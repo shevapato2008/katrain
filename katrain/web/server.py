@@ -147,9 +147,10 @@ async def lifespan(app: FastAPI):
         live_service = getattr(app.state, "live_service", None)
         if live_service:
             await live_service.stop()
-    task = getattr(app.state, "cleanup_task", None)
-    if task:
-        task.cancel()
+    for attr in ("cleanup_task", "ai_ladder_heartbeat_task"):
+        task = getattr(app.state, attr, None)
+        if task:
+            task.cancel()
     app.state.session_manager.cleanup_expired()
 
 
@@ -261,6 +262,7 @@ async def _lifespan_server(app: FastAPI, log):
 
     manager.attach_loop(asyncio.get_running_loop())
     app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
+    app.state.ai_ladder_heartbeat_task = asyncio.create_task(_ai_ladder_heartbeat_loop(app))
 
     # Initialize Live Broadcasting Service
     from katrain.web.live import create_live_service
@@ -432,6 +434,7 @@ async def _lifespan_board(app: FastAPI, log):
 
     manager.attach_loop(asyncio.get_running_loop())
     app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
+    app.state.ai_ladder_heartbeat_task = asyncio.create_task(_ai_ladder_heartbeat_loop(app))
 
     # Start connectivity monitoring (do NOT start live_service in board mode)
     connectivity.start()
@@ -2606,6 +2609,57 @@ async def _cleanup_loop(manager: SessionManager):
     while True:
         await asyncio.sleep(30)
         manager.cleanup_expired()
+
+
+# Boxes report in every 30s against a 5-minute takeover window, so ten consecutive failures
+# still leave the game untakeable. That ratio is the point: one flaky sweep must never be
+# enough to make a live game look abandoned.
+AI_LADDER_HEARTBEAT_INTERVAL_SECONDS = 30
+
+
+async def _send_ai_ladder_heartbeats(app: FastAPI) -> None:
+    """One sweep: tell the authority that every ranked game running here is still being played."""
+
+    targets = app.state.session_manager.ai_ladder_liveness_targets()
+    if not targets:
+        return
+    remote_client = getattr(app.state, "remote_client", None)
+    board = bool(remote_client and getattr(app.state, "repository_dispatcher", None))
+    for user_id, game_id, reservation_key, origin_device_id in targets:
+        try:
+            if board:
+                await remote_client.send_ai_ladder_heartbeat(game_id, reservation_key)
+            else:
+                app.state.ai_ladder_repo.record_heartbeat(
+                    user_id=user_id,
+                    game_id=game_id,
+                    reservation_key=reservation_key,
+                    origin_device_id=origin_device_id,
+                )
+        except Exception as exc:
+            # Per game, so one unreachable game does not stop the others from reporting in.
+            logging.getLogger("katrain_web").warning("ai-ladder heartbeat failed for %s: %s", game_id, exc)
+
+
+async def _ai_ladder_heartbeat_loop(app: FastAPI):
+    """Fixed-interval liveness for ranked games, on a timer rather than off moves.
+
+    A player thinking for three minutes is normal, so move-driven liveness would read deep
+    thought as a dead box and hand a live game to another device.
+
+    Every failure is swallowed and the loop continues. That is deliberate and it is the whole
+    reason this is its own task rather than two lines inside `_cleanup_loop`: if this loop dies,
+    nothing reports an error -- the games it was holding alive simply become takeable five
+    minutes later, and another device banks a loss for a game still being played. A silent stop
+    here is worse than a noisy failure, so there is no path that stops it short of shutdown.
+    """
+
+    while True:
+        await asyncio.sleep(AI_LADDER_HEARTBEAT_INTERVAL_SECONDS)
+        try:
+            await _send_ai_ladder_heartbeats(app)
+        except Exception:
+            logging.getLogger("katrain_web").warning("ai-ladder heartbeat sweep failed", exc_info=True)
 
 
 def _get_session_or_404(manager: SessionManager, session_id: str):

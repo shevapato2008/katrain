@@ -1,6 +1,7 @@
 """Transactional domain rules for the independent 41-rung ranked-AI ladder."""
 
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 from dataclasses import replace
 from types import SimpleNamespace
 from threading import Barrier, BrokenBarrierError
@@ -14,10 +15,14 @@ from katrain.core.ladder import LADDER_LEVELS
 from katrain.web.core import migrations, models_db
 from katrain.web.core.ai_ladder_ranked import (
     AI_LADDER_GAME_TYPE,
+    AI_LADDER_MIN_HEARTBEAT_GENERATION_FOR_TAKEOVER,
+    AI_LADDER_TAKEOVER_THRESHOLD,
     AiLadderLifecycleConflict,
+    AiLadderSettlementStillArriving,
     AiLadderLifecycleNotFound,
     AiLadderOpponentSnapshot,
     AiLadderRankedRepository,
+    AiLadderTakeoverTooEarly,
     InvalidReservationKey,
     initial_placement_window,
 )
@@ -300,6 +305,205 @@ def test_played_result_finalizes_user_game_ledger_profile_and_provenance_once(se
         )
         profile = db.get(models_db.AiLadderProfile, user.id)
         assert (profile.placement_completed, profile.version) == (1, 1)
+
+
+def test_remote_resign_cannot_overwrite_a_result_awaiting_delivery(session_factory, user, opponent):
+    """A game the user already finished must not be resignable from a second device.
+
+    `pending_settlement` means "played out locally, the box is delivering the result" -- the
+    outcome exists, it just has not arrived. `remote_resign` skips the origin check by design
+    (that is what makes the cross-device escape hatch work at all), and it used to skip the
+    state check with it: a second device could resign a *finished* game, and because the ledger
+    is written first-wins, the real result was then permanently replayed as that loss. The user
+    lost a won game, their rating moved the wrong way, and `user_games` kept a fabricated
+    0-move SGF in place of the real one.
+
+    Resigning an `active` game stays allowed -- that is the user abandoning a game in progress,
+    which is theirs to do. The line is drawn at "a result already exists".
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    repo.activate_reservation(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+        origin_session_id="session-a",
+    )
+    repo.mark_pending_settlement(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+    )
+
+    with pytest.raises(AiLadderLifecycleConflict):
+        repo.finalize_reserved_game(
+            user_id=user.id,
+            game_id=reservation.game.game_id,
+            terminal_source="remote_resign",
+            result="loss",
+            deciding_device_id="device-b",
+        )
+
+    # The reservation is still standing and still says a result is on its way, so the origin
+    # box can still deliver the game the user actually played.
+    with session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id).state == "pending_settlement"
+
+    delivered = repo.finalize_reserved_game(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        terminal_source="played_result",
+        result="win",
+        deciding_device_id="device-a",
+        reservation_key=reservation.reservation_key,
+        game_record=complete_game_record(),
+    )
+    assert (delivered.result, delivered.replayed) == ("win", False)
+
+
+def _activated(repo, user, opponent, *, device_id="device-a"):
+    reservation = reserve(repo, user.id, replace(opponent, rung=25), device_id=device_id)
+    repo.activate_reservation(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id=device_id,
+        origin_session_id="session-a",
+    )
+    return reservation
+
+
+def test_a_second_device_must_wait_out_the_threshold_while_the_origin_reports_in(
+    session_factory, user, opponent
+):
+    """A game being played on a live box is not takeable from somewhere else.
+
+    Two heartbeats is what separates "a client that reports liveness" from "a client that never
+    will"; until a client has proven it keeps a timer, the compatibility branch keeps the old
+    unconditional escape hatch rather than stranding it.
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = _activated(repo, user, opponent)
+    game_id = reservation.game.game_id
+
+    def resign_from_elsewhere():
+        return repo.finalize_reserved_game(
+            user_id=user.id,
+            game_id=game_id,
+            terminal_source="remote_resign",
+            result="loss",
+            deciding_device_id="device-b",
+        )
+
+    for _ in range(AI_LADDER_MIN_HEARTBEAT_GENERATION_FOR_TAKEOVER):
+        repo.record_heartbeat(
+            user_id=user.id,
+            game_id=game_id,
+            reservation_key=reservation.reservation_key,
+            origin_device_id="device-a",
+        )
+
+    with pytest.raises(AiLadderTakeoverTooEarly) as blocked:
+        resign_from_elsewhere()
+    assert blocked.value.eligible_at is not None
+
+    # The origin box goes silent for longer than the threshold.
+    with session_factory() as db:
+        row = db.get(models_db.AiLadderActiveGame, game_id)
+        row.last_heartbeat_at = datetime.now(timezone.utc) - (AI_LADDER_TAKEOVER_THRESHOLD + timedelta(seconds=1))
+        db.commit()
+
+    receipt = resign_from_elsewhere()
+    assert (receipt.result, receipt.terminal_source) == ("loss", "remote_resign")
+    with session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).count() == 0
+
+
+def test_the_origin_device_may_always_resign_its_own_live_game(session_factory, user, opponent):
+    """The threshold gates reaching in from elsewhere, never resigning where you are playing."""
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = _activated(repo, user, opponent)
+    for _ in range(AI_LADDER_MIN_HEARTBEAT_GENERATION_FOR_TAKEOVER):
+        repo.record_heartbeat(
+            user_id=user.id,
+            game_id=reservation.game.game_id,
+            reservation_key=reservation.reservation_key,
+            origin_device_id="device-a",
+        )
+
+    receipt = repo.finalize_reserved_game(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        terminal_source="remote_resign",
+        result="loss",
+        deciding_device_id="device-a",
+    )
+    assert (receipt.result, receipt.replayed) == ("loss", False)
+
+
+def test_a_client_that_never_heartbeats_keeps_the_unconditional_escape_hatch(
+    session_factory, user, opponent
+):
+    """Web clients send no heartbeat, and denying them would strand the very accounts we are freeing.
+
+    This is the one place the go ladder deliberately differs from the gomoku track: there
+    takeover is a new capability and defaults closed, here it already exists and defaulting
+    closed would be a regression.
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = _activated(repo, user, opponent, device_id="cloud-local")
+
+    receipt = repo.finalize_reserved_game(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        terminal_source="remote_resign",
+        result="loss",
+        deciding_device_id="some-other-browser",
+    )
+    assert receipt.result == "loss"
+
+
+def test_heartbeat_is_origin_only_and_does_not_resurrect_a_settled_game(session_factory, user, opponent):
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = _activated(repo, user, opponent)
+
+    with pytest.raises(InvalidReservationKey):
+        repo.record_heartbeat(
+            user_id=user.id,
+            game_id=reservation.game.game_id,
+            reservation_key="wrong",
+            origin_device_id="device-a",
+        )
+
+    beat = repo.record_heartbeat(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+    )
+    assert beat.state == "active"
+
+    repo.finalize_reserved_game(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        terminal_source="remote_resign",
+        result="loss",
+        deciding_device_id="device-a",
+    )
+    with pytest.raises(AiLadderLifecycleNotFound):
+        repo.record_heartbeat(
+            user_id=user.id,
+            game_id=reservation.game.game_id,
+            reservation_key=reservation.reservation_key,
+            origin_device_id="device-a",
+        )
 
 
 @pytest.mark.parametrize(("user_color", "expected_re"), [("B", "RE[W+R]"), ("W", "RE[B+R]")])
@@ -1339,3 +1543,153 @@ def test_sqlite_serializes_concurrent_replay_of_the_same_game(tmp_path, opponent
         profile = db.get(models_db.AiLadderProfile, user_id)
         assert (profile.ai_ladder_rung, profile.net_score, profile.version) == (20, 1, 1)
         assert db.query(models_db.AiLadderGameLedger).count() == 1
+
+
+# --- pending_settlement 的诚实释放路径 -----------------------------------------
+
+
+def _pending(repo, user, opponent, *, rung=25):
+    reservation = reserve(repo, user.id, replace(opponent, rung=rung))
+    repo.activate_reservation(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+        origin_session_id="session-a",
+    )
+    repo.mark_pending_settlement(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+    )
+    return reservation
+
+
+def _age_pending(session_factory, game_id, minutes):
+    with session_factory() as db:
+        row = db.get(models_db.AiLadderActiveGame, game_id)
+        row.pending_settlement_since = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+        db.commit()
+
+
+def test_a_result_that_may_still_arrive_is_not_releasable_yet(session_factory, user, opponent):
+    """刚宣告的结果不许放弃 —— 盒子正拿着自己的 outbox 在重试。
+
+    拒绝里带着可释放的时刻:光说「不行」在一个盒子真的回不来的人看来就是永久锁死。
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = _pending(repo, user, opponent)
+
+    with pytest.raises(AiLadderSettlementStillArriving) as excinfo:
+        repo.release_abandoned_settlement(
+            user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
+        )
+    assert excinfo.value.eligible_at is not None
+
+    with session_factory() as db:
+        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id) is not None
+
+
+def test_releasing_an_undelivered_result_banks_nothing_and_moves_no_rating(session_factory, user, opponent):
+    """等够了之后放行,而且**不写账本、不动分**。
+
+    这是这条路径与接管判负的分界:接管记一负、动段位;释放什么都不记。
+    「那台盒子再没回来」不是一个判决 —— 把它当 inconclusive 写进账本,等于声称我们知道
+    这局没下出结果,而我们真正知道的只是「我们不知道」。而且账本先到先得,那一写会把
+    一周后才同步上来的真结果永久重放掉。
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = _pending(repo, user, opponent)
+    _age_pending(session_factory, reservation.game.game_id, 31)
+
+    released = repo.release_abandoned_settlement(
+        user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
+    )
+
+    assert (released.cancelled, released.receipt) == (True, None)
+    with session_factory() as db:
+        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id) is None
+        assert db.query(models_db.AiLadderGameLedger).count() == 0, "释放不是判决,不该留下账本行"
+        assert db.query(models_db.UserGame).count() == 0, "没有对局记录 —— 那局的棋谱从没送到过"
+
+
+def test_a_released_game_still_counts_for_what_it_really_was_if_it_ever_arrives(session_factory, user, opponent):
+    """释放之后真结果又送到了,照旧按真结果算。
+
+    这条是「不写账本」那个决定的**回报**,也是它唯一说得过去的理由:换成写一条 inconclusive
+    墓碑,这里就会重放出「不计分」,用户真下赢的那局被永久抹掉。
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = _pending(repo, user, opponent)
+    _age_pending(session_factory, reservation.game.game_id, 31)
+    repo.release_abandoned_settlement(
+        user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
+    )
+
+    late = repo.settle_game(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        user_color="B",
+        result="win",
+        game_type=AI_LADDER_GAME_TYPE,
+        opponent=replace(opponent, rung=25),
+    )
+
+    assert late.counted is True
+    assert late.reason is None
+
+
+def test_release_returns_the_real_receipt_when_the_result_actually_landed(session_factory, user, opponent):
+    """账本先查,状态后判。
+
+    如果结果其实已经落地了,诚实的回答是那张回执,不是一次释放。把账本查询排在状态判断
+    之后,就是那种「正确分支永远到不了」的形状。
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = _pending(repo, user, opponent)
+    repo.finalize_reserved_game(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        terminal_source="played_result",
+        result="win",
+        deciding_device_id="device-a",
+        reservation_key=reservation.reservation_key,
+        game_record=complete_game_record(user_color="B", result="win"),
+    )
+
+    outcome = repo.release_abandoned_settlement(
+        user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
+    )
+
+    assert outcome.cancelled is False
+    assert outcome.receipt is not None
+    assert (outcome.receipt.result, outcome.receipt.counted) == ("win", True)
+
+
+def test_an_active_game_is_never_releasable_however_long_it_runs(session_factory, user, opponent):
+    """在下的棋不是「没送达的结果」—— 它走接管那条路,而接管要记一负。
+
+    没有这条,一局长考就能被当成待送达的结果放掉,而放掉是不计分的:那就成了免费弃局,
+    正是段位并发规则要防的东西。
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    repo.activate_reservation(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+        origin_session_id="session-a",
+    )
+
+    with pytest.raises(AiLadderLifecycleConflict) as excinfo:
+        repo.release_abandoned_settlement(
+            user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
+        )
+    assert not isinstance(excinfo.value, AiLadderSettlementStillArriving)

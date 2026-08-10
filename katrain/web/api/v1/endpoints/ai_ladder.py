@@ -25,9 +25,14 @@ from katrain.web.core.ai_ladder_catalog import (
 )
 from katrain.web.core.ai_ladder_ranked import (
     AI_LADDER_GAME_TYPE,
+    AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD,
+    AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD_VERSION,
+    AI_LADDER_TAKEOVER_THRESHOLD,
+    AI_LADDER_TAKEOVER_THRESHOLD_VERSION,
     PLACEMENT_GAMES,
     AiLadderBlockingGame,
     AiLadderLifecycleConflict,
+    AiLadderSettlementStillArriving,
     AiLadderLifecycleNotFound,
     AiLadderLifecycleReceipt,
     AiLadderOpponentSnapshot,
@@ -173,6 +178,31 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
         "user_color": game.user_color,
         "opponent_rank_name": game.opponent.rank_name,
     }
+    if payload["ownership"] == "other_device":
+        # Only meaningful when the game is somewhere else -- this is the screen where the user is
+        # told why they cannot start a new game, so it must also say what they can do about it and
+        # when. `takeover_eligible_at` is None when waiting will never help, so the UI shows a
+        # deadline only when one really exists rather than counting down to nothing.
+        payload["can_force_resign"] = game.can_force_resign
+        payload["takeover_eligible_at"] = (
+            game.takeover_eligible_at.isoformat() if game.takeover_eligible_at is not None else None
+        )
+        payload["takeover_threshold_seconds"] = int(AI_LADDER_TAKEOVER_THRESHOLD.total_seconds())
+        payload["takeover_threshold_version"] = AI_LADDER_TAKEOVER_THRESHOLD_VERSION
+        # The second way out, and a materially different bargain the user has to be told apart
+        # from the first: a takeover banks a loss and moves the rung, a release banks nothing
+        # and moves nothing -- it gives up on a result instead of inventing one. Both arrive on
+        # this same screen, so the screen has to be able to say which button it is showing.
+        payload["can_release_abandoned_settlement"] = game.can_release_abandoned_settlement
+        payload["abandoned_settlement_eligible_at"] = (
+            game.abandoned_settlement_eligible_at.isoformat()
+            if game.abandoned_settlement_eligible_at is not None
+            else None
+        )
+        payload["abandoned_settlement_threshold_seconds"] = int(
+            AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD.total_seconds()
+        )
+        payload["abandoned_settlement_threshold_version"] = AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD_VERSION
     if (
         game.state == "active"
         and game.origin_device_id == device_id
@@ -596,6 +626,40 @@ def mark_ranked_game_pending(
     return {"state": "pending_settlement", "game_id": game.game_id}
 
 
+@router.post("/games/{game_id}/heartbeat")
+async def heartbeat_ranked_game(
+    game_id: str,
+    body: AiLadderReservationKeyRequest,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """Report that the client running this ranked game is still alive.
+
+    Called on a fixed timer, never off the back of a move: a player thinking for three minutes
+    is normal, so move-driven liveness would read deep thought as a dead box. The cloud uses
+    nothing but this to decide whether another device may end the game, which is why it is
+    origin-only -- the reservation key proves the caller is the client actually playing.
+    """
+
+    if _is_board(request):
+        _require_bound_board_user(request, current_user)
+        return await _remote(
+            lambda: request.app.state.remote_client.send_ai_ladder_heartbeat(game_id, body.reservation_key),
+            "AI ladder heartbeat",
+        )
+    _require_authority(request)
+    try:
+        game = request.app.state.ai_ladder_repo.record_heartbeat(
+            user_id=current_user.id,
+            game_id=game_id,
+            reservation_key=body.reservation_key,
+            origin_device_id=_device_id(request, required=False),
+        )
+    except ValueError as exc:
+        raise _lifecycle_error(exc) from exc
+    return {"state": game.state, "game_id": game.game_id}
+
+
 @router.delete("/games/{game_id}/reservation")
 def cancel_ranked_game_reservation(
     game_id: str,
@@ -663,13 +727,29 @@ async def end_ranked_game(
             lambda: request.app.state.remote_client.end_ai_ladder_game(game_id), "AI ladder game end"
         )
     _require_authority(request)
+    repo = request.app.state.ai_ladder_repo
+    deciding_device_id = _device_id(request, required=False)
     try:
-        receipt = request.app.state.ai_ladder_repo.finalize_reserved_game(
+        # Which of the two exits this is depends on what the cloud knows, not on what the client
+        # asked for -- the client cannot see whether a result is already in flight. A game whose
+        # result was announced is released (nothing banked); anything else is resigned.
+        lifecycle = repo.get_game_lifecycle(user_id=current_user.id, game_id=game_id)
+        if isinstance(lifecycle, AiLadderBlockingGame) and lifecycle.state == "pending_settlement":
+            released = repo.release_abandoned_settlement(
+                user_id=current_user.id, game_id=game_id, deciding_device_id=deciding_device_id
+            )
+            if released.receipt is not None:
+                return _lifecycle_payload(released.receipt)
+            logging.getLogger("katrain_web").info(
+                "ai-ladder released an undelivered settlement: game=%s device=%s", game_id, deciding_device_id
+            )
+            return {"state": "released", "game_id": game_id, "counted": False}
+        receipt = repo.finalize_reserved_game(
             user_id=current_user.id,
             game_id=game_id,
             terminal_source="remote_resign",
             result="loss",
-            deciding_device_id=_device_id(request, required=False),
+            deciding_device_id=deciding_device_id,
         )
     except ValueError as exc:
         raise _lifecycle_error(exc) from exc
@@ -830,6 +910,10 @@ async def start_ranked_game(
             session.ai_ladder_ai_subtype = "ai:ladder"
             session.ai_ladder_settlement_pending = False
             session.ai_ladder_reservation_key = reservation_key
+            # Kept so the heartbeat loop reports under the device that actually reserved this
+            # game. Provenance, not a credential -- `_verify_origin` authenticates on the
+            # reservation key alone, and a device label is mutable by whoever sends it.
+            session.ai_ladder_origin_device_id = device_id
             session._recorded = False
             session.katrain(
                 "update_player",

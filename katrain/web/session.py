@@ -7,6 +7,7 @@ from typing import Dict, Optional, Set, List
 
 from starlette.websockets import WebSocket
 
+from katrain.web.core.ai_ladder_ranked import AI_LADDER_GAME_TYPE
 from katrain.web.interface import WebKaTrain
 
 
@@ -108,6 +109,44 @@ class SessionManager:
     def list_active_multiplayer_sessions(self) -> List[WebSession]:
         with self._lock:
             return [s for s in self._sessions.values() if s.player_b_id is not None]
+
+    def ai_ladder_liveness_targets(self) -> List[tuple]:
+        """`(user_id, game_id, reservation_key, origin_device_id)` per ranked game running here.
+
+        The heartbeat has to be sent by whoever holds the reservation key, and the key never
+        leaves this process -- `/start` mints it, hands it to the cloud, and keeps it on the
+        session. So liveness is reported by the server that owns the session, not by the browser:
+        a closed tab does not mean the game is gone, and the device the cloud is judging is the
+        box, not the page.
+
+        Games that have already produced a result (`ai_ladder_settlement_pending`) are left out.
+        The cloud treats a heartbeat on a non-active game as a no-op anyway, so this is about not
+        spending a network round trip claiming liveness for a game that is over.
+        """
+
+        with self._lock:
+            sessions = list(self._sessions.values())
+        targets: Dict[tuple, tuple] = {}
+        for session in sessions:
+            if getattr(session, "game_type", None) != AI_LADDER_GAME_TYPE:
+                continue
+            if getattr(session, "ai_ladder_settlement_pending", False):
+                continue
+            snapshot = getattr(session, "ai_ladder_snapshot", None)
+            reservation_key = getattr(session, "ai_ladder_reservation_key", None)
+            game_id = getattr(snapshot, "game_id", None)
+            if session.user_id is None or not game_id or not reservation_key:
+                continue
+            # Keyed so two sessions on one game report once. The cloud counts heartbeats to tell
+            # "this client keeps a timer alive" from "this client never will", and double-counting
+            # would let one box cross that threshold at twice the rate it earned.
+            targets[(session.user_id, game_id)] = (
+                session.user_id,
+                game_id,
+                reservation_key,
+                getattr(session, "ai_ladder_origin_device_id", None) or "cloud-local",
+            )
+        return list(targets.values())
 
     def remove_session(self, session_id: str):
         with self._lock:

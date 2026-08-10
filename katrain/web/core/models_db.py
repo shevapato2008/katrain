@@ -174,6 +174,20 @@ class AiLadderActiveGame(Base):
     origin_session_id = Column(String(64), nullable=True)
     state = Column(String(24), nullable=False, default="reserved")
     version = Column(Integer, nullable=False, default=0)
+    # Liveness of the box that is playing this game, so a second device can tell "still being
+    # played over there" from "that box is gone". Deliberately separate from `updated_at`:
+    # nothing writes this row between activation and settlement, so `updated_at` measures how
+    # long the game has been running, and a long game is not a dead one.
+    last_heartbeat_at = Column(DateTime(timezone=True), nullable=True)
+    # Counts heartbeats, not devices. A client that has only ever activated sits at 0; one that
+    # has proven it keeps a timer running climbs. The takeover rule reads this to tell those two
+    # populations apart -- see AI_LADDER_MIN_HEARTBEAT_GENERATION_FOR_TAKEOVER.
+    heartbeat_generation = Column(Integer, nullable=False, default=0)
+    # When this row entered `pending_settlement`, i.e. when the origin box said "the game is
+    # over, I am delivering the result". Its own column for the same reason as
+    # `last_heartbeat_at`: `updated_at` is reset by any future write to this row, so a clock
+    # kept there would silently restart the moment anything else touches the reservation.
+    pending_settlement_since = Column(DateTime(timezone=True), nullable=True)
     reservation_key_hash = Column(String(64), nullable=False)
     user_color = Column(String(1), nullable=False)
     game_type = Column(String(32), nullable=False, default="ai_ladder_ranked")
@@ -197,6 +211,7 @@ class AiLadderActiveGame(Base):
             name="ck_ai_ladder_active_state",
         ),
         CheckConstraint("version >= 0", name="ck_ai_ladder_active_version"),
+        CheckConstraint("heartbeat_generation >= 0", name="ck_ai_ladder_active_heartbeat_generation"),
         CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_active_user_color"),
         CheckConstraint("game_type = 'ai_ladder_ranked'", name="ck_ai_ladder_active_game_type"),
         CheckConstraint("opponent_rung BETWEEN 1 AND 41", name="ck_ai_ladder_active_rung"),

@@ -17,6 +17,90 @@ from katrain.web.core import models_db
 AI_LADDER_GAME_TYPE = "ai_ladder_ranked"
 PLACEMENT_GAMES = 5
 
+# How long the cloud waits without a heartbeat before it will believe the origin box is gone.
+# Aligned with the other three game tracks (gomoku/xiangqi/chess all use 5 minutes). Bumping the
+# window means bumping the version with it: receipts carry the version so an old one can still
+# say which window it was decided under, instead of being reinterpreted under today's number.
+AI_LADDER_TAKEOVER_THRESHOLD = timedelta(minutes=5)
+AI_LADDER_TAKEOVER_THRESHOLD_VERSION = 1
+
+# Boxes heartbeat every 30s, so 2 means "this client has kept a timer alive past its activation"
+# -- enough to distinguish a client that reports liveness from one that never will. Clients that
+# never heartbeat stay at 0 and are handled by the compatibility branch in `takeover_eligibility`.
+AI_LADDER_MIN_HEARTBEAT_GENERATION_FOR_TAKEOVER = 2
+
+# How long a delivered-but-unreceived result is waited for before the account may free its own
+# slot. Six times the takeover window, and deliberately so: takeover races a box that has gone
+# quiet, while this races a box that is actively retrying an outbox it already owns. The thing
+# being risked is also different -- takeover costs a slot, this costs a real game's result.
+AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD = timedelta(minutes=30)
+AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD_VERSION = 1
+
+
+def abandoned_settlement_eligibility(row, *, now: Optional[datetime] = None) -> tuple[bool, Optional[datetime]]:
+    """Decide, at read time, whether the account may abandon waiting for a result.
+
+    Read-time for the same reason as `takeover_eligibility`, and not a sweeper for the same
+    reason: the failure being judged is "that box never came back", and that judgement must not
+    depend on another background job still being alive.
+
+    Returns `(can_release, eligible_at)`; `eligible_at` is None when waiting cannot make the
+    answer True.
+    """
+
+    if row.state != "pending_settlement":
+        return False, None
+    since = getattr(row, "pending_settlement_since", None)
+    if since is None:
+        # Rows that entered pending_settlement before this column existed have, by definition,
+        # been waiting since before this code shipped. Refusing them would strand exactly the
+        # accounts this path exists to unstick.
+        return True, None
+    if since.tzinfo is None:
+        since = since.replace(tzinfo=timezone.utc)
+    eligible_at = since + AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD
+    moment = now or datetime.now(timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment >= eligible_at, eligible_at
+
+
+def takeover_eligibility(row, *, now: Optional[datetime] = None) -> tuple[bool, Optional[datetime]]:
+    """Decide, at read time, whether a second device may end this game.
+
+    Computed from `now - last_heartbeat_at` on every read rather than stored: a persisted
+    `eligible_at` is derived from the threshold constant, so bumping the threshold would leave
+    stale copies behind that quietly disagree with the rule that produced them. Nothing sweeps,
+    nothing crons -- the failure this guards against is "the box died", and a judgement about a
+    dead box must not itself depend on another background job still being alive.
+
+    Returns `(can_take_over, eligible_at)`. `eligible_at` is None whenever the answer can never
+    become True by waiting, so a UI never counts down toward a moment that will not arrive.
+    """
+
+    if row.state != "active":
+        # `reserved` has its own short lazy reclaim, and `pending_settlement` holds a result that
+        # already exists -- forfeiting it would overwrite a real game with an invented one.
+        return False, None
+    if (row.heartbeat_generation or 0) < AI_LADDER_MIN_HEARTBEAT_GENERATION_FOR_TAKEOVER:
+        # Compatibility branch, and the one place this deliberately differs from the gomoku track.
+        # There, takeover is a *new* capability, so a client that cannot prove liveness is denied
+        # and the reservation waits for its origin. Here it is an *existing* one: `/end` has always
+        # ended a ranked game from anywhere, and a web client still sends no heartbeat at all.
+        # Denying by default would take a working escape hatch away from every current client and
+        # strand the account instead -- the exact failure this whole change exists to remove.
+        return True, None
+    if row.last_heartbeat_at is None:
+        return True, None
+    seen = row.last_heartbeat_at
+    if seen.tzinfo is None:
+        seen = seen.replace(tzinfo=timezone.utc)
+    eligible_at = seen + AI_LADDER_TAKEOVER_THRESHOLD
+    moment = now or datetime.now(timezone.utc)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment >= eligible_at, eligible_at
+
 
 @dataclass(frozen=True)
 class AiLadderOpponentSnapshot:
@@ -74,6 +158,30 @@ class InvalidReservationKey(AiLadderLifecycleError):
     """An origin-only action did not prove possession of its reservation key."""
 
 
+class AiLadderSettlementStillArriving(AiLadderLifecycleConflict):
+    """A result was announced and is still within the window in which it may yet arrive.
+
+    Carries the moment the account may stop waiting, so a client can say "in N minutes" rather
+    than a bare refusal that reads as a permanent lockout.
+    """
+
+    def __init__(self, message: str, *, eligible_at: Optional[datetime] = None) -> None:
+        super().__init__(message)
+        self.eligible_at = eligible_at
+
+
+class AiLadderTakeoverTooEarly(AiLadderLifecycleConflict):
+    """Another device still looks alive, so this game is not takeable yet.
+
+    Carries the moment it becomes takeable so the caller can say "in N minutes" instead of
+    just "no" -- a bare refusal reads as a bug to someone whose box really is dead.
+    """
+
+    def __init__(self, message: str, *, eligible_at: Optional[datetime] = None) -> None:
+        super().__init__(message)
+        self.eligible_at = eligible_at
+
+
 @dataclass(frozen=True)
 class AiLadderBlockingGame:
     game_id: str
@@ -87,6 +195,15 @@ class AiLadderBlockingGame:
     execution_identity: str
     rules_snapshot: Mapping[str, Any]
     time_control_snapshot: Mapping[str, Any]
+    # Projected at read time so a second device can say "in N minutes" rather than a bare no.
+    # Defaulted because every pre-existing construction of this record predates takeover and
+    # means "not takeable", which is what these values say.
+    can_force_resign: bool = False
+    takeover_eligible_at: Optional[datetime] = None
+    # The other way out, and a different bargain: this one banks nothing and moves no rating,
+    # it only stops waiting for a result that may never arrive.
+    can_release_abandoned_settlement: bool = False
+    abandoned_settlement_eligible_at: Optional[datetime] = None
 
 
 @dataclass(frozen=True)
@@ -336,9 +453,88 @@ class AiLadderRankedRepository:
                 raise AiLadderLifecycleConflict("reservation has not been activated")
             if row.state == "active":
                 row.state = "pending_settlement"
+                row.pending_settlement_since = datetime.now(timezone.utc)
                 row.version += 1
             session.commit()
             return self._blocking_from_row(row)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def record_heartbeat(
+        self, *, user_id: int, game_id: str, reservation_key: str, origin_device_id: str
+    ) -> AiLadderBlockingGame:
+        """Report that the box playing this game is still alive.
+
+        Origin-only: the reservation key is the capability that says "I am the client running
+        this game". Without that check any client could hold a game alive that it is not
+        playing, which is precisely the state takeover exists to break out of.
+
+        Only `active` games heartbeat. `reserved` has its own short reclaim and
+        `pending_settlement` is already trying to hand over a result -- neither is waiting on a
+        liveness signal, so a heartbeat there is a no-op rather than an error, and a box that
+        keeps its timer running one tick past the end of a game does not get an error dialog
+        for it.
+        """
+
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
+            self._verify_origin(row, reservation_key=reservation_key, origin_device_id=origin_device_id)
+            if row.state == "active":
+                row.last_heartbeat_at = datetime.now(timezone.utc)
+                row.heartbeat_generation = (row.heartbeat_generation or 0) + 1
+            session.commit()
+            return self._blocking_from_row(row)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def release_abandoned_settlement(
+        self, *, user_id: int, game_id: str, deciding_device_id: str
+    ) -> AiLadderCancelResult:
+        """Stop waiting for a result that was announced but never delivered.
+
+        **Writes no ledger row and moves no rating.** The ledger records verdicts, and "the box
+        that played this game never came back" is not a verdict -- filing it as `inconclusive`
+        would state that we know the game was undecided, when what we actually know is that we
+        do not know. It would also void the real result permanently: the ledger is first-wins,
+        so a box that syncs a week later would find its genuine outcome replayed away.
+
+        Releasing only the reservation keeps both truths intact -- the account can play again
+        now, and if that box ever does deliver, the game it really played still counts for
+        exactly what it was.
+
+        Not origin-only, deliberately: the whole point is that the origin is unreachable. The
+        authenticated account plus the waiting window is the authority here.
+        """
+
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            self._lock_user(session, user_id=user_id)
+            # Ledger first, before any state judgement: if the result did land, the honest
+            # answer is that receipt, not a release. Ordering this after the state check is the
+            # shape that makes a correct branch unreachable.
+            existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
+            if existing is not None:
+                return AiLadderCancelResult(cancelled=False, receipt=self._replay_lifecycle_receipt(session, existing))
+            row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
+            if row.state != "pending_settlement":
+                raise AiLadderLifecycleConflict("only a game awaiting settlement can be released")
+            allowed, eligible_at = abandoned_settlement_eligibility(row)
+            if not allowed:
+                raise AiLadderSettlementStillArriving(
+                    "the result of this game may still arrive", eligible_at=eligible_at
+                )
+            session.delete(row)
+            session.commit()
+            return AiLadderCancelResult(cancelled=True, receipt=None)
         except Exception:
             session.rollback()
             raise
@@ -693,6 +889,35 @@ class AiLadderRankedRepository:
                 )
                 if row.state not in {"active", "pending_settlement"}:
                     raise AiLadderLifecycleConflict("reservation must be activated before terminal submission")
+            elif row.state == "pending_settlement":
+                # `remote_resign` deliberately skips the origin check above -- that is what lets a
+                # second device free a slot whose origin box is gone. But skipping origin must not
+                # also mean skipping "does a result already exist". `pending_settlement` says the
+                # game was played out and the box is delivering the outcome, and because the ledger
+                # is written first-wins, resigning here does not merely race the real result -- it
+                # replaces it permanently, banks a loss the user did not suffer, and files a
+                # fabricated 0-move SGF as the game they played.
+                #
+                # The slot is not stranded by this: the origin box still delivers on reconnect,
+                # and a delivery that never arrives is released by its own honest path rather than
+                # by inventing a result nobody played.
+                raise AiLadderLifecycleConflict("a game awaiting settlement cannot be resigned from another device")
+            elif row.state == "active" and deciding_device_id != row.origin_device_id:
+                # Only a game in progress can be "still being played somewhere else"; a bare
+                # reservation has nobody at the board, so freeing it from another device needs no
+                # waiting period (and it has its own short lazy reclaim besides).
+                #
+                # Resigning from the box that is playing the game is just resigning, and always
+                # allowed. Reaching in from somewhere else is a takeover, and it only becomes
+                # allowed once the origin has stopped reporting for the threshold. The device id
+                # is doing provenance work here, not authentication -- it answers "is this the
+                # machine the game is on", which is what a safety interlock needs; ownership was
+                # already settled by the authenticated account this transaction is locked on.
+                allowed, eligible_at = takeover_eligibility(row)
+                if not allowed:
+                    raise AiLadderTakeoverTooEarly(
+                        "the device playing this game is still reporting in", eligible_at=eligible_at
+                    )
 
             opponent = self._opponent_from_row(row)
             record = self._validated_game_record(
@@ -913,7 +1138,13 @@ class AiLadderRankedRepository:
 
     @classmethod
     def _blocking_from_row(cls, row) -> AiLadderBlockingGame:
+        can_force_resign, takeover_eligible_at = takeover_eligibility(row)
+        can_release, release_eligible_at = abandoned_settlement_eligibility(row)
         return AiLadderBlockingGame(
+            can_force_resign=can_force_resign,
+            takeover_eligible_at=takeover_eligible_at,
+            can_release_abandoned_settlement=can_release,
+            abandoned_settlement_eligible_at=release_eligible_at,
             game_id=row.game_id,
             user_id=row.user_id,
             state=row.state,

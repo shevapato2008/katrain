@@ -268,6 +268,15 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def send_ai_ladder_heartbeat(self, game_id: str, reservation_key: str) -> Dict:
+        resp = await self._request(
+            "POST",
+            f"/api/v1/ai-ladder/games/{game_id}/heartbeat",
+            json={"reservation_key": reservation_key},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     async def cancel_ai_ladder_reservation(self, game_id: str, reservation_key: str) -> Dict:
         resp = await self._request(
             "DELETE",

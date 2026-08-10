@@ -21,6 +21,7 @@ from katrain.web.core.db import Base
 from katrain.web.core.engine_recovery import EngineRecoveryConfig, EngineRecoveryTracker
 from katrain.web.core.ranked_session_guard import RankedAnalysisActivity
 from katrain.web.core.user_game_repo import UserGameAnalysisRepository, UserGameRepository
+from katrain.web import server
 from katrain.web.server import create_app
 
 
@@ -2388,6 +2389,21 @@ async def test_cross_device_ranked_journey_has_one_receipt_and_one_auditable_wri
         "ownership": "other_device",
         "user_color": "B",
         "opponent_rank_name": "fixture-16",
+        # The origin here never sends a heartbeat, so this is the compatibility branch: the
+        # second device may end the game immediately and there is no deadline to count down to.
+        # `ended` below is that call succeeding, which is what makes this the regression guard
+        # for "the takeover gate must not take the existing escape hatch away".
+        "can_force_resign": True,
+        "takeover_eligible_at": None,
+        "takeover_threshold_seconds": 300,
+        "takeover_threshold_version": 1,
+        # The game is `active`, so the other exit is closed and says so with a deadline of None:
+        # no amount of waiting turns a game in progress into an undelivered result. The screen
+        # has to be able to tell the two apart -- one banks a loss, the other banks nothing.
+        "can_release_abandoned_settlement": False,
+        "abandoned_settlement_eligible_at": None,
+        "abandoned_settlement_threshold_seconds": 1800,
+        "abandoned_settlement_threshold_version": 1,
     }
     receipt = ended.json()
     assert ended.status_code == 200
@@ -3271,3 +3287,177 @@ async def test_finishing_a_free_game_records_it_without_erroring(api_app, client
     with api_app.state._test_session_factory() as db:
         assert db.query(models_db.UserGame).count() == 1
         assert db.query(models_db.AiLadderGameLedger).count() == 0
+
+
+# --- 心跳:盒端定时器 ---------------------------------------------------------
+#
+# 三层各自有守卫(契约 ⑧):枚举(会话 → 目标)、扫描(目标 → 权威)、循环(永不静默停摆)。
+# 判据不是「跑没跑绿」,是把任一层的实现单独删掉,有没有东西红。
+
+
+def _active_row(api_app, game_id: str):
+    with api_app.state._test_session_factory() as db:
+        return (
+            db.query(models_db.AiLadderActiveGame)
+            .filter(models_db.AiLadderActiveGame.game_id == game_id)
+            .one()
+        )
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_sweep_reports_liveness_for_a_game_started_through_the_api(api_app, client):
+    """整条链路:/start 建的会话,扫描器能从它身上取到密钥并把生存证据写进权威。
+
+    走真 HTTP 起局而不是手工塞一个会话 —— 这条要证的恰恰是「/start 把密钥和设备标记
+    留在了扫描器找得到的地方」,自己造会话就把要证的东西假设掉了。
+    """
+
+    async with client as ac:
+        response = await start_ranked(api_app, ac)
+    assert response.status_code == 201
+    game_id = response.json()["game_id"]
+
+    before = _active_row(api_app, game_id)
+    assert before.state == "active"
+    assert before.heartbeat_generation == 0
+    assert before.last_heartbeat_at is None
+
+    await server._send_ai_ladder_heartbeats(api_app)
+
+    after = _active_row(api_app, game_id)
+    assert after.heartbeat_generation == 1
+    assert after.last_heartbeat_at is not None
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_sweep_leaves_out_a_game_whose_result_is_already_in_flight(api_app, client):
+    """结算在飞的局不再报生存 —— 它不在等生存信号,它在等自己的结果送达。"""
+
+    async with client as ac:
+        response = await start_ranked(api_app, ac)
+    game_id = response.json()["game_id"]
+    api_app.state._test_created_sessions[0].ai_ladder_settlement_pending = True
+
+    assert api_app.state.session_manager.ai_ladder_liveness_targets() == []
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_sweep_counts_one_game_once_even_with_two_sessions_on_it(api_app, client):
+    """同一局两个会话只报一次。
+
+    云端数的是「这个客户端在不在跑定时器」,重复上报会让一个盒子以两倍速度越过那道门槛,
+    把「证明过自己会报」变成「报得比别人快」。
+    """
+
+    async with client as ac:
+        response = await start_ranked(api_app, ac)
+    game_id = response.json()["game_id"]
+    original = api_app.state._test_created_sessions[0]
+    twin = SimpleNamespace(
+        session_id="twin",
+        user_id=original.user_id,
+        game_type="ai_ladder_ranked",
+        ai_ladder_snapshot=original.ai_ladder_snapshot,
+        ai_ladder_reservation_key=original.ai_ladder_reservation_key,
+        ai_ladder_settlement_pending=False,
+    )
+    api_app.state.session_manager._sessions["twin"] = twin
+
+    targets = api_app.state.session_manager.ai_ladder_liveness_targets()
+    assert [t[1] for t in targets] == [game_id]
+
+    await server._send_ai_ladder_heartbeats(api_app)
+    assert _active_row(api_app, game_id).heartbeat_generation == 1
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_sweep_routes_to_the_cloud_when_this_process_is_a_board(api_app, monkeypatch):
+    """盒端不写自己的库,它把生存证据转给权威 —— 判决在云端做,盒子只是被判决的对象。"""
+
+    remote = AsyncMock()
+    monkeypatch.setattr(api_app.state, "remote_client", remote, raising=False)
+    monkeypatch.setattr(api_app.state, "repository_dispatcher", MagicMock(), raising=False)
+    monkeypatch.setattr(
+        api_app.state.session_manager,
+        "ai_ladder_liveness_targets",
+        lambda: [(7, "game-7", "key-7", "box-7")],
+    )
+    local_write = MagicMock()
+    monkeypatch.setattr(api_app.state.ai_ladder_repo, "record_heartbeat", local_write)
+
+    await server._send_ai_ladder_heartbeats(api_app)
+
+    remote.send_ai_ladder_heartbeat.assert_awaited_once_with("game-7", "key-7")
+    local_write.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_sweep_keeps_reporting_after_one_game_fails(api_app, monkeypatch):
+    """一局报不上去不影响别的局 —— 否则一条坏记录能让同一台机器上所有对局一起变成可接管。"""
+
+    monkeypatch.setattr(
+        api_app.state.session_manager,
+        "ai_ladder_liveness_targets",
+        lambda: [(1, "bad", "k1", "d"), (2, "good", "k2", "d")],
+    )
+    seen = []
+
+    def record(*, user_id, game_id, reservation_key, origin_device_id):
+        seen.append(game_id)
+        if game_id == "bad":
+            raise RuntimeError("row vanished")
+
+    monkeypatch.setattr(api_app.state.ai_ladder_repo, "record_heartbeat", record)
+
+    await server._send_ai_ladder_heartbeats(api_app)
+
+    assert seen == ["bad", "good"]
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_loop_does_not_stop_when_a_sweep_raises(monkeypatch):
+    """循环吞掉一切异常并继续。
+
+    这条守的是**静默停摆**:循环一死没有任何人报错,它托着的对局五分钟后变成可接管,
+    另一台设备替一局还在下的棋记一笔败。所以「失败后仍然继续」本身就是被断言的性质,
+    不是实现细节。
+    """
+
+    sweeps = []
+
+    async def always_fails(app):
+        sweeps.append(1)
+        raise RuntimeError("authority unreachable")
+
+    monkeypatch.setattr(server, "_send_ai_ladder_heartbeats", always_fails)
+    monkeypatch.setattr(server, "AI_LADDER_HEARTBEAT_INTERVAL_SECONDS", 0)
+
+    task = asyncio.create_task(server._ai_ladder_heartbeat_loop(SimpleNamespace()))
+    for _ in range(50):
+        await asyncio.sleep(0)
+        if len(sweeps) >= 3:
+            break
+    task.cancel()
+
+    assert len(sweeps) >= 3, "第一次失败就停了 —— 那正是要防的静默停摆"
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_targets_carry_the_device_that_actually_reserved_the_game(api_app, client):
+    """设备标记取自起局那一刻,不是回落成 "cloud-local"。
+
+    `_verify_origin` 只认预约密钥、根本不看设备标记,所以这行赋值在鉴权上不产生任何后果 ——
+    正因如此它才需要一条专门的断言:没有它,这行就是「写了但没人到得了」的那一类,
+    删掉整套测试照样全绿。这里让起局带一个真设备头,回落值就与真值可区分了。
+    """
+
+    async with client as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers={**api_app.state._test_headers, "X-StellaBox-Device-ID": "box-42"},
+            json={"color": "black", "time_enabled": False},
+        )
+    assert response.status_code == 201
+
+    targets = api_app.state.session_manager.ai_ladder_liveness_targets()
+    assert [t[3] for t in targets] == ["box-42"]

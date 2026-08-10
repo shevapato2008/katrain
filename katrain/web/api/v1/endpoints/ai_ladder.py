@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import uuid
 import logging
+import math
 import secrets
+from datetime import datetime, timezone
 from typing import Literal, Optional
 
 import httpx
@@ -169,6 +171,29 @@ def _device_id(request: Request, *, required: bool = True) -> str:
     return normalized or "cloud-local"
 
 
+def _seconds_until(moment: datetime | None) -> int | None:
+    """How long the client still has to wait -- a **duration**, not an instant.
+
+    The instant is also sent, but nothing that counts down may be computed from it. A client
+    subtracting a server timestamp from its own clock is off by exactly the clock skew between
+    the two machines, and a kiosk that lives offline with no reliable NTP is where that skew is
+    largest. The failure is the precise one this whole screen exists to avoid: the button already
+    works while the screen still reads "2 minutes to go", or the screen reaches zero and the press
+    comes back 409. A duration is a difference, so it survives any offset -- the client only has
+    to know how long ago it received the response, which it can measure against its own clock
+    without ever agreeing with ours about what time it is.
+
+    Clamped at zero: a negative remaining time renders as "-137 seconds to go" next to a button
+    that already works.
+    """
+
+    if moment is None:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return max(0, math.ceil((moment - datetime.now(timezone.utc)).total_seconds()))
+
+
 def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: str) -> dict[str, object]:
     payload: dict[str, object] = {
         "game_id": game.game_id,
@@ -234,6 +259,8 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
             if windowed
             else None
         )
+        # 界面拿来走秒的是这个。见 `_seconds_until`。
+        payload["takeover_eligible_in_seconds"] = _seconds_until(game.takeover_eligible_at) if windowed else None
         payload["takeover_threshold_seconds"] = int(AI_LADDER_TAKEOVER_THRESHOLD.total_seconds())
         payload["takeover_threshold_version"] = AI_LADDER_TAKEOVER_THRESHOLD_VERSION
     # The second way out, and a materially different bargain the user has to be told apart
@@ -255,6 +282,7 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
             if game.abandoned_settlement_eligible_at is not None
             else None
         )
+        payload["abandoned_settlement_eligible_in_seconds"] = _seconds_until(game.abandoned_settlement_eligible_at)
         payload["abandoned_settlement_threshold_seconds"] = int(
             AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD.total_seconds()
         )

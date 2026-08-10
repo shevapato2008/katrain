@@ -2396,6 +2396,10 @@ async def test_cross_device_ranked_journey_has_one_receipt_and_one_auditable_wri
         # for "the takeover gate must not take the existing escape hatch away".
         "can_force_resign": True,
         "takeover_eligible_at": None,
+        # 界面走秒读的是这个**时长**,不是上面那个时刻 —— 客户端拿服务端的时刻去减自己的钟,
+        # 差多少钟倒计时就错多少,而常年离线、没有可靠 NTP 的一体机正是钟偏最大的那一台。
+        # 时长是差值,对钟偏免疫(国象在自己那条上量出来的)。这里为 None:此刻就能按,没什么可数。
+        "takeover_eligible_in_seconds": None,
         "takeover_threshold_seconds": 300,
         "takeover_threshold_version": 1,
         # The game is `active`, so the other exit is closed and says so with a deadline of None:
@@ -2403,6 +2407,7 @@ async def test_cross_device_ranked_journey_has_one_receipt_and_one_auditable_wri
         # has to be able to tell the two apart -- one banks a loss, the other banks nothing.
         "can_release_abandoned_settlement": False,
         "abandoned_settlement_eligible_at": None,
+        "abandoned_settlement_eligible_in_seconds": None,
         "abandoned_settlement_threshold_seconds": 1800,
         "abandoned_settlement_threshold_version": 1,
     }
@@ -4824,3 +4829,64 @@ async def test_a_reservation_orphaned_by_a_power_cut_frees_itself_with_nobody_ru
     # 回收年龄必须真的比接管阈值宽 —— 它是给「正在开的那一局」留的飞行时间,不是随手取的余量。
     # 设太短,worker/读路径会把用户**此刻正在开**的这局清掉,从「偶尔卡死」变成「经常开不了局」。
     assert AI_LADDER_TAKEOVER_THRESHOLD >= timedelta(minutes=5)
+
+
+@pytest.mark.asyncio
+async def test_the_countdown_is_sent_as_a_duration_so_a_skewed_clock_cannot_lie(api_app, client):
+    """走秒读的是**时长**,不是时刻 —— 客户端和服务端不必对「现在几点」达成一致。
+
+    国象在自己那条上量出来的:它透的是 `takeover_eligible_at`(云端的钟),盒端拿它减
+    **自己的**钟来走秒,两台机器差多少倒计时就错多少。而常年离线、没有可靠 NTP 的一体机
+    正是钟偏最大的那一台,所以这个差不是理论值。
+
+    后果恰好是这块屏存在的理由的反面:**按钮其实已经能按了,屏上还在数「还需 2 分钟」**;
+    或者数到 0 按下去 409。时长是**差值**,对钟偏免疫 —— 客户端只需要知道「这份响应到手
+    多久了」,而那个它用自己的钟量得准,不需要和我们对表。
+
+    夹到 0 也在这里钉住:国象那条变异(去掉 `max(0, ...)`)在它那边 133 条一条没红,
+    因为**没有任何测试在过期之后读过一次**。负数不是好看不好看 —— 屏上会显示
+    「还需等待 -137 秒」,而按钮此刻就能按。
+    """
+
+    from katrain.web.core.ai_ladder_ranked import AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD
+
+    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
+    game_id = reservation_payload()["game_id"]
+    key = reservation_payload()["reservation_key"]
+
+    def age_pending_by(delta):
+        with api_app.state._test_session_factory() as db:
+            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
+            row.pending_settlement_since = datetime.now(timezone.utc) - delta
+            db.commit()
+
+    async with client as ac:
+        await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/activate",
+            headers=origin,
+            json={"reservation_key": key, "session_id": "session-a"},
+        )
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/pending-settlement", headers=origin, json={"reservation_key": key}
+        )
+
+        age_pending_by(timedelta(minutes=10))
+        waiting = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
+
+        age_pending_by(AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD + timedelta(minutes=5))
+        expired = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
+
+    remaining = waiting["abandoned_settlement_eligible_in_seconds"]
+    expected = int(AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD.total_seconds()) - 600
+    assert waiting["can_release_abandoned_settlement"] is False
+    # 允许几秒的执行耗时,但必须是**真的剩余时长**,不是别的什么数(比如整个阈值)。
+    assert expected - 5 <= remaining <= expected + 5, f"剩余时长不对:{remaining},应当约 {expected}"
+
+    # 过期之后必须是 0,不是负数 —— 这一格此前从来没有人读过。
+    assert expired["can_release_abandoned_settlement"] is True
+    assert expired["abandoned_settlement_eligible_in_seconds"] == 0, (
+        f"过期之后剩余时长是 {expired['abandoned_settlement_eligible_in_seconds']} —— "
+        "屏上会显示「还需等待 -137 秒」,而按钮此刻就能按"
+    )

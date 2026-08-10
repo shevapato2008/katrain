@@ -1373,11 +1373,21 @@ Wilson 区间仅在 0.342–0.469 重叠）。两次运行的 configuration 指�
 - [ ] **`inconclusive_engine` 静默烧尽尝试**:§C31 首轮 17 组 × 20 次 attempt 全部 `inconclusive_engine`、
   0 盘有效棋且不报错——attestation/路由漂移被 `_player_move` 吞成 `unavailable` 并记为 inconclusive。
   建议加一条早停:某组连续 N 次 attempt 全为 `inconclusive_engine` 时中止整轮并非零退出。
+- [ ] **🔴 `develop` 从未被 CI 把过关（2026-08-10 实测）** — `test_and_build.yaml` 触发条件只有
+  `pull_request` + `workflow_dispatch`,**没有 push**;进 `develop` 的工作全是本地 merge commit、
+  **0 个 PR**;最近 40 次 CI 运行的分支为 master 33 / katago-1.17.1 5 / dependabot 2、**develop 侧 0 次**。
+  ⇒ 本仓的依赖图与测试集从未被任何自动化验证过。两个已确认的后果:(a) `respx` 只声明在
+  `requirements-web.txt` 而不在 `pyproject.toml`,`uv sync` 装不到,导致 `tests/web_ui` **任何子集**
+  都在 collection 阶段中断(collection 早于 `-k`),该中断**同时藏住了 34 个存量失败**;
+  (b) `smartbox-xiangqi-rules = { path = "../../xiangqi/rules" }` 在 `[project.dependencies]`
+  (无条件依赖),使本仓在**任何非 smartbox 父目录布局**下 `uv lock` 直接失败。(a) 已修;(b) 属象棋 track。
 - [ ] **`selfplay_summary.json` 全量覆盖会丢聚合行**:§C34 的 `ladder_41_kyu_adjacent_20260803` 跑了 12 条缝,
   summary 只剩最后一次 invocation 的 4 条。原始 checkpoint 无损,已重算出
   `selfplay_summary.recovered.json`。建议改为按 matchup 合并写入,或写入前先读回既有 summary。
-- [ ] **`tests/core/test_ladder_strategy.py` 21 个用例在 HEAD 红**:`9f4c1821` 落地 41 档目录表后未同步该文件,
-  仍是改造前的期望(如 `LadderUnavailable: level 36 (8段) is not certified`)。自 2026-08-03 12:58 起红至今。
+- [x] **`tests/core/test_ladder_strategy.py` 21 个用例在 HEAD 红** — **已修复,本条曾长期过期**。
+  `9f4c1821` 落地 41 档目录表后未同步该文件,自 2026-08-03 12:58 起红;`7455199c`(2026-08-05,
+  「把阶梯策略测试对准 41 档目录」)已修,实测 **29 passed**。本条待办在修复后又挂了 5 天没人划掉——
+  因为**没有任何自动化会告诉我们它绿了**:`develop` 从未被 CI 把过关(见下条)。
 - [x] **星阵3星 HumanSL visits 固定筛选**:§C20 的 `rank_9d@8/@16/@32/@64` 各完成5个有效结果，
   四档均为 **0–5**，合计0–20；因 `@8` 非5–0，按条件协议未运行 `@4/@2`。
 - [x] **修复 `humansl_search` 语义**:HTTP 实际路由 b18,完整 PIKL 配方、能力/逐请求 attestation、≥40 visits

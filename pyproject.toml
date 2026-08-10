@@ -108,7 +108,7 @@ default-groups = [
 ]
 
 [tool.uv.sources]
-smartbox-xiangqi-ranked = { path = "packages/smartbox-xiangqi-ranked", editable = true }
+smartbox-xiangqi-ranked = { path = "../../xiangqi/ranked-contracts", editable = true }
 smartbox-xiangqi-rules = { path = "../../xiangqi/rules", editable = true }
 
 [tool.pytest.ini_options]

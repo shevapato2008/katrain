@@ -1042,7 +1042,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.32.0" },
     { name = "rknn-toolkit-lite2", marker = "extra == 'vision-rknn'", specifier = ">=2.0.0" },
     { name = "screeninfo", marker = "sys_platform != 'darwin'", specifier = ">=0.8.1,<0.9" },
-    { name = "smartbox-xiangqi-ranked", editable = "packages/smartbox-xiangqi-ranked" },
+    { name = "smartbox-xiangqi-ranked", editable = "../../xiangqi/ranked-contracts" },
     { name = "smartbox-xiangqi-rules", editable = "../../xiangqi/rules" },
     { name = "sqlalchemy", specifier = ">=2.0.46" },
     { name = "sqlalchemy", marker = "extra == 'web'", specifier = ">=2.0.0" },
@@ -2773,7 +2773,7 @@ wheels = [
 [[package]]
 name = "smartbox-xiangqi-ranked"
 version = "0.1.0"
-source = { editable = "packages/smartbox-xiangqi-ranked" }
+source = { editable = "../../xiangqi/ranked-contracts" }
 
 [package.metadata]
 

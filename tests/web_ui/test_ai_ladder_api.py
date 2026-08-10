@@ -4431,3 +4431,50 @@ async def test_another_device_still_has_to_wait_out_the_window(box_and_cloud):
     assert seen["ownership"] == "other_device"
     assert seen["can_force_resign"] is False
     assert seen["takeover_eligible_at"] is not None, "别处那台该拿到一个真的倒计时终点"
+
+
+def test_every_lifecycle_state_the_end_endpoint_can_return_is_one_the_ui_can_decode():
+    """`/end` 能回的每一个 `state`,前端解码器都得认得。
+
+    这条是补给「四层各自绿,不代表有任何一条测试从第一层走到第四层」的(五子棋的话)。
+    今晚它真的漏了一格:`release_abandoned_settlement` 那条出路回 `state: "released"`,
+    而 `api.ts` 的守卫只认 `active` / `pending_settlement` / `settled`。于是**释放成功**
+    (预约删了、账号放开了)却被 `createApiError` 包成 `Request failed 200`,
+    屏上告诉用户「结束对局失败，请重试」。后端全绿,前端全绿,没有一条测试跨过那道缝。
+
+    两侧都从**生产代码自己**取,不在测试里另抄一份 —— 抄一份就等于把要证的东西假设掉:
+    后端这侧扫 `end_ranked_game` 函数体里的 `"state": ...` 字面量,
+    前端那侧扫 `isGameLifecycle` 里比较过的 `value.state === '...'`。
+    """
+
+    import re
+
+    endpoint_src = Path("katrain/web/api/v1/endpoints/ai_ladder.py").read_text(encoding="utf-8")
+    tree = ast.parse(endpoint_src)
+    end_fn = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "end_ranked_game"
+    )
+    returned = {
+        value.value
+        for node in ast.walk(end_fn)
+        if isinstance(node, ast.Dict)
+        for key, value in zip(node.keys, node.values)
+        if isinstance(key, ast.Constant) and key.value == "state" and isinstance(value, ast.Constant)
+    }
+    # `_lifecycle_payload` 是共用投影,不在这个函数体里 —— 它回的是 settled。
+    returned.add("settled")
+
+    guard_src = Path("katrain/web/ui/src/features/aiLadder/api.ts").read_text(encoding="utf-8")
+    guard_body = guard_src.split("const isGameLifecycle", 1)[1].split("\n};", 1)[0]
+    # `[!=]==`:守卫里既有 `=== 'released'` 也有 `!== 'settled'`(那条是「不是 settled 就退出」)。
+    # 只抓 `===` 会漏掉 `settled`,而漏掉的表现是**这条测试自己红**,红在一个不存在的缺陷上
+    # —— 自己造一个不存在的缺陷比漏报还贵,所以下面的正对照钉的是「扫到了该扫到的」。
+    decodable = set(re.findall(r"value\.state [!=]== '([a-z_]+)'", guard_body))
+
+    assert returned, "扫不到 `/end` 的任何返回状态 —— 扫描器空转,而空转长得和守得很好一模一样"
+    assert {"settled", "active"} <= decodable, f"前端扫描器没扫到本来就在的状态,它在空转: {decodable}"
+    assert returned <= decodable, (
+        f"后端能回 {sorted(returned - decodable)},前端解码器不认 —— " "那一跳会被当成畸形响应,成功的操作在屏上变成失败"
+    )

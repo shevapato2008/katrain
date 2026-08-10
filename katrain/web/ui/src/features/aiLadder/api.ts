@@ -39,6 +39,11 @@ const isGameLifecycle = (
     return false;
   }
   if (value.state === 'active' || value.state === 'pending_settlement') return true;
+  // 释放没有 receipt,所以它走不到下面那条要求 receipt 的路。`counted` 必须是假:
+  // 一个说自己计了分的释放是个矛盾的响应,放它过去等于让界面替后端编一个结果。
+  if (value.state === 'released') return value.counted === false;
+  // 释放没有 receipt,所以它走不到下面那条要求 receipt 的路。`counted` 必须是假:
+  // 一个说自己计了分的释放是个矛盾的响应,放它过去等于让界面替后端编一个结果。
   if (value.state !== 'settled' || !isRecord(value.receipt)) return false;
   const { counted, reason } = value.receipt;
   return typeof counted === 'boolean'

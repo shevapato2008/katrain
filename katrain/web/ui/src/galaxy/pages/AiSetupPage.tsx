@@ -292,7 +292,10 @@ const AiSetupPage = () => {
             if (lifecycle.state === 'settled') {
                 setLifecycleReceipt({ gameId, scopeKey: requestScopeKey, receipt: lifecycle.receipt });
                 await retryAiLadderStatus();
-            } else if (lifecycle.state === 'pending_settlement') {
+            } else if (lifecycle.state === 'pending_settlement' || lifecycle.state === 'released') {
+                // 释放成功之后没有可展示的结果 —— 正因为什么都没记。刷新状态就够了:
+                // 挡住开局的那一局消失,页面回到正常的开局卡。**不能落进 catch**,
+                // 那样屏上会说「结束对局失败，请重试」,而此刻预约已经删掉、账号已经放开。
                 await retryAiLadderStatus();
             }
         } catch (endError) {

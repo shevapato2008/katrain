@@ -66,7 +66,11 @@ export type AiLadderGameLifecycle =
         counted: boolean;
         reason: AiLadderCountingReason | null;
       };
-    };
+    }
+  // 放弃等待一个送不到的结果。**没有 receipt,而且没有是对的**:账本记的是裁决,
+  // 而「那台盒子再没回来」不是裁决。所以这一支不带 receipt,`counted` 恒为 false ——
+  // 它只说「这个占位放开了」,不说这局谁赢了。
+  | { state: 'released'; game_id: string; counted: false };
 
 export interface AiLadderLoadingStatus {
   view_state: 'loading';

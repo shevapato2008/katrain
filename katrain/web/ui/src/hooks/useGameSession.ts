@@ -69,7 +69,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         if (sessionId) {
             const connect = async () => {
                 try {
-                    const data = await API.getState(sessionId);
+                    const data = await API.getState(sessionId, token);
                     setGameState(data.state);
 
                     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';

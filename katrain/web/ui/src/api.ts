@@ -259,9 +259,17 @@ export async function apiPost(path: string, payload: any, token?: string) {
 
 export const API = {
   createSession: (token?: string): Promise<SessionResponse> => apiPost("/api/session", {}, token),
-  getState: async (sessionId: string): Promise<SessionResponse> => {
+  // GET /api/state requires an authenticated user (server.py: Depends(get_current_user)).
+  // It used to send no Authorization header, which only worked because the server also
+  // accepts the `sb_token` cookie -- and that cookie is issued ONLY on the 127.0.0.1
+  // loopback host (auth.py _issue_loopback_sso_cookie, whose whole point is to leave the
+  // Galaxy JSON-token flow alone). So it passed on a kiosk and 401'd on Galaxy, where the
+  // game page then showed "Failed to connect to game" with no way to recover.
+  getState: async (sessionId: string, token?: string): Promise<SessionResponse> => {
     const params = new URLSearchParams({ session_id: sessionId });
-    const response = await fetch(`/api/state?${params.toString()}`);
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const response = await fetch(`/api/state?${params.toString()}`, { headers });
     if (!response.ok) throw new Error("Failed to get state");
     return { session_id: sessionId, state: (await response.json()).state };
   },

@@ -4577,6 +4577,12 @@ async def test_a_settlement_that_arrives_after_its_release_still_counts_and_spar
         # 和「删这个账号的全部」在那一刻是同一件事。恒真的前提是那条唯一约束,
         # 而它由 `test_cloud_reservation_is_account_unique_and_status_hides_origin_secrets` 钉着
         # ——谁哪天放开了一账号多预约,那条会先红,这里才轮得到。
+        #
+        # 「0 红 = 恒真」这个判断本身是**量出来的**,不是推出来的,三个证据点(五子棋的协议):
+        #   跑之前、跑之后各数一次变异标记(都是 1)—— 排除「还原早于那一跑,测的其实是干净代码」;
+        #   同一行换成 `raise` 的到达性探针 —— 当场红,排除「这一行这条路根本走不到」。
+        # 三种 0 红在报告上一模一样,处置却完全不同(钉前提 / 换打点 / 挪探测点),所以判成哪一种
+        # 必须留证据。**而工具自己没跑成的时候,输出同样是一片绿。**
         live = db.query(models_db.AiLadderActiveGame).all()
         assert [(entry.game_id, entry.state) for entry in live] == [(new_game_id, "active")], (
             "一笔迟到的旧结算动了用户正在下的那局 —— 他会在棋盘中途被踢出局," "而现场没有任何东西指向半小时前那次放弃"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import ast
 import hashlib
 from datetime import datetime, timedelta, timezone
 import logging
@@ -3735,3 +3736,56 @@ def test_the_tripwire_can_actually_see_a_missing_flag():
         if "current_node.end_state = " in line and "session.game_ended = True" not in "\n".join(lines[i : i + 12])
     ]
     assert hits, "扫描逻辑抓不到缺失的置位 —— 上面那条断言说明不了任何事情"
+
+
+def _lifespan_create_task_targets() -> list[str]:
+    """`server.py` 里所有 `asyncio.create_task(<name>(...))` 的被调函数名。"""
+    tree = ast.parse(Path(server.__file__).read_text(encoding="utf-8"))
+    targets: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not (isinstance(func, ast.Attribute) and func.attr == "create_task"):
+            continue
+        for arg in node.args:
+            inner = arg.func if isinstance(arg, ast.Call) else arg
+            if isinstance(inner, ast.Name):
+                targets.append(inner.id)
+            elif isinstance(inner, ast.Attribute):
+                targets.append(inner.attr)
+    return targets
+
+
+def test_both_lifespans_actually_start_the_ranked_heartbeat_loop():
+    """接线闸:心跳循环必须在**两个** lifespan 里各被 `create_task` 起一次。
+
+    这条守的不是循环的行为(那有别的测试),是**它到底有没有被启动**。本文件里所有心跳
+    测试都直接调 `server._send_ai_ladder_heartbeats(app)`,谁把 `create_task` 那行删掉,
+    它们全部照旧绿 —— 而生产里整个模块不可达,云端永远收不到一次心跳,于是**每一局
+    段位对局在 5 分钟后都变成「可接管」**,任何第二台设备都能替一局正在下的棋记一笔败。
+
+    两个 lifespan:`_lifespan_server`(云端权威)与盒端那个。盒端漏掉的后果更重 ——
+    真正需要报生存的就是盒子。
+
+    国象整整一个模块的不可达就是死在没有这条上;五子棋的 `_wire_ranked` 是同一课的
+    另一面:**手抄 lifespan 接线的测试替身,是接线闸的天敌** —— 它让「接线有测试」在
+    感觉上成立,而它抄漏的那部分正好是没人会去看的那部分。
+    """
+
+    targets = _lifespan_create_task_targets()
+    assert targets.count("_ai_ladder_heartbeat_loop") == 2, (
+        f"心跳循环被 create_task 起了 {targets.count('_ai_ladder_heartbeat_loop')} 次,期望 2 次"
+        f"(云端 + 盒端各一);实际起的是:{sorted(set(targets))}"
+    )
+
+
+def test_the_wiring_scanner_sees_the_other_loops_too():
+    """正对照:证明上面那条不是靠「扫不到任何 create_task」通过的。
+
+    扫源码的断言最常见的坏法是扫了个空,而空结果长得和守得很好一模一样。
+    这里要求它同时看得见那条一直存在的清理循环 —— 看不见就说明扫描器本身失灵了。
+    """
+
+    targets = _lifespan_create_task_targets()
+    assert "_cleanup_loop" in targets, f"扫描器连既有的清理循环都没看见,它已经空转:{targets}"

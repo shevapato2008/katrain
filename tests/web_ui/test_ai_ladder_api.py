@@ -4613,9 +4613,7 @@ async def test_a_reservation_that_never_started_is_not_advertised_as_hopeless(ap
         reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
         assert reserved.status_code == 201
         seen = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
-        ended = await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"}
-        )
+        ended = await ac.post(f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"})
 
     assert ended.status_code == 200 and ended.json()["state"] == "settled", (
         "这条断言先立住业务层的答案 —— 少了它,下面那条会被一个「把 /end 也一起关掉」的"
@@ -4623,7 +4621,141 @@ async def test_a_reservation_that_never_started_is_not_advertised_as_hopeless(ap
     )
     assert seen["ownership"] == "other_device"
     assert seen["can_force_resign"] is True, (
-        "载荷说不行,而 `/end` 当场 200 —— 两处对同一个问题给了不同答案,"
-        "而说谎的那处正好把用户劝退"
+        "载荷说不行,而 `/end` 当场 200 —— 两处对同一个问题给了不同答案," "而说谎的那处正好把用户劝退"
     )
     assert seen["takeover_eligible_at"] is None, "此刻就能按,就不该再给一个未来时刻去倒计时"
+
+
+# --- 阈值两侧各一格:倒计时说的那一刻,就是闸开的那一刻 --------------------------
+#
+# 这一节是国象报的第三种 0 红补上的:**探测点落在漂移之外**。
+# 此前所有涉及阈值的测试都在 6 分钟 / 31 分钟处探测,而阈值是 5 分钟 / 30 分钟 ——
+# 把**执行**那一侧偷偷改成 4 分钟 / 20 分钟(广告出去的秒数原封不动),**全套 366 条一条不红**。
+# 抓住阈值改动的只有载荷里那个 `*_threshold_seconds` 数字,它证明的是「广告牌换了没有」,
+# 不是「闸按哪个数开」。两者一漂,倒计时就成了骗人的:用户被明确告知去信那个时刻。
+
+
+def _boundary_probe_margin():
+    """探测点离阈值多远。
+
+    要小到能抓住现实里的漂移单位(有人把 `minutes=5` 改成 `minutes=4`),
+    又要大到不会被这几个 ASGI 调用的耗时(远小于 1 秒)冲掉。10 秒 ⇒ 抓得住 ≥20 秒的漂移。
+    **探测点本身就是这类测试的灵敏度,写死一个「够远」的值等于关掉它。**
+    """
+
+    return timedelta(seconds=10)
+
+
+@pytest.mark.asyncio
+async def test_the_takeover_countdown_ends_exactly_when_the_gate_opens(api_app, client):
+    """接管:差一点的时候两边都说不行,到点的时候两边都说行。
+
+    投影问 `takeover_eligibility`,准入也问 `takeover_eligibility` —— 今天是一份实现。
+    这条钉的不是「今天没漂」,是**让漂移无处可藏**:任一侧单独改了数,这条当场红,
+    而此前只有广告牌那个数字被钉着。
+    """
+
+    from katrain.web.core.ai_ladder_ranked import AI_LADDER_TAKEOVER_THRESHOLD
+
+    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
+    game_id = reservation_payload()["game_id"]
+    key = reservation_payload()["reservation_key"]
+    margin = _boundary_probe_margin()
+
+    async def seen_from_other(ac):
+        return (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
+
+    async def end_from_other(ac):
+        return await ac.post(f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"})
+
+    def age_heartbeat_to(delta):
+        with api_app.state._test_session_factory() as db:
+            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
+            row.last_heartbeat_at = datetime.now(timezone.utc) - delta
+            db.commit()
+
+    async with client as ac:
+        await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/activate",
+            headers=origin,
+            json={"reservation_key": key, "session_id": "session-a"},
+        )
+        # 两轮心跳:让判据落在真分支上,而不是「没证明过生存」那条兼容分支。
+        for _ in range(2):
+            await ac.post(f"/api/v1/ai-ladder/games/{game_id}/heartbeat", headers=origin, json={"reservation_key": key})
+
+        age_heartbeat_to(AI_LADDER_TAKEOVER_THRESHOLD - margin)
+        just_short = await seen_from_other(ac)
+        refused = await end_from_other(ac)
+
+        age_heartbeat_to(AI_LADDER_TAKEOVER_THRESHOLD + margin)
+        just_due = await seen_from_other(ac)
+        allowed = await end_from_other(ac)
+
+    assert (just_short["can_force_resign"], refused.status_code) == (False, 409), (
+        "差一点那一格:屏上说的和闸认的必须都是「还不行」。"
+        f"实测 载荷={just_short['can_force_resign']} 闸={refused.status_code}"
+    )
+    assert just_short["takeover_eligible_at"] is not None
+    assert (just_due["can_force_resign"], allowed.status_code) == (True, 200), (
+        "到点那一格:屏上说的和闸认的必须都是「可以了」。倒计时走完按钮还 409,"
+        f"是把用户明确告知去信的那个时刻变成了骗人的。实测 载荷={just_due['can_force_resign']} 闸={allowed.status_code}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_the_release_countdown_ends_exactly_when_the_gate_opens(api_app, client):
+    """放弃等待:同一条,换成 30 分钟那道门。
+
+    两道门的判据是两个不同的函数、两个不同的常量,所以各钉一条 —— 一条过了不能替另一条作证。
+    """
+
+    from katrain.web.core.ai_ladder_ranked import AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD
+
+    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
+    game_id = reservation_payload()["game_id"]
+    key = reservation_payload()["reservation_key"]
+    margin = _boundary_probe_margin()
+
+    def age_pending_to(delta):
+        with api_app.state._test_session_factory() as db:
+            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
+            row.pending_settlement_since = datetime.now(timezone.utc) - delta
+            db.commit()
+
+    async with client as ac:
+        await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/activate",
+            headers=origin,
+            json={"reservation_key": key, "session_id": "session-a"},
+        )
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/pending-settlement", headers=origin, json={"reservation_key": key}
+        )
+
+        age_pending_to(AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD - margin)
+        just_short = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
+        refused = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"}
+        )
+
+        age_pending_to(AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD + margin)
+        just_due = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
+        allowed = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"}
+        )
+
+    assert (just_short["can_release_abandoned_settlement"], refused.status_code) == (
+        False,
+        409,
+    ), f"差一点那一格两边不一致:载荷={just_short['can_release_abandoned_settlement']} 闸={refused.status_code}"
+    assert just_short["abandoned_settlement_eligible_at"] is not None
+    assert (just_due["can_release_abandoned_settlement"], allowed.status_code) == (
+        True,
+        200,
+    ), f"到点那一格两边不一致:载荷={just_due['can_release_abandoned_settlement']} 闸={allowed.status_code}"
+    assert allowed.json()["state"] == "released"

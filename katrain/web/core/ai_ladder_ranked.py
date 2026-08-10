@@ -363,6 +363,17 @@ class AiLadderRankedRepository:
             # across accounts on purpose -- the collision is the hazard, not the ownership.)
             if self._find_ledger_by_game_id(session, game_id=game_id) is not None:
                 raise AiLadderLifecycleConflict("game_id is already settled")
+            # 同理,`user_games` 里已有这个 id 也不许预约 —— 而这一侧此前没人查。
+            #
+            # 已有的闸只挡一个方向:`user_game_repo.create` 会拒绝一个已被段位预约占用的
+            # game_id。反过来先建 `user_games` 行、再拿同一个 id 预约,一路畅通;
+            # 而 `_create_or_validate_user_game` 会把那行逐字段与结算比对、任一不同就抛
+            # Conflict,且它挡在 finalize 的**每一条** terminal_source 前面 ⇒ 接管被拒、
+            # 释放又要求 `pending_settlement`,账号在所有设备上锁死。
+            #
+            # game_id 由客户端给,所以这是**两次公开请求**就能走到的自锁。
+            if session.query(models_db.UserGame.id).filter(models_db.UserGame.id == game_id).first() is not None:
+                raise AiLadderLifecycleConflict("game_id already belongs to a recorded game")
             row = models_db.AiLadderActiveGame(
                 game_id=game_id,
                 user_id=user_id,

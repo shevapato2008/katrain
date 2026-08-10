@@ -377,9 +377,7 @@ def _activated(repo, user, opponent, *, device_id="device-a"):
     return reservation
 
 
-def test_a_second_device_must_wait_out_the_threshold_while_the_origin_reports_in(
-    session_factory, user, opponent
-):
+def test_a_second_device_must_wait_out_the_threshold_while_the_origin_reports_in(session_factory, user, opponent):
     """A game being played on a live box is not takeable from somewhere else.
 
     Two heartbeats is what separates "a client that reports liveness" from "a client that never
@@ -447,9 +445,7 @@ def test_the_origin_device_may_always_resign_its_own_live_game(session_factory, 
     assert (receipt.result, receipt.replayed) == ("loss", False)
 
 
-def test_a_client_that_never_heartbeats_keeps_the_unconditional_escape_hatch(
-    session_factory, user, opponent
-):
+def test_a_client_that_never_heartbeats_keeps_the_unconditional_escape_hatch(session_factory, user, opponent):
     """Web clients send no heartbeat, and denying them would strand the very accounts we are freeing.
 
     This is the one place the go ladder deliberately differs from the gomoku track: there
@@ -718,9 +714,7 @@ def test_remote_resign_can_only_record_a_user_loss(session_factory, user, oppone
 
 
 @pytest.mark.parametrize("terminal_source", ["played_result", "recovery"])
-def test_origin_terminal_paths_require_active_state_and_secret(
-    session_factory, user, opponent, terminal_source
-):
+def test_origin_terminal_paths_require_active_state_and_secret(session_factory, user, opponent, terminal_source):
     repo = AiLadderRankedRepository(session_factory)
     reservation = reserve(repo, user.id, replace(opponent, rung=25))
 
@@ -769,9 +763,7 @@ def test_origin_terminal_paths_require_active_state_and_secret(
         ("rules", "", "rules"),
     ],
 )
-def test_invalid_authoritative_game_record_rolls_back(
-    session_factory, user, opponent, field, value, message
-):
+def test_invalid_authoritative_game_record_rolls_back(session_factory, user, opponent, field, value, message):
     repo = AiLadderRankedRepository(session_factory)
     reservation = reserve(repo, user.id, replace(opponent, rung=25))
     repo.activate_reservation(
@@ -802,9 +794,7 @@ def test_invalid_authoritative_game_record_rolls_back(
         assert db.query(models_db.AiLadderProfile).count() == 0
 
 
-def test_finalizer_rechecks_ledger_when_locked_active_row_disappears(
-    session_factory, user, opponent, monkeypatch
-):
+def test_finalizer_rechecks_ledger_when_locked_active_row_disappears(session_factory, user, opponent, monkeypatch):
     repo = AiLadderRankedRepository(session_factory)
     ledger = models_db.AiLadderGameLedger(
         game_id="lock-race",
@@ -1626,9 +1616,7 @@ def test_a_released_game_still_counts_for_what_it_really_was_if_it_ever_arrives(
     repo = AiLadderRankedRepository(session_factory)
     reservation = _pending(repo, user, opponent)
     _age_pending(session_factory, reservation.game.game_id, 31)
-    repo.release_abandoned_settlement(
-        user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
-    )
+    repo.release_abandoned_settlement(user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b")
 
     late = repo.settle_game(
         user_id=user.id,
@@ -1772,3 +1760,44 @@ def test_ending_an_unplayed_reservation_banks_a_loss_on_purpose(session_factory,
     assert (receipt.state, receipt.counted) == ("settled", True)
     with session_factory() as db:
         assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id) is None
+
+
+def test_a_pre_existing_user_game_row_must_not_be_able_to_lock_the_account(session_factory, user, opponent):
+    """先建 `user_games` 行、再用同一个 id 预约 —— 不许因此把账号锁死。
+
+    已有的闸只挡一个方向:`user_game_repo.create` 会拒绝一个已被段位预约占用的 game_id
+    (`ReservedAiLadderGameIdError`)。**反方向没人查** —— `reserve_game` 只查账本,不查
+    `user_games`。
+
+    而 `_create_or_validate_user_game` 会把已存在的那行逐字段与本次结算比对,任一不同就抛
+    Conflict,且它挡在 finalize 的**每一条** terminal_source 前面。于是:预约在、
+    接管走 finalize 被拒、释放要求 `pending_settlement` 也够不着 ⇒ 账号在所有设备上锁死。
+
+    game_id 由客户端给,所以这条路是**两次公开请求**就能走到的。
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    game_id = "c" * 32
+    from katrain.web.core.user_game_repo import UserGameRepository
+
+    UserGameRepository(session_factory).create(
+        user_id=user.id,
+        sgf_content="(;GM[1]FF[4]SZ[19]RU[chinese]KM[7.5]RE[B+1.5])",
+        source="upload",
+        game_id=game_id,
+        result="B+1.5",
+        board_size=19,
+        rules="chinese",
+        komi=7.5,
+        move_count=1,
+        player_black="someone",
+        player_white="else",
+    )
+
+    with pytest.raises(AiLadderLifecycleConflict):
+        reserve(repo, user.id, replace(opponent, rung=25), game_id=game_id)
+
+    with session_factory() as db:
+        assert (
+            db.query(models_db.AiLadderActiveGame).filter_by(user_id=user.id).one_or_none() is None
+        ), "预约建成了,而它的每一条出路都被那行 user_games 挡着 —— 账号从此锁死"

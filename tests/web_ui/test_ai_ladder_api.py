@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+from datetime import datetime, timedelta, timezone
 import logging
 import threading
 from types import SimpleNamespace
@@ -3330,13 +3331,13 @@ async def test_heartbeat_sweep_reports_liveness_for_a_game_started_through_the_a
 
 
 @pytest.mark.asyncio
-async def test_heartbeat_sweep_leaves_out_a_game_whose_result_is_already_in_flight(api_app, client):
-    """结算在飞的局不再报生存 —— 它不在等生存信号,它在等自己的结果送达。"""
+async def test_heartbeat_sweep_leaves_out_a_game_that_has_already_ended_here(api_app, client):
+    """局在本地下完了就不再报生存 —— 心跳声称有人在棋盘前,下完之后那句话就是假的。"""
 
     async with client as ac:
         response = await start_ranked(api_app, ac)
     game_id = response.json()["game_id"]
-    api_app.state._test_created_sessions[0].ai_ladder_settlement_pending = True
+    api_app.state._test_created_sessions[0].game_ended = True
 
     assert api_app.state.session_manager.ai_ladder_liveness_targets() == []
 
@@ -3461,3 +3462,141 @@ async def test_heartbeat_targets_carry_the_device_that_actually_reserved_the_gam
 
     targets = api_app.state.session_manager.ai_ladder_liveness_targets()
     assert [t[3] for t in targets] == ["box-42"]
+
+
+# --- 结算被拒之后,账号不得被永久卡死 -------------------------------------------
+#
+# 这一组是**造状态真跑**,不是读代码。此前「围棋有出路」这个结论只到「我读了心跳枚举
+# 会跳过结算在飞的会话」为止 —— 而今天四家反复证明的一条是:读起来到得了不算数。
+
+
+@pytest.mark.asyncio
+async def test_a_rejected_settlement_stops_the_heartbeat(api_app, client):
+    """结算被拒之后,心跳必须**真的**停。
+
+    这是整条出路的地基:接管判据读的是 `now - last_heartbeat_at`,心跳只要还在发,
+    另一台设备就永远等不到可接管的那一刻 —— 那正是国象和象棋的死局形状。
+
+    这里断言的是「代际不再增长」,不是「枚举返回空」:枚举是实现,代际是云端真正读到的东西。
+    """
+
+    async with client as ac:
+        response = await start_ranked(api_app, ac)
+    game_id = response.json()["game_id"]
+
+    await server._send_ai_ladder_heartbeats(api_app)
+    assert _active_row(api_app, game_id).heartbeat_generation == 1
+
+    # 局下完了。云端拒不拒、什么时候拒,与这里无关 —— 这正是修好之后的性质:
+    # 心跳停在「局结束」这一刻,而不是等某个结算标记被谁置上。
+    api_app.state._test_created_sessions[0].game_ended = True
+
+    await server._send_ai_ladder_heartbeats(api_app)
+    await server._send_ai_ladder_heartbeats(api_app)
+
+    assert _active_row(api_app, game_id).heartbeat_generation == 1, (
+        "被拒之后心跳还在发 —— 那台盒子上已经没有人在下棋了,继续报生存就是在报假信息,"
+        "而接管判据永不满足,账号被永久卡死"
+    )
+
+
+@pytest.mark.asyncio
+async def test_a_rejected_settlement_leaves_an_exit_for_another_device(api_app, client):
+    """被拒之后过了失联阈值,另一台设备能把账号解套。
+
+    构造的是「标记没落上」那一档 —— 行停在 `active`,走接管;这是围棋最坏的一档,
+    因为 `mark_ai_ladder_game_pending` 是 best-effort 的,它没落上时不会有任何人告诉你。
+    """
+
+    async with client as ac:
+        response = await start_ranked(api_app, ac)
+        game_id = response.json()["game_id"]
+
+        # 心跳代际爬过门槛,让判据走真分支而不是「从未心跳」的兼容分支。
+        await server._send_ai_ladder_heartbeats(api_app)
+        await server._send_ai_ladder_heartbeats(api_app)
+        api_app.state._test_created_sessions[0].game_ended = True
+
+        with api_app.state._test_session_factory() as db:
+            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
+            assert row.state == "active" and row.heartbeat_generation >= 2
+            row.last_heartbeat_at = datetime.now(timezone.utc) - timedelta(minutes=6)
+            db.commit()
+
+        # 拨旧之后**再扫一轮**,这一步是这条测试的要害。
+        # 少了它,这条测的只是「接管机制会不会开门」,而不是「因为心跳停了门才开」——
+        # 手工拨旧的时间戳等于把因果里的前一半直接假设掉(契约 ⑦c:断言的是副作用,不是性质)。
+        # 加上它,心跳但凡还在发,这一轮就会把时间戳刷新回来、门重新关上,测试当场红。
+        await server._send_ai_ladder_heartbeats(api_app)
+
+        ended = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end",
+            headers={**api_app.state._test_headers, "X-StellaBox-Device-ID": "other-device"},
+            json={"reason": "user_resigned"},
+        )
+
+    assert ended.status_code == 200, ended.text
+    assert ended.json()["state"] == "settled"
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one_or_none() is None
+
+
+@pytest.mark.asyncio
+async def test_the_exit_stays_shut_while_the_box_is_still_reporting_in(api_app, client):
+    """反向:心跳还在的时候那扇门必须是关的。
+
+    没有这条,上面那条证明不了任何事 —— 一扇永远开着的门当然「有出路」,
+    而那等于把段位并发规则整个作废。
+    """
+
+    async with client as ac:
+        response = await start_ranked(api_app, ac)
+        game_id = response.json()["game_id"]
+        await server._send_ai_ladder_heartbeats(api_app)
+        await server._send_ai_ladder_heartbeats(api_app)
+
+        ended = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end",
+            headers={**api_app.state._test_headers, "X-StellaBox-Device-ID": "other-device"},
+            json={"reason": "user_resigned"},
+        )
+
+    assert ended.status_code == 409
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one().state == "active"
+
+
+@pytest.mark.asyncio
+async def test_heartbeat_stops_when_the_local_game_ends_not_when_settlement_is_flagged(api_app, client):
+    """心跳绑「本地这局还在下」,不绑「结算失败标记」。
+
+    这条是审计推翻我先前结论之后补的。原来的枚举只跳过 `ai_ladder_settlement_pending`,
+    而**云端拒绝发生在异步 sync worker 里**:worker 收到 4xx 只把队列行标成 `failed`
+    (`sync_worker.py:172-173`),**从不回头碰会话**。于是盒端标记停在 False、心跳照发、
+    云端行停在 `active` —— 接管判据永不满足,账号被永久卡死。
+
+    先前那两条测试没抓到它,是因为它们**手工**把 `settlement_pending` 置了真 ——
+    断言的是我摆好的状态,不是系统真会走到的状态(契约 ⑦c)。
+
+    所以这里构造的是真路径:局下完了(`game_ended`)、盒端认为已入队落袋
+    (`settlement_pending=False`、`_recorded=True`),云端稍后才拒。
+    """
+
+    async with client as ac:
+        response = await start_ranked(api_app, ac)
+    game_id = response.json()["game_id"]
+    await server._send_ai_ladder_heartbeats(api_app)
+    assert _active_row(api_app, game_id).heartbeat_generation == 1
+
+    session = api_app.state._test_created_sessions[0]
+    session.game_ended = True                    # 引擎报了 end_result
+    session.ai_ladder_settlement_pending = False  # 盒端认为已经交出去了
+    session._recorded = True
+
+    await server._send_ai_ladder_heartbeats(api_app)
+    await server._send_ai_ladder_heartbeats(api_app)
+
+    assert _active_row(api_app, game_id).heartbeat_generation == 1, (
+        "局已经下完了还在报生存 —— 那台机器上没有人在下棋,继续发心跳就是在报假信息。"
+        "而云端异步拒绝之后行仍是 active,接管判据永不满足 ⇒ 账号永久卡死"
+    )

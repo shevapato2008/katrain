@@ -164,12 +164,16 @@ class FakeKaTrain:
         )
 
 
-@pytest.fixture
-def api_app(tmp_path, monkeypatch):
-    from katrain.core import ladder
+def _build_ladder_app(tmp_path, monkeypatch, *, db_name: str = "ai-ladder-api.db", username: str = "ladder-user"):
+    """One fully wired ranked-ladder app on its own database.
 
-    monkeypatch.setattr(ladder, "LADDER_LEVELS", fixture_catalog())
-    db_path = tmp_path / "ai-ladder-api.db"
+    Extracted so a test can stand up **two** of them at once. Box and cloud are two
+    processes in production, and every defect this file has found in the split between
+    them lived in what one side does when the other side does not answer -- which is
+    exactly the thing a mocked `remote_client` cannot be wrong about.
+    """
+
+    db_path = tmp_path / db_name
     engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=engine)
     sessions = sessionmaker(bind=engine, autocommit=False, autoflush=False, expire_on_commit=False)
@@ -183,7 +187,7 @@ def api_app(tmp_path, monkeypatch):
     app.state.report_session_factory = sessions
 
     with sessions() as db:
-        user = models_db.User(username="ladder-user", hashed_password="x", rank="20k")
+        user = models_db.User(username=username, hashed_password="x", rank="20k")
         db.add(user)
         db.commit()
         user_id = user.id
@@ -204,7 +208,7 @@ def api_app(tmp_path, monkeypatch):
             sockets=set(),
             pending_count_request=None,
             pending_count_timestamp=None,
-            katrain=FakeKaTrain("ladder-user"),
+            katrain=FakeKaTrain(username),
             last_state=None,
             last_access=0.0,
         )
@@ -214,13 +218,21 @@ def api_app(tmp_path, monkeypatch):
         return session
 
     monkeypatch.setattr(app.state.session_manager, "create_session", create_session)
-    token = create_access_token({"sub": "ladder-user"})
+    token = create_access_token({"sub": username})
     app.state._test_session_factory = sessions
     app.state._test_created_sessions = created_sessions
     app.state._test_user_id = user_id
     app.state._test_user_uuid = user_uuid
     app.state._test_headers = {"Authorization": f"Bearer {token}"}
     return app
+
+
+@pytest.fixture
+def api_app(tmp_path, monkeypatch):
+    from katrain.core import ladder
+
+    monkeypatch.setattr(ladder, "LADDER_LEVELS", fixture_catalog())
+    return _build_ladder_app(tmp_path, monkeypatch)
 
 
 @pytest.fixture
@@ -3887,3 +3899,204 @@ async def test_the_running_app_really_has_a_live_heartbeat_task(api_app):
             break
         await asyncio.sleep(0)
     assert task.done(), "关服之后心跳任务还活着 —— 进程退不干净"
+
+
+# --- 盒子对真云端:best-effort 那一跳掉了,账号还有没有出路 ----------------------
+#
+# 这一节起了**两个真 app**。此前所有盒端测试的云端都是 `AsyncMock`,于是「云端最后
+# 是什么状态」是我在断言里写下的,不是系统跑出来的 —— 而这条要证的恰恰是
+# **盒子在那一跳失败时把云端留在了哪一格**。用 mock 就等于把结论当前提。
+
+
+class _CloudOverAsgi:
+    """盒子的 `remote_client`,但每个方法都真的打到另一个 app 上。
+
+    只实现段位生命周期这几支:它们是盒子和云端之间**唯一**的窄口,
+    路径和 body 逐字照抄 `remote_client.py`,写错了对面会 404/422 而不是默默通过。
+    """
+
+    def __init__(self, cloud_app, *, device_id: str):
+        self._app = cloud_app
+        self._headers = {**cloud_app.state._test_headers, "X-StellaBox-Device-ID": device_id}
+        self.bound_user_id = str(cloud_app.state._test_user_id)
+        self.calls: list[tuple[str, str]] = []
+
+    async def _call(self, method: str, path: str, **kwargs):
+        self.calls.append((method, path))
+        transport = ASGITransport(app=self._app)
+        async with AsyncClient(transport=transport, base_url="http://cloud") as ac:
+            response = await ac.request(method, path, headers=self._headers, **kwargs)
+        response.raise_for_status()
+        return response.json()
+
+    async def get_ai_ladder_status(self):
+        return await self._call("GET", "/api/v1/ai-ladder/status")
+
+    async def reserve_ai_ladder_game(self, data):
+        return await self._call("POST", "/api/v1/ai-ladder/games/reserve", json=data)
+
+    async def activate_ai_ladder_game(self, game_id, reservation_key, session_id):
+        return await self._call(
+            "POST",
+            f"/api/v1/ai-ladder/games/{game_id}/activate",
+            json={"reservation_key": reservation_key, "session_id": session_id},
+        )
+
+    async def mark_ai_ladder_game_pending(self, game_id, reservation_key):
+        return await self._call(
+            "POST",
+            f"/api/v1/ai-ladder/games/{game_id}/pending-settlement",
+            json={"reservation_key": reservation_key},
+        )
+
+    async def send_ai_ladder_heartbeat(self, game_id, reservation_key):
+        return await self._call(
+            "POST", f"/api/v1/ai-ladder/games/{game_id}/heartbeat", json={"reservation_key": reservation_key}
+        )
+
+    async def cancel_ai_ladder_reservation(self, game_id, reservation_key):
+        return await self._call(
+            "DELETE", f"/api/v1/ai-ladder/games/{game_id}/reservation", json={"reservation_key": reservation_key}
+        )
+
+    async def get_ai_ladder_game_status(self, game_id):
+        return await self._call("GET", f"/api/v1/ai-ladder/games/{game_id}/status")
+
+    async def end_ai_ladder_game(self, game_id):
+        return await self._call("POST", f"/api/v1/ai-ladder/games/{game_id}/end", json={"reason": "user_resigned"})
+
+
+@pytest.fixture
+def box_and_cloud(tmp_path, monkeypatch, api_app):
+    """`(box, cloud, remote)` —— 盒子是真的,云端是真的,中间那条线也是真的。"""
+
+    cloud = api_app
+    box = _build_ladder_app(tmp_path, monkeypatch, db_name="box.db")
+    remote = _CloudOverAsgi(cloud, device_id="box-17")
+    box.state.remote_client = remote
+    box.state.repository_dispatcher = RecordingDispatcher()
+    box.state.sync_enqueue_fn = MagicMock(return_value=True)
+    monkeypatch.setattr(server.settings, "DEVICE_ID", "box-17")
+    return box, cloud, remote
+
+
+@pytest.mark.asyncio
+async def test_the_pending_hint_is_the_only_thing_that_moves_the_cloud_out_of_active(box_and_cloud):
+    """正对照:那一跳**打通**的时候,云端确实从 `active` 走到 `pending_settlement`。
+
+    没有这条,下面那条证明不了任何东西 —— 一个从来就没生效过的调用,失败时当然
+    「云端还是 active」。这是契约 ⑧b 的形状:先证这条线是活的,再证它断了会怎样。
+    """
+
+    from katrain.web.core.ai_ladder_ranked import abandoned_settlement_eligibility
+
+    box, cloud, _ = box_and_cloud
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers={**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"},
+            json={"color": "black", "time_enabled": False},
+        )
+        assert started.status_code == 201, started.text
+        game_id = started.json()["game_id"]
+        assert _active_row(cloud, game_id).state == "active"
+
+        resigned = await ac.post(
+            "/api/resign",
+            headers=box.state._test_headers,
+            json={"session_id": started.json()["session_id"]},
+        )
+
+    assert resigned.status_code == 200, resigned.text
+    row = _active_row(cloud, game_id)
+    assert row.state == "pending_settlement"
+    assert row.pending_settlement_since is not None
+
+    # 顺带把 `(能不能放, 什么时候能放)` 里 `None` 的语义钉死在这里:这一格是「还没到」,
+    # 到期时刻是个真时刻;下面那条失败路径是「永远不会到」,到期时刻是 `None`。
+    # 少了这个对照,下面那句 `== (False, None)` 就可能只是在断言一个恒假的函数。
+    can_release, eligible_at = abandoned_settlement_eligibility(row)
+    assert can_release is False and eligible_at is not None
+
+
+@pytest.mark.asyncio
+async def test_a_lost_pending_hint_leaves_the_account_on_the_takeover_exit_not_stranded(box_and_cloud):
+    """那一跳掉了,云端停在 `active` —— 出路必须仍然存在,而且是**接管**那一条。
+
+    `mark_ai_ladder_game_pending` 是 best-effort 的:抛了异常只写一行 warning
+    (`server.py:1627-1630`),盒子照常入队、照常落袋,**没有任何人会知道云端没收到**。
+    于是云端行停在 `active`,30 分钟那条「结算被遗弃」的路**永远不会开**——
+    它只认 `pending_settlement`。剩下的唯一出路是 5 分钟的失联接管,
+    而那条路成不成立,全看心跳有没有真的停。
+
+    所以这条把三件事一起钉住:
+      1. 结果没丢(本地账本有行、出站队列进了)——best-effort 失败不许吞掉已经算出来的结果;
+      2. 云端确实停在 `active`,且 30 分钟那扇门的到期时刻是 `None` 而不是某个未来时刻
+         —— 代码用 `None` 区分「还没到」和「永远不会到」,这里断言的是后者;
+      3. 5 分钟那扇门真的会开,并且**是因为心跳停了才开的**。
+    """
+
+    from katrain.web.core.ai_ladder_ranked import abandoned_settlement_eligibility
+
+    box, cloud, remote = box_and_cloud
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start",
+            headers={**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"},
+            json={"color": "black", "time_enabled": False},
+        )
+        game_id = started.json()["game_id"]
+
+        # 心跳先真的爬过门槛,让接管判据走真分支而不是「从未心跳」的兼容分支。
+        await server._send_ai_ladder_heartbeats(box)
+        await server._send_ai_ladder_heartbeats(box)
+        assert _active_row(cloud, game_id).heartbeat_generation == 2
+
+        async def _boom(*_args, **_kwargs):
+            raise RuntimeError("cloud unreachable at exactly the wrong moment")
+
+        remote.mark_ai_ladder_game_pending = _boom
+
+        resigned = await ac.post(
+            "/api/resign",
+            headers=box.state._test_headers,
+            json={"session_id": started.json()["session_id"]},
+        )
+        assert resigned.status_code == 200, resigned.text
+
+        # 1. 结果没丢。
+        session = box.state._test_created_sessions[0]
+        assert session._recorded is True
+        assert box.state.sync_enqueue_fn.call_args.kwargs["payload"]["game_id"] == game_id
+
+        # 2. 云端停在 active,而且 30 分钟那条路是**永远不会开**,不是「还没到」。
+        row = _active_row(cloud, game_id)
+        assert row.state == "active"
+        assert row.pending_settlement_since is None
+        assert abandoned_settlement_eligibility(row) == (False, None)
+
+        # 3. 心跳停了 —— 再扫多少轮代际都不动。
+        for _ in range(3):
+            await server._send_ai_ladder_heartbeats(box)
+        assert _active_row(cloud, game_id).heartbeat_generation == 2
+
+        with cloud.state._test_session_factory() as db:
+            stale = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
+            stale.last_heartbeat_at = datetime.now(timezone.utc) - timedelta(minutes=6)
+            db.commit()
+
+        # 拨旧之后再扫一轮:心跳但凡还在发,这一轮就把时间戳刷回来、门重新关上(契约 ⑦c)。
+        await server._send_ai_ladder_heartbeats(box)
+
+        transport = ASGITransport(app=cloud)
+        async with AsyncClient(transport=transport, base_url="http://cloud") as cloud_ac:
+            ended = await cloud_ac.post(
+                f"/api/v1/ai-ladder/games/{game_id}/end",
+                headers={**cloud.state._test_headers, "X-StellaBox-Device-ID": "phone-9"},
+                json={"reason": "user_resigned"},
+            )
+
+    assert ended.status_code == 200, ended.text
+    assert ended.json()["state"] == "settled"
+    with cloud.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one_or_none() is None

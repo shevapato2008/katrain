@@ -1,6 +1,6 @@
 <!-- 本文件是副本,由 superpowers/shared/sync-shared-doc.sh 生成,请勿直接编辑。
-     正本: smartbox-software  分支 main  commit 7d01a2b3ceb8eae30e72cdd624d962a690038276 
-     正本 sha256: 64cd60c861f52d8383e005d847688366cf204311d544ea7fef908f0f27ac928a
+     正本: smartbox-software  分支 main  commit 994c0e6d15eb71131ea4c1c0a5e04bf36dcc2319 
+     正本 sha256: 102c51856f5f21e9114107879a0663ab3c3625d3ee201fae9efbdcb44cbd4d04
      改动请改正本,再重新同步。 -->
 
 # 智星盒升降级对弈 · 统一前后端架构（落地层）
@@ -34,9 +34,28 @@
 
 **象棋的升降级后端跑在围棋的服务里。** 所以 `XIANGQI_RANKED_CLOUD_BASE_URL` 默认取 `BOX_IDENTITY_REMOTE_URL`（不是 `LOBBY_URL`）是合理的，不是配错。共享算分包在 `packages/smartbox-xiangqi-ranked/`，也在 katrain 仓里。
 
+> ⚠️ **上面这段只在「象棋与身份同服务」期间成立，Phase 2 后必须分离**（2026-08-10 回写，见 §13-ter）。
+> 真正的原因不是「象棋后端恰好在围棋服务里」，而是 **`go.sailorvoyage.top` 那个 katrain 服务是全盒的账号系统**：
+> `provisioning/provision.sh:474`、`:498` 把 `BOX_IDENTITY_REMOTE_URL=https://go.sailorvoyage.top` 烧进每台盒子，
+> 四棋类的登录都走它。象棋当年落在那里，是因为账号在那里、`get_current_user` 同进程可用。
+> 象棋搬走后，这个默认值就从「合理」变成「配错」，两者必须各自配置。
+
 > ⚠️ **各分支的 `vendor/katrain` 子模块 pin 在不同 commit**：象棋分支是 `73ba868f`（有 `xiangqi_ranked.py`），五子棋分支是 `1becaa89`（只有 `ai_ladder.py`）。「云端跑的是什么」取决于你看的是哪个分支的 pin——查证时必须说明用的哪个。
 
 **Fan 的拍板（2026-08-09）**：升降级与「人人对战大厅」是**平级**功能，不放在 `lobby_api` 下面；四棋类收敛到**一套实现**，象棋与围棋的升降级跨仓搬进 smartbox 平台。
+
+> 🔴 **「围棋跨仓搬进 smartbox」这半句 2026-08-10 已被实测推翻**（见 §13-ter）。围棋的升降级端点**就是引擎宿主**：
+> `ai_ladder.py:181` `build_opponent_snapshot()` → `:235` `frozen_recipe_from_snapshot()` 重建
+> 「the immutable LadderRung that the game must use for every move」，紧接着 `:209` `manager.create_session()`
+> 在**同进程**里建 KataGo 会话。而 `LadderRung` 不是对手名录，是**冻结的 KataGo 引擎配方**
+> （`katrain/core/ladder.py` 1004 行：`model` / `maxVisits` / `useUncertainty` / PIKL 设置，41 档由 `_build_ladder()` 生成）。
+>
+> 所以围棋搬迁不是「换个仓」，而是**把「算分」和「走子」拆开**——围棋从来没这么做过。
+> 准确表述：**围棋在其阶梯完成标定、且 play/score 拆分之后才是候选，现在不是。**
+> 补充事实：`ladder.py:483` `_CERTIFIED_RUNGS: FrozenSet[int] = frozenset()`——**零个已认证档位**，
+> 账本 CHECK 与 `_ignored_reason` 都拒绝未认证档，所以**今天没有任何一局围棋升降级能计分**。标定尚未发生。
+>
+> 象棋那半句仍然成立，且象棋是四家里唯一零存量的（生产零路由，验收用的临时 PG 已拆）。
 
 ---
 
@@ -110,7 +129,7 @@ ranked_ladder_profiles   围棋
 
 | 表 | PRIMARY KEY | 业务幂等 / 唯一键 |
 |---|---|---|
-| `ranked_reservations` | `reservation_id` | 账号活动局**条件唯一索引**（按 `account_ref`） |
+| `ranked_reservations` | `reservation_id` | 账号活动局**条件唯一索引**（按 `account_ref`，**仅限单服务内**，见下） |
 | `ranked_ledger` | 自增 `id` | `(account_ref, game_type, rating_pool, rated_game_id)` |
 | `ranked_catalogs` | 自增 `id` | **`(game_type, rating_pool, catalog_version)`** |
 | `ranked_devices` | `device_id` | — |
@@ -118,6 +137,14 @@ ranked_ladder_profiles   围棋
 **`rating_pool` 必须进目录唯一键、当前激活索引、`GET /catalog` 参数和冻结快照。** 初稿把它定义成规则分池却从目录键里漏掉，会串用不同规则的 AI 目录——五子棋的 `free/standard/renju` 强度不可公度，围棋代码也明写 19×19 / 中国规则 / 7.5 贴目 / 无让子不可混用（`ai_ladder.py:35`）。池名由**规则、棋盘、贴目/让子、时控可公度性**推导，**不许统一填 `"default"`**。
 
 > ⚠️ **这里写 `account_ref` 不写 `user_uuid`**：初版两处打架——本节用 `user_uuid` 当业务键，§5 又规定 FK 只能用整数 `users.id`。统一为 **`account_ref` = 内部整数 `users.id`**（库内 FK），业务唯一性由它承担；对外暴露和跨系统对账用 §5 定义的 `account_subject`。**`user_uuid` 这个名字在新表里一律不再出现**——它在现网已经有两种互相冲突的含义（§5），继续用必然接错账号。
+
+> 🔴 **`account_ref` 是「某一个服务库内」的整数，跨服务不可比**（2026-08-10 回写，见 §13-ter）。
+> katrain 和 lobby-platform **各有一张 `users` 表、各在自己的库上**，两边的 `users.id` 互不相干。
+> 词汇冻结里把它改称 `account_row_ref`，就是为了把「跨服务不可比」写进名字。
+>
+> 连带后果：**「同账号全球单局」这条不变量今天靠单库条件唯一索引实现，围棋不搬之后没有任何一个索引能覆盖四家。**
+> 该不变量必须拆成两条——**单服务内条件唯一索引**（照旧）+ **跨服务活动局对账**（新增，尚无设计）。
+> §17-4 里那条也按此理解。
 
 其余两条：
 
@@ -128,6 +155,19 @@ ranked_ladder_profiles   围棋
 
 ## §5 身份词汇必须先冻结（迁移的前置条件）
 
+> 📌 **本节已于 2026-08-10 由象棋 track 的 Phase 1 落实**，正本移到
+> [`identity-vocabulary-freeze-2026-08-10.md`](./identity-vocabulary-freeze-2026-08-10.md)，
+> 路由表由 [`identity-contract-matrix.py`](./identity-contract-matrix.py) 生成（**katrain 7 条 + lobby-platform 4 条**）。
+> 本节保留为索引与摘要；**有冲突以冻结文件为准**。下面三处原表述已被实测修正，见 §13-ter：
+>
+> 1. 原文说「先定义三个词」并给了一张**全局**三行表——**不存在全局一张表**。`users.uuid` 与 `users.username`
+>    这两个列名在 katrain 与 lobby-platform 里**含义互换**，必须按服务分栏。
+> 2. 原文说身份有三重/四种键，但漏了**五子棋盒端的第四个**：它把 katrain 的**整数 `users.id`**
+>    转成字符串存进一个名叫 `user_uuid` 的 TEXT 列（`gomoku/api/gomoku_api/identity.py:118-120` → `gomoku/api/gomoku_api/schema.py:412`）。
+> 3. 原文没记 `account_subject` 的**格式**。它是 `uuid4().hex`＝**32 位小写十六进制无横杠**
+>    （`models_db.py:52-53`），而 lobby 的 `_USERNAME_RE` 上限恰好是 32（`auth.py:57`）。
+>    换成规范带横杠 UUID（36 位）会让**所有** bootstrap 400——国象与五子棋一起断。
+
 这是最容易出事的一处，因为**两边的「user_uuid」不是同一个东西**：
 
 - `users.user_uuid` 是**平台内部随机生成值**（`models_db.py:15`，`default=lambda: str(uuid4())`）
@@ -137,11 +177,19 @@ ranked_ladder_profiles   围棋
 
 先定义三个词，再谈迁移：
 
-| 词 | 含义 | 用途 |
-|---|---|---|
-| `account_subject` | 上游不可变账号标识 | 唯一、跨盒、对外；评级归属的唯一依据 |
-| 内部行主键 | 整数 `users.id` | 只在库内做 FK |
-| 显示名 | `display_name` | 只用于显示，不参与任何判定 |
+| 词 | 含义 | 用途 | 现阶段取值 |
+|---|---|---|---|
+| `account_subject` | 上游不可变账号标识 | 唯一、跨盒、对外；评级归属的唯一依据 | katrain `users.uuid`，**32 位小写 hex** |
+| `account_row_ref` | 某**一个服务库内**的整数行主键 | 只在**该服务**库内做 FK；**跨服务不可比** | 各服务各自的 `users.id` |
+| `display_name` | 显示名 | 只用于显示，不参与任何判定 | katrain `users.username` |
+
+> 原表把第二行叫「内部行主键」，没说明**每个服务各有一个、互不相等**——katrain 与 lobby-platform
+> 各有一张 `users` 表、各在自己的库上。改名 `account_row_ref` 就是把这件事写进名字。
+>
+> ⚠️ **`display_name` 这一行与现状相抵触，是已知未决项**：katrain 的 JWT `sub` 装的正是 `username`
+> （四处铸造点 `auth.py:214/265/279/317`，验证侧 `:121` 按名反查），而 `username` 是**用户自选、可为中文**的登录名。
+> 也就是说现状用「只用于显示、不参与判定」的那个值当唯一鉴权主体。改它会让所有存量 token 失效，
+> 属产品决策，列在冻结文件 §8。
 
 ⚠️ **katrain 那边是三重身份，比 smartbox 还乱**：用户同时有整数 `id`、注册时随机生成的 `uuid` 和唯一 `username`，而 **JWT 的 `sub` 装的是 `username`**；围棋档案按整数 `user_id` 挂，象棋档案却按随机 `users.uuid` 挂。**跨仓合并时这四种键必须先落成一张映射表**，不能假设同名即同物。
 
@@ -152,6 +200,23 @@ ranked_ladder_profiles   围棋
 ## §6 接口与鉴权
 
 ### §6.1 现状矩阵（由脚本生成，不是手抄）
+
+> 🔴 **这张表只覆盖升降级路由，不覆盖身份。** 27 条里**零条** `/api/v1/auth/*`，
+> `ranked-route-matrix.py` 的 `SOURCES` 也不扫任何 `auth.py`（2026-08-10 实测，见 §13-ter）。
+> 于是「冻结 `/api/v1/auth/*` 契约」这件事**没有可照着做的依据**。
+>
+> 身份路由现由 [`identity-contract-matrix.py`](./identity-contract-matrix.py) 单独生成
+> （**katrain 7 条 + lobby-platform 4 条 = 11 条**），结果与词汇见
+> [`identity-vocabulary-freeze-2026-08-10.md`](./identity-vocabulary-freeze-2026-08-10.md)。
+>
+> **为什么另起一个脚本而不是加进这个**：① auth 是**服务**的属性、不是棋类的属性，
+> 塞进按棋类分行的表里会让「五子棋那一行」看起来拥有一条 auth 路由；
+> ② 这个脚本的 `--go` 必填且指向另一个仓，把 auth 并进来等于没有围棋仓就重新生成不了身份矩阵，
+> 而身份跟围棋无关。
+>
+> 那张表最关键的一条结论：**`POST /api/v1/auth/box-sso/bootstrap` 和 `GET /api/v1/auth/me`
+> 由两个服务各实现一份**，且 bootstrap 的返回不同（katrain 回 `access_token`，lobby 回 `code`）。
+> **今后凡说「调 `/api/v1/auth/...`」，不写明哪个服务都是不完整的。**
 
 用 [`ranked-route-matrix.py`](./ranked-route-matrix.py) 重新生成：
 
@@ -615,6 +680,49 @@ Outbox 状态枚举四家三套：
 
 ---
 
+## §13-ter 仓库归属与身份权威（2026-08-10 由象棋 track 回写）
+
+**为什么另开一条而不是并进 §12/§13**：§12 的取代范围**只限评级数学**，§13 是初稿的 7 条断言。
+本轮推翻的是**仓库归属**与**身份权威**——两张表都覆盖不到。照 §13-bis 的先例另起一条。
+
+**触发**：Fan 问「账号系统是不是该搬出 katrain 仓」。为回答它做了一轮跨棋类实测
+（14 个 agent，4 个领域，map → impact → 对抗式复核；**30 条声称影响里 10 条被复核推翻**，未列入下表）。
+
+### 被推翻的断言
+
+| # | 原文 | 实测 | 依据 |
+|---|---|---|---|
+| 1 | §1「围棋跨仓搬进 smartbox」 | **做不到**。围棋升降级端点就是引擎宿主 | `ai_ladder.py:181`→`:235`→`:209`；`core/ladder.py` 1004 行是 KataGo 配方 |
+| 2 | §1「`XIANGQI_RANKED_CLOUD_BASE_URL` 取 `BOX_IDENTITY_REMOTE_URL` 是合理的」 | **仅同服务期间成立**。真实原因是 katrain 是**全盒账号系统** | `provision.sh:474,:498` |
+| 3 | §4「`account_ref` = 内部整数 `users.id`」 | **跨服务不可比**。两服务各有 `users` 表、各在自己的库上 | katrain `web/core/config.py:74` vs lobby `config.py:12` |
+| 4 | §4/§17-4「同账号全球单局」靠条件唯一索引 | 围棋不搬后**没有索引能覆盖四家**，须拆成单服务索引＋跨服务对账 | `models_db.py:151` |
+| 5 | §5 全局三行词汇表 | **不存在全局表**。`users.uuid`／`users.username` 两个列名在两服务里**含义互换** | `box_identity.py:467` vs `lobby_bridge.py:584` + `routers/ranked.py:31-32` |
+| 6 | §5「三重身份」 | 是**四个**。漏了五子棋盒端把整数 `users.id` 存进名为 `user_uuid` 的 TEXT 列 | `gomoku/api/gomoku_api/identity.py:118-120`→`.../schema.py:412` |
+| 7 | §6.1 那张「唯一会被人照着改代码」的矩阵 | **零条 auth 路由**，脚本也不扫 `auth.py`——要冻结的契约从没被写下来过 | `ranked-route-matrix.py:30-37` |
+
+### 新增的事实
+
+- **`/api/v1/auth/*` 由两个服务各实现一套**，`box-sso/bootstrap` 与 `me` 同名不同物
+  （bootstrap：katrain 回 `access_token`，lobby 回 `code`）。见 `identity-contract-matrix.py`。
+- **katrain 的 JWT `sub` 装的是 `username`**（`auth.py:214/265/279/317` 四处铸造，`:121` 按名反查），
+  而 `username` 是用户自选、可为中文的登录名。**现状用「只用于显示」的值当唯一鉴权主体。**
+- **`account_subject` 的格式是承重的**：`uuid4().hex`＝32 位无横杠，lobby 正则上限恰好 32。
+  已有可执行守卫 `lobby-platform/api/tests/test_auth.py:198-216`。
+- **围棋升降级今天零计分**：`ladder.py:483` `_CERTIFIED_RUNGS = frozenset()`。
+  连同象棋的零生产数据，**两个 katrain 侧升降级都还没有存量**——有真实存量的只有账号本身。
+- **第三把没铸的桥键**：继象棋 `xiangqi-ranked-bridge.key` 之后，国象的
+  `rated-chess-bridge.key` 与 `lobby-sso-bridge.key` 同样从未进 provisioning。
+
+### 三阶段与各 track 的关系
+
+| 阶段 | 内容 | 对其它 track |
+|---|---|---|
+| Phase 1 | 冻结身份契约与词汇；产出 `identity-contract-matrix.py` + 冻结文件；回写本文 | **必须单线程**。共享文档已经在漂（国象副本落后一版），并行编辑只会造出第二套词汇 |
+| Phase 2 | 象棋升降级搬出 katrain | 国象、五子棋**零耦合**（已用正对照验证）；只与围棋在 katrain 子模块上要排队 |
+| Phase 3 | 账号权威搬进 smartbox 身份服务 | **有四条前置在别人代码里**：五子棋 2 条、围棋 2 条，见 §15 各表 🔴 行 |
+
+---
+
 ## §14 迁移顺序：expand-contract
 
 测试环境云端 PG 已经在跑真数据（`ranked.sailorvoyage.top`，账本里有真实结算行），所以顺序是安全前提，不是流程洁癖。
@@ -656,6 +764,9 @@ Outbox 状态枚举四家三套：
 | 🟡 | 9 态预约状态机只实现 5 态；`inflight` 从不写入（**第三轮按判据从 🔴 降到这里**：它挡住的是排期，不是用户） | 文档分两栏列；未实现的要么实现要么从 DDL 删掉 | §11 降级说明 |
 | ⚪ | `ladder_state` / `ladder_ledger` / `ladder.py` 在云端路径下是死代码，docstring 还在描述旧行为 | 删死代码；**至少先改掉矛盾的 docstring** | §9 |
 | 🟡 | 盒子里存的是真凭据（AES-GCM），与国象/象棋方向相反 | **§6.5 已经定了**：迁到 `ranked-coordinator` 持有。前置条件是先冻结 capability 的 `expires_at` / 轮换权限 / logout 保留期 / GC / 超期死信 | §6.5 §10.3 |
+| 🔴 | **身份迁移前置**：三张 ranked 表的 `user_uuid` 上有 `RAISE(ABORT)` 不可变触发器（`schema.py:479/491/502`），**原地换键物理上做不到** | 先发触发器 drop/recreate 迁移到每台盒子，再谈换键 | §13-ter |
+| 🔴 | **身份迁移前置**：主体不匹配时 `get_or_create_user`（`user_repo.py:16`）与 `get_or_create_profile`（`ranked/profile_service.py:35`）**静默新建**——玩家评级重置成 placement 且**全链路无任何报错** | 迁移期把这两条路径关进显式主体白名单 | §13-ter |
+| ⚪ | 盒端三张表把 katrain 的**整数 `users.id`** 转字符串存进名为 `user_uuid` 的 TEXT 列（`gomoku/api/gomoku_api/identity.py:118-120` → `.../schema.py:412`） | Phase 1 **不改列名**（触发器挡着）；只在词汇冻结里登记为「第四个标识符」 | 冻结 §3 |
 
 ### 国际象棋
 
@@ -670,6 +781,9 @@ Outbox 状态枚举四家三套：
 | 🟡 | vault 记录只有 `{rated_game_id, credential}`，无 owner / 过期 / 删除 | 补齐，抄象棋 | §10.3 |
 | 🟡 | `unavailable` 同时承担网络失败与预约冲突 | `sync_conflict` 归 L2，给独立屏 | §8.3 注 |
 | ⚪ | 唯一「真联调」harness 写死 SQLite | 补一条 PG 的 | §11-1 |
+| 🟡 | `rated-chess-bridge.key` 与 `lobby-sso-bridge.key` **从未被 provisioning 铸造**（`provision.sh` 只铸 `box-sso-bridge.key`），出厂镜像上这两条链路是坏的 | 补进 provisioning。⚠️ 这是**第三把**同类缺口——象棋的 `xiangqi-ranked-bridge.key` 也从没铸过 | §13-ter |
+| 🟡 | 主体长度上限三处不一致：`rated_profile.py:23` 收 `{1,32}`，`rated_reservation.py:30`／`rated_settlement.py:32` 收 `{1,64}` | 统一（今天唯一产生器恰好 32 位所以三处都过；33–64 位主体会**半通**） | §13-ter |
+| ⚪ | 共享架构文档副本落后一版（`b40ea880`，其余三处已是 `1cf147da`） | 从 main 拉齐 | §16 |
 | ✅ | 目录认证状态机 + 三段证据链、确定性抖动、`login_required` 一等状态 | **这三样是四家蓝本，别动**。⚠️ **「8 档」本身不是蓝本**——档数与阈值必须按各棋类标定产出（象棋 9 档 CXA 称号、围棋 41 rung），可复用的是**认证机制**不是那张表 | §10.2 §8.3 §9 |
 
 ### 中国象棋
@@ -695,6 +809,10 @@ Outbox 状态枚举四家三套：
 | 🟡 | session-expired 与 signed_out 共用一条文案 | 拆成两条 | §8.2 |
 | ✅ | `KioskAuthGuard` 全路由保护 | **§8.1 规则 2 就是从这儿提炼的** | §8.1 |
 | — | 离散 41 档数学 | **已批准的例外，不改** | §3 §12 |
+| 🔴 | **围棋不搬进 smartbox**（推翻 §1 拍板的后半句）：升降级端点就是引擎宿主，`ai_ladder.py:235` 重建 KataGo `LadderRung` 后 `:209` 同进程建会话 | 搬迁＝把算分与走子拆开，是围棋重构不是搬仓。**标定完成前不是候选** | §13-ter |
+| ⚪ | `ladder.py:483` `_CERTIFIED_RUNGS = frozenset()`——**零个已认证档位**，账本 CHECK 与 `_ignored_reason` 都拒绝，**今天没有任何一局能计分** | 标定后再谈上线；好处是围棋升降级**没有存量数据风险** | §13-ter |
+| 🔴 | **身份迁移前置**：三张表 FK `users.id`（`models_db.py:105/133/170`），身份服务的副本**必须保 id 值**，否则三张表全成孤儿 | 把「保 id」写成硬要求，不能只说「建副本」 | §13-ter |
+| 🔴 | **身份迁移前置**：`users` 行上有围棋域字段 `rank`（`models_db.py:57`），`ai_ladder.py:118` 读它定 placement 区间。§2 把 `platform_core` 限定为 account·auth·db·config·migrations，对它沉默 | **须裁定 `rank` 归账号还是归围棋** | §13-ter |
 
 ---
 

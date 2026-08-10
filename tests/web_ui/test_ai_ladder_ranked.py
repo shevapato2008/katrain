@@ -1738,3 +1738,37 @@ def test_a_game_id_already_in_the_ledger_cannot_be_reserved_again(session_factor
     # 而且没有留下半条预约 —— 拒绝必须是彻底的,否则挡住的只是账本那一半。
     with session_factory() as db:
         assert db.query(models_db.AiLadderActiveGame).filter_by(user_id=user.id).one_or_none() is None
+
+
+def test_ending_an_unplayed_reservation_banks_a_loss_on_purpose(session_factory, user, opponent):
+    """未激活的预约被任意设备 `/end` 掉,**照样记一笔计分的负**。这是设计,不是漏网。
+
+    对抗性审计把它报成缺陷(「一手没下就记负」),我照着改了,然后 5 条既有测试当场红 ——
+    其中 `test_any_account_device_can_end_immediately_and_replay_same_receipt` 逐字断言了
+    这个行为。**这条钉在这里,是为了让下一次审计(或下一个我)在改之前先撞到理由。**
+
+    理由是契约 ④「判负后放行」用在预约上:预约本身已经占住了这个账号的段位位子,
+    而释放占位不能是免费的 —— 否则「开一局、看一眼对手、不想下就免费退掉」就成了
+    可以反复刷的动作,段位并发规则要防的正是这个。
+
+    代价也说清楚:`user_games` 里会存一份 `RE[W+R] move_count=0` 的合成棋谱。
+    那份棋谱不诚实(它长得像一局下过的棋),但那是 `remote_resign` 在 `active` 上
+    也有的既有表示法,不是这条路径独有的问题。要改就四条路径一起改,不在这里顺手动。
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    with session_factory() as db:
+        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id).state == "reserved"
+
+    receipt = repo.finalize_reserved_game(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        terminal_source="remote_resign",
+        result="loss",
+        deciding_device_id="device-b",
+    )
+
+    assert (receipt.state, receipt.counted) == ("settled", True)
+    with session_factory() as db:
+        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id) is None

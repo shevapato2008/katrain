@@ -3851,3 +3851,39 @@ async def test_a_ranked_session_without_a_reservation_key_is_skipped_rather_than
 
     assert api_app.state.session_manager.ai_ladder_liveness_targets() == []
     assert _active_row(api_app, game_id).heartbeat_generation == 0
+
+
+@pytest.mark.asyncio
+async def test_the_running_app_really_has_a_live_heartbeat_task(api_app):
+    """跑真 lifespan,断言**运行时对象**,而不是源码里有没有那行字。
+
+    国象发现它自己的接线闸是假的:AST 闸判「`Worker(...)` 和 `.start()` 都出现过」,
+    挡不住「存进 `app.state` 的是一个实例、`start()` 的是另一个新造的实例」——
+    源码里两个符号都在,闸原样放行,而生产里那个 worker 从没跑起来。
+
+    我上面那条 AST 闸有同样的天花板:它数的是**写没写**,不是**跑没跑**。
+    所以补这一条,判据换成运行时:任务对象在、且没结束;关服之后被取消。
+    两条一起看才完整 —— AST 那条能指出「哪一个 lifespan 漏了」,这条能指出「写了但没生效」。
+
+    「存在这个东西」不等于「这个东西在起作用」—— 这句话这次犯在**闸自己**身上。
+    """
+
+    async with api_app.router.lifespan_context(api_app):
+        task = getattr(api_app.state, "ai_ladder_heartbeat_task", None)
+        assert task is not None, "lifespan 跑完了,心跳任务却不在 app.state 上"
+        # 判据必须钉到「存的那个**就是**心跳」,不能只问「有个东西在且没结束」——
+        # 后者被一个永不落定的 Future 满足,而那正是国象那种「存进 state 的是一个实例、
+        # 真跑的是另一个」的形状。实测:不加这句,那种变异**不红**。
+        coro = getattr(task, "get_coro", lambda: None)()
+        assert getattr(coro, "__qualname__", None) == "_ai_ladder_heartbeat_loop", (
+            f"app.state 上那个不是心跳任务,而是 {task!r} —— 真跑起来的可能是另一个对象," "关服也摘不掉它"
+        )
+        assert not task.done(), f"心跳任务启动即结束: {task}"
+
+    # 关服只调 `task.cancel()` 不 await,所以取消要等事件循环转一圈才落定。
+    # 让一圈再断言 —— 断言「取消已生效」,而不是「cancel() 被调用过」。
+    for _ in range(5):
+        if task.done():
+            break
+        await asyncio.sleep(0)
+    assert task.done(), "关服之后心跳任务还活着 —— 进程退不干净"

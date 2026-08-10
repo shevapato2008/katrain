@@ -3789,3 +3789,65 @@ def test_the_wiring_scanner_sees_the_other_loops_too():
 
     targets = _lifespan_create_task_targets()
     assert "_cleanup_loop" in targets, f"扫描器连既有的清理循环都没看见,它已经空转:{targets}"
+
+
+@pytest.mark.asyncio
+async def test_a_non_ranked_session_is_never_heartbeated_even_if_it_carries_ladder_attributes(api_app, client):
+    """棋种过滤这一项,单独也要成立。
+
+    象棋钉出的形状:一个由多个条件构成的守卫,可能是**合取被守着**,而不是每一项各自
+    被守着。实测:把这条 `game_type` 过滤单独删掉,整套心跳测试**零红** —— 因为完整性
+    检查恰好顶住了(自由对局身上没有段位快照)。反过来也一样。
+
+    两条今天各自安全,只是因为对方在。谁哪天动了另一条,这一条就悄悄失效,而没有任何
+    东西会红。所以每一项都要有自己的断言,判据不是「这个守卫有没有测试」,
+    是「**删掉这一项,有没有东西红**」。
+
+    造的状态也是真的:同一个 katrain 进程既跑段位局也跑自由局,而会话属性是复用同一个
+    对象逐步赋上去的 —— 一个残留着段位属性的自由对局并不需要谁犯错才会出现。
+    """
+
+    async with client as ac:
+        response = await start_ranked(api_app, ac)
+        game_id = response.json()["game_id"]
+        ranked = api_app.state._test_created_sessions[0]
+
+        impostor = SimpleNamespace(
+            session_id="free-session",
+            user_id=ranked.user_id,
+            game_type="free",  # ← 唯一的区别
+            game_ended=False,
+            ai_ladder_snapshot=ranked.ai_ladder_snapshot,
+            ai_ladder_reservation_key=ranked.ai_ladder_reservation_key,
+        )
+        api_app.state.session_manager._sessions["free-session"] = impostor
+        ranked.game_ended = True  # 段位那局已结束,只剩冒名者
+
+        await server._send_ai_ladder_heartbeats(api_app)
+
+    assert api_app.state.session_manager.ai_ladder_liveness_targets() == []
+    assert _active_row(api_app, game_id).heartbeat_generation == 0, "自由对局替一局已结束的段位局报了生存"
+
+
+@pytest.mark.asyncio
+async def test_a_ranked_session_without_a_reservation_key_is_skipped_rather_than_guessed_at(api_app, client):
+    """完整性检查这一项,单独也要成立。
+
+    没有预约密钥就证明不了自己是那局的主人 —— 云端会 401,而在盒端形态下这是一次
+    白跑的网络往返。更要紧的是它是**真状态**:`/start` 里会话先被建出来、密钥稍后才
+    赋上去,中间那一小段窗口里这个会话是「段位、但没钥匙」。
+
+    跳过而不是猜一个空串:猜出来的心跳打到云端只会被拒,而拒的次数多了看起来像盒子
+    在掉线 —— 一个**看起来像别的故障**的错误,比直接不发更难查。
+    """
+
+    async with client as ac:
+        response = await start_ranked(api_app, ac)
+        game_id = response.json()["game_id"]
+        session = api_app.state._test_created_sessions[0]
+        session.ai_ladder_reservation_key = None
+
+        await server._send_ai_ladder_heartbeats(api_app)
+
+    assert api_app.state.session_manager.ai_ladder_liveness_targets() == []
+    assert _active_row(api_app, game_id).heartbeat_generation == 0

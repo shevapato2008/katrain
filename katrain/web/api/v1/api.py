@@ -20,7 +20,6 @@ from katrain.web.api.v1.endpoints import (
     geometry,
     hint,
     ai_ladder,
-    xiangqi_ranked,
 )
 
 api_router = APIRouter()
@@ -44,4 +43,3 @@ api_router.include_router(led.router, prefix="/led", tags=["led"])
 api_router.include_router(geometry.router, prefix="/geometry", tags=["geometry"])
 api_router.include_router(hint.router, prefix="/hint", tags=["hint"])
 api_router.include_router(ai_ladder.router, prefix="/ai-ladder", tags=["ai-ladder"])
-api_router.include_router(xiangqi_ranked.router, prefix="/xiangqi-ranked", tags=["xiangqi-ranked"])

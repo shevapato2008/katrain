@@ -29,8 +29,6 @@ dependencies = [
     "onnxslim>=0.1.90",
     "onnxruntime>=1.24.4",
     "anthropic>=0.86.0",
-    "smartbox-xiangqi-ranked>=0.1.0",
-    "smartbox-xiangqi-rules==0.1.0",
 ]
 
 [project.optional-dependencies]
@@ -108,8 +106,6 @@ default-groups = [
 ]
 
 [tool.uv.sources]
-smartbox-xiangqi-ranked = { path = "../../xiangqi/ranked-contracts", editable = true }
-smartbox-xiangqi-rules = { path = "../../xiangqi/rules", editable = true }
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

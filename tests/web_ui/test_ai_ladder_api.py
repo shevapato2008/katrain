@@ -7,6 +7,7 @@ import hashlib
 from datetime import datetime, timedelta, timezone
 import logging
 import threading
+from pathlib import Path
 import time
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
@@ -3634,3 +3635,99 @@ async def test_the_heartbeat_sweep_does_not_keep_its_own_session_alive(api_app, 
     await server._send_ai_ladder_heartbeats(api_app)
 
     assert session.last_access == 0.0, "心跳扫描把会话续命了 —— 超时回收这条兜底就永远不会触发"
+
+
+@pytest.mark.asyncio
+async def test_a_real_resign_stops_the_heartbeat_without_anyone_setting_the_flag(api_app, client):
+    """真认输之后心跳必须停 —— 而且**不许由测试代替系统去置那个标记**。
+
+    这条是对抗性审计挖出来的,它推翻的正是我自己前面那几条心跳测试:它们全部手工写
+    `session.game_ended = True`,于是证明的只是「标记置上以后心跳会停」,
+    **而不是「真实终局会把标记置上」**。两句话之间隔着整个缺陷。
+
+    段位认输分支(`server.py:1725-1735`)直接改
+    `game.game_result` / `current_node.end_state` / `katrain._state["end_result"]`,
+    然后自己给 `session.last_state` 赋值,**全程不调 `session.katrain(...)`** ——
+    而 `game_ended` 唯一的自动写点是 `SessionManager._on_state`,它挂在
+    `update_state` 回调链上。链不触发,标记就永远是 False,心跳永远发下去,
+    另一台设备看到的是一个**永远往后跑的倒计时**。
+
+    对照:`/api/timeout` 走 `session.katrain("timeout")`(会触发回调),
+    数子路径显式赋值(`server.py:1796`)—— 唯独认输两条都没有。
+    """
+
+    async with client as ac:
+        response = await start_ranked(api_app, ac)
+        game_id = response.json()["game_id"]
+        session_id = api_app.state._test_created_sessions[0].session_id
+
+        await server._send_ai_ladder_heartbeats(api_app)
+        assert _active_row(api_app, game_id).heartbeat_generation == 1
+
+        # 让结算失败,好让云端那一行**活下来** —— 结算成功时行会被删掉,死局无从谈起。
+        # 这正是被拒场景的形状:局下完了,而占位还在。
+        def refuse(*args, **kwargs):
+            raise RuntimeError("cloud refused this settlement")
+
+        api_app.state.ai_ladder_repo.finalize_reserved_game = refuse
+        api_app.state.ai_ladder_repo.settle_game = refuse
+
+        resigned = await ac.post("/api/resign", headers=api_app.state._test_headers, json={"session_id": session_id})
+        assert resigned.status_code == 200, resigned.text
+
+    await server._send_ai_ladder_heartbeats(api_app)
+    await server._send_ai_ladder_heartbeats(api_app)
+
+    assert (
+        _active_row(api_app, game_id).heartbeat_generation == 1
+    ), "认输之后还在报生存 —— 心跳唯一的停止条件在最常用的终局路径上没被置位"
+
+
+def test_every_place_that_writes_a_terminal_result_by_hand_also_ends_the_game():
+    """绊线:凡是绕过 `session.katrain(...)` 直接把终局写到树上的地方,都必须自己置 `game_ended`。
+
+    `game_ended` 的自动写点只有一个 —— `SessionManager._on_state`,挂在 `update_state`
+    回调链上。**绕过引擎直接改树,那条链就不触发**,而 `game_ended` 是段位心跳唯一的
+    停止条件:漏一处,那条终局路径上的对局就永远在报「有人在棋盘前」,云端预约永远
+    不可接管,账号在它名下每台设备上都开不了新局。
+
+    认输那处就是这么漏的,而且它是最常用的终局路径。数子那处一直是对的 ——
+    **两处并存正说明这不是「想不到」,是「没有东西提醒」。**
+
+    扫源码而不是跑用例,因为要防的是**将来新加的第三处**:它今天还不存在,
+    写不出针对它的用例;而这条断言在它出现的当天就会红。
+    """
+
+    source = (Path(server.__file__)).read_text(encoding="utf-8")
+    lines = source.splitlines()
+    offenders = []
+    for index, line in enumerate(lines):
+        if "current_node.end_state = " not in line:
+            continue
+        # 直写终局之后 12 行内必须出现 game_ended 置真(两处现存写法都在 4 行以内)。
+        window = "\n".join(lines[index : index + 12])
+        if "session.game_ended = True" not in window:
+            offenders.append(f"server.py:{index + 1}: {line.strip()}")
+
+    assert (
+        not offenders
+    ), "这些地方直接写了终局却没有置 `session.game_ended` —— 段位心跳会永远发下去:\n  " + "\n  ".join(offenders)
+
+
+def test_the_tripwire_can_actually_see_a_missing_flag():
+    """正对照:证明上面那条不是恒真。
+
+    扫源码的断言最容易变成「扫不到任何东西所以 0 违规」,长得和守得很好一模一样。
+    这里直接喂一段缺 `game_ended` 的假源码,确认扫描逻辑抓得到。
+    """
+
+    fake = (
+        "                    session.katrain.game.current_node.end_state = result\n" * 1 + "                    pass\n"
+    )
+    lines = fake.splitlines()
+    hits = [
+        i
+        for i, line in enumerate(lines)
+        if "current_node.end_state = " in line and "session.game_ended = True" not in "\n".join(lines[i : i + 12])
+    ]
+    assert hits, "扫描逻辑抓不到缺失的置位 —— 上面那条断言说明不了任何事情"

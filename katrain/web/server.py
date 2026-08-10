@@ -70,9 +70,7 @@ async def _guard_ai_ladder_cloud_active(app: FastAPI, session, current_user) -> 
                 raise RuntimeError("Invalid ranked lifecycle response")
             lifecycle_state = lifecycle.get("state")
         else:
-            lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
-                user_id=current_user.id, game_id=snapshot.game_id
-            )
+            lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(user_id=current_user.id, game_id=snapshot.game_id)
             lifecycle_state = getattr(lifecycle, "state", "settled")
     except HTTPException:
         raise
@@ -1395,21 +1393,24 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         try:
             from katrain.web.core.ai_ladder_sync import build_settlement_payload
 
-            return enqueue(
-                operation="settle_ai_ladder_ranked",
-                endpoint="/api/v1/ai-ladder/settlements",
-                method="POST",
-                payload=build_settlement_payload(
-                    snapshot,
-                    raw_result,
-                    reservation_key=reservation_key,
-                    game_record=game_record,
-                    device_id=settings.DEVICE_ID,
-                    engine_stalled=getattr(session.katrain, "last_ladder_error", False),
-                ),
-                user_id=str(current_user.id),
-                idempotency_key=f"ladder-settlement:{snapshot.game_id}",
-            ) is True
+            return (
+                enqueue(
+                    operation="settle_ai_ladder_ranked",
+                    endpoint="/api/v1/ai-ladder/settlements",
+                    method="POST",
+                    payload=build_settlement_payload(
+                        snapshot,
+                        raw_result,
+                        reservation_key=reservation_key,
+                        game_record=game_record,
+                        device_id=settings.DEVICE_ID,
+                        engine_stalled=getattr(session.katrain, "last_ladder_error", False),
+                    ),
+                    user_id=str(current_user.id),
+                    idempotency_key=f"ladder-settlement:{snapshot.game_id}",
+                )
+                is True
+            )
         except Exception as exc:  # pragma: no cover - defensive
             logging.getLogger("katrain_web").error(f"Could not queue ranked settlement for sync: {exc}")
             return False
@@ -1542,15 +1543,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 )
                 if getattr(app.state, "remote_client", None) is not None:
                     data["origin_device_id"] = settings.DEVICE_ID
-                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(
-                    lifecycle, "origin_device_id"
-                ):
+                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(lifecycle, "origin_device_id"):
                     data["origin_device_id"] = lifecycle.origin_device_id
                 terminal_result = result_for_user(data["result"], snapshot.user_color)
                 engine_stalled = bool(getattr(session.katrain, "last_ladder_error", False))
-                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(
-                    lifecycle, "origin_device_id"
-                ):
+                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(lifecycle, "origin_device_id"):
                     # New lifecycle games commit their game record, ledger, profile and
                     # reservation release in one repository transaction.
                     app.state.ai_ladder_repo.finalize_reserved_game(
@@ -1568,14 +1565,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     )
                     if confirmed is None:
                         raise RuntimeError("authoritative ranked AI game row was not confirmed")
-                elif getattr(lifecycle, "state", None) == "settled" and getattr(
-                    app.state, "remote_client", None
-                ) is None:
+                elif (
+                    getattr(lifecycle, "state", None) == "settled" and getattr(app.state, "remote_client", None) is None
+                ):
                     # A remote /end won the terminal race. Its minimal resignation
                     # record is immutable; the late local callback is a successful no-op.
-                    app.state.ai_ladder_repo.clear_pending_game(
-                        user_id=current_user.id, game_id=snapshot.game_id
-                    )
+                    app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=snapshot.game_id)
                     session.ai_ladder_settlement_pending = False
                     session._recorded = True
                     return
@@ -1632,9 +1627,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     except Exception as exc:
                         # The durable outbox below is the recovery path; a best-effort
                         # hint must never discard the result already saved locally.
-                        logging.getLogger("katrain_web").warning(
-                            "Could not mark ranked game pending on cloud: %s", exc
-                        )
+                        logging.getLogger("katrain_web").warning("Could not mark ranked game pending on cloud: %s", exc)
                 game_record = {key: value for key, value in data.items() if key != "origin_device_id"}
                 durable = True
                 if remote_client is not None:
@@ -1731,6 +1724,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.katrain.game.current_node.end_state = result
                     if hasattr(session.katrain, "_state"):
                         session.katrain._state["end_result"] = result
+                    # This branch writes the result straight onto the tree instead of going
+                    # through `session.katrain(...)`, so the `update_state` -> `_on_state`
+                    # callback that normally sets `game_ended` never fires. Nothing else sets
+                    # it on this path, and it is the only thing that stops the ranked heartbeat:
+                    # without this line a resigned game goes on reporting a player at the board
+                    # forever, the cloud reservation never becomes takeable, and the account is
+                    # locked out of ranked play on every device it owns.
+                    session.game_ended = True
                 else:
                     session.katrain("resign")
                 state = session.katrain.get_state()

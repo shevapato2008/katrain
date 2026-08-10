@@ -4433,48 +4433,151 @@ async def test_another_device_still_has_to_wait_out_the_window(box_and_cloud):
     assert seen["takeover_eligible_at"] is not None, "别处那台该拿到一个真的倒计时终点"
 
 
-def test_every_lifecycle_state_the_end_endpoint_can_return_is_one_the_ui_can_decode():
-    """`/end` 能回的每一个 `state`,前端解码器都得认得。
+def test_the_lifecycle_contract_is_equal_in_both_directions_between_server_and_ui():
+    """解码器认得的每个 `state`,后端得产得出来;后端产得出的每个,解码器得认得。**双向相等。**
 
-    这条是补给「四层各自绿,不代表有任何一条测试从第一层走到第四层」的(五子棋的话)。
-    今晚它真的漏了一格:`release_abandoned_settlement` 那条出路回 `state: "released"`,
-    而 `api.ts` 的守卫只认 `active` / `pending_settlement` / `settled`。于是**释放成功**
-    (预约删了、账号放开了)却被 `createApiError` 包成 `Request failed 200`,
-    屏上告诉用户「结束对局失败，请重试」。后端全绿,前端全绿,没有一条测试跨过那道缝。
+    第一版只写了单向(`产出 ⊆ 认得`),它抓到的是今晚那条真缺陷:`/end` 的释放分支回
+    `state: "released"`,而守卫只认三个 ⇒ 释放成功却被包成 `Request failed 200`,
+    屏上写「结束对局失败，请重试」,而那一刻账号已经放开了。
 
-    两侧都从**生产代码自己**取,不在测试里另抄一份 —— 抄一份就等于把要证的东西假设掉:
-    后端这侧扫 `end_ranked_game` 函数体里的 `"state": ...` 字面量,
-    前端那侧扫 `isGameLifecycle` 里比较过的 `value.state === '...'`。
+    另一个方向是五子棋补上的,它那边正掉在这一侧:`sync_status` 的契约声明了
+    `superseded`,读侧却一个字都产生不出来,于是前端为它写的分支和**已经过了四图关卡的
+    像素**全是死的 —— 被别人接管判负的一局,屏上写「本局认输 · 已判负」,而他没有认输。
+
+    > **契约声明的每个取值,都得有人产生。前端认得几个 ≠ 后端产得出几个。**
+
+    所以这里断言两集**相等**,不是包含。产出侧要把解码器服务的**每一个**端点都算进来
+    (`/end` 和 `/games/{id}/status` 共用同一个 `parseGameLifecycleResponse`)——
+    只扫一个端点就会把另一个端点合法产出的状态误报成死分支,而
+    **自己造一个不存在的缺陷比漏报还贵**(五子棋今晚的原话)。
+
+    两侧都从生产代码自己取,测试里不另抄一份 —— 抄一份就等于把要证的东西假设掉。
     """
 
     import re
 
     endpoint_src = Path("katrain/web/api/v1/endpoints/ai_ladder.py").read_text(encoding="utf-8")
     tree = ast.parse(endpoint_src)
-    end_fn = next(
-        node
-        for node in ast.walk(tree)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "end_ranked_game"
-    )
-    returned = {
-        value.value
-        for node in ast.walk(end_fn)
-        if isinstance(node, ast.Dict)
-        for key, value in zip(node.keys, node.values)
-        if isinstance(key, ast.Constant) and key.value == "state" and isinstance(value, ast.Constant)
-    }
-    # `_lifecycle_payload` 是共用投影,不在这个函数体里 —— 它回的是 settled。
-    returned.add("settled")
+
+    def state_literals(fn_name: str) -> set:
+        fn = next(
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == fn_name
+        )
+        found = set()
+        for node in ast.walk(fn):
+            if not isinstance(node, ast.Dict):
+                continue
+            for key, value in zip(node.keys, node.values):
+                if not (isinstance(key, ast.Constant) and key.value == "state"):
+                    continue
+                if isinstance(value, ast.Constant):
+                    found.add(value.value)
+                else:
+                    # `"pending_settlement" if ... else "active"` —— 三元里两边都是真出口。
+                    found |= {
+                        sub.value
+                        for sub in ast.walk(value)
+                        if isinstance(sub, ast.Constant) and isinstance(sub.value, str)
+                    }
+        return found
+
+    # 解码器服务的两个端点 + 它们共用的那个投影。
+    produced = state_literals("end_ranked_game") | state_literals("get_ranked_game_status")
+    produced |= state_literals("_lifecycle_payload")
 
     guard_src = Path("katrain/web/ui/src/features/aiLadder/api.ts").read_text(encoding="utf-8")
     guard_body = guard_src.split("const isGameLifecycle", 1)[1].split("\n};", 1)[0]
     # `[!=]==`:守卫里既有 `=== 'released'` 也有 `!== 'settled'`(那条是「不是 settled 就退出」)。
-    # 只抓 `===` 会漏掉 `settled`,而漏掉的表现是**这条测试自己红**,红在一个不存在的缺陷上
-    # —— 自己造一个不存在的缺陷比漏报还贵,所以下面的正对照钉的是「扫到了该扫到的」。
-    decodable = set(re.findall(r"value\.state [!=]== '([a-z_]+)'", guard_body))
+    # 只抓 `===` 会漏掉 `settled`,而漏掉的表现是**这条测试自己红**,红在一个不存在的缺陷上。
+    decodable = set(re.findall(r"value\.state [!=]== \'([a-z_]+)\'", guard_body))
 
-    assert returned, "扫不到 `/end` 的任何返回状态 —— 扫描器空转,而空转长得和守得很好一模一样"
     assert {"settled", "active"} <= decodable, f"前端扫描器没扫到本来就在的状态,它在空转: {decodable}"
-    assert returned <= decodable, (
-        f"后端能回 {sorted(returned - decodable)},前端解码器不认 —— " "那一跳会被当成畸形响应,成功的操作在屏上变成失败"
+    assert len(produced) >= 3, f"后端扫描器空转 —— 空转长得和守得很好一模一样: {produced}"
+    assert produced == decodable, (
+        f"后端产得出 {sorted(produced)},前端认得 {sorted(decodable)}。\n"
+        f"  只有后端有的 {sorted(produced - decodable)}:成功的操作会被当成畸形响应,在屏上变成失败;\n"
+        f"  只有前端有的 {sorted(decodable - produced)}:为它写的分支和像素是死的,永远不会显示"
     )
+
+
+@pytest.mark.asyncio
+async def test_a_settlement_that_arrives_after_its_release_still_counts_and_spares_the_new_game(box_and_cloud):
+    """放弃等待之后那笔成绩迟到了 —— 它仍然算数,而且不许碰用户已经开起来的新局。
+
+    `release_abandoned_settlement` 的注释里写着这条承诺:「放开的只是占位 …… 那台盒子
+    要是哪天真送到了,它真下过的那局仍然按本来的样子算数」。**承诺写在注释里,一条测试都没有。**
+
+    国象今晚的教训正对着这里:接管释放此前在生产里一次都没发生过,是 (d) 让它第一次真会发生;
+    而它一旦发生,下一跳(原盒回来补交)拿到的响应形状就成了新的、从没被走过的路。
+    它那边的下一跳是 502 + 无限重投。这里构造的是同一条缝在围棋的样子。
+
+    构造走满整条时间线,一步不省:下完 → 送不出去 → 等过 30 分钟 → 另一台设备放弃等待
+    → 用户开了新的一局 → **这时候**老那笔才送到。
+
+    三件事必须同时成立:
+      1. 云端回 2xx —— 出站 worker 把 4xx 归成 `PermanentError`(`sync_worker.py:173`),
+         真下过的一局会被永久丢掉;5xx 归成可重试,就是国象那种无限重投;
+      2. 老那局进账本、真的计分 —— 「放弃等待」放弃的是**等待**,不是**成绩**;
+      3. 新那局的预约**原封不动** —— 这条最要命:用户正在下的棋要是被一笔迟到的旧结算
+         顺手清掉,他会在棋盘中途被踢出局,而现场没有任何东西指向半小时前那次放弃。
+    """
+
+    box, cloud, _ = box_and_cloud
+    headers = {**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"}
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+        old_game_id = started.json()["game_id"]
+        await ac.post("/api/resign", headers=box.state._test_headers, json={"session_id": started.json()["session_id"]})
+        # 出站件逐字取自盒子真的入队的那份 —— 不在测试里另拼一个载荷。
+        outbox_payload = box.state.sync_enqueue_fn.call_args.kwargs["payload"]
+
+        with cloud.state._test_session_factory() as db:
+            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=old_game_id).one()
+            row.pending_settlement_since = datetime.now(timezone.utc) - timedelta(minutes=31)
+            db.commit()
+
+        transport = ASGITransport(app=cloud)
+        async with AsyncClient(transport=transport, base_url="http://cloud") as cloud_ac:
+            released = await cloud_ac.post(
+                f"/api/v1/ai-ladder/games/{old_game_id}/end",
+                headers={**cloud.state._test_headers, "X-StellaBox-Device-ID": "phone-9"},
+                json={"reason": "user_resigned"},
+            )
+            assert released.status_code == 200 and released.json()["state"] == "released"
+
+            restarted = await ac.post(
+                "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+            )
+            assert restarted.status_code == 201, "放弃等待之后开不了新局 —— 那这条出路等于没有"
+            new_game_id = restarted.json()["game_id"]
+
+            late = await cloud_ac.post(
+                "/api/v1/ai-ladder/settlements",
+                headers={**cloud.state._test_headers, "X-StellaBox-Device-ID": "box-17"},
+                json=outbox_payload,
+            )
+
+    assert 200 <= late.status_code < 300, (
+        f"迟到的结算拿到 {late.status_code} —— 4xx 会被出站 worker 判成永久失败,真下过的一局就此丢掉;"
+        "5xx 会被判成可重试,那是无限重投一局云端其实收得下的棋"
+    )
+    assert late.json()["game_id"] == old_game_id
+    assert late.json()["counted"] is True, "「放弃等待」放弃的是等待,不是成绩"
+
+    with cloud.state._test_session_factory() as db:
+        ledger = db.query(models_db.AiLadderGameLedger).all()
+        assert [(entry.game_id, entry.counted) for entry in ledger] == [(old_game_id, True)]
+        # 这条断言守的是**迟到的结算**,不是那次放弃 —— 变异 `settle_game` 去清账号预约,
+        # 它当场红。而变异「放弃时清掉该账号所有预约」**0 红**,那不是漏验:放弃发生的那一刻
+        # 新局还不存在,而 `uq_ai_ladder_active_user` 保证一个账号最多一行,所以「删这一行」
+        # 和「删这个账号的全部」在那一刻是同一件事。恒真的前提是那条唯一约束,
+        # 而它由 `test_cloud_reservation_is_account_unique_and_status_hides_origin_secrets` 钉着
+        # ——谁哪天放开了一账号多预约,那条会先红,这里才轮得到。
+        live = db.query(models_db.AiLadderActiveGame).all()
+        assert [(entry.game_id, entry.state) for entry in live] == [(new_game_id, "active")], (
+            "一笔迟到的旧结算动了用户正在下的那局 —— 他会在棋盘中途被踢出局," "而现场没有任何东西指向半小时前那次放弃"
+        )

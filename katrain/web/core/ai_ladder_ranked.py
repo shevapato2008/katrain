@@ -360,6 +360,8 @@ class AiLadderRankedRepository:
 
             ledger = self._new_ledger(
                 user_id=user_id,
+                # Frozen here, from the row we already hold, at the moment of settlement.
+                account_subject=user.uuid,
                 game_id=game_id,
                 user_color=user_color,
                 result=result,
@@ -484,6 +486,7 @@ class AiLadderRankedRepository:
     def _new_ledger(
         *,
         user_id: int,
+        account_subject: Optional[str],
         game_id: str,
         user_color: str,
         result: str,
@@ -494,6 +497,7 @@ class AiLadderRankedRepository:
         return models_db.AiLadderGameLedger(
             game_id=game_id,
             user_id=user_id,
+            account_subject=account_subject,
             user_color=user_color,
             result=result,
             game_type=game_type,

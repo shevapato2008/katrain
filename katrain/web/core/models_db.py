@@ -179,6 +179,14 @@ class AiLadderGameLedger(Base):
     counted = Column(Boolean, nullable=False)
     reason = Column(String(32), nullable=True)
     settled_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    # account_subject frozen at settlement: the 32-hex users.uuid as it was WHEN THIS GAME SETTLED.
+    # Deliberately NOT a ForeignKey and never joined on -- user_id above is the runtime operational
+    # key; this is an immutable historical fact, written once and never updated. An audit row is
+    # allowed to disagree with the present, because it records the past. Test: take the whole
+    # database away and keep only this row -- can you still tell whose game it was?
+    # Nullable for rows written before this column existed. See
+    # superpowers/tracks/golaxy-ai-ladder-parity/identity-p3-preconditions.md §E.
+    account_subject = Column(String(32), nullable=True)
 
     user = relationship("User", backref="ai_ladder_game_ledger")
 

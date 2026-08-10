@@ -3624,15 +3624,19 @@ async def test_the_heartbeat_sweep_does_not_keep_its_own_session_alive(api_app, 
 
     async with client as ac:
         await start_ranked(api_app, ac)
-    session = api_app.state._test_created_sessions[0]
-    # fixture 里的假会话把 `touch` 打成了空 lambda。不换掉它,这条断言就是空转的:
-    # 把枚举改成走 `get_session()`(真会续命的那个写法)照样绿 —— 我第一版正是这样,
-    # 变异红在了另一条测试上,而那条红的是别的原因。**红了不等于红在你要证的地方。**
-    session.touch = lambda s=session: setattr(s, "last_access", time.time())
-    session.last_access = 0.0
+        session = api_app.state._test_created_sessions[0]
+        # fixture 里的假会话把 `touch` 打成了空 lambda。不换掉它,这条断言就是空转的:
+        # 把枚举改成走 `get_session()`(真会续命的那个写法)照样绿 —— 我第一版正是这样,
+        # 变异红在了另一条测试上,而那条红的是别的原因。**红了不等于红在你要证的地方。**
+        session.touch = lambda s=session: setattr(s, "last_access", time.time())
+        session.last_access = 0.0
 
-    await server._send_ai_ladder_heartbeats(api_app)
-    await server._send_ai_ladder_heartbeats(api_app)
+        # 造的是**盒子真实的行为**,不是巡检器自己的行为:局还在下的时候,盒子除了发心跳
+        # 还会不断被前端问状态。走满一整轮阈值的量级、期间反复轮询,才逼近真实压力。
+        # (象棋钉这条时用的就是这个形状:只连扫两轮,量的是一个不存在的安静系统。)
+        for _ in range(10):
+            await server._send_ai_ladder_heartbeats(api_app)
+            await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
 
     assert session.last_access == 0.0, "心跳扫描把会话续命了 —— 超时回收这条兜底就永远不会触发"
 

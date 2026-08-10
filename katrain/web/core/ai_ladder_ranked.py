@@ -348,6 +348,19 @@ class AiLadderRankedRepository:
                         reservation_key=reservation_key,
                     )
                 raise AiLadderLifecycleConflict("account already has an active ranked AI game")
+
+            # A `game_id` that is already in the ledger cannot be reserved again -- by anyone.
+            #
+            # The id is minted by the box (`uuid4().hex`) and taken on trust here, so a box that
+            # replays or fabricates one can hand this account a reservation whose every exit is
+            # shut: `_find_ledger` raises NotFound the moment a ledger row for this `game_id`
+            # belongs to someone else, and it is the FIRST statement in both the takeover path
+            # and the release path. Waiting never helps, because nothing about that row changes.
+            #
+            # Refusing at the door rather than untangling it later, because there is nothing to
+            # untangle: the state is unresolvable by construction, so the only cure is not
+            # creating it. (`ai_ladder_game_ledger.game_id` is globally unique, so this reads
+            # across accounts on purpose -- the collision is the hazard, not the ownership.)
             if self._find_ledger_by_game_id(session, game_id=game_id) is not None:
                 raise AiLadderLifecycleConflict("game_id is already settled")
             row = models_db.AiLadderActiveGame(

@@ -1693,3 +1693,48 @@ def test_an_active_game_is_never_releasable_however_long_it_runs(session_factory
             user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
         )
     assert not isinstance(excinfo.value, AiLadderSettlementStillArriving)
+
+
+def test_a_game_id_already_in_the_ledger_cannot_be_reserved_again(session_factory, user, opponent):
+    """已经进过账本的 game_id 不许再被预约 —— 无论是不是同一个账号。
+
+    审计对抗性反驳挖出来的:`game_id` 由盒端 `uuid4().hex` 铸造、云端照单全收,而
+    `ai_ladder_game_ledger.game_id` 是全局唯一的。一个复用了别人 game_id 的盒子,
+    能给自己的账号造出一条**每一条出路都关着**的预约 —— `_find_ledger` 在账本行属于
+    他人时直接抛 NotFound,而它是接管路径和释放路径的**第一句**。等多久都没用,
+    因为那一行永远不会变。
+
+    所以拦在门口而不是事后拆解:那个状态按构造就无解,唯一的治法是不要造出它。
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    with session_factory() as db:
+        other = models_db.User(username="ledger-squatter", hashed_password="x", rank="20k")
+        db.add(other)
+        db.commit()
+        other_id = other.id
+
+    taken = reserve(repo, other_id, replace(opponent, rung=20))
+    repo.activate_reservation(
+        user_id=other_id,
+        game_id=taken.game.game_id,
+        reservation_key=taken.reservation_key,
+        origin_device_id="device-x",
+        origin_session_id="session-x",
+    )
+    repo.finalize_reserved_game(
+        user_id=other_id,
+        game_id=taken.game.game_id,
+        terminal_source="played_result",
+        result="win",
+        deciding_device_id="device-x",
+        reservation_key=taken.reservation_key,
+        game_record=complete_game_record(user_color="B", result="win"),
+    )
+
+    with pytest.raises(AiLadderLifecycleConflict):
+        reserve(repo, user.id, replace(opponent, rung=25), game_id=taken.game.game_id)
+
+    # 而且没有留下半条预约 —— 拒绝必须是彻底的,否则挡住的只是账本那一半。
+    with session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).filter_by(user_id=user.id).one_or_none() is None

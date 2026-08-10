@@ -145,7 +145,7 @@ describe('AiLadderRatedSetup', () => {
     await user.click(screen.getByRole('button', { name: '刷新状态' }));
     expect(props.onRetry).toHaveBeenCalledOnce();
     expect(props.onContinue).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: '认输并结束' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '替它认输' })).toBeEnabled();
   });
 
   it('only refreshes a game pending settlement', async () => {
@@ -368,8 +368,9 @@ describe('AiLadderRatedSetup', () => {
     });
     renderSetup(status);
 
-    expect(screen.getByRole('button', { name: '认输并结束' })).toBeDisabled();
-    expect(screen.getByText('4:12 后可用')).toBeInTheDocument();
+    // 别处那局叫「替它认输」——动的是一台你此刻碰不到的机器上的棋。
+    expect(screen.getByRole('button', { name: '替它认输' })).toBeDisabled();
+    expect(screen.getByText('那台设备还在联机 · 4:12 后可用')).toBeInTheDocument();
     // 后果那句在没到点的时候不该出现 —— 那一刻要说的是「还要等多久」。
     expect(screen.queryByText('按认输计入本局，段位会变')).not.toBeInTheDocument();
   });
@@ -383,12 +384,12 @@ describe('AiLadderRatedSetup', () => {
         can_force_resign: false, takeover_eligible_in_seconds: 3,
       });
       renderSetup(status);
-      expect(screen.getByRole('button', { name: '认输并结束' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: '替它认输' })).toBeDisabled();
 
       // 只推进时钟，**不重新渲染、不给新数据** —— 这正是要证的:门开不依赖任何一次往返。
       await act(async () => { vi.advanceTimersByTime(4000); });
 
-      expect(screen.getByRole('button', { name: '认输并结束' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: '替它认输' })).toBeEnabled();
       expect(screen.getByText('按认输计入本局，段位会变')).toBeInTheDocument();
     } finally {
       vi.useRealTimers();

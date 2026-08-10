@@ -448,7 +448,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     });
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '认输并结束' }));
+    // 别处那局的按钮叫「替它认输」——动的是一台你此刻碰不到的机器上的棋。
+    await user.click(await screen.findByRole('button', { name: '替它认输' }));
     await user.click(screen.getByRole('button', { name: '确认认输' }));
     expect(await screen.findByText('结束对局失败，请重试')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());

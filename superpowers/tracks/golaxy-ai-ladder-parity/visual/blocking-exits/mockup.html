@@ -1,0 +1,530 @@
+<title>未完成对局 · 出路面板 六态对照</title>
+<style>
+  :root {
+    --paper:      #eceee9;
+    --paper-2:    #f6f7f4;
+    --ink:        #191c19;
+    --ink-2:      #4f5650;
+    --ink-3:      #7d857e;
+    --rule:       #d3d8d1;
+    --jade:       #3d6152;
+    --jade-soft:  #dfe7e1;
+    --flag:       #a2462f;
+    --flag-soft:  #f4e2dc;
+
+    /* 产品面板取自 katrain/web/ui/src/theme.ts,固定不随文档主题变 */
+    --app-bg:     #0f0f0f;
+    --app-paper:  #252525;
+    --app-text:   #f5f3f0;
+    --app-text-2: #b8b5b0;
+    --app-dis:    #4a4845;
+    --app-divide: rgba(255,255,255,.05);
+    --app-primary:#4a6b5c;
+    --app-success:#30a06e;
+    --app-warning:#e89639;
+    --app-error:  #e16b5c;
+
+    --cn: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    --ui: ui-sans-serif, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:     #141715;
+      --paper-2:   #1c201d;
+      --ink:       #e9ece9;
+      --ink-2:     #a7afa8;
+      --ink-3:     #79817a;
+      --rule:      #2b312d;
+      --jade:      #8fbfa8;
+      --jade-soft: #22302a;
+      --flag:      #e08a72;
+      --flag-soft: #34211c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:     #141715;
+    --paper-2:   #1c201d;
+    --ink:       #e9ece9;
+    --ink-2:     #a7afa8;
+    --ink-3:     #79817a;
+    --rule:      #2b312d;
+    --jade:      #8fbfa8;
+    --jade-soft: #22302a;
+    --flag:      #e08a72;
+    --flag-soft: #34211c;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--cn);
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 56px 24px 96px; }
+
+  .eyebrow {
+    font-family: var(--ui);
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--jade); font-weight: 650; margin: 0 0 14px;
+  }
+  h1 { font-size: clamp(30px, 4vw, 44px); line-height: 1.15; margin: 0 0 18px; font-weight: 800; text-wrap: balance; letter-spacing: -.01em; }
+  .lede { font-size: 18px; color: var(--ink-2); max-width: 62ch; margin: 0 0 12px; }
+  .lede strong { color: var(--ink); font-weight: 700; }
+
+  .caveat {
+    margin: 28px 0 0; padding: 18px 20px;
+    background: var(--flag-soft); border-left: 3px solid var(--flag);
+    border-radius: 0 8px 8px 0; font-size: 15px; color: var(--ink);
+    max-width: 74ch;
+  }
+  .caveat b { color: var(--flag); }
+
+  h2 {
+    font-size: 13px; font-family: var(--ui); letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 650;
+    margin: 72px 0 0; padding-bottom: 10px; border-bottom: 1px solid var(--rule);
+  }
+
+  /* ── 一个案例 ─────────────────────────────────────── */
+  .case { margin-top: 40px; }
+  .case-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 14px; margin-bottom: 6px; }
+  .case-n {
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    color: var(--jade); background: var(--jade-soft);
+    padding: 2px 8px; border-radius: 4px; letter-spacing: .04em;
+  }
+  .case-t { font-size: 21px; font-weight: 800; letter-spacing: -.01em; }
+  .case-meta { font-family: var(--mono); font-size: 12.5px; color: var(--ink-3); }
+  .case-why { color: var(--ink-2); max-width: 66ch; margin: 0 0 22px; font-size: 15.5px; }
+  .case-why b { color: var(--ink); font-weight: 700; }
+
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 402px)); gap: 24px; justify-content: start; }
+  .col-label {
+    font-family: var(--ui); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase;
+    font-weight: 650; margin-bottom: 9px; display: flex; align-items: center; gap: 7px;
+  }
+  .col-label.now { color: var(--ink-3); }
+  .col-label.next { color: var(--jade); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
+
+  /* ── 产品面板(固定深色,取自 zenTheme)─────────────── */
+  .panel {
+    width: 100%; max-width: 402px; min-height: 428px;
+    background: var(--app-paper); color: var(--app-text);
+    border: 1px solid var(--app-divide); border-radius: 12px;
+    padding: 32px; display: flex; flex-direction: column;
+    box-shadow: 0 14px 34px rgba(0,0,0,.22);
+  }
+  .panel.ghost { opacity: .96; }
+  .p-kicker { color: var(--app-text-2); font-weight: 650; font-size: 16px; }
+  .p-row { display: flex; align-items: center; gap: 24px; margin-top: 24px; }
+  .stone { width: 68px; height: 68px; border-radius: 50%; flex: 0 0 auto;
+           background: #090a09; border: 1px solid rgba(255,255,255,.08);
+           box-shadow: inset 11px 10px 18px rgba(255,255,255,.13), inset -10px -13px 18px rgba(0,0,0,.65); }
+  .p-sub { font-size: 17px; font-weight: 800; }
+  .p-rank { font-size: 30px; line-height: 1.1; font-weight: 800; margin-top: 4px; }
+  .chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .chip { font-size: 12.5px; padding: 2px 10px; border-radius: 999px; border: 1px solid; line-height: 1.7; }
+  .chip.ok   { color: var(--app-success); border-color: color-mix(in srgb, var(--app-success) 55%, transparent); }
+  .chip.warn { color: var(--app-warning); border-color: color-mix(in srgb, var(--app-warning) 55%, transparent); }
+  .chip.mute { color: var(--app-text-2); border-color: rgba(255,255,255,.18); }
+  .p-div { height: 1px; background: rgba(255,255,255,.07); margin: 24px 0; }
+  .p-copy { color: var(--app-text-2); font-size: 15.5px; }
+  .p-copy.bad { color: var(--app-error); }
+  .p-actions { margin-top: auto; padding-top: 28px; display: flex; flex-direction: column; gap: 12px; }
+
+  .btn {
+    min-height: 52px; border-radius: 8px; font-size: 17px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    border: 1px solid transparent; padding: 0 14px;
+  }
+  .btn.fill { background: var(--app-primary); color: #fff; }
+  .btn.line { background: transparent; color: var(--app-text); border-color: rgba(255,255,255,.24); min-height: 46px; font-size: 16px; }
+  .btn.danger { background: transparent; color: var(--app-error); border-color: color-mix(in srgb, var(--app-error) 55%, transparent); min-height: 46px; font-size: 16px; }
+  .btn.caution { background: transparent; color: var(--app-warning); border-color: color-mix(in srgb, var(--app-warning) 55%, transparent); min-height: 46px; font-size: 16px; }
+  .btn.off { color: var(--app-dis); border-color: rgba(255,255,255,.08); background: transparent; }
+
+  .note { font-size: 13px; color: var(--app-text-2); text-align: center; margin-top: -4px; }
+  .note.clock { font-variant-numeric: tabular-nums; color: var(--app-warning); }
+  .note.cost { color: var(--app-text-2); }
+  .missing {
+    border: 1px dashed rgba(255,255,255,.16); border-radius: 8px;
+    padding: 13px; text-align: center; font-size: 13.5px; color: var(--app-dis);
+  }
+
+  .verdict { margin-top: 14px; font-size: 14.5px; color: var(--ink-2); max-width: 402px; }
+  .verdict b { color: var(--flag); font-weight: 700; }
+  .verdict.good b { color: var(--jade); }
+
+  /* ── 决策清单 ─────────────────────────────────────── */
+  .asks { margin-top: 34px; display: grid; gap: 16px; }
+  .ask { background: var(--paper-2); border: 1px solid var(--rule); border-radius: 10px; padding: 20px 22px; }
+  .ask h3 { margin: 0 0 6px; font-size: 17px; font-weight: 800; }
+  .ask p { margin: 0; color: var(--ink-2); font-size: 15.5px; max-width: 70ch; }
+  .ask .opts { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .opt { font-family: var(--ui); font-size: 13px; padding: 5px 11px; border-radius: 999px;
+         border: 1px solid var(--rule); background: var(--paper); color: var(--ink-2); }
+  .opt.lean { border-color: var(--jade); color: var(--jade); font-weight: 650; }
+  .xtrack {
+    font-family: var(--ui); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+    font-weight: 650; color: var(--flag); background: var(--flag-soft);
+    padding: 3px 8px; border-radius: 4px; margin-left: 10px; vertical-align: middle;
+  }
+
+  table.spec { width: 100%; border-collapse: collapse; margin-top: 22px; font-size: 14.5px; }
+  table.spec th, table.spec td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  table.spec th { font-family: var(--ui); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 650; }
+  table.spec td code { font-family: var(--mono); font-size: 13px; color: var(--jade); }
+  .scroll { overflow-x: auto; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">围棋 · 升降级并发出路 · 视觉待定稿</p>
+  <h1>「未完成对局」面板的六种状态</h1>
+  <p class="lede">
+    后端已经能回答「这局怎么了、你能做什么、什么时候能做」。<strong>这块屏还只会说前两件事的一半。</strong>
+    左边是今天真实的样子,右边是建议 —— 每一格都对应一个已经跑通、已经有测试钉住的后端状态。
+  </p>
+
+  <div class="caveat">
+    <b>这不是取图关卡的参考图。</b>它定的是<b>结构和文案</b>:哪一格出现哪个按钮、按钮说什么、后果写不写、倒计时给不给。
+    字体是系统中文字(真机上是 LXGW WenKai),行高与实际像素<b>一律不作数</b> —— 那要在真浏览器、目标 viewport 下量,
+    而且要把数据造到会溢出再量。你确认结构之后我才动代码,动完再取四图。
+  </div>
+
+  <h2>六态对照</h2>
+
+  <!-- 1 -->
+  <div class="case">
+    <div class="case-head">
+      <span class="case-n">01</span>
+      <span class="case-t">局还在下,就在这台机器上</span>
+      <span class="case-meta">active · current_device · 会话还活着</span>
+    </div>
+    <p class="case-why">唯一正常的一格。用户该做的是<b>接着下</b>,别的都是干扰项。后端现在对这一格<b>不再递出接管字段</b> —— 一局你正坐在前面的棋,不该同时被标成「别人可以替你判负」。</p>
+    <div class="pair">
+      <div>
+        <div class="col-label now"><span class="dot"></span>今天</div>
+        <div class="panel ghost">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip ok">对局中</span><span class="chip mute">当前设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy">你有一局正式对局尚未结束。</div>
+          <div class="p-actions">
+            <div class="btn fill">继续对局</div>
+            <div class="btn danger">结束该对局</div>
+          </div>
+        </div>
+        <p class="verdict">「结束该对局」<b>没说后果</b>,而它会记一场负、动段位。</p>
+      </div>
+      <div>
+        <div class="col-label next"><span class="dot"></span>建议</div>
+        <div class="panel">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip ok">对局中</span><span class="chip mute">当前设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy">你有一局正式对局尚未结束。</div>
+          <div class="p-actions">
+            <div class="btn fill">继续对局</div>
+            <div class="btn danger">认输并结束</div>
+            <div class="note cost">按认输计入本局,段位会变</div>
+          </div>
+        </div>
+        <p class="verdict good">动词换成用户认得的那个:这就是<b>认输</b>,不是「结束」。后果写在按钮下面。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="case">
+    <div class="case-head">
+      <span class="case-n">02</span>
+      <span class="case-t">这台机器重启过,局接不回来了</span>
+      <span class="case-meta">active · current_device · 会话随进程死了</span>
+    </div>
+    <p class="case-why">断电、崩溃、升级重启。云端那行还在,棋盘却已经没了。<b>这一格今天三扇门同时是暗的</b> —— 接不回来、载荷不给接管、放弃等待又不适用,而且等六分钟前后<b>那份响应一模一样</b>。后端已修:原盒结束自己这局就是认输,<b>此刻就能按,不用等五分钟</b>。</p>
+    <div class="pair">
+      <div>
+        <div class="col-label now"><span class="dot"></span>今天</div>
+        <div class="panel ghost">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip ok">对局中</span><span class="chip mute">当前设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy">你有一局正式对局尚未结束。</div>
+          <div class="p-actions">
+            <div class="btn fill">刷新状态</div>
+            <div class="btn danger">结束该对局</div>
+          </div>
+        </div>
+        <p class="verdict">「刷新状态」是主按钮,而<b>刷新永远刷不回来</b> —— 棋盘随进程没了。用户会一直按它。</p>
+      </div>
+      <div>
+        <div class="col-label next"><span class="dot"></span>建议</div>
+        <div class="panel">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip warn">已中断</span><span class="chip mute">当前设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy">这一局在本机开始,但本机的对局进程已经不在了 —— 接不回来。</div>
+          <div class="p-actions">
+            <div class="btn danger">认输并结束</div>
+            <div class="note cost">按认输计入本局,段位会变</div>
+            <div class="btn line">刷新状态</div>
+          </div>
+        </div>
+        <p class="verdict good">主次对调:能做的事变成主按钮,<b>刷新降为次要</b>。第三个 chip 说清这是「已中断」不是「对局中」。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="case">
+    <div class="case-head">
+      <span class="case-n">03</span>
+      <span class="case-t">局在另一台设备上,那台还在报生存</span>
+      <span class="case-meta">active · other_device · can_force_resign = false</span>
+    </div>
+    <p class="case-why">家里那台还在下,店里这台想开新局。<b>这一格必须挡</b> —— 挡的不是「谁」,是「那台机器还在不在报生存」。但挡要给期限:后端已经在回 <code>takeover_eligible_at</code>。</p>
+    <div class="pair">
+      <div>
+        <div class="col-label now"><span class="dot"></span>今天</div>
+        <div class="panel ghost">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip ok">对局中</span><span class="chip mute">其他设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy bad">该对局正在其他设备上进行，请等待对局结算。</div>
+          <div class="p-actions">
+            <div class="btn fill">等待结算</div>
+            <div class="btn danger">结束该对局</div>
+          </div>
+        </div>
+        <p class="verdict">文案是错的 —— 那局<b>没在结算,正在下</b>。而「结束该对局」此刻按下去只会得到 409,屏上不解释为什么、也不说什么时候能按。</p>
+      </div>
+      <div>
+        <div class="col-label next"><span class="dot"></span>建议</div>
+        <div class="panel">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip ok">对局中</span><span class="chip mute">其他设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy">这一局正在你的另一台设备上进行。回到那台接着下,或者在这里替它认输。</div>
+          <div class="p-actions">
+            <div class="btn off">替它认输</div>
+            <div class="note clock">那台设备还在联机 · 4:12 后可用</div>
+            <div class="btn line">刷新状态</div>
+          </div>
+        </div>
+        <p class="verdict good">禁用 + <b>一个真的倒计时</b>。用户知道该等多久,不会一直戳一个会 409 的按钮。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="case">
+    <div class="case-head">
+      <span class="case-n">04</span>
+      <span class="case-t">另一台设备已经失联超过五分钟</span>
+      <span class="case-meta">active · other_device · can_force_resign = true</span>
+    </div>
+    <p class="case-why">门开了。这一步<b>会记一场负、会动段位</b>,而按下去的人未必是刚才在下棋的人,所以后果必须在按钮旁边,不能只在二次确认弹窗里。</p>
+    <div class="pair">
+      <div>
+        <div class="col-label now"><span class="dot"></span>今天</div>
+        <div class="panel ghost">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip ok">对局中</span><span class="chip mute">其他设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy bad">该对局正在其他设备上进行，请等待对局结算。</div>
+          <div class="p-actions">
+            <div class="btn fill">等待结算</div>
+            <div class="btn danger">结束该对局</div>
+          </div>
+        </div>
+        <p class="verdict">和 03 <b>一模一样</b> —— 门开了没开,屏上完全看不出来。</p>
+      </div>
+      <div>
+        <div class="col-label next"><span class="dot"></span>建议</div>
+        <div class="panel">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip warn">已失联</span><span class="chip mute">其他设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy">那台设备已经 5 分钟没有联机。你可以在这里替它认输,把账号放开。</div>
+          <div class="p-actions">
+            <div class="btn danger">替它认输</div>
+            <div class="note cost">按认输计入本局,段位会变</div>
+            <div class="btn line">刷新状态</div>
+          </div>
+        </div>
+        <p class="verdict good">chip 从「对局中」变「已失联」—— <b>状态本身就是可按的理由</b>,不用另写一句解释。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="case">
+    <div class="case-head">
+      <span class="case-n">05</span>
+      <span class="case-t">下完了,成绩送不到云端</span>
+      <span class="case-meta">pending_settlement · 30 分钟未到</span>
+    </div>
+    <p class="case-why">最常见、也最没出路的一格。被拒的结算<b>天生属于刚下完这局的那台设备</b>,也就是用户此刻坐在前面的这台 —— 而载荷此前只把出路发给「别处那台」。后端已修,现在这一格<b>有</b> <code>abandoned_settlement_eligible_at</code>。</p>
+    <div class="pair">
+      <div>
+        <div class="col-label now"><span class="dot"></span>今天</div>
+        <div class="panel ghost">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip warn">结算中</span><span class="chip mute">当前设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy">本局已结束，成绩正在结算中。</div>
+          <div class="p-actions">
+            <div class="btn fill">刷新状态</div>
+            <div class="missing">没有第二个按钮</div>
+          </div>
+        </div>
+        <p class="verdict">开不了新局,而屏上<b>没有任何一个字段会随时间变</b> —— 等多久看到的都是这一句。</p>
+      </div>
+      <div>
+        <div class="col-label next"><span class="dot"></span>建议</div>
+        <div class="panel">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip warn">成绩未送达</span><span class="chip mute">当前设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy">本局已经下完,成绩还没送到云端。系统会一直重试。</div>
+          <div class="p-actions">
+            <div class="btn off">放弃等待成绩</div>
+            <div class="note clock">27 分钟后可用</div>
+            <div class="btn line">刷新状态</div>
+          </div>
+        </div>
+        <p class="verdict good">「成绩未送达」比「结算中」诚实:<b>结算没在进行,是送不出去</b>。倒计时给出口的期限。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="case">
+    <div class="case-head">
+      <span class="case-n">06</span>
+      <span class="case-t">等了三十分钟,成绩还是没送到</span>
+      <span class="case-meta">pending_settlement · can_release = true</span>
+    </div>
+    <p class="case-why">这是<b>和认输完全不同的一笔买卖</b>:认输记一场负、动段位;放弃等待<b>什么都不记</b>,只是不再等一个可能永远不来的结果。两个动作会出现在同一块屏上,所以必须一眼分得开。</p>
+    <div class="pair">
+      <div>
+        <div class="col-label now"><span class="dot"></span>今天</div>
+        <div class="panel ghost">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip warn">结算中</span><span class="chip mute">当前设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy">本局已结束，成绩正在结算中。</div>
+          <div class="p-actions">
+            <div class="btn fill">刷新状态</div>
+            <div class="missing">没有第二个按钮</div>
+          </div>
+        </div>
+        <p class="verdict">和 05 <b>一模一样</b>。出路在 API 上一直是通的,是这块屏把它藏起来了。</p>
+      </div>
+      <div>
+        <div class="col-label next"><span class="dot"></span>建议</div>
+        <div class="panel">
+          <div class="p-kicker">未完成对局</div>
+          <div class="p-row"><div class="stone"></div><div>
+            <div class="p-sub">智星棋手</div><div class="p-rank">业余 3 段</div>
+            <div class="chips"><span class="chip warn">成绩未送达</span><span class="chip mute">当前设备</span></div>
+          </div></div>
+          <div class="p-div"></div>
+          <div class="p-copy">已经等了 30 分钟。你可以不再等这个成绩,先开新局。</div>
+          <div class="p-actions">
+            <div class="btn caution">放弃等待成绩</div>
+            <div class="note cost">本局作废,不计入升降级,段位不变</div>
+            <div class="btn line">刷新状态</div>
+          </div>
+        </div>
+        <p class="verdict good">配色分家:认输用<b>红</b>(会扣分),放弃等待用<b>琥珀</b>(不扣分)。后果各写一句。</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>要你拍的四件事</h2>
+  <div class="asks">
+    <div class="ask">
+      <h3>① 01 这一格,「认输并结束」留不留?</h3>
+      <p>局好好地在下,用户能接着下。留着它是给「不想下了、想换个对手」一条近路;去掉它则少一个误触扣分的机会 —— 局内本来就能认输。</p>
+      <div class="opts"><span class="opt lean">留,但写清后果(图上这样)</span><span class="opt">去掉,只留「继续对局」</span></div>
+    </div>
+    <div class="ask">
+      <h3>② 两个破坏性动作的措辞</h3>
+      <p>「替它认输」会记一场负,「放弃等待成绩」什么都不记。图上用<b>动词 + 颜色 + 后果行</b>三重区分。要不要再加二次确认弹窗(今天认输那条已经有)?</p>
+      <div class="opts"><span class="opt lean">两个都要确认弹窗</span><span class="opt">只有认输要</span><span class="opt">都不要,靠后果行</span></div>
+    </div>
+    <div class="ask">
+      <h3>③ 倒计时是真走秒,还是只写一句静态的?</h3>
+      <p>真走秒要在前端起一个定时器,到点自动把按钮变可用;静态一句(「约 27 分钟后可用」)靠用户自己刷新。真走秒体验好,但多一处会漂的状态。</p>
+      <div class="opts"><span class="opt lean">真走秒,到点自动启用</span><span class="opt">静态一句,靠刷新</span></div>
+    </div>
+    <div class="ask">
+      <h3>④ 放弃成功之后,屏上出现什么?<span class="xtrack">跨棋种</span></h3>
+      <p>后端回 <code>released</code>,什么都没记,所以<b>没有成绩可展示</b>。今天代码接的是「直接回开局卡」(零新增像素)。</p>
+      <p style="margin-top:10px">
+        但五子棋那边的<b>结算卡已经过了你的四图关卡</b>,而且它天然带着「什么都没记」这一态
+        (设备故障未计入 / 本局不计入)。它的看法是:同一张卡、按后果给文案,比两张卡好 ——
+        <b>用户的心智是「这局结束了,结果是什么」,而「有没有记账」是那个问题的答案,不是另一个问题。</b>
+        这句说服我了:我原先想分两张卡,是从后端语义(一个写账本一个不写)出发的,那是我的心智不是用户的。
+      </p>
+      <p style="margin-top:10px">所以建议把两家摆在一起看。<b>按钮</b>那一层仍然要分家(按之前得知道会不会掉分),
+        <b>结果卡</b>那一层不分家。</p>
+      <div class="opts"><span class="opt lean">复用五子棋那张卡,加一条「本局作废」文案</span><span class="opt">直接回开局卡,不给结果卡</span><span class="opt">围棋自己一张独立的作废卡</span></div>
+    </div>
+  </div>
+
+  <h2>这六格背后的后端状态</h2>
+  <div class="scroll">
+    <table class="spec">
+      <thead><tr><th>格</th><th>行状态</th><th>载荷里会随时间变的字段</th><th>后端出路</th></tr></thead>
+      <tbody>
+        <tr><td>01</td><td><code>active</code> 可接回</td><td>不需要(接着下)</td><td>局内认输</td></tr>
+        <tr><td>02</td><td><code>active</code> 接不回</td><td><code>can_force_resign</code> 恒真</td><td>原盒认输,立即</td></tr>
+        <tr><td>03</td><td><code>active</code> 别处</td><td><code>takeover_eligible_at</code></td><td>5 分钟后接管</td></tr>
+        <tr><td>04</td><td><code>active</code> 别处已失联</td><td><code>can_force_resign</code> 转真</td><td>接管,记负</td></tr>
+        <tr><td>05</td><td><code>pending_settlement</code></td><td><code>abandoned_settlement_eligible_at</code></td><td>30 分钟后放弃</td></tr>
+        <tr><td>06</td><td><code>pending_settlement</code> 已过期</td><td><code>can_release…</code> 转真</td><td>放弃,不记账</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>

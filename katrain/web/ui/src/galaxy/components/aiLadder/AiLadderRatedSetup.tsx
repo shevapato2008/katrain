@@ -101,13 +101,23 @@ const EXIT_COPY: Record<AiLadderExitKind, {
 };
 
 /** 一扇门:按钮 + 后果行,没到点就禁用并在下面走秒。 */
-const ExitAction = ({ exit, onArm, disabled }: {
+const ExitAction = ({ exit, onArm, disabled, elsewhere }: {
   exit: AiLadderExit;
   onArm: () => void;
   disabled: boolean;
+  /** 这一局在别的设备上 —— 只影响措辞,不影响这扇门开不开。 */
+  elsewhere: boolean;
 }) => {
   const remaining = useCountdown(exit.ready ? null : exit.readyInSeconds);
   const copy = EXIT_COPY[exit.kind];
+  // 自己这局叫「认输」,别人那局叫「替它认输」—— 后者动的是一台你此刻碰不到的机器上的棋,
+  // 措辞得让人知道自己在替谁做决定。同一个按钮在两种归属下说同一句话,会把「我不想下了」
+  // 和「我要中止另一台上的对局」说成一件事。
+  const label = exit.kind === 'resign' && elsewhere ? '替它认输' : copy.label;
+  // 等的时候也要说清**在等什么**:门关着的理由是那台机器还在报生存,不是系统在忙。
+  const waiting = exit.kind === 'resign' && elsewhere
+    ? `那台设备还在联机 · ${formatCountdown(remaining ?? 0)} 后可用`
+    : `${formatCountdown(remaining ?? 0)} 后可用`;
   // 表走完了就当它开了 —— 服务端的到期时刻和它自己那道闸吃的是同一个常量,两侧边界
   // 各有一条测试钉着。若真差了那么一下,用户看到的是一次 409 + 重试,而不是一个
   // 永远停在 0:00 的按钮。
@@ -124,7 +134,7 @@ const ExitAction = ({ exit, onArm, disabled }: {
         disabled={disabled || !armed}
         sx={{ minHeight: 48, fontWeight: 750 }}
       >
-        {copy.label}
+        {label}
       </Button>
       <Typography
         variant="caption"
@@ -136,7 +146,7 @@ const ExitAction = ({ exit, onArm, disabled }: {
           fontVariantNumeric: 'tabular-nums',
         }}
       >
-        {armed ? copy.cost : `${formatCountdown(remaining ?? 0)} 后可用`}
+        {armed ? copy.cost : waiting}
       </Typography>
     </Box>
   );
@@ -154,7 +164,11 @@ const blockingStateChip = (game: AiLadderBlockingGame, resumable: boolean) => {
 };
 
 const blockingCopy = (game: AiLadderBlockingGame, resumable: boolean) => {
-  if (game.state === 'pending_settlement') return '本局已经下完，成绩还没送到云端。系统会一直重试。';
+  if (game.state === 'pending_settlement') {
+    return game.can_release_abandoned_settlement
+      ? '已经等了 30 分钟。你可以不再等这个成绩，先开新局。'
+      : '本局已经下完，成绩还没送到云端。系统会一直重试。';
+  }
   if (game.ownership === 'other_device') {
     return game.can_force_resign
       ? '那台设备已经很久没有联机。你可以在这里替它认输，把账号放开。'
@@ -290,6 +304,20 @@ const AiLadderRatedSetup = ({
     };
     const stateChip = blockingStateChip(blockingGame, hasCurrentSession);
     const stateCopy = blockingCopy(blockingGame, hasCurrentSession);
+    const refreshFirst = hasCurrentSession || exits.length === 0;
+    const refreshButton = (
+      <Button
+        fullWidth
+        size="large"
+        variant={refreshFirst ? 'contained' : 'outlined'}
+        onClick={primaryAction}
+        disabled={lifecyclePending || (hasCurrentSession && !onContinue)}
+        startIcon={lifecyclePending ? <CircularProgress size={18} color="inherit" /> : undefined}
+        sx={{ minHeight: 54, fontSize: 18, fontWeight: 800 }}
+      >
+        {primaryLabel}
+      </Button>
+    );
 
     challengeContent = (
       <>
@@ -317,26 +345,21 @@ const AiLadderRatedSetup = ({
         {lifecycleError && <Alert severity="error" sx={{ mt: 2 }}>{lifecycleError}</Alert>}
 
         <Stack spacing={1.5} sx={{ mt: 'auto', pt: 4 }}>
-          {/* 接不回来的时候「刷新状态」降为次要 —— 它是这一格里唯一没用的动作。 */}
-          <Button
-            fullWidth
-            size="large"
-            variant={hasCurrentSession || exits.length === 0 ? 'contained' : 'outlined'}
-            onClick={primaryAction}
-            disabled={lifecyclePending || (hasCurrentSession && !onContinue)}
-            startIcon={lifecyclePending ? <CircularProgress size={18} color="inherit" /> : undefined}
-            sx={{ minHeight: 54, fontSize: 18, fontWeight: 800 }}
-          >
-            {primaryLabel}
-          </Button>
+          {/* 次序跟着「用户在这一格能做什么」走,不跟着按钮的重要性走:
+              能接着下 → 「继续对局」在最上,出路排它后面;
+              接不回来 → **出路在上、刷新在下**,因为刷新是这一格里唯一没用的动作
+              (棋盘随进程没了,刷多少次都刷不回来)。参考稿六格都是这个次序。 */}
+          {refreshFirst && refreshButton}
           {exits.map((exit) => (
             <ExitAction
               key={exit.kind}
               exit={exit}
               disabled={lifecyclePending || !onEndGame}
+              elsewhere={blockingGame.ownership === 'other_device'}
               onArm={() => setArmedExit({ gameId: blockingGame.game_id, kind: exit.kind })}
             />
           ))}
+          {!refreshFirst && refreshButton}
         </Stack>
       </>
     );

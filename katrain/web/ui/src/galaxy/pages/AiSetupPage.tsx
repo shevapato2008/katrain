@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress } from '@mui/material';
 import { API, type LadderRung } from '../../api';
@@ -8,10 +8,13 @@ import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDebounce } from '../../hooks/useDebounce';
 import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
-import { startAiLadderGame } from '../../features/aiLadder/api';
+import { AiLadderApiError, endAiLadderGame, startAiLadderGame } from '../../features/aiLadder/api';
+import type { AiLadderCountingReason } from '../../features/aiLadder/types';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
 import { canStartAiLadderGame } from '../../features/aiLadder/startGate';
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
+import AiLadderRatedSetup from '../components/aiLadder/AiLadderRatedSetup';
+import ContentPageHeader from '../components/layout/ContentPageHeader';
 
 // Map Slider value to Rank label for UI
 const valueToRank = (val: number) => {
@@ -35,6 +38,40 @@ const AiSetupPage = () => {
     const [aiConstants, setAiConstants] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [startPending, setStartPending] = useState(false);
+    const [lifecyclePending, setLifecyclePending] = useState(false);
+    const [lifecycleError, setLifecycleError] = useState('');
+    const [lifecycleReceipt, setLifecycleReceipt] = useState<{
+        gameId: string;
+        scopeKey: string;
+        receipt: { counted: boolean; reason: AiLadderCountingReason | null };
+    }>();
+    const lifecycleGeneration = useRef(0);
+    const lifecycleScopeKey = `${isRated ? 'rated' : 'free'}:${token ?? ''}:${String(user?.id ?? user?.username ?? '')}`;
+    const lifecycleScopeRef = useRef(lifecycleScopeKey);
+    lifecycleScopeRef.current = lifecycleScopeKey;
+    const blockingGameId = aiLadderStatus?.view_state === 'ready' ? aiLadderStatus.blocking_game?.game_id : undefined;
+    const blockingGameState = aiLadderStatus?.view_state === 'ready' ? aiLadderStatus.blocking_game?.state : undefined;
+    const blockingGameIdRef = useRef(blockingGameId);
+    blockingGameIdRef.current = blockingGameId;
+
+    useEffect(() => {
+        lifecycleGeneration.current += 1;
+        setLifecyclePending(false);
+        setLifecycleError('');
+        setLifecycleReceipt(undefined);
+    }, [isRated, token, user?.id, user?.username]);
+
+    useEffect(() => {
+        lifecycleGeneration.current += 1;
+        setLifecyclePending(false);
+        setLifecycleError('');
+        setLifecycleReceipt((receipt) => {
+            if (!receipt) return undefined;
+            const belongsToCurrentGame = receipt.gameId === blockingGameId;
+            return belongsToCurrentGame || !blockingGameId ? receipt : undefined;
+        });
+    }, [blockingGameId, blockingGameState]);
 
     // Game Settings
     const [boardSize, setBoardSize] = useState(19);
@@ -153,7 +190,8 @@ const AiSetupPage = () => {
     };
 
     const handleStartGame = async () => {
-        setLoading(true);
+        if (isRated) setStartPending(true);
+        else setLoading(true);
         try {
             if (isRated) {
                 const session = await startAiLadderGame({
@@ -163,8 +201,13 @@ const AiSetupPage = () => {
                     byo_length: byoLength,
                     byo_periods: byoPeriods,
                 }, token || undefined);
-                saveAiLadderBefore(session.session_id, session.status, String(user?.id ?? user?.username ?? 'anonymous'));
-                navigate(`/galaxy/play/game/${session.session_id}?mode=rated`);
+                saveAiLadderBefore(
+                    session.session_id,
+                    session.status,
+                    String(user?.id ?? user?.username ?? 'anonymous'),
+                    session.game_id,
+                );
+                navigate(`/galaxy/play/game/${session.session_id}?mode=rated&game_id=${encodeURIComponent(session.game_id)}`);
                 return;
             }
             const session = await API.createSession(token || undefined);
@@ -230,8 +273,46 @@ const AiSetupPage = () => {
             navigate(`/galaxy/play/game/${session.session_id}?mode=${mode}`);
         } catch (err: any) {
             setError(err.message || 'Failed to start game');
-            setLoading(false);
+            if (isRated) setStartPending(false);
+            else setLoading(false);
         }
+    };
+
+    const handleEndGame = async (gameId: string) => {
+        const requestGeneration = ++lifecycleGeneration.current;
+        const requestScopeKey = lifecycleScopeKey;
+        const requestIsCurrent = () => lifecycleGeneration.current === requestGeneration
+            && lifecycleScopeRef.current === requestScopeKey;
+        const targetIsCurrent = () => requestIsCurrent() && blockingGameIdRef.current === gameId;
+        setLifecycleError('');
+        setLifecyclePending(true);
+        try {
+            const lifecycle = await endAiLadderGame(gameId, token || undefined);
+            if (!targetIsCurrent()) return;
+            if (lifecycle.state === 'settled') {
+                setLifecycleReceipt({ gameId, scopeKey: requestScopeKey, receipt: lifecycle.receipt });
+                await retryAiLadderStatus();
+            } else if (lifecycle.state === 'pending_settlement') {
+                await retryAiLadderStatus();
+            }
+        } catch (endError) {
+            if (!targetIsCurrent()) return;
+            if (endError instanceof AiLadderApiError && endError.status === 404) {
+                setLifecycleError('');
+                await retryAiLadderStatus();
+            } else if (endError instanceof AiLadderApiError && (endError.status === 401 || endError.status === 403)) {
+                setLifecycleError('登录已失效，请重新登录后再试');
+            } else {
+                setLifecycleError('结束对局失败，请重试');
+            }
+        } finally {
+            if (requestIsCurrent()) setLifecyclePending(false);
+        }
+    };
+
+    const handleLifecycleRetry = () => {
+        setLifecycleError('');
+        void retryAiLadderStatus();
     };
 
     const handleSettingChange = (key: string, value: any) => {
@@ -290,6 +371,58 @@ const AiSetupPage = () => {
             />
         );
     };
+
+    if (isRated) {
+        return (
+            <Box
+                sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: 'auto',
+                    px: { xs: 2, sm: 3, lg: 4 },
+                    pt: { xs: 2, md: 3 },
+                    pb: { xs: 'calc(80px + env(safe-area-inset-bottom))', sm: 3 },
+                }}
+            >
+                <Box sx={{ width: '100%', maxWidth: 1500, mx: 'auto' }}>
+                    <ContentPageHeader title="升降级对弈" parentLabel="对局" parentTo="/galaxy/play" />
+                    {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+                    <Box sx={{ mt: 2.5 }}>
+                        <AiLadderRatedSetup
+                            status={aiLadderStatus}
+                            color={color}
+                            mainTime={mainTime}
+                            byoLength={byoLength}
+                            byoPeriods={byoPeriods}
+                            startPending={startPending}
+                            lifecyclePending={lifecyclePending}
+                            lifecycleError={lifecycleError}
+                            lifecycleReceipt={lifecycleReceipt
+                                && lifecycleReceipt.scopeKey === lifecycleScopeKey
+                                && (!blockingGameId || blockingGameId === lifecycleReceipt.gameId)
+                                ? lifecycleReceipt.receipt
+                                : undefined}
+                            onColorChange={setColor}
+                            onRetry={handleLifecycleRetry}
+                            onStart={handleStartGame}
+                            onContinue={(sessionId) => {
+                                if (aiLadderStatus.view_state !== 'ready' || !aiLadderStatus.blocking_game) return;
+                                const gameId = aiLadderStatus.blocking_game.game_id;
+                                saveAiLadderBefore(
+                                    sessionId,
+                                    aiLadderStatus,
+                                    String(user?.id ?? user?.username ?? 'anonymous'),
+                                    gameId,
+                                );
+                                navigate(`/galaxy/play/game/${sessionId}?mode=rated&game_id=${encodeURIComponent(gameId)}`);
+                            }}
+                            onEndGame={handleEndGame}
+                        />
+                    </Box>
+                </Box>
+            </Box>
+        );
+    }
 
     if (loading && !aiConstants) return <Box sx={{ p: 4 }}>Loading...</Box>;
 

@@ -1079,7 +1079,7 @@ msgid "lobby:custom_game"
 msgstr "自定义对局"
 
 msgid "dashboard:welcome"
-msgstr "欢迎使用智星盒"
+msgstr "欢迎来到智星盒"
 
 msgid "game_end:forfeit_loss"
 msgstr "你弃权了。"
@@ -1183,6 +1183,9 @@ msgstr "{{name}} 邀请你进行对局。"
 msgid "play:choose_mode"
 msgstr "选择游戏模式"
 
+msgid "play:game_records"
+msgstr "对局记录"
+
 msgid "play:hvh_desc"
 msgstr "挑战好友或在线匹配对手。"
 
@@ -1245,6 +1248,15 @@ msgstr "领先目数"
 
 msgid "Coordinates"
 msgstr "坐标"
+
+msgid "Home"
+msgstr "首页"
+
+msgid "Tutorials"
+msgstr "教程"
+
+msgid "More"
+msgstr "更多"
 
 msgid "Move Numbers"
 msgstr "手数"
@@ -1605,7 +1617,7 @@ msgid "live:show_ai"
 msgstr "显示AI"
 
 msgid "live:clear"
-msgstr "清空"
+msgstr "清除"
 
 msgid "live:ai_recommendations"
 msgstr "AI推荐"
@@ -2713,195 +2725,3 @@ msgstr "阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，�
 
 msgid "ladder:unscored_engine"
 msgstr "这局的对手没能以标定强度落子，所以不算数——段位没有变动，也不占定级赛的局数。"
-
-msgid "ladder:title"
-msgstr "AI升降级对弈"
-
-msgid "ladder:setup_title"
-msgstr "41档升降级AI"
-
-msgid "ladder:placement_opponent_prefix"
-msgstr "定级对手："
-
-msgid "ladder:game_opponent_prefix"
-msgstr "本局对手："
-
-msgid "ladder:loading_status"
-msgstr "正在加载升降级对弈状态…"
-
-msgid "ladder:load_error"
-msgstr "升降级对弈状态加载失败"
-
-msgid "ladder:load_error_not_authoritative"
-msgstr "本机不记升降级成绩，暂时无法开始升降级对弈"
-
-msgid "ladder:load_error_unauthorized"
-msgstr "登录已失效，请重新登录后再试"
-
-msgid "ladder:retry"
-msgstr "重试"
-
-msgid "ladder:provisional_seating"
-msgstr "该档位尚未标定，可以试下，但本局不计入升降级"
-
-msgid "ladder:current_opponent_prefix"
-msgstr "当前对手："
-
-msgid "ladder:current_rank_prefix"
-msgstr "当前段位："
-
-msgid "ladder:available"
-msgstr "可挑战"
-
-msgid "ladder:unavailable_rung"
-msgstr "该档位暂不可挑战"
-
-msgid "ladder:unavailable_cta"
-msgstr "暂不可挑战"
-
-msgid "ladder:continue_placement_cta"
-msgstr "继续定级"
-
-msgid "ladder:start_ranked_cta"
-msgstr "开始升降级对弈"
-
-msgid "ladder:pending_settlement"
-msgstr "本盘成绩结算中"
-
-msgid "ladder:pending_settlement_cta"
-msgstr "成绩结算中"
-
-msgid "ladder:recent_heading"
-msgstr "最近5盘"
-
-msgid "ladder:recent_aria"
-msgstr "最近5盘升降级AI对局结果"
-
-msgid "ladder:recent_display_note"
-msgstr "最近5盘仅供展示，升降段只看累计净胜分"
-
-msgid "ladder:recent_empty"
-msgstr "暂无升降级AI对局记录"
-
-msgid "ladder:net_score_prefix"
-msgstr "累计净胜分："
-
-msgid "ladder:net_score_aria"
-msgstr "累计净胜分，负值朝降段方向，正值朝升段方向"
-
-msgid "ladder:demotion_threshold"
-msgstr "降段 -3"
-
-msgid "ladder:promotion_threshold"
-msgstr "升段 +3"
-
-msgid "ladder:route_local"
-msgstr "本机对弈"
-
-msgid "ladder:route_server"
-msgstr "服务器对弈"
-
-msgid "ladder:cert_provisional"
-msgstr "暂定"
-
-msgid "ladder:cert_certified"
-msgstr "已认证"
-
-msgid "ladder:placement_progress_n"
-msgstr "定级进度 {n}/{total}"
-
-msgid "ladder:placement_progress_aria"
-msgstr "定级进度：已完成{n}盘，共{total}盘"
-
-msgid "ladder:net_score_positive"
-msgstr "当前累计净胜分+{n}，正值朝升段方向，达到+3升段"
-
-msgid "ladder:net_score_negative"
-msgstr "当前累计净胜分{n}，负值朝降段方向，达到-3降段"
-
-msgid "ladder:net_score_zero"
-msgstr "当前累计净胜分0，达到+3升段，达到-3降段"
-
-msgid "ladder:outcome_label"
-msgstr "第{n}盘：{result}"
-
-msgid "ladder:settled_generic"
-msgstr "升降级结算已完成，当前状态已更新"
-
-msgid "ladder:settled_placement_done"
-msgstr "定级完成：{rank}"
-
-msgid "ladder:settled_placement_progress"
-msgstr "定级中 {n}/{total}"
-
-msgid "ladder:settled_promoted"
-msgstr "升级：{rank}"
-
-msgid "ladder:settled_demoted"
-msgstr "降级：{rank}"
-
-msgid "ladder:settled_no_change"
-msgstr "段位未变化，累计净胜分：{score}"
-
-msgid "ladder:settled_pending"
-msgstr "升降级结算仍在处理中"
-
-msgid "ladder:settled_unavailable"
-msgstr "结算状态暂不可用"
-
-msgid "ok"
-msgstr "确定"
-
-msgid "accept"
-msgstr "接受"
-
-msgid "reject"
-msgstr "拒绝"
-
-msgid "common:cancel"
-msgstr "取消"
-
-msgid "common:retry"
-msgstr "重试"
-
-msgid "Tutorials"
-msgstr "教程"
-
-msgid "Stone Effect"
-msgstr "落子特效"
-
-msgid "3D"
-msgstr "3D"
-
-msgid "research:cancel_analysis_title"
-msgstr "取消分析？"
-
-msgid "research:cancel_analysis_warning"
-msgstr "分析正在进行中，确定要取消并离开吗？"
-
-msgid "research:continue_analysis"
-msgstr "继续分析"
-
-msgid "research:cancel_and_leave"
-msgstr "取消并离开"
-
-msgid "tsumego:loadError"
-msgstr "死活题库加载失败，请稍后重试。"
-
-msgid "tsumego:noData"
-msgstr "暂无死活题。"
-
-msgid "chat:title"
-msgstr "聊天"
-
-msgid "chat:placeholder"
-msgstr "输入消息……"
-
-msgid "audio:play"
-msgstr "播放"
-
-msgid "audio:pause"
-msgstr "暂停"
-
-msgid "audio:unavailable"
-msgstr "音频不可用"

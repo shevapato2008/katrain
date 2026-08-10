@@ -13,7 +13,12 @@ import { API } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 import { translateResult } from '../../utils/resultTranslation';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
-import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
+import { getAiLadderGameStatus } from '../../features/aiLadder/api';
+import type { AiLadderGameLifecycle } from '../../features/aiLadder/types';
+import { peekAiLadderBefore, useAiLadderSettlement } from '../../features/aiLadder/settlement';
+import BoardPageShell from '../components/board/BoardPageShell';
+import ModulePlate from '../components/layout/ModulePlate';
+import AiLadderSettlementPanel from '../components/aiLadder/AiLadderSettlementPanel';
 
 // Dynamically imported Board3D — loaded on first 3D toggle, then stays mounted
 type Board3DComponent = React.ComponentType<BoardProps>;
@@ -29,6 +34,15 @@ const GamePage = () => {
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
     const mode = searchParams.get('mode') || 'free';
     const routeIsRated = mode === 'rated';
+    const identity = String(user?.id ?? user?.username ?? 'anonymous');
+    const rankedGameId = searchParams.get('game_id')
+        || (sessionId ? peekAiLadderBefore(sessionId, identity)?.gameId : undefined);
+    const [remoteLifecycle, setRemoteLifecycle] = useState<AiLadderGameLifecycle | null>(null);
+    const [lifecycleError, setLifecycleError] = useState(false);
+    const [lifecycleRetry, setLifecycleRetry] = useState(0);
+    const lifecycleRef = useRef<AiLadderGameLifecycle | null>(null);
+    const lifecycleRequestRef = useRef<{ gameId: string; promise: Promise<AiLadderGameLifecycle> } | null>(null);
+    const lifecycleGenerationRef = useRef(0);
 
     // Dynamic Board3D import — loaded once, then cached
     const [Board3D, setBoard3D] = useState<Board3DComponent | null>(null);
@@ -45,7 +59,80 @@ const GamePage = () => {
         handleAction
     } = useGameSession({ token: token || undefined });
     const isRated = routeIsRated || isRankedGameType(gameState?.game_type);
-    const settlementFeedback = useAiLadderSettlement(sessionId, gameState?.game_type, gameState?.end_result, token || undefined, String(user?.id ?? user?.username ?? 'anonymous'));
+    const settlementFeedback = useAiLadderSettlement(sessionId, gameState?.game_type, gameState?.end_result, token || undefined, identity);
+
+    useEffect(() => {
+        lifecycleGenerationRef.current += 1;
+        lifecycleRef.current = null;
+        lifecycleRequestRef.current = null;
+        setRemoteLifecycle(null);
+        setLifecycleError(false);
+    }, [rankedGameId]);
+
+    const applyLifecycle = useCallback((incoming: AiLadderGameLifecycle) => {
+        if (!rankedGameId || incoming.game_id !== rankedGameId) return lifecycleRef.current ?? incoming;
+        const rank = (value: AiLadderGameLifecycle) => value.state === 'active' ? 0 : value.state === 'pending_settlement' ? 1 : 2;
+        const current = lifecycleRef.current;
+        const applied = current && current.game_id === incoming.game_id && rank(current) > rank(incoming)
+            ? current
+            : incoming;
+        lifecycleRef.current = applied;
+        setRemoteLifecycle(applied.state === 'active' ? null : applied);
+        return applied;
+    }, [rankedGameId]);
+
+    const requestLifecycle = useCallback((signal?: AbortSignal) => {
+        if (!rankedGameId) return Promise.reject(new Error('Ranked game id is unavailable'));
+        const existing = lifecycleRequestRef.current;
+        if (existing?.gameId === rankedGameId) return existing.promise;
+        const generation = lifecycleGenerationRef.current;
+        let promise: Promise<AiLadderGameLifecycle>;
+        promise = getAiLadderGameStatus(rankedGameId, token || undefined, signal).then((incoming) => {
+            if (generation !== lifecycleGenerationRef.current) return lifecycleRef.current ?? incoming;
+            return applyLifecycle(incoming);
+        }).finally(() => {
+            if (lifecycleRequestRef.current?.promise === promise) lifecycleRequestRef.current = null;
+        });
+        lifecycleRequestRef.current = { gameId: rankedGameId, promise };
+        return promise;
+    }, [applyLifecycle, rankedGameId, token]);
+
+    useEffect(() => {
+        if (!routeIsRated || !rankedGameId || gameState?.end_result) return;
+        const controller = new AbortController();
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const poll = async () => {
+            try {
+                const lifecycle = await requestLifecycle(controller.signal);
+                if (controller.signal.aborted) return;
+                setLifecycleError(false);
+                if (lifecycle.state !== 'settled') timer = setTimeout(() => { void poll(); }, 5000);
+            } catch {
+                if (!controller.signal.aborted) {
+                    setLifecycleError(true);
+                    timer = setTimeout(() => { void poll(); }, 5000);
+                }
+            }
+        };
+        void poll();
+        return () => {
+            controller.abort();
+            if (timer) clearTimeout(timer);
+        };
+    }, [gameState?.end_result, lifecycleRetry, rankedGameId, requestLifecycle, routeIsRated]);
+
+    const checkRankedStillActive = useCallback(async () => {
+        if (!isRated || !rankedGameId) return !isRated;
+        if (lifecycleRef.current && lifecycleRef.current.state !== 'active') return false;
+        try {
+            const lifecycle = await requestLifecycle();
+            setLifecycleError(false);
+            if (lifecycle.state === 'active') return true;
+        } catch {
+            setLifecycleError(true);
+        }
+        return false;
+    }, [isRated, rankedGameId, requestLifecycle]);
 
     // Analysis Toggles State
     const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>(() => ({
@@ -154,7 +241,7 @@ const GamePage = () => {
 
     // Register/unregister active game for sidebar navigation protection
     useEffect(() => {
-        if (gameState && !gameState.end_result) {
+        if (gameState && !gameState.end_result && !remoteLifecycle) {
             registerActiveGame(async () => {
                 await handleAction('resign');
             });
@@ -162,7 +249,7 @@ const GamePage = () => {
             unregisterActiveGame();
         }
         return () => unregisterActiveGame();
-    }, [gameState?.end_result, registerActiveGame, unregisterActiveGame, handleAction]);
+    }, [gameState?.end_result, remoteLifecycle, registerActiveGame, unregisterActiveGame, handleAction]);
 
     const handleToggleChange = (setting: string) => {
         if (setting === 'view3d') {
@@ -198,6 +285,13 @@ const GamePage = () => {
     };
 
     const handleActionWrapper = (action: string) => {
+        if (remoteLifecycle) return;
+        if (isRated && action === 'pass') {
+            void (async () => {
+                if (await checkRankedStillActive()) await handleAction(action);
+            })();
+            return;
+        }
         if (action === 'resign') {
             if (!gameState?.end_result) {
                 setShowResignConfirm(true);
@@ -214,6 +308,7 @@ const GamePage = () => {
     const confirmCount = async () => {
         setShowCountConfirm(false);
         if (!sessionId) return;
+        if (isRated && !(await checkRankedStillActive())) return;
         try {
             const response = await API.requestCount(sessionId, token || undefined);
             if (response.result) {
@@ -230,6 +325,10 @@ const GamePage = () => {
 
     const confirmResign = async () => {
         try {
+            if (isRated && !(await checkRankedStillActive())) {
+                setShowResignConfirm(false);
+                return;
+            }
             await handleAction('resign');
             setShowResignConfirm(false);
         } catch (error) {
@@ -247,6 +346,10 @@ const GamePage = () => {
 
     const handleConfirmLeave = async () => {
         try {
+            if (isRated && !(await checkRankedStillActive())) {
+                setShowLeaveConfirm(false);
+                return;
+            }
             await handleAction('resign');
             setShowLeaveConfirm(false);
             navigate(gameState?.game_type === 'ai_ladder_ranked' ? '/galaxy/play/ai?mode=rated' : '/galaxy/play/ai');
@@ -263,10 +366,79 @@ const GamePage = () => {
     if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert></Box>;
     if (!gameState) return <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
 
+    const handleRankedMove = async (x: number, y: number) => {
+        if (remoteLifecycle || !(await checkRankedStillActive())) return;
+        onMove(x, y);
+    };
+    const remoteFeedback = remoteLifecycle?.state === 'pending_settlement'
+        ? { kind: 'pending' as const, message: '本局已在其他设备结束，正在结算' }
+        : remoteLifecycle?.state === 'settled'
+            ? {
+                kind: remoteLifecycle.receipt.counted ? 'authoritative_complete' as const : 'not_counted' as const,
+                message: remoteLifecycle.receipt.counted
+                    ? '本局已在其他设备结束，结算已完成'
+                    : '本局已在其他设备结束，结算已完成（本局不计入升降级）',
+            }
+            : null;
+
+    const board = (
+        <Box
+            data-testid="ranked-board-interaction"
+            aria-disabled={Boolean(remoteLifecycle)}
+            sx={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', minWidth: 0, minHeight: 0, pointerEvents: remoteLifecycle ? 'none' : 'auto' }}
+        >
+            <div style={{
+                display: (analysisToggles.view3d && Board3D) ? 'none' : 'flex',
+                width: '100%', height: '100%',
+                justifyContent: 'center', alignItems: 'center'
+            }}>
+                <Board
+                    gameState={gameState}
+                    onMove={isRated ? handleRankedMove : onMove}
+                    analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                    playerColor={humanColor}
+                />
+            </div>
+            {analysisToggles.view3d && Board3D && (
+                <Board3D
+                    gameState={gameState}
+                    onMove={isRated ? handleRankedMove : onMove}
+                    analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                    playerColor={humanColor}
+                />
+            )}
+            {analysisToggles.view3d && !Board3D && <CircularProgress />}
+        </Box>
+    );
+
+    const controlsPanel = (embedded = false) => (
+        <RightSidebarPanel
+            gameState={gameState}
+            analysisToggles={analysisToggles}
+            onToggleChange={handleToggleChange}
+            onNavigate={onNavigate}
+            onAction={handleActionWrapper}
+            isRated={isRated}
+            onTimeout={handleTimeout}
+            onPlaySound={handlePlaySound}
+            isAnalysisPending={analysisToggles.hints && !gameState.analysis?.moves?.length}
+            embedded={embedded}
+        />
+    );
+    const controls = (embedded = false) => isRated ? (
+        <Box
+            component="fieldset"
+            disabled={Boolean(remoteLifecycle)}
+            aria-disabled={Boolean(remoteLifecycle)}
+            sx={{ border: 0, m: 0, p: 0, minWidth: 0, width: '100%', height: '100%' }}
+        >
+            {controlsPanel(embedded)}
+        </Box>
+    ) : controlsPanel(embedded);
+
     return (
-        <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', position: 'relative' }}>
+        <Box sx={{ display: 'flex', height: '100%', minHeight: 0, overflow: 'hidden', position: 'relative' }}>
             <Box sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 100, minWidth: 320 }}>
-                <AiLadderSettlementAlert feedback={settlementFeedback} />
                 {/* The ladder AI refused to move (the engine cannot serve the seated rung at
                     its calibrated strength). No move is coming and the clock keeps running,
                     so say so — an empty board with a ticking opponent clock reads as
@@ -277,6 +449,11 @@ const GamePage = () => {
                     </Alert>
                 )}
                 {resignError && <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>}
+                {lifecycleError && !remoteLifecycle && (
+                    <Alert severity="warning" action={<Button color="inherit" size="small" onClick={() => setLifecycleRetry((value) => value + 1)}>重试</Button>}>
+                        暂时无法确认本局状态，请重试
+                    </Alert>
+                )}
             </Box>
             {/* Leave Confirmation Dialog */}
             <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)} maxWidth="xs" fullWidth>
@@ -334,6 +511,31 @@ const GamePage = () => {
                 </DialogActions>
             </Dialog>
 
+            {isRated ? (
+                <BoardPageShell
+                    board={board}
+                    modulePlate={(
+                        <ModulePlate
+                            title={t('rated_play', '升降级对弈')}
+                            backLabel={t('rated_play_short', '升降级')}
+                            backTo="/galaxy/play/ai?mode=rated"
+                        />
+                    )}
+                    railBody={(
+                        <>
+                            {(gameState.end_result || remoteFeedback) && (
+                                <AiLadderSettlementPanel
+                                    feedback={remoteFeedback ?? settlementFeedback ?? { kind: 'pending', message: '正在读取服务器结算结果' }}
+                                    onPlayAgain={() => navigate('/galaxy/play/ai?mode=rated')}
+                                    onReturn={() => navigate('/galaxy/play')}
+                                />
+                            )}
+                            {controls(true)}
+                        </>
+                    )}
+                    actions={null}
+                />
+            ) : (<>
             {/* Main Area: Board only */}
             <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
                 {/* Header */}
@@ -379,17 +581,8 @@ const GamePage = () => {
             </Box>
 
             {/* Right Sidebar with Controls */}
-            <RightSidebarPanel
-                gameState={gameState}
-                analysisToggles={analysisToggles}
-                onToggleChange={handleToggleChange}
-                onNavigate={onNavigate}
-                onAction={handleActionWrapper}
-                isRated={isRated}
-                onTimeout={handleTimeout}
-                onPlaySound={handlePlaySound}
-                isAnalysisPending={analysisToggles.hints && !gameState.analysis?.moves?.length}
-            />
+            {controls()}
+            </>)}
         </Box>
     );
 };

@@ -73,6 +73,21 @@ def test_the_same_game_cannot_be_queued_twice_under_two_names(factory):
     assert rows[0].idempotency_key == "ladder-settlement:same-game"
 
 
+def test_enqueue_reports_both_insert_and_idempotent_duplicate_as_durable(factory):
+    common = dict(
+        operation="settle_ai_ladder_ranked",
+        endpoint="/api/v1/ai-ladder/settlements",
+        method="POST",
+        payload={"game_id": "durable"},
+        user_id="1",
+        idempotency_key="ladder-settlement:durable",
+    )
+
+    assert enqueue_sync_item(factory, **common) is True
+    assert enqueue_sync_item(factory, **common) is True
+    assert len(_rows(factory)) == 1
+
+
 @pytest.mark.asyncio
 async def test_a_rank_event_waits_for_its_own_owners_cloud_session(factory):
     """A board is shared. Posting under whoever logged in last moves the wrong rank."""
@@ -96,6 +111,17 @@ async def test_an_unbound_cloud_session_is_not_good_enough_to_post_a_rank_event(
 
     assert await worker.run_sync() == 0
     assert _rows(factory)[0].status == "pending"
+
+
+@pytest.mark.asyncio
+async def test_ranked_settlement_409_is_a_permanent_failure_not_a_duplicate_success(factory):
+    _enqueue(factory, user_id="1", game_id="conflict")
+    worker = SyncWorker(factory, _client(bound_user_id="1", status_code=409))
+
+    assert await worker.run_sync() == 0
+    row = _rows(factory)[0]
+    assert row.status == "failed"
+    assert "409" in row.last_error
 
 
 @pytest.mark.asyncio
@@ -251,6 +277,46 @@ async def test_the_cloud_profile_in_the_reply_replaces_the_local_one(factory):
         profile = db.get(models_db.AiLadderProfile, 1)
         assert (profile.placement_lo, profile.placement_completed) == (17, 3)
         assert profile.version == 1
+
+
+@pytest.mark.asyncio
+async def test_a_200_terminal_replay_still_adopts_the_cloud_profile(factory):
+    with factory() as db:
+        db.add(models_db.User(id=1, username="fan", hashed_password="x", rank="5d"))
+        db.add(
+            models_db.AiLadderProfile(
+                user_id=1, ai_ladder_rung=20, placement_lo=1, placement_hi=41,
+                placement_completed=5, net_score=2
+            )
+        )
+        db.commit()
+    _enqueue(factory, user_id="1", game_id="remote-end-won")
+    repo = AiLadderRankedRepository(factory)
+    client = _client(
+        bound_user_id="1",
+        body={
+            "game_id": "remote-end-won",
+            "counted": True,
+            "replayed": True,
+            "lifecycle": {
+                "state": "settled",
+                "game_id": "remote-end-won",
+                "receipt": {"counted": True, "reason": None},
+            },
+            "profile": {
+                "ai_ladder_rung": 19,
+                "placement_lo": 1,
+                "placement_hi": 41,
+                "placement_completed": 5,
+                "net_score": 0,
+            },
+        },
+    )
+
+    assert await SyncWorker(factory, client, ai_ladder_repo=repo).run_sync() == 1
+    with factory() as db:
+        profile = db.get(models_db.AiLadderProfile, 1)
+        assert (profile.ai_ladder_rung, profile.net_score, profile.version) == (19, 0, 1)
 
 
 @pytest.mark.asyncio

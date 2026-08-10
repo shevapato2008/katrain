@@ -49,11 +49,13 @@ const renderPage = (mode = 'free') =>
 
 describe('AiSetupPage', () => {
   beforeEach(() => {
+    sessionStorage.clear();
     mockNavigate.mockReset();
     writeActiveSession.mockReset();
     startRanked.mockClear();
     createSession.mockClear();
     gameSetup.mockClear();
+    startRanked.mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1', status: rankedState.current });
   });
 
   it('renders the board-preview console header (盘面预览)', () => {
@@ -90,6 +92,9 @@ describe('AiSetupPage', () => {
       expect(startRanked.mock.calls[0][0]).not.toHaveProperty('board_size');
       expect(createSession).not.toHaveBeenCalled();
       expect(gameSetup).not.toHaveBeenCalled();
+      expect(JSON.parse(sessionStorage.getItem('ai-ladder-before:ranked-s1')!)).toEqual(expect.objectContaining({
+        game_id: 'g1',
+      }));
     });
   });
 

@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Typography, CardActionArea } from '@mui/material';
+import { Box, Button, Card, CardContent, Typography, CardActionArea } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
@@ -37,10 +37,22 @@ const PlayMenu = () => {
 
     return (
         <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
-            <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>{i18n.t('btn:Play', 'Play')}</Typography>
-            <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 6 }}>
-                {i18n.t('play:choose_mode', 'Choose your game mode')}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 6 }}>
+                <Box>
+                    <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>{i18n.t('btn:Play', 'Play')}</Typography>
+                    <Typography variant="subtitle1" color="text.secondary">
+                        {i18n.t('play:choose_mode', 'Choose your game mode')}
+                    </Typography>
+                </Box>
+                <Button
+                    variant="outlined"
+                    color="inherit"
+                    onClick={() => navigate('/galaxy/report')}
+                    sx={{ minHeight: 40, borderColor: 'divider', color: 'text.secondary', px: 2, flex: 'none' }}
+                >
+                    {i18n.t('play:game_records', 'Game Records')}
+                </Button>
+            </Box>
 
             <Box sx={{ 
                 display: 'grid', 

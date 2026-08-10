@@ -12,6 +12,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Index,
     JSON,
+    text,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -131,6 +132,9 @@ class AiLadderPendingGame(Base):
     game_id = Column(String(32), primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     session_id = Column(String(64), nullable=False, unique=True)
+    # Opaque cloud reservation credential retained only for internal recovery.
+    # Nullable keeps pre-reservation local rows readable after migration.
+    reservation_key = Column(String(128), nullable=True)
     user_color = Column(String(1), nullable=False)
     game_type = Column(String(32), nullable=False)
     opponent_rung = Column(Integer, nullable=False)
@@ -159,6 +163,47 @@ class AiLadderPendingGame(Base):
     )
 
 
+class AiLadderActiveGame(Base):
+    """Cloud-owned reservation for the account's one in-flight ranked AI game."""
+
+    __tablename__ = "ai_ladder_active_games"
+
+    game_id = Column(String(32), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    origin_device_id = Column(String(64), nullable=False)
+    origin_session_id = Column(String(64), nullable=True)
+    state = Column(String(24), nullable=False, default="reserved")
+    version = Column(Integer, nullable=False, default=0)
+    reservation_key_hash = Column(String(64), nullable=False)
+    user_color = Column(String(1), nullable=False)
+    game_type = Column(String(32), nullable=False, default="ai_ladder_ranked")
+    opponent_rung = Column(Integer, nullable=False)
+    opponent_rank_name = Column(String(64), nullable=False)
+    opponent_config_snapshot = Column(JSON, nullable=False)
+    opponent_certification_status = Column(String(16), nullable=False)
+    opponent_availability = Column(String(16), nullable=False)
+    opponent_route = Column(String(16), nullable=False)
+    ai_subtype = Column(String(32), nullable=False)
+    execution_identity = Column(String(64), nullable=False)
+    rules_snapshot = Column(JSON, nullable=False)
+    time_control_snapshot = Column(JSON, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", name="uq_ai_ladder_active_user"),
+        CheckConstraint(
+            "state IN ('reserved', 'active', 'pending_settlement')",
+            name="ck_ai_ladder_active_state",
+        ),
+        CheckConstraint("version >= 0", name="ck_ai_ladder_active_version"),
+        CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_active_user_color"),
+        CheckConstraint("game_type = 'ai_ladder_ranked'", name="ck_ai_ladder_active_game_type"),
+        CheckConstraint("opponent_rung BETWEEN 1 AND 41", name="ck_ai_ladder_active_rung"),
+        CheckConstraint("opponent_route IN ('local', 'server')", name="ck_ai_ladder_active_route"),
+    )
+
+
 class AiLadderGameLedger(Base):
     """Append-only, globally idempotent decision for every settlement attempt."""
 
@@ -178,6 +223,10 @@ class AiLadderGameLedger(Base):
     opponent_route = Column(String(16), nullable=True)
     counted = Column(Boolean, nullable=False)
     reason = Column(String(32), nullable=True)
+    origin_device_id = Column(String(64), nullable=True)
+    deciding_device_id = Column(String(64), nullable=True)
+    terminal_source = Column(String(32), nullable=True)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
     settled_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     # account_subject frozen at settlement: the 32-hex users.uuid as it was WHEN THIS GAME SETTLED.
     # Deliberately NOT a ForeignKey and never joined on -- user_id above is the runtime operational
@@ -208,6 +257,172 @@ class AiLadderGameLedger(Base):
             "AND opponent_route IS NOT NULL AND result IN ('win', 'loss') "
             "AND game_type = 'ai_ladder_ranked')",
             name="ck_ai_ladder_ledger_decision",
+        ),
+        CheckConstraint(
+            "(terminal_source IS NULL AND origin_device_id IS NULL "
+            "AND deciding_device_id IS NULL AND decided_at IS NULL) OR "
+            "(terminal_source IS NOT NULL "
+            "AND terminal_source IN ('played_result', 'remote_resign', 'recovery') "
+            "AND origin_device_id IS NOT NULL AND deciding_device_id IS NOT NULL AND decided_at IS NOT NULL)",
+            name="ck_ai_ladder_ledger_terminal_audit",
+        ),
+    )
+
+
+class XiangqiRatingProfile(Base):
+    """Cloud-authoritative Xiangqi rating keyed only by stable account UUID."""
+
+    __tablename__ = "xiangqi_rating_profiles"
+
+    user_uuid = Column(String(36), ForeignKey("users.uuid"), primary_key=True)
+    rating = Column(Float, nullable=False, default=1000.0)
+    rated_games = Column(Integer, nullable=False, default=0)
+    profile_version = Column(Integer, nullable=False, default=0)
+    active_algo_version = Column(Integer, nullable=False)
+    settlement_seq = Column(Integer, nullable=False, default=0)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("rated_games >= 0", name="ck_xiangqi_rating_profiles_rated_games"),
+        CheckConstraint("profile_version >= 0", name="ck_xiangqi_rating_profiles_profile_version"),
+        CheckConstraint("active_algo_version >= 1", name="ck_xiangqi_rating_profiles_algo_version"),
+        CheckConstraint("settlement_seq >= 0", name="ck_xiangqi_rating_profiles_settlement_seq"),
+    )
+
+
+class XiangqiRankedReservation(Base):
+    """One online barrier holding the exact promise shown before a ranked game."""
+
+    __tablename__ = "xiangqi_ranked_reservations"
+
+    reservation_id = Column(String(36), primary_key=True)
+    game_id = Column(String(36), nullable=False, unique=True)
+    user_uuid = Column(String(36), ForeignKey("xiangqi_rating_profiles.user_uuid"), nullable=False, index=True)
+    device_id = Column(String(128), nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="reserved")
+    expected_profile_version = Column(Integer, nullable=False)
+    projection_fingerprint = Column(String(64), nullable=False)
+    frozen_snapshot = Column(JSON, nullable=False)
+    last_heartbeat_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    materialized_at = Column(DateTime(timezone=True), nullable=True)
+    terminal_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('reserved', 'settled', 'resigned', 'system_aborted')",
+            name="ck_xiangqi_ranked_reservations_status",
+        ),
+        CheckConstraint(
+            "(status = 'reserved' AND terminal_at IS NULL) OR "
+            "(status IN ('settled', 'resigned', 'system_aborted') AND terminal_at IS NOT NULL)",
+            name="ck_xiangqi_ranked_reservations_terminal_at",
+        ),
+        CheckConstraint(
+            "expected_profile_version >= 0",
+            name="ck_xiangqi_ranked_reservations_expected_version",
+        ),
+        Index("ix_xiangqi_ranked_reservation_user_status", "user_uuid", "status"),
+        Index("ix_xiangqi_ranked_reservation_device_local", "device_id", "created_at"),
+        Index(
+            "uq_xiangqi_ranked_one_reserved_per_user",
+            "user_uuid",
+            unique=True,
+            sqlite_where=text("status = 'reserved'"),
+            postgresql_where=text("status = 'reserved'"),
+        ),
+    )
+
+
+class XiangqiRankedLedger(Base):
+    """Immutable terminal fact and receipt; corrections are appended as new facts."""
+
+    __tablename__ = "xiangqi_ranked_ledger"
+
+    game_id = Column(String(36), ForeignKey("xiangqi_ranked_reservations.game_id"), primary_key=True)
+    receipt_id = Column(String(36), nullable=False, unique=True)
+    reservation_id = Column(
+        String(36), ForeignKey("xiangqi_ranked_reservations.reservation_id"), nullable=False, unique=True
+    )
+    user_uuid = Column(String(36), ForeignKey("xiangqi_rating_profiles.user_uuid"), nullable=False)
+    device_id = Column(String(128), nullable=False)
+    local_seq = Column(Integer, nullable=False)
+    terminal_status = Column(String(20), nullable=False)
+    payload_hash = Column(String(64), nullable=False)
+    canonical_payload = Column(JSON, nullable=False)
+    frozen_snapshot = Column(JSON, nullable=False)
+    result = Column(String(8), nullable=True)
+    counted = Column(Boolean, nullable=False)
+    reason = Column(String(64), nullable=True)
+    rating_before = Column(Float, nullable=False)
+    rating_after = Column(Float, nullable=True)
+    rating_delta = Column(Integer, nullable=True)
+    tier_before = Column(String(64), nullable=False)
+    tier_after = Column(String(64), nullable=True)
+    profile_version_before = Column(Integer, nullable=False)
+    profile_version_after = Column(Integer, nullable=False)
+    settlement_seq = Column(Integer, nullable=False)
+    received_at = Column(DateTime(timezone=True), nullable=False)
+    settled_at = Column(DateTime(timezone=True), nullable=False)
+    receipt = Column(JSON, nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("local_seq >= 0", name="ck_xiangqi_ranked_ledger_local_seq"),
+        CheckConstraint("profile_version_before >= 0", name="ck_xiangqi_ranked_ledger_version_before"),
+        CheckConstraint("profile_version_after >= 0", name="ck_xiangqi_ranked_ledger_version_after"),
+        CheckConstraint("settlement_seq >= 1", name="ck_xiangqi_ranked_ledger_settlement_seq"),
+        CheckConstraint(
+            "terminal_status IN ('settled', 'resigned', 'system_aborted')",
+            name="ck_xiangqi_ranked_ledger_terminal_status",
+        ),
+        CheckConstraint(
+            "(counted = TRUE AND reason IS NULL AND rating_after IS NOT NULL AND rating_delta IS NOT NULL "
+            "AND tier_after IS NOT NULL AND terminal_status IN ('settled', 'resigned') "
+            "AND result IN ('win', 'draw', 'loss') AND profile_version_after = profile_version_before + 1) OR "
+            "(counted = FALSE AND reason IS NOT NULL AND rating_after IS NULL AND rating_delta IS NULL "
+            "AND tier_after IS NULL AND terminal_status = 'system_aborted' AND result IS NULL "
+            "AND profile_version_after = profile_version_before)",
+            name="ck_xiangqi_ranked_ledger_counting_fact",
+        ),
+        CheckConstraint(
+            "terminal_status != 'resigned' OR result = 'loss'",
+            name="ck_xiangqi_ranked_ledger_resign_loss",
+        ),
+        Index(
+            "uq_xiangqi_ranked_ledger_user_settlement_seq",
+            "user_uuid",
+            "settlement_seq",
+            unique=True,
+        ),
+        Index(
+            "uq_xiangqi_ranked_ledger_device_local_seq",
+            "user_uuid",
+            "device_id",
+            "local_seq",
+            unique=True,
+        ),
+        Index("ix_xiangqi_ranked_ledger_user_settled", "user_uuid", "settled_at"),
+    )
+
+
+class XiangqiRankedCapabilityJti(Base):
+    """Append-only JTI rotation history; at most one capability remains current."""
+
+    __tablename__ = "xiangqi_ranked_capability_jtis"
+
+    jti = Column(String(64), primary_key=True)
+    reservation_id = Column(String(36), ForeignKey("xiangqi_ranked_reservations.reservation_id"), nullable=False)
+    issued_at = Column(DateTime(timezone=True), nullable=False)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (
+        Index("ix_xiangqi_ranked_capability_reservation", "reservation_id"),
+        Index(
+            "uq_xiangqi_ranked_current_capability",
+            "reservation_id",
+            unique=True,
+            sqlite_where=text("revoked_at IS NULL"),
+            postgresql_where=text("revoked_at IS NULL"),
         ),
     )
 
@@ -611,6 +826,7 @@ class UserGame(Base):
     source = Column(String(50), nullable=False)  # play_ai / play_human / import / research
     category = Column(String(50), default="game")  # game / position
     game_type = Column(String(50), nullable=True)  # free / rated / null
+    origin_device_id = Column(String(64), nullable=True)
     sgf_hash = Column(String(64), nullable=True, index=True)
     event = Column(String(255), nullable=True)
     round_name = Column(String(100), nullable=True)

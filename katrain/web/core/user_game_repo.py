@@ -28,8 +28,8 @@ class UserGameRepository:
     ) -> Dict[str, Any]:
         session = self.session_factory()
         try:
-            if game_id and session.get(models_db.AiLadderPendingGame, game_id) is not None:
-                raise ReservedAiLadderGameIdError("game_id is reserved for a pending ranked AI game")
+            if game_id and self._is_ai_ladder_game_id_reserved(session, game_id):
+                raise ReservedAiLadderGameIdError("game_id is reserved for a ranked AI game")
             # Idempotent creation: if client provides an id that already exists, return existing record
             if game_id:
                 existing = session.query(models_db.UserGame).filter(models_db.UserGame.id == game_id).first()
@@ -68,6 +68,7 @@ class UserGameRepository:
                 move_count=kwargs.get("move_count", 0),
                 category=kwargs.get("category", "game"),
                 game_type=kwargs.get("game_type"),
+                origin_device_id=kwargs.get("origin_device_id"),
                 event=kwargs.get("event"),
                 round_name=kwargs.get("round_name"),
                 game_date=kwargs.get("game_date"),
@@ -115,6 +116,7 @@ class UserGameRepository:
                     "white_rank": kwargs.get("white_rank"),
                     "source": "play_ai",
                     "category": kwargs.get("category", "game"),
+                    "origin_device_id": kwargs.get("origin_device_id"),
                 }
                 if any(getattr(existing, field) != value for field, value in immutable_fields.items()):
                     raise ValueError("authoritative ranked AI game is immutable")
@@ -138,6 +140,7 @@ class UserGameRepository:
                 move_count=kwargs.get("move_count", 0),
                 category=kwargs.get("category", "game"),
                 game_type="ai_ladder_ranked",
+                origin_device_id=kwargs.get("origin_device_id"),
                 event=kwargs.get("event"),
                 round_name=kwargs.get("round_name"),
                 game_date=kwargs.get("game_date"),
@@ -169,9 +172,16 @@ class UserGameRepository:
     def is_ai_ladder_game_id_reserved(self, game_id: str) -> bool:
         session = self.session_factory()
         try:
-            return session.get(models_db.AiLadderPendingGame, game_id) is not None
+            return self._is_ai_ladder_game_id_reserved(session, game_id)
         finally:
             session.close()
+
+    @staticmethod
+    def _is_ai_ladder_game_id_reserved(session: Session, game_id: str) -> bool:
+        return (
+            session.get(models_db.AiLadderPendingGame, game_id) is not None
+            or session.get(models_db.AiLadderActiveGame, game_id) is not None
+        )
 
     def get_authoritative_ai_ladder_ranked(self, game_id: str, user_id: int) -> Optional[Dict[str, Any]]:
         """Load a trusted ranked row for recovery, rejecting lookalikes without mutating them."""
@@ -321,6 +331,7 @@ class UserGameRepository:
             "source": game.source,
             "category": game.category,
             "game_type": game.game_type,
+            "origin_device_id": game.origin_device_id,
             "event": game.event,
             "round_name": game.round_name,
             "game_date": game.game_date,

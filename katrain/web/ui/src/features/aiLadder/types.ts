@@ -4,12 +4,30 @@ export type AiLadderAvailability = 'available' | 'unavailable';
 
 export type AiLadderRoute = 'local' | 'server';
 
+export type AiLadderCountingReason =
+  | 'invalid_game_type'
+  | 'engine_unavailable'
+  | 'inconclusive'
+  | 'opponent_not_eligible'
+  | 'opponent_rung_mismatch';
+
+export type AiLadderSettlementReceipt =
+  | { state: 'pending' }
+  | {
+      state: 'settled';
+      game_id: string;
+      counted: boolean;
+      reason: AiLadderCountingReason | null;
+    };
+
 export interface AiLadderCatalogEntry {
   rung: number;
   rank_name: string;
   certification_status: AiLadderCertificationStatus;
   availability: AiLadderAvailability;
   route: AiLadderRoute;
+  counting_eligibility?: 'eligible' | 'ineligible';
+  counting_reason?: AiLadderCountingReason;
 }
 
 export interface AiLadderPlacementInProgress {
@@ -28,6 +46,27 @@ export type AiLadderPlacementState = AiLadderPlacementInProgress | AiLadderPlace
 export type AiLadderRankedOutcome = 'win' | 'loss';
 
 export type AiLadderNetScore = -2 | -1 | 0 | 1 | 2;
+
+export interface AiLadderBlockingGame {
+  game_id: string;
+  state: 'active' | 'pending_settlement';
+  ownership: 'current_device' | 'other_device';
+  session_id?: string;
+  user_color: 'B' | 'W';
+  opponent_rank_name: string;
+}
+
+export type AiLadderGameLifecycle =
+  | { state: 'active'; game_id: string }
+  | { state: 'pending_settlement'; game_id: string }
+  | {
+      state: 'settled';
+      game_id: string;
+      receipt: {
+        counted: boolean;
+        reason: AiLadderCountingReason | null;
+      };
+    };
 
 export interface AiLadderLoadingStatus {
   view_state: 'loading';
@@ -64,6 +103,7 @@ export interface AiLadderReadyStatus {
   recent_ranked_results: AiLadderRankedOutcome[];
   net_score: AiLadderNetScore;
   pending_settlement: boolean;
+  blocking_game?: AiLadderBlockingGame | null;
   // Whether THIS node will seat an uncertified rung (KATRAIN_LADDER_ALLOW_PROVISIONAL).
   // The rung keeps reporting its own real certification_status/availability; this says
   // what the server will do about it. Optional so a node that predates the field reads

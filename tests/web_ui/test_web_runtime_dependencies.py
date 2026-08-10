@@ -11,15 +11,22 @@ uvicorn without the `standard` extra has no WebSocket implementation, so `/ws/{s
 WebSocket and never reconnects), and a human move renders from its own HTTP response --
 so the board shows YOUR stone and the AI's reply never arrives. It looks like a dead
 engine, not a missing dependency.
+
+The xiangqi test below is the mirror image: a package that must stay OPTIONAL, so the
+web API has to import and route cleanly on a machine that does not have it.
 """
 
 import importlib.util
+import os
+import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
 import pytest
 
-PYPROJECT = Path(__file__).parents[2] / "pyproject.toml"
+REPO_ROOT = Path(__file__).parents[2]
+PYPROJECT = REPO_ROOT / "pyproject.toml"
 
 _WEBSOCKET_IMPLEMENTATIONS = ("websockets", "wsproto")
 
@@ -27,6 +34,10 @@ _WEBSOCKET_IMPLEMENTATIONS = ("websockets", "wsproto")
 def _web_extra_requirements() -> list[str]:
     data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
     return data["project"]["optional-dependencies"]["web"]
+
+
+def _distribution_name(requirement: str) -> str:
+    return requirement.split(">=")[0].split("==")[0].split("[")[0].strip()
 
 
 def test_the_web_extra_declares_a_websocket_capable_uvicorn():
@@ -38,13 +49,11 @@ def test_the_web_extra_declares_a_websocket_capable_uvicorn():
     """
     requirements = _web_extra_requirements()
 
-    uvicorn_requirements = [r for r in requirements if r.split(">=")[0].split("==")[0].split("[")[0].strip() == "uvicorn"]
+    uvicorn_requirements = [r for r in requirements if _distribution_name(r) == "uvicorn"]
     assert uvicorn_requirements, f"the web extra no longer declares uvicorn at all: {requirements}"
 
     declares_standard_extra = any("[standard]" in r for r in uvicorn_requirements)
-    declares_implementation = any(
-        r.split(">=")[0].split("==")[0].split("[")[0].strip() in _WEBSOCKET_IMPLEMENTATIONS for r in requirements
-    )
+    declares_implementation = any(_distribution_name(r) in _WEBSOCKET_IMPLEMENTATIONS for r in requirements)
 
     assert declares_standard_extra or declares_implementation, (
         "pyproject's web extra declares bare uvicorn, so `uv sync` installs a server whose "
@@ -71,3 +80,24 @@ def test_a_websocket_implementation_is_importable():
             "that socket. Re-sync the environment after the declaration fix "
             "(`uv sync`), or `pip install -r requirements-web.txt`."
         )
+
+
+def test_web_api_starts_without_optional_xiangqi_runtime_packages():
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(REPO_ROOT)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from katrain.web.api.v1.api import api_router; "
+            "print(any(route.path.startswith('/xiangqi-ranked') for route in api_router.routes))",
+        ],
+        cwd=REPO_ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.rstrip().endswith("False")

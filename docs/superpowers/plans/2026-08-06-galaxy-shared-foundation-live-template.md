@@ -25,7 +25,7 @@
 - Create: `superpowers/tracks/galaxy-ui-redesign/visual/live-template/baseline.md`
 - Create: `superpowers/tracks/galaxy-ui-redesign/visual/live-template/plan-base.txt`
 
-- [ ] **Step 1: Invoke the required worktree workflow**
+- [x] **Step 1: Invoke the required worktree workflow**
 
 Read and follow `@superpowers:using-git-worktrees`. This plan must already be committed in the original worktree. Verify that the exact base contains both approved documents, then create a fresh worktree from that immutable SHA—not from the dirty S0 experiment and not by moving or cleaning the user's current working tree:
 
@@ -38,7 +38,7 @@ git worktree add /Users/fan/Repositories/katrain-galaxy-live-template -b feature
 
 Expected: both `git show` commands succeed; the new worktree is clean and starts at the printed `GALAXY_PLAN_BASE`; `/Users/fan/Repositories/katrain-galaxy-s0` remains untouched; the original worktree retains every uncommitted ladder/calibration change.
 
-- [ ] **Step 2: Record baseline build health before changing source**
+- [x] **Step 2: Record baseline build health before changing source**
 
 Run from `katrain/web/ui` in the new worktree:
 
@@ -51,7 +51,7 @@ npm run build:kiosk-2d
 
 Expected: the existing sidebar test, full TypeScript/Vite build, and kiosk boundary verification pass. Write the exact `GALAXY_PLAN_BASE` plus newline to `visual/live-template/plan-base.txt`. Create `visual/live-template/baseline.md` in every case: record that SHA, commands, PASS results, and chosen match ID; if a pre-existing failure occurs, record its exact output there and do not broaden this slice to fix unrelated tests.
 
-- [ ] **Step 3: Write the capture script before modifying the UI**
+- [x] **Step 3: Write the capture script before modifying the UI**
 
 The script must:
 
@@ -66,7 +66,7 @@ const livePath = () => `/galaxy/live/${matchId}`;
 
 For each viewport it must navigate to the real server, wait for the live canvas, save a full-page screenshot, and write these measurements to `geometry.json`: viewport, canvas rectangle, sidebar rectangle if present, right-rail rectangle if present, horizontal document overflow, and visible text/buttons above the canvas. Use stable `data-testid` selectors where already available and a canvas/landmark fallback only for the untouched baseline.
 
-- [ ] **Step 4: Build and start the real application**
+- [x] **Step 4: Build and start the real application**
 
 Run the frontend build, then start the backend from the repository root:
 
@@ -76,7 +76,7 @@ python katrain/web/server.py --host 127.0.0.1 --port 8901
 
 Expected: `http://127.0.0.1:8901/galaxy/live/yike_184016` displays the real live match. If that recorded match has disappeared, query the real live list and replace the script's single `matchId` value with an existing match; record the chosen ID in `baseline.md`. Do not introduce a production fixture.
 
-- [ ] **Step 5: Capture and inspect all reference viewports**
+- [x] **Step 5: Capture and inspect all reference viewports**
 
 Run from `katrain/web/ui`:
 
@@ -86,7 +86,7 @@ node ../../../superpowers/tracks/galaxy-ui-redesign/capture_live_template.mjs re
 
 Expected: twelve per-viewport `reference.png` files and valid `geometry-reference.json`; the current 1024/900/430 references visibly demonstrate the clipping or stacking problem this slice fixes. Stop the server afterward and restore `~/.katrain/config.json` only if starting the server changed it.
 
-- [ ] **Step 6: Commit only the baseline harness and selected evidence**
+- [x] **Step 6: Commit only the baseline harness and selected evidence**
 
 ```bash
 git add superpowers/tracks/galaxy-ui-redesign/capture_live_template.mjs superpowers/tracks/galaxy-ui-redesign/visual/live-template
@@ -108,7 +108,7 @@ Expected: no generated app bundle, database, local config, or unrelated screensh
 - Create: `katrain/web/ui/src/galaxy/assets/fonts/wenkai-400-*.woff2`
 - Create: `katrain/web/ui/src/galaxy/assets/fonts/wenkai-500-*.woff2`
 
-- [ ] **Step 1: Write failing unit tests for the codepoint policy**
+- [x] **Step 1: Write failing unit tests for the codepoint policy**
 
 Test the pure functions exported by `scripts/build_galaxy_fonts.py`:
 
@@ -132,7 +132,7 @@ def test_manifest_is_deterministic_and_hashes_every_input():
     # Same inputs produce identical JSON and every source has sha256/version/license/url.
 ```
 
-- [ ] **Step 2: Run the font tests and verify failure**
+- [x] **Step 2: Run the font tests and verify failure**
 
 ```bash
 uv run --with fonttools --with brotli pytest tests/web_ui/test_build_galaxy_fonts.py -q
@@ -140,7 +140,7 @@ uv run --with fonttools --with brotli pytest tests/web_ui/test_build_galaxy_font
 
 Expected: FAIL because `scripts.build_galaxy_fonts` does not exist.
 
-- [ ] **Step 3: Implement the minimal generator**
+- [x] **Step 3: Implement the minimal generator**
 
 Adapt the useful frequency-ordering and WOFF2 subset logic from the uncommitted S0 script, but enforce these exact policies:
 
@@ -168,7 +168,7 @@ Additionally:
 - for the exact production output directory, delete only generated names (`wenkai-*.woff2`, `longcang-brand.woff2`, generated CSS/manifest) before regeneration; for any other output path, require that the directory is absent or empty and fail closed otherwise;
 - serialize the manifest command with the canonical token `$OUT` rather than the caller's absolute output path, so identical source inputs generate byte-identical manifests in different fresh directories.
 
-- [ ] **Step 4: Run unit tests and a deterministic two-directory generation check**
+- [x] **Step 4: Run unit tests and a deterministic two-directory generation check**
 
 Use these pinned official inputs and no moving `latest` URL:
 
@@ -197,7 +197,7 @@ diff -rq /private/tmp/galaxy-fonts-a /private/tmp/galaxy-fonts-b
 
 Expected: all three checksum lines report `OK`, tests pass, and `diff` prints nothing. Never commit upstream TTF files.
 
-- [ ] **Step 5: Generate the committed font assets and document licensing**
+- [x] **Step 5: Generate the committed font assets and document licensing**
 
 ```bash
 uv run --with fonttools --with brotli python scripts/build_galaxy_fonts.py --regular /private/tmp/galaxy-font-sources/LXGWWenKai-Regular-v1.522.ttf --medium /private/tmp/galaxy-font-sources/LXGWWenKai-Medium-v1.522.ttf --longcang /private/tmp/galaxy-font-sources/LongCang-Regular-b7b1d76.ttf --out katrain/web/ui/src/galaxy/assets/fonts
@@ -205,7 +205,7 @@ uv run --with fonttools --with brotli python scripts/build_galaxy_fonts.py --reg
 
 `README.md` must identify both upstream sources/releases, state that all three fonts are SIL OFL 1.1, reproduce the exact command and hashes from `sources.json`, and explain that only Galaxy imports this directory. Copy the unmodified OFL 1.1 license text; do not brand-rewrite it.
 
-- [ ] **Step 6: Verify the generated CSS has no prohibited glyphs or mono font**
+- [x] **Step 6: Verify the generated CSS has no prohibited glyphs or mono font**
 
 ```bash
 rg -n "WenKai Mono|wenkai-mono" katrain/web/ui/src/galaxy/assets/fonts && exit 1 || true
@@ -215,7 +215,7 @@ uv run --with fonttools python -c "from fontTools.ttLib import TTFont; p='katrai
 
 Expected: no mono match and no Latin letters/digits in any generated subset. The Long Cang font's cmap is exactly the codepoints of `智星盒`.
 
-- [ ] **Step 7: Commit the generator, tests, fonts, and licensing together**
+- [x] **Step 7: Commit the generator, tests, fonts, and licensing together**
 
 ```bash
 git add tests/web_ui/test_build_galaxy_fonts.py scripts/build_galaxy_fonts.py katrain/web/ui/src/galaxy/assets/fonts
@@ -229,7 +229,7 @@ git commit -m "添加 galaxy 中文字体资源"
 - Create: `katrain/web/ui/src/galaxy/theme.test.tsx`
 - Modify: `katrain/web/ui/src/GalaxyApp.tsx`
 
-- [ ] **Step 1: Write failing tests for locale and typography isolation**
+- [x] **Step 1: Write failing tests for locale and typography isolation**
 
 Assert that:
 
@@ -244,7 +244,7 @@ expect(SYSTEM_UI_FONT).not.toContain('Manrope');
 
 Render `GalaxyApp` with a mocked `useSettings()` and assert `.galaxy-root` exposes `data-language="cn"` and receives the nested `ThemeProvider`. The test must not change the top-level `zenTheme` because that would affect Zen and kiosk.
 
-- [ ] **Step 2: Run the tests and verify failure**
+- [x] **Step 2: Run the tests and verify failure**
 
 ```bash
 cd katrain/web/ui
@@ -253,7 +253,7 @@ npm test -- --run src/galaxy/theme.test.tsx
 
 Expected: FAIL because `createGalaxyTheme` and the Galaxy root do not exist.
 
-- [ ] **Step 3: Implement the Galaxy-only theme and root**
+- [x] **Step 3: Implement the Galaxy-only theme and root**
 
 Define:
 
@@ -275,7 +275,7 @@ In `GalaxyApp`, import `./galaxy/assets/fonts/galaxy-fonts.css`, read `language`
 
 Do not import font CSS from `main.tsx`, shared `theme.ts`, global CSS, AppRouter, or any kiosk file.
 
-- [ ] **Step 4: Run tests and both production builds**
+- [x] **Step 4: Run tests and both production builds**
 
 ```bash
 npm test -- --run src/galaxy/theme.test.tsx
@@ -285,7 +285,7 @@ npm run build:kiosk-2d
 
 Expected: tests/builds pass and the existing kiosk verifier still reports a clean boundary.
 
-- [ ] **Step 5: Prove the kiosk artifact does not contain Galaxy fonts**
+- [x] **Step 5: Prove the kiosk artifact does not contain Galaxy fonts**
 
 ```bash
 find ../static-kiosk-2d -type f | rg 'wenkai|longcang|galaxy-fonts' && exit 1 || true
@@ -294,7 +294,7 @@ rg -n "LXGW WenKai|Long Cang" ../static-kiosk-2d && exit 1 || true
 
 Expected: both checks produce no match. Record the full Galaxy font asset bytes and the network bytes loaded by the Chinese live page later in Chunk 3.
 
-- [ ] **Step 6: Commit the isolated theme**
+- [x] **Step 6: Commit the isolated theme**
 
 ```bash
 git add katrain/web/ui/src/GalaxyApp.tsx katrain/web/ui/src/galaxy/theme.ts katrain/web/ui/src/galaxy/theme.test.tsx
@@ -316,7 +316,7 @@ git commit -m "隔离 galaxy 字体与主题"
 - Modify: `katrain/web/ui/src/galaxy/components/layout/GalaxySidebar.test.tsx`
 - Modify: `katrain/i18n/locales/*/LC_MESSAGES/katrain.po` (brand-specific entries only)
 
-- [ ] **Step 1: Inventory every old product-name occurrence before replacing it**
+- [x] **Step 1: Inventory every old product-name occurrence before replacing it**
 
 ```bash
 rg -n --glob '!katrain/web/static/**' --glob '!katrain/web/static-kiosk-2d/**' --glob '!docs/**' --glob '!superpowers/**' '弈航|BoardNavi' katrain scripts > /tmp/galaxy-old-brand-before.txt
@@ -324,7 +324,7 @@ rg -n --glob '!katrain/web/static/**' --glob '!katrain/web/static-kiosk-2d/**' -
 
 Classify each match as product-facing copy, stable internal identifier, legal entity/copyright holder, author attribution, or third-party license. Only the first category is authorized for automatic replacement. Always create `superpowers/tracks/galaxy-ui-redesign/live-template/brand-boundary.md`: list every intentionally retained match with its category/reason, or explicitly record “no retained old-brand matches” when none exist.
 
-- [ ] **Step 2: Write failing top-bar and brand-boundary tests**
+- [x] **Step 2: Write failing top-bar and brand-boundary tests**
 
 Top-bar test assertions:
 
@@ -343,7 +343,7 @@ Python boundary test assertions:
 - `OFL-1.1.txt`, copyright/author fields, database values, and API enums are outside the replacement scan;
 - all non-Chinese brand translations use `StellaBox`, while cn/tw use `智星盒`.
 
-- [ ] **Step 3: Run the tests and verify failure**
+- [x] **Step 3: Run the tests and verify failure**
 
 ```bash
 cd katrain/web/ui && npm test -- --run src/galaxy/components/layout/GalaxyTopBar.test.tsx
@@ -352,7 +352,7 @@ cd ../../.. && pytest tests/web_ui/test_stellabox_branding.py -q
 
 Expected: FAIL because the Galaxy top bar does not exist and legal copy still names the old product.
 
-- [ ] **Step 4: Implement the 52px brand top bar with real assets**
+- [x] **Step 4: Implement the 52px brand top bar with real assets**
 
 The left home button must render, in order:
 
@@ -364,11 +364,11 @@ The left home button must render, in order:
 
 Use the generated Long Cang face only on `.galaxy-brand-cn`; explicitly use `SYSTEM_UI_FONT` on `.galaxy-brand-latin`. Size the existing logo and text inside the 52px bar; do not redraw the logo. The optional right slot is restricted to global status and language controls—no page title, back action, or board tool.
 
-- [ ] **Step 5: Replace only authorized product-facing copy**
+- [x] **Step 5: Replace only authorized product-facing copy**
 
 Update product name, agreement/privacy titles, `智星盒账号`, and `智星盒团队` as approved. Change old English product name to `StellaBox`. Remove the old oversized brand block from `GalaxySidebar` now that the brand lives in `GalaxyTopBar`, and update its old-logo test in the same task. Update brand-specific PO entries without overwriting unrelated dirty translations when the feature branch is later integrated; do not run a bulk formatter over the PO files.
 
-- [ ] **Step 6: Run tests and a post-replacement audit**
+- [x] **Step 6: Run tests and a post-replacement audit**
 
 ```bash
 cd katrain/web/ui && npm test -- --run src/galaxy/components/layout/GalaxyTopBar.test.tsx
@@ -378,7 +378,7 @@ rg -n --glob '!katrain/web/static/**' --glob '!katrain/web/static-kiosk-2d/**' -
 
 Expected: tests pass. Any remaining `rg` hit is listed in `brand-boundary.md` with a non-product reason; there are no unexplained user-facing hits.
 
-- [ ] **Step 7: Commit branding and legal copy**
+- [x] **Step 7: Commit branding and legal copy**
 
 ```bash
 git add katrain/web/ui/src/galaxy/components/layout/GalaxyTopBar.tsx katrain/web/ui/src/galaxy/components/layout/GalaxyTopBar.test.tsx katrain/web/ui/src/galaxy/components/layout/GalaxySidebar.tsx katrain/web/ui/src/galaxy/components/layout/GalaxySidebar.test.tsx katrain/web/ui/src/legal/terms.ts katrain/web/ui/src/legal/privacy.ts katrain/web/ui/src/galaxy/pages/Dashboard.tsx katrain/web/ui/src/galaxy/components/auth/LoginModal.tsx katrain/i18n/locales tests/web_ui/test_stellabox_branding.py superpowers/tracks/galaxy-ui-redesign/live-template/brand-boundary.md
@@ -399,7 +399,7 @@ git commit -m "统一智星盒产品品牌"
 - Modify: `katrain/web/ui/src/galaxy/components/layout/GalaxySidebar.test.tsx`
 - Modify: `katrain/web/ui/src/galaxy/components/layout/MainLayout.tsx`
 
-- [ ] **Step 1: Write failing tests for the navigation state machine**
+- [x] **Step 1: Write failing tests for the navigation state machine**
 
 Cover these transitions with mocked media queries and localStorage:
 
@@ -418,7 +418,7 @@ docked user collapse -> completely hidden; storage false; 44px expand target rem
 
 Name the single storage key exactly `galaxy.sidebar.docked.expanded.v1`.
 
-- [ ] **Step 2: Write failing component tests for preserved navigation and accessibility**
+- [x] **Step 2: Write failing component tests for preserved navigation and accessibility**
 
 Assert all existing entries plus explicit Home exist in the desktop navigation, retain their current MUI icon types, and call `requestNavigation`. Assert the collapsed control and overlay close control are native buttons with at least 44×44 geometry and translated `aria-label`s. Update the old logo-size test because branding moved from the sidebar to the top bar; do not replace the icons with text glyphs or custom SVG.
 
@@ -426,7 +426,7 @@ For `ModulePlate`, assert a 40×40 back button, title, subtitle, optional arbitr
 
 For the mobile navigation, assert at most five direct destinations and a “More” action containing every remaining destination; changing route closes “More”.
 
-- [ ] **Step 3: Run the focused tests and verify failure**
+- [x] **Step 3: Run the focused tests and verify failure**
 
 ```bash
 cd katrain/web/ui
@@ -439,11 +439,11 @@ npm test -- --run \
 
 Expected: FAIL because the hook, bottom nav, module plate, and new sidebar API do not exist.
 
-- [ ] **Step 4: Centralize the existing navigation model**
+- [x] **Step 4: Centralize the existing navigation model**
 
 Export a function that accepts `t` and returns `{ key, label, path, icon }[]`. Include Home plus Play, Research, Tsumego, Review, Live, Kifu, and Tutorials. Reuse exactly the current MUI icons; Home may use MUI `HomeIcon`. Both sidebar and bottom nav consume this model so entries cannot silently diverge.
 
-- [ ] **Step 5: Implement the responsive state hook**
+- [x] **Step 5: Implement the responsive state hook**
 
 Expose a discriminated result such as:
 
@@ -462,17 +462,17 @@ interface GalaxySidebarState {
 
 Use MUI media queries at 1536/1200/900. Persist only user changes in docked mode. Close overlay on location pathname change and breakpoint exit. Return focus to the toggle after Escape, scrim, or explicit close.
 
-- [ ] **Step 6: Implement the desktop sidebar and narrow overlay**
+- [x] **Step 6: Implement the desktop sidebar and narrow overlay**
 
 Use MUI `Drawer` with `variant="temporary"` for 900–1199 so focus trapping, Escape handling, scroll lock, and scrim are real behavior rather than simulated CSS. In docked mode render width 240 or 216 only when expanded; when collapsed render no 64px icon rail. Keep navigation independently scrollable and settings/account pinned below it. The shared toggle is an absolutely positioned/overlayed 44×44 button anchored to the body row's top-left edge; when the docked drawer is closed it consumes zero grid/flex width, and its z-index keeps it operable without reducing the board column. Add a component assertion that the collapsed sidebar wrapper has width `0` and the main region begins at the body row's left edge.
 
-- [ ] **Step 7: Implement mobile bottom navigation and the reusable module plate**
+- [x] **Step 7: Implement mobile bottom navigation and the reusable module plate**
 
 Below 900px, unmount the left sidebar and its toggle. Fix the bottom navigation to the viewport, render no more than five direct entries, and put all remaining entries in an accessible MUI menu/drawer opened by “More”. Reserve its height in the main content scroll container.
 
 Implement `ModulePlate` as a pure layout component with `title`, optional `subtitle`, `backTo`, `showBack`, and `status?: ReactNode`; it must not know live or ladder states.
 
-- [ ] **Step 8: Rebuild MainLayout around the 52px top bar**
+- [x] **Step 8: Rebuild MainLayout around the 52px top bar**
 
 Use this load-bearing hierarchy:
 
@@ -488,7 +488,7 @@ Use this load-bearing hierarchy:
 
 Mount `GalaxyTopBar` above both sidebar and main. Keep `GameNavigationProvider`. Do not give `main` a universal `overflow:auto`; board pages will define their own single scroll container in Chunk 2.
 
-- [ ] **Step 9: Run focused tests and builds**
+- [x] **Step 9: Run focused tests and builds**
 
 ```bash
 npm test -- --run \
@@ -503,7 +503,7 @@ npm run build:kiosk-2d
 
 Expected: focused tests and both builds pass; kiosk verification finds neither `/galaxy/` nor Galaxy font residue.
 
-- [ ] **Step 10: Commit the responsive chrome**
+- [x] **Step 10: Commit the responsive chrome**
 
 ```bash
 git add katrain/web/ui/src/galaxy/components/layout
@@ -518,7 +518,7 @@ git commit -m "添加 galaxy 响应式导航框架"
 - Create: `katrain/web/ui/src/galaxy/components/board/BoardPageShell.tsx`
 - Create: `katrain/web/ui/src/galaxy/components/board/BoardPageShell.test.tsx`
 
-- [ ] **Step 1: Write failing structural and responsive tests**
+- [x] **Step 1: Write failing structural and responsive tests**
 
 Render named sentinel nodes into `board`, `modulePlate`, `railBody`, `displayControls`, and `actions` slots. Assert the shell creates these stable test IDs and responsibilities:
 
@@ -543,7 +543,7 @@ Mock MUI media queries and assert:
 
 Also assert the horizontal rail has exactly one scrolling middle region, while module/action regions are `flex:none`; the board stage is `min-width:0`, `min-height:0`, `display:grid`, `place-items:center`, and `padding:10px`.
 
-- [ ] **Step 2: Run the shell test and verify failure**
+- [x] **Step 2: Run the shell test and verify failure**
 
 ```bash
 cd katrain/web/ui
@@ -552,7 +552,7 @@ npm test -- --run src/galaxy/components/board/BoardPageShell.test.tsx
 
 Expected: FAIL because `BoardPageShell` does not exist.
 
-- [ ] **Step 3: Define the minimal slot contract**
+- [x] **Step 3: Define the minimal slot contract**
 
 Use a focused public interface:
 
@@ -569,17 +569,17 @@ export interface BoardPageShellProps {
 
 The shell must not import `MatchDetail`, `MoveAnalysis`, live hooks, ladder types, or route-specific copy.
 
-- [ ] **Step 4: Implement horizontal geometry**
+- [x] **Step 4: Implement horizontal geometry**
 
 For `min-width:900px`, render a two-column body: `minmax(0, 1fr)` plus the exact breakpoint rail width. The shell consumes 100% of `MainLayout`'s main width/height. Center the board in a 10px-padded grid and observe the board stage with `ResizeObserver`, calling `onBoardSizeChange(Math.floor(Math.min(contentWidth, contentHeight)))` only when the integer edge changes.
 
 The right rail is `display:flex; flex-direction:column; min-height:0`. Module and actions are non-scrolling. Put `railBody` then `displayControls` inside one `overflow-y:auto; min-height:0` middle region so the rail never develops competing nested page scrollbars.
 
-- [ ] **Step 5: Implement the `<900px` vertical structure**
+- [x] **Step 5: Implement the `<900px` vertical structure**
 
 At 899px and below, the shell itself becomes the single vertical scroll container. Render the board first in a width-limited square stage, then a full-width rail section in this order: module plate, rail body, display controls, actions. All rail regions use natural height; actions are reachable by scrolling rather than fixed to the viewport. Add bottom padding equal to the mobile navigation height plus safe-area inset. Keep `.galaxy-root` and `MainLayout` non-scrolling.
 
-- [ ] **Step 6: Run the focused test and build**
+- [x] **Step 6: Run the focused test and build**
 
 ```bash
 npm test -- --run src/galaxy/components/board/BoardPageShell.test.tsx
@@ -588,7 +588,7 @@ npm run build
 
 Expected: test and build pass. No board page has been migrated yet, so this commit is a reusable but dormant shell.
 
-- [ ] **Step 7: Commit the shell**
+- [x] **Step 7: Commit the shell**
 
 ```bash
 git add katrain/web/ui/src/galaxy/components/board/BoardPageShell.tsx katrain/web/ui/src/galaxy/components/board/BoardPageShell.test.tsx
@@ -603,7 +603,7 @@ git commit -m "添加 galaxy 棋盘页布局壳层"
 - Modify: `katrain/web/ui/src/components/live/LiveBoard.tsx`
 - Modify: `katrain/web/ui/src/components/live/LiveBoard.test.tsx` (create if absent)
 
-- [ ] **Step 1: Write failing tests for canvas sizing and coordinate defaults**
+- [x] **Step 1: Write failing tests for canvas sizing and coordinate defaults**
 
 For `LiveBoard`, mock a 380×380 `ResizeObserver` target and assert:
 
@@ -623,7 +623,7 @@ expect(renderHook(() => useBoardCoordinates(500)).result.current.visible).toBe(t
 
 After a user toggle, the explicit choice stays synchronized with the toggle and board while resizing across 500px. A new page/mount starts in automatic mode again; no global/localStorage preference is added in this slice.
 
-- [ ] **Step 2: Run focused tests and verify failure**
+- [x] **Step 2: Run focused tests and verify failure**
 
 ```bash
 cd katrain/web/ui
@@ -632,7 +632,7 @@ npm test -- --run src/components/live/LiveBoard.test.tsx src/galaxy/components/b
 
 Expected: FAIL because `minimumCanvasSize` and `useBoardCoordinates` do not exist.
 
-- [ ] **Step 3: Add an opt-in minimum canvas size**
+- [x] **Step 3: Add an opt-in minimum canvas size**
 
 Extend the existing props without changing defaults:
 
@@ -649,11 +649,11 @@ setCanvasSize(Math.max(minimumCanvasSize, Math.min(1200, size)));
 
 Add `minimumCanvasSize` to the ResizeObserver effect dependencies. Do not change `BOARD_ASSETS`, board texture drawing, stone drawing, coordinates, stars, warm shadow, last-move marker, AI markers, or move parsing.
 
-- [ ] **Step 4: Implement the coordinate visibility hook**
+- [x] **Step 4: Implement the coordinate visibility hook**
 
 Return `{ visible, userOverride, toggle, resetToAutomatic }`. Compute `visible` from `userOverride ?? edge >= 500`. The toggle must invert the currently rendered value, not a stale default, so its selected state always matches the canvas.
 
-- [ ] **Step 5: Run tests and the existing board wiring regressions**
+- [x] **Step 5: Run tests and the existing board wiring regressions**
 
 ```bash
 npm test -- --run \
@@ -665,7 +665,7 @@ npm test -- --run \
 
 Expected: all pass; existing callers retain the 400px default.
 
-- [ ] **Step 6: Commit the opt-in board sizing behavior**
+- [x] **Step 6: Commit the opt-in board sizing behavior**
 
 ```bash
 git add katrain/web/ui/src/components/live/LiveBoard.tsx katrain/web/ui/src/components/live/LiveBoard.test.tsx katrain/web/ui/src/galaxy/components/board/useBoardCoordinates.ts katrain/web/ui/src/galaxy/components/board/useBoardCoordinates.test.ts
@@ -678,7 +678,7 @@ git commit -m "支持 galaxy 棋盘完整缩放"
 - Create: `katrain/web/ui/src/galaxy/pages/live/LiveMatchDisplayControls.tsx`
 - Create: `katrain/web/ui/src/galaxy/pages/live/LiveMatchDisplayControls.test.tsx`
 
-- [ ] **Step 1: Write failing interaction tests**
+- [x] **Step 1: Write failing interaction tests**
 
 Render the control component with controlled props and assert it preserves these controls and current MUI icon meanings:
 
@@ -692,7 +692,7 @@ GridOn -> board coordinates
 
 Each control must be a real `ToggleButton`, have a translated accessible name, reflect `selected`, and call only its matching callback. The disabled territory button must be wrapped in a non-disabled `<span>` inside its Tooltip so the explanation remains reachable. When try mode has moves, render the path and a 40px clear action; otherwise do not render the clear row.
 
-- [ ] **Step 2: Run the test and verify failure**
+- [x] **Step 2: Run the test and verify failure**
 
 ```bash
 cd katrain/web/ui
@@ -701,11 +701,11 @@ npm test -- --run src/galaxy/pages/live/LiveMatchDisplayControls.test.tsx
 
 Expected: FAIL because the extracted controls do not exist.
 
-- [ ] **Step 3: Implement the controlled presentation component**
+- [x] **Step 3: Implement the controlled presentation component**
 
 Keep all business state in `LiveMatchPage`; accept booleans/callbacks plus `ownershipAvailable` and `tryMoves`. Use an equal-width responsive grid rather than allowing five labels to crush into a single 320px row: two rows are acceptable in the right rail, and every target is at least 40px high. Preserve the existing labels/translations and icons; add only the coordinate label/key needed for the fifth control.
 
-- [ ] **Step 4: Run the test and commit**
+- [x] **Step 4: Run the test and commit**
 
 ```bash
 npm test -- --run src/galaxy/pages/live/LiveMatchDisplayControls.test.tsx
@@ -723,7 +723,7 @@ Expected: all display-control interaction tests pass.
 - Modify: `katrain/web/ui/src/components/live/MatchInfo.tsx`
 - Modify: `katrain/web/ui/src/components/live/MatchInfo.test.tsx` (create if absent)
 
-- [ ] **Step 1: Write failing page tests against the real component boundaries**
+- [x] **Step 1: Write failing page tests against the real component boundaries**
 
 Mock only `useLiveMatch`, sound, and canvas-heavy child rendering. Supply a typed `MatchDetail` and analysis record, then assert:
 
@@ -746,11 +746,11 @@ retry -> awaits useLiveMatch.refresh; shows progress and disables Retry until it
 retry -> old match data is not presented as refreshed data while the error branch is active
 ```
 
-- [ ] **Step 2: Write failing MatchInfo composition test**
+- [x] **Step 2: Write failing MatchInfo composition test**
 
 Add `headingMode?: 'full' | 'metadata-only'` defaulting to `full`. Assert `metadata-only` hides only the duplicated live/finished chip and tournament/round title already represented by `ModulePlate`, while preserving the real date and source chip plus players, ranks, win-rate, score, rules, and komi. Existing callers without the prop must render unchanged.
 
-- [ ] **Step 3: Run focused tests and verify failure**
+- [x] **Step 3: Run focused tests and verify failure**
 
 ```bash
 cd katrain/web/ui
@@ -759,7 +759,7 @@ npm test -- --run src/galaxy/pages/live/LiveMatchPage.test.tsx src/components/li
 
 Expected: FAIL because the page still uses the old header/500px sidebar and `MatchInfo` lacks `headingMode`.
 
-- [ ] **Step 4: Compose the module plate from real match data**
+- [x] **Step 4: Compose the module plate from real match data**
 
 Use the existing translation helpers and fields—never hard-code sample players:
 
@@ -772,19 +772,19 @@ backTo: /galaxy/live
 
 The module plate lives only in the right rail. Delete the old header above the board.
 
-- [ ] **Step 5: Compose the rail's single scroll region and fixed action**
+- [x] **Step 5: Compose the rail's single scroll region and fixed action**
 
 Use `MatchInfo headingMode="metadata-only"`, the extracted display controls, `AiAnalysis`, and `TrendChart` in the shell's scrollable slots. The real date and source remain visible in `MatchInfo`; no existing match metadata is dropped. Put `PlaybackBar` alone in `actions` on horizontal viewports. Preserve PV hover, move clicking, live-follow, try-move clearing, territory availability, AI markers, move numbers, sound, and polling. Do not restore the deferred comment section.
 
-- [ ] **Step 6: Connect board-size reporting to coordinate visibility**
+- [x] **Step 6: Connect board-size reporting to coordinate visibility**
 
 Store the integer edge reported by `BoardPageShell`, pass it to `useBoardCoordinates`, pass `visible` to `LiveBoard.showCoordinates`, and pass the same `visible`/`toggle` pair to the coordinate control. Pass `minimumCanvasSize={0}` and `minContainerHeight={0}` only from this responsive page; other board callers retain defaults.
 
-- [ ] **Step 7: Implement honest loading and error layouts**
+- [x] **Step 7: Implement honest loading and error layouts**
 
 For loading, render the same `BoardPageShell` structure with square board skeleton, module placeholder, rail skeletons, and disabled action placeholders so geometry does not jump. For error/no match, retain the shell, show a translated error in the rail and an enabled retry button wired through a local async `handleRetry`; the board area is an empty/skeleton state, not stale match content. `handleRetry` sets `retrying=true`, awaits `refresh()`, and clears it in `finally`; while true, the Retry button is disabled and contains a progress indicator without changing button geometry. Keep the back action available.
 
-- [ ] **Step 8: Run focused and live-hook regression tests**
+- [x] **Step 8: Run focused and live-hook regression tests**
 
 ```bash
 npm test -- --run \
@@ -797,7 +797,7 @@ npm test -- --run \
 
 Expected: all pass. No API request/response type or backend file changes in this task.
 
-- [ ] **Step 9: Run builds and inspect the source diff for asset preservation**
+- [x] **Step 9: Run builds and inspect the source diff for asset preservation**
 
 ```bash
 npm run build
@@ -808,7 +808,7 @@ git diff -- katrain/web/ui/src/components/board/boardUtils.ts katrain/web/ui/pub
 
 Expected: builds and diff check pass; the final asset-preservation diff is empty. If asset paths differ in this checkout, locate them with `rg --files` and verify the actual three existing files are unchanged.
 
-- [ ] **Step 10: Commit the real live template migration**
+- [x] **Step 10: Commit the real live template migration**
 
 ```bash
 git add katrain/web/ui/src/galaxy/pages/live/LiveMatchPage.tsx katrain/web/ui/src/galaxy/pages/live/LiveMatchPage.test.tsx katrain/web/ui/src/components/live/MatchInfo.tsx katrain/web/ui/src/components/live/MatchInfo.test.tsx
@@ -823,7 +823,7 @@ git commit -m "迁移 galaxy 直播详情棋盘模板"
 - Create: `katrain/web/ui/tests/galaxy-live-template.spec.ts`
 - Modify: `superpowers/tracks/galaxy-ui-redesign/capture_live_template.mjs`
 
-- [ ] **Step 1: Write failing Playwright geometry tests**
+- [x] **Step 1: Write failing Playwright geometry tests**
 
 Use the real application server supplied by the existing `playwright.config.ts`. Set one constant from `GALAXY_LIVE_MATCH_ID` with the baseline match ID as fallback. For each viewport, navigate to `/galaxy/live/${matchId}`, wait for the real canvas and `[data-testid="board-page-shell"]`, then assert:
 
@@ -857,7 +857,7 @@ Every case checks:
 - 1440×900 canvas is `828±2px`;
 - 430×880 has fixed bottom navigation and its coordinate toggle starts unselected because the measured board edge is below 500px.
 
-- [ ] **Step 2: Write failing sidebar behavior tests**
+- [x] **Step 2: Write failing sidebar behavior tests**
 
 Add explicit journeys:
 
@@ -875,7 +875,7 @@ reload at 1200 -> stored collapsed state restored
 
 Use semantic labels/test IDs, never click by screen coordinate.
 
-- [ ] **Step 3: Run Playwright and verify the old/current implementation fails**
+- [x] **Step 3: Run Playwright and verify the old/current implementation fails**
 
 ```bash
 cd katrain/web/ui
@@ -884,11 +884,11 @@ npx playwright test tests/galaxy-live-template.spec.ts --project=chromium
 
 Expected before the completed migration: FAIL on old 500px rail, missing responsive shell/sidebar behavior, or board clipping. If Chunk 2 was already applied before the test was authored, temporarily assert the old rail width of 500 to prove the test detects the contract, observe failure, then restore the approved assertion before proceeding.
 
-- [ ] **Step 4: Add stable selectors only at component boundaries**
+- [x] **Step 4: Add stable selectors only at component boundaries**
 
 If required by the tests, add `data-testid` only to `GalaxyTopBar`, sidebar/trigger, bottom nav, `BoardPageShell` regions, module plate, and live coordinate control. Do not annotate every visual child or expose business data solely for tests.
 
-- [ ] **Step 5: Make the capture script consume stable selectors and record font resources**
+- [x] **Step 5: Make the capture script consume stable selectors and record font resources**
 
 Update the script from Task 1 to write implementation measurements with the same schema as the reference. Add:
 
@@ -901,7 +901,7 @@ Update the script from Task 1 to write implementation measurements with the same
 
 Write the resource data to `superpowers/tracks/galaxy-ui-redesign/visual/live-template/font-budget.json` and implementation geometry to `visual/live-template/geometry-implementation.json`.
 
-- [ ] **Step 6: Run Playwright until all geometry/interaction tests pass**
+- [x] **Step 6: Run Playwright until all geometry/interaction tests pass**
 
 ```bash
 npx playwright test tests/galaxy-live-template.spec.ts --project=chromium
@@ -909,7 +909,7 @@ npx playwright test tests/galaxy-live-template.spec.ts --project=chromium
 
 Expected: all target viewports and sidebar journeys pass. This proves geometry and behavior only; it does not satisfy visual approval.
 
-- [ ] **Step 7: Commit the browser acceptance test and capture updates**
+- [x] **Step 7: Commit the browser acceptance test and capture updates**
 
 ```bash
 git add katrain/web/ui/tests/galaxy-live-template.spec.ts superpowers/tracks/galaxy-ui-redesign/capture_live_template.mjs katrain/web/ui/src/galaxy
@@ -929,7 +929,7 @@ Expected: only selectors needed by the test are included with source changes.
 - Create: `superpowers/tracks/galaxy-ui-redesign/visual/live-template/visual-review.md`
 - Create after approval: `superpowers/tracks/galaxy-ui-redesign/visual/approved/live-template/{1535x900,1536x900,1537x900,1440x900,1201x800,1200x800,1199x800,1024x768,901x700,900x700,899x700,430x880}.png`
 
-- [ ] **Step 1: Write failing tests for evidence dimensions and composition**
+- [x] **Step 1: Write failing tests for evidence dimensions and composition**
 
 Given a tiny temporary viewport directory containing `reference.png` and `implementation.png`, assert the script produces:
 
@@ -940,7 +940,7 @@ diff -> same width/height as source; unchanged pixels black and changed pixels v
 mismatched input dimensions -> explicit nonzero failure naming the viewport
 ```
 
-- [ ] **Step 2: Run the composition test and verify failure**
+- [x] **Step 2: Run the composition test and verify failure**
 
 ```bash
 uv run --with pillow pytest tests/web_ui/test_compose_live_template_visuals.py -q
@@ -948,11 +948,11 @@ uv run --with pillow pytest tests/web_ui/test_compose_live_template_visuals.py -
 
 Expected: FAIL because the composition script does not exist.
 
-- [ ] **Step 3: Implement the small deterministic Pillow composer**
+- [x] **Step 3: Implement the small deterministic Pillow composer**
 
 Accept one `--visual-root`. Discover exact `<width>x<height>/` directories, require `reference.png` and `implementation.png` in each, and write `side-by-side.png`, `overlay.png`, and `diff.png` back into the same directory. Fail on missing/mismatched files. Use `Image.blend(reference, implementation, 0.5)` for overlay and `ImageChops.difference` for diff. Do not resize either source.
 
-- [ ] **Step 4: Capture implementation screenshots from the real backend**
+- [x] **Step 4: Capture implementation screenshots from the real backend**
 
 Build the current branch, start the real backend on port 8901, verify readiness, capture, and always stop the process. Run from the implementation worktree root:
 
@@ -971,7 +971,7 @@ wait "$GALAXY_SERVER_PID" || true
 
 Expected: the capture script uses the fixed base `http://127.0.0.1:8901`; twelve viewport directories now contain `implementation.png`, and the slice root contains `geometry-implementation.json` plus `font-budget.json`. No fixture or mocked API is active. If capture fails, stop the recorded PID before retrying and inspect `/private/tmp/galaxy-live-template-server.log`.
 
-- [ ] **Step 5: Generate all comparison artifacts without resizing**
+- [x] **Step 5: Generate all comparison artifacts without resizing**
 
 ```bash
 cd ../../..
@@ -981,7 +981,7 @@ uv run --with pillow python superpowers/tracks/galaxy-ui-redesign/compose_live_t
 
 Expected: `side-by-side.png`, `overlay.png`, and `diff.png` exist beside the two source files in every one of the twelve exact viewport directories; no source image was resized.
 
-- [ ] **Step 6: Audit the actual screenshots, not only metrics**
+- [x] **Step 6: Audit the actual screenshots, not only metrics**
 
 Fill each viewport's `review.md` and the slice-level `visual-review.md` summary with explicit observations for:
 
@@ -999,13 +999,13 @@ sidebar default/collapsed/overlay and mobile bottom navigation
 
 Record the 1440 canvas target, rail widths, font-family samples, loaded font bytes, kiosk font absence, and every intentional deviation from the approved artifact. Each `review.md` records date, exact viewport, differences, user-approval state, and retained issues. Automated geometry PASS must not be written as visual PASS.
 
-- [ ] **Step 7: Present the complete visual set to the user and stop**
+- [x] **Step 7: Present the complete visual set to the user and stop**
 
 Show at minimum the 1440×900, 1024×768, 900×700, 899×700, and 430×880 implementation images plus their same-size side-by-side/overlay/diff artifacts. Include a scrolled mobile screenshot or the recorded scroll geometry proving actions are reachable above bottom navigation. Provide direct links to the remaining breakpoint evidence and summarize `visual-review.md`.
 
 Expected: stop and wait for an explicit user visual confirmation. Do not begin Galaxy ladder contracts/backend, migrate other board pages, delete the reference set, or start kiosk design.
 
-- [ ] **Step 8: If the user rejects a visual detail, loop only within this slice**
+- [x] **Step 8: If the user rejects a visual detail, loop only within this slice**
 
 Translate the feedback into a focused failing unit/Playwright assertion where practical, change the smallest relevant Galaxy component, rerun focused tests, recapture every affected viewport, regenerate comparisons, update `visual-review.md`, and request confirmation again. Preserve approved board/logo/icon assets throughout.
 
@@ -1017,7 +1017,7 @@ Translate the feedback into a focused failing unit/Playwright assertion where pr
 - Create: `superpowers/tracks/galaxy-ui-redesign/visual/approved/live-template/*.png`
 - Modify: `docs/superpowers/plans/2026-08-06-galaxy-shared-foundation-live-template.md` (checkboxes only during execution)
 
-- [ ] **Step 1: Record explicit user approval**
+- [x] **Step 1: Record explicit user approval**
 
 After confirmation, append the approval date, approved viewport evidence, and any accepted non-blocking differences to the slice summary and every viewport `review.md`. Copy each approved implementation byte-for-byte and verify it:
 
@@ -1028,7 +1028,7 @@ for viewport_dir in superpowers/tracks/galaxy-ui-redesign/visual/live-template/*
 
 Expected: all twelve `cmp` calls succeed. If approval is absent, this task must not run.
 
-- [ ] **Step 2: Invoke verification-before-completion and run the full relevant suite**
+- [x] **Step 2: Invoke verification-before-completion and run the full relevant suite**
 
 Read and follow `@superpowers:verification-before-completion`, then run from `katrain/web/ui`:
 
@@ -1051,7 +1051,7 @@ git status --short
 
 Expected: all new and existing frontend unit tests pass; the targeted Playwright suite passes; full and kiosk builds pass; kiosk boundary is clean; focused Python tests pass; diff check is clean. If repository-wide lint has pre-existing failures, record exact unchanged failures and prove every file changed by this branch passes an explicit `npx eslint <changed-ts/tsx-files>` run.
 
-- [ ] **Step 3: Recheck font and asset boundaries from fresh build output**
+- [x] **Step 3: Recheck font and asset boundaries from fresh build output**
 
 ```bash
 find katrain/web/static-kiosk-2d -type f | rg 'wenkai|longcang|galaxy-fonts' && exit 1 || true
@@ -1066,11 +1066,11 @@ git diff --exit-code "$GALAXY_PLAN_BASE" -- katrain/web/ui/src/components/board/
 
 Before these assertions, the capture/budget script must populate `font-budget.json` with: generated source asset total, Galaxy build font total, Chinese page request count/transfer/encoded bytes, kiosk match count, computed font samples, generator command, input SHA-256 values, and license path. Expected: the JSON assertions pass, no kiosk font/Galaxy route match exists, the license/source manifest is present, the Chinese page remains below the measured S0 upper bound, Galaxy total is below 49MB, and protected board/logo files plus drawing utilities are unchanged across the entire branch. The comparison uses the immutable plan-base SHA, never `HEAD~1`.
 
-- [ ] **Step 4: Invoke code review for the completed slice**
+- [x] **Step 4: Invoke code review for the completed slice**
 
 Read and follow `@superpowers:requesting-code-review`. Give the reviewer the approved spec, this plan, plan-base SHA, branch HEAD, test output, and `visual/live-template/visual-review.md`. Resolve blocking findings with focused tests; rerun the affected verification and update evidence if pixels changed.
 
-- [ ] **Step 5: Commit approved evidence and review fixes**
+- [x] **Step 5: Commit approved evidence and review fixes**
 
 ```bash
 git add superpowers/tracks/galaxy-ui-redesign/visual tests/web_ui/test_compose_live_template_visuals.py superpowers/tracks/galaxy-ui-redesign/compose_live_template_visuals.py docs/superpowers/plans/2026-08-06-galaxy-shared-foundation-live-template.md
@@ -1079,7 +1079,7 @@ git commit -m "确认 galaxy 直播模板视觉验收"
 
 Expected: the branch is clean after the commit. Generated `katrain/web/static*`, local databases/config, Playwright traces, source TTF files, and unrelated dirty-root work are not committed.
 
-- [ ] **Step 6: Prepare a non-destructive integration handoff**
+- [x] **Step 6: Prepare a non-destructive integration handoff**
 
 Read and follow `@superpowers:finishing-a-development-branch`. Report commits, tests, visual evidence, font budget, and the fact that no ladder backend/kiosk work was started. Because the original worktree contains user-owned uncommitted ladder work and PO edits, do not merge/cherry-pick into it automatically; show the exact branch/commits and identify likely PO conflict files for the user to integrate safely.
 

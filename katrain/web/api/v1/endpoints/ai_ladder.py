@@ -51,8 +51,7 @@ class _IndeterminateRemoteTransition(RuntimeError):
 
 def _is_board(request: Request) -> bool:
     return bool(
-        getattr(request.app.state, "remote_client", None)
-        and getattr(request.app.state, "repository_dispatcher", None)
+        getattr(request.app.state, "remote_client", None) and getattr(request.app.state, "repository_dispatcher", None)
     )
 
 
@@ -178,7 +177,8 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
         "user_color": game.user_color,
         "opponent_rank_name": game.opponent.rank_name,
     }
-    if payload["ownership"] == "other_device":
+    elsewhere = payload["ownership"] == "other_device"
+    if elsewhere:
         # Only meaningful when the game is somewhere else -- this is the screen where the user is
         # told why they cannot start a new game, so it must also say what they can do about it and
         # when. `takeover_eligible_at` is None when waiting will never help, so the UI shows a
@@ -189,10 +189,19 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
         )
         payload["takeover_threshold_seconds"] = int(AI_LADDER_TAKEOVER_THRESHOLD.total_seconds())
         payload["takeover_threshold_version"] = AI_LADDER_TAKEOVER_THRESHOLD_VERSION
-        # The second way out, and a materially different bargain the user has to be told apart
-        # from the first: a takeover banks a loss and moves the rung, a release banks nothing
-        # and moves nothing -- it gives up on a result instead of inventing one. Both arrive on
-        # this same screen, so the screen has to be able to say which button it is showing.
+    # The second way out, and a materially different bargain the user has to be told apart
+    # from the first: a takeover banks a loss and moves the rung, a release banks nothing
+    # and moves nothing -- it gives up on a result instead of inventing one. Both arrive on
+    # this same screen, so the screen has to be able to say which button it is showing.
+    #
+    # Unlike a takeover, this one is NOT restricted to a game running elsewhere. An undelivered
+    # settlement belongs, by construction, to the device that just finished playing it -- which
+    # is the device the user is sitting at. Withholding the exit from `current_device` therefore
+    # hides it in the one case that happens most, and the user has to walk to a second device to
+    # be told about a way out that the API had open the whole time. For an `active` game the
+    # opposite reasoning holds and this block stays quiet: there the device's own move is to go
+    # on playing, not to give up on a result that does not exist yet.
+    if elsewhere or game.state == "pending_settlement":
         payload["can_release_abandoned_settlement"] = game.can_release_abandoned_settlement
         payload["abandoned_settlement_eligible_at"] = (
             game.abandoned_settlement_eligible_at.isoformat()
@@ -310,9 +319,7 @@ def _recover_pending(request: Request, user_id: int) -> None:
         if pending is None or not pending.get("reservation_key"):
             return
         try:
-            game = request.app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
-                pending["game_id"], user_id
-            )
+            game = request.app.state.user_game_repo.get_authoritative_ai_ladder_ranked(pending["game_id"], user_id)
             enqueue = getattr(request.app.state, "sync_enqueue_fn", None)
             if game is None or enqueue is None:
                 return
@@ -320,21 +327,24 @@ def _recover_pending(request: Request, user_id: int) -> None:
 
             snapshot = session_snapshot_from_pending(pending)
             lifecycle = repo.get_game_lifecycle(user_id=user_id, game_id=snapshot.game_id)
-            durable = enqueue(
-                operation="settle_ai_ladder_ranked",
-                endpoint="/api/v1/ai-ladder/settlements",
-                method="POST",
-                payload=build_settlement_payload(
-                    snapshot,
-                    game["result"],
-                    reservation_key=pending["reservation_key"],
-                    game_record=game,
-                    device_id=settings.DEVICE_ID,
-                    engine_stalled=getattr(lifecycle, "reason", None) == "engine_unavailable",
-                ),
-                user_id=str(user_id),
-                idempotency_key=f"ladder-settlement:{snapshot.game_id}",
-            ) is True
+            durable = (
+                enqueue(
+                    operation="settle_ai_ladder_ranked",
+                    endpoint="/api/v1/ai-ladder/settlements",
+                    method="POST",
+                    payload=build_settlement_payload(
+                        snapshot,
+                        game["result"],
+                        reservation_key=pending["reservation_key"],
+                        game_record=game,
+                        device_id=settings.DEVICE_ID,
+                        engine_stalled=getattr(lifecycle, "reason", None) == "engine_unavailable",
+                    ),
+                    user_id=str(user_id),
+                    idempotency_key=f"ladder-settlement:{snapshot.game_id}",
+                )
+                is True
+            )
             if durable:
                 repo.clear_pending_game(user_id=user_id, game_id=snapshot.game_id)
         except Exception as exc:
@@ -447,9 +457,7 @@ async def get_status(request: Request, current_user: User = Depends(get_current_
     if _is_board(request):
         _require_bound_board_user(request, current_user)
         _recover_pending(request, current_user.id)
-        payload = await _remote(
-            lambda: request.app.state.remote_client.get_ai_ladder_status(), "AI ladder status"
-        )
+        payload = await _remote(lambda: request.app.state.remote_client.get_ai_ladder_status(), "AI ladder status")
         blocking = payload.get("blocking_game") if isinstance(payload, dict) else None
         if isinstance(blocking, dict):
             payload = dict(payload)
@@ -494,24 +502,18 @@ async def get_status(request: Request, current_user: User = Depends(get_current_
         elif blocking is None:
             pending = request.app.state.ai_ladder_repo.get_pending_game(current_user.id)
             game = (
-                request.app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
-                    pending["game_id"], current_user.id
-                )
+                request.app.state.user_game_repo.get_authoritative_ai_ladder_ranked(pending["game_id"], current_user.id)
                 if pending is not None
                 else None
             )
             if pending is not None and game is None:
-                request.app.state.ai_ladder_repo.clear_pending_game(
-                    user_id=current_user.id, game_id=pending["game_id"]
-                )
+                request.app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=pending["game_id"])
         return payload
     _require_authority(request)
     return _status_payload(request, current_user, device_id=_device_id(request, required=False))
 
 
-def _reserve(
-    *, body: AiLadderReserveRequest, request: Request, current_user: User, device_id: str
-):
+def _reserve(*, body: AiLadderReserveRequest, request: Request, current_user: User, device_id: str):
     status_payload = _status_payload(request, current_user, device_id=device_id)
     opponent_entry = status_payload["current_opponent"]
     assert isinstance(opponent_entry, dict)
@@ -723,9 +725,7 @@ async def end_ranked_game(
 ):
     if _is_board(request):
         _require_bound_board_user(request, current_user)
-        return await _remote(
-            lambda: request.app.state.remote_client.end_ai_ladder_game(game_id), "AI ladder game end"
-        )
+        return await _remote(lambda: request.app.state.remote_client.end_ai_ladder_game(game_id), "AI ladder game end")
     _require_authority(request)
     repo = request.app.state.ai_ladder_repo
     deciding_device_id = _device_id(request, required=False)
@@ -1104,9 +1104,7 @@ def submit_settlement(
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
     try:
-        lifecycle = request.app.state.ai_ladder_repo.get_game_lifecycle(
-            user_id=current_user.id, game_id=body.game_id
-        )
+        lifecycle = request.app.state.ai_ladder_repo.get_game_lifecycle(user_id=current_user.id, game_id=body.game_id)
         if isinstance(lifecycle, AiLadderBlockingGame):
             receipt = request.app.state.ai_ladder_repo.finalize_reserved_game(
                 user_id=current_user.id,

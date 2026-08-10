@@ -4100,3 +4100,54 @@ async def test_a_lost_pending_hint_leaves_the_account_on_the_takeover_exit_not_s
     assert ended.json()["state"] == "settled"
     with cloud.state._test_session_factory() as db:
         assert db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one_or_none() is None
+
+
+@pytest.mark.asyncio
+async def test_the_box_holding_the_undelivered_result_is_told_how_to_get_out(box_and_cloud):
+    """出站队列被云端 4xx 永久拒掉之后,**用户面前这台**必须看得到出路。
+
+    审计 P0 #4。构造的是这条链的终点:局下完 → 提示打通(云端 `pending_settlement`)
+    → 出站队列被 4xx 拒 → worker 只把队列行标 `failed`,**从不回头碰会话或云端**
+    (`sync_worker.py:172-173`)。于是云端行停在 `pending_settlement`,谁也不会再动它。
+
+    这一格的要害是**它属于哪台设备**:被拒的结算天然属于刚下完这局的那台盒子,
+    而那台就是用户此刻坐在前面的那台 —— `ownership == "current_device"`。
+    可 `_blocking_payload` 原本只在 `other_device` 那一支里发出路字段,理由写的是
+    「只有局在别处时才有意义」。对 `active` 成立(自己这台该做的是接着下),
+    对 `pending_settlement` 恰恰相反:没有局可以接着下,只有一个等不到的结果。
+
+    结果就是最常见的那一格反而什么都不说:`/status` 和 `/start` 的 409 都只回
+    `{game_id, state, ownership, user_color, opponent_rank_name}` —— 开不了新局,
+    而屏幕上没有任何东西告诉用户能做什么、什么时候能做。放弃等待这条路在 API 上
+    **一直是通的**,是载荷把它藏起来了。用户要拿到它,得走到另一台设备上去。
+    """
+
+    box, cloud, _ = box_and_cloud
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        headers = {**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"}
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+        game_id = started.json()["game_id"]
+        await ac.post("/api/resign", headers=box.state._test_headers, json={"session_id": started.json()["session_id"]})
+        # 出站队列 4xx 之后没有任何后续动作 —— 什么都不做,就是这一格的真实构造。
+        assert _active_row(cloud, game_id).state == "pending_settlement"
+
+        status_payload = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()
+        blocked = await ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+
+    blocking = status_payload["blocking_game"]
+    assert blocking["ownership"] == "current_device" and blocking["state"] == "pending_settlement"
+    assert blocking["can_release_abandoned_settlement"] is False
+    assert blocking["abandoned_settlement_eligible_at"] is not None, (
+        "自己这台盒子拿着一个送不出去的结果,却被告知不了什么时候能放弃等待 —— "
+        "而这正是最常见的那一格:被拒的结算天生属于刚下完这局的那台设备"
+    )
+    assert blocking["abandoned_settlement_threshold_seconds"] == 1800
+
+    assert blocked.status_code == 409
+    # 409 的 detail 走的是同一个投影。开不了新局的那一刻正是用户最需要出路的那一刻,
+    # 所以这两处必须给出同一份信息,而不是只有其中一处。
+    assert "abandoned_settlement_eligible_at" in blocked.text

@@ -29,7 +29,12 @@ export const canStartAiLadderGame = (status: AiLadderStatus): boolean => aiLadde
 
 /**
  * True when the game about to be played runs on a rung whose strength was never measured.
- * The game still counts — that is the point of the switch — so the UI has to say so.
+ *
+ * The game is played and recorded but does NOT count: the switch decides whether an
+ * uncertified rung may be SEATED, never whether its result may move a rank. The server
+ * refuses to bank it (`opponent_not_eligible`, ai_ladder_ranked.py) and the ledger CHECK
+ * constraint refuses to store a counted row against an uncertified opponent. So the UI has
+ * to say so — see AI_LADDER_COPY.provisionalSeating, which is the honest wording.
  */
 export const isProvisionalSeating = (status: AiLadderStatus): boolean => {
   if (status.view_state !== 'ready' || !status.provisional_play_allowed) return false;

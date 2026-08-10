@@ -128,6 +128,24 @@ def initial_placement_window(legacy_rank: Optional[str]) -> tuple[int, int]:
     return start, start + 31
 
 
+def expected_opponent_rung(rung: Optional[int], placement_lo: int, placement_hi: int) -> int:
+    """The rung a player faces next: their own once placed, else the window's midpoint.
+
+    One definition, because the status endpoint and the settlement check both need the
+    same answer; they used to inline the formula separately, and when two copies drift a
+    legitimately seated game settles as `opponent_rung_mismatch`.
+
+    NOT snapped onto a rung that has a recipe -- deliberately, for now. The raw midpoint
+    lands on one of the ten recipe-less rungs in 12 of the 160 placement games reachable
+    from the default 1..32 window, and those games cannot be seated at all. Snapping here
+    changes the seating contract that `build_opponent_snapshot` and the mismatch check
+    agree on, so it is an open question rather than a quiet fix. See
+    superpowers/tracks/golaxy-ai-ladder-parity/2026-08-04-41-tier-rated-play-integration-design.md
+    §6, which asks for the whole search to run over available rungs.
+    """
+    return rung if rung is not None else (placement_lo + placement_hi) // 2
+
+
 def _legacy_rank_to_rung(legacy_rank: Optional[str]) -> Optional[int]:
     if not isinstance(legacy_rank, str):
         return None
@@ -699,6 +717,12 @@ class AiLadderRankedRepository:
             )
             ledger = self._new_ledger(
                 user_id=user_id,
+                # Same invariant as the other settlement path: every immutable ledger row
+                # carries its own subject, frozen from the user row this transaction already
+                # holds. A write path that skipped it would be a hole in exactly the guarantee
+                # the column exists for -- "take the whole database away and leave only this
+                # row: can you still tell whose it is?"
+                account_subject=user.uuid,
                 game_id=game_id,
                 user_color=row.user_color,
                 result=result,
@@ -777,8 +801,8 @@ class AiLadderRankedRepository:
                 )
                 if profile is None:
                     lo, hi = initial_placement_window(user.rank)
-                    expected_opponent_rung = (lo + hi) // 2
-                    if opponent.rung != expected_opponent_rung:
+                    expected = expected_opponent_rung(None, lo, hi)
+                    if opponent.rung != expected:
                         ignored_reason = "opponent_rung_mismatch"
                     else:
                         profile = models_db.AiLadderProfile(
@@ -792,16 +816,16 @@ class AiLadderRankedRepository:
                         )
                         session.add(profile)
                 else:
-                    expected_opponent_rung = (
-                        profile.ai_ladder_rung
-                        if profile.ai_ladder_rung is not None
-                        else (profile.placement_lo + profile.placement_hi) // 2
+                    expected = expected_opponent_rung(
+                        profile.ai_ladder_rung, profile.placement_lo, profile.placement_hi
                     )
-                    if opponent.rung != expected_opponent_rung:
+                    if opponent.rung != expected:
                         ignored_reason = "opponent_rung_mismatch"
 
             ledger = self._new_ledger(
                 user_id=user_id,
+                # Frozen here, from the row we already hold, at the moment of settlement.
+                account_subject=user.uuid,
                 game_id=game_id,
                 user_color=user_color,
                 result=result,
@@ -1253,6 +1277,11 @@ class AiLadderRankedRepository:
 
     @staticmethod
     def _apply_result(profile: models_db.AiLadderProfile, result: str) -> None:
+        # Ten of the 41 rungs (准1段–准9段, 职业顶尖) have no fitted recipe. Every write to
+        # `ai_ladder_rung` therefore goes through the ladder's playable-rung stepper: raw
+        # +1 from 5段(30) lands on 准6段(31), a rung no opponent can ever be built for.
+        from katrain.core import ladder
+
         if profile.ai_ladder_rung is None:
             mid = (profile.placement_lo + profile.placement_hi) // 2
             if result == "win":
@@ -1261,16 +1290,18 @@ class AiLadderRankedRepository:
                 profile.placement_hi = mid
             profile.placement_completed += 1
             if profile.placement_completed == PLACEMENT_GAMES:
-                profile.ai_ladder_rung = profile.placement_lo
+                # The window is still searched over raw rungs, so the landing can fall on a
+                # recipe-less rung; snap it rather than seat the player somewhere unplayable.
+                profile.ai_ladder_rung = ladder.nearest_playable_rung(profile.placement_lo)
                 profile.net_score = 0
             return
 
         profile.net_score += 1 if result == "win" else -1
         if profile.net_score >= 3:
-            profile.ai_ladder_rung = min(profile.ai_ladder_rung + 1, 41)
+            profile.ai_ladder_rung = ladder.step_playable_rung(profile.ai_ladder_rung, 1)
             profile.net_score = 0
         elif profile.net_score <= -3:
-            profile.ai_ladder_rung = max(profile.ai_ladder_rung - 1, 1)
+            profile.ai_ladder_rung = ladder.step_playable_rung(profile.ai_ladder_rung, -1)
             profile.net_score = 0
 
     @staticmethod
@@ -1290,6 +1321,7 @@ class AiLadderRankedRepository:
     def _new_ledger(
         *,
         user_id: int,
+        account_subject: Optional[str],
         game_id: str,
         user_color: str,
         result: str,
@@ -1300,6 +1332,7 @@ class AiLadderRankedRepository:
         return models_db.AiLadderGameLedger(
             game_id=game_id,
             user_id=user_id,
+            account_subject=account_subject,
             user_color=user_color,
             result=result,
             game_type=game_type,

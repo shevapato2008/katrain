@@ -928,8 +928,11 @@ def test_a_game_whose_engine_recovered_still_counts(session_factory, user, oppon
     assert outcome.reason is None
 
 
+# 1级 is rung 20 and 准1段 is rung 21. The step counts rungs a player can actually be
+# seated on (§6 of 2026-08-04-41-tier-rated-play-integration-design.md); now that all 41
+# carry a recipe, that is every rung, so 1级 promotes to 准1段 (21) rather than skipping it.
 @pytest.mark.parametrize(("start", "results", "expected"), [(20, ["win"] * 3, 21), (20, ["loss"] * 3, 19)])
-def test_plus_or_minus_three_changes_exactly_one_rung_and_resets(
+def test_plus_or_minus_three_changes_exactly_one_playable_rung_and_resets(
     session_factory, user, opponent, start, results, expected
 ):
     placed_profile(session_factory, user.id, start)

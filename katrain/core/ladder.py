@@ -351,6 +351,13 @@ _TEMPERATURE_CANDIDATES = ("t1.15", "t1.3", "t1.6", "t2", "t2.5", "t3")
 _QUASI_9_CANDIDATES = ("rank_9d@1", "rank_9d@1s", "rank_9d@2", "rank_9d@3")
 _PRO_TOP_CANDIDATES = ("b18@12", "b18@10", "b18@14", "b18@8", "b18@16")
 
+#: The 准n段 rungs ship the primary temperature candidate. Parsed from the candidate list
+#: above so the two cannot drift apart: whichever candidate is listed first IS the one that
+#: ships. Nothing here claims it is the RIGHT temperature -- every 准 rung stays
+#: `provisional`/`unavailable` until _CERTIFIED_RUNGS says otherwise, and C31/C33 record that
+#: T=1.15 has not separated adjacent rungs at the sample sizes run so far.
+_QUASI_DAN_TEMPERATURE = float(_TEMPERATURE_CANDIDATES[0].lstrip("t"))
+
 
 def _recipe(
     rung: int,
@@ -364,6 +371,7 @@ def _recipe(
     human_sl_params: Mapping[str, object] = MappingProxyType({}),
     golaxy_level_name: Optional[str] = None,
     golaxy_api_level: Optional[int] = None,
+    human_policy_temperature: Optional[float] = None,
 ) -> LadderRung:
     return LadderRung(
         rung=rung,
@@ -379,6 +387,7 @@ def _recipe(
         human_sl_params=human_sl_params,
         backend_hint="server",
         root_policy_temperature=1.0,
+        human_policy_temperature=human_policy_temperature,
         selection=selection,
     )
 
@@ -424,6 +433,39 @@ def _fixed_product_recipe(rung: int, rank_name: str) -> Optional[LadderRung]:
             golaxy_level_name=rank_name,
             golaxy_api_level=2500 if rank == 7 else 2800,
         )
+    if rung in (21, 23, 25, 27, 29, 31, 33, 35):
+        # 准n段 sits directly below n段, and is built by flattening n段's own HumanSL policy
+        # rather than by borrowing the (n-1)段 profile: same profile, one notch less sharp.
+        # The primary candidate is _TEMPERATURE_CANDIDATES[0]; it is parsed rather than
+        # repeated so the shipped value cannot drift away from the declared candidate.
+        #
+        # This is the human-POLICY temperature (applied when selecting the move, see
+        # ai.py) -- deliberately not root_policy_temperature, which is a KataGo search
+        # setting and would do nothing at all to a one-visit HumanSL recipe. The
+        # calibration axis in EXPERIMENTS.md C30/C31/C33 is this one.
+        rank = (rung - 19) // 2
+        return _recipe(
+            rung,
+            rank_name,
+            net="humanv0",
+            mechanism="humansl",
+            profile=f"rank_{rank}d",
+            visits=1,
+            selection=HUMAN_TEMPERATURE,
+            human_policy_temperature=_QUASI_DAN_TEMPERATURE,
+        )
+    if rung == 37:
+        # 准9段: _QUASI_9_CANDIDATES[0] == "rank_9d@1". Weighted sampling of rank_9d sits
+        # between argmax rank_8d (8段, rung 36) and search-augmented rank_9d (9段, rung 38).
+        return _recipe(
+            rung,
+            rank_name,
+            net="humanv0",
+            mechanism="humansl",
+            profile="rank_9d",
+            visits=1,
+            selection=HUMAN_WEIGHTED,
+        )
     if rung == 38:
         return _recipe(
             rung,
@@ -436,6 +478,22 @@ def _fixed_product_recipe(rung: int, rank_name: str) -> Optional[LadderRung]:
             human_sl_params=HUMANSL_PIKL_BASELINE_V1,
             golaxy_level_name="9段",
             golaxy_api_level=3000,
+        )
+    if rung == 40:
+        # 职业顶尖: _PRO_TOP_CANDIDATES[0] == "b18@12", between 职业水平 (rung 39, b18@1)
+        # and 超越人类 (rung 41, b18@64). The Golaxy counterpart is not invented here --
+        # rungs 39 and 41 are already 星阵1星/3100 and 星阵3星/3300, so 星阵2星/3200 is the
+        # existing middle term of a triple, not a fabricated alignment.
+        return _recipe(
+            rung,
+            rank_name,
+            net="b18",
+            mechanism="net_search",
+            profile=None,
+            visits=12,
+            selection=SEARCH,
+            golaxy_level_name="星阵2星",
+            golaxy_api_level=3200,
         )
     if rung == 39:
         return _recipe(
@@ -519,10 +577,44 @@ def _build_levels() -> Tuple[LadderLevel, ...]:
 LADDER_LEVELS = _build_levels()
 
 
+#: The rungs a player can actually be seated on. Ten of the 41 (准1段–准9段 and
+#: 职业顶尖) never had a strength recipe fitted, so they are names on the ladder
+#: with nothing behind them. Anything that MOVES a player -- promotion, demotion,
+#: the landing of a placement search -- has to step over them, otherwise it parks
+#: someone on a rung no opponent can ever be built for.
+PLAYABLE_RUNGS: Tuple[int, ...] = tuple(level.rung for level in LADDER_LEVELS if level.recipe is not None)
+
+
 def get_level(n: int) -> LadderLevel:
     if type(n) is not int or not 1 <= n <= len(LADDER_LEVELS):
         raise ValueError(f"level out of range 1..41: {n!r}")
     return LADDER_LEVELS[n - 1]
+
+
+def nearest_playable_rung(n: int) -> int:
+    """The playable rung closest to `n`, preferring the lower one on a tie.
+
+    Used when a rung arrives from outside this module (a stored value, a search
+    landing) and may point at one of the ten recipe-less rungs.
+    """
+    if type(n) is not int or not 1 <= n <= len(LADDER_LEVELS):
+        raise ValueError(f"level out of range 1..41: {n!r}")
+    return min(PLAYABLE_RUNGS, key=lambda rung: (abs(rung - n), rung))
+
+
+def step_playable_rung(n: int, step: int) -> int:
+    """Move `step` playable rungs from `n`, saturating at both ends.
+
+    `step` counts rungs a player can be seated on, not raw catalog positions:
+    5段(30) + 1 is 6段(32), because 准6段(31) has no recipe. Arithmetic on the raw
+    rung number lands on 31 and seats the player where no game can be played.
+    """
+    if type(step) is not int:
+        raise ValueError(f"step must be an integer: {step!r}")
+    start = nearest_playable_rung(n)
+    index = PLAYABLE_RUNGS.index(start) + step
+    index = max(0, min(index, len(PLAYABLE_RUNGS) - 1))
+    return PLAYABLE_RUNGS[index]
 
 
 def get_recipe_for_calibration(n: int) -> LadderRung:

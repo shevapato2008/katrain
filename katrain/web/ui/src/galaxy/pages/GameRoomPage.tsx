@@ -163,7 +163,7 @@ const GameRoomPage = () => {
         try { await handleAction('resign'); } catch { /* surfaced by hook */ }
     }, [handleAction]);
 
-    if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert><Button onClick={() => navigate('/galaxy/play/human')}>Back to Lobby</Button></Box>;
+    if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert><Button onClick={() => navigate('/galaxy/play/human')}>{t('game_room:back_to_lobby', '返回大厅')}</Button></Box>;
     if (!gameState) return <Box sx={{ p: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><CircularProgress /></Box>;
 
     const isBlack = gameState.players_info.B.name === user?.username;

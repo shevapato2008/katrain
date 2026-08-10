@@ -1079,7 +1079,7 @@ msgid "lobby:custom_game"
 msgstr "自定义对局"
 
 msgid "dashboard:welcome"
-msgstr "欢迎来到 Galaxy Go"
+msgstr "欢迎来到智星盒"
 
 msgid "game_end:forfeit_loss"
 msgstr "你弃权了。"
@@ -1183,6 +1183,9 @@ msgstr "{{name}} 邀请你进行对局。"
 msgid "play:choose_mode"
 msgstr "选择游戏模式"
 
+msgid "play:game_records"
+msgstr "对局记录"
+
 msgid "play:hvh_desc"
 msgstr "挑战好友或在线匹配对手。"
 
@@ -1245,6 +1248,15 @@ msgstr "领先目数"
 
 msgid "Coordinates"
 msgstr "坐标"
+
+msgid "Home"
+msgstr "首页"
+
+msgid "Tutorials"
+msgstr "教程"
+
+msgid "More"
+msgstr "更多"
 
 msgid "Move Numbers"
 msgstr "手数"
@@ -1434,7 +1446,7 @@ msgid "tsumego:tryModeDesc"
 msgstr "自由探索，不判断对错"
 
 msgid "auth:login_title"
-msgstr "登录 Galaxy Go"
+msgstr "登录智星盒"
 
 msgid "auth:register_title"
 msgstr "创建账号"

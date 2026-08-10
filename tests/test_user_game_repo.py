@@ -1,11 +1,16 @@
 """Tests for UserGameRepository and UserGameAnalysisRepository."""
 
+import asyncio
+from types import SimpleNamespace
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from fastapi import HTTPException
 
 from katrain.web.core import models_db
 from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
+from katrain.web.api.v1.endpoints.user_games import UserGameCreate, create_user_game
 
 
 @pytest.fixture
@@ -27,7 +32,66 @@ def db_session():
     return SessionLocal, user_id
 
 
+def add_active_game(factory, user_id: int, game_id: str = "reserved-active"):
+    with factory() as db:
+        db.add(
+            models_db.AiLadderActiveGame(
+                game_id=game_id,
+                user_id=user_id,
+                origin_device_id="board-origin",
+                origin_session_id="session-origin",
+                state="active",
+                version=1,
+                reservation_key_hash="a" * 64,
+                user_color="B",
+                game_type="ai_ladder_ranked",
+                opponent_rung=16,
+                opponent_rank_name="5级",
+                opponent_config_snapshot={"config_digest": "d", "config_version": "v"},
+                opponent_certification_status="certified",
+                opponent_availability="available",
+                opponent_route="server",
+                ai_subtype="ai:ladder",
+                execution_identity="identity",
+                rules_snapshot={"board_size": 19, "rules": "chinese", "komi": 7.5},
+                time_control_snapshot={"time_enabled": False},
+            )
+        )
+        db.commit()
+
+
 class TestUserGameRepository:
+    def test_generic_create_cannot_claim_an_active_ranked_game_id(self, db_session):
+        factory, user_id = db_session
+        add_active_game(factory, user_id)
+        repo = UserGameRepository(factory)
+
+        assert repo.is_ai_ladder_game_id_reserved("reserved-active")
+        with pytest.raises(ValueError, match="reserved"):
+            repo.create(
+                user_id=user_id,
+                game_id="reserved-active",
+                sgf_content="(;FF[4])",
+                source="research",
+            )
+
+    def test_public_create_api_rejects_an_active_ranked_game_id(self, db_session):
+        factory, user_id = db_session
+        add_active_game(factory, user_id)
+        request = SimpleNamespace(
+            app=SimpleNamespace(state=SimpleNamespace(user_game_repo=UserGameRepository(factory)))
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(
+                create_user_game(
+                    request,
+                    UserGameCreate(id="reserved-active", sgf_content="(;FF[4])", source="research"),
+                    SimpleNamespace(id=user_id),
+                )
+            )
+        assert exc_info.value.status_code == 409
+
     def test_create_game(self, db_session):
         factory, user_id = db_session
         repo = UserGameRepository(factory)
@@ -47,6 +111,53 @@ class TestUserGameRepository:
         assert game["title"] == "Test Game"
         assert game["player_black"] == "Alice"
         assert game["sgf_content"] == "(;FF[4]SZ[19];B[pd];W[dp])"
+
+    def test_create_and_read_nullable_origin_device_id(self, db_session):
+        factory, user_id = db_session
+        repo = UserGameRepository(factory)
+
+        from_device = repo.create(
+            user_id=user_id,
+            sgf_content="(;FF[4]C[from-board])",
+            source="play_human",
+            origin_device_id="board-001",
+        )
+        legacy = repo.create(user_id=user_id, sgf_content="(;FF[4]C[legacy])", source="import")
+
+        assert from_device["origin_device_id"] == "board-001"
+        assert repo.get(from_device["id"], user_id)["origin_device_id"] == "board-001"
+        assert legacy["origin_device_id"] is None
+        assert {game["origin_device_id"] for game in repo.list(user_id)["items"]} == {"board-001", None}
+
+    def test_ranked_authoritative_create_keeps_origin_device_immutable(self, db_session):
+        factory, user_id = db_session
+        repo = UserGameRepository(factory)
+        kwargs = {
+            "sgf_content": "(;FF[4]RE[B+R])",
+            "result": "B+R",
+            "origin_device_id": "board-ranked",
+        }
+
+        created = repo.create_ai_ladder_ranked(user_id=user_id, game_id="ranked-origin", **kwargs)
+        assert created["origin_device_id"] == "board-ranked"
+
+        with pytest.raises(ValueError, match="immutable"):
+            repo.create_ai_ladder_ranked(
+                user_id=user_id,
+                game_id="ranked-origin",
+                **{**kwargs, "origin_device_id": "forged-device"},
+            )
+
+    def test_user_game_create_contract_accepts_origin_but_still_identifies_ranked_rows(self):
+        payload = UserGameCreate(
+            sgf_content="(;FF[4])",
+            source="play_ai",
+            game_type="ai_ladder_ranked",
+            origin_device_id="board-002",
+        )
+
+        assert payload.origin_device_id == "board-002"
+        assert payload.game_type == "ai_ladder_ranked"
 
     def test_get_game(self, db_session):
         factory, user_id = db_session
@@ -70,9 +181,9 @@ class TestUserGameRepository:
         factory, user_id = db_session
         repo = UserGameRepository(factory)
 
-        repo.create(user_id=user_id, sgf_content="(;FF[4])", source="research", title="Game 1")
-        repo.create(user_id=user_id, sgf_content="(;FF[4])", source="research", title="Game 2")
-        repo.create(user_id=user_id, sgf_content="(;FF[4])", source="research", title="Game 3")
+        repo.create(user_id=user_id, sgf_content="(;FF[4]C[1])", source="research", title="Game 1")
+        repo.create(user_id=user_id, sgf_content="(;FF[4]C[2])", source="research", title="Game 2")
+        repo.create(user_id=user_id, sgf_content="(;FF[4]C[3])", source="research", title="Game 3")
 
         result = repo.list(user_id=user_id)
         assert result["total"] == 3
@@ -97,8 +208,8 @@ class TestUserGameRepository:
         factory, user_id = db_session
         repo = UserGameRepository(factory)
 
-        repo.create(user_id=user_id, sgf_content="(;FF[4])", source="research", category="game")
-        repo.create(user_id=user_id, sgf_content="(;FF[4])", source="research", category="position")
+        repo.create(user_id=user_id, sgf_content="(;FF[4]C[game])", source="research", category="game")
+        repo.create(user_id=user_id, sgf_content="(;FF[4]C[position])", source="research", category="position")
 
         games = repo.list(user_id=user_id, category="game")
         assert games["total"] == 1

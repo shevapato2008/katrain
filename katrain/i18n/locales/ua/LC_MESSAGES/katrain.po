@@ -1302,7 +1302,7 @@ msgid "lobby:custom_game"
 msgstr "Користувацька гра"
 
 msgid "dashboard:welcome"
-msgstr "Ласкаво просимо до Galaxy Go"
+msgstr "Ласкаво просимо до StellaBox"
 
 msgid "game_end:forfeit_loss"
 msgstr "Ви відмовилися від гри."
@@ -1638,7 +1638,7 @@ msgid "tsumego:problemRange"
 msgstr "Задачі {start}-{end}"
 
 msgid "auth:login_title"
-msgstr "Увійти до Galaxy Go"
+msgstr "Увійти до StellaBox"
 
 msgid "auth:register_title"
 msgstr "Створити акаунт"
@@ -2946,3 +2946,199 @@ msgid "ladder:unscored_engine"
 msgstr ""
 "Суперник не зміг грати у відкаліброваній силі, тож ця партія не "
 "зараховується — ранг не змінився і кваліфікаційна партія не витрачена."
+
+msgid "ladder:title"
+msgstr "Рейтингові партії з ШІ"
+
+msgid "ladder:setup_title"
+msgstr "ШІ-драбина з 41 ступеня"
+
+msgid "ladder:placement_opponent_prefix"
+msgstr "Суперник кваліфікації: "
+
+msgid "ladder:game_opponent_prefix"
+msgstr "Суперник у цій партії: "
+
+msgid "ladder:loading_status"
+msgstr "Завантаження вашого рейтингового статусу…"
+
+msgid "ladder:load_error"
+msgstr "Не вдалося завантажити рейтинговий статус"
+
+msgid "ladder:load_error_not_authoritative"
+msgstr "Цей пристрій не записує рейтингові результати, почати партію не можна"
+
+msgid "ladder:load_error_unauthorized"
+msgstr "Сесія завершилася — увійдіть ще раз"
+
+msgid "ladder:retry"
+msgstr "Повторити"
+
+msgid "ladder:provisional_seating"
+msgstr ""
+"Цей ступінь ще не відкалібровано — зіграти можна, але партія не зарахується"
+
+msgid "ladder:current_opponent_prefix"
+msgstr "Поточний суперник: "
+
+msgid "ladder:current_rank_prefix"
+msgstr "Поточний розряд: "
+
+msgid "ladder:available"
+msgstr "Доступно"
+
+msgid "ladder:unavailable_rung"
+msgstr "Цей ступінь наразі недоступний"
+
+msgid "ladder:unavailable_cta"
+msgstr "Поки недоступно"
+
+msgid "ladder:continue_placement_cta"
+msgstr "Продовжити кваліфікацію"
+
+msgid "ladder:start_ranked_cta"
+msgstr "Почати рейтингову партію"
+
+msgid "ladder:pending_settlement"
+msgstr "Триває облік результату партії"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "Облік результату…"
+
+msgid "ladder:recent_heading"
+msgstr "Останні 5 партій"
+
+msgid "ladder:recent_aria"
+msgstr "Результати останніх 5 рейтингових партій із ШІ"
+
+msgid "ladder:recent_display_note"
+msgstr ""
+"Останні 5 партій показано для довідки; перехід залежить лише від чистого "
+"рахунку"
+
+msgid "ladder:recent_empty"
+msgstr "Рейтингових партій із ШІ поки немає"
+
+msgid "ladder:net_score_prefix"
+msgstr "Чистий рахунок: "
+
+msgid "ladder:net_score_aria"
+msgstr "Чистий рахунок; від'ємний — до пониження, додатний — до підвищення"
+
+msgid "ladder:demotion_threshold"
+msgstr "Пониження -3"
+
+msgid "ladder:promotion_threshold"
+msgstr "Підвищення +3"
+
+msgid "ladder:route_local"
+msgstr "На цьому пристрої"
+
+msgid "ladder:route_server"
+msgstr "На сервері"
+
+msgid "ladder:cert_provisional"
+msgstr "Попередньо"
+
+msgid "ladder:cert_certified"
+msgstr "Підтверджено"
+
+msgid "ladder:placement_progress_n"
+msgstr "Кваліфікація {n}/{total}"
+
+msgid "ladder:placement_progress_aria"
+msgstr "Хід кваліфікації: зіграно {n} із {total} партій"
+
+msgid "ladder:net_score_positive"
+msgstr "Чистий рахунок +{n}, у бік підвищення; +3 — підвищення"
+
+msgid "ladder:net_score_negative"
+msgstr "Чистий рахунок {n}, у бік пониження; -3 — пониження"
+
+msgid "ladder:net_score_zero"
+msgstr "Чистий рахунок 0; +3 — підвищення, -3 — пониження"
+
+msgid "ladder:outcome_label"
+msgstr "Партія {n}: {result}"
+
+msgid "ladder:settled_generic"
+msgstr "Облік рейтингу завершено, статус оновлено"
+
+msgid "ladder:settled_placement_done"
+msgstr "Кваліфікацію завершено: {rank}"
+
+msgid "ladder:settled_placement_progress"
+msgstr "Кваліфікація {n}/{total}"
+
+msgid "ladder:settled_promoted"
+msgstr "Підвищення: {rank}"
+
+msgid "ladder:settled_demoted"
+msgstr "Пониження: {rank}"
+
+msgid "ladder:settled_no_change"
+msgstr "Розряд не змінився; чистий рахунок: {score}"
+
+msgid "ladder:settled_pending"
+msgstr "Облік рейтингу ще триває"
+
+msgid "ladder:settled_unavailable"
+msgstr "Статус обліку зараз недоступний"
+
+msgid "ok"
+msgstr "OK"
+
+msgid "accept"
+msgstr "Прийняти"
+
+msgid "reject"
+msgstr "Відхилити"
+
+msgid "common:cancel"
+msgstr "Скасувати"
+
+msgid "common:retry"
+msgstr "Повторити"
+
+msgid "Tutorials"
+msgstr "Уроки"
+
+msgid "Stone Effect"
+msgstr "Ефект каменю"
+
+msgid "3D"
+msgstr "3D"
+
+msgid "research:cancel_analysis_title"
+msgstr "Скасувати аналіз?"
+
+msgid "research:cancel_analysis_warning"
+msgstr "Аналіз ще триває. Скасувати й вийти?"
+
+msgid "research:continue_analysis"
+msgstr "Продовжити аналіз"
+
+msgid "research:cancel_and_leave"
+msgstr "Скасувати й вийти"
+
+msgid "tsumego:loadError"
+msgstr ""
+"Не вдалося завантажити бібліотеку задач. Спробуйте ще раз трохи згодом."
+
+msgid "tsumego:noData"
+msgstr "Задач поки немає."
+
+msgid "chat:title"
+msgstr "Чат"
+
+msgid "chat:placeholder"
+msgstr "Введіть повідомлення…"
+
+msgid "audio:play"
+msgstr "Відтворити"
+
+msgid "audio:pause"
+msgstr "Пауза"
+
+msgid "audio:unavailable"
+msgstr "Аудіо недоступне"

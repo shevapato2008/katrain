@@ -20,9 +20,74 @@ BILLING_TABLES = {"credit_transactions", "redeem_codes", "recharge_orders"}
 
 # These tables hold authoritative player rank state and its immutable
 # idempotency ledger. Like billing data, schema drift must never rebuild them.
-AI_LADDER_TABLES = {"ai_ladder_profiles", "ai_ladder_game_ledger", "ai_ladder_pending_games"}
+AI_LADDER_TABLES = {
+    "ai_ladder_profiles",
+    "ai_ladder_game_ledger",
+    "ai_ladder_pending_games",
+    "ai_ladder_active_games",
+}
 AI_LADDER_LEGACY_TABLE = "ai_ladder_game_ledger_legacy_v1"
-PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | {AI_LADDER_LEGACY_TABLE}
+XIANGQI_RANKED_TABLES = {
+    "xiangqi_rating_profiles",
+    "xiangqi_ranked_reservations",
+    "xiangqi_ranked_ledger",
+    "xiangqi_ranked_capability_jtis",
+}
+PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | XIANGQI_RANKED_TABLES | {AI_LADDER_LEGACY_TABLE}
+
+
+def install_xiangqi_ranked_immutability(engine) -> None:
+    """Install idempotent database triggers that make terminal facts append-only."""
+
+    if "xiangqi_ranked_ledger" not in inspect(engine).get_table_names():
+        return
+    if engine.dialect.name == "sqlite":
+        statements = (
+            "CREATE TRIGGER IF NOT EXISTS trg_xiangqi_ranked_ledger_no_update "
+            "BEFORE UPDATE ON xiangqi_ranked_ledger BEGIN "
+            "SELECT RAISE(ABORT, 'xiangqi ranked ledger is immutable'); END",
+            "CREATE TRIGGER IF NOT EXISTS trg_xiangqi_ranked_ledger_no_delete "
+            "BEFORE DELETE ON xiangqi_ranked_ledger BEGIN "
+            "SELECT RAISE(ABORT, 'xiangqi ranked ledger is immutable'); END",
+        )
+    elif engine.dialect.name == "postgresql":
+        statements = (
+            "CREATE OR REPLACE FUNCTION reject_xiangqi_ranked_ledger_mutation() RETURNS trigger AS $$ "
+            "BEGIN RAISE EXCEPTION 'xiangqi ranked ledger is immutable'; END; $$ LANGUAGE plpgsql",
+            "DROP TRIGGER IF EXISTS trg_xiangqi_ranked_ledger_no_update ON xiangqi_ranked_ledger",
+            "CREATE TRIGGER trg_xiangqi_ranked_ledger_no_update BEFORE UPDATE ON xiangqi_ranked_ledger "
+            "FOR EACH ROW EXECUTE FUNCTION reject_xiangqi_ranked_ledger_mutation()",
+            "DROP TRIGGER IF EXISTS trg_xiangqi_ranked_ledger_no_delete ON xiangqi_ranked_ledger",
+            "CREATE TRIGGER trg_xiangqi_ranked_ledger_no_delete BEFORE DELETE ON xiangqi_ranked_ledger "
+            "FOR EACH ROW EXECUTE FUNCTION reject_xiangqi_ranked_ledger_mutation()",
+        )
+    else:
+        raise RuntimeError(f"unsupported Xiangqi ranked ledger dialect: {engine.dialect.name}")
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
+def _fail_on_xiangqi_ranked_column_drift(engine, inspector) -> None:
+    existing_tables = set(inspector.get_table_names())
+    for table_name in XIANGQI_RANKED_TABLES & existing_tables:
+        expected = {column.name for column in models_db.Base.metadata.tables[table_name].columns}
+        actual = {column["name"] for column in inspector.get_columns(table_name)}
+        missing = expected - actual
+        if missing:
+            raise RuntimeError(
+                f"schema drift in protected table {table_name}: missing columns {sorted(missing)!r}; "
+                "refusing generic rebuild"
+            )
+
+AI_LADDER_TERMINAL_AUDIT_CONDITION = (
+    "(terminal_source IS NULL AND origin_device_id IS NULL "
+    "AND deciding_device_id IS NULL AND decided_at IS NULL) OR "
+    "(terminal_source IS NOT NULL "
+    "AND terminal_source IN ('played_result', 'remote_resign', 'recovery') "
+    "AND origin_device_id IS NOT NULL AND deciding_device_id IS NOT NULL AND decided_at IS NOT NULL)"
+)
 
 
 def migrate_ai_ladder_decision_schema(engine) -> None:
@@ -181,6 +246,58 @@ def postgres_ai_ladder_decision_statements(*, existing_columns: set[str], existi
     return statements
 
 
+def postgres_ai_ladder_terminal_audit_statements(*, existing_checks: set[str]) -> list[str]:
+    """Return the non-destructive PostgreSQL constraint upgrade for provenance fields."""
+
+    constraint = "ck_ai_ladder_ledger_terminal_audit"
+    if constraint in existing_checks:
+        return []
+    return [
+        f"ALTER TABLE ai_ladder_game_ledger ADD CONSTRAINT {constraint} "
+        f"CHECK ({AI_LADDER_TERMINAL_AUDIT_CONDITION})"
+    ]
+
+
+def enforce_ai_ladder_terminal_audit_schema(engine) -> None:
+    """Constrain terminal provenance without rebuilding the protected ledger."""
+
+    table = "ai_ladder_game_ledger"
+    inspector = inspect(engine)
+    if table not in inspector.get_table_names():
+        return
+    required = {"terminal_source", "origin_device_id", "deciding_device_id", "decided_at"}
+    if not required.issubset({column["name"] for column in inspector.get_columns(table)}):
+        return
+
+    checks = {constraint.get("name") for constraint in inspector.get_check_constraints(table)}
+    if "ck_ai_ladder_ledger_terminal_audit" in checks:
+        return
+
+    with engine.begin() as conn:
+        invalid = conn.execute(
+            text(f"SELECT COUNT(*) FROM {table} WHERE NOT ({AI_LADDER_TERMINAL_AUDIT_CONDITION})")
+        ).scalar_one()
+        if invalid:
+            raise RuntimeError(f"AI ladder terminal audit migration found {invalid} invalid row(s)")
+
+        if engine.dialect.name == "sqlite":
+            new_condition = AI_LADDER_TERMINAL_AUDIT_CONDITION
+            for column in required:
+                new_condition = new_condition.replace(column, f"NEW.{column}")
+            for action in ("INSERT", "UPDATE"):
+                trigger = f"trg_ai_ladder_ledger_terminal_audit_{action.lower()}"
+                conn.execute(
+                    text(
+                        f'CREATE TRIGGER IF NOT EXISTS "{trigger}" BEFORE {action} ON "{table}" '
+                        f"FOR EACH ROW WHEN NOT ({new_condition}) "
+                        "BEGIN SELECT RAISE(ABORT, 'invalid AI ladder terminal audit provenance'); END"
+                    )
+                )
+        elif engine.dialect.name == "postgresql":
+            for statement in postgres_ai_ladder_terminal_audit_statements(existing_checks=checks):
+                conn.execute(text(statement))
+
+
 def add_missing_columns(engine) -> None:
     """ADD COLUMN for any model column missing from an existing table.
 
@@ -188,6 +305,7 @@ def add_missing_columns(engine) -> None:
     that a simple new column (e.g. users.is_admin) doesn't trigger a full rebuild.
     """
     inspector = inspect(engine)
+    _fail_on_xiangqi_ranked_column_drift(engine, inspector)
     existing_tables = set(inspector.get_table_names())
     with engine.begin() as conn:
         for table in models_db.Base.metadata.sorted_tables:
@@ -204,6 +322,7 @@ def add_missing_columns(engine) -> None:
                     ddl += f" DEFAULT {default}"
                 conn.execute(text(ddl))
                 logger.info(f"migrate: added column {table.name}.{col.name}")
+    enforce_ai_ladder_terminal_audit_schema(engine)
 
 
 def _default_clause(col):
@@ -241,10 +360,13 @@ def create_missing_indexes(engine) -> None:
             for index in table.indexes:
                 if index.name in existing_idx:
                     continue
-                cols = ", ".join(f'"{c.name}"' for c in index.columns)
-                unique = "UNIQUE " if index.unique else ""
-                conn.execute(text(f'CREATE {unique}INDEX IF NOT EXISTS "{index.name}" ON "{table.name}" ({cols})'))
+                # Let SQLAlchemy compile dialect clauses such as the Xiangqi
+                # reservation's partial unique predicate. Reconstructing an
+                # index from column names would silently turn it into a global
+                # unique constraint and prevent a user from playing again.
+                index.create(bind=conn, checkfirst=True)
                 logger.info(f"migrate: created index {index.name} on {table.name}")
+    install_xiangqi_ranked_immutability(engine)
 
 
 def backfill_ai_ladder_decisions(engine) -> None:

@@ -1182,7 +1182,7 @@ msgid "lobby:custom_game"
 msgstr "사용자 정의 대국"
 
 msgid "dashboard:welcome"
-msgstr "Galaxy Go에 오신 것을 환영합니다"
+msgstr "StellaBox에 오신 것을 환영합니다"
 
 msgid "game_end:forfeit_loss"
 msgstr "기권했습니다."
@@ -1515,7 +1515,7 @@ msgid "tsumego:problemRange"
 msgstr "문제 {start}-{end}"
 
 msgid "auth:login_title"
-msgstr "Galaxy Go 로그인"
+msgstr "StellaBox 로그인"
 
 msgid "auth:register_title"
 msgstr "계정 생성"

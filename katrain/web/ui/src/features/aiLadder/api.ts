@@ -1,4 +1,11 @@
-import type { AiLadderReadyStatus, AiLadderStartPreferences, AiLadderStartResponse } from './types';
+import type {
+  AiLadderCountingReason,
+  AiLadderGameLifecycle,
+  AiLadderReadyStatus,
+  AiLadderSettlementReceipt,
+  AiLadderStartPreferences,
+  AiLadderStartResponse,
+} from './types';
 
 export class AiLadderApiError extends Error {
   readonly status: number;
@@ -13,8 +20,33 @@ export class AiLadderApiError extends Error {
 const authHeaders = (token?: string): Record<string, string> =>
   token ? { Authorization: `Bearer ${token}` } : {};
 
-const parseResponse = async <T,>(response: Response): Promise<T> => {
-  if (response.ok) return response.json() as Promise<T>;
+const aiLadderCountingReasons: readonly AiLadderCountingReason[] = [
+  'invalid_game_type',
+  'engine_unavailable',
+  'inconclusive',
+  'opponent_not_eligible',
+  'opponent_rung_mismatch',
+];
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isGameLifecycle = (
+  value: unknown,
+  gameId: string,
+): value is AiLadderGameLifecycle => {
+  if (!isRecord(value) || value.game_id !== gameId) {
+    return false;
+  }
+  if (value.state === 'active' || value.state === 'pending_settlement') return true;
+  if (value.state !== 'settled' || !isRecord(value.receipt)) return false;
+  const { counted, reason } = value.receipt;
+  return typeof counted === 'boolean'
+    && (reason === null
+      || (typeof reason === 'string' && aiLadderCountingReasons.includes(reason as AiLadderCountingReason)));
+};
+
+const createApiError = async (response: Response): Promise<AiLadderApiError> => {
   let detail = `Request failed ${response.status}`;
   try {
     const body = await response.json() as { detail?: unknown };
@@ -22,11 +54,52 @@ const parseResponse = async <T,>(response: Response): Promise<T> => {
   } catch {
     // Keep the status-based fallback for non-JSON gateway errors.
   }
-  throw new AiLadderApiError(response.status, detail);
+  return new AiLadderApiError(response.status, detail);
 };
+
+const parseResponse = async <T,>(response: Response): Promise<T> => {
+  if (response.ok) return response.json() as Promise<T>;
+  throw await createApiError(response);
+};
+
+const parseGameLifecycleResponse = async (
+  response: Response,
+  gameId: string,
+  allowActive = false,
+): Promise<AiLadderGameLifecycle> => {
+  if (response.ok || response.status === 409) {
+    try {
+      const lifecycle: unknown = await response.clone().json();
+      if (isGameLifecycle(lifecycle, gameId) && (allowActive || lifecycle.state !== 'active')) return lifecycle;
+    } catch {
+      // Invalid lifecycle responses use the same API error mapping as other failures.
+    }
+  }
+  throw await createApiError(response);
+};
+
+export const getAiLadderGameStatus = async (
+  gameId: string,
+  token?: string,
+  signal?: AbortSignal,
+): Promise<AiLadderGameLifecycle> => parseGameLifecycleResponse(await fetch(
+  `/api/v1/ai-ladder/games/${encodeURIComponent(gameId)}/status`,
+  { headers: authHeaders(token), credentials: 'same-origin', signal },
+), gameId, true);
 
 export const getAiLadderStatus = async (token?: string, signal?: AbortSignal): Promise<AiLadderReadyStatus> =>
   parseResponse(await fetch('/api/v1/ai-ladder/status', {
+    headers: authHeaders(token),
+    credentials: 'same-origin',
+    signal,
+  }));
+
+export const getAiLadderSettlementReceipt = async (
+  gameId: string,
+  token?: string,
+  signal?: AbortSignal,
+): Promise<AiLadderSettlementReceipt> =>
+  parseResponse(await fetch(`/api/v1/ai-ladder/settlements/${encodeURIComponent(gameId)}`, {
     headers: authHeaders(token),
     credentials: 'same-origin',
     signal,
@@ -42,3 +115,16 @@ export const startAiLadderGame = async (
     credentials: 'same-origin',
     body: JSON.stringify(preferences),
   }));
+
+export const endAiLadderGame = async (
+  gameId: string,
+  token?: string,
+): Promise<AiLadderGameLifecycle> => {
+  const response = await fetch(`/api/v1/ai-ladder/games/${encodeURIComponent(gameId)}/end`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
+    credentials: 'same-origin',
+    body: JSON.stringify({ reason: 'user_resigned' }),
+  });
+  return parseGameLifecycleResponse(response, gameId);
+};

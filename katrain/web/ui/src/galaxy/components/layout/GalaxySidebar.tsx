@@ -1,158 +1,107 @@
-import { useState } from 'react';
-import { Box, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Divider, Button, Menu, MenuItem } from '@mui/material';
-import { useLocation } from 'react-router-dom';
-import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import ScienceIcon from '@mui/icons-material/Science';
-import AssessmentIcon from '@mui/icons-material/Assessment'; // Report
-import LiveTvIcon from '@mui/icons-material/LiveTv'; // Live
+import { useMemo, useState } from 'react';
+import {
+  Avatar,
+  Box,
+  Button,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Typography,
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import LanguageIcon from '@mui/icons-material/Language';
-import ExtensionIcon from '@mui/icons-material/Extension';
-import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useGameNavigation } from '../../context/GameNavigationContext';
 import LoginModal from '../auth/LoginModal';
+import { getGalaxyNavigation, isGalaxyNavigationActive } from './galaxyNavigation';
+import type { GalaxySidebarState } from './useGalaxySidebar';
 
-const GalaxySidebar = () => {
+interface GalaxySidebarProps {
+  sidebarState: GalaxySidebarState;
+}
+
+const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOverlay: () => void }) => {
   const { requestNavigation } = useGameNavigation();
   const location = useLocation();
   const { user, logout } = useAuth();
   const { language, setLanguage, languages } = useSettings();
   const { t } = useTranslation();
+  const items = useMemo(() => getGalaxyNavigation(t), [t]);
   const [loginOpen, setLoginOpen] = useState(false);
-  const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
+  const [settingsAnchorEl, setSettingsAnchorEl] = useState<HTMLElement | null>(null);
+
+  const navigate = (path: string) => {
+    if (overlay) closeOverlay();
+    requestNavigation(path);
+  };
 
   const handleLogout = async () => {
     await logout();
-    // Navigate to home after logout
-    requestNavigation('/galaxy');
+    navigate('/galaxy');
   };
-
-  const handleSettingsClick = (event: React.MouseEvent<HTMLElement>) => {
-    setSettingsAnchorEl(event.currentTarget);
-  };
-
-  const handleSettingsClose = () => {
-    setSettingsAnchorEl(null);
-  };
-
-  const handleLanguageSelect = (code: string) => {
-    setLanguage(code);
-    handleSettingsClose();
-  };
-
-  const menuItems = [
-    { text: t('btn:Play', 'Play'), icon: <SportsEsportsIcon />, path: '/galaxy/play', disabled: false },
-    { text: t('Research', 'Research'), icon: <ScienceIcon />, path: '/galaxy/research', disabled: false },
-    { text: t('Tsumego', '死活题'), icon: <ExtensionIcon />, path: '/galaxy/tsumego', disabled: false },
-    { text: t('analysis:report', 'Review'), icon: <AssessmentIcon />, path: '/galaxy/report', disabled: false },
-    { text: t('Live', 'Live'), icon: <LiveTvIcon />, path: '/galaxy/live', disabled: false },
-    { text: t('kifu:library', '棋谱库'), icon: <LibraryBooksIcon />, path: '/galaxy/kifu', disabled: false },
-    { text: t('Tutorials', '教程'), icon: <MenuBookIcon />, path: '/galaxy/tutorials', disabled: false },
-  ];
 
   return (
-    <Box sx={{
-      width: 240,
-      minWidth: 240,
-      flexShrink: 0,
-      height: '100vh',
-      bgcolor: 'background.paper',
-      borderRight: '1px solid rgba(255,255,255,0.05)',
-      display: 'flex',
-      flexDirection: 'column'
-    }}>
-      {/* Logo Area */}
-      <Box
-        sx={{ px: 3, py: 3.25, display: 'flex', alignItems: 'center', gap: 1.75, cursor: 'pointer' }}
-        onClick={() => requestNavigation('/galaxy')}
-      >
-         <img src="/assets/img/logo-white.png" alt="弈航" style={{ width: 84, height: 84, objectFit: 'contain' }} />
-         <Box sx={{ minWidth: 0 }}>
-           <Typography sx={{ fontSize: '2rem', fontWeight: 900, lineHeight: 1, letterSpacing: '0.01em', mb: 0.5 }}>
-             弈航
-           </Typography>
-           <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', lineHeight: 1.2, letterSpacing: '0.08em' }}>
-             棋道导航者
-           </Typography>
-         </Box>
-      </Box>
-
-      <Divider sx={{ mb: 2 }} />
-
-      {/* Navigation */}
-      <List component="nav" sx={{ flexGrow: 1 }}>
-        {menuItems.map((item) => {
-          const isActive = location.pathname.startsWith(item.path);
+    <Box
+      data-testid={overlay ? 'galaxy-sidebar-overlay' : undefined}
+      sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}
+    >
+      {overlay && (
+        <Box sx={{ height: 52, px: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <IconButton
+            aria-label={t('galaxy.close_navigation', 'Close navigation')}
+            onClick={closeOverlay}
+            style={{ width: 44, height: 44 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+      )}
+      <List component="nav" data-testid="galaxy-sidebar-nav" style={{ overflowY: 'auto' }} sx={{ flex: 1, minHeight: 0, pt: overlay ? 0 : 2 }}>
+        {items.map((item) => {
+          const active = isGalaxyNavigationActive(location.pathname, item.path);
           return (
             <ListItemButton
-              key={item.text}
-              onClick={() => !item.disabled && requestNavigation(item.path)}
-              disabled={item.disabled}
-              selected={isActive}
-              sx={{
-                mx: 1,
-                borderRadius: 2,
-                '&.Mui-selected': {
-                    bgcolor: 'primary.dark',
-                    '&:hover': { bgcolor: 'primary.dark' }
-                }
-              }}
+              key={item.key}
+              selected={active}
+              onClick={() => navigate(item.path)}
+              sx={{ mx: 1, borderRadius: 2, '&.Mui-selected': { bgcolor: 'primary.dark', '&:hover': { bgcolor: 'primary.dark' } } }}
             >
-              <ListItemIcon sx={{ minWidth: 40, color: isActive ? 'primary.main' : 'text.secondary' }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText 
-                primary={item.text} 
-                primaryTypographyProps={{ 
-                    fontWeight: isActive ? 600 : 400,
-                    color: isActive ? 'text.primary' : 'text.secondary'
-                }} 
+              <ListItemIcon sx={{ minWidth: 40, color: active ? 'primary.main' : 'text.secondary' }}>{item.icon}</ListItemIcon>
+              <ListItemText
+                primary={item.label}
+                primaryTypographyProps={{ fontWeight: active ? 600 : 400, color: active ? 'text.primary' : 'text.secondary' }}
               />
             </ListItemButton>
           );
         })}
       </List>
-
-      <Divider sx={{ mt: 2 }} />
-
-      {/* Bottom Area: Settings & User */}
-      <Box sx={{ p: 2 }}>
-        <ListItemButton 
-          sx={{ borderRadius: 2, mb: 1 }}
-          onClick={handleSettingsClick}
-        >
-            <ListItemIcon sx={{ minWidth: 40 }}><SettingsIcon /></ListItemIcon>
-            <ListItemText primary={t('Settings', 'Settings')} />
+      <Divider />
+      <Box data-testid="galaxy-sidebar-account" sx={{ p: 2, flex: 'none' }}>
+        <ListItemButton sx={{ borderRadius: 2, mb: 1 }} onClick={(event) => setSettingsAnchorEl(event.currentTarget)}>
+          <ListItemIcon sx={{ minWidth: 40 }}><SettingsIcon /></ListItemIcon>
+          <ListItemText primary={t('Settings', 'Settings')} />
         </ListItemButton>
-
-        <Menu
-          anchorEl={settingsAnchorEl}
-          open={Boolean(settingsAnchorEl)}
-          onClose={handleSettingsClose}
-          anchorOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          transformOrigin={{
-            vertical: 'bottom',
-            horizontal: 'left',
-          }}
-          sx={{ mb: 2 }}
-        >
-          <Box sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline" color="text.secondary">{t('Language', 'Language')}</Typography>
-          </Box>
+        <Menu anchorEl={settingsAnchorEl} open={Boolean(settingsAnchorEl)} onClose={() => setSettingsAnchorEl(null)}>
+          <Box sx={{ px: 2, py: 1 }}><Typography variant="overline" color="text.secondary">{t('Language', 'Language')}</Typography></Box>
           {languages.map((lang) => (
-            <MenuItem 
-              key={lang.code} 
-              onClick={() => handleLanguageSelect(lang.code)}
+            <MenuItem
+              key={lang.code}
               selected={language === lang.code}
+              onClick={() => { setLanguage(lang.code); setSettingsAnchorEl(null); }}
               sx={{ minWidth: 160, display: 'flex', gap: 1 }}
             >
               <LanguageIcon fontSize="small" sx={{ color: 'text.secondary' }} />
@@ -160,33 +109,76 @@ const GalaxySidebar = () => {
             </MenuItem>
           ))}
         </Menu>
-
         {user ? (
-            <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.75rem' }}>
-                    {user.rank === '20k' ? '?' : user.rank}
-                </Avatar>
-                <Box sx={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
-                    <Typography variant="subtitle2" noWrap>{user.username}</Typography>
-                    <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>
-                        {user.rank === '20k' ? t('No Rank', 'No Rank') : user.rank}
-                    </Typography>
-                </Box>
-                <LogoutIcon fontSize="small" sx={{ color: 'text.secondary', cursor: 'pointer' }} onClick={handleLogout} />
+          <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.75rem' }}>{user.rank === '20k' ? '?' : user.rank}</Avatar>
+            <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+              <Typography variant="subtitle2" noWrap>{user.username}</Typography>
+              <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>{user.rank === '20k' ? t('No Rank', 'No Rank') : user.rank}</Typography>
             </Box>
+            <IconButton aria-label={t('Logout', 'Logout')} size="small" onClick={handleLogout}><LogoutIcon fontSize="small" /></IconButton>
+          </Box>
         ) : (
-            <Button 
-                variant="outlined" 
-                fullWidth 
-                startIcon={<LoginIcon />}
-                onClick={() => setLoginOpen(true)}
-            >
-                {t('Login', 'Sign In')}
-            </Button>
+          <Button variant="outlined" fullWidth startIcon={<LoginIcon />} onClick={() => setLoginOpen(true)}>{t('Login', 'Sign In')}</Button>
         )}
       </Box>
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </Box>
+  );
+};
+
+const GalaxySidebar = ({
+  sidebarState: { mode, dockedWidth, dockedExpanded, overlayOpen, toggle, closeOverlay, toggleButtonRef },
+}: GalaxySidebarProps) => {
+  const { t } = useTranslation();
+  if (mode === 'mobile') return null;
+
+  const overlay = mode === 'narrow-overlay';
+  const toggleLabel = overlay && overlayOpen
+    ? t('galaxy.close_navigation', 'Close navigation')
+    : dockedExpanded && !overlay
+      ? t('galaxy.collapse_navigation', 'Collapse navigation')
+      : t('galaxy.expand_navigation', 'Expand navigation');
+
+  return (
+    <>
+      <Box
+        data-testid="galaxy-sidebar-wrapper"
+        style={{ width: dockedWidth }}
+        sx={{ flex: `0 0 ${dockedWidth}px`, minWidth: 0, height: '100%', overflow: 'hidden', borderRight: dockedWidth ? '1px solid' : 0, borderColor: 'divider' }}
+      >
+        {!overlay && dockedExpanded && <SidebarContents overlay={false} closeOverlay={closeOverlay} />}
+      </Box>
+      <IconButton
+        ref={toggleButtonRef}
+        data-testid="galaxy-sidebar-toggle"
+        aria-label={toggleLabel}
+        aria-expanded={overlay ? overlayOpen : dockedExpanded}
+        onClick={toggle}
+        style={{
+          width: 44,
+          height: 44,
+          position: 'absolute',
+          left: dockedWidth,
+          top: '50%',
+          transform: 'translateY(-50%)',
+        }}
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 2, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
+      >
+        {dockedExpanded && !overlay ? <ChevronLeftIcon /> : <MenuIcon />}
+      </IconButton>
+      {overlay && (
+        <Drawer
+          variant="temporary"
+          open={overlayOpen}
+          onClose={closeOverlay}
+          ModalProps={{ keepMounted: false }}
+          slotProps={{ paper: { sx: { width: 280, maxWidth: 'calc(100vw - 56px)' } } }}
+        >
+          <SidebarContents overlay closeOverlay={closeOverlay} />
+        </Drawer>
+      )}
+    </>
   );
 };
 

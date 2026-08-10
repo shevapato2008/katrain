@@ -1237,7 +1237,7 @@ msgid "lobby:custom_game"
 msgstr "自定義對局"
 
 msgid "dashboard:welcome"
-msgstr "歡迎來到 Galaxy Go"
+msgstr "歡迎來到智星盒"
 
 msgid "game_end:forfeit_loss"
 msgstr "你棄權了。"
@@ -1570,7 +1570,7 @@ msgid "tsumego:problemRange"
 msgstr "第 {start}-{end} 題"
 
 msgid "auth:login_title"
-msgstr "登入 Galaxy Go"
+msgstr "登入智星盒"
 
 msgid "auth:register_title"
 msgstr "建立帳號"

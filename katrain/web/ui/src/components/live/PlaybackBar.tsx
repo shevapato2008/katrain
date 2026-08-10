@@ -105,7 +105,7 @@ export default function PlaybackBar({
   };
 
   return (
-    <Box sx={{ pt: 1, pb: 1.5, px: 2, borderTop: 1, borderColor: 'divider' }}>
+    <Box sx={{ pt: 1, pb: 1.5, px: 1, borderTop: 1, borderColor: 'divider' }}>
       {/* Slider */}
       <Box sx={{ px: 1, mb: 0.5 }}>
         <Slider
@@ -143,7 +143,15 @@ export default function PlaybackBar({
       </Box>
 
       {/* Controls with move counter inline */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 0.25,
+          '@container board-rail (max-width: 340px)': { flexWrap: 'wrap' },
+        }}
+      >
         <Tooltip title={t('live:first_move')}>
           <span><IconButton aria-label={t('live:first_move')} onClick={handleFirst} size="small" disabled={currentMove === 0} sx={touchButtonSx}>
             <KeyboardDoubleArrowLeftIcon />
@@ -165,7 +173,6 @@ export default function PlaybackBar({
             bgcolor: 'primary.main',
             color: 'primary.contrastText',
             '&:hover': { bgcolor: 'primary.dark' },
-            mx: 1,
             ...(touchButtonSx || {}),
           }}
         >
@@ -198,7 +205,6 @@ export default function PlaybackBar({
               }}
               size="small"
               sx={{
-                ml: 1,
                 border: 'none',
                 '&.Mui-selected': {
                   bgcolor: 'success.main',
@@ -213,7 +219,22 @@ export default function PlaybackBar({
         )}
 
         {/* Move counter - inline with controls */}
-        <Typography variant="body2" color="text.secondary" sx={{ ml: 2, minWidth: 80 }}>
+        <Typography
+          data-testid="playback-move-counter"
+          variant="body2"
+          color="text.secondary"
+          noWrap
+          sx={{
+            minWidth: 87,
+            '@container board-rail (max-width: 340px)': {
+              flexBasis: '100%',
+              minWidth: 0,
+              textAlign: 'center',
+              overflow: 'visible',
+              textOverflow: 'clip',
+            },
+          }}
+        >
           {currentMove} / {totalMoves} {t('live:moves')}
         </Typography>
       </Box>

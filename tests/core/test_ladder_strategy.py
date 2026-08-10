@@ -471,6 +471,129 @@ def test_ladder_never_global_resigns(monkeypatch):
     assert game.current_node.end_state is None
 
 
+def test_remote_terminal_during_ladder_analysis_cancels_query_and_never_plays():
+    import threading
+    from katrain.core.ai import LadderUnavailable, generate_ai_move
+
+    started = threading.Event()
+
+    class DeferredEngine(FakeEngine):
+        def request_analysis(self, node, callback, **kwargs):
+            self.node = node
+            self.callback = callback
+            started.set()
+
+        def terminate_queries(self, only_for_node=None, **kwargs):
+            self.terminated_node = only_for_node
+
+    engine = DeferredEngine(_search_analysis(), call_back=False)
+    game = FakeGame(engine)
+    original_node = game.current_node
+    failure = []
+
+    def generate():
+        try:
+            generate_ai_move(game, AI_LADDER, {"rung": NET_SEARCH_RUNG})
+        except Exception as exc:
+            failure.append(exc)
+
+    worker = threading.Thread(target=generate)
+    worker.start()
+    assert started.wait(timeout=1)
+    game.katrain.ai_ladder_remote_ended = True
+    engine.terminate_queries(only_for_node=original_node)
+    engine.callback(_search_analysis(), False)  # a result already in flight arrives late
+    worker.join(timeout=1)
+
+    assert not worker.is_alive()
+    assert engine.terminated_node is original_node
+    assert game.current_node is original_node
+    assert len(failure) == 1 and isinstance(failure[0], LadderUnavailable)
+
+
+def test_remote_terminal_after_move_generation_still_blocks_game_play():
+    from katrain.core.ai import LadderUnavailable, generate_ai_move
+
+    engine = FakeEngine(_search_analysis())
+    game = FakeGame(engine)
+    original_node = game.current_node
+
+    def mark_at_commit(message, *args, **kwargs):
+        if str(message).startswith("Playing move"):
+            game.katrain.ai_ladder_remote_ended = True
+
+    game.katrain.log = mark_at_commit
+
+    with pytest.raises(LadderUnavailable, match="before move commit"):
+        generate_ai_move(game, AI_LADDER, {"rung": NET_SEARCH_RUNG})
+
+    assert game.current_node is original_node
+
+
+def test_remote_terminal_marker_and_ladder_move_commit_are_serialized():
+    import threading
+    from types import SimpleNamespace
+
+    from katrain.core.ai import LadderUnavailable, generate_ai_move
+    from katrain.web.api.v1.endpoints.ai_ladder import mark_ai_ladder_remote_terminal
+
+    play_entered = threading.Event()
+    release_play = threading.Event()
+    marker_started = threading.Event()
+    marker_done = threading.Event()
+
+    class BlockingGame(FakeGame):
+        def __init__(self, engine):
+            super().__init__(engine)
+            self.play_count = 0
+
+        def play(self, move):
+            play_entered.set()
+            assert release_play.wait(timeout=1)
+            self.play_count += 1
+            return super().play(move)
+
+    game = BlockingGame(FakeEngine(_search_analysis()))
+    game.katrain.ai_ladder_commit_lock = threading.RLock()
+    game.katrain.game = game
+    session = SimpleNamespace(katrain=game.katrain)
+    failures = []
+
+    def generate():
+        try:
+            generate_ai_move(game, AI_LADDER, {"rung": NET_SEARCH_RUNG})
+        except Exception as exc:
+            failures.append(exc)
+
+    def mark_remote_terminal():
+        marker_started.set()
+        mark_ai_ladder_remote_terminal(session, {"state": "settled"})
+        marker_done.set()
+
+    ai_worker = threading.Thread(target=generate)
+    ai_worker.start()
+    assert play_entered.wait(timeout=1)
+
+    marker_worker = threading.Thread(target=mark_remote_terminal)
+    marker_worker.start()
+    assert marker_started.wait(timeout=1)
+    assert not marker_done.wait(timeout=0.05), "terminal marker must wait for the in-flight move commit"
+    assert not getattr(game.katrain, "ai_ladder_remote_ended", False)
+
+    release_play.set()
+    ai_worker.join(timeout=1)
+    marker_worker.join(timeout=1)
+
+    assert not ai_worker.is_alive() and not marker_worker.is_alive()
+    assert failures == []
+    assert marker_done.is_set()
+    assert game.play_count == 1
+
+    with pytest.raises(LadderUnavailable, match="ended remotely"):
+        generate_ai_move(game, AI_LADDER, {"rung": NET_SEARCH_RUNG})
+    assert game.play_count == 1
+
+
 def test_ladder_generate_ai_move_keeps_rung_off_katrain_log(caplog):
     # katrain.log is the WS-broadcast channel: WebKaTrain.log forwards EVERY level via
     # message_callback -> SessionManager WS -> ZenModeApp TopBar (codex round 3/5, verified).

@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager, contextmanager, nullcontext
 
 from katrain.web.api.v1.api import api_router
+from katrain.web.api.v1.endpoints.ai_ladder import mark_ai_ladder_remote_terminal
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
 from katrain.web.core.ranked_session_guard import (
@@ -51,6 +52,39 @@ def _json_safe(obj):
     if isinstance(obj, np.ndarray):
         return obj.tolist()
     return obj
+
+
+async def _guard_ai_ladder_cloud_active(app: FastAPI, session, current_user) -> None:
+    """Fail closed before a ranked board mutation when another device ended it."""
+    if not is_ai_ladder_ranked_session(session):
+        return
+    snapshot = guard_ai_ladder_ranked_owner(session, current_user, "ranked lifecycle")
+    if getattr(session, "ai_ladder_remote_ended", False):
+        raise HTTPException(status_code=409, detail="Ranked game has ended on another device")
+    try:
+        if getattr(app.state, "remote_client", None) and getattr(app.state, "repository_dispatcher", None):
+            if str(getattr(app.state.remote_client, "bound_user_id", "")) != str(current_user.id):
+                raise HTTPException(status_code=401, detail="Cloud session does not match local user")
+            lifecycle = await app.state.remote_client.get_ai_ladder_game_status(snapshot.game_id)
+            if not isinstance(lifecycle, dict) or lifecycle.get("game_id") != snapshot.game_id:
+                raise RuntimeError("Invalid ranked lifecycle response")
+            lifecycle_state = lifecycle.get("state")
+        else:
+            lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
+                user_id=current_user.id, game_id=snapshot.game_id
+            )
+            lifecycle_state = getattr(lifecycle, "state", "settled")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logging.getLogger("katrain_web").warning("Could not verify ranked lifecycle: %s", exc)
+        raise HTTPException(status_code=503, detail="Ranked game status is temporarily unavailable") from exc
+    if lifecycle_state == "active":
+        return
+    if lifecycle_state not in {"pending_settlement", "settled"}:
+        raise HTTPException(status_code=503, detail="Ranked game status is temporarily unavailable")
+    mark_ai_ladder_remote_terminal(session, lifecycle)
+    raise HTTPException(status_code=409, detail="Ranked game has ended on another device")
 
 
 @asynccontextmanager
@@ -320,12 +354,9 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.user_game_repo = local_user_game_repo
     app.state.user_game_analysis_repo = local_user_game_analysis_repo
     app.state.ai_ladder_repo = AiLadderRankedRepository(SessionLocal)
-    # The board settles its own ranked games against its own SQLite. It has to: the game
-    # is played by THIS box's KataGo, and /start creates the session on whichever node
-    # serves it, so "authority elsewhere, engine here" is not a thing this design can
-    # express. Cross-device rank still needs the settlement to reach the cloud — that is
-    # the sync queue's job and is NOT wired yet, so a rank earned here is currently a
-    # rank earned on this box.
+    # The board keeps an optimistic local profile so a completed game remains durable
+    # through an outage. The cloud reservation/finalizer is canonical across devices;
+    # the settlement outbox below replaces this profile with the cloud reply.
     app.state.ai_ladder_authoritative = True
     app.state.tsumego_progress_repo = local_tsumego_progress_repo
     app.state.report_session_factory = SessionLocal
@@ -745,6 +776,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def play_move(request: MoveRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_human_action(session, current_user, "play-move")
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
         tracks_auto_analysis = not is_ai_ladder_ranked_session(session) and bool(
             getattr(session.katrain, "analysis_allowed", True)
         )
@@ -837,10 +869,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.get("/api/sgf/save")
-    def save_sgf(session_id: str, current_user: User = Depends(get_current_user_optional)):
+    async def save_sgf(session_id: str, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, session_id)
         if is_ai_ladder_ranked_session(session):
             guard_ai_ladder_ranked_owner(session, current_user, "save-sgf")
+            await _guard_ai_ladder_cloud_active(app, session, current_user)
             if not getattr(session, "_recorded", False) or getattr(session, "ai_ladder_settlement_pending", False):
                 raise HTTPException(status_code=403, detail="SGF is unavailable until ranked settlement completes")
         with session.lock:
@@ -1336,7 +1369,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
-    def _enqueue_ladder_settlement_sync(app, current_user, snapshot, raw_result, session):
+    def _enqueue_ladder_settlement_sync(
+        app, current_user, snapshot, raw_result, session, *, reservation_key=None, game_record=None
+    ):
         """Hand this board's settled ranked game to the sync queue for the cloud.
 
         Only on a node that HAS a queue (a board); a cloud server settles in place. The
@@ -1348,35 +1383,28 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         """
         enqueue = getattr(app.state, "sync_enqueue_fn", None)
         if enqueue is None:
-            return
+            return False
         try:
-            from katrain.web.core.ai_ladder_catalog import result_for_user
+            from katrain.web.core.ai_ladder_sync import build_settlement_payload
 
-            enqueue(
+            return enqueue(
                 operation="settle_ai_ladder_ranked",
                 endpoint="/api/v1/ai-ladder/settlements",
                 method="POST",
-                payload={
-                    "game_id": snapshot.game_id,
-                    "user_color": snapshot.user_color,
-                    "result": result_for_user(raw_result, snapshot.user_color),
-                    "game_type": snapshot.game_type,
-                    "opponent": {
-                        "rung": snapshot.opponent.rung,
-                        "rank_name": snapshot.opponent.rank_name,
-                        "config_snapshot": dict(snapshot.opponent.config_snapshot),
-                        "certification_status": snapshot.opponent.certification_status,
-                        "availability": snapshot.opponent.availability,
-                        "route": snapshot.opponent.route,
-                    },
-                    "engine_stalled": bool(getattr(session.katrain, "last_ladder_error", False)),
-                    "device_id": settings.DEVICE_ID,
-                },
+                payload=build_settlement_payload(
+                    snapshot,
+                    raw_result,
+                    reservation_key=reservation_key,
+                    game_record=game_record,
+                    device_id=settings.DEVICE_ID,
+                    engine_stalled=getattr(session.katrain, "last_ladder_error", False),
+                ),
                 user_id=str(current_user.id),
                 idempotency_key=f"ladder-settlement:{snapshot.game_id}",
-            )
+            ) is True
         except Exception as exc:  # pragma: no cover - defensive
             logging.getLogger("katrain_web").error(f"Could not queue ranked settlement for sync: {exc}")
+            return False
 
     async def _record_ai_game_locked(session, app, current_user, result):
         """Record a completed single-player/local game to user_games (remote-first via
@@ -1501,47 +1529,120 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 if not getattr(app.state, "ai_ladder_authoritative", False):
                     raise RuntimeError("ranked AI settlement is unavailable on this node")
 
-                # Deliberately NOT the repository dispatcher, on any node. Settlement only
-                # moves the rank after re-reading the row it just wrote, and the dispatcher
-                # may have sent that row to the cloud (online) or queued it (offline) --
-                # neither is readable here. The ranked row is written to this node's own
-                # authoritative store; getting it to the cloud is the sync queue's job.
-                saved = app.state.user_game_repo.create_ai_ladder_ranked(
-                    user_id=current_user.id,
-                    game_id=snapshot.game_id,
-                    **data,
+                lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
+                    user_id=current_user.id, game_id=snapshot.game_id
                 )
-                confirmed = app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
-                    snapshot.game_id, current_user.id
-                )
-                if (
-                    saved.get("id") != snapshot.game_id
-                    or confirmed is None
-                    or confirmed.get("game_type") != "ai_ladder_ranked"
+                if getattr(app.state, "remote_client", None) is not None:
+                    data["origin_device_id"] = settings.DEVICE_ID
+                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(
+                    lifecycle, "origin_device_id"
                 ):
-                    raise RuntimeError("authoritative ranked AI game row was not confirmed")
-                app.state.ai_ladder_repo.mark_pending_game_saved(
-                    user_id=current_user.id,
-                    game_id=snapshot.game_id,
-                    result=confirmed["result"],
-                )
-
-                app.state.ai_ladder_repo.settle_game(
-                    user_id=current_user.id,
-                    game_id=snapshot.game_id,
-                    user_color=snapshot.user_color,
-                    result=result_for_user(confirmed["result"], snapshot.user_color),
-                    game_type=game_type,
-                    opponent=snapshot.opponent,
-                    # The AI refused to move because the engine could not seat the rung
-                    # at its calibrated strength. The ledger still gets a row -- it just
-                    # says engine_unavailable instead of moving the rank. Cleared by the
-                    # next successful AI move, so a game that stalled and recovered
-                    # settles normally.
-                    engine_stalled=bool(getattr(session.katrain, "last_ladder_error", False)),
-                )
+                    data["origin_device_id"] = lifecycle.origin_device_id
+                terminal_result = result_for_user(data["result"], snapshot.user_color)
+                engine_stalled = bool(getattr(session.katrain, "last_ladder_error", False))
+                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(
+                    lifecycle, "origin_device_id"
+                ):
+                    # New lifecycle games commit their game record, ledger, profile and
+                    # reservation release in one repository transaction.
+                    app.state.ai_ladder_repo.finalize_reserved_game(
+                        user_id=current_user.id,
+                        game_id=snapshot.game_id,
+                        terminal_source="played_result",
+                        result=terminal_result,
+                        deciding_device_id=lifecycle.origin_device_id,
+                        reservation_key=pending.get("reservation_key"),
+                        game_record=data,
+                        engine_stalled=engine_stalled,
+                    )
+                    confirmed = app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
+                        snapshot.game_id, current_user.id
+                    )
+                    if confirmed is None:
+                        raise RuntimeError("authoritative ranked AI game row was not confirmed")
+                elif getattr(lifecycle, "state", None) == "settled" and getattr(
+                    app.state, "remote_client", None
+                ) is None:
+                    # A remote /end won the terminal race. Its minimal resignation
+                    # record is immutable; the late local callback is a successful no-op.
+                    app.state.ai_ladder_repo.clear_pending_game(
+                        user_id=current_user.id, game_id=snapshot.game_id
+                    )
+                    session.ai_ladder_settlement_pending = False
+                    session._recorded = True
+                    return
+                elif getattr(lifecycle, "state", None) == "settled":
+                    # On a board this is the optimistic local ledger from a previous
+                    # callback. The cloud may still know nothing about it, so replay
+                    # the durable outbox step using the pending reservation credential.
+                    confirmed = app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
+                        snapshot.game_id, current_user.id
+                    )
+                    if confirmed is None:
+                        raise RuntimeError("local ranked AI game row was not confirmed")
+                else:
+                    # Legacy games predate account reservations. Preserve their old
+                    # save-then-settle path for backward compatibility.
+                    saved = app.state.user_game_repo.create_ai_ladder_ranked(
+                        user_id=current_user.id,
+                        game_id=snapshot.game_id,
+                        **data,
+                    )
+                    confirmed = app.state.user_game_repo.get_authoritative_ai_ladder_ranked(
+                        snapshot.game_id, current_user.id
+                    )
+                    if (
+                        saved.get("id") != snapshot.game_id
+                        or confirmed is None
+                        or confirmed.get("game_type") != "ai_ladder_ranked"
+                    ):
+                        raise RuntimeError("authoritative ranked AI game row was not confirmed")
+                    app.state.ai_ladder_repo.mark_pending_game_saved(
+                        user_id=current_user.id,
+                        game_id=snapshot.game_id,
+                        result=confirmed["result"],
+                    )
+                    app.state.ai_ladder_repo.settle_game(
+                        user_id=current_user.id,
+                        game_id=snapshot.game_id,
+                        user_color=snapshot.user_color,
+                        result=terminal_result,
+                        game_type=game_type,
+                        opponent=snapshot.opponent,
+                        # The AI refused to move because the engine could not seat the rung
+                        # at its calibrated strength. The ledger still gets a row -- it just
+                        # says engine_unavailable instead of moving the rank. Cleared by the
+                        # next successful AI move, so a game that stalled and recovered
+                        # settles normally.
+                        engine_stalled=engine_stalled,
+                    )
+                reservation_key = pending.get("reservation_key")
+                remote_client = getattr(app.state, "remote_client", None)
+                if remote_client is not None and reservation_key:
+                    try:
+                        await remote_client.mark_ai_ladder_game_pending(snapshot.game_id, reservation_key)
+                    except Exception as exc:
+                        # The durable outbox below is the recovery path; a best-effort
+                        # hint must never discard the result already saved locally.
+                        logging.getLogger("katrain_web").warning(
+                            "Could not mark ranked game pending on cloud: %s", exc
+                        )
+                game_record = {key: value for key, value in data.items() if key != "origin_device_id"}
+                durable = True
+                if remote_client is not None:
+                    durable = _enqueue_ladder_settlement_sync(
+                        app,
+                        current_user,
+                        snapshot,
+                        data["result"],
+                        session,
+                        reservation_key=reservation_key,
+                        game_record=game_record,
+                    )
+                if not durable:
+                    session.ai_ladder_settlement_pending = True
+                    return
                 app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=snapshot.game_id)
-                _enqueue_ladder_settlement_sync(app, current_user, snapshot, confirmed["result"], session)
                 session.ai_ladder_settlement_pending = False
                 session._recorded = True
                 return
@@ -1557,6 +1658,25 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         except Exception as e:
             if getattr(session, "game_type", None) == "ai_ladder_ranked":
                 session.ai_ladder_settlement_pending = True
+                try:
+                    snapshot = getattr(session, "ai_ladder_snapshot", None)
+                    pending = app.state.ai_ladder_repo.get_pending_game(session.user_id)
+                    lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
+                        user_id=session.user_id, game_id=snapshot.game_id
+                    )
+                    if (
+                        pending is not None
+                        and pending.get("game_saved")
+                        and getattr(lifecycle, "state", None) == "active"
+                    ):
+                        app.state.ai_ladder_repo.mark_pending_settlement(
+                            user_id=session.user_id,
+                            game_id=snapshot.game_id,
+                            reservation_key=pending.get("reservation_key"),
+                            origin_device_id=lifecycle.origin_device_id,
+                        )
+                except Exception:
+                    pass
             logging.getLogger("katrain_web").error(f"Failed to record game: {e}")
 
     async def _record_ai_game(session, app, current_user, result):
@@ -1575,6 +1695,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         ranked_ai = is_ai_ladder_ranked_session(session)
         if ranked_ai:
             guard_ai_ladder_ranked_owner(session, current_user, "resign")
+            await _guard_ai_ladder_cloud_active(app, session, current_user)
 
         # Route through platform gateway for cross-platform games
         gateway = getattr(app.state, "platform_gateway", None)
@@ -1694,6 +1815,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
 
         # Verify move count >= configured minimum
         state = session.katrain.get_state()
@@ -1804,6 +1926,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         """End game due to timeout - current player loses on time"""
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
+        await _guard_ai_ladder_cloud_active(app, session, current_user)
 
         # For multiplayer games, record the result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None

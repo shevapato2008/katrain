@@ -1,0 +1,499 @@
+{
+  "generated_source_asset_bytes": 16787692,
+  "generated_source_assets": [
+    {
+      "path": "src/galaxy/assets/fonts/galaxy-fonts.css",
+      "bytes": 44164
+    },
+    {
+      "path": "src/galaxy/assets/fonts/longcang-brand.woff2",
+      "bytes": 1804
+    },
+    {
+      "path": "src/galaxy/assets/fonts/sources.json",
+      "bytes": 9584
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-000.woff2",
+      "bytes": 230260
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-001.woff2",
+      "bytes": 336300
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-002.woff2",
+      "bytes": 369680
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-003.woff2",
+      "bytes": 383032
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-004.woff2",
+      "bytes": 404056
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-005.woff2",
+      "bytes": 419564
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-006.woff2",
+      "bytes": 372760
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-007.woff2",
+      "bytes": 288180
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-008.woff2",
+      "bytes": 322608
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-009.woff2",
+      "bytes": 327056
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-010.woff2",
+      "bytes": 318188
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-011.woff2",
+      "bytes": 326212
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-012.woff2",
+      "bytes": 346384
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-013.woff2",
+      "bytes": 362476
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-014.woff2",
+      "bytes": 323052
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-015.woff2",
+      "bytes": 340700
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-016.woff2",
+      "bytes": 343132
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-017.woff2",
+      "bytes": 351304
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-018.woff2",
+      "bytes": 350996
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-019.woff2",
+      "bytes": 339004
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-020.woff2",
+      "bytes": 354420
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-021.woff2",
+      "bytes": 358332
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-022.woff2",
+      "bytes": 390940
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-400-023.woff2",
+      "bytes": 240432
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-000.woff2",
+      "bytes": 230120
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-001.woff2",
+      "bytes": 354972
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-002.woff2",
+      "bytes": 393744
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-003.woff2",
+      "bytes": 403592
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-004.woff2",
+      "bytes": 427140
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-005.woff2",
+      "bytes": 442660
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-006.woff2",
+      "bytes": 391828
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-007.woff2",
+      "bytes": 290940
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-008.woff2",
+      "bytes": 330488
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-009.woff2",
+      "bytes": 336372
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-010.woff2",
+      "bytes": 328256
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-011.woff2",
+      "bytes": 334652
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-012.woff2",
+      "bytes": 354260
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-013.woff2",
+      "bytes": 375928
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-014.woff2",
+      "bytes": 333532
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-015.woff2",
+      "bytes": 357716
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-016.woff2",
+      "bytes": 354476
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-017.woff2",
+      "bytes": 365596
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-018.woff2",
+      "bytes": 366424
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-019.woff2",
+      "bytes": 352048
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-020.woff2",
+      "bytes": 371172
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-021.woff2",
+      "bytes": 373240
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-022.woff2",
+      "bytes": 414892
+    },
+    {
+      "path": "src/galaxy/assets/fonts/wenkai-500-023.woff2",
+      "bytes": 249024
+    }
+  ],
+  "galaxy_build_font_bytes": 16732140,
+  "galaxy_build_font_files": [
+    {
+      "path": "../static/assets/wenkai-400-000-Dh7NHSsi.woff2",
+      "bytes": 230260
+    },
+    {
+      "path": "../static/assets/wenkai-400-001-MD5FxzgQ.woff2",
+      "bytes": 336300
+    },
+    {
+      "path": "../static/assets/wenkai-400-002-DVg9NcnD.woff2",
+      "bytes": 369680
+    },
+    {
+      "path": "../static/assets/wenkai-400-003-CkSiGqXJ.woff2",
+      "bytes": 383032
+    },
+    {
+      "path": "../static/assets/wenkai-400-004-DBtghKor.woff2",
+      "bytes": 404056
+    },
+    {
+      "path": "../static/assets/wenkai-400-005-BoyvVboT.woff2",
+      "bytes": 419564
+    },
+    {
+      "path": "../static/assets/wenkai-400-006-okszCPMN.woff2",
+      "bytes": 372760
+    },
+    {
+      "path": "../static/assets/wenkai-400-007-CnwkMkIo.woff2",
+      "bytes": 288180
+    },
+    {
+      "path": "../static/assets/wenkai-400-008-BEHHajLW.woff2",
+      "bytes": 322608
+    },
+    {
+      "path": "../static/assets/wenkai-400-009-CBya1sSU.woff2",
+      "bytes": 327056
+    },
+    {
+      "path": "../static/assets/wenkai-400-010-C6cNmeu3.woff2",
+      "bytes": 318188
+    },
+    {
+      "path": "../static/assets/wenkai-400-011-WfBFSQU5.woff2",
+      "bytes": 326212
+    },
+    {
+      "path": "../static/assets/wenkai-400-012-lbb5tltF.woff2",
+      "bytes": 346384
+    },
+    {
+      "path": "../static/assets/wenkai-400-013-BL66vFvR.woff2",
+      "bytes": 362476
+    },
+    {
+      "path": "../static/assets/wenkai-400-014-l-pKUjAZ.woff2",
+      "bytes": 323052
+    },
+    {
+      "path": "../static/assets/wenkai-400-015-CcaVrb8P.woff2",
+      "bytes": 340700
+    },
+    {
+      "path": "../static/assets/wenkai-400-016-C5AaNwdZ.woff2",
+      "bytes": 343132
+    },
+    {
+      "path": "../static/assets/wenkai-400-017-B_Uv9PPM.woff2",
+      "bytes": 351304
+    },
+    {
+      "path": "../static/assets/wenkai-400-018-Clw8mbZW.woff2",
+      "bytes": 350996
+    },
+    {
+      "path": "../static/assets/wenkai-400-019-DvHOksll.woff2",
+      "bytes": 339004
+    },
+    {
+      "path": "../static/assets/wenkai-400-020-CzN0Zolu.woff2",
+      "bytes": 354420
+    },
+    {
+      "path": "../static/assets/wenkai-400-021-BtxNDlY9.woff2",
+      "bytes": 358332
+    },
+    {
+      "path": "../static/assets/wenkai-400-022-Bgkr-gu7.woff2",
+      "bytes": 390940
+    },
+    {
+      "path": "../static/assets/wenkai-400-023-jCwuYfWY.woff2",
+      "bytes": 240432
+    },
+    {
+      "path": "../static/assets/wenkai-500-000-BKk7XAjK.woff2",
+      "bytes": 230120
+    },
+    {
+      "path": "../static/assets/wenkai-500-001-D0x9ViSi.woff2",
+      "bytes": 354972
+    },
+    {
+      "path": "../static/assets/wenkai-500-002-Dvx6Jg_Z.woff2",
+      "bytes": 393744
+    },
+    {
+      "path": "../static/assets/wenkai-500-003-CEtX0OD5.woff2",
+      "bytes": 403592
+    },
+    {
+      "path": "../static/assets/wenkai-500-004-DWXOiZHp.woff2",
+      "bytes": 427140
+    },
+    {
+      "path": "../static/assets/wenkai-500-005-B_zEBG0C.woff2",
+      "bytes": 442660
+    },
+    {
+      "path": "../static/assets/wenkai-500-006-ByNShFqn.woff2",
+      "bytes": 391828
+    },
+    {
+      "path": "../static/assets/wenkai-500-007-Do84jGH1.woff2",
+      "bytes": 290940
+    },
+    {
+      "path": "../static/assets/wenkai-500-008-J-0mKV1N.woff2",
+      "bytes": 330488
+    },
+    {
+      "path": "../static/assets/wenkai-500-009-G64oU1PS.woff2",
+      "bytes": 336372
+    },
+    {
+      "path": "../static/assets/wenkai-500-010-wPwZZPpL.woff2",
+      "bytes": 328256
+    },
+    {
+      "path": "../static/assets/wenkai-500-011-BnaolbE4.woff2",
+      "bytes": 334652
+    },
+    {
+      "path": "../static/assets/wenkai-500-012-E-S944pJ.woff2",
+      "bytes": 354260
+    },
+    {
+      "path": "../static/assets/wenkai-500-013-CA0Z7aQM.woff2",
+      "bytes": 375928
+    },
+    {
+      "path": "../static/assets/wenkai-500-014-BeAX_EgI.woff2",
+      "bytes": 333532
+    },
+    {
+      "path": "../static/assets/wenkai-500-015-D-H1-yCt.woff2",
+      "bytes": 357716
+    },
+    {
+      "path": "../static/assets/wenkai-500-016-ikHbPaA9.woff2",
+      "bytes": 354476
+    },
+    {
+      "path": "../static/assets/wenkai-500-017-CXvTzxZw.woff2",
+      "bytes": 365596
+    },
+    {
+      "path": "../static/assets/wenkai-500-018-ByAHPmtp.woff2",
+      "bytes": 366424
+    },
+    {
+      "path": "../static/assets/wenkai-500-019-B5tIs8zb.woff2",
+      "bytes": 352048
+    },
+    {
+      "path": "../static/assets/wenkai-500-020-D8LXF8qf.woff2",
+      "bytes": 371172
+    },
+    {
+      "path": "../static/assets/wenkai-500-021-BJRjmTw_.woff2",
+      "bytes": 373240
+    },
+    {
+      "path": "../static/assets/wenkai-500-022-CjVku6zi.woff2",
+      "bytes": 414892
+    },
+    {
+      "path": "../static/assets/wenkai-500-023-XWD-vDvx.woff2",
+      "bytes": 249024
+    }
+  ],
+  "kiosk_build_font_matches": 0,
+  "kiosk_build_font_files": [],
+  "chinese_page": {
+    "viewport": "1440x900",
+    "request_count": 11,
+    "transfer_bytes": 3605300,
+    "encoded_bytes": 3602000,
+    "resources": [
+      {
+        "url": "http://127.0.0.1:8901/assets/wenkai-400-000-Dh7NHSsi.woff2",
+        "transfer_bytes": 230560,
+        "encoded_bytes": 230260,
+        "decoded_bytes": 230260
+      },
+      {
+        "url": "http://127.0.0.1:8901/assets/wenkai-500-000-BKk7XAjK.woff2",
+        "transfer_bytes": 230420,
+        "encoded_bytes": 230120,
+        "decoded_bytes": 230120
+      },
+      {
+        "url": "http://127.0.0.1:8901/assets/wenkai-400-021-BtxNDlY9.woff2",
+        "transfer_bytes": 358632,
+        "encoded_bytes": 358332,
+        "decoded_bytes": 358332
+      },
+      {
+        "url": "http://127.0.0.1:8901/assets/wenkai-500-008-J-0mKV1N.woff2",
+        "transfer_bytes": 330788,
+        "encoded_bytes": 330488,
+        "decoded_bytes": 330488
+      },
+      {
+        "url": "http://127.0.0.1:8901/assets/wenkai-500-021-BJRjmTw_.woff2",
+        "transfer_bytes": 373540,
+        "encoded_bytes": 373240,
+        "decoded_bytes": 373240
+      },
+      {
+        "url": "http://127.0.0.1:8901/assets/wenkai-500-012-E-S944pJ.woff2",
+        "transfer_bytes": 354560,
+        "encoded_bytes": 354260,
+        "decoded_bytes": 354260
+      },
+      {
+        "url": "http://127.0.0.1:8901/assets/wenkai-500-020-D8LXF8qf.woff2",
+        "transfer_bytes": 371472,
+        "encoded_bytes": 371172,
+        "decoded_bytes": 371172
+      },
+      {
+        "url": "http://127.0.0.1:8901/assets/wenkai-500-016-ikHbPaA9.woff2",
+        "transfer_bytes": 354776,
+        "encoded_bytes": 354476,
+        "decoded_bytes": 354476
+      },
+      {
+        "url": "http://127.0.0.1:8901/assets/wenkai-400-011-WfBFSQU5.woff2",
+        "transfer_bytes": 326512,
+        "encoded_bytes": 326212,
+        "decoded_bytes": 326212
+      },
+      {
+        "url": "http://127.0.0.1:8901/assets/wenkai-400-009-CBya1sSU.woff2",
+        "transfer_bytes": 327356,
+        "encoded_bytes": 327056,
+        "decoded_bytes": 327056
+      },
+      {
+        "url": "http://127.0.0.1:8901/assets/wenkai-400-012-lbb5tltF.woff2",
+        "transfer_bytes": 346684,
+        "encoded_bytes": 346384,
+        "decoded_bytes": 346384
+      }
+    ]
+  },
+  "computed_font_samples": {
+    "brandChinese": "\"Galaxy Long Cang\"",
+    "brandLatin": "-apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+    "chineseBodyLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+    "englishLabel": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif",
+    "numericMoveCounter": "\"LXGW WenKai\", -apple-system, \"system-ui\", \"Segoe UI\", Helvetica, Arial, sans-serif"
+  },
+  "generator_command": "uv run --with fonttools==4.61.1 --with brotli==1.2.0 python scripts/build_galaxy_fonts.py --regular /private/tmp/galaxy-font-sources/LXGWWenKai-Regular.ttf --medium /private/tmp/galaxy-font-sources/LXGWWenKai-Medium.ttf --longcang /private/tmp/galaxy-font-sources/LongCang-Regular.ttf --out $OUT",
+  "input_sha256": {
+    "LXGWWenKai-Regular.ttf": "39ad71264b588165b469e35e6afb162a378dacd1f95348160240ba9038ac3009",
+    "LXGWWenKai-Medium.ttf": "d4bdeb38a39151d74d084cba5090f8cb7d20bf83eedb78c35939ae70b9f4e3f6",
+    "LongCang-Regular.ttf": "e5bf2c3f24ef2327c6f136d8f73e2f9dfdf44896fdbeb35a9515f44777bb91bc"
+  },
+  "license_path": "src/galaxy/assets/fonts/OFL-LXGW-WenKai.txt",
+  "license_paths": [
+    "src/galaxy/assets/fonts/OFL-LXGW-WenKai.txt",
+    "src/galaxy/assets/fonts/OFL-Long-Cang.txt"
+  ],
+  "sources_manifest": "src/galaxy/assets/fonts/sources.json"
+}

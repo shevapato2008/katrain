@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from contextlib import nullcontext
 import heapq
 import logging
 import math
@@ -1845,6 +1846,10 @@ def _resolve_ladder_strategy_rung(settings):
     return frozen
 
 
+def _ladder_remote_terminal(game) -> bool:
+    return bool(getattr(getattr(game, "katrain", None), "ai_ladder_remote_ended", False))
+
+
 @register_strategy(AI_LADDER)
 class LadderStrategy(AIStrategy):
     """Golaxy-parity ladder opponent. Fail-closed on every uncertainty: no valid rung ->
@@ -1864,6 +1869,8 @@ class LadderStrategy(AIStrategy):
             validate_analysis_attestation,
         )
 
+        if _ladder_remote_terminal(self.game):
+            raise LadderUnavailable("ranked game ended remotely during analysis")
         if "rung" not in self.settings or self.settings.get("rung") is None:
             raise ValueError("LadderStrategy invoked without an injected rung (fail closed)")
         rung = _resolve_ladder_strategy_rung(self.settings)
@@ -1909,11 +1916,16 @@ class LadderStrategy(AIStrategy):
         # engine would spin while _do_ai_move holds ai_lock, blocking new-game (G3/H3/M2).
         deadline = time.monotonic() + LADDER_ANALYSIS_TIMEOUT_S
         while not done:
+            if _ladder_remote_terminal(self.game):
+                raise LadderUnavailable("ranked game ended remotely during analysis")
             time.sleep(0.01)
             if not engine.check_alive(exception_if_dead=False):
                 raise LadderUnavailable(f"rung {rung.rung}: engine died during analysis")
             if time.monotonic() > deadline:
                 raise LadderUnavailable(f"rung {rung.rung}: analysis timed out ({LADDER_ANALYSIS_TIMEOUT_S}s)")
+
+        if _ladder_remote_terminal(self.game):
+            raise LadderUnavailable("ranked game ended remotely during analysis")
 
         if error or not analysis:  # error, or completed with an empty/missing payload
             # No uncalibrated fallback — the ladder's whole value is the certified strength.
@@ -1959,7 +1971,14 @@ def generate_ai_move(game: Game, ai_mode: str, ai_settings: Dict) -> Optional[Tu
 
     # Play the move and return
     game.katrain.log(f"Playing move {move.gtp()} and creating game node", OUTPUT_DEBUG)
-    played_node = game.play(move)
+    if ai_mode == AI_LADDER:
+        commit_lock = getattr(getattr(game, "katrain", None), "ai_ladder_commit_lock", None)
+        with commit_lock if commit_lock is not None else nullcontext():
+            if _ladder_remote_terminal(game):
+                raise LadderUnavailable("ranked game ended remotely before move commit")
+            played_node = game.play(move)
+    else:
+        played_node = game.play(move)
     game.katrain.log(f"AI thoughts: {ai_thoughts}", OUTPUT_DEBUG)
     played_node.ai_thoughts = ai_thoughts
 

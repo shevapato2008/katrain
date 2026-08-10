@@ -4759,3 +4759,62 @@ async def test_the_release_countdown_ends_exactly_when_the_gate_opens(api_app, c
         200,
     ), f"到点那一格两边不一致:载荷={just_due['can_release_abandoned_settlement']} 闸={allowed.status_code}"
     assert allowed.json()["state"] == "released"
+
+
+@pytest.mark.asyncio
+async def test_a_reservation_orphaned_by_a_power_cut_frees_itself_with_nobody_running_cleanup(api_app, client):
+    """预约成功、盒子当场掉电 —— 没有任何清理代码跑过,账号仍然自己解开。
+
+    五子棋在同一格上撞出一条**永久**锁死,四条各自合理的事实合起来:`authorized` 算作占用、
+    它的释放只写在 `start_online_game` 的 `except` 里、进程被硬杀时那个 `except` 根本不执行、
+    而接管救不了它(那一格心跳代际恒为 0,永远不满足接管资格)。触发条件还不是异常场景 ——
+    **盒子是个电器,用户拔电源就是关机。**
+
+    > 释放路径写在 `except` 里的,都要问一句:**进程被 kill -9 时谁来跑它?**
+
+    围棋这一格是 `reserved`。答案是「没人跑,而它照样会开」,而且这不是运气:回收挂在
+    `get_blocking_game` / `reserve_game` 的**读路径**上(`_is_stale_reserved`),
+    读的人就是下一个想开局的人。**判据是「谁下一次来问,谁顺手把它清了」,
+    而不是「谁当初把它建起来,谁负责清」** —— 后者在掉电面前一定失效,因为那个人已经死了。
+
+    所以这里刻意**一行清理代码都不跑**:不调 cancel、不发心跳、不碰会话,
+    只把时钟拨过回收年龄,然后走用户真会走的那条路(再开一局)。
+    """
+
+    from katrain.web.core.ai_ladder_ranked import AI_LADDER_TAKEOVER_THRESHOLD
+
+    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    game_id = reservation_payload()["game_id"]
+    async with client as ac:
+        reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
+        assert reserved.status_code == 201
+        # 盒子此刻掉电:activate 没发出去,任何 except / finally 都没有机会执行。
+
+        blocked = await ac.post(
+            "/api/v1/ai-ladder/start", headers=origin, json={"color": "black", "time_enabled": False}
+        )
+        assert blocked.status_code == 409, "刚预约完就该挡住 —— 少了这条,下面那条会被「压根没挡过」满足"
+
+        with api_app.state._test_session_factory() as db:
+            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
+            assert row.state == "reserved" and (row.heartbeat_generation or 0) == 0
+            # 心跳代际恒为 0 ⇒ 接管那条路对这一格是死的(五子棋那条永久锁死的第 4 条事实)。
+            # 围棋不靠接管救它,靠的是下面那条读时回收。
+            assert takeover_eligibility(row) == (False, None)
+            row.created_at = datetime.now(timezone.utc) - timedelta(minutes=6)
+            db.commit()
+
+        recovered = await ac.post(
+            "/api/v1/ai-ladder/start", headers=origin, json={"color": "black", "time_enabled": False}
+        )
+
+    assert recovered.status_code == 201, (
+        "掉电落在 reserve 与 activate 之间,账号就此开不了升降级局 —— 而屏上什么都看不出来,"
+        f"唯一的办法是换账号。实测 {recovered.status_code}: {recovered.text[:200]}"
+    )
+    assert recovered.json()["game_id"] != game_id
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one_or_none() is None
+    # 回收年龄必须真的比接管阈值宽 —— 它是给「正在开的那一局」留的飞行时间,不是随手取的余量。
+    # 设太短,worker/读路径会把用户**此刻正在开**的这局清掉,从「偶尔卡死」变成「经常开不了局」。
+    assert AI_LADDER_TAKEOVER_THRESHOLD >= timedelta(minutes=5)

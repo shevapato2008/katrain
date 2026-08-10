@@ -115,8 +115,10 @@ export interface EngineLevel {
   ref_rank: string;
 }
 
-// One rung of the local 棋力阶梯 (strength-ladder) 37-rung opponent — the UI-facing
-// subset served by GET /api/ladder-rungs (see katrain/web/server.py). star阵-free.
+// One rung of the local 棋力阶梯 (strength-ladder) 41-rung opponent — the UI-facing
+// subset served by GET /api/ladder-rungs (see katrain/web/server.py). 星阵-free.
+// That route and /api/v1/ai-ladder/catalog both return catalog_projection(), so the
+// casual picker and the ranked catalog can never disagree about names or count.
 export interface LadderRung {
   rung: number;
   rank_name: string;

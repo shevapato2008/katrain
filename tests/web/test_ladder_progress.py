@@ -16,7 +16,9 @@ from katrain.core import ladder
 from katrain.web.core import models_db
 from katrain.web.core.ai_ladder_ranked import PLACEMENT_GAMES, AiLadderRankedRepository
 
-RECIPELESS = (21, 23, 25, 27, 29, 31, 33, 35, 37, 40)
+# Derived, not hardcoded: all 41 rungs now ship a recipe, so this is empty. Keeping it
+# computed means the guard below stays meaningful if a rung ever loses its recipe again.
+RECIPELESS = tuple(l.rung for l in ladder.LADDER_LEVELS if l.recipe is None)
 
 
 def profile(**overrides):
@@ -44,14 +46,14 @@ def apply(p, *results):
 
 def test_three_net_wins_promote_one_playable_rung_and_reset_the_score():
     p = apply(profile(ai_ladder_rung=30, net_score=0), "win", "win", "win")
-    assert p.ai_ladder_rung == 32  # 6段, not 准6段(31)
-    assert ladder.get_level(p.ai_ladder_rung).rank_name == "6段"
+    assert p.ai_ladder_rung == 31  # 准6段 -- one rung, not a jump over it
+    assert ladder.get_level(p.ai_ladder_rung).rank_name == "准6段"
     assert p.net_score == 0
 
 
 def test_three_net_losses_demote_one_playable_rung():
     p = apply(profile(ai_ladder_rung=30, net_score=0), "loss", "loss", "loss")
-    assert p.ai_ladder_rung == 28  # 4段, not 准5段(29)
+    assert p.ai_ladder_rung == 29  # 准5段
     assert p.net_score == 0
 
 
@@ -63,7 +65,7 @@ def test_two_net_wins_move_nothing():
 
 def test_a_loss_cancels_a_win_rather_than_counting_the_last_five():
     p = apply(profile(ai_ladder_rung=30, net_score=0), "win", "win", "loss", "win", "win")
-    assert p.ai_ladder_rung == 32
+    assert p.ai_ladder_rung == 31
     assert p.net_score == 0
 
 
@@ -124,14 +126,12 @@ def test_every_placement_path_lands_on_a_playable_rung(path):
 
 
 def test_the_seated_opponent_is_still_the_raw_midpoint():
-    """Open question, pinned as-is so a future change is deliberate.
+    """The placement search still names the raw midpoint, and that is now always seatable.
 
-    §6 of the design doc asks for the whole placement search to run over available rungs,
-    which would also move the opponent. That is not done: 6 of the 31 distinct search
-    windows reachable from the default 1..32 range still name a recipe-less rung as the
-    opponent, and a game against one of those cannot be seated at all. Changing it alters
-    the seating contract that `build_opponent_snapshot` and the settlement mismatch check
-    agree on, so it is left as an open question rather than a quiet fix.
+    This used to be an open question: 6 of the 31 distinct search windows reachable from the
+    default 1..32 range named a recipe-less rung as the opponent, so those placement games
+    could not be seated at all. Filling all 41 recipes closed it without touching the search
+    itself -- the midpoint rule is unchanged, every midpoint is simply playable now.
     """
     from katrain.web.core.ai_ladder_ranked import expected_opponent_rung
 
@@ -147,7 +147,7 @@ def test_the_seated_opponent_is_still_the_raw_midpoint():
             nxt.add((mid + 1, hi))
             nxt.add((lo, mid))
         frontier = nxt
-    assert unseatable == 6
+    assert unseatable == 0
 
 
 def test_a_placed_player_faces_their_own_rung():

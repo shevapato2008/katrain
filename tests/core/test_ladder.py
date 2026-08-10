@@ -82,23 +82,41 @@ def test_catalog_fixed_recipes_are_exact_and_unresolved_levels_only_expose_candi
         SEARCH,
     )
 
+    # The ten formerly recipe-less rungs now ship the FIRST label of their own candidate
+    # list. Asserting that correspondence -- rather than the literal values a second time --
+    # is what stops the shipped recipe and the declared primary candidate from drifting apart.
     temperatures = ("t1.15", "t1.3", "t1.6", "t2", "t2.5", "t3")
-    for level_number in (21, 23, 25, 27, 29, 31, 33, 35):
-        assert levels[level_number - 1].recipe is None
-        assert levels[level_number - 1].candidate_labels == temperatures
-    assert levels[36].recipe is None and levels[36].candidate_labels == (
-        "rank_9d@1",
-        "rank_9d@1s",
-        "rank_9d@2",
-        "rank_9d@3",
-    )
-    assert levels[39].recipe is None and levels[39].candidate_labels == (
-        "b18@12",
-        "b18@10",
-        "b18@14",
-        "b18@8",
-        "b18@16",
-    )
+    for level_number, rank in zip((21, 23, 25, 27, 29, 31, 33, 35), range(1, 9)):
+        level = levels[level_number - 1]
+        assert level.candidate_labels == temperatures
+        recipe = level.recipe
+        assert recipe is not None
+        assert (recipe.net, recipe.mechanism, recipe.human_sl_profile, recipe.max_visits, recipe.selection) == (
+            "humanv0",
+            "humansl",
+            f"rank_{rank}d",
+            1,
+            HUMAN_TEMPERATURE,
+        )
+        assert recipe.human_policy_temperature == float(temperatures[0].lstrip("t"))
+        # 准n段 must differ from n段 in a way the engine/selection actually acts on, or it is
+        # a label with no opponent behind it. Same profile, one notch flatter.
+        assert levels[level_number].recipe.human_sl_profile == recipe.human_sl_profile
+        assert levels[level_number].recipe.selection != recipe.selection
+
+    quasi_nine = levels[36]
+    assert quasi_nine.candidate_labels == ("rank_9d@1", "rank_9d@1s", "rank_9d@2", "rank_9d@3")
+    assert (
+        quasi_nine.recipe.human_sl_profile,
+        quasi_nine.recipe.max_visits,
+        quasi_nine.recipe.selection,
+    ) == ("rank_9d", 1, HUMAN_WEIGHTED)
+
+    pro_top = levels[39]
+    assert pro_top.candidate_labels == ("b18@12", "b18@10", "b18@14", "b18@8", "b18@16")
+    assert (pro_top.recipe.net, pro_top.recipe.max_visits, pro_top.recipe.selection) == ("b18", 12, SEARCH)
+    # 职业水平(39) @1 < 职业顶尖(40) @12 < 超越人类(41) @64 -- one axis, strictly increasing.
+    assert levels[38].recipe.max_visits < pro_top.recipe.max_visits < levels[40].recipe.max_visits
 
 
 def test_catalog_metadata_is_frozen_validated_and_initially_unavailable():
@@ -136,16 +154,21 @@ def test_catalog_resolvers_separate_calibration_from_production_availability():
     for invalid in (True, False, 0, 42, 1.0, "1", None):
         with pytest.raises(ValueError):
             ladder.get_level(invalid)
-    with pytest.raises(ValueError, match="unresolved"):
-        ladder.get_recipe_for_calibration(21)
-    for level_number in (1, 21):
+    # Every rung in the catalog now resolves for calibration -- there is no unresolved rung
+    # left for the "unresolved" guard to fire on. The guard stays in the resolver because it
+    # is what would catch a future rung added without a recipe.
+    for level_number in range(1, 42):
+        assert ladder.get_recipe_for_calibration(level_number) is ladder.LADDER_LEVELS[level_number - 1].recipe
+    # Resolving for PLAY is a separate gate and still refuses everything: having a recipe is
+    # not having a certified one. This is the distinction the test name is about.
+    for level_number in (1, 21, 41):
         with pytest.raises(ladder.LadderUnavailable):
             ladder.resolve_available_rung(level_number)
 
 
 def test_resolved_product_recipes_have_no_duplicate_effective_configs():
     recipes = [level.recipe for level in ladder.LADDER_LEVELS if level.recipe is not None]
-    assert len(recipes) == 31
+    assert len(recipes) == 41
     signatures = [
         (
             recipe.net,
@@ -1134,30 +1157,65 @@ def test_pikl_numeric_boundaries_are_accepted(key, value):
 # ---------------------------------------------------------------------------
 # Playable-rung stepping.
 #
-# Ten of the 41 rungs (准1段–准9段, 职业顶尖) never had a strength recipe fitted.
-# Arithmetic on the raw rung number walks straight onto them: 5段 is rung 30,
-# 准6段 is rung 31, so `rung + 1` promotes a 5段 player onto a rung no opponent
-# can be built for. These tests pin the stepper that walks over the holes.
+# Ten of the 41 rungs (准1段–准9段, 职业顶尖) used to have no fitted recipe, and raw
+# arithmetic on the rung number walked straight onto them: 5段 is rung 30, 准6段 is
+# rung 31, so `rung + 1` promoted a 5段 player onto a rung no opponent could be built
+# for. All ten now ship the primary candidate their own candidate list declared, so the
+# stepper has nothing left to step over -- these tests pin that it is a faithful no-op,
+# and that promotion now moves one rung at a time through the 准 tiers, which is the
+# whole reason the ladder has 41 of them rather than 31.
 # ---------------------------------------------------------------------------
 
 
-def test_playable_rungs_excludes_every_recipeless_rung():
+def test_every_catalog_recipe_builds_a_valid_engine_strength_spec():
+    """A rung whose recipe cannot be turned into an engine query is a dead tier.
+
+    `LadderRung` is a dataclass, so a wrong recipe constructs happily and only fails when
+    something asks it for a query -- i.e. when a player has already been seated on it.
+    `rung_strength_spec` is where every mechanism/selection/visits consistency rule lives,
+    so running all 41 through it is what makes "the ladder has no holes" mean the ladder
+    actually works, rather than just that 41 objects exist.
+    """
+    for level in ladder.LADDER_LEVELS:
+        spec = rung_strength_spec(level.recipe)
+        assert spec.visits == level.recipe.max_visits
+        # humansl rungs drive the human net; net_search rungs drive the main net. Exactly
+        # one of the two must be the thing making the move, never neither.
+        assert spec.main_model or spec.human_model, level.rung
+
+
+def test_every_rung_in_the_catalog_is_playable():
+    """All 41 rungs carry a fitted recipe -- the ladder has no holes left.
+
+    The ten 准段/职业顶尖 rungs used to be names with nothing behind them. They now ship
+    the primary candidate their own candidate list declared, so PLAYABLE_RUNGS is the whole
+    catalog. The invariant that defines PLAYABLE_RUNGS is asserted first, so this stays
+    honest if a recipe is ever removed again.
+    """
     assert set(ladder.PLAYABLE_RUNGS) == {level.rung for level in ladder.LADDER_LEVELS if level.recipe is not None}
-    assert set(ladder.PLAYABLE_RUNGS).isdisjoint({21, 23, 25, 27, 29, 31, 33, 35, 37, 40})
-    assert len(ladder.PLAYABLE_RUNGS) == 31
+    assert set(ladder.PLAYABLE_RUNGS) == set(range(1, 42))
+    assert len(ladder.PLAYABLE_RUNGS) == 41
 
 
-def test_promotion_from_5dan_reaches_6dan_not_the_hole_between_them():
+def test_promotion_from_5dan_now_lands_on_the_quasi_rung_between_them():
+    """Filling the holes changed promotion granularity, and that is the point of 41 tiers.
+
+    Before the 准 rungs had recipes, a win at 5段 skipped straight to 6段 because 准6段 was
+    a rung no opponent could be built for. A player now climbs through it.
+    """
     assert ladder.get_level(30).rank_name == "5段"
     assert ladder.get_level(31).rank_name == "准6段"
-    assert ladder.get_level(31).recipe is None
-    assert ladder.step_playable_rung(30, 1) == 32
+    assert ladder.get_level(31).recipe is not None
+    assert ladder.step_playable_rung(30, 1) == 31
+    assert ladder.step_playable_rung(31, 1) == 32
     assert ladder.get_level(32).rank_name == "6段"
 
 
-def test_demotion_also_steps_over_the_hole():
-    assert ladder.get_level(29).recipe is None  # 准5段
-    assert ladder.step_playable_rung(30, -1) == 28
+def test_demotion_also_lands_on_the_quasi_rung():
+    assert ladder.get_level(29).rank_name == "准5段"
+    assert ladder.get_level(29).recipe is not None
+    assert ladder.step_playable_rung(30, -1) == 29
+    assert ladder.step_playable_rung(29, -1) == 28
     assert ladder.get_level(28).rank_name == "4段"
 
 
@@ -1176,12 +1234,15 @@ def test_stepping_saturates_at_both_ends_instead_of_raising():
     assert ladder.step_playable_rung(highest, 99) == highest
 
 
-def test_nearest_playable_rung_snaps_holes_and_leaves_playable_rungs_alone():
-    for rung in ladder.PLAYABLE_RUNGS:
+def test_nearest_playable_rung_is_now_the_identity_on_the_whole_catalog():
+    """With no holes left there is nothing to snap to, so every rung maps to itself.
+
+    The snapping logic is kept rather than deleted: it is what stops a stored rung from a
+    older database, or a placement search landing, from parking a player somewhere no
+    opponent can be built for. It is simply a no-op while the catalog is complete.
+    """
+    for rung in range(1, 42):
         assert ladder.nearest_playable_rung(rung) == rung
-    # 准6段(31) sits between 5段(30) and 6段(32); the tie resolves downward.
-    assert ladder.nearest_playable_rung(31) == 30
-    for rung in (21, 23, 25, 27, 29, 31, 33, 35, 37, 40):
         assert ladder.get_level(ladder.nearest_playable_rung(rung)).recipe is not None
 
 

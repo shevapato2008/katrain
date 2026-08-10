@@ -24,6 +24,8 @@ from katrain.web.core.ai_ladder_catalog import (
     session_snapshot_from_pending,
 )
 from katrain.web.core.ai_ladder_ranked import (
+    REMOTE_RESIGN_WINDOWED,
+    remote_resign_barrier,
     AI_LADDER_GAME_TYPE,
     AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD,
     AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD_VERSION,
@@ -215,12 +217,22 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
         # for our own unresumable game the honest answer is "yes, now" -- reporting the takeover
         # rule's `False` here would sit the user in front of a button that already works and tell
         # them to wait five minutes, in a shop that usually has exactly one machine.
-        own_game = not elsewhere
-        payload["can_force_resign"] = True if own_game else game.can_force_resign
+        #
+        # A bare `reserved` row is the same shape a second time: the window in
+        # `finalize_reserved_game` hangs off `row.state == "active"`, so a reservation nobody ever
+        # sat down to play is let through unconditionally -- while `takeover_eligibility` returns
+        # `(False, None)` for anything that is not `active`, i.e. "no, and waiting will not help".
+        # Both sentences answer the same question, and the false one is the one that talks the
+        # user out of the exit that works.
+        barrier = remote_resign_barrier(
+            game.state, origin_device_id=game.origin_device_id, deciding_device_id=device_id
+        )
+        windowed = barrier == REMOTE_RESIGN_WINDOWED
+        payload["can_force_resign"] = game.can_force_resign if windowed else barrier is None
         payload["takeover_eligible_at"] = (
-            None
-            if own_game
-            else (game.takeover_eligible_at.isoformat() if game.takeover_eligible_at is not None else None)
+            (game.takeover_eligible_at.isoformat() if game.takeover_eligible_at is not None else None)
+            if windowed
+            else None
         )
         payload["takeover_threshold_seconds"] = int(AI_LADDER_TAKEOVER_THRESHOLD.total_seconds())
         payload["takeover_threshold_version"] = AI_LADDER_TAKEOVER_THRESHOLD_VERSION

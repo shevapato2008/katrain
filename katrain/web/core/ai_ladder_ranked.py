@@ -65,6 +65,42 @@ def abandoned_settlement_eligibility(row, *, now: Optional[datetime] = None) -> 
     return moment >= eligible_at, eligible_at
 
 
+# What stands between a device and ending someone's ranked game with `/end`. Three answers, and
+# they are genuinely different in kind -- which is the whole reason this is one function.
+REMOTE_RESIGN_REFUSED = "settlement_in_flight"
+REMOTE_RESIGN_WINDOWED = "takeover_window"
+
+
+def remote_resign_barrier(state: str, *, origin_device_id: str, deciding_device_id: str) -> Optional[str]:
+    """`None` when nothing is in the way; otherwise which obstacle it is.
+
+    One function because the answer is needed in two places that must never disagree: the
+    repository, which enforces it, and the blocking-game projection, which tells the user what they
+    can do about it. Both defects found on 2026-08-11 were that pair drifting apart -- the
+    projection answering from `takeover_eligibility`, a rule about *another* device reaching into a
+    *live* game, in two situations that rule was never about. Each time the payload said "no, and
+    waiting will not help" while `/end` returned 200, and each time the false sentence was the one
+    that talked the user out of the exit that worked.
+
+    The three cases:
+
+    * `pending_settlement` is refused outright, not delayed. A result exists and is being
+      delivered; resigning would not race it but replace it, banking a loss nobody suffered. That
+      game's exit is a release, which is a different bargain and answered by different fields.
+    * A live game somewhere else is windowed: allowed once its box has stopped reporting in.
+    * Everything else is nothing in the way. Resigning from the box the game is on is just
+      resigning. A bare `reserved` row has nobody at the board at all -- it has its own short lazy
+      reclaim, and ending it early is allowed (and banks a loss, deliberately: freeing a
+      placeholder is not free).
+    """
+
+    if state == "pending_settlement":
+        return REMOTE_RESIGN_REFUSED
+    if state == "active" and deciding_device_id != origin_device_id:
+        return REMOTE_RESIGN_WINDOWED
+    return None
+
+
 def takeover_eligibility(row, *, now: Optional[datetime] = None) -> tuple[bool, Optional[datetime]]:
     """Decide, at read time, whether a second device may end this game.
 
@@ -913,7 +949,12 @@ class AiLadderRankedRepository:
                 )
                 if row.state not in {"active", "pending_settlement"}:
                     raise AiLadderLifecycleConflict("reservation must be activated before terminal submission")
-            elif row.state == "pending_settlement":
+            elif (
+                remote_resign_barrier(
+                    row.state, origin_device_id=row.origin_device_id, deciding_device_id=deciding_device_id
+                )
+                == REMOTE_RESIGN_REFUSED
+            ):
                 # `remote_resign` deliberately skips the origin check above -- that is what lets a
                 # second device free a slot whose origin box is gone. But skipping origin must not
                 # also mean skipping "does a result already exist". `pending_settlement` says the
@@ -926,7 +967,12 @@ class AiLadderRankedRepository:
                 # and a delivery that never arrives is released by its own honest path rather than
                 # by inventing a result nobody played.
                 raise AiLadderLifecycleConflict("a game awaiting settlement cannot be resigned from another device")
-            elif row.state == "active" and deciding_device_id != row.origin_device_id:
+            elif (
+                remote_resign_barrier(
+                    row.state, origin_device_id=row.origin_device_id, deciding_device_id=deciding_device_id
+                )
+                == REMOTE_RESIGN_WINDOWED
+            ):
                 # Only a game in progress can be "still being played somewhere else"; a bare
                 # reservation has nobody at the board, so freeing it from another device needs no
                 # waiting period (and it has its own short lazy reclaim besides).

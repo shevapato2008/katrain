@@ -4581,3 +4581,49 @@ async def test_a_settlement_that_arrives_after_its_release_still_counts_and_spar
         assert [(entry.game_id, entry.state) for entry in live] == [(new_game_id, "active")], (
             "一笔迟到的旧结算动了用户正在下的那局 —— 他会在棋盘中途被踢出局," "而现场没有任何东西指向半小时前那次放弃"
         )
+
+
+@pytest.mark.asyncio
+async def test_a_reservation_that_never_started_is_not_advertised_as_hopeless(api_app, client):
+    """一条从没上过棋盘的预约,别处那台按下去当场就成 —— 而屏上说「不行,而且等也没用」。
+
+    这是**同一个缺陷类的第二例**,是照国象给的查法找出来的,不是撞见的:
+
+    > 同一个概念在两处用不同判据回答时,投影层就会开始说假话。
+    > 所以去查:凡是同一个问题在业务层和投影层各算一次的地方,都是候选。
+
+    「这局能不能被别处那台结束」在围棋恰好算两次:
+      · 业务层 `finalize_reserved_game` —— 那道 5 分钟窗口挂在 `row.state == "active"` 上,
+        `reserved` 根本不进那一支,于是**无条件放行**(契约 ④:放开占位不能免费,记一场负);
+      · 投影层 `takeover_eligibility` —— 第一句就是 `row.state != "active"` 直接返回
+        `(False, None)`。
+
+    两个答案对同一个问题:载荷说「不行,而且等也没用」(`eligible_at` 为 `None` 的含义就是
+    「等不来」),`/end` 说 200 settled。**而载荷是往「放弃」那个方向撒的谎。**
+
+    可达性:盒子在 reserve 与 activate 之间崩掉就停在这一格。它有 5 分钟的惰性回收兜底,
+    所以不是永久死局 —— 但那 5 分钟里另一台设备被告知的是「无解」,而它其实一按就通。
+    """
+
+    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
+    game_id = reservation_payload()["game_id"]
+    async with client as ac:
+        # board-a 预约成功之后就崩了 —— 没来得及 activate,行停在 `reserved`。
+        reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
+        assert reserved.status_code == 201
+        seen = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
+        ended = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"}
+        )
+
+    assert ended.status_code == 200 and ended.json()["state"] == "settled", (
+        "这条断言先立住业务层的答案 —— 少了它,下面那条会被一个「把 /end 也一起关掉」的"
+        "实现满足,那是让两个答案一致的**错误方向**:屏上不撒谎了,可出路也没了"
+    )
+    assert seen["ownership"] == "other_device"
+    assert seen["can_force_resign"] is True, (
+        "载荷说不行,而 `/end` 当场 200 —— 两处对同一个问题给了不同答案,"
+        "而说谎的那处正好把用户劝退"
+    )
+    assert seen["takeover_eligible_at"] is None, "此刻就能按,就不该再给一个未来时刻去倒计时"

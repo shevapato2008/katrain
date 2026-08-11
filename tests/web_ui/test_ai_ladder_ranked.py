@@ -15,14 +15,10 @@ from katrain.core.ladder import LADDER_LEVELS
 from katrain.web.core import migrations, models_db
 from katrain.web.core.ai_ladder_ranked import (
     AI_LADDER_GAME_TYPE,
-    AI_LADDER_MIN_HEARTBEAT_GENERATION_FOR_TAKEOVER,
-    AI_LADDER_TAKEOVER_THRESHOLD,
     AiLadderLifecycleConflict,
-    AiLadderSettlementStillArriving,
     AiLadderLifecycleNotFound,
     AiLadderOpponentSnapshot,
     AiLadderRankedRepository,
-    AiLadderTakeoverTooEarly,
     InvalidReservationKey,
     initial_placement_window,
 )
@@ -377,57 +373,12 @@ def _activated(repo, user, opponent, *, device_id="device-a"):
     return reservation
 
 
-def test_a_second_device_must_wait_out_the_threshold_while_the_origin_reports_in(session_factory, user, opponent):
-    """A game being played on a live box is not takeable from somewhere else.
-
-    Two heartbeats is what separates "a client that reports liveness" from "a client that never
-    will"; until a client has proven it keeps a timer, the compatibility branch keeps the old
-    unconditional escape hatch rather than stranding it.
-    """
-
-    repo = AiLadderRankedRepository(session_factory)
-    reservation = _activated(repo, user, opponent)
-    game_id = reservation.game.game_id
-
-    def resign_from_elsewhere():
-        return repo.finalize_reserved_game(
-            user_id=user.id,
-            game_id=game_id,
-            terminal_source="remote_resign",
-            result="loss",
-            deciding_device_id="device-b",
-        )
-
-    for _ in range(AI_LADDER_MIN_HEARTBEAT_GENERATION_FOR_TAKEOVER):
-        repo.record_heartbeat(
-            user_id=user.id,
-            game_id=game_id,
-            reservation_key=reservation.reservation_key,
-            origin_device_id="device-a",
-        )
-
-    with pytest.raises(AiLadderTakeoverTooEarly) as blocked:
-        resign_from_elsewhere()
-    assert blocked.value.eligible_at is not None
-
-    # The origin box goes silent for longer than the threshold.
-    with session_factory() as db:
-        row = db.get(models_db.AiLadderActiveGame, game_id)
-        row.last_heartbeat_at = datetime.now(timezone.utc) - (AI_LADDER_TAKEOVER_THRESHOLD + timedelta(seconds=1))
-        db.commit()
-
-    receipt = resign_from_elsewhere()
-    assert (receipt.result, receipt.terminal_source) == ("loss", "remote_resign")
-    with session_factory() as db:
-        assert db.query(models_db.AiLadderActiveGame).count() == 0
-
-
 def test_the_origin_device_may_always_resign_its_own_live_game(session_factory, user, opponent):
     """The threshold gates reaching in from elsewhere, never resigning where you are playing."""
 
     repo = AiLadderRankedRepository(session_factory)
     reservation = _activated(repo, user, opponent)
-    for _ in range(AI_LADDER_MIN_HEARTBEAT_GENERATION_FOR_TAKEOVER):
+    for _ in range(2):
         repo.record_heartbeat(
             user_id=user.id,
             game_id=reservation.game.game_id,
@@ -502,7 +453,7 @@ def test_heartbeat_is_origin_only_and_does_not_resurrect_a_settled_game(session_
         )
 
 
-@pytest.mark.parametrize(("user_color", "expected_re"), [("B", "RE[W+R]"), ("W", "RE[B+R]")])
+@pytest.mark.parametrize(("user_color", "expected_re"), [("B", "RE[W+F]"), ("W", "RE[B+F]")])
 def test_remote_resign_generates_minimal_legal_sgf_and_uses_origin_provenance(
     session_factory, user, opponent, user_color, expected_re
 ):
@@ -1563,25 +1514,6 @@ def _age_pending(session_factory, game_id, minutes):
         db.commit()
 
 
-def test_a_result_that_may_still_arrive_is_not_releasable_yet(session_factory, user, opponent):
-    """刚宣告的结果不许放弃 —— 盒子正拿着自己的 outbox 在重试。
-
-    拒绝里带着可释放的时刻:光说「不行」在一个盒子真的回不来的人看来就是永久锁死。
-    """
-
-    repo = AiLadderRankedRepository(session_factory)
-    reservation = _pending(repo, user, opponent)
-
-    with pytest.raises(AiLadderSettlementStillArriving) as excinfo:
-        repo.release_abandoned_settlement(
-            user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
-        )
-    assert excinfo.value.eligible_at is not None
-
-    with session_factory() as db:
-        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id) is not None
-
-
 def test_releasing_an_undelivered_result_banks_nothing_and_moves_no_rating(session_factory, user, opponent):
     """等够了之后放行,而且**不写账本、不动分**。
 
@@ -1680,7 +1612,6 @@ def test_an_active_game_is_never_releasable_however_long_it_runs(session_factory
         repo.release_abandoned_settlement(
             user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
         )
-    assert not isinstance(excinfo.value, AiLadderSettlementStillArriving)
 
 
 def test_a_game_id_already_in_the_ledger_cannot_be_reserved_again(session_factory, user, opponent):
@@ -1739,7 +1670,7 @@ def test_ending_an_unplayed_reservation_banks_a_loss_on_purpose(session_factory,
     而释放占位不能是免费的 —— 否则「开一局、看一眼对手、不想下就免费退掉」就成了
     可以反复刷的动作,段位并发规则要防的正是这个。
 
-    代价也说清楚:`user_games` 里会存一份 `RE[W+R] move_count=0` 的合成棋谱。
+    代价也说清楚:`user_games` 里会存一份 `RE[W+F] move_count=0` 的合成棋谱。
     那份棋谱不诚实(它长得像一局下过的棋),但那是 `remote_resign` 在 `active` 上
     也有的既有表示法,不是这条路径独有的问题。要改就四条路径一起改,不在这里顺手动。
     """

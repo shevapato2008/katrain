@@ -1556,7 +1556,7 @@ msgid "tsumego:problemRange"
 msgstr "Задачи {start}-{end}"
 
 msgid "auth:login_title"
-msgstr "Войти в StellaBox"
+msgstr "Вход в StellaBox"
 
 msgid "auth:register_title"
 msgstr "Создать аккаунт"
@@ -2871,3 +2871,193 @@ msgstr "Результат партии ещё не доставлен в обл
 
 msgid "ladder:pending_settlement_cta"
 msgstr "Результат не доставлен"
+
+msgid "ladder:title"
+msgstr "Рейтинговые партии с ИИ"
+
+msgid "ladder:setup_title"
+msgstr "ИИ-лестница из 41 ступени"
+
+msgid "ladder:placement_opponent_prefix"
+msgstr "Соперник квалификации: "
+
+msgid "ladder:game_opponent_prefix"
+msgstr "Соперник в этой партии: "
+
+msgid "ladder:loading_status"
+msgstr "Загрузка вашего рейтингового статуса…"
+
+msgid "ladder:load_error"
+msgstr "Не удалось загрузить рейтинговый статус"
+
+msgid "ladder:load_error_not_authoritative"
+msgstr ""
+"Это устройство не записывает рейтинговые результаты, начать партию нельзя"
+
+msgid "ladder:load_error_unauthorized"
+msgstr "Сессия истекла — войдите снова"
+
+msgid "ladder:retry"
+msgstr "Повторить"
+
+msgid "ladder:provisional_seating"
+msgstr ""
+"Эта ступень ещё не откалибрована — сыграть можно, но партия не засчитается"
+
+msgid "ladder:current_opponent_prefix"
+msgstr "Текущий соперник: "
+
+msgid "ladder:current_rank_prefix"
+msgstr "Текущий разряд: "
+
+msgid "ladder:available"
+msgstr "Доступно"
+
+msgid "ladder:unavailable_rung"
+msgstr "Эту ступень пока нельзя вызвать"
+
+msgid "ladder:unavailable_cta"
+msgstr "Пока недоступно"
+
+msgid "ladder:continue_placement_cta"
+msgstr "Продолжить квалификацию"
+
+msgid "ladder:start_ranked_cta"
+msgstr "Начать рейтинговую партию"
+
+msgid "ladder:recent_heading"
+msgstr "Последние 5 партий"
+
+msgid "ladder:recent_aria"
+msgstr "Результаты последних 5 рейтинговых партий с ИИ"
+
+msgid "ladder:recent_display_note"
+msgstr ""
+"Последние 5 партий показаны для справки; переход зависит только от чистого "
+"счёта"
+
+msgid "ladder:recent_empty"
+msgstr "Рейтинговых партий с ИИ пока нет"
+
+msgid "ladder:net_score_prefix"
+msgstr "Чистый счёт: "
+
+msgid "ladder:net_score_aria"
+msgstr "Чистый счёт; отрицательный — к понижению, положительный — к повышению"
+
+msgid "ladder:demotion_threshold"
+msgstr "Понижение -3"
+
+msgid "ladder:promotion_threshold"
+msgstr "Повышение +3"
+
+msgid "ladder:route_local"
+msgstr "На этом устройстве"
+
+msgid "ladder:route_server"
+msgstr "На сервере"
+
+msgid "ladder:cert_provisional"
+msgstr "Предварительно"
+
+msgid "ladder:cert_certified"
+msgstr "Подтверждено"
+
+msgid "ladder:placement_progress_n"
+msgstr "Квалификация {n}/{total}"
+
+msgid "ladder:placement_progress_aria"
+msgstr "Ход квалификации: сыграно {n} из {total} партий"
+
+msgid "ladder:net_score_positive"
+msgstr "Чистый счёт +{n}, в сторону повышения; +3 — повышение"
+
+msgid "ladder:net_score_negative"
+msgstr "Чистый счёт {n}, в сторону понижения; -3 — понижение"
+
+msgid "ladder:net_score_zero"
+msgstr "Чистый счёт 0; +3 — повышение, -3 — понижение"
+
+msgid "ladder:outcome_label"
+msgstr "Партия {n}: {result}"
+
+msgid "ladder:settled_generic"
+msgstr "Учёт рейтинга завершён, статус обновлён"
+
+msgid "ladder:settled_placement_done"
+msgstr "Квалификация завершена: {rank}"
+
+msgid "ladder:settled_placement_progress"
+msgstr "Квалификация {n}/{total}"
+
+msgid "ladder:settled_promoted"
+msgstr "Повышение: {rank}"
+
+msgid "ladder:settled_demoted"
+msgstr "Понижение: {rank}"
+
+msgid "ladder:settled_no_change"
+msgstr "Разряд не изменился; чистый счёт: {score}"
+
+msgid "ladder:settled_pending"
+msgstr "Учёт рейтинга ещё выполняется"
+
+msgid "ladder:settled_unavailable"
+msgstr "Статус учёта сейчас недоступен"
+
+msgid "ok"
+msgstr "ОК"
+
+msgid "accept"
+msgstr "Принять"
+
+msgid "reject"
+msgstr "Отклонить"
+
+msgid "common:cancel"
+msgstr "Отмена"
+
+msgid "common:retry"
+msgstr "Повторить"
+
+msgid "Tutorials"
+msgstr "Уроки"
+
+msgid "Stone Effect"
+msgstr "Эффект камня"
+
+msgid "3D"
+msgstr "3D"
+
+msgid "research:cancel_analysis_title"
+msgstr "Отменить анализ?"
+
+msgid "research:cancel_analysis_warning"
+msgstr "Анализ ещё выполняется. Отменить и выйти?"
+
+msgid "research:continue_analysis"
+msgstr "Продолжить анализ"
+
+msgid "research:cancel_and_leave"
+msgstr "Отменить и выйти"
+
+msgid "tsumego:loadError"
+msgstr "Не удалось загрузить библиотеку задач. Попробуйте ещё раз чуть позже."
+
+msgid "tsumego:noData"
+msgstr "Задач пока нет."
+
+msgid "chat:title"
+msgstr "Чат"
+
+msgid "chat:placeholder"
+msgstr "Введите сообщение…"
+
+msgid "audio:play"
+msgstr "Воспроизвести"
+
+msgid "audio:pause"
+msgstr "Пауза"
+
+msgid "audio:unavailable"
+msgstr "Аудио недоступно"

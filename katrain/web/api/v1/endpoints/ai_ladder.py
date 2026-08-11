@@ -26,17 +26,10 @@ from katrain.web.core.ai_ladder_catalog import (
     session_snapshot_from_pending,
 )
 from katrain.web.core.ai_ladder_ranked import (
-    REMOTE_RESIGN_WINDOWED,
-    remote_resign_barrier,
     AI_LADDER_GAME_TYPE,
-    AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD,
-    AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD_VERSION,
-    AI_LADDER_TAKEOVER_THRESHOLD,
-    AI_LADDER_TAKEOVER_THRESHOLD_VERSION,
     PLACEMENT_GAMES,
     AiLadderBlockingGame,
     AiLadderLifecycleConflict,
-    AiLadderSettlementStillArriving,
     AiLadderLifecycleNotFound,
     AiLadderLifecycleReceipt,
     AiLadderOpponentSnapshot,
@@ -47,6 +40,11 @@ from katrain.web.core.ai_ladder_ranked import (
 from katrain.web.models import User
 
 router = APIRouter()
+
+
+def _settlement_outbox_key(game_id: str) -> str:
+    """The one idempotency key a settlement is ever queued under, on any path."""
+    return f"ladder-settlement:{game_id}"
 
 
 class _IndeterminateRemoteTransition(RuntimeError):
@@ -171,122 +169,32 @@ def _device_id(request: Request, *, required: bool = True) -> str:
     return normalized or "cloud-local"
 
 
-def _seconds_until(moment: datetime | None) -> int | None:
-    """How long the client still has to wait -- a **duration**, not an instant.
+def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: str) -> dict[str, object]:
+    """挡住新局的那一局,以及**只有**用户需要知道的那几件事。
 
-    The instant is also sent, but nothing that counts down may be computed from it. A client
-    subtracting a server timestamp from its own clock is off by exactly the clock skew between
-    the two machines, and a kiosk that lives offline with no reliable NTP is where that skew is
-    largest. The failure is the precise one this whole screen exists to avoid: the button already
-    works while the screen still reads "2 minutes to go", or the screen reaches zero and the press
-    comes back 409. A duration is a difference, so it survives any offset -- the client only has
-    to know how long ago it received the response, which it can measure against its own clock
-    without ever agreeing with ours about what time it is.
+    曾经这里发 10 个字段(两组 can_*/eligible_at/eligible_in_seconds/threshold_seconds/
+    threshold_version),因为出口分两种、各带一条倒计时。现在出口只有一个「开新局」,
+    代价由 `state` 决定,所以这里只剩事实:是哪一局、什么状态、在不在这台机器上。
 
-    Clamped at zero: a negative remaining time renders as "-137 seconds to go" next to a button
-    that already works.
+    `session_id` 仍然只有盒子能回答 —— 云端知道这局属于哪个会话 id,但不知道那个会话
+    此刻还在不在。在场就意味着用户该做的是**接着下**,不是开新局。
     """
 
-    if moment is None:
-        return None
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=timezone.utc)
-    return max(0, math.ceil((moment - datetime.now(timezone.utc)).total_seconds()))
-
-
-def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: str) -> dict[str, object]:
     payload: dict[str, object] = {
         "game_id": game.game_id,
-        # A reservation already occupies the account and therefore has the same
-        # product meaning as an active game, even before its board session is bound.
+        # 预约还没落子也一样占着账号,产品含义与 active 相同。
         "state": "pending_settlement" if game.state == "pending_settlement" else "active",
         "ownership": "current_device" if game.origin_device_id == device_id else "other_device",
         "user_color": game.user_color,
         "opponent_rank_name": game.opponent.rank_name,
     }
-    elsewhere = payload["ownership"] == "other_device"
-    # "There is a game here to go back to" -- the one condition under which the user's move is
-    # to resume rather than to get out. Everything below keys off this rather than off ownership:
-    # a game whose device restarted is still `current_device` on the cloud, but its session died
-    # with the process and no amount of ownership makes it resumable.
-    resumable = bool(
+    if (
         game.state == "active"
         and game.origin_device_id == device_id
         and game.origin_session_id
         and _active_session(request, game.origin_session_id)
-    )
-    if resumable:
+    ):
         payload["session_id"] = game.origin_session_id
-    if not resumable and (elsewhere or game.state == "active"):
-        # This is the screen where the user is told why they cannot start a new game, so it must
-        # also say what they can do about it and when. `takeover_eligible_at` is None when waiting
-        # will never help, so the UI shows a deadline only when one really exists rather than
-        # counting down to nothing.
-        #
-        # Not `elsewhere`: a box that restarted mid-game cannot resume (no session), cannot take
-        # over (these very fields were withheld from it), and cannot release (that exit belongs to
-        # `pending_settlement`) -- every door dark at once, with a payload that does not change no
-        # matter how long the user waits, because nothing in it depends on time. The 5-minute door
-        # on the server had been open the whole time; only this projection never said so. The user
-        # is then told to go find a second device, and a shop's single kiosk does not have one.
-        #
-        # Still bounded by `active`: a bare `reserved` row has its own short lazy reclaim and there
-        # is no game to end yet, and a `pending_settlement` row is answered by the release block
-        # below. Offering an exit that is structurally False on those two would be noise, and the
-        # rule here is that a field appears when it can carry an answer.
-        #
-        # Whose answer this is matters as much as whether it is sent. `game.can_force_resign` is
-        # computed by the takeover rule, and that rule is about *another* device reaching in: it
-        # waits for the origin to stop reporting. Ending a game from the box the game is on is not
-        # a takeover, it is a resignation, and the repository allows it with no window at all. So
-        # for our own unresumable game the honest answer is "yes, now" -- reporting the takeover
-        # rule's `False` here would sit the user in front of a button that already works and tell
-        # them to wait five minutes, in a shop that usually has exactly one machine.
-        #
-        # A bare `reserved` row is the same shape a second time: the window in
-        # `finalize_reserved_game` hangs off `row.state == "active"`, so a reservation nobody ever
-        # sat down to play is let through unconditionally -- while `takeover_eligibility` returns
-        # `(False, None)` for anything that is not `active`, i.e. "no, and waiting will not help".
-        # Both sentences answer the same question, and the false one is the one that talks the
-        # user out of the exit that works.
-        barrier = remote_resign_barrier(
-            game.state, origin_device_id=game.origin_device_id, deciding_device_id=device_id
-        )
-        windowed = barrier == REMOTE_RESIGN_WINDOWED
-        payload["can_force_resign"] = game.can_force_resign if windowed else barrier is None
-        payload["takeover_eligible_at"] = (
-            (game.takeover_eligible_at.isoformat() if game.takeover_eligible_at is not None else None)
-            if windowed
-            else None
-        )
-        # 界面拿来走秒的是这个。见 `_seconds_until`。
-        payload["takeover_eligible_in_seconds"] = _seconds_until(game.takeover_eligible_at) if windowed else None
-        payload["takeover_threshold_seconds"] = int(AI_LADDER_TAKEOVER_THRESHOLD.total_seconds())
-        payload["takeover_threshold_version"] = AI_LADDER_TAKEOVER_THRESHOLD_VERSION
-    # The second way out, and a materially different bargain the user has to be told apart
-    # from the first: a takeover banks a loss and moves the rung, a release banks nothing
-    # and moves nothing -- it gives up on a result instead of inventing one. Both arrive on
-    # this same screen, so the screen has to be able to say which button it is showing.
-    #
-    # Unlike a takeover, this one is NOT restricted to a game running elsewhere. An undelivered
-    # settlement belongs, by construction, to the device that just finished playing it -- which
-    # is the device the user is sitting at. Withholding the exit from `current_device` therefore
-    # hides it in the one case that happens most, and the user has to walk to a second device to
-    # be told about a way out that the API had open the whole time. For an `active` game the
-    # opposite reasoning holds and this block stays quiet: there the device's own move is to go
-    # on playing, not to give up on a result that does not exist yet.
-    if elsewhere or game.state == "pending_settlement":
-        payload["can_release_abandoned_settlement"] = game.can_release_abandoned_settlement
-        payload["abandoned_settlement_eligible_at"] = (
-            game.abandoned_settlement_eligible_at.isoformat()
-            if game.abandoned_settlement_eligible_at is not None
-            else None
-        )
-        payload["abandoned_settlement_eligible_in_seconds"] = _seconds_until(game.abandoned_settlement_eligible_at)
-        payload["abandoned_settlement_threshold_seconds"] = int(
-            AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD.total_seconds()
-        )
-        payload["abandoned_settlement_threshold_version"] = AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD_VERSION
     return payload
 
 
@@ -409,7 +317,7 @@ def _recover_pending(request: Request, user_id: int) -> None:
                         engine_stalled=getattr(lifecycle, "reason", None) == "engine_unavailable",
                     ),
                     user_id=str(user_id),
-                    idempotency_key=f"ladder-settlement:{snapshot.game_id}",
+                    idempotency_key=_settlement_outbox_key(snapshot.game_id),
                 )
                 is True
             )
@@ -533,6 +441,16 @@ async def get_status(request: Request, current_user: User = Depends(get_current_
             blocking.pop("session_id", None)
             blocking.pop("reservation_key", None)
             payload["blocking_game"] = blocking
+        if isinstance(blocking, dict) and blocking.get("state") == "pending_settlement":
+            # 云端只知道「这局的成绩还没到」,它无从知道**为什么** —— 排队、退避、
+            # 重试用尽还是被拒收,全在盒子这边的 outbox 里。不接上去,屏上就只能写
+            # 一个不含信息的「同步中」,而用户想知道的正是这个。
+            worker = getattr(request.app.state, "sync_worker", None)
+            describe = getattr(worker, "describe", None)
+            if describe is not None:
+                sync = describe(_settlement_outbox_key(blocking["game_id"]), user_id=current_user.id)
+                if sync is not None:
+                    payload["blocking_game"]["sync"] = sync
         if (
             isinstance(blocking, dict)
             and blocking.get("state") == "active"
@@ -554,20 +472,9 @@ async def get_status(request: Request, current_user: User = Depends(get_current_
                 )
                 # Work on a copy: never pass through any cloud-side session/key.
                 payload["blocking_game"]["session_id"] = pending["session_id"]
-                # Sessions live on the box, so the cloud cannot tell a resumable game from an
-                # orphaned one and answers "not resumable" for every board game -- which is why
-                # `session_id` is added here in the first place. The takeover fields are the same
-                # projection seen from the other side, and the same correction has to be made to
-                # them: a game the user is sitting in front of and can go on playing must not also
-                # be advertised as one another device may forfeit. Leaving them would put "someone
-                # can end this for you" on a live board.
-                for stale in (
-                    "can_force_resign",
-                    "takeover_eligible_at",
-                    "takeover_threshold_seconds",
-                    "takeover_threshold_version",
-                ):
-                    payload["blocking_game"].pop(stale, None)
+                # 会话住在盒子上,云端分不清「能接回来」和「已经孤儿」,所以对每一局盒子上的棋
+                # 它都答「接不回来」—— `session_id` 就是为此在这里补上的。
+                # (曾经还要在这里抹掉一组云端发来的接管字段;那组字段已经不存在了。)
             elif pending is not None and pending.get("game_id") == blocking.get("game_id"):
                 try:
                     cancelled = await request.app.state.remote_client.cancel_ai_ladder_reservation(
@@ -836,6 +743,44 @@ async def end_ranked_game(
     except ValueError as exc:
         raise _lifecycle_error(exc) from exc
     return _lifecycle_payload(receipt)
+
+
+@router.post("/games/{game_id}/settlement/retry")
+async def retry_ranked_settlement(
+    game_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
+    """Send the queued settlement now instead of waiting out the backoff.
+
+    Only a board has this route, because only a board has an outbox: on the cloud a
+    settlement is either recorded or was never submitted, and there is nothing in
+    between to retry. The reply is the same descriptor `/status` carries, taken after
+    the attempt — so the button's own result is what refreshes the panel.
+    """
+    if not _is_board(request):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="The settlement outbox only exists on a board device"
+        )
+    _require_bound_board_user(request, current_user)
+    worker = getattr(request.app.state, "sync_worker", None)
+    if worker is None or not hasattr(worker, "describe"):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No settlement outbox on this device")
+    key = _settlement_outbox_key(game_id)
+    if worker.describe(key, user_id=current_user.id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No queued settlement for this game")
+    if getattr(request.app.state.remote_client, "auth_required", False):
+        # 队列在这种状态下会整个暂停(`_process_queue` 一进循环就 break),所以这里
+        # 按下去一步都不会走。不说破的话屏上会显示「正在送」—— 一句不会成真的话。
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Cloud session needs to be renewed")
+    if worker.retry_now(key, user_id=current_user.id):
+        try:
+            await worker.run_sync()
+        except Exception as exc:
+            # 一次没送成不是错误,是这块屏本来就在显示的那件事;失败会落进 outbox 的
+            # 计数和退避里,下一行 describe 就把它读出来。
+            logging.getLogger("katrain_web").info("Manual ranked settlement retry did not land: %s", exc)
+    return {"game_id": game_id, "sync": worker.describe(key, user_id=current_user.id)}
 
 
 @router.post("/start", status_code=status.HTTP_201_CREATED)

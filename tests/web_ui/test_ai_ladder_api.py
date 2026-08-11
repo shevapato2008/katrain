@@ -19,7 +19,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 
 from katrain.web.core import models_db
-from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository, takeover_eligibility
+from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository
 from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token
 from katrain.web.core.db import Base
 from katrain.web.core.engine_recovery import EngineRecoveryConfig, EngineRecoveryTracker
@@ -2351,7 +2351,9 @@ async def test_remote_end_first_makes_late_direct_record_a_noop(api_app, client)
     with api_app.state._test_session_factory() as db:
         game = db.query(models_db.UserGame).one()
         ledger = db.query(models_db.AiLadderGameLedger).one()
-        assert game.result == "W+R"
+        # `+F` 而不是 `+R`:这一局是被**远端结束**的,云端手上一手棋都没有。
+        # 写成认输等于声称这是一盘下过、并在某一手停下的棋 —— 弃权才是真的。
+        assert game.result == "W+F"
         assert (ledger.result, ledger.terminal_source) == ("loss", "remote_resign")
         assert db.query(models_db.AiLadderPendingGame).count() == 0
 
@@ -2394,22 +2396,12 @@ async def test_cross_device_ranked_journey_has_one_receipt_and_one_auditable_wri
         # second device may end the game immediately and there is no deadline to count down to.
         # `ended` below is that call succeeding, which is what makes this the regression guard
         # for "the takeover gate must not take the existing escape hatch away".
-        "can_force_resign": True,
-        "takeover_eligible_at": None,
         # 界面走秒读的是这个**时长**,不是上面那个时刻 —— 客户端拿服务端的时刻去减自己的钟,
         # 差多少钟倒计时就错多少,而常年离线、没有可靠 NTP 的一体机正是钟偏最大的那一台。
         # 时长是差值,对钟偏免疫(国象在自己那条上量出来的)。这里为 None:此刻就能按,没什么可数。
-        "takeover_eligible_in_seconds": None,
-        "takeover_threshold_seconds": 300,
-        "takeover_threshold_version": 1,
         # The game is `active`, so the other exit is closed and says so with a deadline of None:
         # no amount of waiting turns a game in progress into an undelivered result. The screen
         # has to be able to tell the two apart -- one banks a loss, the other banks nothing.
-        "can_release_abandoned_settlement": False,
-        "abandoned_settlement_eligible_at": None,
-        "abandoned_settlement_eligible_in_seconds": None,
-        "abandoned_settlement_threshold_seconds": 1800,
-        "abandoned_settlement_threshold_version": 1,
     }
     receipt = ended.json()
     assert ended.status_code == 200
@@ -3563,31 +3555,6 @@ async def test_a_rejected_settlement_leaves_an_exit_for_another_device(api_app, 
 
 
 @pytest.mark.asyncio
-async def test_the_exit_stays_shut_while_the_box_is_still_reporting_in(api_app, client):
-    """反向:心跳还在的时候那扇门必须是关的。
-
-    没有这条,上面那条证明不了任何事 —— 一扇永远开着的门当然「有出路」,
-    而那等于把段位并发规则整个作废。
-    """
-
-    async with client as ac:
-        response = await start_ranked(api_app, ac)
-        game_id = response.json()["game_id"]
-        await server._send_ai_ladder_heartbeats(api_app)
-        await server._send_ai_ladder_heartbeats(api_app)
-
-        ended = await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/end",
-            headers={**api_app.state._test_headers, "X-StellaBox-Device-ID": "other-device"},
-            json={"reason": "user_resigned"},
-        )
-
-    assert ended.status_code == 409
-    with api_app.state._test_session_factory() as db:
-        assert db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one().state == "active"
-
-
-@pytest.mark.asyncio
 async def test_heartbeat_stops_when_the_local_game_ends_not_when_settlement_is_flagged(api_app, client):
     """心跳绑「本地这局还在下」,不绑「结算失败标记」。
 
@@ -3993,8 +3960,6 @@ async def test_the_pending_hint_is_the_only_thing_that_moves_the_cloud_out_of_ac
     「云端还是 active」。这是契约 ⑧b 的形状:先证这条线是活的,再证它断了会怎样。
     """
 
-    from katrain.web.core.ai_ladder_ranked import abandoned_settlement_eligibility
-
     box, cloud, _ = box_and_cloud
     async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
         started = await ac.post(
@@ -4017,12 +3982,6 @@ async def test_the_pending_hint_is_the_only_thing_that_moves_the_cloud_out_of_ac
     assert row.state == "pending_settlement"
     assert row.pending_settlement_since is not None
 
-    # 顺带把 `(能不能放, 什么时候能放)` 里 `None` 的语义钉死在这里:这一格是「还没到」,
-    # 到期时刻是个真时刻;下面那条失败路径是「永远不会到」,到期时刻是 `None`。
-    # 少了这个对照,下面那句 `== (False, None)` 就可能只是在断言一个恒假的函数。
-    can_release, eligible_at = abandoned_settlement_eligibility(row)
-    assert can_release is False and eligible_at is not None
-
 
 @pytest.mark.asyncio
 async def test_a_lost_pending_hint_leaves_the_account_on_the_takeover_exit_not_stranded(box_and_cloud):
@@ -4040,8 +3999,6 @@ async def test_a_lost_pending_hint_leaves_the_account_on_the_takeover_exit_not_s
          —— 代码用 `None` 区分「还没到」和「永远不会到」,这里断言的是后者;
       3. 5 分钟那扇门真的会开,并且**是因为心跳停了才开的**。
     """
-
-    from katrain.web.core.ai_ladder_ranked import abandoned_settlement_eligibility
 
     box, cloud, remote = box_and_cloud
     async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
@@ -4074,11 +4031,9 @@ async def test_a_lost_pending_hint_leaves_the_account_on_the_takeover_exit_not_s
         assert session._recorded is True
         assert box.state.sync_enqueue_fn.call_args.kwargs["payload"]["game_id"] == game_id
 
-        # 2. 云端停在 active,而且 30 分钟那条路是**永远不会开**,不是「还没到」。
         row = _active_row(cloud, game_id)
         assert row.state == "active"
         assert row.pending_settlement_since is None
-        assert abandoned_settlement_eligibility(row) == (False, None)
 
         # 3. 心跳停了 —— 再扫多少轮代际都不动。
         for _ in range(3):
@@ -4105,163 +4060,6 @@ async def test_a_lost_pending_hint_leaves_the_account_on_the_takeover_exit_not_s
     assert ended.json()["state"] == "settled"
     with cloud.state._test_session_factory() as db:
         assert db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one_or_none() is None
-
-
-@pytest.mark.asyncio
-async def test_the_box_holding_the_undelivered_result_is_told_how_to_get_out(box_and_cloud):
-    """出站队列被云端 4xx 永久拒掉之后,**用户面前这台**必须看得到出路。
-
-    审计 P0 #4。构造的是这条链的终点:局下完 → 提示打通(云端 `pending_settlement`)
-    → 出站队列被 4xx 拒 → worker 只把队列行标 `failed`,**从不回头碰会话或云端**
-    (`sync_worker.py:172-173`)。于是云端行停在 `pending_settlement`,谁也不会再动它。
-
-    这一格的要害是**它属于哪台设备**:被拒的结算天然属于刚下完这局的那台盒子,
-    而那台就是用户此刻坐在前面的那台 —— `ownership == "current_device"`。
-    可 `_blocking_payload` 原本只在 `other_device` 那一支里发出路字段,理由写的是
-    「只有局在别处时才有意义」。对 `active` 成立(自己这台该做的是接着下),
-    对 `pending_settlement` 恰恰相反:没有局可以接着下,只有一个等不到的结果。
-
-    结果就是最常见的那一格反而什么都不说:`/status` 和 `/start` 的 409 都只回
-    `{game_id, state, ownership, user_color, opponent_rank_name}` —— 开不了新局,
-    而屏幕上没有任何东西告诉用户能做什么、什么时候能做。放弃等待这条路在 API 上
-    **一直是通的**,是载荷把它藏起来了。用户要拿到它,得走到另一台设备上去。
-    """
-
-    box, cloud, _ = box_and_cloud
-    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
-        headers = {**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"}
-        started = await ac.post(
-            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
-        )
-        game_id = started.json()["game_id"]
-        await ac.post("/api/resign", headers=box.state._test_headers, json={"session_id": started.json()["session_id"]})
-        # 出站队列 4xx 之后没有任何后续动作 —— 什么都不做,就是这一格的真实构造。
-        assert _active_row(cloud, game_id).state == "pending_settlement"
-
-        status_payload = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()
-        blocked = await ac.post(
-            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
-        )
-
-    blocking = status_payload["blocking_game"]
-    assert blocking["ownership"] == "current_device" and blocking["state"] == "pending_settlement"
-    assert blocking["can_release_abandoned_settlement"] is False
-    assert blocking["abandoned_settlement_eligible_at"] is not None, (
-        "自己这台盒子拿着一个送不出去的结果,却被告知不了什么时候能放弃等待 —— "
-        "而这正是最常见的那一格:被拒的结算天生属于刚下完这局的那台设备"
-    )
-    assert blocking["abandoned_settlement_threshold_seconds"] == 1800
-
-    assert blocked.status_code == 409
-    # 409 的 detail 走的是同一个投影。开不了新局的那一刻正是用户最需要出路的那一刻,
-    # 所以这两处必须给出同一份信息,而不是只有其中一处。
-    assert "abandoned_settlement_eligible_at" in blocked.text
-
-
-@pytest.mark.asyncio
-async def test_a_box_that_restarted_mid_game_is_not_left_with_every_exit_hidden(box_and_cloud):
-    """盒子中途重启:局接不回来,而出路一个都没露出来 —— 三扇门同时是暗的。
-
-    审计 P0 #5(「所有出路同时为假」那一格),真缺陷。构造:局在下,盒子断电重启,
-    内存里的会话没了,云端行还是 `active`、`origin_device_id` 还是这台盒子。于是:
-
-      · 接着下 —— 没有 `session_id`(要求本地会话还活着),接不回来;
-      · 接管   —— `can_force_resign` / `takeover_eligible_at` 只发给 `other_device`,这台拿不到;
-      · 放弃等待 —— 只对 `pending_settlement` 有意义,这局是 `active`,本来就不适用。
-
-    最能说明问题的是**失联六分钟前后那两份载荷一模一样**:里面没有任何一个字段
-    跟时间有关,所以等多久屏幕上都不会变。服务端那扇 5 分钟的门其实已经开了,
-    只是从来没告诉这台设备。用户的唯一出路是走到另一台设备上去 —— 而店里那台
-    一体机常常就是唯一一台。
-
-    所以判据不是「局在不在别处」,是「有没有一局可以接着下」:能接着下的时候
-    该做的是接着下;接不回来的时候,接管就是出路,必须说出来。
-    """
-
-    box, cloud, _ = box_and_cloud
-    headers = {**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"}
-    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
-        started = await ac.post(
-            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
-        )
-        game_id, session_id = started.json()["game_id"], started.json()["session_id"]
-        # 走满两轮心跳,让接管判据落在真分支上而不是「没证明过生存」的兼容分支
-        # ——兼容分支答的是 `(True, None)`,那样「到期时刻」这一半就没被测到。
-        await server._send_ai_ladder_heartbeats(box)
-        await server._send_ai_ladder_heartbeats(box)
-
-        # 正对照先立住:局还在、会话还在的时候,给的是「接着下」,不是「接管」。
-        healthy = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()["blocking_game"]
-        assert healthy.get("session_id") == session_id
-        # 而且**不许同时**递出接管 —— 用户正坐在这局前面,「别人可以替你判负」是句假话。
-        # 会话住在盒子上,云端分不清「能接着下」和「没人了」,所以这一步的更正只能由盒子做,
-        # 跟它补 `session_id` 是同一件事的两面(我第一版只做了一半,正是这条控制组抓住的)。
-        assert "can_force_resign" not in healthy and "takeover_eligible_at" not in healthy
-
-        box.state.session_manager._sessions.pop(session_id)  # 断电重启
-
-        stranded = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()["blocking_game"]
-        blocked = await ac.post(
-            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
-        )
-
-    assert stranded["ownership"] == "current_device" and stranded["state"] == "active"
-    assert "session_id" not in stranded, "会话已经没了,却还在告诉前端可以接回来"
-    assert stranded["can_force_resign"] is True, (
-        "局接不回来,而这台设备的载荷里一个字都没有 —— 三条出路同时是暗的," "用户只能走到另一台设备上去"
-    )
-    # 这里的 `None` 是「已经开着,没什么可等」,不是「永远不会开」。原盒结束自己这局
-    # 就是认输,不进接管窗口(见 `test_the_origin_box_can_end_its_own_stranded_game_at_once`)。
-    # 这条断言原本写的是「必须有个未来时刻」—— 我当时以为原盒也得等那 5 分钟,
-    # 是国象的同设备自查把这个前提问倒的。
-    assert stranded["takeover_eligible_at"] is None
-    assert blocked.status_code == 409 and "can_force_resign" in blocked.text
-
-
-@pytest.mark.asyncio
-async def test_the_blocking_screen_on_another_device_always_carries_both_doors(api_app, client):
-    """挡住你的那块屏永远同时带着两扇门和它们各自的状态,哪扇适用都一样。
-
-    这条钉的是投影的**形状**,不是某一格的取值。两条规矩里我选的是这一条:
-
-      (一)「字段有答案时才出现」—— 于是同一块屏时有时无,前端得先判断键在不在,
-           而键不在既可能是「不适用」也可能是「服务端还没升级」,两者分不开;
-      (二)「别处那块屏恒定带两扇门 + 各自布尔」—— 前端只读值,不猜键。
-
-    选 (二) 的代价是:结算在飞时接管那组恒为 `False`/`None`(接管只对 `active` 有意义)。
-    那不是谎话,是「这扇门此刻走不通」,而这正是这块屏该说的话。
-
-    有这条之前,`_blocking_payload` 里 `elsewhere` 那一项**逐项删下来 0 红**——
-    它承载的规矩当时只活在注释里(契约 ⑧h/⑧i:恒真式要连着「它凭什么」一起钉住,
-    否则前提变了没人知道)。删掉那一项唯一变的就是这一格,所以判据就落在这一格上。
-    """
-
-    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
-    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
-    game_id = reservation_payload()["game_id"]
-    key = reservation_payload()["reservation_key"]
-    async with client as ac:
-        await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
-        await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/activate",
-            headers=origin,
-            json={"reservation_key": key, "session_id": "session-gone"},
-        )
-        pended = await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/pending-settlement", headers=origin, json={"reservation_key": key}
-        )
-        seen_from_elsewhere = await ac.get("/api/v1/ai-ladder/status", headers=other)
-
-    assert pended.status_code == 200
-    blocking = seen_from_elsewhere.json()["blocking_game"]
-    assert blocking["ownership"] == "other_device" and blocking["state"] == "pending_settlement"
-    # 放弃等待:这一格真正的出路,值随时间变。
-    assert blocking["can_release_abandoned_settlement"] is False
-    assert blocking["abandoned_settlement_eligible_at"] is not None
-    # 接管:这一格走不通,但门还在屏上,前端读到的是 False 而不是「键不在」。
-    assert blocking["can_force_resign"] is False
-    assert blocking["takeover_eligible_at"] is None
-    assert blocking["takeover_threshold_seconds"] == 300
 
 
 @pytest.mark.asyncio
@@ -4354,88 +4152,6 @@ async def test_an_authority_outage_is_not_permanent_for_liveness(box_and_cloud):
 
     row = _active_row(cloud, game_id)
     assert row.heartbeat_generation == 3, "权威回来了,盒子却再也不报生存 —— 五分钟后这局就是别人的了"
-    can_take_over, _ = takeover_eligibility(row)
-    assert can_take_over is False
-
-
-@pytest.mark.asyncio
-async def test_the_origin_box_can_end_its_own_stranded_game_at_once_and_the_screen_says_so(box_and_cloud):
-    """原盒结束**自己**这局,不必等那 5 分钟 —— 而载荷此前告诉它要等。
-
-    国象在自查里发现:它的 force-resign 压根没有「发起方必须不同于原盒」的判断,
-    所以单机门店走得通。同一个问题回问围棋,答案在
-    `ai_ladder_ranked.py:929` —— 那道接管窗口挂在 `deciding_device_id != origin_device_id`
-    上,原盒自己来根本不进这一支:「从正在下这局的那台机器上认输,那就只是认输,永远允许」。
-
-    可 `_blocking_payload` 里 `can_force_resign` 取的是 `takeover_eligibility(row)`,
-    那是**别处那台**的判据。于是刚重启的盒子拿到 `can_force_resign: false` +
-    一个 5 分钟后的到期时刻 —— **一句假话**:那扇门此刻就是开的。
-    用户对着一个其实能按的按钮干等五分钟,而店里往往只有这一台机器。
-
-    这条是我昨天那个 P0 #5 修复自己带出来的:我把接管字段递给了原盒,却让它们
-    继续回答「别处那台能不能接管」。递出一个字段,和递出**这台设备的**答案,是两件事。
-    """
-
-    box, cloud, _ = box_and_cloud
-    headers = {**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"}
-    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
-        started = await ac.post(
-            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
-        )
-        game_id, session_id = started.json()["game_id"], started.json()["session_id"]
-        await server._send_ai_ladder_heartbeats(box)
-        await server._send_ai_ladder_heartbeats(box)
-
-        box.state.session_manager._sessions.pop(session_id)  # 断电重启,心跳还很新鲜
-
-        stranded = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()["blocking_game"]
-        assert stranded["ownership"] == "current_device"
-        assert stranded["can_force_resign"] is True, (
-            "心跳还新鲜,于是载荷按「别处那台」的判据答了 false —— 可这是原盒自己,"
-            "那扇门此刻就是开的。用户对着一个能按的按钮干等五分钟"
-        )
-        assert stranded["takeover_eligible_at"] is None, "既然此刻就能按,就不该再给一个未来时刻去倒计时"
-
-        ended = await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/end", headers=headers, json={"reason": "user_resigned"}
-        )
-
-    assert ended.status_code == 200, ended.text
-    assert ended.json()["state"] == "settled"
-    with cloud.state._test_session_factory() as db:
-        assert db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one_or_none() is None
-
-
-@pytest.mark.asyncio
-async def test_another_device_still_has_to_wait_out_the_window(box_and_cloud):
-    """反向:同一局、同一时刻,**别处那台**必须还是等。
-
-    没有这条,上面那条会被一个「谁都能立刻结束」的实现满足 —— 那等于把接管窗口整个作废,
-    一台设备就能把另一台正在下的棋判负。窗口挡的从来不是「谁」,是「那台机器还在不在报生存」。
-    """
-
-    box, cloud, _ = box_and_cloud
-    headers = {**box.state._test_headers, "X-StellaBox-Device-ID": "box-17"}
-    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
-        started = await ac.post(
-            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
-        )
-        game_id = started.json()["game_id"]
-        await server._send_ai_ladder_heartbeats(box)
-        await server._send_ai_ladder_heartbeats(box)
-
-    transport = ASGITransport(app=cloud)
-    async with AsyncClient(transport=transport, base_url="http://cloud") as cloud_ac:
-        other = {**cloud.state._test_headers, "X-StellaBox-Device-ID": "phone-9"}
-        refused = await cloud_ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"}
-        )
-        seen = (await cloud_ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
-
-    assert refused.status_code == 409
-    assert seen["ownership"] == "other_device"
-    assert seen["can_force_resign"] is False
-    assert seen["takeover_eligible_at"] is not None, "别处那台该拿到一个真的倒计时终点"
 
 
 def test_the_lifecycle_contract_is_equal_in_both_directions_between_server_and_ui():
@@ -4595,184 +4311,6 @@ async def test_a_settlement_that_arrives_after_its_release_still_counts_and_spar
 
 
 @pytest.mark.asyncio
-async def test_a_reservation_that_never_started_is_not_advertised_as_hopeless(api_app, client):
-    """一条从没上过棋盘的预约,别处那台按下去当场就成 —— 而屏上说「不行,而且等也没用」。
-
-    这是**同一个缺陷类的第二例**,是照国象给的查法找出来的,不是撞见的:
-
-    > 同一个概念在两处用不同判据回答时,投影层就会开始说假话。
-    > 所以去查:凡是同一个问题在业务层和投影层各算一次的地方,都是候选。
-
-    「这局能不能被别处那台结束」在围棋恰好算两次:
-      · 业务层 `finalize_reserved_game` —— 那道 5 分钟窗口挂在 `row.state == "active"` 上,
-        `reserved` 根本不进那一支,于是**无条件放行**(契约 ④:放开占位不能免费,记一场负);
-      · 投影层 `takeover_eligibility` —— 第一句就是 `row.state != "active"` 直接返回
-        `(False, None)`。
-
-    两个答案对同一个问题:载荷说「不行,而且等也没用」(`eligible_at` 为 `None` 的含义就是
-    「等不来」),`/end` 说 200 settled。**而载荷是往「放弃」那个方向撒的谎。**
-
-    可达性:盒子在 reserve 与 activate 之间崩掉就停在这一格。它有 5 分钟的惰性回收兜底,
-    所以不是永久死局 —— 但那 5 分钟里另一台设备被告知的是「无解」,而它其实一按就通。
-    """
-
-    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
-    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
-    game_id = reservation_payload()["game_id"]
-    async with client as ac:
-        # board-a 预约成功之后就崩了 —— 没来得及 activate,行停在 `reserved`。
-        reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
-        assert reserved.status_code == 201
-        seen = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
-        ended = await ac.post(f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"})
-
-    assert ended.status_code == 200 and ended.json()["state"] == "settled", (
-        "这条断言先立住业务层的答案 —— 少了它,下面那条会被一个「把 /end 也一起关掉」的"
-        "实现满足,那是让两个答案一致的**错误方向**:屏上不撒谎了,可出路也没了"
-    )
-    assert seen["ownership"] == "other_device"
-    assert seen["can_force_resign"] is True, (
-        "载荷说不行,而 `/end` 当场 200 —— 两处对同一个问题给了不同答案," "而说谎的那处正好把用户劝退"
-    )
-    assert seen["takeover_eligible_at"] is None, "此刻就能按,就不该再给一个未来时刻去倒计时"
-
-
-# --- 阈值两侧各一格:倒计时说的那一刻,就是闸开的那一刻 --------------------------
-#
-# 这一节是国象报的第三种 0 红补上的:**探测点落在漂移之外**。
-# 此前所有涉及阈值的测试都在 6 分钟 / 31 分钟处探测,而阈值是 5 分钟 / 30 分钟 ——
-# 把**执行**那一侧偷偷改成 4 分钟 / 20 分钟(广告出去的秒数原封不动),**全套 366 条一条不红**。
-# 抓住阈值改动的只有载荷里那个 `*_threshold_seconds` 数字,它证明的是「广告牌换了没有」,
-# 不是「闸按哪个数开」。两者一漂,倒计时就成了骗人的:用户被明确告知去信那个时刻。
-
-
-def _boundary_probe_margin():
-    """探测点离阈值多远。
-
-    要小到能抓住现实里的漂移单位(有人把 `minutes=5` 改成 `minutes=4`),
-    又要大到不会被这几个 ASGI 调用的耗时(远小于 1 秒)冲掉。10 秒 ⇒ 抓得住 ≥20 秒的漂移。
-    **探测点本身就是这类测试的灵敏度,写死一个「够远」的值等于关掉它。**
-    """
-
-    return timedelta(seconds=10)
-
-
-@pytest.mark.asyncio
-async def test_the_takeover_countdown_ends_exactly_when_the_gate_opens(api_app, client):
-    """接管:差一点的时候两边都说不行,到点的时候两边都说行。
-
-    投影问 `takeover_eligibility`,准入也问 `takeover_eligibility` —— 今天是一份实现。
-    这条钉的不是「今天没漂」,是**让漂移无处可藏**:任一侧单独改了数,这条当场红,
-    而此前只有广告牌那个数字被钉着。
-    """
-
-    from katrain.web.core.ai_ladder_ranked import AI_LADDER_TAKEOVER_THRESHOLD
-
-    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
-    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
-    game_id = reservation_payload()["game_id"]
-    key = reservation_payload()["reservation_key"]
-    margin = _boundary_probe_margin()
-
-    async def seen_from_other(ac):
-        return (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
-
-    async def end_from_other(ac):
-        return await ac.post(f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"})
-
-    def age_heartbeat_to(delta):
-        with api_app.state._test_session_factory() as db:
-            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
-            row.last_heartbeat_at = datetime.now(timezone.utc) - delta
-            db.commit()
-
-    async with client as ac:
-        await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
-        await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/activate",
-            headers=origin,
-            json={"reservation_key": key, "session_id": "session-a"},
-        )
-        # 两轮心跳:让判据落在真分支上,而不是「没证明过生存」那条兼容分支。
-        for _ in range(2):
-            await ac.post(f"/api/v1/ai-ladder/games/{game_id}/heartbeat", headers=origin, json={"reservation_key": key})
-
-        age_heartbeat_to(AI_LADDER_TAKEOVER_THRESHOLD - margin)
-        just_short = await seen_from_other(ac)
-        refused = await end_from_other(ac)
-
-        age_heartbeat_to(AI_LADDER_TAKEOVER_THRESHOLD + margin)
-        just_due = await seen_from_other(ac)
-        allowed = await end_from_other(ac)
-
-    assert (just_short["can_force_resign"], refused.status_code) == (False, 409), (
-        "差一点那一格:屏上说的和闸认的必须都是「还不行」。"
-        f"实测 载荷={just_short['can_force_resign']} 闸={refused.status_code}"
-    )
-    assert just_short["takeover_eligible_at"] is not None
-    assert (just_due["can_force_resign"], allowed.status_code) == (True, 200), (
-        "到点那一格:屏上说的和闸认的必须都是「可以了」。倒计时走完按钮还 409,"
-        f"是把用户明确告知去信的那个时刻变成了骗人的。实测 载荷={just_due['can_force_resign']} 闸={allowed.status_code}"
-    )
-
-
-@pytest.mark.asyncio
-async def test_the_release_countdown_ends_exactly_when_the_gate_opens(api_app, client):
-    """放弃等待:同一条,换成 30 分钟那道门。
-
-    两道门的判据是两个不同的函数、两个不同的常量,所以各钉一条 —— 一条过了不能替另一条作证。
-    """
-
-    from katrain.web.core.ai_ladder_ranked import AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD
-
-    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
-    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
-    game_id = reservation_payload()["game_id"]
-    key = reservation_payload()["reservation_key"]
-    margin = _boundary_probe_margin()
-
-    def age_pending_to(delta):
-        with api_app.state._test_session_factory() as db:
-            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
-            row.pending_settlement_since = datetime.now(timezone.utc) - delta
-            db.commit()
-
-    async with client as ac:
-        await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
-        await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/activate",
-            headers=origin,
-            json={"reservation_key": key, "session_id": "session-a"},
-        )
-        await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/pending-settlement", headers=origin, json={"reservation_key": key}
-        )
-
-        age_pending_to(AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD - margin)
-        just_short = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
-        refused = await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"}
-        )
-
-        age_pending_to(AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD + margin)
-        just_due = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
-        allowed = await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"}
-        )
-
-    assert (just_short["can_release_abandoned_settlement"], refused.status_code) == (
-        False,
-        409,
-    ), f"差一点那一格两边不一致:载荷={just_short['can_release_abandoned_settlement']} 闸={refused.status_code}"
-    assert just_short["abandoned_settlement_eligible_at"] is not None
-    assert (just_due["can_release_abandoned_settlement"], allowed.status_code) == (
-        True,
-        200,
-    ), f"到点那一格两边不一致:载荷={just_due['can_release_abandoned_settlement']} 闸={allowed.status_code}"
-    assert allowed.json()["state"] == "released"
-
-
-@pytest.mark.asyncio
 async def test_a_reservation_orphaned_by_a_power_cut_frees_itself_with_nobody_running_cleanup(api_app, client):
     """预约成功、盒子当场掉电 —— 没有任何清理代码跑过,账号仍然自己解开。
 
@@ -4792,8 +4330,6 @@ async def test_a_reservation_orphaned_by_a_power_cut_frees_itself_with_nobody_ru
     只把时钟拨过回收年龄,然后走用户真会走的那条路(再开一局)。
     """
 
-    from katrain.web.core.ai_ladder_ranked import AI_LADDER_TAKEOVER_THRESHOLD
-
     origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
     game_id = reservation_payload()["game_id"]
     async with client as ac:
@@ -4809,9 +4345,6 @@ async def test_a_reservation_orphaned_by_a_power_cut_frees_itself_with_nobody_ru
         with api_app.state._test_session_factory() as db:
             row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
             assert row.state == "reserved" and (row.heartbeat_generation or 0) == 0
-            # 心跳代际恒为 0 ⇒ 接管那条路对这一格是死的(五子棋那条永久锁死的第 4 条事实)。
-            # 围棋不靠接管救它,靠的是下面那条读时回收。
-            assert takeover_eligibility(row) == (False, None)
             row.created_at = datetime.now(timezone.utc) - timedelta(minutes=6)
             db.commit()
 
@@ -4826,67 +4359,123 @@ async def test_a_reservation_orphaned_by_a_power_cut_frees_itself_with_nobody_ru
     assert recovered.json()["game_id"] != game_id
     with api_app.state._test_session_factory() as db:
         assert db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one_or_none() is None
-    # 回收年龄必须真的比接管阈值宽 —— 它是给「正在开的那一局」留的飞行时间,不是随手取的余量。
-    # 设太短,worker/读路径会把用户**此刻正在开**的这局清掉,从「偶尔卡死」变成「经常开不了局」。
-    assert AI_LADDER_TAKEOVER_THRESHOLD >= timedelta(minutes=5)
+
+
+
+
+class _StubOutbox:
+    """盒子的 outbox,只保留这条路由会问它的那几件事。
+
+    队列自己的行为(退避、预算、拒收)由 `test_ladder_settlement_sync.py` 钉着;
+    这里钉的是**路由的判断**:什么时候 404、什么时候 401、以及它把什么发回屏上。
+    """
+
+    def __init__(self, sync=None, after=None, armed=True):
+        self._sync = sync
+        self._after = after if after is not None else sync
+        self._armed = armed
+        self.retried = []
+        self.ran = 0
+
+    def describe(self, key, *, user_id=None):
+        return self._after if self.retried else self._sync
+
+    def retry_now(self, key, *, user_id=None):
+        self.retried.append(key)
+        return self._armed
+
+    async def run_sync(self):
+        self.ran += 1
+        return 0
+
+
+def _waiting(attempt=2, seconds=252):
+    return {
+        "state": "waiting", "attempt": attempt, "max_attempts": 5,
+        "next_attempt_in_seconds": seconds, "last_http_status": None,
+        "last_error": None, "receipt": None,
+    }
 
 
 @pytest.mark.asyncio
-async def test_the_countdown_is_sent_as_a_duration_so_a_skewed_clock_cannot_lie(api_app, client):
-    """走秒读的是**时长**,不是时刻 —— 客户端和服务端不必对「现在几点」达成一致。
+async def test_manual_retry_sends_now_and_answers_with_the_state_after_that_attempt(box_and_cloud):
+    """按钮自己的响应就是刷新 —— 屏上不必再问一次 `/status` 才知道按下去发生了什么。
 
-    国象在自己那条上量出来的:它透的是 `takeover_eligible_at`(云端的钟),盒端拿它减
-    **自己的**钟来走秒,两台机器差多少倒计时就错多少。而常年离线、没有可靠 NTP 的一体机
-    正是钟偏最大的那一台,所以这个差不是理论值。
-
-    后果恰好是这块屏存在的理由的反面:**按钮其实已经能按了,屏上还在数「还需 2 分钟」**;
-    或者数到 0 按下去 409。时长是**差值**,对钟偏免疫 —— 客户端只需要知道「这份响应到手
-    多久了」,而那个它用自己的钟量得准,不需要和我们对表。
-
-    夹到 0 也在这里钉住:国象那条变异(去掉 `max(0, ...)`)在它那边 133 条一条没红,
-    因为**没有任何测试在过期之后读过一次**。负数不是好看不好看 —— 屏上会显示
-    「还需等待 -137 秒」,而按钮此刻就能按。
+    这条对这块屏是承重的:`/status` 在盒子上是转发到云端的,断网即 503。如果失败之后
+    还要靠一次 `/status` 才能更新那行「重试 N/M」,那么专为断网准备的这个按钮,恰好
+    在断网时什么都答不出来。
     """
 
-    from katrain.web.core.ai_ladder_ranked import AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD
+    box, _cloud, _remote = box_and_cloud
+    after = _waiting(attempt=3, seconds=80)
+    box.state.sync_worker = _StubOutbox(sync=_waiting(), after=after)
 
-    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
-    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
-    game_id = reservation_payload()["game_id"]
-    key = reservation_payload()["reservation_key"]
-
-    def age_pending_by(delta):
-        with api_app.state._test_session_factory() as db:
-            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one()
-            row.pending_settlement_since = datetime.now(timezone.utc) - delta
-            db.commit()
-
-    async with client as ac:
-        await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
-        await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/activate",
-            headers=origin,
-            json={"reservation_key": key, "session_id": "session-a"},
-        )
-        await ac.post(
-            f"/api/v1/ai-ladder/games/{game_id}/pending-settlement", headers=origin, json={"reservation_key": key}
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/games/g-1/settlement/retry", headers=box.state._test_headers
         )
 
-        age_pending_by(timedelta(minutes=10))
-        waiting = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
+    assert response.status_code == 200, response.text
+    assert response.json() == {"game_id": "g-1", "sync": after}
+    assert box.state.sync_worker.ran == 1
 
-        age_pending_by(AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD + timedelta(minutes=5))
-        expired = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
 
-    remaining = waiting["abandoned_settlement_eligible_in_seconds"]
-    expected = int(AI_LADDER_ABANDONED_SETTLEMENT_THRESHOLD.total_seconds()) - 600
-    assert waiting["can_release_abandoned_settlement"] is False
-    # 允许几秒的执行耗时,但必须是**真的剩余时长**,不是别的什么数(比如整个阈值)。
-    assert expected - 5 <= remaining <= expected + 5, f"剩余时长不对:{remaining},应当约 {expected}"
+@pytest.mark.asyncio
+async def test_manual_retry_does_not_send_when_the_queue_says_there_is_nothing_to_arm(box_and_cloud):
+    """已经在送(或者被拒收)的时候,不许再叫一次 —— 那只会重复一次同样的答复。"""
 
-    # 过期之后必须是 0,不是负数 —— 这一格此前从来没有人读过。
-    assert expired["can_release_abandoned_settlement"] is True
-    assert expired["abandoned_settlement_eligible_in_seconds"] == 0, (
-        f"过期之后剩余时长是 {expired['abandoned_settlement_eligible_in_seconds']} —— "
-        "屏上会显示「还需等待 -137 秒」,而按钮此刻就能按"
-    )
+    box, _cloud, _remote = box_and_cloud
+    refused = {**_waiting(), "state": "refused", "last_http_status": 422}
+    box.state.sync_worker = _StubOutbox(sync=refused, armed=False)
+
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/games/g-1/settlement/retry", headers=box.state._test_headers
+        )
+
+    assert response.status_code == 200
+    assert response.json()["sync"]["state"] == "refused"
+    assert box.state.sync_worker.ran == 0
+
+
+@pytest.mark.asyncio
+async def test_manual_retry_says_the_login_expired_instead_of_pretending_to_send(box_and_cloud):
+    """云端会话过期时队列整个暂停,按下去一步都不会走 —— 屏上不许留一句「正在送」。"""
+
+    box, _cloud, remote = box_and_cloud
+    box.state.sync_worker = _StubOutbox(sync=_waiting())
+    remote.auth_required = True
+
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/games/g-1/settlement/retry", headers=box.state._test_headers
+        )
+
+    assert response.status_code == 401, response.text
+    assert box.state.sync_worker.ran == 0
+    assert box.state.sync_worker.retried == []
+
+
+@pytest.mark.asyncio
+async def test_manual_retry_is_a_404_when_the_queue_no_longer_holds_that_game(box_and_cloud):
+    box, _cloud, _remote = box_and_cloud
+    box.state.sync_worker = _StubOutbox(sync=None)
+
+    async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/games/gone/settlement/retry", headers=box.state._test_headers
+        )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_the_cloud_has_no_outbox_to_retry(api_app):
+    """云端要么记下了要么没收到,中间没有一个「还在送」的东西可以再送一次。"""
+
+    async with AsyncClient(transport=ASGITransport(app=api_app), base_url="http://cloud") as ac:
+        response = await ac.post(
+            "/api/v1/ai-ladder/games/g-1/settlement/retry", headers=api_app.state._test_headers
+        )
+
+    assert response.status_code == 404

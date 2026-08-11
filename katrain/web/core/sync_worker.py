@@ -67,6 +67,8 @@ class SyncWorker:
         # so an account that also played elsewhere stops showing two different ranks.
         self._ai_ladder_repo = ai_ladder_repo
         self._sync_lock = asyncio.Lock()
+        #: 云端对已送达结算的裁决,按 idempotency_key。见 `_absorb_response`。
+        self._receipts: dict[str, dict] = {}
 
     async def run_sync(self) -> int:
         """Process all pending sync items. Returns count of successfully synced items.
@@ -189,6 +191,13 @@ class SyncWorker:
             return
         try:
             body = resp.json()
+            if isinstance(body, dict) and isinstance(body.get("counted"), bool):
+                # 云端对这一局的裁决,只此一份 —— 屏上那句「本局已计入 / 不计入升降级:…」
+                # 就靠它。留在内存里:它只在送达之后那几秒有人问,而那几秒进程一定还活着;
+                # 进程没了的话这一局早就不挡着新局,面板本来就不在了。
+                self._receipts[item.idempotency_key] = {"counted": body["counted"], "reason": body.get("reason")}
+                if len(self._receipts) > 16:
+                    self._receipts.pop(next(iter(self._receipts)))
             profile = body.get("profile") if isinstance(body, dict) else None
             if not profile or item.user_id is None:
                 return
@@ -248,6 +257,81 @@ class SyncWorker:
                 db.commit()
                 logger.info(f"Revived {revived} sync items after reconnection")
             return revived
+        finally:
+            db.close()
+
+    def _item_for(self, db: Session, idempotency_key: str, user_id) -> Optional[SyncQueueEntry]:
+        """A board is a shared device, so an item is only this user's if it says so."""
+        query = db.query(SyncQueueEntry).filter(SyncQueueEntry.idempotency_key == idempotency_key)
+        if user_id is not None:
+            query = query.filter(SyncQueueEntry.user_id == str(user_id))
+        return query.one_or_none()
+
+    def describe(self, idempotency_key: str, *, user_id=None) -> Optional[dict]:
+        """What the queue can honestly say about one item, in the user's vocabulary.
+
+        The queue's own words are about the worker (`pending` covers both "next in line"
+        and "serving a backoff"); the user is asking a different question — is it trying,
+        is it waiting, or has it stopped. So `sending`/`waiting`/`exhausted`/`refused`,
+        and the two that stop are kept apart because only one of them is worth a retry.
+
+        Time is reported as a **duration, not an instant**. An always-on box with no
+        reliable NTP is exactly the machine whose clock is furthest off, and a countdown
+        computed from a server timestamp is wrong by precisely that offset.
+        """
+        db: Session = self._session_factory()
+        try:
+            item = self._item_for(db, idempotency_key, user_id)
+            if item is None:
+                return None
+            if item.status == "completed":
+                state = "synced"
+            elif item.status == "failed":
+                state = "refused" if _is_permanent_refusal(item.last_http_status) else "exhausted"
+            elif item.status == "pending" and item.next_retry_at is not None:
+                state = "waiting"
+            else:
+                state = "sending"
+            next_in_seconds = None
+            if state == "waiting":
+                next_in_seconds = max(0, int((item.next_retry_at - datetime.utcnow()).total_seconds()))
+            return {
+                "state": state,
+                # 已经失败了几次,以及一共试几次 —— 「重试 3/5」里的那两个数。
+                "attempt": item.retry_count,
+                "max_attempts": item.max_retries,
+                "next_attempt_in_seconds": next_in_seconds,
+                "last_http_status": item.last_http_status,
+                "last_error": item.last_error,
+                # 送达之后,云端对这一局的裁决。没有它,成功就只是面板悄悄消失 ——
+                # 用户不知道这一局到底计没计、段位为什么动了。
+                "receipt": self._receipts.get(idempotency_key) if state == "synced" else None,
+            }
+        finally:
+            db.close()
+
+    def retry_now(self, idempotency_key: str, *, user_id=None) -> bool:
+        """Skip the wait. Returns whether anything actually became sendable.
+
+        Retry is offered for a bad network, not for a server that understood the request
+        and said no: a permanent refusal answers the same way however many times it is
+        asked, so pressing again would only look like progress.
+        """
+        db: Session = self._session_factory()
+        try:
+            item = self._item_for(db, idempotency_key, user_id)
+            if item is None or item.status in {"completed", "in_progress"}:
+                return False
+            if item.status == "failed" and _is_permanent_refusal(item.last_http_status):
+                return False
+            if item.retry_count >= item.max_retries:
+                # 手动重试和重连自动复活是同一件事,用同一条规则:预算重新开始。
+                item.retry_count = 0
+            item.status = "pending"
+            item.next_retry_at = None
+            item.locked_at = None
+            db.commit()
+            return True
         finally:
             db.close()
 

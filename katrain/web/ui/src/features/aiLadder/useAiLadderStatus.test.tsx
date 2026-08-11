@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AiLadderApiError } from './api';
 import { AI_LADDER_COPY } from './copy';
@@ -89,4 +89,68 @@ describe('useAiLadderStatus', () => {
     expect(getStatus.mock.calls[0][1]).toBeInstanceOf(AbortSignal);
     expect(getStatus.mock.calls[0][1].aborted).toBe(true);
   });
+
+  describe('applyBlockingSync — 不向云端再要一次', () => {
+    const blocked = (sync: Record<string, unknown> | undefined) => ({
+      view_state: 'ready',
+      placement_state: { phase: 'placed', rung: { rung: 2, rank_name: '19级', certification_status: 'certified', availability: 'available', route: 'server' } },
+      current_opponent: null,
+      recent_ranked_results: [],
+      net_score: 0,
+      pending_settlement: false,
+      blocking_game: {
+        game_id: 'g1', state: 'pending_settlement', ownership: 'current_device',
+        user_color: 'B', opponent_rank_name: '业余 3 段',
+        ...(sync ? { sync } : {}),
+      },
+    });
+
+    it('就地换掉那一局的同步状态，一次网络都不发', async () => {
+      getStatus.mockResolvedValue(blocked({
+        state: 'waiting', attempt: 2, max_attempts: 5, next_attempt_in_seconds: 252,
+        last_http_status: null, last_error: null,
+      }));
+      const { result } = renderHook(() => useAiLadderStatus('token', true));
+      await waitFor(() => expect(result.current.status.view_state).toBe('ready'));
+      getStatus.mockClear();
+
+      act(() => result.current.applyBlockingSync('g1', {
+        state: 'waiting', attempt: 3, max_attempts: 5, next_attempt_in_seconds: 80,
+        last_http_status: 503, last_error: 'HTTP 503',
+      }));
+
+      const status = result.current.status as any;
+      expect(status.blocking_game.sync).toEqual(expect.objectContaining({ attempt: 3, next_attempt_in_seconds: 80 }));
+      // 关键:这个按钮存在的理由就是网络不好,所以它这一路不许再依赖网络。
+      expect(getStatus).not.toHaveBeenCalled();
+      expect(status.view_state).toBe('ready');
+    });
+
+    it('贴到别的一局上不生效 —— 面板换过局了，旧响应不许改新的一格', async () => {
+      getStatus.mockResolvedValue(blocked(undefined));
+      const { result } = renderHook(() => useAiLadderStatus('token', true));
+      await waitFor(() => expect(result.current.status.view_state).toBe('ready'));
+
+      act(() => result.current.applyBlockingSync('another-game', {
+        state: 'refused', attempt: 1, max_attempts: 5, next_attempt_in_seconds: null,
+        last_http_status: 422, last_error: null,
+      }));
+
+      expect((result.current.status as any).blocking_game.sync).toBeUndefined();
+    });
+
+    it('传 null 就把这一格的同步状态摘掉，而不是留一个空壳', async () => {
+      getStatus.mockResolvedValue(blocked({
+        state: 'waiting', attempt: 2, max_attempts: 5, next_attempt_in_seconds: 252,
+        last_http_status: null, last_error: null,
+      }));
+      const { result } = renderHook(() => useAiLadderStatus('token', true));
+      await waitFor(() => expect(result.current.status.view_state).toBe('ready'));
+
+      act(() => result.current.applyBlockingSync('g1', null));
+
+      expect((result.current.status as any).blocking_game).not.toHaveProperty('sync');
+    });
+  });
+
 });

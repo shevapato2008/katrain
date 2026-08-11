@@ -47,6 +47,38 @@ export type AiLadderRankedOutcome = 'win' | 'loss';
 
 export type AiLadderNetScore = -2 | -1 | 0 | 1 | 2;
 
+/**
+ * outbox 对这一局成绩的据实交代 —— 「重试 2/5 · 下次 0:18 后」那一行的全部数据来源。
+ *
+ * **只有盒子会发。** 云端只知道「成绩还没到」,它无从知道是在排队、在退避、试完了
+ * 还是被拒了,而这恰好是用户唯一想问的那件事。键不在 = 这台机器上没有 outbox
+ * (网页直连云端),不是「没有重试」。
+ */
+export interface AiLadderSettlementSync {
+  /** `exhausted`(网络坏了一阵)和 `refused`(云端在事实上拒收)必须分开:只有前者值得再按一次。 */
+  state: 'sending' | 'waiting' | 'exhausted' | 'refused' | 'synced';
+  /** 已经失败了几次 / 一共试几次 —— 「重试 2/5」里的那两个数。 */
+  attempt: number;
+  max_attempts: number;
+  /**
+   * 距下一次自动重试还有多少秒,只在 `waiting` 时是数。
+   *
+   * **是时长,不是时刻。** 拿服务端给的时刻去减本机的钟,差多少钟倒计时就错多少,
+   * 而常年离线、没有可靠 NTP 的一体机正是钟偏最大的那一台。时长是差值,对钟偏免疫。
+   */
+  next_attempt_in_seconds: number | null;
+  /** 排错用。屏上只在「被拒收」那一格露一次,因为那时用户需要一个能报给客服的东西。 */
+  last_http_status: number | null;
+  last_error: string | null;
+  /**
+   * 送达之后云端对这一局的裁决,只在 `synced` 时有。
+   *
+   * 拿不到它(盒子中途重启过、内存里那份没了)是允许的,**但不许编一个** ——
+   * 那时就只刷新状态,面板消失、段位更新,少一句确认而已。
+   */
+  receipt?: { counted: boolean; reason: AiLadderCountingReason | null } | null;
+}
+
 export interface AiLadderBlockingGame {
   game_id: string;
   state: 'active' | 'pending_settlement';
@@ -54,35 +86,8 @@ export interface AiLadderBlockingGame {
   session_id?: string;
   user_color: 'B' | 'W';
   opponent_rank_name: string;
-
-  // ── 两条出路,以及各自什么时候能走 ────────────────────────────────────────
-  //
-  // 全部可选:服务端只在**这扇门能承载一个答案**的时候才发(见 `_blocking_payload`)。
-  // 所以「键不在」的意思是「这一格没有这扇门」,不是「这扇门关着」——关着是 `false`。
-  // 前端必须靠值判断而不是靠键在不在,否则一个旧服务端和一扇关着的门会长得一样。
-
-  // 认输 / 接管:记一场负、动段位。
-  // `takeover_eligible_at` 为 null 有两种含义,由 `can_force_resign` 区分:
-  //   can_force_resign=true  + null → **此刻就能按**,没什么可等的;
-  //   can_force_resign=false + null → 等也没用(这扇门对这一格不适用)。
-  // 只有 false + 一个时刻,才该在屏上走倒计时。
-  can_force_resign?: boolean;
-  // **走秒读这个**,不读下面那个时刻。拿服务端的时刻去减本机的钟,差多少钟倒计时就错多少,
-  // 而常年离线、没有可靠 NTP 的一体机正是钟偏最大的那一台。时长是差值,对钟偏免疫——
-  // 本机只需要知道「这份响应到手多久了」,那个它自己量得准。
-  takeover_eligible_in_seconds?: number | null;
-  /** 只作展示/排错。**任何走秒的东西都不许从它算起。** */
-  takeover_eligible_at?: string | null;
-  takeover_threshold_seconds?: number;
-  takeover_threshold_version?: number;
-
-  // 放弃等待:**什么都不记**,段位不变。只对「成绩送不出去」那一格有意义。
-  can_release_abandoned_settlement?: boolean;
-  abandoned_settlement_eligible_in_seconds?: number | null;
-  /** 同上:展示用,不承重。 */
-  abandoned_settlement_eligible_at?: string | null;
-  abandoned_settlement_threshold_seconds?: number;
-  abandoned_settlement_threshold_version?: number;
+  /** 只有 `state: 'pending_settlement'` 且这台机器有 outbox 时才有。 */
+  sync?: AiLadderSettlementSync;
 }
 
 export type AiLadderGameLifecycle =

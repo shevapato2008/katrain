@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AiLadderApiError, getAiLadderStatus } from './api';
 import { AI_LADDER_COPY } from './copy';
-import { isAiLadderReadyStatus, type AiLadderStatus } from './types';
+import {
+  isAiLadderReadyStatus,
+  type AiLadderSettlementSync,
+  type AiLadderStatus,
+} from './types';
 
 /**
  * The message the player sees. The server's `detail` is English operator text
@@ -20,10 +24,10 @@ export const aiLadderStatusErrorMessage = (error: unknown): string => {
 /**
  * 有一局挡着的时候,多久回头问一次。
  *
- * 两条门槛是 5 分钟和 30 分钟,而**到期那一刻不靠这条复查** —— 倒计时在本地走秒、
- * 到点自己启用按钮。这条管的是时刻之外的变化(那一局在别处结束了、状态从「在下」
- * 变成「成绩未送达」),所以不必密。15 秒够快到用户察觉不出延迟,又不会让一台
- * 开着页面的一体机每秒去敲一次云端。
+ * 走秒那一半不靠它 —— 「下一次重试还有多久」在本地数,到点自己改口。这条管的是
+ * 时刻之外的变化(那一局在别处结束了、状态从「在下」变成「成绩未送达」、outbox
+ * 自己在后台送成了),所以不必密。15 秒够快到用户察觉不出延迟,又不会让一台开着
+ * 页面的一体机每秒去敲一次云端。
  */
 export const AI_LADDER_BLOCKED_REFRESH_MS = 15_000;
 
@@ -85,6 +89,29 @@ export const useAiLadderStatus = (token?: string, enabled = true) => {
     return () => window.clearInterval(timer);
   }, [enabled, blocked, refresh]);
 
+  /**
+   * 把 outbox 刚刚给出的同步状态就地贴上去,**不再向云端要一次**。
+   *
+   * 「立即重试」这个按钮存在的理由就是网络不好,而 `/status` 在盒子上是转发到云端的:
+   * 失败即 503,`load()` 一 catch 就把整块面板换成「加载失败」。于是专为离线准备的
+   * 那个按钮,恰恰在离线时会毁掉屏幕。
+   *
+   * 而重试那个请求打的是盒子自己(127.0.0.1),断网照样成功,它的响应里就带着这一次
+   * 尝试之后的真实状态 —— 那是此刻手上**唯一确定收到过**的事实,所以用它。
+   */
+  const applyBlockingSync = useCallback((gameId: string, sync: AiLadderSettlementSync | null) => {
+    setStatus((previous) => {
+      if (!isAiLadderReadyStatus(previous)) return previous;
+      const blocking = previous.blocking_game;
+      if (!blocking || blocking.game_id !== gameId) return previous;
+      const { sync: _dropped, ...rest } = blocking;
+      return {
+        ...previous,
+        blocking_game: sync === null ? rest : { ...rest, sync },
+      };
+    });
+  }, []);
+
   useEffect(() => {
     void load();
     return () => {
@@ -93,5 +120,5 @@ export const useAiLadderStatus = (token?: string, enabled = true) => {
     };
   }, [load]);
 
-  return { status, retry: load };
+  return { status, retry: load, applyBlockingSync };
 };

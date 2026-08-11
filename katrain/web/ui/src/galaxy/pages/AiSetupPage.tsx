@@ -8,7 +8,12 @@ import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDebounce } from '../../hooks/useDebounce';
 import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
-import { AiLadderApiError, endAiLadderGame, startAiLadderGame } from '../../features/aiLadder/api';
+import {
+    AiLadderApiError,
+    endAiLadderGame,
+    retryAiLadderSettlement,
+    startAiLadderGame,
+} from '../../features/aiLadder/api';
 import type { AiLadderCountingReason } from '../../features/aiLadder/types';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
 import { canStartAiLadderGame } from '../../features/aiLadder/startGate';
@@ -33,7 +38,11 @@ const AiSetupPage = () => {
     const { t } = useTranslation();
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
-    const { status: aiLadderStatus, retry: retryAiLadderStatus } = useAiLadderStatus(token || undefined, isRated);
+    const {
+        status: aiLadderStatus,
+        retry: retryAiLadderStatus,
+        applyBlockingSync,
+    } = useAiLadderStatus(token || undefined, isRated);
 
     const [aiConstants, setAiConstants] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -41,6 +50,7 @@ const AiSetupPage = () => {
     const [startPending, setStartPending] = useState(false);
     const [lifecyclePending, setLifecyclePending] = useState(false);
     const [lifecycleError, setLifecycleError] = useState('');
+    const [syncRetryPending, setSyncRetryPending] = useState(false);
     const [lifecycleReceipt, setLifecycleReceipt] = useState<{
         gameId: string;
         scopeKey: string;
@@ -318,6 +328,53 @@ const AiSetupPage = () => {
         void retryAiLadderStatus();
     };
 
+    /**
+     * 「立即重试」按下去之后的每一条路。
+     *
+     * 关键是**不要为了刷新去打一次云端**:`/status` 在盒子上是转发到云端的,断网时
+     * 503,而 `retryAiLadderStatus` 一失败就把整块面板换成「加载失败」—— 那正是这个
+     * 按钮存在的场景。重试请求本身打的是盒子自己,断网照样成功,响应里带着这一次
+     * 尝试之后的真实状态,所以失败路径只贴这份状态,不碰云端。
+     *
+     * 只有**送成了**才去复查:那一刻网络刚被证明是通的,而且那一局不再挡着新局,
+     * 屏上要换成新的段位和一张结算回执。
+     */
+    const handleRetrySettlement = async (gameId: string) => {
+        if (syncRetryPending) return;
+        setLifecycleError('');
+        setSyncRetryPending(true);
+        try {
+            const { sync } = await retryAiLadderSettlement(gameId, token || undefined);
+            if (sync && sync.state !== 'synced') {
+                // 还是没送到:退避重排、次数加一(或者被云端拒收)。就地把这份状态贴上去。
+                applyBlockingSync(gameId, sync);
+                return;
+            }
+            // 送到了。回执是云端对这一局的裁决 —— 没有它,成功就只是面板悄悄消失,
+            // 用户不知道这一局到底计没计。拿不到回执也不编一个,只复查状态。
+            if (sync?.receipt) {
+                setLifecycleReceipt({
+                    gameId,
+                    scopeKey: lifecycleScopeRef.current,
+                    receipt: sync.receipt,
+                });
+            }
+            await retryAiLadderStatus();
+        } catch (retryError) {
+            if (retryError instanceof AiLadderApiError && (retryError.status === 401 || retryError.status === 403)) {
+                setLifecycleError('登录已失效，请重新登录后再试');
+            } else if (retryError instanceof AiLadderApiError && retryError.status === 404) {
+                // 队列里已经没有这一局了 —— 多半是后台那一轮刚把它送成。只有这一条
+                // catch 该去复查:它意味着屏上这一格已经不成立了。
+                await retryAiLadderStatus();
+            } else {
+                setLifecycleError('重试失败，请稍后再试');
+            }
+        } finally {
+            setSyncRetryPending(false);
+        }
+    };
+
     const handleSettingChange = (key: string, value: any) => {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
@@ -420,6 +477,8 @@ const AiSetupPage = () => {
                                 navigate(`/galaxy/play/game/${sessionId}?mode=rated&game_id=${encodeURIComponent(gameId)}`);
                             }}
                             onEndGame={handleEndGame}
+                            onRetrySettlement={handleRetrySettlement}
+                            syncRetryPending={syncRetryPending}
                         />
                     </Box>
                 </Box>

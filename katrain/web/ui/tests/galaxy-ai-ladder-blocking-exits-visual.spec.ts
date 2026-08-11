@@ -9,16 +9,21 @@ import { resolve } from 'node:path';
  *   · 取图那半交给人眼看构图对不对(四图关卡);
  *   · 承重那半交给浏览器算 —— jsdom 没有布局引擎,对布局事实无权作证,
  *     而这张卡的外层 `Paper` 带 `overflow: hidden`,右栏一旦比行高长就是**裁切**,
- *     不是滚动。组件测试里那 24 条全绿也照样看不见这件事。
+ *     不是滚动。组件测试里那些全绿也照样看不见这件事。
  *
- * 量之前先把数据造到会溢出:最长的档位名 + 两扇门都在 + 一条错误条,
+ * 六态从「两扇门 × 各自的倒计时」换成了「一个开新局 × outbox 的四种同步状态」:
+ * 接管窗口和放弃窗口连同它们的门槛一起删了(那两条在回答「另一台设备是不是真的死了」,
+ * 而站在两台机器之间的是同一个人)。留下的这条倒计时数的不是权限,是 outbox 下一次
+ * 真的会发请求的时刻。
+ *
+ * 量之前先把数据造到会溢出:最长的档位名 + 同步状态行 + 重试按钮 + 一条错误条,
  * 那是这块面板内容最多的一格。装得下的数据量下量出来的数字一概不算。
  */
 
 const VIEWPORT = { width: 1440, height: 900 };
 const OUT_DIR = resolve(
   process.cwd(),
-  '../../../superpowers/tracks/golaxy-ai-ladder-parity/visual/blocking-exits/1440x900',
+  '../../../superpowers/tracks/golaxy-ai-ladder-parity/visual/blocking-exits/simplified-1440x900',
 );
 
 const readyStatus = (blocking: Record<string, unknown> | null) => ({
@@ -89,7 +94,6 @@ const CASES: Array<{ slug: string; title: string; blocking: Record<string, unkno
     blocking: {
       game_id: 'g1', state: 'active', ownership: 'current_device', session_id: 'sess-1',
       user_color: 'B', opponent_rank_name: '业余 3 段',
-      can_release_abandoned_settlement: false, abandoned_settlement_eligible_in_seconds: null,
     },
   },
   {
@@ -98,45 +102,50 @@ const CASES: Array<{ slug: string; title: string; blocking: Record<string, unkno
     blocking: {
       game_id: 'g1', state: 'active', ownership: 'current_device',
       user_color: 'B', opponent_rank_name: '业余 3 段',
-      can_force_resign: true, takeover_eligible_in_seconds: null,
     },
   },
   {
-    slug: '03-active-other-waiting',
-    title: '局在另一台设备上,那台还在报生存',
+    slug: '03-active-other',
+    title: '局在另一台设备上',
     blocking: {
       game_id: 'g1', state: 'active', ownership: 'other_device',
       user_color: 'B', opponent_rank_name: '业余 3 段',
-      can_force_resign: false, takeover_eligible_in_seconds: 252,
-      can_release_abandoned_settlement: false, abandoned_settlement_eligible_in_seconds: null,
     },
   },
   {
-    slug: '04-active-other-takeable',
-    title: '另一台设备已经失联超过五分钟',
-    blocking: {
-      game_id: 'g1', state: 'active', ownership: 'other_device',
-      user_color: 'B', opponent_rank_name: '业余 3 段',
-      can_force_resign: true, takeover_eligible_in_seconds: null,
-      can_release_abandoned_settlement: false, abandoned_settlement_eligible_in_seconds: null,
-    },
-  },
-  {
-    slug: '05-pending-waiting',
-    title: '下完了,成绩送不到云端',
+    slug: '04-pending-retrying',
+    title: '成绩还在送:第 2 次重试,下一次 4:12 后',
     blocking: {
       game_id: 'g1', state: 'pending_settlement', ownership: 'current_device',
       user_color: 'B', opponent_rank_name: '业余 3 段',
-      can_release_abandoned_settlement: false, abandoned_settlement_eligible_in_seconds: 1620,
+      sync: {
+        state: 'waiting', attempt: 2, max_attempts: 5, next_attempt_in_seconds: 252,
+        last_http_status: null, last_error: 'timeout',
+      },
     },
   },
   {
-    slug: '06-pending-releasable',
-    title: '等了三十分钟,成绩还是没送到',
+    slug: '05-pending-exhausted',
+    title: '五次都没送到:自动重试用尽,仍可手动再试',
     blocking: {
       game_id: 'g1', state: 'pending_settlement', ownership: 'current_device',
       user_color: 'B', opponent_rank_name: '业余 3 段',
-      can_release_abandoned_settlement: true, abandoned_settlement_eligible_in_seconds: 0,
+      sync: {
+        state: 'exhausted', attempt: 5, max_attempts: 5, next_attempt_in_seconds: null,
+        last_http_status: null, last_error: 'connection refused',
+      },
+    },
+  },
+  {
+    slug: '06-pending-refused',
+    title: '云端在事实上拒收:不给重试按钮',
+    blocking: {
+      game_id: 'g1', state: 'pending_settlement', ownership: 'current_device',
+      user_color: 'B', opponent_rank_name: '业余 3 段',
+      sync: {
+        state: 'refused', attempt: 1, max_attempts: 5, next_attempt_in_seconds: null,
+        last_http_status: 422, last_error: 'HTTP 422: rung mismatch',
+      },
     },
   },
 ];
@@ -177,17 +186,20 @@ for (const testCase of CASES) {
   });
 }
 
-test('内容最多的那一格:两扇门 + 一条错误条 + 最长档位名', async ({ page }) => {
+test('内容最多的那一格:同步状态行 + 重试 + 开新局 + 一条错误条 + 最长档位名', async ({ page }) => {
   // 承重那一关的正题。装得下的数据量下量出来的数字一概不算,所以这里把这块面板
-  // 能同时出现的东西全堆上:两扇门(各带后果行)、一条错误条、以及一个够长的档位名。
+  // 能同时出现的东西全堆上:同步状态行、「立即重试」、「开新局」+ 后果行、
+  // 「刷新状态」、一条错误条,以及一个够长的档位名。
   await page.setViewportSize(VIEWPORT);
   await stubShell(page);
   await page.route('**/api/v1/ai-ladder/status', (route) => route.fulfill({
     json: readyStatus({
       game_id: 'g1', state: 'pending_settlement', ownership: 'other_device',
       user_color: 'W', opponent_rank_name: '智星职业九段·超一流·测试用超长档位名称',
-      can_force_resign: false, takeover_eligible_in_seconds: 252,
-      can_release_abandoned_settlement: false, abandoned_settlement_eligible_in_seconds: 1620,
+      sync: {
+        state: 'waiting', attempt: 4, max_attempts: 5, next_attempt_in_seconds: 3620,
+        last_http_status: 503, last_error: 'HTTP 503: upstream unavailable',
+      },
     }),
   }));
   await page.route('**/api/v1/ai-ladder/games/*/end', (route) => route.fulfill({

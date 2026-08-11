@@ -3,6 +3,7 @@ import type {
   AiLadderGameLifecycle,
   AiLadderReadyStatus,
   AiLadderSettlementReceipt,
+  AiLadderSettlementSync,
   AiLadderStartPreferences,
   AiLadderStartResponse,
 } from './types';
@@ -119,6 +120,23 @@ export const startAiLadderGame = async (
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     credentials: 'same-origin',
     body: JSON.stringify(preferences),
+  }));
+
+/**
+ * 立刻再送一次这一局的成绩,不等退避走完。
+ *
+ * 返回的是**这一次尝试之后**的 outbox 状态,所以按钮自己的响应就是刷新 —— 不需要
+ * 再去查一次 `/status` 才知道按下去发生了什么。这条路只有盒子有(云端没有 outbox),
+ * 网页直连时会 404,调用方据此不显示这个按钮。
+ */
+export const retryAiLadderSettlement = async (
+  gameId: string,
+  token?: string,
+): Promise<{ game_id: string; sync: AiLadderSettlementSync | null }> =>
+  parseResponse(await fetch(`/api/v1/ai-ladder/games/${encodeURIComponent(gameId)}/settlement/retry`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    credentials: 'same-origin',
   }));
 
 export const endAiLadderGame = async (

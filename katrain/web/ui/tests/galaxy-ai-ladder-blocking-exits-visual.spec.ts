@@ -91,6 +91,18 @@ const measurePanel = (page: Page) => page.evaluate(() => {
         .find((node) => /那一局(会记为本局负|不计入|没能开起来)/.test(node.textContent || ''));
       return cost ? Math.round(cost.getBoundingClientRect().bottom) : null;
     })(),
+    // ⚠️ 这块屏的余量**不能**照搬 kiosk 那个「面板底边 − 最后一个元素底边」——
+    // 实测那个数在九个用例里恒为 **32**(动作区是 `mt: 'auto'` 顶到底的,那 32 是内边距,
+    // 不是可用余量),又是一个「在最该报警时不动」的指标。
+    //
+    // 原因是两块屏的失效方式不同:kiosk 的面板被固定高的右栏**裁掉**,galaxy 的卡片
+    // 跟着内容**一起长**(实测 560 → 590),所以它不会被裁,只会把下面的东西推出首屏。
+    // ⇒ galaxy 的余量要对着**首屏**量:代价行底边离视口底边还有多远。
+    costLineHeadroomPx: (() => {
+      const cost = Array.from(panel.querySelectorAll('p'))
+        .find((node) => /那一局(会记为本局负|不计入|没能开起来)/.test(node.textContent || ''));
+      return cost ? Math.round(window.innerHeight - cost.getBoundingClientRect().bottom) : null;
+    })(),
     innerHeight: window.innerHeight,
   };
 });
@@ -221,6 +233,66 @@ for (const testCase of CASES) {
     await panel.screenshot({ path: resolve(OUT_DIR, `${testCase.slug}--panel.png`) });
   });
 }
+
+test('远端那一格的加长代价句:galaxy 要求整块面板零溢出,所以它必须单独量', async ({ page }) => {
+  // **上面那条 overflow 用例量不到这一格。** 它用的是 `pending_settlement`,拿到的是
+  // 短代价句;2026-08-11 加长的那一句只长在 **`active` + `other_device`** 上
+  // (「那一局会记为本局负；它若其实已下完，真实结果会被顶掉」)——多出整整一个分句,
+  // 而这块屏的取舍与 kiosk 不同:**galaxy 要求整块面板一个像素都不许溢出**(外层 Paper
+  // 是 overflow:hidden,超出的不是滚走而是看不见)。所以加长的那一句必须在**它真正出现
+  // 的那一格**上量,不能拿别的格代替。
+  //
+  // 而且要造到会溢出再量:最长档位名 + 加长代价句 + 一条错误条同时在场。
+  await page.setViewportSize(VIEWPORT);
+  await stubShell(page);
+  await page.route('**/api/v1/ai-ladder/status', (route) => route.fulfill({
+    json: readyStatus({
+      game_id: 'g1', state: 'active', ownership: 'other_device',
+      user_color: 'W', opponent_rank_name: '智星职业九段·超一流·测试用超长档位名称',
+    }),
+  }));
+  await page.route('**/api/v1/ai-ladder/games/*/end', (route) => route.fulfill({
+    status: 500, json: { detail: 'boom' },
+  }));
+
+  await page.goto('/galaxy/play/ai?mode=rated');
+  await expect(page.getByText('未完成对局')).toBeVisible();
+
+  // 今天改的那几句,galaxy 侧此前**一条断言都没有**(只有跨设备那条钉了代价行)。
+  // 描述和披露是同一批改动、同一份共享文案,漏在这里等于 galaxy 这一侧没人守。
+  await expect(page.getByText('这一局在你的另一台设备上，还没了结。')).toBeVisible();
+  await expect(page.getByText('那一局会记为本局负；它若其实已下完，真实结果会被顶掉')).toBeVisible();
+  await expect(page.getByText('未了结')).toBeVisible();
+  // 云端不知道那台机器上棋下没下完 —— 这两句在这一格都是假话。
+  expect(await page.locator('body').innerText()).not.toMatch(/正在进行|还没下完/);
+
+  // 披露那一句也要真的出现在二次确认里(它是用户按下之前最后读到的东西)。
+  await page.getByRole('button', { name: '认输那一局，在这里开新局' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('那个结果会被这一场负顶掉');
+
+  const measured = await measurePanel(page);
+  // eslint-disable-next-line no-console
+  console.log(`[measure] remote-longer-cost ${JSON.stringify(measured)}`);
+  expect(measured.docScrollWidth).toBeLessThanOrEqual(measured.innerWidth);
+  // ⚠️ 这里**不能只写** `panelScrollHeight <= panelClientHeight` —— 我第一版就是只写了它,
+  // 然后把代价句加到 20 倍去验红:`costLineHeadroomPx` 掉到 **−203**(那一句在首屏下面
+  // 203px),而这条测试**照样绿**。原因是这块屏的卡片跟着内容一起长(560 → 990),
+  // 没有谁被裁,于是那个不等式恒成立 —— 一条永远不会红的守卫。
+  // 有牙的是下面这条:代价行必须落在首屏内。实测 8 倍(余量 227 → 93)仍绿、
+  // 20 倍才红,所以变异量必须大于 227。
+  expect(measured.costLineHeadroomPx, '代价行没渲染出来').not.toBeNull();
+  expect(
+    measured.costLineHeadroomPx!,
+    `加长的代价句把它推出首屏了:代价行底边离视口底还剩 ${measured.costLineHeadroomPx}px。`
+    + 'galaxy 的卡片会跟着内容一起长,所以它不会被裁,只会把「按下去会发生什么」推到'
+    + '首屏以下 —— 而用户按之前不一定会滚。',
+  ).toBeGreaterThanOrEqual(0);
+
+  await page.screenshot({ path: resolve(OUT_DIR, '08-remote-longer-cost.png') });
+  const panel = page.locator('text=未完成对局').first().locator('..');
+  await panel.screenshot({ path: resolve(OUT_DIR, '08-remote-longer-cost--panel.png') });
+});
 
 test('内容最多的那一格:同步状态行 + 重试 + 开新局 + 一条错误条 + 最长档位名', async ({ page }) => {
   // 承重那一关的正题。装得下的数据量下量出来的数字一概不算,所以这里把这块面板

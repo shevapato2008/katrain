@@ -249,7 +249,9 @@ describe('AiSetupPage — 升降级挡局面板', () => {
     withBlocking(blockingGame({ state: 'reserved' }));
     renderPage('ranked');
 
-    expect(screen.getByText('未开始')).toBeInTheDocument();
+    // 徽标那一格在重设计后没有了 —— 它的那句话已经由标题说出来,再摆一格就是标题的回声。
+    // 所以这里改成断言标题本身。
+    expect(screen.getByText('这一局登记了，但棋盘没能开起来 —— 两边都没有人在下。')).toBeInTheDocument();
     expect(screen.getByText('那一局没能开起来，让掉它不记成绩')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '让掉它，在这里开新局' }));

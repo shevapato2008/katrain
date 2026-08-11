@@ -2128,12 +2128,60 @@ async def test_cloud_reservation_is_account_unique_and_status_hides_origin_secre
         "ownership": "current_device",
         "user_color": "B",
         "opponent_rank_name": "fixture-16",
+        # 预约从没 activate 过 ⇒ 一次心跳都没有、也没进 pending ⇒ 两个都是 None。
+        # **不许用 0 顶替**:「从没收到过」和「刚刚收到」在屏上是相反的两件事。
+        "heartbeat_age_seconds": None,
+        "pending_since_seconds": None,
     }
     assert other_status.json()["blocking_game"]["ownership"] == "other_device"
     assert "session_id" not in other_status.json()["blocking_game"]
     assert "reservation_key" not in str(other_status.json())
     with api_app.state._test_session_factory() as db:
         assert db.query(models_db.AiLadderActiveGame).one().origin_device_id == "board-a"
+
+
+@pytest.mark.asyncio
+async def test_the_two_diagnostic_durations_are_real_and_stay_none_until_they_happen(api_app, client):
+    """屏上那两格诊断数(对方心跳距今 / 成绩压了多久)是真的会填上的,而**没发生就是 None**。
+
+    「从没收到过心跳」和「刚刚收到」在屏上是相反的两件事,所以缺席不许用 0 顶替 ——
+    那正是这一轮反复撞的那条:**一个否定的答复不携带它的原因**,而 0 会把「没有」
+    伪装成「有,且等于零」。
+
+    ⚠️ 这两个数**不是判据**。心跳早已不换取任何权限(简化那一轮把接管窗口整套删了),
+    它们只负责让屏上说得出那台设备多久没消息了。哪天有人拿它们当闸,删掉的那套就从
+    UI 里长回来了。
+    """
+
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    game_id = reservation_payload()["game_id"]
+    async with client as ac:
+        reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=headers, json=reservation_payload())
+        key = reserved.json()["reservation_key"]
+        fresh = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()["blocking_game"]
+
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/activate",
+            headers=headers,
+            json={"reservation_key": key, "session_id": "s-1"},
+        )
+        await ac.post(f"/api/v1/ai-ladder/games/{game_id}/heartbeat", headers=headers, json={"reservation_key": key})
+        beat = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()["blocking_game"]
+
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/pending-settlement",
+            headers=headers,
+            json={"reservation_key": key},
+        )
+        pending = (await ac.get("/api/v1/ai-ladder/status", headers=headers)).json()["blocking_game"]
+
+    # 还没心跳、还没进 pending ⇒ 两个都缺席,而缺席就是 None。
+    assert (fresh["heartbeat_age_seconds"], fresh["pending_since_seconds"]) == (None, None)
+    # 心跳来了 ⇒ 那一格有数了(刚发生,所以是个很小的非负整数);pending 仍然没发生。
+    assert isinstance(beat["heartbeat_age_seconds"], int) and beat["heartbeat_age_seconds"] >= 0
+    assert beat["pending_since_seconds"] is None
+    # 进了 pending ⇒ 第二格也有数了。
+    assert isinstance(pending["pending_since_seconds"], int) and pending["pending_since_seconds"] >= 0
 
 
 @pytest.mark.asyncio
@@ -2417,6 +2465,8 @@ async def test_direct_authoritative_start_reserves_and_activates_before_returnin
         "session_id": started.json()["session_id"],
         "user_color": "B",
         "opponent_rank_name": "fixture-16",
+        "heartbeat_age_seconds": None,
+        "pending_since_seconds": None,
     }
     with api_app.state._test_session_factory() as db:
         active = db.query(models_db.AiLadderActiveGame).one()
@@ -2519,6 +2569,8 @@ async def test_cross_device_ranked_journey_has_one_receipt_and_one_auditable_wri
         "ownership": "other_device",
         "user_color": "B",
         "opponent_rank_name": "fixture-16",
+        "heartbeat_age_seconds": None,
+        "pending_since_seconds": None,
         # The origin here never sends a heartbeat, so this is the compatibility branch: the
         # second device may end the game immediately and there is no deadline to count down to.
         # `ended` below is that call succeeding, which is what makes this the regression guard

@@ -169,6 +169,16 @@ def _device_id(request: Request, *, required: bool = True) -> str:
     return normalized or "cloud-local"
 
 
+def _age_seconds(moment: Optional[datetime]) -> Optional[int]:
+    """距今多少秒。没有那个时刻就是 None —— **不要拿 0 顶替**:
+    「从没收到过心跳」和「刚刚收到」在屏上是相反的两件事。"""
+    if moment is None:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return max(0, int((datetime.now(timezone.utc) - moment).total_seconds()))
+
+
 def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: str) -> dict[str, object]:
     """挡住新局的那一局,以及**只有**用户需要知道的那几件事。
 
@@ -190,6 +200,12 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
         "ownership": "current_device" if game.origin_device_id == device_id else "other_device",
         "user_color": game.user_color,
         "opponent_rank_name": game.opponent.rank_name,
+        # 两个**时长**,不是时刻 —— 常年离线、没有可靠 NTP 的一体机正是钟偏最大的那一台,
+        # 拿服务端时刻去减本机的钟,差多少钟就错多少。时长是差值,对钟偏免疫。
+        # 用途只有一个:让屏上说得出「那台设备多久没消息了」「成绩压了多久」。
+        # **它们不是判据** —— 心跳早已不换取任何权限,别让删掉的那套从 UI 里长回来。
+        "heartbeat_age_seconds": _age_seconds(game.last_heartbeat_at),
+        "pending_since_seconds": _age_seconds(game.pending_settlement_since),
     }
     if (
         game.state == "active"

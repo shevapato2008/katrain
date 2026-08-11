@@ -118,7 +118,7 @@
 }
 
 /* 动作:并排、等宽、贴底。竖排堆叠是这屏原来的样子,和参考差得最远的一处。 */
-.ranked-state__actions { margin-top: auto; display: flex; gap: 8px; flex: none; }
+.ranked-state__actions { display: flex; gap: 8px; flex: none; }
 .ranked-state__actions button {
   min-width: 44px;
   min-height: 44px;
@@ -140,9 +140,10 @@
 .ranked-state__actions button:disabled { opacity: .52; cursor: not-allowed; }
 .ranked-state__actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* 代价行:贴在动作区下面,按下之前就说。 */
+/* 代价行:在动作行**上面**,按下之前就读到。`margin-top: auto` 归它 —— 它现在是
+   贴底那一组的头一个,动作行跟在它后面。 */
 .ranked-state__cost {
-  margin: 6px 0 0;
+  margin: auto 0 6px;
   flex: none;
   text-align: center;
   font-size: 11px;

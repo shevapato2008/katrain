@@ -263,6 +263,8 @@ const CASES: Array<{ slug: string; title: string; blocking: Record<string, unkno
     blocking: {
       game_id: 'g1', state: 'reserved', ownership: 'other_device',
       user_color: 'B', opponent_rank_name: '业余 3 段',
+      // 从没 activate ⇒ 一次心跳都没有、也没进 pending。缺席是 null,不是 0。
+      heartbeat_age_seconds: null, pending_since_seconds: null,
     },
   },
   {
@@ -271,6 +273,7 @@ const CASES: Array<{ slug: string; title: string; blocking: Record<string, unkno
     blocking: {
       game_id: 'g1', state: 'active', ownership: 'current_device', session_id: 'sess-1',
       user_color: 'B', opponent_rank_name: '业余 3 段',
+      heartbeat_age_seconds: 8, pending_since_seconds: null,
     },
   },
   {
@@ -279,6 +282,8 @@ const CASES: Array<{ slug: string; title: string; blocking: Record<string, unkno
     blocking: {
       game_id: 'g1', state: 'active', ownership: 'current_device',
       user_color: 'B', opponent_rank_name: '业余 3 段',
+      // 本机重启过,进程没了 ⇒ 心跳停在重启那一刻。
+      heartbeat_age_seconds: 214, pending_since_seconds: null,
     },
   },
   {
@@ -287,6 +292,8 @@ const CASES: Array<{ slug: string; title: string; blocking: Record<string, unkno
     blocking: {
       game_id: 'g1', state: 'active', ownership: 'other_device',
       user_color: 'W', opponent_rank_name: '业余 3 段',
+      // 42 秒 —— 和象棋参考屏同一个数,方便并排看骨架时对得上。
+      heartbeat_age_seconds: 42, pending_since_seconds: null,
     },
   },
   {
@@ -295,6 +302,7 @@ const CASES: Array<{ slug: string; title: string; blocking: Record<string, unkno
     blocking: {
       game_id: 'g1', state: 'pending_settlement', ownership: 'current_device',
       user_color: 'B', opponent_rank_name: '业余 3 段',
+      heartbeat_age_seconds: 11, pending_since_seconds: 486,
       sync: {
         state: 'waiting', attempt: 2, max_attempts: 5, next_attempt_in_seconds: 252,
         last_http_status: null, last_error: 'timeout',
@@ -307,6 +315,7 @@ const CASES: Array<{ slug: string; title: string; blocking: Record<string, unkno
     blocking: {
       game_id: 'g1', state: 'pending_settlement', ownership: 'current_device',
       user_color: 'B', opponent_rank_name: '业余 3 段',
+      heartbeat_age_seconds: 96, pending_since_seconds: 5400,
       sync: {
         state: 'refused', attempt: 1, max_attempts: 5, next_attempt_in_seconds: null,
         last_http_status: 422, last_error: 'HTTP 422: rung mismatch',
@@ -332,6 +341,18 @@ for (const testCase of CASES) {
     assertLoadBearing(measured, testCase.slug);
     // eslint-disable-next-line no-console
     console.log(`[measure] ${testCase.slug} ${JSON.stringify(measured)}`);
+
+    // **事实格里的每一格,都必须是标题读完之后还不知道的事。**
+    // 两条一起钉:①不许复读标题;②诊断数真的填上了(加法式字段没有任何东西会红 ——
+    // 上一版那两格一直显示「未收到过 / 不适用」,是看图才发现的,不是测试)。
+    const facts = await page.getByTestId('kiosk-ladder-blocking-facts').innerText();
+    const title = await page.getByTestId('kiosk-ladder-state-line').innerText();
+    expect(facts, `${testCase.slug}:事实格复读了标题`).not.toContain(title);
+    const blocking = testCase.blocking as { heartbeat_age_seconds?: number | null };
+    if (typeof blocking.heartbeat_age_seconds === 'number') {
+      expect(facts, `${testCase.slug}:心跳那一格没填上数,fixture 或组件掉了这个字段`)
+        .toMatch(/\d+\s*(秒|分钟|小时)前/);
+    }
 
     await page.screenshot({ path: resolve(OUT_DIR, `${testCase.slug}.png`) });
     await page.getByTestId('kiosk-ladder-blocking-panel')
@@ -431,6 +452,7 @@ test('只在出错时才出现的那一格:真实文案 + 错误条,专门造出
     json: readyStatus({
       game_id: 'g1', state: 'pending_settlement', ownership: 'current_device',
       user_color: 'B', opponent_rank_name: '业余 3 段',
+      heartbeat_age_seconds: 34, pending_since_seconds: 1260,
       sync: {
         state: 'exhausted', attempt: 5, max_attempts: 5, next_attempt_in_seconds: null,
         last_http_status: null, last_error: 'connection refused',

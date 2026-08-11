@@ -93,6 +93,18 @@ export interface AiLadderBlockingGame {
   opponent_rank_name: string;
   /** 只有 `state: 'pending_settlement'` 且这台机器有 outbox 时才有。 */
   sync?: AiLadderSettlementSync;
+  /**
+   * 屏上那两格诊断数,都是**时长**不是时刻(一体机的钟偏最大,时刻减本机钟差多少就错多少)。
+   *
+   * `null` = **那件事还没发生过**,不是「0 秒前」——「从没收到过心跳」和「刚刚收到」
+   * 在屏上是相反的两件事。
+   *
+   * ⚠️ **它们不是判据。** 心跳早已不换取任何权限(接管窗口那一整套已删),这两个数只让
+   * 屏上说得出「那台设备多久没消息了」「成绩压了多久」。拿它们当闸 = 把删掉的那套
+   * 从 UI 里长回来。
+   */
+  heartbeat_age_seconds?: number | null;
+  pending_since_seconds?: number | null;
 }
 
 export type AiLadderGameLifecycle =

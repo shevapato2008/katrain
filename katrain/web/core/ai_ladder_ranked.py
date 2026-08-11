@@ -96,6 +96,11 @@ class AiLadderBlockingGame:
     execution_identity: str
     rules_snapshot: Mapping[str, Any]
     time_control_snapshot: Mapping[str, Any]
+    # 诊断用的两个时刻。它们**不参与任何判据** —— 心跳早已不换取权限(简化那一轮把
+    # 接管窗口整套删了),这里带出来只为让屏上说得出「那台设备多久没消息了」「成绩压了多久」。
+    # 拿它们当闸就是把删掉的那套从 UI 里长回来。
+    last_heartbeat_at: Optional[datetime] = None
+    pending_settlement_since: Optional[datetime] = None
 
 
 @dataclass(frozen=True)
@@ -1047,6 +1052,8 @@ class AiLadderRankedRepository:
             execution_identity=row.execution_identity,
             rules_snapshot=deepcopy(dict(row.rules_snapshot)),
             time_control_snapshot=deepcopy(dict(row.time_control_snapshot)),
+            last_heartbeat_at=row.last_heartbeat_at,
+            pending_settlement_since=row.pending_settlement_since,
         )
 
     @staticmethod

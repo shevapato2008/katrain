@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import {
   blockingCopy,
-  blockingStateChip,
   displaceCopy,
   isResumableHere,
   isSyncRetryable,
@@ -32,6 +31,17 @@ interface KioskAiLadderBlockingPanelProps {
   /** 只有盒子有 outbox。网页直连时不传,「立即重试」就不出现。 */
   onRetrySettlement?: (gameId: string) => void;
 }
+
+/**
+ * 时长 → 屏上那句话。`null` 走 `absent`,**不退化成「0 秒」** ——
+ * 「那件事还没发生过」和「刚刚发生」是相反的两件事。
+ */
+const formatAge = (seconds: number | null | undefined, absent: string): string => {
+  if (typeof seconds !== 'number') return absent;
+  if (seconds < 60) return `${seconds} 秒前`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟前`;
+  return `${Math.floor(seconds / 3600)} 小时前`;
+};
 
 /** 参考屏 seal 槽位里是奖杯,这里换成围棋的棋子 —— 同一个几何槽位,换本棋种的符号。 */
 const SealMark = () => (
@@ -77,7 +87,8 @@ const KioskAiLadderBlockingPanel = ({
   );
 
   const resumable = isResumableHere(game);
-  const chip = blockingStateChip(game, resumable);
+  // 徽标在这一版**没有位置了**:它的那句话(「未了结」/「成绩未送达」)已经由标题说出来,
+  // 再摆一格就是标题的回声。galaxy 那块屏仍然用 `blockingStateChip`,那边的头部没有这句话。
   const displace = displaceCopy(game);
   const canRetrySync = Boolean(onRetrySettlement)
     && game.state === 'pending_settlement'
@@ -130,20 +141,31 @@ const KioskAiLadderBlockingPanel = ({
             <span>我执</span>
             <b>{game.user_color === 'B' ? '● 黑棋' : '○ 白棋'}</b>
           </div>
+          {/* 这两格摆的是**诊断数**,不是身份也不是标题的回声。
+              判据一句:**每一格都必须是标题读完之后还不知道的事。**
+              曾经这里是「这一局的状态」(永远是标题的缩写)和「成绩同步」(复读状态条),
+              于是同一个数一屏印两遍、同一句话说三遍。 */}
           <div className="ranked-state__fact">
-            <span>这一局的状态</span>
-            <b>{chip.label}</b>
+            <span>对方设备心跳</span>
+            {/* 只报**距今多久**,**不配失联阈值** —— 象棋那屏配了,因为它的模型里还有接管窗口;
+                围棋把那一整套删了,再摆个阈值等于把删掉的判据从 UI 里长回来。 */}
+            <b className={typeof game.heartbeat_age_seconds === 'number' ? 'mono' : undefined}>
+              {formatAge(game.heartbeat_age_seconds, '未收到过')}
+            </b>
           </div>
           <div className="ranked-state__fact">
-            <span>成绩同步</span>
-            {/* 数字走 mono —— 「重试 2/5」那两个数是要被读的。
-                没有 outbox 时说「不适用」,不是「0/0」:这台机器上根本没有那个队列,
-                而「0/0」会被读成「试了 0 次」。 */}
-            <b className={game.sync ? 'mono' : undefined} data-testid="kiosk-ladder-sync-fact">
-              {game.sync ? `重试 ${game.sync.attempt}/${game.sync.max_attempts}` : '不适用'}
+            <span>成绩已压</span>
+            {/* 状态条已经说了「重试几次 / 还有多久」,所以这格**不复读它**,报的是另一件事:
+                这笔成绩压了多久。没进 pending 就是「不适用」,不是「0」。 */}
+            <b className={typeof game.pending_since_seconds === 'number' ? 'mono' : undefined} data-testid="kiosk-ladder-sync-fact">
+              {formatAge(game.pending_since_seconds, '不适用')}
             </b>
           </div>
       </div>
+
+      {/* 代价行在动作行**上面** —— 照参考屏。放在按钮下面时,手指已经在按钮上了才读到
+          「按下去会发生什么」,那等于按下之后才说。 */}
+      <p className="ranked-state__cost">{displace.cost}</p>
 
       <div className="ranked-state__actions" data-testid="kiosk-ladder-blocking-actions">
         {resumable && (
@@ -181,9 +203,6 @@ const KioskAiLadderBlockingPanel = ({
           {displace.button}
         </button>
       </div>
-      {/* 代价写在按钮下面,不写在二次确认里 —— 写在弹窗里等于按下之后才说。 */}
-      <p className="ranked-state__cost">{displace.cost}</p>
-
       <Dialog open={armed} onClose={() => setArmedGameId(null)} aria-labelledby="kiosk-ladder-exit-title">
         <DialogTitle id="kiosk-ladder-exit-title">{displace.title}</DialogTitle>
         <DialogContent>

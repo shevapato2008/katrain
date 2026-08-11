@@ -7,7 +7,7 @@ import math
 from dataclasses import dataclass
 from typing import Awaitable, Callable, List, Optional, Tuple, Union
 
-MoveVal = Union[int, str]  # our_move: int|"pass"|"unavailable"; golaxy_move: int|"pass"|"resign"|"terminal"
+MoveVal = Union[int, str]  # our_move: int|"pass"|"unavailable"; golaxy_move: int|"pass"|"resign"|"terminal"|"illegal"
 
 
 def elo_from_winrate(wins: float, conclusive_games: int) -> Tuple[float, float, float]:
@@ -50,7 +50,9 @@ async def play_one_game(
     (NO sentinel ever appended; G1). Trust only VERIFIED stops (H1): our-'pass' and a
     smoke-verified golaxy-'pass' adjudicate; a verified golaxy-'resign' is our win; an
     UNVERIFIED golaxy-'terminal' (out-of-board/malformed) is inconclusive_terminal — never
-    scored. our-'unavailable' -> inconclusive_engine. move_cap -> adjudicate."""
+    scored. our-'unavailable' -> inconclusive_engine. move_cap -> adjudicate. A golaxy-'illegal'
+    (opponent REFUSED the query, Golaxy code 7002 — confirmed to fire even on an empty board, i.e.
+    a request refusal / rate-limit, not move legality) -> adjudicate what we have."""
     if initial_history is None:
         history: List[int] = []
     elif not isinstance(initial_history, list) or any(
@@ -71,6 +73,13 @@ async def play_one_game(
             return GameOutcome(our_color, "our_win", True, len(history), None, True, "golaxy_resign")
         if val == "terminal":  # golaxy_move only, UNVERIFIED/malformed -> never scored
             return GameOutcome(our_color, "inconclusive_terminal", False, len(history), None, False, "golaxy_terminal")
+        if val == "illegal":  # golaxy_move only: the opponent REFUSED the query as "illegal"
+            # (Golaxy code 7002 -- live-confirmed to fire even on an empty board, i.e. it is a
+            # request refusal / rate-limit, not a move-legality verdict). Adjudicate what we have;
+            # the caller's stability recheck guards the score and its consecutive-refusal abort guard
+            # stops the run if this persists (a throttled endpoint must not be hammered).
+            end_reason = "golaxy_illegal"
+            break
         if val == "pass":  # our-pass (trusted) OR golaxy verified-pass -> adjudicate
             end_reason = "our_pass" if is_our_turn else "golaxy_pass"
             break

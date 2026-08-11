@@ -48,7 +48,7 @@ import adapters  # noqa: E402
 from katrain.core.base_katrain import KaTrainBase  # noqa: E402
 from katrain.core.ladder import get_rung  # noqa: E402
 from katrain.core.ladder_calibration import play_one_game, elo_from_winrate, GameOutcome  # noqa: E402
-from katrain.web.platforms.golaxy.engine_client import AuthExpired  # noqa: E402
+from katrain.web.platforms.golaxy.engine_client import AuthExpired, Fatal, Retryable  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("run_calibration")
@@ -56,10 +56,35 @@ log = logging.getLogger("run_calibration")
 # end_reasons that did NOT stop via a verified two-pass -- re-check score stability before
 # trusting them as conclusive (G5). `our_pass` is included until a two-pass encoding is
 # confirmed against the live server (see adjudicate's docstring / Task 9 smoke notes).
-_NEEDS_STABILITY_RECHECK = {"move_cap", "golaxy_terminal", "our_pass"}
+_NEEDS_STABILITY_RECHECK = {"move_cap", "golaxy_terminal", "our_pass", "golaxy_illegal"}
 _STABILITY_VISITS_MULTIPLIER = 4
 _STABILITY_MAX_VISITS = 800
 _STABILITY_DELTA_TOLERANCE = 1.0
+
+# Golaxy code 7002 "illegal query" is Golaxy REFUSING our request, NOT a move-legality verdict
+# (live-confirmed: it rejects even an empty-board genmove, and rejected a fully-legal 236-move
+# sequence). In practice it means the account is being rate-limited / soft-blocked after sustained
+# request volume, so it is effectively never "sporadic" -- once it starts it persists. >= this many
+# CONSECUTIVE 7002 games therefore means STOP NOW (operator guardrail: never keep hammering a
+# throttled endpoint -- ban risk). The 'illegal' -> adjudicate path below still covers the rare
+# genuinely-degenerate case without crashing the run.
+_ILLEGAL_ABORT_STREAK = 3
+
+# Bounded retries for a Golaxy `Retryable` (transient TCP disconnect or HTTP 429). A one-off
+# network drop self-heals on the first retry; a persistent 429 (a REAL throttle) exhausts this
+# small cap fast and then re-raises so the run STOPS -- we never hammer a throttled endpoint
+# (same ban guardrail as the 7002 streak abort). Backoff grows per attempt.
+_NET_RETRY_MAX = 2
+_NET_RETRY_BACKOFF_S = 3.0
+
+
+def _is_illegal_query(err: Fatal) -> bool:
+    """True iff a Golaxy Fatal is the 'illegal query' (code 7002). engine_client stringifies
+    code/msg into the exception text (no structured field), so match on both the code token and
+    the message. AuthExpired/QuotaExhausted are SIBLINGS of Fatal, never caught here -- they must
+    still stop the run (token/quota guardrail)."""
+    s = str(err).lower()
+    return "7002" in s or "illegal query" in s
 
 
 class _MockKaTrainForConfig(KaTrainBase):
@@ -158,7 +183,11 @@ def load_smoke_codes(smoke_report_path: Path) -> Tuple[Optional[int], Optional[i
     return pass_code, resign_code, report
 
 
-def _checkpoint_path(out_dir: Path, rung_n: int) -> Path:
+def _checkpoint_path(out_dir: Path, rung_n: int, visits_override: Optional[int] = None) -> Path:
+    # visits-search experiment: a per-visits checkpoint so each V level resumes independently and
+    # never collides with the plain rung_<n>.jsonl calibration checkpoint.
+    if visits_override is not None:
+        return out_dir / f"rung_{rung_n}_v{visits_override}.jsonl"
     return out_dir / f"rung_{rung_n}.jsonl"
 
 
@@ -189,22 +218,74 @@ async def _golaxy_move_with_reauth(
     was paused. No programmatic Golaxy login exists here (the real login is an SMS-OTP
     browser flow); this is a manual-refresh retry, not an automatic one. On success after
     retry, `token_holder` is updated so later games in this anchor reuse the fresh token."""
-    try:
-        return await adapters.golaxy_move(
-            gx_client, history, rung=rung, token=token_holder["token"], pass_code=pass_code, resign_code=resign_code
-        )
-    except AuthExpired:
+    net_attempt = 0
+    while True:
+        try:
+            return await adapters.golaxy_move(
+                gx_client, history, rung=rung, token=token_holder["token"], pass_code=pass_code, resign_code=resign_code
+            )
+        except AuthExpired:
+            log.warning(
+                "Golaxy token expired/invalid (AuthExpired). Re-reading $%s and retrying ONCE in %.1fs -- "
+                "if it is still stale, export a freshly captured token now.",
+                token_env,
+                throttle,
+            )
+            await asyncio.sleep(throttle)
+            token_holder["token"] = load_token(token_env)
+            try:
+                return await adapters.golaxy_move(
+                    gx_client, history, rung=rung, token=token_holder["token"], pass_code=pass_code, resign_code=resign_code
+                )
+            except Fatal as e:
+                return _illegal_or_raise(e, len(history))
+        except Retryable as e:
+            # Transient TCP drop ("Server disconnected") or HTTP 429. Retry the SAME request a
+            # BOUNDED number of times with growing backoff -- a one-off blip recovers immediately;
+            # a persistent 429 (real throttle) blows the cap and re-raises so the run STOPS.
+            net_attempt += 1
+            if net_attempt > _NET_RETRY_MAX:
+                log.error(
+                    "Golaxy Retryable persisted after %d retries at move %d -- stopping (do NOT hammer a "
+                    "throttled endpoint). detail: %s",
+                    _NET_RETRY_MAX,
+                    len(history),
+                    e,
+                )
+                raise
+            backoff = throttle + _NET_RETRY_BACKOFF_S * net_attempt
+            log.warning(
+                "Golaxy Retryable (network drop / 429) at move %d, attempt %d/%d: %s -- retrying SAME "
+                "request in %.1fs",
+                len(history),
+                net_attempt,
+                _NET_RETRY_MAX,
+                e,
+                backoff,
+            )
+            await asyncio.sleep(backoff)
+            continue
+        except Fatal as e:
+            return _illegal_or_raise(e, len(history))
+
+
+def _illegal_or_raise(err: Fatal, n_moves: int):
+    """A Golaxy 'illegal query' (7002) -> the 'illegal' sentinel so play_one_game adjudicates the
+    (settled) position and the run continues. ANY other Fatal (malformed coord, HTTP 5xx, unknown
+    code) is unexpected -> re-raise and let the run stop, so a real bug is not silently masked."""
+    if _is_illegal_query(err):
         log.warning(
-            "Golaxy token expired/invalid (AuthExpired). Re-reading $%s and retrying ONCE in %.1fs -- "
-            "if it is still stale, export a freshly captured token now.",
-            token_env,
-            throttle,
+            "Golaxy returned 7002 'illegal query' at move %d -- this is Golaxy REFUSING the request "
+            "(live-confirmed: it rejects even empty-board genmoves), i.e. almost always rate-limiting / "
+            "a soft-block, NOT move legality. Adjudicating this game and continuing; the consecutive-"
+            "%d abort guard will STOP the run if it persists (do not keep hammering a throttled "
+            "endpoint). detail: %s",
+            n_moves,
+            _ILLEGAL_ABORT_STREAK,
+            err,
         )
-        await asyncio.sleep(throttle)
-        token_holder["token"] = load_token(token_env)
-        return await adapters.golaxy_move(
-            gx_client, history, rung=rung, token=token_holder["token"], pass_code=pass_code, resign_code=resign_code
-        )
+        return "illegal"
+    raise err
 
 
 async def _stability_recheck(
@@ -236,12 +317,18 @@ async def run_anchor(
     pass_code: Optional[int],
     resign_code: Optional[int],
     throttle: float,
+    move_throttle: float,
     out_dir: Path,
     capabilities: Mapping[str, object],
+    visits_override: Optional[int] = None,
 ) -> dict:
     rung = get_rung(rung_n)
+    if visits_override is not None:
+        # visits-search experiment: same rung (net_search @ b28, api level unchanged) at a
+        # DIFFERENT max_visits, to map win-rate-vs-visits and locate the ~50% crossover.
+        rung = dataclasses.replace(rung, max_visits=visits_override)
     token_holder = {"token": token}  # mutable so a mid-anchor re-auth persists across games
-    ckpt_path = _checkpoint_path(out_dir, rung_n)
+    ckpt_path = _checkpoint_path(out_dir, rung_n, visits_override)
     out_dir.mkdir(parents=True, exist_ok=True)
     start_index = _already_done(ckpt_path)
     if start_index >= games:
@@ -253,6 +340,8 @@ async def run_anchor(
     conclusive = 0
     reason_counts: dict = {}
     golaxy_terminal_count = 0
+    illegal_count = 0  # games Golaxy rejected as 'illegal query' (adjudicated, see _illegal_or_raise)
+    consecutive_illegal = 0  # live-loop streak; >= _ILLEGAL_ABORT_STREAK -> systematic, abort
 
     # Tally prior checkpointed games into the running totals so the summary reflects the
     # FULL anchor, not just this process's newly-played games.
@@ -269,6 +358,8 @@ async def run_anchor(
                 reason_counts[rec["result"]] = reason_counts.get(rec["result"], 0) + 1
                 if rec["end_reason"] == "golaxy_terminal":
                     golaxy_terminal_count += 1
+                if rec.get("end_reason") == "golaxy_illegal":
+                    illegal_count += 1
 
     with ckpt_path.open("a") as ckpt:
         for i in range(start_index, games):
@@ -288,7 +379,7 @@ async def run_anchor(
 
             async def golaxy_move_fn(history, _holder=history_holder):
                 _holder["history"] = history
-                return await _golaxy_move_with_reauth(
+                val = await _golaxy_move_with_reauth(
                     history,
                     gx_client=gx_client,
                     rung=rung,
@@ -298,6 +389,12 @@ async def run_anchor(
                     token_env=token_env,
                     throttle=throttle,
                 )
+                # Per-MOVE pacing: sustained ~2 req/s across a full game is what got the account
+                # rate-limited (7002). Sleep after EVERY Golaxy call (only Golaxy is rate-limited;
+                # our_move hits our own engine) so the sustained Golaxy rate stays well under 1/s.
+                if move_throttle:
+                    await asyncio.sleep(move_throttle)
+                return val
 
             adjudicate_partial = partial(adapters.adjudicate, client, base_url, capabilities=capabilities)
 
@@ -329,6 +426,11 @@ async def run_anchor(
             reason_counts[outcome.result] = reason_counts.get(outcome.result, 0) + 1
             if outcome.end_reason == "golaxy_terminal":
                 golaxy_terminal_count += 1
+            if outcome.end_reason == "golaxy_illegal":
+                illegal_count += 1
+                consecutive_illegal += 1
+            else:
+                consecutive_illegal = 0
 
             record = {
                 "index": i,
@@ -350,6 +452,12 @@ async def run_anchor(
                 outcome.end_reason,
                 outcome.conclusive,
             )
+            if consecutive_illegal >= _ILLEGAL_ABORT_STREAK:
+                raise RuntimeError(
+                    f"rung {rung_n}: {consecutive_illegal} CONSECUTIVE Golaxy 'illegal query' games "
+                    f"(through game {i + 1}) -- SYSTEMATIC, not the sporadic weak-rung endgame case. "
+                    "Stopping now so it is caught here, not after the whole run. Investigate before resuming."
+                )
             if throttle:
                 await asyncio.sleep(throttle)
 
@@ -359,12 +467,14 @@ async def run_anchor(
     return {
         "rung": rung_n,
         "golaxy_level_name": rung.golaxy_level_name,
+        "max_visits": rung.max_visits,  # records the (possibly overridden) visits this anchor ran at
         "games_played": total_games,
         "conclusive": conclusive,
         "wins": wins,
         "elo_vs_opponent": elo,
         "elo_ci95": [lo, hi],
         "golaxy_terminal_rate": golaxy_terminal_rate,
+        "illegal_query_count": illegal_count,
         "reason_counts": reason_counts,
     }
 
@@ -393,8 +503,10 @@ async def main_async(args) -> int:
                 pass_code=pass_code,
                 resign_code=resign_code,
                 throttle=args.throttle,
+                move_throttle=args.move_throttle,
                 out_dir=out_dir,
                 capabilities=capabilities,
+                visits_override=args.visits_override,
             )
             summaries.append(summary)
             log.info("=== anchor summary: %s ===", json.dumps(summary, ensure_ascii=False))
@@ -409,6 +521,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--anchors", required=True, help="'rung:games,rung:games,...' e.g. '26:20,30:20,36:10'")
     p.add_argument("--throttle", type=float, default=2.0, help="seconds to sleep between games (rate-limit Golaxy)")
+    p.add_argument(
+        "--move-throttle",
+        type=float,
+        default=1.0,
+        help="seconds to sleep after EVERY Golaxy genmove call (per-move pacing; sustained ~2 req/s "
+        "got the account 7002-blocked -- keep the Golaxy rate under ~1/s). Set 0 to disable.",
+    )
     p.add_argument("--base-url", default="http://127.0.0.1:8000", help="our KataGo HTTP analysis server base URL")
     p.add_argument("--token-env", default="GOLAXY_TOKEN", help="env var name holding the Golaxy access token")
     p.add_argument("--out", default=str(Path(__file__).parent / "results"), help="checkpoint/results directory")
@@ -420,6 +539,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "this checkout's katrain/config.json)",
     )
     p.add_argument("--smoke-report", default=None, help="path to smoke_report.json (default: <out>/smoke_report.json)")
+    p.add_argument(
+        "--visits-override",
+        type=int,
+        default=None,
+        help="visits-search experiment: run the anchor's rung at THIS max_visits instead of its ladder "
+        "value (net/api/mechanism unchanged). Checkpoints to rung_<n>_v<V>.jsonl so each level resumes "
+        "independently. Used to map win-rate vs visits and find the ~50%% crossover point.",
+    )
     return p
 
 

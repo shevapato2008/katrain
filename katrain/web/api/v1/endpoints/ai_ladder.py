@@ -182,8 +182,11 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
 
     payload: dict[str, object] = {
         "game_id": game.game_id,
-        # 预约还没落子也一样占着账号,产品含义与 active 相同。
-        "state": "pending_settlement" if game.state == "pending_settlement" else "active",
+        # `reserved` 不能并进 `active`。它一样占着账号,但**代价不同** —— 那一格两端都还没
+        # 有人拿到这盘棋,释放它不记成绩。曾经这里把它显示成 active,屏上就会写着「会记为
+        # 本局负」,而后端什么都不会记:一句关于后果的假话,而且是往贵了说,用户会因此干等
+        # 那 5 分钟的自动回收。
+        "state": game.state if game.state in {"reserved", "pending_settlement"} else "active",
         "ownership": "current_device" if game.origin_device_id == device_id else "other_device",
         "user_color": game.user_color,
         "opponent_rank_name": game.opponent.rank_name,
@@ -718,21 +721,43 @@ async def end_ranked_game(
     _require_authority(request)
     repo = request.app.state.ai_ladder_repo
     deciding_device_id = _device_id(request, required=False)
+
+    # 有棋盘的那一格只有一个出口:认输,一个价钱 —— 不再按云端知道什么分流。
+    #
+    # 曾经这里按「结果已宣告」分过一次叉:那条走释放、什么都不记,其余判负。同一处境两个
+    # 价钱会让贵的那条自然消亡 —— 劣势局面下认输记一场负、放弃什么都不记,后者严格更优,
+    # 不需要恶意、只需要看得见。合成一条之后,「不得靠断线躲掉一场负」才重新成立。
+    #
+    # 认输写下的那行账本同时是**墓碑**:原盒子的在途结算重投时命中它,拿到重放回执干净
+    # 收尾,而不是撞上「查无此局」把自己锁死。
+    #
+    # `reserved` 是另一回事,不是第二个价钱:那一格**两端都还没有人拿到这盘棋**。
+    # 判据能成立是因为 `/start` 的顺序 —— session_id 是 activate 返回之后才发出去的,
+    # 而 activate 正是把状态推离 `reserved` 的那一次写;activate 失败会 `remove_session`
+    # 并抛错。所以在锁下读到 `reserved`,就等于「没有任何一端持有这盘棋」。
+    # 这不是推的:失败路径见本文件 `/start` 的 except 块。
+    #
+    # 注意这个判据的形状 ——「云端没收到过盒子的消息」**不是**同一件事,那种缺席有两个
+    # 解释(没起过 / 起了但断网),两个解释在这里价钱正好相反。别的棋种若拿「没心跳」
+    # 当判据,会把一盘离线下完的棋静悄悄丢掉。
+    lifecycle = repo.get_game_lifecycle(user_id=current_user.id, game_id=game_id)
+    if isinstance(lifecycle, AiLadderBlockingGame) and lifecycle.state == "reserved":
+        try:
+            # 读到之后、写进去之前那一格可能已经被 activate 推走了。不用在这里防:
+            # `release_unplayed_reservation` 在锁下重新验状态,那时已经开起来的局会拿到
+            # 409 而不是被悄悄释放 —— 用户再按一次就走认输那条。宁可多一次 409。
+            released = repo.release_unplayed_reservation(
+                user_id=current_user.id,
+                game_id=game_id,
+                deciding_device_id=deciding_device_id,
+            )
+        except ValueError as exc:
+            raise _lifecycle_error(exc) from exc
+        if released.receipt is not None:
+            return _lifecycle_payload(released.receipt)
+        return {"state": "released", "game_id": game_id, "counted": False}
+
     try:
-        # Which of the two exits this is depends on what the cloud knows, not on what the client
-        # asked for -- the client cannot see whether a result is already in flight. A game whose
-        # result was announced is released (nothing banked); anything else is resigned.
-        lifecycle = repo.get_game_lifecycle(user_id=current_user.id, game_id=game_id)
-        if isinstance(lifecycle, AiLadderBlockingGame) and lifecycle.state == "pending_settlement":
-            released = repo.release_abandoned_settlement(
-                user_id=current_user.id, game_id=game_id, deciding_device_id=deciding_device_id
-            )
-            if released.receipt is not None:
-                return _lifecycle_payload(released.receipt)
-            logging.getLogger("katrain_web").info(
-                "ai-ladder released an undelivered settlement: game=%s device=%s", game_id, deciding_device_id
-            )
-            return {"state": "released", "game_id": game_id, "counted": False}
         receipt = repo.finalize_reserved_game(
             user_id=current_user.id,
             game_id=game_id,

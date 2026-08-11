@@ -2964,3 +2964,9 @@ msgid "ladder:unscored_engine"
 msgstr ""
 "Rakibin kalibre edilmiş gücünde oynayamadı, bu yüzden bu oyun sayılmıyor — "
 "sıralaman değişmedi ve yerleştirme oyunlarından biri harcanmadı."
+
+msgid "ladder:pending_settlement"
+msgstr "Bu oyunun sonucu henüz buluta ulaşmadı"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "Sonuç iletilmedi"

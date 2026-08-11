@@ -3000,10 +3000,10 @@ msgid "ladder:start_ranked_cta"
 msgstr "Почати рейтингову партію"
 
 msgid "ladder:pending_settlement"
-msgstr "Триває облік результату партії"
+msgstr "Результат партії ще не доставлено до хмари"
 
 msgid "ladder:pending_settlement_cta"
-msgstr "Облік результату…"
+msgstr "Результат не доставлено"
 
 msgid "ladder:recent_heading"
 msgstr "Останні 5 партій"

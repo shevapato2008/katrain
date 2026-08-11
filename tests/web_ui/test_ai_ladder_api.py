@@ -333,6 +333,13 @@ async def test_game_scoped_settlement_receipt_moves_from_pending_to_settled(api_
     async with client as ac:
         reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=headers, json=reservation_payload())
         game_id = reserved.json()["game_id"]
+        # 必须先 activate:只有真开起来的局认输才会写账本,而这条测的正是「已结算」那条路。
+        # 停在 `reserved` 上按结束走的是让掉,那一条什么都不记 —— 见下一条测试。
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/activate",
+            headers=headers,
+            json={"reservation_key": reserved.json()["reservation_key"], "session_id": "receipt-session"},
+        )
 
         pending = await ac.get(f"/api/v1/ai-ladder/settlements/{game_id}", headers=headers)
         settled_post = await ac.post(
@@ -354,6 +361,39 @@ async def test_game_scoped_settlement_receipt_moves_from_pending_to_settled(api_
         "reason": None,
     }
     assert missing.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_a_released_reservation_leaves_no_receipt_because_nothing_was_decided(api_app, client):
+    """让掉一个从没开起来的预约:响应说清「没记」,而回执端点照旧查无此局。
+
+    响应体的形状是硬要求 —— `counted: false` 且**没有 receipt 字段**。有 receipt 就意味着
+    「有一份裁决可查」,而这一格恰恰是没有裁决;前端的守卫(`api.ts`)也按这个形状判合法。
+
+    回执 404 是同一句话的另一面:账本里什么都没写。写了才是那条被撤销的旧路 —— 一张
+    「从没开始」的墓碑会把这盘棋真的下过时的成绩永久重放掉。
+    """
+
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "receipt-device"}
+    async with client as ac:
+        reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=headers, json=reservation_payload())
+        game_id = reserved.json()["game_id"]
+        released = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end",
+            headers=headers,
+            json={"reason": "user_resigned"},
+        )
+        receipt = await ac.get(f"/api/v1/ai-ladder/settlements/{game_id}", headers=headers)
+        status_after = await ac.get("/api/v1/ai-ladder/status", headers=headers)
+
+    assert released.status_code == 200
+    assert released.json() == {"state": "released", "game_id": game_id, "counted": False}
+    assert receipt.status_code == 404
+    assert status_after.json()["blocking_game"] is None, "让掉之后占位必须当场空出来"
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.query(models_db.UserGame).count() == 0
+        assert db.query(models_db.AiLadderProfile).count() == 0
 
 
 @pytest.mark.asyncio
@@ -2079,9 +2119,12 @@ async def test_cloud_reservation_is_account_unique_and_status_hides_origin_secre
     assert replay.json()["reservation_key"] == reservation_payload()["reservation_key"]
     assert blocked.status_code == 409
     assert blocked.json()["detail"]["blocking_game"]["ownership"] == "other_device"
+    # 只预约、没 activate ⇒ `reserved` 原样发出去,不许并进 `active`:两者一样占着账号,
+    # 但**代价不同**(让掉什么都不记 / 认输记一场负)。并进去屏上就会写着「会记为本局负」,
+    # 而后端什么都不会记 —— 一句关于后果的假话,而且是往贵了说。
     assert owner_status.json()["blocking_game"] == {
         "game_id": reservation_payload()["game_id"],
-        "state": "active",
+        "state": "reserved",
         "ownership": "current_device",
         "user_color": "B",
         "opponent_rank_name": "fixture-16",
@@ -2131,7 +2174,14 @@ async def test_any_account_device_can_end_immediately_and_replay_same_receipt(ap
     origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
     other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
     async with client as ac:
-        await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
+        reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
+        # 认输那条路只在**真开起来的**局上存在,所以这里必须 activate —— 停在 `reserved` 上
+        # 走的是让掉,什么都不记。这条测的是「另一台设备立刻认输,记一负,且可重放」。
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/activate",
+            headers=origin,
+            json={"reservation_key": reserved.json()["reservation_key"], "session_id": "origin-session"},
+        )
         first = await ac.post(
             f"/api/v1/ai-ladder/games/{reservation_payload()['game_id']}/end",
             headers=other,
@@ -2166,6 +2216,83 @@ async def test_any_account_device_can_end_immediately_and_replay_same_receipt(ap
             "remote_resign",
         )
         assert db.query(models_db.AiLadderProfile).one().placement_completed == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("state", ["reserved", "active", "pending_settlement"])
+async def test_the_end_gate_is_open_in_every_state_a_blocking_game_can_be_in(api_app, client, state):
+    """闸的那一半:挡着新局的每一个状态,`/end` 都当场受理 —— 一个都不许「现在还不行」。
+
+    这条和前端那条(`AiSetupPage.test.tsx` 里同名的一对)合起来才是一条断言:
+    **屏和闸必须给同一个答案。** 分开写是因为它们住在两个语言里,而分开的正是会漂的地方。
+
+    这一对存在的理由是另一条赛道的实测:他们拿掉「失联满 N 分钟才能接管」那道闸时,
+    **只拿掉了端点那一半**,投影给 UI 的读路径还在按旧判据回答「不能认输」——
+    屏上写着「还要等 5 分钟」,而端点当场就受理。用户被一句假话关在开着的门外。
+
+    围棋这边等价的旧判据是 `finalize_reserved_game` 里那条「成绩在送不许从别处认输」,
+    已经删了。这条测的是**删干净了没有**:注意它不断言任何秒数、任何倒计时 ——
+    那正是拿掉闸时唯一会漏掉的东西。
+    """
+
+    origin = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    other = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-b"}
+    game_id = reservation_payload()["game_id"]
+    async with client as ac:
+        reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=origin, json=reservation_payload())
+        key = reserved.json()["reservation_key"]
+        if state in {"active", "pending_settlement"}:
+            await ac.post(
+                f"/api/v1/ai-ladder/games/{game_id}/activate",
+                headers=origin,
+                json={"reservation_key": key, "session_id": "origin-session"},
+            )
+        if state == "pending_settlement":
+            await ac.post(
+                f"/api/v1/ai-ladder/games/{game_id}/pending-settlement",
+                headers=origin,
+                json={"reservation_key": key},
+            )
+
+        blocking = (await ac.get("/api/v1/ai-ladder/status", headers=other)).json()["blocking_game"]
+        ended = await ac.post(f"/api/v1/ai-ladder/games/{game_id}/end", headers=other, json={"reason": "user_resigned"})
+
+    # 屏上看到的就是这个 state —— 前端那一半按同一个字符串分支。
+    assert blocking["state"] == state
+    assert 200 <= ended.status_code < 300, (
+        f"`{state}` 这一格闸是关的({ended.status_code}) —— 而屏上会照 `blocking_game.state` "
+        f"摆一个按得下的按钮。屏答应、服务端否决,是这块屏最不该有的顺序"
+    )
+    # 代价按状态分,但**受理与否不分** —— 受理是这条断言的全部内容。
+    assert ended.json()["state"] == ("released" if state == "reserved" else "settled")
+
+
+@pytest.mark.asyncio
+async def test_pressing_end_twice_is_not_an_error_on_the_path_that_leaves_no_tombstone(api_app, client):
+    """连按两次「让掉」:第二次 404,而那必须被读成「已经没了」,不是「失败了」。
+
+    认输有墓碑(账本那一行),所以重投命中它、拿到重放回执。**让掉没有** —— 它按定义
+    什么都不记,给它配墓碑等于在账本里写一行「这局什么都没发生」。代价就是这条 404:
+    它是**承重的**,前端把它认成成功那一段不是容错,是这条路唯一的收尾方式。
+
+    这条钉住的正是「这条 404 真的会发生」;屏上不把它说成失败,由前端那两条测试钉。
+    """
+
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    game_id = reservation_payload()["game_id"]
+    async with client as ac:
+        await ac.post("/api/v1/ai-ladder/games/reserve", headers=headers, json=reservation_payload())
+        first = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end", headers=headers, json={"reason": "user_resigned"}
+        )
+        second = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end", headers=headers, json={"reason": "user_resigned"}
+        )
+
+    assert first.json() == {"state": "released", "game_id": game_id, "counted": False}
+    assert second.status_code == 404
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 0, "第二次按下不许留下任何账本行"
 
 
 @pytest.mark.asyncio
@@ -4224,25 +4351,30 @@ def test_the_lifecycle_contract_is_equal_in_both_directions_between_server_and_u
 
 
 @pytest.mark.asyncio
-async def test_a_settlement_that_arrives_after_its_release_still_counts_and_spares_the_new_game(box_and_cloud):
-    """放弃等待之后那笔成绩迟到了 —— 它仍然算数,而且不许碰用户已经开起来的新局。
+async def test_a_settlement_that_arrives_after_a_remote_resign_lands_cleanly_and_spares_the_new_game(box_and_cloud):
+    """从别处认输之后那笔成绩迟到了 —— 它必须**干净落地**,而且不许碰用户已经开起来的新局。
 
-    `release_abandoned_settlement` 的注释里写着这条承诺:「放开的只是占位 …… 那台盒子
-    要是哪天真送到了,它真下过的那局仍然按本来的样子算数」。**承诺写在注释里,一条测试都没有。**
+    这条守的是国象今晚实测出的那个上线阻塞在围棋的样子:他们那边认输不写账本,原盒子
+    重投时撞上「查无此局」拿到 404,盒端归为永久失败、状态屏走 `unavailable`,而那一屏
+    **没有开始新局的按钮** —— 用户在别处按了一下,原来那台机器再也开不了段位赛。
 
-    国象今晚的教训正对着这里:接管释放此前在生产里一次都没发生过,是 (d) 让它第一次真会发生;
-    而它一旦发生,下一跳(原盒回来补交)拿到的响应形状就成了新的、从没被走过的路。
-    它那边的下一跳是 502 + 无限重投。这里构造的是同一条缝在围棋的样子。
+    围棋不会那样,而原因要被钉住:**认输写下的那行账本同时就是墓碑。** 重投命中它、拿到
+    重放回执、当场终态,不需要另建一张墓碑表。
 
-    构造走满整条时间线,一步不省:下完 → 送不出去 → 等过 30 分钟 → 另一台设备放弃等待
-    → 用户开了新的一局 → **这时候**老那笔才送到。
+    构造走满整条时间线,一步不省:下完 → 送不出去 → 另一台设备认输 → 用户开了新的一局
+    → **这时候**老那笔才送到。
 
     三件事必须同时成立:
       1. 云端回 2xx —— 出站 worker 把 4xx 归成 `PermanentError`(`sync_worker.py:173`),
-         真下过的一局会被永久丢掉;5xx 归成可重试,就是国象那种无限重投;
-      2. 老那局进账本、真的计分 —— 「放弃等待」放弃的是**等待**,不是**成绩**;
+         那一笔被永久丢掉、盒子卡在 conflict;5xx 归成可重试,就是象棋那种无限重投;
+      2. 账本里**只有认输那一行** —— 幂等先到先得,晚到的那份被重放,不是第二次结算;
       3. 新那局的预约**原封不动** —— 这条最要命:用户正在下的棋要是被一笔迟到的旧结算
-         顺手清掉,他会在棋盘中途被踢出局,而现场没有任何东西指向半小时前那次放弃。
+         顺手清掉,他会在棋盘中途被踢出局,而现场没有任何东西指向刚才那次认输。
+
+    ⚠️ 这里也记录了 2026-08-11 那个决定**被知情接受的代价**:盒子真下过的那一局(这里是
+    一场认输,但换成一局胜也一样)被认输那行永久替换。产品方在知道这一点的前提下仍然选了
+    「占位只有一个价钱」,理由是另一条出路(什么都不记)会让认输自然消亡 —— 劣势局面下它
+    严格更优,不需要恶意、只需要看得见。
     """
 
     box, cloud, _ = box_and_cloud
@@ -4256,24 +4388,19 @@ async def test_a_settlement_that_arrives_after_its_release_still_counts_and_spar
         # 出站件逐字取自盒子真的入队的那份 —— 不在测试里另拼一个载荷。
         outbox_payload = box.state.sync_enqueue_fn.call_args.kwargs["payload"]
 
-        with cloud.state._test_session_factory() as db:
-            row = db.query(models_db.AiLadderActiveGame).filter_by(game_id=old_game_id).one()
-            row.pending_settlement_since = datetime.now(timezone.utc) - timedelta(minutes=31)
-            db.commit()
-
         transport = ASGITransport(app=cloud)
         async with AsyncClient(transport=transport, base_url="http://cloud") as cloud_ac:
-            released = await cloud_ac.post(
+            resigned = await cloud_ac.post(
                 f"/api/v1/ai-ladder/games/{old_game_id}/end",
                 headers={**cloud.state._test_headers, "X-StellaBox-Device-ID": "phone-9"},
                 json={"reason": "user_resigned"},
             )
-            assert released.status_code == 200 and released.json()["state"] == "released"
+            assert resigned.status_code == 200 and resigned.json()["state"] == "settled"
 
             restarted = await ac.post(
                 "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
             )
-            assert restarted.status_code == 201, "放弃等待之后开不了新局 —— 那这条出路等于没有"
+            assert restarted.status_code == 201, "认输之后开不了新局 —— 那这条出路等于没有"
             new_game_id = restarted.json()["game_id"]
 
             late = await cloud_ac.post(
@@ -4283,15 +4410,17 @@ async def test_a_settlement_that_arrives_after_its_release_still_counts_and_spar
             )
 
     assert 200 <= late.status_code < 300, (
-        f"迟到的结算拿到 {late.status_code} —— 4xx 会被出站 worker 判成永久失败,真下过的一局就此丢掉;"
-        "5xx 会被判成可重试,那是无限重投一局云端其实收得下的棋"
+        f"迟到的结算拿到 {late.status_code} —— 4xx 会被出站 worker 判成永久失败、盒子卡在 conflict,"
+        "而状态屏那一格没有开始新局的按钮,原来那台机器就再也开不了段位赛;"
+        "5xx 会被判成可重试,那是无限重投一笔云端其实已经裁决过的结算"
     )
     assert late.json()["game_id"] == old_game_id
-    assert late.json()["counted"] is True, "「放弃等待」放弃的是等待,不是成绩"
 
     with cloud.state._test_session_factory() as db:
         ledger = db.query(models_db.AiLadderGameLedger).all()
-        assert [(entry.game_id, entry.counted) for entry in ledger] == [(old_game_id, True)]
+        assert [(entry.game_id, entry.terminal_source) for entry in ledger] == [
+            (old_game_id, "remote_resign")
+        ], "账本里必须只有认输那一行 —— 幂等先到先得,晚到的那份是被重放,不是第二次结算"
         # 这条断言守的是**迟到的结算**,不是那次放弃 —— 变异 `settle_game` 去清账号预约,
         # 它当场红。而变异「放弃时清掉该账号所有预约」**0 红**,那不是漏验:放弃发生的那一刻
         # 新局还不存在,而 `uq_ai_ladder_active_user` 保证一个账号最多一行,所以「删这一行」
@@ -4361,8 +4490,6 @@ async def test_a_reservation_orphaned_by_a_power_cut_frees_itself_with_nobody_ru
         assert db.query(models_db.AiLadderActiveGame).filter_by(game_id=game_id).one_or_none() is None
 
 
-
-
 class _StubOutbox:
     """盒子的 outbox,只保留这条路由会问它的那几件事。
 
@@ -4391,9 +4518,13 @@ class _StubOutbox:
 
 def _waiting(attempt=2, seconds=252):
     return {
-        "state": "waiting", "attempt": attempt, "max_attempts": 5,
-        "next_attempt_in_seconds": seconds, "last_http_status": None,
-        "last_error": None, "receipt": None,
+        "state": "waiting",
+        "attempt": attempt,
+        "max_attempts": 5,
+        "next_attempt_in_seconds": seconds,
+        "last_http_status": None,
+        "last_error": None,
+        "receipt": None,
     }
 
 
@@ -4411,9 +4542,7 @@ async def test_manual_retry_sends_now_and_answers_with_the_state_after_that_atte
     box.state.sync_worker = _StubOutbox(sync=_waiting(), after=after)
 
     async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
-        response = await ac.post(
-            "/api/v1/ai-ladder/games/g-1/settlement/retry", headers=box.state._test_headers
-        )
+        response = await ac.post("/api/v1/ai-ladder/games/g-1/settlement/retry", headers=box.state._test_headers)
 
     assert response.status_code == 200, response.text
     assert response.json() == {"game_id": "g-1", "sync": after}
@@ -4429,9 +4558,7 @@ async def test_manual_retry_does_not_send_when_the_queue_says_there_is_nothing_t
     box.state.sync_worker = _StubOutbox(sync=refused, armed=False)
 
     async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
-        response = await ac.post(
-            "/api/v1/ai-ladder/games/g-1/settlement/retry", headers=box.state._test_headers
-        )
+        response = await ac.post("/api/v1/ai-ladder/games/g-1/settlement/retry", headers=box.state._test_headers)
 
     assert response.status_code == 200
     assert response.json()["sync"]["state"] == "refused"
@@ -4447,9 +4574,7 @@ async def test_manual_retry_says_the_login_expired_instead_of_pretending_to_send
     remote.auth_required = True
 
     async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
-        response = await ac.post(
-            "/api/v1/ai-ladder/games/g-1/settlement/retry", headers=box.state._test_headers
-        )
+        response = await ac.post("/api/v1/ai-ladder/games/g-1/settlement/retry", headers=box.state._test_headers)
 
     assert response.status_code == 401, response.text
     assert box.state.sync_worker.ran == 0
@@ -4462,9 +4587,7 @@ async def test_manual_retry_is_a_404_when_the_queue_no_longer_holds_that_game(bo
     box.state.sync_worker = _StubOutbox(sync=None)
 
     async with AsyncClient(transport=ASGITransport(app=box), base_url="http://box") as ac:
-        response = await ac.post(
-            "/api/v1/ai-ladder/games/gone/settlement/retry", headers=box.state._test_headers
-        )
+        response = await ac.post("/api/v1/ai-ladder/games/gone/settlement/retry", headers=box.state._test_headers)
 
     assert response.status_code == 404
 
@@ -4474,8 +4597,6 @@ async def test_the_cloud_has_no_outbox_to_retry(api_app):
     """云端要么记下了要么没收到,中间没有一个「还在送」的东西可以再送一次。"""
 
     async with AsyncClient(transport=ASGITransport(app=api_app), base_url="http://cloud") as ac:
-        response = await ac.post(
-            "/api/v1/ai-ladder/games/g-1/settlement/retry", headers=api_app.state._test_headers
-        )
+        response = await ac.post("/api/v1/ai-ladder/games/g-1/settlement/retry", headers=api_app.state._test_headers)
 
     assert response.status_code == 404

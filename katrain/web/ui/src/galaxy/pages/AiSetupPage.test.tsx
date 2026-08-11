@@ -106,7 +106,7 @@ const renderPage = (mode = 'free') => {
 };
 
 const blockingGame = (
-  state: 'active' | 'pending_settlement' = 'active',
+  state: 'reserved' | 'active' | 'pending_settlement' = 'active',
   ownership: 'current_device' | 'other_device' = 'current_device',
   sessionId: string | undefined = 'occupied-session',
 ) => ({
@@ -306,7 +306,7 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     rankedState.current = { ...rankedState.current, blocking_game: occupiedGame };
     renderPage('rated');
 
-    await screen.findByRole('button', { name: '在这台机器上开新局' });
+    await screen.findByRole('button', { name: '认输那一局，在这里开新局' });
     expect(screen.queryByRole('button', { name: '刷新状态' })).not.toBeInTheDocument();
   });
 
@@ -316,10 +316,33 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockResolvedValue({ state: 'pending_settlement', game_id: 'occupied-game' });
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '在这台机器上开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认开新局' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     await waitFor(() => expect(mockEndRanked).toHaveBeenCalledWith('occupied-game', 'test-token'));
+  });
+
+  it('让掉一个从没开起来的预约:屏上不说记负，服务端答 released 也不当成失败', async () => {
+    // 页面这一层要证的是**两端接得上**:后端在这一格回的是 `released`(没有 receipt),
+    // 而 `endGame` 的分支要认得它、走「只刷新状态」,不弹结算回执、不写「结束对局失败」。
+    // 这个形状此前一度在解码器里被当成畸形响应,屏上写「结束对局失败，请重试」,
+    // 而那一刻账号其实已经放开了。
+    const user = userEvent.setup();
+    rankedState.current = {
+      ...rankedState.current,
+      blocking_game: blockingGame('reserved', 'other_device', undefined),
+    };
+    mockEndRanked.mockResolvedValue({ state: 'released', game_id: 'occupied-game', counted: false });
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '让掉它，在这里开新局' }));
+    expect(document.body.textContent).not.toMatch(/记为本局负|计为本局负|计入升降级/);
+    await user.click(screen.getByRole('button', { name: '确认让掉' }));
+
+    await waitFor(() => expect(mockEndRanked).toHaveBeenCalledWith('occupied-game', 'test-token'));
+    await waitFor(() => expect(mockRetry).toHaveBeenCalledOnce());
+    expect(screen.queryByText('结束对局失败，请重试')).not.toBeInTheDocument();
+    expect(screen.queryByText('结算已完成')).not.toBeInTheDocument();
   });
 
   it('refreshes ranked status when ending enters pending settlement', async () => {
@@ -328,8 +351,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockResolvedValue({ state: 'pending_settlement', game_id: 'occupied-game' });
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '在这台机器上开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认开新局' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     await waitFor(() => expect(mockRetry).toHaveBeenCalledOnce());
   });
@@ -348,8 +371,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     });
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '在这台机器上开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认开新局' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     expect(await screen.findByText('结算已完成')).toBeInTheDocument();
     expect(screen.getByText(/本局已计入升降级/)).toBeInTheDocument();
@@ -363,8 +386,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockRejectedValue(new Error('gateway exploded'));
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '在这台机器上开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认开新局' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     expect(await screen.findByText('结束对局失败，请重试')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -380,8 +403,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockReturnValue(oldEnd.promise);
     const view = renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '在这台机器上开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认开新局' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
     await waitFor(() => expect(mockEndRanked).toHaveBeenCalledOnce());
 
     authState.current = { token: 'new-token', user: { id: 2, username: 'new-user' }, isAuthenticated: true };
@@ -415,8 +438,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockReturnValue(oldEnd.promise);
     const view = renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '在这台机器上开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认开新局' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
     await waitFor(() => expect(screen.getByRole('button', { name: '继续对局' })).toBeDisabled());
 
     rankedState.current = {
@@ -459,8 +482,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     renderPage('rated');
 
     // 先制造一条陈旧错误:开新局失败。
-    await user.click(await screen.findByRole('button', { name: '在这台机器上开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认开新局' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
     expect(await screen.findByText('结束对局失败，请重试')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
@@ -478,8 +501,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockRejectedValue(new AiLadderApiError(404, 'not found'));
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '在这台机器上开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认开新局' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     await waitFor(() => expect(mockRetry).toHaveBeenCalledOnce());
     expect(screen.queryByText('结束对局失败，请重试')).not.toBeInTheDocument();
@@ -491,8 +514,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockRejectedValue(new AiLadderApiError(status, 'operator detail'));
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '在这台机器上开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认开新局' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     expect(await screen.findByText('登录已失效，请重新登录后再试')).toBeInTheDocument();
     expect(screen.queryByText('operator detail')).not.toBeInTheDocument();

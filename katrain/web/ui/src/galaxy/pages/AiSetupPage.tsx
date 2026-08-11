@@ -302,15 +302,21 @@ const AiSetupPage = () => {
             if (lifecycle.state === 'settled') {
                 setLifecycleReceipt({ gameId, scopeKey: requestScopeKey, receipt: lifecycle.receipt });
                 await retryAiLadderStatus();
-            } else if (lifecycle.state === 'pending_settlement' || lifecycle.state === 'released') {
-                // 释放成功之后没有可展示的结果 —— 正因为什么都没记。刷新状态就够了:
-                // 挡住开局的那一局消失,页面回到正常的开局卡。**不能落进 catch**,
-                // 那样屏上会说「结束对局失败，请重试」,而此刻预约已经删掉、账号已经放开。
+            } else if (lifecycle.state === 'released' || lifecycle.state === 'pending_settlement') {
+                // 没有可展示的结果时只刷新状态:挡住开局的那一局消失,页面回到正常的开局卡。
+                // **不能落进 catch** —— 那样屏上会说「结束对局失败，请重试」,而此刻账号已经放开。
                 await retryAiLadderStatus();
             }
         } catch (endError) {
             if (!targetIsCurrent()) return;
             if (endError instanceof AiLadderApiError && endError.status === 404) {
+                // **这一条对「让掉」是承重的,不是容错。** 认输会写一行账本,那行同时是墓碑:
+                // 再按一次、或者原盒子的在途结算重投,都会命中它、拿到重放回执。
+                // 让掉**按定义什么都不记**,所以它没有墓碑 —— 第二次按下只能撞上「查无此局」。
+                // 那不是失败,是「已经没了」,而这里是这条路唯一的收尾方式。
+                // 想把 404 改成报错之前先读这句:改了,连按两次就会在一个已经放开的账号上
+                // 写「结束对局失败」。钉子在 `test_pressing_end_twice_is_not_an_error_on_the_path_that_leaves_no_tombstone`
+                // (后端:404 真的会发生)和 kiosk 的「连按两次」那条(前端:屏上不说失败)。
                 setLifecycleError('');
                 await retryAiLadderStatus();
             } else if (endError instanceof AiLadderApiError && (endError.status === 401 || endError.status === 403)) {

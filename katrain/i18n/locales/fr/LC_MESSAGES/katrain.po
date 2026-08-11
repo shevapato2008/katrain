@@ -2911,3 +2911,9 @@ msgstr ""
 "Votre adversaire n'a pas pu jouer à sa force calibrée : cette partie ne "
 "compte pas — votre rang est inchangé et aucune partie de classement n'est "
 "consommée."
+
+msgid "ladder:pending_settlement"
+msgstr "Le résultat de cette partie n'est pas encore parvenu au cloud"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "Résultat non transmis"

@@ -2865,3 +2865,9 @@ msgid "ladder:unscored_engine"
 msgstr ""
 "Соперник не смог играть в откалиброванную силу, поэтому партия не засчитана "
 "— ранг не изменился и квалификационная партия не потрачена."
+
+msgid "ladder:pending_settlement"
+msgstr "Результат партии ещё не доставлен в облако"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "Результат не доставлен"

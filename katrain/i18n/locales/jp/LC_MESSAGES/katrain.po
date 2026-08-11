@@ -2881,3 +2881,9 @@ msgstr "ラダーエンジンが利用できず、AI が着手できません ·
 
 msgid "ladder:unscored_engine"
 msgstr "この局の相手は校正された強さで着手できなかったため無効です。段位は変わらず、定級戦の局数にも数えません。"
+
+msgid "ladder:pending_settlement"
+msgstr "この対局の成績はまだクラウドに届いていません"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "成績が未送信"

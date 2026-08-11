@@ -303,22 +303,7 @@ def test_played_result_finalizes_user_game_ledger_profile_and_provenance_once(se
         assert (profile.placement_completed, profile.version) == (1, 1)
 
 
-def test_remote_resign_cannot_overwrite_a_result_awaiting_delivery(session_factory, user, opponent):
-    """A game the user already finished must not be resignable from a second device.
-
-    `pending_settlement` means "played out locally, the box is delivering the result" -- the
-    outcome exists, it just has not arrived. `remote_resign` skips the origin check by design
-    (that is what makes the cross-device escape hatch work at all), and it used to skip the
-    state check with it: a second device could resign a *finished* game, and because the ledger
-    is written first-wins, the real result was then permanently replayed as that loss. The user
-    lost a won game, their rating moved the wrong way, and `user_games` kept a fabricated
-    0-move SGF in place of the real one.
-
-    Resigning an `active` game stays allowed -- that is the user abandoning a game in progress,
-    which is theirs to do. The line is drawn at "a result already exists".
-    """
-
-    repo = AiLadderRankedRepository(session_factory)
+def _pending_settlement_reservation(repo, user, opponent):
     reservation = reserve(repo, user.id, replace(opponent, rung=25))
     repo.activate_reservation(
         user_id=user.id,
@@ -333,32 +318,81 @@ def test_remote_resign_cannot_overwrite_a_result_awaiting_delivery(session_facto
         reservation_key=reservation.reservation_key,
         origin_device_id="device-a",
     )
+    return reservation
 
-    with pytest.raises(AiLadderLifecycleConflict):
-        repo.finalize_reserved_game(
-            user_id=user.id,
-            game_id=reservation.game.game_id,
-            terminal_source="remote_resign",
-            result="loss",
-            deciding_device_id="device-b",
-        )
 
-    # The reservation is still standing and still says a result is on its way, so the origin
-    # box can still deliver the game the user actually played.
+def test_resigning_a_game_whose_result_is_still_in_flight_records_the_loss(session_factory, user, opponent):
+    """成绩还在路上的那一局,从第二台设备认输,**记那一场负** —— 这是被知情选择的代价。
+
+    这条测试记录的是一个**决定**,不是一个我们没看见的缺陷。它一度是反过来的:
+    `pending_settlement` 上的 `remote_resign` 被拒,理由是账本先到先得 ⇒ 判负会**永久替换**
+    真结果,用户赢的那局变成负、段位反向移动、`user_games` 里留下一份 0 手 SGF 顶替真棋谱。
+    那段描述今天**依然准确**。
+
+    2026-08-11 产品方仍然选了判负,理由是**同一处境不能有两个价钱**:另一条出路
+    (什么都不记)会让认输自然消亡 —— 劣势局面下它严格更优,不需要恶意,只需要看得见。
+    于是段位分只由「用户愿意下完的局」构成,一个与作弊无关的系统性向上偏移。
+
+    换来的代价必须**由用户知情按下**,不由系统静默记账,所以有两道守卫:
+      1. 账本先查(下一条测试):结果**已经落账**的一律返回真实回执,绝不写负;
+      2. 手上真有在途结算的那台盒子必须先看到「立即重试」—— 前端的事,不在这里。
+
+    剩下的就是这一格:结果还在路上、用户在别处、他自己按下了认输。
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = _pending_settlement_reservation(repo, user, opponent)
+
+    receipt = repo.finalize_reserved_game(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        terminal_source="remote_resign",
+        result="loss",
+        deciding_device_id="device-b",
+    )
+
+    assert (receipt.result, receipt.counted) == ("loss", True)
     with session_factory() as db:
-        assert db.query(models_db.AiLadderGameLedger).count() == 0
-        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id).state == "pending_settlement"
+        ledger = db.query(models_db.AiLadderGameLedger).one()
+        assert (ledger.result, ledger.terminal_source) == ("loss", "remote_resign")
+        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id) is None, "占位必须当场放开"
 
-    delivered = repo.finalize_reserved_game(
+
+def test_resigning_a_game_whose_result_already_landed_returns_the_real_receipt(session_factory, user, opponent):
+    """守卫 1:认输端点必须**先查账本**。
+
+    最该准确的那一格恰恰是屏上会说谎的那一格 —— 盒子提交成功、**回包丢了**,或者第二台
+    设备看到的是陈旧视图:云端其实已经写了账本、已经算了分,而屏上还写着「还没在云端记录」。
+    此时按下认输,若状态判断排在账本查询前面,用户会「认输」掉一局他已经赢了并且已经计分的棋。
+
+    国象与五子棋各自独立撞到这一格(一个回包丢了、一个视图陈旧),已升为四家必做守卫。
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = _pending_settlement_reservation(repo, user, opponent)
+    # 结果照它真实的路子落账 —— 原盒子拿着自己的预约凭证提交,而不是在测试里另拼一条捷径。
+    repo.finalize_reserved_game(
         user_id=user.id,
         game_id=reservation.game.game_id,
         terminal_source="played_result",
         result="win",
         deciding_device_id="device-a",
         reservation_key=reservation.reservation_key,
-        game_record=complete_game_record(),
+        game_record=complete_game_record(user_color="B", result="win"),
     )
-    assert (delivered.result, delivered.replayed) == ("win", False)
+
+    receipt = repo.finalize_reserved_game(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        terminal_source="remote_resign",
+        result="loss",
+        deciding_device_id="device-b",
+    )
+
+    assert (receipt.result, receipt.counted) == ("win", True), "已经落账的结果不许被认输覆盖"
+    with session_factory() as db:
+        ledger = db.query(models_db.AiLadderGameLedger).one()
+        assert (ledger.result, ledger.terminal_source) == ("win", "played_result")
 
 
 def _activated(repo, user, opponent, *, device_id="device-a"):
@@ -1486,69 +1520,55 @@ def test_sqlite_serializes_concurrent_replay_of_the_same_game(tmp_path, opponent
         assert db.query(models_db.AiLadderGameLedger).count() == 1
 
 
-# --- pending_settlement 的诚实释放路径 -----------------------------------------
+# --- 让掉一个从没开起来的预约 --------------------------------------------------
+#
+# 这一节此前守的是另一条规则(「等够 30 分钟就放弃一笔送不到的成绩」),那条规则
+# 2026-08-11 被产品方撤销:占位只有一个价钱。规则过期了,但它当初守的**陷阱**没有 ——
+# 陷阱只是换了出口,从 `release_abandoned_settlement` 换到 `release_unplayed_reservation`。
+# 下面四条按新出口的形状重写,守的仍然是原来那四个陷阱。
 
 
-def _pending(repo, user, opponent, *, rung=25):
-    reservation = reserve(repo, user.id, replace(opponent, rung=rung))
-    repo.activate_reservation(
-        user_id=user.id,
-        game_id=reservation.game.game_id,
-        reservation_key=reservation.reservation_key,
-        origin_device_id="device-a",
-        origin_session_id="session-a",
-    )
-    repo.mark_pending_settlement(
-        user_id=user.id,
-        game_id=reservation.game.game_id,
-        reservation_key=reservation.reservation_key,
-        origin_device_id="device-a",
-    )
-    return reservation
+def test_releasing_an_unplayed_reservation_banks_nothing_and_moves_no_rating(session_factory, user, opponent):
+    """让掉一个从没开起来的预约:占位当场放开,**不写账本、不留棋谱、不动分**。
 
+    「云端登记过、盘面从没开起来」不是一个判决。把它当 `inconclusive` 写进账本,等于声称
+    我们知道这局没下出结果,而我们真正知道的是它从来没开始;判一场负更糟 —— 那是一场
+    没人下过、也没法向用户解释的负。
 
-def _age_pending(session_factory, game_id, minutes):
-    with session_factory() as db:
-        row = db.get(models_db.AiLadderActiveGame, game_id)
-        row.pending_settlement_since = datetime.now(timezone.utc) - timedelta(minutes=minutes)
-        db.commit()
-
-
-def test_releasing_an_undelivered_result_banks_nothing_and_moves_no_rating(session_factory, user, opponent):
-    """等够了之后放行,而且**不写账本、不动分**。
-
-    这是这条路径与接管判负的分界:接管记一负、动段位;释放什么都不记。
-    「那台盒子再没回来」不是一个判决 —— 把它当 inconclusive 写进账本,等于声称我们知道
-    这局没下出结果,而我们真正知道的只是「我们不知道」。而且账本先到先得,那一写会把
-    一周后才同步上来的真结果永久重放掉。
+    这个判据能成立,靠的是 `/start` 的写序:`session_id` 是 activate 返回之后才发给客户端的,
+    而 activate 正是把状态推离 `reserved` 的那次写。所以在锁下读到 `reserved`,就等于
+    **任何一端都还没有人拿到这盘棋**。
     """
 
     repo = AiLadderRankedRepository(session_factory)
-    reservation = _pending(repo, user, opponent)
-    _age_pending(session_factory, reservation.game.game_id, 31)
+    reservation = reserve(repo, user.id, replace(opponent, rung=25))
 
-    released = repo.release_abandoned_settlement(
+    released = repo.release_unplayed_reservation(
         user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
     )
 
     assert (released.cancelled, released.receipt) == (True, None)
     with session_factory() as db:
-        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id) is None
-        assert db.query(models_db.AiLadderGameLedger).count() == 0, "释放不是判决,不该留下账本行"
-        assert db.query(models_db.UserGame).count() == 0, "没有对局记录 —— 那局的棋谱从没送到过"
+        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id) is None, "占位必须当场放开"
+        assert db.query(models_db.AiLadderGameLedger).count() == 0, "让掉不是判决,不该留下账本行"
+        assert db.query(models_db.UserGame).count() == 0, "没有对局记录 —— 这盘棋从没开起来过"
+        assert db.query(models_db.AiLadderProfile).count() == 0, "段位一步都不许动"
 
 
-def test_a_released_game_still_counts_for_what_it_really_was_if_it_ever_arrives(session_factory, user, opponent):
-    """释放之后真结果又送到了,照旧按真结果算。
+def test_a_released_reservation_leaves_its_game_id_settleable(session_factory, user, opponent):
+    """让掉之后,同一个 game_id 的结算仍然照真结果入账。
 
-    这条是「不写账本」那个决定的**回报**,也是它唯一说得过去的理由:换成写一条 inconclusive
-    墓碑,这里就会重放出「不计分」,用户真下赢的那局被永久抹掉。
+    这是「不写账本」那个决定的**回报**,也是它唯一说得过去的理由:换成写一条 inconclusive
+    墓碑,账本先到先得,这里就会重放出「不计分」—— 一局真下过的棋被一次「从没开始」的
+    登记永久抹掉。
+
+    `settle_game` 走的是 `active is None` 那条分支(占位行已经被让掉了),所以这条同时
+    钉住:让掉不能在别处留下任何挡住结算的残留。
     """
 
     repo = AiLadderRankedRepository(session_factory)
-    reservation = _pending(repo, user, opponent)
-    _age_pending(session_factory, reservation.game.game_id, 31)
-    repo.release_abandoned_settlement(user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b")
+    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    repo.release_unplayed_reservation(user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b")
 
     late = repo.settle_game(
         user_id=user.id,
@@ -1559,43 +1579,18 @@ def test_a_released_game_still_counts_for_what_it_really_was_if_it_ever_arrives(
         opponent=replace(opponent, rung=25),
     )
 
-    assert late.counted is True
-    assert late.reason is None
+    assert (late.counted, late.reason) == (True, None)
 
 
-def test_release_returns_the_real_receipt_when_the_result_actually_landed(session_factory, user, opponent):
-    """账本先查,状态后判。
+def test_release_returns_the_real_receipt_when_the_result_already_landed(session_factory, user, opponent):
+    """账本先查,状态后判 —— 陷阱换了出口,形状一模一样。
 
-    如果结果其实已经落地了,诚实的回答是那张回执,不是一次释放。把账本查询排在状态判断
-    之后,就是那种「正确分支永远到不了」的形状。
-    """
+    端点是「先读 lifecycle 看见 `reserved`,再调这里释放」,两步之间有缝:原盒子恰在此时
+    把真结果交上来,占位行就没了、账本行有了。这时诚实的回答是那张回执。
 
-    repo = AiLadderRankedRepository(session_factory)
-    reservation = _pending(repo, user, opponent)
-    repo.finalize_reserved_game(
-        user_id=user.id,
-        game_id=reservation.game.game_id,
-        terminal_source="played_result",
-        result="win",
-        deciding_device_id="device-a",
-        reservation_key=reservation.reservation_key,
-        game_record=complete_game_record(user_color="B", result="win"),
-    )
-
-    outcome = repo.release_abandoned_settlement(
-        user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
-    )
-
-    assert outcome.cancelled is False
-    assert outcome.receipt is not None
-    assert (outcome.receipt.result, outcome.receipt.counted) == ("win", True)
-
-
-def test_an_active_game_is_never_releasable_however_long_it_runs(session_factory, user, opponent):
-    """在下的棋不是「没送达的结果」—— 它走接管那条路,而接管要记一负。
-
-    没有这条,一局长考就能被当成待送达的结果放掉,而放掉是不计分的:那就成了免费弃局,
-    正是段位并发规则要防的东西。
+    把账本查询排在状态判断之后,`_lock_lifecycle` 会先抛 NotFound —— 用户按下的那一下
+    得到的是「查无此局」,而他刚刚赢的那局其实已经计了分。这就是那种「正确分支永远到不了」
+    的形状,原来那条测试守的正是它。
     """
 
     repo = AiLadderRankedRepository(session_factory)
@@ -1607,11 +1602,61 @@ def test_an_active_game_is_never_releasable_however_long_it_runs(session_factory
         origin_device_id="device-a",
         origin_session_id="session-a",
     )
+    repo.finalize_reserved_game(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        terminal_source="played_result",
+        result="win",
+        deciding_device_id="device-a",
+        reservation_key=reservation.reservation_key,
+        game_record=complete_game_record(user_color="B", result="win"),
+    )
 
-    with pytest.raises(AiLadderLifecycleConflict) as excinfo:
-        repo.release_abandoned_settlement(
+    outcome = repo.release_unplayed_reservation(
+        user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
+    )
+
+    assert outcome.cancelled is False
+    assert outcome.receipt is not None
+    assert (outcome.receipt.result, outcome.receipt.counted) == ("win", True)
+
+
+@pytest.mark.parametrize("state", ["active", "pending_settlement"])
+def test_a_game_that_really_started_is_never_releasable(session_factory, user, opponent, state):
+    """真开起来的局绝不可被让掉 —— 无论它开了多久、结果在不在路上。
+
+    原来这条守的是「在下的棋不许当成待送达的结果放掉」。出口换了,陷阱一字未改:让掉
+    不计分,所以任何一条能把**真下过的局**送进让掉的路,都是一次免费弃局 —— 劣势局面下
+    它严格优于认输,正是段位并发规则要防的东西。
+
+    两个状态都要挡:`active`(在下)与 `pending_settlement`(下完了、成绩在送)。后者今天
+    与 `active` 同价(认输记一负),把它漏在这里,那个价钱就有了绕过去的路。
+    """
+
+    repo = AiLadderRankedRepository(session_factory)
+    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    repo.activate_reservation(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+        origin_session_id="session-a",
+    )
+    if state == "pending_settlement":
+        repo.mark_pending_settlement(
+            user_id=user.id,
+            game_id=reservation.game.game_id,
+            reservation_key=reservation.reservation_key,
+            origin_device_id="device-a",
+        )
+
+    with pytest.raises(AiLadderLifecycleConflict):
+        repo.release_unplayed_reservation(
             user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
         )
+
+    with session_factory() as db:
+        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id).state == state, "占位必须原封不动"
 
 
 def test_a_game_id_already_in_the_ledger_cannot_be_reserved_again(session_factory, user, opponent):

@@ -11,10 +11,16 @@ import { useAuth } from '../../context/AuthContext';
 import LiveBoard from '../../components/live/LiveBoard';
 import { writeActiveSession } from '../utils/activeSession';
 import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
-import { startAiLadderGame } from '../../features/aiLadder/api';
+import {
+  AiLadderApiError,
+  endAiLadderGame,
+  retryAiLadderSettlement,
+  startAiLadderGame,
+} from '../../features/aiLadder/api';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
-import { canStartAiLadderGame } from '../../features/aiLadder/startGate';
+import { aiLadderBlockingGame, canStartAiLadderGame } from '../../features/aiLadder/startGate';
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
+import KioskAiLadderBlockingPanel from '../components/aiLadder/KioskAiLadderBlockingPanel';
 
 // Time-control presets — each maps onto the existing timeEnabled/mainTime/byoyomiTime/
 // byoyomiPeriods state so the submitted payload values are unchanged from the slider UI.
@@ -35,7 +41,14 @@ const AiSetupPage = () => {
   const { t } = useTranslation();
   const { token, user } = useAuth();
   const isRanked = mode === 'ranked';
-  const { status: aiLadderStatus, retry: retryAiLadderStatus } = useAiLadderStatus(token ?? undefined, isRanked);
+  const {
+    status: aiLadderStatus,
+    retry: retryAiLadderStatus,
+    applyBlockingSync,
+  } = useAiLadderStatus(token ?? undefined, isRanked);
+  // 挡着新局的那一局。有它的时候整个右栏换成挡局面板 —— 底下那些设置一个都用不上,
+  // 摆着只会让用户以为改一改就能开局。
+  const blockingGame = isRanked ? aiLadderBlockingGame(aiLadderStatus) : null;
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
@@ -58,6 +71,9 @@ const AiSetupPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [lifecyclePending, setLifecyclePending] = useState(false);
+  const [lifecycleError, setLifecycleError] = useState('');
+  const [syncRetryPending, setSyncRetryPending] = useState(false);
 
   const showRankSlider = !isRanked && aiStrategy === 'ai:human';
 
@@ -122,6 +138,73 @@ const AiSetupPage = () => {
     }
   };
 
+  const handleContinue = (sessionId: string) => {
+    writeActiveSession({
+      kind: 'game', label: t('Ranked Game', '升降级对弈'),
+      route: `/kiosk/play/ai/game/${sessionId}`, ts: Date.now(),
+    });
+    navigate(`/kiosk/play/ai/game/${sessionId}`);
+  };
+
+  const handleEndGame = async (gameId: string) => {
+    setLifecycleError('');
+    setLifecyclePending(true);
+    try {
+      await endAiLadderGame(gameId, token ?? undefined);
+      // `settled`(认输,记一负)/`released`(让掉,什么都不记)/`pending_settlement`
+      // 三种成功形状在这块屏上是同一个后续:占位没了,回到开局卡。区别已经在按下之前
+      // 由代价行和弹窗说清了,这里再复述一遍只会多一个会漂的副本。
+      await retryAiLadderStatus();
+    } catch (endError) {
+      if (endError instanceof AiLadderApiError && endError.status === 404) {
+        // 那一局已经不在了(多半是原盒子刚把结果送到,或者重复按了一次)。这是成功,
+        // 不是失败 —— 说成失败会让用户在一个已经放开的账号上继续按。
+        setLifecycleError('');
+        await retryAiLadderStatus();
+      } else if (endError instanceof AiLadderApiError && (endError.status === 401 || endError.status === 403)) {
+        setLifecycleError(t('Session expired, please sign in again', '登录已失效，请重新登录后再试'));
+      } else {
+        setLifecycleError(t('Could not end that game, please retry', '结束对局失败，请重试'));
+      }
+    } finally {
+      setLifecyclePending(false);
+    }
+  };
+
+  /**
+   * 「立即重试」按下去之后的每一条路。
+   *
+   * 关键是**不要为了刷新去打一次云端**:`/status` 在盒子上是转发到云端的,断网时 503,
+   * 而 `retryAiLadderStatus` 一失败就把整块面板换成「加载失败」—— 那正是这个按钮存在的
+   * 场景。重试请求本身打的是盒子自己(127.0.0.1),断网照样成功,响应里带着这一次尝试
+   * 之后的真实状态,所以失败路径只就地贴这份状态,不碰云端。
+   */
+  const handleRetrySettlement = async (gameId: string) => {
+    if (syncRetryPending) return;
+    setLifecycleError('');
+    setSyncRetryPending(true);
+    try {
+      const { sync } = await retryAiLadderSettlement(gameId, token ?? undefined);
+      if (sync && sync.state !== 'synced') {
+        applyBlockingSync(gameId, sync);
+        return;
+      }
+      await retryAiLadderStatus();
+    } catch (retryError) {
+      if (retryError instanceof AiLadderApiError && (retryError.status === 401 || retryError.status === 403)) {
+        setLifecycleError(t('Session expired, please sign in again', '登录已失效，请重新登录后再试'));
+      } else if (retryError instanceof AiLadderApiError && retryError.status === 404) {
+        // 队列里已经没有这一局了 —— 多半是后台那一轮刚把它送成。只有这一条 catch 该去
+        // 复查:它意味着屏上这一格已经不成立了。
+        await retryAiLadderStatus();
+      } else {
+        setLifecycleError(t('Retry failed, please try again later', '重试失败，请稍后再试'));
+      }
+    } finally {
+      setSyncRetryPending(false);
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <SubPageBar
@@ -139,20 +222,58 @@ const AiSetupPage = () => {
           }}
         >
           <Typography variant="overline" sx={{ color: 'text.secondary', mb: 1 }}>
-            {t('Board Preview', '盘面预览')}
+            {blockingGame ? t('Blocked Game', '被挡住的那一局') : t('Board Preview', '盘面预览')}
           </Typography>
-          <Box sx={{ flex: 1, minHeight: 0 }}>
-            <LiveBoard
-              moves={[]}
-              currentMove={0}
-              boardSize={boardSize}
-              showCoordinates={true}
-            />
-          </Box>
+          {blockingGame ? (
+            // **预览要跟事实走。** 挡局的任何一格,这台机器都**拿不到那一局的盘面**:
+            // `reserved` 是棋盘从没开起来,`other_device` 的盘面在另一台机器上,
+            // `pending_settlement` 那一局已经结束。而原来这里无条件画一张空棋盘 ——
+            // 挨着「棋盘没能开起来 —— 两边都没有人在下」那句话,画面本身是反驳文案的。
+            //
+            // 空态必须**写明自己是空态**,不许长得像加载失败或者「棋盘在这儿等你」。
+            <Box
+              data-testid="kiosk-ladder-preview-empty"
+              sx={{
+                flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 1,
+                border: '1px dashed', borderColor: 'divider', borderRadius: 2, p: 2,
+              }}
+            >
+              <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
+                {t('No board to show for that game', '这台机器上没有那一局的盘面')}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>
+                {t('Not a loading failure', '不是加载失败')}
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ flex: 1, minHeight: 0 }}>
+              <LiveBoard
+                moves={[]}
+                currentMove={0}
+                boardSize={boardSize}
+                showCoordinates={true}
+              />
+            </Box>
+          )}
         </Box>
 
         {/* Right: compact 2-column settings form — structurally no-scroll (overflow:hidden). */}
         <Box data-testid={isRanked ? 'ranked-settings-panel' : undefined} sx={{ flex: 1, p: isRanked ? 2 : 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          {blockingGame ? (
+            // 有一局挡着的时候,整个右栏换成挡局面板:执子、用时、开始按钮此刻一个都用不上,
+            // 摆着只会让用户以为改一改就能开局,而真正能推进事情的两三个按钮反倒被挤到看不见。
+            <KioskAiLadderBlockingPanel
+              game={blockingGame}
+              pending={lifecyclePending}
+              error={lifecycleError}
+              syncRetryPending={syncRetryPending}
+              onContinue={handleContinue}
+              onEndGame={handleEndGame}
+              onRetrySettlement={handleRetrySettlement}
+            />
+          ) : (
+          <>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isRanked ? 1.25 : 2, alignContent: 'start' }}>
             {/* Board size — segmented, spans both columns */}
             {!isRanked && <Box sx={{ gridColumn: '1 / -1' }}>
@@ -311,6 +432,8 @@ const AiSetupPage = () => {
               {loading ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}
             </Button>
           </Box>
+          </>
+          )}
         </Box>
       </Box>
     </Box>

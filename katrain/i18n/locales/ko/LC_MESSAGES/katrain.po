@@ -2808,3 +2808,9 @@ msgstr "래더 엔진을 사용할 수 없어 AI가 착수할 수 없습니다 �
 
 msgid "ladder:unscored_engine"
 msgstr "이 대국의 상대가 보정된 기력으로 착수하지 못해 무효입니다. 단급은 그대로이며 배치 대국 수에도 들어가지 않습니다."
+
+msgid "ladder:pending_settlement"
+msgstr "이번 대국 결과가 아직 서버에 전달되지 않았습니다"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "결과 미전송"

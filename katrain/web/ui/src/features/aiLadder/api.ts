@@ -40,11 +40,10 @@ const isGameLifecycle = (
     return false;
   }
   if (value.state === 'active' || value.state === 'pending_settlement') return true;
-  // 释放没有 receipt,所以它走不到下面那条要求 receipt 的路。`counted` 必须是假:
-  // 一个说自己计了分的释放是个矛盾的响应,放它过去等于让界面替后端编一个结果。
+  // `released` = 让掉一个从没开始的预约。它**没有 receipt**,所以必须在下面那道
+  // 「没有 receipt 就不认」的检查之前放行;顺手把 counted 钉死,免得哪天后端在这条路上
+  // 记了账还能悄悄通过。
   if (value.state === 'released') return value.counted === false;
-  // 释放没有 receipt,所以它走不到下面那条要求 receipt 的路。`counted` 必须是假:
-  // 一个说自己计了分的释放是个矛盾的响应,放它过去等于让界面替后端编一个结果。
   if (value.state !== 'settled' || !isRecord(value.receipt)) return false;
   const { counted, reason } = value.receipt;
   return typeof counted === 'boolean'

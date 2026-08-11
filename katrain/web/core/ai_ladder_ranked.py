@@ -411,38 +411,43 @@ class AiLadderRankedRepository:
         finally:
             session.close()
 
-    def release_abandoned_settlement(
+    def release_unplayed_reservation(
         self, *, user_id: int, game_id: str, deciding_device_id: str
     ) -> AiLadderCancelResult:
-        """Stop waiting for a result that was announced but never delivered.
+        """Give back a slot held by a game that never started.
 
-        **Writes no ledger row and moves no rating.** The ledger records verdicts, and "the box
-        that played this game never came back" is not a verdict -- filing it as `inconclusive`
-        would state that we know the game was undecided, when what we actually know is that we
-        do not know. It would also void the real result permanently: the ledger is first-wins,
-        so a box that syncs a week later would find its genuine outcome replayed away.
+        Only `reserved`: the cloud registered the game, and the box never came back to activate
+        it. **There is no game on either side** -- `/start` builds the session, activates, and on
+        activation failure tears the session back down (`manager.remove_session`) and answers with
+        an error, so the player never received a session id and never saw a board.
 
-        Releasing only the reservation keeps both truths intact -- the account can play again
-        now, and if that box ever does deliver, the game it really played still counts for
-        exactly what it was.
+        **Writes no ledger row and moves no rating**, because there is no verdict to record. A
+        loss for a game that was never dealt cannot be explained to the player, and
+        `inconclusive` would claim we know it ended undecided when what we know is that it never
+        began.
 
-        Not origin-only, deliberately: the whole point is that the origin is unreachable. The
-        authenticated account plus the waiting window is the authority here.
+        This is not a second, cheaper exit competing with resignation -- the slot has exactly one
+        price, and that is what keeps the expensive path from dying out. It is the same rule this
+        module already applies on a timer: a `reserved` row older than five minutes is silently
+        reclaimed on read (`_is_stale_reserved`). All this does is hand the slot back now, while
+        the player is standing at the screen, instead of making him wait out that timer.
+
+        Not origin-only, deliberately: the device that can reach us is not the one that stalled.
+        The authenticated account is the authority here.
         """
 
         session = self.session_factory()
         try:
             self._begin_write_transaction(session)
             self._lock_user(session, user_id=user_id)
-            # Ledger first, before any state judgement: if the result did land, the honest
-            # answer is that receipt, not a release. Ordering this after the state check is the
-            # shape that makes a correct branch unreachable.
+            # 账本先查,排在任何状态判断之前:结果要是其实已经落地了,诚实的回答是那张回执,
+            # 不是一次释放。把账本查询排在状态判断之后,就是那种「正确分支永远到不了」的形状。
             existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
             if existing is not None:
                 return AiLadderCancelResult(cancelled=False, receipt=self._replay_lifecycle_receipt(session, existing))
             row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
-            if row.state != "pending_settlement":
-                raise AiLadderLifecycleConflict("only a game awaiting settlement can be released")
+            if row.state != "reserved":
+                raise AiLadderLifecycleConflict("only a reservation that never started can be released")
             session.delete(row)
             session.commit()
             return AiLadderCancelResult(cancelled=True, receipt=None)
@@ -800,13 +805,16 @@ class AiLadderRankedRepository:
                 )
                 if row.state not in {"active", "pending_settlement"}:
                     raise AiLadderLifecycleConflict("reservation must be activated before terminal submission")
-            elif row.state == "pending_settlement":
-                # 唯一还挡着的一格,而且挡的理由和「谁、等多久」无关:这一格**已经有结果了**,
-                # 正在被送来。账本先到先得,所以在这里判负不是抢在真结果前面,是**永久替换**它
-                # —— 记下一场用户没输的负,并把一份 0 手的记录当成他下过的那盘棋。
-                # 这一格的出路是 `release_abandoned_settlement`(什么都不记,让真结果自己到),
-                # 不是判负。
-                raise AiLadderLifecycleConflict("a game awaiting settlement cannot be resigned from another device")
+            # `pending_settlement` 曾经在这里被拒,理由是「这一格已经有结果了,判负是**永久替换**
+            # 它」。那个描述今天仍然准确,但它不再是拒绝的理由 —— 2026-08-11 产品方定下:
+            # **占位只有一个出口,认输,一个价钱。** 没有「什么都不记」那条路了,因为同一处境
+            # 两个价钱会让贵的那条自然消亡(劣势局面下认输记一场负、放弃什么都不记,后者严格
+            # 更优,不需要动机,只需要看得见)。
+            #
+            # 所以这一格现在也判负,而**代价必须由用户知情按下,不由系统静默记账**:
+            # 账本先到先得的三道检查在上面 —— 结果**已经落账**的一律返回真实回执,不写负。
+            # 剩下的只有「结果还在路上」,那一格的诚实做法是把话说清楚(前端在这一格明说
+            # 「认输会覆盖它的真实结果」),而不是把账号锁死在一个没有出口的状态里。
 
             opponent = self._opponent_from_row(row)
             record = self._validated_game_record(

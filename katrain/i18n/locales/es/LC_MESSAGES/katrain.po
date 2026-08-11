@@ -2828,10 +2828,10 @@ msgid "ladder:start_ranked_cta"
 msgstr "Empezar partida clasificatoria"
 
 msgid "ladder:pending_settlement"
-msgstr "Registrando el resultado de esta partida"
+msgstr "El resultado de esta partida aún no ha llegado a la nube"
 
 msgid "ladder:pending_settlement_cta"
-msgstr "Registrando…"
+msgstr "Resultado no enviado"
 
 msgid "ladder:recent_heading"
 msgstr "Últimas 5 partidas"

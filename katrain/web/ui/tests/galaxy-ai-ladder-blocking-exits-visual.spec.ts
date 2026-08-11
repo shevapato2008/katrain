@@ -84,10 +84,31 @@ const measurePanel = (page: Page) => page.evaluate(() => {
     cardOverflow: getComputedStyle(card).overflow,
     docScrollWidth: document.documentElement.scrollWidth,
     innerWidth: window.innerWidth,
+    // 动作区能不能**够得着**。下面那条 `panelScrollHeight <= panelClientHeight` 表达不了
+    // 这件事 —— 见调用处的说明。
+    costLineBottom: (() => {
+      const cost = Array.from(panel.querySelectorAll('p'))
+        .find((node) => /那一局(会记为本局负|不计入|没能开起来)/.test(node.textContent || ''));
+      return cost ? Math.round(cost.getBoundingClientRect().bottom) : null;
+    })(),
+    innerHeight: window.innerHeight,
   };
 });
 
 const CASES: Array<{ slug: string; title: string; blocking: Record<string, unknown> }> = [
+  {
+    // 2026-08-11 新增。这条 spec 此前**停在契约改动之前** —— 六个案例全是 active/pending,
+    // 而 `blocking_game.state` 从那天起多了 `reserved`,代价与另外两格不同(让掉不记成绩)。
+    // 假响应的层级本来就是对的,所以真浏览器解得开、几何断言照旧全绿 —— 缺的不是正确性,
+    // 是**这一格从没进过真浏览器**。象棋那边同类的缺口是层级过时,这里是取值缺席,
+    // 两种都表现为「取图关卡全绿而屏上那一格没人看过」。
+    slug: '00-reserved-never-started',
+    title: '云端登记了、棋盘没能开起来 —— 让掉不记成绩',
+    blocking: {
+      game_id: 'g1', state: 'reserved', ownership: 'other_device',
+      user_color: 'B', opponent_rank_name: '业余 3 段',
+    },
+  },
   {
     slug: '01-active-current-resumable',
     title: '局还在下,就在这台机器上',
@@ -175,6 +196,21 @@ for (const testCase of CASES) {
       measured.cardScrollHeight,
       `卡片自身被裁切:内容 ${measured.cardScrollHeight}px > 可视 ${measured.cardClientHeight}px`,
     ).toBeLessThanOrEqual(measured.cardClientHeight);
+    // ⚠️ 上面那两条**表达不了「够不够得着」**。实测:把 `opponent_rank_name` 造到 300 字,
+    // 卡片涨到 2370px、代价行跑到 y=2483,而 `panelScrollHeight <= panelClientHeight` 和
+    // `cardScrollHeight <= cardClientHeight` **照样通过** —— 因为卡片是跟着内容一起长的,
+    // 没有谁被裁,只是整页变得很长。一条永远不会红的守卫比没有守卫更坏,下一个人会信它。
+    //
+    // 所以补这一条:realistic 数据下,**代价行必须落在首屏内**,不需要滚页才看得到。
+    // (galaxy 外层是 `overflowY: auto`,失控档位名那一格退化成「页面很长但滚得到、按钮
+    // 够得着」,严重度低于 kiosk 那处真消失 —— 那一格产品方定了行为不动,所以这里不为它
+    // 设闸,只守 realistic 这一侧。)
+    expect(measured.costLineBottom, '代价行没渲染出来').not.toBeNull();
+    expect(
+      measured.costLineBottom!,
+      `代价行底边 ${measured.costLineBottom}px 掉出首屏 ${measured.innerHeight}px —— `
+      + '「按下去会发生什么」要滚页才看得到,而用户按之前不一定会滚',
+    ).toBeLessThanOrEqual(measured.innerHeight);
     // eslint-disable-next-line no-console
     console.log(`[measure] ${testCase.slug} ${JSON.stringify(measured)}`);
 

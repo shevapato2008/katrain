@@ -81,7 +81,12 @@ export interface AiLadderSettlementSync {
 
 export interface AiLadderBlockingGame {
   game_id: string;
-  state: 'active' | 'pending_settlement';
+  /**
+   * `reserved` 和另外两个的区别不是进度,是**代价**:那一格云端登记了、盒子从没激活它,
+   * 两端都还没有人拿到这盘棋,所以让位不记成绩;另外两格都要记一场负。
+   * 屏上必须分得开,否则「会记为本局负」就是一句关于后果的假话。
+   */
+  state: 'reserved' | 'active' | 'pending_settlement';
   ownership: 'current_device' | 'other_device';
   session_id?: string;
   user_color: 'B' | 'W';
@@ -93,6 +98,12 @@ export interface AiLadderBlockingGame {
 export type AiLadderGameLifecycle =
   | { state: 'active'; game_id: string }
   | { state: 'pending_settlement'; game_id: string }
+  /**
+   * 让掉一个从没开始的预约。**没有 receipt,因为没有裁决** —— 不是「结算了但不计入」,
+   * 是这一局根本没发生过。`counted` 写死 `false` 是为了让它和 `settled` 在读的时候
+   * 一眼分得开,而不是靠 `receipt` 在不在。
+   */
+  | { state: 'released'; game_id: string; counted: false }
   | {
       state: 'settled';
       game_id: string;
@@ -101,10 +112,7 @@ export type AiLadderGameLifecycle =
         reason: AiLadderCountingReason | null;
       };
     }
-  // 放弃等待一个送不到的结果。**没有 receipt,而且没有是对的**:账本记的是裁决,
-  // 而「那台盒子再没回来」不是裁决。所以这一支不带 receipt,`counted` 恒为 false ——
-  // 它只说「这个占位放开了」,不说这局谁赢了。
-  | { state: 'released'; game_id: string; counted: false };
+  ;
 
 export interface AiLadderLoadingStatus {
   view_state: 'loading';

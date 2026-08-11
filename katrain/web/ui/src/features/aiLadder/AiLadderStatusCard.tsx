@@ -26,7 +26,7 @@ import {
   formatPlacementProgressLabel,
 } from './copy';
 import { useTranslation } from '../../hooks/useTranslation';
-import { aiLadderStartBlock, isProvisionalSeating } from './startGate';
+import { aiLadderStartBlock, isProvisionalSeating, isRungUnseatable } from './startGate';
 import type { AiLadderCatalogEntry, AiLadderRankedOutcome, AiLadderStatus } from './types';
 
 interface AiLadderStatusCardProps {
@@ -190,7 +190,9 @@ const AiLadderStatusCard = ({ status, onPrimaryAction, onRetry, compact = false 
   // have honoured. The gate reads `provisional_play_allowed`, which is the only thing that
   // distinguishes the two nodes; the rung looks identical in both.
   const startBlock = aiLadderStartBlock(status);
-  const blockedByCertification = startBlock === 'rung_not_certified';
+  // 问的是档位本身,不是「此刻能不能开局」。走 startBlock 的话,有一局挡着的时候这句
+  // 关于档位的事实会被一条与档位无关的原因顺手吞掉。
+  const blockedByCertification = isRungUnseatable(status);
   const provisionalSeating = isProvisionalSeating(status);
   const actionLabel = status.pending_settlement
     ? AI_LADDER_COPY.pendingSettlementCta
@@ -273,8 +275,13 @@ const AiLadderStatusCard = ({ status, onPrimaryAction, onRetry, compact = false 
           )}
         </Box>
 
+        {/* 这一格不挂 `role="status"` / `aria-live`:那是**实时播报进展**的语义,而这里没有
+            进展可播 —— 它说的是一个**停住的状态**(成绩还没到),而且这块屏手上连 outbox 的
+            重试次数和倒计时都没有(那些只在挡局面板的 `sync` 里),报不出任何进展。
+            留着 live region,屏上不说了,读屏用户听到的仍然是「有事情在进行中」。
+            上面加载骨架那处的 `role="status"` 保留 —— 那一处**真的**有一次取数在跑。 */}
         {status.pending_settlement && (
-          <Stack direction="row" role="status" aria-live="polite" alignItems="center" gap={1} color="warning.main">
+          <Stack direction="row" alignItems="center" gap={1} color="warning.main">
             <HourglassTopRoundedIcon fontSize="small" />
             <Typography fontWeight={700}>{AI_LADDER_COPY.pendingSettlement}</Typography>
           </Stack>

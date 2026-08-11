@@ -28,6 +28,7 @@ const renderSetup = (
     byoPeriods: 3,
     startPending: false,
     lifecyclePending: false,
+    lifecycleError: '',
     onColorChange: vi.fn(),
     onRetry: vi.fn(),
     onStart: vi.fn(),
@@ -53,6 +54,7 @@ const renderReceiptStatus = (
     byoLength={30}
     byoPeriods={3}
     startPending={false}
+    lifecycleError=""
     lifecycleReceipt={lifecycleReceipt}
     onColorChange={vi.fn()}
     onRetry={vi.fn()}
@@ -74,6 +76,39 @@ describe('AiLadderRatedSetup', () => {
     expect(screen.queryByText('30')).not.toBeInTheDocument();
   });
 
+  it('从没开起来的那一格，五处文案里一个「记为本局负」都不许出现', async () => {
+    // 硬要求,不是文案偏好:`reserved` 让掉**什么都不记**,后端一行账本都不会写
+    // (`release_unplayed_reservation`)。照另外两格写「会记为本局负」是一句关于后果的
+    // 假话,而且是**往贵了说** —— 用户会因此以为自己必须先输一场,或者干等那 5 分钟的
+    // 自动回收。CLAUDE.md「状态必须诚实」在这一格上的具体样子。
+    //
+    // 五处一起断言,因为它们各自都能单独漂走:按钮、代价行、弹窗标题、弹窗正文、确认按钮。
+    const user = userEvent.setup();
+    const status = blockingStatus({
+      game_id: 'game-reserved', state: 'reserved', ownership: 'other_device',
+      user_color: 'B', opponent_rank_name: '5段',
+    });
+    const { props } = renderSetup(status);
+
+    expect(screen.getByText('未开始')).toBeInTheDocument();
+    expect(screen.getByText('这一局登记了，但棋盘没能开起来 —— 两边都没有人在下。')).toBeInTheDocument();
+    expect(screen.getByText('那一局没能开起来，让掉它不记成绩')).toBeInTheDocument();
+    // 有棋盘的那两格才有「继续/重试」;这一格两端都没有棋盘,给了就是给一个按不动的东西。
+    expect(screen.queryByRole('button', { name: '继续对局' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '立即重试' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '让掉它，在这里开新局' }));
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('让掉那一局？')).toBeInTheDocument();
+    expect(within(dialog).getByText(/让掉它不会记成绩，也不影响升降级/)).toBeInTheDocument();
+
+    // 整块屏 —— 面板 + 弹窗 —— 一个字的「记负」都不许有。挨个查元素会漏掉下一个人新加的那一处。
+    expect(document.body.textContent).not.toMatch(/记为本局负|计为本局负|计入升降级/);
+
+    await user.click(within(dialog).getByRole('button', { name: '确认让掉' }));
+    expect(props.onEndGame).toHaveBeenCalledWith('game-reserved');
+  });
+
   it('does not expose a ranked-game-specific history entry point', () => {
     renderSetup();
 
@@ -91,7 +126,7 @@ describe('AiLadderRatedSetup', () => {
     await user.click(screen.getByRole('button', { name: '继续对局' }));
     expect(props.onContinue).toHaveBeenCalledWith('session-1');
 
-    await user.click(screen.getByRole('button', { name: '在这台机器上开新局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
     expect(props.onEndGame).not.toHaveBeenCalled();
     expect(screen.getByText(/它将计为本局负并计入升降级/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '取消' })).toHaveFocus();
@@ -100,8 +135,8 @@ describe('AiLadderRatedSetup', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(props.onEndGame).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: '在这台机器上开新局' }));
-    await user.click(screen.getByRole('button', { name: '确认开新局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
     expect(props.onEndGame).toHaveBeenCalledWith('game-1');
   });
 
@@ -118,7 +153,7 @@ describe('AiLadderRatedSetup', () => {
     // 而棋盘随进程没了,刷多少次都刷不回来。
     expect(screen.queryByRole('button', { name: '刷新状态' })).not.toBeInTheDocument();
     expect(props.onRetry).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: '在这台机器上开新局' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
   });
 
   it('never reveals or uses another-device session and waits for settlement instead', async () => {
@@ -132,7 +167,7 @@ describe('AiLadderRatedSetup', () => {
     expect(screen.queryByText('private-session')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '继续对局' })).not.toBeInTheDocument();
     expect(props.onContinue).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: '在这台机器上开新局' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
   });
 
   it('成绩还在送的那一局，也能当场把占位夺回来', async () => {
@@ -143,7 +178,7 @@ describe('AiLadderRatedSetup', () => {
     });
     renderSetup(status);
 
-    expect(screen.getByRole('button', { name: '在这台机器上开新局' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
     // 下完了的局没有「继续」可言。
     expect(screen.queryByRole('button', { name: '继续对局' })).not.toBeInTheDocument();
   });
@@ -162,7 +197,7 @@ describe('AiLadderRatedSetup', () => {
     expect(screen.queryByText('智星棋手')).not.toBeInTheDocument();
     expect(screen.queryByText('选择执子')).not.toBeInTheDocument();
     // 「刷新状态」不在禁列里 —— 这一格本来就该有它,上面正断言它在。
-    expect(screen.queryByRole('button', { name: /继续对局|在这台机器上开新局|立即重试/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /继续对局|认输那一局，在这里开新局|立即重试/ })).not.toBeInTheDocument();
   });
 
   it('treats an explicit null blocking game as authoritative over a stale legacy flag', () => {
@@ -226,7 +261,7 @@ describe('AiLadderRatedSetup', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('结束对局失败，请稍后重试');
     expect(screen.getByRole('button', { name: '继续对局' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '在这台机器上开新局' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeDisabled();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getByText('未完成对局')).toBeInTheDocument();
   });
@@ -252,7 +287,7 @@ describe('AiLadderRatedSetup', () => {
     );
 
     expect(screen.getByRole('button', { name: '继续对局' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '在这台机器上开新局' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeDisabled();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 
@@ -264,7 +299,7 @@ describe('AiLadderRatedSetup', () => {
     });
     const { props } = renderSetup(status);
 
-    await user.click(screen.getByRole('button', { name: '在这台机器上开新局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
     await user.keyboard('{Escape}');
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -297,18 +332,18 @@ describe('AiLadderRatedSetup', () => {
     });
     const view = render(<AiLadderRatedSetup {...commonProps} status={gameA} />);
 
-    await user.click(screen.getByRole('button', { name: '在这台机器上开新局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
     view.rerender(<AiLadderRatedSetup {...commonProps} status={gameB} />);
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(onEndGame).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: '在这台机器上开新局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
     view.rerender(<AiLadderRatedSetup {...commonProps} status={readyStatus} />);
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(onEndGame).not.toHaveBeenCalled();
 
     view.rerender(<AiLadderRatedSetup {...commonProps} status={gameB} />);
-    await user.click(screen.getByRole('button', { name: '在这台机器上开新局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
     view.rerender(
       <AiLadderRatedSetup
         {...commonProps}
@@ -323,7 +358,7 @@ describe('AiLadderRatedSetup', () => {
     expect(onEndGame).not.toHaveBeenCalled();
   });
 
-  it('同一局在弹窗开着时转成「成绩未送达」，代价那句话当场改口', async () => {
+  it('同一局在弹窗开着时转成「成绩未送达」，弹窗里多说的那句当场改口', async () => {
     const user = userEvent.setup();
     const onEndGame = vi.fn();
     const active = blockingStatus({
@@ -336,14 +371,14 @@ describe('AiLadderRatedSetup', () => {
     });
     const { props, rerender } = renderSetup(active, { onEndGame });
 
-    await user.click(screen.getByRole('button', { name: '在这台机器上开新局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
     expect(screen.getByText(/它将计为本局负并计入升降级/)).toBeInTheDocument();
 
     // 代价每次都从**当下**这份数据算,不在按下的那一刻抄一份存起来 —— 否则用户会
     // 照着一句已经不成立的话按下去。
     rerender(<AiLadderRatedSetup {...props} status={pending} />);
     await waitFor(() => expect(
-      within(screen.getByRole('dialog')).getByText(/那一局不计入本次开局/),
+      within(screen.getByRole('dialog')).getByText(/会以一场负替换它真实的结果/),
     ).toBeInTheDocument());
     expect(screen.queryByText(/它将计为本局负并计入升降级/)).not.toBeInTheDocument();
     expect(onEndGame).not.toHaveBeenCalled();
@@ -411,7 +446,7 @@ describe('AiLadderRatedSetup', () => {
     expect(screen.getByRole('button', { name: '正在重试…' })).toBeDisabled();
   });
 
-  it('云端在事实上拒收的成绩不给重试按钮，代价那句话也跟着改', () => {
+  it('云端在事实上拒收的成绩不给重试按钮，而价钱仍然是同一个', () => {
     // 422 问一百遍还是 422。给一个按不出结果的按钮，比不给更坏；
     // 而「成绩送到了仍然算」对一份永远送不到的成绩是假话。
     const status = blockingStatus({
@@ -425,8 +460,11 @@ describe('AiLadderRatedSetup', () => {
     renderSetup(status, { onRetrySettlement: vi.fn() });
 
     expect(screen.queryByRole('button', { name: '立即重试' })).not.toBeInTheDocument();
-    expect(screen.getByText('云端拒收了这一局的成绩（HTTP 422），再试也是同一个答复。')).toBeInTheDocument();
-    expect(screen.getByText('那一局不计入升降级，段位不变')).toBeInTheDocument();
+    // HTTP 码不上屏:对棋手没有信息量,却让他以为那是「更严重」的一种错误。
+    // 而这一格**仍然说话** —— 去码那一刀最容易在这里把静默漏回来。
+    expect(screen.getByText('云端拒收了这一局的成绩，再试也是同一个答复。')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/HTTP\s*4\d\d/);
+    expect(screen.getByText('那一局会记为本局负，并计入升降级')).toBeInTheDocument();
   });
 
   it('网页直连没有 outbox：不发 sync，就不摆重试按钮', () => {
@@ -437,8 +475,8 @@ describe('AiLadderRatedSetup', () => {
     renderSetup(status);
 
     expect(screen.queryByRole('button', { name: '立即重试' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '在这台机器上开新局' })).toBeEnabled();
-    expect(screen.getByText('那一局不计入本次开局；成绩送到了仍按它真实的结果计算')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
+    expect(screen.getByText('那一局会记为本局负，并计入升降级')).toBeInTheDocument();
   });
 
   it('这一格属于本机、却接不回来时，开新局仍然露出来', () => {
@@ -450,7 +488,7 @@ describe('AiLadderRatedSetup', () => {
     renderSetup(status);
 
     expect(screen.getByText('这一局在本机开始，但本机的对局进程已经不在了 —— 接不回来。')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '在这台机器上开新局' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
     expect(screen.getByText('那一局会记为本局负，并计入升降级')).toBeInTheDocument();
     expect(screen.getByText('已中断')).toBeInTheDocument();
   });

@@ -2905,3 +2905,9 @@ msgid "ladder:unscored_engine"
 msgstr ""
 "Your opponent could not play at its calibrated strength, so this game does "
 "not count — your rank is unchanged and it does not use up a placement game."
+
+msgid "ladder:pending_settlement"
+msgstr "This game's result hasn't reached the cloud"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "Result not delivered"

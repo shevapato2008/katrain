@@ -2725,3 +2725,9 @@ msgstr "阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，�
 
 msgid "ladder:unscored_engine"
 msgstr "这局的对手没能以标定强度落子，所以不算数——段位没有变动，也不占定级赛的局数。"
+
+msgid "ladder:pending_settlement"
+msgstr "本盘成绩还没送到云端"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "成绩未送达"

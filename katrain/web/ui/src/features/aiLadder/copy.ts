@@ -33,8 +33,11 @@ export const AI_LADDER_COPY = {
   get unavailableCta() { return i18n.t('ladder:unavailable_cta', '暂不可挑战'); },
   get continuePlacementCta() { return i18n.t('ladder:continue_placement_cta', '继续定级'); },
   get startRankedCta() { return i18n.t('ladder:start_ranked_cta', '开始升降级对弈'); },
-  get pendingSettlement() { return i18n.t('ladder:pending_settlement', '本盘成绩结算中'); },
-  get pendingSettlementCta() { return i18n.t('ladder:pending_settlement_cta', '成绩结算中'); },
+  // 状态,不是进行时 —— 这块屏拿不到盒子的 outbox,`waiting`/`exhausted`/`refused`
+  // 在它眼里一样,所以只能说在三种状态下**都为真**的那句话。被永久拒收的那一局,
+  // 旧文案会让屏上永远写着「结算中」。(挡局面板另有 `sync` 那一行说得出实况。)
+  get pendingSettlement() { return i18n.t('ladder:pending_settlement', '本盘成绩还没送到云端'); },
+  get pendingSettlementCta() { return i18n.t('ladder:pending_settlement_cta', '成绩未送达'); },
   get recentResultsHeading() { return i18n.t('ladder:recent_heading', '最近5盘'); },
   get recentResults() { return i18n.t('ladder:recent_aria', '最近5盘升降级AI对局结果'); },
   get recentResultsNote() { return i18n.t('ladder:recent_display_note', '最近5盘仅供展示，升降段只看累计净胜分'); },

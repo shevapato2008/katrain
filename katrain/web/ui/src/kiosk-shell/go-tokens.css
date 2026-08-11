@@ -1,0 +1,42 @@
+/* 围棋青毡 —— 给共享外壳那组语义色变量赋值。
+ *
+ * `tokens.css` 自己说得很清楚:「语义色:各棋类必须自行赋值,这里只给中性占位」。
+ * 占位是象棋的米黄,不赋值的话围棋这几屏会变成象棋配色。
+ *
+ * 值全部取自 `kiosk/theme.ts` —— 那套 jade/slate/raise/hair/ice/sub/amber 与设计稿逐字一致、
+ * 已经拍过板。**这里不是新配色,是把已有的那套接到 token 名上。**
+ * 改这里之前先改 theme.ts,别让两处漂。
+ */
+
+.kiosk {
+  /* ---------- 画布 ---------- */
+  --ink: #0f1416;    /* slate —— 页底 */
+  --panel: #18211f;  /* raise —— 卡片面 */
+  --raise: #18211f;
+  /* `--paper` 在 `tokens.css` 里**没有定义**,而象棋模板的状态条/事实格/按钮都用它。
+     不补就是静默求空(背景变透明,描边还在,看起来像没画完)。
+     深色下它是**凹面**,要比卡片面暗 —— 与浅色稿那边的明暗关系正好相反。 */
+  --paper: #121a18;
+  --hair: #2b3a35;
+  --text: #eef3f1;   /* ice */
+  --dim: #93a49d;    /* sub */
+
+  /* ---------- 强调与状态 ---------- */
+  --accent: #58b57a; /* jade */
+  /* 同样不在 `tokens.css` 里。seal 的底色,要能透出卡片面 —— 用半透明而不是算好的实色,
+     这样它压在 `--panel` 还是 `--paper` 上都成立。 */
+  --accent-soft: rgba(88, 181, 122, 0.14);
+  /* 状态三色是**语义**,和棋种强调色分开:强调色换了,「好」也还得是绿的。
+     围棋的 jade 恰好也是绿,但这两个变量仍然分开写 —— 撞在一起是巧合,不是同一件事。 */
+  --good: #58b57a;
+  --warn: #e0a24a;   /* THE single amber token */
+  --bad: #e2685c;
+
+  /* ---------- 字族 ----------
+     覆盖 `tokens.css` 里的 SmartBox 族。katrain 自带这几个(`theme.ts` 顶部 @fontsource
+     自托管,无 CDN),而且是拍过板的;抄上游字体等于把已定的排版改掉。
+     顺序与 theme.ts 的 SANS/SERIF/MONO 三个常量保持一致。 */
+  --font-serif: 'Newsreader', 'Noto Serif SC', serif;
+  --font-sans: 'Hanken Grotesk', 'Noto Sans SC', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}

@@ -76,6 +76,13 @@ const measureSkeleton = (page: Page, primaryButtonText: RegExp) => page.evaluate
     primaryWidth: Math.round(primaryRect.width),
     // 主按钮底边到右栏底边 —— 「按钮离屏幕底多远」这条视觉节奏不该因为换了内容而变。
     primaryBottomInset: Math.round(rect.bottom - primaryRect.bottom),
+    // 动作**行**的宽度。按钮个数按状态变(1 个或 2 个并排等宽),所以宽度不变式在行上,
+    // 不在单个按钮上 —— 拿按钮去比,两个按钮那一格会红在一个不存在的缺陷上(实测 324 vs 656)。
+    actionsRowWidth: (() => {
+      const row = column.querySelector('[data-testid="kiosk-ladder-blocking-actions"]') as HTMLElement | null;
+      const fallback = primary.parentElement as HTMLElement;
+      return Math.round((row ?? fallback).getBoundingClientRect().width);
+    })(),
   };
 }, primaryButtonText.source);
 
@@ -206,12 +213,23 @@ for (const testCase of CASES) {
     expect(implementation.columnWidth, `${testCase.slug}:栏宽变了`).toBe(reference.columnWidth);
     expect(implementation.columnHeight, `${testCase.slug}:栏高变了`).toBe(reference.columnHeight);
     expect(implementation.columnPadding, `${testCase.slug}:内边距变了`).toBe(reference.columnPadding);
-    expect(implementation.primaryWidth, `${testCase.slug}:主按钮宽度变了`).toBe(reference.primaryWidth);
+    // ⚠️ 主按钮的**宽高不再与常态相等**,这是重设计有意造成的,不是漂移:
+    //   · 宽 690 → 656,差 **34 = 2×16 卡片内边距 + 2×1 描边** —— 挡局面板现在是一张
+    //     带边框的卡(照共享外壳的 `.ranked-state`),常态右栏是裸的。差额正好是卡片内缩。
+    //   · 高 48 → 44 —— 44 是共享外壳定的触控下限(`min-height: 44px`),常态那个 48 是
+    //     katrain 自己的尺度。**过渡期两套尺度并存**,这是拍板时就接受的。
+    // 所以这里改成钉**下限与关系式**,而不是相等:高度不许掉破触控下限,宽度必须正好是
+    // 卡片内宽(按钮撑满它的容器),两者都还能抓住真正的漂移。
     expect(
       implementation.primaryHeight,
-      `${testCase.slug}:主按钮高度 ${implementation.primaryHeight}px ≠ 常态 ${reference.primaryHeight}px —— `
-      + '七寸触屏上按钮高度就是可点面积,不该因为换了内容而变',
-    ).toBe(reference.primaryHeight);
+      `${testCase.slug}:主按钮高 ${implementation.primaryHeight}px,掉破了 44px 触控下限 —— `
+      + '七寸触屏上按钮高度就是可点面积',
+    ).toBeGreaterThanOrEqual(44);
+    expect(
+      implementation.actionsRowWidth,
+      `${testCase.slug}:动作行没有撑满卡片内宽,常态 ${reference.primaryWidth} − 卡片内缩 34 应得 `
+      + `${reference.primaryWidth - 34},实得 ${implementation.actionsRowWidth}`,
+    ).toBe(reference.primaryWidth - 34);
 
     // ④ 并排 + 叠加差异。同一个盒子、同一 viewport ⇒ **亮区少才是对的**。
     const asDataUrl = (file: string) => `data:image/png;base64,${readFileSync(resolve(OUT_DIR, file)).toString('base64')}`;

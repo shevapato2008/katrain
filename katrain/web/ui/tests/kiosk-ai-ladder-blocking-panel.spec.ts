@@ -131,6 +131,9 @@ const measure = (page: Page) => page.evaluate(() => {
   };
   const stateLineBottom = bottomOf('[data-testid="kiosk-ladder-state-line"]');
   const syncLineBottom = bottomOf('[data-testid="kiosk-ladder-sync-line"]');
+  // 重设计之后,「重试几次」那个**数**搬进了固定的事实格(`__facts`),而那句解释它的散文
+  // 留在可滚区。判据跟着搬:必需的是**数**,不是那句话。
+  const syncFactBottom = bottomOf('[data-testid="kiosk-ladder-sync-fact"]');
   const alertBottom = bottomOf('[role="alert"]');
 
   // ② 再推一下,验「能不能滚」。`overflow-y: auto` 只是**声明**,要看 scrollTop 动不动。
@@ -141,7 +144,7 @@ const measure = (page: Page) => page.evaluate(() => {
 
   const actionsRect = actions.getBoundingClientRect();
   // ③ **余量**:文案再长多少就开始裁人。「过」和「过多少」是两回事,所以过与不过都打出来。
-  const required = [stateLineBottom, syncLineBottom].filter((value): value is number => value !== null);
+  const required = [stateLineBottom, syncFactBottom].filter((value): value is number => value !== null);
   const narrativeSlackPx = required.length ? Math.round(clipBottom - Math.max(...required)) : null;
   const alertSlackPx = alertBottom === null ? null : Math.round(clipBottom - alertBottom);
   const actionsSlackPx = Math.round(window.innerHeight - actionsRect.bottom);
@@ -153,8 +156,9 @@ const measure = (page: Page) => page.evaluate(() => {
   // 可滚区是**空的**时(01–04 那四格:描述已升为标题、代价在按钮下面,叙述区里什么都没有),
   // 「主键之前最后一个元素」就是头部本身 —— 空的那一段是整个叙述区。回落到它,
   // 这样每一格都报得出一个数,而不是一个看不懂的 null。
-  const lastChild = body.lastElementChild as HTMLElement | null;
-  const lastBefore = lastChild ?? header;
+  // 事实格已经搬到可滚区外面,所以「主键之前最后一个元素」是它,不再是可滚区里的最后一项。
+  const facts = panel.querySelector('[data-testid="kiosk-ladder-blocking-facts"]') as HTMLElement | null;
+  const lastBefore = facts ?? (body.lastElementChild as HTMLElement | null) ?? header;
   const emptyGapPx = Math.round(actionsRect.top - lastBefore.getBoundingClientRect().bottom);
   return {
     columnClientHeight: column.clientHeight,
@@ -177,12 +181,13 @@ const measure = (page: Page) => page.evaluate(() => {
     clipBottom: Math.round(clipBottom),
     stateLineBottom: stateLineBottom === null ? null : Math.round(stateLineBottom),
     syncLineBottom: syncLineBottom === null ? null : Math.round(syncLineBottom),
+    syncFactBottom: syncFactBottom === null ? null : Math.round(syncFactBottom),
     alertBottom: alertBottom === null ? null : Math.round(alertBottom),
     narrativeSlackPx,
     alertSlackPx,
     actionsSlackPx,
     emptyGapPx,
-    lastChildTestId: lastChild?.getAttribute('data-testid') ?? lastChild?.getAttribute('role') ?? null,
+    lastBeforeActionsTestId: lastBefore?.getAttribute('data-testid') ?? lastBefore?.getAttribute('role') ?? null,
     actionsTop: Math.round(actionsRect.top),
     actionsBottom: Math.round(actionsRect.bottom),
     actionsHeight: Math.round(actionsRect.height),
@@ -230,17 +235,24 @@ const assertLoadBearing = (m: Measured, label: string) => {
     `${label}:叙述区的 overflow-y 是 ${m.bodyOverflowY} —— 错误条「放进可滚区」那个取舍的前提没了`,
   ).toContain(m.bodyOverflowY);
   expect(m.restingScrollTop, `${label}:量之前这块区域已经被滚过,那量的是别的一帧`).toBe(0);
+  // ⚠️ **判据的比较对象跟着盒子链走。** 重设计之后必需信息都搬出了可滚区(标题在头部、
+  // 那几个数在事实格,两者都 `flex: none`),所以它们该比的是**视口**,不是可滚区的裁切框 ——
+  // 裁切框现在只圈着那条会变长的状态条。拿旧的比较对象去比,九格会一起红在一个不存在的
+  // 缺陷上(实测过:facts 搬出去之后 clipBottom 跑到了 facts 上面,九条全红)。
   expect(
     m.stateLineBottom,
-    `${label}:「这是哪一局 / 为什么挡着」那句话的底边 ${m.stateLineBottom}px 掉到裁切框 `
-    + `${m.clipBottom}px 以下 —— 滚得到,但静止那一帧看不见,而那正是他做决定的一帧`,
-  ).toBeLessThanOrEqual(m.clipBottom);
-  if (m.syncLineBottom !== null) {
+    `${label}:「这是哪一局 / 为什么挡着」那句话掉出视口了`,
+  ).toBeLessThanOrEqual(m.innerHeight);
+  if (m.syncFactBottom !== null) {
+    // **判据从散文搬到了数上。** 重设计之后 outbox 的「重试 2/5」进了固定的事实格,
+    // 而解释它的那句话留在可滚区 —— 用户据以决定「要不要先去重试」的是那个数,
+    // 散文长到装不下时滚下去是设计好的降级,把散文也算成必需就等于要求
+    // 「任何长度的译文都必须一屏装完」,那个要求没有任何布局能满足。
     expect(
-      m.syncLineBottom,
-      `${label}:outbox 那一行(重试几次 / 还有多久)在静止帧里被裁掉了 —— `
-      + '而「先去重试」这句话能不能据以决定,全靠这一行',
-    ).toBeLessThanOrEqual(m.clipBottom);
+      m.syncFactBottom,
+      `${label}:outbox 的重试次数在静止帧里被裁掉了 —— `
+      + '而「先去重试」这句话能不能据以决定,全靠那个数',
+    ).toBeLessThanOrEqual(m.innerHeight);
   }
 };
 
@@ -358,10 +370,10 @@ test('内容最多的那一格:叙述装不下时必须真的能滚，而按钮�
     'ladder:blocking_body_undelivered': longCopy,
     // sync 那一行只加到 4 遍(两行,仍然装得下)—— 它是**必需信息**,把它本身撑到比可视区
     // 还高,就没有任何布局能让它「完整落在静止帧里」,那时红的是构造不是实现。
-    'ladder:sync_exhausted': '连试 {max} 次都没送到。恢复联网后会自动继续送。'.repeat(4),
+    'ladder:sync_exhausted': '连试 {max} 次都没送到。恢复联网后会自动继续送。'.repeat(10),
     // 溢出改压在**错误条**上:它是这块可滚区里唯一的非必需元素,而「必需信息留在静止帧、
     // 回执可以滚下去」正是这块屏设计好的降级方式。这样造出来的溢出走的是真实的那条路。
-    'Could not end that game, please retry': '结束对局失败，请重试。'.repeat(16),
+    'Could not end that game, please retry': '结束对局失败，请重试。'.repeat(28),
   });
   await page.route('**/api/v1/ai-ladder/status', (route) => route.fulfill({
     json: readyStatus({
@@ -478,8 +490,16 @@ test('档位名再长,按钮也不许被挤出视口 —— 头部两行封顶',
   // eslint-disable-next-line no-console
   console.log(`[measure] runaway-rank-name ${JSON.stringify(measured)}`);
   assertLoadBearing(measured, 'runaway-rank-name');
-  // 两行封顶:名字自己被裁,而不是让它去裁掉按钮。
-  expect(measured.nameScrollHeight).toBeGreaterThan(measured.nameClientHeight);
+  // 名字**自己被裁**,而不是让它去裁掉按钮。重设计之后裁的轴变了:从前它是标题、
+  // 两行封顶(纵向裁),现在它是事实格里的一行值、`text-overflow: ellipsis`(横向裁)。
+  // 判据跟着轴走 —— 实测 `nameScrollWidth 3900` vs `nameClientWidth 302`。
+  // (这一条是 `min-width: 0` 修好之后才成立的:grid 子项默认 `min-width: auto`,
+  //  格子拒绝收缩到内容宽度以下,省略号永远没机会生效,那时两个数都是 3900。)
+  expect(
+    measured.nameScrollWidth,
+    '档位名没有被省略号截断 —— 格子被它撑开了,`min-width: 0` 没生效',
+  ).toBeGreaterThan(measured.nameClientWidth);
+  expect(measured.nameClientWidth).toBeLessThanOrEqual(measured.columnClientWidth);
   expect(measured.headerHeight).toBeLessThan(measured.panelClientHeight / 2);
 
   await page.screenshot({ path: resolve(OUT_DIR, '09-runaway-rank-name.png') });

@@ -206,7 +206,10 @@ describe('AiSetupPage — 升降级挡局面板', () => {
     expect(screen.getByText('这一局在你的另一台设备上，还没了结。')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/正在进行|还没下完/);
     expect(screen.queryByRole('button', { name: /开始对弈/ })).not.toBeInTheDocument();
-    expect(screen.queryByText('我执')).not.toBeInTheDocument();
+    // 「设置表单整个不在」用**下拉控件**当判据,不用「我执」那个标签 ——
+    // 重设计之后挡局面板自己有一格事实也叫「我执」(对手档位/我执/状态/同步),
+    // 拿标签文本判断会撞上它,红在一个不存在的缺陷上。下拉是设置表单独有的。
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
     // 这一格两端都不在本机,没有可继续的棋盘。
     expect(screen.queryByRole('button', { name: '继续对局' })).not.toBeInTheDocument();
   });

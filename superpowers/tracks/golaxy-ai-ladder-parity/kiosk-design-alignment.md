@@ -1,103 +1,114 @@
-# 挡局屏对齐既有设计稿
+# 挡局屏对齐共享外壳 —— 实测版
 
-来源：Fan 的《智星盒 · 围棋 · 全模块设计稿 · 样板（十屏）》
-（artifact `e4d3c7ef-82dd-4a5e-a7b0-42db6b4ad731`，本机副本见 `tool-results/artifact-e4d3c7ef-*.html`）。
-
-**这份稿不是参考，是已生效的设计系统。** 它有命名 token、命名组件、以及写在 CSS 注释里的
-取舍理由。挡局屏此前按 MUI 默认样式做，等于绕开了它。方向不需要重新生成——**照抄**。
-
-稿里第 ⑥ 屏「成长」下面直接有一节叫**「升降的规矩」**，就是本模块。国象那套 460×516
-的取图用的正是本稿的 `--rail-w`，所以不统一的是围棋这一侧。
+Fan 拍板两条（2026-08-11）：
+1. **引 `tokens.css`，先只用于升降级这几屏**，其余 kiosk 屏不动；
+2. **骨架照象棋 24 屏，配色用围棋青毡。**
 
 ---
 
-## 1. Token（照抄，不要另起名字）
+## 0. 先说清楚问题不在这块面板
 
-```css
---kiosk-w: 1024px;  --kiosk-h: 600px;        /* 目标 viewport，与承重取图一致 */
---topbar-h: 56px;   --pagebar-h: 44px;  --content-top: 70px;
---content-w: 992px; --content-x: 16px;  --content-h-l2: 516px;
---rail-w: 460px;    --rail-x: 548px;    --rail-gap: 12px;   /* 右栏就是这一列 */
+围棋 kiosk 的**颜色是对的**（`theme.ts` 里 `#58b57a` jade / `#0f1416` slate / `#18211f` raise /
+`#2b3a35` hair / `#eef3f1` ice / `#93a49d` sub / `#e0a24a` amber / `#e2685c`，与设计稿逐字一致，
+字族 Newsreader / JetBrains Mono 也是拍过板的）。
 
---ink:  #0F1416;    /* 页底 */
---panel:#18211F;    /* 卡片底 */
---raise:#1D2725;    /* 卡片内再抬一层（.row 用） */
---hair: #2B3A35;    /* 唯一的描边色 */
---text: #EEF3F1;    /* 正文 */
---dim:  #93A49D;    /* 次要信息、区块标题 */
---accent:#58B57A;   --good:#58B57A;  --warn:#E0A24A;  --bad:#E2685C;  --info:#5B9BD5;
+**错的是几何从来没接进来。** 另外三家 `main.tsx` 里都有：
 
---fs-page-title:26px; --fs-section-title:17px; --fs-card-title:16px;
---fs-body:13px; --fs-card-sub:12px; --fs-eyebrow:11px;
-
---btn-primary-h:44px;   --btn-primary-radius:11px;   --btn-primary-pad-x:20px;
---btn-secondary-h:38px; --btn-secondary-radius:10px; --btn-secondary-pad-x:16px;
---primary-action-h:48px; --primary-action-radius:12px;
-
---font-sans:  "SmartBox Sans", …;
---font-serif: "SmartBox Serif", "SmartBox Kai", "Kaiti SC", Georgia, serif;
---font-mono:  "SmartBox Mono", ui-monospace, monospace;
+```ts
+import '@shared/kiosk-shell/assets/fonts.css'
+import '@shared/kiosk-shell/assets/tokens.css'   // 991 行结构 token
 ```
 
-## 2. 组件（用稿里的，不要自造同类）
+围棋 grep **零命中**，`src/kiosk/` 下**一个 CSS 文件都没有**，154 个 kiosk 文件里 127 个走
+MUI 默认尺度。共享外壳在 **smartbox 仓**，katrain 是另一个仓——**这条跨仓依赖从来没建立过**，
+不是忘了 import。
+
+## 1. 怎么引（katrain 是独立仓）
+
+复制 `superpowers/shared/kiosk-shell/assets/{fonts.css,tokens.css,fonts/}` 进
+`katrain/web/ui/src/kiosk-shell/`，**并把上游 `MANIFEST.sha256` 一起抄进来**。
+
+抄 manifest 不是形式：复制品会漂，而漂了没人知道。有 hash 才能回答
+**「我这份和上游还是同一份吗」**——和这一轮在部署域反复撞的是同一条判据。
+
+⚠️ **token 只在 `.kiosk` 类上生效。** 渲染到 `.kiosk` 外面 `var()` 静默求空，
+字体掉回 sans、`color-mix` 整条作废，**且不报错**（国象踩过）。升降级这几屏的根节点必须挂 `.kiosk`。
+
+## 2. 骨架：照抄 `.ranked-state__*`
+
+源：`superpowers/shared/kiosk-shell/sample-xiangqi/xiangqi-kiosk.tmpl.html:258-296`
+参考图：`sample-xiangqi/shots/21-ranked-other-device-active.png`（**就是同一屏**）
 
 ```css
-.panel     { border:1px solid var(--hair); border-radius:12px; background:var(--panel); padding:14px }
-.panel > h3{ font-size:11.5px; font-weight:700; letter-spacing:.14em; color:var(--dim) }
-.empty     { border:1px dashed var(--hair); border-radius:12px;
-             background:rgba(29,39,37,.55); padding:14px }
-.empty h4  { font-family:var(--font-serif); font-size:15px; font-weight:600 }
-.empty p   { font-size:11.5px; color:var(--dim); line-height:1.55 }
-.row       { height:52px; flex:none; border:1px solid var(--hair); border-radius:10px;
-             background:var(--raise); display:flex; align-items:center; gap:12px; padding:0 12px }
-.row .lead { font-family:var(--font-mono); font-size:12px; color:var(--dim); width:46px }
-.row h4    { font-family:var(--font-serif); font-size:14px; font-weight:600 }
-.tag       { font-size:10.5px; letter-spacing:.08em; padding:2px 8px; border-radius:999px;
-             border:1px solid var(--hair); color:var(--dim) }
-.tag.win{color:var(--good)}  .tag.loss{color:var(--bad)}  .tag.live{color:var(--bad)}
-.note      { font-size:11px; color:var(--dim); line-height:1.5 }
-.wip       { font-size:9.5px; letter-spacing:.06em; color:var(--warn);
-             border:1px solid rgba(224,162,74,.45); border-radius:999px; padding:1px 7px }
-.wip.have  { color:var(--info); border-color:rgba(91,155,213,.5) }
+.ranked-state          { flex:1; min-height:0; display:flex; flex-direction:column; gap:12px;
+                         border:1px solid var(--hair); border-radius:14px;
+                         background:var(--panel); padding:16px }
+.ranked-state__head    { display:flex; align-items:center; gap:12px }
+.ranked-state__seal    { width:44px; height:44px; border-radius:12px; display:grid; place-items:center;
+                         color:var(--accent); background:var(--accent-soft); border:1px solid var(--hair) }
+.ranked-state__head h2 { font-family:var(--font-serif); font-size:22px; color:var(--text) }
+.ranked-state__head p  { font-size:11.5px; color:var(--dim); margin-top:2px }
+.ranked-state__status  { min-height:44px; display:flex; align-items:center; gap:10px; padding:9px 12px;
+                         border:1px solid var(--hair); border-radius:10px; background:var(--paper);
+                         font-size:12px; line-height:1.45; color:var(--text) }
+.ranked-state__facts   { display:grid; grid-template-columns:repeat(2,1fr); gap:8px }
+.ranked-state__fact    { min-height:48px; padding:8px 10px; border:1px solid var(--hair);
+                         border-radius:9px; background:var(--paper) }
+.ranked-state__fact span { display:block; font-size:10px; color:var(--dim) }      /* 标签 */
+.ranked-state__fact b    { display:block; margin-top:2px; font-size:13px; color:var(--text) }  /* 值 */
+.ranked-state__fact b.mono { font-family:var(--font-mono) }
+.ranked-state__note    { font-size:11px; line-height:1.55; color:var(--dim) }
+.ranked-state__actions { margin-top:auto; display:flex; gap:8px }                 /* 并排，贴底 */
+.ranked-state__actions button          { min-width:44px; min-height:44px; flex:1;
+                                         border:1px solid var(--hair); border-radius:11px;
+                                         background:var(--paper); color:var(--text);
+                                         font-size:13px; font-weight:600 }
+.ranked-state__actions button.primary  { background:var(--accent); border-color:var(--accent);
+                                         color:var(--paper) }
 ```
 
-## 3. 现状与稿的差距（挡局屏，逐项）
+**状态前缀不靠颜色**（原注释：*状态同时用图形、标题与文字表达，不靠颜色*）：
 
-| 维度 | 稿 | 现在的实现 |
+```css
+.ranked-state__status::before                      { content:"◆"; color:var(--accent) }
+.ranked-state__status[data-tone="error"]::before    { content:"!"; color:var(--bad); font-weight:700 }
+.ranked-state__status[data-tone="progress"]::before { content:"◌"; color:var(--accent); font-size:18px }
+```
+
+这条和本轮那条判据同族：**一个信息不许只走一个通道**。
+
+## 3. 现在这屏和参考差在哪（不只是 token）
+
+看真图 `21-ranked-other-device-active.png`：右栏从上到下是
+**seal + 大衬线标题 + 小副题 → 状态条（带 `!` 前缀）→ 两列事实格 → note → 贴底并排双按钮**。
+
+| | 参考 | 现在 |
 |---|---|---|
-| 卡片 | `.panel` hair 描边 / r12 / `#18211F` | MUI Paper 默认 |
-| 区块标题 | **11.5px / 700 / ls .14em / dim** | 22px 大标题 |
-| 正文 | 13px | MUI body1 / body2 |
-| 空态 | `.empty` **虚线** + 衬线 h4 15px + p 11.5px | 自造的实线盒子 |
-| 徽标 | `.tag` 10.5px / r999 / hair 描边 | MUI Chip（明显更大更重） |
-| 按钮 | primary h44 r11；secondary h38 r10 | MUI 默认 |
-| 字体 | 标题走**衬线**，正文 sans，编号走 mono | 全 sans |
-| 「还不能用」 | `.wip` 琥珀／`.wip.have` 蓝，**两种原因两个色** | 无此概念 |
+| 中段 | **两列事实格，摆具体数字**（失联阈值 30 秒 / 当前阶段 已超过阈值） | **空的** |
+| 动作 | 并排、贴底、等宽 | 竖排堆叠 |
+| 标题 | 衬线 22px + seal 图标 | 无衬线、无图标 |
+| 状态 | 独立状态条 + `!` 字符前缀 | MUI Alert |
+| 徽标 | 事实格（有标签有值） | MUI Chip |
 
-## 4. 一个结构判断（这不是缩小字号的问题）
+**中间空得像没加载完，根因在这里**：参考用事实格把中段填满，我这屏没有这一层。
+而围棋这屏本来就有可摆的事实——**档位 / 执色 / 开局时间 / 心跳距今 / 已重试次数**。
+补上它同时解决「空」和「信息不足」两件事。
 
-稿里正文区最大的字是 `.empty h4` / `.row h4` 的 **14–15px 衬线**；26px 只属于 pagebar。
-所以「把 22px 标题改小」是错的解法。**正确的解法是：挡局屏整块就是一个 `.empty`。**
+## 4. 两处要标成开放问题，不许我们自己定
 
-`.empty` 的定义写在稿的注释里——*「后端还没有的模块，给一个说清楚**为什么现在是空的**的块，
-不摆假数据」*。挡局屏要做的正是这件事：说清为什么现在开不了新局。它不需要一个大标题，
-它需要 `.empty` 的 h4 + p，外加一组动作按钮。
+**① 破坏性按钮的长相，三家现在是两派。**
+- 象棋模板：屏上 `.primary` = 实心 accent（**即使它是「按认输结束」**）；
+  真正变红是在**二次确认框**里（`.ranked-confirm__actions button.primary { background: var(--bad) }`）。
+- 国象 `.rated-primary.is-destructive` 与围棋现版：**屏上就描边**。
 
-## 5. 一条要搬进来的语义
+两派都自洽，但不能同时成立。模型差异是：*吓人吓在屏上，还是吓在不可回头那一步*。
+**这条归 Fan，不由我们三家私下约。**
 
-`.wip` 那对颜色是这一轮那条判据的设计层写法：
+**② 挡局时左边画不画盘。** 参考图画了完整棋盘（起始局面）；围棋现版换成了虚线空态
+（「这台机器上没有那一局的盘面 / 不是加载失败」）。参考那样画等于摆一个**不是这一局**的局面，
+围棋这版更诚实但更空。**要 Fan 看图定。**
 
-> 琥珀 = **后端根本没有**这块东西；蓝 = **后端已经有了**，界面还没接上去。
-> 不标就等于默认它已经能跑。
+## 5. 不要动的
 
-挡局屏的三态同族：`reserved`（从没开起来）／`active·远端`（在别的机器上）／
-`pending_settlement`（下完了没送到）——**三种「拿不到盘面」的原因不同，代价也不同**。
-现在三格共用一句「这台机器上没有那一局的盘面」，按 `.wip` 的口径这是欠区分的。
-是否分色由取图后再定，但**不能因为长得一样就当成一回事**。
-
-## 6. 不要做的
-
-- 不要引入稿里没有的色（尤其不要再加一个绿以外的强调色）。
-- 不要用 MUI 的默认 `Alert` / `Chip` / `Button` 外观——它们自带一套与本稿冲突的尺度。
-- 不要动承重结论：`overflow-y:auto` + `scrollTop` 可推动那条闸原样保留，
-  改的是外观 token，不是盒子链。改完必须重跑，**余量数会变，要重打**。
+承重结论原样保留：`overflow-y:auto` + `scrollTop` 真能推 那条闸不改。
+**改的是外观 token，不是盒子链**——但改完余量数一定会变，四图和余量表都要重打。

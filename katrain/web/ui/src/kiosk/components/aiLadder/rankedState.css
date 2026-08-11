@@ -1,0 +1,151 @@
+/* 挡局屏骨架 —— 逐条抄自共享外壳的象棋样屏
+ * 源:`smartbox-.../shared/kiosk-shell/sample-xiangqi/xiangqi-kiosk.tmpl.html:260-293`
+ * 参考图:同一份里的 `sample-xiangqi/shots/21-ranked-other-device-active.png`(**就是同一屏**)
+ *
+ * 只抄几何,不抄配色:上游那屏是象棋米黄的浅色稿,这里所有颜色走 `var(--*)`,
+ * 由 `kiosk-shell/go-tokens.css` 赋成围棋青毡(深色)。所以**明暗关系是反的** ——
+ * 浅色稿里 `--paper` 比 `--panel` 亮,深色这边它比卡片面暗(凹面)。
+ *
+ * ⚠️ 这些 `var()` 全部依赖 `.kiosk` 作用域。根节点不挂 `.kiosk`,整份静默求空、不报错。
+ */
+
+.ranked-state {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 16px;
+}
+
+.ranked-state__head { display: flex; align-items: center; gap: 12px; }
+.ranked-state__seal {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--hair);
+}
+.ranked-state__seal svg { width: 22px; height: 22px; fill: currentColor; }
+/* 标题两行封顶。这句是**服务端文案**(走 i18n,换语言可以长几倍),而它住在
+   `flex: none` 的头部里 —— 不封顶就重演那个断点:长译文把头部撑高、把贴底的动作区
+   推出视口。实测过,见 kiosk-ai-ladder-blocking-panel.spec.ts 的 runaway 用例。 */
+.ranked-state__head h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ranked-state__head p { margin: 2px 0 0; font-size: 11.5px; color: var(--dim); }
+
+/* 状态条:字符前缀 + 颜色**双通道**。原注释写着「状态同时用图形、标题与文字表达,
+   不靠颜色」—— 一个信息不许只走一个通道。色盲、反光的 7 寸屏、灰度截图,任一情形下
+   只剩颜色那条通道时,前缀仍然说得出这是错误还是进行中。 */
+.ranked-state__status {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  background: var(--paper);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+}
+.ranked-state__status::before { content: "◆"; flex: none; color: var(--accent); font-size: 12px; }
+.ranked-state__status[data-tone="error"]::before { content: "!"; color: var(--bad); font-weight: 700; }
+.ranked-state__status[data-tone="progress"]::before { content: "◌"; color: var(--accent); font-size: 18px; }
+
+/* 两列事实格。中段空得像没加载完,根因就是缺这一层 —— 参考屏用它把中段填满,
+   而围棋本来就有可摆的事实(档位/执色/同步状态/重试次数)。 */
+/* `flex: none` —— 事实格不参与滚动也不被压缩。它是必需信息的家。 */
+.ranked-state__facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; flex: none; }
+.ranked-state__fact {
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  background: var(--paper);
+  /* grid 子项默认 `min-width: auto` —— 不显式压成 0,格子就**拒绝收缩到内容宽度以下**,
+     于是下面那个 `text-overflow: ellipsis` 永远没有机会生效。实测:300 字的档位名把这个
+     `<b>` 撑到 **3900px 宽**(右边界 x=4246,视口才 1024),省略号一个都没出现,
+     纯靠祖先的 `overflow: hidden` 硬裁 —— 屏上看是「名字被切断在栏边」,不是「…」。
+     和 `min-height: auto` 是同一族,只是换到横轴。 */
+  min-width: 0;
+}
+.ranked-state__fact span { display: block; font-size: 10px; color: var(--dim); }
+.ranked-state__fact b {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ranked-state__fact b.mono { font-family: var(--font-mono); }
+
+.ranked-state__note { margin: 0; font-size: 11px; line-height: 1.55; color: var(--dim); }
+.ranked-state__note b { color: var(--text); }
+
+/* 叙述区:唯一允许滚的一段。承重那条闸(`overflow-y:auto` 且 `scrollTop` 真能推)
+   原样保留 —— 这一轮改的是外观,不是盒子链。 */
+.ranked-state__scroll {
+  /* `0 1 auto` 而不是 `1`:它取**自然高度**,只在装不下时才收缩(并由此开始滚)。
+     写 `flex: 1` 会让它把整块面板的空余全吃掉 —— 于是状态条和事实格之间裂开一条大空带,
+     而参考屏的空带在**动作区上面**(动作是 `margin-top: auto` 贴底的)。
+     内容从上往下堆、空的留在底部按钮之前,才是参考那屏的节奏。 */
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 动作:并排、等宽、贴底。竖排堆叠是这屏原来的样子,和参考差得最远的一处。 */
+.ranked-state__actions { margin-top: auto; display: flex; gap: 8px; flex: none; }
+.ranked-state__actions button {
+  min-width: 44px;
+  min-height: 44px;
+  flex: 1;
+  border: 1px solid var(--hair);
+  border-radius: 11px;
+  background: var(--paper);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ranked-state__actions button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+}
+.ranked-state__actions button:disabled { opacity: .52; cursor: not-allowed; }
+.ranked-state__actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 代价行:贴在动作区下面,按下之前就说。 */
+.ranked-state__cost {
+  margin: 6px 0 0;
+  flex: none;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--dim);
+}

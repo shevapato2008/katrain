@@ -36,12 +36,25 @@ interface KioskAiLadderBlockingPanelProps {
  * 时长 → 屏上那句话。`null` 走 `absent`,**不退化成「0 秒」** ——
  * 「那件事还没发生过」和「刚刚发生」是相反的两件事。
  */
-const formatAge = (seconds: number | null | undefined, absent: string): string => {
-  if (typeof seconds !== 'number') return absent;
-  if (seconds < 60) return `${seconds} 秒前`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟前`;
-  return `${Math.floor(seconds / 3600)} 小时前`;
+const formatSpan = (seconds: number): string => {
+  if (seconds < 60) return `${seconds} 秒`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟`;
+  return `${Math.floor(seconds / 3600)} 小时`;
 };
+
+/** 「多久**之前**发生的」—— 心跳那一格。 */
+const formatAge = (seconds: number | null | undefined, absent: string): string =>
+  typeof seconds === 'number' ? `${formatSpan(seconds)}前` : absent;
+
+/**
+ * 「已经持续了**多久**」—— 成绩已压那一格。
+ *
+ * 和上面那个不是同一件事,后缀差一个「前」:心跳是**时点**(11 秒前收到的),
+ * 成绩已压是**时段**(压了 8 分钟)。共用 `formatAge` 会写出「成绩已压 8 分钟前」——
+ * 那句话在中文里没有意思,而它就印在要交出去的那张图上。
+ */
+const formatDuration = (seconds: number | null | undefined, absent: string): string =>
+  typeof seconds === 'number' ? formatSpan(seconds) : absent;
 
 /** 参考屏 seal 槽位里是奖杯,这里换成围棋的棋子 —— 同一个几何槽位,换本棋种的符号。 */
 const SealMark = () => (
@@ -146,7 +159,14 @@ const KioskAiLadderBlockingPanel = ({
               曾经这里是「这一局的状态」(永远是标题的缩写)和「成绩同步」(复读状态条),
               于是同一个数一屏印两遍、同一句话说三遍。 */}
           <div className="ranked-state__fact">
-            <span>对方设备心跳</span>
+            {/* 标签**跟着 ownership 走**,因为这个数的主语跟着它走:
+                `record_heartbeat` 是 origin-only 的(`_verify_origin` 验预约凭证),
+                所以心跳**永远是那一局的 origin 上报的**;而 `ownership === 'current_device'`
+                的定义就是 `origin_device_id == device_id` —— 那一格里 origin 就是这台机器,
+                这个数是**本机自己的**心跳。
+                写死成「对方设备」会让 `05-pending-retrying` 那屏同时说「当前设备」和
+                「对方设备心跳」,其中必有一句是假的。 */}
+            <span>{game.ownership === 'current_device' ? '本机心跳' : '对方设备心跳'}</span>
             {/* 只报**距今多久**,**不配失联阈值** —— 象棋那屏配了,因为它的模型里还有接管窗口;
                 围棋把那一整套删了,再摆个阈值等于把删掉的判据从 UI 里长回来。 */}
             <b className={typeof game.heartbeat_age_seconds === 'number' ? 'mono' : undefined}>
@@ -158,7 +178,7 @@ const KioskAiLadderBlockingPanel = ({
             {/* 状态条已经说了「重试几次 / 还有多久」,所以这格**不复读它**,报的是另一件事:
                 这笔成绩压了多久。没进 pending 就是「不适用」,不是「0」。 */}
             <b className={typeof game.pending_since_seconds === 'number' ? 'mono' : undefined} data-testid="kiosk-ladder-sync-fact">
-              {formatAge(game.pending_since_seconds, '不适用')}
+              {formatDuration(game.pending_since_seconds, '不适用')}
             </b>
           </div>
       </div>

@@ -348,6 +348,14 @@ for (const testCase of CASES) {
     const facts = await page.getByTestId('kiosk-ladder-blocking-facts').innerText();
     const title = await page.getByTestId('kiosk-ladder-state-line').innerText();
     expect(facts, `${testCase.slug}:事实格复读了标题`).not.toContain(title);
+    // 屏上不许同时说「当前设备」和「对方设备」—— 其中必有一句是假的。
+    // 心跳是 origin-only 上报的,而 `current_device` 的定义就是「origin 是这台机器」,
+    // 所以那一格里它是**本机**心跳。标签写死成「对方设备」就是这条同屏矛盾。
+    const panelText = await page.getByTestId('kiosk-ladder-blocking-panel').innerText();
+    expect(
+      panelText.includes('当前设备') && panelText.includes('对方设备'),
+      `${testCase.slug}:同一屏上同时出现「当前设备」和「对方设备」`,
+    ).toBe(false);
     const blocking = testCase.blocking as { heartbeat_age_seconds?: number | null };
     if (typeof blocking.heartbeat_age_seconds === 'number') {
       expect(facts, `${testCase.slug}:心跳那一格没填上数,fixture 或组件掉了这个字段`)

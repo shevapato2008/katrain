@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { Box, Typography, Button, Alert, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PlayArrow } from '@mui/icons-material';
+import { ArrowBack, PlayArrow } from '@mui/icons-material';
 import OptionChips from '../components/common/OptionChips';
-import SubPageBar from '../components/layout/SubPageBar';
 import { API } from '../../api';
 import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
-import LiveBoard from '../../components/live/LiveBoard';
 import { writeActiveSession } from '../utils/activeSession';
 import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
 import {
@@ -21,7 +19,7 @@ import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
 import { aiLadderBlockingGame, canStartAiLadderGame } from '../../features/aiLadder/startGate';
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 import KioskAiLadderBlockingPanel from '../components/aiLadder/KioskAiLadderBlockingPanel';
-import SmartBoardConsole from '../components/layout/SmartBoardConsole';
+import KioskSetupBoard from '../components/board/KioskSetupBoard';
 
 // Time-control presets — each maps onto the existing timeEnabled/mainTime/byoyomiTime/
 // byoyomiPeriods state so the submitted payload values are unchanged from the slider UI.
@@ -207,53 +205,40 @@ const AiSetupPage = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubPageBar
-        title={isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈')}
-        to="/kiosk/play"
-      />
-      <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        {/* Left: board preview console — fixed 322px width (matches artifact .console).
-            Board wrapper below stays flex:1 so LiveBoard renders a square that fits this width. */}
-        {isRanked ? (
-          /* Fan 否掉了上一版的虚线空态:「左边需要画棋盘」。
-             而**这块卡在 kiosk 里早就有了** —— `SmartBoardConsole`:LiveBoard 预览 +
-             摄像头/标定/LED 三个状态格,数据来自 vision / geometry 两个 context。
-             它现在只挂在 `/kiosk/play`(`KioskLayout` 的 `CONSOLE_ROUTES` 是**精确匹配**),
-             所以这个子页一直在自己画一个简化版的左栏。
-             照样稿 `sample-go/01-play.png`:左栏那块盘**不随状态变**,它不声称是那一局,
-             它是**这台机器上那块真盘现在的样子** —— 所以「画的是不是这一局」这个问题
-             根本不存在,上一版那个虚线空框是在解一个不存在的问题。
+    // 规范 §11 **布局 A**(`kiosk-shell-spec.md:510-512`):「开局设置是对局的前一步,所以它走
+    // 布局 A,和对局屏同一个骨架 —— 左盘 516 + 16 + 右栏 460」。
+    // 上一版是**通栏返回条 + 296 镜像栏**,那是把 §5 的 L1 构件(`:139`)搭在了一屏 L2 上,
+    // 也是布局 B 的做法用在了有棋盘的屏上(`:742-743` 那张表的两行搞反了)。
+    //
+    // 外框:`:399` L2/L3 可用高度 600 − 56(顶栏)− 28(上下各 14 内边距)= **516**,
+    // 左右各 16(`:64` `--content-x`)⇒ 内容 992,减去盘 516 与栏距 16,右栏正好 460。
+    // 这三个数一个都不在这里写死 —— `.kiosk-layout-a` / `.kiosk-board` 用的是
+    // `tokens.css` 的 `--board-size` / `--content-x`,改规范时不用回来改这里。
+    <Box className="kiosk" sx={{ height: '100%', boxSizing: 'border-box', px: 'var(--content-x)', py: 'var(--content-pad-y)' }}>
+      <div className="kiosk-layout-a">
+        {/* 左栏 = 按下「开始对弈」后真会出现的那个局面(`:512`),不是摄像头镜像 ——
+            镜像栏是 L1 的东西(`SmartBoardConsole`,296 宽),它留在 `/kiosk/play`。 */}
+        <KioskSetupBoard color={color} size={boardSize} />
 
-             判据是 `isRanked` 而**不是** `blockingGame`:我第一版只在挡局时换成它,于是
-             同一块屏的左栏会随状态变宽(常态 290 的自绘预览 / 挡局 322 的 console)——
-             四图那条骨架断言当场红在「右栏左边界被带歪了」。**那正是它存在的理由**,
-             而带歪它的是我自己写的方案里明说「左栏不随状态变」的那一条。 */
-          <SmartBoardConsole />
-        ) : (
-        <Box
-          sx={{
-            width: isRanked ? 290 : 322, flexShrink: 0, overflow: 'hidden', m: isRanked ? 1.5 : 2, mr: 0,
-            bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
-            borderRadius: 3, p: isRanked ? 1.5 : 2, display: 'flex', flexDirection: 'column',
-          }}
-        >
-          <Typography variant="overline" sx={{ color: 'text.secondary', mb: 1 }}>
-            {t('Board Preview', '盘面预览')}
-          </Typography>
-          <Box sx={{ flex: 1, minHeight: 0 }}>
-            <LiveBoard
-              moves={[]}
-              currentMove={0}
-              boardSize={boardSize}
-              showCoordinates={true}
-            />
-          </Box>
-        </Box>
-        )}
+        <div className="kiosk-rail">
+          {/* 页控条:`:736` 顶栏在所有层级恒为品牌态,返回与标题一律下放到这里;
+              `:742` 有棋盘 ⇒ 它在**右栏顶部**,不是通栏。内部尺寸见 `:750-759`,
+              全部由 `.kiosk-pagebar*`(tokens.css:619-662)给。 */}
+          <div className="kiosk-pagebar" data-testid="kiosk-setup-pagebar">
+            <button type="button" className="kiosk-pagebar__back" onClick={() => navigate('/kiosk/play')}>
+              <ArrowBack />
+              {t('Back', '返回')}
+            </button>
+            <span className="kiosk-pagebar__title">
+              {isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈')}
+            </span>
+            {/* 英文副标不是新文案:它就是上面那个 key 的英文侧,和标题同一句话的两种语言。 */}
+            <span className="kiosk-pagebar__sub">{isRanked ? 'Ranked Game' : 'Free Game'}</span>
+          </div>
 
-        {/* Right: compact 2-column settings form — structurally no-scroll (overflow:hidden). */}
-        <Box data-testid={isRanked ? 'ranked-settings-panel' : undefined} sx={{ flex: 1, p: isRanked ? 2 : 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          {/* 右栏内容:`:512`「按下按钮时骨架不动,只有右栏换内容」—— 挡局面板和设置表单
+              是同一个位置的两种内容,不是两种布局。 */}
+          <Box data-testid={isRanked ? 'ranked-settings-panel' : undefined} sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {blockingGame ? (
             // 有一局挡着的时候,整个右栏换成挡局面板:执子、用时、开始按钮此刻一个都用不上,
             // 摆着只会让用户以为改一改就能开局,而真正能推进事情的两三个按钮反倒被挤到看不见。
@@ -428,8 +413,9 @@ const AiSetupPage = () => {
           </Box>
           </>
           )}
-        </Box>
-      </Box>
+          </Box>
+        </div>
+      </div>
     </Box>
   );
 };

@@ -100,9 +100,14 @@ describe('AiSetupPage', () => {
     startRanked.mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1', status: rankedState.current });
   });
 
-  it('renders the board-preview console header (盘面预览)', () => {
+  // 原来钉的是「盘面预览」那行眉标。布局 A 的左栏**只有盘**(规范 `:512`:它画的是按下
+  // 按钮后真会出现的局面),那行眉标随旧的预览盒一起没了 —— 这是布局裁定的后果,不是改文案。
+  // 陷阱照旧:左边必须有一块真盘,而且它得跟着「我执」翻(`:512` 后半句)。
+  it('renders the opening-position board, oriented by my colour', () => {
     renderPage();
-    expect(screen.getByText('盘面预览')).toBeInTheDocument();
+    const board = screen.getByTestId('kiosk-setup-board');
+    expect(board).toBeInTheDocument();
+    expect(board).toHaveAttribute('data-color', 'black');
   });
 
   it('writes the active session and navigates to the game route on Start (free mode)', async () => {
@@ -149,7 +154,12 @@ describe('AiSetupPage', () => {
   it('uses the rated-only 1024x600 no-scroll geometry with every required control and CTA visible', () => {
     renderPage('ranked');
     const panel = screen.getByTestId('ranked-settings-panel');
-    expect(panel).toHaveStyle({ padding: '16px', overflow: 'hidden' });
+    // 原来这里还钉着 `padding: '16px'`。**那是一条自己造数、自己读回来的断言** ——
+    // jsdom 只是把我写进 sx 的字面量原样还给我,搬进真浏览器也不可能失败。
+    // 而且布局 A 之后右栏内容本来就该铺满 460(`:775` 主行动按钮满宽 460),padding 归零。
+    // `overflow: hidden` 留着:它是结构选择 —— 装不下的后果是**裁切**而不是滚,
+    // 而「裁切还是滚」正是承重那条闸要量的东西(在真浏览器里量,不在这儿)。
+    expect(panel).toHaveStyle({ overflow: 'hidden' });
     expect(screen.queryByText('9路')).not.toBeInTheDocument();
     expect(screen.queryByText('13路')).not.toBeInTheDocument();
     // 规则/让子/贴目 are server-owned in ranked play, so the panel states them

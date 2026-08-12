@@ -32,10 +32,14 @@ const renderPage = (mode = 'free') =>
   );
 
 describe('AiSetupPage', () => {
-  it('renders board preview canvas', () => {
+  // 原来钉的是 `document.querySelector('canvas')` —— 那是 `LiveBoard` 的实现细节。
+  // 改布局 A 之后左栏换成了自己画的 SVG 空盘(`KioskSetupBoard`,规范 `:512`),canvas 没了。
+  // **规则过期,陷阱没有**:它守的是「这一屏左边必须有一块真盘」,那条一直成立,
+  // 所以改的是判别方式 —— 从「用什么技术画的」换成「盘在不在、是不是 19 路」。
+  it('renders the opening-position board on the left', () => {
     renderPage();
-    const canvas = document.querySelector('canvas');
-    expect(canvas).toBeInTheDocument();
+    expect(screen.getByTestId('kiosk-setup-board')).toBeInTheDocument();
+    expect(document.querySelectorAll('.kiosk-board__ruler--top span')).toHaveLength(19);
   });
 
   it('renders board size options', () => {

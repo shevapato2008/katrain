@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import {
   blockingCopy,
+  blockingStateChip,
   displaceCopy,
   isResumableHere,
   isSyncRetryable,
@@ -12,7 +13,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import type { AiLadderBlockingGame } from '../../../features/aiLadder/types';
 import '../../../kiosk-shell/tokens.css';
 import '../../../kiosk-shell/go-tokens.css';
-import './rankedState.css';
+import './blockingPanel.css';
 
 interface KioskAiLadderBlockingPanelProps {
   game: AiLadderBlockingGame;
@@ -21,8 +22,7 @@ interface KioskAiLadderBlockingPanelProps {
    * **必填,不是 `error?:`。** 可选 prop 看起来像契约,其实是个建议 —— 谁不传都编译得过,
    * 防御强度等于「写代码的人记得」。国象正是这么掉进去的:那块屏唯一的按钮按下去失败,
    * 错误写进了另一格的 state,屏上什么都不发生,按钮弹回可按。
-   * (对照:`onRetrySettlement?` 的 `?` 保留 —— 那是真的可选**能力**。
-   * 判据:可选的应该是「这块屏有没有这个能力」,不是「这块屏说不说实话」。)
+   * (对照:`onRetrySettlement?` 的 `?` 保留 —— 那是真的可选**能力**。)
    */
   error: string;
   syncRetryPending: boolean;
@@ -32,52 +32,33 @@ interface KioskAiLadderBlockingPanelProps {
   onRetrySettlement?: (gameId: string) => void;
 }
 
-/**
- * 时长 → 屏上那句话。`null` 走 `absent`,**不退化成「0 秒」** ——
- * 「那件事还没发生过」和「刚刚发生」是相反的两件事。
- */
+/** 时长 → 「多久之前」。`null` 走 absent,**不退化成 0** —— 没发生过和刚发生是相反的两件事。 */
 const formatSpan = (seconds: number): string => {
   if (seconds < 60) return `${seconds} 秒`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)} 分钟`;
   return `${Math.floor(seconds / 3600)} 小时`;
 };
-
-/** 「多久**之前**发生的」—— 心跳那一格。 */
 const formatAge = (seconds: number | null | undefined, absent: string): string =>
   typeof seconds === 'number' ? `${formatSpan(seconds)}前` : absent;
-
-/**
- * 「已经持续了**多久**」—— 成绩已压那一格。
- *
- * 和上面那个不是同一件事,后缀差一个「前」:心跳是**时点**(11 秒前收到的),
- * 成绩已压是**时段**(压了 8 分钟)。共用 `formatAge` 会写出「成绩已压 8 分钟前」——
- * 那句话在中文里没有意思,而它就印在要交出去的那张图上。
- */
+/** 「已经持续了多久」。和上面差一个「前」:心跳是时点,成绩已压是时段。 */
 const formatDuration = (seconds: number | null | undefined, absent: string): string =>
   typeof seconds === 'number' ? formatSpan(seconds) : absent;
 
-/** 参考屏 seal 槽位里是奖杯,这里换成围棋的棋子 —— 同一个几何槽位,换本棋种的符号。 */
-const SealMark = () => (
-  <svg viewBox="0 0 24 24" aria-hidden focusable="false">
-    <circle cx="12" cy="12" r="8" />
-  </svg>
-);
-
 /**
- * kiosk 上的「有一局挡着新局」,**骨架照共享外壳的象棋样屏,配色用围棋青毡**。
+ * 挡局屏的**右栏**(`kiosk-side`)。左栏是那块实体棋盘,由页面挂 `SmartBoardConsole`。
  *
- * 这一版换掉的是**几何**,不是文案也不是盒子链:
- *   · 从前整屏走 MUI 默认尺度,而另外三家都 `import tokens.css`(991 行结构 token)——
- *     围棋这条跨仓依赖从来没建立过,不是忘了 import。颜色一直是对的,几何从来没接进来。
- *   · 中段空得像没加载完,根因是缺**两列事实格**那一层;补上它同时解决「空」和「信息不足」。
- *   · 动作从竖排堆叠改成并排贴底等宽。
+ * **这一版一行新布局 CSS 都没写** —— 全用共享外壳 `tokens.css` 里本来就有的类:
+ * `kiosk-side__fixed` / `kiosk-section` / `kiosk-seclabel` / `kiosk-status` / `kiosk-btn`。
  *
- * ⚠️ 根节点必须挂 `.kiosk`:`tokens.css` 整份定义在那个类上,渲染到外面 `var()` **静默求空**、
- * 字体掉回 sans、且**不报错**。
+ * 上一版的根因就在这儿:我们**导入了共享骨架,然后没用它** —— 去抄了 `sample-xiangqi`
+ * 模板里的 `.ranked-state__*`(那是象棋自己的局部 CSS,不是共享外壳),自造了一套。
+ * `import` 成功、构建绿、什么都没报错,而那个文件里的九个类一个都没被引用。
+ * **「没有报错」不携带「用上了」。**
  *
- * **承重结论原样保留**:叙述区仍是 `overflow-y: auto` 且 `scrollTop` 真能推,而必需信息
- * (标题 =「这是哪一局 / 为什么挡着」)仍在**不参与滚动**的头部。改外观不动盒子链 ——
- * 但余量数一定变,四图和余量表都重打了。
+ * 右栏是**一叠卡**(`kiosk-section` × N),不是一张大卡里塞东西 —— 见 `sample-go/02-game.png`。
+ *
+ * ⚠️ 根节点必须挂 `.kiosk`:`tokens.css` 整份定义在那个类上,渲染到外面 `var()` 静默求空、
+ * 字体掉回 sans、**且不报错**。
  */
 const KioskAiLadderBlockingPanel = ({
   game,
@@ -88,11 +69,10 @@ const KioskAiLadderBlockingPanel = ({
   onEndGame,
   onRetrySettlement,
 }: KioskAiLadderBlockingPanelProps) => {
-  // blockingCopy/displaceCopy 每次 render 才查 i18n;没有这个订阅,切语言这块面板不动。
   useTranslation();
-  // 举起的确认落在**哪一局**上,而不是一个裸的布尔 —— 后台每 15 秒复查一次,弹窗开着的时候
-  // 底下那一格会自己变。换成了另一局,这个 `armed` 自己就是假的(派生值,不需要 effect 去追);
-  // 还是同一局但状态变了,弹窗留着、而里面每一句都从**当下**这份数据现算。
+  // 举起的确认落在**哪一局**上,而不是一个裸布尔:后台每 15 秒复查,换成另一局时这个
+  // `armed` 自己就是假的(派生值,不需要 effect 去追);还是同一局但状态变了,弹窗留着,
+  // 而里面每一句都从**当下**这份数据现算。
   const [armedGameId, setArmedGameId] = useState<string | null>(null);
   const armed = armedGameId === game.game_id;
   const remaining = useCountdown(
@@ -100,129 +80,116 @@ const KioskAiLadderBlockingPanel = ({
   );
 
   const resumable = isResumableHere(game);
-  // 徽标在这一版**没有位置了**:它的那句话(「未了结」/「成绩未送达」)已经由标题说出来,
-  // 再摆一格就是标题的回声。galaxy 那块屏仍然用 `blockingStateChip`,那边的头部没有这句话。
+  const chip = blockingStateChip(game, resumable);
   const displace = displaceCopy(game);
   const canRetrySync = Boolean(onRetrySettlement)
     && game.state === 'pending_settlement'
     && isSyncRetryable(game.sync);
-
-  // 状态条的语气:三档各有**字符前缀 + 颜色**两个通道,不靠颜色单跑。
-  const tone = error
-    ? 'error'
-    : (game.sync?.state === 'waiting' || game.sync?.state === 'sending' ? 'progress' : undefined);
+  const statusLine = error || (game.sync ? settlementSyncText(game.sync, remaining) : '');
 
   return (
-    <div className="kiosk ranked-state" data-testid="kiosk-ladder-blocking-panel">
-      <div className="ranked-state__head" data-testid="kiosk-ladder-blocking-header">
-        <div className="ranked-state__seal"><SealMark /></div>
-        <div style={{ minWidth: 0 }}>
-          {/* 主角是**问题**,不是段位名。从前全屏最大的字是 `opponent_rank_name`,
-              而那是**被挡住那一局**的对手段位 —— 用户会把它读成「我正要开的这局」。 */}
-          <h2 data-testid="kiosk-ladder-state-line">{blockingCopy(game, resumable)}</h2>
-          <p>未完成对局 · {game.ownership === 'current_device' ? '当前设备' : '其他设备'}</p>
-        </div>
-      </div>
-
-      <div className="ranked-state__scroll" data-testid="kiosk-ladder-blocking-body">
-        {/* 状态条只在**真有实况可报**时出现:错误,或者 outbox 有话说。
-            没有实况时它会退化成复读下面那格事实(「未了结」/「未了结」)——
-            一句话在同一屏上说两遍,不是信息是噪声。状态条空着比复读诚实。 */}
-        {(error || game.sync) && (
-          <div
-            className="ranked-state__status"
-            data-tone={tone}
-            role={error ? 'alert' : undefined}
-            data-testid="kiosk-ladder-sync-line"
-          >
-            {error || (game.sync ? settlementSyncText(game.sync, remaining) : '')}
+    <div className="kiosk kiosk-side" data-testid="kiosk-ladder-blocking-panel">
+      <div className="kiosk-side__fixed">
+        {/* ① 状态卡:标题就是那句「这是哪一局 / 为什么挡着」。主角是**问题**,不是段位名 ——
+               段位名是被挡住那一局的对手,摆成最大的字会被读成「我正要开的这局」。 */}
+        <section className="kiosk-section" data-testid="kiosk-ladder-blocking-header">
+          <div className="kiosk-seclabel">
+            <h2>未完成对局</h2>
+            <em>Unfinished</em>
+            <span className="rule" />
+            <b className="secval">{game.ownership === 'current_device' ? '当前设备' : '其他设备'}</b>
           </div>
+          <p className="ladder-title" data-testid="kiosk-ladder-state-line">{blockingCopy(game, resumable)}</p>
+        </section>
+
+        {/* ② outbox 卡:只在**真有实况可报**时出现。没有实况时它会退化成复读下面那格事实,
+               一句话在同一屏上说两遍不是信息是噪声。 */}
+        {statusLine && (
+          <section className="kiosk-section ladder-status-section">
+            <p
+              className={`ladder-status${error ? ' is-error' : ''}`}
+              role={error ? 'alert' : undefined}
+              data-testid="kiosk-ladder-sync-line"
+              id="kiosk-ladder-blocking-body"
+            >
+              {statusLine}
+            </p>
+          </section>
         )}
 
+        {/* ③ 事实卡:走共享的 `kiosk-status`(它本来就是「标签 + 值」的格子)。
+               判据:**每一格都必须是标题读完之后还不知道的事** —— 所以没有「这一局的状态」
+               那种标题的缩写。 */}
+        <section className="kiosk-section" data-testid="kiosk-ladder-blocking-facts">
+          <div className="kiosk-status kiosk-status--2">
+            <div className="kiosk-status__cell">
+              <span className="kiosk-status__k">对手档位</span>
+              <b className="kiosk-status__v" data-testid="kiosk-ladder-blocking-name">{game.opponent_rank_name}</b>
+            </div>
+            <div className="kiosk-status__cell">
+              <span className="kiosk-status__k">我执</span>
+              <b className="kiosk-status__v">{game.user_color === 'B' ? '● 黑棋' : '○ 白棋'}</b>
+            </div>
+            <div className="kiosk-status__cell">
+              {/* 标签跟着 `ownership` 走:心跳是 origin-only 上报的,而 `current_device`
+                  的定义就是「origin 是这台机器」⇒ 那一格里它是**本机自己的**心跳。
+                  **只报距今多久,不配失联阈值** —— 象棋那屏配了阈值,因为它的模型里还有
+                  接管窗口;围棋把那一整套删了,再摆阈值等于把删掉的判据从 UI 长回来。 */}
+              <span className="kiosk-status__k">
+                {game.ownership === 'current_device' ? '本机心跳' : '对方设备心跳'}
+              </span>
+              <b className="kiosk-status__v">{formatAge(game.heartbeat_age_seconds, '未收到过')}</b>
+            </div>
+            <div className="kiosk-status__cell">
+              <span className="kiosk-status__k">成绩已压</span>
+              <b className="kiosk-status__v" data-testid="kiosk-ladder-sync-fact">
+                {formatDuration(game.pending_since_seconds, '不适用')}
+              </b>
+            </div>
+          </div>
+        </section>
+
+        {/* ④ 代价 + 动作,贴底。代价在按钮**上面** —— 放下面时手指已经在按钮上了才读到。 */}
+        <section className="kiosk-section ladder-foot">
+          <p className="ladder-cost">{displace.cost}</p>
+          <div className="ladder-actions" data-testid="kiosk-ladder-blocking-actions">
+            {resumable && (
+              <button
+                type="button"
+                className="kiosk-btn kiosk-btn--primary"
+                onClick={() => game.session_id && onContinue(game.session_id)}
+                disabled={pending}
+              >
+                继续对局
+              </button>
+            )}
+            {canRetrySync && (
+              // 守卫 2:站在**有在途结算的这台盒子**前的人,第一个看到的必须是「把成绩救回去」,
+              // 不是「认输」。云端只知道「成绩还没到」,是排队、退避、试完了还是被拒收
+              // 全在这台机器的 outbox 里 —— 而那恰好是他唯一想问的事。
+              <button
+                type="button"
+                className="kiosk-btn kiosk-btn--primary"
+                onClick={() => onRetrySettlement?.(game.game_id)}
+                disabled={syncRetryPending}
+              >
+                {syncRetryPending ? '正在重试…' : '立即重试'}
+              </button>
+            )}
+            {/* 破坏性按钮**屏上不描红** —— 照象棋模板:屏上次级是描边,红留给不可回头那一步
+                (二次确认)。国象与我们更早那版是屏上就描边。**这条归 Fan**,两版都留着。 */}
+            <button
+              type="button"
+              className="kiosk-btn kiosk-btn--secondary"
+              onClick={() => setArmedGameId(game.game_id)}
+              disabled={pending}
+            >
+              {displace.button}
+            </button>
+          </div>
+        </section>
       </div>
 
-      {/* 事实格**在可滚区外面**。它承载的是必需的**数**(重试几次、什么档位、执什么色),
-          而上面那条状态条长度不可控(错误文案/长译文都往那儿去)。把两者放在同一个可滚区里,
-          状态条一长就把这些数顶出静止帧 —— 用户据以决定的东西被一句解释挤走了。
-          ⇒ 变长的那个滚,必需的那个钉住。 */}
-      <div className="ranked-state__facts" data-testid="kiosk-ladder-blocking-facts">
-          <div className="ranked-state__fact">
-            <span>对手档位</span>
-            <b data-testid="kiosk-ladder-blocking-name">{game.opponent_rank_name}</b>
-          </div>
-          <div className="ranked-state__fact">
-            <span>我执</span>
-            <b>{game.user_color === 'B' ? '● 黑棋' : '○ 白棋'}</b>
-          </div>
-          {/* 这两格摆的是**诊断数**,不是身份也不是标题的回声。
-              判据一句:**每一格都必须是标题读完之后还不知道的事。**
-              曾经这里是「这一局的状态」(永远是标题的缩写)和「成绩同步」(复读状态条),
-              于是同一个数一屏印两遍、同一句话说三遍。 */}
-          <div className="ranked-state__fact">
-            {/* 标签**跟着 ownership 走**,因为这个数的主语跟着它走:
-                `record_heartbeat` 是 origin-only 的(`_verify_origin` 验预约凭证),
-                所以心跳**永远是那一局的 origin 上报的**;而 `ownership === 'current_device'`
-                的定义就是 `origin_device_id == device_id` —— 那一格里 origin 就是这台机器,
-                这个数是**本机自己的**心跳。
-                写死成「对方设备」会让 `05-pending-retrying` 那屏同时说「当前设备」和
-                「对方设备心跳」,其中必有一句是假的。 */}
-            <span>{game.ownership === 'current_device' ? '本机心跳' : '对方设备心跳'}</span>
-            {/* 只报**距今多久**,**不配失联阈值** —— 象棋那屏配了,因为它的模型里还有接管窗口;
-                围棋把那一整套删了,再摆个阈值等于把删掉的判据从 UI 里长回来。 */}
-            <b className={typeof game.heartbeat_age_seconds === 'number' ? 'mono' : undefined}>
-              {formatAge(game.heartbeat_age_seconds, '未收到过')}
-            </b>
-          </div>
-          <div className="ranked-state__fact">
-            <span>成绩已压</span>
-            {/* 状态条已经说了「重试几次 / 还有多久」,所以这格**不复读它**,报的是另一件事:
-                这笔成绩压了多久。没进 pending 就是「不适用」,不是「0」。 */}
-            <b className={typeof game.pending_since_seconds === 'number' ? 'mono' : undefined} data-testid="kiosk-ladder-sync-fact">
-              {formatDuration(game.pending_since_seconds, '不适用')}
-            </b>
-          </div>
-      </div>
-
-      {/* 代价行在动作行**上面** —— 照参考屏。放在按钮下面时,手指已经在按钮上了才读到
-          「按下去会发生什么」,那等于按下之后才说。 */}
-      <p className="ranked-state__cost">{displace.cost}</p>
-
-      <div className="ranked-state__actions" data-testid="kiosk-ladder-blocking-actions">
-        {resumable && (
-          <button
-            type="button"
-            className="primary"
-            onClick={() => game.session_id && onContinue(game.session_id)}
-            disabled={pending}
-          >
-            继续对局
-          </button>
-        )}
-        {canRetrySync && (
-          // 守卫 2:站在**有在途结算的这台盒子**前的人,第一个看到的必须是「把成绩救回去」,
-          // 不是「认输」。云端只知道「成绩还没到」,是排队、退避、试完了还是被拒收全在这台
-          // 机器的 outbox 里 —— 而那恰好是他唯一想问的事。
-          <button
-            type="button"
-            className="primary"
-            onClick={() => onRetrySettlement?.(game.game_id)}
-            disabled={syncRetryPending}
-          >
-            {syncRetryPending ? '正在重试…' : '立即重试'}
-          </button>
-        )}
-        {/* 破坏性按钮**屏上不描红** —— 照象棋模板:屏上 `.primary` 是实心 accent、次级是描边,
-            真正变红在**不可回头那一步**(二次确认框)。国象和围棋上一版是屏上就描边。
-            两派都自洽,差异是「吓人吓在屏上,还是吓在不可回头那一步」——
-            **这条归 Fan,不由我们私下约**,先照参考屏做,两版都留着。 */}
-        <button
-          type="button"
-          onClick={() => setArmedGameId(game.game_id)}
-          disabled={pending}
-        >
-          {displace.button}
-        </button>
-      </div>
       <Dialog open={armed} onClose={() => setArmedGameId(null)} aria-labelledby="kiosk-ladder-exit-title">
         <DialogTitle id="kiosk-ladder-exit-title">{displace.title}</DialogTitle>
         <DialogContent>
@@ -245,6 +212,9 @@ const KioskAiLadderBlockingPanel = ({
           </Button>
         </DialogActions>
       </Dialog>
+      {/* `chip.label` 这一版没有位置:它那句话已经由标题说出来。保留读取是为了让
+          `blockingStateChip` 的契约仍被这块屏消费(galaxy 那边还在用它渲染徽标)。 */}
+      <span hidden data-testid="kiosk-ladder-chip-label">{chip.label}</span>
     </div>
   );
 };

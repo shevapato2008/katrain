@@ -1,0 +1,89 @@
+/* 挡局屏右栏:**只写共享外壳没给的那几条**。
+ *
+ * 共享 `tokens.css` 给的是容器几何(`.kiosk-side` / `.kiosk-side__fixed` / `.kiosk-section` /
+ * `.kiosk-seclabel` / `.kiosk-status` / `.kiosk-btn`),而 `.kiosk-seclabel` 的**子元素**
+ * (h2 / em / .rule / .secval)在共享文件里没有 —— 四份样稿各自带着同样的四行局部 CSS。
+ * 下面前四条逐字取自 `sample-go/go-kiosk.tmpl.html:96-99`。
+ *
+ * 上一版的错不是「写了局部 CSS」,是**导入了共享骨架却没用它**,自己造了一套
+ * `.ranked-state__*`(那是象棋样稿的局部 CSS)。这一版容器全走共享类,局部只补子元素。
+ */
+
+.kiosk-seclabel h2 { font-size: 12.5px; font-weight: 700; letter-spacing: .12em; margin: 0; }
+.kiosk-seclabel em { font-family: var(--font-serif); font-style: italic; font-size: 11px; color: var(--dim); }
+.kiosk-seclabel .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--hair), transparent); }
+.kiosk-seclabel .secval { font-size: 11.5px; color: var(--accent); letter-spacing: 0; white-space: nowrap; }
+
+/* 标题:这一屏的主角是**问题**,不是段位名。三行封顶 —— 它是服务端文案(走 i18n,
+   换一门语言可以长几倍),而它住在不参与滚动的固定区;不封顶就会把贴底的动作推出视口。 */
+.ladder-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* outbox 实况条。`--raise` 是卡片面(比页底亮),`--panel` 是卡片里的格子 —— 这一条是
+   独立的一张卡,所以用 `--raise`。 */
+.ladder-status {
+  margin: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  background: var(--raise);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text);
+  /* **这块是右栏里唯一长度不可控的元素**(错误文案 / 长译文都往这儿去),所以滚动权归它:
+     它自己收缩并滚,而不是让整栏滚 —— 整栏滚会把必需的事实格和贴底的动作一起滚走。
+     长文本时顶端对齐,居中会让它溢出容器。 */
+  align-items: flex-start;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.ladder-status::before { margin-top: 1px; }
+/* 承载它的那一节要**能被压缩**:`.kiosk-section` 是 `flex: none`,不覆盖的话状态条一长
+   就把整块面板顶出右栏(实测 454px vs 右栏 443px,而右栏 `overflow: hidden` ⇒ 直接裁掉)。
+   写死一个 `max-height` 也能挡住,但那是猜一个数;让它按剩余空间收缩才是跟着盒子链走。 */
+.ladder-status-section { flex: 0 1 auto; min-height: 0; display: flex; }
+/* 字符前缀 + 颜色**双通道** —— 一个信息不许只走一个通道(色盲、反光的 7 寸屏、灰度截图,
+   任一情形下只剩颜色时,前缀仍然说得出这是错误还是进行中)。 */
+.ladder-status::before { content: "◌"; flex: none; color: var(--accent); font-size: 18px; }
+.ladder-status.is-error::before { content: "!"; color: var(--bad); font-weight: 700; font-size: 12px; }
+
+/* 共享的 `.kiosk-status__cell` **没有** `min-width: 0`,而它是 grid 子项 ——
+   默认 `min-width: auto` 让格子拒绝收缩到内容宽度以下,于是下面那条 ellipsis 永不生效:
+   实测 300 字的档位名把值撑到 3900px 宽(视口才 1024),一个省略号都没有,纯靠祖先硬裁。
+   这是纵向 `min-height: auto` 吃掉 `overflow-y:auto` 的**横轴同族**。
+   (上游那份 `tokens.css` 缺这一条,值得报回去。) */
+.kiosk-status__cell { min-width: 0; }
+.kiosk-status__v { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 贴底那一组:代价在按钮**上面**(放下面时手指已经在按钮上了才读到)。 */
+.ladder-foot { margin-top: auto; }
+.ladder-cost {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--dim);
+}
+.ladder-actions { display: flex; gap: 8px; }
+/* 并排等宽。`.kiosk-btn--primary/secondary` 已给高度/圆角/配色,这里只管分栏。 */
+/* 并排等宽,且**不低于 44 触控下限**。
+   共享外壳的 `--btn-primary-h` 正好是 44,而 `--btn-secondary-h` 是 **38** ——
+   次级按钮在外壳里本来就是给非关键动作用的。可这一栏里那个次级按钮是**认输/让掉**,
+   是这块屏最重的一下,38px 在七寸触屏上按不准。
+   ⇒ 外观仍走 `kiosk-btn--secondary`(描边),高度抬到 44。
+   (「屏上描边还是实心」那条仍归 Fan;这里改的是**可点面积**,不是那个取舍。) */
+.ladder-actions .kiosk-btn { flex: 1; justify-content: center; min-width: 44px; min-height: 44px; }

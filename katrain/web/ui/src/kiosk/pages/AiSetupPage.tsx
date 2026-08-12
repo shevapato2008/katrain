@@ -21,6 +21,7 @@ import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
 import { aiLadderBlockingGame, canStartAiLadderGame } from '../../features/aiLadder/startGate';
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 import KioskAiLadderBlockingPanel from '../components/aiLadder/KioskAiLadderBlockingPanel';
+import SmartBoardConsole from '../components/layout/SmartBoardConsole';
 
 // Time-control presets — each maps onto the existing timeEnabled/mainTime/byoyomiTime/
 // byoyomiPeriods state so the submitted payload values are unchanged from the slider UI.
@@ -214,6 +215,22 @@ const AiSetupPage = () => {
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {/* Left: board preview console — fixed 322px width (matches artifact .console).
             Board wrapper below stays flex:1 so LiveBoard renders a square that fits this width. */}
+        {isRanked ? (
+          /* Fan 否掉了上一版的虚线空态:「左边需要画棋盘」。
+             而**这块卡在 kiosk 里早就有了** —— `SmartBoardConsole`:LiveBoard 预览 +
+             摄像头/标定/LED 三个状态格,数据来自 vision / geometry 两个 context。
+             它现在只挂在 `/kiosk/play`(`KioskLayout` 的 `CONSOLE_ROUTES` 是**精确匹配**),
+             所以这个子页一直在自己画一个简化版的左栏。
+             照样稿 `sample-go/01-play.png`:左栏那块盘**不随状态变**,它不声称是那一局,
+             它是**这台机器上那块真盘现在的样子** —— 所以「画的是不是这一局」这个问题
+             根本不存在,上一版那个虚线空框是在解一个不存在的问题。
+
+             判据是 `isRanked` 而**不是** `blockingGame`:我第一版只在挡局时换成它,于是
+             同一块屏的左栏会随状态变宽(常态 290 的自绘预览 / 挡局 322 的 console)——
+             四图那条骨架断言当场红在「右栏左边界被带歪了」。**那正是它存在的理由**,
+             而带歪它的是我自己写的方案里明说「左栏不随状态变」的那一条。 */
+          <SmartBoardConsole />
+        ) : (
         <Box
           sx={{
             width: isRanked ? 290 : 322, flexShrink: 0, overflow: 'hidden', m: isRanked ? 1.5 : 2, mr: 0,
@@ -222,41 +239,18 @@ const AiSetupPage = () => {
           }}
         >
           <Typography variant="overline" sx={{ color: 'text.secondary', mb: 1 }}>
-            {blockingGame ? t('Blocked Game', '被挡住的那一局') : t('Board Preview', '盘面预览')}
+            {t('Board Preview', '盘面预览')}
           </Typography>
-          {blockingGame ? (
-            // **预览要跟事实走。** 挡局的任何一格,这台机器都**拿不到那一局的盘面**:
-            // `reserved` 是棋盘从没开起来,`other_device` 的盘面在另一台机器上,
-            // `pending_settlement` 那一局已经结束。而原来这里无条件画一张空棋盘 ——
-            // 挨着「棋盘没能开起来 —— 两边都没有人在下」那句话,画面本身是反驳文案的。
-            //
-            // 空态必须**写明自己是空态**,不许长得像加载失败或者「棋盘在这儿等你」。
-            <Box
-              data-testid="kiosk-ladder-preview-empty"
-              sx={{
-                flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center', gap: 1,
-                border: '1px dashed', borderColor: 'divider', borderRadius: 2, p: 2,
-              }}
-            >
-              <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
-                {t('No board to show for that game', '这台机器上没有那一局的盘面')}
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'center' }}>
-                {t('Not a loading failure', '不是加载失败')}
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-              <LiveBoard
-                moves={[]}
-                currentMove={0}
-                boardSize={boardSize}
-                showCoordinates={true}
-              />
-            </Box>
-          )}
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            <LiveBoard
+              moves={[]}
+              currentMove={0}
+              boardSize={boardSize}
+              showCoordinates={true}
+            />
+          </Box>
         </Box>
+        )}
 
         {/* Right: compact 2-column settings form — structurally no-scroll (overflow:hidden). */}
         <Box data-testid={isRanked ? 'ranked-settings-panel' : undefined} sx={{ flex: 1, p: isRanked ? 2 : 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>

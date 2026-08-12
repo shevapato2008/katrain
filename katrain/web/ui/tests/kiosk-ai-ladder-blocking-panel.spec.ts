@@ -108,11 +108,15 @@ const stubShell = async (page: Page, translations: Record<string, string> = {}) 
 const measure = (page: Page) => page.evaluate(() => {
   const panel = document.querySelector('[data-testid="kiosk-ladder-blocking-panel"]') as HTMLElement | null;
   const header = document.querySelector('[data-testid="kiosk-ladder-blocking-header"]') as HTMLElement | null;
-  const body = document.querySelector('[data-testid="kiosk-ladder-blocking-body"]') as HTMLElement | null;
+  // 可滚的那一层现在是**状态条自己**(右栏里唯一长度不可控的元素)。没有状态条的那几格
+  // 右栏一个可滚元素都没有 —— 那不是缺陷,是那一格没有会变长的东西,拿头部当占位来量。
+  const growable = document.querySelector('#kiosk-ladder-blocking-body') as HTMLElement | null;
+  const body = (growable ?? document.querySelector('[data-testid="kiosk-ladder-blocking-header"]')) as HTMLElement | null;
   const actions = document.querySelector('[data-testid="kiosk-ladder-blocking-actions"]') as HTMLElement | null;
   const column = document.querySelector('[data-testid="ranked-settings-panel"]') as HTMLElement | null;
   const name = document.querySelector('[data-testid="kiosk-ladder-blocking-name"]') as HTMLElement | null;
-  if (!panel || !header || !body || !actions || !column || !name) throw new Error('挡局面板没渲染出来 —— 这一格根本不在');
+  if (!panel || !header || !actions || !column || !name) throw new Error('挡局面板没渲染出来 —— 这一格根本不在');
+  if (!body) throw new Error('连头部都没有 —— 右栏没渲染');
 
   // ① **先读静止那一帧**。量之前必须确认没人滚过 —— 滚过之后量到的是别的一帧,
   //    而用户做决定看的就是这一帧。
@@ -176,6 +180,8 @@ const measure = (page: Page) => page.evaluate(() => {
     bodyClientHeight: body.clientHeight,
     bodyScrollHeight: body.scrollHeight,
     bodyOverflowY: getComputedStyle(body).overflowY,
+    // 这一格有没有「长度不可控的元素」。没有的话,「能不能滚」这个问题在这一格不成立。
+    hasGrowable: growable !== null,
     bodyScrolledTo: scrolledTo,
     restingScrollTop,
     clipBottom: Math.round(clipBottom),
@@ -230,10 +236,17 @@ const assertLoadBearing = (m: Measured, label: string) => {
   // **「这块屏能不能滚」本身要钉一条。** 我为错误条选的是「放进可滚区」那条路,而那条路
   // 成立的前提就是这里真的可滚;哪天有人把它改成 `hidden`,这个取舍就退化成「根本没有
   // 可滚区」—— 装不下的东西不是晚半秒看到,是没了,而屏上什么都不会说。
-  expect(
-    ['auto', 'scroll'],
-    `${label}:叙述区的 overflow-y 是 ${m.bodyOverflowY} —— 错误条「放进可滚区」那个取舍的前提没了`,
-  ).toContain(m.bodyOverflowY);
+  // 「能不能滚」只对**真有会变长的东西**的那几格成立。重设计之后右栏里长度不可控的
+  // 只剩状态条(错误文案 / 长译文都往那儿去),它自己封顶并滚;而没有状态条的那几格
+  // (01/04:既无 sync 也无错误)右栏一个可滚元素都没有 —— **那不是缺陷,是那一格
+  // 没有需要出路的东西**。无条件断言会让四格红在一个不存在的缺陷上(实测过)。
+  if (m.hasGrowable) {
+    expect(
+      ['auto', 'scroll'],
+      `${label}:状态条的 overflow-y 是 ${m.bodyOverflowY} —— 它是右栏唯一会变长的元素,`
+      + '不能滚就只能被裁',
+    ).toContain(m.bodyOverflowY);
+  }
   expect(m.restingScrollTop, `${label}:量之前这块区域已经被滚过,那量的是别的一帧`).toBe(0);
   // ⚠️ **判据的比较对象跟着盒子链走。** 重设计之后必需信息都搬出了可滚区(标题在头部、
   // 那几个数在事实格,两者都 `flex: none`),所以它们该比的是**视口**,不是可滚区的裁切框 ——

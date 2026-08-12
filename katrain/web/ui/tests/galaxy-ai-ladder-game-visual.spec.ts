@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { resolve } from 'node:path';
+import { waitForCanvasPainted } from './helpers/canvasPainted';
 
 const screenshotPath = resolve(
   process.cwd(),
@@ -87,7 +88,12 @@ test('Galaxy 升降级对弈结算页 1440x900', async ({ page }) => {
   await expect(page.getByText('升级：6段')).toBeVisible();
   await expect(page.getByRole('button', { name: '再来一局' })).toBeVisible();
   await expect(page.getByRole('button', { name: '返回对局' })).toBeVisible();
+  // `toBeVisible()` 只证明**元素在**,而这块盘要等 5 张 PNG 全部 onload 才落第一笔
+  // (`LiveBoard.tsx:339-358`)—— 实测同一份代码连开 6 次,元素出现那一刻有 4 次是空的。
+  // 按快门之前必须等**真像素**,否则这张图有约六七成概率是一块空盘,
+  // 而空盘和「盘真的坏了」在图上分不开。
   await expect(page.getByTestId('board-stage').locator('canvas')).toBeVisible();
+  await waitForCanvasPainted(page, '[data-testid="board-stage"] canvas');
   expect(await page.getByTestId('board-stage').locator('h1,h2,h3,h4,h5,h6,button').count()).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: screenshotPath });

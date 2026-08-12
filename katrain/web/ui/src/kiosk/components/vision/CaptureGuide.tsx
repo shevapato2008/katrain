@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { KIOSK_MONO } from '../../theme';
 import {
   Dialog,
   DialogTitle,
@@ -107,7 +108,7 @@ const CaptureGuide = ({ positions, onDismiss }: CaptureGuideProps) => {
         >
           <Typography
             variant="body1"
-            sx={{ color: 'grey.300', fontFamily: 'monospace', wordBreak: 'break-word' }}
+            sx={{ color: 'grey.300', fontFamily: KIOSK_MONO, wordBreak: 'break-word' }}
           >
             {gtpList}
           </Typography>

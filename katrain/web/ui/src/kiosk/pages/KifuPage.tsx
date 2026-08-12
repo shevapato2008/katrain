@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { KIOSK_MONO, KIOSK_SERIF } from '../theme';
 import {
   Box, Typography, TextField, InputAdornment, Card, CardActionArea, Fade, Button,
   CircularProgress, Pagination, Snackbar, Alert, Skeleton,
@@ -132,7 +133,7 @@ const KifuPage = () => {
         {/* Header */}
         <Box sx={{ px: 3, pt: 3, pb: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
-            <Typography variant="h4" sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500, letterSpacing: 0 }}>
+            <Typography variant="h4" sx={{ fontFamily: KIOSK_SERIF, fontWeight: 500, letterSpacing: 0 }}>
               {t('Game Records', '棋谱库')}
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 400, opacity: 0.6 }}>
@@ -351,7 +352,7 @@ const KifuPage = () => {
                   variant="body2"
                   sx={{
                     mx: 2,
-                    fontFamily: '"JetBrains Mono", monospace',
+                    fontFamily: KIOSK_MONO,
                     color: 'text.secondary',
                     minWidth: 80,
                     textAlign: 'center',

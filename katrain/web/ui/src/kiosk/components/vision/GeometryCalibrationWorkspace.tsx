@@ -5,6 +5,7 @@ import { GeometryAPI, type GeometryLayout } from '../../../api/geometryApi';
 import { useGeometry } from '../../context/GeometryContext';
 import CameraGeometryOverlay from './CameraGeometryOverlay';
 import GeometryVideoPanel from './GeometryVideoPanel';
+import { KIOSK_SERIF } from '../../theme';
 import {
   buildAnchorGeometryModel,
   buildRawGeometryModel,
@@ -228,7 +229,7 @@ const GeometryCalibrationWorkspace = ({ mode, requireRecognition = false }: Geom
         </Box>
 
         <Box>
-          <Typography variant="h6" sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500 }}>{phaseTitle}</Typography>
+          <Typography variant="h6" sx={{ fontFamily: KIOSK_SERIF, fontWeight: 500 }}>{phaseTitle}</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{phaseHint}</Typography>
         </Box>
 

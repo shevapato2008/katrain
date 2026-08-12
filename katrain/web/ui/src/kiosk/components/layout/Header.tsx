@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useOptionalVision } from '../../context/VisionContext';
 import { useOptionalGeometry } from '../../context/GeometryContext';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { KIOSK_SERIF } from '../../theme';
 
 interface HeaderProps {
   username?: string;
@@ -144,13 +145,13 @@ const Header = ({ username, showHome = false, onHome }: HeaderProps) => {
             style={{ width: 34, height: 34, objectFit: 'contain' }}
           />
           <Box sx={{ display: 'flex', alignItems: 'baseline' }}>
-            <Typography sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 600, fontSize: 20 }}>
+            <Typography sx={{ fontFamily: KIOSK_SERIF, fontWeight: 600, fontSize: 20 }}>
               智星盒
             </Typography>
             <Typography
               component="span"
               sx={{
-                fontFamily: "'Newsreader','Noto Serif SC',serif",
+                fontFamily: KIOSK_SERIF,
                 fontStyle: 'italic',
                 fontSize: 12,
                 color: 'text.secondary',
@@ -185,7 +186,7 @@ const Header = ({ username, showHome = false, onHome }: HeaderProps) => {
               gap: 1,
               flex: '0 0 auto',
               touchAction: 'manipulation',
-              fontFamily: "'Newsreader','Noto Serif SC',serif",
+              fontFamily: KIOSK_SERIF,
               fontSize: 14,
               '& .MuiButton-startIcon': { margin: 0 },
             }}

@@ -10,23 +10,35 @@ katrain 是独立仓,拿不到 `@shared/kiosk-shell`(那在 smartbox 仓),所以
 |---|---|
 | `tokens.css` | 991 行结构 token。**这才是围棋缺的那一块** —— 颜色本来就对(`kiosk/theme.ts` 的 jade/slate/raise/hair 与设计稿逐字一致),缺的是几何。 |
 | `icons/house.svg` | `tokens.css:338` 用 `mask: url("./icons/house.svg")` 引它。不抄的话那条 mask 静默失效(和 `var()` 求空一样不报错)。 |
+| `fonts.css` + `fonts/` | 规范 §9 定死的字族。202 个 woff2(194 个霞鹜文楷分块 + 4 Geist + 2 Newsreader + 1 JetBrains + 1 龙藏)+ 4 份 OFL 许可,共 9.5MB。 |
 
-`MANIFEST.sha256` 里两行的 hash 与上游 `MANIFEST.sha256` 对应两行**逐字节相同**(2026-08-11 核过)。
-抄 hash 不是形式:复制品会漂而没人知道,有 hash 才答得出**「我这份和上游还是同一份吗」**。
+`MANIFEST.sha256` 共 **209 行**,hash 全部取自上游 `MANIFEST.sha256`(去掉 `assets/` 前缀),
+在本目录 `shasum -a 256 -c MANIFEST.sha256` **209/209 OK**(2026-08-12 实跑)。
+抄 hash 不是形式:复制品会漂而没人知道。
 
-## 故意**没**抄什么 —— 这条是判断,不是遗漏
+> ⚠️ 但要说清这道闸**答得了什么**:`assets/` 和它的清单是**一起抄**的,所以在这里跑它只证明
+> **「我这份副本自己没被人动过」**。上游换了图、上游清单跟着重算,我这边两个都还是旧的、
+> 还互相自洽,**闸照样绿**。要答「我这份还等于上游那份吗」,得再把**上游清单文件本身的
+> sha256** 钉一次。那一条还没做,记在 `kiosk-design-alignment.md` §10。
 
-**`fonts.css`(204KB)和 `fonts/`(9.5MB)没抄。** 两个理由:
+## 曾经**故意没抄**字体 —— 那条判断是错的
 
-1. **katrain 已经自带拍过板的字体**,而且是自托管的:`kiosk/theme.ts` 顶部 `@fontsource` 引入
-   Newsreader / JetBrains Mono / Hanken Grotesk / Noto Sans SC,无 CDN 依赖。
-   抄上游字体等于把 `--font-serif` 换成 SmartBox Kai —— **那是把已经拍过板的排版改掉**,
-   不是对齐。
-2. **`tokens.css` 不依赖它们**:全文 `url()` 只有两处,都指向上面那个 house.svg,
-   一处字体文件都没引。字体只通过 `--font-serif/--font-sans/--font-mono` 三个**变量**进来,
-   而变量由各棋类自己赋值(见 `go-tokens.css`)。
+上一版这里写着「`fonts.css`(204KB)和 `fonts/`(9.5MB)没抄」,两条理由:
 
-⇒ 抄了字体也用不上,不抄也不缺。哪天要对齐排版,那是另一个决定,得先拍板。
+1. katrain 已经自带拍过板的字体(`@fontsource` 的 Newsreader / JetBrains Mono /
+   Hanken Grotesk / Noto Sans SC),抄上游等于把已定的排版改掉;
+2. `tokens.css` 不依赖它们 —— 全文 `url()` 只有两处,都指向 house.svg,一处字体都没引。
+
+**第 2 条是真的,但它不相关**:字体从来不是靠 `tokens.css` 里的 `url()` 进来的,是靠
+`--font-serif/--font-sans/--font-mono` 三个变量指向 `fonts.css` 声明的族 —— 而上一版
+**把那三个变量覆盖掉了**,于是所有中文跑在 Noto Sans SC 上。**第 1 条直接违反规范**:
+§9(`:609/:634/:1141`)写死「其余所有中文 = 霞鹜文楷」,`:648` 把 Noto Sans SC 列为**退役字库**,
+`:628` 还专门写了为什么必须自托管(板子 RK3562/Debian 11 上 PingFang / Songti / **Kaiti SC 一个都没有**,
+楷体没有任何可回退的系统字)。上游 README 第 77 行早就把这类错命名了:
+**「四张棋类设计稿各自用楷体或 Georgia 重新发明了品牌字」** —— 我们做的就是这件事。
+
+留着这段不删,是因为它和下面那条「编出来的规律」是**同一个形状的两次**:
+**一句真话(「tokens.css 不引字体文件」)可以支撑一个错结论,只要它答的不是被问的那个问题。**
 
 ## ⚠️ token 只在 `.kiosk` 类上生效
 

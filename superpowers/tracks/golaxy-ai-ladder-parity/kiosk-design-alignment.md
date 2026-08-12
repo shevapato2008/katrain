@@ -209,3 +209,51 @@ grid 子项默认 `min-width: auto` ⇒ 格子拒绝收缩到内容宽度以下 
 - 要答「我这份**还等不等于**上游那份」,得**把上游 `MANIFEST.sha256` 文件本身的 sha256 再钉一次**。
 
 不做,记账。
+
+---
+
+## 11. 字体(A 块,2026-08-12 做完)
+
+抄了 `fonts.css` + `fonts/`(194 霞鹜文楷分块 + 8 拉丁/品牌 woff2 + 4 份 OFL,9.5MB),
+`MANIFEST.sha256` 209 行在本地 `shasum -c` **209/209 OK**。
+
+**上一版「故意不抄字体」的判断是错的**,理由在 `kiosk-shell/README.md` 里逐条留着没删。
+一句话:那条理由(「`tokens.css` 全文 `url()` 只有两处,不引字体」)**是真的,但答的不是被问的问题** ——
+字体从来不是靠 `url()` 进来的,是靠 `--font-*` 三个变量指向 `fonts.css` 声明的族,而我们把那三个变量覆盖了。
+
+### 11.1 「删掉覆盖的三行」不是生效点
+
+MUI 组件走 `typography.fontFamily`(emotion 类),**不读 `var(--font-*)`**。只删
+`go-tokens.css` 那三行,屏上一个字都不会变。真正的生效点是 `kiosk/theme.ts`。
+
+**而它也只是生效点之一**:kiosk 里另有 **22 处 `sx={{ fontFamily: … }}`(15 个文件)**绕开主题
+直接写字体栈 —— 品牌行、问候语、各页标题、棋钟、SGF 文本。字体闸第一次跑出来的就是它们:
+「智星盒」「晚上好」还落在 **Songti SC(40 字)**、触屏键盘落在 **PingFang SC(35 字)**。
+现在全部 import `theme.ts` 导出的 `KIOSK_SANS/SERIF/MONO`。
+
+`public/smartkeyboard.css` 也改了(它不是 React,原来写死 `-apple-system, "PingFang SC", …`):
+`"SmartBox Kai"` 放最前、系统字保留在后 —— **这个文件 galaxy 也加载,而那边没有 `fonts.css`**。
+
+### 11.2 闸:方法照抄上游,作用域不照抄
+
+上游 `scripts/check-fonts.mjs` 把探针页写进 `assets/` 再量 —— 它量的是**资产包自己**。
+抄过来跑只能证明「这份副本内部自洽」,证明不了「我们屏上的中文由谁画」,
+**和 §10 那道闸是同一个形状**。所以新写了 `tests/kiosk-font-routing.spec.ts`:
+同样用 CDP `CSS.getPlatformFontsForNode`,但探的是**真页面上真正带文字的叶子元素**(逐个问再合并)。
+
+> 写这条闸时先错了一版:在 `body` 上问一次,报「一个都没有」。
+> 该命令只统计节点**自己的直接子文本节点**,不递归,而 `body` 底下全是元素。
+> **那次红是闸自己写错了,不是页面坏了** —— 同一次跑里「真 Bold 面已加载」是绿的。
+
+三条:中文命中霞鹜文楷 / 退役字库与系统 CJK 字一个都不许出现 / 龙藏覆盖字数 ≤ 3。
+第二条比第一条强:「楷体在场」和「所有中文都走楷体」是两回事。
+
+### 11.3 三条记账(都不在本轮范围)
+
+1. **galaxy 早就自托管了霞鹜文楷**(`src/galaxy/assets/fonts/galaxy-fonts.css`,48 个分块,
+   族名 `wenkai-400/500`)。同一个字体在一个仓里有两份、两套族名、两套分块粒度。
+   要不要合并是**另一个决定**,合并会动 galaxy 的排版。
+2. `package.json` 里 `@fontsource/{noto-sans-sc,hanken-grotesk,newsreader,jetbrains-mono}`
+   现在**没有任何 import 引用**。没删:删要动 lockfile,风险大于收益。
+3. 键盘上那个 `⌄`(U+2304)落在 **Menlo** 上 —— 我们的字体里没有这个字形。
+   它是符号不是中文,闸放行了。真要管得给键盘换个图标。

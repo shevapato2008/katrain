@@ -11,7 +11,12 @@
   background: #d1d4da;
   padding: 5px 6px calc(5px + env(safe-area-inset-bottom, 0px));
   box-shadow: 0 -2px 12px rgba(0,0,0,.18);
-  font-family: -apple-system, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  /* 键面与候选词的中文要走自托管的楷体。原来这一行是 `-apple-system, "PingFang SC", …` ——
+     那是**开发机上碰巧存在**的字:板子(RK3562 / Debian 11)上 PingFang / 微软雅黑 一个都没有
+     (规范 §9 `kiosk-shell-spec.md:628`),整条栈会一路掉到 `sans-serif`,候选词长什么样没人保证。
+     "SmartBox Kai" 放在最前、系统字保留在后面:这个文件也随 galaxy 一起加载,而那边没有
+     `fonts.css`,栈里留着后面几档它就还能正常显示。 */
+  font-family: "SmartBox Kai", -apple-system, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
   -webkit-user-select: none; user-select: none;
   touch-action: manipulation;
   transform: translateY(100%);

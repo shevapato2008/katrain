@@ -48,11 +48,14 @@
   --gb-black: #16161A; --gb-white: #F3F0E7;
   --board-ruler-ink: #CBAE80;
 
-  /* ---------- 字族 ----------
-     覆盖 `tokens.css` 里的 SmartBox 族。katrain 自带这几个(`theme.ts` 顶部 @fontsource
-     自托管,无 CDN),而且是拍过板的;抄上游字体等于把已定的排版改掉。
-     顺序与 theme.ts 的 SANS/SERIF/MONO 三个常量保持一致。 */
-  --font-serif: 'Newsreader', 'Noto Serif SC', serif;
-  --font-sans: 'Hanken Grotesk', 'Noto Sans SC', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* ---------- 字族:这里**不再赋值** ----------
+     上一版在这里覆盖了 `tokens.css:21-23` 的三个 SmartBox 族,理由是「katrain 自带拍过板的
+     字体」。那条理由被规范否掉了:§9(`kiosk-shell-spec.md:609/634/1141`)把字族定死 ——
+     「智星盒」= 龙藏行楷、**其余所有中文 = 霞鹜文楷**、拉丁 = Geist / Newsreader、等宽 =
+     JetBrains Mono;而覆盖后所有中文跑在 Noto Sans SC 上,那是 `:648` 明列的**退役字库**。
+
+     同批查出来的另一半:**光删这三行,屏上一个字都不会变。** MUI 组件走
+     `typography.fontFamily`(emotion 类),不读 `var(--font-*)`,而 kiosk 的文字绝大多数是
+     MUI 渲染的。真正的生效点在 `kiosk/theme.ts`,那边已经改成同一套栈。
+     ⇒ 这两处必须同时对,单独改任何一处都只是看起来做了事。 */
 }

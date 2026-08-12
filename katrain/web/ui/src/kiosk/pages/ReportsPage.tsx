@@ -1,4 +1,5 @@
 import SearchIcon from '@mui/icons-material/Search';
+import { KIOSK_SERIF } from '../theme';
 import {
   Alert, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogContentText, DialogTitle, InputAdornment, Pagination, PaginationItem, Stack,
@@ -267,7 +268,7 @@ export default function ReportsPage() {
           <Box sx={{ px: 2, pt: 1.25, pb: 1, flexShrink: 0, minWidth: 0 }}>
             <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0 }}>
               <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="h5" noWrap sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 600 }}>{t('report:my_reports', '复盘')}</Typography>
+                <Typography variant="h5" noWrap sx={{ fontFamily: KIOSK_SERIF, fontWeight: 600 }}>{t('report:my_reports', '复盘')}</Typography>
                 <Stack direction="row" spacing={0.6} sx={{ mt: 0.5, minWidth: 0, overflow: 'hidden' }}>
                   {queueSummary?.pending ? <Chip size="small" label={`${queueSummary.pending} ${t('report:summary_queued', '排队中')}`} /> : null}
                   {queueSummary?.running ? <Chip size="small" color="warning" variant="outlined" label={`${queueSummary.running} ${t('report:summary_running', '生成中')}`} /> : null}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import LiveBoard from '../../../components/live/LiveBoard';
 import { useOptionalVision } from '../../context/VisionContext';
 import { useOptionalGeometry } from '../../context/GeometryContext';
+import { KIOSK_SERIF } from '../../theme';
 
 export interface SmartBoardConsoleProps {
   moves?: string[];
@@ -111,7 +112,7 @@ const SmartBoardConsole = ({ moves, currentMove }: SmartBoardConsoleProps) => {
         </Typography>
         <Typography
           sx={{
-            fontFamily: "'Newsreader','Noto Serif SC',serif",
+            fontFamily: KIOSK_SERIF,
             fontStyle: 'italic',
             fontSize: 12,
             color: 'text.secondary',

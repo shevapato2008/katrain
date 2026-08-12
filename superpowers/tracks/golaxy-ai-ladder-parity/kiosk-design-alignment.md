@@ -472,3 +472,71 @@ worktree,不是这里能改的)。措辞方向:「视角跟着执棋方翻;**刻
 >
 > 这也顺带说明「非黑像素」这条判据的**边界**:它分的是「一笔没画」和「画了」,
 > 分不出「画了一半」。用在 `LiveBoard` 那种**整段被挡住**的失败上是够的,别拿它当通用的「画对了」。
+
+---
+
+## 17. 品牌字:文件在、CSS 在、**消费点没接**(Fan 报的,2026-08-12)
+
+`Header.tsx:148` 那三个字走的是 `KIOSK_SERIF`,而栈首 SmartBox Serif 是 Newsreader
+(**只有拉丁**)⇒ 中文码点匹配不到面,落到第二顺位 SmartBox Kai ⇒ **屏上跑的是霞鹜文楷**。
+字体文件在(1804 字节)、`@font-face` 在(`fonts.css:265`,`unicode-range` 锁死三个码点)、
+`theme.ts` 的 `import` 也在 —— **断的只有最后那一行**。
+
+修法:`theme.ts` 导出 `KIOSK_BRAND = '"SmartBox Brand LongCang", ' + KIOSK_SERIF`,
+`Header.tsx` 那一处用它,并补 `font-synthesis: none`(规范 §2 `:43` 的硬规则:
+顶栏容器常有 600 字重,而龙藏只有 400 一个面,不关合成就会各粗一个样)。
+**「StellaBox」不动**(拉丁,走 Newsreader 斜体);**`AccountSection` 的「智星盒账户」不动**
+(`:609`「只此一处」——「不会出事」和「规范允许」是两回事)。
+
+实测:`智星盒` 元素的 platform font = **`Long Cang(3)`**。
+
+### 17.1 🔴 那道闸的**度量方向和被测事实是反的**
+
+原来只有一条上界:
+
+```ts
+expect(longCang.glyphCount).toBeLessThanOrEqual(3);   // 0 ≤ 3 —— 满分
+```
+
+**「一个字都没盖」是它的最优解**;而三个字掉进霞鹜文楷,又让「中文必须走霞鹜文楷」那条
+**更满足**。⇒ **这个 bug 让闸变绿,不是变红。** 比漏一条断言更坏:它出具了一张合格证,
+而协调方还拿这份闸的数字("LXGW WenKai(207)")向 Fan 报过「字体改好了」。
+
+**通则(新增,和「钉值 vs 钉关系」同族,但更毒 —— 它会主动奖励失败)**:
+
+> **任何「不许超过 N」的断言,都要问一句「0 是不是最优解」。
+> 是的话它就没有下界,而下界通常才是你真正要的那件事。**
+
+补的下界钉在**那个元素**上(CDP 逐元素问,不做全屏统计):
+`used[0].familyName` 含 `Long Cang` **且** `glyphCount === 3`。
+后半条也是必要的:只钉「首位是龙藏」的话,掉出去两个字它还是首位。
+
+**演示过有牙**(把 `Header.tsx` 那行改回 `KIOSK_SERIF`):
+产物名 `KioskApp-Bvtw_C_0` → `KioskApp-jg3QfBs3`(**证明变异到达了被测物**),
+闸 **1 红 3 绿**,红的正是新加的那条,报文 `「智星盒」跑的是 LXGW WenKai(3),不是龙藏行楷`。
+改回后产物名变回 `Bvtw_C_0`、4 绿。
+
+> ⚠️ 第一次变异**没到达产物**:只改 `fontFamily` 会留下未使用的 `KIOSK_BRAND` import,
+> `tsc -b` 报 TS6133、vite 没跑、产物名没变。**当时若直接跑测试会得到「全绿」并被读成
+> 「闸没牙」——和真的没牙逐字相同。** 产物名那一条又救了一次。
+
+### 17.2 反查:共享外壳 112 个类,**81 个零引用**
+
+同一形状这是第三次(`.kiosk-status__*` → `.kiosk-optseg` → `.brand-zh` / `.kiosk-topbar__brand-zh`)。
+反查全仓(`src/**/*.{tsx,ts,css,html}`,排除定义文件本身)后的清单:
+
+**A. 我们屏上确实有、但自己画了一套的**(= 真正的同族候选,**没有顺手接**):
+
+| 组 | 类 | 我们现在用什么 |
+|---|---|---|
+| 顶栏 | `.kiosk-topbar` + `__logo/__brand/__brand-zh/__brand-en/__rule/__game/__right/__user/__avatar/__clock/__home/__home-icon`(13) | `Header.tsx` 全手写 |
+| 镜像栏 | `.kiosk-console` + `__title/__frame/__sync`(4) | `SmartBoardConsole` 手写(§8 已记) |
+| 模式卡 | `.kiosk-card` / `.kiosk-cards` / `.kiosk-card__t` / `.kiosk-card__tile`(4) | `PlayPage` 手写 |
+| L1 两栏 | `.kiosk-layout-l1` | `KioskLayout` 手写 |
+| 主行动 | `.kiosk-primary-action` | MUI `Button` |
+| 悬浮滚动条 | `.kiosk-scrollzone` / `.kiosk-scrollbar` | 原生隐藏滚动条(**规范 §5.2 要求画一条**,未做) |
+
+**B. 对应的屏我们还没做**(Dock、胜率图、折叠面板、滑条、色板、标签带、着法导航、
+`.kiosk-seg` 分段…):**零引用是正常的,不要接**。
+
+⇒ 只列不接,按协调方口径。A 组每一条都要单独判断,不能整批处理。

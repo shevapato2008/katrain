@@ -131,8 +131,16 @@ const assertFontRouting = async (page: Page, screen: string) => {
   const latin = has(fonts, 'Geist') || has(fonts, 'Newsreader') || has(fonts, 'JetBrains');
   expect(latin, `${screen}:拉丁与数字没走 Geist / Newsreader / JetBrains —— 实际命中 ${shown}`).toBe(true);
 
-  // ④ 龙藏只许盖「智星盒」三个字。它只有三个字形,漏出去整段会崩,而 `unicode-range` 一旦
-  //    被人改宽就静默生效 —— 所以钉的是**覆盖字符数**,不是「在不在」。
+  // ④ 龙藏只许盖「智星盒」三个字 —— **上界**。它只有三个字形,漏出去整段会崩,
+  //    而 `unicode-range` 一旦被人改宽就静默生效,所以钉的是**覆盖字符数**不是「在不在」。
+  //
+  // 🔴 **这一条单独用是反的,曾经真的反过一次。** 只有上界时 `0 ≤ 3` 是它的**满分**,
+  // 也就是「一个字都没盖」得分最高;而那三个字掉进霞鹜文楷,又让上面第 ① 条(中文必须走楷体)
+  // **更满足**。⇒ 品牌字没接上这个 bug **让这套闸变得更绿**,不是更红 ——
+  // 比漏一条断言更坏,因为它出具了一张合格证。下界在 `品牌字` 那条 case 里(见文件末尾)。
+  //
+  // 通则,写在这里因为下一个人多半是在这儿加断言:**任何「不许超过 N」的断言,
+  // 都要问一句「0 是不是最优解」。是的话它就没有下界,而下界通常才是你真正要的那件事。**
   const longCang = fonts.find((f) => f.familyName.includes('Long Cang'));
   if (longCang) {
     expect(longCang.glyphCount, `${screen}:龙藏盖到了 ${longCang.glyphCount} 个字,它只有「智星盒」三个字形`).toBeLessThanOrEqual(3);
@@ -170,4 +178,38 @@ test('600 字重的中文命中真 Bold 面,不是浏览器合成的伪粗', asy
       .map((f) => f.weight));
   expect(loaded.length, '一个楷体面都没加载 —— fonts.css 没进来').toBeGreaterThan(0);
   expect(loaded, `已加载的楷体字重:${loaded.join(', ')}`).toContain('700');
+});
+
+/**
+ * 品牌字的**下界** —— 直接问「智星盒」那个元素本身,不做全屏统计。
+ *
+ * 全屏统计答不了这件事:三个字掉进霞鹜文楷时,全屏统计里楷体的字数**只会更多**,
+ * 而龙藏那一项直接消失 —— 上界断言的满分。所以这条必须钉在**那个元素**上,
+ * 而且钉的是「它**是**龙藏」,不是「龙藏没有超标」。
+ */
+test('品牌字:「智星盒」三个字实际命中龙藏行楷(下界)', async ({ page }) => {
+  await stubAuth(page);
+  await page.goto('/kiosk/play');
+  await page.waitForLoadState('networkidle');
+  await page.evaluate(() => document.fonts.ready);
+
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('DOM.enable');
+  await cdp.send('CSS.enable');
+  const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
+  const { nodeId } = await cdp.send('DOM.querySelector', {
+    nodeId: root.nodeId, selector: '[data-testid="kiosk-brand-zh"]',
+  });
+  expect(nodeId, '顶栏没有「智星盒」那个元素 —— 探测点自己失效了').toBeTruthy();
+  const { fonts } = await cdp.send('CSS.getPlatformFontsForNode', { nodeId });
+  const used = (fonts as { familyName: string; glyphCount: number }[])
+    .sort((a, b) => b.glyphCount - a.glyphCount);
+  const shown = used.map((f) => `${f.familyName}(${f.glyphCount})`).join(', ') || '(一个都没有)';
+  // eslint-disable-next-line no-console
+  console.log(`[品牌字] 智星盒 实际命中:${shown}`);
+
+  // 规范 §9 `:609`:这三个字 = 龙藏行楷,**只此一处**。
+  expect(used[0]?.familyName, `「智星盒」跑的是 ${shown},不是龙藏行楷`).toContain('Long Cang');
+  // 三个字全部由它画 —— 只钉「首位是龙藏」的话,两个字掉出去也还是首位。
+  expect(used[0]?.glyphCount, `龙藏只盖了 ${used[0]?.glyphCount} 个字,「智星盒」是 3 个`).toBe(3);
 });

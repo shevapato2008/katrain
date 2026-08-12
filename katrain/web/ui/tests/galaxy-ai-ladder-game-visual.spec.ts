@@ -88,28 +88,21 @@ test('Galaxy 升降级对弈结算页 1440x900', async ({ page }) => {
   await expect(page.getByRole('button', { name: '再来一局' })).toBeVisible();
   await expect(page.getByRole('button', { name: '返回对局' })).toBeVisible();
   await expect(page.getByTestId('board-stage').locator('canvas')).toBeVisible();
-  // ⚠️ `toBeVisible()` 只证明**元素在**。这块盘要等 5 张 PNG 全部 `onload` 才落第一笔
-  // (`LiveBoard.tsx:339-358`:`Promise.all` 预加载 → `setImagesLoaded(true)` → 绘制 effect),
-  // 实测 `/kiosk/play` 同一份代码连开 6 次,**元素出现那一刻 4 次是空的**、1200ms 后 6 次全画。
-  // 所以按快门之前要等**真像素**:空盘和「盘真的坏了」在图上分不开,上一轮就是这么把一次
-  // 竞态误判成回归的。
+  // 这里**没有**「等真像素」那段等待,是量过之后拿掉的,不是漏了:
   //
-  // 写在这里而**不做成通用 helper**:全仓今天**只有这一处**取图会渲染 `LiveBoard`
-  // (kiosk 开局设置屏改布局 A 之后左栏是内联 SVG;galaxy 的 AI 设置页没有盘)。
-  // 一个调用点做成 helper,等于替将来那个还没出现的调用点提前定形状。
+  // 这一屏画盘的是 `components/Board.tsx`,不是 `LiveBoard`。它同样 `Promise.all` 预加载
+  // 5 张 PNG,但**在图到齐之前就已经把底和格线画上了** —— 实测:给全部 6 个
+  // `/assets/img/*.png` 的 route handler 各塞 12 秒延迟(日志确认六个 handler 都命中了),
+  // 这条 spec 仍然 **5.2 秒通过**。⇒ 这一屏**没有全黑那一帧**,「非黑像素」那条判据
+  // 在这儿**永远不会红**,挂着它只是一段不会失效也不会生效的代码。
   //
-  // 🔴 **这一处我没能把它推红**:这条 spec 用 `page.route` 把 5 张 PNG 从**本地磁盘**
-  // fulfill,几乎立刻到齐,拍不到空帧。⇒ 它在这里是**保险,不是被证明有牙的闸**。
-  // 量到 4/6 空的那组数在 `/kiosk/play`(资产走 HTTP),那才是它真正要挡的地方。
-  await page.waitForFunction(() => {
-    const canvas = document.querySelector('[data-testid="board-stage"] canvas') as HTMLCanvasElement | null;
-    if (!canvas || canvas.width === 0) return false;
-    const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
-    for (let i = 0; i < data.length; i += 4 * 97) {
-      if (data[i] > 40 || data[i + 1] > 40 || data[i + 2] > 40) return true;
-    }
-    return false;
-  }, undefined, { timeout: 10_000 });
+  // 真正的空盘证据在 `/kiosk/play`(那屏用 `LiveBoard`,绘制整段被 `imagesLoaded` 挡着,
+  // 同一份代码连开 6 次有 4 次全黑)。那条等待属于 B 块给 `/kiosk/play` 取图的时候。
+  //
+  // ⚠️ 顺带量出来一件**这条 spec 真正缺的闸**(没做,记账):`Board.tsx` 的 `img.onerror`
+  // 是 **reject**,图挂了 `renderBoard()` 就不再被调用 —— 屏上会是「有格线、没有子」。
+  // 「非黑像素」抓不到它,`toBeVisible()` 更抓不到。要抓得钉**子在不在**,
+  // 而这一屏的产物属于 galaxy 那条 track,不在本轮范围里。
   expect(await page.getByTestId('board-stage').locator('h1,h2,h3,h4,h5,h6,button').count()).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: screenshotPath });

@@ -91,7 +91,7 @@ const readyStatus = (blocking: Record<string, unknown> | null) => ({
   blocking_game: blocking,
 });
 
-const stubShell = async (page: Page, translations: Record<string, string> = {}) => {
+const stubShell = async (page: Page, translations: Record<string, string> = {}, devices: DeviceState = 'ready') => {
   await page.addInitScript(() => {
     localStorage.setItem('token', 'kiosk-ladder-e2e-token');
     localStorage.setItem('katrain_language', 'cn');
@@ -101,6 +101,29 @@ const stubShell = async (page: Page, translations: Record<string, string> = {}) 
   }));
   await page.route('**/api/translations?lang=cn', (route) => route.fulfill({
     json: { lang: 'cn', translations },
+  }));
+  // 左栏那三个设备格走的是真接口。取图机器上没有硬件 ⇒ 不 stub 的话三格全是坏的
+  // (未连接 / 需校准 / 未连接,三个红琥珀点并排)—— 那是**取图环境**的意外,不是设计,
+  // 而交到人手上会被读成设计。主取图一律按**常态**造,降级态另有专门一格(见文件末尾)。
+  await stubDevices(page, devices);
+};
+
+/** 设备三格的两种造法:`ready` = 常态(对齐 sample-go/01-play),`degraded` = 硬件没就绪。 */
+type DeviceState = 'ready' | 'degraded';
+const stubDevices = async (page: Page, state: DeviceState) => {
+  await page.route('**/api/v1/vision/status', (route) => route.fulfill({
+    json: {
+      enabled: true,
+      camera_connected: state === 'ready',
+      pose_locked: state === 'ready',
+      sync_state: state === 'ready' ? 'synced' : 'lost',
+      bound_session_id: null,
+      recognition_ready: state === 'ready',
+      led_connected: state === 'ready',
+    },
+  }));
+  await page.route('**/api/v1/geometry/status', (route) => route.fulfill({
+    json: { phase: state === 'ready' ? 'ready' : 'required' },
   }));
 };
 
@@ -507,6 +530,36 @@ test('只在出错时才出现的那一格:真实文案 + 错误条,专门造出
   await page.screenshot({ path: resolve(OUT_DIR, '10-error-state-realistic.png') });
   await page.getByTestId('kiosk-ladder-blocking-panel')
     .screenshot({ path: resolve(OUT_DIR, '10-error-state-realistic--panel.png') });
+});
+
+test('设备未就绪那一格:三个格子是真状态,单独留图,不当主图', async ({ page }) => {
+  // 主取图一律按常态造(摄像头已连接 / 已标定 / LED 就绪),对齐 `sample-go/01-play.png`。
+  // **但降级态是真实状态,值得有图** —— 盒子上摄像头没插、标定没做、LED 没接的时候,
+  // 挡局屏就是长这样。它只是不该当主图:三个红琥珀点并排会被读成设计,而那其实是
+  // 取图机器没有硬件。
+  //
+  // 这一格也顺带钉住:**设备坏不影响挡局屏自己的出路** —— 认输那个按钮照样在、照样能按。
+  // 两件事没有耦合,而屏上不该让人以为「设备没好就不能了结这一局」。
+  await page.setViewportSize(VIEWPORT);
+  await stubShell(page, {}, 'degraded');
+  await page.route('**/api/v1/ai-ladder/status', (route) => route.fulfill({
+    json: readyStatus({
+      game_id: 'g1', state: 'active', ownership: 'other_device',
+      user_color: 'W', opponent_rank_name: '业余 3 段',
+      heartbeat_age_seconds: 42, pending_since_seconds: null,
+    }),
+  }));
+
+  await page.goto('/kiosk/play/ai/setup/ranked');
+  await expect(page.getByTestId('kiosk-ladder-blocking-panel')).toBeVisible();
+  await expect(page.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
+
+  const measured = await measure(page);
+  // eslint-disable-next-line no-console
+  console.log(`[measure] devices-degraded ${JSON.stringify(measured)}`);
+  assertLoadBearing(measured, 'devices-degraded');
+
+  await page.screenshot({ path: resolve(OUT_DIR, '11-devices-degraded.png') });
 });
 
 test('档位名再长,按钮也不许被挤出视口 —— 头部两行封顶', async ({ page }) => {

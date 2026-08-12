@@ -84,6 +84,7 @@ const geometry = (page: Page) => page.evaluate(() => {
     leftFirst: document.querySelector('.kiosk-board__ruler--left span')?.textContent ?? null,
     leftLast: document.querySelector('.kiosk-board__ruler--left span:last-child')?.textContent ?? null,
     lineCount: lineCenters.length,
+    dataColor: document.querySelector('[data-testid="kiosk-setup-board"]')?.getAttribute('data-color') ?? null,
     maxDriftPx: maxDrift === null ? null : Math.round(maxDrift * 10) / 10,
     docScrollWidth: document.documentElement.scrollWidth,
     innerWidth: window.innerWidth,
@@ -152,7 +153,7 @@ test('刻度:19 条、A–T 跳 I、字心与线逐条对齐(margin=0.5 的唯�
   expect(g.maxDriftPx!).toBeLessThanOrEqual(1.5);
 });
 
-test('执白:刻度整个倒过来(`:512` 视角跟着执棋方翻)', async ({ page }) => {
+test('执白:刻度**不倒** —— §8 `:414` 刻度方向由记法定,围棋记法绝对', async ({ page }) => {
   await stub(page);
   await page.goto('/kiosk/play/ai/setup/ranked');
   await page.waitForSelector('[data-testid="kiosk-setup-board"]');
@@ -169,11 +170,21 @@ test('执白:刻度整个倒过来(`:512` 视角跟着执棋方翻)', async ({ p
     document.querySelector('[data-testid="kiosk-setup-board"]')?.getAttribute('data-color') === 'white');
 
   const after = await geometry(page);
-  expect(after.topFirst, '执白时上刻度没有倒过来').toBe('T');
-  expect(after.topLast).toBe('A');
-  expect(after.leftFirst, '执白时行号没有倒过来').toBe('1');
-  expect(after.leftLast).toBe('19');
-  // 翻过来之后**对齐照样成立** —— 翻的是标签顺序,不是几何。
-  expect(after.maxDriftPx!, '翻过来之后字和线错开了').toBeLessThanOrEqual(1.5);
+  // 判据链(顺序就是理由的顺序,别写成「我认为规范错了」):
+  //   §8 `:414` 已经立过刻度方向的法,依据是**记法** —— 「象棋两条刻度数值不同向…
+  //   看到某个实现把上面那行也写成 9…1,那是错的」;
+  //   ⇒ 刻度是记法的函数,不是执棋方的函数;
+  //   ⇒ 围棋记法**绝对**(A1 永远是那一个角,SGF 和对局屏都按它)⇒ 不倒。
+  // §11 `:514`「视角跟着执棋方翻」那句是从国象推出来的,而围棋稿子里没有开局设置屏 ——
+  // 那条规则从来没被它的作者在围棋上应用过。措辞澄清由协调方提给上游,本仓按 §8 执行。
+  expect(after.topFirst, '刻度跟着执棋方倒了 —— 围棋记法是绝对的').toBe('A');
+  expect(after.topLast).toBe('T');
+  expect(after.leftFirst, '行号跟着执棋方倒了').toBe('19');
+  expect(after.leftLast).toBe('1');
+  // **和执黑那一帧逐格相同**:上面四条只钉了首尾,中间被人改了它们照样绿。
+  expect(after.topFirst === before.topFirst && after.topLast === before.topLast).toBe(true);
+  expect(after.maxDriftPx!, '换了执子之后字和线错开了').toBeLessThanOrEqual(1.5);
+  // 选择本身要**看得见**地生效 —— 否则「不翻」和「这个开关根本没接上」在屏上长得一样。
+  expect(after.dataColor, '选了执白,盘上没有任何地方记下这次选择').toBe('white');
   await page.screenshot({ path: resolve(OUT_DIR, '02-setup-my-white.png') });
 });

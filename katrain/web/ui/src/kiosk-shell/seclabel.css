@@ -1,0 +1,14 @@
+/* `.kiosk-seclabel` 的**子元素**样式 —— 共享 `tokens.css` 里只有那个容器,
+ * `h2 / em / .rule / .secval` 四条它没有,四份样稿各自带着同样的四行局部 CSS。
+ * 下面四条逐字取自 `sample-go/go-kiosk.tmpl.html:96-99`。
+ *
+ * 放在这里而不是某个组件的 css 里,是因为**已经有两个消费者**(挡局面板、选择组),
+ * 而它们分属不同的目录树:留在其中一边就会变成「另一边导入了 `.kiosk-seclabel` 却没样式」——
+ * 和 `var()` 静默求空一样,不报错、只是画出来不对。
+ *
+ * 上游哪天把这四条收进 `tokens.css`,删掉本文件。
+ */
+.kiosk-seclabel h2 { font-size: 12.5px; font-weight: 700; letter-spacing: .12em; margin: 0; }
+.kiosk-seclabel em { font-family: var(--font-serif); font-style: italic; font-size: 11px; color: var(--dim); }
+.kiosk-seclabel .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--hair), transparent); }
+.kiosk-seclabel .secval { font-size: 11.5px; color: var(--accent); letter-spacing: 0; white-space: nowrap; }

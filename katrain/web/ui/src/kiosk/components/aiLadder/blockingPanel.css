@@ -1,18 +1,18 @@
+@import '../../../kiosk-shell/seclabel.css';
 /* 挡局屏右栏:**只写共享外壳没给的那几条**。
  *
  * 共享 `tokens.css` 给的是容器几何(`.kiosk-side` / `.kiosk-side__fixed` / `.kiosk-section` /
- * `.kiosk-seclabel` / `.kiosk-status` / `.kiosk-btn`),而 `.kiosk-seclabel` 的**子元素**
- * (h2 / em / .rule / .secval)在共享文件里没有 —— 四份样稿各自带着同样的四行局部 CSS。
- * 下面前四条逐字取自 `sample-go/go-kiosk.tmpl.html:96-99`。
+ * `.kiosk-seclabel` / `.kiosk-status` / `.kiosk-btn`)。
+ *
+ * `.kiosk-seclabel` 的**子元素**(h2 / em / .rule / .secval)共享文件里也没有,原来逐字抄在
+ * 这个文件里;现在搬到了顶上那行 `@import` 指的 `kiosk-shell/seclabel.css` ——
+ * **选择组(`OptionChips`)用的是同一个容器类**,留在这里就会变成「那边导入了类却没样式」,
+ * 和 `var()` 静默求空一样不报错。
+ * (`@import` 必须在文件最前面,否则整条被丢弃且**同样不报错**。)
  *
  * 上一版的错不是「写了局部 CSS」,是**导入了共享骨架却没用它**,自己造了一套
  * `.ranked-state__*`(那是象棋样稿的局部 CSS)。这一版容器全走共享类,局部只补子元素。
  */
-
-.kiosk-seclabel h2 { font-size: 12.5px; font-weight: 700; letter-spacing: .12em; margin: 0; }
-.kiosk-seclabel em { font-family: var(--font-serif); font-style: italic; font-size: 11px; color: var(--dim); }
-.kiosk-seclabel .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--hair), transparent); }
-.kiosk-seclabel .secval { font-size: 11.5px; color: var(--accent); letter-spacing: 0; white-space: nowrap; }
 
 /* 标题:这一屏的主角是**问题**,不是段位名。三行封顶 —— 它是服务端文案(走 i18n,
    换一门语言可以长几倍),而它住在不参与滚动的固定区;不封顶就会把贴底的动作推出视口。 */

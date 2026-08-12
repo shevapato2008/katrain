@@ -1,6 +1,5 @@
 import { expect, test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { waitForCanvasPainted } from './helpers/canvasPainted';
 
 const screenshotPath = resolve(
   process.cwd(),
@@ -88,12 +87,29 @@ test('Galaxy 升降级对弈结算页 1440x900', async ({ page }) => {
   await expect(page.getByText('升级：6段')).toBeVisible();
   await expect(page.getByRole('button', { name: '再来一局' })).toBeVisible();
   await expect(page.getByRole('button', { name: '返回对局' })).toBeVisible();
-  // `toBeVisible()` 只证明**元素在**,而这块盘要等 5 张 PNG 全部 onload 才落第一笔
-  // (`LiveBoard.tsx:339-358`)—— 实测同一份代码连开 6 次,元素出现那一刻有 4 次是空的。
-  // 按快门之前必须等**真像素**,否则这张图有约六七成概率是一块空盘,
-  // 而空盘和「盘真的坏了」在图上分不开。
   await expect(page.getByTestId('board-stage').locator('canvas')).toBeVisible();
-  await waitForCanvasPainted(page, '[data-testid="board-stage"] canvas');
+  // ⚠️ `toBeVisible()` 只证明**元素在**。这块盘要等 5 张 PNG 全部 `onload` 才落第一笔
+  // (`LiveBoard.tsx:339-358`:`Promise.all` 预加载 → `setImagesLoaded(true)` → 绘制 effect),
+  // 实测 `/kiosk/play` 同一份代码连开 6 次,**元素出现那一刻 4 次是空的**、1200ms 后 6 次全画。
+  // 所以按快门之前要等**真像素**:空盘和「盘真的坏了」在图上分不开,上一轮就是这么把一次
+  // 竞态误判成回归的。
+  //
+  // 写在这里而**不做成通用 helper**:全仓今天**只有这一处**取图会渲染 `LiveBoard`
+  // (kiosk 开局设置屏改布局 A 之后左栏是内联 SVG;galaxy 的 AI 设置页没有盘)。
+  // 一个调用点做成 helper,等于替将来那个还没出现的调用点提前定形状。
+  //
+  // 🔴 **这一处我没能把它推红**:这条 spec 用 `page.route` 把 5 张 PNG 从**本地磁盘**
+  // fulfill,几乎立刻到齐,拍不到空帧。⇒ 它在这里是**保险,不是被证明有牙的闸**。
+  // 量到 4/6 空的那组数在 `/kiosk/play`(资产走 HTTP),那才是它真正要挡的地方。
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector('[data-testid="board-stage"] canvas') as HTMLCanvasElement | null;
+    if (!canvas || canvas.width === 0) return false;
+    const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+    for (let i = 0; i < data.length; i += 4 * 97) {
+      if (data[i] > 40 || data[i + 1] > 40 || data[i + 2] > 40) return true;
+    }
+    return false;
+  }, undefined, { timeout: 10_000 });
   expect(await page.getByTestId('board-stage').locator('h1,h2,h3,h4,h5,h6,button').count()).toBe(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: screenshotPath });

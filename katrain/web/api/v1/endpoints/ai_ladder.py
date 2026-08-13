@@ -1189,6 +1189,12 @@ def submit_settlement(
             outcome = lifecycle
             receipt = lifecycle
         else:
+            # No reservation and no ledger row: the cloud has never heard of this game.
+            # A board cannot get here for a game it really played -- `/start` reserves
+            # against the cloud first and raises 503 when that does not land, so a rated
+            # game cannot begin without a reservation row. What is left is a request whose
+            # every scoring input (result, rung, "certified", "available") was written by
+            # the account that stands to gain from it. Record it, never count it.
             receipt = None
             outcome = request.app.state.ai_ladder_repo.settle_game(
                 user_id=current_user.id,
@@ -1198,6 +1204,7 @@ def submit_settlement(
                 game_type=body.game_type,
                 opponent=opponent,
                 engine_stalled=body.engine_stalled,
+                unreserved_origin=True,
             )
     except ValueError as exc:
         raise _lifecycle_error(exc) from exc

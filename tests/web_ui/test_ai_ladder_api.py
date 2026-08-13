@@ -1997,33 +1997,56 @@ def settlement_payload(**overrides):
 
 
 @pytest.mark.asyncio
+async def _play_one_reserved_game(ac, api_app, *, game_id=None, result="win"):
+    """Reserve, activate, settle -- the sequence a board actually performs.
+
+    These tests used to POST straight to /settlements with no reservation and assert
+    the rank moved. That is not what a board does (`/start` reserves against the cloud
+    first and raises 503 when that does not land) and it is exactly the shape that let
+    a fabricated settlement bank a promotion. Going through the real sequence keeps the
+    original intent -- a played game moves the cloud profile -- and stops the test from
+    certifying the hole.
+    """
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
+    payload = reservation_payload() if game_id is None else reservation_payload(game_id=game_id)
+    reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=headers, json=payload)
+    key = reserved.json()["reservation_key"]
+    await ac.post(
+        f"/api/v1/ai-ladder/games/{payload['game_id']}/activate",
+        headers=headers,
+        json={"reservation_key": key, "session_id": "board-session"},
+    )
+    submission = settlement_payload(
+        game_id=payload["game_id"],
+        result=result,
+        reservation_key=key,
+        game_record=lifecycle_game_record(),
+    )
+    return payload["game_id"], submission, headers
+
+
+@pytest.mark.asyncio
 async def test_a_board_settlement_moves_the_cloud_profile(api_app, client):
     """The board played the game; the cloud is where the account's rank lives."""
     async with client as ac:
-        response = await ac.post(
-            "/api/v1/ai-ladder/settlements",
-            headers=api_app.state._test_headers,
-            json=settlement_payload(),
-        )
+        game_id, submission, headers = await _play_one_reserved_game(ac, api_app)
+        response = await ac.post("/api/v1/ai-ladder/settlements", headers=headers, json=submission)
 
     assert response.status_code == 200
     body = response.json()
     assert (body["counted"], body["replayed"], body["reason"]) == (True, False, None)
     assert body["profile"]["placement_completed"] == 1
     with api_app.state._test_session_factory() as db:
-        assert db.query(models_db.AiLadderGameLedger).one().game_id == "board-game-1"
+        assert db.query(models_db.AiLadderGameLedger).one().game_id == game_id
 
 
 @pytest.mark.asyncio
 async def test_resubmitting_the_same_game_replays_instead_of_counting_it_twice(api_app, client):
     """A board that retries an uncertain POST must not double-move the rank."""
     async with client as ac:
-        first = await ac.post(
-            "/api/v1/ai-ladder/settlements", headers=api_app.state._test_headers, json=settlement_payload()
-        )
-        second = await ac.post(
-            "/api/v1/ai-ladder/settlements", headers=api_app.state._test_headers, json=settlement_payload()
-        )
+        _, submission, headers = await _play_one_reserved_game(ac, api_app)
+        first = await ac.post("/api/v1/ai-ladder/settlements", headers=headers, json=submission)
+        second = await ac.post("/api/v1/ai-ladder/settlements", headers=headers, json=submission)
 
     assert (first.status_code, second.status_code) == (200, 200)
     assert second.json()["replayed"] is True
@@ -2031,6 +2054,41 @@ async def test_resubmitting_the_same_game_replays_instead_of_counting_it_twice(a
     with api_app.state._test_session_factory() as db:
         assert db.query(models_db.AiLadderGameLedger).count() == 1
         assert db.query(models_db.AiLadderProfile).one().placement_completed == 1
+
+
+@pytest.mark.asyncio
+async def test_a_settlement_with_no_reservation_is_recorded_but_never_counted(api_app, client):
+    """The account that wants the promotion cannot also be the only witness.
+
+    Every input `_ignored_reason` consults -- the result, the rung, whether that rung is
+    "certified" and "available" -- arrives in the request body. Cross-checking them
+    proves nothing when one party wrote all of them. The single input a client cannot
+    forge is a reservation row the cloud issued itself.
+
+    Measured before the guard existed (2026-08-13): a fresh account sent 40 fabricated
+    settlements and got 40 counted rows, walking rung 1 -> 41 without playing a move.
+    """
+    async with client as ac:
+        responses = [
+            await ac.post(
+                "/api/v1/ai-ladder/settlements",
+                headers=api_app.state._test_headers,
+                json=settlement_payload(game_id=f"forged-{i}", result="win"),
+            )
+            for i in range(5)
+        ]
+
+    # 200, not 4xx: the submitter's outbox treats 4xx as permanent and discards the item,
+    # so refusing outright would silently destroy a real game if this branch is ever
+    # reached legitimately. The row is kept and the refusal is recorded in it instead.
+    assert [r.status_code for r in responses] == [200] * 5
+    assert [(r.json()["counted"], r.json()["reason"]) for r in responses] == [(False, "unreserved")] * 5
+
+    with api_app.state._test_session_factory() as db:
+        rows = db.query(models_db.AiLadderGameLedger).all()
+        assert len(rows) == 5 and not any(row.counted for row in rows)
+        # No profile at all: an unreserved submission must not even open placement.
+        assert db.query(models_db.AiLadderProfile).count() == 0
 
 
 @pytest.mark.asyncio

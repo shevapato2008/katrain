@@ -890,7 +890,16 @@ class AiLadderRankedRepository:
         game_type: str,
         opponent: Optional[AiLadderOpponentSnapshot],
         engine_stalled: bool = False,
+        unreserved_origin: bool = False,
     ) -> AiLadderSettlementResult:
+        """Settle a game that has no live reservation row.
+
+        `unreserved_origin` is the caller saying "everything I know about this game came
+        from the request body". Set it on any path where an untrusted client is the only
+        witness -- see `submit_settlement`. It never raises: the row is still recorded so
+        the submitter's outbox can stop retrying and the attempt stays auditable, it just
+        cannot move a rank.
+        """
         if user_color not in {"B", "W"}:
             raise ValueError("user_color must be B or W")
         if not isinstance(game_id, str) or not game_id.strip():
@@ -917,6 +926,15 @@ class AiLadderRankedRepository:
             ignored_reason = self._ignored_reason(
                 game_type=game_type, result=result, opponent=opponent, engine_stalled=engine_stalled
             )
+            # Every field `_ignored_reason` consults -- the result, the rung, whether that
+            # rung is certified and available -- arrives in the same request body as the
+            # claim "I won". Checking them against each other proves nothing: the account
+            # that wants the promotion wrote all of them. The one input it cannot forge is
+            # a reservation row the server issued itself, so when that is missing the game
+            # is recorded and openly not counted. Measured 2026-08-13 before this line
+            # existed: 40 fabricated POSTs from a fresh account, 40 counted, rung 1 -> 41.
+            if unreserved_origin:
+                ignored_reason = ignored_reason or "unreserved"
             profile = None
             if ignored_reason is None:
                 assert opponent is not None

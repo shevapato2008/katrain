@@ -69,7 +69,12 @@ def migrate_ai_ladder_decision_schema(engine) -> None:
         _migrate_sqlite_ai_ladder_decision_schema(engine, inspector)
     elif engine.dialect.name == "postgresql":
         checks = {constraint.get("name") for constraint in inspector.get_check_constraints(table_name)}
-        statements = postgres_ai_ladder_decision_statements(set(columns), checks)
+        # 🔴 这里原本是 `postgres_ai_ladder_decision_statements(set(columns), checks)` ——
+        # 位置参数调一个**只收关键字参数**的函数(定义见下,签名是 `*, existing_columns,
+        # existing_checks`),必然 TypeError。也就是说 **PG 上的旧库升级分支从来没跑通过**。
+        # SQLite 走的是上面那一支,所以本机测试永远碰不到它 —— 又一例
+        # 「保证在本机不存在而不会红」。
+        statements = postgres_ai_ladder_decision_statements(existing_columns=set(columns), existing_checks=checks)
         with engine.begin() as conn:
             for statement in statements:
                 conn.execute(text(statement))
@@ -249,6 +254,71 @@ def enforce_ai_ladder_terminal_audit_schema(engine) -> None:
                 conn.execute(text(statement))
 
 
+AI_LADDER_ACCOUNT_SUBJECT_CONDITION = "account_subject IS NULL OR length(account_subject) BETWEEN 1 AND 32"
+
+ACCOUNT_SUBJECT_CONSTRAINT = "ck_ai_ladder_ledger_account_subject_len"
+
+
+def postgres_ai_ladder_account_subject_statements(*, existing_checks: set[str]) -> list[str]:
+    """把账本主体长度约束补到已存在的 PostgreSQL 表上。"""
+
+    if ACCOUNT_SUBJECT_CONSTRAINT in existing_checks:
+        return []
+    return [
+        f"ALTER TABLE ai_ladder_game_ledger ADD CONSTRAINT {ACCOUNT_SUBJECT_CONSTRAINT} "
+        f"CHECK ({AI_LADDER_ACCOUNT_SUBJECT_CONDITION})"
+    ]
+
+
+def enforce_ai_ladder_account_subject_schema(engine) -> None:
+    """账本主体长度约束,不重建这张受保护的表就装上去。
+
+    与三家共享账本的 `ck_ranked_ledgers_account_subject_len` 同源。SQLite 不能给
+    已存在的表 `ADD CONSTRAINT`,所以那一支用触发器 —— 与本文件既有的
+    `enforce_ai_ladder_terminal_audit_schema` 同形。
+
+    落库前先点一遍存量:有不合规的行就抛,**不静默放过也不静默改数据**。
+    """
+
+    table = "ai_ladder_game_ledger"
+    inspector = inspect(engine)
+    if table not in inspector.get_table_names():
+        return
+    if "account_subject" not in {column["name"] for column in inspector.get_columns(table)}:
+        return
+
+    checks = {constraint.get("name") for constraint in inspector.get_check_constraints(table)}
+    if ACCOUNT_SUBJECT_CONSTRAINT in checks:
+        return
+
+    with engine.begin() as conn:
+        invalid = conn.execute(
+            text(f"SELECT COUNT(*) FROM {table} WHERE NOT ({AI_LADDER_ACCOUNT_SUBJECT_CONDITION})")
+        ).scalar_one()
+        if invalid:
+            raise RuntimeError(f"AI ladder account_subject migration found {invalid} invalid row(s)")
+
+        if engine.dialect.name == "sqlite":
+            # ⚠️ **不是** `CREATE TRIGGER IF NOT EXISTS` —— 那是按名字跳过、不看内容的,
+            # 名字没变而内容变了就一行都不执行,长命的库留旧规则、新建的库拿新规则,
+            # 两边分叉且全绿。先删后建。(本文件 :242 那个终局审计触发器仍是旧写法,
+            # 是同一个坑的另一处实例,不在本次范围内 —— 别照抄它。)
+            condition = AI_LADDER_ACCOUNT_SUBJECT_CONDITION.replace("account_subject", "NEW.account_subject")
+            for action in ("INSERT", "UPDATE"):
+                trigger = f"trg_ai_ladder_ledger_account_subject_{action.lower()}"
+                conn.execute(text(f'DROP TRIGGER IF EXISTS "{trigger}"'))
+                conn.execute(
+                    text(
+                        f'CREATE TRIGGER "{trigger}" BEFORE {action} ON "{table}" '
+                        f"FOR EACH ROW WHEN NOT ({condition}) "
+                        "BEGIN SELECT RAISE(ABORT, 'invalid AI ladder account subject'); END"
+                    )
+                )
+        elif engine.dialect.name == "postgresql":
+            for statement in postgres_ai_ladder_account_subject_statements(existing_checks=checks):
+                conn.execute(text(statement))
+
+
 def add_missing_columns(engine) -> None:
     """ADD COLUMN for any model column missing from an existing table.
 
@@ -273,6 +343,7 @@ def add_missing_columns(engine) -> None:
                 conn.execute(text(ddl))
                 logger.info(f"migrate: added column {table.name}.{col.name}")
     enforce_ai_ladder_terminal_audit_schema(engine)
+    enforce_ai_ladder_account_subject_schema(engine)
 
 
 def _default_clause(col):

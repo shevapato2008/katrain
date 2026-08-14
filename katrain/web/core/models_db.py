@@ -21,6 +21,24 @@ import enum
 import uuid as uuid_module
 
 
+# ⚠️ **`none_as_null=True` 不是风格问题,是承重的。**
+#
+#     JSON()                     Python None -> JSON 字面量 'null'   ← 列上的 NOT NULL
+#                                                                     和 `IS NOT NULL`
+#                                                                     全都判它**有值**
+#     JSON(none_as_null=True)    Python None -> SQL NULL
+#
+# 关系到 `ck_ai_ladder_ledger_decision` 里那句 `opponent_config_snapshot IS NOT NULL`:
+# 没有这个参数,一个 Python `None` 会以 `'null'` 落库,那句 CHECK 照样为真 —— 闸开着却
+# 看不出来。今天围棋走不到那一格(真正的判据是 `counted = reason is None` 加
+# `AiLadderOpponentSnapshot.__post_init__`,库层那几句伴随子句在这个形状下从不被求值),
+# 所以这条是**潜伏的、不是活的**;但三家的共享账本 2026-08-13 已经统一带上它
+# (`ranked_api/envelope/models_db.py:66`),围棋是最后一个没带的。
+#
+# 只作用于绑定参数,**不改 DDL** —— 不需要迁移。
+LadderJSON = JSON(none_as_null=True)
+
+
 class MatchSourceEnum(str, enum.Enum):
     """Data source for live matches."""
 
@@ -139,7 +157,7 @@ class AiLadderPendingGame(Base):
     game_type = Column(String(32), nullable=False)
     opponent_rung = Column(Integer, nullable=False)
     opponent_rank_name = Column(String(64), nullable=False)
-    opponent_config_snapshot = Column(JSON, nullable=False)
+    opponent_config_snapshot = Column(LadderJSON, nullable=False)
     opponent_certification_status = Column(String(16), nullable=False)
     opponent_availability = Column(String(16), nullable=False)
     opponent_route = Column(String(16), nullable=False)
@@ -193,14 +211,14 @@ class AiLadderActiveGame(Base):
     game_type = Column(String(32), nullable=False, default="ai_ladder_ranked")
     opponent_rung = Column(Integer, nullable=False)
     opponent_rank_name = Column(String(64), nullable=False)
-    opponent_config_snapshot = Column(JSON, nullable=False)
+    opponent_config_snapshot = Column(LadderJSON, nullable=False)
     opponent_certification_status = Column(String(16), nullable=False)
     opponent_availability = Column(String(16), nullable=False)
     opponent_route = Column(String(16), nullable=False)
     ai_subtype = Column(String(32), nullable=False)
     execution_identity = Column(String(64), nullable=False)
-    rules_snapshot = Column(JSON, nullable=False)
-    time_control_snapshot = Column(JSON, nullable=False)
+    rules_snapshot = Column(LadderJSON, nullable=False)
+    time_control_snapshot = Column(LadderJSON, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -232,7 +250,7 @@ class AiLadderGameLedger(Base):
     game_type = Column(String(32), nullable=False)
     opponent_rung = Column(Integer, nullable=True)
     opponent_rank_name = Column(String(64), nullable=True)
-    opponent_config_snapshot = Column(JSON, nullable=True)
+    opponent_config_snapshot = Column(LadderJSON, nullable=True)
     opponent_certification_status = Column(String(16), nullable=True)
     opponent_availability = Column(String(16), nullable=True)
     opponent_route = Column(String(16), nullable=True)
@@ -256,6 +274,20 @@ class AiLadderGameLedger(Base):
 
     __table_args__ = (
         CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_ledger_user_color"),
+        # 与三家共享账本的 `ck_ranked_ledgers_account_subject_len` 同源
+        # (`ranked_api/envelope/models_db.py:544`,那边是全局 `BETWEEN 1 AND 32`
+        # 再加象棋作用域的 `= 32`)。围棋这一列可空 —— 本列诞生前写下的行是 NULL,
+        # 不能追认;所以多一支 `IS NULL`,其余与三家逐字一致。
+        #
+        # ⚠️ 这条守的是**账本这一侧**。铸造侧 `users.uuid` 至今仍是无长度的 `String`,
+        # 32 位只由一个 Python default lambda 保证 —— 那个缺口由
+        # `tests/web_ui/test_account_subject_contract.py` 的 `xfail(strict=True)` 钉着,
+        # 属身份服务 Phase 3,冻结件 §6-3 明令 Phase 1 不动那一列。**别顺手一起改**:
+        # 那条 xfail 一旦 XPASS 会让构建红,而它红的时候应该是有人**有意**去修铸造侧。
+        CheckConstraint(
+            "account_subject IS NULL OR length(account_subject) BETWEEN 1 AND 32",
+            name="ck_ai_ladder_ledger_account_subject_len",
+        ),
         CheckConstraint(
             "opponent_rung IS NULL OR opponent_rung BETWEEN 1 AND 41",
             name="ck_ai_ladder_ledger_opponent_rung",

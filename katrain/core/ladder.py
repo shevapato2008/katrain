@@ -538,6 +538,23 @@ def _candidate_labels(rung: int) -> Tuple[str, ...]:
 #: must cite the EXPERIMENTS.md section that verified it. Never widen this set to
 #: make something playable -- that is what LADDER_ALLOW_PROVISIONAL_ENV is for, and
 #: that switch never touches what the API reports.
+#:
+#: 🔴 2026-08-14: this is now an EMPTY-BY-MEASUREMENT set, not an unstarted one.
+#: 3,972 games over six batches measured 35 adjacent seams (EXPERIMENTS.md §C37).
+#: Only 7 clear the gate (Wilson 95% CI lower bound >= 0.60) and **they are not
+#: contiguous**, so no run of adjacent rungs can be certified as shipped:
+#:   * profile axis (rank_Nd@1 chain, 1k..5d) tops out at lower bound 0.585 and
+#:     saturates outright at 5d->6d (53.2%). More games do not fix it -- the true
+#:     gap is ~110 Elo, and n~105 already puts the bound at its ceiling.
+#:   * the 准段 T=1.15 rungs are INVERTED: 准(N+1)段 measures weaker than N段
+#:     (34.6%..51.5%), because +130 of temperature loss buys only +20~27 of profile.
+#:   * four seams invert wherever the ladder steps from `rank_Nd@search` back down
+#:     to `rank_(N+1)d@1s`, trading away 148~411 Elo of mechanism for ~25 of profile.
+#: Rebuild direction, each step measured: within one profile go
+#: `@1 -> @1t0.8 -> @1s -> @2 -> @4` so the mechanism axis never steps backwards
+#: (`@1t0.8` is the one newly certified rung, +227 Elo, lower bound 0.708); compare
+#: across profiles only at a fixed mechanism. Re-run `calibration/replay_seams_summary.py`
+#: before changing this set.
 _CERTIFIED_RUNGS: FrozenSet[int] = frozenset()
 
 #: Development-only escape hatch. When set to "1", `resolve_available_rung` will

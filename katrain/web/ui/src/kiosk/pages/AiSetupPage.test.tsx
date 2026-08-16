@@ -225,32 +225,43 @@ describe('AiSetupPage — 升降级挡局面板', () => {
   });
 
   it.each([
-    ['other_device', true],
-    ['current_device', false],
-  ] as const)('另一台设备那一局可能其实已经下完 —— %s 那格披不披露这条代价', async (ownership, discloses) => {
-    // **这条代价消不掉,只能说出来。** 那台机器可能已经下完、结果还卡在它自己的发送队列里,
-    // 而云端**看不见任何一台盒子的队列**,所以照样报 `active`。用户在这里按认输,那边补交时
-    // 命中墓碑 —— 一局可能是胜的棋被判负永久顶掉。守卫 2 挡不住这一格:它只看本机 outbox,
-    // 而发起认输的这台**架构上不可能**看见另一台的队列。
-    //
-    // 本机那一格不许出现这句:本机若真下完了,状态会是 `pending_settlement`、根本到不了
-    // 这一格,所以对本机说「还没下完」是**真的**。对本机说这句是一句用不上的恐吓。
-    const user = userEvent.setup();
-    withBlocking(blockingGame({ state: 'active', ownership, session_id: undefined }));
-    renderPage('ranked');
+    ['other_device', undefined, true],
+    ['unknown', undefined, true],
+    ['current_device', undefined, true],
+    ['current_device', 'live-session', false],
+    ['unknown', 'live-session', false],
+  ] as const)(
+    '那一局可能其实已经下完 —— ownership=%s session=%s 披不披露这条代价',
+    async (ownership, session_id, discloses) => {
+      // **这条代价消不掉,只能说出来。** 那一局可能已经下完、结果还卡在某台自己的发送队列里,
+      // 而云端**看不见任何一台设备的队列**,所以照样报 `active`。用户在这里按认输,那边补交时
+      // 命中墓碑 —— 一局可能是胜的棋被判负永久顶掉。守卫 2 挡不住这一格:它只看本机 outbox。
+      //
+      // ⚠️ **这条测试反转过一次。** 前一版的分叉轴是 `ownership`,`current_device` 那格不披露,
+      // 理由是「本机若真下完了,状态会是 `pending_settlement`、根本到不了这一格」。那个推理
+      // 成立,但它悄悄多用了一个前提:**本机那个进程还在**。前提不成立的那一格恰好存在 ——
+      // 就是屏上那句「这一局就在这台设备上，只是本机没有它的记录」说的那一格(库被清过、
+      // 盒子重启过)。那时本机既看不见进度,也可能有一份成绩压在自己队列里没送出去。
+      //
+      // 所以分叉轴换成 `session_id`:**这个节点此刻握不握着那个会话**。握着 ⇒ 进度看得见 ⇒
+      // 「还没下完」是查出来的;握不着 ⇒ 一律披露。位置不再参与这个判断,它只回答「在哪」。
+      const user = userEvent.setup();
+      withBlocking(blockingGame({ state: 'active', ownership, session_id }));
+      renderPage('ranked');
 
-    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
-    const disclosure = /真实结果会被顶掉|结果会被这一场负顶掉/;
-    if (discloses) {
-      expect(document.body.textContent).toMatch(disclosure);
-      // 而且不许再说「正在进行 / 还没下完」—— 云端不知道那台机器上棋下没下完。
-      expect(document.body.textContent).not.toMatch(/正在进行|还没下完/);
-    } else {
-      expect(document.body.textContent).not.toMatch(disclosure);
-      // 本机这一格反过来:说得出「没下完」,因为它确实知道。
-      expect(document.body.textContent).toMatch(/没有下完|尚未结束/);
-    }
-  });
+      await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
+      const disclosure = /真实结果会被顶掉|结果会被这一场负顶掉/;
+      if (discloses) {
+        expect(document.body.textContent).toMatch(disclosure);
+        // 而且不许再说「正在进行 / 还没下完」—— 没握着会话就不知道棋下没下完。
+        expect(document.body.textContent).not.toMatch(/正在进行|还没下完/);
+      } else {
+        expect(document.body.textContent).not.toMatch(disclosure);
+        // 握着会话那一格反过来:说得出「没下完」,因为它确实知道。
+        expect(document.body.textContent).toMatch(/没有下完|尚未结束/);
+      }
+    },
+  );
 
   it('从没开起来的那一格：说的是让掉，整块屏一个「记为本局负」都没有', async () => {
     // 与 galaxy 那块屏同一条硬要求(CLAUDE.md「状态必须诚实」):`reserved` 让掉**什么都不记**,

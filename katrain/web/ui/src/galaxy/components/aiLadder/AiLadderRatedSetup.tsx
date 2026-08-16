@@ -23,6 +23,7 @@ import {
   displaceCopy,
   isResumableHere,
   isSyncRetryable,
+  ownershipLabel,
   settlementSyncText,
 } from '../../../features/aiLadder/blockingCopy';
 import { AI_LADDER_COPY, formatPlacementProgress } from '../../../features/aiLadder/copy';
@@ -247,8 +248,9 @@ const AiLadderRatedSetup = ({
               <Chip size="small" label={stateChip.label} variant="outlined" color={stateChip.color} />
               <Chip
                 size="small"
-                label={blockingGame.ownership === 'current_device' ? '当前设备' : '其他设备'}
+                label={ownershipLabel(blockingGame)}
                 variant="outlined"
+                data-testid="galaxy-ladder-ownership"
               />
             </Stack>
           </Box>

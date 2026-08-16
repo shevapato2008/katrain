@@ -397,6 +397,155 @@ async def test_a_released_reservation_leaves_no_receipt_because_nothing_was_deci
 
 
 @pytest.mark.asyncio
+async def test_reserving_reveals_nothing_that_status_did_not_already_hand_over(api_app, client):
+    """预约一次**不会泄露任何客户端还不知道的东西** —— 「开一局看一眼对手就免费退掉」没有内容。
+
+    这条是免费释放能免费的**第二条理由**,而且是更硬的那条:它不依赖 `/start` 的顺序,
+    所以哪怕有人绕开 `/start` 直接打 `POST /games/reserve`(独立端点,不接 activate,
+    确实能自己停在 `reserved` 里),结论也不变。
+
+    ⚠️ 原论证只有第一条(「经 `/start` 拿不到棋盘」),**那条被 team lead 驳中过宽** ——
+    它只覆盖 `/start` 那条路。这条补上缺口:对手档位是
+    `expected_opponent_rung(rung, placement_lo, placement_hi)`,一个**自己档案的纯函数**
+    (`ai_ladder_ranked.py`),而档案在 `/status` 里就发给客户端了。
+
+    ⇒ 免费释放不是一个可以反复刷的信息通道,它只是把一次失败的开局还回去。
+
+    ⚠️ **这条不变式是 `expected_opponent_rung` 保持纯函数换来的。** 哪天档位改成随机、
+    带时间、或按对手池实时可用性挑,预约就开始泄露信息,「免费」那一格必须重新论证
+    —— 那时这条会红。
+    """
+
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "peeker"}
+    async with client as ac:
+        before = await ac.get("/api/v1/ai-ladder/status", headers=headers)
+        reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=headers, json=reservation_payload())
+        after = await ac.get("/api/v1/ai-ladder/status", headers=headers)
+
+    # 预约之前 `/status` 就把对手整份发出来了,预约不过是把同一份再说一遍。
+    peeked = reserved.json()["opponent"]
+    already_known = before.json()["current_opponent"]
+    assert reserved.status_code == 201
+    for field in ("rung", "rank_name", "certification_status", "availability", "route"):
+        assert peeked[field] == already_known[field], f"预约揭示了 `/status` 没给过的 {field}"
+    # 而且它是幂等的观察:预约没有改变下一次会遇到谁 —— 换句话说,反复预约再退掉刷不出别的对手。
+    assert after.json()["current_opponent"] == already_known
+
+
+@pytest.mark.asyncio
+async def test_freeing_a_reservation_cannot_strand_a_game_the_box_really_played(api_app, client):
+    """免费释放**删行**之后,那台离线盒子补交整局棋会怎样 —— 跑出来的,不是读出来的。
+
+    中国象棋 2026-08-11 跑真代码确认的那条链:
+        离线盒子下完一整局 → 另一台设备免费释放(删预约) → 原盒子联网补交
+        → 服务端查不到预约 → **409** → 盒端把 409 判为不可重试 → 队列 block → 账号锁死。
+    一条以「不该收费」为动机的改动,抹掉一局真棋再把账号锁死。⇒ 四家统一要求
+    「免费 = 写一条不计分的终局回执,不是删行」。
+
+    **围棋今天正是删行**(`release_unplayed_reservation` / `_is_stale_reserved` /
+    `cancel_reservation` 三处都是 `session.delete(row)`),所以这条链的每一跳都得当场跑一遍。
+    断的是最关键那一跳:围棋的补交入口查不到预约行时**不 409**,落到
+    `settle_game(unreserved_origin=True)` —— 那条路记一行 `counted=False, reason="unreserved"`
+    并回 **200**。
+
+    盒端那一半也一起跑:把云端**真发出来的那个 httpx 响应**原样喂进真的
+    `SyncWorker._execute_item`(不是断言状态码好看,是让判 `PermanentError` 的那段代码自己跑),
+    确认它不抛、不 fail、不进 `blocked_users`。锁死链的入口在
+    `sync_worker.py:158-172`(409 且没有 settled receipt ⇒ `PermanentError`)+ `:130-137`
+    (`PermanentError` ⇒ `status="failed"` 且 `blocked_users.add`),两处都够得着,只是这一格
+    进不去。
+    """
+
+    from katrain.web.core.ai_ladder_catalog import AiLadderSessionSnapshot, build_opponent_snapshot
+    from katrain.web.core.ai_ladder_sync import build_settlement_payload
+    from katrain.web.core.repository import enqueue_sync_item
+    from katrain.web.core.sync_worker import SyncWorker, _is_permanent_refusal
+
+    offline_box = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "box-that-went-offline"}
+    other_device = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "box-b"}
+    game_id = reservation_payload()["game_id"]
+    opponent, execution_identity = build_opponent_snapshot(16)
+
+    async with client as ac:
+        reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=offline_box, json=reservation_payload())
+        reservation_key = reserved.json()["reservation_key"]
+
+        # ① 另一台设备免费释放 —— 生产那条路,不是 SQL 造的:`/end` 读到 `reserved`
+        #    就走 `release_unplayed_reservation`,而它 `session.delete(row)`。
+        released = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end", headers=other_device, json={"reason": "user_resigned"}
+        )
+        assert released.json() == {"state": "released", "game_id": game_id, "counted": False}
+        with api_app.state._test_session_factory() as db:
+            assert db.query(models_db.AiLadderActiveGame).count() == 0, "释放就是删行 —— 这条测试的前提"
+            assert db.query(models_db.AiLadderGameLedger).count() == 0, "释放不写账本 —— 也是前提"
+
+        # ② 那台盒子其实把整局下完了,现在联网补交。载荷用**生产那个构造器**造,不是手写字典。
+        snapshot = AiLadderSessionSnapshot(
+            game_id=game_id,
+            session_id="offline-session",
+            user_id=api_app.state._test_user_id,
+            user_color="B",
+            game_type="ai_ladder_ranked",
+            opponent=opponent,
+            ai_subtype="ai:ladder",
+            execution_identity=execution_identity,
+        )
+        payload = build_settlement_payload(
+            snapshot,
+            "B+R",
+            reservation_key=reservation_key,
+            game_record={
+                "sgf_content": "(;GM[1]FF[4]SZ[19]RU[Chinese]KM[7.5]PB[fan]PW[AI];B[dd];W[pp]RE[B+R])",
+                "result": "B+R",
+                "board_size": 19,
+                "rules": "chinese",
+                "komi": 7.5,
+                "move_count": 2,
+                "player_black": "fan",
+                "player_white": "fixture-16",
+                "source": "play_ai",
+                "category": "game",
+                "game_type": "ai_ladder_ranked",
+            },
+            device_id="box-that-went-offline",
+        )
+        submitted = await ac.post("/api/v1/ai-ladder/settlements", headers=offline_box, json=payload)
+        replayed = await ac.post("/api/v1/ai-ladder/settlements", headers=offline_box, json=payload)
+
+    # ③ **不是 409。** 那一局被记下来了、可审计、明说不计分 —— 而不是被拒。
+    assert submitted.status_code == 200, f"补交被拒 ⇒ 象棋那条锁死链在围棋也成立:{submitted.text}"
+    assert (submitted.json()["counted"], submitted.json()["reason"]) == (False, "unreserved")
+    assert replayed.status_code == 200 and replayed.json()["replayed"] is True
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderGameLedger).count() == 1, "补交要留痕:删行不等于这局蒸发"
+        assert db.query(models_db.AiLadderGameLedger).one().counted is False
+        assert db.query(models_db.AiLadderProfile).count() == 0, "不计分 ⇒ 段位一格都不许动"
+
+    # ④ 盒端那一半:把云端真发出来的那个响应喂进真的 outbox 判定代码。
+    factory = api_app.state._test_session_factory
+    enqueue_sync_item(
+        factory,
+        operation="settle_ai_ladder_ranked",
+        endpoint="/api/v1/ai-ladder/settlements",
+        method="POST",
+        payload=payload,
+        user_id=str(api_app.state._test_user_id),
+        idempotency_key=f"ladder-settlement:{game_id}",
+    )
+    with factory() as db:
+        item = db.query(models_db.SyncQueueEntry).one()
+        remote = SimpleNamespace(
+            auth_required=False,
+            bound_user_id=str(api_app.state._test_user_id),
+            _request=AsyncMock(return_value=submitted),
+        )
+        await SyncWorker(factory, remote)._execute_item(item)  # 不抛 = 队列不 block
+        assert item.last_http_status == 200
+        assert _is_permanent_refusal(item.last_http_status) is False
+
+
+@pytest.mark.asyncio
 async def test_settled_receipt_is_hidden_from_other_accounts(api_app, client):
     with api_app.state._test_session_factory() as db:
         db.add(models_db.User(username="receipt-attacker", hashed_password="x", rank="20k"))
@@ -2664,6 +2813,74 @@ async def test_cross_device_ranked_journey_has_one_receipt_and_one_auditable_wri
         )
 
 
+@pytest.mark.asyncio
+async def test_a_request_without_a_device_identity_says_unknown_instead_of_guessing(api_app, client):
+    """没带设备身份的请求,`ownership` 是 `unknown` —— **两个方向的猜都不许**。
+
+    这一格从前发明一个 `"cloud-local"` 顶上去,然后拿它参与 `==`:
+      · 两个不同的浏览器都叫 `"cloud-local"` ⇒ 比出来相等 ⇒ 屏上说「这一局在本机开始」;
+      · 一台真盒子起的局对上浏览器 ⇒ 比出来不等 ⇒ 屏上说「在你的另一台设备上」。
+    两句都不是查出来的,是一个占位字符串碰巧比出来的。**多一个取值只是让谎话有地方待着。**
+
+    所以这条同时钉住两边:不许滑成 `current_device`(旧 bug),也不许滑成 `other_device`
+    (「不知道就当在别台」是另一个方向的同一个错,而且 `None != 真身份` 恒真,天生往那边滑)。
+
+    **第三条断言(`session_id` 必须活下来)守的是一次功能回归,不是措辞。**
+    `X-StellaBox-Device-ID` 全仓只有 `remote_client.py:92` 一处发(盒子的云端客户端),
+    **浏览器直连云端从不带它** ⇒ galaxy 网页端的每一局在三态之后都是 `unknown`。那个哨兵
+    从前一边撒谎、一边顺手让「继续对局」这条恢复路径能走(浏览器和它自己起的局都叫
+    `"cloud-local"`,比出 `current_device`);拆掉谎话很容易把路一起拆掉。
+
+    今天挡住它的是 `_blocking_payload` 那道 `ownership != "other_device"` —— **写成
+    `== "current_device"` 就当场断**,而那是「更严格看起来更安全」的那种改法。这条断言就是
+    钉它:`session_id` 说的是**这个节点此刻握着那个会话**,与「那一局在哪台设备上」是两个
+    语义,位置说不清不该让一条已经查实的出路跟着消失。
+    """
+
+    anonymous = dict(api_app.state._test_headers)
+    assert "X-StellaBox-Device-ID" not in anonymous
+    async with client as ac:
+        started = await ac.post("/api/v1/ai-ladder/start", headers=anonymous, json={"color": "black"})
+        same_client = await ac.get("/api/v1/ai-ladder/status", headers=anonymous)
+        a_real_box = await ac.get(
+            "/api/v1/ai-ladder/status",
+            headers={**anonymous, "X-StellaBox-Device-ID": "box-17"},
+        )
+
+    assert started.status_code == 201
+    blocking = same_client.json()["blocking_game"]
+    assert blocking["ownership"] == "unknown"
+    assert blocking["session_id"] == started.json()["session_id"]
+    # 同一局,换一台**有身份**的机器来问:那一步比得出来,于是必须说 —— 证得出来的位置不许瞒。
+    assert a_real_box.json()["blocking_game"]["ownership"] == "other_device"
+    assert "session_id" not in a_real_box.json()["blocking_game"]
+
+
+@pytest.mark.asyncio
+async def test_the_game_is_on_this_device_but_this_device_has_no_record_of_it(api_app, client):
+    """第三态:**设备身份对得上,而本机没有它的记录**。
+
+    这一格必须报 `current_device`,屏上才说得出那句「这一局就在这台设备上，只是本机没有
+    它的记录」。报成 `other_device` 的代价不是措辞:人就站在这台机器前面,会走开去找一台
+    不存在的第二台。
+
+    同样重要的是 `session_id` **不许有**:接不回来是真的。两件事分开断言,因为它们是
+    两个语义 —— 从前它俩挂在同一个布尔上,「位置」和「接得回来」谁错了都看不出来。
+    """
+
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "box-a"}
+    async with client as ac:
+        started = await ac.post("/api/v1/ai-ladder/start", headers=headers, json={"color": "black"})
+        # 本机那份记录没了(库被清过 / 盒子重启过):会话不在了,而云端那行占位还在。
+        api_app.state.session_manager._sessions.pop(started.json()["session_id"], None)
+        response = await ac.get("/api/v1/ai-ladder/status", headers=headers)
+
+    blocking = response.json()["blocking_game"]
+    assert blocking["ownership"] == "current_device"
+    assert "session_id" not in blocking
+    assert blocking["state"] == "active"
+
+
 class RecordingDispatcher:
     """Stand-in for board mode's online/offline repository dispatcher."""
 
@@ -2992,6 +3209,157 @@ async def test_board_activation_two_gateway_failures_preserve_live_session_for_s
     assert reconciled.status_code == 200
     assert reconciled.json()["blocking_game"]["session_id"] == session.session_id
     assert remote.activate_ai_ladder_game.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_a_box_whose_device_id_rotated_is_not_told_to_go_find_another_machine(api_app, client):
+    """盒子重启后设备 id 换了一个 —— 云端照实说「另一台设备」,而盒子必须把它纠回来。
+
+    这条路是真的,不是设想出来的:`KATRAIN_DEVICE_ID` 没配时 `katrain/web/core/config.py`
+    每次进程启动现生成一个 `uuid4().hex`(README 也这么写:*If omitted, a random UUID is
+    generated on each startup*)。重启一次、重装一次、换一台一次,标签就换一个。云端只有
+    这个标签可比,于是它答 `other_device` —— 而人正站在这台机器前面,那句话会让他走开去
+    找一台不存在的第二台。
+
+    盒子这边有云端没有的东西:那一局的 `reservation_key`。`_verify_origin` 写得明白 ——
+    设备 id 是可变的出处标签、从来不是凭证,**那把钥匙是 origin 唯一的凭据**,而它只在
+    `/start` 时发给创建方一次。所以「本机存着这一局的 key」= 「这一局是这台起的」。
+
+    ⚠️ **fixture 取自那条路上最外面那一跳的真产出。** 这条链是
+    盒端前端 → 盒端服务端 → **云端**,云端那一跳不归这个改动管,手写一个字典就是在猜
+    (旁边几条板测就是这么写的,它们的字典至今缺 `heartbeat_age_seconds` 这两个真会发的键)。
+    这里先用真云端路由跑一次 `/status`,把它**实际**吐出来的 payload 原样喂给 mock。
+    """
+
+    from types import SimpleNamespace as _NS
+
+    headers_old = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "box-before-reboot"}
+    headers_new = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "box-after-reboot"}
+    async with client as ac:
+        # ① 真云端:开一局,占位行上的 origin 标签是重启**前**那个 id。
+        started = await ac.post("/api/v1/ai-ladder/start", headers=headers_old, json={"color": "black"})
+        session_id = started.json()["session_id"]
+        # ② 真云端:重启**后**那个 id 来问。这就是云端在这一格实际会发的东西。
+        from_cloud = (await ac.get("/api/v1/ai-ladder/status", headers=headers_new)).json()
+
+        # 云端只有标签可比,所以它必须、也确实答「另一台设备」—— 这不是云端的 bug,
+        # 是它手上的证据只到这里。纠正它是盒子的活,因为钥匙在盒子手上。
+        assert from_cloud["blocking_game"]["ownership"] == "other_device"
+
+        # ③ 把这台机器变成盒子,让它转发**上面那份真 payload**。
+        pending = api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id)
+        assert pending["game_id"] == started.json()["game_id"] and pending["reservation_key"]
+        api_app.state.remote_client = _NS(
+            bound_user_id=str(api_app.state._test_user_id),
+            get_ai_ladder_status=AsyncMock(return_value=from_cloud),
+            activate_ai_ladder_game=AsyncMock(return_value={"state": "active"}),
+            cancel_ai_ladder_reservation=AsyncMock(return_value={"state": "cancelled"}),
+        )
+        api_app.state.repository_dispatcher = RecordingDispatcher()
+        on_the_box = (await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)).json()
+
+    assert on_the_box["blocking_game"]["ownership"] == "current_device"
+    # 而且它是接得回来的:纠正位置之后那条对账才跑得到,`session_id` 才补得上。
+    # 从前这两件事一起卡死在同一个 `ownership == "current_device"` 的闸上。
+    assert on_the_box["blocking_game"]["session_id"] == session_id
+
+
+@pytest.mark.asyncio
+async def test_the_box_override_keys_on_holding_the_key_not_on_which_wrong_answer_the_cloud_gave(api_app, client):
+    """盒端覆写的判据是**本机手上有没有那把钥匙**,不是「云端答的是哪一种不对」。
+
+    上一条钉的是 `other_device` 那条。这一条钉 `unknown` —— 而它俩的区别正是这个 `if`
+    的形状:
+
+        if owned_here and blocking.get("ownership") != "current_device":   # 今天这样写
+
+    把它改成 `== "other_device"`,上一条**照样绿**,而 `unknown` 那一格会静默退化成
+    「本机认不出它在哪一台设备上」——  一句对**站在这台机器前、且手里就攥着那局钥匙**的人
+    说的假话。这是「断言选在两语义恰好同值那一侧」的标准形状:今天两种写法同值,
+    所以只测一侧的话,语义漂开的那天没有任何一条测试会红。
+
+    ⚠️ **这是一颗防御性的钉子,不是在守一条今天可达的链路 —— 别照着它推断生产行为。**
+    盒子走 `remote_client._auth_headers()` 每次都发 `X-StellaBox-Device-ID`
+    (`remote_client.py`),而 `KATRAIN_DEVICE_ID` 没配时 `config.py` 会 `uuid4().hex`
+    兜底 ⇒ 盒子的 device_id 永不为空 ⇒ **今天的云端不会对盒子答 `unknown`**。
+    它钉住的是「覆写只认钥匙」这条不变式,好让下一个人改窄那个条件时当场红,
+    而不是等某个云端版本真的开始发 `unknown` 才在板上发现。
+    """
+
+    from types import SimpleNamespace as _NS
+
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "box-17"}
+    async with client as ac:
+        started = await ac.post("/api/v1/ai-ladder/start", headers=headers, json={"color": "black"})
+        assert started.status_code == 201, started.text
+        game_id = started.json()["game_id"]
+        session_id = started.json()["session_id"]
+
+        # 云端**答 `unknown`**(它没能比出两个身份)。这份载荷**整份都是真云端跑出来的,
+        # 一个字段都没手改** —— 不带设备头请求 `/status`,`_device_identity` 就是 `None`,
+        # `_ownership` 于是照实答 `unknown`。这比「照抄真产出再把一个字段改成想要的值」硬一档:
+        # 那一改就是在猜「云端发 unknown 的时候其余字段长什么样」,而这一格恰恰不用猜。
+        from_cloud = (await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)).json()
+        assert from_cloud["blocking_game"]["ownership"] == "unknown", "fixture 前提没成立,下面量不到东西"
+
+        pending = api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id)
+        assert pending["game_id"] == game_id and pending["reservation_key"]
+        api_app.state.remote_client = _NS(
+            bound_user_id=str(api_app.state._test_user_id),
+            get_ai_ladder_status=AsyncMock(return_value=from_cloud),
+            activate_ai_ladder_game=AsyncMock(return_value={"state": "active"}),
+            cancel_ai_ladder_reservation=AsyncMock(return_value={"state": "cancelled"}),
+        )
+        api_app.state.repository_dispatcher = RecordingDispatcher()
+        on_the_box = (await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)).json()
+
+    # 钥匙在手 ⇒ 这一局就是这台起的 ⇒ 覆写成 `current_device`,不管云端答的是
+    # `other_device` 还是 `unknown`。
+    assert on_the_box["blocking_game"]["ownership"] == "current_device"
+    # 而且照样接得回来 —— 覆写不是只改一句文案,它是那条对账跑得到的前提。
+    assert on_the_box["blocking_game"]["session_id"] == session_id
+
+
+@pytest.mark.asyncio
+async def test_a_failed_activation_hands_the_player_no_board_so_reserved_means_no_game(api_app, client):
+    """activate 没成 ⇒ 玩家**拿不到 session_id、棋盘被拆掉** ⇒ `reserved` 真的等于「没开过局」。
+
+    这条是围棋那两处 `session.delete(row)`(免费释放 / 5 分钟回收)和
+    `finalize_reserved_game` 那道 `reserved` 闸**共同依赖的前提**,而前提本身住在**另一个文件**
+    (`/start` 的顺序:reserve → 建 session → activate → 才把 session_id 发出去)。判据写在
+    仓库层、前提住在端点层,中间没有任何东西把它们绑在一起 —— 所以在这里绑。
+
+    围棋因此比四家共用的那条代理量(「服务端从没收到过这局的心跳」)更准:activate 在棋盘
+    建起来那一刻,心跳是之后的定时器。五子棋的 `reserved → active` 在 `record_heartbeat` 里,
+    那条链上「已经在下但还没心跳」是真实存在的一格;围棋这一格不存在,因为**发 session_id
+    之前必须先 activate 成功**。
+
+    ⚠️ 谁哪天把 activate 挪晚,这条会红 —— 那正是它存在的理由。
+    """
+
+    import httpx
+
+    remote = _board_remote(api_app)
+    # 确定性拒绝(409),不是 5xx/网络错 —— 后者走的是 `ambiguous_activation` 那条「云端可能
+    # 已经收到了」的分支,故意不拆局。这里要量的是「明确没成」那一格。
+    remote.activate_ai_ladder_game.side_effect = httpx.HTTPStatusError(
+        "activation refused",
+        request=httpx.Request("POST", "https://cloud/api/v1/ai-ladder/games/x/activate"),
+        response=httpx.Response(409, text="reservation is already bound to another session"),
+    )
+
+    async with client as ac:
+        started = await ac.post("/api/v1/ai-ladder/start", headers=api_app.state._test_headers, json={"color": "black"})
+
+    assert started.status_code == 409
+    assert "session_id" not in started.text, "activate 没成却把 session_id 发出去了 ⇒ 玩家有棋盘可下"
+    # 棋盘拆了、预约退了、本机那份记录也清了 —— 三样都得真的发生,少一样都会让 `reserved`
+    # 开始覆盖「其实有人拿到过这盘棋」。
+    assert api_app.state._test_created_sessions, "fixture 没建过 session,这条测试量不到东西"
+    for session in api_app.state._test_created_sessions:
+        assert session.session_id not in api_app.state.session_manager._sessions
+    remote.cancel_ai_ladder_reservation.assert_awaited_once()
+    assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
 
 
 @pytest.mark.asyncio

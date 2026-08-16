@@ -4,8 +4,10 @@ import {
   blockingCopy,
   blockingStateChip,
   displaceCopy,
+  heartbeatLabel,
   isResumableHere,
   isSyncRetryable,
+  ownershipLabel,
   settlementSyncText,
 } from '../../../features/aiLadder/blockingCopy';
 import { useCountdown } from '../../../features/aiLadder/countdown';
@@ -97,7 +99,7 @@ const KioskAiLadderBlockingPanel = ({
             <h2>未完成对局</h2>
             <em>Unfinished</em>
             <span className="rule" />
-            <b className="secval">{game.ownership === 'current_device' ? '当前设备' : '其他设备'}</b>
+            <b className="secval" data-testid="kiosk-ladder-ownership">{ownershipLabel(game)}</b>
           </div>
           <p className="ladder-title" data-testid="kiosk-ladder-state-line">{blockingCopy(game, resumable)}</p>
         </section>
@@ -133,11 +135,10 @@ const KioskAiLadderBlockingPanel = ({
             <div className="kiosk-status__cell">
               {/* 标签跟着 `ownership` 走:心跳是 origin-only 上报的,而 `current_device`
                   的定义就是「origin 是这台机器」⇒ 那一格里它是**本机自己的**心跳。
+                  位置证不出来的那一格(`unknown`)不替它认领一台机器,只说「对局设备」。
                   **只报距今多久,不配失联阈值** —— 象棋那屏配了阈值,因为它的模型里还有
                   接管窗口;围棋把那一整套删了,再摆阈值等于把删掉的判据从 UI 长回来。 */}
-              <span className="kiosk-status__k">
-                {game.ownership === 'current_device' ? '本机心跳' : '对方设备心跳'}
-              </span>
+              <span className="kiosk-status__k">{heartbeatLabel(game)}</span>
               <b className="kiosk-status__v">{formatAge(game.heartbeat_age_seconds, '未收到过')}</b>
             </div>
             <div className="kiosk-status__cell">

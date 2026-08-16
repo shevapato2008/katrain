@@ -158,15 +158,56 @@ def _pending_settlement(request: Request, user_id: int) -> bool:
     return request.app.state.ai_ladder_repo.get_pending_game(user_id) is not None
 
 
-def _device_id(request: Request, *, required: bool = True) -> str:
+def _device_identity(request: Request) -> Optional[str]:
+    """这次请求的设备身份 —— **取不到就是 `None`,不发明一个**。
+
+    和 `_device_id` 只差这一处,而这一处就是那块屏的全部:`_device_id` 在没有头的时候
+    发明一个 `"cloud-local"`。那个值当**出处标签**写进 `origin_device_id` 是无害的
+    (审计里的一行字,谁写的就记谁),当**身份**参与 `==` 就是撒谎 —— 两个不同的浏览器
+    都叫 `"cloud-local"`,比出来相等,屏上于是言之凿凿地说「这一局在本机开始」;而它
+    对上一台真盒子起的局,比出来不等,屏上说「在你的另一台设备上」。两句都不是查出来的,
+    是一个占位字符串碰巧比出来的。
+
+    **多一个取值只是让谎话有地方待着。** 取不到就 `None`,让调用方说得出「不知道」。
+    """
+
     value = request.headers.get("X-StellaBox-Device-ID")
     normalized = value.strip() if isinstance(value, str) else ""
-    if len(normalized) > 64 or (required and not normalized):
+    if len(normalized) > 64:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="X-StellaBox-Device-ID must be a non-empty label of at most 64 characters",
         )
-    return normalized or "cloud-local"
+    return normalized or None
+
+
+def _device_id(request: Request, *, required: bool = True) -> str:
+    """写进账本/预约行的**出处标签**。身份判断一律走 `_device_identity`。"""
+
+    identity = _device_identity(request)
+    if required and identity is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="X-StellaBox-Device-ID must be a non-empty label of at most 64 characters",
+        )
+    return identity or "cloud-local"
+
+
+def _ownership(origin_device_id: str, device_identity: Optional[str]) -> str:
+    """那一局在哪台设备上 —— 三个取值,因为世界有三种。
+
+    判据只有一条:**两个设备身份的比较**。不是「哪条路答上来的」,不是「本机有没有它的
+    记录」——「本机没有记录 ⇒ 那一定在别台」等价于假设本机记录永不丢,而换过盒子、重装
+    系统、清过库的那台正站在用户面前。
+
+    `unknown` 不是第三种位置,是**没有位置**:这次请求根本没带设备身份(网页直连云端),
+    拿它和任何东西比都得不出结论。布尔装不下这个格子 —— 塞回二值就一定有一格在撒谎,
+    而撒的正好是「在别的机器上」那句(`None != 真身份` 恒真)。
+    """
+
+    if device_identity is None:
+        return "unknown"
+    return "current_device" if origin_device_id == device_identity else "other_device"
 
 
 def _age_seconds(moment: Optional[datetime]) -> Optional[int]:
@@ -179,7 +220,9 @@ def _age_seconds(moment: Optional[datetime]) -> Optional[int]:
     return max(0, int((datetime.now(timezone.utc) - moment).total_seconds()))
 
 
-def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: str) -> dict[str, object]:
+def _blocking_payload(
+    request: Request, game: AiLadderBlockingGame, device_identity: Optional[str]
+) -> dict[str, object]:
     """挡住新局的那一局,以及**只有**用户需要知道的那几件事。
 
     曾经这里发 10 个字段(两组 can_*/eligible_at/eligible_in_seconds/threshold_seconds/
@@ -190,6 +233,7 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
     此刻还在不在。在场就意味着用户该做的是**接着下**,不是开新局。
     """
 
+    ownership = _ownership(game.origin_device_id, device_identity)
     payload: dict[str, object] = {
         "game_id": game.game_id,
         # `reserved` 不能并进 `active`。它一样占着账号,但**代价不同** —— 那一格两端都还没
@@ -197,7 +241,7 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
         # 本局负」,而后端什么都不会记:一句关于后果的假话,而且是往贵了说,用户会因此干等
         # 那 5 分钟的自动回收。
         "state": game.state if game.state in {"reserved", "pending_settlement"} else "active",
-        "ownership": "current_device" if game.origin_device_id == device_id else "other_device",
+        "ownership": ownership,
         "user_color": game.user_color,
         "opponent_rank_name": game.opponent.rank_name,
         # 两个**时长**,不是时刻 —— 常年离线、没有可靠 NTP 的一体机正是钟偏最大的那一台,
@@ -207,9 +251,13 @@ def _blocking_payload(request: Request, game: AiLadderBlockingGame, device_id: s
         "heartbeat_age_seconds": _age_seconds(game.last_heartbeat_at),
         "pending_since_seconds": _age_seconds(game.pending_settlement_since),
     }
+    # `session_id` 的判据是**这个节点此刻真的握着那个会话**,不是 ownership。两件事今天
+    # 恰好同值(会话活着 ⇒ 一定是本机的),但它们是两个语义:ownership 说位置,`session_id`
+    # 说「在这里接得回来」。挂在同一个布尔上,第三态一出现就会两边一起错。
+    # `other_device` 仍然一律不给:那台的会话不在这个节点上,给一个接不上的 id 是假出路。
     if (
         game.state == "active"
-        and game.origin_device_id == device_id
+        and ownership != "other_device"
         and game.origin_session_id
         and _active_session(request, game.origin_session_id)
     ):
@@ -390,7 +438,9 @@ def _recover_pending(request: Request, user_id: int) -> None:
         logging.getLogger("katrain_web").error("Failed to recover ranked AI settlement: %s", exc)
 
 
-def _status_payload(request: Request, current_user: User, *, device_id: Optional[str] = None) -> dict[str, object]:
+def _status_payload(
+    request: Request, current_user: User, *, device_identity: Optional[str] = None
+) -> dict[str, object]:
     _recover_pending(request, current_user.id)
     repo = request.app.state.ai_ladder_repo
     db = repo.session_factory()
@@ -433,7 +483,7 @@ def _status_payload(request: Request, current_user: User, *, device_id: Optional
         "recent_ranked_results": repo.recent_counted_results(current_user.id, limit=5),
         "net_score": net_score,
         "pending_settlement": _pending_settlement(request, current_user.id),
-        "blocking_game": _blocking_payload(request, blocking, device_id or "cloud-local") if blocking else None,
+        "blocking_game": _blocking_payload(request, blocking, device_identity) if blocking else None,
         # Whether THIS node will seat an uncertified rung. The rung's own
         # certification_status/availability keep telling the truth about the rung; this
         # says what the server will do about it, so the client can stop guessing why a
@@ -470,17 +520,35 @@ async def get_status(request: Request, current_user: User = Depends(get_current_
                 sync = describe(_settlement_outbox_key(blocking["game_id"]), user_id=current_user.id)
                 if sync is not None:
                     payload["blocking_game"]["sync"] = sync
-        if (
-            isinstance(blocking, dict)
-            and blocking.get("state") == "active"
-            and blocking.get("ownership") == "current_device"
-        ):
+        if isinstance(blocking, dict) and blocking.get("state") == "active":
             pending = request.app.state.ai_ladder_repo.get_pending_game(current_user.id)
-            if (
+            # 这台设备是不是那一局的 origin —— **不看云端那个标签,看凭证在不在手上**。
+            #
+            # ⚠️ **这段扛着 100% 的负载,不是在救一个罕见情况。谁觉得它冗余把它删掉,假话立刻上屏。**
+            # 云端的 `ownership` 比的是 `origin_device_id` 这个标签,而这个标签**每次重启就换一个**:
+            # `config.py:132-134` 在 `KATRAIN_DEVICE_ID` 没配时现生成 `uuid4().hex`(README 原文:
+            # *If omitted, a random UUID is generated on each startup*),而**全仓没有任何一份
+            # 部署产物写过这个环境变量**(2026-08-16 扫过 .env/.service/.sh/.yml/.conf:0 命中;
+            # 只有 README 和几份计划文档提到过它)。⇒ 盒子重启一次,它自己那一局在云端就变成
+            # 「另一台设备」—— 而人正站在这台前面,会去找一台不存在的机器。
+            #
+            # 真正的根治是把 DEVICE_ID 持久化,但那个值同时是 refresh-token 的存储键和 outbox 的
+            # device 字段,不在升降级模块的范围里。在那之前,这段是屏上那句话为真的唯一原因。
+            #
+            # 这台设备手上有那一局的 `reservation_key`,而 `_verify_origin`
+            # (`ai_ladder_ranked.py`)写得很明白:设备 id 是可变的出处标签、从来不是凭证,
+            # **那把猜不到的钥匙是 origin 唯一的凭据**。钥匙只在 `/start` 时发给创建方一次,
+            # 所以「本机 pending 表里存着这一局的 key」就等于「这一局是这台设备起的」。
+            # 我想问的那句话是「那一局是不是这台起的」,这一步问的正是它 —— 没有换成更宽的
+            # 「本机有没有它的记录」(那句在库被清过之后会答错,而且答的是相反的方向)。
+            owned_here = (
                 pending is not None
                 and pending.get("game_id") == blocking.get("game_id")
-                and _local_ranked_session_matches(request, current_user, pending, blocking["game_id"])
-            ):
+                and bool(pending.get("reservation_key"))
+            )
+            if owned_here and blocking.get("ownership") != "current_device":
+                payload["blocking_game"]["ownership"] = "current_device"
+            if owned_here and _local_ranked_session_matches(request, current_user, pending, blocking["game_id"]):
                 await _remote(
                     lambda: _retry_indeterminate(
                         lambda: request.app.state.remote_client.activate_ai_ladder_game(
@@ -494,7 +562,7 @@ async def get_status(request: Request, current_user: User = Depends(get_current_
                 # 会话住在盒子上,云端分不清「能接回来」和「已经孤儿」,所以对每一局盒子上的棋
                 # 它都答「接不回来」—— `session_id` 就是为此在这里补上的。
                 # (曾经还要在这里抹掉一组云端发来的接管字段;那组字段已经不存在了。)
-            elif pending is not None and pending.get("game_id") == blocking.get("game_id"):
+            elif owned_here:
                 try:
                     cancelled = await request.app.state.remote_client.cancel_ai_ladder_reservation(
                         blocking["game_id"], pending["reservation_key"]
@@ -518,11 +586,11 @@ async def get_status(request: Request, current_user: User = Depends(get_current_
                 request.app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=pending["game_id"])
         return payload
     _require_authority(request)
-    return _status_payload(request, current_user, device_id=_device_id(request, required=False))
+    return _status_payload(request, current_user, device_identity=_device_identity(request))
 
 
 def _reserve(*, body: AiLadderReserveRequest, request: Request, current_user: User, device_id: str):
-    status_payload = _status_payload(request, current_user, device_id=device_id)
+    status_payload = _status_payload(request, current_user, device_identity=_device_identity(request))
     opponent_entry = status_payload["current_opponent"]
     assert isinstance(opponent_entry, dict)
     try:
@@ -563,26 +631,29 @@ def reserve_ranked_game(
     current_user: User = Depends(get_current_user),
 ):
     _require_authority(request)
+    # 两个用途,两个值,别合并:`device_id` 是记进预约行的**出处标签**(不能为空),
+    # `identity` 是这次请求**能不能证明自己是谁**(没有就是 None)。
     device_id = _device_id(request, required=False)
+    identity = _device_identity(request)
     try:
         reserved = _reserve(body=body, request=request, current_user=current_user, device_id=device_id)
     except HTTPException as exc:
         blocking = request.app.state.ai_ladder_repo.get_blocking_game(current_user.id)
         if exc.status_code == status.HTTP_409_CONFLICT and blocking is not None:
-            exc.detail = {"message": str(exc.detail), "blocking_game": _blocking_payload(request, blocking, device_id)}
+            exc.detail = {"message": str(exc.detail), "blocking_game": _blocking_payload(request, blocking, identity)}
         raise
     if reserved.reservation_key is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={
                 "message": "Reservation already exists; its credential cannot be replayed",
-                "blocking_game": _blocking_payload(request, reserved.game, device_id),
+                "blocking_game": _blocking_payload(request, reserved.game, identity),
             },
         )
     return {
         "game_id": reserved.game.game_id,
         "reservation_key": reserved.reservation_key,
-        "blocking_game": _blocking_payload(request, reserved.game, device_id),
+        "blocking_game": _blocking_payload(request, reserved.game, identity),
         "opponent": {
             "rung": reserved.game.opponent.rung,
             "rank_name": reserved.game.opponent.rank_name,
@@ -863,7 +934,7 @@ async def start_ranked_game(
                 pass
             raise HTTPException(status_code=503, detail="Cloud returned an invalid ranked reservation") from exc
     else:
-        status_payload = _status_payload(request, current_user, device_id=device_id)
+        status_payload = _status_payload(request, current_user, device_identity=_device_identity(request))
         if status_payload["pending_settlement"]:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="Previous ranked game settlement is pending"
@@ -1089,7 +1160,7 @@ async def start_ranked_game(
         "status": (
             await _remote(lambda: request.app.state.remote_client.get_ai_ladder_status(), "AI ladder status")
             if board
-            else _status_payload(request, current_user, device_id=device_id)
+            else _status_payload(request, current_user, device_identity=_device_identity(request))
         ),
     }
 

@@ -479,17 +479,55 @@ describe('AiLadderRatedSetup', () => {
     expect(screen.getByText('那一局会记为本局负，并计入升降级')).toBeInTheDocument();
   });
 
-  it('这一格属于本机、却接不回来时，开新局仍然露出来', () => {
-    // 盒子中途重启:局接不回来（没有 session_id）。
+  it('这一格属于本机、却接不回来时，说的是「就在这台设备上，只是本机没有它的记录」', () => {
+    // 第三态:设备身份比对说了它就在这台上,而本机那份记录没了(库被清过、重装、换过盒子)。
+    // 屏上**不许**说「另一台设备」—— 人就站在这台机器前面,那句话会让他走开去找第二台。
+    //
+    // 措辞也从「本机的对局进程已经不在了」改掉:进程是不是还活着,这一格根本查不到
+    // (查得到就有 `session_id`、就走「继续对局」那一格了),它只是「接不回来」的一种
+    // 可能原因,被当成结论说了出来。
     const status = blockingStatus({
       game_id: 'game-a', state: 'active', ownership: 'current_device',
       user_color: 'B', opponent_rank_name: '1段',
     });
     renderSetup(status);
 
-    expect(screen.getByText('这一局在本机开始，但本机的对局进程已经不在了 —— 接不回来。')).toBeInTheDocument();
+    expect(screen.getByText('这一局就在这台设备上，只是本机没有它的记录。')).toBeInTheDocument();
+    expect(screen.queryByText(/另一台设备/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
-    expect(screen.getByText('那一局会记为本局负，并计入升降级')).toBeInTheDocument();
+    // 接不回来 ⇒ 看不见它的进度 ⇒ 代价那一行必须补上「它若其实已下完」这条披露。
+    // 从前这一格说的是干净的「记为本局负」,而那句话多用了一个前提:本机那个进程还在。
+    expect(screen.getByText('那一局会记为本局负；它若其实已下完，真实结果会被顶掉')).toBeInTheDocument();
     expect(screen.getByText('已中断')).toBeInTheDocument();
+    expect(screen.getByText('当前设备')).toBeInTheDocument();
+  });
+
+  it('云端答不出设备身份时，一个位置都不说 —— 也不冒充「其他设备」', () => {
+    // 网页直连云端:请求根本不带 `X-StellaBox-Device-ID`,没有两个 id 可比。
+    // 从前这一格由一个占位字符串 `"cloud-local"` 顶上去参与 `==`,于是屏上言之凿凿。
+    const status = blockingStatus({
+      game_id: 'game-a', state: 'active', ownership: 'unknown',
+      user_color: 'B', opponent_rank_name: '1段',
+    });
+    renderSetup(status);
+
+    expect(screen.getByText('这一局还没了结，但本机认不出它在哪一台设备上。')).toBeInTheDocument();
+    expect(screen.getByText('设备未知')).toBeInTheDocument();
+    expect(screen.queryByText(/另一台设备|就在这台设备上/)).not.toBeInTheDocument();
+  });
+
+  it('位置说不清，也不该让一条查实的出路消失 —— unknown + 活会话照样能接着下', () => {
+    // galaxy 这块屏上**每一局**都是 `unknown`(浏览器没有设备身份),所以
+    // 「`isResumableHere` 必须 `current_device`」那种写法会让「继续对局」整块消失。
+    // 判据只能是 `session_id`:它是这个节点自己发的,只在它真握着那个会话时才有。
+    const status = blockingStatus({
+      game_id: 'game-a', state: 'active', ownership: 'unknown', session_id: 'live-session',
+      user_color: 'B', opponent_rank_name: '1段',
+    });
+    renderSetup(status);
+
+    expect(screen.getByRole('button', { name: '继续对局' })).toBeEnabled();
+    expect(screen.getByText('你有一局正式对局尚未结束。')).toBeInTheDocument();
+    expect(screen.getByText('对局中')).toBeInTheDocument();
   });
 });

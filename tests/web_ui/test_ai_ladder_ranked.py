@@ -493,6 +493,15 @@ def test_remote_resign_generates_minimal_legal_sgf_and_uses_origin_provenance(
 ):
     repo = AiLadderRankedRepository(session_factory)
     reservation = reserve(repo, user.id, replace(opponent, rung=25), user_color=user_color)
+    # 认输是**有棋盘**那一格的出口,所以这里先 activate:一手没走过的占位现在根本不许
+    # 走到 finalize(见 `test_a_reservation_that_never_started_can_never_be_resigned`)。
+    repo.activate_reservation(
+        user_id=user.id,
+        game_id=reservation.game.game_id,
+        reservation_key=reservation.reservation_key,
+        origin_device_id="device-a",
+        origin_session_id="session-a",
+    )
 
     receipt = repo.finalize_reserved_game(
         user_id=user.id,
@@ -1704,20 +1713,41 @@ def test_a_game_id_already_in_the_ledger_cannot_be_reserved_again(session_factor
         assert db.query(models_db.AiLadderActiveGame).filter_by(user_id=user.id).one_or_none() is None
 
 
-def test_ending_an_unplayed_reservation_banks_a_loss_on_purpose(session_factory, user, opponent):
-    """未激活的预约被任意设备 `/end` 掉,**照样记一笔计分的负**。这是设计,不是漏网。
+def test_a_reservation_that_never_started_can_never_be_resigned(session_factory, user, opponent):
+    """没开过局的占位**不许记负** —— 而且这条规则钉在写账本的这个函数上,不在路由里。
 
-    对抗性审计把它报成缺陷(「一手没下就记负」),我照着改了,然后 5 条既有测试当场红 ——
-    其中 `test_any_account_device_can_end_immediately_and_replay_same_receipt` 逐字断言了
-    这个行为。**这条钉在这里,是为了让下一次审计(或下一个我)在改之前先撞到理由。**
+    ⚠️ **这条测试是一次反转,前一版逐字断言了相反的行为**
+    (`test_ending_an_unplayed_reservation_banks_a_loss_on_purpose`,「释放占位不能是免费的,
+    否则『开一局、看一眼对手、不想下就免费退掉』可以反复刷」)。反转的理由,按当时那条给的
+    理由逐条对:
 
-    理由是契约 ④「判负后放行」用在预约上:预约本身已经占住了这个账号的段位位子,
-    而释放占位不能是免费的 —— 否则「开一局、看一眼对手、不想下就免费退掉」就成了
-    可以反复刷的动作,段位并发规则要防的正是这个。
+    1. **经 `/start` 选不进这个状态。** 顺序是 reserve → 建 session → activate → 才把
+       `session_id` 发出去,activate 失败就 `remove_session` 并抛错。所以**经 `/start` 拿到过
+       棋盘的人手上一定是 `active`**,`reserved` 只在「棋盘压根没开起来」时留存 —— 免费释放的
+       不是一局棋,是一次失败的开局。跑出来的:`test_a_failed_activation_hands_the_player_
+       no_board_so_reserved_means_no_game`(test_ai_ladder_api.py)。
 
-    代价也说清楚:`user_games` 里会存一份 `RE[W+F] move_count=0` 的合成棋谱。
-    那份棋谱不诚实(它长得像一局下过的棋),但那是 `remote_resign` 在 `active` 上
-    也有的既有表示法,不是这条路径独有的问题。要改就四条路径一起改,不在这里顺手动。
+       ⚠️ **这条只覆盖 `/start` 那条路,别写成无条件的。** `POST /games/reserve`
+       (endpoints/ai_ladder.py)是**独立端点、不接 activate**,一个拿着有效凭据的客户端
+       确实可以自己停在 `reserved` 里。所以「用户选不进这个状态」是句假话;真话是
+       「**经 `/start` 时**选不进」。(2026-08-16 team lead 驳中,原论证在这里过宽。)
+    1b. **而且无论走哪条路,预约都不揭示任何新信息** —— 这一条不依赖 `/start` 的顺序,
+       所以上面那个洞补得掉。原裁定要防的是「开一局**看一眼对手**就退掉」,而围棋这一眼
+       看不到任何东西:对手档位是 `expected_opponent_rung(rung, lo, hi)`,一个**自己档案的
+       纯函数**,而档案在 `/status` 里就发给客户端了。⇒「看一眼」这个动作没有内容。
+       跑出来的:`test_reserving_reveals_nothing_that_status_did_not_already_hand_over`。
+    2. **生产早就这么做了。** `/end` 读到 `reserved` 时走 `release_unplayed_reservation`,
+       不写账本行、不动段位。这条 guard 不是新政策,是把那条政策搬到唯一写账本的地方 ——
+       原来它只活在端点里的一个 `if`,一次重构就没了,而账本不可变:写错一行负改不回来。
+    3. 四家统一口径的判据是**「服务端从没收到过这一局的心跳」**这一类的**代理量**
+       (2026-08-16 定;更早那版「有没有走过一手」已作废 —— 云端手上根本没有着法,着法只在
+       结算那一刻上云,而免费释放走的恰恰是没有结算载荷的那条路)。围棋用的代理量是
+       `state == "reserved"`,它比心跳**更靠前也更准**:activate 挂在棋盘建起来那一刻,
+       心跳是之后的定时器,一局 `active` 的棋可以一次心跳都还没发。象棋那条代理量误盖的
+       「盒子离线把一整局下完了」,在围棋这里盖不到 —— 理由与「围棋为什么可以删行」是同一条,
+       写在 `ai_ladder_ranked.py` 的 `release_unplayed_reservation` 里。
+
+    合成棋谱那条代价也随之消失:这一格不再写 `user_games`,因为它根本不落账。
     """
 
     repo = AiLadderRankedRepository(session_factory)
@@ -1725,17 +1755,30 @@ def test_ending_an_unplayed_reservation_banks_a_loss_on_purpose(session_factory,
     with session_factory() as db:
         assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id).state == "reserved"
 
-    receipt = repo.finalize_reserved_game(
-        user_id=user.id,
-        game_id=reservation.game.game_id,
-        terminal_source="remote_resign",
-        result="loss",
-        deciding_device_id="device-b",
-    )
+    with pytest.raises(AiLadderLifecycleConflict):
+        repo.finalize_reserved_game(
+            user_id=user.id,
+            game_id=reservation.game.game_id,
+            terminal_source="remote_resign",
+            result="loss",
+            deciding_device_id="device-b",
+        )
 
-    assert (receipt.state, receipt.counted) == ("settled", True)
+    # 被拒了就**什么都不许留下**:没有账本行、没有合成棋谱、没有段位。占位原样还在,
+    # 用户走 `release_unplayed_reservation` 免费拿回它。
+    with session_factory() as db:
+        assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id).state == "reserved"
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.query(models_db.UserGame).count() == 0
+        assert db.query(models_db.AiLadderProfile).count() == 0
+
+    released = repo.release_unplayed_reservation(
+        user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
+    )
+    assert (released.cancelled, released.receipt) == (True, None)
     with session_factory() as db:
         assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id) is None
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
 
 
 def test_a_pre_existing_user_game_row_must_not_be_able_to_lock_the_account(session_factory, user, opponent):

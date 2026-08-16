@@ -17,6 +17,29 @@ import { resolve } from 'node:path';
  *   · 出路集合与顺序必须相同(继续 / 立即重试 / 让位)。
  * 文案共用 `features/aiLadder/blockingCopy`,所以这组断言真正守的是「有没有人在某一侧
  * 又抄了一份」—— 而 eslint 的 kiosk↛galaxy 边界保证了两边再也看不见彼此,抄了也没人发现。
+ *
+ * ---
+ * **怎么跑(三个坑全是「假红」—— 看起来像产品坏了,实际是调用方式错了)**
+ *
+ * ```
+ * cd katrain/web/ui
+ * KATRAIN_DATABASE_URL="sqlite:///<某个临时路径>.db" \
+ *   npx playwright test tests/kiosk-ai-ladder-cross-device-semantics.spec.ts --workers=1
+ * ```
+ *
+ * · **必须在 `katrain/web/ui` 下跑。** 上面 `OUT_DIR` 用的是 `process.cwd()` + `../../..`,
+ *   从仓根跑会解析到 `/Users`,报一串 `EACCES: mkdir /Users/superpowers/...`。
+ * · **必须给 `KATRAIN_DATABASE_URL`。** `playwright.config.ts` 的 webServer 起
+ *   `python -m katrain --ui web`,它读 `~/.katrain/config.json` 里的 PostgreSQL URL;
+ *   本机没有 PG 就倒在 `psycopg2.OperationalError: ... port 5432 failed`,
+ *   看着像服务端坏了。指到 SQLite 即可,产品本身不需要 PG。
+ * · **必须 `--workers=1`。** 并行时 SQLite 下 webServer 会中途没掉,
+ *   报 `page.goto: net::ERR_CONNECTION_REFUSED` —— 红在 `page.goto` 上、不在断言上。
+ *   **判据:红了先看红在哪一行;不在断言上的红一律不算数。**
+ *
+ * ⚠️ 跑完 `git status` 复查:`--ui web` 退出时会重写 `~/.katrain/config.json`(跑前先备份),
+ * 而这条 spec 每跑一次都会重写 `visual/**` 下那批 tracked 证据图;**失败**的跑还会留下
+ * 半写的 PNG 和 `test-results/` 临时目录,都要还原/清掉。
  */
 
 const GALAXY_VIEWPORT = { width: 1440, height: 900 };
@@ -111,6 +134,32 @@ const CASES: Array<{ slug: string; title: string; blocking: Record<string, unkno
       user_color: 'W', opponent_rank_name: '业余 3 段',
     },
   },
+  // ↓ 这两格是**这条 spec 唯一分辨得出新旧判据的地方**,别当成凑数的。
+  //
+  // 代价那一行从前按 `ownership === 'other_device'` 分叉,现在按「这个节点握不握着那个
+  // 会话」(`session_id`)分叉。上面五格里两个判据取值**完全相同** —— 02 有 session 且
+  // `current_device`,03 是 `other_device` 且无 session,两边都同值。所以把判据改回旧的,
+  // 这条 spec 照样全绿:断言选在了两个语义恰好同值的那一侧,闸空转。
+  //
+  // 缺的正是 `active` + 没有 `session_id` + **位置不是「别台」**这一格:棋盘真开过、
+  // 而这个节点看不见它的进度。旧判据在这里给「干净的一场负」,新判据给「多一句披露」——
+  // 这两格红不红,就是这条 spec 还守不守得住它自己注释里那句话。
+  {
+    slug: '06-active-current-no-session',
+    title: '就在这台设备上,但本机没有它的记录',
+    blocking: {
+      game_id: 'g1', state: 'active', ownership: 'current_device',
+      user_color: 'B', opponent_rank_name: '业余 3 段',
+    },
+  },
+  {
+    slug: '07-active-unknown-no-session',
+    title: '云端答不出设备身份 —— 网页直连时的每一局',
+    blocking: {
+      game_id: 'g1', state: 'active', ownership: 'unknown',
+      user_color: 'W', opponent_rank_name: '业余 3 段',
+    },
+  },
   {
     slug: '04-pending-retrying',
     title: '成绩还在送 —— 守卫 2 那一格',
@@ -170,8 +219,12 @@ for (const testCase of CASES) {
     // 代价行:那一格的价钱,逐字相同。
     const cost = testCase.blocking.state === 'reserved'
       ? '那一局没能开起来，让掉它不记成绩'
-      : testCase.blocking.state === 'active' && testCase.blocking.ownership === 'other_device'
-        // 远端那格的代价多一句:云端看不见那台机器的发送队列,它可能已经下完了。
+      // 分叉的判据是 **这个节点握不握着那个会话**(`session_id`),不是位置。握不着 ⇒
+      // 看不见那一局的进度、也可能有一份成绩压在别处的队列里 ⇒ 必须补那句披露。
+      // 从前这里写的是 `ownership === 'other_device'`,而「就在这台设备上、只是本机没有
+      // 它的记录」那一格同样看不见进度 —— 它会拿一句干净的「记为本局负」把一份可能已经
+      // 存在的成绩静悄悄顶掉。
+      : testCase.blocking.state === 'active' && !testCase.blocking.session_id
         ? '那一局会记为本局负；它若其实已下完，真实结果会被顶掉'
         : '那一局会记为本局负，并计入升降级';
     expect(galaxy.text).toContain(cost);

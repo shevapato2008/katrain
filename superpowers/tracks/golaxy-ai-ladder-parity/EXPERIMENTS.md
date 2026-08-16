@@ -1319,6 +1319,124 @@ Wilson 区间仅在 0.342–0.469 重叠）。两次运行的 configuration 指�
 
 ---
 
+### C37. 全阶梯相邻缝六轮标定：3,725 局，35 条缝只有 7 条过闸（2026-08-13 — 08-14）
+
+**本节是 2026-08-13/14 两天全部实测的落盘（3,972 局）。此前这些数只活在会话里，无任何仓内记录。**
+
+> **复算入口**：`calibration/replay_seams_summary.py` 从
+> `calibration/results/artifacts/ladder_seams_summary_20260814.jsonl.gz`（6 KB，每局一行）
+> 重算本节全部表格，含自证。原始 checkpoint 共 1.6 GB，留在 home-ubuntu 的
+> `calibration/results/ladder_*_2026081[34]/`（见附表），未入库。
+
+判据一律 **Wilson 95% CI 下界 ≥ 0.60**。点估计只记录、不作判据——设计目标是点估计、
+认证闸门是 CI 下界，同一个数不可能同时成立。每一批出表前逐局自证 `a_color == our_color`，
+不成立即拒绝出表（方向猜错整张表会静默翻转，0.62 与 0.38 都是合理数，肉眼分不出）。
+
+引擎：home-ubuntu `katago-calib`（`katago-trt:latest`，TensorRT，`127.0.0.1:8010`）。
+
+#### C37.1 档案轴（profile）单独走不动
+
+`rank_Nd@1` vs `rank_(N-1)d@1`，纯加权采样、只动档案：
+
+| 缝 | 胜率 | 战绩 | CI 下界 | Elo | 判定 |
+|---|---|---|---|---|---|
+| 1d vs 1k | 68.0% | 70/103 | 0.584 | +131 | 🟡 |
+| 2d vs 1d | 67.9% | 72/106 | 0.585 | +130 | 🟡 |
+| 3d vs 2d | 66.4% | 71/107 | 0.570 | +118 | 🟡 |
+| 4d vs 3d | 65.7% | 71/108 | 0.564 | +113 | 🟡 |
+| 5d vs 4d | 62.5% | 65/104 | 0.529 | +89 | 🟡 |
+| **6d vs 5d** | **53.2%** | 58/109 | 0.439 | +22 | **❌ 饱和** |
+
+**档案轴在 1k–5d 一路 🟡（下界 0.53–0.585，全部够不到 0.60），到 5d→6d 直接饱和。**
+这与 C34/C35/C36 的样本量结论合流：不是样本不够，是相邻档真实差距就在 ~110 Elo 上下，
+n≈105 时 Wilson 下界最好也只能到 ~0.585。**要过 0.60 闸，档案轴必须隔档取，或换轴。**
+
+#### C37.2 准段（T=1.15）方向是反的
+
+`_TEMPERATURE_CANDIDATES` 全部 > 1.0，是把档位做**弱**用的。实测两种缝：
+
+| 缝型 | 例 | 胜率区间 | 判定 |
+|---|---|---|---|
+| 同档案 `@1` vs `@1t1.15`（正段 vs 其下准段） | 21_22 … 31_32 | 62.9%–69.0% | 🟡 全部 |
+| 高一档 `@1t1.15` vs 低一档 `@1`（准段 vs 其下正段） | 20_21 … 32_33 | **34.6%–51.5%** | **❌ 全部** |
+
+第二行是判决：**准(N+1)段比 N 段弱**，档次越高越反（32_33 = 34.6%，−110 Elo）。
+「档案升一级」只值 +20~27 Elo，补不回 T=1.15 掉的那 ~130。**准1–准6 档的取消有实测依据。**
+
+#### C37.3 机制轴强且单调，但阶梯把它用反了
+
+| 缝 | 配置 | 胜率 | CI 下界 | Elo | 判定 |
+|---|---|---|---|---|---|
+| 6段 vs 5段 | `rank_6d@1s` vs `rank_5d@1` | 85.3% | 0.771 | +305 | ✅ |
+| 7段 vs 6段 | `rank_7d@1s` vs `rank_6d@1` | 94.1% | 0.878 | +482 | ✅ |
+| 准7段 vs 6段 | `rank_6d@4` vs `rank_6d@1s` | 91.4% | 0.845 | +411 | ✅ |
+| 准7段 vs 6段 | `rank_6d@2` vs `rank_6d@1s` | 70.1% | 0.608 | +148 | ✅ |
+| 准8段 vs 7段 | `rank_7d@4` vs `rank_7d@1s` | 89.1% | 0.815 | +365 | ✅ |
+| 准9段 vs 8段 | `rank_9d@1s` vs `rank_8d@1s` | 75.9% | 0.671 | +200 | ✅ |
+| **7段 vs 准7段** | `rank_7d@1s` vs `rank_6d@4` | **9.7%** | 0.054 | **−387** | **❌** |
+| **8段 vs 准8段** | `rank_8d@1s` vs `rank_7d@4` | **19.0%** | 0.127 | **−251** | **❌** |
+| 7段 vs 准7段(@2 版) | `rank_7d@1s` vs `rank_6d@2` | 32.7% | 0.246 | −125 | ❌ |
+| 8段 vs 准8段(@2 版) | `rank_8d@1s` vs `rank_7d@2` | 44.9% | 0.358 | −36 | ❌ |
+| 8段 vs 7段 | `rank_8d@1s` vs `rank_7d@1s` | 46.2% | 0.374 | −27 | ❌ |
+
+**四条反序全是同一个形状**：阶梯从 `rank_Nd@搜索` 掉回 `rank_(N+1)d@1s`（argmax），
+**丢掉 148~411 的机制增益，只换回 20~27 的档案增益**。把搜索从 @4 降到 @2（v3 方案）
+只是把反序从 −387 缩到 −125，方向不变——外推预判被实测证实。
+
+**结论：机制轴必须单调，不能在升档时退回去。**
+
+#### C37.4 温度 T<1 能切开 argmax 断崖，但只切得出一档
+
+此前从没跑过 T<1。全程 `rank_7d`，只动温度（低温 = 更接近 argmax = 更强）：
+
+| 缝 | 胜率 | 战绩 | CI 下界 | Elo | 判定 |
+|---|---|---|---|---|---|
+| `@1t0.8` vs `@1`（T1.0） | 78.7% | 100/127 | **0.708** | +227 | **✅ 过闸** |
+| `@1t0.6` vs `@1t0.8` | 64.3% | 81/126 | 0.556 | +102 | 🟡 |
+| `@1t0.4` vs `@1t0.6` | 53.7% | 66/123 | 0.449 | +25 | ❌ |
+| `@1s`(argmax) vs `@1t0.4` | 51.1% | 67/131 | 0.427 | +8 | ❌ |
+
+温度响应**强非线性**：增益几乎全在 T=1.0→0.6 之间（+329 的 88%），
+**T ≤ 0.4 与 argmax 已经分不开**。这一段累计 ≈ 362 Elo，与整段断崖 ~470 同量级。
+
+**可用产物：`@1t0.8` 是一个能过闸的真档位**，坐在加权与 argmax 之间。
+`@1t0.6` 加到 126 局后下界仍只有 0.556（点估计从 67.3% 落到 64.3%，加局是往下走的），
+**它不是样本不够，是真实差距够不到闸**。T ≤ 0.4 不必再试。
+
+#### C37.5 对 `_CERTIFIED_RUNGS` 的直接结论
+
+35 条缝里过 0.60 下界闸的只有 7 条，且**不连续**。现行阶梯的绝大多数相邻缝
+（档案轴那一串 🟡、准段那一串 ❌、四条机制反序）都不满足认证条件。
+
+**因此 `_CERTIFIED_RUNGS` 保持 `frozenset()`。** 这不是「还没填」，是**实测支持的结论**：
+按现行配置，没有一段连续的阶梯能声称已标定。`ladder.py` 的注释本来就写死了这条规矩——
+"Never widen this set to make something playable，that is what LADDER_ALLOW_PROVISIONAL_ENV
+is for"——盒子上正是靠那个开关在跑，API 如实报 `provisional/unavailable`，账本如实记
+`counted=0, reason=opponent_not_eligible`（2026-08-14 rk3562 实测，见下）。
+
+**重排阶梯的方向（有实测支撑，未实施）**：单一档案内按 `@1 → @1t0.8 → @1s → @2 → @4`
+排，机制全程单调不回退；跨档案只在同机制下比较。这条链的每一步都在上面量过。
+
+#### C37.6 2026-08-14 rk3562 真机验证（围棋侧）
+
+盒子 → `go.sailorvoyage.top` → home-ubuntu katrain。SSO 桥经 launcher 模式切换发起
+（**同模式切换是 noop，不触发 bootstrap**，必须真的切走再切回）。开局 201，
+对手 rung 16「5级」，`certification_status: provisional`、`availability: unavailable`、
+`provisional_play_allowed: true`。认输后账本落行：
+
+```
+id=3  game=e16bdddb…  user=5  B  loss  counted=0  reason=opponent_not_eligible
+      opponent_rung=16  cert=provisional
+```
+
+`ck_ai_ladder_ledger_decision` 要求 `counted=TRUE` 时 `opponent_certification_status='certified'`，
+所以未标定档位上的对局**在库层就不可能被记成计分局**。设计意图完整落实。
+
+⚠️ 盒子上 `ai_ladder_game_ledger` 仍是旧 schema（无 `account_subject`、无不可变触发器），
+落后 develop `9d5d76d2`。不影响本次验证结论，但盒子树需要同步。
+
+---
+
 ## D. 待办 / 开放项
 
 - [x] **实验(1)(2)有效重跑**:新 namespace 的 `@80 vs @40` screening 与预声明 confirmation 已完成;
@@ -1465,6 +1583,12 @@ Wilson 区间仅在 0.342–0.469 重叠）。两次运行的 configuration 指�
 | 41 档 6d/5d 40 盘 confirm(§C36) | `calibration/results/ladder_41_native_6d5d_confirm_20260804/` |
 | 41 档段位原生相邻链 2d/1d、4d/3d、5d/4d | `calibration/results/ladder_41_native_bounds_missing_low_20260804/` |
 | 41 档段位原生相邻链 7d/6d、8d/7d、9d/8d | `calibration/results/ladder_41_native_bounds_missing_high_20260804/` |
+| §C37 级位/段位档案轴相邻链 1k–6d(6 条缝) | `calibration/results/ladder_nodan_seams_20260813/` |
+| §C37 高段 6d/7d、7d/8d argmax 缝 | `calibration/results/ladder_top_seams_20260813/` |
+| §C37 41 档产品阶梯相邻链 20–33(13 条缝) | `calibration/results/ladder_41_product_seams_20260813/` |
+| §C37 机制轴方案 v2(搜索 @4,6 条缝) | `calibration/results/ladder_v2_seams_20260813/` |
+| §C37 机制轴方案 v3(搜索 @2,4 条缝) | `calibration/results/ladder_v3_seams_20260813/` |
+| §C37.4 温度轴 T<1(4 条缝,427 局) | `calibration/results/ladder_v4_temp_seams_20260814/` |
 
 > 上表全部 `ladder_41_*` 批次的原始 checkpoint 以 gzip 归档在各批次的 `artifacts/*.jsonl.gz`
 > 并已提交（沿用 `selfplay_v2_pikl/artifacts/` 先例，303 MB → 11 MB，逐个校验解压后 SHA-256

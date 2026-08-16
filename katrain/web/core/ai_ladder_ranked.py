@@ -157,6 +157,13 @@ def expected_opponent_rung(rung: Optional[int], placement_lo: int, placement_hi:
     superpowers/tracks/golaxy-ai-ladder-parity/2026-08-04-41-tier-rated-play-integration-design.md
     §6, which asks for the whole search to run over available rungs.
     """
+    # ⚠️ **这是个纯函数,而「免费释放占位」那一格把这件事当前提用。** 三个入参全在
+    # `AiLadderProfile` 上,而 `/status` 在任何预约之前就把档案连同 `current_opponent`
+    # 发给客户端了 ⇒ **预约一次不揭示任何客户端还不知道的东西**,所以「开一局看一眼对手就
+    # 免费退掉」这个滥用动作没有内容(见 `release_unplayed_reservation`,以及
+    # `test_reserving_reveals_nothing_that_status_did_not_already_hand_over`)。
+    # 哪天档位改成随机 / 带时间 / 按对手池实时可用性挑,预约就变成一条信息通道,
+    # 那一格的「免费」必须重新论证。
     return rung if rung is not None else (placement_lo + placement_hi) // 2
 
 
@@ -451,8 +458,31 @@ class AiLadderRankedRepository:
             if existing is not None:
                 return AiLadderCancelResult(cancelled=False, receipt=self._replay_lifecycle_receipt(session, existing))
             row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
+            # `state == "reserved"` 是「没开过局」的**代理量**,不是那件事本身。它实际断言的是
+            # 「云端从没收到过这一局的 activate」。两者在围棋里重合,靠的是**别的文件**里的一个
+            # 顺序:`/start` 是 reserve → 建 session → activate → 才把 session_id 发给玩家,
+            # 而 activate 失败会 `manager.remove_session` 并抛错(见 endpoints/ai_ladder.py 的
+            # `/start` except 块,以及钉住它的
+            # `test_a_failed_activation_hands_the_player_no_board_so_reserved_means_no_game`)。
+            #
+            # ⚠️ **谁哪天把 activate 挪晚(比如挪到第一次心跳、像五子棋那样),这个代理量当场
+            # 开始覆盖真下过的棋**,而下面那一行 delete 就变成了下面说的那条锁死链的上游。
             if row.state != "reserved":
                 raise AiLadderLifecycleConflict("only a reservation that never started can be released")
+            # **围棋这里可以删行,象棋不行 —— 差别在补交入口,不在这一行。** 别照象棋改过来。
+            #
+            # 象棋 2026-08-11 跑真代码确认的锁死链:离线盒子下完一整局 → 另一台设备免费释放
+            # (删预约)→ 原盒子补交 → 服务端查不到预约 → **409** → 盒端判为不可重试 →
+            # 队列 block → 账号锁死。所以四家统一要求「免费 = 写一条不计分的终局回执,不是删行」。
+            #
+            # 围棋这条链断在第四跳:`submit_settlement` 查不到预约行时**不 409**,落到
+            # `settle_game(unreserved_origin=True)`,那条路 never raises,记一行
+            # `counted=False, reason="unreserved"` 并回 **200**;盒端 outbox 收 200 就 completed。
+            # 这不是推的 —— `test_freeing_a_reservation_cannot_strand_a_game_the_box_really_played`
+            # 把云端真发出来的那个响应喂进真的 `SyncWorker._execute_item` 跑过。
+            #
+            # ⇒ 保留 delete 的**前提有两条**,任一被改掉就必须改成写回执:
+            #    ① 上面那个 activate 顺序;② `submit_settlement` 的无预约分支不 409。
             session.delete(row)
             session.commit()
             return AiLadderCancelResult(cancelled=True, receipt=None)
@@ -492,6 +522,9 @@ class AiLadderRankedRepository:
             self._verify_origin(row, reservation_key=reservation_key, origin_device_id=origin_device_id)
             if row.state != "reserved":
                 raise AiLadderLifecycleConflict("only an unactivated reservation may be cancelled")
+            # 第三处 `session.delete` —— 判据(`state == "reserved"` 这个代理量)和「围棋为什么
+            # 可以删而象棋必须写不计分回执」的两条前提,都写在 `release_unplayed_reservation`。
+            # 别只改一处:三处共用同一对前提。
             session.delete(row)
             session.commit()
             return AiLadderCancelResult(cancelled=True)
@@ -810,6 +843,21 @@ class AiLadderRankedRepository:
                 )
                 if row.state not in {"active", "pending_settlement"}:
                     raise AiLadderLifecycleConflict("reservation must be activated before terminal submission")
+            if terminal_source == "remote_resign" and row.state == "reserved":
+                # 没开过局的占位不记负 —— 这条属于**这个函数**,不属于调用方的路由。
+                #
+                # `/end` 今天确实先把 `reserved` 分流去 `release_unplayed_reservation`,
+                # 所以这一格现在到不了。但那是**别处**的一个 if,而这里是唯一写账本的地方:
+                # 判据留在调用方,就等于「以后谁再接一个调用点,这条规则默认不适用」。
+                # 代价还不对称 —— 账本不可变,写错一行负是改不回来的。
+                #
+                # 判据是 `state == "reserved"`,一个**代理量**:它说的是「云端从没收到过这一局的
+                # activate」,不是「一手没走过」。四家共用的那条判据也是代理量(「服务端从没收到过
+                # 这局的心跳」),而**围棋这个更靠前也更准** —— activate 发生在棋盘建起来那一刻
+                # (`/start`),心跳则是之后的定时器,一局 `active` 的棋可以一次心跳都还没发。
+                # 象棋那条代理量误盖的「盒子离线把一整局下完了」,在围棋这里盖不到,理由与
+                # 能不能删行是同一条,写在 `release_unplayed_reservation` 里。
+                raise AiLadderLifecycleConflict("a reservation that never started cannot be resigned")
             # `pending_settlement` 曾经在这里被拒,理由是「这一格已经有结果了,判负是**永久替换**
             # 它」。那个描述今天仍然准确,但它不再是拒绝的理由 —— 2026-08-11 产品方定下:
             # **占位只有一个出口,认输,一个价钱。** 没有「什么都不记」那条路了,因为同一处境
@@ -1112,6 +1160,13 @@ class AiLadderRankedRepository:
 
     @staticmethod
     def _is_stale_reserved(row) -> bool:
+        """5 分钟没 activate 的预约 = 没开过局,读到就静默回收(调用方 `session.delete`)。
+
+        判据和 `release_unplayed_reservation` 是同一个代理量(`state == "reserved"`),
+        **能删的两条前提也是同一对** —— 见那个方法里写的两条,别只改一处。
+        这里多一条时限,而时限**只影响什么时候回收,不影响回收得对不对**:一个 activate
+        永远不来的预约,等多久都还是没开过局。
+        """
         if row.state != "reserved" or row.created_at is None:
             return False
         created = row.created_at

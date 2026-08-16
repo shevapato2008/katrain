@@ -87,7 +87,24 @@ export interface AiLadderBlockingGame {
    * 屏上必须分得开,否则「会记为本局负」就是一句关于后果的假话。
    */
   state: 'reserved' | 'active' | 'pending_settlement';
-  ownership: 'current_device' | 'other_device';
+  /**
+   * 那一局在哪台设备上。**三个取值,因为世界有三种** —— 布尔装不下「不知道」,
+   * 而塞回二值时撒谎的总是「在别的机器上」那一句(`没有身份 != 真身份` 恒真)。
+   *
+   * · `current_device` 云端拿两个设备身份比过,相等。
+   * · `other_device`   比过,不等。
+   * · `unknown`        **这次请求根本没带设备身份**(网页直连云端),没法比。
+   *                    不是第三种位置,是没有位置 —— 屏上任何说位置的句子这一格都不许说。
+   *
+   * 判据是**设备身份的比较**,不是「本机有没有它的记录」:后者等价于假设本机记录永不丢,
+   * 而换过盒子、重装过系统、清过库的那台正站在用户面前。
+   */
+  ownership: 'current_device' | 'other_device' | 'unknown';
+  /**
+   * 只有**这个节点此刻真的握着那个会话**时才有 —— 它是「在这里接得回来」的唯一凭据,
+   * 与 `ownership` 是两个语义。别把它俩挂在同一个判断上:今天两者恰好同值,
+   * 第三态一出现就会两边一起错。
+   */
   session_id?: string;
   user_color: 'B' | 'W';
   opponent_rank_name: string;

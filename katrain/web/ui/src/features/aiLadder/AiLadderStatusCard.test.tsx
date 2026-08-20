@@ -115,11 +115,15 @@ describe('AiLadderStatusCard', () => {
     expect(screen.getByRole('listitem', { name: '第5盘：负' })).toHaveTextContent('负');
   });
 
-  it('announces pending settlement and disables another ranked action', () => {
+  it('states pending settlement without claiming something is in progress', () => {
     renderCard({ ...readyPlacement, pending_settlement: true });
 
-    expect(screen.getByRole('status')).toHaveTextContent('本盘成绩结算中');
-    expect(screen.getByRole('button', { name: '成绩结算中' })).toBeDisabled();
+    // 曾经这里叫 "announces",而且真的挂着 `role="status"`。那是**实时播报进展**的语义,
+    // 而这一格没有进展可播:成绩停在那里没送到,这块屏连 outbox 的重试次数都拿不到。
+    // 屏上的字改成状态描述之后,无障碍层里那句「有事情在进行中」不能留着不改。
+    expect(screen.getByText('本盘成绩还没送到云端')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '成绩未送达' })).toBeDisabled();
   });
 
   it('shows an accessible loading state without an action', () => {

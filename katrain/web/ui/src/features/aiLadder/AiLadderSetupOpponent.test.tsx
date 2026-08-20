@@ -70,7 +70,11 @@ describe('AiLadderSetupOpponent', () => {
 
   it('shows pending settlement, loading, and retry states without a game action', () => {
     const { rerender } = renderSummary({ ...placement, pending_settlement: true });
-    expect(screen.getByRole('status')).toHaveTextContent('本盘成绩结算中');
+    // 「成绩还没到」是一个**停住的状态**,不是一条进展播报,所以它不该是 live region ——
+    // 屏上不说「进行中」了,读屏用户也不该还听到。而加载那一格仍然是(真有一次取数在跑),
+    // 下面 rerender 之后立刻验它还在。
+    expect(screen.getByText('本盘成绩还没送到云端')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
 
     rerender(
       <ThemeProvider theme={zenTheme}>

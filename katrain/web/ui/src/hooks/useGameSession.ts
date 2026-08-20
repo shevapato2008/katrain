@@ -27,7 +27,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [lastLog, setLastLog] = useState<string | null>(null);
-    const [chatMessages, setChatMessages] = useState<{sender: string, text: string, time: number}[]>([]);
+    // wire 契约 `shapes.Chat`:身份两项由服务端填,字段叫 `from_name` **不叫 `sender`**。
+    const [chatMessages, setChatMessages] = useState<{from_id: number, from_name: string, text: string}[]>([]);
     const [gameEndData, setGameEndData] = useState<GameEndData | null>(null);
     const [physicalReminder, setPhysicalReminder] = useState<{
         kind: 'reminder' | 'escalation';
@@ -88,7 +89,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                         } else if (msg.type === 'log') {
                             setLastLog(msg.data.message);
                         } else if (msg.type === 'chat') {
-                            setChatMessages(prev => [...prev, msg.data]);
+                            // 契约把 chat 定成**扁平帧**(不套 data),与三家共享侧逐字一致。
+                            setChatMessages(prev => [...prev, { from_id: msg.from_id, from_name: msg.from_name, text: msg.text }]);
                         } else if (msg.type === 'game_end') {
                             setGameEndData(msg.data);
                             if (onGameEnd) {
@@ -193,12 +195,11 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     // calls this itself rather than waiting on the server.
     const clearPhysicalEngineError = useCallback(() => setPhysicalEngineError(null), []);
 
-    const sendChat = useCallback((text: string, sender: string) => {
+    // 只发正文。发送者身份**由服务端从会话身份填**(server.py 的 chat 分支),客户端传
+    // `sender` 是没有意义的 —— 它以前会被原样广播出去,于是任何人都能冒名发言。
+    const sendChat = useCallback((text: string) => {
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({
-                type: 'chat',
-                data: { text, sender, time: Date.now() }
-            }));
+            wsRef.current.send(JSON.stringify({ type: 'chat', text }));
         }
     }, []);
 

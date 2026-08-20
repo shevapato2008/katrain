@@ -1237,7 +1237,7 @@ msgid "lobby:custom_game"
 msgstr "自定義對局"
 
 msgid "dashboard:welcome"
-msgstr "歡迎來到智星盒"
+msgstr "歡迎使用智星盒"
 
 msgid "game_end:forfeit_loss"
 msgstr "你棄權了。"
@@ -1755,7 +1755,7 @@ msgid "live:show_ai"
 msgstr "顯示AI"
 
 msgid "live:clear"
-msgstr "清除"
+msgstr "清空"
 
 msgid "live:ai_recommendations"
 msgstr "AI推薦"
@@ -2863,3 +2863,195 @@ msgstr "階梯引擎不可用，AI 無法落子 · 本局不計入升降級，�
 
 msgid "ladder:unscored_engine"
 msgstr "這局的對手沒能以標定強度落子，所以不算數——段位沒有變動，也不佔定級賽的局數。"
+
+msgid "ladder:pending_settlement"
+msgstr "本盤成績還沒送到雲端"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "成績未送達"
+
+msgid "ladder:title"
+msgstr "AI升降級對弈"
+
+msgid "ladder:setup_title"
+msgstr "41檔升降級AI"
+
+msgid "ladder:placement_opponent_prefix"
+msgstr "定級對手："
+
+msgid "ladder:game_opponent_prefix"
+msgstr "本局對手："
+
+msgid "ladder:loading_status"
+msgstr "正在載入升降級對弈狀態…"
+
+msgid "ladder:load_error"
+msgstr "升降級對弈狀態載入失敗"
+
+msgid "ladder:load_error_not_authoritative"
+msgstr "本機不記升降級成績，暫時無法開始升降級對弈"
+
+msgid "ladder:load_error_unauthorized"
+msgstr "登入已失效，請重新登入後再試"
+
+msgid "ladder:retry"
+msgstr "重試"
+
+msgid "ladder:provisional_seating"
+msgstr "該檔位尚未標定，可以試下，但本局不計入升降級"
+
+msgid "ladder:current_opponent_prefix"
+msgstr "目前對手："
+
+msgid "ladder:current_rank_prefix"
+msgstr "目前段位："
+
+msgid "ladder:available"
+msgstr "可挑戰"
+
+msgid "ladder:unavailable_rung"
+msgstr "該檔位暫不可挑戰"
+
+msgid "ladder:unavailable_cta"
+msgstr "暫不可挑戰"
+
+msgid "ladder:continue_placement_cta"
+msgstr "繼續定級"
+
+msgid "ladder:start_ranked_cta"
+msgstr "開始升降級對弈"
+
+msgid "ladder:recent_heading"
+msgstr "最近5盤"
+
+msgid "ladder:recent_aria"
+msgstr "最近5盤升降級AI對局結果"
+
+msgid "ladder:recent_display_note"
+msgstr "最近5盤僅供展示，升降段只看累計淨勝分"
+
+msgid "ladder:recent_empty"
+msgstr "暫無升降級AI對局記錄"
+
+msgid "ladder:net_score_prefix"
+msgstr "累計淨勝分："
+
+msgid "ladder:net_score_aria"
+msgstr "累計淨勝分，負值朝降段方向，正值朝升段方向"
+
+msgid "ladder:demotion_threshold"
+msgstr "降段 -3"
+
+msgid "ladder:promotion_threshold"
+msgstr "升段 +3"
+
+msgid "ladder:route_local"
+msgstr "本機對弈"
+
+msgid "ladder:route_server"
+msgstr "伺服器對弈"
+
+msgid "ladder:cert_provisional"
+msgstr "暫定"
+
+msgid "ladder:cert_certified"
+msgstr "已認證"
+
+msgid "ladder:placement_progress_n"
+msgstr "定級進度 {n}/{total}"
+
+msgid "ladder:placement_progress_aria"
+msgstr "定級進度：已完成{n}盤，共{total}盤"
+
+msgid "ladder:net_score_positive"
+msgstr "目前累計淨勝分+{n}，正值朝升段方向，達到+3升段"
+
+msgid "ladder:net_score_negative"
+msgstr "目前累計淨勝分{n}，負值朝降段方向，達到-3降段"
+
+msgid "ladder:net_score_zero"
+msgstr "目前累計淨勝分0，達到+3升段，達到-3降段"
+
+msgid "ladder:outcome_label"
+msgstr "第{n}盤：{result}"
+
+msgid "ladder:settled_generic"
+msgstr "升降級結算已完成，目前狀態已更新"
+
+msgid "ladder:settled_placement_done"
+msgstr "定級完成：{rank}"
+
+msgid "ladder:settled_placement_progress"
+msgstr "定級中 {n}/{total}"
+
+msgid "ladder:settled_promoted"
+msgstr "升級：{rank}"
+
+msgid "ladder:settled_demoted"
+msgstr "降級：{rank}"
+
+msgid "ladder:settled_no_change"
+msgstr "段位未變化，累計淨勝分：{score}"
+
+msgid "ladder:settled_pending"
+msgstr "升降級結算仍在處理中"
+
+msgid "ladder:settled_unavailable"
+msgstr "結算狀態暫不可用"
+
+msgid "ok"
+msgstr "確定"
+
+msgid "accept"
+msgstr "接受"
+
+msgid "reject"
+msgstr "拒絕"
+
+msgid "common:cancel"
+msgstr "取消"
+
+msgid "common:retry"
+msgstr "重試"
+
+msgid "Tutorials"
+msgstr "教程"
+
+msgid "Stone Effect"
+msgstr "落子特效"
+
+msgid "3D"
+msgstr "3D"
+
+msgid "research:cancel_analysis_title"
+msgstr "取消分析？"
+
+msgid "research:cancel_analysis_warning"
+msgstr "分析正在進行中，確定要取消並離開嗎？"
+
+msgid "research:continue_analysis"
+msgstr "繼續分析"
+
+msgid "research:cancel_and_leave"
+msgstr "取消並離開"
+
+msgid "tsumego:loadError"
+msgstr "死活題庫載入失敗，請稍後重試。"
+
+msgid "tsumego:noData"
+msgstr "暫無死活題。"
+
+msgid "chat:title"
+msgstr "聊天"
+
+msgid "chat:placeholder"
+msgstr "輸入訊息……"
+
+msgid "audio:play"
+msgstr "播放"
+
+msgid "audio:pause"
+msgstr "暫停"
+
+msgid "audio:unavailable"
+msgstr "音訊不可用"

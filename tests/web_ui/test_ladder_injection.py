@@ -57,12 +57,23 @@ def test_ladder_rungs_endpoint(client):
     assert rungs[0] == {
         "rung": 1,
         "rank_name": "20级",
-        "certification_status": "provisional",
-        "availability": "unavailable",
+        "certification_status": "certified",
+        "availability": "available",
         "route": "server",
     }
     assert rungs[-1]["rank_name"] == "超越人类"
-    assert all(rung["availability"] == "unavailable" for rung in rungs)
+    # 2026-08-20「开始吧」之后目录不再是铁板一块：29 档 certified/available、
+    # 12 档封档仍报 provisional/unavailable。端点照实转发，不做任何美化。
+    from katrain.core import ladder
+
+    available = {r["rung"] for r in rungs if r["availability"] == "available"}
+    assert available == set(ladder.PLAYABLE_RUNGS)
+    assert all(r["certification_status"] == "certified" for r in rungs if r["rung"] in available)
+    assert all(
+        (r["certification_status"], r["availability"]) == ("provisional", "unavailable")
+        for r in rungs
+        if r["rung"] not in available
+    )
     # No internal 星阵/elo fields leak to the browser.
     for r in rungs:
         assert "golaxy_level_name" not in r
@@ -96,7 +107,10 @@ def test_new_game_unavailable_ladder_level_returns_422_before_game_mutation(clie
     session_id = session_resp.json()["session_id"]
 
     before = client.get("/api/state", params={"session_id": session_id}).json()["state"]
-    resp = client.post("/api/new-game", json={"session_id": session_id, "ladder_rung": 1})
+    from katrain.core import ladder
+
+    retired = min(ladder._RETIRED_RUNGS)  # 19级(2)：有配方但封档，正是这条要挡的那一类
+    resp = client.post("/api/new-game", json={"session_id": session_id, "ladder_rung": retired})
     assert resp.status_code == 422
     after = client.get("/api/state", params={"session_id": session_id}).json()["state"]
     assert after == before
@@ -106,8 +120,15 @@ def test_new_game_unavailable_ladder_level_returns_422_before_game_mutation(clie
 
 
 def test_resolve_unavailable_level_raises():
-    with pytest.raises(ValueError):
-        resolve_ladder_rung(1)
+    from katrain.core import ladder
+
+    # 封档档位：**有配方**（所以不是"没实现"）但不可坐 —— 这正是 fail-closed 要挡的形状。
+    for rung in sorted(ladder._RETIRED_RUNGS):
+        assert ladder.get_level(rung).recipe is not None
+        with pytest.raises(ValueError):
+            resolve_ladder_rung(rung)
+    # 反面：认证档位必须解析得出来，否则这条闸就把所有人都挡住了。
+    assert resolve_ladder_rung(1) is not None
 
 
 def test_resolve_absent_is_none():

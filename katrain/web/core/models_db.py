@@ -21,6 +21,24 @@ import enum
 import uuid as uuid_module
 
 
+# ⚠️ **`none_as_null=True` 不是风格问题,是承重的。**
+#
+#     JSON()                     Python None -> JSON 字面量 'null'   ← 列上的 NOT NULL
+#                                                                     和 `IS NOT NULL`
+#                                                                     全都判它**有值**
+#     JSON(none_as_null=True)    Python None -> SQL NULL
+#
+# 关系到 `ck_ai_ladder_ledger_decision` 里那句 `opponent_config_snapshot IS NOT NULL`:
+# 没有这个参数,一个 Python `None` 会以 `'null'` 落库,那句 CHECK 照样为真 —— 闸开着却
+# 看不出来。今天围棋走不到那一格(真正的判据是 `counted = reason is None` 加
+# `AiLadderOpponentSnapshot.__post_init__`,库层那几句伴随子句在这个形状下从不被求值),
+# 所以这条是**潜伏的、不是活的**;但三家的共享账本 2026-08-13 已经统一带上它
+# (`ranked_api/envelope/models_db.py:66`),围棋是最后一个没带的。
+#
+# 只作用于绑定参数,**不改 DDL** —— 不需要迁移。
+LadderJSON = JSON(none_as_null=True)
+
+
 class MatchSourceEnum(str, enum.Enum):
     """Data source for live matches."""
 
@@ -139,7 +157,7 @@ class AiLadderPendingGame(Base):
     game_type = Column(String(32), nullable=False)
     opponent_rung = Column(Integer, nullable=False)
     opponent_rank_name = Column(String(64), nullable=False)
-    opponent_config_snapshot = Column(JSON, nullable=False)
+    opponent_config_snapshot = Column(LadderJSON, nullable=False)
     opponent_certification_status = Column(String(16), nullable=False)
     opponent_availability = Column(String(16), nullable=False)
     opponent_route = Column(String(16), nullable=False)
@@ -174,19 +192,33 @@ class AiLadderActiveGame(Base):
     origin_session_id = Column(String(64), nullable=True)
     state = Column(String(24), nullable=False, default="reserved")
     version = Column(Integer, nullable=False, default=0)
+    # Liveness of the box that is playing this game, so a second device can tell "still being
+    # played over there" from "that box is gone". Deliberately separate from `updated_at`:
+    # nothing writes this row between activation and settlement, so `updated_at` measures how
+    # long the game has been running, and a long game is not a dead one.
+    last_heartbeat_at = Column(DateTime(timezone=True), nullable=True)
+    # Counts heartbeats, not devices. A client that has only ever activated sits at 0; one that
+    # has proven it keeps a timer running climbs. The takeover rule reads this to tell those two
+    # populations apart -- see AI_LADDER_MIN_HEARTBEAT_GENERATION_FOR_TAKEOVER.
+    heartbeat_generation = Column(Integer, nullable=False, default=0)
+    # When this row entered `pending_settlement`, i.e. when the origin box said "the game is
+    # over, I am delivering the result". Its own column for the same reason as
+    # `last_heartbeat_at`: `updated_at` is reset by any future write to this row, so a clock
+    # kept there would silently restart the moment anything else touches the reservation.
+    pending_settlement_since = Column(DateTime(timezone=True), nullable=True)
     reservation_key_hash = Column(String(64), nullable=False)
     user_color = Column(String(1), nullable=False)
     game_type = Column(String(32), nullable=False, default="ai_ladder_ranked")
     opponent_rung = Column(Integer, nullable=False)
     opponent_rank_name = Column(String(64), nullable=False)
-    opponent_config_snapshot = Column(JSON, nullable=False)
+    opponent_config_snapshot = Column(LadderJSON, nullable=False)
     opponent_certification_status = Column(String(16), nullable=False)
     opponent_availability = Column(String(16), nullable=False)
     opponent_route = Column(String(16), nullable=False)
     ai_subtype = Column(String(32), nullable=False)
     execution_identity = Column(String(64), nullable=False)
-    rules_snapshot = Column(JSON, nullable=False)
-    time_control_snapshot = Column(JSON, nullable=False)
+    rules_snapshot = Column(LadderJSON, nullable=False)
+    time_control_snapshot = Column(LadderJSON, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -197,6 +229,7 @@ class AiLadderActiveGame(Base):
             name="ck_ai_ladder_active_state",
         ),
         CheckConstraint("version >= 0", name="ck_ai_ladder_active_version"),
+        CheckConstraint("heartbeat_generation >= 0", name="ck_ai_ladder_active_heartbeat_generation"),
         CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_active_user_color"),
         CheckConstraint("game_type = 'ai_ladder_ranked'", name="ck_ai_ladder_active_game_type"),
         CheckConstraint("opponent_rung BETWEEN 1 AND 41", name="ck_ai_ladder_active_rung"),
@@ -217,7 +250,7 @@ class AiLadderGameLedger(Base):
     game_type = Column(String(32), nullable=False)
     opponent_rung = Column(Integer, nullable=True)
     opponent_rank_name = Column(String(64), nullable=True)
-    opponent_config_snapshot = Column(JSON, nullable=True)
+    opponent_config_snapshot = Column(LadderJSON, nullable=True)
     opponent_certification_status = Column(String(16), nullable=True)
     opponent_availability = Column(String(16), nullable=True)
     opponent_route = Column(String(16), nullable=True)
@@ -241,6 +274,20 @@ class AiLadderGameLedger(Base):
 
     __table_args__ = (
         CheckConstraint("user_color IN ('B', 'W')", name="ck_ai_ladder_ledger_user_color"),
+        # 与三家共享账本的 `ck_ranked_ledgers_account_subject_len` 同源
+        # (`ranked_api/envelope/models_db.py:544`,那边是全局 `BETWEEN 1 AND 32`
+        # 再加象棋作用域的 `= 32`)。围棋这一列可空 —— 本列诞生前写下的行是 NULL,
+        # 不能追认;所以多一支 `IS NULL`,其余与三家逐字一致。
+        #
+        # ⚠️ 这条守的是**账本这一侧**。铸造侧 `users.uuid` 至今仍是无长度的 `String`,
+        # 32 位只由一个 Python default lambda 保证 —— 那个缺口由
+        # `tests/web_ui/test_account_subject_contract.py` 的 `xfail(strict=True)` 钉着,
+        # 属身份服务 Phase 3,冻结件 §6-3 明令 Phase 1 不动那一列。**别顺手一起改**:
+        # 那条 xfail 一旦 XPASS 会让构建红,而它红的时候应该是有人**有意**去修铸造侧。
+        CheckConstraint(
+            "account_subject IS NULL OR length(account_subject) BETWEEN 1 AND 32",
+            name="ck_ai_ladder_ledger_account_subject_len",
+        ),
         CheckConstraint(
             "opponent_rung IS NULL OR opponent_rung BETWEEN 1 AND 41",
             name="ck_ai_ladder_ledger_opponent_rung",
@@ -269,162 +316,10 @@ class AiLadderGameLedger(Base):
     )
 
 
-class XiangqiRatingProfile(Base):
-    """Cloud-authoritative Xiangqi rating keyed only by stable account UUID."""
-
-    __tablename__ = "xiangqi_rating_profiles"
-
-    user_uuid = Column(String(36), ForeignKey("users.uuid"), primary_key=True)
-    rating = Column(Float, nullable=False, default=1000.0)
-    rated_games = Column(Integer, nullable=False, default=0)
-    profile_version = Column(Integer, nullable=False, default=0)
-    active_algo_version = Column(Integer, nullable=False)
-    settlement_seq = Column(Integer, nullable=False, default=0)
-    updated_at = Column(DateTime(timezone=True), nullable=False)
-
-    __table_args__ = (
-        CheckConstraint("rated_games >= 0", name="ck_xiangqi_rating_profiles_rated_games"),
-        CheckConstraint("profile_version >= 0", name="ck_xiangqi_rating_profiles_profile_version"),
-        CheckConstraint("active_algo_version >= 1", name="ck_xiangqi_rating_profiles_algo_version"),
-        CheckConstraint("settlement_seq >= 0", name="ck_xiangqi_rating_profiles_settlement_seq"),
-    )
-
-
-class XiangqiRankedReservation(Base):
-    """One online barrier holding the exact promise shown before a ranked game."""
-
-    __tablename__ = "xiangqi_ranked_reservations"
-
-    reservation_id = Column(String(36), primary_key=True)
-    game_id = Column(String(36), nullable=False, unique=True)
-    user_uuid = Column(String(36), ForeignKey("xiangqi_rating_profiles.user_uuid"), nullable=False, index=True)
-    device_id = Column(String(128), nullable=False, index=True)
-    status = Column(String(20), nullable=False, default="reserved")
-    expected_profile_version = Column(Integer, nullable=False)
-    projection_fingerprint = Column(String(64), nullable=False)
-    frozen_snapshot = Column(JSON, nullable=False)
-    last_heartbeat_at = Column(DateTime(timezone=True), nullable=False)
-    created_at = Column(DateTime(timezone=True), nullable=False)
-    materialized_at = Column(DateTime(timezone=True), nullable=True)
-    terminal_at = Column(DateTime(timezone=True), nullable=True)
-
-    __table_args__ = (
-        CheckConstraint(
-            "status IN ('reserved', 'settled', 'resigned', 'system_aborted')",
-            name="ck_xiangqi_ranked_reservations_status",
-        ),
-        CheckConstraint(
-            "(status = 'reserved' AND terminal_at IS NULL) OR "
-            "(status IN ('settled', 'resigned', 'system_aborted') AND terminal_at IS NOT NULL)",
-            name="ck_xiangqi_ranked_reservations_terminal_at",
-        ),
-        CheckConstraint(
-            "expected_profile_version >= 0",
-            name="ck_xiangqi_ranked_reservations_expected_version",
-        ),
-        Index("ix_xiangqi_ranked_reservation_user_status", "user_uuid", "status"),
-        Index("ix_xiangqi_ranked_reservation_device_local", "device_id", "created_at"),
-        Index(
-            "uq_xiangqi_ranked_one_reserved_per_user",
-            "user_uuid",
-            unique=True,
-            sqlite_where=text("status = 'reserved'"),
-            postgresql_where=text("status = 'reserved'"),
-        ),
-    )
-
-
-class XiangqiRankedLedger(Base):
-    """Immutable terminal fact and receipt; corrections are appended as new facts."""
-
-    __tablename__ = "xiangqi_ranked_ledger"
-
-    game_id = Column(String(36), ForeignKey("xiangqi_ranked_reservations.game_id"), primary_key=True)
-    receipt_id = Column(String(36), nullable=False, unique=True)
-    reservation_id = Column(
-        String(36), ForeignKey("xiangqi_ranked_reservations.reservation_id"), nullable=False, unique=True
-    )
-    user_uuid = Column(String(36), ForeignKey("xiangqi_rating_profiles.user_uuid"), nullable=False)
-    device_id = Column(String(128), nullable=False)
-    local_seq = Column(Integer, nullable=False)
-    terminal_status = Column(String(20), nullable=False)
-    payload_hash = Column(String(64), nullable=False)
-    canonical_payload = Column(JSON, nullable=False)
-    frozen_snapshot = Column(JSON, nullable=False)
-    result = Column(String(8), nullable=True)
-    counted = Column(Boolean, nullable=False)
-    reason = Column(String(64), nullable=True)
-    rating_before = Column(Float, nullable=False)
-    rating_after = Column(Float, nullable=True)
-    rating_delta = Column(Integer, nullable=True)
-    tier_before = Column(String(64), nullable=False)
-    tier_after = Column(String(64), nullable=True)
-    profile_version_before = Column(Integer, nullable=False)
-    profile_version_after = Column(Integer, nullable=False)
-    settlement_seq = Column(Integer, nullable=False)
-    received_at = Column(DateTime(timezone=True), nullable=False)
-    settled_at = Column(DateTime(timezone=True), nullable=False)
-    receipt = Column(JSON, nullable=False)
-
-    __table_args__ = (
-        CheckConstraint("local_seq >= 0", name="ck_xiangqi_ranked_ledger_local_seq"),
-        CheckConstraint("profile_version_before >= 0", name="ck_xiangqi_ranked_ledger_version_before"),
-        CheckConstraint("profile_version_after >= 0", name="ck_xiangqi_ranked_ledger_version_after"),
-        CheckConstraint("settlement_seq >= 1", name="ck_xiangqi_ranked_ledger_settlement_seq"),
-        CheckConstraint(
-            "terminal_status IN ('settled', 'resigned', 'system_aborted')",
-            name="ck_xiangqi_ranked_ledger_terminal_status",
-        ),
-        CheckConstraint(
-            "(counted = TRUE AND reason IS NULL AND rating_after IS NOT NULL AND rating_delta IS NOT NULL "
-            "AND tier_after IS NOT NULL AND terminal_status IN ('settled', 'resigned') "
-            "AND result IN ('win', 'draw', 'loss') AND profile_version_after = profile_version_before + 1) OR "
-            "(counted = FALSE AND reason IS NOT NULL AND rating_after IS NULL AND rating_delta IS NULL "
-            "AND tier_after IS NULL AND terminal_status = 'system_aborted' AND result IS NULL "
-            "AND profile_version_after = profile_version_before)",
-            name="ck_xiangqi_ranked_ledger_counting_fact",
-        ),
-        CheckConstraint(
-            "terminal_status != 'resigned' OR result = 'loss'",
-            name="ck_xiangqi_ranked_ledger_resign_loss",
-        ),
-        Index(
-            "uq_xiangqi_ranked_ledger_user_settlement_seq",
-            "user_uuid",
-            "settlement_seq",
-            unique=True,
-        ),
-        Index(
-            "uq_xiangqi_ranked_ledger_device_local_seq",
-            "user_uuid",
-            "device_id",
-            "local_seq",
-            unique=True,
-        ),
-        Index("ix_xiangqi_ranked_ledger_user_settled", "user_uuid", "settled_at"),
-    )
-
-
-class XiangqiRankedCapabilityJti(Base):
-    """Append-only JTI rotation history; at most one capability remains current."""
-
-    __tablename__ = "xiangqi_ranked_capability_jtis"
-
-    jti = Column(String(64), primary_key=True)
-    reservation_id = Column(String(36), ForeignKey("xiangqi_ranked_reservations.reservation_id"), nullable=False)
-    issued_at = Column(DateTime(timezone=True), nullable=False)
-    revoked_at = Column(DateTime(timezone=True), nullable=True)
-
-    __table_args__ = (
-        Index("ix_xiangqi_ranked_capability_reservation", "reservation_id"),
-        Index(
-            "uq_xiangqi_ranked_current_capability",
-            "reservation_id",
-            unique=True,
-            sqlite_where=text("revoked_at IS NULL"),
-            postgresql_where=text("revoked_at IS NULL"),
-        ),
-    )
+# 象棋升降级的四张表(xiangqi_rating_profiles / xiangqi_ranked_reservations /
+# xiangqi_ranked_ledger / xiangqi_ranked_capability_jtis)已搬去
+# lobby-platform `ranked_api/xiangqi/models_db.py`。已部署库里的旧表原样保留:
+# 没有 ORM 模型 = 进不了 `auth.py` 的 drift 重建名单,不会被 drop。
 
 
 class LiveMatchDB(Base):

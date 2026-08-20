@@ -4,7 +4,7 @@ import HourglassTopRoundedIcon from '@mui/icons-material/HourglassTopRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import { Alert, Box, Button, Chip, LinearProgress, Skeleton, Stack, Typography } from '@mui/material';
 import { AI_LADDER_COPY, formatPlacementProgress, formatPlacementProgressLabel } from './copy';
-import { aiLadderStartBlock, isProvisionalSeating } from './startGate';
+import { isProvisionalSeating, isRungUnseatable } from './startGate';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { AiLadderCatalogEntry, AiLadderStatus } from './types';
 
@@ -83,7 +83,7 @@ const AiLadderSetupOpponent = ({ status, onRetry, compact = false }: AiLadderSet
   // "Cannot be challenged" is the server's answer, not a property of the rung: on a node
   // switched into provisional play an uncertified rung IS seatable, and saying otherwise
   // next to an enabled button is the kind of contradiction players rightly distrust.
-  const unavailable = aiLadderStartBlock(status) === 'rung_not_certified' || !activeEntry;
+  const unavailable = isRungUnseatable(status) || !activeEntry;
   const provisionalSeating = isProvisionalSeating(status);
 
   return (
@@ -122,8 +122,13 @@ const AiLadderSetupOpponent = ({ status, onRetry, compact = false }: AiLadderSet
 
         {activeEntry && <StatusChips entry={activeEntry} />}
 
+        {/* 这一格不挂 `role="status"` / `aria-live`:那是**实时播报进展**的语义,而这里没有
+            进展可播 —— 它说的是一个**停住的状态**(成绩还没到),而且这块屏手上连 outbox 的
+            重试次数和倒计时都没有(那些只在挡局面板的 `sync` 里),报不出任何进展。
+            留着 live region,屏上不说了,读屏用户听到的仍然是「有事情在进行中」。
+            上面加载骨架那处的 `role="status"` 保留 —— 那一处**真的**有一次取数在跑。 */}
         {status.pending_settlement && (
-          <Stack direction="row" role="status" aria-live="polite" alignItems="center" gap={1} color="warning.main">
+          <Stack direction="row" alignItems="center" gap={1} color="warning.main">
             <HourglassTopRoundedIcon fontSize="small" />
             <Typography variant="body2" fontWeight={700}>{AI_LADDER_COPY.pendingSettlement}</Typography>
           </Stack>

@@ -2,6 +2,7 @@ import { Box, Typography, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { PlatformClockState } from '../../../api';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { KIOSK_MONO } from '../../theme';
 
 interface PlatformTimerProps {
   clock: PlatformClockState | null;
@@ -58,7 +59,7 @@ const TimerSide = ({ label, time, isActive, isLow }: {
       <Typography
         variant="h5"
         sx={{
-          fontFamily: 'JetBrains Mono, monospace',
+          fontFamily: KIOSK_MONO,
           color: isLow ? 'error.main' : 'text.primary',
           animation: isLow && isActive ? 'pulse 1s infinite' : 'none',
           '@keyframes pulse': {

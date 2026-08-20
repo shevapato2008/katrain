@@ -27,7 +27,7 @@ vi.mock('../context/GameNavigationContext', () => ({
   useGameNavigation: () => ({ requestNavigation: mockRequestNavigation }),
 }));
 
-const { mockAiConstants, mockRungsResponse, mockCreateSession, mockNewGame, mockUpdateConfig, mockStartRanked, mockEndRanked, rankedState, authState, mockRetry } = vi.hoisted(() => ({
+const { mockAiConstants, mockRungsResponse, mockCreateSession, mockNewGame, mockUpdateConfig, mockStartRanked, mockEndRanked, mockRetrySettlement, rankedState, authState, mockRetry, mockApplyBlockingSync } = vi.hoisted(() => ({
   mockAiConstants: {
     strategies: ['ai:human', 'ai:ladder'],
     options: {},
@@ -39,9 +39,12 @@ const { mockAiConstants, mockRungsResponse, mockCreateSession, mockNewGame, mock
     },
   },
   mockRungsResponse: {
+    // 与 GET /api/ladder-rungs 的真实投影同形（五个字段）。第三条是**封档档位**：
+    // 目录里有它、有配方，但 availability=unavailable ⇒ 谁也坐不上去，不该出现在下拉里。
     rungs: [
-      { rung: 18, rank_name: '3K' },
-      { rung: 37, rank_name: 'KataGo中等' },
+      { rung: 18, rank_name: '3K', certification_status: 'certified', availability: 'available', route: 'server' },
+      { rung: 37, rank_name: 'KataGo中等', certification_status: 'certified', availability: 'available', route: 'server' },
+      { rung: 21, rank_name: '准1段', certification_status: 'provisional', availability: 'unavailable', route: 'server' },
     ],
   },
   mockCreateSession: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
@@ -49,7 +52,9 @@ const { mockAiConstants, mockRungsResponse, mockCreateSession, mockNewGame, mock
   mockUpdateConfig: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
   mockStartRanked: vi.fn().mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1' }),
   mockEndRanked: vi.fn(),
+  mockRetrySettlement: vi.fn(),
   mockRetry: vi.fn(),
+  mockApplyBlockingSync: vi.fn(),
   rankedState: { current: null as any },
   authState: { current: { token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true } as any },
 }));
@@ -69,10 +74,19 @@ vi.mock('../../api', () => ({
 
 vi.mock('../../features/aiLadder/api', async () => {
   const actual = await vi.importActual<typeof import('../../features/aiLadder/api')>('../../features/aiLadder/api');
-  return { ...actual, startAiLadderGame: mockStartRanked, endAiLadderGame: mockEndRanked };
+  return {
+    ...actual,
+    startAiLadderGame: mockStartRanked,
+    endAiLadderGame: mockEndRanked,
+    retryAiLadderSettlement: mockRetrySettlement,
+  };
 });
 vi.mock('../../features/aiLadder/useAiLadderStatus', () => ({
-  useAiLadderStatus: () => ({ status: rankedState.current, retry: mockRetry }),
+  useAiLadderStatus: () => ({
+    status: rankedState.current,
+    retry: mockRetry,
+    applyBlockingSync: mockApplyBlockingSync,
+  }),
 }));
 
 vi.mock('../../context/AuthContext', () => ({
@@ -95,7 +109,7 @@ const renderPage = (mode = 'free') => {
 };
 
 const blockingGame = (
-  state: 'active' | 'pending_settlement' = 'active',
+  state: 'reserved' | 'active' | 'pending_settlement' = 'active',
   ownership: 'current_device' | 'other_device' = 'current_device',
   sessionId: string | undefined = 'occupied-session',
 ) => ({
@@ -160,6 +174,23 @@ describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
     expect(screen.queryByText('20k')).not.toBeInTheDocument();
   });
 
+  it('omits sealed rungs from the selector — they exist in the catalog but seat nobody', async () => {
+    // 目录里 12 档是封档的（`ladder._RETIRED_RUNGS`）。它们保留配方是为了让账本里已存的
+    // rung 号仍可解释，但选中开局会 409 —— 用户看到的是「点了没反应」。
+    renderPage();
+    await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
+    const user = userEvent.setup();
+    await user.click(comboboxForLabel('AI Strategy'));
+    await user.click(screen.getByRole('option', { name: '棋力阶梯' }));
+    await waitFor(() => expect(screen.getByText('3K')).toBeInTheDocument());
+
+    await user.click(comboboxForLabel('棋力等级'));
+    // 正对照：可用的两档在；没有它，「封档档位不在」和「下拉整个是空的」分不开。
+    expect(screen.getByRole('option', { name: '3K' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'KataGo中等' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '准1段' })).toBeNull();
+  });
+
   it('starts the game with ladder_rung and skips human_kyu_rank/strategySettings writes', async () => {
     renderPage();
     await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
@@ -197,7 +228,10 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockCreateSession.mockClear();
     mockNewGame.mockClear();
     mockRetry.mockClear();
+    mockRetry.mockReset();
     mockEndRanked.mockReset();
+    mockRetrySettlement.mockReset();
+    mockApplyBlockingSync.mockReset();
     authState.current = { token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true };
     rankedState.current = {
       view_state: 'ready',
@@ -284,16 +318,16 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
   });
 
   it.each([
-    ['等待结算', blockingGame('active', 'other_device')],
-    ['刷新状态', blockingGame('pending_settlement')],
-  ])('uses ranked-status retry for %s', async (buttonName, occupiedGame) => {
-    const user = userEvent.setup();
+    ['active-other', blockingGame('active', 'other_device')],
+    ['pending', blockingGame('pending_settlement')],
+  ])('挡局面板不摆「刷新状态」:%s', async (_label, occupiedGame) => {
+    // 它做的事(重问一次 /status)这块屏每 15 秒已经在自动做,所以它在每一格
+    // 要么是别的按钮的真子集,要么什么都改不了。
     rankedState.current = { ...rankedState.current, blocking_game: occupiedGame };
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: buttonName }));
-
-    expect(mockRetry).toHaveBeenCalledOnce();
+    await screen.findByRole('button', { name: '认输那一局，在这里开新局' });
+    expect(screen.queryByRole('button', { name: '刷新状态' })).not.toBeInTheDocument();
   });
 
   it('ends a confirmed occupied game through the authenticated lifecycle API', async () => {
@@ -302,10 +336,33 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockResolvedValue({ state: 'pending_settlement', game_id: 'occupied-game' });
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
-    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     await waitFor(() => expect(mockEndRanked).toHaveBeenCalledWith('occupied-game', 'test-token'));
+  });
+
+  it('让掉一个从没开起来的预约:屏上不说记负，服务端答 released 也不当成失败', async () => {
+    // 页面这一层要证的是**两端接得上**:后端在这一格回的是 `released`(没有 receipt),
+    // 而 `endGame` 的分支要认得它、走「只刷新状态」,不弹结算回执、不写「结束对局失败」。
+    // 这个形状此前一度在解码器里被当成畸形响应,屏上写「结束对局失败，请重试」,
+    // 而那一刻账号其实已经放开了。
+    const user = userEvent.setup();
+    rankedState.current = {
+      ...rankedState.current,
+      blocking_game: blockingGame('reserved', 'other_device', undefined),
+    };
+    mockEndRanked.mockResolvedValue({ state: 'released', game_id: 'occupied-game', counted: false });
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '让掉它，在这里开新局' }));
+    expect(document.body.textContent).not.toMatch(/记为本局负|计为本局负|计入升降级/);
+    await user.click(screen.getByRole('button', { name: '确认让掉' }));
+
+    await waitFor(() => expect(mockEndRanked).toHaveBeenCalledWith('occupied-game', 'test-token'));
+    await waitFor(() => expect(mockRetry).toHaveBeenCalledOnce());
+    expect(screen.queryByText('结束对局失败，请重试')).not.toBeInTheDocument();
+    expect(screen.queryByText('结算已完成')).not.toBeInTheDocument();
   });
 
   it('refreshes ranked status when ending enters pending settlement', async () => {
@@ -314,8 +371,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockResolvedValue({ state: 'pending_settlement', game_id: 'occupied-game' });
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
-    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     await waitFor(() => expect(mockRetry).toHaveBeenCalledOnce());
   });
@@ -334,8 +391,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     });
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
-    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     expect(await screen.findByText('结算已完成')).toBeInTheDocument();
     expect(screen.getByText(/本局已计入升降级/)).toBeInTheDocument();
@@ -349,8 +406,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockRejectedValue(new Error('gateway exploded'));
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
-    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     expect(await screen.findByText('结束对局失败，请重试')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -366,8 +423,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockReturnValue(oldEnd.promise);
     const view = renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
-    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
     await waitFor(() => expect(mockEndRanked).toHaveBeenCalledOnce());
 
     authState.current = { token: 'new-token', user: { id: 2, username: 'new-user' }, isAuthenticated: true };
@@ -401,8 +458,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockReturnValue(oldEnd.promise);
     const view = renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
-    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
     await waitFor(() => expect(screen.getByRole('button', { name: '继续对局' })).toBeDisabled());
 
     rankedState.current = {
@@ -426,31 +483,36 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     expect(mockRetry).not.toHaveBeenCalled();
   });
 
-  it('clears a lifecycle error before refreshing into pending settlement', async () => {
+  it('「立即重试」送成之后，上一次失败留下的错误条不许还挂着', async () => {
     const user = userEvent.setup();
-    rankedState.current = {
-      ...rankedState.current,
-      blocking_game: blockingGame('active', 'other_device'),
+    const syncing = {
+      ...blockingGame('pending_settlement'),
+      sync: {
+        state: 'waiting', attempt: 2, max_attempts: 5, next_attempt_in_seconds: 20,
+        last_http_status: null, last_error: 'timeout',
+      },
     };
+    rankedState.current = { ...rankedState.current, blocking_game: syncing };
     mockEndRanked.mockRejectedValue(new Error('gateway exploded'));
+    // 重试送成 → 那一局不再挡着新局,页面回到正常开局卡。
+    mockRetrySettlement.mockResolvedValue({ game_id: 'occupied-game', sync: null });
     mockRetry.mockImplementation(() => {
-      rankedState.current = {
-        ...rankedState.current,
-        blocking_game: blockingGame('pending_settlement', 'other_device'),
-      };
+      rankedState.current = { ...rankedState.current, blocking_game: null };
     });
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
-    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    // 先制造一条陈旧错误:开新局失败。
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
     expect(await screen.findByText('结束对局失败，请重试')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: '等待结算' }));
+    await user.click(screen.getByRole('button', { name: '立即重试' }));
 
-    await waitFor(() => expect(screen.getByRole('button', { name: '刷新状态' })).toBeInTheDocument());
+    expect(mockRetrySettlement).toHaveBeenCalledWith('occupied-game', 'test-token');
+    // 无论成败都复查一次状态 —— 送成了这一局就不该再挡着新局。
+    await waitFor(() => expect(mockRetry).toHaveBeenCalled());
     expect(screen.queryByText('结束对局失败，请重试')).not.toBeInTheDocument();
-    expect(mockRetry).toHaveBeenCalledOnce();
   });
 
   it('refreshes status without a stale error when the occupied game already vanished', async () => {
@@ -459,8 +521,8 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockRejectedValue(new AiLadderApiError(404, 'not found'));
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
-    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     await waitFor(() => expect(mockRetry).toHaveBeenCalledOnce());
     expect(screen.queryByText('结束对局失败，请重试')).not.toBeInTheDocument();
@@ -472,10 +534,139 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     mockEndRanked.mockRejectedValue(new AiLadderApiError(status, 'operator detail'));
     renderPage('rated');
 
-    await user.click(await screen.findByRole('button', { name: '结束该对局' }));
-    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    await user.click(await screen.findByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
 
     expect(await screen.findByText('登录已失效，请重新登录后再试')).toBeInTheDocument();
     expect(screen.queryByText('operator detail')).not.toBeInTheDocument();
   });
+
+  // ── 「立即重试」按下之后的每一条路 ──────────────────────────────────────────
+
+  const syncingGame = (sync: Record<string, unknown>) => ({
+    ...blockingGame('pending_settlement'),
+    sync: {
+      state: 'waiting', attempt: 2, max_attempts: 5, next_attempt_in_seconds: 252,
+      last_http_status: null, last_error: null, ...sync,
+    },
+  });
+
+  it('重试没送成时，绝不去打一次云端 —— 那正是这个按钮存在的场景', async () => {
+    // `/status` 在盒子上是转发到云端的:断网即 503,而 `retry` 一失败就把整块面板换成
+    // 「加载失败」。所以失败路径只贴 outbox 刚给的那份状态(它来自一次打到 127.0.0.1、
+    // 确定收到过的响应),一步都不碰云端。
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: syncingGame({}) };
+    mockRetrySettlement.mockResolvedValue({
+      game_id: 'occupied-game',
+      sync: {
+        state: 'waiting', attempt: 3, max_attempts: 5, next_attempt_in_seconds: 80,
+        last_http_status: 503, last_error: 'HTTP 503', receipt: null,
+      },
+    });
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '立即重试' }));
+
+    await waitFor(() => expect(mockApplyBlockingSync).toHaveBeenCalledWith(
+      'occupied-game',
+      expect.objectContaining({ state: 'waiting', attempt: 3, next_attempt_in_seconds: 80 }),
+    ));
+    expect(mockRetry).not.toHaveBeenCalled();
+    expect(screen.queryByText('升降级对弈状态加载失败')).not.toBeInTheDocument();
+  });
+
+  it('被云端拒收也走同一条路:贴状态，不刷新', async () => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: syncingGame({}) };
+    mockRetrySettlement.mockResolvedValue({
+      game_id: 'occupied-game',
+      sync: {
+        state: 'refused', attempt: 3, max_attempts: 5, next_attempt_in_seconds: null,
+        last_http_status: 422, last_error: 'HTTP 422', receipt: null,
+      },
+    });
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '立即重试' }));
+
+    await waitFor(() => expect(mockApplyBlockingSync).toHaveBeenCalledWith(
+      'occupied-game', expect.objectContaining({ state: 'refused' }),
+    ));
+    expect(mockRetry).not.toHaveBeenCalled();
+  });
+
+  it('送成之后给出云端的裁决，而不是让面板悄悄消失', async () => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: syncingGame({}) };
+    mockRetrySettlement.mockResolvedValue({
+      game_id: 'occupied-game',
+      sync: {
+        state: 'synced', attempt: 2, max_attempts: 5, next_attempt_in_seconds: null,
+        last_http_status: 200, last_error: null,
+        receipt: { counted: false, reason: 'opponent_not_eligible' },
+      },
+    });
+    mockRetry.mockImplementation(() => {
+      rankedState.current = { ...rankedState.current, blocking_game: null };
+    });
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '立即重试' }));
+
+    expect(await screen.findByText('结算已完成')).toBeInTheDocument();
+    expect(screen.getByText('本局不计入升降级：本局对手尚未通过计分认证')).toBeInTheDocument();
+    // 送成了才复查:那一刻网络刚被证明是通的,而且要换上新的段位。
+    await waitFor(() => expect(mockRetry).toHaveBeenCalled());
+    expect(mockApplyBlockingSync).not.toHaveBeenCalled();
+  });
+
+  it('送成了但拿不到回执:只刷新，不编一个结果出来', async () => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: syncingGame({}) };
+    mockRetrySettlement.mockResolvedValue({
+      game_id: 'occupied-game',
+      sync: {
+        state: 'synced', attempt: 1, max_attempts: 5, next_attempt_in_seconds: null,
+        last_http_status: 200, last_error: null, receipt: null,
+      },
+    });
+    mockRetry.mockImplementation(() => {
+      rankedState.current = { ...rankedState.current, blocking_game: null };
+    });
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '立即重试' }));
+
+    await waitFor(() => expect(mockRetry).toHaveBeenCalled());
+    expect(screen.queryByText('结算已完成')).not.toBeInTheDocument();
+  });
+
+  it('云端会话过期时说清是登录问题，而不是留一句「正在送」', async () => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: syncingGame({}) };
+    mockRetrySettlement.mockRejectedValue(new AiLadderApiError(401, 'Cloud session needs to be renewed'));
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '立即重试' }));
+
+    expect(await screen.findByText('登录已失效，请重新登录后再试')).toBeInTheDocument();
+    expect(mockRetry).not.toHaveBeenCalled();
+  });
+
+  it('队列里已经没有这一局了(后台刚送成):这一条才去复查', async () => {
+    const user = userEvent.setup();
+    rankedState.current = { ...rankedState.current, blocking_game: syncingGame({}) };
+    mockRetrySettlement.mockRejectedValue(new AiLadderApiError(404, 'No queued settlement for this game'));
+    mockRetry.mockImplementation(() => {
+      rankedState.current = { ...rankedState.current, blocking_game: null };
+    });
+    renderPage('rated');
+
+    await user.click(await screen.findByRole('button', { name: '立即重试' }));
+
+    await waitFor(() => expect(mockRetry).toHaveBeenCalled());
+    expect(screen.queryByText('重试失败，请稍后再试')).not.toBeInTheDocument();
+  });
+
 });

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { KIOSK_MONO } from '../theme';
 import {
   Box, Typography, Button, Chip, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, useTheme,
@@ -397,7 +398,7 @@ const BaipuSessionPage = () => {
         <Chip
           data-testid="baipu-progress"
           label={`${t('Move', '第')} ${Math.min(k + (phase === 'done' ? 0 : 1), steps.length)}/${steps.length} ${t('moves', '手')}`}
-          sx={{ bgcolor: 'var(--raise2)', fontFamily: '"JetBrains Mono", monospace' }}
+          sx={{ bgcolor: 'var(--raise2)', fontFamily: KIOSK_MONO }}
         />
         <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid="baipu-frame-count">
           {t('Captured', '已采集')} {frameCount} {t('frames', '帧')}
@@ -452,7 +453,7 @@ const BaipuSessionPage = () => {
             sx={{ px: 2, py: 1.5, borderRadius: '10px', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
           >
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t('Latest saved', '最近保存')}</Typography>
-            <Typography sx={{ mt: 0.25, fontFamily: '"JetBrains Mono", monospace', fontWeight: 700 }}>
+            <Typography sx={{ mt: 0.25, fontFamily: KIOSK_MONO, fontWeight: 700 }}>
               {latestSavedFile ?? t('None yet', '尚无')}
             </Typography>
           </Box>

@@ -352,3 +352,104 @@ async def test_a_settlement_the_cloud_did_not_count_carries_no_profile_to_adopt(
     with factory() as db:
         profile = db.get(models_db.AiLadderProfile, 1)
         assert (profile.ai_ladder_rung, profile.net_score, profile.version) == (20, 2, 0)
+
+
+# ── 屏上那句话的数据来源 ────────────────────────────────────────────────────────
+#
+# 「上一局的成绩还在送」这一格要写的是重试第几次、一共几次、下一次还有多久,以及
+# 什么时候不该再提「重试」。这些数只有 outbox 知道 —— 云端只知道成绩还没到。
+
+
+@pytest.mark.asyncio
+async def test_a_backed_off_settlement_reports_which_attempt_and_how_long_until_the_next(factory):
+    _enqueue(factory, game_id="flaky")
+    worker = SyncWorker(factory, _client(status_code=503))
+
+    await worker.run_sync()
+
+    sync = worker.describe("ladder-settlement:flaky", user_id="1")
+    assert sync["state"] == "waiting"
+    assert (sync["attempt"], sync["max_attempts"]) == (1, 5)
+    # 20s 的退避;报的是**时长**而不是时刻,盒子的钟偏不进入这个数。
+    assert 0 < sync["next_attempt_in_seconds"] <= 20
+
+
+@pytest.mark.asyncio
+async def test_retrying_now_skips_the_wait_and_lands_the_settlement(factory):
+    _enqueue(factory, game_id="flaky")
+    worker = SyncWorker(factory, _client(status_code=503))
+    await worker.run_sync()
+    assert worker.describe("ladder-settlement:flaky", user_id="1")["state"] == "waiting"
+
+    assert worker.retry_now("ladder-settlement:flaky", user_id="1") is True
+    worker._remote_client = _client(status_code=200)
+    await worker.run_sync()
+
+    assert worker.describe("ladder-settlement:flaky", user_id="1")["state"] == "synced"
+
+
+@pytest.mark.asyncio
+async def test_an_exhausted_settlement_can_be_retried_and_gets_its_budget_back(factory):
+    """重试用尽的意思是「网络坏了一阵子」,不是「这件事永远做不成」。"""
+    _enqueue(factory, game_id="offline")
+    worker = SyncWorker(factory, _client(status_code=503))
+    for _ in range(5):
+        with factory() as db:  # 每一轮都把退避抹掉,只为在测试里走完 5 次预算
+            db.query(models_db.SyncQueueEntry).update({"next_retry_at": None})
+            db.commit()
+        await worker.run_sync()
+
+    sync = worker.describe("ladder-settlement:offline", user_id="1")
+    assert (sync["state"], sync["attempt"]) == ("exhausted", 5)
+
+    assert worker.retry_now("ladder-settlement:offline", user_id="1") is True
+    assert worker.describe("ladder-settlement:offline", user_id="1")["attempt"] == 0
+
+
+@pytest.mark.asyncio
+async def test_a_settlement_the_cloud_refused_on_the_merits_is_not_offered_a_retry(factory):
+    """422 再问一百遍还是 422。给一个按不出结果的按钮,比不给更坏。"""
+    _enqueue(factory, game_id="refused")
+    worker = SyncWorker(factory, _client(status_code=422))
+
+    await worker.run_sync()
+
+    assert worker.describe("ladder-settlement:refused", user_id="1")["state"] == "refused"
+    assert worker.retry_now("ladder-settlement:refused", user_id="1") is False
+
+
+def test_one_users_settlement_is_not_visible_or_retryable_by_another(factory):
+    """一体机是共用的:别人的成绩不该出现在你的屏上,更不该被你按。"""
+    _enqueue(factory, user_id="7", game_id="belongs-to-7")
+    worker = SyncWorker(factory, _client())
+
+    assert worker.describe("ladder-settlement:belongs-to-7", user_id="9") is None
+    assert worker.retry_now("ladder-settlement:belongs-to-7", user_id="9") is False
+    assert worker.describe("ladder-settlement:belongs-to-7", user_id="7") is not None
+
+
+@pytest.mark.asyncio
+async def test_a_delivered_settlement_carries_the_clouds_verdict_back_to_the_screen(factory):
+    """送成之后面板要说清这一局计没计 —— 否则成功就只是面板悄悄消失。"""
+    _enqueue(factory, game_id="landed")
+    worker = SyncWorker(
+        factory,
+        _client(body={"game_id": "landed", "counted": False, "reason": "opponent_not_eligible"}),
+        ai_ladder_repo=MagicMock(),
+    )
+
+    await worker.run_sync()
+
+    sync = worker.describe("ladder-settlement:landed", user_id="1")
+    assert sync["state"] == "synced"
+    assert sync["receipt"] == {"counted": False, "reason": "opponent_not_eligible"}
+
+
+@pytest.mark.asyncio
+async def test_a_settlement_still_in_flight_reports_no_verdict_rather_than_a_made_up_one(factory):
+    _enqueue(factory, game_id="inflight")
+    worker = SyncWorker(factory, _client(status_code=503), ai_ladder_repo=MagicMock())
+
+    await worker.run_sync()
+
+    assert worker.describe("ladder-settlement:inflight", user_id="1")["receipt"] is None

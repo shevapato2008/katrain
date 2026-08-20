@@ -10,6 +10,7 @@ import PlaybackBar from '../../components/live/PlaybackBar';
 import UpcomingList from '../../components/live/UpcomingList';
 import type { MatchSummary } from '../../types/live';
 import { useTranslation } from '../../hooks/useTranslation';
+import { KIOSK_SERIF } from '../theme';
 
 const LivePage = () => {
   const navigate = useNavigate();
@@ -138,7 +139,7 @@ const LivePage = () => {
       {/* Right panel: header + tabs + lists + enter button */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ px: 2, pt: 2, pb: 1, flexShrink: 0 }}>
-          <Typography variant="h5" sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500 }}>{t('Live', '直播')}</Typography>
+          <Typography variant="h5" sx={{ fontFamily: KIOSK_SERIF, fontWeight: 500 }}>{t('Live', '直播')}</Typography>
         </Box>
         <Box sx={{ px: 2, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
           <Tabs

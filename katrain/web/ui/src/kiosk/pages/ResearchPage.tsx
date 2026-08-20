@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { KIOSK_MONO, KIOSK_SERIF } from '../theme';
 import {
   Box, Typography, Button, IconButton, LinearProgress, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
@@ -545,7 +546,7 @@ const ResearchPage = () => {
             }}>
               <ErrorOutlineIcon sx={{ fontSize: 40, color: 'error.main' }} />
             </Box>
-            <Typography variant="h5" sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500 }}>
+            <Typography variant="h5" sx={{ fontFamily: KIOSK_SERIF, fontWeight: 500 }}>
               {t('research:analysis_failed', '分析失败')}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 420 }}>
@@ -695,7 +696,7 @@ const ResearchPage = () => {
               <CircularProgress size={98} thickness={2} disableShrink sx={{ position: 'absolute', color: 'primary.main' }} />
               <ScienceIcon sx={{ fontSize: 44, color: 'primary.main' }} />
             </Box>
-            <Typography variant="h5" sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500 }}>
+            <Typography variant="h5" sx={{ fontFamily: KIOSK_SERIF, fontWeight: 500 }}>
               {t('research:analyzing_game', '正在分析全局')}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 440 }}>
@@ -795,7 +796,7 @@ const ResearchPage = () => {
             <Typography
               variant="body2"
               sx={{
-                mx: 2, fontFamily: '"JetBrains Mono", monospace', color: 'text.secondary',
+                mx: 2, fontFamily: KIOSK_MONO, color: 'text.secondary',
                 minWidth: 80, textAlign: 'center',
               }}
             >

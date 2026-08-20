@@ -33,6 +33,20 @@ from katrain.web.core.ranked_session_guard import (
 from katrain.web.session import SessionManager, LobbyManager, Matchmaker
 from katrain.web.models import *
 
+# 房间聊天单条正文的码点上限。超长拒绝、不截断,理由见发送处。
+#
+# ⚠️ **这个数与共享侧今天只是碰巧相等,没有任何东西在维持。** 共享侧那个是 env 可配的
+# (`platform_core.config.CHAT_MAX_LEN` ← `LOBBY_CHAT_MAX_LEN`,默认同样是 200),运维改一次
+# 就分叉,而两边都不会红。本文件上一版在这里写着「四家同口径」—— 那是一条**我自己发明的、
+# 没有执行机构的不变式**,和它旁边那些被逐条拆掉的散文属性是同一种东西,所以删掉了。
+#
+# 不跟着读 env 是**有意的**:katrain 的环境变量一律 `KATRAIN_*` 前缀,而围棋是独立进程、
+# 独立部署。读 `LOBBY_CHAT_MAX_LEN` 是串命名空间(那台机器上根本不会设它);另起一个
+# `KATRAIN_CHAT_MAX_LEN` 则是**第二个独立旋钮**——看起来配上了,实际要在两台机器上分别设,
+# 比硬编码更容易骗人。真要让四家一致,得让这个数在**每一家的源码里都是字面量**(env 解析出来
+# 的值,任何读源码的闸都看不见),再由契约钉住。已把这条判据交给共享侧,取值待定。
+CHAT_MAX_LEN = 200
+
 
 def _json_safe(obj):
     """Recursively convert numpy scalars/arrays to native Python types.
@@ -70,9 +84,7 @@ async def _guard_ai_ladder_cloud_active(app: FastAPI, session, current_user) -> 
                 raise RuntimeError("Invalid ranked lifecycle response")
             lifecycle_state = lifecycle.get("state")
         else:
-            lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(
-                user_id=current_user.id, game_id=snapshot.game_id
-            )
+            lifecycle = app.state.ai_ladder_repo.get_game_lifecycle(user_id=current_user.id, game_id=snapshot.game_id)
             lifecycle_state = getattr(lifecycle, "state", "settled")
     except HTTPException:
         raise
@@ -147,9 +159,10 @@ async def lifespan(app: FastAPI):
         live_service = getattr(app.state, "live_service", None)
         if live_service:
             await live_service.stop()
-    task = getattr(app.state, "cleanup_task", None)
-    if task:
-        task.cancel()
+    for attr in ("cleanup_task", "ai_ladder_heartbeat_task"):
+        task = getattr(app.state, attr, None)
+        if task:
+            task.cancel()
     app.state.session_manager.cleanup_expired()
 
 
@@ -264,6 +277,7 @@ async def _lifespan_server(app: FastAPI, log):
 
     manager.attach_loop(asyncio.get_running_loop())
     app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
+    app.state.ai_ladder_heartbeat_task = asyncio.create_task(_ai_ladder_heartbeat_loop(app))
 
     if not settings.PREVIEW_MODE:
         # Initialize Live Broadcasting Service
@@ -437,6 +451,7 @@ async def _lifespan_board(app: FastAPI, log):
 
     manager.attach_loop(asyncio.get_running_loop())
     app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
+    app.state.ai_ladder_heartbeat_task = asyncio.create_task(_ai_ladder_heartbeat_loop(app))
 
     # Start connectivity monitoring (do NOT start live_service in board mode)
     connectivity.start()
@@ -690,6 +705,35 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if current_user.id not in allowed_user_ids:
             raise HTTPException(status_code=403, detail=f"{action} is restricted to a session participant")
 
+    def guard_session_terminator(session, current_user, action: str) -> None:
+        """只有这局的参与者才能把它终结掉。
+
+        `/api/resign` 与 `/api/timeout` 都会**记录终局结果、判出胜方、广播 `game_end`**,
+        而胜方是从调用者反推的(`winner = 对手`)。在这条守卫之前,这两个端点只要求
+        `get_current_user_optional` —— 也就是说**任何登录用户,只要拿到一个 session_id,
+        就能把一局陌生人的活棋判负,并把胜利记进对手的账上**。而 session_id 不是秘密:
+        `GET /api/v1/games/active/multiplayer` 至今不带鉴权,返回的正是全部在跑的 session_id。
+        两条拼起来是一条完整的可利用链,不需要猜任何东西。
+
+        允许集与 `guard_session_reader` 相同,但**语义不同**,所以是两个函数不是一个:
+        读取放行的是「能看这局的人」,终结放行的是「这局是他的」。这两个集合今天恰好相等
+        (观战者不在里面 —— 那是另一个待修的问题),但它们没有理由永远相等,合并会让将来
+        「放开观战」变成「放开认输」。
+
+        **无人认领的会话不设闸**:未登录直接开的本地单机局三个 id 全是 None,没有可越权
+        的对象;对它要求登录只会打死盒上离线玩法。跨平台局的对手是 `-1`(OGS/KGS 上的人
+        没有 katrain 账号),它留在集合里不匹配任何真实用户,正确。
+        """
+        owner_ids = {
+            user_id for user_id in (session.user_id, session.player_b_id, session.player_w_id) if user_id is not None
+        }
+        if not owner_ids:
+            return
+        if current_user is None:
+            raise HTTPException(status_code=401, detail=f"Authentication required for {action}")
+        if current_user.id not in owner_ids:
+            raise HTTPException(status_code=403, detail=f"{action} is restricted to a player in this game")
+
     from katrain.web.core.box_sso import BoxSSOState
 
     app.state.box_sso = BoxSSOState(settings.KATRAIN_BOX_SSO_BRIDGE_KEY_PATH)
@@ -718,10 +762,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def health(request: Request):
         # Unversioned alias for /api/v1/health, kept because things outside this repo probe
         # it: the Playwright webServer readiness gate (playwright.config.ts) and the kiosk
-        # devices' reachability check. It must forward the Request -- the v1 handler reads
-        # `request.app.state` for the xiangqi-ranked metrics, so calling it bare raises
-        # TypeError and this route 500s while /api/v1/health stays green. That asymmetry is
-        # what makes the breakage easy to miss.
+        # devices' reachability check. It must forward the Request because the v1 handler
+        # declares one; calling it bare raises TypeError and this route 500s while
+        # /api/v1/health stays green. That asymmetry is what makes the breakage easy to miss.
+        #
+        # The v1 handler no longer *reads* the Request -- it did, for the xiangqi-ranked
+        # metrics off `request.app.state`, until xiangqi ranked left this repo on
+        # 2026-08-10. The parameter is now unused, so anyone tidying it away must fix this
+        # call site in the same commit or re-break exactly the asymmetry described above.
         from katrain.web.api.v1.endpoints.health import health as health_v1
 
         return await health_v1(request)
@@ -1393,21 +1441,24 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         try:
             from katrain.web.core.ai_ladder_sync import build_settlement_payload
 
-            return enqueue(
-                operation="settle_ai_ladder_ranked",
-                endpoint="/api/v1/ai-ladder/settlements",
-                method="POST",
-                payload=build_settlement_payload(
-                    snapshot,
-                    raw_result,
-                    reservation_key=reservation_key,
-                    game_record=game_record,
-                    device_id=settings.DEVICE_ID,
-                    engine_stalled=getattr(session.katrain, "last_ladder_error", False),
-                ),
-                user_id=str(current_user.id),
-                idempotency_key=f"ladder-settlement:{snapshot.game_id}",
-            ) is True
+            return (
+                enqueue(
+                    operation="settle_ai_ladder_ranked",
+                    endpoint="/api/v1/ai-ladder/settlements",
+                    method="POST",
+                    payload=build_settlement_payload(
+                        snapshot,
+                        raw_result,
+                        reservation_key=reservation_key,
+                        game_record=game_record,
+                        device_id=settings.DEVICE_ID,
+                        engine_stalled=getattr(session.katrain, "last_ladder_error", False),
+                    ),
+                    user_id=str(current_user.id),
+                    idempotency_key=f"ladder-settlement:{snapshot.game_id}",
+                )
+                is True
+            )
         except Exception as exc:  # pragma: no cover - defensive
             logging.getLogger("katrain_web").error(f"Could not queue ranked settlement for sync: {exc}")
             return False
@@ -1540,15 +1591,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 )
                 if getattr(app.state, "remote_client", None) is not None:
                     data["origin_device_id"] = settings.DEVICE_ID
-                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(
-                    lifecycle, "origin_device_id"
-                ):
+                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(lifecycle, "origin_device_id"):
                     data["origin_device_id"] = lifecycle.origin_device_id
                 terminal_result = result_for_user(data["result"], snapshot.user_color)
                 engine_stalled = bool(getattr(session.katrain, "last_ladder_error", False))
-                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(
-                    lifecycle, "origin_device_id"
-                ):
+                if getattr(lifecycle, "game_id", None) == snapshot.game_id and hasattr(lifecycle, "origin_device_id"):
                     # New lifecycle games commit their game record, ledger, profile and
                     # reservation release in one repository transaction.
                     app.state.ai_ladder_repo.finalize_reserved_game(
@@ -1566,14 +1613,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     )
                     if confirmed is None:
                         raise RuntimeError("authoritative ranked AI game row was not confirmed")
-                elif getattr(lifecycle, "state", None) == "settled" and getattr(
-                    app.state, "remote_client", None
-                ) is None:
+                elif (
+                    getattr(lifecycle, "state", None) == "settled" and getattr(app.state, "remote_client", None) is None
+                ):
                     # A remote /end won the terminal race. Its minimal resignation
                     # record is immutable; the late local callback is a successful no-op.
-                    app.state.ai_ladder_repo.clear_pending_game(
-                        user_id=current_user.id, game_id=snapshot.game_id
-                    )
+                    app.state.ai_ladder_repo.clear_pending_game(user_id=current_user.id, game_id=snapshot.game_id)
                     session.ai_ladder_settlement_pending = False
                     session._recorded = True
                     return
@@ -1630,9 +1675,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     except Exception as exc:
                         # The durable outbox below is the recovery path; a best-effort
                         # hint must never discard the result already saved locally.
-                        logging.getLogger("katrain_web").warning(
-                            "Could not mark ranked game pending on cloud: %s", exc
-                        )
+                        logging.getLogger("katrain_web").warning("Could not mark ranked game pending on cloud: %s", exc)
                 game_record = {key: value for key, value in data.items() if key != "origin_device_id"}
                 durable = True
                 if remote_client is not None:
@@ -1698,6 +1741,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/resign")
     async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_terminator(session, current_user, "resign")
         ranked_ai = is_ai_ladder_ranked_session(session)
         if ranked_ai:
             guard_ai_ladder_ranked_owner(session, current_user, "resign")
@@ -1729,6 +1773,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.katrain.game.current_node.end_state = result
                     if hasattr(session.katrain, "_state"):
                         session.katrain._state["end_result"] = result
+                    # This branch writes the result straight onto the tree instead of going
+                    # through `session.katrain(...)`, so the `update_state` -> `_on_state`
+                    # callback that normally sets `game_ended` never fires. Nothing else sets
+                    # it on this path, and it is the only thing that stops the ranked heartbeat:
+                    # without this line a resigned game goes on reporting a player at the board
+                    # forever, the cloud reservation never becomes takeable, and the account is
+                    # locked out of ranked play on every device it owns.
+                    session.game_ended = True
                 else:
                     session.katrain("resign")
                 state = session.katrain.get_state()
@@ -1931,6 +1983,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def timeout(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         """End game due to timeout - current player loses on time"""
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_terminator(session, current_user, "timeout")
         guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
         await _guard_ai_ladder_cloud_active(app, session, current_user)
 
@@ -2569,7 +2622,34 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 if message.get("type") == "ping":
                     await websocket.send_json({"type": "pong"})
                 elif message.get("type") == "chat":
-                    manager.broadcast_to_session(session_id, message)
+                    # 身份两项由**服务端**填,正文是唯一采信的客户端输入。
+                    # 在这之前这里是 `broadcast_to_session(session_id, message)` —— 把客户端
+                    # 原样送来的 dict 整包广播回房间,于是 `sender` 是发送方自己写的
+                    # (任何能连上这个房间的登录用户都能冒名发言),而且 payload 无长度上限。
+                    # 三棋共享侧 `lobby_api/ws.py::_handle_chat` 修的是同一个病,wire 契约
+                    # `shapes.Chat` 把结论钉成了字段名:**叫 `from_name` 不叫 `sender`**。
+                    text = message.get("text")
+                    if not isinstance(text, str):
+                        await websocket.send_json({"type": "error", "code": "chat_text_required"})
+                        continue
+                    text = text.strip()
+                    if not text:
+                        await websocket.send_json({"type": "error", "code": "chat_text_empty"})
+                        continue
+                    # 超长**拒绝**而不是截断:静默截断会让发出去的和收到的不是同一句话,
+                    # 而发送方看不出被改过。上限口径与共享侧 `CHAT_MAX_LEN` 一致。
+                    if len(text) > CHAT_MAX_LEN:
+                        await websocket.send_json({"type": "error", "code": "chat_text_too_long"})
+                        continue
+                    manager.broadcast_to_session(
+                        session_id,
+                        {
+                            "type": "chat",
+                            "from_id": current_user.id,
+                            "from_name": current_user.username,
+                            "text": text,
+                        },
+                    )
         except WebSocketDisconnect:
             pass
         finally:
@@ -2607,6 +2687,57 @@ async def _cleanup_loop(manager: SessionManager):
     while True:
         await asyncio.sleep(30)
         manager.cleanup_expired()
+
+
+# Boxes report in every 30s against a 5-minute takeover window, so ten consecutive failures
+# still leave the game untakeable. That ratio is the point: one flaky sweep must never be
+# enough to make a live game look abandoned.
+AI_LADDER_HEARTBEAT_INTERVAL_SECONDS = 30
+
+
+async def _send_ai_ladder_heartbeats(app: FastAPI) -> None:
+    """One sweep: tell the authority that every ranked game running here is still being played."""
+
+    targets = app.state.session_manager.ai_ladder_liveness_targets()
+    if not targets:
+        return
+    remote_client = getattr(app.state, "remote_client", None)
+    board = bool(remote_client and getattr(app.state, "repository_dispatcher", None))
+    for user_id, game_id, reservation_key, origin_device_id in targets:
+        try:
+            if board:
+                await remote_client.send_ai_ladder_heartbeat(game_id, reservation_key)
+            else:
+                app.state.ai_ladder_repo.record_heartbeat(
+                    user_id=user_id,
+                    game_id=game_id,
+                    reservation_key=reservation_key,
+                    origin_device_id=origin_device_id,
+                )
+        except Exception as exc:
+            # Per game, so one unreachable game does not stop the others from reporting in.
+            logging.getLogger("katrain_web").warning("ai-ladder heartbeat failed for %s: %s", game_id, exc)
+
+
+async def _ai_ladder_heartbeat_loop(app: FastAPI):
+    """Fixed-interval liveness for ranked games, on a timer rather than off moves.
+
+    A player thinking for three minutes is normal, so move-driven liveness would read deep
+    thought as a dead box and hand a live game to another device.
+
+    Every failure is swallowed and the loop continues. That is deliberate and it is the whole
+    reason this is its own task rather than two lines inside `_cleanup_loop`: if this loop dies,
+    nothing reports an error -- the games it was holding alive simply become takeable five
+    minutes later, and another device banks a loss for a game still being played. A silent stop
+    here is worse than a noisy failure, so there is no path that stops it short of shutdown.
+    """
+
+    while True:
+        await asyncio.sleep(AI_LADDER_HEARTBEAT_INTERVAL_SECONDS)
+        try:
+            await _send_ai_ladder_heartbeats(app)
+        except Exception:
+            logging.getLogger("katrain_web").warning("ai-ladder heartbeat sweep failed", exc_info=True)
 
 
 def _get_session_or_404(manager: SessionManager, session_id: str):

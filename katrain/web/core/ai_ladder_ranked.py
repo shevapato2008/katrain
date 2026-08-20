@@ -17,6 +17,15 @@ from katrain.web.core import models_db
 AI_LADDER_GAME_TYPE = "ai_ladder_ranked"
 PLACEMENT_GAMES = 5
 
+# 并发只靠一把占位锁:`uq_ai_ladder_active_user` 保证一个账号最多一行。
+# 开新局 = 立即夺占位,没有门槛、没有窗口、没有倒计时 —— 曾经那一整套
+# (心跳门槛/5 分钟接管窗口/30 分钟放弃窗口/两个 threshold + version)都在回答
+# 「另一台设备是不是真的死了」,而那个问题不需要回答:这不是两个用户争抢,
+# 是同一个人站在两台机器之间,他就在屏幕前,直接问他即可。
+#
+# 心跳保留,但用途降级:只让被夺占位的那台在下一次心跳时得知自己被顶掉、当场停手,
+# 不再用来换取任何权限。
+
 
 @dataclass(frozen=True)
 class AiLadderOpponentSnapshot:
@@ -87,6 +96,11 @@ class AiLadderBlockingGame:
     execution_identity: str
     rules_snapshot: Mapping[str, Any]
     time_control_snapshot: Mapping[str, Any]
+    # 诊断用的两个时刻。它们**不参与任何判据** —— 心跳早已不换取权限(简化那一轮把
+    # 接管窗口整套删了),这里带出来只为让屏上说得出「那台设备多久没消息了」「成绩压了多久」。
+    # 拿它们当闸就是把删掉的那套从 UI 里长回来。
+    last_heartbeat_at: Optional[datetime] = None
+    pending_settlement_since: Optional[datetime] = None
 
 
 @dataclass(frozen=True)
@@ -135,15 +149,35 @@ def expected_opponent_rung(rung: Optional[int], placement_lo: int, placement_hi:
     same answer; they used to inline the formula separately, and when two copies drift a
     legitimately seated game settles as `opponent_rung_mismatch`.
 
-    NOT snapped onto a rung that has a recipe -- deliberately, for now. The raw midpoint
-    lands on one of the ten recipe-less rungs in 12 of the 160 placement games reachable
-    from the default 1..32 window, and those games cannot be seated at all. Snapping here
-    changes the seating contract that `build_opponent_snapshot` and the mismatch check
-    agree on, so it is an open question rather than a quiet fix. See
-    superpowers/tracks/golaxy-ai-ladder-parity/2026-08-04-41-tier-rated-play-integration-design.md
-    §6, which asks for the whole search to run over available rungs.
+    SNAPPED onto a playable rung since 2026-08-20, when 12 of the 41 rungs were retired
+    (see `ladder._RETIRED_RUNGS`). The raw midpoint of a placement window can name a
+    retired rung, and such a game cannot be seated at all -- so the midpoint is snapped
+    here, in the ONE definition every caller shares. That sharing is the whole point: the
+    status endpoint, the two settlement mismatch checks and this function must agree, or a
+    legitimately seated game settles as `opponent_rung_mismatch` and the player silently
+    stops earning rank. `test_the_status_endpoint_uses_the_same_opponent_rule_as_settlement`
+    and `test_settlement_uses_the_shared_opponent_rule_not_an_inlined_midpoint` are the gates.
+
+    The binary search itself still walks RAW rung numbers (`_apply_result`) -- deliberately.
+    Snapping the search cursor as well would let `placement_lo` step past `placement_hi`
+    when a narrow window contains no playable rung, and the window is already narrowed to
+    width 1-2 by the fifth game. The cost of leaving it raw is that the search believes it
+    tested `mid` when it tested `nearest_playable_rung(mid)`; the largest gap between
+    consecutive playable rungs is 3, so that is bounded by 2 rungs, against a placement
+    that resolves 32 rungs in 5 games. The landing is snapped too (`_apply_result`).
     """
-    return rung if rung is not None else (placement_lo + placement_hi) // 2
+    # ⚠️ **这是个纯函数,而「免费释放占位」那一格把这件事当前提用。** 三个入参全在
+    # `AiLadderProfile` 上,而 `/status` 在任何预约之前就把档案连同 `current_opponent`
+    # 发给客户端了 ⇒ **预约一次不揭示任何客户端还不知道的东西**,所以「开一局看一眼对手就
+    # 免费退掉」这个滥用动作没有内容(见 `release_unplayed_reservation`,以及
+    # `test_reserving_reveals_nothing_that_status_did_not_already_hand_over`)。
+    # 哪天档位改成随机 / 带时间 / 按对手池实时可用性挑,预约就变成一条信息通道,
+    # 那一格的「免费」必须重新论证。
+    if rung is not None:
+        return rung
+    from katrain.core import ladder
+
+    return ladder.nearest_playable_rung((placement_lo + placement_hi) // 2)
 
 
 def _legacy_rank_to_rung(legacy_rank: Optional[str]) -> Optional[int]:
@@ -231,8 +265,32 @@ class AiLadderRankedRepository:
                         reservation_key=reservation_key,
                     )
                 raise AiLadderLifecycleConflict("account already has an active ranked AI game")
+
+            # A `game_id` that is already in the ledger cannot be reserved again -- by anyone.
+            #
+            # The id is minted by the box (`uuid4().hex`) and taken on trust here, so a box that
+            # replays or fabricates one can hand this account a reservation whose every exit is
+            # shut: `_find_ledger` raises NotFound the moment a ledger row for this `game_id`
+            # belongs to someone else, and it is the FIRST statement in both the takeover path
+            # and the release path. Waiting never helps, because nothing about that row changes.
+            #
+            # Refusing at the door rather than untangling it later, because there is nothing to
+            # untangle: the state is unresolvable by construction, so the only cure is not
+            # creating it. (`ai_ladder_game_ledger.game_id` is globally unique, so this reads
+            # across accounts on purpose -- the collision is the hazard, not the ownership.)
             if self._find_ledger_by_game_id(session, game_id=game_id) is not None:
                 raise AiLadderLifecycleConflict("game_id is already settled")
+            # 同理,`user_games` 里已有这个 id 也不许预约 —— 而这一侧此前没人查。
+            #
+            # 已有的闸只挡一个方向:`user_game_repo.create` 会拒绝一个已被段位预约占用的
+            # game_id。反过来先建 `user_games` 行、再拿同一个 id 预约,一路畅通;
+            # 而 `_create_or_validate_user_game` 会把那行逐字段与结算比对、任一不同就抛
+            # Conflict,且它挡在 finalize 的**每一条** terminal_source 前面 ⇒ 接管被拒、
+            # 释放又要求 `pending_settlement`,账号在所有设备上锁死。
+            #
+            # game_id 由客户端给,所以这是**两次公开请求**就能走到的自锁。
+            if session.query(models_db.UserGame.id).filter(models_db.UserGame.id == game_id).first() is not None:
+                raise AiLadderLifecycleConflict("game_id already belongs to a recorded game")
             row = models_db.AiLadderActiveGame(
                 game_id=game_id,
                 user_id=user_id,
@@ -336,9 +394,111 @@ class AiLadderRankedRepository:
                 raise AiLadderLifecycleConflict("reservation has not been activated")
             if row.state == "active":
                 row.state = "pending_settlement"
+                row.pending_settlement_since = datetime.now(timezone.utc)
                 row.version += 1
             session.commit()
             return self._blocking_from_row(row)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def record_heartbeat(
+        self, *, user_id: int, game_id: str, reservation_key: str, origin_device_id: str
+    ) -> AiLadderBlockingGame:
+        """Report that the box playing this game is still alive.
+
+        Origin-only: the reservation key is the capability that says "I am the client running
+        this game". Without that check any client could hold a game alive that it is not
+        playing, which is precisely the state takeover exists to break out of.
+
+        Only `active` games heartbeat. `reserved` has its own short reclaim and
+        `pending_settlement` is already trying to hand over a result -- neither is waiting on a
+        liveness signal, so a heartbeat there is a no-op rather than an error, and a box that
+        keeps its timer running one tick past the end of a game does not get an error dialog
+        for it.
+        """
+
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
+            self._verify_origin(row, reservation_key=reservation_key, origin_device_id=origin_device_id)
+            if row.state == "active":
+                row.last_heartbeat_at = datetime.now(timezone.utc)
+                row.heartbeat_generation = (row.heartbeat_generation or 0) + 1
+            session.commit()
+            return self._blocking_from_row(row)
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def release_unplayed_reservation(
+        self, *, user_id: int, game_id: str, deciding_device_id: str
+    ) -> AiLadderCancelResult:
+        """Give back a slot held by a game that never started.
+
+        Only `reserved`: the cloud registered the game, and the box never came back to activate
+        it. **There is no game on either side** -- `/start` builds the session, activates, and on
+        activation failure tears the session back down (`manager.remove_session`) and answers with
+        an error, so the player never received a session id and never saw a board.
+
+        **Writes no ledger row and moves no rating**, because there is no verdict to record. A
+        loss for a game that was never dealt cannot be explained to the player, and
+        `inconclusive` would claim we know it ended undecided when what we know is that it never
+        began.
+
+        This is not a second, cheaper exit competing with resignation -- the slot has exactly one
+        price, and that is what keeps the expensive path from dying out. It is the same rule this
+        module already applies on a timer: a `reserved` row older than five minutes is silently
+        reclaimed on read (`_is_stale_reserved`). All this does is hand the slot back now, while
+        the player is standing at the screen, instead of making him wait out that timer.
+
+        Not origin-only, deliberately: the device that can reach us is not the one that stalled.
+        The authenticated account is the authority here.
+        """
+
+        session = self.session_factory()
+        try:
+            self._begin_write_transaction(session)
+            self._lock_user(session, user_id=user_id)
+            # 账本先查,排在任何状态判断之前:结果要是其实已经落地了,诚实的回答是那张回执,
+            # 不是一次释放。把账本查询排在状态判断之后,就是那种「正确分支永远到不了」的形状。
+            existing = self._find_ledger(session, user_id=user_id, game_id=game_id)
+            if existing is not None:
+                return AiLadderCancelResult(cancelled=False, receipt=self._replay_lifecycle_receipt(session, existing))
+            row = self._lock_lifecycle(session, user_id=user_id, game_id=game_id)
+            # `state == "reserved"` 是「没开过局」的**代理量**,不是那件事本身。它实际断言的是
+            # 「云端从没收到过这一局的 activate」。两者在围棋里重合,靠的是**别的文件**里的一个
+            # 顺序:`/start` 是 reserve → 建 session → activate → 才把 session_id 发给玩家,
+            # 而 activate 失败会 `manager.remove_session` 并抛错(见 endpoints/ai_ladder.py 的
+            # `/start` except 块,以及钉住它的
+            # `test_a_failed_activation_hands_the_player_no_board_so_reserved_means_no_game`)。
+            #
+            # ⚠️ **谁哪天把 activate 挪晚(比如挪到第一次心跳、像五子棋那样),这个代理量当场
+            # 开始覆盖真下过的棋**,而下面那一行 delete 就变成了下面说的那条锁死链的上游。
+            if row.state != "reserved":
+                raise AiLadderLifecycleConflict("only a reservation that never started can be released")
+            # **围棋这里可以删行,象棋不行 —— 差别在补交入口,不在这一行。** 别照象棋改过来。
+            #
+            # 象棋 2026-08-11 跑真代码确认的锁死链:离线盒子下完一整局 → 另一台设备免费释放
+            # (删预约)→ 原盒子补交 → 服务端查不到预约 → **409** → 盒端判为不可重试 →
+            # 队列 block → 账号锁死。所以四家统一要求「免费 = 写一条不计分的终局回执,不是删行」。
+            #
+            # 围棋这条链断在第四跳:`submit_settlement` 查不到预约行时**不 409**,落到
+            # `settle_game(unreserved_origin=True)`,那条路 never raises,记一行
+            # `counted=False, reason="unreserved"` 并回 **200**;盒端 outbox 收 200 就 completed。
+            # 这不是推的 —— `test_freeing_a_reservation_cannot_strand_a_game_the_box_really_played`
+            # 把云端真发出来的那个响应喂进真的 `SyncWorker._execute_item` 跑过。
+            #
+            # ⇒ 保留 delete 的**前提有两条**,任一被改掉就必须改成写回执:
+            #    ① 上面那个 activate 顺序;② `submit_settlement` 的无预约分支不 409。
+            session.delete(row)
+            session.commit()
+            return AiLadderCancelResult(cancelled=True, receipt=None)
         except Exception:
             session.rollback()
             raise
@@ -375,6 +535,9 @@ class AiLadderRankedRepository:
             self._verify_origin(row, reservation_key=reservation_key, origin_device_id=origin_device_id)
             if row.state != "reserved":
                 raise AiLadderLifecycleConflict("only an unactivated reservation may be cancelled")
+            # 第三处 `session.delete` —— 判据(`state == "reserved"` 这个代理量)和「围棋为什么
+            # 可以删而象棋必须写不计分回执」的两条前提,都写在 `release_unplayed_reservation`。
+            # 别只改一处:三处共用同一对前提。
             session.delete(row)
             session.commit()
             return AiLadderCancelResult(cancelled=True)
@@ -693,6 +856,31 @@ class AiLadderRankedRepository:
                 )
                 if row.state not in {"active", "pending_settlement"}:
                     raise AiLadderLifecycleConflict("reservation must be activated before terminal submission")
+            if terminal_source == "remote_resign" and row.state == "reserved":
+                # 没开过局的占位不记负 —— 这条属于**这个函数**,不属于调用方的路由。
+                #
+                # `/end` 今天确实先把 `reserved` 分流去 `release_unplayed_reservation`,
+                # 所以这一格现在到不了。但那是**别处**的一个 if,而这里是唯一写账本的地方:
+                # 判据留在调用方,就等于「以后谁再接一个调用点,这条规则默认不适用」。
+                # 代价还不对称 —— 账本不可变,写错一行负是改不回来的。
+                #
+                # 判据是 `state == "reserved"`,一个**代理量**:它说的是「云端从没收到过这一局的
+                # activate」,不是「一手没走过」。四家共用的那条判据也是代理量(「服务端从没收到过
+                # 这局的心跳」),而**围棋这个更靠前也更准** —— activate 发生在棋盘建起来那一刻
+                # (`/start`),心跳则是之后的定时器,一局 `active` 的棋可以一次心跳都还没发。
+                # 象棋那条代理量误盖的「盒子离线把一整局下完了」,在围棋这里盖不到,理由与
+                # 能不能删行是同一条,写在 `release_unplayed_reservation` 里。
+                raise AiLadderLifecycleConflict("a reservation that never started cannot be resigned")
+            # `pending_settlement` 曾经在这里被拒,理由是「这一格已经有结果了,判负是**永久替换**
+            # 它」。那个描述今天仍然准确,但它不再是拒绝的理由 —— 2026-08-11 产品方定下:
+            # **占位只有一个出口,认输,一个价钱。** 没有「什么都不记」那条路了,因为同一处境
+            # 两个价钱会让贵的那条自然消亡(劣势局面下认输记一场负、放弃什么都不记,后者严格
+            # 更优,不需要动机,只需要看得见)。
+            #
+            # 所以这一格现在也判负,而**代价必须由用户知情按下,不由系统静默记账**:
+            # 账本先到先得的三道检查在上面 —— 结果**已经落账**的一律返回真实回执,不写负。
+            # 剩下的只有「结果还在路上」,那一格的诚实做法是把话说清楚(前端在这一格明说
+            # 「认输会覆盖它的真实结果」),而不是把账号锁死在一个没有出口的状态里。
 
             opponent = self._opponent_from_row(row)
             record = self._validated_game_record(
@@ -763,7 +951,16 @@ class AiLadderRankedRepository:
         game_type: str,
         opponent: Optional[AiLadderOpponentSnapshot],
         engine_stalled: bool = False,
+        unreserved_origin: bool = False,
     ) -> AiLadderSettlementResult:
+        """Settle a game that has no live reservation row.
+
+        `unreserved_origin` is the caller saying "everything I know about this game came
+        from the request body". Set it on any path where an untrusted client is the only
+        witness -- see `submit_settlement`. It never raises: the row is still recorded so
+        the submitter's outbox can stop retrying and the attempt stays auditable, it just
+        cannot move a rank.
+        """
         if user_color not in {"B", "W"}:
             raise ValueError("user_color must be B or W")
         if not isinstance(game_id, str) or not game_id.strip():
@@ -790,6 +987,15 @@ class AiLadderRankedRepository:
             ignored_reason = self._ignored_reason(
                 game_type=game_type, result=result, opponent=opponent, engine_stalled=engine_stalled
             )
+            # Every field `_ignored_reason` consults -- the result, the rung, whether that
+            # rung is certified and available -- arrives in the same request body as the
+            # claim "I won". Checking them against each other proves nothing: the account
+            # that wants the promotion wrote all of them. The one input it cannot forge is
+            # a reservation row the server issued itself, so when that is missing the game
+            # is recorded and openly not counted. Measured 2026-08-13 before this line
+            # existed: 40 fabricated POSTs from a fresh account, 40 counted, rung 1 -> 41.
+            if unreserved_origin:
+                ignored_reason = ignored_reason or "unreserved"
             profile = None
             if ignored_reason is None:
                 assert opponent is not None
@@ -925,6 +1131,8 @@ class AiLadderRankedRepository:
             execution_identity=row.execution_identity,
             rules_snapshot=deepcopy(dict(row.rules_snapshot)),
             time_control_snapshot=deepcopy(dict(row.time_control_snapshot)),
+            last_heartbeat_at=row.last_heartbeat_at,
+            pending_settlement_since=row.pending_settlement_since,
         )
 
     @staticmethod
@@ -965,6 +1173,13 @@ class AiLadderRankedRepository:
 
     @staticmethod
     def _is_stale_reserved(row) -> bool:
+        """5 分钟没 activate 的预约 = 没开过局,读到就静默回收(调用方 `session.delete`)。
+
+        判据和 `release_unplayed_reservation` 是同一个代理量(`state == "reserved"`),
+        **能删的两条前提也是同一对** —— 见那个方法里写的两条,别只改一处。
+        这里多一条时限,而时限**只影响什么时候回收,不影响回收得对不对**:一个 activate
+        永远不来的预约,等多久都还是没开过局。
+        """
         if row.state != "reserved" or row.created_at is None:
             return False
         created = row.created_at
@@ -1026,8 +1241,8 @@ class AiLadderRankedRepository:
             )
             if profile is None:
                 lo, hi = initial_placement_window(user.rank)
-                expected_opponent_rung = (lo + hi) // 2
-                if opponent.rung != expected_opponent_rung:
+                expected = expected_opponent_rung(None, lo, hi)
+                if opponent.rung != expected:
                     ignored_reason = "opponent_rung_mismatch"
                 else:
                     profile = models_db.AiLadderProfile(
@@ -1041,12 +1256,8 @@ class AiLadderRankedRepository:
                     )
                     session.add(profile)
             else:
-                expected_opponent_rung = (
-                    profile.ai_ladder_rung
-                    if profile.ai_ladder_rung is not None
-                    else (profile.placement_lo + profile.placement_hi) // 2
-                )
-                if opponent.rung != expected_opponent_rung:
+                expected = expected_opponent_rung(profile.ai_ladder_rung, profile.placement_lo, profile.placement_hi)
+                if opponent.rung != expected:
                     ignored_reason = "opponent_rung_mismatch"
         return ignored_reason, profile
 
@@ -1054,8 +1265,10 @@ class AiLadderRankedRepository:
     def _validated_game_record(*, row, result: str, terminal_source: str, record: Optional[Mapping[str, Any]]) -> dict:
         rules = deepcopy(dict(row.rules_snapshot))
         if terminal_source == "remote_resign":
+            # `+F`(forfeit)而不是 `+R`(resign):云端手上一手棋都没有,
+            # 写成认输等于声称这是一盘下过、并在某一手停下的棋。弃权才是真的。
             winner = "W" if row.user_color == "B" else "B"
-            sgf_result = f"{winner}+R"
+            sgf_result = f"{winner}+F"
             return {
                 "sgf_content": (
                     f"(;GM[1]FF[4]SZ[19]RU[{rules.get('rules', 'chinese')}]"
@@ -1277,17 +1490,22 @@ class AiLadderRankedRepository:
 
     @staticmethod
     def _apply_result(profile: models_db.AiLadderProfile, result: str) -> None:
-        # Ten of the 41 rungs (准1段–准9段, 职业顶尖) have no fitted recipe. Every write to
-        # `ai_ladder_rung` therefore goes through the ladder's playable-rung stepper: raw
-        # +1 from 5段(30) lands on 准6段(31), a rung no opponent can ever be built for.
+        # 12 of the 41 rungs are retired (`ladder._RETIRED_RUNGS`) and cannot be seated.
+        # Every write to `ai_ladder_rung` therefore goes through the ladder's playable-rung
+        # stepper: raw +1 from 5段(30) lands on 准6段(31), a rung no opponent is built for.
         from katrain.core import ladder
 
         if profile.ai_ladder_rung is None:
-            mid = (profile.placement_lo + profile.placement_hi) // 2
+            # The binary-search CURSOR, not the opponent that was played. Those two are the
+            # same number only when the midpoint happens to be playable; the opponent comes
+            # from `expected_opponent_rung`, which snaps. Keeping the cursor raw is what
+            # guarantees `placement_lo <= placement_hi` survives a window too narrow to
+            # contain any playable rung -- see that function's docstring.
+            pivot = (profile.placement_lo + profile.placement_hi) // 2
             if result == "win":
-                profile.placement_lo = mid + 1
+                profile.placement_lo = pivot + 1
             else:
-                profile.placement_hi = mid
+                profile.placement_hi = pivot
             profile.placement_completed += 1
             if profile.placement_completed == PLACEMENT_GAMES:
                 # The window is still searched over raw rungs, so the landing can fall on a

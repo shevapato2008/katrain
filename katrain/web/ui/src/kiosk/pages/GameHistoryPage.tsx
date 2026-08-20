@@ -8,6 +8,7 @@ import LiveBoard from '../../components/live/LiveBoard';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import KioskResultBadge from '../components/game/KioskResultBadge';
 import { UserGamesAPI, type UserGameSummary, type UserGameDetail } from '../../api/userGamesApi';
+import { KIOSK_SERIF } from '../theme';
 
 const PAGE_SIZE = 30;
 
@@ -110,7 +111,7 @@ const GameHistoryPage = () => {
       {/* List panel */}
       <Box sx={{ width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '1px solid', borderColor: 'divider' }}>
         <Box sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}>
-          <Typography variant="h5" sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500, mb: 1.5 }}>
+          <Typography variant="h5" sx={{ fontFamily: KIOSK_SERIF, fontWeight: 500, mb: 1.5 }}>
             {t('Game History', '对局历史')}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>

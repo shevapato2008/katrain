@@ -1,6 +1,7 @@
 import { Typography } from '@mui/material';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { translateResult } from '../../../utils/resultTranslation';
+import { KIOSK_MONO } from '../../theme';
 
 interface KioskResultBadgeProps {
   result: string;
@@ -24,7 +25,7 @@ const KioskResultBadge = ({ result, rules }: KioskResultBadgeProps) => {
         px: 0.7,
         py: 0.3,
         borderRadius: '4px',
-        fontFamily: "'IBM Plex Mono', monospace",
+        fontFamily: KIOSK_MONO,
         bgcolor: isBlack ? '#0a0a0a' : 'var(--raise2)',
         color: 'text.primary',
         border: '1px solid',

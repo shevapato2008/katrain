@@ -4,9 +4,10 @@ import { alpha } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import { KIOSK_SERIF } from '../theme';
 
 // Brand lockup matches the Header (智星盒 / StellaBox) — Newsreader serif, jade console palette.
-const BRAND_SERIF = "'Newsreader','Noto Serif SC',serif";
+const BRAND_SERIF = KIOSK_SERIF;
 
 const LoginPage = () => {
   const theme = useTheme();

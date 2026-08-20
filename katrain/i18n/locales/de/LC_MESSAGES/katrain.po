@@ -2998,10 +2998,10 @@ msgid "ladder:start_ranked_cta"
 msgstr "Ranglistenpartie starten"
 
 msgid "ladder:pending_settlement"
-msgstr "Ergebnis dieser Partie wird verrechnet"
+msgstr "Ergebnis dieser Partie ist noch nicht in der Cloud angekommen"
 
 msgid "ladder:pending_settlement_cta"
-msgstr "Wird verrechnet…"
+msgstr "Ergebnis nicht übermittelt"
 
 msgid "ladder:recent_heading"
 msgstr "Letzte 5 Partien"

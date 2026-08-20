@@ -9,22 +9,50 @@ from katrain.core.ladder import LADDER_ALLOW_PROVISIONAL_ENV, LadderUnavailable,
 def allow_provisional_rungs(monkeypatch):
     """Every test in this file is about how a ladder move is GENERATED -- the picker,
     the attestation, the fail-closed paths -- not about whether a rung has passed
-    calibration. `_CERTIFIED_RUNGS` is empty today, so without this every one of
-    them would just raise LadderUnavailable in the constructor and test nothing.
+    calibration.
 
-    The certification gate itself is covered by tests/core/test_ladder.py and by
-    `test_the_certification_gate_still_applies_when_the_switch_is_off` below, so
-    turning it off here cannot hide a regression in it.
+    2026-08-20: `_CERTIFIED_RUNGS` is no longer empty (29 rungs opened), so this fixture
+    is no longer what makes these tests run -- it is kept because it makes them
+    independent of WHICH rungs are certified. A future re-calibration that un-certifies a
+    rung must not turn this file red; what it tests is the move pipeline, not the gate.
+
+    The gate itself is covered by tests/core/test_ladder.py and by the guard below.
     """
     monkeypatch.setenv(LADDER_ALLOW_PROVISIONAL_ENV, "1")
 
 
-def test_the_certification_gate_still_applies_when_the_switch_is_off(monkeypatch):
-    """Guards the fixture above: it must be the dev switch doing this, not a rung
-    that quietly became certified."""
+def test_the_dev_switch_is_what_forgives_an_uncertified_rung(monkeypatch):
+    """Guards the fixture above: it must be the SWITCH doing this, not a rung that
+    quietly became certified.
+
+    Sampled from `_RETIRED_RUNGS` rather than a hardcoded number: rung 41 used to be the
+    sample and it became certified on 2026-08-20, at which point this test stopped
+    testing anything and went red. A retired rung is provisional/unavailable **by product
+    ruling**, so it stays uncertified no matter how calibration moves.
+    """
+    from katrain.core import ladder
+
+    uncertified = min(ladder._RETIRED_RUNGS)
+    assert uncertified not in ladder._CERTIFIED_RUNGS
+    assert ladder.get_level(uncertified).recipe is not None, "retired is not recipe-less"
+
     monkeypatch.delenv(LADDER_ALLOW_PROVISIONAL_ENV, raising=False)
     with pytest.raises(LadderUnavailable):
-        resolve_available_rung(41)
+        resolve_available_rung(uncertified)
+    # 正对照：开关打开时它能解析 —— 否则「闸生效」和「这一档根本解析不出来」分不开。
+    monkeypatch.setenv(LADDER_ALLOW_PROVISIONAL_ENV, "1")
+    assert resolve_available_rung(uncertified) is ladder.get_level(uncertified).recipe
+
+
+def test_a_certified_rung_needs_no_dev_switch(monkeypatch):
+    """开张之后的正面事实：29 档不靠任何开关就能解析。上面那条只证明开关有效，
+    证不出产品是否真的开张了 —— 认证集是空集的那半年里它一直是绿的。"""
+    from katrain.core import ladder
+
+    monkeypatch.delenv(LADDER_ALLOW_PROVISIONAL_ENV, raising=False)
+    assert ladder._CERTIFIED_RUNGS, "认证集为空 = 升降级没开张"
+    for rung in sorted(ladder._CERTIFIED_RUNGS):
+        assert resolve_available_rung(rung) is ladder.get_level(rung).recipe
 
 
 # The identity a healthy engine attests for a net_search rung. Every net_search
@@ -46,9 +74,9 @@ B18_IDENTITY = {
 #: the only human_argmax one. native_policy_argmax is synthesised from 41 rather
 #: than taken from rung 39, so the attested identity stays the same across the
 #: parametrised cases.
-HUMAN_WEIGHTED_RUNG = 1     # 20级
-HUMAN_ARGMAX_RUNG = 36      # 8段
-NET_SEARCH_RUNG = 41        # 超越人类, 64 visits
+HUMAN_WEIGHTED_RUNG = 1  # 20级
+HUMAN_ARGMAX_RUNG = 36  # 8段
+NET_SEARCH_RUNG = 41  # 超越人类, 64 visits
 
 
 def _search_analysis(move="Q16", identity=B18_IDENTITY):
@@ -423,7 +451,9 @@ def test_humansl_degraded_response_raises_unavailable():
     # move under the humanSL label -> LadderUnavailable (H2, no cross-mechanism fallback).
     from katrain.core.ai import LadderUnavailable
 
-    s, eng = _mk(HUMAN_WEIGHTED_RUNG, {"moveInfos": [{"move": "Q16", "order": 0}]})  # has_human_model True, but degraded output
+    s, eng = _mk(
+        HUMAN_WEIGHTED_RUNG, {"moveInfos": [{"move": "Q16", "order": 0}]}
+    )  # has_human_model True, but degraded output
     with pytest.raises(LadderUnavailable):
         s.generate_move()
 

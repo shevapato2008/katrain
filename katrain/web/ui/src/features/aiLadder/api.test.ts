@@ -127,6 +127,36 @@ describe('ai ladder API', () => {
     });
   });
 
+  it('treats a released reservation as the success it is, not as a failed request', async () => {
+    // 载荷逐字取自 `ai_ladder.py` 里 `end_ranked_game` 的 released 分支 —— 不是照类型想象出来的。
+    // 象棋踩过这一格:后端成功,而界面的解码器认不出这个形状,于是屏上告诉用户「失败了」。
+    // 围棋这边形状不同、结局一样:让掉**没有 receipt**(它不写账本 —— 那一局根本没开始过),
+    // 于是少了这条分支,守卫把 200 当成畸形响应,`createApiError` 拿着 `response.ok === true`
+    // 造出一个 `Request failed 200`,用户看到「结束对局失败，请重试」—— 而那一刻预约已经
+    // 删掉了、账号已经放开了。
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      state: 'released', game_id: 'game-1', counted: false,
+    }), { status: 200 })));
+
+    await expect(endAiLadderGame('game-1')).resolves.toEqual({
+      state: 'released', game_id: 'game-1', counted: false,
+    });
+  });
+
+  it.each([
+    { state: 'released', game_id: 'another-game', counted: false },
+    { state: 'released', game_id: 'game-1', counted: true },
+    { state: 'released', game_id: 'game-1' },
+  ])('still rejects a malformed released lifecycle: %j', async (body) => {
+    // `counted` 必须是**假**:让掉的全部意义就是什么都不计。一个说自己计了分的让掉
+    // 是个矛盾的响应,放它过去等于让界面替后端编一个结果。
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 200 })));
+
+    await expect(endAiLadderGame('game-1')).rejects.toEqual(expect.objectContaining<Partial<AiLadderApiError>>({
+      status: 200,
+    }));
+  });
+
   it('URL-encodes the server-issued game id when ending a game', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       state: 'pending_settlement', game_id: 'game/1',

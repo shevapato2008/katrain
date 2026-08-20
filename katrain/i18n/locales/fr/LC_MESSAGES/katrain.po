@@ -1596,7 +1596,7 @@ msgid "tsumego:problemRange"
 msgstr "Problèmes {start}-{end}"
 
 msgid "auth:login_title"
-msgstr "Connexion à StellaBox"
+msgstr "Se connecter à StellaBox"
 
 msgid "auth:register_title"
 msgstr "Créer un compte"
@@ -2911,3 +2911,202 @@ msgstr ""
 "Votre adversaire n'a pas pu jouer à sa force calibrée : cette partie ne "
 "compte pas — votre rang est inchangé et aucune partie de classement n'est "
 "consommée."
+
+msgid "ladder:pending_settlement"
+msgstr "Le résultat de cette partie n'est pas encore parvenu au cloud"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "Résultat non transmis"
+
+msgid "ladder:title"
+msgstr "Parties classées contre l'IA"
+
+msgid "ladder:setup_title"
+msgstr "IA à 41 paliers"
+
+msgid "ladder:placement_opponent_prefix"
+msgstr "Adversaire de classement : "
+
+msgid "ladder:game_opponent_prefix"
+msgstr "Adversaire de cette partie : "
+
+msgid "ladder:loading_status"
+msgstr "Chargement de votre statut classé…"
+
+msgid "ladder:load_error"
+msgstr "Impossible de charger le statut classé"
+
+msgid "ladder:load_error_not_authoritative"
+msgstr ""
+"Cet appareil n'enregistre pas les résultats classés, impossible de commencer"
+" ici"
+
+msgid "ladder:load_error_unauthorized"
+msgstr "Votre session a expiré — reconnectez-vous"
+
+msgid "ladder:retry"
+msgstr "Réessayer"
+
+msgid "ladder:provisional_seating"
+msgstr ""
+"Ce palier n'est pas encore calibré — jouable, mais cette partie ne comptera "
+"pas"
+
+msgid "ladder:current_opponent_prefix"
+msgstr "Adversaire actuel : "
+
+msgid "ladder:current_rank_prefix"
+msgstr "Rang actuel : "
+
+msgid "ladder:available"
+msgstr "Disponible"
+
+msgid "ladder:unavailable_rung"
+msgstr "Ce palier n'est pas encore accessible"
+
+msgid "ladder:unavailable_cta"
+msgstr "Indisponible"
+
+msgid "ladder:continue_placement_cta"
+msgstr "Poursuivre le classement"
+
+msgid "ladder:start_ranked_cta"
+msgstr "Commencer la partie classée"
+
+msgid "ladder:recent_heading"
+msgstr "5 dernières parties"
+
+msgid "ladder:recent_aria"
+msgstr "Résultats des 5 dernières parties classées contre l'IA"
+
+msgid "ladder:recent_display_note"
+msgstr ""
+"Les 5 dernières parties sont indicatives ; seul le score net décide du "
+"passage de palier"
+
+msgid "ladder:recent_empty"
+msgstr "Aucune partie classée contre l'IA pour l'instant"
+
+msgid "ladder:net_score_prefix"
+msgstr "Score net : "
+
+msgid "ladder:net_score_aria"
+msgstr "Score net ; négatif vers la descente, positif vers la montée"
+
+msgid "ladder:demotion_threshold"
+msgstr "Descente -3"
+
+msgid "ladder:promotion_threshold"
+msgstr "Montée +3"
+
+msgid "ladder:route_local"
+msgstr "Sur cet appareil"
+
+msgid "ladder:route_server"
+msgstr "Sur le serveur"
+
+msgid "ladder:cert_provisional"
+msgstr "Provisoire"
+
+msgid "ladder:cert_certified"
+msgstr "Certifié"
+
+msgid "ladder:placement_progress_n"
+msgstr "Classement {n}/{total}"
+
+msgid "ladder:placement_progress_aria"
+msgstr "Progression du classement : {n} parties sur {total} jouées"
+
+msgid "ladder:net_score_positive"
+msgstr "Score net +{n}, vers la montée ; +3 fait monter"
+
+msgid "ladder:net_score_negative"
+msgstr "Score net {n}, vers la descente ; -3 fait descendre"
+
+msgid "ladder:net_score_zero"
+msgstr "Score net 0 ; +3 fait monter, -3 fait descendre"
+
+msgid "ladder:outcome_label"
+msgstr "Partie {n} : {result}"
+
+msgid "ladder:settled_generic"
+msgstr "Enregistrement classé terminé ; votre statut est à jour"
+
+msgid "ladder:settled_placement_done"
+msgstr "Classement terminé : {rank}"
+
+msgid "ladder:settled_placement_progress"
+msgstr "Classement en cours {n}/{total}"
+
+msgid "ladder:settled_promoted"
+msgstr "Montée : {rank}"
+
+msgid "ladder:settled_demoted"
+msgstr "Descente : {rank}"
+
+msgid "ladder:settled_no_change"
+msgstr "Rang inchangé ; score net : {score}"
+
+msgid "ladder:settled_pending"
+msgstr "L'enregistrement classé est encore en cours"
+
+msgid "ladder:settled_unavailable"
+msgstr "Le statut d'enregistrement est indisponible pour le moment"
+
+msgid "ok"
+msgstr "OK"
+
+msgid "accept"
+msgstr "Accepter"
+
+msgid "reject"
+msgstr "Refuser"
+
+msgid "common:cancel"
+msgstr "Annuler"
+
+msgid "common:retry"
+msgstr "Réessayer"
+
+msgid "Tutorials"
+msgstr "Tutoriels"
+
+msgid "Stone Effect"
+msgstr "Effet de pierre"
+
+msgid "3D"
+msgstr "3D"
+
+msgid "research:cancel_analysis_title"
+msgstr "Annuler l'analyse ?"
+
+msgid "research:cancel_analysis_warning"
+msgstr "L'analyse est en cours. L'annuler et quitter ?"
+
+msgid "research:continue_analysis"
+msgstr "Continuer l'analyse"
+
+msgid "research:cancel_and_leave"
+msgstr "Annuler et quitter"
+
+msgid "tsumego:loadError"
+msgstr ""
+"Impossible de charger la bibliothèque de tsumego. Réessayez dans un instant."
+
+msgid "tsumego:noData"
+msgstr "Aucun problème de tsumego pour l'instant."
+
+msgid "chat:title"
+msgstr "Discussion"
+
+msgid "chat:placeholder"
+msgstr "Écrire un message…"
+
+msgid "audio:play"
+msgstr "Lire"
+
+msgid "audio:pause"
+msgstr "Pause"
+
+msgid "audio:unavailable"
+msgstr "Audio indisponible"

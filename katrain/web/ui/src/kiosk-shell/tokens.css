@@ -1,0 +1,991 @@
+/* tokens.css — 智星盒 kiosk 外壳几何与排版尺规(四棋类共享)
+ *
+ * 规范全文:../kiosk-shell-spec.md
+ * 用法:先 import fonts.css 再 import 本文件,然后在应用根元素加 class="kiosk"。
+ *
+ * 画布固定 1024×600,所以这里全部用 px —— 固定画布上 px 才是可核对的量。
+ * 谁都不要把这些值改成 cqw / vw / %:一旦相对化,「切模块不跳」就没法用截图证明。
+ *
+ * 本文件只定义**结构**(几何、字号、字族)。颜色刻意不在这里定 ——
+ * 四棋类保留各自基调(围棋青毡、国象琥珀、象棋米黄、五子棋夜空),
+ * 只统一结构。各棋类自己给下面这组语义色变量赋值即可。
+ */
+
+.kiosk {
+  /* ---------- 字族(§9 分工规则) ----------
+     栈的第一族只管拉丁与数字(带 latin unicode-range),中文码点在那儿匹配不到面,
+     自然落到第二族 SmartBox Kai(霞鹜文楷)。**顺序不可调**:把 Kai 提前会让它
+     连 ASCII 一起抢走。
+     后面的 Kaiti SC / Georgia 只在开发机(macOS)上存在,板子上一个都没有——
+     那是给开发机看的,不是兜底方案。 */
+  --font-serif: "SmartBox Serif", "SmartBox Kai", "Kaiti SC", Georgia, serif;
+  --font-sans: "SmartBox Sans", "SmartBox Kai", "Kaiti SC", system-ui, sans-serif;
+  --font-mono: "SmartBox Mono", "SmartBox Kai", ui-monospace, monospace;
+
+  /* ---------- 画布 ---------- */
+  --kiosk-w: 1024px;
+  --kiosk-h: 600px;
+
+  /* ---------- §6 上边条 ----------
+     这三个数的来历(按因果顺序,别倒过来读):
+       logo 32 是**输入**,不是算出来的 —— §10 定的 `logo-white.png` 实装尺寸,四棋类同一份字节。
+       条高 56 是从它推出来的:32 + 2×12 呼吸。现状里没有一个 56(围棋/象棋 50、国象 77.8、
+         五子棋根本没有顶栏),选 56 的理由就是这个:50 只剩 9px 上下留白,装不下 logo + 龙藏品牌字 + 棋类名。
+       头像 26 是从两张参考稿(围棋、国象)**量出来的**,没有推导 —— 它跟 logo 无关,
+         那一端是用户不是品牌,比 logo 小一圈是稿子的原意。要改就回去量稿子,别去凑比例。
+     还有一条以前没写出来的:56 里含 1px 底边发丝线,`border-box` 下**内容盒只有 55**。
+     所以元素是在 55 里居中的,§6 表里那两个落点 y=12 / y=15 实际是 **11.5 / 14.5**。
+     Dock 那条 `65 = 82 − 1 − 2×8` 算了这 1px,顶栏早先没算,是同一件事漏了一半。 */
+  --topbar-h: 56px;
+  --topbar-pad-x: 24px;
+  --topbar-logo: 32px;
+  --topbar-gap-logo-brand: 10px;   /* logo → 智星盒 */
+  --topbar-gap-zh-en: 6px;         /* 智星盒 → StellaBox */
+  --topbar-gap-en-rule: 12px;      /* StellaBox → 竖线 */
+  --topbar-rule-h: 20px;
+  --topbar-gap-rule-game: 12px;    /* 竖线 → 棋类名 */
+  --topbar-gap-name-clock: 14px;   /* 登录名 → 时间 */
+  --topbar-gap-avatar-name: 8px;   /* 头像 → 登录名 */
+  --topbar-avatar: 26px;
+
+  /* ---------- §7 底部 Dock ---------- */
+  --dock-h: 82px;
+  --dock-pad-y: 8px;
+  --dock-pad-x: 14px;
+  --dock-gap: 6px;
+  --dock-item-h: 65px;             /* 82 − 1(顶部描边) − 2×8。漏掉那 1px 会把底部内边距吃成 7 */
+  --dock-radius: 13px;
+  --dock-icon: 24px;
+  /* 图标+标签整组垂直居中,不设距顶偏移(顶端对齐会留底部空带) */
+  --dock-icon-label-gap: 5px;
+  --dock-max-items: 7;
+
+  /* ---------- §5/§8 中间区 ---------- */
+  --content-x: 16px;               /* 左右外边距 */
+  --content-w: 992px;              /* 1024 − 2×16 */
+  --content-pad-y: 14px;
+  --content-top: 70px;             /* --topbar-h + --content-pad-y */
+  --content-h-l1: 434px;           /* Dock 在场:600 − 56 − 82 − 2×14 */
+  --content-h-l2: 516px;           /* Dock 收起:600 − 56 − 2×14 */
+
+  /* ---------- §5 L1 两栏(左=实体盘镜像栏,右=模块内容) ----------
+     992 = 296 + 16 + 680。右栏 680 放三列卡:(680 − 2×10) / 3 = 220,整数。
+     左栏 296:减 1px 描边 ×2、内边距 11 ×2 → 内宽 272;镜像框内边距 12 → 盘 248,国象 8 格正好 31px/格。
+     状态三格:(272 − 2×10) / 3 = 84,整数。这一串数字是互相咬合的,改一个要重算。 */
+  --l1-rail-w: 296px;
+  --l1-gap: 16px;
+  --l1-side-w: 680px;
+  --l1-rail-pad: 11px;   /* 11 而非 12:栏有 1px 描边,296 − 2×1 − 2×11 = 272 内宽 */
+  /* 20 而非 22:纵向也要减那 1px 描边 —— 内容高 434 − 2×1 − 2×11 = **410**,不是 412。
+     规范早先横向算了描边、纵向忘了,22 排下来合计 412,多出的 2px 被 flex 默默压在
+     标题和状态格上(各挨 1px),看不出来但等号是错的。让标题这一行让出 2px:
+     20 + 10 + 272 + 10 + 32 + 10 + 56 = 410。它是纯文字眉标行,少 2px 不动版面;
+     状态格 56 是四棋类共用构造,不能为这 2px 去动。栏里每一块都写死 flex:none,
+     再有人算错就顶破外框当场看见,不再悄悄压。 */
+  --l1-rail-title-h: 20px;
+  --l1-mini-frame-pad: 12px;
+  --l1-mini-board: 248px;
+  --l1-sync-h: 32px;
+  --l1-status-h: 56px;
+  --l1-status-gap: 10px;
+  --l1-stat-h: 72px;     /* §5 数据条:比状态格高,因为里面是要一眼读到的大数 */
+  --l1-card-gap: 10px;
+  --l1-card-w: 220px;
+  --l1-card-h: 76px;
+  --l1-ring-stroke: 4px;   /* §5 进度环:画在 40px 方衬位里,和模式卡的图标同一格 */
+  --l1-section-gap: 8px;
+
+  /* 右栏纵向流的五块(Fan 拍板 2026-07-27:右栏可滚动)。
+     国象一屏合计 56+60+3×102+4×8 = 454 > 434 —— 溢出 20px 是设计如此,不是 bug。
+     参考稿这里写的是 overflow:hidden,内容 450 / 视口 414,第三组那张卡被永久裁掉且够不着。 */
+  --l1-greet-h: 56px;
+  --l1-resume-h: 60px;
+  --l1-sec-label-h: 20px;
+  --l1-sec-label-gap: 6px;
+  /* 可滚动必须看得见:底部渐隐 + 视口底边切在卡中间(见 §5「露一半」) */
+  --l1-fade-h: 24px;
+  --l1-peek-min: 24px;
+  --scrollbar-w: 3px;        /* 悬浮滚动条:画在内容之上,不占布局宽度 */
+  --scrollbar-inset: 3px;
+  --scrollbar-min: 24px;
+
+  /* ---------- §8 棋盘(L2/L3 布局 A) ---------- */
+  --board-size: 516px;             /* 正方形,边长 = L2/L3 可用高度 */
+  --board-ruler-ratio: 0.055;      /* 刻度带占外框边长的 5.5% */
+  --board-ruler: 28px;             /* 516 × 5.5% = 28.38 → 取 28,落子区 460(国象 57.5/格) */
+  --board-ruler-ink: var(--dim);   /* 刻度字色,各棋类可覆盖成木框上的浅色 */
+  --rail-x: 548px;                 /* 右栏左缘 = 16 + 516 + 16 */
+  --rail-w: 460px;                 /* 1008 − 548 */
+
+  /* ---------- §11 页控条 ---------- */
+  --pagebar-h: 44px;
+  --pagebar-top: 70px;             /* 有盘页/无盘页纵向位置相同 */
+  --pagebar-gap: 12px;
+  --pagebar-back-h: 36px;
+  --pagebar-back-pad-x: 14px;
+  --pagebar-back-radius: 10px;
+  --pagebar-back-icon: 18px;
+  --pagebar-iconbtn: 32px;
+  --pagebar-iconbtn-radius: 9px;
+  --seg-h: 32px;
+  --seg-pad: 2px;
+  --seg-item-h: 26px;
+  --seg-item-pad-x: 14px;
+  --seg-radius: 9px;
+  --seg-item-radius: 7px;
+  /* 选项分段(开局设置那类「选一项」的组)——比页控条那条视图分段大一号:
+     它是这一屏的主控件,不是右上角的附属开关。 */
+  --optseg-h: 48px;
+  --optseg-pad: 3px;
+  --optseg-gap: 3px;
+  --optseg-radius: 12px;
+  --optseg-item-radius: 9px;
+  --optseg-max-items: 6;           /* 460 宽下每项 ~72;再多就该换下拉或滑条 */
+  --opthint-h: 16px;               /* 选中项那行大白话 */
+
+  /* ---------- §11 右栏其余控件 ---------- */
+  --rail-gap: 12px;                /* 页控条 → 状态区 */
+  --action-cell-h: 52px;           /* 动作区 3 列等宽 */
+  --action-cell-gap: 7px;
+  --action-cell-radius: 10px;
+  --action-icon: 18px;
+  --action-icon-label-gap: 4px;
+  /* §8 可折叠面板(对局屏右栏) */
+  --fold-head-h: 30px;             /* 收起后整块就剩这 30 —— 标题行本身就是开关 */
+  --fold-toggle: 22px;
+  --fold-caret: 14px;
+  --eval-graph-h: 96px;            /* 胜率走势画布,不含标题行 */
+  --eval-axis-w: 38px;             /* 纵坐标刻度带 */
+
+  /* §9 着法条(复盘线的签名构件) —— 一手一格,横向铺满,兼作可拖动的进度条。
+     它**必须和上面那张走势图共用同一条 x 轴**:走势掉崖的那一列,正下方就是出问题的
+     那一格。所以左边留的 --eval-axis-w 不是装饰,是对齐用的占位,一格都不能省。
+     格高 22 是摸出来的下限:再矮手指按不准,再高就和走势图抢视觉重量。 */
+  --ribbon-h: 22px;
+  --ribbon-gap: 1px;
+  --ribbon-scale-h: 14px;          /* 条下面那行手数刻度 */
+  --ribbon-knob: 3px;              /* 当前手的指示条宽 */
+  --ribbon-thumb: 13px;            /* 指示条下端那个可拖的滑块头 */
+
+  /* §9 行列表:复盘的历史对局、重点手、棋谱库的名局共用这一套几何。
+     52 高是一行装得下「标题 + 副标题 + 行尾一个 30 的按钮」的下限。 */
+  --row-h: 52px;
+  --row-gap: 8px;
+  --row-radius: 10px;
+  --row-lead-w: 46px;              /* 行首那截等宽序号(「23 手」) */
+
+  /* ---------- §12 设置页 ---------- */
+  --nav-item-h: 44px;
+  --nav-item-gap: 6px;
+  --slider-w: 200px;
+  --slider-rail-h: 6px;
+  --slider-knob: 16px;
+  --swatch: 40px;
+  --swatch-gap: 8px;
+  --nav-cell-h: 36px;              /* 着法导航 4 列等宽 */
+  --nav-cell-gap: 6px;
+  --nav-icon: 17px;
+  --primary-action-h: 48px;        /* 右栏底部满宽主行动按钮 */
+  --primary-action-radius: 12px;
+
+  /* ---------- §8 按钮尺规 ---------- */
+  --btn-primary-h: 44px;
+  --btn-primary-pad-x: 20px;
+  --btn-primary-radius: 11px;
+  --btn-secondary-h: 38px;
+  --btn-secondary-pad-x: 16px;
+  --btn-secondary-radius: 10px;
+  --btn-pill-h: 26px;
+  --btn-pill-pad-x: 12px;
+  --btn-icon: 34px;
+  --btn-icon-radius: 9px;
+  --btn-icon-glyph: 18px;
+  --card-mode-h: 76px;             /* 一级页模式卡 */
+  --card-mode-pad: 12px 14px;
+  --card-mode-radius: 12px;
+  --card-tile: 40px;               /* 卡内图标底衬方块(两张参考稿都有,不是裸图标) */
+  --card-tile-radius: 10px;
+  --card-tile-icon: 22px;
+  --card-tile-gap: 12px;
+
+  /* ---------- §9 字号尺规 ---------- */
+  --fs-brand-zh: 20px;
+  --fs-brand-en: 12px;
+  --fs-game-name: 16px;
+  --fs-page-title: 26px;
+  --fs-section-title: 17px;
+  --fs-section-en: 12px;
+  --fs-card-title: 16px;
+  --fs-card-sub: 12px;
+  --fs-body: 13px;
+  --fs-eyebrow: 11px;
+  --fs-dock-label: 12.5px;
+  --fs-clock: 14px;
+  --fs-chess-clock: 32px;
+  --fs-bignum: 44px;
+  --fs-pagebar-back: 14px;
+  --fs-pagebar-title: 15px;
+  --fs-pagebar-sub: 12px;
+  --fs-seg: 13px;
+  --fs-ruler: 12px;                /* 刻度字:28px 带里放 12px,四棋类同一号 */
+
+  /* ---------- 语义色:各棋类必须自行赋值,这里只给中性占位 ---------- */
+  --ink: #14110d;      /* 页底 */
+  --panel: #1d1812;    /* 面板 */
+  --raise: #262019;    /* 抬起面 */
+  --hair: #382f24;     /* 分隔线 / 描边 */
+  --text: #f0e8da;     /* 主文本 */
+  --dim: #a0917a;      /* 次文本 —— 各棋类覆盖 */
+  --accent: #e8a33d;   /* 强调色 —— 各棋类覆盖 */
+  /* 状态三色是**语义**,和棋种强调色分开:强调色换了,「好」也还得是绿的。
+     状态格、数据条、走势图峰值点都指着这三个,占位值别删。 */
+  --good: #5fae72;
+  --warn: #e8a33d;
+  --bad:  #c23a2e;
+}
+
+/* ================= 结构类 ================= */
+
+/* 这一条不是可选的:本文件所有尺寸都按 border-box 算(「Dock 高 82」= 含内边距和描边)。
+   以前靠消费方自己写 `*{box-sizing:border-box}` 兜底 —— 谁的项目里没有这条 reset,
+   Dock 就会渲成 82+8+8+1 = 99px,凭空多出 17px 空带,而且中间区跟着一起错位。
+   规范自己带上,不假设外部环境。 */
+.kiosk,
+.kiosk *,
+.kiosk *::before,
+.kiosk *::after { box-sizing: border-box; }
+
+.kiosk-screen {
+  position: relative;
+  width: var(--kiosk-w);
+  height: var(--kiosk-h);
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+/* §6 上边条 —— 通栏贴边,任何层级都不变高、不隐藏 */
+.kiosk-topbar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--topbar-pad-x);
+  border-bottom: 1px solid var(--hair);
+  background: var(--panel);
+}
+.kiosk-topbar__logo { width: var(--topbar-logo); height: var(--topbar-logo); object-fit: contain; }
+.kiosk-topbar__brand { display: flex; align-items: baseline; margin-left: var(--topbar-gap-logo-brand); }
+.kiosk-topbar__brand-zh {
+  font-family: "SmartBox Brand LongCang", var(--font-serif);
+  font-weight: 400;
+  font-style: normal;
+  font-synthesis: none;
+  font-size: var(--fs-brand-zh);
+  line-height: 1;
+}
+.kiosk-topbar__brand-en {
+  margin-left: var(--topbar-gap-zh-en);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: var(--fs-brand-en);
+  line-height: 1;
+  color: var(--dim);
+}
+.kiosk-topbar__rule {
+  width: 1px;
+  height: var(--topbar-rule-h);
+  margin: 0 var(--topbar-gap-rule-game) 0 var(--topbar-gap-en-rule);
+  background: var(--hair);
+}
+.kiosk-topbar__game {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--fs-game-name);
+  line-height: 1;
+  letter-spacing: .12em;
+  color: var(--accent);
+}
+.kiosk-topbar__home {
+  min-width: 88px;
+  min-height: 48px;
+  margin-right: 12px;
+  padding: 0 14px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--panel);
+  font-family: var(--font-serif);
+  font-size: var(--fs-clock);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.kiosk-topbar__home-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  background: currentColor;
+  -webkit-mask: url("./icons/house.svg") center / contain no-repeat;
+  mask: url("./icons/house.svg") center / contain no-repeat;
+}
+.kiosk-topbar__home:active { transform: translateY(1px); }
+.kiosk-topbar__home:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.kiosk-topbar__home:disabled { cursor: wait; opacity: .65; }
+.kiosk-topbar__right { margin-left: auto; display: flex; align-items: center; }
+/* 头像:强调色实底圆 + 深色首字(两张参考稿都这样),不是空心描边圈。
+   有真实头像图时用 <img class="kiosk-topbar__avatar"> 覆盖底色。 */
+.kiosk-topbar__avatar {
+  width: var(--topbar-avatar);
+  height: var(--topbar-avatar);
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--accent);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 12px;
+  object-fit: cover;
+  overflow: hidden;
+}
+.kiosk-topbar__user {
+  margin-left: var(--topbar-gap-avatar-name);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1;
+}
+.kiosk-topbar__clock {
+  margin-left: var(--topbar-gap-name-clock);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: var(--fs-clock);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* §7 Dock —— 通栏贴边,只在 L1 出现 */
+.kiosk-dock {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--dock-h);
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--dock-gap);
+  padding: var(--dock-pad-y) var(--dock-pad-x);
+  border-top: 1px solid var(--hair);
+  background: var(--panel);
+}
+/* 图标 + 标签作为一组**垂直居中**,不是顶端对齐 —— 顶端对齐会在 66px 项的下半部
+   留一条空带,六项排开就是一条贯穿 Dock 的空白。 */
+.kiosk-dock__item {
+  height: var(--dock-item-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dock-icon-label-gap);
+  border: 0;
+  border-radius: var(--dock-radius);
+  background: none;
+  color: var(--dim);
+  cursor: pointer;
+  transition: transform .16s ease, background .16s ease;
+}
+.kiosk-dock__item svg { width: var(--dock-icon); height: var(--dock-icon); }
+.kiosk-dock__label { font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-dock-label); line-height: 1; }
+.kiosk-dock__item[aria-current="page"] {
+  background: var(--accent);
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+.kiosk-dock__item[aria-current="page"] .kiosk-dock__label { font-weight: 700; }
+
+/* §5 中间区 */
+.kiosk-content {
+  position: absolute;
+  left: var(--content-x);
+  right: var(--content-x);
+  top: var(--topbar-h);
+  bottom: 0;
+  padding: var(--content-pad-y) 0;
+}
+.kiosk-screen[data-level="1"] .kiosk-content { bottom: var(--dock-h); }
+
+/* §5 L1 两栏:左边是实体盘镜像栏,右边是模块内容。
+   镜像栏是**状态显示,不是入口** —— 它照着实体盘上真实的子实时画,一眼看出盘接没接、
+   标定好没。落子方式(屏幕 / 实体盘)是每种对弈方式内部的二选一,不在这里(§4)。 */
+/* grid-template-rows 不能省:不写它,行按 auto 取 max-content,右栏内容一多就把整行
+   顶到 454,左栏跟着长高、中间区外框被撑破 —— 「右栏可滚动」直接变成「整页可滚动」。 */
+.kiosk-layout-l1 {
+  display: grid; grid-template-columns: var(--l1-rail-w) var(--l1-side-w);
+  grid-template-rows: minmax(0, 1fr); gap: var(--l1-gap); height: 100%;
+}
+
+.kiosk-console {
+  display: flex; flex-direction: column; gap: var(--l1-status-gap);
+  padding: var(--l1-rail-pad);
+  border: 1px solid var(--hair); border-radius: 14px; background: var(--raise);
+}
+.kiosk-console__title { height: var(--l1-rail-title-h); flex: none; display: flex; align-items: baseline; justify-content: space-between; }
+.kiosk-console__title b { font-family: var(--font-sans); font-weight: 600; font-size: var(--fs-eyebrow); letter-spacing: .12em; text-transform: uppercase; }
+.kiosk-console__title em { font-family: var(--font-serif); font-style: italic; font-size: var(--fs-section-en); color: var(--dim); }
+/* 框必须**正方形贴着盘**:早先写 flex:1 让它吃掉剩余空间,结果框 272×312、
+   盘 248 居中 —— 上下各空 32、左右只有 12,一条不对称的空带。剩余空间给同步行,
+   不给框。 */
+.kiosk-console__frame {
+  flex: none;
+  height: calc(var(--l1-mini-board) + 2 * var(--l1-mini-frame-pad));
+  display: grid; place-items: center;
+  padding: var(--l1-mini-frame-pad); border-radius: 10px; background: var(--panel);
+}
+/* 同步行:框与状态格之间那 32px,放实体盘和屏幕是否一致 —— 镜像栏的本职 */
+.kiosk-console__sync {
+  height: var(--l1-sync-h); flex: none; margin-top: auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 2px; font-family: var(--font-sans); font-size: var(--fs-card-sub); color: var(--dim);
+}
+.kiosk-console__sync b { font-weight: 600; color: var(--text); }
+/* 实体盘镜像:正方形,边长写死 —— 各棋类只换里面的画法(8×8 / 9×10 / 19×19 / 15×15) */
+.kiosk-mini-board { width: var(--l1-mini-board); height: var(--l1-mini-board); border-radius: 5px; }
+.kiosk-status { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--l1-status-gap); }
+.kiosk-status__cell {
+  height: var(--l1-status-h); padding: 8px 10px;
+  display: flex; flex-direction: column; justify-content: center;  /* 同理:不留底部空带 */
+  border: 1px solid var(--hair); border-radius: 9px; background: var(--panel);
+}
+.kiosk-status__k { display: flex; align-items: center; gap: 5px; font-family: var(--font-sans); font-size: var(--fs-card-sub); color: var(--dim); }
+.kiosk-status__k i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.kiosk-status__v { margin-top: 2px; font-family: var(--font-serif); font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+/* 两格变体:成长左栏底部的「本月 / 最高」。三格是硬件状态的形状,别拿来装两个数。 */
+.kiosk-status--2 { grid-template-columns: repeat(2, 1fr); }
+
+/* §5 数据条:成长首页顶上那排关键数字。值大、标签小,
+   标签**必须带口径**(近 30 天 / 累计 / 当前)——一个光秃秃的 58% 谁也不知道是哪来的。 */
+.kiosk-stats { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--l1-status-gap); }
+.kiosk-stat {
+  height: var(--l1-stat-h); padding: 10px 12px;
+  display: flex; flex-direction: column; justify-content: center;
+  border: 1px solid var(--hair); border-radius: 10px; background: var(--panel);
+}
+.kiosk-stat__v {
+  font-family: var(--font-serif); font-weight: 600; font-size: 26px; line-height: 1;
+  color: var(--accent); font-variant-numeric: tabular-nums;
+}
+.kiosk-stat__v.is-good { color: var(--good); }
+.kiosk-stat__k { margin-top: 6px; font-family: var(--font-sans); font-size: var(--fs-card-sub); color: var(--dim); }
+
+/* §5 一级页的按钮**只有一种规格**(Fan 拍板 2026-07-27)。
+   课程的学习路线卡曾做成 220×130 竖排,从对弈切到课程整排按钮换了个尺寸和图标位——
+   这就是「切模块不跳」的另一种破法:框没动,框里的手可点的东西全变了。
+   所以路线卡不是新构造,是模式卡换个衬:同一 220×76、同一 40 方衬位、同一 12 间距,
+   只把方衬里的图标换成进度环。 */
+.kiosk-card__tile.is-ring { border: 0; background: none; position: relative; }
+.kiosk-card__tile.is-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.kiosk-card__tile.is-ring b {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-family: var(--font-sans); font-size: 9.5px; font-weight: 600;
+  font-variant-numeric: tabular-nums; color: var(--text);
+}
+.kiosk-card.is-current { border-color: var(--accent); }
+/* 未录制:压暗 + 不可点。这**不是**「锁定」——锁定意味着东西在、要满足条件才给,
+   没录出来的课不许摆成锁着的样子,那是拿不存在的内容钓人。 */
+.kiosk-card.is-todo { opacity: .45; cursor: default; }
+
+/* §5 右栏:视口写死 680×434,内容可以更高 —— 右栏**可滚动**(Fan 拍板 2026-07-27)。
+   两种形态,都靠 .kiosk-scrollzone 提供「视口 + 渐隐」:
+     形态 1 整栏滚  —— .kiosk-side 自己就是 scrollzone(对弈 / 训练营首页)
+     形态 2 头尾固定 —— 只有中间那条会长的列表滚,标题和底下的卡不动(复盘)
+   渐隐必须钉在**真正滚的那块**上,不是钉在整栏上。 */
+.kiosk-side { position: relative; min-width: 0; min-height: 0; height: 100%; }
+.kiosk-side__scroll {
+  height: 100%; overflow-y: auto;
+  /* 滚动条不许占布局宽度:占了,680 就不是 680,三列 220 的算术当场崩 */
+  scrollbar-width: none;
+  overscroll-behavior: contain;         /* 拽到底不许把整个 kiosk 页面带出来 */
+  -webkit-overflow-scrolling: touch;
+  display: flex; flex-direction: column; gap: var(--l1-section-gap);
+}
+.kiosk-side__scroll::-webkit-scrollbar { width: 0; height: 0; }
+
+/* 形态 2 的骨架:整栏不滚,由固定块 + 一个会长的块组成 */
+.kiosk-side__fixed { height: 100%; display: flex; flex-direction: column; gap: var(--l1-section-gap); }
+/* 特异性必须压过后面那条 .kiosk-section{flex:none} —— 同特异性时后者赢,
+   会让这块不再吃剩余空间,整栏被内容顶破。 */
+.kiosk-section.kiosk-section--grow { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.kiosk-section.kiosk-section--grow .kiosk-side__scroll { flex: 1; min-height: 0; height: auto; }
+
+/* 「还有内容」必须看得见。消费方在滚动时给 scrollzone 写 data-at="top" | "mid" | "end";
+   内容不溢出时**不要**写这个属性 —— 挂一条永远亮着的渐隐,等于谎报下面还有东西。
+   check-geometry 会核:溢出了就必须有 data-at,没溢出就必须没有。 */
+.kiosk-scrollzone { position: relative; min-height: 0; }
+
+/* §5 悬浮滚动条:绝对定位画在内容**之上**,不参与布局。
+   `scrollbar-width:none` 仍然要留着 —— 让原生滚动条占宽度,680 就不是 680,
+   三列 220 的算术当场崩。但零宽度的代价是**完全没有位置指示**:能滚看不出来,
+   滚到哪也不知道。两个都要,就只能自己画一条浮在上面的。
+   由消费方按滚动区的 offsetTop / clientHeight / scrollTop 定位,拇指最短 24。 */
+.kiosk-scrollbar {
+  position: absolute; right: var(--scrollbar-inset); width: var(--scrollbar-w);
+  border-radius: 999px; background: var(--dim); opacity: .38;
+  pointer-events: none; z-index: 2;
+}
+.kiosk-scrollzone::before,
+.kiosk-scrollzone::after {
+  content: ""; position: absolute; left: 0; right: 0; height: var(--l1-fade-h);
+  pointer-events: none; z-index: 1; opacity: 0; transition: opacity .12s linear;
+}
+.kiosk-scrollzone::before { top: 0; background: linear-gradient(to bottom, var(--ink), transparent); }
+.kiosk-scrollzone::after { bottom: 0; background: linear-gradient(to top, var(--ink), transparent); }
+.kiosk-scrollzone[data-at="top"]::after,
+.kiosk-scrollzone[data-at="mid"]::before,
+.kiosk-scrollzone[data-at="mid"]::after,
+.kiosk-scrollzone[data-at="end"]::before { opacity: 1; }
+/* 形态 2 里渐隐要盖住列表,不能盖到组标题上 */
+.kiosk-section--grow::before { top: calc(var(--l1-sec-label-h) + var(--l1-sec-label-gap)); }
+
+@media (prefers-reduced-motion: reduce) { .kiosk-scrollzone::before, .kiosk-scrollzone::after { transition: none; } }
+
+/* 右栏五块的固定高度 —— 它们决定了视口底边切在哪儿(§5「露一半」) */
+.kiosk-greet { height: var(--l1-greet-h); flex: none; display: flex; flex-direction: column; justify-content: center; }
+.kiosk-resume { height: var(--l1-resume-h); flex: none; }
+.kiosk-section { flex: none; }
+.kiosk-seclabel {
+  height: var(--l1-sec-label-h); margin-bottom: var(--l1-sec-label-gap);
+  display: flex; align-items: baseline; gap: 10px; flex: none;
+}
+.kiosk-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--l1-card-gap); }
+/* 遥控/键盘焦点落到被裁掉的卡上时,要自己滚进视野,别停在视口外 */
+.kiosk-side__scroll :focus-visible { scroll-margin-block: 12px; }
+
+/* §8 一级页模式卡:图标必须坐在底衬方块里,不是裸图标(围棋和国象两张参考稿都这样) */
+.kiosk-card {
+  height: var(--card-mode-h); padding: var(--card-mode-pad);
+  display: flex; align-items: center; gap: var(--card-tile-gap);
+  border: 1px solid var(--hair); border-radius: var(--card-mode-radius); background: var(--raise);
+  text-align: left; cursor: pointer; color: var(--text);
+}
+.kiosk-card__tile {
+  width: var(--card-tile); height: var(--card-tile); flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--hair); border-radius: var(--card-tile-radius); background: var(--panel);
+  color: var(--accent);
+}
+.kiosk-card__tile svg { width: var(--card-tile-icon); height: var(--card-tile-icon); }
+.kiosk-card__t { min-width: 0; }
+.kiosk-card__t b { display: block; font-family: var(--font-serif); font-weight: 600; font-size: var(--fs-card-title); line-height: 1.35; }
+.kiosk-card__t em { display: block; font-family: var(--font-sans); font-style: normal; font-size: var(--fs-card-sub); line-height: 1.5; color: var(--dim); }
+
+/* §8 布局 A:棋盘在左,右栏固定 460px */
+/* grid-template-rows 和 L1 那边是同一条:不写它,行按 max-content 撑,右栏内容一多
+   就顶破 516,底部的动作按钮被屏幕边裁掉、点不到。 */
+.kiosk-layout-a {
+  display: grid; grid-template-columns: var(--board-size) 1fr;
+  grid-template-rows: minmax(0, 1fr); gap: 16px; height: 100%;
+}
+/* 棋盘 = 木框 + 内圈刻度带 + 落子区。刻度**画在框内**,不额外占外部空间,
+   所以外框永远 516,四棋类换的只是落子区里的画法和刻度上的字。 */
+.kiosk-board {
+  width: var(--board-size); height: var(--board-size);
+  display: grid;
+  grid-template-columns: var(--board-ruler) 1fr var(--board-ruler);
+  grid-template-rows: var(--board-ruler) 1fr var(--board-ruler);
+  border-radius: 8px; overflow: hidden;
+}
+.kiosk-board__play { grid-area: 2 / 2; min-width: 0; min-height: 0; }
+/* 刻度带:四条,字居中。--board-ruler 28 → 落子区 460,国象 57.5px/格 */
+.kiosk-board__ruler {
+  display: grid; align-items: center; justify-items: center;
+  font-family: var(--font-sans); font-size: var(--fs-ruler); font-weight: 600;
+  letter-spacing: .04em; color: var(--board-ruler-ink); user-select: none;
+}
+.kiosk-board__ruler--top { grid-area: 1 / 2; grid-auto-flow: column; }
+.kiosk-board__ruler--bottom { grid-area: 3 / 2; grid-auto-flow: column; }
+.kiosk-board__ruler--left { grid-area: 2 / 1; }
+.kiosk-board__ruler--right { grid-area: 2 / 3; }
+.kiosk-rail { display: flex; flex-direction: column; gap: var(--rail-gap); min-width: 0; }
+
+/* §11 页控条 —— 有盘页在右栏顶部、无盘页通栏,纵向位置相同 */
+.kiosk-pagebar {
+  height: var(--pagebar-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--pagebar-gap);
+}
+.kiosk-pagebar__back {
+  height: var(--pagebar-back-h);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 var(--pagebar-back-pad-x);
+  border: 1px solid var(--hair);
+  border-radius: var(--pagebar-back-radius);
+  background: var(--raise);
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--fs-pagebar-back);
+  cursor: pointer;
+}
+.kiosk-pagebar__back svg { width: var(--pagebar-back-icon); height: var(--pagebar-back-icon); }
+.kiosk-pagebar__title { font-family: var(--font-serif); font-weight: 600; font-size: var(--fs-pagebar-title); }
+.kiosk-pagebar__sub {
+  margin-left: 8px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: var(--fs-pagebar-sub);
+  color: var(--dim);
+}
+.kiosk-pagebar__spacer { margin-left: auto; }
+.kiosk-pagebar__iconbtn {
+  width: var(--pagebar-iconbtn);
+  height: var(--pagebar-iconbtn);
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--hair);
+  border-radius: var(--pagebar-iconbtn-radius);
+  background: var(--raise);
+  color: var(--text);
+  cursor: pointer;
+}
+.kiosk-pagebar__iconbtn svg { width: 18px; height: 18px; }
+
+/* §11 分段控件(2D/3D、屏幕/实体盘) */
+.kiosk-seg {
+  display: inline-flex;
+  align-items: center;
+  height: var(--seg-h);
+  padding: var(--seg-pad);
+  gap: 2px;
+  border: 1px solid var(--hair);
+  border-radius: var(--seg-radius);
+  background: var(--raise);
+}
+.kiosk-seg__btn {
+  height: var(--seg-item-h);
+  padding: 0 var(--seg-item-pad-x);
+  border: 0;
+  border-radius: var(--seg-item-radius);
+  background: none;
+  color: var(--dim);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--fs-seg);
+  cursor: pointer;
+}
+.kiosk-seg__btn[aria-pressed="true"] { background: var(--panel); color: var(--accent); }
+
+/* 选项分段:开局设置那类「从 N 项里选一项」的组。一屏里所有选择组必须用同一种
+   控件,不许难度用列表、执棋方用宫格、时间用 2×2 —— 那是一屏三套选择手势。 */
+.kiosk-optseg {
+  display: flex; width: 100%; height: var(--optseg-h);
+  padding: var(--optseg-pad); gap: var(--optseg-gap);
+  border: 1px solid var(--hair); border-radius: var(--optseg-radius); background: var(--raise);
+}
+.kiosk-optseg button {
+  flex: 1; min-width: 0;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  border: 0; border-radius: var(--optseg-item-radius); background: none;
+  color: var(--dim); cursor: pointer;
+  font-family: var(--font-serif); font-weight: 600; font-size: 15px;
+}
+.kiosk-optseg button[aria-pressed="true"] { background: var(--panel); color: var(--accent); }
+/* 分段格里塞不下副标题,但说明不能整个丢掉 —— 挪到组下面一行,写**当前选中项** */
+.kiosk-opthint {
+  height: var(--opthint-h); margin: 7px 0 0;
+  font-family: var(--font-sans); font-size: 12px; line-height: var(--opthint-h); color: var(--dim);
+}
+
+/* §11 动作区 / 着法导航 / 主行动按钮 */
+/* 动作区**永远一行**,列数跟着项数走。原来写死 repeat(3,1fr),中国象棋有四个动作
+   (提示/悔棋/求和/认输),第四个被挤到第二行,底下又空出一条。上限 5 个,再多就该收进菜单。
+   国象只有三个 —— 人机局没有和棋谈判,详见国象样板对局屏上的注。 */
+/* §8 可折叠面板:对局屏右栏那两块(胜率走势、棋谱)都占地不小,长棋谱时用户
+   要能把其中一块收起来给另一块让位。三条写死在结构里:
+     · **默认展开** —— 收起不是初始态,进来就该看见内容;
+     · 收起后只剩 30 的标题行,**标题和右端那个当前值照旧显示**(收起的是明细,不是这块的结论);
+     · 收起腾出的空间**归还给同栏里仍展开的那一块**(靠 --grow),都收起时空白落在动作区之上。 */
+.kiosk-fold {
+  position: relative;   /* 悬浮滚动条挂在这儿 */
+  flex: none; min-height: 0; display: flex; flex-direction: column;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--panel); overflow: hidden;
+}
+.kiosk-fold--grow { flex: 1; }
+.kiosk-fold[data-open="false"] { flex: none; }
+.kiosk-fold__head {
+  height: var(--fold-head-h); flex: none;
+  display: flex; align-items: center; gap: 8px; padding: 0 4px 0 12px;
+  border-bottom: 1px solid var(--hair);
+  font-family: var(--font-sans); font-size: 11px; color: var(--dim); letter-spacing: .08em;
+  background: none; cursor: pointer; text-align: left; width: 100%;
+}
+.kiosk-fold[data-open="false"] .kiosk-fold__head { border-bottom: 0; }
+.kiosk-fold__head b { margin-left: auto; color: var(--accent); font-size: 11.5px; letter-spacing: 0; }
+.kiosk-fold__toggle {
+  width: var(--fold-toggle); height: var(--fold-toggle); flex: none;
+  display: grid; place-items: center; border-radius: 6px; color: var(--dim);
+}
+.kiosk-fold__toggle svg { width: var(--fold-caret); height: var(--fold-caret); transition: transform .12s ease; }
+/* 收起时插入符指向右边 = 「点开」的通用读法 */
+.kiosk-fold[data-open="false"] .kiosk-fold__toggle svg { transform: rotate(-90deg); }
+.kiosk-fold__body { flex: 1; min-height: 0; overflow: hidden; }
+.kiosk-fold[data-open="false"] .kiosk-fold__body { display: none; }
+
+/* §8 胜率走势:纵坐标带 + 画布。白优在上、黑优在下,中线 = 均势。 */
+.kiosk-eval { display: grid; grid-template-columns: var(--eval-axis-w) 1fr; height: var(--eval-graph-h); }
+.kiosk-eval__axis {
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 2px 6px 2px 0; text-align: right;
+  font-family: var(--font-sans); font-size: 9.5px; line-height: 1; color: var(--dim);
+  border-right: 1px solid var(--hair);
+}
+.kiosk-eval__plot { position: relative; min-width: 0; }
+.kiosk-eval__plot svg { display: block; width: 100%; height: 100%; }
+
+/* 动作区永远贴右栏底:两块都收起时,腾出的空白落在它**上面**,按钮不许跟着上移 ——
+   悔棋/认输的位置是肌肉记忆,收个面板就把它挪走是「切模块不跳」的同类问题。 */
+.kiosk-rail .kiosk-actions { margin-top: auto; }
+/* ================= §12 设置页构造 ================= */
+
+/* 分组导航:设置项一多就得分组,否则右边是一条没人读完的长表。
+   左栏 296(和 L1-A 同一条纵向接缝),每项 44,整项可点。
+   导航**只跳不换**:右栏是一条完整的纵向流,点导航滚过去,当前分组高亮。
+   换页式(点一下右边整块换掉)在这块屏上更差 —— 用户看不到自己一共有多少可调的。 */
+.kiosk-navlist { display: flex; flex-direction: column; gap: var(--nav-item-gap); }
+.kiosk-navitem {
+  height: var(--nav-item-h); flex: none;
+  display: flex; align-items: center; gap: 10px; padding: 0 12px;
+  border: 1px solid transparent; border-radius: 10px;
+  background: none; color: var(--dim); cursor: pointer; text-align: left; width: 100%;
+  font-family: var(--font-sans); font-size: var(--fs-body);
+}
+.kiosk-navitem svg { width: 18px; height: 18px; flex: none; }
+.kiosk-navitem[aria-current="true"] { background: var(--raise); border-color: var(--hair); color: var(--text); }
+.kiosk-navitem[aria-current="true"] svg { color: var(--accent); }
+
+/* 滑条:落子确认速度这类**连续量**不许用分段控件硬掰成三档。
+   刻度文字必须带单位(「0.4 秒」),光写「适中」没人知道是多少。 */
+.kiosk-slider { display: flex; flex-direction: column; gap: 6px; width: var(--slider-w); }
+.kiosk-slider__rail { position: relative; height: var(--slider-rail-h); border-radius: 999px; background: var(--panel); }
+.kiosk-slider__fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; background: var(--accent); }
+.kiosk-slider__knob {
+  position: absolute; top: 50%; width: var(--slider-knob); height: var(--slider-knob);
+  margin: calc(var(--slider-knob) / -2) 0 0 calc(var(--slider-knob) / -2);
+  border-radius: 50%; background: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.5);
+}
+.kiosk-slider__scale {
+  display: flex; justify-content: space-between;
+  font-family: var(--font-sans); font-size: var(--fs-card-sub); color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 色板:棋盘皮肤这类**看样子选**的项,给色块不给文字列表。
+   选中态用强调色描边 + 勾,不靠颜色深浅暗示 —— 色板本身就是各种颜色。 */
+.kiosk-swatches { display: flex; gap: var(--swatch-gap); }
+.kiosk-swatch {
+  width: var(--swatch); height: var(--swatch); flex: none; padding: 0;
+  border: 2px solid var(--hair); border-radius: 8px; cursor: pointer; overflow: hidden;
+}
+.kiosk-swatch[aria-pressed="true"] { border-color: var(--accent); }
+
+.kiosk-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--action-cell-gap); }
+.kiosk-actions button {
+  height: var(--action-cell-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--action-icon-label-gap);
+  border: 1px solid var(--hair);
+  border-radius: var(--action-cell-radius);
+  background: var(--raise);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  cursor: pointer;
+}
+.kiosk-actions svg { width: var(--action-icon); height: var(--action-icon); }
+.kiosk-movenav { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--nav-cell-gap); }
+.kiosk-movenav button {
+  height: var(--nav-cell-h);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hair);
+  border-radius: var(--action-cell-radius);
+  background: var(--raise);
+  color: var(--text);
+  cursor: pointer;
+}
+.kiosk-movenav svg { width: var(--nav-icon); height: var(--nav-icon); }
+
+/* §9 走势 + 着法条:同一条时间轴上的两条泳道 ────────────────────────────────
+   上面一条是**连续量**(形势),下面一条是**离散量**(每一手的判定)。它们叠在一起,
+   一条贯穿两者的竖线就是「这一刻」—— 走势掉崖的那一列,正下方就是出问题的那一格。
+   这条竖线同时就是 Fan 要的那根可拖动的横条,不另做一个控件。
+
+   注意 x 轴的一个已知误差:走势的第 i 点落在 i/(n−1),着法条第 i 格的中心落在
+   (i+0.5)/n。中段几乎重合,两端最多差半格(41 手时约 5px)。这份是设计稿,先记下;
+   真前端如果要严丝合缝,就给画布左右各留半格内边距,别去动这两个公式。 */
+.kiosk-evalstack { position: relative; display: flex; flex-direction: column; gap: 4px; }
+.kiosk-evalstack__cursor {
+  position: absolute; top: 0; bottom: var(--ribbon-scale-h);
+  width: var(--ribbon-knob); margin-left: calc(var(--ribbon-knob) / -2);
+  left: calc(var(--eval-axis-w) + (100% - var(--eval-axis-w)) * var(--at));
+  background: var(--accent); border-radius: 2px; pointer-events: none;
+}
+/* 把手:一条竖线只说明「现在在这儿」,说明不了「能拖」。给它一个滑块头,照抄滑条那个语汇。
+   放在**竖线顶端**而不是底端,两个原因:
+     ① 底端要么盖住当前那一格的颜色,要么溢出这个不滚动的盒子(闸会当场抓到「内容被裁 7」);
+     ② 顶端是视频播放头的通用位置,一眼认得出是能捏住拖的。
+   translate 只作用于 x —— 一旦带上 y,它就又跑到盒子外面去了。 */
+.kiosk-evalstack__cursor::after {
+  content: ""; position: absolute; left: 50%; top: 0;
+  width: var(--ribbon-thumb); height: var(--ribbon-thumb);
+  transform: translateX(-50%);
+  border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.kiosk-ribbon { display: flex; align-items: stretch; }
+.kiosk-ribbon__lead {
+  width: var(--eval-axis-w); flex: none;   /* 不是留白,是和走势纵坐标带对齐的占位 */
+  display: flex; align-items: center;
+  font-family: var(--font-sans); font-size: 9.5px; color: var(--dim);
+}
+.kiosk-ribbon__track { flex: 1; min-width: 0; display: flex; gap: var(--ribbon-gap); height: var(--ribbon-h); }
+.kiosk-ribbon__cell { flex: 1 1 0; min-width: 0; border-radius: 1px; background: var(--panel); }
+/* 六档语义色全部从各棋类自己的 --good/--warn/--bad 推,共享包不写死任何一个色值 */
+.kiosk-ribbon__cell[data-t="best"]    { background: var(--good); }
+.kiosk-ribbon__cell[data-t="good"]    { background: color-mix(in srgb, var(--good) 52%, var(--panel)); }
+.kiosk-ribbon__cell[data-t="ok"]      { background: color-mix(in srgb, var(--dim) 34%, var(--raise)); }
+.kiosk-ribbon__cell[data-t="inacc"]   { background: color-mix(in srgb, var(--warn) 50%, var(--panel)); }
+.kiosk-ribbon__cell[data-t="mistake"] { background: var(--warn); }
+.kiosk-ribbon__cell[data-t="blunder"] { background: var(--bad); }
+/* 两种「没有颜色」必须长得不一样,因为它们说的不是同一件事:
+     opp  = 对手走的那一手 —— 有分析,只是不记你的账。压成一根细横杠,让整条读起来是「你的棋」。
+     none = 这一手还没算过 —— 它仍是一根**能拖的整条**,只是没上色;配的是明写「本局未分析」的
+            空态。早先这两个共用 --panel,铺在同色面板上等于隐形,未分析屏整条条子直接不见了。 */
+.kiosk-ribbon__cell[data-t="opp"] {
+  align-self: center; height: 6px;
+  background: color-mix(in srgb, var(--dim) 20%, var(--panel));
+}
+.kiosk-ribbon__cell[data-t="none"]    { background: color-mix(in srgb, var(--dim) 20%, var(--raise)); }
+/* 行内进度条(复盘列表的行尾):**就是着法条的缩小版**。
+   它显示的正是「还剩几手没算」,而且和点进去之后看到的是同一个东西 ——
+   不为「进度」另造一个语汇。算完这一行的按钮就变成「查看报告」,不跳页。 */
+/* 缩小版**不留缝**:108px 摊 33 手是每格 2px,再留 1px 缝就成条形码了 ——
+   粒度看不见,只剩噪点。去掉缝之后它读成一根实心进度条,而每一格仍然真的是一手。 */
+.kiosk-ribbon__track--mini {
+  width: 108px; flex: none; height: 10px; gap: 0;
+  border-radius: 3px; overflow: hidden; background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--hair);
+}
+.kiosk-ribbon__track--mini .kiosk-ribbon__cell { border-radius: 0; }
+.kiosk-ribbon__track--mini .kiosk-ribbon__cell[data-t="none"] { background: transparent; }
+.kiosk-ribbon__cell[data-t="done"] { background: var(--accent); }
+.kiosk-ribbon__cell[data-t="now"] {
+  background: var(--accent);
+  animation: kiosk-ribbon-pulse 1.1s ease-in-out infinite;
+}
+@keyframes kiosk-ribbon-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .2 } }
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-ribbon__cell[data-t="now"] { animation: none }
+}
+
+.kiosk-ribbon__scale {
+  display: flex; justify-content: space-between; height: var(--ribbon-scale-h);
+  padding-left: var(--eval-axis-w);
+  font-family: var(--font-mono); font-size: 9.5px; color: var(--dim); font-variant-numeric: tabular-nums;
+}
+
+/* §14 后端还没有的块怎么标。两种情况必须分开,不然「接一根线」和「从零做一个模块」
+   会被估成同一个工作量:
+     .wip       琥珀 = 后端**根本没有**这块东西
+     .wip.have  蓝   = 后端已经跑通了,只是这套界面还没去读 */
+.kiosk-wip, .wip {
+  font-size: 9.5px; letter-spacing: .06em; color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+  border-radius: 999px; padding: 1px 7px; white-space: nowrap;
+}
+.kiosk-wip.have, .wip.have { color: #5b9bd5; border-color: rgba(91, 155, 213, .5); }
+
+/* 未分析时走势位**留白但写明为什么空** —— 不许画一条贴中线的平线冒充「均势」。
+   那是把「没算过」伪装成「算过了,结果是均势」,两回事。 */
+.kiosk-eval__plot.is-empty { display: grid; place-items: center; text-align: center; padding: 0 12px; }
+.kiosk-eval__plot.is-empty span { font-size: 11.5px; color: var(--dim); }
+
+/* §9 行列表(`.kiosk-rows` / `.kiosk-row` / `.kiosk-tag`)────────────────────
+   一条会长到几十行的列表:复盘的历史对局、重点手、棋谱库的名局都是它。
+   2026-07-29 从 sample-chess 提上来 —— 国象复盘线是第一个真用它的前端,四棋类的
+   同类列表从此共享同一套几何,别再各写各的 52 高。 */
+.kiosk-rows { display: flex; flex-direction: column; gap: var(--row-gap); }
+.kiosk-row {
+  display: flex; align-items: center; gap: 12px;
+  /* flex:none 不是可省的:这些行的容器是一条 flex 列 + 溢出滚动,不写死不许收缩的话
+     flex 会先把它们压扁再滚 —— 2026-07-29 真浏览器量出来 18 行被压成 33px(规范 52)。
+     "能滚"和"行高对"是两回事,只有真浏览器量得出来。 */
+  flex: none;
+  height: var(--row-h); padding: 0 12px;
+  border: 1px solid var(--hair); border-radius: var(--row-radius); background: var(--raise);
+}
+.kiosk-row__lead {
+  font-family: var(--font-mono); font-size: 12px; color: var(--dim);
+  width: var(--row-lead-w); flex: none; font-variant-numeric: tabular-nums;
+}
+.kiosk-row__t { min-width: 0; }
+.kiosk-row__t b { display: block; font-family: var(--font-serif); font-size: 14px; font-weight: 600; }
+.kiosk-row__t em { display: block; font-style: normal; font-size: 11px; color: var(--dim); margin-top: 1px; }
+.kiosk-row__end { margin-left: auto; display: flex; align-items: center; gap: 10px; flex: none; }
+
+/* 状态标。说的是**状态**不是结论,所以它不是按钮、也不长得像按钮。 */
+.kiosk-tag {
+  font-size: 10.5px; letter-spacing: .08em; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--hair); color: var(--dim); white-space: nowrap;
+}
+.kiosk-tag--win { color: var(--good); border-color: color-mix(in srgb, var(--good) 40%, transparent); }
+.kiosk-tag--loss { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+/* 「算了一半」既不是成功也不是失败,拿 win/loss/draw 任何一个都是在撒谎 */
+.kiosk-tag--warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+.kiosk-tag--bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+
+/* 曾经在这里加过一个满宽卡变体(一组只有一个入口时铺满三列),2026-07-28 Fan 否掉了:
+   **同一屏上的卡不许有第二种尺寸**。而且不需要 —— 跨平台对弈那组本来就只有一张 220 的卡,
+   先例在同一屏上摆着。留这段话是为了别有人再发明一次。 */
+.kiosk-primary-action {
+  margin-top: auto;
+  width: 100%;
+  height: var(--primary-action-h);
+  border: 0;
+  border-radius: var(--primary-action-radius);
+  background: var(--accent);
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* §8 按钮尺规 */
+.kiosk-btn { display: inline-flex; align-items: center; gap: 8px; border: 0; cursor: pointer; font-family: var(--font-serif); font-weight: 600; }
+.kiosk-btn--primary { height: var(--btn-primary-h); padding: 0 var(--btn-primary-pad-x); border-radius: var(--btn-primary-radius); font-size: 15px; background: var(--accent); color: var(--ink); }
+.kiosk-btn--secondary { height: var(--btn-secondary-h); padding: 0 var(--btn-secondary-pad-x); border-radius: var(--btn-secondary-radius); font-size: 14px; background: var(--raise); color: var(--text); border: 1px solid var(--hair); }
+/* 药丸按钮铺在 --raise 的卡上(继续上一局 / 继续学习 / 继续做题),原来它自己也是 --raise:
+   同底同色 = 一行看不出是按钮的字。改成 --panel 实底 + 发丝描边,浅底深底都读得出。
+   高度仍是 26 —— border-box,加描边不长个。 */
+.kiosk-btn--pill { height: var(--btn-pill-h); padding: 0 var(--btn-pill-pad-x); border: 1px solid var(--hair); border-radius: 999px; font-family: var(--font-sans); font-size: 12px; background: var(--panel); color: var(--text); }
+.kiosk-btn--icon { width: var(--btn-icon); height: var(--btn-icon); padding: 0; justify-content: center; border-radius: var(--btn-icon-radius); background: var(--raise); color: var(--text); border: 1px solid var(--hair); }
+.kiosk-btn--icon svg { width: var(--btn-icon-glyph); height: var(--btn-icon-glyph); }
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-dock__item { transition: none; }
+}

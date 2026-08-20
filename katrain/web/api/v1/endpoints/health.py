@@ -30,7 +30,4 @@ async def health(request: Request):
             engines["cloud"] = "unreachable"
 
     result = {"status": "ok", "engines": engines}
-    ranked = getattr(request.app.state, "xiangqi_ranked_service", None)
-    if ranked is not None:
-        result["xiangqi_ranked"] = ranked.health_metrics()
     return result

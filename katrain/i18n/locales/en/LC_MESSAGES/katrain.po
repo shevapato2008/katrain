@@ -1609,7 +1609,7 @@ msgid "tsumego:tryModeDesc"
 msgstr "Free exploration without judgment"
 
 msgid "auth:login_title"
-msgstr "Login to StellaBox"
+msgstr "Sign in to StellaBox"
 
 msgid "auth:register_title"
 msgstr "Create Account"
@@ -2905,3 +2905,200 @@ msgid "ladder:unscored_engine"
 msgstr ""
 "Your opponent could not play at its calibrated strength, so this game does "
 "not count — your rank is unchanged and it does not use up a placement game."
+
+msgid "ladder:pending_settlement"
+msgstr "This game's result hasn't reached the cloud"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "Result not delivered"
+
+msgid "ladder:title"
+msgstr "AI Ranked Play"
+
+msgid "ladder:setup_title"
+msgstr "41-tier ranked AI"
+
+msgid "ladder:placement_opponent_prefix"
+msgstr "Placement opponent: "
+
+msgid "ladder:game_opponent_prefix"
+msgstr "This game's opponent: "
+
+msgid "ladder:loading_status"
+msgstr "Loading your ranked-play status…"
+
+msgid "ladder:load_error"
+msgstr "Could not load ranked-play status"
+
+msgid "ladder:load_error_not_authoritative"
+msgstr ""
+"This device does not record ranked results, so ranked play cannot start here"
+
+msgid "ladder:load_error_unauthorized"
+msgstr "Your session expired — please sign in again"
+
+msgid "ladder:retry"
+msgstr "Retry"
+
+msgid "ladder:provisional_seating"
+msgstr ""
+"This tier is not calibrated yet — you may play it, but this game will not "
+"count"
+
+msgid "ladder:current_opponent_prefix"
+msgstr "Current opponent: "
+
+msgid "ladder:current_rank_prefix"
+msgstr "Current rank: "
+
+msgid "ladder:available"
+msgstr "Playable"
+
+msgid "ladder:unavailable_rung"
+msgstr "This tier cannot be challenged yet"
+
+msgid "ladder:unavailable_cta"
+msgstr "Not available yet"
+
+msgid "ladder:continue_placement_cta"
+msgstr "Continue placement"
+
+msgid "ladder:start_ranked_cta"
+msgstr "Start ranked game"
+
+msgid "ladder:recent_heading"
+msgstr "Last 5 games"
+
+msgid "ladder:recent_aria"
+msgstr "Results of the last 5 ranked AI games"
+
+msgid "ladder:recent_display_note"
+msgstr ""
+"The last 5 games are shown for reference only; promotion depends solely on "
+"the net score"
+
+msgid "ladder:recent_empty"
+msgstr "No ranked AI games yet"
+
+msgid "ladder:net_score_prefix"
+msgstr "Net score: "
+
+msgid "ladder:net_score_aria"
+msgstr "Net score; negative goes toward demotion, positive toward promotion"
+
+msgid "ladder:demotion_threshold"
+msgstr "Demote -3"
+
+msgid "ladder:promotion_threshold"
+msgstr "Promote +3"
+
+msgid "ladder:route_local"
+msgstr "On this device"
+
+msgid "ladder:route_server"
+msgstr "On the server"
+
+msgid "ladder:cert_provisional"
+msgstr "Provisional"
+
+msgid "ladder:cert_certified"
+msgstr "Certified"
+
+msgid "ladder:placement_progress_n"
+msgstr "Placement {n}/{total}"
+
+msgid "ladder:placement_progress_aria"
+msgstr "Placement progress: {n} of {total} games played"
+
+msgid "ladder:net_score_positive"
+msgstr "Net score +{n}, moving toward promotion; +3 promotes"
+
+msgid "ladder:net_score_negative"
+msgstr "Net score {n}, moving toward demotion; -3 demotes"
+
+msgid "ladder:net_score_zero"
+msgstr "Net score 0; +3 promotes, -3 demotes"
+
+msgid "ladder:outcome_label"
+msgstr "Game {n}: {result}"
+
+msgid "ladder:settled_generic"
+msgstr "Ranked settlement complete; your status is up to date"
+
+msgid "ladder:settled_placement_done"
+msgstr "Placement complete: {rank}"
+
+msgid "ladder:settled_placement_progress"
+msgstr "Placement {n}/{total}"
+
+msgid "ladder:settled_promoted"
+msgstr "Promoted: {rank}"
+
+msgid "ladder:settled_demoted"
+msgstr "Demoted: {rank}"
+
+msgid "ladder:settled_no_change"
+msgstr "Rank unchanged; net score: {score}"
+
+msgid "ladder:settled_pending"
+msgstr "Ranked settlement still in progress"
+
+msgid "ladder:settled_unavailable"
+msgstr "Settlement status is unavailable right now"
+
+msgid "ok"
+msgstr "OK"
+
+msgid "accept"
+msgstr "Accept"
+
+msgid "reject"
+msgstr "Reject"
+
+msgid "common:cancel"
+msgstr "Cancel"
+
+msgid "common:retry"
+msgstr "Retry"
+
+msgid "Tutorials"
+msgstr "Tutorials"
+
+msgid "Stone Effect"
+msgstr "Stone Effect"
+
+msgid "3D"
+msgstr "3D"
+
+msgid "research:cancel_analysis_title"
+msgstr "Cancel analysis?"
+
+msgid "research:cancel_analysis_warning"
+msgstr "Analysis is still running. Cancel it and leave?"
+
+msgid "research:continue_analysis"
+msgstr "Keep analyzing"
+
+msgid "research:cancel_and_leave"
+msgstr "Cancel and leave"
+
+msgid "tsumego:loadError"
+msgstr "Couldn't load the tsumego library. Try again in a moment."
+
+msgid "tsumego:noData"
+msgstr "No tsumego problems yet."
+
+msgid "chat:title"
+msgstr "Chat"
+
+msgid "chat:placeholder"
+msgstr "Type a message…"
+
+msgid "audio:play"
+msgstr "Play"
+
+msgid "audio:pause"
+msgstr "Pause"
+
+msgid "audio:unavailable"
+msgstr "Audio unavailable"

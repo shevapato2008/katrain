@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import LiveBoard from '../../../components/live/LiveBoard';
 import { useOptionalVision } from '../../context/VisionContext';
 import { useOptionalGeometry } from '../../context/GeometryContext';
+import { KIOSK_SERIF } from '../../theme';
 
 export interface SmartBoardConsoleProps {
   moves?: string[];
@@ -111,7 +112,7 @@ const SmartBoardConsole = ({ moves, currentMove }: SmartBoardConsoleProps) => {
         </Typography>
         <Typography
           sx={{
-            fontFamily: "'Newsreader','Noto Serif SC',serif",
+            fontFamily: KIOSK_SERIF,
             fontStyle: 'italic',
             fontSize: 12,
             color: 'text.secondary',
@@ -150,8 +151,12 @@ const SmartBoardConsole = ({ moves, currentMove }: SmartBoardConsoleProps) => {
           <Typography
             variant="caption"
             sx={{
-              color: 'text.disabled',
-              bgcolor: 'rgba(0,0,0,0.45)',
+              // 这条压在**木色盘面**上,原来是 `text.disabled`(灰) + 45% 黑衬 ——
+              // 深色字压浅木色,对比度几乎为零,屏上读不出来。这是真 bug,不是取舍,
+              // 而且 `/kiosk/play` 上同样坏(那块卡是共享的)。
+              // 改成浅字 + 更实的深衬:衬底负责把木纹压住,字色负责可读。
+              color: '#EEF3F1',
+              bgcolor: 'rgba(0,0,0,0.72)',
               px: 1,
               py: 0.25,
               borderRadius: '6px',

@@ -1,9 +1,10 @@
 """Where a counted result moves a player on the 41-rung ladder.
 
-Ten of the 41 rungs (准1段–准9段 and 职业顶尖) have no fitted strength recipe, so no
-opponent can ever be built for them. The settlement rule therefore cannot be plain
-arithmetic on the rung number: 5段 is rung 30 and 准6段 is rung 31, so `rung + 1`
-promotes a 5段 player onto a rung they can never play from.
+12 of the 41 rungs are RETIRED (`ladder._RETIRED_RUNGS`): they keep their catalog position
+and their recipe -- so a rung number stored in the immutable ledger stays interpretable --
+but no player may be seated on them. The settlement rule therefore cannot be plain
+arithmetic on the rung number: 5段 is rung 30 and the retired 准6段 is rung 31, so `rung + 1`
+promotes a 5段 player onto a rung no opponent will be built for.
 
 These tests exist because that is not observable today — `_CERTIFIED_RUNGS` is empty,
 so every game settles as `counted=0` and this code path never runs against a real
@@ -16,9 +17,10 @@ from katrain.core import ladder
 from katrain.web.core import models_db
 from katrain.web.core.ai_ladder_ranked import PLACEMENT_GAMES, AiLadderRankedRepository
 
-# Derived, not hardcoded: all 41 rungs now ship a recipe, so this is empty. Keeping it
-# computed means the guard below stays meaningful if a rung ever loses its recipe again.
+# Derived, not hardcoded: all 41 rungs still ship a recipe, so this is empty -- retirement
+# is not recipe removal. Keeping it computed means the guard stays meaningful either way.
 RECIPELESS = tuple(l.rung for l in ladder.LADDER_LEVELS if l.recipe is None)
+UNSEATABLE = tuple(l.rung for l in ladder.LADDER_LEVELS if l.rung not in ladder.PLAYABLE_RUNGS)
 
 
 def profile(**overrides):
@@ -46,14 +48,15 @@ def apply(p, *results):
 
 def test_three_net_wins_promote_one_playable_rung_and_reset_the_score():
     p = apply(profile(ai_ladder_rung=30, net_score=0), "win", "win", "win")
-    assert p.ai_ladder_rung == 31  # 准6段 -- one rung, not a jump over it
-    assert ladder.get_level(p.ai_ladder_rung).rank_name == "准6段"
+    # 准6段(31) is retired, so one playable step from 5段 is 6段(32) -- the step skips it.
+    assert p.ai_ladder_rung == 32
+    assert ladder.get_level(p.ai_ladder_rung).rank_name == "6段"
     assert p.net_score == 0
 
 
 def test_three_net_losses_demote_one_playable_rung():
     p = apply(profile(ai_ladder_rung=30, net_score=0), "loss", "loss", "loss")
-    assert p.ai_ladder_rung == 29  # 准5段
+    assert p.ai_ladder_rung == 28  # 4段 -- 准5段(29) is retired
     assert p.net_score == 0
 
 
@@ -65,7 +68,7 @@ def test_two_net_wins_move_nothing():
 
 def test_a_loss_cancels_a_win_rather_than_counting_the_last_five():
     p = apply(profile(ai_ladder_rung=30, net_score=0), "win", "win", "loss", "win", "win")
-    assert p.ai_ladder_rung == 31
+    assert p.ai_ladder_rung == 32
     assert p.net_score == 0
 
 
@@ -125,29 +128,53 @@ def test_every_placement_path_lands_on_a_playable_rung(path):
 # --- the opponent a player is seated against --------------------------------
 
 
-def test_the_seated_opponent_is_still_the_raw_midpoint():
-    """The placement search still names the raw midpoint, and that is now always seatable.
+def test_every_reachable_placement_window_seats_a_playable_rung():
+    """The gate that had to land together with retirement.
 
-    This used to be an open question: 6 of the 31 distinct search windows reachable from the
-    default 1..32 range named a recipe-less rung as the opponent, so those placement games
-    could not be seated at all. Filling all 41 recipes closed it without touching the search
-    itself -- the midpoint rule is unchanged, every midpoint is simply playable now.
+    The placement search walks RAW rung numbers, so its midpoint can name a retired rung --
+    16 (5级) is the very first one, the midpoint of the default 1..32 window. Before the
+    snap, that game could not be seated at all. `expected_opponent_rung` now snaps, and
+    this walks every window reachable in 5 games from every legal starting window to prove
+    there is no hole left.
+
+    Mutation check (2026-08-20): dropping the snap from `expected_opponent_rung` makes this
+    fail with 12 unseatable windows out of the 31 reachable from 1..32 alone (measured).
     """
-    from katrain.web.core.ai_ladder_ranked import expected_opponent_rung
+    from katrain.web.core.ai_ladder_ranked import expected_opponent_rung, initial_placement_window
 
-    unseatable = 0
-    frontier = {(1, 32)}
-    for _ in range(PLACEMENT_GAMES):
-        nxt = set()
-        for lo, hi in frontier:
-            mid = (lo + hi) // 2
-            assert expected_opponent_rung(None, lo, hi) == mid
-            if mid not in ladder.PLAYABLE_RUNGS:
-                unseatable += 1
-            nxt.add((mid + 1, hi))
-            nxt.add((lo, mid))
-        frontier = nxt
-    assert unseatable == 0
+    starts = {initial_placement_window(rank) for rank in (None, "20k", "10k", "1k", "1d", "5d", "9d")}
+    checked = 0
+    for start in starts:
+        frontier = {start}
+        for _ in range(PLACEMENT_GAMES):
+            nxt = set()
+            for lo, hi in frontier:
+                seated = expected_opponent_rung(None, lo, hi)
+                assert seated in ladder.PLAYABLE_RUNGS, (lo, hi, seated)
+                assert ladder.get_level(seated).recipe is not None
+                checked += 1
+                pivot = (lo + hi) // 2  # the search cursor stays raw -- see _apply_result
+                nxt.add((pivot + 1, hi))
+                nxt.add((lo, pivot))
+            frontier = nxt
+    assert checked >= 31, checked
+
+
+def test_the_placement_cursor_stays_raw_so_the_window_never_inverts():
+    """Snapping the OPPONENT is required; snapping the search cursor would be a bug.
+
+    `placement_lo <= placement_hi` has to hold after every result, including on windows too
+    narrow to contain any playable rung. That is why `_apply_result` splits on the raw
+    midpoint while the opponent comes from `expected_opponent_rung`.
+    """
+    import itertools
+
+    for path in itertools.product(("win", "loss"), repeat=PLACEMENT_GAMES):
+        p = profile()
+        for result in path:
+            apply(p, result)
+            assert p.placement_lo <= p.placement_hi, (path, p.placement_lo, p.placement_hi)
+        assert p.ai_ladder_rung in ladder.PLAYABLE_RUNGS
 
 
 def test_a_placed_player_faces_their_own_rung():

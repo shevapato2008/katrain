@@ -70,60 +70,9 @@ def test_asset_tables_are_protected_from_the_drift_rebuild():
         "ai_ladder_pending_games",
         "ai_ladder_active_games",
         "ai_ladder_game_ledger_legacy_v1",
-        "xiangqi_rating_profiles",
-        "xiangqi_ranked_reservations",
-        "xiangqi_ranked_ledger",
-        "xiangqi_ranked_capability_jtis",
     } == migrations.PROTECTED_TABLES
     # Billing is a strict subset: the drift rebuild must refuse both groups.
     assert migrations.BILLING_TABLES < migrations.PROTECTED_TABLES
-    assert migrations.XIANGQI_RANKED_TABLES < migrations.PROTECTED_TABLES
-
-
-def test_xiangqi_ranked_rows_survive_normal_idempotent_migration_init(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'ranked-migration.sqlite'}")
-    models_db.Base.metadata.create_all(engine)
-    with engine.begin() as connection:
-        connection.execute(
-            text(
-                "INSERT INTO users (uuid, username, hashed_password, credits, is_admin) "
-                "VALUES ('0123456789abcdef0123456789abcdef', 'kept-owner', 'x', 10000, FALSE)"
-            )
-        )
-        connection.execute(
-            text(
-                "INSERT INTO xiangqi_rating_profiles "
-                "(user_uuid, rating, rated_games, profile_version, active_algo_version, settlement_seq, updated_at) "
-                "VALUES ('0123456789abcdef0123456789abcdef', 1234.5, 7, 3, 4, 8, '2026-08-06 12:00:00')"
-            )
-        )
-
-    migrations.add_missing_columns(engine)
-    migrations.create_missing_indexes(engine)
-    migrations.install_xiangqi_ranked_immutability(engine)
-    migrations.add_missing_columns(engine)
-    migrations.create_missing_indexes(engine)
-    migrations.install_xiangqi_ranked_immutability(engine)
-
-    with engine.connect() as connection:
-        assert connection.execute(
-            text("SELECT rating, rated_games, profile_version, settlement_seq FROM xiangqi_rating_profiles")
-        ).one() == (1234.5, 7, 3, 8)
-
-
-def test_xiangqi_ranked_schema_drift_fails_instead_of_generic_rebuild(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'ranked-drift.sqlite'}")
-    with engine.begin() as connection:
-        connection.execute(text("CREATE TABLE xiangqi_rating_profiles (user_uuid VARCHAR PRIMARY KEY)"))
-        connection.execute(
-            text("INSERT INTO xiangqi_rating_profiles (user_uuid) VALUES ('0123456789abcdef0123456789abcdef')")
-        )
-
-    with pytest.raises(RuntimeError, match="protected table.*xiangqi_rating_profiles"):
-        migrations.add_missing_columns(engine)
-
-    with engine.connect() as connection:
-        assert connection.execute(text("SELECT COUNT(*) FROM xiangqi_rating_profiles")).scalar_one() == 1
 
 
 def test_ai_ladder_active_game_schema_and_terminal_origin_columns_are_added_without_data_loss():

@@ -7,6 +7,7 @@
  * no login flow, so this down-port keeps only the public `KifuAPI` list.
  */
 import { useState, useEffect, useCallback } from 'react';
+import { KIOSK_SERIF } from '../../theme';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography,
   List, ListItem, ListItemButton, ListItemText,
@@ -116,7 +117,7 @@ export default function GameLibraryModal({ open, onClose, onLoadGame }: GameLibr
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
         <Typography
           variant="h6"
-          sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 500, fontSize: '1.15rem' }}
+          sx={{ fontFamily: KIOSK_SERIF, fontWeight: 500, fontSize: '1.15rem' }}
         >
           {t('research:game_library', '从棋谱库打开')}
         </Typography>

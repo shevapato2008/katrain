@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress } from '@mui/material';
+import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress, FormHelperText } from '@mui/material';
 import { API, type LadderRung } from '../../api';
 import { sliderToHumanKyuRankFixed } from '../../utils/rankUtils';
 import { useAuth } from '../../context/AuthContext';
@@ -8,7 +8,12 @@ import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useDebounce } from '../../hooks/useDebounce';
 import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
-import { AiLadderApiError, endAiLadderGame, startAiLadderGame } from '../../features/aiLadder/api';
+import {
+    AiLadderApiError,
+    endAiLadderGame,
+    retryAiLadderSettlement,
+    startAiLadderGame,
+} from '../../features/aiLadder/api';
 import type { AiLadderCountingReason } from '../../features/aiLadder/types';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
 import { canStartAiLadderGame } from '../../features/aiLadder/startGate';
@@ -33,7 +38,11 @@ const AiSetupPage = () => {
     const { t } = useTranslation();
     const mode = searchParams.get('mode') || 'free';
     const isRated = mode === 'rated';
-    const { status: aiLadderStatus, retry: retryAiLadderStatus } = useAiLadderStatus(token || undefined, isRated);
+    const {
+        status: aiLadderStatus,
+        retry: retryAiLadderStatus,
+        applyBlockingSync,
+    } = useAiLadderStatus(token || undefined, isRated);
 
     const [aiConstants, setAiConstants] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -41,6 +50,7 @@ const AiSetupPage = () => {
     const [startPending, setStartPending] = useState(false);
     const [lifecyclePending, setLifecyclePending] = useState(false);
     const [lifecycleError, setLifecycleError] = useState('');
+    const [syncRetryPending, setSyncRetryPending] = useState(false);
     const [lifecycleReceipt, setLifecycleReceipt] = useState<{
         gameId: string;
         scopeKey: string;
@@ -87,9 +97,16 @@ const AiSetupPage = () => {
     const [estimatedRank, setEstimatedRank] = useState<string>('...');
     const [aiLoading, setAiLoading] = useState(false);
 
-    // 棋力阶梯 (strength ladder): 37 rungs fetched from GET /api/ladder-rungs.
-    // Default rung 18 == native HumanSL "3K" (LADDER_RUNGS index 17).
+    // 棋力阶梯 (strength ladder): 目录从 GET /api/ladder-rungs 取，41 档全部返回。
+    // Default rung 18 == native HumanSL "3K" (LADDER_RUNGS index 17)。
     const [ladderRungs, setLadderRungs] = useState<LadderRung[]>([]);
+    // 只列**坐得上去**的档位。目录里有 12 档是封档的（`ladder._RETIRED_RUNGS`：级位段被
+    // 实测倒挂挡死的 6 个 + 准1段–准6段），它们保留目录位置与配方是为了让不可变账本里
+    // 已存的 rung 号仍可解释，但没有人能被安排到那里 —— 选中它开局会 409。
+    //
+    // 判据用服务端给的 `availability`，**不在前端抄一份封档清单**：抄一份就要跟着服务端
+    // 改，而两边不同步时前端会安静地多列或少列几档，没有任何征兆。
+    const selectableRungs = ladderRungs.filter((r) => r.availability === 'available');
     const [ladderRung, setLadderRung] = useState<number>(18);
     const isLadder = opponent === 'ai:ladder';
 
@@ -292,12 +309,21 @@ const AiSetupPage = () => {
             if (lifecycle.state === 'settled') {
                 setLifecycleReceipt({ gameId, scopeKey: requestScopeKey, receipt: lifecycle.receipt });
                 await retryAiLadderStatus();
-            } else if (lifecycle.state === 'pending_settlement') {
+            } else if (lifecycle.state === 'released' || lifecycle.state === 'pending_settlement') {
+                // 没有可展示的结果时只刷新状态:挡住开局的那一局消失,页面回到正常的开局卡。
+                // **不能落进 catch** —— 那样屏上会说「结束对局失败，请重试」,而此刻账号已经放开。
                 await retryAiLadderStatus();
             }
         } catch (endError) {
             if (!targetIsCurrent()) return;
             if (endError instanceof AiLadderApiError && endError.status === 404) {
+                // **这一条对「让掉」是承重的,不是容错。** 认输会写一行账本,那行同时是墓碑:
+                // 再按一次、或者原盒子的在途结算重投,都会命中它、拿到重放回执。
+                // 让掉**按定义什么都不记**,所以它没有墓碑 —— 第二次按下只能撞上「查无此局」。
+                // 那不是失败,是「已经没了」,而这里是这条路唯一的收尾方式。
+                // 想把 404 改成报错之前先读这句:改了,连按两次就会在一个已经放开的账号上
+                // 写「结束对局失败」。钉子在 `test_pressing_end_twice_is_not_an_error_on_the_path_that_leaves_no_tombstone`
+                // (后端:404 真的会发生)和 kiosk 的「连按两次」那条(前端:屏上不说失败)。
                 setLifecycleError('');
                 await retryAiLadderStatus();
             } else if (endError instanceof AiLadderApiError && (endError.status === 401 || endError.status === 403)) {
@@ -313,6 +339,53 @@ const AiSetupPage = () => {
     const handleLifecycleRetry = () => {
         setLifecycleError('');
         void retryAiLadderStatus();
+    };
+
+    /**
+     * 「立即重试」按下去之后的每一条路。
+     *
+     * 关键是**不要为了刷新去打一次云端**:`/status` 在盒子上是转发到云端的,断网时
+     * 503,而 `retryAiLadderStatus` 一失败就把整块面板换成「加载失败」—— 那正是这个
+     * 按钮存在的场景。重试请求本身打的是盒子自己,断网照样成功,响应里带着这一次
+     * 尝试之后的真实状态,所以失败路径只贴这份状态,不碰云端。
+     *
+     * 只有**送成了**才去复查:那一刻网络刚被证明是通的,而且那一局不再挡着新局,
+     * 屏上要换成新的段位和一张结算回执。
+     */
+    const handleRetrySettlement = async (gameId: string) => {
+        if (syncRetryPending) return;
+        setLifecycleError('');
+        setSyncRetryPending(true);
+        try {
+            const { sync } = await retryAiLadderSettlement(gameId, token || undefined);
+            if (sync && sync.state !== 'synced') {
+                // 还是没送到:退避重排、次数加一(或者被云端拒收)。就地把这份状态贴上去。
+                applyBlockingSync(gameId, sync);
+                return;
+            }
+            // 送到了。回执是云端对这一局的裁决 —— 没有它,成功就只是面板悄悄消失,
+            // 用户不知道这一局到底计没计。拿不到回执也不编一个,只复查状态。
+            if (sync?.receipt) {
+                setLifecycleReceipt({
+                    gameId,
+                    scopeKey: lifecycleScopeRef.current,
+                    receipt: sync.receipt,
+                });
+            }
+            await retryAiLadderStatus();
+        } catch (retryError) {
+            if (retryError instanceof AiLadderApiError && (retryError.status === 401 || retryError.status === 403)) {
+                setLifecycleError('登录已失效，请重新登录后再试');
+            } else if (retryError instanceof AiLadderApiError && retryError.status === 404) {
+                // 队列里已经没有这一局了 —— 多半是后台那一轮刚把它送成。只有这一条
+                // catch 该去复查:它意味着屏上这一格已经不成立了。
+                await retryAiLadderStatus();
+            } else {
+                setLifecycleError('重试失败，请稍后再试');
+            }
+        } finally {
+            setSyncRetryPending(false);
+        }
     };
 
     const handleSettingChange = (key: string, value: any) => {
@@ -417,6 +490,8 @@ const AiSetupPage = () => {
                                 navigate(`/galaxy/play/game/${sessionId}?mode=rated&game_id=${encodeURIComponent(gameId)}`);
                             }}
                             onEndGame={handleEndGame}
+                            onRetrySettlement={handleRetrySettlement}
+                            syncRetryPending={syncRetryPending}
                         />
                     </Box>
                 </Box>
@@ -541,12 +616,18 @@ const AiSetupPage = () => {
                                             label={t('ai:golaxy_parity_rung', '棋力等级')}
                                             onChange={(e) => setLadderRung(Number(e.target.value))}
                                         >
-                                            {ladderRungs.map((r) => (
+                                            {selectableRungs.map((r) => (
                                                 <MenuItem key={r.rung} value={r.rung}>
                                                     {r.rank_name}
                                                 </MenuItem>
                                             ))}
                                         </Select>
+                                        {ladderRungs.length > 0 && selectableRungs.length === 0 && (
+                                            // 空态说实话：一个空下拉和「还没加载完」在屏幕上长得一样。
+                                            <FormHelperText error>
+                                                {t('ai:ladder_no_available_rung', '当前没有可用的棋力等级')}
+                                            </FormHelperText>
+                                        )}
                                     </FormControl>
                                 </Box>
                             ) : (

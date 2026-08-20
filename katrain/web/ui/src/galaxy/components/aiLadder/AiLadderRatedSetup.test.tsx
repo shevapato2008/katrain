@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import AiLadderRatedSetup from './AiLadderRatedSetup';
@@ -28,6 +28,7 @@ const renderSetup = (
     byoPeriods: 3,
     startPending: false,
     lifecyclePending: false,
+    lifecycleError: '',
     onColorChange: vi.fn(),
     onRetry: vi.fn(),
     onStart: vi.fn(),
@@ -53,6 +54,7 @@ const renderReceiptStatus = (
     byoLength={30}
     byoPeriods={3}
     startPending={false}
+    lifecycleError=""
     lifecycleReceipt={lifecycleReceipt}
     onColorChange={vi.fn()}
     onRetry={vi.fn()}
@@ -74,6 +76,39 @@ describe('AiLadderRatedSetup', () => {
     expect(screen.queryByText('30')).not.toBeInTheDocument();
   });
 
+  it('从没开起来的那一格，五处文案里一个「记为本局负」都不许出现', async () => {
+    // 硬要求,不是文案偏好:`reserved` 让掉**什么都不记**,后端一行账本都不会写
+    // (`release_unplayed_reservation`)。照另外两格写「会记为本局负」是一句关于后果的
+    // 假话,而且是**往贵了说** —— 用户会因此以为自己必须先输一场,或者干等那 5 分钟的
+    // 自动回收。CLAUDE.md「状态必须诚实」在这一格上的具体样子。
+    //
+    // 五处一起断言,因为它们各自都能单独漂走:按钮、代价行、弹窗标题、弹窗正文、确认按钮。
+    const user = userEvent.setup();
+    const status = blockingStatus({
+      game_id: 'game-reserved', state: 'reserved', ownership: 'other_device',
+      user_color: 'B', opponent_rank_name: '5段',
+    });
+    const { props } = renderSetup(status);
+
+    expect(screen.getByText('未开始')).toBeInTheDocument();
+    expect(screen.getByText('这一局登记了，但棋盘没能开起来 —— 两边都没有人在下。')).toBeInTheDocument();
+    expect(screen.getByText('那一局没能开起来，让掉它不记成绩')).toBeInTheDocument();
+    // 有棋盘的那两格才有「继续/重试」;这一格两端都没有棋盘,给了就是给一个按不动的东西。
+    expect(screen.queryByRole('button', { name: '继续对局' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '立即重试' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '让掉它，在这里开新局' }));
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('让掉那一局？')).toBeInTheDocument();
+    expect(within(dialog).getByText(/让掉它不会记成绩，也不影响升降级/)).toBeInTheDocument();
+
+    // 整块屏 —— 面板 + 弹窗 —— 一个字的「记负」都不许有。挨个查元素会漏掉下一个人新加的那一处。
+    expect(document.body.textContent).not.toMatch(/记为本局负|计为本局负|计入升降级/);
+
+    await user.click(within(dialog).getByRole('button', { name: '确认让掉' }));
+    expect(props.onEndGame).toHaveBeenCalledWith('game-reserved');
+  });
+
   it('does not expose a ranked-game-specific history entry point', () => {
     renderSetup();
 
@@ -91,17 +126,17 @@ describe('AiLadderRatedSetup', () => {
     await user.click(screen.getByRole('button', { name: '继续对局' }));
     expect(props.onContinue).toHaveBeenCalledWith('session-1');
 
-    await user.click(screen.getByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
     expect(props.onEndGame).not.toHaveBeenCalled();
-    expect(screen.getByText('结束后将按你认输处理，并计为本局负。此操作不可撤销。')).toBeInTheDocument();
+    expect(screen.getByText(/它将计为本局负并计入升降级/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '取消' })).toHaveFocus();
 
     await user.click(screen.getByRole('button', { name: '取消' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(props.onEndGame).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: '结束该对局' }));
-    await user.click(screen.getByRole('button', { name: '确认结束' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
+    await user.click(screen.getByRole('button', { name: '确认认输' }));
     expect(props.onEndGame).toHaveBeenCalledWith('game-1');
   });
 
@@ -114,9 +149,11 @@ describe('AiLadderRatedSetup', () => {
     const { props } = renderSetup(status);
 
     expect(screen.queryByRole('button', { name: '继续对局' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '刷新状态' }));
-    expect(props.onRetry).toHaveBeenCalledOnce();
-    expect(screen.getByRole('button', { name: '结束该对局' })).toBeEnabled();
+    // 「刷新状态」不在这一格 —— 它做的事(重问一次 /status)本来就每 15 秒在自动发生,
+    // 而棋盘随进程没了,刷多少次都刷不回来。
+    expect(screen.queryByRole('button', { name: '刷新状态' })).not.toBeInTheDocument();
+    expect(props.onRetry).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
   });
 
   it('never reveals or uses another-device session and waits for settlement instead', async () => {
@@ -129,23 +166,20 @@ describe('AiLadderRatedSetup', () => {
 
     expect(screen.queryByText('private-session')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '继续对局' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '等待结算' }));
-    expect(props.onRetry).toHaveBeenCalledOnce();
     expect(props.onContinue).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: '结束该对局' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
   });
 
-  it('only refreshes a game pending settlement', async () => {
+  it('成绩还在送的那一局，也能当场把占位夺回来', async () => {
     const user = userEvent.setup();
     const status = blockingStatus({
       game_id: 'game-4', state: 'pending_settlement', ownership: 'current_device', session_id: 'session-4',
       user_color: 'W', opponent_rank_name: '2段',
     });
-    const { props } = renderSetup(status);
+    renderSetup(status);
 
-    await user.click(screen.getByRole('button', { name: '刷新状态' }));
-    expect(props.onRetry).toHaveBeenCalledOnce();
-    expect(screen.queryByRole('button', { name: '结束该对局' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
+    // 下完了的局没有「继续」可言。
     expect(screen.queryByRole('button', { name: '继续对局' })).not.toBeInTheDocument();
   });
 
@@ -154,7 +188,7 @@ describe('AiLadderRatedSetup', () => {
     const onRetry = vi.fn();
     renderSetup({ ...readyStatus, pending_settlement: true }, { onRetry });
 
-    expect(screen.getByText('本局已结束，成绩正在结算中。')).toBeInTheDocument();
+    expect(screen.getByText('这一局已经下完，成绩还没送到云端。')).toBeInTheDocument();
     const actions = screen.getAllByRole('button');
     expect(actions).toHaveLength(1);
     expect(actions[0]).toHaveAccessibleName('刷新状态');
@@ -162,13 +196,14 @@ describe('AiLadderRatedSetup', () => {
     expect(onRetry).toHaveBeenCalledOnce();
     expect(screen.queryByText('智星棋手')).not.toBeInTheDocument();
     expect(screen.queryByText('选择执子')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /继续对局|等待结算|结束该对局/ })).not.toBeInTheDocument();
+    // 「刷新状态」不在禁列里 —— 这一格本来就该有它,上面正断言它在。
+    expect(screen.queryByRole('button', { name: /继续对局|认输那一局，在这里开新局|立即重试/ })).not.toBeInTheDocument();
   });
 
   it('treats an explicit null blocking game as authoritative over a stale legacy flag', () => {
     renderSetup({ ...readyStatus, pending_settlement: true, blocking_game: null });
 
-    expect(screen.queryByText('本局已结束，成绩正在结算中。')).not.toBeInTheDocument();
+    expect(screen.queryByText('这一局已经下完，成绩还没送到云端。')).not.toBeInTheDocument();
     expect(screen.getByText('本局挑战')).toBeInTheDocument();
     expect(screen.getByText('智星棋手')).toBeInTheDocument();
     expect(screen.getByText('选择执子')).toBeInTheDocument();
@@ -226,7 +261,7 @@ describe('AiLadderRatedSetup', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('结束对局失败，请稍后重试');
     expect(screen.getByRole('button', { name: '继续对局' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '结束该对局' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeDisabled();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getByText('未完成对局')).toBeInTheDocument();
   });
@@ -252,7 +287,7 @@ describe('AiLadderRatedSetup', () => {
     );
 
     expect(screen.getByRole('button', { name: '继续对局' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '结束该对局' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeDisabled();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 
@@ -264,7 +299,7 @@ describe('AiLadderRatedSetup', () => {
     });
     const { props } = renderSetup(status);
 
-    await user.click(screen.getByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
     await user.keyboard('{Escape}');
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -297,18 +332,18 @@ describe('AiLadderRatedSetup', () => {
     });
     const view = render(<AiLadderRatedSetup {...commonProps} status={gameA} />);
 
-    await user.click(screen.getByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
     view.rerender(<AiLadderRatedSetup {...commonProps} status={gameB} />);
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(onEndGame).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
     view.rerender(<AiLadderRatedSetup {...commonProps} status={readyStatus} />);
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(onEndGame).not.toHaveBeenCalled();
 
     view.rerender(<AiLadderRatedSetup {...commonProps} status={gameB} />);
-    await user.click(screen.getByRole('button', { name: '结束该对局' }));
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
     view.rerender(
       <AiLadderRatedSetup
         {...commonProps}
@@ -323,7 +358,7 @@ describe('AiLadderRatedSetup', () => {
     expect(onEndGame).not.toHaveBeenCalled();
   });
 
-  it('invalidates the end-game target when the same game starts settling', async () => {
+  it('同一局在弹窗开着时转成「成绩未送达」，弹窗里多说的那句当场改口', async () => {
     const user = userEvent.setup();
     const onEndGame = vi.fn();
     const active = blockingStatus({
@@ -336,10 +371,163 @@ describe('AiLadderRatedSetup', () => {
     });
     const { props, rerender } = renderSetup(active, { onEndGame });
 
-    await user.click(screen.getByRole('button', { name: '结束该对局' }));
-    rerender(<AiLadderRatedSetup {...props} status={pending} />);
+    await user.click(screen.getByRole('button', { name: '认输那一局，在这里开新局' }));
+    expect(screen.getByText(/它将计为本局负并计入升降级/)).toBeInTheDocument();
 
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    // 代价每次都从**当下**这份数据算,不在按下的那一刻抄一份存起来 —— 否则用户会
+    // 照着一句已经不成立的话按下去。
+    rerender(<AiLadderRatedSetup {...props} status={pending} />);
+    await waitFor(() => expect(
+      within(screen.getByRole('dialog')).getByText(/会以一场负替换它真实的结果/),
+    ).toBeInTheDocument());
+    expect(screen.queryByText(/它将计为本局负并计入升降级/)).not.toBeInTheDocument();
     expect(onEndGame).not.toHaveBeenCalled();
+  });
+
+  it('成绩还在送：屏上说清第几次重试、下一次还有多久', () => {
+    const status = blockingStatus({
+      game_id: 'game-a', state: 'pending_settlement', ownership: 'current_device',
+      user_color: 'B', opponent_rank_name: '1段',
+      sync: {
+        state: 'waiting', attempt: 2, max_attempts: 5, next_attempt_in_seconds: 252,
+        last_http_status: null, last_error: 'timeout',
+      },
+    });
+    renderSetup(status, { onRetrySettlement: vi.fn() });
+
+    expect(screen.getByText('这一局已经下完，成绩还没送到云端。')).toBeInTheDocument();
+    expect(screen.getByText('重试 2/5 · 4:12 后自动重试')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '立即重试' })).toBeEnabled();
+  });
+
+  it('倒计时走完就改口说「即将重试」，不停在一个 0:00 上', async () => {
+    vi.useFakeTimers();
+    try {
+      const status = blockingStatus({
+        game_id: 'game-a', state: 'pending_settlement', ownership: 'current_device',
+        user_color: 'B', opponent_rank_name: '1段',
+        sync: {
+          state: 'waiting', attempt: 3, max_attempts: 5, next_attempt_in_seconds: 3,
+          last_http_status: null, last_error: null,
+        },
+      });
+      renderSetup(status, { onRetrySettlement: vi.fn() });
+      expect(screen.getByText('重试 3/5 · 0:03 后自动重试')).toBeInTheDocument();
+
+      // 只推进时钟，**不重新渲染、不给新数据** —— 走秒不依赖任何一次往返。
+      await act(async () => { vi.advanceTimersByTime(4000); });
+
+      // 队列每 60 秒排空一次,到期只保证「下一轮会带上它」,不保证此刻正在发。
+      expect(screen.getByText('重试 3/5 · 即将重试…')).toBeInTheDocument();
+      expect(screen.queryByText(/0:00/)).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('立即重试把这一局报上去，等待期间按钮自己说明它在忙', async () => {
+    const user = userEvent.setup();
+    const onRetrySettlement = vi.fn();
+    const status = blockingStatus({
+      game_id: 'game-a', state: 'pending_settlement', ownership: 'current_device',
+      user_color: 'B', opponent_rank_name: '1段',
+      sync: {
+        state: 'exhausted', attempt: 5, max_attempts: 5, next_attempt_in_seconds: null,
+        last_http_status: null, last_error: 'connection refused',
+      },
+    });
+    const { rerender, props } = renderSetup(status, { onRetrySettlement });
+
+    expect(screen.getByText('连试 5 次都没送到。恢复联网后会自动继续送。')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '立即重试' }));
+    expect(onRetrySettlement).toHaveBeenCalledWith('game-a');
+
+    rerender(<AiLadderRatedSetup {...props} status={status} syncRetryPending />);
+    expect(screen.getByRole('button', { name: '正在重试…' })).toBeDisabled();
+  });
+
+  it('云端在事实上拒收的成绩不给重试按钮，而价钱仍然是同一个', () => {
+    // 422 问一百遍还是 422。给一个按不出结果的按钮，比不给更坏；
+    // 而「成绩送到了仍然算」对一份永远送不到的成绩是假话。
+    const status = blockingStatus({
+      game_id: 'game-a', state: 'pending_settlement', ownership: 'current_device',
+      user_color: 'B', opponent_rank_name: '1段',
+      sync: {
+        state: 'refused', attempt: 1, max_attempts: 5, next_attempt_in_seconds: null,
+        last_http_status: 422, last_error: 'HTTP 422',
+      },
+    });
+    renderSetup(status, { onRetrySettlement: vi.fn() });
+
+    expect(screen.queryByRole('button', { name: '立即重试' })).not.toBeInTheDocument();
+    // HTTP 码不上屏:对棋手没有信息量,却让他以为那是「更严重」的一种错误。
+    // 而这一格**仍然说话** —— 去码那一刀最容易在这里把静默漏回来。
+    expect(screen.getByText('云端拒收了这一局的成绩，再试也是同一个答复。')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/HTTP\s*4\d\d/);
+    expect(screen.getByText('那一局会记为本局负，并计入升降级')).toBeInTheDocument();
+  });
+
+  it('网页直连没有 outbox：不发 sync，就不摆重试按钮', () => {
+    const status = blockingStatus({
+      game_id: 'game-a', state: 'pending_settlement', ownership: 'other_device',
+      user_color: 'B', opponent_rank_name: '1段',
+    });
+    renderSetup(status);
+
+    expect(screen.queryByRole('button', { name: '立即重试' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
+    expect(screen.getByText('那一局会记为本局负，并计入升降级')).toBeInTheDocument();
+  });
+
+  it('这一格属于本机、却接不回来时，说的是「就在这台设备上，只是本机没有它的记录」', () => {
+    // 第三态:设备身份比对说了它就在这台上,而本机那份记录没了(库被清过、重装、换过盒子)。
+    // 屏上**不许**说「另一台设备」—— 人就站在这台机器前面,那句话会让他走开去找第二台。
+    //
+    // 措辞也从「本机的对局进程已经不在了」改掉:进程是不是还活着,这一格根本查不到
+    // (查得到就有 `session_id`、就走「继续对局」那一格了),它只是「接不回来」的一种
+    // 可能原因,被当成结论说了出来。
+    const status = blockingStatus({
+      game_id: 'game-a', state: 'active', ownership: 'current_device',
+      user_color: 'B', opponent_rank_name: '1段',
+    });
+    renderSetup(status);
+
+    expect(screen.getByText('这一局就在这台设备上，只是本机没有它的记录。')).toBeInTheDocument();
+    expect(screen.queryByText(/另一台设备/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '认输那一局，在这里开新局' })).toBeEnabled();
+    // 接不回来 ⇒ 看不见它的进度 ⇒ 代价那一行必须补上「它若其实已下完」这条披露。
+    // 从前这一格说的是干净的「记为本局负」,而那句话多用了一个前提:本机那个进程还在。
+    expect(screen.getByText('那一局会记为本局负；它若其实已下完，真实结果会被顶掉')).toBeInTheDocument();
+    expect(screen.getByText('已中断')).toBeInTheDocument();
+    expect(screen.getByText('当前设备')).toBeInTheDocument();
+  });
+
+  it('云端答不出设备身份时，一个位置都不说 —— 也不冒充「其他设备」', () => {
+    // 网页直连云端:请求根本不带 `X-StellaBox-Device-ID`,没有两个 id 可比。
+    // 从前这一格由一个占位字符串 `"cloud-local"` 顶上去参与 `==`,于是屏上言之凿凿。
+    const status = blockingStatus({
+      game_id: 'game-a', state: 'active', ownership: 'unknown',
+      user_color: 'B', opponent_rank_name: '1段',
+    });
+    renderSetup(status);
+
+    expect(screen.getByText('这一局还没了结，但本机认不出它在哪一台设备上。')).toBeInTheDocument();
+    expect(screen.getByText('设备未知')).toBeInTheDocument();
+    expect(screen.queryByText(/另一台设备|就在这台设备上/)).not.toBeInTheDocument();
+  });
+
+  it('位置说不清，也不该让一条查实的出路消失 —— unknown + 活会话照样能接着下', () => {
+    // galaxy 这块屏上**每一局**都是 `unknown`(浏览器没有设备身份),所以
+    // 「`isResumableHere` 必须 `current_device`」那种写法会让「继续对局」整块消失。
+    // 判据只能是 `session_id`:它是这个节点自己发的,只在它真握着那个会话时才有。
+    const status = blockingStatus({
+      game_id: 'game-a', state: 'active', ownership: 'unknown', session_id: 'live-session',
+      user_color: 'B', opponent_rank_name: '1段',
+    });
+    renderSetup(status);
+
+    expect(screen.getByRole('button', { name: '继续对局' })).toBeEnabled();
+    expect(screen.getByText('你有一局正式对局尚未结束。')).toBeInTheDocument();
+    expect(screen.getByText('对局中')).toBeInTheDocument();
   });
 });

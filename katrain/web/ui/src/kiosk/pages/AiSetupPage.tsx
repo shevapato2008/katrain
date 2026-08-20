@@ -1,20 +1,25 @@
 import { useState } from 'react';
 import { Box, Typography, Button, Alert, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import { PlayArrow } from '@mui/icons-material';
+import { ArrowBack, PlayArrow } from '@mui/icons-material';
 import OptionChips from '../components/common/OptionChips';
-import SubPageBar from '../components/layout/SubPageBar';
 import { API } from '../../api';
 import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
-import LiveBoard from '../../components/live/LiveBoard';
 import { writeActiveSession } from '../utils/activeSession';
 import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
-import { startAiLadderGame } from '../../features/aiLadder/api';
+import {
+  AiLadderApiError,
+  endAiLadderGame,
+  retryAiLadderSettlement,
+  startAiLadderGame,
+} from '../../features/aiLadder/api';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
-import { canStartAiLadderGame } from '../../features/aiLadder/startGate';
+import { aiLadderBlockingGame, canStartAiLadderGame } from '../../features/aiLadder/startGate';
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
+import KioskAiLadderBlockingPanel from '../components/aiLadder/KioskAiLadderBlockingPanel';
+import KioskSetupBoard from '../components/board/KioskSetupBoard';
 
 // Time-control presets — each maps onto the existing timeEnabled/mainTime/byoyomiTime/
 // byoyomiPeriods state so the submitted payload values are unchanged from the slider UI.
@@ -35,7 +40,14 @@ const AiSetupPage = () => {
   const { t } = useTranslation();
   const { token, user } = useAuth();
   const isRanked = mode === 'ranked';
-  const { status: aiLadderStatus, retry: retryAiLadderStatus } = useAiLadderStatus(token ?? undefined, isRanked);
+  const {
+    status: aiLadderStatus,
+    retry: retryAiLadderStatus,
+    applyBlockingSync,
+  } = useAiLadderStatus(token ?? undefined, isRanked);
+  // 挡着新局的那一局。有它的时候整个右栏换成挡局面板 —— 底下那些设置一个都用不上,
+  // 摆着只会让用户以为改一改就能开局。
+  const blockingGame = isRanked ? aiLadderBlockingGame(aiLadderStatus) : null;
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
@@ -58,6 +70,9 @@ const AiSetupPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [lifecyclePending, setLifecyclePending] = useState(false);
+  const [lifecycleError, setLifecycleError] = useState('');
+  const [syncRetryPending, setSyncRetryPending] = useState(false);
 
   const showRankSlider = !isRanked && aiStrategy === 'ai:human';
 
@@ -122,37 +137,122 @@ const AiSetupPage = () => {
     }
   };
 
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubPageBar
-        title={isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈')}
-        to="/kiosk/play"
-      />
-      <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        {/* Left: board preview console — fixed 322px width (matches artifact .console).
-            Board wrapper below stays flex:1 so LiveBoard renders a square that fits this width. */}
-        <Box
-          sx={{
-            width: isRanked ? 290 : 322, flexShrink: 0, overflow: 'hidden', m: isRanked ? 1.5 : 2, mr: 0,
-            bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
-            borderRadius: 3, p: isRanked ? 1.5 : 2, display: 'flex', flexDirection: 'column',
-          }}
-        >
-          <Typography variant="overline" sx={{ color: 'text.secondary', mb: 1 }}>
-            {t('Board Preview', '盘面预览')}
-          </Typography>
-          <Box sx={{ flex: 1, minHeight: 0 }}>
-            <LiveBoard
-              moves={[]}
-              currentMove={0}
-              boardSize={boardSize}
-              showCoordinates={true}
-            />
-          </Box>
-        </Box>
+  const handleContinue = (sessionId: string) => {
+    writeActiveSession({
+      kind: 'game', label: t('Ranked Game', '升降级对弈'),
+      route: `/kiosk/play/ai/game/${sessionId}`, ts: Date.now(),
+    });
+    navigate(`/kiosk/play/ai/game/${sessionId}`);
+  };
 
-        {/* Right: compact 2-column settings form — structurally no-scroll (overflow:hidden). */}
-        <Box data-testid={isRanked ? 'ranked-settings-panel' : undefined} sx={{ flex: 1, p: isRanked ? 2 : 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+  const handleEndGame = async (gameId: string) => {
+    setLifecycleError('');
+    setLifecyclePending(true);
+    try {
+      await endAiLadderGame(gameId, token ?? undefined);
+      // `settled`(认输,记一负)/`released`(让掉,什么都不记)/`pending_settlement`
+      // 三种成功形状在这块屏上是同一个后续:占位没了,回到开局卡。区别已经在按下之前
+      // 由代价行和弹窗说清了,这里再复述一遍只会多一个会漂的副本。
+      await retryAiLadderStatus();
+    } catch (endError) {
+      if (endError instanceof AiLadderApiError && endError.status === 404) {
+        // 那一局已经不在了(多半是原盒子刚把结果送到,或者重复按了一次)。这是成功,
+        // 不是失败 —— 说成失败会让用户在一个已经放开的账号上继续按。
+        setLifecycleError('');
+        await retryAiLadderStatus();
+      } else if (endError instanceof AiLadderApiError && (endError.status === 401 || endError.status === 403)) {
+        setLifecycleError(t('Session expired, please sign in again', '登录已失效，请重新登录后再试'));
+      } else {
+        setLifecycleError(t('Could not end that game, please retry', '结束对局失败，请重试'));
+      }
+    } finally {
+      setLifecyclePending(false);
+    }
+  };
+
+  /**
+   * 「立即重试」按下去之后的每一条路。
+   *
+   * 关键是**不要为了刷新去打一次云端**:`/status` 在盒子上是转发到云端的,断网时 503,
+   * 而 `retryAiLadderStatus` 一失败就把整块面板换成「加载失败」—— 那正是这个按钮存在的
+   * 场景。重试请求本身打的是盒子自己(127.0.0.1),断网照样成功,响应里带着这一次尝试
+   * 之后的真实状态,所以失败路径只就地贴这份状态,不碰云端。
+   */
+  const handleRetrySettlement = async (gameId: string) => {
+    if (syncRetryPending) return;
+    setLifecycleError('');
+    setSyncRetryPending(true);
+    try {
+      const { sync } = await retryAiLadderSettlement(gameId, token ?? undefined);
+      if (sync && sync.state !== 'synced') {
+        applyBlockingSync(gameId, sync);
+        return;
+      }
+      await retryAiLadderStatus();
+    } catch (retryError) {
+      if (retryError instanceof AiLadderApiError && (retryError.status === 401 || retryError.status === 403)) {
+        setLifecycleError(t('Session expired, please sign in again', '登录已失效，请重新登录后再试'));
+      } else if (retryError instanceof AiLadderApiError && retryError.status === 404) {
+        // 队列里已经没有这一局了 —— 多半是后台那一轮刚把它送成。只有这一条 catch 该去
+        // 复查:它意味着屏上这一格已经不成立了。
+        await retryAiLadderStatus();
+      } else {
+        setLifecycleError(t('Retry failed, please try again later', '重试失败，请稍后再试'));
+      }
+    } finally {
+      setSyncRetryPending(false);
+    }
+  };
+
+  return (
+    // 规范 §11 **布局 A**(`kiosk-shell-spec.md:510-512`):「开局设置是对局的前一步,所以它走
+    // 布局 A,和对局屏同一个骨架 —— 左盘 516 + 16 + 右栏 460」。
+    // 上一版是**通栏返回条 + 296 镜像栏**,那是把 §5 的 L1 构件(`:139`)搭在了一屏 L2 上,
+    // 也是布局 B 的做法用在了有棋盘的屏上(`:742-743` 那张表的两行搞反了)。
+    //
+    // 外框:`:399` L2/L3 可用高度 600 − 56(顶栏)− 28(上下各 14 内边距)= **516**,
+    // 左右各 16(`:64` `--content-x`)⇒ 内容 992,减去盘 516 与栏距 16,右栏正好 460。
+    // 这三个数一个都不在这里写死 —— `.kiosk-layout-a` / `.kiosk-board` 用的是
+    // `tokens.css` 的 `--board-size` / `--content-x`,改规范时不用回来改这里。
+    <Box className="kiosk" sx={{ height: '100%', boxSizing: 'border-box', px: 'var(--content-x)', py: 'var(--content-pad-y)' }}>
+      <div className="kiosk-layout-a">
+        {/* 左栏 = 按下「开始对弈」后真会出现的那个局面(`:512`),不是摄像头镜像 ——
+            镜像栏是 L1 的东西(`SmartBoardConsole`,296 宽),它留在 `/kiosk/play`。 */}
+        <KioskSetupBoard color={color} size={boardSize} />
+
+        <div className="kiosk-rail">
+          {/* 页控条:`:736` 顶栏在所有层级恒为品牌态,返回与标题一律下放到这里;
+              `:742` 有棋盘 ⇒ 它在**右栏顶部**,不是通栏。内部尺寸见 `:750-759`,
+              全部由 `.kiosk-pagebar*`(tokens.css:619-662)给。 */}
+          <div className="kiosk-pagebar" data-testid="kiosk-setup-pagebar">
+            <button type="button" className="kiosk-pagebar__back" onClick={() => navigate('/kiosk/play')}>
+              <ArrowBack />
+              {t('Back', '返回')}
+            </button>
+            <span className="kiosk-pagebar__title">
+              {isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈')}
+            </span>
+            {/* 英文副标不是新文案:它就是上面那个 key 的英文侧,和标题同一句话的两种语言。 */}
+            <span className="kiosk-pagebar__sub">{isRanked ? 'Ranked Game' : 'Free Game'}</span>
+          </div>
+
+          {/* 右栏内容:`:512`「按下按钮时骨架不动,只有右栏换内容」—— 挡局面板和设置表单
+              是同一个位置的两种内容,不是两种布局。 */}
+          <Box data-testid={isRanked ? 'ranked-settings-panel' : undefined} sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {blockingGame ? (
+            // 有一局挡着的时候,整个右栏换成挡局面板:执子、用时、开始按钮此刻一个都用不上,
+            // 摆着只会让用户以为改一改就能开局,而真正能推进事情的两三个按钮反倒被挤到看不见。
+            <KioskAiLadderBlockingPanel
+              game={blockingGame}
+              pending={lifecyclePending}
+              error={lifecycleError}
+              syncRetryPending={syncRetryPending}
+              onContinue={handleContinue}
+              onEndGame={handleEndGame}
+              onRetrySettlement={handleRetrySettlement}
+            />
+          ) : (
+          <>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isRanked ? 1.25 : 2, alignContent: 'start' }}>
             {/* Board size — segmented, spans both columns */}
             {!isRanked && <Box sx={{ gridColumn: '1 / -1' }}>
@@ -311,8 +411,11 @@ const AiSetupPage = () => {
               {loading ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}
             </Button>
           </Box>
-        </Box>
-      </Box>
+          </>
+          )}
+          </Box>
+        </div>
+      </div>
     </Box>
   );
 };

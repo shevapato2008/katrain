@@ -7,6 +7,7 @@ from typing import Dict, Optional, Set, List
 
 from starlette.websockets import WebSocket
 
+from katrain.web.core.ai_ladder_ranked import AI_LADDER_GAME_TYPE
 from katrain.web.interface import WebKaTrain
 
 
@@ -108,6 +109,53 @@ class SessionManager:
     def list_active_multiplayer_sessions(self) -> List[WebSession]:
         with self._lock:
             return [s for s in self._sessions.values() if s.player_b_id is not None]
+
+    def ai_ladder_liveness_targets(self) -> List[tuple]:
+        """`(user_id, game_id, reservation_key, origin_device_id)` per ranked game running here.
+
+        The heartbeat has to be sent by whoever holds the reservation key, and the key never
+        leaves this process -- `/start` mints it, hands it to the cloud, and keeps it on the
+        session. So liveness is reported by the server that owns the session, not by the browser:
+        a closed tab does not mean the game is gone, and the device the cloud is judging is the
+        box, not the page.
+
+        What is reported is "this game is still being played here", and the binding is
+        `game_ended` -- the marker the engine sets the moment a result exists (`_on_state`).
+        It is deliberately NOT the settlement state. The cloud rejects a settlement
+        asynchronously, inside the sync worker, which marks its queue row `failed` and never
+        touches this session: a box whose settlement was refused an hour ago would go on
+        reporting a game nobody is playing, the reservation would stay `active` forever, and
+        the takeover rule -- which only ever asks "has this box gone quiet" -- would never
+        come true. The account is then locked out of ranked play on every device it owns.
+
+        So the rule is the honest reading of the signal rather than a proxy for it: a heartbeat
+        claims someone is at the board. Once the game is over, that claim is false, whatever
+        the settlement is doing.
+        """
+
+        with self._lock:
+            sessions = list(self._sessions.values())
+        targets: Dict[tuple, tuple] = {}
+        for session in sessions:
+            if getattr(session, "game_type", None) != AI_LADDER_GAME_TYPE:
+                continue
+            if getattr(session, "game_ended", False):
+                continue
+            snapshot = getattr(session, "ai_ladder_snapshot", None)
+            reservation_key = getattr(session, "ai_ladder_reservation_key", None)
+            game_id = getattr(snapshot, "game_id", None)
+            if session.user_id is None or not game_id or not reservation_key:
+                continue
+            # Keyed so two sessions on one game report once. The cloud counts heartbeats to tell
+            # "this client keeps a timer alive" from "this client never will", and double-counting
+            # would let one box cross that threshold at twice the rate it earned.
+            targets[(session.user_id, game_id)] = (
+                session.user_id,
+                game_id,
+                reservation_key,
+                getattr(session, "ai_ladder_origin_device_id", None) or "cloud-local",
+            )
+        return list(targets.values())
 
     def remove_session(self, session_id: str):
         with self._lock:

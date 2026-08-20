@@ -27,59 +27,10 @@ AI_LADDER_TABLES = {
     "ai_ladder_active_games",
 }
 AI_LADDER_LEGACY_TABLE = "ai_ladder_game_ledger_legacy_v1"
-XIANGQI_RANKED_TABLES = {
-    "xiangqi_rating_profiles",
-    "xiangqi_ranked_reservations",
-    "xiangqi_ranked_ledger",
-    "xiangqi_ranked_capability_jtis",
-}
-PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | XIANGQI_RANKED_TABLES | {AI_LADDER_LEGACY_TABLE}
-
-
-def install_xiangqi_ranked_immutability(engine) -> None:
-    """Install idempotent database triggers that make terminal facts append-only."""
-
-    if "xiangqi_ranked_ledger" not in inspect(engine).get_table_names():
-        return
-    if engine.dialect.name == "sqlite":
-        statements = (
-            "CREATE TRIGGER IF NOT EXISTS trg_xiangqi_ranked_ledger_no_update "
-            "BEFORE UPDATE ON xiangqi_ranked_ledger BEGIN "
-            "SELECT RAISE(ABORT, 'xiangqi ranked ledger is immutable'); END",
-            "CREATE TRIGGER IF NOT EXISTS trg_xiangqi_ranked_ledger_no_delete "
-            "BEFORE DELETE ON xiangqi_ranked_ledger BEGIN "
-            "SELECT RAISE(ABORT, 'xiangqi ranked ledger is immutable'); END",
-        )
-    elif engine.dialect.name == "postgresql":
-        statements = (
-            "CREATE OR REPLACE FUNCTION reject_xiangqi_ranked_ledger_mutation() RETURNS trigger AS $$ "
-            "BEGIN RAISE EXCEPTION 'xiangqi ranked ledger is immutable'; END; $$ LANGUAGE plpgsql",
-            "DROP TRIGGER IF EXISTS trg_xiangqi_ranked_ledger_no_update ON xiangqi_ranked_ledger",
-            "CREATE TRIGGER trg_xiangqi_ranked_ledger_no_update BEFORE UPDATE ON xiangqi_ranked_ledger "
-            "FOR EACH ROW EXECUTE FUNCTION reject_xiangqi_ranked_ledger_mutation()",
-            "DROP TRIGGER IF EXISTS trg_xiangqi_ranked_ledger_no_delete ON xiangqi_ranked_ledger",
-            "CREATE TRIGGER trg_xiangqi_ranked_ledger_no_delete BEFORE DELETE ON xiangqi_ranked_ledger "
-            "FOR EACH ROW EXECUTE FUNCTION reject_xiangqi_ranked_ledger_mutation()",
-        )
-    else:
-        raise RuntimeError(f"unsupported Xiangqi ranked ledger dialect: {engine.dialect.name}")
-
-    with engine.begin() as connection:
-        for statement in statements:
-            connection.execute(text(statement))
-
-
-def _fail_on_xiangqi_ranked_column_drift(engine, inspector) -> None:
-    existing_tables = set(inspector.get_table_names())
-    for table_name in XIANGQI_RANKED_TABLES & existing_tables:
-        expected = {column.name for column in models_db.Base.metadata.tables[table_name].columns}
-        actual = {column["name"] for column in inspector.get_columns(table_name)}
-        missing = expected - actual
-        if missing:
-            raise RuntimeError(
-                f"schema drift in protected table {table_name}: missing columns {sorted(missing)!r}; "
-                "refusing generic rebuild"
-            )
+# 象棋升降级的四张表已随模块搬去 lobby-platform(ranked_api/xiangqi/),这里不再有对应
+# 的 ORM 模型。已部署的库里那四张表**原样留着**:drift 循环只遍历
+# `models_db.Base.metadata.sorted_tables`,模型没了就永远进不了 drop 名单,数据不会被动。
+PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | {AI_LADDER_LEGACY_TABLE}
 
 AI_LADDER_TERMINAL_AUDIT_CONDITION = (
     "(terminal_source IS NULL AND origin_device_id IS NULL "
@@ -118,7 +69,12 @@ def migrate_ai_ladder_decision_schema(engine) -> None:
         _migrate_sqlite_ai_ladder_decision_schema(engine, inspector)
     elif engine.dialect.name == "postgresql":
         checks = {constraint.get("name") for constraint in inspector.get_check_constraints(table_name)}
-        statements = postgres_ai_ladder_decision_statements(set(columns), checks)
+        # 🔴 这里原本是 `postgres_ai_ladder_decision_statements(set(columns), checks)` ——
+        # 位置参数调一个**只收关键字参数**的函数(定义见下,签名是 `*, existing_columns,
+        # existing_checks`),必然 TypeError。也就是说 **PG 上的旧库升级分支从来没跑通过**。
+        # SQLite 走的是上面那一支,所以本机测试永远碰不到它 —— 又一例
+        # 「保证在本机不存在而不会红」。
+        statements = postgres_ai_ladder_decision_statements(existing_columns=set(columns), existing_checks=checks)
         with engine.begin() as conn:
             for statement in statements:
                 conn.execute(text(statement))
@@ -298,6 +254,71 @@ def enforce_ai_ladder_terminal_audit_schema(engine) -> None:
                 conn.execute(text(statement))
 
 
+AI_LADDER_ACCOUNT_SUBJECT_CONDITION = "account_subject IS NULL OR length(account_subject) BETWEEN 1 AND 32"
+
+ACCOUNT_SUBJECT_CONSTRAINT = "ck_ai_ladder_ledger_account_subject_len"
+
+
+def postgres_ai_ladder_account_subject_statements(*, existing_checks: set[str]) -> list[str]:
+    """把账本主体长度约束补到已存在的 PostgreSQL 表上。"""
+
+    if ACCOUNT_SUBJECT_CONSTRAINT in existing_checks:
+        return []
+    return [
+        f"ALTER TABLE ai_ladder_game_ledger ADD CONSTRAINT {ACCOUNT_SUBJECT_CONSTRAINT} "
+        f"CHECK ({AI_LADDER_ACCOUNT_SUBJECT_CONDITION})"
+    ]
+
+
+def enforce_ai_ladder_account_subject_schema(engine) -> None:
+    """账本主体长度约束,不重建这张受保护的表就装上去。
+
+    与三家共享账本的 `ck_ranked_ledgers_account_subject_len` 同源。SQLite 不能给
+    已存在的表 `ADD CONSTRAINT`,所以那一支用触发器 —— 与本文件既有的
+    `enforce_ai_ladder_terminal_audit_schema` 同形。
+
+    落库前先点一遍存量:有不合规的行就抛,**不静默放过也不静默改数据**。
+    """
+
+    table = "ai_ladder_game_ledger"
+    inspector = inspect(engine)
+    if table not in inspector.get_table_names():
+        return
+    if "account_subject" not in {column["name"] for column in inspector.get_columns(table)}:
+        return
+
+    checks = {constraint.get("name") for constraint in inspector.get_check_constraints(table)}
+    if ACCOUNT_SUBJECT_CONSTRAINT in checks:
+        return
+
+    with engine.begin() as conn:
+        invalid = conn.execute(
+            text(f"SELECT COUNT(*) FROM {table} WHERE NOT ({AI_LADDER_ACCOUNT_SUBJECT_CONDITION})")
+        ).scalar_one()
+        if invalid:
+            raise RuntimeError(f"AI ladder account_subject migration found {invalid} invalid row(s)")
+
+        if engine.dialect.name == "sqlite":
+            # ⚠️ **不是** `CREATE TRIGGER IF NOT EXISTS` —— 那是按名字跳过、不看内容的,
+            # 名字没变而内容变了就一行都不执行,长命的库留旧规则、新建的库拿新规则,
+            # 两边分叉且全绿。先删后建。(本文件 :242 那个终局审计触发器仍是旧写法,
+            # 是同一个坑的另一处实例,不在本次范围内 —— 别照抄它。)
+            condition = AI_LADDER_ACCOUNT_SUBJECT_CONDITION.replace("account_subject", "NEW.account_subject")
+            for action in ("INSERT", "UPDATE"):
+                trigger = f"trg_ai_ladder_ledger_account_subject_{action.lower()}"
+                conn.execute(text(f'DROP TRIGGER IF EXISTS "{trigger}"'))
+                conn.execute(
+                    text(
+                        f'CREATE TRIGGER "{trigger}" BEFORE {action} ON "{table}" '
+                        f"FOR EACH ROW WHEN NOT ({condition}) "
+                        "BEGIN SELECT RAISE(ABORT, 'invalid AI ladder account subject'); END"
+                    )
+                )
+        elif engine.dialect.name == "postgresql":
+            for statement in postgres_ai_ladder_account_subject_statements(existing_checks=checks):
+                conn.execute(text(statement))
+
+
 def add_missing_columns(engine) -> None:
     """ADD COLUMN for any model column missing from an existing table.
 
@@ -305,7 +326,6 @@ def add_missing_columns(engine) -> None:
     that a simple new column (e.g. users.is_admin) doesn't trigger a full rebuild.
     """
     inspector = inspect(engine)
-    _fail_on_xiangqi_ranked_column_drift(engine, inspector)
     existing_tables = set(inspector.get_table_names())
     with engine.begin() as conn:
         for table in models_db.Base.metadata.sorted_tables:
@@ -323,6 +343,7 @@ def add_missing_columns(engine) -> None:
                 conn.execute(text(ddl))
                 logger.info(f"migrate: added column {table.name}.{col.name}")
     enforce_ai_ladder_terminal_audit_schema(engine)
+    enforce_ai_ladder_account_subject_schema(engine)
 
 
 def _default_clause(col):
@@ -360,13 +381,11 @@ def create_missing_indexes(engine) -> None:
             for index in table.indexes:
                 if index.name in existing_idx:
                     continue
-                # Let SQLAlchemy compile dialect clauses such as the Xiangqi
-                # reservation's partial unique predicate. Reconstructing an
-                # index from column names would silently turn it into a global
-                # unique constraint and prevent a user from playing again.
+                # Let SQLAlchemy compile dialect clauses such as partial unique
+                # predicates. Reconstructing an index from column names would
+                # silently turn it into a global unique constraint.
                 index.create(bind=conn, checkfirst=True)
                 logger.info(f"migrate: created index {index.name} on {table.name}")
-    install_xiangqi_ranked_immutability(engine)
 
 
 def backfill_ai_ladder_decisions(engine) -> None:

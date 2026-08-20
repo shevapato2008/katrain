@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useOptionalVision } from '../../context/VisionContext';
 import { useOptionalGeometry } from '../../context/GeometryContext';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { KIOSK_BRAND, KIOSK_SERIF } from '../../theme';
 
 interface HeaderProps {
   username?: string;
@@ -144,13 +145,20 @@ const Header = ({ username, showHome = false, onHome }: HeaderProps) => {
             style={{ width: 34, height: 34, objectFit: 'contain' }}
           />
           <Box sx={{ display: 'flex', alignItems: 'baseline' }}>
-            <Typography sx={{ fontFamily: "'Newsreader','Noto Serif SC',serif", fontWeight: 600, fontSize: 20 }}>
+            {/* 规范 §2/§9(`kiosk-shell-spec.md:42-44` / `:609`):这三个字走**龙藏行楷**,
+                只此一处。`font-synthesis: none` 不是可选项 —— `:43` 明写「顶栏容器常有 600 字重,
+                否则浏览器会合成伪粗体,四棋类各粗一个样」,而龙藏只有 400 那一个面。
+                `unicode-range` 已把它锁死在 U+667A/661F/76D2,不会外溢到别的中文。 */}
+            <Typography
+              data-testid="kiosk-brand-zh"
+              sx={{ fontFamily: KIOSK_BRAND, fontWeight: 600, fontSize: 20, fontSynthesis: 'none' }}
+            >
               智星盒
             </Typography>
             <Typography
               component="span"
               sx={{
-                fontFamily: "'Newsreader','Noto Serif SC',serif",
+                fontFamily: KIOSK_SERIF,
                 fontStyle: 'italic',
                 fontSize: 12,
                 color: 'text.secondary',
@@ -185,7 +193,7 @@ const Header = ({ username, showHome = false, onHome }: HeaderProps) => {
               gap: 1,
               flex: '0 0 auto',
               touchAction: 'manipulation',
-              fontFamily: "'Newsreader','Noto Serif SC',serif",
+              fontFamily: KIOSK_SERIF,
               fontSize: 14,
               '& .MuiButton-startIcon': { margin: 0 },
             }}

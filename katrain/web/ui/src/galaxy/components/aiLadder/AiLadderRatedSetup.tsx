@@ -17,9 +17,24 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import {
+  blockingCopy,
+  blockingStateChip,
+  displaceCopy,
+  isResumableHere,
+  isSyncRetryable,
+  ownershipLabel,
+  settlementSyncText,
+} from '../../../features/aiLadder/blockingCopy';
 import { AI_LADDER_COPY, formatPlacementProgress } from '../../../features/aiLadder/copy';
+import { useCountdown } from '../../../features/aiLadder/countdown';
 import { aiLadderStartBlock } from '../../../features/aiLadder/startGate';
-import type { AiLadderCountingReason, AiLadderStatus } from '../../../features/aiLadder/types';
+import { useTranslation } from '../../../hooks/useTranslation';
+import type {
+  AiLadderCountingReason,
+  AiLadderSettlementSync,
+  AiLadderStatus,
+} from '../../../features/aiLadder/types';
 
 interface AiLadderRatedSetupProps {
   status: AiLadderStatus;
@@ -29,13 +44,17 @@ interface AiLadderRatedSetupProps {
   byoPeriods: number;
   startPending: boolean;
   lifecyclePending?: boolean;
-  lifecycleError?: string;
+  /** 必填,不是 `lifecycleError?:` —— 见 KioskAiLadderBlockingPanel 里同一个 prop 的说明。 */
+  lifecycleError: string;
   lifecycleReceipt?: { counted: boolean; reason: AiLadderCountingReason | null };
   onColorChange: (color: 'B' | 'W') => void;
   onRetry: () => void;
   onStart: () => void;
   onContinue?: (sessionId: string) => void;
   onEndGame?: (gameId: string) => void;
+  /** 只有盒子有 outbox。网页直连时不传,「立即重试」就不出现。 */
+  onRetrySettlement?: (gameId: string) => void;
+  syncRetryPending?: boolean;
 }
 
 const notCountedMessages: Record<AiLadderCountingReason, string> = {
@@ -68,6 +87,32 @@ const Stone = ({ white = false }: { white?: boolean }) => (
   />
 );
 
+/**
+ * 「上一局的成绩还在送」那一格上的一行字 —— 数全部来自盒子的 outbox,一个都不是前端推的。
+ *
+ * 走秒归 `useCountdown`,它数的是**时长**,所以盒子的钟偏不进这个数。数到 0 之后改说
+ * 「即将重试」而不是「正在重试」:队列是每 60 秒排空一次的(`SYNC_DRAIN_INTERVAL`),
+ * 到期只保证「下一轮会带上它」,不保证此刻正在发。也不许停在一个 0:00 —— 那是这块屏
+ * 唯一会被当成卡死的画面。
+ */
+const SettlementSyncLine = ({ sync }: { sync: AiLadderSettlementSync }) => {
+  const remaining = useCountdown(sync.state === 'waiting' ? sync.next_attempt_in_seconds : null);
+  const text = settlementSyncText(sync, remaining);
+
+  return (
+    <Typography
+      variant="body2"
+      sx={{
+        mt: 1.5,
+        color: sync.state === 'refused' || sync.state === 'exhausted' ? 'warning.light' : 'text.secondary',
+        fontVariantNumeric: 'tabular-nums',
+      }}
+    >
+      {text}
+    </Typography>
+  );
+};
+
 const Conditions = ({ mainTime, byoLength, byoPeriods }: Pick<AiLadderRatedSetupProps, 'mainTime' | 'byoLength' | 'byoPeriods'>) => (
   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 28px' }}>
     {[
@@ -99,19 +144,30 @@ const AiLadderRatedSetup = ({
   onStart,
   onContinue,
   onEndGame,
+  onRetrySettlement,
+  syncRetryPending = false,
 }: AiLadderRatedSetupProps) => {
-  const [endGameId, setEndGameId] = useState<string | null>(null);
-  const activeBlockingGameId = status.view_state === 'ready' && status.blocking_game?.state === 'active'
-    ? status.blocking_game.game_id
-    : undefined;
+  // blockingCopy/displaceCopy 里的每一句都在 render 时才查 i18n;没有这个订阅,
+  // 语言切换之后这块面板会一直说首次渲染时那门语言。
+  useTranslation();
+  // 待确认的那一局。只有一个动作了(开新局),所以只需要记住它落在哪一局上。
+  const [armedGameId, setArmedGameId] = useState<string | null>(null);
+  const liveBlockingGame = status.view_state === 'ready' ? status.blocking_game : undefined;
+  // 弹窗开着的时候,底下那一格会自己变(后台每 15 秒复查一次)。价钱现在只有一个,但弹窗里
+  // 多说的那一句仍然跟着状态走:同一局从「在下」变成「成绩未送达」,那句话要从「还没下完」
+  // 变成「会覆盖它真实的结果,想保住就先用立即重试」。所以它每次都从**当下**这份数据算,
+  // 不在按下的那一刻抄一份存起来 —— 否则用户照着一句已经不成立的话按下不可撤销的按钮。
+  const armedGame = armedGameId !== null && liveBlockingGame && liveBlockingGame.game_id === armedGameId
+    ? liveBlockingGame
+    : null;
   const receiptVisible = Boolean(lifecycleReceipt);
-  const endDialogOpen = endGameId !== null && activeBlockingGameId === endGameId && !receiptVisible;
+  const dialogOpen = armedGame !== null && !receiptVisible;
 
   useEffect(() => {
-    if (endGameId !== null && (activeBlockingGameId !== endGameId || receiptVisible)) {
-      setEndGameId(null);
+    if (armedGameId !== null && (armedGame === null || receiptVisible)) {
+      setArmedGameId(null);
     }
-  }, [activeBlockingGameId, endGameId, receiptVisible]);
+  }, [armedGameId, armedGame, receiptVisible]);
 
   if (lifecycleReceipt && status.view_state !== 'ready') {
     return (
@@ -145,16 +201,12 @@ const AiLadderRatedSetup = ({
   const resultText = status.recent_ranked_results.map((result) => AI_LADDER_COPY.outcome[result]).join(' ');
   const blockingGame = status.blocking_game;
 
-  const confirmEndGame = () => {
-    if (
-      !endGameId
-      || blockingGame?.state !== 'active'
-      || blockingGame.game_id !== endGameId
-      || lifecycleReceipt
-      || !onEndGame
-    ) return;
-    setEndGameId(null);
-    onEndGame(endGameId);
+  const confirmDisplace = () => {
+    if (!armedGame || lifecycleReceipt || !onEndGame) return;
+    setArmedGameId(null);
+    // 打的是同一个 `/end`:记负还是什么都不记,由**服务端按那一行的状态**决定,不由前端挑。
+    // 前端只负责把后果说对 —— 让它自己选路,就等于把同一个判断又实现了一遍。
+    onEndGame(armedGame.game_id);
   };
 
   let challengeContent;
@@ -171,28 +223,16 @@ const AiLadderRatedSetup = ({
       </>
     );
   } else if (blockingGame) {
-    const hasCurrentSession = blockingGame.state === 'active'
-      && blockingGame.ownership === 'current_device'
-      && Boolean(blockingGame.session_id);
-    const primaryLabel = blockingGame.state === 'pending_settlement'
-      ? '刷新状态'
-      : blockingGame.ownership === 'other_device'
-        ? '等待结算'
-        : hasCurrentSession
-          ? '继续对局'
-          : '刷新状态';
-    const primaryAction = () => {
-      if (hasCurrentSession && blockingGame.session_id) {
-        onContinue?.(blockingGame.session_id);
-        return;
-      }
-      onRetry();
-    };
-    const stateCopy = blockingGame.state === 'pending_settlement'
-      ? '本局已结束，成绩正在结算中。'
-      : blockingGame.ownership === 'other_device'
-        ? '该对局正在其他设备上进行，请等待对局结算。'
-        : '你有一局正式对局尚未结束。';
+    const hasCurrentSession = isResumableHere(blockingGame);
+    const sync = blockingGame.sync;
+    // 重试只对「网络坏了」有意义。已经被云端在事实上拒收的那一份,再按一次还是同一个
+    // 答复;给一个按不出结果的按钮,比不给更坏。
+    const canRetrySync = Boolean(onRetrySettlement)
+      && blockingGame.state === 'pending_settlement'
+      && isSyncRetryable(sync);
+    const stateChip = blockingStateChip(blockingGame, hasCurrentSession);
+    const stateCopy = blockingCopy(blockingGame, hasCurrentSession);
+    const displace = displaceCopy(blockingGame);
 
     challengeContent = (
       <>
@@ -205,16 +245,12 @@ const AiLadderRatedSetup = ({
               {blockingGame.opponent_rank_name}
             </Typography>
             <Stack direction="row" gap={1} sx={{ mt: 1.5, flexWrap: 'wrap' }}>
+              <Chip size="small" label={stateChip.label} variant="outlined" color={stateChip.color} />
               <Chip
                 size="small"
-                label={blockingGame.state === 'pending_settlement' ? '结算中' : '对局中'}
+                label={ownershipLabel(blockingGame)}
                 variant="outlined"
-                color={blockingGame.state === 'pending_settlement' ? 'warning' : 'success'}
-              />
-              <Chip
-                size="small"
-                label={blockingGame.ownership === 'current_device' ? '当前设备' : '其他设备'}
-                variant="outlined"
+                data-testid="galaxy-ladder-ownership"
               />
             </Stack>
           </Box>
@@ -222,46 +258,92 @@ const AiLadderRatedSetup = ({
 
         <Divider sx={{ my: 3 }} />
         <Typography color="text.secondary">{stateCopy}</Typography>
+        {sync && <SettlementSyncLine sync={sync} />}
         {lifecycleError && <Alert severity="error" sx={{ mt: 2 }}>{lifecycleError}</Alert>}
 
         <Stack spacing={1.5} sx={{ mt: 'auto', pt: 4 }}>
-          <Button
-            fullWidth
-            size="large"
-            variant="contained"
-            onClick={primaryAction}
-            disabled={lifecyclePending || (hasCurrentSession && !onContinue)}
-            startIcon={lifecyclePending ? <CircularProgress size={18} color="inherit" /> : undefined}
-            sx={{ minHeight: 54, fontSize: 18, fontWeight: 800 }}
-          >
-            {primaryLabel}
-          </Button>
-          {blockingGame.state === 'active' && (
+          {/* 这里只放**会改变什么**的按钮。曾经还有一个「刷新状态」,它做的事
+              (重问一次 `/status`)这块屏本来就每 15 秒自己在做
+              (`useAiLadderStatus` 的 `AI_LADDER_BLOCKED_REFRESH_MS`),
+              所以它在每一格都是别的按钮的真子集,或者干脆什么都改不了。 */}
+          {hasCurrentSession && (
+            <Button
+              fullWidth
+              size="large"
+              variant="contained"
+              onClick={() => blockingGame.session_id && onContinue?.(blockingGame.session_id)}
+              disabled={lifecyclePending || !onContinue}
+              startIcon={lifecyclePending ? <CircularProgress size={18} color="inherit" /> : undefined}
+              sx={{ minHeight: 54, fontSize: 18, fontWeight: 800 }}
+            >
+              继续对局
+            </Button>
+          )}
+          {canRetrySync && (
+            <Button
+              fullWidth
+              size="large"
+              variant="contained"
+              onClick={() => onRetrySettlement?.(blockingGame.game_id)}
+              disabled={syncRetryPending}
+              startIcon={syncRetryPending ? <CircularProgress size={18} color="inherit" /> : undefined}
+              sx={{ minHeight: 54, fontSize: 18, fontWeight: 800 }}
+            >
+              {syncRetryPending ? '正在重试…' : '立即重试'}
+            </Button>
+          )}
+          <Box>
             <Button
               fullWidth
               size="large"
               variant="outlined"
-              color="error"
-              onClick={() => setEndGameId(blockingGame.game_id)}
+              color={displace.color}
+              onClick={() => setArmedGameId(blockingGame.game_id)}
               disabled={lifecyclePending || !onEndGame}
               sx={{ minHeight: 48, fontWeight: 750 }}
             >
-              结束该对局
+              {displace.button}
             </Button>
-          )}
+            {/* 代价写在按钮下面,不写在二次确认里 —— 写在弹窗里等于按下之后才说。 */}
+            <Typography
+              variant="caption"
+              component="p"
+              sx={{ mt: 0.75, textAlign: 'center', color: 'text.secondary' }}
+            >
+              {displace.cost}
+            </Typography>
+          </Box>
         </Stack>
       </>
     );
   } else if (status.blocking_game === undefined && status.pending_settlement) {
+    // **这一格够得着,别删** —— 判据按「链路」不按「模块」,而这条链路是真的:
+    //
+    //   盒端前端(新) → 盒端服务端(新) → **云端 ranked_api(可能旧)**
+    //
+    // 盒子上 `/status` 是**转发**到云端的(`ai_ladder.py` 的 `_is_board` 分支直接
+    // 把云端 payload 发回来)。云端要是还没上这一版,payload 里根本没有 `blocking_game`
+    // 这个键 ⇒ 前端读到 `undefined` ⇒ 落到这一格。前端产物和盒端服务端是同一份 artifact,
+    // 所以「旧服务端 + 新界面」在**同进程内**不可能;但跨到云端那一跳可能,而那一跳正是
+    // 这个字段的来源。
+    //
+    // ⇒ **部署顺序约束:云端 ranked_api 必须先于盒子上线。** 顺序反了的失败长这样:
+    // 用户在盒子上看到「这一局已经下完,成绩还没送到云端」+ 一个「刷新状态」,
+    // **没有认输出口** —— 而这一格里前端手上没有 game_id,`/end` 物理上打不出去,
+    // 不是没接线。所以这里不修前端,修的是上线顺序。
     challengeContent = (
       <>
         <Typography color="text.secondary" fontWeight={650}>未完成对局</Typography>
         <Box sx={{ my: 'auto', py: 6 }}>
           <Typography sx={{ fontSize: 24, lineHeight: 1.4, fontWeight: 800 }}>
-            本局已结束，成绩正在结算中。
+            这一局已经下完，成绩还没送到云端。
           </Typography>
           {lifecycleError && <Alert severity="error" sx={{ mt: 2 }}>{lifecycleError}</Alert>}
         </Box>
+        {/* 「刷新状态」只在这一格活下来:自动复查的开关是 `blocking_game` 存在
+            (`useAiLadderStatus` 的 `blocked`),而这一格恰恰没有它 —— 老服务端只回了
+            一个 `pending_settlement` 标志。没有轮询、也没有别的动作,手动问一次就是
+            这里唯一能推进事情的办法。 */}
         <Button
           fullWidth
           size="large"
@@ -303,7 +385,12 @@ const AiLadderRatedSetup = ({
           </Stack>
         </Stack>
 
-        {status.pending_settlement && <Alert severity="info" sx={{ mt: 2 }}>成绩结算中，暂不能开始新对局</Alert>}
+        {/* 同一条判据:这块屏也分不出 waiting/exhausted/refused,所以说的是三种状态下都为真的
+            那句。前半句取共享文案(跟着语言走),后半句仍是硬编码中文 —— 那是既有欠账,
+            不在这次范围里,记着。 */}
+        {status.pending_settlement && (
+          <Alert severity="info" sx={{ mt: 2 }}>{AI_LADDER_COPY.pendingSettlement}，暂不能开始新对局</Alert>
+        )}
         {block === 'rung_not_certified' && <Alert severity="warning" sx={{ mt: 2 }}>{AI_LADDER_COPY.unavailable}</Alert>}
 
         <Box sx={{ mt: 'auto', pt: 4 }}>
@@ -399,14 +486,23 @@ const AiLadderRatedSetup = ({
       </Box>
       </Paper>
 
-      <Dialog open={endDialogOpen} onClose={() => setEndGameId(null)} aria-labelledby="end-game-dialog-title">
-        <DialogTitle id="end-game-dialog-title">结束该对局？</DialogTitle>
+      {/* 标题、正文、确认按钮全部按 `armedGame` 现算 —— 同一块弹窗要说两件不同的事:
+          有棋盘的那两格是「认输、记一场负」,`reserved` 那格是「让掉、不记成绩」。
+          弹窗文案写死成其中一句,另一格就是当着用户的面承诺一个不会发生的后果。 */}
+      <Dialog open={dialogOpen} onClose={() => setArmedGameId(null)} aria-labelledby="ladder-exit-dialog-title">
+        <DialogTitle id="ladder-exit-dialog-title">{armedGame ? displaceCopy(armedGame).title : '认输那一局？'}</DialogTitle>
         <DialogContent>
-          <DialogContentText>结束后将按你认输处理，并计为本局负。此操作不可撤销。</DialogContentText>
+          <DialogContentText>{armedGame && displaceCopy(armedGame).body}</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button autoFocus onClick={() => setEndGameId(null)}>取消</Button>
-          <Button color="error" onClick={confirmEndGame} disabled={lifecyclePending || !onEndGame}>确认结束</Button>
+          <Button autoFocus onClick={() => setArmedGameId(null)}>取消</Button>
+          <Button
+            color={armedGame ? displaceCopy(armedGame).color : 'error'}
+            onClick={confirmDisplace}
+            disabled={lifecyclePending || !onEndGame}
+          >
+            {armedGame ? displaceCopy(armedGame).confirm : '确认认输'}
+          </Button>
         </DialogActions>
       </Dialog>
     </>

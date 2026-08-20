@@ -1255,7 +1255,7 @@ msgid "lobby:custom_game"
 msgstr "カスタムゲーム"
 
 msgid "dashboard:welcome"
-msgstr "StellaBoxへようこそ"
+msgstr "智星盒へようこそ"
 
 msgid "game_end:forfeit_loss"
 msgstr "あなたが棄権しました。"
@@ -1588,7 +1588,7 @@ msgid "tsumego:problemRange"
 msgstr "問題 {start}-{end}"
 
 msgid "auth:login_title"
-msgstr "StellaBoxにログイン"
+msgstr "智星盒にログイン"
 
 msgid "auth:register_title"
 msgstr "アカウント作成"
@@ -2881,3 +2881,195 @@ msgstr "ラダーエンジンが利用できず、AI が着手できません ·
 
 msgid "ladder:unscored_engine"
 msgstr "この局の相手は校正された強さで着手できなかったため無効です。段位は変わらず、定級戦の局数にも数えません。"
+
+msgid "ladder:pending_settlement"
+msgstr "この対局の成績はまだクラウドに届いていません"
+
+msgid "ladder:pending_settlement_cta"
+msgstr "成績が未送信"
+
+msgid "ladder:title"
+msgstr "AI昇降級対局"
+
+msgid "ladder:setup_title"
+msgstr "41段階の昇降級AI"
+
+msgid "ladder:placement_opponent_prefix"
+msgstr "認定戦の対戦相手："
+
+msgid "ladder:game_opponent_prefix"
+msgstr "この対局の相手："
+
+msgid "ladder:loading_status"
+msgstr "昇降級対局の状態を読み込み中…"
+
+msgid "ladder:load_error"
+msgstr "昇降級対局の状態を読み込めませんでした"
+
+msgid "ladder:load_error_not_authoritative"
+msgstr "この端末は昇降級の成績を記録しないため、対局を開始できません"
+
+msgid "ladder:load_error_unauthorized"
+msgstr "ログインの有効期限が切れました。再度ログインしてください"
+
+msgid "ladder:retry"
+msgstr "再試行"
+
+msgid "ladder:provisional_seating"
+msgstr "この段階はまだ較正されていません。対局はできますが、昇降級には反映されません"
+
+msgid "ladder:current_opponent_prefix"
+msgstr "現在の対戦相手："
+
+msgid "ladder:current_rank_prefix"
+msgstr "現在の段位："
+
+msgid "ladder:available"
+msgstr "挑戦可能"
+
+msgid "ladder:unavailable_rung"
+msgstr "この段階には現在挑戦できません"
+
+msgid "ladder:unavailable_cta"
+msgstr "現在挑戦不可"
+
+msgid "ladder:continue_placement_cta"
+msgstr "認定戦を続ける"
+
+msgid "ladder:start_ranked_cta"
+msgstr "昇降級対局を開始"
+
+msgid "ladder:recent_heading"
+msgstr "直近5局"
+
+msgid "ladder:recent_aria"
+msgstr "直近5局の昇降級AI対局の結果"
+
+msgid "ladder:recent_display_note"
+msgstr "直近5局は参考表示です。昇降級は純勝ち点のみで決まります"
+
+msgid "ladder:recent_empty"
+msgstr "昇降級AI対局の記録はまだありません"
+
+msgid "ladder:net_score_prefix"
+msgstr "純勝ち点："
+
+msgid "ladder:net_score_aria"
+msgstr "純勝ち点。マイナスは降級方向、プラスは昇級方向です"
+
+msgid "ladder:demotion_threshold"
+msgstr "降級 -3"
+
+msgid "ladder:promotion_threshold"
+msgstr "昇級 +3"
+
+msgid "ladder:route_local"
+msgstr "この端末で対局"
+
+msgid "ladder:route_server"
+msgstr "サーバーで対局"
+
+msgid "ladder:cert_provisional"
+msgstr "暫定"
+
+msgid "ladder:cert_certified"
+msgstr "認定済み"
+
+msgid "ladder:placement_progress_n"
+msgstr "認定戦 {n}/{total}"
+
+msgid "ladder:placement_progress_aria"
+msgstr "認定戦の進捗：{total}局中{n}局が終了"
+
+msgid "ladder:net_score_positive"
+msgstr "現在の純勝ち点は+{n}。昇級方向で、+3で昇級します"
+
+msgid "ladder:net_score_negative"
+msgstr "現在の純勝ち点は{n}。降級方向で、-3で降級します"
+
+msgid "ladder:net_score_zero"
+msgstr "現在の純勝ち点は0。+3で昇級、-3で降級します"
+
+msgid "ladder:outcome_label"
+msgstr "第{n}局：{result}"
+
+msgid "ladder:settled_generic"
+msgstr "昇降級の反映が完了し、状態が更新されました"
+
+msgid "ladder:settled_placement_done"
+msgstr "認定完了：{rank}"
+
+msgid "ladder:settled_placement_progress"
+msgstr "認定戦 {n}/{total}"
+
+msgid "ladder:settled_promoted"
+msgstr "昇級：{rank}"
+
+msgid "ladder:settled_demoted"
+msgstr "降級：{rank}"
+
+msgid "ladder:settled_no_change"
+msgstr "段位に変更なし。純勝ち点：{score}"
+
+msgid "ladder:settled_pending"
+msgstr "昇降級の反映を処理中です"
+
+msgid "ladder:settled_unavailable"
+msgstr "反映状況を現在取得できません"
+
+msgid "ok"
+msgstr "OK"
+
+msgid "accept"
+msgstr "同意"
+
+msgid "reject"
+msgstr "拒否"
+
+msgid "common:cancel"
+msgstr "キャンセル"
+
+msgid "common:retry"
+msgstr "再試行"
+
+msgid "Tutorials"
+msgstr "チュートリアル"
+
+msgid "Stone Effect"
+msgstr "着手エフェクト"
+
+msgid "3D"
+msgstr "3D"
+
+msgid "research:cancel_analysis_title"
+msgstr "分析を中止しますか？"
+
+msgid "research:cancel_analysis_warning"
+msgstr "分析が進行中です。中止して移動しますか？"
+
+msgid "research:continue_analysis"
+msgstr "分析を続ける"
+
+msgid "research:cancel_and_leave"
+msgstr "中止して移動"
+
+msgid "tsumego:loadError"
+msgstr "詰碁ライブラリを読み込めませんでした。しばらくしてからお試しください。"
+
+msgid "tsumego:noData"
+msgstr "詰碁がまだありません。"
+
+msgid "chat:title"
+msgstr "チャット"
+
+msgid "chat:placeholder"
+msgstr "メッセージを入力…"
+
+msgid "audio:play"
+msgstr "再生"
+
+msgid "audio:pause"
+msgstr "一時停止"
+
+msgid "audio:unavailable"
+msgstr "音声を利用できません"

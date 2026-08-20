@@ -100,7 +100,7 @@ class SQLAlchemyUserRepository(UserRepository):
         # But for simplicity/dev, we can use Base.metadata.create_all
         from katrain.web.core.db import engine
         from sqlalchemy import inspect, text
-        from katrain.web.core import migrations
+        from katrain.web.core import ledger_immutability, migrations
 
         models_db.Base.metadata.create_all(bind=engine)
 
@@ -153,6 +153,15 @@ class SQLAlchemyUserRepository(UserRepository):
                 tables = [models_db.Base.metadata.tables[t] for t in rebuildable]
                 models_db.Base.metadata.drop_all(bind=engine, tables=tables)
                 models_db.Base.metadata.create_all(bind=engine, tables=tables)
+
+        # 账本只追加 —— 由触发器执行,不靠调用方自觉。三家(象棋/国象/五子棋)
+        # 2026-08-13 已在共享 `ranked.ledgers` 上装了同源的一对,围棋是最后一个。
+        #
+        # **必须是 init_db 的最后一步**,两个理由:
+        #   1. `backfill_ai_ladder_decisions`(:122)要对存量行发 UPDATE,得先跑完;
+        #   2. 上面的漂移重建走 drop+create,会把触发器一并带走 —— 虽然账本在
+        #      PROTECTED_TABLES 里不会被重建,但顺序放在后面就不必依赖那个事实。
+        ledger_immutability.install(engine)
 
     def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
         session = self.session_factory()

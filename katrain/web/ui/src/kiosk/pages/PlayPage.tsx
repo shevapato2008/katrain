@@ -8,9 +8,10 @@ import { useAuth } from '../../context/AuthContext';
 import { readActiveSession } from '../utils/activeSession';
 import { API, type PlatformInfo } from '../../api';
 import { PLATFORM_META } from '../constants/platforms';
+import { KIOSK_SERIF } from '../theme';
 
 // Brand serif (artifact `--serif`), used only for the greeting h1.
-const SERIF = "'Newsreader','Noto Serif SC',serif";
+const SERIF = KIOSK_SERIF;
 
 // Small section label — artifact renders these as a quiet caption above each grid,
 // NOT a big heading (variant h6 pushed the cards down and out of the viewport).

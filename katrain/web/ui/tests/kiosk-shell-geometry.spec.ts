@@ -300,3 +300,135 @@ test('层级:L2 没有 Dock,中间区因此长到画布底;对局屏是 L2 但�
   expect(topbar.y).toBe(screen.y);
   expect(await page.evaluate(() => document.querySelectorAll('.kiosk-dock').length)).toBe(0);
 });
+
+/* ───────────────────── Task 5:L1 两栏与镜像栏（承重） ─────────────────────
+ *
+ * 变异记录(2026-08-20,Task 5),**三支各演示一次**:
+ *   ① 去掉 `status.css` 的 `.kiosk-status__cell { min-width: 0 }`
+ *      ⇒「承重」红:`scrollWidth 4200` 不再 > `clientWidth`(格子被内容撑成 4200,
+ *      不是内容被格子裁到 62)。这正是「grid 子项 min-width:auto 拒绝收缩」那条。
+ *   ② 给 `.kiosk-console__frame` 加回 `flex: 1; height: auto`
+ *      ⇒「严丝合缝」红:同步行压到 0 之后框吃掉了腾出来的 32,272 → 304。
+ *      ⚠️ **第一次这支变异是绿的。** 今天 410 − (20+32+56) − 3×10 = 272,和框写死的 272
+ *      **恰好同值** —— `flex:1` 和 `flex:none` 在这份数据下画出来一模一样,断言落在了
+ *      两个语义正好同值的那一侧。补上「动一动兄弟的高再看框跟不跟着变」才分得开。
+ *   ③ 往左栏里塞一个 `overflow-y:auto` 且内容溢出的块 ⇒「永不滚动」红。
+ */
+
+test('§5 L1 两栏:296 + 16 + 680,左栏纵向 20+10+272+10+32+10+56=410 严丝合缝', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+
+  const content = await box(page, '.kiosk-content');
+  const rail = await box(page, '.kiosk-console');
+  const side = await box(page, '.kiosk-layout-l1 > *:nth-child(2)');
+
+  // 横向:此前是 322 + 2×20 外边距 = 362 占位、右边只剩 662。
+  expect(rail.w).toBe(296);
+  expect(side.w).toBe(680);
+  expect(side.x - (rail.x + rail.w)).toBe(16);
+  expect(rail.x).toBe(content.x);
+  expect(side.right).toBe(content.right);
+
+  const title  = await box(page, '.kiosk-console__title');
+  const frame  = await box(page, '.kiosk-console__frame');
+  const mini   = await box(page, '.kiosk-mini-board');
+  const sync   = await box(page, '.kiosk-console__sync');
+  const status = await box(page, '.kiosk-status');
+
+  // 每一块都不许被 flex 压扁(全部 flex:none),四段间距都是 10。
+  // 这串曾经算错过 2px —— 横向算了 1px 描边、纵向漏了,而标题行和状态格当时没写 flex:none,
+  // 被各压 1px,**肉眼看不出来**。
+  expect(title.h).toBe(20);
+  expect(sync.h).toBe(32);
+  expect(status.h).toBe(56);
+  expect(frame.y - (title.y + title.h)).toBe(10);
+  expect(sync.y - (frame.y + frame.h)).toBe(10);
+  expect(status.y - (sync.y + sync.h)).toBe(10);
+  // 纵向恰好用完,不多不少:最后一块的下缘 = 栏的内容盒下缘(434 − 1 描边 − 11 内边距)
+  expect(status.bottom).toBe(rail.bottom - 1 - 11);
+  // 左栏本身恒为中间区的**内容盒**高 —— 它不长也不缩。
+  // ⚠️ `getBoundingClientRect` 给的是**边框盒**:`.kiosk-content` 有 `padding: 14px 0`
+  // (tokens.css:421),所以它量出来是 462 而不是 434。第一次写成 `rail.h === content.h`
+  // 就红在这儿 —— 434 是对的,462 也是对的,错的是把两个盒混为一谈。
+  const contentPad = await page.evaluate(() => {
+    const cs = getComputedStyle(document.querySelector('.kiosk-content')!);
+    return { top: parseFloat(cs.paddingTop), bottom: parseFloat(cs.paddingBottom) };
+  });
+  expect(rail.h).toBe(content.h - contentPad.top - contentPad.bottom);
+  expect(rail.y).toBe(content.y + contentPad.top);
+
+  // 镜像框是**正方形**,不许吃剩余空间(早先写 flex:1 → 272×312,上下各空 32、左右只有 12)
+  expect(frame.w).toBe(frame.h);
+  expect(mini.w).toBe(mini.h);
+  expect(mini.w).toBe(frame.w - 2 * 12);   // 248 = 272 − 2×12
+
+  // ⚠️ 上面三条**证不了**「不吃剩余空间」这句话:今天 410 − (20+32+56) − 3×10 = 272,
+  // 和框自己写死的 272 **恰好同值** —— `flex:1` 与 `flex:none` 在这份数据下画出来一模一样
+  // (实测:把 `flex:1; height:auto` 加回去,上面三条全绿)。断言落在了两个语义正好同值的那一侧。
+  // 要分开它们,得**动一动兄弟的高**再看框跟不跟着变:同步行压到 0,框必须还是 272。
+  const frameWhenSlack = await page.evaluate(() => {
+    const rail = document.querySelector('.kiosk-console') as HTMLElement;
+    rail.style.setProperty('--l1-sync-h', '0px');
+    const h = (document.querySelector('.kiosk-console__frame') as HTMLElement).getBoundingClientRect().height;
+    rail.style.removeProperty('--l1-sync-h');
+    return Math.round(h);
+  });
+  expect(frameWhenSlack, '框把腾出来的空间吃掉了 —— 它是 flex:1,不是 flex:none').toBe(frame.h);
+});
+
+test('§5 左栏永不滚动 —— 滚动只属于右栏', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  const scrollable = await page.evaluate(() => {
+    const walk = (n: Element): boolean => {
+      const cs = getComputedStyle(n);
+      if ((cs.overflowY === 'auto' || cs.overflowY === 'scroll') && n.scrollHeight > n.clientHeight) return true;
+      return Array.from(n.children).some(walk);
+    };
+    return walk(document.querySelector('.kiosk-console')!);
+  });
+  expect(scrollable, '左栏里有东西在滚 —— 它必须恒为 434 固定高').toBe(false);
+});
+
+test('§5 承重:把三格的值撑到会溢出,外框 296×434 一动不动', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+
+  // 铁律:**装得下的数据量下量出来的数字一概不算。** 上面两条量的都是「刚好装得下」,
+  // 证不了「装不下的时候谁让步」。这里把值撑成 300 个字再量一次。
+  const before = await box(page, '.kiosk-console');
+  await page.evaluate(() => {
+    document.querySelectorAll('.kiosk-status__v').forEach((el) => { el.textContent = '已连接'.repeat(100); });
+    document.querySelectorAll('.kiosk-console__sync span').forEach((el) => { el.textContent = '盘面与屏幕一致'.repeat(50); });
+  });
+
+  const after = await box(page, '.kiosk-console');
+  const status = await box(page, '.kiosk-status');
+  const sync = await box(page, '.kiosk-console__sync');
+  const content = await box(page, '.kiosk-content');
+  const side = await box(page, '.kiosk-layout-l1 > *:nth-child(2)');
+
+  // 外框、状态格、同步行、右栏 —— 一个都不许被撑
+  expect({ w: after.w, h: after.h }).toEqual({ w: before.w, h: before.h });
+  expect(status.h).toBe(56);
+  expect(sync.h).toBe(32);
+  expect(side.w).toBe(680);
+  expect(status.bottom).toBe(after.bottom - 1 - 11);
+  // 撑长之后**整块中间区**也不许变 —— 溢出没有往上传导。
+  // 比的是中间区的**内容盒**(减掉自己的 14px 上下内边距)对上左栏的边框盒。
+  const contentPad = await page.evaluate(() => {
+    const cs = getComputedStyle(document.querySelector('.kiosk-content')!);
+    return { top: parseFloat(cs.paddingTop), bottom: parseFloat(cs.paddingBottom) };
+  });
+  expect(content.h - contentPad.top - contentPad.bottom).toBe(before.h);
+
+  // 撑不开就必须**看得出被截断了**:格子的内容宽 > 可视宽 = 出了省略号。
+  // grid 子项默认 `min-width: auto` 会拒绝收缩到内容宽度以下 —— 实测把值撑到 3900px 宽、
+  // 视口才 1024、**一个省略号都没有**。所以这一条要正面量,不能只量外框没变。
+  const truncated = await page.evaluate(() =>
+    [...document.querySelectorAll('.kiosk-status__v')].map((el) => ({
+      scroll: el.scrollWidth, client: el.clientWidth, ellipsis: getComputedStyle(el).textOverflow,
+    })));
+  for (const t of truncated) {
+    expect(t.scroll).toBeGreaterThan(t.client);
+    expect(t.ellipsis).toBe('ellipsis');
+  }
+});

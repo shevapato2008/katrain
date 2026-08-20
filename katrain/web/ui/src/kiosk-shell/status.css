@@ -1,0 +1,21 @@
+/* `.kiosk-status` 那两条**结构性**补丁 —— 和 `seclabel.css` / `icon.css` / `card.css`
+ * 同一个理由:共享 `tokens.css` 里没有,而少了它整格会炸开。
+ *
+ * `.kiosk-status__cell` 是 grid 子项,默认 `min-width: auto`:它**拒绝收缩到内容宽度以下**,
+ * 于是下面那条 ellipsis 永不生效 —— 实测 300 字的值把格子撑到 **3900px 宽**(视口才 1024),
+ * **一个省略号都没有**,纯靠祖先硬裁。这是纵向 `min-height: auto` 吃掉 `overflow-y: auto`
+ * 的**横轴同族**。
+ *
+ * ⚠️ 这两条原来住在 `components/aiLadder/blockingPanel.css` 里(挡局面板自己的样式表)。
+ * 它们**不是挡局面板的样式** —— `.kiosk-status` 是共享外壳的类,四棋类六个屏都在用。
+ * 待在那儿意味着:哪条路由没加载挡局面板那个 chunk,哪条路由的状态格就没有省略号 ——
+ * 而且**不报错、只是画出来不对**,和 `var()` 静默求空一模一样。搬到这里,由
+ * `KioskApp.tsx` 无条件引一次,作用域才是确定的(2026-08-20,Task 5)。
+ *
+ * ⚠️ 口径要说准:「上游 `tokens.css` 缺这一条」是**未验证的判断**,不是结论 ——
+ * 也可能上游各家自己在屏级样式里补。要报回上游之前先去四份样稿里搜一遍。
+ *
+ * 上游哪天把这两条收进 `tokens.css`,删掉本文件。
+ */
+.kiosk-status__cell { min-width: 0; }
+.kiosk-status__v { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

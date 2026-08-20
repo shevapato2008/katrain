@@ -156,5 +156,17 @@ Fan 2026-08-20 裁定：**只接壳，不重排版式** —— 把顶栏 / Dock 
 ⇒ Task 16 重写 `ReportsPage` 时，别拿「它们绿了」当功劳，也别拿「它们红了」当回归 ——
 先看是不是又超时了。
 
+### 已知的「负载相关」不稳定名单（会随机在全量跑里变红，单独跑绿）
+
+同一族毛病，判据一律是**单独跑一遍**，绿就不算回归：
+
+| 文件 | 观察到的红 | 取证 |
+|---|---|---|
+| `src/kiosk/pages/ReportsPage.test.tsx` | `Test timed out in 5000ms`；2026-08-20 全量跑里还见过 `selects an imported game when it is present after current-page reconciliation` | 单独跑 **22/22 全绿** |
+| `src/kiosk/__tests__/ReportsPage.polling.test.tsx` | 同上 | — |
+| `src/galaxy/pages/tutorials/TutorialFigurePage.test.tsx` | 2026-08-20 Task 5 全量跑里红 `saves narration text without regenerating audio`；**单独跑却红在另一条** `lets the user edit narration and regenerate audio` | 连跑 3 遍单独跑 **2/2 全绿×3**；`src/galaxy/` 本轮一个字没动 |
+
+⚠️ **两次红在不同的用例上**，这本身就是「不是我改坏的」的证据形状：确定性的破坏会稳定命中同一条。
+
 `~/.katrain/config.json` 已备份到 `~/.katrain/config.json.bak-20260820`
 （`python -m katrain --ui web` 退出时会重写它）。

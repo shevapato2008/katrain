@@ -5,9 +5,14 @@ import { KioskFrame } from '../../shell/KioskFrame';
 import { KioskTopbar } from '../../shell/KioskTopbar';
 import { KioskDock } from '../../shell/KioskDock';
 import { dockLevelOf } from '../../shell/dockRoutes';
-import SmartBoardConsole from './SmartBoardConsole';
+import { GoConsoleRail } from './GoConsoleRail';
 
-const CONSOLE_ROUTES = ['/kiosk/play'];
+/**
+ * 哪些 L1 屏出左边的镜像栏。规范 §5 的判据是**「这个模块的活动会不会发生在实体盘上」**——
+ * 对弈/训练营/课程/棋谱会,看直播不会。
+ * 现在只覆盖 `/kiosk/play`(等价于此前的 `CONSOLE_ROUTES`),其余 L1 屏在各自的屏 Task 里接。
+ */
+const RAIL_ROUTES = ['/kiosk/play'];
 interface KioskLayoutProps { username?: string }
 
 const KioskShell = ({ username }: KioskLayoutProps) => {
@@ -18,7 +23,7 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
   // 层级**只**由 dockRoutes 的词典说了算,不由路由前缀、也不由 immersive 说了算。
   // 一个真相来源:Dock 出不出、中间区 434 还是 516、主页键给不给,全从这一个数派生。
   const level = dockLevelOf(location.pathname);
-  const showConsole = !immersive && CONSOLE_ROUTES.includes(location.pathname);
+  const showRail = !immersive && level === 1 && RAIL_ROUTES.includes(location.pathname);
 
   return (
     <KioskFrame
@@ -41,14 +46,25 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
         <KioskDock pathname={location.pathname} onTab={(p) => navigate(p)} />
       ) : undefined}
     >
-      {/* 内容区暂时保持现状:左栏与 <Outlet/> 的两栏化留给 Task 5,
-          本 Task 只换 Dock 和层级判定 —— 一次只改一层,断点才定位得到。 */}
-      <Box sx={{ display: 'flex', height: '100%', minHeight: 0 }}>
-        {showConsole && <SmartBoardConsole />}
-        <Box component="main" sx={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+      {/* ⚠️ `.kiosk-layout-l1` 是 `grid-template-columns: 296px 680px`(tokens.css:430),
+          **右栏由页面自己提供根节点** —— `<Outlet/>` 渲染出来的那一层就是第二列。
+          各屏改造完之前它们的老 `<Box>` 会直接落进网格第二列、尺寸当场变成 680,
+          这是**预期的中间态**;Task 7 之后各屏的根换成 `.kiosk-side`。
+
+          没有左栏的那一支保留旧的 `<Box component="main" overflow:auto>` 外壳:
+          计划写的是裸 `<Outlet/>`,但那会把**每一个**二级页的滚动容器一起抽掉,而
+          `.kiosk-content` 自己是 `overflow: visible` —— 内容会溢到 Dock 上。
+          本 Task 只动有左栏的那一支,一次只改一层。 */}
+      {showRail ? (
+        <div className="kiosk-layout-l1">
+          <GoConsoleRail />
+          <Outlet />
+        </div>
+      ) : (
+        <Box component="main" sx={{ height: '100%', minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
           <Outlet />
         </Box>
-      </Box>
+      )}
     </KioskFrame>
   );
 };

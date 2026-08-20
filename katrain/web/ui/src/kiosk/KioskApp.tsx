@@ -4,8 +4,9 @@
 //   go-tokens.css 给共享外壳那组「各棋类必须自行赋值」的语义色赋围棋青毡,必须在 tokens.css 之后;
 //   seclabel.css 组标题;
 //   icon.css     `.kiosk-icon` 包裹层(display:contents);
-//   card.css     模式卡的 is-soon / .soon / .dot 三个状态(tokens.css 里没有)。
-// 后三个是**本地补的**(共享 tokens.css 里没有这些规则),必须排在 tokens.css 之后 ——
+//   card.css     模式卡的 is-soon / .soon / .dot 三个状态(tokens.css 里没有);
+//   status.css   状态格的 min-width:0 + ellipsis 两条(少了它一格能撑到 3900px 宽)。
+// 后四个是**本地补的**(共享 tokens.css 里没有这些规则),必须排在 tokens.css 之后 ——
 // card.css 里有一条 `.kiosk-card { position: relative }` 和 tokens.css 的 `.kiosk-card`
 // 同名同权重,靠后来居上生效。
 // go-screens.css(围棋屏级类)Task 9 才建,那之前不要加进来。
@@ -18,6 +19,7 @@ import '../kiosk-shell/go-tokens.css';
 import '../kiosk-shell/seclabel.css';
 import '../kiosk-shell/icon.css';
 import '../kiosk-shell/card.css';
+import '../kiosk-shell/status.css';
 
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';

@@ -39,7 +39,9 @@ describe('KioskLayout', () => {
     expect(screen.getByText('对弈')).toBeInTheDocument();
     expect(screen.getByText('复盘')).toBeInTheDocument();
     expect(screen.getByText('PLAY_CONTENT')).toBeInTheDocument();
-    expect(screen.getByText('智能棋盘')).toBeInTheDocument();
+    // Task 5:左栏从自造几何的 `SmartBoardConsole`(标题「智能棋盘」)换成共享外壳的
+    // `.kiosk-console`,标题逐字取稿子 ——「实体棋盘 / Camera board」。
+    expect(screen.getByText('实体棋盘')).toBeInTheDocument();
   });
 
   // ⚠️ 后半句 Task 4 **翻了面**:设置是 Dock 的第六项(规范 §1),所以它有 Dock。
@@ -56,10 +58,12 @@ describe('KioskLayout', () => {
     expect(screen.getByText('复盘')).toBeInTheDocument();
   });
 
-  it('gates the SmartBoardConsole to CONSOLE_ROUTES — hidden on /kiosk/settings', () => {
+  it('gates the console rail to RAIL_ROUTES — hidden on /kiosk/settings', () => {
     renderLayout('/kiosk/settings');
     expect(screen.getByText('SETTINGS_CONTENT')).toBeInTheDocument();
-    expect(screen.queryByText('智能棋盘')).toBeNull();
+    expect(screen.queryByText('实体棋盘')).toBeNull();
+    // 判据是「这个模块的活动会不会发生在实体盘上」(§5)—— 改设置不会。
+    expect(document.querySelector('.kiosk-layout-l1')).toBeNull();
   });
 
   // Task 4 把 Dock 的出没**只**交给 `dockLevelOf`,`immersive` 不再参与:

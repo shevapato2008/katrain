@@ -11,6 +11,7 @@ from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
+from katrain.core import ladder as ladder_module
 from katrain.core.ladder import LADDER_LEVELS
 from katrain.web.core import migrations, models_db
 from katrain.web.core.ai_ladder_ranked import (
@@ -20,8 +21,19 @@ from katrain.web.core.ai_ladder_ranked import (
     AiLadderOpponentSnapshot,
     AiLadderRankedRepository,
     InvalidReservationKey,
+    expected_opponent_rung,
     initial_placement_window,
 )
+
+
+#: 定级搜索给一个 rank="5d" 的用户排的对手档位。**推导出来的，不是写死的**：
+#: 2026-08-20 准3段(25) 封档、`expected_opponent_rung` 开始 snap 之后，它从 25 变成了 24。
+#: 这些用例把它当**输入**用（构造一局合法对局去结算），值本身在
+#: `test_ladder_progress.py::test_every_reachable_placement_window_seats_a_playable_rung`
+#: 和 `test_ai_ladder_api.py` 里被断言，所以这里推导不构成同义反复。
+PLACEMENT_RUNG_5D = expected_opponent_rung(None, *initial_placement_window("5d"))
+#: 同上，给一个没有 legacy rank 的用户（窗口 1..32）。原始中点 16 = 5级，已封档 -> snap 到 15。
+PLACEMENT_RUNG_DEFAULT = expected_opponent_rung(None, *initial_placement_window(None))
 
 
 EXPECTED_RANK_NAMES = [
@@ -53,9 +65,9 @@ def user(session_factory):
 @pytest.fixture
 def opponent():
     return AiLadderOpponentSnapshot(
-        rung=16,
-        rank_name="5级",
-        config_snapshot={"config_digest": "fixture-certified-rung-16", "config_version": "fixture-v1"},
+        rung=PLACEMENT_RUNG_DEFAULT,
+        rank_name=LADDER_LEVELS[PLACEMENT_RUNG_DEFAULT - 1].rank_name,
+        config_snapshot={"config_digest": "fixture-certified-default-rung", "config_version": "fixture-v1"},
         certification_status="certified",
         availability="available",
         route="server",
@@ -256,7 +268,7 @@ def test_cross_account_lifecycle_lookups_are_not_found(session_factory, user, op
 
 def test_played_result_finalizes_user_game_ledger_profile_and_provenance_once(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
     repo.activate_reservation(
         user_id=user.id,
         game_id=reservation.game.game_id,
@@ -304,7 +316,7 @@ def test_played_result_finalizes_user_game_ledger_profile_and_provenance_once(se
 
 
 def _pending_settlement_reservation(repo, user, opponent):
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
     repo.activate_reservation(
         user_id=user.id,
         game_id=reservation.game.game_id,
@@ -396,7 +408,7 @@ def test_resigning_a_game_whose_result_already_landed_returns_the_real_receipt(s
 
 
 def _activated(repo, user, opponent, *, device_id="device-a"):
-    reservation = reserve(repo, user.id, replace(opponent, rung=25), device_id=device_id)
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D), device_id=device_id)
     repo.activate_reservation(
         user_id=user.id,
         game_id=reservation.game.game_id,
@@ -492,7 +504,7 @@ def test_remote_resign_generates_minimal_legal_sgf_and_uses_origin_provenance(
     session_factory, user, opponent, user_color, expected_re
 ):
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25), user_color=user_color)
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D), user_color=user_color)
     # 认输是**有棋盘**那一格的出口,所以这里先 activate:一手没走过的占位现在根本不许
     # 走到 finalize(见 `test_a_reservation_that_never_started_can_never_be_resigned`)。
     repo.activate_reservation(
@@ -522,7 +534,7 @@ def test_remote_resign_generates_minimal_legal_sgf_and_uses_origin_provenance(
 
 def test_invalid_played_result_key_does_not_mutate_any_terminal_state(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
 
     with pytest.raises(InvalidReservationKey):
         repo.finalize_reserved_game(
@@ -550,7 +562,7 @@ def test_sqlite_concurrent_played_result_and_remote_resign_have_one_winner(tmp_p
         db.commit()
         user_id = user.id
     repo = AiLadderRankedRepository(sessions)
-    reservation = reserve(repo, user_id, replace(opponent, rung=16))
+    reservation = reserve(repo, user_id, replace(opponent, rung=PLACEMENT_RUNG_DEFAULT))
     repo.activate_reservation(
         user_id=user_id,
         game_id=reservation.game.game_id,
@@ -599,7 +611,7 @@ def test_sqlite_cancel_and_remote_end_share_one_serialized_decision(tmp_path, op
         db.commit()
         user_id = user.id
     repo = AiLadderRankedRepository(sessions)
-    reservation = reserve(repo, user_id, replace(opponent, rung=16))
+    reservation = reserve(repo, user_id, replace(opponent, rung=PLACEMENT_RUNG_DEFAULT))
 
     def cancel():
         try:
@@ -644,7 +656,7 @@ def test_sqlite_cancel_and_remote_end_share_one_serialized_decision(tmp_path, op
 
 def test_mismatched_frozen_game_record_rolls_back_everything(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
     repo.activate_reservation(
         user_id=user.id,
         game_id=reservation.game.game_id,
@@ -674,10 +686,10 @@ def test_mismatched_frozen_game_record_rolls_back_everything(session_factory, us
 
 def test_legacy_settlement_cannot_bypass_an_account_reservation(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
 
     with pytest.raises(AiLadderLifecycleConflict):
-        settle(repo, user.id, reservation.game.game_id, "win", replace(opponent, rung=25))
+        settle(repo, user.id, reservation.game.game_id, "win", replace(opponent, rung=PLACEMENT_RUNG_5D))
 
     with session_factory() as db:
         active = db.get(models_db.AiLadderActiveGame, reservation.game.game_id)
@@ -689,7 +701,7 @@ def test_legacy_settlement_cannot_bypass_an_account_reservation(session_factory,
 
 def test_remote_resign_can_only_record_a_user_loss(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
 
     with pytest.raises(ValueError, match="remote_resign"):
         repo.finalize_reserved_game(
@@ -710,7 +722,7 @@ def test_remote_resign_can_only_record_a_user_loss(session_factory, user, oppone
 @pytest.mark.parametrize("terminal_source", ["played_result", "recovery"])
 def test_origin_terminal_paths_require_active_state_and_secret(session_factory, user, opponent, terminal_source):
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
 
     with pytest.raises(AiLadderLifecycleConflict, match="activated"):
         repo.finalize_reserved_game(
@@ -759,7 +771,7 @@ def test_origin_terminal_paths_require_active_state_and_secret(session_factory, 
 )
 def test_invalid_authoritative_game_record_rolls_back(session_factory, user, opponent, field, value, message):
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
     repo.activate_reservation(
         user_id=user.id,
         game_id=reservation.game.game_id,
@@ -847,13 +859,13 @@ def test_reserve_and_legacy_settle_lock_account_before_terminal_absence_read(
         origin_device_id="device-a",
     )
     events.clear()
-    settle(repo, user.id, "legacy-ordered", "win", replace(opponent, rung=25))
+    settle(repo, user.id, "legacy-ordered", "win", replace(opponent, rung=PLACEMENT_RUNG_5D))
     assert events.index("lock_user") < events.index("find_ledger")
 
 
 def test_legacy_settled_game_prevents_later_reservation_for_same_game(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
-    settle(repo, user.id, "legacy-before-reserve", "win", replace(opponent, rung=25))
+    settle(repo, user.id, "legacy-before-reserve", "win", replace(opponent, rung=PLACEMENT_RUNG_5D))
 
     with pytest.raises(AiLadderLifecycleConflict):
         reserve(repo, user.id, opponent, game_id="legacy-before-reserve")
@@ -910,7 +922,7 @@ def test_sgf_terminal_and_rules_must_match_submission_and_frozen_contract(
     session_factory, user, opponent, sgf_content, submitted_result, message
 ):
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
     repo.activate_reservation(
         user_id=user.id,
         game_id=reservation.game.game_id,
@@ -1021,11 +1033,14 @@ def test_five_valid_results_deterministically_finish_binary_placement(session_fa
     repo = AiLadderRankedRepository(session_factory)
     lo, hi = 1, 32
     for round_number, result in enumerate(results, start=1):
+        # 镜像生产：**坐上去的**对手是 snap 过的，而二分游标仍走原始中点。两者只有在中点
+        # 恰好可坐时才是同一个数（见 `expected_opponent_rung` 的 docstring）。
         mid = (lo + hi) // 2
+        seated = expected_opponent_rung(None, lo, hi)
         snapshot = AiLadderOpponentSnapshot(
-            rung=mid,
-            rank_name=f"fixture-{mid}",
-            config_snapshot={"config_digest": f"fixture-{mid}", "config_version": "fixture-v1"},
+            rung=seated,
+            rank_name=f"fixture-{seated}",
+            config_snapshot={"config_digest": f"fixture-{seated}", "config_version": "fixture-v1"},
             certification_status="certified",
             availability="available",
             route="server",
@@ -1039,6 +1054,8 @@ def test_five_valid_results_deterministically_finish_binary_placement(session_fa
         assert (outcome.placement_lo, outcome.placement_hi) == (lo, hi)
 
     assert lo == hi == expected_rung
+    # 落点也 snap；这三个 expected_rung(1/32/22) 本身就可坐，所以 snap 是恒等。
+    assert expected_rung in ladder_module.PLAYABLE_RUNGS
     assert outcome.ai_ladder_rung == expected_rung
     assert outcome.net_score == 0
 
@@ -1050,10 +1067,11 @@ def test_existing_legacy_rank_still_requires_all_five_placement_games(session_fa
 
     for round_number in range(1, 6):
         mid = (lo + hi) // 2
+        seated = expected_opponent_rung(None, lo, hi)
         snapshot = AiLadderOpponentSnapshot(
-            rung=mid,
-            rank_name=f"fixture-{mid}",
-            config_snapshot={"config_digest": str(mid), "recipe_identity": f"fixture-recipe-{mid}"},
+            rung=seated,
+            rank_name=f"fixture-{seated}",
+            config_snapshot={"config_digest": str(seated), "recipe_identity": f"fixture-recipe-{seated}"},
             certification_status="certified",
             availability="available",
             route="server",
@@ -1116,10 +1134,11 @@ def test_a_game_whose_engine_recovered_still_counts(session_factory, user, oppon
     assert outcome.reason is None
 
 
-# 1级 is rung 20 and 准1段 is rung 21. The step counts rungs a player can actually be
-# seated on (§6 of 2026-08-04-41-tier-rated-play-integration-design.md); now that all 41
-# carry a recipe, that is every rung, so 1级 promotes to 准1段 (21) rather than skipping it.
-@pytest.mark.parametrize(("start", "results", "expected"), [(20, ["win"] * 3, 21), (20, ["loss"] * 3, 19)])
+# 1级 is rung 20, 准1段 is rung 21 and 1段 is rung 22. The step counts rungs a player can
+# actually be seated on (§6 of 2026-08-04-41-tier-rated-play-integration-design.md); 准1段 is
+# retired (2026-08-13), so 1级 promotes straight to 1段(22). Downward, 2级(19) is playable,
+# so a demotion is one raw rung -- the two directions are asymmetric on purpose.
+@pytest.mark.parametrize(("start", "results", "expected"), [(20, ["win"] * 3, 22), (20, ["loss"] * 3, 19)])
 def test_plus_or_minus_three_changes_exactly_one_playable_rung_and_resets(
     session_factory, user, opponent, start, results, expected
 ):
@@ -1245,7 +1264,9 @@ def test_the_provisional_switch_lets_the_game_be_played_but_never_banked(
         ("pvp_local", "win", None, "invalid_game_type"),
         (AI_LADDER_GAME_TYPE, "inconclusive", {}, "inconclusive"),
         (AI_LADDER_GAME_TYPE, "win", {"availability": "unavailable"}, "opponent_not_eligible"),
-        (AI_LADDER_GAME_TYPE, "win", {"rung": 24}, "opponent_rung_mismatch"),
+        # 一个可坐但**不是**搜索排给他的档位。不写死数字：2026-08-20 之前写死的 24 正好
+        # 变成了正确答案，那次这条用例是靠别处红才被发现的。
+        (AI_LADDER_GAME_TYPE, "win", {"rung": "OTHER_PLAYABLE_RUNG"}, "opponent_rung_mismatch"),
     ],
 )
 def test_excluded_game_id_replays_its_first_decision_even_if_later_parameters_would_count(
@@ -1258,7 +1279,11 @@ def test_excluded_game_id_replays_its_first_decision_even_if_later_parameters_wo
     reason,
 ):
     repo = AiLadderRankedRepository(session_factory)
-    valid_opponent = replace(opponent, rung=25)
+    valid_opponent = replace(opponent, rung=PLACEMENT_RUNG_5D)
+    if first_snapshot and first_snapshot.get("rung") == "OTHER_PLAYABLE_RUNG":
+        other = ladder_module.step_playable_rung(PLACEMENT_RUNG_5D, 1)
+        assert other != PLACEMENT_RUNG_5D
+        first_snapshot = {**first_snapshot, "rung": other}
     first_opponent = None if first_snapshot is None else replace(valid_opponent, **first_snapshot)
 
     first = settle(
@@ -1281,7 +1306,7 @@ def test_excluded_game_id_replays_its_first_decision_even_if_later_parameters_wo
 
 def test_single_decision_table_rejects_a_second_valid_row_after_exclusion(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
-    valid_opponent = replace(opponent, rung=25)
+    valid_opponent = replace(opponent, rung=PLACEMENT_RUNG_5D)
     first = settle(repo, user.id, "single-table-unique", "win", None, game_type="pvp_local")
     assert (first.counted, first.reason) == (False, "invalid_game_type")
 
@@ -1293,7 +1318,7 @@ def test_single_decision_table_rejects_a_second_valid_row_after_exclusion(sessio
                 user_color="B",
                 result="win",
                 game_type=AI_LADDER_GAME_TYPE,
-                opponent_rung=25,
+                opponent_rung=PLACEMENT_RUNG_5D,
                 opponent_rank_name=valid_opponent.rank_name,
                 opponent_config_snapshot=dict(valid_opponent.config_snapshot),
                 opponent_certification_status="certified",
@@ -1317,7 +1342,13 @@ def test_single_decision_table_rejects_a_second_valid_row_after_exclusion(sessio
 def test_settlement_requires_the_current_placement_or_ranked_opponent(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
 
-    placement = settle(repo, user.id, "wrong-placement-opponent", "win", replace(opponent, rung=24))
+    # 一个**明确不对**的对手：可坐、但不是搜索排给他的那一档。写成推导式，免得阶梯一变
+    # 这个"错的"悄悄变成"对的"—— 2026-08-20 就正好发生过（原来写死的 24 变成了正确答案）。
+    from katrain.core import ladder
+
+    wrong_rung = ladder.step_playable_rung(PLACEMENT_RUNG_5D, 1)
+    assert wrong_rung != PLACEMENT_RUNG_5D
+    placement = settle(repo, user.id, "wrong-placement-opponent", "win", replace(opponent, rung=wrong_rung))
     assert not placement.counted
     assert placement.reason == "opponent_rung_mismatch"
 
@@ -1334,7 +1365,7 @@ def test_settlement_requires_the_current_placement_or_ranked_opponent(session_fa
 
 def test_ledger_snapshots_opponent_contract_and_replay_is_idempotent(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
-    opponent = replace(opponent, rung=25)
+    opponent = replace(opponent, rung=PLACEMENT_RUNG_5D)
 
     first = settle(repo, user.id, "same-game", "win", opponent)
     replay = settle(repo, user.id, "same-game", "win", opponent)
@@ -1387,7 +1418,7 @@ def test_callers_cannot_mutate_persisted_config_snapshot_after_settlement(sessio
         "config_version": "catalog-v1",
         "recipe": {"identity": "fixture-recipe"},
     }
-    mutable_opponent = replace(opponent, rung=25, config_snapshot=mutable_config)
+    mutable_opponent = replace(opponent, rung=PLACEMENT_RUNG_5D, config_snapshot=mutable_config)
     repo = AiLadderRankedRepository(session_factory)
 
     settle(repo, user.id, "immutable-config", "win", mutable_opponent)
@@ -1408,7 +1439,7 @@ def test_callers_cannot_mutate_persisted_config_snapshot_after_settlement(sessio
 def test_ai_ladder_never_changes_legacy_user_rank_or_net_wins(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
 
-    settle(repo, user.id, "legacy-independent", "win", replace(opponent, rung=25))
+    settle(repo, user.id, "legacy-independent", "win", replace(opponent, rung=PLACEMENT_RUNG_5D))
 
     with session_factory() as db:
         unchanged = db.get(models_db.User, user.id)
@@ -1550,7 +1581,7 @@ def test_releasing_an_unplayed_reservation_banks_nothing_and_moves_no_rating(ses
     """
 
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
 
     released = repo.release_unplayed_reservation(
         user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b"
@@ -1576,7 +1607,7 @@ def test_a_released_reservation_leaves_its_game_id_settleable(session_factory, u
     """
 
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
     repo.release_unplayed_reservation(user_id=user.id, game_id=reservation.game.game_id, deciding_device_id="device-b")
 
     late = repo.settle_game(
@@ -1585,7 +1616,7 @@ def test_a_released_reservation_leaves_its_game_id_settleable(session_factory, u
         user_color="B",
         result="win",
         game_type=AI_LADDER_GAME_TYPE,
-        opponent=replace(opponent, rung=25),
+        opponent=replace(opponent, rung=PLACEMENT_RUNG_5D),
     )
 
     assert (late.counted, late.reason) == (True, None)
@@ -1603,7 +1634,7 @@ def test_release_returns_the_real_receipt_when_the_result_already_landed(session
     """
 
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
     repo.activate_reservation(
         user_id=user.id,
         game_id=reservation.game.game_id,
@@ -1643,7 +1674,7 @@ def test_a_game_that_really_started_is_never_releasable(session_factory, user, o
     """
 
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
     repo.activate_reservation(
         user_id=user.id,
         game_id=reservation.game.game_id,
@@ -1706,7 +1737,7 @@ def test_a_game_id_already_in_the_ledger_cannot_be_reserved_again(session_factor
     )
 
     with pytest.raises(AiLadderLifecycleConflict):
-        reserve(repo, user.id, replace(opponent, rung=25), game_id=taken.game.game_id)
+        reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D), game_id=taken.game.game_id)
 
     # 而且没有留下半条预约 —— 拒绝必须是彻底的,否则挡住的只是账本那一半。
     with session_factory() as db:
@@ -1751,7 +1782,7 @@ def test_a_reservation_that_never_started_can_never_be_resigned(session_factory,
     """
 
     repo = AiLadderRankedRepository(session_factory)
-    reservation = reserve(repo, user.id, replace(opponent, rung=25))
+    reservation = reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D))
     with session_factory() as db:
         assert db.get(models_db.AiLadderActiveGame, reservation.game.game_id).state == "reserved"
 
@@ -1814,7 +1845,7 @@ def test_a_pre_existing_user_game_row_must_not_be_able_to_lock_the_account(sessi
     )
 
     with pytest.raises(AiLadderLifecycleConflict):
-        reserve(repo, user.id, replace(opponent, rung=25), game_id=game_id)
+        reserve(repo, user.id, replace(opponent, rung=PLACEMENT_RUNG_5D), game_id=game_id)
 
     with session_factory() as db:
         assert (

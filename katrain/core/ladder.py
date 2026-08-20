@@ -347,8 +347,14 @@ _LEVEL_NAMES = (
     "职业顶尖",
     "超越人类",
 )
-_TEMPERATURE_CANDIDATES = ("t1.15", "t1.3", "t1.6", "t2", "t2.5", "t3")
-_QUASI_9_CANDIDATES = ("rank_9d@1", "rank_9d@1s", "rank_9d@2", "rank_9d@3")
+#: 2026-08-20: the >1 half of this list is measured WRONG-WAY -- T>1 flattens the policy
+#: and makes the rung WEAKER than the one below it (C37.2: 准n段 vs (n-1)段 = 0.346-0.515).
+#: T<1 sharpens instead; C37.4 measured `@1t0.8` at 0.787 over `@1` (n=127, lower bound
+#: 0.708) -- the only new configuration that cleared the gate. t0.8 is therefore primary.
+_TEMPERATURE_CANDIDATES = ("t0.8", "t0.6", "t1.15", "t1.3", "t1.6", "t2")
+#: 2026-08-20: reordered so the shipped value stays first. rank_9d@1 measured 0.200
+#: against 8段 (a pit); rank_9d@2 measured 0.660 up from 8段 and 0.750 into 9段 (n=100 each).
+_QUASI_9_CANDIDATES = ("rank_9d@2", "rank_9d@1s", "rank_9d@3", "rank_9d@1")
 _PRO_TOP_CANDIDATES = ("b18@12", "b18@10", "b18@14", "b18@8", "b18@16")
 
 #: The 准n段 rungs ship the primary temperature candidate. Parsed from the candidate list
@@ -357,6 +363,14 @@ _PRO_TOP_CANDIDATES = ("b18@12", "b18@10", "b18@14", "b18@8", "b18@16")
 #: `provisional`/`unavailable` until _CERTIFIED_RUNGS says otherwise, and C31/C33 record that
 #: T=1.15 has not separated adjacent rungs at the sample sizes run so far.
 _QUASI_DAN_TEMPERATURE = float(_TEMPERATURE_CANDIDATES[0].lstrip("t"))
+
+#: 2026-08-20: 准1段-准6段 已于 2026-08-13 退役（见 _RETIRED_RUNGS），它们**钉死**在退役当时
+#: 的温度 1.15，不再跟 _TEMPERATURE_CANDIDATES[0] 走。理由是当天把首项从 t1.15 改成 t0.8 时
+#: 顺手让这六档一起变了 —— 而 t0.8 是**锐化**，会让准n段强过正上方的 n段（rank_7d 上实测
+#: t0.8 对 @1 = 0.783），六处倒挂。当时判断"已封档所以对产品无影响"是错的：封档尚未接进
+#: PLAYABLE_RUNGS（见下方注释），这六档仍可被坐上，倒挂是活的。退役的语义是"冻在原配置"，
+#: 那就必须真的冻住，而不是跟着一个仍在演化的候选表漂移。
+_RETIRED_QUASI_DAN_TEMPERATURE = 1.15
 
 
 def _recipe(
@@ -407,7 +421,21 @@ def _fixed_product_recipe(rung: int, rank_name: str) -> Optional[LadderRung]:
             golaxy_level_name=rank_name if api_level is not None else None,
             golaxy_api_level=api_level,
         )
-    if rung in (22, 24, 26, 28, 30, 32):
+    if rung == 32:
+        # 6段: rank_6d@1 measured SATURATED against 5段 (0.528, n=180) -- one archive step
+        # buys ~+20 Elo here, below any usable gate. rank_7d@1 clears it: 0.690 (n=100).
+        return _recipe(
+            rung,
+            rank_name,
+            net="humanv0",
+            mechanism="humansl",
+            profile="rank_7d",
+            visits=1,
+            selection=HUMAN_WEIGHTED,
+            golaxy_level_name=rank_name,
+            golaxy_api_level=2300,
+        )
+    if rung in (22, 24, 26, 28, 30):
         rank = (rung - 20) // 2
         return _recipe(
             rung,
@@ -420,8 +448,23 @@ def _fixed_product_recipe(rung: int, rank_name: str) -> Optional[LadderRung]:
             golaxy_level_name=rank_name,
             golaxy_api_level=1100 + rank * 200,
         )
-    if rung in (34, 36):
-        rank = 7 if rung == 34 else 8
+    if rung == 36:
+        # 8段: rank_8d@1s is NOT stronger than rank_7d@1s (0.477 merged, n=220) -- the
+        # archive axis is dead on the argmax plateau at this rank. rank_9d@1s is: 0.580 up
+        # from 准8段 (rank_7d@2, n=100) and 0.660 handed to 准9段 (rank_9d@2).
+        return _recipe(
+            rung,
+            rank_name,
+            net="humanv0",
+            mechanism="humansl",
+            profile="rank_9d",
+            visits=1,
+            selection=HUMAN_ARGMAX,
+            golaxy_level_name=rank_name,
+            golaxy_api_level=2800,
+        )
+    if rung == 34:
+        rank = 7
         return _recipe(
             rung,
             rank_name,
@@ -433,7 +476,21 @@ def _fixed_product_recipe(rung: int, rank_name: str) -> Optional[LadderRung]:
             golaxy_level_name=rank_name,
             golaxy_api_level=2500 if rank == 7 else 2800,
         )
-    if rung in (21, 23, 25, 27, 29, 31, 33, 35):
+    if rung == 35:
+        # 准8段: rank_8d@1t1.15 measured 0.200 against 7段 -- a pit, weaker than the rung
+        # below AND the one above. rank_7d@2 keeps the mechanism axis monotone
+        # (@1s -> @2, 0.640 over 7段, n=100) instead of stepping back to a flatter policy.
+        return _recipe(
+            rung,
+            rank_name,
+            net="b18",
+            mechanism="humansl_search",
+            profile="rank_7d",
+            visits=2,
+            selection=SEARCH,
+            human_sl_params=HUMANSL_PIKL_BASELINE_V1,
+        )
+    if rung in (21, 23, 25, 27, 29, 31, 33):
         # 准n段 sits directly below n段, and is built by flattening n段's own HumanSL policy
         # rather than by borrowing the (n-1)段 profile: same profile, one notch less sharp.
         # The primary candidate is _TEMPERATURE_CANDIDATES[0]; it is parsed rather than
@@ -452,19 +509,23 @@ def _fixed_product_recipe(rung: int, rank_name: str) -> Optional[LadderRung]:
             profile=f"rank_{rank}d",
             visits=1,
             selection=HUMAN_TEMPERATURE,
-            human_policy_temperature=_QUASI_DAN_TEMPERATURE,
+            human_policy_temperature=(
+                _RETIRED_QUASI_DAN_TEMPERATURE if rung in _RETIRED_RUNGS else _QUASI_DAN_TEMPERATURE
+            ),
         )
     if rung == 37:
-        # 准9段: _QUASI_9_CANDIDATES[0] == "rank_9d@1". Weighted sampling of rank_9d sits
-        # between argmax rank_8d (8段, rung 36) and search-augmented rank_9d (9段, rung 38).
+        # 准9段: rank_9d@1 (weighted) measured 0.200 against 8段 -- another pit. rank_9d@2
+        # continues the same mechanism axis one notch (`@1s -> @2`): 0.660 over 8段
+        # (rank_9d@1s) and 0.750 handed up to 9段 (rank_9d@4). Both n=100, 2026-08-20 v6.
         return _recipe(
             rung,
             rank_name,
-            net="humanv0",
-            mechanism="humansl",
+            net="b18",
+            mechanism="humansl_search",
             profile="rank_9d",
-            visits=1,
-            selection=HUMAN_WEIGHTED,
+            visits=2,
+            selection=SEARCH,
+            human_sl_params=HUMANSL_PIKL_BASELINE_V1,
         )
     if rung == 38:
         return _recipe(
@@ -523,7 +584,7 @@ def _fixed_product_recipe(rung: int, rank_name: str) -> Optional[LadderRung]:
 
 
 def _candidate_labels(rung: int) -> Tuple[str, ...]:
-    if rung in (21, 23, 25, 27, 29, 31, 33, 35):
+    if rung in (21, 23, 25, 27, 29, 31, 33):
         return _TEMPERATURE_CANDIDATES
     if rung == 37:
         return _QUASI_9_CANDIDATES
@@ -556,6 +617,32 @@ def _candidate_labels(rung: int) -> Tuple[str, ...]:
 #: across profiles only at a fixed mechanism. Re-run `calibration/replay_seams_summary.py`
 #: before changing this set.
 _CERTIFIED_RUNGS: FrozenSet[int] = frozenset()
+
+#: Rungs that keep their catalog position and their recipe but that no player may be
+#: seated on. "Retired" is deliberately not "recipe-less": stored rung numbers in the
+#: immutable ledger keep pointing at the same tier they always did, and a settled game
+#: from before retirement stays interpretable. What changes is only `PLAYABLE_RUNGS`.
+#:
+#: Two rulings, both Fan's:
+#:
+#: 1. **准1段–准6段** (21, 23, 25, 27, 29, 31), 2026-08-13: "6段及以下段胜率差异不是很大,
+#:    不需要再设置准N段这一档了。也就是取消准1、2、3、4、5、6段". Evidence: EXPERIMENTS.md
+#:    C37.2 -- the 准段 axis runs BACKWARDS at these ranks (34.6%-51.5%).
+#:
+#: 2. **19级 18级 16级 15级 13级 5级** (2, 3, 5, 6, 8, 16), 2026-08-20, gate lowered to
+#:    0.550 by the same ruling: "把胜率边界改成55%". These six are the archives the kyu
+#:    axis cannot use. Each is blocked by its OWN measured seam, not by a missing one --
+#:    the search space was audited exhaustively (EXPERIMENTS.md C38.4): every one of the
+#:    13 surviving chain edges either joins adjacent archives (nothing to insert) or has
+#:    every insertable archive excluded by measurement:
+#:
+#:        20k->19k 0.530 | 20k->18k 0.490 | 17k->16k 0.467
+#:        17k->15k 0.530 | 14k->13k 0.500 | 6k->5k   0.492      (n >= 100 each)
+#:
+#:    What survives is `20k 17k 14k 12k 11k 10k 9k 8k 7k 6k 4k 3k 2k 1k` -- 14 rungs whose
+#:    recipes were ALREADY right, because rung n has always been `rank_{21-n}k`. The kyu
+#:    half of this ruling therefore changes no recipe at all; retirement IS the delivery.
+_RETIRED_RUNGS: FrozenSet[int] = frozenset({2, 3, 5, 6, 8, 16, 21, 23, 25, 27, 29, 31})
 
 #: Development-only escape hatch. When set to "1", `resolve_available_rung` will
 #: hand back the recipe for a provisional rung so the rated-play pipeline can be
@@ -594,12 +681,20 @@ def _build_levels() -> Tuple[LadderLevel, ...]:
 LADDER_LEVELS = _build_levels()
 
 
-#: The rungs a player can actually be seated on. Ten of the 41 (准1段–准9段 and
-#: 职业顶尖) never had a strength recipe fitted, so they are names on the ladder
-#: with nothing behind them. Anything that MOVES a player -- promotion, demotion,
-#: the landing of a placement search -- has to step over them, otherwise it parks
-#: someone on a rung no opponent can ever be built for.
-PLAYABLE_RUNGS: Tuple[int, ...] = tuple(level.rung for level in LADDER_LEVELS if level.recipe is not None)
+#: The rungs a player can actually be seated on: has a recipe AND is not retired.
+#:
+#: All 41 carry a fitted recipe since 61d0a886, so today this is the catalog minus the 12
+#: retired rungs = 29. Retirement was wired on 2026-08-20 together with the placement fix
+#: it depended on: `expected_opponent_rung` now SNAPS the search midpoint onto a playable
+#: rung, and the three sites that used to inline that formula call it instead. Without the
+#: snap, 12 of the 31 search windows reachable from the default 1..32 range name a retired rung
+#: as the opponent and those placement games cannot be seated at all; without converging the
+#: inline copies, a one-sided snap turns legitimately seated games into
+#: `opponent_rung_mismatch` at settlement. The two halves must land together --
+#: `test_every_reachable_placement_window_seats_a_playable_rung` is the gate.
+PLAYABLE_RUNGS: Tuple[int, ...] = tuple(
+    level.rung for level in LADDER_LEVELS if level.recipe is not None and level.rung not in _RETIRED_RUNGS
+)
 
 
 def get_level(n: int) -> LadderLevel:

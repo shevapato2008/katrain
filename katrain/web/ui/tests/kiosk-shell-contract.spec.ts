@@ -1,0 +1,153 @@
+import { expect, test } from '@playwright/test';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * 契约闸:**扫源码,不开浏览器**。守的是几条「本地看着对、上板才塌」的规矩,
+ * 眼睛和尺子都验不出来 —— 四图对比看不出一个 `50vh`,几何闸也量不出来
+ * (它在 1024×600 下量,而 `50vh` 在 1024×600 下恰好等于 300px,一点不差)。
+ *
+ * 两条都是**基线名单**,不是一刀切:`src/kiosk` 现存 45 个文件用 MUI 图标、
+ * 18 个文件用视口单位,本轮不去大改它们(那是十屏 Task 一屏一屏做的事)。
+ * 断言写成**全等**而不是「没有新增」——名单里的文件被清干净了、却忘了从名单里划掉,
+ * 一样要红。名单只许缩,不许悄悄留着一条已经不成立的账。
+ *
+ * 变异记录(2026-08-20,Task 6 Step 7),**三支各演示一次**:
+ *   ① 往 `shell/KioskSecLabel.tsx` 里塞一句 `height: "50vh"`
+ *      ⇒ 闸一红,Received 多出 "src/kiosk/shell/KioskSecLabel.tsx"。
+ *   ② 往同一个文件顶上加 `import { Gear } from '@mui/icons-material'`
+ *      ⇒ 闸二红,同样多出那一行。
+ *   ③ 把白名单里的 `SubPageBar.tsx` 的 MUI 图标 import 改掉(相当于"清干净了但没划掉")
+ *      ⇒ 闸二红,Expected 多出那一行 —— 这一支证明名单**只许缩**。
+ *      ⚠️ 第一次做这个变异时把 `@mui/icons-material` 改成 `@mui/icons-material-REMOVED`,
+ *      正则是子串匹配、照样命中,闸绿了。**变异本身没生效不等于闸没牙**——
+ *      改成 `@mui/ICONS-GONE` 才真的移走了那个子串。
+ */
+
+// ESM 里没有 __dirname。用 process.cwd() 也行(playwright 从 ui/ 起),
+// 但那样这份 spec 就依赖「从哪儿敲的命令」——钉在文件自己的位置上更稳。
+const UI = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const rel = (p: string) => relative(UI, p).split('\\').join('/');
+
+function walk(dir: string, pick: (p: string) => boolean): string[] {
+  const out: string[] = [];
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = resolve(dir, e.name);
+    if (e.isDirectory()) { out.push(...walk(p, pick)); continue; }
+    if (pick(p)) out.push(p);
+  }
+  return out;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 闸一:固定 1024×600 画布上不许出现 vw / vh / cqw / cqh
+ *
+ * 一相对化,「切模块不跳」就没法用截图证明了 —— 同一份代码在 Mac 全屏和盒子 7 寸屏上
+ * 算出来的是两个尺寸,而我们的整套验收(四图对比 + 几何闸)都建立在
+ * 「1024×600 画布里的 px 就是屏上的 px」这一条上。
+ *
+ * `RotationWrapper.tsx` 是**永久豁免**:它在画布**外面**,职责就是把整个视口铺满
+ * 再按方向旋转,`100vw/100vh` 正是它该写的东西。KioskFrame 在它里面按 min(w/1024, h/600)
+ * 缩放 —— 那一层才是画布。
+ * ────────────────────────────────────────────────────────────────────────── */
+const VIEWPORT_UNIT_BASELINE = [
+  'src/kiosk/__tests__/RotationWrapper.test.tsx',
+  'src/kiosk/components/guards/KioskAuthGuard.tsx',
+  'src/kiosk/components/layout/RotationWrapper.tsx',
+  'src/kiosk/components/report/ReportLibraryImportDialog.test.tsx',
+  'src/kiosk/components/report/ReportLibraryImportDialog.tsx',
+  'src/kiosk/components/report/ReportLocalImportDialog.test.tsx',
+  'src/kiosk/components/report/ReportLocalImportDialog.tsx',
+  'src/kiosk/components/research/CloudSGFPanel.tsx',
+  'src/kiosk/components/tsumego/SuccessOverlay.tsx',
+  'src/kiosk/pages/TsumegoCategoriesPage.tsx',
+  'src/kiosk/pages/TsumegoLevelPage.tsx',
+  'src/kiosk/pages/TsumegoPage.tsx',
+  'src/kiosk/pages/TsumegoUnitListPage.tsx',
+  'src/kiosk/pages/TsumegoUnitsPage.tsx',
+  'src/kiosk/pages/TutorialBookDetailPage.tsx',
+  'src/kiosk/pages/TutorialBooksPage.tsx',
+  'src/kiosk/pages/TutorialCategoriesPage.tsx',
+  'src/kiosk/pages/TutorialSectionPage.tsx',
+];
+
+test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
+  const files = walk(resolve(UI, 'src/kiosk'), (p) => /\.(tsx?|css)$/.test(p));
+  const hit = files.filter((p) => {
+    const src = readFileSync(p, 'utf8');
+    return src.split('\n').some((line) => {
+      const t = line.trimStart();
+      if (t.startsWith('*') || t.startsWith('//') || t.startsWith('/*')) return false;
+      return /[0-9](vw|vh|cqw|cqh)\b/.test(line);
+    });
+  }).map(rel).sort();
+  expect(hit).toEqual(VIEWPORT_UNIT_BASELINE);
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 闸二:图标只能从 `kiosk-shell/icons/` 出(规范 §10)
+ *
+ * 四个前端要用**同一份字节**。MUI 的 Material 图标和 Phosphor 不是同一套线宽、
+ * 同一套圆角,混着用的结果是「从对弈切到训练营,图标风格换了一次」——
+ * 又一种「切模块不跳」的破法。
+ *
+ * 手写 `<path d="…">` 同罪:它绕过 MANIFEST,谁也说不清那一笔是从哪儿来的。
+ * ────────────────────────────────────────────────────────────────────────── */
+const MUI_ICON_BASELINE = [
+  'src/kiosk/__tests__/ModeCard.test.tsx',
+  'src/kiosk/components/game/GameControlPanel.tsx',
+  'src/kiosk/components/game/RecalibrationModal.tsx',
+  'src/kiosk/components/layout/SubPageBar.tsx',
+  'src/kiosk/components/layout/navTabs.tsx',
+  'src/kiosk/components/physical/PhysicalPlayStatusChip.tsx',
+  'src/kiosk/components/report/ReportGameCard.tsx',
+  'src/kiosk/components/report/ReportImportMenu.tsx',
+  'src/kiosk/components/report/ReportLibraryImportDialog.tsx',
+  'src/kiosk/components/report/ReportLocalImportDialog.tsx',
+  'src/kiosk/components/research/CloudSGFPanel.tsx',
+  'src/kiosk/components/research/ResearchAnalysisPanel.tsx',
+  'src/kiosk/components/research/ResearchSetupPanel.tsx',
+  'src/kiosk/components/research/ResearchToolbar.tsx',
+  'src/kiosk/components/settings/AccountSection.tsx',
+  'src/kiosk/components/tsumego/PhysicalModeToggle.tsx',
+  'src/kiosk/components/tsumego/PhysicalStatePanel.tsx',
+  'src/kiosk/components/tsumego/SuccessOverlay.tsx',
+  'src/kiosk/components/vision/AmbiguousStoneAlert.tsx',
+  'src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx',
+  'src/kiosk/components/vision/GeometryVideoPanel.tsx',
+  'src/kiosk/components/vision/VisionSyncOverlay.tsx',
+  'src/kiosk/pages/AiSetupPage.tsx',
+  'src/kiosk/pages/BaipuListPage.tsx',
+  'src/kiosk/pages/GameHistoryPage.tsx',
+  'src/kiosk/pages/GamePage.tsx',
+  'src/kiosk/pages/KifuPage.tsx',
+  'src/kiosk/pages/LiveMatchPage.tsx',
+  'src/kiosk/pages/LivePage.tsx',
+  'src/kiosk/pages/LobbyPage.tsx',
+  'src/kiosk/pages/PlatformConnectPage.tsx',
+  'src/kiosk/pages/PlatformEngineSetupPage.tsx',
+  'src/kiosk/pages/PlatformLobbyPage.tsx',
+  'src/kiosk/pages/PlayPage.tsx',
+  'src/kiosk/pages/PvpLocalSetupPage.tsx',
+  'src/kiosk/pages/ReportDetailPage.tsx',
+  'src/kiosk/pages/ReportsPage.tsx',
+  'src/kiosk/pages/ResearchPage.tsx',
+  'src/kiosk/pages/SettingsPage.tsx',
+  'src/kiosk/pages/TsumegoCategoriesPage.tsx',
+  'src/kiosk/pages/TsumegoPage.tsx',
+  'src/kiosk/pages/TsumegoProblemPage.tsx',
+  'src/kiosk/pages/TutorialBookDetailPage.tsx',
+  'src/kiosk/pages/TutorialSectionPage.tsx',
+  'src/kiosk/pages/VisionSetupPage.tsx',
+];
+
+test('图标不许新增手写内联路径或 MUI 图标 —— 只能从 kiosk-shell/icons/ 出', () => {
+  const files = walk(resolve(UI, 'src/kiosk'), (p) => p.endsWith('.tsx'));
+  const hit = files.filter((p) => {
+    if (p.endsWith('shell/icons.tsx')) return false;          // 它就是那个出口
+    const src = readFileSync(p, 'utf8');
+    return /@mui\/icons-material/.test(src) || /<path\s+d="/.test(src);
+  }).map(rel).sort();
+  expect(hit).toEqual(MUI_ICON_BASELINE);
+});

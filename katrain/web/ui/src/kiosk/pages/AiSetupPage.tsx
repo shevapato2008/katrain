@@ -214,7 +214,11 @@ const AiSetupPage = () => {
     // 左右各 16(`:64` `--content-x`)⇒ 内容 992,减去盘 516 与栏距 16,右栏正好 460。
     // 这三个数一个都不在这里写死 —— `.kiosk-layout-a` / `.kiosk-board` 用的是
     // `tokens.css` 的 `--board-size` / `--content-x`,改规范时不用回来改这里。
-    <Box className="kiosk" sx={{ height: '100%', boxSizing: 'border-box', px: 'var(--content-x)', py: 'var(--content-pad-y)' }}>
+    // `px`/`py` 和 `.kiosk` 一起去掉(Task 1):`.kiosk-content` 现在自己就给
+    // `left/right: var(--content-x)` 和 `padding: var(--content-pad-y) 0`。
+    // 这一处曾经是对的(那时还没有 `.kiosk-content`),留着就是**两层内边距叠加** ——
+    // 中间区从 992 缩成 960、纵向各多 14,不报错,只是尺寸悄悄小一圈。
+    <Box sx={{ height: '100%', boxSizing: 'border-box' }}>
       <div className="kiosk-layout-a">
         {/* 左栏 = 按下「开始对弈」后真会出现的那个局面(`:512`),不是摄像头镜像 ——
             镜像栏是 L1 的东西(`SmartBoardConsole`,296 宽),它留在 `/kiosk/play`。 */}

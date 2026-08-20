@@ -1,4 +1,3 @@
-@import '../../../kiosk-shell/seclabel.css';
 /* 挡局屏右栏:**只写共享外壳没给的那几条**。
  *
  * 共享 `tokens.css` 给的是容器几何(`.kiosk-side` / `.kiosk-side__fixed` / `.kiosk-section` /

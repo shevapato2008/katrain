@@ -1,7 +1,3 @@
-import '../../../kiosk-shell/tokens.css';
-import '../../../kiosk-shell/go-tokens.css';
-import '../../../kiosk-shell/seclabel.css';
-
 interface OptionChipsProps<T extends string | number> {
   label: string;
   options: { value: T; label: string }[];
@@ -36,8 +32,10 @@ function OptionChips<T extends string | number>({
   value,
   onChange,
 }: OptionChipsProps<T>) {
+  // 不挂 `.kiosk` —— 它现在由 `shell/KioskFrame` 挂在 kiosk 应用根上(Task 1)。
+  // 这里再挂一次是嵌套同一个作用域,无害但会让「谁提供 token」变成两个答案。
   return (
-    <div className="kiosk">
+    <div>
       {/* 样稿里这一行是 `<h2>中文</h2><em>English</em><span class="rule">`
           (`sample-xiangqi:602`)。**这里没有 `<em>`**:`label` 只有中文一侧,
           现编一个英文副标就是新写文案,而本轮文案冻结。 */}

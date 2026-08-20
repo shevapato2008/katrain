@@ -1,9 +1,8 @@
 import { createTheme } from '@mui/material';
 
-// 共享外壳的字体表(自托管,无 CDN)。规范 §9 把字族定死:「智星盒」= 龙藏行楷、
-// 其余所有中文 = 霞鹜文楷、拉丁与数字 = Geist / Newsreader、等宽 = JetBrains Mono。
-// 这里 import 一次就够 —— `kiosk/theme.ts` 是整个 kiosk 应用和全部 kiosk 测试的共同入口。
-import '../kiosk-shell/fonts.css';
+// 字体表(fonts.css)现在由 `kiosk/KioskApp.tsx` 顶部统一引 —— 和 tokens.css /
+// go-tokens.css / seclabel.css 排在同一处,顺序才控得住。两个文件各引一份同样的 CSS,
+// 「谁先谁后」就变成打包器的实现细节了。
 
 // 三个字族栈**逐字**取自 `kiosk-shell/tokens.css:21-23`,不要在这里另起一套。
 //

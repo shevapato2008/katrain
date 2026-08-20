@@ -1,3 +1,17 @@
+// 共享外壳的样式,**全站只在这里引一次**,顺序不可换:
+//   fonts.css   先声明字族,tokens.css 的 --font-* 才指得到它;
+//   tokens.css  991 行几何与结构类,整份定义在 `.kiosk {}` 里(见 shell/KioskFrame.tsx);
+//   go-tokens.css 给共享外壳那组「各棋类必须自行赋值」的语义色赋围棋青毡,必须在 tokens.css 之后;
+//   seclabel.css 组标题。
+// go-screens.css(围棋屏级类)Task 9 才建,那之前不要加进来。
+//
+// 引在 KioskApp.tsx 而不是 main.tsx:AppRouter 是 lazy(() => import('./kiosk/KioskApp')),
+// 引在这里 CSS 就落进 kiosk 分块,galaxy 不受影响;kiosk-2d 构建里 galaxy 整条被 DCE。
+import '../kiosk-shell/fonts.css';
+import '../kiosk-shell/tokens.css';
+import '../kiosk-shell/go-tokens.css';
+import '../kiosk-shell/seclabel.css';
+
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';

@@ -4,15 +4,21 @@ import SendIcon from '@mui/icons-material/Send';
 import { useAuth } from '../../../context/AuthContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 
+// wire 契约 `shapes.Chat`：身份两项由**服务端**从会话身份填，客户端传什么都不作数。
+// 字段叫 `from_name` **不叫 `sender`** —— 旧版把客户端自报的 `sender` 原样广播，
+// 任何拿到 session_id 的登录用户都能冒名发言。
+//
+// 线上帧里**没有时间戳**（契约只有这三个字段），所以这里不显示时间：拿客户端的收到时刻
+// 冒充发送时刻，在乱序或重连补发时就是一句假话，而看的人分辨不出来。
 interface ChatMessage {
-    sender: string;
+    from_id: number;
+    from_name: string;
     text: string;
-    time: number;
 }
 
 interface ChatPanelProps {
     messages: ChatMessage[];
-    onSendMessage: (text: string, sender: string) => void;
+    onSendMessage: (text: string) => void;
 }
 
 const ChatPanel = ({ messages, onSendMessage }: ChatPanelProps) => {
@@ -31,9 +37,8 @@ const ChatPanel = ({ messages, onSendMessage }: ChatPanelProps) => {
 
     const handleSend = () => {
         if (inputValue.trim()) {
-            // 'Guest' 是发给其它客户端的发送者名，不走 t()：本地化它会让同一位访客
-            // 在不同语言的对局室里显示成不同的人。
-            onSendMessage(inputValue.trim(), user?.username || 'Guest');
+            // 只发正文。发送者身份由服务端填 —— 客户端已经无法自称是谁了。
+            onSendMessage(inputValue.trim());
             setInputValue('');
         }
     };
@@ -50,11 +55,10 @@ const ChatPanel = ({ messages, onSendMessage }: ChatPanelProps) => {
                         <ListItemText
                             primary={
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <Typography variant="subtitle2" sx={{ color: msg.sender === user?.username ? 'primary.main' : 'text.primary', fontWeight: 'bold' }}>
-                                        {msg.sender}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                        {new Date(msg.time).toLocaleTimeString()}
+                                    {/* 认自己用 from_id 不用名字：重名的两个人在名字上分不开，
+                                        而 id 是服务端填的、客户端改不动。 */}
+                                    <Typography variant="subtitle2" sx={{ color: msg.from_id === user?.id ? 'primary.main' : 'text.primary', fontWeight: 'bold' }}>
+                                        {msg.from_name}
                                     </Typography>
                                 </Box>
                             }

@@ -228,7 +228,7 @@ katrain 这份 vendored `tokens.css` **比围棋设计稿内联的那份新**：
 
 围棋稿对局屏写的是 `<button class="danger">认输</button>`（`go-kiosk.tmpl.html:305`），而 `.danger` 在 `tokens.css` 和稿子自己的 `<style>` 里**都没有定义**——实测 `grep -c` 只在那一处出现。所以稿子上的「认输」和旁边三个按钮**长得一模一样**（参考图 `02-game.png` 可证）。
 
-这与 `kiosk-design-alignment.md` §4① 描述的两派**都不同**，是第三种。⇒ 见 **Q1**，停下来问 Fan。
+这与 `kiosk-design-alignment.md` §4① 描述的两派**都不同**，是第三种。⇒ 已按 **D7** 裁定：照抄五子棋 `index.css:1619`（同一个类名、同一份配方），稿子那份「零样式」是稿子自己没写全，不是设计意图。
 
 ### D6 参考图与实现之间**预期存在**的差异，登记在此
 
@@ -237,7 +237,7 @@ katrain 这份 vendored `tokens.css` **比围棋设计稿内联的那份新**：
 | 差异 | 为什么 |
 |---|---|
 | 稿子上大段旁注（`.note`）实现里没有 | G5 |
-| Dock 项数（见 Q2） | D1 的后果 |
+| Dock 项数（6 vs 参考图的 7，见 D8） | D1 的后果 |
 | 稿子时钟恒为 `16:40`、用户恒为「访客」 | 稿子是静态样张；实现读真时钟与真身份 |
 | 稿子上的题量 / 课本数 / 胜率曲线是示意值 | 稿子自己写明「不写死任何一个题量，写了就是编」（`:349`） |
 | 木纹贴图 | 稿子在木色渐变上叠了一层 `--oak`（`mix-blend-mode:multiply`），那张图在 `sample-go/board-assets.json` 里，**不在共享资产包、不在 `MANIFEST.sha256` 管辖内**。上一轮就没抄，本轮同样不抄——抄它等于往仓里塞一份没人核的二进制。要对齐得先把它收进资产包（记账，非本轮） |
@@ -291,54 +291,98 @@ katrain 这份 vendored `tokens.css` **比围棋设计稿内联的那份新**：
 
 ---
 
-## 仍然未决，不许自己定
+## 四条已裁定（Fan 2026-08-20 二次授权：「你自己做决定吧。相似功能的模块尽量和其他三种棋类的 kiosk 界面保持一致」）
 
-碰到就**停下来问 Fan**，不要私下约定。
+原来这里挂着 Q1–Q4 四条「不许自己定」。Fan 把裁量权交回来了，**并且给了判据**：不是我凭审美挑，
+是**去看象棋 / 国象 / 五子棋这三家同一个模块怎么做的，照做**。下面四条都是这么定出来的，
+每条都点名了取证的那一行。执行时照做，不要重新讨论。
 
-### Q1 破坏性按钮的长相（`kiosk-design-alignment.md` §4①，至今无答复）
+### D7（原 Q1）破坏性按钮 —— 照抄五子棋那一条，一个字不改
 
-现在有**三派**，不是两派：
+三家里**只有五子棋在 `.kiosk-actions` 里真的摆了「认输」这颗键**，而且它的类名和围棋稿
+一模一样：`<button type="button" className="danger">` (`gomoku/ui/src/play/GameRail.tsx:373`)。
+它的样式是 `gomoku/ui/src/index.css:1619` 一行：
 
-| 派 | 屏上 | 二次确认框里 |
-|---|---|---|
-| 象棋模板 | 实心 accent（即使它是「按认输结束」） | 变红（`.ranked-confirm__actions button.primary { background: var(--bad) }`） |
-| 国象 / 围棋现版 | 就描边 | — |
-| **围棋设计稿** | **和普通按钮完全一样**（`.danger` 类零样式，见 D5） | 稿子没画确认框 |
+```css
+.play-screen .kiosk-actions .danger {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 35%, var(--hair));
+}
+```
 
-模型差异是：*吓人吓在屏上，还是吓在不可回头那一步*。三派都自洽，不能同时成立。**这条归 Fan。**
-影响 Task 11（02 对局屏「认输」）和 Task 14（05 做题屏无破坏性动作，不受影响）。
+**形状、尺寸、内边距、背景一律不动，只有字色和边框着一点红。** 这正好落在原来三派的
+中间：屏上认得出，但不靠实心色块吓人。
 
-### Q2 Dock 到底几项 —— D1 的直接后果
+⇒ 围棋写同一条，选择器换成 `.kiosk-screen[data-screen="game"] .kiosk-actions .danger`，
+放 **`go-screens.css`**（不是 `tokens.css` —— 那份是共享正本，这条等上游收编）。
+`--bad` / `--hair` 都定义在 `tokens.css` 的 `.kiosk` 里，而这颗键渲染在 `.kiosk` 内，
+求值没问题（G2）。
 
-规范 §3 的词典是 `对弈 · 训练营 · 棋谱 · 复盘 · 成长 · 课程 · 设置` = **7 项**，十张参考图上画的也全是这 7 项。但 **D1 把成长整条跳过了**：围棋没有 growth 路由、没有页面、后端零命中。
+**二次确认框本轮不新造**：稿子没画。现状 `GamePage` 有什么保持什么，只核**一件事** ——
+它的确认键**不能在 `.kiosk` 外面写 `var(--bad)`**。国象在 `chess/ui/src/index.css:574-580`
+把这个坑记下来了：`--bad` 只定义在 `.kiosk` 上，挂在 app 根上的弹窗写它会静默求空，
+真浏览器量出来是 `rgba(0,0,0,0)` —— 红键**看起来就是没红**。Task 11 Step 5 加一条断言。
 
-两条路：
+（国象另有一条自己写下的判据 `index.css:571`「不可撤销的那一下才标红，而且只标**第二下**」，
+和 D7 不冲突：它说的是没有屏上认输键时红标在哪儿。围棋两处都有，屏上走五子棋那条、
+弹窗那颗本轮不动。）
 
-| 方案 | Dock | 代价 |
-|---|---|---|
-| **(a) 6 项，先不放成长**（建议） | `对弈 训练营 棋谱 复盘 课程 设置` | 十张参考图的 Dock 都会比实现多一格 —— **每一屏的差异图底部都会有一条固定的红带**。要在四图的标签带里写死这句话 |
-| (b) 7 项，成长指向「未接后端」占位页 | 与参考图逐格一致 | 违反 G8「做不了的不留占位框」和「灰掉的不写锁定」；而且它会把一条纯表现层赛道拖出一个新屏 |
+### D8（原 Q2）Dock **六项**
 
-建议 (a)：项目自己的诚实规则比图面一致优先级高。**但这条影响全部 9 张差异图，代价不对称，请 Fan 确认。**
+原来担心的是「参考图七格、实现六格，九张差异图底部会有一条固定红带」。**取证之后这个顾虑降级了**：
 
-### Q4 设置页七组里有五组现在没有内容
+- 五子棋自己就是 **6 项**（`gomoku/ui/src/shell/dockRoutes.ts`）—— 它没有「棋谱」那一格，因为五子棋没有棋谱库。
+- 象棋 7 项（`xiangqi/ui/src/shell/KioskDock.tsx`）、国象 7 项（`chess/ui/src/shell/routes.ts`）。
 
-稿子画了 7 组，现状只有 5 张卡、**0 个导航项**，其中「棋盘外观 / 声音与报着 / 对局默认值 / 关于」**整组不存在**，「账号与平台」里那四个平台是一块 `pointer-events:none` 的死装饰（而且列的平台和真正能连的对不上）。另外现状**多出一个「语言」**，而规范 §12 明写语言属于设置中心、不在这里。
+⇒ **「四家 Dock 项数必须相等」从来不是规矩。** 规矩是「词与顺序来自共享词典、
+专属项最多一个且钉在训练营之后」。围棋 `对弈 训练营 棋谱 复盘 课程 设置` 满足这条，
+和五子棋同为 6 项。成长按 D1 跳过，不摆假入口（G8）。
 
-三条路（(a) 只做有内容的组 / (b) 七组全摆、空的挂琥珀标 / (c) 把五组做成真功能）的取舍与建议，写在 **Task 18** 里。**这条也归 Fan。**
+⇒ **方案 (a)，6 项。** 每张四图的标签带里写死这句：**「参考图的 Dock 是 7 格，实现是 6 格，
+差的是成长（D1 跳过）——底部这条红带是预期差异，不是回归。」**
 
-### Q3 顶栏那几个围棋专属指示器往哪去
+### D9（原 Q3）顶栏那四样 **全部拆掉**
 
-规范 §1 写死「顶栏**只放这些**」：左 logo + 智星盒 + StellaBox + ｜围棋，右 头像 + 名字 + 时钟（外加 `tokens.css` 提供的 `.kiosk-topbar__home`）。而围棋现版 `Header.tsx` 右侧还挂着**四个围棋独有的东西**：
+- 三家顶栏都是**同一份**：logo / 智星盒·StellaBox / 分隔线 / 棋种名 / 主页 / 头像 / 名字 / 时钟。
+  **零指示器、零齿轮**（`xiangqi/ui/src/shell/KioskTopbar.tsx` 整份可证）。
+- 器件状态在四家共同的另一个位置：**L1 左栏 `.kiosk-console` 底部的 `.kiosk-status` 三格**。
+  国象 `chess/ui/src/shell/boardStatus.ts` 把它写死成「三格的**格数、顺序、灯色语义**四棋类相同，
+  只有第一格跟着硬件走」—— 国象第一格是「传感盘」，围棋第一格就是「摄像头」。
+  围棋稿 L1 屏上那个 `<div class="kiosk-status" data-status></div>` 就是这三格。
+- **围棋现状已经有这三格了**：`SmartBoardConsole.tsx:171-188`（摄像头 / 标定 / LED）。
+  所以顶栏那两个是**同一份信息的第二个出口**，拆掉不丢信息。
+- 原来写的「拆了 L3 就盲了」**是错的，取证推翻**：`GamePage.tsx:14,18` 已经挂了
+  `VisionSyncOverlay` + `PhysicalPlayStatusChip`，外加 `RecalibrationModal`；做题屏走
+  `usePhysicalTsumego`。**L3 上摄像头掉线是「打断」不是「读数」** —— 它本来就该弹东西，
+  不该常驻一个小点。国象那句「盘上没有的器件不摆在界面上」是同一个态度。
+- 引擎状态点：四家顶栏都没有。拆。
+- 齿轮：规范 §1 点名拆（Dock 里已经有设置）。
 
-- `engine-status` 引擎状态点（`Header.tsx:167-171`）
-- `VisionIndicators` 摄像头状态（可点，去 `/kiosk/vision/setup`）
-- `GeometryIndicator` 标定状态（可点，去 `/kiosk/vision/setup`）
-- 设置齿轮（规范 §1 点名「象棋顶栏那个齿轮要拆掉——Dock 里已经有设置，两个入口是重复」）
+⇒ **方案 ①。** Task 3 删 `Header.tsx` 时这四样一并删。`VisionIndicators` / `GeometryIndicator`
+是 `Header.tsx` 里的局部组件，跟着没了；**动手前先 grep 确认 `Header.tsx` 之外没有第二个使用者**。
 
-齿轮好办：拆掉。**摄像头 / 标定这两个不好办**——L1-A 的左栏三格（摄像头 · 标定 · LED）覆盖了同样的信息，**但 L2/L3 没有左栏**，对局屏和做题屏正是最需要知道「摄像头还看得见吗」的地方。
+### D10（原 Q4）设置页 **只做有内容的组**
 
-三条路：① 一律拆掉，信息只在 L1 左栏三格里（最贴规范，但 L3 上盲了）；② 拆出顶栏，改挂到 L2/L3 右栏的状态区（规范 §11 允许右栏放状态区）；③ 留在顶栏，作为围棋对规范 §1 的一处登记偏差。**归 Fan。** 影响 Task 3。
+- 国象 `chess/ui/src/pages/SettingsPage.tsx` 的 `<aside aria-label="设置分类">` 只有**两项**
+  （棋盘与棋子 / 声音与语音），右边三张卡。稿子画多少组，它没跟。
+- 象棋 `xiangqi/ui/src/screens/SettingsScreen.tsx` 是**一条八行的平表**，连导航都没有。
+- 五子棋根本没有设置屏。
+- **三家没有一家摆过空组，也没有一家挂过「未接后端」的空壳。**
+
+⇒ **方案 (a)。导航项数 = 真有内容的组数，词一一对应。** 和参考图差的那几组写进标签带，
+和 D8 那条红带一样属于登记过的预期差异。
+
+**语言那一格：留着。** 登记成规范 §12 的一处已知偏差 —— 设置中心不在本仓，搬走等于
+这台盒子上再没有语言开关。（国象把「语音语言」做成 disabled + 「跟随界面语言」，
+那是**语音**语言；围棋这一格是**界面**语言本身，不是同一件事，不照抄。）
+
+### G12（新增，本轮起长期有效）相似模块先看那三家
+
+Fan 2026-08-20 的原话：「相似功能的模块尽量和其他三种棋类的 kiosk 界面保持一致」。
+⇒ **每屏动手前，先找出那三家里做同一件事的那一屏 / 那一个组件，读它，照它。**
+稿子和三家实现打架时，**先查是不是自己看漏了**（D7 就是这么翻案的：稿子上 `.danger`
+零样式看着像「不区分」，其实五子棋早就给同一个类名写好了一行）。
+真打架且三家一致时，**以三家为准**并在这里补一条 D。
 
 ---
 
@@ -1230,7 +1274,9 @@ export function KioskTopbar({ identity, onHome, homeBusy = false }: {
 
 `KioskLayout.tsx` 的 `topbar` 插槽换成 `<KioskTopbar identity={{ username }} onHome={isL1 ? onHome : undefined} />`，删掉 `import Header`，`git rm` 掉 `Header.tsx`。
 
-⚠️ **Q3 未决之前**：`engine-status` 点、`VisionIndicators`、`GeometryIndicator`、设置齿轮这四样**先不搬进 `KioskTopbar`，也先不删**——把 `Header.tsx` 留在原地不引用，等 Fan 答复 Q3 再决定去处。若 Fan 已答复，按答复做，并在本 Task 的提交信息里写明依据。
+✅ **已按 D9 裁定**：`engine-status` 点、`VisionIndicators`、`GeometryIndicator`、设置齿轮**四样全拆**，不进 `KioskTopbar`。摄像头 / 标定这两条信息的去处是 **L1 左栏 `.kiosk-status` 三格**，而 `SmartBoardConsole.tsx:171-188` 早就有这三格了 —— 拆掉不丢信息。L3 已有 `VisionSyncOverlay` + `PhysicalPlayStatusChip` + `RecalibrationModal`（`GamePage.tsx:14,18`），不会盲。
+
+⚠️ **删之前先 grep**：确认 `VisionIndicators` / `GeometryIndicator` 除 `Header.tsx` 外没有第二个使用者；有的话只删顶栏这一处引用。
 
 ⚠️ 同时要删掉 `src/kiosk/__tests__/Header.test.tsx`（它 `:65-68` 断言 `toHaveStyle({height:'56px'})`，被测组件没了）。**不要只是删**：把「顶栏恒 56 高」这条断言搬进 Task 1 那条真浏览器几何闸里——jsdom 对布局无权作证，那条 jsdom 断言本来就该被替换掉（**替换不是叠加**）。
 
@@ -1312,14 +1358,15 @@ git commit -m "feat(kiosk-shell): 顶栏改用共享外壳的 .kiosk-topbar
 
 补上此前没有的｜围棋、26px 头像;齿轮按规范 §1 拆掉(Dock 里已有设置)。
 品牌字闸补了下界(首位是龙藏 且 覆盖 3 字),并变异演示过。
-围棋专属的摄像头/标定指示器暂留 Header.tsx 不引用,等 Q3 答复。"
+围棋专属的摄像头/标定/引擎点/齿轮四样按 D9 全拆:三家顶栏都零指示器,
+那三格信息在 L1 左栏 SmartBoardConsole 里已有,L3 走 VisionSyncOverlay。"
 ```
 
 ---
 
 ## Task 4: Dock 与路由重映射
 
-⚠️ **这个 Task 卡在 Q2 上**（Dock 到底 6 项还是 7 项）。**先拿到 Fan 的答复再动手。** 下面按建议方案 (a) 6 项写；若 Fan 选 (b)，把 `growth` 那一格加回 `TABS` 并另开一个 Task 做那一屏。
+✅ **Q2 已裁定 —— 见 D8：6 项。** 五子棋自己就是 6 项，「四家 Dock 项数相等」不是规矩。照下面写，不要再回头讨论。
 
 **Files:**
 - Create: `katrain/web/ui/src/kiosk/shell/KioskDock.tsx`
@@ -1564,7 +1611,7 @@ test('§7 Dock:项数、等宽、项高 65、选中态位移 -2px', async ({ pag
   await boot(page, '/kiosk/play');
   const dock = await box(page, '.kiosk-dock');
   const items = await page.locator('.kiosk-dock__item').all();
-  expect(items.length).toBe(6);           // Q2 = (a);若 Fan 选 (b) 改 7
+  expect(items.length).toBe(6);           // D8:六项。五子棋也是 6 项,项数相等不是规矩
 
   const boxes = await Promise.all(items.map((i) => i.evaluate((el) => {
     const r = el.getBoundingClientRect();
@@ -2505,9 +2552,10 @@ import { Icon, type IconName } from './icons';
  * **动作区永远贴右栏底**(tokens.css:758 `.kiosk-rail .kiosk-actions{margin-top:auto}`):
  * 上面的折叠面板收起时,空白落在它**上面**,按钮不许跟着上移 —— 悔棋/认输的位置是肌肉记忆。
  *
- * ⚠️ `danger` 的**屏上长相还没定**(Q1,归 Fan)。在 Fan 答复之前:
- * 这个 prop 只挂 `data-danger`,**不给任何视觉差异** —— 和围棋设计稿现状一致(稿子里
- * `.danger` 这个类零样式)。答复到了再在 go-screens.css 里给它一条规则。
+ * `danger` 走**类名 `danger`**,不是 `data-danger` —— 五子棋 `play/GameRail.tsx:373` 和
+ * 围棋设计稿 `go-kiosk.tmpl.html:305` 用的都是这个类名,三处对齐才不用各写一套选择器。
+ * 长相见 **D7**:只换字色和边框(`gomoku/ui/src/index.css:1619`),形状尺寸背景一律不动;
+ * 规则写在 `go-screens.css`,不写进共享的 tokens.css。
  */
 export function KioskActions({ items }: {
   items: readonly { icon: IconName; label: string; onClick: () => void; disabled?: boolean; danger?: boolean }[];
@@ -2516,7 +2564,7 @@ export function KioskActions({ items }: {
     <div className="kiosk-actions">
       {items.map((a) => (
         <button key={a.label} type="button" disabled={a.disabled}
-                data-danger={a.danger || undefined} onClick={a.onClick}>
+                className={a.danger ? 'danger' : undefined} onClick={a.onClick}>
           <Icon name={a.icon} /><span>{a.label}</span>
         </button>
       ))}
@@ -2906,7 +2954,7 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
 
 **设计稿**：`go-kiosk.tmpl.html:270-311`（**L3 布局 A**）。**现状**：`pages/GamePage.tsx`（825 行）+ `components/game/GameControlPanel.tsx`。
 
-⚠️ **这屏卡在 Q1 上**（破坏性按钮长相）。「认输」那一格的长相要等 Fan 答复。**其余部分可以先做**，那一格先按稿子（无差异）写，Fan 定了再改一行。
+✅ **Q1 已裁定 —— 见 D7：照抄五子棋 `gomoku/ui/src/index.css:1619` 那一行**（`color: var(--bad)` + `border-color: color-mix(in srgb, var(--bad) 35%, var(--hair))`，形状尺寸背景一律不动）。写进 `go-screens.css`，选择器 `.kiosk-screen[data-screen="game"] .kiosk-actions .danger`。
 
 **骨架**：`.kiosk-layout-a` = 盘 516 贴 x16 + 16 + 右栏 460。右栏自上而下：
 
@@ -2930,11 +2978,11 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
 - [ ] **Step 2** 确认这屏已经在 `KioskLayout` 里了（Task 4 Step 6 挪过来的），`dockLevelOf` 判成 2、不出 Dock、顶栏在。
 - [ ] **Step 3** 右栏按上表重写；棋盘换成 `.kiosk-board` + 四条刻度带 + `.kiosk-board__play` 里的 `GoBoardSvg`。
 - [ ] **Step 4** 写 `KioskFold`（`shell/KioskFold.tsx`，照象棋 `shell/KioskFold.tsx`），带上那四条硬性。
-- [ ] **Step 5** 单测：加两条 —— ① 收起「本局记账」后，标题行右端 `白贴 6.5 目` **仍在**；② 两块都收起时，动作区的 `bottom` 不变（这条要在真浏览器里量，写进 spec 不是 jsdom）。
+- [ ] **Step 5** 单测：加两条 —— ① 收起「本局记账」后，标题行右端 `白贴 6.5 目` **仍在**；② 两块都收起时，动作区的 `bottom` 不变（这条要在真浏览器里量，写进 spec 不是 jsdom）。**再加一条真浏览器断言（D7）**：认输键 `color` 求得出值且 ≠ 兄弟键的 `color`；若现状的认输确认框渲染在 `.kiosk` 外，它那颗确认键的 `color`/`border-color` 也要求得出值（国象 `index.css:574-580` 记过这个坑）。
 - [ ] **Step 6** 真浏览器几何：盘 516×516@(16,70)、落子区 460×460@(44,98)、右栏 460@x548、页控条 460×44@y70、返回键高 36。**上一轮量过，规范给的数一次全中**（`kiosk-ai-ladder-layout-a-geometry.spec.ts`），照抄那条 spec 的量法。
 - [ ] **Step 7** 承重：把棋谱造到 300 手，量 ① 棋谱那块自己滚（`.kiosk-fold--grow` 内 `scrollHeight > clientHeight`）② **外层不滚**（L3 布局 A 整体不滚是首选形态）③ 动作区仍贴底。
 - [ ] **Step 8** 四图（slug `02-game`）；标签带里写明「稿子上那段解释为什么不画胜率曲线的话是旁注，不上线」。
-- [ ] **Step 9** 双构建 + 提交 + **等 Fan 确认四图**，并在同一封里把 **Q1** 摆给他。
+- [ ] **Step 9** 双构建 + 提交 + **等 Fan 确认四图**。
 
 ---
 
@@ -3111,9 +3159,9 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
 
 **设计稿**：`go-kiosk.tmpl.html:655-762`（**L1-B**，但左栏仍是 `.kiosk-console` 装 `.kiosk-navlist`，宽照样 296 —— 规范 §12「左栏宽度和 L1-A 的镜像栏一样，从对弈切到设置那条纵向接缝不动」）。**现状**：`pages/SettingsPage.tsx`（197 行）。
 
-⚠️ **这屏卡在 Q4 上（见下），先拿到答复再动手。**
+✅ **Q4 已裁定 —— 见 D10：方案 (a)，只做有内容的组，导航项数 = 真组数。** 语言那一格留着，登记成规范 §12 的已知偏差。下面「Q4」那一小节保留作取证记录，**不再是待办**。
 
-**骨架**（这部分不受 Q4 影响，可以先做）：
+**骨架**（D10 只决定摆几组，骨架本身不受影响）：
 - 左栏 296：`.kiosk-console` > `.kiosk-console__title`（`设置` / `Settings`）+ `.kiosk-navlist`（`.kiosk-navitem` 高 44、间距 6、18px 图标 + 13px 文字、整项可点）+ 底部一句 `系统设置（网络、语言、输入法）在**设置中心**，不在这里。`（`margin-top:auto`）
 - 右栏 680：`<KioskScrollZone>` 形态 1，一条完整的纵向流，每组一个 `.kiosk-section[data-group]`。
 - **导航只跳不换页**：点导航**滚过去**，不是把右边整块换掉。换页式在这块屏上更差——用户看不到自己一共有多少可调的。
@@ -3130,7 +3178,7 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
 - [ ] Step 1–10 同 Task 10 的七步；四图 slug `10-settings`。
 - [ ] 承重：右栏造到 7 组全满，量整栏滚 + 渐隐 + 高亮跟着滚动走（**滚到第 3 组时导航第 3 项 `aria-current="true"`，其余都不是**）。
 
-### Q4（新增，归 Fan）· 设置页七组里有五组现在没有内容
+### 取证记录（原 Q4）· 设置页七组里有五组现在没有内容
 
 survey 逐项核过，稿子的 7 组对上现状的 5 张卡：
 
@@ -3145,13 +3193,13 @@ survey 逐项核过，稿子的 7 组对上现状的 5 张卡：
 | 关于 | **整组不存在** |
 | （稿子没有）语言 | **现状有** —— 而规范 §12 明写「系统设置（网络、账号、**语言**、输入法）不在这里，在设置中心」 |
 
-三条路，**都不许我自己选**：
+三条路，**已按 D10 选了 (a)**：
 
-- **(a) 只做有内容的组**（建议）：导航 3–4 项，词与右边一一对应。**符合「导航项数 = 分组数」和 G8**，但和参考图差 3–4 组，差异图上是一片红。
+- ✅ **(a) 只做有内容的组**（**已选**）：导航 3–4 项，词与右边一一对应。**符合「导航项数 = 分组数」和 G8**，但和参考图差 3–4 组，差异图上是一片红。
 - **(b) 七组全摆，空的挂琥珀「未接后端」**：图上最像，但那五组里**大部分不是「后端没有」而是「这个设置项还没做」**——挂「未接后端」是**用错标**（G8 那条两色规则）。而且它把一条表现层赛道拖出五个新功能。
 - **(c) 七组全摆，空的组做成真功能**：那是五个新 feature，远超本轮。
 
-另外**语言那一格怎么办**也要 Fan 定：按规范该搬去设置中心，但**设置中心不在本仓**，搬走等于这台盒子上再没有语言开关。建议**留着**，并登记为「规范 §12 的一处已知偏差，等设置中心接手」。
+**语言那一格：留着**（D10）。按规范该搬去设置中心，但**设置中心不在本仓**，搬走等于这台盒子上再没有语言开关 ⇒ 登记为「规范 §12 的一处已知偏差，等设置中心接手」。
 
 ---
 
@@ -3223,17 +3271,17 @@ npx tsc -b && npm run build && npm run build:kiosk-2d
 
 **4. 一处已知的顺序张力** —— Task 5（镜像栏）要用 Task 9 的 `GoBoardSvg`，Task 7（滚动区）要 Task 10 的内容才有被测物。已分别在两个 Task 里写了过渡办法（占位 / 造数据），不改顺序：**共享壳必须整块先稳定**，这是 Fan 定的。
 
-**5. 两处自查后补上的** —— ① Task 20 要比的那份基线原来没有任何 Task 产出，补了 **Task 0**（`lint` 和 `npm test` 本来就是红的，不存基线就没法判「这条红是不是我弄的」）；② 设置页那个七组对五卡的缺口原来只写在 Task 18 里，提到了顶上的 **Q4**——它和 Q1/Q2 一样会挡住一整屏。
+**5. 两处自查后补上的** —— ① Task 20 要比的那份基线原来没有任何 Task 产出，补了 **Task 0**（`lint` 和 `npm test` 本来就是红的，不存基线就没法判「这条红是不是我弄的」）；② 设置页那个七组对五卡的缺口原来只写在 Task 18 里，提到了顶上的 **Q4**——它和 Q1/Q2 一样会挡住一整屏。**（2026-08-20 二次授权后 Q1–Q4 已全部裁定为 D7–D10，见上。）**
 
 ---
 
-## 执行前必须先拿到答复的四条
+## 执行前的四条：**已全部裁定**（Fan 2026-08-20 二次授权自决）
 
-| # | 问题 | 挡住谁 |
-|---|---|---|
-| **Q1** | 破坏性按钮的长相（三派，围棋稿是第三种：屏上完全不区分） | Task 11 的「认输」那一格 |
-| **Q2** | Dock 六项还是七项（成长本轮跳过的后果，影响全部 9 张差异图） | Task 4，以及每一屏的四图标签带 |
-| **Q3** | 顶栏那几个围棋专属指示器（摄像头 / 标定 / 引擎点）往哪去 | Task 3 |
-| **Q4** | 设置页七组里五组没内容 | Task 18 |
+| # | 问题 | 裁定 | 依据（三家取证） |
+|---|---|---|---|
+| **Q1 → D7** | 破坏性按钮的长相 | 照抄五子棋：只换字色和边框，形状不动 | `gomoku/.../GameRail.tsx:373` 用的就是 `className="danger"`；`gomoku/ui/src/index.css:1619` 给了它样式 |
+| **Q2 → D8** | Dock 六项还是七项 | **六项** | 五子棋自己就是 6 项（`gomoku/.../dockRoutes.ts`）—— 项数相等从来不是规矩 |
+| **Q3 → D9** | 顶栏那几个围棋专属指示器 | **四样全拆** | 三家顶栏都零指示器零齿轮；三格状态在 L1 左栏（`chess/.../boardStatus.ts`）；L3 已有 `VisionSyncOverlay` + `PhysicalPlayStatusChip`，原来那条「会盲」是错的 |
+| **Q4 → D10** | 设置页七组里五组没内容 | **只做有内容的组**；语言留着 | 国象设置屏只有 2 项导航、象棋是平表、五子棋没有设置屏 —— 三家没有一家摆过空组 |
 
-**Q2 挡的是 Task 4，也就是整条链的第四步** —— 它最早需要答复。Q1/Q3/Q4 可以边做边等：Task 3 先把四样东西留在原地不引用，Task 11 先按稿子写，Task 18 先只搭骨架。
+**没有任何一条还挡着执行。** 从 Task 0 开始按序做，每屏四图仍然要 Fan 点头才进下一屏（G4，这条没变）。

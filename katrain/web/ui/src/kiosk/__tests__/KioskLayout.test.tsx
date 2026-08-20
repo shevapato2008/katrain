@@ -42,7 +42,9 @@ describe('KioskLayout', () => {
     expect(screen.getByText('智能棋盘')).toBeInTheDocument();
   });
 
-  it('shows Header and Dock on Report but Header without Dock on Settings', () => {
+  // ⚠️ 后半句 Task 4 **翻了面**:设置是 Dock 的第六项(规范 §1),所以它有 Dock。
+  // 旧断言「设置没有 Dock」属于顶栏还挂着齿轮的那套分工。
+  it('shows topbar and Dock on both L1 Report and L1 Settings', () => {
     const report = renderLayout('/kiosk/report');
     expect(screen.getByText('REPORT_CONTENT')).toBeInTheDocument();
     expect(screen.getByText('智星盒')).toBeInTheDocument();
@@ -51,7 +53,7 @@ describe('KioskLayout', () => {
 
     renderLayout('/kiosk/settings');
     expect(screen.getByText('智星盒')).toBeInTheDocument();
-    expect(screen.queryByText('复盘')).not.toBeInTheDocument();
+    expect(screen.getByText('复盘')).toBeInTheDocument();
   });
 
   it('gates the SmartBoardConsole to CONSOLE_ROUTES — hidden on /kiosk/settings', () => {
@@ -60,7 +62,15 @@ describe('KioskLayout', () => {
     expect(screen.queryByText('智能棋盘')).toBeNull();
   });
 
-  it('collapses Header and Dock when a descendant sets immersive mode', () => {
+  // Task 4 把 Dock 的出没**只**交给 `dockLevelOf`,`immersive` 不再参与:
+  // 今天五个设 immersive 的页面(研究/复盘详情/摆谱对局/做题/直播)**全在 L2**,
+  // `level === 1` 已经把它们挡住了,再叠一个条件只是多一条永远不走的分支。
+  // 所以这条测试现在断言的是 immersive 仅存的那一半作用 —— 抽顶栏。
+  //
+  // ⚠️ **抽顶栏本身和规范 §5 防跳铁律 1 冲突**(「顶栏永远占 y 0–56,任何层级、
+  // 任何模块都不变高、不隐藏」)。这条冲突已登记,归 Task 18 的 §12 差异清单处理,
+  // 不在本 Task 范围内 —— 这条测试锁的是**现状**,不是终态。
+  it('immersive 抽掉顶栏;Dock 归 level 管,L1 上照旧在(已登记的 §5 冲突)', () => {
     render(
       <ThemeProvider theme={kioskTheme}>
         <MemoryRouter initialEntries={['/kiosk/play']}>
@@ -75,6 +85,6 @@ describe('KioskLayout', () => {
 
     expect(screen.getByText('IMMERSIVE_CONTENT')).toBeInTheDocument();
     expect(screen.queryByText('智星盒')).toBeNull();
-    expect(screen.queryByText('对弈')).toBeNull();
+    expect(screen.getByText('对弈')).toBeInTheDocument();
   });
 });

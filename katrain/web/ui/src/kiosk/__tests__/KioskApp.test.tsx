@@ -99,10 +99,10 @@ describe('KioskApp', () => {
       token: 'mock-token',
     });
     renderApp('/kiosk/tutorial');
-    // The 教程 nav tab is present within the kiosk layout (route is reachable).
-    // Use getAllByText: the tutorial landing page may also render a 教程 title
-    // once its (mocked) data resolves, so there can be more than one match.
-    expect(screen.getAllByText('教程').length).toBeGreaterThanOrEqual(1);
+    // Dock 上那一项 Task 4 起叫「课程」不叫「教程」——规范 §3 的共享词典
+    // (四棋类同一份词,不是围棋能自选的)。路由 `/kiosk/tutorial` 没变。
+    // 用 getAllByText:课程落地页自己也可能渲染同名标题,不止一处匹配。
+    expect(screen.getAllByText('课程').length).toBeGreaterThanOrEqual(1);
   });
 
   it('registers the real first-level Report destination with Header and Dock', () => {

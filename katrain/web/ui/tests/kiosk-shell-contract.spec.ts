@@ -50,6 +50,10 @@ function walk(dir: string, pick: (p: string) => boolean): string[] {
  * `RotationWrapper.tsx` 是**永久豁免**:它在画布**外面**,职责就是把整个视口铺满
  * 再按方向旋转,`100vw/100vh` 正是它该写的东西。KioskFrame 在它里面按 min(w/1024, h/600)
  * 缩放 —— 那一层才是画布。
+ *
+ * 划账记录:
+ *   Task 4 —— `components/layout/navTabs.tsx` 随旧 Dock 一起删,从图标名单里划掉。
+ *             (这一笔就是这道闸自己抓出来的:它红了,而不是等着谁想起来手动更新。)
  * ────────────────────────────────────────────────────────────────────────── */
 const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/__tests__/RotationWrapper.test.tsx',
@@ -99,7 +103,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/components/game/GameControlPanel.tsx',
   'src/kiosk/components/game/RecalibrationModal.tsx',
   'src/kiosk/components/layout/SubPageBar.tsx',
-  'src/kiosk/components/layout/navTabs.tsx',
   'src/kiosk/components/physical/PhysicalPlayStatusChip.tsx',
   'src/kiosk/components/report/ReportGameCard.tsx',
   'src/kiosk/components/report/ReportImportMenu.tsx',

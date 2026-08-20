@@ -16,7 +16,10 @@ const modules = import.meta.glob('../../kiosk-shell/icons/*.svg', {
 
 const table: Record<string, string> = {};
 for (const [path, source] of Object.entries(modules)) {
-  table[path.split('/').pop()!.replace(/\.svg$/, '')] = source;
+  // `.trim()`:svg 文件末尾那个换行会变成 `.kiosk-icon` 里的一个空白文本节点。
+  // 布局上无害(flex 容器忽略纯空白匿名盒),但它会混进 textContent ——
+  // Dock 项读出来就成了 "\n对弈"。
+  table[path.split('/').pop()!.replace(/\.svg$/, '')] = source.trim();
 }
 
 /**

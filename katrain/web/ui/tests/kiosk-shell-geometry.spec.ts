@@ -89,7 +89,9 @@ test('L1:中间区外框 x16–1008、上缘接顶栏下沿、下缘停在 Dock 
 });
 
 test('L2/L3:没有 Dock,中间区一路到画布下缘', async ({ page }) => {
-  await boot(page, '/kiosk/settings');   // Task 4 之前 settings 仍是 L2
+  // ⚠️ 这里原来用的是 `/kiosk/settings`。Task 4 把「设置」放进了 Dock(规范 §1),
+  // 它现在是 **L1** —— 拿它当 L2 的样本会证反。换成对弈设置页,那是货真价实的二级页。
+  await boot(page, '/kiosk/play/ai/setup/free');
 
   const screen = await box(page, '.kiosk-screen');
   const content = await box(page, '.kiosk-content');
@@ -173,7 +175,8 @@ test('§6 主页键只在 L1 出现 —— 二级页要退的是这一屏,不是
   await boot(page, '/kiosk/play');
   await expect(page.locator('[data-testid="kiosk-home-action"]')).toHaveCount(1);
 
-  await boot(page, '/kiosk/settings');
+  // 同上:settings 自 Task 4 起是 L1,不能再拿它当二级页的例子。
+  await boot(page, '/kiosk/play/ai/setup/free');
   await expect(page.locator('[data-testid="kiosk-home-action"]')).toHaveCount(0);
 
   // 但**身份位不许跟着消失**(防跳铁律 2:右簇位置恒定)。
@@ -207,4 +210,93 @@ test('§2 品牌字「智星盒」跑的是龙藏行楷,而且三个字都是', 
   //      —— 这一支专门证明下界那半条不是摆设。
   expect(fonts[0].familyName).toContain('Long Cang');
   expect(fonts[0].glyphCount).toBe(3);
+});
+
+/* ─────────────────────────── Task 4:Dock 与层级 ───────────────────────────
+ *
+ * 变异记录(2026-08-20,Task 4 Step 8),**四支各演示一次**:
+ *   ① 拆掉 `KioskDock` 的 `aria-current` ⇒「选中态位移」红(上移的项 1 → 0)
+ *      **且**「图标翻色」红(两种 fill → 一种)。
+ *   ② 把 `<Icon name=… />` 换成空 `<span className="kiosk-icon" />`
+ *      ⇒「?raw 内联成立」红(svg 6 → 0)。这一支就是「构建绿但图标其实没进包」长的样子。
+ *   ③ `dockLevelOf` 恒返回 1 ⇒「L2 没有 Dock」红(.kiosk-dock 0 → 1)。
+ *   ④ 词典删掉「设置」一项 ⇒「六项」红(6 → 5)。
+ * 实测值一并记在这里(只作记录、不作判据):项高 65,未选中项 y=527、选中项 y=525。
+ */
+
+test('§7 Dock:六项、通栏贴底、等宽、项高 65、选中态位移 −2px', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+
+  const screen = await box(page, '.kiosk-screen');
+  const dock = await box(page, '.kiosk-dock');
+  // 通栏贴底:左右各到画布边、下缘就是画布下缘。Dock 是**盖在**中间区下面那 82px 上的,
+  // 不是被中间区的 16px 外边距框住的 —— 这一条和 `--content-x` 是两回事。
+  expect(dock.x).toBe(screen.x);
+  expect(dock.right).toBe(screen.right);
+  expect(dock.bottom).toBe(screen.bottom);
+
+  const items = await page.evaluate(() =>
+    [...document.querySelectorAll('.kiosk-dock__item')].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y, w: r.width, h: r.height };
+    }));
+  expect(items).toHaveLength(6);   // D8:六项。五子棋自己也是 6 项,「四家项数相等」不是规矩
+
+  // 等宽:最宽和最窄差不到 1px(亚像素)。grid-auto-columns: 1fr 说的就是这件事,
+  // 但说了不等于算出来是 —— 中间任何一个元素给自己一个 min-width 都会破它。
+  expect(Math.max(...items.map((b) => b.w)) - Math.min(...items.map((b) => b.w))).toBeLessThan(1);
+
+  // 项高 = Dock 高 − 1(顶部描边)− 2×8(上下内边距)。写成关系式,不写字面量 65。
+  expect(Math.round(items[0].h)).toBe(dock.h - 1 - 2 * 8);
+
+  // 选中项上移 2 —— 而且**只有一个**上移。两个一起动就说明高亮认了不止一项。
+  const base = Math.max(...items.map((b) => b.y));
+  const raised = items.filter((b) => b.y < base - 1);
+  expect(raised).toHaveLength(1);
+  expect(Math.round(base - raised[0].y)).toBe(2);
+});
+
+test('§10 Dock 图标真的画出来了 —— ?raw 内联在生产链路上成立', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  // 这一条是给 `import.meta.glob(..., "?raw")` 兜底的:单测在 vitest 里跑,
+  // 构建绿也只说明没报错。要证「82 个 svg 真的进了包、真的渲染成了有面积的图形」,
+  // 只有真浏览器量得出来。
+  const icons = await page.evaluate(() =>
+    [...document.querySelectorAll('.kiosk-dock__item svg')].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { w: Math.round(r.width), h: Math.round(r.height), paths: el.querySelectorAll('path').length };
+    }));
+  expect(icons).toHaveLength(6);
+  for (const i of icons) {
+    expect(i.w).toBe(24);            // --dock-icon
+    expect(i.h).toBe(24);
+    expect(i.paths).toBeGreaterThan(0);   // 有 <path> 才是真图标,不是个空 svg 壳
+  }
+
+  // 选中那一项的图标跟着容器翻成 --ink(深色),没选中的是 --dim。
+  // `<img src>` 版本跟不了 currentColor,这一条正是那条规矩的实测面。
+  const fills = await page.evaluate(() =>
+    [...document.querySelectorAll('.kiosk-dock__item')].map((el) =>
+      getComputedStyle(el.querySelector('svg')!).fill));
+  expect(new Set(fills).size).toBe(2);      // 选中 1 个 + 没选中 5 个 = 两种颜色
+});
+
+test('层级:L2 没有 Dock,中间区因此长到画布底;对局屏是 L2 但顶栏在', async ({ page }) => {
+  await boot(page, '/kiosk/tsumego/problem/1');
+
+  const screen = await box(page, '.kiosk-screen');
+  const content = await box(page, '.kiosk-content');
+  expect(await page.evaluate(() => document.querySelectorAll('.kiosk-dock').length)).toBe(0);
+  // L2 把 Dock 那 82px 整个还给中间区:下缘就是画布下缘,没有底部留白。
+  expect(content.bottom).toBe(screen.bottom);
+  // 关系式:L2 的中间区正好比 L1 高出一个 Dock。这一条才是「因为没 Dock」本身。
+  expect(content.h).toBe(screen.h - 56);
+
+  // 对局屏 Task 4 挪进了 KioskLayout。挪之前它在 KioskLayout **外面** ——
+  // 连顶栏都没有,撞规范 §5 防跳铁律 1「顶栏任何层级都不隐藏」。
+  await boot(page, '/kiosk/play/ai/game/nonexistent');
+  const topbar = await box(page, '.kiosk-topbar');
+  expect(topbar.h).toBe(56);
+  expect(topbar.y).toBe(screen.y);
+  expect(await page.evaluate(() => document.querySelectorAll('.kiosk-dock').length)).toBe(0);
 });

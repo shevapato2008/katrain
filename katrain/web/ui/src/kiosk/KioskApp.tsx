@@ -75,15 +75,19 @@ const KioskRoutes = () => {
 
       {/* Auth-protected */}
       <Route element={<KioskAuthGuard />}>
-        {/* Fullscreen — no nav rail */}
-        <Route path="play/ai/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
-        <Route path="play/pvp/local/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
-        <Route path="play/pvp/room/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
-        <Route path="play/cross-platform/engine/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage engineMode /></PhysicalBoardGuard>} />
-
-        {/* Standard — with nav rail */}
         <Route element={<KioskLayout username={user?.username} />}>
           <Route index element={<Navigate to="play" replace />} />
+
+          {/* 对局屏。Task 4 之前这四条在 KioskLayout **外面**,所以对局屏连顶栏都没有 ——
+              而规范 §5 防跳铁律 1 写死「顶栏永远占 y 0–56,任何层级、任何模块都不变高、
+              不隐藏」。挪进来之后 `dockLevelOf` 把它们判成 2 级:有顶栏、没 Dock、
+              中间区 516 高,正是对局屏该有的样子。
+              ⚠️ `PhysicalBoardGuard requireRecognition` 原样保留,不要顺手改。 */}
+          <Route path="play/ai/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
+          <Route path="play/pvp/local/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
+          <Route path="play/pvp/room/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
+          <Route path="play/cross-platform/engine/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage engineMode /></PhysicalBoardGuard>} />
+
           <Route path="play" element={<PlayPage />} />
           {/* 升降级对弈 has its own page: nothing about the opponent is chosen here,
               so it shares no controls with free play. Static path wins over the
@@ -102,6 +106,10 @@ const KioskRoutes = () => {
           <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
+          {/* ⚠️ research / baipu / live 三条**下了 Dock 但路由照旧存在**(规范 §3:
+              研究并进复盘、摆谱降为选中棋谱之后的落子方式、直播并进棋谱)。
+              入口在 Task 15(棋谱屏出 摆谱/直播)和 Task 16(复盘屏出 研究)里补。
+              **在那之前这三屏只能靠直接输 URL 到达** —— 可接受的中间态,不是终态。 */}
           <Route path="research" element={<ResearchPage />} />
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<PlaceholderPage />} />

@@ -81,7 +81,8 @@ describe('Kiosk navigation integration', () => {
 
     it('nav rail items navigate correctly', async () => {
       renderApp('/kiosk/play');
-      fireEvent.click(screen.getByText('死活'));
+      // Task 4:Dock 上这一项改叫「训练营」(规范 §3 共享词典),路由 `/kiosk/tsumego` 不变。
+      fireEvent.click(screen.getByText('训练营'));
       // Phase B reskin composes the subtitle from two separate translated
       // spans ("选择难度级别" + " · " + "练习死活以提高计算力"), so an exact
       // getByText('选择难度级别') no longer matches a single text node. Match

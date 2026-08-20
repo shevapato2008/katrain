@@ -8,6 +8,21 @@
 
 **Tech Stack:** React 18 + TypeScript + Vite + MUI（保留，仅用于业务控件与既有页面内部，外壳层不再经过它）+ Playwright（四图闸与几何闸）+ 已 vendored 的 `src/kiosk-shell/{tokens.css,fonts.css,fonts/,go-tokens.css,seclabel.css,icons/}`。
 
+**进度（每完成一个 Task 更新这一行；129 个步骤复选框不逐个勾，git 历史才是记录）：**
+
+| Task | 状态 | 提交 |
+|---|---|---|
+| 0 基线 | ✅ | 记在 `scope.md` §8 —— 计划里写的「3 文件 / 6 测试红」是**过期的**，实测是 1 文件 / 1 测试 |
+| 1 画布与 `.kiosk` 作用域 | ✅ | `KioskFrame` / `kioskScale` |
+| 2 四图工具 | ✅ | `bd80bcc8` `tests/helpers/fourup.ts` |
+| 3 顶栏 | ✅ | `c25bb1a3` 四件指示物全拆(D9)，`Header.tsx` 删 |
+| 6 图标 / 模式卡 / 组标题 | ✅ | `227706f8` 82 个 Phosphor + 契约闸（**提前到 Task 4 之前做** —— Task 4 的 Dock 要 `<Icon>`） |
+| 4 Dock 与路由重映射 | ✅ | `488ddbfe` 六项(D8)；对局屏挪进 KioskLayout |
+| 5 L1 两栏与镜像栏 | ⬜ 下一个 | |
+| 7–20 | ⬜ | |
+
+⚠️ **实际执行顺序是 0→1→2→3→**6**→4→5→…**，不是文档里的编号顺序。Task 4 的 `KioskDock` 消费 Task 6 的 `<Icon>`（这条依赖计划自己在 Task 4 的 Interfaces 里点过名）。
+
 **Spec:**
 - `/Users/fan/Repositories/smartbox-software/superpowers/shared/kiosk-shell/kiosk-shell-spec.md`（1191 行，v1.27，四棋类共享，**最高权威**）
 - `superpowers/tracks/kiosk-go-shell-align/scope.md`（本轮范围裁定，Fan 2026-08-20 已确认）
@@ -1415,7 +1430,7 @@ git commit -m "feat(kiosk-shell): 顶栏改用共享外壳的 .kiosk-topbar
 | 复盘 `/kiosk/report` | `Assessment` | **复盘**，图标 `grid-nine` | §3 |
 | （无） | — | **设置** `/kiosk/settings`，图标 `gear` | §1「Dock 里已经有设置」，顶栏齿轮拆掉 |
 
-⚠️ **Task 3 欠下的一笔账在本 Task 销。** D9 拆掉顶栏齿轮那一刻,「设置」在壳上**一个入口都没有**了 —— `src/kiosk/__tests__/navigation.integration.test.tsx` 里那条 `opens Settings from the header and returns to the originating route` 因此被 `it.skip` 挂起(Task 3 Step 10 挂的,注释写在原处)。本 Task 把 `设置` 加进 Dock 之后:**把那条测试的选择器改成点 Dock 上的设置项,然后解开 skip**。⚠️ **不许**改成 `renderApp('/kiosk/settings')` 直接跳路由 —— 那是「到达性测试给断路发通行证」:自造入口只证明「从我这层往里通」,而堵点按定义总在更外面。
+✅ **Task 3 欠下的那笔账已在本 Task 销(2026-08-20)。** D9 拆掉顶栏齿轮那一刻，「设置」在壳上一个入口都没有了，`src/kiosk/__tests__/navigation.integration.test.tsx` 里那条用例因此被 `it.skip` 挂起。本 Task 把 `设置` 加进 Dock 之后已经解开：选择器改成**点 Dock 上的设置项**，用例改名为 `opens Settings from the Dock and its back action lands on the safe fallback`。⚠️ 没有改成 `renderApp('/kiosk/settings')` 直接跳 —— 那是「到达性测试给断路发通行证」。返回落到 `/kiosk/play`(Dock 不带 `location.state.from`，`SettingsPage.tsx:73` 走安全兜底)；旧齿轮那条路会带上原路由，**Dock 要不要带留给 Task 18 重做设置屏时定**。
 
 ⚠️ **下 Dock ≠ 删路由。** `research` / `baipu` / `live` 三条路由**照旧存在**（D2 只接壳），只是不再是 Dock 项。它们的入口在 Task 15（棋谱屏出 `摆谱` / `直播`）和 Task 16（复盘屏出 `研究`）里补上。**Task 4 做完到 Task 15/16 做完之间，这三屏只能靠直接输 URL 到达**——这是可接受的中间态，但**每个 Task 的验收里要点名它还没接**，不要让它悄悄变成永久状态。
 

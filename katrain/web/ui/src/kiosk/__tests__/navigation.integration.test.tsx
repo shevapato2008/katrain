@@ -105,25 +105,20 @@ describe('Kiosk navigation integration', () => {
       expect(screen.getByText('人机对弈')).toBeInTheDocument();
     });
 
-    // ⚠️ Task 3(D9)把顶栏齿轮**拆了** —— 顶栏四个指示件/齿轮一个不留,设备状态归
-    // L1 左栏,设置归 Dock。于是「设置」在 Task 3 与 Task 4 之间**一个入口都没有**,
-    // 这条测试红在实处,不是选择器过时。
+    // Task 3(D9)把顶栏齿轮拆了,Task 4 把「设置」放进 Dock(规范 §1)——
+    // 入口换了地方,不是没有了。这里点的就是 Dock 上那一格。
     //
-    // 不改成 `renderApp('/kiosk/settings')` 直接跳:那样测的是「从我这层往里通」,
-    // 而堵点按定义在更外面 —— 断路照样发通行证。宁可 skip,让它明着欠着。
+    // 不写成 `renderApp('/kiosk/settings')` 直接跳:那样测的是「从我这层往里通」,
+    // 而堵点按定义在更外面 —— 断路照样发通行证。入口在不在,只有从入口点进去才算数。
     //
-    // Task 4 销账:Dock 加 `设置` 项(见计划 Task 4 词典表最后一行)后,把选择器改成
-    // **点 Dock 上的设置项**,再解开 skip。不许用直接跳路由的写法。
-    it.skip('opens Settings from the header and returns to the originating route', async () => {
+    // 返回落到 `/kiosk/play`:Dock 不带 `location.state.from`,SettingsPage 的
+    // `handleBack` 因此走安全兜底(SettingsPage.tsx:73)。旧齿轮那条路会带上原路由,
+    // Task 18 重做设置屏时再决定 Dock 要不要带 —— 这条测试锁的是现状。
+    it('opens Settings from the Dock and its back action lands on the safe fallback', async () => {
       renderApp('/kiosk/play');
 
-      const headerSettings = screen
-        .getAllByRole('button', { name: '设置' })
-        .find((button) => button.querySelector('[data-testid="SettingsOutlinedIcon"]'));
-      expect(headerSettings).toBeDefined();
-      fireEvent.click(headerSettings!);
+      fireEvent.click(screen.getByRole('button', { name: '设置' }));
       await waitFor(() => expect(screen.getByRole('heading', { name: '设置' })).toBeInTheDocument());
-      expect(screen.queryByText('复盘')).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByRole('button', { name: '返回' }));
       await waitFor(() => expect(screen.getByText('人机对弈')).toBeInTheDocument());

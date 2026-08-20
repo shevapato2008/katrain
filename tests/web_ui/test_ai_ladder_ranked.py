@@ -1304,6 +1304,47 @@ def test_excluded_game_id_replays_its_first_decision_even_if_later_parameters_wo
         assert db.query(models_db.AiLadderProfile).count() == 0
 
 
+def test_a_real_catalog_rung_actually_banks_a_counted_result(session_factory, user):
+    """2026-08-20「开始吧」到底有没有生效 —— 用**真目录**造对手，不是 fixture。
+
+    本文件其余用例的对手快照是手写的 `certification_status="certified"`，所以它们证明的是
+    「如果对手已认证，结算会计分」，而不是「真阶梯现在产得出已认证的对手」。认证集是空集
+    的那半年里，那些用例一直是绿的，产品却一局都不计分。这条补的就是那一环。
+    """
+    from katrain.web.core.ai_ladder_catalog import build_opponent_snapshot
+
+    rung = ladder_module.PLAYABLE_RUNGS[0]
+    snapshot, _identity = build_opponent_snapshot(rung)
+    assert (snapshot.certification_status, snapshot.availability) == ("certified", "available")
+
+    placed_profile(session_factory, user.id, rung)
+    repo = AiLadderRankedRepository(session_factory)
+    outcome = settle(repo, user.id, "real-catalog-counts", "win", snapshot)
+    assert (outcome.counted, outcome.reason) == (True, None)
+    assert outcome.net_score == 1
+
+    # 反面：封档档位连对手都造不出来，所以那一类对局在更外层就没了。
+    for retired in sorted(ladder_module._RETIRED_RUNGS):
+        assert ladder_module.get_level(retired).recipe is not None
+        with pytest.raises(ValueError):
+            build_opponent_snapshot(retired)
+
+
+def test_every_certified_rung_can_be_seated_and_counted(session_factory, user):
+    """29 档逐个走一遍：真快照 + 结算 = counted。有一档漏认证，玩家到那里会静默卡住。"""
+    from katrain.web.core.ai_ladder_catalog import build_opponent_snapshot
+
+    repo = AiLadderRankedRepository(session_factory)
+    for index, rung in enumerate(ladder_module.PLAYABLE_RUNGS):
+        snapshot, _ = build_opponent_snapshot(rung)
+        with session_factory() as db:
+            db.query(models_db.AiLadderProfile).filter_by(user_id=user.id).delete()
+            db.commit()
+        placed_profile(session_factory, user.id, rung)
+        outcome = settle(repo, user.id, f"certified-sweep-{index}", "win", snapshot)
+        assert (outcome.counted, outcome.reason) == (True, None), (rung, outcome.reason)
+
+
 def test_single_decision_table_rejects_a_second_valid_row_after_exclusion(session_factory, user, opponent):
     repo = AiLadderRankedRepository(session_factory)
     valid_opponent = replace(opponent, rung=PLACEMENT_RUNG_5D)

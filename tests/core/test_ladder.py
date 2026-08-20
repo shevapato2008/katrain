@@ -168,11 +168,12 @@ def test_catalog_fixed_recipes_are_exact_and_unresolved_levels_only_expose_candi
     assert levels[38].recipe.max_visits < pro_top.recipe.max_visits < levels[40].recipe.max_visits
 
 
-def test_catalog_metadata_is_frozen_validated_and_initially_unavailable():
-    assert all(
-        (level.certification_status, level.availability, level.route) == ("provisional", "unavailable", "server")
-        for level in ladder.LADDER_LEVELS
-    )
+def test_catalog_metadata_is_frozen_validated_and_certified_exactly_where_measured():
+    for level in ladder.LADDER_LEVELS:
+        expected = (
+            ("certified", "available") if level.rung in ladder._CERTIFIED_RUNGS else ("provisional", "unavailable")
+        )
+        assert (level.certification_status, level.availability, level.route) == (*expected, "server"), level.rung
     assert [level.external_status for level in ladder.LADDER_LEVELS[:2]] == ["not_applicable", "not_applicable"]
     assert all(level.external_status == "untested" for level in ladder.LADDER_LEVELS[2:])
     with pytest.raises(FrozenInstanceError):
@@ -208,11 +209,16 @@ def test_catalog_resolvers_separate_calibration_from_production_availability():
     # is what would catch a future rung added without a recipe.
     for level_number in range(1, 42):
         assert ladder.get_recipe_for_calibration(level_number) is ladder.LADDER_LEVELS[level_number - 1].recipe
-    # Resolving for PLAY is a separate gate and still refuses everything: having a recipe is
-    # not having a certified one. This is the distinction the test name is about.
-    for level_number in (1, 21, 41):
+    # Resolving for PLAY is a separate gate: having a recipe is not having a certified one.
+    # That distinction is the point of this test, and it is still live -- the 12 retired rungs
+    # keep their recipes (so calibration above resolves them) yet refuse to be seated.
+    for level_number in sorted(ladder._RETIRED_RUNGS):
+        assert ladder.get_level(level_number).recipe is not None
         with pytest.raises(ladder.LadderUnavailable):
             ladder.resolve_available_rung(level_number)
+    # …while the 29 certified rungs resolve, which is what 2026-08-20「开始吧」 turned on.
+    for level_number in sorted(ladder._CERTIFIED_RUNGS):
+        assert ladder.resolve_available_rung(level_number) is ladder.LADDER_LEVELS[level_number - 1].recipe
 
 
 def test_resolved_product_recipes_have_no_duplicate_effective_configs():
@@ -1231,6 +1237,49 @@ def test_every_catalog_recipe_builds_a_valid_engine_strength_spec():
         # humansl rungs drive the human net; net_search rungs drive the main net. Exactly
         # one of the two must be the thing making the move, never neither.
         assert spec.main_model or spec.human_model, level.rung
+
+
+def test_certified_is_exactly_the_playable_set_and_never_a_retired_rung():
+    """认证 = 可坐，一个不多一个不少（2026-08-20 Fan「开始吧」之后）。
+
+    两个方向都要钉：
+    * 认证 ⊄ 可坐 ⇒ 对一个没人能坐上去的档位做了强度主张；
+    * 可坐 ⊄ 认证 ⇒ 玩家会被 `step_playable_rung` 挪到一个未认证档上，
+      到了那里所有对局都 `counted=0`，他会静默地卡住不再升降。
+    第二条正是「认证集必须连续」那个老顾虑的实质 —— 两集合相等时它自动成立。
+    """
+    assert set(ladder._CERTIFIED_RUNGS) == set(ladder.PLAYABLE_RUNGS)
+    assert not (set(ladder._CERTIFIED_RUNGS) & ladder._RETIRED_RUNGS)
+    assert len(ladder._CERTIFIED_RUNGS) == 29
+    # 显式成员，防止哪天被改写成 `全集 - 封档` 那种会自己长大的推导式。
+    assert set(ladder._CERTIFIED_RUNGS) == {1, 4, 7, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20} | {
+        22,
+        24,
+        26,
+        28,
+        30,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+    }
+    # 每一个认证档都必须真的能造出对手来。
+    for rung in ladder._CERTIFIED_RUNGS:
+        assert ladder.get_level(rung).recipe is not None
+
+
+def test_every_step_between_certified_rungs_stays_certified():
+    """从任一认证档 ±1 步，落点仍是认证档 —— 否则玩家会掉进一个「打了不算」的档位。"""
+    for rung in ladder.PLAYABLE_RUNGS:
+        for step in (-1, 1):
+            landed = ladder.step_playable_rung(rung, step)
+            assert landed in ladder._CERTIFIED_RUNGS, (rung, step, landed)
 
 
 def test_playable_rungs_are_the_catalog_minus_the_retired_ones():

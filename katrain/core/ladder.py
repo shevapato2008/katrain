@@ -600,23 +600,45 @@ def _candidate_labels(rung: int) -> Tuple[str, ...]:
 #: make something playable -- that is what LADDER_ALLOW_PROVISIONAL_ENV is for, and
 #: that switch never touches what the API reports.
 #:
-#: 🔴 2026-08-14: this is now an EMPTY-BY-MEASUREMENT set, not an unstarted one.
-#: 3,972 games over six batches measured 35 adjacent seams (EXPERIMENTS.md §C37).
-#: Only 7 clear the gate (Wilson 95% CI lower bound >= 0.60) and **they are not
-#: contiguous**, so no run of adjacent rungs can be certified as shipped:
-#:   * profile axis (rank_Nd@1 chain, 1k..5d) tops out at lower bound 0.585 and
-#:     saturates outright at 5d->6d (53.2%). More games do not fix it -- the true
-#:     gap is ~110 Elo, and n~105 already puts the bound at its ceiling.
-#:   * the 准段 T=1.15 rungs are INVERTED: 准(N+1)段 measures weaker than N段
-#:     (34.6%..51.5%), because +130 of temperature loss buys only +20~27 of profile.
-#:   * four seams invert wherever the ladder steps from `rank_Nd@search` back down
-#:     to `rank_(N+1)d@1s`, trading away 148~411 Elo of mechanism for ~25 of profile.
-#: Rebuild direction, each step measured: within one profile go
-#: `@1 -> @1t0.8 -> @1s -> @2 -> @4` so the mechanism axis never steps backwards
-#: (`@1t0.8` is the one newly certified rung, +227 Elo, lower bound 0.708); compare
-#: across profiles only at a fixed mechanism. Re-run `calibration/replay_seams_summary.py`
-#: before changing this set.
-_CERTIFIED_RUNGS: FrozenSet[int] = frozenset()
+#: 🟢 2026-08-20: OPENED. Fan: 「开始吧」。All 29 playable rungs are certified; the 12
+#: retired ones are not (they cannot be seated, so certifying them would be a claim about
+#: strength nobody can meet). Evidence: EXPERIMENTS.md §C38.4 -- every rung below cites the
+#: measured seam against the playable rung directly beneath it, merged across all batches
+#: by (A config, B config) and reproducible from the committed artifact:
+#:
+#:     cd superpowers/tracks/golaxy-ai-ladder-parity/calibration
+#:     python replay_seams_summary.py --summary results/artifacts/ladder_all_seams_20260820.jsonl.gz \
+#:         --by-config --pairs --gate-point 0.550
+#:
+#: ⚠️ **The standard changed, and that must not be quietly forgotten.** Until 2026-08-19 the
+#: gate here was the Wilson 95% CI LOWER BOUND >= 0.600, and under it this set was empty by
+#: measurement (§C37: 3,972 games, 35 seams, only 7 clear, non-contiguous). Fan replaced it
+#: twice: 2026-08-19 「胜率60%」 -> POINT ESTIMATE, and 2026-08-20 「把胜率边界改成55%」 ->
+#: 0.550. What that buys is smoothness (the steps he objected to were 0.65-0.79); what it
+#: costs is proof: at n=100-320 the Wilson lower bound of a 0.570 seam is ~0.47, so **we
+#: cannot demonstrate that adjacent rungs are ordered at all** -- promotion between two
+#: neighbours is closer to a coin flip than the label suggests. That is a product decision
+#: taken with the cost stated, not a measurement result. See
+#: memory reference_n100_cannot_adjudicate_060 and reference_ladder_finer_than_provable.
+#:
+#: Seam behind each entry (A beats the playable rung below it; n merged, gate 0.550):
+#:   kyu   1 20级 floor  |  4 17级 .570/100 |  7 14级 .630/100 |  9 12级 .615/200
+#:        10 11级 .573/220 | 11 10级 .595/220 | 12 9级 .600/220 | 13 8级 .595/220
+#:        14 7级 .591/220 | 15 6级 .625/320 | 17 4级 .720/200 | 18 3级 .650/320
+#:        19 2级 .591/220 | 20 1级 .623/220
+#:   dan  22 1段 .676/102 | 24 2段 .683/120 | 26 3段 .650/120 | 28 4段 .667/120
+#:        30 5段 .600/120 | 32 6段 .686/102 | 33 准7段 .783/120 | 34 7段 .765/102
+#:        35 准8段 .637/102 | 36 8段 .578/102 | 37 准9段 .657/102 | 38 9段 .750/100
+#:        39 职业水平 .625/120 | 40 职业顶尖 .842/120 | 41 超越人类 .925/120
+#:
+#: Listed explicitly rather than derived as `catalog - retired`: each number is a product
+#: claim with a citation, and a derivation would silently certify whatever gets un-retired
+#: next. `test_certified_is_exactly_the_playable_set_and_never_a_retired_rung` pins both
+#: the membership and the containment.
+_CERTIFIED_RUNGS: FrozenSet[int] = frozenset(
+    {1, 4, 7, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20}  # 级位 14 档
+    | {22, 24, 26, 28, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41}  # 段位 15 档
+)
 
 #: Rungs that keep their catalog position and their recipe but that no player may be
 #: seated on. "Retired" is deliberately not "recipe-less": stored rung numbers in the

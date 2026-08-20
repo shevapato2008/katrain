@@ -1415,6 +1415,8 @@ git commit -m "feat(kiosk-shell): 顶栏改用共享外壳的 .kiosk-topbar
 | 复盘 `/kiosk/report` | `Assessment` | **复盘**，图标 `grid-nine` | §3 |
 | （无） | — | **设置** `/kiosk/settings`，图标 `gear` | §1「Dock 里已经有设置」，顶栏齿轮拆掉 |
 
+⚠️ **Task 3 欠下的一笔账在本 Task 销。** D9 拆掉顶栏齿轮那一刻,「设置」在壳上**一个入口都没有**了 —— `src/kiosk/__tests__/navigation.integration.test.tsx` 里那条 `opens Settings from the header and returns to the originating route` 因此被 `it.skip` 挂起(Task 3 Step 10 挂的,注释写在原处)。本 Task 把 `设置` 加进 Dock 之后:**把那条测试的选择器改成点 Dock 上的设置项,然后解开 skip**。⚠️ **不许**改成 `renderApp('/kiosk/settings')` 直接跳路由 —— 那是「到达性测试给断路发通行证」:自造入口只证明「从我这层往里通」,而堵点按定义总在更外面。
+
 ⚠️ **下 Dock ≠ 删路由。** `research` / `baipu` / `live` 三条路由**照旧存在**（D2 只接壳），只是不再是 Dock 项。它们的入口在 Task 15（棋谱屏出 `摆谱` / `直播`）和 Task 16（复盘屏出 `研究`）里补上。**Task 4 做完到 Task 15/16 做完之间，这三屏只能靠直接输 URL 到达**——这是可接受的中间态，但**每个 Task 的验收里要点名它还没接**，不要让它悄悄变成永久状态。
 
 - [ ] **Step 1: 写失败的单测——Dock 词典与层级**

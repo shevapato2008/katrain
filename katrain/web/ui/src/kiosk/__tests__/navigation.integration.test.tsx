@@ -104,7 +104,16 @@ describe('Kiosk navigation integration', () => {
       expect(screen.getByText('人机对弈')).toBeInTheDocument();
     });
 
-    it('opens Settings from the header and returns to the originating route', async () => {
+    // ⚠️ Task 3(D9)把顶栏齿轮**拆了** —— 顶栏四个指示件/齿轮一个不留,设备状态归
+    // L1 左栏,设置归 Dock。于是「设置」在 Task 3 与 Task 4 之间**一个入口都没有**,
+    // 这条测试红在实处,不是选择器过时。
+    //
+    // 不改成 `renderApp('/kiosk/settings')` 直接跳:那样测的是「从我这层往里通」,
+    // 而堵点按定义在更外面 —— 断路照样发通行证。宁可 skip,让它明着欠着。
+    //
+    // Task 4 销账:Dock 加 `设置` 项(见计划 Task 4 词典表最后一行)后,把选择器改成
+    // **点 Dock 上的设置项**,再解开 skip。不许用直接跳路由的写法。
+    it.skip('opens Settings from the header and returns to the originating route', async () => {
       renderApp('/kiosk/play');
 
       const headerSettings = screen

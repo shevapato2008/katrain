@@ -25,18 +25,20 @@ export const KIOSK_SANS = '"SmartBox Sans", "SmartBox Kai", "Kaiti SC", system-u
 export const KIOSK_SERIF = '"SmartBox Serif", "SmartBox Kai", "Kaiti SC", Georgia, serif';
 export const KIOSK_MONO = '"SmartBox Mono", "SmartBox Kai", ui-monospace, monospace';
 
-/**
- * 品牌字。规范 §9 `:609`:**「智星盒」三个字 = 龙藏行楷,只此一处**。
+/* 品牌字常量(KIOSK_BRAND)在 Task 3 随 `Header.tsx` 一起删了。
  *
- * 兜底接的是 `KIOSK_SERIF` 而**不是** sans —— 龙藏没加载到时该掉进楷体,不该掉进黑体。
+ * 「智星盒」三个字 = 龙藏行楷、只此一处(规范 §9 `:609`)这条**没有变**,变的是
+ * 谁来说它:现在由 `kiosk-shell/tokens.css` 的 `.kiosk-topbar__brand-zh` 一处给出
+ * (字族 + `font-synthesis:none` 一起),React 侧不再写 `sx={{ fontFamily }}`。
+ * 留一个和 tokens.css 逐字重复的常量在这里,下一次只会有一处被改。
  *
- * ⚠️ 上一版没有这一条,而 `Header.tsx` 那三个字走的是 `KIOSK_SERIF`:
- * 栈首 SmartBox Serif 是 Newsreader(**只有拉丁**),中文码点在那儿匹配不到面,
- * 于是「智星盒」落到第二顺位 SmartBox Kai —— **屏上跑的是霞鹜文楷,不是龙藏**。
+ * ⚠️ 那条曾经踩过的坑照旧记着:旧 `Header.tsx` 让这三个字走 `KIOSK_SERIF`,
+ * 而栈首 SmartBox Serif 是 Newsreader(**只有拉丁**),中文码点在那儿匹配不到面,
+ * 「智星盒」落到第二顺位 SmartBox Kai —— **屏上跑的是霞鹜文楷,不是龙藏**。
  * 字体文件在、`@font-face` 在(`fonts.css:265`)、`import` 也在,**只有消费点没接**。
- * 用 `unicode-range` 锁死三个码点这件事上游已经做了,所以这个栈**不会外溢**到别的中文。
+ * 现在由 `tests/kiosk-shell-geometry.spec.ts` 那条 CDP 闸盯着(首位是龙藏 **且**
+ * 覆盖 3 个字),它变异演示过。
  */
-export const KIOSK_BRAND = `"SmartBox Brand LongCang", ${KIOSK_SERIF}`;
 
 const SANS = KIOSK_SANS;
 const SERIF = KIOSK_SERIF;

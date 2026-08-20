@@ -2,7 +2,7 @@ import { Box } from '@mui/material';
 import { Outlet, useLocation } from 'react-router-dom';
 import { ImmersiveProvider, useImmersive } from '../../context/ImmersiveContext';
 import { KioskFrame } from '../../shell/KioskFrame';
-import Header from './Header';
+import { KioskTopbar } from '../../shell/KioskTopbar';
 import Dock from './Dock';
 import SmartBoardConsole from './SmartBoardConsole';
 import { L1_PATHS } from './navTabs';
@@ -20,16 +20,12 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
     <KioskFrame
       level={showDock ? 1 : 2}
       topbar={immersive ? undefined : (
-        // 过渡期垫片(Task 3 拆):`.kiosk-content` 是 `position:absolute; top:--topbar-h`,
-        // 而旧 `Header` 是普通流里的 MUI Box —— 不钉住它,内容会盖在顶栏上。
-        // 真顶栏(`.kiosk-topbar`)自己就带这套定位,那时这层 div 一起删。
-        <div style={{ position: 'absolute', left: 0, right: 0, top: 0, zIndex: 2 }}>
-          <Header
-            username={username}
-            showHome={isL1}
-            onHome={() => window.location.assign('http://127.0.0.1:8080/launcher')}
-          />
-        </div>
+        <KioskTopbar
+          identity={{ username }}
+          // 主页键只在一级页出现(规范 §6「一级页面可在固定系统动作区显示主页入口」)。
+          // 二/三级页要退的是**这一屏**,那是页控条上的返回,不是回智星盒主页。
+          onHome={isL1 ? () => window.location.assign('http://127.0.0.1:8080/launcher') : undefined}
+        />
       )}
       dock={showDock ? (
         // 同上(Task 4 拆)。⚠️ 旧 Dock 自己高 86,而 `--dock-h` 是 82 ——

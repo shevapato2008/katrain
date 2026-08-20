@@ -126,3 +126,85 @@ test('token 求得到值 —— .kiosk 作用域真的生效了', async ({ page 
   expect(vars.accent.toUpperCase()).toBe('#58B57A');
   expect(vars.font).toContain('SmartBox');
 });
+
+test('§6 顶栏:通栏贴顶恒 56 高、左簇顺序与间距、右簇贴右缘', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+
+  const screen = await box(page, '.kiosk-screen');
+  const topbar = await box(page, '.kiosk-topbar');
+
+  // 这三条**替换**了原 `__tests__/Header.test.tsx` 里那条 jsdom 的
+  // `toHaveStyle({height:'56px'})` —— 那个数是 jsdom 照着内联样式回读的,
+  // 对布局无权作证。同一件事在这里由浏览器量。
+  expect(topbar.x).toBe(screen.x);              // 通栏贴边,不留左右外边距
+  expect(topbar.y).toBe(screen.y);
+  expect(topbar.w).toBe(screen.w);
+  expect(topbar.h).toBe(56);                    // --topbar-h
+
+  const logo = await box(page, '.kiosk-topbar__logo');
+  const zh = await box(page, '.kiosk-topbar__brand-zh');
+  const en = await box(page, '.kiosk-topbar__brand-en');
+  const rule = await box(page, '.kiosk-topbar__rule');
+  const game = await box(page, '.kiosk-topbar__game');
+  const avatar = await box(page, '.kiosk-topbar__avatar');
+  const clock = await box(page, '.kiosk-topbar__clock');
+
+  expect(logo.x - screen.x).toBe(24);           // --topbar-pad-x
+  expect(logo.w).toBe(32);                      // --topbar-logo
+  expect(logo.h).toBe(32);
+  expect(Math.round(zh.x - logo.right)).toBe(10);   // --topbar-gap-logo-brand
+  expect(Math.round(en.x - zh.right)).toBe(6);      // --topbar-gap-zh-en
+  expect(rule.w).toBe(1);
+  expect(rule.h).toBe(20);                      // --topbar-rule-h
+  expect(avatar.w).toBe(26);                    // --topbar-avatar
+  expect(avatar.h).toBe(26);
+
+  // 左簇顺序不可调 —— 间距对了但顺序反了,上面每一条仍会过。
+  expect(logo.x).toBeLessThan(zh.x);
+  expect(zh.x).toBeLessThan(en.x);
+  expect(en.x).toBeLessThan(rule.x);
+  expect(rule.x).toBeLessThan(game.x);
+
+  // 右簇贴右缘,和左簇同一个内边距
+  expect(Math.round(screen.right - clock.right)).toBe(24);
+});
+
+test('§6 主页键只在 L1 出现 —— 二级页要退的是这一屏,不是回智星盒主页', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  await expect(page.locator('[data-testid="kiosk-home-action"]')).toHaveCount(1);
+
+  await boot(page, '/kiosk/settings');
+  await expect(page.locator('[data-testid="kiosk-home-action"]')).toHaveCount(0);
+
+  // 但**身份位不许跟着消失**(防跳铁律 2:右簇位置恒定)。
+  const screen = await box(page, '.kiosk-screen');
+  const clock = await box(page, '.kiosk-topbar__clock');
+  expect(Math.round(screen.right - clock.right)).toBe(24);
+});
+
+test('§2 品牌字「智星盒」跑的是龙藏行楷,而且三个字都是', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  // 字体真没真跑起来只有浏览器自己知道:CSS 里写了字族 ≠ 那个面被选中。
+  // 上一版就是「字体文件在、@font-face 在、import 也在,只有消费点没接」——
+  // 屏上跑的是霞鹜文楷,而任何读 CSS 的断言都会说它是对的。
+  const client = await page.context().newCDPSession(page);
+  await client.send('DOM.enable');
+  await client.send('CSS.enable');
+  const { root } = await client.send('DOM.getDocument');
+  const { nodeId } = await client.send('DOM.querySelector', {
+    nodeId: root.nodeId, selector: '[data-testid="kiosk-brand-zh"]',
+  });
+  const { fonts } = await client.send('CSS.getPlatformFontsForNode', { nodeId });
+
+  // §17.1:任何「不许超过 N」的断言都要问一句「0 是不是最优解」。是的话它就没有下界,
+  // 而下界通常才是真正要的那件事。这里的下界钉在「首位是龙藏 **且** 覆盖 3 个字」——
+  // 只钉首位的话,掉出去两个字它还是首位。
+  //
+  // 变异记录(2026-08-20,Task 3 Step 9),**两支各演示一次**:
+  //   ① 把 className 从 `kiosk-topbar__brand-zh` 改成 `kiosk-topbar__brand`
+  //      ⇒ 红,Received "LXGW WenKai"(正是上一版屏上真跑的那个面)。
+  //   ② 把文案从「智星盒」改成「智星」⇒ 红,Expected 3 / Received 2。
+  //      —— 这一支专门证明下界那半条不是摆设。
+  expect(fonts[0].familyName).toContain('Long Cang');
+  expect(fonts[0].glyphCount).toBe(3);
+});

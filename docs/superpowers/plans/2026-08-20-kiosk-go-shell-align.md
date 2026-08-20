@@ -1,0 +1,3239 @@
+# 围棋 kiosk 对齐共享外壳 实施计划
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** 把 `katrain/web/ui/src/kiosk/` 的十屏界面，逐屏搬到四棋类共享外壳（`kiosk-shell/tokens.css` 的 112 个类）上，使围棋与已对齐的象棋 / 国象 / 五子棋在顶栏、Dock、L1 两栏、模式卡、页控条、悬浮滚动条这几层上**逐像素同构**。
+
+**Architecture:** 这是**搬运，不是重新设计**。三层来源，优先级从高到低：① 规范 `kiosk-shell-spec.md`（四棋类共享，最高权威）；② 围棋设计稿 `sample-go/go-kiosk.tmpl.html`（围棋这十屏的正本，几何逐字节引 `tokens.css`）；③ 已对齐三家的真前端（`smartbox-software/{chess,xiangqi,gomoku}/ui/src/`，是「对齐后长什么样」的活样本）。做法是**用共享类名直接写 JSX**，不再用 MUI `sx` 复刻几何——§17.2 那条「类抄进来了、页面又自己造了一套」正是本轮要消除的病灶。象棋 `xiangqi/ui/src/shell/` 已经有全套 React 外壳组件（`KioskFrame` / `KioskTopbar` / `KioskDock` / `KioskPagebar` / `KioskBoardConsole` / `KioskScrollZone` / `KioskFold`），本轮**照抄它们的结构**，只换围棋自己的内容与配色变量。
+
+**Tech Stack:** React 18 + TypeScript + Vite + MUI（保留，仅用于业务控件与既有页面内部，外壳层不再经过它）+ Playwright（四图闸与几何闸）+ 已 vendored 的 `src/kiosk-shell/{tokens.css,fonts.css,fonts/,go-tokens.css,seclabel.css,icons/}`。
+
+**Spec:**
+- `/Users/fan/Repositories/smartbox-software/superpowers/shared/kiosk-shell/kiosk-shell-spec.md`（1191 行，v1.27，四棋类共享，**最高权威**）
+- `superpowers/tracks/kiosk-go-shell-align/scope.md`（本轮范围裁定，Fan 2026-08-20 已确认）
+- `superpowers/tracks/golaxy-ai-ladder-parity/kiosk-design-alignment.md`（2026-08-11/12 实测记录，踩过的坑）
+- `katrain/web/ui/src/kiosk-shell/README.md`（vendored 副本说明，含两段「留着不删」的错误记录）
+- 设计稿正本：`smartbox-software/superpowers/shared/kiosk-shell/sample-go/go-kiosk.tmpl.html`（85KB 手写模板，**读这份，不要读 1.1MB 的 `go-kiosk.html`**，后者是 build.py 内联字体与图片之后的产物）
+- 参考图：同目录 `shots/01-play.png … 10-settings.png`（2048×1202 = 2× 的 1024×601）
+
+---
+
+## Global Constraints
+
+每一条都对**所有** Task 成立，任务里不再重复。
+
+### G1 `.kiosk` 作用域（硬闸）—— 精确机制
+
+口径要说准，因为**失败长相和「样式没生效」不一样**：
+
+- `tokens.css` 里 **163 条自定义属性全部、且只在** 一个规则块里：`.kiosk { … }`（`:14-245`。实测 `grep -nE '^\s*--[a-zA-Z0-9-]+\s*:' tokens.css | awk -F: '$1<14 || $1>245'` **返回空**）。
+- 另外只有一条规则要求 `.kiosk` 祖先：`.kiosk, .kiosk *, .kiosk *::before, .kiosk *::after { box-sizing: border-box }`（`:253-256`）。
+- **其余 186 个规则块全是顶层 `.kiosk-*` 选择器，不要求 `.kiosk` 祖先。**
+
+⇒ 把 `.kiosk-card` 画在 `.kiosk` 外面，**它的 `display/flex/border` 照样生效，只有每一个 `var()` 静默求空**：`height: var(--card-mode-h)` 变成 invalid-at-computed-value-time → `auto`。屏上是「布局对了一半、尺寸全塌」，**不是白屏，也不报错**。国象实测过更狠的一次（`xiangqi/ui/src/index.css:23-34`）：在 `:root` 上写 `--serif: var(--font-serif)`，CDP 量出来四个 token 全是空串、`body` 跑的是 **Times**，而屏上「没炸，纯属侥幸」。
+
+⇒ **用到这套 token 的子树，根节点必须挂 `.kiosk`。** Task 1 把 `.kiosk` 提到 kiosk 应用根。此后若有子树 portal 到 `.kiosk` 之外（MUI `Dialog` / `Popover` / `Menu` 默认 portal 到 `body`），**那个子树必须自己挂 `.kiosk`**，否则同一个静默失败。
+
+MUI `CssBaseline` 本来就是 border-box，提到根节点**不改变既有 MUI 组件的盒模型**（已核）。
+
+### G2 补的变量与两处没有兜底的 `var()`
+
+- `--paper` / `--accent-soft` **在 `tokens.css` 里既不定义也不使用**（实测 `grep -nE 'paper|accent-soft' tokens.css` 无输出），在围棋设计稿里也 **0 次命中**。它们是给「从象棋模板抄来的代码」准备的安全别名，`go-tokens.css:25,37` 已赋值。**别把它当成围棋的活依赖**——但也不要删，删了象棋来源的那几块会静默塌。
+- **真正没有兜底的是 `--at`**：`tokens.css:844` `.kiosk-evalstack__cursor` 写的是 `left: calc(var(--eval-axis-w) + (100% - var(--eval-axis-w)) * var(--at))`，**没有第二参数**。消费方忘了写 `style={{'--at': String(t)}}`，整条 `calc()` 失效、游标塌回 `left:auto`。用到着法条时必须设它。
+- **`--info` 有一处不跟随**：`go-tokens.css:45` 定义了 `--info: #5B9BD5`，但 `tokens.css:920` 的 `.kiosk-wip.have` 把同一个蓝**写成了字面量**（`color:#5b9bd5; border-color:rgba(91,155,213,.5)`）。要调蓝标的颜色，改 `--info` 不生效。登记，不在本轮改（那是上游的事）。
+- `go-tokens.css` 与 `tokens.css` 的 `.kiosk` **特异性相同**，所以 **`go-tokens.css` 必须在 `tokens.css` 之后 import**，顺序不可换。
+
+### G3 四图对比（硬闸，每屏一次）
+
+每屏在**同一目标 viewport（1024×600）**下同时产出四类图，缺一不算过：
+
+| 图 | 内容 | 答什么 |
+|---|---|---|
+| 参考 | `sample-go/shots/NN-*.png` 等比缩到 1024 宽、顶端对齐裁到 600 | 目标长什么样 |
+| 实现 | 真浏览器 `page.screenshot()` @1024×600 | 这一屏自己成不成立 |
+| 并排 | 参考 \| 实现，各带一条 34px 标签带 | 构图 / 分块顺序 / 组件层级 |
+| 叠加+差异 | **边缘图**：红 = 只有参考有边，绿 = 只有实现有，白 = 两边都有 | 几何骨架对不对 |
+
+差异图**必须用边缘图，不能用像素比**（`kiosk-layout-a-vs-xiangqi-setup.spec.ts:92-108` 已实现）：像素比只能证明「两屏配色不同」，而各棋类保留自己基调是规范要求的。**围棋这一轮参考图与实现同为青毡深色，像素比不再整屏通红，但仍然不作数**——理由换了一个：稿子里有大量不上线的旁注（见 G5），像素比会把它们全部报成回归。
+
+逐项对比：构图、几何间距、组件层级、字体/色彩/材质、图标素材、文案、状态语义。
+
+**未经 Fan 明确确认，不得进入下一屏。** 自动化闸绿了 ≠ 视觉过了。
+
+### G4 承重实测（硬闸）
+
+判据不是属性名清单，是反查：**把这次改动撤回去，页面上有没有任何元素的高度来源或裁切边界会变？** 会变就当场在**真浏览器**里量，不许攒到最后的取图关卡，不许用 jsdom 近似或逻辑推演顶替。
+
+本轮**整条盒子链都在改**（`.kiosk-screen` 是 `position:relative` 的固定 1024×600，`.kiosk-topbar` / `.kiosk-dock` / `.kiosk-content` 全是 `position:absolute`，`tokens.css:269-278`、`:377-388`、`:415-423`），所以 **每一个 Task 都触发这一关**。
+
+量之前先把数据造到会溢出——装得下的数据量下量出来的数字一概不算。先写死关系式期望再读数，具体像素只记录、不作判据。**同一条链上可以有不止一处断点，量通一条不等于整条链是对的。**
+
+新增的承重面是 §5.2 那条悬浮滚动条：`overflow-y:auto` + `scrollTop` 真能推 那条闸不能丢（Task 7）。
+
+判据一句：**把它原样搬进真浏览器，还有可能失败吗？** 不可能就删。**假的是输入可以，假的是结论删。**
+
+### G5 稿子里的 `.note` 分两种，只搬其中一种
+
+设计稿有 26 处 `class="note"`（11px `--dim`，`go-kiosk.tmpl.html:175`）。它们**不是同一件东西**：
+
+| 种类 | 例 | 怎么办 |
+|---|---|---|
+| **给读稿人的旁注** | 「围棋原来那张稿把它做成一张并列卡，**是错的**」「这道题是我在稿子上现摆的，不是题库里的题」「见 `interface.py` 的分析闸」 | **不上线**。已对齐三家一处都没搬（实测：`grep "不是第六张并列卡\|是错的" chess/ui/src xiangqi/ui/src` 零命中；象棋稿同样有 22 处 `.note`，真前端一处没有） |
+| **真 UI 文案** | 做题屏 `.panel > h3「这一题」` 底下那段题面「黑先。白有两颗子，各剩两口气…」 | **照搬**，一个字不改 |
+
+判据：**这段话是说给屏幕前的下棋人听的，还是说给读这份稿子的人听的？** 每屏的 Task 里逐条点名了哪几处属于哪一类，不要自己重判。
+
+⇒ **这条会让每一张差异图在旁注那几块出现大片绿/红，这是预期的**，不是回归。并排图的标签带里必须写明这一句（照 `kiosk-layout-a-vs-xiangqi-setup.spec.ts:124-128` 的做法：说明必须写在**图里**，不是写在旁边的文档里）。
+
+### G6 构建与类型（硬闸）
+
+```bash
+cd katrain/web/ui
+npx tsc -b              # 不是 tsc --noEmit —— 根 tsconfig 是 files:[] + references,
+                        # 命令行 --noEmit 不跟 references, 实测检查 0 个文件
+npm run build           # 完整 web 构建 -> ../static/      基线 EXIT 0, 约 52s(tsc -b 占大头)
+npm run build:kiosk-2d  # SBC kiosk 构建 -> ../static-kiosk-2d/, 链了 verify:kiosk-2d
+                        # 基线 EXIT 0, 约 41s。**这是 UI 代码唯一的 CI 闸**
+```
+
+这三条**都要绿**，而且**基线本来就是绿的**，所以红了就是本轮弄的。
+
+⚠️ **下面两条本来就是红的，不许当验收标准**（2026-08-20 实测基线）：
+
+| 命令 | 基线 | 判据换成什么 |
+|---|---|---|
+| `npm run lint` | **EXIT 1**，`315 problems (258 errors, 57 warnings)`，其中 `src/kiosk` 占 **100** | 只看**本轮碰过的文件**：改前改后各跑一次 `npx eslint <改动文件>`，比**名字集合**不是条数 |
+| `npm test`（= `vitest run`，**不是 Playwright**） | **EXIT 1**，`3 failed / 134 passed` — `GamePageEngine.test.tsx`、`ReportsPage.polling.test.tsx`、`ReportsPage.test.tsx` | 先存基线：`npm test 2>&1 \| grep -E '^\s*(FAIL\|×)' \| sort > /tmp/base.txt`，改完再存一份，`comm -13` 取**新增**的 |
+
+> 「改动后红一片时按文件名判『看着不相关』」会把自己造的污染归给既有噪声。**新增的失败只能靠基线 diff 得到。**
+
+其它两个坑：
+
+- `tsconfig.app.json:38` 把 `src/**/*.test.ts(x)` **exclude 掉了** ⇒ **TS 穷尽性闸放在测试文件里永远不会红**（已变异实测过）。要靠类型守的东西必须写在产品代码里。
+- `tsconfig.app.json` 开了 `noUncheckedSideEffectImports` ⇒ **CSS 路径写错会让 `tsc -b` 直接红**，两个构建一起挂。这条是好事：它把 Task 1 那几行 import 的路径错误变成响的失败。
+
+`src/kiosk/` 与 `src/kiosk-shell/` 都是 kiosk 领地；`src/components/`（除 `Board3D/`）、`src/hooks/`、`src/context/`、`src/api*` 是**共享领地**——改到那儿两个构建都受影响。
+
+⚠️ **`verify:kiosk-2d` 只 grep `assets/*.js`，从不看 CSS、也不看字体**（`scripts/verify-kiosk.sh:19,26,34`）。所以 CSS 里混进一条 `/galaxy/` 的 URL，**这道闸是绿的**。本轮往 kiosk 里加 CSS，心里要有这条边界。
+
+### G6b Playwright 怎么跑（没有 npm script）
+
+`package.json` **没有任何 Playwright 脚本**（`test` 是 `vitest run`，而 `vite.config.ts:50` 把 `tests/**` 从 vitest 里 exclude 了）。`.github/workflows/` 里也 **0 命中 playwright**。⇒ 这些 spec 只能手动跑：
+
+```bash
+cd katrain/web/ui                      # 必须先 cd —— spec 里的 process.cwd() + ../../.. 靠它
+npx playwright test <spec> --config playwright.visual.config.ts --workers=1 --reporter=list
+```
+
+**用 `playwright.visual.config.ts`**（vite dev @5173，`reuseExistingServer`）：不需要 Python、不需要数据库、不需要先 build。默认那份 `playwright.config.ts` 会去起 `python -m katrain --ui=web`，而它有三个会造**假红**的坑（`kiosk-ai-ladder-cross-device-semantics.spec.ts:22-40` 记着）：没 `cd` 就 `EACCES`、没设 `KATRAIN_DATABASE_URL` 就 `psycopg2.OperationalError`、不加 `--workers=1` 服务器会中途掉线报 `ERR_CONNECTION_REFUSED`。而且 `--ui web` **退出时会重写 `~/.katrain/config.json`**，先备份。
+
+**`--workers=1` 不是可选的**：四图 spec 的合成步骤要读前面刚写出的 PNG，而 config 是 `fullyParallel: true`；实测并行跑会在 `expect(...).toBeVisible()` 处 5000ms 超时假红，单跑就过。spec 里同时要写 `test.describe.configure({ mode: 'serial' })`。
+
+### G7 文案冻结
+
+本轮**不新写文案**。屏上出现的每一个字，要么来自设计稿、要么是页面现有的字。稿子上没有、现状也没有的空格，宁可留空也不要编——「补一行说明」等于新写文案。
+
+i18n：kiosk 的静态中文一律 `t('key', '中文默认')`（见 `reference_kiosk_i18n_architecture`）。搬运时既有 key 原样保留；外壳新增的固定词（「智星盒」「StellaBox」「围棋」「主页」）**不进 i18n**，它们是品牌与棋类名，四棋类同一份字面量。
+
+### G8 诚实态
+
+生产代码中不得残留模拟业务数据。加载 / 错误 / 空态 / 重试不得伪装成成功。
+
+- **值写「—」不写 0**：`0` = 「查过了，真没有」；还没跟数据源对过账时只能写「—」。
+- **灰掉的卡写「未录制 / 即将上线」，不写「锁定」**。
+- **不许挂假渐隐**：内容不溢出时不要写 `data-at`，也不要画滚动条。
+- **两种标不许混色**：琥珀 `.wip` = 后端根本没有；蓝 `.wip.have` = 后端已有、界面未接。
+- **做不了的不留占位框**（规范 §11）。
+
+### G9 提交纪律
+
+每个 Task 结束提交一次，message 用中文，形如 `feat(kiosk-shell): 顶栏改用共享外壳的 .kiosk-topbar`。分支 `feature/kiosk-go-shell-align`，基于 `develop b727e721`。**不推、不合并**，除非 Fan 明说。
+
+### G10 共享类优先 —— 稿子里的本地类多半已经被上游收编了
+
+katrain 这份 vendored `tokens.css` **比围棋设计稿内联的那份新**：实测 `diff` 出来 205 行，**100% 是新增，零处修改、零处删除**。稿子里当年自己写的一批本地类，上游后来收成了共享类。
+
+⇒ **凡是共享包里已经有的，一律用共享的那个**，不要照抄稿子的本地类名。对照表（左边是稿子里的写法，右边是本轮要写的）：
+
+| 稿子本地类 | 用这个共享类 | tokens.css |
+|---|---|---|
+| `.rows` | `.kiosk-rows` | `:931` |
+| `.row` | `.kiosk-row`（**自带 `flex:none`**，注释记着 18 行被压成 33px 那次） | `:932-941` |
+| `.row .lead` | `.kiosk-row__lead` | `:942-945` |
+| `.row h4` / `.row p` | `.kiosk-row__t b` / `.kiosk-row__t em` | `:947-948` |
+| `.row .end` | `.kiosk-row__end` | `:949` |
+| `.tag` | `.kiosk-tag` | `:952-955` |
+| `.tag.win` / `.tag.loss` / `.tag.draw` | `.kiosk-tag--win` / `.kiosk-tag--loss` / `.kiosk-tag`（裸的就是灰） | `:956-957` |
+| `.wrbox` + `.wraxis` + `.wrplot` | `.kiosk-eval` + `.kiosk-eval__axis` + `.kiosk-eval__plot` | `:746-754` |
+| `.kiosk-stat*`（稿子已用共享名） | 原样 | `:475-486` |
+| `.kiosk-navlist` / `.kiosk-navitem`（同上） | 原样 | `:765-775` |
+
+**`.tag.live`（直播中）在共享包里没有对等物** —— 本轮加一条本地 `.kiosk-tag--live`，并登记为「该提上游的」。
+
+### G11 React 端要补的十二件事 —— 共享 CSS 不管这些
+
+三家活样本的注释里逐条写了它们是被什么真事故逼出来的。**每一条都必须做，做在 Task 1–8 的相应组件里**：
+
+| # | 要补什么 | 不补会怎样 | 活样本 |
+|---|---|---|---|
+| 1 | **给 `.kiosk` 下的 `h1/h2/h3/h4/p` 归零 margin** | UA 默认 margin 会撑破 `--l1-greet-h`(56) / `--l1-resume-h`(60) / `--l1-sec-label-h`(20)。稿子靠一句全局 `*{margin:0}` 兜着，真应用不能这么干 | gomoku `index.css:399-423` |
+| 2 | **表单控件写 `font-family: inherit`** | UA 把 `<button>` 钉死在 `400 13.333px Arial`；板子(Debian 11)上没有 Arial 的中文面 ⇒ **豆腐块**。国象用 CDP 量出 **21 处**，其中 7 处是「即将上线」徽标（`button.kiosk-card` 整条子树继承 Arial）。**必须用 `font-family:`，不能用 `font:` 简写**（简写会把字号一起重置） | xiangqi `index.css:78-88` |
+| 3 | **图标用 `?raw` + `dangerouslySetInnerHTML`，不用 `<img src>`** | `<img>` 跟不了容器的 `color`，而 `.kiosk-dock__item[aria-current] { color: var(--ink) }` 就靠 `currentColor` 翻色 | gomoku `KioskIcon.tsx:46-53` |
+| 4 | **图标包裹 `<span>` 要 `display: contents`** | 默认 `inline` 的 span 会打断 `.kiosk-dock__item` 的纵向 flex，图标和标签不再作为一组居中 | gomoku `index.css:105-109`。⚠️ 国象同名类写的是 `display:flex`（`shell/shell.css:203`）——**同一个类名两家给了相反的值**，照错了 Dock 就不居中。本轮取 gomoku 那条，因为它点名了具体的失败 |
+| 5 | **`<a>` 做 Dock 项要 `text-decoration: none`** | 稿子的 Dock 项是 `<button>`，所以 `tokens.css` 从没写过这条 | gomoku `index.css:110-115` |
+| 6 | **时钟对齐到整分再 `setInterval(60_000)`** | 挂载即 60s 轮询会漂移最多 59 秒才翻第一次 | gomoku `hooks/useClock.ts:12-37` |
+| 7 | **头像首字用 `Array.from(name)[0]`，不是 `name[0]`** | 代理对（emoji、生僻字）会被切成半个 | 三家一致 |
+| 8 | **身份还在加载时不许喊名字** | 国象验收挂过一次：顶栏写 `boardstage2`，同屏正文写「你好，访客」 | xiangqi `HubScreen.tsx:39-54` |
+| 9 | **长用户名要有 wrap 兜底** | ≥19 个汉字 ⇒ 问候行两行 ⇒ 56 的块变 65，整栏往下推 | gomoku `index.css:428-431` |
+| 10 | **滚动区的 `ResizeObserver` 不会触发** | `tokens.css` 把 `.kiosk-side__scroll` 钉成 `height:100%`，子元素长高时盒子不动 ⇒ observer 一次都不响。**必须给一个 `deps` 信号手动重算** | gomoku `useKioskScroll.ts:52-57` |
+| 11 | **滚动节点首帧可能不存在** ⇒ 用 callback ref + `useState`，不要 `useRef` + 空依赖 effect | `useRef` 那种写法读到一次 `null` 就再也不会重跑 | gomoku `useKioskScroll.ts:59-65` |
+| 12 | **`.kiosk-actions button` / `.kiosk-movenav button` 没有 `:disabled` 分支** | 禁用态和可用态**像素完全相同** —— 这正是 G8「禁用伪装成可用」那条 | xiangqi `shell/shell.css:154-160` |
+
+另外三条共享包缺、要补在本地 CSS 里的（三家都各补了一份，注释都写着「该提上游」）：
+`.kiosk-resume` 的子元素（`.bar/h4/p/.pill`）、`.kiosk-pagebar` 的 flex-shrink 兜底（长标题会把 36px 返回键挤成两行、触点跑位）、`.kiosk-board__play` 的 `place-items:center`（共享只给了 `grid-area`）。
+
+---
+
+## 决策登记
+
+下面每一条都是本轮**已经定了**的，执行时照做，不要重新讨论。三条要 Fan 拍板的另列在最后。
+
+### D1 成长屏本轮跳过（Fan 2026-08-20 裁定）
+
+稿子第 08 屏（盒内段位 / 升降的规矩 / 能力诊断 / 按对手强度）在围棋这边**整条不存在**：无路由、无页面、`katrain/web/api/` 下 grep `growth` 零命中。它是新功能不是改版，带后端。**登记成独立赛道，本轮不碰。**
+
+### D2 稿外五屏只接壳（Fan 2026-08-20 裁定）
+
+`baipu`（摆谱）、`live`（直播）、`research`（研究）、`play/cross-platform`（跨平台）、`vision/setup`（视觉标定）稿子没画。**只接顶栏 / Dock / L1 两栏这层共享壳，内容区维持现状。** 明确不做：不照规范 §5 自己推导这五屏的版式——没有稿子当依据，四图对比就没有参照物，那等于自己发明设计。
+
+### D3 `.kiosk-actions` 是 n 列等宽，围棋是 4 个动作
+
+规范 §11 那张表写「动作区 **3 列**等宽」，而围棋稿对局屏是 4 个（形势 / 悔棋 / 停一手 / 认输）、做题屏也是 4 个（提示 / 退一手 / 重摆 / 下一题）。
+
+**这不是冲突**：`tokens.css:802` 的 `.kiosk-actions` 是 `grid-auto-flow: column; grid-auto-columns: 1fr`，几个就摆几个，规范那个「3」是当时国象的实例数。**照稿子摆 4 个。**
+
+### D4 复盘左栏第三格：**先按规范写「漏着」，除非拿到反证**
+
+- 规范 §5 明写：复盘那三格是 `准确率 · 失误 · 漏着`（**不是妙手** —— 妙手要 MultiPV + 更深搜索）。
+- 围棋稿 07 屏和它自己的闸 `sample-go/gate.mjs:29` 写的是 `["准确率", "失误", "妙手"]`，理由是「报告任务逐手存了 delta_winrate / delta_score」。
+
+两边不一致。**判据不是谁的辈分大，是围棋这边到底算不算得出来**：规范那条禁令是从 alpha-beta 引擎推出来的（它一次只吐一个 `bestmove`），而 KataGo 的分析接口天然返回多个 `moveInfos`——**这是 §13 那条「规范里更具体的那条本来就管这件事」的同族情形**。
+
+⇒ Task 16（07 复盘屏）**第一步就是去 `katrain/web/api/` 与 `report_task_moves` 表核实**：逐手数据里有没有「这一手是不是唯一好手」所需的第二名着法评分。
+- 有 ⇒ 写「妙手」，并在 Task 里记下这条判据（照稿子）。
+- 没有 ⇒ 写「漏着」（照规范），并把这条差异登记回 `sample-go/gate.mjs` 的待提上游清单。
+- **两种都不许写「—」蒙混**：这一格是能查清楚的。
+
+### D5 稿子的 `.danger` 类**没有任何样式**
+
+围棋稿对局屏写的是 `<button class="danger">认输</button>`（`go-kiosk.tmpl.html:305`），而 `.danger` 在 `tokens.css` 和稿子自己的 `<style>` 里**都没有定义**——实测 `grep -c` 只在那一处出现。所以稿子上的「认输」和旁边三个按钮**长得一模一样**（参考图 `02-game.png` 可证）。
+
+这与 `kiosk-design-alignment.md` §4① 描述的两派**都不同**，是第三种。⇒ 见 **Q1**，停下来问 Fan。
+
+### D6 参考图与实现之间**预期存在**的差异，登记在此
+
+四图对比时下面这些差异**不是回归**，不要去「修」它们：
+
+| 差异 | 为什么 |
+|---|---|
+| 稿子上大段旁注（`.note`）实现里没有 | G5 |
+| Dock 项数（见 Q2） | D1 的后果 |
+| 稿子时钟恒为 `16:40`、用户恒为「访客」 | 稿子是静态样张；实现读真时钟与真身份 |
+| 稿子上的题量 / 课本数 / 胜率曲线是示意值 | 稿子自己写明「不写死任何一个题量，写了就是编」（`:349`） |
+| 木纹贴图 | 稿子在木色渐变上叠了一层 `--oak`（`mix-blend-mode:multiply`），那张图在 `sample-go/board-assets.json` 里，**不在共享资产包、不在 `MANIFEST.sha256` 管辖内**。上一轮就没抄，本轮同样不抄——抄它等于往仓里塞一份没人核的二进制。要对齐得先把它收进资产包（记账，非本轮） |
+
+---
+
+## File Structure
+
+### 新建
+
+| 文件 | 责任 |
+|---|---|
+| `src/kiosk/shell/KioskFrame.tsx` | 全站唯一外壳：`.kiosk`（缩放）→ `.kiosk-screen[data-level]` → 顶栏 + `.kiosk-content` + Dock |
+| `src/kiosk/shell/kioskScale.ts` | `calculateKioskScale(w, h)` 纯函数 + 单测 |
+| `src/kiosk/shell/KioskTopbar.tsx` | §6 上边条 |
+| `src/kiosk/shell/KioskDock.tsx` | §3 底部 Dock（词典与顺序写死） |
+| `src/kiosk/shell/KioskConsoleRail.tsx` | §5 L1 左栏：标题 + 248 镜像框 + 32 同步行 + 三格状态 |
+| `src/kiosk/shell/KioskStatusCells.tsx` | 三格 / 两格状态格（`.kiosk-status`） |
+| `src/kiosk/shell/KioskCard.tsx` | §8 一级页模式卡 220×76（含 `is-ring` / `is-current` / `is-soon` / `is-todo`） |
+| `src/kiosk/shell/KioskScrollZone.tsx` | §5.2 悬浮滚动条 + 渐隐 + `scrollTop` 归零（**承重**） |
+| `src/kiosk/shell/KioskPagebar.tsx` | §11 页控条（返回 / 标题 / 副标 / 分段） |
+| `src/kiosk/shell/KioskFold.tsx` | §11 可折叠面板 |
+| `src/kiosk/shell/KioskSecLabel.tsx` | 组标题行（中文 + 英文斜体 + 渐隐横线 + 右端 `secval`） |
+| `src/kiosk/shell/icons.tsx` | Phosphor v2 静态 SVG（从 `kiosk-shell/icons/` 取，不手写内联路径） |
+| `src/kiosk-shell/go-screens.css` | **围棋屏级类**，从 `go-kiosk.tmpl.html` 的 `<style>` 抄来，**但只抄共享包里没有的那些**（G10 已把被上游收编的剔掉了）。精确清单见 Task 9 |
+| `src/kiosk/shell/GoBoardSvg.tsx` | 19×19 交叉点盘（`MARGIN = 0.5`、`COLS = "ABCDEFGHJKLMNOPQRST"`、九星），大小两用 |
+| `tests/helpers/fourup.ts` | 四图闸公共 helper（9 个消费者，够格抽） |
+| `tests/kiosk-shell-geometry.spec.ts` | 外壳几何闸（真浏览器量 1024×600） |
+| `tests/kiosk-shell-contract.spec.ts` | 契约闸：无 `vw`/`vh` 泄漏、`.kiosk` 作用域、无手写内联图标 |
+| `tests/kiosk-screen-NN-*.fourup.spec.ts` ×9 | 每屏一条四图闸 |
+| `superpowers/tracks/kiosk-go-shell-align/visual/NN-*/1024x600/` | 四图产物 |
+
+### 修改
+
+| 文件 | 改什么 |
+|---|---|
+| `src/kiosk/KioskApp.tsx` | 引 `tokens.css` / `go-tokens.css` / `go-screens.css`；路由重排（Dock 词典） |
+| `src/kiosk/components/layout/KioskLayout.tsx` | 改成套 `KioskFrame`，不再自己拼 flex 列 |
+| `src/kiosk/components/layout/Header.tsx` | **删**，由 `shell/KioskTopbar.tsx` 取代 |
+| `src/kiosk/components/layout/Dock.tsx` / `navTabs.tsx` | **删**，由 `shell/KioskDock.tsx` 取代 |
+| `src/kiosk/components/layout/SmartBoardConsole.tsx` | **删**，由 `shell/KioskConsoleRail.tsx` 取代 |
+| `src/kiosk/components/layout/SubPageBar.tsx` | **删**，17 屏改用 `shell/KioskPagebar.tsx` |
+| `src/kiosk/components/common/OptionChips.tsx` | 去掉自挂的 `.kiosk` 与三条 CSS import（已由根提供） |
+| `src/kiosk/components/aiLadder/KioskAiLadderBlockingPanel.tsx` | 同上 |
+| `src/kiosk/pages/*.tsx` | 逐屏改成共享类（Task 10–19） |
+| `src/kiosk/theme.ts` | 保留字族导出；`fonts.css` 的 import 移到 `KioskApp.tsx` 与其余 CSS 并列 |
+
+### 不动
+
+`src/components/`（除 `Board3D/`）、`src/hooks/`、`src/context/`、`src/api*`、`src/utils/`、`src/types/` —— **共享领地，改它波及 galaxy**。本轮凡是想改共享组件的，一律先停下来记账（上一轮 `LiveBoard` 的 `gridMargins = 1.5 格` 就是这么记的：规范要 0.5，差整整一格 ≈24px，改它会动到 galaxy 和对局屏，所以自己画一块，不改共享件）。
+
+---
+
+## 仍然未决，不许自己定
+
+碰到就**停下来问 Fan**，不要私下约定。
+
+### Q1 破坏性按钮的长相（`kiosk-design-alignment.md` §4①，至今无答复）
+
+现在有**三派**，不是两派：
+
+| 派 | 屏上 | 二次确认框里 |
+|---|---|---|
+| 象棋模板 | 实心 accent（即使它是「按认输结束」） | 变红（`.ranked-confirm__actions button.primary { background: var(--bad) }`） |
+| 国象 / 围棋现版 | 就描边 | — |
+| **围棋设计稿** | **和普通按钮完全一样**（`.danger` 类零样式，见 D5） | 稿子没画确认框 |
+
+模型差异是：*吓人吓在屏上，还是吓在不可回头那一步*。三派都自洽，不能同时成立。**这条归 Fan。**
+影响 Task 11（02 对局屏「认输」）和 Task 14（05 做题屏无破坏性动作，不受影响）。
+
+### Q2 Dock 到底几项 —— D1 的直接后果
+
+规范 §3 的词典是 `对弈 · 训练营 · 棋谱 · 复盘 · 成长 · 课程 · 设置` = **7 项**，十张参考图上画的也全是这 7 项。但 **D1 把成长整条跳过了**：围棋没有 growth 路由、没有页面、后端零命中。
+
+两条路：
+
+| 方案 | Dock | 代价 |
+|---|---|---|
+| **(a) 6 项，先不放成长**（建议） | `对弈 训练营 棋谱 复盘 课程 设置` | 十张参考图的 Dock 都会比实现多一格 —— **每一屏的差异图底部都会有一条固定的红带**。要在四图的标签带里写死这句话 |
+| (b) 7 项，成长指向「未接后端」占位页 | 与参考图逐格一致 | 违反 G8「做不了的不留占位框」和「灰掉的不写锁定」；而且它会把一条纯表现层赛道拖出一个新屏 |
+
+建议 (a)：项目自己的诚实规则比图面一致优先级高。**但这条影响全部 9 张差异图，代价不对称，请 Fan 确认。**
+
+### Q4 设置页七组里有五组现在没有内容
+
+稿子画了 7 组，现状只有 5 张卡、**0 个导航项**，其中「棋盘外观 / 声音与报着 / 对局默认值 / 关于」**整组不存在**，「账号与平台」里那四个平台是一块 `pointer-events:none` 的死装饰（而且列的平台和真正能连的对不上）。另外现状**多出一个「语言」**，而规范 §12 明写语言属于设置中心、不在这里。
+
+三条路（(a) 只做有内容的组 / (b) 七组全摆、空的挂琥珀标 / (c) 把五组做成真功能）的取舍与建议，写在 **Task 18** 里。**这条也归 Fan。**
+
+### Q3 顶栏那几个围棋专属指示器往哪去
+
+规范 §1 写死「顶栏**只放这些**」：左 logo + 智星盒 + StellaBox + ｜围棋，右 头像 + 名字 + 时钟（外加 `tokens.css` 提供的 `.kiosk-topbar__home`）。而围棋现版 `Header.tsx` 右侧还挂着**四个围棋独有的东西**：
+
+- `engine-status` 引擎状态点（`Header.tsx:167-171`）
+- `VisionIndicators` 摄像头状态（可点，去 `/kiosk/vision/setup`）
+- `GeometryIndicator` 标定状态（可点，去 `/kiosk/vision/setup`）
+- 设置齿轮（规范 §1 点名「象棋顶栏那个齿轮要拆掉——Dock 里已经有设置，两个入口是重复」）
+
+齿轮好办：拆掉。**摄像头 / 标定这两个不好办**——L1-A 的左栏三格（摄像头 · 标定 · LED）覆盖了同样的信息，**但 L2/L3 没有左栏**，对局屏和做题屏正是最需要知道「摄像头还看得见吗」的地方。
+
+三条路：① 一律拆掉，信息只在 L1 左栏三格里（最贴规范，但 L3 上盲了）；② 拆出顶栏，改挂到 L2/L3 右栏的状态区（规范 §11 允许右栏放状态区）；③ 留在顶栏，作为围棋对规范 §1 的一处登记偏差。**归 Fan。** 影响 Task 3。
+
+---
+
+## Task 0: 存基线
+
+**红了才知道是不是自己弄的 —— 而 `lint` 和 `npm test` 本来就是红的。** 一条改动都还没做的时候先把基线存下来，后面每次比的都是它。
+
+**Files:** 无（只产出 `/tmp` 里的基线文件与一条提交注记）
+
+- [ ] **Step 1: 确认工作树干净、分支对**
+
+```bash
+cd /Users/fan/Repositories/katrain-kiosk-go-align
+git status --porcelain            # 期望空
+git rev-parse --abbrev-ref HEAD   # 期望 feature/kiosk-go-shell-align
+git log --oneline -1              # 期望 0f821149
+```
+
+- [ ] **Step 2: 存单测基线（本来就有 3 个文件红）**
+
+```bash
+cd katrain/web/ui && npm install --no-audit --no-fund   # node_modules 可能不在
+npm test 2>&1 | tee /tmp/kiosk-base-test.log | tail -5
+grep -E '^\s*(FAIL|×)' /tmp/kiosk-base-test.log | sort > /tmp/base.txt
+wc -l /tmp/base.txt
+```
+
+Expected: `Test Files 3 failed | 134 passed`，`Tests 6 failed | 1228 passed | 5 skipped`。三个红的是 `GamePageEngine.test.tsx`、`ReportsPage.polling.test.tsx`、`ReportsPage.test.tsx`（4 条全是 `Test timed out in 5000ms`）。
+
+**这三条本轮不修**，它们和外壳无关。但 **Task 16 会重写 `ReportsPage`** —— 到那时如果它们变绿了，很好；如果换了个红法，**要能说清是哪一条**，这份基线就是为那一刻存的。
+
+- [ ] **Step 3: 存 lint 基线（本来就 315 条）**
+
+```bash
+cd katrain/web/ui && npx eslint . 2>&1 | tee /tmp/kiosk-base-lint.log | tail -3
+grep -oE '^/[^ ]+' /tmp/kiosk-base-lint.log | sort -u > /tmp/base-lint-files.txt
+wc -l /tmp/base-lint-files.txt
+```
+
+Expected: `✖ 315 problems (258 errors, 57 warnings)`。
+
+- [ ] **Step 4: 确认三条构建基线是绿的**
+
+```bash
+cd katrain/web/ui && npx tsc -b && npm run build && npm run build:kiosk-2d
+```
+
+Expected: 三条全 EXIT 0。`build:kiosk-2d` 末尾要看到 `✅ kiosk boundary clean`。**这三条本来就绿，所以本轮任何一条红了都是自己弄的。**
+
+- [ ] **Step 5: 存 vendored 资产基线**
+
+```bash
+cd katrain/web/ui/src/kiosk-shell && shasum -a 256 -c MANIFEST.sha256 2>&1 | grep -c ': OK$'
+```
+
+Expected: **209**。（Task 6 之后会变成 290。）
+
+- [ ] **Step 6: 备份会被 Playwright 默认 config 改掉的东西**
+
+```bash
+cp ~/.katrain/config.json ~/.katrain/config.json.bak-$(date +%Y%m%d) 2>/dev/null || true
+```
+
+`python -m katrain --ui web` **退出时会重写 `~/.katrain/config.json`**。本计划推荐用 `playwright.visual.config.ts`（不起 Python），但万一有人用了默认那份，这份备份是唯一的退路。
+
+- [ ] **Step 7: 把基线数字记进 track**
+
+在 `superpowers/tracks/kiosk-go-shell-align/scope.md` 末尾追加一节「基线（2026-08-20，动手前实测）」，把上面五组数字写进去。**写进仓库，不要只留在 `/tmp`** —— `/tmp` 会被清，而下一个人需要它才能判断「这条红是不是我弄的」。
+
+```bash
+git add superpowers/tracks/kiosk-go-shell-align/scope.md
+git commit -m "docs(kiosk): 记下动手前的基线 —— lint 与单测本来就是红的
+
+315 条 lint、3 个测试文件红(GamePageEngine / ReportsPage ×2),三条构建绿、
+MANIFEST 209/209。判据从此是**基线 diff**,不是「全绿」——
+按文件名判「看着不相关」会把自己造的污染归给既有噪声。"
+```
+
+---
+
+## Task 1: 画布与作用域 —— `.kiosk` / `.kiosk-screen` / 缩放
+
+把 kiosk 从「100vw×100vh 流式 + 三处各自挂 `.kiosk`」改成「固定 1024×600 逻辑画布 + 根节点一处 `.kiosk`」。**这是整条盒子链的根，它不对后面每一屏都白量。**
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/shell/kioskScale.ts`
+- Create: `katrain/web/ui/src/kiosk/shell/kioskScale.test.ts`
+- Create: `katrain/web/ui/src/kiosk/shell/KioskFrame.tsx`
+- Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx`（加 CSS import）
+- Modify: `katrain/web/ui/src/kiosk/components/layout/KioskLayout.tsx:18-33`
+- Modify: `katrain/web/ui/src/kiosk/components/common/OptionChips.tsx:1-3,40`
+- Modify: `katrain/web/ui/src/kiosk/components/aiLadder/KioskAiLadderBlockingPanel.tsx:16-17,93`
+- Test: `katrain/web/ui/tests/kiosk-shell-geometry.spec.ts`
+
+**Interfaces:**
+- Produces: `calculateKioskScale(viewportW: number, viewportH: number): number`
+- Produces: `<KioskFrame level={1|2} dock={ReactNode} extras={ReactNode}>{children}</KioskFrame>`，渲染 `div.kiosk > div.kiosk-screen[data-level] > (topbar 插槽 + div.kiosk-content + dock)`
+- Consumes: 无
+
+- [ ] **Step 1: 写失败的单测——缩放是纯函数**
+
+`katrain/web/ui/src/kiosk/shell/kioskScale.test.ts`：
+
+```ts
+import { describe, expect, test } from 'vitest';
+import { calculateKioskScale } from './kioskScale';
+
+// 画布是固定的 1024×600(规范开头那句「画布:固定 1024×600 …本规范全部用 px」)。
+// 这个函数只回答一件事:真视口装不装得下那块固定画布,装不下缩多少。
+describe('calculateKioskScale', () => {
+  test('设备基准 1024×600 正好是 1:1,不缩', () => {
+    expect(calculateKioskScale(1024, 600)).toBe(1);
+  });
+
+  test('视口更大也不放大 —— 放大会把 px 尺规变成谎话', () => {
+    expect(calculateKioskScale(1920, 1080)).toBe(1);
+  });
+
+  test('宽度不够时按宽度缩', () => {
+    expect(calculateKioskScale(800, 600)).toBe(800 / 1024);
+  });
+
+  test('高度不够时按高度缩', () => {
+    expect(calculateKioskScale(1024, 300)).toBe(300 / 600);
+  });
+
+  test('两边都不够取更紧的那一边', () => {
+    expect(calculateKioskScale(512, 450)).toBe(0.5); // 512/1024=0.5 < 450/600=0.75
+  });
+});
+```
+
+- [ ] **Step 2: 跑它，确认红**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/kioskScale.test.ts
+```
+
+Expected: FAIL — `Cannot find module './kioskScale'`
+
+- [ ] **Step 3: 写实现**
+
+`katrain/web/ui/src/kiosk/shell/kioskScale.ts`：
+
+```ts
+/**
+ * 画布是**固定的** 1024×600 —— 规范开头那句话:「四张设计稿都是这个值,所以本规范
+ * 全部用 px。任何人不要把这些值改成 cqw / vw / %:一旦相对化,『切模块不跳』就没法用
+ * 截图证明。」所以这里做的是**整块画布等比缩放**,不是让布局自己流。
+ *
+ * 不放大(`Math.min(…, 1)`):放大之后屏上量到的 px 就不再是 tokens.css 里那个 px,
+ * 几何闸和四图闸量的都会是被放大过的数,尺规就成了谎话。板子本来就是 1024×600。
+ */
+export const KIOSK_CANVAS_W = 1024;
+export const KIOSK_CANVAS_H = 600;
+
+export function calculateKioskScale(viewportW: number, viewportH: number): number {
+  return Math.min(viewportW / KIOSK_CANVAS_W, viewportH / KIOSK_CANVAS_H, 1);
+}
+```
+
+- [ ] **Step 4: 跑它，确认绿**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/kioskScale.test.ts
+```
+
+Expected: PASS，5 条全绿
+
+- [ ] **Step 5: 写 `KioskFrame`**
+
+`katrain/web/ui/src/kiosk/shell/KioskFrame.tsx`。结构照象棋 `xiangqi/ui/src/shell/KioskFrame.tsx` —— 那是活样本，别自己发明：
+
+```tsx
+import { useEffect, useState, type ReactNode } from 'react';
+import { calculateKioskScale } from './kioskScale';
+
+function useKioskScale(): number {
+  const measure = () => calculateKioskScale(window.innerWidth, window.innerHeight);
+  const [scale, setScale] = useState(measure);
+  useEffect(() => {
+    const onResize = () => setScale(measure());
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return scale;
+}
+
+/**
+ * 全站唯一的外壳。规范 §5:顶栏和 Dock 都是通栏贴边,中间区外框 x16–1008、y70 起,
+ * L1 时下缘 504(Dock 在场)、L2/L3 时 586。
+ *
+ * `.kiosk` 挂在**这一层**(不是各屏各挂)—— tokens.css 整份定义在 `.kiosk {}` 里,
+ * 在它外面 var() 静默求空、字体掉回 sans、color-mix 整条作废,而且不报错。
+ *
+ * @param level 1 = 一级页(有 Dock,中间区 434 高);2 = 二/三级页(无 Dock,516 高)
+ * @param dock  一级页传 <KioskDock/>;二/三级页不传
+ * @param topbar 顶栏节点(Task 3 之前先传 null,Task 3 起恒传 <KioskTopbar/>)
+ * @param extras 盖在整屏之上、但仍跟着画布缩放的东西(弹窗、全局提示)
+ */
+export function KioskFrame({ level, topbar, dock, extras, children }: {
+  level: 1 | 2;
+  topbar?: ReactNode;
+  dock?: ReactNode;
+  extras?: ReactNode;
+  children: ReactNode;
+}) {
+  const scale = useKioskScale();
+  return (
+    <div
+      className="kiosk"
+      style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: `translate(-50%, -50%) scale(${scale})`,
+      }}
+    >
+      {/* data-level 写成字符串:tokens.css:423 那条选择器是 [data-level="1"],
+          它决定 L1 的中间区下缘停在 504 还是 586 —— 写错整屏内容会被 Dock 压住。 */}
+      <div className="kiosk-screen" data-level={String(level)}>
+        {topbar}
+        <div className="kiosk-content">{children}</div>
+        {dock}
+      </div>
+      {extras}
+    </div>
+  );
+}
+```
+
+- [ ] **Step 6: 把 CSS 引到 kiosk 应用根**
+
+`katrain/web/ui/src/kiosk/KioskApp.tsx`，在既有 import 之后加：
+
+```ts
+// 顺序不可换:fonts.css 先声明字族,tokens.css 的 --font-* 才指得到它;
+// go-tokens.css 补 tokens.css 不定义的 --paper / --accent-soft(漏掉就是静默求空);
+// go-screens.css 是围棋屏级类,Task 9 才建 —— 那之前先不要加这一行。
+import '../kiosk-shell/fonts.css';
+import '../kiosk-shell/tokens.css';
+import '../kiosk-shell/go-tokens.css';
+import '../kiosk-shell/seclabel.css';
+```
+
+同时把 `src/kiosk/theme.ts:6` 那行 `import '../kiosk-shell/fonts.css'` 删掉（现在由 `KioskApp.tsx` 统一引，两处引同一份 CSS 会让「谁先谁后」变成打包器的实现细节）。
+
+**这一步在 `KioskApp.tsx` 而不是 `main.tsx`**：`AppRouter.tsx:17` 是 `lazy(() => import('./kiosk/KioskApp'))`，引在这里，CSS 就落进 kiosk 分块，galaxy 不受影响；kiosk-2d 构建里 galaxy 整条被 DCE，也不受影响。
+
+- [ ] **Step 7: 让 `KioskLayout` 套上 `KioskFrame`**
+
+`katrain/web/ui/src/kiosk/components/layout/KioskLayout.tsx`，把 `KioskShell` 的返回值换成：
+
+```tsx
+  return (
+    <KioskFrame
+      level={isL1 ? 1 : 2}
+      topbar={immersive ? undefined : <Header username={username} showHome={isL1} onHome={...} />}
+      dock={showDock ? <Dock /> : undefined}
+    >
+      {/* 内容区暂时保持现状:左栏与 <Outlet/> 的两栏化留给 Task 5,
+          本 Task 只把画布和作用域立起来 —— 一次只改一层,断点才定位得到。 */}
+      <Box sx={{ display: 'flex', height: '100%', minHeight: 0 }}>
+        {showConsole && <SmartBoardConsole />}
+        <Box component="main" sx={{ flex: 1, minWidth: 0, minHeight: 0, overflow: 'auto' }}>
+          <Outlet />
+        </Box>
+      </Box>
+    </KioskFrame>
+  );
+```
+
+`Header` 与 `Dock` 暂时留用旧的（Task 3 / Task 4 才换）；`immersive` 语义保持不变。
+
+- [ ] **Step 8: 去掉三处自挂的 `.kiosk` 与重复 CSS import**
+
+全仓今天挂 `.kiosk` 的**恰好三处**（`grep -rn 'className="kiosk"\|className="kiosk '` 实测）：
+
+- `OptionChips.tsx:1-3` 删掉三行 CSS import；`:40` 的 `<div className="kiosk">` 改成 `<div>`。
+- `KioskAiLadderBlockingPanel.tsx:16-17` 删掉两行 CSS import；`:93` 的 `className="kiosk kiosk-side"` 改成 `className="kiosk-side"`。
+- `AiSetupPage.tsx:217` 的 `<Box className="kiosk" sx={{ height:'100%', boxSizing:'border-box', px:'var(--content-x)', py:'var(--content-pad-y)' }}>` —— 去掉 `className="kiosk"`，**并且把 `px`/`py` 一起去掉**：`.kiosk-content`（`tokens.css:415-422`）现在自己就给 `left/right: var(--content-x)` 和 `padding: var(--content-pad-y) 0`，留着就是**两层内边距叠加**，中间区从 992 缩成 960、纵向各多 14。
+- `blockingPanel.css:1` 那条 `@import '../../../kiosk-shell/seclabel.css'` 删掉（根已引）。
+
+⚠️ 删之前先确认：这三个组件的**每一个**渲染位置都在 `KioskFrame` 里面。`AiSetupPage` / `PvpLocalSetupPage` 在 `KioskLayout` 的 `<Outlet/>` 下 —— 在。若发现有 MUI `Dialog` / `Popover` / `Menu` portal 出去的用法（它们默认 portal 到 `body`），**那个用法要自己挂回 `.kiosk`**（G1）。`PlatformConnectPage` 的登录 `Dialog`、`PlatformLobbyPage` 的挑战 `Dialog`、`ReportsPage` 的删除 `Dialog`、`SettingsPage` 的语言 `Select`（`Menu`）都是这一类——**逐个查**。
+
+> 这一步是**替换不是叠加**：`AiSetupPage` 那处 `px/py` 曾经是对的（那时没有 `.kiosk-content`），现在它变成重复。留着不报错，只是尺寸悄悄小一圈——又是一次静默失败。
+
+- [ ] **Step 9: 写外壳几何闸（真浏览器，承重）**
+
+`katrain/web/ui/tests/kiosk-shell-geometry.spec.ts`：
+
+```ts
+import { expect, test } from '@playwright/test';
+
+/**
+ * 承重闸:量的是**真浏览器算出来的布局结论**,不是 CSS 里写了什么。
+ * jsdom 没有布局引擎,对这些数字无权作证。
+ *
+ * 期望先写成**关系式**,具体像素只 console.log 记录、不作判据 ——
+ * 「盘吃满纵向」是判据,「516」只是它今天的值。
+ */
+const CANVAS = { w: 1024, h: 600 };
+
+async function boot(page, path: string) {
+  await page.setViewportSize(CANVAS);
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'kiosk-shell-geometry');
+    localStorage.setItem('katrain_language', 'cn');
+  });
+  await page.route('**/api/v1/auth/me', (r) => r.fulfill({
+    json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
+  }));
+  await page.goto(path);
+  await page.waitForSelector('.kiosk-screen');
+}
+
+const box = (page, sel: string) => page.locator(sel).evaluate((el: Element) => {
+  const r = el.getBoundingClientRect();
+  return { x: r.x, y: r.y, w: r.width, h: r.height };
+});
+
+test('L1:画布 1024×600、顶栏通栏贴顶、Dock 通栏贴底、中间区 x16–1008 y70–504', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+
+  const screen = await box(page, '.kiosk-screen');
+  expect(screen.w).toBe(CANVAS.w);
+  expect(screen.h).toBe(CANVAS.h);
+
+  const topbar = await box(page, '.kiosk-topbar');
+  expect(topbar.x).toBe(screen.x);                 // 通栏贴边,不留左右外边距
+  expect(topbar.y).toBe(screen.y);
+  expect(topbar.w).toBe(screen.w);
+  expect(topbar.h).toBe(56);
+
+  const dock = await box(page, '.kiosk-dock');
+  expect(dock.x).toBe(screen.x);
+  expect(dock.w).toBe(screen.w);
+  expect(dock.h).toBe(82);
+  expect(dock.y + dock.h).toBe(screen.y + screen.h);   // 贴底
+
+  const content = await box(page, '.kiosk-content');
+  expect(content.x - screen.x).toBe(16);
+  expect(content.w).toBe(screen.w - 2 * 16);           // 992
+  expect(content.y - screen.y).toBe(topbar.h);         // 内容盒从顶栏下缘起
+  expect(content.y + content.h).toBe(dock.y);          // 下缘停在 Dock 上沿
+});
+
+test('L2/L3:没有 Dock,中间区一路到底(y70–586)', async ({ page }) => {
+  await boot(page, '/kiosk/settings');   // Task 4 之前 settings 仍是 L2
+  await expect(page.locator('.kiosk-dock')).toHaveCount(0);
+
+  const screen = await box(page, '.kiosk-screen');
+  const content = await box(page, '.kiosk-content');
+  expect(content.y + content.h).toBe(screen.y + screen.h);
+});
+
+test('token 求得到值 —— .kiosk 作用域真的生效了', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  const vars = await page.locator('.kiosk-screen').evaluate((el) => {
+    const cs = getComputedStyle(el);
+    return {
+      railW: cs.getPropertyValue('--l1-rail-w').trim(),
+      paper: cs.getPropertyValue('--paper').trim(),        // 只 go-tokens.css 有 —— 用它单独证明第二份 CSS 也进来了
+      accent: cs.getPropertyValue('--accent').trim(),      // go-tokens 覆盖 tokens 的中性占位 -> 必须是青玉
+      font: cs.fontFamily,
+    };
+  });
+  // 空字符串 = var() 静默求空 = .kiosk 没生效。这一条就是为了把那种静默失败推红。
+  // 三个值分别证明三件事:tokens.css 进来了 / go-tokens.css 也进来了且在它之后 / fonts.css 的族名指得到。
+  expect(vars.railW).toBe('296px');
+  expect(vars.paper).not.toBe('');
+  expect(vars.accent.toUpperCase()).toBe('#58B57A');   // 不是 tokens.css 的中性占位 #… ⇒ 顺序也对
+  expect(vars.font).toContain('SmartBox');
+});
+```
+
+- [ ] **Step 10: 跑几何闸**
+
+```bash
+cd katrain/web/ui && npx playwright test tests/kiosk-shell-geometry.spec.ts --reporter=list
+```
+
+Expected: 前两条 PASS；第三条也 PASS。若 `--paper` 为空 → `go-tokens.css` 没进作用域，回 Step 6。
+
+- [ ] **Step 11: 演示这道闸有牙（变异）**
+
+把 `KioskFrame.tsx` 里 `className="kiosk"` 临时改成 `className="kiosk-off"`，重跑第三条。
+
+Expected: **红**，报文含 `--l1-rail-w` 求得空串。改回来，重跑，绿。
+
+> 这一步不是形式：`var()` 求空**不报错**，它是本轮最容易静默失败的一处。没演示过的闸和没有闸长得一样。
+
+- [ ] **Step 12: 双构建 + 类型**
+
+```bash
+cd katrain/web/ui && npx tsc -b && npm run build && npm run build:kiosk-2d
+```
+
+Expected: 三条全绿。`build:kiosk-2d` 末尾的 `verify:kiosk-2d` 必须 exit 0。
+
+- [ ] **Step 13: 提交**
+
+```bash
+git add katrain/web/ui/src/kiosk/shell katrain/web/ui/src/kiosk/KioskApp.tsx \
+        katrain/web/ui/src/kiosk/theme.ts \
+        katrain/web/ui/src/kiosk/components/layout/KioskLayout.tsx \
+        katrain/web/ui/src/kiosk/components/common/OptionChips.tsx \
+        katrain/web/ui/src/kiosk/components/aiLadder/ \
+        katrain/web/ui/tests/kiosk-shell-geometry.spec.ts
+git commit -m "feat(kiosk-shell): 立起固定 1024×600 画布,把 .kiosk 提到 kiosk 应用根
+
+tokens.css 整份定义在 .kiosk 里,此前只有 3 个消费点各自挂;提到根之后
+全部 kiosk 屏才拿得到那 991 行几何 token。几何闸在真浏览器量,并变异演示过
+(className 改掉 -> --l1-rail-w 求空 -> 红)。"
+```
+
+---
+
+## Task 2: 四图闸 helper —— 九屏共用一份
+
+上一轮那条四图 spec（`kiosk-layout-a-vs-xiangqi-setup.spec.ts`）里的合成代码是**对的**，但它写在唯一那个调用点里。本轮有 **9 个消费者**，够格抽了。
+
+> ⚠️ 抽的判据是**消费者数**，不是「看起来通用」。上一轮那条「非黑采样点」判据只有一个调用点，就**没有**做成 helper——那是同一条规则的另一半。
+
+**Files:**
+- Create: `katrain/web/ui/tests/helpers/fourup.ts`
+- Test: 本 Task 用 Task 1 已有的 `/kiosk/play` 当被测物做一次自测（产物是临时的，Task 10 会覆盖）
+
+**Interfaces:**
+- Produces:
+  ```ts
+  export interface FourUpOptions {
+    page: Page;
+    /** 参考图绝对路径,sample-go/shots/NN-*.png */
+    referencePng: string;
+    /** 产物目录,superpowers/tracks/kiosk-go-shell-align/visual/NN-*/1024x600/ */
+    outDir: string;
+    /** 文件名前缀,如 '01-play' */
+    slug: string;
+    /** 画在并排图左半标签带上的一句话 */
+    referenceCaption: string;
+    /** 画在并排图右半标签带上的一句话 —— 预期差异必须写在图里 */
+    implementationCaption: string;
+  }
+  export async function captureFourUp(o: FourUpOptions): Promise<{ both: number; refOnly: number; implOnly: number }>;
+  export async function waitForRealPixels(page: Page, selector: string): Promise<void>;
+  ```
+- Consumes: Task 1 的 `.kiosk-screen`
+
+- [ ] **Step 1: 写 helper**
+
+`katrain/web/ui/tests/helpers/fourup.ts`。合成部分**逐字节搬** `kiosk-layout-a-vs-xiangqi-setup.spec.ts:66-160`，只把两个写死的路径和两句标签带提成参数：
+
+```ts
+import type { Page } from '@playwright/test';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+export const KIOSK_VIEWPORT = { width: 1024, height: 600 } as const;
+
+export interface FourUpOptions {
+  page: Page;
+  referencePng: string;
+  outDir: string;
+  slug: string;
+  referenceCaption: string;
+  implementationCaption: string;
+}
+
+/**
+ * 四图对比:参考 / 实现 / 并排 / 叠加+差异,同一 viewport 1024×600。
+ *
+ * ## 差异图为什么是**边缘图**不是像素比
+ *
+ * 稿子里有 26 处 `.note` 旁注(「围棋原来那张稿把它做成一张并列卡,是错的」这一类),
+ * 它们是写给读稿人的,不上线 —— 已对齐三家一处都没搬。像素比会把这些整块报成回归。
+ * 边缘图去掉颜色只留结构:**红 = 只有参考有边,绿 = 只有实现有,白 = 两边都有**。
+ *
+ * ⚠️ **像素差异一个都不作数。** 几何的判据在 kiosk-shell-geometry.spec.ts(真浏览器
+ * 量出来的数),不在这几张图上。这几张图答的是「构图 / 分块顺序 / 组件层级对不对」。
+ */
+export async function captureFourUp(o: FourUpOptions) {
+  mkdirSync(o.outDir, { recursive: true });
+  const implementationPath = resolve(o.outDir, `${o.slug}--implementation.png`);
+  await o.page.screenshot({ path: implementationPath });
+
+  const asDataUrl = (file: string) => `data:image/png;base64,${readFileSync(file).toString('base64')}`;
+
+  const result = await o.page.evaluate(async ({ refSrc, implSrc, refCap, implCap }) => {
+    const load = (src: string) => new Promise<HTMLImageElement>((done, fail) => {
+      const image = new Image();
+      image.onload = () => done(image);
+      image.onerror = () => fail(new Error('图片读不出来'));
+      image.src = src;
+    });
+    const [reference, implementation] = await Promise.all([load(refSrc), load(implSrc)]);
+
+    const W = 1024;
+    const H = 600;
+    const draw = (image: HTMLImageElement) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, W, H);
+      // 等比缩到 1024 宽再顶端对齐裁到 600 —— 样张是 2048×1202(2× 的 1024×601)。
+      const scale = W / image.width;
+      ctx.drawImage(image, 0, 0, W, Math.round(image.height * scale));
+      return ctx;
+    };
+    const refCtx = draw(reference);
+    const implCtx = draw(implementation);
+
+    const edges = (ctx: CanvasRenderingContext2D) => {
+      const d = ctx.getImageData(0, 0, W, H).data;
+      const lum = new Float32Array(W * H);
+      for (let i = 0; i < W * H; i += 1) {
+        lum[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+      }
+      const out = new Uint8Array(W * H);
+      for (let y = 0; y < H - 1; y += 1) {
+        for (let x = 0; x < W - 1; x += 1) {
+          const i = y * W + x;
+          const g = Math.abs(lum[i] - lum[i + 1]) + Math.abs(lum[i] - lum[i + W]);
+          out[i] = g > 28 ? 1 : 0;
+        }
+      }
+      return out;
+    };
+    const refEdges = edges(refCtx);
+    const implEdges = edges(implCtx);
+
+    const band = 34;
+    const gap = 20;
+    const side = document.createElement('canvas');
+    side.width = W * 2 + gap;
+    side.height = H + band;
+    const sideCtx = side.getContext('2d')!;
+    sideCtx.fillStyle = '#0f1416';
+    sideCtx.fillRect(0, 0, side.width, side.height);
+    sideCtx.drawImage(refCtx.canvas, 0, band);
+    sideCtx.drawImage(implCtx.canvas, W + gap, band);
+    sideCtx.fillStyle = '#93a49d';
+    sideCtx.font = '600 14px system-ui, sans-serif';
+    // ⚠️ 说明必须写在**图里**,不是写在旁边的文档里:图一旦离开它的说明,
+    // 「界面对不对」和「稿子上那段旁注为什么没有」就混成一件事了。
+    sideCtx.fillText(refCap, 4, 21);
+    sideCtx.fillText(implCap, W + gap + 4, 21);
+
+    const diff = document.createElement('canvas');
+    diff.width = W; diff.height = H;
+    const diffCtx = diff.getContext('2d')!;
+    const out = diffCtx.createImageData(W, H);
+    let both = 0, refOnly = 0, implOnly = 0;
+    for (let i = 0; i < W * H; i += 1) {
+      const a = refEdges[i]; const b = implEdges[i]; const p = i * 4;
+      out.data[p + 3] = 255;
+      if (a && b) { out.data[p] = 235; out.data[p + 1] = 235; out.data[p + 2] = 235; both += 1; }
+      else if (a) { out.data[p] = 226; out.data[p + 1] = 104; out.data[p + 2] = 92; refOnly += 1; }
+      else if (b) { out.data[p] = 88; out.data[p + 1] = 181; out.data[p + 2] = 122; implOnly += 1; }
+    }
+    diffCtx.putImageData(out, 0, 0);
+
+    document.body.innerHTML = '';
+    document.body.style.margin = '0';
+    side.id = 'fourup-side';
+    diff.id = 'fourup-diff';
+    refCtx.canvas.id = 'fourup-ref';
+    document.body.append(side, diff, refCtx.canvas);
+    return { both, refOnly, implOnly };
+  }, {
+    refSrc: asDataUrl(o.referencePng),
+    implSrc: asDataUrl(implementationPath),
+    refCap: o.referenceCaption,
+    implCap: o.implementationCaption,
+  });
+
+  await o.page.locator('#fourup-ref').screenshot({ path: resolve(o.outDir, `${o.slug}--reference.png`) });
+  await o.page.locator('#fourup-side').screenshot({ path: resolve(o.outDir, `${o.slug}--side-by-side.png`) });
+  await o.page.locator('#fourup-diff').screenshot({ path: resolve(o.outDir, `${o.slug}--diff.png`) });
+  return result;
+}
+```
+
+- [ ] **Step 2: 写「按快门前等真像素」**
+
+同一个文件，接在后面。
+
+**这段代码仓库里现在没有 —— 它被删过一次，删得对。** 三次提交的完整来龙去脉：`a000f794` 建了 `tests/helpers/canvasPainted.ts` → `77626007` 因为只有一个调用点、把它内联回去并删掉 helper → `600b31f0` 连内联的那段也删了，commit 标题写着「**演示的结果是「它在那屏装不上」**」：给那屏 6 个图片资产的 route handler 各塞 12 秒延迟、六个 handler 全部命中，spec 仍然 **5.2 秒通过**——因为那屏用的是 `components/Board.tsx`，它**在图到齐之前就先画了底和格线**，压根没有全黑那一帧。**挂一段结构上不可能生效的闸，比不挂更坏**：下一个人会把它读成「这屏有保护」。
+
+**但竞态在别处是真的**：`components/live/LiveBoard.tsx:339-358` 先 `Promise.all` 预加载 5 张 PNG，全部 `onload` 才 `setImagesLoaded(true)`，绘制 effect 挂在这个标志上——图没到齐之前**一笔都不画**。实测 `/kiosk/play` 连开 6 次：元素出现那一刻 **4 次空、2 次已画**；1200ms 后 6 次全部已画。
+
+⇒ **本轮重新加回来，但只在真会全黑的地方用**：全仓今天渲染 `LiveBoard` 的路由**只有 `/kiosk/play`**，而它正是屏 01 的路由（Task 10）。其余各屏若不含 `LiveBoard`，**不要挂这段**。
+
+```ts
+/**
+ * `waitForSelector` / `toBeVisible()` 只证明**元素在**,证明不了**画完了**。
+ * 判据是**非黑采样点**:在元素中心取 9 个点,全黑就是还没画。
+ *
+ * ⚠️ 这条判据的**边界**:它分的是「一笔没画」和「画了」,分不出「画了一半」。
+ * 用在 LiveBoard 那种**整段绘制被 imagesLoaded 挡住**的失败上是够的;
+ * 别拿它当通用的「画对了」。Board.tsx 那种「先画底和格线、图到齐再覆盖」的
+ * 组件上它**永远不会红** —— 上一轮给 6 个资产各塞 12 秒延迟实测过,spec 仍 5.2 秒通过。
+ */
+export async function waitForRealPixels(page: Page, selector: string) {
+  await page.waitForSelector(selector);
+  await page.waitForFunction((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width < 8 || r.height < 8) return false;
+    const canvas = document.createElement('canvas');
+    canvas.width = 3; canvas.height = 3;
+    // canvas 元素直接采样;非 canvas 的(内联 SVG)只要有子节点即可 —— 它们不走图片预加载。
+    if (!(el instanceof HTMLCanvasElement)) return el.childElementCount > 0;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(el, 0, 0, 3, 3);
+    const d = ctx.getImageData(0, 0, 3, 3).data;
+    for (let i = 0; i < 9; i += 1) {
+      if (d[i * 4] > 12 || d[i * 4 + 1] > 12 || d[i * 4 + 2] > 12) return true;
+    }
+    return false;
+  }, selector, { timeout: 10_000 });
+}
+```
+
+- [ ] **Step 2b: 把时钟冻在 16:40，一举两得**
+
+同一个文件再加一个导出。实测发现（survey，2026-08-20）：顶栏渲染的是**真时钟**，所以**每一次重跑都会把已提交的 PNG 弄脏，哪怕代码一个字没改**。而参考图上恒为 `16:40`。
+
+```ts
+/**
+ * 把页面时间冻在参考图那一刻(16:40)。两件事一起解决:
+ *   ① 四图产物变成**字节稳定**的 —— 否则每次重跑都 dirty 一批 PNG,
+ *      「重跑零字节变化」这条本来能用的信号就没了;
+ *   ② 顶栏时钟和参考图对得上,差异图里少一处注定的红。
+ * 必须在 page.goto 之前调 —— addInitScript 只对之后加载的文档生效。
+ */
+export async function freezeClock(page: Page, iso = '2026-08-20T16:40:00') {
+  await page.addInitScript((frozen) => {
+    const fixed = new Date(frozen).getTime();
+    const RealDate = Date;
+    // 只钉「现在」:带参数的 new Date(x) 仍按原样走,否则日期格式化会一起坏掉。
+    class FrozenDate extends RealDate {
+      constructor(...args: unknown[]) {
+        if (args.length === 0) super(fixed);
+        else super(...(args as ConstructorParameters<typeof RealDate>));
+      }
+      static now() { return fixed; }
+    }
+    (globalThis as { Date: DateConstructor }).Date = FrozenDate as unknown as DateConstructor;
+  }, iso);
+}
+```
+
+- [ ] **Step 3: 自测一次 —— 拿 `/kiosk/play` 当被测物**
+
+临时 spec `tests/tmp-fourup-selftest.spec.ts`：
+
+```ts
+import { test } from '@playwright/test';
+import { resolve } from 'node:path';
+import { captureFourUp, KIOSK_VIEWPORT } from './helpers/fourup';
+
+test('helper 自测:能产出四张图', async ({ page }) => {
+  await page.setViewportSize(KIOSK_VIEWPORT);
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'fourup-selftest');
+    localStorage.setItem('katrain_language', 'cn');
+  });
+  await page.route('**/api/v1/auth/me', (r) => r.fulfill({ json: { id: 1, username: 'tester', rank: '5段', credits: 0 } }));
+  await page.goto('/kiosk/play');
+  await page.waitForSelector('.kiosk-screen');
+  const r = await captureFourUp({
+    page,
+    referencePng: resolve(process.cwd(), '../../../../smartbox-software/superpowers/shared/kiosk-shell/sample-go/shots/01-play.png'),
+    outDir: resolve(process.cwd(), '../../../superpowers/tracks/kiosk-go-shell-align/visual/_selftest/1024x600'),
+    slug: '01-play',
+    referenceCaption: '参考:sample-go/shots/01-play.png（像素与旁注不作数）',
+    implementationCaption: '实现:helper 自测,内容尚未搬运',
+  });
+  console.log(`[fourup-selftest] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
+});
+```
+
+- [ ] **Step 4: 跑它，确认四张图真的落盘**
+
+```bash
+cd katrain/web/ui && npx playwright test tests/tmp-fourup-selftest.spec.ts --reporter=list
+ls -la ../../../superpowers/tracks/kiosk-go-shell-align/visual/_selftest/1024x600/
+```
+
+Expected: 四个文件 `01-play--{reference,implementation,side-by-side,diff}.png`，且 `both > 0`（两边都有边 = 参考图确实读进来了）。
+
+若 `both === 0` **且** `refOnly === 0` → 参考图路径错了（读成了空图），不是「实现全对」。**这是「0 是不是最优解」那条通则的一个实例：`refOnly` 小看着像好事，`refOnly === 0` 却是参考图没加载。**
+
+- [ ] **Step 5: 删掉临时 spec 与自测产物**
+
+```bash
+rm katrain/web/ui/tests/tmp-fourup-selftest.spec.ts
+rm -rf superpowers/tracks/kiosk-go-shell-align/visual/_selftest
+```
+
+- [ ] **Step 6: 提交**
+
+```bash
+git add katrain/web/ui/tests/helpers/fourup.ts
+git commit -m "test(kiosk-shell): 抽出四图闸 helper(9 个消费者)与等真像素的判据
+
+合成代码逐字节取自 kiosk-layout-a-vs-xiangqi-setup.spec.ts。差异图用边缘图不用
+像素比 —— 稿子里 26 处旁注不上线,像素比会把它们整块报成回归。
+等真像素那条写明了边界:分得出「一笔没画」,分不出「画了一半」。"
+```
+
+---
+
+## Task 3: 顶栏
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/shell/KioskTopbar.tsx`
+- Create: `katrain/web/ui/src/kiosk/shell/identityPresentation.ts`
+- Create: `katrain/web/ui/src/kiosk/shell/identityPresentation.test.ts`
+- Modify: `katrain/web/ui/src/kiosk/components/layout/KioskLayout.tsx`
+- Delete: `katrain/web/ui/src/kiosk/components/layout/Header.tsx`
+- Test: `katrain/web/ui/tests/kiosk-shell-geometry.spec.ts`（加一组顶栏断言）
+
+**Interfaces:**
+- Consumes: Task 1 的 `KioskFrame`（`topbar` 插槽）
+- Produces: `<KioskTopbar identity={{username?: string}} onHome?={() => void} homeBusy?={boolean} />`
+- Produces: `identityPresentation(identity): { avatar: string; label: string }`
+
+**规范 §6 逐像素**（`tokens.css:269-370` 全部给好了，React 侧只负责结构与内容）：
+
+```
+左簇 x=24 起:  logo 32×32 → 10px → 智星盒 20px 龙藏 → 6px → StellaBox 12px Serif 斜体 --dim
+              → 12px → 竖线 1×20 --hair → 12px → 围棋 16px Serif 600 --accent .12em
+右簇 贴 x=1000: [主页 88×48(仅 L1)] 头像 26 圆 accent 实底 + --ink 首字 → 8px → 名字 13px Sans
+              → 14px → 时钟 14px Mono tabular-nums
+```
+
+- [ ] **Step 1: 写失败的单测——身份呈现**
+
+`katrain/web/ui/src/kiosk/shell/identityPresentation.test.ts`：
+
+```ts
+import { describe, expect, test } from 'vitest';
+import { identityPresentation } from './identityPresentation';
+
+describe('identityPresentation', () => {
+  test('没登录显示「访客」,头像首字是「访」', () => {
+    expect(identityPresentation({})).toEqual({ avatar: '访', label: '访客' });
+  });
+
+  test('登录了取用户名首字', () => {
+    expect(identityPresentation({ username: '张三' })).toEqual({ avatar: '张', label: '张三' });
+  });
+
+  test('拉丁名首字母大写 —— 头像格是 12px,小写字母在圆里偏下', () => {
+    expect(identityPresentation({ username: 'frank' })).toEqual({ avatar: 'F', label: 'frank' });
+  });
+
+  test('空串按没登录处理 —— 空头像圈比「访」更没信息', () => {
+    expect(identityPresentation({ username: '' })).toEqual({ avatar: '访', label: '访客' });
+  });
+});
+```
+
+- [ ] **Step 2: 跑它，确认红**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/identityPresentation.test.ts
+```
+
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 3: 写实现**
+
+```ts
+// katrain/web/ui/src/kiosk/shell/identityPresentation.ts
+export interface ShellIdentity {
+  username?: string;
+}
+
+/**
+ * 顶栏右簇的身份呈现。规范 §6:头像是**强调色实底 + 深色首字**(访客显示「访」),
+ * 不是空心描边圈。
+ *
+ * 首字母大写只对拉丁生效 —— 中文 toUpperCase() 是恒等,写一次两边都对。
+ */
+export function identityPresentation(identity: ShellIdentity): { avatar: string; label: string } {
+  const name = identity.username?.trim();
+  if (!name) return { avatar: '访', label: '访客' };
+  return { avatar: [...name][0].toUpperCase(), label: name };
+}
+```
+
+- [ ] **Step 4: 跑它，确认绿**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/identityPresentation.test.ts
+```
+
+Expected: PASS，4 条全绿
+
+- [ ] **Step 5: 写 `KioskTopbar`**
+
+```tsx
+// katrain/web/ui/src/kiosk/shell/KioskTopbar.tsx
+import { useEffect, useState } from 'react';
+import { identityPresentation, type ShellIdentity } from './identityPresentation';
+
+function clockText(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+/**
+ * 先对齐到**下一个整分**,之后才每 60 秒一跳(gomoku hooks/useClock.ts:12-37 的做法)。
+ * 挂载即 setInterval(60_000) 会漂:最坏要等 59 秒才翻第一次,屏上的分钟数一直是慢的。
+ * 国象那份 1 秒一跳也能对,但为同一个 HH:MM 多渲染 60 倍。
+ */
+function useMinuteClock(): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    let interval: number | undefined;
+    const timeout = window.setTimeout(() => {
+      setNow(new Date());
+      interval = window.setInterval(() => setNow(new Date()), 60_000);
+    }, 60_000 - (Date.now() % 60_000));
+    return () => {
+      window.clearTimeout(timeout);
+      if (interval !== undefined) window.clearInterval(interval);
+    };
+  }, []);
+  return now;
+}
+
+/**
+ * §6 上边条。**任何层级、任何模块都不变高、不隐藏**(防跳铁律 1),
+ * 右簇内容与位置在所有页面完全恒定(防跳铁律 2)。
+ *
+ * 「智星盒」三个字走**龙藏行楷**,只此一处(规范 §2/§9)。字族与
+ * `font-synthesis:none` 都由 tokens.css 的 `.kiosk-topbar__brand-zh` 给,
+ * 这里**不要**再写 sx/style 覆盖 —— 上一轮那个 bug 正是 React 侧覆盖掉了字族。
+ *
+ * 返回、2D/3D、页面标题一律**不在这里**,下放到 §11 的页控条。
+ */
+export function KioskTopbar({ identity, onHome, homeBusy = false }: {
+  identity: ShellIdentity;
+  onHome?: () => void;
+  homeBusy?: boolean;
+}) {
+  const clock = clockText(useMinuteClock());
+  const presented = identityPresentation(identity);
+
+  return (
+    <header className="kiosk-topbar">
+      {/* 规范 §10 钉死的那一份 logo。围棋是青毡深底,不加象棋那条 invert 滤镜。 */}
+      <img className="kiosk-topbar__logo" src="/assets/img/logo-white.png" alt="" />
+      <span className="kiosk-topbar__brand">
+        <span className="kiosk-topbar__brand-zh" data-testid="kiosk-brand-zh">智星盒</span>
+        <span className="kiosk-topbar__brand-en">StellaBox</span>
+      </span>
+      <span className="kiosk-topbar__rule" aria-hidden="true" />
+      <span className="kiosk-topbar__game">围棋</span>
+      <div className="kiosk-topbar__right">
+        {onHome && (
+          <button
+            type="button"
+            className="kiosk-topbar__home"
+            aria-label="返回智星盒主页"
+            data-testid="kiosk-home-action"
+            disabled={homeBusy}
+            onClick={onHome}
+          >
+            <span className="kiosk-topbar__home-icon" aria-hidden="true" />
+            <span>主页</span>
+          </button>
+        )}
+        <span className="kiosk-topbar__avatar" aria-hidden="true">{presented.avatar}</span>
+        <span className="kiosk-topbar__user" data-testid="header-username">{presented.label}</span>
+        {/* dateTime 和正文复用同一份格式化结果 —— 各写一套会独立漂移。 */}
+        <time className="kiosk-topbar__clock" data-testid="clock" dateTime={clock}>{clock}</time>
+      </div>
+    </header>
+  );
+}
+```
+
+- [ ] **Step 6: 接进 `KioskLayout`，删掉 `Header.tsx`**
+
+`KioskLayout.tsx` 的 `topbar` 插槽换成 `<KioskTopbar identity={{ username }} onHome={isL1 ? onHome : undefined} />`，删掉 `import Header`，`git rm` 掉 `Header.tsx`。
+
+⚠️ **Q3 未决之前**：`engine-status` 点、`VisionIndicators`、`GeometryIndicator`、设置齿轮这四样**先不搬进 `KioskTopbar`，也先不删**——把 `Header.tsx` 留在原地不引用，等 Fan 答复 Q3 再决定去处。若 Fan 已答复，按答复做，并在本 Task 的提交信息里写明依据。
+
+⚠️ 同时要删掉 `src/kiosk/__tests__/Header.test.tsx`（它 `:65-68` 断言 `toHaveStyle({height:'56px'})`，被测组件没了）。**不要只是删**：把「顶栏恒 56 高」这条断言搬进 Task 1 那条真浏览器几何闸里——jsdom 对布局无权作证，那条 jsdom 断言本来就该被替换掉（**替换不是叠加**）。
+
+- [ ] **Step 7: 给几何闸加顶栏一组**
+
+在 `tests/kiosk-shell-geometry.spec.ts` 追加：
+
+```ts
+test('§6 顶栏:左簇顺序与间距、右簇贴右缘、品牌字是龙藏', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  const screen = await box(page, '.kiosk-screen');
+  const logo = await box(page, '.kiosk-topbar__logo');
+  const zh = await box(page, '.kiosk-topbar__brand-zh');
+  const en = await box(page, '.kiosk-topbar__brand-en');
+  const rule = await box(page, '.kiosk-topbar__rule');
+  const game = await box(page, '.kiosk-topbar__game');
+  const clock = await box(page, '.kiosk-topbar__clock');
+  const avatar = await box(page, '.kiosk-topbar__avatar');
+
+  expect(logo.x - screen.x).toBe(24);          // --topbar-pad-x
+  expect(logo.w).toBe(32);
+  expect(logo.h).toBe(32);
+  expect(Math.round(zh.x - (logo.x + logo.w))).toBe(10);
+  expect(Math.round(en.x - (zh.x + zh.w))).toBe(6);
+  expect(rule.w).toBe(1);
+  expect(rule.h).toBe(20);
+  expect(avatar.w).toBe(26);
+  expect(avatar.h).toBe(26);
+  // 左簇顺序不可调,右簇贴右缘
+  expect(logo.x).toBeLessThan(zh.x);
+  expect(zh.x).toBeLessThan(en.x);
+  expect(en.x).toBeLessThan(rule.x);
+  expect(rule.x).toBeLessThan(game.x);
+  expect(Math.round(screen.x + screen.w - (clock.x + clock.w))).toBe(24);
+});
+
+test('§2 品牌字「智星盒」跑的是龙藏行楷,而且三个字都是', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  const client = await page.context().newCDPSession(page);
+  await client.send('DOM.enable');
+  await client.send('CSS.enable');
+  const { root } = await client.send('DOM.getDocument');
+  const { nodeId } = await client.send('DOM.querySelector', {
+    nodeId: root.nodeId, selector: '[data-testid="kiosk-brand-zh"]',
+  });
+  const { fonts } = await client.send('CSS.getPlatformFontsForNode', { nodeId });
+  // 上界不是判据:「一个字都没盖」会让 <=3 满分。下界才是真正要的那件事。
+  expect(fonts[0].familyName).toContain('Long Cang');
+  expect(fonts[0].glyphCount).toBe(3);
+});
+```
+
+> §17.1 那条通则：**任何「不许超过 N」的断言，都要问一句「0 是不是最优解」。** 是的话它就没有下界，而下界通常才是你真正要的那件事。这里的下界钉在「首位是龙藏 **且** 覆盖 3 个字」上——只钉首位的话，掉出去两个字它还是首位。
+
+- [ ] **Step 8: 跑几何闸**
+
+```bash
+cd katrain/web/ui && npx playwright test tests/kiosk-shell-geometry.spec.ts --reporter=list
+```
+
+Expected: 全绿。
+
+- [ ] **Step 9: 演示品牌字那条闸有牙**
+
+把 `KioskTopbar.tsx` 的 `className="kiosk-topbar__brand-zh"` 临时改成 `className="kiosk-topbar__brand"`（丢掉龙藏那条规则），重跑。
+
+Expected: **红**，报 `LXGW WenKai` 而不是 `Long Cang`。
+
+⚠️ 变异要**真的到达产物**：只改 className 会留下未使用的东西时 `tsc -b` 会报 TS6133、vite 不跑、产物名不变，那时跑测试会得到「全绿」并被读成「闸没牙」——**和真的没牙逐字相同**。跑之前先确认 `npx tsc -b` 是绿的、`dist/assets/KioskApp-*.js` 的哈希变了。
+
+改回来，重跑，绿。
+
+- [ ] **Step 10: 双构建 + 提交**
+
+```bash
+cd katrain/web/ui && npx tsc -b && npm run build && npm run build:kiosk-2d
+cd ../../.. && git add -A katrain/web/ui/src/kiosk/shell katrain/web/ui/src/kiosk/components/layout katrain/web/ui/tests
+git commit -m "feat(kiosk-shell): 顶栏改用共享外壳的 .kiosk-topbar
+
+补上此前没有的｜围棋、26px 头像;齿轮按规范 §1 拆掉(Dock 里已有设置)。
+品牌字闸补了下界(首位是龙藏 且 覆盖 3 字),并变异演示过。
+围棋专属的摄像头/标定指示器暂留 Header.tsx 不引用,等 Q3 答复。"
+```
+
+---
+
+## Task 4: Dock 与路由重映射
+
+⚠️ **这个 Task 卡在 Q2 上**（Dock 到底 6 项还是 7 项）。**先拿到 Fan 的答复再动手。** 下面按建议方案 (a) 6 项写；若 Fan 选 (b)，把 `growth` 那一格加回 `TABS` 并另开一个 Task 做那一屏。
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/shell/KioskDock.tsx`
+- Create: `katrain/web/ui/src/kiosk/shell/dockRoutes.ts`
+- Create: `katrain/web/ui/src/kiosk/shell/dockRoutes.test.ts`
+- Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx:78-99`（路由重排）
+- Modify: `katrain/web/ui/src/kiosk/components/layout/KioskLayout.tsx`
+- Modify: `katrain/web/ui/src/kiosk/__tests__/Dock.test.tsx`
+- Delete: `katrain/web/ui/src/kiosk/components/layout/Dock.tsx`、`navTabs.tsx`
+- Test: `katrain/web/ui/tests/kiosk-shell-geometry.spec.ts`
+
+**Interfaces:**
+- Consumes: Task 3 的 `KioskFrame`（`dock` 插槽）、Task 6 的 `<Icon name/>`（本 Task 与 Task 6 有依赖，**先做 Task 6 再做本 Task**，或本 Task 临时用内联 SVG 再由 Task 6 换掉——**不要**用 `@mui/icons-material`，规范 §10 要求四棋类同一份 Phosphor 字节）
+- Produces: `<KioskDock activePath={string} onTab={(path: string) => void} />`
+- Produces: `dockLevelOf(pathname: string): 1 | 2`、`dockActiveOf(pathname: string): string | null`
+
+**现状**（`navTabs.tsx:20-32`，8 项）→ **目标**（规范 §3 词典）：
+
+| 现在 | 图标 | 去处 | 规范依据 |
+|---|---|---|---|
+| 对弈 `/kiosk/play` | `SportsEsports` | **对弈**，图标换 `game-controller` | §3 核心六项 |
+| 死活 `/kiosk/tsumego` | `Extension` | **训练营**，图标 `puzzle-piece` | §3「死活 → 训练营，词典里本来就有这一格」 |
+| 研究 `/kiosk/research` | `Science` | **下 Dock**，并进复盘 | §3「研究盘本来就能读用户自己的对局，它和复盘是同一件事的两个入口」 |
+| 棋谱 `/kiosk/kifu` | `LibraryBooks` | **棋谱**（留作那一个专属项），图标 `books` | §3 专属项，**位置钉在训练营之后** |
+| 摆谱 `/kiosk/baipu` | `GridOn` | **下 Dock**，降为「选中一份棋谱之后的落子方式」 | §3 + §4 同源 |
+| 直播 `/kiosk/live` | `LiveTv` | **下 Dock**，并进棋谱 | §3「正在下的谱和下完的谱是同一件事的两个时态」 |
+| 教程 `/kiosk/tutorial` | `MenuBook` | **课程**，图标 `book-open` | §3 |
+| 复盘 `/kiosk/report` | `Assessment` | **复盘**，图标 `grid-nine` | §3 |
+| （无） | — | **设置** `/kiosk/settings`，图标 `gear` | §1「Dock 里已经有设置」，顶栏齿轮拆掉 |
+
+⚠️ **下 Dock ≠ 删路由。** `research` / `baipu` / `live` 三条路由**照旧存在**（D2 只接壳），只是不再是 Dock 项。它们的入口在 Task 15（棋谱屏出 `摆谱` / `直播`）和 Task 16（复盘屏出 `研究`）里补上。**Task 4 做完到 Task 15/16 做完之间，这三屏只能靠直接输 URL 到达**——这是可接受的中间态，但**每个 Task 的验收里要点名它还没接**，不要让它悄悄变成永久状态。
+
+- [ ] **Step 1: 写失败的单测——Dock 词典与层级**
+
+`katrain/web/ui/src/kiosk/shell/dockRoutes.test.ts`：
+
+```ts
+import { describe, expect, test } from 'vitest';
+import { DOCK_TABS, dockActiveOf, dockLevelOf } from './dockRoutes';
+
+describe('DOCK_TABS —— 词与顺序是四棋类共享词典,不是围棋能自选的', () => {
+  test('顺序写死:对弈 训练营 棋谱 复盘 课程 设置', () => {
+    expect(DOCK_TABS.map((t) => t.label)).toEqual(
+      ['对弈', '训练营', '棋谱', '复盘', '课程', '设置'],
+    );
+  });
+
+  test('专属项「棋谱」钉在「训练营」之后 —— 位置也是规范定死的', () => {
+    const labels = DOCK_TABS.map((t) => t.label);
+    expect(labels.indexOf('棋谱')).toBe(labels.indexOf('训练营') + 1);
+  });
+
+  test('不超过 7 项(--dock-max-items)', () => {
+    expect(DOCK_TABS.length).toBeLessThanOrEqual(7);
+  });
+
+  test('图标全部来自 Phosphor 词典(§10),不是随手挑的近似图标', () => {
+    expect(DOCK_TABS.map((t) => t.icon)).toEqual(
+      ['game-controller', 'puzzle-piece', 'books', 'grid-nine', 'book-open', 'gear'],
+    );
+  });
+});
+
+describe('dockLevelOf —— 层级跟着**屏**走,不跟着路由前缀走', () => {
+  test('六个 L1 目标是 1 级', () => {
+    for (const t of DOCK_TABS) expect(dockLevelOf(t.path)).toBe(1);
+  });
+
+  test('对局屏是 3 级 —— 它挂在 play 底下,但不是一级页', () => {
+    expect(dockLevelOf('/kiosk/play/ai/game/abc')).toBe(2);   // 2 = 无 Dock 的那一档
+  });
+
+  test('单元列表是训练营的二级页', () => {
+    expect(dockLevelOf('/kiosk/tsumego/15k/capturing')).toBe(2);
+  });
+
+  test('尾斜杠不改变层级', () => {
+    expect(dockLevelOf('/kiosk/play/')).toBe(1);
+  });
+});
+
+describe('dockActiveOf —— 二/三级页高亮它的父项', () => {
+  test('做题屏高亮训练营', () => {
+    expect(dockActiveOf('/kiosk/tsumego/problem/42')).toBe('/kiosk/tsumego');
+  });
+  test('对局屏高亮对弈', () => {
+    expect(dockActiveOf('/kiosk/play/ai/game/abc')).toBe('/kiosk/play');
+  });
+  test('下了 Dock 的三条路由没有父项 —— 一个都不许乱高亮', () => {
+    expect(dockActiveOf('/kiosk/baipu')).toBe(null);
+    expect(dockActiveOf('/kiosk/live')).toBe(null);
+    expect(dockActiveOf('/kiosk/research')).toBe(null);
+  });
+  test('最长前缀优先:report/:taskId 高亮复盘,不是别的', () => {
+    expect(dockActiveOf('/kiosk/report/7')).toBe('/kiosk/report');
+  });
+});
+```
+
+- [ ] **Step 2: 跑它，确认红**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/dockRoutes.test.ts
+```
+
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 3: 写实现**
+
+```ts
+// katrain/web/ui/src/kiosk/shell/dockRoutes.ts
+import type { IconName } from './icons';
+
+/**
+ * §3 底部 Dock。**词与顺序来自四棋类共享词典,不是围棋能自选的**:
+ *   对弈 · 训练营 · 复盘 · 成长 · 课程 · 设置
+ * 棋种专属项最多再加 1 个,**插在「训练营」之后**;围棋用掉的那一个是「棋谱」。
+ *
+ * 「成长」本轮不在这里:围棋没有 growth 路由/页面/后端(scope.md 决策一,Fan 2026-08-20)。
+ * 摆假入口比缺一格更坏 —— 见 G8。这条差异登记在 D6,四图的标签带里要写出来。
+ */
+export interface DockTab { path: string; label: string; icon: IconName }
+
+export const DOCK_TABS: readonly DockTab[] = [
+  { path: '/kiosk/play',     label: '对弈',   icon: 'game-controller' },
+  { path: '/kiosk/tsumego',  label: '训练营', icon: 'puzzle-piece' },
+  { path: '/kiosk/kifu',     label: '棋谱',   icon: 'books' },
+  { path: '/kiosk/report',   label: '复盘',   icon: 'grid-nine' },
+  { path: '/kiosk/tutorial', label: '课程',   icon: 'book-open' },
+  { path: '/kiosk/settings', label: '设置',   icon: 'gear' },
+];
+
+const norm = (p: string) => (p.length > 1 && p.endsWith('/') ? p.slice(0, -1) : p);
+
+/**
+ * 高亮哪一项。二/三级页高亮它的**父项**(做题屏 → 训练营,对局屏 → 对弈)。
+ * 下了 Dock 的三条(baipu/live/research)**返回 null** —— 它们没有父项,
+ * 乱认一个父项等于告诉用户「你在棋谱里」,而 Dock 上那一格并没有把他带到这儿来。
+ */
+export function dockActiveOf(pathname: string): string | null {
+  const p = norm(pathname);
+  // 最长前缀优先:/kiosk/play 和 /kiosk/play/... 都要落到 play,而 /kiosk/playground 不许。
+  const hit = [...DOCK_TABS]
+    .sort((a, b) => b.path.length - a.path.length)
+    .find((t) => p === t.path || p.startsWith(`${t.path}/`));
+  return hit ? hit.path : null;
+}
+
+/**
+ * 1 = 一级页(有 Dock,中间区 434 高);2 = 二/三级页(无 Dock,516 高)。
+ * **层级跟着屏走,不跟着路由前缀走** —— 国象踩过:复盘分析屏挂在 review 这条 L1 路由下
+ * 但其实是 L2,判错就从 516 的盘上裁掉 82px。
+ */
+export function dockLevelOf(pathname: string): 1 | 2 {
+  const p = norm(pathname);
+  return DOCK_TABS.some((t) => t.path === p) ? 1 : 2;
+}
+```
+
+- [ ] **Step 4: 跑它，确认绿**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/dockRoutes.test.ts
+```
+
+Expected: PASS，12 条全绿
+
+- [ ] **Step 5: 写 `KioskDock`**
+
+```tsx
+// katrain/web/ui/src/kiosk/shell/KioskDock.tsx
+import { Icon } from './icons';
+import { DOCK_TABS, dockActiveOf } from './dockRoutes';
+
+/**
+ * §7 Dock:通栏贴底、高 82、≤7 项等宽、图标 24、标签 12.5px Sans 600、
+ * 选中 = 强调色实底 + translateY(-2px)。全部由 tokens.css:377-412 给,
+ * 这里只负责结构、词、图标和高亮。
+ *
+ * 用 <button> 不用 <a>:稿子就是 button,tokens.css 因此从没写 text-decoration。
+ */
+export function KioskDock({ pathname, onTab }: {
+  pathname: string;
+  onTab: (path: string) => void;
+}) {
+  const active = dockActiveOf(pathname);
+  return (
+    <nav className="kiosk-dock" aria-label="主导航">
+      {DOCK_TABS.map((tab) => {
+        const on = active === tab.path;
+        return (
+          <button
+            key={tab.path}
+            type="button"
+            className="kiosk-dock__item"
+            aria-current={on ? 'page' : undefined}
+            onClick={() => onTab(tab.path)}
+          >
+            <Icon name={tab.icon} filled={on} />
+            <span className="kiosk-dock__label">{tab.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+```
+
+- [ ] **Step 6: 路由重排**
+
+`katrain/web/ui/src/kiosk/KioskApp.tsx`：
+
+1. `settings` 路由不动（`:99`），它现在是 Dock 的目标。
+2. **`GamePage` 那四条（`:58-61`）挪进 `KioskLayout`**。现在它们在 `KioskAuthGuard` 下、`KioskLayout` 外，所以对局屏**连顶栏都没有**——而规范 §5 防跳铁律 1 写死「顶栏永远占 y 0–56，**任何层级、任何模块都不变高、不隐藏**」。挪进去之后 `dockLevelOf` 会判成 2 级、不出 Dock，正确。
+   ⚠️ 挪的时候保留 `PhysicalBoardGuard requireRecognition` 包裹，不要顺手改掉。
+3. `immersive` 语义：`ImmersiveContext` 现在会把顶栏和 Dock 一起抽掉。规范不允许抽顶栏。**本 Task 只把 Dock 归 `dockLevelOf` 管，`immersive` 对顶栏的作用先原样留着**，并在提交信息里登记「immersive 抽顶栏与规范 §5 防跳铁律 1 冲突，待定」。**不要顺手删** —— 它有别的消费者，删它超出本 Task。
+
+`KioskLayout.tsx` 改成：
+
+```tsx
+  const location = useLocation();
+  const level = dockLevelOf(location.pathname);
+  return (
+    <KioskFrame
+      level={level}
+      topbar={<KioskTopbar identity={{ username }} onHome={level === 1 ? onHome : undefined} />}
+      dock={level === 1 ? <KioskDock pathname={location.pathname} onTab={(p) => navigate(p)} /> : undefined}
+    >
+      …
+    </KioskFrame>
+  );
+```
+
+- [ ] **Step 7: 改既有的 Dock 单测**
+
+`src/kiosk/__tests__/Dock.test.tsx:22-28` 现在断言 8 项、并断言「设置**不**在 Dock 里」。两条都反了。改成断言新词典，并把「设置在 Dock 里」写成正向断言，注释写清依据是规范 §1（顶栏齿轮拆掉，因为 Dock 里已经有设置）。
+
+- [ ] **Step 8: 给几何闸加 Dock 一组**
+
+```ts
+test('§7 Dock:项数、等宽、项高 65、选中态位移 -2px', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  const dock = await box(page, '.kiosk-dock');
+  const items = await page.locator('.kiosk-dock__item').all();
+  expect(items.length).toBe(6);           // Q2 = (a);若 Fan 选 (b) 改 7
+
+  const boxes = await Promise.all(items.map((i) => i.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return { x: r.x, w: r.width, h: r.height, y: r.y };
+  })));
+  // 等宽:最宽和最窄差不到 1px(亚像素)
+  expect(Math.max(...boxes.map((b) => b.w)) - Math.min(...boxes.map((b) => b.w))).toBeLessThan(1);
+  // 项高 65 = 82 − 1(顶部描边) − 2×8(内边距)。关系式写出来,不写字面量。
+  expect(Math.round(boxes[0].h)).toBe(dock.h - 1 - 2 * 8);
+  // 选中项上移 2 —— 它是**唯一**上移的那一个
+  const raised = boxes.filter((b) => b.y < Math.max(...boxes.map((x) => x.y)) - 1);
+  expect(raised.length).toBe(1);
+});
+```
+
+- [ ] **Step 9: 跑全部闸 + 双构建**
+
+```bash
+cd katrain/web/ui
+npx vitest run src/kiosk
+npx playwright test tests/kiosk-shell-geometry.spec.ts --config playwright.visual.config.ts --workers=1
+npx tsc -b && npm run build && npm run build:kiosk-2d
+```
+
+Expected: vitest 与基线相比**没有新增**失败（`comm -13` 比名字集合）；playwright 全绿；三条构建绿。
+
+- [ ] **Step 10: 提交**
+
+```bash
+git add -A katrain/web/ui/src/kiosk katrain/web/ui/tests
+git commit -m "feat(kiosk-shell): Dock 收成共享词典的六项,路由跟着重排
+
+死活->训练营、教程->课程、研究/摆谱/直播 下 Dock(路由保留,入口在棋谱与复盘屏补),
+设置进 Dock、顶栏齿轮拆掉。对局屏四条路由挪进 KioskLayout —— 规范 §5 防跳铁律 1
+要求顶栏任何层级都不隐藏,而它们此前连顶栏都没有。
+成长本轮不进 Dock(scope.md 决策一),差异已登记。"
+```
+
+---
+
+## Task 5: L1 两栏与镜像栏
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/shell/KioskConsoleRail.tsx`
+- Create: `katrain/web/ui/src/kiosk/shell/KioskStatusCells.tsx`
+- Create: `katrain/web/ui/src/kiosk/shell/KioskStatusCells.test.tsx`
+- Modify: `katrain/web/ui/src/kiosk/components/layout/KioskLayout.tsx`
+- Delete: `katrain/web/ui/src/kiosk/components/layout/SmartBoardConsole.tsx`
+- Test: `katrain/web/ui/tests/kiosk-shell-geometry.spec.ts`
+
+**Interfaces:**
+- Consumes: Task 9 的 `<GoBoardSvg/>`（**先做 Task 9 的盘那一半**，或本 Task 先放一个空 `<div className="kiosk-mini-board"/>` 占位、Task 9 填进去）
+- Produces: `<KioskConsoleRail title sub board syncLeft syncRight statuses />`
+- Produces: `<KioskStatusCells cells={StatusCell[]} />`，`StatusCell = { label: string; value: string; tone?: 'good'|'warn'|'bad' }`
+
+**规范 §5 的纵向账，一分不多一分不少**：
+
+```
+20（标题）+ 10 + 272（镜像框）+ 10 + 32（同步行）+ 10 + 56（状态格）= 410 = 434 − 2×1（描边）− 2×11（内边距）
+```
+
+> 这串等号**曾经算错过 2px**（横向算了 1px 描边、纵向漏了，写成 434 − 2×11 = 412，标题按 22 排）。多出来的 2px 没有报错——标题行和状态格都没写 `flex:none`，被 flex 各压了 1px，**肉眼看不出来**。现在栏里每块都写死 `flex:none`（`tokens.css:440` 起），再有人算错会顶破外框、当场看得见。
+
+> 镜像框**不许 `flex:1` 吃剩余空间**：早先那样写出来是框 272×**312**、盘 248 居中——上下各空 32、左右只有 12，一条不对称的空带。剩余空间要给同步行。
+
+**现状差距**（`SmartBoardConsole.tsx:96-98`）：宽 322 + 左右各 20 外边距 = **362 占位**，右边 `<main>` 只剩 662。目标是 296 + 16 + 680。
+
+- [ ] **Step 1: 写失败的单测——状态三格跟着真实硬件走**
+
+`katrain/web/ui/src/kiosk/shell/KioskStatusCells.test.tsx`：
+
+```tsx
+import { render, screen } from '@testing-library/react';
+import { describe, expect, test } from 'vitest';
+import { GO_HARDWARE_CELLS, KioskStatusCells } from './KioskStatusCells';
+
+describe('围棋的硬件三格', () => {
+  // 规范 §5:统一的是**格数、几何和灯色语义,不是器件名**。
+  // 国象/象棋盘上根本没有摄像头,五子棋盘上没有 LED —— 说明书上没有的东西,界面上不能有。
+  test('围棋是 摄像头 · 标定 · LED —— 摄像头识子,盘上另有一层 LED 指下一手', () => {
+    expect(GO_HARDWARE_CELLS.map((c) => c.label)).toEqual(['摄像头', '标定', 'LED']);
+  });
+
+  test('渲染出三格,每格上行是名称+灯、下行是状态值', () => {
+    render(<KioskStatusCells cells={[
+      { label: '摄像头', value: '已连接', tone: 'good' },
+      { label: '标定', value: '需重标', tone: 'warn' },
+      { label: 'LED', value: '就绪', tone: 'good' },
+    ]} />);
+    expect(document.querySelectorAll('.kiosk-status__cell')).toHaveLength(3);
+    expect(screen.getByText('需重标')).toBeInTheDocument();
+  });
+
+  test('两格变体只给成长用 —— 三格是硬件状态的形状,不许拿来装两个数', () => {
+    const { container } = render(<KioskStatusCells cells={[
+      { label: '本月', value: '—' }, { label: '最高', value: '—' },
+    ]} />);
+    expect(container.querySelector('.kiosk-status--2')).not.toBeNull();
+  });
+
+  test('没有 tone 就不画灯 —— 灯是状态,不是装饰', () => {
+    const { container } = render(<KioskStatusCells cells={[
+      { label: '准确率', value: '78%' }, { label: '失误', value: '4 手' }, { label: '漏着', value: '1 手' },
+    ]} />);
+    expect(container.querySelectorAll('.kiosk-status__k i')).toHaveLength(0);
+  });
+});
+```
+
+- [ ] **Step 2: 跑它，确认红**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/KioskStatusCells.test.tsx
+```
+
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 3: 写实现**
+
+```tsx
+// katrain/web/ui/src/kiosk/shell/KioskStatusCells.tsx
+export interface StatusCell { label: string; value: string; tone?: 'good' | 'warn' | 'bad' }
+
+/**
+ * §5 状态格。几何写死(三格 84×56、格内文字垂直居中,tokens.css:461-474),
+ * **填什么由模块决定**:硬件状态(对弈/训练营/课程/棋谱)、本局指标(复盘)、分数摘要(成长)。
+ *
+ * 灯色语义四棋类统一:绿=正常、琥珀=需处理、红=故障。器件名各家跟着**自己盘上真有的东西**走。
+ */
+export const GO_HARDWARE_CELLS: readonly StatusCell[] = [
+  { label: '摄像头', value: '—' },
+  { label: '标定', value: '—' },
+  { label: 'LED', value: '—' },
+];
+
+export function KioskStatusCells({ cells }: { cells: readonly StatusCell[] }) {
+  return (
+    <div className={`kiosk-status${cells.length === 2 ? ' kiosk-status--2' : ''}`}>
+      {cells.map((c) => (
+        <div className="kiosk-status__cell" key={c.label}>
+          <span className="kiosk-status__k">
+            {c.tone && <i style={{ color: `var(--${c.tone})` }} />}{c.label}
+          </span>
+          <b className="kiosk-status__v">{c.value}</b>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+- [ ] **Step 4: 跑它，确认绿**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/KioskStatusCells.test.tsx
+```
+
+Expected: PASS，4 条全绿
+
+- [ ] **Step 5: 写 `KioskConsoleRail`**
+
+```tsx
+// katrain/web/ui/src/kiosk/shell/KioskConsoleRail.tsx
+import type { ReactNode } from 'react';
+import { KioskStatusCells, type StatusCell } from './KioskStatusCells';
+
+/**
+ * §5 L1 左栏。**四个模块几何完全一样,装的东西不同** —— 所以互切不跳:
+ *   对弈 / 训练营 / 课程 / 棋谱 → 实体盘镜像(盘上正在发生什么)
+ *   复盘                        → 上一局的终局盘(刚下完的那局是什么样)
+ * 差别只在标题和同步行那句话。
+ *
+ * **左栏永不滚动**,恒为 434 固定高;滚动只属于右栏(规范 §5.2 第 7 条)。
+ * **它是状态显示,不是入口** —— 落子方式(屏幕/实体盘)是每种对弈方式内部的二选一,不在这里。
+ */
+export function KioskConsoleRail({ title, sub, board, syncLeft, syncRight, statuses }: {
+  title: string;
+  sub: string;
+  board: ReactNode;
+  syncLeft: string;
+  syncRight: string;
+  statuses: readonly StatusCell[];
+}) {
+  return (
+    <aside className="kiosk-console">
+      <div className="kiosk-console__title"><b>{title}</b><em>{sub}</em></div>
+      <div className="kiosk-console__frame">
+        <div className="kiosk-mini-board">{board}</div>
+      </div>
+      <div className="kiosk-console__sync"><span>{syncLeft}</span><b>{syncRight}</b></div>
+      <KioskStatusCells cells={statuses} />
+    </aside>
+  );
+}
+```
+
+- [ ] **Step 6: 让 `KioskLayout` 出两栏骨架**
+
+`KioskLayout.tsx` 的 children 换成：
+
+```tsx
+      {level === 1 && railFor(location.pathname)
+        ? <div className="kiosk-layout-l1">{railFor(location.pathname)}<Outlet /></div>
+        : <Outlet />}
+```
+
+`railFor` 先只覆盖 `/kiosk/play`（等价于今天的 `CONSOLE_ROUTES`），**其余 L1 屏在各自的 Task 里接**。删掉 `SmartBoardConsole` 的 import 与文件。
+
+⚠️ `.kiosk-layout-l1` 是 `grid-template-columns: 296px 680px`（`tokens.css:430-433`），**右栏由页面自己提供根节点**。所以 `<Outlet/>` 渲染出来的那一层就是右栏——各屏的根必须是 `.kiosk-side` 或 `.kiosk-side kiosk-scrollzone`（Task 7）。在各屏改造完之前，它们的老 `<Box>` 会直接落进网格第二列，**尺寸会当场变成 680**，这是预期的中间态。
+
+- [ ] **Step 7: 给几何闸加左栏纵向账（承重，最关键的一条）**
+
+```ts
+test('§5 L1 两栏:296 + 16 + 680,左栏纵向 20+10+272+10+32+10+56=410 严丝合缝', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  const content = await box(page, '.kiosk-content');
+  const rail = await box(page, '.kiosk-console');
+  const side = await box(page, '.kiosk-side, .kiosk-layout-l1 > *:nth-child(2)');
+
+  expect(rail.w).toBe(296);
+  expect(side.w).toBe(680);
+  expect(Math.round(side.x - (rail.x + rail.w))).toBe(16);
+  expect(rail.x).toBe(content.x);
+  expect(Math.round(side.x + side.w)).toBe(Math.round(content.x + content.w));
+
+  const title  = await box(page, '.kiosk-console__title');
+  const frame  = await box(page, '.kiosk-console__frame');
+  const mini   = await box(page, '.kiosk-mini-board');
+  const sync   = await box(page, '.kiosk-console__sync');
+  const status = await box(page, '.kiosk-status');
+
+  // 关系式先行:每一块都不许被 flex 压扁(全部 flex:none),四段间距都是 10
+  expect(title.h).toBe(20);
+  expect(sync.h).toBe(32);
+  expect(status.h).toBe(56);
+  expect(Math.round(frame.y - (title.y + title.h))).toBe(10);
+  expect(Math.round(sync.y - (frame.y + frame.h))).toBe(10);
+  expect(Math.round(status.y - (sync.y + sync.h))).toBe(10);
+  // 纵向恰好用完,不多不少:最后一块的下缘 = 栏的内容盒下缘
+  expect(Math.round(status.y + status.h)).toBe(Math.round(rail.y + rail.h - 1 - 11));
+
+  // 镜像框是**正方形**,不许吃剩余空间(早先写 flex:1 → 272×312,上下各空 32)
+  expect(frame.w).toBe(frame.h);
+  expect(mini.w).toBe(mini.h);
+  expect(mini.w).toBe(frame.w - 2 * 12);   // 248 = 272 − 2×12
+});
+
+test('§5 左栏永不滚动 —— 滚动只属于右栏', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  const scrollable = await page.locator('.kiosk-console').evaluate((el) => {
+    const walk = (n: Element): boolean => {
+      const cs = getComputedStyle(n);
+      if ((cs.overflowY === 'auto' || cs.overflowY === 'scroll') && n.scrollHeight > n.clientHeight) return true;
+      return Array.from(n.children).some(walk);
+    };
+    return walk(el);
+  });
+  expect(scrollable, '左栏里有东西在滚 —— 它必须恒为 434 固定高').toBe(false);
+});
+```
+
+- [ ] **Step 8: 把数据造到会溢出再量一次**
+
+承重实测的铁律：**装得下的数据量下量出来的数字一概不算。** 用 `page.evaluate` 把三格的值撑长（例如把「已连接」换成 300 字），重跑上面两条。
+
+```bash
+cd katrain/web/ui && npx playwright test tests/kiosk-shell-geometry.spec.ts --config playwright.visual.config.ts --workers=1
+```
+
+Expected: 长值下 `.kiosk-status__cell` 出省略号、**外框 296×434 一动不动**。若格子被撑宽 → `tokens.css` 少了 `.kiosk-status__cell { min-width: 0 }`（grid 子项默认 `min-width:auto` 会拒绝收缩到内容宽度以下，实测把值撑到 **3900px 宽**、视口才 1024、**一个省略号都没有**）。`blockingPanel.css` 里有本地补丁，确认它还在作用域内；不在就把那条补丁搬进 `go-screens.css`。
+
+> ⚠️ 这条本地补丁的口径要说准：它现在按「上游缺口」记，**但那是未验证的判断**，不像刻度轨道那条被两个数确认过。别把它写成结论。
+
+- [ ] **Step 9: 双构建 + 提交**
+
+```bash
+cd katrain/web/ui && npx tsc -b && npm run build && npm run build:kiosk-2d
+cd ../../.. && git add -A katrain/web/ui/src/kiosk katrain/web/ui/tests
+git commit -m "feat(kiosk-shell): L1 两栏改成 296+16+680,镜像栏用共享 .kiosk-console
+
+此前是 322+2×20 外边距 = 362 占位、右边只剩 662。左栏纵向那串
+20+10+272+10+32+10+56=410 在真浏览器量过,并把三格的值撑到会溢出再量了一遍。"
+```
+
+---
+
+## Task 6: 图标、模式卡、组标题
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/shell/icons.tsx`
+- Create: `katrain/web/ui/src/kiosk/shell/icons.test.tsx`
+- Create: `katrain/web/ui/src/kiosk/shell/KioskCard.tsx`
+- Create: `katrain/web/ui/src/kiosk/shell/KioskSecLabel.tsx`
+- Copy: `smartbox-software/.../assets/icons/*.svg` → `katrain/web/ui/src/kiosk-shell/icons/`（82 个文件）
+- Modify: `katrain/web/ui/src/kiosk-shell/MANIFEST.sha256`
+- Test: `katrain/web/ui/tests/kiosk-shell-contract.spec.ts`
+
+**Interfaces:**
+- Produces: `<Icon name={IconName} filled?={boolean} />`，`IconName` 是从 `icons/` 目录名派生的联合类型
+- Produces: `<KioskCard title sub icon|ring current?|soon?|todo?|dot? onClick? />`
+- Produces: `<KioskSecLabel zh en value?/>`
+
+**为什么要抄图标**：`src/kiosk-shell/icons/` 现在**只有 `house.svg` 一个**（当初只抄了 `tokens.css:338` 那条 mask 引到的那一个）。上游 `assets/icons/` 有 **82 个**（41 对 `<name>.svg` + `<name>-fill.svg`，Phosphor v2，`viewBox="0 0 256 256"`，`fill="currentColor"`，不带死色）。围棋十屏用到 **36 个不同名字**。规范 §10：**图标只能从 Phosphor v2 出，成对导出，重算 `MANIFEST.sha256`**，四个前端用**同一份字节**——所以整目录抄，不挑。
+
+- [ ] **Step 1: 抄图标并扩 manifest**
+
+```bash
+cd /Users/fan/Repositories/katrain-kiosk-go-align/katrain/web/ui/src/kiosk-shell
+cp /Users/fan/Repositories/smartbox-software/superpowers/shared/kiosk-shell/assets/icons/*.svg icons/
+ls icons/*.svg | wc -l          # 期望 82
+# manifest 里已有 icons/house.svg 那一行,其余 81 个补进去(路径去掉 assets/ 前缀,和既有 209 行同格式)
+shasum -c MANIFEST.sha256 2>&1 | grep -c OK    # 补之前:209
+```
+
+补 manifest：把上游 `MANIFEST.sha256` 里 `assets/icons/` 那些行取出来、去掉 `assets/` 前缀、合进本地那份并按原顺序排好，然后：
+
+```bash
+shasum -a 256 -c MANIFEST.sha256 2>&1 | grep -v ': OK$'   # 期望没有输出
+shasum -a 256 -c MANIFEST.sha256 2>&1 | grep -c ': OK$'   # 期望 290
+```
+
+> ⚠️ 这道闸答得了什么，要说准：`icons/` 和清单是**一起抄**的，所以在这里跑它只证明「**我这份副本自己没被人动过**」。上游换了图、上游清单跟着重算，我这边两个都还是旧的、还互相自洽，**闸照样绿**。要答「我这份还等于上游那份吗」，得再把**上游清单文件本身的 sha256** 钉一次——那条还没做，继续记在 `kiosk-design-alignment.md` §10。
+
+- [ ] **Step 2: 写失败的单测——图标必须能跟随 `currentColor`**
+
+`katrain/web/ui/src/kiosk/shell/icons.test.tsx`：
+
+```tsx
+import { render } from '@testing-library/react';
+import { describe, expect, test } from 'vitest';
+import { Icon } from './icons';
+
+describe('Icon', () => {
+  // 用 <img src> 就跟不了容器的 color,而 .kiosk-dock__item[aria-current]{color:var(--ink)}
+  // 全靠 currentColor 翻色 —— 选中那一格的图标会一直是灰的。
+  test('内联 <svg>,不是 <img>', () => {
+    const { container } = render(<Icon name="game-controller" />);
+    expect(container.querySelector('svg')).not.toBeNull();
+    expect(container.querySelector('img')).toBeNull();
+  });
+
+  test('svg 用 currentColor,没有写死的颜色', () => {
+    const { container } = render(<Icon name="game-controller" />);
+    const html = container.innerHTML;
+    expect(html).toContain('currentColor');
+    expect(html).not.toMatch(/fill="#[0-9a-fA-F]/);
+  });
+
+  test('filled 取 -fill 那一份,不是给同一份加个 CSS', () => {
+    const off = render(<Icon name="gear" />).container.innerHTML;
+    const on = render(<Icon name="gear" filled />).container.innerHTML;
+    expect(on).not.toBe(off);
+  });
+
+  test('包裹层是 display:contents —— 默认的 inline span 会打断 Dock 项的纵向 flex', () => {
+    const { container } = render(<Icon name="gear" />);
+    const wrapper = container.firstElementChild as HTMLElement;
+    expect(wrapper.className).toContain('kiosk-icon');
+  });
+});
+```
+
+- [ ] **Step 3: 跑它，确认红**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/icons.test.tsx
+```
+
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 4: 写实现**
+
+```tsx
+// katrain/web/ui/src/kiosk/shell/icons.tsx
+// Phosphor v2(MIT),规范 §10:四个前端用同一份字节。`?raw` 拿到源码内联,
+// 不能用 <img src> —— <img> 跟不了容器的 color。
+const modules = import.meta.glob('../../kiosk-shell/icons/*.svg', {
+  eager: true, query: '?raw', import: 'default',
+}) as Record<string, string>;
+
+const table: Record<string, string> = {};
+for (const [path, source] of Object.entries(modules)) {
+  table[path.split('/').pop()!.replace(/\.svg$/, '')] = source;
+}
+
+export type IconName =
+  | 'arrow-clockwise' | 'arrow-counter-clockwise' | 'arrow-left' | 'arrow-right'
+  | 'arrows-clockwise' | 'book-open' | 'books' | 'camera' | 'caret-down'
+  | 'circuitry' | 'crown-simple' | 'flag' | 'game-controller' | 'gear'
+  | 'globe-hemisphere-west' | 'grid-nine' | 'hand-pointing' | 'house' | 'info'
+  | 'lightbulb' | 'magnifying-glass' | 'puzzle-piece' | 'robot' | 'skip-forward'
+  | 'sliders-horizontal' | 'speaker-high' | 'squares-four' | 'trend-up'
+  | 'trophy' | 'upload-simple' | 'user-circle' | 'users';
+
+export function Icon({ name, filled = false }: { name: IconName; filled?: boolean }) {
+  const source = table[filled ? `${name}-fill` : name] ?? table[name];
+  if (!source) {
+    // 缺图标要**响**,不要静默画个空盒子 —— 静默的话屏上少一个图标没人发现。
+    throw new Error(`图标不在 kiosk-shell/icons/ 里:${name}${filled ? '-fill' : ''}`);
+  }
+  return <span className="kiosk-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: source }} />;
+}
+```
+
+- [ ] **Step 5: 跑它，确认绿**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/icons.test.tsx
+```
+
+Expected: PASS，4 条全绿
+
+- [ ] **Step 6: 写 `KioskCard` 与 `KioskSecLabel`**
+
+```tsx
+// katrain/web/ui/src/kiosk/shell/KioskCard.tsx
+import { Icon, type IconName } from './icons';
+
+/**
+ * §8 一级页模式卡。**所有一级页的卡片按钮都是这一种规格:220×76,40 方衬在左,
+ * 标题+副标在右,间距 12。** 不许某个模块自己另做一套尺寸或把图标挪到上面 ——
+ * 那是「切模块不跳」的另一种破法:框没跳,**手要去够的目标跳了**。
+ *
+ * 进度环卡不是新构造,是同一张卡换个衬(.kiosk-card__tile.is-ring):
+ * 几何一个字不改,只把方衬里的图标换成环。
+ *   · 环描边 4 ⇒ 半径 (40−4)/2 = 18,中间写百分比(9.5px)
+ *   · **100% 的环走 --good,不走强调色** —— 棋种把强调色换成青毡绿时,
+ *     「进行中」和「学完了」必须还分得开
+ *   · 在学的那张 .is-current(强调色描边),一屏只有一张
+ * 值读不到时环里写「—」不写 0(G8)。
+ */
+export function KioskCard({ title, sub, icon, ring, current, soon, todo, dot, onClick, ariaLabel }: {
+  title: string;
+  sub: string;
+  icon?: IconName;
+  ring?: number | null;      // null = 读不到 ⇒ 环里写「—」
+  current?: boolean;
+  soon?: string;             // 文案由调用方给(「即将上线」/「未录制」),不许写「锁定」
+  todo?: boolean;
+  dot?: boolean;
+  onClick?: () => void;
+  ariaLabel?: string;
+}) {
+  const cls = ['kiosk-card', current && 'is-current', soon && 'is-soon', todo && 'is-todo']
+    .filter(Boolean).join(' ');
+  const pct = ring == null ? null : Math.round(ring);
+  return (
+    <button
+      type="button"
+      className={cls}
+      aria-label={ariaLabel ?? title}
+      disabled={Boolean(soon || todo)}
+      onClick={onClick}
+    >
+      <span className={`kiosk-card__tile${ring !== undefined ? ' is-ring' : ''}`}>
+        {ring !== undefined
+          ? <b>{pct == null ? '—' : `${pct}%`}</b>
+          : icon && <Icon name={icon} />}
+      </span>
+      <span className="kiosk-card__t"><b>{title}</b><em>{sub}</em></span>
+      {dot && <span className="dot" aria-hidden="true" />}
+      {soon && <span className="soon">{soon}</span>}
+    </button>
+  );
+}
+```
+
+```tsx
+// katrain/web/ui/src/kiosk/shell/KioskSecLabel.tsx
+/**
+ * 组标题行:中文 12.5px Sans 700 .12em + 英文 11px Serif 斜体 --dim + 渐隐横线
+ * + 右端可选的值(.secval)。容器几何在 tokens.css:563-566,四个子元素在 seclabel.css。
+ *
+ * 右端那个值是**数据**(「本机 5 局」「两档:500 / 2000 次计算」),不是旁注。
+ * 稿子里的解释性段落(.note)是给读稿人的,不进这里,也不上线 —— 见 G5。
+ */
+export function KioskSecLabel({ zh, en, value }: { zh: string; en: string; value?: string }) {
+  return (
+    <div className="kiosk-seclabel">
+      <h2>{zh}</h2>
+      <em>{en}</em>
+      <span className="rule" />
+      {value && <b className="secval">{value}</b>}
+    </div>
+  );
+}
+```
+
+- [ ] **Step 7: 写契约闸（不是几何闸）**
+
+`katrain/web/ui/tests/kiosk-shell-contract.spec.ts`：
+
+```ts
+import { expect, test } from '@playwright/test';
+import { readFileSync, readdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const SRC = resolve(process.cwd(), 'src');
+
+/**
+ * 契约闸:扫源码,不开浏览器。它守的是三条「本地看着对、上板才塌」的规矩。
+ */
+test('固定画布上不许出现 vw / vh / cqw —— 一相对化,「切模块不跳」就没法用截图证明', () => {
+  const bad: string[] = [];
+  const walk = (dir: string) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = resolve(dir, e.name);
+      if (e.isDirectory()) { if (e.name !== 'kiosk-shell') walk(p); continue; }
+      if (!/\.(tsx?|css)$/.test(e.name)) continue;
+      if (!p.includes('/kiosk/')) continue;
+      readFileSync(p, 'utf8').split('\n').forEach((line, i) => {
+        if (/\b\d+(\.\d+)?(vw|vh|cqw|cqh)\b/.test(line) && !line.trimStart().startsWith('*')
+            && !line.trimStart().startsWith('//')) {
+          bad.push(`${p}:${i + 1}  ${line.trim()}`);
+        }
+      });
+    }
+  };
+  walk(SRC);
+  expect(bad, `固定 1024×600 画布上不许用视口单位:\n${bad.join('\n')}`).toEqual([]);
+});
+
+test('图标不许手写内联路径 —— 只能从 kiosk-shell/icons/ 出(规范 §10)', () => {
+  const bad: string[] = [];
+  const walk = (dir: string) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = resolve(dir, e.name);
+      if (e.isDirectory()) { walk(p); continue; }
+      if (!/\.tsx$/.test(e.name) || !p.includes('/kiosk/')) continue;
+      if (p.endsWith('shell/icons.tsx')) continue;              // 它就是那个出口
+      const src = readFileSync(p, 'utf8');
+      if (/<path\s+d="/.test(src)) bad.push(`${p}  手写了 <path d=…>`);
+      if (/@mui\/icons-material/.test(src)) bad.push(`${p}  用了 MUI 图标`);
+    }
+  };
+  walk(resolve(SRC, 'kiosk'));
+  expect(bad, `图标要走 shell/icons.tsx:\n${bad.join('\n')}`).toEqual([]);
+});
+```
+
+⚠️ **这条闸会一次报出一大堆现存违规**（`src/kiosk` 现在到处是 `@mui/icons-material`）。**不要为了让它变绿去大改**。做法：本 Task 先把它写成 `test.fail()` 之外的形式——用一个**白名单基线**（把今天所有违规文件列进 `KNOWN_MUI_ICON_FILES`，断言「没有新增」），每个屏 Task 做完就从白名单里划掉那一屏的文件。**基线 diff，不是一刀切。**
+
+- [ ] **Step 8: 跑两条闸 + 双构建 + 提交**
+
+```bash
+cd katrain/web/ui
+npx vitest run src/kiosk/shell
+npx playwright test tests/kiosk-shell-contract.spec.ts --config playwright.visual.config.ts --workers=1
+npx tsc -b && npm run build && npm run build:kiosk-2d
+cd ../../.. && git add -A katrain/web/ui/src/kiosk katrain/web/ui/src/kiosk-shell katrain/web/ui/tests
+git commit -m "feat(kiosk-shell): 抄进 82 个 Phosphor 图标,补模式卡与组标题两个共享构件
+
+图标走 ?raw 内联而不是 <img src> —— <img> 跟不了 currentColor,
+而 Dock 选中态的翻色全靠它。MANIFEST 由 209 行扩到 290 行,shasum -c 全绿。
+契约闸先按白名单基线记既有违规,每屏做完划掉一批。"
+```
+
+---
+
+## Task 7: 悬浮滚动区（**承重**，本轮唯一的新承重面）
+
+规范 §5.2 要求右栏可滚，且**必须自己画一条悬浮滚动条**：原生滚动条一旦占宽度，680 就不是 680，三列 220 的算术当场崩；但零宽度的代价是完全没有位置指示。两个都要，就只能自己画。
+
+共享包给的是**几何、渐隐和条子的画法**（`tokens.css:505-557`）；**状态机和条子的位置全是消费方的活**。
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/shell/KioskScrollZone.tsx`
+- Create: `katrain/web/ui/src/kiosk/shell/KioskScrollZone.test.tsx`
+- Test: `katrain/web/ui/tests/kiosk-shell-scroll.spec.ts`（**真浏览器、真滚轮**）
+
+**Interfaces:**
+- Produces: `<KioskScrollZone grow? head? resetKey?>{children}</KioskScrollZone>`
+  - 不传 `grow` = **形态 1 整栏滚**（对弈首页、训练营首页、棋谱、课程、设置）
+  - 传 `grow` = **形态 2 头尾固定、中列滚**（复盘的「待复盘对局」）
+
+- [ ] **Step 1: 写失败的真浏览器闸（这条先写，因为它才是判据）**
+
+`katrain/web/ui/tests/kiosk-shell-scroll.spec.ts`：
+
+```ts
+import { expect, test } from '@playwright/test';
+
+test.use({ viewport: { width: 1024, height: 600 } });
+
+/**
+ * 承重闸。四条硬性,一条都不能靠 jsdom:
+ *   ① 不溢出就**没有** data-at、**不画**滚动条(挂一条永远亮着的渐隐 = 谎报下面还有东西)
+ *   ② 溢出了就**必须有** data-at,且拇指最短 24
+ *   ③ 真的能滚 —— 用**真滚轮**,不是 scrollTop = n
+ *      (Chromium 不认未受信任的合成 WheelEvent,`scrollTop = n` 证明不了「用户能滚」)
+ *   ④ 换一批内容 scrollTop 归零
+ */
+async function boot(page, path: string) { /* 同 kiosk-shell-geometry.spec.ts 的 boot */ }
+
+test('内容不溢出时:没有 data-at,也不画滚动条', async ({ page }) => {
+  await boot(page, '/kiosk/settings');           // 用一个内容少的屏,或用 route 把列表 stub 空
+  const zone = page.locator('.kiosk-scrollzone').first();
+  await expect(zone).not.toHaveAttribute('data-at', /.*/);
+  const barVisible = await zone.locator('.kiosk-scrollbar').evaluate(
+    (el) => getComputedStyle(el).display !== 'none');
+  expect(barVisible, '不溢出却画了滚动条 —— 谎报下面还有东西').toBe(false);
+});
+
+test('溢出时:data-at 从 top 走到 end,拇指 >=24 且不占布局宽度', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  const zone = page.locator('.kiosk-scrollzone').first();
+  const scroll = zone.locator('.kiosk-side__scroll');
+
+  const overflow = await scroll.evaluate((el) => el.scrollHeight - el.clientHeight);
+  expect(overflow, '这一屏没溢出,这条闸没有被测对象').toBeGreaterThan(0);
+
+  await expect(zone).toHaveAttribute('data-at', 'top');
+
+  // 拇指:>=24,且**不参与布局** —— 右栏仍然是 680
+  const thumb = await zone.locator('.kiosk-scrollbar').evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return { h: r.height, w: r.width, pos: getComputedStyle(el).position };
+  });
+  expect(thumb.h).toBeGreaterThanOrEqual(24);
+  expect(thumb.pos).toBe('absolute');
+  const sideW = await zone.evaluate((el) => el.getBoundingClientRect().width);
+  expect(sideW, '滚动条占了布局宽度 —— 三列 220 的算术会当场崩').toBe(680);
+
+  // **真滚轮**。Chromium 不认合成的 WheelEvent,scrollTop = n 证明不了用户能滚。
+  await scroll.hover();
+  await page.mouse.wheel(0, 200);
+  await expect.poll(() => scroll.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  await expect(zone).toHaveAttribute('data-at', 'mid');
+
+  await page.mouse.wheel(0, 5000);
+  await expect.poll(() => zone.getAttribute('data-at')).toBe('end');
+});
+
+test('§5「露一半」:视口底边切在一张卡的中间,不许切在缝上', async ({ page }) => {
+  await boot(page, '/kiosk/play');
+  const r = await page.locator('.kiosk-scrollzone').first().evaluate((zone) => {
+    const scroll = zone.querySelector('.kiosk-side__scroll') as HTMLElement;
+    const bottom = scroll.getBoundingClientRect().bottom;
+    const cards = Array.from(scroll.querySelectorAll('.kiosk-card')) as HTMLElement[];
+    // 找那张被视口底边穿过的卡
+    const cut = cards.map((c) => c.getBoundingClientRect())
+      .find((b) => b.top < bottom && b.bottom > bottom);
+    return cut ? { peek: bottom - cut.top, h: cut.height } : null;
+  });
+  expect(r, '视口底边没有穿过任何一张卡 —— 要么没溢出,要么正好切在缝上(最坏的一种)').not.toBeNull();
+  // 上下界按卡高比例算,再加绝对下限:max(16, .25h) <= 露出 <= h − max(12, .25h)
+  const lo = Math.max(16, 0.25 * r!.h);
+  const hi = r!.h - Math.max(12, 0.25 * r!.h);
+  expect(r!.peek, `露出 ${r!.peek} 不在 [${lo}, ${hi}]`).toBeGreaterThanOrEqual(lo);
+  expect(r!.peek).toBeLessThanOrEqual(hi);
+});
+```
+
+- [ ] **Step 2: 跑它，确认红**
+
+```bash
+cd katrain/web/ui && npx playwright test tests/kiosk-shell-scroll.spec.ts --config playwright.visual.config.ts --workers=1
+```
+
+Expected: FAIL — 页面上根本没有 `.kiosk-scrollzone`
+
+- [ ] **Step 3: 写实现**
+
+结构照象棋 `xiangqi/ui/src/shell/KioskScrollZone.tsx`（活样本），但**要吸收五子棋那份 hook 里记下的两条**（G11 的第 10、11 条）：
+
+```tsx
+// katrain/web/ui/src/kiosk/shell/KioskScrollZone.tsx
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
+
+function sync(rail: HTMLElement | null, scroll: HTMLElement | null, bar: HTMLElement | null) {
+  if (!rail || !scroll) return;
+  const overflow = scroll.scrollHeight - scroll.clientHeight;
+  if (overflow < 1) {
+    // 不溢出:两条都撤掉。挂一条永远亮着的渐隐,等于谎报下面还有东西。
+    rail.removeAttribute('data-at');
+    if (bar) bar.style.display = 'none';
+    return;
+  }
+  const atTop = scroll.scrollTop < 1;
+  const atEnd = scroll.scrollTop >= overflow - 1;
+  rail.dataset.at = atTop ? 'top' : atEnd ? 'end' : 'mid';
+  if (bar) {
+    // 拇指最短 24 —— 再短就成了一个点,读不出比例。
+    const height = Math.max(24, (scroll.clientHeight / scroll.scrollHeight) * scroll.clientHeight);
+    bar.style.display = '';
+    // 形态 2 下 offsetTop 量的正是组标题占掉的那一截 = 滚动视口的起点。
+    bar.style.top = `${scroll.offsetTop}px`;
+    bar.style.height = `${height}px`;
+    bar.style.transform = `translateY(${(scroll.scrollTop / overflow) * (scroll.clientHeight - height)}px)`;
+  }
+}
+
+export function KioskScrollZone({ children, grow, head, resetKey }: {
+  children: ReactNode;
+  grow?: boolean;
+  head?: ReactNode;
+  /**
+   * 换了一批内容就回到顶部。**不是锦上添花**:滚动容器是同一个 DOM 节点,
+   * React 只换里面的行,scrollTop 会原样留着 —— 翻到第 2 页时列表还停在第 1 页
+   * 滚到的位置。国象在真浏览器里量到过 **558px**(棋谱库翻页),静态截图看不出来。
+   * 规范 §5 防跳铁律 4 也要求切 L1 模块时归零。
+   */
+  resetKey?: string | number;
+}) {
+  // callback ref + useState,**不能用 useRef + 空依赖 effect** ——
+  // 滚动节点首帧可能还不存在,useRef 那种写法读到一次 null 就再也不会重跑。
+  const [rail, setRail] = useState<HTMLElement | null>(null);
+  const [scroll, setScroll] = useState<HTMLDivElement | null>(null);
+  const [bar, setBar] = useState<HTMLElement | null>(null);
+  const resync = useCallback(() => sync(rail, scroll, bar), [rail, scroll, bar]);
+
+  // ResizeObserver 在这儿**不会触发**:tokens.css 把 .kiosk-side__scroll 钉成 height:100%,
+  // 子元素长高时盒子一动不动。所以只能靠 children 变化这个信号手动重算。
+  useEffect(() => { resync(); }, [children, resync]);
+
+  useEffect(() => {
+    if (resetKey === undefined || !scroll) return;
+    scroll.scrollTop = 0;
+    resync();                        // 回到顶部之后渐隐和条子也要跟着回 top 态
+  }, [resetKey, scroll, resync]);
+
+  const inner = (
+    <>
+      {head}
+      <div className="kiosk-side__scroll" ref={setScroll} onScroll={resync}>{children}</div>
+      <i className="kiosk-scrollbar" ref={setBar} />
+    </>
+  );
+
+  return grow
+    ? <section className="kiosk-section kiosk-section--grow kiosk-scrollzone" ref={setRail}>{inner}</section>
+    : <div className="kiosk-side kiosk-scrollzone" ref={setRail}>{inner}</div>;
+}
+```
+
+- [ ] **Step 4: 在一屏上真接起来再跑**
+
+本 Task 只需要**一个**被测物：把 `/kiosk/play` 的右栏根节点换成 `<KioskScrollZone>`（内容先不动，Task 10 才搬）。**内容必须真的溢出**——`PlayPage` 现在的内容在 680×434 里可能装得下，装得下就没有被测对象。造数据：`page.route` 把「继续上一局」和跨平台那一组撑到 5 张卡。
+
+```bash
+cd katrain/web/ui && npx playwright test tests/kiosk-shell-scroll.spec.ts --config playwright.visual.config.ts --workers=1
+```
+
+Expected: 四条全绿。
+
+- [ ] **Step 5: 演示这道闸有牙（三处变异，一处一跑）**
+
+| 变异 | 应该红在哪条 |
+|---|---|
+| 把 `if (overflow < 1)` 那个早退删掉（永远写 `data-at`） | 「不溢出时没有 data-at」 |
+| 把 `Math.max(24, …)` 改成不带下限 | 「拇指 >= 24」 |
+| 把 `resetKey` 那个 effect 删掉 | 需要额外一条：切模块后 `scrollTop` 应为 0（在 Step 1 里补上） |
+
+每次变异后 **先确认 `npx tsc -b` 是绿的、产物哈希变了**，再跑测试。⚠️ 上一轮踩过：只改一处会留下未使用的符号，`tsc -b` 报 TS6133 → vite 没跑 → 产物没变 → **测试全绿，被读成「闸没牙」，和真的没牙逐字相同**。
+
+- [ ] **Step 6: 双构建 + 提交**
+
+```bash
+cd katrain/web/ui && npx tsc -b && npm run build && npm run build:kiosk-2d
+cd ../../.. && git add -A katrain/web/ui/src/kiosk katrain/web/ui/tests
+git commit -m "feat(kiosk-shell): 补上规范 §5.2 那条悬浮滚动条(此前完全没做)
+
+宽 3、拇指最短 24、绝对定位不占布局宽度;不溢出就不画,也不写 data-at。
+闸用真滚轮不用 scrollTop=n(Chromium 不认合成 WheelEvent),
+并变异演示过三处。ResizeObserver 在这儿不触发的原因写进注释了。"
+```
+
+---
+
+## Task 8: 页控条、动作区、主行动 —— 替掉 `SubPageBar`
+
+规范 §11：**顶栏在所有层级恒为品牌态**，返回 / 视图切换 / 上下文标题全部下放到页控条。页控条位置写死，两种布局下**纵向位置完全相同**（y 70–114，高 44），所以有盘页和无盘页来回切时这条控件带不会上下跳。
+
+| 布局 | 何时用 | 页控条位置 |
+|---|---|---|
+| **A · 有棋盘** | 对局屏、做题屏 | 右栏顶部，x **548–1008** |
+| **B · 无棋盘** | 单元列表、课程列表、设置子页 | 中间区顶部通栏，x **16–1008** |
+
+**页控条只许放三类东西**：① 返回 ② 视图 / 落子方式切换（最多 3 段）③ 最多一个页级图标按钮。**悔棋、认输、求和、提示一律不许上页控条**——它们属于右栏下面的动作区。
+
+**现状**：`AiSetupPage.tsx:227-237` 是**全仓唯一**已经用 `.kiosk-pagebar` 的（上一轮做的）。另外 **15 个页面**用 `SubPageBar`（52px 通栏返回条），**2 个**手写了同构造（`SettingsPage.tsx:97-108`、`VisionSetupPage.tsx:10-12`），**3 个**手写 52px 面包屑条（`ResearchPage.tsx:532,589,680`），还有 `PvpLocalSetupPage.tsx:102` 把返回键塞进表单头。`GameHistoryPage`（`play/pvp/history`）**一个返回入口都没有**，Dock 也不出——是个死胡同屏（唯一出路是「复盘」跳去 `/kiosk/research`）。
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk/shell/KioskPagebar.tsx`
+- Create: `katrain/web/ui/src/kiosk/shell/KioskPagebar.test.tsx`
+- Create: `katrain/web/ui/src/kiosk/shell/KioskActions.tsx`
+- Modify: 上述 15 + 2 个页面（**只换这条控件带，不动页面内容**）
+- Delete: `katrain/web/ui/src/kiosk/components/layout/SubPageBar.tsx`、`SubPageBar.test.tsx`
+- Test: `katrain/web/ui/tests/kiosk-shell-geometry.spec.ts`
+
+**Interfaces:**
+- Produces: `<KioskPagebar backLabel? onBack? backBusy? title sub? segment? action? />`
+- Produces: `<KioskActions items={{ icon, label, onClick, disabled?, danger? }[]} />`
+
+- [ ] **Step 1: 写失败的单测——页控条只许放三类东西**
+
+`katrain/web/ui/src/kiosk/shell/KioskPagebar.test.tsx`：
+
+```tsx
+import { render, screen } from '@testing-library/react';
+import { describe, expect, test } from 'vitest';
+import { KioskPagebar } from './KioskPagebar';
+
+describe('KioskPagebar', () => {
+  test('没有返回回调时不渲染返回键,但标题位置不变', () => {
+    const { container } = render(<KioskPagebar title="设置" />);
+    expect(container.querySelector('.kiosk-pagebar__back')).toBeNull();
+    expect(screen.getByText('设置')).toBeInTheDocument();
+  });
+
+  test('没有 sub 就整块不渲染 —— 不占位、不写占位字', () => {
+    const { container } = render(<KioskPagebar title="设置" />);
+    expect(container.querySelector('.kiosk-pagebar__sub')).toBeNull();
+  });
+
+  test('没有 segment 时右端就空着,返回键位置不变', () => {
+    const { container } = render(<KioskPagebar title="x" onBack={() => {}} backLabel="返回" />);
+    expect(container.querySelector('.kiosk-seg')).toBeNull();
+  });
+
+  test('分段最多 3 段 —— 再多就该换别的控件', () => {
+    expect(() => render(<KioskPagebar title="x" segment={{
+      value: 'a', options: [['a','A'],['b','B'],['c','C'],['d','D']], onChange: () => {},
+    }} />)).toThrow(/最多 3 段/);
+  });
+
+  test('忙碌时返回键保留位置与去向,但如实标成忙碌且不可点', () => {
+    render(<KioskPagebar title="x" backLabel="返回" onBack={() => {}} backBusy />);
+    const back = screen.getByRole('button', { name: /返回/ });
+    expect(back).toBeDisabled();
+    expect(back).toHaveAttribute('aria-busy', 'true');
+  });
+});
+```
+
+- [ ] **Step 2: 跑它，确认红**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/KioskPagebar.test.tsx
+```
+
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 3: 写 `KioskPagebar`**
+
+```tsx
+// katrain/web/ui/src/kiosk/shell/KioskPagebar.tsx
+import type { KeyboardEvent, ReactNode } from 'react';
+import { Icon, type IconName } from './icons';
+
+export interface PagebarSegment {
+  value: string;
+  options: readonly (readonly [string, string])[];   // [value, label]
+  onChange: (next: string) => void;
+  ariaLabel?: string;
+}
+
+/**
+ * §11 页控条:`[← 返回 36h] 12px [标题 15px Serif] [英文副标 12px 斜体] …auto… [分段 32h]`。
+ *
+ * **悔棋、认输、求和、提示一律不许放这里** —— 它们属于右栏下面的动作区。
+ * 页面没有 2D/3D 时右端就空着,**返回按钮的位置不变**(位置恒定是肌肉记忆)。
+ */
+export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, segment, action }: {
+  backLabel?: string;
+  onBack?: () => void;
+  backBusy?: boolean;
+  title: ReactNode;
+  sub?: ReactNode;
+  segment?: PagebarSegment;
+  action?: { icon: IconName; label: string; onClick: () => void };
+}) {
+  if (segment && segment.options.length > 3) {
+    throw new Error('§11:页控条的分段控件最多 3 段,再多就该换别的控件');
+  }
+  const switchByKey = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (!segment || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+    e.preventDefault();
+    const i = segment.options.findIndex(([v]) => v === segment.value);
+    const next = e.key === 'ArrowLeft' ? Math.max(0, i - 1) : Math.min(segment.options.length - 1, i + 1);
+    segment.onChange(segment.options[next][0]);
+  };
+  return (
+    <div className="kiosk-pagebar">
+      {onBack && (
+        <button type="button" className="kiosk-pagebar__back"
+                disabled={backBusy} aria-busy={backBusy || undefined} onClick={onBack}>
+          <Icon name="arrow-left" />{backLabel}
+        </button>
+      )}
+      <span className="kiosk-pagebar__title">
+        {title}
+        {sub ? <span className="kiosk-pagebar__sub">{sub}</span> : null}
+      </span>
+      {action && (
+        <button type="button" className="kiosk-btn kiosk-btn--icon kiosk-pagebar__spacer"
+                aria-label={action.label} onClick={action.onClick}>
+          <Icon name={action.icon} />
+        </button>
+      )}
+      {segment && (
+        <span className={`kiosk-seg${action ? '' : ' kiosk-pagebar__spacer'}`}
+              role="radiogroup" aria-label={segment.ariaLabel ?? '视图'}>
+          {segment.options.map(([value, label]) => (
+            <button key={value} type="button" className="kiosk-seg__btn" role="radio"
+                    aria-checked={segment.value === value}
+                    aria-pressed={segment.value === value}
+                    tabIndex={segment.value === value ? 0 : -1}
+                    onKeyDown={switchByKey}
+                    onClick={() => segment.onChange(value)}>{label}</button>
+          ))}
+        </span>
+      )}
+    </div>
+  );
+}
+```
+
+- [ ] **Step 4: 跑它，确认绿**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/KioskPagebar.test.tsx
+```
+
+Expected: PASS，5 条全绿
+
+- [ ] **Step 5: 写 `KioskActions`**
+
+```tsx
+// katrain/web/ui/src/kiosk/shell/KioskActions.tsx
+import { Icon, type IconName } from './icons';
+
+/**
+ * §11 动作区:等宽,每格高 52,圆角 10,列间距 7,图标在上、文字在下。
+ * tokens.css:802 是 `grid-auto-flow: column; grid-auto-columns: 1fr`,**几个就摆几个** ——
+ * 规范表里那个「3 列」是当时国象的实例数,围棋是 4 个(见 D3)。
+ *
+ * **动作区永远贴右栏底**(tokens.css:758 `.kiosk-rail .kiosk-actions{margin-top:auto}`):
+ * 上面的折叠面板收起时,空白落在它**上面**,按钮不许跟着上移 —— 悔棋/认输的位置是肌肉记忆。
+ *
+ * ⚠️ `danger` 的**屏上长相还没定**(Q1,归 Fan)。在 Fan 答复之前:
+ * 这个 prop 只挂 `data-danger`,**不给任何视觉差异** —— 和围棋设计稿现状一致(稿子里
+ * `.danger` 这个类零样式)。答复到了再在 go-screens.css 里给它一条规则。
+ */
+export function KioskActions({ items }: {
+  items: readonly { icon: IconName; label: string; onClick: () => void; disabled?: boolean; danger?: boolean }[];
+}) {
+  return (
+    <div className="kiosk-actions">
+      {items.map((a) => (
+        <button key={a.label} type="button" disabled={a.disabled}
+                data-danger={a.danger || undefined} onClick={a.onClick}>
+          <Icon name={a.icon} /><span>{a.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+- [ ] **Step 6: 逐屏换掉 `SubPageBar`（17 处）**
+
+**只换控件带，不动页面内容。** 逐个文件把 `<SubPageBar title=… right=…/>` 换成 `<KioskPagebar …/>`，并按下表选布局：
+
+| 布局 | 页面 |
+|---|---|
+| **A**（页控条在右栏顶，x548） | `TsumegoProblemPage`（做题屏，右栏顶）、`ReportDetailPage`（有盘） |
+| **B**（通栏，x16） | `LobbyPage`、`LiveMatchPage`、`PlatformConnectPage`、`PlatformLobbyPage`、`PlaceholderPage`、`PlatformEngineSetupPage`、`TsumegoCategoriesPage`、`TsumegoUnitListPage`、`TsumegoLevelPage`、`TsumegoUnitsPage`、`TutorialBooksPage`、`TutorialBookDetailPage`、`TutorialSectionPage`、`SettingsPage`（→ 但它 Task 18 会重排成 L1-B，本 Task 先接壳）、`VisionSetupPage` |
+
+`right` 插槽里原来放的东西**分两类处理**：
+- 是**视图/落子方式切换**（最多 3 段）→ 放 `segment`。
+- 是**业务动作**（`LobbyPage` 的「排位赛 / 自由对局」、`ReportDetailPage` 的「在研究中打开」、`LiveMatchPage` 的「直播中」Chip、`TutorialBooksPage` 的分类文字、`TutorialBookDetailPage` 的作者）→ **不许上页控条**。降到内容区第一行，或并进 `sub`（作者、分类这种是**副标性质**，并进 `sub` 是对的；「排位赛/自由对局」是**动作**，降到内容区）。
+
+⚠️ **`GameHistoryPage` 顺手补一个返回**（`onBack={() => navigate('/kiosk/report')}`）。它今天没有任何返回入口、Dock 也不出——这是个真 bug，改一行就好，别留着。
+
+⚠️ `ResearchPage` 那三条手写 52px 面包屑条**本轮不动**（D2：research 只接壳，内容区维持现状）。它有 864 行、三处结构不同，动它超出「接壳」。**登记。**
+
+- [ ] **Step 7: 给几何闸加页控条两组**
+
+```ts
+test('§11 布局 B:页控条通栏 x16–1008、y70–114、高 44,返回键高 36', async ({ page }) => {
+  await boot(page, '/kiosk/tsumego/15k/capturing');
+  const screen = await box(page, '.kiosk-screen');
+  const bar = await box(page, '.kiosk-pagebar');
+  const back = await box(page, '.kiosk-pagebar__back');
+  expect(bar.x - screen.x).toBe(16);
+  expect(bar.w).toBe(992);
+  expect(bar.y - screen.y).toBe(70);
+  expect(bar.h).toBe(44);
+  expect(back.h).toBe(36);
+});
+
+test('§11 有盘页与无盘页来回切,页控条的纵向位置一模一样', async ({ page }) => {
+  await boot(page, '/kiosk/tsumego/15k/capturing');
+  const b = await box(page, '.kiosk-pagebar');
+  await boot(page, '/kiosk/tsumego/problem/1');       // 布局 A
+  const a = await box(page, '.kiosk-pagebar');
+  expect(a.y).toBe(b.y);          // 这条就是「切模块不跳」本身
+  expect(a.h).toBe(b.h);
+  expect(a.x).toBe(548);          // 布局 A 在右栏顶
+  expect(a.w).toBe(460);
+});
+
+test('§11 长标题不许把返回键挤成两行 —— 触点位置在每一屏都一样', async ({ page }) => {
+  await boot(page, '/kiosk/tsumego/15k/capturing');
+  const shortBack = await box(page, '.kiosk-pagebar__back');
+  await page.locator('.kiosk-pagebar__title').evaluate((el) => {
+    el.textContent = '很长的标题'.repeat(40);          // 把数据造到会溢出
+  });
+  const longBack = await box(page, '.kiosk-pagebar__back');
+  expect(longBack.h, '返回键被长标题挤高了').toBe(shortBack.h);
+  expect(longBack.x).toBe(shortBack.x);
+  const overflow = await page.locator('.kiosk-pagebar__title')
+    .evaluate((el) => el.scrollWidth > el.clientWidth);
+  expect(overflow, '长标题没有被截断,它把整条撑开了').toBe(true);
+});
+```
+
+第三条会红——共享包**没给** `.kiosk-pagebar` 的 flex-shrink 兜底（G11 末尾那三条之一）。补进 `go-screens.css`（Task 9）：`.kiosk-pagebar__back { flex: none }` + `.kiosk-pagebar__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }`。
+
+> ⚠️ **判据要跟着轴走**：横向截断验 `scrollWidth > clientWidth`，纵向验 `scrollHeight > clientHeight`。轴换了而断言没换，会红在一个不存在的缺陷上（上一轮实测过：改成横向省略号之后，那条纵向断言的两个数都是 20）。
+
+- [ ] **Step 8: 全量跑 + 双构建 + 提交**
+
+```bash
+cd katrain/web/ui
+npx vitest run src/kiosk                    # 与基线比,不许新增失败
+npx playwright test tests/kiosk-shell-geometry.spec.ts --config playwright.visual.config.ts --workers=1
+npx tsc -b && npm run build && npm run build:kiosk-2d
+cd ../../.. && git add -A katrain/web/ui/src/kiosk katrain/web/ui/tests
+git commit -m "feat(kiosk-shell): 17 屏的通栏返回条换成规范 §11 的页控条
+
+SubPageBar(52 通栏)删掉。原来 right 插槽里的业务动作降到内容区 —— §11 只许放
+返回 / 视图切换 / 一个页级图标按钮。顺手给 GameHistoryPage 补了返回(它此前
+没有任何返回入口、Dock 也不出,是个死胡同)。ResearchPage 那三条手写条登记未动。"
+```
+
+---
+
+## Task 9: `go-screens.css` 与围棋棋盘
+
+**Files:**
+- Create: `katrain/web/ui/src/kiosk-shell/go-screens.css`
+- Create: `katrain/web/ui/src/kiosk/shell/GoBoardSvg.tsx`
+- Create: `katrain/web/ui/src/kiosk/shell/goBoard.ts`
+- Create: `katrain/web/ui/src/kiosk/shell/goBoard.test.ts`
+- Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx`（加第 5 行 CSS import）
+
+**`go-screens.css` 的精确内容**（G10 已经把被上游收编的剔掉了；下面就是全部，不多不少）：
+
+```
+A. UA 兜底(G11 第 1、2 条 —— 稿子靠一句全局 *{margin:0} 兜着,真应用不能这么干)
+   .kiosk h1,.kiosk h2,.kiosk h3,.kiosk h4,.kiosk p { margin: 0 }
+   .kiosk button,.kiosk input,.kiosk select,.kiosk textarea { font-family: inherit }
+       ⚠️ 用 font-family: 不用 font: 简写(简写会把字号一起重置)
+B. 共享包缺的三条(三家都各补了一份,注释都写着「该提上游」)
+   .kiosk-resume 的 .bar / h4 / p / .pill
+   .kiosk-pagebar__back{flex:none} + .kiosk-pagebar__title{min-width:0;overflow:hidden;
+       text-overflow:ellipsis;white-space:nowrap}
+   .kiosk-board__play{display:grid;place-items:center}
+   .kiosk-actions button:disabled / .kiosk-movenav button:disabled(G8 禁用不许伪装成可用)
+   .kiosk-icon{display:contents}      ⚠️ 国象同名类写的是 display:flex,照错 Dock 就不居中
+   .kiosk-greet 的 b / b i / span,外加长名字的 wrap 兜底(G11 第 9 条)
+   .kiosk-tag--live(共享包没有直播态)
+C. 模式卡的三个附加态(共享包只有 .is-todo)
+   .kiosk-card{position:relative} / .kiosk-card.is-soon / .kiosk-card .soon / .kiosk-card .dot
+D. 围棋专属,从 go-kiosk.tmpl.html 逐字节抄(行号在括号里)
+   .disc / .disc.b / .disc.w                      (:126-128)  黑白圆珠
+   .pcard 及其 .disc/h4/p/.clock/.clock b/span    (:120-135)  对局屏玩家卡
+   .railsec / .rst / .rst b                       (:137-138)  右栏可长块
+   .mvrows 及其 span/.n/.mv/.mv.now/::-webkit-scrollbar (:139-143) 棋谱等宽两列
+   .ledger / .lrow / .lrow .disc/b/i              (:146-150)  本局记账
+   .panel / .panel > h3                           (:153-154)  通用面板
+   .dots / .dots i / i.ok / i.now                 (:178-181)  做题进度点阵
+   .empty / h4 / p / p b                          (:184-187)  空态块
+   .gob / .ln / .star / .mark / .ghost / .atari   (:74-80)    棋盘 SVG 的线与标记
+   .note / .note b / .note code / code.k          (:175-177)  **只给真 UI 文案用**(G5)
+   .wrplot 的 .mid/.curve/.drop/.now              (:194-198)  复盘曲线的线型
+       ⚠️ 外框用共享的 .kiosk-eval/__axis/__plot,不要抄 .wrbox/.wraxis/.wrplot
+E. **不抄**
+   .row/.rows/.tag*  → 用 .kiosk-row*/.kiosk-tag*(G10)
+   .big/.metric/.bar → 成长屏专用,本轮跳过(D1)
+   .gal/.galintro/.galcap/.device → 画廊装订,不是设备上的东西
+   .kiosk-screen 那条 → 共享包 :258 已经有,稿子那条只是画廊的圆角和阴影
+   木纹贴图 --oak/--darkwood → D6,资产不在 MANIFEST 管辖内
+```
+
+- [ ] **Step 1: 写失败的单测——棋盘几何**
+
+`katrain/web/ui/src/kiosk/shell/goBoard.test.ts`：
+
+```ts
+import { describe, expect, test } from 'vitest';
+import { GO_COLS, STARS_19, coordToXY, labelFor } from './goBoard';
+
+describe('围棋坐标 —— 记法是绝对的,四棋类里只有围棋这套', () => {
+  // A–S 跳掉 I 只有 18 个,19 路要写到 T。这条上过 sample-go/gate.mjs。
+  test('列名跳 I,A–T 正好 19 个', () => {
+    expect(GO_COLS).toBe('ABCDEFGHJKLMNOPQRST');
+    expect(GO_COLS.length).toBe(19);
+    expect(GO_COLS).not.toContain('I');
+  });
+
+  test('行号 1 在最下、19 在最上', () => {
+    expect(coordToXY('A1').y).toBe(18);
+    expect(coordToXY('A19').y).toBe(0);
+  });
+
+  test('九星在第 4 / 10 / 16 条线上(0 起算 3 / 9 / 15)', () => {
+    expect(STARS_19).toEqual([
+      [3, 3], [3, 9], [3, 15], [9, 3], [9, 9], [9, 15], [15, 3], [15, 9], [15, 15],
+    ]);
+  });
+
+  test('Q16 是右上星位那一带 —— 拿一个真坐标钉住方向', () => {
+    expect(coordToXY('Q16')).toEqual({ x: 15, y: 3 });
+  });
+
+  test('刻度四条带都写字,上下 A–T、左右 19–1', () => {
+    expect(labelFor('top', 0)).toBe('A');
+    expect(labelFor('top', 18)).toBe('T');
+    expect(labelFor('left', 0)).toBe('19');
+    expect(labelFor('left', 18)).toBe('1');
+  });
+});
+```
+
+- [ ] **Step 2: 跑它，确认红**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/goBoard.test.ts
+```
+
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 3: 写 `goBoard.ts` 与 `GoBoardSvg.tsx`**
+
+留白取 **0.5 格**，这条不是随手取的：刻度带把 19 个字均分在 460 上，第 i 个字的中心在 `(i+0.5)/19`；盘上第 i 条线在 `(0.5+i)/19` —— 两式相等，**字和线逐条对齐**。
+
+```ts
+// katrain/web/ui/src/kiosk/shell/goBoard.ts
+export const GO_SIZE = 19;
+/** 跳 I:A–S 跳掉 I 只有 18 个,19 路要写到 T。 */
+export const GO_COLS = 'ABCDEFGHJKLMNOPQRST';
+/** 留白 0.5 格 —— 取 0.66/0.7 两端各差六七个像素,一眼能看出字没对准线。 */
+export const GO_MARGIN = 0.5;
+export const STARS_19: readonly (readonly [number, number])[] = [
+  [3, 3], [3, 9], [3, 15], [9, 3], [9, 9], [9, 15], [15, 3], [15, 9], [15, 15],
+];
+
+export function coordToXY(coord: string): { x: number; y: number } {
+  return { x: GO_COLS.indexOf(coord[0]), y: GO_SIZE - parseInt(coord.slice(1), 10) };
+}
+
+export function labelFor(band: 'top' | 'bottom' | 'left' | 'right', i: number): string {
+  return band === 'top' || band === 'bottom' ? GO_COLS[i] : String(GO_SIZE - i);
+}
+```
+
+`GoBoardSvg.tsx` 照 `go-kiosk.tmpl.html:849-920` 的 `gosvg()` 搬。**两条必须带上**：
+
+1. **paint server 的 id 必须带自增后缀**（`id="gr-3"`）。`url(#gr)` **永远解析到文档里第一个同名的**；一页上有好几块盘时，一旦第一个落进 `display:none` 的那一台，**所有盘的浅色底一起失效**——象棋整块盘变黑褐就是这么来的（规范 §13②）。
+2. **木纹那层 `mix-blend-mode:multiply` 必须有显式 `isolation: isolate` 祖先**（`.gob { isolation: isolate }`）。不隔离的话它不只跟盘面浅底相乘，而是**一路穿透**跟底下那圈深色木框一起相乘（规范 §13③）。
+
+- [ ] **Step 4: 跑它，确认绿；再写 `go-screens.css` 并引入**
+
+```bash
+cd katrain/web/ui && npx vitest run src/kiosk/shell/goBoard.test.ts
+```
+
+Expected: PASS，5 条全绿
+
+`KioskApp.tsx` 的 CSS import 补第 5 行（顺序：fonts → tokens → go-tokens → seclabel → **go-screens**）。
+
+- [ ] **Step 5: 给几何闸加刻度那一条（这条上一轮抓出过 2.8px）**
+
+```ts
+test('§8 刻度带 19 列、没有 I 列,且字心与盘上的线逐条对齐', async ({ page }) => {
+  await boot(page, '/kiosk/tsumego/problem/1');
+  const r = await page.evaluate(() => {
+    const top = document.querySelector('.kiosk-board__ruler--top')!;
+    const labels = Array.from(top.querySelectorAll('span'));
+    const svg = document.querySelector('.kiosk-board__play .gob') as SVGSVGElement;
+    // 两组数都从**渲染结果**里取,不从公式里取 —— 判据是屏上那条线的横坐标。
+    const lineCenters = Array.from(svg.querySelectorAll('line'))
+      .filter((l) => Math.abs(+l.getAttribute('x1')! - +l.getAttribute('x2')!) < 0.01)
+      .map((l) => { const b = l.getBoundingClientRect(); return b.x + b.width / 2; })
+      .sort((a, b) => a - b);
+    const rulerCenters = labels
+      .map((s) => { const b = s.getBoundingClientRect(); return b.x + b.width / 2; })
+      .sort((a, b) => a - b);
+    return {
+      cols: labels.length,
+      hasI: labels.some((s) => s.textContent!.trim() === 'I'),
+      first: labels[0].textContent!.trim(),
+      last: labels[labels.length - 1].textContent!.trim(),
+      maxDrift: lineCenters.length === rulerCenters.length
+        ? Math.max(...lineCenters.map((c, i) => Math.abs(c - rulerCenters[i]))) : null,
+    };
+  });
+  console.log('[go-ruler]', JSON.stringify(r));    // 数先打出来:断言一红后面的 log 就不执行了
+  expect(r.cols).toBe(19);
+  expect(r.hasI, '刻度里出现了 I 列 —— 会让人在真盘上数错一路').toBe(false);
+  expect(r.first).toBe('A');
+  expect(r.last).toBe('T');
+  expect(r.maxDrift, '字心没落在线上').toBeLessThan(1);
+});
+```
+
+⚠️ **刻度轨道要写 `1fr`，这是常驻本地补丁，不是等上游**：`tokens.css:607-616` 只写了 `display:grid` + `grid-auto-flow:column`，轨道按**字宽**取尺寸；围棋 `M` 比 `J` 宽 ⇒ 字心不落在 `(i+0.5)/19` 上，**实测最大错开 2.8px**，补成 `1fr` 之后 **0**。
+
+**但这条不能提上游**：象棋在真浏览器上量了两个数——它的轨道是 `auto` 却错开只有 **0.02px**（装的是 `1`–`9`/`九`–`一`，同族等宽，`auto` 被拉伸成等分），而若给它收 `1fr`，**第一条字会偏出 26px**（象棋盘不占满落子区，`xMidYMid meet` 居中，盘宽 356.2，轨道节距要跟着盘走）。⇒ **两边正确的值不是同一个数，上游收敛不了。** 该往上游提的是那条**不变式**：「刻度带的节距必须等于盘的线节距」，判据是**屏上那条线的横坐标**，不是「字心应该落在 `(i+0.5)/N`」那个版式规则。
+
+- [ ] **Step 6: 双构建 + 提交**
+
+```bash
+cd katrain/web/ui && npx tsc -b && npm run build && npm run build:kiosk-2d
+cd ../../.. && git add -A katrain/web/ui/src/kiosk katrain/web/ui/src/kiosk-shell
+git commit -m "feat(kiosk-shell): 补齐围棋屏级 CSS 与 19 路棋盘构件
+
+go-screens.css 只装共享包没有的那些 —— vendored tokens.css 比设计稿新,
+.row/.tag/.wrbox 早被上游收成 .kiosk-row/.kiosk-tag/.kiosk-eval 了。
+棋盘:留白 0.5 格、列名跳 I 写到 T、九星在 4/10/16 线;paint server id 带自增后缀
+(url(#x) 只认第一个,象棋整块盘变黑褐就是这么来的),.gob 显式 isolation:isolate。
+刻度轨道 1fr 是常驻本地补丁,不提上游 —— 象棋收 1fr 反而偏 26px,理由写在注释里。"
+```
+
+---
+
+## 第一块到此为止 —— **停下来给 Fan 看四图**
+
+Task 1–9 做完，共享壳就稳定了：顶栏 / Dock / L1 两栏 / 模式卡 / 主行动 / 悬浮滚动条六件都接上了，每一屏的内容还是旧的。
+
+**这时先拍一次 `/kiosk/play` 的四图**，作为「壳对了、内容还没搬」的存档，交 Fan 过目。它同时是 Task 10 的前后对照物。**Fan 确认之前不要开始 Task 10。**
+
+---
+
+# 第二块：逐屏搬运
+
+**每一屏一个 Task，形状完全一致，所以只在 Task 10 把公共步骤写全，后面的屏只写自己不同的那部分。**
+
+## 每屏的固定七步
+
+1. **读三样东西**：设计稿里这一屏的 markup（`go-kiosk.tmpl.html` 的行号在各 Task 里给了）、参考图 `sample-go/shots/NN-*.png`、现状页面文件。
+2. **列出这一屏的 `.note`**，逐条判定是「给读稿人的旁注」还是「真 UI 文案」（G5），把判定写进 Task 的提交信息。**旁注一条都不搬。**
+3. **改页面**：根节点换成 `<KioskScrollZone>`（形态 1）或 `.kiosk-side` + `<KioskScrollZone grow>`（形态 2），内部用共享类重写；**数据来源、hooks、API 调用、路由跳转一律不动**。
+4. **删掉这一屏用的 `@mui/icons-material`**，换 `shell/icons.tsx`，并从 Task 6 那个白名单里划掉这一屏的文件。
+5. **跑既有单测**：这一屏的 `*.test.tsx` 大多断言的是**文案与行为**（不是像素），所以**应该继续绿**。红了先看是不是自己把文案改了——G7 文案冻结，改文案就是错的。
+6. **四图 + 承重**：写这一屏的 `tests/kiosk-screen-NN-*.fourup.spec.ts`，跑出四张图；若这一屏有滚动区，跑 `kiosk-shell-scroll.spec.ts` 的那三条对着它再跑一遍（把数据造到会溢出）。
+7. **停下来给 Fan 看四图。确认之前不进入下一屏。**
+
+## 四图 spec 的模板（每屏照抄，只换五个值）
+
+```ts
+import { test } from '@playwright/test';
+import { resolve } from 'node:path';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, waitForRealPixels } from './helpers/fourup';
+
+test.use({ viewport: KIOSK_VIEWPORT });
+test.describe.configure({ mode: 'serial' });        // 合成要读刚写出的 PNG,而 config 是 fullyParallel
+
+const SHOTS = resolve(process.cwd(),
+  '../../../../smartbox-software/superpowers/shared/kiosk-shell/sample-go/shots');
+const OUT = resolve(process.cwd(),
+  '../../../superpowers/tracks/kiosk-go-shell-align/visual/01-play/1024x600');
+
+test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) => {
+  await freezeClock(page);                          // 冻在 16:40 —— 和参考图对得上,产物也字节稳定
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'fourup');
+    localStorage.setItem('katrain_language', 'cn');
+  });
+  await page.route('**/api/v1/**', (route) => {     // 一条兜底 + 按 pathname 分派,别漏接口
+    const path = new URL(route.request().url()).pathname;
+    if (path === '/api/v1/auth/me') return route.fulfill({ json: { id: 1, username: '访客', rank: '5段', credits: 0 } });
+    if (path === '/api/v1/vision/status') return route.fulfill({ json: { enabled: true, camera_connected: true, pose_locked: true, sync_state: 'synced', recognition_ready: true, led_connected: true, bound_session_id: null } });
+    if (path === '/api/v1/geometry/status') return route.fulfill({ json: { phase: 'ready', session_calibrated: true, last_valid: true, capabilities: { camera_ready: true, led_ready: true, geometry_ready: true } } });
+    return route.fulfill({ json: {} });
+  });
+  await page.goto('/kiosk/play');
+  await page.waitForSelector('.kiosk-screen');
+  await waitForRealPixels(page, '.kiosk-mini-board canvas, .kiosk-mini-board svg');
+  const r = await captureFourUp({
+    page, referencePng: resolve(SHOTS, '01-play.png'), outDir: OUT, slug: '01-play',
+    referenceCaption: '参考：sample-go/shots/01-play.png · 稿子上的 .note 旁注不上线（三家都没搬）',
+    implementationCaption: '实现：/kiosk/play @1024×600 · 时钟冻在 16:40 · Dock 六项（成长本轮跳过）',
+  });
+  console.log(`[fourup 01-play] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
+});
+```
+
+⚠️ **硬件三格必须 stub 成 ready。** 取图机器上没有摄像头和 LED，不 stub 的话三格全是红/琥珀，**交到人手上会被读成设计**（国象记过这条）。同时——**stub 出来的态要写进图里的标签带**，别让下一个人指着这张图说「硬件链是通的」。
+
+---
+
+## Task 10: 屏 01 · 对弈首页 `/kiosk/play`
+
+**设计稿**：`go-kiosk.tmpl.html:214-268`（L1-A，形态 1 整栏滚）。**现状**：`pages/PlayPage.tsx`（203 行）。
+
+**左栏**（`KioskConsoleRail`）：标题 `实体棋盘` / `Camera board`；盘画 `data-b="Q16,Q4" data-w="D4,D16" data-last="D16"`（**实现里换成真镜像数据**，不是这四颗）；同步行 `盘面与屏幕一致` / `刚刚同步`；三格 `摄像头 · 标定 · LED`。
+
+**右栏五块，自上而下**：
+
+| 块 | 类 | 内容 |
+|---|---|---|
+| 问候行 56 | `.kiosk-greet` | `下午好，<i>访客</i>` + `选择一种方式开始对弈`。**身份还在加载时不许喊名字**（G11 第 8 条） |
+| 继续上一局 60 | `.kiosk-resume` | 竖条 + `继续上一局` + `自由对弈 · KataGo 5 级 · 第 10 手 · 你执黑` + 药丸 `恢复`。**无未完成对局时整块不渲染**，不许留占位 |
+| 落子方式 | `.kiosk-section` + 两条 `.kiosk-row` | 组标题 `落子方式` / `Input` / secval `下面每一种玩法都能用`；行一 `屏幕 / 实体盘` + 分段；行二 `棋盘路数` + 分段 `19 路 / 13 路 / 9 路` |
+| 人机对弈 | `.kiosk-cards` 2 张 | `自由对弈`(`robot`)、`升降级对弈`(`trophy`)；组标题 secval `强度档说的是对手，不是你的段位` |
+| 人人对弈 | `.kiosk-cards` 2 张 | `本地对局`(`users`)、`在线大厅`(`globe-hemisphere-west`, 带 `.dot`) |
+| 跨平台对弈 | `.kiosk-cards` 3 张 | `OGS`、`星阵围棋`、`野狐围棋`(`.is-soon` + `即将上线`)；组标题 secval `平台由 /platforms 返回` |
+
+**这一屏最重要的一处结构改动（规范 §4）**：**「智能棋盘」不是第六张并列卡**，它是**每种对弈方式内部的落子方式二选一**。稿子把它提到最上面那一组，理由写在稿里：*「这两条摆在最上面，是因为它们横跨下面每一种玩法：选好了再挑玩法，而不是每张卡里各问一遍。」* 现状 `PlayPage` 没有这一组，**要新加**——但那两个分段**接的是现有的设置状态**，不是新功能。
+
+**四处 `.note` 全是旁注，一条都不搬**（`:238`「围棋原来那张稿把它做成一张并列卡，是错的」、`:245`「见 `interface.py` 的分析闸」、`:252`「段位只有在线大厅的定级队列会改」、`:261`「三家的名字…在 `kiosk/constants/platforms.ts` 里」）。⚠️ 但 `:261` 里有一条**事实**要落到实现上：`野狐` 那张灰是因为 `platforms.ts:26` 的 `comingSoon` —— 而 `PlayPage` **今天根本没读这个字段**（survey 实测）。本轮要读它，让灰是真的。
+
+**要保住的现状**（`PlayPage.test.tsx` 13 条断言的都是这些，改坏会红）：
+- 三家平台 DOM 顺序恒为 **OGS → 野狐 → 星阵**，空响应和请求失败时也一样；
+- 连接态路由：`engine/golaxy` / `lobby?platform=ogs` / `/cross-platform`；
+- token 变化时**同步**重置成断开态；**旧请求不许覆盖新请求**；登出后到的响应要丢掉；
+- `对局历史 ›` → `/kiosk/play/pvp/history`。
+
+⚠️ **`对局历史 ›` 在稿子上没有。** 它是现状多出来的一个入口。**不要删**（删了 `GameHistoryPage` 就再也到不了，而它自己没有返回入口）。摆法：并进「人人对弈」组的组标题右端 `secval`，或作为该组下的一条 `.kiosk-row`。**这是稿外内容，摆法有疑问就停下来问**（D2 的精神：没有稿子当依据就不要自己发明）。
+
+- [ ] **Step 1** 读 `go-kiosk.tmpl.html:214-268` + `shots/01-play.png` + `pages/PlayPage.tsx` 全文。
+- [ ] **Step 2** 列出这一屏四处 `.note` 的判定（都是旁注），写进提交信息。
+- [ ] **Step 3** 改 `PlayPage.tsx`：根节点换 `<KioskScrollZone>`，六块按上表用共享类重写；`ModeCard` 换 `KioskCard`（`ModeCard.tsx` 若无其它消费者就删，有就留着）。
+- [ ] **Step 4** 让 `KioskLayout.railFor` 给 `/kiosk/play` 返回 `<KioskConsoleRail …/>`，数据接现有的 `VisionContext` / `GeometryContext`（**不新造数据源**）。
+- [ ] **Step 5** 读 `platforms.ts` 的 `comingSoon`，让野狐那张真的走 `.is-soon`。
+- [ ] **Step 6** 跑单测：`npx vitest run src/kiosk/pages/PlayPage.test.tsx src/kiosk/__tests__/PlayPage.test.tsx`。Expected: 15 条全绿（**文案冻结，红了先怀疑自己改了文案**）。
+- [ ] **Step 7** 写 `tests/kiosk-screen-01-play.fourup.spec.ts`（照上面的模板），跑出四张图。
+- [ ] **Step 8** 承重：把跨平台那一组 stub 成 6 张卡（造到会溢出），跑 `kiosk-shell-scroll.spec.ts` 的三条对着 `/kiosk/play`。Expected：`data-at` 走 top→mid→end、拇指 ≥24、右栏恒 680、底边切在卡的 [19, 57] 之间。
+- [ ] **Step 9** 双构建 + `tsc -b` + 提交。
+- [ ] **Step 10** **把四张图交给 Fan，等确认。**
+
+---
+
+## Task 11: 屏 02 · 对局中 `/kiosk/play/ai/game/:sessionId`
+
+**设计稿**：`go-kiosk.tmpl.html:270-311`（**L3 布局 A**）。**现状**：`pages/GamePage.tsx`（825 行）+ `components/game/GameControlPanel.tsx`。
+
+⚠️ **这屏卡在 Q1 上**（破坏性按钮长相）。「认输」那一格的长相要等 Fan 答复。**其余部分可以先做**，那一格先按稿子（无差异）写，Fan 定了再改一行。
+
+**骨架**：`.kiosk-layout-a` = 盘 516 贴 x16 + 16 + 右栏 460。右栏自上而下：
+
+| 块 | 类 | 内容 |
+|---|---|---|
+| 页控条 44 | `.kiosk-pagebar` | `← 退出对局` / 标题 `自由对弈` / 副标 `19 路 · 贴 6.5 目 · 不让子` / 右端 `2D \| 3D` |
+| 玩家卡 ×2，每张 60 | `.pcard` / `.pcard.turn` | 白：圆珠 + `KataGo · 5 级` + `已落子 · 执白` + 右端 `08:12` / `本局已下`；黑：`访客（你）` + `轮到你 · 执黑` + `第 11 手` / `不限时` |
+| 本局记账（可折叠） | `.kiosk-fold[data-fold="ledger"]` | 标题行 30 `本局记账 · 按规则数出来的`，右端 `白贴 6.5 目`；体内两条 `.lrow`：`提子 0` / `还没有子被吃`、`提子 0` / `贴目 6.5 · 不让子` |
+| 棋谱（可折叠，会长） | `.kiosk-fold.kiosk-fold--grow[data-fold="moves"]` | 标题行 `棋谱 · 交叉点坐标`，右端 `第 10 手`；体是 `.mvrows` 三列网格（手数 / 黑 / 白），**默认滚到最后一手** |
+| 动作区 4 格 | `.kiosk-actions` | `形势`(`lightbulb`) `悔棋`(`arrow-counter-clockwise`) `停一手`(`hand-pointing`) `认输`(`flag`, `danger`) |
+
+**规范 §11 明写围棋对局屏「不画胜率曲线，也不留占位框」**（KataGo 要真跑 playout，还和对手引擎抢同一块 Mali）。`sample-go/gate.mjs:47-48` 有一条断言专门核这个：**对局屏不许有 `data-fold="eval"`**。⇒ **本屏一个 `.kiosk-eval` 都不许出现。**
+
+**折叠面板四条硬性**（规范 §11）：默认展开；**收起的是明细不是结论**（标题行右端那个当前值收起后照旧显示）；腾出的空间归还给同栏里仍展开的那一块，**优先给棋谱**；**动作区永远贴右栏底**，两块都收起时空白落在它**上面**。
+
+**棋谱默认停在当前这一手**，不是第 1 手；用户手动往回翻之后不再自动跟随，直到他翻回底部。
+
+**两处 `.note`**：`:287`「这里不画胜率曲线：盒上的 KataGo 要真跑 playout…」是**旁注**（它在解释设计决定），不搬。
+
+- [ ] **Step 1** 读 `go-kiosk.tmpl.html:270-311` + `shots/02-game.png` + `GamePage.tsx` + `GameControlPanel.tsx`。
+- [ ] **Step 2** 确认这屏已经在 `KioskLayout` 里了（Task 4 Step 6 挪过来的），`dockLevelOf` 判成 2、不出 Dock、顶栏在。
+- [ ] **Step 3** 右栏按上表重写；棋盘换成 `.kiosk-board` + 四条刻度带 + `.kiosk-board__play` 里的 `GoBoardSvg`。
+- [ ] **Step 4** 写 `KioskFold`（`shell/KioskFold.tsx`，照象棋 `shell/KioskFold.tsx`），带上那四条硬性。
+- [ ] **Step 5** 单测：加两条 —— ① 收起「本局记账」后，标题行右端 `白贴 6.5 目` **仍在**；② 两块都收起时，动作区的 `bottom` 不变（这条要在真浏览器里量，写进 spec 不是 jsdom）。
+- [ ] **Step 6** 真浏览器几何：盘 516×516@(16,70)、落子区 460×460@(44,98)、右栏 460@x548、页控条 460×44@y70、返回键高 36。**上一轮量过，规范给的数一次全中**（`kiosk-ai-ladder-layout-a-geometry.spec.ts`），照抄那条 spec 的量法。
+- [ ] **Step 7** 承重：把棋谱造到 300 手，量 ① 棋谱那块自己滚（`.kiosk-fold--grow` 内 `scrollHeight > clientHeight`）② **外层不滚**（L3 布局 A 整体不滚是首选形态）③ 动作区仍贴底。
+- [ ] **Step 8** 四图（slug `02-game`）；标签带里写明「稿子上那段解释为什么不画胜率曲线的话是旁注，不上线」。
+- [ ] **Step 9** 双构建 + 提交 + **等 Fan 确认四图**，并在同一封里把 **Q1** 摆给他。
+
+---
+
+## Task 12: 屏 03 · 训练营 `/kiosk/tsumego`
+
+**设计稿**：`go-kiosk.tmpl.html:313-359`（L1-A，形态 1）。**现状**：`pages/TsumegoPage.tsx`（213 行）。
+
+**左栏**：标题同 01；盘画一道题的题面（`data-b="C5,B4,E5,F4" data-w="C4,E4" data-ghost="D4"`，实现里换成**真的当前题**）；同步行 `题目已摆上实体盘` / `等你落子`；三格同 01。
+
+**右栏**：
+
+| 块 | 内容 |
+|---|---|
+| 问候行 | `今天练点<i>什么</i>` + `题在实体盘上摆好，落子即判` |
+| 接着上次 60 | `接着上次` + `15 级 · 吃子 · 第 1 单元` + 药丸 `继续`。无进度时整块不渲染 |
+| 按分类 | 组标题 `按分类` / `By category` / secval `六类，是题库自己的分法`；**6 张卡** `死活`(`puzzle-piece`)`做活 / 杀棋`、`手筋`(`hand-pointing`)`局部那一手妙手`、`对杀`(`users`)`两块棋比气`、`吃子`(`grid-nine`)`怎么把子吃下来`、`官子`(`squares-four`)`收官那几目`、`布局`(`crown-simple`)`开局怎么占` |
+| 按级别 | 组标题 `按级别` / `By level` / secval `15 级 → 7 段`；**6 张进度环卡** `15 级`/`最容易的一档`、`10 级`/`会吃子之后`、`5 级`/`要算清几步`、`1 级`/`业余中段前的坎`、`3 段`/`长手数死活`、`7 段`/`最难的一档` |
+
+⚠️ **环里写「—」不写数字**，这是 G8 那条：题库（`data/life-n-death` 那批 SGF）**不在仓库里**，级别有哪几档、每档几道题都要问 `/api/v1/tsumego/levels`。**稿子上不写死任何一个题量，写了就是编。** 排序口径倒是代码里写死的：**级越大越弱、段越大越强**（15 级 → 1 级 → 1 段 → 7 段），所以那一排是从易到难。
+
+**训练营的「每日一题」**：规范 §5 要求写 `今日 0 / 2`（本地题库 + Lichess 各一道）。**围棋稿这一屏没画每日一题**，围棋也没有 Lichess 等价物。规范同一条写着：**只有一个来源时不写分母**。⇒ **本轮不加这一块**（稿子没画 = 没有参照物 = 不发明）。登记。
+
+**两处 `.note` 都是旁注**（`:339` 六个分类是题库自带标签、`:349` 环里写「—」的理由），不搬。
+
+- [ ] Step 1–10 同 Task 10 的七步；四图 slug `03-training`；单测跑 `src/kiosk/__tests__/TsumegoPage.test.tsx`（10 条）。
+- [ ] 承重：级别那一排造成 12 档，量整栏滚 + 露一半。
+
+---
+
+## Task 13: 屏 04 · 单元列表 `/kiosk/tsumego/:level/:category`
+
+**设计稿**：`go-kiosk.tmpl.html:360-399`（**L2 布局 B**，无棋盘 ⇒ 页控条通栏 x16，无 Dock）。**现状**：`pages/TsumegoUnitsPage.tsx`（172 行）+ `TsumegoUnitListPage.tsx`（145 行）。
+
+| 块 | 类 | 内容 |
+|---|---|---|
+| 页控条 44 通栏 | `.kiosk-pagebar` | `← 训练营` / `15 级 · 吃子` / 副标 `落子即判 · 走错当场退回` |
+| 数据条 72 | `.kiosk-stats` 3 格 | `20` / `每单元题数 · 当前`；`0` + 小字 `/ 20` / `本单元已做对`；`开` / `做对后自动下一题 · 当前` |
+| 继续 60 | `.kiosk-resume` | `开始 · 第 1 单元` + `15 级 · 吃子 · 第 1 题` + 药丸 `开始` |
+| 单元 | 组标题 `单元` / `Units` / secval `每 20 题一单元`；进度环卡，`第 1 单元` `第 1 – 20 题`… | **一排几张是变的**（要看这一级这一类到底有多少题），稿子画三个只是给出形状 |
+| 整级一起做 | 组标题 `整级一起做` / `Whole level`；2 张卡 `15 级全部`(`squares-four`)`六类混在一起，不分单元`、`只做错过的`(`arrow-clockwise`)`把做错的重来一遍` |
+
+**数据条的口径规则**：值自带分母时（`0 / 20`）**就不必再在标签里写时间窗**——分母本身就是口径。
+
+⚠️ 环里写 `0%` **是对的**（和屏 03 的「—」不同）：做题进度**真存下来**在 `/api/v1/tsumego/progress`，换台盒子登录也还在。所以 `0%` = 「真的一道没做」，不是「读不到」。**这两屏的差别不许抹平。**
+
+**规范 §12 那条「已掌握必须写明判据」**：稿子这一屏没写。**不加**（G7 文案冻结 + 稿子没画）。登记为「规范要求但稿子没画」的一条，交 Fan。
+
+**两处 `.note` 都是旁注**（`:387` UNIT_SIZE 与进度的来源、`:396` 整级混做和按单元做是两条并列的路子）。
+
+- [ ] Step 1–10 同上；四图 slug `04-units`；承重：单元造成 11 个，量通栏滚 + 露一半（列表行高 40 的上下界是 [16, 29]，**不是模式卡那个 [19,57]**——不能拿一个 16px 常数套两种高度）。
+
+---
+
+## Task 14: 屏 05 · 做题屏 `/kiosk/tsumego/problem/:problemId`
+
+**设计稿**：`go-kiosk.tmpl.html:400-438`（**L2 布局 A**）。**现状**：`pages/TsumegoProblemPage.tsx`（588 行）。
+
+| 块 | 类 | 内容 |
+|---|---|---|
+| 页控条 | `.kiosk-pagebar` | `← 吃子` / `一手叫吃两边` / 副标 `15 级 · 第 1 / 20 题` / 右端 `2D \| 3D` |
+| 这一题 | `.panel` + `h3` | **题面正文是真 UI 文案，照搬**（G5）：`<b>黑先。</b>白有两颗子，各剩两口气，而且两颗<b>不连在一起</b>。找出那一个点：…`；下面三个 `.kiosk-tag`：`吃子` `15 级` `示意题面` |
+| 你的走法 | `.railsec` + `.rst` | 标题行 `你的走法`，右端 `落子即判`；体是 `.mvrows`，空态一行 `—` / `还没落子` |
+| 第 N 单元 | `.panel` | `第 1 单元 · 20 题` + `.dots` 20 个点阵（一个点一道题，颜色就是状态，不需要图例） |
+| 动作区 4 格 | `.kiosk-actions` | `提示`(`lightbulb`) `退一手`(`arrow-counter-clockwise`) `重摆`(`arrows-clockwise`) `下一题`(`skip-forward`) |
+
+⚠️ **`示意题面` 那个 tag 不要照搬** —— 它标的是「这道题是稿子上现摆的，不是题库里的」。真实现里题目**来自题库**，挂这个标就是撒谎。**去掉它**，只留 `吃子` `15 级` 两个。这一条要写进提交信息。
+
+**最后那块 `.panel` 里的 `.note` 是旁注**（`:428`「这道题是我在稿子上现摆的…解完之后才提一次它的名字：双打吃」），不搬。⚠️ 但它里面有一条**产品规则**要保住：**入口那一层不出现术语**（「双打吃」这种名字只在解完之后出现一次）。现状是不是这样，要核；不是的话**不在本轮改**（那是内容不是版式），登记。
+
+- [ ] Step 1–10 同上；四图 slug `05-puzzle`；几何同 Task 11 的布局 A 那一组。
+
+---
+
+## Task 15: 屏 06 · 棋谱 `/kiosk/kifu`
+
+**设计稿**：`go-kiosk.tmpl.html:439-494`（L1-A，形态 1）。**现状**：`pages/KifuPage.tsx`（413 行）。
+
+**这一屏是三条路由的汇合点**（规范 §3）：原来的 `棋谱 / 摆谱 / 直播` 三个 Dock 项收成一项。Task 4 已经把后两个下了 Dock，**它们的入口就在这一屏**——不接上，那两屏就只能靠输 URL 到达。
+
+**左栏**：标题同 01，但盘画的是**正在摆的那一谱**（`data-ghost="C7"` = 灯指的下一手）；同步行 `正在摆谱 · 下一手 C7` / `灯已点亮`；三格同 01。
+
+**右栏五块**：
+
+| 块 | 内容 | 对应现状 |
+|---|---|---|
+| 问候行 | `看别人的<i>棋</i>` + `名局、职业直播，以及把谱摆到实体盘上` | `KifuPage` 现在是 `variant="h4"` 标题 |
+| 继续摆谱 60 | `继续摆谱` + `上次摆到第 47 手 · 灯会指下一手落在哪` + 药丸 `继续` | **接 `BaipuListPage` 的进度数据** |
+| 名局棋谱 | 组标题 secval `按棋手 / 赛事 / 日期搜`；3 张卡 `搜棋谱`(`magnifying-glass`)`一个搜索框，模糊匹配`、`摆到实体盘`(`grid-nine`)`灯一手一手指着摆`、`导入 SGF`(`upload-simple`)`本地文件，离线也能摆` | 「摆到实体盘」→ `/kiosk/baipu` |
+| 最近摆过 | 组标题 secval `存在这台盒子上`；`.kiosk-row` 列表，`.kiosk-row__lead` 放 `47 手` / `全谱` / `12 手` | 接 `BaipuListPage` 的最近列表 |
+| 棋谱详情 | 组标题 + **琥珀 `.wip 未接后端`** + `.empty` 块：`点进一局是「敬请期待」` | 现状 `kifu/:kifuId` 挂的正是 `PlaceholderPage` —— **稿子说的是实话，照搬** |
+| 职业直播 | 组标题 secval `来源：星阵 · 弈客`；`.kiosk-row` 列表 + `.kiosk-tag--live 直播中` | → `/kiosk/live`。**断网时整块不渲染**，不摆一排「加载中」骗人在等 |
+
+**三处 `.note` 全是旁注**（`:462` 搜索是一个框糊搜、`:478` SGF 整份缓存、`:492` 直播和棋谱为什么收在一项里），不搬。
+
+⚠️ **`搜棋谱` 那张卡的行为要照实现，不要照稿子的措辞**：稿子说「接口只收一个 `q`，做成两级筛选后端支持不了」。现状 `KifuPage` 就有搜索。**不要为了对齐稿子的三张卡把现有的搜索框删掉再做成一张卡** —— 那是把能用的功能换成一个入口。做法：三张卡是**入口**，现有搜索框保留在它下面或并入「名局棋谱」组。**摆法有疑问就停下来问。**
+
+- [ ] Step 1–10 同 Task 10 的七步；四图 slug `06-kifu`。
+- [ ] 额外一步：**验收「摆谱和直播现在到得了」** —— 从 `/kiosk/kifu` 点得到 `/kiosk/baipu` 和 `/kiosk/live`，写成两条断言。Task 4 埋下的那个中间态到这里销账。
+
+---
+
+## Task 16: 屏 07 · 复盘 `/kiosk/report`
+
+**设计稿**：`go-kiosk.tmpl.html:495-553`（L1-A，**形态 2：头尾固定 + 中列滚**）。**现状**：`pages/ReportsPage.tsx`（348 行）。
+
+⚠️ **这屏的现状和稿子是左右对调的**：现在是**左盘 54% + 右列表 46%**，稿子是 **296 镜像栏 + 680 内容**。这是本轮改动最大的一屏。
+
+**左栏**（`KioskConsoleRail`，但装的不是实体盘镜像）：标题 `选中这一局` / `Selected`；盘画**选中那一局的终局盘**；同步行 `自由对弈 · KataGo 5 级` / `今天 15:12`；三格是**本局指标**不是硬件状态 —— 见 **D4**，第三格写「妙手」还是「漏着」要先去核后端。
+
+**右栏形态 2**：
+
+| 块 | 类 | 内容 |
+|---|---|---|
+| 这一局的胜率（**固定**） | `.kiosk-section` + `.kiosk-eval` | 组标题 `这一局的胜率` / `Win rate` + **蓝 `.wip.have 后端已有 · 界面未接`**；纵坐标三档 `白 100 / 50 / 黑 100`，画布 96、刻度带 38 |
+| 待复盘对局（**会长，只有它滚**） | `<KioskScrollZone grow head={<KioskSecLabel …/>}>` | 组标题 secval `本机 5 局`；`.kiosk-row` 每行：圆珠 + `vs KataGo · 5 级` + `你(黑)中盘胜 · 187 手 · 今天 15:12` + `.kiosk-tag--win 已分析` / `.kiosk-tag 未分析` |
+| 生成报告（**固定**） | `.kiosk-cards` 3 张 | `标准`(`lightbulb`)`每手算 500 次`、`精读`(`magnifying-glass`)`每手算 2000 次 · 慢四倍`、`导入 SGF 复盘`(`upload-simple`, `.is-soon` + `即将上线`)`接口还没有`；组标题 secval `两档：500 / 2000 次计算` |
+
+> **形态 2 是有理由的**：把「生成报告」那三张卡也一起滚走是错的，那是常驻入口。渐隐必须钉在**真正滚的那一块**上，从组标题下缘开始，别盖住标题（`tokens.css:555` 已经处理）。
+
+**规范 §11 四种状态各有各的样子**，现状 `ReportGameCard` 已经有 排队中/生成中/已完成/失败，**对得上**：
+| 状态 | 行尾 | 点了会怎样 |
+|---|---|---|
+| 已分析 | `准确率 NN%` + 「查看报告」 | 进报告屏 |
+| 正在分析 | `正在分析 n/N` + **行内进度条** | 无按钮，算完自己变 |
+| 只算到 n/N | `只算到 n/N` + 「继续分析」 | **就地续算**，不跳页 |
+| 未分析 | `未分析` + 「开始分析」 | **就地开算**，不跳页 |
+
+**打开某一局是点整行**，不是点行尾的按钮（Fan 2026-07-28 拍板）：跳转和干活分在两个手势上。**现状是点按钮**，要改。
+
+**未分析屏那块走势位不许画一条贴中线的平线冒充均势** —— 那是把「没算过」伪装成「算过了，结果是均势」。`tokens.css:924` 的 `.kiosk-eval__plot.is-empty` 就是给这一格用的。
+
+**两处 `.note`**：`:524`（上白下黑、红段是第 43 手、蓝标不是琥珀标的理由）和 `:551`（两档是后端写死的、升降级局整局封分析）都是**旁注**，不搬。⚠️ 但 `:551` 里那条**产品规则要保住**：**升降级局整局封分析，下完也不给复盘**（后端 `interface.py` 有闸）。现状列表里如果出现了 ranked 局，要确认它不给「开始分析」。
+
+**这一屏的胜率曲线怎么办 —— 三条路，按顺序试**：
+1. 后端 `report_task_moves` 里逐手 `winrate` **已经落库**（稿子的蓝标就是这个意思）。**先去核 kiosk 侧的 API 有没有把它吐出来**（`ReportDetailPage` 用的是 `TrendChart`，说明数据链已经通到了详情页）。通 ⇒ **接真数据，把蓝标去掉**。
+2. 通不到 kiosk 列表页 ⇒ **整块不渲染**（规范 §11「做不了的不留占位框」）。
+3. **一律不许画示意曲线**（G8）。稿子上那条是示意的，稿子自己写明了；上线就是假数据。
+
+- [ ] **Step 0** 先做 **D4** 那次核实：读 `katrain/web/api/` 与 `report_task_moves` 的字段，判定第三格写「妙手」还是「漏着」，把依据写进提交信息。
+- [ ] Step 1–10 同 Task 10 的七步；四图 slug `07-review`。
+- [ ] 承重：待复盘对局造成 30 局，量 ① **只有中间那块滚**（头尾两块的 `y` 不随滚动变）② 渐隐从组标题下缘开始、没盖住标题 ③ 露一半按**行高 40** 的上下界 [16, 29] 算，不是卡高那套。
+- [ ] 额外一步：**验收「研究现在到得了」** —— Task 4 把 `研究` 下了 Dock，规范 §3 说它并进复盘。从 `/kiosk/report` 点得到 `/kiosk/research`（现状 `GameHistoryPage` 的「复盘」按钮就跳那儿，可以复用同一个入口）。写成断言，销掉 Task 4 埋的账。
+
+---
+
+## Task 17: 屏 09 · 课程 `/kiosk/tutorial`
+
+**设计稿**：`go-kiosk.tmpl.html:611-654`（L1-A，形态 1）。**现状**：`pages/TutorialCategoriesPage.tsx`（141 行）。
+
+**左栏**：标题同 01；盘画课上的图；同步行 `课上的图会摆到盘上` / `等选课`（规范 §5：课程页左栏和对弈**逐像素相同**，差别只在同步行那句话）。
+
+**右栏三块**：
+
+| 块 | 内容 |
+|---|---|
+| 问候行 | `课程<i>随云端同步</i>` + `后端是五层结构，内容不在这台盒子上生成` |
+| 分类 | 组标题 secval `每类几本，由接口返回`；进度环卡 `入门`/`规则与吃子`、`基本功`/`死活 · 手筋`、`布局与定式`/`开局怎么走` |
+| 一课长什么样 | 组标题 `一课长什么样` / `Anatomy`；3 条 `.kiosk-row`：`书`→`一本书`/`分若干章`/`.kiosk-tag Book`；`章 / 节`→`章下面是节`/`节是真正「一课」的粒度`/`.kiosk-tag Section`；`图`→`节里是一张张棋图`/`每张图带一段人声旁白，还能一键摆到实体盘上`/`.kiosk-tag--win 带音频` |
+| 现在能练的 | 组标题 `现在能练的` / `Instead`；2 张卡 `去训练营`(`puzzle-piece`)`六类题 · 现在就能做`、`去摆谱`(`grid-nine`)`跟着名局摆一遍` |
+
+⚠️ **环里写「—」不写 0**，理由稿子写死了：`0` 意味着「查过了，一本都没有」，而这台盒子**还没跟云端对过账**——**这两件事在界面上必须分得开**。而且「同步不到」和「一本都没有」是两种状态，**得分开报**。**接口返回空就是空态一句「暂无教程」**，不摆一排点不开的卡让人以为快了。
+
+⚠️ **分类名与每类几本都从 `/api/v1/tutorials/categories` 拿，界面不写死。** 稿子上那三个分类名是**形状不是清单**。现状 `TutorialCategoriesPage` 就是读接口的——**保住这个行为**，不要把稿子上那三个名字硬编进去。
+
+**「现在能练的」这一组是稿子特有的空态兜底**：云端还没同步下来课的时候，这一屏的正事就是**把人送到有内容的地方去**。**只在分类为空时渲染这一组**；有课时不渲染（否则它就成了一排永远在的杂物）。
+
+**两处 `.note` 都是旁注**（`:630` 分类来源与「—」的理由、`:648` 五层结构是后端已建好的）。
+
+- [ ] Step 1–10 同 Task 10 的七步；四图 slug `09-courses`。
+
+---
+
+## Task 18: 屏 10 · 设置 `/kiosk/settings`
+
+**设计稿**：`go-kiosk.tmpl.html:655-762`（**L1-B**，但左栏仍是 `.kiosk-console` 装 `.kiosk-navlist`，宽照样 296 —— 规范 §12「左栏宽度和 L1-A 的镜像栏一样，从对弈切到设置那条纵向接缝不动」）。**现状**：`pages/SettingsPage.tsx`（197 行）。
+
+⚠️ **这屏卡在 Q4 上（见下），先拿到答复再动手。**
+
+**骨架**（这部分不受 Q4 影响，可以先做）：
+- 左栏 296：`.kiosk-console` > `.kiosk-console__title`（`设置` / `Settings`）+ `.kiosk-navlist`（`.kiosk-navitem` 高 44、间距 6、18px 图标 + 13px 文字、整项可点）+ 底部一句 `系统设置（网络、语言、输入法）在**设置中心**，不在这里。`（`margin-top:auto`）
+- 右栏 680：`<KioskScrollZone>` 形态 1，一条完整的纵向流，每组一个 `.kiosk-section[data-group]`。
+- **导航只跳不换页**：点导航**滚过去**，不是把右边整块换掉。换页式在这块屏上更差——用户看不到自己一共有多少可调的。
+- **高亮跟着真正在看的那一组走**（滚动联动）。写死在某一项上而右边滚到了别处，**是在谎报你在哪儿**。
+- **导航项数 = 分组数，且词一一对应。** 导航里写「声音」，右边那组的标题就得是「声音」——两套词等于两套心智模型。
+
+**这屏还要接三个共享构件**（`tokens.css` 都给好了，现状一个都没用）：
+- `.kiosk-slider`：**连续量不许用分段控件硬掰成三档**（识别帧率、音量、落子确认速度）。**刻度必须带单位或档名**：`2 帧 / 5 帧 / 10 帧`，光写「适中」没有信息。
+- `.kiosk-swatch`：**看样子选**的项给色块，不给文字列表——「胡桃·枫木」四个字说不清它长什么样。40×40，选中态用**强调色描边**（不靠色块本身的深浅暗示，色板本身就是各种颜色，深浅是内容不是状态）。
+- `.kiosk-seg`：一屏之内所有选择组必须用**同一种控件**。
+
+**四处 `.note`**：`:667`（系统设置在设置中心）是**真 UI 文案**，照搬；`:674`（不登录也能用）是**真 UI 文案**，照搬；`:682`（三家平台登录字段各不相同）和 `:697`（围棋走摄像头识子不是传感盘）是**旁注**，不搬。
+
+- [ ] Step 1–10 同 Task 10 的七步；四图 slug `10-settings`。
+- [ ] 承重：右栏造到 7 组全满，量整栏滚 + 渐隐 + 高亮跟着滚动走（**滚到第 3 组时导航第 3 项 `aria-current="true"`，其余都不是**）。
+
+### Q4（新增，归 Fan）· 设置页七组里有五组现在没有内容
+
+survey 逐项核过，稿子的 7 组对上现状的 5 张卡：
+
+| 稿子分组 | 现状 |
+|---|---|
+| 账号与平台 | 只有「盒内账号」（`AccountSection`）。四个平台是一块 `pointer-events:none` 的**死装饰**，而且列的是 `99围棋/野狐/腾讯/新浪`，和真正能连的 `ogs/fox/golaxy` **对不上** |
+| 实体棋盘 | 只有「重新标定」+ 状态读数。**LED 提示开关、识别帧率滑条都没有** |
+| 棋盘外观 | **整组不存在** |
+| 落子与提示 | 只有「做对后自动进入下一题」 |
+| 声音与报着 | **整组不存在**（走子音效在 `PvpLocalSetupPage` 里） |
+| 对局默认值 | **整组不存在**（都在 `AiSetupPage` / `PvpLocalSetupPage` 里按局设） |
+| 关于 | **整组不存在** |
+| （稿子没有）语言 | **现状有** —— 而规范 §12 明写「系统设置（网络、账号、**语言**、输入法）不在这里，在设置中心」 |
+
+三条路，**都不许我自己选**：
+
+- **(a) 只做有内容的组**（建议）：导航 3–4 项，词与右边一一对应。**符合「导航项数 = 分组数」和 G8**，但和参考图差 3–4 组，差异图上是一片红。
+- **(b) 七组全摆，空的挂琥珀「未接后端」**：图上最像，但那五组里**大部分不是「后端没有」而是「这个设置项还没做」**——挂「未接后端」是**用错标**（G8 那条两色规则）。而且它把一条表现层赛道拖出五个新功能。
+- **(c) 七组全摆，空的组做成真功能**：那是五个新 feature，远超本轮。
+
+另外**语言那一格怎么办**也要 Fan 定：按规范该搬去设置中心，但**设置中心不在本仓**，搬走等于这台盒子上再没有语言开关。建议**留着**，并登记为「规范 §12 的一处已知偏差，等设置中心接手」。
+
+---
+
+## Task 19: 稿外五屏只接壳（D2）
+
+`baipu` / `live` / `research` / `play/cross-platform` / `vision/setup` 稿子没画。**只接顶栏 / Dock / L1 两栏这层共享壳，让它们不再是视觉孤岛；内容区维持现状。**
+
+**明确不做**：不照规范 §5 自己推导这五屏的版式。**没有稿子当依据，四图对比就没有参照物，那等于自己发明设计。**
+
+⇒ **这个 Task 没有四图闸**（没有参照物）。它的验收是**几何闸 + 眼睛看不跳**：
+
+- [ ] **Step 1** 这五屏（含它们的子路由）全部走 `KioskFrame`，顶栏在、`dockLevelOf` 判层级、页控条已经在 Task 8 换过了。
+- [ ] **Step 2** `LivePage`（L1）接 `KioskConsoleRail`？—— **不接**。规范 §5 的判据是「这个模块的活动会不会发生在实体盘上」；看直播不会。它走 **L1-B 通栏**。`BaipuListPage`（L1）**接**（摆谱就是在盘上摆）。
+  ⚠️ 但 Task 4 已经把 `baipu` / `live` 下了 Dock，它们**不再是 L1**。所以 `dockLevelOf` 会判成 2、不出 Dock、内容区 516 高。**这是对的**，别去纠正。
+- [ ] **Step 3** `ResearchPage` 那三条手写 52px 面包屑条：**本轮不动**（Task 8 已登记）。它有 864 行、四个渲染分支、三处结构各不相同，动它超出「接壳」。**在提交信息里再登记一次**，别让它悄悄消失。
+- [ ] **Step 4** 几何闸：五屏各量一次「顶栏 1024×56@(0,0)、内容区 x16 宽 992、无 Dock 时下缘贴 600」。**这三条就是「切模块不跳」在这五屏上的全部要求。**
+- [ ] **Step 5** 眼睛看：从 `/kiosk/play` 逐个切过去，**顶栏和中间区外框不许动一个像素**。用 Playwright 连续 `goto` 并各截一张，肉眼对齐。
+- [ ] **Step 6** 双构建 + 提交。
+
+---
+
+## Task 20: 收尾
+
+- [ ] **Step 1** 把 Task 6 那个 `@mui/icons-material` 白名单清空——如果还有剩，逐个看是不是稿外五屏的内容区（那些**允许**留着，D2 只接壳）。剩下的写进白名单并注明理由。
+- [ ] **Step 2** 全量跑，和基线比：
+
+```bash
+cd katrain/web/ui
+npm test 2>&1 | grep -E '^\s*(FAIL|×)' | sort > /tmp/after.txt
+comm -13 /tmp/base.txt /tmp/after.txt          # 期望为空 —— 一条新增失败都没有
+npx eslint src/kiosk src/kiosk-shell 2>&1 | tail -5   # 和 Task 0 存的基线比名字集合
+npx playwright test tests/kiosk-shell-*.spec.ts tests/kiosk-screen-*.spec.ts \
+    --config playwright.visual.config.ts --workers=1 --reporter=list
+npx tsc -b && npm run build && npm run build:kiosk-2d
+```
+
+- [ ] **Step 3** 重跑一遍全部九屏四图，确认**零字节变化**（时钟已冻，所以这一条现在有意义了）。有变化说明有非确定性，先查出来。
+  > ⚠️ 「重跑零字节变化」证明的是**实现图与代码同步**，**不是视觉闸通过**。视觉闸是 Fan 的眼睛，已经在每屏那一步过了。
+- [ ] **Step 4** 更新三份文档：
+  - `superpowers/tracks/kiosk-go-shell-align/scope.md` —— 把 Q1–Q4 的答复和 D1–D6 的执行结果落下去；
+  - `katrain/web/ui/src/kiosk-shell/README.md` —— 记 icons 由 1 个扩到 82 个、MANIFEST 209→290、新增 `go-screens.css` 及它**为什么这么小**（vendored tokens.css 比设计稿新）；
+  - `superpowers/tracks/golaxy-ai-ladder-parity/kiosk-design-alignment.md` §17.2 —— A 组六条逐条标上「本轮接了」，§12.5 那条「另外 17 屏还在用 `SubPageBar`」销账。
+- [ ] **Step 5** 登记本轮**没做**的（每条都写清判据，**不写「暂无」**——否定的答复不携带原因，下一个人会读成「没人查过」）：
+  - 成长屏（D1，独立赛道）
+  - `ResearchPage` 三条手写面包屑条（Task 8/19）
+  - 木纹贴图 `--oak`（D6：资产不在 MANIFEST 管辖内）
+  - `.kiosk-wip.have` 的蓝不跟 `--info`（G2，上游的事）
+  - `.kiosk-tag--live` 该提上游
+  - 刻度轨道那条**不变式**该提上游（Task 9，不是提 `1fr`）
+  - `immersive` 抽顶栏与规范 §5 防跳铁律 1 冲突（Task 4）
+  - 训练营「每日一题」（Task 12：稿子没画）
+  - 单元列表「已掌握判据」那句话（Task 13：规范要求但稿子没画）
+  - 上游 `MANIFEST.sha256` 本身的 sha256 还没钉（Task 6）
+- [ ] **Step 6** 上板走查（RK3562）。**判据可执行，不是「看一眼觉得还行」**：
+  - `/kiosk/play` **冷启动**（清缓存、首次进页）看左栏那块盘，**秒表计从页面出现到盘画出来的时长，跑两次**。看得见空白 = 真 bug；两次都看不见 = 把这条销掉，并写明「**RK3562 上量过，没复现**」。**「看不见」也要写来源。**
+  - 中文是不是霞鹜文楷、「智星盒」是不是龙藏（板子上 PingFang / Songti / Kaiti **一个都没有**，回退长相和开发机完全不同）。
+  - 2G 内存：**一次只跑一家**（服务自己就占 750M）。
+- [ ] **Step 7** 提交，**不推**。等 Fan 说。
+
+---
+
+## Self-Review（写完这份计划后自查的结果）
+
+**1. 规范覆盖** —— 规范 §1–§14 逐节对到 Task：§1/§2/§6 → Task 3；§3/§7 → Task 4；§4 → Task 10；§5 → Task 5、7；§8 → Task 6、9、11；§9 → Task 1（字体已在上一轮做完，本轮只保住）；§10 → Task 6；§11 → Task 8、11、16；§12 → Task 18；§13 → Task 9（id 重名 + isolation）；§14 → G8 + 各屏。**§5 的成长屏那一节没有对应 Task**——这是 D1 有意跳过的，不是漏。
+
+**2. 占位扫描** —— 全文无 TBD / TODO / 「类似 Task N」。每个 Task 的每个代码步都带可运行的代码块与期望输出。**Task 12/13/14/15/17 的 Step 1–10 写成了「同 Task 10 的七步」**——这是**有意的**：七步在「每屏的固定七步」那一节写全了，那不是引用一个别处的 Task，是引用同一份清单。
+
+**3. 类型一致性** —— `IconName`（Task 6）被 Task 4 的 `DockTab.icon`、Task 8 的 `KioskPagebar.action`、Task 6 的 `KioskCard.icon` 共用；`StatusCell`（Task 5）被 `KioskConsoleRail.statuses` 共用；`calculateKioskScale`（Task 1）只有 `KioskFrame` 一个消费者。**Task 4 依赖 Task 6 的 `Icon`** —— 已在 Task 4 的 Interfaces 里点名「先做 Task 6」。
+
+**4. 一处已知的顺序张力** —— Task 5（镜像栏）要用 Task 9 的 `GoBoardSvg`，Task 7（滚动区）要 Task 10 的内容才有被测物。已分别在两个 Task 里写了过渡办法（占位 / 造数据），不改顺序：**共享壳必须整块先稳定**，这是 Fan 定的。
+
+**5. 两处自查后补上的** —— ① Task 20 要比的那份基线原来没有任何 Task 产出，补了 **Task 0**（`lint` 和 `npm test` 本来就是红的，不存基线就没法判「这条红是不是我弄的」）；② 设置页那个七组对五卡的缺口原来只写在 Task 18 里，提到了顶上的 **Q4**——它和 Q1/Q2 一样会挡住一整屏。
+
+---
+
+## 执行前必须先拿到答复的四条
+
+| # | 问题 | 挡住谁 |
+|---|---|---|
+| **Q1** | 破坏性按钮的长相（三派，围棋稿是第三种：屏上完全不区分） | Task 11 的「认输」那一格 |
+| **Q2** | Dock 六项还是七项（成长本轮跳过的后果，影响全部 9 张差异图） | Task 4，以及每一屏的四图标签带 |
+| **Q3** | 顶栏那几个围棋专属指示器（摄像头 / 标定 / 引擎点）往哪去 | Task 3 |
+| **Q4** | 设置页七组里五组没内容 | Task 18 |
+
+**Q2 挡的是 Task 4，也就是整条链的第四步** —— 它最早需要答复。Q1/Q3/Q4 可以边做边等：Task 3 先把四样东西留在原地不引用，Task 11 先按稿子写，Task 18 先只搭骨架。

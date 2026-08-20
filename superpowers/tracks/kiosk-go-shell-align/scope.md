@@ -111,11 +111,50 @@ Fan 2026-08-20 裁定：**只接壳，不重排版式** —— 把顶栏 / Dock 
   规范 §5.2 那条悬浮滚动条是新增承重面，`overflow-y:auto` + `scrollTop` 真能推那条闸不能丢。
 - **取图**：按快门前等真像素（§16 那条竞态曾被误判成回归）。设备基准 **1024×600**。
 
-## 7. 仍然未决，不许自己定（`kiosk-design-alignment.md` §4）
+## 7. 已裁定（Fan 2026-08-20 授权自决：「相似功能的模块尽量和其他三种棋类的 kiosk 界面保持一致」）
 
-这两条 Fan 至今没答复，碰到了要停下来问，**不要私下约定**：
+原来这两条挂着「不许自己定」。Fan 把裁量权交回来了并给了判据 —— **去看那三家同一个模块
+怎么做的，照做**。两条都这么定出来的：
 
-1. **破坏性按钮的长相**：象棋模板是「屏上实心 accent、二次确认框里才变红」，
-   国象和围棋现版是「屏上就描边」。两派都自洽但不能同时成立。
-2. **挡局时左边画不画盘**：参考图画完整棋盘（起始局面），围棋现版是虚线空态。
-   参考那样画等于摆一个**不是这一局**的局面。
+1. **破坏性按钮的长相 → 照抄五子棋。**
+   三家里只有五子棋在 `.kiosk-actions` 里真摆了「认输」这颗键，而且**类名和围棋设计稿
+   一模一样**（`gomoku/ui/src/play/GameRail.tsx:373` 的 `className="danger"`，围棋稿
+   `go-kiosk.tmpl.html:305` 的 `class="danger"`）。它的样式是一行
+   （`gomoku/ui/src/index.css:1619`）：`color: var(--bad)` +
+   `border-color: color-mix(in srgb, var(--bad) 35%, var(--hair))` ——
+   **形状、尺寸、内边距、背景一律不动，只有字色和边框着一点红。**
+   稿子上 `.danger` 零样式不是「设计意图是不区分」，是稿子没写全。
+   ⇒ 详见计划 **D7**。二次确认框本轮不新造（稿子没画）。
+
+2. **挡局时左边画不画盘 → 画，但画空盘 + 一行说明，不摆起始局面。**
+   国象把这条规矩写在 `chess/ui/src/shell/BoardConsole.tsx` 的注释里：
+   「**不画局面**：盒子上还没有传感盘，盘面数据一个字节都拿不到，摆一个开局局面上去
+   就是拿装饰冒充状态。空盘 + 一行说明，才是今天的真相。」它渲染的是 `EMPTY_FEN`。
+   **围棋现状已经就是这个形态**：`SmartBoardConsole.tsx` 传 `moves ?? []` 给 `LiveBoard`
+   （真盘面网格、零颗子），叠一条 `实时预览暂不可用 · no live feed`。
+   ⇒ 参考图上那个完整开局局面是**样张**，不搬。这条登记为预期差异。
+   ⇒ 详见计划 **D11**。
+
+## 8. 基线（2026-08-20，动手前实测）
+
+**判据从此是「基线 diff」，不是「全绿」** —— `lint` 和单测本来就是红的，按文件名判
+「看着不相关」会把自己造的污染归给既有噪声。
+
+| 项 | 基线 | 怎么复现 |
+|---|---|---|
+| `npm test` | **1 个文件红 / 1 条红**，1233 通过、5 跳过（共 1239） | `cd katrain/web/ui && npm test` |
+| 那一条红是谁 | `src/kiosk/__tests__/GamePageEngine.test.tsx` → `confirming resign from the error dialog fires the resign action AND closes the error dialog`（`mockClearPhysicalEngineError` 期望 1 次实得 0 次） | — |
+| `npx eslint .` | **315 problems（258 errors / 57 warnings），178 个文件** | `npx eslint . \| tail -3` |
+| `npx tsc -b` | **绿**（注意：不是 `tsc --noEmit`，根 tsconfig 是 `files: []` + references，`--noEmit` 检查 0 个文件） | — |
+| `npm run build` | **绿** | — |
+| `npm run build:kiosk-2d` | **绿**，末尾 `✅ kiosk boundary clean` | — |
+| `src/kiosk-shell/MANIFEST.sha256` | **209/209 OK**（Task 6 之后应变 290） | `shasum -a 256 -c MANIFEST.sha256 \| grep -c ': OK$'` |
+
+⚠️ **计划里写的「3 个文件红 / 6 条红」是过期的**：那三条多出来的红是
+`ReportsPage.test.tsx` / `ReportsPage.polling.test.tsx` 的 `Test timed out in 5000ms`，
+**跟机器负载走，不稳定**。连跑两遍确认过：稳定复现的只有上面那一条。
+⇒ Task 16 重写 `ReportsPage` 时，别拿「它们绿了」当功劳，也别拿「它们红了」当回归 ——
+先看是不是又超时了。
+
+`~/.katrain/config.json` 已备份到 `~/.katrain/config.json.bak-20260820`
+（`python -m katrain --ui web` 退出时会重写它）。

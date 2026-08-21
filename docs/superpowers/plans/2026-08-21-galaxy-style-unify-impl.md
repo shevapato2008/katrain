@@ -1,0 +1,138 @@
+# galaxy 全站风格统一 · 实施计划（2026-08-21）
+
+分支 `feature/galaxy-style-unify`，基线 commit **fd3de2b6**。
+
+**权威文档**（冲突时按此顺序）
+1. 设计：`docs/superpowers/specs/2026-08-06-galaxy-board-template-ladder-design.md`
+2. 范围：`superpowers/tracks/galaxy-ui-redesign/style-unify-scope.md`
+3. 验收：`superpowers/tracks/galaxy-ui-redesign/visual/live-template/visual-review.md`
+4. 可点原型（本轮定稿）：Artifact `a26b02fd-e89f-47f0-a5f8-0cf0aa35289e`
+
+同目录的 `design.md` / `plan.md` **作废**，只当背景读。
+
+## 0. 本轮的性质
+
+**纯表现层搬运。** 不改后端契约、不改业务逻辑、不动 `src/kiosk/**` 的页面。
+任何需要改 API 的发现 → 记进「待议」，不顺手改。
+
+## 1. 原型 ≠ 现状：四处「我画错了，不是产品要改」
+
+做之前先钉死，否则会照着原型的错去改真代码，那才是真的丢按钮。
+
+| 原型里的样子 | 真实代码 | 结论 |
+|---|---|---|
+| 研究室「停一手」出现两次 | `ResearchToolbar.tsx:180` 只有一个 | **不动**，不存在的重复不许「修」 |
+| 摆黑/摆白 是同一个灰点，交替是循环箭头 | `ResearchToolbar.tsx:51/66/81` 本来就是黑子/白子/黑白相叠 | **不动** |
+| 变化图 编号/大写/小写/图形/橡皮 是 MUI 图标 | `BoardEditToolbar.tsx` 本来就是 `123 / A / a / △ / ✕` 字形 | **不动** |
+| 每页都有「自动跟进」，还是带文字的第二行 | `PlaybackBar.tsx:195` 只在 `isLive` 渲染；复盘两页根本没传 | 只改**一行装完**，跟进逻辑不动 |
+| 右栏「统一 320，取消 320/340/380 三档」 | spec §2.3 明写三档，§3.3 明写「1440×900 右栏 340px」 | **按 spec，三档保留**。原型那条是我自己简化的，与设计权威冲突，作废；`BoardPageShell` 不动。1440×900 下棋盘由高度定死在 828，右栏 320 还是 340 都不影响棋盘 |
+
+## 2. 闸：控件账本
+
+`superpowers/tracks/galaxy-ui-redesign/audit_controls.mjs`
+用 TypeScript 编译器 API 静态扫 TSX，逐个记下可点控件的**可及名 + 类型 + 有没有 handler**。
+可及名取值顺序：`aria-label` → `title` → `label` → `placeholder` → 子文本 → 外层 `<Tooltip title>` → 子图标名。
+已扣掉三类误报：选项类控件的 handler 挂在父 `Select/Tabs/ToggleButtonGroup` 上、整行可点时里面的图标键、
+`disabled` 的骨架占位。
+
+```bash
+# 基线（fd3de2b6 上跑出来：59 文件 / 275 控件 / 0 可疑）
+superpowers/tracks/galaxy-ui-redesign/controls-baseline.json
+
+# 每页改完必跑，判据：丢失 0，空按钮 0
+node superpowers/tracks/galaxy-ui-redesign/audit_controls.mjs --diff fd3de2b6 <改过的文件...>
+```
+
+**判据**：`丢失 0 类 / 空按钮 0 个`。控件「新增」允许，但每一条都要在提交信息里说清是设计要求的哪一条。
+名字取不出来的动态文案控件（64 个）靠**出现次数**守：数量掉了同样报丢失。
+
+这条闸只管「有没有」，**不管「能不能用」**——那归每页的真浏览器验收。
+
+## 3. 步骤
+
+### S1 共享件（三处真改动，先做，因为六个页面都要用）
+- `components/live/PlaybackBar.tsx`：控件收窄到 320 右栏内宽（~288）一行装得下 —— 小键 30 / 播放 42 /
+  跟进 30 / 间距 2 / 手数 .74rem。现有的 `@container board-rail (max-width:340px)` 换行断点要跟着降，
+  否则新右栏必然命中。**kiosk 五个页面共用这个文件**，`touchSized`（48px 触摸档）分支单独量一次。
+- `components/tsumego/TsumegoBoard.tsx`：加 `showCoordinates?: boolean`，**默认 `true`** ——
+  kiosk 死活题页一行都不用改。（现状 `:197` 无条件画坐标。）
+- `galaxy/components/layout/ContentPageHeader.tsx`：`parentLabel` / `parentTo` 改可选，
+  根级页面（Dashboard）只留标题（spec §2.4）。加可选属性不影响 `AiSetupPage`。
+
+出口：`tsc -b` + `npm run build` + `npm run build:kiosk-2d` + `vitest run` 四绿。
+
+### S2–S7 六个棋盘页（一页一闭环，顺序按 scope 决策一）
+`ResearchPage` → `TsumegoProblemPage` → `report/ReportDetailPage` → `KifuLibraryPage` →
+`GameRoomPage` → `tutorials/TutorialFigurePage`
+
+每页固定五步，**不做完不进下一页**：
+1. 迁 `BoardPageShell` + `ModulePlate`（图标左置那种），右栏三段：模块牌 / 中段（唯一可滚）/ 动作区；
+   棋盘上方不留任何东西；右栏定宽 320。
+2. 控件账本 diff：`丢失 0 / 空按钮 0`。
+3. **承重实测**（真浏览器 1440×900 / 1024×768 / 430×880）：先把数据造到会溢出，
+   先写死关系式再读数，具体像素只记录。每页按自己那条盒子链重写关系式，
+   **不照抄** `s0-loadbearing-checklist.md` 的条目。「能不能滚」归这一关。
+4. 四图对比（参考图 / 实现截图 / 并排 / 叠加+差异），三档视口齐全。
+5. 你确认。
+
+### S8 十二个内容页（只换页头，不动承重链）
+`Dashboard`、`PlayMenu`、`HvHLobbyPage`、`live/LivePage`、`report/ReportsPage`、
+`TsumegoCategoriesPage`、`TsumegoLevelsPage`、`TsumegoListPage`、`TsumegoUnitsPage`、
+`tutorials/TutorialLandingPage`、`tutorials/TutorialBooksPage`、`tutorials/TutorialBookDetailPage`
+
+单行左右布局：左标题、右「← 上一级简称」。英文 eyebrow / 面包屑 / 长副标题 / 状态说明 / chip
+一律不进页头，要留的下沉到正文第一个业务区。合成**一张对比板**一次确认，不逐页取图。
+
+### S9 收口
+`tsc -b`、`npm run build`、`npm run build:kiosk-2d`、`vitest run`、eslint 边界规则；
+kiosk dist 体积对照**同一 commit 上现跑的一次构建**（不拿磁盘上现成的 dist 当基线）。
+全量控件账本 diff：`--diff fd3de2b6` 覆盖 59 个文件。
+
+## 4. 本轮的默认裁定（没单独问，按这个做；要改说一声）
+
+1. **教程变化图的「原书页对照层」**（棋盘左侧 34%，可收起；竖屏降级到右栏第一节）是原型里新加的，
+   spec 没写。按原型做 —— 原书页必须和棋盘并排才能核对，塞进右栏等于没用。
+2. **`live/LivePage` 归内容页**：它左边有棋盘预览和播放条，但主体是列表。按 scope 只换页头，
+   不上 `BoardPageShell`。
+3. **死活题不接进度 API**：你已明确本轮不改后端，取「不接进度」那一支。
+
+## 4.5 2026-08-21 插队修的可用性缺陷（研究页 L2/L3 打不开）
+
+现象：测试服 `go.sailorvoyage.top/galaxy/research` 点「开始研究」永远停在
+「正在分析棋局 / 正在连接研究会话…」。本机 127.0.0.1 却是好的。
+
+**三个叠在一起的原因，缺一个都到不了 L3：**
+
+1. **鉴权头没带。** 后端 72 个端点挂 `Depends(get_current_user)`；
+   `box_sso.resolve_http_token` 非严格档是 `cookie or header`，而那块 `sb_token`
+   cookie 只在 `hostname == 127.0.0.1` 时才发（`auth.py:_issue_loopback_sso_cookie`）。
+   于是本机靠 cookie 一路绿灯，换域名就整片 401。
+   修法**不是逐个调用点补 token**，是 `api.ts` 加 `authHeaders()`：没显式传 token
+   就从 localStorage 兜底；严格盒端 SSO 例外（那档故意不持有 token，只走 HttpOnly cookie）。
+   非严格档 cookie 优先于 header ⇒ 盒端/本机行为不变。
+2. **会话建的时候没有主人。** `useResearchSession` 用四个手写 `fetch` 建会话，
+   `POST /api/session` 是 `get_current_user_optional`，没凭证就把 `session.user_id`
+   建成 `None`；随后 `/api/state` 的 `guard_session_reader` 要求
+   `current_user.id ∈ {user_id, player_b_id, player_w_id}` ⇒ **403**，
+   `gameState` 永远拿不到，进不了 L3。全部改走 `apiPost`。
+   教训：**建资源和用资源必须是同一个身份**，只补「用」那一半会从 401 变成 403。
+3. **UI 把失败演成了加载中。** 轮询是 `catch {}`，401/403 全吞，只剩一条不确定进度条。
+   现在连续失败 5 次就报「无法获取分析进度 · HTTP xxx」并给「重试」。
+
+**闸**：`superpowers/tracks/galaxy-ui-redesign/audit_auth_headers.py`
+（后端需鉴权端点 × 前端调用最终会不会带 Authorization；已做变异验证：
+拿掉一处 `authHeaders` 会红，还原会绿）。
+
+**顺带修掉的承重缺陷**：`BoardPageShell` 的 stage 是 `display:grid` 但没写显式行列，
+只有一条 `auto` 隐式行 ⇒ 子元素 `height:100%` 没有确定基准、退化成 auto ⇒
+旧版 `Board`（`components/Board.tsx:97` 取 `min(width,height)`）量到的是自己画出来的
+高度，越量越大：1280×640 下算出 704 的方板，把 588 高的区域撑破、整个 shell 开始滚。
+加上 `gridTemplateColumns/Rows: minmax(0, 1fr)` 后 704 → 568；
+L1 与已批准的 `LiveMatchPage` 四档实测数字**一个没变**（828/684/399/568）。
+
+## 5. 待议（发现即记，不顺手改）
+
+- **基线上就红的一条单测**：`src/kiosk/__tests__/GamePageEngine.test.tsx`
+  「confirming resign from the error dialog fires the resign action AND closes the error dialog」，
+  `mockClearPhysicalEngineError` 期望调用 1 次实得 0 次。已在 **fd3de2b6 干净树**上单独跑过复现 ——
+  与本轮无关，属 kiosk 对局页赛道。本轮的判据是「不新增失败」，不是「全绿」。

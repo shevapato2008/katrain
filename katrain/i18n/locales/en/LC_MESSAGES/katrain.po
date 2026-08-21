@@ -3102,3 +3102,6 @@ msgstr "Pause"
 
 msgid "audio:unavailable"
 msgstr "Audio unavailable"
+
+msgid "research:progress_failed"
+msgstr "Couldn't load analysis progress"

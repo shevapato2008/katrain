@@ -2914,3 +2914,6 @@ msgstr "暂停"
 
 msgid "audio:unavailable"
 msgstr "音频不可用"
+
+msgid "research:progress_failed"
+msgstr "无法获取分析进度"

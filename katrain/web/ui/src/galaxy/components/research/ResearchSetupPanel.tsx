@@ -35,7 +35,6 @@ interface ResearchSetupPanelProps {
   onCopyToClipboard?: () => void;
   onSaveToCloud?: () => void;
   onOpenFromCloud?: () => void;
-  onStartAnalysis: () => void;
 }
 
 export default function ResearchSetupPanel({
@@ -69,7 +68,6 @@ export default function ResearchSetupPanel({
   onCopyToClipboard,
   onSaveToCloud,
   onOpenFromCloud,
-  onStartAnalysis,
 }: ResearchSetupPanelProps) {
   const { t } = useTranslation();
   const inputSx = {
@@ -80,16 +78,11 @@ export default function ResearchSetupPanel({
 
   const menuItemSx = { fontSize: '0.9rem' };
 
+  /* 统一版式：右栏的宽度、高度、滚动和左边框由 BoardPageShell 的三段结构提供，
+     这里只出中段的内容。底部那个「开始研究」拆到了 ResearchSetupActions —— 动作区
+     按契约不跟着滚。 */
   return (
-    <Box sx={{
-      width: 500,
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      bgcolor: 'background.paper',
-      borderLeft: '1px solid rgba(255,255,255,0.05)',
-    }}>
-      <Box sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         {/* Player Info */}
         <Box sx={{ p: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'block', fontWeight: 600, letterSpacing: 0.5 }}>
@@ -214,28 +207,32 @@ export default function ResearchSetupPanel({
             onOpenFromCloud={onOpenFromCloud}
           />
         </Box>
-      </Box>
+    </Box>
+  );
+}
 
-      {/* Start Analysis Button - pinned to bottom */}
-      <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-        <Button
-          variant="contained"
-          fullWidth
-          size="large"
-          startIcon={<ScienceIcon />}
-          onClick={onStartAnalysis}
-          sx={{
-            bgcolor: 'success.main',
-            color: '#fff',
-            fontWeight: 700,
-            fontSize: '1rem',
-            py: 1.5,
-            '&:hover': { bgcolor: 'success.dark' },
-          }}
-        >
-          {t('research:start_research', '开始研究')}
-        </Button>
-      </Box>
+/** 「开始研究」。统一版式里它属于右栏动作区（不滚动），所以从面板里拆出来单独渲染。 */
+export function ResearchSetupActions({ onStartAnalysis }: { onStartAnalysis: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <Button
+        variant="contained"
+        fullWidth
+        size="large"
+        startIcon={<ScienceIcon />}
+        onClick={onStartAnalysis}
+        sx={{
+          bgcolor: 'success.main',
+          color: '#fff',
+          fontWeight: 700,
+          fontSize: '1rem',
+          py: 1.5,
+          '&:hover': { bgcolor: 'success.dark' },
+        }}
+      >
+        {t('research:start_research', '开始研究')}
+      </Button>
     </Box>
   );
 }

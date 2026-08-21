@@ -3142,3 +3142,6 @@ msgstr "Пауза"
 
 msgid "audio:unavailable"
 msgstr "Аудіо недоступне"
+
+msgid "research:progress_failed"
+msgstr "Не вдалося отримати прогрес аналізу"

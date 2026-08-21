@@ -2972,3 +2972,6 @@ msgstr "Pausar"
 
 msgid "audio:unavailable"
 msgstr "Audio no disponible"
+
+msgid "research:progress_failed"
+msgstr "No se pudo obtener el progreso del análisis"

@@ -3073,3 +3073,6 @@ msgstr "一時停止"
 
 msgid "audio:unavailable"
 msgstr "音声を利用できません"
+
+msgid "research:progress_failed"
+msgstr "解析の進捗を取得できません"

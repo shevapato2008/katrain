@@ -94,6 +94,11 @@ const BRILLIANT_THRESHOLD = 2.0;      // gains >= 2.0 points → 妙手
 const MISTAKE_THRESHOLD = -3.0;       // loses >= 3.0 points → 问题手
 const QUESTIONABLE_THRESHOLD = -1.5;  // loses >= 1.5 points → 疑问手
 
+const iconButtonStyle = {
+  color: 'text.secondary',
+  '&:hover': { color: 'text.primary', bgcolor: 'rgba(255,255,255,0.05)' },
+};
+
 export default function ResearchAnalysisPanel({
   playerBlack,
   playerWhite,
@@ -131,26 +136,7 @@ export default function ResearchAnalysisPanel({
 }: ResearchAnalysisPanelProps) {
   const { t } = useTranslation();
   const [trendTab, setTrendTab] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const audioCache = useRef<Record<string, HTMLAudioElement>>({});
-
-  // Auto-play effect
-  useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(() => {
-      if (currentMove < totalMoves) {
-        onMoveChange(currentMove + 1);
-      } else {
-        setIsPlaying(false);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isPlaying, currentMove, totalMoves, onMoveChange]);
-
-  // Stop playing when reaching end
-  useEffect(() => {
-    if (currentMove >= totalMoves) setIsPlaying(false);
-  }, [currentMove, totalMoves]);
 
   // Play stone sound on navigation
   const prevMoveRef = useRef(currentMove);
@@ -169,11 +155,6 @@ export default function ResearchAnalysisPanel({
 
   const winratePercent = winrate * 100;
   const blackAdvantage = winrate > 0.5;
-
-  const iconButtonStyle = {
-    color: 'text.secondary',
-    '&:hover': { color: 'text.primary', bgcolor: 'rgba(255,255,255,0.05)' },
-  };
 
   // Classify moves as 妙手 or 问题手 from history score changes
   // Uses score delta (in points) matching the live module's thresholds
@@ -409,16 +390,10 @@ export default function ResearchAnalysisPanel({
     onMoveChange(moveIdx);
   }, [history, totalMoves, onMoveChange]);
 
+  /* 统一版式：右栏外框（宽 / 高 / 滚动 / 左边框）由 BoardPageShell 三段结构提供，
+     这里只出中段内容；底部那条走子条拆到了 ResearchAnalysisActions。 */
   return (
-    <Box sx={{
-      width: 500,
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      bgcolor: 'background.paper',
-      borderLeft: '1px solid rgba(255,255,255,0.05)',
-    }}>
-      <Box sx={{ flexGrow: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         {/* Player Info + Winrate Bar */}
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
@@ -809,9 +784,39 @@ export default function ResearchAnalysisPanel({
             )}
           </Box>
         </Box>
-      </Box>
+    </Box>
+  );
+}
 
-      {/* Navigation Bar - pinned to bottom */}
+/** 走子条。统一版式里它属于右栏动作区（按契约不跟着滚），所以从面板里拆出来；
+ *  自动播放的状态和那两个 effect 只服务这一条，一并搬过来。 */
+export function ResearchAnalysisActions({ currentMove, totalMoves, onMoveChange }: {
+  currentMove: number;
+  totalMoves: number;
+  onMoveChange: (move: number) => void;
+}) {
+  const { t } = useTranslation();
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      if (currentMove < totalMoves) {
+        onMoveChange(currentMove + 1);
+      } else {
+        setIsPlaying(false);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isPlaying, currentMove, totalMoves, onMoveChange]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 走到最后一手必须立刻停掉自动播放
+    if (currentMove >= totalMoves) setIsPlaying(false);
+  }, [currentMove, totalMoves]);
+
+  return (
+    <>
       <Divider />
       <Box sx={{ pt: 1, pb: 1.5, px: 2, bgcolor: '#1a1a1a' }}>
         <Box sx={{ px: 1, mb: 0.5 }}>
@@ -872,6 +877,6 @@ export default function ResearchAnalysisPanel({
           </Typography>
         </Stack>
       </Box>
-    </Box>
+    </>
   );
 }

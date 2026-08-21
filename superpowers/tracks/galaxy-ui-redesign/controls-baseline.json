@@ -1,0 +1,2035 @@
+{
+ "katrain/web/ui/src/galaxy/components/aiLadder/AiLadderRatedSetup.tsx": [
+  {
+   "tag": "Button",
+   "name": "重试",
+   "named": true,
+   "line": 191,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "继续对局",
+   "named": true,
+   "line": 270,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "正在重试… | 立即重试",
+   "named": true,
+   "line": 283,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "«Button»",
+   "named": false,
+   "line": 296,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "刷新状态",
+   "named": true,
+   "line": 347,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "● 黑棋",
+   "named": true,
+   "line": 383,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "○ 白棋",
+   "named": true,
+   "line": 384,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "正在开始… | 开始正式对局",
+   "named": true,
+   "line": 397,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "取消",
+   "named": true,
+   "line": 498,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "确认认输",
+   "named": true,
+   "line": 499,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/aiLadder/AiLadderSettlementPanel.tsx": [
+  {
+   "tag": "Button",
+   "name": "重试",
+   "named": true,
+   "line": 41,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "再来一局",
+   "named": true,
+   "line": 45,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "返回对局",
+   "named": true,
+   "line": 46,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/auth/LoginModal.tsx": [
+  {
+   "tag": "TextField",
+   "name": "Username",
+   "named": true,
+   "line": 81,
+   "handler": "ok"
+  },
+  {
+   "tag": "TextField",
+   "name": "Password",
+   "named": true,
+   "line": 91,
+   "handler": "ok"
+  },
+  {
+   "tag": "TextField",
+   "name": "Confirm Password",
+   "named": true,
+   "line": 104,
+   "handler": "ok"
+  },
+  {
+   "tag": "Link",
+   "name": "Already have an account? Login | Don't have an account? Register",
+   "named": true,
+   "line": 118,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 124,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Register | Login",
+   "named": true,
+   "line": 125,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/board/BoardPageShell.tsx": [],
+ "katrain/web/ui/src/galaxy/components/FriendsPanel.tsx": [
+  {
+   "tag": "IconButton",
+   "name": "icon:PersonRemove",
+   "named": true,
+   "line": 90,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/game/ChatPanel.tsx": [
+  {
+   "tag": "TextField",
+   "name": "输入消息……",
+   "named": true,
+   "line": 73,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:Send",
+   "named": true,
+   "line": 83,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/game/RightSidebarPanel.tsx": [
+  {
+   "tag": "Switch",
+   "name": "«Switch»",
+   "named": false,
+   "line": 243,
+   "handler": "ok"
+  },
+  {
+   "tag": "Switch",
+   "name": "«Switch»",
+   "named": false,
+   "line": 247,
+   "handler": "ok"
+  },
+  {
+   "tag": "Switch",
+   "name": "«Switch»",
+   "named": false,
+   "line": 252,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:SkipPrevious",
+   "named": true,
+   "line": 280,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:FastRewind",
+   "named": true,
+   "line": 288,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:ArrowBack",
+   "named": true,
+   "line": 296,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:ArrowForward",
+   "named": true,
+   "line": 304,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:FastForward",
+   "named": true,
+   "line": 312,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:SkipNext",
+   "named": true,
+   "line": 320,
+   "handler": "ok"
+  },
+  {
+   "tag": "Box",
+   "name": "«Box»",
+   "named": false,
+   "line": 343,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/guards/AuthGuard.tsx": [],
+ "katrain/web/ui/src/galaxy/components/layout/ContentPageHeader.tsx": [
+  {
+   "tag": "Button",
+   "name": "返回${…}",
+   "named": true,
+   "line": 19,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/layout/GalaxyBottomNav.tsx": [
+  {
+   "tag": "MenuItem",
+   "name": "«MenuItem»",
+   "named": false,
+   "line": 61,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/layout/galaxyNavigation.tsx": [],
+ "katrain/web/ui/src/galaxy/components/layout/GalaxySidebar.tsx": [
+  {
+   "tag": "IconButton",
+   "name": "Close navigation",
+   "named": true,
+   "line": 64,
+   "handler": "ok"
+  },
+  {
+   "tag": "ListItemButton",
+   "name": "icon:ListItem",
+   "named": true,
+   "line": 77,
+   "handler": "ok"
+  },
+  {
+   "tag": "ListItemButton",
+   "name": "icon:ListItem",
+   "named": true,
+   "line": 94,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "icon:Language",
+   "named": true,
+   "line": 101,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "Logout",
+   "named": true,
+   "line": 119,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Sign In",
+   "named": true,
+   "line": 122,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "«IconButton»",
+   "named": false,
+   "line": 152,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/layout/GalaxyTopBar.tsx": [],
+ "katrain/web/ui/src/galaxy/components/layout/MainLayout.tsx": [],
+ "katrain/web/ui/src/galaxy/components/layout/ModulePlate.tsx": [
+  {
+   "tag": "IconButton",
+   "name": "Back",
+   "named": true,
+   "line": 34,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "返回${…}",
+   "named": true,
+   "line": 49,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/live/CommentSection.tsx": [
+  {
+   "tag": "TextField",
+   "name": "Add a comment...",
+   "named": true,
+   "line": 146,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "«IconButton»",
+   "named": false,
+   "line": 158,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:Delete",
+   "named": true,
+   "line": 210,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/live/LiveBoard.tsx": [],
+ "katrain/web/ui/src/galaxy/components/report/ReportGameCard.tsx": [
+  {
+   "tag": "Box",
+   "name": "«Box»",
+   "named": false,
+   "line": 101,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "Delete game",
+   "named": true,
+   "line": 125,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Normal",
+   "named": true,
+   "line": 202,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Deep",
+   "named": true,
+   "line": 215,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Retry normal",
+   "named": true,
+   "line": 229,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Retry deep",
+   "named": true,
+   "line": 242,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Generate deep report | Generate normal report | Generate report",
+   "named": true,
+   "line": 257,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "Normal",
+   "named": true,
+   "line": 279,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "Deep",
+   "named": true,
+   "line": 290,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/report/ReportHighlightsPanel.tsx": [
+  {
+   "tag": "Button",
+   "name": "«Button»",
+   "named": false,
+   "line": 58,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/report/ReportImportMenu.tsx": [
+  {
+   "tag": "Button",
+   "name": "Import game",
+   "named": true,
+   "line": 17,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "Import local SGF",
+   "named": true,
+   "line": 26,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "Import from library",
+   "named": true,
+   "line": 34,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/report/ReportLibraryImportDialog.tsx": [
+  {
+   "tag": "TextField",
+   "name": "Search",
+   "named": true,
+   "line": 73,
+   "handler": "ok"
+  },
+  {
+   "tag": "Box",
+   "name": "«Box»",
+   "named": false,
+   "line": 93,
+   "handler": "ok"
+  },
+  {
+   "tag": "Pagination",
+   "name": "«Pagination»",
+   "named": false,
+   "line": 123,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 132,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Importing... | Import only",
+   "named": true,
+   "line": 133,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Import & generate normal report",
+   "named": true,
+   "line": 136,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Import & generate deep report",
+   "named": true,
+   "line": 143,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/report/ReportLocalImportDialog.tsx": [
+  {
+   "tag": "TextField",
+   "name": "Title",
+   "named": true,
+   "line": 88,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Choose local file",
+   "named": true,
+   "line": 96,
+   "handler": "ok"
+  },
+  {
+   "tag": "input",
+   "name": "Choose local file",
+   "named": true,
+   "line": 98,
+   "handler": "ok"
+  },
+  {
+   "tag": "TextField",
+   "name": "SGF Content",
+   "named": true,
+   "line": 105,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 125,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Importing... | Import only",
+   "named": true,
+   "line": 126,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Import & generate normal report",
+   "named": true,
+   "line": 129,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Import & generate deep report",
+   "named": true,
+   "line": 136,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/report/ReportMetaPanel.tsx": [],
+ "katrain/web/ui/src/galaxy/components/research/CloudSGFPanel.tsx": [
+  {
+   "tag": "IconButton",
+   "name": "icon:Close",
+   "named": true,
+   "line": 163,
+   "handler": "ok"
+  },
+  {
+   "tag": "ListItemButton",
+   "name": "«ListItemButton»",
+   "named": false,
+   "line": 181,
+   "handler": "ok"
+  },
+  {
+   "tag": "TextField",
+   "name": "搜索棋手、赛事...",
+   "named": true,
+   "line": 218,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:Search",
+   "named": true,
+   "line": 227,
+   "handler": "ok"
+  },
+  {
+   "tag": "ListItemButton",
+   "name": "«ListItemButton»",
+   "named": false,
+   "line": 250,
+   "handler": "ok"
+  },
+  {
+   "tag": "Pagination",
+   "name": "«Pagination»",
+   "named": false,
+   "line": 279,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/research/ResearchAnalysisPanel.tsx": [
+  {
+   "tag": "Tab",
+   "name": "走势图",
+   "named": true,
+   "line": 713,
+   "handler": "ok"
+  },
+  {
+   "tag": "Tab",
+   "name": "«Tab»",
+   "named": false,
+   "line": 714,
+   "handler": "ok"
+  },
+  {
+   "tag": "Tab",
+   "name": "«Tab»",
+   "named": false,
+   "line": 715,
+   "handler": "ok"
+  },
+  {
+   "tag": "Box",
+   "name": "«Box»",
+   "named": false,
+   "line": 729,
+   "handler": "ok"
+  },
+  {
+   "tag": "Box",
+   "name": "«Box»",
+   "named": false,
+   "line": 745,
+   "handler": "ok"
+  },
+  {
+   "tag": "Box",
+   "name": "«Box»",
+   "named": false,
+   "line": 780,
+   "handler": "ok"
+  },
+  {
+   "tag": "Slider",
+   "name": "«Slider»",
+   "named": false,
+   "line": 818,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "最初",
+   "named": true,
+   "line": 833,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "后退",
+   "named": true,
+   "line": 838,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "«IconButton»",
+   "named": false,
+   "line": 842,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "前进",
+   "named": true,
+   "line": 861,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "最终",
+   "named": true,
+   "line": 866,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/research/ResearchSetupPanel.tsx": [
+  {
+   "tag": "TextField",
+   "name": "黑方",
+   "named": true,
+   "line": 101,
+   "handler": "ok"
+  },
+  {
+   "tag": "TextField",
+   "name": "白方",
+   "named": true,
+   "line": 112,
+   "handler": "ok"
+  },
+  {
+   "tag": "Select",
+   "name": "棋盘大小",
+   "named": true,
+   "line": 135,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "9×9",
+   "named": true,
+   "line": 140,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "13×13",
+   "named": true,
+   "line": 141,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "19×19",
+   "named": true,
+   "line": 142,
+   "handler": "ok"
+  },
+  {
+   "tag": "Select",
+   "name": "规则",
+   "named": true,
+   "line": 149,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "中国规则",
+   "named": true,
+   "line": 154,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "日本规则",
+   "named": true,
+   "line": 155,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "韩国规则",
+   "named": true,
+   "line": 156,
+   "handler": "ok"
+  },
+  {
+   "tag": "TextField",
+   "name": "贴目",
+   "named": true,
+   "line": 161,
+   "handler": "ok"
+  },
+  {
+   "tag": "Select",
+   "name": "让子",
+   "named": true,
+   "line": 175,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "无",
+   "named": true,
+   "line": 181,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "开始研究",
+   "named": true,
+   "line": 221,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/research/ResearchToolbar.tsx": [
+  {
+   "tag": "MenuItem",
+   "name": "icon:ListItem",
+   "named": true,
+   "line": 262,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "icon:ListItem",
+   "named": true,
+   "line": 266,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "icon:ListItem",
+   "named": true,
+   "line": 280,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "icon:ListItem",
+   "named": true,
+   "line": 284,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "icon:ListItem",
+   "named": true,
+   "line": 288,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "取消",
+   "named": true,
+   "line": 301,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "确认",
+   "named": true,
+   "line": 302,
+   "handler": "ok"
+  },
+  {
+   "tag": "Box",
+   "name": "«Box»",
+   "named": false,
+   "line": 320,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/tsumego/MobileControls.tsx": [
+  {
+   "tag": "IconButton",
+   "name": "icon:ArrowBack",
+   "named": true,
+   "line": 76,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:NavigateBefore",
+   "named": true,
+   "line": 149,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:Undo",
+   "named": true,
+   "line": 161,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:Refresh",
+   "named": true,
+   "line": 173,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:TouchApp",
+   "named": true,
+   "line": 184,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:Lightbulb",
+   "named": true,
+   "line": 197,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:NavigateNext",
+   "named": true,
+   "line": 209,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/tsumego/ProblemCard.tsx": [
+  {
+   "tag": "CardActionArea",
+   "name": "«CardActionArea»",
+   "named": false,
+   "line": 44,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/tsumego/SuccessOverlay.tsx": [],
+ "katrain/web/ui/src/galaxy/components/tsumego/TsumegoBoard.tsx": [],
+ "katrain/web/ui/src/galaxy/components/tsumego/TsumegoProblemControls.tsx": [
+  {
+   "tag": "Button",
+   "name": "t:tsumego:hideHint | t:tsumego:showHint",
+   "named": true,
+   "line": 190,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "t:tsumego:tryModeDesc",
+   "named": true,
+   "line": 223,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "t:tsumego:undo (U)",
+   "named": true,
+   "line": 238,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "t:tsumego:reset (R)",
+   "named": true,
+   "line": 251,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "t:tsumego:previousProblem",
+   "named": true,
+   "line": 268,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "t:tsumego:nextProblem",
+   "named": true,
+   "line": 277,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/tutorials/AudioPlayer.tsx": [
+  {
+   "tag": "IconButton",
+   "name": "暂停 | 播放",
+   "named": true,
+   "line": 56,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/tutorials/BoardEditToolbar.tsx": [
+  {
+   "tag": "Box",
+   "name": "«Box»",
+   "named": false,
+   "line": 69,
+   "handler": "ok"
+  },
+  {
+   "tag": "TextField",
+   "name": "«TextField»",
+   "named": false,
+   "line": 166,
+   "handler": "ok"
+  },
+  {
+   "tag": "TextField",
+   "name": "«TextField»",
+   "named": false,
+   "line": 207,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "△ 三角形",
+   "named": true,
+   "line": 226,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "□ 正方形",
+   "named": true,
+   "line": 227,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "○ 圆形",
+   "named": true,
+   "line": 228,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "✕ 叉形",
+   "named": true,
+   "line": 229,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "撤销",
+   "named": true,
+   "line": 237,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "一键清空",
+   "named": true,
+   "line": 241,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "保存",
+   "named": true,
+   "line": 243,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "取消",
+   "named": true,
+   "line": 246,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/tutorials/RecognitionDebugPanel.tsx": [
+  {
+   "tag": "Box",
+   "name": "«Box»",
+   "named": false,
+   "line": 22,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "«IconButton»",
+   "named": false,
+   "line": 31,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/components/tutorials/SGFBoard.tsx": [],
+ "katrain/web/ui/src/galaxy/context/GameNavigationContext.tsx": [
+  {
+   "tag": "Button",
+   "name": "«Button»",
+   "named": false,
+   "line": 95,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "«Button»",
+   "named": false,
+   "line": 96,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/AiSetupPage.tsx": [
+  {
+   "tag": "Checkbox",
+   "name": "«Checkbox»",
+   "named": false,
+   "line": 397,
+   "handler": "ok"
+  },
+  {
+   "tag": "Slider",
+   "name": "«Slider»",
+   "named": false,
+   "line": 421,
+   "handler": "ok"
+  },
+  {
+   "tag": "TextField",
+   "name": "«TextField»",
+   "named": false,
+   "line": 433,
+   "handler": "ok"
+  },
+  {
+   "tag": "Select",
+   "name": "Board Size",
+   "named": true,
+   "line": 513,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "19x19 (",
+   "named": true,
+   "line": 514,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "13x13",
+   "named": true,
+   "line": 515,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "9x9",
+   "named": true,
+   "line": 516,
+   "handler": "ok"
+  },
+  {
+   "tag": "Select",
+   "name": "Ruleset",
+   "named": true,
+   "line": 522,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "«MenuItem»",
+   "named": false,
+   "line": 523,
+   "handler": "ok"
+  },
+  {
+   "tag": "Select",
+   "name": "Your Color",
+   "named": true,
+   "line": 529,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "Black",
+   "named": true,
+   "line": 530,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "White",
+   "named": true,
+   "line": 531,
+   "handler": "ok"
+  },
+  {
+   "tag": "Slider",
+   "name": "«Slider»",
+   "named": false,
+   "line": 538,
+   "handler": "ok"
+  },
+  {
+   "tag": "Slider",
+   "name": "«Slider»",
+   "named": false,
+   "line": 544,
+   "handler": "ok"
+  },
+  {
+   "tag": "Select",
+   "name": "AI Strategy",
+   "named": true,
+   "line": 565,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "«MenuItem»",
+   "named": false,
+   "line": 575,
+   "handler": "ok"
+  },
+  {
+   "tag": "Slider",
+   "name": "«Slider»",
+   "named": false,
+   "line": 589,
+   "handler": "ok"
+  },
+  {
+   "tag": "Select",
+   "name": "棋力等级",
+   "named": true,
+   "line": 607,
+   "handler": "ok"
+  },
+  {
+   "tag": "MenuItem",
+   "name": "«MenuItem»",
+   "named": false,
+   "line": 613,
+   "handler": "ok"
+  },
+  {
+   "tag": "Switch",
+   "name": "«Switch»",
+   "named": false,
+   "line": 648,
+   "handler": "ok"
+  },
+  {
+   "tag": "Slider",
+   "name": "«Slider»",
+   "named": false,
+   "line": 657,
+   "handler": "ok"
+  },
+  {
+   "tag": "Slider",
+   "name": "«Slider»",
+   "named": false,
+   "line": 664,
+   "handler": "ok"
+  },
+  {
+   "tag": "Slider",
+   "name": "«Slider»",
+   "named": false,
+   "line": 671,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 682,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Start Game",
+   "named": true,
+   "line": 683,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/Dashboard.tsx": [
+  {
+   "tag": "CardActionArea",
+   "name": "«CardActionArea»",
+   "named": false,
+   "line": 24,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/GamePage.tsx": [
+  {
+   "tag": "Button",
+   "name": "重试",
+   "named": true,
+   "line": 453,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 467,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Resign & Exit",
+   "named": true,
+   "line": 468,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 481,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Resign",
+   "named": true,
+   "line": 482,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 495,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Count",
+   "named": true,
+   "line": 496,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "OK",
+   "named": true,
+   "line": 510,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Exit",
+   "named": true,
+   "line": 546,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/GameRoomPage.tsx": [
+  {
+   "tag": "Button",
+   "name": "返回大厅",
+   "named": true,
+   "line": 166,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 206,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Leave & Forfeit",
+   "named": true,
+   "line": 207,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 220,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Resign",
+   "named": true,
+   "line": 221,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Back to Lobby",
+   "named": true,
+   "line": 234,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 247,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Count",
+   "named": true,
+   "line": 248,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Reject",
+   "named": true,
+   "line": 261,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Accept",
+   "named": true,
+   "line": 262,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Exit",
+   "named": true,
+   "line": 278,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Leave",
+   "named": true,
+   "line": 290,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/HvHLobbyPage.tsx": [
+  {
+   "tag": "Button",
+   "name": "Quick Match (Rated)",
+   "named": true,
+   "line": 195,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Custom Game",
+   "named": true,
+   "line": 198,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 212,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Invite",
+   "named": true,
+   "line": 248,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Watch",
+   "named": true,
+   "line": 290,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Decline",
+   "named": true,
+   "line": 323,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Accept",
+   "named": true,
+   "line": 324,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/KifuLibraryPage.tsx": [
+  {
+   "tag": "CardActionArea",
+   "name": "«CardActionArea»",
+   "named": false,
+   "line": 115,
+   "handler": "ok"
+  },
+  {
+   "tag": "TextField",
+   "name": "Search by player, event, date...",
+   "named": true,
+   "line": 299,
+   "handler": "ok"
+  },
+  {
+   "tag": "Pagination",
+   "name": "«Pagination»",
+   "named": false,
+   "line": 380,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "⏮",
+   "named": true,
+   "line": 433,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "◀",
+   "named": true,
+   "line": 441,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "▶",
+   "named": true,
+   "line": 461,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "⏭",
+   "named": true,
+   "line": 469,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "在研究中打开",
+   "named": true,
+   "line": 481,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/live/LiveMatchDisplayControls.tsx": [
+  {
+   "tag": "ToggleButton",
+   "name": "«ToggleButton»",
+   "named": false,
+   "line": 53,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Clear",
+   "named": true,
+   "line": 155,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/live/LiveMatchPage.tsx": [
+  {
+   "tag": "Button",
+   "name": "«Button»",
+   "named": false,
+   "line": 23,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "«Button»",
+   "named": false,
+   "line": 30,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Retry",
+   "named": true,
+   "line": 110,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/live/LivePage.tsx": [
+  {
+   "tag": "Tab",
+   "name": "t:live:top_matches",
+   "named": true,
+   "line": 120,
+   "handler": "ok"
+  },
+  {
+   "tag": "Tab",
+   "name": "t:live:upcoming",
+   "named": true,
+   "line": 121,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "t:live:enter_live | t:live:view_game",
+   "named": true,
+   "line": 163,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/PlayMenu.tsx": [
+  {
+   "tag": "Button",
+   "name": "Game Records",
+   "named": true,
+   "line": 47,
+   "handler": "ok"
+  },
+  {
+   "tag": "CardActionArea",
+   "name": "«CardActionArea»",
+   "named": false,
+   "line": 77,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/report/ReportDetailPage.tsx": [
+  {
+   "tag": "Button",
+   "name": "Back to review list",
+   "named": true,
+   "line": 105,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:ArrowBack",
+   "named": true,
+   "line": 114,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Open in Research",
+   "named": true,
+   "line": 120,
+   "handler": "ok"
+  },
+  {
+   "tag": "ToggleButton",
+   "name": "Try",
+   "named": true,
+   "line": 168,
+   "handler": "ok"
+  },
+  {
+   "tag": "ToggleButton",
+   "name": "Territory",
+   "named": true,
+   "line": 185,
+   "handler": "ok"
+  },
+  {
+   "tag": "ToggleButton",
+   "name": "icon:Map",
+   "named": true,
+   "line": 196,
+   "handler": "ok"
+  },
+  {
+   "tag": "ToggleButton",
+   "name": "Move #",
+   "named": true,
+   "line": 208,
+   "handler": "ok"
+  },
+  {
+   "tag": "ToggleButton",
+   "name": "Hide hints | Show hints",
+   "named": true,
+   "line": 219,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Clear",
+   "named": true,
+   "line": 235,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/report/ReportsPage.tsx": [
+  {
+   "tag": "TextField",
+   "name": "Search by player, title, or event",
+   "named": true,
+   "line": 433,
+   "handler": "ok"
+  },
+  {
+   "tag": "Pagination",
+   "name": "«Pagination»",
+   "named": false,
+   "line": 509,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Cancel",
+   "named": true,
+   "line": 540,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "Delete game",
+   "named": true,
+   "line": 543,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/ResearchPage.tsx": [
+  {
+   "tag": "Button",
+   "name": "返回编辑",
+   "named": true,
+   "line": 434,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "取消",
+   "named": true,
+   "line": 556,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "⏮",
+   "named": true,
+   "line": 606,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "◀",
+   "named": true,
+   "line": 614,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "▶",
+   "named": true,
+   "line": 634,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "⏭",
+   "named": true,
+   "line": 642,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/TsumegoCategoriesPage.tsx": [
+  {
+   "tag": "IconButton",
+   "name": "icon:ArrowBack",
+   "named": true,
+   "line": 53,
+   "handler": "ok"
+  },
+  {
+   "tag": "Link",
+   "name": "t:Tsumego",
+   "named": true,
+   "line": 57,
+   "handler": "ok"
+  },
+  {
+   "tag": "CardActionArea",
+   "name": "«CardActionArea»",
+   "named": false,
+   "line": 92,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/TsumegoLevelsPage.tsx": [
+  {
+   "tag": "CardActionArea",
+   "name": "«CardActionArea»",
+   "named": false,
+   "line": 89,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/TsumegoListPage.tsx": [
+  {
+   "tag": "IconButton",
+   "name": "icon:ArrowBack",
+   "named": true,
+   "line": 116,
+   "handler": "ok"
+  },
+  {
+   "tag": "Link",
+   "name": "t:Tsumego",
+   "named": true,
+   "line": 120,
+   "handler": "ok"
+  },
+  {
+   "tag": "Link",
+   "name": "«Link»",
+   "named": false,
+   "line": 128,
+   "handler": "ok"
+  },
+  {
+   "tag": "Link",
+   "name": "«Link»",
+   "named": false,
+   "line": 136,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/TsumegoProblemPage.tsx": [
+  {
+   "tag": "IconButton",
+   "name": "icon:ArrowBack",
+   "named": true,
+   "line": 366,
+   "handler": "ok"
+  },
+  {
+   "tag": "Link",
+   "name": "t:Tsumego",
+   "named": true,
+   "line": 370,
+   "handler": "ok"
+  },
+  {
+   "tag": "Link",
+   "name": "«Link»",
+   "named": false,
+   "line": 378,
+   "handler": "ok"
+  },
+  {
+   "tag": "Link",
+   "name": "«Link»",
+   "named": false,
+   "line": 386,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/TsumegoUnitsPage.tsx": [
+  {
+   "tag": "IconButton",
+   "name": "icon:ArrowBack",
+   "named": true,
+   "line": 151,
+   "handler": "ok"
+  },
+  {
+   "tag": "Link",
+   "name": "t:Tsumego",
+   "named": true,
+   "line": 155,
+   "handler": "ok"
+  },
+  {
+   "tag": "Link",
+   "name": "«Link»",
+   "named": false,
+   "line": 163,
+   "handler": "ok"
+  },
+  {
+   "tag": "CardActionArea",
+   "name": "«CardActionArea»",
+   "named": false,
+   "line": 207,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/tutorials/TutorialBookDetailPage.tsx": [
+  {
+   "tag": "Button",
+   "name": "重试",
+   "named": true,
+   "line": 56,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "← 返回",
+   "named": true,
+   "line": 61,
+   "handler": "ok"
+  },
+  {
+   "tag": "ListItemButton",
+   "name": "«ListItemButton»",
+   "named": false,
+   "line": 76,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "播放视频",
+   "named": true,
+   "line": 84,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "icon:Close",
+   "named": true,
+   "line": 117,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/tutorials/TutorialBooksPage.tsx": [
+  {
+   "tag": "Button",
+   "name": "重试",
+   "named": true,
+   "line": 34,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "← 返回",
+   "named": true,
+   "line": 38,
+   "handler": "ok"
+  },
+  {
+   "tag": "CardActionArea",
+   "name": "«CardActionArea»",
+   "named": false,
+   "line": 47,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/tutorials/TutorialFigurePage.tsx": [
+  {
+   "tag": "Button",
+   "name": "重试",
+   "named": true,
+   "line": 261,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "← 返回",
+   "named": true,
+   "line": 267,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "上一图",
+   "named": true,
+   "line": 274,
+   "handler": "ok"
+  },
+  {
+   "tag": "IconButton",
+   "name": "下一图",
+   "named": true,
+   "line": 280,
+   "handler": "ok"
+  },
+  {
+   "tag": "Slider",
+   "name": "«Slider»",
+   "named": false,
+   "line": 354,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "编辑",
+   "named": true,
+   "line": 368,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "逻辑检查",
+   "named": true,
+   "line": 371,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "确认审核",
+   "named": true,
+   "line": 374,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "初始化空棋盘",
+   "named": true,
+   "line": 391,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "编辑讲解",
+   "named": true,
+   "line": 418,
+   "handler": "ok"
+  },
+  {
+   "tag": "TextField",
+   "name": "讲解文本",
+   "named": true,
+   "line": 431,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "保存文字",
+   "named": true,
+   "line": 440,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "生成语音并保存",
+   "named": true,
+   "line": 447,
+   "handler": "ok"
+  },
+  {
+   "tag": "Button",
+   "name": "取消",
+   "named": true,
+   "line": 456,
+   "handler": "ok"
+  }
+ ],
+ "katrain/web/ui/src/galaxy/pages/tutorials/TutorialLandingPage.tsx": [
+  {
+   "tag": "Button",
+   "name": "重试",
+   "named": true,
+   "line": 32,
+   "handler": "ok"
+  },
+  {
+   "tag": "CardActionArea",
+   "name": "«CardActionArea»",
+   "named": false,
+   "line": 42,
+   "handler": "ok"
+  }
+ ]
+}

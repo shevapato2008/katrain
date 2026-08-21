@@ -122,6 +122,14 @@ export interface EngineLevel {
 export interface LadderRung {
   rung: number;
   rank_name: string;
+  // 服务端目录投影的全部字段（`ai_ladder_catalog.catalog_projection`）。原来这里只有前两个，
+  // 于是任何按认证/可用性过滤的代码都读不到字段 —— 而本仓 `tsc --noEmit` 检查 0 个文件
+  // （根 tsconfig 是 `files: []` + references），漏了也不会红，要用 `tsc -b`。
+  certification_status: 'certified' | 'provisional';
+  // `unavailable` = 坐不上去。今天它恰好等于「已封档」(`ladder._RETIRED_RUNGS`)，
+  // 因为认证集与可坐集重合；但判据是这个字段本身，不是封档清单的前端副本。
+  availability: 'available' | 'unavailable';
+  route: string;
 }
 
 export interface PlatformStatusResponse {

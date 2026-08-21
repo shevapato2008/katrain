@@ -239,7 +239,7 @@ katrain 这份 vendored `tokens.css` **比围棋设计稿内联的那份新**：
 > **悔棋在星阵算招期间禁用**、多一条平台条。稿子现在有第 ⑪ 屏「星阵围棋 · 对局中」专画这一屏。
 > ⇒ 对齐这条链时，**`platform-engine` 的「开始对局」接的是第 ⑪ 屏，不是第 ⑤ 屏**；
 > 两屏骨架相同但右栏不同，照第 ⑤ 屏做出来会是一个看着像对的错。
-> 稿子在 `smartbox-software/superpowers/shared/kiosk-shell/sample-go/`（**28 屏 / 闸 754 条全过**，commit `f5ba41597`）。
+> 稿子在 `smartbox-software/superpowers/shared/kiosk-shell/sample-go/`（**27 屏 / 闸 754 条全过**）。
 > 画廊版（逐屏对规范）：https://claude.ai/code/artifact/f1cf8ada-61c3-4950-b785-dee11963924e
 > 原型版（点着走，验跳转用）：https://claude.ai/code/artifact/e4d3c7ef-82dd-4a5e-a7b0-42db6b4ad731
 >
@@ -2645,7 +2645,8 @@ export function KioskActions({ items }: {
 - 是**视图/落子方式切换**（最多 3 段）→ 放 `segment`。
 - 是**业务动作**（`LobbyPage` 的「排位赛 / 自由对局」、`ReportDetailPage` 的「在研究中打开」、`LiveMatchPage` 的「直播中」Chip、`TutorialBooksPage` 的分类文字、`TutorialBookDetailPage` 的作者）→ **不许上页控条**。降到内容区第一行，或并进 `sub`（作者、分类这种是**副标性质**，并进 `sub` 是对的；「排位赛/自由对局」是**动作**，降到内容区）。
 
-⚠️ **`GameHistoryPage` 顺手补一个返回**（`onBack={() => navigate('/kiosk/report')}`）。它今天没有任何返回入口、Dock 也不出——这是个真 bug，改一行就好，别留着。
+~~⚠️ **`GameHistoryPage` 顺手补一个返回**~~ —— **2026-08-21 作废**：Fan 裁定对局历史直接进
+`/kiosk/report`，这一页没有入口了，该并进 `ReportsPage` 而不是给它补返回。见 Task 10 那条再修订。
 
 ⚠️ `ResearchPage` 那三条手写 52px 面包屑条**本轮不动**（D2：research 只接壳，内容区维持现状）。它有 864 行、三处结构不同，动它超出「接壳」。**登记。**
 
@@ -3009,7 +3010,23 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
 - token 变化时**同步**重置成断开态；**旧请求不许覆盖新请求**；登出后到的响应要丢掉；
 - `对局历史 ›` → `/kiosk/play/pvp/history`。
 
-⚠️ **`对局历史 ›` 在稿子上没有。** 它是现状多出来的一个入口。**不要删**（删了 `GameHistoryPage` 就再也到不了，而它自己没有返回入口）。摆法：并进「人人对弈」组的组标题右端 `secval`，或作为该组下的一条 `.kiosk-row`。**这是稿外内容，摆法有疑问就停下来问**（D2 的精神：没有稿子当依据就不要自己发明）。
+> ### ⚠️ 2026-08-21 再修订：`对局历史` 现在稿子上有了，但它**不通向 `GameHistoryPage`**
+>
+> 上面那段（「稿子上没有、不要删、摆法有疑问就问」）**整段作废**。问过了，Fan 当场裁了两条：
+>
+> 1. **「对局历史按钮太大了，可以参考国际象棋的对局历史按钮，和其他按钮保持大小一致」**
+>    ⇒ 就是一张普通的 `.kiosk-card`（220×76），进「对局历史」组，和同屏其他 7 张卡一模一样。
+>    **同一屏上的卡不许有第二种尺寸** —— 这条国象 2026-07-28 就裁过，注释还留在 `sample-chess` 里。
+>    不要用通栏 `.rows > .row` + 「打开」药丸键，那是围棋自己发明的第二种尺寸。
+> 2. **「需要能够跳转到复盘模块的首页，不是现在的单独创建一个复盘页，搞得过于复杂了」**
+>    ⇒ 落点是 **`/kiosk/report`（复盘模块首页）**，不是 `/kiosk/play/pvp/history`。
+>    设计稿里那一屏 `history` **已经删掉**（28 屏 → 27 屏）：它和复盘屏的列表画的是同一批局，
+>    而它自己的职责只是「从一张表里挑一局送到另一屏的同一张表去」。国象从来没有这一屏。
+>
+> ⇒ **`GameHistoryPage` 因此没有任何入口了。** 这不是「顺手补个返回」能解决的（下面 Task 里
+>    那条「⚠️ GameHistoryPage 顺手补一个返回」也一并作废）。建议：把它的列表并进
+>    `ReportsPage`（那边本来就渲染同一张表，且已有「未分析 / 分析中 / 已分析」三态），
+>    然后删掉 `play/pvp/history` 路由。**这一步动的是实现不是稿子，落地前跟 Fan 确认一次。**
 
 - [ ] **Step 1** 读 `go-kiosk.tmpl.html:214-268` + `shots/01-play.png` + `pages/PlayPage.tsx` 全文。
 - [ ] **Step 2** 列出这一屏四处 `.note` 的判定（都是旁注），写进提交信息。

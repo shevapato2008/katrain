@@ -41,7 +41,7 @@ function ResultBadge({ result, rules, t }: { result: string | null; rules?: stri
         px: 0.7,
         py: 0.3,
         borderRadius: '4px',
-        fontFamily: "'IBM Plex Mono', monospace",
+        fontFamily: (t) => `"IBM Plex Mono", monospace, ${t.typography.fontFamily}`,
         bgcolor: isBlack ? 'rgba(10,10,10,0.9)' : 'rgba(255,255,255,0.1)',
         color: isBlack ? '#ccc' : '#f5f3f0',
         border: '1px solid',
@@ -450,7 +450,7 @@ export default function KifuLibraryPage() {
                   variant="body2"
                   sx={{
                     mx: 2,
-                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontFamily: (t) => `"IBM Plex Mono", monospace, ${t.typography.fontFamily}`,
                     color: 'text.secondary',
                     minWidth: 80,
                     textAlign: 'center',

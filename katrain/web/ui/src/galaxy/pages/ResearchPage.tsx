@@ -605,11 +605,11 @@ const ResearchPage = () => {
 
                             {analysisProgress && (
                                 <Box sx={{ mt: 1.5 }}>
-                                    <Typography variant="body2" color="primary.main" sx={{ fontWeight: 700, fontFamily: '"IBM Plex Mono", monospace' }}>
+                                    <Typography variant="body2" color="primary.main" sx={{ fontWeight: 700, fontFamily: (t) => `"IBM Plex Mono", monospace, ${t.typography.fontFamily}` }}>
                                         {progressPercent}%
                                     </Typography>
                                     {etaSeconds !== null && etaSeconds > 0 && (
-                                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontFamily: '"IBM Plex Mono", monospace' }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontFamily: (t) => `"IBM Plex Mono", monospace, ${t.typography.fontFamily}` }}>
                                             {t('research:eta', '预计剩余 {time}').replace('{time}',
                                                 etaSeconds >= 60
                                                     ? t('research:time_min_sec', '{min}分{sec}秒').replace('{min}', String(Math.floor(etaSeconds / 60))).replace('{sec}', (etaSeconds % 60).toString().padStart(2, '0'))
@@ -738,7 +738,7 @@ const ResearchPage = () => {
                                 variant="body2"
                                 sx={{
                                     mx: 1,
-                                    fontFamily: '"IBM Plex Mono", monospace',
+                                    fontFamily: (t) => `"IBM Plex Mono", monospace, ${t.typography.fontFamily}`,
                                     color: 'text.secondary',
                                     minWidth: 76,
                                     textAlign: 'center',

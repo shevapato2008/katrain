@@ -130,6 +130,61 @@ kiosk dist 体积对照**同一 commit 上现跑的一次构建**（不拿磁盘
 加上 `gridTemplateColumns/Rows: minmax(0, 1fr)` 后 704 → 568；
 L1 与已批准的 `LiveMatchPage` 四档实测数字**一个没变**（828/684/399/568）。
 
+## 4.6 2026-08-21 两个环境的发布记录
+
+**落地路径**：`feature/galaxy-style-unify` 先合入 `origin/develop`（快进到 `a930c6c1`），
+再由 `release/ucloud-20260805` 合入 develop（`65677ce5`）。相对上一版生产镜像，
+本次改动**只有前端 + i18n + 文档**：`git diff --name-only e3f50c43..a930c6c1` 里
+没有任何 `.py`、没有迁移、没有 schema。
+
+**发布前砍掉的两处投机改动**：`TsumegoBoard.showCoordinates` 与
+`ContentPageHeader` 的可选 `parentLabel/parentTo` 当时都还没有任何调用方
+（前者是给 S2 死活题页备的，后者是给 S8 内容页备的）。默认值都不改行为，
+但「先发到生产再等消费者」正是「最小实现」那条规则要挡的事,已 revert,
+到 S2 / S8 各自那一步再随消费者一起加。
+
+**测试服 go.sailorvoyage.top（home-ubuntu）**
+
+- 走 `docker compose up -d --build katrain-web`。构建一度失败于
+  `proxyconnect tcp: dial tcp 127.0.0.1:7890: connect: connection refused` ——
+  docker 的 systemd unit 里写死了这个代理，而它没在跑；nvcr.io 直连是通的
+  （`curl --noproxy '*' https://nvcr.io/v2/` → 401）。改 unit 要
+  `systemctl restart docker`，会把这台机器上所有容器（katago-gpu0/1、postgres、
+  smartbox-platform……）一起弹掉,代价不成比例。改用一个临时的**直连穿透代理**
+  占住 7890,让 daemon 的配置成立;构建完即杀掉并删文件（已核实端口空、进程无、文件不在）。
+- `.mo` 是 gitignore 的,而 develop 的 `Dockerfile.web` 不编译它（release 分支的会）,
+  所以本机编译后 rsync 那 11 个 `katrain.mo` 进构建上下文再构建。
+- 实测：`/api/translations` 951 条（原 950），`research:progress_failed` cn/en 各就位。
+
+**测试服上的真浏览器走查（这条是修复的判据）**
+
+Mac 的代理是 fakeip，`/browse` 的 SSRF 闸会把 `go.sailorvoyage.top` 判成云元数据 IP 拒绝加载，
+于是改走 ssh 隧道到那台机器的 8001，用主机名 **`localhost`** 打开 —— 关键在于
+`SSO_LOOPBACK_HOST = "127.0.0.1"`（`auth.py:32`），`localhost` 不等于它，
+**正是出问题的那个条件**。同一隧道做过对照：
+
+- `POST /api/v1/auth/login` 经 `localhost` → 200，**无 `set-cookie`**
+- 同一请求经 `127.0.0.1` → 200，**发 `sb_token` cookie**
+
+登录后页面上 `document.cookie` 为空、`localStorage.token` 存在（即旧代码下必然全 401），
+点「开始研究」后四个请求全部 200：`/api/session?mode=research`、`/api/analysis/scan`、
+`/api/state`、`/api/analysis/progress`，页面进入 L3（AI 推荐 / 走势图 / 返回编辑）。
+控制台 0 错误，网络里 0 条 401/403。截图存在会话 scratchpad 的 `deploy-verify/`。
+
+**Fixture（创建时就写好删除条件）**：测试服上注册了账号 `styleunify_probe`（id 15）。
+**删除条件**：本赛道在测试服上的验收结束即删；它只存在于测试服库，生产库没有。
+
+**生产 modelstella.com（ucloud-v100）**
+
+按 `docs/operations/ucloud-migration-runbook.md` 的流程发布，细节记在那份文档的
+「2026-08-21（当日第二次）」一节（镜像 ID / 回滚锚点 / env 单行改动 / 备份与豁免判据 /
+容量闸的明示越过 / 变异验证 / 容器不变量 / 外网实测）。这里只记一条与本赛道直接相关的：
+生产入口 chunk `/assets/index-xPv7qGZG.js` 与本机已验证构建的同名文件 **SHA-256 逐字节相同**
+（`ba566bd4…`）——chunk 名是内容哈希，所以这不是「大概是同一版」而是同一份字节。
+
+**生产上没做登录态走查**：在生产建探针账号属于生产数据写入，按用户级规则要单独授权。
+需要的话给一个可用账号，或者授权在生产建一个探针账号，我补这一步。
+
 ## 5. 待议（发现即记，不顺手改）
 
 - **基线上就红的一条单测**：`src/kiosk/__tests__/GamePageEngine.test.tsx`

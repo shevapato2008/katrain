@@ -3162,3 +3162,9 @@ msgstr "Ses kullanılamıyor"
 
 msgid "research:progress_failed"
 msgstr "Analiz ilerlemesi alınamadı"
+
+msgid "tsumego:hint"
+msgstr "İpucu"
+
+msgid "tsumego:this_problem"
+msgstr "Bu problem"

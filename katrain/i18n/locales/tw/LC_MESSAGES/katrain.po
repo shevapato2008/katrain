@@ -3058,3 +3058,9 @@ msgstr "音訊不可用"
 
 msgid "research:progress_failed"
 msgstr "無法取得分析進度"
+
+msgid "tsumego:hint"
+msgstr "提示"
+
+msgid "tsumego:this_problem"
+msgstr "本題"

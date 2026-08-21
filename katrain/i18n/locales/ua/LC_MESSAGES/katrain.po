@@ -3145,3 +3145,9 @@ msgstr "Аудіо недоступне"
 
 msgid "research:progress_failed"
 msgstr "Не вдалося отримати прогрес аналізу"
+
+msgid "tsumego:hint"
+msgstr "Підказка"
+
+msgid "tsumego:this_problem"
+msgstr "Ця задача"

@@ -3076,3 +3076,9 @@ msgstr "音声を利用できません"
 
 msgid "research:progress_failed"
 msgstr "解析の進捗を取得できません"
+
+msgid "tsumego:hint"
+msgstr "ヒント"
+
+msgid "tsumego:this_problem"
+msgstr "この問題"

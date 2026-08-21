@@ -1,25 +1,20 @@
 /**
- * TsumegoProblemControls - Control panel for tsumego problem solving
+ * TsumegoProblemControls —— 死活题页右栏的三段内容
  *
- * Displays:
- * - Problem info (level, category)
- * - Hint toggle
- * - Timer and attempts
- * - Undo/Reset buttons
- * - Result display (correct/incorrect)
- * - Navigation to next/previous problems
+ * 统一版式（spec §2.3）把右栏切成模块牌 / 中段（唯一可滚）/ 显示开关 / 动作区，
+ * 所以这个文件导出三块，由 `TsumegoProblemPage` 分别塞进 `BoardPageShell`：
+ *
+ *   default 导出        中段：面包屑（由页面传进来）、本题状态、四个工具格按钮
+ *   TsumegoDisplayControls  显示开关：坐标
+ *   TsumegoProblemActions   动作区：上一题 / 下一题
+ *
+ * 工具格四个键（提示 / 试下 / 撤销 / 重置）以前是一个 outlined Button 加三个圆形
+ * IconButton；按 Fan 的裁定，除「离开对局」这类和滑轨类以外的按钮一律做成对局室
+ * 右栏那种带标签的方格键，所以这里改用共享的 `ToolGridButton`。
  */
 
-import React from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  IconButton,
-  Chip,
-  Divider,
-  Tooltip
-} from '@mui/material';
+import type { ReactNode } from 'react';
+import { Box, Typography, Button, Divider, Switch } from '@mui/material';
 import UndoIcon from '@mui/icons-material/Undo';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
@@ -29,11 +24,33 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import TimerIcon from '@mui/icons-material/Timer';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
+import ToolGridButton from '../board/ToolGridButton';
 import { useTranslation } from '../../../hooks/useTranslation';
 
+// mm:ss
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const StoneDot = ({ color, size }: { color: 'B' | 'W'; size: number }) => (
+  <Box
+    sx={{
+      width: size,
+      height: size,
+      borderRadius: '50%',
+      flex: 'none',
+      bgcolor: color === 'B' ? '#1a1a1a' : '#f5f5f5',
+      border: '1px solid',
+      borderColor: color === 'B' ? '#333' : '#ccc',
+    }}
+  />
+);
+
 interface TsumegoProblemControlsProps {
-  level: string;
-  category: string;
+  /** 面包屑由页面渲染后传进来 —— 导航是页面的事，这里只负责摆位置。 */
+  breadcrumb?: ReactNode;
   hint?: string;
   showHint: boolean;
   isSolved: boolean;
@@ -48,15 +65,10 @@ interface TsumegoProblemControlsProps {
   onToggleHint: () => void;
   onEnterTryMode: () => void;
   onExitTryMode: () => void;
-  onPrevious?: () => void;
-  onNext?: () => void;
-  hasPrevious?: boolean;
-  hasNext?: boolean;
 }
 
-const TsumegoProblemControls: React.FC<TsumegoProblemControlsProps> = ({
-  level,
-  category,
+const TsumegoProblemControls = ({
+  breadcrumb,
   hint,
   showHint,
   isSolved,
@@ -71,223 +83,196 @@ const TsumegoProblemControls: React.FC<TsumegoProblemControlsProps> = ({
   onToggleHint,
   onEnterTryMode,
   onExitTryMode,
-  onPrevious,
-  onNext,
-  hasPrevious = false,
-  hasNext = false
-}) => {
+}: TsumegoProblemControlsProps) => {
   const { t } = useTranslation();
-
-  // Format elapsed time as mm:ss
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  const toPlay = nextPlayer === 'B' ? t('tsumego:blackToPlay') : t('tsumego:whiteToPlay');
 
   return (
-    <Box
-      sx={{
-        p: 2,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-        overflow: 'auto'
-      }}
-    >
-      {/* Problem Info */}
-      <Box>
-        <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-          <Chip
-            label={level.toUpperCase()}
-            size="small"
-            color="primary"
-            variant="outlined"
-          />
-          <Chip
-            label={t(`tsumego:${category}`)}
-            size="small"
-            variant="outlined"
-          />
-        </Box>
-      </Box>
+    <Box>
+      {breadcrumb != null && (
+        <>
+          <Box sx={{ px: 2, py: 1.5 }}>{breadcrumb}</Box>
+          <Divider />
+        </>
+      )}
 
-      <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-
-      {/* Status */}
-      <Box>
+      {/* 本题：状态 + 计时 + 尝试次数 */}
+      <Box sx={{ px: 2, py: 1.5 }}>
+        <Typography
+          variant="caption"
+          sx={{ display: 'block', mb: 1, letterSpacing: '.1em', textTransform: 'uppercase', color: 'text.disabled' }}
+        >
+          {t('tsumego:this_problem', '本题')}
+        </Typography>
         {isSolved ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#4caf50' }}>
             <CheckCircleIcon />
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              {t('tsumego:solved')}
-            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{t('tsumego:solved')}</Typography>
           </Box>
         ) : isFailed ? (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#e16b5c' }}>
             <CancelIcon />
-            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-              {t('tsumego:incorrect')}
-            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{t('tsumego:incorrect')}</Typography>
           </Box>
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box
-              sx={{
-                width: 20,
-                height: 20,
-                borderRadius: '50%',
-                bgcolor: nextPlayer === 'B' ? '#1a1a1a' : '#f5f5f5',
-                border: '1px solid',
-                borderColor: nextPlayer === 'B' ? '#333' : '#ccc'
-              }}
-            />
-            <Typography variant="body1">
-              {nextPlayer === 'B' ? t('tsumego:blackToPlay') : t('tsumego:whiteToPlay')}
-            </Typography>
+            <StoneDot color={nextPlayer} size={20} />
+            <Typography variant="body1">{toPlay}</Typography>
           </Box>
         )}
 
-        {/* Show next player info below failed indicator */}
+        {/* 判错之后仍然要看得见轮谁走 —— 迁版式前就是这样，保留 */}
         {isFailed && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-            <Box
-              sx={{
-                width: 16,
-                height: 16,
-                borderRadius: '50%',
-                bgcolor: nextPlayer === 'B' ? '#1a1a1a' : '#f5f5f5',
-                border: '1px solid',
-                borderColor: nextPlayer === 'B' ? '#333' : '#ccc'
-              }}
-            />
-            <Typography variant="body2" color="text.secondary">
-              {nextPlayer === 'B' ? t('tsumego:blackToPlay') : t('tsumego:whiteToPlay')}
-            </Typography>
+            <StoneDot color={nextPlayer} size={16} />
+            <Typography variant="body2" color="text.secondary">{toPlay}</Typography>
           </Box>
         )}
-      </Box>
 
-      {/* Timer and Attempts */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
-          <TimerIcon fontSize="small" />
-          <Typography variant="body2">{formatTime(elapsedTime)}</Typography>
-        </Box>
-        {attempts > 0 && (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
+            <TimerIcon fontSize="small" />
+            <Typography variant="body2">{formatTime(elapsedTime)}</Typography>
+          </Box>
+          {/* 冻结稿里这一格在 0 次时也在，行结构不随数据跳动 */}
           <Typography variant="body2" color="text.secondary">
             {t('tsumego:attempts')}: {attempts}
           </Typography>
+        </Box>
+      </Box>
+
+      <Divider />
+
+      {/* 工具格 */}
+      <Box sx={{ px: 2, py: 1.5 }}>
+        {/* 四列一行 —— 冻结稿的 `tgrid` 默认 4 列、gap 6px，与研究页工具格同一档 */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+          <ToolGridButton
+            icon={<LightbulbIcon />}
+            label={t('tsumego:hint', '提示')}
+            ariaLabel={showHint ? t('tsumego:hideHint') : t('tsumego:showHint')}
+            toggle
+            active={showHint}
+            onClick={onToggleHint}
+          />
+          <ToolGridButton
+            icon={<TouchAppIcon />}
+            label={t('tsumego:tryMode', '试下')}
+            ariaLabel={t('tsumego:tryModeDesc')}
+            toggle
+            active={isTryMode}
+            disabled={isSolved}
+            onClick={isTryMode ? onExitTryMode : onEnterTryMode}
+          />
+          <ToolGridButton
+            icon={<UndoIcon />}
+            label={t('tsumego:undo')}
+            ariaLabel={`${t('tsumego:undo')} (U)`}
+            disabled={!canUndo || isSolved}
+            onClick={onUndo}
+          />
+          <ToolGridButton
+            icon={<RefreshIcon />}
+            label={t('tsumego:reset')}
+            ariaLabel={`${t('tsumego:reset')} (R)`}
+            onClick={onReset}
+          />
+        </Box>
+
+        {/* 后端 hint 字段是 String(16)，多数题只存了「黑先」；真正的提示是棋盘上那个绿点，
+            所以「提示」这个键不再依赖这个字段存在与否，有字才多显示这一条。 */}
+        {showHint && hint && (
+          <Typography
+            variant="body2"
+            sx={{
+              mt: 1.5,
+              p: 1.5,
+              bgcolor: 'rgba(232, 150, 57, 0.1)',
+              borderRadius: 1,
+              borderLeft: '3px solid #e89639',
+            }}
+          >
+            {hint}
+          </Typography>
+        )}
+
+        {isTryMode && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, lineHeight: 1.7 }}>
+            {t('tsumego:tryModeDesc')}
+          </Typography>
         )}
       </Box>
-
-      <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-
-      {/* Hint */}
-      {hint && (
-        <Box>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<LightbulbIcon />}
-            onClick={onToggleHint}
-            sx={{
-              mb: 1,
-              borderColor: showHint ? '#e89639' : 'rgba(255,255,255,0.3)',
-              color: showHint ? '#e89639' : 'inherit'
-            }}
-          >
-            {showHint ? t('tsumego:hideHint') : t('tsumego:showHint')}
-          </Button>
-          {showHint && (
-            <Typography
-              variant="body2"
-              sx={{
-                p: 1.5,
-                bgcolor: 'rgba(232, 150, 57, 0.1)',
-                borderRadius: 1,
-                borderLeft: '3px solid #e89639'
-              }}
-            >
-              {hint}
-            </Typography>
-          )}
-        </Box>
-      )}
-
-      {/* Actions */}
-      <Box sx={{ display: 'flex', gap: 1 }}>
-        <Tooltip title={t('tsumego:tryModeDesc')}>
-          <span>
-            <IconButton
-              onClick={isTryMode ? onExitTryMode : onEnterTryMode}
-              disabled={isSolved}
-              sx={{
-                bgcolor: isTryMode ? 'rgba(33, 150, 243, 0.2)' : 'rgba(255,255,255,0.1)',
-                color: isTryMode ? '#2196f3' : 'inherit',
-                '&:hover': { bgcolor: isTryMode ? 'rgba(33, 150, 243, 0.3)' : 'rgba(255,255,255,0.2)' }
-              }}
-            >
-              <TouchAppIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title={`${t('tsumego:undo')} (U)`}>
-          <span>
-            <IconButton
-              onClick={onUndo}
-              disabled={!canUndo || isSolved}
-              sx={{
-                bgcolor: 'rgba(255,255,255,0.1)',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
-              }}
-            >
-              <UndoIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title={`${t('tsumego:reset')} (R)`}>
-          <IconButton
-            onClick={onReset}
-            sx={{
-              bgcolor: 'rgba(255,255,255,0.1)',
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
-            }}
-          >
-            <RefreshIcon />
-          </IconButton>
-        </Tooltip>
-      </Box>
-
-      {/* Spacer */}
-      <Box sx={{ flexGrow: 1 }} />
-
-      {/* Navigation */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<NavigateBeforeIcon />}
-          onClick={onPrevious}
-          disabled={!hasPrevious}
-        >
-          {t('tsumego:previousProblem')}
-        </Button>
-        <Button
-          variant={isSolved ? 'contained' : 'outlined'}
-          size="small"
-          endIcon={<NavigateNextIcon />}
-          onClick={onNext}
-          disabled={!hasNext}
-          color={isSolved ? 'success' : 'primary'}
-        >
-          {t('tsumego:nextProblem')}
-        </Button>
-      </Box>
-
     </Box>
   );
 };
+
+export function TsumegoDisplayControls({
+  showCoordinates,
+  onToggleCoordinates,
+}: {
+  showCoordinates: boolean;
+  onToggleCoordinates: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <Divider />
+      <Box sx={{ px: 2, py: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="body2" color="text.secondary">{t('Coordinates', '坐标')}</Typography>
+        <Switch
+          size="small"
+          checked={showCoordinates}
+          onChange={onToggleCoordinates}
+          /* MUI v7：`inputProps` 到不了里面那个 input（实测 aria-label 为 null），
+             可及名要走 `slotProps.input`。 */
+          slotProps={{ input: { 'aria-label': t('Coordinates', '坐标') } }}
+        />
+      </Box>
+    </>
+  );
+}
+
+export function TsumegoProblemActions({
+  isSolved,
+  hasPrevious,
+  hasNext,
+  onPrevious,
+  onNext,
+}: {
+  isSolved: boolean;
+  hasPrevious: boolean;
+  hasNext: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: 2, py: 1.5 }}>
+      <Button
+        fullWidth
+        variant="outlined"
+        size="small"
+        startIcon={<NavigateBeforeIcon />}
+        onClick={onPrevious}
+        disabled={!hasPrevious}
+        sx={{ textTransform: 'none' }}
+      >
+        {t('tsumego:previousProblem')}
+      </Button>
+      <Button
+        fullWidth
+        variant={isSolved ? 'contained' : 'outlined'}
+        size="small"
+        endIcon={<NavigateNextIcon />}
+        onClick={onNext}
+        disabled={!hasNext}
+        color={isSolved ? 'success' : 'primary'}
+        sx={{ textTransform: 'none' }}
+      >
+        {t('tsumego:nextProblem')}
+      </Button>
+    </Box>
+  );
+}
 
 export default TsumegoProblemControls;

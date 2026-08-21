@@ -2975,3 +2975,9 @@ msgstr "Audio no disponible"
 
 msgid "research:progress_failed"
 msgstr "No se pudo obtener el progreso del análisis"
+
+msgid "tsumego:hint"
+msgstr "Pista"
+
+msgid "tsumego:this_problem"
+msgstr "Este problema"

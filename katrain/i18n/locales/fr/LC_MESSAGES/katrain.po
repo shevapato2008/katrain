@@ -3113,3 +3113,9 @@ msgstr "Audio indisponible"
 
 msgid "research:progress_failed"
 msgstr "Impossible de récupérer la progression de l'analyse"
+
+msgid "tsumego:hint"
+msgstr "Indice"
+
+msgid "tsumego:this_problem"
+msgstr "Ce problème"

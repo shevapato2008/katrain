@@ -3105,3 +3105,9 @@ msgstr "Audio unavailable"
 
 msgid "research:progress_failed"
 msgstr "Couldn't load analysis progress"
+
+msgid "tsumego:hint"
+msgstr "Hint"
+
+msgid "tsumego:this_problem"
+msgstr "This problem"

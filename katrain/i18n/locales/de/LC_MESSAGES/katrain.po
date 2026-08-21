@@ -3144,3 +3144,9 @@ msgstr "Audio nicht verfügbar"
 
 msgid "research:progress_failed"
 msgstr "Analysefortschritt konnte nicht geladen werden"
+
+msgid "tsumego:hint"
+msgstr "Tipp"
+
+msgid "tsumego:this_problem"
+msgstr "Diese Aufgabe"

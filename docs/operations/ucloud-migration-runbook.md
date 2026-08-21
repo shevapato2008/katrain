@@ -117,3 +117,61 @@ At the Chunk 1 checkpoint, only a disposable `/tmp/katrain-ucloud-preflight-2026
 旧 release 目录 `bb3f85bf…`(217M)、`a9607e75`(220M)、`e7f0e758`(554M)；
 旧镜像 `katrain-web:{85d81a06,e7f0e758,a9607e75}` 与 `katrain-web:ucloud-candidate-20260724`(2.48G)。
 `93803100` 的目录与镜像在回滚窗口内**不得删除**。
+
+### 2026-08-21（当日第二次）— 研究页可用性修复发布（非迁移）
+
+发布内容：`release/ucloud-20260805` 再次合入 `origin/develop`（合并提交 `65677ce5`）。
+相对上一版 `0d88bff6`，改动**只有前端 + i18n + 文档**——`git diff --name-only e3f50c43..a930c6c1`
+里没有任何 `.py`、没有迁移、没有 schema。修的是研究页在**任何非 `127.0.0.1` 域名**下
+永远停在「正在分析棋局」：`sb_token` cookie 只在 loopback 主机名下发，而前端手写 fetch
+不带 `Authorization`，于是需鉴权端点一律 401；建会话那一步也因此建成无主的，
+`/api/state` 再被 `guard_session_reader` 判 403。
+
+- 镜像：`katrain-web:65677ce5`，`image_id=sha256:87176ac9188e03e1dd109d3312f6a923ffe11831183a67cac960e7a785e56304`，
+  `size_bytes=542199207`（上一版 542197378，增量 1829 字节）。`build-web.sh` 的容器内容测试通过。
+- 回滚锚点保留：镜像 `katrain-web:0d88bff6`
+  = `sha256:83092e2a51bbf574c7fb34602e34ca1bb02f7dcec5581d24fb5825ebca1865f5`，
+  目录 `/opt/katrain/releases/0d88bff6` 未删。`current` 指向 `releases/65677ce5`。
+- `/etc/katrain/ucloud.env` 改动仅 `WEB_IMAGE` 一行（与改前副本 `diff` 恰好 2 行 = 1 删 1 增）；
+  改前副本 `/opt/katrain/backups/ucloud.env.20260821-1213`，改后仍 root 所有、mode 0600。
+- 数据库备份 `/opt/katrain/backups/prod-20260821-1207.dump`（`pg_dump -Fc`，192.6 MB）。
+  **本次未做恢复验证**，判据写在这里：本次发布不含 schema 变更、也不含任何后端代码变更
+  （见上面那条 diff），回滚路径是换回镜像 tag 而不是恢复数据；当日 00:30 那份**已逐表
+  恢复验证过**的 dump 仍是有效的验证锚点。若下次发布带 schema 变更，这条豁免不成立。
+
+**闸门结果与同一次明示越闸：**
+
+- `--phase full`：仍只有 2 条失败，且都是容量闸——`available_bytes=20709629952`，
+  `required_bytes=38500000000`；以及「projected filesystem use ≥ 75%」（实际 81%）。
+- **越闸说明与 2026-08-21 00:40 同因同判据**：容量闸按本文档 Invariants 一节的措辞是为
+  **迁移峰值**标定的，本次只是替换一个已构建完成的镜像，磁盘增量 1829 字节。
+  **Stop conditions 写的是「任一闸失败即停」，此处是明示越过，不是忽略。**
+- **「其余通过」不是靠沉默认定的**：拿一份 `WEB_IMAGE` 改成 `sha256:deadbeef…` 的 env 副本
+  做变异，`--phase runtime` 如实多报一条 `WEB_IMAGE is not available locally`（checks 2 → 3），
+  对照组同相位仍是 2。副本 `shred -u` 删除，未落盘留存。
+- 容器不变量实测：`KATRAIN_PREVIEW_MODE=0`、卷 `katrain-ucloud_katrain-state-production`、
+  调度器恰好 1 个、端口仅绑 `10.8.0.3` 与 `127.0.0.1`（无公网通配）。仅 `katrain-web` 与
+  一次性的 `minio-setup` 被重建，postgres / katago / minio / cron 保持原进程。
+
+**发布后实测（外网 https://modelstella.com）：**
+
+- `/health` = `{"status":"ok","engines":{"local":"reachable","cloud":"unconfigured"}}`，首页 200。
+- `/api/translations`：951 条（上一版 950），新增 `research:progress_failed`，
+  cn = 「无法获取分析进度」、en = "Couldn't load analysis progress"，11 种语言全部就位。
+- **入口 chunk `/assets/index-xPv7qGZG.js` 与本机已验证构建的同名文件 SHA-256 逐字节相同**
+  （`ba566bd4ac204e158afda179df50880ca55ab414d2f82db575d653b02b248a43`）。chunk 名是内容哈希，
+  哈希相同即内容相同。其中含 `authHeaders` 的 localStorage 兜底；严格盒端那条分支在全量
+  构建里按预期被 DCE 掉（全文件只剩 1 处 `Bearer ` 模板）。
+
+**本次未做（需要授权才做）：** 生产上的登录态走查。修复的判据是「主机名 ≠ 127.0.0.1 时
+请求会不会带 `Authorization`」，这一条已在测试服（home-ubuntu）上用真浏览器走通：
+主机名 `localhost` 登录后 `document.cookie` 为空、`localStorage.token` 存在，
+`/api/session`、`/api/analysis/scan`、`/api/state`、`/api/analysis/progress` 四个请求全部 200，
+页面进入 L3。生产跑的是同一份 bundle（哈希已比对）。在生产建探针账号属于生产数据写入，
+未经明确授权不做。
+
+**遗留（未处理）：** 根分区 81%。本次新增 `/opt/katrain/releases/65677ce5`（1.9 GB，
+`git clone` 因源仓是 shallow 而未能硬链接复用对象）与一份 192 MB 的 dump。可回收但本次
+一律未删：旧 release 目录 `bb3f85bf…`(217M)、`a9607e75`(220M)、`e7f0e758`(554M)；
+旧镜像 `katrain-web:{85d81a06,e7f0e758,a9607e75}` 与 `katrain-web:ucloud-candidate-20260724`(2.48G)。
+`0d88bff6` 的目录与镜像在回滚窗口内**不得删除**。

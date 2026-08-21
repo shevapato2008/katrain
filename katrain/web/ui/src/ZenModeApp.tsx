@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, CssBaseline, ThemeProvider, Divider, Typography, Snackbar, Alert } from '@mui/material';
-import { API, type GameState } from './api';
+import { API, apiPost, type GameState } from './api';
 import { i18n } from './i18n';
 import { useTranslation } from './hooks/useTranslation';
 import Board from './components/Board';
@@ -296,18 +296,11 @@ function ZenModeApp() {
     
     if (toggle === 'continuous_analysis') {
       try {
-        // We don't have a direct API for this in the provided list, 
-        // but let's assume one exists or map it to something relevant. 
-        // Actually, the backend likely has /api/analysis/continuous
-        const response = await fetch('/api/analysis/continuous', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id: sessionId })
-        });
-        if (response.ok) {
-           const data = await response.json();
-           setGameState(data.state);
-        }
+        // /api/analysis/continuous 后端挂着 Depends(get_current_user)。原来这里是
+        // 手写 fetch、只带 Content-Type，在非 loopback 域名下必然 401；走 apiPost
+        // 才拿得到统一的鉴权头（见 api.ts 的 authHeaders）。
+        const data = await apiPost('/api/analysis/continuous', { session_id: sessionId });
+        setGameState(data.state);
       } catch (e) {
         console.error("Continuous analysis toggle failed", e);
       }

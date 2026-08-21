@@ -7,7 +7,7 @@
  */
 import { useCallback, useState } from 'react';
 import { useSessionBase } from './useSessionBase';
-import { API } from '../api';
+import { API, apiPost, authHeaders } from '../api';
 import type { GameState } from '../api';
 
 export interface UseResearchSessionReturn {
@@ -47,36 +47,31 @@ export function useResearchSession(): UseResearchSessionReturn {
         },
     });
 
+    /* 这一串原来是四个手写 fetch，只带 Content-Type。后果不是「少个头」而是
+       **会话没有主人**：POST /api/session 是 get_current_user_optional，没带凭证
+       就把 session.user_id 建成 None；随后 /api/state 的 guard_session_reader
+       要求 current_user.id ∈ {user_id, player_b_id, player_w_id}，于是 403，
+       gameState 永远拿不到，页面卡在「正在分析棋局」进不去 L3。
+       本机看不出来，是因为 127.0.0.1 上有 sb_token cookie，浏览器会自动带上，
+       建会话和读状态用的是同一个身份；换成 go.sailorvoyage.top 就没这块 cookie。
+       统一走 apiPost（api.ts 的 authHeaders 会兜底带上 Bearer），建会话和用会话
+       就是同一个身份。 */
     const createSession = useCallback(async (sgf?: string, options?: { skipAnalysis?: boolean; initialMove?: number }): Promise<string | null> => {
         try {
-            const response = await fetch('/api/session?mode=research', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            });
-            if (!response.ok) throw new Error('Failed to create research session');
-            const data = await response.json();
+            const data = await apiPost('/api/session?mode=research', {});
 
             // Load SGF if provided
             if (sgf) {
-                await fetch('/api/sgf/load', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        session_id: data.session_id,
-                        sgf,
-                        skip_analysis: options?.skipAnalysis ?? false,
-                    }),
+                await apiPost('/api/sgf/load', {
+                    session_id: data.session_id,
+                    sgf,
+                    skip_analysis: options?.skipAnalysis ?? false,
                 });
 
                 // Navigate to the target move (SGF loads at root by default)
                 const targetMove = options?.initialMove ?? 999;
                 if (targetMove > 0) {
-                    const redoResp = await fetch('/api/redo', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ session_id: data.session_id, n_times: targetMove }),
-                    });
-                    const redoData = await redoResp.json();
+                    const redoData = await apiPost('/api/redo', { session_id: data.session_id, n_times: targetMove });
                     // Set initial gameState immediately from redo response to avoid
                     // race conditions with WS initial state or analysis callbacks
                     if (redoData.state) {
@@ -97,7 +92,8 @@ export function useResearchSession(): UseResearchSessionReturn {
     const destroySession = useCallback(async () => {
         if (base.sessionId) {
             try {
-                await fetch(`/api/session/${base.sessionId}`, { method: 'DELETE' });
+                // 同样要带身份：会话归属校验认的是 current_user.id
+                await fetch(`/api/session/${base.sessionId}`, { method: 'DELETE', headers: authHeaders() });
             } catch { /* ignore */ }
         }
         base.disconnect();

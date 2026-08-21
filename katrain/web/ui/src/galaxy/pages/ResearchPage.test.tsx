@@ -34,8 +34,13 @@ vi.mock('../../components/live/LiveBoard', () => ({
 }));
 
 // ResearchSetupPanel is the right-hand setup sidebar on the default (edit) path — stub it.
+// 统一版式把「开始研究」拆成了同一个模块的具名导出（它归右栏动作区，不跟着滚），
+// 所以这里两个导出都要给，否则页面渲染时 ResearchSetupActions 是 undefined。
 vi.mock('../components/research/ResearchSetupPanel', () => ({
   default: ({ onToggleHints }: { onToggleHints: () => void }) => <div data-testid="mock-setup-panel"><button onClick={onToggleHints}>建议</button></div>,
+  ResearchSetupActions: ({ onStartAnalysis }: { onStartAnalysis: () => void }) => (
+    <button data-testid="mock-start-analysis" onClick={onStartAnalysis}>开始研究</button>
+  ),
 }));
 
 // Legacy Board (canvas) is only used in the L2 analysis-complete branch, not the default

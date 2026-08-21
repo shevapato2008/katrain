@@ -3159,3 +3159,6 @@ msgstr "Duraklat"
 
 msgid "audio:unavailable"
 msgstr "Ses kullanılamıyor"
+
+msgid "research:progress_failed"
+msgstr "Analiz ilerlemesi alınamadı"

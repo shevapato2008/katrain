@@ -76,6 +76,13 @@ const BoardPageShell = ({
           minWidth: 0,
           minHeight: 0,
           display: 'grid',
+          // 显式给一行一列。不写的话这个 grid 只有一条 auto 隐式行，行高由内容决定，
+          // 于是子元素的 height:100% 没有确定的百分比基准，退化成 auto —— 谁量容器
+          // 谁就量到自己画出来的高度，越量越大。旧版 Board（components/Board.tsx:97
+          // 用 getBoundingClientRect 取 min(width,height)）就是这么在 1280×640 下
+          // 算出 704 的方板、把 588 高的区域撑破、让整个 shell 开始滚的。
+          gridTemplateColumns: 'minmax(0, 1fr)',
+          gridTemplateRows: 'minmax(0, 1fr)',
           placeItems: 'center',
           // LiveBoard keeps its existing 4px inner breathing room; 6px here
           // preserves the approved 10px visible board inset without double-counting it.

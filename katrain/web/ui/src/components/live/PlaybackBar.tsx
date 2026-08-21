@@ -30,6 +30,15 @@ export default function PlaybackBar({
   const [playSpeed] = useState(1000); // ms per move
   const touchButtonSx = touchSized ? { minWidth: 48, width: 48, minHeight: 48, height: 48 } : undefined;
 
+  /* 窄容器（统一版式的 320 右栏，内宽 ~288）下把控件收窄，让走子键、播放键、
+     自动跟进和手数**一行装完**。以前这里是换行，手数被挤到第二行。
+     只在 board-rail 这个具名容器里生效 —— 没有这个容器的调用方
+     （kiosk 五个页面、直播列表页的旧版式）宽度本来就够，保持 40px 触摸尺寸不变。
+     touchSized（盒端 48px）优先级更高，写在后面覆盖。 */
+  const NARROW = '@container board-rail (max-width: 340px)';
+  const compactIconSx = { [NARROW]: { width: 30, height: 30, padding: '3px' } };
+  const compactPlaySx = { [NARROW]: { width: 42, height: 42, padding: '6px' } };
+
   // Auto-play effect
   useEffect(() => {
     if (!isPlaying) return;
@@ -149,17 +158,17 @@ export default function PlaybackBar({
           alignItems: 'center',
           justifyContent: 'center',
           gap: 0.25,
-          '@container board-rail (max-width: 340px)': { flexWrap: 'wrap' },
+          flexWrap: 'nowrap',
         }}
       >
         <Tooltip title={t('live:first_move')}>
-          <span><IconButton aria-label={t('live:first_move')} onClick={handleFirst} size="small" disabled={currentMove === 0} sx={touchButtonSx}>
+          <span><IconButton aria-label={t('live:first_move')} onClick={handleFirst} size="small" disabled={currentMove === 0} sx={{ ...compactIconSx, ...(touchButtonSx || {}) }}>
             <KeyboardDoubleArrowLeftIcon />
           </IconButton></span>
         </Tooltip>
 
         <Tooltip title={t('live:previous')}>
-          <span><IconButton aria-label={t('live:previous')} onClick={handlePrev} size="small" disabled={currentMove === 0} sx={touchButtonSx}>
+          <span><IconButton aria-label={t('live:previous')} onClick={handlePrev} size="small" disabled={currentMove === 0} sx={{ ...compactIconSx, ...(touchButtonSx || {}) }}>
             <ChevronLeftIcon />
           </IconButton></span>
         </Tooltip>
@@ -173,6 +182,7 @@ export default function PlaybackBar({
             bgcolor: 'primary.main',
             color: 'primary.contrastText',
             '&:hover': { bgcolor: 'primary.dark' },
+            ...compactPlaySx,
             ...(touchButtonSx || {}),
           }}
         >
@@ -180,13 +190,13 @@ export default function PlaybackBar({
         </IconButton>
 
         <Tooltip title={t('live:next')}>
-          <span><IconButton aria-label={t('live:next')} onClick={handleNext} size="small" disabled={currentMove >= totalMoves} sx={touchButtonSx}>
+          <span><IconButton aria-label={t('live:next')} onClick={handleNext} size="small" disabled={currentMove >= totalMoves} sx={{ ...compactIconSx, ...(touchButtonSx || {}) }}>
             <ChevronRightIcon />
           </IconButton></span>
         </Tooltip>
 
         <Tooltip title={t('live:latest')}>
-          <span><IconButton aria-label={t('live:latest')} onClick={handleLast} size="small" disabled={currentMove >= totalMoves} sx={touchButtonSx}>
+          <span><IconButton aria-label={t('live:latest')} onClick={handleLast} size="small" disabled={currentMove >= totalMoves} sx={{ ...compactIconSx, ...(touchButtonSx || {}) }}>
             <KeyboardDoubleArrowRightIcon />
           </IconButton></span>
         </Tooltip>
@@ -211,6 +221,8 @@ export default function PlaybackBar({
                   color: 'success.contrastText',
                   '&:hover': { bgcolor: 'success.dark' },
                 },
+                ...compactIconSx,
+                ...(touchButtonSx || {}),
               }}
             >
               <SyncIcon fontSize="small" />
@@ -226,12 +238,11 @@ export default function PlaybackBar({
           noWrap
           sx={{
             minWidth: 87,
-            '@container board-rail (max-width: 340px)': {
-              flexBasis: '100%',
+            [NARROW]: {
+              /* 不再另起一行，跟控件同行；只把字号和保底宽度收掉 */
               minWidth: 0,
-              textAlign: 'center',
-              overflow: 'visible',
-              textOverflow: 'clip',
+              fontSize: '0.72rem',
+              ml: 0.5,
             },
           }}
         >

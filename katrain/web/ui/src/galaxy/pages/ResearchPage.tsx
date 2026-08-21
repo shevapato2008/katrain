@@ -1,16 +1,17 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Box, Typography, Button, LinearProgress } from '@mui/material';
+import { Alert, Box, Typography, Button, LinearProgress } from '@mui/material';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
-import ScienceIcon from '@mui/icons-material/Science';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
 import Board from '../../components/Board';
-import ResearchSetupPanel from '../components/research/ResearchSetupPanel';
-import ResearchAnalysisPanel from '../components/research/ResearchAnalysisPanel';
+import ResearchSetupPanel, { ResearchSetupActions } from '../components/research/ResearchSetupPanel';
+import ResearchAnalysisPanel, { ResearchAnalysisActions } from '../components/research/ResearchAnalysisPanel';
+import BoardPageShell from '../components/board/BoardPageShell';
+import ModulePlate from '../components/layout/ModulePlate';
 import { useResearchBoard } from '../hooks/useResearchBoard';
 import { useResearchSession } from '../../hooks/useResearchSession';
 import { useTranslation } from '../../hooks/useTranslation';
-import { API } from '../../api';
+import { API, authHeaders } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
 import { UserGamesAPI } from '../api/userGamesApi';
 import GameLibraryModal from '../components/research/CloudSGFPanel';
@@ -45,6 +46,14 @@ const ResearchPage = () => {
 
     // ETA tracking: record first meaningful progress to compute rate
     const analysisStartRef = useRef<{ time: number; analyzed: number } | null>(null);
+
+    /* 轮询失败要说出来。原来这里是 catch {} 静静吞掉，界面就永远停在
+       「正在连接研究会话…」的不确定进度条上 —— 2026-08-21 测试服那次「一直卡住」
+       就是这个样子：每秒一次 401，用户看不到任何线索。
+       连续失败若干次才报，避免一次抖动就弹错。 */
+    const progressFailRef = useRef(0);
+    const [progressError, setProgressError] = useState<string | null>(null);
+    const PROGRESS_FAIL_LIMIT = 5;
 
     // Guard: enable hints only once per analysis session
     const hintsEnabledRef = useRef(false);
@@ -166,7 +175,8 @@ const ResearchPage = () => {
         const cleanup = () => {
             if (session.sessionId) {
                 // Use fetch with keepalive for reliable cleanup on page unload
-                fetch(`/api/session/${session.sessionId}`, { method: 'DELETE', keepalive: true }).catch(() => {});
+                // 带上身份：会话归属校验认的是 current_user.id（见 useResearchSession 那段注释）
+                fetch(`/api/session/${session.sessionId}`, { method: 'DELETE', keepalive: true, headers: authHeaders() }).catch(() => {});
             }
         };
         window.addEventListener('beforeunload', cleanup);
@@ -227,9 +237,15 @@ const ResearchPage = () => {
                             }
                         }
                     }
+                    progressFailRef.current = 0;
+                    setProgressError(null);
                 }
-            } catch {
-                // Ignore errors during polling
+            } catch (err) {
+                progressFailRef.current += 1;
+                if (progressFailRef.current >= PROGRESS_FAIL_LIMIT) {
+                    const status = (err as { status?: number })?.status;
+                    setProgressError(status ? `HTTP ${status}` : String((err as Error)?.message ?? err));
+                }
             }
         }, 1000);
 
@@ -347,6 +363,8 @@ const ResearchPage = () => {
             // 4. Switch to L2
             activeSessionIdRef.current = newSessionId;
             setAnalysisProgress(null);
+            setProgressError(null);
+            progressFailRef.current = 0;
             setEtaSeconds(null);
             analysisStartRef.current = null;
             hintsEnabledRef.current = false;
@@ -355,6 +373,15 @@ const ResearchPage = () => {
             API.analysisScan(newSessionId, 500);
         }
     }, [board, session]);
+
+    /* 重试：把失败计数清零并重新发一次全盘扫描；轮询本身一直在跑，
+       下一拍拿到 200 就会自己把错误条收掉。 */
+    const handleRetryProgress = useCallback(() => {
+        progressFailRef.current = 0;
+        setProgressError(null);
+        const sid = activeSessionIdRef.current;
+        if (sid) API.analysisScan(sid, 500).catch(() => {});
+    }, []);
 
     // Return to edit (L2 → L1)
     const handleReturnToEdit = useCallback(async () => {
@@ -372,6 +399,8 @@ const ResearchPage = () => {
         // 3. Switch to L1
         setIsAnalyzing(false);
         setAnalysisProgress(null);
+        setProgressError(null);
+        progressFailRef.current = 0;
         setEtaSeconds(null);
         analysisStartRef.current = null;
         hintsEnabledRef.current = false;
@@ -405,6 +434,16 @@ const ResearchPage = () => {
         }
     }, [session]);
 
+    /* ══════════════════════════════════════════════════════════════════
+       统一版式：三个形态都走 BoardPageShell 的三段右栏
+         模块牌（不滚）/ 中段（唯一可滚）/ 动作区（不滚）
+       棋盘上方不留任何东西 —— 原来压在棋盘头上的「研究模式 + 返回编辑」
+       那一条，标题进模块牌、按钮进动作区。
+       研究是一级导航，没有上一级，所以模块牌不出返回键。
+       文案一律复用已有词条，本轮不新增 i18n key（原型里那两个状态 chip
+       「编辑中 / 分析完成」需要新词条，暂缺，副标题已经把状态说清楚了）。
+       ══════════════════════════════════════════════════════════════════ */
+
     // ──────────────────────────── L2: Analysis Mode (complete) ────────────────────────────
     if (isAnalyzing && analysisComplete && session.gameState) {
         const gs = session.gameState;
@@ -413,168 +452,104 @@ const ResearchPage = () => {
 
         return (
             <>
-                <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-                    {/* Main Board Area */}
-                    <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
-                        {/* Header */}
-                        <Box sx={{
-                            p: 1,
-                            bgcolor: 'rgba(0,0,0,0.3)',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            px: 3,
-                        }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <ScienceIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                                <Typography variant="subtitle2" color="primary.main">
-                                    {t('research:mode', '研究模式')}
-                                </Typography>
-                            </Box>
-                            <Button
-                                size="small"
-                                color="error"
-                                variant="outlined"
-                                startIcon={<ExitToAppIcon />}
-                                onClick={handleReturnToEdit}
-                                sx={{ textTransform: 'none' }}
-                            >
-                                {t('research:return_to_edit', '返回编辑')}
-                            </Button>
-                        </Box>
-
-                        {/* Board - Legacy Board with GameState */}
-                        <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 0.5 }}>
-                            <Board
-                                gameState={gs}
-                                onMove={session.onMove}
-                                analysisToggles={analysisToggles}
+                <BoardPageShell
+                    board={(
+                        <Board
+                            gameState={gs}
+                            onMove={session.onMove}
+                            analysisToggles={analysisToggles}
+                        />
+                    )}
+                    modulePlate={(
+                        <ModulePlate
+                            title={t('Research', '研究')}
+                            subtitle={`${t('research:mode', '研究模式')} · ${t('research:move_counter', '{current} / {total} 手').replace('{current}', String(currentMove)).replace('{total}', String(totalMoves))}`}
+                            backTo="/galaxy/research"
+                            showBack={false}
+                        />
+                    )}
+                    railBody={(
+                        <ResearchAnalysisPanel
+                            playerBlack={gs.players_info?.B?.name || board.playerBlack || t('research:black', '黑方')}
+                            playerWhite={gs.players_info?.W?.name || board.playerWhite || t('research:white', '白方')}
+                            currentMove={currentMove}
+                            totalMoves={totalMoves}
+                            onMoveChange={handleL2MoveChange}
+                            winrate={analysisData.winrate}
+                            scoreLead={analysisData.scoreLead}
+                            rules={board.rules}
+                            komi={board.komi}
+                            handicap={board.handicap}
+                            boardSize={board.boardSize}
+                            showMoveNumbers={analysisToggles.numbers}
+                            onToggleMoveNumbers={() => toggleAnalysis('numbers')}
+                            onPass={session.onPass}
+                            editMode={null}
+                            onEditModeChange={() => {}}
+                            placeMode="alternate"
+                            onPlaceModeChange={() => {}}
+                            showHints={analysisToggles.hints}
+                            onToggleHints={() => {
+                                toggleAnalysis('hints');
+                                session.toggleHints();
+                            }}
+                            showTerritory={analysisToggles.ownership}
+                            onToggleTerritory={() => {
+                                toggleAnalysis('ownership');
+                                session.toggleOwnership();
+                            }}
+                            onClear={() => {}}
+                            onOpen={board.openLocalSGF}
+                            onSave={board.saveLocalSGF}
+                            onCopyToClipboard={board.copyToClipboard}
+                            onSaveToCloud={handleSaveToCloud}
+                            onOpenFromCloud={handleOpenFromCloud}
+                            analysisMoves={gs.analysis?.moves}
+                            history={gs.history}
+                            playerToMove={gs.player_to_move}
+                            children={gs.children}
+                        />
+                    )}
+                    actions={(
+                        <>
+                            <ResearchAnalysisActions
+                                currentMove={currentMove}
+                                totalMoves={totalMoves}
+                                onMoveChange={handleL2MoveChange}
                             />
-                        </Box>
-                    </Box>
-
-                    {/* Right Sidebar: Analysis Panel */}
-                    <ResearchAnalysisPanel
-                        playerBlack={gs.players_info?.B?.name || board.playerBlack || t('research:black', '黑方')}
-                        playerWhite={gs.players_info?.W?.name || board.playerWhite || t('research:white', '白方')}
-                        currentMove={currentMove}
-                        totalMoves={totalMoves}
-                        onMoveChange={handleL2MoveChange}
-                        winrate={analysisData.winrate}
-                        scoreLead={analysisData.scoreLead}
-                        rules={board.rules}
-                        komi={board.komi}
-                        handicap={board.handicap}
-                        boardSize={board.boardSize}
-                        showMoveNumbers={analysisToggles.numbers}
-                        onToggleMoveNumbers={() => toggleAnalysis('numbers')}
-                        onPass={session.onPass}
-                        editMode={null}
-                        onEditModeChange={() => {}}
-                        placeMode="alternate"
-                        onPlaceModeChange={() => {}}
-                        showHints={analysisToggles.hints}
-                        onToggleHints={() => {
-                            toggleAnalysis('hints');
-                            session.toggleHints();
-                        }}
-                        showTerritory={analysisToggles.ownership}
-                        onToggleTerritory={() => {
-                            toggleAnalysis('ownership');
-                            session.toggleOwnership();
-                        }}
-                        onClear={() => {}}
-                        onOpen={board.openLocalSGF}
-                        onSave={board.saveLocalSGF}
-                        onCopyToClipboard={board.copyToClipboard}
-                        onSaveToCloud={handleSaveToCloud}
-                        onOpenFromCloud={handleOpenFromCloud}
-                        analysisMoves={gs.analysis?.moves}
-                        history={gs.history}
-                        playerToMove={gs.player_to_move}
-                        children={gs.children}
-                    />
-                </Box>
+                            <Box sx={{ px: 2, pb: 1.5 }}>
+                                <Button
+                                    fullWidth
+                                    size="small"
+                                    color="error"
+                                    variant="outlined"
+                                    startIcon={<ExitToAppIcon />}
+                                    onClick={handleReturnToEdit}
+                                    sx={{ textTransform: 'none' }}
+                                >
+                                    {t('research:return_to_edit', '返回编辑')}
+                                </Button>
+                            </Box>
+                        </>
+                    )}
+                />
                 <GameLibraryModal open={libraryOpen} onClose={() => setLibraryOpen(false)} onLoadGame={handleLoadFromLibrary} />
             </>
         );
     }
 
     // ──────────────────────────── L2: Analysis in Progress ────────────────────────────
+    // 以前这里整屏换成一个居中的转圈；现在盘面留在左边不动，进度进右栏中段 ——
+    // 分析在后台跑，随时可以看着盘面等，取消也还在原地。
     if (isAnalyzing) {
         const progressPercent = analysisProgress && analysisProgress.total > 0
             ? Math.round((analysisProgress.analyzed / analysisProgress.total) * 100)
             : 0;
 
         return (
-            <Box sx={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', bgcolor: '#0f0f0f' }}>
-                <Box sx={{ textAlign: 'center', width: 400 }}>
-                    <ScienceIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
-                    <Typography variant="h6" color="text.primary" sx={{ mb: 1 }}>
-                        {t('research:analyzing_game', '正在分析棋局')}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                        {analysisProgress
-                            ? t('research:progress', '已完成 {analyzed} / {total} 步').replace('{analyzed}', String(analysisProgress.analyzed)).replace('{total}', String(analysisProgress.total))
-                            : t('research:connecting', '正在连接研究会话...')
-                        }
-                    </Typography>
-
-                    {/* Progress bar */}
-                    <Box sx={{ mx: 2, mb: 1 }}>
-                        <LinearProgress
-                            variant={analysisProgress ? 'determinate' : 'indeterminate'}
-                            value={progressPercent}
-                            sx={{
-                                height: 10,
-                                borderRadius: 5,
-                                bgcolor: 'rgba(255,255,255,0.1)',
-                                '& .MuiLinearProgress-bar': {
-                                    borderRadius: 5,
-                                    bgcolor: 'primary.main',
-                                },
-                            }}
-                        />
-                    </Box>
-                    {analysisProgress && (
-                        <Box sx={{ mb: 3 }}>
-                            <Typography variant="body2" color="primary.main" sx={{ fontWeight: 700, fontFamily: '"IBM Plex Mono", monospace' }}>
-                                {progressPercent}%
-                            </Typography>
-                            {etaSeconds !== null && etaSeconds > 0 && (
-                                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontFamily: '"IBM Plex Mono", monospace' }}>
-                                    {t('research:eta', '预计剩余 {time}').replace('{time}',
-                                        etaSeconds >= 60
-                                            ? t('research:time_min_sec', '{min}分{sec}秒').replace('{min}', String(Math.floor(etaSeconds / 60))).replace('{sec}', (etaSeconds % 60).toString().padStart(2, '0'))
-                                            : t('research:time_sec', '{sec}秒').replace('{sec}', String(etaSeconds))
-                                    )}
-                                </Typography>
-                            )}
-                        </Box>
-                    )}
-
-                    <Button
-                        size="small"
-                        color="error"
-                        variant="text"
-                        onClick={handleReturnToEdit}
-                        sx={{ mt: 1, textTransform: 'none' }}
-                    >
-                        {t('research:cancel', '取消')}
-                    </Button>
-                </Box>
-            </Box>
-        );
-    }
-
-    // ──────────────────────────── L1: Setup / Edit Mode ────────────────────────────
-    return (
-        <>
-            <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-                {/* Main Board Area */}
-                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
-                    {/* Board */}
-                    <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <>
+                <BoardPageShell
+                    board={(
                         <LiveBoard
                             moves={board.moves}
                             stoneColors={board.stoneColors}
@@ -583,108 +558,215 @@ const ResearchPage = () => {
                             showCoordinates={true}
                             showMoveNumbers={board.showMoveNumbers}
                             handicapCount={board.handicapCount}
-                            onIntersectionClick={board.handleIntersectionClick}
-                            nextColor={board.nextColor ?? undefined}
-                            aiMarkers={l1ShowHints ? l1AiMarkers : null}
-                            showAiMarkers={l1ShowHints}
-                            showTerritory={l1ShowTerritory}
-                            ownership={l1Ownership}
+                            minimumCanvasSize={0}
+                            minContainerHeight={0}
                         />
-                    </Box>
+                    )}
+                    modulePlate={(
+                        <ModulePlate
+                            title={t('Research', '研究')}
+                            subtitle={t('research:analyzing_game', '正在分析棋局')}
+                            backTo="/galaxy/research"
+                            showBack={false}
+                        />
+                    )}
+                    railBody={(
+                        <Box sx={{ p: 2 }}>
+                            {progressError && (
+                                <Alert
+                                    severity="error"
+                                    sx={{ mb: 2 }}
+                                    action={(
+                                        <Button color="inherit" size="small" onClick={handleRetryProgress}>
+                                            {t('common:retry', '重试')}
+                                        </Button>
+                                    )}
+                                >
+                                    {t('research:progress_failed', '无法获取分析进度')} · {progressError}
+                                </Alert>
+                            )}
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                {analysisProgress
+                                    ? t('research:progress', '已完成 {analyzed} / {total} 步').replace('{analyzed}', String(analysisProgress.analyzed)).replace('{total}', String(analysisProgress.total))
+                                    : t('research:connecting', '正在连接研究会话...')
+                                }
+                            </Typography>
 
-                    {/* Bottom Navigation */}
-                    <Box sx={{
-                        px: 3,
-                        py: 1.5,
-                        bgcolor: '#1a1a1a',
-                        borderTop: '1px solid rgba(255,255,255,0.05)',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: 1,
-                    }}>
-                        <Button
-                            size="small"
-                            disabled={board.currentMove === 0}
-                            onClick={() => board.handleMoveChange(0)}
-                            sx={{ minWidth: 32, color: 'text.secondary' }}
-                        >
-                            ⏮
-                        </Button>
-                        <Button
-                            size="small"
-                            disabled={board.currentMove === 0}
-                            onClick={() => board.handleMoveChange(board.currentMove - 1)}
-                            sx={{ minWidth: 32, color: 'text.secondary' }}
-                        >
-                            ◀
-                        </Button>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                mx: 2,
-                                fontFamily: '"IBM Plex Mono", monospace',
-                                color: 'text.secondary',
-                                minWidth: 80,
-                                textAlign: 'center',
-                            }}
-                        >
-                            {t('research:move_counter', '{current} / {total} 手').replace('{current}', String(Math.max(0, board.currentMove - board.handicapCount))).replace('{total}', String(board.moves.length - board.handicapCount))}
-                        </Typography>
-                        <Button
-                            size="small"
-                            disabled={board.currentMove >= board.moves.length}
-                            onClick={() => board.handleMoveChange(board.currentMove + 1)}
-                            sx={{ minWidth: 32, color: 'text.secondary' }}
-                        >
-                            ▶
-                        </Button>
-                        <Button
-                            size="small"
-                            disabled={board.currentMove >= board.moves.length}
-                            onClick={() => board.handleMoveChange(board.moves.length)}
-                            sx={{ minWidth: 32, color: 'text.secondary' }}
-                        >
-                            ⏭
-                        </Button>
-                    </Box>
-                </Box>
+                            <LinearProgress
+                                variant={analysisProgress ? 'determinate' : 'indeterminate'}
+                                value={progressPercent}
+                                sx={{
+                                    height: 10,
+                                    borderRadius: 5,
+                                    bgcolor: 'rgba(255,255,255,0.1)',
+                                    '& .MuiLinearProgress-bar': { borderRadius: 5, bgcolor: 'primary.main' },
+                                }}
+                            />
 
-                {/* Right Sidebar: Setup Panel */}
-                <ResearchSetupPanel
-                    playerBlack={board.playerBlack}
-                    playerWhite={board.playerWhite}
-                    onPlayerBlackChange={board.setPlayerBlack}
-                    onPlayerWhiteChange={board.setPlayerWhite}
-                    boardSize={board.boardSize}
-                    onBoardSizeChange={board.setBoardSize}
-                    rules={board.rules}
-                    onRulesChange={board.setRules}
-                    komi={board.komi}
-                    onKomiChange={board.setKomi}
-                    handicap={board.handicap}
-                    onHandicapChange={board.setHandicap}
-                    showMoveNumbers={board.showMoveNumbers}
-                    onToggleMoveNumbers={() => board.setShowMoveNumbers(!board.showMoveNumbers)}
-                    onPass={board.handlePass}
-                    editMode={board.editMode}
-                    onEditModeChange={board.setEditMode}
-                    placeMode={board.placeMode}
-                    onPlaceModeChange={board.setPlaceMode}
-                    showHints={l1ShowHints}
-                    onToggleHints={handleL1ToggleHints}
-                    showTerritory={l1ShowTerritory}
-                    onToggleTerritory={handleL1ToggleTerritory}
-                    isAnalysisPending={l1AnalysisPending}
-                    onClear={board.handleClear}
-                    onOpen={board.openLocalSGF}
-                    onSave={board.saveLocalSGF}
-                    onCopyToClipboard={board.copyToClipboard}
-                    onSaveToCloud={handleSaveToCloud}
-                    onOpenFromCloud={handleOpenFromCloud}
-                    onStartAnalysis={handleStartAnalysis}
+                            {analysisProgress && (
+                                <Box sx={{ mt: 1.5 }}>
+                                    <Typography variant="body2" color="primary.main" sx={{ fontWeight: 700, fontFamily: '"IBM Plex Mono", monospace' }}>
+                                        {progressPercent}%
+                                    </Typography>
+                                    {etaSeconds !== null && etaSeconds > 0 && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontFamily: '"IBM Plex Mono", monospace' }}>
+                                            {t('research:eta', '预计剩余 {time}').replace('{time}',
+                                                etaSeconds >= 60
+                                                    ? t('research:time_min_sec', '{min}分{sec}秒').replace('{min}', String(Math.floor(etaSeconds / 60))).replace('{sec}', (etaSeconds % 60).toString().padStart(2, '0'))
+                                                    : t('research:time_sec', '{sec}秒').replace('{sec}', String(etaSeconds))
+                                            )}
+                                        </Typography>
+                                    )}
+                                </Box>
+                            )}
+                        </Box>
+                    )}
+                    actions={(
+                        <Box sx={{ p: 2 }}>
+                            <Button
+                                fullWidth
+                                size="small"
+                                color="error"
+                                variant="outlined"
+                                onClick={handleReturnToEdit}
+                                sx={{ textTransform: 'none' }}
+                            >
+                                {t('research:cancel', '取消')}
+                            </Button>
+                        </Box>
+                    )}
                 />
-            </Box>
+                <GameLibraryModal open={libraryOpen} onClose={() => setLibraryOpen(false)} onLoadGame={handleLoadFromLibrary} />
+            </>
+        );
+    }
+
+    // ──────────────────────────── L1: Setup / Edit Mode ────────────────────────────
+    return (
+        <>
+            <BoardPageShell
+                board={(
+                    <LiveBoard
+                        moves={board.moves}
+                        stoneColors={board.stoneColors}
+                        currentMove={board.currentMove}
+                        boardSize={board.boardSize}
+                        showCoordinates={true}
+                        showMoveNumbers={board.showMoveNumbers}
+                        handicapCount={board.handicapCount}
+                        onIntersectionClick={board.handleIntersectionClick}
+                        nextColor={board.nextColor ?? undefined}
+                        aiMarkers={l1ShowHints ? l1AiMarkers : null}
+                        showAiMarkers={l1ShowHints}
+                        showTerritory={l1ShowTerritory}
+                        ownership={l1Ownership}
+                        minimumCanvasSize={0}
+                        minContainerHeight={0}
+                    />
+                )}
+                modulePlate={(
+                    <ModulePlate
+                        title={t('Research', '研究')}
+                        subtitle={t('research:move_counter', '{current} / {total} 手').replace('{current}', String(Math.max(0, board.currentMove - board.handicapCount))).replace('{total}', String(board.moves.length - board.handicapCount))}
+                        backTo="/galaxy/research"
+                        showBack={false}
+                    />
+                )}
+                railBody={(
+                    <ResearchSetupPanel
+                        playerBlack={board.playerBlack}
+                        playerWhite={board.playerWhite}
+                        onPlayerBlackChange={board.setPlayerBlack}
+                        onPlayerWhiteChange={board.setPlayerWhite}
+                        boardSize={board.boardSize}
+                        onBoardSizeChange={board.setBoardSize}
+                        rules={board.rules}
+                        onRulesChange={board.setRules}
+                        komi={board.komi}
+                        onKomiChange={board.setKomi}
+                        handicap={board.handicap}
+                        onHandicapChange={board.setHandicap}
+                        showMoveNumbers={board.showMoveNumbers}
+                        onToggleMoveNumbers={() => board.setShowMoveNumbers(!board.showMoveNumbers)}
+                        onPass={board.handlePass}
+                        editMode={board.editMode}
+                        onEditModeChange={board.setEditMode}
+                        placeMode={board.placeMode}
+                        onPlaceModeChange={board.setPlaceMode}
+                        showHints={l1ShowHints}
+                        onToggleHints={handleL1ToggleHints}
+                        showTerritory={l1ShowTerritory}
+                        onToggleTerritory={handleL1ToggleTerritory}
+                        isAnalysisPending={l1AnalysisPending}
+                        onClear={board.handleClear}
+                        onOpen={board.openLocalSGF}
+                        onSave={board.saveLocalSGF}
+                        onCopyToClipboard={board.copyToClipboard}
+                        onSaveToCloud={handleSaveToCloud}
+                        onOpenFromCloud={handleOpenFromCloud}
+                    />
+                )}
+                actions={(
+                    <>
+                        {/* 原来贴在棋盘下面那条走子键，按契约进动作区 */}
+                        <Box sx={{
+                            px: 2,
+                            py: 1,
+                            borderTop: '1px solid rgba(255,255,255,0.05)',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: 1,
+                        }}>
+                            <Button
+                                size="small"
+                                disabled={board.currentMove === 0}
+                                onClick={() => board.handleMoveChange(0)}
+                                sx={{ minWidth: 32, color: 'text.secondary' }}
+                            >
+                                ⏮
+                            </Button>
+                            <Button
+                                size="small"
+                                disabled={board.currentMove === 0}
+                                onClick={() => board.handleMoveChange(board.currentMove - 1)}
+                                sx={{ minWidth: 32, color: 'text.secondary' }}
+                            >
+                                ◀
+                            </Button>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    mx: 1,
+                                    fontFamily: '"IBM Plex Mono", monospace',
+                                    color: 'text.secondary',
+                                    minWidth: 76,
+                                    textAlign: 'center',
+                                }}
+                            >
+                                {t('research:move_counter', '{current} / {total} 手').replace('{current}', String(Math.max(0, board.currentMove - board.handicapCount))).replace('{total}', String(board.moves.length - board.handicapCount))}
+                            </Typography>
+                            <Button
+                                size="small"
+                                disabled={board.currentMove >= board.moves.length}
+                                onClick={() => board.handleMoveChange(board.currentMove + 1)}
+                                sx={{ minWidth: 32, color: 'text.secondary' }}
+                            >
+                                ▶
+                            </Button>
+                            <Button
+                                size="small"
+                                disabled={board.currentMove >= board.moves.length}
+                                onClick={() => board.handleMoveChange(board.moves.length)}
+                                sx={{ minWidth: 32, color: 'text.secondary' }}
+                            >
+                                ⏭
+                            </Button>
+                        </Box>
+                        <ResearchSetupActions onStartAnalysis={handleStartAnalysis} />
+                    </>
+                )}
+            />
             <GameLibraryModal open={libraryOpen} onClose={() => setLibraryOpen(false)} onLoadGame={handleLoadFromLibrary} />
         </>
     );

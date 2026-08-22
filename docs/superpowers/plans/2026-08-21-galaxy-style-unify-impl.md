@@ -219,7 +219,12 @@ locale 作用域节点，已挂 `data-language` 与 `font-synthesis:none`，唯�
 顺带同类五处：`ResearchPage` / `KifuLibraryPage` 的 sx 写死 `'IBM Plex Mono', monospace`，
 其中四处字符串夹着中文，走的是 monospace 的 CJK 回退；改成在后面追加 galaxy 字体栈。
 
-> ### ⚠️ 未还的债：死活题页四图**取于字体修复之前**
+> ### ✅ 已还（2026-08-22）：死活题页四图已重取
+>
+> 原计划排到「测试服重新部署时一起做」，但 2026-08-22 因返回键裁定本来就要重取全部实现图，
+> 顺势一并还清 —— 现在 `implementation` 系列已经带着字体修复。**下面是原始债务记录，留作依据。**
+>
+> ### ⚠️（原记录）死活题页四图取于字体修复之前
 >
 > `superpowers/tracks/galaxy-ui-redesign/visual/tsumego/{1440x900,1024x768,430x880}/`
 > 里的 `implementation` / `side-by-side` / `overlay` / `diff` 四类图，工具格标签还是系统黑体。
@@ -276,3 +281,10 @@ locale 作用域节点，已挂 `data-language` 与 `font-synthesis:none`，唯�
 - **「进入研究室」是个空跳转**：`ReportDetailPage` 只 `navigate('/galaxy/research')`，不带
   taskId / sgf / game_id，落到研究页的空白编辑态。冻结稿 V2 的注释写着「现状漏了棋局参数，
   改版补上」并注明「仍然请你点头」。属导航参数、不涉后端契约，**等 Fan 点头再补**。
+
+- **取参考图必须回读屏名**：2026-08-22 发现研究页（S1）的三张 `reference.png` 画的其实是
+  **直播观战页** —— 取图脚本切了屏但没有核对切到没切到，四图对比因此拿研究页的实现去比直播页的
+  稿子，而 S1 的确认是在这份错证据上做出的。已重取并修好。**判据从此是：取每一张参考图时，
+  由页面自己回读它当前渲染的屏名并打印出来**（`SCREENS.find(s => s.id === S.screen).label`），
+  不能只看脚本里写了哪个 id。这是「否定的答复不携带原因」的同族 —— 切屏没成功和切屏成功后
+  画面长得像，在截图里是同一个结果。

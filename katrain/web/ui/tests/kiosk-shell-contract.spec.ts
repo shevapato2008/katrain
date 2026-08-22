@@ -57,6 +57,8 @@ function walk(dir: string, pick: (p: string) => boolean): string[] {
  * ────────────────────────────────────────────────────────────────────────── */
 // Task 12(2026-08-22):`TsumegoPage.tsx` 两处基线一起划掉 —— 屏 11 按稿子重写之后,
 // 那个 `height:'50vh'` 的加载转圈和 `ArrowForward` 一起没了(棘轮往下走,不是往上加)。
+// Task 13b(2026-08-22):`TsumegoUnitListPage.tsx` 同理 —— 屏 13 按稿子重画成 `.qgrid`,
+// 那个 `height:'50vh'` 的转圈换成了 `.empty` 三态。
 const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/__tests__/RotationWrapper.test.tsx',
   'src/kiosk/components/guards/KioskAuthGuard.tsx',
@@ -69,7 +71,6 @@ const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/components/tsumego/SuccessOverlay.tsx',
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
   'src/kiosk/pages/TsumegoLevelPage.tsx',
-  'src/kiosk/pages/TsumegoUnitListPage.tsx',
   'src/kiosk/pages/TutorialBookDetailPage.tsx',
   'src/kiosk/pages/TutorialBooksPage.tsx',
   'src/kiosk/pages/TutorialCategoriesPage.tsx',

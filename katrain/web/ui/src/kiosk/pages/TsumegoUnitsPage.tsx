@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
-import { CATEGORY_META, UNIT_SIZE, levelChinese, readAutoAdvance, sequenceKey, writeLastCategory } from './tsumegoUnits';
+import { CATEGORY_META, UNIT_SIZE, levelChinese, readAutoAdvance, writeLastCategory, writeSequence } from './tsumegoUnits';
 import { interpolate } from '../utils/interpolate';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
@@ -55,12 +55,9 @@ const TsumegoUnitsPage = () => {
       .then((data: ProblemSummary[]) => {
         const ids = Array.isArray(data) ? data.map((p) => p.id) : [];
         setProblemIds(ids);
-        // Phase 4 契约:把**按顺序**的整类题号存下来,做题屏靠它算上/下一题,不再取一次。
-        try {
-          sessionStorage.setItem(sequenceKey(lvl, cat), JSON.stringify(ids));
-        } catch {
-          /* best-effort */
-        }
+        // Phase 4 契约:把**按顺序**的整类题号存下来 —— 做题屏靠它算上/下一题,
+        // 屏 13(题目列表)靠它连一次接口都不用取。
+        writeSequence(lvl, cat, ids);
       })
       .catch((err: Error) => {
         if (err.name !== 'AbortError') setError(err.message);

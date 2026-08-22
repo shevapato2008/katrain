@@ -280,3 +280,93 @@ test('单元列表(布局 B):单元多到装不下时,通栏 992 一分不少,�
   await page.mouse.wheel(0, 5000);
   await expect.poll(() => zone.getAttribute('data-at')).toBe('end');
 });
+
+/* ══ 屏 13 题目列表(Task 13b)—— 20 格题号必须**一屏装得下** ═════════════════
+ * 这一条不是「能不能滚」的重复,恰恰相反:**它断言这一屏不需要滚**。
+ *
+ * 为什么这是承重不是审美:`.qgrid` 的格高 76 是稿子 2026-08-21 从 58 调上来的,
+ * 理由是「把散文清出设备之后底下露出一条 60px 空带」——**那次是拿空带换的格高**。
+ * 再有人往上加(或者数据条 / 组标题变高),20 格就会把「换一批」那两行顶到视野之外,
+ * 而那两行是这一屏**唯一**的两个出口(整级、错题)。滚动条会照常出现、`data-at` 照常诚实,
+ * 三条通用闸**全绿**,人却看不见出口 —— 所以这件事只有在这里说得出来。
+ *
+ * 判据写成关系式:满编 20 格时滚动区**不溢出**,且最后那一行的下缘在视口内。
+ * 具体空了多少 px 只记录、不作判据(稿子那 24 是它自己那份 HTML 的数;这边实测 48)。
+ *
+ * 变异实测(2026-08-22):把 `.qgrid button` 的 76 改成 110,这条当场红在
+ * 「满编 20 格已经装不下了」。红分支跑过。
+ */
+test('题目列表:满编 20 格 + 换一批两行,一屏装得下 —— 出口不许被顶到视野之外', async ({ page }) => {
+  await page.route('**/api/v1/tsumego/levels/*/categories/*', (route) => route.fulfill({
+    json: Array.from({ length: 45 }, (_, i) => ({ id: `q${i}` })),
+  }));
+  await boot(page, '/kiosk/tsumego/15k/capturing/1');
+  await page.waitForSelector('.qgrid button:nth-child(20)');
+
+  const m = await page.evaluate(() => {
+    const sc = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+    const cells = Array.from(document.querySelectorAll('.qgrid button')) as HTMLElement[];
+    const rows = document.querySelectorAll('.kiosk-rows .kiosk-row');
+    const last = rows[rows.length - 1] as HTMLElement;
+    return {
+      cells: cells.length,
+      overflow: sc.scrollHeight - sc.clientHeight,
+      lastRowBottom: Math.round(last.getBoundingClientRect().bottom),
+      zoneBottom: Math.round(sc.getBoundingClientRect().bottom),
+      exits: rows.length,
+    };
+  });
+
+  expect(m.cells, '没造出满编的一个单元 —— 下面量的就不是「最挤的那一屏」').toBe(20);
+  expect(m.exits, '换一批那两行没渲出来').toBe(2);
+  expect(m.overflow, '满编 20 格已经装不下了 —— 「换一批」那两个出口被顶到视野之外').toBeLessThanOrEqual(0);
+  expect(m.lastRowBottom, '最后一行的下缘越过了滚动视口').toBeLessThanOrEqual(m.zoneBottom);
+  // ⚠️ 别拿 `clientHeight - scrollHeight` 当空带:`scrollHeight` 有 `clientHeight` 这个下界,
+  // 那个差**永远是 0 或负**,写出来会是一条恒等于 0 的假读数。空带只能从最后一行的下缘量。
+  console.log(`[qgrid] 满编 20 格之后底下还空 ${m.zoneBottom - m.lastRowBottom}px(只记录,不作判据)`);
+});
+
+/* ══ 屏 13 —— `.qgrid` 横向:10 列铺满通栏 992,一列不多一列不少 ════════════════
+ * 横向溢出在截图上**看不出来**(格子会被裁掉一点点,或者整页能左右拖),
+ * 而 §1 说画布是死的 1024 —— 页面本体永远不许横向滚。
+ * 判据同样是关系式:第一行正好 10 格且四缘对齐通栏,不写死 92。
+ *
+ * 变异实测(2026-08-22):`repeat(10, 1fr)` 改成 `repeat(8, 1fr)`,这条当场红在
+ * 「一行不是 10 格」;格高那条由上一个变异(76 → 110)红过。两条红分支都跑过。
+ */
+test('题目列表:.qgrid 十列铺满 992,行内不换行、页面不横向溢出', async ({ page }) => {
+  await page.route('**/api/v1/tsumego/levels/*/categories/*', (route) => route.fulfill({
+    json: Array.from({ length: 45 }, (_, i) => ({ id: `q${i}` })),
+  }));
+  await boot(page, '/kiosk/tsumego/15k/capturing/1');
+  await page.waitForSelector('.qgrid button:nth-child(20)');
+
+  const g = await page.evaluate(() => {
+    const grid = document.querySelector('.qgrid') as HTMLElement;
+    const sc = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+    const cells = (Array.from(grid.children) as HTMLElement[]).map((c) => c.getBoundingClientRect());
+    const firstTop = Math.round(cells[0].top);
+    return {
+      gridW: Math.round(grid.getBoundingClientRect().width),
+      clientW: sc.clientWidth,
+      perRow: cells.filter((r) => Math.round(r.top) === firstTop).length,
+      rowTops: [...new Set(cells.map((r) => Math.round(r.top)))].length,
+      cellH: Math.round(cells[0].height),
+      left: Math.round(cells[0].left),
+      right: Math.round(cells[9].right),
+      gridLeft: Math.round(grid.getBoundingClientRect().left),
+      gridRight: Math.round(grid.getBoundingClientRect().right),
+      docScrollW: document.documentElement.scrollWidth,
+      docClientW: document.documentElement.clientWidth,
+    };
+  });
+
+  expect(g.gridW, '题号格没铺满通栏 992').toBe(992);
+  expect(g.gridW, '滚动条占了布局宽度').toBe(g.clientW);
+  expect(g.perRow, '一行不是 10 格 —— 20 道题就不是整齐的两行').toBe(10);
+  expect(g.rowTops, '20 格没排成两行').toBe(2);
+  expect(g.cellH, '格高不是 76(稿子 2026-08-21 从 58 调上来的那个数)').toBe(76);
+  expect(g.left, '第一格没贴左缘').toBe(g.gridLeft);
+  expect(g.right, '第十格没贴右缘 —— 要么少算了缝,要么被裁掉了一点').toBe(g.gridRight);
+  expect(g.docScrollW, '页面本体横向溢出了 —— 固定画布上这条永远不许发生').toBe(g.docClientW);
+});

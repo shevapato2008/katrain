@@ -21,6 +21,30 @@ export const UNIT_SIZE = 20;
 export const sequenceKey = (level: string, category: string) => `kiosk_problems_${level}_${category}`;
 
 /**
+ * 读那条顺序表。**读不到和读到一条空的是两回事**:前者返回 `null`(该去取),
+ * 后者返回 `[]`(这一类真的没题)—— 合成一个值会让「还没取过」被当成「取过了,是空的」。
+ */
+export function readSequence(level: string, category: string): string[] | null {
+  try {
+    const raw = sessionStorage.getItem(sequenceKey(level, category));
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as string[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 写那条顺序表。写不进去(隐私模式 / 配额)不算错 —— 消费方各自还有自己取一次的退路。 */
+export function writeSequence(level: string, category: string, ids: string[]): void {
+  try {
+    sessionStorage.setItem(sequenceKey(level, category), JSON.stringify(ids));
+  } catch {
+    /* best-effort */
+  }
+}
+
+/**
  * localStorage key for the "auto-advance to next problem after solving" preference (D4).
  * Default is ON (true) when unset.
  */

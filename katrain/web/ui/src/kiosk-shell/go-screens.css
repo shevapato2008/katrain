@@ -290,3 +290,28 @@
    分母比值小一号、灰一档,是为了让人一眼读到的是**值**,不是那条斜杠。
    同样该提上游 —— 四家的数据条都有带分母的格。 */
 .kiosk-stat__v small { font-size: 15px; font-weight: inherit; color: var(--dim); }
+
+/* ── 题号格 `.qgrid`(屏 13 题目列表)────────────────────────────────────
+ * 一格一题,10 列铺满 992 通栏 ⇒ 格宽 (992 − 9×8) / 10 = 92。
+ * **不用 `.kiosk-card`**:那是 220×76 的模式卡,一屏摆 20 张既放不下、也太重 ——
+ * 这一层要回答的只有「第几题、做过没有」。也**不是 `.dots`**:点阵是**看的**
+ * (整单元一眼扫完),这里每一格是**能点的**。逐字对应稿子 `go-kiosk.tmpl.html:362-376`。
+ *
+ * 高度 76 是稿子 2026-08-21 从 58 调上来的:58 时格子又宽又扁,底下还白空一条 60px ——
+ * 那条空带原来被一段小字占着,把散文清出设备之后才露出来。**空间本来就在。**
+ *
+ * 状态只有三种,而且**只靠边框和数字的颜色分**,不加图标:
+ *   (无类)  没做过         —— 小字写「—」,**不写「0 次」**(0 次是一个次数,「没做过」不是)
+ *   .ok     做对了         —— `--good`
+ *   .now    下一道要做的   —— `--accent` + `--panel` 底 */
+.qgrid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 8px; }
+.qgrid button {
+  height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  border: 1px solid var(--hair); border-radius: 10px; background: var(--raise); color: var(--text); cursor: pointer;
+}
+.qgrid b { font-family: var(--font-serif); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.qgrid em { font-style: normal; font-size: 10px; color: var(--dim); }
+.qgrid button.ok { border-color: color-mix(in srgb, var(--good) 45%, transparent); }
+.qgrid button.ok b { color: var(--good); }
+.qgrid button.now { border-color: var(--accent); background: var(--panel); }
+.qgrid button.now b { color: var(--accent); }

@@ -208,9 +208,10 @@ describe('Kiosk navigation integration', () => {
       expect(screen.getByText('第 21-25 题')).toBeInTheDocument();
       fireEvent.click(screen.getByText('第 1-20 题').closest('button')!);
 
-      // Level 4: unit list page → problem cards. The unit heading shows the range.
+      // Level 4: 题目列表 → 一格一题的 `.qgrid`。(屏 13 起不再是带缩略棋盘的 MUI 卡,
+      // 格子里只有题号和「试了几次」。)
       await waitFor(() => {
-        expect(document.querySelectorAll('.MuiCardActionArea-root').length).toBeGreaterThan(0);
+        expect(document.querySelectorAll('.qgrid button').length).toBe(20);
       });
 
       // The units page wrote the prev/next sequence to sessionStorage.
@@ -218,8 +219,8 @@ describe('Kiosk navigation integration', () => {
       expect(seq).not.toBeNull();
       expect(JSON.parse(seq!)).toHaveLength(25);
 
-      // Level 5: click the first problem card → problem page (board renders).
-      const firstCard = document.querySelector('.MuiCardActionArea-root') as HTMLElement;
+      // Level 5: 点第一格 → 做题屏(盘渲出来)。
+      const firstCard = document.querySelector('.qgrid button') as HTMLElement;
       fireEvent.click(firstCard);
       await waitFor(() => expect(screen.getByTestId('tsumego-board')).toBeInTheDocument());
     });

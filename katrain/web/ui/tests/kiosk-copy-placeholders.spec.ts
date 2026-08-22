@@ -44,6 +44,7 @@ const screens: readonly (readonly [string, string, string])[] = [
   ['对弈首页', '/kiosk/play', '.kiosk-cards .kiosk-card'],
   ['训练营', '/kiosk/tsumego', '.kiosk-cards .kiosk-card'],
   ['单元列表', '/kiosk/tsumego/15k/capturing', '.kiosk-cards .kiosk-card'],
+  ['题目列表', '/kiosk/tsumego/15k/capturing/1', '.qgrid button'],
 ];
 
 for (const [name, path, ready] of screens) {

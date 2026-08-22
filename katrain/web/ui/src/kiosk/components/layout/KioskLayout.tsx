@@ -10,11 +10,13 @@ import { GoConsoleRail } from './GoConsoleRail';
 /**
  * 哪些 L1 屏出左边的镜像栏。规范 §5 的判据是**「这个模块的活动会不会发生在实体盘上」**——
  * 对弈/训练营/课程/棋谱会,看直播不会。
- * 现在覆盖 `/kiosk/play`(Task 10)和 `/kiosk/tsumego`(Task 12),其余 L1 屏在各自的屏 Task 里接。
+ * 现在覆盖 `/kiosk/play`(Task 10)、`/kiosk/tsumego`(Task 12)和 `/kiosk/kifu`(Task 15),
+ * 其余 L1 屏在各自的屏 Task 里接。**棋谱这一项过判据靠的是摆谱**:选中的谱要一手一手
+ * 摆到实体盘上、灯点着下一手,那正是「活动发生在实体盘上」。复盘和课程还没接。
  * ⚠️ 比的是**整条 pathname 相等**,不是前缀 —— `/kiosk/tsumego/15k` 是 L2,`dockLevelOf` 已经
  * 把它挡在外面了,但这里写成 `startsWith` 会让两条判据各说各的,而只有一条会被人记住。
  */
-const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tsumego'];
+const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tsumego', '/kiosk/kifu'];
 interface KioskLayoutProps { username?: string }
 
 const KioskShell = ({ username }: KioskLayoutProps) => {

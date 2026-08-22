@@ -370,3 +370,77 @@ test('题目列表:.qgrid 十列铺满 992,行内不换行、页面不横向溢�
   expect(g.right, '第十格没贴右缘 —— 要么少算了缝,要么被裁掉了一点').toBe(g.gridRight);
   expect(g.docScrollW, '页面本体横向溢出了 —— 固定画布上这条永远不许发生').toBe(g.docClientW);
 });
+
+/* ══ 屏 15 棋谱:五块全长满时,右栏得滚得到最后一块 ═════════════════════════
+ * 这一屏是 L1 里**最长的一条右栏**:问候 + 继续摆谱 + 名局棋谱(三张卡 + 搜索框 +
+ * 六行结果 + 翻页)+ 最近摆过六行 + 职业直播四行。展开搜索是**唯一**会让它长一截的
+ * 交互,所以造输入就造这一版 —— 收起态量出来的数字不算数。
+ *
+ * 判据不是「有没有滚动条」(那条别处已经守了),是**最后一块滚得到**:
+ * 直播那几行如果永远落在视野外,等于 Task 4 把直播下 Dock 之后它就再也到不了了。
+ */
+const KIFU_ROWS = Array.from({ length: 6 }, (_, i) => ({
+  id: i + 1, player_black: '柯洁', player_white: '申真谞',
+  black_rank: '九段', white_rank: '九段',
+  event: '第 29 届三星杯', result: 'B+R', move_count: 241,
+  date_played: '2026-06-30', board_size: 19, handicap: 0,
+  komi: 7.5, rules: 'chinese', round_name: '半决赛',
+}));
+
+const LIVE_ROWS = Array.from({ length: 4 }, (_, i) => ({
+  id: `m${i}`, source: 'xingzhen', tournament: `第 ${29 - i} 届三星杯`, round_name: '八强',
+  date: '2026-08-22T06:00:00Z', player_black: '柯洁', player_white: '申真谞',
+  black_rank: '九段', white_rank: '九段', status: 'live', result: null, move_count: 118,
+  current_winrate: .5, current_score: 0, last_updated: '', board_size: 19, komi: 7.5, rules: 'chinese',
+}));
+
+test('棋谱:展开搜索之后右栏自己滚,最后一块(职业直播)滚得到', async ({ page }) => {
+  await page.addInitScript(() => {
+    const now = Date.now();
+    localStorage.setItem('baipu:recent', JSON.stringify(
+      Array.from({ length: 6 }, (_, i) => ({ id: `kifu_${i}`, name: `名局 ${i}`, savedAt: now - i * 3600e3 })),
+    ));
+    for (let i = 0; i < 6; i += 1) {
+      localStorage.setItem(`baipu:progress:kifu_${i}`, JSON.stringify({ k: 47, frames: 0, updatedAt: now, total: 241 }));
+    }
+  });
+  await page.route('**/api/v1/kifu/albums*', (route) => route.fulfill({
+    json: { items: KIFU_ROWS, total: 1234, page: 1, page_size: 6 },
+  }));
+  await page.route('**/live/matches*', (route) => route.fulfill({
+    json: { matches: LIVE_ROWS, live_count: 4, total: 4 },
+  }));
+  await boot(page, '/kiosk/kifu');
+  await page.waitForSelector('[data-testid="kifu-live"]');
+
+  const railW = await page.evaluate(() =>
+    Math.round(document.querySelector('.kiosk-side')!.getBoundingClientRect().width));
+  expect(railW, '右栏不是 680 —— 后面量的滚动都建在错的宽度上').toBe(680);
+
+  // 展开搜索:这是唯一会让这条栏长一截的交互。
+  await page.getByRole('button', { name: /搜棋谱/ }).click();
+  await page.waitForSelector('[data-testid="kifu-search"] .kiosk-row');
+
+  const before = await overflowOf(page);
+  expect(before, '没造出溢出 —— 下面那条断言是空的').toBeGreaterThan(100);
+
+  // 滚到底,直播那一块的下缘必须进得了视野。**用真滚轮**,不是 scrollTop = n。
+  const zone = page.locator('.kiosk-side__scroll');
+  const zb = (await zone.boundingBox())!;
+  await page.mouse.move(zb.x + zb.width / 2, zb.y + zb.height / 2);
+  for (let i = 0; i < 12; i += 1) await page.mouse.wheel(0, 400);
+
+  const m = await page.evaluate(() => {
+    const el = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+    const live = document.querySelector('[data-testid="kifu-live"]') as HTMLElement;
+    return {
+      atEnd: el.scrollHeight - el.clientHeight - el.scrollTop,
+      liveBottom: Math.round(live.getBoundingClientRect().bottom),
+      zoneBottom: Math.round(el.getBoundingClientRect().bottom),
+      horizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  });
+  expect(m.atEnd, '滚不到底').toBeLessThanOrEqual(1);
+  expect(m.liveBottom, '滚到底了,直播那一块的下缘还在视野外 —— 它就是到不了的').toBeLessThanOrEqual(m.zoneBottom);
+  expect(m.horizontal, '页面横向溢出了').toBe(0);
+});

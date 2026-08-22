@@ -135,6 +135,12 @@ export interface BaipuProgress {
   k: number; // number of steps applied to the physical board
   frames: number; // captured frames so far (disk manifest is the source of truth in P4)
   updatedAt: number;
+  /**
+   * 这份谱一共多少步。**可选,而且必须留成可选** —— 2026-08-22 之前写下的进度里没有它,
+   * 读到 `undefined` 的正确反应是「不知道摆完没有」,不是「没摆完」。
+   * 棋谱屏(屏 15)那句「已摆完」只在 `total != null && k >= total` 时才敢说。
+   */
+  total?: number;
 }
 
 function safeParse<T>(raw: string | null): T | null {

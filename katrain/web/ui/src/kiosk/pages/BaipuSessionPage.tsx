@@ -218,7 +218,7 @@ const BaipuSessionPage = () => {
   const advance = useCallback(() => {
     setK((prev) => {
       const next = prev + 1;
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now() });
+      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length });
       setPhase(next >= steps.length ? 'done' : 'guiding');
       return next;
     });
@@ -332,7 +332,7 @@ const BaipuSessionPage = () => {
     setUndoOpen(false);
     setK((prev) => {
       const next = Math.max(0, prev - 1);
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now() });
+      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length });
       return next;
     });
     setPhase('guiding');

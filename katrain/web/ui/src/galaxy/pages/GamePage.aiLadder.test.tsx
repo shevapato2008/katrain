@@ -25,6 +25,9 @@ vi.mock('../components/game/RightSidebarPanel', () => ({
       <button disabled={Boolean(gameState.end_result)} onClick={() => onAction('pass')}>pass</button>
       <button onClick={() => onAction('resign')}>resign action</button>
       <button onClick={() => { mocks.railToggle(); onToggleChange('coords'); }}>toggle coords</button>
+      <button onClick={() => onToggleChange('view3d')}>toggle 3d</button>
+      <button onClick={() => onToggleChange('stoneDropEffect')}>toggle drop</button>
+      <button onClick={() => onToggleChange('hints')}>toggle hints</button>
     </div>
   ),
   /* 翻手那六个键搬到了动作区（`board-rail-actions`，不跟着滚），
@@ -33,6 +36,20 @@ vi.mock('../components/game/RightSidebarPanel', () => ({
     <div data-testid="game-rail-actions" data-game-over={String(isGameOver)}>
       <button onClick={() => onAction('back')}>nav back</button>
     </div>
+  ),
+}));
+
+/* 3D 棋盘是动态 import 进来的；桩件把**它实际收到的**开关回读出来。
+   判据不能落在右栏那个开关自己身上 —— 它 checked 会变，下游收不收得到是另一回事
+   （这正是修之前的真实状态，真运行时顺着 React fiber 量到过）。 */
+vi.mock('../../components/Board3D', () => ({
+  default: ({ analysisToggles }: { analysisToggles: Record<string, boolean> }) => (
+    <div
+      data-testid="board3d"
+      data-drop={String(!!analysisToggles.stoneDropEffect)}
+      data-hints={String(!!analysisToggles.hints)}
+      data-ownership={String(!!analysisToggles.ownership)}
+    />
   ),
 }));
 
@@ -66,6 +83,25 @@ describe('Galaxy GamePage ranked settlement', () => {
     mocks.gameState = gameState;
   });
   afterEach(() => vi.useRealTimers());
+
+  /* 升降级模式下棋盘只接非分析的开关。这一条同时守两个方向：
+     纯外观的「落子特效」必须**能**到棋盘（修之前到不了 —— 空按钮），
+     而分析类的建议 / 领地必须**到不了**（那正是这个过滤器存在的理由）。 */
+  it('passes the cosmetic stone-drop toggle to the 3D board but never the analysis toggles', async () => {
+    mocks.gameState = { ...gameState, end_result: null };
+    render(<MemoryRouter initialEntries={['/galaxy/play/ai/game/s1?mode=rated']}><Routes><Route path="/galaxy/play/ai/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+
+    fireEvent.click(screen.getByRole('button', { name: 'toggle 3d' }));
+    const board3d = await screen.findByTestId('board3d');
+    expect(board3d).toHaveAttribute('data-drop', 'false');
+
+    fireEvent.click(screen.getByRole('button', { name: 'toggle drop' }));
+    await waitFor(() => expect(screen.getByTestId('board3d')).toHaveAttribute('data-drop', 'true'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'toggle hints' }));
+    expect(screen.getByTestId('board3d')).toHaveAttribute('data-hints', 'false');
+    expect(screen.getByTestId('board3d')).toHaveAttribute('data-ownership', 'false');
+  });
 
   it('renders the authoritative feedback and supports cookie-only status refresh', async () => {
     sessionStorage.setItem('ai-ladder-before:s1', JSON.stringify({ identity: 'fan', status: status(18) }));

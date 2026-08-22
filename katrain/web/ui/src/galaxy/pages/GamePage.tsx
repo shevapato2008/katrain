@@ -381,6 +381,20 @@ const GamePage = () => {
             }
             : null;
 
+    /* 升降级对局中棋盘只接**非分析**的开关 —— 建议 / 领地 / 走势一律不上盘，
+       那正是这个过滤器存在的理由。坐标 / 手数 / 落子特效都是纯外观，放行。
+       `stoneDropEffect` 原来漏在外面：3D 打开后右栏那个「落子特效」开关拨得动、
+       自己也会变 checked，但值到不了棋盘 —— 真运行时顺着 React fiber 量过，
+       开关 checked=true 而 Board3D 收到的是 `{coords, numbers}`。是个空按钮。
+       四处调用点原来各写一遍同样的三元式，现在收成一个。 */
+    const boardToggles = isRated
+        ? {
+            coords: analysisToggles.coords,
+            numbers: analysisToggles.numbers,
+            stoneDropEffect: analysisToggles.stoneDropEffect,
+        }
+        : analysisToggles;
+
     const board = (
         <Box
             data-testid="ranked-board-interaction"
@@ -395,7 +409,7 @@ const GamePage = () => {
                 <Board
                     gameState={gameState}
                     onMove={isRated ? handleRankedMove : onMove}
-                    analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                    analysisToggles={boardToggles}
                     playerColor={humanColor}
                 />
             </div>
@@ -403,7 +417,7 @@ const GamePage = () => {
                 <Board3D
                     gameState={gameState}
                     onMove={isRated ? handleRankedMove : onMove}
-                    analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                    analysisToggles={boardToggles}
                     playerColor={humanColor}
                 />
             )}
@@ -589,7 +603,7 @@ const GamePage = () => {
                         <Board
                             gameState={gameState}
                             onMove={onMove}
-                            analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                            analysisToggles={boardToggles}
                             playerColor={humanColor}
                         />
                     </div>
@@ -597,7 +611,7 @@ const GamePage = () => {
                         <Board3D
                             gameState={gameState}
                             onMove={onMove}
-                            analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                            analysisToggles={boardToggles}
                             playerColor={humanColor}
                         />
                     )}

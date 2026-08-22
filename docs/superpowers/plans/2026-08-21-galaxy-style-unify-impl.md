@@ -329,7 +329,7 @@ Fan 选 A。**因此本节包含对 `GamePage.tsx` 的改动 —— 那条「照
 | `galaxy/pages/GameRoomPage.tsx` | 迁 `BoardPageShell` + `ModulePlate`；删棋盘上方那条横栏；坐标/手数/落子特效接上真状态 |
 | `galaxy/pages/GamePage.tsx` | `actions={<RightSidebarActions/>}`（外裹 fieldset）、`onLeave`、模块牌补副标题与状态徽章 |
 
-### 顺手修掉的三条既有缺陷（都不是版式问题）
+### 顺手修掉的四条既有缺陷（都不是版式问题）
 
 1. **自由的人人对弈被当成升降级对局。** `GameRoomPage` 无条件传 `isRated={true}`，于是一局
    `game_type='free'` 的对弈也挂着绿色「升降级模式：进行中 / 净胜局数将用于段位更新」横幅，
@@ -342,6 +342,25 @@ Fan 选 A。**因此本节包含对 `GamePage.tsx` 的改动 —— 那条「照
 3. **对局室的坐标 / 手数 / 落子特效三个开关是死的。** 面板照一个写死的字面量渲染、
    `onToggleChange` 对它们是空操作，而棋盘拿到的又是**另一个**写死的
    `{coords:true, numbers:false}`。已改成同一份真状态同时喂给面板和棋盘。
+4. **升降级对弈页的「落子特效」也是死的**（2026-08-22 Fan 追问「为什么实现页面没有落子特效」
+   时顺出来的）。那个开关的**显示条件**是 3D 打开——截图里 3D 是关的，所以不上屏，这一半是
+   迁移前就有的设计，照搬没动。但底下压着一个真缺陷：`GamePage` 给棋盘的是
+   `isRated ? { coords, numbers } : analysisToggles`，**升降级模式下 `stoneDropEffect`
+   被过滤掉了**，于是 3D 打开后那个开关拨得动、自己也变 checked，值却到不了 `Board3D`。
+   真运行时顺着 React fiber 量到：开关 `checked=true`，两块棋盘收到的都是
+   `{coords:true, numbers:false}` —— 连这个 key 都不存在。
+   **修法**：过滤器的用意是「分析类不上盘」，而坐标 / 手数 / 落子特效都是纯外观，
+   `stoneDropEffect` 是漏的。四处重复的三元式收成一个 `boardToggles`。
+   新增一条双向守卫（`GamePage.aiLadder.test.tsx`）：外观类必须**能**到 3D 棋盘、
+   分析类（建议 / 领地）必须**到不了**；两个方向都变异证过。
+
+   **一条取证教训**：React fiber 是**双缓冲**的，从 DOM 拿到的那棵可能是上一次提交的那半，
+   读出来会落后一个 commit —— 中间一度据此误判「修完仍然不通」。判据是**两半都读**
+   （`f.memoizedProps` 与 `f.alternate.memoizedProps`），对得上开关的那半才是当前树。
+   另外 `board-stage` 里同时挂着 2D 和 3D 两块画布，从 `querySelector('canvas')` 向上爬
+   只会撞到第一块；要从 stage 的 fiber **向下**遍历，把两个消费方都列出来。
+
+   **不用重取四图**：3D 关闭时 `Board3D` 根本没挂载，这处改动在已取的那一帧上是 0 像素差异。
 
 ### 控件账本（真浏览器 census，1440×900）
 

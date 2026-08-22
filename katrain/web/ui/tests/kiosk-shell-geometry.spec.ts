@@ -1126,3 +1126,55 @@ test('§11 复盘报告:重点手再多,翻手键也贴着右栏底,列表自己
   expect(m.navBottom, '翻手键没贴右栏底').toBe(m.railBottom);
   expect(m.navBottom, '翻手键被顶到画布外面了').toBeLessThanOrEqual(m.screenBottom);
 });
+
+// ── D2 稿外五屏:只接壳,不推导版式 ──────────────────────────────────────
+
+/**
+ * 摆谱 / 直播 / 研究 / 跨平台 / 标定 —— 稿子没画这五屏。**没有参照物就没有四图闸**,
+ * 所以它们的验收只有这一条:**共享外壳这一层是对的,切模块的时候不跳**。
+ *
+ * 三条判据合起来就是「切模块不跳」在这五屏上的全部要求:
+ *   ① 顶栏 1024×56 贴在 (0,0) —— 规范 §5 防跳铁律 1
+ *   ② 内容区左缘 x16、通栏 992 —— 外边距 16 是规范开头明写「全部用 px」的那几个之一
+ *   ③ 这五屏都不是 Dock 项 ⇒ `dockLevelOf` 判 2 ⇒ 没有 Dock ⇒ 内容区下缘贴画布底 600
+ *
+ * ⚠️ ③ **不是 bug**:Task 4 把摆谱和直播下了 Dock(规范 §3 只许一个棋种专属项),
+ * 它们因此不再是 L1。内容区从 434 变成 516 是那条裁定的后果,别去「纠正」。
+ */
+const D2_SCREENS: readonly [string, string][] = [
+  ['/kiosk/baipu', '摆谱'],
+  ['/kiosk/live', '直播'],
+  ['/kiosk/research', '研究'],
+  ['/kiosk/play/cross-platform', '跨平台'],
+  ['/kiosk/vision/setup', '标定'],
+];
+
+for (const [path, name] of D2_SCREENS) {
+  test(`D2 ${name}(${path}):顶栏 1024×56@(0,0)、内容区 x16 宽 992、无 Dock 时下缘贴 600`, async ({ page }) => {
+    await page.route('**/api/v1/kifu/albums*', (route) => route.fulfill({
+      json: { items: [], total: 0, page: 1, page_size: 12 },
+    }));
+    await page.route('**/live/matches*', (route) => route.fulfill({
+      json: { matches: [], live_count: 0, total: 0 },
+    }));
+    await boot(page, path);
+
+    const topbar = await box(page, '.kiosk-topbar');
+    expect(topbar.x, '顶栏没贴左缘').toBe(0);
+    expect(topbar.y, '顶栏没贴顶').toBe(0);
+    expect(topbar.w, '顶栏不通栏').toBe(1024);
+    expect(topbar.h, '顶栏不是 56 —— 防跳铁律 1 是它不变高').toBe(56);
+
+    const content = await box(page, '.kiosk-content');
+    expect(content.x, '内容区左缘不是 16').toBe(16);
+    expect(content.w, '内容区不是通栏 992').toBe(992);
+    // 量的是**外框**(border-box);规范 §5 说的「内容从 y70 起」说的是内沿 ——
+    // 差的正好是 `--content-pad-y` 的 14。两套数不矛盾,别混着读。
+    expect(content.y, '内容区上缘没接顶栏下沿').toBe(topbar.h);
+
+    // 这五屏都不在 Dock 词典里 ⇒ L2 ⇒ 没有 Dock ⇒ 内容区一路到画布下缘。
+    const dock = await page.evaluate(() => document.querySelectorAll('.kiosk-dock').length);
+    expect(dock, `${name} 出了 Dock —— 它不在 Dock 词典里`).toBe(0);
+    expect(content.bottom, '没有 Dock,内容区下缘就该贴画布底 600').toBe(600);
+  });
+}

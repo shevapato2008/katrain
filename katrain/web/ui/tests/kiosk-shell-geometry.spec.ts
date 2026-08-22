@@ -980,3 +980,149 @@ test('§5 屏 19:视口下缘切在一行的中间,不落在行与行的空隙�
   expect(m.shown!).toBeGreaterThan(0);
   expect(m.shown!).toBeLessThan(m.rowH!);
 });
+
+// ── 屏 20 复盘 · 报告(L2 布局 A:盘 516 + 16 + 右栏 460)────────────────────
+
+const REPORT_GAME = {
+  id: 'g1', user_id: 1, title: null, player_black: 'tester', player_white: 'KataGo',
+  black_rank: null, white_rank: '6 级', result: 'W+R', board_size: 19, rules: 'chinese',
+  komi: 7.5, move_count: 40, source: 'play_ai', category: 'game', game_type: 'free',
+  event: null, round_name: null, game_date: '2026-08-20',
+  created_at: '2026-08-20T15:12:00', updated_at: null,
+  // 40 手谱 —— 造到「重点手」和曲线都有东西可画。
+  sgf_content: `(;FF[4]GM[1]SZ[19]${Array.from({ length: 40 }, (_, i) => {
+    const col = String.fromCharCode(97 + (i % 19));
+    const row = String.fromCharCode(97 + Math.floor(i / 19) * 3);
+    return `;${i % 2 === 0 ? 'B' : 'W'}[${col}${row}]`;
+  }).join('')})`,
+};
+
+/** 逐手分析:每四手来一次大跌,保证「重点手」列得满三行。 */
+const reportMoveRows = () => Array.from({ length: 41 }, (_, n) => ({
+  id: n, task_id: 7, move_number: n, status: 'success',
+  winrate: 0.5 - n * 0.008, score_lead: -n * 0.4, visits: 500,
+  top_moves: n % 2 === 0
+    ? [{ move: 'R11', visits: 400, winrate: 0.6, score_lead: 2, prior: 0.6, pv: ['R11'], psv: 1 }]
+    : null,
+  ownership: null,
+  actual_move: n === 0 ? null : 'C3',
+  actual_player: n === 0 ? null : (n % 2 === 1 ? 'B' : 'W'),
+  delta_score: n === 0 ? null : (n % 4 === 1 ? -6 : -0.4),
+  delta_winrate: null,
+}));
+
+const bootReportDetail = async (page: Page) => {
+  await page.route('**/api/v1/reports/7/moves', (route) => route.fulfill({ json: reportMoveRows() }));
+  await page.route('**/api/v1/reports/7', (route) => route.fulfill({
+    json: {
+      id: 7, user_game_id: 'g1', status: 'completed', report_type: 'deep',
+      total_moves: 40, analyzed_moves: 40, requested_visits: 2000,
+    },
+  }));
+  await page.route('**/api/v1/user-games/g1', (route) => route.fulfill({ json: REPORT_GAME }));
+  await boot(page, '/kiosk/report/7');
+  await page.waitForSelector('[data-testid="report-detail-movenav"] button', { state: 'attached' });
+  // canvas 是图片加载完之后才画的 —— 早一步读到的是一张空白。
+  await page.waitForFunction(() => {
+    const c = document.querySelector('.kiosk-board__play canvas') as HTMLCanvasElement | null;
+    if (!c || !c.width) return false;
+    const d = c.getContext('2d')!.getImageData(0, Math.floor(c.height / 2), c.width, 1).data;
+    for (let i = 0; i < d.length; i += 4) if (d[i] > 40) return true;   // 有木色了
+    return false;
+  });
+};
+
+/**
+ * 和做题屏那条是**同一条不变式的第三条实现路径**。
+ *
+ * `LiveBoard` 原来永远按 1.5 格边距画(那是给盘面里自己那圈坐标留的位置),而布局 A 的
+ * 坐标交给外壳 ⇒ 线的节距 W/(N−1+3)、刻度带的节距 W/N,**两者不等**。
+ * 本轮给 `calculateBoardLayout` 加了 `margin` 参数、`LiveBoard` 在
+ * `showCoordinates=false` 时传 0.5 —— 这条闸守的正是那个参数别被人改回去。
+ *
+ * 变异实测(2026-08-23):把 `showCoordinates ? 1.5 : 0.5` 改回常数 1.5,这条当场红
+ * (头尾两条线各偏 11 像素以上),而同文件里别的 25 条一条都不动。
+ */
+test('§8 复盘报告:盘上第一条和最后一条竖线,正对刻度带头尾两个字', async ({ page }) => {
+  await bootReportDetail(page);
+
+  const m = await page.evaluate(() => {
+    const canvas = document.querySelector('.kiosk-board__play canvas') as HTMLCanvasElement;
+    const cr = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d')!;
+    const y = Math.floor(canvas.height * 0.28);
+    const row = ctx.getImageData(0, y, canvas.width, 1).data;
+    const lum: number[] = [];
+    for (let x = 0; x < canvas.width; x += 1) lum.push((row[x * 4] + row[x * 4 + 1] + row[x * 4 + 2]) / 3);
+    const wood = [...lum].sort((a, b) => a - b)[Math.floor(lum.length * 0.75)];
+    let woodL = 0;
+    while (woodL < lum.length && lum[woodL] < wood * 0.5) woodL += 1;
+    let woodR = lum.length - 1;
+    while (woodR > woodL && lum[woodR] < wood * 0.5) woodR -= 1;
+    const dark: number[] = [];
+    for (let x = woodL + 1; x < woodR; x += 1) if (lum[x] < wood * 0.72) dark.push(x);
+    const lines: number[] = [];
+    let run = [dark[0]];
+    for (let i = 1; i < dark.length; i += 1) {
+      if (dark[i] - dark[i - 1] <= 2) run.push(dark[i]);
+      else { lines.push(run.reduce((a, b) => a + b, 0) / run.length); run = [dark[i]]; }
+    }
+    if (run.length) lines.push(run.reduce((a, b) => a + b, 0) / run.length);
+    const toPage = (px: number) => cr.left + (px / canvas.width) * cr.width;
+    const xOf = (el: Element) => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; };
+    const labels = [...document.querySelectorAll('.kiosk-board__ruler--top span')].map(xOf);
+    return {
+      lines: lines.length,
+      labels: labels.length,
+      firstLine: toPage(lines[0]),
+      lastLine: toPage(lines[lines.length - 1]),
+      firstLabel: labels[0],
+      lastLabel: labels[labels.length - 1],
+    };
+  });
+
+  expect(m.labels, '刻度带不是 19 个字').toBe(19);
+  expect(m.lines, '像素里数出来的竖线不是 19 条 —— 阈值或取样行选歪了,下面两条不作数').toBe(19);
+  expect(Math.abs(m.firstLine - m.firstLabel),
+    `第一条线 ${m.firstLine.toFixed(1)} 和第一个字 ${m.firstLabel.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.lastLine - m.lastLabel),
+    `最后一条线 ${m.lastLine.toFixed(1)} 和最后一个字 ${m.lastLabel.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+});
+
+/**
+ * 右栏纵向账:页控条 + 题头 + 曲线 + **重点手(吃掉剩下的)** + 四个开关 + 四个翻手键 = 516。
+ * 翻手键是这一屏的肌肉记忆位置,**任何一块长高都不许把它顶出画布**。
+ */
+test('§11 复盘报告:重点手再多,翻手键也贴着右栏底,列表自己滚', async ({ page }) => {
+  await bootReportDetail(page);
+
+  const m = await page.evaluate(() => {
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const nav = document.querySelector('[data-testid="report-detail-movenav"]') as HTMLElement;
+    const toggles = document.querySelector('[data-testid="report-detail-toggles"]') as HTMLElement;
+    const rows = document.querySelector('.kiosk-fold__body.foldrows') as HTMLElement;
+    const screenEl = document.querySelector('.kiosk-screen') as HTMLElement;
+    const r = rail.getBoundingClientRect();
+    return {
+      railH: Math.round(r.height),
+      railBottom: Math.round(r.bottom),
+      navBottom: Math.round(nav.getBoundingClientRect().bottom),
+      navCount: nav.querySelectorAll('button').length,
+      toggleCount: toggles.querySelectorAll('button').length,
+      keyRows: document.querySelectorAll('[data-testid="report-detail-key-row"]').length,
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      rowsOverflow: rows.scrollHeight - rows.clientHeight,
+      screenBottom: Math.round(screenEl.getBoundingClientRect().bottom),
+      plot: document.querySelector('[data-testid="review-winrate-plot"]')!.getAttribute('data-state'),
+    };
+  });
+
+  expect(m.railH, '右栏不是 516 —— 布局 A 的高度账先崩了').toBe(516);
+  expect(m.navCount, '翻手键不是四个').toBe(4);
+  expect(m.toggleCount, '显示开关不是四个(形势 / 手数 / AI 推荐 / 试下)').toBe(4);
+  expect(m.keyRows, '造的数据没让重点手列出三行 —— 下面的断言是空的').toBe(3);
+  expect(m.plot, '曲线没画出来 —— 这一屏的胜率是真数据,画不出来就不该判几何').toBe('plotted');
+  expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由重点手那一块吃掉').toBeLessThanOrEqual(0);
+  expect(m.navBottom, '翻手键没贴右栏底').toBe(m.railBottom);
+  expect(m.navBottom, '翻手键被顶到画布外面了').toBeLessThanOrEqual(m.screenBottom);
+});

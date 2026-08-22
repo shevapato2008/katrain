@@ -24,21 +24,35 @@ export interface BoardLayout {
 
 /**
  * Calculate board layout parameters.
- * Uses symmetric 1.5 grid-space margins for coordinates.
+ *
+ * `margin` 是**每边留几格**。默认 1.5:那是给盘面**自己那圈坐标**留的位置。
+ * 坐标交给外壳画的时候(kiosk 布局 A 的四条刻度带)必须传 **0.5**,否则:
+ *   线的节距 = W/(N−1+2·margin),刻度带的节距 = W/N —— 两者只在 margin=0.5 时相等。
+ *
+ * `exact` 关掉取整。**这两个必须一起用**:外壳画坐标时线的节距要**逐像素等于**刻度带的
+ * 轨道宽,而 `floor` 会把 24.2 砍成 24 —— 一格差 0.2,18 格累到边上就是 4px,
+ * 再加上重新居中,头尾两条线各偏 ~6px,四图上一眼看得出「字和线错开」。
+ * 自己画坐标时仍然取整:那时线要落在整像素上才不发虚,而刻度带不存在,没人跟它对齐。
+ *
+ * 同一条不变式在 `TsumegoBoard`(canvas,Task 14)、`GoBoardSvg`(SVG)和这里各有一份,
+ * 判据写在 `tests/kiosk-shell-geometry.spec.ts`:头尾两条线正对刻度带头尾两个字。
  */
 export function calculateBoardLayout(
   canvasWidth: number,
   canvasHeight: number,
-  boardSize: number
+  boardSize: number,
+  options: { margin?: number; exact?: boolean } = {}
 ): BoardLayout {
-  const gridMargins = { x: [1.5, 1.5] as [number, number], y: [1.5, 1.5] as [number, number] };
+  const { margin = 1.5, exact = false } = options;
+  const gridMargins = { x: [margin, margin] as [number, number], y: [margin, margin] as [number, number] };
   const xGridSpaces = boardSize - 1 + gridMargins.x[0] + gridMargins.x[1];
   const yGridSpaces = boardSize - 1 + gridMargins.y[0] + gridMargins.y[1];
-  const gridSize = Math.floor(Math.min(canvasWidth / xGridSpaces, canvasHeight / yGridSpaces));
+  const raw = Math.min(canvasWidth / xGridSpaces, canvasHeight / yGridSpaces);
+  const gridSize = exact ? raw : Math.floor(raw);
   const boardWidth = xGridSpaces * gridSize;
   const boardHeight = yGridSpaces * gridSize;
-  const offsetX = Math.round((canvasWidth - boardWidth) / 2);
-  const offsetY = Math.round((canvasHeight - boardHeight) / 2);
+  const offsetX = exact ? (canvasWidth - boardWidth) / 2 : Math.round((canvasWidth - boardWidth) / 2);
+  const offsetY = exact ? (canvasHeight - boardHeight) / 2 : Math.round((canvasHeight - boardHeight) / 2);
   return { gridMargins, gridSize, boardWidth, boardHeight, offsetX, offsetY };
 }
 

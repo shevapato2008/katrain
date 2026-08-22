@@ -498,3 +498,33 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 }
 .rvconfirm .empty { background: var(--panel); border-style: solid; width: 100%; }
 .rvconfirm__row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+
+/* ── 屏 20 复盘 · 报告 ────────────────────────────────────────────────
+   题头:状态 + 两个出口。和 `.khero` 是同一族,但它得放得下按钮,所以是横排定高 60。 */
+.rhead {
+  display: flex; align-items: center; gap: 10px; padding: 0 12px; height: 60px; flex: none;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--panel);
+}
+.rhead h4 { font-family: var(--font-serif); font-size: 14px; font-weight: 600; margin: 0; }
+/* 和 `.khero p` 同一个坑:本仓没有全局重置,只写 margin-top 会留着 UA 的下边距,
+   整块被顶高 11.5px(2026-08-22 在屏 15 上量出来过)。 */
+.rhead p { font-size: 11px; color: var(--dim); margin: 1px 0 0; }
+.rhead .end { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: none; }
+
+/* 折叠块里那条会长的行列表(重点手)。滚动条不占宽 —— 占了,460 就不是 460。 */
+.foldrows {
+  flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none;
+  display: flex; flex-direction: column; gap: 8px; padding: 8px 12px 10px;
+}
+.foldrows::-webkit-scrollbar { width: 0; height: 0; }
+/* 「该走 X」按掉得多少上色:最狠的那一手用 --bad,其余用 --warn。
+   **不是装饰** —— 三行并排时,颜色是唯一一眼能读出「先看哪一行」的东西。 */
+.foldrows .kiosk-row__t b[data-sev="bad"] { color: var(--bad); }
+.foldrows .kiosk-row__t b[data-sev="warn"] { color: var(--warn); }
+
+/* 曲线可点:点哪儿跳哪一手。`TrendChart` 原来就有这条,换成 `.wrplot` 之后不能丢 ——
+   187 手的谱靠四个翻手键一手一手挪是走不到第 120 手的。 */
+.wrplot.is-pickable { cursor: pointer; }
+.wrplot.is-pickable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 当前停在哪一手 —— 竖的一条,和曲线上那颗点说的是同一件事。 */
+.wrplot .cursor { stroke: var(--accent); stroke-width: 1.2; opacity: .55; }

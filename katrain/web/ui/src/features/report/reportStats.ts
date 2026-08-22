@@ -155,3 +155,63 @@ export function winrateSeries(moves: readonly ReportTaskMove[]): WinratePoint[] 
   }
   return points;
 }
+
+export interface KeyMove {
+  moveNumber: number;
+  player: 'B' | 'W';
+  /** 走子方**自己**视角的胜率(0–100),走之前 / 走之后。 */
+  beforePct: number;
+  afterPct: number;
+  /** 掉了多少个百分点(走子方视角)。恒为正 —— 只有掉的才进这张表。 */
+  dropPct: number;
+  /** KataGo 在那个局面下的首选着法。`null` = 上一行没存候选(算失败或旧数据)。 */
+  bestMove: string | null;
+  /** 这一手实际走的地方。 */
+  playedMove: string | null;
+}
+
+/**
+ * 「重点手」—— **只列掉得最多的那几手**。
+ *
+ * 排序按**走子方自己视角**的胜率跌幅,不按黑方胜率的绝对变化:白走坏的时候黑方胜率是**涨**的,
+ * 按绝对值排会把白的失误排成「黑的好手」。
+ *
+ * 「该走 X」取的是**上一行**的 `top_moves[0]` —— 那一行分析的正是「该走第 N 手」的局面
+ * (`cron/jobs/report_analyze.py:304` 送进去的是 `moves[:move_number]`)。取本行的是错的:
+ * 本行已经是走完之后的局面,它的首选说的是「下一手该走哪儿」。
+ *
+ * 门槛借的是仓里已有的失误线(`delta_score <= -3`),不另立一个「掉多少算掉」——
+ * 屏上列出来的这几手,和三格里数进「失误」的那些手必须是同一批。
+ */
+export function keyMoves(moves: readonly ReportTaskMove[], limit = 3): KeyMove[] {
+  const byNumber = new Map<number, ReportTaskMove>();
+  for (const m of moves) byNumber.set(m.move_number, m);
+
+  const out: KeyMove[] = [];
+  for (const move of moves) {
+    const player = move.actual_player;
+    if (player !== 'B' && player !== 'W') continue;
+    if (move.delta_score == null || move.delta_score > MISTAKE_SCORE_LOSS) continue;
+    const prev = byNumber.get(move.move_number - 1);
+    if (prev?.winrate == null || move.winrate == null) continue;
+
+    const own = (blackWinrate: number) => (player === 'B' ? blackWinrate : 1 - blackWinrate);
+    const beforePct = own(prev.winrate) * 100;
+    const afterPct = own(move.winrate) * 100;
+    const dropPct = beforePct - afterPct;
+    if (dropPct <= 0) continue;              // 丢了目却没丢胜率的手不进这张表
+
+    const cands = Array.isArray(prev.top_moves) ? (prev.top_moves as { move?: string | null }[]) : [];
+    out.push({
+      moveNumber: move.move_number,
+      player,
+      beforePct,
+      afterPct,
+      dropPct,
+      bestMove: cands[0]?.move ?? null,
+      playedMove: move.actual_move,
+    });
+  }
+  out.sort((a, b) => b.dropPct - a.dropPct);
+  return out.slice(0, limit);
+}

@@ -4,6 +4,7 @@ import type { ReportTaskMove } from '../../api/reportApi';
 import type { TopMove } from '../../types/live';
 import {
   BRILLIANT_SCORE_GAIN,
+  keyMoves,
   MISTAKE_SCORE_LOSS,
   summarizeReportMoves,
   winrateSeries,
@@ -122,5 +123,72 @@ describe('winrateSeries —— 曲线的点', () => {
       move({ move_number: 3, winrate: 0.3, actual_player: 'B' }),
     ];
     expect(winrateSeries(partial).map((p) => p.moveNumber)).toEqual([0, 1, 3]);
+  });
+});
+
+describe('keyMoves —— 重点手', () => {
+  // 白走坏的时候**黑方胜率是涨的**。按黑方胜率的绝对变化排,会把白的失误排成「黑的好手」,
+  // 而且方向反了还看不出来 —— 屏上照样是一行通顺的中文。
+  it('按走子方自己视角的跌幅排,黑白各按各的算', () => {
+    const rows = [
+      move({ move_number: 0, winrate: 0.5, score_lead: 0 }),
+      // 黑走坏:黑胜率 50 → 30,掉 20
+      move({ move_number: 1, actual_player: 'B', winrate: 0.3, score_lead: -6, delta_score: -6 }),
+      // 白走坏:黑胜率 30 → 65 ⇒ 白自己 70 → 35,掉 35
+      move({ move_number: 2, actual_player: 'W', winrate: 0.65, score_lead: 4, delta_score: -10 }),
+    ];
+    const k = keyMoves(rows);
+    expect(k.map((x) => x.moveNumber)).toEqual([2, 1]);
+    expect(k[0].player).toBe('W');
+    expect(k[0].beforePct).toBeCloseTo(70, 6);
+    expect(k[0].afterPct).toBeCloseTo(35, 6);
+    expect(k[0].dropPct).toBeCloseTo(35, 6);
+    expect(k[1].dropPct).toBeCloseTo(20, 6);
+  });
+
+  // 「该走 X」在**上一行**里 —— 本行已经是走完之后的局面,它的首选说的是「下一手该走哪儿」。
+  it('「该走 X」取上一行的首选,不是本行的', () => {
+    const cand = (m: string) => [{ move: m, visits: 1, winrate: 0.5, prior: 0.9, pv: [m], score_lead: 0 }] as unknown as TopMove[];
+    const rows = [
+      move({ move_number: 0, winrate: 0.5, score_lead: 0, top_moves: cand('R11') }),
+      move({ move_number: 1, actual_player: 'B', winrate: 0.2, score_lead: -8, delta_score: -8, actual_move: 'C3', top_moves: cand('S8') }),
+    ];
+    expect(keyMoves(rows)[0]).toMatchObject({ bestMove: 'R11', playedMove: 'C3' });
+  });
+
+  it('上一行没存候选时说「没有」,不拿本行的顶替', () => {
+    const rows = [
+      move({ move_number: 0, winrate: 0.5, score_lead: 0 }),
+      move({ move_number: 1, actual_player: 'B', winrate: 0.2, score_lead: -8, delta_score: -8 }),
+    ];
+    expect(keyMoves(rows)[0].bestMove).toBeNull();
+  });
+
+  it('门槛就是失误线 —— 屏上列的这几手和三格里数的那些手是同一批', () => {
+    const rows = [
+      move({ move_number: 0, winrate: 0.5, score_lead: 0 }),
+      move({ move_number: 1, actual_player: 'B', winrate: 0.4, score_lead: -3, delta_score: MISTAKE_SCORE_LOSS }),
+      move({ move_number: 2, actual_player: 'W', winrate: 0.45, score_lead: -2, delta_score: -2.99 }),
+    ];
+    expect(keyMoves(rows).map((k) => k.moveNumber)).toEqual([1]);
+  });
+
+  it('丢了目却没丢胜率的手不进这张表', () => {
+    const rows = [
+      move({ move_number: 0, winrate: 0.5, score_lead: 0 }),
+      move({ move_number: 1, actual_player: 'B', winrate: 0.52, score_lead: -9, delta_score: -9 }),
+    ];
+    expect(keyMoves(rows)).toEqual([]);
+  });
+
+  it('最多只列 limit 条', () => {
+    const rows = [move({ move_number: 0, winrate: 0.9, score_lead: 0 })];
+    for (let n = 1; n <= 6; n += 1) {
+      rows.push(move({
+        move_number: n, actual_player: 'B',
+        winrate: 0.9 - n * 0.1, score_lead: -n * 4, delta_score: -4 - n,
+      }));
+    }
+    expect(keyMoves(rows, 3)).toHaveLength(3);
   });
 });

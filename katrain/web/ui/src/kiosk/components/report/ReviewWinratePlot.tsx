@@ -43,7 +43,9 @@ function worstDropIndex(points: readonly WinratePoint[]): number | null {
   return worst;
 }
 
-export function ReviewWinratePlot({ points, empty, axisTop, axisMid, axisBottom, label }: {
+export function ReviewWinratePlot({
+  points, empty, axisTop, axisMid, axisBottom, label, cursor, onPick,
+}: {
   points: readonly WinratePoint[];
   /**
    * 空态那句话。**传了就画它、不画线**;点不够两个时也画它 ——
@@ -54,6 +56,13 @@ export function ReviewWinratePlot({ points, empty, axisTop, axisMid, axisBottom,
   axisMid: string;
   axisBottom: string;
   label: string;
+  /** 停在第几手 —— 画一条竖线。`undefined` = 不画(复盘列表那一屏没有游标)。 */
+  cursor?: number;
+  /**
+   * 点曲线跳到那一手。**不是锦上添花**:187 手的谱靠四个翻手键一手一手挪走不到第 120 手,
+   * 而稿子把滑块拿掉了 —— 这条是那个滑块的替代品(`TrendChart` 原来就有)。
+   */
+  onPick?: (moveNumber: number) => void;
 }) {
   const axis = (
     <div className="wraxis">
@@ -80,13 +89,50 @@ export function ReviewWinratePlot({ points, empty, axisTop, axisMid, axisBottom,
 
   const drop = worstDropIndex(points);
   const last = points[points.length - 1];
+  const cursorPoint = cursor == null
+    ? null
+    : points.reduce((best, p) => (
+      Math.abs(p.moveNumber - cursor) < Math.abs(best.moveNumber - cursor) ? p : best
+    ), points[0]);
+
+  // 横坐标是**手数**不是数组下标(断掉的手不补点),所以反查也按手数来。
+  const pickAt = (clientX: number, el: HTMLElement) => {
+    if (!onPick) return;
+    const r = el.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    const target = ratio * lastMove;
+    const nearest = points.reduce((best, p) => (
+      Math.abs(p.moveNumber - target) < Math.abs(best.moveNumber - target) ? p : best
+    ), points[0]);
+    onPick(nearest.moveNumber);
+  };
 
   return (
     <div className="wrbox">
       {axis}
-      <div className="wrplot" data-testid="review-winrate-plot" data-state="plotted" data-points={points.length}>
+      <div
+        className={onPick ? 'wrplot is-pickable' : 'wrplot'}
+        data-testid="review-winrate-plot"
+        data-state="plotted"
+        data-points={points.length}
+        role={onPick ? 'button' : undefined}
+        tabIndex={onPick ? 0 : undefined}
+        aria-label={onPick ? label : undefined}
+        onClick={onPick ? (e) => pickAt(e.clientX, e.currentTarget) : undefined}
+        onKeyDown={onPick ? (e) => {
+          if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+          e.preventDefault();
+          const i = cursorPoint ? points.indexOf(cursorPoint) : 0;
+          const next = e.key === 'ArrowLeft' ? Math.max(0, i - 1) : Math.min(points.length - 1, i + 1);
+          onPick(points[next].moveNumber);
+        } : undefined}
+      >
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={label}>
           <line className="mid" x1="0" y1={H / 2} x2={W} y2={H / 2} />
+          {cursorPoint && (
+            <line className="cursor" data-testid="review-winrate-cursor"
+              x1={x(cursorPoint)} y1="0" x2={x(cursorPoint)} y2={H} />
+          )}
           {drop == null ? (
             <polyline className="curve" points={path(0, points.length - 1)} />
           ) : (

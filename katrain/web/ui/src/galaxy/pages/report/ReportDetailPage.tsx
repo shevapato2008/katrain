@@ -38,17 +38,19 @@ const BACK_TO = '/galaxy/report';
 
 // 三个早退形态（未登录 / 加载中 / 出错）也走同一副骨架 —— 照 `LiveMatchPage.tsx:79-125`。
 // 迁版式前它们是裸 `Box p={4}`，于是「棋盘正上方不放任何东西」这条在错误态下等于没实现。
+/* 占位不是控件 —— 与 `LiveMatchPage` 同一处修正（那份是原件，这份是抄件）。
+   原来是 `<Button disabled><Skeleton/></Button>`，按构造就没有可及名。 */
 const LoadingControls = () => (
   <Box sx={{ p: 2, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px' }}>
     {Array.from({ length: 4 }, (_, index) => (
-      <Button key={index} disabled sx={{ minHeight: 54 }}><Skeleton width="70%" /></Button>
+      <Skeleton key={index} variant="rounded" height={54} />
     ))}
   </Box>
 );
 
 const LoadingActions = () => (
   <Box sx={{ p: 2 }}>
-    <Button fullWidth disabled sx={{ minHeight: 40 }}><Skeleton width="60%" /></Button>
+    <Skeleton variant="rounded" height={40} />
   </Box>
 );
 
@@ -113,15 +115,17 @@ export default function ReportDetailPage() {
     return (
       <BoardPageShell
         onBoardSizeChange={setBoardEdge}
-        board={<Skeleton data-testid="board-unauthenticated-skeleton" variant="rectangular" width="100%" height="100%" />}
+        /* 未登录和出错都**不是加载态** —— 脉动的骨架屏在说「东西还在路上」，
+           而这两屏都已经定局了。静止占位 + 不挂 `displayControls`/`actions`：
+           没有对局可显示，就没有可开关的东西。 */
+        board={<Skeleton data-testid="board-unauthenticated-skeleton" variant="rectangular" animation={false} width="100%" height="100%" />}
         modulePlate={<ModulePlate title={t('report:review', '复盘')} backTo={BACK_TO} />}
         railBody={(
           <Box sx={{ p: 2 }}>
             <Alert severity="info">{t('report:login_required_detail', 'Please log in to view report details.')}</Alert>
           </Box>
         )}
-        displayControls={<LoadingControls />}
-        actions={<LoadingActions />}
+        actions={null}
       />
     );
   }
@@ -150,7 +154,7 @@ export default function ReportDetailPage() {
     return (
       <BoardPageShell
         onBoardSizeChange={setBoardEdge}
-        board={<Skeleton data-testid="board-error-skeleton" variant="rectangular" width="100%" height="100%" />}
+        board={<Skeleton data-testid="board-error-skeleton" variant="rectangular" animation={false} width="100%" height="100%" />}
         modulePlate={<ModulePlate title={t('report:review', '复盘')} backTo={BACK_TO} />}
         railBody={(
           <Box sx={{ p: 2 }}>
@@ -164,8 +168,7 @@ export default function ReportDetailPage() {
             </Button>
           </Box>
         )}
-        displayControls={<LoadingControls />}
-        actions={<LoadingActions />}
+        actions={null}
       />
     );
   }

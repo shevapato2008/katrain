@@ -1,3 +1,4 @@
+/* spec-sync: 2.4 rev=2026-08-22 sha=2c267c58 —— 见 check_spec_sync.py；规范 §2.4 一改这里就红。 */
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useGameNavigation } from '../../context/GameNavigationContext';

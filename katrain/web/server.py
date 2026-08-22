@@ -2679,9 +2679,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
 
 async def _cleanup_loop(manager: SessionManager):
+    """定时回收过期会话。
+
+    `cleanup_expired()` 是**同步**方法，而且它做的事里包含关停 KataGo 子进程 ——
+    直接 `manager.cleanup_expired()` 就是把这段活儿跑在事件循环线程上，
+    它一慢，整个服务对所有请求就没有响应。`to_thread` 把它挪到线程池里，
+    事件循环在这期间照常收发。
+
+    （`session.py` 那边已经把「持锁关引擎」拆掉了，`engine.py` 那边给 join 加了上界。
+      三处是同一个故障的三段：**别在事件循环上做**、**别持着锁做**、**别无限等**。
+      少改任何一处，另外两处都还能把服务挂住。）
+
+    一轮失败不停表：吞掉异常继续下一轮。清理停摆的后果是会话越积越多，
+    比循环悄悄死掉、谁都不知道要好 —— 所以这里记 warning，不是静默 pass。
+    """
     while True:
         await asyncio.sleep(30)
-        manager.cleanup_expired()
+        try:
+            await asyncio.to_thread(manager.cleanup_expired)
+        except Exception:
+            logging.getLogger("katrain_web").warning("session cleanup sweep failed", exc_info=True)
 
 
 # Boxes report in every 30s against a 5-minute takeover window, so ten consecutive failures

@@ -1,0 +1,17 @@
+{
+  "spec": "docs/superpowers/specs/2026-08-06-galaxy-board-template-ladder-design.md",
+  "sections": {
+    "2.4": [
+      "katrain/web/ui/src/galaxy/components/layout/ModulePlate.tsx",
+      "katrain/web/ui/src/galaxy/components/layout/ModulePlate.test.tsx",
+      "katrain/web/ui/src/galaxy/components/layout/ContentPageHeader.tsx",
+      "katrain/web/ui/src/galaxy/components/layout/ContentPageHeader.test.tsx",
+      "superpowers/tracks/galaxy-ui-redesign/proto/04-runtime.js"
+    ],
+    "3.2": [
+      "katrain/web/ui/src/galaxy/components/board/useBoardCoordinates.ts",
+      "katrain/web/ui/src/galaxy/components/board/BoardPageShell.tsx",
+      "katrain/web/ui/src/galaxy/components/board/useBoardCoordinates.test.ts"
+    ]
+  }
+}

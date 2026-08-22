@@ -1,0 +1,133 @@
+<style>
+.layout{display:flex;align-items:flex-start}
+.stagecol{flex:1;min-width:0}
+/* ── control drawer ─────────────────────────────────────────── */
+.drawer{
+  position:sticky;top:52px;flex:0 0 320px;width:320px;
+  height:calc(100vh - 52px);overflow:hidden;
+  border-left:1px solid var(--console-line);background:var(--console);
+  display:flex;flex-direction:column;
+}
+body.nodrawer .drawer{display:none}
+.drawer-head{padding:14px 16px 12px;border-bottom:1px solid var(--console-line);flex:none}
+.drawer-head h2{margin:0 0 2px;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3);font-weight:600}
+.drawer-head .big{display:flex;align-items:baseline;gap:8px;margin-top:4px}
+.drawer-head .big b{font-size:1.75rem;font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--jade-l);line-height:1}
+.drawer-head .big span{font-size:.78rem;color:var(--tx3)}
+.drawer-head .who{margin:8px 0 0;font-size:.85rem;color:var(--tx);line-height:1.4}
+.drawer-head .route{margin:2px 0 0;font-size:.72rem;font-family:var(--mono);color:var(--tx3)}
+.drawer-body{flex:1;min-height:0;overflow-y:auto;padding:8px 8px 24px}
+.drawer-body::-webkit-scrollbar{width:8px}
+.drawer-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+.zblock{margin-bottom:12px}
+.zname{display:flex;align-items:center;justify-content:space-between;margin:0 0 4px;padding:6px 8px 4px;
+  font-size:.7rem;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);
+  border-bottom:1px solid var(--console-line)}
+.zname em{font-style:normal;font-family:var(--mono);color:var(--jade-l)}
+.crow{display:grid;grid-template-columns:60px 1fr;gap:2px 8px;width:100%;text-align:left;
+  background:transparent;border:0;border-radius:6px;padding:5px 8px;cursor:pointer;color:var(--tx2)}
+.crow:hover{background:rgba(255,255,255,.05)}
+.crow .ck{font-size:.6rem;letter-spacing:.05em;text-transform:uppercase;color:var(--tx3);
+  align-self:center;overflow:hidden;text-overflow:ellipsis}
+.crow .cl{font-size:.82rem;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crow .cs{grid-column:2;font-size:.65rem;font-family:var(--mono);color:var(--tx3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flash{animation:flash 1.1s ease-out}
+@keyframes flash{0%,55%{box-shadow:0 0 0 3px var(--warn);border-radius:6px}100%{box-shadow:0 0 0 0 transparent}}
+
+/* ── click log, docked in the drawer ── */
+.logpane{flex:none;border-top:1px solid var(--console-line);background:#101010;max-height:210px;display:flex;flex-direction:column}
+.logpane-head{margin:0;padding:9px 16px 7px;font-size:.7rem;letter-spacing:.09em;text-transform:uppercase;color:var(--tx3);
+  display:flex;align-items:baseline;gap:8px;flex:none}
+.logpane-head b{font-family:var(--mono);color:var(--jade-l);font-size:.85rem}
+.logpane-head span{text-transform:none;letter-spacing:0;font-size:.68rem;opacity:.75}
+.logpane ol{margin:0;padding:0 0 8px;list-style:none;overflow-y:auto;flex:1;min-height:0}
+.logpane ol::-webkit-scrollbar{width:6px}
+.logpane ol::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
+.logpane li{display:grid;grid-template-columns:auto 1fr;gap:8px;padding:4px 16px;font-size:.72rem;
+  border-bottom:1px solid rgba(255,255,255,.04)}
+.logpane li .t{font-family:var(--mono);color:var(--tx3)}
+.logpane li .a{color:var(--tx);overflow:hidden}
+.logpane li .a em{font-style:normal;color:var(--tx3);display:block;font-size:.68rem}
+.logpane .empty{display:block;padding:8px 16px;font-size:.72rem;color:var(--tx3);border:0}
+
+.note{max-width:760px;margin:0 auto;padding:24px 20px 60px;color:var(--tx2);font-size:.86rem;line-height:1.7}
+.note h3{color:var(--tx);font-size:.95rem;margin:22px 0 6px}
+.note code{font-family:var(--mono);font-size:.8rem;color:var(--jade-l);background:rgba(74,107,92,.12);
+  padding:1px 5px;border-radius:4px}
+.note ul{margin:6px 0;padding-left:18px}
+.note li{margin:3px 0}
+@media (max-width:1100px){ .drawer{display:none} }
+</style>
+
+<div class="console">
+  <div class="console-mark"><b>原型控制台</b><span>不是产品的一部分</span></div>
+
+  <div class="cgroup">
+    <span class="clabel">版式</span>
+    <div class="cseg mode" id="modes">
+      <button data-mode="now" aria-pressed="true">现状</button>
+      <button data-mode="new" aria-pressed="false">改版</button>
+    </div>
+    <span class="modeflag now" id="modeFlag">照搬今天的代码</span>
+  </div>
+
+  <div class="cgroup">
+    <span class="clabel">页面</span>
+    <select class="cpick" id="pick" aria-label="选择页面"></select>
+  </div>
+
+  <div class="cgroup" id="branchWrap">
+    <span class="clabel">分支</span>
+    <div class="cseg" id="branches"></div>
+  </div>
+
+  <div class="cgroup" id="dlgWrap">
+    <span class="clabel">弹窗</span>
+    <div class="cseg" id="dlgs"></div>
+  </div>
+
+  <div class="cgroup">
+    <span class="clabel">视口</span>
+    <div class="cseg" id="vps"></div>
+    <div class="cseg" id="stress"><button data-stress="1" aria-pressed="false">压力数据</button></div>
+  </div>
+
+  <dl class="readout" aria-label="实测几何">
+    <div id="roTop"><dt>顶栏</dt><dd>—</dd></div>
+    <div id="roSide"><dt>左栏</dt><dd>—</dd></div>
+    <div id="roRail"><dt>右栏</dt><dd>—</dd></div>
+    <div id="roBoard"><dt>棋盘</dt><dd>—</dd></div>
+  </dl>
+</div>
+
+<div class="layout">
+  <div class="stagecol">
+    <div class="stage">
+      <div>
+        <div class="frame-cap">
+          <code id="capRoute">/galaxy</code>
+          <span id="scaleNote">1:1</span>
+        </div>
+        <div id="frameWrap" class="frame-wrap"><div class="app" id="app"></div></div>
+        <div class="note" id="footnote"></div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="drawer" aria-label="本页控件清单">
+    <div class="drawer-head">
+      <h2>本页控件</h2>
+      <div class="big"><b id="ctlCount">0</b><span>个可点控件，全部来自现有代码</span></div>
+      <p class="who" id="ctlScreen">—</p>
+      <p class="route" id="ctlRoute">—</p>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="logpane">
+      <p class="logpane-head">点击记录 <b id="logCount">0</b><span>每个按钮都记下它在真实代码里做什么</span></p>
+      <ol id="logList"><li class="empty">还没有点击。点左边框里任意按钮试试。</li></ol>
+    </div>
+  </aside>
+</div>
+
+

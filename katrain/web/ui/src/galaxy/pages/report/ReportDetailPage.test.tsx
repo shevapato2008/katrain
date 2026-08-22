@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { computeAccessibleName } from 'dom-accessibility-api';
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -100,6 +101,72 @@ describe('ReportDetailPage', () => {
       error: null,
       refresh: mockDetailRefresh,
     };
+  });
+
+  /**
+   * 早退形态里不许有没有名字的控件。
+   *
+   * 2026-08-22 全站控件账本量到：这一页正常数据下 14 控件 / 0 无名，但 task 不存在时
+   * 进错误态，右栏那 4 个工具格占位 + 1 个动作占位都是 `<Button disabled><Skeleton/></Button>`,
+   * 既没有可见文字也没有 `aria-label` —— 读屏用户会听到五个没有名字的按钮。
+   * **错误态是真状态**，不是「测不到就不算」的边角。
+   *
+   * 判据落在**每个按钮都有可及名**上，不落在按钮个数上：数目断言对「换一种实现、
+   * 仍然没有名字」免疫，而这一页的历史正是抄了直播页那份实现。可及名用
+   * `dom-accessibility-api` 真算（testing-library 内部同一份），不用 textContent 近似。
+   *
+   * 两条各守一半，缺一不可：
+   *   - 错误态那条守**槽位**（错误态不再挂 `displayControls`/`actions`）
+   *   - 加载态那条守**占位实现**（占位不再做成 `<Button>`）
+   * 只写错误态那条的话，把 `LoadingControls` 改回按钮实现它是绿的 —— 因为错误态
+   * 已经不渲染它了，而加载态会。
+   *
+   * 变异记录（2026-08-22 实跑，见提交信息）：把本页对这两处的改动整体撤回 →
+   * 加载态那条红（5 个无名），错误态那条红（5 个无名）。
+   */
+  it('leaves no unnamed control in the error state', async () => {
+    reportDetailFixture = { ...reportDetailFixture, task: null, game: null, error: 'Report task not found' };
+
+    render(
+      <MemoryRouter initialEntries={['/galaxy/report/404']}><GameNavigationProvider>
+        <Routes>
+          <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
+        </Routes>
+      </GameNavigationProvider></MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Report task not found')).toBeInTheDocument();
+    });
+
+    const unnamed = screen
+      .getAllByRole('button')
+      .filter((el) => computeAccessibleName(el).trim() === '');
+    expect(unnamed).toEqual([]);
+
+    // 而且错误态根本不该画加载骨架 —— 脉动的骨架在说「东西还在路上」，这一屏已经失败了。
+    expect(screen.queryByTestId('board-loading-skeleton')).not.toBeInTheDocument();
+  });
+
+  it('leaves no unnamed control while loading', async () => {
+    reportDetailFixture = { ...reportDetailFixture, loading: true };
+
+    render(
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
+        <Routes>
+          <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
+        </Routes>
+      </GameNavigationProvider></MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('board-loading-skeleton')).toBeInTheDocument();
+    });
+
+    const unnamed = screen
+      .getAllByRole('button')
+      .filter((el) => computeAccessibleName(el).trim() === '');
+    expect(unnamed).toEqual([]);
   });
 
   it('renders a live-aligned detail shell', async () => {

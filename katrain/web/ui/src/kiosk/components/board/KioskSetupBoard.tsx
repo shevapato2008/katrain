@@ -1,4 +1,5 @@
 import { useTranslation } from '../../../hooks/useTranslation';
+import { boardExtent, colsFor, lineAt, rowsFor, starsFor } from '../../shell/goBoard';
 import './kioskSetupBoard.css';
 
 /**
@@ -26,25 +27,16 @@ import './kioskSetupBoard.css';
  * 没抄 —— 抄它等于往仓里塞一份没人核的二进制。记账在 `kiosk-design-alignment.md` §12。
  */
 
-// `spec:403` 围棋:上下 A–T(**跳 I**),左右 1–19。跳 I 之后正好 19 个字母。
-// 9 路 / 13 路取前 9 / 前 13 个,跳 I 这条一样成立。
-const COLS = 'ABCDEFGHJKLMNOPQRST';
-// `spec:432`:没有外双框的棋种(围棋、五子棋)一律 0.5 格,这样刻度字和线逐条对齐。
-const MARGIN = 0.5;
+// 列名(跳 I)、留白 0.5 格、星位、行号方向**全部来自 `shell/goBoard.ts`** ——
+// 它们原来就写在这里,Task 9 抽出去了。对局屏和做题屏也要按同一套坐标摆子,
+// 留在这儿的话它们只能各抄一份,而这套东西每一条都容易抄错、抄错了屏上还挺像。
 const U = 100; // SVG 内部单位;19 路外框 viewBox 边长 = (18 + 2×0.5) × 100 = 1900
-
-/** 星位按路数换,不是同一组坐标缩放:9 路的星在 3-3,19 路在 4-4(这里是 0 起索引)。 */
-const STARS_BY_SIZE: Record<number, [number, number][]> = {
-  9: [[2, 2], [2, 6], [6, 2], [6, 6], [4, 4]],
-  13: [[3, 3], [3, 9], [9, 3], [9, 9], [6, 6]],
-  19: [[3, 3], [3, 9], [3, 15], [9, 3], [9, 9], [9, 15], [15, 3], [15, 9], [15, 15]],
-};
 // 稿子 `:852`:19 路比 15 路密,线宽按格距收一档;最外一圈粗一档,和真木盘一样。
 const LINE_W = U * 0.03;
 const EDGE_W = U * 0.048;
 const STAR_R = U * 0.075;
 
-const at = (i: number) => (MARGIN + i) * U;
+const at = (i: number) => lineAt(i, U);
 
 interface KioskSetupBoardProps {
   /**
@@ -58,8 +50,8 @@ interface KioskSetupBoardProps {
 
 const KioskSetupBoard = ({ color, size }: KioskSetupBoardProps) => {
   const { t } = useTranslation();
-  const W = (size - 1 + 2 * MARGIN) * U;
-  const stars = STARS_BY_SIZE[size] ?? [];
+  const W = boardExtent(size, U);
+  const stars = starsFor(size);
   // 刻度**不跟着执棋方翻**。这不是给规范开例外,是规范里更具体的那条本来就管这件事:
   //
   //   §8 `:414` 已经立过刻度方向的法,而且**立法依据就是记法** —— 「象棋两条刻度数值不同向:
@@ -76,9 +68,9 @@ const KioskSetupBoard = ({ color, size }: KioskSetupBoardProps) => {
   // ⚠️ 别把理由写成「围棋空盘 180° 对称所以翻不翻都一样」—— **那句是错的**:
   // 空盘对,**让子局不对**(3 子让子是右上/左下/左上,转 180° 变成左下/右上/右下,
   // 不是同一个局面)。理由是记法绝对,不是图形对称。
-  const cols = [...COLS].slice(0, size);
+  const cols = colsFor(size);
   // 行号 1 在最下(`spec:403` 那张表,五子棋那行写明了方向,围棋同向),所以从上往下读是 19…1。
-  const rows = Array.from({ length: size }, (_, i) => size - i);
+  const rows = rowsFor(size);
 
   const lines = [];
   for (let i = 0; i < size; i += 1) {

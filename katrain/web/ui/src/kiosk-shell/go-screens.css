@@ -26,3 +26,27 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ── 这里**没有**的两条,以及为什么 ──────────────────────────────────────
+ *
+ * ① `.kiosk button,input,select,textarea { font-family: inherit }`(G11 第 2 条)。
+ *    **这条在本仓是多余的,而且是量出来的、不是推出来的。** 往跨平台屏塞了一个裸
+ *    `<button>中文</button>` 当变异探针,字族闸**没红**;去查它的计算值:
+ *
+ *        computed: "SmartBox Sans", "SmartBox Kai", "Kaiti SC", system-ui, sans-serif
+ *        匹配到的规则:button → inherit(**两条**)
+ *
+ *    发这两条的是 **MUI `CssBaseline`**。三家活样本(象棋/国象/五子棋)都补了这条,
+ *    是因为**它们不是 MUI 栈** —— 纯 React + 手写 CSS,没人替它们发 `inherit`。
+ *    ⇒ 这不是「我们还没踩到」,是**这条坑在这个技术栈上不存在**。
+ *    照抄过来会多一条永远不承重的规则,而不承重的规则会让针对它的变异永远杀不死闸
+ *    (本轮已经在 `min-width:0` 上栽过一次:两条冗余规则互相顶着,谁都杀不死)。
+ *
+ *    真正守着这件事的是 `tests/kiosk-font-routing.spec.ts` —— 它问的是「屏上这段字最后
+ *    由谁画的」,与谁发的规则无关。Task 8 那三屏已经加进去了。
+ *
+ * ② `.kiosk h1,h2,h3,h4,p { margin: 0 }`(G11 第 1 条)。
+ *    它的特异性 (0,1,1) 压得过 MUI emotion 类 (0,1,0),会把全站 `<Typography gutterBottom>`
+ *    的下边距一起吃掉(现在 kiosk 里 gutterBottom 是 0 处,但逐屏重写时会出现)。
+ *    ⇒ 谁需要谁在自己那一屏的块里归零,像上面 `.kiosk-pagebar__title` 那样。
+ */

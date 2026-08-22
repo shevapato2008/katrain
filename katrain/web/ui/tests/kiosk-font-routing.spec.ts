@@ -165,6 +165,33 @@ test('kiosk 对弈首页:同一套字族(这屏不共用挡局屏的任何组件
   console.log(`[字体] 对弈首页实际命中:${shown}`);
 });
 
+// ── Task 8/9 —— 页控条那批屏 ────────────────────────────────────────────
+// 这三屏各引进了一批**裸 `<button>`**(页控条的返回键、分段控件)。UA 会把裸 button 钉死在
+// `400 13.333px Arial`,而板子(Debian 11)上没有 Arial 的中文面 ⇒ **豆腐块**。
+// 共享 `tokens.css` 给这几个类都写了显式 font-family,所以现在是绿的 ——
+// 这几条闸是替**下一批**裸控件守的:它们一进来就会在这里响。
+
+test('kiosk 页控条布局 B(跨平台):裸 button 没掉到 UA 字体', async ({ page }) => {
+  await stubAuth(page);
+  await page.goto('/kiosk/play/cross-platform');
+  await page.waitForLoadState('networkidle');
+  console.log(`[字体] 跨平台屏实际命中:${await assertFontRouting(page, '跨平台屏')}`);
+});
+
+test('kiosk 设置屏:整屏同一套字族', async ({ page }) => {
+  await stubAuth(page);
+  await page.goto('/kiosk/settings');
+  await page.waitForLoadState('networkidle');
+  console.log(`[字体] 设置屏实际命中:${await assertFontRouting(page, '设置屏')}`);
+});
+
+test('kiosk 单元列表:页控条副标(斜体 Serif)也走拉丁族,中文照旧走楷体', async ({ page }) => {
+  await stubAuth(page);
+  await page.goto('/kiosk/tsumego/15k/capturing');
+  await page.waitForLoadState('networkidle');
+  console.log(`[字体] 单元列表实际命中:${await assertFontRouting(page, '单元列表')}`);
+});
+
 test('600 字重的中文命中真 Bold 面,不是浏览器合成的伪粗', async ({ page }) => {
   await stubAuth(page);
   await page.goto('/kiosk/play/ai/setup/ranked');

@@ -207,9 +207,74 @@ Mac 的代理是 fakeip，`/browse` 的 SSRF 闸会把 `go.sailorvoyage.top` 判
 sx 不动则像素不变，但要各补一张工具格截图，且动 `RightSidebarPanel` 前要先问 —— 它是
 `GamePage` 的面板。折叠之后账本能第一次看见那 20 个控件（研究 12 + 对局室 8）。
 
+## 4.8 2026-08-21 galaxy 地板字体（commit 5ff29e43）与一笔**必须还**的取图债
+
+Fan 在对照台上指出死活题页四个工具格键的中文不是霞鹜文楷。根因比「ButtonBase 不套
+`typography.button`」更靠上一层：**galaxy 从来没铺过自己的地板字体**。`theme.typography.*`
+只能到达在自身根样式里展开了某个 variant 的 MUI 组件；`ButtonBase`、裸 `span/div`、
+SVG `<text>` 只能沿 DOM 继承，而继承链顶端的 `<body>` 是**外层** zenTheme 的 CssBaseline
+画的（`AppRouter.tsx:30-31` → `theme.ts:43` 的 `'Manrope', sans-serif`，零 CJK；且 Manrope
+全仓没有 `@font-face`）。修在 `.galaxy-root`（`GalaxyApp.tsx`）—— 它本来就是规范 §4.1 说的
+locale 作用域节点，已挂 `data-language` 与 `font-synthesis:none`，唯独漏了字体栈本身。
+取 `galaxyTheme` 的值不写死，locale 门（`galaxy/theme.ts:8`）原样生效。
+
+顺带同类五处：`ResearchPage` / `KifuLibraryPage` 的 sx 写死 `'IBM Plex Mono', monospace`，
+其中四处字符串夹着中文，走的是 monospace 的 CJK 回退；改成在后面追加 galaxy 字体栈。
+
+> ### ⚠️ 未还的债：死活题页四图**取于字体修复之前**
+>
+> `superpowers/tracks/galaxy-ui-redesign/visual/tsumego/{1440x900,1024x768,430x880}/`
+> 里的 `implementation` / `side-by-side` / `overlay` / `diff` 四类图，工具格标签还是系统黑体。
+> **Fan 2026-08-21 明确要求：整组重取，排在测试服重新部署时一起做，「一定要记得做」。**
+>
+> 触发条件：下一次部署测试服（`go.sailorvoyage.top` / home-ubuntu）时。
+> 完成判据：三档视口下 `implementation.png` 里工具格标签的字形与同页「上一题」按钮一致
+> （霞鹜文楷），且 `reference` 不动（稿子没变，只有实现变了）。
+> 重取后同步更新对照台 Artifact `279158d5-4564-43ea-b761-bcf93d7f5522`，
+> 并撤掉死活题那一节顶上的「取于修复前」黄字提示。
+>
+> `research/` 那组不受影响：研究页可见文字全走 Typography/Button，实测整屏逐像素 0 变化。
+
+**波及面实测**：`/galaxy`、`/play`、`/research`、`/kifu`、`/tsumego` 五页整屏逐像素 diff
+**0 变化**；只有死活题页有差，且只落在标签那条 11px 高的横带上。kiosk 侧零波及 ——
+`GalaxyApp` 整个模块在 kiosk 构建里被 DCE，产物里族名 `LXGW WenKai` 命中 0。
+
+## 4.9 S3 复盘·报告详情页（commit 00e850ea）
+
+**与 S2 同一处待裁定，两页保持一致**：冻结稿 V2 与已批准的 `LiveMatchPage` 都是
+「左箭头图标 + 右侧状态 chip」，规范 §2.4 写的是「左标题、右『← 上一级简称』」且
+「chip 一律不进页头」。按授权顺序取规范。**这是 §4.7 那两处的同一条，Fan 一句话两页一起改。**
+
+**一处有意不按冻结稿：显示开关的落位。** 稿子放在中段最末（shell 的 `displayControls` 槽），
+但那是按稿子里那份很短的假数据排的。真数据下掉到折线以下 208px（1440×900）/ 389px（1024×768），
+迁版式前它一直可见。稿子的意图是「不用滚就能看见」（参考图里它露着），真数据下只有紧跟
+对局信息才成立。
+
+**顺带关掉了一笔债的两处**：`LiveMatchDisplayControls` 换成工具格（`ToolGridButton` 四列一行
++ 坐标单独一行开关），直播页与复盘页同时升级。S9 的折叠清单因此**只剩两处**：
+`RightSidebarPanel.ItemToggle`（对局室，动之前先问 Fan）与 `ResearchToolbar.ToolButton`（研究页）。
+
+**修掉一个既有 bug**：原来「领地」按有没有 ownership 分成两个几乎相同的 `ToggleButton` 分支，
+其中 disabled 那支连 `Tooltip` 都掉了 —— 用户按不动而没有任何解释。共享件用
+`disabled` + `tooltip`（`ToolGridButton` 新增的覆盖：默认 disabled 不显示提示，
+但「要先有分析才能看领地」这句恰恰只在键是灰的时候才有用）一处表达。
+
+**取图 fixture（本机 dev 库，S3 验收通过即删）**：`styleunify_probe` 名下、对局名
+`STYLEUNIFY_FIXTURE`、由 `fan` 的 task 14 整套复制（250 手 / 24 失误 / task_id 25）。
+报告接口按 owner 过滤，本机 probe 账号名下原本没有报告。
+删除：`python3 <scratchpad>/s3-fixture.py --drop`。
+
 ## 5. 待议（发现即记，不顺手改）
 
 - **基线上就红的一条单测**：`src/kiosk/__tests__/GamePageEngine.test.tsx`
   「confirming resign from the error dialog fires the resign action AND closes the error dialog」，
   `mockClearPhysicalEngineError` 期望调用 1 次实得 0 次。已在 **fd3de2b6 干净树**上单独跑过复现 ——
   与本轮无关，属 kiosk 对局页赛道。本轮的判据是「不新增失败」，不是「全绿」。
+
+- **直播页的显示开关可能也在折线以下**：复盘页实测工具格掉到折线下 208–389px，原因是真数据把
+  中段撑长。`LiveMatchPage` 用的是同一个共享件、同样挂在 `displayControls` 槽，但本机没有直播
+  数据，量不到。**下一次有直播数据时量一次**；若同样在折线以下，改法与复盘页相同（挪到
+  `MatchInfo` 之后）。
+- **「进入研究室」是个空跳转**：`ReportDetailPage` 只 `navigate('/galaxy/research')`，不带
+  taskId / sgf / game_id，落到研究页的空白编辑态。冻结稿 V2 的注释写着「现状漏了棋局参数，
+  改版补上」并注明「仍然请你点头」。属导航参数、不涉后端契约，**等 Fan 点头再补**。

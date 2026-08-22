@@ -3111,3 +3111,9 @@ msgstr "Hint"
 
 msgid "tsumego:this_problem"
 msgstr "This problem"
+
+msgid "Back"
+msgstr "Back"
+
+msgid "back_to"
+msgstr "Back to {parent}"

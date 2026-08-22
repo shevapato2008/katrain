@@ -44,7 +44,11 @@ katrain/web/ui/src/galaxy/pages/tutorials/` 看有没有并行改动，有就先
 `TsumegoCategoriesPage.tsx`、`TsumegoLevelsPage.tsx`、`TsumegoListPage.tsx`、`TsumegoUnitsPage.tsx`、
 `tutorials/TutorialLandingPage.tsx`、`tutorials/TutorialBooksPage.tsx`、`tutorials/TutorialBookDetailPage.tsx`
 
-按 spec §2.4：单行左右布局，左标题右「← 上一级简称」；根级页面（Dashboard）只留标题。
+按 spec §2.4：单行布局，**左上角返回箭头图标键 + 标题**；上一级简称不上屏、只进无障碍名；根级页面（Dashboard）只留标题。
+
+> **2026-08-22 修订**：返回按钮改为**左上角箭头图标键**，上一级简称不上屏、只进无障碍名。
+> 依据 Fan 当日裁定「返回按钮都放到右边栏的左上角吧。不止限于复盘页面」并授权改文档。
+> 权威条款见规范 §2.4；实现在 `galaxy/components/layout/ModulePlate.tsx` 一处。
 英文 eyebrow、面包屑、长副标题、状态说明、chip **一律不进页头**，需要保留的下沉到正文首个业务区。
 
 ## 3. 决策三 · 视觉与承重关卡的粒度

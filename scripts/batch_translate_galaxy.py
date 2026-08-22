@@ -21,6 +21,19 @@ I18N_DIR = PROJECT_ROOT / "katrain" / "i18n" / "locales"
 # All Galaxy UI translation keys with translations for each language
 # Format: {msgid: {lang_code: msgstr}}
 GALAXY_TRANSLATIONS = {
+    # 模块牌返回键（2026-08-22：返回键统一到右栏左上角，简称不上屏、只进无障碍名）
+    "Back": {
+        "en": "Back", "cn": "返回", "tw": "返回", "jp": "戻る", "ko": "뒤로",
+        "de": "Zurück", "es": "Atrás", "fr": "Retour", "ru": "Назад",
+        "tr": "Geri", "ua": "Назад",
+    },
+    "back_to": {
+        "en": "Back to {parent}", "cn": "返回{parent}", "tw": "返回{parent}",
+        "jp": "{parent}に戻る", "ko": "{parent}(으)로 뒤로", "de": "Zurück zu {parent}",
+        "es": "Volver a {parent}", "fr": "Retour à {parent}", "ru": "Назад к {parent}",
+        "tr": "{parent} sayfasına dön", "ua": "Назад до {parent}",
+    },
+
     # Dashboard
     "dashboard:welcome": {
         "en": "Welcome to Galaxy Go",

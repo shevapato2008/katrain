@@ -3168,3 +3168,9 @@ msgstr "İpucu"
 
 msgid "tsumego:this_problem"
 msgstr "Bu problem"
+
+msgid "Back"
+msgstr "Geri"
+
+msgid "back_to"
+msgstr "{parent} sayfasına dön"

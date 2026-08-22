@@ -158,7 +158,7 @@ describe('LiveMatchPage', () => {
 
   it('uses requestNavigation for the module back action', async () => {
     renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    fireEvent.click(screen.getByRole('button', { name: '返回' }));
     expect(await screen.findByText('Live list destination')).toBeInTheDocument();
   });
 
@@ -171,7 +171,7 @@ describe('LiveMatchPage', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getByTestId('board-rail-scroll')).toBeInTheDocument();
     expect(screen.getByTestId('board-rail-actions')).toBeInTheDocument();
-    screen.getAllByRole('button').filter((button) => button.getAttribute('aria-label') !== 'Back')
+    screen.getAllByRole('button').filter((button) => button.getAttribute('aria-label') !== '返回')
       .forEach((button) => expect(button).toBeDisabled());
   });
 

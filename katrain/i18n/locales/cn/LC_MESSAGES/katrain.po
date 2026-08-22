@@ -2923,3 +2923,9 @@ msgstr "提示"
 
 msgid "tsumego:this_problem"
 msgstr "本题"
+
+msgid "Back"
+msgstr "返回"
+
+msgid "back_to"
+msgstr "返回{parent}"

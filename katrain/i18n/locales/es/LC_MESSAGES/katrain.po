@@ -2981,3 +2981,9 @@ msgstr "Pista"
 
 msgid "tsumego:this_problem"
 msgstr "Este problema"
+
+msgid "Back"
+msgstr "Atrás"
+
+msgid "back_to"
+msgstr "Volver a {parent}"

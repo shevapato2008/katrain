@@ -3119,3 +3119,9 @@ msgstr "Indice"
 
 msgid "tsumego:this_problem"
 msgstr "Ce problème"
+
+msgid "Back"
+msgstr "Retour"
+
+msgid "back_to"
+msgstr "Retour à {parent}"

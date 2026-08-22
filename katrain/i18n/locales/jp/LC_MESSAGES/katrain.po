@@ -3082,3 +3082,9 @@ msgstr "ヒント"
 
 msgid "tsumego:this_problem"
 msgstr "この問題"
+
+msgid "Back"
+msgstr "戻る"
+
+msgid "back_to"
+msgstr "{parent}に戻る"

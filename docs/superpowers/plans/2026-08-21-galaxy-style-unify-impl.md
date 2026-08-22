@@ -80,7 +80,7 @@ node superpowers/tracks/galaxy-ui-redesign/audit_controls.mjs --diff fd3de2b6 <�
 `TsumegoCategoriesPage`、`TsumegoLevelsPage`、`TsumegoListPage`、`TsumegoUnitsPage`、
 `tutorials/TutorialLandingPage`、`tutorials/TutorialBooksPage`、`tutorials/TutorialBookDetailPage`
 
-单行左右布局：左标题、右「← 上一级简称」。英文 eyebrow / 面包屑 / 长副标题 / 状态说明 / chip
+单行布局：**左上角返回箭头图标键 + 标题**（2026-08-22 裁定，上一级简称只进无障碍名）。英文 eyebrow / 面包屑 / 长副标题 / 状态说明 / chip
 一律不进页头，要留的下沉到正文第一个业务区。合成**一张对比板**一次确认，不逐页取图。
 
 ### S9 收口
@@ -189,12 +189,10 @@ Mac 的代理是 fakeip，`/browse` 的 SSRF 闸会把 `go.sailorvoyage.top` 判
 
 **规范 §2.4 与冻结稿冲突两处，按授权顺序取规范：**
 
-| | 冻结稿 | 实现 | 依据 |
+| | 冻结稿 | 当时的实现 | 结局 |
 |---|---|---|---|
-| 返回 | 标题左侧的 `←` 图标键 | 右侧「← 死活」带简称 | §2.4「左标题、右『← 上一级简称』」 |
-| 状态 | 页头右挂一枚「黑先」chip | 留在中段「本题」段 | §2.4「chip 一律不进页头」 |
-
-两处都是可逆的一行改动，要改回稿子的样子说一声。
+| 返回 | 标题左侧的 `←` 图标键 | 右侧「← 死活」带简称 | **2026-08-22 Fan 裁定按稿子做**：返回键一律在右栏左上角，规范 §2.4 已按裁定改写；`ModulePlate` 改一处全站生效 |
+| 状态 | 页头右挂一枚「黑先」chip | 留在中段「本题」段 | **维持**：裁定只涉及返回按钮，§2.4「chip 一律不进页头」那半句没被推翻，继续有效 |
 
 **要还的债：工具格按钮现在有三处实现。**
 `RightSidebarPanel.tsx` 的 `ItemToggle`（对局室，Fan 指的那个参照物）、
@@ -241,9 +239,9 @@ locale 作用域节点，已挂 `data-language` 与 `font-synthesis:none`，唯�
 
 ## 4.9 S3 复盘·报告详情页（commit 00e850ea）
 
-**与 S2 同一处待裁定，两页保持一致**：冻结稿 V2 与已批准的 `LiveMatchPage` 都是
-「左箭头图标 + 右侧状态 chip」，规范 §2.4 写的是「左标题、右『← 上一级简称』」且
-「chip 一律不进页头」。按授权顺序取规范。**这是 §4.7 那两处的同一条，Fan 一句话两页一起改。**
+**返回按钮位置（已裁定）**：2026-08-22 Fan 裁定「返回按钮都放到右边栏的左上角吧。
+不止限于复盘页面」，并授权改文档。规范 §2.4 已改写，`ModulePlate` 改一处、全站消费方
+（升降级对局 / 死活题 / 复盘 / 直播 / 研究）一起生效。状态 chip 那半句未被推翻，仍不进页头。
 
 **一处有意不按冻结稿：显示开关的落位。** 稿子放在中段最末（shell 的 `displayControls` 槽），
 但那是按稿子里那份很短的假数据排的。真数据下掉到折线以下 208px（1440×900）/ 389px（1024×768），

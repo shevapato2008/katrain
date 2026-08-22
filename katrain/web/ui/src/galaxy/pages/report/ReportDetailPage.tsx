@@ -204,11 +204,10 @@ export default function ReportDetailPage() {
         <ModulePlate
           title={`${black} vs ${white}`}
           subtitle={`${currentMove} / ${totalMoves} ${t('live:moves', '手')}`}
-          /* 与死活题页（S2）保持同一种取舍：冻结稿和已批准的 LiveMatchPage 都是
-             「左箭头图标 + 右侧状态 chip」，而规范 §2.4 写的是「左标题、右『← 上一级简称』」
-             且「chip 一律不进页头」。授权顺序是规范 > 稿子，所以两页都按规范做，
-             报告状态/类型仍旧留在右栏的 ReportMetaPanel 里。
-             **两页是同一处待裁定，Fan 一句话可以一起改回稿子的样子。** */
+          /* 返回键在右栏左上角（Fan 2026-08-22 裁定，见 ModulePlate 的注释）。
+             `backLabel` 不上屏，只把无障碍名做成「返回复盘」。
+             报告状态/类型仍留在右栏的 ReportMetaPanel 里 —— 规范 §2.4「chip 一律不进
+             页头」那半句没有被这次裁定推翻，继续有效。 */
           backTo={BACK_TO}
           backLabel={t('report:review', '复盘')}
         />

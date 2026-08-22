@@ -3070,3 +3070,9 @@ msgstr "Подсказка"
 
 msgid "tsumego:this_problem"
 msgstr "Эта задача"
+
+msgid "Back"
+msgstr "Назад"
+
+msgid "back_to"
+msgstr "Назад к {parent}"

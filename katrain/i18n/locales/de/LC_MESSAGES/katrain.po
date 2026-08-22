@@ -3150,3 +3150,9 @@ msgstr "Tipp"
 
 msgid "tsumego:this_problem"
 msgstr "Diese Aufgabe"
+
+msgid "Back"
+msgstr "Zurück"
+
+msgid "back_to"
+msgstr "Zurück zu {parent}"

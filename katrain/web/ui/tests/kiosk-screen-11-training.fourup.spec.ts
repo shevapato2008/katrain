@@ -75,7 +75,7 @@ test('四图:训练营 ←→ sample-go/shots/11-training.png', async ({ page })
     outDir: OUT,
     slug: '11-training',
     referenceCaption:
-      '参考:sample-go/shots/11-training.png · 稿子上那两段 .note(分类标签的来源 / 环里为什么写「—」)是旁注,一律不上线',
+      '参考:sample-go/shots/11-training.png · 2026-08-22 起稿子上不再有旁注小字(Fan 裁:那些字收进 HTML 注释)',
     implementationCaption:
       '实现:/kiosk/tsumego @1024×600 · 时钟冻 16:40 · 题库六档是 fixture(题量由页面从接口算,不是图上写死)· 接着上次 / 两处高亮 / 硬件三格都是 fixture · 镜像盘压暗=还没接到识别结果 · 环恒「—」是真的:这一层算不出每档进度',
   });

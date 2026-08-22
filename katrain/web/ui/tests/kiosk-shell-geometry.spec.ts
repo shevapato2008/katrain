@@ -836,7 +836,14 @@ const bootReview = async (page: Page, n: number) => {
   await page.route('**/api/v1/reports/summary', (route) => route.fulfill({
     json: { pending: 0, running: 0, completed: 0, failed: 0 },
   }));
-  await page.route('**/api/v1/reports/', (route) => route.fulfill({ json: [] }));
+  // 第一局**两档报告都跑完**,而且它是默认选中的那一行 —— 于是行尾最挤的那一种在这儿:
+  // 状态标 + 「标准」+「精读」+「删除」四个元素。行宽装不下的话下面那条会红。
+  await page.route('**/api/v1/reports/', (route) => route.fulfill({
+    json: [
+      { id: 1, user_game_id: 'g0', status: 'completed', report_type: 'normal', total_moves: 100, analyzed_moves: 100, requested_visits: 500 },
+      { id: 2, user_game_id: 'g0', status: 'completed', report_type: 'deep', total_moves: 100, analyzed_moves: 100, requested_visits: 2000 },
+    ],
+  }));
   await page.route('**/api/v1/baipu/load', (route) => route.fulfill({
     json: {
       board_size: 19,
@@ -1178,3 +1185,45 @@ for (const [path, name] of D2_SCREENS) {
     expect(content.bottom, '没有 Dock,内容区下缘就该贴画布底 600').toBe(600);
   });
 }
+
+/**
+ * 行尾最挤的那一种:**两档报告都跑完 + 这一行还是选中的** ⇒
+ * 状态标 +「标准」+「精读」+「删除」四个元素。
+ *
+ * 稿子的行尾只有一个状态标,所以这条没有参照物可比 —— 判据只能是**装不装得下**:
+ * 行不许横向溢出,行尾也不许压到左半那块文字上。
+ * (为什么会有两个报告键:`taskId` 是**按档**发的,同一局可以同时挂标准和精读两份;
+ *  一个「查看报告」指不了两个 id。)
+ */
+test('§9 屏 19:两档都跑完又正好选中的那一行,行尾四个元素装得下', async ({ page }) => {
+  await bootReview(page, 30);
+  await page.waitForSelector('[data-testid="review-row"] .kiosk-row__end button');
+
+  const m = await page.evaluate(() => {
+    const row = document.querySelector('[data-testid="review-row"]') as HTMLElement;
+    const pick = row.querySelector('.rvpick') as HTMLElement;
+    const end = row.querySelector('.kiosk-row__end') as HTMLElement;
+    const rb = row.getBoundingClientRect();
+    const pb = pick.getBoundingClientRect();
+    const eb = end.getBoundingClientRect();
+    return {
+      selected: row.getAttribute('data-selected'),
+      state: row.getAttribute('data-state'),
+      endButtons: [...end.querySelectorAll('button')].map((b) => b.textContent),
+      rowOverflow: row.scrollWidth - row.clientWidth,
+      endRight: Math.round(eb.right),
+      rowInnerRight: Math.round(rb.right - 12),      // .kiosk-row 的右内边距是 12
+      gap: Math.round(eb.left - pb.right),
+      textClipped: pick.scrollWidth - pick.clientWidth,
+    };
+  });
+
+  expect(m.selected, '第一行不是选中态 —— 那就造不出最挤的那一种').toBe('true');
+  expect(m.state, '第一行不是「已分析」—— 两档报告的 fixture 没生效').toBe('analyzed');
+  expect(m.endButtons, '行尾不是「标准 / 精读 / 删除」三个键').toEqual(['标准', '精读', '删除']);
+  expect(m.rowOverflow, '行横向溢出了').toBeLessThanOrEqual(0);
+  expect(m.endRight, '行尾越过了行的右内边界').toBeLessThanOrEqual(m.rowInnerRight);
+  expect(m.gap, '行尾贴上了左半那块文字').toBeGreaterThanOrEqual(0);
+  // 左半那块文字**允许**被省略号截掉(标题可以很长),但不许被挤到零宽。
+  expect(m.textClipped, '左半那块文字被挤没了').toBeLessThan(400);
+});

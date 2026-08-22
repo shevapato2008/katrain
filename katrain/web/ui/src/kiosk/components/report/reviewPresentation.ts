@@ -130,7 +130,8 @@ export function outcomeLine(game: UserGameSummary, mine: 'B' | 'W' | null, t: TF
 }
 
 export type RowState =
-  | { kind: 'analyzed'; taskId: number }
+  /** `taskIds` 按档给全 —— 两档都跑完时**没有唯一宾语**,行尾得拆成两个键。 */
+  | { kind: 'analyzed'; taskId: number; taskIds: readonly { tier: 'normal' | 'deep'; id: number }[] }
   | { kind: 'running'; taskId: number; analyzed: number; total: number }
   | { kind: 'partial'; taskId: number; analyzed: number; total: number }
   | { kind: 'failed'; taskId: number }
@@ -148,7 +149,16 @@ export type RowState =
  */
 export function rowState(game: UserGameSummary, state: ReportGameStatus): RowState {
   const done = state.completedDeep ?? state.completedNormal;
-  if (done) return { kind: 'analyzed', taskId: done.id };
+  if (done) {
+    // ⚠️ **`taskId` 按档发,同一局可以同时挂着标准和精读两份完成报告** ——
+    // 那时一个「查看报告」键指不了两个 id。`taskId` 保留成「最细的那一份」(深读优先),
+    // `taskIds` 把两档都带出来,由行尾决定是画一个键还是两个。
+    const taskIds = [
+      state.completedNormal ? { tier: 'normal' as const, id: state.completedNormal.id } : null,
+      state.completedDeep ? { tier: 'deep' as const, id: state.completedDeep.id } : null,
+    ].filter((x): x is { tier: 'normal' | 'deep'; id: number } => x !== null);
+    return { kind: 'analyzed', taskId: done.id, taskIds };
+  }
   const active = state.activeDeep ?? state.activeNormal;
   if (active) {
     return {

@@ -373,6 +373,14 @@ export default function ReportsPage() {
   }
 
   const totalPages = Math.max(1, Math.ceil(totalGames / PAGE_SIZE));
+  /**
+   * **没下完的局不给生成报告。** 半局的报告本身没意义;而且离线 KataGo 把残局算完再回去
+   * 接着下,那是一条真作弊通道。
+   * ⚠️ 判别位是「**这局结束了没有**」——**不是「算不算分」**。用 `isRated` 去管它,
+   * 就又变成一个 prop 兼管两件事、逼调用方撒谎(计分局下完了照样该有报告,
+   * 国象稿子明写两者进的是同一条复盘线)。
+   */
+  const canAnalyzeSelected = Boolean(selectedSummary) && selectedState?.kind !== 'unfinished';
   const countLabel = query
     ? interpolate(t('review:matched_games', '搜到 {n} 局'), { n: totalGames })
     : interpolate(t('review:local_games', '本机 {n} 局'), { n: totalGames });
@@ -533,7 +541,7 @@ export default function ReportsPage() {
                   title={t('review:tier_standard', '标准')}
                   sub={t('review:tier_standard_sub', '每手算 500 次')}
                   icon="lightbulb"
-                  disabled={!selectedSummary}
+                  disabled={!canAnalyzeSelected}
                   onClick={() => {
                     if (!selectedSummary) return;
                     setActionError(null);
@@ -544,7 +552,7 @@ export default function ReportsPage() {
                   title={t('review:tier_deep', '精读')}
                   sub={t('review:tier_deep_sub', '每手算 2000 次 · 慢四倍')}
                   icon="magnifying-glass"
-                  disabled={!selectedSummary}
+                  disabled={!canAnalyzeSelected}
                   onClick={() => {
                     if (!selectedSummary) return;
                     setActionError(null);
@@ -639,9 +647,25 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport,
         {state.kind === 'analyzed' && (
           <>
             <span className="kiosk-tag kiosk-tag--win">{t('review:tag_analyzed', '已分析')}</span>
-            <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => onOpenReport(state.taskId)}>
-              {t('review:open_report', '查看报告')}
-            </button>
+            {/* ⚠️ **两档都跑完时一个「查看报告」指不了两个 id** —— 报告是按档发的。
+                那时拆成两个键,各自只有一个宾语;只有一档时才是那句概括的「查看报告」。
+                上一版的 `ReportGameCard` 本来就是两个键,收成一个等于丢了一条路。 */}
+            {state.taskIds.length > 1
+              ? state.taskIds.map((task) => (
+                <button
+                  key={task.tier}
+                  type="button"
+                  className="kiosk-btn kiosk-btn--pill"
+                  onClick={() => onOpenReport(task.id)}
+                >
+                  {task.tier === 'deep' ? t('review:tier_deep', '精读') : t('review:tier_standard', '标准')}
+                </button>
+              ))
+              : (
+                <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => onOpenReport(state.taskId)}>
+                  {t('review:open_report', '查看报告')}
+                </button>
+              )}
           </>
         )}
         {state.kind === 'running' && (
@@ -678,8 +702,10 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport,
         {state.kind === 'unfinished' && (
           <span className="kiosk-tag">{t('review:tag_unfinished', '未终局')}</span>
         )}
-        {/* 删除只挂在**选中**的那一行上。稿子的行尾只有一个状态标,而删除是一条不可逆的操作 ——
-            五十二高的行上并排三个可点的东西,误触的是最不能误触的那个。
+        {/* 删除只挂在**选中**的那一行上 —— 它是一条不可逆的操作,而稿子的行尾只有一个状态标。
+            ⚠️ 理由不是「一行上不许有三个可点的东西」:选中行本身就可能有三个(标 + 动作键 + 删除)。
+            准确的说法是**未选中的行上不放不可逆操作** —— 那些行你只是扫过去,
+            而选中的那一行是你刚点过、正在看的,删除出现在那儿是你自己把它叫出来的。
             (`kiosk-shell/icons/` 里没有 trash:那 41 对图标由 MANIFEST 钉着,
              为一个按钮往共享资产包里塞一份新二进制不划算,所以这里用文字。) */}
         {selected && (

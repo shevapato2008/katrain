@@ -107,9 +107,20 @@ describe('rowState —— 分析到哪一步了', () => {
     total_moves: 187, analyzed_moves: 187, requested_visits: 500, ...over,
   });
 
-  it('深读优先于普通 —— 两份都在时屏上说的是那份更细的', () => {
+  // ⚠️ **报告是按档发的** —— 同一局可以同时挂标准和精读两份。`taskId` 取最细的那一份,
+  // 但 `taskIds` 必须把两档都带出来:一个「查看报告」键指不了两个 id。
+  it('两档都跑完时把两个 id 都带出来,taskId 取更细的那一份', () => {
     expect(rowState(game(), { completedNormal: task(), completedDeep: task({ id: 9 }) }))
-      .toEqual({ kind: 'analyzed', taskId: 9 });
+      .toEqual({
+        kind: 'analyzed',
+        taskId: 9,
+        taskIds: [{ tier: 'normal', id: 7 }, { tier: 'deep', id: 9 }],
+      });
+  });
+
+  it('只有一档时 taskIds 也只有一条 —— 行尾据此决定画一个键还是两个', () => {
+    expect(rowState(game(), { completedNormal: task() }))
+      .toEqual({ kind: 'analyzed', taskId: 7, taskIds: [{ tier: 'normal', id: 7 }] });
   });
 
   it('正在跑的带上进度', () => {

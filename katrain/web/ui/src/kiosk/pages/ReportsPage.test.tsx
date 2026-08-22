@@ -336,13 +336,26 @@ describe('屏 19 · 行的五种状态', () => {
     mocks.hookResult = { ...mocks.hookResult, reportStatesByGame: { a: state } };
   };
 
-  it('已分析:标 + 「查看报告」,点了进报告屏', async () => {
+  it('只跑了一档:标 + 一个「查看报告」,点了进报告屏', async () => {
     withState({ completedNormal: task() });
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'analyzed'));
     expect(within(rows()[0]).getByText('已分析')).toBeInTheDocument();
     fireEvent.click(within(rows()[0]).getByRole('button', { name: '查看报告' }));
     expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/report/41');
+  });
+
+  // ⚠️ **报告按档发** —— 两档都跑完时一个「查看报告」指不了两个 id。
+  // 上一版的 `ReportGameCard` 本来就是两个键,收成一个等于丢了一条路。
+  it('两档都跑完:拆成「标准」「精读」两个键,各自只有一个宾语', async () => {
+    withState({ completedNormal: task(), completedDeep: task({ id: 88, report_type: 'deep' }) });
+    renderPage();
+    await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'analyzed'));
+    expect(within(rows()[0]).queryByRole('button', { name: '查看报告' })).toBeNull();
+    fireEvent.click(within(rows()[0]).getByRole('button', { name: '标准' }));
+    expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/report/41');
+    fireEvent.click(within(rows()[0]).getByRole('button', { name: '精读' }));
+    expect(mocks.navigate).toHaveBeenCalledWith('/kiosk/report/88');
   });
 
   it('正在分析:写到第几手了,没有按钮 —— 算完自己会变', async () => {
@@ -375,7 +388,10 @@ describe('屏 19 · 行的五种状态', () => {
     expect(mocks.retryReport).toHaveBeenCalledWith(41);
   });
 
-  it('没下完的局标「未终局」,而且不给分析 —— 半局的报告没有意义', async () => {
+  // **判别位是「这局结束了没有」,不是「算不算分」** —— 半局的报告没意义,
+  // 而且离线 KataGo 把残局算完再回去接着下是一条真作弊通道。
+  // 计分局下完了照样该有报告(国象稿子明写两者进的是同一条复盘线)。
+  it('没下完的局标「未终局」,而且两张档位卡按不了', async () => {
     mocks.list.mockResolvedValue(response([game('a', { result: null, move_count: 22 })]));
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'unfinished'));
@@ -383,6 +399,17 @@ describe('屏 19 · 行的五种状态', () => {
     // 那句话自己带着手数,后面不许再挂一段「22 手」—— 同一个数说两遍。
     expect(within(rows()[0]).getByText(/^下到第 22 手就退出了 · /)).toBeInTheDocument();
     expect(within(rows()[0]).queryByText(/就退出了 · 22 手/)).toBeNull();
+    expect(screen.getByRole('button', { name: /标准/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /精读/ })).toBeDisabled();
+  });
+
+  it('计分局下完了照样能分析 —— 挡的是没下完,不是算不算分', async () => {
+    mocks.list.mockResolvedValue(response([game('a', { game_type: 'ai_ladder_ranked', result: 'W+R' })]));
+    renderPage();
+    await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'unanalyzed'));
+    expect(screen.getByRole('button', { name: /标准/ })).not.toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /标准/ }));
+    expect(mocks.createReport).toHaveBeenCalledWith({ userGameId: 'a', reportType: 'normal', totalMoves: 187 });
   });
 
   it('行里念的是「你(黑)…」,而且计分局认得出来', async () => {

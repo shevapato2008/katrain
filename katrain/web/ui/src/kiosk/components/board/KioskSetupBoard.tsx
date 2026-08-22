@@ -1,6 +1,6 @@
 import { useTranslation } from '../../../hooks/useTranslation';
-import { boardExtent, colsFor, lineAt, rowsFor, starsFor } from '../../shell/goBoard';
-import './kioskSetupBoard.css';
+import { colsFor, rowsFor } from '../../shell/goBoard';
+import { GoBoardSvg } from '../../shell/GoBoardSvg';
 
 /**
  * 开局设置屏左边那块盘 —— 规范 §8 的 516 外框 + §11 布局 A。
@@ -19,24 +19,20 @@ import './kioskSetupBoard.css';
  * 刻度带把 19 个字**均分**在 460 上、第 i 个字心在 `(i+0.5)/19`,盘上第 i 条线在
  * `(0.5+i)/19` —— **两式相等当且仅当 margin = 0.5**。拿 1.5 的盘配 0.5 的刻度带,
  * 字和线会整整错开一格(≈24px),不是「差几个像素」。
- * 改 `LiveBoard` 的边距是动**共享**组件(galaxy 和对局屏都在用),blast radius 远大于
- * 这里自己画一块空盘。⇒ 按稿子 `sample-go/go-kiosk.tmpl.html:850-880` 的算式重写一份。
+ * ⇒ 按稿子 `sample-go/go-kiosk.tmpl.html:850-880` 的算式另画一份,就是 `shell/GoBoardSvg`。
  *
- * 与稿子的**唯一**出入:稿子在渐变之上还叠了一层 `--oak` 木纹(`mix-blend-mode:multiply`),
- * 那张贴图在 `sample-go/board-assets.json` 里、**不在共享资产包**,也不在 MANIFEST 管辖内。
- * 没抄 —— 抄它等于往仓里塞一份没人核的二进制。记账在 `kiosk-design-alignment.md` §12。
+ * ⚠️ Task 11 起**对局屏走的正是 `LiveBoard` 那条路的另一半**:它用共享 `Board`(canvas),
+ * 靠一个默认 `false` 的 `externalRulers` 开关把边距切到 0.5、并把落子区**精确铺满** ——
+ * 那是「盘上有子、要能点」的屏才必须付的代价。这一屏的盘是空的、也不可点,
+ * 一块 SVG 就够,不必把 canvas 那套搬过来。
  */
 
-// 列名(跳 I)、留白 0.5 格、星位、行号方向**全部来自 `shell/goBoard.ts`** ——
-// 它们原来就写在这里,Task 9 抽出去了。对局屏和做题屏也要按同一套坐标摆子,
-// 留在这儿的话它们只能各抄一份,而这套东西每一条都容易抄错、抄错了屏上还挺像。
-const U = 100; // SVG 内部单位;19 路外框 viewBox 边长 = (18 + 2×0.5) × 100 = 1900
-// 稿子 `:852`:19 路比 15 路密,线宽按格距收一档;最外一圈粗一档,和真木盘一样。
-const LINE_W = U * 0.03;
-const EDGE_W = U * 0.048;
-const STAR_R = U * 0.075;
-
-const at = (i: number) => lineAt(i, U);
+// 盘面本身交给 `shell/GoBoardSvg`(Task 11 起对局屏、镜像栏、做题屏共用同一份)。
+// 这里原来自己画了一遍线、星位和木底渐变 —— 算式虽然都从 `goBoard.ts` 取,
+// **渐变的 id 是写死的字面量** `kiosk-setup-board-wood`;规范 §13① 说得很直白:
+// `url(#id)` 永远解析到文档里第一个同名的 paint server,一页上出现第二块盘就会串。
+// `GoBoardSvg` 用 `useId()` 加后缀,所以搬过去顺带把那颗雷拆了。
+// 刻度带留在这儿:它是**外框**的一部分(`.kiosk-board` 的四条 28 带),不是盘面。
 
 interface KioskSetupBoardProps {
   /**
@@ -50,36 +46,9 @@ interface KioskSetupBoardProps {
 
 const KioskSetupBoard = ({ color, size }: KioskSetupBoardProps) => {
   const { t } = useTranslation();
-  const W = boardExtent(size, U);
-  const stars = starsFor(size);
-  // 刻度**不跟着执棋方翻**。这不是给规范开例外,是规范里更具体的那条本来就管这件事:
-  //
-  //   §8 `:414` 已经立过刻度方向的法,而且**立法依据就是记法** —— 「象棋两条刻度数值不同向:
-  //   同一列,下面写「九」时上面写「1」…**看到某个实现把上面那行也写成 9…1,那是错的**」。
-  //   ⇒ 规范自己的口径是:**刻度是记法的函数,不是执棋方的函数。**
-  //   围棋的记法是**绝对**的(A1 永远是那一个角,SGF 记谱、棋谱库、对局屏都按它),
-  //   ⇒ 刻度不倒。
-  //
-  // §11 `:514`「视角跟着执棋方翻」那句是从**国象**那一版推出来的(v1.21 改动记录自陈,
-  // 起因是国象把开局设置做成了无盘卡片墙),而围棋稿子里**根本没有开局设置屏** ——
-  // 这条规则从来没有被它的作者在围棋上应用过。本仓按 §8 `:414` 执行,
-  // **`:514` 的措辞已由协调方提请澄清**;那份文档四家共读,不是这里能改的。
-  //
-  // ⚠️ 别把理由写成「围棋空盘 180° 对称所以翻不翻都一样」—— **那句是错的**:
-  // 空盘对,**让子局不对**(3 子让子是右上/左下/左上,转 180° 变成左下/右上/右下,
-  // 不是同一个局面)。理由是记法绝对,不是图形对称。
   const cols = colsFor(size);
   // 行号 1 在最下(`spec:403` 那张表,五子棋那行写明了方向,围棋同向),所以从上往下读是 19…1。
   const rows = rowsFor(size);
-
-  const lines = [];
-  for (let i = 0; i < size; i += 1) {
-    const w = i === 0 || i === size - 1 ? EDGE_W : LINE_W;
-    lines.push(
-      <line key={`h${i}`} className="ln" x1={at(0)} y1={at(i)} x2={at(size - 1)} y2={at(i)} strokeWidth={w} />,
-      <line key={`v${i}`} className="ln" x1={at(i)} y1={at(0)} x2={at(i)} y2={at(size - 1)} strokeWidth={w} />,
-    );
-  }
 
   return (
     <div
@@ -96,19 +65,7 @@ const KioskSetupBoard = ({ color, size }: KioskSetupBoardProps) => {
         {rows.map((r) => <span key={`l${r}`}>{r}</span>)}
       </div>
       <div className="kiosk-board__play">
-        <svg className="gob" viewBox={`0 0 ${W} ${W}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-          <defs>
-            <linearGradient id="kiosk-setup-board-wood" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="var(--gb-light)" />
-              <stop offset="1" stopColor="var(--gb-dark)" />
-            </linearGradient>
-          </defs>
-          <rect width={W} height={W} fill="url(#kiosk-setup-board-wood)" />
-          {lines}
-          {stars.map(([x, y]) => (
-            <circle key={`s${x}-${y}`} className="star" cx={at(x)} cy={at(y)} r={STAR_R} />
-          ))}
-        </svg>
+        <GoBoardSvg size={size} />
       </div>
       <div className="kiosk-board__ruler kiosk-board__ruler--right">
         {rows.map((r) => <span key={`r${r}`}>{r}</span>)}

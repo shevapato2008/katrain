@@ -98,11 +98,15 @@ test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
  *
  * 手写 `<path d="…">` 同罪:它绕过 MANIFEST,谁也说不清那一笔是从哪儿来的。
  * ────────────────────────────────────────────────────────────────────────── */
+// 2026-08-22(Task 11)一次摘掉四条,它们都是**已经清干净的**,不是放行:
+//   `SubPageBar.tsx` Task 8 删了整个文件;`PlayPage.tsx` Task 10 重画时换成了 `shell/icons`;
+//   `VisionSetupPage.tsx` 早先某次顺手清掉、名单没跟;`GameControlPanel.tsx` 本 Task 重画。
+// ⚠️ **前三条说明这条闸在 Task 8 之后就一直是红的** —— 它是 `toEqual` 的双向棘轮:
+// 名单只许缩,而**缩了不改名单一样红**。那正是它该有的样子(名单和现实不许漂),
+// 但也意味着「上一轮全绿」那句话在这一条上不成立,记在这里免得下一个人再查一遍。
 const MUI_ICON_BASELINE = [
   'src/kiosk/__tests__/ModeCard.test.tsx',
-  'src/kiosk/components/game/GameControlPanel.tsx',
   'src/kiosk/components/game/RecalibrationModal.tsx',
-  'src/kiosk/components/layout/SubPageBar.tsx',
   'src/kiosk/components/physical/PhysicalPlayStatusChip.tsx',
   'src/kiosk/components/report/ReportGameCard.tsx',
   'src/kiosk/components/report/ReportImportMenu.tsx',
@@ -131,7 +135,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/pages/PlatformConnectPage.tsx',
   'src/kiosk/pages/PlatformEngineSetupPage.tsx',
   'src/kiosk/pages/PlatformLobbyPage.tsx',
-  'src/kiosk/pages/PlayPage.tsx',
   'src/kiosk/pages/PvpLocalSetupPage.tsx',
   'src/kiosk/pages/ReportDetailPage.tsx',
   'src/kiosk/pages/ReportsPage.tsx',
@@ -142,7 +145,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/pages/TsumegoProblemPage.tsx',
   'src/kiosk/pages/TutorialBookDetailPage.tsx',
   'src/kiosk/pages/TutorialSectionPage.tsx',
-  'src/kiosk/pages/VisionSetupPage.tsx',
 ];
 
 test('图标不许新增手写内联路径或 MUI 图标 —— 只能从 kiosk-shell/icons/ 出', () => {

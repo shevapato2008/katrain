@@ -3282,6 +3282,97 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
 
 ---
 
+### Task 11 修订（2026-08-22，做完之后回填）
+
+**做到了**：`/kiosk/play/ai/game` 整屏按新稿重画成 §11 布局 A。真浏览器实测:
+盘 **516×516@(16,70)**、落子区 **460×460@(44,98)**、右栏 **460@x548**、页控条 **460×44@y70**、
+返回键 **36** —— 规范给的数一次全中。右栏那本账也对上了:
+44 + 60 + 60 + **128**(胜率块,30 + 96 **+ 2 描边**)+ 40 + 111 + 5×12 = **503**,余 13。
+(计划里写的 126 少算了折叠块上下各 1px 的描边;稿子那本账写的 128 是对的。)
+
+**屏号**:计划里叫「屏 02」,那是十屏稿的编号。稿子 8-21 扩到 27 屏后这一屏是 **05**
+(`sample-go/shots/05-game.png`)。文件名跟参考图走:`kiosk-screen-05-game*.spec.ts`、四图 slug `05-game`。
+
+**九处与原文不同,都是动手时才拿到的事实:**
+
+1. **盘没有换成 `GoBoardSvg`,而是给共享 `Board` 加了一个默认 `false` 的 `externalRulers`。**
+   计划 Step 3 写的是「`.kiosk-board__play` 里放 `GoBoardSvg`」—— 那会把**触屏落子、领地热力图、
+   AI 候选点、变化图、手数、最后一手、ghost stone** 一起丢掉(约 500 行共享逻辑),
+   为了一块画得更像的盘。⇒ 反过来:让共享 `Board` 能长在 460 的落子区里。
+   打开这个开关**三件事一起变,少一件就白改**:留白 1.5 → **0.5 格**、容器 `padding:4px` + `min−8` → **0**、
+   格距 `Math.floor` → **不取整**;外加盘内不再画坐标(那是外面四条带的活)。
+   三条**逐条变异验过**,刻度对齐闸分别红在 **21.4px / 数不出 19 条线 / 2.4px**。
+   默认 `false` ⇒ galaxy / ZenMode / 复盘一个字节不变。
+
+2. **刻度对齐的判据是「从 canvas 像素里读出来的竖线横坐标」**,不是「字心应该落在 (i+0.5)/19」。
+   后者是版式规则,拿它当判据会「数字漂亮、结论全假」(象棋踩过)。实测最大错开 **0.98px**。
+
+3. **`.kiosk-board` 的木框、四条刻度带轨道等分、`.gob` 那一组,从 `kioskSetupBoard.css` 搬进了
+   `go-screens.css`**,`kioskSetupBoard.css` 整个删掉。理由:这几条对**每一块围棋盘**都成立,
+   留在开局屏那个类下面,第二块盘进来就得抄第二份 —— 两处载荷、改一处不报错。
+   选择器带一层 `.kiosk-board`(0,2,0 > tokens 的 0,1,0):组件级 CSS 与 `go-screens.css` 的
+   相对顺序 Vite 不保证,**同特异性时靠顺序赢是赌**。
+
+4. **`KioskSetupBoard` 顺手改成用 `GoBoardSvg`**,少了 40 行重复的画线代码,也拆掉了它那颗
+   写死的 `id="kiosk-setup-board-wood"` —— 规范 §13① 那颗雷(计划里记的是「Task 11 出现第二块盘时再说」,
+   就是现在)。
+
+5. **`tokens.css` 从上游同步了一版**(`.kiosk-actions button.danger` + `:disabled`,上游 8-22 补的),
+   `MANIFEST.sha256` 跟着更新,**290/290 校验通过**。⇒ D7 说的「写进 `go-screens.css`
+   并按屏限定作用域」不做了:共享包里已经有了,再写一份就是第 3 条那个毛病。
+
+6. **`GameControlPanel` 返回的是 Fragment,不是一个包住一切的 `<div>`。**
+   这些块必须是 `.kiosk-rail` 的**直接子元素**,否则 `.kiosk-rail .kiosk-actions { margin-top:auto }`
+   选不中,「动作区永远贴右栏底」当场失效。变异验过:去掉那条规则,动作区底 586 → **573**。
+
+7. **着法导航六个键 → 终局后才渲染的四个键(`.kiosk-movenav`)。**
+   它们原来 `disabled={!isGameOver}`,对局中全程是灰的 —— 稿子的判词是「不是在这一屏塞一排点不动的键」。
+   终局时反过来:悔棋/停一手/认输/数子那四个全变死键,整组撤掉,位置让给真能用的导航。
+   **`±10 手` 那两个键没了**(`.kiosk-movenav` 是 4 列,Phosphor 里也没有对应图标),登记为欠账。
+
+8. **顶条那三颗常亮状态灯(摄像头/标定/LED)撤了,但信号没撤。**
+   §5 说状态显示归 L1 镜像栏,L3 上没它们的位置;可 **LED 掉线在这一屏原来只有那颗灯说得出来**。
+   ⇒ 改成「只在真出故障时说一句」,落在显示开关排右端那格 `.ghint`(它本来就是解释「为什么那个键是灰的」的位置),
+   平时不占地方,故障优先于「数子还差几手」。`GamePageLedBadge.test.tsx` 跟着改判据。
+   顺带:**「重置识别」不再需要先卡住 10 秒才出现** —— 它现在是页控条上那个唯一的页级图标键(§11),
+   实体模式下常驻;`stuckEligible` + `syncStuck` 那套计时器整个删了。
+
+9. **`.items` 角标的 `—` 曾经渲成空。** 原写法 `engineItemCounts ? engineItemCounts.area : null`,
+   而接口回 `{}` 时对象**是真值**、`.area` 是 `undefined`,`undefined === null` 为假 ⇒ React 渲成空。
+   「没取到数」和「这一格不存在」在屏上长得一样。改成 `?? null`,浏览器闸里钉死三个 `—`。
+
+**同一个组件顺带覆盖了屏 10(星阵人机)。** `GamePage engineMode` 和自由对弈是**同一个 `GamePage`**,
+右栏内容不同、骨架相同 ⇒ 改一屏必然动另一屏,**只量一屏等于只证了一半**。所以浏览器闸里两屏各量一遍
+(道具键在 / 胜率块不在 / 动作区贴底 / 不滚)。
+
+**没做、已登记:**
+
+- **`.plat` 平台条(稿子屏 10 顶上那一条)**:`PlatformBadge.tsx` 现在**零消费者**,
+  而它要的 `connected` / `latency` 没有任何地方喂 —— 造一条出来就是假数据。
+- **`棋谱` 折叠块(稿子屏 10 那块 `.mvrows`)**:`GameState.history` 里**只有 `node_id/score/winrate`,
+  没有坐标**;`stones` 有 `moveNumber` 但**被提掉的子就不在里面了**,拿它拼出来的棋谱会缺手。
+  ⇒ 要么后端加一个着法序列,要么不画。CSS 先写着(`.mvrows` / `.plat` / `.items` 都在 `go-screens.css`),
+  接口一到就能接。
+- **`analysisToggles.score` 默认 `true`** —— 默认状态下每手触发一次 `analyze_current`。
+  规范 §8 那句「默认关」四家一家都没实现。**是产品决定,等 Fan 定**,本轮没动。
+- **`AI 支招` 在纯触屏模式下永远是灰的**(`hintVisible` 与 `isVisionEnabled` 相与)。
+  实体盘白闪引导确实要摄像头,但 `HintPanel` 在屏上也能显示 —— 这条限制是既有的,不在本 Task 改。
+- **`internalToRank` 那句「Fallback if it's already a rank string like "20k"」从来没生效过**:
+  `parseInt('5k', 10)` = 5 不是 NaN,于是 `'5k'` 被画成「**5 段**」。后端给的一直是数值
+  (`base_katrain.py:178`),所以那个坑**休眠**;但拿字符串造 fixture 会把它叫醒 —— 本轮四图第一版
+  就画错了。fixture 已改成内部数值(−4 = 5 级)。共享 `rankUtils` 没动。
+- **`kiosk-shell-contract.spec.ts` 的 MUI 图标名单一次摘掉四条**,其中 `SubPageBar` / `PlayPage` /
+  `VisionSetupPage` 三条**在本 Task 之前就已经清干净了** —— 也就是**这条闸从 Task 8 之后就一直是红的**
+  (它是 `toEqual` 双向棘轮,名单只许缩、缩了不改名单一样红)。「上一轮全绿」那句话在这一条上不成立。
+
+**基线 diff(新增失败只能这么得到)**:整套 Playwright 在 HEAD 上跑一遍,**失败集合与改动后逐条相同,21 条**
+(auth / console / diagnose / integration / interaction / smoke / tutorial×3 / tutorial-kiosk×3 /
+report-kiosk×2 / galaxy-active-game×3 / ladder-geometry / kiosk-shell-contract)。
+⇒ 本 Task **零新增失败**,并且修好了其中一条(图标名单)。
+单测 `1 failed | 1304 passed`,那一条红是既有基线(`GamePageEngine` 认输那条,断言写在 await 之前)。
+
+---
+
 ## Task 12: 屏 03 · 训练营 `/kiosk/tsumego`
 
 **设计稿**：`go-kiosk.tmpl.html:313-359`（L1-A，形态 1）。**现状**：`pages/TsumegoPage.tsx`（213 行）。

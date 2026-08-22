@@ -192,6 +192,35 @@ test('kiosk 单元列表:页控条副标(斜体 Serif)也走拉丁族,中文照�
   console.log(`[字体] 单元列表实际命中:${await assertFontRouting(page, '单元列表')}`);
 });
 
+// ── Task 11 —— 对局屏 ────────────────────────────────────────────────────
+// 这一屏一次引进了**四批**裸 `<button>`:七个动作键(`.kiosk-actions`)、两个显示开关
+// (`.gtoggles`)、折叠块的标题行(`.kiosk-fold__head`)、终局后的着法导航(`.kiosk-movenav`)。
+// 前三批都带中文,是本轮字族栈铺得最广的一屏 —— 而 `.pcard p`(「轮到你 · 执黑 · 提子 0」)
+// 谁都没给它写 font-family,靠的是从 `.kiosk` 继承下来,那正是最容易断的一环。
+test('kiosk 对局屏:七个动作键 / 两个开关 / 折叠标题行都没掉到 UA 字体', async ({ page }) => {
+  await stubAuth(page);
+  await page.route('**/api/state**', (route) => route.fulfill({ json: { state: {
+    game_id: 'g-font', board_size: [19, 19], komi: 6.5, handicap: 0, ruleset: 'chinese',
+    game_type: 'free', count_min_moves: 100, current_node_id: 2, current_node_index: 2,
+    history: [{ node_id: 0, score: 0, winrate: 0.5 }, { node_id: 1, score: 0.4, winrate: 0.52 },
+      { node_id: 2, score: -1.1, winrate: 0.47 }],
+    player_to_move: 'B', stones: [], last_move: null, prisoner_count: { B: 0, W: 0 },
+    analysis: null, commentary: '', is_root: false, is_pass: false, end_result: null,
+    children: [], ghost_stones: [],
+    players_info: {
+      B: { player_type: 'player:human', player_subtype: '', name: '访客（你）', calculated_rank: '', periods_used: 0, main_time_used: 0 },
+      W: { player_type: 'player:ai', player_subtype: 'katago', name: 'KataGo', calculated_rank: -4, periods_used: 0, main_time_used: 0 },
+    },
+    note: '', ui_state: { show_children: false, show_dots: false, show_hints: false, show_policy: false,
+      show_ownership: false, show_move_numbers: false, show_coordinates: true, zen_mode: false },
+  } } }));
+  await page.route('**/api/v1/geometry/status', (route) => route.fulfill({ status: 404, json: {} }));
+  await page.goto('/kiosk/play/ai/game/g-font');
+  await page.waitForSelector('[data-testid="game-actions"]');
+  await page.waitForLoadState('networkidle');
+  console.log(`[字体] 对局屏实际命中:${await assertFontRouting(page, '对局屏')}`);
+});
+
 test('600 字重的中文命中真 Bold 面,不是浏览器合成的伪粗', async ({ page }) => {
   await stubAuth(page);
   await page.goto('/kiosk/play/ai/setup/ranked');

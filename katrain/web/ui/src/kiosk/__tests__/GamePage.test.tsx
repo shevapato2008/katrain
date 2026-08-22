@@ -148,10 +148,15 @@ describe('GamePage', () => {
     expect(screen.getByTestId('player-card-W')).toHaveTextContent('KataGo');
   });
 
-  it('renders game info bar with ruleset and komi', () => {
+  // 上一版这几条是右栏里一整条 `Game info bar`。规则和贴目是**这一局开局时定死的**,
+  // 不是过程量 —— Task 11 起它们并进页控条副标,占 0 高度(右栏 516 装下胜率块靠的就是这个)。
+  it('页控条副标写着这一局的开局条件:路数 / 规则 / 贴目 / 让子', () => {
     renderPage();
-    expect(screen.getByText(/日本 规则/)).toBeInTheDocument();
-    expect(screen.getByText(/贴目: 6.5/)).toBeInTheDocument();
+    const sub = document.querySelector('.kiosk-pagebar__sub');
+    expect(sub).toHaveTextContent('19 路');
+    expect(sub).toHaveTextContent('日本 规则');
+    expect(sub).toHaveTextContent('贴目 6.5');
+    expect(sub).toHaveTextContent('不让子');
   });
 
   it('renders all 7 ItemToggles', () => {
@@ -165,15 +170,21 @@ describe('GamePage', () => {
     expect(screen.getByText('数子')).toBeInTheDocument();
   });
 
-  it('renders navigation controls', () => {
+  // 着法导航整排原来 `disabled={!isGameOver}` —— 对局中全程是灰的。
+  // 稿子的判词:「要画就得先加那一屏,不是在这一屏塞一排点不动的键」。⇒ 对局中整组不渲染。
+  // 终局那一态在 `GamePage.test.tsx`(pages/)里有 `end_result` 的用例,这里只守「对局中没有」。
+  it('对局中不渲染着法导航 —— 它整排要到终局才活', () => {
     renderPage();
-    expect(screen.getByTestId('nav-controls')).toBeInTheDocument();
+    expect(screen.queryByTestId('nav-controls')).toBeNull();
   });
 
-  it('renders header with game title and exit button', () => {
+  // 标题 = **这一局是哪种对弈**,不是「张三 vs KataGo」:名字在玩家卡里各占一行
+  // (还带段位、执色、提子),标题再写一遍是把 460 宽的一行花在已经看得见的东西上。
+  it('页控条写的是对弈方式和退出对局,名字留给玩家卡', () => {
     renderPage();
-    expect(screen.getByText('张三 vs KataGo')).toBeInTheDocument();
-    expect(screen.getByText('退出')).toBeInTheDocument();
+    expect(screen.getByText('自由对弈')).toBeInTheDocument();
+    expect(screen.getByText('退出对局')).toBeInTheDocument();
+    expect(screen.queryByText('张三 vs KataGo')).toBeNull();
   });
 
   it('does NOT render navigation rail (fullscreen)', () => {

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { KifuAPI } from '../../api/kifuApi';
 import { BaipuAPI, cacheSgf, canonToGtp, type BaipuStep } from '../../api/baipuApi';
+import { replayBaipuSteps } from '../../utils/baipuReplay';
 import { translateResult } from '../../utils/resultTranslation';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
@@ -39,11 +40,14 @@ import type { KifuAlbumDetail } from '../../types/kifu';
  *
  * ① 稿子右上角那枚 `界面未接` 蓝标是**说给读稿人听的**(它说的正是这一屏当时没接),
  *    接上了就不成立,不搬。
- * ② 稿子画了三个动作键,第三个是 `送去复盘`。**这条路对棋谱库不存在**:
- *    `POST /api/v1/reports/` 收的是 `user_game_id`,服务端 `reports.py:133` 拿它去
- *    `UserGame` 表里查这一局是不是你下的 —— 名局棋谱没有这一行。galaxy 那边的棋谱库
- *    (`galaxy/pages/KifuLibraryPage.tsx`)也只有「在研究中打开」一个出口。
- *    ⇒ 这里两个键。画一个按下去必然报错的键,比少一个键坏。
+ * ② 稿子画了三个动作键,第三个是 `送去复盘` —— **不搬,但理由不是「做不到」**(2026-08-22 更正:
+ *    上一版这段写的是「这条路不存在」,不准确)。准确的说法是:
+ *    `POST /api/v1/reports/` 收的是 `user_game_id`,服务端 `reports.py:133` 拿它去 `UserGame`
+ *    表里查这一局是不是你下的 —— 名局棋谱**在那张表里没有行**,所以要先复制一份进去。
+ *    而**那件事已经有地方做了**:复盘屏的「从棋谱库导入」(`ReportLibraryImportDialog`
+ *    + `toLibraryUserGameParams`)就是干这个的。在这儿再开一个入口 = 同一条路两个口。
+ *    galaxy 那边的棋谱库(`galaxy/pages/KifuLibraryPage.tsx`)也只有「在研究中打开」一个出口。
+ *    ⇒ 这里两个键;要把名局送去复盘,走复盘屏那个导入。
  * ③ 稿子 `.khero` 那行只有名字,实现里补了段位 —— 段位是库里真有的列
  *    (`black_rank` / `white_rank`),现有的 `KifuPage` 列表也一直在显示。
  *
@@ -55,45 +59,12 @@ import type { KifuAlbumDetail } from '../../types/kifu';
  * 这正是闸四(`kiosk-shell-contract.spec.ts`)守的那条,新 key 是它逼出来的。
  */
 
-interface BoardState {
-  black: string[];
-  white: string[];
-  last?: string;
-}
-
 /** 一手棋在列表里的样子。`n` 是第几手(从 1 数,setup 不算)。 */
 interface MoveEntry {
   n: number;
   coord: string | null;   // null = 虚手
   color: 'B' | 'W';
   stepIndex: number;
-}
-
-/**
- * 把前 `stepCount` 步**原样播一遍**。放子用 `(row, col, color)`,拿子用后端给的
- * `removed[]` —— 两样都是数据,不是规则。`clear` 清盘(SGF 里的 AE/重开)。
- */
-function replay(steps: readonly BaipuStep[], stepCount: number, size: number): BoardState {
-  const stones = new Map<string, 'B' | 'W'>();
-  let last: string | undefined;
-  for (let i = 0; i < stepCount && i < steps.length; i += 1) {
-    const s = steps[i];
-    if (s.kind === 'clear') {
-      stones.clear();
-      last = undefined;
-      continue;
-    }
-    if (s.row != null && s.col != null && s.color) {
-      const coord = canonToGtp(s.row, s.col, size);
-      stones.set(coord, s.color);
-      if (s.kind === 'move') last = coord;
-    }
-    for (const p of s.removed) stones.delete(canonToGtp(p.row, p.col, size));
-  }
-  const black: string[] = [];
-  const white: string[] = [];
-  for (const [coord, color] of stones) (color === 'B' ? black : white).push(coord);
-  return { black, white, last };
 }
 
 const rulesLabel = (rules: string | null, t: (k: string, d: string) => string): string | null => {
@@ -167,7 +138,7 @@ const KifuDetailPage = () => {
     ? (entries[0]?.stepIndex ?? steps?.length ?? 0)
     : entries[at - 1].stepIndex + 1;
   const board = useMemo(
-    () => (steps ? replay(steps, stepCount, boardSize) : { black: [], white: [] }),
+    () => (steps ? replayBaipuSteps(steps, stepCount, boardSize) : { black: [], white: [] }),
     [steps, stepCount, boardSize],
   );
 

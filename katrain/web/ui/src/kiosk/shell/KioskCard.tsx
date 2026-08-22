@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import { Icon, type IconName } from './icons';
 
 const RING_R = 18;                       // (40 − 4) / 2,见下方注释
@@ -20,7 +21,7 @@ const RING_C = 2 * Math.PI * RING_R;
  *
  * 值读不到时环里写「—」不写 0%(G8:0% 是一个事实断言,而我们并不知道)。
  */
-export function KioskCard({ title, sub, icon, ring, current, soon, todo, dot, onClick, ariaLabel }: {
+export function KioskCard({ title, sub, icon, ring, current, soon, todo, dot, disabled, onClick, ariaLabel }: {
   title: string;
   sub: string;
   icon?: IconName;
@@ -29,7 +30,11 @@ export function KioskCard({ title, sub, icon, ring, current, soon, todo, dot, on
   soon?: string;             // 文案由调用方给(「即将上线」/「未录制」),不许写「锁定」
   todo?: boolean;
   dot?: boolean;
-  onClick?: () => void;
+  /** 现在按不了(复盘屏一局都没有时的「标准 / 精读」)。**不要拿 `todo` 顶替** ——
+   * `is-todo` 说的是「这一格还没轮到」,和「没有可作用的对象」不是一回事。 */
+  disabled?: boolean;
+  /** 事件带出来是为了给菜单当锚点(复盘屏的「导入棋谱复盘」)。不需要的调用方照旧忽略。 */
+  onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   ariaLabel?: string;
 }) {
   const cls = ['kiosk-card', current && 'is-current', soon && 'is-soon', todo && 'is-todo']
@@ -43,7 +48,7 @@ export function KioskCard({ title, sub, icon, ring, current, soon, todo, dot, on
       // 可及名要把**状态**一起带上:`.dot`(已连接那颗绿点)和 `.soon` 徽标都是纯视觉,
       // 只报标题的话,读屏的人拿到的三张平台卡一模一样 —— 分不出哪张连上了、哪张还没通。
       aria-label={ariaLabel ?? [title, sub, soon].filter(Boolean).join('，')}
-      disabled={Boolean(soon || todo)}
+      disabled={Boolean(soon || todo || disabled)}
       onClick={onClick}
     >
       <span className={`kiosk-card__tile${isRing ? ' is-ring' : ''}`}>

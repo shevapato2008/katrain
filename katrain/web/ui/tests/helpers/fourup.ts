@@ -227,3 +227,18 @@ export async function freezeClock(page: Page, iso = '2026-08-20T16:40:00') {
     (globalThis as unknown as { Date: DateConstructor }).Date = FrozenDate as unknown as DateConstructor;
   }, iso);
 }
+
+/**
+ * 外壳上那些**从后端拿的静态件**。四图跑的是 vite dev server,它把 `/assets/**` 代理到
+ * Python(:8001);后端没起的时候 logo 会 502,取出来的实现图左上角是一个**碎图标**。
+ *
+ * 2026-08-23 实测撞上:同一份代码,后端起着取出来的图和没起时取出来的**不是一张图** ——
+ * 「重跑零字节变化」这条验收(Task 20 Step 3)因此证明不了任何事。
+ * 这里把它钉在仓里那份真字节上,四图从此不依赖另一个进程在不在。
+ */
+export async function stubShellAssets(page: Page) {
+  const logo = resolve(process.cwd(), '../../img/logo-white.png');
+  await page.route('**/assets/img/logo-white.png', (route) => route.fulfill({
+    path: logo, contentType: 'image/png',
+  }));
+}

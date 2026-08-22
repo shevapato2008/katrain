@@ -48,9 +48,15 @@ interface KioskScrollZoneProps {
    * 规范 §5 防跳铁律 4 也要求切 L1 模块时归零。
    */
   resetKey?: string | number;
+  /**
+   * 挂在 scrollzone 根上的额外类。**只为一件事存在**:形态 2 的顶部渐隐位置
+   * (`tokens.css:555`)按「头 = 一条组标题」写死了,头里多放东西的屏得自己把它挪下去。
+   * 复盘屏展开搜索时用 `has-search`。不是给屏级配色/几何开的口子。
+   */
+  className?: string;
 }
 
-export function KioskScrollZone({ children, grow, head, resetKey }: KioskScrollZoneProps) {
+export function KioskScrollZone({ children, grow, head, resetKey, className }: KioskScrollZoneProps) {
   // callback ref + useState,**不能用 useRef + 空依赖 effect** —— 滚动节点首帧不一定存在
   // (复盘详情拿不到棋谱时整条右栏是另一棵树),`useRef` 那种写法读到一次 null 就再也不重跑,
   // 悬浮条永远不画。五子棋量到过:列表真的溢出 66px,屏上一条位置指示都没有。
@@ -78,9 +84,10 @@ export function KioskScrollZone({ children, grow, head, resetKey }: KioskScrollZ
     </>
   );
 
+  const extra = className ? ` ${className}` : '';
   return grow ? (
-    <section className="kiosk-section kiosk-section--grow kiosk-scrollzone" ref={setRail}>{inner}</section>
+    <section className={`kiosk-section kiosk-section--grow kiosk-scrollzone${extra}`} ref={setRail}>{inner}</section>
   ) : (
-    <div className="kiosk-side kiosk-scrollzone" ref={setRail}>{inner}</div>
+    <div className={`kiosk-side kiosk-scrollzone${extra}`} ref={setRail}>{inner}</div>
   );
 }

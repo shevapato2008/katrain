@@ -405,3 +405,96 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 .kiosk-tag--live::before { content: ""; display: inline-block; width: 6px; height: 6px;
   border-radius: 50%; background: var(--bad); margin-right: 5px; vertical-align: 1px;
   box-shadow: 0 0 6px color-mix(in srgb, var(--bad) 70%, transparent); }
+
+/* ── 屏 19 复盘:胜率曲线 ──────────────────────────────────────────────
+   共享包里那份 `.kiosk-eval`(tokens.css:746)是**对局中**那条走势:两条轴、刻度带
+   靠一条右描边和画布贴着。复盘这条是稿子自己的一套 —— 画布带描边圆角、刻度带和画布之间
+   留 8 的空。两者不是同一个控件,不要拿 `.kiosk-eval` 顶替(几何差 8px,四图上看得出来)。
+
+   ⚠️ **上黑下白**:cron 那条分析线固定 `reportAnalysisWinratesAs: "BLACK"`
+   (`katrain/cron/clients/katago.py:83`),所以 `winrate` 恒为黑方胜率,1.0 画在顶上,
+   和 galaxy 的 `ScoreGraph` 同向。稿子 2026-08-22 翻过一次就是为了这个。
+   (共享包 `tokens.css:745` 那句注释还写着「白优在上」,已经过期 —— 上游的事,本轮不改它。) */
+.wrbox { display: flex; gap: 8px; }
+.wraxis { width: 38px; height: 96px; flex: none;
+  display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; }
+.wraxis i { font-style: normal; font-size: 9.5px; color: var(--dim); font-family: var(--font-mono); }
+.wrplot { flex: 1; height: 96px; border: 1px solid var(--hair); border-radius: 8px;
+  background: #131B19; overflow: hidden; }
+.wrplot svg { width: 100%; height: 100%; display: block; }
+.wrplot .mid { stroke: var(--hair); stroke-width: 1.4; stroke-dasharray: 5 5; }
+.wrplot .curve { fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linejoin: round; }
+/* 掉分的那一手单独一段红 —— 不换整条线的颜色,换了就读不出「哪一手」 */
+.wrplot .drop { stroke: var(--bad); stroke-width: 2.6; }
+.wrplot .now { fill: var(--accent); }
+/* 没算过的时候**留白并写明为什么空**,不许画一条贴中线的平线冒充均势 ——
+   那是把「没算过」伪装成「算过了,结果是均势」。配方抄自共享包的
+   `.kiosk-eval__plot.is-empty`(tokens.css:931),换个宿主类而已。 */
+.wrplot.is-empty { display: grid; place-items: center; text-align: center; padding: 0 12px; }
+.wrplot.is-empty span { font-size: 11.5px; color: var(--dim); line-height: 1.5; }
+
+/* 导进来的谱没有「你」,黑白各一半 —— 拿 `.disc.b` 或 `.disc.w` 顶替等于替它选了一方。 */
+.disc.rnd { background: linear-gradient(90deg, #F3F0E7 50%, #16161A 50%); }
+
+/* ── 屏 19 复盘:组标题右端那个开关 ────────────────────────────────────
+   稿子这一屏没画搜索框,但**稿子自己的 `.sbox` 注释把复盘列进了「有搜索的四屏」**
+   (`go-kiosk.tmpl.html:326`),而现状 `ReportsPage` 的搜索是通的 —— 是稿子漏画,不是没有。
+   常驻一条 44 的搜索框会把列表视口从 168 压到 116,「露一半」当场破(三行变两行整),
+   所以做成**开关**:收起时这一屏和稿子逐像素一样。
+   靶子按触摸屏来 —— 视觉 20、可点 48,靠内边距撑出去再用负外边距收回来,不动版式。 */
+.kiosk-seclabel__act {
+  flex: none; width: 20px; height: 20px; padding: 14px; margin: -14px -14px -14px 0;
+  box-sizing: content-box; display: grid; place-items: center;
+  background: none; border: 0; color: var(--dim); cursor: pointer;
+}
+.kiosk-seclabel__act[aria-expanded="true"] { color: var(--accent); }
+.kiosk-seclabel__act svg { width: 16px; height: 16px; }
+.kiosk-seclabel__act:focus-visible { outline: 2px solid var(--accent); outline-offset: -12px; border-radius: 8px; }
+/* 展开之后头部多了 44 的框 + 10 的空,渐隐要跟着往下挪,否则它盖在搜索框上。
+   共享包那条(`tokens.css:555`)按「头 = 一条组标题」写死,这是本屏的补丁。 */
+.kiosk-section--grow.has-search::before {
+  top: calc(var(--l1-sec-label-h) + var(--l1-sec-label-gap) + 54px);
+}
+
+/* 展开出来的搜索框 —— 高度 44 + 下边距 10 = 54,和上面 `has-search` 那条里的数是同一个。
+   两处必须一起改;改一处的话渐隐会从搜索框中间开始。 */
+.rvsearch { display: block; width: 100%; margin-bottom: 10px; }
+
+/* 行分成两半:左半(整块)是「选中这一局」的靶,右半是这一行自己的动作。
+   **不能把整行做成 `<button>`** —— 按钮里套按钮是非法 DOM,React 会警告,
+   读屏也读不出来。左半吃掉除行尾之外的全部宽度,所以手感上还是「点整行」。 */
+.rvpick {
+  display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;
+  height: 100%; background: none; border: 0; padding: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.rvpick:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+/* 稿子没画选中态,但稿子左栏写着「**选中**这一局」—— 没有选中的样子,那三个字就没有出处。 */
+.kiosk-row[data-selected="true"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--raise));
+}
+/* 正在分析那一行的进度条 —— 它显示的正是「还剩几手没算」,和点进去看到的是同一个东西。 */
+.rvprog { width: 54px; height: 4px; border-radius: 999px; background: var(--hair); overflow: hidden; flex: none; }
+.rvprog i { display: block; height: 100%; background: var(--warn); }
+
+/* 不可逆的那一档按钮。配方和共享包 `.kiosk-actions button.danger`(tokens.css:824)同一份 ——
+   那条只对动作区里的按钮生效,这里是行尾的药丸,所以另挂一个类,**颜色配方不许另编**。 */
+.kiosk-btn--pill.rvdanger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+
+/* 干活出错时那句话。它挨着「生成报告」那一组的组标题,占一行 —— 不进组标题里,
+   组标题右端那格是**数据**不是消息。 */
+.rverr {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 8px;
+  font-size: 11.5px; color: var(--bad);
+}
+
+/* 删除确认。整屏 1024×600 里盖一层,**不用 MUI Dialog** —— 它自带的 backdrop 和纸张
+   跟这套壳的配色不是一路,而且 `.kiosk` 的缩放对 portal 到 body 的层不生效。 */
+.rvconfirm {
+  position: absolute; inset: 0; z-index: 30;
+  display: grid; place-items: center; padding: 0 120px;
+  background: color-mix(in srgb, var(--ink) 78%, transparent);
+}
+.rvconfirm .empty { background: var(--panel); border-style: solid; width: 100%; }
+.rvconfirm__row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }

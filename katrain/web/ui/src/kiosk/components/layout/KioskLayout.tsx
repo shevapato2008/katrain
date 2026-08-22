@@ -17,6 +17,14 @@ import { GoConsoleRail } from './GoConsoleRail';
  * 把它挡在外面了,但这里写成 `startsWith` 会让两条判据各说各的,而只有一条会被人记住。
  */
 const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tsumego', '/kiosk/kifu'];
+
+/**
+ * 自己拼两栏的屏。**复盘的左栏装的不是实体盘镜像**,是「选中的那一局」——
+ * 它的内容跟着页面里的选中状态走,外壳拿不到那个状态,所以这一屏的
+ * `.kiosk-layout-l1` 由页面自己出。外壳只负责别再往它外面套一层滚动容器
+ * (那层 `<Box overflow:auto>` 会让 434 高的两栏在自己里面再滚一次)。
+ */
+const SELF_LAYOUT_ROUTES = ['/kiosk/report'];
 interface KioskLayoutProps { username?: string }
 
 const KioskShell = ({ username }: KioskLayoutProps) => {
@@ -64,6 +72,8 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
           <GoConsoleRail />
           <Outlet />
         </div>
+      ) : level === 1 && SELF_LAYOUT_ROUTES.includes(location.pathname) ? (
+        <Outlet />
       ) : (
         <Box component="main" sx={{ height: '100%', minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
           <Outlet />

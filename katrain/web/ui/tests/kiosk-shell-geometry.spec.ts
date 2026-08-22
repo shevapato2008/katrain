@@ -26,6 +26,18 @@ const boot = async (page: Page, path: string) => {
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
   }));
+  // ⚠️ **这条不是装饰,是这份闸能不能自己站住的前提。**
+  // `tsumego/problem/:id` / `baipu/session/:id` 等路由外面套着 `PhysicalBoardGuard`,
+  // 它读 `GeometryContext`;而 `GeometryProvider` 只在**接口 404** 时才落到 `disabled`,
+  // 接口连不上(vite 代理到 :8001,后端没起 ⇒ 502)时 phase 停在 `required` ⇒ 整屏被换成标定台。
+  // 2026-08-23 实测:后端起着的时候这两条做题屏的闸是绿的,后端一停就 30 秒超时 ——
+  // **闸绿不绿取决于另一个进程在不在**,那不叫闸。这里把它钉成「这台盒子没有摄像头」。
+  await page.route('**/api/v1/geometry/status', (route) => route.fulfill({
+    json: {
+      phase: 'disabled', session_calibrated: false, last_error: null,
+      capabilities: { camera_ready: false, led_ready: false, geometry_ready: false, recognition_ready: false },
+    },
+  }));
   await page.goto(path);
   // `state: 'attached'` 不是 `'visible'`(默认):画布塌成 0×0 时元素照旧在 DOM 里,
   // 但 Playwright 判它不可见 —— 默认值会把「量出来是 0」变成一条 30 秒超时。
@@ -800,4 +812,171 @@ test('§11 棋谱详情:谱再长,动作区也贴着右栏底,谱自己滚', asy
   await page.mouse.wheel(0, 300);
   await expect.poll(() => body.evaluate((el) => el.scrollTop),
     { message: '谱那一块自己滚不动 —— 翻不到后面的手' }).toBeGreaterThan(0);
+});
+
+// ── 屏 19 复盘:形态 2(头尾固定,只有中间那条会长的列表滚)──────────────────
+
+const reviewGames = (n: number) => Array.from({ length: n }, (_, i) => ({
+  id: `g${i}`, user_id: 1, title: null, player_black: 'tester', player_white: 'KataGo',
+  black_rank: null, white_rank: '6 级', result: i % 3 === 0 ? 'B+R' : 'W+2.5',
+  board_size: 19, rules: 'chinese', komi: 7.5, move_count: 100 + i,
+  source: 'play_ai', category: 'game', game_type: 'free',
+  event: null, round_name: null, game_date: '2026-08-20',
+  created_at: '2026-08-20T15:12:00', updated_at: null,
+}));
+
+/** **造到会溢出**:30 局塞进 168 高的视口。装得下的数据量下量出来的数字一概不算。 */
+const bootReview = async (page: Page, n: number) => {
+  await page.route('**/api/v1/user-games/*', (route) => route.fulfill({
+    json: { ...reviewGames(1)[0], id: 'g0', sgf_content: '(;FF[4]GM[1]SZ[19];B[pd];W[dd])' },
+  }));
+  await page.route('**/api/v1/user-games**', (route) => route.fulfill({
+    json: { items: reviewGames(n), total: n, page: 1, page_size: 12 },
+  }));
+  await page.route('**/api/v1/reports/summary', (route) => route.fulfill({
+    json: { pending: 0, running: 0, completed: 0, failed: 0 },
+  }));
+  await page.route('**/api/v1/reports/', (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/v1/baipu/load', (route) => route.fulfill({
+    json: {
+      board_size: 19,
+      steps: [
+        { kind: 'move', move_index: 0, property: 'B', row: 3, col: 15, color: 'B', removed: [], board_hash: '' },
+        { kind: 'move', move_index: 1, property: 'W', row: 15, col: 3, color: 'W', removed: [], board_hash: '' },
+      ],
+      meta: {},
+    },
+  }));
+  await boot(page, '/kiosk/report');
+  await page.waitForSelector('[data-testid="review-rows"] .kiosk-row', { state: 'attached' });
+};
+
+/**
+ * 纵向账:胜率(20+6+96=122)+ 8 + 历史对局(吃剩下的)+ 8 + 生成报告(20+6+76=102)= 434。
+ * **写成关系式**:三块加两条 gap 等于右栏高,中间那块是被挤出来的。
+ * 具体像素(122 / 194 / 102)只作记录。
+ */
+test('§5 屏 19 形态 2:头尾两块定高,中间那块吃掉剩下的,合起来正好是右栏', async ({ page }) => {
+  await bootReview(page, 30);
+  const m = await page.evaluate(() => {
+    const r = (s: string) => {
+      const el = document.querySelector(s);
+      if (!el) throw new Error(`没有这个元素: ${s}`);
+      const b = el.getBoundingClientRect();
+      return { y: Math.round(b.y), h: Math.round(b.height), bottom: Math.round(b.bottom) };
+    };
+    const side = document.querySelector('.kiosk-side') as HTMLElement;
+    const sections = [...document.querySelectorAll('.kiosk-side__fixed > *')];
+    return {
+      side: r('.kiosk-side'),
+      sideOverflow: side.scrollHeight - side.clientHeight,
+      blocks: sections.map((el) => {
+        const b = el.getBoundingClientRect();
+        return { y: Math.round(b.y), h: Math.round(b.height) };
+      }),
+    };
+  });
+  expect(m.side.h, '右栏不是 434 —— L1 的高度账先崩了').toBe(434);
+  expect(m.blocks.length, '右栏不是三块').toBe(3);
+  const [wr, grow, cards] = m.blocks;
+  expect(wr.h + 8 + grow.h + 8 + cards.h, '三块加两条 gap 对不上右栏高').toBe(m.side.h);
+  expect(grow.h, '中间那块没吃到剩余空间').toBeGreaterThan(wr.h);
+  // 形态 2 的定义:**整栏不滚**。整栏能滚 = 把生成报告那三张常驻入口也一起滚走了。
+  expect(m.sideOverflow, '整条右栏自己滚起来了 —— 那就不是形态 2 了').toBeLessThanOrEqual(0);
+});
+
+/**
+ * **只有中间那块滚。** 判据不是「有没有 overflow」,是滚完之后头尾两块的位置一动不动 ——
+ * 生成报告那三张卡是常驻入口,跟着列表滚走就找不着了。
+ *
+ * 变异实测(2026-08-23):把 `.kiosk-side__fixed` 换成 `.kiosk-side.kiosk-scrollzone`(形态 1),
+ * 上面那条「三块加两条 gap = 434」照旧绿,只有这条红。
+ */
+test('§5 屏 19 承重:列表滚起来的时候,胜率曲线和生成报告一个像素都不动', async ({ page }) => {
+  await bootReview(page, 30);
+  const before = await page.evaluate(() => ({
+    wr: Math.round(document.querySelector('.wrbox')!.getBoundingClientRect().y),
+    cards: Math.round(document.querySelector('[data-testid="review-cards"]')!.getBoundingClientRect().y),
+  }));
+
+  const scroll = page.locator('.kiosk-section--grow .kiosk-side__scroll');
+  const bb = (await scroll.boundingBox())!;
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  await page.mouse.wheel(0, 400);
+  await expect.poll(() => scroll.evaluate((el) => el.scrollTop),
+    { message: '列表自己滚不动 —— 后面那些局到不了' }).toBeGreaterThan(0);
+
+  const after = await page.evaluate(() => ({
+    wr: Math.round(document.querySelector('.wrbox')!.getBoundingClientRect().y),
+    cards: Math.round(document.querySelector('[data-testid="review-cards"]')!.getBoundingClientRect().y),
+    at: document.querySelector('.kiosk-section--grow')!.getAttribute('data-at'),
+    thumb: Math.round((document.querySelector('.kiosk-scrollbar') as HTMLElement).getBoundingClientRect().height),
+  }));
+  expect(after.wr, '胜率曲线跟着列表滚走了').toBe(before.wr);
+  expect(after.cards, '生成报告那三张卡跟着列表滚走了').toBe(before.cards);
+  expect(after.at, '滚过之后还报 top —— 渐隐说的是假话').not.toBe('top');
+  expect(after.thumb, '悬浮条拇指短于 24,读不出比例').toBeGreaterThanOrEqual(24);
+});
+
+/**
+ * 渐隐钉在**真正滚的那一块**上,从组标题下缘开始 —— 盖住组标题的话,
+ * 「历史对局」四个字会随滚动忽明忽暗。
+ * 收起搜索时头就是一条组标题(20+6=26);展开时多一条 44 的框 + 10 的空(再 +54)。
+ */
+test('§5 屏 19:渐隐从组标题下缘开始,展开搜索之后跟着往下挪', async ({ page }) => {
+  await bootReview(page, 30);
+  const closed = await page.evaluate(() => {
+    const sec = document.querySelector('.kiosk-section--grow') as HTMLElement;
+    const label = document.querySelector('.kiosk-section--grow .kiosk-seclabel') as HTMLElement;
+    const scroll = document.querySelector('.kiosk-section--grow .kiosk-side__scroll') as HTMLElement;
+    return {
+      fade: parseFloat(getComputedStyle(sec, '::before').top),
+      headH: Math.round(scroll.getBoundingClientRect().top - sec.getBoundingClientRect().top),
+      labelH: Math.round(label.getBoundingClientRect().height),
+    };
+  });
+  expect(closed.fade, '渐隐没落在滚动区的起点上 —— 它盖住组标题了').toBe(closed.headH);
+  expect(closed.headH, '收起时头不止一条组标题').toBe(closed.labelH + 6);
+
+  await page.click('button[aria-label="搜历史对局"]');
+  await page.waitForSelector('[data-testid="review-search"]');
+  const open = await page.evaluate(() => {
+    const sec = document.querySelector('.kiosk-section--grow') as HTMLElement;
+    const scroll = document.querySelector('.kiosk-section--grow .kiosk-side__scroll') as HTMLElement;
+    return {
+      fade: parseFloat(getComputedStyle(sec, '::before').top),
+      headH: Math.round(scroll.getBoundingClientRect().top - sec.getBoundingClientRect().top),
+    };
+  });
+  expect(open.headH, '展开搜索没把头撑高 54(44 的框 + 10 的空)').toBe(closed.headH + 54);
+  expect(open.fade, '展开搜索之后渐隐没跟着挪 —— 它压在搜索框上').toBe(open.headH);
+});
+
+/**
+ * §5「露一半」:视口下缘必须切在**某一行的内部**。切在行与行的空隙里,
+ * 屏上就是一条干干净净的下边界 —— 看不出下面还有二十几局。
+ * 今天的值:第三行 52 高、露 48。**判据是「切在行内」,48 只是记录。**
+ */
+test('§5 屏 19:视口下缘切在一行的中间,不落在行与行的空隙里', async ({ page }) => {
+  await bootReview(page, 30);
+  const m = await page.evaluate(() => {
+    const scroll = document.querySelector('.kiosk-section--grow .kiosk-side__scroll') as HTMLElement;
+    const sb = scroll.getBoundingClientRect();
+    const rows = [...document.querySelectorAll('[data-testid="review-rows"] .kiosk-row')].map((el) => {
+      const b = el.getBoundingClientRect();
+      return { top: b.top - sb.top, bottom: b.bottom - sb.top, h: b.height };
+    });
+    const cut = scroll.clientHeight;
+    const straddling = rows.find((r) => r.top < cut && r.bottom > cut);
+    return {
+      overflow: scroll.scrollHeight - scroll.clientHeight,
+      cut,
+      shown: straddling ? Math.round(cut - straddling.top) : null,
+      rowH: straddling ? Math.round(straddling.h) : null,
+    };
+  });
+  expect(m.overflow, '没造出「装不下」—— 下面那条断言是空的').toBeGreaterThan(100);
+  expect(m.shown, '视口下缘落在两行之间,看不出下面还有').not.toBeNull();
+  expect(m.shown!).toBeGreaterThan(0);
+  expect(m.shown!).toBeLessThan(m.rowH!);
 });

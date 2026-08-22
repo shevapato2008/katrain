@@ -134,7 +134,9 @@ describe('Kiosk navigation integration', () => {
       }) as unknown as typeof fetch;
       renderApp('/kiosk/play');
       fireEvent.click(screen.getByText('复盘'));
-      await waitFor(() => expect(screen.getAllByText('复盘').length).toBeGreaterThanOrEqual(2));
+      // 屏 19 自己拼 L1 两栏(左栏是「选中这一局」不是实体盘镜像),所以判据是这块两栏在了,
+      // 不是「屏上有两处写着复盘」—— 那句原来靠的是旧页面里的一个标题,本轮已经没有了。
+      await screen.findByTestId('review-page');
       expect(screen.queryByText('智能棋盘')).not.toBeInTheDocument();
     });
 

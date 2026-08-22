@@ -4005,6 +4005,71 @@ galaxy 那边的棋谱库（`KifuLibraryPage.tsx`）也**只有**「在研究中
 
 ---
 
+### Task 16 修订（2026-08-23，做完之后回填）
+
+⚠️ **屏号是 19 不是 07**，四图 slug `19-review`。稿子行号 `go-kiosk.tmpl.html:1664-1734`。
+
+### D4 那次核实的结论：**写「妙手」**，判据 `delta_score >= 2`
+
+计划问的是「逐手数据里有没有『这一手是不是唯一好手』所需的第二名着法评分」。**有** ——
+`report_task_moves.top_moves` 是十个候选，每个带 `winrate` / `score_lead` / `prior`，
+`GET /api/v1/reports/{task_id}/moves` 原样吐出来（`endpoints/reports.py:85`）；
+第 N 手的候选在第 N−1 行里（分析送进去的是 `moves[:move_number]`，`report_analyze.py:304`）。
+
+但**更要紧的是另一件事**：这个仓里早就有一份妙手口径，而且它**不用 top_moves** ——
+`features/report/reportModel.ts:192` 把同一批 `ReportTaskMove` 映射成
+`is_brilliant: delta_score >= 2` / `is_mistake: delta_score <= -3`，
+后端 `cron/analysis_repo.py:185` 和 `live/models.py:67` 也是这两个数。⇒ 复用，不另立。
+
+**国象 2026-07-28 把妙手撤成「漏着」的那个理由不能转过来**：它的分析跑在盒子自己身上
+（单线程 12 万节点、13–16 层、同一局面能摆 45cp），噪声吃掉了判据；围棋的报告是 **cron 离线**
+跑的，每手 500 或 2000 次计算，跟盒子算力无关。**转判据不转结论。**
+
+⚠️ 附带查出来一条既有的不一致（本轮不动）：`web/interface.py:1337` 用的是丢分
+`-0.5 / 1.0` 那一套，和 cron / live 那套 `2.0 / -3.0` 对不上。两套各自服务不同的数据源
+（对局中实时 vs 离线报告），这一屏读的是 `report_task_moves`，所以取 cron 那套。
+
+### 准确率照搬 `core/ai.py` 的公式，不自己发明
+
+`100 × 0.75^加权丢分`，权重是「这一手有多难」（候选着法按 policy 先验加权的平均丢分）。
+搬进 `features/report/reportStats.ts`，期望值**手算**写在 `reportStats.test.ts` 里。
+理由：桌面版和 web 版的对局报告显示的就是这个数，同一局在两处必须一样。
+
+### 稿子这一屏的三处漏画 / 一处写错（都已登记，该提上游）
+
+| 稿子 | 实际 | 怎么办 |
+|---|---|---|
+| 行尾只有一个状态标 | 规范 §11 要四态各有各的样子 + 「就地干活不跳页」（Fan 2026-07-28）；国象稿子同处画的就是「状态标 + 药丸键」 | 照规范做，四图上多出的键是预期 |
+| 这一屏没画搜索 | **稿子自己的 `.sbox` 注释把复盘列进了「有搜索的四屏」**（`:326`），而现状搜索是通的 | 做成开关：收起态和稿子逐像素一样 |
+| 第三张卡 `is-soon`「接口还没有 · 即将上线」 | 两条导入路都在跑（`ReportLocalImportDialog` / `ReportLibraryImportDialog` → `POST /user-games`） | 做成能用的，一张卡两条路 |
+| 旁注说「升降级局下完也不给复盘」 | **没有任何实现**：`POST /reports/` 不看 game_type；带 ranked 闸的是 `hint_gate.py`，它挡的是**对局进行中**的选点白灯。国象稿子明写「两者进的是同一条复盘线、同一份报告」 | 按国象和后端来；那句旁注是把「对局中封分析」错误延伸到了下完之后 |
+
+### 「算了一半」那一档是从 `failed + analyzed_moves > 0` 认出来的
+
+后端没有「暂停」状态：跑了一半断掉的任务落在 `failed` 上、`analyzed_moves` 还留着，
+而重试会从断点续算（`_get_resume_move_number`）。所以 `failed` 按有没有进度分两档，
+有进度的那档说「继续分析」——说「重试」反而像要从头再来。
+
+### 「研究到得了」那笔账（Task 4 埋的）**落在屏 20 不在屏 19**
+
+稿子自己写着研究的入口有三个：「棋谱详情的『去研究』、**复盘报告**的『去研究』、棋谱库的
+`open_in_research`」（`:1800`）——不含复盘列表屏。而 `ReportDetailPage.tsx:324` 早就有
+「在研究中打开」。⇒ 从 `/kiosk/report` 点整行的「查看报告」进屏 20，再点「去研究」，路是通的。
+
+### 顺手修的两件与本屏无关但会咬人的事
+
+1. **`ReportsPage.layout.test.tsx` 删掉了。** 它在 jsdom 里断言 `flex:1` / `minHeight:0` ——
+   断的是**声明**不是**结论**（原样搬进真浏览器不可能失败），而且它的断言对象
+   （`report-preview-region` / `PlaybackBar`）本轮整块没了。承重判据搬进了几何闸。
+2. **两条做题屏的几何闸原来依赖「另一个进程在不在」。** `tsumego/problem/:id` 外面套着
+   `PhysicalBoardGuard`，它读 `GeometryContext`，而后者**只在接口 404 时**才落到 `disabled`；
+   接口连不上（502）时 phase 停在 `required` ⇒ 整屏被换成标定台 ⇒ 30 秒超时。
+   后端起着就绿、一停就红的东西不叫闸。已在 `boot()` 里把 geometry status 钉成
+   「这台盒子没有摄像头」。同理给四图加了 `stubShellAssets`（logo 502 会让实现图左上角变成碎图标，
+   而 Task 20 Step 3 要靠「重跑零字节变化」验证确定性）。
+
+---
+
 ## Task 17: 屏 09 · 课程 `/kiosk/tutorial`
 
 **设计稿**：`go-kiosk.tmpl.html:611-654`（L1-A，形态 1）。**现状**：`pages/TutorialCategoriesPage.tsx`（141 行）。

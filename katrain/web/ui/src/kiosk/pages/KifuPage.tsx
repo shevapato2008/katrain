@@ -13,6 +13,7 @@ import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import type { MatchSource } from '../../types/live';
+import { whenLabel } from '../utils/whenLabel';
 
 const DEBOUNCE_MS = 350;
 /** 一页 6 条:这是**滚栏里的一段**,不是整屏的列表。20 条会把下面两组挤到看不见。 */
@@ -39,22 +40,6 @@ const readRecent = (): RecentItem[] =>
 /** 摆完了没有 —— **只有两个数都在的时候才敢答**,见 `BaipuProgress.total` 那段注释。 */
 const isDone = (p: BaipuProgress | null): boolean =>
   p != null && p.total != null && p.k >= p.total;
-
-/**
- * 「今天 15:40 / 昨天 / 前天 / 08-19」。**跨的是日历天不是 24 小时** ——
- * 23:50 存的谱,第二天 00:10 回来时说「今天」是错的。
- */
-function whenLabel(ts: number, t: (k: string, d: string) => string): string {
-  const then = new Date(ts);
-  const midnight = new Date();
-  midnight.setHours(0, 0, 0, 0);
-  const days = Math.floor((midnight.getTime() - new Date(then).setHours(0, 0, 0, 0)) / 86400000);
-  const hhmm = `${String(then.getHours()).padStart(2, '0')}:${String(then.getMinutes()).padStart(2, '0')}`;
-  if (days <= 0) return `${t('kifu:today', '今天')} ${hhmm}`;
-  if (days === 1) return t('kifu:yesterday', '昨天');
-  if (days === 2) return t('kifu:day_before', '前天');
-  return `${String(then.getMonth() + 1).padStart(2, '0')}-${String(then.getDate()).padStart(2, '0')}`;
-}
 
 /**
  * 屏 15 · 棋谱 `/kiosk/kifu` —— L1 布局 A(镜像栏 296 + 16 + 右栏 680)。

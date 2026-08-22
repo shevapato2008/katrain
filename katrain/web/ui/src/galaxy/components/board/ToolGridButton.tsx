@@ -13,6 +13,12 @@ interface ToolGridButtonProps {
   label: string;
   /** 无障碍名。不传就用 label；只有在 label 本身说不清时才传。 */
   ariaLabel?: string;
+  /**
+   * 悬浮提示。不传时用可及名，且 `disabled` 下不显示（死键上挂个复读标签没有意义）。
+   * 传了就**连 disabled 一起显示** —— 这一支是给「为什么这个键是灰的」准备的：
+   * 那句解释恰恰只在键失效时才有用（例：领地键要有 ownership 才能按）。
+   */
+  tooltip?: string;
   active?: boolean;
   /** true 时按 `aria-pressed` 报告开关状态；一次性动作（撤销/重置）不要传。 */
   toggle?: boolean;
@@ -43,6 +49,7 @@ const ToolGridButton = ({
   icon,
   label,
   ariaLabel,
+  tooltip,
   active = false,
   toggle = false,
   onClick,
@@ -50,7 +57,7 @@ const ToolGridButton = ({
   loading = false,
   isDestructive = false,
 }: ToolGridButtonProps) => (
-  <Tooltip title={disabled ? '' : (ariaLabel ?? label)}>
+  <Tooltip title={tooltip ?? (disabled ? '' : (ariaLabel ?? label))}>
     <span style={{ display: 'flex' }}>
       <ButtonBase
         aria-label={ariaLabel ?? label}

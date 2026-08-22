@@ -108,7 +108,9 @@ describe('LiveMatchPage', () => {
     const controls = within(rail).getByTestId('live-match-display-controls-grid');
     const trend = within(rail).getByTestId('live-match-trend-region');
     expect(controls).toBeInTheDocument();
-    expect(within(controls).getAllByRole('button')).toHaveLength(5);
+    // 工具格是四列一行的四个键；坐标不在格子里，是格子下面单独一行的开关。
+    expect(within(controls).getAllByRole('button')).toHaveLength(4);
+    expect(within(rail).getByRole('checkbox', { name: 'Coordinates' })).toBeInTheDocument();
     expect(trend).toHaveStyle({ flex: 'none' });
     expect(within(actions).getByText('2 / 3 live:moves')).toBeInTheDocument();
     expect(shell).toBeInTheDocument();
@@ -143,7 +145,8 @@ describe('LiveMatchPage', () => {
       {} as ResizeObserver,
     ));
     expect(boardProps.showCoordinates).toBe(true);
-    expect(screen.getByRole('button', { name: 'Coordinates' })).toHaveAttribute('aria-pressed', 'true');
+    // 坐标已从工具格挪成单独一行的开关（与死活题页对齐），role 从 button 变成 checkbox。
+    expect(screen.getByRole('checkbox', { name: 'Coordinates' })).toBeChecked();
   });
 
   it('keeps the playback move counter as one measurable action-region item', () => {

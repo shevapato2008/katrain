@@ -3,6 +3,10 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { UseReportDetailResult } from '../../../features/report/useReportDetail';
+// 迁统一版式后页头是 ModulePlate，它的返回键走 useGameNavigation()（无 Provider 直接 throw）。
+// 用**真**的 Provider 而不是 stub —— 返回键的行为正是这一页要守的东西之一。
+// 同一写法见 live/LiveMatchPage.test.tsx:6,67。
+import { GameNavigationProvider } from '../../context/GameNavigationContext';
 
 import ReportDetailPage from './ReportDetailPage';
 
@@ -100,11 +104,11 @@ describe('ReportDetailPage', () => {
 
   it('renders a live-aligned detail shell', async () => {
     render(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}>
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
         <Routes>
           <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
         </Routes>
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -115,7 +119,13 @@ describe('ReportDetailPage', () => {
     expect(screen.getByTestId('mock-playback-bar')).toBeInTheDocument();
     expect(screen.getByTestId('mock-trend-chart')).toBeInTheDocument();
     expect(screen.getByText('AI Recommendations')).toBeInTheDocument();
-    expect(screen.getByText('Try')).toBeInTheDocument();
+    // 显示开关改成复用直播页那一组共享件（工具格），所以文案走的是 live:* 而不是
+    // 原来手抄的 report:*。十个共享 key 在 11 种语言里都齐，不构成 i18n 回归。
+    expect(screen.getByRole('button', { name: 'Try Move' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Territory' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Move Numbers' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide Advice' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Coordinates' })).toBeInTheDocument();
     expect(screen.queryByText('报告摘要')).not.toBeInTheDocument();
     expect(screen.queryByText('精彩手')).not.toBeInTheDocument();
     expect(screen.queryByText('失误手')).not.toBeInTheDocument();
@@ -125,12 +135,12 @@ describe('ReportDetailPage', () => {
 
   it('navigates to the unchanged Galaxy research route', async () => {
     render(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}>
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
         <Routes>
           <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
           <Route path="/galaxy/research" element={<div>Research destination</div>} />
         </Routes>
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Open in Research' })).toBeInTheDocument());
@@ -145,9 +155,9 @@ describe('ReportDetailPage', () => {
     };
 
     const { rerender } = render(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}>
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
         <Routes><Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} /></Routes>
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => expect(screen.getByTestId('mock-playback-bar')).toHaveTextContent('2/2'));
@@ -160,9 +170,9 @@ describe('ReportDetailPage', () => {
       currentMove: 1,
     };
     rerender(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}>
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
         <Routes><Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} /></Routes>
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
     expect(screen.getByTestId('mock-playback-bar')).toHaveTextContent('1/2');
     expect(mockDetailRefresh).not.toHaveBeenCalled();

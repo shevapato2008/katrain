@@ -1,3 +1,4 @@
+/* spec-sync: 3.2 rev=2026-08-22 sha=f861d7e1 —— 见 check_spec_sync.py；规范 §3.2 一改这里就红。 */
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Box } from '@mui/material';
 

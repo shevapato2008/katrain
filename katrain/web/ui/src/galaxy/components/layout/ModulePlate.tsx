@@ -1,3 +1,11 @@
+/* spec-sync: 2.4 rev=2026-08-22 sha=2c267c58
+ *
+ * 这一行由 `superpowers/tracks/galaxy-ui-redesign/check_spec_sync.py` 对账：
+ * `sha` 是规范 §2.4 正文的哈希。规范正文一改、这里没跟，闸就会指名道姓说
+ * 「这一处没跟上规范」—— 2026-08-22 §2.4 改写时，冻结原型就是这样悄悄留在
+ * 裁定前的形状、一路活到 S8 才被人工比对抓到。
+ * 看过新条款、确认本文件确实跟上了，再跑 `check_spec_sync.py --update` 写回 sha。
+ */
 import type { ReactNode } from 'react';
 import { Box, IconButton, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';

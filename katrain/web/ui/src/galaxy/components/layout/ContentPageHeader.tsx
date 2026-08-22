@@ -1,3 +1,4 @@
+/* spec-sync: 2.4 rev=2026-08-22 sha=2c267c58 —— 见 check_spec_sync.py；规范 §2.4 一改这里就红。 */
 import type { ReactNode } from 'react';
 import ModulePlate from './ModulePlate';
 

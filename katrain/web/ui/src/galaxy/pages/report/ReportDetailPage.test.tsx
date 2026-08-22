@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { UseReportDetailResult } from '../../../features/report/useReportDetail';
@@ -133,19 +133,40 @@ describe('ReportDetailPage', () => {
     expect(mockUseReportDetail).toHaveBeenCalledWith('token', '7');
   });
 
-  it('navigates to the unchanged Galaxy research route', async () => {
+  // Fan 2026-08-22 点头：「进入研究室」不再是空跳转，要把这一局带过去。
+  // 断言落在**到达研究页时手里有没有这局的 id** 上，不落在 navigate() 的入参上 ——
+  // 后者只证明我照着自己写的字符串调了一次，前者才是用户要的那件事。
+  it('carries this game into research instead of landing on a blank board', async () => {
+    const ResearchProbe = () => {
+      const [params] = useSearchParams();
+      return <div>research:{params.get('user_game_id') ?? 'none'}</div>;
+    };
+
     render(
       <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
         <Routes>
           <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
-          <Route path="/galaxy/research" element={<div>Research destination</div>} />
+          <Route path="/galaxy/research" element={<ResearchProbe />} />
         </Routes>
       </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Open in Research' })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Open in Research' }));
-    expect(await screen.findByText('Research destination')).toBeInTheDocument();
+    expect(await screen.findByText('research:game-1')).toBeInTheDocument();
+  });
+
+  // 没有棋局就没有可带的参数 —— 这时按钮是死的，而不是把人送去一张空棋盘。
+  it('disables the research entry when the game is not available', async () => {
+    reportDetailFixture = { ...reportDetailFixture, game: null };
+
+    render(
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
+        <Routes><Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} /></Routes>
+      </GameNavigationProvider></MemoryRouter>,
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Open in Research' })).toBeDisabled());
   });
 
   it('refreshes a progressive report while preserving a historical cursor', async () => {

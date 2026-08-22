@@ -278,9 +278,24 @@ locale 作用域节点，已挂 `data-language` 与 `font-synthesis:none`，唯�
   中段撑长。`LiveMatchPage` 用的是同一个共享件、同样挂在 `displayControls` 槽，但本机没有直播
   数据，量不到。**下一次有直播数据时量一次**；若同样在折线以下，改法与复盘页相同（挪到
   `MatchInfo` 之后）。
-- **「进入研究室」是个空跳转**：`ReportDetailPage` 只 `navigate('/galaxy/research')`，不带
-  taskId / sgf / game_id，落到研究页的空白编辑态。冻结稿 V2 的注释写着「现状漏了棋局参数，
-  改版补上」并注明「仍然请你点头」。属导航参数、不涉后端契约，**等 Fan 点头再补**。
+- ~~**「进入研究室」是个空跳转**~~ **已补（Fan 2026-08-22 点头「补」）**：
+  `ReportDetailPage` 现在跳 `/galaxy/research?user_game_id=<uuid>`，研究页新增对应的深链
+  effect（`ResearchPage.tsx`，紧挨原有的 `?kifu_id=` 那条）。三处裁定写在代码注释里：
+  1. **用 `user_game_id` 不用 `kifu_id`** —— 后者走棋谱库 `KifuAPI.getAlbum`，是另一个
+     id 空间；把报告的 game id 塞进去会加载到一局无关的棋，**比不跳转更坏**。
+  2. **不带 `&analyze=1`** —— 全盘扫描是计费动作，不该由一次导航悄悄触发；这一局报告页
+     也早已分析过。要分析在研究页按「开始研究」。单测里有一条绊线守着这个决定。
+  3. **SGF 用刚取回的 `detail.sgf_content`，不从 `board` 反推** —— `loadFromSGF` 的
+     setState 在同一段 async 续体里还没冲刷。这正是 kiosk 同名页注释里记的那个坑，
+     而 galaxy 原有的 `?kifu_id=` 那条**仍然踩着**（`setTimeout(handleStartAnalysis, 100)`
+     闭包在空棋盘那一帧）——**属另一条入口的既有缺陷，本轮不动，记在这里**。
+
+  真浏览器实测（本机 8001 + S3 fixture，1280×720）：点「进入研究室」→
+  `/galaxy/research?user_game_id=sufx_s3_report_250`，棋盘 **250 / 250 手**、
+  对局信息回填 武宫正树 / 铃木伊佐男 / 19×19 / 中国规则 / 贴目 6.5，页面停在 L1 摆盘态
+  （「开始研究」还在，无进度条），网络里只有 1 次 `GET /api/v1/user-games/sufx_s3_report_250`、
+  **0 次 session/scan**。截图 `scratchpad/research-deeplink-1440.png`。
+  四条新断言全部做过变异（改坏 → 变红）。
 
 - **取参考图必须回读屏名**：2026-08-22 发现研究页（S1）的三张 `reference.png` 画的其实是
   **直播观战页** —— 取图脚本切了屏但没有核对切到没切到，四图对比因此拿研究页的实现去比直播页的

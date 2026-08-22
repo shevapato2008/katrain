@@ -173,6 +173,20 @@ export default function ReportDetailPage() {
   const black = game?.player_black || t('report:black', 'Black');
   const white = game?.player_white || t('report:white', 'White');
 
+  /* 「进入研究室」带着这一局走。改版前它是 `navigate('/galaxy/research')` —— 不带任何
+     棋局参数，点进去是一张空棋盘（冻结稿 V2 的注释：「现状漏了棋局参数，改版补上」）。
+     Fan 2026-08-22 点头补上。
+
+     参数用 `user_game_id`（`user_games` 那套 uuid），不是 `kifu_id` —— 研究页原有的
+     `?kifu_id=` 走的是棋谱库 `KifuAPI.getAlbum`，是**另一个 id 空间**；把报告的
+     game id 塞进去只会加载到一局无关的棋，比不跳转更坏。
+
+     不带 `&analyze=1`：这一局报告页已经分析过一遍，进研究室是为了摆变化；而全盘扫描
+     是计费动作，不该由一次导航悄悄触发。要分析就在研究页按「开始研究」。 */
+  const researchHref = game?.id
+    ? `/galaxy/research?user_game_id=${encodeURIComponent(game.id)}`
+    : null;
+
   return (
     <BoardPageShell
       onBoardSizeChange={setBoardEdge}
@@ -269,7 +283,8 @@ export default function ReportDetailPage() {
               fullWidth
               variant="outlined"
               startIcon={<ScienceIcon />}
-              onClick={() => navigate('/galaxy/research')}
+              disabled={!researchHref}
+              onClick={() => { if (researchHref) navigate(researchHref); }}
               sx={{ textTransform: 'none', minHeight: 40 }}
             >
               {t('report:enter_research', 'Open in Research')}

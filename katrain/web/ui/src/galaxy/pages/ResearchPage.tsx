@@ -208,6 +208,39 @@ const ResearchPage = () => {
             });
     }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    /* 「进入研究室」的入口：`?user_game_id=<uuid>`（复盘·报告详情页 → 这里）。
+       Fan 2026-08-22 点头补上 —— 在此之前报告页那个按钮只 `navigate('/galaxy/research')`，
+       落到一张空棋盘。
+
+       和上面那条 `?kifu_id=` 是**两个 id 空间**：那条走棋谱库 `KifuAPI.getAlbum`，
+       这条走个人对局 `UserGamesAPI.get`（要 token，而 auth 是异步加载的，所以
+       `!token` 时先不烧掉 ref，等 token 到了这个 effect 会因为依赖变化再跑一次）。
+
+       **不认 `&analyze=1`。** 全盘扫描是计费动作，不该由一次导航悄悄触发；报告页那一局
+       也早已分析过。要分析就按「开始研究」。上面 kifu 那条认它，是它原有的行为，不动。
+
+       SGF 用刚取回来的 `detail.sgf_content`，不从 `board` 反推 —— `loadFromSGF` 的
+       setState 在同一段 async 续体里还没冲刷，此刻读 `board.moves` 拿到的是加载前的空值。
+       （kiosk 那份同名页在 `ResearchPage.tsx:374` 的注释里记的就是这个坑。） */
+    const userGameLoadedRef = useRef(false);
+    useEffect(() => {
+        const userGameId = searchParams.get('user_game_id');
+        if (!userGameId || userGameLoadedRef.current || !token) return;
+        userGameLoadedRef.current = true;
+
+        UserGamesAPI.get(token, userGameId)
+            .then((detail) => {
+                if (!detail.sgf_content) return;
+                const result = board.loadFromSGF(detail.sgf_content);
+                if (!result.success) {
+                    console.error('Failed to load user game for deep link:', result.error);
+                }
+            })
+            .catch((err) => {
+                console.error('Failed to load user game for deep link:', err);
+            });
+    }, [searchParams, token]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // Poll analysis progress while analyzing and not yet complete
     useEffect(() => {
         if (!isAnalyzing || analysisComplete) return;

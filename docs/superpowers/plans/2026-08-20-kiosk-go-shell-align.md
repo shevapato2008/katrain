@@ -3045,6 +3045,40 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
 
 **设计稿**：`go-kiosk.tmpl.html:270-311`（**L3 布局 A**）。**现状**：`pages/GamePage.tsx`（825 行）+ `components/game/GameControlPanel.tsx`。
 
+> ### ⚠️ 2026-08-22 修订：这一屏整块重画了，**下面那张表和「不许有 `.kiosk-eval`」那一段全部作废**
+>
+> Fan 把 galaxy 的自由对弈页和这一屏并排看，给了三条，都成立（原话：「kiosk 界面需要涵盖 galaxy 界面
+> 有边框所有元素：按钮、胜率/目差图 等」「3D 效果按钮可以不做」「新增的按钮没有图标，字体也不是
+> 霞骛楷体，大小也不一致」）。稿子已改，按**新稿**做，行号按 `data-screen="game"` 找：
+>
+> 1. **胜率/目差图回来了。** 旧禁令的依据是**能力判断**（KataGo 要真跑 playout），而
+>    `interface.py:_do_analyze_current` 是**领地和图表共用的一次按需分析**（点一次算一次，优先走
+>    `analysis_engine()` 即云端），胜率是那一次调用的**副产品**。规范 §8 已改（v1.32），
+>    `sample-go/gate.mjs` 那条断言**反了过来**：对局屏**必须**有 `data-fold="eval"`。
+>    图是**双轴**：左胜率、右目差，**上黑下白**（`models_db.py:373` 的 winrate 是黑方的，
+>    共享 `ScoreGraph` 把 1.0 画在顶上）。
+> 2. **七个键排成 4×2 的等大格阵**（galaxy 八个减掉 3D）：`领地` `AI 支招` `图表` `数子` /
+>    `悔棋` `停一手` `认输`。实现里它们**本来就是同一个 `ItemToggle`**，不需要改组件，改的是稿子。
+>    `数子` 灰着是真的（`/api/count/request` 在 `count_min_moves`=100 之前一律拒），
+>    灰的旁边要写明还差什么。
+> 3. **`本局记账` 那一块和 `棋谱` 那一块都撤了。** 提子挪进玩家卡副行、规则与贴目挪进页控条副标；
+>    棋谱在这一屏是**稿子自己发明的**（galaxy 右栏没有、`GameControlPanel` 也没有），
+>    而右栏 516 装不下「胜率块 + 记账块 + 棋谱」三样。
+> 4. **页控条右端没有 `2D | 3D`**（围棋不做 3D，这条 2026-08-21 已经在别处作废过一次）。
+>
+> **本屏两条要动实现的（不是稿子的事，做这个 Task 时一起做）：**
+>
+> - **升降级局里这一块必须整块不渲染。** 现在前端只是**不去请求**（`GamePage.tsx` 的
+>   `isRankedGameType` 早退），面板照样渲染，画出来是一条全 `--` 的空图 —— 规范 §8 明写
+>   「禁的时候整块不渲染，不要渲成灰的或显示『—』，那是在提示『这里本来有个东西，你没资格看』」。
+>   改法：`GameControlPanel` 的 `showScore` 再与 `!isRanked` 相与，`图表` 那个键在升降级局里
+>   一并不出现（同一条 `interface.py` 分析闸已经在后端拦住了，界面只是没跟上）。
+> - **`analysisToggles.score` 默认 `true` ⇒ 默认状态下每手都会触发一次 `analyze_current`。**
+>   配了云端分析引擎就走云端；没配就和对弈引擎抢同一个本地 KataGo —— 这正是 2026-07-27 那条
+>   禁令当初担心的事，实现用「默认开」把它变成了常态。规范 §8 那句「默认关」**四家一家都没实现**。
+>   **要不要把默认改成关，是产品决定，等 Fan 定**，先别自己改。
+
+
 ✅ **Q1 已裁定 —— 见 D7：照抄五子棋 `gomoku/ui/src/index.css:1619` 那一行**（`color: var(--bad)` + `border-color: color-mix(in srgb, var(--bad) 35%, var(--hair))`，形状尺寸背景一律不动）。写进 `go-screens.css`，选择器 `.kiosk-screen[data-screen="game"] .kiosk-actions .danger`。
 
 **骨架**：`.kiosk-layout-a` = 盘 516 贴 x16 + 16 + 右栏 460。右栏自上而下：

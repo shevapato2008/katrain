@@ -192,6 +192,9 @@ const ResearchPage = () => {
 
     // Deep linking: load kifu from ?kifu_id=xxx query param
     const kifuLoadedRef = useRef(false);
+    /* `?analyze=1` 不在这条 effect 里直接开分析，而是先立一个标志、等下一帧再开。
+       原因见下面那条 effect 的注释 —— 这里直接开会拿一张空棋盘去分析。 */
+    const [autoAnalyzeAfterLoad, setAutoAnalyzeAfterLoad] = useState(false);
     useEffect(() => {
         const kifuId = searchParams.get('kifu_id');
         if (!kifuId || kifuLoadedRef.current) return;
@@ -207,13 +210,38 @@ const ResearchPage = () => {
 
                 // Auto-start analysis if ?analyze=1 is set
                 if (searchParams.get('analyze') === '1') {
-                    setTimeout(() => handleStartAnalysis(), 100);
+                    setAutoAnalyzeAfterLoad(true);
                 }
             })
             .catch((err) => {
                 console.error('Failed to load kifu for deep link:', err);
             });
     }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    /* `?kifu_id=…&analyze=1` 的自动分析在这里发，不在上面那条 effect 里。
+
+       改之前是 `setTimeout(() => handleStartAnalysis(), 100)`，那是错的，而且
+       **不是等得不够久**：`setTimeout` 的闭包捕获的是 effect 那一帧的
+       `handleStartAnalysis`，那一帧的 `board.moves` / `board.currentMove` /
+       `board.getSnapshot()` 全是加载前的空值（`loadFromSGF` 走 `useState`，
+       同一段 async 续体里还没冲刷）。于是 `handleStartAnalysis` 里那行
+       `board.moves.length > 0 ? sgf : undefined` 取到 `undefined` —— 会话建成
+       一张空棋盘，紧跟着的 `analysisScan(500)` 扫的也是空棋盘。等 1000ms 一样错，
+       因为拿到的那个函数本身就是旧的。
+
+       改成「立标志 + 独立 effect」之后，这条 effect 只在标志变 true 的那一帧之后
+       才跑，而 `setAutoAnalyzeAfterLoad(true)` 与 `loadFromSGF` 的 setState 在同一段
+       续体里、由 React 一起冲刷，所以这一帧的 `handleStartAnalysis` 读到的是**装好的**
+       棋盘。顺带把 `getSnapshot()` 和 `initialMove` 两处同样读旧值的地方一起修好了 ——
+       它们和 SGF 是同一个闭包里的三个受害者，只补 SGF 那一个是补不干净的。
+
+       同族：`?user_game_id=` 那条从一开始就不认 `analyze=1`（全盘扫描是计费动作，
+       不该由一次导航悄悄触发），所以它没有这个坑。 */
+    useEffect(() => {
+        if (!autoAnalyzeAfterLoad) return;
+        setAutoAnalyzeAfterLoad(false);
+        void handleStartAnalysis();
+    }, [autoAnalyzeAfterLoad]); // eslint-disable-line react-hooks/exhaustive-deps
 
     /* 「进入研究室」的入口：`?user_game_id=<uuid>`（复盘·报告详情页 → 这里）。
        Fan 2026-08-22 点头补上 —— 在此之前报告页那个按钮只 `navigate('/galaxy/research')`，

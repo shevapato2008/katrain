@@ -7,6 +7,7 @@ import Board from '../../components/Board';
 import ResearchSetupPanel, { ResearchSetupActions } from '../components/research/ResearchSetupPanel';
 import ResearchAnalysisPanel, { ResearchAnalysisActions } from '../components/research/ResearchAnalysisPanel';
 import BoardPageShell from '../components/board/BoardPageShell';
+import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import ModulePlate from '../components/layout/ModulePlate';
 import { useResearchBoard } from '../hooks/useResearchBoard';
 import { useResearchSession } from '../../hooks/useResearchSession';
@@ -163,8 +164,14 @@ const ResearchPage = () => {
         eval: false,
         numbers: false,
         children: false,
-        coords: true,
     });
+
+    // spec §3.2：**棋盘边长低于 500px 时坐标默认关闭**，判据是棋盘量出来的边长而不是视口宽度
+    // （899px 横窗堆叠后棋盘仍可能大于 500）。原来这一页有三个各说各话的真相来源：
+    // 初值里的 `coords: true`（共享 Board 真的读它，见 Board.tsx:194）和两处写死的坐标开。
+    // 现在只剩这一个。本页三个形态一次只渲染一个，所以共用一份 edge 状态。
+    const [boardEdge, setBoardEdge] = useState(0);
+    const coordinates = useBoardCoordinates(boardEdge);
 
     const toggleAnalysis = useCallback((key: string) => {
         setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key] }));
@@ -486,11 +493,12 @@ const ResearchPage = () => {
         return (
             <>
                 <BoardPageShell
+                    onBoardSizeChange={setBoardEdge}
                     board={(
                         <Board
                             gameState={gs}
                             onMove={session.onMove}
-                            analysisToggles={analysisToggles}
+                            analysisToggles={{ ...analysisToggles, coords: coordinates.visible }}
                         />
                     )}
                     modulePlate={(
@@ -582,13 +590,14 @@ const ResearchPage = () => {
         return (
             <>
                 <BoardPageShell
+                    onBoardSizeChange={setBoardEdge}
                     board={(
                         <LiveBoard
                             moves={board.moves}
                             stoneColors={board.stoneColors}
                             currentMove={board.currentMove}
                             boardSize={board.boardSize}
-                            showCoordinates={true}
+                            showCoordinates={coordinates.visible}
                             showMoveNumbers={board.showMoveNumbers}
                             handicapCount={board.handicapCount}
                             minimumCanvasSize={0}
@@ -678,13 +687,14 @@ const ResearchPage = () => {
     return (
         <>
             <BoardPageShell
+                    onBoardSizeChange={setBoardEdge}
                 board={(
                     <LiveBoard
                         moves={board.moves}
                         stoneColors={board.stoneColors}
                         currentMove={board.currentMove}
                         boardSize={board.boardSize}
-                        showCoordinates={true}
+                        showCoordinates={coordinates.visible}
                         showMoveNumbers={board.showMoveNumbers}
                         handicapCount={board.handicapCount}
                         onIntersectionClick={board.handleIntersectionClick}

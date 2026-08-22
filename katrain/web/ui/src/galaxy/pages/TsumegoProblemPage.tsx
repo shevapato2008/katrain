@@ -28,6 +28,7 @@ import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import type { MoveResult } from '../../hooks/useTsumegoProblem';
 import TsumegoBoard from '../../components/tsumego/TsumegoBoard';
 import BoardPageShell from '../components/board/BoardPageShell';
+import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import ModulePlate from '../components/layout/ModulePlate';
 import TsumegoProblemControls, {
   TsumegoDisplayControls,
@@ -52,8 +53,12 @@ const TsumegoProblemPage: React.FC = () => {
   const [problemList, setProblemList] = useState<ProblemListItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
 
-  // 坐标开关。默认开 —— 迁版式前 TsumegoBoard 是无条件画坐标的，这里保持原样。
-  const [showCoordinates, setShowCoordinates] = useState(true);
+  // 坐标开关。spec §3.2：**棋盘边长低于 500px 时默认关闭**，开关仍在、且与实际渲染一致。
+  // 判据是棋盘实际量出来的边长，不是视口宽度 —— 899px 横窗堆叠后棋盘仍可能大于 500。
+  // `useBoardCoordinates` 里 `visible = userOverride ?? edge >= 500`：用户一旦手动扳过，
+  // 就以他的选择为准，不再被自动规则改回去。
+  const [boardEdge, setBoardEdge] = useState(0);
+  const coordinates = useBoardCoordinates(boardEdge);
 
   // Snackbar for move feedback
   const [snackbar, setSnackbar] = useState<{
@@ -303,6 +308,7 @@ const TsumegoProblemPage: React.FC = () => {
   return (
     <>
       <BoardPageShell
+        onBoardSizeChange={setBoardEdge}
         board={(
           <Box
             sx={{
@@ -327,7 +333,7 @@ const TsumegoProblemPage: React.FC = () => {
               lastMove={lastMove}
               hintCoords={hintCoords}
               showHint={showHint}
-              showCoordinates={showCoordinates}
+              showCoordinates={coordinates.visible}
               disabled={isSolved}
               moveHistory={moveHistory}
               showMoveNumbers={isTryMode}
@@ -368,8 +374,8 @@ const TsumegoProblemPage: React.FC = () => {
         )}
         displayControls={(
           <TsumegoDisplayControls
-            showCoordinates={showCoordinates}
-            onToggleCoordinates={() => setShowCoordinates(prev => !prev)}
+            showCoordinates={coordinates.visible}
+            onToggleCoordinates={coordinates.toggle}
           />
         )}
         actions={(

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { ButtonBase, Tooltip, keyframes } from '@mui/material';
 
 const blink = keyframes`
@@ -22,7 +22,8 @@ interface ToolGridButtonProps {
   active?: boolean;
   /** true 时按 `aria-pressed` 报告开关状态；一次性动作（撤销/重置）不要传。 */
   toggle?: boolean;
-  onClick: () => void;
+  /** 透传原生事件 —— 有的调用方要拿 currentTarget 当菜单锚点。忽略它的调用方不受影响。 */
+  onClick: (event: MouseEvent<HTMLElement>) => void;
   disabled?: boolean;
   loading?: boolean;
   isDestructive?: boolean;
@@ -38,8 +39,10 @@ interface ToolGridButtonProps {
  *   tx2 #b8b5b0 = text.secondary，tx3 #4a4845 = text.disabled），所以这里直接用主题值，
  * 不再抄一遍十六进制。
  *
- * 与对局室右栏那组开关（`galaxy/components/game/RightSidebarPanel.tsx` 的 `ItemToggle`）
- * 是同一种控件 —— Fan 的裁定是「除『离开对局』这种按钮和滑轨类以外，其他按钮一律按这个方式设计」。
+ * Fan 的裁定：「除『离开对局』这种按钮和滑轨类以外，其他按钮一律按这个方式设计」。
+ * 对局室右栏那组开关（原 `RightSidebarPanel.ItemToggle`）和变化图的编辑工具条
+ * （原 `BoardEditToolbar.ToolButton`）都已折叠到这里；只剩研究页的 `ResearchToolbar.ToolButton`
+ * 还是一份独立实现，排在 S9 收口。
  *
  * 一处**有意不同**：这里渲染的是真的 `<button>`（`ButtonBase`），不是挂了 onClick 的 `<div>`。
  * 原因有两条：死活题页那四个控件本来就是 `Button`/`IconButton`，换成 div 是键盘可达性的倒退；

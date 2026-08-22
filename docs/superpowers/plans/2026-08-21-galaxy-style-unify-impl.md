@@ -542,6 +542,98 @@ Fan 选 A。**因此本节包含对 `GamePage.tsx` 的改动 —— 那条「照
    `superpowers/tracks/...`，必须回到仓库根。另外本机 dev server 一小时内挂死两次
    （进程在、不响应），重起即可。
 
+## 4.13 S8 十二个内容页（commit d80b5134，只换页头）
+
+`Dashboard` / `PlayMenu` / `HvHLobbyPage` / `live/LivePage` / `report/ReportsPage` /
+`TsumegoLevelsPage` / `TsumegoCategoriesPage` / `TsumegoUnitsPage` / `TsumegoListPage` /
+`tutorials/{TutorialLandingPage,TutorialBooksPage,TutorialBookDetailPage}`
+
+### 一处「按规范不按稿子」
+
+冻结原型的 `cph()`（`proto/04-runtime.js:206`）画的是**标题在左、右侧一个带文字的
+outlined 返回按钮**，`ContentPageHeader.tsx` 也停在那一版。但 spec §2.4 在 **2026-08-22
+Fan 裁定之后**已改写成「返回按钮是左上角的箭头图标键，页面标题紧跟在它右边」，
+并明确「**无棋盘内容页把同一结构放在内容区顶端**」。棋盘页那半（`plate iconleft`）跟上了
+裁定，`cph` 这半没有。按权威顺序**规范高于原型**，取规范。
+
+这是 [[project_kiosk_go_design_27_screens]] 记过的那个形状再现一次：**规范改了、稿子没跟，
+中间没有闸**。这次是靠人工比对抓到的 —— 值得单独记一笔：`proto/check.py` 只检查稿子内部
+自洽，**不与 spec 对账**，所以它对这种漂移是全盲的。
+
+### 共享件收成一份
+
+`ModulePlate` 加 `size: 'rail' | 'page'`（默认 `rail`，**S2–S7 六个棋盘页一行没改**），
+`ContentPageHeader` 收成它的薄壳。`page` 档字号照 `.cph h1`：2.125rem / 800 / -.02em，
+430 档降 1.5rem，`minHeight 48`。响应式**用断点不用 `@container`** —— `ContentPageHeader`
+在 `galaxy/components/layout/`，按 eslint 边界规则 kiosk 不能 import 它，不存在误伤
+第三方调用方的风险（这是 [[reference_overloaded_prop_forces_a_lie]] 那条「共享件一律走
+`@container`」纪律的**边界**：那条纪律针对的是 kiosk/galaxy 共用件）。
+
+`ContentPageHeader` **故意不开 `subtitle` 属性**：规范禁长副标题进页头，属性不存在就没有
+调用方能把它塞回来。闸建在类型上，比写在注释里可靠。
+
+**连带后果（已在对照台上标出等确认）**：`ContentPageHeader` 唯一的老调用方是
+`AiSetupPage.tsx:461`，它在「不许改」的拷贝目标清单里，改共享件让它**跟着变了**
+（它自己的文件一行没动）。与 S5 的「方案 A」同口径。
+
+顺手修掉一处无障碍缺陷：原来 `aria-label={\`返回${parentLabel}\`}` 是**硬编码中文**，
+英文界面下也读中文；委派给 `ModulePlate` 后自动用上已补齐 11 语言的 `back_to` 词条。
+
+### 账本：0 无名，但净少 6 个跳转口
+
+12 页页头实测 @1440：**0 无名控件 / 0 面包屑 / 0 段落**，标题统一 34px、高 48；
+430 档统一 24px。返回键可及名回读为「返回对局 / 返回死活题 / 返回15K / 返回吃子 /
+返回教程 / 返回布局」。
+
+**如实记**：删掉的三处 Breadcrumbs 里有 **6 个可点的跳转链接**（各能一跳回到更上面的祖先），
+外加 3 个**没有可及名**的返回图标键。无名的没了，跳转口也少了 —— 从单元页一步回到
+「死活题」根现在要点两次返回，或走左侧一级导航。spec §2.4 正是这么兜的：
+「点击左侧一级导航也返回对应一级页面」。
+
+### 承重只测两页
+
+反查「撤回去有没有元素的高度来源或裁切边界会变」——只有 **LivePage 和 ReportsPage**
+会变（页头长在 `overflow:hidden` 的 flex 列里）。其余十页是自然流或整页 `auto` 滚。
+
+两页三档 **R1–R5 全过**，关键是 R5：主体区拿到的正好是「容器内高 − 页头高 − 间隔」，
+**一个像素都没被 hidden 静默吞掉**。
+
+**LivePage 430 的 R6 未测**：该页唯一的滚动区是赛事列表，本机没有直播数据、列表是空的。
+1440 / 1024 两档过了，430 这一档不拿假绿顶。
+
+**脚本自己错了两次，都值得记**：
+1. 第一版把 R5 写成「主体区必须吸收溢出」—— 那是**照抄棋盘页的式子**。这两页容器里的
+   主体区是棋盘预览 / 直播棋盘，本来就不该滚，列表在另一条链上。这正是计划里
+   「每页按自己那条盒子链重写关系式，**不照抄**」那句要防的，我照抄了自己刚写的通用式。
+2. 间隔只读了容器的 `gap` —— 复盘页用 `gap:2`，**直播页用的是页头自己的 `mb:2`**，
+   于是直播页被判红。判据读错了操作数，不是页面错。同族：[[reference_gate_measures_wrong_operand]]。
+
+### 顺手量出一个既有缺陷（不在 S8 范围，记账）
+
+复盘页 430 档页头高 660px，逐层反查：两栏是 `flex-direction: row; flex-wrap: nowrap`，
+窄屏**不换行也不堆叠**，左栏被压到 **48px 宽**、右栏 520px，**两栏合计 568 已超出 430 视口**。
+左栏那句提示文字因此竖排成 595px 高。**那几行布局代码本次一个字没动**，页头之前就住在
+同一个被压扁的栏里。
+
+### 测试
+
+三个页面测试补 `GameNavigationProvider`（页头经 `ModulePlate` 读该 context；生产里 provider
+挂在 `MainLayout` 上、覆盖全部 galaxy 路由，补的是**测试装配**不是生产缺口）。
+`PlayMenu.test` 的 i18n mock 只有 `t`，补上 `lang` / `subscribe` 才装得起 provider。
+`PlayMenu` 有一条用例名叫「from the page-header secondary action」，那个按钮已下沉到正文，
+名字已改 —— **闸的名字说错了位置，和闸失效同样有害**。
+
+`ContentPageHeader.test` 三条守的是裁定后的形状，四条变异（`size` 去掉 / `showBack` 恒真 /
+删 `backLabel` / `parentLabel` 上屏）已实跑：后三条红、还原绿。
+
+### 出口
+
+`tsc -b` 0；eslint 与 `b05c67fe` 基线**逐条一致**（15 个文件各 8 个既有 error，无新增，
+用同目录 `__base_*.tsx` 副本对账，按完整路径配对 —— 第一版按 basename 配对把没碰过的
+文件全算成新增，见 [[reference_new_failures_only_from_baseline_diff]]）；
+`vitest run` 1248 passed，只剩 `GamePageEngine` 那条基线上就红的 kiosk 用例；
+`npm run build` 与 `npm run build:kiosk-2d` 均绿，kiosk 边界检查通过（14M）。
+
 ## 5. 待议（发现即记，不顺手改）
 
 - **基线上就红的一条单测**：`src/kiosk/__tests__/GamePageEngine.test.tsx`

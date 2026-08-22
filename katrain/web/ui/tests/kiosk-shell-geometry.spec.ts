@@ -690,3 +690,114 @@ test('§11 做题屏:着法再多,动作区也贴着右栏底,一个键都不许
   await expect.poll(() => body.evaluate((el) => el.scrollTop),
     { message: '着法那一块自己滚不动 —— 溢出会糊到下面那排开关上' }).toBeGreaterThan(0);
 });
+
+/* ══ 屏 16 棋谱详情 ════════════════════════════════════════════════════════
+ * 造数据的两个接口:`/api/v1/kifu/albums/:id`(元数据 + SGF)和
+ * `/api/v1/baipu/load`(逐步表,**提子由它给**)。坐标是 canonical:row=0 在上。
+ */
+const KIFU_ALBUM = {
+  id: 7,
+  player_black: '申真谞', player_white: '柯洁',
+  black_rank: '九段', white_rank: '九段',
+  event: '第 29 届三星杯', round_name: '半决赛',
+  result: 'B+R', move_count: 241,
+  date_played: '2026-06-30', board_size: 19, handicap: 0,
+  komi: 7.5, rules: 'chinese', place: null, source: null,
+  sgf_content: '(;FF[4]GM[1]SZ[19];B[pd])',
+};
+
+/** n 手谱。前四手照稿子那张图的头四手,再往后按行铺开凑数(只为把着法表撑到会溢出)。 */
+const kifuSteps = (n: number) => Array.from({ length: n }, (_, i) => ({
+  kind: 'move', move_index: i, property: i % 2 === 0 ? 'B' : 'W',
+  row: 3 + Math.floor(i / 15), col: 3 + (i % 15),
+  color: i % 2 === 0 ? 'B' : 'W', removed: [], board_hash: '',
+}));
+
+const bootKifuDetail = async (page: Page, moves: number) => {
+  await page.route('**/api/v1/kifu/albums/*', (route) => route.fulfill({ json: KIFU_ALBUM }));
+  await page.route('**/api/v1/baipu/load', (route) => route.fulfill({
+    json: { board_size: 19, steps: kifuSteps(moves), meta: {} },
+  }));
+  await boot(page, '/kiosk/kifu/7');
+  await page.waitForSelector('[data-testid="kifu-detail-actions"] button');
+};
+
+/**
+ * 和上面做题屏那条是**同一条不变式的另一条实现路径**:做题屏的盘是 canvas(要能点),
+ * 这一屏的盘是 `GoBoardSvg`(只看不点)。SVG 的线在 DOM 里问得出来,不必读像素 ——
+ * 但**判据一个字不改**:屏上第一条 / 最后一条竖线的横坐标,要正对刻度带头尾两个字心。
+ *
+ * `GoBoardSvg` 的 0.5 格边距是由构造保证的(`goBoard.ts` 那段推导),所以这条闸守的
+ * 不是它自己算错,而是**外面那层**:`.kiosk-board__play` 的内边距、`preserveAspectRatio`
+ * 造成的居中留白、将来有人给盘加一圈边框 —— 任何一样都会让两者错开,而 SVG 内部数值照旧对。
+ */
+test('§8 棋谱详情:SVG 盘的头尾两条竖线,正对刻度带头尾两个字', async ({ page }) => {
+  await bootKifuDetail(page, 8);
+  const m = await page.evaluate(() => {
+    const svg = document.querySelector('.kiosk-board__play svg.gob') as SVGSVGElement;
+    const lines = [...svg.querySelectorAll('line.ln')]
+      .filter((l) => l.getAttribute('x1') === l.getAttribute('x2'));   // 竖线
+    const xOf = (el: Element) => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; };
+    const labels = [...document.querySelectorAll('.kiosk-board__ruler--top span')].map(xOf);
+    return {
+      lines: lines.length,
+      labels: labels.length,
+      firstLine: xOf(lines[0]),
+      lastLine: xOf(lines[lines.length - 1]),
+      firstLabel: labels[0],
+      lastLabel: labels[labels.length - 1],
+    };
+  });
+  expect(m.labels, '刻度带不是 19 个字').toBe(19);
+  expect(m.lines, 'SVG 上不是 19 条竖线').toBe(19);
+  expect(Math.abs(m.firstLine - m.firstLabel),
+    `第一条线 ${m.firstLine.toFixed(1)} 和第一个字 ${m.firstLabel.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.lastLine - m.lastLabel),
+    `最后一条线 ${m.lastLine.toFixed(1)} 和最后一个字 ${m.lastLabel.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+});
+
+/**
+ * 右栏:页控条 44 + 题头 + 谱(`flex:1`)+ 四个翻手键 + 两个动作键 = 516。
+ * **造数据要造到会溢出** —— 241 手的谱,四十几行,`.kiosk-fold__body` 装不下。
+ * 装得下的数据量下量出来的数字一概不算。
+ */
+test('§11 棋谱详情:谱再长,动作区也贴着右栏底,谱自己滚', async ({ page }) => {
+  await bootKifuDetail(page, 240);
+
+  const m = await page.evaluate(() => {
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const acts = document.querySelector('[data-testid="kifu-detail-actions"]') as HTMLElement;
+    const nav = document.querySelector('[data-testid="kifu-detail-movenav"]') as HTMLElement;
+    const body = document.querySelector('.kiosk-fold__body.mvrows') as HTMLElement;
+    const screen = document.querySelector('.kiosk-screen') as HTMLElement;
+    const r = rail.getBoundingClientRect();
+    return {
+      railH: Math.round(r.height),
+      railBottom: Math.round(r.bottom),
+      actsBottom: Math.round(acts.getBoundingClientRect().bottom),
+      actsCount: acts.querySelectorAll('button').length,
+      navCount: nav.querySelectorAll('button').length,
+      overflowInBody: body.scrollHeight - body.clientHeight,
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      screenBottom: Math.round(screen.getBoundingClientRect().bottom),
+    };
+  });
+
+  expect(m.railH, '右栏不是 516 —— 布局 A 的高度账先崩了').toBe(516);
+  expect(m.navCount, '翻手键不是四个').toBe(4);
+  expect(m.actsCount, '动作区不是两个键(摆到实体盘 / 去研究)').toBe(2);
+  expect(m.overflowInBody, '没造出「谱装不下」—— 下面那条断言是空的').toBeGreaterThan(100);
+  expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由谱那一块吃掉').toBeLessThanOrEqual(0);
+  expect(m.actsBottom, '动作区没贴右栏底').toBe(m.railBottom);
+  expect(m.actsBottom, '动作区被顶到画布外面了').toBeLessThanOrEqual(m.screenBottom);
+
+  // 同屏 14 那条:盒子的矩形对 `overflow:visible` 免疫,分得出来的只有「它自己能不能滚」。
+  // 变异实测(2026-08-22):把 `.kiosk-fold__body.mvrows` 的 `overflow-y:auto` 去掉
+  // (回落到共享 `.kiosk-fold__body` 的 `overflow:hidden`),上面六条**全绿**,只有下面这条红。
+  const body = page.locator('.kiosk-fold__body.mvrows');
+  const bb = (await body.boundingBox())!;
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  await page.mouse.wheel(0, 300);
+  await expect.poll(() => body.evaluate((el) => el.scrollTop),
+    { message: '谱那一块自己滚不动 —— 翻不到后面的手' }).toBeGreaterThan(0);
+});

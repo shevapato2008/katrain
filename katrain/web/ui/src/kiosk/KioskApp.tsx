@@ -38,7 +38,6 @@ import RotationWrapper from './components/layout/RotationWrapper';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
 import LoginPage from './pages/LoginPage';
-import PlaceholderPage from './pages/PlaceholderPage';
 import PlayPage from './pages/PlayPage';
 import AiSetupPage from './pages/AiSetupPage';
 import PvpLocalSetupPage from './pages/PvpLocalSetupPage';
@@ -51,6 +50,7 @@ import TsumegoUnitListPage from './pages/TsumegoUnitListPage';
 import TsumegoProblemPage from './pages/TsumegoProblemPage';
 import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
+import KifuDetailPage from './pages/KifuDetailPage';
 import GameHistoryPage from './pages/GameHistoryPage';
 import BaipuListPage from './pages/BaipuListPage';
 import BaipuSessionPage from './pages/BaipuSessionPage';
@@ -116,7 +116,7 @@ const KioskRoutes = () => {
               **在那之前这三屏只能靠直接输 URL 到达** —— 可接受的中间态,不是终态。 */}
           <Route path="research" element={<ResearchPage />} />
           <Route path="kifu" element={<KifuPage />} />
-          <Route path="kifu/:kifuId" element={<PlaceholderPage />} />
+          <Route path="kifu/:kifuId" element={<KifuDetailPage />} />
           <Route path="baipu" element={<BaipuListPage />} />
           <Route path="baipu/session/:source" element={<PhysicalBoardGuard><BaipuSessionPage /></PhysicalBoardGuard>} />
           <Route path="live" element={<LivePage />} />

@@ -59,7 +59,9 @@ export function GoBoardSvg({ size = 19, black = [], white = [], last, ghost = []
   const stone = (c: string, isBlack: boolean) => {
     const p = P(c);
     return (
-      <g key={`${isBlack ? 'b' : 'w'}${c}`}>
+      // `data-stone` / `data-at`:**给测试和几何闸用的把手**。子是画出来的圆,DOM 上问不出
+      // 「Q16 上有没有黑子」—— 没有把手就只能去数 circle,而数出来的数字换个装饰就变。
+      <g key={`${isBlack ? 'b' : 'w'}${c}`} data-stone={isBlack ? 'b' : 'w'} data-at={c}>
         {/* 落影:往下偏 3%,不是模糊 —— 7″ 屏上高斯模糊看不出来,只吃 GPU */}
         <circle cx={p.x} cy={p.y + U * 0.03} r={STONE_R} fill="rgba(40,20,8,.34)" />
         <circle cx={p.x} cy={p.y} r={STONE_R} fill={`url(#s${isBlack ? 'b' : 'w'}-${uid})`} />

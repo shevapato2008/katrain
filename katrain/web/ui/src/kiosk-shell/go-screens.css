@@ -355,3 +355,53 @@
   border: 1px solid var(--hair); display: block; font-style: normal; }
 .dots i.ok { background: color-mix(in srgb, var(--good) 55%, transparent); border-color: color-mix(in srgb, var(--good) 50%, transparent); }
 .dots i.now { background: var(--accent); border-color: var(--accent); }
+
+/* ── 屏 16 棋谱详情:题头 `.khero` ────────────────────────────────────────
+   逐字取自稿子 `sample-go/go-kiosk.tmpl.html:379-382`。`b i`(那个「对」)
+   **不斜、不加粗、走 --dim** —— 它是连接词不是名字,和两边的名字同粗就分不出谁是谁了。
+   `em` 是段位,稿子没有:段位是库里真有的列(`black_rank`/`white_rank`),
+   跟在名字后面走小一号的 --dim,不去挤名字那一行的重量。 */
+.khero { padding: 11px 13px; flex: none; border: 1px solid var(--hair); border-radius: 11px; background: var(--panel); }
+.khero b { font-family: var(--font-serif); font-size: 15px; font-weight: 600; }
+.khero b i { font-style: normal; font-weight: 400; color: var(--dim); margin: 0 7px; }
+.khero b em { font-style: normal; font-weight: 400; font-size: 11.5px; color: var(--dim); margin-left: 5px; }
+/* `margin` 写全四边,不是只写 `margin-top` —— UA 给 `<p>` 的 `margin-bottom: 1em`
+   会在题头底下留出 11.5px 的空,整块比稿子高一截,右栏下面每一块跟着往下挪。
+   稿子那份 CSS 里只写了 `margin-top`,因为它自己有一段全局 reset,本仓没有。 */
+.khero p { margin: 4px 0 0; font-size: 11.5px; color: var(--dim); line-height: 1.5; }
+
+/* 折叠块里那份谱要能滚 —— 241 手的谱装不进 `.kiosk-fold__body` 那点高度,
+   而共享的 `.kiosk-fold__body` 是 `overflow: hidden`(它管的是收起时把内容裁掉)。
+   ⚠️ **这一条是承重的**:去掉之后每个盒子的矩形一模一样,四条几何断言全绿,
+   只有「它自己能不能滚」分得出来 —— 屏 14 的右栏闸上刚栽过一次同样的跟头。 */
+.kiosk-fold__body.mvrows { overflow-y: auto; scrollbar-width: none; }
+.kiosk-fold__body.mvrows::-webkit-scrollbar { width: 0; height: 0; }
+/* 谱上的每一格都能点(点哪手跳哪手),所以它得有可按的样子和够大的靶。 */
+.mvrows .mv[role="button"] { cursor: pointer; border-radius: 5px; padding: 0 4px; margin: 0 -4px; }
+.mvrows .mv[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── 屏 15 棋谱:「搜棋谱」展开出来的那一段 ────────────────────────────────
+   稿子这一组只有三张卡。搜索框和结果行是**收起态之外**的东西:
+   稿子画的是收起的样子,展开才有这一段(理由见 `KifuPage.tsx` 头上第 ② 条)。 */
+.ksearch { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.ksearch__box {
+  height: 44px; padding: 0 14px; border: 1px solid var(--hair); border-radius: 11px;
+  background: var(--panel); color: var(--text);
+  font-family: var(--font-sans); font-size: 14px;
+}
+.ksearch__box::placeholder { color: var(--dim); }
+.ksearch__box:focus-visible { outline: none; border-color: var(--accent); }
+.kpager { display: flex; align-items: center; justify-content: center; gap: 12px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--dim); }
+.kpager button:disabled { opacity: .4; }
+
+/* 行本身可点时它就是个按钮 —— 共享 `.kiosk-row` 是照 `<div>` 写的,
+   `<button>` 会自带居中的文字和 UA 字体。**改的是按钮的默认值,不是这一族的几何。** */
+button.kiosk-row { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 「直播中」不是胜负也不是警告,共享的四个 `.kiosk-tag--*` 里没有它的位置。 */
+.kiosk-tag--live { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+.kiosk-tag--live::before { content: ""; display: inline-block; width: 6px; height: 6px;
+  border-radius: 50%; background: var(--bad); margin-right: 5px; vertical-align: 1px;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--bad) 70%, transparent); }

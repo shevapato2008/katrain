@@ -55,6 +55,8 @@ function walk(dir: string, pick: (p: string) => boolean): string[] {
  *   Task 4 —— `components/layout/navTabs.tsx` 随旧 Dock 一起删,从图标名单里划掉。
  *             (这一笔就是这道闸自己抓出来的:它红了,而不是等着谁想起来手动更新。)
  * ────────────────────────────────────────────────────────────────────────── */
+// Task 12(2026-08-22):`TsumegoPage.tsx` 两处基线一起划掉 —— 屏 11 按稿子重写之后,
+// 那个 `height:'50vh'` 的加载转圈和 `ArrowForward` 一起没了(棘轮往下走,不是往上加)。
 const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/__tests__/RotationWrapper.test.tsx',
   'src/kiosk/components/guards/KioskAuthGuard.tsx',
@@ -67,7 +69,6 @@ const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/components/tsumego/SuccessOverlay.tsx',
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
   'src/kiosk/pages/TsumegoLevelPage.tsx',
-  'src/kiosk/pages/TsumegoPage.tsx',
   'src/kiosk/pages/TsumegoUnitListPage.tsx',
   'src/kiosk/pages/TsumegoUnitsPage.tsx',
   'src/kiosk/pages/TutorialBookDetailPage.tsx',
@@ -104,6 +105,7 @@ test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
 // ⚠️ **前三条说明这条闸在 Task 8 之后就一直是红的** —— 它是 `toEqual` 的双向棘轮:
 // 名单只许缩,而**缩了不改名单一样红**。那正是它该有的样子(名单和现实不许漂),
 // 但也意味着「上一轮全绿」那句话在这一条上不成立,记在这里免得下一个人再查一遍。
+// 2026-08-22(Task 12)再摘一条:`TsumegoPage.tsx` 按稿子重写,`ArrowForward` 换成了共享外壳的药丸键。
 const MUI_ICON_BASELINE = [
   'src/kiosk/__tests__/ModeCard.test.tsx',
   'src/kiosk/components/game/RecalibrationModal.tsx',
@@ -141,7 +143,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/pages/ResearchPage.tsx',
   'src/kiosk/pages/SettingsPage.tsx',
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
-  'src/kiosk/pages/TsumegoPage.tsx',
   'src/kiosk/pages/TsumegoProblemPage.tsx',
   'src/kiosk/pages/TutorialBookDetailPage.tsx',
   'src/kiosk/pages/TutorialSectionPage.tsx',

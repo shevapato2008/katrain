@@ -131,3 +131,134 @@ test('内容极长时:拇指仍然有 24 —— 再短就成了一个点,读不�
   expect(m.unclamped, '这一批输入下不带下限也能过 24 —— 这条闸是睡着的').toBeLessThan(24);
   expect(m.thumbH).toBeGreaterThanOrEqual(24);
 });
+
+/* ══ 屏 11 训练营(Task 12)══════════════════════════════════════════════════
+ *
+ * 这一屏和 `/kiosk/play` 不同:**内容长短由接口说了算**(题库有几档、这一档有几类),
+ * 所以造输入不用注 CSS —— 直接把 `/api/v1/tsumego/levels` 造成想要的形状,
+ * 量到的是页面拿真数据算出来的结论。
+ */
+
+const LEVELS = (n: number, nCat = 6) => Array.from({ length: n }, (_, i) => ({
+  level: `${15 - i}k`,
+  categories: Object.fromEntries(
+    ['life-death', 'tesuji', 'semeai', 'capturing', 'endgame', 'opening'].slice(0, nCat).map((c, j) => [c, 50 + j]),
+  ),
+  total: 300 + i,
+}));
+
+const bootTraining = async (page: Page, levels: ReturnType<typeof LEVELS>, resume: boolean) => {
+  await page.addInitScript((withResume) => {
+    localStorage.setItem('token', 'kiosk-shell-scroll');
+    localStorage.setItem('katrain_language', 'cn');
+    localStorage.setItem('kiosk_tsumego_last_level', '15k');
+    if (withResume) {
+      localStorage.setItem('kiosk_active_practice', JSON.stringify({
+        kind: 'practice', label: '15 级 · 吃子 · 第 1 题', route: '/kiosk/tsumego/problem/x', ts: 1,
+      }));
+    }
+  }, resume);
+  await page.route('**/api/v1/**', (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === '/api/v1/auth/me') {
+      return route.fulfill({ json: { id: 1, username: 'tester', rank: '5段', credits: 0 } });
+    }
+    if (path === '/api/v1/tsumego/levels') return route.fulfill({ json: levels });
+    return route.fulfill({ json: {} });
+  });
+  await page.goto('/kiosk/tsumego');
+  // 卡是接口回来之后才渲的 —— 等 `.kiosk-screen` 不够,量到的会是还没长齐的内容。
+  // 空态那一支一张卡都没有,所以两个落点都等:等不到才是真的没渲完。
+  await page.waitForSelector('.kiosk-cards .kiosk-card, .empty');
+};
+
+/** 视口底边切在哪张卡上、露出多少。找不到被切的那一张 = 正好切在缝上,那是最坏的一种。 */
+const peekCut = (page: Page) => page.evaluate(() => {
+  const sc = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+  const vb = sc.getBoundingClientRect().bottom;
+  const items = [...document.querySelectorAll('.kiosk-card')] as HTMLElement[];
+  const cut = items.map(el => el.getBoundingClientRect())
+    .find(b => b.top < vb - 0.5 && b.bottom > vb + 0.5);
+  if (!cut) {
+    const above = items.map(e => e.getBoundingClientRect().bottom).filter(b => b <= vb);
+    return { none: true as const, gap: above.length ? +(vb - Math.max(...above)).toFixed(1) : null };
+  }
+  return { none: false as const, h: +cut.height.toFixed(1), peek: +(vb - cut.top).toFixed(1) };
+});
+
+test('训练营:档数多到装不下时,右栏自己滚 —— data-at 走 top→mid→end,拇指 >=24,栏恒 680', async ({ page }) => {
+  await bootTraining(page, LEVELS(12), true);
+  await expect.poll(() => overflowOf(page), { message: '12 档还没造出「装不下」' }).toBeGreaterThan(200);
+
+  const zone = page.locator('.kiosk-scrollzone').first();
+  await expect(zone).toHaveAttribute('data-at', 'top');
+
+  const geom = await page.evaluate(() => {
+    const z = document.querySelector('.kiosk-scrollzone') as HTMLElement;
+    const bar = z.querySelector('.kiosk-scrollbar') as HTMLElement;
+    return {
+      thumbH: bar.getBoundingClientRect().height,
+      pos: getComputedStyle(bar).position,
+      zoneW: Math.round(z.getBoundingClientRect().width),
+    };
+  });
+  expect(geom.thumbH, '拇指短于 24 就成了一个点,读不出比例').toBeGreaterThanOrEqual(24);
+  expect(geom.pos).toBe('absolute');
+  expect(geom.zoneW, '滚动条占了布局宽度 —— 三列 220 的算术会当场崩').toBe(680);
+
+  await page.mouse.move(700, 300);
+  await page.mouse.wheel(0, 150);
+  await expect(zone).toHaveAttribute('data-at', 'mid');
+  await page.mouse.wheel(0, 5000);
+  await expect.poll(() => zone.getAttribute('data-at')).toBe('end');
+});
+
+test('训练营:一档也读不到时不许挂渐隐 —— 空态那一块装得下', async ({ page }) => {
+  await bootTraining(page, LEVELS(0), false);
+  await page.waitForSelector('[data-testid="tsumego-empty"]');
+  await expect.poll(() => overflowOf(page), { message: '空态反而溢出了?' }).toBeLessThan(1);
+  const state = await page.evaluate(() => {
+    const zone = document.querySelector('.kiosk-scrollzone') as HTMLElement;
+    const bar = zone.querySelector('.kiosk-scrollbar') as HTMLElement;
+    return { at: zone.getAttribute('data-at'), barDisplay: getComputedStyle(bar).display };
+  });
+  expect(state.at, '装得下却写了 data-at —— 渐隐会永远亮着,谎报下面还有东西').toBeNull();
+  expect(state.barDisplay, '装得下却画了滚动条').toBe('none');
+});
+
+/**
+ * ⚠️ **已知不合规,根因在设计稿,不在这份实现** —— 所以标 `test.fail()`:
+ * 它现在必须红(=body 抛),等哪天真修好了,这条会**反过来变红**,提醒把标记删掉。
+ *
+ * 规范 §5「露一半」:内容溢出时视口底边必须切在一张卡中间,`max(16,.25h) ≤ 露出 ≤ h−max(12,.25h)`
+ * —— 76 的模式卡就是 **[19, 57]**;「正好切在缝上」被规范点名为**最坏的一种**。
+ *
+ * 实测两个数据态都不合规(1024×600,`.kiosk-side__scroll` 底边 y=504):
+ *   · 有「接着上次」  → 卡行 424..500,底边落在 500..510 那条 10px 的缝里(离上一张 **4**)
+ *   · 没有「接着上次」→ 卡行 442..518,**露 62** / 卡高 76(上界 57)
+ *
+ * **根因是量出来的,不是推出来的**:稿子 `data-screen="training"` 那两段 `.note`(分类标签的
+ * 来源、环里为什么写「—」)一共 **41px**,把「按级别」整段往下顶了 41 —— 稿子自己的
+ * `peek` 因此是 39,恰好落在 [19,57] 里。而 `.note` 是写给读稿人的旁注,**按 G5 一律不上线**。
+ * 把这两段 `hidden` 掉重跑稿子自己的闸(`sample-go/gate.mjs`),它当场报:
+ *   `FAIL [training] §5 露一半 ← 正好切在缝上,底下那条完全没露(离上一张 4)`
+ * ⇒ **这一屏的合规是靠一段永远不会上线的散文撑着的。**
+ *
+ * 修它要往那条带里放**真东西**(43–63px 才能让两个数据态同时落进 [19,57] —— 两态相差 18,
+ * 而窗口宽 39,所以确实同时装得下)。规范 §5 给训练营留的那一块正是**每日一题**,
+ * 围棋稿没画、围棋也没有第二个题源。⇒ 放什么是产品决定,交 Fan。
+ */
+test('训练营 §5 露一半:两个数据态都不合规 —— 稿子靠 41px 旁注撑着(已知,待 Fan 裁)', async ({ page }) => {
+  // ⚠️ `test.fail()` 必须写在**用例体里**。写在文件作用域会套住这个文件里**后面每一条**,
+  //    实测:三条 `/kiosk/play` 的闸连同两条训练营的闸一起被标成「预期失败」,
+  //    于是五条真闸全红、整份文件只剩这一条「过」—— 一条注解把整道闸关掉了。
+  test.fail();
+  await bootTraining(page, LEVELS(12), true);
+  await expect.poll(() => overflowOf(page)).toBeGreaterThan(0);
+  const cut = await peekCut(page);
+  expect(cut.none, `正好切在缝上,底下那条完全没露(离上一张 ${cut.none ? cut.gap : ''})`).toBe(false);
+  if (!cut.none) {
+    expect(cut.peek).toBeGreaterThanOrEqual(Math.max(16, cut.h * 0.25));
+    expect(cut.peek).toBeLessThanOrEqual(cut.h - Math.max(12, cut.h * 0.25));
+  }
+});

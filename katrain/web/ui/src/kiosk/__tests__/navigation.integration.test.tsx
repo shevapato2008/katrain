@@ -68,7 +68,8 @@ describe('Kiosk navigation integration', () => {
         json: () => Promise.resolve(
           String(url).includes('/api/v1/platforms/status')
             ? { platforms: [] }
-            : [{ level: '15k', categories: { '手筋': 139 }, total: 1000 }],
+            // 分类键是后端真的会给的 slug(`TsumegoProblem.category`),不是中文名。
+            : [{ level: '15k', categories: { tesuji: 139 }, total: 1000 }],
         ),
       })) as unknown as typeof fetch;
     });
@@ -83,15 +84,10 @@ describe('Kiosk navigation integration', () => {
       renderApp('/kiosk/play');
       // Task 4:Dock 上这一项改叫「训练营」(规范 §3 共享词典),路由 `/kiosk/tsumego` 不变。
       fireEvent.click(screen.getByText('训练营'));
-      // Phase B reskin composes the subtitle from two separate translated
-      // spans ("选择难度级别" + " · " + "练习死活以提高计算力"), so an exact
-      // getByText('选择难度级别') no longer matches a single text node. Match
-      // on the full composed subtitle instead — still proves the 死活 nav
-      // item landed on the tsumego levels page.
+      // Task 12 把这一屏按稿子整屏换了(`shots/11-training.png`):原来那条
+      // 「选择难度级别 · 练习死活以提高计算力」的标题栏没有了,问候行取而代之。
       await waitFor(() => {
-        expect(
-          screen.getByText((_, node) => node?.textContent === '选择难度级别 · 练习死活以提高计算力')
-        ).toBeInTheDocument();
+        expect(screen.getByText('题在实体盘上摆好，落子即判')).toBeInTheDocument();
       });
     });
 
@@ -189,7 +185,7 @@ describe('Kiosk navigation integration', () => {
         }
         if (/\/categories\/tesuji\?limit=1000/.test(u)) return json(problemIds);
         if (/\/levels\/15k\/categories$/.test(u)) return json([{ category: 'tesuji', name: '手筋', count: 25 }]);
-        if (/\/tsumego\/levels$/.test(u)) return json([{ level: '15k', categories: { '手筋': 25 }, total: 25 }]);
+        if (/\/tsumego\/levels$/.test(u)) return json([{ level: '15k', categories: { tesuji: 25 }, total: 25 }]);
         return json([]);
       }) as unknown as typeof fetch;
     });
@@ -197,9 +193,11 @@ describe('Kiosk navigation integration', () => {
     it('drills from levels → categories → units → unit list → problem', async () => {
       renderApp('/kiosk/tsumego');
 
-      // Level 1: levels grid → click 15K.
-      await waitFor(() => expect(screen.getByText('15K')).toBeInTheDocument());
-      fireEvent.click(screen.getByText('15K'));
+      // Level 1: 训练营「按级别」那一排 → 点 15 级。(Task 12 起卡上写的是中文档名,
+      // 不是 `15K` —— `levelChinese('15k')`。)
+      // 只有一档时「按级别」右端那个值也是「15 级」,所以按卡的可及名取,别按裸文本取。
+      const levelCard = await screen.findByRole('button', { name: /^15 级，/ });
+      fireEvent.click(levelCard);
 
       // Level 2: categories page → "选择分类" subtitle + 手筋 category card.
       await waitFor(() => expect(screen.getByText('手筋')).toBeInTheDocument());

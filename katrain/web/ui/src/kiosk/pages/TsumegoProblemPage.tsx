@@ -31,6 +31,7 @@ import {
   readPhysicalMode,
   writePhysicalMode,
   writeLastLevel,
+  writeLastCategory,
 } from './tsumegoUnits';
 import { writeActiveSession } from '../utils/activeSession';
 import PhysicalModeToggle from '../components/tsumego/PhysicalModeToggle';
@@ -185,6 +186,7 @@ const TsumegoProblemPage = () => {
   useEffect(() => {
     if (!problem) return;
     writeLastLevel(problem.level);
+    writeLastCategory(problem.category);
     writeActiveSession({
       kind: 'practice',
       label: `${levelChinese(problem.level)} · ${t(`tsumego:${problem.category}`, problem.category)} · 第 ${currentIndex + 1} 题`,

@@ -103,3 +103,29 @@ export function writePhysicalMode(v: boolean): void {
     /* best-effort */
   }
 }
+
+/**
+ * localStorage key for the last category the user practised in (训练营 hub 的 `is-current`).
+ * Same shape and same rationale as {@link LAST_LEVEL_KEY}: **a pointer, not progress** —
+ * it says "这是你上次做的那一类", never "你做完了多少". The hub cannot compute per-category
+ * completion without pulling every problem id for the level (R2 / §3.5), and it doesn't try.
+ */
+export const LAST_CATEGORY_KEY = 'kiosk_tsumego_last_category';
+
+/** Read the last-practised category key (e.g. 'capturing'), or null if never set. */
+export function readLastCategory(): string | null {
+  try {
+    return localStorage.getItem(LAST_CATEGORY_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Persist the last-practised category key. */
+export function writeLastCategory(category: string): void {
+  try {
+    localStorage.setItem(LAST_CATEGORY_KEY, category);
+  } catch {
+    /* best-effort */
+  }
+}

@@ -261,3 +261,16 @@
 .plat b { color: var(--good); font-weight: 600; letter-spacing: .04em; }
 .plat i { font-style: normal; margin-left: auto; font-family: var(--font-mono); }
 .plat .led { width: 7px; height: 7px; border-radius: 50%; background: var(--good); flex: none; }
+
+/* 空/加载/读不到:虚线框 + 标题 + 一句解释。逐字取自稿子 `go-kiosk.tmpl.html:424-427`
+   (稿子上是棋谱详情那屏「点进一局是敬请期待」用的,同一个构造)。
+   ⚠️ **这三态不许互相冒充**,也不许任何一态冒充成功:
+     · 正在读   —— 只有标题,没有结论;
+     · 读不到   —— 写出**为什么**,并给一个能再试一次的键;
+     · 真的没有 —— 说清楚东西从哪来、什么时候会有。
+   `<p>` 是虚线框自己的说明文字,不是 `.note`(那是写给读稿人的旁注,一律不上线)。 */
+.empty { border: 1px dashed var(--hair); border-radius: 12px; background: rgba(29, 39, 37, .55); padding: 14px; }
+.empty h4 { font-family: var(--font-serif); font-size: 15px; font-weight: 600; margin: 0; }
+.empty p { font-size: 11.5px; color: var(--dim); line-height: 1.55; margin: 5px 0 0; }
+.empty p b { color: var(--text); font-weight: 600; }
+.empty .pill { margin-top: 10px; }

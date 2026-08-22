@@ -50,3 +50,40 @@
  *    的下边距一起吃掉(现在 kiosk 里 gutterBottom 是 0 处,但逐屏重写时会出现)。
  *    ⇒ 谁需要谁在自己那一屏的块里归零,像上面 `.kiosk-pagebar__title` 那样。
  */
+
+/* ── 棋盘 SVG(`.gob`)—— 逐字取自稿子 `go-kiosk.tmpl.html:74-80` ────────────
+ * 算式在 `shell/goBoard.ts`,长相在这里。
+ * `isolation: isolate` 即使现在没抄木纹也留着:它同时是「这块盘自成一个混合上下文」
+ * 这件事本身(规范 §13③),下一个人加木纹时不会再踩一次穿透相乘。 */
+.gob { width: 100%; height: 100%; display: block; isolation: isolate; }
+.gob .ln { stroke: var(--gb-line); }
+.gob .star { fill: var(--gb-line); }
+/* 最后一手的圈 */
+.gob .mark { fill: none; stroke: var(--accent); stroke-width: 3.5; }
+/* 候选点:半透明青玉圈,不画成棋子 */
+.gob .ghost { fill: rgba(88, 181, 122, .40); stroke: rgba(88, 181, 122, .95); stroke-width: 4; stroke-dasharray: 10 8; }
+/* 打吃:被叫吃那颗子上画红方框,不换子的颜色 */
+.gob .atari { fill: none; stroke: var(--bad); stroke-width: 5; }
+/* **看不到盘** ≠ 盘上没子。镜像栏还没接到识别结果时压暗,和空盘区分开;
+   同步行那句「识别的盘面还没接进来」是同一件事的文字面。 */
+.gob.is-muted { opacity: .5; }   /* .32 试过,盘几乎看不见 —— 压暗是「我看不到盘」,不是「把盘藏起来」 */
+
+/* ── 屏 01 对弈首页 ────────────────────────────────────────────────────
+ * `.kiosk-greet` / `.kiosk-resume` 的**子元素** —— 共享 `tokens.css` 只给了这两个容器的高度
+ * (`--l1-greet-h` 56 / `--l1-resume-h` 60),里面长什么样它没有,三家各补了一份。
+ * 下面几条逐字取自稿子 `go-kiosk.tmpl.html:83-94`。 */
+.kiosk-greet b { font-family: var(--font-serif); font-size: 24px; font-weight: 500; }
+.kiosk-greet b i { font-style: normal; font-weight: 600; color: var(--accent); }
+.kiosk-greet span { font-size: 12px; color: var(--dim); margin-top: 2px; }
+/* 长名字兜底(G11 第 9 条):≥19 个汉字会让问候行变两行,56 的块撑成 65,整栏往下推。 */
+.kiosk-greet b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.kiosk-resume {
+  display: flex; align-items: center; gap: 12px; padding: 0 14px;
+  border: 1px solid var(--hair); border-radius: 12px; background: var(--raise);
+}
+.kiosk-resume .bar { width: 5px; height: 28px; border-radius: 3px; background: var(--accent); flex: none; }
+.kiosk-resume > div { min-width: 0; }
+.kiosk-resume h4 { font-family: var(--font-serif); font-size: 14px; font-weight: 600; margin: 0; }
+.kiosk-resume p { font-size: 11px; color: var(--dim); margin: 1px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kiosk-resume .pill { margin-left: auto; flex: none; }

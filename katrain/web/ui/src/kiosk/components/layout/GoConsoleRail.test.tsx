@@ -62,9 +62,16 @@ describe('GoConsoleRail —— 状态格接真硬件', () => {
     expect(screen.getByText('需校准')).toBeInTheDocument();
   });
 
-  test('镜像框现在是空的,而同步行把这件事说出来 —— 不画假子', () => {
+  test('镜像框画的是**压暗的空盘**:一颗子都没有,同步行把「看不到」说出来', () => {
     const { container } = render(<GoConsoleRail />);
-    expect(container.querySelector('.kiosk-mini-board')?.innerHTML).toBe('');
+    const board = container.querySelector('.kiosk-mini-board .gob');
+    // 上一版这里断言 `innerHTML === ''`(整块不画)。Fan 2026-08-22 指出画面上少了一块盘。
+    // 三件事要分开:**不画盘** = 和稿子对不上、也没说清为什么;**画一盘子** = 假数据;
+    // **画空盘 + 压暗 + 同步行写「还没接进来」** = 盘在、但我看不到它。取第三条。
+    expect(board, '镜像框里没有盘 —— 和稿子对不上').not.toBeNull();
+    expect(board!.classList.contains('is-muted'), '空盘没压暗,会被读成「盘上真的没子」').toBe(true);
+    // 一颗子都不许有:棋子是 `<circle fill="url(#sb-…)">`,星位用的是 class="star"。
+    expect(board!.querySelectorAll('circle[fill^="url(#s"]').length).toBe(0);
     expect(screen.getByText('识别的盘面还没接进来')).toBeInTheDocument();
     expect(screen.getByText('暂不可用')).toBeInTheDocument();
   });

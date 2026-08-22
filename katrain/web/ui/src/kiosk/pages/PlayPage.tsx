@@ -1,24 +1,26 @@
 import { useEffect, useState } from 'react';
-import { Box, Typography, ButtonBase } from '@mui/material';
-import { SmartToy, SportsEsports, Groups, Public } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import ModeCard from '../components/common/ModeCard';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import { readActiveSession } from '../utils/activeSession';
 import { API, type PlatformInfo } from '../../api';
 import { PLATFORM_META } from '../constants/platforms';
-import { KIOSK_SERIF } from '../theme';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
+import { KioskSecLabel } from '../shell/KioskSecLabel';
+import { KioskCard } from '../shell/KioskCard';
+import type { IconName } from '../shell/icons';
 
-// Brand serif (artifact `--serif`), used only for the greeting h1.
-const SERIF = KIOSK_SERIF;
+// 顺序照稿子:**能用的排前面,「即将上线」排最后**。上一版是 ogs/fox/golaxy,
+// 于是连不上的野狐夹在两个能用的中间 —— 一排卡里最先撞见的是那张按不动的。
+const PLATFORM_CATALOGUE = ['ogs', 'golaxy', 'fox'] as const;
 
-// Small section label — artifact renders these as a quiet caption above each grid,
-// NOT a big heading (variant h6 pushed the cards down and out of the viewport).
-const sectionLabelSx = { fontSize: 13, fontWeight: 600, color: 'text.secondary', mt: 0.5 } as const;
-
-const PLATFORM_CATALOGUE = ['ogs', 'fox', 'golaxy'] as const;
+// 稿子给每个平台配的图标(`go-kiosk.tmpl.html:play`):星阵是引擎直连,画机器人;
+// 走大厅的画地球。图标不带语义色,状态由 `.dot` / `.soon` 表达。
+const PLATFORM_ICON: Record<string, IconName> = {
+  ogs: 'globe-hemisphere-west',
+  fox: 'globe-hemisphere-west',
+  golaxy: 'robot',
+};
 
 const defaultPlatforms = (): PlatformInfo[] => PLATFORM_CATALOGUE.map((platform) => ({
   platform,
@@ -36,12 +38,21 @@ const mergePlatformStatus = (records: PlatformInfo[]): PlatformInfo[] => {
 };
 
 /**
- * Route: play — the 对弈 hub. Three sibling sections: 人机对弈 (自由/升降级),
- * 人人对弈 (本地/在线大厅), 跨平台对弈 (platform cards fetched from API.platformStatus).
- * Layout mirrors play-hub-states.html §01 (基准态·横屏 1024×600):
- * greeting → optional 继续上一局 resume bar → 人机对弈 → 人人对弈 → 跨平台对弈,
- * all sized to fit the 464px content area without scrolling. The left 智能棋盘 console is rendered
- * by KioskLayout (not here); this page owns only the right column.
+ * 屏 01 · 对弈首页 `/kiosk/play` —— L1 布局 A(镜像栏 296 + 16 + 右栏 680)。
+ *
+ * 这一屏**只回答「下哪一种」**:落子方式(屏幕 / 实体盘)和棋盘路数已经下沉到各自的开局设置屏,
+ * 不在这儿问。左边那条镜像栏由 `KioskLayout` 渲染(`GoConsoleRail`),本文件只管右栏。
+ *
+ * 结构逐节对着稿子 `sample-go/go-kiosk.tmpl.html` 的 `data-screen="play"`:
+ * 问候 → 继续上一局 → 人机对弈 → 人人对弈 → 跨平台对弈 → 对局历史,
+ * 五块都是 `.kiosk-side__scroll` 的直接子元素,块间距由它的 `--l1-section-gap` 给。
+ *
+ * **稿子上那两条 `.secval` 没搬**(「强度档说的是对手,不是你的段位」「平台由 /platforms 返回」):
+ * `.secval` 的位置按规范放的是**数据**,而这两句是写给读稿人的解释(G5)。三家一处旁注都没搬。
+ *
+ * **「全部对局」那张卡的副标没有数字。** 稿子写的是「6 局 · 1 局已有报告」—— 那是稿子上的
+ * 示例数据,本页拿不到真数(要另开一次 `user-games` 计数请求)。**不许把示例数字当成真的印上去**,
+ * 所以写成一句不含数字的实话。要数字就得先去取,已登记。
  */
 const PlayPage = () => {
   const { t } = useTranslation();
@@ -62,9 +73,7 @@ const PlayPage = () => {
       });
     }
 
-    return () => {
-      current = false;
-    };
+    return () => { current = false; };
   }, [token]);
 
   const hour = new Date().getHours();
@@ -77,133 +86,124 @@ const PlayPage = () => {
 
   return (
     <KioskScrollZone>
-      {/* Task 7 只把右栏接上滚动区,**内容一个字没搬**(那是 Task 10)。
-          去掉的两条是病灶本身:`height:'100%'` + `overflow:'hidden'` 让内容被裁在 434 处,
-          真浏览器量到内容 477 —— 底下 43px(「对局历史」那一条)此前**一直看不见**。
-          `flexShrink: 0` 不能省:`.kiosk-side__scroll` 是 flex column,默认 shrink=1 会把
-          这一整块压回 434,内容再多也永远「不溢出」—— 滚动条不画、渐隐不亮,和裁掉一样。 */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, px: 2.5, py: 2, flexShrink: 0 }}>
-      {/* Greeting (artifact .greet: serif h1 + sub) */}
-      <Box>
-        <Typography component="h1" sx={{ fontFamily: SERIF, fontWeight: 500, fontSize: 20, color: 'text.primary', lineHeight: 1.2 }}>
+      <div className="kiosk-greet">
+        <b>
           {t(greetKey, greetZh)}
-          {user?.username && (
-            <>
-              ，<Box component="span" sx={{ color: 'primary.main', fontWeight: 600 }}>{user.username}</Box>
-            </>
-          )}
-        </Typography>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: '2px' }}>
-          {t('Choose a way to start playing', '选择一种方式开始对弈')}
-        </Typography>
-      </Box>
+          {user?.username && <>，<i>{user.username}</i></>}
+        </b>
+        <span>{t('Choose a way to start playing', '选择一种方式开始对弈')}</span>
+      </div>
 
-      {/* 继续上一局 — compact resume bar (artifact .resume), only when a game is in progress */}
       {resume && (
-        <ButtonBase
-          onClick={() => navigate(resume.route)}
-          data-testid="resume-game-bar"
-          sx={{
-            display: 'flex', alignItems: 'center', gap: 1.5, width: '100%', textAlign: 'left',
-            px: '13px', py: '9px', borderRadius: '12px', border: '1px solid', borderColor: 'divider',
-            bgcolor: 'var(--raise2)',
-          }}
-        >
-          <Box sx={{ width: 6, height: 28, borderRadius: '5px', bgcolor: 'warning.main', flexShrink: 0 }} />
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'text.primary' }}>
-              {t('Resume last game', '继续上一局')}
-            </Typography>
-            <Typography sx={{ fontSize: 11, color: 'text.secondary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {resume.label}
-            </Typography>
-          </Box>
-          <Box sx={{ fontSize: 11.5, color: 'warning.main', border: '1px solid', borderColor: 'rgba(224,162,74,.4)', px: 1.25, py: 0.5, borderRadius: '20px', flexShrink: 0 }}>
+        <div className="kiosk-resume" data-testid="resume-game-bar">
+          <span className="bar" />
+          <div>
+            <h4>{t('Resume last game', '继续上一局')}</h4>
+            <p>{resume.label}</p>
+          </div>
+          <button
+            type="button"
+            className="kiosk-btn kiosk-btn--pill pill"
+            onClick={() => navigate(resume.route)}
+          >
             {t('Resume', '恢复')}
-          </Box>
-        </ButtonBase>
+          </button>
+        </div>
       )}
 
-      {/* 人机对弈 */}
-      <Typography sx={sectionLabelSx}>{t('Play vs AI', '人机对弈')}</Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5 }}>
-        <ModeCard
-          title={t('Free Game', '自由对弈')}
-          subtitle={t('Choose AI strength and board settings freely', '随意选择AI强度和棋盘设置')}
-          icon={<SmartToy fontSize="inherit" />}
-          to="/kiosk/play/ai/setup/free"
-          variant="primary"
-        />
-        <ModeCard
-          title={t('Ranked Game', '升降级对弈')}
-          subtitle={t('The ladder picks your opponent; wins and losses move your rank', '对手由段位决定，胜负计入升降级')}
-          icon={<SportsEsports fontSize="inherit" />}
-          to="/kiosk/play/ai/setup/ranked"
-        />
-      </Box>
+      <section className="kiosk-section">
+        <KioskSecLabel zh={t('Play vs AI', '人机对弈')} en="vs KataGo" />
+        <div className="kiosk-cards">
+          <KioskCard
+            title={t('Free Game', '自由对弈')}
+            sub={t('Pick the strength yourself · form estimate available', '自己挑强度 · 可以看形势判断')}
+            icon="robot"
+            onClick={() => navigate('/kiosk/play/ai/setup/free')}
+          />
+          <KioskCard
+            title={t('Ranked Game', '升降级对弈')}
+            sub={t('Tier picked from your strength · analysis sealed throughout', '按棋力自动配档 · 全程封分析')}
+            icon="trophy"
+            onClick={() => navigate('/kiosk/play/ai/setup/ranked')}
+          />
+        </div>
+      </section>
 
-      {/* 人人对弈 */}
-      <Typography sx={sectionLabelSx}>{t('Play vs Human', '人人对弈')}</Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5 }}>
-        <ModeCard
-          title={t('Local Game', '本地对局')}
-          subtitle={t('Play face-to-face on the smart board', '两人在智能棋盘上面对面对弈')}
-          icon={<Groups fontSize="inherit" />}
-          to="/kiosk/play/pvp/setup"
-        />
-        <ModeCard
-          title={t('Online Lobby', '在线大厅')}
-          subtitle={t('Match with online opponents', '匹配网络上的对手进行对弈')}
-          icon={<Public fontSize="inherit" />}
-          to="/kiosk/play/pvp/lobby"
-        />
-      </Box>
+      <section className="kiosk-section">
+        <KioskSecLabel zh={t('Play vs Human', '人人对弈')} en="vs Human" />
+        <div className="kiosk-cards">
+          <KioskCard
+            title={t('Local Game', '本地对局')}
+            sub={t('Two players on the same physical board', '两人在同一块实体盘上下')}
+            icon="users"
+            onClick={() => navigate('/kiosk/play/pvp/setup')}
+          />
+          <KioskCard
+            title={t('Online Lobby', '在线大厅')}
+            sub={t('Challenge others · rated queue available', '约战 · 有定级队列')}
+            icon="globe-hemisphere-west"
+            onClick={() => navigate('/kiosk/play/pvp/lobby')}
+          />
+        </div>
+      </section>
 
-      {/* 跨平台对弈 — fixed catalogue with connection state overlaid from API.platformStatus */}
-      <Typography sx={sectionLabelSx}>{t('Cross-Platform', '跨平台对弈')}</Typography>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5 }}>
-        {platforms.map((p) => {
-          const meta = PLATFORM_META[p.platform] ?? { label: p.platform, labelCn: p.platform, color: '#888' };
-          const target = p.connected
-            ? (p.supports_engine_play
-                ? `/kiosk/play/cross-platform/engine/${p.platform}`
-                : `/kiosk/play/cross-platform/lobby?platform=${p.platform}`)
-            : '/kiosk/play/cross-platform';   // not connected → go to login page
-          return (
-            <ButtonBase
-              key={p.platform}
-              onClick={() => navigate(target)}
-              sx={{
-                display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.75, p: '11px 13px',
-                borderRadius: '15px', border: '1px solid', borderColor: p.connected ? 'primary.dark' : 'divider',
-                bgcolor: 'background.paper',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: p.connected ? 'success.main' : 'text.disabled' }} />
-                <Typography sx={{ fontSize: 14, fontWeight: 600 }}>{t(meta.label, meta.labelCn)}</Typography>
-              </Box>
-              <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                {p.connected ? t('Connected', '已连接') : t('Tap to connect', '点击登录连接')}
-              </Typography>
-            </ButtonBase>
-          );
-        })}
-      </Box>
+      <section className="kiosk-section">
+        <KioskSecLabel zh={t('Cross-Platform', '跨平台对弈')} en="Cross-platform" />
+        <div className="kiosk-cards">
+          {platforms.map((p) => {
+            const meta = PLATFORM_META[p.platform] ?? { label: p.platform, labelCn: p.platform, color: '#888' };
+            // 「即将上线」不是「锁定」:锁定意味着东西在、满足条件就给。接口没通的平台
+            // 不许摆成锁着的样子 —— `comingSoon` 是 PLATFORM_META 里就有的真标记,不是这里现编的。
+            if (meta.comingSoon) {
+              return (
+                <KioskCard
+                  key={p.platform}
+                  title={t(meta.label, meta.labelCn)}
+                  sub={t('Not wired up yet', '接口还没通')}
+                  icon={PLATFORM_ICON[p.platform] ?? 'globe-hemisphere-west'}
+                  soon={t('Coming soon', '即将上线')}
+                />
+              );
+            }
+            const target = p.connected
+              ? (p.supports_engine_play
+                  ? `/kiosk/play/cross-platform/engine/${p.platform}`
+                  : `/kiosk/play/cross-platform/lobby?platform=${p.platform}`)
+              : '/kiosk/play/cross-platform';
+            // 副标说的是**下一步会发生什么**,而且每一句都从真状态推出来:
+            // 连上了就说走哪条路,没连上就说这个平台要拿什么登录(登录字段在 PLATFORM_META 里)。
+            const sub = p.connected
+              ? (p.supports_engine_play
+                  ? t('Connected · plays the engine', '已连接 · 人机对弈')
+                  : t('Connected · goes to the lobby', '已连接 · 走大厅'))
+              : meta.login
+                ? `${t('Tap to connect', '点击登录')} · ${t(meta.login.userLabel, meta.login.userLabelCn)} + ${t(meta.login.passLabel, meta.login.passLabelCn)}`
+                : t('Tap to connect', '点击登录');
+            return (
+              <KioskCard
+                key={p.platform}
+                title={t(meta.label, meta.labelCn)}
+                sub={sub}
+                icon={PLATFORM_ICON[p.platform] ?? 'globe-hemisphere-west'}
+                dot={p.connected}
+                onClick={() => navigate(target)}
+              />
+            );
+          })}
+        </div>
+      </section>
 
-      {/* 对局历史 — compact secondary entry, mirrors the resume-bar ButtonBase style.
-          Deliberately not a 4th ModeCard: the grid above is a fixed repeat(3,1fr). */}
-      <ButtonBase
-        onClick={() => navigate('/kiosk/play/pvp/history')}
-        data-testid="game-history-entry"
-        sx={{
-          mt: 0.5, alignSelf: 'flex-start', px: 1.5, py: 0.75, borderRadius: '10px',
-          border: '1px solid', borderColor: 'divider', color: 'text.secondary', fontSize: 13,
-        }}
-      >
-        {t('Game History', '对局历史')} ›
-      </ButtonBase>
-      </Box>
+      <section className="kiosk-section">
+        <KioskSecLabel zh={t('Game History', '对局历史')} en="History" />
+        <div className="kiosk-cards">
+          <KioskCard
+            title={t('All games', '全部对局')}
+            sub={t('Every game played, with its review report', '下过的每一局,连同它的复盘报告')}
+            icon="grid-nine"
+            onClick={() => navigate('/kiosk/report')}
+          />
+        </div>
+      </section>
     </KioskScrollZone>
   );
 };

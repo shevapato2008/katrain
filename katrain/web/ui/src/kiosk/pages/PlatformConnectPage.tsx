@@ -159,14 +159,14 @@ const PlatformConnectPage = () => {
                 {p.supports_automatch && <Chip label={t('Automatch', '自动匹配')} size="small" variant="outlined" />}
                 {p.supports_rooms && <Chip label={t('Rooms', '房间')} size="small" variant="outlined" />}
                 {p.supports_engine_play && <Chip label={t('Engine Play', '人机对弈')} size="small" variant="outlined" />}
-                {meta.comingSoon && <Chip label={t('Coming Soon', '即将支持')} size="small" color="warning" variant="outlined" />}
+                {meta.comingSoon && <Chip label={t('Coming soon', '即将上线')} size="small" color="warning" variant="outlined" />}
               </Box>
 
               {/* Actions */}
               <Box sx={{ display: 'flex', gap: 1, mt: 'auto' }}>
                 {meta.comingSoon ? (
                   <Button variant="outlined" size="small" disabled sx={{ flex: 1, minHeight: 44, opacity: 0.5 }}>
-                    {t('Coming Soon', '即将支持')}
+                    {t('Coming soon', '即将上线')}
                   </Button>
                 ) : p.connected ? (
                   <>

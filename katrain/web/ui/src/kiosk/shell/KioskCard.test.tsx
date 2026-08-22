@@ -62,17 +62,17 @@ describe('「还不能用」的两种,点不动', () => {
   test('soon 的文案由调用方给,并且卡是 disabled 的', () => {
     render(<KioskCard title="野狐围棋" sub="接口还没通" icon="globe-hemisphere-west" soon="即将上线" />);
     expect(screen.getByText('即将上线')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '野狐围棋' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^野狐围棋，/ })).toBeDisabled();
   });
 
   test('todo 压暗且点不动', () => {
     const { container } = render(<KioskCard title="第 3 课" sub="未录制" todo />);
     expect(container.querySelector('.kiosk-card')!.className).toContain('is-todo');
-    expect(screen.getByRole('button', { name: '第 3 课' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^第 3 课，/ })).toBeDisabled();
   });
 
   test('能用的卡不 disabled —— 「不超过 N」那一侧的下界(§17.1)', () => {
     render(<KioskCard title="在线大厅" sub="约战" icon="globe-hemisphere-west" dot />);
-    expect(screen.getByRole('button', { name: '在线大厅' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^在线大厅，/ })).toBeEnabled();
   });
 });

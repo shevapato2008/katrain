@@ -15,6 +15,15 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
   await page.addInitScript(() => {
     localStorage.setItem('token', 'fourup');
     localStorage.setItem('katrain_language', 'cn');
+    // 「继续上一局」是真实数据驱动的:localStorage 里没有在下的局它就**不该**出现。
+    // 稿子上有这一条,所以取图时造一条 —— 造的是**输入**,画出来的还是页面自己的逻辑。
+    // 标签带里写明了它是 fixture,别让下一个人指着这张图说「板上真有一局在下」。
+    localStorage.setItem('kiosk_active_game', JSON.stringify({
+      kind: 'game',
+      label: '自由对弈 · KataGo 5 级 · 第 24 手 · 你执黑',
+      route: '/kiosk/play/ai/game/fourup-fixture',
+      ts: 1_766_000_000_000,
+    }));
   });
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -30,6 +39,15 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
     if (path === '/api/v1/geometry/status') {
       return route.fulfill({ json: { phase: 'ready', session_calibrated: true, last_valid: true,
         capabilities: { camera_ready: true, led_ready: true, geometry_ready: true } } });
+    }
+    // 平台状态也造:取图机器上一个平台都没登录,而稿子画的是「OGS 已连接」——
+    // 不造的话三张卡全是「点击登录」,`.dot`(那颗绿点)和「已连接 · 走大厅」这条分支
+    // 在图上一次都不出现,四图就核不到它们。造的是**输入**,标签带里写明了。
+    if (path === '/api/v1/platforms/status' || path.endsWith('/platforms')) {
+      return route.fulfill({ json: { platforms: [
+        { platform: 'ogs', connected: true, supports_live_play: true, supports_automatch: true,
+          supports_rooms: true, supports_seek_graph: true, supports_engine_play: false },
+      ] } });
     }
     return route.fulfill({ json: {} });
   });
@@ -48,7 +66,7 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
     slug: '01-play',
     referenceCaption: '参考:sample-go/shots/01-play.png · 稿子上的 .note 旁注不上线(三家都没搬)',
     implementationCaption:
-      '实现:/kiosk/play @1024×600 · 时钟冻 16:40 · Dock 六项(成长跳过) · 硬件三格是 stub 的 ready · 内容尚未按稿重画(Task 10)',
+      '实现:/kiosk/play @1024×600 · 时钟冻 16:40 · Dock 六项(成长跳过) · 硬件三格 / 继续上一局 / OGS 已连接 都是 fixture · 镜像盘压暗=还没接到识别结果',
   });
   console.log(`[fourup 01-play] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

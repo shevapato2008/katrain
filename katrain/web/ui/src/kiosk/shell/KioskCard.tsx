@@ -40,7 +40,9 @@ export function KioskCard({ title, sub, icon, ring, current, soon, todo, dot, on
     <button
       type="button"
       className={cls}
-      aria-label={ariaLabel ?? title}
+      // 可及名要把**状态**一起带上:`.dot`(已连接那颗绿点)和 `.soon` 徽标都是纯视觉,
+      // 只报标题的话,读屏的人拿到的三张平台卡一模一样 —— 分不出哪张连上了、哪张还没通。
+      aria-label={ariaLabel ?? [title, sub, soon].filter(Boolean).join('，')}
       disabled={Boolean(soon || todo)}
       onClick={onClick}
     >

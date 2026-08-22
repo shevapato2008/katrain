@@ -1,4 +1,5 @@
 import { KioskConsoleRail } from '../../shell/KioskConsoleRail';
+import { GoBoardSvg } from '../../shell/GoBoardSvg';
 import type { StatusCell } from '../../shell/KioskStatusCells';
 import { GO_HARDWARE_CELLS } from '../../shell/goHardware';
 import { useOptionalVision } from '../../context/VisionContext';
@@ -12,10 +13,12 @@ import { useOptionalGeometry } from '../../context/GeometryContext';
  * **壳是共享的,接线是围棋自己的**,所以拆成两个文件:`shell/KioskConsoleRail` 只认
  * props,四棋类同一份;本文件知道围棋盘上有摄像头、有标定、有 LED。
  *
- * ⚠️ 镜像框现在是**空的**,这是诚实的:识别出的盘面还没有喂到这儿来
- * (旧组件在木色盘面上压了一句「实时预览暂不可用 · no live feed」说的是同一件事)。
- * 同步行那句话现在承担这个交代 —— 空盘 + 一句「还没接上」,比画一盘假子好。
- * Task 9 的 `<GoBoardSvg/>` 进来之后,这里换成真正的镜像。
+ * ⚠️ 镜像框里画的是**一块压暗的空盘**,一颗子都没有 —— 识别出的盘面还没有喂到这儿来。
+ * 三件事要分开:
+ *   · **不画盘**(上一版)= 画面上少一块东西,和稿子对不上,也没说清楚为什么;
+ *   · **画一盘子** = 拿假数据充门面,不许;
+ *   · **画空盘 + 压暗 + 同步行写「识别的盘面还没接进来」** = 盘在、但我看不到它。这一条才对。
+ * `.gob.is-muted` 就是「看不到盘」和「盘上没子」的区分,别把它当成一个装饰。
  */
 export function GoConsoleRail() {
   const vision = useOptionalVision();
@@ -36,7 +39,7 @@ export function GoConsoleRail() {
     <KioskConsoleRail
       title="实体棋盘"
       sub="Camera board"
-      board={null}
+      board={<GoBoardSvg muted label="实体棋盘镜像:识别的盘面还没接进来" />}
       syncLeft="识别的盘面还没接进来"
       syncRight="暂不可用"
       statuses={statuses}

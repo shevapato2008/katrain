@@ -56,7 +56,9 @@ const STUFF = '.kiosk-side__scroll::after { content:""; display:block; flex:none
 const STUFF_HUGE = '.kiosk-side__scroll::after { content:""; display:block; flex:none; height:20000px; }';
 
 /** 造到装得下:把靠后的几段藏掉。藏的是**输入**,量的还是浏览器算出来的结论。 */
-const SHRINK = '.kiosk-side__scroll > * > :nth-child(n+4) { display:none !important; }';
+// Task 10 之后各块是 `.kiosk-side__scroll` 的**直接**子元素(之前隔着一层 Box),
+// 选择器跟着少一层。造不出「装得下」时下面那条前置断言会当场红,不会静默变绿。
+const SHRINK = '.kiosk-side__scroll > :nth-child(n+4) { display:none !important; }';
 
 /** 直接量 DOM,不用 locator.evaluate —— 后者要先等「可见」,而本文件防的故障恰好让元素不可见。 */
 const overflowOf = (page: Page) => page.evaluate(() => {

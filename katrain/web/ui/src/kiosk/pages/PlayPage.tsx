@@ -9,6 +9,7 @@ import { readActiveSession } from '../utils/activeSession';
 import { API, type PlatformInfo } from '../../api';
 import { PLATFORM_META } from '../constants/platforms';
 import { KIOSK_SERIF } from '../theme';
+import { KioskScrollZone } from '../shell/KioskScrollZone';
 
 // Brand serif (artifact `--serif`), used only for the greeting h1.
 const SERIF = KIOSK_SERIF;
@@ -75,7 +76,13 @@ const PlayPage = () => {
     ['Good evening', '晚上好'];
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, px: 2.5, py: 2, height: '100%', overflow: 'hidden' }}>
+    <KioskScrollZone>
+      {/* Task 7 只把右栏接上滚动区,**内容一个字没搬**(那是 Task 10)。
+          去掉的两条是病灶本身:`height:'100%'` + `overflow:'hidden'` 让内容被裁在 434 处,
+          真浏览器量到内容 477 —— 底下 43px(「对局历史」那一条)此前**一直看不见**。
+          `flexShrink: 0` 不能省:`.kiosk-side__scroll` 是 flex column,默认 shrink=1 会把
+          这一整块压回 434,内容再多也永远「不溢出」—— 滚动条不画、渐隐不亮,和裁掉一样。 */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, px: 2.5, py: 2, flexShrink: 0 }}>
       {/* Greeting (artifact .greet: serif h1 + sub) */}
       <Box>
         <Typography component="h1" sx={{ fontFamily: SERIF, fontWeight: 500, fontSize: 20, color: 'text.primary', lineHeight: 1.2 }}>
@@ -196,7 +203,8 @@ const PlayPage = () => {
       >
         {t('Game History', '对局历史')} ›
       </ButtonBase>
-    </Box>
+      </Box>
+    </KioskScrollZone>
   );
 };
 

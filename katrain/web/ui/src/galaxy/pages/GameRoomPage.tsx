@@ -1,14 +1,15 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, CircularProgress, Alert, Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import { Box, CircularProgress, Alert, Chip, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import Board from '../../components/Board';
 import type { BoardProps } from '../../components/Board';
 import { useGameSession } from '../../hooks/useGameSession';
 
 type Board3DComponent = React.ComponentType<BoardProps>;
-import RightSidebarPanel from '../components/game/RightSidebarPanel';
+import RightSidebarPanel, { RightSidebarActions } from '../components/game/RightSidebarPanel';
+import BoardPageShell from '../components/board/BoardPageShell';
+import ModulePlate from '../components/layout/ModulePlate';
+import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { useAuth } from '../../context/AuthContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
 import { API } from '../../api';
@@ -21,7 +22,17 @@ const GameRoomPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
-    const [view3d, setView3d] = useState(false);
+    /* 坐标 / 手数 / 落子特效这三个开关原来是**死的**：面板照一个写死的字面量渲染，
+       `onToggleChange` 对它们是空操作，而棋盘拿到的又是另一个写死的
+       `{ coords: true, numbers: false }`。点了没有任何反应 —— 控件账本里的空按钮。
+       改成真状态，并且**同一个对象**同时喂给面板和棋盘，两边不可能再各说各的。 */
+    const [displayToggles, setDisplayToggles] = useState({
+        coords: true,
+        numbers: false,
+        stoneDropEffect: false,
+        view3d: false,
+    });
+    const view3d = displayToggles.view3d;
     const [Board3D, setBoard3D] = useState<Board3DComponent | null>(null);
     const board3dLoadingRef = useRef(false);
 
@@ -33,6 +44,15 @@ const GameRoomPage = () => {
             });
         }
     }, [view3d, Board3D]);
+
+    const handleToggleChange = useCallback((setting: string) => {
+        if (setting !== 'coords' && setting !== 'numbers' && setting !== 'stoneDropEffect' && setting !== 'view3d') return;
+        setDisplayToggles(prev => {
+            const next = { ...prev, [setting]: !prev[setting] };
+            if (setting === 'view3d') localStorage.setItem('katrain_view3d', String(next.view3d));
+            return next;
+        });
+    }, []);
 
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
     const [showGameEndDialog, setShowGameEndDialog] = useState(false);
@@ -172,6 +192,18 @@ const GameRoomPage = () => {
     const myTurn = (gameState.player_to_move === 'B' && isBlack) || (gameState.player_to_move === 'W' && isWhite);
 
     const spectatorCount = gameState.sockets_count !== undefined ? Math.max(0, gameState.sockets_count - 2) : 0;
+    const isGameOver = !!gameState.end_result;
+
+    /* 「离开对局」的落点。观战者没有可判负的东西、已结束的对局也没有 —— 直接回大厅；
+       只有进行中的自己的对局才弹那句「离开将判负」的确认框。 */
+    const handleLeave = () => {
+        if (!isPlayer || isGameOver || gameEndData) {
+            navigate('/galaxy/play/human');
+        } else {
+            setShowLeaveConfirm(true);
+        }
+    };
+
 
     // Determine game end result message
     const getGameEndMessage = () => {
@@ -193,7 +225,7 @@ const GameRoomPage = () => {
     };
 
     return (
-        <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', height: '100%', minHeight: 0, overflow: 'hidden' }}>
             {/* Leave Confirmation Dialog */}
             <Dialog open={showLeaveConfirm} onClose={() => setShowLeaveConfirm(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>{t('leave_game_title', 'Leave Game?')}</DialogTitle>
@@ -263,83 +295,70 @@ const GameRoomPage = () => {
                 </DialogActions>
             </Dialog>
 
-            {/* Main Area: Board only */}
-            <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
-                <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 3 }}>
-                    <Typography variant="subtitle2" color={myTurn ? "primary.main" : "text.secondary"}>
-                        {isPlayer ? (myTurn ? t('game_room:your_turn', "Your Turn") : t('game_room:opponents_turn', "Opponent's Turn")) : t('game_room:spectating', "Spectating")}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <VisibilityIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                            <Typography variant="caption" color="text.secondary">{spectatorCount} {t('Spectators', 'Spectators')}</Typography>
-                        </Box>
-                        {!isPlayer && (
-                            <Button
-                                size="small"
-                                color="inherit"
-                                variant="outlined"
-                                startIcon={<ExitToAppIcon />}
-                                onClick={() => navigate('/galaxy/play/human')}
-                                sx={{ textTransform: 'none', borderColor: 'rgba(255,255,255,0.3)', color: 'text.secondary' }}
-                            >
-                                {t('exit', 'Exit')}
-                            </Button>
+            <BoardPageShell
+                board={(
+                    <Box sx={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', minWidth: 0, minHeight: 0 }}>
+                        <div style={{
+                            display: (view3d && Board3D) ? 'none' : 'flex',
+                            width: '100%', height: '100%',
+                            justifyContent: 'center', alignItems: 'center'
+                        }}>
+                            <Board
+                                gameState={gameState}
+                                onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
+                                analysisToggles={{ coords: displayToggles.coords, numbers: displayToggles.numbers }}
+                            />
+                        </div>
+                        {view3d && Board3D && (
+                            <Board3D
+                                gameState={gameState}
+                                onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
+                                analysisToggles={displayToggles}
+                            />
                         )}
-                        {isPlayer && !gameEndData && (
-                            <Button
-                                size="small"
-                                color="error"
-                                variant="outlined"
-                                startIcon={<ExitToAppIcon />}
-                                onClick={() => setShowLeaveConfirm(true)}
-                                sx={{ textTransform: 'none' }}
-                            >
-                                {t('game_room:leave', 'Leave')}
-                            </Button>
-                        )}
+                        {view3d && !Board3D && <CircularProgress />}
                     </Box>
-                </Box>
-                <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
-                    <div style={{
-                        display: (view3d && Board3D) ? 'none' : 'flex',
-                        width: '100%', height: '100%',
-                        justifyContent: 'center', alignItems: 'center'
-                    }}>
-                        <Board
-                            gameState={gameState}
-                            onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
-                            analysisToggles={{ coords: true, numbers: false }}
-                        />
-                    </div>
-                    {view3d && Board3D && (
-                        <Board3D
-                            gameState={gameState}
-                            onMove={(x, y) => isPlayer ? onMove(x, y) : {}}
-                            analysisToggles={{ coords: true, numbers: false }}
-                        />
-                    )}
-                    {view3d && !Board3D && <CircularProgress />}
-                </Box>
-            </Box>
-
-            {/* Right Sidebar with Controls */}
-            <RightSidebarPanel
-                gameState={gameState}
-                analysisToggles={{ ownership: false, hints: false, score: false, policy: false, coords: true, numbers: false, stoneDropEffect: false, view3d }}
-                onToggleChange={(setting) => {
-                    if (setting === 'view3d') {
-                        setView3d(prev => {
-                            const next = !prev;
-                            localStorage.setItem('katrain_view3d', String(next));
-                            return next;
-                        });
-                    }
-                    // Other toggles are disabled for HvH — no-op (stoneDropEffect handled via analysisToggles in Board3D)
-                }}
-                onNavigate={onNavigate}
-                onAction={isPlayer ? handleActionWrapper : () => {}}
-                isRated={true}
+                )}
+                modulePlate={(
+                    <ModulePlate
+                        title={t('game_room:title', '对局室')}
+                        subtitle={`${gameState.players_info.B.name} vs ${gameState.players_info.W.name} · ${t('game_room:board_size', '{n} 路').replace(/\{n\}/g, String(gameState.board_size[0]))}`}
+                        /* 棋盘上方那条横栏取消了。「轮到你了 / 对方回合 / 观战中」升到这里成为状态徽章 ——
+                           它是这一屏此刻的状态，模块牌右侧正是放状态的地方。 */
+                        status={
+                            isGameOver
+                                ? <Chip size="small" color="success" variant="outlined" label={t('game_room:ended', '已结束')} />
+                                : !isPlayer
+                                    ? <Chip size="small" variant="outlined" label={t('game_room:spectating', '观战中')} />
+                                    : myTurn
+                                        ? <Chip size="small" color="primary" label={t('game_room:your_turn', '轮到你了')} />
+                                        : <Chip size="small" variant="outlined" label={t('game_room:opponents_turn', '对手回合')} />
+                        }
+                        backTo="/galaxy/play/human"
+                        backLabel={t('game_room:lobby_short', '大厅')}
+                    />
+                )}
+                railBody={(
+                    <RightSidebarPanel
+                        gameState={gameState}
+                        analysisToggles={{ ownership: false, hints: false, score: false, policy: false, ...displayToggles }}
+                        onToggleChange={handleToggleChange}
+                        onNavigate={onNavigate}
+                        onAction={isPlayer ? handleActionWrapper : () => {}}
+                        /* 人人对弈没有引擎 —— 分析类道具一律锁死。这与「这局算不算段位」是两件事：
+                           以前这里无条件传 isRated={true}，于是一局**自由**对弈也挂着升降级横幅。 */
+                        analysisLocked
+                        isRated={isRankedGameType(gameState.game_type)}
+                        isSpectator={!isPlayer}
+                        spectatorCount={spectatorCount}
+                        resultAlert={gameState.end_result
+                            ? <Alert severity="success" variant="outlined">{translateResult(gameState.end_result, t, gameState.ruleset)}</Alert>
+                            : undefined}
+                        onLeave={handleLeave}
+                        embedded
+                    />
+                )}
+                actions={<RightSidebarActions onAction={isPlayer ? handleActionWrapper : () => {}} isGameOver={isGameOver} />}
             />
         </Box>
     );

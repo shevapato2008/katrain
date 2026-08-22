@@ -6,6 +6,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
 import { useSettings } from '../../context/SettingsContext';
 import { i18n } from '../../i18n';
+import ContentPageHeader from '../components/layout/ContentPageHeader';
 
 const PlayMenu = () => {
     const navigate = useNavigate();
@@ -37,13 +38,13 @@ const PlayMenu = () => {
 
     return (
         <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mb: 6 }}>
-                <Box>
-                    <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>{i18n.t('btn:Play', 'Play')}</Typography>
-                    <Typography variant="subtitle1" color="text.secondary">
-                        {i18n.t('play:choose_mode', 'Choose your game mode')}
-                    </Typography>
-                </Box>
+            <ContentPageHeader title={i18n.t('btn:Play', 'Play')} />
+            {/* 副标和「棋谱记录」原来都挤在页头那一行里。spec §2.4 只留返回键 + 标题 + 状态，
+                说明文字和业务动作一律下沉到正文第一个业务区。 */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', mt: 1, mb: 6 }}>
+                <Typography variant="subtitle1" color="text.secondary">
+                    {i18n.t('play:choose_mode', 'Choose your game mode')}
+                </Typography>
                 <Button
                     variant="outlined"
                     color="inherit"

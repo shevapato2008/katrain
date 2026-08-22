@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { Box, CircularProgress, Alert, Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
+import { Box, CircularProgress, Alert, Chip, Typography, Button, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import Board from '../../components/Board';
 import type { BoardProps } from '../../components/Board';
 import { useGameSession } from '../../hooks/useGameSession';
-import RightSidebarPanel from '../components/game/RightSidebarPanel';
+import RightSidebarPanel, { RightSidebarActions } from '../components/game/RightSidebarPanel';
 import { useSettings } from '../../context/SettingsContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -381,6 +381,20 @@ const GamePage = () => {
             }
             : null;
 
+    /* 升降级对局中棋盘只接**非分析**的开关 —— 建议 / 领地 / 走势一律不上盘，
+       那正是这个过滤器存在的理由。坐标 / 手数 / 落子特效都是纯外观，放行。
+       `stoneDropEffect` 原来漏在外面：3D 打开后右栏那个「落子特效」开关拨得动、
+       自己也会变 checked，但值到不了棋盘 —— 真运行时顺着 React fiber 量过，
+       开关 checked=true 而 Board3D 收到的是 `{coords, numbers}`。是个空按钮。
+       四处调用点原来各写一遍同样的三元式，现在收成一个。 */
+    const boardToggles = isRated
+        ? {
+            coords: analysisToggles.coords,
+            numbers: analysisToggles.numbers,
+            stoneDropEffect: analysisToggles.stoneDropEffect,
+        }
+        : analysisToggles;
+
     const board = (
         <Box
             data-testid="ranked-board-interaction"
@@ -395,7 +409,7 @@ const GamePage = () => {
                 <Board
                     gameState={gameState}
                     onMove={isRated ? handleRankedMove : onMove}
-                    analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                    analysisToggles={boardToggles}
                     playerColor={humanColor}
                 />
             </div>
@@ -403,7 +417,7 @@ const GamePage = () => {
                 <Board3D
                     gameState={gameState}
                     onMove={isRated ? handleRankedMove : onMove}
-                    analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                    analysisToggles={boardToggles}
                     playerColor={humanColor}
                 />
             )}
@@ -422,6 +436,10 @@ const GamePage = () => {
             onTimeout={handleTimeout}
             onPlaySound={handlePlaySound}
             isAnalysisPending={analysisToggles.hints && !gameState.analysis?.moves?.length}
+            /* 「离开对局」只在统一版式的右栏里出现 —— 旧版式那条顶栏本来就有一个退出键，
+               再加一个是重复。这一页在此之前**根本没有键能打开那个确认框**：
+               handleLeaveRequest 只挂在非升降级的顶栏上，升降级模式下弹窗接好了却没有入口。 */
+            onLeave={embedded ? handleLeaveRequest : undefined}
             embedded={embedded}
         />
     );
@@ -517,6 +535,12 @@ const GamePage = () => {
                     modulePlate={(
                         <ModulePlate
                             title={t('rated_play', '升降级对弈')}
+                            /* 副标题和状态徽章按冻结稿补上 —— 对局室有、这一页没有的话，
+                               同一个模块牌在两页上长得不一样。 */
+                            subtitle={`${gameState.players_info.B.name} vs ${gameState.players_info.W.name} · ${gameState.history.length} ${t('live:moves', '手')}`}
+                            status={gameState.end_result
+                                ? <Chip size="small" color="success" variant="outlined" label={t('game_room:ended', '已结束')} />
+                                : <Chip size="small" color="primary" label={t('game:in_play', '对局中')} />}
                             backLabel={t('rated_play_short', '升降级')}
                             backTo="/galaxy/play/ai?mode=rated"
                         />
@@ -533,7 +557,22 @@ const GamePage = () => {
                             {controls(true)}
                         </>
                     )}
-                    actions={null}
+                    /* 翻手那六个键归动作区（不跟着滚）。以前它们沉在
+                       RightSidebarPanel 的滚动段最底下，长盘要滚到底才够得着。
+                       fieldset 沿用棋盘/面板那套：本局已在别处结束时整体失效。 */
+                    actions={(
+                        <Box
+                            component="fieldset"
+                            disabled={Boolean(remoteLifecycle)}
+                            aria-disabled={Boolean(remoteLifecycle)}
+                            sx={{ border: 0, m: 0, p: 0, minWidth: 0 }}
+                        >
+                            <RightSidebarActions
+                                onAction={handleActionWrapper}
+                                isGameOver={Boolean(gameState.end_result)}
+                            />
+                        </Box>
+                    )}
                 />
             ) : (<>
             {/* Main Area: Board only */}
@@ -564,7 +603,7 @@ const GamePage = () => {
                         <Board
                             gameState={gameState}
                             onMove={onMove}
-                            analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                            analysisToggles={boardToggles}
                             playerColor={humanColor}
                         />
                     </div>
@@ -572,7 +611,7 @@ const GamePage = () => {
                         <Board3D
                             gameState={gameState}
                             onMove={onMove}
-                            analysisToggles={isRated ? { coords: analysisToggles.coords, numbers: analysisToggles.numbers } : analysisToggles}
+                            analysisToggles={boardToggles}
                             playerColor={humanColor}
                         />
                     )}

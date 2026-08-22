@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
+import ContentPageHeader from '../../components/layout/ContentPageHeader';
 import {
   Alert,
   Box,
@@ -328,9 +329,8 @@ export default function ReportsPage() {
           }}
         >
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-              {t('report:my_reports', 'Review')}
-            </Typography>
+            <ContentPageHeader title={t('report:my_reports', 'Review')} />
+            {/* 操作提示原来是页头第二行。spec §2.4 禁长副标题进页头，下沉到正文首行。 */}
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
               {t('report:page_hint', 'Select a game on the right to preview. Create reports from the game card.')}
             </Typography>

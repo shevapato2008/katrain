@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Collapse from '@mui/material/Collapse';
-import IconButton from '@mui/material/IconButton';
+import ButtonBase from '@mui/material/ButtonBase';
 import Chip from '@mui/material/Chip';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -19,17 +19,26 @@ function Section({ title, step, defaultOpen, children }: {
   const [open, setOpen] = useState(defaultOpen ?? false);
   return (
     <Box sx={{ mb: 1, border: '1px solid #e0e0e0', borderRadius: 1, overflow: 'hidden' }}>
-      <Box
+      {/* 这一行原来是**挂 onClick 的 div**，里面再套一个既没有 onClick 也没有名字的
+          IconButton —— 它能用只是因为点击冒泡到了外面那个 div。于是：键盘到不了，
+          读屏念不出，控件账本把这五步整整记成五个空按钮。
+          改成真的按钮（名字取小节标题，展开态用 aria-expanded 报告），
+          右侧的箭头降级成纯图标（按钮里不能再嵌按钮）。 */}
+      <ButtonBase
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-label={title}
         sx={{
-          display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75,
-          bgcolor: '#f5f5f5', cursor: 'pointer', '&:hover': { bgcolor: '#eeeeee' },
+          width: '100%', display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.75,
+          bgcolor: '#f5f5f5', textAlign: 'left', '&:hover': { bgcolor: '#eeeeee' },
         }}
       >
         <Chip label={step} size="small" variant="outlined" sx={{ fontFamily: 'monospace', fontSize: 11, color: '#333', borderColor: '#999' }} />
         <Typography variant="body2" sx={{ flex: 1, fontWeight: 500, color: '#333' }}>{title}</Typography>
-        <IconButton size="small">{open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}</IconButton>
-      </Box>
+        <Box sx={{ display: 'flex', color: '#555' }}>
+          {open ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+        </Box>
+      </ButtonBase>
       <Collapse in={open}>
         <Box sx={{ p: 1.5 }}>{children}</Box>
       </Collapse>

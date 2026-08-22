@@ -9,6 +9,7 @@ import PlaybackBar from '../../../components/live/PlaybackBar';
 import UpcomingList from '../../../components/live/UpcomingList';
 import type { MatchSummary } from '../../../types/live';
 import { useTranslation } from '../../../hooks/useTranslation';
+import ContentPageHeader from '../../components/layout/ContentPageHeader';
 
 export default function LivePage() {
   const navigate = useNavigate();
@@ -61,11 +62,9 @@ export default function LivePage() {
           p: 2,
         }}
       >
-        {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h4" fontWeight="bold">
-            {t('Live')}
-          </Typography>
+        {/* 页头：直播是一级导航项，没有上一级，只留标题（spec §2.4）。 */}
+        <Box sx={{ mb: 2 }}>
+          <ContentPageHeader title={t('Live')} />
         </Box>
 
         {/* Board area */}

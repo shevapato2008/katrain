@@ -122,6 +122,10 @@ export default function PlaybackBar({
           min={0}
           max={totalMoves}
           onChange={handleSliderChange}
+          /* 这条滑轨原来没有可及名 —— 控件账本把它记成一个「空按钮」。
+             它是 MUI Slider 内部那个 `<input type=range>`，名字只能从这里传下去。
+             共享件，直播 / 复盘 / 棋谱库 / kiosk 一起受益。 */
+          aria-label={t('live:move_slider', '手数进度')}
           sx={{
             ...(touchSized ? {
               minHeight: 48,

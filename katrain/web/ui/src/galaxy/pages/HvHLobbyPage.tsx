@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import FriendsPanel from '../components/FriendsPanel';
 import { i18n } from '../../i18n';
+import ContentPageHeader from '../components/layout/ContentPageHeader';
 import { getAiLadderStatus } from '../../features/aiLadder/api';
 
 interface OnlineUser {
@@ -186,11 +187,14 @@ const HvHLobbyPage = () => {
 
     return (
         <Box sx={{ p: 4, height: '100%', overflow: 'auto' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
-                <Box>
-                    <Typography variant="h4" fontWeight="bold" gutterBottom>{i18n.t('lobby:title', 'Multiplayer Lobby')}</Typography>
-                    <Typography variant="body1" color="text.secondary">{i18n.t('lobby:subtitle', 'Play against other humans or watch live games.')}</Typography>
-                </Box>
+            <ContentPageHeader
+                title={i18n.t('lobby:title', 'Multiplayer Lobby')}
+                parentLabel={i18n.t('btn:Play', 'Play')}
+                parentTo="/galaxy/play"
+            />
+            {/* 副标和两个开局按钮原来都在页头那一行里。spec §2.4 只留返回键 + 标题 + 状态。 */}
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1, mb: 4 }}>
+                <Typography variant="body1" color="text.secondary">{i18n.t('lobby:subtitle', 'Play against other humans or watch live games.')}</Typography>
                 <Stack direction="row" spacing={2}>
                     <Button variant="contained" color="primary" size="large" startIcon={<SportsEsportsIcon />} onClick={() => startMatchmaking('rated')}>
                         {i18n.t('lobby:quick_match_rated', 'Quick Match (Rated)')}

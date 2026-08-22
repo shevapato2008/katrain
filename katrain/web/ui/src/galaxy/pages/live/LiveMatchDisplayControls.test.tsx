@@ -44,7 +44,7 @@ const names = {
 };
 
 describe('LiveMatchDisplayControls', () => {
-  it('renders five real, translated MUI toggle buttons with the established icons and selected state', () => {
+  it('renders four real, translated tool-grid buttons plus a coordinate switch, with the established icons and pressed state', () => {
     renderControls({
       tryMoveMode: true,
       showTerritory: false,
@@ -58,16 +58,22 @@ describe('LiveMatchDisplayControls', () => {
       [names.territory, 'MapIcon', 'false'],
       [names.moveNumbers, 'FormatListNumberedIcon', 'true'],
       ['translated:live:hide_advice:Hide Advice', 'TipsAndUpdatesIcon', 'true'],
-      [names.coordinates, 'GridOnIcon', 'false'],
     ] as const;
 
     for (const [name, icon, pressed] of expected) {
       const button = screen.getByRole('button', { name });
-      expect(button).toHaveClass('MuiToggleButton-root');
+      // 工具格按钮渲染的是真的 <button>（ButtonBase），不是挂 onClick 的 div ——
+      // 键盘可达，控件账本也看得见。
+      expect(button.tagName).toBe('BUTTON');
+      expect(button).toHaveClass('MuiButtonBase-root');
       expect(button).toHaveAttribute('aria-pressed', pressed);
-      expect(button).toHaveStyle({ minHeight: '40px' });
       expect(button.querySelector(`[data-testid="${icon}"]`)).toBeInTheDocument();
     }
+
+    // 坐标不在工具格里：它改的是棋盘刻度，不是棋盘上画什么分析信息（与死活题页对齐）。
+    const coordinates = screen.getByRole('checkbox', { name: names.coordinates });
+    expect(coordinates).not.toBeChecked();
+    expect(screen.queryByRole('button', { name: names.coordinates })).not.toBeInTheDocument();
   });
 
   it('calls only the callback belonging to the clicked control', () => {
@@ -77,7 +83,6 @@ describe('LiveMatchDisplayControls', () => {
       [names.territory, 'onTerritoryToggle'],
       [names.moveNumbers, 'onMoveNumbersToggle'],
       [names.aiMarkers, 'onAiMarkersToggle'],
-      [names.coordinates, 'onCoordinatesToggle'],
     ] as const;
 
     for (const [name, callback] of cases) {
@@ -86,6 +91,12 @@ describe('LiveMatchDisplayControls', () => {
       for (const [handlerName, handler] of Object.entries(handlers)) {
         expect(handler).toHaveBeenCalledTimes(handlerName === callback ? 1 : 0);
       }
+    }
+
+    Object.values(handlers).forEach((handler) => handler.mockClear());
+    fireEvent.click(screen.getByRole('checkbox', { name: names.coordinates }));
+    for (const [handlerName, handler] of Object.entries(handlers)) {
+      expect(handler).toHaveBeenCalledTimes(handlerName === 'onCoordinatesToggle' ? 1 : 0);
     }
   });
 
@@ -123,11 +134,11 @@ describe('LiveMatchDisplayControls', () => {
     expect(screen.queryByRole('button', { name: 'translated:live:clear:Clear' })).not.toBeInTheDocument();
   });
 
-  it('uses an equal-width wrapping grid suitable for the 320px rail', () => {
+  it('uses the four-column tool grid shared with the tsumego rail', () => {
     renderControls();
     expect(screen.getByTestId('live-match-display-controls-grid')).toHaveStyle({
       display: 'grid',
-      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+      gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
     });
   });
 });

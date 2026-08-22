@@ -108,7 +108,9 @@ describe('LiveMatchPage', () => {
     const controls = within(rail).getByTestId('live-match-display-controls-grid');
     const trend = within(rail).getByTestId('live-match-trend-region');
     expect(controls).toBeInTheDocument();
-    expect(within(controls).getAllByRole('button')).toHaveLength(5);
+    // 工具格是四列一行的四个键；坐标不在格子里，是格子下面单独一行的开关。
+    expect(within(controls).getAllByRole('button')).toHaveLength(4);
+    expect(within(rail).getByRole('checkbox', { name: 'Coordinates' })).toBeInTheDocument();
     expect(trend).toHaveStyle({ flex: 'none' });
     expect(within(actions).getByText('2 / 3 live:moves')).toBeInTheDocument();
     expect(shell).toBeInTheDocument();
@@ -143,7 +145,8 @@ describe('LiveMatchPage', () => {
       {} as ResizeObserver,
     ));
     expect(boardProps.showCoordinates).toBe(true);
-    expect(screen.getByRole('button', { name: 'Coordinates' })).toHaveAttribute('aria-pressed', 'true');
+    // 坐标已从工具格挪成单独一行的开关（与死活题页对齐），role 从 button 变成 checkbox。
+    expect(screen.getByRole('checkbox', { name: 'Coordinates' })).toBeChecked();
   });
 
   it('keeps the playback move counter as one measurable action-region item', () => {
@@ -153,9 +156,18 @@ describe('LiveMatchPage', () => {
     expect(counter).toHaveStyle({ minWidth: '87px', whiteSpace: 'nowrap' });
   });
 
+  /* 播放条的滑轨原来没有可及名 —— 控件账本把它记成一个空按钮（2026-08-22 迁棋谱库
+     时才照出来，因为那是第一页把 PlaybackBar 放进统一版式又逐个点名清点的）。
+     共享件，直播 / 复盘 / 棋谱库 / kiosk 都吃这一条，所以守在这里。 */
+  it('gives the playback slider an accessible name', () => {
+    renderPage();
+    const actions = within(screen.getByTestId('board-rail-actions'));
+    expect(actions.getByRole('slider', { name: '手数进度' })).toBeInTheDocument();
+  });
+
   it('uses requestNavigation for the module back action', async () => {
     renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+    fireEvent.click(screen.getByRole('button', { name: '返回' }));
     expect(await screen.findByText('Live list destination')).toBeInTheDocument();
   });
 
@@ -168,7 +180,7 @@ describe('LiveMatchPage', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getByTestId('board-rail-scroll')).toBeInTheDocument();
     expect(screen.getByTestId('board-rail-actions')).toBeInTheDocument();
-    screen.getAllByRole('button').filter((button) => button.getAttribute('aria-label') !== 'Back')
+    screen.getAllByRole('button').filter((button) => button.getAttribute('aria-label') !== '返回')
       .forEach((button) => expect(button).toBeDisabled());
   });
 

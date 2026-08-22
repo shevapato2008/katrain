@@ -3373,6 +3373,41 @@ report-kiosk×2 / galaxy-active-game×3 / ladder-geometry / kiosk-shell-contract
 
 ---
 
+### Task 11 追补（2026-08-22 下午，Fan 看完对照台之后）
+
+**三条,都做完了。**
+
+1. **对照台的滑块和视图切换全是死的。** 根因不是 CSS:那份内联脚本里写了
+   `const top = document.getElementById('topLayer')` —— `window.top` 是
+   `[[Configurable]]: false` 的**受限全局属性**,经典脚本的全局作用域里同名词法声明
+   直接抛 `SyntaxError: Identifier 'top' has already been declared`,**整份 script 一行都不执行**。
+   表现是「拉了没反应」,而其实上面那排「参考 / 实现 / 并排 / 差异」也一起是死的。
+   真浏览器验过两遍:改之前 `pageerrors` 里就是那句、clip-path 卡在 50%;改之后 50% → 80%。
+   ⚠️ **Task 10 那份对照台是同一份模板,同一个 bug** —— 一起修了。
+
+2. **坐标 / 手数改成开关**(Fan:「galaxy 界面里都是开关这种形式」)。稿子和实现一起改。
+   语义 `aria-pressed` → `role="switch"` + `aria-checked` —— 前者说的是「按钮此刻被按住」,
+   而这两个是**状态**:开着就一直开着,没有「发生」。
+   **做成修饰类 `.gtoggles--switch`,没有直接改 `.gtoggles`。** 第一版直接改了,
+   当场把稿子的直播屏和复盘屏画坏:那两排里的「试下」「AI 推荐」「跟到最新」不是开关,
+   是动作和模式 —— 是重新取图时那两张参考图跟着变了才发现的(收成修饰类后逐像素回到原样)。
+   闸落在**屏上那颗珠子挪没挪**,不落在类名或 `aria-checked` 上;变异过。
+   点击那条要等 .12s 过渡落定再读 —— 不等会在**没有缺陷**时红(实测读到半路的 `matrix(…,9.6,-7)`)。
+
+3. **可点击原型每屏标出实现进度**,并把标题从「二十八屏」补回二十七
+   (2026-08-21 删掉对局历史那一屏时,gate 数的是 27、画廊标题写的是 28,**两边各说各的**)。
+   三态:已按稿重画 3 / 外壳已接 23 / 还没有那一屏 1。几屏是**数出来的**,数不对当场看得见。
+
+**顺带修了一条既有的偶发红**:`kiosk-shell-geometry` 的 `box()` 只等到 `.kiosk-screen`(外壳),
+路由里的元素在并发跑满时可能还没挂上 —— 41 条里偶发红 1 条(「没有这个元素: .kiosk-pagebar」),
+单独重跑就绿。补 `waitForSelector(state: 'attached')`,**仍然不用默认的 `'visible'`**:
+画布塌成 0×0 时元素照旧在 DOM 里,默认值会把「量出来是 0」糊成一条 30 秒超时 ——
+那正是这个文件要防的头号故障。补完连跑三遍 16/16。
+
+提交:katrain `cfacdb2b`;smartbox-software `4b7fcb887`(开关)+ `15dcbb23f`(原型进度带)。
+
+---
+
 ## Task 12: 屏 03 · 训练营 `/kiosk/tsumego`
 
 **设计稿**：`go-kiosk.tmpl.html:313-359`（L1-A，形态 1）。**现状**：`pages/TsumegoPage.tsx`（213 行）。

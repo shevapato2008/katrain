@@ -10,13 +10,15 @@ import { GoConsoleRail } from './GoConsoleRail';
 /**
  * 哪些 L1 屏出左边的镜像栏。规范 §5 的判据是**「这个模块的活动会不会发生在实体盘上」**——
  * 对弈/训练营/课程/棋谱会,看直播不会。
- * 现在覆盖 `/kiosk/play`(Task 10)、`/kiosk/tsumego`(Task 12)和 `/kiosk/kifu`(Task 15),
- * 其余 L1 屏在各自的屏 Task 里接。**棋谱这一项过判据靠的是摆谱**:选中的谱要一手一手
- * 摆到实体盘上、灯点着下一手,那正是「活动发生在实体盘上」。复盘和课程还没接。
+ * 现在覆盖 `/kiosk/play`(Task 10)、`/kiosk/tsumego`(Task 12)、`/kiosk/kifu`(Task 15)
+ * 和 `/kiosk/tutorial`(Task 17)。**棋谱这一项过判据靠的是摆谱**:选中的谱要一手一手
+ * 摆到实体盘上、灯点着下一手,那正是「活动发生在实体盘上」;**课程过判据靠的是「课上的图
+ * 会摆到盘上」**,同步行那句话说的就是它。
+ * 复盘不走这条路 —— 它的左栏装的不是实体盘镜像,见下面的 `SELF_LAYOUT_ROUTES`。
  * ⚠️ 比的是**整条 pathname 相等**,不是前缀 —— `/kiosk/tsumego/15k` 是 L2,`dockLevelOf` 已经
  * 把它挡在外面了,但这里写成 `startsWith` 会让两条判据各说各的,而只有一条会被人记住。
  */
-const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tsumego', '/kiosk/kifu'];
+const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tsumego', '/kiosk/kifu', '/kiosk/tutorial'];
 
 /**
  * 自己拼两栏的屏。**复盘的左栏装的不是实体盘镜像**,是「选中的那一局」——
@@ -69,7 +71,12 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
           本 Task 只动有左栏的那一支,一次只改一层。 */}
       {showRail ? (
         <div className="kiosk-layout-l1">
-          <GoConsoleRail />
+          <GoConsoleRail
+            // 课程屏那句同步行是「课上的图会摆到盘上 / 等选课」—— 规范 §5 允许的唯一差别。
+            {...(location.pathname === '/kiosk/tutorial'
+              ? { syncLeft: '课上的图会摆到盘上', syncRight: '等选课' }
+              : {})}
+          />
           <Outlet />
         </div>
       ) : level === 1 && SELF_LAYOUT_ROUTES.includes(location.pathname) ? (

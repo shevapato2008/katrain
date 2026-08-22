@@ -444,3 +444,54 @@ test('棋谱:展开搜索之后右栏自己滚,最后一块(职业直播)滚得�
   expect(m.liveBottom, '滚到底了,直播那一块的下缘还在视野外 —— 它就是到不了的').toBeLessThanOrEqual(m.zoneBottom);
   expect(m.horizontal, '页面横向溢出了').toBe(0);
 });
+
+/**
+ * 屏 23 课程(L1-A,形态 1 整栏滚)。分类多到装不下时,**最后一块(一课长什么样)滚得到** ——
+ * 这一屏三块加起来比 434 高,滚不动就等于那一块不存在。
+ *
+ * 造到会溢出:8 个分类 = 3 行卡。装得下的数据量下量出来的数字一概不算。
+ */
+test('课程:分类多到装不下时右栏自己滚,最后一块(一课长什么样)滚得到', async ({ page }) => {
+  await page.route('**/api/v1/tutorials/categories', (route) => route.fulfill({
+    json: Array.from({ length: 8 }, (_, i) => ({
+      slug: `c${i}`, title: `分类 ${i + 1}`, summary: '接口给的说明', order: i + 1, book_count: i + 1,
+    })),
+  }));
+  await boot(page, '/kiosk/tutorial');
+  await page.waitForSelector('[data-testid="tutorial-categories"] .kiosk-card');
+
+  const before = await page.evaluate(() => {
+    const side = document.querySelector('.kiosk-side') as HTMLElement;
+    const scroll = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+    return {
+      sideW: Math.round(side.getBoundingClientRect().width),
+      overflow: scroll.scrollHeight - scroll.clientHeight,
+      at: side.getAttribute('data-at'),
+    };
+  });
+  expect(before.sideW, '右栏不是 680').toBe(680);
+  expect(before.overflow, '没造出「装不下」—— 下面那条断言是空的').toBeGreaterThan(80);
+  expect(before.at, '一开始就该报 top').toBe('top');
+
+  const scroll = page.locator('.kiosk-side__scroll');
+  const bb = (await scroll.boundingBox())!;
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  await page.mouse.wheel(0, 1200);
+  await expect.poll(() => scroll.evaluate((el) => el.scrollTop),
+    { message: '右栏滚不动 —— 最后一块到不了' }).toBeGreaterThan(0);
+
+  const after = await page.evaluate(() => {
+    const scrollEl = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+    const last = document.querySelector('[data-testid="tutorial-anatomy"]') as HTMLElement;
+    const sb = scrollEl.getBoundingClientRect();
+    const lb = last.getBoundingClientRect();
+    return {
+      at: document.querySelector('.kiosk-side')!.getAttribute('data-at'),
+      lastVisible: lb.top < sb.bottom && lb.bottom > sb.top,
+      thumb: Math.round((document.querySelector('.kiosk-scrollbar') as HTMLElement).getBoundingClientRect().height),
+    };
+  });
+  expect(after.at, '滚过之后还报 top —— 渐隐说的是假话').not.toBe('top');
+  expect(after.lastVisible, '滚到底也看不见「一课长什么样」').toBe(true);
+  expect(after.thumb, '悬浮条拇指短于 24').toBeGreaterThanOrEqual(24);
+});

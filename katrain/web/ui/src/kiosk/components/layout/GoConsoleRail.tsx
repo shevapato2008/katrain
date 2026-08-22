@@ -20,7 +20,15 @@ import { useOptionalGeometry } from '../../context/GeometryContext';
  *   · **画空盘 + 压暗 + 同步行写「识别的盘面还没接进来」** = 盘在、但我看不到它。这一条才对。
  * `.gob.is-muted` 就是「看不到盘」和「盘上没子」的区分,别把它当成一个装饰。
  */
-export function GoConsoleRail() {
+/**
+ * 规范 §5:课程屏的左栏和对弈屏**逐像素相同**,差别只在同步行那句话
+ * (对弈:「识别的盘面还没接进来」;课程:「课上的图会摆到盘上 / 等选课」)。
+ * 所以开的口子只有这一处 —— 标题、盘、三格状态一律不给改。
+ */
+export function GoConsoleRail({ syncLeft, syncRight }: {
+  syncLeft?: string;
+  syncRight?: string;
+} = {}) {
   const vision = useOptionalVision();
   const geometry = useOptionalGeometry();
 
@@ -40,8 +48,8 @@ export function GoConsoleRail() {
       title="实体棋盘"
       sub="Camera board"
       board={<GoBoardSvg muted label="实体棋盘镜像:识别的盘面还没接进来" />}
-      syncLeft="识别的盘面还没接进来"
-      syncRight="暂不可用"
+      syncLeft={syncLeft ?? '识别的盘面还没接进来'}
+      syncRight={syncRight ?? '暂不可用'}
       statuses={statuses}
     />
   );

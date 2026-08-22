@@ -73,7 +73,6 @@ const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/pages/TsumegoLevelPage.tsx',
   'src/kiosk/pages/TutorialBookDetailPage.tsx',
   'src/kiosk/pages/TutorialBooksPage.tsx',
-  'src/kiosk/pages/TutorialCategoriesPage.tsx',
   'src/kiosk/pages/TutorialSectionPage.tsx',
 ];
 

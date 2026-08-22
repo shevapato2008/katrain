@@ -503,3 +503,46 @@ test('§11 长标题不许把返回键挤成两行 —— 触点位置在每一�
   expect(title.overflow, '溢出没有被裁掉 —— 长标题会糊到控件带外面').toBe('hidden');
   expect(title.ellipsis).toBe('ellipsis');
 });
+
+/* ── Task 13 —— §11 布局 B 的**纵向账** ──────────────────────────────────────
+ * 上面那条布局 B 量的是页控条自己(x/y/高);这条量的是它下面那块内容区,
+ * 也就是**这条账有没有第二个来源**:
+ *     70(内容区上缘) + 44(页控条) + 12(gap) + 460(滚动区) = 586(内容区下缘)
+ * `.kiosk-layout-b` 里**没写死任何高度** —— 滚动区吃剩余空间。要是哪天有人给它补一个
+ * `height: 460`,这条账就有了两个来源,而两个来源必然有一天不一致(那天会是改 `--pagebar-h`)。
+ * 判据因此写成**关系式**:滚动区上缘 = 页控条下缘 + 12,下缘 = 内容区下缘。
+ *
+ * ⚠️ 屏 12 是本仓第一个真的走 `.kiosk-layout-b` 的屏(跨平台那几屏还是手搓的 Box),
+ * 所以这条闸落在它身上。
+ */
+test('§11 布局 B 的纵向账:页控条 44 + 12 + 滚动区 460 = 516,且滚动区通栏 992', async ({ page }) => {
+  await page.route('**/api/v1/tsumego/levels/*/categories/*', (route) => route.fulfill({
+    json: Array.from({ length: 45 }, (_, i) => ({ id: `q${i}` })),
+  }));
+  await boot(page, '/kiosk/tsumego/15k/capturing');
+  // ⚠️ 量的是 `.kiosk-content` 的**内边**(padding box),不是 border box:
+  // 它的 border box 一路到画布下缘 600,上下各 14 的内边距才是内容真正能用的 70..586。
+  // 第一版拿 border box 比,红在 `600 ≠ 586` —— **闸量错了对象**,不是页面错。
+  const content = await page.evaluate(() => {
+    const el = document.querySelector('.kiosk-content') as HTMLElement;
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return {
+      innerTop: Math.round(r.top + parseFloat(cs.paddingTop)),
+      innerBottom: Math.round(r.bottom - parseFloat(cs.paddingBottom)),
+    };
+  });
+  const bar = await box(page, '.kiosk-pagebar');
+  const zone = await box(page, '.kiosk-side.kiosk-scrollzone');
+  const screen = await box(page, '.kiosk-screen');
+
+  expect(bar.x - screen.x, '页控条没贴中间区左缘').toBe(16);
+  expect(bar.w, '页控条不是通栏').toBe(992);
+  expect(zone.x, '滚动区没和页控条左对齐').toBe(bar.x);
+  expect(zone.w, '滚动区不是通栏 —— 无盘页的内容区就是整条 992').toBe(992);
+  expect(zone.y - bar.bottom, '页控条与内容区之间不是 12').toBe(12);
+  expect(bar.y, '页控条没贴内容区上缘').toBe(content.innerTop);
+  expect(zone.bottom, '滚动区没停在内容区下缘 —— 要么溢出到画布外,要么白空一条').toBe(content.innerBottom);
+  expect(content.innerBottom - content.innerTop, '无盘页的内容区总高不是 516').toBe(516);
+  expect(zone.h, '460 = 516 − 44 − 12,这个数是算出来的不是写死的').toBe(460);
+});

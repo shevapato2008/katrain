@@ -274,3 +274,19 @@
 .empty p { font-size: 11.5px; color: var(--dim); line-height: 1.55; margin: 5px 0 0; }
 .empty p b { color: var(--text); font-weight: 600; }
 .empty .pill { margin-top: 10px; }
+
+/* ── L2 布局 B 的骨架 ──────────────────────────────────────────────────
+ * 无棋盘 ⇒ 页控条通栏 x16–1008,下面是通栏 992×460 的内容区。
+ * 逐字对应稿子那句内联样式(`go-kiosk.tmpl.html` 的 `data-screen="units"` 那一行);
+ * 稿子写成内联是因为它是一份单文件,实现里该有名字。
+ * ⚠️ **纵向的账由 `.kiosk-content` 的内边距给**,这里不写死高度:
+ *   70(内容区上缘) + 44(页控条) + 12(gap) + 460(滚动区) = 586 = 内容区下缘。
+ *   写死高度会让这条账出现第二个来源,而两个来源必然有一天不一致。
+ * 布局 A 的那一份(`.kiosk-layout-a`)在共享 tokens.css:592;B 这一份共享包还没有,
+ * **该提上游** —— 四家的无盘页都是这个形状。 */
+.kiosk-layout-b { display: flex; flex-direction: column; gap: 12px; height: 100%; }
+
+/* 数据条那一格里的分母(`0 / 20` 的「/ 20」)。稿子写成内联 15px + dim;
+   分母比值小一号、灰一档,是为了让人一眼读到的是**值**,不是那条斜杠。
+   同样该提上游 —— 四家的数据条都有带分母的格。 */
+.kiosk-stat__v small { font-size: 15px; font-weight: inherit; color: var(--dim); }

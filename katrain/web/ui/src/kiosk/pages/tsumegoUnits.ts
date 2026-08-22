@@ -1,3 +1,5 @@
+import type { IconName } from '../shell/icons';
+
 /**
  * Tsumego unit-grouping constants + the Phase 4 prev/next sequence contract.
  * Kept in a non-component module so the unit pages stay react-refresh clean.
@@ -129,3 +131,27 @@ export function writeLastCategory(category: string): void {
     /* best-effort */
   }
 }
+
+/**
+ * 题库自带的六个标签(`life-death / tesuji / semeai / capturing / endgame / opening`),
+ * 从每道题的 SGF 注释里解析出来 —— **不是界面自己分的**。所以这张表只负责给它们配
+ * 中文名、图标和一句话说明,**有哪几类由 `/levels` 说了算**:表里有、题库里没有的不画,
+ * 题库里有、表里没有的照画(标题退回原始 key,副标写题量)。
+ * 中文名与 cn PO 的 `tsumego:*` msgstr 一致,拿来当 `t()` 的兜底,翻译表没到位时也读得通。
+ */
+export const CATEGORY_META: Record<string, { zh: string; sub: string; icon: IconName }> = {
+  'life-death': { zh: '死活', sub: '做活 / 杀棋', icon: 'puzzle-piece' },
+  tesuji: { zh: '手筋', sub: '局部那一手妙手', icon: 'hand-pointing' },
+  semeai: { zh: '对杀', sub: '两块棋比气', icon: 'users' },
+  capturing: { zh: '吃子', sub: '怎么把子吃下来', icon: 'grid-nine' },
+  endgame: { zh: '官子', sub: '收官那几目', icon: 'squares-four' },
+  opening: { zh: '布局', sub: '开局怎么占', icon: 'crown-simple' },
+};
+
+const CATEGORY_ORDER = Object.keys(CATEGORY_META);
+
+/** 表里的排前面(照稿子那六张的顺序),表外的按 key 排在后面 —— 不让未知分类插队。 */
+export const categoryRank = (key: string) => {
+  const i = CATEGORY_ORDER.indexOf(key);
+  return i < 0 ? CATEGORY_ORDER.length : i;
+};

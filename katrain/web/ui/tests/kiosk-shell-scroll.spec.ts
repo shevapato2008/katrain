@@ -233,3 +233,50 @@ test('训练营:一档也读不到时不许挂渐隐 —— 空态那一块装�
  * ⇒ 「下面还有」在这一层靠的是上面那三条:悬浮滚动条画不画、`data-at` 诚不诚实、拇指够不够高。
  *   **这三条在每个数据态下都成立**,与内容长短无关。不要把「露一半」加回来。
  */
+
+/* ══ 屏 12 单元列表(Task 13)—— 布局 B,滚动区是**通栏 992** ═══════════════════
+ * 和上面那几条不是重复:那些量的是 L1 右栏 680,这一条量的是无盘页的 992。
+ * 「滚动条不占布局宽度」这条判据**带着宽度**,680 上成立不代表 992 上成立
+ *  —— 原生滚动条一冒出来,992 就不是 992。
+ */
+test('单元列表(布局 B):单元多到装不下时,通栏 992 一分不少,滚动条仍然不占宽', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'kiosk-shell-scroll');
+    localStorage.setItem('katrain_language', 'cn');
+  });
+  await page.route('**/api/v1/auth/me', (route) => route.fulfill({
+    json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
+  }));
+  // 240 道题 = 12 个单元(四行),一定装不下 460。
+  await page.route('**/api/v1/tsumego/levels/*/categories/*', (route) => route.fulfill({
+    json: Array.from({ length: 240 }, (_, i) => ({ id: `q${i}` })),
+  }));
+  await page.goto('/kiosk/tsumego/15k/capturing');
+  await page.waitForSelector('.kiosk-cards .kiosk-card');
+
+  await expect.poll(() => overflowOf(page), { message: '12 个单元还没造出「装不下」' }).toBeGreaterThan(100);
+
+  const zone = page.locator('.kiosk-scrollzone').first();
+  await expect(zone).toHaveAttribute('data-at', 'top');
+  const geom = await page.evaluate(() => {
+    const z = document.querySelector('.kiosk-scrollzone') as HTMLElement;
+    const sc = z.querySelector('.kiosk-side__scroll') as HTMLElement;
+    const bar = z.querySelector('.kiosk-scrollbar') as HTMLElement;
+    return {
+      zoneW: Math.round(z.getBoundingClientRect().width),
+      clientW: sc.clientWidth,
+      thumbH: bar.getBoundingClientRect().height,
+      pos: getComputedStyle(bar).position,
+    };
+  });
+  expect(geom.zoneW, '通栏不是 992').toBe(992);
+  expect(geom.clientW, '滚动条占了布局宽度 —— 992 就不是 992 了').toBe(992);
+  expect(geom.thumbH, '拇指短于 24 就成了一个点,读不出比例').toBeGreaterThanOrEqual(24);
+  expect(geom.pos).toBe('absolute');
+
+  await page.mouse.move(500, 300);
+  await page.mouse.wheel(0, 120);
+  await expect(zone).toHaveAttribute('data-at', 'mid');
+  await page.mouse.wheel(0, 5000);
+  await expect.poll(() => zone.getAttribute('data-at')).toBe('end');
+});

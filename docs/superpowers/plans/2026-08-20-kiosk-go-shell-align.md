@@ -3563,6 +3563,78 @@ MUI 图标名单（`ArrowForward`）里一起划掉。**名单只许缩，缩了
 
 ---
 
+### Task 13 修订（2026-08-22，做完之后回填）
+
+⚠️ **屏号是 12 不是 04。** 四图 slug 跟参考图文件名走（`shots/12-units.png`）。
+**只做了屏 12。** 稿子 2026-08-21 在中间补了一屏「题目列表」（屏 13 = `TsumegoUnitListPage`），
+计划书里没有对应的 Task —— 那一屏单独排，不并进这一轮。
+
+**这一屏是本仓第一个真的走 L2 布局 B 的屏**（跨平台那几屏还是手搓的 `<Box>`）：
+`.kiosk-layout-b` 补在 `go-screens.css`（**该提上游** —— 四家的无盘页都是这个形状），
+**里面不写死任何高度**，滚动区吃剩余空间。承重闸写成关系式：
+`70 + 44(页控条) + 12 + 460 = 586`，且滚动区通栏 992。
+⚠️ 闸的第一版拿 `.kiosk-content` 的 **border box** 去比，红在 `600 ≠ 586` ——
+那是**闸量错了对象**（border box 一路到画布下缘，上下各 14 的内边距才是能用的 70..586），
+改成量 padding box。把 gap 12 改成 16 变异过，当场红。
+
+**几处口径：**
+
+1. **环里写真 `0%`**，不是屏 11 的「—」。这一层为了 prev/next 契约本来就把整类题号取回来了，
+   所以每个单元做完几道**算得出来** ⇒ `0%` = 真的一道没做。**两屏的差别不许抹平。**
+2. **「当前单元」= 第一个没做完的**，不是恒定的第 1 单元；全做完了指最后一个
+   （**不许指向一个不存在的单元**）。数据条第二格、开始条、`is-current` 三处同一个来源。
+3. **「只做错过的」标成「还没接」，但副标写真数。** 这个集合算得出来
+   （本地进度里 `attempts > 0 && !completed`），**但没有地方去**：后端没有按错题筛的接口，
+   前端也没有一条只播这批题的路由 —— 做题屏的上/下一题读的是 `sessionStorage` 里那条
+   **整类**的顺序表，塞一份筛过的进去会把正常的上下一题弄坏。§14：后端没有的块要标出来，不是藏起来。
+4. **`第 1-20 题` 用的是 galaxy 也在用的 `tsumego:problemRange`**，所以是 PO 里那个写法，
+   不是稿子上的 `第 1 – 20 题`（多两个空格、破折号不同）。**两处口径统一比对上稿子的破折号要紧。**
+
+---
+
+### ⚠️ Task 13 抓到的那个 bug：`t()` 的占位符约定
+
+**四图对比抓到的，单测全绿。** 卡片写成 `t('tsumego:unit', '第 {n} 单元').replace('{n}', …)`，
+而 `tsumego:unit` 在 cn PO 里是 **`单元`**（galaxy 三处在用）。`t()` 是
+`translations[key] || defaultText` —— **翻译表赢**，于是 `.replace` 找不到东西可换，
+**数字连同占位符一起没了**，屏上只剩「单元」。同一次的另一半：
+`t('tsumego:problemRange', '第 {a} – {b} 题')` —— PO 里那条的占位符叫 `{start}/{end}`，
+于是 `第 {start}-{end} 题` **原样上了屏**。
+
+**单测为什么抓不到**：jsdom 里翻译表没加载，`t()` 恒返回默认值，
+而默认值里的占位符名当然和我自己写的 `.replace` 对得上 ——
+**断言断的是「我自己和我自己一致」**。
+
+**两半表现相反，所以补两条闸：**
+
+| 表现 | 闸 | 判据 |
+|---|---|---|
+| 花括号原样上屏 | `tests/kiosk-copy-placeholders.spec.ts` | 真浏览器 + 真翻译表扫 `innerText`，不许有 `{word}` |
+| 数字连同占位符消失 | `kiosk-shell-contract.spec.ts` 闸三 | 源码里 `t(key, 默认值)` 的占位符集合 == cn PO 里那条的 |
+
+**只有前一条时杀不死变异**（实测）：把 `unit_n` 改回 `unit`，屏上是「单元」，一个花括号都没有。
+闸三扫源码前**先剥注释** —— 第一版指着这条闸自己的说明里举的反例说「你这儿写错了」，
+**闸把文档当成了代码**。
+
+**闸三一上来就抓到另外两处既有的同类 bug**（都不在本轮改的屏上，都是用户看得见的乱码文字）：
+
+- `ReportsPage` `t('report:no_match', '没有匹配的棋谱')` ←→ PO `没有找到与 "{query}" 匹配的棋局。`
+  ⇒ 搜不到结果时屏上印着一个字面的 `{query}`。已修（`query` 就在作用域里）。
+- `ResearchPage` `t('research:progress', '进度')` ←→ PO `已完成 {analyzed} / {total} 步`
+  ⇒ 那是**一整句**，被当成一个 StatBlock 的标签用了。已改成自己的 key。
+
+`interpolate` 因此从 `pages/tsumegoUnits.ts` 挪到 `utils/interpolate.ts`（两个模块都要用），
+**没匹配上的占位符原样留在屏上** —— 静默吞掉会让「拿错 msgid」变成一句读起来通顺的假话。
+
+**登记（i18n 债）**：新加的 kiosk key `tsumego:unit_n` / `tsumego:unit_size` / `tsumego:problem_no`
+/ `tsumego:wrong_now` / `tsumego:category_unit` / `research:progress_label` 只有中文兜底，
+**还没进 PO**（要走 katrain-i18n-expert，11 种语言一起）。
+
+**基线 diff**：全量 Playwright 20 红 / 128 绿，与 Task 12 前那次退回 HEAD 跑出来的红**名字集合完全相同**
+⇒ 零新增失败。四图 `both=17777 refOnly=16923 implOnly=15767`。
+
+---
+
 ## Task 14: 屏 05 · 做题屏 `/kiosk/tsumego/problem/:problemId`
 
 **设计稿**：`go-kiosk.tmpl.html:400-438`（**L2 布局 A**）。**现状**：`pages/TsumegoProblemPage.tsx`（588 行）。

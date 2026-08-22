@@ -70,7 +70,6 @@ const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
   'src/kiosk/pages/TsumegoLevelPage.tsx',
   'src/kiosk/pages/TsumegoUnitListPage.tsx',
-  'src/kiosk/pages/TsumegoUnitsPage.tsx',
   'src/kiosk/pages/TutorialBookDetailPage.tsx',
   'src/kiosk/pages/TutorialBooksPage.tsx',
   'src/kiosk/pages/TutorialCategoriesPage.tsx',
@@ -156,4 +155,70 @@ test('图标不许新增手写内联路径或 MUI 图标 —— 只能从 kiosk-
     return /@mui\/icons-material/.test(src) || /<path\s+d="/.test(src);
   }).map(rel).sort();
   expect(hit).toEqual(MUI_ICON_BASELINE);
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 闸三:`t(key, 默认值)` 的**占位符约定必须和 PO 里那条一致**
+ *
+ * ⚠️ 这条是 2026-08-22(Task 13)踩出来的,不是想出来的。新写的卡片用了
+ *     t('tsumego:unit', '第 {n} 单元').replace('{n}', …)
+ * 而 `tsumego:unit` 在 cn PO 里是 **`单元`**(galaxy 三处在用)。
+ * `t()` 的实现是 `translations[key] || defaultText` —— **翻译表赢**,于是拿到的是「单元」,
+ * `.replace('{n}', …)` 找不到东西可换,**数字连同占位符一起人间蒸发**,屏上只剩「单元」。
+ * 同一次还有另一半:`t('tsumego:problemRange', '第 {a} – {b} 题')` —— PO 里那条的占位符叫
+ * `{start}/{end}`,于是 `{start}-{end}` **原样留在屏上**。
+ *
+ * 两半的表现相反,所以要两条闸:
+ *   · 「原样留在屏上」→ `tests/kiosk-copy-placeholders.spec.ts`(真浏览器扫 innerText);
+ *   · 「连数字一起消失」→ **就是这一条**(比源码里的默认值和 PO 里那条的占位符集合)。
+ * 只有前一条时,把 `unit_n` 改回 `unit` 的变异**杀不死闸**(实测过):
+ * 屏上是「单元」,一个花括号都没有,扫不出来。
+ *
+ * 单测同样抓不到这一类:jsdom 里翻译表没加载,`t()` 恒返回默认值,
+ * 断言断的是「我自己和我自己一致」。
+ * ────────────────────────────────────────────────────────────────────────── */
+const PO = resolve(UI, '../../i18n/locales/cn/LC_MESSAGES/katrain.po');
+
+/** 极简 PO 读法:只要 msgid/msgstr 成对的单行形式,够用 —— 这里只关心占位符名。 */
+function readPo(path: string): Map<string, string> {
+  const out = new Map<string, string>();
+  const lines = readFileSync(path, 'utf8').split('\n');
+  let id: string | null = null;
+  for (const line of lines) {
+    const mid = /^msgid\s+"(.*)"$/.exec(line.trim());
+    if (mid) { id = mid[1]; continue; }
+    const mstr = /^msgstr\s+"(.*)"$/.exec(line.trim());
+    if (mstr && id !== null) { out.set(id, mstr[1]); id = null; }
+  }
+  return out;
+}
+
+const placeholders = (s: string) => new Set((s.match(/\{[A-Za-z_]\w*\}/g) ?? []));
+
+test('t(key, 默认值) 的占位符必须和 cn PO 里那条一致 —— 不许拿旧 msgid 套新约定', () => {
+  const po = readPo(PO);
+  const files = walk(resolve(UI, 'src/kiosk'), (p) => /\.tsx?$/.test(p) && !p.endsWith('.test.tsx'));
+  const bad: string[] = [];
+  let scanned = 0;
+  for (const p of files) {
+    // 先把注释剥掉:注释里举的**反例**长得和真调用一模一样(这条闸自己的说明就写着一个),
+    // 不剥的话它会指着一段解释说「你这儿写错了」——**闸把文档当成了代码**。
+    const src = readFileSync(p, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^[ \t]*\/\/.*$/gm, '');
+    for (const m of src.matchAll(/\bt\(\s*'([^'\\]+)'\s*,\s*'([^'\\]*)'\s*\)/g)) {
+      const [, key, def] = m;
+      const translated = po.get(key);
+      if (translated === undefined) continue;          // PO 里没有 ⇒ 走默认值,不会打架
+      scanned += 1;
+      const a = placeholders(def);
+      const b = placeholders(translated);
+      if (a.size !== b.size || [...a].some((x) => !b.has(x))) {
+        bad.push(`${rel(p)}  t('${key}', '${def}')  ←→ PO: "${translated}"`);
+      }
+    }
+  }
+  // 一条都没扫到 = 这条闸没有被测对象(正则写错、PO 路径错),会以「没有违规」的姿态变绿。
+  expect(scanned, 'PO 里一个 key 都没对上 —— 这条闸没有被测对象').toBeGreaterThan(0);
+  expect(bad, `占位符对不上(共扫了 ${scanned} 处 PO 里真有的 key)`).toEqual([]);
 });

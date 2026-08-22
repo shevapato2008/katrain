@@ -19,6 +19,7 @@ import { useReportTasks } from '../../features/report/useReportTasks';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { sgfToMoves } from '../../utils/sgfSerializer';
+import { interpolate } from '../utils/interpolate';
 import ReportGameCard from '../components/report/ReportGameCard';
 import ReportImportMenu from '../components/report/ReportImportMenu';
 import ReportLibraryImportDialog from '../components/report/ReportLibraryImportDialog';
@@ -301,7 +302,7 @@ export default function ReportsPage() {
 
           <Box data-testid="report-card-scroll" sx={{ flex: 1, minHeight: 0, minWidth: 0, overflowY: 'auto', overflowX: 'hidden', px: 1.5, pb: 1 }}>
             {gamesLoading && games.length === 0 ? <Box sx={{ height: '100%', display: 'grid', placeItems: 'center' }}><CircularProgress size={30} /></Box>
-              : games.length === 0 ? <Box sx={{ height: '100%', display: 'grid', placeItems: 'center', px: 2 }}><Typography color="text.secondary">{query ? t('report:no_match', '没有匹配的棋谱') : t('report:no_games', '暂无棋谱，请先导入')}</Typography></Box>
+              : games.length === 0 ? <Box sx={{ height: '100%', display: 'grid', placeItems: 'center', px: 2 }}><Typography color="text.secondary">{query ? interpolate(t('report:no_match', '没有找到与 "{query}" 匹配的棋局。'), { query }) : t('report:no_games', '暂无棋谱，请先导入')}</Typography></Box>
                 : <Stack spacing={1}>{games.map((game) => (
                   <ReportGameCard
                     key={game.id} game={game} selected={game.id === selectedGameId}

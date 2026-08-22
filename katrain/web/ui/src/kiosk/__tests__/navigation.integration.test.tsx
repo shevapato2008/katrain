@@ -203,10 +203,10 @@ describe('Kiosk navigation integration', () => {
       await waitFor(() => expect(screen.getByText('手筋')).toBeInTheDocument());
       fireEvent.click(screen.getByText('手筋'));
 
-      // Level 3: units page → 2 units (1–20, 21–25). Click unit 1.
-      await waitFor(() => expect(screen.getByText('1–20')).toBeInTheDocument());
-      expect(screen.getByText('21–25')).toBeInTheDocument();
-      fireEvent.click(screen.getByText('1–20'));
+      // Level 3: 单元列表 → 2 个单元。(Task 13 起卡上写的是「第 1-20 题」,不是「1–20」。)
+      await waitFor(() => expect(screen.getByText('第 1-20 题')).toBeInTheDocument());
+      expect(screen.getByText('第 21-25 题')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('第 1-20 题').closest('button')!);
 
       // Level 4: unit list page → problem cards. The unit heading shows the range.
       await waitFor(() => {

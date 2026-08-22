@@ -718,7 +718,7 @@ const ResearchPage = () => {
                   value={`${analysisProgress.analyzed} / ${analysisProgress.total}`}
                   label={t('research:analyzed_moves', '已分析手数')}
                 />
-                <StatBlock value={`${progressPercent}%`} label={t('research:progress', '进度')} />
+                <StatBlock value={`${progressPercent}%`} label={t('research:progress_label', '进度')} />
                 <StatBlock
                   value={etaSeconds !== null && etaSeconds > 0 ? formatEtaValue(etaSeconds, t) : '—'}
                   label={t('research:eta_label', '预计剩余')}

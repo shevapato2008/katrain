@@ -64,16 +64,16 @@ const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/components/guards/KioskAuthGuard.tsx',
   'src/kiosk/components/layout/RotationWrapper.tsx',
   'src/kiosk/components/report/ReportLibraryImportDialog.test.tsx',
-  'src/kiosk/components/report/ReportLibraryImportDialog.tsx',
+  'src/kiosk/components/report/ReportLibraryImportDialog.tsx', // (C) 对话框
   'src/kiosk/components/report/ReportLocalImportDialog.test.tsx',
-  'src/kiosk/components/report/ReportLocalImportDialog.tsx',
-  'src/kiosk/components/research/CloudSGFPanel.tsx',
-  'src/kiosk/components/tsumego/SuccessOverlay.tsx',
-  'src/kiosk/pages/TsumegoCategoriesPage.tsx',
+  'src/kiosk/components/report/ReportLocalImportDialog.tsx', // (C) 对话框
+  'src/kiosk/components/research/CloudSGFPanel.tsx', // (A) 研究屏
+  'src/kiosk/components/tsumego/SuccessOverlay.tsx', // (C) 做题屏上的浮层
+  'src/kiosk/pages/TsumegoCategoriesPage.tsx', // (B) 训练营分类,未排
   'src/kiosk/pages/TsumegoLevelPage.tsx',
-  'src/kiosk/pages/TutorialBookDetailPage.tsx',
+  'src/kiosk/pages/TutorialBookDetailPage.tsx', // (B) 屏 24 课程书目,未排
   'src/kiosk/pages/TutorialBooksPage.tsx',
-  'src/kiosk/pages/TutorialSectionPage.tsx',
+  'src/kiosk/pages/TutorialSectionPage.tsx', // (B) 屏 25 课程小节,未排
 ];
 
 test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
@@ -107,35 +107,53 @@ test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
 // 2026-08-22(Task 12)再摘一条:`TsumegoPage.tsx` 按稿子重写,`ArrowForward` 换成了共享外壳的药丸键。
 // 2026-08-22(屏 14)再摘两条:做题屏按稿子重画,九个 MUI 图标换成 `shell/icons` 的动作区;
 // `PhysicalModeToggle.tsx` 整个文件删了 —— 「实体棋盘」成了共享开关排里的一个 `role="switch"`。
+// 2026-08-23(屏 15/16/19/20/23/27)一路摘掉六条:`KifuPage` / `ReportsPage` / `ReportImportMenu`
+// / `ReportDetailPage` / `SettingsPage` / `AccountSection`,外加整块删掉的 `ReportMetaPanel`。
+//
+// ── 2026-08-23(Task 20 Step 1)把剩下的按**为什么还在**分了三类 ──────────────
+// 名单不是「以后再说」的清单,是「这些为什么允许」的记录。三类,判据各不相同:
+//
+//  (A) **D2 稿外五屏的内容区** —— 摆谱 / 直播 / 研究 / 跨平台 / 标定。
+//      稿子没画这五屏,D2 明写「只接壳,不推导版式」:没有参照物就没有四图闸,
+//      重画它们的内容区等于自己发明设计。**允许留着,直到稿子把它们补齐。**
+//
+//  (B) **稿子画了、但本轮的十个 Task 没排到的屏** —— 开局设置(自由/升降级/本地)、在线大厅、
+//      训练营分类、课程书目、课程小节。它们在 `sample-go/build.py` 的进度带上仍是「外壳已接」。
+//      **允许留着,直到那几屏各自被重画。**
+//
+//  (C) **对话框与浮层** —— 它们不在 1024×600 的版式里(盖在上面),规范 §10 管的是屏上的
+//      图标风格。**允许留着**,但重画所在的屏时顺手换掉最省事。
+//
+// 三类之外一个都不许有。新增一条 = 有人在**已经重画过的屏**上又引了 MUI 图标 ⇒ 该红。
 const MUI_ICON_BASELINE = [
-  'src/kiosk/__tests__/ModeCard.test.tsx',
-  'src/kiosk/components/game/RecalibrationModal.tsx',
-  'src/kiosk/components/physical/PhysicalPlayStatusChip.tsx',
-  'src/kiosk/components/report/ReportGameCard.tsx',
+  'src/kiosk/__tests__/ModeCard.test.tsx', // (C) 测试文件,不上屏
+  'src/kiosk/components/game/RecalibrationModal.tsx', // (C) 对局屏上的浮层
+  'src/kiosk/components/physical/PhysicalPlayStatusChip.tsx', // (C) 对局屏上的浮层
+  'src/kiosk/components/report/ReportGameCard.tsx', // (B) galaxy 侧还在用;kiosk 复盘屏已不用它
   'src/kiosk/components/report/ReportLibraryImportDialog.tsx',
   'src/kiosk/components/report/ReportLocalImportDialog.tsx',
   'src/kiosk/components/research/CloudSGFPanel.tsx',
-  'src/kiosk/components/research/ResearchAnalysisPanel.tsx',
-  'src/kiosk/components/research/ResearchSetupPanel.tsx',
-  'src/kiosk/components/research/ResearchToolbar.tsx',
-  'src/kiosk/components/tsumego/PhysicalStatePanel.tsx',
+  'src/kiosk/components/research/ResearchAnalysisPanel.tsx', // (A) 研究屏
+  'src/kiosk/components/research/ResearchSetupPanel.tsx', // (A) 研究屏
+  'src/kiosk/components/research/ResearchToolbar.tsx', // (A) 研究屏
+  'src/kiosk/components/tsumego/PhysicalStatePanel.tsx', // (C) 做题屏上的浮层
   'src/kiosk/components/tsumego/SuccessOverlay.tsx',
-  'src/kiosk/components/vision/AmbiguousStoneAlert.tsx',
-  'src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx',
-  'src/kiosk/components/vision/GeometryVideoPanel.tsx',
-  'src/kiosk/components/vision/VisionSyncOverlay.tsx',
-  'src/kiosk/pages/AiSetupPage.tsx',
-  'src/kiosk/pages/BaipuListPage.tsx',
-  'src/kiosk/pages/GameHistoryPage.tsx',
-  'src/kiosk/pages/GamePage.tsx',
-  'src/kiosk/pages/LiveMatchPage.tsx',
-  'src/kiosk/pages/LivePage.tsx',
-  'src/kiosk/pages/LobbyPage.tsx',
-  'src/kiosk/pages/PlatformConnectPage.tsx',
-  'src/kiosk/pages/PlatformEngineSetupPage.tsx',
-  'src/kiosk/pages/PlatformLobbyPage.tsx',
-  'src/kiosk/pages/PvpLocalSetupPage.tsx',
-  'src/kiosk/pages/ResearchPage.tsx',
+  'src/kiosk/components/vision/AmbiguousStoneAlert.tsx', // (A) 标定/识别
+  'src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx', // (A) 标定屏
+  'src/kiosk/components/vision/GeometryVideoPanel.tsx', // (A) 标定屏
+  'src/kiosk/components/vision/VisionSyncOverlay.tsx', // (A) 标定/识别
+  'src/kiosk/pages/AiSetupPage.tsx', // (B) 屏 02/03 开局设置,未排
+  'src/kiosk/pages/BaipuListPage.tsx', // (A) 摆谱屏
+  'src/kiosk/pages/GameHistoryPage.tsx', // (B) 已无入口,等 Fan 裁定是并进复盘还是删
+  'src/kiosk/pages/GamePage.tsx', // (C) 屏 05 已重画;剩的是对话框里的图标
+  'src/kiosk/pages/LiveMatchPage.tsx', // (A) 直播屏
+  'src/kiosk/pages/LivePage.tsx', // (A) 直播屏
+  'src/kiosk/pages/LobbyPage.tsx', // (B) 屏 06 在线大厅,未排
+  'src/kiosk/pages/PlatformConnectPage.tsx', // (A) 跨平台
+  'src/kiosk/pages/PlatformEngineSetupPage.tsx', // (A) 跨平台
+  'src/kiosk/pages/PlatformLobbyPage.tsx', // (A) 跨平台
+  'src/kiosk/pages/PvpLocalSetupPage.tsx', // (B) 屏 04 本地对局设置,未排
+  'src/kiosk/pages/ResearchPage.tsx', // (A) 研究屏
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
   'src/kiosk/pages/TutorialBookDetailPage.tsx',
   'src/kiosk/pages/TutorialSectionPage.tsx',

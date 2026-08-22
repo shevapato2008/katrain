@@ -33,6 +33,21 @@ interface PlayerCardProps {
   showFollowButton?: boolean;
 }
 
+/**
+ * 统一版式的棋盘右栏（`BoardPageShell` 里那个具名容器）下的收窄档。
+ *
+ * 右栏最宽 380，两张卡并排各得 ~140 —— 卡片原来是照着 500 宽的旧右栏做的，
+ * 在 340 右栏里实测横向溢出 87px（第二个人的名字和时钟直接被裁掉）。
+ * 用容器查询而不是断点，是因为**决定卡片宽度的是右栏、不是视口**：430 视口下右栏
+ * 是满宽的，那时候不该收。
+ *
+ * 只在 `board-rail` 这个具名容器里生效 —— 盒端对局面板（`kiosk/components/game/
+ * GameControlPanel.tsx`）和禅模式没有这个容器，渲染结果一像素不变。
+ */
+/* 上界取 899 —— 右栏在桌面档最宽 380，在 <900 的堆叠态是满宽（最大 899）。
+   也就是「只要在统一版式的右栏里」就收窄。盒端和禅模式没有这个容器，一律不受影响。 */
+const RAIL = '@container board-rail (max-width: 899px)';
+
 const formatTime = (seconds: number) => {
   const totalSeconds = Math.ceil(Math.max(0, seconds));
   const m = Math.floor(totalSeconds / 60);
@@ -162,34 +177,44 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       sx={{
         p: 1.5,
         flex: 1,
+        minWidth: 0,
         bgcolor: '#2a2a2a',
         color: '#f5f3f0',
         border: active ? '2px solid #4a6b5c' : '1px solid rgba(255, 255, 255, 0.1)',
         borderRadius: 2,
         transition: 'all 250ms',
         boxShadow: active ? '0 0 12px rgba(74, 107, 92, 0.3)' : 'none',
+        /* 轮次线索之四：不该谁下，谁压暗。冻结稿的原话是「四条线索是冗余的，
+           不只靠颜色 —— 色盲和强光下的 7 寸屏上，只改一个色相等于没改」。
+           另外三条是描边、外发光、名字前的呼吸点。 */
+        [RAIL]: { p: 1, opacity: active ? 1 : 0.62 },
       }}
     >
-      {/* Player Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      {/* Player Header —— 名字这一行只剩「棋子 + 名字」和右侧段位。关注键下沉到底行，
+          和暂停键并排：340 右栏里它挤在名字旁边会把名字压到只剩两三个字。 */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 0.5, mb: 1, minWidth: 0, [RAIL]: { mb: 0.5 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1, [RAIL]: { gap: 0.75 } }}>
+          {/* 轮次线索之三：呼吸点。默认不上屏 —— 盒端和禅模式的卡片没有跟着改。 */}
+          {active && (
+            <Box sx={{
+              display: 'none', flex: 'none',
+              width: 6, height: 6, borderRadius: '50%', bgcolor: 'primary.main',
+              animation: 'pcardPulse 1.4s ease-in-out infinite',
+              '@keyframes pcardPulse': { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.25 } },
+              '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+              [RAIL]: { display: 'block' },
+            }} />
+          )}
           <Box sx={{
-              width: 16, height: 16, borderRadius: '50%',
+              width: 16, height: 16, flex: 'none', borderRadius: '50%',
               bgcolor: isBlack ? '#000' : '#fff',
               border: '1px solid #666'
           }} />
-          <Typography variant="body2" fontWeight={700} noWrap sx={{ maxWidth: 140 }}>
+          <Typography variant="body2" fontWeight={700} noWrap sx={{ maxWidth: 140, minWidth: 0, [RAIL]: { maxWidth: 'none', fontSize: '0.8rem' } }}>
             {displayName}
           </Typography>
-          {showFollowButton && onToggleFollow && (
-              <Tooltip title={isFollowed ? t("Unfollow") : t("Follow")}>
-                  <IconButton size="small" onClick={onToggleFollow} sx={{ ml: 0.5, p: 0.2, color: isFollowed ? 'secondary.main' : 'primary.main' }}>
-                      {isFollowed ? <PersonRemoveIcon fontSize="inherit" /> : <PersonAddIcon fontSize="inherit" />}
-                  </IconButton>
-              </Tooltip>
-          )}
         </Box>
-        <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700 }}>
+        <Typography variant="caption" noWrap sx={{ color: 'primary.main', fontWeight: 700, flex: 'none', [RAIL]: { fontSize: '0.66rem' } }}>
           {displayRank}
         </Typography>
       </Box>
@@ -198,6 +223,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       <Box sx={{
           mb: 1.5,
           p: 1,
+          [RAIL]: { mb: 1, p: 0.5 },
           bgcolor: 'rgba(0,0,0,0.3)',
           borderRadius: 2,
           border: showTimer && active ? '2px solid' : '1px solid transparent',
@@ -219,6 +245,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
                   textAlign: 'center',
                   color: showTimer ? (mainTimeLeft > 0 ? '#e89639' : '#4a4845') : '#3a3835',
                   lineHeight: 1.2,
+                  [RAIL]: { fontSize: '1.15rem' },
               }}
           >
               {showTimer ? formatTime(mainTimeLeft) : '0:00'}
@@ -237,6 +264,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
                       fontSize: '1rem',
                       fontWeight: 600,
                       color: showTimer ? (isWarning ? '#e89639' : '#7a7772') : '#3a3835',
+                      [RAIL]: { fontSize: '0.82rem' },
                   }}
               >
                   {showTimer ? `${Math.ceil(byoyomiLeft)}s` : '0s'}
@@ -255,16 +283,25 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
           </Box>
       </Box>
 
-      {/* Footer Info */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="caption" sx={{ color: '#7a7772' }}>
+      {/* Footer Info —— 提子数 + 两个图标键（关注 / 暂停计时） */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+        <Typography variant="caption" noWrap sx={{ color: '#7a7772', minWidth: 0, [RAIL]: { fontSize: '0.66rem' } }}>
           {t("Captures")}: {captures}
         </Typography>
-        {active && timer && onPauseTimer && (
-            <IconButton size="small" onClick={onPauseTimer} sx={{ p: 0, color: 'primary.main' }}>
-                {timer.paused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
-            </IconButton>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flex: 'none' }}>
+          {showFollowButton && onToggleFollow && (
+              <Tooltip title={isFollowed ? t("Unfollow") : t("Follow")}>
+                  <IconButton size="small" onClick={onToggleFollow} sx={{ p: 0, color: isFollowed ? 'secondary.main' : 'primary.main' }}>
+                      {isFollowed ? <PersonRemoveIcon fontSize="small" /> : <PersonAddIcon fontSize="small" />}
+                  </IconButton>
+              </Tooltip>
+          )}
+          {active && timer && onPauseTimer && (
+              <IconButton size="small" onClick={onPauseTimer} sx={{ p: 0, color: 'primary.main' }}>
+                  {timer.paused ? <PlayArrowIcon fontSize="small" /> : <PauseIcon fontSize="small" />}
+              </IconButton>
+          )}
+        </Box>
       </Box>
     </Paper>
   );

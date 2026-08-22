@@ -3076,3 +3076,42 @@ msgstr "第 {page} / {total} 頁"
 
 msgid "live:move_slider"
 msgstr "手數進度"
+
+msgid "game_room:title"
+msgstr "對局室"
+
+msgid "game_room:board_size"
+msgstr "{n} 路"
+
+msgid "game_room:ended"
+msgstr "已結束"
+
+msgid "game_room:lobby_short"
+msgstr "大廳"
+
+msgid "game_room:leave_game"
+msgstr "離開對局"
+
+msgid "game_room:exit_spectating"
+msgstr "退出觀戰"
+
+msgid "game:nav_first"
+msgstr "跳到開局"
+
+msgid "game:nav_back_10"
+msgstr "後退 10 手"
+
+msgid "game:nav_back"
+msgstr "後退一手"
+
+msgid "game:nav_forward"
+msgstr "前進一手"
+
+msgid "game:nav_forward_10"
+msgstr "前進 10 手"
+
+msgid "game:nav_last"
+msgstr "跳到最後"
+
+msgid "game:in_play"
+msgstr "對局中"

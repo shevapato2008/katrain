@@ -3123,3 +3123,42 @@ msgstr "Page {page} / {total}"
 
 msgid "live:move_slider"
 msgstr "Move slider"
+
+msgid "game_room:title"
+msgstr "Game Room"
+
+msgid "game_room:board_size"
+msgstr "{n}×{n}"
+
+msgid "game_room:ended"
+msgstr "Ended"
+
+msgid "game_room:lobby_short"
+msgstr "Lobby"
+
+msgid "game_room:leave_game"
+msgstr "Leave Game"
+
+msgid "game_room:exit_spectating"
+msgstr "Stop Watching"
+
+msgid "game:nav_first"
+msgstr "First move"
+
+msgid "game:nav_back_10"
+msgstr "Back 10 moves"
+
+msgid "game:nav_back"
+msgstr "Back one move"
+
+msgid "game:nav_forward"
+msgstr "Forward one move"
+
+msgid "game:nav_forward_10"
+msgstr "Forward 10 moves"
+
+msgid "game:nav_last"
+msgstr "Last move"
+
+msgid "game:in_play"
+msgstr "In play"

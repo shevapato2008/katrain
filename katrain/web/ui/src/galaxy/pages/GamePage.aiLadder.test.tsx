@@ -27,6 +27,13 @@ vi.mock('../components/game/RightSidebarPanel', () => ({
       <button onClick={() => { mocks.railToggle(); onToggleChange('coords'); }}>toggle coords</button>
     </div>
   ),
+  /* 翻手那六个键搬到了动作区（`board-rail-actions`，不跟着滚），
+     所以这个桩件也要给出具名导出 —— 少了它页面直接渲染不出来。 */
+  RightSidebarActions: ({ onAction, isGameOver }: { onAction: (action: string) => void; isGameOver: boolean }) => (
+    <div data-testid="game-rail-actions" data-game-over={String(isGameOver)}>
+      <button onClick={() => onAction('back')}>nav back</button>
+    </div>
+  ),
 }));
 
 const rung = (value: number) => ({ rung: value, rank_name: `${value}级`, certification_status: 'certified' as const, availability: 'available' as const, route: 'server' as const });

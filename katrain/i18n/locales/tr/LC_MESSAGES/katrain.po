@@ -3180,3 +3180,42 @@ msgstr "Sayfa {page} / {total}"
 
 msgid "live:move_slider"
 msgstr "Hamle kaydırıcısı"
+
+msgid "game_room:title"
+msgstr "Oyun Odası"
+
+msgid "game_room:board_size"
+msgstr "{n}×{n}"
+
+msgid "game_room:ended"
+msgstr "Bitti"
+
+msgid "game_room:lobby_short"
+msgstr "Lobi"
+
+msgid "game_room:leave_game"
+msgstr "Oyundan Ayrıl"
+
+msgid "game_room:exit_spectating"
+msgstr "İzlemeyi Bırak"
+
+msgid "game:nav_first"
+msgstr "İlk hamle"
+
+msgid "game:nav_back_10"
+msgstr "10 hamle geri"
+
+msgid "game:nav_back"
+msgstr "Bir hamle geri"
+
+msgid "game:nav_forward"
+msgstr "Bir hamle ileri"
+
+msgid "game:nav_forward_10"
+msgstr "10 hamle ileri"
+
+msgid "game:nav_last"
+msgstr "Son hamle"
+
+msgid "game:in_play"
+msgstr "Devam ediyor"

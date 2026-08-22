@@ -3163,3 +3163,42 @@ msgstr "Стор. {page} / {total}"
 
 msgid "live:move_slider"
 msgstr "Повзунок ходів"
+
+msgid "game_room:title"
+msgstr "Ігрова кімната"
+
+msgid "game_room:board_size"
+msgstr "{n}×{n}"
+
+msgid "game_room:ended"
+msgstr "Завершено"
+
+msgid "game_room:lobby_short"
+msgstr "Лобі"
+
+msgid "game_room:leave_game"
+msgstr "Покинути партію"
+
+msgid "game_room:exit_spectating"
+msgstr "Припинити спостереження"
+
+msgid "game:nav_first"
+msgstr "На початок"
+
+msgid "game:nav_back_10"
+msgstr "Назад на 10 ходів"
+
+msgid "game:nav_back"
+msgstr "Назад на один хід"
+
+msgid "game:nav_forward"
+msgstr "Вперед на один хід"
+
+msgid "game:nav_forward_10"
+msgstr "Вперед на 10 ходів"
+
+msgid "game:nav_last"
+msgstr "У кінець"
+
+msgid "game:in_play"
+msgstr "Триває партія"

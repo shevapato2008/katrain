@@ -200,6 +200,7 @@ Mac 的代理是 fakeip，`/browse` 的 SSRF 闸会把 `go.sailorvoyage.top` 判
 `galaxy/components/board/ToolGridButton.tsx`。前两处都是**挂 onClick 的 `<div>`**：
 键盘到不了，控件账本也看不见它们（账本新增的那条「未登记的疑似包装件」提示会列出来）。
 本次没有顺手折叠，因为研究页已经确认过、对局室归 `GamePage`（拷贝目标，不许动）。
+**（2026-08-22 更新：Fan 裁定方案 A 后 `ItemToggle` 已折叠掉，见 §4.11。剩 `ResearchToolbar.ToolButton` 一处。）**
 
 **关掉这笔债的步骤（放在 S9 收口）**：把两处都换成 `ToolGridButton`。那是纯 DOM 变更，
 sx 不动则像素不变，但要各补一张工具格截图，且动 `RightSidebarPanel` 前要先问 —— 它是
@@ -256,6 +257,7 @@ locale 作用域节点，已挂 `data-language` 与 `font-synthesis:none`，唯�
 **顺带关掉了一笔债的两处**：`LiveMatchDisplayControls` 换成工具格（`ToolGridButton` 四列一行
 + 坐标单独一行开关），直播页与复盘页同时升级。S9 的折叠清单因此**只剩两处**：
 `RightSidebarPanel.ItemToggle`（对局室，动之前先问 Fan）与 `ResearchToolbar.ToolButton`（研究页）。
+**（2026-08-22 更新：前者已在 S5 折叠掉 —— Fan 裁定方案 A，见 §4.11。S9 只剩 `ResearchToolbar.ToolButton`。）**
 
 **修掉一个既有 bug**：原来「领地」按有没有 ownership 分成两个几乎相同的 `ToggleButton` 分支，
 其中 disabled 那支连 `Tooltip` 都掉了 —— 用户按不动而没有任何解释。共享件用
@@ -310,6 +312,129 @@ locale 作用域节点，已挂 `data-language` 与 `font-synthesis:none`，唯�
 **顺手补的一处共享缺陷**：`PlaybackBar` 的滑轨一直没有可及名，账本把它记成空按钮。
 补 `aria-label`（新 key `live:move_slider` × 11 语言），直播 / 复盘 / 棋谱库 / kiosk 一起受益；
 守卫写在 `LiveMatchPage.test.tsx`，去掉 label 即红（变异验过）。
+
+## 4.11 S5 对局室 + 升降级对弈页（方案 A：改共享件，两页一起变）
+
+**Fan 2026-08-22 裁定：方案 A。** 提问背景：对局室整条右栏是 `RightSidebarPanel`，与升降级
+对弈页共用，而 scope 写着那页「已迁移、别改」。三个选项（A 改共享件两页一起变 / B 另起一份
+只改对局室 / C 只换外壳）做成了对照页 artifact `33d10b06-5f30-4921-b7bf-a38472be73fc`，
+Fan 选 A。**因此本节包含对 `GamePage.tsx` 的改动 —— 那条「照抄对象不许改」的约束被这次裁定取代。**
+
+### 动了哪四个文件
+
+| 文件 | 改动 |
+|---|---|
+| `galaxy/components/game/RightSidebarPanel.tsx` | 拆出具名导出 `RightSidebarActions`；`ItemToggle` → 共享 `ToolGridButton`；两列 → 四列；加整行「离开对局」；`isRated` 拆成 `isRated` + `analysisLocked`；加 `isSpectator` / `spectatorCount` / `resultAlert` / `onLeave`；显示开关改整行 |
+| `components/PlayerCard.tsx` | 容器查询收窄档（只在 `board-rail` 里）；关注键从名字旁下沉到底行；加呼吸点 + 非轮次方压暗 |
+| `galaxy/pages/GameRoomPage.tsx` | 迁 `BoardPageShell` + `ModulePlate`；删棋盘上方那条横栏；坐标/手数/落子特效接上真状态 |
+| `galaxy/pages/GamePage.tsx` | `actions={<RightSidebarActions/>}`（外裹 fieldset）、`onLeave`、模块牌补副标题与状态徽章 |
+
+### 顺手修掉的三条既有缺陷（都不是版式问题）
+
+1. **自由的人人对弈被当成升降级对局。** `GameRoomPage` 无条件传 `isRated={true}`，于是一局
+   `game_type='free'` 的对弈也挂着绿色「升降级模式：进行中 / 净胜局数将用于段位更新」横幅，
+   并读到「升降级对局中道具已禁用」。根因是 `isRated` 一个 prop 兼管两件事：**算不算段位** 和
+   **能不能分析**。已拆成两个正交的 prop —— 人人对弈没有引擎，`analysisLocked` 恒真；
+   `isRated` 按 `isRankedGameType(gameState.game_type)` 如实传。
+2. **升降级对弈页的「离开对局」弹窗没有任何键能打开。** `handleLeaveRequest` 只挂在非升降级
+   那条旧顶栏上；升降级分支走 `BoardPageShell`，顶栏没了，弹窗还接着。现在按冻结稿放在工具格
+   正下方。
+3. **对局室的坐标 / 手数 / 落子特效三个开关是死的。** 面板照一个写死的字面量渲染、
+   `onToggleChange` 对它们是空操作，而棋盘拿到的又是**另一个**写死的
+   `{coords:true, numbers:false}`。已改成同一份真状态同时喂给面板和棋盘。
+
+### 控件账本（真浏览器 census，1440×900）
+
+|  | 对局室 | 升降级对弈页 |
+|---|---|---|
+| 迁移前 | 10 个，其中 **6 个无名** | 10 个，其中 **6 个无名** |
+| 迁移后 | 19 个，**0 无名** | 19 个，**0 无名** |
+
+**丢失 0 / 空按钮 0。** 增加的九个不是新功能：
+- 六个翻手键从**无名**变成有名（`跳到开局 / 后退 10 手 / 后退一手 / 前进一手 / 前进 10 手 / 跳到最后`，
+  11 种语言已补）—— 它们本来就在，只是账本和读屏都看不见；
+- 八个工具键（领地/建议/图表/悔棋/停一手/认输/数子/3D）迁移前是**挂了 onClick 的 `<div>`**，
+  既不进账本也**不能用键盘到达**，现在是真的 `<button>`（`ToolGridButton`）；
+- 一个模块牌返回键（`返回大厅` / `返回升降级`）是模板自带的。
+- 「离开对局」在对局室是从棋盘上方那条横栏**搬**进右栏（不是新增）；在升降级对弈页是**新增**，
+  见上面第 2 条。
+
+### 承重实测（真浏览器，`scratchpad/lb-room.js`，两页 × 三档视口全过）
+
+关系式先写死再读数。这一页自己的盒子链是
+`board-page-shell → board-stage | board-right-rail{module | scroll | actions}`，关系式与前几页
+**不照抄**：多了「两张棋手卡并排横向不许溢出」和「六个翻手键必须整个落在动作区矩形内」两条。
+
+- **造溢出**：对局室右栏的真实内容在 768 高下装得下，装得下时量出来的「会不会滚」不算。
+  往滚动段注入 1200px 填充物 —— 假的是**输入**，结论仍由浏览器算。
+  **第一版量出「不会滚」是假绿**：滚动段是 column flex 容器，填充物 `flex-shrink:1` 被压回去了，
+  必须写 `flex:0 0 1200px` + `min-height`。
+- R1 只有中段会滚（module / actions / shell 三者 `scrollHeight == clientHeight`，中段 `scrollTop` 真能 >0）
+- R2 撑高后三段守位（module.top 不变、actions.bottom 不变且 ≤ rail.bottom、棋盘边长不变）
+- R3 `<900` 时 stage 为方（`aspectRatio:1/1`）；≥900 时 stage 是网格单元、方的是里面那张 canvas。
+  **第一版把这条写反了**（对 ≥900 断言 stage 为方，读到 884×848 报红）—— 是期望写错，不是产品错。
+- R4 右栏与棋手卡行都不横向溢出、两张卡都不退化、工具格 8 个键都在格内
+- R5 整页不横向滚 R6 六个翻手键整个可见
+
+**实测数字（只记录，不作判据）**：棋盘边长 **828 / 684 / 410**，右栏 **340 / 320 / 满宽 430** ——
+与直播样板、死活题、复盘、棋谱库四页完全一致。
+
+**87px 那条的前后配对**（升降级对弈页，同一对用户名 `sufx_s5_black` / `sufx_s5_white`）：
+
+| | 棋手卡行 scrollWidth / clientWidth | 横向被裁 | 动作区高 |
+|---|---|---|---|
+| 迁移前 | 400 / 297 | **103px** | **0** |
+| 迁移后 | 297 / 297 · 277 / 277 · 398 / 398 | **0**（三档） | 58 |
+
+（此前在对照页里报的是 87px，那是另一对较短的用户名量出来的；**溢出量随名字长度变**，
+缺陷是同一个：卡片按 500 宽的旧右栏做，塞进 340 的新右栏。）
+
+### 与冻结稿的实差（四图对比里看得见，有意保留）
+
+1. **棋手卡比稿子高。** 冻结稿的卡是三行（名字 / 时钟 / `5k · 提子 3`），把**读秒次数**
+   （`0s ×0`）整条去掉了。读秒是记时对局里的真信息，去掉是信息损失，所以保留了原来的计时块，
+   只做收窄（内边距、字号、关注键下沉）。
+2. **没有「该你了」飘带。** 稿子在轮次方卡片底部压一条飘带。`PlayerCard` 的 `active` 表示
+   **该这一方走**，不表示**该你走** —— 直接照搬会在**对手的卡上**写「该你了」，是错的；
+   要做得加一个「这张卡是不是我」的新 prop。而轮次归属已经由模块牌右侧的徽章
+   （`轮到你了 / 对手回合 / 观战中 / 已结束`）如实说了，那里才是它该在的地方。
+   稿子要的**冗余线索**做到了三条：描边 + 外发光 + 呼吸点，再加非轮次方压暗到 62%。
+   时钟**没有**改成玉色 —— 它现在的颜色编码的是「主时间 / 读秒 / 危险」，比轮次更要紧。
+3. **禁用提示文案短一句。** 稿子写「升降级对局中不开放 AI 分析、改规则、改贴目、改让子或改强度」，
+   实现用的是既有 key `items_disabled_rated`（「升降级对局中道具已禁用」）。改文案要动 11 种语言，
+   与版式无关，没有顺手改。
+4. **呼吸点与压暗只在 `board-rail` 容器里生效**，盒端对局面板和禅模式一像素不动 ——
+   `PlayerCard` 是共享件（kiosk / ZenMode 都用），共享件的改动一律走容器查询，不走断点。
+
+### 单测
+
+新增 `galaxy/pages/GameRoomPage.test.tsx`（6 条），**五条闸的红分支逐条变异证过**，记录写在
+文件顶部的 docstring 里。`GamePage.aiLadder.test.tsx` 的 `RightSidebarPanel` 桩件补了
+`RightSidebarActions` 具名导出。
+
+### i18n
+
+新增 13 个 key × 11 种语言（`game_room:title` / `board_size` / `ended` / `lobby_short` /
+`leave_game` / `exit_spectating`、`game:nav_first` / `nav_back_10` / `nav_back` / `nav_forward` /
+`nav_forward_10` / `nav_last`、`game:in_play`），走 `scripts/batch_translate_galaxy.py` 的
+`update_po_file` 子集调用，与本轮前几页同一条路子。
+
+### 四图对比
+
+`visual/gameroom/{1440x900,1024x768,430x880}/` 与 `visual/rated/{...}/`，各 5 张
+（reference / implementation / side-by-side / overlay / diff），共 30 张。
+参考图取自冻结原型 `game-room · 棋手 2D` 与 `game-rated · 对局中`，取图时由页面**回读屏名 /
+分支 / 视口 / `usedV2`**（见 §5 那条判据）。实现图取自本机 8001 的**真运行时** ——
+两个临时账号撮合出的一局真人人对弈，同一个 session 既当对局室也当升降级页的渲染输入。
+
+**不用原型的「现状」渲染做对照**：它把对局室的工具格画成四列（真的是两列），还画了一排
+「认输 / 数子 / 离开 / 终局」底部按钮，`git log -S"终局"` 证明 `RightSidebarPanel` 里从未有过。
+这是 §1「原型 ≠ 现状」的第五、第六处。
+
+### Fixture
+
+`scratchpad/s5-room-fixture.py` 在本机 dev 库注册 `sufx_s5_black` / `sufx_s5_white` 并撮合一局。
+**删除条件写在 docstring 里：四图对比取完即删** —— `python3 s5-room-fixture.py --drop`。
 
 ## 5. 待议（发现即记，不顺手改）
 

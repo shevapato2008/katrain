@@ -3094,3 +3094,42 @@ msgstr "{page} / {total} ページ"
 
 msgid "live:move_slider"
 msgstr "手数スライダー"
+
+msgid "game_room:title"
+msgstr "対局室"
+
+msgid "game_room:board_size"
+msgstr "{n}路"
+
+msgid "game_room:ended"
+msgstr "終了"
+
+msgid "game_room:lobby_short"
+msgstr "ロビー"
+
+msgid "game_room:leave_game"
+msgstr "対局を離れる"
+
+msgid "game_room:exit_spectating"
+msgstr "観戦をやめる"
+
+msgid "game:nav_first"
+msgstr "最初の手へ"
+
+msgid "game:nav_back_10"
+msgstr "10手戻る"
+
+msgid "game:nav_back"
+msgstr "1手戻る"
+
+msgid "game:nav_forward"
+msgstr "1手進む"
+
+msgid "game:nav_forward_10"
+msgstr "10手進む"
+
+msgid "game:nav_last"
+msgstr "最後の手へ"
+
+msgid "game:in_play"
+msgstr "対局中"

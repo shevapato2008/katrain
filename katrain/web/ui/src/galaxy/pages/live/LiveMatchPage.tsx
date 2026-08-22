@@ -17,17 +17,24 @@ import { useBoardCoordinates } from '../../components/board/useBoardCoordinates'
 import ModulePlate from '../../components/layout/ModulePlate';
 import LiveMatchDisplayControls from './LiveMatchDisplayControls';
 
+/* 加载态的占位**不是控件**。原来这里是 `<Button disabled><Skeleton/></Button>` ——
+   一个禁用按钮，子元素只有骨架，于是既没有可见文字也没有 `aria-label`：读屏用户
+   在这一屏上会听到五个没有名字的按钮，键盘用户会数到五个到不了任何地方的停靠点。
+   占位就画成占位（`Skeleton` 本身不是可交互元素，无障碍树里不出现），
+   高度沿用原来的 40，视觉落点不变。
+   2026-08-22 全量控件账本量到：本页加载态/错误态各 6 个无名控件，
+   报告详情页同款 5 个（那份是从这里抄过去的）。 */
 const LoadingControls = () => (
   <Box sx={{ p: 2, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}>
     {Array.from({ length: 5 }, (_, index) => (
-      <Button key={index} disabled sx={{ minHeight: 40 }}><Skeleton width="70%" /></Button>
+      <Skeleton key={index} variant="rounded" height={40} />
     ))}
   </Box>
 );
 
 const LoadingActions = () => (
   <Box sx={{ p: 2 }}>
-    <Button fullWidth disabled sx={{ minHeight: 40 }}><Skeleton width="60%" /></Button>
+    <Skeleton variant="rounded" height={40} />
   </Box>
 );
 
@@ -100,7 +107,11 @@ export default function LiveMatchPage() {
     return (
       <BoardPageShell
         onBoardSizeChange={setBoardEdge}
-        board={<Skeleton data-testid="board-error-skeleton" variant="rectangular" width="100%" height="100%" />}
+        /* 错误态**不是加载态**：骨架屏会脉动，那是在说「东西还在路上」，而这一屏
+           已经失败了。`animation={false}` 让它退成一块静止的占位。同理下面不再
+           挂 `displayControls`/`actions` —— 加载不出对局，就没有可开关的东西，
+           画一排永远按不动的占位只是在假装还有内容。 */
+        board={<Skeleton data-testid="board-error-skeleton" variant="rectangular" animation={false} width="100%" height="100%" />}
         modulePlate={<ModulePlate title={t('live:match', 'Live match')} backTo="/galaxy/live" />}
         railBody={(
           <Box sx={{ p: 2 }}>
@@ -118,8 +129,7 @@ export default function LiveMatchPage() {
             </Button>
           </Box>
         )}
-        displayControls={<LoadingControls />}
-        actions={<LoadingActions />}
+        actions={null}
       />
     );
   }

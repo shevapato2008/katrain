@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { computeAccessibleName } from 'dom-accessibility-api';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -180,8 +181,15 @@ describe('LiveMatchPage', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getByTestId('board-rail-scroll')).toBeInTheDocument();
     expect(screen.getByTestId('board-rail-actions')).toBeInTheDocument();
-    screen.getAllByRole('button').filter((button) => button.getAttribute('aria-label') !== '返回')
-      .forEach((button) => expect(button).toBeDisabled());
+
+    /* 原来这里是「除返回键外的按钮都 disabled」的 forEach —— 那时候右栏占位就是
+       `<Button disabled><Skeleton/></Button>`。2026-08-22 把占位改成不是控件之后，
+       那条 forEach 会**空转**（0 个元素也算过），成了一条睡着的断言。
+       换成两条实的：没有无名控件（占位曾经就是 5 个无名按钮），
+       且这一屏可及的按钮只剩返回键 —— 后者正是「占位不再是控件」这件事本身。 */
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.filter((button) => computeAccessibleName(button).trim() === '')).toEqual([]);
+    expect(buttons.map((button) => computeAccessibleName(button).trim())).toEqual(['返回']);
   });
 
   it('keeps the shell and hides stale match data in a retryable error state', () => {
@@ -193,6 +201,14 @@ describe('LiveMatchPage', () => {
     expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
     expect(screen.queryByTestId('mock-live-board')).not.toBeInTheDocument();
     expect(screen.queryByText('Alpha vs Beta')).not.toBeInTheDocument();
+
+    /* 错误态里不许有没有名字的控件。改之前这一屏是 5 个工具格占位 + 1 个动作占位，
+       全是没有可及名的禁用按钮 —— 读屏用户会在一条「加载失败」旁边听到六个无名按钮。
+       现在错误态干脆不挂 `displayControls`/`actions`：对局都没加载出来，就没有可开关的东西。
+       报告详情页那份实现是从这里抄过去的，同一处修正见 report/ReportDetailPage.test.tsx。 */
+    expect(screen.getAllByRole('button').filter((button) => computeAccessibleName(button).trim() === ''))
+      .toEqual([]);
+    expect(screen.queryByTestId('board-loading-skeleton')).not.toBeInTheDocument();
   });
 
   it('awaits refresh and keeps the fixed-size retry action disabled with progress', async () => {

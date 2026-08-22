@@ -528,3 +528,15 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 .wrplot.is-pickable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* 当前停在哪一手 —— 竖的一条,和曲线上那颗点说的是同一件事。 */
 .wrplot .cursor { stroke: var(--accent); stroke-width: 1.2; opacity: .55; }
+
+/* ── 屏 27 设置 ──────────────────────────────────────────────────────
+   组里那句说明。**不是旁注** —— 稿子 2026-08-22 把讲道理的小字都收进注释了,
+   留在屏上的这几句是**真 UI 文案**(「不登录也能用，成绩存在这台盒子上」这类)。 */
+.setnote { margin: 0 0 8px; font-size: 11.5px; line-height: 1.55; color: var(--dim); }
+.setnote b { color: var(--text); font-weight: 600; }
+
+/* 语言那一格的下拉。十一种语言摆不成分段控件(最多三段),用原生 select ——
+   借 `.ksearch__box` 的描边和圆角,但收成一行高、跟着行尾走。 */
+.kiosk-row__end select.ksearch__box {
+  height: var(--btn-secondary-h); padding: 0 10px; font-size: 13px; max-width: 180px;
+}

@@ -26,7 +26,7 @@ const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tsumego', '/kiosk/kifu', '/kiosk/tut
  * `.kiosk-layout-l1` 由页面自己出。外壳只负责别再往它外面套一层滚动容器
  * (那层 `<Box overflow:auto>` 会让 434 高的两栏在自己里面再滚一次)。
  */
-const SELF_LAYOUT_ROUTES = ['/kiosk/report'];
+const SELF_LAYOUT_ROUTES = ['/kiosk/report', '/kiosk/settings'];
 interface KioskLayoutProps { username?: string }
 
 const KioskShell = ({ username }: KioskLayoutProps) => {

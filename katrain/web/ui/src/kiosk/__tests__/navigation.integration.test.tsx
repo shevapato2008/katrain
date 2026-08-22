@@ -110,13 +110,17 @@ describe('Kiosk navigation integration', () => {
     // 返回落到 `/kiosk/play`:Dock 不带 `location.state.from`,SettingsPage 的
     // `handleBack` 因此走安全兜底(SettingsPage.tsx:73)。旧齿轮那条路会带上原路由,
     // Task 18 重做设置屏时再决定 Dock 要不要带 —— 这条测试锁的是现状。
-    it('opens Settings from the Dock and its back action lands on the safe fallback', async () => {
+    // ⚠️ 2026-08-23:设置屏**没有返回键了**。它是 Dock 项 ⇒ L1,而 L1 没有返回 ——
+    // 要退的是「回哪儿」,而 Dock 一直在。上一版那条「返回落到安全兜底」测的是死码:
+    // 全仓只有 Dock 会跳到这一屏,而 Dock 不带 `state.from`。
+    it('opens Settings from the Dock; L1 has no back button, the Dock is the way out', async () => {
       renderApp('/kiosk/play');
 
       fireEvent.click(screen.getByRole('button', { name: '设置' }));
-      await waitFor(() => expect(screen.getByRole('heading', { name: '设置' })).toBeInTheDocument());
+      await screen.findByTestId('settings-page');
+      expect(screen.queryByRole('button', { name: '返回' })).toBeNull();
 
-      fireEvent.click(screen.getByRole('button', { name: '返回' }));
+      fireEvent.click(screen.getByRole('button', { name: '对弈' }));
       await waitFor(() => expect(screen.getByText('人机对弈')).toBeInTheDocument());
     });
 

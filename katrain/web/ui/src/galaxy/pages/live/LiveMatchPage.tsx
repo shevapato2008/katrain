@@ -180,6 +180,39 @@ export default function LiveMatchPage() {
       railBody={(
         <>
           <MatchInfo match={match} currentMove={currentMove} analysis={currentAnalysis} headingMode="metadata-only" />
+          {/* 显示开关紧跟在对局信息之后，而不是 shell 的 `displayControls` 槽。
+
+              冻结稿 V2 把它排在中段最末，但那是按稿子里那份**很短**的假数据排的。
+              真数据实测（yike_182849，312 手全部分析完、48 处失误）：排在最末时
+              开关块的顶边在折线**以下 32px**（1440x900）/ **164px**（1024x768），
+              整块要滚 127 / 259px 才露全 —— 用户得先滚一屏才知道有这组开关。
+              稿子的意图是「不用滚就能看见」（参考图里它是露着的），
+              真数据下只有放在这里才成立。
+
+              复盘·报告详情页 2026-08-22 已经这样改过（那页是 208/389px），
+              当时记了一条待议：「直播页用同一个共享件、同样挂在 displayControls 槽，
+              但本机没有直播数据量不到」。现在量到了 —— 本机库里有 123 场真实对局，
+              那条待议的前提是错的。
+
+              顺序也与死活题页一致：身份块（对局信息）→ 工具格 → 其余内容。 */}
+          <LiveMatchDisplayControls
+            tryMoveMode={tryMoveMode}
+            showTerritory={showTerritory}
+            showMoveNumbers={showMoveNumbers}
+            showAiMarkers={showAiMarkers}
+            showCoordinates={coordinates.visible}
+            ownershipAvailable={ownership != null}
+            tryMoves={tryMoves}
+            onTryMoveToggle={() => {
+              setTryMoveMode((enabled) => !enabled);
+              if (tryMoveMode) setTryMoves([]);
+            }}
+            onTerritoryToggle={() => setShowTerritory((visible) => !visible)}
+            onMoveNumbersToggle={() => setShowMoveNumbers((visible) => !visible)}
+            onAiMarkersToggle={() => setShowAiMarkers((visible) => !visible)}
+            onCoordinatesToggle={coordinates.toggle}
+            onClearTryMoves={() => setTryMoves([])}
+          />
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <AiAnalysis currentMove={currentMove} analysis={analysis} onMoveHover={setPvMoves} />
           </Box>
@@ -192,26 +225,6 @@ export default function LiveMatchPage() {
             />
           </Box>
         </>
-      )}
-      displayControls={(
-        <LiveMatchDisplayControls
-          tryMoveMode={tryMoveMode}
-          showTerritory={showTerritory}
-          showMoveNumbers={showMoveNumbers}
-          showAiMarkers={showAiMarkers}
-          showCoordinates={coordinates.visible}
-          ownershipAvailable={ownership != null}
-          tryMoves={tryMoves}
-          onTryMoveToggle={() => {
-            setTryMoveMode((enabled) => !enabled);
-            if (tryMoveMode) setTryMoves([]);
-          }}
-          onTerritoryToggle={() => setShowTerritory((visible) => !visible)}
-          onMoveNumbersToggle={() => setShowMoveNumbers((visible) => !visible)}
-          onAiMarkersToggle={() => setShowAiMarkers((visible) => !visible)}
-          onCoordinatesToggle={coordinates.toggle}
-          onClearTryMoves={() => setTryMoves([])}
-        />
       )}
       actions={(
         <PlaybackBar

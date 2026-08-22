@@ -156,6 +156,15 @@ describe('LiveMatchPage', () => {
     expect(counter).toHaveStyle({ minWidth: '87px', whiteSpace: 'nowrap' });
   });
 
+  /* 播放条的滑轨原来没有可及名 —— 控件账本把它记成一个空按钮（2026-08-22 迁棋谱库
+     时才照出来，因为那是第一页把 PlaybackBar 放进统一版式又逐个点名清点的）。
+     共享件，直播 / 复盘 / 棋谱库 / kiosk 都吃这一条，所以守在这里。 */
+  it('gives the playback slider an accessible name', () => {
+    renderPage();
+    const actions = within(screen.getByTestId('board-rail-actions'));
+    expect(actions.getByRole('slider', { name: '手数进度' })).toBeInTheDocument();
+  });
+
   it('uses requestNavigation for the module back action', async () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: '返回' }));

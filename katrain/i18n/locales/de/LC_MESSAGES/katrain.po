@@ -3156,3 +3156,9 @@ msgstr "Zurück"
 
 msgid "back_to"
 msgstr "Zurück zu {parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "Seite {page} / {total}"
+
+msgid "live:move_slider"
+msgstr "Zugregler"

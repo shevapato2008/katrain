@@ -3125,3 +3125,9 @@ msgstr "Retour"
 
 msgid "back_to"
 msgstr "Retour à {parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "Page {page} / {total}"
+
+msgid "live:move_slider"
+msgstr "Curseur de coups"

@@ -2929,3 +2929,9 @@ msgstr "返回"
 
 msgid "back_to"
 msgstr "返回{parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "第 {page} / {total} 页"
+
+msgid "live:move_slider"
+msgstr "手数进度"

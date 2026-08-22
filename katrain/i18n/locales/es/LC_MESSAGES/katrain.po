@@ -2987,3 +2987,9 @@ msgstr "Atrás"
 
 msgid "back_to"
 msgstr "Volver a {parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "Página {page} / {total}"
+
+msgid "live:move_slider"
+msgstr "Control de jugadas"

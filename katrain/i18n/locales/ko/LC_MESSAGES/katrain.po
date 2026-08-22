@@ -3015,3 +3015,9 @@ msgstr "뒤로"
 
 msgid "back_to"
 msgstr "{parent}(으)로 뒤로"
+
+msgid "kifu:page_x_of_y"
+msgstr "{page} / {total} 페이지"
+
+msgid "live:move_slider"
+msgstr "수순 슬라이더"

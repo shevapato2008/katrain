@@ -3174,3 +3174,9 @@ msgstr "Geri"
 
 msgid "back_to"
 msgstr "{parent} sayfasına dön"
+
+msgid "kifu:page_x_of_y"
+msgstr "Sayfa {page} / {total}"
+
+msgid "live:move_slider"
+msgstr "Hamle kaydırıcısı"

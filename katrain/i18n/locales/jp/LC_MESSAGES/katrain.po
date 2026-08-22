@@ -3088,3 +3088,9 @@ msgstr "戻る"
 
 msgid "back_to"
 msgstr "{parent}に戻る"
+
+msgid "kifu:page_x_of_y"
+msgstr "{page} / {total} ページ"
+
+msgid "live:move_slider"
+msgstr "手数スライダー"

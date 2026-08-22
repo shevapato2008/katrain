@@ -3076,3 +3076,9 @@ msgstr "Назад"
 
 msgid "back_to"
 msgstr "Назад к {parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "Стр. {page} / {total}"
+
+msgid "live:move_slider"
+msgstr "Ползунок ходов"

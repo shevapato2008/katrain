@@ -28,6 +28,15 @@ interface TsumegoBoardProps {
   moveHistory?: Stone[];
   /** Show move numbers on stones */
   showMoveNumbers?: boolean;
+  /**
+   * 画不画自己那一圈坐标(默认画)。
+   *
+   * kiosk 的 L2 布局 A 把盘放进共享外壳的木框里,而那个框**自带四条刻度带**
+   * (`.kiosk-board__ruler`,四棋类同一套几何)。两边都画就是**两套坐标**:
+   * 一套在木框上、一套在盘面里,而且字号字色都不是同一套。
+   * ⇒ kiosk 做题屏传 `false`,坐标交给外壳;galaxy 那边不传,行为一个字节不变。
+   */
+  showCoordinates?: boolean;
   /** Board coords [x, y] of wrong/extra physical stones to flag with a red ✕ (occlusion-proof
    *  screen cue — the physical LED under the stone is hidden by the stone itself). */
   extraMarkers?: [number, number][];
@@ -49,6 +58,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
   disabled = false,
   moveHistory = [],
   showMoveNumbers = false,
+  showCoordinates = true,
   extraMarkers = [],
   onPlaceStone
 }) => {
@@ -89,8 +99,10 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
     const updateCanvasSize = () => {
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
-        // Use the smaller dimension to keep the board square, minus padding
-        const size = Math.floor(Math.min(width, height) - 8);
+        // Use the smaller dimension to keep the board square, minus padding.
+        // 外壳画坐标时(kiosk 布局 A)那 4px 内边距要收掉:落子区是 460,盘就得是 460 ——
+        // 差 8px 摊到 18 个格上,线和外壳刻度带的字就对不上了。
+        const size = Math.floor(Math.min(width, height) - (showCoordinates ? 8 : 0));
         // Clamp between 200 and 1200 for reasonable bounds (matching main Board component)
         setCanvasSize(Math.max(200, Math.min(1200, size)));
       }
@@ -121,20 +133,32 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
       window.removeEventListener('resize', updateCanvasSize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+    // `showCoordinates` 决定要不要减那 8px ⇒ 它变了就得重新量一次。
+    // (实际上它每屏是常量,这条依赖是为了让「读的是当前值」这件事由 React 保证,
+    //  而不是靠一个在 render 里写的 ref —— 那条 lint 规则骂的正是后者。)
+  }, [showCoordinates]);
 
   // Board layout calculations
   const boardLayout = useCallback((canvas: HTMLCanvasElement) => {
-    const gridMargins = { x: [1.5, 1.5], y: [1.5, 1.5] };
+    // 边距 1.5 格是**给盘面里那圈坐标留的位置**。坐标交给外壳画时(kiosk 布局 A)那圈字不在了,
+    // 边距要收回 0.5 —— 不然线的节距是 W/(N−1+3),而外壳刻度带的节距是 W/N,
+    // **两者不等 ⇒ 字和线对不上**(19 路 460 宽实测差 2.3px/格,累到边上是 20px)。
+    // go-screens.css 那段把这条写成了不变式:**刻度带的节距必须等于盘的线节距**。
+    const m = showCoordinates ? 1.5 : 0.5;
+    const gridMargins = { x: [m, m], y: [m, m] };
     const xGridSpaces = boardSize - 1 + gridMargins.x[0] + gridMargins.x[1];
     const yGridSpaces = boardSize - 1 + gridMargins.y[0] + gridMargins.y[1];
-    const gridSize = Math.floor(Math.min(canvas.width / xGridSpaces, canvas.height / yGridSpaces));
+    // ⚠️ **取整只在自己画坐标时做。** 外壳画坐标时线的节距必须**逐像素等于**刻度带的轨道宽
+    // (460 / 19),而 `floor` 会把 24.2 砍成 24 —— 一格差 0.2,18 格累到边上就是 4px,
+    // 加上盘被重新居中,头尾两条线各偏 ~6px。四图对比一眼看得出「字和线错开」。
+    const raw = Math.min(canvas.width / xGridSpaces, canvas.height / yGridSpaces);
+    const gridSize = showCoordinates ? Math.floor(raw) : raw;
     const boardWidth = xGridSpaces * gridSize;
     const boardHeight = yGridSpaces * gridSize;
-    const offsetX = Math.round((canvas.width - boardWidth) / 2);
-    const offsetY = Math.round((canvas.height - boardHeight) / 2);
+    const offsetX = showCoordinates ? Math.round((canvas.width - boardWidth) / 2) : (canvas.width - boardWidth) / 2;
+    const offsetY = showCoordinates ? Math.round((canvas.height - boardHeight) / 2) : (canvas.height - boardHeight) / 2;
     return { gridMargins, gridSize, boardWidth, boardHeight, offsetX, offsetY };
-  }, [boardSize]);
+  }, [boardSize, showCoordinates]);
 
   const gridToCanvas = useCallback((layout: ReturnType<typeof boardLayout>, x: number, y: number) => {
     const invertedY = boardSize - 1 - y;
@@ -197,6 +221,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
     }));
 
     // Draw coordinates
+    if (showCoordinates) {
     const letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ".split("");
     ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
     ctx.font = `600 ${Math.max(10, layout.gridSize * 0.4)}px 'IBM Plex Mono', monospace`;
@@ -222,6 +247,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
     for (let j = 0; j < boardSize; j++) {
       const pos = gridToCanvas(layout, boardSize - 1, j);
       ctx.fillText((j + 1).toString(), layout.offsetX + layout.boardWidth - layout.gridSize * 0.5, pos.y);
+    }
     }
 
     // Draw hint if enabled
@@ -320,7 +346,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
         ctx.stroke();
       });
     }
-  }, [boardSize, stones, lastMove, hintCoords, showHint, disabled, imagesLoaded, boardLayout, gridToCanvas, moveHistory, showMoveNumbers, extraMarkers]);
+  }, [boardSize, stones, lastMove, hintCoords, showHint, disabled, imagesLoaded, boardLayout, gridToCanvas, moveHistory, showMoveNumbers, showCoordinates, extraMarkers]);
 
   // Re-render on state changes
   useEffect(() => {
@@ -361,7 +387,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '4px'
+        padding: showCoordinates ? '4px' : 0
       }}
     >
       <canvas

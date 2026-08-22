@@ -315,3 +315,43 @@
 .qgrid button.ok b { color: var(--good); }
 .qgrid button.now { border-color: var(--accent); background: var(--panel); }
 .qgrid button.now b { color: var(--accent); }
+
+/* ── 屏 14 做题屏(L2 布局 A)────────────────────────────────────────────
+ * 逐字取自稿子 `go-kiosk.tmpl.html` 的 `.panel` / `.qtext` / `.railsec` / `.dots`
+ * (`:151-152`、`:240-241`、`:132-134`、`:180-183`)。
+ *
+ * ⚠️ **`.kiosk-board` 的四条刻度带这一屏不用。** `TsumegoBoard` 是一块 canvas,
+ * 坐标字母和数字**画在它自己里面**(`:200-224`);再套一层共享刻度带就是两套坐标。
+ * 所以落子区跨满整个 3×3 网格,木框由 `.kiosk-board` 自己的底色给。
+ * (对局屏那边相反:`Board` 不画坐标,刻度带是它唯一的坐标来源。) */
+.kiosk-board__play--full { grid-area: 1 / 1 / -1 / -1; }
+
+/* 右栏里的一块「面板」:一条 11.5px 的组标题 + 内容。和 `.kiosk-section` 不是一回事 ——
+   后者是**一组卡**的标题行(带渐隐横线),这里是一个有边框的盒子。 */
+.panel { border: 1px solid var(--hair); border-radius: 12px; background: var(--panel); padding: 14px; flex: none; }
+.panel > h3 { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; color: var(--dim); margin: 0 0 10px; }
+/* 题面正文。**这是给下棋的人看的正文,不是旁注** —— 2026-08-22 那次按 `.note` 批量清散文
+   把稿子上这一段一起清掉过,所以它在稿子里也换成了自己的类。 */
+.qtext { margin: 0; font-size: 12px; line-height: 1.6; color: var(--text); }
+.qtext b { font-weight: 600; color: var(--accent); }
+
+/* 会长的那一块:头是一条 30 高的标题行,身子吃掉右栏剩下的高度。 */
+.railsec { flex: 1; min-height: 0; display: flex; flex-direction: column;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--panel); overflow: hidden; }
+.railsec .rst { display: flex; align-items: center; justify-content: space-between; flex: none;
+  height: 30px; padding: 0 12px; border-bottom: 1px solid var(--hair);
+  font-size: 11px; color: var(--dim); letter-spacing: .08em; }
+.railsec .rst b { color: var(--accent); font-size: 11.5px; letter-spacing: 0; font-weight: 600; }
+.railsec .rst b.dim { color: var(--dim); font-weight: 400; }
+/* 身子自己滚。**不给它 `overflow` 的话**,着法一多整块会把动作区顶出右栏 —— 而动作区
+   贴底靠的是 `margin-top:auto`,顶出去之后它就在画布外面,点不到。 */
+.railsec__body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 10px 12px; }
+.railsec__body::-webkit-scrollbar { width: 0; height: 0; }
+
+/* 题目进度点阵:一个点一道题,**颜色就是状态,不需要图例**。
+   和屏 13 的 `.qgrid` 不是一回事:点阵是**看的**(整单元一眼扫完),那边每一格是**能点的**。 */
+.dots { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; }
+.dots i { height: 14px; border-radius: 4px; background: #1A2320;
+  border: 1px solid var(--hair); display: block; font-style: normal; }
+.dots i.ok { background: color-mix(in srgb, var(--good) 55%, transparent); border-color: color-mix(in srgb, var(--good) 50%, transparent); }
+.dots i.now { background: var(--accent); border-color: var(--accent); }

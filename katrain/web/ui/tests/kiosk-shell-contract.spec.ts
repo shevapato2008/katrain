@@ -106,6 +106,8 @@ test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
 // 名单只许缩,而**缩了不改名单一样红**。那正是它该有的样子(名单和现实不许漂),
 // 但也意味着「上一轮全绿」那句话在这一条上不成立,记在这里免得下一个人再查一遍。
 // 2026-08-22(Task 12)再摘一条:`TsumegoPage.tsx` 按稿子重写,`ArrowForward` 换成了共享外壳的药丸键。
+// 2026-08-22(屏 14)再摘两条:做题屏按稿子重画,九个 MUI 图标换成 `shell/icons` 的动作区;
+// `PhysicalModeToggle.tsx` 整个文件删了 —— 「实体棋盘」成了共享开关排里的一个 `role="switch"`。
 const MUI_ICON_BASELINE = [
   'src/kiosk/__tests__/ModeCard.test.tsx',
   'src/kiosk/components/game/RecalibrationModal.tsx',
@@ -119,7 +121,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/components/research/ResearchSetupPanel.tsx',
   'src/kiosk/components/research/ResearchToolbar.tsx',
   'src/kiosk/components/settings/AccountSection.tsx',
-  'src/kiosk/components/tsumego/PhysicalModeToggle.tsx',
   'src/kiosk/components/tsumego/PhysicalStatePanel.tsx',
   'src/kiosk/components/tsumego/SuccessOverlay.tsx',
   'src/kiosk/components/vision/AmbiguousStoneAlert.tsx',
@@ -143,7 +144,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/pages/ResearchPage.tsx',
   'src/kiosk/pages/SettingsPage.tsx',
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
-  'src/kiosk/pages/TsumegoProblemPage.tsx',
   'src/kiosk/pages/TutorialBookDetailPage.tsx',
   'src/kiosk/pages/TutorialSectionPage.tsx',
 ];
@@ -222,4 +222,125 @@ test('t(key, 默认值) 的占位符必须和 cn PO 里那条一致 —— 不�
   // 一条都没扫到 = 这条闸没有被测对象(正则写错、PO 路径错),会以「没有违规」的姿态变绿。
   expect(scanned, 'PO 里一个 key 都没对上 —— 这条闸没有被测对象').toBeGreaterThan(0);
   expect(bad, `占位符对不上(共扫了 ${scanned} 处 PO 里真有的 key)`).toEqual([]);
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 闸四:`t(key, 中文默认值)` 里**默认值和 PO 里那条说的不是一回事**
+ *
+ * ⚠️ 这条是 2026-08-22(屏 14)四图对比抓出来的,又一次:动作键写的是
+ *     t('Undo', '退一手')
+ * 而 cn PO 里 `Undo` 是「**悔棋**」—— `t()` 是 `translations[key] || defaultText`,
+ * **翻译表赢**,屏上出现的是「悔棋」。同一次还有两处:`tsumego:practiceProblems`
+ * 在 PO 里是一整句「练习死活题以提高计算能力」,被当页控条标题用;
+ * `tsumego:loadError` 是一句「死活题库加载失败，请稍后重试。」,被当一个 `<h4>` 标题用。
+ *
+ * 和闸三是**同一个病、两种症状**:闸三管占位符对不上(数字会蒸发 / 花括号上屏),
+ * 这一条管**词本身不一样** —— 源码上写着 A,屏上是 B,而两个都是中文、都通顺,
+ * 所以读代码、跑单测(jsdom 里翻译表没加载,`t()` 恒返回默认值)都发现不了。
+ *
+ * 判据故意收窄成「**两边都是中文且不相等**」:默认值是英文时,那本来就是 msgid 的常态写法。
+ *
+ * 名单是**双向棘轮**:新增会红,修好了不改名单**一样红**。77 条是 2026-08-22 的实测存量,
+ * 一条都不是本轮引入的 —— 本轮引入的三条当场改成了自己的 key。
+ *
+ * 变异实测(2026-08-22):把 `t('tsumego:undoMove', '退一手')` 改回 `t('Undo', '退一手')`,
+ * 这条当场红,多出来的正是 `TsumegoProblemPage.tsx  Undo`。红分支跑过。
+ * ────────────────────────────────────────────────────────────────────────── */
+const PO_OVERRIDES_DEFAULT_BASELINE = [
+  'src/kiosk/components/game/GameControlPanel.tsx  Black',
+  'src/kiosk/components/game/GameControlPanel.tsx  White',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:deep',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:delete_game',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:generate_deep',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:generate_normal',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:no_result',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:normal',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:select_game',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:title_ai_free',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:title_ai_ranked',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:title_human',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:title_import',
+  'src/kiosk/components/report/ReportGameCard.tsx  report:title_kifu',
+  'src/kiosk/components/report/ReportImportMenu.tsx  report:import_local',
+  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:import_and_deep',
+  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:import_and_normal',
+  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:importing',
+  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:loading',
+  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:no_results',
+  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:search_placeholder_lib',
+  'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:choose_file_hint',
+  'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:import_and_deep',
+  'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:import_and_normal',
+  'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:import_local',
+  'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:importing',
+  'src/kiosk/components/report/ReportMetaPanel.tsx  report:black',
+  'src/kiosk/components/report/ReportMetaPanel.tsx  report:deep',
+  'src/kiosk/components/report/ReportMetaPanel.tsx  report:no_result',
+  'src/kiosk/components/report/ReportMetaPanel.tsx  report:normal',
+  'src/kiosk/components/report/ReportMetaPanel.tsx  report:white',
+  'src/kiosk/components/research/CloudSGFPanel.tsx  research:game_library',
+  'src/kiosk/pages/AiSetupPage.tsx  Byoyomi only 30s x3',
+  'src/kiosk/pages/AiSetupPage.tsx  Territory',
+  'src/kiosk/pages/BaipuSessionPage.tsx  Black',
+  'src/kiosk/pages/BaipuSessionPage.tsx  Undo',
+  'src/kiosk/pages/BaipuSessionPage.tsx  White',
+  'src/kiosk/pages/GameHistoryPage.tsx  Black',
+  'src/kiosk/pages/GameHistoryPage.tsx  White',
+  'src/kiosk/pages/GamePage.tsx  Black',
+  'src/kiosk/pages/GamePage.tsx  White',
+  'src/kiosk/pages/KifuPage.tsx  Select a game to preview',
+  'src/kiosk/pages/LiveMatchPage.tsx  Territory',
+  'src/kiosk/pages/LivePage.tsx  Live',
+  'src/kiosk/pages/LobbyPage.tsx  lobby:custom_game',
+  'src/kiosk/pages/LobbyPage.tsx  lobby:finding_opponent',
+  'src/kiosk/pages/LobbyPage.tsx  lobby:invitation_text',
+  'src/kiosk/pages/LobbyPage.tsx  lobby:matching_desc',
+  'src/kiosk/pages/LobbyPage.tsx  lobby:no_active_games',
+  'src/kiosk/pages/LobbyPage.tsx  lobby:no_players',
+  'src/kiosk/pages/LobbyPage.tsx  lobby:quick_match_rated',
+  'src/kiosk/pages/LobbyPage.tsx  lobby:subtitle',
+  'src/kiosk/pages/LobbyPage.tsx  lobby:title',
+  'src/kiosk/pages/PvpLocalSetupPage.tsx  Black',
+  'src/kiosk/pages/PvpLocalSetupPage.tsx  White',
+  'src/kiosk/pages/ReportDetailPage.tsx  report:back_to_list',
+  'src/kiosk/pages/ReportDetailPage.tsx  report:deep',
+  'src/kiosk/pages/ReportDetailPage.tsx  report:enter_research',
+  'src/kiosk/pages/ReportDetailPage.tsx  report:login_required_detail',
+  'src/kiosk/pages/ReportDetailPage.tsx  report:no_sgf',
+  'src/kiosk/pages/ReportDetailPage.tsx  report:normal',
+  'src/kiosk/pages/ReportDetailPage.tsx  report:territory',
+  'src/kiosk/pages/ReportDetailPage.tsx  report:unknown_status',
+  'src/kiosk/pages/ReportsPage.tsx  report:delete_confirm_body',
+  'src/kiosk/pages/ReportsPage.tsx  report:delete_confirm_title',
+  'src/kiosk/pages/ReportsPage.tsx  report:login_required',
+  'src/kiosk/pages/ReportsPage.tsx  report:no_games',
+  'src/kiosk/pages/ReportsPage.tsx  report:no_match',
+  'src/kiosk/pages/ReportsPage.tsx  report:no_preview',
+  'src/kiosk/pages/ReportsPage.tsx  report:search_placeholder',
+  'src/kiosk/pages/ReportsPage.tsx  report:summary_running',
+  'src/kiosk/pages/ResearchPage.tsx  research:analyzing_game',
+  'src/kiosk/pages/ResearchPage.tsx  research:cancel_analysis_warning',
+  'src/kiosk/pages/ResearchPage.tsx  research:mode',
+  'src/kiosk/pages/TsumegoCategoriesPage.tsx  tsumego:selectCategory',
+  'src/kiosk/pages/TsumegoProblemPage.tsx  Black',
+  'src/kiosk/pages/TsumegoProblemPage.tsx  White',
+];
+
+test('t(key, 中文默认值) 的默认值不许和 PO 里那条说的是两回事', () => {
+  const po = readPo(PO);
+  const files = walk(resolve(UI, 'src/kiosk'), (p) => /\.tsx?$/.test(p) && !p.endsWith('.test.tsx'));
+  const cjk = (s: string) => /[\u4e00-\u9fff]/.test(s);
+  const hit = new Set<string>();
+  for (const p of files) {
+    const src = readFileSync(p, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^[ \t]*\/\/.*$/gm, '');
+    for (const m of src.matchAll(/\bt\(\s*'([^'\\]+)'\s*,\s*'([^'\\]*)'\s*\)/g)) {
+      const [, key, def] = m;
+      const translated = po.get(key);
+      if (translated === undefined) continue;
+      if (cjk(def) && cjk(translated) && def !== translated) hit.add(`${rel(p)}  ${key}`);
+    }
+  }
+  expect([...hit].sort()).toEqual(PO_OVERRIDES_DEFAULT_BASELINE);
 });

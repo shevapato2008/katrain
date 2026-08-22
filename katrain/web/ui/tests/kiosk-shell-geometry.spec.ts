@@ -546,3 +546,147 @@ test('§11 布局 B 的纵向账:页控条 44 + 12 + 滚动区 460 = 516,且滚�
   expect(content.innerBottom - content.innerTop, '无盘页的内容区总高不是 516').toBe(516);
   expect(zone.h, '460 = 516 − 44 − 12,这个数是算出来的不是写死的').toBe(460);
 });
+
+/* ══ 屏 14 做题屏 —— 刻度带的节距必须**等于盘的线节距** ═══════════════════════
+ * `go-screens.css` 把这条写成了不变式,而且写明了**判据是屏上那条线的横坐标**,
+ * 不是「字心应该落在 (i+0.5)/N」那个版式规则 —— 象棋第一版探针拿后者当判据,
+ * 量出「最大错开 26px」,数字漂亮、结论全假。
+ *
+ * 这一屏是它第一次**真的失效**:`TsumegoBoard` 原来按 1.5 格边距画(那是给盘面里
+ * 自己那圈坐标留的位置),而 kiosk 布局 A 的坐标交给外壳画 ⇒ 线的节距 W/(N−1+3)、
+ * 刻度带 W/N,**两者不等**。四图对比一眼看出来「字和线错开」,而当时没有任何一条闸会红。
+ *
+ * 线画在 canvas 上,DOM 里问不出来 ⇒ **直接读像素**:横切一条,找最暗的那些列 = 竖线。
+ */
+test('§8 做题屏:盘上第一条和最后一条竖线,正对刻度带头尾两个字', async ({ page }) => {
+  await page.route('**/api/v1/tsumego/problems/*', (route) => route.fulfill({
+    json: {
+      id: 'g1', level: '15k', category: 'capturing', hint: '黑先', boardSize: 19,
+      initialBlack: [], initialWhite: [], sgfContent: '',
+    },
+  }));
+  await page.route('**/api/v1/tsumego/levels/*/categories/*', (route) => route.fulfill({
+    json: Array.from({ length: 20 }, (_, i) => ({ id: `g${i + 1}` })),
+  }));
+  await boot(page, '/kiosk/tsumego/problem/g1');
+  await page.waitForSelector('.kiosk-board canvas');
+  // canvas 是图片加载完之后才画的 —— 早一步读到的是一张空白。
+  await page.waitForFunction(() => {
+    const c = document.querySelector('.kiosk-board canvas') as HTMLCanvasElement | null;
+    if (!c) return false;
+    const d = c.getContext('2d')!.getImageData(0, Math.floor(c.height / 2), c.width, 1).data;
+    for (let i = 0; i < d.length; i += 4) if (d[i] > 40) return true;   // 有木色了
+    return false;
+  });
+
+  const m = await page.evaluate(() => {
+    const canvas = document.querySelector('.kiosk-board canvas') as HTMLCanvasElement;
+    const cr = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d')!;
+    // 横切一条(避开星位那几行),按列取平均亮度;竖线 = 明显比木色暗的那些列。
+    const y = Math.floor(canvas.height * 0.28);
+    const row = ctx.getImageData(0, y, canvas.width, 1).data;
+    const lum: number[] = [];
+    for (let x = 0; x < canvas.width; x += 1) lum.push((row[x * 4] + row[x * 4 + 1] + row[x * 4 + 2]) / 3);
+    const wood = [...lum].sort((a, b) => a - b)[Math.floor(lum.length * 0.75)];
+    // 木底没铺满整个 canvas(盘宽按格数取整,两侧各余 2px 暗边)——
+    // 那两条暗边不是棋盘线,先按「木色区间」把它们排除掉,不然会多数出两条。
+    let woodL = 0;
+    while (woodL < lum.length && lum[woodL] < wood * 0.5) woodL += 1;
+    let woodR = lum.length - 1;
+    while (woodR > woodL && lum[woodR] < wood * 0.5) woodR -= 1;
+    const dark: number[] = [];
+    for (let x = woodL + 1; x < woodR; x += 1) if (lum[x] < wood * 0.72) dark.push(x);
+    // 把相邻的暗列并成一条线,取中点。
+    const lines: number[] = [];
+    let run: number[] = [];
+    for (const x of dark) {
+      if (run.length === 0 || x - run[run.length - 1] <= 1) run.push(x);
+      else { lines.push(run.reduce((a, b) => a + b, 0) / run.length); run = [x]; }
+    }
+    if (run.length) lines.push(run.reduce((a, b) => a + b, 0) / run.length);
+    // canvas 的内部像素 → 屏幕坐标(canvas 被 CSS 缩放过)。
+    const toScreen = (px: number) => cr.left + (px / canvas.width) * cr.width;
+    const labels = Array.from(document.querySelectorAll('.kiosk-board__ruler--top span'))
+      .map((s) => { const r = s.getBoundingClientRect(); return r.left + r.width / 2; });
+    return {
+      lines: lines.length,
+      labels: labels.length,
+      firstLine: toScreen(lines[0]),
+      lastLine: toScreen(lines[lines.length - 1]),
+      firstLabel: labels[0],
+      lastLabel: labels[labels.length - 1],
+    };
+  });
+
+  expect(m.labels, '刻度带不是 19 个字 —— 下面比的就不是头尾两条线').toBe(19);
+  expect(m.lines, '从像素里没读出 19 条竖线 —— 阈值挑坏了,后面的数都不算').toBe(19);
+  // 判据是**关系式**:头对头、尾对尾。1.5px 的余量给的是抗锯齿和取整,不是给错位留的。
+  expect(Math.abs(m.firstLine - m.firstLabel),
+    `第一条线 ${m.firstLine.toFixed(1)} 和第一个字 ${m.firstLabel.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.lastLine - m.lastLabel),
+    `最后一条线 ${m.lastLine.toFixed(1)} 和最后一个字 ${m.lastLabel.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+});
+
+/* ══ 屏 14 —— 右栏五块必须装进 516,而且动作区**贴底** ══════════════════════
+ * 这一屏的右栏比对局屏还挤:页控条 44 + 这一题 + 你的走法(flex:1)+ 一排开关 40
+ * + 第 N 单元 + 动作区 52。实体模式的引导块是**换掉**「你的走法」的内容而不是加一块 ——
+ * 加一块就会把动作区顶出右栏,而它贴底靠的是 `margin-top:auto`,顶出去就在画布外面、点不到。
+ * 所以造数据时要把两种模式下最挤的那一版都造出来。
+ */
+test('§11 做题屏:着法再多,动作区也贴着右栏底,一个键都不许被挤出画布', async ({ page }) => {
+  await page.route('**/api/v1/tsumego/problems/*', (route) => route.fulfill({
+    json: {
+      id: 'g1', level: '15k', category: 'capturing', hint: '黑先', boardSize: 19,
+      initialBlack: [], initialWhite: [], sgfContent: '',
+    },
+  }));
+  await page.route('**/api/v1/tsumego/levels/*/categories/*', (route) => route.fulfill({
+    json: Array.from({ length: 20 }, (_, i) => ({ id: `g${i + 1}` })),
+  }));
+  await boot(page, '/kiosk/tsumego/problem/g1');
+  await page.waitForSelector('[data-testid="puzzle-actions"] button');
+
+  // 造到会溢出:往着法表里塞 40 行(一道死活题不可能这么多,正因为如此才是**上界**)。
+  await page.addStyleTag({
+    content: '.mvrows::after { content:""; display:block; height:600px; grid-column:1/-1; }',
+  });
+
+  const m = await page.evaluate(() => {
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const acts = document.querySelector('[data-testid="puzzle-actions"]') as HTMLElement;
+    const body = document.querySelector('.railsec__body') as HTMLElement;
+    const screen = document.querySelector('.kiosk-screen') as HTMLElement;
+    const r = rail.getBoundingClientRect();
+    const a = acts.getBoundingClientRect();
+    return {
+      railH: Math.round(r.height),
+      railBottom: Math.round(r.bottom),
+      actsBottom: Math.round(a.bottom),
+      actsCount: acts.querySelectorAll('button').length,
+      overflowInBody: body.scrollHeight - body.clientHeight,
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      screenBottom: Math.round(screen.getBoundingClientRect().bottom),
+    };
+  });
+
+  expect(m.railH, '右栏不是 516 —— 布局 A 的高度账先崩了').toBe(516);
+  expect(m.actsCount, '动作区不是五个键').toBe(5);
+  expect(m.overflowInBody, '没造出「着法装不下」—— 下面那条断言是空的').toBeGreaterThan(100);
+  expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由着法那一块自己吃掉').toBeLessThanOrEqual(0);
+  expect(m.actsBottom, '动作区没贴右栏底').toBe(m.railBottom);
+  expect(m.actsBottom, '动作区被顶到画布外面了 —— 键还在 DOM 里,但手指够不到').toBeLessThanOrEqual(m.screenBottom);
+
+  // 上面那几条只证明「盒子没被顶动」。**溢出到底是被这一块自己吃掉了,还是糊到了下面那排开关上**,
+  // 盒子的矩形分不出来(`overflow:visible` 下每个盒子的 rect 一模一样)——
+  // 只有「它自己能不能滚」分得出来。用**真滚轮**:合成事件 Chromium 不认,
+  // 而 `scrollTop = n` 只证明这个属性可写。
+  // 变异实测(2026-08-22):把 `.railsec__body` 的 `overflow-y:auto` 改成 `visible`,
+  // 上面四条**全绿**,只有下面这条红。
+  const body = page.locator('.railsec__body');
+  const bb = (await body.boundingBox())!;
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  await page.mouse.wheel(0, 200);
+  await expect.poll(() => body.evaluate((el) => el.scrollTop),
+    { message: '着法那一块自己滚不动 —— 溢出会糊到下面那排开关上' }).toBeGreaterThan(0);
+});

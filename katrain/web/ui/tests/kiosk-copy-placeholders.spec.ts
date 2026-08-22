@@ -31,6 +31,12 @@ const boot = async (page: Page, path: string) => {
   await page.route('**/api/v1/tsumego/levels/*/categories/*', (route) => route.fulfill({
     json: Array.from({ length: 45 }, (_, i) => ({ id: `q${i}` })),
   }));
+  await page.route('**/api/v1/tsumego/problems/*', (route) => route.fulfill({
+    json: {
+      id: 'q0', level: '15k', category: 'capturing', hint: '黑先', boardSize: 19,
+      initialBlack: ['co'], initialWhite: ['cp'], sgfContent: '',
+    },
+  }));
   await page.goto(path);
   await page.waitForSelector('.kiosk-screen', { state: 'attached' });
   // 翻译表是异步取的 —— 早一步扫到的是默认值,而默认值恰好总是自洽的。
@@ -45,6 +51,7 @@ const screens: readonly (readonly [string, string, string])[] = [
   ['训练营', '/kiosk/tsumego', '.kiosk-cards .kiosk-card'],
   ['单元列表', '/kiosk/tsumego/15k/capturing', '.kiosk-cards .kiosk-card'],
   ['题目列表', '/kiosk/tsumego/15k/capturing/1', '.qgrid button'],
+  ['做题屏', '/kiosk/tsumego/problem/q0', '[data-testid="puzzle-actions"] button'],
 ];
 
 for (const [name, path, ready] of screens) {

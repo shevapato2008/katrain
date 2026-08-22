@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { GameNavigationProvider } from '../../context/GameNavigationContext';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ReportQueueSummary, ReportTaskSummary } from '../../../api/reportApi';
@@ -103,6 +104,9 @@ const gameDetail = {
   sgf_content: '(;FF[4]SZ[19]PB[Black]PW[White];B[pd];W[dp])',
 };
 
+// 页头改用共享的 `ContentPageHeader`（spec §2.4：左上角箭头图标键 + 标题），它经由
+// `ModulePlate` 读 `GameNavigationContext`。生产里 provider 挂在 `MainLayout` 上、
+// 覆盖全部 galaxy 路由，所以这里补的是**测试的装配**，不是生产缺口。
 describe('ReportsPage', () => {
   beforeEach(() => {
     mockUserGamesList.mockReset();
@@ -141,9 +145,9 @@ describe('ReportsPage', () => {
 
   it('renders report list and preview shell', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -163,9 +167,9 @@ describe('ReportsPage', () => {
 
   it('opens local import dialog from the import menu', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -183,9 +187,9 @@ describe('ReportsPage', () => {
 
   it('opens report-type menu from a game card', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -215,9 +219,9 @@ describe('ReportsPage', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -301,9 +305,9 @@ describe('ReportsPage', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -345,18 +349,18 @@ describe('ReportsPage', () => {
     setReportTasks([runningTask]);
 
     const { rerender } = render(
-      <MemoryRouter>
+      <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByText('0/2')).toBeInTheDocument());
 
     setReportTasks([{ ...runningTask, analyzed_moves: 1 }]);
-    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     expect(screen.getByText('1/2')).toBeInTheDocument();
 
     setReportTasks([{ ...runningTask, analyzed_moves: 2 }]);
-    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     expect(screen.getByText('2/2')).toBeInTheDocument();
   });
 
@@ -383,9 +387,9 @@ describe('ReportsPage', () => {
     ]);
 
     render(
-      <MemoryRouter>
+      <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -409,9 +413,9 @@ describe('ReportsPage', () => {
     ]);
 
     render(
-      <MemoryRouter>
+      <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -426,9 +430,9 @@ describe('ReportsPage', () => {
     mockUserGamesDelete.mockResolvedValue({ status: 'ok' });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -475,9 +479,9 @@ describe('ReportsPage', () => {
     ], { pending: 0, running: 0, completed: 0, failed: 1 });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -510,9 +514,9 @@ describe('ReportsPage', () => {
     ], { pending: 1, running: 1, completed: 1, failed: 1 });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     // Queue summary chips
@@ -538,9 +542,9 @@ describe('ReportsPage', () => {
     mockUserGamesList.mockResolvedValue({ items: [gameSummary], total: 25, page: 2, page_size: 12 });
 
     render(
-      <MemoryRouter initialEntries={['/galaxy/report?q=Alpha&page=2']}>
+      <MemoryRouter initialEntries={['/galaxy/report?q=Alpha&page=2']}><GameNavigationProvider>
         <ReportsPage />
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -561,7 +565,7 @@ describe('ReportsPage', () => {
   });
 
   it('creates a deep report with the selected game adapter arguments', async () => {
-    render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
@@ -573,7 +577,7 @@ describe('ReportsPage', () => {
 
   it('removes a create failure alert when the shared hook recovers', async () => {
     mockCreateReport.mockRejectedValue(new Error('Create failed'));
-    const { rerender } = render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    const { rerender } = render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
@@ -581,16 +585,16 @@ describe('ReportsPage', () => {
     await waitFor(() => expect(mockCreateReport).toHaveBeenCalled());
 
     reportTasksFixture = { ...reportTasksFixture, error: 'Create failed' };
-    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     expect(screen.getByText('Create failed')).toBeInTheDocument();
 
     reportTasksFixture = { ...reportTasksFixture, error: null };
-    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     expect(screen.queryByText('Create failed')).not.toBeInTheDocument();
   });
 
   it('shows an optimistic queued report until creation reconciles with the server task', async () => {
-    const { rerender } = render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    const { rerender } = render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Generate report' })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Generate report' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Normal' }));
@@ -602,20 +606,20 @@ describe('ReportsPage', () => {
       id: -1, user_game_id: 'game-1', status: 'pending', report_type: 'normal',
       total_moves: 2, analyzed_moves: 0, requested_visits: 500,
     }]);
-    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     expect(screen.getByText('Normal Queued')).toBeInTheDocument();
 
     setReportTasks([{
       id: 41, user_game_id: 'game-1', status: 'running', report_type: 'normal',
       total_moves: 2, analyzed_moves: 1, requested_visits: 500,
     }]);
-    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     expect(screen.getByText('Normal Generating')).toBeInTheDocument();
   });
 
   it('surfaces a delete rejection and keeps the game visible', async () => {
     mockUserGamesDelete.mockRejectedValue(new Error('Delete denied'));
-    render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Delete game' })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete game' }));
@@ -627,7 +631,7 @@ describe('ReportsPage', () => {
 
   it('dismisses shared hook errors through the supported hook boundary', async () => {
     reportTasksFixture = { ...reportTasksFixture, error: 'Task service unavailable' };
-    render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
 
     expect(await screen.findByText('Task service unavailable')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
@@ -641,18 +645,18 @@ describe('ReportsPage', () => {
       total_moves: 2, analyzed_moves: 1, requested_visits: 500,
     }]);
     mockRetryReport.mockRejectedValue(new Error('Retry failed'));
-    const { rerender } = render(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    const { rerender } = render(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Retry normal' })).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Retry normal' }));
     await waitFor(() => expect(mockRetryReport).toHaveBeenCalledWith(15));
 
     reportTasksFixture = { ...reportTasksFixture, error: 'Retry failed' };
-    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     expect(screen.getByText('Retry failed')).toBeInTheDocument();
 
     reportTasksFixture = { ...reportTasksFixture, error: null };
-    rerender(<MemoryRouter><ReportsPage /></MemoryRouter>);
+    rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     expect(screen.queryByText('Retry failed')).not.toBeInTheDocument();
   });
 });

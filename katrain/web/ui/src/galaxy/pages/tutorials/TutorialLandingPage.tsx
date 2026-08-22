@@ -8,6 +8,7 @@ import CardActionArea from '@mui/material/CardActionArea';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
+import ContentPageHeader from '../../components/layout/ContentPageHeader';
 import { TutorialAPI } from '../../api/tutorialApi';
 import type { TutorialCategory } from '../../../types/tutorial';
 
@@ -33,8 +34,9 @@ export default function TutorialLandingPage() {
 
   return (
     <Box p={3}>
-      <Typography variant="h5" gutterBottom>教程</Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom>选择一个学习阶段开始学习</Typography>
+      <ContentPageHeader title="教程" />
+      {/* 引导语原来是页头第二行，下沉到正文首行（spec §2.4）。 */}
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>选择一个学习阶段开始学习</Typography>
       <Box display="flex" flexWrap="wrap" gap={2} mt={1}>
         {categories.map(cat => (
           <Box key={cat.slug} sx={{ flex: '0 0 260px', maxWidth: 260 }}>

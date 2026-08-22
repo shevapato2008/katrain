@@ -3,6 +3,7 @@ import { Box, Typography, Grid, Card, CardContent, CardActionArea, CircularProgr
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import ContentPageHeader from '../components/layout/ContentPageHeader';
 
 interface LevelInfo {
   level: string;
@@ -56,8 +57,8 @@ const TsumegoLevelsPage = () => {
   if (levels.length === 0) {
     return (
       <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
-        <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>{t('Tsumego')}</Typography>
-        <Alert severity="info">
+        <ContentPageHeader title={t('Tsumego')} />
+        <Alert severity="info" sx={{ mt: 2 }}>
           {t('tsumego:noData', '暂无死活题。')}
         </Alert>
       </Box>
@@ -66,10 +67,9 @@ const TsumegoLevelsPage = () => {
 
   return (
     <Box sx={{ p: 4, maxWidth: 1200, mx: 'auto' }}>
-      <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>
-        {t('Tsumego')}
-      </Typography>
-      <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 4 }}>
+      <ContentPageHeader title={t('Tsumego')} />
+      {/* 引导语原来是页头第二行，spec §2.4 禁长副标题进页头，下沉到正文首行。 */}
+      <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
         {t('tsumego:selectLevel')}
       </Typography>
 

@@ -25,6 +25,11 @@ const ts = require('typescript');
 /* MUI + 原生里「用户能点/能改」的东西。Box/Typography 这类只有在带 onClick 时
    才算控件，单独列在 IMPLICIT 里按 handler 判定。 */
 const CONTROL_TAGS = new Set([
+  /* 项目自己的控件包装件。登记判据：**组件自己渲染一个真控件、并把可及名透传下去**
+     （`ToolGridButton` 渲染 ButtonBase + aria-label）。不登记的话账本看不见它，
+     于是「把四个 IconButton 换成工具格键」会报成丢失 4 —— 闸量错了对象。
+     新增这类包装件必须同时登记到这里；忘了登记会被下面那条「未登记的疑似包装件」抓到。 */
+  'ButtonBase', 'ToolGridButton',
   'Button', 'IconButton', 'LoadingButton', 'Fab', 'ToggleButton', 'Switch', 'Checkbox',
   'Radio', 'Slider', 'Tab', 'MenuItem', 'TextField', 'Select', 'NativeSelect', 'Autocomplete',
   'Link', 'ListItemButton', 'CardActionArea', 'Chip', 'Rating', 'Pagination', 'PaginationItem',
@@ -92,6 +97,38 @@ function iconChild(node) {
   return null;
 }
 
+/** Switch/Checkbox 的可及名藏在 `slotProps={{ input: { 'aria-label': … } }}`（MUI v7）
+ *  或旧的 `inputProps={{ 'aria-label': … }}` 里。**只有前者在 v7 里真的到得了那个 input**
+ *  —— 实测 `inputProps` 写法下浏览器读到的 aria-label 是 null，账本却报出了名字。
+ *  所以两种都读，但读到旧写法时标注出来，免得账本比浏览器乐观。 */
+function objLiteralProp(obj, key) {
+  if (!obj || !ts.isObjectLiteralExpression(obj)) return null;
+  for (const prop of obj.properties) {
+    if (!ts.isPropertyAssignment(prop)) continue;
+    const name = ts.isStringLiteral(prop.name) || ts.isIdentifier(prop.name) ? prop.name.text : null;
+    if (name === key) return prop.initializer;
+  }
+  return null;
+}
+
+function inputPropsLabel(node) {
+  const slotInit = attr(node, 'slotProps')?.initializer;
+  if (slotInit && ts.isJsxExpression(slotInit) && slotInit.expression) {
+    const input = objLiteralProp(slotInit.expression, 'input');
+    const label = input && ts.isObjectLiteralExpression(input) ? objLiteralProp(input, 'aria-label') : null;
+    if (label) return textOf(label);
+  }
+  const legacy = attr(node, 'inputProps')?.initializer;
+  if (legacy && ts.isJsxExpression(legacy) && legacy.expression) {
+    const label = objLiteralProp(legacy.expression, 'aria-label');
+    if (label) {
+      const t = textOf(label);
+      return t ? t + ' [inputProps: MUI v7 下到不了 input]' : null;
+    }
+  }
+  return null;
+}
+
 /** 子节点里的第一段人能读的文字 */
 function childText(node) {
   const parent = node.parent;
@@ -121,6 +158,11 @@ function isNoop(p) {
   }
   return false;
 }
+
+/** 大写开头、不在任何已知集合里、却挂了 onClick 的标签 —— 多半是个控件包装件，
+ *  而账本看不见它。不判失败（有些确实只是可点的展示块），但必须说出来：
+ *  闸看不见的东西等于没有闸。 */
+export const unregisteredWrappers = new Map();
 
 export function scan(source, fileName) {
   const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -156,9 +198,19 @@ export function scan(source, fileName) {
       const asLabel = textOf(attr(node, 'component')?.initializer) === 'label';
       /* disabled 的骨架占位按钮不是空按钮 */
       const isDisabled = !!attr(node, 'disabled');
+      if (!isControl && !isImplicit && /^[A-Z]/.test(tag) && !CONTROL_TAGS.has(tag)
+          && !IMPLICIT_TAGS.has(tag) && attr(node, 'onClick')) {
+        const seen = unregisteredWrappers.get(tag) || new Set();
+        seen.add(fileName);
+        unregisteredWrappers.set(tag, seen);
+      }
       if (isControl || isImplicit) {
         const name =
           textOf(attr(node, 'aria-label')?.initializer) ??
+          /* 包装件把 ariaLabel 透传成 aria-label；MUI Switch/Checkbox 把可及名
+             塞在 inputProps 里。两处都是真的可及名，不认就只能报 «Switch»。 */
+          textOf(attr(node, 'ariaLabel')?.initializer) ??
+          inputPropsLabel(node) ??
           textOf(attr(node, 'title')?.initializer) ??
           textOf(attr(node, 'label')?.initializer) ??
           textOf(attr(node, 'placeholder')?.initializer) ??
@@ -200,14 +252,23 @@ const read = (f, atRev) => atRev
   ? execFileSync('git', ['show', `${atRev}:${f}`], { encoding: 'utf8', maxBuffer: 1 << 26 })
   : fs.readFileSync(f, 'utf8');
 
-const key = (c) => `${c.tag}|${c.name}`;
+/* 身份认**可及名**，不认 MUI 标签。全站风格统一这件事本身就是在换实现：
+   把 IconButton 换成工具格键、把 Button 换成 ButtonBase 包装件，如果 key 里带上标签，
+   每一次重做都报成「丢失 1 / 新增 1」，真的丢了一个反而淹在噪声里。
+   人看得见的身份是那个可及名，闸就该断言那个。改的是判据不是页面。 */
+const key = (c) => c.name;
 
 if (diffRev) {
   let lost = 0, added = 0, dead = 0;
   for (const f of files) {
     let before;
     try { before = scan(read(f, diffRev), f); } catch { before = []; }
-    const after = scan(read(f, null), f);
+    /* 文件被删掉 ⇒ 现状是 0 个控件，里面的东西**全部**报成丢失。
+       以前这里直接让 ENOENT 冒出去把进程打死 —— 而删文件恰恰是控件最容易丢的一步，
+       闸在最该说话的时候崩掉了。 */
+    let after;
+    try { after = scan(read(f, null), f); }
+    catch (e) { if (e.code === 'ENOENT') after = []; else throw e; }
     const bMap = new Map(); before.forEach(c => bMap.set(key(c), (bMap.get(key(c)) || 0) + 1));
     const aMap = new Map(); after.forEach(c => aMap.set(key(c), (aMap.get(key(c)) || 0) + 1));
     const gone = [...bMap].filter(([k, n]) => (aMap.get(k) || 0) < n);
@@ -215,14 +276,25 @@ if (diffRev) {
     const bad = after.filter(c => c.handler === 'noop' || (c.handler === 'no-handler' && c.tag !== 'a'));
     lost += gone.length; added += neu.length; dead += bad.length;
     if (gone.length || neu.length || bad.length) {
+      const tagsOf = (list, k) => [...new Set(list.filter(c => key(c) === k).map(c => c.tag))].join('/');
       console.log(`\n── ${f}  (${before.length} → ${after.length})`);
-      gone.forEach(([k, n]) => console.log(`   丢失  ${k}  ×${n - (aMap.get(k) || 0)}`));
-      neu.forEach(([k, n]) => console.log(`   新增  ${k}  ×${n - (bMap.get(k) || 0)}`));
+      gone.forEach(([k, n]) => console.log(`   丢失  ${k}  [${tagsOf(before, k)}]  ×${n - (aMap.get(k) || 0)}`));
+      neu.forEach(([k, n]) => console.log(`   新增  ${k}  [${tagsOf(after, k)}]  ×${n - (bMap.get(k) || 0)}`));
       bad.forEach(c => console.log(`   空键  ${c.tag} "${c.name}" :${c.line}  (${c.handler})`));
     }
   }
   console.log(`\n合计：丢失 ${lost} 类 / 新增 ${added} 类 / 空按钮 ${dead} 个`);
+  reportUnregistered();
   process.exit(lost || dead ? 1 : 0);
+}
+
+function reportUnregistered() {
+  if (!unregisteredWrappers.size) return;
+  console.log(`\n注意：以下标签挂了 onClick 但不在账本认得的集合里，账本看不见它们的调用点。`);
+  console.log(`若它们渲染的是真控件，登记到 CONTROL_TAGS；若只是可点的展示块，可以不管。`);
+  for (const [tag, fileSet] of [...unregisteredWrappers].sort()) {
+    console.log(`   ${tag}  ←  ${[...fileSet].join(', ')}`);
+  }
 }
 
 const report = {};
@@ -237,4 +309,5 @@ if (asJson) {
       console.log(`${flag}${String(c.line).padStart(4)}  ${c.tag.padEnd(16)} ${c.name}${c.handler === 'ok' ? '' : '   [' + c.handler + ']'}`);
     }
   }
+  reportUnregistered();
 }

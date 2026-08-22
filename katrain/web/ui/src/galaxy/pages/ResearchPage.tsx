@@ -7,6 +7,7 @@ import Board from '../../components/Board';
 import ResearchSetupPanel, { ResearchSetupActions } from '../components/research/ResearchSetupPanel';
 import ResearchAnalysisPanel, { ResearchAnalysisActions } from '../components/research/ResearchAnalysisPanel';
 import BoardPageShell from '../components/board/BoardPageShell';
+import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import ModulePlate from '../components/layout/ModulePlate';
 import { useResearchBoard } from '../hooks/useResearchBoard';
 import { useResearchSession } from '../../hooks/useResearchSession';
@@ -163,8 +164,14 @@ const ResearchPage = () => {
         eval: false,
         numbers: false,
         children: false,
-        coords: true,
     });
+
+    // spec §3.2：**棋盘边长低于 500px 时坐标默认关闭**，判据是棋盘量出来的边长而不是视口宽度
+    // （899px 横窗堆叠后棋盘仍可能大于 500）。原来这一页有三个各说各话的真相来源：
+    // 初值里的 `coords: true`（共享 Board 真的读它，见 Board.tsx:194）和两处写死的坐标开。
+    // 现在只剩这一个。本页三个形态一次只渲染一个，所以共用一份 edge 状态。
+    const [boardEdge, setBoardEdge] = useState(0);
+    const coordinates = useBoardCoordinates(boardEdge);
 
     const toggleAnalysis = useCallback((key: string) => {
         setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key] }));
@@ -185,6 +192,9 @@ const ResearchPage = () => {
 
     // Deep linking: load kifu from ?kifu_id=xxx query param
     const kifuLoadedRef = useRef(false);
+    /* `?analyze=1` 不在这条 effect 里直接开分析，而是先立一个标志、等下一帧再开。
+       原因见下面那条 effect 的注释 —— 这里直接开会拿一张空棋盘去分析。 */
+    const [autoAnalyzeAfterLoad, setAutoAnalyzeAfterLoad] = useState(false);
     useEffect(() => {
         const kifuId = searchParams.get('kifu_id');
         if (!kifuId || kifuLoadedRef.current) return;
@@ -200,13 +210,71 @@ const ResearchPage = () => {
 
                 // Auto-start analysis if ?analyze=1 is set
                 if (searchParams.get('analyze') === '1') {
-                    setTimeout(() => handleStartAnalysis(), 100);
+                    setAutoAnalyzeAfterLoad(true);
                 }
             })
             .catch((err) => {
                 console.error('Failed to load kifu for deep link:', err);
             });
     }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    /* `?kifu_id=…&analyze=1` 的自动分析在这里发，不在上面那条 effect 里。
+
+       改之前是 `setTimeout(() => handleStartAnalysis(), 100)`，那是错的，而且
+       **不是等得不够久**：`setTimeout` 的闭包捕获的是 effect 那一帧的
+       `handleStartAnalysis`，那一帧的 `board.moves` / `board.currentMove` /
+       `board.getSnapshot()` 全是加载前的空值（`loadFromSGF` 走 `useState`，
+       同一段 async 续体里还没冲刷）。于是 `handleStartAnalysis` 里那行
+       `board.moves.length > 0 ? sgf : undefined` 取到 `undefined` —— 会话建成
+       一张空棋盘，紧跟着的 `analysisScan(500)` 扫的也是空棋盘。等 1000ms 一样错，
+       因为拿到的那个函数本身就是旧的。
+
+       改成「立标志 + 独立 effect」之后，这条 effect 只在标志变 true 的那一帧之后
+       才跑，而 `setAutoAnalyzeAfterLoad(true)` 与 `loadFromSGF` 的 setState 在同一段
+       续体里、由 React 一起冲刷，所以这一帧的 `handleStartAnalysis` 读到的是**装好的**
+       棋盘。顺带把 `getSnapshot()` 和 `initialMove` 两处同样读旧值的地方一起修好了 ——
+       它们和 SGF 是同一个闭包里的三个受害者，只补 SGF 那一个是补不干净的。
+
+       同族：`?user_game_id=` 那条从一开始就不认 `analyze=1`（全盘扫描是计费动作，
+       不该由一次导航悄悄触发），所以它没有这个坑。 */
+    useEffect(() => {
+        if (!autoAnalyzeAfterLoad) return;
+        setAutoAnalyzeAfterLoad(false);
+        void handleStartAnalysis();
+    }, [autoAnalyzeAfterLoad]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    /* 「进入研究室」的入口：`?user_game_id=<uuid>`（复盘·报告详情页 → 这里）。
+       Fan 2026-08-22 点头补上 —— 在此之前报告页那个按钮只 `navigate('/galaxy/research')`，
+       落到一张空棋盘。
+
+       和上面那条 `?kifu_id=` 是**两个 id 空间**：那条走棋谱库 `KifuAPI.getAlbum`，
+       这条走个人对局 `UserGamesAPI.get`（要 token，而 auth 是异步加载的，所以
+       `!token` 时先不烧掉 ref，等 token 到了这个 effect 会因为依赖变化再跑一次）。
+
+       **不认 `&analyze=1`。** 全盘扫描是计费动作，不该由一次导航悄悄触发；报告页那一局
+       也早已分析过。要分析就按「开始研究」。上面 kifu 那条认它，是它原有的行为，不动。
+
+       SGF 用刚取回来的 `detail.sgf_content`，不从 `board` 反推 —— `loadFromSGF` 的
+       setState 在同一段 async 续体里还没冲刷，此刻读 `board.moves` 拿到的是加载前的空值。
+       （kiosk 那份同名页在 `ResearchPage.tsx:374` 的注释里记的就是这个坑。） */
+    const userGameLoadedRef = useRef(false);
+    useEffect(() => {
+        const userGameId = searchParams.get('user_game_id');
+        if (!userGameId || userGameLoadedRef.current || !token) return;
+        userGameLoadedRef.current = true;
+
+        UserGamesAPI.get(token, userGameId)
+            .then((detail) => {
+                if (!detail.sgf_content) return;
+                const result = board.loadFromSGF(detail.sgf_content);
+                if (!result.success) {
+                    console.error('Failed to load user game for deep link:', result.error);
+                }
+            })
+            .catch((err) => {
+                console.error('Failed to load user game for deep link:', err);
+            });
+    }, [searchParams, token]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Poll analysis progress while analyzing and not yet complete
     useEffect(() => {
@@ -453,11 +521,12 @@ const ResearchPage = () => {
         return (
             <>
                 <BoardPageShell
+                    onBoardSizeChange={setBoardEdge}
                     board={(
                         <Board
                             gameState={gs}
                             onMove={session.onMove}
-                            analysisToggles={analysisToggles}
+                            analysisToggles={{ ...analysisToggles, coords: coordinates.visible }}
                         />
                     )}
                     modulePlate={(
@@ -549,13 +618,14 @@ const ResearchPage = () => {
         return (
             <>
                 <BoardPageShell
+                    onBoardSizeChange={setBoardEdge}
                     board={(
                         <LiveBoard
                             moves={board.moves}
                             stoneColors={board.stoneColors}
                             currentMove={board.currentMove}
                             boardSize={board.boardSize}
-                            showCoordinates={true}
+                            showCoordinates={coordinates.visible}
                             showMoveNumbers={board.showMoveNumbers}
                             handicapCount={board.handicapCount}
                             minimumCanvasSize={0}
@@ -605,11 +675,11 @@ const ResearchPage = () => {
 
                             {analysisProgress && (
                                 <Box sx={{ mt: 1.5 }}>
-                                    <Typography variant="body2" color="primary.main" sx={{ fontWeight: 700, fontFamily: '"IBM Plex Mono", monospace' }}>
+                                    <Typography variant="body2" color="primary.main" sx={{ fontWeight: 700, fontFamily: (t) => `"IBM Plex Mono", monospace, ${t.typography.fontFamily}` }}>
                                         {progressPercent}%
                                     </Typography>
                                     {etaSeconds !== null && etaSeconds > 0 && (
-                                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontFamily: '"IBM Plex Mono", monospace' }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontFamily: (t) => `"IBM Plex Mono", monospace, ${t.typography.fontFamily}` }}>
                                             {t('research:eta', '预计剩余 {time}').replace('{time}',
                                                 etaSeconds >= 60
                                                     ? t('research:time_min_sec', '{min}分{sec}秒').replace('{min}', String(Math.floor(etaSeconds / 60))).replace('{sec}', (etaSeconds % 60).toString().padStart(2, '0'))
@@ -645,13 +715,14 @@ const ResearchPage = () => {
     return (
         <>
             <BoardPageShell
+                    onBoardSizeChange={setBoardEdge}
                 board={(
                     <LiveBoard
                         moves={board.moves}
                         stoneColors={board.stoneColors}
                         currentMove={board.currentMove}
                         boardSize={board.boardSize}
-                        showCoordinates={true}
+                        showCoordinates={coordinates.visible}
                         showMoveNumbers={board.showMoveNumbers}
                         handicapCount={board.handicapCount}
                         onIntersectionClick={board.handleIntersectionClick}
@@ -738,7 +809,7 @@ const ResearchPage = () => {
                                 variant="body2"
                                 sx={{
                                     mx: 1,
-                                    fontFamily: '"IBM Plex Mono", monospace',
+                                    fontFamily: (t) => `"IBM Plex Mono", monospace, ${t.typography.fontFamily}`,
                                     color: 'text.secondary',
                                     minWidth: 76,
                                     textAlign: 'center',

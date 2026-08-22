@@ -2,6 +2,12 @@
  * TsumegoProblemPage - Main page for solving a tsumego problem
  *
  * Brings together the board, controls, and problem-solving logic.
+ *
+ * 版式：走统一的 `BoardPageShell` —— 棋盘是唯一连续伸缩区域，棋盘正上方不放任何东西，
+ * 右栏三段（模块牌 / 可滚中段 / 动作区）。迁版式前这里是桌面和移动**两套 JSX**：
+ * 桌面版把返回箭头和面包屑压在棋盘正上方，移动版另有一套 `MobileHeader`/`MobileToolbar`。
+ * 现在合成一套，横竖屏的差别由 shell 自己按 900px 断点处理，两套能力一个不少：
+ * 返回 → 模块牌，上一题/下一题 → 动作区，撤销/重置/提示/试下 → 中段的工具格。
  */
 
 import React, { useEffect, useState } from 'react';
@@ -10,24 +16,25 @@ import {
   Box,
   Typography,
   CircularProgress,
-  IconButton,
   Breadcrumbs,
   Link,
   Snackbar,
-  Alert,
-  useMediaQuery,
-  useTheme
+  Alert
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import type { MoveResult } from '../../hooks/useTsumegoProblem';
 import TsumegoBoard from '../../components/tsumego/TsumegoBoard';
-import TsumegoProblemControls from '../components/tsumego/TsumegoProblemControls';
+import BoardPageShell from '../components/board/BoardPageShell';
+import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
+import ModulePlate from '../components/layout/ModulePlate';
+import TsumegoProblemControls, {
+  TsumegoDisplayControls,
+  TsumegoProblemActions,
+} from '../components/tsumego/TsumegoProblemControls';
 import SuccessOverlay from '../components/tsumego/SuccessOverlay';
-import { MobileHeader, MobileToolbar } from '../components/tsumego/MobileControls';
 
 interface ProblemListItem {
   id: string;
@@ -41,12 +48,17 @@ const TsumegoProblemPage: React.FC = () => {
   useSettings();
   const { t } = useTranslation();
   const { play: playSound } = useSound();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Problem list for navigation (loaded from localStorage or fetched)
   const [problemList, setProblemList] = useState<ProblemListItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
+
+  // 坐标开关。spec §3.2：**棋盘边长低于 500px 时默认关闭**，开关仍在、且与实际渲染一致。
+  // 判据是棋盘实际量出来的边长，不是视口宽度 —— 899px 横窗堆叠后棋盘仍可能大于 500。
+  // `useBoardCoordinates` 里 `visible = userOverride ?? edge >= 500`：用户一旦手动扳过，
+  // 就以他的选择为准，不再被自动规则改回去。
+  const [boardEdge, setBoardEdge] = useState(0);
+  const coordinates = useBoardCoordinates(boardEdge);
 
   // Snackbar for move feedback
   const [snackbar, setSnackbar] = useState<{
@@ -165,14 +177,6 @@ const TsumegoProblemPage: React.FC = () => {
     }
   };
 
-  const handleBack = () => {
-    if (problem) {
-      navigate(`/galaxy/tsumego/${problem.level}/${problem.category}`);
-    } else {
-      navigate('/galaxy/tsumego');
-    }
-  };
-
   // Play victory sound when problem is solved
   useEffect(() => {
     if (isSolved) {
@@ -263,178 +267,127 @@ const TsumegoProblemPage: React.FC = () => {
     return null;
   }
 
-  // Shared board area with animations
-  const boardArea = (
-    <Box
-      sx={{
-        flexGrow: 1,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        p: 0.5,
-        position: 'relative',
-        animation: isShaking ? 'shake 0.3s ease-in-out' : 'none',
-        '@keyframes shake': {
-          '0%, 100%': { transform: 'translateX(0)' },
-          '20%': { transform: 'translateX(-8px)' },
-          '40%': { transform: 'translateX(8px)' },
-          '60%': { transform: 'translateX(-6px)' },
-          '80%': { transform: 'translateX(6px)' },
-        }
-      }}
-    >
-      <TsumegoBoard
-        boardSize={boardSize}
-        stones={stones}
-        lastMove={lastMove}
-        hintCoords={hintCoords}
-        showHint={showHint}
-        disabled={isSolved}
-        moveHistory={moveHistory}
-        showMoveNumbers={isTryMode}
-        onPlaceStone={handlePlaceStone}
-      />
-      <SuccessOverlay
-        show={isSolved}
-        message={t('tsumego:solved')}
-      />
-    </Box>
+  const problemNumber = currentIndex + 1;
+  const totalProblems = problemList.length || 1;
+  const categoryLabel = t(`tsumego:${problem.category}`);
+
+  // 面包屑在页面这一侧渲染 —— 导航是页面的事。按 spec §2.4 它不进页头，
+  // 而是落到右栏中段的第一段。
+  const breadcrumb = (
+    <Breadcrumbs sx={{ '& .MuiBreadcrumbs-separator': { mx: 0.5 } }}>
+      <Link
+        component="button"
+        variant="body2"
+        onClick={() => navigate('/galaxy/tsumego')}
+        sx={{ cursor: 'pointer' }}
+      >
+        {t('Tsumego')}
+      </Link>
+      <Link
+        component="button"
+        variant="body2"
+        onClick={() => navigate(`/galaxy/tsumego/${problem.level}`)}
+        sx={{ cursor: 'pointer' }}
+      >
+        {problem.level.toUpperCase()}
+      </Link>
+      <Link
+        component="button"
+        variant="body2"
+        onClick={() => navigate(`/galaxy/tsumego/${problem.level}/${problem.category}`)}
+        sx={{ cursor: 'pointer' }}
+      >
+        {categoryLabel}
+      </Link>
+      <Typography variant="body2" color="text.primary">
+        {t('tsumego:problem_n').replace('{n}', String(problemNumber))}
+      </Typography>
+    </Breadcrumbs>
   );
 
-  // Mobile layout: Header + Board + Toolbar
-  if (isMobile) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', bgcolor: '#0f0f0f' }}>
-        {/* Mobile Header */}
-        <MobileHeader
-          level={problem.level}
-          problemNumber={currentIndex + 1}
-          totalProblems={problemList.length || 1}
-          hint={problem.hint}
-          nextPlayer={nextPlayer}
-          isSolved={isSolved}
-          isFailed={isFailed}
-          isTryMode={isTryMode}
-          onBack={handleBack}
-        />
-
-        {/* Board Area */}
-        {boardArea}
-
-        {/* Mobile Toolbar */}
-        <MobileToolbar
-          showHint={showHint}
-          canUndo={moveHistory.length > 0 && !isSolved}
-          hasPrevious={hasPrevious}
-          hasNext={hasNext}
-          isSolved={isSolved}
-          isTryMode={isTryMode}
-          onUndo={undo}
-          onReset={reset}
-          onToggleHint={toggleHint}
-          onToggleTryMode={isTryMode ? exitTryMode : enterTryMode}
-          onPrevious={handlePrevious}
-          onNext={handleNext}
-        />
-
-        {/* Feedback Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={3000}
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        >
-          <Alert
-            severity={snackbar.severity}
-            variant="filled"
-            onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-      </Box>
-    );
-  }
-
-  // Desktop layout: Header + Board | Sidebar
   return (
-    <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      {/* Main Area: Header + Board */}
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', bgcolor: '#0f0f0f' }}>
-        {/* Header */}
-        <Box sx={{ p: 1, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', px: 2 }}>
-          <IconButton onClick={handleBack} size="small" sx={{ mr: 1 }}>
-            <ArrowBackIcon />
-          </IconButton>
-          <Breadcrumbs sx={{ '& .MuiBreadcrumbs-separator': { mx: 0.5 } }}>
-            <Link
-              component="button"
-              variant="body2"
-              onClick={() => navigate('/galaxy/tsumego')}
-              sx={{ cursor: 'pointer' }}
-            >
-              {t('Tsumego')}
-            </Link>
-            <Link
-              component="button"
-              variant="body2"
-              onClick={() => navigate(`/galaxy/tsumego/${problem.level}`)}
-              sx={{ cursor: 'pointer' }}
-            >
-              {problem.level.toUpperCase()}
-            </Link>
-            <Link
-              component="button"
-              variant="body2"
-              onClick={() => navigate(`/galaxy/tsumego/${problem.level}/${problem.category}`)}
-              sx={{ cursor: 'pointer' }}
-            >
-              {t(`tsumego:${problem.category}`)}
-            </Link>
-            <Typography variant="body2" color="text.primary">
-              {t('tsumego:problem_n').replace('{n}', String(currentIndex + 1))}
-            </Typography>
-          </Breadcrumbs>
-        </Box>
-
-        {/* Board Area */}
-        {boardArea}
-      </Box>
-
-      {/* Right Sidebar with Controls */}
-      <Box
-        sx={{
-          width: 320,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          bgcolor: 'background.paper',
-          borderLeft: '1px solid rgba(255,255,255,0.05)'
-        }}
-      >
-        <TsumegoProblemControls
-          level={problem.level}
-          category={problem.category}
-          hint={problem.hint}
-          showHint={showHint}
-          isSolved={isSolved}
-          isFailed={isFailed}
-          isTryMode={isTryMode}
-          elapsedTime={elapsedTime}
-          attempts={attempts}
-          nextPlayer={nextPlayer}
-          canUndo={moveHistory.length > 0 && !isSolved}
-          onUndo={undo}
-          onReset={reset}
-          onToggleHint={toggleHint}
-          onEnterTryMode={enterTryMode}
-          onExitTryMode={exitTryMode}
-          onPrevious={handlePrevious}
-          onNext={handleNext}
-          hasPrevious={hasPrevious}
-          hasNext={hasNext}
-        />
-      </Box>
+    <>
+      <BoardPageShell
+        onBoardSizeChange={setBoardEdge}
+        board={(
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              minWidth: 0,
+              minHeight: 0,
+              position: 'relative',
+              animation: isShaking ? 'shake 0.3s ease-in-out' : 'none',
+              '@keyframes shake': {
+                '0%, 100%': { transform: 'translateX(0)' },
+                '20%': { transform: 'translateX(-8px)' },
+                '40%': { transform: 'translateX(8px)' },
+                '60%': { transform: 'translateX(-6px)' },
+                '80%': { transform: 'translateX(6px)' },
+              }
+            }}
+          >
+            <TsumegoBoard
+              boardSize={boardSize}
+              stones={stones}
+              lastMove={lastMove}
+              hintCoords={hintCoords}
+              showHint={showHint}
+              showCoordinates={coordinates.visible}
+              disabled={isSolved}
+              moveHistory={moveHistory}
+              showMoveNumbers={isTryMode}
+              onPlaceStone={handlePlaceStone}
+            />
+            <SuccessOverlay
+              show={isSolved}
+              message={t('tsumego:solved')}
+            />
+          </Box>
+        )}
+        modulePlate={(
+          <ModulePlate
+            title={t('tsumego:problem_n').replace('{n}', String(problemNumber))}
+            subtitle={`${problem.level.toUpperCase()} · ${categoryLabel} · ${problemNumber} / ${totalProblems}`}
+            backTo={`/galaxy/tsumego/${problem.level}/${problem.category}`}
+            backLabel={categoryLabel}
+          />
+        )}
+        railBody={(
+          <TsumegoProblemControls
+            breadcrumb={breadcrumb}
+            hint={problem.hint}
+            showHint={showHint}
+            isSolved={isSolved}
+            isFailed={isFailed}
+            isTryMode={isTryMode}
+            elapsedTime={elapsedTime}
+            attempts={attempts}
+            nextPlayer={nextPlayer}
+            canUndo={moveHistory.length > 0 && !isSolved}
+            onUndo={undo}
+            onReset={reset}
+            onToggleHint={toggleHint}
+            onEnterTryMode={enterTryMode}
+            onExitTryMode={exitTryMode}
+          />
+        )}
+        displayControls={(
+          <TsumegoDisplayControls
+            showCoordinates={coordinates.visible}
+            onToggleCoordinates={coordinates.toggle}
+          />
+        )}
+        actions={(
+          <TsumegoProblemActions
+            isSolved={isSolved}
+            hasPrevious={hasPrevious}
+            hasNext={hasNext}
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+          />
+        )}
+      />
 
       {/* Feedback Snackbar */}
       <Snackbar
@@ -451,7 +404,7 @@ const TsumegoProblemPage: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </>
   );
 };
 

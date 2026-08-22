@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
+import ContentPageHeader from '../../components/layout/ContentPageHeader';
 import {
   Alert,
   Box,
@@ -315,22 +316,55 @@ export default function ReportsPage() {
 
   return (
     <>
-      <Box sx={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+      {/* 承重：**基态是窄档**，`@media (min-width:900px)` 才回到并排 —— 与 `BoardPageShell`
+          同一档、同一写法（900 / 1200 / 1536）。这样写而不是反过来，是因为宽档那一支
+          必须与改动前逐字一致：宽档本来就是对的，这次只补窄档。
+
+          改之前这里是一条写死的 `flex-direction: row; flex-wrap: nowrap`，右栏 `width:520`
+          且 `flexShrink:0`。430 视口下实测：左栏被压到 **48px**（只剩 p:3 的左右内边距）、
+          右栏仍占 520，两栏合计 **568 > 430**，`split.scrollWidth 568 vs clientWidth 430`
+          —— 超出的部分被 `overflow:hidden` 直接切掉，棋局卡右边 118px 永远看不到，
+          也没有任何地方能滚过去。 */}
+      <Box
+        data-testid="reports-split"
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          // 底部导航是 position:fixed 的浮层，窄档下会盖住内容最后 64px。
+          // 与 BoardPageShell 同一句。
+          pb: 'calc(64px + env(safe-area-inset-bottom))',
+          '@media (min-width:900px)': {
+            flexDirection: 'row',
+            overflow: 'hidden',
+            pb: 0,
+          },
+        }}
+      >
         <Box
+          data-testid="reports-preview-pane"
           sx={{
-            flex: 1,
+            // 窄档：按内容占高、整幅宽，滚动交给外层那一条。
+            flex: 'none',
+            width: '100%',
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
+            overflow: 'visible',
             p: 3,
             gap: 2,
+            '@media (min-width:900px)': {
+              flex: 1,
+              width: 'auto',
+              overflow: 'hidden',
+            },
           }}
         >
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-              {t('report:my_reports', 'Review')}
-            </Typography>
+            <ContentPageHeader title={t('report:my_reports', 'Review')} />
+            {/* 操作提示原来是页头第二行。spec §2.4 禁长副标题进页头，下沉到正文首行。 */}
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
               {t('report:page_hint', 'Select a game on the right to preview. Create reports from the game card.')}
             </Typography>
@@ -347,7 +381,9 @@ export default function ReportsPage() {
 
           <Box
             sx={{
-              flex: 1,
+              // 窄档没有「剩余高度」可分 —— 外层已经是滚动列，flex:1 在这里会退化成
+              // 由内容决定，量到多少算多少。改成按内容占高，棋盘那一格自己撑出方形。
+              flex: 'none',
               minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
@@ -355,6 +391,7 @@ export default function ReportsPage() {
               bgcolor: '#111111',
               border: '1px solid rgba(255,255,255,0.06)',
               overflow: 'hidden',
+              '@media (min-width:900px)': { flex: 1 },
             }}
           >
             <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -368,7 +405,20 @@ export default function ReportsPage() {
               </Typography>
             </Box>
 
-            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', p: 2 }}>
+            <Box
+              data-testid="reports-preview-stage"
+              sx={{
+                // 窄档用 1:1 定尺（同 BoardPageShell 的 board-stage），宽档仍旧吃剩余高度。
+                flex: 'none',
+                aspectRatio: '1 / 1',
+                minHeight: 0,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                p: 2,
+                '@media (min-width:900px)': { flex: 1, aspectRatio: 'auto' },
+              }}
+            >
               {previewLoading || gamesLoading ? (
                 <CircularProgress />
               ) : previewMoves.length > 0 ? (
@@ -378,6 +428,12 @@ export default function ReportsPage() {
                   currentMove={previewCurrentMove}
                   boardSize={previewBoardSize}
                   showCoordinates
+                  /* 两个 400px 地板必须关掉：430 档下这一格净宽只有 382，
+                     默认的 `minHeight: 400` 会把定尺格顶破。已迁的两页同样传 0/0
+                     （见 ReportDetailPage.tsx 那段注释）。宽档这一格本来就 > 400，
+                     去掉地板不改变宽档任何一个数。 */
+                  minimumCanvasSize={0}
+                  minContainerHeight={0}
                 />
               ) : (
                 <Typography variant="body2" color="text.secondary">
@@ -395,14 +451,23 @@ export default function ReportsPage() {
         </Box>
 
         <Box
+          data-testid="reports-list-pane"
           sx={{
-            width: 520,
-            flexShrink: 0,
-            borderLeft: '1px solid rgba(255,255,255,0.06)',
+            width: '100%',
+            flexShrink: 1,
+            // 窄档两栏上下堆叠，左边那条竖线会变成横在中间的一道，改到顶边。
+            borderTop: '1px solid rgba(255,255,255,0.06)',
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden',
+            overflow: 'visible',
             bgcolor: 'rgba(20,20,20,0.98)',
+            '@media (min-width:900px)': {
+              width: 520,
+              flexShrink: 0,
+              borderTop: 'none',
+              borderLeft: '1px solid rgba(255,255,255,0.06)',
+              overflow: 'hidden',
+            },
           }}
         >
           <Box sx={{ p: 3, pb: 2 }}>
@@ -463,7 +528,19 @@ export default function ReportsPage() {
             </Box>
           )}
 
-          <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: 2.5, pb: 2 }}>
+          <Box
+            data-testid="reports-list-scroll"
+            sx={{
+              // 窄档不在自己内部滚 —— 页面已经是一条滚动列，列表里再套一个滚动区
+              // 就成了「中段里再套中段」，两条滚动条互相抢。
+              flex: 'none',
+              minHeight: 0,
+              overflow: 'visible',
+              px: 2.5,
+              pb: 2,
+              '@media (min-width:900px)': { flex: 1, overflow: 'auto' },
+            }}
+          >
             {gamesLoading ? (
               <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <CircularProgress size={28} />

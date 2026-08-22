@@ -83,6 +83,7 @@
   "is_root": true,
   "komi": 7.5,
   "language": "cn",
+  "last_ladder_error": false,
   "last_move": null,
   "note": "",
   "platform_engine_color": "W",
@@ -95,7 +96,8 @@
       "name": "Me",
       "periods_used": 0,
       "player_subtype": "game:normal",
-      "player_type": "human"
+      "player_type": "human",
+      "rank_display": null
     },
     "W": {
       "calculated_rank": null,
@@ -103,7 +105,8 @@
       "name": "[golaxy] 星铠虾",
       "periods_used": 0,
       "player_subtype": "game:normal",
-      "player_type": "human"
+      "player_type": "human",
+      "rank_display": null
     }
   },
   "pondering": false,

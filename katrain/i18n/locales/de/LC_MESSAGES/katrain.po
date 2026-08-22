@@ -3144,3 +3144,60 @@ msgstr "Audio nicht verfügbar"
 
 msgid "research:progress_failed"
 msgstr "Analysefortschritt konnte nicht geladen werden"
+
+msgid "tsumego:hint"
+msgstr "Tipp"
+
+msgid "tsumego:this_problem"
+msgstr "Diese Aufgabe"
+
+msgid "Back"
+msgstr "Zurück"
+
+msgid "back_to"
+msgstr "Zurück zu {parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "Seite {page} / {total}"
+
+msgid "live:move_slider"
+msgstr "Zugregler"
+
+msgid "game_room:title"
+msgstr "Spielraum"
+
+msgid "game_room:board_size"
+msgstr "{n}×{n}"
+
+msgid "game_room:ended"
+msgstr "Beendet"
+
+msgid "game_room:lobby_short"
+msgstr "Lobby"
+
+msgid "game_room:leave_game"
+msgstr "Partie verlassen"
+
+msgid "game_room:exit_spectating"
+msgstr "Zuschauen beenden"
+
+msgid "game:nav_first"
+msgstr "Erster Zug"
+
+msgid "game:nav_back_10"
+msgstr "10 Züge zurück"
+
+msgid "game:nav_back"
+msgstr "Ein Zug zurück"
+
+msgid "game:nav_forward"
+msgstr "Ein Zug vor"
+
+msgid "game:nav_forward_10"
+msgstr "10 Züge vor"
+
+msgid "game:nav_last"
+msgstr "Letzter Zug"
+
+msgid "game:in_play"
+msgstr "Läuft"

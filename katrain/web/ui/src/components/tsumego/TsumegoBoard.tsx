@@ -28,6 +28,9 @@ interface TsumegoBoardProps {
   moveHistory?: Stone[];
   /** Show move numbers on stones */
   showMoveNumbers?: boolean;
+  /** 画不画 A–T / 1–19 坐标。默认 true —— 这个组件以前是无条件画的，
+   *  不传这个属性的调用方（盒端死活题页）行为一个字都不变。 */
+  showCoordinates?: boolean;
   /** Board coords [x, y] of wrong/extra physical stones to flag with a red ✕ (occlusion-proof
    *  screen cue — the physical LED under the stone is hidden by the stone itself). */
   extraMarkers?: [number, number][];
@@ -49,6 +52,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
   disabled = false,
   moveHistory = [],
   showMoveNumbers = false,
+  showCoordinates = true,
   extraMarkers = [],
   onPlaceStone
 }) => {
@@ -197,31 +201,33 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
     }));
 
     // Draw coordinates
-    const letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ".split("");
-    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-    ctx.font = `600 ${Math.max(10, layout.gridSize * 0.4)}px 'IBM Plex Mono', monospace`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+    if (showCoordinates) {
+      const letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ".split("");
+      ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+      ctx.font = `600 ${Math.max(10, layout.gridSize * 0.4)}px 'IBM Plex Mono', monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
-    // Bottom letters
-    for (let i = 0; i < boardSize; i++) {
-      const pos = gridToCanvas(layout, i, 0);
-      ctx.fillText(letters[i], pos.x, layout.offsetY + layout.boardHeight - layout.gridSize * 0.5);
-    }
-    // Top letters
-    for (let i = 0; i < boardSize; i++) {
-      const pos = gridToCanvas(layout, i, boardSize - 1);
-      ctx.fillText(letters[i], pos.x, layout.offsetY + layout.gridSize * 0.5);
-    }
-    // Left numbers
-    for (let j = 0; j < boardSize; j++) {
-      const pos = gridToCanvas(layout, 0, j);
-      ctx.fillText((j + 1).toString(), layout.offsetX + layout.gridSize * 0.5, pos.y);
-    }
-    // Right numbers
-    for (let j = 0; j < boardSize; j++) {
-      const pos = gridToCanvas(layout, boardSize - 1, j);
-      ctx.fillText((j + 1).toString(), layout.offsetX + layout.boardWidth - layout.gridSize * 0.5, pos.y);
+      // Bottom letters
+      for (let i = 0; i < boardSize; i++) {
+        const pos = gridToCanvas(layout, i, 0);
+        ctx.fillText(letters[i], pos.x, layout.offsetY + layout.boardHeight - layout.gridSize * 0.5);
+      }
+      // Top letters
+      for (let i = 0; i < boardSize; i++) {
+        const pos = gridToCanvas(layout, i, boardSize - 1);
+        ctx.fillText(letters[i], pos.x, layout.offsetY + layout.gridSize * 0.5);
+      }
+      // Left numbers
+      for (let j = 0; j < boardSize; j++) {
+        const pos = gridToCanvas(layout, 0, j);
+        ctx.fillText((j + 1).toString(), layout.offsetX + layout.gridSize * 0.5, pos.y);
+      }
+      // Right numbers
+      for (let j = 0; j < boardSize; j++) {
+        const pos = gridToCanvas(layout, boardSize - 1, j);
+        ctx.fillText((j + 1).toString(), layout.offsetX + layout.boardWidth - layout.gridSize * 0.5, pos.y);
+      }
     }
 
     // Draw hint if enabled
@@ -320,7 +326,7 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
         ctx.stroke();
       });
     }
-  }, [boardSize, stones, lastMove, hintCoords, showHint, disabled, imagesLoaded, boardLayout, gridToCanvas, moveHistory, showMoveNumbers, extraMarkers]);
+  }, [boardSize, stones, lastMove, hintCoords, showHint, disabled, imagesLoaded, boardLayout, gridToCanvas, moveHistory, showMoveNumbers, showCoordinates, extraMarkers]);
 
   // Re-render on state changes
   useEffect(() => {

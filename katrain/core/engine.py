@@ -419,7 +419,32 @@ class KataGoEngine(BaseEngine):
         while self.queries and self.katago_process and self.katago_process.poll() is None:
             time.sleep(0.1)
 
+    # 关停时每个线程 / 子进程各等这么久。两个都是**上界**，不是期望值 ——
+    # 正常情况下 terminate() 之后毫秒级就结束了。有上界是因为没上界的那一版
+    # 会把调用方永远挂住（见下面的注释）。
+    SHUTDOWN_JOIN_TIMEOUT = 5.0
+    SHUTDOWN_REAP_TIMEOUT = 5.0
+
     def shutdown(self, finish=False):
+        """关停引擎：终止子进程、回收它、等读写线程退出。
+
+        2026-08-22 修的两件事（都是在本机抓到现行之后才确认的，不是读代码猜的）：
+
+        1. **`t.join()` 没有超时。** 这个方法被 `SessionManager._cleanup_locked()`
+           在**持有 `_lock` 的情况下**调用，而那条清理跑在 asyncio 事件循环上。
+           于是 KataGo 只要有一个线程不退，事件循环就永远卡在这里，
+           整个 web 服务对所有请求无响应 —— 进程还在、端口还听着、什么都不回。
+           用 `sample <pid>` 采到的栈：主线程（uvloop 事件循环）停在
+           `lock_PyThread_acquire_lock`，25 个线程里 18 个的栈上都有同一把锁，
+           没有一个停在阻塞 `read()` 上。那是一条锁队列，不是「慢」。
+           （持锁那一半在 `session.py` 一起改掉了；这里补的是超时上界。）
+
+        2. **`terminate()` 之后从不 `wait()`。** SIGTERM 只是发个信号，
+           不回收就留下僵尸子进程 —— 同一次抓现行里确实看到一个。
+
+        超时之后只记日志、不抛：关停路径上再抛一个异常，只会让调用方连
+        「已经尽力关掉了」这一步都走不完。线程是 daemon，进程退出时不会被它们挡住。
+        """
         process = self.katago_process
         if finish and process:
             self.wait_to_finish()
@@ -427,11 +452,28 @@ class KataGoEngine(BaseEngine):
             self.katago_process = None
             self.katrain.log("Terminating KataGo process", OUTPUT_DEBUG)
             process.terminate()
+            try:
+                process.wait(timeout=self.SHUTDOWN_REAP_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                self.katrain.log(
+                    f"KataGo process ignored SIGTERM for {self.SHUTDOWN_REAP_TIMEOUT}s, killing it", OUTPUT_ERROR
+                )
+                process.kill()
+                try:
+                    process.wait(timeout=self.SHUTDOWN_REAP_TIMEOUT)
+                except subprocess.TimeoutExpired:
+                    self.katrain.log("KataGo process could not be reaped; it will be left as a zombie", OUTPUT_ERROR)
             self.katrain.log("Terminated KataGo process", OUTPUT_DEBUG)
         if finish is not None:  # don't care if exiting app
             for t in [self.write_stdin_thread, self.analysis_thread, self.stderr_thread]:
                 if t:
-                    t.join()
+                    t.join(timeout=self.SHUTDOWN_JOIN_TIMEOUT)
+                    if t.is_alive():
+                        self.katrain.log(
+                            f"KataGo {t.name} did not exit within {self.SHUTDOWN_JOIN_TIMEOUT}s; "
+                            f"giving up on it (daemon thread, will not block exit)",
+                            OUTPUT_ERROR,
+                        )
 
     def is_idle(self):
         return not self.queries and self.write_queue.empty()

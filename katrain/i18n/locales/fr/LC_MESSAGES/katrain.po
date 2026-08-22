@@ -3113,3 +3113,60 @@ msgstr "Audio indisponible"
 
 msgid "research:progress_failed"
 msgstr "Impossible de récupérer la progression de l'analyse"
+
+msgid "tsumego:hint"
+msgstr "Indice"
+
+msgid "tsumego:this_problem"
+msgstr "Ce problème"
+
+msgid "Back"
+msgstr "Retour"
+
+msgid "back_to"
+msgstr "Retour à {parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "Page {page} / {total}"
+
+msgid "live:move_slider"
+msgstr "Curseur de coups"
+
+msgid "game_room:title"
+msgstr "Salle de jeu"
+
+msgid "game_room:board_size"
+msgstr "{n}×{n}"
+
+msgid "game_room:ended"
+msgstr "Terminée"
+
+msgid "game_room:lobby_short"
+msgstr "Salon"
+
+msgid "game_room:leave_game"
+msgstr "Quitter la partie"
+
+msgid "game_room:exit_spectating"
+msgstr "Quitter le mode spectateur"
+
+msgid "game:nav_first"
+msgstr "Premier coup"
+
+msgid "game:nav_back_10"
+msgstr "Reculer de 10 coups"
+
+msgid "game:nav_back"
+msgstr "Reculer d'un coup"
+
+msgid "game:nav_forward"
+msgstr "Avancer d'un coup"
+
+msgid "game:nav_forward_10"
+msgstr "Avancer de 10 coups"
+
+msgid "game:nav_last"
+msgstr "Dernier coup"
+
+msgid "game:in_play"
+msgstr "En cours"

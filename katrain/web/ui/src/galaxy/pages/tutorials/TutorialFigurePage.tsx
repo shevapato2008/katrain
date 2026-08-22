@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -15,7 +15,17 @@ import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import RuleIcon from '@mui/icons-material/Rule';
+import Chip from '@mui/material/Chip';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/Save';
 import { TutorialAPI } from '../../api/tutorialApi';
+import BoardPageShell from '../../components/board/BoardPageShell';
+import ModulePlate from '../../components/layout/ModulePlate';
+import ToolGridButton from '../../components/board/ToolGridButton';
 import SGFBoard from '../../components/tutorials/SGFBoard';
 import BoardEditToolbar from '../../components/tutorials/BoardEditToolbar';
 import RecognitionDebugPanel from '../../components/tutorials/RecognitionDebugPanel';
@@ -26,7 +36,6 @@ import type { TutorialSectionDetail, TutorialFigure, BoardPayload } from '../../
 
 export default function TutorialFigurePage() {
   const { sectionId } = useParams<{ sectionId: string }>();
-  const navigate = useNavigate();
   const { token } = useAuth();
   const [section, setSection] = useState<TutorialSectionDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +45,12 @@ export default function TutorialFigurePage() {
   const [isEditingNarration, setIsEditingNarration] = useState(false);
   const [editedNarration, setEditedNarration] = useState('');
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  /* 原书页对照层。审图的人必须让原书页图和识别出的棋盘**并排**才能核对，
+     所以它不进右栏，而是做成 stage 里的一层，占左侧 34%，可一键收起把整块还给棋盘。
+     竖屏放不下并排（410 的 stage 让出 34% 只剩 270 的棋盘），那一档改成降到右栏第一节。 */
+  const [compareOpen, setCompareOpen] = useState(true);
+  const isWide = useMediaQuery('(min-width:900px)');
+  const showCompare = isWide && compareOpen;
 
   const currentFigure = section?.figures[currentFigureIndex] ?? null;
 
@@ -262,70 +277,149 @@ export default function TutorialFigurePage() {
   if (!section) return <Box p={3}><Typography>小节不存在</Typography></Box>;
   if (section.figures.length === 0) return <Box p={3}><Typography>该小节暂无变化图</Typography></Box>;
 
-  return (
-    <Box p={2}>
-      <Button size="small" onClick={() => navigate(-1)} sx={{ mb: 1 }}>← 返回</Button>
-      <Typography variant="h6" gutterBottom>
-        {section.section_number}. {section.title}
-      </Typography>
+  const SECTION = { p: 2, borderBottom: '1px solid', borderColor: 'divider' } as const;
+  const hasBoard = Boolean(displayPayload);
 
-      {/* Figure navigation */}
-      <Box display="flex" alignItems="center" gap={1} mb={2}>
-        <IconButton onClick={handlePrev} disabled={currentFigureIndex === 0 || editor.isEditing} aria-label="上一图">
-          <NavigateBeforeIcon />
-        </IconButton>
-        <Typography variant="body2">
-          {currentFigure?.figure_label} ({currentFigureIndex + 1} / {section.figures.length})
-        </Typography>
-        <IconButton onClick={handleNext} disabled={currentFigureIndex === section.figures.length - 1 || editor.isEditing} aria-label="下一图">
-          <NavigateNextIcon />
-        </IconButton>
-      </Box>
+  const pageImage = currentFigure?.page_image_path ? (
+    <Box
+      component="img"
+      src={TutorialAPI.assetUrl(currentFigure.page_image_path)}
+      alt={`原书第 ${currentFigure.page} 页`}
+      sx={{ width: '100%', display: 'block', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}
+    />
+  ) : (
+    <Typography variant="caption" color="text.secondary">该图没有原书页截图</Typography>
+  );
 
-      {/* Three-column layout */}
-      <Box sx={{
-        display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
-        gap: 2,
-        maxHeight: 'calc(100vh - 140px)',
-      }}>
-        {/* Column 1: page screenshot + book text */}
-        <Box sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 140px)', pr: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>原书内容</Typography>
-          {currentFigure?.page_image_path && (
-            <Box
-              component="img"
-              src={TutorialAPI.assetUrl(currentFigure.page_image_path)}
-              alt={`page ${currentFigure.page}`}
-              sx={{ width: '100%', borderRadius: 1, border: '1px solid #ddd', mb: 2 }}
-            />
-          )}
-          {currentFigure?.book_text && (
-            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary' }}>
-              {currentFigure.book_text}
-            </Typography>
-          )}
-          {currentFigure?.page_context_text && (
-            <Typography variant="body2" sx={{ mt: 1, whiteSpace: 'pre-wrap', color: 'text.secondary', fontStyle: 'italic' }}>
-              {currentFigure.page_context_text}
-            </Typography>
-          )}
+  const boardNode = (
+    <Box sx={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
+      {showCompare ? (
+        <Box
+          data-testid="source-pane"
+          sx={{
+            position: 'absolute', left: 0, top: 0, bottom: 0, width: '34%', minWidth: 180, zIndex: 5,
+            bgcolor: 'background.paper', borderRight: '1px solid', borderColor: 'divider',
+            display: 'flex', flexDirection: 'column',
+          }}
+        >
+          <Box sx={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.25, py: 0.75, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Typography variant="caption" color="text.secondary">原书页</Typography>
+            <IconButton size="small" aria-label="收起原书页" onClick={() => setCompareOpen(false)}>
+              <ChevronLeftIcon fontSize="small" />
+            </IconButton>
+          </Box>
+          {/* 这一层自己滚 —— 原书页是竖长的扫描图（实测版心 ~1500×2200），
+              34% 宽下装不进一屏。它不在右栏的滚动段里，两条滚动条互不干扰。 */}
+          <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.25 }}>
+            {pageImage}
+            {currentFigure?.book_text && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                {currentFigure.book_text}
+              </Typography>
+            )}
+          </Box>
         </Box>
+      ) : isWide && (
+        <IconButton
+          size="small"
+          aria-label="展开原书页"
+          onClick={() => setCompareOpen(true)}
+          sx={{ position: 'absolute', left: 8, top: 8, zIndex: 6, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
+        >
+          <ChevronRightIcon fontSize="small" />
+        </IconButton>
+      )}
+      <Box sx={{ position: 'absolute', inset: 0, left: showCompare ? '34%' : 0, display: 'grid', placeItems: 'center', p: 1, minWidth: 0, minHeight: 0 }}>
+        {hasBoard ? (
+          <SGFBoard
+            payload={editor.isEditing ? editor.payload : displayPayload!}
+            maxMoveStep={editor.isEditing ? undefined : (moveStep ?? undefined)}
+            showFullBoard={editor.isEditing}
+            onClick={editor.isEditing ? editor.handleClick : undefined}
+            /* 变化图只截棋盘一角，SGFBoard 按 viewport 出图，**不一定是方的**
+               （第 3 节实测 379×703）。所以两个方向都要限，光给 maxWidth 会让竖长的图
+               在高度上溢出 stage。 */
+            style={{ maxWidth: '100%', maxHeight: '100%', width: 'auto', height: 'auto' }}
+          />
+        ) : (
+          <Typography color="text.secondary">暂无棋盘数据</Typography>
+        )}
+      </Box>
+    </Box>
+  );
 
-        {/* Column 2: board + controls + debug panel */}
-        <Box sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 140px)', pr: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom>棋盘识别</Typography>
-          {displayPayload ? (
-            <>
-              <SGFBoard
-                payload={editor.isEditing ? editor.payload : displayPayload}
-                maxMoveStep={editor.isEditing ? undefined : (moveStep ?? undefined)}
-                showFullBoard={editor.isEditing}
-                onClick={editor.isEditing ? editor.handleClick : undefined}
-              />
+  const initEmptyBoard = async () => {
+    await handleServerSave({ size: 19, stones: { B: [], W: [] }, labels: {}, letters: {}, shapes: {}, highlights: [] });
+  };
 
-              {/* Edit toolbar */}
-              {editor.isEditing && (
+  return (
+    <BoardPageShell
+      board={boardNode}
+      modulePlate={(
+        <ModulePlate
+          title={`${section.section_number}. ${section.title}`}
+          subtitle={`${currentFigure?.figure_label ?? ''} · ${currentFigureIndex + 1} / ${section.figures.length}`}
+          status={<Chip size="small" color={editor.isEditing ? 'warning' : 'default'} variant={editor.isEditing ? 'filled' : 'outlined'} label={editor.isEditing ? '编辑中' : '只读'} />}
+          backTo={section.chapter_id ? `/galaxy/tutorials/book/${section.chapter_id}` : '/galaxy/tutorials'}
+          backLabel="教程"
+        />
+      )}
+      railBody={(
+        <>
+          {/* 翻图 + 对照层开关 */}
+          <Box sx={{ ...SECTION, pt: 1.5 }}>
+            <Box display="flex" alignItems="center" justifyContent="space-between">
+              <IconButton onClick={handlePrev} disabled={currentFigureIndex === 0 || editor.isEditing} aria-label="上一图">
+                <NavigateBeforeIcon />
+              </IconButton>
+              <Typography variant="body2">
+                {currentFigure?.figure_label} ({currentFigureIndex + 1} / {section.figures.length})
+              </Typography>
+              <IconButton onClick={handleNext} disabled={currentFigureIndex === section.figures.length - 1 || editor.isEditing} aria-label="下一图">
+                <NavigateNextIcon />
+              </IconButton>
+            </Box>
+            {isWide && (
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px', mt: 1.25 }}>
+                <ToolGridButton
+                  icon={<MenuBookIcon />}
+                  label="对照原书页"
+                  toggle
+                  active={compareOpen}
+                  onClick={() => setCompareOpen(v => !v)}
+                />
+              </Box>
+            )}
+          </Box>
+
+          {/* 竖屏没有对照层，原书页降到这里 */}
+          {!isWide && (
+            <Box sx={SECTION}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>原书页</Typography>
+              {pageImage}
+              {currentFigure?.book_text && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                  {currentFigure.book_text}
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {currentFigure?.page_context_text && (
+            <Box sx={SECTION}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>原书正文</Typography>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: 'text.secondary', lineHeight: 1.8 }}>
+                {currentFigure.page_context_text}
+              </Typography>
+            </Box>
+          )}
+
+          {hasBoard && (
+            <Box sx={SECTION}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                {editor.isEditing ? '编辑棋盘' : '手数'}
+              </Typography>
+              {editor.isEditing ? (
                 <BoardEditToolbar
                   activeTool={editor.activeTool}
                   stoneMode={editor.stoneMode}
@@ -342,166 +436,135 @@ export default function TutorialFigurePage() {
                   onShapeChange={editor.setSelectedShape}
                   onUndo={editor.undo}
                   onClearAll={editor.clearAll}
-                  onSave={editor.save}
-                  onCancel={editor.cancelEdit}
                 />
+              ) : maxMoveNumber > 0 ? (
+                <>
+                  <Typography variant="caption" color="text.secondary">当前 {moveStep ?? maxMoveNumber} / {maxMoveNumber}</Typography>
+                  {/* 滑轨自己要留出横向余量：滑块拉到最右端时，它和它的水波纹会越过轨道
+                      末端约 13px。竖屏下右栏是满宽、滚动段又不裁横向，这点溢出会一路顶到
+                      右栏上，实测让整条右栏横向可滚 5px。 */}
+                  <Box sx={{ px: 1.5 }}>
+                    <Slider
+                      value={moveStep ?? maxMoveNumber}
+                      onChange={(_, v) => setMoveStep(v as number)}
+                      min={0}
+                      max={maxMoveNumber}
+                      step={1}
+                      size="small"
+                      aria-label="手数"
+                    />
+                  </Box>
+                </>
+              ) : (
+                <Typography variant="body2" color="text.secondary">这张图没有编号手数</Typography>
               )}
+            </Box>
+          )}
 
-              {/* Move-step slider (read-only mode only) */}
-              {maxMoveNumber > 0 && !editor.isEditing && (
-                <Box px={1} mt={1}>
-                  <Typography variant="caption" color="text.secondary">手数: {moveStep ?? maxMoveNumber}</Typography>
-                  <Slider
-                    value={moveStep ?? maxMoveNumber}
-                    onChange={(_, v) => setMoveStep(v as number)}
-                    min={0}
-                    max={maxMoveNumber}
-                    step={1}
-                    size="small"
-                  />
-                </Box>
-              )}
-
-              {/* Edit + Verify buttons (read-only mode) */}
-              {!editor.isEditing && (
-                <Box mt={1} display="flex" gap={1}>
-                  <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={editor.enterEdit} aria-label="编辑">
-                    编辑
-                  </Button>
-                  <Button size="small" variant="outlined" startIcon={<RuleIcon />} onClick={handleLogicCheck} aria-label="逻辑检查">
-                    逻辑检查
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={isVerified ? "contained" : "outlined"}
-                    color={isVerified ? "success" : "inherit"}
-                    startIcon={isVerified ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
-                    onClick={handleVerify}
-                    disabled={isVerified}
-                    aria-label="确认审核"
-                  >
-                    {isVerified ? "已审核" : "确认审核"}
-                  </Button>
-                </Box>
-              )}
-            </>
-          ) : (
-            <Box p={4} textAlign="center">
-              <Typography color="text.secondary">暂无棋盘数据</Typography>
+          {/* 语音讲解 */}
+          <Box sx={SECTION}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+              <Typography variant="caption" color="text.secondary">语音讲解</Typography>
               <Button
                 size="small"
                 variant="outlined"
-                sx={{ mt: 1 }}
-                onClick={async () => {
-                  const emptyPayload: BoardPayload = {
-                    size: 19, stones: { B: [], W: [] },
-                    labels: {}, letters: {}, shapes: {}, highlights: [],
-                  };
-                  await handleServerSave(emptyPayload);
-                }}
+                startIcon={<EditIcon />}
+                onClick={() => setIsEditingNarration(v => !v)}
+                aria-label={isEditingNarration ? '收起编辑' : '编辑讲解'}
               >
-                初始化空棋盘
+                {isEditingNarration ? '收起编辑' : '编辑讲解'}
               </Button>
             </Box>
-          )}
 
-          {/* Recognition debug panel */}
-          {currentFigure?.recognition_debug && (
-            <RecognitionDebugPanel debug={currentFigure.recognition_debug} />
-          )}
-        </Box>
+            {isEditingNarration ? (
+              <Box>
+                <TextField
+                  label="讲解文本"
+                  multiline
+                  fullWidth
+                  minRows={5}
+                  value={editedNarration}
+                  onChange={(e) => setEditedNarration(e.target.value)}
+                />
+                <Box display="flex" flexDirection="column" gap={1} mt={1.5}>
+                  <Button variant="contained" startIcon={<RecordVoiceOverIcon />} onClick={handleGenerateAudio} disabled={isGeneratingAudio} aria-label="生成语音并保存">
+                    {isGeneratingAudio ? '生成中...' : '生成语音并保存'}
+                  </Button>
+                  <Box display="flex" gap={1}>
+                    <Button fullWidth variant="outlined" onClick={handleSaveNarration} aria-label="保存文字">保存文字</Button>
+                    <Button fullWidth variant="text" onClick={() => { setEditedNarration(currentFigure?.narration ?? ''); setIsEditingNarration(false); }}>取消</Button>
+                  </Box>
+                </Box>
+              </Box>
+            ) : currentFigure?.narration ? (
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mb: 2, lineHeight: 1.8 }}>
+                {currentFigure.narration}
+              </Typography>
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mb: 2 }}>
+                暂无讲解文本。点击“编辑讲解”后可直接填写并生成语音。
+              </Typography>
+            )}
 
-        {/* Column 3: narration + audio */}
-        <Box sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 140px)', pr: 1 }}>
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-            <Typography variant="subtitle2" color="text.secondary">语音讲解</Typography>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<EditIcon />}
-              onClick={() => setIsEditingNarration(v => !v)}
-              aria-label="编辑讲解"
-            >
-              {isEditingNarration ? '收起编辑' : '编辑讲解'}
-            </Button>
+            <AudioPlayer src={currentFigure?.audio_asset ? TutorialAPI.assetUrl(currentFigure.audio_asset) : null} />
+            {currentFigure?.video_asset && (
+              <Box sx={{ mt: 2 }}>
+                <video
+                  controls
+                  preload="none"
+                  poster={TutorialAPI.assetUrl(currentFigure.video_asset.replace('.mp4', '.jpg'))}
+                  width="100%"
+                  style={{ borderRadius: 8, display: 'block' }}
+                  src={TutorialAPI.assetUrl(currentFigure.video_asset)}
+                  onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
+                />
+                {currentFigure.video_duration_ms && (
+                  <Typography variant="caption" color="text.secondary">
+                    {Math.floor(currentFigure.video_duration_ms / 60000)}:
+                    {String(Math.floor((currentFigure.video_duration_ms % 60000) / 1000)).padStart(2, '0')}
+                  </Typography>
+                )}
+              </Box>
+            )}
           </Box>
 
-          {isEditingNarration ? (
-            <Box>
-              <TextField
-                label="讲解文本"
-                multiline
-                fullWidth
-                minRows={5}
-                value={editedNarration}
-                onChange={(e) => setEditedNarration(e.target.value)}
-              />
-              <Box display="flex" gap={1} mt={1.5}>
+          {currentFigure?.recognition_debug && (
+            <Box sx={{ p: 2 }}>
+              <RecognitionDebugPanel debug={currentFigure.recognition_debug} />
+            </Box>
+          )}
+        </>
+      )}
+      actions={(
+        <Box sx={{ p: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+          {!hasBoard ? (
+            <Button fullWidth variant="contained" onClick={initEmptyBoard}>初始化空棋盘</Button>
+          ) : editor.isEditing ? (
+            <Box display="flex" gap={1}>
+              <Button variant="outlined" color="inherit" startIcon={<CloseIcon />} onClick={editor.cancelEdit} aria-label="取消">取消</Button>
+              <Button fullWidth variant="contained" startIcon={<SaveIcon />} onClick={editor.save} aria-label="保存">保存</Button>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+              <Button variant="outlined" startIcon={<EditIcon />} onClick={editor.enterEdit} aria-label="编辑">编辑</Button>
+              <Button variant="outlined" startIcon={<RuleIcon />} onClick={handleLogicCheck} aria-label="逻辑检查">逻辑检查</Button>
+              <Box sx={{ gridColumn: '1 / -1' }}>
                 <Button
-                  variant="outlined"
-                  onClick={handleSaveNarration}
-                  aria-label="保存文字"
+                  fullWidth
+                  variant={isVerified ? 'contained' : 'outlined'}
+                  color={isVerified ? 'success' : 'primary'}
+                  startIcon={isVerified ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
+                  onClick={handleVerify}
+                  disabled={isVerified}
+                  aria-label="确认审核"
                 >
-                  保存文字
-                </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<RecordVoiceOverIcon />}
-                  onClick={handleGenerateAudio}
-                  disabled={isGeneratingAudio}
-                  aria-label="生成语音并保存"
-                >
-                  {isGeneratingAudio ? '生成中...' : '生成语音并保存'}
-                </Button>
-                <Button
-                  variant="text"
-                  onClick={() => {
-                    setEditedNarration(currentFigure?.narration ?? '');
-                    setIsEditingNarration(false);
-                  }}
-                >
-                  取消
+                  {isVerified ? '已审核' : '确认审核'}
                 </Button>
               </Box>
             </Box>
-          ) : (
-            <>
-              {currentFigure?.narration ? (
-                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mb: 2, lineHeight: 1.8 }}>
-                  {currentFigure.narration}
-                </Typography>
-              ) : (
-                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mb: 2 }}>
-                  暂无讲解文本。点击“编辑讲解”后可直接填写并生成语音。
-                </Typography>
-              )}
-            </>
-          )}
-
-          <AudioPlayer
-            src={currentFigure?.audio_asset ? TutorialAPI.assetUrl(currentFigure.audio_asset) : null}
-          />
-          {currentFigure?.video_asset && (
-            <Box sx={{ mt: 2 }}>
-              <video
-                controls
-                preload="none"
-                poster={TutorialAPI.assetUrl(currentFigure.video_asset.replace('.mp4', '.jpg'))}
-                width="100%"
-                style={{ borderRadius: 8, maxHeight: 400 }}
-                src={TutorialAPI.assetUrl(currentFigure.video_asset)}
-                onError={(e) => { (e.target as HTMLVideoElement).style.display = 'none'; }}
-              />
-              {currentFigure.video_duration_ms && (
-                <Typography variant="caption" color="text.secondary">
-                  {Math.floor(currentFigure.video_duration_ms / 60000)}:
-                  {String(Math.floor((currentFigure.video_duration_ms % 60000) / 1000)).padStart(2, '0')}
-                </Typography>
-              )}
-            </Box>
           )}
         </Box>
-      </Box>
-    </Box>
+      )}
+    />
   );
 }

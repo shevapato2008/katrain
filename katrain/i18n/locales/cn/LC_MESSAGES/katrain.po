@@ -2917,3 +2917,60 @@ msgstr "音频不可用"
 
 msgid "research:progress_failed"
 msgstr "无法获取分析进度"
+
+msgid "tsumego:hint"
+msgstr "提示"
+
+msgid "tsumego:this_problem"
+msgstr "本题"
+
+msgid "Back"
+msgstr "返回"
+
+msgid "back_to"
+msgstr "返回{parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "第 {page} / {total} 页"
+
+msgid "live:move_slider"
+msgstr "手数进度"
+
+msgid "game_room:title"
+msgstr "对局室"
+
+msgid "game_room:board_size"
+msgstr "{n} 路"
+
+msgid "game_room:ended"
+msgstr "已结束"
+
+msgid "game_room:lobby_short"
+msgstr "大厅"
+
+msgid "game_room:leave_game"
+msgstr "离开对局"
+
+msgid "game_room:exit_spectating"
+msgstr "退出观战"
+
+msgid "game:nav_first"
+msgstr "跳到开局"
+
+msgid "game:nav_back_10"
+msgstr "后退 10 手"
+
+msgid "game:nav_back"
+msgstr "后退一手"
+
+msgid "game:nav_forward"
+msgstr "前进一手"
+
+msgid "game:nav_forward_10"
+msgstr "前进 10 手"
+
+msgid "game:nav_last"
+msgstr "跳到最后"
+
+msgid "game:in_play"
+msgstr "对局中"

@@ -21,6 +21,38 @@ I18N_DIR = PROJECT_ROOT / "katrain" / "i18n" / "locales"
 # All Galaxy UI translation keys with translations for each language
 # Format: {msgid: {lang_code: msgstr}}
 GALAXY_TRANSLATIONS = {
+    # 模块牌返回键（2026-08-22：返回键统一到右栏左上角，简称不上屏、只进无障碍名）
+    "Back": {
+        "en": "Back", "cn": "返回", "tw": "返回", "jp": "戻る", "ko": "뒤로",
+        "de": "Zurück", "es": "Atrás", "fr": "Retour", "ru": "Назад",
+        "tr": "Geri", "ua": "Назад",
+    },
+    "back_to": {
+        "en": "Back to {parent}", "cn": "返回{parent}", "tw": "返回{parent}",
+        "jp": "{parent}に戻る", "ko": "{parent}(으)로 뒤로", "de": "Zurück zu {parent}",
+        "es": "Volver a {parent}", "fr": "Retour à {parent}", "ru": "Назад к {parent}",
+        "tr": "{parent} sayfasına dön", "ua": "Назад до {parent}",
+    },
+
+    # 播放条滑轨的可及名（2026-08-22：控件账本把无名滑轨记作空按钮）
+    "live:move_slider": {
+        "en": "Move slider", "cn": "手数进度", "tw": "手數進度",
+        "jp": "手数スライダー", "ko": "수순 슬라이더", "de": "Zugregler",
+        "es": "Control de jugadas", "fr": "Curseur de coups",
+        "ru": "Ползунок ходов", "tr": "Hamle kaydırıcısı", "ua": "Повзунок ходів",
+    },
+
+    # 棋谱库右栏的页码行（2026-08-22 迁统一版式：列表从左 520 搬进右 320，
+    # 记录数与页码合成一行放在搜索框下面）
+    "kifu:page_x_of_y": {
+        "en": "Page {page} / {total}", "cn": "第 {page} / {total} 页",
+        "tw": "第 {page} / {total} 頁", "jp": "{page} / {total} ページ",
+        "ko": "{page} / {total} 페이지", "de": "Seite {page} / {total}",
+        "es": "Página {page} / {total}", "fr": "Page {page} / {total}",
+        "ru": "Стр. {page} / {total}", "tr": "Sayfa {page} / {total}",
+        "ua": "Стор. {page} / {total}",
+    },
+
     # Dashboard
     "dashboard:welcome": {
         "en": "Welcome to Galaxy Go",
@@ -1818,6 +1850,32 @@ GALAXY_TRANSLATIONS = {
         "ru": "Попытки",
         "tr": "Denemeler",
         "ua": "Спроби",
+    },
+    "tsumego:this_problem": {
+        "en": "This problem",
+        "cn": "本题",
+        "tw": "本題",
+        "jp": "この問題",
+        "ko": "이 문제",
+        "de": "Diese Aufgabe",
+        "es": "Este problema",
+        "fr": "Ce problème",
+        "ru": "Эта задача",
+        "tr": "Bu problem",
+        "ua": "Ця задача",
+    },
+    "tsumego:hint": {
+        "en": "Hint",
+        "cn": "提示",
+        "tw": "提示",
+        "jp": "ヒント",
+        "ko": "힌트",
+        "de": "Tipp",
+        "es": "Pista",
+        "fr": "Indice",
+        "ru": "Подсказка",
+        "tr": "İpucu",
+        "ua": "Підказка",
     },
     "tsumego:showHint": {
         "en": "Show Hint",

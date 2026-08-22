@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Grid, CircularProgress, IconButton, Chip, Breadcrumbs, Link } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { Box, Typography, Grid, CircularProgress, Chip } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import ContentPageHeader from '../components/layout/ContentPageHeader';
 import ProblemCard from '../components/tsumego/ProblemCard';
 
 interface ProblemSummary {
@@ -111,55 +111,23 @@ const TsumegoListPage = () => {
 
   return (
     <Box sx={{ p: 4, maxWidth: 1400, mx: 'auto' }}>
-      {/* Breadcrumbs */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate(`/galaxy/tsumego/${level}/${category}`)} sx={{ mr: 1 }}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Breadcrumbs>
-          <Link
-            component="button"
-            variant="body1"
-            onClick={() => navigate('/galaxy/tsumego')}
-            sx={{ cursor: 'pointer' }}
-          >
-            {t('Tsumego')}
-          </Link>
-          <Link
-            component="button"
-            variant="body1"
-            onClick={() => navigate(`/galaxy/tsumego/${level}`)}
-            sx={{ cursor: 'pointer' }}
-          >
-            {level?.toUpperCase()}
-          </Link>
-          <Link
-            component="button"
-            variant="body1"
-            onClick={() => navigate(`/galaxy/tsumego/${level}/${category}`)}
-            sx={{ cursor: 'pointer' }}
-          >
-            {getCategoryName(category || '')}
-          </Link>
-          <Typography color="text.primary">{t('tsumego:unit')} {unitNumber}</Typography>
-        </Breadcrumbs>
-      </Box>
-
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
-        <Box sx={{ flexGrow: 1 }}>
-          <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-            {t('tsumego:unit')} {unitNumber}
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            {interpolate(t('tsumego:problemRange'), { start: startProblem, end: endProblem })}
-          </Typography>
-        </Box>
-        <Chip
-          label={`${completedCount}/${problems.length}`}
-          color={completedCount === problems.length ? 'success' : 'default'}
-          sx={{ fontSize: '1rem', px: 1 }}
-        />
-      </Box>
+      {/* 面包屑四级 → 一个返回键（spec §2.4）。完成度 Chip 是**单个**状态件，
+          进页头最右的 status 槽 —— §2.4 允许「状态放最右」，禁的是往页头堆多个 chip。 */}
+      <ContentPageHeader
+        title={`${t('tsumego:unit')} ${unitNumber}`}
+        parentLabel={getCategoryName(category || '')}
+        parentTo={`/galaxy/tsumego/${level}/${category}`}
+        status={
+          <Chip
+            label={`${completedCount}/${problems.length}`}
+            color={completedCount === problems.length ? 'success' : 'default'}
+            sx={{ fontSize: '1rem', px: 1 }}
+          />
+        }
+      />
+      <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
+        {interpolate(t('tsumego:problemRange'), { start: startProblem, end: endProblem })}
+      </Typography>
 
       <Grid container spacing={2}>
         {problems.map((problem, index) => (

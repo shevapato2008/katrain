@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Grid, CircularProgress, Alert, Button, Chip } from '@mui/material';
+import { Box, Grid, CircularProgress, Alert, Button } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import ProblemCard from '../components/tsumego/ProblemCard';
 import { UNIT_SIZE, sequenceKey } from './tsumegoUnits';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 interface ProblemSummary {
   id: string;
@@ -111,17 +111,15 @@ const TsumegoUnitListPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <SubPageBar
+      <KioskPagebar
         title={`${t('tsumego:unit', '单元')} ${unitNumber} · ${startProblem}–${endProblem}`}
-        to={`/kiosk/tsumego/${level}/${category}`}
-        right={
-          <Chip
-            label={`${completedCount}/${problems.length}`}
-            color={completedCount === problems.length && problems.length > 0 ? 'success' : 'default'}
-            sx={{ fontSize: '0.95rem', px: 1 }}
-          />
-        }
+        backLabel={t('Back', '返回')}
+        onBack={() => navigate(`/kiosk/tsumego/${level}/${category}`)}
+        sub={`${completedCount}/${problems.length}`}
       />
+      {/* 这里原来是页控条右端的一个进度 Chip,做完时变绿。§11 的右端只留给视图切换,
+          所以数字并进了 sub —— **绿色那个「做完了」的信号跟着没了**,这是本次的净损失。
+          不拿别的东西顶上:Task 13 会按稿子重画这一屏,那时进度有正经位置。已登记在计划书。 */}
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>
         <Grid container spacing={2}>

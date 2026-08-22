@@ -175,7 +175,7 @@ describe('TsumegoProblemPage', () => {
   // ---- Existing behavior (still covered) ----
   it('renders category and level', () => {
     renderPage();
-    // Category + level now render together in the SubPageBar breadcrumb title
+    // Category + level now render together in the KioskPagebar breadcrumb title
     // ("死活 › 15 级 › 手筋 › 第 1 题"); assert both segments are present.
     expect(screen.getByText(/手筋/)).toBeInTheDocument();
     expect(screen.getByText(/15 级/)).toBeInTheDocument();

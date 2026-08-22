@@ -2744,6 +2744,53 @@ SubPageBar(52 通栏)删掉。原来 right 插槽里的业务动作降到内容�
 
 ---
 
+### Task 8 修订（2026-08-22，做完之后回填）
+
+**做到了**：15 个用 `SubPageBar` 的页面 + `SettingsPage` + `VisionSetupPage` 共 **17 处**全换成
+`KioskPagebar`，`SubPageBar.tsx` / `.test.tsx` 删除。布局 B 实测 **x16 / y70 / w992 / h44、返回键 h36**，
+布局 A（`AiSetupPage`）实测 **x548 / y70 / w460 / h44** —— 与 §11 逐个吻合。
+
+**七处与原文不同，都是动手时才拿到的事实：**
+
+1. **`KioskActions` 推迟到 Task 11。** Task 8 没有任何一屏渲染动作区（对局屏 / 做题屏归 Task 11、14），
+   而它的全部内容——等宽、格高 52、图标在上文字在下、**永远贴右栏底**——都是**布局结论**。
+   现在建，只能靠 jsdom 断言类名，等于发一个没被任何真运行时验证过的构件。
+
+2. **标题渲染成 `<h2>`，不是稿子里的 `<span>`。** 静态稿无所谓，真应用丢了标题语义读屏就没法跳转
+   （`SettingsPage` / `navigation.integration` 两个既有测试就是查 `role="heading"` 红的）。
+   UA 给 h2 的上下 margin 只在 `.kiosk-pagebar__title` 这一个类上归零 ——
+   **不做 `.kiosk h1,h2,h3,h4{margin:0}` 那种全局归零**：它的特异性 (0,1,1) 压得过 MUI emotion 类 (0,1,0)，
+   会把全站 `<Typography gutterBottom>` 的下边距一起吃掉。（G11 第 1 条到 Task 9 再按屏补。）
+
+3. **`go-screens.css` 提前到 Task 8 建。** §11「长标题不许挤到返回键」那条闸现在就要有被测对象，
+   而它靠的正是这个文件里的两条兜底。Task 9 的屏级类往下加，不要另起文件。
+
+4. **闸原来量错了对象。** 计划写的三条断言是 `back.h` / `back.x` / 标题溢出 —— 这条带子**没有
+   `flex-wrap`，「挤成两行」在这儿根本发生不了**；真实的失效是返回键被**压窄**（实测 82 → 68）。
+   拿掉 `flex: none` 之后原断言**全绿**。补了 `back.w` 才有牙。
+
+5. **`min-width: 0` 与 `overflow: hidden` 互为冗余，两条并存等于给闸发免疫。**
+   CSS Sizing §4.1：`overflow` 不是 `visible` 时 flex 项的自动最小尺寸就是 0。删掉任一条行为都不变
+   ⇒ 针对任一条的变异都杀不死闸。删掉 `min-width: 0` 之后，把 `overflow` 改成 `visible` 当场红在
+   **布局断言**上（client 3000 = scroll 3000，不再收缩）。
+
+6. **`SettingsPage` 根节点的 `px/pt` 撤了。** 它把页控条推到 **x28 / y78** —— 正是 §11 要防的
+   「有盘页无盘页来回切上下跳 8px」。内边距挪到下面的内容网格，视觉一个字没变。
+
+7. **`TsumegoProblemPage` 的布局 A 不达标，归 Task 14。** 实测 **x548 / y86 / w444**（该 548 / 70 / 460）：
+   它的右栏还带 `p: 2`，整屏也还没换成 `.kiosk-layout-a`。本 Task 只换控件带，不动骨架 ⇒
+   闸的布局 A 用 `AiSetupPage`（它上一轮就是真布局 A，实测正好命中三个数）。
+
+**两笔净损失，都不拿别的东西顶上：**
+
+- `TsumegoUnitListPage` 的进度 Chip **做完时变绿**那个信号没了（数字并进 `sub`，颜色语义丢失）。归 **Task 13**。
+- `ReportDetailPage` 标题的 `title=` 原生提示没了。**这是台触摸屏，手指没有悬停态**，那个提示本来就点不出来；
+  标题截断该看见的是省略号，已由真浏览器闸守着。
+
+**未动的**：`ResearchPage` 那三条手写 52px 面包屑条（D2：research 本轮只接壳）。
+
+---
+
 ## Task 9: `go-screens.css` 与围棋棋盘
 
 **Files:**

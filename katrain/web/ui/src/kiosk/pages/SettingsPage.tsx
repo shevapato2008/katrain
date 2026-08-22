@@ -1,12 +1,12 @@
 import { useState, type ReactNode } from 'react';
-import { Box, Typography, FormControlLabel, Switch, Button, Select, MenuItem, IconButton } from '@mui/material';
+import { Box, Typography, FormControlLabel, Switch, Button, Select, MenuItem } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeveloperBoardOutlinedIcon from '@mui/icons-material/DeveloperBoardOutlined';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
 import TranslateOutlinedIcon from '@mui/icons-material/TranslateOutlined';
 import { useTranslation } from '../../hooks/useTranslation';
+import { KioskPagebar } from '../shell/KioskPagebar';
 import { useSettings } from '../../context/SettingsContext';
 import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
 import AccountSection from '../components/settings/AccountSection';
@@ -93,19 +93,13 @@ const SettingsPage = () => {
   };
 
   return (
-    <Box sx={{ height: '100%', overflow: 'hidden', px: 1.5, pt: 1, pb: 1, display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75, flexShrink: 0 }}>
-        <IconButton
-          aria-label={t('Back', '返回')}
-          onClick={handleBack}
-          sx={{ minWidth: 48, width: 48, minHeight: 48, height: 48, flexShrink: 0 }}
-        >
-          <ArrowBackIcon />
-        </IconButton>
-        <Typography variant="h6" component="h2" sx={{ fontSize: '1.1rem', minWidth: 0 }}>
-          {t('Settings', '设置')}
-        </Typography>
-      </Box>
+    // 根节点的 px/pt 撤了:§11 的页控条要贴着中间区的原点(x16 / y70),外面再垫一层
+    // 内边距,它就被推到 x28 / y78 —— 有盘页与无盘页来回切时这条控件带会上下跳 8px。
+    // 内边距挪到下面那个内容网格上,视觉上一个字没变。
+    <Box sx={{ height: '100%', overflow: 'hidden', pb: 1, display: 'flex', flexDirection: 'column' }}>
+      {/* 原来是手写的一条同构造(48 圆钮 + h6)。§11 归一到页控条 ——
+          Task 18 会把这一屏重排成 L1-B,那之前先接壳。 */}
+      <KioskPagebar title={t('Settings', '设置')} backLabel={t('Back', '返回')} onBack={handleBack} />
 
       <Box
         sx={{
@@ -116,6 +110,7 @@ const SettingsPage = () => {
           columnGap: 1.5,
           rowGap: 1,
           alignContent: 'start',
+          px: 1.5,
         }}
       >
         {/* ── Left column ─────────────────────────────────────────── */}

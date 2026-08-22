@@ -5,7 +5,7 @@ import { PlayArrow, ChevronLeft, ChevronRight, SmartToy } from '@mui/icons-mater
 import { API, type EngineLevel } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 type Translate = (en: string, zh: string) => string;
 
@@ -196,7 +196,11 @@ const PlatformEngineSetupPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubPageBar title={t('Play vs AI', '人机对弈')} to="/kiosk/play/cross-platform" />
+      <KioskPagebar
+        title={t('Play vs AI', '人机对弈')}
+        backLabel={t('Back', '返回')}
+        onBack={() => navigate('/kiosk/play/cross-platform')}
+      />
       <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {/* Left: board preview console — fixed width, mirrors AiSetupPage's compact layout. */}
         <Box

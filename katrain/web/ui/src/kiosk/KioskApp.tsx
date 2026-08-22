@@ -9,7 +9,8 @@
 // 后四个是**本地补的**(共享 tokens.css 里没有这些规则),必须排在 tokens.css 之后 ——
 // card.css 里有一条 `.kiosk-card { position: relative }` 和 tokens.css 的 `.kiosk-card`
 // 同名同权重,靠后来居上生效。
-// go-screens.css(围棋屏级类)Task 9 才建,那之前不要加进来。
+//   go-screens.css 围棋屏级类 + 共享包缺的那几条(页控条 flex 兜底)。计划写的是 Task 9,
+//     实际 Task 8 就建了 —— §11「长标题不许挤到返回键」那条闸现在就要有被测对象。
 //
 // 引在 KioskApp.tsx 而不是 main.tsx:AppRouter 是 lazy(() => import('./kiosk/KioskApp')),
 // 引在这里 CSS 就落进 kiosk 分块,galaxy 不受影响;kiosk-2d 构建里 galaxy 整条被 DCE。
@@ -20,6 +21,7 @@ import '../kiosk-shell/seclabel.css';
 import '../kiosk-shell/icon.css';
 import '../kiosk-shell/card.css';
 import '../kiosk-shell/status.css';
+import '../kiosk-shell/go-screens.css';
 
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';

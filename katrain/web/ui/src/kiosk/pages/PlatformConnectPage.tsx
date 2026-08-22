@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API, type PlatformInfo } from '../../api';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 import { PLATFORM_META } from '../constants/platforms';
 
 const PlatformConnectPage = () => {
@@ -110,7 +110,11 @@ const PlatformConnectPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubPageBar title={t('Cross-Platform Play', '跨平台对弈')} to="/kiosk/play" />
+      <KioskPagebar
+        title={t('Cross-Platform Play', '跨平台对弈')}
+        backLabel={t('Back', '返回')}
+        onBack={() => navigate('/kiosk/play')}
+      />
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 3, flex: 1, minHeight: 0, overflow: 'auto' }}>
       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
         {t('Connect to Go platforms and play through your smart board', '连接围棋平台，通过智能棋盘对弈')}

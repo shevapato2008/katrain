@@ -160,7 +160,10 @@ describe('ReportDetailPage (kiosk)', () => {
 
   it('uses the game title in the ellipsized bar and falls back to the player matchup', () => {
     const rendered = renderPage();
-    expect(screen.getByText(game.title!)).toHaveAttribute('title', game.title!);
+    // 原来断言的是 `title=` 原生提示 —— 那是**悬停**才出得来的东西,而这是台触摸屏,
+    // 手指没有悬停态。§11 换成页控条之后不再带它;标题被截断时该看见的是省略号,
+    // 那是布局结论,归真浏览器闸(「长标题不许把返回键挤成两行」那条)。
+    expect(screen.getByText(game.title!)).toBeInTheDocument();
     detail = { ...baseDetail(), game: { ...game, title: null } };
     rendered.rerender(
       <ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={['/kiosk/report/42']}>

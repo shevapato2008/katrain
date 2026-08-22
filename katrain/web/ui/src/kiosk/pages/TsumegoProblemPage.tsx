@@ -35,7 +35,7 @@ import {
 import { writeActiveSession } from '../utils/activeSession';
 import PhysicalModeToggle from '../components/tsumego/PhysicalModeToggle';
 import PhysicalStatePanel from '../components/tsumego/PhysicalStatePanel';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 interface ProblemSummary {
   id: string;
@@ -362,12 +362,14 @@ const TsumegoProblemPage = () => {
 
       {/* Controls panel */}
       <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
-        <SubPageBar
+        {/* 布局 A:做题屏有棋盘 ⇒ 页控条在**右栏顶部**,不是通栏(§11 那张表)。 */}
+        <KioskPagebar
           title={
             problem
               ? `${t('Life & Death', '死活')} › ${levelChinese(problem.level)} › ${t(`tsumego:${problem.category}`, problem.category)} › 第 ${currentIndex + 1} 题`
               : t('Life & Death', '死活棋')
           }
+          backLabel={t('Back', '返回')}
           onBack={goToUnits}
         />
 

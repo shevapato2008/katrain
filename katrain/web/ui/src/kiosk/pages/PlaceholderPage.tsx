@@ -1,16 +1,17 @@
 import { Box, Typography } from '@mui/material';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 const PlaceholderPage = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const location = useLocation();
   const segment = location.pathname.split('/').filter(Boolean).pop() || 'home';
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubPageBar title={t('Coming soon', '敬请期待')} />
+      <KioskPagebar title={t('Coming soon', '敬请期待')} backLabel={t('Back', '返回')} onBack={() => navigate(-1)} />
       <Box
         sx={{
           display: 'flex',

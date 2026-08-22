@@ -3,7 +3,7 @@ import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, B
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 interface ProblemItem {
   id: string;
@@ -105,14 +105,11 @@ const TsumegoLevelPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <SubPageBar
+      <KioskPagebar
         title={`${level?.toUpperCase()} ${t('tsumego:allProblems', '全部题目')}`}
-        to={`/kiosk/tsumego/${level}`}
-        right={
-          <Typography variant="body2" color="text.secondary">
-            {problems.length} / {total} {t('problems count', '道题目')}
-          </Typography>
-        }
+        backLabel={t('Back', '返回')}
+        onBack={() => navigate(`/kiosk/tsumego/${level}`)}
+        sub={`${problems.length} / ${total} ${t('problems count', '道题目')}`}
       />
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>
         <Grid container spacing={2}>

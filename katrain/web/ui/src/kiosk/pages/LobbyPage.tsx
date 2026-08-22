@@ -11,7 +11,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../../context/AuthContext';
 import { i18n } from '../../i18n';
 import { getAiLadderStatus } from '../../features/aiLadder/api';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 interface OnlineUser {
   id: number;
@@ -192,22 +192,25 @@ const LobbyPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <SubPageBar
+      <KioskPagebar
         title={i18n.t('lobby:title', '在线大厅')}
-        to="/kiosk/play"
-        right={
-          <Stack direction="row" spacing={1}>
-            <Button variant="contained" size="small" startIcon={<SportsEsportsIcon />} onClick={() => startMatchmaking('rated')}>
-              {i18n.t('lobby:quick_match_rated', '排位赛')}
-            </Button>
-            <Button variant="outlined" size="small" onClick={() => startMatchmaking('free')}>
-              {i18n.t('lobby:custom_game', '自由对局')}
-            </Button>
-          </Stack>
-        }
+        backLabel={i18n.t('Back', '返回')}
+        onBack={() => navigate('/kiosk/play')}
       />
-      <Box sx={{ px: 2, pt: 1 }}>
-        <Typography variant="body2" color="text.secondary">{i18n.t('lobby:subtitle', '与其他玩家对弈或观战')}</Typography>
+      {/* 「排位赛 / 自由对局」原来挂在返回条的 right 插槽里。§11 的页控条只许放
+          返回 / 视图切换 / 一个页级图标按钮 —— 这两个是**开局动作**,降到内容区第一行。 */}
+      <Box sx={{ px: 2, pt: 1, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ flex: 1, minWidth: 0 }}>
+          {i18n.t('lobby:subtitle', '与其他玩家对弈或观战')}
+        </Typography>
+        <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
+          <Button variant="contained" size="small" startIcon={<SportsEsportsIcon />} onClick={() => startMatchmaking('rated')}>
+            {i18n.t('lobby:quick_match_rated', '排位赛')}
+          </Button>
+          <Button variant="outlined" size="small" onClick={() => startMatchmaking('free')}>
+            {i18n.t('lobby:custom_game', '自由对局')}
+          </Button>
+        </Stack>
       </Box>
 
       {/* Matchmaking dialog */}

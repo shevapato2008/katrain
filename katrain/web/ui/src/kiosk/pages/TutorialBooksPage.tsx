@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { TutorialReadAPI } from '../../api/tutorialApi';
 import type { TutorialBook } from '../../types/tutorial';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 /**
  * Route: tutorial/:category — the book list within a single tutorial category.
@@ -70,16 +70,11 @@ const TutorialBooksPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <SubPageBar
+      <KioskPagebar
         title={t('tutorial:selectBook', '选择书籍')}
-        to="/kiosk/tutorial"
-        right={
-          category ? (
-            <Typography variant="body2" color="text.secondary">
-              {category}
-            </Typography>
-          ) : undefined
-        }
+        backLabel={t('Back', '返回')}
+        onBack={() => navigate('/kiosk/tutorial')}
+        sub={category || undefined}
       />
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>

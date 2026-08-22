@@ -16,7 +16,7 @@ import type { TutorialSectionDetail, TutorialFigure } from '../../types/tutorial
 import SGFBoard, { type SGFPayload } from '../../components/tutorials/SGFBoard';
 import TutorialVideoPlayer from '../../components/tutorials/TutorialVideoPlayer';
 import type { SectionNavState } from '../types/tutorialNav';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 /** Highest numeric move label on a figure's board (0 when there are none). */
 function maxMoveOf(fig: TutorialFigure | null): number {
@@ -130,7 +130,7 @@ const TutorialSectionPage = () => {
   if (figures.length === 0 || !current) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-        <SubPageBar title={breadcrumb} onBack={onBack} />
+        <KioskPagebar title={breadcrumb} backLabel={t('Back', '返回')} onBack={onBack} />
         <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Typography color="text.secondary">{t('tutorial:noFigures', '本节暂无棋谱')}</Typography>
         </Box>
@@ -242,7 +242,7 @@ const TutorialSectionPage = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Header: back + breadcrumb */}
-      <SubPageBar title={breadcrumb} onBack={onBack} />
+      <KioskPagebar title={breadcrumb} backLabel={t('Back', '返回')} onBack={onBack} />
 
       {/* Figure navigation: ◀ 图X (i / N) ▶ */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 0.5 }}>

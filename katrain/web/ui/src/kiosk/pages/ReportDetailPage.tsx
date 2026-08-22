@@ -26,7 +26,7 @@ import { useSound } from '../../hooks/useSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import ReportMetaPanel from '../components/report/ReportMetaPanel';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 import { useImmersive } from '../context/ImmersiveContext';
 
 const BACK_PATH = '/kiosk/report';
@@ -303,25 +303,27 @@ export default function ReportDetailPage() {
         data-testid="report-detail-right"
         sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: 1, borderColor: 'divider' }}
       >
-        <SubPageBar
+        <KioskPagebar
           title={title}
-          to={BACK_PATH}
-          right={(
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
-              {task && <Typography data-testid="report-detail-status" variant="caption" color="text.secondary" noWrap>{taskStatus} · {reportType}</Typography>}
-              <Button
-                variant="outlined"
-                sx={{ ...TOUCH_ACTION_SX, flexShrink: 0, whiteSpace: 'nowrap' }}
-                onClick={() => {
-                  const params = new URLSearchParams({ user_game_id: game.id });
-                  navigate(`/kiosk/research?${params.toString()}`);
-                }}
-              >
-                {t('report:enter_research', '在研究中打开')}
-              </Button>
-            </Box>
-          )}
+          backLabel={t('Back', '返回')}
+          onBack={() => navigate(BACK_PATH)}
         />
+        {/* 任务状态是**状态**、「在研究中打开」是**动作**,两个都不属于页控条(§11 只许放
+            返回 / 视图切换 / 一个页级图标按钮)。下到内容区顶上,顺序与去向一个字没动。 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 2, pt: 1, flexShrink: 0 }}>
+          {task && <Typography data-testid="report-detail-status" variant="caption" color="text.secondary" noWrap>{taskStatus} · {reportType}</Typography>}
+          <Box sx={{ flex: 1 }} />
+          <Button
+            variant="outlined"
+            sx={{ ...TOUCH_ACTION_SX, flexShrink: 0, whiteSpace: 'nowrap' }}
+            onClick={() => {
+              const params = new URLSearchParams({ user_game_id: game.id });
+              navigate(`/kiosk/research?${params.toString()}`);
+            }}
+          >
+            {t('report:enter_research', '在研究中打开')}
+          </Button>
+        </Box>
 
         <Box
           data-testid="report-detail-analysis-scroll"

@@ -102,11 +102,14 @@ describe('SettingsPage', () => {
     expect(mockSetLanguage).toHaveBeenCalledWith('en');
   });
 
-  it('renders a translated page-owned 48 by 48 back button', () => {
+  it('renders a translated page-owned back button —— §11 页控条那个 36 高带字的返回键', () => {
     renderPage();
 
     const back = screen.getByRole('button', { name: '返回' });
-    expect(back).toHaveStyle({ minWidth: '48px', width: '48px', minHeight: '48px', height: '48px' });
+    // 48 见方的圆钮是**上一版页面自己手写**的返回条。§11 把返回统一下放到页控条,
+    // 尺寸由共享 `--pagebar-back-h`(36)给,四棋类同一个数 —— 这里不再逐像素断言,
+    // 那是布局结论,归 `tests/kiosk-shell-geometry.spec.ts` 的真浏览器闸。
+    expect(back).toHaveClass('kiosk-pagebar__back');
   });
 
   it('returns to a validated internal kiosk route from location state', () => {

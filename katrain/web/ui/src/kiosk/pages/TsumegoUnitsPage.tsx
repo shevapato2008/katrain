@@ -5,7 +5,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import ProgressDots from '../components/tsumego/ProgressDots';
 import { UNIT_SIZE, sequenceKey } from './tsumegoUnits';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 interface ProblemSummary {
   id: string;
@@ -106,14 +106,11 @@ const TsumegoUnitsPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <SubPageBar
+      <KioskPagebar
         title={`${level?.toUpperCase()} ${t(`tsumego:${category}`, category || '')} · ${t('tsumego:selectUnit', '选择单元')}`}
-        to={`/kiosk/tsumego/${level}`}
-        right={
-          <Typography variant="body2" color="text.secondary">
-            {totalProblems} {t('tsumego:problems', '题')} · {totalUnits} {t('tsumego:unit', '单元')}
-          </Typography>
-        }
+        backLabel={t('Back', '返回')}
+        onBack={() => navigate(`/kiosk/tsumego/${level}`)}
+        sub={`${totalProblems} ${t('tsumego:problems', '题')} · ${totalUnits} ${t('tsumego:unit', '单元')}`}
       />
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>

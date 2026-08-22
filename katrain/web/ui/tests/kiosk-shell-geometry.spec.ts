@@ -432,3 +432,66 @@ test('§5 承重:把三格的值撑到会溢出,外框 296×434 一动不动', a
     expect(t.ellipsis).toBe('ellipsis');
   }
 });
+
+// ── Task 8 —— §11 页控条 ────────────────────────────────────────────────
+// 顶栏在所有层级恒为品牌态,返回 / 视图切换 / 上下文标题全部下放到这条控件带。
+// 位置写死是**判据本身**:两种布局下纵向位置完全相同,有盘页和无盘页来回切时不上下跳。
+
+test('§11 布局 B:页控条通栏 x16–1008、y70–114、高 44,返回键高 36', async ({ page }) => {
+  await boot(page, '/kiosk/play/cross-platform');
+  const screen = await box(page, '.kiosk-screen');
+  const bar = await box(page, '.kiosk-pagebar');
+  const back = await box(page, '.kiosk-pagebar__back');
+  expect(bar.x - screen.x).toBe(16);          // --content-x
+  expect(bar.w).toBe(992);                    // 1024 − 2×16
+  expect(bar.y - screen.y).toBe(70);          // --topbar-h 56 + --content-pad-y 14
+  expect(bar.h).toBe(44);                     // --pagebar-h
+  expect(back.h).toBe(36);                    // --pagebar-back-h
+  // 返回键贴左缘 —— 触点位置在每一屏都一样,这是肌肉记忆
+  expect(back.x).toBe(bar.x);
+});
+
+test('§11 有盘页与无盘页来回切,页控条的纵向位置一模一样', async ({ page }) => {
+  await boot(page, '/kiosk/play/cross-platform');           // 布局 B
+  const b = await box(page, '.kiosk-pagebar');
+  await boot(page, '/kiosk/play/ai/setup/free');            // 布局 A
+  const a = await box(page, '.kiosk-pagebar');
+  expect(a.y).toBe(b.y);                      // 这条就是「切模块不跳」本身
+  expect(a.h).toBe(b.h);
+  expect(a.x).toBe(548);                      // 布局 A 在右栏顶:16 + 516(盘) + 16
+  expect(a.w).toBe(460);
+});
+
+test('§11 长标题不许把返回键挤成两行 —— 触点位置在每一屏都一样', async ({ page }) => {
+  await boot(page, '/kiosk/play/cross-platform');
+  const shortBack = await box(page, '.kiosk-pagebar__back');
+  const shortBar = await box(page, '.kiosk-pagebar');
+  // 把数据造到会溢出 —— 装得下的长度下量出来的数一概不算
+  await page.evaluate(() => {
+    document.querySelector('.kiosk-pagebar__title')!.textContent = '很长的标题'.repeat(40);
+  });
+  const longBack = await box(page, '.kiosk-pagebar__back');
+  const longBar = await box(page, '.kiosk-pagebar');
+  expect(longBack.h, '返回键被长标题挤高了').toBe(shortBack.h);
+  expect(longBack.x, '返回键被长标题推走了').toBe(shortBack.x);
+  // **宽度才是这条闸的承重点**:这条带子不换行(没有 flex-wrap),所以「挤成两行」在这儿
+  // 根本发生不了 —— 真实的失效是返回键被**压窄**(实测 82 → 68,字和图标跟着挤)。
+  // 只断言高和 x 的话,`flex: none` 拿掉照样全绿。
+  expect(longBack.w, '返回键被长标题压窄了').toBe(shortBack.w);
+  expect(longBar.h, '整条控件带被长标题撑高了').toBe(shortBar.h);
+  expect(longBar.w, '整条控件带被长标题撑宽了').toBe(shortBar.w);
+  // **判据要跟着轴走**:横向截断验 scrollWidth > clientWidth。
+  // 换成纵向那两个数会同时是 20,红在一个不存在的缺陷上(上一轮实测过)。
+  const title = await page.evaluate(() => {
+    const el = document.querySelector('.kiosk-pagebar__title') as HTMLElement;
+    const cs = getComputedStyle(el);
+    return { scroll: el.scrollWidth, client: el.clientWidth, ellipsis: cs.textOverflow, overflow: cs.overflowX };
+  });
+  expect(title.scroll, '长标题没有被截断,它把整条撑开了').toBeGreaterThan(title.client);
+  // 下面两条断言的是 CSS 计算值,不是布局结论 —— **这是有意的**:
+  // 「装不下」是布局(上一条已经量了),而「装不下之后是裁掉加省略号、还是溢出去糊在
+  // 旁边」是**绘制**,布局盒子在两种情况下逐像素相同(实测:两种状态下 title 都是 912 宽、
+  // scrollWidth 都是 3000)。真浏览器量不出绘制差异,就如实用计算值断言,不假装量到了。
+  expect(title.overflow, '溢出没有被裁掉 —— 长标题会糊到控件带外面').toBe('hidden');
+  expect(title.ellipsis).toBe('ellipsis');
+});

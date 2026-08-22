@@ -5,11 +5,11 @@ import {
   DialogTitle, DialogContent, DialogActions, Snackbar, Alert,
 } from '@mui/material';
 import { Search, SportsKabaddi, Casino } from '@mui/icons-material';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API, type PlatformUser, type PlatformInfo } from '../../api';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 // Minimal display labels for the lobby back-bar title (full metadata lives in PlatformConnectPage).
 const PLATFORM_LABELS: Record<string, { label: string; labelCn: string }> = {
@@ -101,11 +101,16 @@ const PlatformLobbyPage = () => {
   const connectedPlatforms = platforms.filter(p => p.connected);
   const currentPlatform = connectedPlatforms.find(p => p.platform === activePlatform);
   const filteredUsers = users; // Filtering now done server-side
+  const navigate = useNavigate();
   const platformMeta = PLATFORM_LABELS[activePlatform] || { label: activePlatform, labelCn: activePlatform };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubPageBar title={t(platformMeta.label, platformMeta.labelCn)} to="/kiosk/play/cross-platform" />
+      <KioskPagebar
+        title={t(platformMeta.label, platformMeta.labelCn)}
+        backLabel={t('Back', '返回')}
+        onBack={() => navigate('/kiosk/play/cross-platform')}
+      />
       <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, p: 2, gap: 1.5 }}>
       {/* Platform tabs */}
       {connectedPlatforms.length > 1 && (

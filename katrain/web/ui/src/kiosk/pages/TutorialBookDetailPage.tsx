@@ -19,7 +19,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { TutorialReadAPI } from '../../api/tutorialApi';
 import type { TutorialBookDetail, TutorialSection } from '../../types/tutorial';
 import type { SectionNavState } from '../types/tutorialNav';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 /**
  * Route: /kiosk/tutorial/book/:bookId — chapter/section tree for one book.
@@ -105,16 +105,11 @@ const TutorialBookDetailPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <SubPageBar
+      <KioskPagebar
         title={book.title}
+        backLabel={t('Back', '返回')}
         onBack={() => (book ? navigate('/kiosk/tutorial/' + book.category) : navigate(-1))}
-        right={
-          book.author ? (
-            <Typography variant="body2" color="text.secondary">
-              {book.author}
-            </Typography>
-          ) : undefined
-        }
+        sub={book.author || undefined}
       />
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>

@@ -23,7 +23,7 @@ import AiAnalysis from '../../components/live/AiAnalysis';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
 import { useImmersive } from '../context/ImmersiveContext';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 const LiveMatchPage = () => {
   const { matchId } = useParams<{ matchId: string }>();
@@ -154,17 +154,20 @@ const LiveMatchPage = () => {
 
       {/* Right (or bottom) panel */}
       <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderLeft: '1px solid', borderTop: 'none', borderColor: 'divider' }}>
-        <SubPageBar
+        <KioskPagebar
           title={`${match.player_black} vs ${match.player_white}`}
-          to="/kiosk/live"
-          right={
-            <Chip
-              label={match.status === 'live' ? t('Live Status', '直播中') : t('Ended', '已结束')}
-              size="small"
-              color={match.status === 'live' ? 'success' : 'default'}
-            />
-          }
+          backLabel={t('Back', '返回')}
+          onBack={() => navigate('/kiosk/live')}
         />
+        {/* 「直播中 / 已结束」是这一局的**状态**。页控条右端只留给视图切换(§11),
+            所以它下到内容区顶上 —— 位置变了,颜色语义一个字没动。 */}
+        <Box sx={{ px: 2, pt: 1, flexShrink: 0 }}>
+          <Chip
+            label={match.status === 'live' ? t('Live Status', '直播中') : t('Ended', '已结束')}
+            size="small"
+            color={match.status === 'live' ? 'success' : 'default'}
+          />
+        </Box>
 
         {/* Match info */}
         <MatchInfo match={match} currentMove={currentMove} analysis={analysis[currentMove]} />

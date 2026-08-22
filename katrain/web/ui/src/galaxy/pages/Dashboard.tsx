@@ -8,6 +8,7 @@ import ExtensionIcon from '@mui/icons-material/Extension';
 import type { ReactNode } from 'react';
 import { useSettings } from '../../context/SettingsContext';
 import { i18n } from '../../i18n';
+import ContentPageHeader from '../components/layout/ContentPageHeader';
 
 interface ModuleCardProps {
     title: string;
@@ -78,14 +79,11 @@ const Dashboard = () => {
 
     return (
         <Box sx={{ p: 6, maxWidth: 1200, mx: 'auto', width: '100%', overflow: 'auto' }}>
-            <Box sx={{ mb: 6 }}>
-                <Typography variant="h3" fontWeight="800" gutterBottom sx={{ background: 'linear-gradient(45deg, #4a6b5c 30%, #5d8270 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    {i18n.t('dashboard:welcome', '欢迎使用智星盒')}
-                </Typography>
-                <Typography variant="h6" color="text.secondary">
-                    {i18n.t('dashboard:tagline', '棋道导航者')}
-                </Typography>
-            </Box>
+            <ContentPageHeader title={i18n.t('dashboard:welcome', '欢迎使用智星盒')} />
+            {/* 标语原来是页头里的第二行 h6。spec §2.4 不许长副标题进页头，下沉到正文首行。 */}
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 1, mb: 6 }}>
+                {i18n.t('dashboard:tagline', '棋道导航者')}
+            </Typography>
 
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 4 }}>
                 {modules.map((m) => (

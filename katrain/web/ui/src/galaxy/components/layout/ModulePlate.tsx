@@ -18,6 +18,17 @@ interface ModulePlateProps {
    * 「返回」变成「返回复盘」—— 屏幕阅读器仍然听得出这一下会去哪里。
    */
   backLabel?: string;
+  /**
+   * 版式档位。`'rail'`（默认）是棋盘页右栏那一档：`h6`、定宽 320 里 `noWrap` 截断。
+   * `'page'` 是无棋盘内容页那一档：字号照设计稿 `.cph h1`（2.125rem / 800 / -.02em，
+   * 430 档降到 1.5rem），标题不截断而是 `text-wrap: balance` 换行 —— 内容区是整幅宽度，
+   * 截断在这里既没必要也会丢信息。
+   *
+   * 两档共用**同一结构**（左上角箭头图标键 + 标题 + 状态），这正是 spec §2.4
+   * 「无棋盘内容页把同一结构放在内容区顶端」要的：改这一处，两类页面一起生效。
+   * 内容页的消费方是 `ContentPageHeader`，它只是这里的一层薄壳。
+   */
+  size?: 'rail' | 'page';
 }
 
 /**
@@ -31,7 +42,8 @@ interface ModulePlateProps {
  * 改这里一处，所有消费方（升降级对局页 / 死活题页 / 复盘报告页 / 直播观战页 / 研究页）
  * 一起生效；这正是「不止限于复盘页面」要的效果。
  */
-const ModulePlate = ({ title, subtitle, status, backTo, showBack = true, backLabel }: ModulePlateProps) => {
+const ModulePlate = ({ title, subtitle, status, backTo, showBack = true, backLabel, size = 'rail' }: ModulePlateProps) => {
+  const isPage = size === 'page';
   const { t } = useTranslation();
   const { requestNavigation } = useGameNavigation();
 
@@ -44,7 +56,7 @@ const ModulePlate = ({ title, subtitle, status, backTo, showBack = true, backLab
         justifyContent: 'flex-start',
         gap: 1.5,
         minWidth: 0,
-        minHeight: 52,
+        minHeight: isPage ? 48 : 52,
         px: 0,
       }}
     >
@@ -64,7 +76,16 @@ const ModulePlate = ({ title, subtitle, status, backTo, showBack = true, backLab
         </IconButton>
       )}
       <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography variant="h6" component="h1" noWrap>{title}</Typography>
+        <Typography
+          component="h1"
+          variant={isPage ? 'h4' : 'h6'}
+          noWrap={!isPage}
+          sx={isPage
+            ? { fontWeight: 800, letterSpacing: '-0.02em', textWrap: 'balance', fontSize: { xs: '1.5rem', sm: '2.125rem' } }
+            : undefined}
+        >
+          {title}
+        </Typography>
         {subtitle != null && <Typography variant="body2" color="text.secondary" noWrap>{subtitle}</Typography>}
       </Box>
       {status != null && <Box sx={{ flex: 'none' }}>{status}</Box>}

@@ -6,6 +6,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import ContentPageHeader from '../../components/layout/ContentPageHeader';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import Accordion from '@mui/material/Accordion';
@@ -58,9 +59,13 @@ export default function TutorialBookDetailPage() {
 
   return (
     <Box p={3}>
-      <Button size="small" onClick={() => navigate(`/galaxy/tutorials/${book.category}`)} sx={{ mb: 1 }}>← 返回</Button>
-      <Typography variant="h5" gutterBottom>{book.title}</Typography>
-      {book.author && <Typography variant="body2" color="text.secondary" gutterBottom>{book.author}</Typography>}
+      {/* 同 TutorialBooksPage：「← 返回」文字键换成左上角箭头图标键（spec §2.4）。 */}
+      <ContentPageHeader
+        title={book.title}
+        parentLabel={book.category}
+        parentTo={`/galaxy/tutorials/${book.category}`}
+      />
+      {book.author && <Typography variant="body2" color="text.secondary" sx={{ mt: 1, display: 'block' }}>{book.author}</Typography>}
 
       {book.chapters.map(ch => (
         <Accordion key={ch.id} defaultExpanded={book.chapters.length <= 3}>

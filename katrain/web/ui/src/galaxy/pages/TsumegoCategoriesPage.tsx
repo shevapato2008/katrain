@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Card, CardActionArea, CircularProgress, IconButton, Breadcrumbs, Link } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { Box, Typography, Card, CardActionArea, CircularProgress } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import ContentPageHeader from '../components/layout/ContentPageHeader';
 
 interface CategoryInfo {
   category: string;
@@ -48,29 +48,15 @@ const TsumegoCategoriesPage = () => {
 
   return (
     <Box sx={{ p: 4, pl: 6 }}>
-      {/* Breadcrumbs */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate('/galaxy/tsumego')} sx={{ mr: 1 }}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Breadcrumbs>
-          <Link
-            component="button"
-            variant="body1"
-            onClick={() => navigate('/galaxy/tsumego')}
-            sx={{ cursor: 'pointer' }}
-          >
-            {t('Tsumego')}
-          </Link>
-          <Typography color="text.primary">{level?.toUpperCase()}</Typography>
-        </Breadcrumbs>
-      </Box>
-
-      <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>
-        {level?.toUpperCase()} - {t('tsumego:selectCategory')}
-      </Typography>
-      <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 4 }}>
-        {t('tsumego:categoryDesc')}
+      {/* 原来这里是「返回图标键 + 面包屑」两段式，标题另起一行还带着 "- 选择分类"。
+          spec §2.4 明令面包屑不进页头，返回键与标题同行；层级信息由返回键的无障碍名承载。 */}
+      <ContentPageHeader
+        title={level?.toUpperCase() ?? ''}
+        parentLabel={t('Tsumego')}
+        parentTo="/galaxy/tsumego"
+      />
+      <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
+        {t('tsumego:selectCategory')} · {t('tsumego:categoryDesc')}
       </Typography>
 
       {/* Vertical card list */}

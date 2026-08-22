@@ -382,3 +382,60 @@ test('星阵人机屏:道具键在、胜率块不在,动作区照旧贴底且不
   expect(g.docScrollHeight, '整屏溢出').toBeLessThanOrEqual(600);
   expect(g.title).toBe('星阵围棋 · 人机');
 });
+
+// ── 坐标 / 手数:开关不是药丸键(Fan 2026-08-22)────────────────────────────
+// 判据落在**屏上那颗珠子挪没挪**,不落在类名或 `aria-checked` 上 ——
+// 后两者是输入,珠子的位置才是结论。上一版是「有没有那个小圆点」,
+// 圆点在两态下位置相同,所以那种断言对「开关根本没接上」免疫。
+test('显示开关:珠子真的从左滑到右,两态在屏上分得开', async ({ page }) => {
+  await open(page);
+
+  const read = () => page.evaluate(() => {
+    const btns = Array.from(document.querySelectorAll('.gtoggles button')) as HTMLElement[];
+    const one = (b: HTMLElement) => {
+      const knob = getComputedStyle(b, '::after');
+      const track = getComputedStyle(b, '::before');
+      return {
+        checked: b.getAttribute('aria-checked'),
+        role: b.getAttribute('role'),
+        knob: knob.transform,
+        knobBg: knob.backgroundColor,
+        trackW: track.width,
+        trackBg: track.backgroundColor,
+        color: getComputedStyle(b).color,
+      };
+    };
+    const hint = document.querySelector('.gtoggles .ghint')!.getBoundingClientRect();
+    const row = document.querySelector('.gtoggles')!.getBoundingClientRect();
+    return { coords: one(btns[0]), numbers: one(btns[1]), hintRight: Math.round(row.right - hint.right) };
+  });
+
+  const a = await read();
+  console.log('[05-game/switch]', JSON.stringify(a));
+
+  expect(a.coords.role, '不是 role="switch" —— aria-pressed 说的是「此刻被按住」').toBe('switch');
+  expect(a.coords.checked).toBe('true');
+  expect(a.numbers.checked).toBe('false');
+  // 轨 34 宽(galaxy 的 <Switch size="small"> 同一个观感)
+  expect(a.coords.trackW).toBe('34px');
+  // **开着的那个珠子被推到了右边**:关着是 translateY(-50%),开着多一个 18 的 X 位移。
+  expect(a.coords.knob, '开着的珠子没往右挪 —— 两态在屏上分不开').not.toBe(a.numbers.knob);
+  expect(a.coords.knob).toContain('18');
+  expect(a.numbers.knob).not.toContain('18');
+  // 颜色也分:开着的轨是半透明青玉、珠是实心青玉;关着的轨是发丝灰、珠是浅色
+  expect(a.coords.trackBg).not.toBe(a.numbers.trackBg);
+  expect(a.coords.knobBg).not.toBe(a.numbers.knobBg);
+  expect(a.coords.color, '开着的标签没变亮').not.toBe(a.numbers.color);
+
+  // 点一下必须真切换 —— 不然上面那些只证明了「两个不同的初始值长得不一样」
+  await page.click('.gtoggles button:nth-child(2)');
+  // 珠子有 .12s 的过渡:点完立刻读到的是**半路上**那个矩阵(实测 matrix(...,9.6,-7))。
+  // 等它落定再读 —— 不等的话这条断言会在**没有缺陷**的时候红。
+  await expect.poll(async () => (await read()).numbers.knob, { timeout: 2000 })
+    .toBe(a.coords.knob);
+  const b = await read();
+  expect(b.numbers.checked, '点了没切换').toBe('true');
+
+  // 右端那句提示靠 `margin-left:auto` 贴右(上一版靠 grid 第三列,换 flex 后没了)
+  expect(a.hintRight, '「数子要下满 100 手」没有贴到这一排的右端').toBe(0);
+});

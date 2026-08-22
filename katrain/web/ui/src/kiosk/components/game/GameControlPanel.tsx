@@ -243,14 +243,16 @@ const GameControlPanel = ({
         </div>
       )}
 
-      {/* 纯显示开关。**不带图标不是漏了** —— 开关本来就没有图标,安一个反而像「按下去有后果」。
-          右端那句写「为什么数子是灰的」;数子能按了就空着,但这个格子**一直在**,
-          否则两个键会在第 100 手那一下从 1/3 宽跳成 1/2 宽。 */}
-      <div className="gtoggles" role="group" aria-label={t('game:display', '显示')}>
-        <button type="button" aria-pressed={!!analysisToggles.coords} onClick={() => onToggleAnalysis('coords')}>
+      {/* 纯显示开关。`role="switch"` 不是 `aria-pressed`:后者是「这个按钮此刻被按住」,
+          而这两个是**状态** —— 开着就一直开着。长相跟 galaxy 那两个 `<Switch size="small">` 走
+          (Fan 2026-08-22:「galaxy 界面里都是开关这种形式,kiosk 也改成一样的」),
+          轨和珠是 `.gtoggles button` 的两个伪元素,不加新标签。
+          右端那句写「为什么数子是灰的」;数子能按了就空着,但这个格子**一直在**。 */}
+      <div className="gtoggles gtoggles--switch" role="group" aria-label={t('game:display', '显示')}>
+        <button type="button" role="switch" aria-checked={!!analysisToggles.coords} onClick={() => onToggleAnalysis('coords')}>
           {t('Coordinates', '坐标')}
         </button>
-        <button type="button" aria-pressed={!!analysisToggles.numbers} onClick={() => onToggleAnalysis('numbers')}>
+        <button type="button" role="switch" aria-checked={!!analysisToggles.numbers} onClick={() => onToggleAnalysis('numbers')}>
           {t('Move Numbers', '手数')}
         </button>
         <i className="ghint" data-fault={hardwareFault ? 'true' : undefined}>

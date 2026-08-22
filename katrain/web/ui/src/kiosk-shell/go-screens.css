@@ -149,8 +149,9 @@
 .pcard .clock b { font-family: var(--font-mono); font-size: 19px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .pcard .clock span { display: block; font-size: 10.5px; color: var(--dim); }
 
-/* 纯显示开关(实现里原来是两个 MUI `<Switch>`)。**不带图标不是漏了** ——
-   开关本来就没有图标,安一个反而像「按下去有后果」。 */
+/* 纯显示开关那一排。**不带图标不是漏了** —— 开关本来就没有图标,安一个反而像「按下去有后果」。
+ * 基态(药丸键)与稿子 `go-kiosk.tmpl.html:281-293` 逐字相同;直播屏和复盘屏也用它,
+ * 那两排里是「试下 / AI 推荐 / 跟到最新」这类**动作**,不是开关。 */
 .gtoggles { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; height: 40px; flex: none; }
 .gtoggles button {
   display: inline-flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer;
@@ -163,6 +164,40 @@
 .gtoggles button::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--hair); flex: none; }
 .gtoggles button[aria-pressed="true"] { color: var(--accent); background: var(--raise); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 .gtoggles button[aria-pressed="true"]::before { background: var(--accent); box-shadow: 0 0 5px color-mix(in srgb, var(--accent) 70%, transparent); }
+
+/* ── `.gtoggles--switch`:这一排全是**纯开关**时的长相 ────────────────────────
+ * ⚠️ 2026-08-22 Fan:「坐标和手数在 galaxy 界面里都是**开关**这种形式,kiosk 也改成一样的」。
+ * 药丸键读起来是「按一下发生一件事」,而坐标 / 手数是**状态**:开着就一直开着,没有「发生」。
+ * ⇒ 语义走 `role="switch"` + `aria-checked`(不是 `aria-pressed`:后者是「按钮此刻被按住」),
+ *   长相跟 galaxy 那两个 `<Switch size="small">`(`galaxy/components/game/RightSidebarPanel.tsx:243`)走。
+ *
+ * **为什么是修饰类,不是直接改 `.gtoggles`。** 那个类还在直播屏和复盘屏上用着,
+ * 那两排里的「试下」「AI 推荐」「跟到最新」不是开关,是动作和模式 ——
+ * 把它们一起做成开关,等于说「跟到最新」有一个可以一直开着的状态。
+ * (第一版就是直接改的 `.gtoggles`,当场把稿子那两屏的 `aria-pressed` 高亮全画没了,
+ *  取图时才看出来 —— 那两屏的参考图跟着一起变了。)
+ *
+ * 轨和珠都用伪元素,不加新标签:`::before` 是轨(参与 flex 排布),`::after` 是珠(绝对定位在轨上)。
+ * 轨 34×16、珠 14 —— 关着是灰轨 + 浅珠,开着是半透明青玉轨 + 实心青玉珠
+ * (MUI 的 track 就是 thumb 色 50% 透明)。与稿子 `:295-321` 逐字相同。 */
+.gtoggles--switch { display: flex; align-items: center; gap: 20px; }
+.gtoggles--switch button {
+  position: relative; justify-content: flex-start; gap: 9px;
+  border: 0; border-radius: 0; padding: 0; background: none;
+}
+/* `margin-left: auto` 是那句提示靠右的**唯一**依据 —— 基态靠的是 grid 第三列,flex 下没了。 */
+.gtoggles--switch .ghint { margin-left: auto; }
+.gtoggles--switch button::before { width: 34px; height: 16px; border-radius: 999px;
+  background: var(--hair); box-shadow: none; transition: background .12s ease; }
+.gtoggles--switch button::after { content: ""; position: absolute; left: 1px; top: 50%;
+  width: 14px; height: 14px; border-radius: 50%; background: #E9EFEC;
+  transform: translateY(-50%); transition: transform .12s ease, background .12s ease; }
+.gtoggles--switch button[aria-checked="true"] { color: var(--text); background: none; }
+.gtoggles--switch button[aria-checked="true"]::before { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+.gtoggles--switch button[aria-checked="true"]::after { transform: translate(18px, -50%); background: var(--accent); }
+@media (prefers-reduced-motion: reduce) {
+  .gtoggles--switch button::before, .gtoggles--switch button::after { transition: none; }
+}
 
 /* 动作区排成两行 —— 只有自由对弈那一屏有七个键(三个分析 + 四个动作)。
    只换排布,格子高 / 图标 / 字号 / 圆角继续走共享 `.kiosk-actions button`:

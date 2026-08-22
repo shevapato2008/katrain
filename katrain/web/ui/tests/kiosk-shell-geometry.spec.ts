@@ -36,7 +36,14 @@ const boot = async (page: Page, path: string) => {
 // 「可见」。而本文件要防的头号故障(`.kiosk` 掉了 ⇒ `--kiosk-w/--kiosk-h` 求空 ⇒
 // 画布 0×0)恰好会让元素变成不可见 —— 那时 locator 版会卡满 30 秒再报「hidden」,
 // 把「量出来的数不对」糊成一条超时。querySelector 版当场把 0 摆出来。
-const box = (page: Page, sel: string) => page.evaluate((s) => {
+const box = async (page: Page, sel: string) => {
+  // `boot()` 只等到 `.kiosk-screen`(外壳),而这些数量的都是**路由里面**的元素 ——
+  // 并发跑满时路由组件可能还没挂上,于是偶发一条「没有这个元素: .kiosk-pagebar」。
+  // 2026-08-22 实测撞到过一次(41 条里红 1 条,单独重跑就绿)。
+  // 仍然用 `state: 'attached'` 而不是默认的 `'visible'`:画布塌成 0×0 时元素照旧在 DOM 里,
+  // 默认值会把「量出来是 0」糊成一条 30 秒超时 —— 那正是这个文件要防的头号故障。
+  await page.waitForSelector(sel, { state: 'attached', timeout: 5000 });
+  return page.evaluate((s) => {
   const el = document.querySelector(s);
   if (!el) throw new Error(`没有这个元素: ${s}`);
   const r = el.getBoundingClientRect();
@@ -45,7 +52,8 @@ const box = (page: Page, sel: string) => page.evaluate((s) => {
     w: Math.round(r.width), h: Math.round(r.height),
     right: Math.round(r.right), bottom: Math.round(r.bottom),
   };
-}, sel);
+  }, sel);
+};
 
 test('画布固定 1024×600,视口正好等于它时不缩放', async ({ page }) => {
   await boot(page, '/kiosk/play');

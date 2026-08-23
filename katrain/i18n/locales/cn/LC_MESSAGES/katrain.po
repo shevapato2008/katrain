@@ -2977,3 +2977,18 @@ msgstr "对局中"
 
 msgid "report:summary_done"
 msgstr "已完成"
+
+msgid "tsumego:kyu_tier"
+msgstr "级位"
+
+msgid "tsumego:dan_tier"
+msgstr "段位"
+
+msgid "tsumego:stronger_downward"
+msgstr "越往下越强"
+
+msgid "tsumego:all_levels"
+msgstr "全部难度 · {count} 档"
+
+msgid "tsumego:your_level"
+msgstr "你的水平"

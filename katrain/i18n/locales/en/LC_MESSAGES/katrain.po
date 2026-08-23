@@ -3164,3 +3164,18 @@ msgstr "In play"
 
 msgid "report:summary_done"
 msgstr "done"
+
+msgid "tsumego:kyu_tier"
+msgstr "Kyu"
+
+msgid "tsumego:dan_tier"
+msgstr "Dan"
+
+msgid "tsumego:stronger_downward"
+msgstr "harder as you go down"
+
+msgid "tsumego:all_levels"
+msgstr "All levels · {count}"
+
+msgid "tsumego:your_level"
+msgstr "your level"

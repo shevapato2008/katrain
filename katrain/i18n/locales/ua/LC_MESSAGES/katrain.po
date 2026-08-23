@@ -3209,3 +3209,18 @@ msgstr "готово"
 #. TODO
 msgid "play:game_records"
 msgstr "Game Records"
+
+msgid "tsumego:kyu_tier"
+msgstr "К'ю"
+
+msgid "tsumego:dan_tier"
+msgstr "Дан"
+
+msgid "tsumego:stronger_downward"
+msgstr "нижче — сильніше"
+
+msgid "tsumego:all_levels"
+msgstr "Усі рівні · {count}"
+
+msgid "tsumego:your_level"
+msgstr "ваш рівень"

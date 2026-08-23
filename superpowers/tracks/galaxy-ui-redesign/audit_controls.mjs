@@ -40,6 +40,17 @@ const HANDLER_ATTRS = ['onClick', 'onChange', 'onSubmit', 'onInput', 'onMouseDow
 /* Chip 只有可点/可删时才算控件，纯状态标签不进账本 */
 const CONDITIONAL_TAGS = new Set(['Chip', 'Typography', 'Box', 'Paper', 'Card', 'Stack', 'div', 'span', 'li', 'tr']);
 
+/* 有 `role` 不等于是控件。ARIA 里 `img` / `presentation` / `separator` / `progressbar`
+   这些是**结构角色**，不是 widget 角色 —— 给一条数据分布条挂 `role="img"` + aria-label
+   恰恰是正确写法（冻结原型自己也是这么画的：`<span class="rung-bar" role="img" …>`），
+   而账本会把它算成一个「没有 handler 的空按钮」并报红。
+   2026-08-23 死活题阶梯页第一次就撞上：22 条分布条 → 一个空键。
+   闸报的是假红时，改的是闸不是页面 —— 判据：这个 role 在 ARIA 里是不是可交互的。 */
+const NON_INTERACTIVE_ROLES = new Set([
+  'img', 'presentation', 'none', 'separator', 'progressbar', 'status', 'note',
+  'figure', 'group', 'list', 'listitem', 'region', 'heading', 'meter', 'definition',
+]);
+
 function attr(node, name) {
   for (const p of node.attributes.properties) {
     if (ts.isJsxAttribute(p) && p.name.getText() === name) return p;
@@ -173,7 +184,9 @@ export function scan(source, fileName) {
       const handlers = HANDLER_ATTRS.map(h => attr(node, h)).filter(Boolean);
       const hasHref = !!attr(node, 'href') || !!attr(node, 'to');
       const isControl = CONTROL_TAGS.has(tag) && !CONDITIONAL_TAGS.has(tag);
-      const isImplicit = CONDITIONAL_TAGS.has(tag) && (handlers.length > 0 || attr(node, 'role'));
+      const roleText = textOf(attr(node, 'role')?.initializer);
+      const interactiveRole = !!attr(node, 'role') && !(roleText && NON_INTERACTIVE_ROLES.has(roleText));
+      const isImplicit = CONDITIONAL_TAGS.has(tag) && (handlers.length > 0 || interactiveRole);
       /* MenuItem / Tab / ToggleButton / Radio 的 handler 挂在父容器上
          （Select.onChange / Tabs.onChange / ToggleButtonGroup.onChange），
          不认这层继承就会把一堆正常选项误判成空按钮 —— 会哭狼的闸没人看。 */

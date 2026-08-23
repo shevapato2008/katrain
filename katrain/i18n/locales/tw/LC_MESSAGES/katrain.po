@@ -3122,3 +3122,18 @@ msgstr "已完成"
 #. TODO
 msgid "play:game_records"
 msgstr "Game Records"
+
+msgid "tsumego:kyu_tier"
+msgstr "級位"
+
+msgid "tsumego:dan_tier"
+msgstr "段位"
+
+msgid "tsumego:stronger_downward"
+msgstr "越往下越強"
+
+msgid "tsumego:all_levels"
+msgstr "全部難度 · {count} 檔"
+
+msgid "tsumego:your_level"
+msgstr "你的水平"

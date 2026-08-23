@@ -147,6 +147,20 @@
       guest ? (!!q('reports-login') && B.actions.h > 0) : true,
       guest ? `login 键在=${!!q('reports-login')} actions.h=${B.actions.h}` : '已登录支，跳过');
 
+
+  /* R15 —— 棋盘页在窄档下**只能有一个滚动条**。`MainLayout` 2026-08-23 给 `galaxy-main`
+     补了 `overflowY:auto`（内容页要靠它才滚得动，见 `loadbearing_tsumego_ladder.js` T5a），
+     那一改动过后 main 与 shell 就都声明了 auto —— 会不会双滚，只有真浏览器说了算：
+     shell 是 `height:100%` + `boxSizing:border-box`，正好等于 main 的内高，main 永不溢出。
+     `MainLayout.test.tsx` 原来用「main 不许是 overflowY:auto」守这条结果，那是在守机制；
+     jsdom 里 scrollHeight 恒等于 clientHeight，它对「有几个滚动条」无权作证。 */
+  const mainEl = document.querySelector('[data-testid="galaxy-main"]');
+  const scrollers = [mainEl, shell].filter((el) => el && el.scrollHeight > el.clientHeight + 1);
+  rel('R15', '整页只有一个滚动条（main 装的是 height:100% 的 shell，自己永不溢出）',
+      scrollers.length <= 1,
+      `main ${mainEl ? mainEl.scrollHeight + '/' + mainEl.clientHeight : 'n/a'}`
+      + ` · shell ${shell.scrollHeight}/${shell.clientHeight} · 滚动条数=${scrollers.length}`);
+
   const failed = R.filter((r) => !r.pass).map((r) => r.id);
   const dataEnough = noList || cardCount >= 8;
   return { vw, vh, stacked, guest, emptyState, cardCount, dataEnough,

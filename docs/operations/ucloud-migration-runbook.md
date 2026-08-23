@@ -232,3 +232,61 @@ followups 六项收口、11 种语言 i18n，以及**三个后端 `.py`**
 **遗留（未处理，需决策）：** 根分区 84%（16G 可用），可回收但**本次一律未删**：
 旧 release 目录 `bb3f85bf…`、`a9607e75`、`e7f0e758`、`93803100`，以及对应旧镜像与
 `katrain-web:ucloud-candidate-20260724`(2.48G)。`65677ce5` 的目录与镜像在回滚窗口内**不得删除**。
+
+### 2026-08-24 — 四个内容页迁统一棋盘页外壳（非迁移）
+
+发布 `53e83787`（= "Merge origin/develop into release/ucloud-20260805"，合入 develop 的
+`80f54290`），线上此前 `26a046d0`。相对线上的实际改动：**10 个 `.tsx`、11 种语言 `.po`、
+四份闸脚本、61 张视觉存档、本文件一段。零后端 `.py`、零 schema。**
+
+- 镜像：`katrain-web:53e83787`，
+  `image_id=sha256:27506996787e93e6f6807a93f495acf4b56e1e123f4045888cca3e5dbcb8998d`，
+  `size_bytes=542522701`（上一版 `26a046d0` 为 542210337，增量 312364 字节）。
+  `build-web.sh` 的容器内容测试通过。
+- 回滚锚点保留：镜像 `katrain-web:26a046d0` 与目录 `/opt/katrain/releases/26a046d0` 均在位。
+  `current` → `releases/53e83787`。
+- `/etc/katrain/ucloud.env` 改动仅 `WEB_IMAGE` 一行（与改前副本 `diff` 恰好 2 行）；
+  改前副本 `/opt/katrain/backups/ucloud.env.20260823-2353`，改后仍 root 所有、mode 0600。
+- 数据库备份 `/opt/katrain/backups/prod-20260823-2342.dump`（`pg_dump -Fc`，189600570 字节）。
+  **本次沿用 2026-08-21 第二次的恢复验证豁免，且前提这次是真成立的**：那条豁免的依据写的是
+  「不含 schema 变更、**也不含任何后端代码变更**」—— 本次改动逐个文件核过，确实一个
+  `katrain/**/*.py` 都没动（2026-08-23 那次不能沿用，是因为它改了三个后端 `.py`）。
+
+**闸门结果 —— 一条真红，两条明示越过：**
+
+- **第一次 `--phase full` 报了 3 条，其中第三条是真的：`WEB_IMAGE is not immutable`。**
+  原因是我先把 `WEB_IMAGE` 写成了**标签** `katrain-web:53e83787`。preflight 要求的是
+  `^sha256:[0-9a-f]{64}$` 或 `name@sha256:…` —— **标签会被后来的构建重新指向，不是不可变引用**。
+  改成 `docker image inspect --format '{{.Id}}'` 的 image id 后重跑，checks 3 → 2。
+  **这一进一出本身就是该分支在执行的证据**，本次因此没有再另做 `WEB_IMAGE` 变异。
+- 剩下 2 条仍是容量闸：`available_bytes=26780643328`、`required_bytes=38500000000`，
+  以及「projected filesystem use ≥ 75%」。**与 2026-08-21 两次、2026-08-23 一次同因同判据的
+  明示越过**：该闸按本文档 Invariants 一节是为**迁移峰值**标定的，本次只是替换一个已构建完成
+  的镜像。Stop conditions 写的是「任一闸失败即停」，此处是明示越过，不是忽略。
+- 只有 `katrain-web` 与一次性的 `minio-setup` 被重建；postgres / katago / minio / cron
+  保持原进程（compose 项目名仍是显式的 `name: katrain-ucloud`，换目录不会起平行栈）。
+
+**发布后实测（外网 https://modelstella.com）：**
+
+- `/health` = `{"status":"ok","engines":{"local":"reachable","cloud":"unconfigured"}}`；
+  `/`、`/galaxy`、`/galaxy/tsumego`、`/galaxy/report` 均 200。
+- `/api/translations?lang=cn`：**976 条**（上一版 970，+6），与 `26a046d0..53e83787` 的 cn
+  `.po` 新增 msgid 数逐一吻合。判据仍选在**旧版根本不存在的键**上：`report:summary_done`、
+  `tsumego:kyu_tier`、`dan_tier`、`stronger_downward`、`all_levels`、`your_level`，6/6 就位。
+- **再加一条构建指纹判据**：新包 `/assets/GalaxyApp-DgDiQDNZ.js` = 200，
+  旧包 `/assets/GalaxyApp-CaZhuOdw.js` = **404**。i18n 那条只能证明 `.mo` 换了，
+  这条才证明**前端 bundle 也确实换了**（旧包还在就说明有缓存或没换）。
+
+**同批部署的测试环境**（home-ubuntu / https://go.sailorvoyage.top，独立库、与生产不互通）：
+`develop` 快进到 `80f54290` 后 `docker compose up -d --build katrain-web`。同样 6/6、976 条，
+`/galaxy/live` 等六个路径均 200；测试专用开关 `KATRAIN_LADDER_ALLOW_PROVISIONAL=1`
+（`docker-compose.override.yml`，仅测试机）重建后仍在。
+
+**本次一并记下的两点：**
+
+- **`katrain-cron` 两台都未重建**，是有意的：本次零后端 `.py`，cron 没有功能增量。
+  home-ubuntu 上 `Dockerfile.cron` 的基础镜像 `python:3.11-slim` 仍拉不动 Docker Hub，
+  这条阻塞照旧存在，只是本次不构成发布缺口。
+- 上一条「遗留（未处理）」已自然消解：旧 release 目录 `bb3f85bf…`、`a9607e75`、`e7f0e758`、
+  `93803100` 与对应旧镜像现已不在，根分区从 84% 降到 **75%（25G 可用）**。当前保留三份：
+  `53e83787`（线上）、`26a046d0`（回滚锚点，**回滚窗口内不得删除**）、`65677ce5`（更早一版）。

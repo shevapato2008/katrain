@@ -490,3 +490,70 @@ ECONNREFUSED，于是它画出**一块空盘**——木纹和子一颗都没有�
 `git checkout HEAD --` 撤回（它们这一轮没改过内容，而且是在贴图缺失的环境下拍的，
 比存档更差）。修完贴图之后重拍 05 / 15 是**另一次的事**，且要等翻译表那条也解决，
 否则拍出来仍然带着英文回退。
+
+## 14. 屏 04 本地对局 · 开局设置（2026-08-23）
+
+和屏 02/03 同一副骨架（左盘 516 + 16 + 右栏 460，右栏整栏滚，主行动键钉栏底），
+**但是另一个页面组件**（`pages/PvpLocalSetupPage.tsx`）。它上一版根本没接过外壳：
+左边是 `LiveBoard`、右边一整套 MUI（`TextField` × 2、`Slider` × 4、`Switch` × 2）。
+
+差别是这一边**没有引擎对手** ⇒ 没有棋力、没有 AI 策略、也没有「我执」；
+多出来的是**两个姓名输入**——四家里只有围棋有，因为面对面下完要记谱，谱上得有名字。
+
+### 复用，没有新构件
+
+`KioskOptSeg` / `KioskStepTrack` / `KioskSecLabel` / `KioskScrollZone` / `KioskPagebar` /
+`KioskSetupBoard` / `handicapStones()` / `.setgrp` 那一族 CSS，全部来自屏 02/03 那一轮。
+新写的只有 **`.nameinput` 一条**（稿子那颗「点此输入」药丸的可输入版本）和
+**`utils/setupOptions.ts`**（用时七档 + 规则四条说明，从 `AiSetupPage` 原样搬出来）。
+
+提 `setupOptions.ts` 的理由**不是「看着通用」，是它们是契约**：用时每一档写死了送给后端的
+四个字段（`time_enabled` / `main_time` / `byo_length` / `byo_periods`），
+各屏各抄一份的话，改一档要记得改三处，而漏改的那一处**不会红**，
+只会让某一屏悄悄送出另一套时限。
+
+### 稿子这一屏有**四处**不成立，都按仓里的事实写
+
+| 稿子 | 实际 | 出处 |
+|---|---|---|
+| 「落子」两段**可选** | 同屏 02：`isVisionEnabled` 用户切不了。这一屏尤其不能画成可选——本地对局那条路由外面套着 `<PhysicalBoardGuard requireRecognition>`，盘没标定过时进去的是**标定工作台**，不是对局 | `KioskApp.tsx:91`、`components/vision/PhysicalBoardGuard.tsx` |
+| 「白方 · **贴目**的一方」 | **反了。** 贴目是**黑方贴给白方**的，白方是**收**的那一方 ⇒ 写「后行 · 收下贴目的一方」 | `core/game.py:372`：黑棋分数 `- self.komi` |
+| 「不接引擎，没有提示也**没有形势判断**」 | 前半句对、后半句不对。`pvp_local` **不在** `SCORING_GAME_TYPES` 里 ⇒ `analysis_allowed` 为真，对局屏那颗**「领地」照样能按**，而领地就是形势判断。真正关掉的是**胜负走势图**（`evalAllowed` 把两人局排除）和 **AI 支招**（`hintVisible` 要求 `game_type === 'free'`） | `interface.py:253/261`、`GameControlPanel.tsx:113`、`GamePage.tsx:451` |
+| 「段位只有**在线大厅的定级队列**会改」 | 定级赛不在在线大厅，在**「升降级对弈」**——在线大厅那句挡人的话原文就是「先在『升降级对弈』打完 5 局定级赛」。权威是 `RANK_MOVING_GAME_TYPES = ("ai_ladder_ranked",)`，注释逐字写着「Exactly one, by design」 | `LobbyPage.tsx:151`、`interface.py:258` |
+
+后两条都在同一段 `.setnote` 上。**这类文案是最容易编的一类：它说的是别的屏上的事。**
+两句都改成有出处的版本，并留了一条闸盯着（`note` 里不许出现「形势判断」和「在线大厅」）。
+
+### 稿子上有、实现里做法不同的一处（不是错，是静态稿画不出来）
+
+「点此输入」在稿子里是一颗 `.kiosk-btn--pill`。真页面上它**必须真能打字** ⇒
+换成 `<input class="nameinput">`：同高 26、同圆角、同描边、同字号，宽度放到 116
+（药丸只装得下那四个字，输入框还要装得下人名）。
+**不做「点药丸弹一层输入」**——那是稿子上没有的一层流程，而且弹层正好盖住左边那块盘。
+
+留空时送出去的是**空串**，后端因此不写 SGF 的 `PB`/`PW`，对局屏回落到「黑方 / 白方」。
+**前端不替用户编名字**——编出来的名字会被写进棋谱。屏上那句「留空就记成『黑方 / 白方』」
+和送出去的载荷得对得上，两边各有一条断言。
+
+### 承重反查：触发，量了，而且**变异证明它量的是屏 04 自己**
+
+这一屏也是这一轮才第一次「能滚 / 主行动键钉得住底」。原来那条只跑屏 02 的闸
+**参数化成两屏各跑一次**（`SETUP_SCREENS`）：它们共用 `.setgrp` 那套类，
+但**骨架各自手写**——屏 04 完全可能把主行动键写进滚动区里，而屏 02 的那条闸对此一无所知。
+**同一条承重链上可以有不止一处断点；判据能转，结论不能转。**
+
+变异：把 `PvpLocalSetupPage` 的主行动键搬进 `<KioskScrollZone>` 里边 ⇒
+屏 04 那条当场红在「`ctaBottom` 没贴着右栏底」（586 → 530），而**屏 02 那条照样绿**。
+
+### 棘轮往下走了三格
+
+- `MUI_ICON_BASELINE` 摘掉 `PvpLocalSetupPage.tsx`（`PlayArrow` / `ArrowBack` 换成外壳）
+- `PO_OVERRIDES_DEFAULT_BASELINE` 摘掉它的 `Black` / `White` 两条（另铸
+  `setup:black_side` / `setup:white_side`：PO 里那两条是「黑棋 / 白棋」说的是**子**，
+  这里说的是**人**）；同一条名单里 `Byoyomi only 30s x3` **跟着文件搬**到
+  `utils/setupOptions.ts`，不是新漂的
+- `eslint src/kiosk` 从 108 降到 **107**（顺手清掉那个测试文件里的 `as any`）
+
+### 四图三计数
+
+`04-setup-local both=39432 refOnly=22347 implOnly=28491`（两次跑一模一样）。

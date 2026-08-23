@@ -637,3 +637,18 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 
 /* 分段格里的黑白子比独立那颗小一圈 —— 26 的子会把 60 高的格子撑得没有余白。 */
 .kiosk-optseg .disc { width: 18px; height: 18px; }
+
+/* ── 屏 04 本地对局:「对局双方」那两行行尾的名字输入 ──────────────────────
+   稿子画的是一颗写着「点此输入」的药丸(`.kiosk-btn--pill`)—— 静态稿只能画到这一步。
+   真页面上它必须**真能输入**:药丸的样子照搬(同高 26、同圆角、同描边、同字号),
+   把 `<span>` 换成 `<input>`。**不做「点药丸弹一个输入框」** —— 那是稿子上没有的
+   一层流程,而且弹层正好盖住左边那块盘。
+   宽度不照药丸:药丸只装得下「点此输入」四个字,而输入框还要装得下人名。 */
+.nameinput {
+  width: 116px; height: var(--btn-pill-h); padding: 0 12px;
+  border: 1px solid var(--hair); border-radius: 999px;
+  background: var(--panel); color: var(--text);
+  font-family: var(--font-sans); font-size: 12px; text-align: center;
+}
+.nameinput::placeholder { color: var(--dim); }
+.nameinput:focus-visible { outline: none; border-color: var(--accent); }

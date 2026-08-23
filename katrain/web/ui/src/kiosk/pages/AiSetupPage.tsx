@@ -9,6 +9,7 @@ import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskStepTrack } from '../shell/KioskStepTrack';
 import { interpolate } from '../utils/interpolate';
+import { RULES_HINT, TIME_PRESETS, TIME_TRACK_ORDER } from '../utils/setupOptions';
 import { API } from '../../api';
 import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -27,18 +28,6 @@ import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 import KioskAiLadderBlockingPanel from '../components/aiLadder/KioskAiLadderBlockingPanel';
 import KioskSetupBoard from '../components/board/KioskSetupBoard';
 
-// Time-control presets — each maps onto the existing timeEnabled/mainTime/byoyomiTime/
-// byoyomiPeriods state so the submitted payload values are unchanged from the slider UI.
-const TIME_PRESETS = (t: (en: string, zh: string) => string) => [
-  { key: 'untimed', label: t('Untimed', '不限时'), enabled: false, main: 0, byo: 30, periods: 3 },
-  { key: 'byoOnly', label: t('Byoyomi only 30s x3', '仅读秒 30秒×3'), enabled: true, main: 0, byo: 30, periods: 3 },
-  { key: '5', label: t('5 min + 3x30s', '5分+3×30秒'), enabled: true, main: 5, byo: 30, periods: 3 },
-  { key: '10', label: t('10 min + 3x30s', '10分+3×30秒'), enabled: true, main: 10, byo: 30, periods: 3 },
-  { key: '20', label: t('20 min + 3x30s', '20分+3×30秒'), enabled: true, main: 20, byo: 30, periods: 3 },
-  { key: '30', label: t('30 min + 3x30s', '30分+3×30秒'), enabled: true, main: 30, byo: 30, periods: 3 },
-  { key: '60', label: t('60 min + 3x30s', '60分+3×30秒'), enabled: true, main: 60, byo: 30, periods: 3 },
-];
-
 /**
  * `.kiosk-opthint` 写的是**当前选中项**的大白话(规范 §11 v1.21)。
  *
@@ -53,17 +42,6 @@ const AI_STRATEGY_HINT = (t: (en: string, zh: string) => string): Record<string,
     'Human-like: plays at the chosen strength, mistakes of that level included',
     '拟人:按所选棋力下出该水平的棋,包括那个水平会犯的错',
   ),
-});
-
-/**
- * 规则那四条**不是编的**,是围棋常识 —— 而且这是个教棋的产品,终局怎么算是开局前
- * 必须讲清的那件事。稿子给了中国规则那一条,其余三条同一个口径写下来。
- */
-const RULES_HINT = (t: (en: string, zh: string) => string): Record<string, string> => ({
-  chinese: t('Chinese rules count area: territory plus stones on the board', '中国规则数子:终局按占地算,活棋在自己空里落子不损目'),
-  japanese: t('Japanese rules count territory: filling your own territory costs a point', '日本规则数目:只算围住的空,在自己空里落子要损一目'),
-  korean: t('Korean rules count territory, same as Japanese with different komi practice', '韩国规则数目:和日本规则同一种算法,贴目习惯不同'),
-  aga: t('AGA rules count area but pass stones keep the count equal to territory scoring', 'AGA 规则数子,但停一手要交一子 —— 算出来和数目同分'),
 });
 
 // Canonical kiosk setup skeleton: left preview console + right token-themed form. pvp/cross-platform setup pages restyle against this — tokens only, no flow change.
@@ -243,11 +221,9 @@ const AiSetupPage = () => {
   // 规范 §11(v1.21)给 `.kiosk-optseg` 定的项数上限是 6,「超过就换下拉或滑条」。
   // 棋力 29 / 贴目 15 / 让子 10 / 用时 7 都超了,所以这四组走 `KioskStepTrack`。
   //
-  // **用时那七档在轨上按时长从短到长排**:仅读秒 → 5 → 10 → 20 → 30 → 60 → 不限时。
-  // `TIME_PRESETS` 里 `untimed` 排在第一个(它是自由对弈的默认值),照那个顺序画的话
-  // 「不限时」会落在轨的最左端 —— 而一条 −/＋ 轨的语义是「越往右越多」。
-  // 两件事:默认值是哪一个,和它在轨上排第几,不该共用一个数组顺序。
-  const timeTrack = ['byoOnly', '5', '10', '20', '30', '60', 'untimed']
+  // 用时那几档在轨上的顺序由 `utils/setupOptions` 的 `TIME_TRACK_ORDER` 定(理由写在那儿)。
+  // 计分局把「不限时」整档摘掉 —— **不是灰掉**:那一档在这一局里根本不存在。
+  const timeTrack = [...TIME_TRACK_ORDER]
     .filter((key) => !isRanked || key !== 'untimed')
     .map((key) => timePresets.find((p) => p.key === key)!)
     .filter(Boolean);

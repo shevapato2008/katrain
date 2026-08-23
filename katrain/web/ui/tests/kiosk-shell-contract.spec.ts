@@ -117,9 +117,12 @@ test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
 //      稿子没画这五屏,D2 明写「只接壳,不推导版式」:没有参照物就没有四图闸,
 //      重画它们的内容区等于自己发明设计。**允许留着,直到稿子把它们补齐。**
 //
-//  (B) **稿子画了、但本轮的十个 Task 没排到的屏** —— 开局设置(自由/升降级/本地)、在线大厅、
-//      训练营分类、课程书目、课程小节。它们在 `sample-go/build.py` 的进度带上仍是「外壳已接」。
+//  (B) **稿子画了、但本轮的十个 Task 没排到的屏** —— 在线大厅、训练营分类、课程书目、课程小节。
+//      它们在 `sample-go/build.py` 的进度带上仍是「外壳已接」。
 //      **允许留着,直到那几屏各自被重画。**
+//      2026-08-23 屏 02/03 重画时摘掉 `AiSetupPage.tsx`,屏 04 重画时摘掉 `PvpLocalSetupPage.tsx`
+//      (它同时从下面那条 PO 名单里带走 `Black` / `White` 两条 —— 那两句改成了
+//      `setup:black_side` / `setup:white_side`,说的是**人**不是子)。
 //
 //  (C) **对话框与浮层** —— 它们不在 1024×600 的版式里(盖在上面),规范 §10 管的是屏上的
 //      图标风格。**允许留着**,但重画所在的屏时顺手换掉最省事。
@@ -151,7 +154,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/pages/PlatformConnectPage.tsx', // (A) 跨平台
   'src/kiosk/pages/PlatformEngineSetupPage.tsx', // (A) 跨平台
   'src/kiosk/pages/PlatformLobbyPage.tsx', // (A) 跨平台
-  'src/kiosk/pages/PvpLocalSetupPage.tsx', // (B) 屏 04 本地对局设置,未排
   'src/kiosk/pages/ResearchPage.tsx', // (A) 研究屏
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
   'src/kiosk/pages/TutorialBookDetailPage.tsx',
@@ -284,7 +286,6 @@ const PO_OVERRIDES_DEFAULT_BASELINE = [
   'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:import_local',
   'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:importing',
   'src/kiosk/components/research/CloudSGFPanel.tsx  research:game_library',
-  'src/kiosk/pages/AiSetupPage.tsx  Byoyomi only 30s x3',
   'src/kiosk/pages/AiSetupPage.tsx  Territory',
   'src/kiosk/pages/BaipuSessionPage.tsx  Black',
   'src/kiosk/pages/BaipuSessionPage.tsx  Undo',
@@ -304,8 +305,6 @@ const PO_OVERRIDES_DEFAULT_BASELINE = [
   'src/kiosk/pages/LobbyPage.tsx  lobby:quick_match_rated',
   'src/kiosk/pages/LobbyPage.tsx  lobby:subtitle',
   'src/kiosk/pages/LobbyPage.tsx  lobby:title',
-  'src/kiosk/pages/PvpLocalSetupPage.tsx  Black',
-  'src/kiosk/pages/PvpLocalSetupPage.tsx  White',
   'src/kiosk/pages/ReportDetailPage.tsx  report:deep',
   'src/kiosk/pages/ReportDetailPage.tsx  report:login_required_detail',
   'src/kiosk/pages/ReportDetailPage.tsx  report:no_sgf',
@@ -321,6 +320,10 @@ const PO_OVERRIDES_DEFAULT_BASELINE = [
   'src/kiosk/pages/TsumegoCategoriesPage.tsx  tsumego:selectCategory',
   'src/kiosk/pages/TsumegoProblemPage.tsx  Black',
   'src/kiosk/pages/TsumegoProblemPage.tsx  White',
+  // 2026-08-23(屏 04):用时那七档从 `AiSetupPage.tsx` 搬进 `utils/setupOptions.ts`(两屏共用),
+  // 这一条**跟着文件走**,不是新漂的 —— `Byoyomi only 30s x3` 在 PO 里是「仅读秒」,
+  // 而屏上要写「仅读秒 30秒×3」(轨上要看得见是几秒几次)。
+  'src/kiosk/utils/setupOptions.ts  Byoyomi only 30s x3',
 ];
 
 test('t(key, 中文默认值) 的默认值不许和 PO 里那条说的是两回事', () => {

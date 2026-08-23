@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
-import ContentPageHeader from '../../components/layout/ContentPageHeader';
+import LoginIcon from '@mui/icons-material/Login';
 import {
   Alert,
   Box,
@@ -44,6 +44,10 @@ import ReportLibraryImportDialog from '../../components/report/ReportLibraryImpo
 import ReportLocalImportDialog, {
   type LocalImportPayload,
 } from '../../components/report/ReportLocalImportDialog';
+import BoardPageShell from '../../components/board/BoardPageShell';
+import { useBoardCoordinates } from '../../components/board/useBoardCoordinates';
+import ModulePlate from '../../components/layout/ModulePlate';
+import LoginModal from '../../components/auth/LoginModal';
 
 const PAGE_SIZE = 12;
 
@@ -92,6 +96,10 @@ export default function ReportsPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [boardEdge, setBoardEdge] = useState(0);
+  const coordinates = useBoardCoordinates(boardEdge);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   const loadGames = useCallback(async () => {
     if (!token || !isAuthenticated) {
@@ -306,288 +314,269 @@ export default function ReportsPage() {
     [retryReport],
   );
 
+  const hasPreview = previewMoves.length > 0;
+  const movesUnit = t('report:moves_unit', 'moves');
+
+  /* 模块牌副标题：选中棋局后是对局双方 + 手数，没选中时是「选择一局棋谱」。
+     与棋谱库页（S4，`KifuLibraryPage.tsx:325`）同一口径。
+     迁移前预览卡有自己的标题栏（棋局标题 + 双方 · 手数）；标题栏整块没了，
+     **棋局标题下沉到右栏那张卡上**（`ReportGameCard` 本来就画标题，选中态高亮），
+     模块牌只留双方 + 手数 —— 稿子 `plate2({title:'复盘', sub:'申真谞 vs 柯洁 · 250 手'})` 同址。 */
+  /* 详情还在路上时退回列表里那条摘要 —— 双方名字摘要里就有，不必等 SGF 回来
+     才敢写标题，否则每选一局副标题都会先塌成「选择一局棋谱」再撑回去。 */
+  const plateGame = selectedGame ?? selectedSummary;
+  const plateSubtitle = plateGame
+    ? `${plateGame.player_black || t('report:black', 'Black')} vs ${plateGame.player_white || t('report:white', 'White')}`
+      + ` · ${plateGame.move_count} ${movesUnit}`
+    : t('report:select_game', 'Select a game');
+
+  /* 状态位：选中那一局的报告状态。spec §2.4「状态放最右」，只留**一个**状态件不堆
+     —— 队列汇总（几个生成中/排队中/失败）仍在右栏中段顶部，那是整页的状态，不是这一局的。 */
+  const selectedReportState = selectedGameId ? reportStatesByGame[selectedGameId] : undefined;
+  const plateStatus = (() => {
+    const state = selectedReportState;
+    if (!state) return undefined;
+    /* 优先级与卡片上一致（`ReportGameCard.tsx:83`）：进行中 > 失败 > 已完成 ——
+       一局同时有「深度已完成」和「普通生成中」时，说「生成中」才是当下在发生的事。 */
+    if (state.activeNormal || state.activeDeep) {
+      return <Chip size="small" color="warning" variant="outlined" label={t('report:summary_running', 'running')} />;
+    }
+    if (state.failedNormal || state.failedDeep) {
+      return <Chip size="small" color="error" variant="outlined" label={t('report:summary_failed', 'failed')} />;
+    }
+    if (state.completedNormal || state.completedDeep) {
+      return <Chip size="small" color="success" variant="outlined" label={t('report:summary_done', '已完成')} />;
+    }
+    return undefined;
+  })();
+
   if (!isAuthenticated) {
     return (
-      <Box sx={{ p: 4 }}>
-        <Alert severity="info">{t('report:login_required', 'Please log in to view and generate game reviews.')}</Alert>
-      </Box>
+      <>
+        <BoardPageShell
+          board={(
+            <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.5, textAlign: 'center', px: 2 }}>
+              {t('report:login_required', 'Please log in to view and generate game reviews.')}
+            </Typography>
+          )}
+          modulePlate={(
+            <ModulePlate
+              title={t('report:my_reports', 'Review')}
+              backTo="/galaxy/report"
+              showBack={false}
+            />
+          )}
+          railBody={(
+            <Box sx={{ p: 2 }}>
+              <Alert severity="info">
+                {t('report:login_required', 'Please log in to view and generate game reviews.')}
+              </Alert>
+            </Box>
+          )}
+          actions={(
+            <Box sx={{ p: 2 }}>
+              {/* 稿子的未登录支给了这个按钮。左栏底部也有一个登录按钮，但那是全站的，
+                  而「请先登录」这句话就写在这一屏上、旁边却没有可按的东西 ——
+                  代价只是本页再挂一份 `LoginModal`（对话框状态，两份不会同时开）。 */}
+              <Button
+                data-testid="reports-login"
+                variant="contained"
+                fullWidth
+                size="large"
+                startIcon={<LoginIcon />}
+                onClick={() => setLoginOpen(true)}
+                sx={{ py: 1.5 }}
+              >
+                {t('Login', 'Sign In')}
+              </Button>
+            </Box>
+          )}
+        />
+        <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      </>
     );
   }
 
   return (
     <>
-      {/* 承重：**基态是窄档**，`@media (min-width:900px)` 才回到并排 —— 与 `BoardPageShell`
-          同一档、同一写法（900 / 1200 / 1536）。这样写而不是反过来，是因为宽档那一支
-          必须与改动前逐字一致：宽档本来就是对的，这次只补窄档。
+      {/* 迁到统一的棋盘页外壳（spec §2.2/§2.3）。迁移前这一页是「左 预览卡 / 右 520 列表」，
+          棋盘只有 467 —— 全站最小的一块。现在棋盘吃满中间区（1440 档 828），
+          导入 / 搜索 / 列表 / 分页整块进右栏。
 
-          改之前这里是一条写死的 `flex-direction: row; flex-wrap: nowrap`，右栏 `width:520`
-          且 `flexShrink:0`。430 视口下实测：左栏被压到 **48px**（只剩 p:3 的左右内边距）、
-          右栏仍占 520，两栏合计 **568 > 430**，`split.scrollWidth 568 vs clientWidth 430`
-          —— 超出的部分被 `overflow:hidden` 直接切掉，棋局卡右边 118px 永远看不到，
-          也没有任何地方能滚过去。 */}
-      <Box
-        data-testid="reports-split"
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          // 底部导航是 position:fixed 的浮层，窄档下会盖住内容最后 64px。
-          // 与 BoardPageShell 同一句。
-          pb: 'calc(64px + env(safe-area-inset-bottom))',
-          '@media (min-width:900px)': {
-            flexDirection: 'row',
-            overflow: 'hidden',
-            pb: 0,
-          },
-        }}
-      >
-        <Box
-          data-testid="reports-preview-pane"
-          sx={{
-            // 窄档：按内容占高、整幅宽，滚动交给外层那一条。
-            flex: 'none',
-            width: '100%',
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'visible',
-            p: 3,
-            gap: 2,
-            '@media (min-width:900px)': {
-              flex: 1,
-              width: 'auto',
-              overflow: 'hidden',
-            },
-          }}
-        >
-          <Box>
-            <ContentPageHeader title={t('report:my_reports', 'Review')} />
-            {/* 操作提示原来是页头第二行。spec §2.4 禁长副标题进页头，下沉到正文首行。 */}
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-              {t('report:page_hint', 'Select a game on the right to preview. Create reports from the game card.')}
-            </Typography>
-          </Box>
-
-          {(taskError || reportTasksError) && (
-            <Alert severity="error" onClose={() => {
-              setTaskError(null);
-              clearReportTasksError();
-            }}>
-              {taskError || reportTasksError}
-            </Alert>
-          )}
-
-          <Box
-            sx={{
-              // 窄档没有「剩余高度」可分 —— 外层已经是滚动列，flex:1 在这里会退化成
-              // 由内容决定，量到多少算多少。改成按内容占高，棋盘那一格自己撑出方形。
-              flex: 'none',
-              minHeight: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              borderRadius: 3,
-              bgcolor: '#111111',
-              border: '1px solid rgba(255,255,255,0.06)',
-              overflow: 'hidden',
-              '@media (min-width:900px)': { flex: 1 },
-            }}
-          >
-            <Box sx={{ px: 3, py: 2, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                {selectedGame?.title || selectedGame?.event || selectedSummary?.title || selectedSummary?.event || t('report:select_game', 'Select a game')}
+          062b19c4 那轮为窄档手写的一整套 `@media (min-width:900px)` 断点在这里**整段没了**
+          —— `BoardPageShell` 自己就是按同一组断点写的（900 / 1200 / 1536），
+          两份实现收成一份。 */}
+      <BoardPageShell
+        onBoardSizeChange={setBoardEdge}
+        board={previewLoading || gamesLoading ? (
+          <CircularProgress data-testid="reports-preview-spinner" />
+        ) : hasPreview ? (
+          <LiveBoard
+            moves={previewMoves}
+            stoneColors={previewColors}
+            currentMove={previewCurrentMove}
+            boardSize={previewBoardSize}
+            /* 迁移前这里写死 `showCoordinates`。改成走 spec §3.2 的自动档（棋盘边长
+               低于 500px 时默认关闭）。本页右栏塞的是列表、没有显示开关那一段，
+               所以只取 `visible` 不挂 toggle —— 同 S4 棋谱库页。 */
+            showCoordinates={coordinates.visible}
+            minimumCanvasSize={0}
+            minContainerHeight={0}
+          />
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.5, textAlign: 'center', px: 2 }}>
+            {t('report:no_preview', 'No game to preview yet.')}
+          </Typography>
+        )}
+        modulePlate={(
+          <ModulePlate
+            title={t('report:my_reports', 'Review')}
+            subtitle={plateSubtitle}
+            status={plateStatus}
+            /* 复盘是一级导航页，没有上一级 —— 同棋谱库页 / 直播列表页。 */
+            backTo="/galaxy/report"
+            showBack={false}
+          />
+        )}
+        railBody={(
+          <>
+            <Box sx={{ p: 2, pb: 1.5 }}>
+              {/* 这句提示原来在页头第二行、S8 那轮下沉到正文首行，现在跟着列表进右栏。
+                  措辞去掉了方位词：原文是「选择**右侧**棋局预览棋盘」，稿子改成
+                  「选一局在**左边**预览棋盘」—— 两个在 <900px 堆叠档下都是假的
+                  （列表在棋盘**下方**）。同 S4 棋谱库页那条「不带方位的说法」。 */}
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                {t('report:page_hint', 'Select a game to preview it. Reports are created from the game card.')}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {selectedGame
-                  ? `${selectedGame.player_black || t('report:black', 'Black')} vs ${selectedGame.player_white || t('report:white', 'White')} · ${selectedGame.move_count} ${t('report:moves_unit', 'moves')}`
-                  : t('report:select_game_hint', 'Select a game from the right panel, or import a new SGF / library game.')}
-              </Typography>
-            </Box>
 
-            <Box
-              data-testid="reports-preview-stage"
-              sx={{
-                // 窄档用 1:1 定尺（同 BoardPageShell 的 board-stage），宽档仍旧吃剩余高度。
-                flex: 'none',
-                aspectRatio: '1 / 1',
-                minHeight: 0,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                p: 2,
-                '@media (min-width:900px)': { flex: 1, aspectRatio: 'auto' },
-              }}
-            >
-              {previewLoading || gamesLoading ? (
-                <CircularProgress />
-              ) : previewMoves.length > 0 ? (
-                <LiveBoard
-                  moves={previewMoves}
-                  stoneColors={previewColors}
-                  currentMove={previewCurrentMove}
-                  boardSize={previewBoardSize}
-                  showCoordinates
-                  /* 两个 400px 地板必须关掉：430 档下这一格净宽只有 382，
-                     默认的 `minHeight: 400` 会把定尺格顶破。已迁的两页同样传 0/0
-                     （见 ReportDetailPage.tsx 那段注释）。宽档这一格本来就 > 400，
-                     去掉地板不改变宽档任何一个数。 */
-                  minimumCanvasSize={0}
-                  minContainerHeight={0}
+              {(taskError || reportTasksError) && (
+                <Alert
+                  severity="error"
+                  sx={{ mb: 1.5 }}
+                  onClose={() => {
+                    setTaskError(null);
+                    clearReportTasksError();
+                  }}
+                >
+                  {taskError || reportTasksError}
+                </Alert>
+              )}
+
+              {queueSummary && (queueSummary.pending > 0 || queueSummary.running > 0 || queueSummary.failed > 0) && (
+                <Stack direction="row" spacing={0.75} sx={{ mb: 1.5, flexWrap: 'wrap', rowGap: 0.75 }}>
+                  {queueSummary.running > 0 && (
+                    <Chip label={`${queueSummary.running} ${t('report:summary_running', 'running')}`} size="small" color="warning" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
+                  )}
+                  {queueSummary.pending > 0 && (
+                    <Chip label={`${queueSummary.pending} ${t('report:summary_queued', 'queued')}`} size="small" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
+                  )}
+                  {queueSummary.failed > 0 && (
+                    <Chip label={`${queueSummary.failed} ${t('report:summary_failed', 'failed')}`} size="small" color="error" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
+                  )}
+                </Stack>
+              )}
+
+              <Stack spacing={1.5}>
+                <ReportImportMenu
+                  onImportLocal={() => setLocalImportOpen(true)}
+                  onImportLibrary={() => setLibraryImportOpen(true)}
                 />
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  {t('report:no_preview', 'No game to preview yet.')}
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder={t('report:search_placeholder', 'Search by player, title, or event')}
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      handleSearch();
+                    }
+                  }}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: 'text.secondary', fontSize: 20, opacity: 0.65 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: 'rgba(255,255,255,0.03)',
+                    },
+                  }}
+                />
+              </Stack>
+
+              {/* 局数与页码。选中棋局后模块牌副标题会换成对局双方，所以这一行是
+                  「一共多少局、看到第几页」唯一常驻的地方（同 S4 棋谱库页）。
+                  迁移前这句话住在右栏那个 h5「棋局列表」下面；h5 没了 —— 模块牌
+                  就是这一栏的标题，同一层级不写两遍。 */}
+              {!gamesLoading && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, fontSize: '0.72rem', opacity: 0.75 }}>
+                  {t('report:game_list_hint', '{count} games. Search by player, title, or event.').replace('{count}', totalGames.toLocaleString())}
+                  {totalPages > 1 && ` · ${t('kifu:page_x_of_y', '第 {page} / {total} 页')
+                    .replace('{page}', String(page))
+                    .replace('{total}', String(totalPages))}`}
                 </Typography>
               )}
             </Box>
 
-            <PlaybackBar
-              currentMove={previewCurrentMove}
-              totalMoves={previewMoves.length}
-              onMoveChange={setPreviewCurrentMove}
-            />
-          </Box>
-        </Box>
-
-        <Box
-          data-testid="reports-list-pane"
-          sx={{
-            width: '100%',
-            flexShrink: 1,
-            // 窄档两栏上下堆叠，左边那条竖线会变成横在中间的一道，改到顶边。
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'visible',
-            bgcolor: 'rgba(20,20,20,0.98)',
-            '@media (min-width:900px)': {
-              width: 520,
-              flexShrink: 0,
-              borderTop: 'none',
-              borderLeft: '1px solid rgba(255,255,255,0.06)',
-              overflow: 'hidden',
-            },
-          }}
-        >
-          <Box sx={{ p: 3, pb: 2 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700 }}>
-              {t('report:game_list', 'Game List')}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, mb: queueSummary && (queueSummary.pending > 0 || queueSummary.running > 0 || queueSummary.failed > 0) ? 1 : 2 }}>
-              {t('report:game_list_hint', '{count} games. Search by player, title, or event.').replace('{count}', totalGames.toLocaleString())}
-            </Typography>
-            {queueSummary && (queueSummary.pending > 0 || queueSummary.running > 0 || queueSummary.failed > 0) && (
-              <Stack direction="row" spacing={0.75} sx={{ mb: 1.5 }}>
-                {queueSummary.running > 0 && (
-                  <Chip label={`${queueSummary.running} ${t('report:summary_running', 'running')}`} size="small" color="warning" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
-                )}
-                {queueSummary.pending > 0 && (
-                  <Chip label={`${queueSummary.pending} ${t('report:summary_queued', 'queued')}`} size="small" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
-                )}
-                {queueSummary.failed > 0 && (
-                  <Chip label={`${queueSummary.failed} ${t('report:summary_failed', 'failed')}`} size="small" color="error" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
-                )}
-              </Stack>
-            )}
-            <Stack spacing={1.5}>
-              <ReportImportMenu
-                onImportLocal={() => setLocalImportOpen(true)}
-                onImportLibrary={() => setLibraryImportOpen(true)}
-              />
-              <TextField
-                fullWidth
-                size="small"
-                placeholder={t('report:search_placeholder', 'Search by player, title, or event')}
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    handleSearch();
-                  }
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'text.secondary', fontSize: 20, opacity: 0.65 }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(255,255,255,0.03)',
-                  },
-                }}
-              />
-            </Stack>
-          </Box>
-
-          {gamesError && (
-            <Box sx={{ px: 3, pb: 2 }}>
-              <Alert severity="error">{gamesError}</Alert>
-            </Box>
-          )}
-
-          <Box
-            data-testid="reports-list-scroll"
-            sx={{
-              // 窄档不在自己内部滚 —— 页面已经是一条滚动列，列表里再套一个滚动区
-              // 就成了「中段里再套中段」，两条滚动条互相抢。
-              flex: 'none',
-              minHeight: 0,
-              overflow: 'visible',
-              px: 2.5,
-              pb: 2,
-              '@media (min-width:900px)': { flex: 1, overflow: 'auto' },
-            }}
-          >
-            {gamesLoading ? (
-              <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CircularProgress size={28} />
+            {gamesError && (
+              <Box sx={{ px: 2, pb: 1.5 }}>
+                <Alert severity="error">{gamesError}</Alert>
               </Box>
-            ) : games.length === 0 ? (
-              <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  {query ? t('report:no_match', 'No games matching “{query}”.').replace('{query}', query) : t('report:no_games', 'No games yet. Import one to generate a report.')}
-                </Typography>
-              </Box>
-            ) : (
-              <Stack spacing={1.25}>
-                {games.map((game, index) => (
-                  <Fade key={game.id} in timeout={200 + index * 40}>
-                    <Box>
-                      <ReportGameCard
-                        game={game}
-                        selected={game.id === selectedGameId}
-                        reportState={reportStatesByGame[game.id] || {}}
-                        onSelect={() => setSelectedGameId(game.id)}
-                        onCreateReport={(reportType) => handleCreateReport(game, reportType)}
-                        onOpenReport={(taskId) => navigate(`/galaxy/report/${taskId}`)}
-                        onRetry={(taskId) => handleRetry(taskId)}
-                        onDelete={() => setDeleteTarget(game.id)}
-                      />
-                    </Box>
-                  </Fade>
-                ))}
-              </Stack>
             )}
-          </Box>
 
-          {totalPages > 1 && (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                py: 1.5,
-                borderTop: '1px solid rgba(255,255,255,0.06)',
-                flexShrink: 0,
-              }}
-            >
-              <Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" size="small" />
+            <Box data-testid="reports-list" sx={{ px: 1.5, pb: 1 }}>
+              {gamesLoading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6 }}>
+                  <CircularProgress size={28} />
+                </Box>
+              ) : games.length === 0 ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 2, py: 6 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                    {query ? t('report:no_match', 'No games matching \u201c{query}\u201d.').replace('{query}', query) : t('report:no_games', 'No games yet. Import one to generate a report.')}
+                  </Typography>
+                </Box>
+              ) : (
+                <Stack spacing={1.25}>
+                  {games.map((game, index) => (
+                    <Fade key={game.id} in timeout={200 + index * 40}>
+                      <Box>
+                        <ReportGameCard
+                          game={game}
+                          selected={game.id === selectedGameId}
+                          reportState={reportStatesByGame[game.id] || {}}
+                          onSelect={() => setSelectedGameId(game.id)}
+                          onCreateReport={(reportType) => handleCreateReport(game, reportType)}
+                          onOpenReport={(taskId) => navigate(`/galaxy/report/${taskId}`)}
+                          onRetry={(taskId) => handleRetry(taskId)}
+                          onDelete={() => setDeleteTarget(game.id)}
+                        />
+                      </Box>
+                    </Fade>
+                  ))}
+                </Stack>
+              )}
             </Box>
-          )}
-        </Box>
-      </Box>
+
+            {totalPages > 1 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', px: 1, pb: 2 }}>
+                {/* 分页保持 MUI 默认密度、不收 `siblingCount` —— 收了会丢直达页码，
+                    账本上就是丢控件。同 S4 棋谱库页那条注释。 */}
+                <Pagination count={totalPages} page={page} onChange={handlePageChange} color="primary" size="small" />
+              </Box>
+            )}
+          </>
+        )}
+        actions={hasPreview ? (
+          <PlaybackBar
+            currentMove={previewCurrentMove}
+            totalMoves={previewMoves.length}
+            onMoveChange={setPreviewCurrentMove}
+          />
+        ) : null}
+      />
 
       <ReportLocalImportDialog
         open={localImportOpen}

@@ -2273,8 +2273,7 @@ msgstr "Разбор"
 
 msgid "report:page_hint"
 msgstr ""
-"Выберите партию справа для просмотра. Отчёты создаются через карточку "
-"партии."
+"Выберите партию для предпросмотра. Отчёты создаются на карточке партии."
 
 msgid "report:select_game"
 msgstr "Выбрать партию"
@@ -3121,3 +3120,25 @@ msgstr "В конец"
 
 msgid "game:in_play"
 msgstr "Идёт партия"
+
+msgid "report:summary_done"
+msgstr "готово"
+
+#. TODO
+msgid "play:game_records"
+msgstr "Game Records"
+
+msgid "tsumego:kyu_tier"
+msgstr "Кю"
+
+msgid "tsumego:dan_tier"
+msgstr "Дан"
+
+msgid "tsumego:stronger_downward"
+msgstr "ниже — сильнее"
+
+msgid "tsumego:all_levels"
+msgstr "Все уровни · {count}"
+
+msgid "tsumego:your_level"
+msgstr "ваш уровень"

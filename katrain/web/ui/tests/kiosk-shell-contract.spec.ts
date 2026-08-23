@@ -151,6 +151,9 @@ test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
 //      2026-08-23 屏 02/03 重画时摘掉 `AiSetupPage.tsx`,屏 04 重画时摘掉 `PvpLocalSetupPage.tsx`
 //      (它同时从下面那条 PO 名单里带走 `Black` / `White` 两条 —— 那两句改成了
 //      `setup:black_side` / `setup:white_side`,说的是**人**不是子)。
+//      2026-08-24 屏 06 重画时摘掉 `LobbyPage.tsx`,同时从 PO 名单里带走它那**九条** ——
+//      那九条全是「源码写 A、屏上出 B」的实例(`lobby:title` 写着「在线大厅」,
+//      cn PO 却是「多人游戏大厅」),重画时逐条换成了这一屏自己的新 key。
 //
 //  (C) **对话框与浮层** —— 它们不在 1024×600 的版式里(盖在上面),规范 §10 管的是屏上的
 //      图标风格。**允许留着**,但重画所在的屏时顺手换掉最省事。
@@ -178,7 +181,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/pages/GamePage.tsx', // (C) 屏 05 已重画;剩的是对话框里的图标
   'src/kiosk/pages/LiveMatchPage.tsx', // (A) 直播屏
   'src/kiosk/pages/LivePage.tsx', // (A) 直播屏
-  'src/kiosk/pages/LobbyPage.tsx', // (B) 屏 06 在线大厅,未排
   'src/kiosk/pages/PlatformConnectPage.tsx', // (A) 跨平台
   'src/kiosk/pages/PlatformEngineSetupPage.tsx', // (A) 跨平台
   'src/kiosk/pages/PlatformLobbyPage.tsx', // (A) 跨平台
@@ -325,15 +327,6 @@ const PO_OVERRIDES_DEFAULT_BASELINE = [
   'src/kiosk/pages/GamePage.tsx  White',
   'src/kiosk/pages/LiveMatchPage.tsx  Territory',
   'src/kiosk/pages/LivePage.tsx  Live',
-  'src/kiosk/pages/LobbyPage.tsx  lobby:custom_game',
-  'src/kiosk/pages/LobbyPage.tsx  lobby:finding_opponent',
-  'src/kiosk/pages/LobbyPage.tsx  lobby:invitation_text',
-  'src/kiosk/pages/LobbyPage.tsx  lobby:matching_desc',
-  'src/kiosk/pages/LobbyPage.tsx  lobby:no_active_games',
-  'src/kiosk/pages/LobbyPage.tsx  lobby:no_players',
-  'src/kiosk/pages/LobbyPage.tsx  lobby:quick_match_rated',
-  'src/kiosk/pages/LobbyPage.tsx  lobby:subtitle',
-  'src/kiosk/pages/LobbyPage.tsx  lobby:title',
   'src/kiosk/pages/ReportDetailPage.tsx  report:deep',
   'src/kiosk/pages/ReportDetailPage.tsx  report:login_required_detail',
   'src/kiosk/pages/ReportDetailPage.tsx  report:no_sgf',

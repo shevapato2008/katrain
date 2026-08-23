@@ -632,3 +632,170 @@ test(`开局设置(${screen.name}):设置装不下时右栏自己滚,而「开�
   expect(m.horizontal, '页面横向溢出了').toBe(0);
 });
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 屏 06 在线大厅:**两栏各自滚**
+ *
+ * 这一屏是这套外壳里第一处「同一屏上两个滚动区」。底座的悬浮拇指是
+ * `position:absolute; right: var(--scrollbar-inset)`,而它的定位原点靠
+ * `.kiosk-scrollzone{position:relative}` —— 那条隐含约定只在「唯一会滚的是最右那栏」时
+ * 才看不出问题。这一屏左栏也要滚,**定位错了两条拇指会一起贴到整屏最右边**,
+ * 而截图上它们只是两条 3px 宽的细线,四图对比看不出来。⇒ 归这一关,用机器量。
+ *
+ * 判据先写死再读数:
+ *   · 该滚的是**两个** `.kiosk-side__scroll`,各自 scrollHeight > clientHeight
+ *   · 在左栏上真拨滚轮 ⇒ **左栏动、右栏一格不动**(反之亦然)—— 这是「两栏独立」的全部内容
+ *   · 左栏那条拇指的右缘必须落在**左栏**里(< 右栏左缘),右栏那条落在右栏里
+ *   · 溢出由列表吃掉,**不许顶破栏** ⇒ `.lobbycol` 自己不溢出
+ *   · 「开始匹配」高度仍是 48(名单一长它会被 flex 从 48 压成 24)、贴着栏底、滚过不动
+ *   · 页面不许横向溢出
+ *
+ * 造输入:12 局 / 20 人。稿子那一帧(5 局 / 14 人)的左栏算出来正好 422 = 可用高度,
+ * **一像素都不溢出** —— 拿它量等于什么都没量。
+ *
+ * **变异记录**(2026-08-24):
+ *   · 给 `.gamelist.kiosk-scrollzone` 写上 `position: static` ⇒ 「左栏那条拇指跑到右栏去了」
+ *     当场红,右缘从 < 548 变成 **1005**(整屏最右)。稿子警告的正是这一个,红分支跑过。
+ *   · **一条没红的**:去掉稿子那条 `.kiosk-primary-action{flex:none}`,`cta.h === 48` 照样绿。
+ *     所以那条 CSS 没有照抄(理由写在 `go-screens.css` 那一段);这里的高度断言留着,
+ *     但它今天**没有红分支** —— 它挡的是「以后有人改栏结构把按钮挤扁」,不是眼下某个已知故障。
+ *     余下三条(拨哪一栏动哪一栏 / 栏不许被顶破 / 按钮贴栏底且滚过不动)与屏 02/04 那一支
+ *     同源,那边已有变异记录(把主行动键搬进滚动区)。
+ * ────────────────────────────────────────────────────────────────────────── */
+
+const LOBBY_GAMES = Array.from({ length: 12 }, (_, i) => ({
+  session_id: `sess${String(i).padStart(4, '0')}`,
+  player_b: `黑方${i}`, player_w: `白方${i}`,
+  spectator_count: i % 3, move_count: 10 + i * 7,
+}));
+const LOBBY_USERS = Array.from({ length: 20 }, (_, i) => ({ id: i + 1, username: `棋手${i}` }));
+
+const bootLobbyScroll = async (page: Page) => {
+  await page.route('**/api/v1/users/online', (r) => r.fulfill({ json: LOBBY_USERS }));
+  await page.route('**/api/v1/games/active/multiplayer', (r) => r.fulfill({ json: LOBBY_GAMES }));
+  await page.route('**/api/v1/ai-ladder/status', (r) => r.fulfill({
+    json: {
+      view_state: 'ready',
+      placement_state: { phase: 'placement', completed_games: 2, total_games: 5 },
+      current_opponent: null, recent_ranked_results: [], net_score: 0, pending_settlement: false,
+    },
+  }));
+  await boot(page, '/kiosk/play/pvp/lobby');
+  await page.waitForSelector('[data-testid="lobby-start-match"]');
+  await expect(page.locator('[data-testid="lobby-game"]')).toHaveCount(12);
+  await expect(page.locator('[data-testid="lobby-player"]')).toHaveCount(20);
+};
+
+/** 两栏的滚动区、两条拇指、两栏外框,一次读齐。 */
+const lobbyMetrics = (page: Page) => page.evaluate(() => {
+  const zone = (sel: string) => document.querySelector(`${sel} .kiosk-side__scroll`) as HTMLElement;
+  const bar = (sel: string) => document.querySelector(`${sel} .kiosk-scrollbar`) as HTMLElement;
+  const col = (i: number) => document.querySelectorAll('.lobbycol')[i] as HTMLElement;
+  const cta = document.querySelector('.kiosk-primary-action') as HTMLElement;
+  const rd = (el: Element) => {
+    const b = el.getBoundingClientRect();
+    return { left: Math.round(b.left), right: Math.round(b.right), top: Math.round(b.top), bottom: Math.round(b.bottom), h: Math.round(b.height) };
+  };
+  const of = (el: HTMLElement) => ({
+    overflow: el.scrollHeight - el.clientHeight,
+    scrollTop: Math.round(el.scrollTop),
+    at: (el.closest('.kiosk-scrollzone') as HTMLElement).dataset.at ?? null,
+  });
+  return {
+    left: of(zone('.gamelist')), right: of(zone('.lobbylist')),
+    leftBar: rd(bar('.gamelist')), rightBar: rd(bar('.lobbylist')),
+    leftCol: rd(col(0)), rightCol: rd(col(1)),
+    leftColOverflow: col(0).scrollHeight - col(0).clientHeight,
+    rightColOverflow: col(1).scrollHeight - col(1).clientHeight,
+    cta: rd(cta),
+    horizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  };
+});
+
+const wheelOver = async (page: Page, selector: string, times: number) => {
+  const box = (await page.locator(selector).boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  for (let i = 0; i < times; i += 1) await page.mouse.wheel(0, 400);
+};
+
+test('在线大厅:左右两栏各自滚,拨哪一栏动哪一栏,两条拇指各回各栏', async ({ page }) => {
+  await bootLobbyScroll(page);
+
+  const before = await lobbyMetrics(page);
+  // 前置:两边都真的溢出了。造不出来下面全是空的。
+  expect(before.left.overflow, '左栏没造出溢出 —— 下面几条都是空的').toBeGreaterThan(100);
+  expect(before.right.overflow, '右栏没造出溢出 —— 下面几条都是空的').toBeGreaterThan(100);
+  expect(before.left.at, '左栏溢出了却没挂 data-at').toBe('top');
+  expect(before.right.at, '右栏溢出了却没挂 data-at').toBe('top');
+
+  // ① 两条拇指各回各栏。定位原点错了它们会**一起**贴到整屏最右边。
+  expect(before.leftBar.right, '左栏那条拇指跑到右栏去了 —— 定位原点不是自己那一栏')
+    .toBeLessThan(before.rightCol.left);
+  expect(before.leftBar.right, '左栏拇指不在左栏里').toBeLessThanOrEqual(before.leftCol.right);
+  expect(before.rightBar.right, '右栏拇指不在右栏里').toBeLessThanOrEqual(before.rightCol.right);
+
+  // ② 在**左栏**上拨真滚轮:左栏动、右栏一格不动。
+  await wheelOver(page, '.gamelist .kiosk-side__scroll', 12);
+  const afterLeft = await lobbyMetrics(page);
+  expect(afterLeft.left.scrollTop, '拨了十二下,左栏一格没动 —— 程序化能滚不算数').toBeGreaterThan(0);
+  expect(afterLeft.right.scrollTop, '拨左栏把右栏也带着滚了 —— 两栏没有各自独立').toBe(0);
+  expect(afterLeft.left.at, '左栏滚到底了 data-at 还不是 end').toBe('end');
+
+  // ③ 反过来:在**右栏**上拨,右栏动、左栏停在刚才那儿。
+  await wheelOver(page, '.lobbylist .kiosk-side__scroll', 12);
+  const after = await lobbyMetrics(page);
+  expect(after.right.scrollTop, '拨了十二下,右栏一格没动').toBeGreaterThan(0);
+  expect(after.left.scrollTop, '拨右栏把左栏又带动了').toBe(afterLeft.left.scrollTop);
+  expect(after.right.at, '右栏滚到底了 data-at 还不是 end').toBe('end');
+
+  // ④ 溢出由列表吃掉,不许顶破栏 —— 顶破了底下三块会被推出 516 之外。
+  expect(after.leftColOverflow, '左栏自己被顶破了').toBeLessThanOrEqual(0);
+  expect(after.rightColOverflow, '右栏自己被顶破了').toBeLessThanOrEqual(0);
+
+  // ⑤ 「开始匹配」:名单一长,`.kiosk-primary-action` 只有 margin-top:auto **没有 flex:none**,
+  //    会被从 48 压成一条 24 的细边。它在滚动区外面,所以滚过也不该动。
+  expect(after.cta.h, '「开始匹配」被名单挤扁了 —— 它缺 flex:none').toBe(48);
+  expect(after.cta.bottom, '「开始匹配」没贴着右栏底').toBe(after.rightCol.bottom);
+  expect(after.cta.bottom, '滚过之后主行动键动了 —— 它在滚动区外面').toBe(before.cta.bottom);
+
+  expect(after.horizontal, '页面横向溢出了').toBe(0);
+});
+
+/**
+ * 匹配中那个弹层**不许被画布裁掉**。
+ *
+ * `.cdlg{position:absolute; inset:0}` 找的是最近的**定位祖先**。`.kiosk-layout-a` 不定位的话
+ * 它一路找到 `.kiosk-content` —— 那一层带 14px 上下内边距,于是弹层高 544 而中间区只有 516,
+ * 底边 28px 落到画布外面。**截图上看不出来**(弹层是半透明的,底下那 14px 本来就是深色),
+ * 所以这一条只能量。
+ *
+ * **变异记录**(2026-08-24):把 `.kiosk-layout-a.lobby-layout` 那条 `position: relative` 去掉,
+ * 这一条当场红在「弹层比中间区高」——`cdlgH` 从 516 变 544、`bottom` 从 586 变 600 且
+ * 落到 `content.bottom` 之外。红分支跑过。
+ */
+test('在线大厅:匹配中那个弹层的定位原点是布局根,不是带内边距的中间区', async ({ page }) => {
+  await bootLobbyScroll(page);
+  await page.click('[data-testid="lobby-start-match"]');
+  await page.waitForSelector('[data-testid="lobby-matching"]');
+
+  const m = await page.evaluate(() => {
+    const rd = (sel: string) => {
+      const b = document.querySelector(sel)!.getBoundingClientRect();
+      return { top: Math.round(b.top), bottom: Math.round(b.bottom), h: Math.round(b.height) };
+    };
+    return {
+      dlg: rd('.cdlg'), box: rd('.cdlg__box'),
+      layout: rd('.kiosk-layout-a'), content: rd('.kiosk-content'),
+      screenBottom: Math.round(document.querySelector('.kiosk-screen')!.getBoundingClientRect().bottom),
+    };
+  });
+
+  expect(m.dlg.h, '弹层不是布局根那么高 —— 它的定位原点跑到别的层去了').toBe(m.layout.h);
+  expect(m.dlg.top, '弹层上缘没对齐布局根').toBe(m.layout.top);
+  expect(m.dlg.bottom, '弹层下缘超出了中间区 —— 底边会被画布裁掉')
+    .toBeLessThanOrEqual(m.content.bottom);
+  expect(m.dlg.bottom, '弹层被画布裁了').toBeLessThanOrEqual(m.screenBottom);
+  // 盒子本身也得整个在里面 —— 弹层对了但盒子太高一样看不全。
+  expect(m.box.top, '弹窗盒上缘在中间区外面').toBeGreaterThanOrEqual(m.content.top);
+  expect(m.box.bottom, '弹窗盒下缘在中间区外面').toBeLessThanOrEqual(m.content.bottom);
+});

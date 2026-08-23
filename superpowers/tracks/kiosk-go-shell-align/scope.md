@@ -758,3 +758,103 @@ artifact 里（`fbc085e7-1cae-4f3b-82c2-ed5808d017c2`），`sample-chess/README-
 真正能分辨的是**插入点签名**：改动点之前的图必须一张都不变。变了才是事故。
 （顺带:这也意味着**不能拿存档图的稳定性来查这个仓的回归** —— 任何加字的改动还会
 重新子集化字库,66 面 → 70 面、65 面字节不同,那是另一条同向的噪声源。）
+
+---
+
+## §18 屏 06 在线大厅 —— 实现（2026-08-24）
+
+Fan 看过四张稿子后放行（「可以」）。稿子已提交进 smartbox `main`（`b40fa8f99`，未推），
+实现按它做。四帧的四图产物在 `visual/06-lobby/1024x600/`。
+
+| 帧 | 路由 / 触发 | both | refOnly | implOnly |
+|---|---|---|---|---|
+| 06 主屏 | `/kiosk/play/pvp/lobby` | 21306 | 21716 | 17541 |
+| 06b 未登录 | 同上，无 token | 15391 | 9328 | 6921 |
+| 06c 匹配中 | 点「开始匹配」 | 10309 | 13579 | 9628 |
+| 06d 收到邀请 | 服务端推 `invitation` | 14712 | 11822 | 6977 |
+
+### 和稿子的四处不同，每一处都写在四图标签带里
+
+1. **段位那一列没有实现。** 这是本屏唯一一处「实现比稿子少」。理由就是 §17 登记的那条契约：
+   `/users/online` 回的 `User.rank` / `elo_points` 全仓没有任何一处写（`UPDATE users SET`
+   只在 `core/billing.py` 改 credits，`models_db.py:75` 的默认值 `"20k"` 从注册那天起没动过）。
+   今天照画只有两种结果：每个人恒显「20k / 0」，或按现有那句 `rank==='20k' && !elo → 无段位`
+   把整列写死成一个词 —— 而**定过级的人会被这一列说成没定过级**。位置和宽度稿子里定死了
+   （`.rk`，62px，名字之后第一格），`/users/online` join 上阶梯就补。
+2. **06d 那行小字改了。** 稿子写「不接受就一直挂着 —— 邀请没有期限」只说了一半：后端连
+   decline 都没有，这颗「拒绝」只关掉本地这个窗、对面收不到任何东西。⇒ 写成
+   「拒绝只关掉这个窗 —— 对面收不到回音，邀请也没有期限」。
+3. **06d 副行去掉「业余 3 段 · 」。** `invitation` 只有 `from_id` / `from_name` / `mode`。
+4. **06b `fact` 那行小字改了。** 稿子那句承诺的正是第 1 条里没上的段位列。
+
+### 稿子注释里一句错的，已在提交里改掉
+
+「全仓没有 follow」——**接口是有的**（`/api/v1/users/follow/{username}`、`/users/following`，
+galaxy 的 `FriendsPanel` 在用）。真实理由是**盒内一个入口都没有** ⇒ 关注集恒为空，
+拿它做筛选是一个永远筛不出东西的标签。结论没变，理由换成成立的那一个。
+（这和 8-23 屏 02/04 那次是同一个形状：**「我没找到」写成了「不存在」**。）
+
+### 实现过程中量出来的三个错
+
+1. **无限刷新。** `useTranslation()` 的 `t` 每次渲染都是新函数，写进 `useCallback`/`useEffect`
+   依赖 ⇒ `/ws/lobby` 那个 effect 每帧重跑：新开 socket、新起定时器、再拉一次两个列表 →
+   setState → 再渲染。表现是四图那一步 `waitForLoadState('networkidle')` **永远等不到**。
+   ⇒ effect 里一个 `t` 都不留：失败存布尔、通知存事件，译文渲染时才求（顺带修好「切语言后
+   屏上还留着上一种语言那句」）。
+2. **hooks 顺序错（旧代码就有）。** 「没登录就早退」写在一部分 hooks 中间，`/ws/lobby` 那个
+   `useEffect` 排在它后面 ⇒ 访客那一帧比登录那一帧少注册一个 hook，同一个组件实例上登录一次
+   当场抛 `Rendered more hooks than during the previous render`。已把早退挪到所有 hook 之后。
+3. **认不出的行会白屏。** `await res.json()` 是 `unknown`，`as ActiveGame[]` 只是让类型检查闭嘴；
+   少一个 `session_id`，`.slice(0,4)` 当场抛，而这一屏上面没有 error boundary。
+   `navigation.integration.test.tsx` 真的这么炸过（它那个兜底 fetch 对所有 URL 回同一份分类数组）。
+   ⇒ 整行丢掉：认不出的行本来也没法观战。
+
+### 承重结构实测（真浏览器 1024×600，造到 12 局 / 20 人）
+
+这一屏是这套外壳里**第一处「同一屏两个滚动区」**。判据先写死再读数，全部在
+`tests/kiosk-shell-scroll.spec.ts` 尾部两条：
+
+| 量什么 | 关系式 | 实测 |
+|---|---|---|
+| 该滚的是谁 | 两个 `.kiosk-side__scroll` 各自 `scrollHeight > clientHeight` | 都 > 100 |
+| 手指拨得动吗 | 在左栏上派发 12 次真滚轮 ⇒ 左栏 `scrollTop > 0` **且右栏 == 0** | 成立（反向同样成立） |
+| 两条拇指各回各栏 | 左栏拇指 `right < 右栏 left` | 成立（变异后跳到 **1005**） |
+| 栏没被顶破 | `.lobbycol` 自己 `scrollHeight - clientHeight <= 0` | 两栏都 ≤ 0 |
+| 主行动键 | 高 48、`bottom == 栏底`、滚过不动 | 成立 |
+| 弹层没被裁 | `.cdlg` 高 == `.kiosk-layout-a` 高，且 `bottom <= .kiosk-content bottom` | 516 / 586 |
+
+**变异记录（三条真跑过、一条没红）**
+
+- `.gamelist.kiosk-scrollzone{position:static}` ⇒ 「左栏拇指跑到右栏」当场红，右缘 < 548 → **1005**。
+- 去掉 `.lobby-layout{position:relative}` ⇒ 「弹层不是布局根那么高」红，`cdlg` 高 **516 → 544**。
+- 去掉 `roster` 的 `sort` / 把访客早退挪回 hooks 中间 ⇒ 单测两条各自红（后者报的正是那句 React 错）。
+- **没红的一条**：稿子多一条 `.kiosk-primary-action{flex:none}`（理由「名单一溢出主按钮被压成 24」），
+  去掉它 `cta.h === 48` **照样绿**。原因是实现这一屏的列表用共享 `KioskScrollZone`
+  （`.kiosk-section--grow{flex:1; min-height:0}`），空间全由它让出来，栏本身从不溢出。
+  ⇒ **那条 CSS 没有照抄**：抄一条挡不住任何东西的规则比没有更坏，下一个读到它的人会以为
+  这儿有过一个已经被治住的故障。高度断言留着，但注明它今天**没有红分支**。
+
+### 一处几何是照着参考图补的，不是审美
+
+稿子里组标题和列表是 `.lobbycol` 的两个兄弟，中间隔着栏距 12，**外加**组标题自己的
+`margin-bottom: 6`；搬进 `KioskScrollZone` 之后两者同属一节，只剩那 6。
+表现是**上面对不齐、下面对得齐**（底下几块钉着栏底不动，只有列表白多出 12 的高度）。
+补回 `margin-top: var(--rail-gap)`，渐隐起点跟着下移同样多。
+补之前 both=12628 / refOnly=30394，补之后 **both=21306 / refOnly=21716**。
+
+### 顺带清掉的
+
+- `src/kiosk/__tests__/LobbyPage.test.tsx`（旧 6 条）**删除** —— 它测的是旧版面
+  （「张三 (B) vs 李四 (W)」「观战」按钮），每一条的意图都被新的
+  `src/kiosk/pages/LobbyPage.test.tsx`（14 条）覆盖且更严。同一个页面两份同名测试是重复陷阱。
+- 契约闸两条名单摘掉 `LobbyPage.tsx`：MUI 图标那条，和 PO 名单里它那**九条**
+  （`lobby:title` 源码写「在线大厅」、cn PO 却是「多人游戏大厅」—— 九条全是这个形状，
+  重画时逐条换成了这一屏自己的新 key）。
+
+### 基线 diff（判据是名字集合，不是条数）
+
+- **vitest**：新增红 **0**。稳定红只有既有那条 `GamePageEngine … resign from the error dialog`
+  （在 HEAD 上同样红）；`ReportsPage … 计分局下完了照样能分析` 在全量跑里两边**各红过一次**，
+  是既有的跨用例串扰，不是本轮引入。
+- **playwright**：26 红，**两边完全同一批**（`comm` 名字集合空差）。它们要真引擎 / 真登录，
+  这台机器上 `local: error_502`。

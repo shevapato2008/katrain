@@ -657,3 +657,177 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 }
 .nameinput::placeholder { color: var(--dim); }
 .nameinput:focus-visible { outline: none; border-color: var(--accent); }
+
+/* ── 屏 06 在线大厅(L2 两栏,无棋盘 → 页控条通栏)+ 未登录 / 匹配中 / 收到邀请 ──
+   稿子 `sample-go/go-kiosk.tmpl.html` 的 `[data-screen^="lobby"]` 那一段。**稿子按屏名
+   选中,真页面里没有 `data-screen`** —— 换成挂在布局根上的 `.lobby-layout`,选择器一一对应。
+   ⚠️ 稿子还有一条 `.rk`(段位那一列)—— **这里没有**,不是漏了,理由见 `LobbyPage.tsx` 头注。 */
+
+/* ① 大厅屏没有棋盘 ⇒ 页控条横跨两栏,两列各自从同一条基线起。
+   列宽仍是底座那对 516 | 1fr —— 换的是行,不是这一屏自己的比例。
+   `position:relative` 是**弹层的定位原点**,不是装饰:没有它 `.cdlg{inset:0}` 会一路
+   找到 `.kiosk-content`(带 14px 上下内边距),弹层比中间区高出 28、底边被画布裁掉。 */
+.kiosk-layout-a.lobby-layout {
+  position: relative;
+  grid-template-rows: var(--pagebar-h) minmax(0, 1fr);
+  row-gap: var(--rail-gap);
+}
+.lobby-layout .kiosk-pagebar { grid-column: 1 / -1; position: relative; z-index: 5; }
+/* ⚠️ 稿子在这儿多一条 `.kiosk-primary-action { flex: none; margin-top: 0 }`,理由是
+   「名单一溢出主按钮会被从 48 压成 24」。**这里没有照抄** —— 2026-08-24 变异实测:
+   去掉它,承重闸那条 `cta.h === 48` **照样绿**。原因是这一屏的列表用的是共享的
+   `KioskScrollZone`(`.kiosk-section--grow{flex:1; min-height:0}`),空间全由它让出来,
+   栏本身从不溢出,底下几块也就没被挤过。抄一条挡不住任何东西的规则,比没有更坏:
+   下一个读到它的人会以为这儿有过一个已经被治住的故障。 */
+
+/* 两栏各自是一条 flex 列:组标题定高 + 一段自己滚的列表 + 底下几块固定的。
+   滚动那一层直接用共享的 `KioskScrollZone`(形态 2)—— 渐隐、悬浮拇指、
+   `data-at` 状态机都在里面,这里只把列表的行距改成 `--row-gap`。 */
+.lobbycol { display: flex; flex-direction: column; gap: var(--rail-gap); min-width: 0; min-height: 0; }
+.gamelist .kiosk-side__scroll,
+.lobbylist .kiosk-side__scroll { gap: var(--row-gap); margin-top: var(--rail-gap); }
+/* ⚠️ `margin-top` 那一条不是留白偏好,是**对齐参考图**:稿子里组标题和列表是 `.lobbycol` 的
+   两个兄弟,中间隔着栏距 12,**外加**组标题自己的 `margin-bottom: 6`。搬进 `KioskScrollZone`
+   之后两者同属一节,只剩那 6 —— 列表整体上移 12,底下几块因为钉着栏底反而不动,
+   于是只有列表变高、四图上是「上面对不齐、下面对得齐」。补回那 12。
+   渐隐的起点跟着往下挪同样多,否则它会盖在组标题上。 */
+.gamelist.kiosk-section--grow::before,
+.lobbylist.kiosk-section--grow::before {
+  top: calc(var(--l1-sec-label-h) + var(--l1-sec-label-gap) + var(--rail-gap));
+}
+
+/* ② 左栏:进行中的对局 */
+.gcard {
+  display: flex; flex-direction: column; justify-content: center; gap: 6px; flex: none;
+  height: 78px; padding: 0 14px; text-align: left; cursor: pointer; color: var(--text);
+  font-family: var(--font-sans);
+  border: 1px solid var(--hair); border-radius: var(--row-radius); background: var(--panel);
+}
+.gcard__meta { display: flex; align-items: center; gap: 9px; font-size: var(--fs-eyebrow); color: var(--dim); }
+.gcard__meta b { font-family: var(--font-mono); font-weight: 500; letter-spacing: .04em; }
+.gcard__meta i { margin-left: auto; display: flex; align-items: center; gap: 4px; font-style: normal; }
+.gcard__meta i svg { width: 13px; height: 13px; }
+/* 每一侧是一个两行的块:名字在上、执哪一色在下,中间只剩「对」。
+   两侧块各自贴卡片左/右边缘 ⇒ 跨卡片依然对齐(靠边缘,不靠定宽)。 */
+.gcard__vs { display: grid; align-items: center; gap: 10px; grid-template-columns: minmax(0,1fr) 24px minmax(0,1fr); }
+.gcard__p { display: flex; flex-direction: column; gap: 3px; min-width: 0; align-items: flex-start; }
+.gcard__p.is-r { align-items: flex-end; }
+/* `max-width:100%` 而不是 `min-width:0`:块本身已经 `min-width:0`,名字要在**块**里省略号,
+   不是在网格轨道里 —— 少了这一条,长名字会把块撑过轨道再被裁掉,省略号不出现。 */
+.gcard__n { font-size: var(--fs-card-title); font-weight: 600; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gcard__mid { text-align: center; font-size: var(--fs-eyebrow); color: var(--dim); }
+/* 这一格国象放「等级 + 等级分」,围棋放「执黑 / 执白」——
+   `/api/v1/games/active/multiplayer` 对每一局只回两个名字字符串,谁执黑是它唯一多给的事实。 */
+.gside { display: flex; align-items: center; gap: 6px; font-size: var(--fs-card-sub); color: var(--dim); }
+.gside .disc { width: 14px; height: 14px; }
+
+/* ③ 右栏:在线棋手。名字之后两列定宽 ⇒ 状态和按钮跨行对齐。 */
+.lobbyrow {
+  display: flex; align-items: center; gap: 9px; height: var(--row-h); flex: none;
+  padding: 0 10px 0 13px; cursor: default;
+  border: 1px solid var(--hair); border-radius: var(--row-radius); background: var(--panel);
+}
+.lobbyrow.is-me { border-color: var(--accent); }
+.lobbyrow__id { min-width: 0; flex: 1 1 auto; }
+.lobbyrow__id h4 { margin: 0; font-size: var(--fs-card-title); font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 状态只用**两种**颜色:绿=可邀请、灰=不可邀请。哪一种「不可」由**词**说 ——
+   颜色本来就该只编码「能不能点」这一件事,而围棋这边只有两态。 */
+.lvst { flex: none; width: 44px; font-size: var(--fs-card-sub); color: var(--good); }
+.lvst.is-play { color: var(--dim); }
+.lobbyrow__act { flex: none; width: 56px; height: var(--btn-pill-h); border: 0; border-radius: 7px;
+  background: var(--accent); color: var(--ink); font-family: var(--font-sans);
+  font-size: var(--fs-card-sub); font-weight: 600; cursor: pointer; }
+.lobbyrow__act:disabled { background: transparent; color: var(--dim);
+  border: 1px solid var(--hair); cursor: not-allowed; }
+.lobbyrow__self { flex: none; width: 56px; text-align: center; font-size: var(--fs-eyebrow); color: var(--dim); }
+.lobbylist__note { margin: 0 2px; font-size: var(--fs-eyebrow); line-height: 1.55; color: var(--dim); flex: none; }
+.lobbylist__note b { color: var(--text); font-weight: 600; }
+/* 空态 / 读取中。**稿子没有这一态** —— 但一台孤零零的盒子上它才是常态,
+   而列表空着不画字,和「还没读完」在屏上是同一个样子。 */
+.lobbyempty { margin: 0; padding: 18px 2px; text-align: center;
+  font-size: var(--fs-card-sub); color: var(--dim); }
+
+/* ④ 主行动上面那一格:**围棋有两种对局,国象只有一种。** 排位那条队要先定级
+   (`server.py` 的 `PLACEMENT_REQUIRED`)⇒ 没定级时灰掉,并在底下一行说清为什么
+   —— 和开局设置三屏同一条规矩:灰了就得有人说原因。 */
+.matchpick { display: flex; flex-direction: column; gap: 7px; flex: none; }
+.matchpick .kiosk-seg { display: flex; width: 100%; }
+.matchpick .kiosk-seg__btn { flex: 1 1 0; }
+.matchpick .kiosk-seg__btn:disabled { opacity: .38; cursor: default; }
+.matchpick__why { margin: 0 2px; font-size: var(--fs-eyebrow); line-height: 1.5; color: var(--dim); }
+.matchpick__why b { color: var(--text); font-weight: 600; }
+
+/* ⑤ 弹窗骨架(围棋这套屏此前没有模态,这是第一处)。 */
+.cdlg { position: absolute; inset: 0; z-index: 10; background: rgba(8,6,4,.72); display: grid; place-items: center; }
+.cdlg__box { width: 430px; padding: 20px; border: 1px solid var(--hair); border-radius: 16px;
+  background: linear-gradient(165deg, #1b2420, var(--panel)); box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+.cdlg__box h3 { margin: 0; font-family: var(--font-serif); font-size: 21px; font-weight: 600; }
+.cdlg__box p { margin: 12px 0 0; font-size: 13px; line-height: 1.6; color: var(--dim); }
+.cdlg__acts { display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px; }
+.cdlg__acts button { min-width: 128px; height: 48px; cursor: pointer; border-radius: 12px;
+  font-family: var(--font-serif); font-size: 15px; font-weight: 600; }
+.cdlg__acts .ghost { border: 1px solid var(--hair); background: var(--raise); color: var(--text); }
+.cdlg__acts .main { border: 0; background: var(--accent); color: var(--ink); }
+
+/* 等待类弹窗。**围棋只有「不定长」那一种进度条。** 等多久取决于队列里有没有第二个人,
+   这个数产不出来。而邀请那一屏**一条都不画**:`/ws/lobby` 的 `invite` 只转发一条消息,
+   没有 TTL、没有撤回 —— 画一条归零时后端什么都不做的条,是拿动画伪造一个不存在的裁定。 */
+.wdlg { text-align: left; }
+.wdlg__lead { margin-top: 10px !important; }
+.wdlg__lead b { color: var(--text); font-weight: 600; }
+.wbar { position: relative; height: 6px; margin-top: 16px; border-radius: 999px;
+  background: var(--raise); overflow: hidden; }
+.wbar__loop { position: absolute; top: 0; bottom: 0; left: 0; width: 34%; border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--accent) 26%, var(--accent) 74%, transparent);
+  animation: wloop 1.5s ease-in-out infinite; }
+@keyframes wloop { from { transform: translateX(-100%); } to { transform: translateX(295%); } }
+@media (prefers-reduced-motion: reduce) { .wbar__loop { animation-duration: 4s; } }
+.wdlg__row { display: flex; align-items: baseline; gap: 12px; margin-top: 9px; }
+.wdlg__num { font-size: var(--fs-card-sub); color: var(--dim); }
+.wdlg__num b { font-family: var(--font-mono); font-size: 17px; font-weight: 500;
+  color: var(--text); font-variant-numeric: tabular-nums; }
+.wdlg__tc { margin-left: auto; font-size: var(--fs-eyebrow); color: var(--dim); }
+/* 只有一个动作时把它铺满:`.cdlg__acts` 是 flex-end(为「取消 / 确定」那一对写的),
+   等待类弹窗只有一个「取消」,靠右吊着会在左边留一大块空,而且手指要伸到最右。 */
+.wdlg .cdlg__acts button:only-child { flex: 1 1 auto; }
+
+/* ⑥ 未登录门。没有棋盘 ⇒ 内容整栏,面板 460 宽居中 —— 460 就是大厅屏右栏的宽度,换屏不跳。
+   **横向居中、纵向铺满**:吊在上半屏会在栏底留一条没人负责的空带,
+   靠 `.rrule{margin:auto 0 0}` 把注脚和两颗按钮顶到栏底。 */
+.lobby-layout .gate-rail { grid-column: 1 / -1; width: 100%; max-width: 460px; margin: 0 auto; }
+.rgate { flex: none; padding: 16px 16px 14px; border: 1px solid var(--hair);
+  border-radius: 12px; background: var(--panel); }
+.rgate > span { width: 44px; height: 44px; display: grid; place-items: center;
+  border-radius: 12px; background: var(--raise); color: var(--accent); }
+.rgate svg { width: 23px; height: 23px; }
+.rgate h2 { margin: 11px 0 0; font-family: var(--font-serif); font-size: 17px; font-weight: 600; }
+.rgate p { margin: 5px 0 0; font-size: 12px; line-height: 1.6; color: var(--dim); }
+.rgate .fact { margin-top: 12px; padding: 9px 11px; border: 1px solid var(--hair);
+  border-radius: 10px; background: var(--ink); }
+.rgate .fact span, .rgate .fact small { display: block; font-size: 10.5px; color: var(--dim); }
+.rgate .fact b { display: block; margin: 2px 0; font-family: var(--font-serif); font-size: 15px; font-weight: 600; }
+.rrule { margin: auto 0 0; font-size: 11.5px; line-height: 1.55; color: var(--dim); }
+.rrule b { color: var(--text); font-weight: 600; }
+.rgate + .kiosk-primary-action, .rrule + .kiosk-primary-action { margin-top: 0; }
+/* 高度 44 是**它自己的盒子**,不是伪元素撑出来的命中区:视觉 40 高时那层 44 的 `::after`
+   会让它的 `scrollHeight` 比 `clientHeight` 大 4,「内容被裁」那一条当场红。
+   **能把盒子做够就别拿伪元素凑。** */
+.rsecond { height: 44px; flex: none; width: 100%; cursor: pointer;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--raise); color: var(--text);
+  font-family: var(--font-serif); font-size: 14px; font-weight: 600; }
+
+/* ⑦ 触控目标:7 寸电容屏 ⇒ 命中区不得小于 44×44。**扩命中区不改视觉** ——
+   视觉尺寸沿用底座节奏,用伪元素把可点范围撑到 44。对局卡整张就是按钮(78 高)、
+   名单行 52 高,本来就够;要扩的是行尾那颗 26 高的按钮、分段里 26 高的那两颗,
+   和页控条上那颗 36 高的返回。三处的父盒都不是滚动容器,撑不破谁。 */
+.lobby-layout .lobbyrow__act,
+.lobby-layout .kiosk-pagebar__back,
+.lobby-layout .kiosk-seg__btn { position: relative; }
+.lobby-layout .lobbyrow__act::after,
+.lobby-layout .kiosk-pagebar__back::after,
+.lobby-layout .kiosk-seg__btn::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%;
+  transform: translateY(-50%); height: 44px;
+}

@@ -236,9 +236,27 @@ export async function freezeClock(page: Page, iso = '2026-08-20T16:40:00') {
  * 「重跑零字节变化」这条验收(Task 20 Step 3)因此证明不了任何事。
  * 这里把它钉在仓里那份真字节上,四图从此不依赖另一个进程在不在。
  */
+/**
+ * `/assets/img/*` 由 vite 代理到 **:8001**(Python 后端)。视觉这一套跑的是
+ * `playwright.visual.config.ts`,它**不起后端** —— 那些请求全是 ECONNREFUSED。
+ *
+ * 只 stub logo 的时候,后果只在 canvas 棋盘那几屏上看得见,而且**看不出是坏的**:
+ * `components/Board` 拿不到 `B_stone.png` / `W_stone.png` / `board.png` 就画出一块
+ * **空盘**(木纹和子全没了),四图闸照样跑完、照样打印三个计数、照样报绿。
+ * 2026-08-23 量出来:屏 05 对局的实现图和存档差 **212952 / 614400 像素(34.66%)**,
+ * 而那 34% 全是「后端在不在」的差,不是代码的差。
+ *
+ * ⇒ 五张图一起从仓里喂进去。**判据是 scope §9.2 自己写下的那句**:
+ * 「后端起着就绿、一停就红的东西不叫闸」—— 取图同理,
+ * **一张随后端在不在而变的实现图,不是这一屏的实现图。**
+ */
+const SHELL_IMAGES = ['logo-white.png', 'B_stone.png', 'W_stone.png', 'board.png', 'inner.png', 'topmove.png'];
+
 export async function stubShellAssets(page: Page) {
-  const logo = resolve(process.cwd(), '../../img/logo-white.png');
-  await page.route('**/assets/img/logo-white.png', (route) => route.fulfill({
-    path: logo, contentType: 'image/png',
-  }));
+  for (const name of SHELL_IMAGES) {
+    const file = resolve(process.cwd(), '../../img/', name);
+    await page.route(`**/assets/img/${name}`, (route) => route.fulfill({
+      path: file, contentType: 'image/png',
+    }));
+  }
 }

@@ -142,7 +142,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx', // (A) 标定屏
   'src/kiosk/components/vision/GeometryVideoPanel.tsx', // (A) 标定屏
   'src/kiosk/components/vision/VisionSyncOverlay.tsx', // (A) 标定/识别
-  'src/kiosk/pages/AiSetupPage.tsx', // (B) 屏 02/03 开局设置,未排
   'src/kiosk/pages/BaipuListPage.tsx', // (A) 摆谱屏
   'src/kiosk/pages/GameHistoryPage.tsx', // (B) 已无入口,等 Fan 裁定是并进复盘还是删
   'src/kiosk/pages/GamePage.tsx', // (C) 屏 05 已重画;剩的是对话框里的图标

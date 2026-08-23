@@ -287,7 +287,7 @@ const PvpLocalSetupPage = () => {
               '&:hover': { bgcolor: 'primary.dark' },
             }}
           >
-            {loading ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}
+            {loading ? t('Creating...', '创建中...') : t('setup:start', '开始对局')}
           </Button>
         </Box>
       </Box>

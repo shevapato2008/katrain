@@ -33,7 +33,7 @@ describe('PvpLocalSetupPage', () => {
     renderPage();
     await userEvent.type(screen.getByTestId('black-name-input').querySelector('input')!, '小明');
     await userEvent.type(screen.getByTestId('white-name-input').querySelector('input')!, '小红');
-    await userEvent.click(screen.getByRole('button', { name: /开始对弈|Start Game/ }));
+    await userEvent.click(screen.getByRole('button', { name: /开始对局|Start Game/ }));
     await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());
     const [, mode, settings] = (API.gameSetup as any).mock.calls[0];
     expect(mode).toBe('pvp_local');

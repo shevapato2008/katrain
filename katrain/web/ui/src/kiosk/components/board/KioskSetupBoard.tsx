@@ -1,5 +1,6 @@
 import { useTranslation } from '../../../hooks/useTranslation';
-import { colsFor, rowsFor } from '../../shell/goBoard';
+import { interpolate } from '../../utils/interpolate';
+import { colsFor, handicapStones, rowsFor } from '../../shell/goBoard';
 import { GoBoardSvg } from '../../shell/GoBoardSvg';
 
 /**
@@ -42,11 +43,21 @@ interface KioskSetupBoardProps {
   color: 'black' | 'white';
   /** 路数。自由对弈可选 9/13/19;升降级固定 19(`ladder:fixed_setup`)。 */
   size: number;
+  /**
+   * 让几子。**这块盘要画出来** —— 规范 `:512` 说它画的是「按下按钮后**真会出现**的
+   * 那个局面」,而让子局的起始局面就是带着那几颗黑子的。
+   *
+   * 2026-08-23(屏 02)之前这里恒画空盘,注释里的理由是「围棋这一局的起始局面就是空盘」——
+   * **那句话只对不让子的那一局成立**。四图一比就露了:稿子那一帧让了 2 子、盘上有 Q16 和 D4,
+   * 实现画的是空盘。计分局一律 0 子,所以那一屏不受影响,这条只在自由对弈上看得见。
+   */
+  handicap?: number;
 }
 
-const KioskSetupBoard = ({ color, size }: KioskSetupBoardProps) => {
+const KioskSetupBoard = ({ color, size, handicap = 0 }: KioskSetupBoardProps) => {
   const { t } = useTranslation();
   const cols = colsFor(size);
+  const stones = handicapStones(size, handicap);
   // 行号 1 在最下(`spec:403` 那张表,五子棋那行写明了方向,围棋同向),所以从上往下读是 19…1。
   const rows = rowsFor(size);
 
@@ -56,7 +67,10 @@ const KioskSetupBoard = ({ color, size }: KioskSetupBoardProps) => {
       data-testid="kiosk-setup-board"
       data-color={color}
       role="img"
-      aria-label={t('ladder:board_preview', '开局局面预览:空盘')}
+      data-handicap={handicap}
+      aria-label={stones.length
+        ? interpolate(t('setup:board_preview_handicap', '开局局面预览:让 {n} 子'), { n: handicap })
+        : t('ladder:board_preview', '开局局面预览:空盘')}
     >
       <div className="kiosk-board__ruler kiosk-board__ruler--top">
         {cols.map((c) => <span key={`t${c}`}>{c}</span>)}
@@ -65,7 +79,7 @@ const KioskSetupBoard = ({ color, size }: KioskSetupBoardProps) => {
         {rows.map((r) => <span key={`l${r}`}>{r}</span>)}
       </div>
       <div className="kiosk-board__play">
-        <GoBoardSvg size={size} />
+        <GoBoardSvg size={size} black={stones} />
       </div>
       <div className="kiosk-board__ruler kiosk-board__ruler--right">
         {rows.map((r) => <span key={`r${r}`}>{r}</span>)}

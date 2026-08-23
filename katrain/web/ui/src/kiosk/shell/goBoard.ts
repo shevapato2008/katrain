@@ -67,3 +67,29 @@ export function lineAt(i: number, unit = 100): number {
 export function boardExtent(size: number, unit = 100): number {
   return (size - 1 + 2 * GO_MARGIN) * unit;
 }
+
+/**
+ * 让 `n` 子时盘上那几颗黑子，写成 `["Q16","D4"]` 这样的坐标。
+ *
+ * **算式照后端那一份搬**：`katrain/core/sgf_parser.py:374 place_handicap_stones`
+ * 的 `n <= 9` 那一支。开局设置屏左边那块盘按规范 §11 画的是「按下按钮后**真会出现**
+ * 的那个局面」——让子局的起始局面就是带着这几颗子的，画成空盘等于画错了局面。
+ *
+ * 顺序不是随便排的：先两个对角、再另两个角、奇数补天元、最后四个边星。
+ * 取前 `n` 个。**下标的 y 方向在这里不用纠结** —— `n ≤ 9` 那一支取出来的集合
+ * 在上下翻转下不变（角是四个全取或不取、天元在中心、四个边星成对），
+ * 所以前端 y 朝下、后端 y 朝上这件事不改变结果。实测 2 子 = `Q16` + `D4`，和稿子一致。
+ *
+ * `n > 9` 后端另有一支（按 `ceil(sqrt(n))` 铺格），这里不抄：让子上限就是 9
+ * （`pages/AiSetupPage.tsx` 的档位轨 0–9），抄一段没人走的分支只是多一处要维护的算式。
+ */
+export function handicapStones(size: number, n: number): string[] {
+  if (n < 2 || size < 3) return [];
+  const near = size >= 13 ? 3 : Math.min(2, size - 1);
+  const far = size - 1 - near;
+  const mid = Math.floor(size / 2);
+  const pts: [number, number][] = [[far, far], [near, near], [far, near], [near, far]];
+  if (n % 2 === 1) pts.push([mid, mid]);
+  pts.push([near, mid], [far, mid], [mid, near], [mid, far]);
+  return pts.slice(0, Math.min(n, 9)).map(([x, y]) => `${GO_COLS[x]}${y + 1}`);
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -73,6 +73,17 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true }),
 }));
 
+// 「怎么落子」那一格读的是**设备能力**(摄像头标没标定),不是设置项 ——
+// 所以它要有个桩,而且要能切:两态在屏上是两句不同的话。
+const vision = vi.hoisted(() => ({ enabled: false }));
+vi.mock('../context/VisionContext', () => ({
+  useVision: () => ({
+    visionStatus: { enabled: vision.enabled },
+    isVisionEnabled: vision.enabled,
+    refreshStatus: vi.fn(),
+  }),
+}));
+
 const renderPage = (mode = 'free') =>
   render(
     <ThemeProvider theme={kioskTheme}>
@@ -97,6 +108,7 @@ describe('AiSetupPage', () => {
     applyBlockingSync.mockReset();
     retryRanked.mockReset();
     withBlocking(null);
+    vision.enabled = false;
     startRanked.mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1', status: rankedState.current });
   });
 
@@ -113,7 +125,7 @@ describe('AiSetupPage', () => {
   it('writes the active session and navigates to the game route on Start (free mode)', async () => {
     renderPage('free');
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: /开始对弈/i }));
+    await user.click(screen.getByRole('button', { name: /开始对局|开始计分局/i }));
 
     await waitFor(() => {
       expect(writeActiveSession).toHaveBeenCalledWith({
@@ -129,7 +141,7 @@ describe('AiSetupPage', () => {
   it('writes the ranked label on Start (ranked mode)', async () => {
     renderPage('ranked');
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: /开始对弈/i }));
+    await user.click(screen.getByRole('button', { name: /开始对局|开始计分局/i }));
 
     await waitFor(() => {
       expect(writeActiveSession).toHaveBeenCalledWith(
@@ -148,48 +160,107 @@ describe('AiSetupPage', () => {
   it('shows the server-selected ranked opponent instead of HumanSL strength', () => {
     renderPage('ranked');
     expect(screen.getByText('定级对手：9级')).toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: 'AI 棋力' })).not.toBeInTheDocument();
+    // 棋力那条轨在升降级屏**整组不渲染** —— 对手由盒子配档。
+    // (原来这里钉的是「没有 `combobox[name=AI 棋力]`」,而控件已经不是 combobox 了,
+    //  那条断言从此永远为真、什么都不再守。)
+    expect(screen.queryByTestId('setup-strength')).not.toBeInTheDocument();
   });
 
-  it('uses the rated-only 1024x600 no-scroll geometry with every required control and CTA visible', () => {
+  // 升降级那一屏上,规则 / 让子 / 贴目 / 路数**都是服务端定的**:给个能点的控件
+  // 只会是个改不动的旋钮。屏上因此是一格读数,不是一排灰掉的选择器。
+  it('升降级屏:服务端定的那几项是读数,不是控件', () => {
     renderPage('ranked');
-    const panel = screen.getByTestId('ranked-settings-panel');
-    // 原来这里还钉着 `padding: '16px'`。**那是一条自己造数、自己读回来的断言** ——
-    // jsdom 只是把我写进 sx 的字面量原样还给我,搬进真浏览器也不可能失败。
-    // 而且布局 A 之后右栏内容本来就该铺满 460(`:775` 主行动按钮满宽 460),padding 归零。
-    // `overflow: hidden` 留着:它是结构选择 —— 装不下的后果是**裁切**而不是滚,
-    // 而「裁切还是滚」正是承重那条闸要量的东西(在真浏览器里量,不在这儿)。
-    expect(panel).toHaveStyle({ overflow: 'hidden' });
-    expect(screen.queryByText('9路')).not.toBeInTheDocument();
-    expect(screen.queryByText('13路')).not.toBeInTheDocument();
-    // 规则/让子/贴目 are server-owned in ranked play, so the panel states them
-    // instead of offering knobs that the server would override.
-    expect(screen.queryByRole('combobox', { name: '规则' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: '让子' })).not.toBeInTheDocument();
-    expect(screen.getByText('19 路 · 中国规则 · 贴 7.5 目 · 不让子')).toBeVisible();
-    expect(screen.getByRole('combobox', { name: '用时' })).toBeVisible();
-    expect(screen.getByRole('button', { name: /开始对弈/i })).toHaveStyle({ minHeight: '48px' });
-    expect(screen.getByTestId('ranked-start-action')).toHaveStyle({ flexShrink: '0' });
+    expect(screen.getByTestId('setup-ranked-fixed')).toHaveTextContent('19 路');
+    expect(screen.getByTestId('setup-ranked-fixed')).toHaveTextContent('中国规则 · 贴 7.5 目 · 不让子');
+    // 路数、让子、贴目、规则、棋力五组在这一屏一组都不该出现。
+    expect(screen.queryByTestId('setup-size')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('setup-handicap')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('setup-komi')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('setup-rules')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('setup-strength')).not.toBeInTheDocument();
+    // 用时和执子照旧是能选的。
+    expect(screen.getByTestId('setup-clock')).toBeInTheDocument();
+    expect(screen.getByTestId('setup-color')).toBeInTheDocument();
+    expect(screen.getByTestId('ranked-start-action')).toBeInTheDocument();
   });
 
-  it('keeps the free setup board-size choices unchanged', () => {
+  // 稿子那两格写的是「胜 · 升到 4 级」「负 · 退到 6 级」—— **那是净胜分正好 ±2 的特例**。
+  // 真规则在 `core/ai_ladder_ranked.py:1503-1506`:每局 ±1,到 ±3 才动档。
+  // 这三条守的就是「不把特例说成常态」。
+  it.each([
+    [0, '胜 · 净胜分 +1', '负 · 净胜分 -1'],
+    [2, '胜 · 升一档', '负 · 净胜分 +1'],
+    [-2, '胜 · 净胜分 -1', '负 · 退一档'],
+  ])('赌注按净胜分 %i 说话', (net, win, loss) => {
+    rankedState.current = { ...rankedState.current, net_score: net };
+    renderPage('ranked');
+    const stakes = screen.getByTestId('setup-stakes');
+    expect(stakes).toHaveTextContent(win);
+    expect(stakes).toHaveTextContent(loss);
+  });
+
+  it('自由对弈:路数三档照旧都在,而且是分段控件不是下拉', () => {
     renderPage('free');
-    expect(screen.getByText('9路')).toBeInTheDocument();
-    expect(screen.getByText('13路')).toBeInTheDocument();
-    expect(screen.getByText('19路')).toBeInTheDocument();
+    const size = screen.getByTestId('setup-size');
+    expect(size).toHaveTextContent('19 路');
+    expect(size).toHaveTextContent('13 路');
+    expect(size).toHaveTextContent('9 路');
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
+  // 规范 §11(v1.21):一屏之内所有选择组必须用同一种控件,项数上限 6。
+  // 这一条**倒过来了**:原来钉的是「规则要是下拉、AGA 不许可见」,
+  // 而稿子 02 屏画的正是四段并排。项数 4 ≤ 6,分段就是对的那一种。
+  it('规则四段并排 —— 不再是下拉', () => {
+    renderPage('free');
+    const rules = screen.getByTestId('setup-rules');
+    for (const label of ['中国', '日本', '韩国', 'AGA']) {
+      expect(rules).toHaveTextContent(label);
+    }
+  });
+
+  // 「怎么落子」不是设置项,是这台盒子此刻的能力(`VisionContext`,后端给的)。
+  // 两态在屏上是两句不同的话,而且**两态都不给按** —— 它是 `.igfix` 读数。
+  it.each([
+    [true, '实体盘'],
+    [false, '屏幕'],
+  ])('落子那一格照实说设备能力:isVisionEnabled=%s', (enabled, expected) => {
+    vision.enabled = enabled;
+    renderPage('free');
+    const readout = screen.getByTestId('setup-input-readout');
+    expect(readout).toHaveTextContent(expected);
+    expect(readout.querySelector('button')).toBeNull();
+  });
+
+  // 让子 > 0 时贴目那一组**整个换成一段话**,不是把控件灰掉:
+  // 灰掉说的是「你现在不能改」,而这一局是根本没有贴目这回事。
+  it('让子调上去,贴目那一组换成说明;调回 0 再变回档位轨', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    expect(screen.getByTestId('setup-komi')).toBeInTheDocument();
+    expect(screen.queryByTestId('setup-komi-explain')).not.toBeInTheDocument();
+
+    await user.click(within(screen.getByTestId('setup-handicap')).getByRole('button', { name: '多让一子' }));
+    expect(screen.getByTestId('setup-komi-explain')).toHaveTextContent('已经让了 1 子');
+    expect(screen.queryByTestId('setup-komi')).not.toBeInTheDocument();
+
+    await user.click(within(screen.getByTestId('setup-handicap')).getByRole('button', { name: '少让一子' }));
+    expect(screen.getByTestId('setup-komi')).toBeInTheDocument();
+  });
+
+  // 两头的键要禁用,**不是回绕**:让子从 0 按 `−` 绕到 9 子,是把一次误触变成
+  // 一局完全不同的棋 —— 而这一组标着「开局后不可改」。
+  it('档位轨两头到底就禁用', () => {
+    renderPage('free');
+    const handicap = within(screen.getByTestId('setup-handicap'));
+    expect(handicap.getByRole('button', { name: '少让一子' })).toBeDisabled();   // 默认 0 子
+    expect(handicap.getByRole('button', { name: '多让一子' })).toBeEnabled();
   });
 
   it('Start button is present without scrolling (rendered, not gated behind overflow)', () => {
     renderPage('free');
-    expect(screen.getByRole('button', { name: /开始对弈|start game/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /返回|back/i })).toBeInTheDocument();
-  });
-
-  it('rules render as a dropdown trigger, not 4 separate chips', () => {
-    renderPage('free');
-    // Compact form shows the current rule value as one control; the Japanese/Korean/AGA
-    // options are behind the dropdown (not all visible at once).
-    expect(screen.queryByText('AGA')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /开始对局|start game/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /返回对弈|back/i })).toBeInTheDocument();
   });
 });
 
@@ -215,7 +286,7 @@ describe('AiSetupPage — 升降级挡局面板', () => {
     // 而云端只知道预约还在。换成两种情形下都真的说法。
     expect(screen.getByText('这一局在你的另一台设备上，还没了结。')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/正在进行|还没下完/);
-    expect(screen.queryByRole('button', { name: /开始对弈/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /开始计分局/ })).not.toBeInTheDocument();
     // 「设置表单整个不在」用**下拉控件**当判据,不用「我执」那个标签 ——
     // 重设计之后挡局面板自己有一格事实也叫「我执」(对手档位/我执/状态/同步),
     // 拿标签文本判断会撞上它,红在一个不存在的缺陷上。下拉是设置表单独有的。

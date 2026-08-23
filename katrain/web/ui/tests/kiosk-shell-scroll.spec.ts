@@ -543,3 +543,75 @@ test('设置:滚到第三组时,导航第三项高亮,其余都不是', async ({
     return items.map((b) => b.getAttribute('aria-current') === 'true');
   }), { message: '滚到第三组了,导航没跟上' }).toEqual([false, false, true, false]);
 });
+
+/**
+ * 屏 02 自由对弈开局设置(L2 布局 A,右栏 460,形态 1 整栏滚)。
+ *
+ * **这一屏是这一轮才第一次能滚的。** 上一版右栏是一个 `overflow: hidden` 的两列 MUI 表单
+ * —— 装不下的后果是**裁掉**,而不是滚。按稿子重画之后右栏是八组 `.setgrp` 叠起来,
+ * 一定比 460 宽 × 约 400 高装得下的多,所以「能不能滚 / 拨不拨得动 / 主行动键会不会
+ * 被顶出去」三件事全是新成立的 —— 承重反查在这一屏上是**触发**的。
+ *
+ * 造到会溢出:不用造 —— 自由对弈默认就是八组(怎么落子 / 棋力 / AI 策略 / 我执 /
+ * 让子 / 贴目 / 规则 / 用时)。下面第一条就是核这件事,溢出不到 100 就说明后面全是空的。
+ *
+ * 判据先写死再读数:
+ *   · 该滚的是 `.kiosk-side__scroll`(**不是** `.kiosk-rail`,也不是页面)
+ *   · 主行动键在滚动区**外面** ⇒ 怎么滚它都贴着右栏底,`bottom` 不随 scrollTop 变
+ *   · 页面不许横向溢出
+ */
+test('开局设置:八组设置装不下时右栏自己滚,而「开始对局」怎么滚都还在', async ({ page }) => {
+  await page.route('**/api/v1/vision/status', (route) => route.fulfill({
+    json: {
+      enabled: false, camera_connected: false, pose_locked: false, sync_state: 'idle',
+      bound_session_id: null, recognition_ready: false, led_connected: null,
+    },
+  }));
+  await boot(page, '/kiosk/play/ai/setup/free');
+  await page.waitForSelector('[data-testid="setup-clock"]');
+
+  const railW = await page.evaluate(() =>
+    Math.round(document.querySelector('.kiosk-rail')!.getBoundingClientRect().width));
+  expect(railW, '右栏不是 460 —— 布局 A 的宽度账先崩了,后面量的滚动都建在错的宽度上').toBe(460);
+
+  const overflow = await overflowOf(page);
+  expect(overflow, '没造出溢出 —— 那下面这几条断言都是空的').toBeGreaterThan(100);
+
+  // 主行动键在滚动区外面:先记下它现在在哪。
+  const ctaBefore = await page.evaluate(() =>
+    Math.round(document.querySelector('.kiosk-primary-action')!.getBoundingClientRect().bottom));
+
+  // **用真滚轮**,不是 `scrollTop = n` —— 程序化能滚 ≠ 手指拨得动。
+  const zone = page.locator('.kiosk-side__scroll');
+  const zb = (await zone.boundingBox())!;
+  await page.mouse.move(zb.x + zb.width / 2, zb.y + zb.height / 2);
+  for (let i = 0; i < 12; i += 1) await page.mouse.wheel(0, 400);
+
+  const m = await page.evaluate(() => {
+    const el = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const cta = document.querySelector('.kiosk-primary-action') as HTMLElement;
+    const clock = document.querySelector('[data-testid="setup-clock"]') as HTMLElement;
+    return {
+      scrollTop: Math.round(el.scrollTop),
+      atEnd: el.scrollHeight - el.clientHeight - el.scrollTop,
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      ctaBottom: Math.round(cta.getBoundingClientRect().bottom),
+      railBottom: Math.round(rail.getBoundingClientRect().bottom),
+      // 最后一组(用时)滚到底之后必须整个进得了视野 —— 到不了就等于它不存在。
+      clockBottom: Math.round(clock.parentElement!.getBoundingClientRect().bottom),
+      zoneBottom: Math.round(el.getBoundingClientRect().bottom),
+      horizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  });
+
+  expect(m.scrollTop, '拨了十二下滚轮,一格都没动 —— 程序化能滚不算数').toBeGreaterThan(0);
+  expect(m.atEnd, '滚不到底').toBeLessThanOrEqual(1);
+  expect(m.clockBottom, '滚到底了,最后一组「用时」的下缘还在视野外 —— 那一组就是到不了的')
+    .toBeLessThanOrEqual(m.zoneBottom);
+  // 溢出必须由滚动区吃掉,**不能顶破右栏** —— 顶破了主行动键就被推出 516 之外。
+  expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由滚动区吃掉').toBeLessThanOrEqual(0);
+  expect(m.ctaBottom, '「开始对局」没贴着右栏底').toBe(m.railBottom);
+  expect(m.ctaBottom, '滚过之后主行动键动了 —— 它在滚动区外面,不该跟着滚').toBe(ctaBefore);
+  expect(m.horizontal, '页面横向溢出了').toBe(0);
+});

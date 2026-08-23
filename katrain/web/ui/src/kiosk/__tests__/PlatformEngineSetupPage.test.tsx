@@ -93,7 +93,7 @@ describe('PlatformEngineSetupPage', () => {
     });
 
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: /开始对弈/i }));
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
 
     const { API } = await import('../../api');
     await waitFor(() => {
@@ -119,7 +119,7 @@ describe('PlatformEngineSetupPage', () => {
     await user.click(screen.getByRole('button', { name: '选择让子' }));
     await user.click(await screen.findByRole('menuitem', { name: '让4子' }));
 
-    await user.click(screen.getByRole('button', { name: /开始对弈/i }));
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
 
     const { API } = await import('../../api');
     await waitFor(() => {

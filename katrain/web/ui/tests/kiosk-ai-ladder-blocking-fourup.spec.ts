@@ -178,8 +178,8 @@ for (const testCase of CASES) {
     // ① 参考图:**kiosk 常态右栏**,同一个 viewport、同一个盒子。
     await page.route('**/api/v1/ai-ladder/status', (route) => route.fulfill({ json: readyStatus(null) }));
     await page.goto('/kiosk/play/ai/setup/ranked');
-    await expect(page.getByRole('button', { name: /开始对弈/ })).toBeVisible();
-    const reference = await measureSkeleton(page, /开始对弈/);
+    await expect(page.getByRole('button', { name: /开始计分局/ })).toBeVisible();
+    const reference = await measureSkeleton(page, /开始计分局/);
     await page.getByTestId('ranked-settings-panel')
       .screenshot({ path: resolve(OUT_DIR, `${testCase.slug}--reference-normal.png`) });
 

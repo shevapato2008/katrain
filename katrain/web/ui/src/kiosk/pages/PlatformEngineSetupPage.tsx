@@ -379,7 +379,7 @@ const PlatformEngineSetupPage = () => {
                     '&.Mui-disabled': { color: 'text.disabled', background: 'var(--raise2)' },
                   }}
                 >
-                  {starting ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}
+                  {starting ? t('Creating...', '创建中...') : t('setup:start', '开始对局')}
                 </Button>
                 <Typography sx={{ color: 'text.disabled', fontSize: 12.5, textAlign: 'center', mt: 1.5 }}>
                   {`${t('Chinese rules', '中国规则')} · ${handicapShort(handicap, t)} · ${komiLabel(handicap, t)} · ${t('19 lines', '19 路')} · ${t('Untimed', '不计时')} · ${colorShort}`}

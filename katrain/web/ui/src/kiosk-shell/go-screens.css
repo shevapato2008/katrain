@@ -540,3 +540,100 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 .kiosk-row__end select.ksearch__box {
   height: var(--btn-secondary-h); padding: 0 10px; font-size: 13px; max-width: 180px;
 }
+
+/* ── 屏 02 / 03 / 04 开局设置三屏 ────────────────────────────────────
+   三屏同一副骨架(L2 布局 A),右栏是一叠 `.setgrp`。样式照 `sample-go` 稿子自己的
+   `<style>` 抄,只抄**共享包里没有的那几个**:`.kiosk-optseg` / `.kiosk-seclabel` /
+   `.secval` / `.kiosk-opthint` / `.kiosk-side` / `.kiosk-scrollzone` /
+   `.kiosk-primary-action` 都已经在 `tokens.css` 与 `seclabel.css` 里,一个都不重写。
+
+   ⚠️ `.ranked-state__stakes` 是**从象棋/国象自己的 `<style>` 里来的**,不在共享包 ——
+   借别家类名之前先 grep 它住在哪儿,这条在本分支上已经栽过两次。
+   字族一律走 token(`--font-sans` / `--font-serif` / `--font-mono`),
+   不抄稿子里那几个 `"SmartBox Sans", sans-serif` 字面量:回退链在 token 里多两跳
+   (`SmartBox Kai` / `Kaiti SC`),而盒子上 PingFang / Songti / Kaiti 一个都没有。 */
+.setgrp { flex: none; }
+.setgrp + .setgrp { margin-top: 20px; }
+.setgrp-scroll { flex: 1; min-height: 0; }
+.setgrp-scroll .kiosk-side__scroll { padding-right: 10px; }
+
+/* 「怎么落子」自己带一圈强调框 —— 三屏里只有这一组是**开局后不可改**的。 */
+.inputgrp {
+  background: var(--raise);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 13px; padding: 26px;
+}
+.inputgrp .kiosk-seclabel { margin-bottom: 12px; }
+.inputgrp .kiosk-optseg { height: 60px; }
+.inputgrp .kiosk-optseg button { font-size: 15px; }
+
+.igrow { display: flex; align-items: center; gap: 10px; }
+.igrow + .igrow { margin-top: 12px; }
+.igrow > .iglab { width: 52px; flex: none; font-size: 12.5px; color: var(--dim); }
+.igrow > .kiosk-optseg { flex: 1; }
+/* **读数,不是控件。** 虚线边是它和旁边那些能点的分段控件唯一的区别 ——
+   实线圆角一样、高度一样,不给个记号,用户会去戳一个戳不动的东西。 */
+.igfix {
+  flex: 1; height: 60px; display: flex; align-items: center; padding: 0 13px;
+  font-size: 13px; color: var(--dim);
+  border: 1px dashed var(--hair); border-radius: 11px; background: var(--panel);
+}
+.igfix b { color: var(--text); font-weight: 500; margin-right: 7px; }
+
+/* 档位轨:− / 一排点 / ＋。规范 §11(v1.21)给 `.kiosk-optseg` 定的**项数上限是 6**,
+   「超过就换下拉或滑条」。棋力 29 档、贴目 15 档、让子 10 档、用时 7 档都超了 ——
+   这条轨就是那个「滑条」。不选下拉:7″ 触屏上下拉要点两次才看得见选项,
+   而弹层正好盖住左边那块盘,那块盘画的偏偏是「按下开始之后会出现的局面」。 */
+.catpick { display: flex; align-items: center; gap: 10px; height: 44px; flex: none; }
+.catstep {
+  width: 44px; height: 44px; flex: none; cursor: pointer;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--raise);
+  color: var(--accent); font-family: var(--font-sans); font-size: 20px; line-height: 1;
+}
+.catstep:disabled { opacity: .38; cursor: default; }
+.cattrack { flex: 1; min-width: 0; position: relative; height: 44px; }
+.cattrack::before {
+  content: ""; position: absolute; left: 9px; right: 9px; top: 21px;
+  height: 2px; border-radius: 1px; background: var(--hair);
+}
+.catticks {
+  position: relative; height: 44px;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 5px;
+}
+.catticks i {
+  width: 6px; height: 6px; border-radius: 50%; flex: none;
+  background: var(--panel); border: 1px solid var(--hair);
+}
+.catticks i.on {
+  background: color-mix(in srgb, var(--accent) 50%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.catticks i.now {
+  width: 18px; height: 18px; background: var(--accent); border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.catmeta { display: flex; align-items: baseline; gap: 10px; min-height: 20px; margin-top: 7px; }
+.catmeta b { font-family: var(--font-serif); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.catmeta b i { font-style: normal; color: var(--accent); }
+.catmeta span { margin-left: auto; font-size: 11.5px; color: var(--dim); white-space: nowrap; }
+.catmeta span b { font-family: var(--font-sans); color: var(--accent); font-size: 11.5px; }
+
+/* 一整段说明顶掉一组控件 —— 让子 > 0 时贴目那一组就是这个形态。
+   **不是把控件灰掉**:灰掉说的是「你现在不能改」,这里要说的是「这一局没有这回事」。 */
+.setexplain {
+  margin: 0; padding: 12px 14px;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--panel);
+  font-size: 13px; line-height: 1.65; color: var(--dim);
+}
+.setexplain b { color: var(--text); font-weight: 600; }
+
+/* 升降级那两格「赌多少」。 */
+.ranked-state__stakes { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.ranked-state__stakes span {
+  min-height: 44px; display: grid; place-items: center;
+  border: 1px solid var(--hair); border-radius: 9px; background: var(--panel);
+  font: 600 12px var(--font-mono); color: var(--text);
+}
+
+/* 分段格里的黑白子比独立那颗小一圈 —— 26 的子会把 60 高的格子撑得没有余白。 */
+.kiosk-optseg .disc { width: 18px; height: 18px; }

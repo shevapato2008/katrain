@@ -42,7 +42,7 @@ describe('PlatformEngineSetupPage (compact, no-scroll)', () => {
   it('Start button is present without scrolling (rendered, not gated behind overflow)', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /开始对弈|start game/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /开始对局|start game/i })).toBeInTheDocument();
     });
     expect(screen.getByRole('button', { name: /返回|back/i })).toBeInTheDocument();
   });
@@ -50,7 +50,7 @@ describe('PlatformEngineSetupPage (compact, no-scroll)', () => {
   it('settings panel is structurally non-scrolling (overflow:hidden, not auto)', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /开始对弈|start game/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /开始对局|start game/i })).toBeInTheDocument();
     });
     const panel = screen.getByTestId('engine-setup-noscroll-root');
     expect(getComputedStyle(panel).overflowY).not.toBe('auto');

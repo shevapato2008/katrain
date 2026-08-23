@@ -221,3 +221,56 @@ describe('Galaxy GamePage ranked settlement', () => {
     expect(screen.getByRole('button', { name: 'board' })).not.toBeDisabled();
   });
 });
+
+/* ── 自由对弈那半 ────────────────────────────────────────────────
+ * 2026-08-23：`free` 分支从「顶栏（标题 + 退出键）+ 棋盘 / 右边 500px 面板」的老版式
+ * 迁到与 `rated` **同一个** `BoardPageShell`。版式结论（右栏三档宽、三段和、棋盘方不方）
+ * 由真浏览器量（`loadbearing_board_page.js`，六个棋盘页共用的那份探针，三档全过）；
+ * 这里只守渲染结构 —— 判据「把它原样搬进真浏览器，还有可能失败吗」：会。
+ *
+ * 变异实跑：
+ *   1. 模块牌标题写死成 `t('rated_play', …)`  → 「标题/返回」那条红
+ *   2. `railBody` 里去掉 `isRated &&` 这个条件 → 「不渲染结算面板」那条红
+ *   3. `controls(true)` 改回 `controls()`      → 「右栏是 embedded」那条红
+ */
+describe('Galaxy GamePage 自由对弈', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    mocks.getStatus.mockReset();
+    mocks.getGameStatus.mockReset();
+    mocks.gameState = { ...gameState, end_result: null, game_type: 'ai' };
+  });
+
+  const renderFree = () => render(
+    <MemoryRouter initialEntries={['/galaxy/play/game/s1']}>
+      <Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes>
+    </MemoryRouter>,
+  );
+
+  it('走的是与升降级同一个棋盘页外壳，模块牌是「自由对弈」、返回「对局」', () => {
+    renderFree();
+    expect(screen.getByTestId('board-page-shell')).toBeInTheDocument();
+    const plate = screen.getByTestId('module-plate');
+    expect(plate.querySelector('h1')).toHaveTextContent('自由对弈');
+    /* 返回键去哪儿不能靠点（`useGameNavigation` 在这份桩件里没有 requestNavigation），
+       改判无障碍名 —— 它由 backLabel 拼出来，同样能区分升降级和自由。 */
+    expect(plate.querySelector('button[aria-label="返回对局"]')).not.toBeNull();
+  });
+
+  it('不渲染升降级的结算面板', () => {
+    mocks.gameState = { ...gameState, end_result: 'B+R', game_type: 'ai' };
+    renderFree();
+    expect(screen.queryByText(/晋级|降级|正在读取服务器结算结果/)).toBeNull();
+  });
+
+  it('右栏面板走 embedded，且顶栏那个「退出」键不再存在', () => {
+    renderFree();
+    // 迁移前 free 分支传的是非 embedded 的 `controls()`（自带 500px 宽和自己的滚动）。
+    expect(screen.getByTestId('game-controls')).toHaveAttribute('data-embedded', 'true');
+    // 「退出」搬进右栏成了「离开对局」，顶栏那份是重复，已删。
+    expect(screen.queryByRole('button', { name: '退出' })).toBeNull();
+    // 翻手六键在动作区，不跟着中段滚。
+    expect(screen.getByTestId('board-rail-actions')).toContainElement(screen.getByTestId('game-rail-actions'));
+  });
+});
+

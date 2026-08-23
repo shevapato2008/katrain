@@ -2148,7 +2148,7 @@ msgid "report:my_reports"
 msgstr "复盘"
 
 msgid "report:page_hint"
-msgstr "选择右侧棋局预览棋盘，报告生成和跳转都在棋局卡片上完成。"
+msgstr "选一局预览棋盘；报告生成和跳转都在棋局卡片上完成。"
 
 msgid "report:select_game"
 msgstr "选择一局棋谱"
@@ -2974,3 +2974,21 @@ msgstr "跳到最后"
 
 msgid "game:in_play"
 msgstr "对局中"
+
+msgid "report:summary_done"
+msgstr "已完成"
+
+msgid "tsumego:kyu_tier"
+msgstr "级位"
+
+msgid "tsumego:dan_tier"
+msgstr "段位"
+
+msgid "tsumego:stronger_downward"
+msgstr "越往下越强"
+
+msgid "tsumego:all_levels"
+msgstr "全部难度 · {count} 档"
+
+msgid "tsumego:your_level"
+msgstr "你的水平"

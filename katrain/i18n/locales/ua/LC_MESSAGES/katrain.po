@@ -2355,7 +2355,7 @@ msgstr "Розбір"
 
 msgid "report:page_hint"
 msgstr ""
-"Оберіть партію праворуч для перегляду. Звіти створюються через картку "
+"Виберіть партію для попереднього перегляду. Звіти створюються на картці "
 "партії."
 
 msgid "report:select_game"
@@ -3202,3 +3202,25 @@ msgstr "У кінець"
 
 msgid "game:in_play"
 msgstr "Триває партія"
+
+msgid "report:summary_done"
+msgstr "готово"
+
+#. TODO
+msgid "play:game_records"
+msgstr "Game Records"
+
+msgid "tsumego:kyu_tier"
+msgstr "К'ю"
+
+msgid "tsumego:dan_tier"
+msgstr "Дан"
+
+msgid "tsumego:stronger_downward"
+msgstr "нижче — сильніше"
+
+msgid "tsumego:all_levels"
+msgstr "Усі рівні · {count}"
+
+msgid "tsumego:your_level"
+msgstr "ваш рівень"

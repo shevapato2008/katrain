@@ -2231,7 +2231,7 @@ msgid "report:my_reports"
 msgstr "복기"
 
 msgid "report:page_hint"
-msgstr "오른쪽 대국을 선택하여 미리보기. 보고서 생성은 대국 카드에서 합니다."
+msgstr "대국을 선택하면 기보를 미리 볼 수 있습니다. 보고서 생성은 대국 카드에서 합니다."
 
 msgid "report:select_game"
 msgstr "대국 선택"
@@ -3060,3 +3060,25 @@ msgstr "마지막 수로"
 
 msgid "game:in_play"
 msgstr "대국 중"
+
+msgid "report:summary_done"
+msgstr "완료"
+
+#. TODO
+msgid "play:game_records"
+msgstr "Game Records"
+
+msgid "tsumego:kyu_tier"
+msgstr "급위"
+
+msgid "tsumego:dan_tier"
+msgstr "단위"
+
+msgid "tsumego:stronger_downward"
+msgstr "아래로 갈수록 강함"
+
+msgid "tsumego:all_levels"
+msgstr "전체 난이도 · {count}단계"
+
+msgid "tsumego:your_level"
+msgstr "내 실력"

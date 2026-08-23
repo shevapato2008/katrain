@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { GameNavigationProvider } from '../../context/GameNavigationContext';
+import { SettingsProvider } from '../../../context/SettingsContext';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ReportQueueSummary, ReportTaskSummary } from '../../../api/reportApi';
@@ -19,12 +20,20 @@ const mockClearTaskError = vi.fn();
 const mockKifuGetAlbums = vi.fn();
 const mockKifuGetAlbum = vi.fn();
 
+/* 登录态做成可变 fixture（与本文件里 `reportTasksFixture` 同一手法），
+   好让底下的「未登录支」那个 describe 把它翻过去 —— 迁到 `BoardPageShell`
+   之后未登录支不再是一块光秃秃的 Alert，它有自己的壳和一个登录键。 */
+let authFixture: { token: string | null; isAuthenticated: boolean; user: { id: number; username: string } | null };
+
+function setAuth(authenticated: boolean) {
+  authFixture = authenticated
+    ? { token: 'token', isAuthenticated: true, user: { id: 1, username: 'reporter' } }
+    : { token: null, isAuthenticated: false, user: null };
+}
+setAuth(true);
+
 vi.mock('../../../context/AuthContext', () => ({
-  useAuth: () => ({
-    token: 'token',
-    isAuthenticated: true,
-    user: { id: 1, username: 'reporter' },
-  }),
+  useAuth: () => authFixture,
 }));
 
 vi.mock('../../../api/userGamesApi', () => ({
@@ -109,6 +118,7 @@ const gameDetail = {
 // 覆盖全部 galaxy 路由，所以这里补的是**测试的装配**，不是生产缺口。
 describe('ReportsPage', () => {
   beforeEach(() => {
+    setAuth(true);
     mockUserGamesList.mockReset();
     mockUserGamesGet.mockReset();
     mockUserGamesCreate.mockReset();
@@ -658,5 +668,55 @@ describe('ReportsPage', () => {
     reportTasksFixture = { ...reportTasksFixture, error: null };
     rerender(<MemoryRouter><GameNavigationProvider><ReportsPage /></GameNavigationProvider></MemoryRouter>);
     expect(screen.queryByText('Retry failed')).not.toBeInTheDocument();
+  });
+});
+
+/* ── 未登录支 ──────────────────────────────────────────────────
+ * 已登录支的**版式结论**（右栏三段和、没预览时动作区高 0、分页滚得到）全部由
+ * `superpowers/tracks/galaxy-ui-redesign/loadbearing_reports_list.js` 在真浏览器里量，
+ * 那是更强的证据，这里不重复写一遍弱的。留在 jsdom 里只守这一支：CI 里没人会去点它，
+ * 而它上面有本次账本唯一那条「新增 1 类」——登录键。
+ *
+ * 变异实跑：① 未登录支改回迁移前那块光秃秃的 `<Alert>` → 两条都红；
+ *           ② 去掉 `showBack={false}` → 「不画返回键」那条红。还原后各自变绿。
+ */
+describe('ReportsPage · 未登录支', () => {
+  beforeEach(() => {
+    setAuth(false);
+  });
+
+  it('走的是统一的棋盘页外壳，动作区里有登录键', () => {
+    render(
+      <MemoryRouter>
+        {/* 这一支多包一层 `SettingsProvider`：未登录支会渲染 `LoginModal`，
+            而它读 `useSettings`。已登录支不渲染它，所以上面 18 条一行没动。 */}
+        <SettingsProvider>
+          <GameNavigationProvider>
+            <ReportsPage />
+          </GameNavigationProvider>
+        </SettingsProvider>
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId('board-page-shell')).toBeInTheDocument();
+    /* 断言落在**这个控件**上，不落在「动作区里有没有 button」上 ——
+       动作区里可能还挂着别的东西，按容器断言会假绿（直播页那次的教训）。 */
+    const login = screen.getByTestId('reports-login');
+    expect(screen.getByTestId('board-rail-actions')).toContainElement(login);
+  });
+
+  it('复盘是一级导航页 —— 模块牌不画返回键', () => {
+    render(
+      <MemoryRouter>
+        {/* 这一支多包一层 `SettingsProvider`：未登录支会渲染 `LoginModal`，
+            而它读 `useSettings`。已登录支不渲染它，所以上面 18 条一行没动。 */}
+        <SettingsProvider>
+          <GameNavigationProvider>
+            <ReportsPage />
+          </GameNavigationProvider>
+        </SettingsProvider>
+      </MemoryRouter>,
+    );
+    const plate = screen.getByTestId('module-plate');
+    expect(plate.querySelector('button[aria-label^="返回"], button[aria-label^="Back"]')).toBeNull();
   });
 });

@@ -2178,8 +2178,8 @@ msgstr "Revisión"
 
 msgid "report:page_hint"
 msgstr ""
-"Selecciona una partida a la derecha para previsualizar. Los informes se "
-"crean desde la tarjeta."
+"Selecciona una partida para previsualizarla. Los informes se crean desde la "
+"tarjeta de la partida."
 
 msgid "report:select_game"
 msgstr "Seleccionar partida"
@@ -3032,3 +3032,21 @@ msgstr "Última jugada"
 
 msgid "game:in_play"
 msgstr "En juego"
+
+msgid "report:summary_done"
+msgstr "completado"
+
+msgid "tsumego:kyu_tier"
+msgstr "Kyu"
+
+msgid "tsumego:dan_tier"
+msgstr "Dan"
+
+msgid "tsumego:stronger_downward"
+msgstr "más difícil hacia abajo"
+
+msgid "tsumego:all_levels"
+msgstr "Todos los niveles · {count}"
+
+msgid "tsumego:your_level"
+msgstr "tu nivel"

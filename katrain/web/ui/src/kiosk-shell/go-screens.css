@@ -638,6 +638,11 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 /* 分段格里的黑白子比独立那颗小一圈 —— 26 的子会把 60 高的格子撑得没有余白。 */
 .kiosk-optseg .disc { width: 18px; height: 18px; }
 
+/* 分段控件里**此刻选不了**的那一段(屏 02/04 的「实体盘」:摄像头没标定,或这一局不是 19 路)。
+   照 `.catstep:disabled` 那一条的做法 —— 同一套外壳里「点不动」只有一种画法。
+   **不动几何**:灰掉不改高度也不改边框,否则这一组会在可用/不可用之间跳一下。 */
+.kiosk-optseg button:disabled { opacity: .38; cursor: default; }
+
 /* ── 屏 04 本地对局:「对局双方」那两行行尾的名字输入 ──────────────────────
    稿子画的是一颗写着「点此输入」的药丸(`.kiosk-btn--pill`)—— 静态稿只能画到这一步。
    真页面上它必须**真能输入**:药丸的样子照搬(同高 26、同圆角、同描边、同字号),

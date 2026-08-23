@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useVision } from '../context/VisionContext';
@@ -11,6 +11,7 @@ import KioskSetupBoard from '../components/board/KioskSetupBoard';
 import OptionChips from '../components/common/OptionChips';
 import { interpolate } from '../utils/interpolate';
 import { RULES_HINT, TIME_PRESETS, TIME_TRACK_ORDER } from '../utils/setupOptions';
+import { playInputState, writePlayOnBoard } from '../utils/playInput';
 import { API } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
@@ -43,12 +44,15 @@ import { writeActiveSession } from '../utils/activeSession';
  * ③ **「白方 · 贴目的一方」反了**(稿子那一行)。贴目是**黑方贴给白方**的 ——
  *    `core/game.py:372` 里黑棋的分数减去 komi,少的那一边是黑。白方是**收**的那一方。
  *
- * ## 「怎么落子」那一组:读数,不是设置项(同屏 02)
+ * ## 「怎么落子」是**真开关**(2026-08-23 改回来的)
  *
- * `isVisionEnabled` 由后端 `/api/v1/vision/status` 给,全仓没有任何地方能让用户切它。
- * 这一屏尤其不能画成可选:本地对局那条路由外面套着
- * `<PhysicalBoardGuard requireRecognition>`,盘没标定过时进去的是标定工作台,
- * 不是对局 —— 屏上摆一个「实体盘 / 屏幕」的开关,等于让人以为自己选得了。
+ * 这一屏第一版把它画成了一格读数,理由写的是「全仓没有任何地方能让用户切」——
+ * **那句话是错的**:做题屏早就有这颗开关。设备能不能(`isVisionEnabled`)和这一局想不想
+ * 是两段,第一版把后一段抹掉了。现在两段都在:`utils/playInput.ts` 存偏好,
+ * `KioskApp` 的 `PlayInputGuard` 和 `GamePage` 都认它。
+ *
+ * 选中的是**这一局实际会落在哪**(`onBoard`),不是偏好本身 —— 屏上那块盘画的是
+ * 「按下按钮后真会出现的局面」,同一屏的控件不能说另一件事。
  */
 const PvpLocalSetupPage = () => {
   const navigate = useNavigate();
@@ -99,7 +103,18 @@ const PvpLocalSetupPage = () => {
   const KOMI_STEP = 0.5;
   const komiIndex = Math.round((komi - KOMI_MIN) / KOMI_STEP);
 
-  const onPhysicalBoard = isVisionEnabled;
+  // 三段:设备能不能 / 这一局想不想 / 实际落在哪。`bumpInput` 只是为了让偏好写进
+  // localStorage 之后这一屏重算一次 —— 偏好不在 React state 里,它跨屏活着。
+  const [inputTick, setInputTick] = useState(0);
+  const playInput = useMemo(
+    () => playInputState(isVisionEnabled, boardSize),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- inputTick 就是「偏好刚被改过」这个信号
+    [isVisionEnabled, boardSize, inputTick],
+  );
+  const setPlayOnBoard = (next: boolean) => {
+    writePlayOnBoard(next);
+    setInputTick((n) => n + 1);
+  };
 
   const handleStart = async () => {
     setError('');
@@ -160,12 +175,17 @@ const PvpLocalSetupPage = () => {
             />
             <div className="igrow">
               <span className="iglab">{t('setup:input_where', '落子')}</span>
-              <span className="igfix" data-testid="setup-input-readout">
-                <b>{onPhysicalBoard ? t('setup:on_board', '实体盘') : t('setup:on_screen', '屏幕')}</b>
-                {onPhysicalBoard
-                  ? t('setup:on_board_hint', '摄像头已标定,落子直接下在盘上')
-                  : t('setup:on_screen_hint', '这台机器没有标定过摄像头')}
-              </span>
+              <KioskOptSeg
+                ariaLabel={t('setup:input_where', '落子')}
+                testId="setup-input"
+                value={playInput.onBoard ? 'board' : 'screen'}
+                onChange={(v) => setPlayOnBoard(v === 'board')}
+                options={[
+                  // 「屏幕」**永远选得了** —— 条件掉了不能把两个人锁在一块用不了的盘上。
+                  { value: 'screen', label: t('setup:on_screen', '屏幕') },
+                  { value: 'board', label: t('setup:on_board', '实体盘'), disabled: !playInput.available },
+                ]}
+              />
             </div>
             <div className="igrow">
               <span className="iglab">{t('setup:size', '路数')}</span>
@@ -181,10 +201,15 @@ const PvpLocalSetupPage = () => {
                 ]}
               />
             </div>
+            {/* 灰掉的那一段必须有人说为什么 —— 这一行就是那个人。 */}
             <p className="kiosk-opthint">
-              {onPhysicalBoard
-                ? t('local:input_hint_board', '两人面对面下在这块盘上,屏幕只记谱和读秒;9 路和 13 路只有屏幕上有')
-                : t('setup:size_hint', '9 路和 13 路只有屏幕上有 —— 盘上那块是 19 路')}
+              {playInput.reason === 'noCamera'
+                ? t('setup:board_no_camera', '这台机器没有标定过摄像头,只能下在屏幕上')
+                : playInput.reason === 'notNineteen'
+                  ? t('setup:board_needs_19', '盘上那块是 19 路 —— 9 路和 13 路只有屏幕上有')
+                  : playInput.onBoard
+                    ? t('local:input_hint_board', '两人面对面下在这块盘上,屏幕只记谱和读秒')
+                    : t('local:input_hint_screen', '两人轮流点屏幕落子 —— 盘就在旁边,也可以切回实体盘')}
             </p>
           </section>
 

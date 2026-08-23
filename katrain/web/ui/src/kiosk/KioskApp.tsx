@@ -34,6 +34,7 @@ import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
 import { GeometryProvider } from './context/GeometryContext';
 import PhysicalBoardGuard from './components/vision/PhysicalBoardGuard';
+import PlayInputGuard from './components/vision/PlayInputGuard';
 import RotationWrapper from './components/layout/RotationWrapper';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
@@ -86,11 +87,15 @@ const KioskRoutes = () => {
               而规范 §5 防跳铁律 1 写死「顶栏永远占 y 0–56,任何层级、任何模块都不变高、
               不隐藏」。挪进来之后 `dockLevelOf` 把它们判成 2 级:有顶栏、没 Dock、
               中间区 516 高,正是对局屏该有的样子。
-              ⚠️ `PhysicalBoardGuard requireRecognition` 原样保留,不要顺手改。 */}
-          <Route path="play/ai/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
-          <Route path="play/pvp/local/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
-          <Route path="play/pvp/room/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
-          <Route path="play/cross-platform/engine/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage engineMode /></PhysicalBoardGuard>} />
+              ⚠️ 2026-08-23:这四条从 `PhysicalBoardGuard requireRecognition` 换成
+              `PlayInputGuard` —— 它在里面套的**就是**那道守卫,只多问一句「这一局是不是
+              选了下在屏幕上」。开局设置屏那颗「屏幕 / 实体盘」不接到这儿的话,人选了屏幕
+              进来还是被推去标定工作台,开关只做了半截。偏好默认开 ⇒ 对现有行为零影响。
+              **不要退回裸的 `PhysicalBoardGuard`。** */}
+          <Route path="play/ai/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
+          <Route path="play/pvp/local/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
+          <Route path="play/pvp/room/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
+          <Route path="play/cross-platform/engine/game/:sessionId" element={<PlayInputGuard><GamePage engineMode /></PlayInputGuard>} />
 
           <Route path="play" element={<PlayPage />} />
           {/* 升降级对弈 has its own page: nothing about the opponent is chosen here,

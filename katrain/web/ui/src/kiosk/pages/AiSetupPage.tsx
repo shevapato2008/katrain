@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Box } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import OptionChips from '../components/common/OptionChips';
@@ -10,6 +10,7 @@ import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskStepTrack } from '../shell/KioskStepTrack';
 import { interpolate } from '../utils/interpolate';
 import { RULES_HINT, TIME_PRESETS, TIME_TRACK_ORDER } from '../utils/setupOptions';
+import { playInputState, writePlayOnBoard } from '../utils/playInput';
 import { API } from '../../api';
 import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -260,11 +261,24 @@ const AiSetupPage = () => {
     ? t('ladder:stake_loss_demote', '负 · 退一档')
     : interpolate(t('ladder:stake_loss_score', '负 · 净胜分 {n}'), { n: signed(netScore - 1) });
 
-  // 「落子」**不是设置项,是这台盒子此刻的能力**。`isVisionEnabled` 由后端
-  // `/api/v1/geometry/status` 给(`context/VisionContext.tsx`),全仓没有任何地方能让
-  // 用户切它。稿子把它画成了可选分段 —— 照画就是摆一个戳不动的旋钮。
-  // ⇒ 用 `.igfix`(虚线边 = 读数不是控件),说实话:这一局会落在哪儿。
-  const onPhysicalBoard = isVisionEnabled;
+  // ── 「落子」是**真开关**(2026-08-23 改回来的)────────────────────────
+  // 第一版画成了一格读数,理由写的是「全仓没有任何地方能让用户切」——**那句话是错的**:
+  // 做题屏(`TsumegoProblemPage`)早就有这颗开关。设备能不能(`isVisionEnabled`,后端给)
+  // 和这一局想不想是**两段**,第一版把后一段抹掉了。偏好存在 `utils/playInput.ts`,
+  // `KioskApp` 的 `PlayInputGuard` 和 `GamePage` 都认它。
+  //
+  // 选中的是**这一局实际会落在哪**(`onBoard`),不是偏好本身:左边那块盘画的是
+  // 「按下按钮后真会出现的局面」,同一屏上的控件不能说另一件事。
+  const [inputTick, setInputTick] = useState(0);
+  const playInput = useMemo(
+    () => playInputState(isVisionEnabled, isRanked ? 19 : boardSize),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- inputTick 就是「偏好刚被改过」这个信号
+    [isVisionEnabled, isRanked, boardSize, inputTick],
+  );
+  const setPlayOnBoard = (next: boolean) => {
+    writePlayOnBoard(next);
+    setInputTick((n) => n + 1);
+  };
 
   return (
     // 规范 §11 **布局 A**(`kiosk-shell-spec.md:510-512`):「开局设置是对局的前一步,所以它走
@@ -317,12 +331,17 @@ const AiSetupPage = () => {
                 />
                 <div className="igrow">
                   <span className="iglab">{t('setup:input_where', '落子')}</span>
-                  <span className="igfix" data-testid="setup-input-readout">
-                    <b>{onPhysicalBoard ? t('setup:on_board', '实体盘') : t('setup:on_screen', '屏幕')}</b>
-                    {onPhysicalBoard
-                      ? t('setup:on_board_hint', '摄像头已标定,落子直接下在盘上')
-                      : t('setup:on_screen_hint', '这台机器没有标定过摄像头')}
-                  </span>
+                  <KioskOptSeg
+                    ariaLabel={t('setup:input_where', '落子')}
+                    testId="setup-input"
+                    value={playInput.onBoard ? 'board' : 'screen'}
+                    onChange={(v) => setPlayOnBoard(v === 'board')}
+                    options={[
+                      // 「屏幕」**永远选得了** —— 条件掉了不能把人锁在一块用不了的盘上。
+                      { value: 'screen', label: t('setup:on_screen', '屏幕') },
+                      { value: 'board', label: t('setup:on_board', '实体盘'), disabled: !playInput.available },
+                    ]}
+                  />
                 </div>
                 <div className="igrow">
                   <span className="iglab">{t('setup:size', '路数')}</span>
@@ -346,9 +365,22 @@ const AiSetupPage = () => {
                     />
                   )}
                 </div>
-                {!isRanked && (
+                {/* 这一行有两个身份,**计分局只认后一个**:
+                    · 自由对弈:稿子 02 屏本来就画了一行说明 ⇒ 常驻。
+                    · 计分局:稿子 03 屏这一组**到路数那行就结束了**,没有说明行。
+                      常驻会把它下面的每一组都往下推一行 —— 那就是上一轮「给升降级编了一段
+                      `.setnote`」的同一个错(四图 refOnly 当场涨了 1900)。
+                    ⇒ 计分局只在**实体盘那段灰掉时**说话:灰而不说原因是另一条更硬的规矩,
+                      而稿子从没画过那一态。 */}
+                {(!isRanked || playInput.reason !== null) && (
                   <p className="kiosk-opthint">
-                    {t('setup:size_hint', '9 路和 13 路只有屏幕上有 —— 盘上那块是 19 路')}
+                    {playInput.reason === 'noCamera'
+                      ? t('setup:board_no_camera', '这台机器没有标定过摄像头,只能下在屏幕上')
+                      : playInput.reason === 'notNineteen'
+                        ? t('setup:board_needs_19', '盘上那块是 19 路 —— 9 路和 13 路只有屏幕上有')
+                        : playInput.onBoard
+                          ? t('setup:input_hint_board', '这一局下在盘上,屏幕负责记谱、读秒和显示分析')
+                          : t('setup:input_hint_screen', '这一局点屏幕落子 —— 盘就在旁边,也可以切回实体盘')}
                   </p>
                 )}
               </section>

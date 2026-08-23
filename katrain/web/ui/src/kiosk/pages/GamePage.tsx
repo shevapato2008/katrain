@@ -18,6 +18,7 @@ import KioskResultBadge from '../components/game/KioskResultBadge';
 import RecalibrationModal from '../components/game/RecalibrationModal';
 import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
 import { useVision } from '../context/VisionContext';
+import { readPlayOnBoard } from '../utils/playInput';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { useTranslation } from '../../hooks/useTranslation';
 import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChip';
@@ -194,7 +195,22 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   // refreshStatus drives the 重置识别 recovery button clearing immediately on success.
   const { visionStatus, isVisionEnabled, refreshStatus } = useVision();
-  const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
+
+  // ── 这一局到底落在哪儿 ────────────────────────────────────────────────
+  // **`isVisionEnabled` 只是设备那一段。** 2026-08-23 起开局设置屏上有一颗真的
+  // 「屏幕 / 实体盘」,偏好存在 `utils/playInput.ts`;这一屏下面**每一处**实体盘 UI
+  // (识别绑定、AI 落子横幅、重标定弹层、硬件故障条、重置识别键、识别浮层、
+  // 引擎落子错误弹层)认的都得是**两段之和**,不是设备那一段。
+  //
+  // 偏好只在**挂载时读一次**:这一局落在哪儿是开局那一刻定的(开局设置屏上写着
+  // 「开局后不可改」),中途跟着 localStorage 变会把人从一块已经摆着子的盘上赶下来。
+  // 路数同理并进来 —— 盒子上那块盘是 19 路的,9 路 / 13 路的局本来就落不到盘上,
+  // 而开局设置屏正是这么答的,两边不能给出两个答案。
+  const [playOnBoard] = useState(readPlayOnBoard);
+  const physicalPlay = isVisionEnabled
+    && playOnBoard
+    && (session.gameState?.board_size?.[0] ?? 19) === 19;
+  const visionSync = useVisionSync(physicalPlay ? sessionId ?? null : null);
 
   useEffect(() => {
     if (!session.physicalReminder) return;
@@ -229,20 +245,20 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // Persistent amber banner when AI makes a move (vision mode: physical board player
   // needs a coordinate hint to place the matching stone). Cleared on the human's own move.
   useEffect(() => {
-    if (!isVisionEnabled || !session.gameState) return;
+    if (!physicalPlay || !session.gameState) return;
     const gs = session.gameState;
     const human = deriveHumanColor(gs);
     if (gs.last_move && gs.end_result === null && human && gs.player_to_move === human) {
       setAiMoveBanner(formatGtpCoord(gs.last_move[0], gs.last_move[1], gs.board_size[0]));
     }
-  }, [isVisionEnabled, session.gameState?.current_node_id]);
+  }, [physicalPlay, session.gameState?.current_node_id]);
 
   // Camera disconnect fallback
   useEffect(() => {
-    if (isVisionEnabled && !visionStatus.cameraConnected) {
+    if (physicalPlay && !visionStatus.cameraConnected) {
       setCameraDisconnectToast(true);
     }
-  }, [isVisionEnabled, visionStatus.cameraConnected]);
+  }, [physicalPlay, visionStatus.cameraConnected]);
 
   // Invalidate the 星阵 analysis overlay when the board position advances (a move
   // played, human or AI) — otherwise stale 领地/支招/变化图 markers keep drawing over
@@ -268,10 +284,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   useEffect(() => {
     const prevKind = prevEngineOptionsKindRef.current;
     prevEngineOptionsKindRef.current = activeEngineKind;
-    if (engineMode && isVisionEnabled && prevKind === 'options' && activeEngineKind !== 'options') {
+    if (engineMode && physicalPlay && prevKind === 'options' && activeEngineKind !== 'options') {
       API.hintDismiss().catch(() => undefined);
     }
-  }, [activeEngineKind, engineMode, isVisionEnabled]);
+  }, [activeEngineKind, engineMode, physicalPlay]);
 
   // Local free-play on-demand analysis for 领地(ownership)/图表(winrate/score). Board mode
   // suppresses per-move auto-eval, so the current position has no analysis until we ask.
@@ -388,7 +404,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // generic 10s "board detection abnormal" dialog: recalOpen both gates RecalibrationModal
   // itself (further suppressed `&& !escalationOpen`) AND feeds into VisionSyncOverlay's
   // suppressBoardLost, so at most one board-loss surface is ever visible at a time.
-  const recalOpen = isVisionEnabled && !visionStatus.poseLocked && !isGameOver;
+  const recalOpen = physicalPlay && !visionStatus.poseLocked && !isGameOver;
 
   // State C: force territory coloring while scoring, without mutating the user's own
   // analysisToggles selection (so the toggle panel keeps reflecting their real picks).
@@ -403,7 +419,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // ⇒ 只在**真出故障时**说一句,落在开关排右端那个本来就用来解释「为什么它是灰的」的位置,
   //    平时不占地方。三条的优先级按「不修就没法下」排:摄像头 > 标定 > LED。
   //    `ledConnected === null` 是**后端没说**,不是「没连上」—— 不报(见 `GoConsoleRail`)。
-  const hardwareFault = !isVisionEnabled ? null
+  const hardwareFault = !physicalPlay ? null
     : visionStatus.cameraConnected === false ? t('vision:camera_down', '摄像头未连接 · 已转触屏')
     : visionStatus.poseLocked === false ? t('vision:pose_lost', '标定丢失 · 请重新标定')
     : visionStatus.ledConnected === false ? t('vision:led_down', 'LED 未连接 · 不再亮灯引导')
@@ -449,7 +465,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   };
 
   const hintVisible =
-    isVisionEnabled &&
+    physicalPlay &&
     gameState.game_type === 'free' &&
     gameState.analysis_allowed !== false;
 
@@ -521,7 +537,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </Box>
       {/* Persistent AI-move banner: physical board player needs a coordinate hint.
           Single-owner gate: vision on + an AI seat exists + a banner label is pending. */}
-      {isVisionEnabled && aiColor !== null && aiMoveBanner && (
+      {physicalPlay && aiColor !== null && aiMoveBanner && (
         <Box
           data-testid="ai-move-banner"
           sx={{
@@ -573,7 +589,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Error display */}
       {session.error && <Alert severity="error" sx={{ mx: 2, mt: 1 }}>{session.error}</Alert>}
 
-      {isVisionEnabled && (
+      {physicalPlay && (
         <PhysicalPlayStatusChip
           latestEvent={visionSync.latestEvent}
           currentNodeId={session.gameState?.current_node_id ?? null}
@@ -583,7 +599,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* State B: RecalibrationModal (pose lost). Gated `&& !escalationOpen` so the
           escalation dialog (highest-priority board-loss surface) wins — see the
           precedence comment above recalOpen. */}
-      {isVisionEnabled && (
+      {physicalPlay && (
         <RecalibrationModal
           key={String(visionStatus.poseLocked)}
           open={recalOpen && !escalationOpen}
@@ -642,7 +658,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             // §11 只允许一个页级图标按钮。重置识别在这一屏是**唯一**那个:
             // 让屏幕重新以实体盘为准。上一版它只在 `syncStuck` 之后才出现 ——
             // 也就是必须先卡住一次才能自救;实体模式下它现在一直在。
-            action={isVisionEnabled ? {
+            action={physicalPlay ? {
               icon: 'arrows-clockwise',
               label: t('Re-sync', '重置识别 · 让屏幕重新以实体盘为准'),
               onClick: () => { void handleResetSync(); },
@@ -766,7 +782,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Vision sync overlay — suppressBoardLost consolidates the board-loss surfaces
           (see the precedence comment above recalOpen): its own board_lost modal is
           suppressed whenever the escalation dialog OR the recalibration modal is up. */}
-      {isVisionEnabled && (
+      {physicalPlay && (
         <VisionSyncOverlay
           syncEvents={visionSync.syncEvents}
           sessionId={sessionId ?? null}
@@ -808,12 +824,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
       {/* Physical engine-move (Golaxy 隧道) bounded-retry failure — physical mode only;
           pure-screen engine games keep the existing engineErrorToast path (handleBoardMove)
-          untouched. Gate the ERROR PROP (not the mount) on isVisionEnabled so the dialog
-          component itself stays mounted across any isVisionEnabled flap without losing its
+          untouched. Gate the ERROR PROP (not the mount) on physicalPlay so the dialog
+          component itself stays mounted across any physicalPlay flap without losing its
           local dismissed-token bookkeeping (mirrors PhysicalSyncEscalationDialog's always-
           mounted pattern). */}
       <EngineMoveErrorDialog
-        error={isVisionEnabled ? session.physicalEngineError : null}
+        error={physicalPlay ? session.physicalEngineError : null}
         sessionId={sessionId ?? null}
         token={token ?? undefined}
         boardSize={gameState.board_size[0]}

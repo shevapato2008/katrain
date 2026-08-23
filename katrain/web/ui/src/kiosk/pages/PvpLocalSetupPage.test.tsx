@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import PvpLocalSetupPage from './PvpLocalSetupPage';
+import { PLAY_ON_BOARD_KEY, readPlayOnBoard } from '../utils/playInput';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -21,9 +22,12 @@ const { writeActiveSession } = vi.hoisted(() => ({ writeActiveSession: vi.fn() }
 vi.mock('../utils/activeSession', () => ({ writeActiveSession }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: 'tok', user: { username: 'u' } }) }));
 
-// 「怎么落子」读的是设备能力,不是设置项 —— 这一屏因此要 VisionProvider 的桩。
+// 「怎么落子」的**设备那一段**由它给(用户那一段在 `utils/playInput`)。
+const vision = { enabled: false };
 vi.mock('../context/VisionContext', () => ({
-  useVision: () => ({ visionStatus: { enabled: false }, isVisionEnabled: false, refreshStatus: vi.fn() }),
+  useVision: () => ({
+    visionStatus: { enabled: vision.enabled }, isVisionEnabled: vision.enabled, refreshStatus: vi.fn(),
+  }),
 }));
 
 import { API } from '../../api';
@@ -40,7 +44,12 @@ const renderPage = () =>
 const step = (testId: string, dir: '＋' | '−') =>
   within(screen.getByTestId(testId)).getByRole('button', { name: dir === '＋' ? /多|提高|增加/ : /少|降低|减少/ });
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  // 偏好活在 localStorage 里,**跨用例会串**。清掉 = 回到默认(开)。
+  localStorage.removeItem(PLAY_ON_BOARD_KEY);
+  vision.enabled = false;
+});
 
 describe('PvpLocalSetupPage', () => {
   it('starts a pvp_local game with both player names and navigates to the local game route', async () => {
@@ -110,15 +119,39 @@ describe('PvpLocalSetupPage', () => {
     expect(settings).toMatchObject({ time_enabled: true, main_time: 60, byo_length: 30, byo_periods: 3 });
   });
 
-  // 「落子」是读数不是控件:桩里 `isVisionEnabled` 为 false ⇒ 这一格写「屏幕」,
-  // 而且**这一组里除了路数没有第二个能点的东西**(屏幕/实体盘不是两颗键)。
-  it('「落子」那一格是读数,不是能点的分段控件', () => {
+  // 「怎么落子」是**两段之和**:设备能不能 + 这一局想不想。2026-08-23 之前这里是
+  // 一格读数,理由写着「全仓没有任何地方能让用户切」—— 那句话是错的(做题屏早有这颗开关)。
+  const seg = () => within(screen.getByTestId('setup-input'));
+
+  it('没标定摄像头时「实体盘」灰掉,「屏幕」照样能按,而且说得出为什么', () => {
     renderPage();
-    const readout = screen.getByTestId('setup-input-readout');
-    expect(readout).toHaveTextContent('屏幕');
-    expect(readout.querySelectorAll('button')).toHaveLength(0);
-    expect(within(screen.getByTestId('setup-input-group')).getAllByRole('button'))
-      .toHaveLength(3);   // 19 / 13 / 9 路,仅此三颗
+    expect(seg().getByRole('button', { name: '屏幕' })).toHaveAttribute('aria-pressed', 'true');
+    expect(seg().getByRole('button', { name: '实体盘' })).toBeDisabled();
+    expect(seg().getByRole('button', { name: '屏幕' })).toBeEnabled();
+    expect(screen.getByTestId('setup-input-group'))
+      .toHaveTextContent('这台机器没有标定过摄像头,只能下在屏幕上');
+  });
+
+  // 两人面对面、盘就在中间 ⇒ **默认走实体盘**(偏好默认开,也正是这次改动之前的行为)。
+  it('标定过的机器上默认走实体盘,选了屏幕就写进偏好', async () => {
+    vision.enabled = true;
+    renderPage();
+    expect(seg().getByRole('button', { name: '实体盘' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('两人面对面下在这块盘上');
+
+    await userEvent.click(seg().getByRole('button', { name: '屏幕' }));
+    expect(readPlayOnBoard()).toBe(false);
+    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('两人轮流点屏幕落子');
+  });
+
+  // 盒子上那块盘是 19 路的 —— 选 9 路,实体盘这条路自己塌掉,偏好不动。
+  it('切到 9 路,实体盘这条路自己塌掉', async () => {
+    vision.enabled = true;
+    renderPage();
+    await userEvent.click(within(screen.getByTestId('setup-size')).getByRole('button', { name: '9 路' }));
+    expect(seg().getByRole('button', { name: '实体盘' })).toBeDisabled();
+    expect(seg().getByRole('button', { name: '屏幕' })).toHaveAttribute('aria-pressed', 'true');
+    expect(readPlayOnBoard()).toBe(true);   // 偏好没被改,调回 19 路它自己就回来
   });
 
   // 这一屏没有引擎,所以稿子上属于人机那三组(棋力 / AI 策略 / 我执)一个都不该在。

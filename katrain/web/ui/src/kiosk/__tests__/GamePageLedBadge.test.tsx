@@ -122,10 +122,13 @@ const renderGamePage = () =>
 
 // Import after mocks
 import GamePage from '../pages/GamePage';
+import { PLAY_ON_BOARD_KEY, writePlayOnBoard } from '../utils/playInput';
 
 describe('GamePage 硬件故障', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // 「这一局落在哪儿」的偏好活在 localStorage 里。清掉 = 默认(实体盘)。
+    localStorage.removeItem(PLAY_ON_BOARD_KEY);
   });
 
   // 上一版这里断言顶条上有一颗 MUI `LightbulbIcon`。那三颗**常亮**的状态灯
@@ -145,5 +148,29 @@ describe('GamePage 硬件故障', () => {
   it('故障压过「数子要下满 100 手」那句', () => {
     renderGamePage();
     expect(screen.queryByText(/数子要下满/)).toBeNull();
+  });
+});
+
+/**
+ * 开局设置屏那颗「屏幕 / 实体盘」的**后半截**:选了屏幕,这一屏所有实体盘的东西都得消失。
+ *
+ * 这一条和上面两条**共用同一副桩** —— 摄像头开着、LED 报掉线、盘还是那块盘,
+ * **唯一的变量是偏好**。所以它证得干净:消失不是因为设备没了,是因为这一局不在盘上。
+ *
+ * 挑「LED 掉线」那句话当探针,是因为它只有 `physicalPlay` 一个来源
+ * (`hardwareFault` 的第一行就是 `!physicalPlay ? null`),而且它一让位,
+ * 同一格会换上「数子要下满 100 手」——**有东西顶上来**,比断言「某个字不见了」结实:
+ * 整块没渲染出来时,「不见了」也是满分。
+ */
+describe('GamePage:选了「屏幕」之后,实体盘那一套整个不出现', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    writePlayOnBoard(false);
+  });
+
+  it('设备一模一样,只是这一局不在盘上 ⇒ 硬件故障条让位给常态提示', () => {
+    renderGamePage();
+    expect(screen.queryByText('LED 未连接 · 不再亮灯引导')).toBeNull();
+    expect(document.querySelector('.gtoggles .ghint')).toHaveTextContent('数子要下满 100 手');
   });
 });

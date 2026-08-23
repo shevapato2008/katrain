@@ -11,7 +11,15 @@
  * 就挂在它上面，读屏也靠它。写成 `className={selected ? … : …}` 会让两者分家。
  */
 interface KioskOptSegProps<T extends string | number> {
-  options: { value: T; label: React.ReactNode }[];
+  /**
+   * `disabled` 只给**此刻选不了**的那一段用(2026-08-23 屏 02/04:没标定摄像头时的
+   * 「实体盘」)。两条规矩:
+   *   · **永远至少留一段能选** —— 全灰掉的一组控件在屏上和一段读数没有区别,
+   *     而读数该用 `.igfix`(虚线边),不是骗人的实线圆角。
+   *   · **灰了就得有人说为什么** —— 调用方必须同时给一行 `hint`。这套稿子在别处
+   *     专门骂过「灰而不说原因」。
+   */
+  options: { value: T; label: React.ReactNode; disabled?: boolean }[];
   value: T;
   onChange: (value: T) => void;
   /** 读屏用的组名。行内用法里它是 `.iglab` 那几个字。 */
@@ -29,6 +37,7 @@ export function KioskOptSeg<T extends string | number>({
           key={String(opt.value)}
           type="button"
           aria-pressed={value === opt.value}
+          disabled={opt.disabled}
           onClick={() => onChange(opt.value)}
         >
           {opt.label}

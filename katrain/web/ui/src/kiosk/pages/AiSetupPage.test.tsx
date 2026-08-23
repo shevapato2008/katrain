@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import AiSetupPage from './AiSetupPage';
+import { PLAY_ON_BOARD_KEY, readPlayOnBoard } from '../utils/playInput';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -98,6 +99,9 @@ const renderPage = (mode = 'free') =>
 describe('AiSetupPage', () => {
   beforeEach(() => {
     sessionStorage.clear();
+    // 「这一局落在哪儿」的偏好活在 localStorage 里 —— **跨用例会串**,
+    // 上一条选了「屏幕」,下一条就会莫名其妙地也在屏幕上。清掉 = 回到默认(开)。
+    localStorage.removeItem(PLAY_ON_BOARD_KEY);
     mockNavigate.mockReset();
     writeActiveSession.mockReset();
     startRanked.mockClear();
@@ -219,17 +223,66 @@ describe('AiSetupPage', () => {
     }
   });
 
-  // 「怎么落子」不是设置项,是这台盒子此刻的能力(`VisionContext`,后端给的)。
-  // 两态在屏上是两句不同的话,而且**两态都不给按** —— 它是 `.igfix` 读数。
+  // 「怎么落子」是**两段之和**:设备能不能(`VisionContext`,后端给)+ 这一局想不想
+  // (`utils/playInput` 的偏好,默认开)。2026-08-23 之前这里画的是一格读数,
+  // 理由写着「全仓没有任何地方能让用户切」—— **那句话是错的**,做题屏早就有这颗开关。
+  //
+  // 选中态取的是**实际会落在哪**(两段之和),不是偏好本身:左边那块盘画的是
+  // 「按下按钮后真会出现的局面」,同一屏的控件不能说另一件事。
+  const seg = () => within(screen.getByTestId('setup-input'));
   it.each([
-    [true, '实体盘'],
-    [false, '屏幕'],
-  ])('落子那一格照实说设备能力:isVisionEnabled=%s', (enabled, expected) => {
+    [true, 'board'],
+    [false, 'screen'],
+  ])('没动过偏好时,落子跟着设备走:isVisionEnabled=%s', (enabled, expected) => {
     vision.enabled = enabled;
     renderPage('free');
-    const readout = screen.getByTestId('setup-input-readout');
-    expect(readout).toHaveTextContent(expected);
-    expect(readout.querySelector('button')).toBeNull();
+    expect(seg().getByRole('button', { name: '实体盘' }))
+      .toHaveAttribute('aria-pressed', String(expected === 'board'));
+    expect(seg().getByRole('button', { name: '屏幕' }))
+      .toHaveAttribute('aria-pressed', String(expected === 'screen'));
+  });
+
+  // 没摄像头时「实体盘」灰掉,**而「屏幕」永远按得动** —— 一组全灰的控件在屏上
+  // 和一段读数没区别,而读数该用虚线边的 `.igfix`,不是骗人的实线圆角。
+  // 灰了就得有人说为什么:那一行 `.kiosk-opthint` 就是那个人。
+  it('没标定摄像头时「实体盘」灰掉,「屏幕」照样能按,而且说得出为什么', () => {
+    vision.enabled = false;
+    renderPage('free');
+    expect(seg().getByRole('button', { name: '实体盘' })).toBeDisabled();
+    expect(seg().getByRole('button', { name: '屏幕' })).toBeEnabled();
+    expect(screen.getByTestId('setup-input-group'))
+      .toHaveTextContent('这台机器没有标定过摄像头,只能下在屏幕上');
+  });
+
+  // 盒子上那块盘是 19 路的 —— 选了 9 路,「实体盘」这条路就不成立了。
+  // **偏好不动**(调回 19 路它自己就回来),但屏上说的是这一局的真实去向。
+  it('切到 9 路,实体盘这条路自己塌掉;调回 19 路又回来', async () => {
+    vision.enabled = true;
+    renderPage('free');
+    const user = userEvent.setup();
+    expect(seg().getByRole('button', { name: '实体盘' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(within(screen.getByTestId('setup-size')).getByRole('button', { name: '9 路' }));
+    expect(seg().getByRole('button', { name: '实体盘' })).toBeDisabled();
+    expect(seg().getByRole('button', { name: '屏幕' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('盘上那块是 19 路');
+
+    await user.click(within(screen.getByTestId('setup-size')).getByRole('button', { name: '19 路' }));
+    expect(seg().getByRole('button', { name: '实体盘' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  // 选「屏幕」要**真的落进偏好里** —— 它是对局屏和 `PlayInputGuard` 唯一能读到的东西。
+  // 只改屏上那个高亮而不落盘,等于开局之后又被推回实体盘。
+  it('选了屏幕就写进偏好,对局屏和守卫读的是同一个值', async () => {
+    vision.enabled = true;
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(seg().getByRole('button', { name: '屏幕' }));
+    expect(readPlayOnBoard()).toBe(false);
+    expect(seg().getByRole('button', { name: '屏幕' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(seg().getByRole('button', { name: '实体盘' }));
+    expect(readPlayOnBoard()).toBe(true);
   });
 
   // 让子 > 0 时贴目那一组**整个换成一段话**,不是把控件灰掉:

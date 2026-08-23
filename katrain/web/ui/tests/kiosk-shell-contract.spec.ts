@@ -40,6 +40,38 @@ function walk(dir: string, pick: (p: string) => boolean): string[] {
   return out;
 }
 
+/**
+ * 扫描类的闸**必须说清扫的是代码还是文本** —— 不说清就会把散文当缺陷。
+ *
+ * 2026-08-23 从象棋那支的实测里搬来的判据(他们那条新扫描闸把示例代码写进了自己的
+ * docstring,还原变异之后照样红)。**搬的是判据,不是他们的做法** ——
+ * 他们连字符串字面量一起抹掉,因为他们找的是 `now + 900` 那种**算术**;
+ * 这里两条闸找的东西**恰恰住在字符串里**(`from '@mui/icons-material'`、`height: '50vh'`),
+ * 照抄会让两条闸一起变成永远绿的空闸。⇒ **只抹注释,不动字符串。**
+ *
+ * 本文件的闸三(`t(key, 默认值)`)早就在自己那儿抹注释了 —— 同一个文件里两种扫描面,
+ * 那本身就是个味道。三条现在走同一个 `codeOnly`。
+ *
+ * 行号不保留:这三条闸报的是**文件名**,不报行。要报行的时候得换成保号的抹法。
+ *
+ * **四条分支各跑过一次**(2026-08-23,拿 `utils/playInput.ts` 和 `shell/KioskOptSeg.tsx`
+ * 这两个干净文件当靶子):
+ *   ① 闸一红:真代码里加 `height: '50vh'` ⇒ 红。
+ *   ② 闸一**该绿**:块注释里写一行 `height: 50vh,后来撤了` ⇒ 新扫描面绿。
+ *      **拿 HEAD 的旧扫描面重跑同一处变异 ⇒ 红**,Received 多出 `utils/playInput.ts`
+ *      —— 旧的按行判注释漏掉了「块注释里不以 `*` 开头的中间行」。
+ *   ③ 闸二红:真 `import { Gear } from '@mui/icons-material'` ⇒ 红。
+ *   ④ 闸二**该绿**:行注释里写「别从 `@mui/icons-material` 引图标」⇒ 新扫描面绿。
+ *      **旧扫描面重跑 ⇒ 红**,Received 多出 `shell/KioskOptSeg.tsx`。
+ * ②④ 那两条假红最可能的收场是「把这个文件加进白名单」—— 而两条闸都是 `toEqual` 的
+ * 单向棘轮,加进去之后棘轮就永远带着一条**不成立**的账。这才是这次要修的东西。
+ */
+function codeOnly(src: string): string {
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')     // 块注释(TSX 与 CSS 通用)
+    .replace(/^[ \t]*\/\/.*$/gm, ' ');       // 整行的行注释
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
  * 闸一:固定 1024×600 画布上不许出现 vw / vh / cqw / cqh
  *
@@ -78,14 +110,10 @@ const VIEWPORT_UNIT_BASELINE = [
 
 test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
   const files = walk(resolve(UI, 'src/kiosk'), (p) => /\.(tsx?|css)$/.test(p));
-  const hit = files.filter((p) => {
-    const src = readFileSync(p, 'utf8');
-    return src.split('\n').some((line) => {
-      const t = line.trimStart();
-      if (t.startsWith('*') || t.startsWith('//') || t.startsWith('/*')) return false;
-      return /[0-9](vw|vh|cqw|cqh)\b/.test(line);
-    });
-  }).map(rel).sort();
+  // 原来这里是**按行**判注释(`t.startsWith('*') || '//' || '/*'`)—— 漏两种:
+  // 代码行尾巴上挂的注释,和块注释里不以 `*` 开头的中间行。换成整份抹一遍。
+  const hit = files.filter((p) => /[0-9](vw|vh|cqw|cqh)\b/.test(codeOnly(readFileSync(p, 'utf8'))))
+    .map(rel).sort();
   expect(hit).toEqual(VIEWPORT_UNIT_BASELINE);
 });
 
@@ -164,7 +192,10 @@ test('图标不许新增手写内联路径或 MUI 图标 —— 只能从 kiosk-
   const files = walk(resolve(UI, 'src/kiosk'), (p) => p.endsWith('.tsx'));
   const hit = files.filter((p) => {
     if (p.endsWith('shell/icons.tsx')) return false;          // 它就是那个出口
-    const src = readFileSync(p, 'utf8');
+    // 2026-08-23 之前这里扫的是**生文本**:注释里提一句「别引 `@mui/icons-material`」
+    // 就会把一个干净的文件报成缺陷 —— 而这条闸是 `toEqual` 的单向棘轮,
+    // 那种假红最可能被「加进白名单」收场,棘轮从此带着一条不成立的账。
+    const src = codeOnly(readFileSync(p, 'utf8'));
     return /@mui\/icons-material/.test(src) || /<path\s+d="/.test(src);
   }).map(rel).sort();
   expect(hit).toEqual(MUI_ICON_BASELINE);
@@ -216,9 +247,7 @@ test('t(key, 默认值) 的占位符必须和 cn PO 里那条一致 —— 不�
   for (const p of files) {
     // 先把注释剥掉:注释里举的**反例**长得和真调用一模一样(这条闸自己的说明就写着一个),
     // 不剥的话它会指着一段解释说「你这儿写错了」——**闸把文档当成了代码**。
-    const src = readFileSync(p, 'utf8')
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^[ \t]*\/\/.*$/gm, '');
+    const src = codeOnly(readFileSync(p, 'utf8'));
     for (const m of src.matchAll(/\bt\(\s*'([^'\\]+)'\s*,\s*'([^'\\]*)'\s*\)/g)) {
       const [, key, def] = m;
       const translated = po.get(key);
@@ -332,9 +361,7 @@ test('t(key, 中文默认值) 的默认值不许和 PO 里那条说的是两回�
   const cjk = (s: string) => /[\u4e00-\u9fff]/.test(s);
   const hit = new Set<string>();
   for (const p of files) {
-    const src = readFileSync(p, 'utf8')
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^[ \t]*\/\/.*$/gm, '');
+    const src = codeOnly(readFileSync(p, 'utf8'));
     for (const m of src.matchAll(/\bt\(\s*'([^'\\]+)'\s*,\s*'([^'\\]*)'\s*\)/g)) {
       const [, key, def] = m;
       const translated = po.get(key);

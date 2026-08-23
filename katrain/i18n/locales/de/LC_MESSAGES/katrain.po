@@ -2342,8 +2342,8 @@ msgstr "Analyse"
 
 msgid "report:page_hint"
 msgstr ""
-"Wählen Sie rechts eine Partie zur Vorschau. Berichte werden über die "
-"Partiekarte erstellt."
+"Wählen Sie eine Partie zur Vorschau. Berichte werden über die Partiekarte "
+"erstellt."
 
 msgid "report:select_game"
 msgstr "Partie auswählen"
@@ -3201,3 +3201,10 @@ msgstr "Letzter Zug"
 
 msgid "game:in_play"
 msgstr "Läuft"
+
+msgid "report:summary_done"
+msgstr "fertig"
+
+#. TODO
+msgid "play:game_records"
+msgstr "Game Records"

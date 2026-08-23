@@ -2311,8 +2311,7 @@ msgid "report:my_reports"
 msgstr "Review"
 
 msgid "report:page_hint"
-msgstr ""
-"Select a game on the right to preview. Create reports from the game card."
+msgstr "Select a game to preview it. Reports are created from the game card."
 
 msgid "report:select_game"
 msgstr "Select a game"
@@ -3162,3 +3161,6 @@ msgstr "Last move"
 
 msgid "game:in_play"
 msgstr "In play"
+
+msgid "report:summary_done"
+msgstr "done"

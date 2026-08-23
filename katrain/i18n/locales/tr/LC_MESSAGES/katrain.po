@@ -2375,8 +2375,7 @@ msgid "report:my_reports"
 msgstr "İnceleme"
 
 msgid "report:page_hint"
-msgstr ""
-"Önizleme için sağdaki bir oyunu seçin. Raporlar oyun kartından oluşturulur."
+msgstr "Önizlemek için bir oyun seçin. Raporlar oyun kartından oluşturulur."
 
 msgid "report:select_game"
 msgstr "Oyun seç"
@@ -3219,3 +3218,10 @@ msgstr "Son hamle"
 
 msgid "game:in_play"
 msgstr "Devam ediyor"
+
+msgid "report:summary_done"
+msgstr "tamamlandı"
+
+#. TODO
+msgid "play:game_records"
+msgstr "Game Records"

@@ -2304,7 +2304,7 @@ msgid "report:my_reports"
 msgstr "検討"
 
 msgid "report:page_hint"
-msgstr "右側の対局を選択してプレビュー。レポートの作成は対局カードから行います。"
+msgstr "対局を選ぶと棋盤をプレビューできます。レポートの作成は対局カードから行います。"
 
 msgid "report:select_game"
 msgstr "対局を選択"
@@ -3133,3 +3133,10 @@ msgstr "最後の手へ"
 
 msgid "game:in_play"
 msgstr "対局中"
+
+msgid "report:summary_done"
+msgstr "完了"
+
+#. TODO
+msgid "play:game_records"
+msgstr "Game Records"

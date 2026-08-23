@@ -2286,7 +2286,7 @@ msgid "report:my_reports"
 msgstr "復盤"
 
 msgid "report:page_hint"
-msgstr "選擇右側棋局預覽棋盤，報告生成和跳轉都在棋局卡片上完成。"
+msgstr "選一局預覽棋盤；報告生成和跳轉都在棋局卡片上完成。"
 
 msgid "report:select_game"
 msgstr "選擇一局棋譜"
@@ -3115,3 +3115,10 @@ msgstr "跳到最後"
 
 msgid "game:in_play"
 msgstr "對局中"
+
+msgid "report:summary_done"
+msgstr "已完成"
+
+#. TODO
+msgid "play:game_records"
+msgstr "Game Records"

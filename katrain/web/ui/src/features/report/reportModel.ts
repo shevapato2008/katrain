@@ -55,6 +55,9 @@ export function createOptimisticReportTask(
     total_moves: moveCount,
     analyzed_moves: 0,
     requested_visits: reportType === 'deep' ? 2000 : 500,
+    // 乐观任务是还没到过后端的一行 —— 它按定义没有开始时间,更没有完成时间。
+    started_at: null,
+    completed_at: null,
   };
   if (baselineServerTaskIds !== undefined) {
     task.baseline_server_task_ids = [...baselineServerTaskIds];

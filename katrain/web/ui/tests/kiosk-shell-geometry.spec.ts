@@ -1024,6 +1024,14 @@ const bootReportDetail = async (page: Page) => {
     json: {
       id: 7, user_game_id: 'g1', status: 'completed', report_type: 'deep',
       total_moves: 40, analyzed_moves: 40, requested_visits: 2000,
+      // **这两个章在这里是「把数据造到会溢出」那一步**,不是为了好看。
+      // 接上耗时之后 `.rhead` 的副行从「每手算 2000 次 · 40 手」变成
+      // 「每手算 2000 次 · 用了 128分36秒」—— 它一换行,`.rhead` 就长高,
+      // 下面那块自己滚的重点手列表可用高度当场变。所以这里造的是**最坏那一档**
+      // (深度复盘 + 长局,分位到三位数),不是稿子里那个 6 分 12 秒。
+      // 稿子那一档在四图闸里(`kiosk-screen-20-report.fourup.spec.ts`)—— 那一关看
+      // 静止一帧对不对,这一关量交互之后对不对,两边造的数据本来就该不一样。
+      started_at: '2026-08-23T01:00:00+08:00', completed_at: '2026-08-23T03:08:36+08:00',
     },
   }));
   await page.route('**/api/v1/user-games/g1', (route) => route.fulfill({ json: REPORT_GAME }));
@@ -1117,6 +1125,16 @@ test('§11 复盘报告:重点手再多,翻手键也贴着右栏底,列表自己
       navCount: nav.querySelectorAll('button').length,
       toggleCount: toggles.querySelectorAll('button').length,
       keyRows: document.querySelectorAll('[data-testid="report-detail-key-row"]').length,
+      progressText: (document.querySelector('[data-testid="report-detail-progress"]') as HTMLElement).textContent,
+      // 一个块级 <p> 无论几行都只有一个 client rect —— 要数**行盒**只能拿 Range 量。
+      progressLines: (() => {
+        const p = document.querySelector('[data-testid="report-detail-progress"]') as HTMLElement;
+        const range = document.createRange();
+        range.selectNodeContents(p);
+        return range.getClientRects().length;
+      })(),
+      rheadH: Math.round((document.querySelector('[data-testid="report-detail-rhead"]') as HTMLElement)
+        .getBoundingClientRect().height),
       railOverflow: rail.scrollHeight - rail.clientHeight,
       rowsOverflow: rows.scrollHeight - rows.clientHeight,
       screenBottom: Math.round(screenEl.getBoundingClientRect().bottom),
@@ -1124,10 +1142,21 @@ test('§11 复盘报告:重点手再多,翻手键也贴着右栏底,列表自己
     };
   });
 
+  // 只记录、不作判据。2026-08-23 接耗时那次的承重反查结果就在这两个数里:
+  //   短行(40 手)rheadH=60 · 长行(128分36秒)rheadH=60 · **强行顶成两行 rheadH 还是 60**
+  // ⇒ `.rhead` 是 `height:60px; flex:none` 且内容 `align-items:center`,副行长短
+  //   既不长高也不溢出(两行时 `p` 底边比 `.rhead` 底边还高 4px),下面那块自己滚的
+  //   重点手列表可用高度**不随这一行变**。所以这一轮没有新的承重断言要留 ——
+  //   量出来是「不受影响」,就不该硬安一条理由是假的闸。
+  console.log('[report-rhead] rheadH=%d progressLines=%d text=%s', m.rheadH, m.progressLines, m.progressText);
   expect(m.railH, '右栏不是 516 —— 布局 A 的高度账先崩了').toBe(516);
   expect(m.navCount, '翻手键不是四个').toBe(4);
   expect(m.toggleCount, '显示开关不是四个(形势 / 手数 / AI 推荐 / 试下)').toBe(4);
   expect(m.keyRows, '造的数据没让重点手列出三行 —— 下面的断言是空的').toBe(3);
+  // **这一条守的是「量的是不是最坏那一档」,不是版式本身。** 没有它,谁把 fixture 里
+  // 那两个章删掉,下面整组几何断言就悄悄退回去量那条短行,而且照样全绿。
+  expect(m.progressText, '副行没写成耗时 —— 那这条闸量的不是接上耗时之后的版式')
+    .toContain('用了 128分36秒');
   expect(m.plot, '曲线没画出来 —— 这一屏的胜率是真数据,画不出来就不该判几何').toBe('plotted');
   expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由重点手那一块吃掉').toBeLessThanOrEqual(0);
   expect(m.navBottom, '翻手键没贴右栏底').toBe(m.railBottom);

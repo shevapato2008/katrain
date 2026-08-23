@@ -28,6 +28,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useImmersive } from '../context/ImmersiveContext';
 import { useAuth } from '../../context/AuthContext';
 import { API } from '../../api';
+import { durationLabel } from '../utils/durationLabel';
 import { KifuAPI } from '../../api/kifuApi';
 import { UserGamesAPI } from '../../api/userGamesApi';
 
@@ -55,16 +56,6 @@ function StatBlock({ value, label }: { value: string; label: string }) {
       <Typography sx={{ color: 'text.secondary', fontSize: '0.78rem' }}>{label}</Typography>
     </Box>
   );
-}
-
-// Format ETA seconds → "N分SS秒" / "N秒" (galaxy L546-550 verbatim math, extracted for reuse).
-function formatEtaValue(etaSeconds: number, t: (key: string, fallback: string) => string): string {
-  if (etaSeconds >= 60) {
-    return t('research:time_min_sec', '{min}分{sec}秒')
-      .replace('{min}', String(Math.floor(etaSeconds / 60)))
-      .replace('{sec}', (etaSeconds % 60).toString().padStart(2, '0'));
-  }
-  return t('research:time_sec', '{sec}秒').replace('{sec}', String(etaSeconds));
 }
 
 const ResearchPage = () => {
@@ -720,7 +711,7 @@ const ResearchPage = () => {
                 />
                 <StatBlock value={`${progressPercent}%`} label={t('research:progress_label', '进度')} />
                 <StatBlock
-                  value={etaSeconds !== null && etaSeconds > 0 ? formatEtaValue(etaSeconds, t) : '—'}
+                  value={etaSeconds !== null && etaSeconds > 0 ? durationLabel(etaSeconds, t) : '—'}
                   label={t('research:eta_label', '预计剩余')}
                 />
               </Box>

@@ -72,6 +72,8 @@ const task: ReportTaskSummary = {
   total_moves: 3,
   analyzed_moves: 2,
   requested_visits: 1000,
+  started_at: null,
+  completed_at: null,
 };
 
 const game: UserGameDetail = {
@@ -176,15 +178,45 @@ describe('屏 20 · 题头与状态', () => {
     expect(screen.getByTestId('report-detail-pagebar').textContent).toContain('导入的棋谱');
   });
 
-  // 稿子这行写「用了 6 分 12 秒」——**接口不吐时间戳**,编一个就是假数据。
-  it('还在跑的时候写进度,跑完了写「每手算多少次」,一个字的耗时都不编', () => {
+  it('还在跑的时候写进度 —— 那会儿「一共多少手」说的是将来', () => {
     renderPage();
     expect(screen.getByTestId('report-detail-progress')).toHaveTextContent('已分析 2 / 3 手');
+    // 排队/生成中不可能有耗时:completed_at 要到跑完才写。
     expect(screen.queryByText(/秒/)).toBeNull();
+  });
 
-    detail = { ...baseDetail(), task: { ...task, status: 'completed', analyzed_moves: 3 } };
+  // 稿子这行写「每手算 2000 次 · 用了 6 分 12 秒」。耗时 2026-08-23 才接上
+  // (`ReportTaskStatus` 补了 started_at / completed_at),**接不到时不许编**。
+  it('跑完了照稿子写耗时', () => {
+    detail = {
+      ...baseDetail(),
+      task: {
+        ...task,
+        status: 'completed',
+        analyzed_moves: 3,
+        started_at: '2026-08-23T01:00:00+08:00',
+        completed_at: '2026-08-23T01:06:12+08:00',
+      },
+    };
     renderPage();
-    expect(screen.getAllByTestId('report-detail-progress')[1]).toHaveTextContent('每手算 1000 次 · 3 手');
+    expect(screen.getByTestId('report-detail-progress')).toHaveTextContent('每手算 1000 次 · 用了 6分12秒');
+  });
+
+  // 这三条守的是同一件事:**耗时说不出来时,退回那句本来就真的话,不写「用了 0 秒」。**
+  // 没有它,①云端还没补字段的盒子、②失败的任务、③两个章的时钟对不上的行,
+  // 屏上都会出现一个编出来的耗时。
+  it.each([
+    ['云端还没补字段 —— 两个章都是 null', { status: 'completed', started_at: null, completed_at: null }],
+    ['失败的任务 —— completed_at 被回队列的那条路清掉了', { status: 'failed', started_at: '2026-08-23T01:00:00+08:00', completed_at: null }],
+    ['时钟对不上 —— 完成早于开始', { status: 'completed', started_at: '2026-08-23T01:06:12+08:00', completed_at: '2026-08-23T01:00:00+08:00' }],
+  ] as const)('耗时拿不到就退回「一共多少手」:%s', (_name, patch) => {
+    detail = {
+      ...baseDetail(),
+      task: { ...task, analyzed_moves: 3, ...patch } as ReportTaskSummary,
+    };
+    renderPage();
+    expect(screen.getByTestId('report-detail-progress')).toHaveTextContent('每手算 1000 次 · 3 手');
+    expect(screen.getByTestId('report-detail-progress').textContent).not.toContain('用了');
   });
 
   it('状态和档位只认识那几个,别的照实说「未知」', () => {

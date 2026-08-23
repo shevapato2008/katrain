@@ -92,6 +92,10 @@ test('四图:复盘 · 报告 ←→ sample-go/shots/20-report.png', async ({ pa
     json: {
       id: 41, user_game_id: 'g1', status: 'completed', report_type: 'deep',
       total_moves: 187, analyzed_moves: 187, requested_visits: 2000,
+      // 稿子这一行写的就是「每手算 2000 次 · 用了 6 分 12 秒」—— 372 秒。
+      // 2026-08-23 之前接口不吐这两个章,屏上只能退回「187 手」;补上之后
+      // 参照物和实现说的是同一句话,这一处的差因此该消失。
+      started_at: '2026-08-23T01:00:00+08:00', completed_at: '2026-08-23T01:06:12+08:00',
     },
   }));
   await page.route('**/api/v1/user-games/g1', (route) => route.fulfill({ json: GAME }));

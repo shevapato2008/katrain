@@ -4118,12 +4118,18 @@ galaxy 那边的棋谱库（`KifuLibraryPage.tsx`）也**只有**「在研究中
 ⇒ **这一屏不再进沉浸。** `immersive` 本身留着（研究 / 摆谱 / 做题 / 直播还在用），
 那笔账仍在 Task 4 名下。
 
-### 稿子写了而后端给不出的一处：「用了 6 分 12 秒」
+### 稿子写了而后端给不出的一处：「用了 6 分 12 秒」——**已补上（2026-08-23）**
 
-`ReportTaskStatus` **不吐时间戳** —— `started_at` / `completed_at` 在表里有、在响应里没有
-（`endpoints/reports.py:64` 的 `_task_to_dict`）。编一个耗时上去就是假数据。
-⇒ 这一行改写真能拿到的：还在跑时写「已分析 a / b 手」，跑完写「每手算 N 次 · M 手」。
-**登记：该给 `_task_to_dict` 补两个时间戳字段**，补了这一行就能照稿子写。
+当时：`ReportTaskStatus` **不吐时间戳** —— `started_at` / `completed_at` 在表里有、
+在响应里没有（`endpoints/reports.py:64` 的 `_task_to_dict`），编一个耗时上去就是假数据，
+于是这一行只能改写真能拿到的：跑完写「每手算 N 次 · M 手」。**登记为该补的字段。**
+
+现在：两个字段已经进了 `_task_to_dict` 与 `ReportTaskStatus`，这一行按稿子写
+「每手算 N 次 · 用了 D」。**「拿不到就不写」那一条没有跟着松掉** —— 两个章任一为空、
+解析不出、或者算出负数时，屏上退回「M 手」那句本来就真的话。
+同一轮还发现 `/retry` 只清 `completed_at` 不清 `started_at`，会把「等人来点重试的那一夜」
+算进耗时里，一并改掉。全部经过与实测数字见
+`superpowers/tracks/kiosk-go-shell-align/scope.md` §10。
 
 ### 稿子没有滑块，但「点曲线跳手」不能跟着 `PlaybackBar` 一起丢
 

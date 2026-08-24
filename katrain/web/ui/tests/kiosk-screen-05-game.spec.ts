@@ -376,11 +376,55 @@ test('星阵人机屏:道具键在、胜率块不在,动作区照旧贴底且不
   // `—` = **这一次没取到数**,和 `0`(用完了)不是一回事。取图机器上接口是空桩,所以是 `—`。
   expect(g.badges).toEqual(['—', '—', '—']);
   expect(g.hasEval, '星阵局里不该有胜率块 —— 那一屏没有图表键').toBe(false);
-  expect(g.actionLabels, '星阵局的动作区不是四个键').toEqual(['悔棋', '停一手', '数子', '认输']);
+  // 悔棋不在里面 —— **跨平台对弈整局都没有这颗键**(Fan 2026-08-25 亲裁)。
+  // 上一版是四个键,第四个是「悔棋」,只在星阵算招期间撤掉 ⇒ 一局几十次四↔三来回翻,
+  // 而这一排是 `grid-auto-columns: 1fr`,翻一次「认输」就在用户手指底下挪一格。
+  expect(g.actionLabels, '星阵局的动作区不是三个键').toEqual(['停一手', '数子', '认输']);
   expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
   expect(g.railOverflow, '右栏溢出').toBeLessThanOrEqual(0);
   expect(g.docScrollHeight, '整屏溢出').toBeLessThanOrEqual(600);
   expect(g.title).toBe('星阵围棋 · 人机');
+});
+
+// ── 屏 05 · 人人对弈 —— 悔棋按对弈方式判 ─────────────────────────────────────
+// Fan 2026-08-25:「只有人机对弈的自由对弈允许悔棋。」本地对局/对战大厅这一态在这份
+// spec 里**此前一条断言都没有**,而它的行为正是这次改掉的那一条 —— 所以它自己量一遍。
+//
+// 顺带守住「撤掉一颗键之后这一排还是两行、还贴底」:`.gacts` 是 4 列,
+// 六个键排 4+2、五个键排 4+1,**行数没变** ⇒ 动作区高度不该动。
+// 这个数只有浏览器算得出来,jsdom 无权作证。
+test('本地对局:没有悔棋、没有胜率块,动作区仍是两行且贴底', async ({ page }) => {
+  await open(page, 'pvp_local');
+
+  const g = await page.evaluate(() => {
+    const row = document.querySelector('[data-testid="game-actions"]') as HTMLElement;
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const tops = Array.from(row.querySelectorAll('button')).map((b) => Math.round(b.getBoundingClientRect().top));
+    return {
+      labels: Array.from(row.querySelectorAll('button')).map((b) => b.textContent?.trim()),
+      disabledLabels: Array.from(row.querySelectorAll('button'))
+        .filter((b) => (b as HTMLButtonElement).disabled).map((b) => b.textContent?.trim()),
+      rows: new Set(tops).size,
+      rowH: Math.round(row.getBoundingClientRect().height),
+      actionsBottom: Math.round(row.getBoundingClientRect().bottom),
+      railBottom: Math.round(rail.getBoundingClientRect().bottom),
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      hasEval: !!document.querySelector('.kiosk-fold[data-fold="eval"]'),
+      title: document.querySelector('.kiosk-pagebar__title')?.firstChild?.textContent ?? null,
+    };
+  });
+  console.log('[05-game/pvp_local]', JSON.stringify(g));
+
+  expect(g.title, '页控条标题没说这是本地对局').toBe('本地对局');
+  expect(g.labels, '本地对局里还有「悔棋」键').not.toContain('悔棋');
+  // 撤掉不是灰着:不许留一颗永远点不动的悔棋。
+  expect(g.disabledLabels, '本地对局里留了一颗灰着的悔棋').not.toContain('悔棋');
+  expect(g.labels).toEqual(['领地', 'AI支招', '数子', '停一手', '认输']);
+  expect(g.hasEval, '两个人面对面的局里还有胜率块').toBe(false);
+  // 关系式先写死再读数:五个键在 4 列的 `.gacts` 里 = 4+1 两行,和六个键时行数相同。
+  expect(g.rows, '动作区不是两行了').toBe(2);
+  expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
+  expect(g.railOverflow, '右栏溢出').toBeLessThanOrEqual(0);
 });
 
 // ── 坐标 / 手数:开关不是药丸键(Fan 2026-08-22)────────────────────────────

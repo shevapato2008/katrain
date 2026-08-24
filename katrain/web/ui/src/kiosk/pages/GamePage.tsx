@@ -27,7 +27,6 @@ import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog'
 import HintPanel from '../components/physical/HintPanel';
 import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
 import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
-import { usePlatformEvents } from '../hooks/usePlatformEvents';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
@@ -142,10 +141,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { token, user } = useAuth();
   const session = useGameSession({ token: token ?? undefined });
-  // B2/D5 (engine-move commit protocol): while a Golaxy 人机对弈 move is in flight
-  // (genmove tunnel, up to ~180s), the backend already 409s undo/redo/nav — this
-  // mirrors that in the UI so the button doesn't sit there inviting a rejected tap.
-  const { pendingMove: platformPendingMove } = usePlatformEvents(session.wsRef, {});
   const [analysisToggles, setAnalysisToggles] = useState(() => ({
     ownership: false,
     hints: false,
@@ -674,7 +669,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             hintEnabled={hintVisible}
             isGameOver={isGameOver}
             isRanked={isRanked}
-            disableUndo={isRanked || !!platformPendingMove}
             engineMode={engineMode}
             activeEngineKind={activeEngineKind}
             onEngineAnalysis={handleEngineAnalysis}

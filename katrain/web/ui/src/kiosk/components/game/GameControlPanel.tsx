@@ -3,6 +3,7 @@ import { KioskFold } from '../../shell/KioskFold';
 import { KioskActions, type KioskAction } from '../../shell/KioskActions';
 import { GoEvalGraph, goEvalSummary } from './GoEvalGraph';
 import { localizedRank } from '../../../utils/rankUtils';
+import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import type { EngineItemCounts, GameState, PlayerInfo } from '../../../api';
 import { useTranslation } from '../../../hooks/useTranslation';
 
@@ -15,7 +16,6 @@ interface Props {
   onHint?: () => void;
   hintEnabled?: boolean;
   isGameOver?: boolean;
-  disableUndo?: boolean;
   /**
    * 升降级对弈。**不是只把请求掐掉,是整块不渲染** —— 规范 §8:
    * 「禁的时候整块不渲染,不要渲成灰的或显示『—』,那是在提示『这里本来有个东西,你没资格看』」。
@@ -97,7 +97,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
  */
 const GameControlPanel = ({
   gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
-  isGameOver = false, disableUndo = false, isRanked = false, engineMode = false,
+  isGameOver = false, isRanked = false, engineMode = false,
   activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null,
 }: Props) => {
   const { t, lang } = useTranslation();
@@ -109,9 +109,34 @@ const GameControlPanel = ({
   const moves = gameState.history?.length ?? 0;
   const canCount = !isGameOver && moves >= countMin;
 
+  // 这一局是不是**人机自由对弈**。规范 §8 那张「按对弈方式判」的表只有一句话:
+  // 自由对弈能用的,另外四种(升降级 / 本地两人 / 在线大厅 / 星阵人机)一概不能。
+  //
+  // 升降级这一档**两个操作数都读**:`isRanked` 是调用方给的,`game_type` 是这一局自己带的。
+  // 只认前者的话,少传一次 prop 就等于把闸打开 —— 而这里挂着的是「悔棋能不能按」,
+  // 升降级局里那是反作弊的一环(后端 `handleAction` 也拒,但界面不该先摆出来邀请他点)。
+  const rankedGame = isRanked || isRankedGameType(gameState.game_type);
+  const freeVsAi = !engineMode && !rankedGame && !TWO_HUMAN_GAME_TYPES.has(gameState.game_type ?? 'free');
+
   // 胜率块:自由对弈可开;升降级 / 本地两人 / 在线大厅 / 星阵人机一律**整块不渲染**。
-  const evalAllowed = !engineMode && !isRanked && !TWO_HUMAN_GAME_TYPES.has(gameState.game_type ?? 'free');
+  const evalAllowed = freeVsAi;
   const showScore = evalAllowed && !!analysisToggles.score;
+
+  /**
+   * 悔棋 —— Fan 2026-08-25 亲裁:「**只有人机对弈的自由对弈允许悔棋**;升降级对弈、
+   * 对战大厅、跨平台对弈等都不允许,悔棋按钮可以撤销。」
+   *
+   * **两个名字引同一个判据,不是其中一个引另一个**:胜率图和悔棋今天恰好落在同一张表上,
+   * 但它们不是同一件事(一个是「能不能看」,一个是「能不能改」)。哪天有一种只让其一,
+   * 改的是这一行,不用先把两者拆开。
+   *
+   * 撤掉而不是灰着,依的是本屏那条判据:**永久不可用 → 撤掉;暂时不可用 → 灰着**。
+   * 这四种里悔棋是**开局就定死的没有**(`game_type` 一局之内不变),不是过一会儿会回来的状态,
+   * 所以留一颗永远灰的键只是噪声。上一版还把星阵「算招期间」也塞进同一个开关
+   * (`disableUndo={isRanked || !!platformPendingMove}`)—— 那是**暂时**的,四颗变三颗
+   * 会让「认输」在用户手指底下左右挪;现在星阵整局都没有这颗键,那条来回翻的路径不存在了。
+   */
+  const undoAllowed = freeVsAi;
 
   const toMove = gameState.player_to_move === 'B' ? 'B' : 'W';
   const isAiSeat = (c: 'B' | 'W') => {
@@ -165,20 +190,19 @@ const GameControlPanel = ({
       onClick: () => onAction('count'), disabled: !canCount,
       reason: t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin)),
     },
-    ...(disableUndo ? [] : [{
+    ...(undoAllowed ? [{
       key: 'undo', icon: 'arrow-counter-clockwise' as const, label: t('Undo', '悔棋'),
       onClick: () => onAction('undo'),
-    }]),
+    }] : []),
     { key: 'pass', icon: 'hand-pointing', label: t('game:pass', '停一手'), onClick: () => onAction('pass') },
     { key: 'resign', icon: 'flag', label: t('Resign', '认输'), onClick: () => onAction('resign'), danger: true },
   ];
 
   const actions = engineMode
     ? [
-      ...(disableUndo ? [] : [{
-        key: 'undo', icon: 'arrow-counter-clockwise' as const, label: t('Undo', '悔棋'),
-        onClick: () => onAction('undo'), disabled: isGameOver,
-      }]),
+      // 悔棋不在这里 —— 跨平台对弈**整局都没有**这颗键(见上面 `undoAllowed`)。
+      // 稿子 `:1851` 画的是 `<button disabled>悔棋</button>`,理由「灰在这儿比点了被拒好」;
+      // 那条理由只对「等一会儿就回来」成立,而这儿是永久没有。**实现反过来纠正稿子。**
       { key: 'pass', icon: 'hand-pointing' as const, label: t('game:pass', '停一手'), onClick: () => onAction('pass'), disabled: isGameOver },
       {
         key: 'count', icon: 'squares-four' as const, label: t('Score', '数子'),

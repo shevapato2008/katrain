@@ -237,6 +237,9 @@ katrain 这份 vendored `tokens.css` **比围棋设计稿内联的那份新**：
 > （领地 / 支招 / 变化图，`GameControlPanel.tsx:75-90`），右上角挂余次角标（`/platforms/golaxy/engine/items`，
 > 每次分析结算后重拉），`0` 用红底**不灰掉**，`—` 是「没取到数」；另外**没有胜率图表**、
 > **悔棋在星阵算招期间禁用**、多一条平台条。稿子现在有第 ⑪ 屏「星阵围棋 · 对局中」专画这一屏。
+> **⚠️ 2026-08-25 更正:上一句「悔棋在星阵算招期间禁用」已经不成立。** Fan 亲裁「只有人机对弈的
+> 自由对弈允许悔棋」⇒ 跨平台对弈**整局都没有这颗键**,不是算招期间灰着。落在
+> `GameControlPanel.tsx` 的 `undoAllowed`,断言在 `GameControlPanel.test.tsx`(五种对弈方式逐个)。
 > ⇒ 对齐这条链时，**`platform-engine` 的「开始对局」接的是第 ⑪ 屏，不是第 ⑤ 屏**；
 > 两屏骨架相同但右栏不同，照第 ⑤ 屏做出来会是一个看着像对的错。
 > 稿子在 `smartbox-software/superpowers/shared/kiosk-shell/sample-go/`（**27 屏 / 闸 754 条全过**）。

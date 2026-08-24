@@ -1232,7 +1232,7 @@ msgid "Territory"
 msgstr "领地"
 
 msgid "Advice"
-msgstr "建议"
+msgstr "支招"
 
 msgid "Graph"
 msgstr "图表"
@@ -1719,10 +1719,10 @@ msgid "continue_game"
 msgstr "继续对局"
 
 msgid "live:show_advice"
-msgstr "显示建议"
+msgstr "显示支招"
 
 msgid "live:hide_advice"
-msgstr "隐藏建议"
+msgstr "隐藏支招"
 
 msgid "No Rank"
 msgstr "无级别"
@@ -2091,7 +2091,7 @@ msgid "tsumego:midgame"
 msgstr "中盘"
 
 msgid "research:suggestions"
-msgstr "建议"
+msgstr "支招"
 
 msgid "result:black_win"
 msgstr "黑胜"
@@ -2211,13 +2211,13 @@ msgid "report:move_numbers"
 msgstr "手数"
 
 msgid "report:suggestions"
-msgstr "建议"
+msgstr "支招"
 
 msgid "report:hide_suggestions"
-msgstr "隐藏建议"
+msgstr "隐藏支招"
 
 msgid "report:show_suggestions"
-msgstr "显示建议"
+msgstr "显示支招"
 
 msgid "report:clear"
 msgstr "清空"

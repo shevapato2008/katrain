@@ -388,6 +388,54 @@ def create_missing_indexes(engine) -> None:
                 logger.info(f"migrate: created index {index.name} on {table.name}")
 
 
+KIFU_SORT_INDEX = "ix_kifu_albums_date_sort_desc_id_desc"
+
+
+def create_kifu_album_sort_index(engine) -> None:
+    """给棋谱库列表的 ORDER BY 配一条真能用上的索引（**仅 PostgreSQL**）。
+
+    `/api/v1/kifu/albums` 按 ``date_sort DESC NULLS LAST, id DESC`` 排。现有的
+    ``btree(date_sort)`` 是默认的 ASC NULLS LAST，**反向扫出来是 DESC NULLS
+    FIRST**——不是同一个顺序，所以规划器只能全表扫 247MB 的堆再排 151,197 行，
+    每翻一页做两遍（COUNT 一遍、取页一遍）。
+
+    2026-08-24 在与生产同一份数据（151,197 行 / 247MB）的测试库上实测：
+
+    ==========  ========  =========
+    查询        建索引前  建索引后
+    ==========  ========  =========
+    取当页      364ms     0.13ms（读 9 个 buffer，不是 31,707）
+    COUNT       557ms     25ms（index-only scan，排序一并消失）
+    端到端接口  1.30s     0.18s
+    ==========  ========  =========
+
+    **为什么不写进 ``__table_args__``**：SQLAlchemy 对所有方言都照样渲染
+    ``NULLS LAST``，而 SQLite 在 CREATE INDEX 里直接拒绝它
+    （``unsupported use of NULLS LAST``，sqlite 3.51 实测），
+    那会让每一次 SQLite 启动都挂在 ``create_missing_indexes`` 上。
+    跑 SQLite 的部署（kiosk / 盒端）不会有这个量级的棋谱库。
+
+    不用 CONCURRENTLY：它不能在事务块里跑，而这里是启动期的一次性建索引，
+    151k 行实测约 600ms。
+    """
+
+    if engine.dialect.name != "postgresql":
+        return
+    inspector = inspect(engine)
+    if "kifu_albums" not in inspector.get_table_names():
+        return
+    if KIFU_SORT_INDEX in {ix["name"] for ix in inspector.get_indexes("kifu_albums")}:
+        return
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                f"CREATE INDEX IF NOT EXISTS {KIFU_SORT_INDEX} "
+                "ON kifu_albums (date_sort DESC NULLS LAST, id DESC)"
+            )
+        )
+    logger.info(f"migrate: created index {KIFU_SORT_INDEX} on kifu_albums")
+
+
 def backfill_ai_ladder_decisions(engine) -> None:
     """Mark rows from the pre-decision ledger schema as counted valid games.
 

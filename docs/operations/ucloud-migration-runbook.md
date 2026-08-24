@@ -375,3 +375,58 @@ followups 六项收口、11 种语言 i18n，以及**三个后端 `.py`**
 **容量闸仍然过不了，而且过不了是对的**：它要 38.5GB，是按**迁移峰值**标定的，
 这台 97G 的盘在正常占用下永远达不到。它不是「磁盘告警」，把盘清空也没用 ——
 以后仍按同因同判据明示越过，不要为了让它变绿去删该留的东西。
+
+### 2026-08-24（晚）— 直播列表修复，连着三次发布（非迁移）
+
+`3d65e536` → `fc1e73c3` → `772ee97a` → `c7f3eed7`。三次都只动 `katrain/cron/**`，
+**一次 schema 都没动**。改的是同一条链上的三处，一处修完才量得出下一处：
+
+1. **`fc1e73c3`** —— 上游不再列为 live 的对局要降级。`SourceRegistry` 先把
+   「这家答没答」做成显式状态位（key 在 = 答了，哪怕是空集合；key 不在 = 这轮没问到），
+   `FetchListJob` 去掉 `if not all_rows: return` 并新增降级。
+2. **`772ee97a`** —— 装完上一条，日志每轮都是 `demoted 49`，接口读出来仍是 49 局 live。
+   `poll_moves` 每 3 秒把它们改了回去：对局结束后上游 `/situation/<id>` 只回信封
+   `{"code":"0","msg":""}`（**21 字节，没有 data**），`get_situation` 的
+   `data.get("data", data)` 把信封当局面返回（真值 dict，`if not situation` 拦不住），
+   再往下 `md.get("liveStatus", 0) == 0` —— 默认值 0 恰好是「进行中」。
+3. **`c7f3eed7`** —— 测试机上每轮 `FetchListJob failed`：dedup 那句 `db.delete(dup)`
+   撞 `live_analysis_match_id_fkey`，错在 `commit()` 才炸，**把整轮（含降级）一起回滚**。
+   放进 savepoint，删不掉就退回「跳过这条新行」。生产没撞上，是数据不同。
+
+三处是同一个错的三次出现：**「上游没说」被读成了「上游说还在下」。**
+判别位必须是上游真写进来的值，不能是一条消息的缺席，更不能给它配一个恰好等于
+「进行中」的默认值。
+
+**这次发布方式与以往不同的两点，都记死：**
+
+- **`katrain-cron` 挂在 `profiles: [production]` 下**，所以历次 `docker compose up -d`
+  **从来没有换过它**（部署前它已经 `Up 13 days`，跑的是两周前的镜像）。
+  要换必须显式带 `--profile production`。这条不写下来下次还会踩。
+- **没有 cron 的构建脚本**（`deploy/ucloud/scripts/` 里只有 `build-web.sh`）。
+  cron 镜像是手工 `docker build --pull=false -f Dockerfile.cron -t katrain-cron:<sha> .`，
+  再把 `CRON_IMAGE` 改成 `docker image inspect --format '{{.Id}}'` 的 digest。
+- `772ee97a` 与 `c7f3eed7` **只重建了 cron，没有重建 web**：这两次相对上一版
+  web 源码零改动，且 `katrain/web/**` 不 import `katrain.cron`（已 grep 确认）。
+  代价是 release 目录的树比 `WEB_IMAGE` 新，**这一点是有意的，记在这里免得以后当成漂移**。
+  当前 `WEB_IMAGE` 对应的是 `fc1e73c3` 那次构建。
+
+**`docker builder prune -f` 的一个没预料到的代价（自己造的，记下来）：**
+当天早些时候为腾磁盘跑的 `docker builder prune -f`（4.222GB）把 `Dockerfile.web` 里
+按 digest 钉死的 `node:22-bookworm-slim@sha256:6c74791e…` 的缓存一并清掉了，
+而这台机器连不上 Docker Hub ⇒ **web 镜像一度构建不出来**
+（`failed to resolve source metadata for node:22-bookworm-slim@sha256:…`）。
+修法：从国内镜像源**按同一个 digest** 拉回来再打上官方名 ——
+`docker pull docker.m.daocloud.io/library/node@sha256:6c74791e…` +
+`docker tag … node:22-bookworm-slim`，之后 `build-web.sh` 恢复正常。
+可用的源实测：`docker.m.daocloud.io`、`dockerproxy.net`、`docker.1panel.live`
+（`hub-mirror.c.163.com` 不可用）。**以后在这台机器上 prune 构建缓存之前，
+先确认按 digest 钉死的基础镜像在本地留得住。**
+
+**发布后实测：** 上游 `/all` = `{"code":"0","msg":"","data":[]}`、`/count` = 0（**HTTP 200，
+星阵没有拒绝我们**）。修复前生产接口 49 局标 live，修复后 **50 条全部 finished**，
+与上游一致；cron 日志 `demoted 0`（没有可降的了）、`poll_moves` 被跳过 **0 次**
+（此前它每 3 秒去轮询 28 局早已下完的棋，把自己堵死）。
+
+**遗留：** 根分区 **82%**（三次发布各留一份 release 目录与镜像）。可回收：
+`3d65e536`、`fc1e73c3`、`772ee97a` 三份目录与对应镜像（`c7f3eed7` 是线上，
+`772ee97a` 是回滚锚点，**它不能删**）。本次未删。

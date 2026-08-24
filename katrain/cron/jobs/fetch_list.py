@@ -68,8 +68,27 @@ class FetchListJob(BaseJob):
                         skipped += 1
                         continue
                     elif dup:
-                        # New row has higher priority — remove the old one
-                        db.delete(dup)
+                        # New row has higher priority — remove the old one.
+                        #
+                        # 但旧行可能已经被 `live_analysis.match_id` 外键引用，删就报
+                        # ForeignKeyViolation。那个错在 `db.commit()` 时才炸，会把**整轮**
+                        # 一起回滚 —— 包括下面的降级。测试机上实测：
+                        # "update or delete on table live_matches violates foreign key
+                        #  constraint live_analysis_match_id_fkey"，于是 fetch_list 每轮
+                        # 都报 FetchListJob failed，降级写进去又被回滚掉。
+                        # 放进 savepoint：删不掉就退回「跳过这条新行」，不连累这一轮。
+                        try:
+                            with db.begin_nested():
+                                db.delete(dup)
+                                db.flush()
+                        except Exception:
+                            self.logger.warning(
+                                "FetchListJob: %s 仍被引用，删不掉，跳过来自 %s 的重复行",
+                                dup.match_id,
+                                row["source"],
+                            )
+                            skipped += 1
+                            continue
                     db.add(LiveMatchDB(**row))
                     upserted += 1
 

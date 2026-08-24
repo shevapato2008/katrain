@@ -199,3 +199,39 @@ def test_already_finished_matches_are_left_alone(db_session):
     _run_job(db_session, {"xingzhen": []})
 
     assert _status(db_session, "x1") == "finished"
+
+
+def test_an_undeletable_duplicate_does_not_roll_back_the_whole_round(db_session):
+    """去重要删的旧行删不掉时，这一轮（含降级）必须照样落库。
+
+    测试机实测：dedup 那句 `db.delete(dup)` 撞上
+    ``live_analysis_match_id_fkey``（旧行还被分析表引用），错误在 `db.commit()`
+    才炸，于是**整轮回滚** —— 降级明明算对了、日志也打了 "demoted N"，
+    写进去的东西又被撤销，接口读出来还是老样子。
+    这条守的就是「一条删不掉的重复行不许连累这一轮」。
+
+    SQLite 默认不强制外键（见 reference：SQLite 比生产弱的那一族），
+    所以这里不去复现 FK 本身，而是直接让 delete 抛错 —— 断言对象是
+    **失败之后这一轮还算不算数**，那一点两个库上一致。
+    """
+    _seed(db_session, ("y_dup", "yike", "live"), ("x_other", "xingzhen", "live"))
+    # 让 y_dup 和新来的 xingzhen 行是同一对棋手，才会走到 dedup 的删除分支
+    dup_row = db_session.query(LiveMatchDB).filter(LiveMatchDB.match_id == "y_dup").one()
+    dup_row.player_black, dup_row.player_white = "黑x_new", "白x_new"
+    db_session.commit()
+
+    original_delete = db_session.delete
+
+    def _boom(obj):
+        raise RuntimeError("FK: still referenced from live_analysis")
+
+    db_session.delete = _boom
+    try:
+        _run_job(db_session, {"xingzhen": [_row("x_new", "xingzhen")]})
+    finally:
+        db_session.delete = original_delete
+
+    # 这一轮没白跑：x_other 不在本轮 live 名单里，该降的降了
+    assert _status(db_session, "x_other") == "finished", "一条删不掉的重复行把整轮降级连累回滚了"
+    # 删不掉的那条原样留着，没有被半删成脏数据
+    assert _status(db_session, "y_dup") == "live"

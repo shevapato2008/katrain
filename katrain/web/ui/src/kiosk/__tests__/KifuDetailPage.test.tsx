@@ -219,7 +219,9 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
     renderPage();
     await waitLoaded();
     fireEvent.click(screen.getByRole('button', { name: '去研究' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/research?kifu_id=7&analyze=1');
+    // `&from=kifu` 是 2026-08-24 屏 21 加的:研究屏有四个入口、回去的地方各不相同,
+    // 而屏 20 和对局历史两条的 URL 形状一模一样(都是 `?user_game_id=`)、反推不出来。
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/research?kifu_id=7&analyze=1&from=kifu');
   });
 
   it('返回键回棋谱屏', async () => {

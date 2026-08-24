@@ -105,7 +105,6 @@ const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/components/report/ReportLibraryImportDialog.tsx', // (C) 对话框
   'src/kiosk/components/report/ReportLocalImportDialog.test.tsx',
   'src/kiosk/components/report/ReportLocalImportDialog.tsx', // (C) 对话框
-  'src/kiosk/components/research/CloudSGFPanel.tsx', // (A) 研究屏
   'src/kiosk/components/tsumego/SuccessOverlay.tsx', // (C) 做题屏上的浮层
   'src/kiosk/pages/TsumegoCategoriesPage.tsx', // (B) 训练营分类,未排
   'src/kiosk/pages/TsumegoLevelPage.tsx',
@@ -186,10 +185,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/components/report/ReportGameCard.tsx', // (B) galaxy 侧还在用;kiosk 复盘屏已不用它
   'src/kiosk/components/report/ReportLibraryImportDialog.tsx',
   'src/kiosk/components/report/ReportLocalImportDialog.tsx',
-  'src/kiosk/components/research/CloudSGFPanel.tsx',
-  'src/kiosk/components/research/ResearchAnalysisPanel.tsx', // (A) 研究屏
-  'src/kiosk/components/research/ResearchSetupPanel.tsx', // (A) 研究屏
-  'src/kiosk/components/research/ResearchToolbar.tsx', // (A) 研究屏
   'src/kiosk/components/tsumego/PhysicalStatePanel.tsx', // (C) 做题屏上的浮层
   'src/kiosk/components/tsumego/SuccessOverlay.tsx',
   'src/kiosk/components/vision/AmbiguousStoneAlert.tsx', // (A) 标定/识别
@@ -200,7 +195,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/pages/GameHistoryPage.tsx', // (B) 已无入口,等 Fan 裁定是并进复盘还是删
   'src/kiosk/pages/GamePage.tsx', // (C) 屏 05 已重画;剩的是对话框里的图标
   'src/kiosk/pages/LivePage.tsx', // (A) 直播屏
-  'src/kiosk/pages/ResearchPage.tsx', // (A) 研究屏
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
 ];
 
@@ -338,7 +332,6 @@ const PO_OVERRIDES_DEFAULT_BASELINE = [
   'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:import_and_normal',
   'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:import_local',
   'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:importing',
-  'src/kiosk/components/research/CloudSGFPanel.tsx  research:game_library',
   'src/kiosk/pages/AiSetupPage.tsx  Territory',
   'src/kiosk/pages/GameHistoryPage.tsx  Black',
   'src/kiosk/pages/GameHistoryPage.tsx  White',
@@ -354,9 +347,6 @@ const PO_OVERRIDES_DEFAULT_BASELINE = [
   'src/kiosk/pages/ReportsPage.tsx  report:delete_confirm_body',
   'src/kiosk/pages/ReportsPage.tsx  report:delete_confirm_title',
   'src/kiosk/pages/ReportsPage.tsx  report:login_required',
-  'src/kiosk/pages/ResearchPage.tsx  research:analyzing_game',
-  'src/kiosk/pages/ResearchPage.tsx  research:cancel_analysis_warning',
-  'src/kiosk/pages/ResearchPage.tsx  research:mode',
   'src/kiosk/pages/TsumegoCategoriesPage.tsx  tsumego:selectCategory',
   'src/kiosk/pages/TsumegoProblemPage.tsx  Black',
   'src/kiosk/pages/TsumegoProblemPage.tsx  White',

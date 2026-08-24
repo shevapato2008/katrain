@@ -1433,3 +1433,130 @@ test('§8 课程小节:切到全盘 —— 19 个字、19 条线,退回和棋谱
   expect(Math.abs(m.firstHoriz - m.firstLeft)).toBeLessThanOrEqual(1.5);
   expect(Math.abs(m.lastHoriz - m.lastLeft)).toBeLessThanOrEqual(1.5);
 });
+
+/* ══ 屏 21 研究 —— AI 推荐表装不下时,该滚的是**表自己** ═══════════════════════
+ * 这一屏右栏六块:页控条 44 + 分段 48 + 提示行 16(另有 margin-top 7)+ AI 折叠块(grow)
+ * + 翻手条 36 + 动作区 52,五个 12 的间隙 ⇒ **折叠块 253,减掉 30 的折叠头,表体 223**。
+ * 稿子给的表是 10 行而 223 只露得出表头 + 8 行 —— 参考图 `21-research.png` 就是这样
+ * (K3 那行被横切)。**所以「装不下」是设计里就有的,不是意外。**
+ *
+ * 这一关量的是那个「装不下」有没有出路:`.aitab` 的 `overflow-y:auto` 是**压在**共享
+ * `.kiosk-fold__body { overflow: hidden }` 上面的(靠 `go-screens.css` 在
+ * `KioskApp.tsx:24` 最后导入),层叠一旦反过来,第 9 行往后就静默不见、手指也够不到。
+ * 那种失败在四图上**看不见** —— 被裁掉的内容在截图里根本不存在。
+ *
+ * 变异实测(2026-08-24)两发,**其中一发推翻了我事先的预测**:
+ *
+ * ① 拿掉 `.aitab` 的 `overflow-y:auto`(⇒ 共享那条 `overflow:hidden` 说了算):
+ *    我预测「表自己溢出」和「真滚轮滚得动」两条会红。**只红了后一条。**
+ *    因为 `scrollHeight − clientHeight > 0` 量的是**内容有没有超出**,
+ *    而 `overflow:hidden` 的容器内容照样超出 —— 它只是没有出路。
+ *    ⇒ **「有溢出」不等于「滚得动」**,能把「静默裁掉」和「能翻到」分开的**只有真滚轮那一条**。
+ *    其余六条(516 / 四段 / 四颗 / 五键 / 不顶破 / 贴底 / 表体高)对这个故障**全部免疫**。
+ * ② 把夹具从 24 个候选缩到 3 个(装得下):只有「造到会溢出」那条红。
+ *    ⇒ 那条不是凑数的,它守的是「下面那条滚动断言不是空转」。
+ * ③ 把 `KioskFold` 的 `scrollbar` opt-in 撤掉:只有「没有悬浮滚动条」那条红,
+ *    **能不能滚照旧全绿** —— 滚得动和看不看得出能滚是两件独立的事,各要一条。
+ *
+ * 结论和屏 14 那条一样,而且这回是量出来的:**盒子的矩形对这一类故障免疫。**
+ */
+test('§11 研究屏:AI 推荐表装不下时,滚的是表自己,动作区照旧贴底', async ({ page }) => {
+  // 造到会溢出:给 24 个候选,而表体只露得出 8 行。**装得下的数据量下量出来的数不算数。**
+  await page.route('**/api/v1/analysis/quick-analyze', (route) => route.fulfill({
+    json: {
+      turnInfos: [{
+        moveInfos: Array.from({ length: 24 }, (_, i) => ({
+          move: `${'ABCDEFGHJKLMNOPQRST'[i % 19]}${i + 1}`,
+          visits: 500 - i * 15, winrate: 0.6 - i * 0.01, scoreLead: 3 - i * 0.4,
+        })),
+        ownership: null,
+      }],
+    },
+  }));
+  await boot(page, '/kiosk/research');
+  // ⚠️ 等的是**一个真有盒子的格子**,不是 `[data-testid="research-ai-row"]` ——
+  // 那层行包装是 `display:contents`(它的四个格子要直接落进 `.aitab` 的网格),
+  // 而 `display:contents` 的元素**没有盒子**,Playwright 默认的 `'visible'` 判它不可见,
+  // 于是「表画出来了」会被糊成一条 30 秒超时。
+  await page.waitForSelector('.aitab .best');
+
+  const m = await page.evaluate(() => {
+    const q = (s: string) => document.querySelector(s) as HTMLElement;
+    const rail = q('.kiosk-rail');
+    const fold = q('.kiosk-fold--grow');
+    const tab = q('.aitab');
+    const acts = q('[data-testid="research-actions"]');
+    const r = rail.getBoundingClientRect();
+    return {
+      railH: Math.round(r.height),
+      railBottom: Math.round(r.bottom),
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      foldH: Math.round(fold.getBoundingClientRect().height),
+      headH: Math.round(q('.kiosk-fold__head').getBoundingClientRect().height),
+      // 折叠块自己那圈 1px 边框也吃高度 —— 关系式里少算它就会差 2。**读出来,不写死。**
+      foldBorder: Math.round(
+        parseFloat(getComputedStyle(fold).borderTopWidth) + parseFloat(getComputedStyle(fold).borderBottomWidth),
+      ),
+      tabH: Math.round(tab.getBoundingClientRect().height),
+      tabTop: Math.round(tab.getBoundingClientRect().top),
+      tabBottom: Math.round(tab.getBoundingClientRect().bottom),
+      tabOverflow: tab.scrollHeight - tab.clientHeight,
+      actsBottom: Math.round(acts.getBoundingClientRect().bottom),
+      actsCount: acts.querySelectorAll('button').length,
+      // 分段和翻手条在不在,决定上面那本高度账是不是这一屏真的这本
+      segCount: document.querySelectorAll('[data-testid="research-tools"] button').length,
+      navCount: document.querySelectorAll('[data-testid="research-movenav"] button').length,
+      grows: document.querySelectorAll('.kiosk-fold--grow').length,
+      // 悬浮滚动条(规范 §5.2)。`scrollbar-width:none` 必须留着(原生条一占宽度,
+      // 460 就不是 460),而零宽度的代价是**屏上一点位置指示都没有** ——
+      // 7 寸触摸屏没有 hover,第 9 行往后就成了没人知道存在的东西。
+      bar: (() => {
+        const b = document.querySelector('.kiosk-scrollbar') as HTMLElement | null;
+        if (!b) return null;
+        const br = b.getBoundingClientRect();
+        return { h: Math.round(br.height), w: Math.round(br.width), top: Math.round(br.top) };
+      })(),
+    };
+  });
+
+  // ── 关系式(先写死,再读数)──
+  expect(m.railH, '右栏不是 516 —— 布局 A 的高度账先崩了').toBe(516);
+  expect(m.segCount, '分段不是四段').toBe(4);
+  expect(m.navCount, '翻手条不是四颗').toBe(4);
+  expect(m.actsCount, '动作区不是五个键').toBe(5);
+  expect(m.grows, '一栏里只许有一块 grow —— 多一块两块就都拿不到确定高度').toBe(1);
+
+  expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由 AI 表自己吃掉').toBeLessThanOrEqual(0);
+  expect(m.actsBottom, '动作区没贴右栏底').toBe(m.railBottom);
+  // 表体 = 折叠块 − 折叠头 − 折叠块自己那圈边框。中间**不许**再有别的东西 ——
+  // 多一个 8px 的 margin,表就少露一行(屏 18 的 `.setnote` 正是这么偷走 8px 的)。
+  expect(m.tabH, '表体 ≠ 折叠块 − 折叠头 − 边框:中间多出了别的东西,那本高度账就不成立了')
+    .toBe(m.foldH - m.headH - m.foldBorder);
+  expect(m.tabBottom, '表体的下缘越过了右栏 —— 被裁掉的行在截图上根本不存在')
+    .toBeLessThanOrEqual(m.railBottom);
+  expect(m.tabTop, '表体的上缘跑到右栏外面去了').toBeGreaterThanOrEqual(Math.round(m.railBottom - m.railH));
+
+  // ── 造出来的溢出是真的吗 ──
+  expect(m.tabOverflow, '24 个候选没把表撑到溢出 —— 下面那条滚动断言是空的')
+    .toBeGreaterThan(100);
+
+  // 条子要真的画出来,而且**比例得是算过的**:视口/内容 × 视口高,下限 24。
+  expect(m.bar, '没有悬浮滚动条 —— 装不下这件事屏上一点指示都没有').not.toBeNull();
+  expect(m.bar!.w, '条子宽度是 0 —— 等于没画').toBeGreaterThan(0);
+  expect(m.bar!.h, '拇指比视口还长 —— 那说明它根本没按比例算').toBeLessThan(m.tabH);
+  expect(m.bar!.h, '拇指短于下限 24,就成了一个点、读不出比例').toBeGreaterThanOrEqual(24);
+
+  // ── 唯一分得出「有没有出路」的那一条:**真滚轮**。
+  //    合成事件 Chromium 不认,`scrollTop = n` 只证明这个属性可写。
+  const tab = page.locator('.aitab');
+  const bb = (await tab.boundingBox())!;
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  await page.mouse.wheel(0, 240);
+  await expect.poll(() => tab.evaluate((el) => el.scrollTop),
+    { message: 'AI 推荐表自己滚不动 —— 第 9 行往后手指够不到' }).toBeGreaterThan(0);
+
+  // 条子得**跟着**滚。不动的条子比没有更糟:它谎报「你在顶上」。
+  const barTop = await page.locator('.kiosk-scrollbar').evaluate((el) => el.getBoundingClientRect().top);
+  expect(barTop, '滚了之后拇指没往下走 —— 一条不动的位置指示是在说假话')
+    .toBeGreaterThan(m.bar!.top);
+});

@@ -33,7 +33,8 @@ describe('GameHistoryPage', () => {
     await userEvent.click(screen.getByText('小明'));
     await waitFor(() => expect(get).toHaveBeenCalledWith('tok', 'g1'));
     await userEvent.click(screen.getByRole('button', { name: /复盘|Review/ }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/research?user_game_id=g1&analyze=1');
+    // `&from=history`:研究屏靠它才知道返回键该回对局历史(见屏 21 页头注)
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/research?user_game_id=g1&analyze=1&from=history');
   });
 
   it('切换到 全部 re-queries the list without the play_local source filter', async () => {
@@ -77,6 +78,6 @@ describe('GameHistoryPage', () => {
     await Promise.resolve();
 
     await userEvent.click(reviewButton);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/research?user_game_id=g2&analyze=1');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/research?user_game_id=g2&analyze=1&from=history');
   });
 });

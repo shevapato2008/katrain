@@ -1,4 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { syncScrollZone } from './scrollSync';
 
 /**
  * 规范 §5.2:右栏视口写死 680×434,内容可以更高 —— 右栏**可滚**,且必须自己画一条悬浮滚动条。
@@ -10,30 +11,6 @@ import { type ReactNode, useCallback, useEffect, useState } from 'react';
  *   形态 1 整栏滚  —— `.kiosk-side` 自己就是 scrollzone(对弈 / 训练营首页 / 棋谱 / 课程 / 设置)
  *   形态 2 头尾固定 —— 只有中间那条会长的列表滚,组标题和底下的卡不动(复盘)。传 `grow`。
  */
-
-function sync(rail: HTMLElement | null, scroll: HTMLElement | null, bar: HTMLElement | null): void {
-  if (!rail || !scroll) return;
-  const overflow = scroll.scrollHeight - scroll.clientHeight;
-  if (overflow < 1) {
-    // 不溢出:两条都撤掉。挂一条永远亮着的渐隐,等于谎报下面还有东西 —— G8 诚实态那条。
-    rail.removeAttribute('data-at');
-    if (bar) bar.style.display = 'none';
-    return;
-  }
-  const atTop = scroll.scrollTop < 1;
-  const atEnd = scroll.scrollTop >= overflow - 1;
-  rail.dataset.at = atTop ? 'top' : atEnd ? 'end' : 'mid';
-  if (bar) {
-    // 拇指最短 24 —— 再短就成了一个点,读不出比例。
-    const height = Math.max(24, (scroll.clientHeight / scroll.scrollHeight) * scroll.clientHeight);
-    bar.style.display = '';
-    // 形态 2 下 `offsetTop` 量的正是组标题占掉的那一截 = 滚动视口的起点
-    // (`.kiosk-scrollzone` 带 position:relative,offsetParent 就是它)。
-    bar.style.top = `${scroll.offsetTop}px`;
-    bar.style.height = `${height}px`;
-    bar.style.transform = `translateY(${(scroll.scrollTop / overflow) * (scroll.clientHeight - height)}px)`;
-  }
-}
 
 interface KioskScrollZoneProps {
   children: ReactNode;
@@ -63,7 +40,7 @@ export function KioskScrollZone({ children, grow, head, resetKey, className }: K
   const [rail, setRail] = useState<HTMLElement | null>(null);
   const [scroll, setScroll] = useState<HTMLDivElement | null>(null);
   const [bar, setBar] = useState<HTMLElement | null>(null);
-  const resync = useCallback(() => sync(rail, scroll, bar), [rail, scroll, bar]);
+  const resync = useCallback(() => syncScrollZone(rail, scroll, bar), [rail, scroll, bar]);
 
   // `ResizeObserver` 在这儿**不会触发**:`tokens.css` 把 `.kiosk-side__scroll` 钉成
   // `height:100%`,子元素长高时盒子一动不动,回调一次都不响。所以只能靠 children 变化

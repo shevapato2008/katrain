@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Icon } from './icons';
+import { syncScrollbar } from './scrollSync';
 
 /**
  * §11 折叠块 —— 标题行 30 高**本身就是开关**,收起后整块就剩这 30。
@@ -20,7 +21,7 @@ import { Icon } from './icons';
  * 需要受控时再加 `open`/`onToggle`,现在没有第二个使用者,先不提前泛化。
  */
 export function KioskFold({
-  fold, title, value, defaultOpen = true, grow = false, bodyClassName, testId, children,
+  fold, title, value, defaultOpen = true, grow = false, bodyClassName, scrollbar = false, testId, children,
 }: {
   /** `data-fold`。规范拿它当这一块的身份(`eval` / `moves` / `ledger`),取图和断言都认它。 */
   fold: string;
@@ -31,10 +32,33 @@ export function KioskFold({
   /** 这一块吃掉同栏里剩下的高度(`.kiosk-fold--grow`)。一栏里最多一块。 */
   grow?: boolean;
   bodyClassName?: string;
+  /**
+   * 给这一块的体画一条**悬浮滚动条**(规范 §5.2)。**只在体自己会滚时才传。**
+   *
+   * 是 opt-in 而不是默认开:今天七个消费者里只有屏 21 研究的 AI 推荐表是「内容真的
+   * 装不下、而且装不下是设计里就有的」那一种(稿子给那块 body 挂的正是 `data-scrollbar`)。
+   * 其余六块要么装得下、要么已经有别的位置指示,默认打开等于给它们加一条永远不响的逻辑,
+   * 还要把六屏的四图重取一遍。**它们该不该有,等各自那一轮再判。**
+   *
+   * 为什么非画不可:`scrollbar-width:none` 必须留着(让原生条占宽度,516/460 的算术当场崩),
+   * 而零宽度的代价是屏上**一点位置指示都没有** —— 7 寸触摸屏没有 hover,
+   * 表里第 9 行往后的内容就成了没人知道存在的东西。
+   */
+  scrollbar?: boolean;
   testId?: string;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+
+  // callback ref + useState,**不能用 useRef + 空依赖 effect** —— 收起时体根本不在树上,
+  // `useRef` 那种写法读到一次 null 就再也不重跑,展开回来条子永远不画。
+  // (`KioskScrollZone` 的同一个坑,那儿的注释记着五子棋量到过「真的溢出 66px 却毫无指示」。)
+  const [bodyEl, setBodyEl] = useState<HTMLDivElement | null>(null);
+  const [barEl, setBarEl] = useState<HTMLElement | null>(null);
+  const resync = useCallback(() => { if (scrollbar) syncScrollbar(bodyEl, barEl); }, [scrollbar, bodyEl, barEl]);
+  // `children` 是信号:表是接口回来之后才渲出来的,那一刻必须重算。
+  useEffect(() => { resync(); }, [children, open, resync]);
+
   return (
     <div
       className={grow ? 'kiosk-fold kiosk-fold--grow' : 'kiosk-fold'}
@@ -52,9 +76,16 @@ export function KioskFold({
         {title}
         {value !== undefined && <b>{value}</b>}
       </button>
-      <div className={bodyClassName ? `kiosk-fold__body ${bodyClassName}` : 'kiosk-fold__body'}>
+      <div
+        className={bodyClassName ? `kiosk-fold__body ${bodyClassName}` : 'kiosk-fold__body'}
+        ref={setBodyEl}
+        onScroll={resync}
+      >
         {children}
       </div>
+      {/* `.kiosk-fold` 本来就带 `position:relative`,共享 CSS 那行的注释写的就是
+          「悬浮滚动条挂在这儿」—— 这一槽是给它留好了的。 */}
+      {scrollbar && open && <i className="kiosk-scrollbar" ref={setBarEl} />}
     </div>
   );
 }

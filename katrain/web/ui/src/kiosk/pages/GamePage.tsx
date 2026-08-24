@@ -702,7 +702,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             try {
               const { sgf } = await API.saveSGF(sessionId);
               sessionStorage.setItem('kioskReviewSgf', sgf);
-              navigate('/kiosk/research');
+              navigate('/kiosk/research?from=game');
             } catch (e) { console.error(e); setReviewError(true); }
           }}
         />

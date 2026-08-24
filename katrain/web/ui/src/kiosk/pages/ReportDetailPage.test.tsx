@@ -512,10 +512,17 @@ describe('屏 20 · 翻手、出口与出错', () => {
     expect(playSound).toHaveBeenCalledWith('stone');
   });
 
-  it('「去研究」带着这一局的编号过去,编号照原样编码', () => {
+  /**
+   * `&from=report&task=42` 是 2026-08-24 屏 21 加的:研究屏有四个入口、回去的地方各不
+   * 相同,而这一条和对局历史那一条的 URL 形状**一模一样**(都是 `?user_game_id=`)、
+   * 反推不出来。`task` 让返回键回得到**这一份报告**,而不是报告列表。
+   */
+  it('「去研究」带着这一局的编号和出处过去,编号照原样编码', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: '去研究' }));
-    expect(navigate).toHaveBeenCalledWith('/kiosk/research?user_game_id=game+id%2F%E6%B1%89%E5%AD%97');
+    expect(navigate).toHaveBeenCalledWith(
+      '/kiosk/research?user_game_id=game+id%2F%E6%B1%89%E5%AD%97&from=report&task=42',
+    );
   });
 
   // 稿子把「重算」和「去研究」并排画在题头,不是只在失败时才出现 ——

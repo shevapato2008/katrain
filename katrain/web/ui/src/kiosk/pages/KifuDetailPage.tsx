@@ -189,7 +189,7 @@ const KifuDetailPage = () => {
       key: 'research',
       icon: 'magnifying-glass',
       label: t('kifu:to_research', '去研究'),
-      onClick: () => navigate(`/kiosk/research?kifu_id=${album?.id}&analyze=1`),
+      onClick: () => navigate(`/kiosk/research?kifu_id=${album?.id}&analyze=1&from=kifu`),
       disabled: !album,
       reason: t('kifu:need_sgf', '这一局还没读到谱'),
     },

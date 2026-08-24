@@ -391,7 +391,7 @@ export default function ReportDetailPage() {
             <button
               type="button"
               className="kiosk-btn kiosk-btn--pill"
-              onClick={() => navigate(`/kiosk/research?${new URLSearchParams({ user_game_id: game.id }).toString()}`)}
+              onClick={() => navigate(`/kiosk/research?${new URLSearchParams({ user_game_id: game.id, from: 'report', task: String(taskId) }).toString()}`)}
             >
               {t('review:to_research', '去研究')}
             </button>

@@ -1016,3 +1016,50 @@ button.kiosk-row.figrow { flex: none; }
    (那是给屏 27 设置页写的),在一条 flex 栏里那 8px 会从上面 `grow` 的折叠块里偷走 8、
    并在栏底留一条 8 的死空 —— 四图上看得出来。**只在右栏里归零,不动共享那条。** */
 .kiosk-rail > .setnote { margin-bottom: 0; }
+
+/* ── 屏 21 研究 ────────────────────────────────────────────────────────────
+   AI 推荐表:着手 / 推荐度 / 目差 / 胜率 四列。逐字取自稿子(`go-kiosk.tmpl.html:386-393`)。
+   等宽字 + `tabular-nums`,列才对得齐 —— 和 `.mvrows` 同一条理由,但列数和口径不同,
+   所以不复用那个类。
+
+   这块的高度**不是这里定的**,是右栏 516 减出来的:
+     44(页控条)+ 48(分段)+ 16+7(提示行及其 margin-top)+ 36(翻手条)+ 52(动作区)
+     + 5×12(rail-gap) = 263  ⇒  折叠块 253  ⇒  减掉 30 的折叠头,**表体 223**。
+   按下面的 12px / line-height 1.95(= 23.4)算,223 − 16(上下内边距)− 19.5(表头)
+   = 187.5 ⇒ **正好露出 8 行,第 9 行切一半**。参考图 `shots/21-research.png` 就是这样
+   (K3 那行被横切,D17 完全没露)。⇒ **稿子对「装不下就滚」是诚实的,不要为了让 10 行
+   全露出来去压行高或改预算。** */
+.aitab {
+  overflow-y: auto; scrollbar-width: none;
+  display: grid; grid-template-columns: 1.1fr 1fr 1fr 1fr; align-content: start;
+  padding: 6px 12px 10px; column-gap: 6px;
+}
+.aitab::-webkit-scrollbar { width: 0 }
+.aitab span {
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.95;
+  font-variant-numeric: tabular-nums; color: var(--text);
+}
+.aitab .hd { color: var(--dim); font-size: 10px; letter-spacing: .06em; }
+.aitab .best { color: var(--accent); font-weight: 600; }
+.aitab .neg { color: var(--bad); }
+
+/* `.cdlg{inset:0}` 找的是最近的**定位祖先**,所以这一屏的布局根要 `position:relative`
+   —— 屏 06(布局 A)、屏 08(布局 B)、屏 17(摆谱)已各踩过一次,判据一样。**只给这一屏加**。 */
+.kiosk-layout-a.research-layout { position: relative; }
+
+/* 不可撤销的那一个(清空整盘)。和 `.kiosk-actions` 里的 `danger` 同一条口径:
+   **描边 + 字色走 --bad,不用实心红** —— 弹层里实心红比旁边那颗「取消」重一大截,
+   而这两颗的分量本该是「留下」重于「擦掉」。 */
+.cdlg__acts .bad { border: 1px solid var(--bad); background: none; color: var(--bad); }
+
+/* 扫描进行中,占的是 AI 折叠块的体。**不另开一块** —— 右栏 516 没有余量,而且扫完之后
+   这块地方就是那张表,同一个位置换内容比多一块面板更少跳。 */
+.aiscan { padding: 14px 12px; display: flex; flex-direction: column; gap: 12px; }
+.aiscan h4 { margin: 0; font-family: var(--font-serif); font-size: 15px; font-weight: 600; }
+.aiscan__bar { height: 6px; border-radius: 999px; background: var(--raise); overflow: hidden; }
+.aiscan__bar i { display: block; height: 100%; border-radius: 999px; background: var(--accent);
+  transition: width .3s ease; }
+.aiscan__stats { display: flex; gap: 22px; margin: 0; }
+.aiscan__stats dt { font-size: 11px; color: var(--dim); letter-spacing: .06em; }
+.aiscan__stats dd { margin: 2px 0 0; font-family: var(--font-mono); font-size: 15px;
+  font-variant-numeric: tabular-nums; color: var(--text); }

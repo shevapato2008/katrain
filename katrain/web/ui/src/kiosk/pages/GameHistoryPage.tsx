@@ -101,7 +101,7 @@ const GameHistoryPage = () => {
 
   const handleReview = () => {
     if (!detail) return;
-    navigate(`/kiosk/research?user_game_id=${detail.id}&analyze=1`);
+    navigate(`/kiosk/research?user_game_id=${detail.id}&analyze=1&from=history`);
   };
 
   const parsed = detail?.sgf_content ? sgfToMoves(detail.sgf_content) : null;

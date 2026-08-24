@@ -48,8 +48,16 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
    * `state` 让这颗键**兼当一个状态点**:摆谱屏(屏 17)右上角那颗「重新点灯」正是
    * 「LED 通不通」的补救动作,把指示和补救合成一个控件,比另摆一颗只会变色的点省一格
    * ——而那一屏的右栏只剩 252px 给两个折叠块分。`bad` 走 `--bad`,不改几何。
+   *
+   * `pressed` 让这颗键当**开关**(屏 21 研究的「领地」):§11 举的两个例子
+   * 「翻转棋盘 / 全屏」里,全屏本来就是个开关,所以开关不是这一槽的例外。
+   * 给了值才渲染 `aria-pressed` —— 不给就还是按完弹回来的动作键,既有七处调用一个不受影响。
    */
-  action?: { icon: IconName; label: string; onClick: () => void; state?: 'bad' };
+  action?: {
+    icon: IconName; label: string; onClick: () => void;
+    state?: 'bad';
+    pressed?: boolean;
+  };
   testId?: string;
 }) {
   if (segment && segment.options.length > 3) {
@@ -99,6 +107,7 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
             !segment && !status && 'kiosk-pagebar__spacer',
           ].filter(Boolean).join(' ')}
           aria-label={action.label}
+          aria-pressed={action.pressed}
           data-state={action.state}
           onClick={action.onClick}
         >

@@ -469,7 +469,9 @@ test.describe('kiosk Report at the exact seven-inch viewport', () => {
     await expectPlaybackTouchTargets(page, page.getByTestId('report-detail-playback-fixed'), 'Detail playback');
     await expectViewportFit(page);
     await research.click();
-    await expect(page).toHaveURL(/\/kiosk\/research\?user_game_id=long$/);
+    // `&from=report&task=` 是屏 21 加的 —— 研究屏靠它才知道返回键该回**这一份报告**
+    // (四个入口里,这一条和对局历史那一条的 URL 形状一模一样、反推不出来)。
+    await expect(page).toHaveURL(/\/kiosk\/research\?user_game_id=long&from=report&task=\d+$/);
     expect(state.unhandledRequests).toEqual([]);
   });
 

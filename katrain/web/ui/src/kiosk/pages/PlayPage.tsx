@@ -4,15 +4,11 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import { readActiveSession } from '../utils/activeSession';
 import { API, type PlatformInfo } from '../../api';
-import { PLATFORM_META } from '../constants/platforms';
+import { PLATFORM_META, defaultPlatforms, mergePlatformStatus } from '../constants/platforms';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
 import type { IconName } from '../shell/icons';
-
-// 顺序照稿子:**能用的排前面,「即将上线」排最后**。上一版是 ogs/fox/golaxy,
-// 于是连不上的野狐夹在两个能用的中间 —— 一排卡里最先撞见的是那张按不动的。
-const PLATFORM_CATALOGUE = ['ogs', 'golaxy', 'fox'] as const;
 
 // 稿子给每个平台配的图标(`go-kiosk.tmpl.html:play`):星阵是引擎直连,画机器人;
 // 走大厅的画地球。图标不带语义色,状态由 `.dot` / `.soon` 表达。
@@ -22,20 +18,7 @@ const PLATFORM_ICON: Record<string, IconName> = {
   golaxy: 'robot',
 };
 
-const defaultPlatforms = (): PlatformInfo[] => PLATFORM_CATALOGUE.map((platform) => ({
-  platform,
-  connected: false,
-  supports_live_play: false,
-  supports_automatch: false,
-  supports_rooms: false,
-  supports_seek_graph: false,
-  supports_engine_play: false,
-}));
-
-const mergePlatformStatus = (records: PlatformInfo[]): PlatformInfo[] => {
-  const byPlatform = new Map(records.map((record) => [record.platform, record]));
-  return defaultPlatforms().map((fallback) => byPlatform.get(fallback.platform) ?? fallback);
-};
+// 目录顺序和「少下发就补一条全 false」都上提到 `constants/platforms.ts` —— 屏 07 共读同一份。
 
 /**
  * 屏 01 · 对弈首页 `/kiosk/play` —— L1 布局 A(镜像栏 296 + 16 + 右栏 680)。

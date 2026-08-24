@@ -831,3 +831,47 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
   content: ""; position: absolute; left: 0; right: 0; top: 50%;
   transform: translateY(-50%); height: 44px;
 }
+
+/* ── 屏 07/08/09 跨平台三屏 ────────────────────────────────────────────
+   行本身用共享的 `.kiosk-rows` / `.kiosk-row` / `.kiosk-row__t` / `.kiosk-row__end`
+   （`tokens.css:938`），这里只补稿子里共享包**没有**的三样：头像圆点、能力标、两种行高。
+   ⚠️ 稿子里还有一个 `.wip`（琥珀「对弈未接后端」/ 蓝「后端已有 · 界面未接」）——
+   **那是给读稿人看的进度标注，不上屏**，屏 15 / 屏 19 重画时已按这条处理过。这里同样不搬。 */
+
+/* 头像圆点。**不复用 `.kiosk-row__lead` 那一格** —— 那格是等宽数字（手数 / 局数），
+   塞头像进去会把行的左缘节奏打乱，而这几屏里同一列上下必须是同一种东西。 */
+.av {
+  width: 30px; height: 30px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  border: 1px solid var(--hair); background: var(--panel);
+  font-family: var(--font-serif); font-size: 13px; font-weight: 600; color: var(--accent);
+}
+.av.dim { color: var(--dim); }
+
+/* 能力标:每家支持什么由 `/platforms` 下发（`supports_live_play` 等四个布尔），
+   **不是界面写死的四个格子** —— 亮着的（`.on`）才是那一家真支持的。 */
+.caps { display: flex; flex-wrap: wrap; gap: 6px; }
+.caps span {
+  font-size: 10.5px; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--hair); color: var(--dim);
+}
+.caps span.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 42%, transparent); }
+
+/* 两种比 52 高的行。稿子写成内联 `style="height:72px"`，实现里该有名字。
+   72 = 名字一行 + 能力标一行；60 = 搜索那行（行尾要装下输入框和一颗次要按钮）。 */
+.kiosk-row--caps { height: 72px; }
+.kiosk-row--search { height: 60px; }
+
+/* 搜索那一格的输入框:和屏 04 的 `.nameinput` 同一副长相(药丸、同高、同描边),
+   只是宽度放到 168 —— 人名比「点此输入」四个字长,而这一格右边还要留住那颗次要按钮。 */
+.nameinput--search { width: 168px; text-align: left; }
+
+/* 这一屏也有模态(挑战前确认一次)。`.cdlg{inset:0}` 找的是最近的**定位祖先** ——
+   布局 B 不定位的话它会一路找到 `.kiosk-content`(带 14px 上下内边距),弹层比中间区
+   高出 28、底边被画布裁掉。屏 06 在布局 A 上踩过同一个,判据也一样(见承重闸)。
+   **只给有模态的那一屏加**,不动共享的 `.kiosk-layout-b`。 */
+.kiosk-layout-b.plat-layout { position: relative; }
+
+/* 屏 07 登录段:错误落点 + 提交键。稿子只画到两行输入 —— 错误没有落点等于没报错,
+   而「登录」这个动作稿子那一帧也没画(它把提交寄托在行尾那颗药丸上)。 */
+.loginerr { margin: 8px 2px 0; font-size: 11.5px; line-height: 1.5; color: var(--bad); }
+.loginsubmit { width: 100%; margin-top: 10px; justify-content: center; }

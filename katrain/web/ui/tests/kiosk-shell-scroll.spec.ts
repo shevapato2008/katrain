@@ -799,3 +799,227 @@ test('在线大厅:匹配中那个弹层的定位原点是布局根,不是带内
   expect(m.box.top, '弹窗盒上缘在中间区外面').toBeGreaterThanOrEqual(m.content.top);
   expect(m.box.bottom, '弹窗盒下缘在中间区外面').toBeLessThanOrEqual(m.content.bottom);
 });
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 屏 09 跨平台 · 人机开局:布局 A,右栏整栏滚,「开始对局」钉栏底
+ *
+ * 骨架和屏 02/04 是同一副,但**不能挂进上面那条 `SETUP_SCREENS` 循环** ——
+ * 这一屏的内容要先从平台把 39 档棋力拉回来(`/platforms/:p/engine/levels`),
+ * 那条循环的 `boot` 不喂它,拉不到就只剩一条错误提示,右栏根本不溢出 ⇒
+ * 整组断言会以「没造出溢出」的姿态变红,或者更糟:量的是另一屏。
+ * 「判据能转,结论不能转」——这里把判据搬过来,自己造自己的输入。
+ *
+ * 造输入:39 档全份。这一屏的右栏内容天然远超 460,不需要额外撑。
+ * ────────────────────────────────────────────────────────────────────────── */
+test('跨平台人机开局:设置装不下时右栏自己滚,而「开始对局」怎么滚都还在', async ({ page }) => {
+  await page.route('**/api/v1/vision/status', (route) => route.fulfill({
+    json: {
+      enabled: false, camera_connected: false, pose_locked: false, sync_state: 'idle',
+      bound_session_id: null, recognition_ready: false, led_connected: null,
+    },
+  }));
+  await page.route('**/api/v1/platforms/golaxy/engine/levels', (route) => route.fulfill({
+    json: {
+      levels: Array.from({ length: 39 }, (_, i) => ({
+        elo_score: 100 + i * 10, level_name: `第 ${i + 1} 档`, name: `星阵 ${i + 1}`,
+        goal_difference: 0, timing: '', display_elo: 400 + i * 50, ref_rank: `业余 ${i + 1}`,
+      })),
+    },
+  }));
+  await boot(page, '/kiosk/play/cross-platform/engine/golaxy');
+  await page.waitForSelector('[data-testid="setup-summary-line"]');
+
+  const railW = await page.evaluate(() =>
+    Math.round(document.querySelector('.kiosk-rail')!.getBoundingClientRect().width));
+  expect(railW, '右栏不是 460 —— 布局 A 的宽度账先崩了').toBe(460);
+
+  // 前置:棋力档真拉回来了。拉不到时这一屏只剩一条错误提示,右栏根本不溢出 ——
+  // 下面整组会以「没造出溢出」的姿态红,而红的原因是 fixture 不是版式。
+  await expect(page.locator('[data-testid="setup-opponent"] .catmeta')).toContainText('/ 39 档');
+
+  const overflow = await overflowOf(page);
+  expect(overflow, '没造出溢出 —— 那下面这几条断言都是空的').toBeGreaterThan(100);
+
+  const ctaBefore = await page.evaluate(() =>
+    Math.round(document.querySelector('.kiosk-primary-action')!.getBoundingClientRect().bottom));
+
+  // **真滚轮**,不是 `scrollTop = n`。
+  const zone = page.locator('.kiosk-side__scroll');
+  const zb = (await zone.boundingBox())!;
+  await page.mouse.move(zb.x + zb.width / 2, zb.y + zb.height / 2);
+  for (let i = 0; i < 24; i += 1) await page.mouse.wheel(0, 400);
+
+  const m = await page.evaluate(() => {
+    const el = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const cta = document.querySelector('.kiosk-primary-action') as HTMLElement;
+    const last = document.querySelector('[data-testid="setup-summary-line"]') as HTMLElement;
+    return {
+      scrollTop: Math.round(el.scrollTop),
+      atEnd: el.scrollHeight - el.clientHeight - el.scrollTop,
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      ctaBottom: Math.round(cta.getBoundingClientRect().bottom),
+      ctaHeight: Math.round(cta.getBoundingClientRect().height),
+      railBottom: Math.round(rail.getBoundingClientRect().bottom),
+      lastBottom: Math.round(last.parentElement!.getBoundingClientRect().bottom),
+      zoneBottom: Math.round(el.getBoundingClientRect().bottom),
+      horizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  });
+
+  expect(m.scrollTop, '拨了二十四下滚轮,一格都没动 —— 程序化能滚不算数').toBeGreaterThan(0);
+  expect(m.atEnd, '滚不到底').toBeLessThanOrEqual(1);
+  expect(m.lastBottom, '滚到底了,「这一局会是」还在视野外 —— 那一段就是到不了的')
+    .toBeLessThanOrEqual(m.zoneBottom);
+  expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由滚动区吃掉').toBeLessThanOrEqual(0);
+  expect(m.ctaHeight, '「开始对局」被上面几组挤扁了').toBe(48);
+  expect(m.ctaBottom, '「开始对局」没贴着右栏底').toBe(m.railBottom);
+  expect(m.ctaBottom, '滚过之后主行动键动了 —— 它在滚动区外面').toBe(ctaBefore);
+  expect(m.horizontal, '页面横向溢出了').toBe(0);
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 屏 08 跨平台 · 大厅:布局 B,搜到的人多了整栏自己滚,底下两段滚得到
+ *
+ * 稿子那一帧只有三个人,**一屏装得下** —— 拿它量等于什么都没量。这里造 24 个,
+ * 那才是「搜 a」在 OGS 上的常态。判据:
+ *   · 该滚的是 `.kiosk-side__scroll`(布局 B 形态 1 整栏滚),**不是页面**
+ *   · 滚到底之后「自动匹配」那一段整个进得了视野 —— 到不了就等于它不存在
+ *   · 页面不许横向溢出;通栏仍是 992
+ * ────────────────────────────────────────────────────────────────────────── */
+test('跨平台大厅:搜到的人多到装不下时整栏自己滚,「自动匹配」那一段滚得到', async ({ page }) => {
+  await page.route('**/api/v1/platforms/status', (route) => route.fulfill({
+    json: {
+      platforms: [{
+        platform: 'ogs', connected: true, saved_username: 'me',
+        supports_live_play: true, supports_automatch: true,
+        supports_rooms: false, supports_seek_graph: true, supports_engine_play: false,
+      }],
+    },
+  }));
+  await page.route('**/api/v1/platforms/ogs/users*', (route) => route.fulfill({
+    json: {
+      users: Array.from({ length: 24 }, (_, i) => ({
+        user_id: String(i), username: `player_${i}`, rank: `${i % 9 + 1}k`,
+        status: i % 5 === 0 ? 'playing' : 'idle',
+      })),
+    },
+  }));
+  await boot(page, '/kiosk/play/cross-platform/lobby?platform=ogs');
+  await page.waitForSelector('[data-testid="platform-automatch"]');
+  expect(await page.locator('[data-testid="platform-user"]').count(), '24 个人没渲出来').toBe(24);
+
+  const zoneW = await page.evaluate(() =>
+    Math.round(document.querySelector('.kiosk-side__scroll')!.getBoundingClientRect().width));
+  expect(zoneW, '布局 B 的滚动区不是通栏 992').toBe(992);
+
+  const overflow = await overflowOf(page);
+  expect(overflow, '没造出溢出 —— 下面的断言都是空的').toBeGreaterThan(100);
+
+  const zone = page.locator('.kiosk-side__scroll');
+  const zb = (await zone.boundingBox())!;
+  await page.mouse.move(zb.x + zb.width / 2, zb.y + zb.height / 2);
+  for (let i = 0; i < 16; i += 1) await page.mouse.wheel(0, 400);
+
+  const m = await page.evaluate(() => {
+    const el = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+    const auto = document.querySelector('[data-testid="platform-automatch"]') as HTMLElement;
+    return {
+      scrollTop: Math.round(el.scrollTop),
+      atEnd: el.scrollHeight - el.clientHeight - el.scrollTop,
+      autoBottom: Math.round(auto.getBoundingClientRect().bottom),
+      zoneBottom: Math.round(el.getBoundingClientRect().bottom),
+      pageScroll: Math.round(document.documentElement.scrollTop),
+      horizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  });
+
+  expect(m.scrollTop, '拨了十六下滚轮,一格都没动').toBeGreaterThan(0);
+  expect(m.atEnd, '滚不到底').toBeLessThanOrEqual(1);
+  expect(m.autoBottom, '滚到底了,「自动匹配」那一段还在视野外 —— 那一段就是到不了的')
+    .toBeLessThanOrEqual(m.zoneBottom);
+  // 滚的必须是那一栏,不是整页 —— 整页一滚,顶栏和 Dock 会跟着跑出去(规范 §5 防跳铁律 1)。
+  expect(m.pageScroll, '滚的是整个页面,不是那一栏').toBe(0);
+  expect(m.horizontal, '页面横向溢出了').toBe(0);
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 屏 07 跨平台 · 连接:**软键盘不许把正在输入的那一格压在底下**
+ *
+ * 这一屏的登录段排在第三段。真浏览器量出来:滚动区 clientH 460 / scrollH 610 ⇒
+ * **maxScroll 只有 150**;而触屏键盘高 188、上缘落在 y=412 —— 两个输入框滚到底时
+ * 都在 412 以下。键盘自己那句 `scrollIntoView({block:'center'})` 需要 scrollTop≈294,
+ * 比 maxScroll 还大,**救不回来**:人看不见自己打的验证码。
+ *
+ * 修法是聚焦时给滚动区垫一段等于键盘高度的下内衬(`PlatformConnectPage` 里那个 effect),
+ * **不动版式** —— 所以四图仍逐像素可比,而这一条只能在这儿量。
+ *
+ * ⚠️ 判据是**键盘上缘**,不是某个写死的 y:键盘带中文候选条时会长到 246,
+ * 写死 412 的话候选条一出来这条闸就变成假绿。
+ *
+ * **变异记录**(2026-08-24):把 `PlatformConnectPage` 里那个 `paddingBottom` 的赋值删掉
+ * ⇒ 这条当场红在**断言本身**:验证码那格底边 **525** > 键盘上缘 **412**(压掉 113px)。
+ * (第一版把「内衬写进去了」当成前置等待,变异红在了那句 `waitForFunction` 上 ——
+ * 那是红在被测机制自己身上,断言其实没跑过。改成等「输入框位置不再变」,修没修都成立。)
+ * ────────────────────────────────────────────────────────────────────────── */
+test('跨平台连接:聚焦验证码那一格时,它整个在软键盘上缘之上', async ({ page }) => {
+  await page.route('**/api/v1/platforms/status', (route) => route.fulfill({
+    json: {
+      platforms: [
+        { platform: 'ogs', connected: true, saved_username: 'me', supports_live_play: true,
+          supports_automatch: true, supports_rooms: false, supports_seek_graph: true, supports_engine_play: false },
+        { platform: 'golaxy', connected: false, supports_live_play: true,
+          supports_automatch: false, supports_rooms: true, supports_seek_graph: false, supports_engine_play: true },
+        { platform: 'fox', connected: false, supports_live_play: false,
+          supports_automatch: false, supports_rooms: true, supports_seek_graph: false, supports_engine_play: false },
+      ],
+    },
+  }));
+  await boot(page, '/kiosk/play/cross-platform');
+  await page.waitForSelector('[data-testid="platform-login-section"]');
+  // 键盘是 index.html 在 load 之后异步塞进来的三个脚本 —— 不等它,量到的是「没有键盘」。
+  await page.waitForSelector('.skbd', { state: 'attached' });
+
+  // 前置:这一屏确实滚不到底就够不着 —— 造不出这个前置,下面那条断言是空的。
+  const before = await page.evaluate(() => {
+    const zone = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+    return { maxScroll: zone.scrollHeight - zone.clientHeight };
+  });
+  expect(before.maxScroll, '这一屏根本不溢出 —— 那这条闸没有被测对象').toBeGreaterThan(0);
+
+  await page.locator('[data-testid="platform-login-pass"]').click();
+  // ⚠️ 等的是**它真的滑上来了**,不是 `skbd-open` 这个类。类一加就为真,而 transform
+  // 还在过渡 —— 那一刻量到的 `keyboardTop` 是 599(键盘还在屏幕外),
+  // 「输入框在键盘上方」于是恒成立:**断言落在两种语义恰好同值的那一侧**,假绿。
+  await page.waitForFunction(() => {
+    const k = document.querySelector('.skbd') as HTMLElement | null;
+    if (!k || !k.offsetHeight) return false;
+    return k.getBoundingClientRect().top <= window.innerHeight - k.offsetHeight + 2;
+  });
+  // 等布局稳下来再量。⚠️ **等的不能是「内衬写进去了」** —— 那是被测的那个机制本身,
+  // 拿它当前置的话,去掉内衬的变异会红在这句等待上而不是红在下面那条断言上,
+  // 红分支就没被真正跑过。这里等的是**输入框的位置不再变**,修没修都成立。
+  await page.waitForFunction(() => {
+    const w = window as unknown as { __lastBottom?: number };
+    const el = document.querySelector('[data-testid="platform-login-pass"]') as HTMLElement;
+    const now = Math.round(el.getBoundingClientRect().bottom);
+    const settled = w.__lastBottom === now;
+    w.__lastBottom = now;
+    return settled;
+  }, undefined, { polling: 120 });
+
+  const m = await page.evaluate(() => {
+    const input = document.querySelector('[data-testid="platform-login-pass"]') as HTMLElement;
+    const kbd = document.querySelector('.skbd') as HTMLElement;
+    return {
+      inputBottom: Math.round(input.getBoundingClientRect().bottom),
+      keyboardTop: Math.round(kbd.getBoundingClientRect().top),
+      keyboardH: Math.round(kbd.offsetHeight),
+    };
+  });
+  console.log('[kbd-inset] inputBottom=%d keyboardTop=%d keyboardH=%d',
+    m.inputBottom, m.keyboardTop, m.keyboardH);
+  expect(m.keyboardH, '键盘没弹出来 —— 那这条闸量的不是被键盘挡住这件事').toBeGreaterThan(0);
+  expect(m.inputBottom, '验证码那一格被软键盘压住了 —— 人看不见自己打的字')
+    .toBeLessThanOrEqual(m.keyboardTop);
+});

@@ -154,6 +154,8 @@ test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
 //      2026-08-24 屏 06 重画时摘掉 `LobbyPage.tsx`,同时从 PO 名单里带走它那**九条** ——
 //      那九条全是「源码写 A、屏上出 B」的实例(`lobby:title` 写着「在线大厅」,
 //      cn PO 却是「多人游戏大厅」),重画时逐条换成了这一屏自己的新 key。
+//      2026-08-24 跨平台三屏(07 / 08 / 09)一起重画,三条一起摘掉。
+//      这一轮之后名单里**再没有跨平台那一族**。
 //
 //  (C) **对话框与浮层** —— 它们不在 1024×600 的版式里(盖在上面),规范 §10 管的是屏上的
 //      图标风格。**允许留着**,但重画所在的屏时顺手换掉最省事。
@@ -181,9 +183,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/pages/GamePage.tsx', // (C) 屏 05 已重画;剩的是对话框里的图标
   'src/kiosk/pages/LiveMatchPage.tsx', // (A) 直播屏
   'src/kiosk/pages/LivePage.tsx', // (A) 直播屏
-  'src/kiosk/pages/PlatformConnectPage.tsx', // (A) 跨平台
-  'src/kiosk/pages/PlatformEngineSetupPage.tsx', // (A) 跨平台
-  'src/kiosk/pages/PlatformLobbyPage.tsx', // (A) 跨平台
   'src/kiosk/pages/ResearchPage.tsx', // (A) 研究屏
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
   'src/kiosk/pages/TutorialBookDetailPage.tsx',

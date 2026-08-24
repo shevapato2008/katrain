@@ -290,3 +290,75 @@ followups 六项收口、11 种语言 i18n，以及**三个后端 `.py`**
 - 上一条「遗留（未处理）」已自然消解：旧 release 目录 `bb3f85bf…`、`a9607e75`、`e7f0e758`、
   `93803100` 与对应旧镜像现已不在，根分区从 84% 降到 **75%（25G 可用）**。当前保留三份：
   `53e83787`（线上）、`26a046d0`（回滚锚点，**回滚窗口内不得删除**）、`65677ce5`（更早一版）。
+
+### 2026-08-24 — 棋谱库列表性能修复 + 「建议」改称「支招」（非迁移，**含一条 DDL**）
+
+发布 `3d65e536`（合入 develop 的 `58f130c0`），线上此前 `53e83787`。相对线上 12 个文件：
+**3 个后端 `.py`**（`katrain/web/api/v1/endpoints/kifu.py`、`katrain/web/core/migrations.py`、
+`katrain/web/core/auth.py`）、2 份 `.po`、4 个 `.tsx`、1 个新测试、本文件一段。
+**无 schema 迁移，但有一条新索引**，由启动期迁移 `create_kifu_album_sort_index` 自建。
+
+- 镜像：`katrain-web:3d65e536`，
+  `image_id=sha256:62536691fd314ab75d918e6fcc72779a1ca2e314a0c80b8a1ef802612be25280`，
+  `size_bytes=542524053`（上一版 542522701，增量 1352 字节）。`build-web.sh` 容器内容测试通过。
+- 回滚锚点：镜像 `katrain-web:53e83787` 与目录 `/opt/katrain/releases/53e83787` 均在位。
+  `current` → `releases/3d65e536`。
+- `/etc/katrain/ucloud.env` 只改 `WEB_IMAGE` 一行（与改前副本 `diff` 恰好 2 行）；
+  改前副本 `/opt/katrain/backups/ucloud.env.20260824-1348`，仍 root 所有、mode 0600。
+
+**恢复验证：这次不能豁免，而且做了。**
+备份 `/opt/katrain/backups/prod-20260824-1246.dump`（`pg_dump -Fc`，192198943 字节）。
+2026-08-21 第二次那条豁免的依据是「不含 schema 变更、**也不含任何后端代码变更**」——
+本次改了三个后端 `.py`**并且**新建了一条索引，前提两头都不成立。
+恢复进临时库 `katrain_restore_verify`：`pg_restore` 0 错误，**38 张表里 37 张逐行一致**。
+
+> 唯一不一致的是 `live_analysis`（生产 61754 / 恢复 61747，差 7 行）。**没有当成噪声放过，
+> 而是量了**：连采三次间隔 20 秒 —— `04:49:33=61759`、`04:49:53=61761`、`04:50:13=61765`，
+> 约每 20 秒 +2 行。这张表在 dump 之后仍在持续追加，7 行正是那段写入窗口，不是恢复缺陷。
+> 判据是「该表是否在持续增长」，不是「差值小不小」。验证库已 DROP。
+
+**闸门结果：**
+
+- `--phase full` 只剩 2 条容量闸失败：`available_bytes=22232080384`、
+  `required_bytes=38500000000`，以及「projected filesystem use ≥ 75%」（实际 79%）。
+  **与前三次同因同判据的明示越过**（该闸为迁移峰值标定，本次只是替换已构建完成的镜像）。
+- **上一次学到的那条这次直接照做了**：`WEB_IMAGE` 必须写 **image id digest**，不能写标签
+  （2026-08-23 先写成 `katrain-web:53e83787`，闸如实报 `WEB_IMAGE is not immutable`）。
+  这次直接 `docker image inspect --format '{{.Id}}'`，该分支没红。
+- 「其余通过」仍不是靠沉默认定：把 `WEB_IMAGE` 改成 `sha256:deadbeef…` 的副本做变异，
+  `--phase runtime` 如实多报 `WEB_IMAGE is not available locally`（checks 2 → 3），
+  对照组同相位仍是 2。副本 `shred -u`。
+- 只有 `katrain-web` 与一次性 `minio-setup` 被重建；postgres / katago / minio / cron 保持原进程。
+- 启动日志确认 DDL 执行：`migrate: created index ix_kifu_albums_date_sort_desc_id_desc on kifu_albums`。
+
+**这次修的是什么（供以后同类问题对照）：**
+
+`/api/v1/kifu/albums` 在 151,197 行、堆 247MB 的表上要 1.3 秒，两处叠加：
+
+1. `Query.count()` 把**带 ORDER BY 的**查询整个套进子查询，COUNT 也要排序，外部归并落盘 3712kB。
+   而且那个子查询把 `sgf_content` 也选了进去 —— `defer()` 是 loader option，`.count()` 不认它。
+2. `date_sort DESC NULLS LAST, id DESC` 没有能用的索引：现有 `btree(date_sort)` 是默认
+   ASC NULLS LAST，**反向扫出来是 DESC NULLS FIRST**，不是同一个顺序。
+
+补索引 + 拆 COUNT 之后，生产 `EXPLAIN ANALYZE` 实测：
+
+- 取当页：`Index Scan using ix_kifu_albums_date_sort_desc_id_desc`，**9 个 buffer、0.14ms**
+  （原先并行全表扫 + top-N，31,707 buffer、364ms）
+- COUNT：并行 index-only scan，**18ms**（原先 557ms、带落盘排序）
+
+**发布后实测：**
+
+- 同一条 ssh 隧道（与部署前 1.28–1.37s 可比）：列表接口 **0.054–0.062s**；
+  搜索 `q=丁浩` 0.786s → **0.587s**（COUNT 那半变快，`LIKE '%q%'` 仍是全表扫）；详情 0.058s。
+- 真浏览器打开 `/galaxy/kifu`：`kifu/albums` 请求 **1249ms → 44ms**。
+- 外网 `https://modelstella.com`：`/health` ok；`/`、`/galaxy`、`/galaxy/kifu`、`/galaxy/research` 均 200。
+- `/api/translations?lang=cn` 仍 **976 条**（本次没有新键，只改值），7 个键全部读作「支招」。
+  **条数不变时更要看构建指纹**：新包 `/assets/GalaxyApp-BNATEQSJ.js` = 200，
+  上一版 `/assets/GalaxyApp-DgDiQDNZ.js` = **404**。
+
+**没修的（已写进代码 docstring）：** 深翻页 `OFFSET 151180` 仍约 361ms（规划器回退到全表扫+排序，
+要 keyset 游标分页才治）；搜索 `search_text LIKE '%q%'` 仍是全表扫（要 pg_trgm GIN）。
+
+**遗留（未处理，需决策）：** 根分区 **79%（21G 可用）**，已连续四次触发容量闸。当前三份 release
+目录：`3d65e536`（线上）、`53e83787`（回滚锚点，**回滚窗口内不得删除**）、`65677ce5`（两版之前，
+**可回收**，目录 1.9G + 同名镜像 1.8G）。本次一律未删。

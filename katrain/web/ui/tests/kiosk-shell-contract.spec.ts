@@ -163,6 +163,10 @@ test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
 //      / `PlayCircleOutline` 随之而去)。
 //      2026-08-24 屏 25 重画:`TutorialSectionPage.tsx` 那两个 `NavigateBefore/After` 换成了
 //      共享动作区的 `caret-left/right`。**课程这一族(B)从此清空。**
+//      2026-08-24 屏 17 摆谱重画:`BaipuSessionPage.tsx` 整页换成共享外壳,
+//      同时从下面那条 PO 名单里带走 `Black` / `Undo` / `White` 三条 ——
+//      它们全是「源码写 A、屏上出 B」的实例(`Undo` 在 cn PO 里是「悔棋」,而摆谱要说的是
+//      「撤回上一手」:摆谱没有悔棋这回事,那是对局的词)。重画时换成了 `baipu:*` 自己的 key。
 //
 //  (C) **对话框与浮层** —— 它们不在 1024×600 的版式里(盖在上面),规范 §10 管的是屏上的
 //      图标风格。**允许留着**,但重画所在的屏时顺手换掉最省事。
@@ -322,9 +326,6 @@ const PO_OVERRIDES_DEFAULT_BASELINE = [
   'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:importing',
   'src/kiosk/components/research/CloudSGFPanel.tsx  research:game_library',
   'src/kiosk/pages/AiSetupPage.tsx  Territory',
-  'src/kiosk/pages/BaipuSessionPage.tsx  Black',
-  'src/kiosk/pages/BaipuSessionPage.tsx  Undo',
-  'src/kiosk/pages/BaipuSessionPage.tsx  White',
   'src/kiosk/pages/GameHistoryPage.tsx  Black',
   'src/kiosk/pages/GameHistoryPage.tsx  White',
   'src/kiosk/pages/GamePage.tsx  Black',

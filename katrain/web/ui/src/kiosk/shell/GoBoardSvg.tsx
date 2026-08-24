@@ -27,7 +27,7 @@ const STONE_R = U * 0.47;
  * 管辖内,抄它等于往仓里塞一份没人核的二进制(D6 已登记)。
  */
 export function GoBoardSvg({
-  size = 19, black = [], white = [], last, ghost = [], atari = [], muted = false, label,
+  size = 19, black = [], white = [], last, ghost = [], ghostFor, atari = [], muted = false, label,
   numbers, letters, shapes, highlights = [], window: win,
 }: {
   size?: number;
@@ -35,8 +35,15 @@ export function GoBoardSvg({
   black?: readonly string[];
   white?: readonly string[];
   last?: string;
-  /** 候选点(「下一手该落这儿」的灯位 / 题目提示):半透明青玉圈,**不画成棋子**。 */
+  /** 候选点(「下一手该落这儿」的灯位 / 题目提示):半透明圈,**不画成棋子**。 */
   ghost?: readonly string[];
+  /**
+   * 候选点画成哪一色。**摆谱屏(屏 17)必须传** —— 那一屏的圈说的是「这儿要放一颗什么子」,
+   * 而实体盘上的灯同时在那个点亮着,规范给这一屏定死了「**屏上高亮色必须和灯同色**」:
+   * 黑子亮红灯、白子亮绿灯(`constants/ledColors.ts` 的 `LED_HEX`,四处独立来源一致)。
+   * 不传时沿用原来那圈青玉色 —— 做题屏的「提示落这儿」没有灯,不该借用灯的语义。
+   */
+  ghostFor?: 'B' | 'W';
   /** 被叫吃的子:红方框,**不换子的颜色** —— 换颜色会和「这颗子是什么色」打架。 */
   atari?: readonly string[];
   /** 还没有真盘面可镜像时压暗。空盘和「看不到盘」是两回事,压暗说的是后者。 */
@@ -125,7 +132,9 @@ export function GoBoardSvg({
       ))}
       {ghost.map((c) => {
         const p = P(c);
-        return <circle key={`g${c}`} className="ghost" cx={p.x} cy={p.y} r={STONE_R * 0.62} />;
+        // `ghost--b` / `ghost--w` 只改颜色,几何一个字不动 —— 见 `ghostFor` 那段。
+        const cls = ghostFor ? `ghost ghost--${ghostFor.toLowerCase()}` : 'ghost';
+        return <circle key={`g${c}`} className={cls} cx={p.x} cy={p.y} r={STONE_R * 0.62} />;
       })}
       {black.map((c) => stone(c, true))}
       {white.map((c) => stone(c, false))}

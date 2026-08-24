@@ -62,6 +62,14 @@
 .gob .mark { fill: none; stroke: var(--accent); stroke-width: 3.5; }
 /* 候选点:半透明青玉圈,不画成棋子 */
 .gob .ghost { fill: rgba(88, 181, 122, .40); stroke: rgba(88, 181, 122, .95); stroke-width: 4; stroke-dasharray: 10 8; }
+/* 摆谱屏(屏 17)的候选点:**颜色必须和实体盘上那颗灯一致** —— 黑子亮红灯、白子亮绿灯
+   (`constants/ledColors.ts` 的 `LED_HEX`:black `#ff3b30` / white `#34c759`,
+   四处独立来源一致)。上面那条不带修饰的青玉圈留给**没有灯**的场合(做题屏的提示),
+   借用灯的语义会让人以为盘上也亮着一颗。
+   ⚠️ 稿子那一帧把 C7(黑棋)的圈画成了绿的 —— 那是稿子错了,不是这里跑偏,已回报。 */
+.gob .ghost--b { fill: rgba(255, 59, 48, .32); stroke: rgba(255, 59, 48, .95); }
+.gob .ghost--w { fill: rgba(52, 199, 89, .32); stroke: rgba(52, 199, 89, .95); }
+
 /* 打吃:被叫吃那颗子上画红方框,不换子的颜色 */
 .gob .atari { fill: none; stroke: var(--bad); stroke-width: 5; }
 /* ── 教程图那几层(屏 25)。四个既有消费者一个都不画,所以这几条只在课程屏上承重。 ──
@@ -961,3 +969,36 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
    当前那一行用共享的 `[data-selected]` 高亮:那说的是「你正在看这一张」,屏上为真;
    稿子那三态(已看过 / 正在看 / 还没看)里只有中间这一个盒上问得出来。 */
 button.kiosk-row.figrow { flex: none; }
+
+/* ── 屏 17 摆谱 · 进行中 ────────────────────────────────────────────────────
+   页控条那颗「重新点灯」同时是 LED 的状态点(见 `KioskPagebar` 的 `action.state`):
+   灯通不了时它变红。**不新开一个只会变色的点** —— 这一屏右栏只剩 252px 给两个折叠块分,
+   而这颗键本来就是那个故障的补救动作。 */
+.kiosk-pagebar__iconbtn.is-bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
+
+/* 摄像头折叠块里那本账。逐字取自稿子 `sample-go/go-kiosk.tmpl.html:144-148`。
+   右列 `<i>` 放的是**图例**(红=黑棋 / 绿=白棋 / 蓝=移除),不是解释文字 ——
+   规范建议 E 把「屏上必须常驻一条 LED 图例」定成硬性,理由是操作员照灯摆子,
+   而这台盒子上灯色和子色的对应关系没有第二处写着。 */
+.ledger { display: flex; flex-direction: column; gap: 7px; padding: 9px 12px; }
+.lrow { display: flex; align-items: center; gap: 9px; font-size: 12px; }
+.lrow b { font-family: var(--font-serif); font-size: 13px; font-weight: 600; }
+.lrow i { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+/* 图例那一列的色点 —— 和 `LED_HEX` 同源,别在这儿另写一遍十六进制以外的东西。
+   **`margin-left:auto` 挂在色点上而不是挂在 `<i>` 上**:挂错的话色点会贴着左边那句读数,
+   屏上读成「已采集 13 帧 ●」—— 那颗点看起来在给帧数分类,而它其实是右边那句图例的样本。
+   四图第一版就是这个样子,当场看出来的。 */
+.lrow .led { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-left: auto; }
+
+/* 这一屏的 pcard 有三态:待摆(青玉,共享 `.pcard.turn`)、待移除、采集失败。
+   后两个各自换描边和底色 —— **它们说的是「此刻你该做什么」,不是装饰**。
+   待移除走蓝(和 `LED_HEX.remove` 同色,盘上那几颗也亮蓝灯);失败走 `--bad`。 */
+.pcard.removal { border-color: rgba(47, 111, 255, .75); background: rgba(47, 111, 255, .10); }
+.pcard.failed { border-color: color-mix(in srgb, var(--bad) 65%, transparent); background: color-mix(in srgb, var(--bad) 10%, var(--panel)); }
+
+/* 「正在拍照,请勿伸手」那层遮罩盖的是**整个布局根**,不只是盘 —— 它的第一职责是
+   挡住第二次按下「确认落子」(拍照那一秒最不能发生的事)。只盖盘的话右栏三颗键
+   看着是活的、按下去没反应,那比一句偏了的提示更像假话。
+   `.cdlg{inset:0}` 找的是最近的**定位祖先**,所以这一屏的布局根要 `position:relative`
+   —— 屏 06(布局 A)和屏 08(布局 B)已经各踩过一次,判据一样。**只给这一屏加**。 */
+.kiosk-layout-a.baipu-layout { position: relative; }

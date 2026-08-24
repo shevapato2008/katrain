@@ -1126,3 +1126,168 @@ test('课程书目:摊开一章之后整栏自己滚,行不许被压扁,最后�
   expect(m.pageScroll, '滚的是整个页面,不是那一栏').toBe(0);
   expect(m.horizontal, '页面横向溢出了').toBe(0);
 });
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 屏 17 摆谱 · 进行中:**「确认落子」在任何一态下都得贴着右栏底**
+ *
+ * 这一屏是 27 屏里最不能让那颗键动的一屏 —— 一局 241 手要按它约 250 次,位置是肌肉记忆。
+ * 而它贴底靠的是共享 `tokens.css` 的 `.kiosk-rail .kiosk-actions{margin-top:auto}`:
+ * **右栏一旦自己溢出,那条 `auto` 就没有空间可让,键会被顶出画布**(还在 DOM 里,手指够不到)。
+ *
+ * 右栏的账是死的:页控条 44 + `.pcard` 60 + 两个折叠头 30×2 + 动作区 52 + 四条间隙 48 = 264,
+ * **两个折叠块的 body 一共只剩 252**。所以这一屏所有「新增一块」的想法都被这个数否掉了 ——
+ * 四条通栏横幅(拍照 / 待移除 / 几何漂移 / 采集失败)一条都没进右栏,各自找了别的落点。
+ *
+ * **造数据要造到会溢出**:241 手 ⇒ 121 行着法,`.mvrows` 装得下 6 行。
+ * 装得下的数据量下量出来的数字一概不算。
+ *
+ * 四态逐个量,因为它们换的是**同一块 pcard 的内容**,而内容一长盒子就可能长高 ——
+ * 「待移除」那一态标题最长(「请拿走被提的 N 子」+ 两行副文)。
+ *
+ * ## 变异实测(2026-08-24)—— **我预判的三条里有两条是错的,照实记**
+ *
+ * | 变异 | 我以为 | 实际 |
+ * |---|---|---|
+ * | 去掉 `.baipu-layout{position:relative}` | 遮罩那条红 | ✅ 红:`遮罩顶边 56 对不上布局根 70` |
+ * | `.pcard` 的 `height:60px` → `min-height:60px` | 「贴底」红 | ❌ **全绿**:内容本来就装得下,`min-height` 不会让它长高 |
+ * | `.pcard` 高度硬改成 **140** | ——(没想到) | ❌ **仍全绿**:着法那块带 `grow`(`flex:1;min-height:0`),多出来的 80 由它让出来 |
+ * | `.pcard` 高度硬改成 **240** | —— | ✅ 红:`着法块只剩 16px,装不下三行` |
+ * | 去掉着法那块的 `grow` | 「右栏不许溢出」红 | ✅ 红,而且**一次红三条**(含「遮罩没盖住那三颗键」——栏一溢出,键被顶出布局根) |
+ *
+ * 有价值的是中间那两行:**这条链上真正承重的不是「pcard 有多高」,是那块 `grow`。**
+ * 只要它在,右栏就不会溢出、键就贴得住底,pcard 长高只是把着法表压薄;
+ * 一旦它不在,三条断言同时倒。⇒ 这道闸的牙齿其实是**「着法块 ≥ 3 行」**那一条 ——
+ * 它是「压薄」和「压没」之间唯一的分界线,前面几条(贴底 / 不溢出)在 `grow` 还在时杀不死。
+ * ────────────────────────────────────────────────────────────────────────── */
+const BAIPU_STEPS = (n: number) => ({
+  board_size: 19,
+  meta: { player_black: '申真谞', player_white: '柯洁', handicap: 0, komi: 7.5, ruleset: 'chinese' },
+  steps: Array.from({ length: n }, (_, i) => ({
+    kind: 'move', move_index: i, property: i % 2 === 0 ? 'B' : 'W',
+    row: 3 + (i % 13), col: 3 + Math.floor(i / 13) % 13, color: i % 2 === 0 ? 'B' : 'W',
+    // 第 3 手提两颗 —— 那一态的 pcard 文案最长,量的就是它。
+    removed: i === 2 ? [{ row: 0, col: 0 }, { row: 0, col: 1 }] : [],
+    board_hash: `h${i}`,
+  })),
+});
+
+const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang' } = {}) => {
+  await page.route('**/api/v1/baipu/load', (route) => route.fulfill({ json: BAIPU_STEPS(241) }));
+  await page.route('**/api/v1/led/**', (route) => route.fulfill({
+    json: { ok: true, connected: true, shown_at: null, errors: [] },
+  }));
+  await page.route('**/api/v1/baipu/capture', async (route) => {
+    if (opts.capture === 'fail') return route.fulfill({ status: 500, json: { detail: 'camera unavailable' } });
+    if (opts.capture === 'hang') return new Promise(() => {});     // 永不回 ⇒ 停在拍照遮罩上
+    return route.fulfill({ json: { ok: true, path: '/c/frame_001.jpg' } });
+  });
+  // ⚠️ **不能用上面那个共享 `boot`**:它末尾等 `.kiosk-scrollzone`,而这一屏没有 ——
+  // 它的右栏是两个 `KioskFold`(各自内滚),不是整栏滚的 `KioskScrollZone`。
+  // 等一个永远不出现的选择器 = 30 秒超时,而且超时信息指向 helper、不指向真正的原因。
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'kiosk-shell-scroll');
+    localStorage.setItem('katrain_language', 'cn');
+    localStorage.setItem('baipu:sgf:g1', JSON.stringify({ id: 'g1', name: '三星杯半决赛', sgf: '(;SZ[19];B[pd])', savedAt: 1 }));
+  });
+  await page.route('**/api/v1/auth/me', (route) => route.fulfill({
+    json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
+  }));
+  await page.goto('/kiosk/baipu/session/g1');
+  await page.waitForSelector('[data-testid="baipu-pcard"]');
+};
+
+/** 右栏、动作区、着法块、画布,一次读齐。 */
+const railOf = (page: Page) => page.evaluate(() => {
+  const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+  const acts = document.querySelector('[data-testid="baipu-actions"]') as HTMLElement;
+  const moves = document.querySelector('[data-testid="baipu-moves-fold"] .mvrows') as HTMLElement;
+  const screen = document.querySelector('.kiosk-screen') as HTMLElement;
+  const board = document.querySelector('[data-testid="baipu-board"]') as HTMLElement;
+  const r = rail.getBoundingClientRect();
+  const a = acts.getBoundingClientRect();
+  const b = board.getBoundingClientRect();
+  return {
+    railH: Math.round(r.height),
+    railBottom: Math.round(r.bottom),
+    railOverflow: rail.scrollHeight - rail.clientHeight,
+    actsBottom: Math.round(a.bottom),
+    actsCount: acts.querySelectorAll('button').length,
+    movesOverflow: moves.scrollHeight - moves.clientHeight,
+    movesH: Math.round(moves.getBoundingClientRect().height),
+    boardW: Math.round(b.width),
+    boardH: Math.round(b.height),
+    screenBottom: Math.round(screen.getBoundingClientRect().bottom),
+  };
+});
+
+test('摆谱:241 手四态轮一遍,「确认落子」始终贴右栏底、盘恒 516', async ({ page }) => {
+  await bootBaipu(page);
+
+  const guiding = await railOf(page);
+  expect(guiding.railH, '右栏不是 516 —— 布局 A 的高度账先崩了').toBe(516);
+  expect(guiding.boardW, '盘不是 516 宽').toBe(516);
+  expect(guiding.boardH, '盘不是 516 高').toBe(516);
+  expect(guiding.actsCount, '动作区不是三格 —— 稿子那颗「虚手」不做').toBe(3);
+  expect(guiding.movesOverflow, '241 手没造出溢出 —— 下面的断言都是空的').toBeGreaterThan(100);
+  expect(guiding.railOverflow, '右栏自己被顶破了 —— 溢出该由着法那一块自己吃掉').toBeLessThanOrEqual(0);
+  expect(guiding.actsBottom, '动作区没贴右栏底').toBe(guiding.railBottom);
+  expect(guiding.actsBottom, '动作区被顶到画布外面了').toBeLessThanOrEqual(guiding.screenBottom);
+  // 规范:固定部分之后至少留得下 3 行,否则右栏就得整栏滚 —— 而整栏一滚这颗键就不贴底了。
+  expect(guiding.movesH, `着法块只剩 ${guiding.movesH}px,装不下三行`).toBeGreaterThanOrEqual(3 * 24);
+
+  // ── 待移除:pcard 文案最长的那一态 ──
+  await page.getByRole('button', { name: '确认落子' }).click();
+  await page.getByRole('button', { name: '确认落子' }).click();
+  await page.getByRole('button', { name: '确认落子' }).click();
+  await expect(page.getByTestId('baipu-pcard')).toHaveAttribute('data-mood', 'removal');
+  const removal = await railOf(page);
+  expect(removal.railH, '待移除态右栏被撑破').toBe(516);
+  expect(removal.railOverflow, '待移除态右栏自己溢出了').toBeLessThanOrEqual(0);
+  expect(removal.actsBottom, '待移除态动作区没贴底').toBe(removal.railBottom);
+});
+
+test('摆谱:采集失败那一态,右栏照样不溢出、键照样贴底', async ({ page }) => {
+  await bootBaipu(page, { capture: 'fail' });
+  await page.getByRole('button', { name: '确认落子' }).click();
+  await expect(page.getByTestId('baipu-pcard')).toHaveAttribute('data-mood', 'failed');
+
+  const m = await railOf(page);
+  expect(m.railH).toBe(516);
+  expect(m.railOverflow, '失败态右栏自己溢出了 —— 那句话把栏顶破了').toBeLessThanOrEqual(0);
+  expect(m.actsBottom, '失败态动作区没贴底').toBe(m.railBottom);
+  expect(m.actsCount, '失败态动作区格数变了 —— 格子一变位置就跳').toBe(3);
+});
+
+/**
+ * 拍照遮罩盖的是**整个布局根**,不只是盘 —— 它的第一职责是挡住第二次按下「确认落子」。
+ * 判据照抄屏 06 那条(`:776`):`.cdlg{inset:0}` 找的是最近的**定位祖先**,
+ * 布局根不定位的话它会一路找到带 14px 上下内边距的 `.kiosk-content`,
+ * 于是 top 差 14、高多 28,底边被画布裁掉。
+ */
+test('摆谱:拍照遮罩的定位原点是布局根,而且真的盖住了那三颗键', async ({ page }) => {
+  await bootBaipu(page, { capture: 'hang' });
+  await page.getByRole('button', { name: '确认落子' }).click();
+  await page.waitForSelector('[data-testid="baipu-capture-pending"]');
+
+  const m = await page.evaluate(() => {
+    const dlg = document.querySelector('[data-testid="baipu-capture-pending"]') as HTMLElement;
+    const root = document.querySelector('.kiosk-layout-a.baipu-layout') as HTMLElement;
+    const acts = document.querySelector('[data-testid="baipu-actions"]') as HTMLElement;
+    const d = dlg.getBoundingClientRect();
+    const r = root.getBoundingClientRect();
+    const a = acts.getBoundingClientRect();
+    return {
+      dlg: { top: Math.round(d.top), left: Math.round(d.left), h: Math.round(d.height), w: Math.round(d.width) },
+      root: { top: Math.round(r.top), left: Math.round(r.left), h: Math.round(r.height), w: Math.round(r.width) },
+      // 遮罩的矩形要把动作区整个包住 —— 不然那三颗键就是「看着能按、按下去没反应」
+      covers: d.top <= a.top && d.bottom >= a.bottom && d.left <= a.left && d.right >= a.right,
+      zIndex: getComputedStyle(dlg).zIndex,
+    };
+  });
+
+  expect(m.dlg.top, `遮罩顶边 ${m.dlg.top} 对不上布局根 ${m.root.top}`).toBe(m.root.top);
+  expect(m.dlg.left).toBe(m.root.left);
+  expect(m.dlg.h, `遮罩高 ${m.dlg.h} 对不上布局根 ${m.root.h}`).toBe(m.root.h);
+  expect(m.dlg.w).toBe(m.root.w);
+  expect(m.covers, '遮罩没盖住那三颗键 —— 拍照时还能按下第二次「确认落子」').toBe(true);
+});

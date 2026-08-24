@@ -29,8 +29,14 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
   /** 英文副标。不是新文案,是标题那句话的另一种语言。 */
   sub?: ReactNode;
   segment?: PagebarSegment;
-  /** §11 允许的**最多一个**页级图标按钮。 */
-  action?: { icon: IconName; label: string; onClick: () => void };
+  /**
+   * §11 允许的**最多一个**页级图标按钮。
+   *
+   * `state` 让这颗键**兼当一个状态点**:摆谱屏(屏 17)右上角那颗「重新点灯」正是
+   * 「LED 通不通」的补救动作,把指示和补救合成一个控件,比另摆一颗只会变色的点省一格
+   * ——而那一屏的右栏只剩 252px 给两个折叠块分。`bad` 走 `--bad`,不改几何。
+   */
+  action?: { icon: IconName; label: string; onClick: () => void; state?: 'bad' };
   testId?: string;
 }) {
   if (segment && segment.options.length > 3) {
@@ -69,8 +75,13 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
       {action && (
         <button
           type="button"
-          className={`kiosk-pagebar__iconbtn${segment ? '' : ' kiosk-pagebar__spacer'}`}
+          className={[
+            'kiosk-pagebar__iconbtn',
+            action.state === 'bad' && 'is-bad',
+            !segment && 'kiosk-pagebar__spacer',
+          ].filter(Boolean).join(' ')}
           aria-label={action.label}
+          data-state={action.state}
           onClick={action.onClick}
         >
           <Icon name={action.icon} />

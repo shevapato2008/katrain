@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import { boardExtent, coordToXY, lineAt, starsFor } from './goBoard';
+import { boardExtent, coordToXY, lineAt, starsFor, windowViewBox, type GoWindow } from './goBoard';
 
 const U = 100;                 // SVG 内部单位
 const LINE_W = U * 0.030;      // 19 路比 15 路密,线宽按格距收一档,否则盘面糊成一片
@@ -26,7 +26,10 @@ const STONE_R = U * 0.47;
  * 木纹贴图没抄:那张图在 `sample-go/board-assets.json` 里,不在共享资产包、也不在 MANIFEST
  * 管辖内,抄它等于往仓里塞一份没人核的二进制(D6 已登记)。
  */
-export function GoBoardSvg({ size = 19, black = [], white = [], last, ghost = [], atari = [], muted = false, label }: {
+export function GoBoardSvg({
+  size = 19, black = [], white = [], last, ghost = [], atari = [], muted = false, label,
+  numbers, letters, shapes, highlights = [], window: win,
+}: {
   size?: number;
   /** 坐标写成 `"Q16"`,不是 `[x, y]` —— 记谱、接口、日志全是这套写法,少一层换算就少一处错。 */
   black?: readonly string[];
@@ -39,6 +42,22 @@ export function GoBoardSvg({ size = 19, black = [], white = [], last, ghost = []
   /** 还没有真盘面可镜像时压暗。空盘和「看不到盘」是两回事,压暗说的是后者。 */
   muted?: boolean;
   label?: string;
+  /* ── 以下五个 2026-08-24(屏 25 课程 · 小节讲解)加,**四个既有消费者一个都不传** ──
+     教程图不是一局棋:它带手数号、字母、记号,而且书上印的大多只是棋盘一角。
+     这几样落在这块盘上而不是另开一块,理由在 `goBoard.ts` 的文件头:
+     跳 I、行号 1 在最下、九星按路数换、留白 0.5 格 —— 每一条都容易抄错,抄错了还挺像。
+     (`components/tutorials/SGFBoard.tsx` 画得出这些,但它的边距是 0.75 格 ——
+      配 kiosk 那条 0.5 格的刻度带,两端各差 5.59px,而几何闸的容差是 1.5。) */
+  /** 手数号,`{ "Q16": "1" }`。**画在子上** —— 调用方负责只传这一步该显示的那些。 */
+  numbers?: Readonly<Record<string, string>>;
+  /** 空交叉点上的字母(书正文里的「A 方面」)。 */
+  letters?: Readonly<Record<string, string>>;
+  /** 空交叉点上的记号:`triangle` / `square` / `circle` / `cross`。 */
+  shapes?: Readonly<Record<string, string>>;
+  /** 「说的就是这几颗」——子上加一个三角,**不换子的颜色**(同 `atari` 那条理由)。 */
+  highlights?: readonly string[];
+  /** 只看一角。不传 = 全盘。线照全盘画,由 viewBox 裁 —— 见 `windowViewBox`。 */
+  window?: GoWindow;
 }) {
   const uid = useId().replace(/:/g, '');
   const W = boardExtent(size, U);
@@ -69,10 +88,19 @@ export function GoBoardSvg({ size = 19, black = [], white = [], last, ghost = []
     );
   };
 
+  const blackSet = new Set(black);
+  /** 子上的号和三角取**对比色**:黑子上白、白子上深。空点上的字/记号走墨色。 */
+  const onBlack = (c: string) => blackSet.has(c);
+
+  /** 空点上的字母和记号:先垫一颗盘色小圆,不然 24px 的格线从字底下穿过去,7″ 屏读不出。 */
+  const inkPad = (x: number, y: number, key: string) => (
+    <circle key={key} className="pad" cx={x} cy={y} r={STONE_R * 0.62} fill={`url(#gr-${uid})`} />
+  );
+
   return (
     <svg
       className={muted ? 'gob is-muted' : 'gob'}
-      viewBox={`0 0 ${W} ${W}`}
+      viewBox={win ? windowViewBox(win, U) : `0 0 ${W} ${W}`}
       preserveAspectRatio="xMidYMid meet"
       role={label ? 'img' : undefined}
       aria-label={label}
@@ -107,6 +135,57 @@ export function GoBoardSvg({ size = 19, black = [], white = [], last, ghost = []
         const p = P(c);
         const s = STONE_R * 1.15;
         return <rect key={`a${c}`} className="atari" x={p.x - s} y={p.y - s} width={s * 2} height={s * 2} rx={4} />;
+      })}
+      {/* 空点上的记号:先垫盘色圆,再画。放在字母前面 —— 同一个点上不会两者都有。 */}
+      {shapes && Object.entries(shapes).flatMap(([c, kind]) => {
+        const p = P(c);
+        const r = STONE_R * 0.5;
+        const cls = 'shape';
+        const node = kind === 'square'
+          ? <rect key={`sh${c}`} className={cls} x={p.x - r} y={p.y - r} width={r * 2} height={r * 2} />
+          : kind === 'circle'
+            ? <circle key={`sh${c}`} className={cls} cx={p.x} cy={p.y} r={r} fill="none" />
+            : kind === 'cross'
+              ? (
+                <g key={`sh${c}`} className={cls}>
+                  <line x1={p.x - r * .7} y1={p.y - r * .7} x2={p.x + r * .7} y2={p.y + r * .7} />
+                  <line x1={p.x - r * .7} y1={p.y + r * .7} x2={p.x + r * .7} y2={p.y - r * .7} />
+                </g>
+              )
+              : (
+                <polygon
+                  key={`sh${c}`} className={cls}
+                  points={`${p.x},${p.y - r} ${p.x - r * .866},${p.y + r * .5} ${p.x + r * .866},${p.y + r * .5}`}
+                />
+              );
+        return [inkPad(p.x, p.y, `shp${c}`), node];
+      })}
+      {letters && Object.entries(letters).flatMap(([c, ch]) => {
+        const p = P(c);
+        return [
+          inkPad(p.x, p.y, `ltp${c}`),
+          <text key={`lt${c}`} className="letter" x={p.x} y={p.y} data-at={c}>{ch}</text>,
+        ];
+      })}
+      {/* 手数号画在子上 —— 所以排在子后面。 */}
+      {numbers && Object.entries(numbers).map(([c, n]) => {
+        const p = P(c);
+        return (
+          <text
+            key={`nm${c}`} className={onBlack(c) ? 'num on-b' : 'num on-w'}
+            x={p.x} y={p.y} data-at={c}
+          >{n}</text>
+        );
+      })}
+      {highlights.map((c) => {
+        const p = P(c);
+        const r = STONE_R * 0.6;
+        return (
+          <polygon
+            key={`hl${c}`} className={onBlack(c) ? 'hl on-b' : 'hl on-w'} data-at={c}
+            points={`${p.x},${p.y - r} ${p.x - r * .866},${p.y + r * .5} ${p.x + r * .866},${p.y + r * .5}`}
+          />
+        );
       })}
     </svg>
   );

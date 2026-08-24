@@ -93,3 +93,33 @@ export function handicapStones(size: number, n: number): string[] {
   pts.push([near, mid], [far, mid], [mid, near], [mid, far]);
   return pts.slice(0, Math.min(n, 9)).map(([x, y]) => `${GO_COLS[x]}${y + 1}`);
 }
+
+/**
+ * `{ x: 15, y: 3 }` → `"Q16"` —— `coordToXY` 的反函数。
+ *
+ * 教程图的 `board_payload` 用的是 `[col, row]` 数对(`"3,3"` 这样的键),
+ * 而 `GoBoardSvg` 从第一天起收的就是 `"Q16"` 这种坐标串。**换算只许有这一份**:
+ * 给那块盘再开一套数字坐标的 API,等于同一件事两种写法,而跳 I 和「行号 1 在最下」
+ * 这两条正是最容易各抄错一半的地方。
+ */
+export function xyToCoord(x: number, y: number, size = 19): string {
+  return `${GO_COLS[x]}${size - y}`;
+}
+
+/** 只看一角时的窗口。`cols`/`rows` 可以不等 —— 后端的半盘视口就是 19×10 / 10×19。 */
+export interface GoWindow { col: number; row: number; cols: number; rows: number }
+
+/**
+ * 窗口的 viewBox。
+ *
+ * 推导和 `lineAt` 是同一条:第 i 条线在 `(0.5 + i) * unit`,所以从第 `col` 条线往左留
+ * 半格、到第 `col + cols - 1` 条线往右留半格,正好是 `[col·unit, (col+cols)·unit]`。
+ * 全盘是它的特例(`col=0, cols=size` ⇒ `0 … size·unit` = `boardExtent`)。
+ *
+ * ⚠️ **线照全盘画,由 viewBox 裁。** 不许只画窗口内那几条:最外一圈线要粗一档
+ * (`i === 0 || i === size - 1`),而那句话的意思是「棋盘到此为止」——
+ * 画在裁切边上就成了「这盘只有这么大」,一张讲角上死活的图会被说成 10 路棋。
+ */
+export function windowViewBox(w: GoWindow, unit = 100): string {
+  return `${w.col * unit} ${w.row * unit} ${w.cols * unit} ${w.rows * unit}`;
+}

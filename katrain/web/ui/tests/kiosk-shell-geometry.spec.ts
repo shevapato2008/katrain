@@ -1256,3 +1256,180 @@ test('§9 屏 19:两档都跑完又正好选中的那一行,行尾四个元素�
   // 左半那块文字**允许**被省略号截掉(标题可以很长),但不许被挤到零宽。
   expect(m.textClipped, '左半那块文字被挤没了').toBeLessThan(400);
 });
+
+/* ══ 屏 25 课程 · 小节讲解 —— 只看一角时,刻度带的节距要跟着窗口走 ══════════════
+ *
+ * 这一屏的盘和别的布局 A 屏**不是同一个形状**:教程图可以只画棋盘一角,
+ * 而后端 `viewport.py:31` 产的窗口有两种量级 —— 10×10 的方窗,和 19×10 / 10×19 的**半盘**。
+ *
+ * 判据一个字不改,还是那条不变式:**屏上第一条 / 最后一条线的坐标,要正对刻度带头尾两个字心**
+ * (`.gob` 的 0.5 格边距由构造保证,这条闸守的是外面那层:刻度带的轨道尺寸、
+ * `preserveAspectRatio` 造成的居中留白)。变的只是「几个字、几条线」不再恒是 19。
+ *
+ * ⚠️ **两轴都要量。** 半盘 19×10 下横轴 19 轨、纵轴 10 轨,而共享包那条补丁给的是 `1fr`
+ * (均分整条带)—— 纵轴那 10 个字会被摊到 460 上,而盘按 `xMidYMid meet` 只占 242。
+ * 只量横轴的话它是绿的:19 轨均分 460 和「节距 460/19」恰好同值。
+ * **量通一条不等于整条链是对的**,这一屏正是那句话的实例。
+ *
+ * 造数据:方窗那一档量出来的数**证明不了**非方那一档,所以半盘的 payload 是手造的
+ * (`preview.db` 里 `tutorial_figures` 是 0 行,本机没有真图)。
+ *
+ * 变异实测(2026-08-24)—— **第二条我先写错了,记在这儿**:
+ *   · 撤掉 `.figure-board` 那条 `grid-auto-rows`(退回共享包的 `1fr`)
+ *     ⇒ **上下半盘 19×10 的纵向断言红**(第一条横线 219.1 vs 第一个左字 121.0),横向全绿。
+ *   · 撤掉 `grid-auto-columns` ⇒ 我原以为方窗那条会红,**跑下来三条全绿**。
+ *     原因:`1fr` 是「均分整条带」,而带宽恰好就是落子区 —— **长轴上两者永远同值**。
+ *     方窗两轴都是长轴,19×10 的长轴是横轴 ⇒ 这两种形状都杀不死它。
+ *     ⇒ 补了**左右半盘 10×19** 那一条(`viewport.py:75` 真的会产这个形状),
+ *     它的短轴是横轴;再跑同一个变异 ⇒ **它的横向断言红**。
+ *     两条补丁各由一种半盘守着,方窗那两条是退化情形。
+ *
+ * 这条弯路本身值得留下:一条**挡不住任何东西的规则比没有更坏**,而「看起来对称所以
+ * 两条都需要」是推不出来的 —— 得让每一条各自被一次变异杀死过。
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** 一张教程图。`viewport` 由调用方给 —— 它就是这条闸的自变量。 */
+const figurePayload = (viewport: Record<string, number> | null) => ({
+  id: 1, section_id: 10, page: 1, figure_label: '图 1',
+  book_text: null, page_context_text: null, bbox: null, page_image_path: null,
+  board_payload: {
+    size: 19,
+    // 子摆在窗口内,免得「窗口外的子不该出现」这件事混进来 —— 这条闸只量刻度带。
+    stones: { B: [[1, 14], [2, 15]], W: [[4, 15]] },
+    labels: { '2,15': '1', '4,15': '2' },
+    viewport,
+  },
+  recognition_debug: null, narration: '量刻度带用的图。', audio_asset: null, video_asset: null,
+  video_duration_ms: null, video_size_bytes: null, order: 0, updated_at: null,
+});
+
+const bootFigure = async (page: Page, viewport: Record<string, number> | null) => {
+  await page.route('**/api/v1/tutorials/sections/10', (route) => route.fulfill({
+    json: {
+      id: 10, chapter_id: 11, section_number: '1', title: '量刻度带', order: 0,
+      figure_count: 1, has_video: false, figures: [figurePayload(viewport)],
+    },
+  }));
+  await boot(page, '/kiosk/tutorial/section/10');
+  await page.waitForSelector('[data-testid="tutorial-figure-board"] svg.gob');
+};
+
+/** 两轴一起读:线的中心坐标、字的中心坐标,各取头尾。 */
+const rulerVsLines = (page: Page) => page.evaluate(() => {
+  const svg = document.querySelector('.kiosk-board__play svg.gob') as SVGSVGElement;
+  const all = [...svg.querySelectorAll('line.ln')];
+  const cx = (el: Element) => { const r = el.getBoundingClientRect(); return r.left + r.width / 2; };
+  const cy = (el: Element) => { const r = el.getBoundingClientRect(); return r.top + r.height / 2; };
+  // 竖线 x1===x2;横线 y1===y2。**屏上看得见的那些**才算 —— 线照全盘画、由 viewBox 裁,
+  // 窗口外那些的 rect 落在盘外面,拿去和刻度带比就是拿看不见的东西比。
+  //
+  // ⚠️ 判「看不看得见」只能看**它自己那根轴**:横线是整幅宽的,窗口一裁它左右两头必然
+  // 伸到盘外,拿「整个 rect 都在框内」去判会把每一条线都判成不可见(第一版就是这么写的,
+  // 结果 `vert[0]` 是 undefined —— 闸当场炸,而不是悄悄绿掉)。
+  //
+  // ⚠️ 而「框」是 **viewBox 映射出来的那一块**,不是 `<svg>` 元素的盒子。非方窗下
+  // `xMidYMid meet` 会上下(或左右)留白:19×10 在 460 的方框里只占 242 高,居中。
+  // 拿元素盒子当框,窗口外那几条横线**照样落在 460 之内**(它们只是被 SVG 根裁掉了,
+  // rect 还在)—— 第二版就是这么错的,量出 15 条横线而不是 10 条。
+  // 这里问浏览器要 `getScreenCTM()`,**不自己算一遍缩放** —— 自己算就成了「用我的模型
+  // 去核我的模型」。
+  const ctm = svg.getScreenCTM()!;
+  const vb = svg.viewBox.baseVal;
+  const map = (x: number, y: number) => {
+    const pt = new DOMPoint(x, y).matrixTransform(ctm);
+    return { x: pt.x, y: pt.y };
+  };
+  const tl = map(vb.x, vb.y);
+  const br = map(vb.x + vb.width, vb.y + vb.height);
+  const box = { left: tl.x, right: br.x, top: tl.y, bottom: br.y };
+  const inX = (el: Element) => {
+    const r = el.getBoundingClientRect();
+    return r.left >= box.left - 1 && r.right <= box.right + 1;
+  };
+  const inY = (el: Element) => {
+    const r = el.getBoundingClientRect();
+    return r.top >= box.top - 1 && r.bottom <= box.bottom + 1;
+  };
+  const vert = all.filter((l) => l.getAttribute('x1') === l.getAttribute('x2')).filter(inX);
+  const horiz = all.filter((l) => l.getAttribute('y1') === l.getAttribute('y2')).filter(inY);
+  const top = [...document.querySelectorAll('.kiosk-board__ruler--top span')];
+  const left = [...document.querySelectorAll('.kiosk-board__ruler--left span')];
+  return {
+    verts: vert.length, horizs: horiz.length,
+    topN: top.length, leftN: left.length,
+    firstVert: cx(vert[0]), lastVert: cx(vert[vert.length - 1]),
+    firstTop: cx(top[0]), lastTop: cx(top[top.length - 1]),
+    firstHoriz: cy(horiz[0]), lastHoriz: cy(horiz[horiz.length - 1]),
+    firstLeft: cy(left[0]), lastLeft: cy(left[left.length - 1]),
+  };
+});
+
+test('§8 课程小节:10×10 方窗 —— 两轴的头尾线都正对头尾两个字', async ({ page }) => {
+  await bootFigure(page, { col: 0, row: 9, size: 10 });
+  const m = await rulerVsLines(page);
+
+  expect(m.topN, '上带不是 10 个字').toBe(10);
+  expect(m.leftN, '左带不是 10 个字').toBe(10);
+  expect(m.verts, '窗口里看得见的不是 10 条竖线').toBe(10);
+  expect(m.horizs, '窗口里看得见的不是 10 条横线').toBe(10);
+  expect(Math.abs(m.firstVert - m.firstTop),
+    `第一条竖线 ${m.firstVert.toFixed(1)} 和第一个上字 ${m.firstTop.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.lastVert - m.lastTop),
+    `最后一条竖线 ${m.lastVert.toFixed(1)} 和最后一个上字 ${m.lastTop.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.firstHoriz - m.firstLeft),
+    `第一条横线 ${m.firstHoriz.toFixed(1)} 和第一个左字 ${m.firstLeft.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.lastHoriz - m.lastLeft),
+    `最后一条横线 ${m.lastHoriz.toFixed(1)} 和最后一个左字 ${m.lastLeft.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+});
+
+test('§8 课程小节:19×10 半盘 —— 非方窗下短轴那条带要居中,不许摊满', async ({ page }) => {
+  await bootFigure(page, { col: 0, row: 9, cols: 19, rows: 10 });
+  const m = await rulerVsLines(page);
+
+  expect(m.topN, '上带不是 19 个字').toBe(19);
+  expect(m.leftN, '左带不是 10 个字').toBe(10);
+  expect(m.verts, '窗口里看得见的不是 19 条竖线').toBe(19);
+  expect(m.horizs, '窗口里看得见的不是 10 条横线').toBe(10);
+  expect(Math.abs(m.firstVert - m.firstTop),
+    `第一条竖线 ${m.firstVert.toFixed(1)} 和第一个上字 ${m.firstTop.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.lastVert - m.lastTop),
+    `最后一条竖线 ${m.lastVert.toFixed(1)} 和最后一个上字 ${m.lastTop.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  // ↓ 这两条才是这一屏新造出来的那半条链 —— 共享包的 `1fr` 在这儿是错的。
+  expect(Math.abs(m.firstHoriz - m.firstLeft),
+    `第一条横线 ${m.firstHoriz.toFixed(1)} 和第一个左字 ${m.firstLeft.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.lastHoriz - m.lastLeft),
+    `最后一条横线 ${m.lastHoriz.toFixed(1)} 和最后一个左字 ${m.lastLeft.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+});
+
+test('§8 课程小节:10×19 左半盘 —— 短轴换成横轴,守的是另一条补丁', async ({ page }) => {
+  await bootFigure(page, { col: 0, row: 0, cols: 10, rows: 19 });
+  const m = await rulerVsLines(page);
+
+  expect(m.topN, '上带不是 10 个字').toBe(10);
+  expect(m.leftN, '左带不是 19 个字').toBe(19);
+  expect(m.verts, '窗口里看得见的不是 10 条竖线').toBe(10);
+  expect(m.horizs, '窗口里看得见的不是 19 条横线').toBe(19);
+  // ↓ 这两条是 `grid-auto-columns` 唯一的守卫:19×10 和方窗都杀不死它(长轴上 `1fr` 同值)。
+  expect(Math.abs(m.firstVert - m.firstTop),
+    `第一条竖线 ${m.firstVert.toFixed(1)} 和第一个上字 ${m.firstTop.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.lastVert - m.lastTop),
+    `最后一条竖线 ${m.lastVert.toFixed(1)} 和最后一个上字 ${m.lastTop.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.firstHoriz - m.firstLeft),
+    `第一条横线 ${m.firstHoriz.toFixed(1)} 和第一个左字 ${m.firstLeft.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.lastHoriz - m.lastLeft),
+    `最后一条横线 ${m.lastHoriz.toFixed(1)} 和最后一个左字 ${m.lastLeft.toFixed(1)} 对不上`).toBeLessThanOrEqual(1.5);
+});
+
+test('§8 课程小节:切到全盘 —— 19 个字、19 条线,退回和棋谱详情同一个形状', async ({ page }) => {
+  await bootFigure(page, { col: 0, row: 9, size: 10 });
+  await page.getByRole('radio', { name: '全盘' }).click();
+  const m = await rulerVsLines(page);
+
+  expect(m.topN).toBe(19);
+  expect(m.leftN).toBe(19);
+  expect(m.verts).toBe(19);
+  expect(Math.abs(m.firstVert - m.firstTop)).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.lastVert - m.lastTop)).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.firstHoriz - m.firstLeft)).toBeLessThanOrEqual(1.5);
+  expect(Math.abs(m.lastHoriz - m.lastLeft)).toBeLessThanOrEqual(1.5);
+});

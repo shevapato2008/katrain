@@ -167,7 +167,7 @@ describe('屏 24 课程 · 书目与章节', () => {
     expect(within(second).getByTestId('tutorial-section-row')).toHaveTextContent('数气');
   });
 
-  it('点节:去屏 25,并把 category / chapterId / hasVideo 一起带过去', async () => {
+  it('点节:去屏 25,并把 category / 章号 / hasVideo 一起带过去', async () => {
     renderPage();
     await tocReady();
     await userEvent.click(screen.getAllByTestId('tutorial-chapter-row')[0]);
@@ -175,7 +175,7 @@ describe('屏 24 课程 · 书目与章节', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tutorial/section/711', {
       state: {
         bookId: 7, bookTitle: '围棋入门一本通', bookSlug: 'rumen',
-        chapterId: 71, chapterTitle: '棋盘与棋子', sectionTitle: '十九路',
+        chapterId: 71, chapterNumber: '第 1 章', chapterTitle: '棋盘与棋子', sectionTitle: '十九路',
         category: '入门',
         hasVideo: true,
       },

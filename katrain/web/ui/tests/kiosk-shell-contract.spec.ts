@@ -94,6 +94,9 @@ function codeOnly(src: string): string {
 // 2026-08-24(屏 24):两条一起划掉 —— `TutorialBookDetailPage.tsx` **整个文件删了**
 // (选书和目录合成了 `tutorial/:category?book=<id>` 一屏),`TutorialBooksPage.tsx` 重写时
 // 那个 `height:'50vh'` 的转圈也换成了 `.empty` 三态。
+// 2026-08-24(屏 25):`TutorialSectionPage.tsx` 也划掉 —— 它那个 `maxHeight:'60vh'` 是喂给
+// `TutorialVideoPlayer` 的;重画之后视频走 `fill` 占那块 516,那个参数不再传。
+// **课程这一族从此一条都不剩。**
 const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/__tests__/RotationWrapper.test.tsx',
   'src/kiosk/components/guards/KioskAuthGuard.tsx',
@@ -106,7 +109,6 @@ const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/components/tsumego/SuccessOverlay.tsx', // (C) 做题屏上的浮层
   'src/kiosk/pages/TsumegoCategoriesPage.tsx', // (B) 训练营分类,未排
   'src/kiosk/pages/TsumegoLevelPage.tsx',
-  'src/kiosk/pages/TutorialSectionPage.tsx', // (B) 屏 25 课程小节,未排
 ];
 
 test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
@@ -158,7 +160,9 @@ test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
 //      2026-08-24 跨平台三屏(07 / 08 / 09)一起重画,三条一起摘掉。
 //      这一轮之后名单里**再没有跨平台那一族**。
 //      2026-08-24 屏 24 重画:`TutorialBookDetailPage.tsx` 整个文件删了(它的 `ExpandMore`
-//      / `PlayCircleOutline` 随之而去)。课程这一族只剩屏 25 那一条。
+//      / `PlayCircleOutline` 随之而去)。
+//      2026-08-24 屏 25 重画:`TutorialSectionPage.tsx` 那两个 `NavigateBefore/After` 换成了
+//      共享动作区的 `caret-left/right`。**课程这一族(B)从此清空。**
 //
 //  (C) **对话框与浮层** —— 它们不在 1024×600 的版式里(盖在上面),规范 §10 管的是屏上的
 //      图标风格。**允许留着**,但重画所在的屏时顺手换掉最省事。
@@ -188,7 +192,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/pages/LivePage.tsx', // (A) 直播屏
   'src/kiosk/pages/ResearchPage.tsx', // (A) 研究屏
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
-  'src/kiosk/pages/TutorialSectionPage.tsx',
 ];
 
 test('图标不许新增手写内联路径或 MUI 图标 —— 只能从 kiosk-shell/icons/ 出', () => {

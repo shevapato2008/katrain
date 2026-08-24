@@ -290,6 +290,7 @@ const TutorialBooksPage = () => {
                               bookTitle: tree.detail.title,
                               bookSlug: tree.detail.slug,
                               chapterId: ch.id,
+                              chapterNumber: ch.chapter_number,
                               chapterTitle: ch.title,
                               sectionTitle: s.title,
                               category,

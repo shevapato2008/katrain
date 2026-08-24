@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   GO_COLS, GO_MARGIN, STARS_19, boardExtent, colsFor, coordToXY, labelFor, lineAt, rowsFor, starsFor,
+  windowViewBox, xyToCoord,
 } from './goBoard';
 
 describe('围棋坐标 —— 记法是绝对的,四棋类里只有围棋这套', () => {
@@ -72,5 +73,47 @@ describe('留白 0.5 格 —— 字心与线逐条对齐的充要条件', () => 
     const line = (wrong + 0) * 100 / extent;
     expect(line).not.toBeCloseTo(0.5 / size, 3);
     expect(GO_MARGIN).toBe(0.5);
+  });
+});
+
+/**
+ * 2026-08-24(屏 25 课程 · 小节讲解)加的两样。教程图用的是 `[col,row]` 数对,
+ * 而这块盘从第一天起收的就是 `"Q16"` —— 换算只许有这一份,
+ * 因为跳 I 和「行号 1 在最下」正是最容易各抄错一半的两条。
+ */
+describe('教程图:数对 ←→ 坐标串,以及「只看一角」的 viewBox', () => {
+  test('xyToCoord 是 coordToXY 的反函数 —— 19 路上逐点对上', () => {
+    for (let x = 0; x < 19; x += 1) {
+      for (let y = 0; y < 19; y += 1) {
+        expect(coordToXY(xyToCoord(x, y))).toEqual({ x, y });
+      }
+    }
+  });
+
+  test('9 路上也成立 —— 行号是按 size 数的,不是恒 19', () => {
+    expect(xyToCoord(0, 8, 9)).toBe('A1');
+    expect(xyToCoord(8, 0, 9)).toBe('J9');       // 跳 I:第 9 列是 J
+    expect(coordToXY('J9', 9)).toEqual({ x: 8, y: 0 });
+  });
+
+  test('全盘窗口 = boardExtent —— 窗口是它的推广,不是另一套', () => {
+    expect(windowViewBox({ col: 0, row: 0, cols: 19, rows: 19 }))
+      .toBe(`0 0 ${boardExtent(19)} ${boardExtent(19)}`);
+  });
+
+  /**
+   * 窗口两边各留半格 —— **和 `lineAt` 是同一条式子**。右下角那个 10×10 方窗:
+   * 第 9 条线在 (0.5+9)·100 = 950,窗口左边界 900 ⇒ 线离边 50 = 半格。✓
+   */
+  test('右下角 10×10 方窗:左上角落在 900,边长 1000', () => {
+    expect(windowViewBox({ col: 9, row: 9, cols: 10, rows: 10 })).toBe('900 900 1000 1000');
+    expect(lineAt(9)).toBe(950);
+    expect(lineAt(18)).toBe(1850);               // 最后一条线离右边界 1900 也是半格
+  });
+
+  /** 后端 `viewport.py` 唯一的非方形状:上下半盘 19×10、左右半盘 10×19。 */
+  test('上半盘 19×10 和右半盘 10×19', () => {
+    expect(windowViewBox({ col: 0, row: 0, cols: 19, rows: 10 })).toBe('0 0 1900 1000');
+    expect(windowViewBox({ col: 9, row: 0, cols: 10, rows: 19 })).toBe('900 0 1000 1900');
   });
 });

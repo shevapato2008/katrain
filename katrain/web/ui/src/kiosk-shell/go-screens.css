@@ -64,6 +64,27 @@
 .gob .ghost { fill: rgba(88, 181, 122, .40); stroke: rgba(88, 181, 122, .95); stroke-width: 4; stroke-dasharray: 10 8; }
 /* 打吃:被叫吃那颗子上画红方框,不换子的颜色 */
 .gob .atari { fill: none; stroke: var(--bad); stroke-width: 5; }
+/* ── 教程图那几层(屏 25)。四个既有消费者一个都不画,所以这几条只在课程屏上承重。 ──
+   颜色**不许从 galaxy 那块 `SGFBoard` 搬**:`#d32f2f` / `#1565c0` 是 Material 调色板,
+   和这套外壳的 token 不是一家。也**不许复用 `--accent`**(这块盘上它已经是「最后一手」
+   和「候选点」)或 `--bad`(已经是「叫吃」)—— 一个颜色在同一块盘上说两件事,
+   读的人分不出哪一件。空点上的字母和记号走墨色 `--gb-line`,底下垫一颗盘色圆,
+   不然 24px 的格线从字底下穿过去,7″ 屏上读不出来。 */
+.gob .pad { stroke: none; }
+.gob .num, .gob .letter {
+  font-family: var(--font-sans); font-weight: 700;
+  text-anchor: middle; dominant-baseline: central;
+}
+.gob .num { font-size: 52px; }
+.gob .letter { font-size: 56px; fill: var(--gb-line); }
+/* 子上的号取对比色 —— 黑子上写白,白子上写深。 */
+.gob .num.on-b { fill: #F3F0E7; }
+.gob .num.on-w { fill: #1A1A1E; }
+.gob .shape { fill: none; stroke: var(--gb-line); stroke-width: 5; }
+.gob .hl { fill: none; stroke-width: 5; }
+.gob .hl.on-b { stroke: #F3F0E7; }
+.gob .hl.on-w { stroke: #1A1A1E; }
+
 /* **看不到盘** ≠ 盘上没子。镜像栏还没接到识别结果时压暗,和空盘区分开;
    同步行那句「识别的盘面还没接进来」是同一件事的文字面。 */
 .gob.is-muted { opacity: .5; }   /* .32 试过,盘几乎看不见 —— 压暗是「我看不到盘」,不是「把盘藏起来」 */
@@ -897,3 +918,46 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 .secrow .kiosk-row__t b { font-size: 13px; }
 .secrow .kiosk-row__end svg { width: 14px; height: 14px; color: var(--dim); }
 .secfig { font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+
+/* ── 屏 25 课程 · 小节讲解 ──────────────────────────────────────────────────
+   左边那一格有两种内容:一张变化图(`.kiosk-board.figure-board`)或者这张图的视频。
+   视频占的就是那块 516 —— 右栏摊完之后折叠块只剩两行(~120),而 460 宽的 16:9 要 259 高,
+   塞进讲解块会把折叠块压到一行不足。 */
+.figvideo {
+  width: var(--board-size); height: var(--board-size);
+  border-radius: 8px; overflow: hidden; background: #000;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* 刻度带**按节距摆,不按等分**。共享包那条 `1fr`(本文件上面那一组)对「盘占满落子区」
+   的屏是对的;这一屏的图可以只占一角,而且后端的半盘视口是 19×10 / 10×19 —— 非方。
+   盘按 `xMidYMid meet` 居中缩放,两轴共用同一个比例 `落子区 / max(cols, rows)`,
+   于是短轴那条带只占一部分、`*-content:center` 居中,和盘留出来的白对齐。
+   方窗(绝大多数)算出来就是 `落子区 / n`,和 `1fr` 数学上完全一致 —— 那三种形状下这条不改变任何东西。
+
+   ⚠️ **别去改上面那条通用的 `1fr`**:象棋盘按 8:9 不占满落子区,改了它第一条字偏出 26px
+   (那一段注释里量过)。这一条只挂在 `.figure-board` 上,特异性 (0,3,0) 压过 (0,2,0)。
+
+   `--gb-axis` = `max(cols, rows)`,由页面按当前窗口内联写进来 —— 它随「局部 / 全盘」变,
+   不是一个可以写死在 CSS 里的常数。落子区 = 516 − 2×28,这里用 token 算,不写 460 那个字面量。 */
+.kiosk-board.figure-board .kiosk-board__ruler--top,
+.kiosk-board.figure-board .kiosk-board__ruler--bottom {
+  grid-auto-columns: calc((var(--board-size) - 2 * var(--board-ruler)) / var(--gb-axis));
+  justify-content: center;
+}
+.kiosk-board.figure-board .kiosk-board__ruler--left,
+.kiosk-board.figure-board .kiosk-board__ruler--right {
+  grid-auto-rows: calc((var(--board-size) - 2 * var(--board-ruler)) / var(--gb-axis));
+  align-content: center;
+}
+
+/* 讲解那一段。书正文可以很长(实测有 140 字的),而这一屏的高度账是死的 ——
+   让它**自己滚**,不许把下面的折叠块顶掉。max-height 是四行:13px × 1.65 × 4 + 上下 12。 */
+.figexplain { max-height: 110px; overflow-y: auto; scrollbar-width: none; flex: none; }
+.figexplain::-webkit-scrollbar { width: 0; height: 0; }
+
+/* 图列表那一行:行首那格是**等宽手数**(规范给 `.kiosk-row__lead` 的定义就是「23 手」),
+   图自己的名字 `figure_label` 归标题位 —— 一个值不摆两处。
+   当前那一行用共享的 `[data-selected]` 高亮:那说的是「你正在看这一张」,屏上为真;
+   稿子那三态(已看过 / 正在看 / 还没看)里只有中间这一个盒上问得出来。 */
+button.kiosk-row.figrow { flex: none; }

@@ -21,6 +21,8 @@ export interface SectionNavState {
    * 上一版那一屏是「每一章都摊开」的,回来时全收起等于让人重新找一遍自己在哪。
    */
   chapterId?: number;
+  /** 章号(「第 3 章」)。屏 25 的页控条标题按稿子写「第 3 章 · 第 2 节 禁入点」。 */
+  chapterNumber?: string;
   bookTitle?: string;
   bookSlug?: string;
   chapterTitle?: string;

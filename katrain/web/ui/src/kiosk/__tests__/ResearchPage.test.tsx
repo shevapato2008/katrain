@@ -134,7 +134,7 @@ describe('ResearchPage', () => {
     authState.current = { ...authState.current, token: null };
     renderPage();
     const user = userEvent.setup();
-    await user.click(screen.getByText('建议').parentElement!);
+    await user.click(screen.getByText('支招').parentElement!);
     await waitFor(() => expect(API.quickAnalyze).toHaveBeenCalledWith(expect.any(Object), undefined));
   });
 

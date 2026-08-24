@@ -225,7 +225,7 @@ export default function ResearchToolbar({
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <ToolGridButton
           icon={<TipsAndUpdatesIcon />}
-          label={t('research:suggestions', '建议')}
+          label={t('research:suggestions', '支招')}
           toggle
           active={showHints}
           onClick={onToggleHints}

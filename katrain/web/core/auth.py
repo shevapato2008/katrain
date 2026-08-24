@@ -121,6 +121,9 @@ class SQLAlchemyUserRepository(UserRepository):
         migrations.add_missing_columns(engine)
         migrations.backfill_ai_ladder_decisions(engine)
         migrations.create_missing_indexes(engine)
+        # PostgreSQL-only: the kifu list's DESC NULLS LAST ordering cannot be
+        # declared in __table_args__ without breaking SQLite. See the docstring.
+        migrations.create_kifu_album_sort_index(engine)
 
         # Schema drift guard (SQLite only): if ORM model columns STILL don't match
         # (e.g. a column type change that ADD COLUMN can't fix), drop and recreate

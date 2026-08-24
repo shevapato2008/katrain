@@ -4,6 +4,7 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict
+from sqlalchemy import func
 from sqlalchemy.orm import Session, defer
 
 from katrain.web.core.db import get_db
@@ -66,15 +67,22 @@ async def list_kifu_albums(
         return await dispatcher.kifu_list_albums(q, page, page_size)
 
     query = db.query(KifuAlbum).options(defer(KifuAlbum.sgf_content), defer(KifuAlbum.search_text))
+    count_query = db.query(func.count(KifuAlbum.id))
 
     if q:
         # search_text is stored lowercased; match with lower(q)
-        query = query.filter(KifuAlbum.search_text.contains(q.lower()))
+        needle = KifuAlbum.search_text.contains(q.lower())
+        query = query.filter(needle)
+        count_query = count_query.filter(needle)
 
     # Sort by normalized date descending (nulls last), then by id for deterministic pagination
     query = query.order_by(KifuAlbum.date_sort.desc().nulls_last(), KifuAlbum.id.desc())
 
-    total = query.count()
+    # `Query.count()` wraps the *ordered* query in a subquery, so the ORDER BY survives
+    # into a COUNT that cannot possibly need it. On the 151k-row production table that
+    # cost an external merge sort on disk: 557ms, versus 27ms for a bare COUNT
+    # (measured 2026-08-24 with EXPLAIN ANALYZE). Count from a separate unordered query.
+    total = count_query.scalar() or 0
     records = query.offset((page - 1) * page_size).limit(page_size).all()
 
     return KifuAlbumListResponse(

@@ -263,7 +263,7 @@ describe('GamePage engine mode', () => {
   });
 
   describe('星阵隧道分析 (领地/支招/变化图)', () => {
-    it('renders the three engine buttons and hides local 建议/图表/形势 + ScoreGraph in engineMode', () => {
+    it('renders the three engine buttons and hides local AI支招/图表/形势 + ScoreGraph in engineMode', () => {
       renderPage(true);
 
       expect(screen.getByText('领地')).toBeInTheDocument();
@@ -271,7 +271,15 @@ describe('GamePage engine mode', () => {
       expect(screen.getByText('变化图')).toBeInTheDocument();
 
       // No local KataGo analysis controls and no winrate chart — golaxy 人机对弈 has neither.
-      expect(screen.queryByText('建议')).not.toBeInTheDocument();
+      /* 2026-08-24 修订。原来这里断言的是 `queryByText('建议')` —— 而本页的本地
+       * 一次性提示键在更早一次改名后就叫 `AI支招`（见下一条用例），'建议' 两个字
+       * **两种模式下都不出现**，这条断言从那时起就永远为真、什么都挡不住。
+       * 这次把 galaxy/kiosk 的「建议」统一改成「支招」时撞见它。
+       * 改成断言真正该消失的那个控件：`AI支招`（engineMode 下隐藏，非 engineMode
+       * 下在场 —— 两边都被执行到，不是空断言）。
+       * 不能直接把字面量换成 '支招'：engineMode 下星阵隧道那颗键正好就叫 支招
+       * （key `Suggest`），换了这条断言会转红，而且红的理由是错的。 */
+      expect(screen.queryByText('AI支招')).not.toBeInTheDocument();
       expect(screen.queryByText('图表')).not.toBeInTheDocument();
       expect(screen.queryByText('形势')).not.toBeInTheDocument();
       expect(screen.queryByTestId('score-graph')).not.toBeInTheDocument();

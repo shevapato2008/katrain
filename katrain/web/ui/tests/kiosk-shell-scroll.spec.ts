@@ -1023,3 +1023,106 @@ test('跨平台连接:聚焦验证码那一格时,它整个在软键盘上缘之
   expect(m.inputBottom, '验证码那一格被软键盘压住了 —— 人看不见自己打的字')
     .toBeLessThanOrEqual(m.keyboardTop);
 });
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 屏 24 课程 · 书目与章节:布局 B 整栏滚,而**摊开的那几节挂在一个新的包装 div 里**
+ *
+ * 这一屏是两屏合一新造的承重链,量的是三件事:
+ *
+ *  ① **该滚的是 `.kiosk-side__scroll`,不是整页。** 整页一滚,顶栏会跟着跑出去。
+ *  ② **两种行的高是浏览器算出来的 52 / 44。** 44 是触摸靶子的下限(规范 §8),
+ *     不是随手挑的一个比 52 小的数 —— 为了多塞两行把它调下去,这一条当场红。
+ *  ③ **最后一章滚得到。** 摊开一章之后总高涨了一截,滚不到底就等于后面几章不存在。
+ *
+ * 造数据:6 章 × 6 节。稿子那一帧一节都没摊开、6 章刚好露五行半 —— 拿它量等于什么都没量。
+ *
+ * ## 变异实测(2026-08-24),含一条**被证伪的**担心
+ *
+ *  · `.secrow{height:36px}` ⇒ 红在「节行被压扁了:36/36/…」。②的红分支跑过。
+ *  · `.kiosk-side__scroll{overflow-y:visible}` ⇒ 红在「拨了十六下滚轮,一格都没动」。①跑过。
+ *  · `.secrows{position:absolute}` ⇒ 红在**前置**「没造出溢出」。那句话是准的:节那一段
+ *    脱了流,整栏就不会因它变高,几节互相压着、谁也滚不到 —— 不是断言选错了地方。
+ *  · ⚠️ **写这条闸时我担心的那个坑不成立。** 我原以为节那一段外面那个自己加的 `<div>`
+ *    没有 `flex:none`,会像 `tokens.css:939` 记的 2026-07-29 那次一样被压扁(18 行压成 33px)。
+ *    变异(给 `[data-testid="tutorial-chapter-rows"]` 加 `max-height:240px`)**照旧全绿** ——
+ *    因为 `.kiosk-row` 自己带着 `height: var(--row-h)` **和** `flex:none`,包装 div 被压
+ *    并不会传下去。理由留在这儿,免得下一个人照着一个假前提改结构。
+ * ────────────────────────────────────────────────────────────────────────── */
+const TUTORIAL_BOOKS = [
+  { id: 1, category: '入门', subcategory: '', title: '围棋入门一本通', author: null, translator: null, slug: 'rumen', chapter_count: 6 },
+];
+const TUTORIAL_BOOK_DETAIL = {
+  ...TUTORIAL_BOOKS[0],
+  chapters: Array.from({ length: 6 }, (_, i) => ({
+    id: 100 + i, book_id: 1, chapter_number: `第 ${i + 1} 章`, title: `第 ${i + 1} 章的名字`,
+    order: i, section_count: 6,
+  })),
+};
+const tutorialSections = (chapterId: number) => Array.from({ length: 6 }, (_, i) => ({
+  id: chapterId * 100 + i, chapter_id: chapterId, section_number: String(i + 1),
+  title: `第 ${i + 1} 节`, order: i, figure_count: 7, has_video: i === 0,
+}));
+
+const bootTutorialBooks = async (page: Page) => {
+  await page.route('**/api/v1/tutorials/categories/*/books', (route) => route.fulfill({ json: TUTORIAL_BOOKS }));
+  await page.route('**/api/v1/tutorials/books/1', (route) => route.fulfill({ json: TUTORIAL_BOOK_DETAIL }));
+  await page.route('**/api/v1/tutorials/chapters/*/sections', (route) => {
+    const id = Number(/chapters\/(\d+)\/sections/.exec(route.request().url())?.[1] ?? 100);
+    route.fulfill({ json: tutorialSections(id) });
+  });
+  await boot(page, '/kiosk/tutorial/%E5%85%A5%E9%97%A8');
+  await page.waitForSelector('[data-testid="tutorial-chapter-row"]');
+};
+
+test('课程书目:摊开一章之后整栏自己滚,行不许被压扁,最后一章滚得到', async ({ page }) => {
+  await bootTutorialBooks(page);
+
+  const zoneW = await page.evaluate(() =>
+    Math.round(document.querySelector('.kiosk-side__scroll')!.getBoundingClientRect().width));
+  expect(zoneW, '布局 B 的滚动区不是通栏 992').toBe(992);
+
+  // 摊开第一章 —— 这一下才是这条闸要量的那个结构。
+  await page.locator('[data-testid="tutorial-chapter-row"]').first().click();
+  await page.waitForSelector('[data-testid="tutorial-section-row"]');
+  expect(await page.locator('[data-testid="tutorial-section-row"]').count(), '六节没渲出来').toBe(6);
+
+  const overflow = await overflowOf(page);
+  expect(overflow, '没造出溢出 —— 下面的断言都是空的').toBeGreaterThan(100);
+
+  // ② 行高:章 52 / 节 44。**先写死关系式再读数**,具体像素只作记录。
+  const heights = await page.evaluate(() => {
+    const h = (sel: string) => [...document.querySelectorAll(sel)]
+      .map((el) => Math.round(el.getBoundingClientRect().height));
+    return { chapters: h('[data-testid="tutorial-chapter-row"]'), sections: h('[data-testid="tutorial-section-row"]') };
+  });
+  expect(new Set(heights.chapters), `章行被压扁了:${heights.chapters.join('/')}`).toEqual(new Set([52]));
+  expect(new Set(heights.sections), `节行被压扁了:${heights.sections.join('/')}`).toEqual(new Set([44]));
+
+  // ③ 滚到底,最后一章进得了视野。
+  const zb = (await page.locator('.kiosk-side__scroll').boundingBox())!;
+  await page.mouse.move(zb.x + zb.width / 2, zb.y + zb.height / 2);
+  for (let i = 0; i < 16; i += 1) await page.mouse.wheel(0, 400);
+
+  const m = await page.evaluate(() => {
+    const el = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+    const rows = document.querySelectorAll('[data-testid="tutorial-chapter-row"]');
+    const last = rows[rows.length - 1] as HTMLElement;
+    return {
+      scrollTop: Math.round(el.scrollTop),
+      atEnd: el.scrollHeight - el.clientHeight - el.scrollTop,
+      lastBottom: Math.round(last.getBoundingClientRect().bottom),
+      lastTop: Math.round(last.getBoundingClientRect().top),
+      zoneBottom: Math.round(el.getBoundingClientRect().bottom),
+      zoneTop: Math.round(el.getBoundingClientRect().top),
+      pageScroll: Math.round(document.documentElement.scrollTop),
+      horizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    };
+  });
+
+  expect(m.scrollTop, '拨了十六下滚轮,一格都没动').toBeGreaterThan(0);
+  expect(m.atEnd, '滚不到底').toBeLessThanOrEqual(1);
+  expect(m.lastBottom, '滚到底了,最后一章还在视野外').toBeLessThanOrEqual(m.zoneBottom);
+  expect(m.lastTop - m.zoneTop, '最后一章被卷出了视野顶部').toBeGreaterThanOrEqual(0);
+  expect(m.pageScroll, '滚的是整个页面,不是那一栏').toBe(0);
+  expect(m.horizontal, '页面横向溢出了').toBe(0);
+});

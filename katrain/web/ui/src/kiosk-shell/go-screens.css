@@ -875,3 +875,25 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
    而「登录」这个动作稿子那一帧也没画(它把提交寄托在行尾那颗药丸上)。 */
 .loginerr { margin: 8px 2px 0; font-size: 11.5px; line-height: 1.5; color: var(--bad); }
 .loginsubmit { width: 100%; margin-top: 10px; justify-content: center; }
+
+/* ── 屏 24 课程 · 书目与章节 ────────────────────────────────────────────────
+   章行本身就是展开控件(稿子那三个行尾键「已看完 / 接着看 / 开始」不做 —— 盒上没有可信的
+   「谁看过什么」)。行尾那颗 caret 说的是**这一行现在是开是合**,展开时转 180°。
+   不用 `KioskFold`:它的 `__head` 是 30 高 11px 字,那是面板标题不是列表行 ——
+   拿它当章行既破 44 的靶子,又把章名压成 11px。 */
+.chrow .chcaret { display: grid; place-items: center; color: var(--dim);
+  transition: transform .15s ease; }
+.chrow[aria-expanded="true"] { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.chrow[aria-expanded="true"] .chcaret { transform: rotate(180deg); color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .chrow .chcaret { transition: none; } }
+
+/* 摊开的那几节。左边那条竖线是**层级**不是装饰:节缩进 20 之后,若不画线,
+   一列 52 高的章行里夹着一列 44 高的节行,读起来像两种行随机混排。 */
+.secrows { display: flex; flex-direction: column; gap: var(--row-gap);
+  margin: var(--row-gap) 0 0 20px; padding-left: 12px;
+  border-left: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+/* 44 是**触摸靶子的下限**(规范 §8),不是随手挑的一个比 52 小的数。 */
+.secrow { height: 44px; }
+.secrow .kiosk-row__t b { font-size: 13px; }
+.secrow .kiosk-row__end svg { width: 14px; height: 14px; color: var(--dim); }
+.secfig { font-family: var(--font-mono); font-size: 11px; color: var(--dim); }

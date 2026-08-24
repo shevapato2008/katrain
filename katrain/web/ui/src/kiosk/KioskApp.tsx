@@ -67,7 +67,6 @@ import PlatformLobbyPage from './pages/PlatformLobbyPage';
 import PlatformEngineSetupPage from './pages/PlatformEngineSetupPage';
 import TutorialCategoriesPage from './pages/TutorialCategoriesPage';
 import TutorialBooksPage from './pages/TutorialBooksPage';
-import TutorialBookDetailPage from './pages/TutorialBookDetailPage';
 import TutorialSectionPage from './pages/TutorialSectionPage';
 
 const KioskRoutes = () => {
@@ -128,10 +127,11 @@ const KioskRoutes = () => {
           <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="report" element={<ReportsPage />} />
           <Route path="report/:taskId" element={<ReportDetailPage />} />
-          {/* Tutorial (read-only mirror) — static `book`/`section` win over dynamic `:category` in v6 best-match */}
+          {/* 课程(只读镜像)。`tutorial/book/:bookId` 2026-08-24 连同 `TutorialBookDetailPage`
+              一起删了 —— 选书和目录合成了 `tutorial/:category?book=<id>` 一屏。
+              没留重定向:kiosk 是全屏 chromium,没有地址栏也没有书签。 */}
           <Route path="tutorial" element={<TutorialCategoriesPage />} />
           <Route path="tutorial/:category" element={<TutorialBooksPage />} />
-          <Route path="tutorial/book/:bookId" element={<TutorialBookDetailPage />} />
           <Route path="tutorial/section/:sectionId" element={<TutorialSectionPage />} />
           <Route path="vision/setup" element={<VisionSetupPage />} />
           <Route path="settings" element={<SettingsPage />} />

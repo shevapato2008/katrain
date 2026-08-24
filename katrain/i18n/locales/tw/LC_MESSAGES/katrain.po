@@ -1415,7 +1415,7 @@ msgid "rated_mode_active"
 msgstr "升降級模式：進行中"
 
 msgid "Advice"
-msgstr "建議"
+msgstr "支招"
 
 msgid "PASS"
 msgstr "停一手"
@@ -1857,10 +1857,10 @@ msgid "continue_game"
 msgstr "繼續對局"
 
 msgid "live:show_advice"
-msgstr "顯示建議"
+msgstr "顯示支招"
 
 msgid "live:hide_advice"
-msgstr "隱藏建議"
+msgstr "隱藏支招"
 
 msgid "No Rank"
 msgstr "無級別"
@@ -2229,7 +2229,7 @@ msgid "tsumego:midgame"
 msgstr "中盤"
 
 msgid "research:suggestions"
-msgstr "建議"
+msgstr "支招"
 
 msgid "result:black_win"
 msgstr "黑勝"
@@ -2349,13 +2349,13 @@ msgid "report:move_numbers"
 msgstr "手數"
 
 msgid "report:suggestions"
-msgstr "建議"
+msgstr "支招"
 
 msgid "report:hide_suggestions"
-msgstr "隱藏建議"
+msgstr "隱藏支招"
 
 msgid "report:show_suggestions"
-msgstr "顯示建議"
+msgstr "顯示支招"
 
 msgid "report:clear"
 msgstr "清空"

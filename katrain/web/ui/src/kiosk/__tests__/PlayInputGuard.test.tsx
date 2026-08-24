@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
@@ -30,11 +31,14 @@ const NOT_CALIBRATED = {
   capabilities: { camera_ready: true, led_ready: true, geometry_ready: false },
 };
 
+// `MemoryRouter`:挡人时渲染的标定台带返回键(`useNavigate`)—— 见 `PhysicalBoardGuard`。
 const renderGuard = () => render(
   <ThemeProvider theme={kioskTheme}>
-    <GeometryProvider>
-      <PlayInputGuard><div>对局内容</div></PlayInputGuard>
-    </GeometryProvider>
+    <MemoryRouter>
+      <GeometryProvider>
+        <PlayInputGuard><div>对局内容</div></PlayInputGuard>
+      </GeometryProvider>
+    </MemoryRouter>
   </ThemeProvider>,
 );
 
@@ -48,7 +52,7 @@ describe('PlayInputGuard', () => {
   it('默认仍然挡:没标定过的盒子进不了对局,先去标定', async () => {
     expect(readPlayOnBoard()).toBe(true);
     renderGuard();
-    expect(await screen.findByText('请清空棋盘')).toBeInTheDocument();
+    expect(await screen.findByTestId('calib-screen')).toBeInTheDocument();
     expect(screen.queryByText('对局内容')).not.toBeInTheDocument();
   });
 
@@ -57,6 +61,6 @@ describe('PlayInputGuard', () => {
     writePlayOnBoard(false);
     renderGuard();
     expect(await screen.findByText('对局内容')).toBeInTheDocument();
-    expect(screen.queryByText('请清空棋盘')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('calib-screen')).not.toBeInTheDocument();
   });
 });

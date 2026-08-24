@@ -1560,3 +1560,110 @@ test('§11 研究屏:AI 推荐表装不下时,滚的是表自己,动作区照旧
   expect(barTop, '滚了之后拇指没往下走 —— 一条不动的位置指示是在说假话')
     .toBeGreaterThan(m.bar!.top);
 });
+
+/* ══ 屏 26 标定 —— 头尾钉死,失败时中段自己滚 ═════════════════════════════════
+ * 稿子那五块按共享 token 算是 **462 / 460** —— 差 2px 就装不下,而且那本账**只在它画的
+ * 那一个状态下**勉强平:失败时要多一张诊断卡,当场顶破。
+ *
+ * ⇒ 结构改成头(三格 56)尾(按钮 44)固定、中间那块滚。这样账本只依赖四个共享 token
+ * (56 / 44 / 两个 8),中段是多少都顶不破。删掉稿子那个不存在的第 2 步又还回 60。
+ *
+ * 这一关量三件事,**第三件是这里唯一分得出真假的那件**:
+ *  ① 五段加起来正好 460(关系式,不是硬编码);
+ *  ② 四行步骤各 52 —— `.kiosk-row` 的 `flex:none` 在一个**会滚的**容器里必须还在。
+ *     那条注释警告过:不写死的话 flex 会先把行压扁再滚(2026-07-29 量到 18 行被压成 33)。
+ *     而这四行现在**真的**住在会滚的容器里,正是它描述的场景。
+ *  ③ **失败态**下中段真的滚得动,而按钮**没有被顶出右栏**。
+ *
+ * 变异实测(2026-08-24)两发,**两条预测都被推翻了**,而且推翻的方式各自都有教训:
+ *
+ * ① 去掉 `.calib-body` 的 `flex:1`。我预测两条测试全红。
+ *    **实际只红了上面那条(常态)** —— 下面那条(失败态)照旧全绿,量出来 rail 仍是 460。
+ *    原因:这一格没有 `flex:1` 时按**内容**定高,而失败态的内容(多一张 117 高的诊断卡)
+ *    正好把它撑回 460 上下;常态内容少,当场塌下去。
+ *    ⇒ **内容多的那个状态把这个缺陷盖住了。** 平时说「造到会溢出才算数」,这里是反过来的
+ *    同一件事:**塌陷类的缺陷要在内容最少的状态下量**,内容一多它自己就撑住了。
+ *    所以这两条测试**不是一条的两个例子**,常态那条是唯一逮得住塌陷的。
+ *
+ * ② 去掉 `.calib-rail .setnote{margin-bottom:0}`。我预测常态那条会差 8 变红。
+ *    **实际两条全绿。** 原因:`.setnote` 住在**会滚的那个容器里**,那 8px 只是让滚动内容
+ *    高 8,不进外层那本账。屏 18 上它是承重的,因为那儿 `.setnote` 是 flex 栏的**直接子节点**。
+ *    ⇒ **同一条规则在两种结构里不是同一件事**;从屏 18 转过来的是结论,不是判据。
+ *    那行 CSS 留着(省掉 8px 没必要的滚动内容),但**它不承重**,注释已照实改写。
+ */
+const CALIB_ANCHORS = [[0, 0], [0, 18], [18, 18], [18, 0], [3, 3], [3, 9]].map(([row, col], i) => ({
+  row, col, x: 120 + col * 17, y: 110 + row * 15 + i, color: 'green',
+}));
+
+const bootCalib = async (page: Page, over: Record<string, unknown>) => {
+  await page.route('**/api/v1/geometry/layout', (route) => route.fulfill({ status: 409, json: {} }));
+  // ⚠️ **顺序是承重的**:`boot()` 自己也注册 `**/api/v1/geometry/status`(钉成
+  // 「这台盒子没有摄像头」),而 Playwright 的路由是**后注册的先匹配**。
+  // 先注册这条就会被 boot 那条盖掉 ⇒ 拿到 `disabled`、整屏换成一句「没配摄像头」、
+  // 一行步骤都没有。必须 boot 之后再注册,然后重新加载。
+  await boot(page, '/kiosk/vision/setup');
+  await page.route('**/api/v1/geometry/status', (route) => route.fulfill({
+    json: {
+      phase: 'required', session_calibrated: false, last_valid: false, error: null,
+      detected_anchors: CALIB_ANCHORS,
+      capabilities: { camera_ready: true, led_ready: true, geometry_ready: false, recognition_ready: false },
+      ...over,
+    },
+  }));
+  await page.reload();
+  await page.waitForSelector('[data-testid="calib-step"]');
+};
+
+const calibBoxes = (page: Page) => page.evaluate(() => {
+  const q = (s: string) => document.querySelector(s) as HTMLElement;
+  const r = (s: string) => { const e = q(s); const b = e.getBoundingClientRect();
+    return { top: Math.round(b.top), bottom: Math.round(b.bottom), h: Math.round(b.height) }; };
+  const scroll = q('.calib-scroll .kiosk-side__scroll');
+  return {
+    rail: r('.calib-rail'), status: r('.kiosk-status'), zone: r('.calib-scroll'), acts: r('.calib-acts'),
+    body: r('.calib-body'), cam: r('.camview'),
+    rows: Array.from(document.querySelectorAll('[data-testid="calib-step"]'))
+      .map((e) => Math.round(e.getBoundingClientRect().height)),
+    overflow: scroll.scrollHeight - scroll.clientHeight,
+  };
+});
+
+test('§11 标定屏:头尾钉死、四行不被压扁,右栏总高正好 460', async ({ page }) => {
+  await bootCalib(page, {});
+  const m = await calibBoxes(page);
+
+  // ── 关系式:五段拼满,一个像素不多不少 ──
+  expect(m.rail.h, '右栏不是 460 —— 布局 B 内容区 516 减去页控条 44 和那 12 的间隙').toBe(460);
+  expect(m.body.h, '左右两格不等高').toBe(m.rail.h);
+  expect(m.cam.h, '摄像头画面没有跟右栏一样高').toBe(m.rail.h);
+  expect(m.status.bottom + 8, '三格与中段之间不是 8').toBe(m.zone.top);
+  expect(m.zone.bottom + 8, '中段与按钮行之间不是 8').toBe(m.acts.top);
+  expect(m.acts.bottom, '按钮行没贴右栏底 —— 它是固定尾,不靠 margin-top:auto').toBe(m.rail.bottom);
+  expect(m.status.h + m.zone.h + m.acts.h + 16, '五段加起来 ≠ 右栏高度').toBe(m.rail.h);
+
+  // ── 四行不许被压扁 ──
+  expect(m.rows, '步骤行被压扁了 —— `.kiosk-row` 的 flex:none 掉了').toEqual([52, 52, 52, 52]);
+  // 常态装得下 ⇒ **不许**有 data-at(挂一条永远亮着的渐隐等于谎报下面还有东西)
+  expect(m.overflow, '常态就溢出了 —— 那本账已经不对了').toBeLessThanOrEqual(0);
+});
+
+test('§11 标定屏:失败时多一张诊断卡,中段自己滚,按钮一颗都不许被顶出去', async ({ page }) => {
+  // 造到会溢出:失败态比常态多一整张诊断卡。**装得下的状态下量出来的数不作数。**
+  await bootCalib(page, { phase: 'failed', error: 'anchor_not_found:3,15', last_valid: true });
+  await page.waitForSelector('[data-testid="geometry-diagnostic-card"]');
+  const m = await calibBoxes(page);
+
+  expect(m.rail.h, '右栏高度被诊断卡顶变了').toBe(460);
+  expect(m.acts.bottom, '按钮被顶出右栏了 —— 键还在 DOM 里,但手指够不到').toBe(m.rail.bottom);
+  expect(m.rows, '失败态下步骤行被压扁了').toEqual([52, 52, 52, 52]);
+  expect(m.overflow, '诊断卡没把中段撑到溢出 —— 下面那条滚动断言是空的').toBeGreaterThan(0);
+
+  // 唯一分得出「有没有出路」的那一条:**真滚轮**。合成事件 Chromium 不认,
+  // 而 `scrollTop = n` 只证明这个属性可写。
+  const zone = page.locator('.calib-scroll .kiosk-side__scroll');
+  const bb = (await zone.boundingBox())!;
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  await page.mouse.wheel(0, 200);
+  await expect.poll(() => zone.evaluate((el) => el.scrollTop),
+    { message: '中段自己滚不动 —— 诊断卡下面那几步就看不到了' }).toBeGreaterThan(0);
+});

@@ -1,25 +1,24 @@
-import { Box } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
-import { KioskPagebar } from '../shell/KioskPagebar';
-import GeometryCalibrationWorkspace from '../components/vision/GeometryCalibrationWorkspace';
+import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationScreen';
 
+/**
+ * 屏 26 棋盘标定 `/kiosk/vision/setup`。入口是设置屏那颗「重新标定棋盘」。
+ *
+ * 这一层现在只剩四个字面量 —— 页控条、摄像头画面、四步、按钮全部住在
+ * `GeometryCalibrationScreen` 里,和 `PhysicalBoardGuard` 那一路**共用同一段代码**。
+ * 两条路唯一的差别就是这四个字:guard 是从做题/摆谱里被拦下的,写「← 设置」是对来路撒谎。
+ */
 const VisionSetupPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   return (
-    <Box sx={{ width: '100%', height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 1.5, bgcolor: 'background.default' }}>
-      {/* 原来这一屏**连标题都没有**,只有一个裸「返回」。标题不是新文案:
-          它就是设置页里通到这儿的那个按钮自己的名字。 */}
-      <KioskPagebar
-        title={t('Recalibrate board', '重新标定棋盘')}
-        backLabel={t('Back', '返回')}
-        onBack={() => navigate(-1)}
-      />
-      <Box sx={{ flex: 1, minHeight: 0 }}>
-        <GeometryCalibrationWorkspace mode="settings" />
-      </Box>
-    </Box>
+    <GeometryCalibrationScreen
+      backLabel={t('vision:back_settings', '设置')}
+      onBack={() => navigate(-1)}
+      title={t('vision:calibrate_title', '棋盘标定')}
+      sub={t('vision:calibrate_sub', '先把棋盘清空 · 四角 + 九星共 13 个定位点')}
+    />
   );
 };
 

@@ -20,7 +20,7 @@ import { readPlayOnBoard } from '../../utils/playInput';
  */
 const PlayInputGuard = ({ children }: { children: ReactNode }) => (
   readPlayOnBoard()
-    ? <PhysicalBoardGuard requireRecognition>{children}</PhysicalBoardGuard>
+    ? <PhysicalBoardGuard requireRecognition sub="在实体盘上对弈，要先让摄像头看清盘面">{children}</PhysicalBoardGuard>
     : <>{children}</>
 );
 

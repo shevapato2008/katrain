@@ -1063,3 +1063,98 @@ button.kiosk-row.figrow { flex: none; }
 .aiscan__stats dt { font-size: 11px; color: var(--dim); letter-spacing: .06em; }
 .aiscan__stats dd { margin: 2px 0 0; font-family: var(--font-mono); font-size: 15px;
   font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* ── 屏 26 棋盘标定 ────────────────────────────────────────────────────────
+   **布局 B**(无棋盘 ⇒ 页控条通栏 x16–1008),内容区 992×460 内部再切 516 | 16 | 460。
+
+   **不复用 `.kiosk-layout-a`**,两笔账:① 那个类的语义捆着「有棋盘 ⇒ 页控条在右栏顶部」,
+   复用会让「这屏是 A 还是 B」在闸和读码的人眼里说不清;② 它的 `height:100%` 在别处落在
+   **516** 的容器里,这里落在 **460** 的容器里 —— 同一个类量出两个高度,哪天有人拿它断言
+   516 就会误伤这屏。四行 CSS 比这两笔账便宜。 */
+.calib-screen { display: flex; flex-direction: column; gap: var(--rail-gap); height: 100%; min-height: 0; }
+.calib-body {
+  /* `flex:1` 不是可省的:少了它这一格按**内容**定高 —— 实测塌成 392(右栏那五块的高度),
+     摄像头画面跟着矮 68,而右栏中段永远不会溢出、那条滚动逻辑一辈子不响。 */
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: var(--board-size) 1fr;
+  grid-template-rows: minmax(0, 1fr); gap: 16px;
+}
+
+/* 摄像头画面。**故意不叫 `.kiosk-board`**,两条理由:
+   ① 稿子说的 —— 闸的真像素抽查按木色(平均亮度 120–185)去量 `.kiosk-board`,
+      而这儿画的是摄像头看到的东西,量它等于拿木盘的尺子量摄像头;
+   ② `.kiosk-board` 本身是 3×3 栅格 + 四条 28px 刻度带,把视频塞进去等于四边各内缩 28,
+      去给「没有东西可标」的刻度让位。
+   宽度**不再写第二个 516** —— 由上面那个栅格列给(量出来一样)。 */
+.camview {
+  position: relative; overflow: hidden; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column;
+  border-radius: 8px; border: 1px solid var(--hair);
+  background: radial-gradient(120% 100% at 50% 0%, #16211E, #0B1211 72%);
+
+  /* 叠加层是 `<canvas>` 不是 SVG,稿子的 `.camview .quad/.g/.cor/.star` 落不到它身上。
+     ⇒ **调色板仍然留在 CSS**(稿子把它放的地方),用这四个自定义属性传进去,
+     `CameraGeometryOverlay` 画的时候 `getComputedStyle` 读回。 */
+  --cam-line: var(--accent);
+  --cam-corner: var(--accent);
+  --cam-star: var(--warn);
+  --cam-stale: var(--bad);
+}
+/* `.cap` 的定位原点是 `.camview` 的 `position:relative` —— 屏 06/08/17 都为同一个坑栽过一次。 */
+.camview .cap {
+  position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 2;
+  display: flex; align-items: center; gap: 9px;
+  height: 34px; padding: 0 11px; border-radius: 9px;
+  background: rgba(11, 18, 17, .88); border: 1px solid var(--hair);
+  font-size: 11.5px; color: var(--dim);
+}
+.camview .cap b { color: var(--text); font-weight: 600; }
+.camview .cap i {
+  font-style: normal; margin-left: auto;
+  font-family: var(--font-mono); font-size: 11px; color: var(--accent);
+}
+
+/* 右栏:头(状态格)尾(按钮行)固定,中间那块滚。
+   **不叫 `.kiosk-rail`** —— 那个类的 gap 是 12,而稿子这一屏写的是 8;而且它第一个间隙的
+   语义是「页控条 → 状态区」,这屏的页控条通栏、根本不在栏里。让一个类同时表示两种几何,
+   和复用 `.kiosk-layout-a` 是同一笔账。 */
+.calib-rail { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+/* `.kiosk-rail > .setnote{margin-bottom:0}` 按选择器落不到这屏(这栏不叫 `.kiosk-rail`)。
+   ⚠️ **但这一条在这儿并不承重** —— 2026-08-24 变异实测:去掉它两条几何闸**全绿**。
+   屏 18 上它是承重的,因为那儿 `.setnote` 是 flex 栏的**直接子节点**、那 8px 直接进外层的账;
+   这屏它住在**会滚的容器里**,多出的 8 只是让滚动内容高 8。
+   留着只为省掉那 8px 没必要的滚动内容,**不要**把它当成高度账的一环。 */
+.calib-rail .setnote { margin-bottom: 0; }
+/* 形态 2 的顶部渐隐默认按「头是一条组标题」偏移(`tokens.css:555`),这屏没有组标题 ⇒ 归零。 */
+.calib-scroll.kiosk-section--grow::before { top: 0; }
+.calib-scroll .kiosk-side__scroll { display: flex; flex-direction: column; gap: 8px; }
+.calib-acts {
+  flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px;
+}
+/* 两颗键**等高** —— `--btn-secondary-h` 是 38 而主行动是 44,稿子画的是等高两列。 */
+.calib-acts .kiosk-btn { height: var(--btn-primary-h); justify-content: center; }
+/* 不可撤销 / 会毁掉一次运行的那一颗(取消标定):描边 + 字色走 `--bad`,**不用实心红** ——
+   和 `.kiosk-actions` 里 `danger` 同一条口径。 */
+.calib-acts .kiosk-btn.is-danger { border-color: var(--bad); color: var(--bad); background: none; }
+.calib-acts .kiosk-btn:disabled { opacity: .45; cursor: default; }
+.calib-diag__raw { font-family: var(--font-mono); font-size: 10.5px; color: var(--dim); opacity: .7; }
+
+/* 标定五步 → **四步**(见 `GeometryCalibrationScreen.tsx` 页头注)。
+   用共享 `.kiosk-row` 的骨架,只换序号那一格:稿子要圆的 26×26,不是等宽数字。
+   ⚠️ **绝不覆盖 `.kiosk-row` 的 `flex` 和 `height`** —— 那条 `flex:none` 的注释写着
+   「不写死的话 flex 会先把它们压扁再滚(2026-07-29 真浏览器量出来 18 行被压成 33px)」,
+   而这四行现在**真的住在一个会滚的容器里**,正是那条注释描述的场景。 */
+.kiosk-row--step > .kiosk-row__lead {
+  width: 26px; height: 26px; flex: none; display: grid; place-items: center;
+  border-radius: 50%; border: 1px solid var(--hair); background: var(--panel);
+  font-family: var(--font-mono); font-size: 11px; color: var(--dim);
+}
+.kiosk-row--step.is-done > .kiosk-row__lead,
+.kiosk-row--step.is-plain > .kiosk-row__lead {
+  border-color: color-mix(in srgb, var(--good) 45%, transparent); color: var(--good);
+}
+.kiosk-row--step.is-now { border-color: var(--accent); }
+.kiosk-row--step.is-now > .kiosk-row__lead { border-color: var(--accent); background: var(--accent); color: var(--ink); }
+.kiosk-row--step.is-bad { border-color: color-mix(in srgb, var(--bad) 55%, transparent); }
+.kiosk-row--step.is-bad > .kiosk-row__lead { border-color: var(--bad); color: var(--bad); }
+.kiosk-row--step.is-warn > .kiosk-row__lead { border-color: var(--warn); color: var(--warn); }

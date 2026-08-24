@@ -188,7 +188,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/components/tsumego/PhysicalStatePanel.tsx', // (C) 做题屏上的浮层
   'src/kiosk/components/tsumego/SuccessOverlay.tsx',
   'src/kiosk/components/vision/AmbiguousStoneAlert.tsx', // (A) 标定/识别
-  'src/kiosk/components/vision/GeometryCalibrationWorkspace.tsx', // (A) 标定屏
   'src/kiosk/components/vision/GeometryVideoPanel.tsx', // (A) 标定屏
   'src/kiosk/components/vision/VisionSyncOverlay.tsx', // (A) 标定/识别
   'src/kiosk/pages/BaipuListPage.tsx', // (A) 摆谱屏

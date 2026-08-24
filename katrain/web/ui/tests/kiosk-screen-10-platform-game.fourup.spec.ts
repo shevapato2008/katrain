@@ -46,6 +46,22 @@ const OUT = resolve(process.cwd(),
  *    ⇒ 等后端补一条着法序列。`.mvrows` 的 CSS 一直留着(屏 16/18 有真消费者),接口一到就能接。
  *    **这也是为什么 engineMode 下右栏中段空着约 148px**(实测:六块 308 + 5×12 = 368 / 516,
  *    `grows: 0`,动作区靠 `margin-top:auto` 贴底)。
+ *  · 🔴 **动作区:稿子把「悔棋」画成 `<button disabled>`(在、但灰),实现是把它整颗撤掉。**
+ *    稿子注释里写得很明确:「那一手最长要等 ~180 秒,后端本来就 409,**灰在这儿比点了被拒好**」。
+ *    而 `GameControlPanel.tsx:177` 是 `...(disableUndo ? [] : [{…}])` —— **整项不渲染**。
+ *    后果不是少一颗键:动作区是 `grid-auto-columns: 1fr`,**四颗变三颗时剩下三颗会重排** ——
+ *    星阵一开始算,「认输」就往左挪一格。而这套外壳自己反复写着「位置恒定是肌肉记忆」。
+ *    **已登记,本轮不改** —— `playActions` 那一支(非 engineMode)也这么写,动它会同时改到
+ *    屏 05 和升降级屏,得三屏一起重量重取。判据也一并登记:
+ *    **永久不可用 → 撤掉;暂时不可用 → 灰着**(升降级局里悔棋是永远没有,那儿撤掉是对的;
+ *    星阵算招是**过一会儿就回来**的状态,撤掉就等于让键在用户手指底下移动)。
+ *  · **数子:稿子画成可按,实现是灰的 —— 这次是稿子错。** `canCount = !isGameOver && moves >= countMin`,
+ *    这一帧第 18 手而 `count_min_moves` 是 100 ⇒ 灰,且开关排右端已经写出「数子要下满 100 手」。
+ *    稿子在第 18 手把数子画成能按,和它自己写的中国规则局对不上。归「稿子画错」那一类。
+ *  · **两张玩家卡:稿子那一帧自相矛盾。** `.turn`(青玉描边)给了写着「已落子」的访客卡,
+ *    而正在算的是星皮猴 —— `go-screens.css` 那行注释白纸黑字「`.turn` 是**轮到谁**」。
+ *    实现把手数计只挂在轮到的那张卡上也是对的:kiosk 不计时、`main_time_used` 不累加,
+ *    唯一为真的量「第几手」是**局面的**量不是某一方的量。「最长 180s」是隧道超时不是时限,**不上屏**。
  *  · 取图机器上**实体识别关着** ⇒ 页控条右端那个「重置识别」页级图标键不出现。
  *    **它在真盒子上是有的。**
  */
@@ -110,9 +126,38 @@ test('四图:星阵围棋 · 对局中 ←→ sample-go/shots/10-platform-game.p
     return route.fulfill({ json: {} });
   });
 
+  /**
+   * 🔴 **必须把 WS 接管掉,否则这张图会自相矛盾。**
+   *
+   * `disableUndo={isRanked || !!platformPendingMove}`,而 `platformPendingMove` 只来自 WS 的
+   * `platform_move_pending`。纯 route stub 没有 WS ⇒ pending 恒为 null ⇒ **悔棋一直可按**。
+   * 可这一帧 `player_to_move === platform_engine_color === 'W'` ⇒ `showThinking` 为真、
+   * 「AI 思考中…」那颗药丸正显示着。于是同一张图会同时说「AI 在算」和「悔棋可以按」——
+   * 真盒子上不是这样(`gateway.py` 在下隧道调用**之前**就 `_broadcast_pending`)。
+   *
+   * 而且不接管的话,**稿子那四处差别里的第③条(悔棋在算招期间禁用)这份四图根本没证到** ——
+   * 说明里却写着它。**证据说错话比缺一条说明贵。**
+   * ⇒ 造到那个状态:接管 WS,先喂一份 state,再喂 `platform_move_pending`。
+   */
+  await page.routeWebSocket('**/ws/fourup-10', (ws) => {
+    ws.onMessage(() => {});   // 客户端发什么都不理,这一帧不需要往返
+    ws.send(JSON.stringify({ type: 'state', state: STATE }));
+    // ⚠️ `usePlatformEvents` 的 listener 是 **effect 里挂的**:连上那一瞬发过去会被静默丢掉
+    //(实测过 —— 立刻发,悔棋一直是亮的,看起来像「这条没生效」)。
+    setTimeout(() => ws.send(JSON.stringify({ type: 'platform_move_pending', col: 12, row: 2 })), 700);
+  });
+
   await page.goto('/kiosk/play/cross-platform/engine/game/fourup-10');
   // 等的是**三颗道具键真的画出来了** —— 它们是这一屏区别于屏 05 的那一块。
   await page.waitForSelector('.items button:nth-child(3)');
+  /**
+   * 等**动作区从四颗变三颗** —— 那才是第③条差别被拍进图里的证据。
+   *
+   * ⚠️ 第一版我等的是 `button:disabled`,**那是量错了对象**:数子本来就是灰的
+   *(第 18 手 < `count_min_moves` 100),所以那个选择器立刻命中、测试通过而**什么都没证明**。
+   */
+  await page.waitForFunction(() =>
+    document.querySelectorAll('[data-testid="game-actions"] button').length === 3);
   await page.waitForLoadState('networkidle');
 
   const r = await captureFourUp({
@@ -136,6 +181,13 @@ test('四图:星阵围棋 · 对局中 ←→ sample-go/shots/10-platform-game.p
       + '**棋谱折叠块不画**:history 只有 node_id/score/winrate 没坐标，stones 有 moveNumber 但'
       + '**不含被提掉的子**，拼出来的棋谱会缺手 ⇒ 等后端补着法序列。'
       + '这也是右栏中段空着约 148px 的原因(实测 308+60=368/516，grows:0) · '
+      + '**悔棋:稿子画成「在、但灰」，实现是整颗撤掉**——稿子注释原话「灰在这儿比点了被拒好」，'
+      + '而 GameControlPanel.tsx:177 是 `disableUndo ? [] : […]`。后果是动作区四颗变三颗会**重排**，'
+      + '星阵一开始算「认输」就往左挪一格，与这套外壳反复写的「位置恒定是肌肉记忆」相抵。'
+      + '**已登记本轮不改**(同一写法也在非 engineMode 那一支，动它要连屏 05/升降级三屏一起重量重取)；'
+      + '判据:**永久不可用→撤掉，暂时不可用→灰着** · '
+      + '**数子稿子画错**:第 18 手 < count_min_moves 100 ⇒ 该灰，右端也已写出原因 · '
+      + '**两张玩家卡稿子自相矛盾**:.turn 给了写着「已落子」的访客卡而正在算的是星皮猴 · '
       + '实体识别关着 ⇒ 页控条右端那个「重置识别」键不出现，**它在真盒子上是有的**',
   });
   console.log(`[fourup 10-platform-game] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);

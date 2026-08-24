@@ -1024,7 +1024,7 @@ katrain/web/ui/src/
 │   └── PlatformLobbyPage.tsx      # Per-platform lobby
 ├── components/
 │   ├── PlatformTimer.tsx           # Clock display (byo-yomi, fischer, canadian)
-│   ├── PlatformBadge.tsx           # Platform indicator
+│   ├── PlatformBadge.tsx           # Platform indicator —— **2026-08-24 已删**(围棋 27 屏 track 屏 10 登记):零消费者，三个 prop(platform/connected/latency)在盒内都喂不了；要做请按 kiosk 类写法(.plat)重写，别找这个文件
 │   ├── OpponentMoveIndicator.tsx   # Move highlight overlay + audio cue
 │   └── MovePendingOverlay.tsx      # [NEW] "确认中..." overlay during platform ACK wait
 ├── hooks/

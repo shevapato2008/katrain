@@ -3347,8 +3347,26 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
 
 **没做、已登记:**
 
-- **`.plat` 平台条(稿子屏 10 顶上那一条)**:`PlatformBadge.tsx` 现在**零消费者**,
-  而它要的 `connected` / `latency` 没有任何地方喂 —— 造一条出来就是假数据。
+- **`.plat` 平台条(稿子屏 10 顶上那一条)—— 不做,连「只在掉线时出现」也不做。**
+  (2026-08-24 收紧:原文写「造一条出来就是假数据」,理由对但不够钉,少了下面两半。)
+  三个值:「哪一家」是 `GamePage.tsx:185` 的写死常量且页控条标题已经写了;「上一手 Xs」全链路无字段;
+  **「连没连上」没有来源,而最近的候选会主动撒谎** —— WS `platform_status` 全仓**无任何 Python 处 emit**
+  (只有 `usePlatformEvents.ts:10` 的类型联合和一份计划稿),REST `/platforms/status` 的 `connected`
+  是 `web/platforms/golaxy/adapter.py` 的**登录闩**(4 处置真全在 `connect()` 里、置假只有 `disconnect()`
+  一处),平台宕机时恒真 —— 与屏 18 `current_winrate` 写死 `0.5` 同形,且更坏一档:
+  那个绿点唯一存在的理由就是掉线那一刻,而恰好那一刻它在说谎。
+  「只在掉线时出现」也要一个判「掉线」的状态位,而仓里只有那个恒真的闩、和「一条从未被 emit 过的
+  消息的缺席」—— 后者正是本 track 已登记的判例「否定的答复不携带原因」的教科书形状。
+  **掉线不靠这条说**:星阵 genmove 跑在人类那次落子请求**里面**(`gateway.py:137/163`,同步 ≤180s),
+  不存在不由用户触发的往返 ⇒ 每次掉线都必然落成一次用户正在等的失败,由 `engineErrorToast`
+  (`GamePage.tsx:455/521`)或 `session.error`(`:590`)说出来,且失败时人类那手**不本地落下**、
+  盘面停在原处。代价:那条 toast `autoHideDuration=6000`,6 秒后消失 —— **常驻环境态没了**
+  (可选 follow-up,**未做**:engineMode 下改成不自动消失,一行;它是行为改动不是对齐改动)。
+  **顺带删了两样**(2026-08-24):`PlatformBadge.tsx`(MUI、零消费者,三个 prop 正是这三个喂不了的值,
+  还含一个对**全仓不存在的字段**设的 `latency > 1000` 阈值 —— 留着等于给下一个人留一张
+  「把登录闩接上绿灯」的邀请函;色值 ogs `#4a90d9` / fox `#e67e22` / golaxy `#2ecc71` / kgs `#9b59b6`
+  备份在此)、`go-screens.css` 的 `.plat` 六行(换成「为什么没搬」的注释,组头索引一并改)。
+  **`.mvrows` 不同命、保留** —— 它在屏 16/18 有真消费者,且只等一个说得清的后端字段(见下一条)。
 - **`棋谱` 折叠块(稿子屏 10 那块 `.mvrows`)**:`GameState.history` 里**只有 `node_id/score/winrate`,
   没有坐标**;`stones` 有 `moveNumber` 但**被提掉的子就不在里面了**,拿它拼出来的棋谱会缺手。
   ⇒ 要么后端加一个着法序列,要么不画。CSS 先写着(`.mvrows` / `.plat` / `.items` 都在 `go-screens.css`),

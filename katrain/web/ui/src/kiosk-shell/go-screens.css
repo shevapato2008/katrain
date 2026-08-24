@@ -156,7 +156,9 @@
 
 /* ── 屏 02 对局中 / 屏 10 星阵人机 —— 同一个 `GamePage`,`engineMode` 换右栏 ────
  * 逐字取自稿子 `go-kiosk.tmpl.html` 的 `.pcard` / `.gtoggles` / `.gacts` / `.gevax` /
- * `.items` / `.plat` 那几组(`:117-146`、`:276-288`、`:428-482`)。
+ * `.items` 那几组(`:117-146`、`:276-288`、`:428-475`)。**`.plat` 不在其列** ——
+ * 它故意没搬,理由在下面 `.items` 之后那段注释里(范围从 :482 收到 :475,
+ * 482 那一行正是 `.plat .led`;这行组头当索引用,不改的话下一个人会扑空)。
  * 木框、刻度带、页控条、折叠块、动作区格子本体全部走共享 `tokens.css`,这里只补它没有的。 */
 
 /* 玩家卡。`.turn` 是**轮到谁**,不是「谁赢」—— 青玉描边在这一屏只表示当前手。 */
@@ -287,13 +289,20 @@
   font-family: var(--font-mono); background: #0C1211; color: var(--dim); }
 .items .cnt.zero { background: var(--bad); color: #fff; }
 
-/* 平台条:哪一家、连没连上、这一手等了多久。**自由对弈屏没有这一条** —— 本地局没有「对面」。 */
-.plat { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 11px; flex: none;
-  border: 1px solid color-mix(in srgb, var(--good) 40%, transparent); border-radius: 9px;
-  background: var(--panel); font-size: 11.5px; color: var(--dim); }
-.plat b { color: var(--good); font-weight: 600; letter-spacing: .04em; }
-.plat i { font-style: normal; margin-left: auto; font-family: var(--font-mono); }
-.plat .led { width: 7px; height: 7px; border-radius: 50%; background: var(--good); flex: none; }
+/* 平台条(稿子 `go-kiosk.tmpl.html:1856`)**故意没搬**,三个值一个都喂不了:
+     · 「哪一家」是 `GamePage.tsx:185` 的写死常量 `'golaxy'`,而页控条标题已经写着「星阵围棋 · 人机」;
+     · 「连没连上」**没有来源,而最近的候选会主动撒谎** —— WS 的 `platform_status` 全仓
+       没有任何 Python 处 emit(只有前端一个类型联合成员和一份计划稿);REST `/platforms/status`
+       的 `connected` 是 `golaxy/adapter.py` 的**登录闩**:4 处置真全在 `connect()` 里、
+       **置假只有 `disconnect()` 一处**,星阵服务器半夜死了它照样是 `true`。
+       和屏 18 `current_winrate` 写死 `0.5` 同形,而且更坏一档 —— 那个绿点唯一存在的理由
+       就是掉线那一刻,恰好那一刻它在说谎。
+     · 「上一手 4.2s」全链路没有这个字段。
+   **掉线不靠这条说**:星阵 genmove 跑在人类那次落子请求**里面**(`gateway.py:137/163`,同步 ≤180s),
+   不存在不由用户触发的往返 ⇒ 每次掉线都必然落成一次用户正在等的失败,由
+   `GamePage.tsx:455/521` 那条 `engineErrorToast` 说出来,而且失败时人类那手不本地落下、
+   盘面停在原处。它由**一次真的失败**触发,不是由心跳的缺席推断。
+   不留空规则:**不承重的规则会让针对它的变异永远杀不死闸**(见本文件开头那段「这里没有的两条」)。 */
 
 /* 空/加载/读不到:虚线框 + 标题 + 一句解释。逐字取自稿子 `go-kiosk.tmpl.html:424-427`
    (稿子上是棋谱详情那屏「点进一局是敬请期待」用的,同一个构造)。

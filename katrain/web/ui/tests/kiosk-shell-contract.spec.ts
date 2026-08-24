@@ -163,6 +163,13 @@ test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
 //      / `PlayCircleOutline` 随之而去)。
 //      2026-08-24 屏 25 重画:`TutorialSectionPage.tsx` 那两个 `NavigateBefore/After` 换成了
 //      共享动作区的 `caret-left/right`。**课程这一族(B)从此清空。**
+//      2026-08-24 屏 18 直播重画:`LiveMatchPage.tsx` 的四个 MUI 图标(TipsAndUpdates /
+//      Map / FormatListNumbered / TouchApp)随那排 `ToggleButton` 一起没了 —— 稿子那排
+//      `.gtoggles` 是**纯文字**的(注释在 `tokens.css`:开关本来就没有图标,
+//      安一个反而像「按下去有后果」)。**(A) 那一类里直播只剩 `LivePage`**(它不在 27 屏稿子里)。
+//      同时带走 `Territory` 一条 PO 覆盖。
+//      同一次**把这条闸自己的判据放宽了**(去掉「PO 那边也得是中文」),放宽之后
+//      **一条新行都没多出来** —— 说明这个洞在存量里只漏过屏 18 那一处。
 //      2026-08-24 屏 17 摆谱重画:`BaipuSessionPage.tsx` 整页换成共享外壳,
 //      同时从下面那条 PO 名单里带走 `Black` / `Undo` / `White` 三条 ——
 //      它们全是「源码写 A、屏上出 B」的实例(`Undo` 在 cn PO 里是「悔棋」,而摆谱要说的是
@@ -192,7 +199,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/pages/BaipuListPage.tsx', // (A) 摆谱屏
   'src/kiosk/pages/GameHistoryPage.tsx', // (B) 已无入口,等 Fan 裁定是并进复盘还是删
   'src/kiosk/pages/GamePage.tsx', // (C) 屏 05 已重画;剩的是对话框里的图标
-  'src/kiosk/pages/LiveMatchPage.tsx', // (A) 直播屏
   'src/kiosk/pages/LivePage.tsx', // (A) 直播屏
   'src/kiosk/pages/ResearchPage.tsx', // (A) 研究屏
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
@@ -289,7 +295,15 @@ test('t(key, 默认值) 的占位符必须和 cn PO 里那条一致 —— 不�
  * 这一条管**词本身不一样** —— 源码上写着 A,屏上是 B,而两个都是中文、都通顺,
  * 所以读代码、跑单测(jsdom 里翻译表没加载,`t()` 恒返回默认值)都发现不了。
  *
- * 判据故意收窄成「**两边都是中文且不相等**」:默认值是英文时,那本来就是 msgid 的常态写法。
+ * 判据是「**默认值是中文、且和 PO 里那条不相等**」。默认值是英文时不算 ——
+ * 那本来就是 msgid 的常态写法(`t('Undo', ...)` 里的 `Undo` 就是 msgid 本身)。
+ *
+ * ⚠️ **2026-08-24 把「PO 那边也得是中文」这半条去掉了 —— 它是个洞,而且真漏过一次。**
+ * 屏 18 直播写 `t('live:numbers', '手数')`,而 cn PO 里 `live:numbers` 是 **`#`**;
+ * `#` 不是中文 ⇒ 旧判据跳过它 ⇒ **屏上真的出现了一个光秃秃的「#」**,四图上才看见。
+ * 道理是:只要**默认值**是中文,作者的意图就是「屏上出现这几个字」,
+ * 那么 PO 里那条不管是什么语言、什么符号,只要不相等就是覆盖。PO 那边的语言与此无关。
+ * (同一次还漏了 `live:territory` → 「领地」,那条两边都是中文,旧判据抓得到。)
  *
  * 名单是**双向棘轮**:新增会红,修好了不改名单**一样红**。77 条是 2026-08-22 的实测存量,
  * 一条都不是本轮引入的 —— 本轮引入的三条当场改成了自己的 key。
@@ -330,7 +344,6 @@ const PO_OVERRIDES_DEFAULT_BASELINE = [
   'src/kiosk/pages/GameHistoryPage.tsx  White',
   'src/kiosk/pages/GamePage.tsx  Black',
   'src/kiosk/pages/GamePage.tsx  White',
-  'src/kiosk/pages/LiveMatchPage.tsx  Territory',
   'src/kiosk/pages/LivePage.tsx  Live',
   'src/kiosk/pages/ReportDetailPage.tsx  report:deep',
   'src/kiosk/pages/ReportDetailPage.tsx  report:login_required_detail',
@@ -364,7 +377,7 @@ test('t(key, 中文默认值) 的默认值不许和 PO 里那条说的是两回�
       const [, key, def] = m;
       const translated = po.get(key);
       if (translated === undefined) continue;
-      if (cjk(def) && cjk(translated) && def !== translated) hit.add(`${rel(p)}  ${key}`);
+      if (cjk(def) && def !== translated) hit.add(`${rel(p)}  ${key}`);
     }
   }
   expect([...hit].sort()).toEqual(PO_OVERRIDES_DEFAULT_BASELINE);

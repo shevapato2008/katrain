@@ -186,6 +186,10 @@
   display: inline-flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer;
   border: 1px solid var(--hair); border-radius: 10px; background: var(--panel);
   color: var(--dim); font-family: var(--font-sans); font-size: 12.5px;
+  /* 开关的字**不许折行**。屏 18 那排五个里「跟到最新」正好卡在边界上,折成两行之后
+     那颗键比邻居高出一截、整排的基线也散了(四图第一版看出来的)。
+     折行对一个 2–4 字的开关标签从来不是想要的结果 —— 装不下该换更短的词,不是叠起来。 */
+  white-space: nowrap;
 }
 /* 同一排右端挂一句「为什么那个键是灰的」。灰掉而不说原因,是稿子在别处专门骂过的事。 */
 .gtoggles .ghint { display: flex; align-items: center; justify-content: flex-end;
@@ -1002,3 +1006,13 @@ button.kiosk-row.figrow { flex: none; }
    `.cdlg{inset:0}` 找的是最近的**定位祖先**,所以这一屏的布局根要 `position:relative`
    —— 屏 06(布局 A)和屏 08(布局 B)已经各踩过一次,判据一样。**只给这一屏加**。 */
 .kiosk-layout-a.baipu-layout { position: relative; }
+
+/* ── 屏 18 直播 · 观战 ──────────────────────────────────────────────────────
+   状态标(直播中 / 已结束)在页控条右端。它**不占流内高度** —— 这一屏右栏六块正好
+   摆满 516,一个像素的余量都没有;挪到内容区顶上要 44,那 44 会从着法表里扣掉近两行。 */
+.kiosk-pagebar__status { display: inline-flex; align-items: center; flex: none; }
+
+/* 这一屏的 `.setnote` 是右栏最后一个孩子。共享那条给它带了 `margin-bottom:8px`
+   (那是给屏 27 设置页写的),在一条 flex 栏里那 8px 会从上面 `grow` 的折叠块里偷走 8、
+   并在栏底留一条 8 的死空 —— 四图上看得出来。**只在右栏里归零,不动共享那条。** */
+.kiosk-rail > .setnote { margin-bottom: 0; }

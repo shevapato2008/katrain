@@ -1291,3 +1291,113 @@ test('摆谱:拍照遮罩的定位原点是布局根,而且真的盖住了那三
   expect(m.dlg.w).toBe(m.root.w);
   expect(m.covers, '遮罩没盖住那三颗键 —— 拍照时还能按下第二次「确认落子」').toBe(true);
 });
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * 屏 18 直播 · 观战:右栏**正好摆满 516,一个像素余量都没有**
+ *
+ * 44(页控条) + 12 + 60 + 12 + 60 + 12 + 着法块(grow) + 12 + 40(开关排) + 12 + 那句话 = 516。
+ * 这一屏删掉了进度条 / 胜率曲线 / AI 推荐列表三块,判据之一就是「能再塞进来的上限只有 101px」——
+ * 那么这条闸要守的就是**这个账没被谁悄悄撑破**:
+ *   ① 着法表 ≥ 3 行(§11:固定部分之后剩不到三行就得整栏滚,而整栏一滚开关排会滚出视野)
+ *   ② 会长的是着法块**自己**,不是右栏(右栏溢出 = 底下那排和那句话被顶出画布)
+ *   ③ 开关排和那句话**恒在视野内** —— 观战屏上唯一的一排控件不许跟着内容跑
+ *
+ * **造数据要造到会溢出**:241 手 ⇒ 121 行,`.mvrows` 装得下 8 行。
+ *
+ * ⚠️ 顺带守着一个 8px 的坑:共享 `.setnote` 带 `margin-bottom:8px`(那是给屏 27 写的),
+ * 在这条 flex 栏里它是最后一个孩子,那 8px 会从 grow 的着法块里偷走 8 并在栏底留一条死空。
+ * 本屏用 `.kiosk-rail > .setnote` 归零 —— ③ 那条断言(那句话的底边贴着右栏底)守的就是它。
+ * ────────────────────────────────────────────────────────────────────────── */
+const LIVE_MATCH = (moves: number) => ({
+  id: 'lm', source: 'xingzhen', tournament: '第 29 届三星杯', round_name: '八强',
+  date: '2026-08-24', player_black: '申真谞', player_white: '柯洁',
+  black_rank: '九段', white_rank: '九段', status: 'live', result: null,
+  move_count: moves, current_winrate: 0.5, current_score: 0,
+  last_updated: '2026-08-24T08:40:00Z', board_size: 19, komi: 7.5, rules: 'chinese',
+  sgf: null,
+  moves: Array.from({ length: moves }, (_, i) => `${'ABCDEFGHJKLMNOPQRST'[i % 19]}${(i % 19) + 1}`),
+});
+
+const bootLive = async (page: Page, moves = 241) => {
+  // ⚠️ **顺序有讲究**:playwright 后注册的先匹配,而 `matches/lm**` 也能吃掉
+  // `matches/lm/analysis`。所以宽的先注册、窄的后注册,否则分析请求会拿到一份 match JSON,
+  // 页面卡在 loading —— 第一版就是这么超时的,而超时信息只说「等不到那个选择器」。
+  await page.route('**/api/v1/live/matches/lm**', (route) => route.fulfill({ json: LIVE_MATCH(moves) }));
+  await page.route('**/api/v1/live/matches/lm/analysis**', (route) => route.fulfill({ json: { analysis: {} } }));
+  // 同屏 17:**不能用共享 `boot`** —— 它末尾等 `.kiosk-scrollzone`,而这一屏没有那个东西。
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'kiosk-shell-scroll');
+    localStorage.setItem('katrain_language', 'cn');
+  });
+  await page.route('**/api/v1/auth/me', (route) => route.fulfill({
+    json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
+  }));
+  await page.goto('/kiosk/live/lm');
+  await page.waitForSelector('[data-testid="live-toggles"] button');
+};
+
+test('直播:241 手着法表自己滚,开关排和那句话恒在视野内', async ({ page }) => {
+  await bootLive(page);
+
+  const m = await page.evaluate(() => {
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const moves = document.querySelector('[data-testid="live-moves-fold"] .mvrows') as HTMLElement;
+    const tog = document.querySelector('[data-testid="live-toggles"]') as HTMLElement;
+    const note = document.querySelector('.kiosk-rail > .setnote') as HTMLElement;
+    const board = document.querySelector('[data-testid="live-board"]') as HTMLElement;
+    const r = rail.getBoundingClientRect();
+    return {
+      railH: Math.round(r.height),
+      railBottom: Math.round(r.bottom),
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      movesH: Math.round(moves.getBoundingClientRect().height),
+      movesOverflow: moves.scrollHeight - moves.clientHeight,
+      togBottom: Math.round(tog.getBoundingClientRect().bottom),
+      noteBottom: Math.round(note.getBoundingClientRect().bottom),
+      boardW: Math.round(board.getBoundingClientRect().width),
+      boardH: Math.round(board.getBoundingClientRect().height),
+    };
+  });
+
+  expect(m.railH, '右栏不是 516').toBe(516);
+  expect(m.boardW, '盘不是 516 宽').toBe(516);
+  expect(m.boardH, '盘不是 516 高').toBe(516);
+  expect(m.movesOverflow, '241 手没造出溢出 —— 下面的断言都是空的').toBeGreaterThan(100);
+  expect(m.railOverflow, '右栏自己被顶破了 —— 该溢出的是着法块').toBeLessThanOrEqual(0);
+  // §11:固定部分之后至少留得下三行。一行 `.mvrows` 约 24.4。
+  expect(m.movesH, `着法块只剩 ${m.movesH}px,装不下三行`).toBeGreaterThanOrEqual(3 * 24);
+  expect(m.togBottom, '开关排被顶出右栏了 —— 观战屏上唯一那排控件跟着内容跑了')
+    .toBeLessThanOrEqual(m.railBottom);
+  // 那句话是最后一个孩子:它的底边**就是**右栏底。差出来的就是共享 `.setnote` 那 8px 下边距。
+  expect(m.noteBottom, `那句话的底边 ${m.noteBottom} 没贴住右栏底 ${m.railBottom} —— 多半是 .setnote 那 8px`)
+    .toBe(m.railBottom);
+});
+
+/**
+ * 真滚轮:着法表自己拨得动,而且拨的**不是**整页。
+ * 程序化写 `scrollTop` 只证明这个属性可写,证明不了手指能滚。
+ */
+test('直播:着法表真拨得动,滚的不是整页也不是右栏', async ({ page }) => {
+  await bootLive(page);
+  const box = (await page.locator('[data-testid="live-moves-fold"] .mvrows').boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  for (let i = 0; i < 10; i += 1) await page.mouse.wheel(0, 300);
+
+  const m = await page.evaluate(() => {
+    const moves = document.querySelector('[data-testid="live-moves-fold"] .mvrows') as HTMLElement;
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const tog = document.querySelector('[data-testid="live-toggles"]') as HTMLElement;
+    return {
+      scrollTop: Math.round(moves.scrollTop),
+      railScrollTop: Math.round(rail.scrollTop),
+      pageScroll: Math.round(document.documentElement.scrollTop),
+      togBottom: Math.round(tog.getBoundingClientRect().bottom),
+      railBottom: Math.round(rail.getBoundingClientRect().bottom),
+    };
+  });
+
+  expect(m.scrollTop, '拨了十下滚轮,着法表一格都没动').toBeGreaterThan(0);
+  expect(m.railScrollTop, '滚的是整条右栏,不是着法表').toBe(0);
+  expect(m.pageScroll, '滚的是整个页面').toBe(0);
+  expect(m.togBottom, '滚完之后开关排跑了').toBeLessThanOrEqual(m.railBottom);
+});

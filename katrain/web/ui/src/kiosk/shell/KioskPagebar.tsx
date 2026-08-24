@@ -20,7 +20,7 @@ export interface PagebarSegment {
  * **悔棋、认输、求和、提示一律不许放这里** —— 它们属于右栏下面的动作区。
  * 页面没有视图切换时右端就空着,**返回键的位置不变**(位置恒定是肌肉记忆)。
  */
-export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, segment, action, testId }: {
+export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, status, segment, action, testId }: {
   backLabel?: ReactNode;
   onBack?: () => void;
   /** 返回正在进行中(要先存盘、先退出房间)。**保留位置与去向,如实标成忙碌** —— 不是把键藏了。 */
@@ -28,6 +28,19 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
   title: ReactNode;
   /** 英文副标。不是新文案,是标题那句话的另一种语言。 */
   sub?: ReactNode;
+  /**
+   * 这一屏的**状态标**(直播中 / 已结束)。排在标题之后、图标键与分段之前。
+   *
+   * §11 那句「页控条只许放三类东西:① 返回 ② 视图切换 ③ 最多一个页级图标按钮」
+   * 枚举的是**可交互的槽**,不是「这条上能出现的全部元素」—— 标题和 `sub` 也不在那三类里,
+   * 而它们显然是允许的。紧接着那句禁令点名的是「**悔棋、认输、求和、提示这些业务动作**」,
+   * 而状态标既不可点也不可聚焦,不在被禁的那一类。
+   * 稿子屏 18 就是这么画的,而 `.kiosk-tag--live` 这个部件本仓早就为这三个字写好了。
+   *
+   * ⚠️ 它**不占流内高度**:直播屏的右栏六块正好摆满 516,一个像素的余量都没有;
+   * 把它放到内容区顶上要 44,那 44 会从着法表里扣掉将近两行。
+   */
+  status?: ReactNode;
   segment?: PagebarSegment;
   /**
    * §11 允许的**最多一个**页级图标按钮。
@@ -72,13 +85,18 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
         {title}
         {sub ? <span className="kiosk-pagebar__sub">{sub}</span> : null}
       </h2>
+      {/* 三者共用一个「把我推到右边去」的职责,所以 `__spacer` 只能挂在**第一个出现的**那个上。
+          原来它写成「没有 segment 就挂 action」,加了 status 之后那条判断就不完整了。 */}
+      {status && (
+        <span className="kiosk-pagebar__status kiosk-pagebar__spacer">{status}</span>
+      )}
       {action && (
         <button
           type="button"
           className={[
             'kiosk-pagebar__iconbtn',
             action.state === 'bad' && 'is-bad',
-            !segment && 'kiosk-pagebar__spacer',
+            !segment && !status && 'kiosk-pagebar__spacer',
           ].filter(Boolean).join(' ')}
           aria-label={action.label}
           data-state={action.state}
@@ -89,7 +107,7 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
       )}
       {segment && (
         <span
-          className={`kiosk-seg${action ? '' : ' kiosk-pagebar__spacer'}`}
+          className={`kiosk-seg${action || status ? '' : ' kiosk-pagebar__spacer'}`}
           role="radiogroup"
           aria-label={segment.ariaLabel ?? '视图'}
         >

@@ -430,3 +430,63 @@ followups 六项收口、11 种语言 i18n，以及**三个后端 `.py`**
 **遗留：** 根分区 **82%**（三次发布各留一份 release 目录与镜像）。可回收：
 `3d65e536`、`fc1e73c3`、`772ee97a` 三份目录与对应镜像（`c7f3eed7` 是线上，
 `772ee97a` 是回滚锚点，**它不能删**）。本次未删。
+
+### 2026-08-24（夜）— 根分区清理：82% → 71%
+
+承接上一条的「遗留」。**上一条列的可回收项，本次仍未删**（`3d65e536`/`fc1e73c3`/
+`772ee97a` 三份 release 目录与镜像都还在，回滚窗口未关）。本次回收的是另外三处，
+与回滚锚点无关。
+
+**先记一个会把人带偏的量法：`du /var/lib/docker` 报 32G 是假的。**
+这台的 Docker 用 containerd 快照器（`Storage Driver: overlayfs` +
+`driver-type: io.containerd.snapshotter.v1`，`ctr namespaces ls` 里是 `moby`），
+镜像层实际落在 `/var/lib/containerd`；运行中容器的 rootfs 又挂在
+`/var/lib/docker/rootfs` 下（实测 15 个挂载点），`du` 会把 containerd 里那份**再数一遍**。
+`du -shx --exclude=rootfs /var/lib/docker` = **8.3G** 才是 Docker 自身。
+判据：**在装了 containerd 快照器的机器上，`du /var/lib/docker` 与
+`/var/lib/containerd` 不可相加。**
+
+清理前 79G/97G（82%）的真实构成：
+
+| 占用 | 大小 | 备注 |
+|---|---|---|
+| `/var/lib/containerd`（镜像层 + 构建缓存） | 39G | `katago-trt:latest` 一个就 **20.8G** |
+| `/opt/katrain/releases` | 12.4G | 4 份 × 3.1G，**其中每份 2.0G 是 `.git`** |
+| Docker volumes | 8.3G | postgres 3.5G、minio 2.7G、smartbox-kifu 1.9G |
+| `/swapfile` | 8.1G | 已用 2.2G |
+| `/var/log` | 5.9G | journal 4.0G、`kifu-telemetry.ndjson` 1.3G、btmp 540M |
+| `/usr` + 其它 | 3.3G | |
+| `/opt` 其它项目 | 0.9G | pitch-booking、smartbox-kifu |
+
+**这台不是只跑 katrain** —— pitch-booking、smartbox-kifu、platform 都在上面，
+共 15 个容器。腾空间时别只盯着 katrain。
+
+**本次回收（共 10G，82% → 71%，剩余 19G → 29G）：**
+
+1. `journalctl --vacuum-size=500M` → **3.4G**。
+2. `truncate -s 0 /var/log/btmp` + `rm /var/log/btmp.1` → **540M**。
+   截断前 `lastb | wc -l` = **570,629 条失败登录** —— 这台一直在被爆破扫，
+   值得单独评估要不要上 fail2ban（本次未做）。
+3. 三份**非 current** release 目录的 `.git` → **6.0G**（每份 2.0G）。
+   删前逐个校验 `deploy/ucloud/compose.yml` 与 `scripts/build-web.sh` 在位才动手；
+   工作树完整保留，三个回滚锚点的 compose/脚本/镜像事后复核全部 ✓。
+
+**为什么留下 `current`（`c7f3eed7`）那份 `.git`：** 新 release 目录是**从已有 release
+目录本地 `git clone`** 出来的（见 2026-07-31 那条：「`git clone` 因源仓是 shallow
+而未能硬链接复用对象」）。四份全删，下次部署就没有本地克隆源。
+GitHub 本次实测**直连可用**（`git ls-remote` 拿到 `develop` = `7d551ba6`，exit 0），
+所以留的这份不是唯一依赖，只是快。
+
+**根因没修（下次部署仍会再长 2G）：** 源仓虽然是 shallow，但 grafted 点很深
+（`git rev-list --count HEAD` = 2611），pack 里压着 KataGo 二进制与 b18 权重
+（单个 blob 97MB：`kata1-b18c384nbt-s9996604416`、`KataGo/katago-bs` 73MB），
+所以本地 clone 一份就是 1.98 GiB，而工作树只有 1.1G。
+**建议改成从 GitHub `git clone --depth 1`**，一份 release 目录可从 3.1G 降到约 1.1G。
+未改，因为动的是部署流程，需要单独确认。
+
+**未处理（本次没碰）：** `kifu-telemetry.ndjson` 1.3G **没配日志轮转**，会一直长；
+构建缓存 12.24G **不要动** —— 见上一条 `docker builder prune -f` 的代价，
+且 `docker system df` 显示它可回收的只有 639M。
+
+**清理后复核：** `df -h /` = 69G/97G（71%），15 个容器全 healthy，
+`curl localhost:8001/api/v1/health` = 200，`current` → `releases/c7f3eed7` 未变。

@@ -110,13 +110,16 @@ interface Provenance { label: string; backPath: string; backLabel: string }
  * 返回去哪,由 URL 上的 `?from=` 决定,**目标路径查这张表、不收路径参数** ——
  * 收一个 back URL 就等于让调用方决定跳去哪,那是个能被注入的洞。
  *
- * 稿子把返回键写死成「← 棋谱」,可这一屏有**四个入口**,回去的地方各不相同,
- * 而且中间两条的 URL 形状完全一样(都是 `?user_game_id=`)、反推不出来。
- * ⇒ 稿子这里不成立,改成跟着入口走。四个调用点同一轮改成带 `&from=`。
+ * 稿子把返回键写死成「← 棋谱」,可这一屏有**三个入口**,回去的地方各不相同,
+ * 而且棋谱详情和复盘报告两条的 URL 形状完全一样(都带 `?user_game_id=`)、反推不出来。
+ * ⇒ 稿子这里不成立,改成跟着入口走。三个调用点都带着 `&from=`。
+ *
+ * ⚠️ 2026-08-25 去掉了第四条 `history`(`/kiosk/play/pvp/history`):那是 27 屏改造
+ * **之前**的对局历史屏,改造后它的活由屏 19 复盘接了过去,而它自己的路由**没有任何入口**
+ * —— 从 UI 上走不到。页面已删,这条出处跟着删。
  */
 const BACK: Record<string, { path: string; label: string }> = {
   kifu: { path: '/kiosk/kifu', label: '棋谱' },
-  history: { path: '/kiosk/play/pvp/history', label: '对局历史' },
   report: { path: '/kiosk/report', label: '复盘' },
   game: { path: '/kiosk/play', label: '对弈' },
 };

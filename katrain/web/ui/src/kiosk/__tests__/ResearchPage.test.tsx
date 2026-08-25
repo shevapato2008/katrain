@@ -104,7 +104,7 @@ const renderPage = (entry = '/kiosk/research') =>
         <Routes>
           <Route path="/kiosk/research" element={<ResearchPage />} />
           <Route path="/kiosk/play" element={<div>对弈屏</div>} />
-          <Route path="/kiosk/play/pvp/history" element={<div>对局历史屏</div>} />
+          <Route path="/kiosk/report" element={<div>复盘屏</div>} />
           <Route path="/kiosk/report/:taskId" element={<div>报告屏</div>} />
         </Routes>
       </MemoryRouter>
@@ -320,14 +320,28 @@ describe('屏 21 研究', () => {
   // ── 返回:跟着入口走 ───────────────────────────────────────────────────────
 
   /**
-   * 🔴 稿子把返回键写死成「← 棋谱」,可这一屏有四个入口、回去的地方各不相同,
-   * 而屏 20 和对局历史两条的 URL 形状完全一样(都是 `?user_game_id=`)、反推不出来。
-   * ⇒ 由 `?from=` 说了算,目标路径查前端常量表(**不收路径参数**,那是个能注入的洞)。
+   * 🔴 稿子把返回键写死成「← 棋谱」,可这一屏有三个入口、回去的地方各不相同,
+   * 而屏 16 棋谱详情和屏 20 复盘报告两条的 URL 形状完全一样(都带 `?user_game_id=`)、
+   * 反推不出来。⇒ 由 `?from=` 说了算,目标路径查前端常量表
+   * (**不收路径参数**,那是个能注入的洞)。
    */
-  it('?from=history 回对局历史', async () => {
+  it('?from=report 回复盘', async () => {
+    renderPage('/kiosk/research?from=report');
+    await userEvent.click(within(screen.getByTestId('research-pagebar')).getByRole('button', { name: /复盘/ }));
+    expect(screen.getByText('复盘屏')).toBeInTheDocument();
+  });
+
+  /**
+   * 表里认不得的 `from=` 一律退回对弈 —— 包括 2026-08-25 删掉的那条 `history`
+   * (对局历史是 27 屏改造之前的屏,它的活由屏 19 复盘接了,自己那条路由**没有入口**)。
+   * 退回去而不是崩,是因为 `?from=` 来自 URL:**手输一个不存在的值不该把这一屏打白**。
+   */
+  it('认不得的 from(含已删掉的 history)退回对弈,副标题整行不渲染', async () => {
     renderPage('/kiosk/research?from=history');
-    await userEvent.click(within(screen.getByTestId('research-pagebar')).getByRole('button', { name: /对局历史/ }));
-    expect(screen.getByText('对局历史屏')).toBeInTheDocument();
+    const bar = screen.getByTestId('research-pagebar');
+    expect(bar.querySelector('.kiosk-pagebar__sub')).toBeNull();
+    await userEvent.click(within(bar).getByRole('button', { name: /对弈/ }));
+    expect(screen.getByText('对弈屏')).toBeInTheDocument();
   });
 
   it('没有 from(手输 URL / 刷新):回对弈,而且副标题整行不渲染 —— 不许编一个出处', async () => {

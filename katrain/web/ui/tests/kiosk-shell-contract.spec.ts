@@ -182,7 +182,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/__tests__/ModeCard.test.tsx', // (C) 测试文件,不上屏
   'src/kiosk/components/game/RecalibrationModal.tsx', // (C) 对局屏上的浮层
   'src/kiosk/components/physical/PhysicalPlayStatusChip.tsx', // (C) 对局屏上的浮层
-  'src/kiosk/components/report/ReportGameCard.tsx', // (B) galaxy 侧还在用;kiosk 复盘屏已不用它
   'src/kiosk/components/report/ReportLibraryImportDialog.tsx',
   'src/kiosk/components/report/ReportLocalImportDialog.tsx',
   'src/kiosk/components/tsumego/PhysicalStatePanel.tsx', // (C) 做题屏上的浮层
@@ -191,7 +190,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/components/vision/GeometryVideoPanel.tsx', // (A) 标定屏
   'src/kiosk/components/vision/VisionSyncOverlay.tsx', // (A) 标定/识别
   'src/kiosk/pages/BaipuListPage.tsx', // (A) 摆谱屏
-  'src/kiosk/pages/GameHistoryPage.tsx', // (B) 已无入口,等 Fan 裁定是并进复盘还是删
   'src/kiosk/pages/GamePage.tsx', // (C) 屏 05 已重画;剩的是对话框里的图标
   'src/kiosk/pages/LivePage.tsx', // (A) 直播屏
   'src/kiosk/pages/TsumegoCategoriesPage.tsx',
@@ -307,18 +305,6 @@ test('t(key, 默认值) 的占位符必须和 cn PO 里那条一致 —— 不�
 const PO_OVERRIDES_DEFAULT_BASELINE = [
   'src/kiosk/components/game/GameControlPanel.tsx  Black',
   'src/kiosk/components/game/GameControlPanel.tsx  White',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:deep',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:delete_game',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:generate_deep',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:generate_normal',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:no_result',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:normal',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:select_game',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:title_ai_free',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:title_ai_ranked',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:title_human',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:title_import',
-  'src/kiosk/components/report/ReportGameCard.tsx  report:title_kifu',
   'src/kiosk/components/report/ReportImportMenu.tsx  report:import_local',
   'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:import_and_deep',
   'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:import_and_normal',
@@ -332,8 +318,6 @@ const PO_OVERRIDES_DEFAULT_BASELINE = [
   'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:import_local',
   'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:importing',
   'src/kiosk/pages/AiSetupPage.tsx  Territory',
-  'src/kiosk/pages/GameHistoryPage.tsx  Black',
-  'src/kiosk/pages/GameHistoryPage.tsx  White',
   'src/kiosk/pages/GamePage.tsx  Black',
   'src/kiosk/pages/GamePage.tsx  White',
   'src/kiosk/pages/LivePage.tsx  Live',

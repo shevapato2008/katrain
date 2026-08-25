@@ -40,13 +40,20 @@ const game = (id: string, overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+/**
+ * 七局各占一种行状态 —— `reviewPresentation.rowState` 一共就六种,
+ * 加上「同一局两档都跑完」那一档(行尾没有唯一宾语,得拆成两个键)。
+ * 少造一种,那一档在真浏览器里就一次都没画过。
+ */
 const GAMES = [
-  game('no-report', { event: '尚未生成复盘' }),
-  game('queued', { event: '排队中的棋局' }),
-  game('running', { event: '正在生成的棋局' }),
-  game('normal', { event: '普通复盘已完成' }),
-  game('deep', { event: '深度复盘已完成' }),
-  game('failed', { event: '失败后可重试' }),
+  game('no-report', { event: '尚未生成复盘' }),                       // unanalyzed
+  game('queued', { event: '排队中的棋局' }),                          // running(pending)
+  game('running', { event: '正在生成的棋局' }),                       // running
+  game('normal', { event: '普通复盘已完成' }),                        // analyzed(一档)
+  game('both-tiers', { event: '两档都跑完了' }),                      // analyzed(两档)
+  game('failed', { event: '算了一半断掉' }),                          // partial
+  game('dead', { event: '一手没算就失败了' }),                        // failed
+  game('unfinished', { event: '没下完的棋', result: null }),          // unfinished
   game('long', {
     title: '一段非常非常长、用于验证七英寸屏幕标题不会挤出研究按钮的复盘标题',
     event: '一场元数据同样很长、必须在 1024 像素宽度内正确省略的国际赛事',
@@ -59,10 +66,26 @@ const INITIAL_TASKS: ReportTask[] = [
   { id: 101, user_game_id: 'queued', status: 'pending', report_type: 'normal', total_moves: 6, analyzed_moves: 0, requested_visits: 1000 },
   { id: 102, user_game_id: 'running', status: 'running', report_type: 'deep', total_moves: 6, analyzed_moves: 3, requested_visits: 5000 },
   { id: 103, user_game_id: 'normal', status: 'completed', report_type: 'normal', total_moves: 6, analyzed_moves: 6, requested_visits: 1000 },
-  { id: 104, user_game_id: 'deep', status: 'completed', report_type: 'deep', total_moves: 6, analyzed_moves: 6, requested_visits: 5000 },
+  { id: 104, user_game_id: 'both-tiers', status: 'completed', report_type: 'normal', total_moves: 6, analyzed_moves: 6, requested_visits: 1000 },
+  { id: 107, user_game_id: 'both-tiers', status: 'completed', report_type: 'deep', total_moves: 6, analyzed_moves: 6, requested_visits: 5000 },
+  // 后端没有「暂停」：跑一半断掉的落在 failed 上、`analyzed_moves` 还留着 ⇒ 那是「只算到 n/m · 继续分析」。
   { id: 105, user_game_id: 'failed', status: 'failed', report_type: 'normal', total_moves: 6, analyzed_moves: 2, requested_visits: 1000 },
+  { id: 108, user_game_id: 'dead', status: 'failed', report_type: 'normal', total_moves: 6, analyzed_moves: 0, requested_visits: 1000 },
   { id: 106, user_game_id: 'long', status: 'completed', report_type: 'deep', total_moves: 6, analyzed_moves: 6, requested_visits: 5000 },
 ];
+
+/**
+ * `/baipu/load` 的 canonical 坐标(row 0 在上,col 按 ABCDEFGHJKLMNOPQRST 数),
+ * 对着 `SGF` 那六手:B[pd] W[dd] B[qp] W[dq] B[fc] W[cf]。
+ */
+const FINAL_BOARD = [
+  ['B', 3, 15],   // pd = Q16
+  ['W', 3, 3],    // dd = D16
+  ['B', 15, 16],  // qp = R4
+  ['W', 16, 3],   // dq = D3
+  ['B', 2, 5],    // fc = F17
+  ['W', 5, 2],    // cf = C14
+] as const;
 
 const OWNERSHIP = Array.from({ length: 19 }, (_row, y) =>
   Array.from({ length: 19 }, (_column, x) => ((x + y) % 3 === 0 ? 0.8 : -0.6)),
@@ -73,7 +96,9 @@ const reportMoves = (taskId: number) => Array.from({ length: 7 }, (_unused, move
   task_id: taskId,
   move_number: moveNumber,
   status: 'completed',
-  winrate: 0.52 + moveNumber * 0.01,
+  // 第 3 手是黑走的,黑的胜率从 54% 掉到 30% —— `keyMoves` 要**目和胜率同时掉**才收，
+  // 只把 `delta_score` 写成负数、胜率却一路上扬,那一手一样进不了「重点手」。
+  winrate: moveNumber === 3 ? 0.30 : 0.52 + moveNumber * 0.01,
   score_lead: 1.2 + moveNumber * 0.3,
   visits: 1200,
   top_moves: [
@@ -84,7 +109,9 @@ const reportMoves = (taskId: number) => Array.from({ length: 7 }, (_unused, move
   ownership: OWNERSHIP,
   actual_move: moveNumber === 0 ? null : ['Q16', 'D16', 'Q4', 'D4', 'F17', 'C14'][moveNumber - 1],
   actual_player: moveNumber === 0 ? null : moveNumber % 2 ? 'B' : 'W',
-  delta_score: moveNumber === 0 ? null : 0.3,
+  // 第 3 手黑掉 6.4 目 —— 「重点手」只列掉过三目以上的,一手都不掉时它是空态,
+  // 那一块的「看这手」就一次都没画过。
+  delta_score: moveNumber === 0 ? null : moveNumber === 3 ? -6.4 : 0.3,
   delta_winrate: moveNumber === 0 ? null : 0.01,
 }));
 
@@ -105,31 +132,12 @@ const ALBUM = {
   move_count: 6,
 };
 
-const TRANSLATIONS: Record<string, string> = {
-  Settings: '设置',
-  'report:normal': '普通报告',
-  'report:deep': '深度报告',
-  'report:select_game': '选择一局棋谱',
-  'report:more_actions': '更多报告操作',
-  'report:generate_normal': '生成普通报告',
-  'report:generate_deep': '生成深度报告',
-  'report:open_normal': '打开普通报告',
-  'report:open_deep': '打开深度报告',
-  'report:retry_normal': '重试普通报告',
-  'report:retry_deep': '重试深度报告',
-  'report:import_local': '从本地导入 SGF',
-  'report:import_library': '从棋谱库导入',
-  'report:import_and_normal': '导入并生成普通报告',
-  'report:import_and_deep': '导入并生成深度报告',
-  'report:enter_research': '进入研究室',
-  'report:territory': '领地',
-  'report:suggestions': '建议',
-  'live:first_move': '第一手',
-  'live:previous': '上一手',
-  'live:next': '下一手',
-  'live:latest': '最新',
-  'live:moves': '手',
-};
+/**
+ * **空表。** 这一屏的文案键(`review:*`)在 `katrain/i18n/` 里一个都没有 ——
+ * 屏上真正出现的就是代码里写的那句中文 fallback。桩里再写一份自己的译文,
+ * 断言就落在一句**盒子上永远不会出现**的话上了。
+ */
+const TRANSLATIONS: Record<string, string> = {};
 
 interface MockState {
   tasks: ReportTask[];
@@ -288,6 +296,19 @@ async function setupReportMocks(page: Page): Promise<MockState> {
       return;
     }
 
+    // 左栏那块「选中那一局的终局盘」由后端把 SGF 走成局面 —— 前端不自己摆子。
+    if (path === '/api/v1/baipu/load' && method === 'POST') {
+      await fulfillJson(route, {
+        board_size: 19,
+        steps: FINAL_BOARD.map(([color, row, col], index) => ({
+          kind: 'move', move_index: index, property: color, row, col, color,
+          removed: [], board_hash: '',
+        })),
+        meta: {},
+      });
+      return;
+    }
+
     if (path === '/api/v1/kifu/albums') {
       await fulfillJson(route, { items: [ALBUM], total: 1, page: 1, page_size: 10 });
       return;
@@ -308,6 +329,16 @@ async function expectViewportFit(page: Page) {
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(VIEWPORT.width);
 }
 
+/**
+ * **48 只对壳管不着的控件成立。** MUI 的菜单项、对话框按钮、顶栏、Dock 由这份自己负责,
+ * 那 48 是这里唯一的判据。
+ *
+ * 而 §11 那套外壳控件(页控条返回键 36 高、`--btn-pill-h: 26`、走子键、开关条)的几何
+ * **是四棋类共用的设计系统**,由 `kiosk-shell-geometry.spec.ts` 逐条钉着。
+ * 在这儿对同一个控件再断言一个不一样的数,两条闸就会互相矛盾 ——
+ * 而先红的那条多半会被人按现状改小,等于把设计系统调成了「现在长这样」。
+ * 所以壳控件在这份里只判 `expectReachable`:**在屏上、没被切掉、点得到**。
+ */
 async function expectTouchTarget(page: Page, locator: Locator, name: string) {
   await expect(locator, `${name} should be visible`).toBeVisible();
   await expect.poll(async () => (await locator.boundingBox())?.width ?? 0, {
@@ -326,22 +357,44 @@ async function expectTouchTarget(page: Page, locator: Locator, name: string) {
   expect(box!.y + box!.height, `${name} bottom edge`).toBeLessThanOrEqual(VIEWPORT.height + 0.5);
 }
 
-async function expectPlaybackTouchTargets(page: Page, playback: Locator, name: string) {
-  await expectTouchTarget(page, playback.getByRole('slider'), `${name} slider`);
-  for (const control of ['第一手', '上一手', '播放', '下一手', '最新']) {
-    await expectTouchTarget(page, playback.getByRole('button', { name: control }), `${name} ${control}`);
-  }
+/** 壳控件:看得见、点得着、整块落在 1024×600 之内。具体尺寸归 `kiosk-shell-geometry.spec.ts`。 */
+async function expectReachable(page: Page, locator: Locator, name: string) {
+  // 不判 enabled：走子条走到末手时,四个键里有两个**本来就该是灰的**。
+  // 该亮的地方由各条用例自己点名。
+  await expect(locator, `${name} should be visible`).toBeVisible();
+  const box = await locator.boundingBox();
+  expect(box, `${name} should have a bounding box`).not.toBeNull();
+  expect(box!.width, `${name} width`).toBeGreaterThan(0);
+  expect(box!.height, `${name} height`).toBeGreaterThan(0);
+  expect(box!.x, `${name} left edge`).toBeGreaterThanOrEqual(0);
+  expect(box!.y, `${name} top edge`).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width, `${name} right edge`).toBeLessThanOrEqual(VIEWPORT.width + 0.5);
+  expect(box!.y + box!.height, `${name} bottom edge`).toBeLessThanOrEqual(VIEWPORT.height + 0.5);
 }
 
 test.use({ viewport: VIEWPORT });
 
+/**
+ * 屏 19 复盘列表 / 屏 20 报告详情，**在 1024×600 这块真屏上**。
+ *
+ * 这份守的是 jsdom 作不了证的三样：控件够不够手指点（≥48）· 有没有横着溢出屏幕 ·
+ * 点下去之后真的发了哪一条请求。静止一帧长什么样归四图
+ * （`kiosk-screen-19-review.fourup.spec.ts` / `-20-report`），两边互不替代。
+ *
+ * ⚠️ **2026-08-25 整份重写。** 原来那版打的是 27 屏改造**之前**的 DOM
+ * （`report-list-page` / `report-game-card` / 列表上的播放条 / 每张卡自己的菜单），
+ * 改造之后四条全部停在第一句 `toBeVisible` 上 —— 断言的对象整个不存在了。
+ * 这类失败最会骗人：它红得像「功能坏了」，其实是**闸自己过期了**，
+ * 而一旦有人把它标成 skip，这一屏在真浏览器里就再也没人量过。
+ */
 test.describe('kiosk Report at the exact seven-inch viewport', () => {
-  test('list fits, exposes every state, selects games, creates and retries reports', async ({ page }) => {
+  test('列表：装得下、六种状态各说各的话、选中、两档生成、断点续算、打开报告', async ({ page }) => {
     const state = await setupReportMocks(page);
     await page.goto('/kiosk/report');
 
-    await expect(page.getByTestId('report-list-page')).toBeVisible();
+    await expect(page.getByTestId('review-page')).toBeVisible();
     await expectViewportFit(page);
+
     const headerActions = page.locator('header').getByRole('button').or(
       page.locator('header').getByRole('link'),
     );
@@ -349,76 +402,108 @@ test.describe('kiosk Report at the exact seven-inch viewport', () => {
     for (let index = 0; index < await headerActions.count(); index += 1) {
       await expectTouchTarget(page, headerActions.nth(index), `Header action ${index + 1}`);
     }
+    // Dock 有几项由 `KioskDock.test.tsx` 钉着 —— 这里只管**每一项都够手指点**。
     const dockActions = page.locator('nav button');
-    await expect(dockActions).toHaveCount(8);
-    for (let index = 0; index < 8; index += 1) {
+    await expect(dockActions).not.toHaveCount(0);
+    for (let index = 0; index < await dockActions.count(); index += 1) {
       await expectTouchTarget(page, dockActions.nth(index), `Dock action ${index + 1}`);
     }
-    await expectPlaybackTouchTargets(page, page.getByTestId('report-playback'), 'List playback');
-    await expect(page.getByText('普通报告 · 排队中', { exact: true })).toBeVisible();
-    await expect(page.getByText('深度报告 · 生成中', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: '打开普通报告' })).toBeAttached();
-    await expect(page.getByRole('button', { name: '打开深度报告' })).toHaveCount(2);
-    await expect(page.getByRole('button', { name: '重试普通报告' })).toBeAttached();
 
-    const runningCard = page.getByRole('button', { name: /选择一局棋谱：正在生成的棋局/ });
-    await runningCard.click();
-    await expect(runningCard.locator('xpath=ancestor::*[@data-testid="report-game-card"]')).toHaveAttribute('data-selected', 'true');
+    // 六种行状态各有各的说法 —— 「算了一半」被糊弄成「已分析」是这一屏最容易犯的错。
+    // ⚠️ 行上写的是 `rowTitle` —— `source: 'import'` 画的是「导入的棋谱 · {title}」,
+    // `event` 在这一屏**根本不上屏**。拿 event 去找行,找到的是空集合。
+    const rows = page.getByTestId('review-row');
+    const rowOf = (id: string) => rows.filter({ hasText: `测试棋局 ${id}` });
+    for (const [id, kind, tag] of [
+      ['no-report', 'unanalyzed', '未分析'],
+      ['queued', 'running', '正在分析 0/6'],
+      ['running', 'running', '正在分析 3/6'],
+      ['normal', 'analyzed', '已分析'],
+      ['failed', 'partial', '只算到 2/6'],
+      ['dead', 'failed', '分析失败'],
+      ['unfinished', 'unfinished', '未终局'],
+    ] as const) {
+      await expect(rowOf(id), `${id} 行`).toHaveAttribute('data-state', kind);
+      await expect(rowOf(id), `${id} 的状态标`).toContainText(tag);
+    }
 
-    const noReportCard = page.getByRole('button', { name: /选择一局棋谱：尚未生成复盘/ })
-      .locator('xpath=ancestor::*[@data-testid="report-game-card"]');
-    await noReportCard.getByRole('button').nth(1).click();
-    const generateNormal = page.getByRole('menuitem', { name: '生成普通报告' });
-    await expectTouchTarget(page, generateNormal, 'Generate normal report');
-    await generateNormal.click();
-    await expect.poll(() => state.createReportBodies).toContainEqual({ user_game_id: 'no-report', report_type: 'normal' });
+    // 两档都跑完 ⇒ 行尾拆成两个键，各自只有一个宾语；只有一档时才是概括的「查看报告」。
+    const bothRow = rowOf('both-tiers');
+    await expectReachable(page, bothRow.getByRole('button', { name: '标准' }), '两档 · 标准');
+    await expectReachable(page, bothRow.getByRole('button', { name: '精读' }), '两档 · 精读');
+    await expect(bothRow.getByRole('button', { name: '查看报告' })).toHaveCount(0);
 
-    const retry = page.getByRole('button', { name: '重试普通报告' });
-    await retry.scrollIntoViewIfNeeded();
-    await expectTouchTarget(page, retry, 'Failed report retry');
-    await retry.click();
+    // 选中是整块左半，动作在行尾 —— 两个手势分开。
+    const pick = rowOf('running').locator('.rvpick');
+    await expectReachable(page, pick, 'Row select target');
+    await pick.click();
+    await expect(rowOf('running')).toHaveAttribute('data-selected', 'true');
+
+    // 没下完的局不给生成报告：判别位是「终局没有」，不是「算不算分」。
+    await rowOf('unfinished').locator('.rvpick').click();
+    const standard = page.getByTestId('review-cards').getByRole('button', { name: /标准/ });
+    const deep = page.getByTestId('review-cards').getByRole('button', { name: /精读/ });
+    await expect(standard).toBeDisabled();
+    await expect(deep).toBeDisabled();
+
+    await rowOf('no-report').locator('.rvpick').click();
+    await expectReachable(page, standard, 'Standard tier card');
+    await expectReachable(page, deep, 'Deep tier card');
+    await standard.click();
+    await expect.poll(() => state.createReportBodies)
+      .toContainEqual({ user_game_id: 'no-report', report_type: 'normal' });
+
+    // 断掉的那条重试会**从断点续算**，所以它说的是「继续分析」而不是「重试」。
+    const resume = rowOf('failed').getByRole('button', { name: '继续分析' });
+    await resume.scrollIntoViewIfNeeded();
+    await expectReachable(page, resume, 'Resume partial analysis');
+    await resume.click();
     await expect.poll(() => state.retryIds).toContain(105);
     await expectViewportFit(page);
 
-    const openCompleted = page.getByRole('button', { name: '打开普通报告' });
-    await openCompleted.scrollIntoViewIfNeeded();
-    await expectTouchTarget(page, openCompleted, 'Open completed report');
-    await openCompleted.click();
+    const open = rowOf('normal').getByRole('button', { name: '查看报告' });
+    await open.scrollIntoViewIfNeeded();
+    await expectReachable(page, open, 'Open completed report');
+    await open.click();
     await expect(page).toHaveURL(/\/kiosk\/report\/103$/);
     await expect(page.getByTestId('report-detail-board')).toBeVisible();
     expect(state.unhandledRequests).toEqual([]);
   });
 
-  test('local and library imports keep all actions visible and send normal/deep requests', async ({ page }) => {
+  test('导入：两条路都点得着，送出去的两份 body 都对', async ({ page }) => {
     const state = await setupReportMocks(page);
     await page.goto('/kiosk/report');
-    await expect(page.getByTestId('report-list-page')).toBeVisible();
+    await expect(page.getByTestId('review-page')).toBeVisible();
 
-    const importButton = page.getByRole('button', { name: '导入棋谱' });
-    await expectTouchTarget(page, importButton, 'Import trigger');
-    await importButton.click();
-    const localMenuItem = page.getByRole('menuitem', { name: '从本地导入 SGF' });
+    const importCard = page.getByTestId('review-cards').getByRole('button', { name: /导入棋谱复盘/ });
+    await expectReachable(page, importCard, 'Import trigger');
+    await importCard.click();
+    const localMenuItem = page.getByRole('menuitem', { name: '导入本地 SGF' });
     const libraryMenuItem = page.getByRole('menuitem', { name: '从棋谱库导入' });
     await expectTouchTarget(page, localMenuItem, 'Local import menu action');
     await expectTouchTarget(page, libraryMenuItem, 'Library import menu action');
     await localMenuItem.click();
 
-    const localDialog = page.getByRole('dialog', { name: '从本地导入 SGF' });
+    const localDialog = page.getByRole('dialog', { name: '导入本地 SGF' });
     await expect(localDialog).toBeVisible();
     await expectTouchTarget(page, localDialog.getByRole('button', { name: '选择本地文件' }), 'Local file chooser');
     await localDialog.getByLabel('SGF 内容').fill(SGF);
-    for (const label of ['取消', '仅导入', '导入并生成普通报告', '导入并生成深度报告']) {
+    for (const label of ['取消', '仅导入', '导入并生成普通复盘', '导入并生成深度复盘']) {
       await expectTouchTarget(page, localDialog.getByRole('button', { name: label }), `Local dialog ${label}`);
     }
     await expectViewportFit(page);
     const keyboardHide = page.locator('.skbd-hide');
     if (await keyboardHide.isVisible()) await keyboardHide.click();
-    await localDialog.getByRole('button', { name: '导入并生成普通报告' }).click();
+    await localDialog.getByRole('button', { name: '导入并生成普通复盘' }).click();
     await expect(localDialog).toBeHidden();
     await expect.poll(() => state.createGameBodies.length).toBe(1);
-    await expect.poll(() => state.createReportBodies).toContainEqual({ user_game_id: 'imported-1', report_type: 'normal' });
+    // 棋谱自己写着 `RE[B+2.5]`。本地导入这条以前**不读 RE[]**，
+    // 于是导进来的每一局在屏上都是「没写胜负」——而屏幕上看不出它本来是有的。
+    await expect.poll(() => state.createGameBodies[0]?.result).toBe('B+2.5');
+    await expect.poll(() => state.createReportBodies)
+      .toContainEqual({ user_game_id: 'imported-1', report_type: 'normal' });
 
-    await importButton.click();
+    await importCard.click();
     await page.getByRole('menuitem', { name: '从棋谱库导入' }).click();
     const libraryDialog = page.getByRole('dialog', { name: '从棋谱库导入' });
     await expect(libraryDialog).toBeVisible();
@@ -428,45 +513,64 @@ test.describe('kiosk Report at the exact seven-inch viewport', () => {
     await expectTouchTarget(page, librarySearchButton, 'Library search button');
     const album = libraryDialog.getByRole('button', { name: /棋谱库测试赛事/ });
     await expectTouchTarget(page, album, 'Library result');
-    for (const label of ['取消', '仅导入', '导入并生成普通报告', '导入并生成深度报告']) {
+    for (const label of ['取消', '仅导入', '导入并生成普通复盘', '导入并生成深度复盘']) {
       await expectTouchTarget(page, libraryDialog.getByRole('button', { name: label }), `Library dialog ${label}`);
     }
     await expectViewportFit(page);
-    await libraryDialog.getByRole('button', { name: '导入并生成深度报告' }).click();
+    await libraryDialog.getByRole('button', { name: '导入并生成深度复盘' }).click();
     await expect(libraryDialog).toBeHidden();
     await expect.poll(() => state.createGameBodies.length).toBe(2);
-    await expect.poll(() => state.createReportBodies).toContainEqual({ user_game_id: 'imported-2', report_type: 'deep' });
+    await expect.poll(() => state.createReportBodies)
+      .toContainEqual({ user_game_id: 'imported-2', report_type: 'deep' });
     expect(state.unhandledRequests).toEqual([]);
   });
 
-  test('completed detail fits long metadata, toggles analysis, previews recommendations and opens Research', async ({ page }) => {
+  test('报告详情：长元数据装得下、四个开关、重点手跳手、去研究带得回来', async ({ page }) => {
     const state = await setupReportMocks(page);
     await page.goto('/kiosk/report/106');
 
     await expect(page.getByTestId('report-detail-board')).toBeVisible();
     await expectViewportFit(page);
-    await expectTouchTarget(page, page.getByRole('button', { name: '返回', exact: true }), 'Detail back');
-    const research = page.getByRole('button', { name: '进入研究室' });
-    await expectTouchTarget(page, research, 'Open in Research');
+    await expectReachable(
+      page,
+      page.getByTestId('report-detail-pagebar').getByRole('button', { name: '复盘' }),
+      'Detail back',
+    );
+    const research = page.getByRole('button', { name: '去研究' });
+    await expectReachable(page, research, 'Open in Research');
+    await expectReachable(page, page.getByRole('button', { name: '重算' }), 'Recompute');
 
-    for (const [name, pressed] of [['试下', 'true'], ['领地', 'true'], ['手数', 'true'], ['建议', 'false']] as const) {
-      const toggle = page.getByRole('button', { name });
-      await expectTouchTarget(page, toggle, `${name} toggle`);
+    // 造的数据里有 ownership ⇒「形势」可点。四个开关的初值写死在页面上，点一下必须翻面。
+    const toggles = page.getByTestId('report-detail-toggles');
+    for (const [name, pressedAfter] of [
+      ['形势', 'false'], ['手数', 'false'], ['AI 推荐', 'true'], ['试下', 'true'],
+    ] as const) {
+      const toggle = toggles.getByRole('button', { name });
+      await expectReachable(page, toggle, `${name} toggle`);
       await toggle.click();
-      await expect(toggle).toHaveAttribute('aria-pressed', pressed);
+      await expect(toggle).toHaveAttribute('aria-pressed', pressedAfter);
     }
 
-    const recommendations = ['Q10', 'C12', 'R6'].map((move) => (
-      page.getByRole('button', { name: `预览变化 ${move}` })
-    ));
-    for (const [index, recommendation] of recommendations.entries()) {
-      await recommendation.scrollIntoViewIfNeeded();
-      await expectTouchTarget(page, recommendation, `AI recommendation ${index + 1}`);
+    // 走子的四个键 —— 这一屏没有滑杆，长局靠曲线点，短距离靠这四个。
+    const movenav = page.getByTestId('report-detail-movenav');
+    for (const label of ['回到开局', '上一手', '下一手', '跳到最后']) {
+      await expectReachable(page, movenav.getByRole('button', { name: label }), `Movenav ${label}`);
     }
-    await recommendations[0].click();
-    await expect(page.getByText('变化预览', { exact: false })).toBeVisible();
+    // 打开时游标停在**最后一份算完的分析**上,所以「跳到最后」这会儿就是灰的。
+    await expect(movenav.getByRole('button', { name: '跳到最后' })).toBeDisabled();
+    await movenav.getByRole('button', { name: '回到开局' }).click();
+    await expect(movenav.getByRole('button', { name: '回到开局' })).toBeDisabled();
+    await expect(movenav.getByRole('button', { name: '下一手' })).toBeEnabled();
 
-    await expectPlaybackTouchTargets(page, page.getByTestId('report-detail-playback-fixed'), 'Detail playback');
+    // 「重点手」那块每行一个「看这手」，点了就跳到那一手。
+    const keyRow = page.getByTestId('report-detail-key-row').first();
+    await keyRow.scrollIntoViewIfNeeded();
+    const seeMove = keyRow.getByRole('button', { name: '看这手' });
+    await expectReachable(page, seeMove, 'See this move');
+    await seeMove.click();
+    // 跳到某一手之后就不在开局了 —— 「回到开局」重新亮起来。
+    await expect(movenav.getByRole('button', { name: '回到开局' })).toBeEnabled();
+
     await expectViewportFit(page);
     await research.click();
     // `&from=report&task=` 是屏 21 加的 —— 研究屏靠它才知道返回键该回**这一份报告**
@@ -475,12 +579,12 @@ test.describe('kiosk Report at the exact seven-inch viewport', () => {
     expect(state.unhandledRequests).toEqual([]);
   });
 
-  test('failed detail keeps its retry action touch-safe and retries through the shared server API', async ({ page }) => {
+  test('算了一半的报告：「重算」够手指点，且真的打到共用的那条 API', async ({ page }) => {
     const state = await setupReportMocks(page);
     await page.goto('/kiosk/report/105');
 
-    const retry = page.getByRole('button', { name: '重试复盘' });
-    await expectTouchTarget(page, retry, 'Detail retry');
+    const retry = page.getByRole('button', { name: '重算' });
+    await expectReachable(page, retry, 'Detail retry');
     await retry.click();
     await expect.poll(() => state.retryIds).toContain(105);
     await expectViewportFit(page);

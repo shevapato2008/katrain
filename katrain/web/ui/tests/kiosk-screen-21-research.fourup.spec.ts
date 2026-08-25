@@ -19,16 +19,18 @@ const OUT = resolve(process.cwd(),
  * 预期差异,每条都是裁定:
  *
  *  ① **副标题跟着入口走,不是稿子写死的那一句。** 稿子的返回键是「← 棋谱」、副标写
- *    「来自复盘:自由对弈 · 今天 15:12」。可这一屏有**四个**入口(棋谱详情 / 对局历史 /
- *    复盘报告 / 刚下完那局),回去的地方各不相同,而中间两条的 URL 形状完全一样
- *    (都是 `?user_game_id=`)、反推不出来 ⇒ 由 `?from=` 说了算。这一帧取 `from=history`。
+ *    「来自复盘:自由对弈 · 今天 15:12」。可这一屏有**三个**入口(棋谱详情 / 复盘报告 /
+ *    刚下完那局),回去的地方各不相同,而前两条的 URL 形状完全一样
+ *    (都带 `?user_game_id=`)、反推不出来 ⇒ 由 `?from=` 说了算。这一帧取 `from=report`。
+ *    (2026-08-25:原来那一帧取的是 `from=history`,而对局历史那一屏是 27 屏改造之前的东西、
+ *     从 UI 上走不到,已随本轮删掉 ⇒ 入口从四个变三个。)
  *    **拿不到出处就整行不渲染** —— 不编。
  *
  *  ② **稿子那句 `.kiosk-opthint` 换掉了。** 原句「这四种互斥 —— 同一根手指点在盘上只能是
  *    其中一个意思,所以是分段不是开关」是讲给读稿人的设计理由,而规范给这一行的定义是
  *    **「写当前选中项」**;Fan 2026-08-22 也说过「不要写那么多解释文字,还都是小字,
  *    7 英寸屏看起来非常费劲」。腾出来的这一行拿去说**规则 / 贴目** ——
- *    那三个控件(规则 / 贴目 / 让子)这一版删了(四个入口都自带这些值),
+ *    那三个控件(规则 / 贴目 / 让子)这一版删了(三个入口都自带这些值),
  *    但**删控件不等于可以不说值**:用户得知道 AI 是按什么规则算的。
  *
  *  ③ **实现比稿子多一颗:页控条右端的「领地」。** 这是本轮**唯一**超出稿子的增加,
@@ -85,7 +87,7 @@ test('四图:研究 ←→ sample-go/shots/21-research.png', async ({ page }) =>
   await page.route('**/api/v1/analysis/quick-analyze', (route) => route.fulfill({
     json: { turnInfos: [{ moveInfos: MOVE_INFOS, ownership: null }] },
   }));
-  // 出处那一行要真数据 —— 这一帧走「对局历史 → 一键复盘」那条入口。
+  // 出处那一行要真数据 —— 这一帧走「复盘报告 → 去研究」那条入口。
   await page.route('**/api/v1/user-games/hist-1**', (route) => route.fulfill({
     json: {
       id: 'hist-1', user_id: 1, title: '自由对弈', player_black: '柯洁', player_white: '申真谞',
@@ -97,7 +99,7 @@ test('四图:研究 ←→ sample-go/shots/21-research.png', async ({ page }) =>
   }));
 
   // **不带 `analyze=1`** —— 带了会直接跑去扫描态,而稿子这一帧画的是编辑态。
-  await page.goto('/kiosk/research?user_game_id=hist-1&from=history');
+  await page.goto('/kiosk/research?user_game_id=hist-1&from=report');
   await page.waitForSelector('.aitab .best');
   await page.waitForLoadState('networkidle');
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
@@ -112,12 +114,12 @@ test('四图:研究 ←→ sample-go/shots/21-research.png', async ({ page }) =>
       + '编辑工具互斥所以用分段，不是开关 · 折叠块 253，AI 表体 221 只露得出表头 + 8 行(稿子给了 10 行，'
       + 'K3 那行被横切) —— 装不下是设计里就有的',
     implementationCaption:
-      '实现:/kiosk/research?user_game_id=hist-1&from=history @1024×600 · 时钟冻 16:40 · '
-      + '**副标题跟着入口走**:四个入口(棋谱详情/对局历史/复盘报告/刚下完那局)回去的地方各不相同，'
-      + '而中间两条 URL 形状一样、反推不出来 ⇒ 由 `?from=` 说了算；拿不到出处就整行不渲染，不编 · '
+      '实现:/kiosk/research?user_game_id=hist-1&from=report @1024×600 · 时钟冻 16:40 · '
+      + '**副标题跟着入口走**:三个入口(棋谱详情/复盘报告/刚下完那局)回去的地方各不相同，'
+      + '而前两条 URL 形状一样、反推不出来 ⇒ 由 `?from=` 说了算；拿不到出处就整行不渲染，不编 · '
       + '**提示行换成「当前工具 · 规则 · 贴目」**:规范给这一行的定义是「写当前选中项」，'
       + '稿子那句讲设计理由的话收进代码注释(Fan 2026-08-22:小字太费劲)；'
-      + '规则/贴目/让子三个控件删了(四个入口都自带这些值)，但**删控件不等于可以不说值** · '
+      + '规则/贴目/让子三个控件删了(三个入口都自带这些值)，但**删控件不等于可以不说值** · '
       + '**多一颗「领地」在页控条**(本轮唯一超出稿子的增加，已登记):形势图对手搭的局面没有替代路径，'
       + '而它连一次请求都不多发——ownership 和候选着法在同一个响应里 · '
       + '**少三颗**:`移动` 是坏的不是用得少(选中态存在 useRef 里，屏上零反馈、第二下瞬移)、'

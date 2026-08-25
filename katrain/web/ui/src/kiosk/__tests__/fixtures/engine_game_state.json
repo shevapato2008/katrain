@@ -73,7 +73,9 @@
   "handicap": 0,
   "history": [
     {
+      "move": null,
       "node_id": 0,
+      "player": null,
       "score": null,
       "winrate": null
     }

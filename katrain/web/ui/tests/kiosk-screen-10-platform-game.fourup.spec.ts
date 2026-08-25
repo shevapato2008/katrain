@@ -42,11 +42,17 @@ const OUT = resolve(process.cwd(),
  *    **「上一手 4.2s」全链路没有这个字段**。
  *    掉线由 `engineErrorToast` 说 —— 星阵 genmove 跑在人类落子请求**里面**
  *    (`gateway.py:137/163`),没有不由用户触发的往返。
- *  · **稿子那个「棋谱」折叠块也不画**:`GameState.history` 里只有 `node_id/score/winrate`、
- *    **没有坐标**,而 `stones` 虽有 `moveNumber` 却**不含被提掉的子** —— 拿它拼出来的棋谱会缺手。
- *    ⇒ 等后端补一条着法序列。`.mvrows` 的 CSS 一直留着(屏 16/18 有真消费者),接口一到就能接。
- *    **这也是为什么 engineMode 下右栏中段空着约 148px**(实测:六块 308 + 5×12 = 368 / 516,
- *    `grows: 0`,动作区靠 `margin-top:auto` 贴底)。
+ *  · **「棋谱」折叠块 —— 2026-08-25 补上了,右栏中段那 148px 的空没了。**
+ *    卡住它的是数据:`history` 只有 `node_id/score/winrate`(**没有坐标**),而 `stones` 虽有
+ *    `moveNumber` 却**不含被提掉的子** —— 拿它拼出来的棋谱会缺手。
+ *    ⇒ 后端在 `interface.py` 那个**本来就在遍历主线 GameNode** 的循环里加了两个键
+ *    (`move` = `Move.gtp()`,`player`),坐标就在 `node.move` 上,顺手写进去。
+ *    断言在 `tests/platforms/test_state_history_moves.py` —— 其中一条专门造了个提子,
+ *    证明那一手在 `history` 里还在、在 `stones` 里已经没了(**这条就是这次改动的全部理由**)。
+ *    前端在 `GameControlPanel` 里叠行:**按后端给的 `player` 分黑白,不按手数奇偶**
+ *    (让子局第一手就是白,连着几手同色也真会出现)。
+ *    「装不下时滚的是它自己 / 一手没下时空态说话」在 `kiosk-screen-05-game.spec.ts` 里
+ *    用真浏览器量 —— 被 `overflow` 裁掉的行在截图上根本不存在,四图对比无从证起。
  *  · **悔棋:实现反过来纠正稿子(Fan 2026-08-25 亲裁)。**
  *    原话:「**只有人机对弈的自由对弈允许悔棋**。人机对弈的升降级对弈、人人对弈的对战大厅、
  *    跨平台对弈等都不允许悔棋,悔棋按钮可以撤销。」
@@ -71,6 +77,9 @@ const OUT = resolve(process.cwd(),
  *    而正在算的是星皮猴 —— `go-screens.css` 那行注释白纸黑字「`.turn` 是**轮到谁**」。
  *    实现把手数计只挂在轮到的那张卡上也是对的:kiosk 不计时、`main_time_used` 不累加,
  *    唯一为真的量「第几手」是**局面的**量不是某一方的量。「最长 180s」是隧道超时不是时限,**不上屏**。
+ *  · **两个显示开关的状态两边不同,而稿子那一帧自己也不自洽。** 稿子画的是「坐标关 / 手数开」,
+ *    可它盘上的子**一个手数都没写**;实现的默认是「坐标开 / 手数关」,盘上也没有手数 —— 自洽。
+ *    这两个是**用户开关**,不是这一屏的属性,四图比的是默认态 ⇒ **不改**,登记在此。
  *  · 取图机器上**实体识别关着** ⇒ 页控条右端那个「重置识别」页级图标键不出现。
  *    **它在真盒子上是有的。**
  */
@@ -78,19 +87,32 @@ const OUT = resolve(process.cwd(),
 const COLS = 'ABCDEFGHJKLMNOPQRST';
 const xy = (c: string): [number, number] => [COLS.indexOf(c[0]), Number(c.slice(1)) - 1];
 
-// 稿子 `:1822` 那一局,逐子照搬 —— 参考图和实现图必须画同一个局面。
-const BLACK = ['Q16', 'D4', 'C6', 'Q10', 'R14', 'F17', 'K4', 'C11', 'P3'];
-const WHITE = ['D16', 'Q4', 'F3', 'R6', 'O17', 'D9', 'H3', 'R11', 'M17'];
+/**
+ * 稿子 `:1822` 那一局,逐子照搬 —— 参考图和实现图必须画同一个局面。
+ *
+ * 这里存的是**落子顺序**,不是两串「盘上有哪些子」:稿子的棋谱块画出了第 11–18 手
+ * (`6 K4/H3`、`7 P3/R11`、`8 F17/O17`、`9 Q10/M17`),顺序是它自己写死的,和把黑白各自
+ * 排成一列的那种写法对不上。⇒ **盘上的子和棋谱从同一个数组导出**,两者不可能互相说谎。
+ * 前十手稿子里滚出去了(它默认停在当前手),照常规布局补,不影响那两张图要比的东西。
+ */
+const ORDER: [string, 'B' | 'W'][] = [
+  ['Q16', 'B'], ['D16', 'W'], ['D4', 'B'], ['Q4', 'W'], ['C6', 'B'],
+  ['F3', 'W'], ['R14', 'B'], ['R6', 'W'], ['C11', 'B'], ['D9', 'W'],
+  // ↓ 稿子棋谱块上看得见的那四行
+  ['K4', 'B'], ['H3', 'W'], ['P3', 'B'], ['R11', 'W'],
+  ['F17', 'B'], ['O17', 'W'], ['Q10', 'B'], ['M17', 'W'],
+];
 
 const STATE = {
   game_id: 'fourup-10', board_size: [19, 19], komi: 7.5, handicap: 0, ruleset: 'chinese',
   game_type: 'free', count_min_moves: 100, current_node_id: 18, current_node_index: 18,
-  history: Array.from({ length: 19 }, (_, i) => ({ node_id: i, winrate: 0.5, score: 0 })),
-  player_to_move: 'W',
-  stones: [
-    ...BLACK.map((c, i) => ['B', xy(c), null, i * 2 + 1]),
-    ...WHITE.map((c, i) => ['W', xy(c), null, i * 2 + 2]),
+  // `history[0]` 是根节点 —— 没有着法。第 n 手落在 `history[n]`,和 `current_node_index` 同一套下标。
+  history: [
+    { node_id: 0, winrate: 0.5, score: 0, move: null, player: null },
+    ...ORDER.map(([move, player], i) => ({ node_id: i + 1, winrate: 0.5, score: 0, move, player })),
   ],
+  player_to_move: 'W',
+  stones: ORDER.map(([c, p], i) => [p, xy(c), null, i + 1]),
   last_move: xy('M17'), prisoner_count: { B: 0, W: 0 },
   analysis: null, commentary: '', is_root: false, is_pass: false, end_result: null,
   children: [], ghost_stones: [],
@@ -185,9 +207,12 @@ test('四图:星阵围棋 · 对局中 ←→ sample-go/shots/10-platform-game.p
       + 'golaxy/adapter.py 的**登录闩**(置真全在 connect() 里、置假只有 disconnect() 一处)，'
       + '平台宕机时恒真，和屏 18 写死 0.5 的 current_winrate 同形；「上一手 4.2s」全链路无字段。'
       + '掉线由 engineErrorToast 说——星阵 genmove 跑在人类落子请求**里面**，没有不由用户触发的往返 · '
-      + '**棋谱折叠块不画**:history 只有 node_id/score/winrate 没坐标，stones 有 moveNumber 但'
-      + '**不含被提掉的子**，拼出来的棋谱会缺手 ⇒ 等后端补着法序列。'
-      + '这也是右栏中段空着约 148px 的原因(实测 308+60=368/516，grows:0) · '
+      + '**棋谱折叠块补上了**(2026-08-25)，右栏中段那 148px 的空没了。'
+      + '卡住它的是数据:history 只有 node_id/score/winrate **没坐标**，stones 有 moveNumber 但'
+      + '**不含被提掉的子**，拼出来的谱会缺手 ⇒ 后端在**本来就在遍历主线的那个循环**里'
+      + '加了 move(GTP)/player 两个键。叠行**按 player 不按手数奇偶**(让子局第一手就是白) · '
+      + '**「AI 思考中…」药丸居中在棋盘上**(2026-08-25 改)——上一版 left:50% 相对的是 992 宽的'
+      + '定位祖先，落在视口 512 而盘右沿是 532，药丸横跨盘/栏接缝压住第一张玩家卡 · '
       + '**悔棋:实现反过来纠正稿子**——稿子画成「在、但灰」，实现整局都没有这颗键。'
       + 'Fan 2026-08-25 亲裁:「只有人机对弈的自由对弈允许悔棋，跨平台对弈等都不允许，按钮可以撤销。」'
       + '稿子那条理由「灰在这儿比点了被拒好」只对**过一会儿会回来**的状态成立，而这里是'

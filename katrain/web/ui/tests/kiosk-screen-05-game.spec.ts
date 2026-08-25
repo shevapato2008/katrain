@@ -27,11 +27,21 @@ const xy = (c: string): [number, number] => [COLS.indexOf(c[0]), Number(c.slice(
 const BLACK = ['Q16', 'Q4', 'C14', 'C11', 'Q6', 'Q10', 'K17', 'C7', 'C5', 'D8', 'R14', 'M16'];
 const WHITE = ['D4', 'D16', 'C16', 'O3', 'L3', 'F17', 'G3', 'D6', 'C4', 'F5', 'N17', 'P17'];
 
-/** 25 手的胜率/目差:第 17 手黑走坏,两条线一起掉(和稿子那张图说的是同一局)。 */
+/**
+ * 25 手的胜率/目差:第 17 手黑走坏,两条线一起掉(和稿子那张图说的是同一局)。
+ *
+ * `move`/`player` 是 2026-08-25 后端在主线循环里加的两个键(棋谱折叠块要用)。
+ * ⚠️ **`history[0]` 是根节点,没有着法** —— 口径就是这样,第 n 手落在 `history[n]`。
+ * 25 项 ⇒ 24 手 ⇒ 12 行,而星阵屏那块 body 只有一百来像素:**这份数据是造来会溢出的**,
+ * 装得下的数据量下量出来的滚动数字一概不算。
+ */
 const HISTORY = Array.from({ length: 25 }, (_, i) => ({
   node_id: i,
   winrate: i < 17 ? 0.5 - i * 0.004 : 0.5 - 17 * 0.004 - (i - 16) * 0.012,
   score: i < 17 ? -i * 0.12 : -17 * 0.12 - (i - 16) * 0.55,
+  // 黑白交替,坐标就取盘上那两串 —— **谱和盘上的子对得上**,不是两套互不相干的假数据。
+  move: i === 0 ? null : (i % 2 === 1 ? BLACK[(i - 1) / 2] : WHITE[i / 2 - 1]),
+  player: i === 0 ? null : (i % 2 === 1 ? 'B' : 'W'),
 }));
 
 // `calculated_rank` 是**内部数值**,不是 `'5k'` 这种字符串:0 → 1 级、−4 → 5 级、1 → 1 段。
@@ -384,6 +394,169 @@ test('星阵人机屏:道具键在、胜率块不在,动作区照旧贴底且不
   expect(g.railOverflow, '右栏溢出').toBeLessThanOrEqual(0);
   expect(g.docScrollHeight, '整屏溢出').toBeLessThanOrEqual(600);
   expect(g.title).toBe('星阵围棋 · 人机');
+});
+
+// ── 屏 10 · 棋谱折叠块 —— 承重:该滚的是它自己 ────────────────────────────────
+// 2026-08-25 补上稿子 `:1833` 那一块(此前 engineMode 下右栏中段空着约 148px)。
+// 数据来自后端在主线循环里新加的 `history[].move/player`。
+//
+// **这一关是「量」不是「看」**:四图对比看得见「有没有这一块」,看不见「装不下的时候它自己能不能滚」——
+// 被 `overflow` 裁掉的行在截图上根本不存在。清单先写死关系式,再读数:
+//   · 该滚的是 `.kiosk-fold__body.mvrows` **它自己**,不是 `.kiosk-rail`
+//   · 能滚:自己 scrollHeight > clientHeight;写入大 scrollTop 后**读回非 0**
+//   · 手指拨得动:真派一次滚轮,scrollTop 变化不为 0(程序化能滚 ≠ 拨得动)
+//   · 没被祖先裁掉:fold 的 border box 落在 `.kiosk-rail` 的裁切框内
+//   · 右栏本身照旧不滚、动作区照旧贴底(加了一块会长的东西,这两条最容易崩)
+// 具体像素只记录,判据是上面这几条关系式。
+//
+// **变异记录**(2026-08-25,逐个改坏逐个跑,不是推演):
+//   M1 `.gthink` 退回 `left:50%`            → 只红「药丸没居中在棋盘上」
+//   M2 去掉 `.kiosk-fold__body.mvrows` 的 `overflow-y:auto` → 只红「真滚轮拨不动」
+//   M3 棋谱折叠块去掉 `grow`                 → 红「棋谱没溢出」+「动作区没贴右栏底」
+//
+// ⚠️ **M2 把我的预测证伪了一半**:我以为 `overflow` 那条(`scrollHeight − clientHeight > 0`)
+// 和 ⑤ 那条(写 `scrollTop` 读回非 0)会跟着一起红,**两条都没红**。
+// 回落到 `overflow:hidden` 之后内容照样溢出(所以 ①绿)、`scrollTop` 照样写得进读得回
+// (Chromium 里 `overflow:hidden` 的元素**程序化仍可滚**,所以 ⑤绿)——
+// 分得出来的只有**真滚轮**。屏 21 `.aitab` 那次踩的是同一个坑,这里第二次实测确认。
+test('星阵屏棋谱:装不下时滚的是它自己,右栏照旧不滚、动作区照旧贴底', async ({ page }) => {
+  await open(page, 'free', '/kiosk/play/cross-platform/engine/game/g-02');
+  await page.waitForSelector('[data-testid="game-moves-fold"] .mvrows .mv');
+
+  const g = await page.evaluate(() => {
+    const body = document.querySelector('[data-testid="game-moves-fold"] .kiosk-fold__body') as HTMLElement;
+    const fold = document.querySelector('[data-testid="game-moves-fold"]') as HTMLElement;
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const acts = document.querySelector('[data-testid="game-actions"]') as HTMLElement;
+    const fb = fold.getBoundingClientRect(), rb = rail.getBoundingClientRect();
+    return {
+      bodyIsMvrows: body.classList.contains('mvrows'),
+      rows: body.querySelectorAll('.n').length,
+      firstRow: Array.from(body.querySelectorAll('span')).slice(0, 3).map((n) => n.textContent),
+      overflow: body.scrollHeight - body.clientHeight,
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      foldInsideRail: fb.top >= rb.top - 0.5 && fb.bottom <= rb.bottom + 0.5,
+      actionsBottom: Math.round(acts.getBoundingClientRect().bottom),
+      railBottom: Math.round(rb.bottom),
+      value: fold.querySelector('.kiosk-fold__head b')?.textContent ?? null,
+      nowCells: Array.from(body.querySelectorAll('.mv.now')).map((n) => n.textContent),
+    };
+  });
+  console.log('[10-moves/geometry]', JSON.stringify(g));
+
+  expect(g.bodyIsMvrows, '棋谱 body 不是 .mvrows —— 那条 overflow-y 挂在这个组合选择器上').toBe(true);
+  expect(g.rows, '24 手该叠成 12 行').toBe(12);
+  // 第 1、2 手 = BLACK[0] / WHITE[0]。**和盘上那两颗子是同一份数据**。
+  expect(g.firstRow, '第一行不是「1 / 黑 / 白」').toEqual(['1', 'Q16', 'D4']);
+  expect(g.value, '标题行右端没写到第几手').toBe('第 24 手');
+  // `now` 只能有一个 —— 两个说明 `bAt`/`wAt` 的下标口径和 current_node_index 对不上。
+  expect(g.nowCells.length, 'now 高亮不是恰好一个').toBe(1);
+
+  // ① 该滚的是它自己,而且真的装不下
+  expect(g.overflow, '棋谱没溢出 —— 数据没造够,这一轮量出来的数一概不算').toBeGreaterThan(0);
+  // ② 右栏本身不许滚:会长的那一块吃掉的应该是**自己**的高度,不是把栏顶破
+  expect(g.railOverflow, '加了会长的棋谱之后右栏被顶破了').toBeLessThanOrEqual(0);
+  // ③ 没被祖先裁掉
+  expect(g.foldInsideRail, '棋谱块被右栏裁掉了一截').toBe(true);
+  // ④ 动作区照旧贴底
+  expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
+
+  // ⑤ 程序化能滚 —— 写进去读得回来
+  const wrote = await page.evaluate(() => {
+    const b = document.querySelector('[data-testid="game-moves-fold"] .kiosk-fold__body') as HTMLElement;
+    b.scrollTop = 9999;
+    return b.scrollTop;
+  });
+  expect(wrote, '写了 scrollTop 读回来还是 0 —— 这块根本不是滚动容器').toBeGreaterThan(0);
+
+  // ⑥ **手指拨得动** —— 程序化能滚不等于拨得动(祖先上一个 touch-action / pointer-events 就废了)
+  await page.evaluate(() => {
+    const b = document.querySelector('[data-testid="game-moves-fold"] .kiosk-fold__body') as HTMLElement;
+    b.scrollTop = 0;
+  });
+  const body = page.locator('[data-testid="game-moves-fold"] .kiosk-fold__body');
+  const box = (await body.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, 300);
+  // ⚠️ `expect.poll` 不是保险起见:**Chromium 的滚轮滚动是异步的**,派完事件立刻读
+  // `scrollTop` 拿到的还是 0(第一版就是这么写的,红了一次而产品是好的)。
+  // 屏 14 / 屏 16 那两条同型断言(`kiosk-shell-geometry.spec.ts:702/813`)也是这么写的。
+  await expect.poll(() => body.evaluate((el) => el.scrollTop),
+    { message: '真滚轮拨不动 —— 程序化能滚只证明了 overflow,没证明手指能用' }).toBeGreaterThan(0);
+});
+
+/**
+ * 最空的那一态。**本来是照「塌陷要在最空状态下量」那条来的,而实测把它证伪了一半:**
+ *
+ * 这一屏的右栏固定件加起来 44+60+60+52+40+52 = 308,六道缝 72,合 380 —— 516 里只剩 **136**。
+ * 也就是「中段的空」总共就这么点。实测(2026-08-25,真浏览器逐个量右栏的直接子元素):
+ *   带 `grow`:fold 高 **136**;去掉 `grow`:**134**。差 2px。
+ * ⇒ **这一态分不出 `grow` 在不在**,写 `foldH > 100` 那种断言对它免疫,是个假闸,已删。
+ * `grow` 的红分支在**满态**那条上(变异 M3 实测:去掉 grow ⇒「棋谱没溢出」和上面那条
+ * 「动作区没贴右栏底」同时红)。
+ *
+ * 那这一条还守什么?**空态得自己说话**,以及**加了一块会长的东西之后动作区还贴不贴底**——
+ * 后者靠的是 `.kiosk-rail .kiosk-actions { margin-top: auto }`,和 `grow` 是两条链。
+ */
+test('星阵屏棋谱:一手没下时空态说话,动作区照旧贴底', async ({ page }) => {
+  await stub(page, 'free');
+  await page.route('**/api/state**', (route) => route.fulfill({
+    json: { state: { ...stateFor('free'), history: [{ node_id: 0, score: null, winrate: null, move: null, player: null }],
+                     stones: [], last_move: null, current_node_id: 0, current_node_index: 0 } },
+  }));
+  await page.goto('/kiosk/play/cross-platform/engine/game/g-02');
+  await page.waitForSelector('[data-testid="game-moves-fold"]');
+
+  const g = await page.evaluate(() => {
+    const fold = document.querySelector('[data-testid="game-moves-fold"]') as HTMLElement;
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const acts = document.querySelector('[data-testid="game-actions"]') as HTMLElement;
+    return {
+      empty: fold.querySelector('.kiosk-fold__body')?.textContent?.trim() ?? null,
+      foldH: Math.round(fold.getBoundingClientRect().height),
+      actionsBottom: Math.round(acts.getBoundingClientRect().bottom),
+      railBottom: Math.round(rail.getBoundingClientRect().bottom),
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+    };
+  });
+  console.log('[10-moves/empty]', JSON.stringify(g));
+
+  expect(g.empty, '一手没下时那块是空的 —— 空态得自己说话').toBe('这一局还没有着法');
+  // `foldH` 只**记录**不判据(见上面那段:这一态里 136 vs 134,分不出 grow 在不在)。
+  expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
+  expect(g.railOverflow, '右栏溢出').toBeLessThanOrEqual(0);
+});
+
+// ── 「AI 思考中…」药丸:居中在**棋盘**上,不是整页上 ─────────────────────────
+// 上一版是 `left:'50%'`,50% 相对的是 992 宽的定位祖先 ⇒ 落在视口 512,而盘右沿是 532:
+// 药丸横跨盘/栏接缝,压住第一张玩家卡的上沿。判据是**两个中心对齐**,不是某个像素值。
+test('AI 思考中那颗药丸的中心 = 棋盘的中心,整颗都在盘内', async ({ page }) => {
+  await stub(page, 'free');
+  // ⚠️ `showThinking` 要**轮到 AI 那一方**(`deriveAiTurnState`)。这份 fixture 默认
+  // `player_to_move: 'B'` 而黑是访客 ⇒ 药丸根本不出现,等它就是干等 30 秒。
+  await page.route('**/api/state**', (route) => route.fulfill({
+    json: { state: { ...stateFor('free'), player_to_move: 'W' } },
+  }));
+  await page.goto('/kiosk/play/cross-platform/engine/game/g-02');
+  await page.waitForSelector('[data-testid="ai-thinking"]');
+
+  const g = await page.evaluate(() => {
+    const pill = document.querySelector('[data-testid="ai-thinking"]')!.getBoundingClientRect();
+    const board = document.querySelector('[data-testid="game-board"]')!.getBoundingClientRect();
+    const rail = document.querySelector('.kiosk-rail')!.getBoundingClientRect();
+    return {
+      pillCx: Math.round(pill.x + pill.width / 2), boardCx: Math.round(board.x + board.width / 2),
+      pillLeft: Math.round(pill.x), pillRight: Math.round(pill.right),
+      boardLeft: Math.round(board.x), boardRight: Math.round(board.right),
+      railLeft: Math.round(rail.x),
+    };
+  });
+  console.log('[10-pill]', JSON.stringify(g));
+
+  expect(g.pillCx, '药丸没居中在棋盘上').toBe(g.boardCx);
+  expect(g.pillLeft, '药丸左沿探出盘外').toBeGreaterThanOrEqual(g.boardLeft);
+  expect(g.pillRight, '药丸右沿压到右栏上了 —— 这正是原来那个毛病').toBeLessThanOrEqual(g.boardRight);
+  expect(g.pillRight, '药丸压过了右栏左沿').toBeLessThan(g.railLeft);
 });
 
 // ── 屏 05 · 人人对弈 —— 悔棋按对弈方式判 ─────────────────────────────────────

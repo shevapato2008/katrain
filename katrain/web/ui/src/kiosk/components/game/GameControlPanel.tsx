@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Icon } from '../../shell/icons';
 import { KioskFold } from '../../shell/KioskFold';
 import { KioskActions, type KioskAction } from '../../shell/KioskActions';
@@ -39,6 +40,68 @@ interface Props {
 
 /** 两个人面对面下的局:胜率图整块不渲染(规范 §8 那张「按对弈方式判」的表)。 */
 const TWO_HUMAN_GAME_TYPES = new Set(['pvp_local', 'pvp_online']);
+
+/**
+ * 把主线着法叠成「一行 = 一个黑白回合」。
+ *
+ * ⚠️ **不按手数奇偶判黑白** —— 让子局第一手就是白,连着两手同色(让子、连续虚手之后的实战)
+ * 也真会出现。判据只认后端给的 `player`:同一列已经占了就另起一行,所以让子那几手会各占一行的
+ * 黑格,白格空着 —— 那正是围棋棋谱的写法。
+ *
+ * `history[0]` 是**根节点**,没有着法(`move`/`player` 都是 null)⇒ 第 n 手落在 `history[n]`,
+ * 而 `current_node_index` 用的也是这套下标,两者能直接比。
+ */
+interface MoveRow { n: number; b: string | null; w: string | null; bAt: number; wAt: number }
+
+function toMoveRows(history: GameState['history'] | undefined): MoveRow[] {
+  const rows: MoveRow[] = [];
+  (history ?? []).forEach((h, i) => {
+    if (!h.move || !h.player) return;   // 根节点
+    const black = h.player === 'B';
+    let tail = rows[rows.length - 1];
+    if (!tail || (black ? tail.b : tail.w) !== null) {
+      tail = { n: rows.length + 1, b: null, w: null, bAt: -1, wAt: -1 };
+      rows.push(tail);
+    }
+    if (black) { tail.b = h.move; tail.bAt = i; } else { tail.w = h.move; tail.wAt = i; }
+  });
+  return rows;
+}
+
+/**
+ * 棋谱一格。**不可点** —— 屏 16/18 那两处 `.mvrows` 是回放,点哪手跳哪手是它们的主要交互;
+ * 这一屏是**正在下的一局**,跳到中间那一手会让屏幕和对面的星阵各说各的
+ * (隧道那边只认当前局面)。稿子这一屏也没画任何可按的样子。
+ */
+function MoveCell({ label, at, now, nowRef, passLabel }: {
+  label: string | null; at: number; now: number;
+  nowRef: React.MutableRefObject<HTMLSpanElement | null>; passLabel: string;
+}) {
+  if (label == null || at < 0) return <span className="mv" />;
+  const isNow = at === now;
+  return (
+    <span ref={isNow ? nowRef : undefined} className={isNow ? 'mv now' : 'mv'}>
+      {label.toLowerCase() === 'pass' ? passLabel : label}
+    </span>
+  );
+}
+
+/**
+ * 一整行 = 三个**平铺的** span。`.mvrows` 是 `grid-template-columns: 30px 1fr 1fr`,
+ * 包一层 `<div>` 就会变成「一行只占一格」—— 列全塌。用 Fragment。
+ */
+function MoveCellRow({ row, now, nowRef, passLabel }: {
+  row: MoveRow; now: number;
+  nowRef: React.MutableRefObject<HTMLSpanElement | null>; passLabel: string;
+}) {
+  return (
+    <>
+      <span className="n">{row.n}</span>
+      <MoveCell label={row.b} at={row.bAt} now={now} nowRef={nowRef} passLabel={passLabel} />
+      <MoveCell label={row.w} at={row.wAt} now={now} nowRef={nowRef} passLabel={passLabel} />
+    </>
+  );
+}
 
 const formatTime = (seconds: number) => {
   const total = Math.ceil(Math.max(0, seconds));
@@ -138,6 +201,18 @@ const GameControlPanel = ({
    */
   const undoAllowed = freeVsAi;
 
+  /**
+   * 棋谱(星阵屏)。稿子只在这一屏画它 —— 屏 05 那块地方归胜率图,两者共用同一段高度。
+   * 数据来自 `history` 的 `move`/`player`(2026-08-25 后端在**已有的那个主线循环**里加的两个键);
+   * ⚠️ 不许改用 `stones`:它带 `move_number` 但**不含被提掉的子**,拼出来的谱会缺手。
+   */
+  const moveRows = engineMode ? toMoveRows(gameState.history) : [];
+  const nowIndex = gameState.current_node_index ?? 0;
+  const nowRef = useRef<HTMLSpanElement | null>(null);
+  // 跟到当前那一手。live 那一屏(`LiveMatchPage.tsx:110`)同一句 —— 对局中「当前」永远是最后一行,
+  // 不跟的话下到第十手以后屏上就一直停在开头几手。`block: 'nearest'` 只在滚出视野时才动。
+  useEffect(() => { nowRef.current?.scrollIntoView({ block: 'nearest' }); }, [nowIndex]);
+
   const toMove = gameState.player_to_move === 'B' ? 'B' : 'W';
   const isAiSeat = (c: 'B' | 'W') => {
     const pt = gameState.players_info[c].player_type;
@@ -235,6 +310,29 @@ const GameControlPanel = ({
         color="B" info={gameState.players_info.B} captures={gameState.prisoner_count.B}
         turn={toMove === 'B' && !isGameOver} state={stateWord('B')} clock={clockFor('B')} lang={lang} t={t}
       />
+
+      {/* 棋谱 —— 只有星阵屏有(稿子 `:1833`)。`grow` 让它吃掉这一栏剩下的高度:
+          在此之前 engineMode 下右栏中段是**空着约 148px** 的,登记在 scope.md 屏 10。
+          `scrollbar` 是显式画的那根 —— `.kiosk-fold__body.mvrows` 把原生条宽度设成 0
+          (460 的算术不许被滚动条改),所以「能滚」这件事得自己说出来。 */}
+      {engineMode && (
+        <KioskFold
+          fold="moves"
+          grow
+          scrollbar
+          testId="game-moves-fold"
+          title={t('game:moves_title', '棋谱 · 交叉点坐标')}
+          value={t('game:move_n', '第 {n} 手').replace('{n}', String(nowIndex))}
+          bodyClassName="mvrows"
+        >
+          {moveRows.length === 0 ? (
+            // `n--empty` 横跨三列 —— 不加它这句话会掉进第一列那 30px 里竖着排。
+            <span className="n n--empty">{t('game:no_moves', '这一局还没有着法')}</span>
+          ) : moveRows.map((r) => (
+            <MoveCellRow key={r.n} row={r} now={nowIndex} nowRef={nowRef} passLabel={t('kifu:pass', '虚手')} />
+          ))}
+        </KioskFold>
+      )}
 
       {showScore && (
         <KioskFold

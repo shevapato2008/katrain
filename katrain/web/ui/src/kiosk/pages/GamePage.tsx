@@ -550,15 +550,17 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Box>
       )}
 
+      {/* 位置走 `.gthink`(go-screens.css)—— **居中在棋盘上,不是整页上**。
+          这两块共用同一个槽(构造上互斥,见 deriveAiTurnState),所以位置也共用一个类:
+          分开写过一次,结果是两处各写一遍 `left:'50%'`,改一处漏一处不会有人红。 */}
       {/* State A: AI 思考中 — jade spinner banner (design.md §5.1 state A). Single-owner
           gate via showThinking (deriveAiTurnState): suppressed for PVP (aiColor===null)
           and while the physical layer is confirming a move (move_pending), so it never
           stacks with PhysicalPlayStatusChip's 确认中 chip. Board interaction is already
           gated by playerColor={humanColor} (Board.tsx, consume-only) — no extra disable needed. */}
       {showThinking && (
-        <Box data-testid="ai-thinking"
-          sx={{ position: 'absolute', top: 44, left: '50%', transform: 'translateX(-50%)', zIndex: 55,
-                display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderRadius: 2,
+        <Box data-testid="ai-thinking" className="gthink"
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderRadius: 2,
                 bgcolor: 'var(--raise2)', border: '1px solid', borderColor: 'primary.main' }}>
           <CircularProgress size={16} sx={{ color: 'primary.main' }} />
           <Typography sx={{ color: 'primary.main' }}>{t('AI is thinking…', 'AI 思考中…')}</Typography>
@@ -571,9 +573,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           construction — see deriveAiTurnState) and says the two things the player needs:
           no move is coming, and this game will not touch their rank. */}
       {ladderStalled && (
-        <Box data-testid="ladder-stalled"
-          sx={{ position: 'absolute', top: 44, left: '50%', transform: 'translateX(-50%)', zIndex: 55,
-                maxWidth: 620, px: 2, py: 0.75, borderRadius: 2,
+        <Box data-testid="ladder-stalled" className="gthink"
+          sx={{ px: 2, py: 0.75, borderRadius: 2,
                 bgcolor: 'var(--raise2)', border: '1px solid', borderColor: 'warning.main' }}>
           <Typography sx={{ color: 'warning.main', fontSize: 14, textAlign: 'center' }}>
             {t('ladder:engine_stalled', '阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，请退出本局')}
@@ -857,8 +858,13 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Alert>
       </Snackbar>
 
-      {/* Engine error toast */}
-      <Snackbar open={engineErrorToast} autoHideDuration={6000} onClose={() => setEngineErrorToast(false)}
+      {/* 星阵掉线 —— **这一屏唯一说得出「连不上了」的地方**(平台条那三个值一个都喂不了,
+          见 scope.md 屏 10),所以它**不自动消失**:`autoHideDuration={null}`。
+          兄弟几条 toast 照旧 5–8 秒自己走,它们说的是「这一次操作失败了,再试一次」;
+          这一条说的是「对面没了,你现在要么重试落子、要么退出弃局」——
+          6 秒之后屏上什么都不剩,而那盘棋还卡在那儿,用户不知道自己在等什么。
+          `<Alert onClose>` 那颗 × 是唯一的关法,右上角,手指够得到。 */}
+      <Snackbar open={engineErrorToast} autoHideDuration={null} onClose={() => setEngineErrorToast(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="error" onClose={() => setEngineErrorToast(false)}>
           {t('AI connection error — please retry your move, or exit to abandon the game.', 'AI 连接出错，请重试落子，或退出以放弃对局。')}

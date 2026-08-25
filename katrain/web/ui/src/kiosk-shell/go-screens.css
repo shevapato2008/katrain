@@ -234,6 +234,21 @@
   .gtoggles--switch button::before, .gtoggles--switch button::after { transition: none; }
 }
 
+/* 「AI 思考中…」/「阶梯引擎不可用」那颗药丸的位置。**居中在棋盘上,不是整页上。**
+   上一版写在组件的 `sx` 里:`left: 50%` + `translateX(-50%)`,而 50% 相对的是
+   **L3 内容区那个 992 宽的定位祖先** ⇒ 1024 下落在 496(视口 512),
+   而棋盘只到 **532** —— 药丸横跨盘/栏接缝,压住第一张玩家卡的上沿。
+   它说的是「盘上这一手在等」,就该居中在盘上:`--board-size` 是棋盘边长,
+   定位祖先的左沿和棋盘左沿是同一条(`.kiosk-layout-a` 第一列就是盘)。
+
+   `max-width` 也跟着盘走:阶梯停摆那一句是整句话(上一版写死 620,比盘还宽 104),
+   宽出去就又压回接缝上 —— 两条毛病其实是同一条。 */
+.gthink {
+  position: absolute; top: 44px; left: calc(var(--board-size) / 2);
+  transform: translateX(-50%); z-index: 55;
+  max-width: calc(var(--board-size) - 32px);
+}
+
 /* 动作区排成两行 —— 只有自由对弈那一屏有七个键(三个分析 + 四个动作)。
    只换排布,格子高 / 图标 / 字号 / 圆角继续走共享 `.kiosk-actions button`:
    **七个键必须一模一样大**(Fan 2026-08-22 原话)。 */
@@ -269,6 +284,9 @@
   padding: 6px 12px 10px; column-gap: 6px; }
 .mvrows span { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.95; font-variant-numeric: tabular-nums; }
 .mvrows .n { color: var(--dim); font-size: 11px; }
+/* 空态那一句(「这一局还没有着法」)横跨三列。**不加这条它会掉进第一列那 30px 里**,
+   一个字一行竖着排下去 —— 屏 10 四图第一版就是这么露出来的。 */
+.mvrows .n--empty { grid-column: 1 / -1; }
 .mvrows .mv { color: var(--text); }
 .mvrows .mv.now { color: var(--accent); font-weight: 600; }
 

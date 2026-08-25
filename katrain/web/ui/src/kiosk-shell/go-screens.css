@@ -118,12 +118,43 @@
 .kiosk-resume .pill { margin-left: auto; flex: none; }
 
 /* ── 棋盘木框 ──────────────────────────────────────────────────────────
- * 取自稿子 `go-kiosk.tmpl.html:69`,渐变逐字相同。稿子在渐变之上还有一层 `var(--darkwood)`
- * 贴图 —— 那张图在 `sample-go/board-assets.json` 里、**不在共享资产包也不在 MANIFEST 管辖内**,
- * 没抄(抄它等于往仓里塞一份没人核的二进制,D6 已登记)。
- * 挂在 `.kiosk-board` 而不是某一屏的类上:本仓 `.kiosk-board` 只可能是围棋盘,
- * 而木框对每一块都成立。 */
-.kiosk-board { background: linear-gradient(150deg, rgba(118, 80, 44, .94), rgba(56, 36, 20, .96) 75%); }
+ * 取自稿子 `go-kiosk.tmpl.html:69` / `:70`,渐变和贴图尺寸逐字相同。
+ *
+ * 🔵 **2026-08-26 补上那层贴图。D6 当初登记的理由被证伪了一半。**
+ * 原话是「那张图不在共享资产包、不在 MANIFEST 管辖内,抄它等于往仓里塞一份**没人核的二进制**」——
+ * 前半句今天仍然对(上游 `MANIFEST.sha256` 里 `wood|oak|board` 零命中),
+ * **后半句是错的**:同一份字节早就是三家的生产资产 ——
+ * `smartbox-software/{chess,xiangqi,gomoku}/ui/src/assets/board/darkwood_512.jpg`
+ * 三份 **sha256 完全相同**(`58e43174…`,51733 字节),许可写在 `xiangqi/ui/src/skins.tsx:11`
+ * (**Poly Haven CC0**),而且三家都已上板。
+ * ⇒ 它不是没人核的二进制,是四家里三家在用、许可清楚、已上板的那一份。
+ * 而 Fan 2026-08-20 的授权判据(§7)恰恰是「去看那三家同一个模块怎么做的,照做」。
+ *
+ * **落点不是 `kiosk-shell/`** —— 那个目录整目录抄自上游、由 `MANIFEST.sha256` 钉住,
+ * 这张图不在上游清单里,塞进去等于伪造「和上游一致」。放在 `src/kiosk/assets/board/`,
+ * 走 CSS `url()`,和三家同构(出处和许可写在那个目录的 README 里)。
+ *
+ * 不补的代价是真的:稿子 `.kiosk-board` / `.kiosk-mini-board` 都带这层贴图,
+ * 而盘是布局 A 上最大的一块 —— 整盘 12 屏 + 迷你盘 5 屏,**17 屏的四图在盘面区域永远对不齐**。
+ *
+ * ⚠️ **只补外框那一层。** 落子区的木纹另有出处(`/assets/img/board.png`,画在 canvas 里,
+ * `boardUtils.ts:105`),而那是 galaxy 也在用的**共享资产** —— 换它是另一件事,不在这一轮。
+ * 稿子那边落子区取的是 `--oak`,和本仓的 `board.png` 不是同一张,色差已登记(`scope.md:969`)。
+ *
+ * 挂在 `.kiosk-board` 而不是某一屏的类上:本仓 `.kiosk-board` 只可能是围棋盘,木框对每一块都成立。 */
+.kiosk-board {
+  background:
+    linear-gradient(150deg, rgba(118, 80, 44, .94), rgba(56, 36, 20, .96) 75%),
+    url('../kiosk/assets/board/darkwood_512.jpg') center / 34% repeat;
+}
+/* 迷你盘同一层,尺寸照稿子的 40%(它比整盘小,纹理要按比例放大才看得出是木头)。
+   ⚠️ `.kiosk-mini-board` 的**几何**在共享 `tokens.css:460`,那份是上游的、不动;
+   这里只加背景一条 —— 同一个裸类在本文件里只许有这一处定义(见文件顶上 `.gside` 那条碰撞)。 */
+.kiosk-mini-board {
+  background:
+    linear-gradient(150deg, rgba(118, 80, 44, .94), rgba(56, 36, 20, .96) 75%),
+    url('../kiosk/assets/board/darkwood_512.jpg') center / 40% repeat;
+}
 
 /* ── 棋盘刻度带:轨道等分 ────────────────────────────────────────────────
  * 共享 `tokens.css` 的 `.kiosk-board__ruler` 只写 `display:grid` + `grid-auto-flow:column`,

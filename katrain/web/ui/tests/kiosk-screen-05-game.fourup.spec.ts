@@ -57,6 +57,15 @@ test('四图:对局中 ←→ sample-go/shots/05-game.png', async ({ page }) => 
     localStorage.setItem('token', 'fourup');
     localStorage.setItem('katrain_language', 'cn');
   });
+  /**
+   * 对局 WS 也要接住。造的 token 是假的,服务端会 `close(1008, "Invalid token")`,
+   * 而 `dc55f32e` 之后那条拒绝**会在屏上说出来** —— 稿子这一帧画的是正常对局,
+   * 不接的话四图右半永远盖着一条红色的「实时连接被拒绝」。
+   * 接住之后什么都不发:这一帧的局面本来就来自 `/api/state`,WS 只负责后续推送。
+   * (它占不占流内高度是另一回事,归 `kiosk-screen-05-game.spec.ts` 那条几何闸 ——
+   *  那一条**故意不 stub**,量的就是报错态。)
+   */
+  await page.routeWebSocket('**/ws/**', () => { /* 连上就行,不推任何东西 */ });
   // 后端没起时 logo 会 502,取出来的图左上角是碎图标 —— 钉在仓里那份真字节上。
   await stubShellAssets(page);
   await page.route('**/api/state**', (route) => route.fulfill({ json: { state: STATE } }));

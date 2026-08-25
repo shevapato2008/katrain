@@ -154,6 +154,17 @@ test('布局 A 的外框:516 的盘贴 (16,70),右栏 460,页控条在右栏顶'
   const g = await geometry(page);
   console.log('[02-game/geometry]', JSON.stringify(g));
 
+  /**
+   * ⚠️ **这一帧正处在报错态。** WS 没有 stub,服务端 `close(1008, "Invalid token")` 拒掉
+   * ⇒ 屏上有一条「实时连接被拒绝」。它必须走**浮层**、不占流内高度 ——
+   * 一旦回到流里(2026-03-26 从 galaxy 搬来的那块 `<Alert>` 就在流里,平时 `session.error`
+   * 是空的所以看不出来;`dc55f32e` 让它真的会填上之后),盘会被顶到 y=126、底边 642 掉出 600。
+   *
+   * 这一句把「量的是报错态」钉住:没有它,哪天有人给 WS 加了 stub,下面这一堆数就悄悄
+   * 变成「没报错时的几何」,而**真正会塌的那一态再也没人量**。
+   */
+  await expect(page.getByRole('alert')).toContainText('实时连接被拒绝');
+
   expect(g.board!.w, '盘不是 516 宽').toBe(516);
   expect(g.board!.h, '盘不是 516 高').toBe(516);
   expect(g.board!.x, '盘没有贴 x=16').toBe(16);

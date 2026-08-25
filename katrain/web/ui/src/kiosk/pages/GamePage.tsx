@@ -582,8 +582,21 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Box>
       )}
 
-      {/* Error display */}
-      {session.error && <Alert severity="error" sx={{ mx: 2, mt: 1 }}>{session.error}</Alert>}
+      {/*
+        对局出错 —— **走浮层,不占流内高度。**
+        这一屏是布局 A 的固定画布:盘 516 贴 (16,70),整屏一共就 600 高。
+        原来这条是一块流内的 `<Alert>`(2026-03-26 从 galaxy 搬过来时就在),
+        平时 `session.error` 是空的所以看不出问题;`dc55f32e`(对局 WS 补上凭据)让
+        「实时连接被拒绝(Invalid token)」真的会填进来之后,它就成了盘上面 48+8 高的一条 ——
+        **盘被顶到 y=126、底边 642 掉出 600 的屏外**,右栏一起下移。
+        (`kiosk-screen-05-game.spec.ts` 的「盘顶不在 y=70」当场红,2026-08-25 逮到。)
+        这一屏另外六条错都在 `Snackbar` 里,这条本来就是那六条的同类。
+        ⚠️ **不自动消失**(`autoHideDuration={null}`):Fan 2026-08-21 裁过掉线 toast 这一条 ——
+        连接断了是持续状态,不是一闪而过的事件。
+      */}
+      <Snackbar open={!!session.error} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="error">{session.error}</Alert>
+      </Snackbar>
 
       {physicalPlay && (
         <PhysicalPlayStatusChip

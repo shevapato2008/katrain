@@ -12,8 +12,8 @@ import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
 import type { KifuAlbumSummary } from '../../types/kifu';
-import type { MatchSource } from '../../types/live';
 import { whenLabel } from '../utils/whenLabel';
+import { liveSourceLabel } from '../../utils/liveSources';
 
 const DEBOUNCE_MS = 350;
 /** 一页 6 条:这是**滚栏里的一段**,不是整屏的列表。20 条会把下面两组挤到看不见。 */
@@ -24,12 +24,6 @@ const PAGE_SIZE = 6;
  * 同样的表(两份并行,早于本轮),这是第三处 —— **没有合并是有意的**:那两份带着颜色,
  * 是 galaxy 那套卡片的样子;这里只要名字。合并要动 galaxy 的两屏,已登记为债。
  */
-const SOURCE_LABEL: Record<MatchSource, string> = {
-  xingzhen: '星阵',
-  yike: '弈客',
-  pandanet: 'PandaNet',
-};
-
 interface RecentItem extends BaipuRecentEntry {
   progress: BaipuProgress | null;
 }
@@ -175,7 +169,7 @@ const KifuPage = () => {
   const totalPages = total == null ? 1 : Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const liveSources = [...new Set(matches.map((m) => m.source))]
-    .map((s) => SOURCE_LABEL[s] ?? s)
+    .map((s) => liveSourceLabel(s))
     .join(' · ');
 
   return (
@@ -402,7 +396,7 @@ const KifuPage = () => {
                 <span className="kiosk-row__t">
                   <b>{[m.tournament, m.round_name].filter(Boolean).join(' · ')}</b>
                   <em>
-                    {SOURCE_LABEL[m.source] ?? m.source}
+                    {liveSourceLabel(m.source)}
                     {' · '}
                     {m.status === 'live'
                       ? `${t('kifu:move_ordinal', '第')} ${m.move_count} ${t('kifu:moves_unit', '手')}`

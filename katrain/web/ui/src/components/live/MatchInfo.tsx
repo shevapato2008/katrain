@@ -3,6 +3,7 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import type { MatchDetail, MoveAnalysis } from '../../types/live';
 import { i18n } from '../../i18n';
 import { useTranslation } from '../../hooks/useTranslation';
+import { liveSourceMeta } from '../../utils/liveSources';
 
 interface MatchInfoProps {
   match: MatchDetail;
@@ -11,16 +12,10 @@ interface MatchInfoProps {
   headingMode?: 'full' | 'metadata-only';
 }
 
-const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  yike: { label: '弈客', color: '#1976d2' },
-  xingzhen: { label: '星阵', color: '#7b1fa2' },
-  pandanet: { label: 'IGS', color: '#e65100' },
-};
-
 export default function MatchInfo({ match, analysis, headingMode = 'full' }: MatchInfoProps) {
   const { t } = useTranslation();
   const isLive = match.status === 'live';
-  const sourceInfo = SOURCE_LABELS[match.source];
+  const sourceInfo = liveSourceMeta(match.source);
 
   // Use KataGo analysis data if available, otherwise fall back to match data
   const winrate = analysis?.winrate ?? match.current_winrate;

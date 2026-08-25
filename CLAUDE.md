@@ -167,7 +167,9 @@ KaTrain ships **two web-UI build outputs** from a single codebase:
 - Files under `src/galaxy/**`, `src/pages/**`, and `src/ZenModeApp.tsx` may **not** import from `src/kiosk/**`
 
 **Shared territory (both builds may import):**
-`src/components/` (except `Board3D/`), `src/hooks/`, `src/context/`, `src/api.ts` + `src/api/`, `src/utils/`, `src/types/`, `src/theme.ts`, `src/i18n.ts`. ~10.6K LOC. **Modifying a shared file affects BOTH builds** — run both `npm run build` and `npm run build:kiosk-2d` before pushing.
+`src/components/` (except `Board3D/`), `src/hooks/`, `src/context/`, `src/features/`, `src/api.ts` + `src/api/`, `src/utils/`, `src/types/`, `src/theme.ts`, `src/i18n.ts`. ~10.6K LOC. **Modifying a shared file affects BOTH builds** — run both `npm run build` and `npm run build:kiosk-2d` before pushing.
+
+Shared code must **not** import from `src/kiosk/`, `src/galaxy/`, or `src/pages/` — a shared file that reaches back into one side drags that side into the *other* bundle, and the two rules above only see the import line as written, so one hop through shared territory is invisible to them. `eslint.config.js` enforces this (test files are exempt: they are in neither bundle).
 
 **When modifying the web UI:**
 - Adding a page/route in `src/kiosk/` → use only shared territory + `src/kiosk/`.

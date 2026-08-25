@@ -9,10 +9,9 @@ import { colsFor, rowsFor } from '../shell/goBoard';
 import { KioskFold } from '../shell/KioskFold';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { interpolate } from '../utils/interpolate';
+import { liveSourceLabel } from '../../utils/liveSources';
 
 /** 三个源在屏上叫什么。和 `components/live/MatchCard.tsx:14` 同一份口径。 */
-const SOURCE_LABEL: Record<string, string> = { yike: '弈客', xingzhen: '星阵', pandanet: 'IGS' };
-
 /**
  * 屏 18 · 直播 · 观战 `/kiosk/live/:matchId` —— L2 布局 A(左盘 516 + 16 + 右栏 460)。
  *
@@ -255,7 +254,7 @@ const LiveMatchPage = () => {
           title={[match.tournament, match.round_name].filter(Boolean).join(' · ')}
           sub={interpolate(
             t('live:pagebar_sub', '来源：{src} · 第 {n} 手'),
-            { src: SOURCE_LABEL[match.source] ?? match.source, n: currentMove },
+            { src: liveSourceLabel(match.source), n: currentMove },
           )}
           status={isLive
             ? <span className="kiosk-tag kiosk-tag--live" data-testid="live-status">{t('kifu:live_now', '直播中')}</span>

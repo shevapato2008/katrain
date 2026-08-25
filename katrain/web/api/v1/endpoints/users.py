@@ -1,7 +1,7 @@
 from typing import Any, List
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from katrain.web.api.v1.endpoints.auth import get_current_user
-from katrain.web.models import User
+from katrain.web.models import User, OnlineUser
 
 router = APIRouter()
 
@@ -48,13 +48,17 @@ async def get_following(request: Request, current_user: User = Depends(get_curre
     return [User(**u) for u in following]
 
 
-@router.get("/online", response_model=List[User])
+@router.get("/online", response_model=List[OnlineUser])
 async def get_online_users(request: Request, current_user: User = Depends(get_current_user)) -> Any:
+    """大厅的「谁在线」。
+
+    ⚠️ 响应模型是 `OnlineUser` **不是 `User`** —— 后者带着 uuid / credits /
+    is_admin / net_wins,而这一行一个都不需要。见 `models.OnlineUser` 的说明。
+    """
     lobby_manager = request.app.state.lobby_manager
     repo = request.app.state.user_repo
     online_ids = lobby_manager.get_online_user_ids()
 
     # Fetch user details for these IDs
     all_users = repo.list_users()
-    online_users = [User(**u) for u in all_users if u["id"] in online_ids]
-    return online_users
+    return [OnlineUser(**{k: u[k] for k in OnlineUser.model_fields if k in u}) for u in all_users if u["id"] in online_ids]

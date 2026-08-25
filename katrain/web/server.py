@@ -2482,6 +2482,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                                 except:
                                     pass
 
+                            # 记一笔 —— `accept_invite` 认的就是这份记录。
+                            lobby_manager.record_invite(current_user.id, target_id)
+
                             # Confirm to sender
                             await websocket.send_json({"type": "info", "message": "Invitation sent."})
                         else:
@@ -2489,7 +2492,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
                 elif msg_type == "accept_invite":
                     target_id = message.get("target_id")  # The inviter
-                    if target_id:
+                    # ⚠️ **判别位是「他邀请过我没有」,不是「target_id 是不是个在线用户」。**
+                    # 这里原来只判 `if target_id:` 就直接建局并把 match_found 推给对方 ——
+                    # 对方前端收到就导航进对局室 ⇒ 任何登录用户都能把任意在线用户
+                    # 拽进一局棋,被拽的人一次点击都没有过。
+                    # 「不是自己 + 对方在线」这类校验挡不住它(攻击者传的本来就是在线用户),
+                    # 只有这份 pending 记录能。`consume_invite` 是**一次性**的:
+                    # 同一封邀请开不出第二局。
+                    if target_id and target_id != current_user.id and lobby_manager.consume_invite(
+                        target_id, current_user.id
+                    ):
                         # Fetch Usernames
                         user_repo = app.state.user_repo
                         all_users = user_repo.list_users()
@@ -2527,6 +2539,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         finally:
             app.state.box_sso.discard_socket(websocket)
             app.state.matchmaker.remove_from_queue(current_user.id)
+            lobby_manager.discard_invites_for(current_user.id)
             lobby_manager.remove_user(current_user.id, websocket)
             await lobby_manager.broadcast(
                 {"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())}

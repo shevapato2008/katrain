@@ -191,6 +191,53 @@ test('§6 顶栏:通栏贴顶恒 56 高、左簇顺序与间距、右簇贴右�
   expect(Math.round(screen.right - clock.right)).toBe(24);
 });
 
+/**
+ * §5 防跳铁律 1:「顶栏永远占 y 0–56,**任何层级、任何模块**都不变高、不隐藏」。
+ *
+ * 上面那条只在 `/kiosk/play` 一屏上量 —— 而漏掉的恰恰是**别的屏**:屏 14 做题
+ * 靠一个 `setImmersive(true)` 把顶栏整块不渲染,四图存档里那一屏顶上是一条空黑带,
+ * 而顶栏那条逐像素闸**从头到尾是绿的**,因为它量的不是那一屏。
+ * (那个开关连一个像素都没换来:`.kiosk-content` 的 `top` 是无条件的
+ * `var(--topbar-h)`,抽掉顶栏不会把 56px 还给内容。2026-08-26 已整个删除。)
+ *
+ * ⇒ 这一条把判据从「顶栏长什么样」换成「**每一屏上它都在,而且没被盖住**」。
+ * 「没被盖住」是 jsdom 说不出来的那一半:`KioskLayout.test.tsx` 能证明它**渲染了**,
+ * 证明不了某一屏用一块 `position:fixed` 的遮罩把它压在下面。
+ */
+const TOPBAR_ROUTES: readonly [string, string][] = [
+  ['/kiosk/play',                     'L1 · 屏 01 对弈(带镜像栏)'],
+  ['/kiosk/report',                   'L1 · 屏 19 复盘(自带 L1 布局)'],
+  ['/kiosk/settings',                 'L1 · 屏 27 设置(自带 L1 布局)'],
+  ['/kiosk/play/ai/setup/free',       'L2 · 屏 02 开局设置'],
+  ['/kiosk/tsumego/15k/capturing/1',  'L2 · 屏 14 做题 —— 就是漏掉顶栏的那一屏'],
+  ['/kiosk/report/41',                'L2 · 屏 20 报告'],
+  ['/kiosk/baipu/session/s1',         'L2 · 屏 17 摆谱'],
+  ['/kiosk/live/m1',                  'L2 · 屏 18 直播'],
+];
+
+for (const [route, label] of TOPBAR_ROUTES) {
+  test(`§5 顶栏在每一屏上都在、都是 56、都没被盖住 —— ${label}`, async ({ page }) => {
+    await boot(page, route);
+
+    const screen = await box(page, '.kiosk-screen');
+    const topbar = await box(page, '.kiosk-topbar');
+    expect(topbar.y).toBe(screen.y);
+    expect(topbar.h).toBe(56);
+    expect(topbar.w).toBe(screen.w);
+
+    // 盖没盖住:在顶栏正中取一点,问浏览器那一点上**最上面**的元素是谁。
+    // 元素在 DOM 里、盒子也量得出来,却被一层遮罩压着 —— 上面三条一条都不会红。
+    const hitsTopbar = await page.evaluate(() => {
+      const bar = document.querySelector('.kiosk-topbar') as HTMLElement | null;
+      if (!bar) return false;
+      const r = bar.getBoundingClientRect();
+      const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      return Boolean(top && bar.contains(top));
+    });
+    expect(hitsTopbar, '顶栏被别的东西盖住了').toBe(true);
+  });
+}
+
 test('§6 主页键只在 L1 出现 —— 二级页要退的是这一屏,不是回智星盒主页', async ({ page }) => {
   await boot(page, '/kiosk/play');
   await expect(page.locator('[data-testid="kiosk-home-action"]')).toHaveCount(1);

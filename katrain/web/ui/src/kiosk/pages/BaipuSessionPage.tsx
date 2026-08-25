@@ -73,6 +73,7 @@ type Mood = 'guiding' | 'removal' | 'failed' | 'done';
  * 上一版 `setImmersive(true)` 把顶栏和 Dock 都藏了。`ReportDetailPage:52-58` 已为同一件事
  * 判过一次,判据是量出来的:`immersive` 在 `KioskLayout` 里只让**顶栏不渲染**,而
  * `.kiosk-content` 的 `top` 仍是 `var(--topbar-h)` ⇒ 屏顶留一条 56 高的空黑带。
+ * (2026-08-26:最后一个现场屏 14 也还完,`ImmersiveContext` 已删,这条开关不复存在。)
  * 返回归页控条「← 棋谱」,**但二次确认留着** —— 它不是实现遗留,是这一屏已采纳的裁定
  * (Blocker #2:「确认落子」一局按约 250 次,退出按一次,两颗不能同排;解法是移到角上 + 确认)。
  *

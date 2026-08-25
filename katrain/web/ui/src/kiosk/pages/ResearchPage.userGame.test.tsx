@@ -4,10 +4,6 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 
-vi.mock('../context/ImmersiveContext', () => ({
-  useImmersive: () => ({ immersive: false, setImmersive: vi.fn() }),
-}));
-
 vi.mock('../../api', () => ({
   API: {
     quickAnalyze: vi.fn().mockResolvedValue({ turnInfos: [{ moveInfos: [], ownership: null }] }),

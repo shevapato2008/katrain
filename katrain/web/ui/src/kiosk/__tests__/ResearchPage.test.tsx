@@ -18,10 +18,6 @@ import type { GameState } from '../../api';
  * 「表能不能滚」「右栏 516 摆不摆得下」归 `tests/kiosk-shell-geometry.spec.ts`。
  */
 
-vi.mock('../context/ImmersiveContext', () => ({
-  useImmersive: () => ({ immersive: false, setImmersive: vi.fn() }),
-}));
-
 const { authState } = vi.hoisted(() => ({ authState: { current: { token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() } as any } }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => authState.current }));
 

@@ -52,7 +52,8 @@ import { UserGamesAPI } from '../../api/userGamesApi';
  * (`tokens.css:419`),于是屏顶留一条 **56 高的空黑带**,一个像素都没省下。
  * 规范 §5 防跳铁律 1 写死「顶栏永远占 y 0–56,任何层级、任何模块都不变高、不隐藏」,
  * 参考图 `shots/21-research.png` 顶栏也是在的。⇒ 这一屏不再调它。
- * 屏 17 摆谱、屏 18 直播、屏 20 复盘详情已各自还过一次,本屏还完只剩屏 14 做题一个现场。
+ * 屏 17 摆谱、屏 18 直播、屏 20 复盘详情已各自还过一次,本屏还完只剩屏 14 做题一个现场 ——
+ * 2026-08-26 屏 14 也还了,`ImmersiveContext` 随即整个删掉,顶栏从此无条件渲染。
  *
  * Dock 与本屏无关:`/kiosk/research` 不在 `DOCK_TABS` 里 ⇒ `dockLevelOf` 恒为 2 ⇒
  * **四态一律没有 Dock**,`immersive` 从来就不影响它(`KioskLayout.tsx:56-59`)。

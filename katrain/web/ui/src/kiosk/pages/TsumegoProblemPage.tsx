@@ -9,7 +9,6 @@ import SuccessOverlay from '../components/tsumego/SuccessOverlay';
 import BoardSetupGuide from '../components/vision/BoardSetupGuide';
 import { useVision } from '../context/VisionContext';
 import { useOptionalGeometry } from '../context/GeometryContext';
-import { useImmersive } from '../context/ImmersiveContext';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { usePhysicalTsumego, stonesToVisionBoard } from '../hooks/usePhysicalTsumego';
 import {
@@ -46,7 +45,6 @@ const TsumegoProblemPage = () => {
   const { t } = useTranslation();
   const { play: playSound } = useSound();
   const { progress } = useTsumegoProgress();
-  const { setImmersive } = useImmersive();
   const {
     problem,
     loading,
@@ -118,12 +116,6 @@ const TsumegoProblemPage = () => {
   // Sequence of problem ids for the whole category, sourced from sessionStorage (written by
   // the units pages). If missing (deep-link), fetch the full category list once and cache it.
   const [sequence, setSequence] = useState<string[]>([]);
-
-  // Immersive solve screen — hide the Dock + left board console while a problem is open.
-  useEffect(() => {
-    setImmersive(true);
-    return () => setImmersive(false);
-  }, [setImmersive]);
 
   useEffect(() => {
     if (!problem) return;

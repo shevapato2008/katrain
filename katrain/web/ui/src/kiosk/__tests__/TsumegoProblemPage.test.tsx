@@ -53,10 +53,6 @@ vi.mock('../context/VisionContext', () => ({
   }),
 }));
 
-vi.mock('../context/ImmersiveContext', () => ({
-  useImmersive: () => ({ immersive: false, setImmersive: vi.fn() }),
-}));
-
 vi.mock('../hooks/useVisionSync', () => ({
   useVisionSync: () => ({
     syncEvents: [],

@@ -17,7 +17,6 @@ const getMoves = vi.fn();
 const getGame = vi.fn();
 const setCurrentMove = vi.fn();
 const playSound = vi.fn();
-const setImmersive = vi.fn();
 let auth = { token: 'token', isAuthenticated: true };
 let detail: ReturnType<typeof baseDetail>;
 let boardProps: Record<string, unknown> = {};
@@ -47,7 +46,6 @@ vi.mock('../../api/userGamesApi', async (original) => ({
   UserGamesAPI: { get: (...args: unknown[]) => getGame(...args) },
 }));
 vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play: playSound }) }));
-vi.mock('../context/ImmersiveContext', () => ({ useImmersive: () => ({ setImmersive }) }));
 // 盘是 canvas,jsdom 里画不出来 —— 换成一块能替它发出「点了哪一格」的桩。
 // `Q10` 在 `ABCDEFGHJKLMNOPQRSTUVWXYZ`(跳 I)里 x=15、y=10−1=9;`A1` 是 (0,0)。
 vi.mock('../../components/live/LiveBoard', () => ({
@@ -166,12 +164,11 @@ describe('屏 20 · 题头与状态', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  // ⚠️ **这一屏不进沉浸。** `immersive` 只把顶栏整块不渲染,而 `.kiosk-content` 的 top
-  // 仍是 56 ⇒ 屏顶留一条 56 高的空黑带(2026-08-23 四图当场看见)。
-  // 规范 §5 防跳铁律 1:顶栏任何层级都不隐藏;稿子这一屏画的也是有顶栏的。
-  it('不进沉浸 —— 顶栏得留着,盘按谱的路数画,题头念的是这一局是什么', () => {
+  // 顶栏在不在**不再是这一屏能决定的事**:2026-08-26 删掉了 `ImmersiveContext`,
+  // `KioskLayout` 无条件渲染顶栏,判据搬到 `KioskLayout.test.tsx` 和真浏览器几何闸。
+  // 这一条只留下它自己的部分 —— 盘按谱的路数画、题头念的是这一局是什么。
+  it('盘按谱的路数画,题头念的是这一局是什么', () => {
     renderPage();
-    expect(setImmersive).not.toHaveBeenCalledWith(true);
     expect(screen.getByTestId('live-board')).toHaveAttribute('data-board-size', '19');
     expect(screen.getByTestId('report-detail-status')).toHaveTextContent('生成中 · 深度复盘');
     // 页控条的标题走的是复盘列表那套说法(同一局在两屏之间不许改口)
@@ -255,11 +252,6 @@ describe('屏 20 · 题头与状态', () => {
     expect(document.querySelectorAll('.kiosk-board__ruler--top span')).toHaveLength(19);
   });
 
-  it('从头到尾没碰过沉浸开关 —— 碰了就等于自己把顶栏抽掉', () => {
-    const rendered = renderPage();
-    rendered.unmount();
-    expect(setImmersive).not.toHaveBeenCalled();
-  });
 });
 
 describe('屏 20 · 胜率曲线与重点手', () => {

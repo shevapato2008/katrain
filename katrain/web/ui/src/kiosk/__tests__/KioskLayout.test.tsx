@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
-import { useEffect } from 'react';
 import { kioskTheme } from '../theme';
 import KioskLayout from '../components/layout/KioskLayout';
-import { useImmersive } from '../context/ImmersiveContext';
 
 const renderLayout = (route = '/kiosk/play') =>
   render(
@@ -16,21 +14,12 @@ const renderLayout = (route = '/kiosk/play') =>
             <Route path="/kiosk/play" element={<div>PLAY_CONTENT</div>} />
             <Route path="/kiosk/report" element={<div>REPORT_CONTENT</div>} />
             <Route path="/kiosk/settings" element={<div>SETTINGS_CONTENT</div>} />
+            <Route path="/kiosk/report/x1" element={<div>DETAIL_CONTENT</div>} />
           </Route>
         </Routes>
       </MemoryRouter>
     </ThemeProvider>
   );
-
-/** Outlet child that flips the real ImmersiveContext (mounted by KioskLayout) to
- * immersive mode on mount — proves the A6→A10 immersive mechanism end to end. */
-const ImmersiveTrigger = () => {
-  const { setImmersive } = useImmersive();
-  useEffect(() => {
-    setImmersive(true);
-  }, [setImmersive]);
-  return <div>IMMERSIVE_CONTENT</div>;
-};
 
 describe('KioskLayout', () => {
   it('renders header, dock, console, and outlet on /kiosk/play', () => {
@@ -66,29 +55,21 @@ describe('KioskLayout', () => {
     expect(document.querySelector('.kiosk-layout-l1')).toBeNull();
   });
 
-  // Task 4 把 Dock 的出没**只**交给 `dockLevelOf`,`immersive` 不再参与:
-  // 今天五个设 immersive 的页面(研究/复盘详情/摆谱对局/做题/直播)**全在 L2**,
-  // `level === 1` 已经把它们挡住了,再叠一个条件只是多一条永远不走的分支。
-  // 所以这条测试现在断言的是 immersive 仅存的那一半作用 —— 抽顶栏。
+  // 顶栏**没有开关**。这里曾经有一个 `immersive`,它能把顶栏整块不渲染 ——
+  // 而 `.kiosk-content` 的 `top` 是写死的 `var(--topbar-h)`(tokens.css:419),
+  // **抽掉顶栏并不会把那 56px 还给内容**:换来的只是屏顶一条空黑带,
+  // 代价是那一屏上没有身份、没有时钟、没有退出口。2026-08-26 连同 `ImmersiveContext` 一起删。
   //
-  // ⚠️ **抽顶栏本身和规范 §5 防跳铁律 1 冲突**(「顶栏永远占 y 0–56,任何层级、
-  // 任何模块都不变高、不隐藏」)。这条冲突已登记,归 Task 18 的 §12 差异清单处理,
-  // 不在本 Task 范围内 —— 这条测试锁的是**现状**,不是终态。
-  it('immersive 抽掉顶栏;Dock 归 level 管,L1 上照旧在(已登记的 §5 冲突)', () => {
-    render(
-      <ThemeProvider theme={kioskTheme}>
-        <MemoryRouter initialEntries={['/kiosk/play']}>
-          <Routes>
-            <Route element={<KioskLayout username="张三" />}>
-              <Route path="/kiosk/play" element={<ImmersiveTrigger />} />
-            </Route>
-          </Routes>
-        </MemoryRouter>
-      </ThemeProvider>
-    );
+  // 这条锁的是规范 §5 防跳铁律 1(「顶栏永远占 y 0–56,任何层级、任何模块都不变高、不隐藏」)
+  // 里 jsdom 能作证的那一半 —— **在不在**。高度和位置归真浏览器几何闸
+  // (`kiosk-shell-geometry.spec.ts`),那一条同一天补了「每一条路由上都在」。
+  it('顶栏在 L1 和 L2 上都渲染 —— 页面无法把它抽掉', () => {
+    renderLayout('/kiosk/play');           // L1
+    expect(screen.getByText('智星盒')).toBeInTheDocument();
+    cleanup();
 
-    expect(screen.getByText('IMMERSIVE_CONTENT')).toBeInTheDocument();
-    expect(screen.queryByText('智星盒')).toBeNull();
-    expect(screen.getByText('对弈')).toBeInTheDocument();
+    renderLayout('/kiosk/report/x1');      // L2:不在 dockRoutes 词典里 ⇒ 无 Dock
+    expect(screen.getByText('智星盒')).toBeInTheDocument();
+    expect(screen.queryByText('对弈')).toBeNull();   // Dock 确实没了,顶栏还在
   });
 });

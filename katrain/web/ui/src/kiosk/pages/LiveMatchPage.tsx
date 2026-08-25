@@ -53,6 +53,7 @@ const SOURCE_LABEL: Record<string, string> = { yike: '弈客', xingzhen: '星阵
  * `.kiosk-content` 全样式包里只有两条规则(`tokens.css:415` 的 `top:var(--topbar-h)` 无条件、
  * `:423` 只改 L1 的 `bottom`),**没有任何选择器能在 immersive 下改它的 top** ⇒ 顶栏不渲染
  * 只会在屏顶留一条 56 的空黑带。参考图那一帧顶栏在。
+ * (2026-08-26:最后一个现场屏 14 也还完,`ImmersiveContext` 已删,这条开关不复存在。)
  * (顺带更正上一版那句注释:Dock **不归 immersive 管** —— `KioskLayout` 是
  * `level === 1 ? <KioskDock/> : undefined`,而这一屏 `dockLevelOf` 返回 2,本来就没有 Dock。)
  * **返回不加二次确认**:这一屏没有动作区、返回在左上角离那排开关最远,而且观众没有可损失的

@@ -9,10 +9,6 @@ vi.mock('../context/OrientationContext', () => ({
   useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
 }));
 
-vi.mock('../context/ImmersiveContext', () => ({
-  useImmersive: () => ({ immersive: false, setImmersive: vi.fn() }),
-}));
-
 vi.mock('../../hooks/live/useLiveMatch', () => ({
   useLiveMatch: vi.fn(),
 }));

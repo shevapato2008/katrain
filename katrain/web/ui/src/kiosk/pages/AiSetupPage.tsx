@@ -16,7 +16,7 @@ import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import { writeActiveSession } from '../utils/activeSession';
-import AiLadderSetupOpponent from '../../features/aiLadder/AiLadderSetupOpponent';
+import KioskAiLadderOpponent from '../components/aiLadder/KioskAiLadderOpponent';
 import {
   AiLadderApiError,
   endAiLadderGame,
@@ -387,18 +387,18 @@ const AiSetupPage = () => {
 
               {isRanked ? (
                 <>
-                  {/* 对手。**这一块还没换成外壳写法** —— `AiLadderSetupOpponent` 手上是
-                      加载 / 出错重试 / 定级赛进度 / 未认证档 / 不可挑战 / 待结算六种状态,
-                      稿子只画了「你是 5 级,配到 第 16 档」那一种。换壳要把六种都搬过来,
-                      而它同时还是 galaxy 那屏的消费者(`galaxy/pages/AiSetupPage.tsx:557`),
-                      在原地改样式会把另一家一起改了。**登记,不在这一轮。** */}
+                  {/* 对手。2026-08-26 换成外壳写法:六种状态(加载 / 出错重试 / 定级进度 /
+                      未认证档 / 不可挑战 / 待结算)全部搬过来了,词和判别位都还取自
+                      `features/aiLadder` 那一份(`copy.ts` / `startGate.ts`),
+                      两个视图说的是同一套话 —— `KioskAiLadderOpponent.parity.test.tsx` 逐状态钉住。
+                      **没有在共享件上原地改样式**:它同时是 galaxy 那屏的消费者。 */}
                   <section className="setgrp" data-testid="setup-opponent-group">
                     <KioskSecLabel
                       zh={t('ladder:opponent', '对手')}
                       en="Opponent"
                       value={t('ladder:box_picks', '盒子配档,不可选')}
                     />
-                    <AiLadderSetupOpponent status={aiLadderStatus} onRetry={retryAiLadderStatus} compact />
+                    <KioskAiLadderOpponent status={aiLadderStatus} onRetry={retryAiLadderStatus} />
                     <p className="kiosk-opthint">
                       {t('ladder:sealed_hint', '提示、形势判断、变化图一律封掉 —— 硬规则,不是设置项')}
                     </p>

@@ -1262,3 +1262,28 @@ button.kiosk-row.figrow { flex: none; }
 .kiosk-row--step.is-bad { border-color: color-mix(in srgb, var(--bad) 55%, transparent); }
 .kiosk-row--step.is-bad > .kiosk-row__lead { border-color: var(--bad); color: var(--bad); }
 .kiosk-row--step.is-warn > .kiosk-row__lead { border-color: var(--warn); color: var(--warn); }
+
+/* ── 屏 03 升降级 ·「对手」那一格 ──────────────────────────────────────────
+   共享件 `features/aiLadder/AiLadderSetupOpponent` 用的是 MUI(Chip / LinearProgress /
+   Alert),而它同时是 galaxy 那屏的消费者 —— 在原地改样式会把另一家一起改了。
+   这里是外壳那一份视图(`kiosk/components/aiLadder/KioskAiLadderOpponent`)自己的几个类。
+   ⚠️ 名字都带 `ladder-` 前缀,**不重定义任何裸共享类**(见本文件顶上 `.gside` 那条碰撞)。 */
+.ladder-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+/* 警告那几行会换行(「该档位尚未标定,可以试下,但本局不计入升降级」有 23 个字),
+   所以**不能**用 `.kiosk-opthint` —— 那个类的高度是写死的 `var(--opthint-h)`、
+   行高等于高度,第二行会直接压出去。 */
+.ladder-warn {
+  margin: 8px 0 0; font-family: var(--font-sans); font-size: 12px; line-height: 1.6;
+  color: var(--warn);
+}
+
+/* 定级进度条。原生 `<progress>`:它自带 `value`/`max` 语义,读屏不用另外编 aria。 */
+.ladder-progress {
+  display: block; width: 100%; height: 8px; margin-top: 8px;
+  appearance: none; border: none; border-radius: 4px; background: var(--raise);
+}
+.ladder-progress::-webkit-progress-bar { border-radius: 4px; background: var(--raise); }
+.ladder-progress::-webkit-progress-value { border-radius: 4px; background: var(--accent); }
+
+.ladder-retry { margin-top: 10px; }

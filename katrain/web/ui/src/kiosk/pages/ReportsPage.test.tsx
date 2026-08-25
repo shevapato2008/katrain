@@ -264,6 +264,48 @@ describe('屏 19 · 列表与选中', () => {
  * 正好从列表里扣 54,和 `.has-search::before` 那个 +54 是同一个数)。
  * 这里守的是**口径**:筛出来的空不许说成「一局没下过」、看不见的筛选不许留着。
  */
+/**
+ * 组标题右端那个数**是谁数的**。
+ *
+ * 「本机 N 局」以前是句假话:盒子在线时列表和 `total` 来自云端(跨设备),
+ * 只有断网那一档它才碰巧是真的 —— 而用户没有任何办法分辨自己看的是哪一档。
+ * 后端那三档在 `tests/web_ui/test_user_games_authority.py`。
+ */
+describe('屏 19 · 这个数是谁数的', () => {
+  it('云端那份说「共 N 局」—— 它是跨设备的总数,不是这台盒子的', async () => {
+    mocks.list.mockResolvedValue({ ...response([game('a')], 1, 37), authority: 'cloud' });
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    const label = document.querySelector('.kiosk-section--grow .secval') as HTMLElement;
+    expect(label).toHaveTextContent('共 37 局');
+    expect(label).not.toHaveTextContent('本机');
+  });
+
+  it.each(['this_node', 'local_cache'] as const)('%s 说「本机 N 局」', async (authority) => {
+    mocks.list.mockResolvedValue({ ...response([game('a')], 1, 3), authority });
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    expect(document.querySelector('.kiosk-section--grow .secval')).toHaveTextContent('本机 3 局');
+  });
+
+  it('老服务端不带这一格时退回「本机」——**不知道就说小的那个**', async () => {
+    // 反过来(默认当成 cloud)的代价是不对称的:说小了用户会去找,说大了他不会。
+    mocks.list.mockResolvedValue(response([game('a')], 1, 3));
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    const label = document.querySelector('.kiosk-section--grow .secval') as HTMLElement;
+    expect(label).toHaveTextContent('本机 3 局');
+    expect(label).not.toHaveTextContent('共');
+  });
+
+  it('搜到 / 面对面 那两句不声称完整,云端与否都不改口', async () => {
+    mocks.list.mockResolvedValue({ ...response([game('a')], 1, 2), authority: 'cloud' });
+    renderPage('/kiosk/report?q=柯洁');
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    expect(document.querySelector('.kiosk-section--grow .secval')).toHaveTextContent('搜到 2 局');
+  });
+});
+
 describe('屏 19 · 按来源筛', () => {
   it('筛「面对面」把 source 发给后端,并写进 URL', async () => {
     renderPage();

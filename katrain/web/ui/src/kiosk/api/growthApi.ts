@@ -4,6 +4,9 @@
  * **为什么不拿对局列表自己数**:RK3562 是 2G 内存,为渲染四个数字把整个对局库拉到浏览器里
  * 再 filter,和被否掉的「每手轮询 SGF」是同一类错。
  */
+import type { DataAuthority } from '../../api/userGamesApi';
+
+const AUTHORITIES: readonly DataAuthority[] = ['this_node', 'cloud', 'local_cache'];
 
 export interface GrowthOpponentRung {
   rung: number;
@@ -21,14 +24,14 @@ export interface GrowthSummary {
   /** 只列**打过的**档,高档在前。没打过的档不会出现 —— 不摆一排 0 胜 0 负。 */
   by_opponent_rung: GrowthOpponentRung[];
   /**
-   * 这几个数是谁数出来的。
+   * 这几个数是谁数出来的。口径见 `api/userGamesApi.ts` 的 `DataAuthority` ——
+   * **一个概念只许有一套词**,复盘列表那句「本机 N 局 / 共 N 局」用的是同一格。
    *
-   * `this_node` = 这台机器就是权威(普通服务端)。
-   * `local_cache` = 盒子,权威在云端,本机库只是缓存 ⇒ **数可能偏小**。
-   * 「一个数」在屏上天然读作「全部」,所以这一格必须上屏(写成「本机记录」),
-   * 不许悄悄拿缓存冒充完整账本。
+   * 2026-08-26 补了 `cloud`:在此之前盒子上**从来不问云端**,永远数本机、永远标
+   * `local_cache` ⇒ 同一台盒子上复盘屏那张列表来自云端、成长屏那几个数来自本机,
+   * **两屏对不上,而两边都没说自己从哪儿数的**。
    */
-  authority: 'this_node' | 'local_cache';
+  authority: DataAuthority;
 }
 
 export class GrowthApiError extends Error {
@@ -58,7 +61,7 @@ export const isGrowthSummary = (value: unknown): value is GrowthSummary => {
     && Array.isArray(v.by_opponent_rung)
     && v.by_opponent_rung.every((r) => r && typeof r.rung === 'number'
       && typeof r.wins === 'number' && typeof r.losses === 'number')
-    && (v.authority === 'this_node' || v.authority === 'local_cache');
+    && AUTHORITIES.includes(v.authority as DataAuthority);
 };
 
 export const getGrowthSummary = async (token?: string, signal?: AbortSignal): Promise<GrowthSummary> => {

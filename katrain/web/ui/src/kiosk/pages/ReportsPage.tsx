@@ -4,7 +4,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BaipuAPI } from '../../api/baipuApi';
 import { KifuAPI } from '../../api/kifuApi';
 import { ReportsAPI, type ReportTaskMove, type ReportType } from '../../api/reportApi';
-import { UserGamesAPI, type UserGameDetail, type UserGameSummary } from '../../api/userGamesApi';
+import {
+  UserGamesAPI, type DataAuthority, type UserGameDetail, type UserGameSummary,
+} from '../../api/userGamesApi';
 import { useAuth } from '../../context/AuthContext';
 import { toLibraryUserGameParams, toLocalUserGameParams } from '../../features/report/reportModel';
 import { summarizeReportMoves, winrateSeries } from '../../features/report/reportStats';
@@ -108,6 +110,12 @@ export default function ReportsPage() {
 
   const [games, setGames] = useState<UserGameSummary[]>([]);
   const [totalGames, setTotalGames] = useState(0);
+  /**
+   * **这个 `total` 是谁数的。** 盒子在线时列表和总数来自云端(跨设备),
+   * 离线时才是本机那一份 —— 两者在屏上长得一模一样。
+   * 老服务端不带这一格 ⇒ `null` = 不知道,而**不知道要退到最保守的那句话**。
+   */
+  const [authority, setAuthority] = useState<DataAuthority | null>(null);
   const [gamesLoading, setGamesLoading] = useState(Boolean(token));
   const [gamesError, setGamesError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -156,6 +164,7 @@ export default function ReportsPage() {
       if (requestGeneration !== listRequestGenerationRef.current) return null;
       setGames(response.items);
       setTotalGames(response.total);
+      setAuthority(response.authority ?? null);
       return response;
     } catch (error) {
       if (requestGeneration !== listRequestGenerationRef.current) return null;
@@ -402,11 +411,23 @@ export default function ReportsPage() {
    * 国象稿子明写两者进的是同一条复盘线)。
    */
   const canAnalyzeSelected = Boolean(selectedSummary) && selectedState?.kind !== 'unfinished';
+  /**
+   * ⚠️ **「本机 N 局」以前是句假话。** 盒子在线时 `user_games_list` 走的是云端
+   * (`RepositoryDispatcher.user_games_list`),这个 `total` 是**跨设备**的总数,
+   * 而标签写死着「本机」—— 只有断网那一档它才碰巧是真的,
+   * 而用户没有任何办法分辨自己看的是哪一档。
+   *
+   * 现在跟着 `authority` 走,**只有确知来自云端时才敢说「共」**:
+   * `null`(老服务端不带这一格)退回「本机」—— 不知道就说小的那个。
+   * 搜索/筛选那两句本来就不声称完整,不动。
+   */
   const countLabel = query
     ? interpolate(t('review:matched_games', '搜到 {n} 局'), { n: totalGames })
     : source === 'play_local'
       ? interpolate(t('review:facing_games', '面对面 {n} 局'), { n: totalGames })
-      : interpolate(t('review:local_games', '本机 {n} 局'), { n: totalGames });
+      : authority === 'cloud'
+        ? interpolate(t('review:all_games', '共 {n} 局'), { n: totalGames })
+        : interpolate(t('review:local_games', '本机 {n} 局'), { n: totalGames });
 
   return (
     <>

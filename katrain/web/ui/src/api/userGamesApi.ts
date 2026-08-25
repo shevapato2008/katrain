@@ -32,11 +32,25 @@ export interface UserGameDetail extends UserGameSummary {
   sgf_content: string;
 }
 
+/**
+ * **这个数是谁数的。**
+ *
+ * `this_node`   —— 这台机器就是权威(普通服务端 / 本机跑的 web UI),数是全的。
+ * `cloud`       —— 盒子在线,列表和 `total` 来自云端,**跨设备完整**。
+ * `local_cache` —— 盒子拿不到云端,这是本机那一份,**可能偏小**。
+ *
+ * 三档和 `growth/summary` 的 `authority` 同名同义 —— 一个概念只许有一套词。
+ * ⚠️ 老服务端不带这一格,所以是**选填**:读不到就当「不知道」,而「不知道」
+ * 在屏上必须退到最保守的那句话,不许当成 `cloud`。
+ */
+export type DataAuthority = 'this_node' | 'cloud' | 'local_cache';
+
 export interface UserGameListResponse {
   items: UserGameSummary[];
   total: number;
   page: number;
   page_size: number;
+  authority?: DataAuthority;
 }
 
 export interface MoveAnalysis {

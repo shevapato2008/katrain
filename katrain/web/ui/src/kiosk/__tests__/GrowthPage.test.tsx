@@ -200,6 +200,20 @@ describe('屏 22 成长', () => {
     expect(screen.queryByTestId('growth-local-note')).toBeNull();
   });
 
+  /**
+   * 2026-08-26 补的第三档。在此之前盒子上**从来不问云端**,永远数本机、永远标
+   * `local_cache` ⇒ 同一台盒子上复盘屏那张列表来自云端、成长屏这几个数来自本机,
+   * **两屏对不上,而两边都没说自己从哪儿数的**。
+   * 现在拿到云端那份时这几个数是跨设备完整的 ⇒ 那句「本机记录」不该再出现,
+   * 它出现就是在给一份完整账本挂免责声明。
+   */
+  it('数来自云端时不说「本机记录」—— 那一份是全的', async () => {
+    mocks.summary = SUMMARY({ authority: 'cloud' });
+    render(<GrowthPage />);
+    await waitFor(() => expect(statValues()[0]).toBe('12'));
+    expect(screen.queryByTestId('growth-local-note')).toBeNull();
+  });
+
   it('「按对手强度」只列打过的档,不补一排 0 胜 0 负', async () => {
     mocks.summary = SUMMARY({
       by_opponent_rung: [

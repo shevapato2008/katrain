@@ -689,3 +689,53 @@ http_has_human_model = False
 **旁证**：`user_games` 近 21 天只有 1 局（2026-08-25 03:11，**3 手后黑方中盘认输**），
 上一局远在 2026-06-23。3 手意味着白棋当时确实走了；「下三手就认输」正是
 「看不见 AI 还手」的形状。
+
+#### 2026-08-25（承上）— 那件既有故障已修：改卷里的持久化 engine 配置
+
+上一条留的「未修，需要决定」已授权执行。
+
+**改了什么**（`/var/lib/docker/volumes/katrain-ucloud_katrain-state-preview/_data/config.json`，
+文件 mtime 原为 **Jul 24 20:49** —— 迁移期遗留无疑）：
+
+```
+engine.http_url             : http://127.0.0.1:8000  →  http://katago-web:8000
+engine.http_has_human_model : False                  →  True
+```
+
+**手法**：先 `cp -a` 备份成 `config.json.bak-20260825-134012`（仍在位），
+然后用 **json 解析改写而不是 sed**，并在脚本里断言
+「engine 段里发生变化的键必须是且只是这两个」—— 不满足就 assert 失败、不落盘。
+文件属主 `10001:10001` 未变（`open(p,"w")` 保留 inode）。
+**注意**：整个文件被重新序列化成 `indent=2`，字节数 6900 → 5392，
+**内容等价、排版变了**；要逐字节对照请用那份备份。
+
+**卷没有删**（里面还有别的持久化状态），只改了这一个文件里的两项。
+
+**改后重启 `katrain-web`，启动日志的变化就是判据：**
+
+```
+改前: Checking HTTP engine status at http://127.0.0.1:8000/health
+      ERROR Could not connect to HTTP engine: ... Connection refused. Falling back to local engine.
+      ERROR 引擎意外终止且未发送输出:  status 127        ← 本地 KataGo 缺 fusermount
+改后: Syncing KataGo URL to http://katago-web:8000 from environment
+      （上面三条一条不剩）
+```
+
+**端到端验证（与测试机同一个探针）：**
+
+```
+握手 HTTP/1.1 101 Switching Protocols
+game_update 推送 6 次
+手数 3   该谁走 B          ← AI 还手了
+探针期间 AI/引擎错误日志：无
+```
+
+对照修复前同一探针在生产上的结果：`手数 2 / 该谁走 W`（AI 不还手）。
+
+**至此生产的自由对弈两条链都通了**：WS 凭据（本次发布 `c5b8c4eb`）+ 引擎地址（本条）。
+6/6 healthy、`/api/v1/health` 200、`current -> releases/c5b8c4eb`、盘面 74%（26G 可用）。
+
+**仍未查清的一点**：`server.py:248-253` 那条 `Syncing KataGo URL` 分支，
+在改配置**之前**（`http_url` 与 `LOCAL_KATAGO_URL` 明明不同、`backend` 也确是 `http`）
+日志里**没有**出现，改完之后反而出现了。条件看起来该成立却没走，本次没查到底 ——
+如果它当初正常执行，这个故障根本不会存在。**下一个碰这块的人从这里接。**

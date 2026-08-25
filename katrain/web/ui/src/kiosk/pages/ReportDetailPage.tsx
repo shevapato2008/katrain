@@ -194,7 +194,17 @@ export default function ReportDetailPage() {
   }, [currentMove, recommendationSignature, reportIdentity]);
 
   const boardSize = previewData?.metadata.boardSize || game?.board_size || 19;
-  const totalMoves = previewData?.moves.length || game?.move_count || 0;
+  /**
+   * 让子局里这两套下标不是一回事:`previewData.moves` 开头那几个是摆上去的让子石,
+   * 而报告的 `move_number` 只数真正的着手(后端把摆子走 `initialStones`)。
+   * 盘上的游标因此要加回这个偏移,滑杆的上限要减掉它 —— 不这么做,让子局滑到第 k 手
+   * 时盘面是对的、右边的分析却是第 k+让子数 手的,**屏上没有任何东西会说它错位了**。
+   */
+  const setupCount = previewData?.setupCount ?? 0;
+  const boardCursor = currentMove + setupCount;
+  const totalMoves = previewData
+    ? Math.max(0, previewData.moves.length - setupCount)
+    : (game?.move_count || 0);
   const ownership = currentAnalysis?.ownership || null;
 
   const aiMarkers = useMemo((): AiMoveMarker[] | null => {
@@ -328,7 +338,7 @@ export default function ReportDetailPage() {
           <LiveBoard
             moves={previewData.moves}
             stoneColors={previewData.stoneColors}
-            currentMove={currentMove}
+            currentMove={boardCursor}
             boardSize={boardSize}
             showCoordinates={false}
             pvMoves={pvMoves}

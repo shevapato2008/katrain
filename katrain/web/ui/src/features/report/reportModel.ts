@@ -19,6 +19,8 @@ export interface LocalReportImportPayload {
   playerWhite?: string;
   blackRank?: string;
   whiteRank?: string;
+  /** `RE[]`。棋谱库那条(`toLibraryUserGameParams`)一直在传,本地导入这条以前漏了。 */
+  result?: string;
 }
 
 export interface ReportGameStatus {
@@ -142,6 +144,7 @@ export function toLocalUserGameParams(payload: LocalReportImportPayload): Create
     player_white: payload.playerWhite,
     black_rank: payload.blackRank,
     white_rank: payload.whiteRank,
+    result: payload.result,
     board_size: payload.boardSize,
     rules: payload.rules,
     komi: payload.komi,

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { StrictMode } from 'react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -659,5 +659,72 @@ describe('屏 20 · 接真钩子的轮询', () => {
     expect(getReport).toHaveBeenCalledTimes(2);
     await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
     expect(getReport).toHaveBeenCalledTimes(2);
+  });
+});
+
+/**
+ * 让子局的两套下标。**盘上的 `moves` 里前几个是摆上去的让子石,而报告的 `move_number`
+ * 只数真正的着手**(后端 `katrain/cron/sgf.py` 把摆子单独走 `initialStones`)。
+ * 不把这个偏移加回去,让子局滑到第 k 手时盘面是对的、右边的分析却是第 k+让子数 手的 ——
+ * 而**屏上没有任何东西会说它错位了**:胜率有、曲线有、推荐也有,只是都不属于这一手。
+ */
+describe('屏 20 · 让子局的下标要对得上', () => {
+  const handicapGame = {
+    ...game,
+    move_count: 2,
+    sgf_content: '(;GM[1]FF[4]SZ[19]HA[2]AB[dd][pp];W[qq];B[cc])',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    auth = { token: 'token', isAuthenticated: true };
+    boardProps = {};
+    realHook.enabled = false;
+  });
+
+  it('第 0 手:盘上是两颗让子石,不是空盘', () => {
+    detail = { ...baseDetail(), game: handicapGame, currentMove: 0, analysisByMove: {} };
+    renderPage();
+    expect(screen.getByTestId('live-board')).toHaveAttribute('data-current-move', '2');
+    expect(boardProps.moves).toEqual(['D16', 'Q4', 'R3', 'C17']);
+  });
+
+  it('第 1 手:盘上是让子石加白第一手', () => {
+    detail = { ...baseDetail(), game: handicapGame, currentMove: 1, analysisByMove: {} };
+    renderPage();
+    expect(screen.getByTestId('live-board')).toHaveAttribute('data-current-move', '3');
+  });
+
+  it('走到最后一手就走不动了 —— 上限数的是着手,不数让子石', () => {
+    // 上限要是把两颗让子石也算进去,「下一手 / 跳到最后」在真正的末手之后还是亮的,
+    // 点下去停在两个根本不存在的手数上,那两格永远不会有分析。
+    detail = {
+      ...baseDetail(),
+      game: handicapGame,
+      currentMove: 2,
+      analysisByMove: {},
+      task: { ...task, status: 'completed', total_moves: 2, analyzed_moves: 2 },
+    };
+    renderPage();
+    const nav = screen.getByTestId('report-detail-movenav');
+    for (const label of ['下一手', '跳到最后']) {
+      expect(within(nav).getByLabelText(label)).toBeDisabled();
+    }
+  });
+
+  it('还没到末手时该亮着 —— 一律禁掉也叫「过」', () => {
+    detail = {
+      ...baseDetail(), game: handicapGame, currentMove: 1, analysisByMove: {},
+      task: { ...task, status: 'completed', total_moves: 2, analyzed_moves: 2 },
+    };
+    renderPage();
+    const nav = screen.getByTestId('report-detail-movenav');
+    expect(within(nav).getByLabelText('下一手')).toBeEnabled();
+  });
+
+  it('分先局没有偏移 —— 加错方向比不加还坏', () => {
+    detail = { ...baseDetail(), currentMove: 2 };
+    renderPage();
+    expect(screen.getByTestId('live-board')).toHaveAttribute('data-current-move', '2');
   });
 });

@@ -61,6 +61,8 @@ export interface SGFMetadata {
   playerWhite: string;
   blackRank?: string;
   whiteRank?: string;
+  /** `RE[]` —— 棋谱自己写的胜负。本地导入靠它，没有别的来源。 */
+  result?: string;
 }
 
 // ── Serialization: moves[] → SGF ──
@@ -84,6 +86,7 @@ export function movesToSGF(
   if (playerBlack) root += `PB[${escapeSGF(playerBlack)}]`;
   if (playerWhite) root += `PW[${escapeSGF(playerWhite)}]`;
   if (handicap > 0) root += `HA[${handicap}]`;
+  if (metadata.result) root += `RE[${escapeSGF(metadata.result)}]`;
 
   // Determine how many leading moves are handicap setup stones.
   // These are emitted as AB[] in the root node (per SGF standard),
@@ -158,11 +161,23 @@ export function sgfToMoves(sgfContent: string): {
   moves: string[];
   stoneColors: ('B' | 'W')[];
   metadata: Partial<SGFMetadata>;
+  /**
+   * `moves` 开头有多少个是**第一手之前**的摆子(让子石/摆好的局面)。
+   *
+   * 摆子被折进 `moves` 是给棋盘用的 —— 渲染的时候它们就是盘上的子。但**复盘报告
+   * 的 `move_number` 只数真正的着手**(后端 `katrain/cron/sgf.py` 把摆子单独走
+   * `initialStones`),两边的下标因此差着一个让子数。让子局里滑到第 k 手,盘上是
+   * 对的、右边的分析却是第 k+让子数 手的 —— 屏上没有任何东西会说它错位了。
+   * 报告页拿这个数把两套下标对齐;只关心盘面的调用方不用理它。
+   */
+  setupCount: number;
 } {
   const nodes = extractMainLine(sgfContent);
   const moves: string[] = [];
   const stoneColors: ('B' | 'W')[] = [];
   const metadata: Partial<SGFMetadata> = {};
+  let setupCount = 0;
+  let sawMove = false;
 
   for (const node of nodes) {
     const props = parseNode(node);
@@ -176,6 +191,7 @@ export function sgfToMoves(sgfContent: string): {
     if (props.PW) metadata.playerWhite = props.PW[0];
     if (props.BR) metadata.blackRank = props.BR[0];
     if (props.WR) metadata.whiteRank = props.WR[0];
+    if (props.RE) metadata.result = props.RE[0];
 
     const boardSize = metadata.boardSize || 19;
 
@@ -187,6 +203,7 @@ export function sgfToMoves(sgfContent: string): {
           if (coords && coords !== 'pass') {
             moves.push(toDisplayMove(coords[0], coords[1]));
             stoneColors.push(color);
+            if (!sawMove) setupCount++;
           }
         }
       }
@@ -195,6 +212,7 @@ export function sgfToMoves(sgfContent: string): {
     // Extract moves (B/W)
     for (const color of ['B', 'W'] as const) {
       if (props[color]) {
+        sawMove = true;
         const val = props[color][0];
         if (!val || val === '') {
           moves.push('pass');
@@ -214,7 +232,7 @@ export function sgfToMoves(sgfContent: string): {
     }
   }
 
-  return { moves, stoneColors, metadata };
+  return { moves, stoneColors, metadata, setupCount };
 }
 
 // ── Round-trip validation ──

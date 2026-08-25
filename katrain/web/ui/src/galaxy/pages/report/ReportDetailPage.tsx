@@ -109,7 +109,10 @@ export default function ReportDetailPage() {
 
   const ownership = showTerritory ? currentAnalysis?.ownership || null : null;
   const boardSize = previewData?.metadata.boardSize || game?.board_size || 19;
-  const totalMoves = previewData?.moves.length || 0;
+  // 让子局:`moves` 开头是摆子,报告的 move_number 只数着手。见 kiosk 同名页那段注释。
+  const setupCount = previewData?.setupCount ?? 0;
+  const boardCursor = currentMove + setupCount;
+  const totalMoves = previewData ? Math.max(0, previewData.moves.length - setupCount) : 0;
 
   if (!isAuthenticated) {
     return (
@@ -197,7 +200,7 @@ export default function ReportDetailPage() {
         <LiveBoard
           moves={previewData.moves}
           stoneColors={previewData.stoneColors}
-          currentMove={currentMove}
+          currentMove={boardCursor}
           pvMoves={pvMoves}
           boardSize={boardSize}
           aiMarkers={aiMarkers}

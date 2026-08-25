@@ -48,6 +48,22 @@ beforeEach(() => {
   ]);
 });
 
+/**
+ * 后端**真会给出来的**那一种空:分类是写死的四条
+ * (`katrain/web/tutorials/db_queries.py` 的 `CATEGORIES`,`get_categories()` 无条件返回),
+ * 一本课都没有时它照样回 4 行、每行 `book_count: 0`。
+ *
+ * ⚠️ 这一组原来用 `getCategories.mockResolvedValue([])` 造空态 —— 那是**真后端
+ * 一次都产不出来的形状**。夹具够不着真实路径的话,测试再绿也只证明「从我这层往里
+ * 是通的」,而堵点按定义总在更外面:屏上真正会出现的是四张「0 本」的卡。
+ */
+const EMPTY_LIBRARY = [
+  cat({ slug: '入门', title: '入门', order: 1, book_count: 0 }),
+  cat({ slug: '布局', title: '布局', order: 2, book_count: 0 }),
+  cat({ slug: '中盘', title: '中盘', order: 3, book_count: 0 }),
+  cat({ slug: '官子', title: '官子', order: 4, book_count: 0 }),
+];
+
 describe('屏 23 · 三种「没有」各有各的说法', () => {
   it('还没查到的时候说的是「正在跟云端对课」', () => {
     getCategories.mockReturnValue(new Promise(() => {}));
@@ -67,11 +83,22 @@ describe('屏 23 · 三种「没有」各有各的说法', () => {
   });
 
   // **接口答了、答的是空** —— 这时候「暂无教程」是结论,不是「还没查」。
-  it('接口返回空就是空态一句话,不摆一排点不开的卡', async () => {
-    getCategories.mockResolvedValue([]);
+  // 判别位是**书数**不是分类数:分类写死四条,`length === 0` 经真后端走不到。
+  it('一本课都没有就是空态一句话,不摆四张「0 本」的卡', async () => {
+    getCategories.mockResolvedValue(EMPTY_LIBRARY);
     renderPage();
     expect(await screen.findByTestId('tutorial-empty')).toBeInTheDocument();
     expect(screen.queryByTestId('tutorial-categories')).toBeNull();
+    // 不写「同步」:盒子上 tutorials 是实时代理,全仓没有同步机制 ——
+    // 说「还没同步下来」会让人以为等一会儿就有。
+    expect(screen.getByTestId('tutorial-empty')).not.toHaveTextContent('同步');
+  });
+
+  // 退化形状也得接住(接口若真回了空数组),但它不是主路径。
+  it('接口回空数组时也走同一条空态', async () => {
+    getCategories.mockResolvedValue([]);
+    renderPage();
+    expect(await screen.findByTestId('tutorial-empty')).toBeInTheDocument();
   });
 });
 
@@ -140,7 +167,7 @@ describe('屏 23 · 另外两块', () => {
     await screen.findByTestId('tutorial-categories');
     expect(screen.queryByTestId('tutorial-instead')).toBeNull();
 
-    getCategories.mockResolvedValue([]);
+    getCategories.mockResolvedValue(EMPTY_LIBRARY);
     renderPage();
     const instead = await screen.findAllByTestId('tutorial-instead');
     expect(instead).toHaveLength(1);
@@ -149,7 +176,7 @@ describe('屏 23 · 另外两块', () => {
   });
 
   it('那两张卡各去各的地方', async () => {
-    getCategories.mockResolvedValue([]);
+    getCategories.mockResolvedValue(EMPTY_LIBRARY);
     renderPage();
     await screen.findByTestId('tutorial-instead');
     fireEvent.click(screen.getByRole('button', { name: /去训练营/ }));

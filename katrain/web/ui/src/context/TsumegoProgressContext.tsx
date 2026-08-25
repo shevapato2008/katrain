@@ -187,6 +187,16 @@ function entryFromMark(input: MarkProgressInput): TsumegoProgressEntry {
 
 export interface TsumegoProgressContextValue {
   progress: TsumegoProgressMap;
+  /**
+   * 服务端那一次读**失败了吗**。
+   *
+   * 为什么要有它:`progress` 空着有两种意思 —— 「这个人一题没做过」和「没读到」。
+   * 前者写 0 是事实,后者写 0 是**编**。屏 22 那四格明令一个都不许写 0
+   * (`GrowthPage` 头上那段:「拿不到就写 —,并说一句」),而不区分这两者的话
+   * 一个刚断网的老用户会看到「累计已解题 0」。
+   * 只在**本地也是空的**时候才有分别:本地有数就至少是个下界,照常显示。
+   */
+  serverLoadFailed: boolean;
   /** Write progress for one problem: localStorage always, in-memory + server only under Provider. */
   markProgress: (id: string, input: MarkProgressInput) => void;
   isCompleted: (id: string) => boolean;
@@ -202,6 +212,8 @@ export interface TsumegoProgressContextValue {
  */
 const defaultContextValue: TsumegoProgressContextValue = {
   progress: {},
+  // 没有 Provider 就没人去读服务端 ⇒ 谈不上失败。
+  serverLoadFailed: false,
   markProgress: (id, input) => {
     // R3 safety: localStorage persistence must survive even without a Provider.
     writeLocalProgress(id, entryFromMark(input));
@@ -249,17 +261,21 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
    * 在 render 期间调整,不放 effect:同一帧里子组件的 `cacheLocalProgress`
    * (`useTsumegoProblem.ts`)会直接写 localStorage,effect 太晚,那一下会落到上一个人的钥匙上。
    */
+  const [serverLoadFailed, setServerLoadFailed] = useState(false);
   const [scopedUser, setScopedUser] = useState<number | string | null>(userId);
   if (scopedUser !== userId) {
     setScopedUser(userId);
     setProgressScope(userId);
     setProgress(readLocalProgress());
+    // 换人了,上一个人那次读失败与否与这个人无关。
+    setServerLoadFailed(false);
   }
 
   // Guard against double server-fetch (e.g. React StrictMode) for the same account.
   const fetchedUserRef = useRef<number | string | null>(null);
 
   const fetchAndMerge = useCallback((authToken?: string) => {
+    setServerLoadFailed(false);
     TsumegoAPI.getProgress(authToken)
       .then((serverMap) => {
         setProgress((prev) => {
@@ -273,7 +289,9 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
         });
       })
       .catch(() => {
-        // offline / unauthorized — keep localStorage-only progress
+        // offline / unauthorized — keep localStorage-only progress，但**要说出去**:
+        // 吞掉的话下游分不清「一题没做」和「没读到」。
+        setServerLoadFailed(true);
       });
   }, []);
 
@@ -334,8 +352,8 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
   );
 
   const value = useMemo<TsumegoProgressContextValue>(
-    () => ({ progress, markProgress, isCompleted, unitProgress, categoryProgress, refresh }),
-    [progress, markProgress, isCompleted, unitProgress, categoryProgress, refresh],
+    () => ({ progress, serverLoadFailed, markProgress, isCompleted, unitProgress, categoryProgress, refresh }),
+    [progress, serverLoadFailed, markProgress, isCompleted, unitProgress, categoryProgress, refresh],
   );
 
   return (

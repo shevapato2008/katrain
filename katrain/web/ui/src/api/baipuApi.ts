@@ -62,10 +62,20 @@ export interface BaipuCaptureResult {
 
 // Discriminated outcome so the UI can fall back when capture isn't enabled
 // (404 = dev/screen-only mode). Hardware/storage failures remain blocking.
+/**
+ * 采集失败的原因。**409 有两种可分辨的形状,而它们对站在盘前的人意味着完全不同的事:**
+ *  · `geometry` —— 几何没锁/失效(`endpoints/baipu.py:109`,`detail` 是**纯字符串**)。
+ *    这一种**再按一次永远是同一个 409**,人得去重新标定棋盘。
+ *  · `led` —— 灯不可用(`:140`,`detail` 是 `{error:'led_unavailable', …}`)。
+ *    这一种再按一次是有可能成的。
+ * 混成一句「再按一次」会让几何坏掉的人一直按下去。
+ */
+export type BaipuCaptureErrorReason = 'geometry' | 'led' | 'other';
+
 export type BaipuCaptureOutcome =
   | { kind: 'ok'; result: BaipuCaptureResult }
   | { kind: 'disabled' } // 404: capture/geometry not available
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; message: string; reason: BaipuCaptureErrorReason };
 
 export const BaipuAPI = {
   load: async (req: { sgf?: string; kifu_id?: number }): Promise<BaipuLoadResponse> => {
@@ -96,17 +106,28 @@ export const BaipuAPI = {
         body: JSON.stringify(req),
       });
     } catch (e) {
-      return { kind: 'error', message: e instanceof Error ? e.message : 'network error' };
+      return { kind: 'error', message: e instanceof Error ? e.message : 'network error', reason: 'other' };
     }
     if (response.status === 404) return { kind: 'disabled' };
     if (response.ok) return { kind: 'ok', result: await response.json() };
     if (response.status === 409) {
       const body = await response.json().catch(() => ({}));
       const detail = body?.detail;
+      // 判别位是 `detail` 的**形状**,不是拿 message 去匹配关键词 ——
+      // 字符串的内容是会被改的文案,而形状是契约。
+      //   · 纯字符串  → 几何(`endpoints/baipu.py:109` 是 409 里**唯一**给字符串的那处)
+      //   · {error:'led_unavailable'} → 灯(`:140`)
+      //   · 其它对象  → other。**必须留这一支**:409 还有第三种形状
+      //     (遗留的 `{qa:'mismatch', diffs:[…]}`),把它归成「几何」会让屏上
+      //     叫人去重新标定棋盘 —— 一件跟它毫无关系的事。
+      const reason: BaipuCaptureErrorReason =
+        typeof detail === 'string' ? 'geometry'
+          : (typeof detail === 'object' && detail !== null && detail.error === 'led_unavailable') ? 'led'
+            : 'other';
       const message = typeof detail === 'string' ? detail : detail?.message;
-      return { kind: 'error', message: message ?? 'capture conflict' };
+      return { kind: 'error', message: message ?? 'capture conflict', reason };
     }
-    return { kind: 'error', message: `capture failed ${response.status}` };
+    return { kind: 'error', message: `capture failed ${response.status}`, reason: 'other' };
   },
 };
 

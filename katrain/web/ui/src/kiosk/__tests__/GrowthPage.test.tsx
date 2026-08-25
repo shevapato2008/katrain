@@ -22,6 +22,7 @@ const { mocks } = vi.hoisted(() => ({
     summary: null as GrowthSummary | null,
     summaryError: null as Error | null,
     progress: {} as Record<string, { completed: boolean }>,
+    progressFailed: false,
   },
 }));
 
@@ -29,7 +30,7 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'tok', isAuthenticated: true, user: { id: 1, username: 't' } }),
 }));
 vi.mock('../../context/TsumegoProgressContext', () => ({
-  useTsumegoProgress: () => ({ progress: mocks.progress }),
+  useTsumegoProgress: () => ({ progress: mocks.progress, serverLoadFailed: mocks.progressFailed }),
 }));
 vi.mock('../../features/aiLadder/useAiLadderStatus', () => ({
   useAiLadderStatus: () => ({ status: mocks.ladder }),
@@ -71,6 +72,7 @@ beforeEach(() => {
   mocks.summary = SUMMARY();
   mocks.summaryError = null;
   mocks.progress = {};
+  mocks.progressFailed = false;
 });
 
 describe('屏 22 成长', () => {
@@ -151,6 +153,27 @@ describe('屏 22 成长', () => {
     await waitFor(() => expect(statValues()[0]).toBe('12'));
     expect(statValues()[1]).toBe('—');
     expect(statValues()[1]).not.toBe('0%');
+  });
+
+  /**
+   * 四个格里这一格最容易漏:另外三格的数来自 `summary`,取不到时是 `undefined`
+   * ⇒ `num()` 自己会写 `—`;而「已解题」是**本地 `.length` 算出来的,永远是个数字**,
+   * 读失败也照样是 0 ——「一题没做过」和「没读到」在屏上成了同一句话。
+   */
+  it('做题进度没读到、本机也是空的:已解题写「—」不写 0', async () => {
+    mocks.progressFailed = true;
+    render(<GrowthPage />);
+    await waitFor(() => expect(statValues()[0]).toBe('12'));
+    expect(statValues()[2]).toBe('—');
+    expect(statValues()[2]).not.toBe('0');
+  });
+
+  it('读失败但本机有数:照常显示 —— 那至少是个真实下界,不是猜的', async () => {
+    mocks.progressFailed = true;
+    mocks.progress = { a: { completed: true }, b: { completed: true }, c: { completed: false } };
+    render(<GrowthPage />);
+    await waitFor(() => expect(statValues()[0]).toBe('12'));
+    expect(statValues()[2]).toBe('2');
   });
 
   it('数没取到时写「—」并说一句,**不退回 0**', async () => {

@@ -57,7 +57,7 @@ const GrowthPage = () => {
   const { t } = useTranslation();
   const { token } = useAuth();
   const ladder = useAiLadderStatus(token ?? undefined);
-  const { progress } = useTsumegoProgress();
+  const { progress, serverLoadFailed } = useTsumegoProgress();
   const [summary, setSummary] = useState<GrowthSummary | null>(null);
   const [summaryFailed, setSummaryFailed] = useState(false);
 
@@ -71,7 +71,19 @@ const GrowthPage = () => {
     return () => ac.abort();
   }, [token]);
 
-  const solved = Object.values(progress).filter((p) => p?.completed).length;
+  const solvedCount = Object.values(progress).filter((p) => p?.completed).length;
+  /**
+   * ⚠️ **「一题没做过」和「没读到」是两句话。**
+   *
+   * 服务端那次读失败、而本机缓存也是空的 —— 这时候写 `0` 是在替用户断言
+   * 「你一题都没解过」,而我们根本不知道。这一屏自己头上就写着这条规矩
+   * (拿不到就写 `—` 并说一句),四个格里只有这一格原来漏了:
+   * 另外三格的数来自 `summary`,取不到时是 `undefined` ⇒ `num()` 自己会写 `—`;
+   * 而这一格是**本地 `.length` 算出来的,永远是个数字**,失败也照样是 0。
+   *
+   * 本机有数就照常显示:那至少是个真实下界,不是猜的。
+   */
+  const solved = serverLoadFailed && solvedCount === 0 ? null : solvedCount;
 
   const status = ladder.status;
   const placement = status.view_state === 'ready' ? status.placement_state : null;
@@ -125,7 +137,7 @@ const GrowthPage = () => {
       k: t('growth:stat_winrate', '升降级胜率 · 近 30 天'),
       good: wr !== null && wr >= 0.5,
     },
-    { v: String(solved), k: t('growth:stat_solved', '累计已解题') },
+    { v: solved === null ? dash : String(solved), k: t('growth:stat_solved', '累计已解题') },
     { v: num(summary?.ranked_total), k: t('growth:stat_ranked', '升降级局 · 累计') },
   ];
 
@@ -166,13 +178,13 @@ const GrowthPage = () => {
         <KioskStatusCells
           cells={[
             { label: t('growth:cell_placement', '定级局'), value: placementLine },
-            { label: t('growth:cell_solved', '已解题'), value: String(solved), tone: 'good' },
+            { label: t('growth:cell_solved', '已解题'), value: solved === null ? dash : String(solved), tone: 'good' },
           ]}
         />
       </div>
 
       {/* 右栏 680:数据条 → 权威口径 → 两块诊断 */}
-      <div className="gside">
+      <div className="gcol">
         <div className="kiosk-stats" data-testid="growth-stats">
           {stats.map((s) => (
             <div className="kiosk-stat" key={s.k}>

@@ -320,13 +320,33 @@ const LobbyPage = () => {
         >
           {failed && <Alert severity="error" sx={{ fontSize: '0.75rem' }}>{t('lobby:load_failed', '读不到大厅 —— 网络或服务没通')}</Alert>}
           {!failed && activeGames.length === 0 && <p className="lobbyempty">{emptyGames}</p>}
-          {activeGames.map((g) => (
-            <button
+          {activeGames.map((g) => {
+            /**
+             * ⚠️ **只有自己在里面的那一局才点得进去。**
+             *
+             * 这一列原来整列可点、屏上还写着「点进去可以观战」—— 而观战这条路
+             * **今天根本不存在**:`/api/session/{id}/*` 一律过 `guard_session_reader`,
+             * 陌生人进去必 403。也就是说那句话邀请用户去按一颗必然失败的按钮。
+             *
+             * 观战要做是另一轮的事(要一条只读旁路 + 真正的只读态,而且得先证明
+             * `game_update` 广播里的 `analysis` 不会递给旁观者 —— 那道闸是防
+             * 「跨会话偷分析」的反作弊闸)。在那之前**撤回承诺**,不是灰着一颗键:
+             * 灰键说的是「满足条件就给你」,而这里没有条件可满足。
+             *
+             * 判别位只能拿用户名比:这条端点对每一局只回 `player_b` / `player_w`
+             * 两个名字字符串,没有 id。用户名在库里是唯一的(建号时就挡重名)。
+             */
+            const mine = !!user && (g.player_b === user.username || g.player_w === user.username);
+            const Cell = mine ? 'button' : 'div';
+            return (
+            <Cell
               key={g.session_id}
-              type="button"
-              className="gcard"
+              {...(mine
+                ? { type: 'button' as const, onClick: () => navigate(`/kiosk/play/pvp/room/${g.session_id}`) }
+                : {})}
+              className={mine ? 'gcard is-mine' : 'gcard is-static'}
               data-testid="lobby-game"
-              onClick={() => navigate(`/kiosk/play/pvp/room/${g.session_id}`)}
+              data-mine={mine ? '1' : '0'}
             >
               <span className="gcard__meta">
                 <b>{g.session_id.slice(0, 4)}</b>
@@ -347,8 +367,9 @@ const LobbyPage = () => {
                   <span className="gside">{t('lobby:plays_white', '执白')}<span className="disc w" /></span>
                 </span>
               </span>
-            </button>
-          ))}
+            </Cell>
+            );
+          })}
         </KioskScrollZone>
       </div>
 
@@ -396,7 +417,9 @@ const LobbyPage = () => {
           <b>{t('lobby:idle', '空闲')}</b>
           {t('lobby:note_a', '的人可以邀请,')}
           <b>{t('lobby:in_game', '对局中')}</b>
-          {t('lobby:note_b', '的不行。左边那一列点进去可以观战。')}
+          {/* 「点进去可以观战」撤掉了 —— 观战这条路今天不存在,陌生人进去必 403。
+              换成这一列真正给得出的那件事:自己那局能回去。 */}
+          {t('lobby:note_b', '的不行。左边是进行中的对局,自己那局可以点回去。')}
         </p>
 
         <div className="matchpick">

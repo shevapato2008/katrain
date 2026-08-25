@@ -36,10 +36,14 @@ import { interpolate } from '../utils/interpolate';
  * **一个状态摆两个地方,必有一个在撒谎。** 删的是搜索行那颗:段里那一行带着三件实的
  * (19 路写死、队排在平台那边、只有支持 automatch 的平台才有这一格),而行尾那颗什么都不带。
  *
- * ⚠️ **登记一条诚实债(不在本轮修)**:`automatch` 是纯前端本地状态,只有用户按取消才变回
- * false。OGS 适配器**已经在收** `automatch/start` 那条事件,但「适配器 → WS → kiosk 大厅」
- * 这一段没接 —— **配上之后没有任何东西会把「排队中」清掉**。不是这次重画造成的,
- * 但那枚「排队中」标会把这个洞显示得更醒目。
+ * ✅ **那条诚实债 2026-08-25(S1)已还** —— 不是把链路接上,是**撤回屏上的断言**。
+ * `automatch` 是纯前端本地状态;OGS 适配器收 `automatch/start` 后会
+ * `_emit("automatch_found", …)`,但 `on_automatch_found` **全仓零订阅者**
+ * ⇒ 「适配器 → WS → kiosk 大厅」这一段确实不存在,配上之后盒子不会知道。
+ * 接这条链要先定「用户级(非 session 级)平台事件通道落在哪」—— 那是设计决定不是编码,
+ * 端到端还要真 OGS 账号 ⇒ 本轮不投(D3)。所以撤掉那枚「排队中」标和那句
+ * 「配上就自动进对局」,换成一句**始终成立**的说明。键留着两态:它说的是
+ * 「按下去会发生什么」,不是「你现在是什么状态」。
  *
  * ## 「输入之后回车」是**真按回车**,不是边打边搜
  *
@@ -241,21 +245,26 @@ const PlatformLobbyPage = () => {
                 <span className="kiosk-row__lead">{t('19x19', '19 路')}</span>
                 <div className="kiosk-row__t">
                   <b>{interpolate(t('platform:automatch_body', '让 {name} 配一个'), { name: t(meta.label, meta.labelCn) })}</b>
-                  {/* 稿子那句「排队时这里变成『取消匹配』」是**写给读稿人的使用说明** ——
-                      上屏就成了 Fan 8-22 点名的那种小字。前半句留着,后半句让状态自己说。 */}
+                  {/* ⚠️ **不带状态,只说会发生什么**(2026-08-25,S1)。
+                      原来这里在排队时写「排队中 · 配上就自动进对局」—— 后半句是**平的假话**:
+                      OGS 适配器确实收 `automatch/start` 并 `_emit("automatch_found", …)`,
+                      可 `on_automatch_found` 这个注册口**全仓零订阅者**(只有 emit 处和
+                      注册 API 两行)⇒ 平台真给你配上局了,这台盒子永远不会知道。
+                      前半句「排队中」也没人维护:它是纯前端本地状态,刷一下页面就没了,
+                      而 OGS 那边还排着。**两句都撤,换成一句始终成立的。** */}
                   <em>
-                    {automatch
-                      ? t('platform:automatch_queued_hint', '排队中 · 配上就自动进对局')
-                      : t('platform:automatch_hint', '平台在它那边排队，配上才回来')}
+                    {interpolate(
+                      t('platform:automatch_hint', '队排在 {name} 那边。配上之后不会自动回到这台盒子，要去 {name} 上接着下。'),
+                      { name: t(meta.label, meta.labelCn) },
+                    )}
                   </em>
                 </div>
-                {/* **排队中整行都变**,不是只换按钮上那两个字。
+                {/* 「排队中」那枚标撤了 —— 它断言的是一个**没有任何东西在维护**的状态。
+                    键本身留着两态:它说的是**按下去会发生什么**(这一下是开还是撤),
+                    那是真的;而且不留着就没法撤销已经发出去的排队。
                     这一屏一共只有这一处能开匹配(搜索行行尾那颗次要按钮按裁定删了)——
                     一个状态摆两个地方,必有一个在撒谎。 */}
                 <div className="kiosk-row__end">
-                  {automatch && (
-                    <span className="kiosk-tag kiosk-tag--warn">{t('platform:queued', '排队中')}</span>
-                  )}
                   <button
                     type="button"
                     className="kiosk-btn kiosk-btn--pill"

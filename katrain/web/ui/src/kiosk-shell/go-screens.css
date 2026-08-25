@@ -292,7 +292,12 @@
 /* 左栏底部那两格贴底 —— 和右栏动作区同一条口径:上面收窄腾出的空落在它**上面**。 */
 .gsec .kiosk-status { margin-top: auto; }
 
-.gside { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+/* 屏 22 成长的**右栏**。
+   ⚠️ 2026-08-25 从 `.gside` 改名过来:那个名字屏 06 早就在用了(执黑/执白那枚标,
+   本文件 `:841`)。两条同特异度、后面那条赢了 display/gap/font-size,可它**没设
+   flex-direction** ⇒ 这里的 `column` 漏了过去,把屏 06 的标变成竖排、撑破了对局卡。
+   两屏的单测和几何闸**全绿** —— 它们各自只看自己那一屏;是四图重取时逮到的。 */
+.gcol { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 /* 两块诊断并排,吃掉右栏剩下的高度。`min-height:0` 缺一个,里面的空态就顶破整栏。 */
 .gdiag { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; min-height: 0; }
 .gdiag .empty { flex: 1; display: flex; flex-direction: column; justify-content: center; }
@@ -818,10 +823,15 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 /* ② 左栏:进行中的对局 */
 .gcard {
   display: flex; flex-direction: column; justify-content: center; gap: 6px; flex: none;
-  height: 78px; padding: 0 14px; text-align: left; cursor: pointer; color: var(--text);
+  height: 78px; padding: 0 14px; text-align: left; color: var(--text);
   font-family: var(--font-sans);
   border: 1px solid var(--hair); border-radius: var(--row-radius); background: var(--panel);
 }
+/* 只有自己在里面的那一局点得进去(观战不存在,陌生人进去必 403)。
+   `cursor` 跟着可点性走 —— **看起来能按却按不动,比明确不能按更坏**:
+   前者让人以为是自己点歪了,会一直点下去。 */
+.gcard.is-mine { cursor: pointer; }
+.gcard.is-static { cursor: default; }
 .gcard__meta { display: flex; align-items: center; gap: 9px; font-size: var(--fs-eyebrow); color: var(--dim); }
 .gcard__meta b { font-family: var(--font-mono); font-weight: 500; letter-spacing: .04em; }
 .gcard__meta i { margin-left: auto; display: flex; align-items: center; gap: 4px; font-style: normal; }

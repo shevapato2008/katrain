@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useTranslation } from '../../hooks/useTranslation';
-import {
+import { type BaipuCaptureErrorReason,
   BaipuAPI, getCachedSgf, saveProgress, getProgress, clearProgress,
   canonToGtp, type BaipuStep, type BaipuMeta, type BaipuGeometryCorrection,
 } from '../../api/baipuApi';
@@ -122,6 +122,8 @@ const BaipuSessionPage = () => {
   // ⚠️ `null` = 没失败;`''` = 失败了但服务端没给话。**存的不是译文**(见 `driftLine` 那段)。
   const [loadError, setLoadError] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
+  /** 几何失效那一种「再按一次」永远不会成 —— 屏上得说另一句话。见 `BaipuCaptureErrorReason`。 */
+  const [captureReason, setCaptureReason] = useState<BaipuCaptureErrorReason>('other');
   const [drift, setDrift] = useState<BaipuGeometryCorrection | null>(null);
   const [steps, setSteps] = useState<BaipuStep[]>([]);
   const [boardSize, setBoardSize] = useState(19);
@@ -190,7 +192,7 @@ const BaipuSessionPage = () => {
       });
       if (!mountedRef.current) return;
       setCapturePending(false);
-      if (out.kind === 'error') { setCaptureError(out.message); return; }
+      if (out.kind === 'error') { setCaptureError(out.message); setCaptureReason(out.reason); return; }
       if (out.kind === 'disabled') setCaptureDisabled(true);
       if (out.kind === 'ok') {
         const filename = savedFilename(out.result.path);
@@ -417,8 +419,14 @@ const BaipuSessionPage = () => {
               <>
                 <h4>{t('baipu:failed_title', '这一手没采上')}</h4>
                 {/* 服务端原文塞 title,不上屏:`.pcard p` 是 11px 单行省略,印上去只会被截断,
-                    而站在盘前的人也不 debug HTTP。 */}
-                <p title={captureError || undefined}>{t('baipu:failed_hint', '子先别动 —— 再按一次「确认落子」')}</p>
+                    而站在盘前的人也不 debug HTTP。
+                    ⚠️ **几何那一种不能说「再按一次」** —— 它的 409 会一直是同一个,
+                    人照着做只会一直按下去。那一种要说的是「去哪儿修」。 */}
+                <p title={captureError || undefined}>
+                  {captureReason === 'geometry'
+                    ? t('baipu:failed_hint_geometry', '棋盘位置对不上了 —— 去设置里重新标定，再按一次没用')
+                    : t('baipu:failed_hint', '子先别动 —— 再按一次「确认落子」')}
+                </p>
               </>
             ) : mood === 'removal' ? (
               <>

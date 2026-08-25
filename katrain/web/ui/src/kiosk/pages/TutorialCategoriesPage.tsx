@@ -34,7 +34,7 @@ import { interpolate } from '../utils/interpolate';
  *
  * ## 「现在能练的」只在没课的时候出现
  *
- * 云端还没同步下来课的时候,这一屏的正事是**把人送到有内容的地方去**。
+ * 一本课都没有的时候,这一屏的正事是**把人送到有内容的地方去**。
  * 有课的时候它就成了一排永远在的杂物 —— 所以只在分类为空时渲染。
  *
  * ## 和稿子不一样的两处
@@ -112,11 +112,24 @@ const TutorialCategoriesPage = () => {
           <div className="empty" data-testid="tutorial-loading">
             <h4>{t('tutorial:loading_cn', '正在跟云端对课')}</h4>
           </div>
-        ) : sorted.length === 0 ? (
-          // 接口答了、答的是空 —— 这时候写「暂无教程」是**结论**,不是「还没查」。
+        ) : books === 0 ? (
+          /**
+           * ⚠️ **判别位是 `books`,不是 `sorted.length`**(2026-08-25,S1)。
+           *
+           * 分类是**写死的四条**(`katrain/web/tutorials/db_queries.py:22-27` 的
+           * `CATEGORIES`,`get_categories()` 无条件原样返回)⇒ 这条接口永远回 4 行,
+           * `sorted.length === 0` **经真后端一次都走不到**:一本课都没有的时候,
+           * 屏上会摆出四张「0 本」的卡,而这个空态分支永远不显示。
+           *
+           * 「答了、答的是空」这个判断本身没错,错的是**空在哪一层**:
+           * 空的是书,不是分类。
+           */
           <div className="empty" data-testid="tutorial-empty">
             <h4>{t('tutorial:empty', '暂无教程')}</h4>
-            <p>{t('tutorial:empty_hint', '云端还没有同步下来课；下面两处现在就有内容。')}</p>
+            {/* 不写「同步」—— 盒子上 tutorials 是**实时代理**(`board.py` 的
+                `proxy_tutorial_categories` → `remote_client.get_tutorial_categories`),
+                全仓没有任何同步机制。说「还没同步下来」会让人以为等一会儿就有。 */}
+            <p>{t('tutorial:empty_hint', '云端的课程库里还没有书；下面两处现在就有内容。')}</p>
           </div>
         ) : (
           <div className="kiosk-cards" data-testid="tutorial-categories">
@@ -160,9 +173,9 @@ const TutorialCategoriesPage = () => {
         </div>
       </section>
 
-      {/* 云端还没同步下来课的时候,这一屏的正事是把人送到有内容的地方去。
+      {/* 一本课都没有的时候,这一屏的正事是把人送到有内容的地方去。
           有课的时候它就成了一排永远在的杂物 —— 所以只在分类为空时渲染。 */}
-      {sorted?.length === 0 && (
+      {sorted != null && books === 0 && (
         <section className="kiosk-section">
           <KioskSecLabel zh={t('tutorial:instead_cn', '现在能练的')} en="Instead" />
           <div className="kiosk-cards" data-testid="tutorial-instead">

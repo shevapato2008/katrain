@@ -181,10 +181,36 @@ describe('屏 06 在线大厅', () => {
     expect(JSON.parse(sent.at(-1)!)).toEqual({ type: 'accept_invite', target_id: 2 });
   });
 
-  it('点一张对局卡 = 进去观战', async () => {
+  /**
+   * 「点进去可以观战」**撤掉了**(2026-08-25,S1)。观战这条路今天不存在:
+   * `/api/session/{id}/*` 一律过 `guard_session_reader`,陌生人进去必 403 ——
+   * 原来那句话是在邀请用户去按一颗必然失败的按钮。
+   *
+   * 两条一起看才有意义:**没有正对照,「点了没反应」和「这一列整个渲染坏了」分不开。**
+   */
+  it('别人的对局卡不是按钮,点了什么都不会发生', async () => {
     renderPage();
     await waitFor(() => expect(screen.getAllByTestId('lobby-game')).toHaveLength(2));
-    await userEvent.click(screen.getAllByTestId('lobby-game')[0]);
+    const card = screen.getAllByTestId('lobby-game')[0];
+    // 夹具里两局都不是「我」的(小满/云在青天、不系舟/半日闲)。
+    expect(card.tagName).not.toBe('BUTTON');
+    expect(card).toHaveAttribute('data-mine', '0');
+    await userEvent.click(card);
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('自己在里面的那一局点得回去 —— 判别位是用户名(端点只回名字,没有 id)', async () => {
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      const body = url.includes('/users/online') ? USERS
+        : url.includes('/games/active/multiplayer') ? [{ ...GAMES[0], player_w: '我' }]
+          : [];
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(body) } as Response);
+    }));
+    renderPage();
+    await waitFor(() => expect(screen.getAllByTestId('lobby-game')).toHaveLength(1));
+    const card = screen.getByTestId('lobby-game');
+    expect(card.tagName).toBe('BUTTON');
+    await userEvent.click(card);
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/room/aaaa1111');
   });
 

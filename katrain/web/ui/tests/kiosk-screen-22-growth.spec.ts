@@ -10,7 +10,7 @@ import { expect, test, type Page } from '@playwright/test';
  *
  * 清单先写死关系式再读数:
  *   · L1 外框:左栏 296、右栏 680、中间区 434(一级页有 Dock ⇒ 434,不是 516)
- *   · 该滚的是 `.grungs` **它自己**,不是 `.gside`,更不是整页
+ *   · 该滚的是 `.grungs` **它自己**,不是 `.gcol`(右栏),更不是整页
  *   · 能滚:自己 scrollHeight > clientHeight;**真滚轮**拨得动
  *   · 没被裁:`.gdiag` 的 border box 完整落在中间区裁切框内
  *   · 整屏不滚:`documentElement.scrollHeight <= 600`
@@ -109,7 +109,7 @@ test('L1 外框:左栏 296 · 右栏 680 · 中间区 434(有 Dock 的一级页)
     return {
       layout: box('[data-testid="growth-page"]'),
       rank: box('[data-testid="growth-rank"]'),
-      side: box('.gside'),
+      side: box('.gcol'),
       docScrollHeight: document.documentElement.scrollHeight,
       dockItems: document.querySelectorAll('.kiosk-dock__item').length,
     };
@@ -134,7 +134,7 @@ test('打过的档一多:滚的是那张表自己,右栏不被顶破,两格照�
     const layout = document.querySelector('[data-testid="growth-page"]')!.getBoundingClientRect();
     const cells = document.querySelector('.gsec .kiosk-status')!.getBoundingClientRect();
     const rank = document.querySelector('[data-testid="growth-rank"]')!.getBoundingClientRect();
-    const side = document.querySelector('.gside') as HTMLElement;
+    const side = document.querySelector('.gcol') as HTMLElement;
     return {
       rows: rungs.querySelectorAll('.grung').length,
       overflow: rungs.scrollHeight - rungs.clientHeight,

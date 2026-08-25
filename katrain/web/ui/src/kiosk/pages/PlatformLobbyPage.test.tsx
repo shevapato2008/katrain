@@ -140,7 +140,7 @@ describe('屏 08 跨平台 · 大厅', () => {
    * 这一屏不滚,两颗同屏可见 ⇒ 排队中会同时挂着「取消匹配」和「开始匹配」。
    * **一个状态摆两个地方,必有一个在撒谎。**
    */
-  it('全屏只有一处能开匹配,排队中「开始匹配」一个字都不许再出现', async () => {
+  it('全屏只有一处能开匹配,按下之后「开始匹配」一个字都不许再出现', async () => {
     const { container } = renderPage();
     const action = await screen.findByTestId('platform-automatch-action');
     expect(screen.getAllByRole('button', { name: '开始匹配' })).toHaveLength(1);
@@ -149,9 +149,35 @@ describe('屏 08 跨平台 · 大厅', () => {
     expect(searchEnd.querySelectorAll('button')).toHaveLength(0);
 
     await userEvent.click(action);
-    await waitFor(() => expect(screen.getByText('排队中')).toBeInTheDocument());
+    // 键换成「取消匹配」—— 它说的是**按下去会发生什么**,而且不留着就撤不回已发出的排队。
+    await waitFor(() => expect(screen.getByRole('button', { name: '取消匹配' })).toBeInTheDocument());
     expect(container.textContent).not.toContain('开始匹配');
-    expect(screen.getByTestId('platform-automatch')).toHaveTextContent('排队中 · 配上就自动进对局');
+  });
+
+  /**
+   * 「排队中」那枚标和「配上就自动进对局」那句话**都撤了**(2026-08-25,S1)。
+   *
+   * 后半句是**平的假话**:OGS 适配器收 `automatch/start` 后会
+   * `_emit("automatch_found", …)`,但 `on_automatch_found` **全仓零订阅者**
+   * ⇒ 平台真给你配上局了,这台盒子永远不会知道。前半句「排队中」也没人维护:
+   * 纯前端本地状态,刷一下页面就没了,而 OGS 那边还排着。
+   *
+   * 这条守的是**两态都不许再出现那些词** —— 只查按下之前那一帧的话,
+   * 撤了一半也是绿的。
+   */
+  it('不摆「排队中」这种没人维护的状态,也不承诺配上会自己回来', async () => {
+    const { container } = renderPage();
+    const action = await screen.findByTestId('platform-automatch-action');
+    const box = screen.getByTestId('platform-automatch');
+
+    for (const phase of ['按下之前', '按下之后']) {
+      expect(box, phase).not.toHaveTextContent('排队中');
+      expect(box, phase).not.toHaveTextContent('自动进对局');
+      expect(container.querySelector('.kiosk-tag--warn'), phase).toBeNull();
+      if (phase === '按下之前') await userEvent.click(action);
+    }
+    // 换上的那句话两态都在,而且把「配上之后要去哪」说清楚了。
+    expect(box).toHaveTextContent('不会自动回到这台盒子');
   });
 
   it('名单取不回来:说出来,不摆一张空名单冒充「那边没人」', async () => {

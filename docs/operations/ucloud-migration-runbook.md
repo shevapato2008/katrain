@@ -490,3 +490,126 @@ GitHub 本次实测**直连可用**（`git ls-remote` 拿到 `develop` = `7d551b
 
 **清理后复核：** `df -h /` = 69G/97G（71%），15 个容器全 healthy，
 `curl localhost:8001/api/v1/health` = 200，`current` → `releases/c7f3eed7` 未变。
+
+### 2026-08-25 — 上一条留的三项收口（治根，不是再腾一次空间）
+
+上一条清出 10G 靠的是删东西，源头一个没动。本次三项都是**堵源头**。
+
+#### 1. 停掉一个跑了 21 天的失控采样进程（每年 24G）
+
+`/var/log/kifu-telemetry.ndjson` 我上一条写成「没配日志轮转」，**定性错了**。真相：
+
+```
+PID 627940  /bin/bash ./telemetry-sample.sh
+启动 Mon Aug  3 11:41:08 2026    停时已运行 22 天
+cwd  /opt/smartbox-kifu/releases/20260803-gen2-rollout/kifu-platform/deploy
+```
+
+它的父进程链是一条 **Aug 3 卡死的交互式诊断命令**
+（`sudo bash -c "... telemetry-sample.sh | head -1"` —— `head -1` 读完就走，
+脚本里的 `while [ "$running" = 1 ]` 却没人叫停）。3 秒内 `wchar` 涨 9.8KB，
+**一直在写**：1,583,543 行 / 1.3G / 21 天 = **64.9 MB/天 → 23.7 GB/年**，1.2 秒一条。
+
+**所以 logrotate 是错药** —— 加轮转只是把没人看的垃圾定期切片，源头照长。
+脚本自带 `trap 'running=0' INT TERM`，按 trap 停：
+
+```bash
+kill -TERM 627940          # 优雅退出，不硬杀
+kill -TERM 627939 627937 627814   # 清掉已成孤儿的父链
+```
+
+停后观察 6 秒，文件**增长 0 字节**。
+
+**判据（值得记）：`ps` 里 `ELAPSED` 以「天」计、`%CPU` 却是 0.0 的 bash，
+十有八九是某次交互式排查留下的。** 找它们不看进程名，看 etime。
+
+那 1.3G 数据**没删** —— 它是 smartbox-kifu 的东西，不是 katrain 的。
+要不要留由那边定。`pgrep -af telemetry-sample` 会匹配到查询命令自己，别被它骗。
+
+#### 2. 关闭 SSH 密码登录（原来的「上 fail2ban」建议排错了顺序）
+
+`btmp` 里 570,629 条失败登录不是噪声，是**真暴露面**：
+
+```
+passwordauthentication yes       ← 开着
+permitrootlogin without-password
+passwd -S ubuntu → ubuntu P      ← ubuntu **有密码且未锁定**
+```
+
+而 715 次成功登录**全部是 `publickey`、全部是 `ubuntu`**，一次密码登录都没有。
+有 shell 的真实用户也只有 `ubuntu` 一个 ⇒ **密码登录零收益**。
+被撞最多的是 `root`（23594 次，被 `without-password` 挡着）和 **`ubuntu`（1240 次，
+挡不住）**。
+
+**先关密码登录，fail2ban 才是次要的**（关完之后它只剩「减少日志噪声」的作用）。
+
+**坑：`PasswordAuthentication yes` 写在两个文件里**
+
+```
+/etc/ssh/sshd_config:58
+/etc/ssh/sshd_config.d/50-cloud-init.conf:1
+```
+
+sshd 取**先读到的**值，而 `sshd_config.d/*` 是在主文件顶部 Include 的 ⇒
+**cloud-init 那份赢**。只改 `sshd_config` 不生效。改完必须 `sshd -T` 回读。
+
+**改远程 SSH 配置的安全姿势（本次用的）** —— 事前无法确认 UCloud VNC 兜底可用，
+所以装了「死人开关」代替：
+
+```bash
+BK=/root/sshd-backup-$(date +%Y%m%d-%H%M%S); mkdir -p $BK
+cp /etc/ssh/sshd_config /etc/ssh/sshd_config.d/50-cloud-init.conf $BK/
+# 180 秒后无条件还原并 reload，除非标记文件被删除
+nohup sh -c "sleep 180; [ -f /root/.sshd-deadman-armed ] && { cp $BK/* 回原位; systemctl reload ssh; }" &
+touch /root/.sshd-deadman-armed
+# 改 → sshd -t（**reload 前必须过**）→ systemctl reload ssh（不是 restart）
+# → 用**新连接**验证密钥仍可用 → rm /root/.sshd-deadman-armed
+```
+
+改后实测：
+
+```
+强制只用密码  → ubuntu@117.50.183.169: Permission denied (publickey).
+密钥          → Accepted publickey for ubuntu from 120.245.64.242
+sshd -T       → passwordauthentication no
+```
+
+备份留在 `/root/sshd-backup-20260825-114356/`。
+
+#### 3. release 目录改用 `git clone --depth 1`（每次省 1.6G）
+
+**先纠正上一条写错的数**：那里写「一份 release 目录可从 3.1G 降到约 1.1G」是错的
+—— `.git` 不可能是 0。服务器上跑探针实测：
+
+| | `.git` | 工作树 | 合计 |
+|---|---|---|---|
+| 现在（从上一个 release 目录本地 clone） | 2.0G | 1.1G | **3.1G** |
+| `clone --depth 1 --branch <分支>` | **403M** | 1.1G | **1.5G** |
+
+**省 1.6G/次，不是 2G。**
+
+为什么本地 clone 这么大：源仓虽是 shallow，但 graft 点在 2611 个 commit 之外
+（`git rev-list --count HEAD` = 2611），pack 里压着 KataGo 二进制与 b18 权重
+（单 blob 97MB：`kata1-b18c384nbt-s9996604416`；`KataGo/katago-bs` 73MB），
+而 `git clone` 从 shallow 源仓**无法硬链接复用对象** ⇒ 每次整份复制。
+
+**没有脚本在建 release 目录**（`grep -rl "git clone" deploy/` 空，
+`deploy/ucloud/scripts/*.sh` 里 `git` 一次都没出现）—— 这一步一直是手工的，
+所以「改部署流程」= 改这里。**下次发布照抄：**
+
+```bash
+SHA=<release 分支尖端的 short sha>
+sudo git clone --depth 1 --branch release/ucloud-20260805 \
+     https://github.com/shevapato2008/katrain.git /opt/katrain/releases/$SHA
+sudo git -C /opt/katrain/releases/$SHA rev-parse --short HEAD   # 核对 = $SHA
+# 然后照旧：build-web.sh → preflight.sh → 切 current 软链 → docker compose up -d
+```
+
+GitHub 本机实测直连可用（`git ls-remote` exit 0）。**不再从旧 release 目录 clone。**
+
+改完之后 `current`（`c7f3eed7`）那份 2.0G 的 `.git` 就不再是必需的克隆源了，
+**但本次没删** —— 这台机器有过连不上外部 registry 的前科，留一份本地兜底。
+等 `--depth 1` 真正跑通一次发布之后再回收。
+
+**盘面：** 71% → **72%（70G/97G，剩余 28G）**。本次三项都不是为了立刻腾空间，
+是把「每年 24G」和「每次 +1.6G」两个源头堵上；SSH 那项与磁盘无关。

@@ -38,10 +38,21 @@ export interface UseResearchSessionReturn {
     analysisScan: (visits?: number) => Promise<void>;
 }
 
-export function useResearchSession(): UseResearchSessionReturn {
+export interface UseResearchSessionOptions {
+    /** 必须传。研究会话的 `/ws/{session_id}` 和对局用的是**同一个**要鉴权的端点，
+     *  不传 token 的后果不是「少个参数」而是服务端 `close(1008, "Invalid token")`：
+     *  棋盘停在 /api/state 那一帧，摆子（onMove 只发 HTTP、状态全靠推送）看起来
+     *  像点了没反应，分析结果也永远不刷新 —— 与 2026-08-25 修的自由对弈那条同病。
+     *  本机看不出来，因为 127.0.0.1 上有 sb_token cookie 兜底。 */
+    token?: string;
+}
+
+export function useResearchSession(options: UseResearchSessionOptions = {}): UseResearchSessionReturn {
+    const { token } = options;
     const [isConnected, setIsConnected] = useState(false);
 
     const base = useSessionBase({
+        token,
         onStateUpdate: () => {
             setIsConnected(true);
         },

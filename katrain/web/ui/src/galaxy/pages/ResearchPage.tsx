@@ -154,7 +154,7 @@ const ResearchPage = () => {
     const handleL1ToggleTerritory = useCallback(() => setL1ShowTerritory(prev => !prev), []);
 
     // Research session hook (L2)
-    const session = useResearchSession();
+    const session = useResearchSession({ token: token || undefined });
 
     // Analysis toggles for Legacy Board (L2)
     const [analysisToggles, setAnalysisToggles] = useState<Record<string, boolean>>({

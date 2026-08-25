@@ -142,3 +142,71 @@ describe('闸：对局 WebSocket 必须带凭据', () => {
         }
     });
 });
+
+describe('闸：持有会话 WS 的 hook，调用方必须把 token 交进去', () => {
+    /**
+     * 上面那组闸量错了对象 —— 它看的是 `websocketUrl()` 收没收到第二个参数，
+     * 而 `useSessionBase` 一直是把自己的 `token` 变量原样递进去的，**参数在**。
+     * 缺的是更外面一层：`useResearchSession()` 压根不收 token，于是递进去的是
+     * `undefined`。闸全绿，研究/复盘页的 WS 在两台线上机器上却一直被
+     * `close(1008, "Invalid token")`（2026-08-25 在测试机上用原始 close 帧实测：
+     * 不带 token → 1008 Invalid token；带 token → 收到 game_update）。
+     *
+     * 所以这一条把断言落在**真正的操作数**上：谁调用这三个 hook，谁就得在选项里
+     * 写出 `token`。传 `undefined` 没关系（盒子上本来就靠 cookie），但必须是
+     * 显式写下来的一个决定，而不是忘了。
+     *
+     * 变异验证（已真跑）：把 galaxy/pages/ResearchPage.tsx 改回
+     * `useResearchSession()` ⇒ 本组两条转红。
+     */
+    const HOOKS = ['useGameSession', 'useSessionBase', 'useResearchSession'];
+
+    function callArgs(text: string, hook: string): string[] {
+        const out: string[] = [];
+        const re = new RegExp(`(\\w+\\s+)?\\b${hook}\\(`, 'g');
+        for (const m of text.matchAll(re)) {
+            if (m[1] && m[1].trim() === 'function') continue;   // 这是定义，不是调用
+            let depth = 0;
+            const start = m.index! + m[0].length;
+            let i = start;
+            for (; i < text.length; i++) {
+                const c = text[i];
+                if (c === '(' || c === '{' || c === '[') depth++;
+                else if (c === ')' && depth === 0) break;
+                else if (c === ')' || c === '}' || c === ']') depth--;
+            }
+            out.push(text.slice(start, i));
+        }
+        return out;
+    }
+
+    it('每个调用点都显式给出 token', () => {
+        const offenders: string[] = [];
+        for (const file of sourceFiles()) {
+            const text = readFileSync(file, 'utf8');
+            for (const hook of HOOKS) {
+                for (const args of callArgs(text, hook)) {
+                    if (/\btoken\s*[:,}]/.test(args)) continue;
+                    offenders.push(`${relative(SRC, file)}: ${hook}(${args.trim().slice(0, 60)}) 没交 token`);
+                }
+            }
+        }
+        expect(offenders, '会话 WS 拿不到凭据 ⇒ 服务端 close(1008) ⇒ 棋盘不再更新').toEqual([]);
+    });
+
+    it('五个调用点一个都不少', () => {
+        // 同样是防「整项没了」：这五个页面/hook 必须都还在开会话 WS。
+        const expected: Array<[string, string]> = [
+            ['galaxy/pages/GamePage.tsx', 'useGameSession'],
+            ['galaxy/pages/GameRoomPage.tsx', 'useGameSession'],
+            ['kiosk/pages/GamePage.tsx', 'useGameSession'],
+            ['galaxy/pages/ResearchPage.tsx', 'useResearchSession'],
+            ['kiosk/pages/ResearchPage.tsx', 'useResearchSession'],
+        ];
+        for (const [rel, hook] of expected) {
+            const args = callArgs(readFileSync(join(SRC, rel), 'utf8'), hook);
+            expect(args.length, `${rel} 不再调用 ${hook}`).toBeGreaterThan(0);
+            expect(args.some((a) => /\btoken\s*[:,}]/.test(a)), `${rel} 的 ${hook} 没交 token`).toBe(true);
+        }
+    });
+});

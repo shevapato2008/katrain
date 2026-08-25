@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API, type GameState, type PhysicalEngineErrorState } from '../api';
+import { websocketUrl, WS_POLICY_VIOLATION } from '../utils/websocketUrl';
 
 interface GameEndData {
     reason: 'resign' | 'forfeit' | 'timeout' | 'count' | 'normal';
@@ -73,8 +74,10 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                     const data = await API.getState(sessionId, token);
                     setGameState(data.state);
 
-                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/${sessionId}`);
+                    /* token 必须带上 —— 服务端 `/ws/{session_id}` 是要鉴权的，而这里
+                       在此之前一个凭据都不发（`/ws/lobby` 一直是带的）。详见
+                       utils/websocketUrl.ts 里记的那次回归。 */
+                    const ws = new WebSocket(websocketUrl(`/ws/${sessionId}`, token));
                     wsRef.current = ws;
                     
                     ws.onmessage = (event) => {
@@ -126,6 +129,21 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             setAwaitingRemovalReminder(msg.data);
                         }
                     };
+
+                    /* 这条通道断了必须**说出来**。在此之前它一个回调都没有：服务端
+                       `close(1008, "Invalid token")` 在浏览器里悄无声息，于是
+                       AI 的每一手都推不过来、棋盘停在人类那一手，用户只看到
+                       「点了没反应」。对局状态全靠这条推送，它断 = 页面在撒谎。 */
+                    ws.onclose = (event) => {
+                        if (wsRef.current !== ws) return;  // 已被新连接替换或组件卸载
+                        if (event.code === WS_POLICY_VIOLATION) {
+                            console.error("Game WebSocket rejected:", event.reason);
+                            setError(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新，请重新登录后重试`);
+                        } else if (!event.wasClean) {
+                            console.warn("Game WebSocket closed:", event.code, event.reason);
+                            setError("实时连接已断开，棋盘不会自动更新，请刷新页面");
+                        }
+                    };
                 } catch (err) {
                     console.error("Failed to connect", err);
                     setError("Failed to connect to game");
@@ -133,11 +151,12 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             };
             connect();
             return () => {
-                wsRef.current?.close();
-                wsRef.current = null;
+                const ws = wsRef.current;
+                wsRef.current = null;  // 先清空，让上面的 onclose 认出这是我们自己关的
+                ws?.close();
             };
         }
-    }, [sessionId, playSound]);
+    }, [sessionId, token, playSound]);
 
     const onMove = useCallback(async (x: number, y: number) => {
         if (!sessionId) return;

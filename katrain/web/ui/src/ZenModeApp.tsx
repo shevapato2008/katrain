@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, CssBaseline, ThemeProvider, Divider, Typography, Snackbar, Alert } from '@mui/material';
 import { API, apiPost, type GameState } from './api';
+import { websocketUrl, WS_POLICY_VIOLATION } from './utils/websocketUrl';
 import { i18n } from './i18n';
 import { useTranslation } from './hooks/useTranslation';
 import Board from './components/Board';
@@ -109,9 +110,9 @@ function ZenModeApp() {
 
         setStatusMessage(t("Ready"));
 
-        // Setup WebSocket
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const ws = new WebSocket(`${protocol}//${window.location.host}/ws/${data.session_id}`);
+        // Setup WebSocket —— 必须带 token，服务端 `/ws/{session_id}` 是鉴权的
+        // （见 utils/websocketUrl.ts 里记的那次回归）。
+        const ws = new WebSocket(websocketUrl(`/ws/${data.session_id}`, token));
         ws.onmessage = (event) => {
           const msg = JSON.parse(event.data);
           if (msg.type === 'game_update') {
@@ -126,6 +127,17 @@ function ZenModeApp() {
           } else if (msg.type === 'game_report') {
             setGameReport(msg.data);
             setGameReportDialogOpen(true);
+          }
+        };
+
+        /* 断了要说出来 —— 静默的 1008 会让棋盘停在人类那一手而毫无提示。 */
+        ws.onclose = (event) => {
+          if (event.code === WS_POLICY_VIOLATION) {
+            console.error("Session WebSocket rejected:", event.reason);
+            setStatusMessage(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新`);
+          } else if (!event.wasClean) {
+            console.warn("Session WebSocket closed:", event.code, event.reason);
+            setStatusMessage("实时连接已断开，棋盘不会自动更新，请刷新页面");
           }
         };
 

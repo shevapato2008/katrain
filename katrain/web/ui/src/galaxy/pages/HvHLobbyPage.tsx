@@ -10,6 +10,7 @@ import FriendsPanel from '../components/FriendsPanel';
 import { i18n } from '../../i18n';
 import ContentPageHeader from '../components/layout/ContentPageHeader';
 import { getAiLadderStatus } from '../../features/aiLadder/api';
+import { websocketUrl } from '../../utils/websocketUrl';
 
 interface OnlineUser {
     id: number;
@@ -99,8 +100,7 @@ const HvHLobbyPage = () => {
             fetchOnlineUsers();
             fetchActiveGames();
         }, 10000);
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/lobby?token=${token}`;
+        const wsUrl = websocketUrl('/ws/lobby', token);
         console.log("Connecting to Lobby WebSocket:", wsUrl);
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;

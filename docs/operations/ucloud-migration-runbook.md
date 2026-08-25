@@ -614,6 +614,85 @@ GitHub 本机实测直连可用（`git ls-remote` exit 0）。**不再从旧 rel
 **盘面：** 71% → **72%（70G/97G，剩余 28G）**。本次三项都不是为了立刻腾空间，
 是把「每年 24G」和「每次 +1.6G」两个源头堵上；SSH 那项与磁盘无关。
 
+### 2026-08-25（傍晚）— 发布 `a9b2485b`：研究/复盘页的 WS 凭据（同族最后一处）
+
+下午发的 `c5b8c4eb` 修的是**对局** WS。之后普查了全仓 6 个 `new WebSocket()` 调用点与
+后端 3 条 WS 路由，找到同族的最后一处：`useResearchSession` 压根不收 token，往
+`useSessionBase` 递进去的是 `undefined`。测试机原始 close 帧实测（同一 research session）：
+
+```
+不带 token → CLOSE code=1008 reason='Invalid token'
+带  token  → 收到 game_update
+```
+
+后果与对局那条同形：研究页 `onMove` 只发 HTTP、状态全靠推送 ⇒ 摆子「点了没反应」、
+分析永不刷新。两个 ResearchPage 手里本来就有 `token`（都写了 `useAuth()`），只是没往下传。
+
+**闸也一并改了，因为上一版的闸量错了对象。** 它检查 `websocketUrl()` 收没收到第二个参数，
+而 `useSessionBase` 一直老实把自己的 `token` 递进去 —— **参数在**，闸全绿。缺的是更外面一层。
+新一组落在真正的操作数上：谁调用这三个 hook，谁就得在选项里显式写出 `token`。
+变异验证（真跑）：把 `galaxy/pages/ResearchPage.tsx` 改回 `useResearchSession()` ⇒ 新增两条转红。
+
+**发布数据：**
+
+- `git clone --depth 1` 第二次实战：`/opt/katrain/releases/a9b2485b` **1.5G**（与首次同）。
+- 镜像 `katrain-web:a9b2485b`，
+  `image_id=sha256:01b14b65429f10e020f9c9f443bd63f067443a22de921a1d09b780c9df603a34`，
+  `size_bytes=542524873`（上一版 `c5b8c4eb` 为 542524786，**+87 字节**）。`build-web.sh` 容器内容测试全过。
+- `/etc/katrain/ucloud.env` 只改 `WEB_IMAGE` 一行（与备份 `diff` 恰好 2 行），仍 root:root / 0600；
+  备份 `/opt/katrain/backups/ucloud.env.20260825-1536`。
+- **回滚锚点：** 目录 `releases/c5b8c4eb` + 镜像 `katrain-web:c5b8c4eb`
+  （`sha256:50f9a56f48d1…`），均已复查在位。`current` → `releases/a9b2485b`。
+- 盘面 74% → **77%（24G 可用）**。
+
+**闸门：** `--phase full` 仍只有那 2 条容量闸（`available_bytes=24921931776`、
+`required_bytes=38500000000`、projected ≥ 75%），`checks=2`，与历次同因同判据明示越过。
+**这次没有重做变异验证**，理由是查过 `preflight.sh` 自 `661b7cc7`（2026-07-24）起一字未改，
+而 2026-08-24 那次变异正是对这同一份脚本做的 —— 重复做不增加信息。
+
+**验证（不靠 health 200 一条撑着）：**
+
+- 新旧镜像的前端产物逐文件比对：**16 个 chunk 换了哈希、255 个不变**。换的正是这次动到的
+  （`GalaxyApp` / `KioskApp` / `useReportDetail` / `Undo` / `index` 等）。
+- 外网指纹对照：新 `/assets/index-CJo6Tllh.js` = **200**，旧 `/assets/index-BBvEhq70.js` = **404**。
+- `https://modelstella.com` 的 `/api/v1/health`、`/`、`/galaxy`、`/galaxy/research`、`/galaxy/kifu` 全 200。
+- 容器内 `katago-web:8000/health` → `status=ok, has_human_model=True`。
+- 卷里那份今早修好的 engine 配置**没被这次重建冲掉**：`http_url=http://katago-web:8000`、
+  `http_has_human_model=True`。
+
+#### 本次发现的一件**既有**配置错位（未处理，需要决定）
+
+**生产的 web 容器跑在 preview profile 上**，而 cron 是 production profile 起的：
+
+```
+KATRAIN_PREVIEW_MODE=1
+挂载 katrain-ucloud_katrain-state-preview -> /home/katrain/.katrain
+config_files = /opt/katrain/current/deploy/ucloud/compose.yml    ← 没有 compose.production.yml
+katrain-ucloud-katrain-cron-1  Up 19 hours (healthy)             ← 却是 production profile 的
+```
+
+这违反本 runbook 开头的 Invariants（production 应为 `PREVIEW_MODE=0` + `katrain-state-production` 卷）。
+`PREVIEW_MODE` 在 `server.py` 里管三处，都是「**不**做」：
+
+1. `server.py:210` — 崩溃后的 billing 预留对账不跑；
+2. `server.py:282` — **直播服务不启动**。实测 `GET /api/v1/live/matches` → **503
+   `{"detail":"Live service not initialized"}`**；
+3. `server.py:298` — 跨平台对弈的 `PlatformManager` 不初始化。
+
+**本次刻意没有切过去**，理由不是怕麻烦而是有具体风险：production 卷里的
+`config.json` 是 **2026-07-25** 的，切过去等于换掉 `/home/katrain/.katrain` ——
+今早那份修好的 engine 配置在 **preview** 卷里，一切就又回到「引擎不可用」。
+要切得先把 production 卷里的 config 也修好并验过，那是一次独立的变更。
+
+**顺带澄清一件不是应用缺陷的事**：同日测试域名 `go.sailorvoyage.top` 上点「对局」报 504，
+根因在**网关**不在应用 —— `acme_error.log` 写的是 `upstream timed out (110) while
+**connecting** to upstream`，即 TCP 都没连上，应用日志那一秒一片空白。该站点是
+阿里云 nginx → WireGuard → 家宽上的 home-ubuntu，网关 `proxy_connect_timeout` 只有 **5s**，
+且全局无 `upstream{keepalive}`（每个请求都要重新握手）。生产是 `proxy_pass http://127.0.0.1:8001`
+同机直连，结构上不会发生。历史上该站点共 9 次 504，其余 8 次全在 8 月 16 日那次停服里。
+
+---
+
 ### 2026-08-25（下午）— 发布 `c5b8c4eb`：自由对弈无法落子的修复
 
 发布内容：对局 WebSocket 从来不带凭据，AI 走的每一手都推不到浏览器

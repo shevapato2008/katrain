@@ -613,3 +613,79 @@ GitHub 本机实测直连可用（`git ls-remote` exit 0）。**不再从旧 rel
 
 **盘面：** 71% → **72%（70G/97G，剩余 28G）**。本次三项都不是为了立刻腾空间，
 是把「每年 24G」和「每次 +1.6G」两个源头堵上；SSH 那项与磁盘无关。
+
+### 2026-08-25（下午）— 发布 `c5b8c4eb`：自由对弈无法落子的修复
+
+发布内容：对局 WebSocket 从来不带凭据，AI 走的每一手都推不到浏览器
+（详见 commit `dc55f32e` 与 `katrain/web/ui/src/utils/websocketUrl.test.ts` 的头注）。
+`c751e8dd`（2026-08-04）把 `/ws/{session_id}` 的鉴权从「只在 strict box 模式下检查」
+改成无条件，而前端三处对局 WS 一处都不带凭据 ⇒ **两个线上环境已断三周**。
+
+**只换 web，没换 cron**：`Dockerfile.cron` 只 `COPY katrain/cron/`，
+且 `katrain/cron/models.py` 明写「zero imports from katrain.web」，本次改动碰不到它。
+命令用第 37 行那条（不带 `--profile production`），cron 容器保持 16 小时前那个不动。
+
+**`--depth 1` 首次实战（上一条刚定的新步骤）：**
+
+```
+git clone --depth 1 --branch release/ucloud-20260805 … /opt/katrain/releases/c5b8c4eb
+→ 合计 1.5G（.git 403M）   对照 c7f3eed7 的 3.1G
+```
+
+**与预测一致，省 1.6G。** 新旧目录并排摆着就是证据：
+
+```
+3.1G  releases/c7f3eed7     ← 旧法（从上一个 release 本地 clone）
+1.5G  releases/c5b8c4eb     ← 新法（GitHub --depth 1）
+```
+
+**preflight 仍是那 2 条容量闸失败后继续** —— `available_bytes=27119853568`、
+`required_bytes=38500000000`、「projected ≥ 75%」。与 2026-07-31 / 08-14 / 08-23 / 08-24
+历次完全同形，那道闸是按**迁移**量级设的，不是按换一次 web 镜像。
+
+**验证：** 6/6 healthy、`/api/v1/health` 200、容器镜像 id 与构建产物逐字符相符、
+bundle 里含 `?token=${encodeURIComponent`、WS 握手 `101` 且持续收到 `game_update`
+（修复前此处是 `CLOSE 1008 'Invalid token'`）。盘面 72% → 74%（26G 可用）。
+
+**回滚锚点：** 目录 `releases/c7f3eed7` + 镜像 `katrain-web:fc1e73c3`
+（`sha256:f1fa474eeabd…`）+ env 备份 `/etc/katrain/ucloud.env.bak-20260825`。
+
+---
+
+#### 本次顺带查出的一件**既有**故障（未修，需要决定）
+
+**生产上拟人 AI 走不出手** —— 与上面这个 WS 修复无关，是另一条链。实测可复现：
+落一手之后 `player_to_move` 停在 W，日志只有一行
+`[HumanStyleStrategy] Engine does not have a human model loaded. Falling back to PolicyStrategy.`
+而 PolicyStrategy 同样走不出手。
+
+根因是 **`/home/katrain/.katrain` 挂的那个迁移期遗留卷
+`katrain-ucloud_katrain-state-preview`**，里面那份持久化 config 写着：
+
+```
+http_url             = http://127.0.0.1:8000     ← 容器内这个地址指向容器自己
+http_has_human_model = False
+```
+
+于是启动时 `Checking HTTP engine status at http://127.0.0.1:8000/health` → `Connection refused`
+→ `Falling back to local engine` → 本地 KataGo 因镜像里没有 `fusermount` 直接
+`status 127` 死掉 ⇒ **整个会话没有可用引擎**。
+
+**证据它不是本次发布带来的**：三个镜像里的仓库默认 config 完全一样
+（`fc1e73c3`＝换之前跑的那个、`3d65e536`、`c5b8c4eb`），且那份生效的 config 根本
+不在镜像里、在卷里。**测试机 home-ubuntu 没有这个卷**
+（`/home/katrain/.katrain/config.json` 不存在，用镜像默认值），所以测试机是好的
+—— 这也是同一份代码两个环境表现不同的全部原因。
+
+**线路本身是通的**：容器内 `curl http://katago-web:8000/health` → 200 且
+`has_human_ment=true`；compose 也已经把 `LOCAL_KATAGO_URL: http://katago-web:8000`
+传进去了。`server.py:248-253` 本该用它同步 `engine/http_url` 并落盘，
+但容器日志里**没有** `Syncing KataGo URL` 这一行 —— 那条分支为什么没执行，本次没查到底。
+
+**修法（未执行，等授权）**：把卷里 config 的 `engine.http_url` 改成
+`http://katago-web:8000`、`engine.http_has_human_model` 改成 `true`，重启 web。
+改前先备份该文件。**不要**顺手删那个卷 —— 里面还有别的持久化状态。
+
+**旁证**：`user_games` 近 21 天只有 1 局（2026-08-25 03:11，**3 手后黑方中盘认输**），
+上一局远在 2026-06-23。3 手意味着白棋当时确实走了；「下三手就认输」正是
+「看不见 AI 还手」的形状。

@@ -62,6 +62,10 @@ def fixture_catalog(*, unavailable_rung: int | None = None, provisional_rung: in
         SimpleNamespace(
             rung=rung,
             rank_name=f"fixture-{rung}",
+            # 注：这些用例里"服务端给未定级玩家选的那一档"是 **15**，不是窗口 1..32 的
+            # 原始中点 16。rung 16 = 5级，2026-08-20 起是封档档位（`ladder._RETIRED_RUNGS`），
+            # `expected_opponent_rung` 会把中点 snap 到最近的可坐档位 15。fixture 只替换了
+            # LADDER_LEVELS，PLAYABLE_RUNGS 仍是真实阶梯算出来的，所以这里跟着真实封档集合走。
             certification_status="provisional" if rung == provisional_rung else "certified",
             availability="unavailable" if rung == unavailable_rung else "available",
             route="server",
@@ -179,6 +183,11 @@ def _build_ladder_app(tmp_path, monkeypatch, *, db_name: str = "ai-ladder-api.db
     sessions = sessionmaker(bind=engine, autocommit=False, autoflush=False, expire_on_commit=False)
 
     app = create_app(enable_engine=False)
+    # 这一行是让下面那几行真正生效的前提：lifespan（`_lifespan_server`）会无条件用
+    # 全局 `SessionLocal` 重建全部 repo 并覆盖 `app.state`，于是下面精心注入的 `sessions`
+    # 会被丢掉，`init_db()` 还会对开发机真库跑账本迁移。设了这一行，lifespan 就用
+    # 同一个 `sessions` 重建，结果等价而且不碰真库。
+    app.state.session_factory = sessions
     app.state.user_repo = SQLAlchemyUserRepository(sessions)
     app.state.user_game_repo = UserGameRepository(sessions)
     app.state.user_game_analysis_repo = UserGameAnalysisRepository(sessions)
@@ -283,8 +292,8 @@ async def test_status_projects_uncreated_profile_and_server_selected_midpoint(ap
         "view_state": "ready",
         "placement_state": {"phase": "placement", "completed_games": 0, "total_games": 5},
         "current_opponent": {
-            "rung": 16,
-            "rank_name": "fixture-16",
+            "rung": 15,
+            "rank_name": "fixture-15",
             "certification_status": "certified",
             "availability": "available",
             "route": "server",
@@ -305,8 +314,8 @@ async def test_status_exposes_public_counting_eligibility_for_the_current_oppone
 
     assert response.status_code == 200
     assert response.json()["current_opponent"] == {
-        "rung": 16,
-        "rank_name": "fixture-16",
+        "rung": 15,
+        "rank_name": "fixture-15",
         "certification_status": "certified",
         "availability": "available",
         "route": "server",
@@ -318,7 +327,7 @@ async def test_status_exposes_public_counting_eligibility_for_the_current_oppone
 async def test_status_explains_when_the_current_opponent_will_not_count(api_app, client, monkeypatch):
     from katrain.core import ladder
 
-    monkeypatch.setattr(ladder, "LADDER_LEVELS", fixture_catalog(provisional_rung=16))
+    monkeypatch.setattr(ladder, "LADDER_LEVELS", fixture_catalog(provisional_rung=15))
     async with client as ac:
         response = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)
 
@@ -464,7 +473,7 @@ async def test_freeing_a_reservation_cannot_strand_a_game_the_box_really_played(
     offline_box = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "box-that-went-offline"}
     other_device = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "box-b"}
     game_id = reservation_payload()["game_id"]
-    opponent, execution_identity = build_opponent_snapshot(16)
+    opponent, execution_identity = build_opponent_snapshot(15)
 
     async with client as ac:
         reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=offline_box, json=reservation_payload())
@@ -503,7 +512,7 @@ async def test_freeing_a_reservation_cannot_strand_a_game_the_box_really_played(
                 "komi": 7.5,
                 "move_count": 2,
                 "player_black": "fan",
-                "player_white": "fixture-16",
+                "player_white": "fixture-15",
                 "source": "play_ai",
                 "category": "game",
                 "game_type": "ai_ladder_ranked",
@@ -635,7 +644,7 @@ async def test_start_issues_server_game_id_and_frozen_ranked_session_snapshot(ap
     payload = response.json()
     assert len(payload["game_id"]) == 32
     assert int(payload["game_id"], 16) >= 0
-    assert payload["opponent"]["rung"] == 16
+    assert payload["opponent"]["rung"] == 15
 
     session = api_app.state._test_created_sessions[0]
     snapshot = session.ai_ladder_snapshot
@@ -644,8 +653,8 @@ async def test_start_issues_server_game_id_and_frozen_ranked_session_snapshot(ap
     assert snapshot.user_id == api_app.state._test_user_id
     assert snapshot.user_color == "B"
     assert snapshot.game_type == "ai_ladder_ranked"
-    assert snapshot.opponent.rung == 16
-    assert snapshot.opponent.rank_name == "fixture-16"
+    assert snapshot.opponent.rung == 15
+    assert snapshot.opponent.rank_name == "fixture-15"
     assert snapshot.opponent.certification_status == "certified"
     assert snapshot.opponent.availability == "available"
     assert snapshot.opponent.route == "server"
@@ -655,9 +664,9 @@ async def test_start_issues_server_game_id_and_frozen_ranked_session_snapshot(ap
     assert snapshot.ai_subtype == "ai:ladder"
     assert session.game_type == "ai_ladder_ranked"
     assert session.katrain.game_type == "ai_ladder_ranked"
-    assert session.katrain.ladder_rung == {"rung": 16}
-    assert session.katrain.frozen_ladder_recipe.rung == 16
-    assert session.katrain.frozen_ladder_recipe.max_visits == 16
+    assert session.katrain.ladder_rung == {"rung": 15}
+    assert session.katrain.frozen_ladder_recipe.rung == 15
+    assert session.katrain.frozen_ladder_recipe.max_visits == 15
     assert api_app.state._test_last_create_kwargs == {
         "katago_uuid": api_app.state._test_user_uuid,
         "user_id": api_app.state._test_user_id,
@@ -684,8 +693,8 @@ async def test_start_issues_server_game_id_and_frozen_ranked_session_snapshot(ap
         assert pending["user_id"] == api_app.state._test_user_id
         assert pending["session_id"] == session.session_id
         assert pending["user_color"] == "B"
-        assert pending["opponent_rung"] == 16
-        assert pending["opponent_rank_name"] == "fixture-16"
+        assert pending["opponent_rung"] == 15
+        assert pending["opponent_rank_name"] == "fixture-15"
         assert pending["execution_identity"] == snapshot.execution_identity
         assert pending["game_saved"] in (False, 0)
         assert pending["saved_result"] is None
@@ -1627,7 +1636,7 @@ async def test_start_rejects_client_authored_strength_or_result(api_app, client,
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("catalog", [fixture_catalog(unavailable_rung=16), fixture_catalog(provisional_rung=16)])
+@pytest.mark.parametrize("catalog", [fixture_catalog(unavailable_rung=15), fixture_catalog(provisional_rung=15)])
 async def test_start_fails_closed_when_exact_server_selected_level_is_ineligible(api_app, client, monkeypatch, catalog):
     from katrain.core import ladder
 
@@ -1639,7 +1648,7 @@ async def test_start_fails_closed_when_exact_server_selected_level_is_ineligible
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("catalog", [fixture_catalog(unavailable_rung=16), fixture_catalog(provisional_rung=16)])
+@pytest.mark.parametrize("catalog", [fixture_catalog(unavailable_rung=15), fixture_catalog(provisional_rung=15)])
 async def test_provisional_switch_seats_an_uncertified_rung_without_relabelling_it(
     api_app, client, monkeypatch, catalog
 ):
@@ -1662,13 +1671,13 @@ async def test_provisional_switch_seats_an_uncertified_rung_without_relabelling_
     # The API keeps reporting the rung's real state next to the started game.
     opponent = response.json()["opponent"]
     assert (opponent["certification_status"], opponent["availability"]) == (
-        catalog[15].certification_status,
-        catalog[15].availability,
+        catalog[14].certification_status,
+        catalog[14].availability,
     )
     with api_app.state._test_session_factory() as db:
         pending = db.query(models_db.AiLadderPendingGame).one()
-    assert pending.opponent_certification_status == catalog[15].certification_status
-    assert pending.opponent_availability == catalog[15].availability
+    assert pending.opponent_certification_status == catalog[14].certification_status
+    assert pending.opponent_availability == catalog[14].availability
 
 
 @pytest.mark.asyncio
@@ -1683,8 +1692,8 @@ async def test_a_rung_with_no_recipe_is_refused_even_with_the_provisional_switch
     """The switch forgives "not measured yet"; it cannot forgive "no recipe exists"."""
     from katrain.core import ladder
 
-    catalog = list(fixture_catalog(provisional_rung=16))
-    catalog[15] = SimpleNamespace(**{**catalog[15].__dict__, "recipe": None})
+    catalog = list(fixture_catalog(provisional_rung=15))
+    catalog[14] = SimpleNamespace(**{**catalog[14].__dict__, "recipe": None})
     monkeypatch.setattr(ladder, "LADDER_LEVELS", tuple(catalog))
     monkeypatch.setenv(ladder.LADDER_ALLOW_PROVISIONAL_ENV, "1")
     async with client as ac:
@@ -1978,7 +1987,7 @@ async def test_catalog_change_does_not_change_frozen_runtime_or_block_settlement
         await start_ranked(api_app, ac)
         session = api_app.state._test_created_sessions[0]
         ladder.LADDER_LEVELS[15].recipe.max_visits = 999
-        assert session.katrain.frozen_ladder_recipe.max_visits == 16
+        assert session.katrain.frozen_ladder_recipe.max_visits == 15
         session.katrain.game.end_result = "B+R"
         session.katrain._state["end_result"] = "B+R"
         await __import__("katrain.web.server", fromlist=["_RECORD_FN"])._RECORD_FN(
@@ -2132,8 +2141,8 @@ def settlement_payload(**overrides):
         "result": "loss",
         "game_type": "ai_ladder_ranked",
         "opponent": {
-            "rung": 16,
-            "rank_name": "fixture-16",
+            "rung": 15,
+            "rank_name": "fixture-15",
             "config_snapshot": {"config_digest": "d" * 16, "config_version": "v1"},
             "certification_status": "certified",
             "availability": "available",
@@ -2320,7 +2329,7 @@ async def test_cloud_reservation_is_account_unique_and_status_hides_origin_secre
     assert reserved.status_code == 201
     assert set(reserved.json()) == {"game_id", "reservation_key", "blocking_game", "opponent", "execution_identity"}
     assert reserved.json()["reservation_key"]
-    assert reserved.json()["opponent"]["rank_name"] == "fixture-16"
+    assert reserved.json()["opponent"]["rank_name"] == "fixture-15"
     assert reserved.json()["execution_identity"] == reserved.json()["opponent"]["config_snapshot"]["recipe_identity"]
     assert replay.status_code == 201
     assert replay.json()["reservation_key"] == reservation_payload()["reservation_key"]
@@ -2334,7 +2343,7 @@ async def test_cloud_reservation_is_account_unique_and_status_hides_origin_secre
         "state": "reserved",
         "ownership": "current_device",
         "user_color": "B",
-        "opponent_rank_name": "fixture-16",
+        "opponent_rank_name": "fixture-15",
         # 预约从没 activate 过 ⇒ 一次心跳都没有、也没进 pending ⇒ 两个都是 None。
         # **不许用 0 顶替**:「从没收到过」和「刚刚收到」在屏上是相反的两件事。
         "heartbeat_age_seconds": None,
@@ -2593,14 +2602,14 @@ async def test_game_lifecycle_is_private_and_requests_are_strict(api_app, client
 
 def lifecycle_game_record(*, result="B+R"):
     return {
-        "sgf_content": f"(;GM[1]FF[4]SZ[19]RU[chinese]KM[7.5]PB[ladder-user]PW[fixture-16]RE[{result}])",
+        "sgf_content": f"(;GM[1]FF[4]SZ[19]RU[chinese]KM[7.5]PB[ladder-user]PW[fixture-15]RE[{result}])",
         "result": result,
         "board_size": 19,
         "rules": "chinese",
         "komi": 7.5,
         "move_count": 0,
         "player_black": "ladder-user",
-        "player_white": "fixture-16",
+        "player_white": "fixture-15",
         "source": "play_ai",
         "category": "game",
         "game_type": "ai_ladder_ranked",
@@ -2671,7 +2680,7 @@ async def test_direct_authoritative_start_reserves_and_activates_before_returnin
         "ownership": "current_device",
         "session_id": started.json()["session_id"],
         "user_color": "B",
-        "opponent_rank_name": "fixture-16",
+        "opponent_rank_name": "fixture-15",
         "heartbeat_age_seconds": None,
         "pending_since_seconds": None,
     }
@@ -2775,7 +2784,7 @@ async def test_cross_device_ranked_journey_has_one_receipt_and_one_auditable_wri
         "state": "active",
         "ownership": "other_device",
         "user_color": "B",
-        "opponent_rank_name": "fixture-16",
+        "opponent_rank_name": "fixture-15",
         "heartbeat_age_seconds": None,
         "pending_since_seconds": None,
         # The origin here never sends a heartbeat, so this is the compatibility branch: the
@@ -2895,7 +2904,7 @@ class RecordingDispatcher:
 def _board_remote(api_app):
     from katrain.web.core.ai_ladder_catalog import build_opponent_snapshot
 
-    opponent, identity = build_opponent_snapshot(16)
+    opponent, identity = build_opponent_snapshot(15)
     remote = SimpleNamespace(
         bound_user_id=str(api_app.state._test_user_id),
         get_ai_ladder_status=AsyncMock(
@@ -2943,7 +2952,7 @@ async def test_board_status_uses_cloud_authority_and_only_enriches_its_live_loca
             "state": "active",
             "ownership": "current_device",
             "user_color": "B",
-            "opponent_rank_name": "fixture-16",
+            "opponent_rank_name": "fixture-15",
         },
     }
     # A local mirror with a live session proves that this board may reveal only its
@@ -2992,7 +3001,7 @@ async def test_board_status_rejects_stale_or_mismatched_local_sessions(api_app, 
             "state": "active",
             "ownership": "current_device",
             "user_color": "B",
-            "opponent_rank_name": "fixture-16",
+            "opponent_rank_name": "fixture-15",
         },
     }
     reserved = await remote.reserve_ai_ladder_game({})
@@ -3048,7 +3057,7 @@ async def test_board_status_never_relays_cloud_session_or_reservation_secrets(ap
             "session_id": "cloud-internal-session",
             "reservation_key": "cloud-secret",
             "user_color": "B",
-            "opponent_rank_name": "fixture-16",
+            "opponent_rank_name": "fixture-15",
         },
     }
 
@@ -3201,7 +3210,7 @@ async def test_board_activation_two_gateway_failures_preserve_live_session_for_s
                 "state": "active",
                 "ownership": "current_device",
                 "user_color": "B",
-                "opponent_rank_name": "fixture-16",
+                "opponent_rank_name": "fixture-15",
             },
         }
         reconciled = await ac.get("/api/v1/ai-ladder/status", headers=api_app.state._test_headers)

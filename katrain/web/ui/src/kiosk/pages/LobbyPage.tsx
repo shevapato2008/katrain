@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { getAiLadderStatus } from '../../features/aiLadder/api';
+import { websocketUrl } from '../../utils/websocketUrl';
 import { Icon } from '../shell/icons';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
@@ -186,8 +187,9 @@ const LobbyPage = () => {
     void fetchLists();
     const refresh = setInterval(() => { void fetchLists(); }, 10000);
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/lobby?token=${token}`);
+    // 走共享 helper,不手搓协议串 —— `websocketUrl` 是上游 dc55f32e 那族修复的落点,
+    // 全仓扫描闸盯着它(`utils/websocketUrl.test.ts`)。
+    const ws = new WebSocket(websocketUrl('/ws/lobby', token));
     wsRef.current = ws;
 
     ws.onmessage = (event: MessageEvent<string>) => {

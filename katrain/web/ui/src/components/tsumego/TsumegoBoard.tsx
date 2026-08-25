@@ -222,32 +222,32 @@ const TsumegoBoard: React.FC<TsumegoBoardProps> = ({
 
     // Draw coordinates
     if (showCoordinates) {
-    const letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ".split("");
-    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-    ctx.font = `600 ${Math.max(10, layout.gridSize * 0.4)}px 'IBM Plex Mono', monospace`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
+      const letters = "ABCDEFGHJKLMNOPQRSTUVWXYZ".split("");
+      ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+      ctx.font = `600 ${Math.max(10, layout.gridSize * 0.4)}px 'IBM Plex Mono', monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
-    // Bottom letters
-    for (let i = 0; i < boardSize; i++) {
-      const pos = gridToCanvas(layout, i, 0);
-      ctx.fillText(letters[i], pos.x, layout.offsetY + layout.boardHeight - layout.gridSize * 0.5);
-    }
-    // Top letters
-    for (let i = 0; i < boardSize; i++) {
-      const pos = gridToCanvas(layout, i, boardSize - 1);
-      ctx.fillText(letters[i], pos.x, layout.offsetY + layout.gridSize * 0.5);
-    }
-    // Left numbers
-    for (let j = 0; j < boardSize; j++) {
-      const pos = gridToCanvas(layout, 0, j);
-      ctx.fillText((j + 1).toString(), layout.offsetX + layout.gridSize * 0.5, pos.y);
-    }
-    // Right numbers
-    for (let j = 0; j < boardSize; j++) {
-      const pos = gridToCanvas(layout, boardSize - 1, j);
-      ctx.fillText((j + 1).toString(), layout.offsetX + layout.boardWidth - layout.gridSize * 0.5, pos.y);
-    }
+      // Bottom letters
+      for (let i = 0; i < boardSize; i++) {
+        const pos = gridToCanvas(layout, i, 0);
+        ctx.fillText(letters[i], pos.x, layout.offsetY + layout.boardHeight - layout.gridSize * 0.5);
+      }
+      // Top letters
+      for (let i = 0; i < boardSize; i++) {
+        const pos = gridToCanvas(layout, i, boardSize - 1);
+        ctx.fillText(letters[i], pos.x, layout.offsetY + layout.gridSize * 0.5);
+      }
+      // Left numbers
+      for (let j = 0; j < boardSize; j++) {
+        const pos = gridToCanvas(layout, 0, j);
+        ctx.fillText((j + 1).toString(), layout.offsetX + layout.gridSize * 0.5, pos.y);
+      }
+      // Right numbers
+      for (let j = 0; j < boardSize; j++) {
+        const pos = gridToCanvas(layout, boardSize - 1, j);
+        ctx.fillText((j + 1).toString(), layout.offsetX + layout.boardWidth - layout.gridSize * 0.5, pos.y);
+      }
     }
 
     // Draw hint if enabled

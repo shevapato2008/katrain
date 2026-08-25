@@ -25,6 +25,12 @@ vi.mock('../../../context/AuthContext', async (importOriginal) => {
   };
 });
 
+/* 统一版式的模块牌用 useGameNavigation 做「对局中拦截导航」；这一页没有对局，
+   桩掉即可（与其他棋盘页的测试同一写法）。 */
+vi.mock('../../context/GameNavigationContext', () => ({
+  useGameNavigation: () => ({ registerActiveGame: vi.fn(), unregisterActiveGame: vi.fn(), requestNavigation: vi.fn() }),
+}));
+
 vi.mock('../../components/tutorials/SGFBoard', () => ({
   default: () => <div data-testid="sgf-board" />,
 }));

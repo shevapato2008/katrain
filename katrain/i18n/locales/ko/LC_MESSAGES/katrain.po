@@ -2231,7 +2231,7 @@ msgid "report:my_reports"
 msgstr "복기"
 
 msgid "report:page_hint"
-msgstr "오른쪽 대국을 선택하여 미리보기. 보고서 생성은 대국 카드에서 합니다."
+msgstr "대국을 선택하면 기보를 미리 볼 수 있습니다. 보고서 생성은 대국 카드에서 합니다."
 
 msgid "report:select_game"
 msgstr "대국 선택"
@@ -3000,3 +3000,85 @@ msgstr "일시정지"
 
 msgid "audio:unavailable"
 msgstr "오디오를 사용할 수 없습니다"
+
+msgid "research:progress_failed"
+msgstr "분석 진행 상황을 가져올 수 없습니다"
+
+msgid "tsumego:hint"
+msgstr "힌트"
+
+msgid "tsumego:this_problem"
+msgstr "이 문제"
+
+msgid "Back"
+msgstr "뒤로"
+
+msgid "back_to"
+msgstr "{parent}(으)로 뒤로"
+
+msgid "kifu:page_x_of_y"
+msgstr "{page} / {total} 페이지"
+
+msgid "live:move_slider"
+msgstr "수순 슬라이더"
+
+msgid "game_room:title"
+msgstr "대국실"
+
+msgid "game_room:board_size"
+msgstr "{n}로"
+
+msgid "game_room:ended"
+msgstr "종료됨"
+
+msgid "game_room:lobby_short"
+msgstr "로비"
+
+msgid "game_room:leave_game"
+msgstr "대국 나가기"
+
+msgid "game_room:exit_spectating"
+msgstr "관전 종료"
+
+msgid "game:nav_first"
+msgstr "첫 수로"
+
+msgid "game:nav_back_10"
+msgstr "10수 뒤로"
+
+msgid "game:nav_back"
+msgstr "한 수 뒤로"
+
+msgid "game:nav_forward"
+msgstr "한 수 앞으로"
+
+msgid "game:nav_forward_10"
+msgstr "10수 앞으로"
+
+msgid "game:nav_last"
+msgstr "마지막 수로"
+
+msgid "game:in_play"
+msgstr "대국 중"
+
+msgid "report:summary_done"
+msgstr "완료"
+
+#. TODO
+msgid "play:game_records"
+msgstr "Game Records"
+
+msgid "tsumego:kyu_tier"
+msgstr "급위"
+
+msgid "tsumego:dan_tier"
+msgstr "단위"
+
+msgid "tsumego:stronger_downward"
+msgstr "아래로 갈수록 강함"
+
+msgid "tsumego:all_levels"
+msgstr "전체 난이도 · {count}단계"
+
+msgid "tsumego:your_level"
+msgstr "내 실력"

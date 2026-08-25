@@ -87,7 +87,13 @@ class XingZhenClient:
         try:
             data = await self._request("GET", f"/situation/{live_id}", params={"no_cache": 1})
             if isinstance(data, dict):
-                return data.get("data", data)
+                # 对局已结束时上游只回信封：{"code":"0","msg":""}（21 字节，没有 data）。
+                # 原来的 `data.get("data", data)` 把信封本身当成局面返回 —— 一个真值 dict，
+                # 于是调用方的 `if not situation` 拦不住它，再往下 `liveStatus` 缺失被默认成
+                # 0（=进行中），已经结束的对局每 3 秒被重新标成 live。
+                # 「上游没给局面」要如实回 None。
+                payload = data.get("data")
+                return payload or None
             return data
         except Exception:
             logger.exception("Failed to get situation for %s", live_id)

@@ -1,0 +1,447 @@
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   APP CHROME — geometry transcribed from the real components.
+   The frame is a fixed-size box, so the app's own media queries
+   can't fire; the breakpoint result is pinned per viewport with
+   data attributes instead. Numbers come from:
+     GalaxyTopBar.tsx (52)  GalaxySidebar.tsx (240/216/0)
+     GalaxyBottomNav.tsx (64)  BoardPageShell.tsx (320/340/380)
+   ═══════════════════════════════════════════════════════════════ */
+.app[data-vp="1440x900"]{--sidebar-w:216px;--rail-w:340px}
+.app[data-vp="1024x768"]{--sidebar-w:0px;--rail-w:320px}
+.app[data-vp="430x880"] {--sidebar-w:0px;--rail-w:auto}
+.app[data-vp="1280x640"]{--sidebar-w:216px;--rail-w:340px}
+
+/* ── 改版：右栏全站一个数 ──────────────────────────────────────
+   340 / 380 两档取消。1440×900 和 1024×768 下卡住棋盘的都是「高度」
+   （828 和 696），所以右栏从 340 收到 320 一个棋盘像素都不亏。 */
+.app[data-mode="new"][data-vp="1440x900"]{--rail-w:320px}
+.app[data-mode="new"][data-vp="1024x768"]{--rail-w:320px}
+.app[data-mode="new"][data-vp="1280x640"]{--rail-w:320px}
+
+.ic{width:24px;height:24px;fill:currentColor;flex:none;display:block}
+.ic.sm{width:20px;height:20px}
+.ic.xs{width:16px;height:16px}
+
+/* ── top bar ─────────────────────────────────────────────────── */
+.topbar{
+  box-sizing:border-box;height:var(--topbar);min-height:var(--topbar);
+  padding:0 16px;display:flex;align-items:center;gap:6px;justify-content:flex-start;
+  background:var(--paper);border-bottom:1px solid var(--line);flex:none;
+}
+.brand{display:flex;align-items:center;gap:8px;height:100%;padding:0 4px;
+  background:none;border:0;border-radius:4px;cursor:pointer}
+.brand:hover{background:rgba(255,255,255,.04)}
+.brand img{width:32px;height:32px;object-fit:contain}
+.brand-cn{font-family:var(--brand);font-size:22px;line-height:1;font-weight:400}
+.brand-latin{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:14px;line-height:1;font-weight:600;letter-spacing:.02em}
+
+/* ── row / sidebar / main ────────────────────────────────────── */
+.row{position:relative;display:flex;flex:1;min-height:0}
+.sidebar{
+  flex:0 0 var(--sidebar-w);width:var(--sidebar-w);min-width:0;height:100%;
+  overflow:hidden;background:var(--paper);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;
+}
+.app[data-vp="1024x768"] .sidebar,
+.app[data-vp="430x880"] .sidebar{border-right:0}
+.sidenav{flex:1;min-height:0;overflow-y:auto;padding:16px 0 8px;list-style:none;margin:0}
+.sidenav li{margin:0 8px}
+.navitem{
+  width:100%;display:flex;align-items:center;gap:0;
+  padding:8px 16px;border:0;background:transparent;border-radius:16px;
+  cursor:pointer;text-align:left;color:var(--tx2);
+  transition:background 150ms;
+}
+.navitem .ic{margin-right:16px;color:var(--tx2)}
+.navitem:hover{background:rgba(255,255,255,.04)}
+.navitem[aria-current="page"]{background:var(--jade-d);color:var(--tx);font-weight:600}
+.navitem[aria-current="page"] .ic{color:var(--jade)}
+.side-foot{border-top:1px solid var(--line);padding:16px;flex:none}
+.usercard{
+  padding:12px;background:var(--bg);border-radius:16px;
+  display:flex;align-items:center;gap:12px;margin-top:8px;
+}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--jade);
+  display:grid;place-items:center;font-size:12px;flex:none;color:#eaf3ee}
+.sidebar-toggle{
+  position:absolute;left:var(--sidebar-w);top:50%;transform:translateY(-50%);
+  width:44px;height:44px;border-radius:50%;z-index:30;
+  background:var(--paper);border:1px solid var(--line2);color:var(--tx2);
+  display:grid;place-items:center;cursor:pointer;
+}
+.sidebar-toggle:hover{color:var(--tx);border-color:var(--line3)}
+.app[data-vp="430x880"] .sidebar-toggle{display:none}
+
+.main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;box-sizing:border-box}
+
+/* ── bottom nav (mobile only) ────────────────────────────────── */
+.bottomnav{
+  position:absolute;left:0;right:0;bottom:0;height:var(--bottomnav);z-index:40;
+  background:var(--paper);border-top:1px solid var(--line);
+  display:flex;
+}
+.bottomnav button{
+  flex:1;border:0;background:transparent;cursor:pointer;color:var(--tx3);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-size:11px;padding:0;min-width:0;
+}
+.bottomnav button[aria-current="page"]{color:var(--jade)}
+.bottomnav button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+/* ═══ BoardPageShell — BoardPageShell.tsx transcribed ═══════════ */
+.shell{
+  width:100%;height:100%;min-height:0;position:relative;
+  display:grid;grid-template-columns:minmax(0,1fr) var(--rail-w);
+  grid-template-rows:minmax(0,1fr);overflow:hidden;box-sizing:border-box;
+}
+.app[data-vp="430x880"] .shell{
+  display:flex;flex-direction:column;overflow:hidden;overflow-y:auto;
+  padding-bottom:var(--bottomnav);
+}
+.stage-box{
+  width:auto;max-width:none;flex:none;min-width:0;min-height:0;
+  display:grid;place-items:center;padding:6px;box-sizing:border-box;
+}
+.app[data-vp="430x880"] .stage-box{width:100%;max-width:100%;aspect-ratio:1/1}
+.rail{
+  width:100%;display:flex;flex-direction:column;flex:none;
+  min-height:0;overflow:hidden;border-left:1px solid var(--line);
+  background:var(--paper);
+}
+.app[data-vp="430x880"] .rail{min-height:auto;overflow:visible;border-left:0;border-top:1px solid var(--line)}
+.rail-module{flex:none}
+.rail-scroll{
+  display:flex;flex-direction:column;flex:1;min-height:0;
+  overflow-x:hidden;overflow-y:auto;scrollbar-gutter:stable;
+}
+.app[data-vp="430x880"] .rail-scroll{flex:none;overflow:visible}
+.rail-actions{flex:none;border-top:1px solid var(--line)}
+.rail-scroll::-webkit-scrollbar{width:8px}
+.rail-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+
+/* module plate — ModulePlate.tsx */
+.plate{
+  display:flex;align-items:center;gap:12px;min-width:0;min-height:52px;
+  padding:0 16px;border-bottom:1px solid var(--line);
+}
+.plate.iconleft{padding-left:4px}
+.plate-text{min-width:0;flex:1}
+.plate-title{font-size:1.25rem;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plate-sub{font-size:.875rem;color:var(--tx2);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ═══ content-page shell — AiSetupPage.tsx:443-453 ═════════════ */
+.content{
+  flex:1;min-height:0;overflow-y:auto;
+  padding:24px 32px;box-sizing:border-box;
+}
+.app[data-vp="1024x768"] .content{padding:24px}
+.app[data-vp="430x880"] .content{padding:16px 16px calc(var(--bottomnav) + 16px)}
+.content-inner{width:100%;max-width:1500px;margin:0 auto}
+.content::-webkit-scrollbar{width:8px}
+.content::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+
+/* content page header — ContentPageHeader.tsx */
+.cph{min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.cph h1{font-size:2.125rem;font-weight:800;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.app[data-vp="430x880"] .cph h1{font-size:1.5rem}
+
+/* ═══ MUI-equivalent controls ═════════════════════════════════ */
+.mbtn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:var(--r-ctl);border:0;background:transparent;
+  padding:8px 16px;min-height:var(--h-normal);
+  font-size:.875rem;font-weight:600;line-height:1.2;
+  color:var(--jade-l);cursor:pointer;text-transform:none;
+  transition:background 150ms,border-color 150ms,color 150ms,opacity 150ms;
+  white-space:nowrap;
+}
+.mbtn:hover{background:rgba(93,130,112,.12)}
+.mbtn.outlined{border:1px solid rgba(93,130,112,.5)}
+.mbtn.outlined:hover{border-color:var(--jade-l)}
+.mbtn.contained{background:var(--jade);color:#f2f7f4}
+.mbtn.contained:hover{background:var(--jade-l)}
+.mbtn.lg{min-height:var(--h-primary);font-size:.95rem;padding:12px 22px}
+.mbtn.sm{min-height:var(--h-small);font-size:.8125rem;padding:5px 12px}
+.mbtn.full{width:100%}
+.mbtn.inherit{color:var(--tx2)}
+.mbtn.inherit.outlined{border-color:var(--line2)}
+.mbtn.inherit:hover{background:rgba(255,255,255,.06);color:var(--tx)}
+.mbtn.err{color:var(--err)}
+.mbtn.err.contained{background:var(--err);color:#2a0f0c}
+.mbtn.err.outlined{border-color:rgba(225,107,92,.5)}
+.mbtn.err:hover{background:rgba(225,107,92,.12)}
+.mbtn.ok{color:var(--ok)}
+.mbtn.ok.contained{background:var(--ok);color:#04150d}
+.mbtn.warn{color:var(--warn)}
+.mbtn[disabled],.mbtn[aria-disabled="true"]{color:var(--tx3);border-color:var(--line);
+  background:transparent;cursor:not-allowed;pointer-events:none}
+.mbtn.contained[disabled]{background:rgba(255,255,255,.06);color:var(--tx3)}
+
+.iconbtn{
+  width:var(--h-normal);height:var(--h-normal);border-radius:50%;
+  border:0;background:transparent;color:var(--tx2);
+  display:inline-grid;place-items:center;cursor:pointer;flex:none;
+  transition:background 150ms,color 150ms;
+}
+.iconbtn:hover{background:rgba(255,255,255,.08);color:var(--tx)}
+.iconbtn.sm{width:var(--h-small);height:var(--h-small)}
+.iconbtn.back{border-radius:var(--r-back)}
+.iconbtn[disabled]{color:var(--tx3);cursor:not-allowed;pointer-events:none}
+
+.tgroup{display:flex;border:1px solid var(--line2);border-radius:var(--r-ctl);overflow:hidden}
+.tgroup .tbtn{flex:1;border:0;border-right:1px solid var(--line2);border-radius:0}
+.tgroup .tbtn:last-child{border-right:0}
+.tbtn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:var(--h-normal);padding:6px 10px;font-size:.78rem;
+  background:transparent;color:var(--tx2);border:1px solid var(--line2);
+  border-radius:var(--r-ctl);cursor:pointer;transition:background 150ms,color 150ms;
+  white-space:nowrap;
+}
+.tbtn:hover{background:rgba(255,255,255,.06);color:var(--tx)}
+.tbtn[aria-pressed="true"]{background:var(--jade-d);color:var(--tx);border-color:var(--jade)}
+.tbtn[disabled]{color:var(--tx3);cursor:not-allowed;pointer-events:none}
+
+/* 播放条（PlaybackBar.tsx）。一行装完：五个走子键 + 播放键 +（仅直播）
+   自动跟进 + 手数。自动跟进是 ToggleButton border:none，选中时 success.main。 */
+.iconbtn.play{width:42px;height:42px;background:var(--jade);color:#eef4f0}
+.iconbtn.play:hover{background:var(--jade-l);color:#eef4f0}
+/* 一行要在 320 右栏（内宽 ~288）里装下：小键 30 + 播放 42 + 跟进 30 +
+   间距 2 + 手数 .74rem ≈ 275。真容器窄到装不下时（现状档 430 的旧版式
+   右栏只有 200）允许换行 —— 真代码在 340 断点也是换行，不是硬挤。 */
+.pbrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px}
+.pbrow .iconbtn.sm{width:30px;height:30px}
+.syncbtn{
+  width:30px;height:30px;flex:none;border:0;border-radius:var(--r-ctl);
+  background:transparent;color:var(--tx2);display:inline-grid;place-items:center;
+  cursor:pointer;transition:background 150ms,color 150ms;
+}
+.syncbtn:hover{background:rgba(255,255,255,.08);color:var(--tx)}
+.syncbtn[aria-pressed="true"]{background:var(--ok);color:#0c1a12}
+.syncbtn[aria-pressed="true"]:hover{background:#288a5e;color:#0c1a12}
+
+/* 研究室 / 变化图工具栏里的三个自定义图标 —— 真代码是手画的圆，不是 MUI 图标 */
+.stoneic{width:18px;height:18px;border-radius:50%;box-sizing:border-box;flex:none}
+.stoneic.b{background:#1a1a1a;border:1.5px solid rgba(255,255,255,.2);box-shadow:inset 0 -1px 2px rgba(255,255,255,.1)}
+.stoneic.w{background:#fff;border:1.5px solid rgba(0,0,0,.3);box-shadow:inset 0 1px 3px rgba(0,0,0,.08)}
+.stoneic.alt{width:25px;height:16px;border-radius:0;background:none;position:relative}
+.stoneic.alt i{position:absolute;top:0;width:16px;height:16px;border-radius:50%;box-sizing:border-box}
+.stoneic.alt i:first-child{left:0;z-index:1;background:#1a1a1a;border:1.5px solid rgba(255,255,255,.2)}
+.stoneic.alt i:last-child{left:9px;background:#fff;border:1.5px solid rgba(0,0,0,.3)}
+.tbtn .glyph{font-size:.8rem;font-weight:700;line-height:1;height:18px;display:grid;place-items:center}
+
+/* ResearchToolbar 的 isDestructive：没激活也是红字（真代码 color: error.main） */
+.tbtn.danger{color:var(--err);border-color:rgba(225,107,92,.32)}
+.tbtn.danger:hover{background:rgba(225,107,92,.12);color:var(--err)}
+.tbtn.danger[aria-pressed="true"]{background:rgba(211,47,47,.15);border-color:var(--err);color:var(--err)}
+
+/* 移动档滚动条：真机是叠加式的，不占布局宽度；桌面 Chromium 默认是
+   经典滚动条，会从棋盘那一列里吃掉 15px，把 430 档的棋盘从 410 量成
+   395。原型按真机来，否则量到的是浏览器的毛病不是版式的。 */
+.app[data-vp="430x880"] .shell::-webkit-scrollbar{width:0;height:0}
+
+/* 四列工具格。340 下横排还塞得下，320 下第 4 列会被切，
+   所以在改版模式里改成「图标在上、文字在下」。现状模式不受影响。 */
+.app[data-mode="new"] .toolgrid .tbtn{
+  flex-direction:column;gap:3px;height:54px;min-height:0;padding:6px 2px;
+  font-size:.66rem;line-height:1.1;
+}
+.app[data-mode="new"] .toolgrid .tbtn .ic{width:18px;height:18px}
+
+/* ═══ 难度阶梯（死活题 · 难度列表）══════════════════════════════
+   15K→7D 是一条有序的阶梯，不是 8 个等价的盒子。所以用「行」不用
+   「格」：一行 = 一档，级位和段位之间画一道真的坎，自己的水平在坎
+   的哪一侧一眼可见。玉色只给两样东西 —— 「你在这里」和已解进度。
+   三个分类从 24 枚 chip 收成每行一条三段分布条，图例只出现一次；
+   第三段的颜色取自棋盘木色，不另起色系。 */
+.ladder{display:flex;flex-direction:column;gap:5px}
+.lrung{
+  display:grid;align-items:center;gap:18px;width:100%;
+  grid-template-columns:56px minmax(120px,1fr) minmax(140px,200px) 62px 116px 20px;
+  background:var(--paper);border:1px solid var(--line);border-left:3px solid transparent;
+  border-radius:10px;padding:10px 14px 10px 12px;
+  color:inherit;font:inherit;text-align:left;cursor:pointer;
+  transition:background 160ms,border-color 160ms;
+}
+.lrung:hover{background:#242424;border-color:var(--line3)}
+.lrung:focus-visible{outline:2px solid var(--jade-l);outline-offset:2px}
+.lrung.dan{background:#1c1a18}
+.lrung.dan:hover{background:#252220}
+.lrung.me{border-left-color:var(--jade)}
+.rung-badge{
+  height:34px;border-radius:8px;display:grid;place-items:center;
+  background:rgba(255,255,255,.05);border:1px solid var(--line2);
+  font-family:var(--mono);font-variant-numeric:tabular-nums;
+  font-size:1.05rem;font-weight:700;letter-spacing:.02em;color:var(--tx);
+}
+.lrung.me .rung-badge{background:var(--jade-d);border-color:var(--jade);color:#e6f1ea}
+.rung-name{font-size:.95rem;font-weight:600;line-height:1.25}
+.rung-sub{font-size:.72rem;color:var(--tx3);margin-top:2px}
+/* 条的「长度」编码题量、「分段」编码构成。八档比例本来就接近，
+   光靠分段看不出差别；宽度一起用上，题库从 15K 到 7D 变薄这件事
+   就在同一条上读出来了。 */
+.rung-bar{display:flex;height:7px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.05)}
+.rung-bar i{display:block;height:100%}
+.rung-barwrap{display:flex;align-items:center}
+.rung-total{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.85rem;
+  color:var(--tx2);text-align:right}
+.rung-prog{display:flex;flex-direction:column;gap:5px}
+.rung-prog .track{height:6px;border-radius:3px;background:rgba(255,255,255,.13);overflow:hidden}
+.rung-prog .fill{display:block;height:100%;background:var(--jade-l);border-radius:3px}
+.rung-prog .num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:.74rem;color:var(--tx2)}
+.rung-prog .num.zero{color:var(--tx3)}
+.rung-prog .num b{font-weight:600;color:var(--jade-l)}
+.lrung .chev{color:var(--tx3)}
+.lrung:hover .chev{color:var(--tx2)}
+.tier-seam{
+  display:flex;align-items:center;gap:12px;margin:12px 2px 6px;
+  font-size:.7rem;letter-spacing:.16em;color:var(--tx2);
+}
+.tier-seam:first-child{margin-top:0}
+.tier-seam::after{content:"";flex:1;height:1px;background:var(--line3)}
+.tier-seam em{font-style:normal;color:var(--tx3);letter-spacing:.02em;font-size:.68rem}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--tx3)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:9px;height:9px;border-radius:2px;display:block}
+.resume{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+  background:linear-gradient(100deg,rgba(74,107,92,.18),rgba(74,107,92,.05));
+  border:1px solid rgba(93,130,112,.4);border-radius:12px;padding:12px 18px;
+}
+
+/* ── 棋手卡 · 轮次高亮 ─────────────────────────────────────────
+   轮到谁下，谁的卡描边变玉色、时钟变玉色、名字前多一个呼吸点，
+   卡底压一条「该你了」。另一张压到 62% 不透明度。
+   只靠颜色区分是不够的（色盲 / 强光下的 7 寸屏），所以同时给了
+   文字、位移和一个动的点，三条冗余。 */
+.pcard{
+  background:var(--paper);border:1px solid var(--line);border-radius:10px;
+  padding:10px;position:relative;overflow:hidden;transition:border-color 160ms,background 160ms;
+}
+.pcard .clock{transition:color 160ms}
+.pcard:not(.on){opacity:.62}
+.pcard.on{
+  border-color:var(--jade);background:#232b26;
+  box-shadow:0 0 0 1px rgba(93,130,112,.35), 0 6px 18px -10px rgba(93,130,112,.7);
+  padding-bottom:22px;
+}
+.pcard.on .clock{color:var(--jade-l)}
+.pcard .turn{
+  width:7px;height:7px;border-radius:50%;background:var(--jade-l);flex:none;
+  animation:pulse 1.4s infinite;
+}
+.pcard-turn{
+  position:absolute;left:0;right:0;bottom:0;
+  background:var(--jade-d);color:#dcebe3;
+  font-size:.62rem;letter-spacing:.08em;text-align:center;padding:2px 0;
+}
+
+/* 棋手卡里的关注 / 暂停：150px 宽的卡放不下两个 32px 圆钮 + 时钟，
+   会换行，让两张卡一高一低。缩到 26px 就在一行了。 */
+.pcard-icons{flex:none;display:flex;gap:0}
+.pcard-icons .iconbtn{width:26px;height:26px}
+.pcard-icons .ic{width:17px;height:17px}
+
+.swrow{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:6px 0;font-size:.875rem;color:var(--tx2)}
+.sw{width:38px;height:20px;border-radius:10px;background:rgba(255,255,255,.16);
+  border:0;position:relative;cursor:pointer;flex:none;transition:background 150ms}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;
+  border-radius:50%;background:var(--tx2);transition:transform 150ms,background 150ms}
+.sw[aria-checked="true"]{background:rgba(74,107,92,.5)}
+.sw[aria-checked="true"]::after{transform:translateX(18px);background:var(--jade-l)}
+
+.field{
+  width:100%;background:rgba(255,255,255,.025);border:1px solid var(--line);
+  border-radius:10px;padding:9px 12px;color:var(--tx);font-size:.88rem;
+  transition:background 200ms,border-color 200ms;
+}
+.field::placeholder{color:var(--tx3)}
+.field:hover{background:rgba(255,255,255,.04);border-color:var(--line2)}
+.field:focus{outline:0;background:rgba(255,255,255,.045);border-color:rgba(74,107,92,.4)}
+.fieldwrap{position:relative;display:flex;align-items:center}
+.fieldwrap .ic{position:absolute;left:10px;color:var(--tx3)}
+.fieldwrap .field{padding-left:36px}
+.flabel{display:block;font-size:.72rem;color:var(--tx3);letter-spacing:.04em;margin-bottom:5px}
+
+.sel{appearance:none;width:100%;background:var(--surface);border:1px solid var(--line2);
+  border-radius:var(--r-ctl);padding:9px 32px 9px 12px;color:var(--tx);font-size:.88rem;cursor:pointer}
+.selwrap{position:relative}
+.selwrap .ic{position:absolute;right:6px;top:50%;transform:translateY(-50%);color:var(--tx3);pointer-events:none}
+
+.slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;
+  background:rgba(255,255,255,.16);outline:0;cursor:pointer}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--jade-l);cursor:pointer}
+.slider::-moz-range-thumb{width:14px;height:14px;border:0;border-radius:50%;background:var(--jade-l)}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card);
+  transition:border-color 160ms,background 160ms}
+.card.click{cursor:pointer;text-align:left;width:100%;display:block;color:inherit;font:inherit}
+.card.click:hover{border-color:rgba(74,107,92,.45);background:#2a2a2a}
+.card.sel{border-color:var(--jade);background:#2a302c}
+
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 9px;
+  border-radius:11px;font-size:.7rem;border:1px solid var(--line2);color:var(--tx2);
+  background:transparent;white-space:nowrap}
+.chip.filled{background:var(--jade-d);border-color:transparent;color:#dcebe3}
+.chip.err{color:var(--err);border-color:rgba(225,107,92,.45)}
+.chip.err.filled{background:var(--err);color:#2a0f0c;border-color:transparent}
+.chip.warn{color:var(--warn);border-color:rgba(232,150,57,.45)}
+.chip.ok{color:var(--ok);border-color:rgba(48,160,110,.45)}
+.chip.info{color:var(--info);border-color:rgba(91,155,213,.45)}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:none}
+.chip.pulse .dot{animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.alert{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:var(--r-ctl);
+  font-size:.85rem;border:1px solid;line-height:1.45}
+.alert.error{background:rgba(225,107,92,.12);border-color:rgba(225,107,92,.35);color:#f2b7ae}
+.alert.warning{background:rgba(232,150,57,.12);border-color:rgba(232,150,57,.35);color:#f0c890}
+.alert.info{background:rgba(91,155,213,.12);border-color:rgba(91,155,213,.35);color:#a8caea}
+.alert.success{background:rgba(48,160,110,.12);border-color:rgba(48,160,110,.35);color:#93d6b6}
+
+.skel{background:linear-gradient(90deg,rgba(255,255,255,.04),rgba(255,255,255,.09),rgba(255,255,255,.04));
+  background-size:200% 100%;animation:shim 1.4s linear infinite;border-radius:6px}
+@keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.spin{width:22px;height:22px;border:2px solid rgba(255,255,255,.15);border-top-color:var(--jade-l);
+  border-radius:50%;animation:sp .9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.crumbs{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--tx2);flex-wrap:wrap}
+.crumbs button{background:none;border:0;color:var(--info);cursor:pointer;padding:0;font-size:inherit;
+  text-decoration:underline;text-underline-offset:2px}
+.crumbs span.sep{color:var(--tx3)}
+
+.pager{display:flex;gap:4px;justify-content:center;align-items:center}
+.pager button{min-width:30px;height:30px;border-radius:6px;border:0;background:transparent;
+  color:var(--tx2);cursor:pointer;font-size:.8rem}
+.pager button:hover{background:rgba(255,255,255,.07)}
+.pager button[aria-current="true"]{background:var(--jade);color:#eef4f0}
+
+/* dialogs — rendered inline in the frame, MuiDialog radius 12 */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.62);z-index:50;
+  display:grid;place-items:center;padding:24px}
+.dlg{background:var(--paper);border-radius:var(--r-dlg);width:100%;max-width:420px;
+  border:1px solid var(--line2);box-shadow:0 24px 60px -12px rgba(0,0,0,.8)}
+.dlg h3{margin:0;padding:18px 22px 6px;font-size:1.125rem;font-weight:600}
+.dlg p{margin:0;padding:0 22px 18px;color:var(--tx2);font-size:.9rem;line-height:1.55}
+.dlg .acts{display:flex;justify-content:flex-end;gap:8px;padding:8px 14px 14px}
+
+.snack{position:absolute;left:50%;transform:translateX(-50%);z-index:45;
+  padding:10px 18px;border-radius:var(--r-ctl);font-size:.85rem;font-weight:600}
+.snack.top{top:16px}.snack.bottom{bottom:80px}
+.snack.success{background:var(--ok);color:#04150d}
+.snack.error{background:var(--err);color:#2a0f0c}
+
+.grid{display:grid;gap:16px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.sec-label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin:0 0 8px}
+.hr{height:1px;background:var(--line);border:0;margin:0}
+.pad{padding:16px}
+.muted{color:var(--tx2)}
+.dim{color:var(--tx3)}
+</style>

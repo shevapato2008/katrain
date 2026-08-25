@@ -139,6 +139,14 @@ export interface EngineLevel {
 export interface LadderRung {
   rung: number;
   rank_name: string;
+  // 服务端目录投影的全部字段（`ai_ladder_catalog.catalog_projection`）。原来这里只有前两个，
+  // 于是任何按认证/可用性过滤的代码都读不到字段 —— 而本仓 `tsc --noEmit` 检查 0 个文件
+  // （根 tsconfig 是 `files: []` + references），漏了也不会红，要用 `tsc -b`。
+  certification_status: 'certified' | 'provisional';
+  // `unavailable` = 坐不上去。今天它恰好等于「已封档」(`ladder._RETIRED_RUNGS`)，
+  // 因为认证集与可坐集重合；但判据是这个字段本身，不是封档清单的前端副本。
+  availability: 'available' | 'unavailable';
+  route: string;
 }
 
 export interface PlatformStatusResponse {
@@ -257,11 +265,41 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiPost(path: string, payload: any, token?: string) {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+/* 严格盒端 SSO（kiosk 构建 + VITE_BOX_SSO_STRICT）那一档故意不持有 token，
+   鉴权只走 HttpOnly 的 sb_go_token cookie，这里绝不能自己造 Bearer 头。 */
+const isStrictBoxKiosk = __KIOSK_2D_ONLY__ && import.meta.env.VITE_BOX_SSO_STRICT === 'true';
+
+/**
+ * 统一取鉴权头。调用方没显式传 token 时，从 localStorage 兜底。
+ *
+ * 为什么必须兜底而不是逐个调用点补 token：后端 72 个端点挂着
+ * `Depends(get_current_user)`，前端有一批 `apiPost(path, body)` 从来不传 token。
+ * 这批调用在本机看着是好的 —— 因为 auth.py 的 _issue_loopback_sso_cookie 只在
+ * hostname == 127.0.0.1 时发 `sb_token` cookie，而 box_sso.resolve_http_token 是
+ * `cookie or header`，cookie 先赢。一换成 go.sailorvoyage.top / modelstella.com
+ * 就没有那块 cookie，header 又是空的，于是 401。
+ * 「研究 → 开始研究 卡在『正在连接研究会话…』不动」就是这么来的：
+ * /api/analysis/scan 和 /api/analysis/progress 每秒 401，而轮询把异常吞了。
+ * getState 上面那条注释记的是同一个坑的上一次发作 —— 那次只补了一个端点。
+ *
+ * 顺序上兜底是安全的：非严格档 cookie 优先于 header，所以盒端/本机行为不变；
+ * 只有本来就没有 cookie 的远端会用上这个头。
+ */
+export function authHeaders(token?: string): Record<string, string> {
+  if (isStrictBoxKiosk) return {};
+  let resolved = token;
+  if (!resolved) {
+    try {
+      resolved = localStorage.getItem('token') ?? undefined;
+    } catch {
+      resolved = undefined;   // 隐私模式下 localStorage 会抛
+    }
   }
+  return resolved ? { Authorization: `Bearer ${resolved}` } : {};
+}
+
+export async function apiPost(path: string, payload: any, token?: string) {
+  const headers: Record<string, string> = { "Content-Type": "application/json", ...authHeaders(token) };
   const response = await fetch(path, {
     method: "POST",
     headers,
@@ -284,8 +322,7 @@ export const API = {
   // game page then showed "Failed to connect to game" with no way to recover.
   getState: async (sessionId: string, token?: string): Promise<SessionResponse> => {
     const params = new URLSearchParams({ session_id: sessionId });
-    const headers: Record<string, string> = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const headers: Record<string, string> = authHeaders(token);
     const response = await fetch(`/api/state?${params.toString()}`, { headers });
     if (!response.ok) throw new Error("Failed to get state");
     return { session_id: sessionId, state: (await response.json()).state };
@@ -374,9 +411,9 @@ export const API = {
   // auto-eval is suppressed). Result streams back over the game WebSocket, not this response.
   analyzeCurrent: (sessionId: string): Promise<any> =>
     apiPost("/api/analysis/current", { session_id: sessionId }),
-  analysisProgress: async (sessionId: string): Promise<{ session_id: string; analyzed: number; total: number }> => {
-    const response = await fetch(`/api/analysis/progress?session_id=${sessionId}`);
-    if (!response.ok) throw new Error("Failed to fetch analysis progress");
+  analysisProgress: async (sessionId: string, token?: string): Promise<{ session_id: string; analyzed: number; total: number }> => {
+    const response = await fetch(`/api/analysis/progress?session_id=${sessionId}`, { headers: authHeaders(token) });
+    if (!response.ok) throw new ApiError(response.status, `Failed to fetch analysis progress (${response.status})`);
     return response.json();
   },
   getGameReport: (sessionId: string, depth_filter?: number[]): Promise<any> => 

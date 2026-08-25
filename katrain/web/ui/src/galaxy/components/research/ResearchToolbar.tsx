@@ -1,6 +1,7 @@
-import { Box, Typography, Tooltip, keyframes, Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import { Box, Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 import { useState } from 'react';
 import { useTranslation } from '../../../hooks/useTranslation';
+import ToolGridButton from '../board/ToolGridButton';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import PanToolAltIcon from '@mui/icons-material/PanToolAlt';
 import OpenWithIcon from '@mui/icons-material/OpenWith';
@@ -14,11 +15,6 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-
-const blink = keyframes`
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-`;
 
 export type PlaceMode = 'alternate' | 'black' | 'white' | null;
 export type EditMode = 'place' | 'move' | 'delete' | null;
@@ -45,7 +41,6 @@ interface ResearchToolbarProps {
   isAnalysisPending?: boolean;
 }
 
-const ICON_SIZE = 22;
 
 // Custom icon: pure black filled stone
 function BlackStoneIcon({ size = 18 }: { size?: number }) {
@@ -169,51 +164,57 @@ export default function ResearchToolbar({
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
       {/* Row 1: Edit tools — 4 per row, no gap */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <ToolButton
-          icon={<FormatListNumberedIcon sx={{ fontSize: ICON_SIZE }} />}
+        <ToolGridButton
+          icon={<FormatListNumberedIcon />}
           label={t('research:move_numbers', '手数')}
+          toggle
           active={showMoveNumbers}
           onClick={onToggleMoveNumbers}
         />
-        <ToolButton
-          icon={<PanToolAltIcon sx={{ fontSize: ICON_SIZE }} />}
+        <ToolGridButton
+          icon={<PanToolAltIcon />}
           label={t('research:pass', '停一手')}
           active={false}
           onClick={() => setPassConfirmOpen(true)}
         />
-        <ToolButton
-          icon={<OpenWithIcon sx={{ fontSize: ICON_SIZE }} />}
+        <ToolGridButton
+          icon={<OpenWithIcon />}
           label={t('research:move', '移动')}
+          toggle
           active={editMode === 'move'}
           onClick={() => handleEditMode('move')}
         />
-        <ToolButton
-          icon={<DeleteForeverIcon sx={{ fontSize: ICON_SIZE }} />}
+        <ToolGridButton
+          icon={<DeleteForeverIcon />}
           label={t('research:delete', '删除')}
+          toggle
           active={editMode === 'delete'}
           onClick={() => handleEditMode('delete')}
           isDestructive
         />
-        <ToolButton
+        <ToolGridButton
           icon={<BlackStoneIcon size={18} />}
           label={t('research:place_black', '摆黑')}
+          toggle
           active={placeMode === 'black'}
           onClick={() => handlePlaceMode('black')}
         />
-        <ToolButton
+        <ToolGridButton
           icon={<WhiteStoneIcon size={18} />}
           label={t('research:place_white', '摆白')}
+          toggle
           active={placeMode === 'white'}
           onClick={() => handlePlaceMode('white')}
         />
-        <ToolButton
+        <ToolGridButton
           icon={<AlternateIcon size={20} />}
           label={t('research:alternate', '交替')}
+          toggle
           active={placeMode === 'alternate'}
           onClick={() => handlePlaceMode('alternate')}
         />
-        <ToolButton
-          icon={<LayersClearIcon sx={{ fontSize: ICON_SIZE }} />}
+        <ToolGridButton
+          icon={<LayersClearIcon />}
           label={t('research:clear', '清空')}
           active={false}
           onClick={onClear}
@@ -222,29 +223,31 @@ export default function ResearchToolbar({
 
       {/* Row 2: Analysis + File tools — 4 per row, no gap */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <ToolButton
-          icon={<TipsAndUpdatesIcon sx={{ fontSize: ICON_SIZE }} />}
-          label={t('research:suggestions', '建议')}
+        <ToolGridButton
+          icon={<TipsAndUpdatesIcon />}
+          label={t('research:suggestions', '支招')}
+          toggle
           active={showHints}
           onClick={onToggleHints}
           disabled={!isAnalyzing}
           loading={isAnalysisPending && showHints}
         />
-        <ToolButton
-          icon={<MapIcon sx={{ fontSize: ICON_SIZE }} />}
+        <ToolGridButton
+          icon={<MapIcon />}
           label={t('research:territory', '领地')}
+          toggle
           active={showTerritory}
           onClick={onToggleTerritory}
           disabled={!isAnalyzing}
         />
-        <ToolButton
-          icon={<FolderOpenIcon sx={{ fontSize: ICON_SIZE }} />}
+        <ToolGridButton
+          icon={<FolderOpenIcon />}
           label={t('research:open', '打开')}
           active={false}
           onClick={(e) => setOpenAnchor(e.currentTarget as HTMLElement)}
         />
-        <ToolButton
-          icon={<SaveIcon sx={{ fontSize: ICON_SIZE }} />}
+        <ToolGridButton
+          icon={<SaveIcon />}
           label={t('research:save', '保存')}
           active={false}
           onClick={(e) => setSaveAnchor(e.currentTarget as HTMLElement)}
@@ -306,53 +309,3 @@ export default function ResearchToolbar({
   );
 }
 
-function ToolButton({ icon, label, active, onClick, disabled, loading, isDestructive }: {
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-  onClick: (e: React.MouseEvent) => void;
-  disabled?: boolean;
-  loading?: boolean;
-  isDestructive?: boolean;
-}) {
-  return (
-    <Tooltip title={disabled ? '' : label}>
-      <Box
-        onClick={(e) => !disabled && onClick(e)}
-        sx={{
-          py: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: disabled ? 'default' : 'pointer',
-          bgcolor: active && !disabled
-            ? (isDestructive ? 'rgba(211, 47, 47, 0.15)' : 'rgba(74, 107, 92, 0.2)')
-            : 'rgba(255,255,255,0.04)',
-          color: active && !disabled
-            ? (isDestructive ? 'error.main' : 'primary.light')
-            : (isDestructive ? 'error.main' : 'text.primary'),
-          opacity: disabled ? 0.3 : 1,
-          border: '1px solid',
-          borderColor: active && !disabled
-            ? (isDestructive ? 'error.main' : 'primary.main')
-            : 'rgba(255,255,255,0.06)',
-          animation: loading ? `${blink} 1s ease-in-out infinite` : 'none',
-          transition: 'all 0.15s ease',
-          '&:hover': {
-            bgcolor: disabled
-              ? 'rgba(255,255,255,0.04)'
-              : (active
-                ? (isDestructive ? 'rgba(211, 47, 47, 0.25)' : 'rgba(74, 107, 92, 0.3)')
-                : 'rgba(255,255,255,0.08)'),
-          },
-        }}
-      >
-        {icon}
-        <Typography variant="caption" sx={{ mt: 0.5, fontSize: '0.8rem', lineHeight: 1.2 }}>
-          {label}
-        </Typography>
-      </Box>
-    </Tooltip>
-  );
-}

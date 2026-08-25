@@ -1,16 +1,12 @@
 import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import Button from '@mui/material/Button';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import UndoIcon from '@mui/icons-material/Undo';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
-import SaveIcon from '@mui/icons-material/Save';
-import CloseIcon from '@mui/icons-material/Close';
 import { useState } from 'react';
+import ToolGridButton from '../board/ToolGridButton';
 import type { EditTool, StoneEditMode, ShapeType } from '../../../types/tutorial';
 
 /* ── Stone icon components (matching ResearchToolbar style) ── */
@@ -54,51 +50,6 @@ function AlternateIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-/* ── ToolButton (adapted from ResearchToolbar) ── */
-
-function ToolButton({ icon, label, active, onClick, disabled, compact }: {
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-  onClick: (e: React.MouseEvent) => void;
-  disabled?: boolean;
-  compact?: boolean;
-}) {
-  return (
-    <Tooltip title={label}>
-      <Box
-        onClick={(e) => !disabled && onClick(e)}
-        sx={{
-          py: compact ? 0.5 : 0.75,
-          px: compact ? 0.75 : 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: disabled ? 'default' : 'pointer',
-          bgcolor: active ? 'rgba(74, 107, 92, 0.2)' : 'rgba(255,255,255,0.04)',
-          color: active ? 'primary.light' : 'text.primary',
-          opacity: disabled ? 0.3 : 1,
-          border: '1px solid',
-          borderColor: active ? 'primary.main' : 'rgba(255,255,255,0.06)',
-          borderRadius: 1,
-          transition: 'all 0.15s ease',
-          minWidth: 36,
-          '&:hover': {
-            bgcolor: disabled ? 'rgba(255,255,255,0.04)'
-              : active ? 'rgba(74, 107, 92, 0.3)' : 'rgba(255,255,255,0.08)',
-          },
-        }}
-      >
-        {icon}
-        <Typography variant="caption" sx={{ mt: 0.25, fontSize: '0.65rem', lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-          {label}
-        </Typography>
-      </Box>
-    </Tooltip>
-  );
-}
-
 /* ── Main toolbar ── */
 
 interface BoardEditToolbarProps {
@@ -117,109 +68,116 @@ interface BoardEditToolbarProps {
   onShapeChange: (s: ShapeType) => void;
   onUndo: () => void;
   onClearAll: () => void;
-  onSave: () => void;
-  onCancel: () => void;
 }
 
+/**
+ * 变化图的棋盘编辑工具条。
+ *
+ * 2026-08-22 迁统一版式：从「一条横向 flex、按需换行」改成右栏里的**四列工具格**，
+ * 用的是全站共享的 `ToolGridButton`（Fan 的裁定：除破坏性整行按钮和滑轨外，
+ * 其他按钮一律按对局室工具格的方式设计）。这同时收掉了本文件自己那份 `ToolButton`
+ * —— 它是工具格按钮的第四份实现。
+ *
+ * **保存 / 取消不在这里了**：它们是这一屏的主动作，归右栏动作区
+ * （`BoardPageShell` 的 `board-rail-actions`，不跟着滚）。编辑长图时它们原来会跟着
+ * 工具条一起滚出视口。
+ */
 export default function BoardEditToolbar({
   activeTool, stoneMode, numbering, nextMoveNumber, nextLetter, selectedShape, canUndo,
   onToolChange, onStoneModeChange, onNumberingChange, onNextMoveNumberChange, onNextLetterChange, onShapeChange,
-  onUndo, onClearAll, onSave, onCancel,
+  onUndo, onClearAll,
 }: BoardEditToolbarProps) {
-  const [shapeAnchor, setShapeAnchor] = useState<null | HTMLElement>(null);
+  /* 图形菜单锚在被点的那个格子上。锚点存 state 而不是 ref —— 渲染期读 `ref.current`
+     既是 React 的规则违例（refs 不参与渲染），也会让菜单第一次打开时锚不到东西。 */
+  const [shapeAnchor, setShapeAnchor] = useState<HTMLElement | null>(null);
+
+  const glyph = (text: string, size: number) => (
+    <Typography component="span" sx={{ fontSize: size, fontWeight: 700, lineHeight: 1 }}>{text}</Typography>
+  );
 
   return (
-    <Box display="flex" flexWrap="wrap" gap={0.5} alignItems="center" py={0.5}>
-      {/* Row 1: Tool group */}
-      <Box display="flex" gap={0.25}>
-        <ToolButton
-          icon={<BlackStoneIcon />}
-          label="摆黑"
+    <Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+        <ToolGridButton
+          icon={<BlackStoneIcon />} label="摆黑" toggle
           active={activeTool === 'stone' && stoneMode === 'black'}
           onClick={() => { onToolChange('stone'); onStoneModeChange('black'); }}
         />
-        <ToolButton
-          icon={<WhiteStoneIcon />}
-          label="摆白"
+        <ToolGridButton
+          icon={<WhiteStoneIcon />} label="摆白" toggle
           active={activeTool === 'stone' && stoneMode === 'white'}
           onClick={() => { onToolChange('stone'); onStoneModeChange('white'); }}
         />
-        <ToolButton
-          icon={<AlternateIcon />}
-          label="交替"
+        <ToolGridButton
+          icon={<AlternateIcon />} label="交替" toggle
           active={activeTool === 'stone' && stoneMode === 'alternate'}
           onClick={() => { onToolChange('stone'); onStoneModeChange('alternate'); }}
         />
-      </Box>
-
-      {/* Numbering toggle + number input */}
-      {activeTool === 'stone' && (
-        <Box display="flex" gap={0.25} alignItems="center">
-          <ToolButton
-            icon={<Typography sx={{ fontSize: 13, fontWeight: 700, lineHeight: 1 }}>123</Typography>}
-            label="编号"
-            active={numbering}
-            onClick={() => onNumberingChange(!numbering)}
-            compact
-          />
-          {numbering && (
-            <TextField
-              size="small"
-              type="number"
-              value={nextMoveNumber}
-              onChange={e => {
-                const n = parseInt(e.target.value, 10);
-                if (!isNaN(n) && n > 0) onNextMoveNumberChange(n);
-              }}
-              inputProps={{ min: 1, style: { textAlign: 'center', padding: '4px 2px' } }}
-              sx={{ width: 48, '& .MuiOutlinedInput-root': { height: 32 } }}
-            />
-          )}
-        </Box>
-      )}
-
-      <Box sx={{ width: '1px', height: 28, bgcolor: 'divider', mx: 0.5 }} />
-
-      {/* Annotation tools */}
-      <Box display="flex" gap={0.25}>
-        <ToolButton
-          icon={<Typography sx={{ fontSize: 12, fontWeight: 700, lineHeight: 1 }}>A</Typography>}
-          label="大写"
+        <ToolGridButton
+          icon={glyph('123', 12)} label="编号" toggle
+          active={numbering}
+          onClick={() => onNumberingChange(!numbering)}
+          /* 编号只对落子工具有意义；不是落子工具时说明理由，而不是留一个按下去没反应的键。 */
+          disabled={activeTool !== 'stone'}
+          tooltip={activeTool === 'stone' ? undefined : '先选摆黑 / 摆白 / 交替'}
+        />
+        <ToolGridButton
+          icon={glyph('A', 13)} label="大写" toggle
           active={activeTool === 'letter_upper'}
           onClick={() => onToolChange('letter_upper')}
-          compact
         />
-        <ToolButton
-          icon={<Typography sx={{ fontSize: 12, fontWeight: 700, lineHeight: 1 }}>a</Typography>}
-          label="小写"
+        <ToolGridButton
+          icon={glyph('a', 13)} label="小写" toggle
           active={activeTool === 'letter_lower'}
           onClick={() => onToolChange('letter_lower')}
-          compact
         />
-        <ToolButton
-          icon={<Typography sx={{ fontSize: 14, lineHeight: 1 }}>△</Typography>}
-          label="图形"
-          active={activeTool === 'shape'}
-          onClick={(e) => { onToolChange('shape'); setShapeAnchor(e.currentTarget as HTMLElement); }}
-          compact
-        />
-        {(activeTool === 'letter_upper' || activeTool === 'letter_lower') && (
-          <TextField
-            size="small"
-            value={nextLetter}
-            onChange={(e) => onNextLetterChange(e.target.value)}
-            inputProps={{ style: { textAlign: 'center', padding: '4px 2px' } }}
-            sx={{ width: 36, ml: 0.5, '& .MuiOutlinedInput-root': { height: 32 } }}
-          />
-        )}
-        <ToolButton
-          icon={<Typography sx={{ fontSize: 14, lineHeight: 1 }}>✕</Typography>}
-          label="橡皮"
+        <ToolGridButton
+          icon={glyph('✕', 14)} label="橡皮" toggle
           active={activeTool === 'eraser'}
           onClick={() => onToolChange('eraser')}
-          compact
+        />
+        <ToolGridButton
+          icon={glyph('△', 14)} label="图形" toggle
+          active={activeTool === 'shape'}
+          onClick={(e) => { onToolChange('shape'); setShapeAnchor(e.currentTarget); }}
+        />
+        <ToolGridButton
+          icon={<UndoIcon />} label="撤销"
+          onClick={onUndo}
+          disabled={!canUndo}
+          tooltip={canUndo ? undefined : '还没有可撤销的改动'}
+        />
+        <ToolGridButton
+          icon={<DeleteSweepIcon />} label="一键清空"
+          onClick={onClearAll}
+          isDestructive
         />
       </Box>
+
+      {/* 两个跟着工具走的输入框：只在对应工具生效时出现，不留死输入 */}
+      {activeTool === 'stone' && numbering && (
+        <TextField
+          size="small"
+          type="number"
+          label="下一手编号"
+          value={nextMoveNumber}
+          onChange={e => {
+            const n = parseInt(e.target.value, 10);
+            if (!isNaN(n) && n > 0) onNextMoveNumberChange(n);
+          }}
+          sx={{ mt: 1.25, width: 132 }}
+          slotProps={{ htmlInput: { min: 1 } }}
+        />
+      )}
+      {(activeTool === 'letter_upper' || activeTool === 'letter_lower') && (
+        <TextField
+          size="small"
+          label="下一个字母"
+          value={nextLetter}
+          onChange={(e) => onNextLetterChange(e.target.value)}
+          sx={{ mt: 1.25, width: 132 }}
+        />
+      )}
 
       {/* Shape submenu */}
       <Menu anchorEl={shapeAnchor} open={Boolean(shapeAnchor)} onClose={() => setShapeAnchor(null)}>
@@ -228,24 +186,6 @@ export default function BoardEditToolbar({
         <MenuItem selected={selectedShape === 'circle'} onClick={() => { onShapeChange('circle'); setShapeAnchor(null); }}>○ 圆形</MenuItem>
         <MenuItem selected={selectedShape === 'cross'} onClick={() => { onShapeChange('cross'); setShapeAnchor(null); }}>✕ 叉形</MenuItem>
       </Menu>
-
-      <Box sx={{ flexGrow: 1 }} />
-
-      {/* Actions */}
-      <Tooltip title="撤销">
-        <span>
-          <IconButton size="small" onClick={onUndo} disabled={!canUndo}><UndoIcon /></IconButton>
-        </span>
-      </Tooltip>
-      <Tooltip title="一键清空">
-        <IconButton size="small" onClick={onClearAll} color="warning"><DeleteSweepIcon /></IconButton>
-      </Tooltip>
-      <Button size="small" variant="contained" startIcon={<SaveIcon />} onClick={onSave} aria-label="保存">
-        保存
-      </Button>
-      <Button size="small" variant="outlined" startIcon={<CloseIcon />} onClick={onCancel} aria-label="取消">
-        取消
-      </Button>
     </Box>
   );
 }

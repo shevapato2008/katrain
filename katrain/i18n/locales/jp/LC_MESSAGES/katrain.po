@@ -2304,7 +2304,7 @@ msgid "report:my_reports"
 msgstr "検討"
 
 msgid "report:page_hint"
-msgstr "右側の対局を選択してプレビュー。レポートの作成は対局カードから行います。"
+msgstr "対局を選ぶと棋盤をプレビューできます。レポートの作成は対局カードから行います。"
 
 msgid "report:select_game"
 msgstr "対局を選択"
@@ -3073,3 +3073,85 @@ msgstr "一時停止"
 
 msgid "audio:unavailable"
 msgstr "音声を利用できません"
+
+msgid "research:progress_failed"
+msgstr "解析の進捗を取得できません"
+
+msgid "tsumego:hint"
+msgstr "ヒント"
+
+msgid "tsumego:this_problem"
+msgstr "この問題"
+
+msgid "Back"
+msgstr "戻る"
+
+msgid "back_to"
+msgstr "{parent}に戻る"
+
+msgid "kifu:page_x_of_y"
+msgstr "{page} / {total} ページ"
+
+msgid "live:move_slider"
+msgstr "手数スライダー"
+
+msgid "game_room:title"
+msgstr "対局室"
+
+msgid "game_room:board_size"
+msgstr "{n}路"
+
+msgid "game_room:ended"
+msgstr "終了"
+
+msgid "game_room:lobby_short"
+msgstr "ロビー"
+
+msgid "game_room:leave_game"
+msgstr "対局を離れる"
+
+msgid "game_room:exit_spectating"
+msgstr "観戦をやめる"
+
+msgid "game:nav_first"
+msgstr "最初の手へ"
+
+msgid "game:nav_back_10"
+msgstr "10手戻る"
+
+msgid "game:nav_back"
+msgstr "1手戻る"
+
+msgid "game:nav_forward"
+msgstr "1手進む"
+
+msgid "game:nav_forward_10"
+msgstr "10手進む"
+
+msgid "game:nav_last"
+msgstr "最後の手へ"
+
+msgid "game:in_play"
+msgstr "対局中"
+
+msgid "report:summary_done"
+msgstr "完了"
+
+#. TODO
+msgid "play:game_records"
+msgstr "Game Records"
+
+msgid "tsumego:kyu_tier"
+msgstr "級位"
+
+msgid "tsumego:dan_tier"
+msgstr "段位"
+
+msgid "tsumego:stronger_downward"
+msgstr "下へ行くほど強い"
+
+msgid "tsumego:all_levels"
+msgstr "全難易度 · {count} 段階"
+
+msgid "tsumego:your_level"
+msgstr "あなたの棋力"

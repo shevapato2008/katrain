@@ -25,7 +25,31 @@ vi.mock('../components/game/RightSidebarPanel', () => ({
       <button disabled={Boolean(gameState.end_result)} onClick={() => onAction('pass')}>pass</button>
       <button onClick={() => onAction('resign')}>resign action</button>
       <button onClick={() => { mocks.railToggle(); onToggleChange('coords'); }}>toggle coords</button>
+      <button onClick={() => onToggleChange('view3d')}>toggle 3d</button>
+      <button onClick={() => onToggleChange('stoneDropEffect')}>toggle drop</button>
+      <button onClick={() => onToggleChange('hints')}>toggle hints</button>
     </div>
+  ),
+  /* 翻手那六个键搬到了动作区（`board-rail-actions`，不跟着滚），
+     所以这个桩件也要给出具名导出 —— 少了它页面直接渲染不出来。 */
+  RightSidebarActions: ({ onAction, isGameOver }: { onAction: (action: string) => void; isGameOver: boolean }) => (
+    <div data-testid="game-rail-actions" data-game-over={String(isGameOver)}>
+      <button onClick={() => onAction('back')}>nav back</button>
+    </div>
+  ),
+}));
+
+/* 3D 棋盘是动态 import 进来的；桩件把**它实际收到的**开关回读出来。
+   判据不能落在右栏那个开关自己身上 —— 它 checked 会变，下游收不收得到是另一回事
+   （这正是修之前的真实状态，真运行时顺着 React fiber 量到过）。 */
+vi.mock('../../components/Board3D', () => ({
+  default: ({ analysisToggles }: { analysisToggles: Record<string, boolean> }) => (
+    <div
+      data-testid="board3d"
+      data-drop={String(!!analysisToggles.stoneDropEffect)}
+      data-hints={String(!!analysisToggles.hints)}
+      data-ownership={String(!!analysisToggles.ownership)}
+    />
   ),
 }));
 
@@ -59,6 +83,25 @@ describe('Galaxy GamePage ranked settlement', () => {
     mocks.gameState = gameState;
   });
   afterEach(() => vi.useRealTimers());
+
+  /* 升降级模式下棋盘只接非分析的开关。这一条同时守两个方向：
+     纯外观的「落子特效」必须**能**到棋盘（修之前到不了 —— 空按钮），
+     而分析类的建议 / 领地必须**到不了**（那正是这个过滤器存在的理由）。 */
+  it('passes the cosmetic stone-drop toggle to the 3D board but never the analysis toggles', async () => {
+    mocks.gameState = { ...gameState, end_result: null };
+    render(<MemoryRouter initialEntries={['/galaxy/play/ai/game/s1?mode=rated']}><Routes><Route path="/galaxy/play/ai/game/:sessionId" element={<GamePage />} /></Routes></MemoryRouter>);
+
+    fireEvent.click(screen.getByRole('button', { name: 'toggle 3d' }));
+    const board3d = await screen.findByTestId('board3d');
+    expect(board3d).toHaveAttribute('data-drop', 'false');
+
+    fireEvent.click(screen.getByRole('button', { name: 'toggle drop' }));
+    await waitFor(() => expect(screen.getByTestId('board3d')).toHaveAttribute('data-drop', 'true'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'toggle hints' }));
+    expect(screen.getByTestId('board3d')).toHaveAttribute('data-hints', 'false');
+    expect(screen.getByTestId('board3d')).toHaveAttribute('data-ownership', 'false');
+  });
 
   it('renders the authoritative feedback and supports cookie-only status refresh', async () => {
     sessionStorage.setItem('ai-ladder-before:s1', JSON.stringify({ identity: 'fan', status: status(18) }));
@@ -178,3 +221,56 @@ describe('Galaxy GamePage ranked settlement', () => {
     expect(screen.getByRole('button', { name: 'board' })).not.toBeDisabled();
   });
 });
+
+/* ── 自由对弈那半 ────────────────────────────────────────────────
+ * 2026-08-23：`free` 分支从「顶栏（标题 + 退出键）+ 棋盘 / 右边 500px 面板」的老版式
+ * 迁到与 `rated` **同一个** `BoardPageShell`。版式结论（右栏三档宽、三段和、棋盘方不方）
+ * 由真浏览器量（`loadbearing_board_page.js`，六个棋盘页共用的那份探针，三档全过）；
+ * 这里只守渲染结构 —— 判据「把它原样搬进真浏览器，还有可能失败吗」：会。
+ *
+ * 变异实跑：
+ *   1. 模块牌标题写死成 `t('rated_play', …)`  → 「标题/返回」那条红
+ *   2. `railBody` 里去掉 `isRated &&` 这个条件 → 「不渲染结算面板」那条红
+ *   3. `controls(true)` 改回 `controls()`      → 「右栏是 embedded」那条红
+ */
+describe('Galaxy GamePage 自由对弈', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    mocks.getStatus.mockReset();
+    mocks.getGameStatus.mockReset();
+    mocks.gameState = { ...gameState, end_result: null, game_type: 'ai' };
+  });
+
+  const renderFree = () => render(
+    <MemoryRouter initialEntries={['/galaxy/play/game/s1']}>
+      <Routes><Route path="/galaxy/play/game/:sessionId" element={<GamePage />} /></Routes>
+    </MemoryRouter>,
+  );
+
+  it('走的是与升降级同一个棋盘页外壳，模块牌是「自由对弈」、返回「对局」', () => {
+    renderFree();
+    expect(screen.getByTestId('board-page-shell')).toBeInTheDocument();
+    const plate = screen.getByTestId('module-plate');
+    expect(plate.querySelector('h1')).toHaveTextContent('自由对弈');
+    /* 返回键去哪儿不能靠点（`useGameNavigation` 在这份桩件里没有 requestNavigation），
+       改判无障碍名 —— 它由 backLabel 拼出来，同样能区分升降级和自由。 */
+    expect(plate.querySelector('button[aria-label="返回对局"]')).not.toBeNull();
+  });
+
+  it('不渲染升降级的结算面板', () => {
+    mocks.gameState = { ...gameState, end_result: 'B+R', game_type: 'ai' };
+    renderFree();
+    expect(screen.queryByText(/晋级|降级|正在读取服务器结算结果/)).toBeNull();
+  });
+
+  it('右栏面板走 embedded，且顶栏那个「退出」键不再存在', () => {
+    renderFree();
+    // 迁移前 free 分支传的是非 embedded 的 `controls()`（自带 500px 宽和自己的滚动）。
+    expect(screen.getByTestId('game-controls')).toHaveAttribute('data-embedded', 'true');
+    // 「退出」搬进右栏成了「离开对局」，顶栏那份是重复，已删。
+    expect(screen.queryByRole('button', { name: '退出' })).toBeNull();
+    // 翻手六键在动作区，不跟着中段滚。
+    expect(screen.getByTestId('board-rail-actions')).toContainElement(screen.getByTestId('game-rail-actions'));
+  });
+});
+

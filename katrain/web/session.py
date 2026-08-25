@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 import uuid
@@ -53,10 +54,15 @@ class SessionManager:
         initial_game_type: str = "free",
         skip_initial_analysis: bool = False,
     ) -> WebSession:
+        evicted: List[WebSession] = []
         with self._lock:
             if len(self._sessions) >= self.max_sessions:
-                self._cleanup_locked()
+                # 摘出来的会话在锁外关（见 `_cleanup_locked`）。名额检查仍然成立 ——
+                # `_cleanup_locked` 已经把它们从 `_sessions` 里 pop 掉了，
+                # 关引擎快不快不影响这个计数。
+                evicted = self._cleanup_locked()
                 if len(self._sessions) >= self.max_sessions:
+                    self._shutdown_all(evicted)
                     raise RuntimeError("Session limit reached")
             session_id = uuid.uuid4().hex
             # Use provided UUID for KataGo requests if available, otherwise session_id
@@ -64,6 +70,8 @@ class SessionManager:
             katrain = WebKaTrain(force_package_config=False, enable_engine=self.enable_engine, user_id=engine_user_id)
             session = WebSession(session_id=session_id, katrain=katrain, user_id=user_id)
             self._sessions[session_id] = session
+
+        self._shutdown_all(evicted)
 
         session.katrain.update_state_callback = lambda state, sid=session_id: self._on_state(sid, state)
         session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(sid, msg_type, data)
@@ -171,16 +179,44 @@ class SessionManager:
             pass
 
     def cleanup_expired(self):
+        """回收过期会话。**同步方法，不要直接在事件循环上调用** —— 见 `_cleanup_locked`。"""
         with self._lock:
-            self._cleanup_locked()
+            evicted = self._cleanup_locked()
+        # 关引擎在**锁外**做。理由见 `_cleanup_locked` 的注释。
+        self._shutdown_all(evicted)
 
-    def _cleanup_locked(self):
+    @staticmethod
+    def _shutdown_all(sessions: List[WebSession]):
+        """逐个关停，一个失败不影响其余 —— 关停路径上再抛异常只会漏掉后面那些。"""
+        for session in sessions:
+            try:
+                session.katrain.shutdown()
+            except Exception:
+                logging.getLogger("katrain_web").warning(
+                    "shutting down session %s failed", session.session_id, exc_info=True
+                )
+
+    def _cleanup_locked(self) -> List[WebSession]:
+        """在锁内把过期会话**摘出去**并返回，**不在这里关引擎**。
+
+        2026-08-22 之前这里是就地 `session.katrain.shutdown()`，而那个 shutdown 会
+        `t.join()` 三个线程、当时还没有超时。合起来的后果是：清理线程持着 `_lock`
+        阻塞在 join 上，于是**每一个要取会话的请求都排在它后面**（`get_session`、
+        `create_session`、`remove_session` 全都要这把锁）。本机抓到过现行：
+        `sample` 采下来 25 个线程里 18 个的栈上都有 `lock_PyThread_acquire_lock`，
+        主线程（uvloop 事件循环）也在其中 —— 服务进程还在、端口还听着、
+        对所有请求不回话。那不是「慢」，是一条锁队列。
+
+        锁内只做字典操作（O(n) 纯内存），关引擎放到锁外 ——
+        `remove_session` 从一开始就是这么写的，这里只是补上同样的写法。
+        """
         now = time.time()
         expired = [sid for sid, s in self._sessions.items() if now - s.last_access > self.session_timeout]
+        evicted: List[WebSession] = []
         for sid in expired:
             session = self._sessions.pop(sid, None)
             if session:
-                session.katrain.shutdown()
+                evicted.append(session)
 
         # Clean up expired count requests (60 second timeout)
         for session in self._sessions.values():
@@ -190,6 +226,8 @@ class SessionManager:
                     session.pending_count_timestamp = None
                     # Broadcast timeout notification
                     self._schedule_broadcast(session, {"type": "count_timeout", "data": {}})
+
+        return evicted
 
     def _on_state(self, session_id: str, state: Dict):
         try:

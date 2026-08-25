@@ -8,6 +8,7 @@ import CardActionArea from '@mui/material/CardActionArea';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
+import ContentPageHeader from '../../components/layout/ContentPageHeader';
 import { TutorialAPI } from '../../api/tutorialApi';
 import type { TutorialBook } from '../../../types/tutorial';
 
@@ -35,8 +36,9 @@ export default function TutorialBooksPage() {
 
   return (
     <Box p={3}>
-      <Button size="small" onClick={() => navigate('/galaxy/tutorials')} sx={{ mb: 1 }}>← 返回</Button>
-      <Typography variant="h5" gutterBottom>{category}</Typography>
+      {/* 原来是标题上方一个「← 返回」文字键（半个箭头 + 硬编码中文，英文界面下也读中文）。
+          spec §2.4：返回键是左上角的箭头图标键，与标题同行；简称只进无障碍名。 */}
+      <ContentPageHeader title={category ?? ''} parentLabel="教程" parentTo="/galaxy/tutorials" />
       {books.length === 0 ? (
         <Typography color="text.secondary">该分类暂无书籍</Typography>
       ) : (

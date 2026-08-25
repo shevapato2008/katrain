@@ -2178,8 +2178,8 @@ msgstr "Revisión"
 
 msgid "report:page_hint"
 msgstr ""
-"Selecciona una partida a la derecha para previsualizar. Los informes se "
-"crean desde la tarjeta."
+"Selecciona una partida para previsualizarla. Los informes se crean desde la "
+"tarjeta de la partida."
 
 msgid "report:select_game"
 msgstr "Seleccionar partida"
@@ -2972,3 +2972,81 @@ msgstr "Pausar"
 
 msgid "audio:unavailable"
 msgstr "Audio no disponible"
+
+msgid "research:progress_failed"
+msgstr "No se pudo obtener el progreso del análisis"
+
+msgid "tsumego:hint"
+msgstr "Pista"
+
+msgid "tsumego:this_problem"
+msgstr "Este problema"
+
+msgid "Back"
+msgstr "Atrás"
+
+msgid "back_to"
+msgstr "Volver a {parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "Página {page} / {total}"
+
+msgid "live:move_slider"
+msgstr "Control de jugadas"
+
+msgid "game_room:title"
+msgstr "Sala de partida"
+
+msgid "game_room:board_size"
+msgstr "{n}×{n}"
+
+msgid "game_room:ended"
+msgstr "Terminada"
+
+msgid "game_room:lobby_short"
+msgstr "Sala"
+
+msgid "game_room:leave_game"
+msgstr "Salir de la partida"
+
+msgid "game_room:exit_spectating"
+msgstr "Dejar de observar"
+
+msgid "game:nav_first"
+msgstr "Primera jugada"
+
+msgid "game:nav_back_10"
+msgstr "Retroceder 10 jugadas"
+
+msgid "game:nav_back"
+msgstr "Retroceder una jugada"
+
+msgid "game:nav_forward"
+msgstr "Avanzar una jugada"
+
+msgid "game:nav_forward_10"
+msgstr "Avanzar 10 jugadas"
+
+msgid "game:nav_last"
+msgstr "Última jugada"
+
+msgid "game:in_play"
+msgstr "En juego"
+
+msgid "report:summary_done"
+msgstr "completado"
+
+msgid "tsumego:kyu_tier"
+msgstr "Kyu"
+
+msgid "tsumego:dan_tier"
+msgstr "Dan"
+
+msgid "tsumego:stronger_downward"
+msgstr "más difícil hacia abajo"
+
+msgid "tsumego:all_levels"
+msgstr "Todos los niveles · {count}"
+
+msgid "tsumego:your_level"
+msgstr "tu nivel"

@@ -150,13 +150,22 @@ def expected_opponent_rung(rung: Optional[int], placement_lo: int, placement_hi:
     same answer; they used to inline the formula separately, and when two copies drift a
     legitimately seated game settles as `opponent_rung_mismatch`.
 
-    NOT snapped onto a rung that has a recipe -- deliberately, for now. The raw midpoint
-    lands on one of the ten recipe-less rungs in 12 of the 160 placement games reachable
-    from the default 1..32 window, and those games cannot be seated at all. Snapping here
-    changes the seating contract that `build_opponent_snapshot` and the mismatch check
-    agree on, so it is an open question rather than a quiet fix. See
-    superpowers/tracks/golaxy-ai-ladder-parity/2026-08-04-41-tier-rated-play-integration-design.md
-    §6, which asks for the whole search to run over available rungs.
+    SNAPPED onto a playable rung since 2026-08-20, when 12 of the 41 rungs were retired
+    (see `ladder._RETIRED_RUNGS`). The raw midpoint of a placement window can name a
+    retired rung, and such a game cannot be seated at all -- so the midpoint is snapped
+    here, in the ONE definition every caller shares. That sharing is the whole point: the
+    status endpoint, the two settlement mismatch checks and this function must agree, or a
+    legitimately seated game settles as `opponent_rung_mismatch` and the player silently
+    stops earning rank. `test_the_status_endpoint_uses_the_same_opponent_rule_as_settlement`
+    and `test_settlement_uses_the_shared_opponent_rule_not_an_inlined_midpoint` are the gates.
+
+    The binary search itself still walks RAW rung numbers (`_apply_result`) -- deliberately.
+    Snapping the search cursor as well would let `placement_lo` step past `placement_hi`
+    when a narrow window contains no playable rung, and the window is already narrowed to
+    width 1-2 by the fifth game. The cost of leaving it raw is that the search believes it
+    tested `mid` when it tested `nearest_playable_rung(mid)`; the largest gap between
+    consecutive playable rungs is 3, so that is bounded by 2 rungs, against a placement
+    that resolves 32 rungs in 5 games. The landing is snapped too (`_apply_result`).
     """
     # ⚠️ **这是个纯函数,而「免费释放占位」那一格把这件事当前提用。** 三个入参全在
     # `AiLadderProfile` 上,而 `/status` 在任何预约之前就把档案连同 `current_opponent`
@@ -165,7 +174,11 @@ def expected_opponent_rung(rung: Optional[int], placement_lo: int, placement_hi:
     # `test_reserving_reveals_nothing_that_status_did_not_already_hand_over`)。
     # 哪天档位改成随机 / 带时间 / 按对手池实时可用性挑,预约就变成一条信息通道,
     # 那一格的「免费」必须重新论证。
-    return rung if rung is not None else (placement_lo + placement_hi) // 2
+    if rung is not None:
+        return rung
+    from katrain.core import ladder
+
+    return ladder.nearest_playable_rung((placement_lo + placement_hi) // 2)
 
 
 def _legacy_rank_to_rung(legacy_rank: Optional[str]) -> Optional[int]:
@@ -1279,8 +1292,8 @@ class AiLadderRankedRepository:
             )
             if profile is None:
                 lo, hi = initial_placement_window(user.rank)
-                expected_opponent_rung = (lo + hi) // 2
-                if opponent.rung != expected_opponent_rung:
+                expected = expected_opponent_rung(None, lo, hi)
+                if opponent.rung != expected:
                     ignored_reason = "opponent_rung_mismatch"
                 else:
                     profile = models_db.AiLadderProfile(
@@ -1294,12 +1307,8 @@ class AiLadderRankedRepository:
                     )
                     session.add(profile)
             else:
-                expected_opponent_rung = (
-                    profile.ai_ladder_rung
-                    if profile.ai_ladder_rung is not None
-                    else (profile.placement_lo + profile.placement_hi) // 2
-                )
-                if opponent.rung != expected_opponent_rung:
+                expected = expected_opponent_rung(profile.ai_ladder_rung, profile.placement_lo, profile.placement_hi)
+                if opponent.rung != expected:
                     ignored_reason = "opponent_rung_mismatch"
         return ignored_reason, profile
 
@@ -1532,17 +1541,22 @@ class AiLadderRankedRepository:
 
     @staticmethod
     def _apply_result(profile: models_db.AiLadderProfile, result: str) -> None:
-        # Ten of the 41 rungs (准1段–准9段, 职业顶尖) have no fitted recipe. Every write to
-        # `ai_ladder_rung` therefore goes through the ladder's playable-rung stepper: raw
-        # +1 from 5段(30) lands on 准6段(31), a rung no opponent can ever be built for.
+        # 12 of the 41 rungs are retired (`ladder._RETIRED_RUNGS`) and cannot be seated.
+        # Every write to `ai_ladder_rung` therefore goes through the ladder's playable-rung
+        # stepper: raw +1 from 5段(30) lands on 准6段(31), a rung no opponent is built for.
         from katrain.core import ladder
 
         if profile.ai_ladder_rung is None:
-            mid = (profile.placement_lo + profile.placement_hi) // 2
+            # The binary-search CURSOR, not the opponent that was played. Those two are the
+            # same number only when the midpoint happens to be playable; the opponent comes
+            # from `expected_opponent_rung`, which snaps. Keeping the cursor raw is what
+            # guarantees `placement_lo <= placement_hi` survives a window too narrow to
+            # contain any playable rung -- see that function's docstring.
+            pivot = (profile.placement_lo + profile.placement_hi) // 2
             if result == "win":
-                profile.placement_lo = mid + 1
+                profile.placement_lo = pivot + 1
             else:
-                profile.placement_hi = mid
+                profile.placement_hi = pivot
             profile.placement_completed += 1
             if profile.placement_completed == PLACEMENT_GAMES:
                 # The window is still searched over raw rungs, so the landing can fall on a

@@ -53,15 +53,32 @@ def test_catalog_fixed_recipes_are_exact_and_unresolved_levels_only_expose_candi
             1,
             HUMAN_WEIGHTED,
         )
-    for level_number, rank in zip((22, 24, 26, 28, 30, 32), range(1, 7)):
+    for level_number, rank in zip((22, 24, 26, 28, 30), range(1, 6)):
         recipe = levels[level_number - 1].recipe
         assert (recipe.human_sl_profile, recipe.max_visits, recipe.selection) == (
             f"rank_{rank}d",
             1,
             HUMAN_WEIGHTED,
         )
+    # 2026-08-20 rebuild (EXPERIMENTS.md C37 + v5/v6, n=100 per seam). The archive axis dies
+    # above rank_7d: rank_6d@1 is saturated against 5段 (0.528, n=180) and rank_8d is not
+    # stronger than rank_7d in EITHER mechanism (@1 0.525 n=120, @1s 0.477 n=220). So 6段
+    # jumps the archive to rank_7d, and 8段 jumps to rank_9d rather than stepping on rank_8d.
+    assert (levels[31].recipe.human_sl_profile, levels[31].recipe.selection) == ("rank_7d", HUMAN_WEIGHTED)
     assert (levels[33].recipe.human_sl_profile, levels[33].recipe.selection) == ("rank_7d", HUMAN_ARGMAX)
-    assert (levels[35].recipe.human_sl_profile, levels[35].recipe.selection) == ("rank_8d", HUMAN_ARGMAX)
+    assert (levels[35].recipe.human_sl_profile, levels[35].recipe.selection) == ("rank_9d", HUMAN_ARGMAX)
+    # 准8段/准9段 are no longer temperature rungs: T>1 made them PITS (0.200 against the
+    # rung below). They continue the mechanism axis `@1s -> @2` instead.
+    for level_number, profile in ((35, "rank_7d"), (37, "rank_9d")):
+        r = levels[level_number - 1].recipe
+        assert (r.net, r.mechanism, r.human_sl_profile, r.max_visits, r.selection) == (
+            "b18",
+            "humansl_search",
+            profile,
+            2,
+            SEARCH,
+        )
+        assert dict(r.human_sl_params) == dict(HUMANSL_PIKL_BASELINE)
     nine_d = levels[37].recipe
     assert (
         nine_d.net,
@@ -85,8 +102,11 @@ def test_catalog_fixed_recipes_are_exact_and_unresolved_levels_only_expose_candi
     # The ten formerly recipe-less rungs now ship the FIRST label of their own candidate
     # list. Asserting that correspondence -- rather than the literal values a second time --
     # is what stops the shipped recipe and the declared primary candidate from drifting apart.
-    temperatures = ("t1.15", "t1.3", "t1.6", "t2", "t2.5", "t3")
-    for level_number, rank in zip((21, 23, 25, 27, 29, 31, 33, 35), range(1, 9)):
+    # T>1 was measured the WRONG WAY round (C37.2: 准n段 vs (n-1)段 = 0.346-0.515 -- the
+    # 准 rung came out WEAKER than the rung below it). T<1 sharpens; C37.4 measured
+    # `@1t0.8` at 0.787 over `@1` (n=127), the only new configuration to clear the gate.
+    temperatures = ("t0.8", "t0.6", "t1.15", "t1.3", "t1.6", "t2")
+    for level_number, rank in zip((21, 23, 25, 27, 29, 31, 33), range(1, 8)):
         level = levels[level_number - 1]
         assert level.candidate_labels == temperatures
         recipe = level.recipe
@@ -98,19 +118,48 @@ def test_catalog_fixed_recipes_are_exact_and_unresolved_levels_only_expose_candi
             1,
             HUMAN_TEMPERATURE,
         )
-        assert recipe.human_policy_temperature == float(temperatures[0].lstrip("t"))
+        # 退役的六档钉死在退役当时的 1.15；仍在产品里的准7段跟候选表首项走。这两个值必须分开
+        # 断言：2026-08-20 把首项从 t1.15 改成 t0.8 时它们是同一个表达式，六档跟着变成锐化，
+        # 于是每一档都强过正上方的 n段 —— 六处倒挂，而且因为封档没接进 PLAYABLE_RUNGS 是活的。
+        if level_number in ladder._RETIRED_RUNGS:
+            assert recipe.human_policy_temperature == ladder._RETIRED_QUASI_DAN_TEMPERATURE == 1.15
+        else:
+            assert recipe.human_policy_temperature == float(temperatures[0].lstrip("t"))
         # 准n段 must differ from n段 in a way the engine/selection actually acts on, or it is
-        # a label with no opponent behind it. Same profile, one notch flatter.
-        assert levels[level_number].recipe.human_sl_profile == recipe.human_sl_profile
+        # a label with no opponent behind it. Same profile, one notch LESS sharp than n段:
+        # T=0.8 sits between weighted sampling (@1) and argmax (@1s), which is what the
+        # 准7段->7段 seam measures at 0.760 (n=100).
+        #
+        # The profile-pairing half holds only for 准 rungs still in the product. 准1段-准6段
+        # were retired by Fan on 2026-08-13 and are frozen at the configuration they had;
+        # 6段 has since jumped its archive to rank_7d (rank_6d@1 was saturated), so 准6段 and
+        # 6段 no longer share a profile. Asserting it anyway would be asserting a pairing the
+        # product no longer offers.
         assert levels[level_number].recipe.selection != recipe.selection
+        if level_number not in ladder._RETIRED_RUNGS:
+            assert levels[level_number].recipe.human_sl_profile == recipe.human_sl_profile
+        else:
+            # 同档案时方向必须成立：准n段 的温度 > 1 才是"比 n段 钝"。这一条是上面那次倒挂
+            # 唯一能红的地方 —— 变异验证：把 _RETIRED_QUASI_DAN_TEMPERATURE 改回 0.8 即红。
+            upper = levels[level_number].recipe
+            if upper.human_sl_profile == recipe.human_sl_profile:
+                assert upper.selection == HUMAN_WEIGHTED
+                assert recipe.human_policy_temperature > 1.0
+
+    # 两条封档裁定都记在这个常量里，并且**已经**接进 PLAYABLE_RUNGS（2026-08-20 与定级
+    # 中点 snap 一起落地）。段位那 6 个是 2026-08-13 的准1-准6段；级位那 6 个是 2026-08-20
+    # 闸改 0.550 后实测链排除掉的档案。
+    assert ladder._RETIRED_RUNGS == frozenset({2, 3, 5, 6, 8, 16, 21, 23, 25, 27, 29, 31})
+    assert all(levels[r - 1].recipe is not None for r in ladder._RETIRED_RUNGS)
+    assert not (set(ladder.PLAYABLE_RUNGS) & ladder._RETIRED_RUNGS)
 
     quasi_nine = levels[36]
-    assert quasi_nine.candidate_labels == ("rank_9d@1", "rank_9d@1s", "rank_9d@2", "rank_9d@3")
+    assert quasi_nine.candidate_labels == ("rank_9d@2", "rank_9d@1s", "rank_9d@3", "rank_9d@1")
     assert (
         quasi_nine.recipe.human_sl_profile,
         quasi_nine.recipe.max_visits,
         quasi_nine.recipe.selection,
-    ) == ("rank_9d", 1, HUMAN_WEIGHTED)
+    ) == ("rank_9d", 2, SEARCH)
 
     pro_top = levels[39]
     assert pro_top.candidate_labels == ("b18@12", "b18@10", "b18@14", "b18@8", "b18@16")
@@ -119,22 +168,23 @@ def test_catalog_fixed_recipes_are_exact_and_unresolved_levels_only_expose_candi
     assert levels[38].recipe.max_visits < pro_top.recipe.max_visits < levels[40].recipe.max_visits
 
 
-def test_catalog_metadata_is_frozen_validated_and_initially_unavailable():
-    assert all(
-        (level.certification_status, level.availability, level.route) == ("provisional", "unavailable", "server")
-        for level in ladder.LADDER_LEVELS
-    )
+def test_catalog_metadata_is_frozen_validated_and_certified_exactly_where_measured():
+    for level in ladder.LADDER_LEVELS:
+        expected = (
+            ("certified", "available") if level.rung in ladder._CERTIFIED_RUNGS else ("provisional", "unavailable")
+        )
+        assert (level.certification_status, level.availability, level.route) == (*expected, "server"), level.rung
     assert [level.external_status for level in ladder.LADDER_LEVELS[:2]] == ["not_applicable", "not_applicable"]
     assert all(level.external_status == "untested" for level in ladder.LADDER_LEVELS[2:])
     with pytest.raises(FrozenInstanceError):
         ladder.LADDER_LEVELS[0].availability = "available"
     assert asdict(ladder.LADDER_LEVELS[20])["candidate_labels"] == (
+        "t0.8",
+        "t0.6",
         "t1.15",
         "t1.3",
         "t1.6",
         "t2",
-        "t2.5",
-        "t3",
     )
     certified = replace(ladder.LADDER_LEVELS[0], certification_status="certified", availability="available")
     assert (certified.certification_status, certified.availability) == ("certified", "available")
@@ -159,11 +209,16 @@ def test_catalog_resolvers_separate_calibration_from_production_availability():
     # is what would catch a future rung added without a recipe.
     for level_number in range(1, 42):
         assert ladder.get_recipe_for_calibration(level_number) is ladder.LADDER_LEVELS[level_number - 1].recipe
-    # Resolving for PLAY is a separate gate and still refuses everything: having a recipe is
-    # not having a certified one. This is the distinction the test name is about.
-    for level_number in (1, 21, 41):
+    # Resolving for PLAY is a separate gate: having a recipe is not having a certified one.
+    # That distinction is the point of this test, and it is still live -- the 12 retired rungs
+    # keep their recipes (so calibration above resolves them) yet refuse to be seated.
+    for level_number in sorted(ladder._RETIRED_RUNGS):
+        assert ladder.get_level(level_number).recipe is not None
         with pytest.raises(ladder.LadderUnavailable):
             ladder.resolve_available_rung(level_number)
+    # …while the 29 certified rungs resolve, which is what 2026-08-20「开始吧」 turned on.
+    for level_number in sorted(ladder._CERTIFIED_RUNGS):
+        assert ladder.resolve_available_rung(level_number) is ladder.LADDER_LEVELS[level_number - 1].recipe
 
 
 def test_resolved_product_recipes_have_no_duplicate_effective_configs():
@@ -1184,39 +1239,134 @@ def test_every_catalog_recipe_builds_a_valid_engine_strength_spec():
         assert spec.main_model or spec.human_model, level.rung
 
 
-def test_every_rung_in_the_catalog_is_playable():
-    """All 41 rungs carry a fitted recipe -- the ladder has no holes left.
+def test_certified_is_exactly_the_playable_set_and_never_a_retired_rung():
+    """认证 = 可坐，一个不多一个不少（2026-08-20 Fan「开始吧」之后）。
 
-    The ten 准段/职业顶尖 rungs used to be names with nothing behind them. They now ship
-    the primary candidate their own candidate list declared, so PLAYABLE_RUNGS is the whole
-    catalog. The invariant that defines PLAYABLE_RUNGS is asserted first, so this stays
-    honest if a recipe is ever removed again.
+    两个方向都要钉：
+    * 认证 ⊄ 可坐 ⇒ 对一个没人能坐上去的档位做了强度主张；
+    * 可坐 ⊄ 认证 ⇒ 玩家会被 `step_playable_rung` 挪到一个未认证档上，
+      到了那里所有对局都 `counted=0`，他会静默地卡住不再升降。
+    第二条正是「认证集必须连续」那个老顾虑的实质 —— 两集合相等时它自动成立。
     """
-    assert set(ladder.PLAYABLE_RUNGS) == {level.rung for level in ladder.LADDER_LEVELS if level.recipe is not None}
-    assert set(ladder.PLAYABLE_RUNGS) == set(range(1, 42))
-    assert len(ladder.PLAYABLE_RUNGS) == 41
+    assert set(ladder._CERTIFIED_RUNGS) == set(ladder.PLAYABLE_RUNGS)
+    assert not (set(ladder._CERTIFIED_RUNGS) & ladder._RETIRED_RUNGS)
+    assert len(ladder._CERTIFIED_RUNGS) == 29
+    # 显式成员，防止哪天被改写成 `全集 - 封档` 那种会自己长大的推导式。
+    assert set(ladder._CERTIFIED_RUNGS) == {1, 4, 7, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20} | {
+        22,
+        24,
+        26,
+        28,
+        30,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+    }
+    # 每一个认证档都必须真的能造出对手来。
+    for rung in ladder._CERTIFIED_RUNGS:
+        assert ladder.get_level(rung).recipe is not None
 
 
-def test_promotion_from_5dan_now_lands_on_the_quasi_rung_between_them():
-    """Filling the holes changed promotion granularity, and that is the point of 41 tiers.
+def test_every_step_between_certified_rungs_stays_certified():
+    """从任一认证档 ±1 步，落点仍是认证档 —— 否则玩家会掉进一个「打了不算」的档位。"""
+    for rung in ladder.PLAYABLE_RUNGS:
+        for step in (-1, 1):
+            landed = ladder.step_playable_rung(rung, step)
+            assert landed in ladder._CERTIFIED_RUNGS, (rung, step, landed)
 
-    Before the 准 rungs had recipes, a win at 5段 skipped straight to 6段 because 准6段 was
-    a rung no opponent could be built for. A player now climbs through it.
+
+def test_playable_rungs_are_the_catalog_minus_the_retired_ones():
+    """PLAYABLE_RUNGS = has a recipe AND is not retired. 41 - 12 = 29.
+
+    Every rung still carries a fitted recipe (that is what keeps a stored rung number in the
+    immutable ledger interpretable after retirement); what retirement removes is only the
+    right to seat a player. Both halves of the definition are asserted, so this stays honest
+    whether a recipe is removed or a rung is retired.
     """
-    assert ladder.get_level(30).rank_name == "5段"
+    with_recipe = {level.rung for level in ladder.LADDER_LEVELS if level.recipe is not None}
+    assert with_recipe == set(range(1, 42)), "recipes are still complete; retirement is not recipe removal"
+    assert set(ladder.PLAYABLE_RUNGS) == with_recipe - ladder._RETIRED_RUNGS
+    assert len(ladder.PLAYABLE_RUNGS) == 29
+    # 级位段 14 档（2026-08-20 闸 0.550 的实测链），段位段 15 档（2026-08-13 取消准1-准6段）。
+    assert [ladder.get_level(r).rank_name for r in ladder.PLAYABLE_RUNGS if r <= 20] == [
+        "20级",
+        "17级",
+        "14级",
+        "12级",
+        "11级",
+        "10级",
+        "9级",
+        "8级",
+        "7级",
+        "6级",
+        "4级",
+        "3级",
+        "2级",
+        "1级",
+    ]
+    assert [ladder.get_level(r).rank_name for r in ladder.PLAYABLE_RUNGS if r > 20] == [
+        "1段",
+        "2段",
+        "3段",
+        "4段",
+        "5段",
+        "6段",
+        "准7段",
+        "7段",
+        "准8段",
+        "8段",
+        "准9段",
+        "9段",
+        "职业水平",
+        "职业顶尖",
+        "超越人类",
+    ]
+
+
+def test_promotion_from_5dan_skips_the_retired_quasi_rung():
+    """准6段(31) keeps its recipe but is retired, so a win at 5段 climbs straight to 6段.
+
+    This is the granularity the 2026-08-13 ruling bought back: the 准 rung between them
+    measured WEAKER than 5段 (C37.2, 34.6%-51.5%), so climbing through it was a step down.
+    """
     assert ladder.get_level(31).rank_name == "准6段"
-    assert ladder.get_level(31).recipe is not None
-    assert ladder.step_playable_rung(30, 1) == 31
-    assert ladder.step_playable_rung(31, 1) == 32
+    assert ladder.get_level(31).recipe is not None, "retired is not recipe-less"
+    assert 31 in ladder._RETIRED_RUNGS
+    assert ladder.step_playable_rung(30, 1) == 32
     assert ladder.get_level(32).rank_name == "6段"
 
 
-def test_demotion_also_lands_on_the_quasi_rung():
+def test_demotion_also_skips_the_retired_quasi_rung():
     assert ladder.get_level(29).rank_name == "准5段"
-    assert ladder.get_level(29).recipe is not None
-    assert ladder.step_playable_rung(30, -1) == 29
-    assert ladder.step_playable_rung(29, -1) == 28
+    assert 29 in ladder._RETIRED_RUNGS
+    assert ladder.step_playable_rung(30, -1) == 28
     assert ladder.get_level(28).rank_name == "4段"
+
+
+def test_the_kyu_band_steps_over_its_six_retired_archives():
+    """级位段每一步都跳过被实测挡死的档案：19级 18级 16级 15级 13级 5级。
+    C38.4 逐条边审计过：这六个各自都有一条自己的实测边挡着，不是漏测。
+    """
+    assert {ladder.get_level(r).rank_name for r in ladder._RETIRED_RUNGS if r <= 20} == {
+        "19级",
+        "18级",
+        "16级",
+        "15级",
+        "13级",
+        "5级",
+    }
+    assert ladder.step_playable_rung(1, 1) == 4  # 20级 -> 17级，跳过 19级 18级
+    assert ladder.step_playable_rung(4, 1) == 7  # 17级 -> 14级，跳过 16级 15级
+    assert ladder.step_playable_rung(7, 1) == 9  # 14级 -> 12级，跳过 13级
+    assert ladder.step_playable_rung(15, 1) == 17  # 6级  -> 4级， 跳过 5级
+    assert ladder.step_playable_rung(20, 1) == 22  # 1级  -> 1段，跳过封档的准1段
 
 
 def test_stepping_never_lands_on_a_recipeless_rung_from_anywhere():
@@ -1234,16 +1384,19 @@ def test_stepping_saturates_at_both_ends_instead_of_raising():
     assert ladder.step_playable_rung(highest, 99) == highest
 
 
-def test_nearest_playable_rung_is_now_the_identity_on_the_whole_catalog():
-    """With no holes left there is nothing to snap to, so every rung maps to itself.
-
-    The snapping logic is kept rather than deleted: it is what stops a stored rung from a
-    older database, or a placement search landing, from parking a player somewhere no
-    opponent can be built for. It is simply a no-op while the catalog is complete.
-    """
+def test_nearest_playable_rung_snaps_the_retired_rungs_and_is_the_identity_elsewhere():
+    """Snapping is what stops a retired rung -- from an old row, or a placement midpoint --
+    from parking a player where no opponent will be built. It must be a no-op everywhere
+    else, or a stored rung would silently drift."""
     for rung in range(1, 42):
-        assert ladder.nearest_playable_rung(rung) == rung
-        assert ladder.get_level(ladder.nearest_playable_rung(rung)).recipe is not None
+        snapped = ladder.nearest_playable_rung(rung)
+        assert snapped in ladder.PLAYABLE_RUNGS
+        assert ladder.get_level(snapped).recipe is not None
+        if rung in ladder._RETIRED_RUNGS:
+            assert snapped != rung
+            assert abs(snapped - rung) <= 2
+        else:
+            assert snapped == rung
 
 
 @pytest.mark.parametrize("bad", [0, 42, -1, "30", 30.0, None])

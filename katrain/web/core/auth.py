@@ -95,12 +95,33 @@ class SQLAlchemyUserRepository(UserRepository):
     def __init__(self, session_factory):
         self.session_factory = session_factory
 
+    def _bind(self):
+        """建表/迁移要用的 engine —— 取自本对象自己的 `session_factory`。
+
+        原来这里是 `from katrain.web.core.db import engine`，抓的是模块级全局 engine，
+        于是**调用方注入了自己的 session_factory 也没用**：建表、迁移、账本触发器
+        统统落到全局那个库上。2026-08-23 实测，测试就是这样把 34 张表建进开发机
+        真实 dev 库的（`tests/conftest.py` 里记了完整链路）。
+
+        生产没有变化：`_lifespan_server` 不注入时传进来的就是全局 `SessionLocal`，
+        它的 bind 正是原来那个全局 engine。
+        """
+        bind = getattr(self.session_factory, "kw", {}).get("bind")
+        if bind is not None:
+            return bind
+        session = self.session_factory()
+        try:
+            return session.get_bind()
+        finally:
+            session.close()
+
     def init_db(self):
         # With SQLAlchemy, we typically use Alembic for migrations.
         # But for simplicity/dev, we can use Base.metadata.create_all
-        from katrain.web.core.db import engine
         from sqlalchemy import inspect, text
         from katrain.web.core import ledger_immutability, migrations
+
+        engine = self._bind()
 
         models_db.Base.metadata.create_all(bind=engine)
 
@@ -121,6 +142,9 @@ class SQLAlchemyUserRepository(UserRepository):
         migrations.add_missing_columns(engine)
         migrations.backfill_ai_ladder_decisions(engine)
         migrations.create_missing_indexes(engine)
+        # PostgreSQL-only: the kifu list's DESC NULLS LAST ordering cannot be
+        # declared in __table_args__ without breaking SQLite. See the docstring.
+        migrations.create_kifu_album_sort_index(engine)
 
         # Schema drift guard (SQLite only): if ORM model columns STILL don't match
         # (e.g. a column type change that ADD COLUMN can't fix), drop and recreate

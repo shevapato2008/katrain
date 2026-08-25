@@ -2311,8 +2311,7 @@ msgid "report:my_reports"
 msgstr "Review"
 
 msgid "report:page_hint"
-msgstr ""
-"Select a game on the right to preview. Create reports from the game card."
+msgstr "Select a game to preview it. Reports are created from the game card."
 
 msgid "report:select_game"
 msgstr "Select a game"
@@ -3102,3 +3101,81 @@ msgstr "Pause"
 
 msgid "audio:unavailable"
 msgstr "Audio unavailable"
+
+msgid "research:progress_failed"
+msgstr "Couldn't load analysis progress"
+
+msgid "tsumego:hint"
+msgstr "Hint"
+
+msgid "tsumego:this_problem"
+msgstr "This problem"
+
+msgid "Back"
+msgstr "Back"
+
+msgid "back_to"
+msgstr "Back to {parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "Page {page} / {total}"
+
+msgid "live:move_slider"
+msgstr "Move slider"
+
+msgid "game_room:title"
+msgstr "Game Room"
+
+msgid "game_room:board_size"
+msgstr "{n}×{n}"
+
+msgid "game_room:ended"
+msgstr "Ended"
+
+msgid "game_room:lobby_short"
+msgstr "Lobby"
+
+msgid "game_room:leave_game"
+msgstr "Leave Game"
+
+msgid "game_room:exit_spectating"
+msgstr "Stop Watching"
+
+msgid "game:nav_first"
+msgstr "First move"
+
+msgid "game:nav_back_10"
+msgstr "Back 10 moves"
+
+msgid "game:nav_back"
+msgstr "Back one move"
+
+msgid "game:nav_forward"
+msgstr "Forward one move"
+
+msgid "game:nav_forward_10"
+msgstr "Forward 10 moves"
+
+msgid "game:nav_last"
+msgstr "Last move"
+
+msgid "game:in_play"
+msgstr "In play"
+
+msgid "report:summary_done"
+msgstr "done"
+
+msgid "tsumego:kyu_tier"
+msgstr "Kyu"
+
+msgid "tsumego:dan_tier"
+msgstr "Dan"
+
+msgid "tsumego:stronger_downward"
+msgstr "harder as you go down"
+
+msgid "tsumego:all_levels"
+msgstr "All levels · {count}"
+
+msgid "tsumego:your_level"
+msgstr "your level"

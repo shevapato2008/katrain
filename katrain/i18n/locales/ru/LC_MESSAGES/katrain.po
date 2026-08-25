@@ -2273,8 +2273,7 @@ msgstr "Разбор"
 
 msgid "report:page_hint"
 msgstr ""
-"Выберите партию справа для просмотра. Отчёты создаются через карточку "
-"партии."
+"Выберите партию для предпросмотра. Отчёты создаются на карточке партии."
 
 msgid "report:select_game"
 msgstr "Выбрать партию"
@@ -3061,3 +3060,85 @@ msgstr "Пауза"
 
 msgid "audio:unavailable"
 msgstr "Аудио недоступно"
+
+msgid "research:progress_failed"
+msgstr "Не удалось получить прогресс анализа"
+
+msgid "tsumego:hint"
+msgstr "Подсказка"
+
+msgid "tsumego:this_problem"
+msgstr "Эта задача"
+
+msgid "Back"
+msgstr "Назад"
+
+msgid "back_to"
+msgstr "Назад к {parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "Стр. {page} / {total}"
+
+msgid "live:move_slider"
+msgstr "Ползунок ходов"
+
+msgid "game_room:title"
+msgstr "Игровая комната"
+
+msgid "game_room:board_size"
+msgstr "{n}×{n}"
+
+msgid "game_room:ended"
+msgstr "Завершена"
+
+msgid "game_room:lobby_short"
+msgstr "Лобби"
+
+msgid "game_room:leave_game"
+msgstr "Покинуть партию"
+
+msgid "game_room:exit_spectating"
+msgstr "Прекратить наблюдение"
+
+msgid "game:nav_first"
+msgstr "В начало"
+
+msgid "game:nav_back_10"
+msgstr "Назад на 10 ходов"
+
+msgid "game:nav_back"
+msgstr "Назад на один ход"
+
+msgid "game:nav_forward"
+msgstr "Вперёд на один ход"
+
+msgid "game:nav_forward_10"
+msgstr "Вперёд на 10 ходов"
+
+msgid "game:nav_last"
+msgstr "В конец"
+
+msgid "game:in_play"
+msgstr "Идёт партия"
+
+msgid "report:summary_done"
+msgstr "готово"
+
+#. TODO
+msgid "play:game_records"
+msgstr "Game Records"
+
+msgid "tsumego:kyu_tier"
+msgstr "Кю"
+
+msgid "tsumego:dan_tier"
+msgstr "Дан"
+
+msgid "tsumego:stronger_downward"
+msgstr "ниже — сильнее"
+
+msgid "tsumego:all_levels"
+msgstr "Все уровни · {count}"
+
+msgid "tsumego:your_level"
+msgstr "ваш уровень"

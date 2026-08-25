@@ -33,6 +33,20 @@ from katrain.web.core.ranked_session_guard import (
 from katrain.web.session import SessionManager, LobbyManager, Matchmaker
 from katrain.web.models import *
 
+# 房间聊天单条正文的码点上限。超长拒绝、不截断,理由见发送处。
+#
+# ⚠️ **这个数与共享侧今天只是碰巧相等,没有任何东西在维持。** 共享侧那个是 env 可配的
+# (`platform_core.config.CHAT_MAX_LEN` ← `LOBBY_CHAT_MAX_LEN`,默认同样是 200),运维改一次
+# 就分叉,而两边都不会红。本文件上一版在这里写着「四家同口径」—— 那是一条**我自己发明的、
+# 没有执行机构的不变式**,和它旁边那些被逐条拆掉的散文属性是同一种东西,所以删掉了。
+#
+# 不跟着读 env 是**有意的**:katrain 的环境变量一律 `KATRAIN_*` 前缀,而围棋是独立进程、
+# 独立部署。读 `LOBBY_CHAT_MAX_LEN` 是串命名空间(那台机器上根本不会设它);另起一个
+# `KATRAIN_CHAT_MAX_LEN` 则是**第二个独立旋钮**——看起来配上了,实际要在两台机器上分别设,
+# 比硬编码更容易骗人。真要让四家一致,得让这个数在**每一家的源码里都是字面量**(env 解析出来
+# 的值,任何读源码的闸都看不见),再由契约钉住。已把这条判据交给共享侧,取值待定。
+CHAT_MAX_LEN = 200
+
 
 def _json_safe(obj):
     """Recursively convert numpy scalars/arrays to native Python types.
@@ -160,13 +174,24 @@ async def _lifespan_server(app: FastAPI, log):
     from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository
     from katrain.web.core.db import SessionLocal
 
-    repo = SQLAlchemyUserRepository(SessionLocal)
+    # 唯一的库接缝。调用方（测试）可以在进 `TestClient(app)` / 触发 lifespan **之前**
+    # 设 `app.state.session_factory`，这里就用它；生产没人设 → 退回全局 `SessionLocal`，
+    # 行为与改动前逐字相同。
+    #
+    # 为什么必须是这里、而不是让调用方设 `app.state.user_repo`：下面那六行会**无条件
+    # 覆盖** `app.state` 上的全部六个 repo。注入发生在 `TestClient` 之前、覆盖发生在
+    # 之后，于是调用方精心准备的库从头到尾一行没写过 —— 而测试还是绿的。
+    # 2026-08-23 实测的完整链路记在 `tests/conftest.py`。
+    session_factory = getattr(app.state, "session_factory", None) or SessionLocal
+    app.state.session_factory = session_factory
+
+    repo = SQLAlchemyUserRepository(session_factory)
     repo.init_db()
 
-    game_repo = GameRepository(SessionLocal)
-    user_game_repo = UserGameRepository(SessionLocal)
-    user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
-    ai_ladder_repo = AiLadderRankedRepository(SessionLocal)
+    game_repo = GameRepository(session_factory)
+    user_game_repo = UserGameRepository(session_factory)
+    user_game_analysis_repo = UserGameAnalysisRepository(session_factory)
+    ai_ladder_repo = AiLadderRankedRepository(session_factory)
 
     # Create default admin user if no users exist
     if not repo.list_users():
@@ -179,9 +204,8 @@ async def _lifespan_server(app: FastAPI, log):
     # Ensure the default 'admin' account carries the is_admin flag (billing admin).
     try:
         from katrain.web.core import models_db
-        from katrain.web.core.db import SessionLocal as _SL
 
-        _s = _SL()
+        _s = session_factory()
         try:
             admin_row = _s.query(models_db.User).filter(models_db.User.username == "admin").one_or_none()
             if admin_row is not None and not admin_row.is_admin:
@@ -196,9 +220,8 @@ async def _lifespan_server(app: FastAPI, log):
     # Reconcile any credit reservations stuck after a previous crash.
     try:
         from katrain.web.core import billing
-        from katrain.web.core.db import SessionLocal as _SL2
 
-        _s2 = _SL2()
+        _s2 = session_factory()
         try:
             billing.reconcile_stale_reservations(_s2, settings.BILLING_RESERVATION_TTL_SEC)
         finally:
@@ -212,7 +235,7 @@ async def _lifespan_server(app: FastAPI, log):
     app.state.user_game_analysis_repo = user_game_analysis_repo
     app.state.ai_ladder_repo = ai_ladder_repo
     app.state.ai_ladder_authoritative = True
-    app.state.report_session_factory = SessionLocal
+    app.state.report_session_factory = session_factory
     app.state.lobby_manager = LobbyManager()
     app.state.matchmaker = Matchmaker()
 
@@ -338,23 +361,29 @@ async def _lifespan_board(app: FastAPI, log):
 
     log.info(f"Starting in BOARD mode (device={settings.DEVICE_ID[:8]}..., remote={settings.REMOTE_API_URL})")
 
+    # 与 `_lifespan_server` 同一条接缝：调用方可在触发 lifespan 之前设
+    # `app.state.session_factory`；没人设 → 全局 `SessionLocal`，行为逐字不变。
+    # 两支必须一起改 —— 只修一支等于把同一个缺陷留在另一半。
+    session_factory = getattr(app.state, "session_factory", None) or SessionLocal
+    app.state.session_factory = session_factory
+
     # Local SQLite — create only the core tables needed for offline
-    repo = SQLAlchemyUserRepository(SessionLocal)
+    repo = SQLAlchemyUserRepository(session_factory)
     repo.init_db()
     app.state.user_repo = repo
 
-    local_user_game_repo = UserGameRepository(SessionLocal)
-    local_user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
-    local_tsumego_progress_repo = LocalTsumegoProgressRepository(SessionLocal)
+    local_user_game_repo = UserGameRepository(session_factory)
+    local_user_game_analysis_repo = UserGameAnalysisRepository(session_factory)
+    local_tsumego_progress_repo = LocalTsumegoProgressRepository(session_factory)
     app.state.user_game_repo = local_user_game_repo
     app.state.user_game_analysis_repo = local_user_game_analysis_repo
-    app.state.ai_ladder_repo = AiLadderRankedRepository(SessionLocal)
+    app.state.ai_ladder_repo = AiLadderRankedRepository(session_factory)
     # The board keeps an optimistic local profile so a completed game remains durable
     # through an outage. The cloud reservation/finalizer is canonical across devices;
     # the settlement outbox below replaces this profile with the cloud reply.
     app.state.ai_ladder_authoritative = True
     app.state.tsumego_progress_repo = local_tsumego_progress_repo
-    app.state.report_session_factory = SessionLocal
+    app.state.report_session_factory = session_factory
 
     # Remote API client
     remote_client = RemoteAPIClient(
@@ -380,7 +409,7 @@ async def _lifespan_board(app: FastAPI, log):
             log.debug(f"No saved credentials: {e}")
 
     # Sync worker
-    sync_worker = SyncWorker(SessionLocal, remote_client, ai_ladder_repo=app.state.ai_ladder_repo)
+    sync_worker = SyncWorker(session_factory, remote_client, ai_ladder_repo=app.state.ai_ladder_repo)
     sync_worker.recover_stale_leases()
     app.state.sync_worker = sync_worker
 
@@ -389,7 +418,7 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.connectivity_manager = connectivity
 
     # Repository dispatcher
-    sync_fn = partial(enqueue_sync_item, SessionLocal, device_id=settings.DEVICE_ID)
+    sync_fn = partial(enqueue_sync_item, session_factory, device_id=settings.DEVICE_ID)
     # Also reachable outside the dispatcher: a ranked settlement is written by the
     # authoritative local path, not by the online/offline repository routing, but it
     # still has to reach the cloud through the same one queue.
@@ -685,6 +714,35 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         }
         if current_user.id not in allowed_user_ids:
             raise HTTPException(status_code=403, detail=f"{action} is restricted to a session participant")
+
+    def guard_session_terminator(session, current_user, action: str) -> None:
+        """只有这局的参与者才能把它终结掉。
+
+        `/api/resign` 与 `/api/timeout` 都会**记录终局结果、判出胜方、广播 `game_end`**,
+        而胜方是从调用者反推的(`winner = 对手`)。在这条守卫之前,这两个端点只要求
+        `get_current_user_optional` —— 也就是说**任何登录用户,只要拿到一个 session_id,
+        就能把一局陌生人的活棋判负,并把胜利记进对手的账上**。而 session_id 不是秘密:
+        `GET /api/v1/games/active/multiplayer` 至今不带鉴权,返回的正是全部在跑的 session_id。
+        两条拼起来是一条完整的可利用链,不需要猜任何东西。
+
+        允许集与 `guard_session_reader` 相同,但**语义不同**,所以是两个函数不是一个:
+        读取放行的是「能看这局的人」,终结放行的是「这局是他的」。这两个集合今天恰好相等
+        (观战者不在里面 —— 那是另一个待修的问题),但它们没有理由永远相等,合并会让将来
+        「放开观战」变成「放开认输」。
+
+        **无人认领的会话不设闸**:未登录直接开的本地单机局三个 id 全是 None,没有可越权
+        的对象;对它要求登录只会打死盒上离线玩法。跨平台局的对手是 `-1`(OGS/KGS 上的人
+        没有 katrain 账号),它留在集合里不匹配任何真实用户,正确。
+        """
+        owner_ids = {
+            user_id for user_id in (session.user_id, session.player_b_id, session.player_w_id) if user_id is not None
+        }
+        if not owner_ids:
+            return
+        if current_user is None:
+            raise HTTPException(status_code=401, detail=f"Authentication required for {action}")
+        if current_user.id not in owner_ids:
+            raise HTTPException(status_code=403, detail=f"{action} is restricted to a player in this game")
 
     from katrain.web.core.box_sso import BoxSSOState
 
@@ -1693,6 +1751,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/resign")
     async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_terminator(session, current_user, "resign")
         ranked_ai = is_ai_ladder_ranked_session(session)
         if ranked_ai:
             guard_ai_ladder_ranked_owner(session, current_user, "resign")
@@ -1934,6 +1993,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def timeout(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         """End game due to timeout - current player loses on time"""
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_terminator(session, current_user, "timeout")
         guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
         await _guard_ai_ladder_cloud_active(app, session, current_user)
 
@@ -2572,7 +2632,34 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 if message.get("type") == "ping":
                     await websocket.send_json({"type": "pong"})
                 elif message.get("type") == "chat":
-                    manager.broadcast_to_session(session_id, message)
+                    # 身份两项由**服务端**填,正文是唯一采信的客户端输入。
+                    # 在这之前这里是 `broadcast_to_session(session_id, message)` —— 把客户端
+                    # 原样送来的 dict 整包广播回房间,于是 `sender` 是发送方自己写的
+                    # (任何能连上这个房间的登录用户都能冒名发言),而且 payload 无长度上限。
+                    # 三棋共享侧 `lobby_api/ws.py::_handle_chat` 修的是同一个病,wire 契约
+                    # `shapes.Chat` 把结论钉成了字段名:**叫 `from_name` 不叫 `sender`**。
+                    text = message.get("text")
+                    if not isinstance(text, str):
+                        await websocket.send_json({"type": "error", "code": "chat_text_required"})
+                        continue
+                    text = text.strip()
+                    if not text:
+                        await websocket.send_json({"type": "error", "code": "chat_text_empty"})
+                        continue
+                    # 超长**拒绝**而不是截断:静默截断会让发出去的和收到的不是同一句话,
+                    # 而发送方看不出被改过。上限口径与共享侧 `CHAT_MAX_LEN` 一致。
+                    if len(text) > CHAT_MAX_LEN:
+                        await websocket.send_json({"type": "error", "code": "chat_text_too_long"})
+                        continue
+                    manager.broadcast_to_session(
+                        session_id,
+                        {
+                            "type": "chat",
+                            "from_id": current_user.id,
+                            "from_name": current_user.username,
+                            "text": text,
+                        },
+                    )
         except WebSocketDisconnect:
             pass
         finally:
@@ -2607,9 +2694,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
 
 async def _cleanup_loop(manager: SessionManager):
+    """定时回收过期会话。
+
+    `cleanup_expired()` 是**同步**方法，而且它做的事里包含关停 KataGo 子进程 ——
+    直接 `manager.cleanup_expired()` 就是把这段活儿跑在事件循环线程上，
+    它一慢，整个服务对所有请求就没有响应。`to_thread` 把它挪到线程池里，
+    事件循环在这期间照常收发。
+
+    （`session.py` 那边已经把「持锁关引擎」拆掉了，`engine.py` 那边给 join 加了上界。
+      三处是同一个故障的三段：**别在事件循环上做**、**别持着锁做**、**别无限等**。
+      少改任何一处，另外两处都还能把服务挂住。）
+
+    一轮失败不停表：吞掉异常继续下一轮。清理停摆的后果是会话越积越多，
+    比循环悄悄死掉、谁都不知道要好 —— 所以这里记 warning，不是静默 pass。
+    """
     while True:
         await asyncio.sleep(30)
-        manager.cleanup_expired()
+        try:
+            await asyncio.to_thread(manager.cleanup_expired)
+        except Exception:
+            logging.getLogger("katrain_web").warning("session cleanup sweep failed", exc_info=True)
 
 
 # Boxes report in every 30s against a 5-minute takeover window, so ten consecutive failures

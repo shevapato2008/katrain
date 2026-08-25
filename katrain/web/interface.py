@@ -1121,7 +1121,10 @@ class WebKaTrain(KaTrainBase):
             self.game.play(Move(coords, player=self.next_player_info.player))
             self.play_stone_sound()
         except IllegalMoveException as e:
-            self.log(f"Illegal Move: {e}", OUTPUT_ERROR)
+            # 坐标必须记 —— 2026-08-25 查「自由对弈无法落子」时，日志里 4 条
+            # `Illegal Move: Space occupied` 拿不出**点的是哪一路**，只能靠时间戳
+            # 间隔（5 秒、3 秒）反推「是人在反复点」。少这一个字段，定位多花了几小时。
+            self.log(f"Illegal Move at {coords}: {e}", OUTPUT_ERROR)
         finally:
             self.last_timer_update = time.time()
 

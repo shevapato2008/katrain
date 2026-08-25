@@ -1,11 +1,25 @@
+/**
+ * 棋盘页右栏的显示开关组 —— 直播观战页与复盘·报告详情页共用。
+ *
+ * 两页的显示开关是同一组（试下 / 领地 / 手数 / 建议 / 坐标），所以共用一个组件；
+ * 复盘页迁统一版式（S3）时不再另写一份，直接消费这里。
+ *
+ * 2026-08-22 换成工具格：四个开关做成 `ToolGridButton` 的四列一行，坐标单独一行开关，
+ * 与死活题页右栏逐格相同。依据是 Fan 的裁定「除『离开对局』这种按钮和滑轨类以外，
+ * 其他按钮一律按对局室右栏那种带标签的方格键来设计」。原来是两列的 `ToggleButton`，
+ * 那是这条裁定之前的写法。
+ *
+ * 坐标为什么不进工具格：它和另外四个不是一类 —— 那四个改的是**棋盘上画什么分析信息**，
+ * 坐标改的是棋盘本身的刻度。死活题页已经是「四格 + 一条坐标开关」，这里跟它对齐。
+ */
+
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
-import GridOnIcon from '@mui/icons-material/GridOn';
 import MapIcon from '@mui/icons-material/Map';
 import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
-import { Box, Button, ToggleButton, Tooltip, Typography } from '@mui/material';
-import type { ReactNode } from 'react';
+import { Box, Button, Divider, Switch, Typography } from '@mui/material';
 
+import ToolGridButton from '../../components/board/ToolGridButton';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 export interface LiveMatchDisplayControlsProps {
@@ -24,51 +38,6 @@ export interface LiveMatchDisplayControlsProps {
   onClearTryMoves: () => void;
 }
 
-interface DisplayToggleProps {
-  label: string;
-  tooltip: string;
-  accessibleName?: string;
-  value: string;
-  selected: boolean;
-  onChange: () => void;
-  icon: ReactNode;
-  disabled?: boolean;
-  testId?: string;
-}
-
-function DisplayToggle({
-  label,
-  tooltip,
-  accessibleName = tooltip,
-  value,
-  selected,
-  onChange,
-  icon,
-  disabled = false,
-  testId,
-}: DisplayToggleProps) {
-  return (
-    <Tooltip title={tooltip}>
-      <span style={{ display: 'block', minWidth: 0 }}>
-        <ToggleButton
-          data-testid={testId}
-          aria-label={accessibleName}
-          value={value}
-          selected={selected}
-          disabled={disabled}
-          onChange={onChange}
-          sx={{ width: '100%', minWidth: 0, minHeight: 40, px: 1, py: 0.5 }}
-        >
-          {icon}
-          <Typography variant="caption" sx={{ ml: 0.5 }} noWrap>
-            {label}
-          </Typography>
-        </ToggleButton>
-      </span>
-    </Tooltip>
-  );
-}
-
 export default function LiveMatchDisplayControls({
   tryMoveMode,
   showTerritory,
@@ -85,65 +54,55 @@ export default function LiveMatchDisplayControls({
   onClearTryMoves,
 }: LiveMatchDisplayControlsProps) {
   const { t } = useTranslation();
-  const tryTooltip = t('live:try_move', 'Try Move');
   const territoryLabel = t('live:territory', 'Territory');
-  const territoryTooltip = ownershipAvailable
-    ? territoryLabel
-    : t('live:territory_needs_analysis', 'Territory (needs analysis)');
-  const moveNumbersTooltip = t('live:move_numbers', 'Move Numbers');
-  const adviceTooltip = showAiMarkers
-    ? t('live:hide_advice', 'Hide Advice')
-    : t('live:show_advice', 'Show Advice');
   const coordinatesLabel = t('Coordinates', 'Coordinates');
 
   return (
     <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
       <Box
         data-testid="live-match-display-controls-grid"
-        sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}
+        sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px' }}
       >
-        <DisplayToggle
+        <ToolGridButton
+          icon={<TouchAppIcon />}
           label={t('live:try', 'TRY')}
-          tooltip={tryTooltip}
-          value="tryMove"
-          selected={tryMoveMode}
-          onChange={onTryMoveToggle}
-          icon={<TouchAppIcon fontSize="small" />}
+          ariaLabel={t('live:try_move', 'Try Move')}
+          toggle
+          active={tryMoveMode}
+          onClick={onTryMoveToggle}
         />
-        <DisplayToggle
-          label={t('live:territory', 'TERRITORY')}
-          tooltip={territoryTooltip}
-          accessibleName={territoryLabel}
-          value="territory"
-          selected={showTerritory}
+        <ToolGridButton
+          icon={<MapIcon />}
+          label={territoryLabel}
+          ariaLabel={territoryLabel}
+          /* 这一条**连 disabled 一起显示** —— 「要先有分析才能看领地」这句解释，
+             恰恰只在键是灰的时候才有用。 */
+          tooltip={ownershipAvailable
+            ? territoryLabel
+            : t('live:territory_needs_analysis', 'Territory (needs analysis)')}
+          toggle
+          active={showTerritory}
           disabled={!ownershipAvailable}
-          onChange={onTerritoryToggle}
-          icon={<MapIcon fontSize="small" />}
+          onClick={onTerritoryToggle}
         />
-        <DisplayToggle
+        <ToolGridButton
+          icon={<FormatListNumberedIcon />}
           label={t('live:move_numbers', 'Numbers')}
-          tooltip={moveNumbersTooltip}
-          value="numbers"
-          selected={showMoveNumbers}
-          onChange={onMoveNumbersToggle}
-          icon={<FormatListNumberedIcon fontSize="small" />}
+          ariaLabel={t('live:move_numbers', 'Move Numbers')}
+          toggle
+          active={showMoveNumbers}
+          onClick={onMoveNumbersToggle}
         />
-        <DisplayToggle
+        <ToolGridButton
+          icon={<TipsAndUpdatesIcon />}
           label={t('Advice', 'Advice')}
-          tooltip={adviceTooltip}
-          value="aiMarkers"
-          selected={showAiMarkers}
-          onChange={onAiMarkersToggle}
-          icon={<TipsAndUpdatesIcon fontSize="small" />}
-        />
-        <DisplayToggle
-          testId="live-coordinate-toggle"
-          label={coordinatesLabel}
-          tooltip={coordinatesLabel}
-          value="coordinates"
-          selected={showCoordinates}
-          onChange={onCoordinatesToggle}
-          icon={<GridOnIcon fontSize="small" />}
+          /* 标签不随状态变（格子宽度不能跳），随状态变的只有可及名。 */
+          ariaLabel={showAiMarkers
+            ? t('live:hide_advice', 'Hide Advice')
+            : t('live:show_advice', 'Show Advice')}
+          toggle
+          active={showAiMarkers}
+          onClick={onAiMarkersToggle}
         />
       </Box>
 
@@ -157,6 +116,19 @@ export default function LiveMatchDisplayControls({
           </Button>
         </Box>
       )}
+
+      <Divider sx={{ mt: 1.5, mx: -2 }} />
+      <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="body2" color="text.secondary">{coordinatesLabel}</Typography>
+        <Switch
+          data-testid="live-coordinate-toggle"
+          size="small"
+          checked={showCoordinates}
+          onChange={onCoordinatesToggle}
+          /* MUI v7：`inputProps` 到不了里面那个 input，可及名要走 `slotProps.input`。 */
+          slotProps={{ input: { 'aria-label': coordinatesLabel } }}
+        />
+      </Box>
     </Box>
   );
 }

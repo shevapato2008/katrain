@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API, type GameState } from '../api';
+import { websocketUrl, WS_POLICY_VIOLATION } from '../utils/websocketUrl';
 
 export interface UseSessionBaseOptions {
     onStateUpdate?: (state: GameState) => void;
@@ -64,8 +65,9 @@ export function useSessionBase(options: UseSessionBaseOptions = {}): UseSessionB
                 setGameState(data.state);
                 onStateUpdate?.(data.state);
 
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const ws = new WebSocket(`${protocol}//${window.location.host}/ws/${sessionId}`);
+                /* 同 useGameSession：`/ws/{session_id}` 要鉴权，凭据只能走 query
+                   （浏览器的 WebSocket 不能自定义请求头）。见 utils/websocketUrl.ts。 */
+                const ws = new WebSocket(websocketUrl(`/ws/${sessionId}`, token));
                 wsRef.current = ws;
 
                 ws.onmessage = (event) => {
@@ -79,6 +81,17 @@ export function useSessionBase(options: UseSessionBaseOptions = {}): UseSessionB
                         playSound(msg.data.sound);
                     }
                 };
+                /* 断了要说出来 —— 静默的 1008 正是这次三周无人察觉的原因。 */
+                ws.onclose = (event) => {
+                    if (wsRef.current !== ws) return;  // 自己关的
+                    if (event.code === WS_POLICY_VIOLATION) {
+                        console.error('Session WebSocket rejected:', event.reason);
+                        setError(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新，请重新登录后重试`);
+                    } else if (!event.wasClean) {
+                        console.warn('Session WebSocket closed:', event.code, event.reason);
+                        setError('实时连接已断开，棋盘不会自动更新，请刷新页面');
+                    }
+                };
             } catch (err) {
                 console.error('Failed to connect session', err);
                 setError('Failed to connect to session');
@@ -88,10 +101,11 @@ export function useSessionBase(options: UseSessionBaseOptions = {}): UseSessionB
         connect();
 
         return () => {
-            wsRef.current?.close();
+            const ws = wsRef.current;
             wsRef.current = null;
+            ws?.close();
         };
-    }, [sessionId, playSound]);
+    }, [sessionId, token, playSound]);
 
     const onMove = useCallback(async (x: number, y: number) => {
         if (!sessionId) return;

@@ -1,0 +1,102 @@
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   LEGACY LAYOUTS — the 18 pages that have NOT been migrated yet.
+   Reproduced as they are today, including the defects, because the
+   point of this prototype is to look at what exists before changing it.
+
+   --vp-h is the emulated viewport height, so a page that asks for
+   `height:100vh` inside a shell that only has (100dvh − 52px) really
+   does overflow here by 52px, and really does get clipped, exactly
+   as it does in the running app.
+   ═══════════════════════════════════════════════════════════════ */
+.app[data-vp="1440x900"]{--vp-h:900px}
+.app[data-vp="1024x768"]{--vp-h:768px}
+.app[data-vp="430x880"] {--vp-h:880px}
+.app[data-vp="1280x640"]{--vp-h:640px}
+
+.lrow{display:flex;height:100%;overflow:hidden}
+.lrow.vh100{height:var(--vp-h)}           /* the `height:'100vh'` pages */
+/* MUI writes only flexGrow:1 here — flex-basis stays auto and the automatic
+   minimum size stays min-content, so a narrow frame overflows rather than
+   collapsing the board column. Reproduced. */
+.lmain{flex-grow:1;flex-basis:auto;display:flex;flex-direction:column;background:var(--bg);min-width:0}
+.lmain.floor{min-width:auto}
+.lhead{
+  padding:8px 24px;background:rgba(0,0,0,.3);flex:none;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.lboard{flex:1;display:flex;justify-content:center;align-items:center;min-height:0;padding:4px}
+.lbottom{
+  padding:12px 24px;background:var(--surface);border-top:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;gap:8px;flex:none;
+}
+.lrail{
+  /* MUI Box sx={{width:500}} keeps the DEFAULT flex-shrink:1 — these rails
+     really do squeeze on a narrow frame. Only the two that set
+     flexShrink:0 in the source get .fixed. */
+  border-left:1px solid var(--line);background:var(--paper);
+  display:flex;flex-direction:column;overflow:hidden;min-height:0;
+}
+.lrail.w500{flex:0 1 500px;width:500px}
+.lrail.w520{flex:0 1 520px;width:520px}
+.lrail.w320{flex:0 1 320px;width:320px}
+.lrail.fixed{flex:none}
+/* LivePage's rail is display:{xs:'none', md:'flex'} — gone below 900px */
+.app[data-vp="430x880"] .lrail.mdonly{display:none}
+.lrail-scroll{flex:1;min-height:0;overflow-y:auto}
+.lrail-scroll::-webkit-scrollbar{width:8px}
+.lrail-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+.lleft{width:520px;flex:none;  /* KifuLibraryPage.tsx:281 flexShrink:0 */
+  display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.lleft-scroll{flex:1;min-height:0;overflow-y:auto;padding:8px 16px}
+.lleft-scroll::-webkit-scrollbar{width:8px}
+.lleft-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+
+/* the "this page overflows its shell" marker */
+.vhwarn{
+  position:absolute;right:8px;bottom:8px;z-index:44;
+  background:rgba(232,150,57,.16);border:1px solid rgba(232,150,57,.5);
+  color:#f0c890;font-size:11px;padding:3px 9px;border-radius:20px;pointer-events:none;
+}
+
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);padding:0 16px}
+.tabs button{
+  border:0;background:transparent;color:var(--tx2);cursor:pointer;
+  padding:12px 16px;font-size:.875rem;border-bottom:2px solid transparent;
+}
+.tabs button[aria-selected="true"]{color:var(--jade-l);border-bottom-color:var(--jade-l)}
+
+.kcard{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;
+  border:1px solid var(--line);background:rgba(255,255,255,.015);cursor:pointer;color:inherit;font:inherit}
+.kcard:hover{background:rgba(255,255,255,.04);border-color:var(--line2)}
+.kcard.sel{border-color:var(--jade);background:#232a26}
+.kmeta{display:flex;justify-content:space-between;font-size:.7rem;color:var(--tx3);margin-bottom:6px}
+.kplayers{display:flex;align-items:center;gap:8px;font-size:.9rem}
+.kplayers .side{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+.kplayers .side.w{justify-content:flex-end}
+.kstone{width:14px;height:14px;border-radius:50%;flex:none}
+.kstone.b{background:#111;border:1px solid #444}
+.kstone.w{background:#f0eee9}
+
+.gridcards{display:grid;gap:16px}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat b{font-size:1.4rem;font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600}
+.stat span{font-size:.7rem;color:var(--tx3);letter-spacing:.06em}
+.rowbetween{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.stack{display:flex;flex-direction:column}
+.stack.g4{gap:4px}.stack.g8{gap:8px}.stack.g12{gap:12px}.stack.g16{gap:16px}
+.inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+</style>
+<style>
+/* TutorialFigurePage 的三列 —— 连同它那个 calc(100vh - 140px) 一起复现 */
+.figgrid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+  max-height:calc(var(--vp-h) - 140px);
+}
+.figcol{overflow-y:auto;max-height:calc(var(--vp-h) - 140px);padding-right:8px}
+.figcol::-webkit-scrollbar{width:6px}
+.figcol::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
+.app[data-vp="430x880"] .figgrid{grid-template-columns:1fr;max-height:none}
+.app[data-vp="430x880"] .figcol{max-height:none}
+.figboard{max-width:500px;width:100%!important;height:auto!important;aspect-ratio:1/1}
+</style>

@@ -108,8 +108,12 @@ async def test_record_is_idempotent_within_session():
 
 
 @pytest.fixture
-def client():
+def client(isolated_session_factory):
     app = server.create_app(enable_engine=False)
+    # 必须在进 `TestClient` **之前**设：lifespan 会用它建全部 repo 并跑 `init_db()`。
+    # 不设的话这一整个文件会把 34 张表建进开发机的真实 dev 库 —— 2026-08-23 实测，
+    # `tests/conftest.py` 的闸现在会当场拦下。
+    app.state.session_factory = isolated_session_factory
     with TestClient(app) as c:
         yield c
 

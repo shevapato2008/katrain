@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Card, CardActionArea, CircularProgress, IconButton, Breadcrumbs, Link } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { Box, Typography, Card, CardActionArea, CircularProgress } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
+import ContentPageHeader from '../components/layout/ContentPageHeader';
 
 interface ProgressData {
   completed: boolean;
@@ -146,37 +146,14 @@ const TsumegoUnitsPage = () => {
 
   return (
     <Box sx={{ p: 4, pl: 6 }}>
-      {/* Breadcrumbs */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate(`/galaxy/tsumego/${level}`)} sx={{ mr: 1 }}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Breadcrumbs>
-          <Link
-            component="button"
-            variant="body1"
-            onClick={() => navigate('/galaxy/tsumego')}
-            sx={{ cursor: 'pointer' }}
-          >
-            {t('Tsumego')}
-          </Link>
-          <Link
-            component="button"
-            variant="body1"
-            onClick={() => navigate(`/galaxy/tsumego/${level}`)}
-            sx={{ cursor: 'pointer' }}
-          >
-            {level?.toUpperCase()}
-          </Link>
-          <Typography color="text.primary">{getCategoryName(category || '')}</Typography>
-        </Breadcrumbs>
-      </Box>
-
-      <Typography variant="h4" sx={{ mb: 1, fontWeight: 'bold' }}>
-        {level?.toUpperCase()} {getCategoryName(category || '')} - {t('tsumego:selectUnit')}
-      </Typography>
-      <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 4 }}>
-        {interpolate(t('tsumego:unitDesc'), { total: totalProblems, units: totalUnits })}
+      {/* 面包屑三级 → 一个返回键（spec §2.4）。上一级是该难度档，简称进无障碍名。 */}
+      <ContentPageHeader
+        title={getCategoryName(category || '')}
+        parentLabel={level?.toUpperCase()}
+        parentTo={`/galaxy/tsumego/${level}`}
+      />
+      <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 1, mb: 4 }}>
+        {t('tsumego:selectUnit')} · {interpolate(t('tsumego:unitDesc'), { total: totalProblems, units: totalUnits })}
       </Typography>
 
       {/* Unit cards — row-first grid: 1,2,3 then 4,5,6 etc. */}

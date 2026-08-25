@@ -1232,7 +1232,7 @@ msgid "Territory"
 msgstr "领地"
 
 msgid "Advice"
-msgstr "建议"
+msgstr "支招"
 
 msgid "Graph"
 msgstr "图表"
@@ -1719,10 +1719,10 @@ msgid "continue_game"
 msgstr "继续对局"
 
 msgid "live:show_advice"
-msgstr "显示建议"
+msgstr "显示支招"
 
 msgid "live:hide_advice"
-msgstr "隐藏建议"
+msgstr "隐藏支招"
 
 msgid "No Rank"
 msgstr "无级别"
@@ -2091,7 +2091,7 @@ msgid "tsumego:midgame"
 msgstr "中盘"
 
 msgid "research:suggestions"
-msgstr "建议"
+msgstr "支招"
 
 msgid "result:black_win"
 msgstr "黑胜"
@@ -2148,7 +2148,7 @@ msgid "report:my_reports"
 msgstr "复盘"
 
 msgid "report:page_hint"
-msgstr "选择右侧棋局预览棋盘，报告生成和跳转都在棋局卡片上完成。"
+msgstr "选一局预览棋盘；报告生成和跳转都在棋局卡片上完成。"
 
 msgid "report:select_game"
 msgstr "选择一局棋谱"
@@ -2211,13 +2211,13 @@ msgid "report:move_numbers"
 msgstr "手数"
 
 msgid "report:suggestions"
-msgstr "建议"
+msgstr "支招"
 
 msgid "report:hide_suggestions"
-msgstr "隐藏建议"
+msgstr "隐藏支招"
 
 msgid "report:show_suggestions"
-msgstr "显示建议"
+msgstr "显示支招"
 
 msgid "report:clear"
 msgstr "清空"
@@ -2914,3 +2914,81 @@ msgstr "暂停"
 
 msgid "audio:unavailable"
 msgstr "音频不可用"
+
+msgid "research:progress_failed"
+msgstr "无法获取分析进度"
+
+msgid "tsumego:hint"
+msgstr "提示"
+
+msgid "tsumego:this_problem"
+msgstr "本题"
+
+msgid "Back"
+msgstr "返回"
+
+msgid "back_to"
+msgstr "返回{parent}"
+
+msgid "kifu:page_x_of_y"
+msgstr "第 {page} / {total} 页"
+
+msgid "live:move_slider"
+msgstr "手数进度"
+
+msgid "game_room:title"
+msgstr "对局室"
+
+msgid "game_room:board_size"
+msgstr "{n} 路"
+
+msgid "game_room:ended"
+msgstr "已结束"
+
+msgid "game_room:lobby_short"
+msgstr "大厅"
+
+msgid "game_room:leave_game"
+msgstr "离开对局"
+
+msgid "game_room:exit_spectating"
+msgstr "退出观战"
+
+msgid "game:nav_first"
+msgstr "跳到开局"
+
+msgid "game:nav_back_10"
+msgstr "后退 10 手"
+
+msgid "game:nav_back"
+msgstr "后退一手"
+
+msgid "game:nav_forward"
+msgstr "前进一手"
+
+msgid "game:nav_forward_10"
+msgstr "前进 10 手"
+
+msgid "game:nav_last"
+msgstr "跳到最后"
+
+msgid "game:in_play"
+msgstr "对局中"
+
+msgid "report:summary_done"
+msgstr "已完成"
+
+msgid "tsumego:kyu_tier"
+msgstr "级位"
+
+msgid "tsumego:dan_tier"
+msgstr "段位"
+
+msgid "tsumego:stronger_downward"
+msgstr "越往下越强"
+
+msgid "tsumego:all_levels"
+msgstr "全部难度 · {count} 档"
+
+msgid "tsumego:your_level"
+msgstr "你的水平"

@@ -1,8 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { computeAccessibleName } from 'dom-accessibility-api';
+import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { UseReportDetailResult } from '../../../features/report/useReportDetail';
+// 迁统一版式后页头是 ModulePlate，它的返回键走 useGameNavigation()（无 Provider 直接 throw）。
+// 用**真**的 Provider 而不是 stub —— 返回键的行为正是这一页要守的东西之一。
+// 同一写法见 live/LiveMatchPage.test.tsx:6,67。
+import { GameNavigationProvider } from '../../context/GameNavigationContext';
 
 import ReportDetailPage from './ReportDetailPage';
 
@@ -98,13 +103,79 @@ describe('ReportDetailPage', () => {
     };
   });
 
-  it('renders a live-aligned detail shell', async () => {
+  /**
+   * 早退形态里不许有没有名字的控件。
+   *
+   * 2026-08-22 全站控件账本量到：这一页正常数据下 14 控件 / 0 无名，但 task 不存在时
+   * 进错误态，右栏那 4 个工具格占位 + 1 个动作占位都是 `<Button disabled><Skeleton/></Button>`,
+   * 既没有可见文字也没有 `aria-label` —— 读屏用户会听到五个没有名字的按钮。
+   * **错误态是真状态**，不是「测不到就不算」的边角。
+   *
+   * 判据落在**每个按钮都有可及名**上，不落在按钮个数上：数目断言对「换一种实现、
+   * 仍然没有名字」免疫，而这一页的历史正是抄了直播页那份实现。可及名用
+   * `dom-accessibility-api` 真算（testing-library 内部同一份），不用 textContent 近似。
+   *
+   * 两条各守一半，缺一不可：
+   *   - 错误态那条守**槽位**（错误态不再挂 `displayControls`/`actions`）
+   *   - 加载态那条守**占位实现**（占位不再做成 `<Button>`）
+   * 只写错误态那条的话，把 `LoadingControls` 改回按钮实现它是绿的 —— 因为错误态
+   * 已经不渲染它了，而加载态会。
+   *
+   * 变异记录（2026-08-22 实跑，见提交信息）：把本页对这两处的改动整体撤回 →
+   * 加载态那条红（5 个无名），错误态那条红（5 个无名）。
+   */
+  it('leaves no unnamed control in the error state', async () => {
+    reportDetailFixture = { ...reportDetailFixture, task: null, game: null, error: 'Report task not found' };
+
     render(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}>
+      <MemoryRouter initialEntries={['/galaxy/report/404']}><GameNavigationProvider>
         <Routes>
           <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
         </Routes>
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Report task not found')).toBeInTheDocument();
+    });
+
+    const unnamed = screen
+      .getAllByRole('button')
+      .filter((el) => computeAccessibleName(el).trim() === '');
+    expect(unnamed).toEqual([]);
+
+    // 而且错误态根本不该画加载骨架 —— 脉动的骨架在说「东西还在路上」，这一屏已经失败了。
+    expect(screen.queryByTestId('board-loading-skeleton')).not.toBeInTheDocument();
+  });
+
+  it('leaves no unnamed control while loading', async () => {
+    reportDetailFixture = { ...reportDetailFixture, loading: true };
+
+    render(
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
+        <Routes>
+          <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
+        </Routes>
+      </GameNavigationProvider></MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('board-loading-skeleton')).toBeInTheDocument();
+    });
+
+    const unnamed = screen
+      .getAllByRole('button')
+      .filter((el) => computeAccessibleName(el).trim() === '');
+    expect(unnamed).toEqual([]);
+  });
+
+  it('renders a live-aligned detail shell', async () => {
+    render(
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
+        <Routes>
+          <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
+        </Routes>
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => {
@@ -115,7 +186,13 @@ describe('ReportDetailPage', () => {
     expect(screen.getByTestId('mock-playback-bar')).toBeInTheDocument();
     expect(screen.getByTestId('mock-trend-chart')).toBeInTheDocument();
     expect(screen.getByText('AI Recommendations')).toBeInTheDocument();
-    expect(screen.getByText('Try')).toBeInTheDocument();
+    // 显示开关改成复用直播页那一组共享件（工具格），所以文案走的是 live:* 而不是
+    // 原来手抄的 report:*。十个共享 key 在 11 种语言里都齐，不构成 i18n 回归。
+    expect(screen.getByRole('button', { name: 'Try Move' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Territory' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Move Numbers' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hide Advice' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Coordinates' })).toBeInTheDocument();
     expect(screen.queryByText('报告摘要')).not.toBeInTheDocument();
     expect(screen.queryByText('精彩手')).not.toBeInTheDocument();
     expect(screen.queryByText('失误手')).not.toBeInTheDocument();
@@ -123,19 +200,40 @@ describe('ReportDetailPage', () => {
     expect(mockUseReportDetail).toHaveBeenCalledWith('token', '7');
   });
 
-  it('navigates to the unchanged Galaxy research route', async () => {
+  // Fan 2026-08-22 点头：「进入研究室」不再是空跳转，要把这一局带过去。
+  // 断言落在**到达研究页时手里有没有这局的 id** 上，不落在 navigate() 的入参上 ——
+  // 后者只证明我照着自己写的字符串调了一次，前者才是用户要的那件事。
+  it('carries this game into research instead of landing on a blank board', async () => {
+    const ResearchProbe = () => {
+      const [params] = useSearchParams();
+      return <div>research:{params.get('user_game_id') ?? 'none'}</div>;
+    };
+
     render(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}>
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
         <Routes>
           <Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} />
-          <Route path="/galaxy/research" element={<div>Research destination</div>} />
+          <Route path="/galaxy/research" element={<ResearchProbe />} />
         </Routes>
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Open in Research' })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: 'Open in Research' }));
-    expect(await screen.findByText('Research destination')).toBeInTheDocument();
+    expect(await screen.findByText('research:game-1')).toBeInTheDocument();
+  });
+
+  // 没有棋局就没有可带的参数 —— 这时按钮是死的，而不是把人送去一张空棋盘。
+  it('disables the research entry when the game is not available', async () => {
+    reportDetailFixture = { ...reportDetailFixture, game: null };
+
+    render(
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
+        <Routes><Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} /></Routes>
+      </GameNavigationProvider></MemoryRouter>,
+    );
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Open in Research' })).toBeDisabled());
   });
 
   it('refreshes a progressive report while preserving a historical cursor', async () => {
@@ -145,9 +243,9 @@ describe('ReportDetailPage', () => {
     };
 
     const { rerender } = render(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}>
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
         <Routes><Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} /></Routes>
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
 
     await waitFor(() => expect(screen.getByTestId('mock-playback-bar')).toHaveTextContent('2/2'));
@@ -160,9 +258,9 @@ describe('ReportDetailPage', () => {
       currentMove: 1,
     };
     rerender(
-      <MemoryRouter initialEntries={['/galaxy/report/7']}>
+      <MemoryRouter initialEntries={['/galaxy/report/7']}><GameNavigationProvider>
         <Routes><Route path="/galaxy/report/:taskId" element={<ReportDetailPage />} /></Routes>
-      </MemoryRouter>,
+      </GameNavigationProvider></MemoryRouter>,
     );
     expect(screen.getByTestId('mock-playback-bar')).toHaveTextContent('1/2');
     expect(mockDetailRefresh).not.toHaveBeenCalled();

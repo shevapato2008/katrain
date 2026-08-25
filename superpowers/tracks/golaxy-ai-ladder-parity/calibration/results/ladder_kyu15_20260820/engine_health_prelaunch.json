@@ -1,0 +1,1 @@
+{"status":"ok","capability_schema":1,"schema_version":1,"phase":"ready","ready":true,"pid":458,"has_human_model":true,"error_code":null,"katago_version":"KataGo v1.16.4\nGit revision: <omitted>\nCompile Time: Mar 31 2026 02:22:59\nUsing TensorRT backend","default_model":"b28","models":{"b28":{"pid":

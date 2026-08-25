@@ -129,7 +129,11 @@ const ResearchPage = () => {
   const { token } = useAuth();
 
   const board = useResearchBoard();
-  const session = useResearchSession();
+  // ⚠️ **token 必传。** 签名是 `token?: string`(选填)—— 漏传编译得过、单测也不红,
+  // 但服务端会 `close(1008, "Invalid token")`:棋盘停在 `/api/state` 那一帧,摆子看起来
+  // 像点了没反应,分析结果永远不刷新。**本机看不出来**,127.0.0.1 上有 cookie 兜底。
+  // 上游 `8ac2d6f6` 修的就是这一处;屏 21 重画时它落进了冲突里,合并时补回。
+  const session = useResearchSession({ token: token || undefined });
 
   const [scan, setScan] = useState<Scan>('none');
   const [progress, setProgress] = useState<{ analyzed: number; total: number } | null>(null);

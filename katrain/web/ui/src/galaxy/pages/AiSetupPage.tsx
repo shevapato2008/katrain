@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress } from '@mui/material';
+import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress, FormHelperText } from '@mui/material';
 import { API, type LadderRung } from '../../api';
 import { sliderToHumanKyuRankFixed } from '../../utils/rankUtils';
 import { useAuth } from '../../context/AuthContext';
@@ -97,9 +97,16 @@ const AiSetupPage = () => {
     const [estimatedRank, setEstimatedRank] = useState<string>('...');
     const [aiLoading, setAiLoading] = useState(false);
 
-    // 棋力阶梯 (strength ladder): 37 rungs fetched from GET /api/ladder-rungs.
-    // Default rung 18 == native HumanSL "3K" (LADDER_RUNGS index 17).
+    // 棋力阶梯 (strength ladder): 目录从 GET /api/ladder-rungs 取，41 档全部返回。
+    // Default rung 18 == native HumanSL "3K" (LADDER_RUNGS index 17)。
     const [ladderRungs, setLadderRungs] = useState<LadderRung[]>([]);
+    // 只列**坐得上去**的档位。目录里有 12 档是封档的（`ladder._RETIRED_RUNGS`：级位段被
+    // 实测倒挂挡死的 6 个 + 准1段–准6段），它们保留目录位置与配方是为了让不可变账本里
+    // 已存的 rung 号仍可解释，但没有人能被安排到那里 —— 选中它开局会 409。
+    //
+    // 判据用服务端给的 `availability`，**不在前端抄一份封档清单**：抄一份就要跟着服务端
+    // 改，而两边不同步时前端会安静地多列或少列几档，没有任何征兆。
+    const selectableRungs = ladderRungs.filter((r) => r.availability === 'available');
     const [ladderRung, setLadderRung] = useState<number>(18);
     const isLadder = opponent === 'ai:ladder';
 
@@ -609,12 +616,18 @@ const AiSetupPage = () => {
                                             label={t('ai:golaxy_parity_rung', '棋力等级')}
                                             onChange={(e) => setLadderRung(Number(e.target.value))}
                                         >
-                                            {ladderRungs.map((r) => (
+                                            {selectableRungs.map((r) => (
                                                 <MenuItem key={r.rung} value={r.rung}>
                                                     {r.rank_name}
                                                 </MenuItem>
                                             ))}
                                         </Select>
+                                        {ladderRungs.length > 0 && selectableRungs.length === 0 && (
+                                            // 空态说实话：一个空下拉和「还没加载完」在屏幕上长得一样。
+                                            <FormHelperText error>
+                                                {t('ai:ladder_no_available_rung', '当前没有可用的棋力等级')}
+                                            </FormHelperText>
+                                        )}
                                     </FormControl>
                                 </Box>
                             ) : (

@@ -7,7 +7,7 @@
  */
 import { useCallback, useState } from 'react';
 import { useSessionBase } from './useSessionBase';
-import { API } from '../api';
+import { API, apiPost, authHeaders } from '../api';
 import type { GameState } from '../api';
 
 export interface UseResearchSessionReturn {
@@ -38,45 +38,51 @@ export interface UseResearchSessionReturn {
     analysisScan: (visits?: number) => Promise<void>;
 }
 
-export function useResearchSession(): UseResearchSessionReturn {
+export interface UseResearchSessionOptions {
+    /** 必须传。研究会话的 `/ws/{session_id}` 和对局用的是**同一个**要鉴权的端点，
+     *  不传 token 的后果不是「少个参数」而是服务端 `close(1008, "Invalid token")`：
+     *  棋盘停在 /api/state 那一帧，摆子（onMove 只发 HTTP、状态全靠推送）看起来
+     *  像点了没反应，分析结果也永远不刷新 —— 与 2026-08-25 修的自由对弈那条同病。
+     *  本机看不出来，因为 127.0.0.1 上有 sb_token cookie 兜底。 */
+    token?: string;
+}
+
+export function useResearchSession(options: UseResearchSessionOptions = {}): UseResearchSessionReturn {
+    const { token } = options;
     const [isConnected, setIsConnected] = useState(false);
 
     const base = useSessionBase({
+        token,
         onStateUpdate: () => {
             setIsConnected(true);
         },
     });
 
+    /* 这一串原来是四个手写 fetch，只带 Content-Type。后果不是「少个头」而是
+       **会话没有主人**：POST /api/session 是 get_current_user_optional，没带凭证
+       就把 session.user_id 建成 None；随后 /api/state 的 guard_session_reader
+       要求 current_user.id ∈ {user_id, player_b_id, player_w_id}，于是 403，
+       gameState 永远拿不到，页面卡在「正在分析棋局」进不去 L3。
+       本机看不出来，是因为 127.0.0.1 上有 sb_token cookie，浏览器会自动带上，
+       建会话和读状态用的是同一个身份；换成 go.sailorvoyage.top 就没这块 cookie。
+       统一走 apiPost（api.ts 的 authHeaders 会兜底带上 Bearer），建会话和用会话
+       就是同一个身份。 */
     const createSession = useCallback(async (sgf?: string, options?: { skipAnalysis?: boolean; initialMove?: number }): Promise<string | null> => {
         try {
-            const response = await fetch('/api/session?mode=research', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            });
-            if (!response.ok) throw new Error('Failed to create research session');
-            const data = await response.json();
+            const data = await apiPost('/api/session?mode=research', {});
 
             // Load SGF if provided
             if (sgf) {
-                await fetch('/api/sgf/load', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        session_id: data.session_id,
-                        sgf,
-                        skip_analysis: options?.skipAnalysis ?? false,
-                    }),
+                await apiPost('/api/sgf/load', {
+                    session_id: data.session_id,
+                    sgf,
+                    skip_analysis: options?.skipAnalysis ?? false,
                 });
 
                 // Navigate to the target move (SGF loads at root by default)
                 const targetMove = options?.initialMove ?? 999;
                 if (targetMove > 0) {
-                    const redoResp = await fetch('/api/redo', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ session_id: data.session_id, n_times: targetMove }),
-                    });
-                    const redoData = await redoResp.json();
+                    const redoData = await apiPost('/api/redo', { session_id: data.session_id, n_times: targetMove });
                     // Set initial gameState immediately from redo response to avoid
                     // race conditions with WS initial state or analysis callbacks
                     if (redoData.state) {
@@ -97,7 +103,8 @@ export function useResearchSession(): UseResearchSessionReturn {
     const destroySession = useCallback(async () => {
         if (base.sessionId) {
             try {
-                await fetch(`/api/session/${base.sessionId}`, { method: 'DELETE' });
+                // 同样要带身份：会话归属校验认的是 current_user.id
+                await fetch(`/api/session/${base.sessionId}`, { method: 'DELETE', headers: authHeaders() });
             } catch { /* ignore */ }
         }
         base.disconnect();

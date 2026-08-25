@@ -123,7 +123,12 @@ class PollMovesJob(BaseJob):
 
         # Extract match data (may be nested under "liveMatch")
         md = situation.get("liveMatch", situation)
-        new_status = "live" if md.get("liveStatus", 0) == 0 else "finished"
+        # `liveStatus` 缺失**不等于**「还在下」。原来写的是 `md.get("liveStatus", 0) == 0`,
+        # 默认值 0 恰好就是「进行中」那一档 —— 上游少给一个字段, 对局就被判成 live。
+        # 缺失时保持原状: 状态该由 fetch_list 那条「上游还列不列它为 live」的判据决定,
+        # 这里绝不负责把一局棋改回 live。
+        live_status = md.get("liveStatus")
+        new_status = match.status if live_status is None else ("live" if live_status == 0 else "finished")
 
         # Parse moves
         moves_data = situation.get("moves") or md.get("moves") or md.get("moveList")

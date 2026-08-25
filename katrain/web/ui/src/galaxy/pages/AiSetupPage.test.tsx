@@ -39,9 +39,12 @@ const { mockAiConstants, mockRungsResponse, mockCreateSession, mockNewGame, mock
     },
   },
   mockRungsResponse: {
+    // 与 GET /api/ladder-rungs 的真实投影同形（五个字段）。第三条是**封档档位**：
+    // 目录里有它、有配方，但 availability=unavailable ⇒ 谁也坐不上去，不该出现在下拉里。
     rungs: [
-      { rung: 18, rank_name: '3K' },
-      { rung: 37, rank_name: 'KataGo中等' },
+      { rung: 18, rank_name: '3K', certification_status: 'certified', availability: 'available', route: 'server' },
+      { rung: 37, rank_name: 'KataGo中等', certification_status: 'certified', availability: 'available', route: 'server' },
+      { rung: 21, rank_name: '准1段', certification_status: 'provisional', availability: 'unavailable', route: 'server' },
     ],
   },
   mockCreateSession: vi.fn().mockResolvedValue({ session_id: 's1', state: {} }),
@@ -169,6 +172,23 @@ describe('AiSetupPage — 棋力阶梯 ladder opponent', () => {
     });
     // The generic human-rank slider (visible for ai:human) must not be showing.
     expect(screen.queryByText('20k')).not.toBeInTheDocument();
+  });
+
+  it('omits sealed rungs from the selector — they exist in the catalog but seat nobody', async () => {
+    // 目录里 12 档是封档的（`ladder._RETIRED_RUNGS`）。它们保留配方是为了让账本里已存的
+    // rung 号仍可解释，但选中开局会 409 —— 用户看到的是「点了没反应」。
+    renderPage();
+    await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
+    const user = userEvent.setup();
+    await user.click(comboboxForLabel('AI Strategy'));
+    await user.click(screen.getByRole('option', { name: '棋力阶梯' }));
+    await waitFor(() => expect(screen.getByText('3K')).toBeInTheDocument());
+
+    await user.click(comboboxForLabel('棋力等级'));
+    // 正对照：可用的两档在；没有它，「封档档位不在」和「下拉整个是空的」分不开。
+    expect(screen.getByRole('option', { name: '3K' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'KataGo中等' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: '准1段' })).toBeNull();
   });
 
   it('starts the game with ladder_rung and skips human_kyu_rank/strategySettings writes', async () => {

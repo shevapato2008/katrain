@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -26,7 +26,7 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
     }));
   });
   // 后端没起时 logo 会 502,取出来的图左上角是碎图标 —— 钉在仓里那份真字节上。
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/api/v1/auth/me') {
@@ -68,7 +68,7 @@ test('四图:对弈首页 ←→ sample-go/shots/01-play.png', async ({ page }) 
     slug: '01-play',
     referenceCaption: '参考:sample-go/shots/01-play.png · 稿子上的 .note 旁注不上线(三家都没搬)',
     implementationCaption:
-      '实现:/kiosk/play @1024×600 · 时钟冻 16:40 · Dock 六项(成长跳过) · 硬件三格 / 继续上一局 / OGS 已连接 都是 fixture · 镜像盘压暗=还没接到识别结果',
+      '实现:/kiosk/play @1024×600 · 时钟冻 16:40 · Dock 七项(2026-08-25 起补了「成长」,围棋独有) · 硬件三格 / 继续上一局 / OGS 已连接 都是 fixture · 镜像盘压暗=还没接到识别结果',
   });
   console.log(`[fourup 01-play] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

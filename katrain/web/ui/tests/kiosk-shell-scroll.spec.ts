@@ -503,7 +503,7 @@ test('课程:分类多到装不下时右栏自己滚,最后一块(一课长什�
  * 所以这条不量「点了导航之后高亮对不对」(那是同一次点击自己设的),
  * 而是**用滚轮把右栏滚下去**,再看导航跟没跟上。
  */
-test('设置:滚到第三组时,导航第三项高亮,其余都不是', async ({ page }) => {
+test('设置:滚到「落子与提示」那一组时,导航高亮的正是它', async ({ page }) => {
   await boot(page, '/kiosk/settings');
   await page.waitForSelector('[data-testid="settings-nav"] button');
 
@@ -538,10 +538,21 @@ test('设置:滚到第三组时,导航第三项高亮,其余都不是', async ({
   await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
   await page.mouse.wheel(0, Math.round(target) + 4);
 
+  // 判据落在**高亮的是哪一项**上,不落在「第几个是 true」的定长数组上 ——
+  // 2026-08-26 补「声音」那一组时,那个 `[false,false,true,false]` 当场红了,
+  // 而红的原因和高亮对不对毫无关系(组数从四变五)。**闸要量它自己说要量的那件事。**
   await expect.poll(async () => page.evaluate(() => {
     const items = [...document.querySelectorAll('[data-testid="settings-nav"] button')];
-    return items.map((b) => b.getAttribute('aria-current') === 'true');
-  }), { message: '滚到第三组了,导航没跟上' }).toEqual([false, false, true, false]);
+    return items.filter((b) => b.getAttribute('aria-current') === 'true').map((b) => b.textContent);
+  }), { message: '滚到「落子与提示」了,导航没跟上' }).toEqual(['落子与提示']);
+
+  // 尾部那段留白是**为了让最后一组也能滚到视口顶**(不然点最后一项会被滚动事件弹回前一项)。
+  // 每加一组这段算术就变一次 ⇒ 一路滚到底,看最后一项认不认账。
+  await page.mouse.wheel(0, 2000);
+  await expect.poll(async () => page.evaluate(() => {
+    const items = [...document.querySelectorAll('[data-testid="settings-nav"] button')];
+    return items.filter((b) => b.getAttribute('aria-current') === 'true').map((b) => b.textContent);
+  }), { message: '滚到底了,最后一组没能滚到视口顶 —— 尾部留白不够' }).toEqual(['语言']);
 });
 
 /**

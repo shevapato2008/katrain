@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });
@@ -136,7 +136,11 @@ test('四图:星阵围棋 · 对局中 ←→ sample-go/shots/10-platform-game.p
     // 否则取图机器(没摄像头、几何 404)会被换成标定台。
     localStorage.setItem('kiosk_play_on_board', 'false');
   });
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
+  // 实时连接**接上但不推**。不接的话 `useGameSession` 那条掉线红条会盖在题头上,
+  // 而稿子那一帧当然没有它 —— 屏 05 同一处 2026-08-25 已经判过一次(`7b048605`)。
+  // 判据同 `stubBackendStatics`:**一张随「另一个进程在不在」而变的实现图,不是这一屏的实现图。**
+  await page.routeWebSocket('**/ws/**', () => { /* 连上就行,不推任何东西 */ });
   await page.route('**/api/state**', (route) => route.fulfill({ json: { state: STATE } }));
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;

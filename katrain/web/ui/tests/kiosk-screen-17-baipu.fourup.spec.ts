@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });
@@ -71,9 +71,23 @@ const boot = async (page: import('@playwright/test').Page) => {
       id: 's1', name: '摆谱 · 三星杯半决赛', sgf: '(;SZ[19];B[pd])', savedAt: 1,
     }));
   });
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { id: 1, username: '访客', rank: '5段', credits: 0 },
+  }));
+  // ⚠️ **这条不是装饰,是这一屏的四图能不能自己站住的前提。**
+  // `baipu/session/:source` 外面套着 `PhysicalBoardGuard`,它读 `GeometryContext`;
+  // 而 `GeometryProvider` 只在**接口 404** 时才落到 `disabled`(那是「这台盒子没摄像头」
+  // 这个**读到了的结论**),接口连不上时 phase 停在 `required` ⇒ 整屏被换成标定台,
+  // `baipu-pcard` 永远不出现 ⇒ 30 秒超时。四图跑的 vite dev server 把 `/api` 代理到
+  // :8001,而视觉这一套**不起后端** —— 也就是说这一屏原来「后端起着就绿、一停就红」。
+  // 2026-08-26 撞上:整批 27 屏重跑时只有这一屏红,而它上一次绿是因为那天 :8001 正好开着。
+  // 判据和 `stubBackendStatics` 是同一条:**一张随后端在不在而变的实现图,不是这一屏的实现图。**
+  await page.route('**/api/v1/geometry/status', (route) => route.fulfill({
+    json: {
+      phase: 'disabled', session_calibrated: false, last_error: null,
+      capabilities: { camera_ready: false, led_ready: false, geometry_ready: false, recognition_ready: false },
+    },
   }));
   await page.route('**/api/v1/baipu/load', (route) => route.fulfill({ json: STEPS }));
   await page.route('**/api/v1/led/**', (route) => route.fulfill({

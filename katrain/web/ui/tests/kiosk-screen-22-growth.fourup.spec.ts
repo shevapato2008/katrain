@@ -1,6 +1,6 @@
 import { test, type Page } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });
@@ -83,7 +83,7 @@ const PROGRESS = Object.fromEntries(
 );
 
 const stub = async (page: Page) => {
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.addInitScript(() => {
     localStorage.setItem('token', 'fourup-22');
     localStorage.setItem('katrain_language', 'cn');

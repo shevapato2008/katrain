@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useSettings } from '../../context/SettingsContext';
@@ -9,6 +9,7 @@ import { PLATFORM_META } from '../constants/platforms';
 import { Icon, type IconName } from '../shell/icons';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
+import { readAudioPref, subscribeAudioPref, writeAudioPref, type AudioKind } from '../../utils/audioPrefs';
 import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
 
 /**
@@ -50,13 +51,39 @@ import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
  * 上一版那条页控条(带返回 + `location.state.from`)是它还是 L2 时留下的。
  */
 
-type GroupKey = 'account' | 'board' | 'move' | 'language';
+type GroupKey = 'account' | 'board' | 'move' | 'sound' | 'language';
 
 const GROUPS: readonly { key: GroupKey; zh: string; en: string; icon: IconName }[] = [
   { key: 'account', zh: '账号与平台', en: 'Account', icon: 'user-circle' },
   { key: 'board', zh: '实体棋盘', en: 'Physical board', icon: 'camera' },
   { key: 'move', zh: '落子与提示', en: 'Move & hints', icon: 'hand-pointing' },
+  // 稿子这一组叫「声音与报着」。**这里只写「声音」** —— 盒子上没有报着:
+  // `useVoice` 说的是摆子引导那七句(清盘 / 摆黑子 / 对了 …),不是报手数。
+  // 词跟着屏上真有的东西走,多写两个字就是承诺一个不存在的功能(见本文件顶上那条
+  // 「导航里写什么,右边那组的标题就是什么」)。
+  { key: 'sound', zh: '声音', en: 'Sound', icon: 'speaker-high' },
   { key: 'language', zh: '语言', en: 'Language', icon: 'globe-hemisphere-west' },
+];
+
+/**
+ * 两把开关,**分开**:音效是几十毫秒的一声,引导语是一整句话 ——
+ * 教室里最先想关掉的往往是后者,合成一把就逼人连落子声一起丢掉。
+ */
+const AUDIO_ROWS: readonly {
+  kind: AudioKind; titleKey: string; title: string; subKey: string; sub: string;
+}[] = [
+  {
+    kind: 'sfx',
+    titleKey: 'settings:sound_sfx', title: '落子音效',
+    subKey: 'settings:sound_sfx_sub', sub: '落子、提子、做题对错 · 出厂就是开的',
+  },
+  {
+    kind: 'voice',
+    titleKey: 'settings:sound_voice', title: '语音提示',
+    // 照实说它什么时候会响:这台盒子没接摄像头的话它一次都不会响,
+    // 而屏上写「开」而永远不响,用户会以为坏了。
+    subKey: 'settings:sound_voice_sub', sub: '摆棋和做题时的引导语 · 只在用实体棋盘时会响',
+  },
 ];
 
 const SettingsPage = () => {
@@ -120,6 +147,11 @@ const SettingsPage = () => {
     scroll.scrollTop += el.getBoundingClientRect().top - scroll.getBoundingClientRect().top;
     setActive(key);
   };
+
+  // 两把声音开关读的是 `utils/audioPrefs` 那一份模块级状态,**不另存一份 useState** ——
+  // 两份迟早走散,而走散的表现正好是「屏上写着关、喇叭还在响」。
+  const sfxOn = useSyncExternalStore(subscribeAudioPref, () => readAudioPref('sfx'), () => true);
+  const voiceOn = useSyncExternalStore(subscribeAudioPref, () => readAudioPref('voice'), () => true);
 
   const handleAutoAdvance = (next: boolean) => {
     setAutoAdvance(next);
@@ -253,6 +285,39 @@ const SettingsPage = () => {
                 </span>
               </span>
             </div>
+          </div>
+        </section>
+
+        <section className="kiosk-section" data-group="sound">
+          <KioskSecLabel zh={t('settings:nav_sound', '声音')} en="Sound" />
+          <div className="kiosk-rows">
+            {AUDIO_ROWS.map((row) => (
+              <div className="kiosk-row" key={row.kind}>
+                <span className="kiosk-row__t">
+                  <b>{t(row.titleKey, row.title)}</b>
+                  <em>{t(row.subKey, row.sub)}</em>
+                </span>
+                <span className="kiosk-row__end">
+                  {/* 同屏同控件(规范 §12):和「做对后自动进入下一题」一样是分段,不是开关。 */}
+                  <span className="kiosk-seg" role="group" aria-label={t(row.titleKey, row.title)}>
+                    <button
+                      type="button" className="kiosk-seg__btn"
+                      aria-pressed={row.kind === 'sfx' ? sfxOn : voiceOn}
+                      onClick={() => writeAudioPref(row.kind, true)}
+                    >
+                      {t('settings:on', '开')}
+                    </button>
+                    <button
+                      type="button" className="kiosk-seg__btn"
+                      aria-pressed={!(row.kind === 'sfx' ? sfxOn : voiceOn)}
+                      onClick={() => writeAudioPref(row.kind, false)}
+                    >
+                      {t('settings:off', '关')}
+                    </button>
+                  </span>
+                </span>
+              </div>
+            ))}
           </div>
         </section>
 

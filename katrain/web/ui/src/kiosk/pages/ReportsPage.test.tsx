@@ -518,10 +518,18 @@ describe('屏 19 · 行的五种状态', () => {
   // **判别位是「这局结束了没有」,不是「算不算分」** —— 半局的报告没意义,
   // 而且离线 KataGo 把残局算完再回去接着下是一条真作弊通道。
   // 计分局下完了照样该有报告(国象稿子明写两者进的是同一条复盘线)。
+  // ⚠️ 这两条**都要先等到那一行真被选中**。两张档位卡按的是「**选中的那一局**」,
+  // 没选中时它们本来就是灰的 —— 只等 `data-state` 的话:
+  //  · 「按不了」那条会**空过**(灰的原因是没选中,和「未终局」毫无关系);
+  //  · 「能分析」那条会**假红**(自动选中那一下的 setState 还没刷回来)。
+  // 2026-08-26 撞上后者,而它的孪生兄弟正好是前者。**待测状态要写成前提,不能靠巧合。**
+  const selectedRow = () => waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
+
   it('没下完的局标「未终局」,而且两张档位卡按不了', async () => {
     mocks.list.mockResolvedValue(response([game('a', { result: null, move_count: 22 })]));
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'unfinished'));
+    await selectedRow();
     expect(within(rows()[0]).getByText('未终局')).toBeInTheDocument();
     // 那句话自己带着手数,后面不许再挂一段「22 手」—— 同一个数说两遍。
     expect(within(rows()[0]).getByText(/^下到第 22 手就退出了 · /)).toBeInTheDocument();
@@ -534,6 +542,7 @@ describe('屏 19 · 行的五种状态', () => {
     mocks.list.mockResolvedValue(response([game('a', { game_type: 'ai_ladder_ranked', result: 'W+R' })]));
     renderPage();
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'unanalyzed'));
+    await selectedRow();
     expect(screen.getByRole('button', { name: /标准/ })).not.toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: /标准/ }));
     expect(mocks.createReport).toHaveBeenCalledWith({ userGameId: 'a', reportType: 'normal', totalMoves: 187 });

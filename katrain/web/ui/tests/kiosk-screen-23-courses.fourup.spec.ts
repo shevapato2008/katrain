@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -26,7 +26,6 @@ const OUT = resolve(process.cwd(),
  *  ① 组标题右端稿子写「每类几本，由接口返回」——那是说给读稿人听的,而那一格按规范放**数据**。
  *  ② 左栏那块盘稿子画了几颗示意子,实现照旧是压暗的空盘 —— 那一栏是实体盘镜像,
  *    摆一盘不是这一局的子就是拿装饰冒充状态(D11)。同步行那句话已经把意思说清楚了。
- *  ③ Dock 少「成长」:围棋没有 growth 路由/页面/后端(D6)。
  */
 
 const CATEGORIES = [
@@ -41,7 +40,7 @@ test('四图:课程 ←→ sample-go/shots/23-courses.png', async ({ page }) => 
     localStorage.setItem('token', 'fourup');
     localStorage.setItem('katrain_language', 'cn');
   });
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { id: 1, username: '访客', rank: '5段', credits: 0 },
   }));
@@ -66,7 +65,7 @@ test('四图:课程 ←→ sample-go/shots/23-courses.png', async ({ page }) => 
       + '环恒是「—」:接口只给本数不给进度,拿本数画进度环会画出一条读不懂的弧;本数写在副标和组标题右端 · '
       + '组标题右端写真数「3 类 · 共 13 本」,不是稿子那句「由接口返回」 · '
       + '左栏是压暗的空盘不是示意子(D11:实体盘镜像里摆装饰=拿装饰冒充状态)· '
-      + 'Dock 少「成长」(D6)',
+      + 'Dock 七项(2026-08-25 起补了「成长」,围棋独有)',
   });
   console.log(`[fourup 23-courses] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

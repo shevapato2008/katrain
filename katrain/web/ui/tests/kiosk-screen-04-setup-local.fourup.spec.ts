@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -44,7 +44,6 @@ const OUT = resolve(process.cwd(),
  *    权威在 `interface.py:258`:`RANK_MOVING_GAME_TYPES = ("ai_ladder_ranked",)`,
  *    注释逐字写着「Exactly one, by design」。照稿子写会把人指去一个改不了段位的地方。
  *
- *  另外 Dock 少「成长」:围棋没有 growth 路由/页面/后端(D6)。
  */
 
 test('四图:本地对局开局设置 ←→ sample-go/shots/04-setup-local.png', async ({ page }) => {
@@ -53,7 +52,7 @@ test('四图:本地对局开局设置 ←→ sample-go/shots/04-setup-local.png'
     localStorage.setItem('token', 'fourup');
     localStorage.setItem('katrain_language', 'cn');
   });
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { id: 1, username: '访客', rank: '5级', credits: 0 },
   }));
@@ -95,8 +94,7 @@ test('四图:本地对局开局设置 ←→ sample-go/shots/04-setup-local.png'
       + '**底下那段说明两句都改了**:① 稿子说「没有提示也没有形势判断」,而 `pvp_local` 不在 '
       + '`interface.py:253` 的 `SCORING_GAME_TYPES` 里 ⇒ 对局屏那颗「领地」照样能按;真正关掉的是'
       + '胜负走势图和 AI 支招 · ② 稿子说「段位只有在线大厅的定级队列会改」,而定级赛在「升降级对弈」'
-      + '(`LobbyPage.tsx:151`),权威是 `interface.py:258` 的 `RANK_MOVING_GAME_TYPES = ("ai_ladder_ranked",)` · '
-      + 'Dock 少「成长」(D6)',
+      + '(`LobbyPage.tsx:151`),权威是 `interface.py:258` 的 `RANK_MOVING_GAME_TYPES = ("ai_ladder_ranked",)`',
   });
   console.log(`[fourup 04-setup-local] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

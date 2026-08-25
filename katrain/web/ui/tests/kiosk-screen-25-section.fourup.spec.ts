@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });
@@ -99,7 +99,7 @@ const boot = async (page: import('@playwright/test').Page) => {
     // 所以把它塞进 history。这是**输入**,不是被断言的结论。
     history.replaceState({ usr: nav }, '');
   }, NAV);
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { id: 1, username: '访客', rank: '5段', credits: 0 },
   }));

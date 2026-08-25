@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -14,7 +14,7 @@ const OUT = resolve(process.cwd(),
  * 屏 13 题目列表。**原稿少画的那一层**(2026-08-21 补的),计划书里没有对应的 Task。
  *
  * 稿子那一格画的是「做了 3 道、第 4 道是下一道」的中途态,所以这里**得造进度** ——
- * 造的是 `tsumego_progress`(真存储,真格式),不是往组件里塞假 props。
+ * 造的是 `tsumego_progress:u<id>`(真存储,真格式),不是往组件里塞假 props。
  * ⚠️ `attempts` 存的是**失败**的那几次,屏上那句「N 次」= `attempts + (做对了 ? 1 : 0)`:
  * 稿子上的 `1 次 / 1 次 / 3 次` 对应 `attempts: 0 / 0 / 2`。
  */
@@ -27,7 +27,11 @@ test('四图:题目列表 ←→ sample-go/shots/13-problems.png', async ({ page
     localStorage.setItem('katrain_language', 'cn');
     // 稿子那一屏:前 3 道做对(试了 1 / 1 / 3 次),第 4 道是下一道且一次没试过,
     // 另有一道错过没做对的(第 21 题,给「换一批」那行的「现在有 1 道」当依据)。
-    localStorage.setItem('tsumego_progress', JSON.stringify({
+    // ⚠️ 钥匙**带 user id**(`progressStorageKey`)—— S1 把做题进度改成分人存之后,
+    // 这个 fixture 的钥匙一直没跟着改:整整一天,这一屏的四图里三个数全是「0 / — / —」,
+    // 而闸照样绿、三个计数照样打印。**没人重跑四图,所以没人知道。**
+    // 这里的 `auth/me` 回的是 id=1 ⇒ `tsumego_progress:u1`。
+    localStorage.setItem('tsumego_progress:u1', JSON.stringify({
       p0: { completed: true, attempts: 0, lastDuration: 18 },
       p1: { completed: true, attempts: 0, lastDuration: 21 },
       p2: { completed: true, attempts: 2, lastDuration: 27 },
@@ -35,7 +39,7 @@ test('四图:题目列表 ←→ sample-go/shots/13-problems.png', async ({ page
     }));
   });
   // 后端没起时 logo 会 502,取出来的图左上角是碎图标 —— 钉在仓里那份真字节上。
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/api/v1/auth/me') {
@@ -59,7 +63,7 @@ test('四图:题目列表 ←→ sample-go/shots/13-problems.png', async ({ page
     referenceCaption:
       '参考:sample-go/shots/13-problems.png · 布局 B(无棋盘 ⇒ 页控条通栏 x16)· 稿子这一层 2026-08-21 才补上,原稿从单元卡直接跳做题屏',
     implementationCaption:
-      '实现:/kiosk/tsumego/15k/capturing/1 @1024×600 · 时钟冻 16:40 · 题号 45 个是 fixture,进度造进 tsumego_progress(真存储真格式)· '
+      '实现:/kiosk/tsumego/15k/capturing/1 @1024×600 · 时钟冻 16:40 · 题号 45 个是 fixture,进度造进 tsumego_progress:u1(真存储真格式,钥匙分人)· '
       + '三处按 Fan「别写那么多小字」改了:两条组标题右端的说明去掉、数据条标签去掉「· 当前单元」、错题那行点名「这一类」 · '
       + '「只做错过的」不摆按不动的「开始」,只挂 §14 琥珀标',
   });

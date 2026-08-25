@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -30,7 +30,6 @@ const OUT = resolve(process.cwd(),
  *    造的数据让**失误 4 手、妙手 1 手**落在稿子那两个数上,准确率随算式走。
  *  ⑤ 第三行稿子写「在线大厅 · 定级局」,实现按 `source` + `game_type` 拼成
  *    「升降级对弈 · 对手」——「在线大厅」这个说法在库里没有对应的列,不自己编。
- *  ⑥ Dock 少「成长」:围棋没有 growth 路由/页面/后端(D6)。
  */
 
 const at = (iso: string) => new Date(iso).toISOString();
@@ -143,7 +142,7 @@ test('四图:复盘 ←→ sample-go/shots/19-review.png', async ({ page }) => {
     localStorage.setItem('token', 'fourup');
     localStorage.setItem('katrain_language', 'cn');
   });
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { id: 1, username: '访客', rank: '5段', credits: 0 },
   }));
@@ -201,7 +200,7 @@ test('四图:复盘 ←→ sample-go/shots/19-review.png', async ({ page }) => {
       + '行尾多出动作键(规范 §11 四态各有各的样子 + 就地干活不跳页,国象稿子同处就是这么画的)· '
       + '组标题右端多一个搜索开关(稿子漏画,它自己的 `.sbox` 注释把复盘算进了有搜索的四屏)· '
       + '第三张卡是能用的,不是「即将上线」· 三格数字随算式走,稿子那三个是示意值 · '
-      + 'Dock 少「成长」:围棋没有 growth 路由/页面/后端(D6)',
+      + 'Dock 七项(2026-08-25 起补了「成长」,围棋独有)',
   });
   console.log(`[fourup 19-review] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

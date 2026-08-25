@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -67,7 +67,7 @@ test('四图:对局中 ←→ sample-go/shots/05-game.png', async ({ page }) => 
    */
   await page.routeWebSocket('**/ws/**', () => { /* 连上就行,不推任何东西 */ });
   // 后端没起时 logo 会 502,取出来的图左上角是碎图标 —— 钉在仓里那份真字节上。
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/state**', (route) => route.fulfill({ json: { state: STATE } }));
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;

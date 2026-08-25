@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -45,7 +45,7 @@ const OUT = resolve(process.cwd(),
  *    那是净胜分正好 ±2 的特例;真规则 `core/ai_ladder_ranked.py:1503-1506` 是每局 ±1、
  *    到 ±3 才动档。而且「升到几级」这块屏拿不到(状态里只有当前档和对手档,没有整份阶梯目录)。
  *    这一帧造的是 `net_score = 2` —— 稿子那一态,于是胜那一格写「升一档」。
- *  · Dock 少「成长」(D6)。
+ * 。
  */
 
 const LADDER_STATUS = {
@@ -73,7 +73,7 @@ test('四图:升降级开局设置 ←→ sample-go/shots/03-setup-ranked.png', 
     localStorage.setItem('token', 'fourup');
     localStorage.setItem('katrain_language', 'cn');
   });
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { id: 1, username: '访客', rank: '5级', credits: 0 },
   }));
@@ -114,8 +114,7 @@ test('四图:升降级开局设置 ←→ sample-go/shots/03-setup-ranked.png', 
       + '**赌注按净胜分说话**:稿子那两格「升到 4 级 / 退到 6 级」是净胜分 ±2 的特例,真规则是每局 ±1、'
       + '到 ±3 才动档;「升到几级」这块屏也拿不到(状态里没有整份阶梯目录),所以到点那格写「升一档」· '
       + '**那行提示写的是「变化图」不是「复盘」**:2026-08-23 查明后端那道闸(`interface.py:877` '
-      + '`ANALYSIS_ACTIONS`)关的是对局中那棵树上的动作,离线报告不在里面;那一轮三处更正漏了这一屏 · '
-      + 'Dock 少「成长」(D6)',
+      + '`ANALYSIS_ACTIONS`)关的是对局中那棵树上的动作,离线报告不在里面;那一轮三处更正漏了这一屏',
   });
   console.log(`[fourup 03-setup-ranked] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

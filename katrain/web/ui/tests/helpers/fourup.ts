@@ -1,6 +1,12 @@
 import type { Page } from '@playwright/test';
-import { mkdirSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, resolve } from 'node:path';
+
+import { parsePo } from './po';
+import PINNED from './reference-shots.json' with { type: 'json' };
 
 export const KIOSK_VIEWPORT = { width: 1024, height: 600 } as const;
 
@@ -45,6 +51,8 @@ export interface FourUpResult {
  * (本轮 9 个),不是「看起来通用」。
  */
 export async function captureFourUp(o: FourUpOptions): Promise<FourUpResult> {
+  // 参考图那一半住在**另一个仓**,按登记的指纹取 —— 见 `resolveReferenceShot`。
+  const referencePng = resolveReferenceShot(o.referencePng);
   mkdirSync(o.outDir, { recursive: true });
   const implementationPath = resolve(o.outDir, `${o.slug}--implementation.png`);
   await o.page.screenshot({ path: implementationPath });
@@ -142,7 +150,7 @@ export async function captureFourUp(o: FourUpOptions): Promise<FourUpResult> {
     document.body.append(side, diff, refCtx.canvas);
     return { both, refOnly, implOnly };
   }, {
-    refSrc: asDataUrl(o.referencePng),
+    refSrc: asDataUrl(referencePng),
     implSrc: asDataUrl(implementationPath),
     refCap: o.referenceCaption,
     implCap: o.implementationCaption,
@@ -159,7 +167,7 @@ export async function captureFourUp(o: FourUpOptions): Promise<FourUpResult> {
   // 这一条当场红 ——「参考图没有任何边:/tmp/all-black.png 读成了空图」。
   // 正常那一支同一天用 sample-go/shots/01-play.png 跑通(both=7702)。**两支都执行过。**
   if (result.both === 0 && result.refOnly === 0) {
-    throw new Error(`参考图没有任何边:${o.referencePng} 读成了空图,不是实现全对`);
+    throw new Error(`参考图没有任何边:${referencePng} 读成了空图,不是实现全对`);
   }
   return result;
 }
@@ -252,11 +260,111 @@ export async function freezeClock(page: Page, iso = '2026-08-20T16:40:00') {
  */
 const SHELL_IMAGES = ['logo-white.png', 'B_stone.png', 'W_stone.png', 'board.png', 'inner.png', 'topmove.png'];
 
-export async function stubShellAssets(page: Page) {
+/**
+ * ## 第二样:翻译表
+ *
+ * `i18n.ts` 开机拉 `/api/translations?lang=cn`,拉不到就**每一句都回落到代码里那个默认串**。
+ * 后端没起的时候屏上写的是 `chinese` 和 `2d`,而设备上写的是「中国」和「2 段」——
+ * **同一份代码,两句不同的话**。2026-08-26 在屏 10 上肉眼撞见:存档里是中文,重跑出来是英文键。
+ * (同一件事 2026-08-26 之前已经在屏 20 上发生过一次并被误判成「实现改了」。)
+ *
+ * 表从**仓里那份 `.po`** 生成,不是 `.mo`:`.mo` 在 `.gitignore` 里,
+ * 拿它当输入等于「闸的绿取决于本机跑过没跑过 `i18n.py`」。
+ * 实测:`.po` 解析出来和后端 `/api/translations` 吐的**976 条一字不差**。
+ */
+export async function stubTranslations(page: Page, lang = 'cn') {
+  const table = parsePo(resolve(process.cwd(), `../../i18n/locales/${lang}/LC_MESSAGES/katrain.po`));
+  await page.route('**/api/translations*', (route) => route.fulfill({
+    json: { lang, translations: table },
+  }));
+}
+
+/**
+ * 后端那几样**静态件**一次性钉住:图片 + 翻译表。
+ *
+ * 名字从 `stubShellAssets` 改过来 —— 它现在管的不只是图片,
+ * 而是「这一屏的样子里有多少取决于另一个进程在不在」这一整类。
+ */
+export async function stubBackendStatics(page: Page, lang = 'cn') {
   for (const name of SHELL_IMAGES) {
     const file = resolve(process.cwd(), '../../img/', name);
     await page.route(`**/assets/img/${name}`, (route) => route.fulfill({
       path: file, contentType: 'image/png',
     }));
+  }
+  await stubTranslations(page, lang);
+}
+
+const DESIGN_REPO = resolve(process.cwd(), '../../../../smartbox-software');
+const SHOT_PATH = 'superpowers/shared/kiosk-shell/sample-go/shots';
+const SHOT_CACHE = resolve(tmpdir(), 'kiosk-go-shots');
+
+const sha256 = (buf: Buffer | string) => createHash('sha256').update(buf).digest('hex');
+
+/**
+ * 拿到**这一屏的存档当时照的那份稿子**,返回一个能读的绝对路径。
+ *
+ * ## 为什么不能直接用设计仓工作树里那份
+ *
+ * 四图的**输入有一半在另一个仓**,而那个仓有自己的分支,还同时被好几个会话切来切去。
+ * 2026-08-26 实测撞上:本赛道后半程 25 张稿子的新版本全在
+ * `feat/kiosk-go-lobby-2026-08-24` 上,**没并进 main**;那个仓切回 main 之后重跑四图,
+ * 九屏的参考图**悄悄换成了旧稿**,而闸照样全绿、三个计数照样打印 ——
+ * 它们比的已经不是同一件东西了。
+ *
+ * 「参考图读进来了」(`both === 0 && refOnly === 0` 那条)挡不住这个:
+ * **读进来的确实是一张真图,只是不是那一张。** ⇒ 判据落在**字节**上。
+ * `reference-shots.json` 记的是每一屏该照的那份稿子的 sha256 和它所在的分支 ——
+ * 那正是「Fan 那次是照着这张确认的」里隐含的那个前提,现在它被写下来了。
+ *
+ * 对不上就**从 git 里按登记的分支取**(只读,不碰那个仓的工作树),缓存到临时目录。
+ * 判据和 `stubBackendStatics` 是同一条,只是又往外走了一层:
+ * **一张随「另一个仓停在哪条分支」而变的参考图,不是这一屏的参考图。**
+ *
+ * 稿子**真的更新了**的时候这里会抛 —— 那是对的:重取之前先看清稿子哪儿变了,
+ * 然后把新图和新指纹放进同一次提交。
+ */
+export function resolveReferenceShot(referencePng: string): string {
+  const name = basename(referencePng);
+  const pin = (PINNED as Record<string, { sha256: string; shotFrom: string }>)[name];
+  if (!pin) {
+    throw new Error(`参考图 ${name} 没有登记指纹 —— 新增一屏时要写进 tests/helpers/reference-shots.json`);
+  }
+
+  if (existsSync(referencePng) && sha256(readFileSync(referencePng)) === pin.sha256) return referencePng;
+
+  const cached = resolve(SHOT_CACHE, `${pin.sha256}-${name}`);
+  if (existsSync(cached)) return cached;
+
+  let blob: Buffer;
+  try {
+    blob = execFileSync('git', ['-C', DESIGN_REPO, 'show', `${pin.shotFrom}:${SHOT_PATH}/${name}`],
+      { maxBuffer: 64 * 1024 * 1024 });
+  } catch {
+    throw new Error(
+      `参考图 ${name} 取不到:工作树那份和登记的指纹对不上,`
+      + `而设计仓里也没有 \`${pin.shotFrom}\` 这条引用。\n`
+      + '  要么去 smartbox 那边把那条分支取回来,要么稿子真的改了 —— 那就重取四图并更新指纹。',
+    );
+  }
+  if (sha256(blob) !== pin.sha256) {
+    throw new Error(
+      `参考图 ${name} 变了:\`${pin.shotFrom}\` 上现在那份和登记的指纹对不上。\n`
+      + `  登记 ${pin.sha256.slice(0, 16)}… / 那条分支上现在是 ${sha256(blob).slice(0, 16)}…\n`
+      + '  稿子改了 ⇒ 先看清哪儿变了,再重取四图,新图和新指纹放进同一次提交。',
+    );
+  }
+  mkdirSync(SHOT_CACHE, { recursive: true });
+  writeFileSync(cached, blob);
+  return cached;
+}
+
+/** 参考图这一半有没有问题;没问题返回 `null`。给 `test.skip(...)` 做前置检查用。 */
+export function shotProblem(referencePng: string): string | null {
+  try {
+    resolveReferenceShot(referencePng);
+    return null;
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
   }
 }

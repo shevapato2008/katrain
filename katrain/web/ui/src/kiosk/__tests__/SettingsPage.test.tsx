@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import SettingsPage from '../pages/SettingsPage';
+import { readAudioPref } from '../../utils/audioPrefs';
 
 // B6: SettingsPage pulls in useSettings/useAuth/useGeometry (via AccountSection +
 // PhysicalBoardStatus). Mock each context module directly — same idiom as
@@ -75,11 +76,11 @@ describe('屏 27 设置 · 分组与导航', () => {
   beforeEach(() => vi.clearAllMocks());
 
   // **导航项数 = 分组数,且词一一对应** —— 两套词等于两套心智模型。
-  it('导航四项,和右边四组的标题一个字不差', () => {
+  it('导航五项,和右边五组的标题一个字不差', () => {
     renderPage();
     const nav = screen.getByTestId('settings-nav');
     const labels = [...nav.querySelectorAll('button')].map((b) => b.textContent);
-    expect(labels).toEqual(['账号与平台', '实体棋盘', '落子与提示', '语言']);
+    expect(labels).toEqual(['账号与平台', '实体棋盘', '落子与提示', '声音', '语言']);
 
     const groups = [...document.querySelectorAll('[data-group]')].map(
       (g) => g.querySelector('.kiosk-seclabel h2')?.textContent,
@@ -91,9 +92,14 @@ describe('屏 27 设置 · 分组与导航', () => {
   // 挂「未接后端」是用错标 —— 那五组大部分不是「后端没有」,是「这个设置项还没做」。
   it('没有内容的那几组一个都不摆,也不挂「未接后端」', () => {
     renderPage();
-    for (const absent of ['棋盘外观', '声音与报着', '对局默认值', '关于']) {
+    for (const absent of ['棋盘外观', '对局默认值', '关于']) {
       expect(screen.queryByText(absent)).toBeNull();
     }
+    // 「声音」这一组 2026-08-26 补上了 —— 它**有内容**:落子音效和实体盘引导语一直在响,
+    // 而这台盒子上原来一个关掉它们的地方都没有。
+    // 但屏上写的是「声音」不是稿子那句「声音与报着」:**盒子不报着**(`useVoice` 说的是
+    // 摆子引导那七句,不是手数)。多写两个字就是承诺一个不存在的功能。
+    expect(screen.queryByText('声音与报着')).toBeNull();
     expect(screen.queryByText(/未接后端/)).toBeNull();
     expect(screen.queryByText(/即将上线/)).toBeNull();
   });
@@ -151,7 +157,45 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
     expect(on).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('换语言走的是会落盘的那个 setter,不是组件里的局部状态', () => {
+  // 两把开关**分开**:音效是几十毫秒的一声,引导语是一整句话 ——
+  // 教室里最先想关掉的往往是后者,合成一把就逼人连落子声一起丢掉。
+  it('声音是两把开关,不是一把', () => {
+    renderPage();
+    expect(screen.getByRole('group', { name: '落子音效' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: '语音提示' })).toBeInTheDocument();
+  });
+
+  it('出厂两把都是开的 —— 读不到就当开,不是当关', () => {
+    localStorage.clear();
+    renderPage();
+    for (const name of ['落子音效', '语音提示']) {
+      const [on] = [...screen.getByRole('group', { name }).querySelectorAll('button')];
+      expect(on, name).toHaveAttribute('aria-pressed', 'true');
+    }
+  });
+
+  it('拨了就落盘,而且落的是**共享的那一份** —— 不是组件里另存的 state', () => {
+    renderPage();
+    const seg = screen.getByRole('group', { name: '落子音效' });
+    const [on, off] = [...seg.querySelectorAll('button')];
+
+    fireEvent.click(off);
+    expect(off).toHaveAttribute('aria-pressed', 'true');
+    // 判据落在**播放那一侧读的同一个出口**上,不落在 localStorage 的键名上:
+    // 键名对了而 `useSound` 读的是别处,屏上照样写着「关」而喇叭还在响。
+    expect(readAudioPref('sfx')).toBe(false);
+    expect(readAudioPref('voice')).toBe(true);   // 另一把没跟着动
+
+    fireEvent.click(on);
+    expect(readAudioPref('sfx')).toBe(true);
+  });
+
+  it('语音那一行照实说它什么时候才会响', () => {
+    renderPage();
+    expect(screen.getByText(/只在用实体棋盘时会响/)).toBeInTheDocument();
+  });
+
+    it('换语言走的是会落盘的那个 setter,不是组件里的局部状态', () => {
     renderPage();
     fireEvent.change(screen.getByTestId('settings-language'), { target: { value: 'jp' } });
     expect(mockSetLanguage).toHaveBeenCalledWith('jp');

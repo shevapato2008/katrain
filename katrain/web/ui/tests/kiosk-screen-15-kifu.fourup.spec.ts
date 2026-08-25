@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -20,7 +20,6 @@ const OUT = resolve(process.cwd(),
  *  ① 稿子第五块「棋谱详情 · 后端已有 · 界面未接」—— 那是**说给读稿人听的**进度说明
  *    (块里印着 `PlaceholderPage` 和 `galaxy/pages/KifuLibraryPage.tsx` 两个文件名),
  *    而且它说的事本轮已经不成立:详情屏接上了,就是下一张对照台那一屏。
- *  ② Dock 上的「成长」—— 围棋没有 growth 路由/页面/后端(D6),摆假入口比缺一格更坏。
  */
 const ALBUMS = Array.from({ length: 6 }, (_, i) => ({
   id: i + 1,
@@ -67,7 +66,7 @@ test('四图:棋谱 ←→ sample-go/shots/15-kifu.png', async ({ page }) => {
     localStorage.setItem('baipu:progress:local_3', prog(12, 175));
   });
   // 后端没起时 logo 会 502,取出来的图左上角是碎图标 —— 钉在仓里那份真字节上。
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { id: 1, username: '访客', rank: '5段', credits: 0 },
   }));
@@ -94,7 +93,7 @@ test('四图:棋谱 ←→ sample-go/shots/15-kifu.png', async ({ page }) => {
       + '**没搬**稿子第五块「棋谱详情 · 界面未接」:那是说给读稿人听的,而且详情屏本轮已接上(见屏 16 对照台) · '
       + '组标题右端写真数据(共 1,234 局 / 来源按这批真的来自哪几家算),不是稿子那两句解释 · '
       + '「搜棋谱」是开关不是跳转 —— 收起时和稿子一样,按下去在这一组里展开搜索框和结果行 · '
-      + 'Dock 少「成长」:围棋没有 growth 路由/页面/后端(D6)',
+      + 'Dock 七项(2026-08-25 起补了「成长」,围棋独有)',
   });
   console.log(`[fourup 15-kifu] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

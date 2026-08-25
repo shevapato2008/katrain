@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -38,7 +38,6 @@ const OUT = resolve(process.cwd(),
  *    一段说明里,不是控件规格;实现的贴目是 0.5 – 7.5 半目一档共 15 档,
  *    把它收成三档是删功能不是重画。屏 04 的贴目稿子画的正是一条档位轨,两屏因此同一种控件。
  *
- *  另外 Dock 少「成长」:围棋没有 growth 路由/页面/后端(D6)。
  */
 
 test('四图:自由对弈开局设置 ←→ sample-go/shots/02-setup-free.png', async ({ page }) => {
@@ -47,7 +46,7 @@ test('四图:自由对弈开局设置 ←→ sample-go/shots/02-setup-free.png',
     localStorage.setItem('token', 'fourup');
     localStorage.setItem('katrain_language', 'cn');
   });
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { id: 1, username: '访客', rank: '5段', credits: 0 },
   }));
@@ -99,7 +98,7 @@ test('四图:自由对弈开局设置 ←→ sample-go/shots/02-setup-free.png',
       + '**「我执」两项不是三项**:第三项「随机」是搬象棋骨架带来的,围棋 kiosk 和 galaxy 两处都只给黑白 · '
       + '**AI 策略只有「拟人」那一条说明**:另外四条是对引擎行为的断言,仓里没有出处,不编 · '
       + '**贴目 15 档**(0.5 – 7.5 半目一档),稿子那句「(6.5 / 7.5 / 0)」写在说明里不是控件规格,'
-      + '收成三档是删功能不是重画 · Dock 少「成长」(D6)',
+      + '收成三档是删功能不是重画',
   });
   console.log(`[fourup 02-setup-free] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

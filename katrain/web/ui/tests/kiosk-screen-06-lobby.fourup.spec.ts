@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { resolve } from 'node:path';
-import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubShellAssets } from './helpers/fourup';
+import { captureFourUp, freezeClock, KIOSK_VIEWPORT, shotProblem, stubBackendStatics } from './helpers/fourup';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -38,7 +38,6 @@ const OUT = resolve(process.cwd(),
  *  ④ **06b 的 `fact` 小字改了。** 稿子写「段位来自『升降级对弈』,没打过定级赛就显示未定级」,
  *    那句话承诺的正是 ① 里没上的那一列。换成这一屏真做得到的事(名单只列此刻连着的人)。
  *
- *  另外 Dock 少「成长」:围棋没有 growth 路由/页面/后端(D6)。
  */
 
 const ME = { id: 1, username: '访客' };
@@ -66,7 +65,7 @@ const USERS = [
  * 假 WebSocket。**不是为了省事** —— 两条理由:
  *   · 「收到邀请」这一态没有任何用户可触发的入口,它只能由服务端推过来。
  *   · 真 WS 连的是 `:8002` 上那个 Python 进程,它对 `token=fourup` 会直接关掉连接 ⇒
- *     这几张图的绿会取决于另一个进程当时的脾气。这一条本 track 栽过(见 `stubShellAssets`)。
+ *     这几张图的绿会取决于另一个进程当时的脾气。这一条本 track 栽过(见 `stubBackendStatics`)。
  * 顺带把 1 秒那条计时器停掉,让「已等 N 秒」停在 0 —— 稿子那一帧写的就是 0。
  */
 async function stubLobbySocket(page: Page) {
@@ -107,7 +106,7 @@ async function bootLobby(page: Page, { token = true } = {}) {
     else localStorage.removeItem('token');
     localStorage.setItem('katrain_language', 'cn');
   }, token);
-  await stubShellAssets(page);
+  await stubBackendStatics(page);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
     json: { ...ME, rank: '20k', credits: 0 },
   }));
@@ -148,13 +147,14 @@ test('四图:在线大厅主屏 ←→ sample-go/shots/06-lobby.png', async ({ p
       + '**空闲 / 对局中是算出来的**:拿左栏那五局的名字比对右栏,不是后端喂的状态位 · '
       + '**名单按能不能邀请排序**(我 → 空闲 → 对局中),能点的那几个不该埋在十几行灰按钮下面 · '
       + '**观众数只在真有观众时出现**,恒挂一个 0 是拿一个空位置冒充一条信息 · '
-      + '**一个字不写时限**:`create_multiplayer_session` 不带任何时钟参数,不是「不限时」是没有那个字段 · '
-      + 'Dock 少「成长」(D6)',
+      + '**一个字不写时限**:`create_multiplayer_session` 不带任何时钟参数,不是「不限时」是没有那个字段',
   });
   console.log(`[fourup 06-lobby] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });
 
 test('四图:在线大厅 · 未登录 ←→ sample-go/shots/06b-lobby-guest.png', async ({ page }) => {
+  test.skip(shotProblem(resolve(SHOTS, '06b-lobby-guest.png')) ?? false,
+    shotProblem(resolve(SHOTS, '06b-lobby-guest.png')) ?? '');
   await bootLobby(page, { token: false });
   await page.waitForSelector('[data-testid="lobby-guest"]');
   await page.waitForLoadState('networkidle');
@@ -180,6 +180,8 @@ test('四图:在线大厅 · 未登录 ←→ sample-go/shots/06b-lobby-guest.pn
 });
 
 test('四图:在线大厅 · 匹配中 ←→ sample-go/shots/06c-lobby-match.png', async ({ page }) => {
+  test.skip(shotProblem(resolve(SHOTS, '06c-lobby-match.png')) ?? false,
+    shotProblem(resolve(SHOTS, '06c-lobby-match.png')) ?? '');
   await bootLobby(page);
   await page.waitForSelector('[data-testid="lobby-start-match"]');
   await expect(page.locator('[data-testid="lobby-game"]')).toHaveCount(5);
@@ -212,6 +214,8 @@ test('四图:在线大厅 · 匹配中 ←→ sample-go/shots/06c-lobby-match.pn
 });
 
 test('四图:在线大厅 · 收到邀请 ←→ sample-go/shots/06d-lobby-inbox.png', async ({ page }) => {
+  test.skip(shotProblem(resolve(SHOTS, '06d-lobby-inbox.png')) ?? false,
+    shotProblem(resolve(SHOTS, '06d-lobby-inbox.png')) ?? '');
   await bootLobby(page);
   await page.waitForSelector('[data-testid="lobby-start-match"]');
   await expect(page.locator('[data-testid="lobby-game"]')).toHaveCount(5);

@@ -293,6 +293,23 @@ export async function stubBackendStatics(page: Page, lang = 'cn') {
     }));
   }
   await stubTranslations(page, lang);
+
+  /**
+   * 直播那张**人名 / 赛事名**对照表(`/api/v1/live/translations`,盒子上走
+   * `/api/v1/board/live/...` 的代理)。它和上面那张不是一回事:
+   * 上面那张的正本在仓里(`.po`),**这一张没有** —— 它是每套部署自己的远端数据。
+   *
+   * ⇒ 这里钉成**空表**,并接受它的后果:`i18n.translatePlayer(name)` 是
+   * `players[name] || name`,空表 ⇒ 名字原样上屏。
+   * **所以四图的 fixture 里,人名和赛事名必须写成「屏上最终该长的样子」**,
+   * 不能指望这张表把它们翻过去 —— 那张表在取图这台机器上永远是空的。
+   *
+   * 不钉的话它每次 502,而 `liveTranslations` 变成 `null`(同样是原样上屏)——
+   * 结果碰巧一样,但那是「另一个进程恰好不在」换来的,不是判据。
+   */
+  await page.route('**/live/translations*', (route) => route.fulfill({
+    json: { lang, players: {}, tournaments: {}, rounds: {}, rules: {} },
+  }));
 }
 
 const DESIGN_REPO = resolve(process.cwd(), '../../../../smartbox-software');

@@ -614,6 +614,101 @@ GitHub 本机实测直连可用（`git ls-remote` exit 0）。**不再从旧 rel
 **盘面：** 71% → **72%（70G/97G，剩余 28G）**。本次三项都不是为了立刻腾空间，
 是把「每年 24G」和「每次 +1.6G」两个源头堵上；SSH 那项与磁盘无关。
 
+### 2026-08-25（夜）— 发布 `e9a7889e` + **把生产从 preview profile 切回 production**
+
+两件分开做、分开验，为的是出事时能归因。
+
+#### 第一步：补发代码 `e9a7889e`
+
+`fix/test-fixture-isolation` 那两条（2026-08-23 做完一直没并）今天并进 develop 后补发。
+只动后端与测试，不含前端。
+
+**合并时 `server.py` 冲突了一处**，两边分别是：release 的 `PREVIEW_MODE` 守卫、
+develop 把 `SessionLocal as _SL2` 换成可注入的 `session_factory()`。**两者都要**——
+守卫决定跑不跑，`session_factory` 决定跑在哪个库上。解完复核：三处 `PREVIEW_MODE`
+守卫俱在，无残留标记，相关 38 条测试通过。
+
+- `git clone --depth 1` → `/opt/katrain/releases/e9a7889e` **1.5G**（第三次，稳定）。
+- 镜像 `katrain-web:e9a7889e`，
+  `image_id=sha256:53bfcb82ff9a163eb0b7849803aadc0bb264bba0a657cd655b14d5382c802f44`，
+  `size_bytes=542526049`（上一版 542524873，+1176）。`build-web.sh` 容器内容测试全过。
+- `--phase full` 仍只有那 2 条容量闸（`available_bytes=22352781312`），`checks=2`，同因越过。
+- env 备份 `/opt/katrain/backups/ucloud.env.20260825-1614`，diff 恰好 2 行，root:root 0600。
+- **回滚锚点：** 目录 `releases/a9b2485b` + 镜像 `katrain-web:a9b2485b`。
+
+验证：镜像 id 逐字符相符、health 200、外网 `/`、`/galaxy`、`/galaxy/research` 全 200。
+
+#### 第二步：切回 production profile（修上一条记的那个错位）
+
+**先查清机制再动手。** 两个容器的 `config_files` 标签把事情说明白了：
+
+```
+katrain-cron : .../c7f3eed7/compose.yml,.../c7f3eed7/compose.production.yml   ← 用完整命令起的
+katrain-web  : .../e9a7889e/compose.yml                                        ← 只用了短命令
+```
+
+所以不是有人决定让生产跑 preview，而是**后续每次「只发 web」都用了那条短命令，
+把 web 的 production override 冲掉了**，cron 那半一直是对的。
+
+**切之前先排掉三个风险，每一个都是量出来的，不是想出来的：**
+
+1. **卷里会不会有东西丢**：preview 卷只有 `config.json`（+ 我今早的备份），20K；
+   production 卷有 `.platform_salt` 和 `platform_credentials.db`。⇒ 切过去**不丢任何东西**。
+2. **打开 billing 对账会不会动钱**：`reconcile_stale_reservations` 会退款 `status='reserved'`
+   且超时的交易。生产库实测 **`credit_transactions` 表是空的** ⇒ 零影响。
+3. **production 卷里的 engine 配置**：和 preview 卷今早修之前一模一样的病
+   （`http_url=http://127.0.0.1:8000`、`http_has_human_model=False`）。**不修就切，
+   引擎会立刻回到「连不上 → 回退本地 KataGo → status 127 死掉」。**
+   先改（备份 `config.json.bak-20260825-081537`，带断言只许这两个键变），再切。
+
+切换命令用 runbook 第 43 行那条（`-f compose.yml -f compose.production.yml --profile production`）。
+
+**验证（逐条对着 `PREVIEW_MODE` 管的那三处）：**
+
+| 项 | 切换前 | 切换后 |
+|---|---|---|
+| `KATRAIN_PREVIEW_MODE` | 1 | **0** |
+| 挂载卷 | `katrain-state-preview` | **`katrain-state-production`** |
+| `GET /api/v1/live/matches` | **503** `Live service not initialized` | **200** |
+| 平台适配器 | 不初始化 | **OGS / Fox registered** |
+| 调度器数量 | 1 | 1（invariant 要求恰好一个） |
+
+引擎端到端实测：容器内现签一个 5 分钟 token 给已存在的 `qa_verify`（不新建账号、
+不碰密码），开一个**内存会话**走一手，**AI 1 秒内回手**。会话不到终局 ⇒ 不落库，跑完即弃。
+
+外网 `/`、`/galaxy`、`/galaxy/live` 全 200。盘面 77% → **79%（21G 可用）**。
+
+**回滚**：`-f compose.yml up -d`（短命令）即切回 preview；env 备份在
+`/opt/katrain/backups/ucloud.env.20260825-1614`；production 卷 config 备份见上。
+
+**以后别再踩**：只发 web 时**也要用完整命令**。短命令会静默把 web 的 production
+override 冲掉，而且**冲掉之后一切看起来都正常**——health 200、页面 200，只有直播那一格
+503，而没人天天点它。判据：发布后查一次
+`docker inspect katrain-ucloud-katrain-web-1 --format '{{index .Config.Labels "com.docker.compose.project.config_files"}}'`，
+必须是**两个**文件。
+
+#### 顺带修掉的：测试域名网关那两行（不同机器，同一天的故事）
+
+`alicloud-ecs-gateway` 上 `go.sailorvoyage.top` 的 504 已治：新增
+`/etc/nginx/conf.d/katrain-upstream.conf`（`map $http_upgrade $connection_upgrade` +
+`upstream katrain_go { server 10.8.0.2:8001; keepalive 32; }`），站点里
+`proxy_pass` 改指 upstream、`Connection` 改用 map 变量、`proxy_connect_timeout` **5s → 15s**。
+备份 `/root/nginx-backup-20260825-1613/`。
+
+验证：`nginx -t` 通过、reload 后 `/`、`/galaxy`、`/api/v1/health` 全 200、
+**重复请求 `connect` 降到 ~1ms**（连接复用生效）、**WS 升级仍是 `101`**（这是改
+`Connection` 头的主要风险，专门验了两次）。
+
+> 中途出现过一次 `502`，**不是这个改动**：那一刻测试机容器 08:13:17 才启动，探针
+> 08:13:28 打进去，差 11 秒应用还没起来。判据是容器 `StartedAt`，不是「改完就红所以是改的」。
+
+**遗留（未处理）：** 根分区 79%（21G）。`releases/` 下有 7 份，其中 5 份已无引用
+（`3d65e536` / `772ee97a` / `c5b8c4eb` / `c7f3eed7` / `fc1e73c3`，合计约 8.3G）。
+保留 `e9a7889e`（线上）与 `a9b2485b`（回滚锚点）。**未删，等授权**——容量闸那条老规矩
+仍然成立：它要 38.5G 是按迁移峰值标定的，清盘也不会变绿，别为了让它绿去删该留的东西。
+
+---
+
 ### 2026-08-25（傍晚）— 发布 `a9b2485b`：研究/复盘页的 WS 凭据（同族最后一处）
 
 下午发的 `c5b8c4eb` 修的是**对局** WS。之后普查了全仓 6 个 `new WebSocket()` 调用点与

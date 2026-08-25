@@ -582,7 +582,15 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 
 /* 展开出来的搜索框 —— 高度 44 + 下边距 10 = 54,和上面 `has-search` 那条里的数是同一个。
    两处必须一起改;改一处的话渐隐会从搜索框中间开始。 */
-.rvsearch { display: block; width: 100%; margin-bottom: 10px; }
+/* 「筛 + 搜」那条带子。展开时头部多的正是 44 + 10 = 54,和
+   `.kiosk-section--grow.has-search::before` 那个 +54 是同一个数 —— 改这里要一起改。
+   ⚠️ `.kiosk-optseg` 是共享件(`tokens.css:691`,`width:100%; height:48`),
+   四家都在用。这里**按上下文**收窄它的盒子,不重定义那个裸类本身
+   (`goScreensCssCollision.test.ts` 守的正是「同一个裸单类只许有一处定义」)。 */
+.rvfind { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.rvfind .kiosk-optseg { flex: none; width: auto; height: 44px; }
+.rvfind .kiosk-optseg button { padding: 0 14px; font-size: 13px; }
+.rvsearch { flex: 1; min-width: 0; }
 
 /* 行分成两半:左半(整块)是「选中这一局」的靶,右半是这一行自己的动作。
    **不能把整行做成 `<button>`** —— 按钮里套按钮是非法 DOM,React 会警告,

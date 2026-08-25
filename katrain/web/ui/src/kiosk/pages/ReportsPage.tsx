@@ -23,6 +23,7 @@ import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { Icon } from '../shell/icons';
 import { KioskCard } from '../shell/KioskCard';
 import { KioskConsoleRail } from '../shell/KioskConsoleRail';
+import { KioskOptSeg } from '../shell/KioskOptSeg';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import type { StatusCell } from '../shell/KioskStatusCells';
@@ -65,6 +66,9 @@ import { whenLabel } from '../utils/whenLabel';
  *    没有选中态,那三个字就没有出处。
  */
 
+/** 来源筛选只有两档 —— 见 `source` 那段注。 */
+type SourceFilter = 'all' | 'play_local';
+
 const PAGE_SIZE = 12;
 const messageOf = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
@@ -88,7 +92,18 @@ export default function ReportsPage() {
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const query = searchParams.get('q') || '';
-  const [searchOpen, setSearchOpen] = useState(Boolean(query));
+  /**
+   * 来源筛选。**只有两档**:全部 / 本地对局(`play_local` = 人人对弈·面对面那一种)。
+   * 它是从 27 屏改造前那一屏「对局历史」接过来的唯一一件东西 ——
+   * 那一屏这一轮删了(全仓没有任何入口),而这个筛选是它有、屏 19 没有的
+   * (Fan 2026-08-26 裁定要补)。稿子上没画,四图这一处会红。
+   *
+   * ⚠️ 认不得的值一律退回 `all` —— `?source=` 来自 URL,手输一个不存在的来源
+   * 不该让列表空着还说「还没有下过的棋」。
+   */
+  const source: SourceFilter = searchParams.get('source') === 'play_local' ? 'play_local' : 'all';
+  // 筛选活着就把带子撑开 —— 否则列表短了而屏上没有任何控件说得出为什么。
+  const [searchOpen, setSearchOpen] = useState(Boolean(query) || searchParams.get('source') === 'play_local');
   const [searchInput, setSearchInput] = useState(query);
 
   const [games, setGames] = useState<UserGameSummary[]>([]);
@@ -135,6 +150,7 @@ export default function ReportsPage() {
     try {
       const response = await UserGamesAPI.list(token, {
         page, page_size: PAGE_SIZE, q: query || undefined, sort: 'created_at_desc',
+        source: source === 'all' ? undefined : source,
       });
       // 迟到的成功不许覆盖新结果 —— 搜索输入快过网络时,旧那批会盖掉刚回来的。
       if (requestGeneration !== listRequestGenerationRef.current) return null;
@@ -148,7 +164,7 @@ export default function ReportsPage() {
     } finally {
       if (requestGeneration === listRequestGenerationRef.current) setGamesLoading(false);
     }
-  }, [isAuthenticated, page, query, token]);
+  }, [isAuthenticated, page, query, source, token]);
 
   useEffect(() => setSearchInput(query), [query]);
   useEffect(() => {
@@ -288,19 +304,24 @@ export default function ReportsPage() {
     createReport({ userGameId: game.id, reportType, totalMoves: game.move_count })
   ), [createReport]);
 
-  const updateLocation = useCallback((nextQuery: string, nextPage: number) => {
+  const updateLocation = useCallback((
+    nextQuery: string, nextPage: number, nextSource: SourceFilter = source,
+  ) => {
     const params: Record<string, string> = {};
     if (nextQuery) params.q = nextQuery;
     if (nextPage > 1) params.page = String(nextPage);
+    if (nextSource !== 'all') params.source = nextSource;
     setSearchParams(params);
-  }, [setSearchParams]);
+  }, [setSearchParams, source]);
 
   const focusImportedGame = useCallback(async (game: UserGameDetail) => {
     setSelectedGameId(game.id);
     setSearchInput('');
-    if (page !== 1 || query) setSearchParams({});
+    // 刚导进来的那局 `source` 是 `import` —— 筛在「本地对局」上它根本不在结果里,
+    // 屏上就成了「导入成功,可列表里没有它」。所以顺带把筛选也收回「全部」。
+    if (page !== 1 || query || source !== 'all') setSearchParams({});
     else await loadGames();
-  }, [loadGames, page, query, setSearchParams]);
+  }, [loadGames, page, query, setSearchParams, source]);
 
   const handleLocalImport = useCallback(async (payload: LocalImportPayload, reportType?: ReportType) => {
     if (!token) return;
@@ -383,7 +404,9 @@ export default function ReportsPage() {
   const canAnalyzeSelected = Boolean(selectedSummary) && selectedState?.kind !== 'unfinished';
   const countLabel = query
     ? interpolate(t('review:matched_games', '搜到 {n} 局'), { n: totalGames })
-    : interpolate(t('review:local_games', '本机 {n} 局'), { n: totalGames });
+    : source === 'play_local'
+      ? interpolate(t('review:facing_games', '面对面 {n} 局'), { n: totalGames })
+      : interpolate(t('review:local_games', '本机 {n} 局'), { n: totalGames });
 
   return (
     <>
@@ -435,30 +458,53 @@ export default function ReportsPage() {
                         type="button"
                         className="kiosk-seclabel__act"
                         aria-expanded={searchOpen}
-                        aria-label={t('review:search_toggle', '搜历史对局')}
+                        aria-label={t('review:search_toggle', '筛选和搜索历史对局')}
                         onClick={() => {
                           const next = !searchOpen;
                           setSearchOpen(next);
-                          if (!next && query) updateLocation('', 1);
+                          // 收起来就把筛选一起清掉 —— **看不见的筛选是最坏的一种**:
+                          // 列表短了,而屏上没有任何控件解释为什么。
+                          if (!next && (query || source !== 'all')) updateLocation('', 1, 'all');
                         }}
                       >
                         <Icon name="magnifying-glass" />
                       </button>
                     )}
                   />
+                  {/*
+                    筛与搜同住一条 44 高的带子(`.rvfind`,展开时头部 +54)。
+                    **筛选没有别处可去**:组标题行只有 20 高(`--l1-sec-label-h`),
+                    连 26 高的药丸都塞不进去;而单开一条常驻的筛选行要从列表里扣 54 ——
+                    列表是这一屏唯一会长的东西。挂进已经存在的这条带子,高度一分不多。
+                    分段用的是共享的 `KioskOptSeg`(同一套按下态和读屏语义),
+                    只在 `go-screens.css` 里按**上下文**收窄它的盒子(`.rvfind .kiosk-optseg`)——
+                    不是重定义 `.kiosk-optseg` 本身,那会波及另外三家。
+                  */}
                   {searchOpen && (
-                    <input
-                      className="ksearch__box rvsearch"
-                      data-testid="review-search"
-                      type="search"
-                      value={searchInput}
-                      placeholder={t('report:search_placeholder', '按棋手、标题或赛事搜索')}
-                      aria-label={t('review:search_toggle', '搜历史对局')}
-                      onChange={(event) => setSearchInput(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') updateLocation(searchInput.trim(), 1);
-                      }}
-                    />
+                    <div className="rvfind">
+                      <KioskOptSeg
+                        options={[
+                          { value: 'all', label: t('review:filter_all', '全部') },
+                          { value: 'play_local', label: t('review:filter_local', '面对面') },
+                        ]}
+                        value={source}
+                        onChange={(next) => updateLocation(query, 1, next)}
+                        ariaLabel={t('review:filter_label', '按来源筛对局')}
+                        testId="review-source"
+                      />
+                      <input
+                        className="ksearch__box rvsearch"
+                        data-testid="review-search"
+                        type="search"
+                        value={searchInput}
+                        placeholder={t('report:search_placeholder', '按棋手、标题或赛事搜索')}
+                        aria-label={t('report:search_placeholder', '按棋手、标题或赛事搜索')}
+                        onChange={(event) => setSearchInput(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') updateLocation(searchInput.trim(), 1);
+                        }}
+                      />
+                    </div>
                   )}
                 </>
               )}
@@ -475,11 +521,22 @@ export default function ReportsPage() {
                 <div className="empty"><h4>{t('review:list_loading', '正在读你的对局')}</h4></div>
               ) : games.length === 0 ? (
                 <div className="empty">
-                  <h4>{query ? t('review:no_match', '没有对得上的对局') : t('review:no_games', '还没有下过的棋')}</h4>
+                  {/* 三种「没有」是三句话:搜不到 / 这一类还没有 / 一局都没下过。
+                      筛在「面对面」上而结果为空时说「还没有下过的棋」,是把筛选的后果
+                      栽到用户头上 —— 他可能下过一百局人机。 */}
+                  <h4>
+                    {query
+                      ? t('review:no_match', '没有对得上的对局')
+                      : source === 'play_local'
+                        ? t('review:no_local_games', '还没有面对面下过')
+                        : t('review:no_games', '还没有下过的棋')}
+                  </h4>
                   <p>
                     {query
                       ? t('review:no_match_hint', '换棋手名或赛事名再试。')
-                      : t('review:no_games_hint', '下完一局会自动记在这里；也可以从下面导入一份 SGF。')}
+                      : source === 'play_local'
+                        ? t('review:no_local_games_hint', '「对弈 · 人人对弈」里两个人在同一台盒子上下的局会记在这里。')
+                        : t('review:no_games_hint', '下完一局会自动记在这里；也可以从下面导入一份 SGF。')}
                   </p>
                 </div>
               ) : (

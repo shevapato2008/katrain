@@ -937,7 +937,7 @@ test('§5 屏 19 承重:列表滚起来的时候,胜率曲线和生成报告一�
  * 「历史对局」四个字会随滚动忽明忽暗。
  * 收起搜索时头就是一条组标题(20+6=26);展开时多一条 44 的框 + 10 的空(再 +54)。
  */
-test('§5 屏 19:渐隐从组标题下缘开始,展开搜索之后跟着往下挪', async ({ page }) => {
+test('§5 屏 19:渐隐从组标题下缘开始,展开「筛 + 搜」之后跟着往下挪', async ({ page }) => {
   await bootReview(page, 30);
   const closed = await page.evaluate(() => {
     const sec = document.querySelector('.kiosk-section--grow') as HTMLElement;
@@ -952,18 +952,36 @@ test('§5 屏 19:渐隐从组标题下缘开始,展开搜索之后跟着往下�
   expect(closed.fade, '渐隐没落在滚动区的起点上 —— 它盖住组标题了').toBe(closed.headH);
   expect(closed.headH, '收起时头不止一条组标题').toBe(closed.labelH + 6);
 
-  await page.click('button[aria-label="搜历史对局"]');
+  await page.click('button[aria-label="筛选和搜索历史对局"]');
   await page.waitForSelector('[data-testid="review-search"]');
   const open = await page.evaluate(() => {
     const sec = document.querySelector('.kiosk-section--grow') as HTMLElement;
     const scroll = document.querySelector('.kiosk-section--grow .kiosk-side__scroll') as HTMLElement;
+    const r = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
     return {
       fade: parseFloat(getComputedStyle(sec, '::before').top),
       headH: Math.round(scroll.getBoundingClientRect().top - sec.getBoundingClientRect().top),
+      labelH: Math.round(r('.kiosk-section--grow .kiosk-seclabel').height),
+      segRight: Math.round(r('.rvfind .kiosk-optseg').right),
+      inputLeft: Math.round(r('.rvsearch').left),
+      inputRight: Math.round(r('.rvsearch').right),
+      secRight: Math.round(r('.kiosk-section--grow').right),
+      docScrollW: document.documentElement.scrollWidth,
     };
   });
-  expect(open.headH, '展开搜索没把头撑高 54(44 的框 + 10 的空)').toBe(closed.headH + 54);
-  expect(open.fade, '展开搜索之后渐隐没跟着挪 —— 它压在搜索框上').toBe(open.headH);
+  expect(open.headH, '展开「筛 + 搜」没把头撑高 54(44 的框 + 10 的空)').toBe(closed.headH + 54);
+  expect(open.fade, '展开之后渐隐没跟着挪 —— 它压在那条带子上').toBe(open.headH);
+
+  /*
+   * 2026-08-26 那条带子里多了一个来源筛选(Fan 裁定要补)。
+   * **它没有别处可去**:组标题行只有 20 高(`--l1-sec-label-h`),连 26 高的药丸都塞不进去;
+   * 单开一条常驻的筛选行又要再从列表里扣 54 —— 而列表是这一屏唯一会长的东西。
+   * 所以它和搜索框同住这一条 44 的带子,上面那个 +54 因此**一分不变**。
+   */
+  expect(open.labelH, '筛选把组标题行撑高了 —— 那一行只有 20').toBe(closed.labelH);
+  expect(open.segRight, '筛选和搜索框叠在一起了').toBeLessThanOrEqual(open.inputLeft);
+  expect(open.inputRight, '搜索框出了这一组的右缘').toBe(open.secRight);
+  expect(open.docScrollW, '整页横向溢出了').toBeLessThanOrEqual(1024);
 });
 
 /**

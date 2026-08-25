@@ -189,14 +189,14 @@ describe('屏 19 · 列表与选中', () => {
     fireEvent.click(within(rows()[1]).getByRole('button', { name: /vs 柯洁/ }));
     await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
     mocks.list.mockResolvedValue(response([game('a'), game('b', { player_white: '柯洁', white_rank: '九段' })]));
-    fireEvent.click(screen.getByRole('button', { name: '搜历史对局' }));
+    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
     await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
   });
 
   it('搜索写进 URL、页码归 1;翻页把搜索词留着', async () => {
     renderPage('/kiosk/report?page=3');
     await waitFor(() => expect(rows()).toHaveLength(2));
-    fireEvent.click(screen.getByRole('button', { name: '搜历史对局' }));
+    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
     const box = screen.getByTestId('review-search');
     fireEvent.change(box, { target: { value: '  柯洁  ' } });
     fireEvent.keyDown(box, { key: 'Enter' });
@@ -207,7 +207,7 @@ describe('屏 19 · 列表与选中', () => {
     renderPage('/kiosk/report?q=柯洁');
     await waitFor(() => expect(rows()).toHaveLength(2));
     expect(screen.getByTestId('review-search')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '搜历史对局' }));
+    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
     await waitFor(() => expect(screen.queryByTestId('review-search')).toBeNull());
     expect(screen.getByTestId('location')).toHaveTextContent('/kiosk/report');
     expect(screen.getByTestId('location')).not.toHaveTextContent('q=');
@@ -217,7 +217,7 @@ describe('屏 19 · 列表与选中', () => {
     const stale = deferred<ReturnType<typeof response>>();
     mocks.list.mockReturnValueOnce(stale.promise);
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: '搜历史对局' }));
+    fireEvent.click(await screen.findByRole('button', { name: '筛选和搜索历史对局' }));
     const box = screen.getByTestId('review-search');
     fireEvent.change(box, { target: { value: '柯洁' } });
     fireEvent.keyDown(box, { key: 'Enter' });
@@ -230,7 +230,7 @@ describe('屏 19 · 列表与选中', () => {
     const stale = deferred<ReturnType<typeof response>>();
     mocks.list.mockReturnValueOnce(stale.promise);
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: '搜历史对局' }));
+    fireEvent.click(await screen.findByRole('button', { name: '筛选和搜索历史对局' }));
     const box = screen.getByTestId('review-search');
     fireEvent.change(box, { target: { value: '柯洁' } });
     fireEvent.keyDown(box, { key: 'Enter' });
@@ -253,6 +253,91 @@ describe('屏 19 · 列表与选中', () => {
     renderPage();
     expect(await screen.findByText('还没有下过的棋')).toBeInTheDocument();
     expect(screen.queryAllByTestId('review-row')).toHaveLength(0);
+  });
+});
+
+/**
+ * 来源筛选(Fan 2026-08-26 裁定要补)。它是 27 屏改造前那一屏「对局历史」有、
+ * 屏 19 没有的唯一一件东西 —— 那一屏这一轮删了(全仓没有任何入口)。
+ *
+ * 几何在 `tests/kiosk-shell-scroll.spec.ts`(真浏览器 1024×600 量:展开那条带子
+ * 正好从列表里扣 54,和 `.has-search::before` 那个 +54 是同一个数)。
+ * 这里守的是**口径**:筛出来的空不许说成「一局没下过」、看不见的筛选不许留着。
+ */
+describe('屏 19 · 按来源筛', () => {
+  it('筛「面对面」把 source 发给后端,并写进 URL', async () => {
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
+    fireEvent.click(screen.getByRole('button', { name: '面对面' }));
+    await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith('token', {
+      page: 1, page_size: 12, q: undefined, sort: 'created_at_desc', source: 'play_local',
+    }));
+    expect(screen.getByTestId('location')).toHaveTextContent('source=play_local');
+  });
+
+  it('「全部」不往后端发 source —— 别把默认值也当成一个筛选条件', async () => {
+    renderPage('/kiosk/report?source=play_local');
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    fireEvent.click(screen.getByRole('button', { name: '全部' }));
+    await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith('token', {
+      page: 1, page_size: 12, q: undefined, sort: 'created_at_desc', source: undefined,
+    }));
+    expect(screen.getByTestId('location')).not.toHaveTextContent('source=');
+  });
+
+  it('URL 上带着筛选进来时,那条带子是**开着**的', async () => {
+    renderPage('/kiosk/report?source=play_local');
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    // 收着的话列表短了,而屏上没有任何控件说得出为什么。
+    expect(screen.getByTestId('review-source')).toBeInTheDocument();
+    expect(within(screen.getByTestId('review-source')).getByRole('button', { name: '面对面' }))
+      .toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('收起那条带子会把筛选一起撤掉,不是只撤搜索词', async () => {
+    renderPage('/kiosk/report?source=play_local');
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    fireEvent.click(screen.getByRole('button', { name: '筛选和搜索历史对局' }));
+    await waitFor(() => expect(screen.queryByTestId('review-source')).toBeNull());
+    expect(screen.getByTestId('location')).not.toHaveTextContent('source=');
+  });
+
+  it('计数写的是筛出来那一档,不是「本机 N 局」', async () => {
+    mocks.list.mockResolvedValue(response([game('a')], 1, 1));
+    renderPage('/kiosk/report?source=play_local');
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    const label = document.querySelector('.kiosk-section--grow .secval') as HTMLElement;
+    expect(label).toHaveTextContent('面对面 1 局');
+    expect(label).not.toHaveTextContent('本机');
+  });
+
+  it('筛出来是空的,说的是「还没有面对面下过」——**不是**「还没有下过的棋」', async () => {
+    // 把筛选的后果栽到用户头上是这一族最常见的谎:他可能下过一百局人机。
+    mocks.list.mockResolvedValue(response([], 1, 0));
+    renderPage('/kiosk/report?source=play_local');
+    expect(await screen.findByText('还没有面对面下过')).toBeInTheDocument();
+    expect(screen.queryByText('还没有下过的棋')).toBeNull();
+  });
+
+  it('认不得的 source 退回全部 —— URL 是手输得到的,不该让列表空着还怪用户', async () => {
+    renderPage('/kiosk/report?source=乱写的');
+    await waitFor(() => expect(mocks.list).toHaveBeenLastCalledWith('token', {
+      page: 1, page_size: 12, q: undefined, sort: 'created_at_desc', source: undefined,
+    }));
+    expect(document.querySelector('.kiosk-section--grow .secval')).toHaveTextContent('本机');
+  });
+
+  it('导入一局之后筛选收回全部 —— 导进来的是 import,筛在面对面上它根本不在结果里', async () => {
+    mocks.create.mockResolvedValue({ ...game('imported'), sgf_content: '(;FF[4]SZ[19];B[pd])' });
+    renderPage('/kiosk/report?source=play_local');
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    fireEvent.click(screen.getByRole('button', { name: /导入棋谱复盘/ }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '导入本地 SGF' }));
+    const box = await screen.findByLabelText('SGF 内容');
+    fireEvent.change(box, { target: { value: '(;FF[4]GM[1]SZ[19];B[pd];W[dd])' } });
+    fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
+    await waitFor(() => expect(screen.getByTestId('location')).not.toHaveTextContent('source='));
   });
 });
 

@@ -1401,3 +1401,67 @@ test('直播:着法表真拨得动,滚的不是整页也不是右栏', async ({ 
   expect(m.pageScroll, '滚的是整个页面').toBe(0);
   expect(m.togBottom, '滚完之后开关排跑了').toBeLessThanOrEqual(m.railBottom);
 });
+
+/* ══ 屏 19 复盘:多了一条 54 的带子之后,列表还得**拨得动** ═══════════════════
+ * 那个 54 本身(头撑高多少、渐隐跟不跟着挪、两个控件排不排得开)由
+ * `kiosk-shell-geometry.spec.ts` 的「§5 屏 19:渐隐…」那条量 —— 这里不重复。
+ * 这一条只管**扣掉 54 之后剩下的那点高度里,滚动这件事还成不成立**:
+ * 该滚的是列表自己、手指真拨得动、筛完之后带子的几何不跟着结果长短动。
+ *
+ * ⚠️ **先把数据造到会溢出**:24 局远超一屏。装得下的数据量下量到的数字一概不算。
+ */
+test('复盘:展开「筛 + 搜」之后列表照样是它自己在滚,而且拨得动', async ({ page }) => {
+  const GAMES = Array.from({ length: 24 }, (_, i) => ({
+    id: `g${i}`, user_id: 1, title: null, player_black: '访客', player_white: 'KataGo',
+    black_rank: null, white_rank: '6 级', result: 'W+R', move_count: 187,
+    source: i % 3 === 0 ? 'play_local' : 'play_ai', game_type: 'free',
+    created_at: '2026-08-20T15:12:00Z', updated_at: null, board_size: 19, rules: 'chinese',
+    komi: 7.5, category: 'game', event: null, round_name: null, game_date: '2026-08-20',
+  }));
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'kiosk-shell-scroll');
+    localStorage.setItem('katrain_language', 'cn');
+  });
+  await page.route('**/api/v1/**', (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === '/api/v1/auth/me') {
+      return route.fulfill({ json: { id: 1, username: 'tester', rank: '5段', credits: 0 } });
+    }
+    if (url.pathname === '/api/v1/user-games/') {
+      const src = url.searchParams.get('source');
+      const items = src ? GAMES.filter((g) => g.source === src) : GAMES;
+      return route.fulfill({ json: { items, total: items.length, page: 1, page_size: 30 } });
+    }
+    if (url.pathname === '/api/v1/reports/') return route.fulfill({ json: [] });
+    return route.fulfill({ json: {} });
+  });
+  await page.goto('/kiosk/report');
+  await page.waitForSelector('[data-testid="review-rows"] .kiosk-row');
+  await expect.poll(() => overflowOf(page), { message: '24 局还没造出「装不下」' }).toBeGreaterThan(100);
+
+  await page.getByLabel('筛选和搜索历史对局').click();
+  await page.waitForSelector('.rvfind');
+  await expect.poll(() => overflowOf(page), { message: '扣掉 54 之后反而不溢出了' }).toBeGreaterThan(100);
+
+  const list = page.locator('.kiosk-scrollzone .kiosk-side__scroll');
+  const box = (await list.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  for (let i = 0; i < 5; i += 1) await page.mouse.wheel(0, 200);
+  const after = await page.evaluate(() => ({
+    list: Math.round((document.querySelector('.kiosk-scrollzone .kiosk-side__scroll') as HTMLElement).scrollTop),
+    rail: Math.round((document.querySelector('.kiosk-scrollzone') as HTMLElement).scrollTop),
+    pageScroll: Math.round(document.documentElement.scrollTop),
+    bandBottom: Math.round(document.querySelector('.rvfind')!.getBoundingClientRect().bottom),
+    zoneBottom: Math.round(document.querySelector('.kiosk-scrollzone')!.getBoundingClientRect().bottom),
+  }));
+  expect(after.list, '拨了五下滚轮,列表一格都没动').toBeGreaterThan(0);
+  expect(after.rail, '滚的是整个滚动区,不是列表').toBe(0);
+  expect(after.pageScroll, '滚的是整个页面').toBe(0);
+  expect(after.bandBottom, '带子被裁到滚动区外面去了').toBeLessThanOrEqual(after.zoneBottom);
+
+  // 筛下去列表真的变短,而带子的几何**不跟着结果长短动**。
+  const bandBefore = await page.locator('.rvfind').boundingBox();
+  await page.getByRole('button', { name: '面对面' }).click();
+  await expect.poll(async () => page.locator('[data-testid="review-row"]').count()).toBe(8);
+  expect(await page.locator('.rvfind').boundingBox()).toEqual(bandBefore);
+});

@@ -172,6 +172,49 @@ export function mergeProgressMaps(
 }
 
 /** Build a TsumegoProgressEntry from a markProgress() call, stamping timestamps. */
+/**
+ * 本机这一条是不是**比服务端那一条更靠前**(解出来了 / 试的次数更多)。
+ *
+ * 只看这两个量:`completed` 是单调的,`attempts` 是累加的 —— 时间戳不作判据
+ * (两端各写各的 `lastAttemptAt`,拿它比会把每一条都判成「本机更新」,
+ *  于是每次拉取都要整库回推一遍)。
+ */
+export function localIsAhead(
+  local: TsumegoProgressEntry | undefined,
+  server: TsumegoProgressEntry | undefined,
+): boolean {
+  if (!local) return false;
+  if (!server) return Boolean(local.completed) || (local.attempts ?? 0) > 0;
+  if (local.completed && !server.completed) return true;
+  return (local.attempts ?? 0) > (server.attempts ?? 0);
+}
+
+/**
+ * **对账,不是队列。** 拉得回来说明服务端此刻够得着,把本机比它多的那几条补上去。
+ *
+ * 为什么不用一条「失败重发队列」:队列活在内存里,刷新页面就没了 ——
+ * 而丢掉的正是「那次 POST 失败了」这个唯一的记录。对账的依据是 localStorage 本身,
+ * 它本来就要长期存着,所以刷新、换标签页、隔天再开都还算得出来。
+ *
+ * 一条都不多发:两边一样时 `localIsAhead` 全 false,这里一次请求都不产生。
+ */
+function pushLocalAhead(
+  local: TsumegoProgressMap,
+  server: TsumegoProgressMap,
+  authToken?: string,
+): void {
+  for (const [id, entry] of Object.entries(local)) {
+    if (!localIsAhead(entry, server[id])) continue;
+    TsumegoAPI.saveProgress(
+      id,
+      { completed: entry.completed, attempts: entry.attempts, lastDuration: entry.lastDuration },
+      authToken,
+    ).catch(() => {
+      // 还是发不上去 —— 下次拉取成功时再对一次。本机那份始终是权威的下界。
+    });
+  }
+}
+
 function entryFromMark(input: MarkProgressInput): TsumegoProgressEntry {
   const now = new Date().toISOString();
   return {
@@ -285,6 +328,8 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
           } catch {
             // best-effort cache
           }
+          // 拉得回来 = 服务端此刻够得着 ⇒ 把**本机比服务端多的**那几条补上去。
+          pushLocalAhead(prev, serverMap, authToken);
           return merged;
         });
       })
@@ -320,7 +365,17 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
           { completed: input.completed, attempts: input.attempts, lastDuration: input.lastDuration },
           token ?? undefined,
         ).catch(() => {
-          // swallow — offline/queued server-side; localStorage already holds the truth
+          /*
+           * ⚠️ 这里原来的注释写着「offline/queued server-side」——**那句话只在盒子上成立**。
+           * 盒子的浏览器打的是本机 127.0.0.1,请求必到,后端(`tsumego_update_progress`)
+           * 离线时会写本机库 + 入同步队列。可 galaxy 网页版的浏览器打的是**云端**:
+           * 网断了这一 POST 就没了,而本机 localStorage 里那条却记着「解出来了」——
+           * **坏了和好着在用户那儿看起来一模一样**,直到他换台设备才发现少了几题。
+           *
+           * 不新开一条队列:下次 `fetchAndMerge` 成功时会把「本机比服务端多的」整批补上去
+           * (见 `pushLocalAhead`)。那是一次**对账**不是一条队列 —— 刷新页面也不会丢,
+           * 而队列会。
+           */
         });
       }
     },

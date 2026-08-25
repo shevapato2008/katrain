@@ -29,6 +29,7 @@ import {
   mergeProgressMaps,
   progressStorageKey,
   setProgressScope,
+  localIsAhead,
   type TsumegoProgressEntry,
   type TsumegoProgressMap,
 } from '../TsumegoProgressContext';
@@ -334,6 +335,111 @@ describe('出厂盒子:token 恒为 null,身份靠 cookie', () => {
 });
 
 // ============ Default (no Provider) safety ============
+
+/**
+ * **对账,不是队列。**
+ *
+ * `markProgress` 的服务端写是 fire-and-forget,`.catch` 里原来的注释写着
+ * 「offline/queued server-side」—— 那句话**只在盒子上成立**:盒子的浏览器打的是
+ * 本机 127.0.0.1,请求必到,后端离线时会写本机库 + 入同步队列。
+ * 而 galaxy 网页版的浏览器打的是云端,网一断这条 POST 就没了,
+ * 本机 localStorage 却记着「解出来了」—— **坏了和好着在用户那儿长得一模一样**,
+ * 直到他换台设备才发现少了几题。
+ *
+ * 补法是在每次**拉取成功**之后对一次账(拉得回来 = 服务端此刻够得着),
+ * 把本机比服务端多的补上去。不用重发队列:队列活在内存里,刷新页面就没了,
+ * 而丢掉的正是「那次 POST 失败了」这唯一的记录。
+ */
+describe('做题进度:拉得回来就把本机多出来的补上去', () => {
+  const entry = (over: Partial<TsumegoProgressEntry> = {}): TsumegoProgressEntry => ({
+    completed: false, attempts: 1, ...over,
+  });
+
+  it('本机解出来了而服务端没有 ⇒ 补一次', async () => {
+    seedLocal({ p1: entry({ completed: true, attempts: 2 }) }, 7);
+    mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
+    mockGetProgress.mockResolvedValue({ p1: entry({ completed: false, attempts: 1 }) });
+
+    renderHook(() => useTsumegoProgress(), { wrapper });
+
+    await waitFor(() => expect(mockSaveProgress).toHaveBeenCalledWith(
+      'p1', { completed: true, attempts: 2, lastDuration: undefined }, undefined,
+    ));
+  });
+
+  it('服务端根本没有这一条 ⇒ 也补', async () => {
+    seedLocal({ p9: entry({ completed: true, attempts: 1 }) }, 7);
+    mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
+    mockGetProgress.mockResolvedValue({});
+
+    renderHook(() => useTsumegoProgress(), { wrapper });
+
+    await waitFor(() => expect(mockSaveProgress).toHaveBeenCalled());
+    expect(mockSaveProgress.mock.calls[0][0]).toBe('p9');
+  });
+
+  it('两边一样时**一次请求都不发** —— 每次开屏回推整库是另一种错', async () => {
+    const same = entry({ completed: true, attempts: 3 });
+    seedLocal({ p1: same }, 7);
+    mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
+    mockGetProgress.mockResolvedValue({ p1: { ...same } });
+
+    renderHook(() => useTsumegoProgress(), { wrapper });
+
+    await waitFor(() => expect(mockGetProgress).toHaveBeenCalled());
+    expect(mockSaveProgress).not.toHaveBeenCalled();
+  });
+
+  it('服务端比本机靠前时不回推 —— 那会把服务端的数往回按', async () => {
+    seedLocal({ p1: entry({ completed: false, attempts: 1 }) }, 7);
+    mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
+    mockGetProgress.mockResolvedValue({ p1: entry({ completed: true, attempts: 5 }) });
+
+    renderHook(() => useTsumegoProgress(), { wrapper });
+
+    await waitFor(() => expect(mockGetProgress).toHaveBeenCalled());
+    expect(mockSaveProgress).not.toHaveBeenCalled();
+  });
+
+  it('拉取失败时不对账 —— 服务端此刻够不着,补也补不上去', async () => {
+    seedLocal({ p1: entry({ completed: true }) }, 7);
+    mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
+    mockGetProgress.mockRejectedValue(new Error('offline'));
+
+    renderHook(() => useTsumegoProgress(), { wrapper });
+
+    await waitFor(() => expect(mockGetProgress).toHaveBeenCalled());
+    expect(mockSaveProgress).not.toHaveBeenCalled();
+  });
+
+  it('没有账号时既不拉也不对账 —— 匿名那份进度不许挂到任何人头上', async () => {
+    seedLocal({ p1: entry({ completed: true }) }, null);
+    renderHook(() => useTsumegoProgress(), { wrapper });
+    await Promise.resolve();
+    expect(mockGetProgress).not.toHaveBeenCalled();
+    expect(mockSaveProgress).not.toHaveBeenCalled();
+  });
+
+  describe('localIsAhead:只看 completed 和 attempts', () => {
+    it.each([
+      ['本机解出来了、服务端没有', entry({ completed: true }), entry({ completed: false }), true],
+      ['本机试得更多', entry({ attempts: 5 }), entry({ attempts: 2 }), true],
+      ['服务端没有这一条', entry({ completed: true }), undefined, true],
+      ['服务端没有而本机也是空的', entry({ attempts: 0 }), undefined, false],
+      ['一模一样', entry({ completed: true, attempts: 2 }), entry({ completed: true, attempts: 2 }), false],
+      ['服务端更靠前', entry({ attempts: 1 }), entry({ attempts: 9 }), false],
+      ['本机没有这一条', undefined, entry({ completed: true }), false],
+    ])('%s', (_name, local, server, expected) => {
+      expect(localIsAhead(local, server)).toBe(expected);
+    });
+
+    it('时间戳不作判据 —— 拿它比会把每一条都判成「本机更新」,于是每次开屏回推整库', () => {
+      const local = entry({ completed: true, attempts: 2, lastAttemptAt: '2026-08-26T10:00:00Z' });
+      const server = entry({ completed: true, attempts: 2, lastAttemptAt: '2026-01-01T00:00:00Z' });
+      expect(localIsAhead(local, server)).toBe(false);
+    });
+  });
+});
 
 describe('useTsumegoProgress without a Provider (safe default)', () => {
   it('markProgress still persists to localStorage', () => {

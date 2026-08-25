@@ -56,6 +56,15 @@ def app(tmp_path):
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
     application = create_app(enable_engine=False)
+    # **这一行才是真正生效的那一处。** 底下两行单独存在时是装饰性的：`client` fixture
+    # 的 `with TestClient(app)` 会跑 lifespan，而 `_lifespan_server` 无条件用全局
+    # `SessionLocal` 重建六个 repo 再覆盖 `app.state` —— 注入在 `TestClient` 之前、
+    # 覆盖在之后，于是上面这个 tmp 库从头到尾一行没写过，19 个 `alice-/bob-/mallory-`
+    # 用户全落进了开发机的真实 dev 库，而测试一直是绿的（断言只看 HTTP 行为）。
+    # 2026-08-23 用 SQL 层探针量出来的；`tests/conftest.py` 现在有闸守着。
+    application.state.session_factory = Session
+    # 下面两行留着是为了不经 lifespan 直接用 `app` fixture 的用例；经 lifespan 时
+    # 它们会被覆盖成由同一个 `Session` 建出来的等价物。
     application.state.user_repo = SQLAlchemyUserRepository(Session)
     application.state.game_repo = GameRepository(Session)
     try:

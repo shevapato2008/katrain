@@ -183,6 +183,11 @@ def _build_ladder_app(tmp_path, monkeypatch, *, db_name: str = "ai-ladder-api.db
     sessions = sessionmaker(bind=engine, autocommit=False, autoflush=False, expire_on_commit=False)
 
     app = create_app(enable_engine=False)
+    # 这一行是让下面那几行真正生效的前提：lifespan（`_lifespan_server`）会无条件用
+    # 全局 `SessionLocal` 重建全部 repo 并覆盖 `app.state`，于是下面精心注入的 `sessions`
+    # 会被丢掉，`init_db()` 还会对开发机真库跑账本迁移。设了这一行，lifespan 就用
+    # 同一个 `sessions` 重建，结果等价而且不碰真库。
+    app.state.session_factory = sessions
     app.state.user_repo = SQLAlchemyUserRepository(sessions)
     app.state.user_game_repo = UserGameRepository(sessions)
     app.state.user_game_analysis_repo = UserGameAnalysisRepository(sessions)

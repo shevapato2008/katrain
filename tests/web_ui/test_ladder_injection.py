@@ -39,8 +39,12 @@ from katrain.web.session import SessionManager  # noqa: E402
 
 
 @pytest.fixture
-def client():
+def client(isolated_session_factory):
     app = create_app(enable_engine=False)
+    # 必须在进 `TestClient` **之前**设。不设的话 lifespan 里的 `init_db()` 会对开发机
+    # 真实 dev 库跑 `backfill_ai_ladder_decisions` —— 那是一条对**真实账本表**的
+    # `UPDATE ai_ladder_game_ledger SET counted = TRUE …`。`tests/conftest.py` 的闸拦得住。
+    app.state.session_factory = isolated_session_factory
     user = SimpleNamespace(id=987654, uuid="ladder-injection-user", username="ladder-injection-user")
     app.dependency_overrides[get_current_user] = lambda: user
     app.dependency_overrides[get_current_user_optional] = lambda: user

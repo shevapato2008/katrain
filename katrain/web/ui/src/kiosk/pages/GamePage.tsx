@@ -124,7 +124,7 @@ const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
       {/* Score breakdown — komi + captures only (display only). Full territory-adjusted
           目/子 breakdown needs dead-stone data from the backend; deferred (Gate S). */}
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-        {t('Komi', '贴目')} {gameState.komi} · {t('Captures', '提子')} {t('Black', '黑')} {gameState.prisoner_count.B} / {t('White', '白')} {gameState.prisoner_count.W}
+        {t('Komi', '贴目')} {gameState.komi} · {t('Captures', '提子')} {t('game:black_short', '黑')} {gameState.prisoner_count.B} / {t('game:white_short', '白')} {gameState.prisoner_count.W}
       </Typography>
       <Box sx={{ display: 'flex', gap: 1.5 }}>
         <Button variant="outlined" onClick={() => setDismissed(true)}>{t('Resume game', '继续对弈')}</Button>

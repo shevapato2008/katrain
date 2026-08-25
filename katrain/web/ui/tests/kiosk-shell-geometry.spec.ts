@@ -1223,7 +1223,7 @@ test('§11 复盘报告:重点手再多,翻手键也贴着右栏底,列表自己
   console.log('[report-rhead] rheadH=%d progressLines=%d text=%s', m.rheadH, m.progressLines, m.progressText);
   expect(m.railH, '右栏不是 516 —— 布局 A 的高度账先崩了').toBe(516);
   expect(m.navCount, '翻手键不是四个').toBe(4);
-  expect(m.toggleCount, '显示开关不是四个(形势 / 手数 / AI 推荐 / 试下)').toBe(4);
+  expect(m.toggleCount, '显示开关不是四个(领地 / 手数 / AI 推荐 / 试下)').toBe(4);
   expect(m.keyRows, '造的数据没让重点手列出三行 —— 下面的断言是空的').toBe(3);
   // **这一条守的是「量的是不是最坏那一档」,不是版式本身。** 没有它,谁把 fixture 里
   // 那两个章删掉,下面整组几何断言就悄悄退回去量那条短行,而且照样全绿。

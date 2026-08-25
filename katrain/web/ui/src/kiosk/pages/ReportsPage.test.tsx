@@ -375,7 +375,7 @@ describe('屏 19 · 按来源筛', () => {
     renderPage('/kiosk/report?source=play_local');
     await waitFor(() => expect(rows()).toHaveLength(2));
     fireEvent.click(screen.getByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: '导入本地 SGF' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '从本地导入 SGF' }));
     const box = await screen.findByLabelText('SGF 内容');
     fireEvent.change(box, { target: { value: '(;FF[4]GM[1]SZ[19];B[pd];W[dd])' } });
     fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
@@ -589,14 +589,14 @@ describe('屏 19 · 生成报告那一组', () => {
     expect(card).not.toBeDisabled();
     expect(screen.queryByText('即将上线')).toBeNull();
     fireEvent.click(card);
-    expect(await screen.findByRole('menuitem', { name: '导入本地 SGF' })).toBeInTheDocument();
+    expect(await screen.findByRole('menuitem', { name: '从本地导入 SGF' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: '从棋谱库导入' })).toBeInTheDocument();
   });
 
   it('本地导入可以只存不分析,也可以存完直接建报告', async () => {
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: '导入本地 SGF' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '从本地导入 SGF' }));
     fireEvent.change(await screen.findByLabelText('SGF 内容'), { target: { value: '(;SZ[19];B[aa])' } });
     fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
     await waitFor(() => expect(mocks.create).toHaveBeenCalled());
@@ -607,7 +607,7 @@ describe('屏 19 · 生成报告那一组', () => {
     mocks.create.mockRejectedValueOnce(new Error('SGF 不合法'));
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
-    fireEvent.click(await screen.findByRole('menuitem', { name: '导入本地 SGF' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '从本地导入 SGF' }));
     const box = await screen.findByLabelText('SGF 内容');
     fireEvent.change(box, { target: { value: '(;SZ[19];B[aa])' } });
     fireEvent.click(screen.getByRole('button', { name: '仅导入' }));

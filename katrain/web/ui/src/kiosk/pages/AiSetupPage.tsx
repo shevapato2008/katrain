@@ -455,7 +455,7 @@ const AiSetupPage = () => {
                       options={[
                         { value: 'ai:human', label: t('Human-like', '拟人') },
                         { value: 'ai:default', label: 'KataGo' },
-                        { value: 'ai:territory', label: t('Territory', '实地') },
+                        { value: 'ai:territory', label: t('setup:style_territory', '实地') },
                         { value: 'ai:influence', label: t('Influence', '厚势') },
                         { value: 'ai:policy', label: t('Policy', '策略') },
                       ]}

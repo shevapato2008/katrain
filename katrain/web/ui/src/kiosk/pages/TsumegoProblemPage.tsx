@@ -584,7 +584,7 @@ const TsumegoProblemPage = () => {
                       <Fragment key={`${m.coords[0]}-${m.coords[1]}-${i}`}>
                         <span className="n">{i + 1}</span>
                         <span className={last ? 'mv now' : 'mv'}>
-                          {m.player === 'B' ? t('Black', '黑') : t('White', '白')} {coordLabel(m.coords[0], m.coords[1])}
+                          {m.player === 'B' ? t('game:black_short', '黑') : t('game:white_short', '白')} {coordLabel(m.coords[0], m.coords[1])}
                         </span>
                         <span className="mv" style={isFailed && last && !isTryMode ? { color: 'var(--bad)' } : undefined}>
                           {verdict}

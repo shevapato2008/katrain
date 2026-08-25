@@ -53,7 +53,7 @@ describe('ReportLocalImportDialog parsing and submission', () => {
     const user = userEvent.setup();
     renderDialog();
     const paste = screen.getByRole('textbox', { name: 'SGF 内容' });
-    for (const label of ['仅导入', '导入并生成普通复盘', '导入并生成深度复盘']) {
+    for (const label of ['仅导入', '导入并生成普通报告', '导入并生成深度报告']) {
       expect(screen.getByRole('button', { name: label })).toBeDisabled();
     }
     await user.type(paste, '这不是 SGF');
@@ -109,8 +109,8 @@ describe('ReportLocalImportDialog parsing and submission', () => {
 
     expect(screen.getByRole('textbox', { name: '标题（可选）' })).toHaveValue('决赛');
     await user.click(screen.getByRole('button', { name: '仅导入' }));
-    await user.click(screen.getByRole('button', { name: '导入并生成普通复盘' }));
-    await user.click(screen.getByRole('button', { name: '导入并生成深度复盘' }));
+    await user.click(screen.getByRole('button', { name: '导入并生成普通报告' }));
+    await user.click(screen.getByRole('button', { name: '导入并生成深度报告' }));
 
     const payload = {
       title: '决赛', sgfContent: sgf(13), boardSize: 13, rules: 'Chinese', komi: 7.5,
@@ -221,7 +221,7 @@ describe('ReportLocalImportDialog parsing and submission', () => {
     const { onClose } = renderDialog({ loading: true });
     expect(screen.getByRole('textbox', { name: '标题（可选）' })).toBeDisabled();
     expect(screen.getByRole('textbox', { name: 'SGF 内容' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '正在导入…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '导入中...' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
     expect(onClose).not.toHaveBeenCalled();
   });
@@ -233,7 +233,7 @@ describe('ReportLocalImportDialog 1024×600 layout', () => {
     Object.defineProperty(window, 'innerHeight', { configurable: true, value: 600 });
     renderDialog();
 
-    const paper = screen.getByRole('dialog', { name: '导入本地 SGF' });
+    const paper = screen.getByRole('dialog', { name: '从本地导入 SGF' });
     const content = screen.getByTestId('report-local-import-content');
     const actions = screen.getByTestId('report-local-import-actions');
     expect(paper).toHaveStyle({
@@ -256,7 +256,7 @@ describe('ReportLocalImportDialog 1024×600 layout', () => {
     ]) {
       expect(control).toHaveStyle({ minHeight: '48px', minWidth: '48px' });
     }
-    for (const label of ['取消', '仅导入', '导入并生成普通复盘', '导入并生成深度复盘']) {
+    for (const label of ['取消', '仅导入', '导入并生成普通报告', '导入并生成深度报告']) {
       const button = screen.getByRole('button', { name: label });
       expect(button).toHaveStyle({ minHeight: '48px', minWidth: '48px', whiteSpace: 'normal' });
     }

@@ -126,7 +126,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
   // 段位:阶梯 AI 的段位是 `rank_display` 里的字符串,其他人走数值 `calculated_rank`。
   const rawRank = info.rank_display ?? localizedRank(info.calculated_rank, lang);
   const rank = !rawRank || rawRank === 'No Rank' ? null : rawRank;
-  const name = info.name || (color === 'B' ? t('Black', '黑方') : t('White', '白方'));
+  const name = info.name || (color === 'B' ? t('Black', '黑棋') : t('White', '白棋'));
   return (
     <div className={turn ? 'pcard turn' : 'pcard'} data-testid={`player-card-${color}`}>
       <span className={color === 'B' ? 'disc b' : 'disc w'} />

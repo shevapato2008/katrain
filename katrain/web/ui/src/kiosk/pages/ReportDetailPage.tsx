@@ -77,7 +77,7 @@ function taskStatusLabel(status: string | undefined, t: Translate): string {
   if (status === 'running') return t('report:generating', '生成中');
   if (status === 'completed') return t('report:completed', '已完成');
   if (status === 'failed') return t('report:failed', '失败');
-  return t('report:unknown_status', '状态未知');
+  return t('report:unknown_status', '未知状态');
 }
 
 /**
@@ -109,8 +109,8 @@ function headMetaLine(task: ReportTaskSummary | null, fallbackTotalMoves: number
 }
 
 function reportTypeLabel(reportType: string | undefined, t: Translate): string {
-  if (reportType === 'deep') return t('report:deep', '深度复盘');
-  if (reportType === 'normal') return t('report:normal', '普通复盘');
+  if (reportType === 'deep') return t('report:deep', '深度报告');
+  if (reportType === 'normal') return t('report:normal', '普通报告');
   return t('report:unknown_type', '类型未知');
 }
 
@@ -280,7 +280,7 @@ export default function ReportDetailPage() {
 
   if (!isAuthenticated) {
     return shell(
-      <div className="empty"><h4>{t('report:login_required_detail', '请登录后查看复盘详情。')}</h4></div>,
+      <div className="empty"><h4>{t('report:login_required_detail', '请先登录后查看报告详情。')}</h4></div>,
     );
   }
   if (loading && !game) {
@@ -304,7 +304,7 @@ export default function ReportDetailPage() {
   if (!previewData) {
     return shell(
       <div className="empty" data-testid="report-detail-no-sgf">
-        <h4>{t('report:no_sgf', '暂无棋谱数据，无法复盘。')}</h4>
+        <h4>{t('report:no_sgf', '没有可用于复盘展示的 SGF 数据。')}</h4>
         <button type="button" className="kiosk-btn kiosk-btn--pill pill" onClick={() => void handleRefresh()}>
           {t('report:reload', '重新加载')}
         </button>
@@ -495,7 +495,7 @@ export default function ReportDetailPage() {
             type="button" aria-pressed={showTerritory} disabled={!ownership}
             onClick={() => setShowTerritory((v) => !v)}
           >
-            {t('report:territory', '形势')}
+            {t('report:territory', '领地')}
           </button>
           <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((v) => !v)}>
             {t('report:move_numbers', '手数')}

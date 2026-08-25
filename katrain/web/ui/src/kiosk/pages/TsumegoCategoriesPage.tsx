@@ -114,7 +114,7 @@ const TsumegoCategoriesPage = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <KioskPagebar
-        title={`${level?.toUpperCase()} ${t('tsumego:selectCategory', '选择分类')}`}
+        title={`${level?.toUpperCase()} ${t('tsumego:selectCategory', '选择题型')}`}
         backLabel={t('Back', '返回')}
         onBack={() => navigate('/kiosk/tsumego')}
         /* 原来挂在 right 插槽的题数是**副标性质**(它描述这一屏,不是一个动作),

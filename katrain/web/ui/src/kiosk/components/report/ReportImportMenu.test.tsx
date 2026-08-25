@@ -40,7 +40,7 @@ describe('ReportImportMenu', () => {
     const trigger = screen.getByRole('button', { name: /导入棋谱复盘/ });
 
     await user.click(trigger);
-    await user.click(screen.getByRole('menuitem', { name: '导入本地 SGF' }));
+    await user.click(screen.getByRole('menuitem', { name: '从本地导入 SGF' }));
     expect(handlers.onImportLocal).toHaveBeenCalledOnce();
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
 
@@ -57,7 +57,7 @@ describe('ReportImportMenu', () => {
     const trigger = screen.getByRole('button', { name: /导入棋谱复盘/ });
 
     await user.click(trigger);
-    for (const label of ['导入本地 SGF', '从棋谱库导入']) {
+    for (const label of ['从本地导入 SGF', '从棋谱库导入']) {
       expect(screen.getByRole('menuitem', { name: label })).toHaveStyle({ minHeight: '48px', minWidth: '48px' });
     }
     await user.keyboard('{Escape}');

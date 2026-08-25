@@ -22,7 +22,7 @@ type Translate = (en: string, zh: string) => string;
 
 export const TIME_PRESETS = (t: Translate): TimePreset[] => [
   { key: 'untimed', label: t('Untimed', '不限时'), enabled: false, main: 0, byo: 30, periods: 3 },
-  { key: 'byoOnly', label: t('Byoyomi only 30s x3', '仅读秒 30秒×3'), enabled: true, main: 0, byo: 30, periods: 3 },
+  { key: 'byoOnly', label: t('setup:time_byo_only', '仅读秒 30秒×3'), enabled: true, main: 0, byo: 30, periods: 3 },
   { key: '5', label: t('5 min + 3x30s', '5分+3×30秒'), enabled: true, main: 5, byo: 30, periods: 3 },
   { key: '10', label: t('10 min + 3x30s', '10分+3×30秒'), enabled: true, main: 10, byo: 30, periods: 3 },
   { key: '20', label: t('20 min + 3x30s', '20分+3×30秒'), enabled: true, main: 20, byo: 30, periods: 3 },

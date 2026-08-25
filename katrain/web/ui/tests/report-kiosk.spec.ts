@@ -1,4 +1,7 @@
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
+import { resolve } from 'node:path';
+
+import { parsePo } from './helpers/po';
 
 const VIEWPORT = { width: 1024, height: 600 };
 const SGF = '(;FF[4]GM[1]SZ[19]RU[Chinese]KM[7.5]PB[Alpha]BR[3D]PW[Beta]WR[4D]RE[B+2.5];B[pd];W[dd];B[qp];W[dq];B[fc];W[cf])';
@@ -133,11 +136,22 @@ const ALBUM = {
 };
 
 /**
- * **空表。** 这一屏的文案键(`review:*`)在 `katrain/i18n/` 里一个都没有 ——
- * 屏上真正出现的就是代码里写的那句中文 fallback。桩里再写一份自己的译文,
- * 断言就落在一句**盒子上永远不会出现**的话上了。
+ * **喂仓里那份真 PO,不是空表。**
+ *
+ * 这里原来是 `{}`,理由写的是「这一屏的文案键(`review:*`)在 `katrain/i18n/` 里一个都没有」
+ * —— 那句话对 `review:*` 成立,可这条 spec 同时走**导入对话框**,而那一族(`report:*`)
+ * 在 PO 里**条条都有**。于是空表让屏上落回代码 fallback,
+ * 而当时代码 fallback 和 PO 说的不是同一句话(「导入并生成普通**复盘**」对「…普通**报告**」)
+ * ⇒ **这条 e2e 有五处断言的字符串,设备上从来没出现过**。
+ * 那是「到达性 fixture 给断路发通行证」的又一例:自己造的输入,自然自己能通过。
+ *
+ * 2026-08-26 那批 fallback 已经统一到 PO(见 `kiosk-shell-contract.spec.ts` 闸四),
+ * 所以现在两边说的是同一句;但**判据不能靠这个巧合** —— 喂真 PO,
+ * 将来任何一边再走散,这条 spec 会跟着红。
  */
-const TRANSLATIONS: Record<string, string> = {};
+const TRANSLATIONS: Record<string, string> = parsePo(
+  resolve(process.cwd(), '../../i18n/locales/cn/LC_MESSAGES/katrain.po'),
+);
 
 interface MockState {
   tasks: ReportTask[];
@@ -164,7 +178,8 @@ async function setupReportMocks(page: Page): Promise<MockState> {
     localStorage.setItem('katrain_language', 'cn');
   });
   await page.route('**/api/translations**', (route) =>
-    fulfillJson(route, { language: 'cn', translations: TRANSLATIONS }),
+    // 形状照真端点:`server.py:2180` 回的是 `{lang, translations}`,不是 `language`。
+    fulfillJson(route, { lang: 'cn', translations: TRANSLATIONS }),
   );
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request();
@@ -478,23 +493,23 @@ test.describe('kiosk Report at the exact seven-inch viewport', () => {
     const importCard = page.getByTestId('review-cards').getByRole('button', { name: /导入棋谱复盘/ });
     await expectReachable(page, importCard, 'Import trigger');
     await importCard.click();
-    const localMenuItem = page.getByRole('menuitem', { name: '导入本地 SGF' });
+    const localMenuItem = page.getByRole('menuitem', { name: '从本地导入 SGF' });
     const libraryMenuItem = page.getByRole('menuitem', { name: '从棋谱库导入' });
     await expectTouchTarget(page, localMenuItem, 'Local import menu action');
     await expectTouchTarget(page, libraryMenuItem, 'Library import menu action');
     await localMenuItem.click();
 
-    const localDialog = page.getByRole('dialog', { name: '导入本地 SGF' });
+    const localDialog = page.getByRole('dialog', { name: '从本地导入 SGF' });
     await expect(localDialog).toBeVisible();
     await expectTouchTarget(page, localDialog.getByRole('button', { name: '选择本地文件' }), 'Local file chooser');
     await localDialog.getByLabel('SGF 内容').fill(SGF);
-    for (const label of ['取消', '仅导入', '导入并生成普通复盘', '导入并生成深度复盘']) {
+    for (const label of ['取消', '仅导入', '导入并生成普通报告', '导入并生成深度报告']) {
       await expectTouchTarget(page, localDialog.getByRole('button', { name: label }), `Local dialog ${label}`);
     }
     await expectViewportFit(page);
     const keyboardHide = page.locator('.skbd-hide');
     if (await keyboardHide.isVisible()) await keyboardHide.click();
-    await localDialog.getByRole('button', { name: '导入并生成普通复盘' }).click();
+    await localDialog.getByRole('button', { name: '导入并生成普通报告' }).click();
     await expect(localDialog).toBeHidden();
     await expect.poll(() => state.createGameBodies.length).toBe(1);
     // 棋谱自己写着 `RE[B+2.5]`。本地导入这条以前**不读 RE[]**，
@@ -513,11 +528,11 @@ test.describe('kiosk Report at the exact seven-inch viewport', () => {
     await expectTouchTarget(page, librarySearchButton, 'Library search button');
     const album = libraryDialog.getByRole('button', { name: /棋谱库测试赛事/ });
     await expectTouchTarget(page, album, 'Library result');
-    for (const label of ['取消', '仅导入', '导入并生成普通复盘', '导入并生成深度复盘']) {
+    for (const label of ['取消', '仅导入', '导入并生成普通报告', '导入并生成深度报告']) {
       await expectTouchTarget(page, libraryDialog.getByRole('button', { name: label }), `Library dialog ${label}`);
     }
     await expectViewportFit(page);
-    await libraryDialog.getByRole('button', { name: '导入并生成深度复盘' }).click();
+    await libraryDialog.getByRole('button', { name: '导入并生成深度报告' }).click();
     await expect(libraryDialog).toBeHidden();
     await expect.poll(() => state.createGameBodies.length).toBe(2);
     await expect.poll(() => state.createReportBodies)
@@ -540,10 +555,10 @@ test.describe('kiosk Report at the exact seven-inch viewport', () => {
     await expectReachable(page, research, 'Open in Research');
     await expectReachable(page, page.getByRole('button', { name: '重算' }), 'Recompute');
 
-    // 造的数据里有 ownership ⇒「形势」可点。四个开关的初值写死在页面上，点一下必须翻面。
+    // 造的数据里有 ownership ⇒「领地」可点(那颗键开的就是 ownership 色块)。四个开关的初值写死在页面上，点一下必须翻面。
     const toggles = page.getByTestId('report-detail-toggles');
     for (const [name, pressedAfter] of [
-      ['形势', 'false'], ['手数', 'false'], ['AI 推荐', 'true'], ['试下', 'true'],
+      ['领地', 'false'], ['手数', 'false'], ['AI 推荐', 'true'], ['试下', 'true'],
     ] as const) {
       const toggle = toggles.getByRole('button', { name });
       await expectReachable(page, toggle, `${name} toggle`);

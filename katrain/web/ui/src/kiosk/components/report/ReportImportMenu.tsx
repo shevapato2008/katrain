@@ -54,7 +54,7 @@ export default function ReportImportMenu({ onImportLocal, onImportLibrary }: Rep
           onClick={(event) => choose(event, onImportLocal)}
           sx={{ minWidth: 48, minHeight: 48 }}
         >
-          {t('report:import_local', '导入本地 SGF')}
+          {t('report:import_local', '从本地导入 SGF')}
         </MenuItem>
         <MenuItem
           onClick={(event) => choose(event, onImportLibrary)}

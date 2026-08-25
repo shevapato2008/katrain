@@ -267,7 +267,7 @@ export default function ReportLocalImportDialog({
       }}
     >
       <DialogTitle sx={{ flexShrink: 0, py: 1.5 }}>
-        {t('report:import_local', '导入本地 SGF')}
+        {t('report:import_local', '从本地导入 SGF')}
       </DialogTitle>
       <DialogContent
         data-testid="report-local-import-content"
@@ -306,7 +306,7 @@ export default function ReportLocalImportDialog({
               />
             </Button>
             <Typography variant="body2" color="text.secondary" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
-              {t('report:choose_file_hint', '可选择文件，也可直接粘贴 SGF 内容。')}
+              {t('report:choose_file_hint', '选择本地 SGF 文件，或直接粘贴 SGF 内容。')}
             </Typography>
           </Stack>
           <Divider />
@@ -367,13 +367,13 @@ export default function ReportLocalImportDialog({
       >
         <Button disabled={loading} onClick={onClose} sx={actionButtonSx}>{t('common:cancel', '取消')}</Button>
         <Button disabled={loading || fileReading || !payload} onClick={() => submit()} sx={actionButtonSx}>
-          {loading ? t('report:importing', '正在导入…') : t('report:import_only', '仅导入')}
+          {loading ? t('report:importing', '导入中...') : t('report:import_only', '仅导入')}
         </Button>
         <Button variant="contained" disabled={loading || fileReading || !payload} onClick={() => submit('normal')} sx={actionButtonSx}>
-          {t('report:import_and_normal', '导入并生成普通复盘')}
+          {t('report:import_and_normal', '导入并生成普通报告')}
         </Button>
         <Button variant="outlined" disabled={loading || fileReading || !payload} onClick={() => submit('deep')} sx={actionButtonSx}>
-          {t('report:import_and_deep', '导入并生成深度复盘')}
+          {t('report:import_and_deep', '导入并生成深度报告')}
         </Button>
       </DialogActions>
     </Dialog>

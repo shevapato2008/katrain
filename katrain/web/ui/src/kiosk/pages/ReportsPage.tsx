@@ -396,7 +396,7 @@ export default function ReportsPage() {
     return (
       <div className="kiosk-side" data-testid="review-page">
         <div className="empty">
-          <h4>{t('report:login_required', '请先登录后查看复盘。')}</h4>
+          <h4>{t('report:login_required', '请先登录后查看和生成复盘报告。')}</h4>
         </div>
       </div>
     );
@@ -665,7 +665,7 @@ export default function ReportsPage() {
         <div className="rvconfirm" role="dialog" aria-modal="true" aria-label={t('report:delete_confirm_title', '确认删除棋谱')}>
           <div className="empty">
             <h4>{t('report:delete_confirm_title', '确认删除棋谱')}</h4>
-            <p>{t('report:delete_confirm_body', '删除后将无法恢复，关联复盘数据也会一并删除。')}</p>
+            <p>{t('report:delete_confirm_body', '删除后棋局及所有关联分析数据将不可恢复，确认删除？')}</p>
             <div className="rvconfirm__row">
               <button
                 type="button" className="kiosk-btn kiosk-btn--pill"

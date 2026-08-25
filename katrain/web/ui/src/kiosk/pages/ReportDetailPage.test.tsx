@@ -170,7 +170,7 @@ describe('屏 20 · 题头与状态', () => {
   it('盘按谱的路数画,题头念的是这一局是什么', () => {
     renderPage();
     expect(screen.getByTestId('live-board')).toHaveAttribute('data-board-size', '19');
-    expect(screen.getByTestId('report-detail-status')).toHaveTextContent('生成中 · 深度复盘');
+    expect(screen.getByTestId('report-detail-status')).toHaveTextContent('生成中 · 深度报告');
     // 页控条的标题走的是复盘列表那套说法(同一局在两屏之间不许改口)
     expect(screen.getByTestId('report-detail-pagebar').textContent).toContain('导入的棋谱');
   });
@@ -222,7 +222,7 @@ describe('屏 20 · 题头与状态', () => {
       task: { ...task, status: 'mystery', report_type: 'mystery' as unknown as ReportTaskSummary['report_type'] },
     };
     renderPage();
-    expect(screen.getByTestId('report-detail-status')).toHaveTextContent('状态未知 · 类型未知');
+    expect(screen.getByTestId('report-detail-status')).toHaveTextContent('未知状态 · 类型未知');
     expect(screen.queryByText(/失败/)).toBeNull();
   });
 
@@ -322,13 +322,18 @@ describe('屏 20 · 盘上的交互', () => {
     realHook.enabled = false;
   });
 
-  it('四个开关都在,没有形势数据时「形势」按不了', () => {
+  // 2026-08-26:这颗键叫**领地**不叫「形势」。它 `onClick` 翻 `showTerritory`,
+  // 而 `ReportDetailPage:350` 把它喂给 `ownership={showTerritory ? ownership : null}`、
+  // `:495` 按 `!ownership` 置灰 —— **开的就是 ownership 色块**。
+  // 以前源码 fallback 写「形势」而 cn PO 写「领地」,`t()` 是翻译表赢 ⇒
+  // **设备上一直是「领地」,而这条 jsdom 断言(翻译表不加载)一直在验一个屏上没有的词。**
+  it('四个开关都在,没有领地数据时「领地」按不了', () => {
     detail = { ...baseDetail(), analysisByMove: { 2: { ...analysis, ownership: null } } };
     renderPage();
-    for (const name of ['形势', '手数', 'AI 推荐', '试下']) {
+    for (const name of ['领地', '手数', 'AI 推荐', '试下']) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
-    expect(screen.getByRole('button', { name: '形势' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '领地' })).toBeDisabled();
   });
 
   it('三个显示开关真的传到盘上', () => {
@@ -341,7 +346,7 @@ describe('屏 20 · 盘上的交互', () => {
     expect(boardProps.showAiMarkers).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: '手数' }));
     expect(boardProps.showMoveNumbers).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: '形势' }));
+    fireEvent.click(screen.getByRole('button', { name: '领地' }));
     expect(boardProps.showTerritory).toBe(false);
     expect(boardProps.ownership).toBeNull();
   });
@@ -539,7 +544,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
   it('没登录时只给一条路:回复盘列表', () => {
     auth = { token: null, isAuthenticated: false };
     renderPage();
-    expect(screen.getByText('请登录后查看复盘详情。')).toBeInTheDocument();
+    expect(screen.getByText('请先登录后查看报告详情。')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /复盘/ }));
     expect(navigate).toHaveBeenCalledWith('/kiosk/report');
   });
@@ -547,7 +552,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
   it('谱缺了的时候说清楚,并给一条重新加载', () => {
     detail = { ...baseDetail(), game: { ...game, sgf_content: '' } };
     renderPage();
-    expect(screen.getByText('暂无棋谱数据，无法复盘。')).toBeInTheDocument();
+    expect(screen.getByText('没有可用于复盘展示的 SGF 数据。')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '重新加载' }));
     expect(refresh).toHaveBeenCalled();
   });

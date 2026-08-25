@@ -78,7 +78,7 @@ const LivePage = () => {
             {selectedMatch.status === 'live' && (
               <Box sx={{ mb: 1 }}>
                 <Chip
-                  label={t('Live', '直播中')}
+                  label={t('live:status_live', '直播中')}
                   size="small"
                   sx={{
                     bgcolor: 'transparent',

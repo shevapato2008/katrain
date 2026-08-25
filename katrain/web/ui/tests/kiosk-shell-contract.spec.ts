@@ -296,47 +296,39 @@ test('t(key, 默认值) 的占位符必须和 cn PO 里那条一致 —— 不�
  * 那么 PO 里那条不管是什么语言、什么符号,只要不相等就是覆盖。PO 那边的语言与此无关。
  * (同一次还漏了 `live:territory` → 「领地」,那条两边都是中文,旧判据抓得到。)
  *
- * 名单是**双向棘轮**:新增会红,修好了不改名单**一样红**。77 条是 2026-08-22 的实测存量,
- * 一条都不是本轮引入的 —— 本轮引入的三条当场改成了自己的 key。
+ * 名单是**双向棘轮**:新增会红,修好了不改名单**一样红**。
  *
  * 变异实测(2026-08-22):把 `t('tsumego:undoMove', '退一手')` 改回 `t('Undo', '退一手')`,
  * 这条当场红,多出来的正是 `TsumegoProblemPage.tsx  Undo`。红分支跑过。
+ *
+ * ## 2026-08-26:31 条清到只剩 1 条
+ *
+ * 独立裁定(方向三):**默认 PO 是正本**,24 条把代码 fallback 照抄成 PO 那句;
+ * 例外只有一种形状 —— **同一个 msgid 兼管两个概念**,那 7 条的修法是**铸新 key**,
+ * 不是改文案。**全程一个 PO 条目都没动** ⇒ 十一份 `.po` 原封不动、`i18n.py` 不用跑、CI 不红。
+ *
+ * 判据是「**屏上那句话是不是真的**」,不是哪句好听。最硬的一条:`report:territory`
+ * 那颗键 `ReportDetailPage.tsx:350` 喂的是 `ownership`、`:495` 按 `!ownership` 置灰
+ * —— **它开的就是 ownership 色块** ⇒ PO 的「领地」对,代码的「形势」错。
+ * 而「领地」这个词在仓里另有两处独立收敛(`Territory`、`live:territory`),屏 20 是孤例。
+ *
+ * 七条「新键」的共同形状是**一个 msgid 兼管两件事,逼调用方撒谎**(和共享件那个
+ * `isRated` 是同一个病的字符串版):`Territory` 有四个消费者,三个要 ownership 的「领地」,
+ * 只有 AI 棋风那一处要「实地」;`Black`/`White` 一边是人名占位(黑棋)一边是紧凑内联(黑);
+ * `Live` 一边是页标题(直播)一边是状态 chip(直播中)。⇒ 铸 `setup:style_territory` /
+ * `game:black_short` / `game:white_short` / `live:status_live` / `setup:time_byo_only`,
+ * **不进 PO** —— 门槛是「galaxy 或桌面端也要用这句」,这五条只有围棋 kiosk 一个消费者
+ * (和本轮 `setup:` / `settings:` / `review:` 三族一个待遇,那三族在 cn PO 里各 0 条)。
+ *
+ * ⚠️ **剩下的那一条不是漏网,是等一个词。** `report:delete_confirm_title` 的 PO 是
+ * 「确认删除」,而代码写「确认删除棋谱」—— 代码写长是为了躲一个**真碰撞**:同一个对话框的
+ * 危险键 `report:confirm_delete`(kiosk 自铸、PO 里没有)fallback 也是「确认删除」。
+ * 正解是标题回到 PO,按钮改用 galaxy 已有的 `report:delete_game`(PO=「删除棋局」)。
+ * 但那要先定一个词:同屏现在「棋局 / 对局(`review:sec_games`→历史对局) / 棋谱」三个词并存。
+ * **等 Fan 定,不自选。**
  * ────────────────────────────────────────────────────────────────────────── */
 const PO_OVERRIDES_DEFAULT_BASELINE = [
-  'src/kiosk/components/game/GameControlPanel.tsx  Black',
-  'src/kiosk/components/game/GameControlPanel.tsx  White',
-  'src/kiosk/components/report/ReportImportMenu.tsx  report:import_local',
-  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:import_and_deep',
-  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:import_and_normal',
-  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:importing',
-  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:loading',
-  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:no_results',
-  'src/kiosk/components/report/ReportLibraryImportDialog.tsx  report:search_placeholder_lib',
-  'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:choose_file_hint',
-  'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:import_and_deep',
-  'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:import_and_normal',
-  'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:import_local',
-  'src/kiosk/components/report/ReportLocalImportDialog.tsx  report:importing',
-  'src/kiosk/pages/AiSetupPage.tsx  Territory',
-  'src/kiosk/pages/GamePage.tsx  Black',
-  'src/kiosk/pages/GamePage.tsx  White',
-  'src/kiosk/pages/LivePage.tsx  Live',
-  'src/kiosk/pages/ReportDetailPage.tsx  report:deep',
-  'src/kiosk/pages/ReportDetailPage.tsx  report:login_required_detail',
-  'src/kiosk/pages/ReportDetailPage.tsx  report:no_sgf',
-  'src/kiosk/pages/ReportDetailPage.tsx  report:normal',
-  'src/kiosk/pages/ReportDetailPage.tsx  report:territory',
-  'src/kiosk/pages/ReportDetailPage.tsx  report:unknown_status',
-  'src/kiosk/pages/ReportsPage.tsx  report:delete_confirm_body',
   'src/kiosk/pages/ReportsPage.tsx  report:delete_confirm_title',
-  'src/kiosk/pages/ReportsPage.tsx  report:login_required',
-  'src/kiosk/pages/TsumegoCategoriesPage.tsx  tsumego:selectCategory',
-  'src/kiosk/pages/TsumegoProblemPage.tsx  Black',
-  'src/kiosk/pages/TsumegoProblemPage.tsx  White',
-  // 2026-08-23(屏 04):用时那七档从 `AiSetupPage.tsx` 搬进 `utils/setupOptions.ts`(两屏共用),
-  // 这一条**跟着文件走**,不是新漂的 —— `Byoyomi only 30s x3` 在 PO 里是「仅读秒」,
-  // 而屏上要写「仅读秒 30秒×3」(轨上要看得见是几秒几次)。
-  'src/kiosk/utils/setupOptions.ts  Byoyomi only 30s x3',
 ];
 
 test('t(key, 中文默认值) 的默认值不许和 PO 里那条说的是两回事', () => {

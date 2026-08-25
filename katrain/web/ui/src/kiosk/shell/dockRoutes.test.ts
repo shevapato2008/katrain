@@ -2,10 +2,18 @@ import { describe, expect, test } from 'vitest';
 import { DOCK_TABS, dockActiveOf, dockLevelOf } from './dockRoutes';
 
 describe('DOCK_TABS —— 词与顺序是四棋类共享词典,不是围棋能自选的', () => {
-  test('顺序写死:对弈 训练营 棋谱 复盘 课程 设置', () => {
+  test('顺序写死:对弈 训练营 棋谱 复盘 成长 课程 设置', () => {
     expect(DOCK_TABS.map((t) => t.label)).toEqual(
-      ['对弈', '训练营', '棋谱', '复盘', '课程', '设置'],
+      ['对弈', '训练营', '棋谱', '复盘', '成长', '课程', '设置'],
     );
+  });
+
+  // 成长的位置也是稿子定死的:**复盘之后、课程之前**。
+  // ⚠️ 这一项围棋独有,另外三家还是六项 —— 见 `dockRoutes.ts` 上那条注释。
+  test('「成长」钉在「复盘」之后、「课程」之前', () => {
+    const labels = DOCK_TABS.map((t) => t.label);
+    expect(labels.indexOf('成长')).toBe(labels.indexOf('复盘') + 1);
+    expect(labels.indexOf('课程')).toBe(labels.indexOf('成长') + 1);
   });
 
   test('专属项「棋谱」钉在「训练营」之后 —— 位置也是规范定死的', () => {
@@ -16,12 +24,12 @@ describe('DOCK_TABS —— 词与顺序是四棋类共享词典,不是围棋能�
   test('不超过 7 项(--dock-max-items)', () => {
     expect(DOCK_TABS.length).toBeLessThanOrEqual(7);
     // §17.1:「不超过 N」那一侧要配下界,不然一项不放也算过。
-    expect(DOCK_TABS.length).toBeGreaterThanOrEqual(6);
+    expect(DOCK_TABS.length).toBeGreaterThanOrEqual(7);
   });
 
   test('图标全部来自 Phosphor 词典(§10),不是随手挑的近似图标', () => {
     expect(DOCK_TABS.map((t) => t.icon)).toEqual(
-      ['game-controller', 'puzzle-piece', 'books', 'grid-nine', 'book-open', 'gear'],
+      ['game-controller', 'puzzle-piece', 'books', 'grid-nine', 'trend-up', 'book-open', 'gear'],
     );
   });
 });

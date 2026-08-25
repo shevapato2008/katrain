@@ -43,6 +43,7 @@ import PlayPage from './pages/PlayPage';
 import AiSetupPage from './pages/AiSetupPage';
 import PvpLocalSetupPage from './pages/PvpLocalSetupPage';
 import GamePage from './pages/GamePage';
+import GrowthPage from './pages/GrowthPage';
 import TsumegoPage from './pages/TsumegoPage';
 import TsumegoCategoriesPage from './pages/TsumegoCategoriesPage';
 import TsumegoLevelPage from './pages/TsumegoLevelPage';
@@ -127,6 +128,9 @@ const KioskRoutes = () => {
           <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="report" element={<ReportsPage />} />
           <Route path="report/:taskId" element={<ReportDetailPage />} />
+          {/* 成长(屏 22)。**Dock 第五项**,一级页 ⇒ 路径必须与 `DOCK_TABS` 里那条**全等**
+              (`dockLevelOf` 是全等比较,差一个尾斜杠就掉成 L2、中间区从 434 变 516)。 */}
+          <Route path="growth" element={<GrowthPage />} />
           {/* 课程(只读镜像)。`tutorial/book/:bookId` 2026-08-24 连同 `TutorialBookDetailPage`
               一起删了 —— 选书和目录合成了 `tutorial/:category?book=<id>` 一屏。
               没留重定向:kiosk 是全屏 chromium,没有地址栏也没有书签。 */}

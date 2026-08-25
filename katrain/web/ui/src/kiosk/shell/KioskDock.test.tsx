@@ -1,20 +1,26 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { KioskDock } from './KioskDock';
+import { DOCK_TABS } from './dockRoutes';
 
 /**
  * 替换 `__tests__/Dock.test.tsx`(随旧 `components/layout/Dock.tsx` 一起删)。
  * 旧那份有两条断言是**反的**:它断言 8 项、并断言「设置**不**在 Dock 里」。
  * 规范 §3 的词典是六项,§1 说设置就在 Dock 里(顶栏因此没有齿轮,D9)。
  *
+ * ⚠️ **2026-08-25 起围棋是七项** —— 补了「成长」(屏 22,钉在复盘之后、课程之前)。
+ * 那一项**围棋独有**:它靠 `ai_ladder_game_ledger`(每局带 `user_color` 和 `opponent_rung`),
+ * 另外三家(象棋 / 国象 / 五子棋)有没有同形的账本要各自查 —— **不能拿这里的结论去推它们**。
+ * 共享外壳的上限是 `--dock-max-items` = 7,没破。
+ *
  * 这里不断言尺寸/位置/高亮的长相 —— 那些是布局结论,归
  * `tests/kiosk-shell-geometry.spec.ts` 在真浏览器里量。jsdom 没有布局引擎。
  */
 describe('KioskDock', () => {
-  it('渲染共享词典的六项,顺序不变', () => {
+  it('渲染共享词典的七项,顺序不变', () => {
     render(<KioskDock pathname="/kiosk/play" onTab={vi.fn()} />);
     expect(screen.getAllByRole('button').map((b) => b.textContent))
-      .toEqual(['对弈', '训练营', '棋谱', '复盘', '课程', '设置']);
+      .toEqual(['对弈', '训练营', '棋谱', '复盘', '成长', '课程', '设置']);
   });
 
   it('「设置」在 Dock 里 —— 顶栏的齿轮因此才拆得掉(§1 / D9)', () => {
@@ -56,7 +62,8 @@ describe('KioskDock', () => {
 
   it('图标是内联 svg 且跟随 currentColor —— 选中那一格靠它翻成 --ink', () => {
     const { container } = render(<KioskDock pathname="/kiosk/play" onTab={vi.fn()} />);
-    expect(container.querySelectorAll('.kiosk-dock__item svg')).toHaveLength(6);
+    // 每一项一个图标 —— 数字跟着 `DOCK_TABS` 走(2026-08-25 起七项)。
+    expect(container.querySelectorAll('.kiosk-dock__item svg')).toHaveLength(DOCK_TABS.length);
     expect(container.querySelector('img')).toBeNull();
   });
 

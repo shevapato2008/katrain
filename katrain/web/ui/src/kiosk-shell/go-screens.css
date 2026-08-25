@@ -249,6 +249,65 @@
   max-width: calc(var(--board-size) - 32px);
 }
 
+/* ── 屏 22 成长 ────────────────────────────────────────────────────────────
+   外壳那边早就为这一屏写好了三样(`tokens.css` 的注释直接点名):
+   `.kiosk-stats`/`.kiosk-stat`(「**成长首页顶上那排关键数字**」)、
+   `.kiosk-status--2`(「两格变体:**成长左栏底部**」)、`.kiosk-layout-l1`。
+   这里只补这一屏自己的那几件。
+
+   ⚠️ `.panel` 是 `flex: none` —— 直接拿它当**要长高的**容器会塌成内容高。
+   所以这一屏用 `.gsec` 覆盖成 flex 列 + `min-height: 0`。 */
+.gsec { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.gsec > h3 { display: flex; justify-content: space-between; align-items: baseline; flex: none; }
+.gsec > h3 em { font-family: var(--font-serif); font-style: italic; font-size: 11px;
+  letter-spacing: 0; text-transform: none; color: var(--dim); }
+.gsec__h { margin-top: 14px !important; }
+
+/* 段位那个大字。**不写「20 级」** —— 未定级时写「未定级」,那是这一屏最要紧的一句诚实话。 */
+.grank { font-family: var(--font-serif); font-weight: 600; font-size: 44px; line-height: 1.1;
+  text-align: center; margin-top: 6px; color: var(--text); }
+
+/* 大字底下那条进度。稿子只画了未定级那一态(定级局 n/5);定级之后那儿是空的,
+   而空的正是左栏那道缝 —— 定级后换成「净胜分 n/3」,数据同一个接口本来就在给。 */
+.gmetric { margin-top: 12px; flex: none; }
+.gmetric > span { display: flex; justify-content: space-between; align-items: baseline; }
+.gmetric b { font-family: var(--font-sans); font-size: 12px; font-weight: 600; }
+.gmetric i { font-family: var(--font-mono); font-style: normal; font-size: 12px;
+  color: var(--dim); font-variant-numeric: tabular-nums; }
+.gbar { margin-top: 6px; height: 4px; border-radius: 2px; background: var(--hair); overflow: hidden; }
+.gbar > span { display: block; height: 100%; background: var(--accent); }
+
+/* 升降规矩三条。
+   ⚠️ 稿子这三行用的是 `.row` + `.lead`,而 `.lead` **本仓从来没有过** ——
+   我先写了「走共享的 .lead」,一 grep 发现整个 `src/` 里只有我自己那句注释。
+   稿子 `:160` 的 `.row .lead` 是 46px 宽的等宽数字格(给手数 / 局数用的),
+   照搬到「1 2 3」上会空出 46px 的死区。⇒ 这一屏自己写一个窄的序号。 */
+.grules { display: flex; flex-direction: column; gap: 6px; }
+.grule { height: 44px; display: flex; align-items: center; gap: 10px;
+  padding: 0 10px; border: 1px solid var(--hair); border-radius: 9px; background: var(--raise); }
+.grule .lead { width: 18px; flex: none; font-family: var(--font-mono); font-size: 12px;
+  color: var(--dim); font-variant-numeric: tabular-nums; }
+.grule b { font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+
+/* 左栏底部那两格贴底 —— 和右栏动作区同一条口径:上面收窄腾出的空落在它**上面**。 */
+.gsec .kiosk-status { margin-top: auto; }
+
+.gside { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+/* 两块诊断并排,吃掉右栏剩下的高度。`min-height:0` 缺一个,里面的空态就顶破整栏。 */
+.gdiag { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; min-height: 0; }
+.gdiag .empty { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+/* 打过的档:一档一行。**没打过的档不在这里** —— 那是后端 GROUP BY 的结果,
+   前端不补零。列表会长,所以它自己滚(和棋谱那块同一条理由)。 */
+.grungs { display: flex; flex-direction: column; gap: 4px; flex: 1; min-height: 0;
+  overflow-y: auto; scrollbar-width: none; }
+.grungs::-webkit-scrollbar { width: 0; height: 0; }
+.grung { display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  padding: 5px 8px; border-radius: 7px; background: var(--raise); }
+.grung b { font-family: var(--font-sans); font-size: 12.5px; font-weight: 600; }
+.grung span { font-family: var(--font-mono); font-size: 11.5px; color: var(--dim);
+  font-variant-numeric: tabular-nums; }
+
 /* 动作区排成两行 —— 只有自由对弈那一屏有七个键(三个分析 + 四个动作)。
    只换排布,格子高 / 图标 / 字号 / 圆角继续走共享 `.kiosk-actions button`:
    **七个键必须一模一样大**(Fan 2026-08-22 原话)。 */

@@ -238,13 +238,17 @@ test('§2 品牌字「智星盒」跑的是龙藏行楷,而且三个字都是', 
  *   ① 拆掉 `KioskDock` 的 `aria-current` ⇒「选中态位移」红(上移的项 1 → 0)
  *      **且**「图标翻色」红(两种 fill → 一种)。
  *   ② 把 `<Icon name=… />` 换成空 `<span className="kiosk-icon" />`
- *      ⇒「?raw 内联成立」红(svg 6 → 0)。这一支就是「构建绿但图标其实没进包」长的样子。
+ *      ⇒「?raw 内联成立」红(svg 7 → 0)。这一支就是「构建绿但图标其实没进包」长的样子。
  *   ③ `dockLevelOf` 恒返回 1 ⇒「L2 没有 Dock」红(.kiosk-dock 0 → 1)。
- *   ④ 词典删掉「设置」一项 ⇒「六项」红(6 → 5)。
+ *   ④ 词典删掉「设置」一项 ⇒「七项」红(7 → 6)。
  * 实测值一并记在这里(只作记录、不作判据):项高 65,未选中项 y=527、选中项 y=525。
+ *
+ * ⚠️ **2026-08-25:六项 → 七项**(补了「成长」,屏 22)。这一条**当场红了**,
+ * 是它自己把 6 → 7 逮住的 —— 也就是这个闸在守的东西没变,只是词典变了。
+ * 等宽那条同批复核:960 / 7 = **137.14**,最宽最窄差 < 1px,`grid-auto-columns: 1fr` 照旧成立。
  */
 
-test('§7 Dock:六项、通栏贴底、等宽、项高 65、选中态位移 −2px', async ({ page }) => {
+test('§7 Dock:七项、通栏贴底、等宽、项高 65、选中态位移 −2px', async ({ page }) => {
   await boot(page, '/kiosk/play');
 
   const screen = await box(page, '.kiosk-screen');
@@ -260,7 +264,9 @@ test('§7 Dock:六项、通栏贴底、等宽、项高 65、选中态位移 −2
       const r = el.getBoundingClientRect();
       return { x: r.x, y: r.y, w: r.width, h: r.height };
     }));
-  expect(items).toHaveLength(6);   // D8:六项。五子棋自己也是 6 项,「四家项数相等」不是规矩
+  // D8。**「四家项数相等」不是规矩** —— 五子棋自己是 6 项,围棋 2026-08-25 起是 7 项
+  // (补了「成长」)。数字跟着本仓的 `DOCK_TABS` 走,共享上限是 `--dock-max-items` = 7。
+  expect(items).toHaveLength(7);
 
   // 等宽:最宽和最窄差不到 1px(亚像素)。grid-auto-columns: 1fr 说的就是这件事,
   // 但说了不等于算出来是 —— 中间任何一个元素给自己一个 min-width 都会破它。
@@ -286,7 +292,8 @@ test('§10 Dock 图标真的画出来了 —— ?raw 内联在生产链路上成
       const r = el.getBoundingClientRect();
       return { w: Math.round(r.width), h: Math.round(r.height), paths: el.querySelectorAll('path').length };
     }));
-  expect(icons).toHaveLength(6);
+  // 七项 ⇒ 七个图标(2026-08-25 补了「成长」,用 `trend-up`)。
+  expect(icons).toHaveLength(7);
   for (const i of icons) {
     expect(i.w).toBe(24);            // --dock-icon
     expect(i.h).toBe(24);

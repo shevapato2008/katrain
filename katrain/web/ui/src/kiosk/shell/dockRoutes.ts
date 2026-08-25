@@ -18,6 +18,12 @@ export const DOCK_TABS: readonly DockTab[] = [
   { path: '/kiosk/tsumego',  label: '训练营', icon: 'puzzle-piece' },
   { path: '/kiosk/kifu',     label: '棋谱',   icon: 'books' },
   { path: '/kiosk/report',   label: '复盘',   icon: 'grid-nine' },
+  // 成长钉在**复盘之后、课程之前**(稿子 27 屏版的 Dock 表)。
+  // ⚠️ 这一项**围棋独有** —— 另外三家(象棋 / 国象 / 五子棋)的 Dock 还是六项。
+  //    它靠的是 `ai_ladder_game_ledger`(每局带 `user_color` 和 `opponent_rung`),
+  //    那三家有没有同形的账本要各自查,**不能拿这里的结论去推它们**。已登记在
+  //    `superpowers/tracks/kiosk-go-shell-align/scope.md` §29。
+  { path: '/kiosk/growth',   label: '成长',   icon: 'trend-up' },
   { path: '/kiosk/tutorial', label: '课程',   icon: 'book-open' },
   { path: '/kiosk/settings', label: '设置',   icon: 'gear' },
 ];

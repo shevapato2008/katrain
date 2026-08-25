@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { API } from '../../api';
+import { websocketUrl } from '../../utils/websocketUrl';
 
 // ---- Types ----------------------------------------------------------------
 
@@ -89,8 +90,9 @@ export function useVisionSync(sessionId: string | null): VisionSyncState {
       }
       if (cancelled) return;
 
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const ws = new WebSocket(`${protocol}//${window.location.host}/ws/vision`);
+      /* `/ws/vision` 是盒端本地通道，服务端不鉴权（server.py 的 vision_websocket
+         直接 accept），所以不传 token —— helper 在 token 缺席时不会拼空参数。 */
+      const ws = new WebSocket(websocketUrl('/ws/vision'));
       wsRef.current = ws;
       ws.onopen = () => { if (!cancelled) setConnected(true); };
       ws.onmessage = handleMessage;

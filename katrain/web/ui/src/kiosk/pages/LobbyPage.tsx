@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { i18n } from '../../i18n';
 import { getAiLadderStatus } from '../../features/aiLadder/api';
 import SubPageBar from '../components/layout/SubPageBar';
+import { websocketUrl } from '../../utils/websocketUrl';
 
 interface OnlineUser {
   id: number;
@@ -110,8 +111,7 @@ const LobbyPage = () => {
       fetchActiveGames();
     }, 10000);
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/lobby?token=${token}`;
+    const wsUrl = websocketUrl('/ws/lobby', token);
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 

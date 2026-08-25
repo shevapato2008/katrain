@@ -6,6 +6,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import ContentPageHeader from '../components/layout/ContentPageHeader';
 import ProblemCard from '../components/tsumego/ProblemCard';
+import { readLocalProgress } from '../../context/TsumegoProgressContext';
 
 interface ProblemSummary {
   id: string;
@@ -72,15 +73,10 @@ const TsumegoListPage = () => {
         setLoading(false);
       });
 
-    // Load progress from localStorage
-    const stored = localStorage.getItem('tsumego_progress');
-    if (stored) {
-      try {
-        setProgress(JSON.parse(stored));
-      } catch (e) {
-        console.error('Failed to parse stored progress', e);
-      }
-    }
+    // Load progress from localStorage —— 走 `readLocalProgress()`,**不要再直接读 key**:
+    // 2026-08-25 起那把钥匙按账号分(`tsumego_progress:u<id>`),因为盒子是共享设备。
+    // 这里绕过去的话读到的永远是空的(旧的不分人 key 已被删),屏上会显示成「一题没做过」。
+    setProgress(readLocalProgress());
 
     // If logged in, also fetch from server
     if (user && token) {

@@ -2532,6 +2532,23 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                                 await ws.send_json(match_payload)
                             except:
                                 pass
+                    else:
+                        # 🔴 **这个 else 原来没有。** 2026-08-25 给 `accept_invite` 加了
+                        # `consume_invite`(一次性 + `INVITE_TTL_SECONDS = 120`)之后,
+                        # 邀请过期或已被消费时这里**什么都不发**,而前端点完就关窗
+                        # ⇒ 用户按下「接受并开局」,屏上一点反应都没有。
+                        #
+                        # **是那次提交自己造出来的静默失败**:在它之前 accept 恒成功
+                        # (不安全,但不会没反应)。判据同「坏了和好着在用户那里看起来一样吗」——
+                        # 这里的答案曾经是「一样」。
+                        #
+                        # 只发 `code`,话由前端说:这条链上另一处(`PLACEMENT_REQUIRED`)
+                        # 就是这么办的,而后端的英文 detail 是写给运维的。
+                        await websocket.send_json({
+                            "type": "error",
+                            "code": "INVITE_NOT_PENDING",
+                            "message": "invite expired or already used",
+                        })
 
         except WebSocketDisconnect:
             logging.getLogger("katrain_web").info(f"User {current_user.username} disconnected from lobby.")

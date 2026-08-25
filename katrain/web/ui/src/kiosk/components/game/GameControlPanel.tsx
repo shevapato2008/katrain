@@ -126,7 +126,15 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
   // 段位:阶梯 AI 的段位是 `rank_display` 里的字符串,其他人走数值 `calculated_rank`。
   const rawRank = info.rank_display ?? localizedRank(info.calculated_rank, lang);
   const rank = !rawRank || rawRank === 'No Rank' ? null : rawRank;
-  const name = info.name || (color === 'B' ? t('Black', '黑棋') : t('White', '白棋'));
+  // ⚠️ 这里是**人名缺席时的占位**,站的是「谁在下」那个位置,不是「哪一方的子」。
+  // 屏 04 对同一个位置承诺的是「黑方」(`PvpLocalSetupPage.tsx:227`,用的是自铸的
+  // `setup:black_side`),而那一屏的注释白纸黑字写着「**和对局屏上那两张卡的回落值是同一句话**」。
+  // 而 PO 里的 `Black` 是「黑棋」—— 说的是**子**(`PlatformTimer.tsx:105` 那两个计时侧标
+  // 用它是对的)。同一个 msgid 背两个意思,正是「一个 key 兼管两件事」那一族。
+  // ⇒ 铸 `game:black_side` / `game:white_side`,和屏 04 用同一个词。
+  // (2026-08-26 一度把 fallback 改成「黑棋」去迁就 PO —— 那是把这处不一致钉死了:
+  //  设备上设置页承诺「黑方」、对局页给「黑棋」,而注释说它们是同一句话。)
+  const name = info.name || (color === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'));
   return (
     <div className={turn ? 'pcard turn' : 'pcard'} data-testid={`player-card-${color}`}>
       <span className={color === 'B' ? 'disc b' : 'disc w'} />

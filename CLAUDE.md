@@ -47,9 +47,15 @@ npm run fourup                       # 27-screen four-up visual capture (vite de
 
 `npm run fourup` regenerates `superpowers/tracks/kiosk-go-shell-align/visual/**`. Judge the result
 **per screen, as a set of four**: an implementation shot committed without its side-by-side leaves a
-self-contradicting archive. Jitter is under ~200 changed pixels scattered over a wide bbox; a real
-content change is thousands and usually clustered. Revert the jitter-only screens
-(`git checkout HEAD -- <screen dir>`) rather than committing them.
+self-contradicting archive.
+
+**The jitter floor is not one number — it depends on what renders the board.** Screens whose board is
+DOM/SVG jitter under ~200 changed pixels; screens whose board is a `<canvas>` (`LiveBoard`, e.g. 05 /
+20 / 21 / 10) jitter by **~4500** run to run. A pixel count alone will therefore mislead you on canvas
+screens. The reliable discriminator is **run the capture twice and diff the two runs** — that gives
+this screen's own floor. Failing that, look at the bbox: jitter is scattered across the whole frame,
+a content change is clustered. Revert the jitter-only screens (`git checkout HEAD -- <screen dir>`)
+rather than committing them.
 
 The reference half of every four-up lives in **another repo** (`smartbox-software`), pinned by sha256
 in `tests/helpers/reference-shots.json`. If a shot's bytes don't match the pin, the harness fetches the

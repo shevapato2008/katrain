@@ -208,7 +208,10 @@ const LobbyPage = () => {
         setIsMatching(false);
         setNotice(data.code === 'PLACEMENT_REQUIRED'
           ? { kind: 'placement' }
-          : { kind: 'text', text: String(data.message), bad: true });
+          // 邀请过期/已被用掉。后端只发 code —— 它的 `message` 是英文、写给运维的。
+          : data.code === 'INVITE_NOT_PENDING'
+            ? { kind: 'text', text: t('lobby:invite_expired', '这封邀请已经过期或被用过了 —— 请对方再邀一次'), bad: true }
+            : { kind: 'text', text: String(data.message), bad: true });
       }
     };
 
@@ -506,9 +509,12 @@ const LobbyPage = () => {
             </p>
             <div className="wdlg__row">
               <span className="wdlg__num">{t('lobby:invite_kind', '自由对局 · 不计段位')}</span>
-              {/* 稿子写「不接受就一直挂着 —— 邀请没有期限」,只说了一半:后端没有 decline,
-                  这颗「拒绝」只关掉本地这个窗。得说出来,不能让人以为对面会知道。 */}
-              <span className="wdlg__tc">{t('lobby:invite_no_decline', '拒绝只关掉这个窗 —— 对面收不到回音,邀请也没有期限')}</span>
+              {/* 稿子写「不接受就一直挂着 —— 邀请没有期限」,两半都不成立:
+                  后端没有 decline,这颗「拒绝」只关掉本地这个窗;
+                  🔴 而「没有期限」**已经被我们自己 2026-08-25 那次提交证伪** ——
+                  `LobbyManager.INVITE_TTL_SECONDS = 120`(`session.py:369`)。
+                  屏上那句话不会自己跟着改,所以这是**过期的不是注释,是屏上的句子**。 */}
+              <span className="wdlg__tc">{t('lobby:invite_no_decline', '拒绝只关掉这个窗 —— 对面收不到回音;邀请 2 分钟后失效')}</span>
             </div>
             <div className="cdlg__acts">
               <button type="button" className="ghost" onClick={() => setInvitation(null)}>

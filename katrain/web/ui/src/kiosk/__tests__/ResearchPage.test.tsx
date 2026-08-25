@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -28,6 +28,21 @@ vi.mock('../../api', () => ({
     quickAnalyze: vi.fn(),
     analysisScan: vi.fn().mockResolvedValue({}),
     analysisProgress: vi.fn(),
+  },
+}));
+
+/**
+ * 盘换成一个能把 `ownership` 读出来的桩 —— 真 `LiveBoard` 是 canvas,
+ * 在 jsdom 里画不出东西,而这几条要问的正是「这一帧到底给不给它那张地图」。
+ */
+vi.mock('../../components/live/LiveBoard', () => ({
+  default: (props: Record<string, unknown>) => {
+    const click = props.onIntersectionClick as ((x: number, y: number) => void) | undefined;
+    return (
+      <div data-testid="research-board-svg" data-ownership={props.ownership ? 'grid' : 'none'}>
+        <button onClick={() => click?.(3, 3)}>点 D4</button>
+      </div>
+    );
   },
 }));
 
@@ -381,4 +396,70 @@ describe('屏 21 研究', () => {
     await waitFor(() => expect(API.quickAnalyze).toHaveBeenCalled(), { timeout: 2000 });
     expect(vi.mocked(API.quickAnalyze).mock.calls[0][1]).toBeUndefined();
   });
+
+  // ── 领地那张图:**只画这个局面自己的** ──────────────────────────────────────
+  //
+  // 两处真实存在过的假话(2026-08-26 查出并修):
+  //  ① 分析失败时只清了表,**没清这张图** ⇒「算不出来」的同时盘上照旧画着上一个局面的地。
+  //     那三行下面的注释写的正是「不留着上一手的数假装是这一手的」,而它自己漏了这一格。
+  //  ② 换了局面之后旧的那张会跟过去 —— 全局分析跑完时最明显:会话数据里**没有**
+  //     per-move 的 ownership,于是每一手都显示开扫那一刻的同一张地图。
+  //
+  // 判据落在**传给盘的那个 prop** 上,不落在「有没有调 setOwnership」上。
+  describe('领地', () => {
+    const withOwnership = (moveInfos: unknown[] = MOVE_INFOS) => ({
+      turnInfos: [{ moveInfos, ownership: new Array(19 * 19).fill(0.5) }],
+    });
+    const boardOwnership = () => screen.getByTestId('research-board-svg').getAttribute('data-ownership');
+    const openTerritory = async () => {
+      fireEvent.click(screen.getByRole('button', { name: /领地/ }));
+    };
+
+    it('拿到了就画', async () => {
+      vi.mocked(API.quickAnalyze).mockResolvedValue(withOwnership());
+      renderPage();
+      await table();
+      await openTerritory();
+      await waitFor(() => expect(boardOwnership()).toBe('grid'));
+    });
+
+    it('分析失败时跟着清掉 —— 不留着上一个局面的地', async () => {
+      vi.mocked(API.quickAnalyze).mockResolvedValue(withOwnership());
+      renderPage();
+      await table();
+      await openTerritory();
+      await waitFor(() => expect(boardOwnership()).toBe('grid'));
+
+      // 摆一颗子换局面,这一次算不出来
+      vi.mocked(API.quickAnalyze).mockRejectedValue(new Error('引擎没起来'));
+      fireEvent.click(screen.getByRole('button', { name: '点 D4' }));
+      await waitFor(() => expect(boardOwnership()).toBe('none'), { timeout: 2000 });
+    });
+
+    it('响应里没带 ownership 时也清掉 —— 旧服务端不该让盘上留着上一张', async () => {
+      vi.mocked(API.quickAnalyze).mockResolvedValue(withOwnership());
+      renderPage();
+      await table();
+      await openTerritory();
+      await waitFor(() => expect(boardOwnership()).toBe('grid'));
+
+      vi.mocked(API.quickAnalyze).mockResolvedValue(quick());   // ownership: null
+      fireEvent.click(screen.getByRole('button', { name: '点 D4' }));
+      await waitFor(() => expect(boardOwnership()).toBe('none'), { timeout: 2000 });
+    });
+
+    it('换了局面而新的还没算出来时,旧的那张不跟过去', async () => {
+      vi.mocked(API.quickAnalyze).mockResolvedValue(withOwnership());
+      renderPage();
+      await table();
+      await openTerritory();
+      await waitFor(() => expect(boardOwnership()).toBe('grid'));
+
+      // 新局面的请求永不 resolve ⇒ 这一帧「还不知道」,而不知道就是不画
+      vi.mocked(API.quickAnalyze).mockImplementation(() => new Promise(() => {}));
+      fireEvent.click(screen.getByRole('button', { name: '点 D4' }));
+      await waitFor(() => expect(boardOwnership()).toBe('none'), { timeout: 2000 });
+    });
+  });
+
 });

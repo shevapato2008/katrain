@@ -105,6 +105,37 @@ def test_active_multiplayer_requires_auth(client, app):
 # ── 2. 在线列表的字段面 ────────────────────────────────────────────────────────
 
 
+def test_follow_lists_do_not_leak_uuid_credits_or_admin(client, app):
+    """`/followers` 和 `/following` 和 `/online` 是**同一种泄露**。
+
+    🔴 它们是漏网的:`/online` 2026-08-25 已经收窄成 `OnlineUser`,而**同一个文件里
+    上面十一行**的这两条原样留着 `response_model=List[User]` —— 同一种泄露、隔着两个函数。
+    ⇒ 判据:收窄一个响应模型时,把同一个文件里回同一种东西的端点**一起数一遍**;
+    「我改的这一处」和「这一类」不是同一件事。
+    """
+    _, alice = _make_user(app, "flw_alice")
+    _, bob = _make_user(app, "flw_bob")
+    token = _token(client, bob)
+
+    alice_id = app.state.user_repo.get_user_by_username(alice)["id"]
+    bob_id = app.state.user_repo.get_user_by_username(bob)["id"]
+    app.state.user_repo.follow_user(bob_id, alice_id)
+
+    for path, who in (("/api/v1/users/following", alice), ("/api/v1/users/followers", bob)):
+        headers = {"Authorization": f"Bearer {token if path.endswith('following') else _token(client, alice)}"}
+        resp = client.get(path, headers=headers)
+        assert resp.status_code == 200, resp.text
+        rows = resp.json()
+        assert rows, f"{path} 是空的 —— 下面的断言会全部空过"
+        row = rows[0]
+        for leaked in ("uuid", "credits", "is_admin", "net_wins"):
+            assert leaked not in row, f"{leaked} 不该出现在 {path} 里:{row}"
+        # 正对照:面板真正要用的那几个还在,别收窄过头
+        # (`galaxy/components/FriendsPanel.tsx` 用 id / username / rank / avatar_url)。
+        assert row["username"] == who
+        assert "rank" in row and "avatar_url" in row
+
+
 def test_online_users_does_not_leak_uuid_credits_or_admin(client, app):
     """收窄的是**响应模型**,不是端点里手挑字段 —— 手挑的写法在 `User` 以后加字段时会漏。"""
     _, alice = _make_user(app, "alice")
@@ -150,7 +181,16 @@ def _next(ws):
 
 
 def test_accept_invite_without_an_invitation_creates_no_game(client, app):
-    """没人邀请过我,我 `accept_invite` 也开不出局来。"""
+    """没人邀请过我,我 `accept_invite` 也开不出局来 —— **而且屏上会说出来**。
+
+    🔴 2026-08-26 之前这条走的是「屏障」写法:先发一条注定回 error 的 `invite`,
+    看第一条收到的是不是它。**之所以需要屏障,正是因为被拒的 accept 是静默的** ——
+    服务端那个 `if` 没有 `else`,前端点完就关窗 ⇒ 用户按下「接受并开局」屏上什么都不发生。
+    那是 2026-08-25 加 `consume_invite` + `INVITE_TTL_SECONDS` 那次**自己造出来的**:
+    在它之前 accept 恒成功(不安全,但不会没反应)。
+
+    补上 `else` 之后屏障就不必要了,断言也变强:**不但没建局,而且回了 `INVITE_NOT_PENDING`。**
+    """
     _, alice = _make_user(app, "alice")
     _, mallory = _make_user(app, "mallory")
     alice_id = app.state.user_repo.get_user_by_username(alice)["id"]
@@ -160,13 +200,36 @@ def test_accept_invite_without_an_invitation_creates_no_game(client, app):
     with _ws(client, _token(client, alice)), _ws(client, _token(client, mallory)) as m:
         # mallory 从没收到过邀请,却直接「接受」alice 的邀请。
         m.send_json({"type": "accept_invite", "target_id": alice_id})
-        # 屏障:邀请一个不存在的人 —— 这一条**一定**会回 error。
-        m.send_json({"type": "invite", "target_id": 999_999})
         first = _next(m)
 
-    # 第一条收到的就是屏障那条 error ⇒ 前面没有 match_found。
-    assert first["type"] == "error", f"收到的第一条不是屏障那条 error,而是 {first}"
+    assert first["type"] == "error", f"被拒的 accept 应该出声,而收到的是 {first}"
+    assert first.get("code") == "INVITE_NOT_PENDING", first
     assert len(app.state.session_manager._sessions) == before, "凭空建出了一局棋"
+
+
+def test_accept_invite_says_so_when_the_invitation_expired(client, app):
+    """过期那一档:邀请真发过,但过了 `INVITE_TTL_SECONDS` ⇒ 开不出局,**并且说出来**。
+
+    「没人邀请过我」和「邀请过但过期了」在用户那里是两件事,在这条通道上曾经
+    **长得一模一样**(都是什么都不发生)。
+    """
+    _, alice = _make_user(app, "alice")
+    _, bob = _make_user(app, "bob")
+    alice_id = app.state.user_repo.get_user_by_username(alice)["id"]
+    bob_id = app.state.user_repo.get_user_by_username(bob)["id"]
+
+    before = len(app.state.session_manager._sessions)
+    lobby = app.state.lobby_manager
+    lobby.record_invite(alice_id, bob_id)
+    # 把发出时刻推到 TTL 之外 —— 不睡 120 秒。
+    lobby._pending_invites[(alice_id, bob_id)] -= lobby.INVITE_TTL_SECONDS + 1
+
+    with _ws(client, _token(client, bob)) as b:
+        b.send_json({"type": "accept_invite", "target_id": alice_id})
+        first = _next(b)
+
+    assert first["type"] == "error" and first.get("code") == "INVITE_NOT_PENDING", first
+    assert len(app.state.session_manager._sessions) == before, "过期的邀请也开出了局"
 
 
 def test_accept_invite_after_a_real_invitation_creates_the_game(client, app):

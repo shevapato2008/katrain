@@ -154,7 +154,28 @@ const ResearchPage = () => {
 
   /** `quickAnalyze`(200 visits)那一路的表。这一份是**取回来的**,所以是 state。 */
   const [quickRows, setQuickRows] = useState<AiRow[] | null>(null);
-  const [ownership, setOwnership] = useState<number[][] | null>(null);
+  /**
+   * 领地那张图,**连同产出它的那个局面一起记**。
+   *
+   * ⚠️ 只记数不记来源的话,它会在两处说假话(2026-08-26 查出,两处都真存在):
+   *  ① 分析失败时下面那支只清了表(`setQuickRows(null)` + 报错),**没清这张图** ——
+   *    于是「算不出来」的同时,盘上照旧画着**上一个局面**的地。
+   *    那三行下面的注释写的正是「不留着上一手的数假装是这一手的」,而它自己漏了这一格。
+   *  ② 全局分析跑完之后这个 effect 直接 return(`scan === 'done'`),而会话那份数据里
+   *    **没有 ownership**(`gameState.analysis.moves` 只有着法)⇒ 翻手时每一个局面
+   *    都显示同一张、开扫那一刻的地图。
+   *
+   * ⇒ 渲染时只在 `key === positionKey` 时往下传。**对不上就是没有**,不猜、不沿用。
+   *
+   * **一个机制,不叠第二道。** 我先在失败支和「响应没带 ownership」支各加了一句
+   * `setOwnership(null)` —— 变异实测**两条都不红**:key 那一道已经把它们全盖住了
+   * (`mover` 由 `stoneColors`/`currentMove` 派生,而这两个量都在 `positionKey` 里
+   * ⇒ 构造不出「同一个 key 重算一次」)。**测不出差别的分支不留** ——
+   * 留着它下一个人会以为这儿有两道保险。
+   * 变异记录:把渲染处改回 `ownership?.grid ?? null`(不比 key)⇒「换了局面而新的
+   * 还没算出来时,旧的那张不跟过去」当场红。
+   */
+  const [ownership, setOwnership] = useState<{ key: string; grid: number[][] } | null>(null);
   const [rowsError, setRowsError] = useState<string | null>(null);
 
   const activeSessionIdRef = useRef<string | null>(null);
@@ -223,11 +244,14 @@ const ResearchPage = () => {
           const size = board.boardSize;
           const grid: number[][] = [];
           for (let y = 0; y < size; y++) grid.push(raw.slice(y * size, (y + 1) * size));
-          setOwnership(grid);
+          setOwnership({ key, grid });
         }
+        // 响应没带 ownership 时**什么都不用做**:那份旧的带着它自己的 key,
+        // 而下面渲染时按 key 比 —— 对不上就是没有。见下面那条变异记录。
       }).catch((err: unknown) => {
         if (rowsKeyRef.current !== key) return;
         // 状态诚实:算不出来就说算不出来,**不留着上一手的数假装是这一手的**。
+        // 领地那一格不用在这儿清 —— 它带着产出它的那个 key,渲染时按 key 比。
         setQuickRows(null);
         setRowsError(err instanceof Error ? err.message : String(err));
       });
@@ -551,7 +575,9 @@ const ResearchPage = () => {
             aiMarkers={markers}
             showAiMarkers
             showTerritory={showTerritory}
-            ownership={showTerritory ? ownership : null}
+            /* 只有**这个局面自己**那张地图才画得出去。全局分析跑完之后会话里没有
+               per-move 的 ownership ⇒ 这里恒为 null,而不是一路沿用开扫那一刻的那张。 */
+            ownership={showTerritory && ownership?.key === positionKey ? ownership.grid : null}
             minContainerHeight={0}
           />
         </div>

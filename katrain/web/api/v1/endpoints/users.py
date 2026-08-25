@@ -34,18 +34,33 @@ async def unfollow_user(username: str, request: Request, current_user: User = De
     return {"status": "unfollowed"}
 
 
-@router.get("/followers", response_model=List[User])
+def _people(rows) -> List[OnlineUser]:
+    """一串「人」收窄成 `OnlineUser`。
+
+    ⚠️ 和下面 `/online` 是**同一条理由、同一个修法**:`User` 里带着 `uuid`
+    (发给 KataGo 的标识)、`credits`、`is_admin`、`net_wins`,而「关注/粉丝」这两张名单
+    一个都不需要(消费方 `galaxy/components/FriendsPanel.tsx` 只用
+    id / username / rank / avatar_url)。
+
+    🔴 **2026-08-26:这两条是漏网的。** `/online` 那条 2026-08-25 已经收窄,
+    而它上面十一行的这两条**原样留着 `response_model=List[User]`** ——
+    同一个文件、同一种泄露、隔着两个函数。
+    ⇒ 判据:收窄一个响应模型时,**把同一个文件里回同一种东西的端点一起数一遍**;
+    「我改的这一处」和「这一类」不是同一件事。
+    """
+    return [OnlineUser(**{k: u[k] for k in OnlineUser.model_fields if k in u}) for u in rows]
+
+
+@router.get("/followers", response_model=List[OnlineUser])
 async def get_followers(request: Request, current_user: User = Depends(get_current_user)) -> Any:
     repo = request.app.state.user_repo
-    followers = repo.get_followers(current_user.id)
-    return [User(**u) for u in followers]
+    return _people(repo.get_followers(current_user.id))
 
 
-@router.get("/following", response_model=List[User])
+@router.get("/following", response_model=List[OnlineUser])
 async def get_following(request: Request, current_user: User = Depends(get_current_user)) -> Any:
     repo = request.app.state.user_repo
-    following = repo.get_following(current_user.id)
-    return [User(**u) for u in following]
+    return _people(repo.get_following(current_user.id))
 
 
 @router.get("/online", response_model=List[OnlineUser])

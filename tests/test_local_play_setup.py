@@ -14,8 +14,11 @@ from katrain.web.server import create_app
 
 
 @pytest.fixture
-def client():
+def client(isolated_session_factory):
     app = create_app()
+    # 必须在进 `TestClient` **之前**设：lifespan 的 `init_db()` 会对开发机真库跑账本迁移
+    # （`UPDATE ai_ladder_game_ledger …`）。`tests/conftest.py` 的闸拦得住。
+    app.state.session_factory = isolated_session_factory
     with TestClient(app) as c:
         yield c
 

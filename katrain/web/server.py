@@ -174,13 +174,24 @@ async def _lifespan_server(app: FastAPI, log):
     from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository
     from katrain.web.core.db import SessionLocal
 
-    repo = SQLAlchemyUserRepository(SessionLocal)
+    # 唯一的库接缝。调用方（测试）可以在进 `TestClient(app)` / 触发 lifespan **之前**
+    # 设 `app.state.session_factory`，这里就用它；生产没人设 → 退回全局 `SessionLocal`，
+    # 行为与改动前逐字相同。
+    #
+    # 为什么必须是这里、而不是让调用方设 `app.state.user_repo`：下面那六行会**无条件
+    # 覆盖** `app.state` 上的全部六个 repo。注入发生在 `TestClient` 之前、覆盖发生在
+    # 之后，于是调用方精心准备的库从头到尾一行没写过 —— 而测试还是绿的。
+    # 2026-08-23 实测的完整链路记在 `tests/conftest.py`。
+    session_factory = getattr(app.state, "session_factory", None) or SessionLocal
+    app.state.session_factory = session_factory
+
+    repo = SQLAlchemyUserRepository(session_factory)
     repo.init_db()
 
-    game_repo = GameRepository(SessionLocal)
-    user_game_repo = UserGameRepository(SessionLocal)
-    user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
-    ai_ladder_repo = AiLadderRankedRepository(SessionLocal)
+    game_repo = GameRepository(session_factory)
+    user_game_repo = UserGameRepository(session_factory)
+    user_game_analysis_repo = UserGameAnalysisRepository(session_factory)
+    ai_ladder_repo = AiLadderRankedRepository(session_factory)
 
     # Create default admin user if no users exist
     if not repo.list_users():
@@ -193,9 +204,8 @@ async def _lifespan_server(app: FastAPI, log):
     # Ensure the default 'admin' account carries the is_admin flag (billing admin).
     try:
         from katrain.web.core import models_db
-        from katrain.web.core.db import SessionLocal as _SL
 
-        _s = _SL()
+        _s = session_factory()
         try:
             admin_row = _s.query(models_db.User).filter(models_db.User.username == "admin").one_or_none()
             if admin_row is not None and not admin_row.is_admin:
@@ -213,9 +223,11 @@ async def _lifespan_server(app: FastAPI, log):
         # Reconcile any credit reservations stuck after a previous crash.
         try:
             from katrain.web.core import billing
-            from katrain.web.core.db import SessionLocal as _SL2
 
-            _s2 = _SL2()
+            # release 侧保留 PREVIEW_MODE 守卫；develop 侧把 SessionLocal 换成注入进来的
+            # session_factory（lifespan 会无条件覆盖注入点，那正是 daf209a1 修的东西）。
+            # 两边都要：守卫决定跑不跑，session_factory 决定跑在哪个库上。
+            _s2 = session_factory()
             try:
                 billing.reconcile_stale_reservations(_s2, settings.BILLING_RESERVATION_TTL_SEC)
             finally:
@@ -229,7 +241,7 @@ async def _lifespan_server(app: FastAPI, log):
     app.state.user_game_analysis_repo = user_game_analysis_repo
     app.state.ai_ladder_repo = ai_ladder_repo
     app.state.ai_ladder_authoritative = True
-    app.state.report_session_factory = SessionLocal
+    app.state.report_session_factory = session_factory
     app.state.lobby_manager = LobbyManager()
     app.state.matchmaker = Matchmaker()
 
@@ -357,23 +369,29 @@ async def _lifespan_board(app: FastAPI, log):
 
     log.info(f"Starting in BOARD mode (device={settings.DEVICE_ID[:8]}..., remote={settings.REMOTE_API_URL})")
 
+    # 与 `_lifespan_server` 同一条接缝：调用方可在触发 lifespan 之前设
+    # `app.state.session_factory`；没人设 → 全局 `SessionLocal`，行为逐字不变。
+    # 两支必须一起改 —— 只修一支等于把同一个缺陷留在另一半。
+    session_factory = getattr(app.state, "session_factory", None) or SessionLocal
+    app.state.session_factory = session_factory
+
     # Local SQLite — create only the core tables needed for offline
-    repo = SQLAlchemyUserRepository(SessionLocal)
+    repo = SQLAlchemyUserRepository(session_factory)
     repo.init_db()
     app.state.user_repo = repo
 
-    local_user_game_repo = UserGameRepository(SessionLocal)
-    local_user_game_analysis_repo = UserGameAnalysisRepository(SessionLocal)
-    local_tsumego_progress_repo = LocalTsumegoProgressRepository(SessionLocal)
+    local_user_game_repo = UserGameRepository(session_factory)
+    local_user_game_analysis_repo = UserGameAnalysisRepository(session_factory)
+    local_tsumego_progress_repo = LocalTsumegoProgressRepository(session_factory)
     app.state.user_game_repo = local_user_game_repo
     app.state.user_game_analysis_repo = local_user_game_analysis_repo
-    app.state.ai_ladder_repo = AiLadderRankedRepository(SessionLocal)
+    app.state.ai_ladder_repo = AiLadderRankedRepository(session_factory)
     # The board keeps an optimistic local profile so a completed game remains durable
     # through an outage. The cloud reservation/finalizer is canonical across devices;
     # the settlement outbox below replaces this profile with the cloud reply.
     app.state.ai_ladder_authoritative = True
     app.state.tsumego_progress_repo = local_tsumego_progress_repo
-    app.state.report_session_factory = SessionLocal
+    app.state.report_session_factory = session_factory
 
     # Remote API client
     remote_client = RemoteAPIClient(
@@ -399,7 +417,7 @@ async def _lifespan_board(app: FastAPI, log):
             log.debug(f"No saved credentials: {e}")
 
     # Sync worker
-    sync_worker = SyncWorker(SessionLocal, remote_client, ai_ladder_repo=app.state.ai_ladder_repo)
+    sync_worker = SyncWorker(session_factory, remote_client, ai_ladder_repo=app.state.ai_ladder_repo)
     sync_worker.recover_stale_leases()
     app.state.sync_worker = sync_worker
 
@@ -408,7 +426,7 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.connectivity_manager = connectivity
 
     # Repository dispatcher
-    sync_fn = partial(enqueue_sync_item, SessionLocal, device_id=settings.DEVICE_ID)
+    sync_fn = partial(enqueue_sync_item, session_factory, device_id=settings.DEVICE_ID)
     # Also reachable outside the dispatcher: a ranked settlement is written by the
     # authoritative local path, not by the online/offline repository routing, but it
     # still has to reach the cloud through the same one queue.

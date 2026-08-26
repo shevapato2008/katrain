@@ -193,6 +193,47 @@ def test_the_other_player_is_also_allowed(app, client):
     assert resp.status_code == 200, resp.text
 
 
+# ------------------------------------------------------- 告诉对面 vs 记进账本
+
+
+@pytest.mark.parametrize("endpoint,reason", [("/api/resign", "resign"), ("/api/timeout", "timeout")])
+def test_the_opponent_is_told_even_when_the_game_cannot_be_recorded(app, client, endpoint, reason):
+    """落账失败**不许**吃掉「这局结束了」那条广播。
+
+    两件事本来捆在同一个 `try` 里,广播排在 `record_multiplayer_game` 后面 ⇒ 记不进去
+    就不广播。而盒上 `app.state.game_repo` **恒为 None**(board 模式那一段明写
+    「Multiplayer game_repo not used in board mode」),所以这条路上每一次认输/超时
+    都会把对面挂在「还在等你走」,日志里只留一句「Failed to record game result」——
+    那句话一个字都没提广播也没了。
+
+    这里就用 `game_repo = None` 造这个状态,不是另编一个异常:**盒上的形状就是它**。
+
+    变异记录:把广播搬回 `try` 里(合入前的写法),这两条都红在最后那句 assert。
+    数子和退出两处本来就把广播放在 try 外,所以只有这两条路有病 —— 那也说明
+    「捆在一起」不是这份代码的约定,是这两处漏了。
+    """
+    black_id, black_name = _make_user(app, "alice")
+    white_id, _ = _make_user(app, "bob")
+    session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=white_id)
+
+    app.state.game_repo = None  # 盒上就是这个值
+
+    sent = []
+    manager = app.state.session_manager
+    original = manager._schedule_broadcast
+    manager._schedule_broadcast = lambda sess, msg: sent.append((sess, msg))
+    try:
+        resp = client.post(endpoint, json={"session_id": session.session_id}, headers=_login(client, black_name))
+    finally:
+        manager._schedule_broadcast = original
+
+    assert resp.status_code == 200, resp.text
+    ends = [m for _, m in sent if m.get("type") == "game_end"]
+    assert ends, f"{endpoint} 落账失败后没有广播 game_end —— 对面不知道这局结束了"
+    assert ends[0]["data"]["reason"] == reason
+    assert ends[0]["data"]["winner_id"] == white_id
+
+
 # ------------------------------------------------------- 聊天身份
 
 

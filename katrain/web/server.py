@@ -1801,10 +1801,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         # Record game result for multiplayer
         if is_multiplayer and current_user:
+            winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
+            result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
             try:
-                winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
-                result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
-
                 app.state.game_repo.record_multiplayer_game(
                     sgf_content=session.katrain.get_sgf(),
                     result=result,
@@ -1812,13 +1811,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     black_id=session.player_b_id,
                     white_id=session.player_w_id,
                 )
-
-                manager._schedule_broadcast(
-                    session,
-                    {"type": "game_end", "data": {"reason": "resign", "winner_id": winner_id, "result": result}},
-                )
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
+
+            # 广播**不在** try 里:它告诉对面「这局结束了」,而 try 守的是落账。
+            # 两件事捆在一个 try 里时,落账一失败对面就永远收不到终局 —— 盒上
+            # `app.state.game_repo` 恒为 None(`server.py` board 模式那一段),
+            # 于是这条路上每一次认输/超时都会静默地把对面挂在「还在等你走」。
+            # 数子(`_complete_count`)和退出(forfeit)两处本来就是这么写的,这里对齐。
+            manager._schedule_broadcast(
+                session,
+                {"type": "game_end", "data": {"reason": "resign", "winner_id": winner_id, "result": result}},
+            )
         elif not is_multiplayer and current_user and session.user_id:
             result = state.get("end_result") or session.katrain.game.end_result
             if result:
@@ -2008,10 +2012,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         # Record game result for multiplayer
         if is_multiplayer and current_user:
+            winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
+            result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"
             try:
-                winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
-                result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"
-
                 app.state.game_repo.record_multiplayer_game(
                     sgf_content=session.katrain.get_sgf(),
                     result=result,
@@ -2019,13 +2022,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     black_id=session.player_b_id,
                     white_id=session.player_w_id,
                 )
-
-                manager._schedule_broadcast(
-                    session,
-                    {"type": "game_end", "data": {"reason": "timeout", "winner_id": winner_id, "result": result}},
-                )
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
+
+            # 广播**不在** try 里:它告诉对面「这局结束了」,而 try 守的是落账。
+            # 两件事捆在一个 try 里时,落账一失败对面就永远收不到终局 —— 盒上
+            # `app.state.game_repo` 恒为 None(`server.py` board 模式那一段),
+            # 于是这条路上每一次认输/超时都会静默地把对面挂在「还在等你走」。
+            # 数子(`_complete_count`)和退出(forfeit)两处本来就是这么写的,这里对齐。
+            manager._schedule_broadcast(
+                session,
+                {"type": "game_end", "data": {"reason": "timeout", "winner_id": winner_id, "result": result}},
+            )
         elif not is_multiplayer and current_user and session.user_id:
             result = session.katrain.game.end_result
             if result:
@@ -2499,8 +2507,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     # 「不是自己 + 对方在线」这类校验挡不住它(攻击者传的本来就是在线用户),
                     # 只有这份 pending 记录能。`consume_invite` 是**一次性**的:
                     # 同一封邀请开不出第二局。
-                    if target_id and target_id != current_user.id and lobby_manager.consume_invite(
-                        target_id, current_user.id
+                    if (
+                        target_id
+                        and target_id != current_user.id
+                        and lobby_manager.consume_invite(target_id, current_user.id)
                     ):
                         # Fetch Usernames
                         user_repo = app.state.user_repo
@@ -2544,11 +2554,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         #
                         # 只发 `code`,话由前端说:这条链上另一处(`PLACEMENT_REQUIRED`)
                         # 就是这么办的,而后端的英文 detail 是写给运维的。
-                        await websocket.send_json({
-                            "type": "error",
-                            "code": "INVITE_NOT_PENDING",
-                            "message": "invite expired or already used",
-                        })
+                        await websocket.send_json(
+                            {
+                                "type": "error",
+                                "code": "INVITE_NOT_PENDING",
+                                "message": "invite expired or already used",
+                            }
+                        )
 
         except WebSocketDisconnect:
             logging.getLogger("katrain_web").info(f"User {current_user.username} disconnected from lobby.")

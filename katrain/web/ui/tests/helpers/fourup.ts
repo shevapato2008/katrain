@@ -55,7 +55,18 @@ export async function captureFourUp(o: FourUpOptions): Promise<FourUpResult> {
   const referencePng = resolveReferenceShot(o.referencePng);
   mkdirSync(o.outDir, { recursive: true });
   const implementationPath = resolve(o.outDir, `${o.slug}--implementation.png`);
-  await o.page.screenshot({ path: implementationPath });
+  /**
+   * `animations: 'disabled'` —— 把有限时长的 CSS 过渡**快进到终值**再拍。
+   *
+   * 不加它时,屏 27 的实现图在两个状态之间来回,连跑两次差 12017 像素:滚动区底部那道
+   * 渐隐(`tokens.css` 的 `.kiosk-scrollzone::after`)带 `transition: opacity .12s`,
+   * 而截图正撞在这 120 毫秒里 —— 两态**几何完全相同**,只有渐变中段的透明度不同。
+   * 那不是产品缺陷,是取图撞上了动画;代价是这一屏的存档在 12000 像素以下什么都判不了。
+   *
+   * 快进到终值也比「等它 120ms」对:终值是用户最终看到的那一帧,而等多久是另一个
+   * 随机数。参考图那半是静态 PNG,本来就没有这个问题。
+   */
+  await o.page.screenshot({ path: implementationPath, animations: 'disabled' });
 
   const asDataUrl = (file: string) => `data:image/png;base64,${readFileSync(file).toString('base64')}`;
 

@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { BOARD_ASSETS } from '../../components/board/boardUtils';
 import { boardExtent, coordToXY, lineAt, starsFor, windowViewBox, type GoWindow } from './goBoard';
 
 const U = 100;                 // SVG 内部单位
@@ -23,8 +24,20 @@ const STONE_R = U * 0.47;
  *    `.gob { isolation: isolate }` 写在 `go-screens.css` 里 —— **即使现在没抄木纹也留着**,
  *    因为它同时是「这块盘自成一个混合上下文」这件事本身。
  *
- * 木纹贴图没抄:那张图在 `sample-go/board-assets.json` 里,不在共享资产包、也不在 MANIFEST
- * 管辖内,抄它等于往仓里塞一份没人核的二进制(D6 已登记)。
+ * ③ **落子区那层木纹取的是共享的 `BOARD_ASSETS.board`,不是这里自己写的一个路径。**
+ *    2026-08-26 量到:同一块物理棋盘在盒内是**两个颜色** —— 走 canvas 那条的屏
+ *    (`LiveBoard`,屏 05/20/21)画 `board.png`,均值 (199,152,73);走这块 SVG 的屏
+ *    (02/04/17/25)只有 token 渐变,均值 (211,180,126)。用户在同一台机器上换个屏,
+ *    盘就换一块木头。⇒ 并到 canvas 那条:`LiveBoard` 取的就是 `BOARD_ASSETS`
+ *    (`live/LiveBoard.tsx:346`),这里取同一个常量,**两条路要再分岔得先改到同一行**,
+ *    所以不另立一条闸去比对两个字面量。
+ *    渐变没删,退到贴图**底下当回落**:图取不到时盘仍是木色而不是一片白 ——
+ *    `stubBackendStatics` 之外的场合(后端没起)照样是一块看得出是棋盘的盘。
+ *    贴图铺法与 canvas 一致(`boardUtils.ts:105` 的 `drawImage` 拉满落子区),
+ *    所以 `preserveAspectRatio="none"`——`meet` 会留边,那就又是两个长相。
+ *
+ * 稿子那层是 `--oak` ×0.36 multiply(均值 184,148,97),和本仓这张 `board.png` 不是同一张;
+ * 要不要把 oak 收进上游共享包是**四个产品一起的决定**,与本文件内部统一这件事不冲突。
  */
 export function GoBoardSvg({
   size = 19, black = [], white = [], last, ghost = [], ghostFor, atari = [], muted = false, label,
@@ -114,10 +127,18 @@ export function GoBoardSvg({
       aria-hidden={label ? undefined : true}
     >
       <defs>
-        <linearGradient id={`gr-${uid}`} x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={`gw-${uid}`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="var(--gb-light)" />
           <stop offset="1" stopColor="var(--gb-dark)" />
         </linearGradient>
+        {/* 落子区的面 —— 见文件头 ③。`gr-` 这个名字不改:底下那个空点垫圆(`inkPad`)
+            也取它,垫圆和盘面**必须是同一块面**,否则字底下会露出一枚色块。
+            `patternUnits="userSpaceOnUse"` + 铺满全盘:只看一角的教程图(`window`)
+            取到的是那一角对应的那块木纹,而不是把整张图塞进一角。 */}
+        <pattern id={`gr-${uid}`} patternUnits="userSpaceOnUse" x="0" y="0" width={W} height={W}>
+          <rect width={W} height={W} fill={`url(#gw-${uid})`} />
+          <image href={BOARD_ASSETS.board} x="0" y="0" width={W} height={W} preserveAspectRatio="none" />
+        </pattern>
         <radialGradient id={`sb-${uid}`} cx="34%" cy="30%">
           <stop offset="0" stopColor="#585862" /><stop offset="1" stopColor="#0A0A0C" />
         </radialGradient>

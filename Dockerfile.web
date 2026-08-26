@@ -15,6 +15,17 @@ COPY . /app
 RUN python3 -m pip install --trusted-host pypi.tuna.tsinghua.edu.cn -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip && \
     python3 -m pip install --trusted-host pypi.tuna.tsinghua.edu.cn -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements-web.txt -r requirements-desktop.txt
 
+# Compile the gettext catalogs. The `.mo` files are gitignored, so a clean checkout has
+# none and every string falls back to its untranslated msgid -- the whole UI in English.
+# `i18n.py`'s exit code means "some language still has TODOs", not "nothing was built"
+# (measured 2026-08-26: it exits 1 while writing all 10 catalogs), so the check below is
+# on the **artifacts**, not on that status. `es` is in the script's INACTIVE_LANGS.
+RUN python3 i18n.py || true; \
+    for d in katrain/i18n/locales/*/LC_MESSAGES; do \
+      case "$d" in */es/*) continue;; esac; \
+      test -f "$d/katrain.mo" || { echo "missing $d/katrain.mo"; exit 1; }; \
+    done
+
 # Build frontend during Docker build (not at runtime)
 RUN cd katrain/web/ui && npm install && npm run build
 

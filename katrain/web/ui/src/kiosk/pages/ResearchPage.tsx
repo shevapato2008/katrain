@@ -639,7 +639,7 @@ const ResearchPage = () => {
             </div>
           ) : scan === 'running' ? (
             <div className="aiscan" data-testid="research-scan">
-              <h4>{t('research:analyzing_game', '正在分析棋局')}</h4>
+              <h4>{t('research:analyzing_game', '正在分析对局')}</h4>
               <div className="aiscan__bar">
                 <i style={{ width: progress && progress.total > 0 ? `${Math.round((progress.analyzed / progress.total) * 100)}%` : '0%' }} />
               </div>

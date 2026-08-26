@@ -642,7 +642,7 @@ describe('屏 19 · 删除', () => {
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
     fireEvent.click(within(rows()[0]).getByRole('button', { name: '删除' }));
     expect(mocks.deleteGame).not.toHaveBeenCalled();
-    fireEvent.click(await screen.findByRole('button', { name: '确认删除' }));
+    fireEvent.click(await screen.findByRole('button', { name: '删除对局' }));
     await waitFor(() => expect(mocks.deleteGame).toHaveBeenCalledWith('token', 'a'));
     await waitFor(() => expect(mocks.refreshTasks).toHaveBeenCalled());
   });
@@ -653,7 +653,7 @@ describe('屏 19 · 删除', () => {
     await waitFor(() => expect(rows()).toHaveLength(2));
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
     fireEvent.click(within(rows()[0]).getByRole('button', { name: '删除' }));
-    fireEvent.click(await screen.findByRole('button', { name: '确认删除' }));
+    fireEvent.click(await screen.findByRole('button', { name: '删除对局' }));
     expect(await screen.findByText('删不掉')).toBeInTheDocument();
     expect(rows()).toHaveLength(2);
   });

@@ -168,7 +168,7 @@ export default function ReportsPage() {
       return response;
     } catch (error) {
       if (requestGeneration !== listRequestGenerationRef.current) return null;
-      setGamesError(messageOf(error, translationRef.current('report:load_games_failed', '加载棋谱失败，请重试。')));
+      setGamesError(messageOf(error, translationRef.current('report:load_games_failed', '加载对局列表失败')));
       return null;
     } finally {
       if (requestGeneration === listRequestGenerationRef.current) setGamesLoading(false);
@@ -344,7 +344,7 @@ export default function ReportsPage() {
       setLocalImportError(null);
       await refreshTasks();
     } catch (error) {
-      setLocalImportError(messageOf(error, translationRef.current('report:import_failed', '导入失败，请重试。')));
+      setLocalImportError(messageOf(error, translationRef.current('report:import_failed', '导入 SGF 失败')));
     } finally {
       setLocalImporting(null);
     }
@@ -363,7 +363,7 @@ export default function ReportsPage() {
       setLibraryImportError(null);
       await refreshTasks();
     } catch (error) {
-      setLibraryImportError(messageOf(error, translationRef.current('report:library_import_failed', '从棋谱库导入失败，请重试。')));
+      setLibraryImportError(messageOf(error, translationRef.current('report:library_import_failed', '从棋谱库导入失败')));
     } finally {
       setLibraryImporting(null);
     }
@@ -386,7 +386,7 @@ export default function ReportsPage() {
       if (next && next.items.length === 0 && page > 1 && next.total > 0) updateLocation(query, page - 1);
       setDeleteTarget(null);
     } catch (error) {
-      setActionError(messageOf(error, translationRef.current('report:delete_failed', '删除失败，请重试。')));
+      setActionError(messageOf(error, translationRef.current('report:delete_failed', '删除对局失败')));
     } finally {
       setDeleteLoading(false);
     }
@@ -661,11 +661,18 @@ export default function ReportsPage() {
         onClose={() => { setLibraryImportError(null); setLibraryImportOpen(false); }}
         onImport={handleLibraryImport}
       />
+      {/* 删除确认框:标题 / 正文 / 危险键三条**与 galaxy 同一组 key**
+          (`galaxy/pages/report/ReportsPage.tsx:599-611`)—— 同一个对话框、同一个动作,
+          两处说的话必须是同一句。
+          危险键原来是 kiosk 自铸的 `report:confirm_delete`,fallback「确认删除」,
+          而标题的 PO 也是「确认删除」⇒ 标题和按钮会是同四个字。当时的躲法是把标题写长成
+          「确认删除棋谱」,那又让屏上冒出一个稿子从没用过的词。改用 galaxy 已有的
+          `report:delete_game` 之后碰撞自然消失,自铸那颗键也就没有使用者了。 */}
       {deleteTarget !== null && (
-        <div className="rvconfirm" role="dialog" aria-modal="true" aria-label={t('report:delete_confirm_title', '确认删除棋谱')}>
+        <div className="rvconfirm" role="dialog" aria-modal="true" aria-label={t('report:delete_confirm_title', '确认删除')}>
           <div className="empty">
-            <h4>{t('report:delete_confirm_title', '确认删除棋谱')}</h4>
-            <p>{t('report:delete_confirm_body', '删除后棋局及所有关联分析数据将不可恢复，确认删除？')}</p>
+            <h4>{t('report:delete_confirm_title', '确认删除')}</h4>
+            <p>{t('report:delete_confirm_body', '删除后对局及所有关联分析数据将不可恢复，确认删除？')}</p>
             <div className="rvconfirm__row">
               <button
                 type="button" className="kiosk-btn kiosk-btn--pill"
@@ -677,7 +684,7 @@ export default function ReportsPage() {
                 type="button" className="kiosk-btn kiosk-btn--pill rvdanger"
                 disabled={deleteLoading} onClick={() => void confirmDelete()}
               >
-                {t('report:confirm_delete', '确认删除')}
+                {t('report:delete_game', '删除对局')}
               </button>
             </div>
           </div>

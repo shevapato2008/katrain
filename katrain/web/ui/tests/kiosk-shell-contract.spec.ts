@@ -255,7 +255,9 @@ test('t(key, 默认值) 的占位符必须和 cn PO 里那条一致 —— 不�
     // 先把注释剥掉:注释里举的**反例**长得和真调用一模一样(这条闸自己的说明就写着一个),
     // 不剥的话它会指着一段解释说「你这儿写错了」——**闸把文档当成了代码**。
     const src = codeOnly(readFileSync(p, 'utf8'));
-    for (const m of src.matchAll(/\bt\(\s*'([^'\\]+)'\s*,\s*'([^'\\]*)'\s*\)/g)) {
+    // 调用者名字不进判据 —— 理由与下面那条闸同一个(`translationRef.current(...)` 这一类
+    // 在 `\bt\(` 下整类隐身)。这条闸的洞是同一天一起补的。
+    for (const m of src.matchAll(/[A-Za-z_$][\w$.]*\(\s*'([^'\\]+)'\s*,\s*'([^'\\]*)'\s*\)/g)) {
       const [, key, def] = m;
       const translated = po.get(key);
       if (translated === undefined) continue;          // PO 里没有 ⇒ 走默认值,不会打架
@@ -320,16 +322,32 @@ test('t(key, 默认值) 的占位符必须和 cn PO 里那条一致 —— 不�
  * **不进 PO** —— 门槛是「galaxy 或桌面端也要用这句」,这五条只有围棋 kiosk 一个消费者
  * (和本轮 `setup:` / `settings:` / `review:` 三族一个待遇,那三族在 cn PO 里各 0 条)。
  *
- * ⚠️ **剩下的那一条不是漏网,是等一个词。** `report:delete_confirm_title` 的 PO 是
- * 「确认删除」,而代码写「确认删除棋谱」—— 代码写长是为了躲一个**真碰撞**:同一个对话框的
- * 危险键 `report:confirm_delete`(kiosk 自铸、PO 里没有)fallback 也是「确认删除」。
- * 正解是标题回到 PO,按钮改用 galaxy 已有的 `report:delete_game`(PO=「删除棋局」)。
- * 但那要先定一个词:同屏现在「棋局 / 对局(`review:sec_games`→历史对局) / 棋谱」三个词并存。
- * **等 Fan 定,不自选。**
+ * ## 2026-08-26 下午:最后一条清空了 —— Fan 定了那个词
+ *
+ * 最后剩的 `report:delete_confirm_title` 不是漏网,是**等一个词**:PO 写「确认删除」,
+ * 代码写「确认删除棋谱」。代码写长是为了躲一个**真碰撞** —— 同一个对话框的危险键
+ * `report:confirm_delete`(kiosk 自铸、PO 里没有)fallback 也是「确认删除」,
+ * 标题和按钮会是同四个字。而躲法本身又在屏上造出一个稿子从没用过的词。
+ *
+ * 三个词的实际分布(2026-08-26 数):围棋稿子 `go-kiosk.tmpl.html` 里
+ * **对局 62 / 棋谱 36 / 棋局 0**;kiosk 代码 对局 38 条 / 棋谱 31 条 / 棋局 2 条;
+ * 而 cn PO 里 `report:` 一族**一致地**说「棋局」(12 条,与 galaxy、桌面端共用)。
+ * ⇒ 不是三个词乱用,是**两套各自自洽的口径撞在同一块屏上**。
+ *
+ * Fan 裁:**对局**。改的是 cn / tw 两份 PO 里那 14 条既有 `msgstr`(棋局→对局 / 對局),
+ * **一个 msgid 都没动、`en` 一个字没改** ⇒ 另外九种语言不受影响。
+ * 碰撞随之消失:标题回到 PO 的「确认删除」,危险键改用 galaxy 已有的 `report:delete_game`,
+ * 与 galaxy 那个对话框(`galaxy/pages/report/ReportsPage.tsx:599-611`)**用同一组 key**。
+ * 自铸的 `report:confirm_delete` 就此没有使用者。
+ *
+ * ⚠️ 这条闸当场逮到了顺带的一处:`research:analyzing_game` 的 kiosk 默认串还写着
+ * 「正在分析棋局」而 PO 已经改了 —— **改 PO 会让别处的 fallback 过期,而人想不全**。
+ * 这正是这条闸存在的理由,别把 baseline 当成「允许清单」。
+ *
+ * ⇒ baseline 现在是**空的**。空了不等于这条闸没用:它红过两次(上面那两处),
+ *   而空 baseline 的含义是「kiosk 里再没有一句中文默认串和 PO 说的是两回事」。
  * ────────────────────────────────────────────────────────────────────────── */
-const PO_OVERRIDES_DEFAULT_BASELINE = [
-  'src/kiosk/pages/ReportsPage.tsx  report:delete_confirm_title',
-];
+const PO_OVERRIDES_DEFAULT_BASELINE: string[] = [];
 
 test('t(key, 中文默认值) 的默认值不许和 PO 里那条说的是两回事', () => {
   const po = readPo(PO);
@@ -338,7 +356,31 @@ test('t(key, 中文默认值) 的默认值不许和 PO 里那条说的是两回�
   const hit = new Set<string>();
   for (const p of files) {
     const src = codeOnly(readFileSync(p, 'utf8'));
-    for (const m of src.matchAll(/\bt\(\s*'([^'\\]+)'\s*,\s*'([^'\\]*)'\s*\)/g)) {
+    /**
+     * ⚠️ **判据不挂在调用者的名字上。**
+     *
+     * 这条闸原来写的是 `/\bt\(/` —— 只认 `t('key', '默认')` 这一种写法。
+     * 而 `ReportsPage.tsx` 里有 **7 处**走的是 `translationRef.current('key', '默认')`
+     * (在 effect / 回调里取当时的翻译函数,不能用闭包里那个 `t`),
+     * `\b` 在 `curren|t(` 处不成立(前一个字符是 `n`)⇒ **整整一类调用点闸看不见**。
+     *
+     * 2026-08-26 补这个洞时,那 7 处里当场查出 **4 处**和 PO 不一致,
+     * 其中 `report:import_failed` / `report:library_import_failed` **在改 PO 之前就已经不一致** ——
+     * 也就是说 08-25 那轮「31 条清到只剩 1 条」的普查同样漏了它们,漏的原因是同一个。
+     * (同族教训:「我 grep 的是 X 本身,还是它的某一类使用者」。)
+     *
+     * 所以现在**任何调用者**都算:第一个实参落在 PO 里,这一对就要对得上。
+     * 误判风险由 `po.get(key) === undefined ⇒ 跳过` 这一句挡住 —— 一个恰好等于某条
+     * msgid 的字符串被当成第二个实参传给别的函数,才可能误报,而那本身就值得看一眼。
+     *
+     * **变异实测(两格,2026-08-26):**
+     *   A 加宽的正则 + 把 `report:delete_failed` 退回「删除失败,请重试。」→ **红**,
+     *     多出来的正是 `ReportsPage.tsx  report:delete_failed`。
+     *   B 同一处不一致、正则退回 `\bt\(` → **绿**。
+     * B 这一格才是这次的发现:旧闸不是「没查到」,是**看不见**。
+     * 一条只在 A 上验过的闸,证明不了它比原来强。
+     */
+    for (const m of src.matchAll(/[A-Za-z_$][\w$.]*\(\s*'([^'\\]+)'\s*,\s*'([^'\\]*)'\s*\)/g)) {
       const [, key, def] = m;
       const translated = po.get(key);
       if (translated === undefined) continue;

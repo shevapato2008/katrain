@@ -2641,3 +2641,87 @@ baseline 清空。
   而那五个皮肤全部由**一张 oak** 打底 + 每皮肤一层渐变 multiply 上色。
   本裁定既然不取 oak,**照搬象棋那条实现路径就不成立了**;要做得另起一条
   (在 `board.png` 上做同样的渐变分层)。仍按原样登记未做 —— 它要调的设置项本身不存在。
+
+---
+
+## §39 跨盒人人对弈:三家实际怎么做的(2026-08-26 调查,55 个 agent 读+反驳)
+
+Fan 定了产品方向:**盒子之间的人人对弈要做,而且是主要形式**。
+于是问题变成「另外三家怎么做的、围棋必须照搬吗」。查完之后**先更正 §36 里我写错的一句**。
+
+### 🔴 更正:「象棋/五子棋/国象的大厅是云端共享进程」——**错了**
+
+我在 §36 和给 Fan 的答复里写过「另外三家的大厅卡打开的是云端共享进程(跨盒可见)」。
+实际是:**三家里只有国际象棋真做了**。
+
+| | 在线大厅卡 | 云端 adapter | 证据 |
+|---|---|---|---|
+| 国际象棋 | **可点**,`leaveTo` 整页跳云端 | 有 | `chess/ui/src/play/homePresentation.ts:82-91` |
+| 中国象棋 | **写死 disabled** | 无 | `xiangqi/ui/src/screens/HubScreen.tsx:125` |
+| 五子棋 | **`SoonCard` = `<button disabled>` + 「即将上线」** | 无 | `gomoku/ui/src/play/PlayModeSection.tsx:21-29` |
+
+`lobby_ui.py:20` 的 `LOBBY_UI_GAMES = ("chess","xiangqi","gomoku")` 是**挂载点的规划**,
+不是「三家都上线了」—— 我把规划读成了现状,同一类错在这条 track 上已经是第七次。
+`adapters/registry.py` 没有缺省降级,`/ws/lobby?variant=xiangqi` 今天建连即 1008。
+
+⇒ **围棋不是「四家里唯一没有的」,而是「四家里第二个要做的」**,
+而且围棋的大厅代码比中国象棋和五子棋写得都多(见下)。
+
+### 国象那条链(唯一的先例)
+
+盒端一张卡 `leaveTo` → `window.location.assign()` **整页离开本源** → 盒上 wizard:8080
+`/api/lobby/enter?game=chess` 铸 30 秒一次性码 → 302 到云端 `/auth/callback`。
+大厅屏和房间屏**由云端托管**(源码在 `chess/ui` 仓,`build:lobby` 产出直接落进
+lobby-platform 的静态目录);对局权威状态在**云端 lobby 进程内存**;
+走法判定在**云端 adapter**(客户端的 chess.js 只做拖拽预筛);
+实体盘**用不了 —— 但 chess 盒端全仓零视觉代码**,`BoardConnectionStore` 是恒返回未连接的桩。
+落账两处:云端 `game_records` 只在终局写一行;事后盒端主动 `POST /api/games/lobby/sync` 拉回本地复盘库。
+进程重启在飞的局全丢,是明确写下并同意的代价(J5)。
+
+### 围棋今天已经有的(比想象的多)
+
+**大厅、撮合、邀请、房间全都写好了**:`/ws/lobby`(`server.py:2353`)、排队 →
+`create_multiplayer_session` → 双方 `match_found`(`:2415-2465`)、直邀 120 秒 TTL 一次性消费
+(`session.py:369-385`)、前端 `LobbyPage` 已挂 `/kiosk/play/pvp/lobby`。
+**缺的只有一件:它是进程内的**(`LobbyManager._online_users` 是内存 dict,`session.py:334`)。
+
+### 🔴 更正:D1 那条排除理由**被过度陈述了**
+
+「围棋数子必经 KataGo ⇒ 属于缺了就不能下棋的必需依赖」——**只有出分那一下要引擎**。
+提子/劫/自杀全是纯 Python(`katrain/core/game.py:153-215`);认输、超时、双 pass 终局都不经引擎。
+缺了 KataGo 不是「不能下棋」,是「没有分数」。
+而且**盒上本来就有本地 KataGo**(`smartbox-katago-api.service`,:8000),
+katrain 连它走的就是进程外 HTTP。⇒「必须把 GPU 依赖引进大厅进程」只在**共享 lobby 云端**成立
+(那个镜像里只有 Stockfish),在盒上不成立。
+
+⚠️ 而且 D1 是不是 Fan 拍的板本身存疑:仓里唯一出处是那份 spec 表头的自称,
+而同一份文档第 3 行状态还是「待 Fan 复核」。
+
+### 三条路线(详见 `decisions/2026-08-26-cross-box-hvh.md`)
+
+| | 云端管什么 | 盒上留什么 | 实体盘 | 第一个硬问题 |
+|---|---|---|---|---|
+| **A 云端只做撮合与账本** | 在线名单、排队/邀请、着法转发、终局裁定 | 规则、引擎、相机、LED、本地库 | 能用(要先补一个洞) | LED 不会为远端真人亮 |
+| **B 照搬国象** | 大厅屏 + 房间屏 + 规则权威 | 身份、本地复盘库、离线功能 | **结构上用不了** | `box_generation` 这一维在别的 origin 上不存在 |
+| **C 轻量中继** | —— | 全部 | 能用 | 数子没有单一裁判 + 落账没有仲裁人 |
+
+**A 有先例、不是凭空设计**:升降级 AI 对局就是这个形状 —— 盒上本地引擎下棋,
+云端只持账本,靠 reserve → activate → heartbeat → pending-settlement → end 五个 REST。这条链今天在跑。
+
+**C 的判断:中继这个形状成立,「纯转发、两台盒各判各的」不成立** ——
+卡点是数子(两台盒各有一台 KataGo,两个数不保证相等,「谁的分数算数」没有答案)
+和落账(盒上 `game_repo` 恒为 None),不是网络。⇒ C 要么长成 A 的样子,要么就是 B。
+
+### 🔴 最值钱的一条:LED 不会为**远端真人**亮灯(现在就成立)
+
+`_guided_colors_from_state`(`physical_play_orchestrator.py:415-434`)只把
+`player_type == "player:ai"` 和 `platform_engine_color` 放进引导集合,
+而 `create_multiplayer_session` 把两边都设成 `player_type="human"`(`session.py:103,105`)
+⇒ **集合为空 ⇒ 对面下的那一手,盒上不会亮灯告诉你摆哪。**
+
+那个函数的 docstring 自己写着理由:「Human moves need no LED (vision observing them IS the move source)」——
+**这句话对本地真人成立(他自己摆自己那颗子),对远端真人不成立**(你要替对面摆一颗,而没人告诉你摆哪)。
+星阵人机当初撞的是同一个形状,补法是加了 `platform_engine_color` 这个旁路标记;
+跨盒对弈需要的是**第三种情况**,补法同形。
+
+⇒ **这条对 katrain 现有的大厅房间已经成立,不是搬云端才引入的。**

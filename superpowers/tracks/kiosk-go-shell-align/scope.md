@@ -61,6 +61,23 @@ import '@shared/kiosk-shell/assets/tokens.css'   // 991 行结构 token
 
 **B 组（对应的屏还没做）零引用是正常的，不要接。** A 组每一条单独判断，不整批处理。
 
+> 📅 **上面这张表是 track 起点的诊断，不是现状。**「围棋现在用什么」那一列说的是
+> 2026-08-20 的样子；**六行现在全部做完了**（2026-08-26 复核，非 CSS 源码引用数）：
+> `kiosk-topbar` 3 · `kiosk-console` 4 · `kiosk-card` 17 · `kiosk-layout-l1` 5 ·
+> `kiosk-primary-action` 4 · `kiosk-scrollzone` 2 / `kiosk-scrollbar` 4
+> （悬浮滚动条在 `shell/KioskScrollZone.tsx` + `shell/scrollSync.ts`，21 个消费方，
+> 真浏览器闸在 `tests/kiosk-shell-scroll.spec.ts`）。`tokens.css` 也早就 import 了
+> （`KioskApp.tsx:18`），**「围棋 grep 零命中」那句同属起点描述**。
+>
+> 零引用从 **81 降到 16**。这 16 条逐条对过围棋稿子的**用法**（`class="..."`，
+> 不是名字出现——名字在稿子里全命中，因为稿子把 tokens.css 内联进去了）：
+> `kiosk-ribbon`×6 / `kiosk-evalstack`×2 / `kiosk-btn--icon` / `kiosk-tag--loss`
+> 在围棋稿子的 markup 里**一次都没有**，是真 B 组；
+> `kiosk-slider`×4 与 `kiosk-swatch`×2 稿子里有，但两者都有裁定：
+> 前者 D3「手数是离散整数，用 `KioskStepTrack` 不用拖拽滑条」，
+> 后者见本文档 §「`.kiosk-slider` / `.kiosk-swatch` 仍无第一个消费者」——
+> 它们要调的设置项本身不存在。⇒ **没有未接的缺口。**
+
 ## 3. 十屏 → 路由映射
 
 | # | 稿子 screen | 路由 | 页面文件 | 本轮 |

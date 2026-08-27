@@ -1,8 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import AiSetupPage from './AiSetupPage';
+// mock 工厂把真的 ApiError 透传了出来（见下面的 vi.mock），所以这里拿到的就是页面
+// `err instanceof ApiError` 判的那一个类，不是替身。
+import { ApiError as ApiErrorReal } from '../../api';
 import { AiLadderApiError } from '../../features/aiLadder/api';
 
 // Task 11: 棋力阶梯 (strength ladder) 37-rung opponent selector on the galaxy AiSetupPage.
@@ -59,7 +62,10 @@ const { mockAiConstants, mockRungsResponse, mockCreateSession, mockNewGame, mock
   authState: { current: { token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true } as any },
 }));
 
-vi.mock('../../api', () => ({
+// `ApiError` 要用**真的那一个**:页面靠 `err instanceof ApiError` 把 401 与别的失败分开,
+// mock 里少了它就不是「测不到」而是 `instanceof undefined` 当场 TypeError。
+vi.mock('../../api', async () => ({
+  ApiError: (await vi.importActual<typeof import('../../api')>('../../api')).ApiError,
   API: {
     createSession: mockCreateSession,
     getAIConstants: vi.fn().mockResolvedValue(mockAiConstants),
@@ -669,4 +675,128 @@ describe('AiSetupPage — rated AI ladder visual slice', () => {
     expect(screen.queryByText('重试失败，请稍后再试')).not.toBeInTheDocument();
   });
 
+});
+
+
+// --- 未登录（游客）---------------------------------------------------------------
+//
+// 自由对弈对游客开放，升降级对弈不开放 —— 后者要说清楚原因并给一个能按的入口，
+// 而不是把服务端的 401 报文原样贴到屏上。
+
+describe('AiSetupPage — 未登录访客', () => {
+  const loggedIn = { token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true, isLoading: false };
+  const guest = { token: null, user: null, isAuthenticated: false, isLoading: false };
+
+  beforeEach(() => {
+    mockNavigate.mockReset();
+    mockCreateSession.mockClear();
+    mockNewGame.mockClear();
+    authState.current = guest;
+  });
+
+  afterEach(() => {
+    authState.current = loggedIn;
+    mockCreateSession.mockResolvedValue({ session_id: 's1', state: {} });
+    mockNewGame.mockResolvedValue({ session_id: 's1', state: {} });
+  });
+
+  it('升降级对弈：说的是「需要登录」而不是「登录已失效」，并且当场能登录', async () => {
+    renderPage('rated');
+    expect(await screen.findByTestId('rated-login-required')).toHaveTextContent('需要登录');
+    // 「重试」是给「加载失败」用的出口，对从未登录过的人按多少次都不会成功。
+    expect(screen.queryByRole('button', { name: '重试' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId('rated-login-action'));
+    // 断言的是「能当场填凭据的那个框」,不是「有个框」——换成再弹一次「需要登录」的
+    // AuthRequiredDialog 也满足 findByRole('dialog'),而那样用户永远登不上去。
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getAllByRole('textbox').length).toBeGreaterThan(0);
+    expect(dialog.querySelector('input[type="password"]')).not.toBeNull();
+  });
+
+  it('/me 探针还没回来时，既不说「需要登录」也不说「游客不保存」', async () => {
+    // 挂载时 auth 是异步 bootstrap。不等它，已登录用户每次刷新都会先闪一下这两条。
+    authState.current = { token: null, user: null, isAuthenticated: false, isLoading: true };
+    renderPage('rated');
+    await waitFor(() => expect(screen.queryByTestId('rated-login-required')).not.toBeInTheDocument());
+
+    authState.current = { token: null, user: null, isAuthenticated: false, isLoading: true };
+    renderPage('free');
+    await waitFor(() => expect(screen.queryByTestId('free-guest-notice')).not.toBeInTheDocument());
+  });
+
+  it('自由对弈：已登录的人不该被告知本局不保存 —— 他的局会落库', async () => {
+    authState.current = loggedIn;
+    renderPage('free');
+    await waitFor(() => expect(comboboxForLabel('AI Strategy')).toBeInTheDocument());
+    expect(screen.queryByTestId('free-guest-notice')).not.toBeInTheDocument();
+  });
+
+  it('自由对弈：非鉴权失败仍然显示原始报错，不弹登录框', async () => {
+    mockCreateSession.mockRejectedValueOnce(new ApiErrorReal(500, 'Request failed 500: boom'));
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Start Game' }));
+
+    expect(await screen.findByText(/Request failed 500/)).toBeInTheDocument();
+    expect(screen.queryByTestId('login-required-message')).not.toBeInTheDocument();
+  });
+
+  it('升降级：登录中途失效时点开始，弹的也是登录引导（AiLadderApiError 不是 ApiError 的子类）', async () => {
+    // rated 走 `startAiLadderGame`，它抛的是 `AiLadderApiError extends Error`。
+    // 判据只认 `instanceof ApiError` 时这一支是死代码：屏上会退回那串裸报文。
+    authState.current = loggedIn;
+    rankedState.current = {
+      view_state: 'ready',
+      placement_state: { phase: 'placement', completed_games: 3, total_games: 5 },
+      current_opponent: { rung: 17, rank_name: '4级', certification_status: 'certified', availability: 'available', route: 'server' },
+      recent_ranked_results: [], net_score: 0, pending_settlement: false,
+    };
+    mockStartRanked.mockRejectedValueOnce(new AiLadderApiError(401, 'Not authenticated'));
+    renderPage('rated');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: '开始正式对局' }));
+
+    expect(await screen.findByTestId('login-required-message')).toHaveTextContent('升降级对弈会记录段位');
+  });
+
+  it('已登录但有一局升降级没结算：说的是那件事，不是「需要登录」', async () => {
+    authState.current = loggedIn;
+    mockCreateSession.mockRejectedValueOnce(
+      new ApiErrorReal(403, 'Request failed 403: {"detail":"session analysis is unavailable during a ranked AI game"}'),
+    );
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Start Game' }));
+
+    expect(await screen.findByText(/升降级对弈还没结算/)).toBeInTheDocument();
+    expect(screen.queryByTestId('login-required-message')).not.toBeInTheDocument();
+  });
+
+  it('升降级对弈：给游客指出自由对弈这条不需要账号的路', async () => {
+    renderPage('rated');
+    const user = userEvent.setup();
+    await user.click(await screen.findByTestId('rated-login-free-fallback'));
+    expect(mockNavigate).toHaveBeenCalledWith('/galaxy/play/ai?mode=free');
+  });
+
+  it('自由对弈：让游客进，但开局前先说清楚这一局不会被保存', async () => {
+    renderPage('free');
+    expect(await screen.findByTestId('free-guest-notice')).toHaveTextContent('不会保存到棋谱库');
+    expect(screen.queryByTestId('rated-login-required')).not.toBeInTheDocument();
+  });
+
+  it('自由对弈：万一服务端还是 401，弹的是登录引导，不是那串裸 JSON', async () => {
+    mockCreateSession.mockRejectedValueOnce(
+      new ApiErrorReal(401, 'Request failed 401: {"detail":"Not authenticated"}'),
+    );
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Start Game' }));
+
+    expect(await screen.findByTestId('login-required-message')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed 401/)).not.toBeInTheDocument();
+  });
 });

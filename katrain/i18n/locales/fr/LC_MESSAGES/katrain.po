@@ -3192,3 +3192,46 @@ msgstr "Tous les niveaux · {count}"
 
 msgid "tsumego:your_level"
 msgstr "votre niveau"
+
+msgid "auth:login_required_title"
+msgstr "Connexion requise"
+
+msgid "auth:login_required_generic"
+msgstr "Cette fonctionnalité nécessite un compte connecté."
+
+msgid "auth:go_login"
+msgstr "Se connecter"
+
+msgid "ladder:login_required"
+msgstr ""
+"Les parties classées font évoluer votre rang et nécessitent donc une "
+"connexion."
+
+msgid "play:login_required_free"
+msgstr ""
+"Le démarrage de cette partie nécessite une connexion. Connectez-vous puis "
+"réessayez."
+
+msgid "play:guest_free_notice"
+msgstr ""
+"Vous jouez en tant qu'invité : cette partie ne sera pas enregistrée et "
+"n'affecte pas votre rang. Connectez-vous pour la conserver."
+
+msgid "play:go_free_play"
+msgstr "Jouer une partie libre"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr ""
+"Vous avez une partie classée non réglée. Terminez-la avant d'en commencer "
+"une autre."
+
+msgid "research:login_required"
+msgstr ""
+"L'analyse complète utilise le moteur cloud et nécessite une connexion. "
+"L'édition et la relecture non."
+
+msgid "play:analysis_requires_login"
+msgstr "Disponible après connexion"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "Territoire / Conseil / Graphique sont disponibles après connexion"

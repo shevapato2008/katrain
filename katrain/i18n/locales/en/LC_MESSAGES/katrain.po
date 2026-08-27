@@ -3179,3 +3179,43 @@ msgstr "All levels · {count}"
 
 msgid "tsumego:your_level"
 msgstr "your level"
+
+msgid "auth:login_required_title"
+msgstr "Sign-in required"
+
+msgid "auth:login_required_generic"
+msgstr "This feature requires a signed-in account."
+
+msgid "auth:go_login"
+msgstr "Sign in"
+
+msgid "ladder:login_required"
+msgstr "Rated games move your rank, so they need a signed-in account."
+
+msgid "play:login_required_free"
+msgstr ""
+"Starting this game needs a signed-in account. Please sign in and try again."
+
+msgid "play:guest_free_notice"
+msgstr ""
+"You are playing as a guest: this game will not be saved to your game records"
+" and does not affect your rank. Sign in to keep your games."
+
+msgid "play:go_free_play"
+msgstr "Play a free game instead"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr ""
+"You have an unsettled rated game. Finish it in 升降级对弈 before starting a new "
+"one."
+
+msgid "research:login_required"
+msgstr ""
+"Full-board analysis runs on the cloud engine and needs a signed-in account. "
+"Editing and replaying do not."
+
+msgid "play:analysis_requires_login"
+msgstr "Available after signing in"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "Territory / Advice / Graph become available after signing in"

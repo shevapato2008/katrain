@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, FormControl, InputLabel, Select, MenuItem, Button, Slider, Alert, Stack, Switch, FormControlLabel, Divider, Checkbox, TextField, CircularProgress, FormHelperText } from '@mui/material';
-import { API, type LadderRung } from '../../api';
+import { API, ApiError, type LadderRung } from '../../api';
 import { sliderToHumanKyuRankFixed } from '../../utils/rankUtils';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -20,6 +20,9 @@ import { canStartAiLadderGame } from '../../features/aiLadder/startGate';
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 import AiLadderRatedSetup from '../components/aiLadder/AiLadderRatedSetup';
 import ContentPageHeader from '../components/layout/ContentPageHeader';
+import AuthRequiredDialog from '../components/auth/AuthRequiredDialog';
+import LoginModal from '../components/auth/LoginModal';
+import LoginIcon from '@mui/icons-material/Login';
 
 // Map Slider value to Rank label for UI
 const valueToRank = (val: number) => {
@@ -33,7 +36,7 @@ const valueToRank = (val: number) => {
 const AiSetupPage = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { user, token } = useAuth();
+    const { user, token, isAuthenticated, isLoading: authLoading } = useAuth();
     useSettings(); // Subscribe to translation changes for re-render
     const { t } = useTranslation();
     const mode = searchParams.get('mode') || 'free';
@@ -42,12 +45,16 @@ const AiSetupPage = () => {
         status: aiLadderStatus,
         retry: retryAiLadderStatus,
         applyBlockingSync,
-    } = useAiLadderStatus(token || undefined, isRated);
+    } = useAiLadderStatus(token || undefined, isRated && isAuthenticated);
 
     const [aiConstants, setAiConstants] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [startPending, setStartPending] = useState(false);
+    // 未登录时该说的那句话。空 = 不说。自由对弈本身不需要登录（服务端对无人认领的会话放行），
+    // 所以这条只在服务端仍然拒绝时兜底 —— 它不是常态路径，而是「万一还是 401」的出口。
+    const [authPrompt, setAuthPrompt] = useState('');
+    const [loginOpen, setLoginOpen] = useState(false);
     const [lifecyclePending, setLifecyclePending] = useState(false);
     const [lifecycleError, setLifecycleError] = useState('');
     const [syncRetryPending, setSyncRetryPending] = useState(false);
@@ -289,7 +296,28 @@ const AiSetupPage = () => {
             // Navigate to game page immediately - AI moves will be handled by the game page via WebSocket
             navigate(`/galaxy/play/game/${session.session_id}?mode=${mode}`);
         } catch (err: any) {
-            setError(err.message || 'Failed to start game');
+            // 把服务端的英文报文原样贴上去（`Request failed 401: {"detail":"Not
+            // authenticated"}`）既没说是什么事，也没给可按的东西。但**只有 401 才是「去登录」**：
+            //
+            // 403 在这条链上说的是「知道你是谁，可这件事现在不能做」——最常见的一种是
+            // `guard_user_has_no_pending_ranked_game` 的「你有一局升降级还没结算」。把它也
+            // 翻成「需要登录」，就是对一个明明登录着的人说假话，而且他照着做也解决不了。
+            // 未登录时的 403（`guard_session_reader` 的「不是这局的参与者」）仍然归登录引导：
+            // 那时候「去登录」确实是对的下一步。
+            const status = (err instanceof ApiError || err instanceof AiLadderApiError) ? err.status : null;
+            const isAuthFailure = status === 401 || (status === 403 && !isAuthenticated);
+            if (isAuthFailure) {
+                setError('');
+                setAuthPrompt(isRated
+                    ? t('ladder:login_required', '升降级对弈会记录段位，需要登录后才能开始。')
+                    : t('play:login_required_free', '开始对局需要登录，请先登录后再试。'));
+            } else if (status === 403 && /ranked AI game/.test(String(err.message || ''))) {
+                setAuthPrompt('');
+                setError(t('play:blocked_by_pending_ranked', '你有一局升降级对弈还没结算，先去「升降级对弈」把它处理掉再开新局。'));
+            } else {
+                setAuthPrompt('');
+                setError(err.message || 'Failed to start game');
+            }
             if (isRated) setStartPending(false);
             else setLoading(false);
         }
@@ -445,6 +473,62 @@ const AiSetupPage = () => {
         );
     };
 
+    /**
+     * 升降级对弈的未登录支。
+     *
+     * 段位是记在账号上的,没有账号就无处可记 —— 这一屏对游客不是「暂时不可用」而是
+     * **永远需要先有账号**,所以说的是原因不是故障。在这条分支之前,游客走到这里看到的是
+     * 「登录已失效,请重新登录后再试」(`/api/v1/ai-ladder/status` 的 401 被当成过期处理),
+     * 那句话对**从未登录过**的人是假的,而且旁边只有一个「重试」——重试永远不会成功。
+     *
+     * `authLoading` 必须等:挂载时那次 `/me` 探针没回来之前 `isAuthenticated` 是 false,
+     * 不等就会让已登录用户每次刷新都先闪一下「需要登录」(AuthGuard 里记的是同一条)。
+     * 同一个理由,状态请求也要等 —— `useAiLadderStatus(..., isRated && isAuthenticated)`。
+     */
+    if (isRated && !authLoading && !isAuthenticated) {
+        return (
+            <Box
+                sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: 'auto',
+                    px: { xs: 2, sm: 3, lg: 4 },
+                    pt: { xs: 2, md: 3 },
+                    pb: { xs: 'calc(80px + env(safe-area-inset-bottom))', sm: 3 },
+                }}
+            >
+                <Box sx={{ width: '100%', maxWidth: 1500, mx: 'auto' }}>
+                    <ContentPageHeader title="升降级对弈" parentLabel="对局" parentTo="/galaxy/play" />
+                    <Alert severity="info" data-testid="rated-login-required" sx={{ mt: 2.5 }}>
+                        {t('ladder:login_required', '升降级对弈会记录段位，需要登录后才能开始。')}
+                    </Alert>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2.5 }}>
+                        <Button
+                            data-testid="rated-login-action"
+                            variant="contained"
+                            size="large"
+                            startIcon={<LoginIcon />}
+                            onClick={() => setLoginOpen(true)}
+                        >
+                            {t('Login', '登录')}
+                        </Button>
+                        {/* 游客不是无路可走:自由对弈本来就不需要账号,把那条路指出来。 */}
+                        <Button
+                            data-testid="rated-login-free-fallback"
+                            variant="outlined"
+                            color="inherit"
+                            size="large"
+                            onClick={() => navigate('/galaxy/play/ai?mode=free')}
+                        >
+                            {t('play:go_free_play', '先去自由对弈')}
+                        </Button>
+                    </Stack>
+                </Box>
+                <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+            </Box>
+        );
+    }
+
     if (isRated) {
         return (
             <Box
@@ -495,6 +579,7 @@ const AiSetupPage = () => {
                         />
                     </Box>
                 </Box>
+                <AuthRequiredDialog open={!!authPrompt} onClose={() => setAuthPrompt('')} message={authPrompt} />
             </Box>
         );
     }
@@ -510,6 +595,15 @@ const AiSetupPage = () => {
             </Typography>
             
             {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+
+            {/* 自由对弈不需要账号,但**代价要在开局前说**:这一局落在一个匿名会话上,
+                服务端不会把它写进任何人的棋谱库(落库那几处的条件都是 `current_user and
+                session.user_id`)。事后才发现「棋谱没了」比事前少一句话贵得多。 */}
+            {!authLoading && !isAuthenticated && (
+                <Alert severity="info" data-testid="free-guest-notice" sx={{ mb: 3 }}>
+                    {t('play:guest_free_notice', '你正在以游客身份对弈：本局不会保存到棋谱库，也不计入段位。登录后可保存对局。')}
+                </Alert>
+            )}
 
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
                 <Paper sx={{ p: 4, borderRadius: 4 }}>
@@ -703,6 +797,7 @@ const AiSetupPage = () => {
                     {t('btn:Play', 'Start Game')}
                 </Button>
             </Box>
+            <AuthRequiredDialog open={!!authPrompt} onClose={() => setAuthPrompt('')} message={authPrompt} />
         </Box>
     );
 };

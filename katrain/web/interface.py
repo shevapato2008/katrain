@@ -155,6 +155,10 @@ class WebKaTrain(KaTrainBase):
         from katrain.web.core.config import settings as _settings
 
         self.suppress_auto_eval = _settings.KATRAIN_MODE == "board"
+        # 这个会话交付不交付分析结果（胜率/目差/候选点/领地/policy/逐手 score_loss）。
+        # 无人认领的会话（未登录 `POST /api/session` 建出来的）为 False —— 见
+        # `get_state` 末尾那段注释。`SessionManager.create_session` 按 user_id 设它。
+        self.deliver_analysis = True
         # R3/R5: rated games forbid ALL analysis (anti-cheat). game_type defaults to
         # "free"; rated/ranked games disable every analysis action at the dispatch
         # chokepoint (see __call__) and via analysis_allowed.
@@ -389,7 +393,21 @@ class WebKaTrain(KaTrainBase):
         return None
 
     def get_state(self):
-        """Returns a JSON-serializable representation of the current game state."""
+        """Returns a JSON-serializable representation of the current game state.
+
+        末尾按 `deliver_analysis` 决定要不要把分析结果交出去。这里是**唯一的**交付口子：
+        `/api/state`、每个改动状态的端点的返回体、以及 WS 的 `game_update` 广播
+        （`SessionManager._on_state`）读的都是这一个函数的产物，所以闸建在这里就够，
+        不必在十几个端点上各挡一次（那种挡法漏一处就等于没挡）。
+
+        为什么无人认领的会话不交付：未登录就能拿到引擎的胜率与最佳点，等于给
+        `/api/analysis/*`、`/api/v1/hint`（两者至今都要求登录）开了一扇不需要账号的后门；
+        更重的是它绕过了升降级期间禁止分析那道反作弊闸 —— 一个正在下升降级对局的人，
+        开一个不带凭据的窗口、把当前局面按手顺摆出来，就能看到引擎的最佳点。
+        **分析照常在服务端跑**（AI 走子要用：PolicyStrategy 一族靠 `wait_for_analysis`
+        等的就是节点上这份分析，关掉生成会让 AI 永远不落子），只是不交付给调用方。
+        """
+
         if not self.game:
             return {"error": "No game active"}
 
@@ -502,7 +520,7 @@ class WebKaTrain(KaTrainBase):
                 "policy": policy_grid,
             }
 
-        return {
+        state = {
             "game_id": self.game.game_id,
             "board_size": list(self.game.board_size),
             "komi": self.game.komi,
@@ -577,8 +595,24 @@ class WebKaTrain(KaTrainBase):
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
             "analysis_allowed": self.analysis_allowed,
+            # 与 `analysis_allowed` 是两件事，别合并：
+            #   analysis_allowed   = 这一局允不允许分析（升降级反作弊，服务端连算都不算）
+            #   analysis_delivered = 算了，但交不交给你（无人认领的会话拿不到）
+            # UI 靠它把三个分析键置灰并说明「登录后可用」，而不是留着一个点了没反应的键。
+            # **前端不许自己按 isAuthenticated 推**：决定交不交付的是「这个会话有没有主人」，
+            # 而一个登录用户照样可能打开一个无主会话（拿到了游客的链接）。
+            "analysis_delivered": bool(getattr(self, "deliver_analysis", True)),
             "last_ladder_error": getattr(self, "last_ladder_error", False),
         }
+        if not getattr(self, "deliver_analysis", True):
+            state["analysis"] = None
+            state["commentary"] = ""
+            state["history"] = [{**h, "score": None, "winrate": None} for h in state["history"]]
+            # `stones` 每项是 [player, coords, score_loss, move_number]，第三格是逐手失分。
+            state["stones"] = [
+                [player, coords, None, move_number] for player, coords, _, move_number in state["stones"]
+            ]
+        return state
 
     def _do_new_game(
         self,

@@ -91,6 +91,15 @@ export interface GameState {
   };
   game_type?: GameType;
   analysis_allowed?: boolean;
+  /**
+   * 服务端这一局**交付不交付**分析结果。与 `analysis_allowed` 是两件事，别合并：
+   *   analysis_allowed  = 这一局允不允许分析（升降级反作弊；服务端连算都不算）
+   *   analysis_delivered = 算了，但交不交给你（无人认领的会话 —— 未登录游客建的那种 ——
+   *                        拿不到胜率/候选点/领地，AI 走子照常）
+   * 为 false 时 UI 要把三个分析键置灰并说明「登录后可用」，而不是留着一个点了没反应的键。
+   * 老服务端不带这个字段 ⇒ undefined ⇒ 一切照旧。
+   */
+  analysis_delivered?: boolean;
   // True once an ai:ladder player refused to move because the engine cannot serve the
   // seated rung at its calibrated strength (interface._surface_ladder_unavailable).
   // It is a terminal condition for the current turn, not a transient one: nothing will
@@ -353,9 +362,14 @@ export const API = {
     if (!response.ok) throw new Error("Failed to save SGF");
     return response.json();
   },
-  getConfig: async (sessionId: string, setting: string): Promise<any> => {
+  /* `GET /api/config` 现在要求「这局是你的」（server.py 的 guard_session_reader），
+     所以这个裸 fetch 必须带上凭据 —— 与 `getState` 上面那条注释记的是同一个坑：
+     不带头时它只在 127.0.0.1 上靠 loopback 的 `sb_token` cookie 侥幸通过，
+     在 galaxy 上会 401，而唯一的调用方（ZenMode 的 AI 设置对话框）catch 里只有
+     console.error，屏上什么都不会说。 */
+  getConfig: async (sessionId: string, setting: string, token?: string): Promise<any> => {
     const params = new URLSearchParams({ session_id: sessionId, setting });
-    const response = await fetch(`/api/config?${params.toString()}`);
+    const response = await fetch(`/api/config?${params.toString()}`, { headers: authHeaders(token) });
     if (!response.ok) throw new Error("Failed to get config");
     return (await response.json()).value;
   },

@@ -18,16 +18,18 @@ import { UserGamesAPI } from '../api/userGamesApi';
 import GameLibraryModal from '../components/research/CloudSGFPanel';
 import { useAuth } from '../../context/AuthContext';
 import { useGameNavigation } from '../context/GameNavigationContext';
+import AuthRequiredDialog from '../components/auth/AuthRequiredDialog';
 import type { ResearchBoardState } from '../hooks/useResearchBoard';
 
 const ResearchPage = () => {
     const [searchParams] = useSearchParams();
-    const { token } = useAuth();
+    const { token, isAuthenticated, isLoading: authLoading } = useAuth();
     const { t } = useTranslation();
     const { registerActiveGame, unregisterActiveGame } = useGameNavigation();
 
     // L1 ↔ L2 state
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [authPromptOpen, setAuthPromptOpen] = useState(false);
 
     // Game library modal
     const [libraryOpen, setLibraryOpen] = useState(false);
@@ -414,6 +416,17 @@ const ResearchPage = () => {
 
     // Start analysis (L1 → L2)
     const handleStartAnalysis = useCallback(async () => {
+        /* 全盘分析要登录 —— `/api/analysis/scan` 与 `/api/analysis/progress` 都挂着必需的
+           `get_current_user`。闸必须建在**进 L2 之前**：一旦进了 L2，屏上是「正在分析棋局」
+           加一条 indeterminate 进度条，几秒后换成「无法获取分析进度 · HTTP 401」和一个
+           「重试」——而那个重试打的是同一个 401，按多少次都不会成功。
+           （建会话那几步本身对未登录是通的，所以不能靠它们抛错来兜底。）
+           等 `authLoading`：挂载时那次 /me 探针没回来之前 `isAuthenticated` 是 false，
+           不等会让已登录用户刷新后第一次点被误挡。 */
+        if (!authLoading && !isAuthenticated) {
+            setAuthPromptOpen(true);
+            return;
+        }
         // 1. Freeze L1 snapshot
         frozenSnapshot.current = board.getSnapshot();
 
@@ -440,7 +453,7 @@ const ResearchPage = () => {
             // 5. Trigger full analysis scan (500 visits per node, engine queues internally)
             API.analysisScan(newSessionId, 500);
         }
-    }, [board, session]);
+    }, [authLoading, board, isAuthenticated, session]);
 
     /* 重试：把失败计数清零并重新发一次全盘扫描；轮询本身一直在跑，
        下一拍拿到 200 就会自己把错误条收掉。 */
@@ -839,6 +852,11 @@ const ResearchPage = () => {
                 )}
             />
             <GameLibraryModal open={libraryOpen} onClose={() => setLibraryOpen(false)} onLoadGame={handleLoadFromLibrary} />
+            <AuthRequiredDialog
+                open={authPromptOpen}
+                onClose={() => setAuthPromptOpen(false)}
+                message={t('research:login_required', '全盘分析要用云端引擎，需要登录后才能使用。摆棋和打谱不需要登录。')}
+            />
         </>
     );
 };

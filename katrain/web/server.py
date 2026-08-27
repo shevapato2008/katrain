@@ -2684,8 +2684,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             #
             # 而 REST 那条同名字段是**已经减过的**:`api/v1/endpoints/games.py:39`
             # `len(s.sockets) - 2`,`HvHLobbyPage.tsx:291` 直接显示。
-            # ⇒ 全仓两个 `spectator_count`,一个是原料一个是成品,今天各自算对了。
-            # **谁照着名字新增第三个消费者、直接显示 `count`,观众数就凭空多 2。**
+            # ⇒ 全仓 **3 个产出方**(WS 两处:本处 + 离房那处;REST 一处)、**2 种语义**:
+            # 原料 × 2 与成品 × 1。今天各自算对了。
+            # **而「照着名字直接显示」这个动作已经存在两处**(`HvHLobbyPage.tsx:291`、
+            # kiosk `LobbyPage.tsx:358`,吃的都是成品那条)⇒ 屏上已经有两个先例在教下一个人
+            # 怎么接。**缺陷不是在等第一个消费者,是在等下一个人接错那一条。**
             # 这条已登记进四棋类大厅裁决 §8.4(`variant_local.go` 那段的属主是围棋)。
             # 改名要连着 wire 契约一起改,所以本轮只留话不动线。
             manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
@@ -2729,6 +2732,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 app.state.box_sso.discard_socket(websocket)
             session.sockets.discard(websocket)
             # Broadcast updated spectator count when someone leaves
+            # 🔴 这是 `spectator_count` 的**第二个**产出方,`count` 同样是原始 socket 数不是观众数 ——
+            # 完整说明见进房那处(本文件上方 `session.sockets.add(websocket)` 之后)。**改一处要改两处。**
+            # 只贴一处的后果就是:动到没贴的这一处的人照样看不到。(国象 track 复量出这一处,2026-08-27)
             if session.sockets:  # Only if there are still connected clients
                 manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
 

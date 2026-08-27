@@ -21,6 +21,78 @@ I18N_DIR = PROJECT_ROOT / "katrain" / "i18n" / "locales"
 # All Galaxy UI translation keys with translations for each language
 # Format: {msgid: {lang_code: msgstr}}
 GALAXY_TRANSLATIONS = {
+    # 未登录（游客）——2026-08-27：自由对弈对游客开放，升降级对弈不开放。
+    # 后者要说清楚**原因**（段位记在账号上），不能沿用「登录已失效」那句：
+    # 对从未登录过的人它是假的，而且旁边只有一个永远不会成功的「重试」。
+    "auth:login_required_title": {
+        "en": "Sign-in required", "cn": "需要登录", "tw": "需要登入",
+        "jp": "ログインが必要", "ko": "로그인 필요", "de": "Anmeldung erforderlich",
+        "es": "Inicio de sesión requerido", "fr": "Connexion requise",
+        "ru": "Требуется вход", "tr": "Giriş gerekli", "ua": "Потрібен вхід",
+    },
+    "auth:login_required_generic": {
+        "en": "This feature requires a signed-in account.",
+        "cn": "该功能需要登录后使用。", "tw": "此功能需要登入後使用。",
+        "jp": "この機能を使うにはログインが必要です。",
+        "ko": "이 기능은 로그인 후 사용할 수 있습니다.",
+        "de": "Diese Funktion erfordert ein angemeldetes Konto.",
+        "es": "Esta función requiere una cuenta con sesión iniciada.",
+        "fr": "Cette fonctionnalité nécessite un compte connecté.",
+        "ru": "Эта функция доступна только после входа в аккаунт.",
+        "tr": "Bu özellik için giriş yapmış bir hesap gerekir.",
+        "ua": "Ця функція доступна лише після входу в акаунт.",
+    },
+    "auth:go_login": {
+        "en": "Sign in", "cn": "去登录", "tw": "前往登入", "jp": "ログインする",
+        "ko": "로그인하기", "de": "Anmelden", "es": "Iniciar sesión",
+        "fr": "Se connecter", "ru": "Войти", "tr": "Giriş yap", "ua": "Увійти",
+    },
+    "ladder:login_required": {
+        "en": "Rated games move your rank, so they need a signed-in account.",
+        "cn": "升降级对弈会记录段位，需要登录后才能开始。",
+        "tw": "升降級對弈會記錄段位，需要登入後才能開始。",
+        "jp": "昇降級対局は段位を記録するため、ログインが必要です。",
+        "ko": "승단·강등 대국은 단급을 기록하므로 로그인이 필요합니다.",
+        "de": "Wertungspartien verändern deinen Rang und erfordern daher ein angemeldetes Konto.",
+        "es": "Las partidas de clasificación cambian tu rango, por lo que requieren iniciar sesión.",
+        "fr": "Les parties classées font évoluer votre rang et nécessitent donc une connexion.",
+        "ru": "Рейтинговые партии меняют ваш ранг, поэтому нужен вход в аккаунт.",
+        "tr": "Dereceli oyunlar seviyenizi etkiler, bu yüzden giriş yapmanız gerekir.",
+        "ua": "Рейтингові партії змінюють ваш ранг, тому потрібен вхід в акаунт.",
+    },
+    "play:login_required_free": {
+        "en": "Starting this game needs a signed-in account. Please sign in and try again.",
+        "cn": "开始对局需要登录，请先登录后再试。",
+        "tw": "開始對局需要登入，請先登入後再試。",
+        "jp": "対局を始めるにはログインが必要です。ログインしてからお試しください。",
+        "ko": "대국을 시작하려면 로그인이 필요합니다. 로그인 후 다시 시도해 주세요.",
+        "de": "Zum Starten dieser Partie ist eine Anmeldung nötig. Bitte melde dich an.",
+        "es": "Para iniciar esta partida necesitas iniciar sesión. Inténtalo de nuevo después.",
+        "fr": "Le démarrage de cette partie nécessite une connexion. Connectez-vous puis réessayez.",
+        "ru": "Чтобы начать партию, нужно войти в аккаунт. Войдите и повторите попытку.",
+        "tr": "Bu oyunu başlatmak için giriş yapmalısınız. Giriş yapıp tekrar deneyin.",
+        "ua": "Щоб почати партію, потрібно увійти в акаунт. Увійдіть і спробуйте ще раз.",
+    },
+    "play:guest_free_notice": {
+        "en": "You are playing as a guest: this game will not be saved to your game records and does not affect your rank. Sign in to keep your games.",
+        "cn": "你正在以游客身份对弈：本局不会保存到棋谱库，也不计入段位。登录后可保存对局。",
+        "tw": "你正在以訪客身分對弈：本局不會儲存到棋譜庫，也不計入段位。登入後可儲存對局。",
+        "jp": "ゲストとして対局中です：この対局は棋譜に保存されず、段位にも反映されません。ログインすると保存できます。",
+        "ko": "손님으로 대국 중입니다: 이 대국은 기보에 저장되지 않고 단급에도 반영되지 않습니다. 로그인하면 저장됩니다.",
+        "de": "Du spielst als Gast: Diese Partie wird nicht gespeichert und zählt nicht für deinen Rang. Melde dich an, um Partien zu behalten.",
+        "es": "Juegas como invitado: esta partida no se guardará ni afectará a tu rango. Inicia sesión para conservar tus partidas.",
+        "fr": "Vous jouez en tant qu'invité : cette partie ne sera pas enregistrée et n'affecte pas votre rang. Connectez-vous pour la conserver.",
+        "ru": "Вы играете как гость: эта партия не будет сохранена и не влияет на ранг. Войдите, чтобы сохранять партии.",
+        "tr": "Misafir olarak oynuyorsunuz: bu oyun kayıtlara eklenmez ve seviyenizi etkilemez. Kaydetmek için giriş yapın.",
+        "ua": "Ви граєте як гість: цю партію не буде збережено, і вона не впливає на ранг. Увійдіть, щоб зберігати партії.",
+    },
+    "play:go_free_play": {
+        "en": "Play a free game instead", "cn": "先去自由对弈", "tw": "先去自由對弈",
+        "jp": "まずは自由対局へ", "ko": "먼저 자유 대국 하기",
+        "de": "Stattdessen frei spielen", "es": "Jugar una partida libre",
+        "fr": "Jouer une partie libre", "ru": "Сыграть свободную партию",
+        "tr": "Önce serbest oyna", "ua": "Зіграти вільну партію",
+    },
     # 模块牌返回键（2026-08-22：返回键统一到右栏左上角，简称不上屏、只进无障碍名）
     "Back": {
         "en": "Back", "cn": "返回", "tw": "返回", "jp": "戻る", "ko": "뒤로",

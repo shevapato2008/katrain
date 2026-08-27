@@ -3050,3 +3050,30 @@ msgstr "Todos los niveles · {count}"
 
 msgid "tsumego:your_level"
 msgstr "tu nivel"
+
+msgid "auth:login_required_title"
+msgstr "Inicio de sesión requerido"
+
+msgid "auth:login_required_generic"
+msgstr "Esta función requiere una cuenta con sesión iniciada."
+
+msgid "auth:go_login"
+msgstr "Iniciar sesión"
+
+msgid "ladder:login_required"
+msgstr ""
+"Las partidas de clasificación cambian tu rango, por lo que requieren iniciar"
+" sesión."
+
+msgid "play:login_required_free"
+msgstr ""
+"Para iniciar esta partida necesitas iniciar sesión. Inténtalo de nuevo "
+"después."
+
+msgid "play:guest_free_notice"
+msgstr ""
+"Juegas como invitado: esta partida no se guardará ni afectará a tu rango. "
+"Inicia sesión para conservar tus partidas."
+
+msgid "play:go_free_play"
+msgstr "Jugar una partida libre"

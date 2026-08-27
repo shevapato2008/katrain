@@ -3192,3 +3192,30 @@ msgstr "Tous les niveaux · {count}"
 
 msgid "tsumego:your_level"
 msgstr "votre niveau"
+
+msgid "auth:login_required_title"
+msgstr "Connexion requise"
+
+msgid "auth:login_required_generic"
+msgstr "Cette fonctionnalité nécessite un compte connecté."
+
+msgid "auth:go_login"
+msgstr "Se connecter"
+
+msgid "ladder:login_required"
+msgstr ""
+"Les parties classées font évoluer votre rang et nécessitent donc une "
+"connexion."
+
+msgid "play:login_required_free"
+msgstr ""
+"Le démarrage de cette partie nécessite une connexion. Connectez-vous puis "
+"réessayez."
+
+msgid "play:guest_free_notice"
+msgstr ""
+"Vous jouez en tant qu'invité : cette partie ne sera pas enregistrée et "
+"n'affecte pas votre rang. Connectez-vous pour la conserver."
+
+msgid "play:go_free_play"
+msgstr "Jouer une partie libre"

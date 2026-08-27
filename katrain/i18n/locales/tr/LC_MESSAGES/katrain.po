@@ -3240,3 +3240,28 @@ msgstr "Tüm seviyeler · {count}"
 
 msgid "tsumego:your_level"
 msgstr "seviyeniz"
+
+msgid "auth:login_required_title"
+msgstr "Giriş gerekli"
+
+msgid "auth:login_required_generic"
+msgstr "Bu özellik için giriş yapmış bir hesap gerekir."
+
+msgid "auth:go_login"
+msgstr "Giriş yap"
+
+msgid "ladder:login_required"
+msgstr ""
+"Dereceli oyunlar seviyenizi etkiler, bu yüzden giriş yapmanız gerekir."
+
+msgid "play:login_required_free"
+msgstr ""
+"Bu oyunu başlatmak için giriş yapmalısınız. Giriş yapıp tekrar deneyin."
+
+msgid "play:guest_free_notice"
+msgstr ""
+"Misafir olarak oynuyorsunuz: bu oyun kayıtlara eklenmez ve seviyenizi "
+"etkilemez. Kaydetmek için giriş yapın."
+
+msgid "play:go_free_play"
+msgstr "Önce serbest oyna"

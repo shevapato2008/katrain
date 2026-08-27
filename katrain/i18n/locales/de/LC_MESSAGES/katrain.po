@@ -3223,3 +3223,29 @@ msgstr "Alle Stufen · {count}"
 
 msgid "tsumego:your_level"
 msgstr "dein Niveau"
+
+msgid "auth:login_required_title"
+msgstr "Anmeldung erforderlich"
+
+msgid "auth:login_required_generic"
+msgstr "Diese Funktion erfordert ein angemeldetes Konto."
+
+msgid "auth:go_login"
+msgstr "Anmelden"
+
+msgid "ladder:login_required"
+msgstr ""
+"Wertungspartien verändern deinen Rang und erfordern daher ein angemeldetes "
+"Konto."
+
+msgid "play:login_required_free"
+msgstr ""
+"Zum Starten dieser Partie ist eine Anmeldung nötig. Bitte melde dich an."
+
+msgid "play:guest_free_notice"
+msgstr ""
+"Du spielst als Gast: Diese Partie wird nicht gespeichert und zählt nicht für"
+" deinen Rang. Melde dich an, um Partien zu behalten."
+
+msgid "play:go_free_play"
+msgstr "Stattdessen frei spielen"

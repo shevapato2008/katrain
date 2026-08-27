@@ -3142,3 +3142,27 @@ msgstr "Все уровни · {count}"
 
 msgid "tsumego:your_level"
 msgstr "ваш уровень"
+
+msgid "auth:login_required_title"
+msgstr "Требуется вход"
+
+msgid "auth:login_required_generic"
+msgstr "Эта функция доступна только после входа в аккаунт."
+
+msgid "auth:go_login"
+msgstr "Войти"
+
+msgid "ladder:login_required"
+msgstr "Рейтинговые партии меняют ваш ранг, поэтому нужен вход в аккаунт."
+
+msgid "play:login_required_free"
+msgstr ""
+"Чтобы начать партию, нужно войти в аккаунт. Войдите и повторите попытку."
+
+msgid "play:guest_free_notice"
+msgstr ""
+"Вы играете как гость: эта партия не будет сохранена и не влияет на ранг. "
+"Войдите, чтобы сохранять партии."
+
+msgid "play:go_free_play"
+msgstr "Сыграть свободную партию"

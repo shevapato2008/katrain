@@ -3137,3 +3137,24 @@ msgstr "全部難度 · {count} 檔"
 
 msgid "tsumego:your_level"
 msgstr "你的水平"
+
+msgid "auth:login_required_title"
+msgstr "需要登入"
+
+msgid "auth:login_required_generic"
+msgstr "此功能需要登入後使用。"
+
+msgid "auth:go_login"
+msgstr "前往登入"
+
+msgid "ladder:login_required"
+msgstr "升降級對弈會記錄段位，需要登入後才能開始。"
+
+msgid "play:login_required_free"
+msgstr "開始對局需要登入，請先登入後再試。"
+
+msgid "play:guest_free_notice"
+msgstr "你正在以訪客身分對弈：本局不會儲存到棋譜庫，也不計入段位。登入後可儲存對局。"
+
+msgid "play:go_free_play"
+msgstr "先去自由對弈"

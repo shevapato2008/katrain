@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import LoginIcon from '@mui/icons-material/Login';
-import { useSettings } from '../../../context/SettingsContext';
-import { i18n } from '../../../i18n';
+import { useTranslation } from '../../../hooks/useTranslation';
 import LoginModal from './LoginModal';
 
 interface AuthRequiredDialogProps {
@@ -25,21 +24,21 @@ interface AuthRequiredDialogProps {
  * 把两个框串起来，不猜调用方要跳哪。
  */
 const AuthRequiredDialog = ({ open, onClose, message }: AuthRequiredDialogProps) => {
-    useSettings(); // 跟着语言切换重渲染
+    const { t } = useTranslation(); // 订阅语言切换，切了当场重渲染
     const [loginOpen, setLoginOpen] = useState(false);
 
     return (
         <>
             <Dialog open={open} onClose={onClose} PaperProps={{ sx: { borderRadius: 3, minWidth: 320 } }}>
-                <DialogTitle>{i18n.t('auth:login_required_title', '需要登录')}</DialogTitle>
+                <DialogTitle>{t('auth:login_required_title', '需要登录')}</DialogTitle>
                 <DialogContent>
                     <DialogContentText data-testid="login-required-message">
-                        {message || i18n.t('auth:login_required_generic', '该功能需要登录后使用。')}
+                        {message || t('auth:login_required_generic', '该功能需要登录后使用。')}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <Button onClick={onClose} color="inherit">
-                        {i18n.t('btn:Cancel', '取消')}
+                        {t('cancel', '取消')}
                     </Button>
                     <Button
                         data-testid="login-required-action"
@@ -47,7 +46,7 @@ const AuthRequiredDialog = ({ open, onClose, message }: AuthRequiredDialogProps)
                         startIcon={<LoginIcon />}
                         onClick={() => setLoginOpen(true)}
                     >
-                        {i18n.t('auth:go_login', '去登录')}
+                        {t('auth:go_login', '去登录')}
                     </Button>
                 </DialogActions>
             </Dialog>

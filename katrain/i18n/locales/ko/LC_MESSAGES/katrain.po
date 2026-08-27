@@ -3082,3 +3082,24 @@ msgstr "전체 난이도 · {count}단계"
 
 msgid "tsumego:your_level"
 msgstr "내 실력"
+
+msgid "auth:login_required_title"
+msgstr "로그인 필요"
+
+msgid "auth:login_required_generic"
+msgstr "이 기능은 로그인 후 사용할 수 있습니다."
+
+msgid "auth:go_login"
+msgstr "로그인하기"
+
+msgid "ladder:login_required"
+msgstr "승단·강등 대국은 단급을 기록하므로 로그인이 필요합니다."
+
+msgid "play:login_required_free"
+msgstr "대국을 시작하려면 로그인이 필요합니다. 로그인 후 다시 시도해 주세요."
+
+msgid "play:guest_free_notice"
+msgstr "손님으로 대국 중입니다: 이 대국은 기보에 저장되지 않고 단급에도 반영되지 않습니다. 로그인하면 저장됩니다."
+
+msgid "play:go_free_play"
+msgstr "먼저 자유 대국 하기"

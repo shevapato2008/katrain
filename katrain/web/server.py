@@ -2677,7 +2677,17 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             state["sockets_count"] = len(session.sockets)
             # Send initial state to this client
             await websocket.send_json({"type": "game_update", "state": state})
-            # Broadcast updated spectator count to all other clients (lightweight update)
+            # 🔴 名字撒谎:type 叫 `spectator_count`,`count` 却是**原始 socket 数**,不是观众数。
+            # 减 2 由消费方做(`GameRoomPage.tsx:194` 的 `sockets_count - 2`),因为这条消息只是
+            # 给 `state["sockets_count"]` 打的补丁 —— 它和上面那行 `state["sockets_count"]`
+            # 说的是同一个量,前端两处都存进 `sockets_count`。
+            #
+            # 而 REST 那条同名字段是**已经减过的**:`api/v1/endpoints/games.py:39`
+            # `len(s.sockets) - 2`,`HvHLobbyPage.tsx:291` 直接显示。
+            # ⇒ 全仓两个 `spectator_count`,一个是原料一个是成品,今天各自算对了。
+            # **谁照着名字新增第三个消费者、直接显示 `count`,观众数就凭空多 2。**
+            # 这条已登记进四棋类大厅裁决 §8.4(`variant_local.go` 那段的属主是围棋)。
+            # 改名要连着 wire 契约一起改,所以本轮只留话不动线。
             manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
             while True:
                 message = await websocket.receive_json()

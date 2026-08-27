@@ -688,6 +688,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @contextmanager
     def persistent_analysis_activity(current_user, session, kind: str, action: str):
+        # 这套记账整个是**以 user_id 为键**的（`RankedAnalysisActivity` 在「同一用户的自由局
+        # 分析租约」与「同一用户的升降级开局」之间做互斥）。游客没有 user_id，也就没有任何
+        # 一端可以互斥 —— 未登录自由对弈在这里既不占租约也不需要占。不早退的话
+        # `current_user.id` 会当场 AttributeError，把 401 换成 500（更难诊断，不是更安全）。
+        if current_user is None:
+            yield
+            return
         activity = app.state.ranked_analysis_activity
         with activity.lock:
             guard_user_has_no_pending_ranked_game(app, current_user, action)
@@ -700,19 +707,45 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 raise
 
     def register_persistent_analysis(current_user, session, kind: str, action: str) -> None:
+        if current_user is None:
+            return  # 同上：没有 user_id 就没有这本账。
         activity = app.state.ranked_analysis_activity
         with activity.lock:
             guard_user_has_no_pending_ranked_game(app, current_user, action)
             activity.begin_background(current_user.id, session.session_id, kind)
             guard_user_has_no_pending_ranked_game(app, current_user, action)
 
-    def guard_session_reader(session, current_user, action: str) -> None:
-        if current_user is None:
-            raise HTTPException(status_code=401, detail=f"Authentication required for {action}")
-        allowed_user_ids = {
+    def session_owner_ids(session) -> set:
+        """这局归谁。空集 = 无人认领（未登录直接开的单机局，三个 id 全是 None）。"""
+
+        return {
             user_id for user_id in (session.user_id, session.player_b_id, session.player_w_id) if user_id is not None
         }
-        if current_user.id not in allowed_user_ids:
+
+    def guard_session_reader(session, current_user, action: str) -> None:
+        """能不能读/操作这个会话。
+
+        **无人认领的会话不设闸** —— 与 `guard_session_terminator` 同一口径，理由也同一条：
+        没有主人就没有可越权的对象。这一支是自由对弈对游客开放的承重条：未登录用户
+        `POST /api/session` 拿到的是一个三个 id 全 None 的匿名会话，它此前在这里被
+        「`current_user is None` 一律 401」挡死，于是 `/api/new-game` 之后整条链
+        （state / ws / move / undo / ai-move）没有一步走得通，屏上是一串裸的
+        `Request failed 401: {"detail":"Not authenticated"}`。
+
+        放开的**只是没有主人的那一类**：登录用户建的会话必带 `user_id`、多人局必带
+        `player_*_id`，它们照旧要求「是这局的参与者」。匿名会话的 id 也不会从任何不鉴权的
+        端点漏出去 —— `/api/v1/games/active/multiplayer` 只列 `player_b_id is not None` 的局
+        （session.py `list_active_multiplayer_sessions`），匿名局按定义不在其中。
+
+        升降级对弈不靠这条守：它的会话总是带 `user_id`（`/api/ladder/start-game` 只发给
+        登录用户），而且另有 `guard_ai_ladder_ranked_*` 一族在更前面。
+        """
+
+        if not session_owner_ids(session):
+            return
+        if current_user is None:
+            raise HTTPException(status_code=401, detail=f"Authentication required for {action}")
+        if current_user.id not in session_owner_ids(session):
             raise HTTPException(status_code=403, detail=f"{action} is restricted to a session participant")
 
     def guard_session_terminator(session, current_user, action: str) -> None:
@@ -734,9 +767,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         的对象;对它要求登录只会打死盒上离线玩法。跨平台局的对手是 `-1`(OGS/KGS 上的人
         没有 katrain 账号),它留在集合里不匹配任何真实用户,正确。
         """
-        owner_ids = {
-            user_id for user_id in (session.user_id, session.player_b_id, session.player_w_id) if user_id is not None
-        }
+        owner_ids = session_owner_ids(session)
         if not owner_ids:
             return
         if current_user is None:
@@ -823,7 +854,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"status": "deleted"}
 
     @app.get("/api/state")
-    def get_state(session_id: str, current_user: User = Depends(get_current_user)):
+    def get_state(session_id: str, current_user: User | None = Depends(get_current_user_optional)):
         try:
             session = manager.get_session(session_id)
         except KeyError as exc:
@@ -845,8 +876,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             getattr(session.katrain, "analysis_allowed", True)
         )
         if tracks_auto_analysis:
-            if current_user is None:
-                raise HTTPException(status_code=401, detail="Authentication required for analyzed games")
+            # 这里从前还有一条独立的 `current_user is None -> 401 "Authentication required for
+            # analyzed games"`。它只可能打到**无人认领**的会话（有主人的局 `guard_session_reader`
+            # 自己就会 401），也就是说它挡的正是未登录自由对弈本身。自由对弈对游客开放之后
+            # 它没有别的猎物了，删掉；归属判断只留一处，就是下面这条。
             guard_session_reader(session, current_user, "play move")
 
         # Skip turn validation for research sessions
@@ -959,7 +992,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/new-game")
-    def new_game(request: NewGameRequest, current_user: User = Depends(get_current_user)):
+    def new_game(request: NewGameRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_session(session, "new-game")
         guard_session_reader(session, current_user, "new game")
@@ -2593,14 +2626,22 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         strict_box = strict_box_sso_enabled()
         token = resolve_websocket_token(websocket)
-        try:
-            if not token:
-                raise ValueError("missing credential")
-            current_user = await get_user_from_token(token=token, repo=app.state.user_repo, box_sso=app.state.box_sso)
-        except Exception:
-            await websocket.accept()
-            await websocket.close(code=1008, reason="Invalid token")
-            return
+        # 「没带凭据」与「凭据是坏的」是两回事,分开处理:
+        #   坏凭据 -> 1008,和从前一样(有人拿着过期/伪造的 token 来,那就是错误);
+        #   没凭据 -> current_user=None,交给下面的 `guard_session_reader` 定夺 ——
+        #            无人认领的匿名局放行,有主人的局照旧 1008。
+        # 这条通道是承重的:AI 的每一手只经 WS 广播推过来(interface.py 的
+        # `_do_ai_move_and_broadcast` 后台线程),连不上 = 游客点完第一手棋盘就再也不动。
+        current_user = None
+        if token:
+            try:
+                current_user = await get_user_from_token(
+                    token=token, repo=app.state.user_repo, box_sso=app.state.box_sso
+                )
+            except Exception:
+                await websocket.accept()
+                await websocket.close(code=1008, reason="Invalid token")
+                return
         try:
             session = manager.get_session(session_id)
         except KeyError:
@@ -2632,6 +2673,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 if message.get("type") == "ping":
                     await websocket.send_json({"type": "pong"})
                 elif message.get("type") == "chat":
+                    # 未登录的连接没有可填的身份。身份两项是**服务端**填的(见下),所以这里
+                    # 只能拒绝,不能退回「让客户端自己写 sender」那条老路。
+                    # 说一句而不是静默丢弃:静默丢弃时发言的人看不出自己没发出去。
+                    if current_user is None:
+                        await websocket.send_json({"type": "error", "code": "chat_requires_identity"})
+                        continue
                     # 身份两项由**服务端**填,正文是唯一采信的客户端输入。
                     # 在这之前这里是 `broadcast_to_session(session_id, message)` —— 把客户端
                     # 原样送来的 dict 整包广播回房间,于是 `sender` 是发送方自己写的

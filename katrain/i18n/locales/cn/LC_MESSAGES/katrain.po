@@ -3019,3 +3019,9 @@ msgstr "你有一局升降级对弈还没结算，先去「升降级对弈」把
 
 msgid "research:login_required"
 msgstr "全盘分析要用云端引擎，需要登录后才能使用。摆棋和打谱不需要登录。"
+
+msgid "play:analysis_requires_login"
+msgstr "登录后可用"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "领地 / 支招 / 图表 登录后可用"

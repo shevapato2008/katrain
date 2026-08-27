@@ -3182,3 +3182,9 @@ msgstr "未清算の昇降級対局があります。先に「昇降級対局」
 
 msgid "research:login_required"
 msgstr "全局解析はクラウドエンジンを使うためログインが必要です。並べる・再生するだけならログイン不要です。"
+
+msgid "play:analysis_requires_login"
+msgstr "ログイン後に利用できます"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "地合い / ヒント / グラフ はログイン後に利用できます"

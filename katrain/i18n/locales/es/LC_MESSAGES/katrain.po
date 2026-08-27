@@ -3087,3 +3087,9 @@ msgid "research:login_required"
 msgstr ""
 "El análisis completo usa el motor en la nube y requiere iniciar sesión. "
 "Editar y reproducir no."
+
+msgid "play:analysis_requires_login"
+msgstr "Disponible al iniciar sesión"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "Territorio / Consejo / Gráfico están disponibles al iniciar sesión"

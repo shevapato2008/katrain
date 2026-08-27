@@ -49,6 +49,17 @@ interface RightSidebarPanelProps {
      */
     analysisLocked?: boolean;
     /**
+     * 这一局的分析**服务端根本不交付**（无人认领的会话 —— 未登录游客建的那种）。
+     *
+     * 与 `analysisLocked` 分开是因为两者禁的范围不同：`analysisLocked` 连悔棋一起禁
+     * （升降级反作弊、人人对弈没引擎），而未登录游客的悔棋是通的，只有三个分析键点了没用。
+     * 分不开的话就会为了关掉分析而顺手把能用的功能也关掉 —— 那正是 `isRated` 从前兼管
+     * 两件事时出的问题。
+     *
+     * 禁用之外还要**说出原因**：一个不解释的灰键和一个坏掉的键在用户那里是同一个东西。
+     */
+    analysisRequiresLogin?: boolean;
+    /**
      * 观战者。今天这四个键（悔棋 / 停一手 / 认输 / 数子）对观战者仍然可按，
      * 但 `onAction` 被调用方换成了空函数 —— 点了没有任何反应，是账本意义上的空按钮。
      * 传 true 就如实置灰，并把「离开对局」换成「退出观战」（观战者没有可判负的东西）。
@@ -81,6 +92,7 @@ const RightSidebarPanel = ({
     onAction = () => {},
     isRated = false,
     analysisLocked,
+    analysisRequiresLogin = false,
     isSpectator = false,
     onTimeout,
     onPauseTimer,
@@ -136,7 +148,12 @@ const RightSidebarPanel = ({
     const isGameOver = !!gameState.end_result;
     /* 不传 analysisLocked 时退回旧口径（升降级对局中锁分析），人机对局页因此不用改。 */
     const locked = (analysisLocked ?? isRated) && !isGameOver;
-    const canShowAnalysis = !locked;
+    const canShowAnalysis = !locked && !analysisRequiresLogin;
+    /* 传了才显示 —— `ToolGridButton` 的 `tooltip` 是**连 disabled 一起显示**的那一支，
+       正是给「为什么这个键是灰的」准备的。不传时它对灰键什么都不显示。 */
+    const analysisTooltip = analysisRequiresLogin
+        ? t('play:analysis_requires_login', '登录后可用')
+        : undefined;
 
     return (
         <Box sx={{
@@ -201,6 +218,7 @@ const RightSidebarPanel = ({
                         <ToolGridButton
                             icon={<MapIcon />}
                             label={t('Territory', 'Territory')}
+                            tooltip={analysisTooltip}
                             toggle
                             active={analysisToggles.ownership}
                             onClick={() => onToggleChange('ownership')}
@@ -209,6 +227,7 @@ const RightSidebarPanel = ({
                         <ToolGridButton
                             icon={<TipsAndUpdatesIcon />}
                             label={t('Advice', 'Advice')}
+                            tooltip={analysisTooltip}
                             toggle
                             active={analysisToggles.hints}
                             onClick={() => onToggleChange('hints')}
@@ -218,6 +237,7 @@ const RightSidebarPanel = ({
                         <ToolGridButton
                             icon={<TimelineIcon />}
                             label={t('Graph', 'Graph')}
+                            tooltip={analysisTooltip}
                             toggle
                             active={analysisToggles.score}
                             onClick={() => onToggleChange('score')}
@@ -259,6 +279,18 @@ const RightSidebarPanel = ({
                     {isRated && !isGameOver && (
                         <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
                             {t('items_disabled_rated', 'Items disabled during Rated Game')}
+                        </Typography>
+                    )}
+                    {/* 悬浮提示在触屏上是够不着的，所以那句话也要落在屏上一次。
+                        与升降级那条同一个位置、同一种排版，只是不是错误色 —— 它不是故障。 */}
+                    {analysisRequiresLogin && (
+                        <Typography
+                            data-testid="analysis-requires-login"
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: 'block', mt: 1, textAlign: 'center' }}
+                        >
+                            {t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')}
                         </Typography>
                     )}
                     {resultAlert && <Box sx={{ mt: 1.25 }}>{resultAlert}</Box>}

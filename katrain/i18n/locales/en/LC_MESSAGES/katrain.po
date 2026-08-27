@@ -3213,3 +3213,9 @@ msgid "research:login_required"
 msgstr ""
 "Full-board analysis runs on the cloud engine and needs a signed-in account. "
 "Editing and replaying do not."
+
+msgid "play:analysis_requires_login"
+msgstr "Available after signing in"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "Territory / Advice / Graph become available after signing in"

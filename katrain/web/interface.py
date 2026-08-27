@@ -586,6 +586,13 @@ class WebKaTrain(KaTrainBase):
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
             "analysis_allowed": self.analysis_allowed,
+            # 与 `analysis_allowed` 是两件事，别合并：
+            #   analysis_allowed   = 这一局允不允许分析（升降级反作弊，服务端连算都不算）
+            #   analysis_delivered = 算了，但交不交给你（无人认领的会话拿不到）
+            # UI 靠它把三个分析键置灰并说明「登录后可用」，而不是留着一个点了没反应的键。
+            # **前端不许自己按 isAuthenticated 推**：决定交不交付的是「这个会话有没有主人」，
+            # 而一个登录用户照样可能打开一个无主会话（拿到了游客的链接）。
+            "analysis_delivered": bool(getattr(self, "deliver_analysis", True)),
             "last_ladder_error": getattr(self, "last_ladder_error", False),
         }
         if not getattr(self, "deliver_analysis", True):

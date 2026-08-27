@@ -3257,3 +3257,9 @@ msgid "research:login_required"
 msgstr ""
 "Повний аналіз використовує хмарний рушій і потребує входу. Розбір і перегляд"
 " — ні."
+
+msgid "play:analysis_requires_login"
+msgstr "Доступно після входу"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "Територія / Підказка / Графік доступні після входу"

@@ -3258,3 +3258,9 @@ msgid "research:login_required"
 msgstr ""
 "Die Gesamtanalyse läuft auf der Cloud-Engine und erfordert eine Anmeldung. "
 "Bearbeiten und Abspielen nicht."
+
+msgid "play:analysis_requires_login"
+msgstr "Nach Anmeldung verfügbar"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "Gebiet / Rat / Verlauf sind nach der Anmeldung verfügbar"

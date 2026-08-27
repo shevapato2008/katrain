@@ -1271,17 +1271,30 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
         return {"session_id": session.session_id, "state": state}
 
+    #: `GET /api/config` 允许读的配置前缀。
+    #:
+    #: 这个端点读的是**进程的整份 config**（`base_katrain.config("cat/key")` 支持任意两级键），
+    #: 不是「这个会话的设置」—— 也就是说没有白名单时它能读出 `server/database_url` 与
+    #: `contribute/username|password`。归属闸挡不住这一条：会话的主人本人问同样读得到。
+    #: 所以这里是**白名单不是黑名单**：漏写一个黑名单条目 = 漏一个密钥，漏写一个白名单条目
+    #: = 某个设置读不到（会被立刻发现）。今天唯一的调用方是 ZenMode 的 AI 设置对话框读 `ai/*`。
+    READABLE_CONFIG_PREFIXES = ("ai", "trainer", "timer", "game", "ui_state")
+
     @app.get("/api/config")
-    def get_config(session_id: str, setting: str):
+    def get_config(session_id: str, setting: str, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, session_id)
+        guard_session_reader(session, current_user, "read config")
+        if setting.split("/", 1)[0] not in READABLE_CONFIG_PREFIXES:
+            raise HTTPException(status_code=403, detail=f"config key is not readable: {setting}")
         # config is thread-safe enough for read
         value = session.katrain.config(setting)
         return {"setting": setting, "value": value}
 
     @app.post("/api/config")
-    def update_config(request: ConfigUpdateRequest):
+    def update_config(request: ConfigUpdateRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_session(session, "update-config")
+        guard_session_reader(session, current_user, "update config")
         with session.lock:
             session.katrain.update_config(request.setting, request.value)
             state = session.katrain.get_state()
@@ -1289,9 +1302,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/config/bulk")
-    def update_config_bulk(request: ConfigBulkUpdateRequest):
+    def update_config_bulk(request: ConfigBulkUpdateRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_session(session, "update-config-bulk")
+        guard_session_reader(session, current_user, "update config")
         with session.lock:
             for setting, value in request.updates.items():
                 session.katrain.update_config(setting, value)
@@ -1300,9 +1314,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/player")
-    def update_player(request: UpdatePlayerRequest):
+    def update_player(request: UpdatePlayerRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_session(session, "update-player")
+        guard_session_reader(session, current_user, "update player")
         with session.lock:
             session.katrain(
                 "update_player",
@@ -1316,9 +1331,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/player/swap")
-    def swap_players(request: ToggleAnalysisRequest):
+    def swap_players(request: ToggleAnalysisRequest, current_user: User | None = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_session(session, "swap-players")
+        guard_session_reader(session, current_user, "swap players")
         with session.lock:
             session.katrain("swap_players")
             state = session.katrain.get_state()

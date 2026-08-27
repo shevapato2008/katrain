@@ -3229,3 +3229,9 @@ msgid "research:login_required"
 msgstr ""
 "L'analyse complète utilise le moteur cloud et nécessite une connexion. "
 "L'édition et la relecture non."
+
+msgid "play:analysis_requires_login"
+msgstr "Disponible après connexion"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "Territoire / Conseil / Graphique sont disponibles après connexion"

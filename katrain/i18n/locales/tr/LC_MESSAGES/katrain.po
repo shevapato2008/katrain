@@ -3275,3 +3275,9 @@ msgid "research:login_required"
 msgstr ""
 "Tam tahta analizi bulut motorunu kullanır ve giriş gerektirir. Dizmek ve "
 "oynatmak gerektirmez."
+
+msgid "play:analysis_requires_login"
+msgstr "Giriş yaptıktan sonra kullanılabilir"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "Bölge / Tavsiye / Grafik giriş yaptıktan sonra kullanılabilir"

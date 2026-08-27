@@ -117,6 +117,14 @@ def test_a_claimed_session_still_refuses_a_credential_less_caller(client):
     assert client.post("/api/new-game", json={"session_id": sid}).status_code == 401
     assert client.post("/api/move", json={"session_id": sid, "coords": [3, 3], "pass_move": False}).status_code == 401
     assert client.post("/api/undo", json={"session_id": sid, "n_times": 1}).status_code == 401
+    # 2026-08-27 补上鉴权的那四个：在此之前它们**完全不看调用者**，任何人拿到 session_id
+    # 就能改别人在跑的对局的配置和座位（session_id 也不用猜 ——
+    # `GET /api/v1/games/active/multiplayer` 至今不鉴权，返回的正是全部多人局的 id）。
+    assert client.post("/api/config", json={"session_id": sid, "setting": "timer/main_time", "value": 1}).status_code == 401
+    assert client.post("/api/config/bulk", json={"session_id": sid, "updates": {"timer/paused": True}}).status_code == 401
+    assert client.post("/api/player", json={"session_id": sid, "bw": "W", "player_type": "player:ai"}).status_code == 401
+    assert client.post("/api/player/swap", json={"session_id": sid}).status_code == 401
+    assert client.get("/api/config", params={"session_id": sid, "setting": "ai/ai:human"}).status_code == 401
 
 
 def test_a_claimed_session_still_refuses_a_different_account(client):
@@ -129,6 +137,10 @@ def test_a_claimed_session_still_refuses_a_different_account(client):
     try:
         assert client.get("/api/state", params={"session_id": sid}).status_code == 403
         assert client.post("/api/new-game", json={"session_id": sid}).status_code == 403
+        assert client.post("/api/player/swap", json={"session_id": sid}).status_code == 403
+        assert client.post(
+            "/api/config", json={"session_id": sid, "setting": "timer/main_time", "value": 1}
+        ).status_code == 403
     finally:
         client.app.dependency_overrides.pop(get_current_user_optional, None)
 
@@ -223,6 +235,9 @@ def test_an_unclaimed_session_is_never_handed_analysis(client):
     _seat_two_humans(client, sid)
     state = client.post("/api/move", json={"session_id": sid, "coords": [3, 3], "pass_move": False}).json()["state"]
 
+    # 服务端如实说出这一局交不交付分析 —— 前端靠它置灰那三个键，不靠自己推。
+    assert state["analysis_delivered"] is False
+
     fields = _analysis_bearing_fields(state)
     assert fields["analysis"] is None
     assert fields["commentary"] == ""
@@ -239,6 +254,7 @@ def test_a_claimed_session_still_gets_its_analysis(client):
     session = client.app.state.session_manager.create_session(user_id=7)
     assert session.katrain.deliver_analysis is True
     state = session.katrain.get_state()
+    assert state["analysis_delivered"] is True
     # 引擎在测试里是 NullEngine，不会真的算出胜率；能证明的是这些位置**没有被抹掉**：
     # `history` 每项都带 score/winrate 两个键，`stones` 每项都是四格。
     assert all("score" in h and "winrate" in h for h in state["history"])
@@ -292,3 +308,31 @@ def test_no_unauthenticated_endpoint_hands_out_an_unclaimed_session_id(client):
     # 正对照：这条端点确实在返回东西，不是空列表或挂了。
     assert multiplayer.session_id in listed
     assert guest_sid not in listed
+
+
+def test_get_config_refuses_keys_that_are_not_session_settings(client):
+    """`GET /api/config` 读的是**进程的整份 config**，不是「这个会话的设置」。
+
+    归属闸挡不住这一条：会话的主人本人问同样读得到 `server/database_url` 和
+    `contribute/password`。所以那里是白名单 —— 漏写一个黑名单条目 = 漏一个密钥，
+    漏写一个白名单条目 = 某个设置读不到（会被立刻发现）。
+    """
+
+    sid = _guest_session(client)  # 无人认领，归属闸放行；挡下来的只能是白名单
+    assert client.get("/api/config", params={"session_id": sid, "setting": "ai/ai:human"}).status_code == 200
+    for secret in ("server/database_url", "contribute/password", "contribute/username", "engine/command"):
+        r = client.get("/api/config", params={"session_id": sid, "setting": secret})
+        assert r.status_code == 403, f"{secret} -> {r.status_code} {r.text}"
+
+
+def test_guest_can_still_configure_its_own_session(client):
+    """反向：这四个端点对游客自己的匿名会话必须照常放行（游客开局链路要用它们）。"""
+
+    sid = _guest_session(client)
+    assert client.post(
+        "/api/config", json={"session_id": sid, "setting": "timer/main_time", "value": 1}
+    ).status_code == 200
+    assert client.post(
+        "/api/config/bulk", json={"session_id": sid, "updates": {"timer/paused": True}}
+    ).status_code == 200
+    assert client.post("/api/player/swap", json={"session_id": sid}).status_code == 200

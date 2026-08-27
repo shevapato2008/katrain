@@ -3164,3 +3164,9 @@ msgstr "你有一局升降級對弈還沒結算，先去「升降級對弈」把
 
 msgid "research:login_required"
 msgstr "全盤分析要用雲端引擎，需要登入後才能使用。擺棋和打譜不需要登入。"
+
+msgid "play:analysis_requires_login"
+msgstr "登入後可用"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "領地 / 支招 / 圖表 登入後可用"

@@ -3176,3 +3176,9 @@ msgid "research:login_required"
 msgstr ""
 "Полный анализ использует облачный движок и требует входа в аккаунт. Разбор и"
 " просмотр — нет."
+
+msgid "play:analysis_requires_login"
+msgstr "Доступно после входа"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "Территория / Подсказка / График доступны после входа"

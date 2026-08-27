@@ -10,7 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from katrain.web.api.v1.endpoints.auth import get_current_user_optional
+from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional
 from katrain.web.server import create_app
 
 
@@ -118,8 +118,12 @@ def test_a_claimed_session_still_refuses_a_credential_less_caller(client):
     assert client.post("/api/move", json={"session_id": sid, "coords": [3, 3], "pass_move": False}).status_code == 401
     assert client.post("/api/undo", json={"session_id": sid, "n_times": 1}).status_code == 401
     # 2026-08-27 补上鉴权的那四个：在此之前它们**完全不看调用者**，任何人拿到 session_id
-    # 就能改别人在跑的对局的配置和座位（session_id 也不用猜 ——
-    # `GET /api/v1/games/active/multiplayer` 至今不鉴权，返回的正是全部多人局的 id）。
+    # 就能改别人在跑的对局的配置和座位。
+    # ⚠️ 原注释在这里写着「session_id 也不用猜 —— `GET /api/v1/games/active/multiplayer`
+    # 至今不鉴权」。**那半句在本分支上已经不成立**（`349fe908` 给它挂了 `get_current_user`），
+    # 利用链的「怎么拿到 id」那一环已经封了。留着不改会让下一个人以为那个洞还开着，
+    # 从而误判这一条用例守的是什么。两格现在分别由
+    # `test_no_unauthenticated_endpoint_hands_out_an_unclaimed_session_id` 守。
     assert (
         client.post("/api/config", json={"session_id": sid, "setting": "timer/main_time", "value": 1}).status_code
         == 401
@@ -301,21 +305,39 @@ def test_guest_sgf_load_never_runs_a_whole_game_scan(client, monkeypatch):
 def test_no_unauthenticated_endpoint_hands_out_an_unclaimed_session_id(client):
     """「匿名会话的 id 不会漏给第三方」是放行无主会话的承重前提，钉在操作数这一侧。
 
-    `GET /api/v1/games/active/multiplayer` 至今不鉴权。它今天只列 `player_b_id is not None`
-    的局，所以匿名局不在其中 —— 但那是 `session.py` 里一句可以被改掉的过滤条件，
-    改掉的那天这条会红。
+    ⚠️ **原稿的 docstring 写着「`GET /api/v1/games/active/multiplayer` 至今不鉴权」，
+    那句话在这条分支上已经不成立**：`349fe908`（大厅三条边界）给它挂上了
+    `get_current_user`。两个提交从两个方向堵的是同一个洞 —— develop 这边是
+    「放行游客之后别把匿名 id 漏出去」，本分支那边是「这个吐 session_id 的端点
+    根本就不该裸奔」。合并之后**两格都要守**，少哪一格都会让另一条路重新打开：
+
+      ① 不带凭据 → 401。哪天有人把那个 `Depends` 摘掉，这一格红。
+      ② 带了凭据的**第三方**也只看得到有主的联机局。那道过滤
+         （`list_active_multiplayer_sessions` 只列 `player_b_id is not None`）是
+         `session.py` 里一句可以被改掉的条件，改掉的那天这一格红 —— 这正是原稿要守的。
+
+    ① 鉴权不能顶替 ②：登录门槛挡的是陌生人，挡不住一个**已登录**用户看见别人的匿名局。
     """
 
     guest_sid = _guest_session(client)
     manager = client.app.state.session_manager
     multiplayer = manager.create_multiplayer_session(player_b_id=1, player_w_id=2)
 
-    r = client.get("/api/v1/games/active/multiplayer")
-    assert r.status_code == 200, r.text
-    listed = {row["session_id"] for row in r.json()}
-    # 正对照：这条端点确实在返回东西，不是空列表或挂了。
-    assert multiplayer.session_id in listed
-    assert guest_sid not in listed
+    # ① 裸奔那一格
+    assert client.get("/api/v1/games/active/multiplayer").status_code == 401
+
+    # ② 过滤那一格：换一个**不是这局参与者**的登录用户来问
+    stranger = types.SimpleNamespace(id=999, username="stranger", uuid="u-999")
+    client.app.dependency_overrides[get_current_user] = lambda: stranger
+    try:
+        r = client.get("/api/v1/games/active/multiplayer")
+        assert r.status_code == 200, r.text
+        listed = {row["session_id"] for row in r.json()}
+        # 正对照：这条端点确实在返回东西，不是空列表或挂了。
+        assert multiplayer.session_id in listed
+        assert guest_sid not in listed
+    finally:
+        client.app.dependency_overrides.pop(get_current_user, None)
 
 
 def test_get_config_refuses_keys_that_are_not_session_settings(client):

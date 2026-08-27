@@ -106,10 +106,181 @@
 
 # 四、还没查清、但会改变结论的
 
-1. **「围棋保留自有后端(D1)」是不是 Fan 拍的板。** 仓里唯一出处是那份 design spec 表头的自称(`docs/superpowers/specs/2026-08-18-multichess-lobby-design.md:24`),而同一份文档第 3 行状态还是「待 Fan 复核」,没有第二处独立记录。若这条不是裁定,路线 B 的前提就松动。→ 查:Fan 自己的记录 / 那份 spec 的 review 回执。
+1. ~~**「围棋保留自有后端(D1)」是不是 Fan 拍的板。**~~ **2026-08-27 已查清:是。见下面「五、复审」①。我当时的依据本身是错的** —— 那份 spec 第 3 行的「待 Fan 复核」是**起草时的流程,不是状态**,而 `:22` 的 `## 1. 已定决策(2026-08-17/18,Fan 拍板)` 才是。**同一份文档里一行流程和一行状态并排,我读了流程那行。** 国象 track 已把表头改掉,并把「它骗过谁」写进文件。
 2. **`LOBBY_ORIGIN` 的实际值** —— 国象在线大厅今天连的是哪台云端机器。那个值来自设备上的 `/etc/smartbox/cloud-endpoints.env`,两个仓里都没有(`chess/ui/src/shell/boxUrls.ts:19`)。→ 查:板上 `cat /etc/smartbox/cloud-endpoints.env`。
 3. **盒上数子到底会不会 400,我没有真跑过。** 推理链每一环的代码都读到了(`KATRAIN_MODE=board`,`smartbox-katrain.service:14` → `suppress_auto_eval`,`interface.py:157` → `score is None` → 400,`server.py:1841`),但没有发过一次 `/api/count/request`。这条决定路线 A/C 里「数子」要补多大一块。→ 查:本地起 board 模式下一局到双 pass。
-4. **`/kiosk/play/pvp/lobby` 这张卡在盒上今天是不是可见的。** 路由无条件注册(`KioskApp.tsx:105`)、入口卡不 disabled(`PlayPage.tsx:128`),但盒上 lobby 是 placeholder(`server.py:444-447`)⇒ 用户点进去会看到一个永远只有自己的大厅。是否已在盒上暴露,我没上板确认。→ 查:板上打开那一页,或 kiosk build 里有无开关把它藏起来。
+4. ~~**`/kiosk/play/pvp/lobby` 这张卡在盒上今天是不是可见的。**~~ **2026-08-27 部分查清,而且我写在这条里的前提是错的:「盒上 lobby 是 placeholder」不成立。** 见下面「五、复审」②。那个词来自 `server.py:444` 一行注释,而它下面构造的是**和 server 模式逐字相同的真 `LobbyManager()`/`Matchmaker()`**;`/ws/lobby` 无条件注册。**剩下没查清的只有「板上那张卡视觉上可不可见」,要上板。**
 5. **云端 katrain(go.sailorvoyage.top)现在是不是 server 模式、逐手分析是不是真开着。** 路线 B 的「数子不会 400」建在这上面,我只读到代码分支(`interface.py:157`),没读那台机器的部署配置。→ 查:那台机 katrain-web 容器的 `KATRAIN_MODE` 与 engine 配置。
 6. **共享 lobby 云端主机能不能访问某个 KataGo。** 两个仓里都没有任何「lobby → katago」的地址或凭据 —— 这是部署事实,源码里本来也不该有。只在「围棋接共享大厅」这条被重新提上来时才需要。→ 查:那台机器的 compose / 防火墙。
 7. **象棋/五子棋大厅的排期与阻塞点。** `docs/superpowers/plans/2026-08-18-multichess-lobby.md` 存在,我只读到零星几行,没通读任务清单。若那份计划已排了「四家统一」的路径,围棋选型应与之对齐而不是另起。→ 查:通读那份 plan 的任务清单。
+---
+
+# 五、复审(2026-08-27,与国象 track 跨 session 对证)
+
+Fan 让我找国象那个 session(`smartbox-software-chess-features`,worktree
+`/Users/fan/Repositories/smartbox-software-chess-features`,分支 `feat/chess-features-2026-07-16`)
+核实「瘦客户端 = 实体盘不可用」是否属实,并商定根本改法。往返六轮,双方各自回源核对方引的每一处。
+**代码只动了一行注释(`server.py:444`),其余全部等 Fan。**
+
+## ① 这不是新发现,是一个**已登记的待触发决策**,而触发条件今天到了
+
+`smartbox-software/docs/superpowers/plans/2026-08-18-multichess-lobby.md:1492`(在
+「## 复审触发器」标题下,独立一节)逐字:
+
+> **实体盘联机一旦立项,D8 必须重审,大概率要转「盒 API 持上行 WS」那条路。** 传感盘接在盒子上,
+> 而 D8 的房间屏在云端 origin,**读不到它**;而 kiosk-shell 规范明确要「用实体盘下在线对战」。
+> 本轮不触发(只做自由对局,国象传感板尚未落地)。
+
+Fan 2026-08-27 原话取消了那个免触发条件:「国际象棋、中国象棋……**后续也是会设计完成实体棋盘的**,
+**远程对战大厅进行人人对弈是我们的核心卖点**」。
+
+**决策归属(核过,不是推的):** `docs/superpowers/specs/2026-08-18-multichess-lobby-design.md:22`
+的 `## 1. 已定决策(2026-08-17/18,Fan 拍板)` 下面,D6 = 「本 session 兼国象 track」,
+`:5` = 「总协调:本 session」⇒ **大厅总协调是国象那个 session,Fan 八月拍过。**
+而 **D8 标的是「P3 已裁」,和 D7/D9 一样是那条 track 在评审轮次里自裁的,不在 Fan 拍的 D1–D6 里**
+⇒ **D8 的复审是它的活,不是 Fan 的。** 我一度准备把「无人认领」报给 Fan,那是把已定的事又摆回去,撤回。
+
+## ② 「取样把会坏的那个东西排除掉了」—— 本轮最值钱的一条
+
+`superpowers/shared/lobby-consensus.md` v2(2026-07-17)§3「盒=瘦客户端」+ §5「中央服务端权威」
+是**四家基线**(围棋在适用范围内)。**该文件全文 6239 字节,`实体盘|传感盘|摄像头|LED|相机|physical`
+零命中**(双方各自 grep 过)。而 §3 写明它的依据是:
+
+> 「**围棋已这样部署**(`KATRAIN_MODE=server`;**盒上 `board` 模式大厅是 placeholder 不启用,
+> 别拿它判断跨盒能力**)」
+
+⇒ **当时拿来当范本的那份部署恰好没有实体盘;唯一有实体盘的那种部署被这句话明确排除在证据之外。**
+三棋当时也都没有实体盘。**不是谁疏忽,是取样把冲突排除掉了。**
+
+**而那句话今天连事实都不成立**(我核,国象复核):
+
+| | 依据 |
+|---|---|
+| `/ws/lobby` 无条件注册 | `server.py:2353`(`@432aad7c` 上是 `:2345`)。全文件 `KATRAIN_MODE` 仅 5 处,无一在附近 |
+| kiosk 大厅是真的 | `LobbyPage.tsx` 连 `/ws/lobby`、发 `start_matchmaking`、收 `match_found`。**`@432aad7c` 的 349 行版本就已经如此**,不依赖本分支的 103 个本地提交 |
+| 编排器不挑 session 类型 | `server.py:562` `if app.state.vision is not None:` → `:569` 传**整个** `session_manager` |
+
+🔴 **那个词的出处已经找到,并已就地修正**:`server.py:444` 原注释写着
+「Lobby/matchmaker placeholders (not used in board mode…)」,**而它下面构造的是和 server 模式
+(`:239`)逐字相同的真 `LobbyManager()`/`Matchmaker()`**(同一个类,`session.py:285/334`)。
+board 模式真正独有的只有下一行 `game_repo = None`。**一行不实的注释被四家基线当成证据引用过。**
+
+⇒ **推论:LED 那个缺陷今天在盒上就能触发** —— 有相机 + 大厅撮合成功 ⇒ 编排器照常驱动 ⇒ 引导集合空。
+不需要跨盒,不需要云端。
+
+## ③ 三条路线的裁决:我原来的 A 案早被否过,E′ 也绕不开它被否的那条
+
+D8 当初评过四种形状。**D(盒 API 持上行 WS)就是本文的路线 A**,被否,四条理由里两条成立:
+
+- ③ 盒 API 持 socket ⇒ **盒 API 重启(部署/OOM)= 云端认为两人同时离席**
+- ④ 五方互斥下,大厅屏由 game 服务托管要占掉一个互斥槽,`launcher.html` 首页直连大厅那个零冷启动
+  入口在 D 之下不可能存在
+
+否 A(跨源直连)的理由也成立:`COOKIE_SAMESITE` 是**全局旋钮**,同一枚 cookie 供大厅 + 四棋类升降级 +
+账号操作 ⇒ 为一块屏改 `none` = 给整台主机的账号/结算面重新引入 CSRF;且**全仓零 CORS 中间件**。
+
+我提的 **E′**(大厅屏留云端,只有房间屏按有没有实体盘二选一)**绕开了 ④,但绕不开 ③**,理由是他们
+契约自己写的:**WebSocket 握手不走 CORS,浏览器会把 cookie 原样带给任意第三方页面发起的 ws 连接,
+唯一的防线就是 `SameSite=lax`** ⇒ 盒源页面对大厅是第三方页面 ⇒ **浏览器根本不发那枚 cookie**。
+Origin 白名单只管服务端肯不肯采信。生产两条旋钮都关着:
+`platform-app/deploy/deploy-ranked.sh:141` `LOBBY_COOKIE_SAMESITE=lax` / `:142`
+`LOBBY_ALLOW_TOKEN_AUTH=0`,且 `DEPLOY-NOTES.md:156` 的 `assert_production_secrets()` 硬拒后者。
+
+**⇒ 盒源房间屏的实时通道只能由盒上一个持凭据的进程代持。E′ 只能把 ③ 从「全程」收窄到「一局之内」。**
+
+## ④ ③ 的解法是现成的,而且判据在围棋自己的代码里
+
+`katrain/web/session.py:117-142` `ai_ladder_liveness_targets()`(升降级链,已过生产)逐字:
+
+> liveness is reported by **the server that owns the session, not by the browser**: a closed tab
+> does not mean the game is gone, and **the device the cloud is judging is the box, not the page**.
+
+云端问的不是「socket 在不在」,是「这台盒子最近有没有安静下来」,配 takeover 规则。**最容易错的绑定点
+也写死了:心跳绑 `game_ended`,故意不绑结算态** —— 绑错的后果原文写着(被拒结算的盒子会一直上报一局
+没人在下的棋,reservation 永远 `active`,**账号在名下每台设备上被锁死在升降级之外**)。
+
+这正是 Fan 2026-08-11 对四棋类 ranked 拍的 (d)「心跳绑本机这局还在下」。**不是新设计,是把已拍的口径
+补到第四个地方。** 国象已采纳,并已指出它搬进大厅的对应物是 `not sess.game.is_over`,**不是**「存谱落地」
+(`reaper.py` 的 `finalize_pending` 重试挂起时 session 还活着,绑存谱等于逐字重演围棋踩过的坑)。
+
+## ⑤ 一条更便宜的:房间屏走轮询,③ 从结构上消失
+
+盒上根本不建长连接 ⇒ 没有「盒进程重启 = 双方离席」。代价只有着法到达延迟。
+
+**我一度说「围棋读秒吃不下轮询」,撤回,而且方向反了:** `clock_update` 在围棋**只从跨平台适配器来**
+(`platforms/ogs/adapter.py:447`、`kgs/adapter.py:259` → `manager.py:336`),**围棋自己的大厅局今天
+没有棋钟**,四家计划本轮也不做棋钟。围棋的 `timer/main_time` 只在升降级和 newgame 路径上用 ——
+而升降级恰恰跑在④那条盒进程持心跳的链上,带钟,已过生产。⇒ **四家没有一家因为钟而否掉轮询**,
+轮询从备选升为默认候选。
+
+## ⑥ LED 缺陷:修法要重写,而且它拆成两件
+
+缺陷本身复核无误:`physical_play_orchestrator.py:414-434` 的引导集合 =
+`{player_type == "player:ai"} ∪ {platform_engine_color}`,而 `session.py:103,105` 把多人局两边都写
+`player_type="human"` ⇒ 集合空。
+
+🔴 **我原来提的「加第三种情况」是错的。** 三次同形(AI / 星阵远端引擎 / 跨盒远端真人)说明**谓词本身
+是代理**,不是少一格。docstring 括号里已经把正确谓词写出来了:*vision observing them IS the move
+source* ⇒ 判据是「**这一色的子由不由本机视觉产生**」。国象补的证据更强一档:
+`platforms/manager.py:180-181` 的注释自己写着该字段的意图是
+「which side is **not physically playable by the human**」—— **意图从第一天起就是正确谓词,
+名字和取值却是关于引擎的。** 它不是先例,是一个在那个场景里碰巧等价的代理。
+
+🔴 **但国象据此裁「现在修,不等 Fan」,理由是「不需要新设计」,这条被我驳回并由他撤回:** 正确谓词需要
+一位**今天不存在**的状态。我核过 `interface.py:520-600` 的 `get_state()`:
+`local|present|seat|at_board|this_box|device` **零命中**(正对照:`platform_engine_color` 命中 `:569`);
+`my_color` 只活在 `platforms/`。而**谁来写这一位取决于架构**。
+
+**⇒ 拆两件(国象把理由说得比我准,原话收下):**
+
+> 「哪一色在本机」= 云端持的 `(game, color→user)` ⋈ 盒端持的 `(本机登录的是谁)`。
+> **盒上多人局是唯一一种盒子两半都齐的情形**;跨盒时盒子缺前一半,**而那一半怎么拿到,就是 D8**。
+
+1. **现在能做(与 D8 无关)**:盒上多人局 —— 本机登录的用户坐在盘前 ⇒ 引导另一色。**要盒上实机验收
+   (LED 真亮才算数)。** 落地时带一条守卫:**断言「两边都是 human 的多人局」引导集合非空**,
+   否则下次改动会把它静默变回空集,**而空集和「本来就不需要引导」在测试里长得一样**。
+2. **必须等 D8**:跨盒时这一位由谁下发、房间屏在哪个源上拿到它。
+
+## ⑦ 数子:围棋独有,而且 D9 那条闸转不过来
+
+D9 给三棋的可微分闸(adapter 的终局判定必须与盒端 `xiangqi.js` 对同一串局面同结论)守的是
+「两个不同实现不许分家」。围棋两端是**同一个实现**(KataGo)⇒ 同形的闸只能守「同一二进制在两台机器上
+同分」,**那是在守权重/版本一致性,不是规则一致性,挡的事故整个换了一类。**
+
+**而且比那还弱一档(我提,国象采纳):KataGo 的分是搜索出来的,同权重同版本跨机器也不保证逐位相同**
+(访问数、线程调度、批处理都进结果)⇒ 「两台盒同权重同版本」是必要条件,**推不出同分**。
+
+⇒ **围棋能建的闸只有「协议走完没走完」**(`count_request`/`count_rejected`/`count_timeout` 三件套),
+不能建在「两个数相等」上。**建在相等上的闸会间歇红,然后长出白名单。**
+
+## ⑧ 跨 session 对证本身的两条
+
+- **两棵树。** 我的 `feature/kiosk-go-shell-align` HEAD `fd84f286` 领先 `origin/develop`(`14f58d43`)
+  **103 个提交,全部本地未推**。国象 pin 在 `vendor/katrain` gitlink `432aad7c`(是 develop 的父)。
+  ⇒ 我引的五条事实里**四条两棵树一致**(行号差 8),唯一分家的 `LobbyPage.tsx`(349 vs 553)**不承重**。
+  **判据:「有一条对不上」不等于「整封作废」,要逐条问「这一条依赖那个差异吗」。**
+  推分支不在本 session 授权内(常驻约束:只在被要求时提交、绝不 push),已报 Fan;国象同样不 bump
+  gitlink(四条 track 共用)。**双方约定:凡引 katrain 事实一律标 SHA。**
+- **国象 pin 的那个提交,下一个就是推翻它的更正**(`14f58d43 docs(spec): 更正 —— KataGo 侧早就实现了,
+  缺的是部署`)。判据原文:「**我查的这个位置,是这类事实该待的地方吗**」—— 实现在不在只有源码说了算,
+  一个旧镜像的响应只能证明**那个镜像**没有。已告知,其复审未引用受影响的那句。
+
+## 需要 Fan 拍的(只剩两条 + 三件排期)
+
+1. **要不要花 `SameSite=none` 那笔预算** —— 唯一「技术可行但代价是整台主机账号/结算面重新引入 CSRF」
+   的取舍。双方都不替他判。
+2. **`lobby-consensus.md §3` 改不改** —— 四家基线,且被设计稿 `:6` 标为「本文取代其冲突部分」。
+   四家基线的修订不该由三棋的总协调单方面做。**新增理由:它引以为据的那句已经不是事实。**
+3. **盒上时间(三件一次排完)**:LED 引导修完的实机验收 · 盒端重启到第一个心跳的**分布**
+   (冷启/热重启各三次,报中位与最大;**并报云端那一侧同期看到的状态**——只量盒子这头,宽限窗够不够
+   仍是推的)· PNA 那条盒上的一半。
+4. **批不批 push 本分支**(国象核不动我引的行号;不批就继续标 SHA,不阻塞)。
+
+**PNA 实测的取数顺序已钉死(先写死再取数):**
+① **留痕对照** —— 盒上同源页面 fetch 那个端点,access log **必须**出现一条;**没出现就停**,
+后面全部作废。② 盒上 kiosk chromium 打开公网大厅页,从那一页 fetch 同一端点,**同一次往返**,
+判据是 access log 那条的 `Referer` 是 `https://lobby.…`。③ 三种结果各自的读法(通了 / 有 `OPTIONS`
+无正式请求 = PNA 拒 / 什么都没有 = 浏览器没发)。④ 附 chromium `--version`。
+
+⚠️ **这条实测的价值不对称,报的时候必须带上这句**:**失败 ⇒ D8 必须改,分支当场关闭;
+成功 ⇒ 什么都没证明**(权威还在云端、云端→盒上 LED 的反向通道照样不存在)。**它是必要不充分。**

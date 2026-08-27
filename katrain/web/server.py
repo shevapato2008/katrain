@@ -441,10 +441,20 @@ async def _lifespan_board(app: FastAPI, log):
 
     app.state.router = build_router(settings.LOCAL_KATAGO_URL, settings.CLOUD_KATAGO_URL)
 
-    # Lobby/matchmaker placeholders (not used in board mode but needed by endpoints)
+    # NOT placeholders -- these are the same real LobbyManager/Matchmaker the server mode
+    # builds above, and the box's lobby is LIVE: /ws/lobby is registered unconditionally
+    # (no KATRAIN_MODE branch guards it), the kiosk LobbyPage really connects to it, and a
+    # match here really calls create_multiplayer_session. The word "placeholder" used to sit
+    # on this line and it did damage: it was cited (as "server.py:353") in the four-game
+    # shared baseline `smartbox-software/superpowers/shared/lobby-consensus.md:23` to rule
+    # board mode out as evidence -- which is how "box = thin client" got settled on a survey
+    # where the only deployment that owns a physical board was excluded. Say what is true.
+    #
+    # What IS board-specific is the line below: with no game_repo, a multiplayer result is
+    # never recorded on a box.
     app.state.lobby_manager = LobbyManager()
     app.state.matchmaker = Matchmaker()
-    app.state.game_repo = None  # Multiplayer game_repo not used in board mode
+    app.state.game_repo = None  # Multiplayer results are not recorded in board mode
 
     manager = app.state.session_manager
     try:

@@ -68,6 +68,11 @@ class SessionManager:
             # Use provided UUID for KataGo requests if available, otherwise session_id
             engine_user_id = katago_uuid or session_id
             katrain = WebKaTrain(force_package_config=False, enable_engine=self.enable_engine, user_id=engine_user_id)
+            # 无人认领的会话不交付分析结果（理由见 `WebKaTrain.get_state` 的 docstring）。
+            # 注意不能用 `engine_user_id` 判 —— 它对匿名会话退化成 session_id，永远为真。
+            # 跨平台局（`create_multiplayer_session` 里 player id 为 -1）随后会把它设回 True：
+            # 那种局是**有主人**的，只是主人不是本站账号。
+            katrain.deliver_analysis = user_id is not None
             session = WebSession(session_id=session_id, katrain=katrain, user_id=user_id)
             self._sessions[session_id] = session
 
@@ -97,6 +102,9 @@ class SessionManager:
         session = self.create_session(user_id=primary_user_id, skip_initial_analysis=skip_initial_analysis)
         session.player_b_id = player_b_id
         session.player_w_id = player_w_id
+        # 多人局有主人（哪怕两边都是 -1 的跨平台局），照常交付分析。`create_session` 只看得见
+        # `user_id`，而座位是在它返回之后才填的，所以这里要补一次。
+        session.katrain.deliver_analysis = True
 
         # Set player names in KaTrain
         if b_name:

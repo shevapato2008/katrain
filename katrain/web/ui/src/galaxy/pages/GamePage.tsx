@@ -432,6 +432,10 @@ const GamePage = () => {
             onNavigate={onNavigate}
             onAction={handleActionWrapper}
             isRated={isRated}
+            /* 判据取**服务端说的那一句**（`get_state` 的 `analysis_delivered`），不是本地的
+               `isAuthenticated`：决定交不交付的是「这个会话有没有主人」，而一个登录用户
+               照样可能打开一个无主会话（拿到了游客的链接）。客户端自己推，两边就会不一致。 */
+            analysisRequiresLogin={gameState.analysis_delivered === false}
             onTimeout={handleTimeout}
             onPlaySound={handlePlaySound}
             isAnalysisPending={analysisToggles.hints && !gameState.analysis?.moves?.length}

@@ -793,8 +793,12 @@ async def test_free_session_canonical_mutations_remain_available(api_app, client
     session.katrain.game_type = "free"
     async with client as ac:
         responses = (
+            # 这两条 2026-08-27 之前不带 headers —— 那时这两个端点**完全不鉴权**。
+            # 现在它们和同组其余三条一样要求「这局是你的」，所以照同一份身份带上。
+            # 本条用例问的是「自由局的这几个动作有没有被升降级那道闸挡掉」，与身份无关。
             await ac.post(
                 "/api/player",
+                headers=api_app.state._test_headers,
                 json={
                     "session_id": session.session_id,
                     "bw": "W",
@@ -804,6 +808,7 @@ async def test_free_session_canonical_mutations_remain_available(api_app, client
             ),
             await ac.post(
                 "/api/config",
+                headers=api_app.state._test_headers,
                 json={"session_id": session.session_id, "setting": "timer/main_time", "value": 10},
             ),
             await ac.post(

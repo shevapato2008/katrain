@@ -235,4 +235,38 @@ describe('ResearchPage', () => {
     await waitFor(() => expect(screen.getByTestId('mock-live-board')).toHaveAttribute('data-moves', '2'));
     expect(API.analysisScan).not.toHaveBeenCalled();
   });
+
+  // 未登录点「开始研究」——全盘分析要登录（`/api/analysis/scan` 与 `/progress` 都是
+  // 必需的 `get_current_user`）。闸必须在**进 L2 之前**：一旦进去，屏上会是「正在分析
+  // 棋局」加一个永远不会成功的「重试」，而且还会在服务端留下一个白建的会话壳。
+  it('未登录点开始研究：说需要登录，且一个会话壳都不建', async () => {
+    (useAuth as Mock).mockReturnValue({ isAuthenticated: false, isLoading: false, token: null });
+
+    renderPage();
+    fireEvent.click(screen.getByTestId('mock-start-analysis'));
+
+    expect(await screen.findByTestId('login-required-message')).toHaveTextContent('全盘分析');
+    expect(createSession).not.toHaveBeenCalled();
+    expect(API.analysisScan).not.toHaveBeenCalled();
+  });
+
+  it('/me 探针还没回来时不误挡：不弹「需要登录」', async () => {
+    (useAuth as Mock).mockReturnValue({ isAuthenticated: false, isLoading: true, token: null });
+
+    renderPage();
+    fireEvent.click(screen.getByTestId('mock-start-analysis'));
+
+    await waitFor(() => expect(createSession).toHaveBeenCalled());
+    expect(screen.queryByTestId('login-required-message')).not.toBeInTheDocument();
+  });
+
+  it('已登录照常进 L2', async () => {
+    (useAuth as Mock).mockReturnValue({ isAuthenticated: true, isLoading: false, token: 'tok' });
+
+    renderPage();
+    fireEvent.click(screen.getByTestId('mock-start-analysis'));
+
+    await waitFor(() => expect(createSession).toHaveBeenCalled());
+    expect(screen.queryByTestId('login-required-message')).not.toBeInTheDocument();
+  });
 });

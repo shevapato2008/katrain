@@ -3224,3 +3224,42 @@ msgstr "Усі рівні · {count}"
 
 msgid "tsumego:your_level"
 msgstr "ваш рівень"
+
+msgid "auth:login_required_title"
+msgstr "Потрібен вхід"
+
+msgid "auth:login_required_generic"
+msgstr "Ця функція доступна лише після входу в акаунт."
+
+msgid "auth:go_login"
+msgstr "Увійти"
+
+msgid "ladder:login_required"
+msgstr "Рейтингові партії змінюють ваш ранг, тому потрібен вхід в акаунт."
+
+msgid "play:login_required_free"
+msgstr ""
+"Щоб почати партію, потрібно увійти в акаунт. Увійдіть і спробуйте ще раз."
+
+msgid "play:guest_free_notice"
+msgstr ""
+"Ви граєте як гість: цю партію не буде збережено, і вона не впливає на ранг. "
+"Увійдіть, щоб зберігати партії."
+
+msgid "play:go_free_play"
+msgstr "Зіграти вільну партію"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr ""
+"У вас є незавершена рейтингова партія. Завершіть її перед початком нової."
+
+msgid "research:login_required"
+msgstr ""
+"Повний аналіз використовує хмарний рушій і потребує входу. Розбір і перегляд"
+" — ні."
+
+msgid "play:analysis_requires_login"
+msgstr "Доступно після входу"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "Територія / Підказка / Графік доступні після входу"

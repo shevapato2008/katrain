@@ -3155,3 +3155,36 @@ msgstr "全難易度 · {count} 段階"
 
 msgid "tsumego:your_level"
 msgstr "あなたの棋力"
+
+msgid "auth:login_required_title"
+msgstr "ログインが必要"
+
+msgid "auth:login_required_generic"
+msgstr "この機能を使うにはログインが必要です。"
+
+msgid "auth:go_login"
+msgstr "ログインする"
+
+msgid "ladder:login_required"
+msgstr "昇降級対局は段位を記録するため、ログインが必要です。"
+
+msgid "play:login_required_free"
+msgstr "対局を始めるにはログインが必要です。ログインしてからお試しください。"
+
+msgid "play:guest_free_notice"
+msgstr "ゲストとして対局中です：この対局は棋譜に保存されず、段位にも反映されません。ログインすると保存できます。"
+
+msgid "play:go_free_play"
+msgstr "まずは自由対局へ"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr "未清算の昇降級対局があります。先に「昇降級対局」で処理してから新しい対局を始めてください。"
+
+msgid "research:login_required"
+msgstr "全局解析はクラウドエンジンを使うためログインが必要です。並べる・再生するだけならログイン不要です。"
+
+msgid "play:analysis_requires_login"
+msgstr "ログイン後に利用できます"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "地合い / ヒント / グラフ はログイン後に利用できます"

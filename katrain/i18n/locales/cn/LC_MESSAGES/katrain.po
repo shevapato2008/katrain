@@ -2992,3 +2992,36 @@ msgstr "全部难度 · {count} 档"
 
 msgid "tsumego:your_level"
 msgstr "你的水平"
+
+msgid "auth:login_required_title"
+msgstr "需要登录"
+
+msgid "auth:login_required_generic"
+msgstr "该功能需要登录后使用。"
+
+msgid "auth:go_login"
+msgstr "去登录"
+
+msgid "ladder:login_required"
+msgstr "升降级对弈会记录段位，需要登录后才能开始。"
+
+msgid "play:login_required_free"
+msgstr "开始对局需要登录，请先登录后再试。"
+
+msgid "play:guest_free_notice"
+msgstr "你正在以游客身份对弈：本局不会保存到棋谱库，也不计入段位。登录后可保存对局。"
+
+msgid "play:go_free_play"
+msgstr "先去自由对弈"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr "你有一局升降级对弈还没结算，先去「升降级对弈」把它处理掉再开新局。"
+
+msgid "research:login_required"
+msgstr "全盘分析要用云端引擎，需要登录后才能使用。摆棋和打谱不需要登录。"
+
+msgid "play:analysis_requires_login"
+msgstr "登录后可用"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "领地 / 支招 / 图表 登录后可用"

@@ -3223,3 +3223,44 @@ msgstr "Alle Stufen · {count}"
 
 msgid "tsumego:your_level"
 msgstr "dein Niveau"
+
+msgid "auth:login_required_title"
+msgstr "Anmeldung erforderlich"
+
+msgid "auth:login_required_generic"
+msgstr "Diese Funktion erfordert ein angemeldetes Konto."
+
+msgid "auth:go_login"
+msgstr "Anmelden"
+
+msgid "ladder:login_required"
+msgstr ""
+"Wertungspartien verändern deinen Rang und erfordern daher ein angemeldetes "
+"Konto."
+
+msgid "play:login_required_free"
+msgstr ""
+"Zum Starten dieser Partie ist eine Anmeldung nötig. Bitte melde dich an."
+
+msgid "play:guest_free_notice"
+msgstr ""
+"Du spielst als Gast: Diese Partie wird nicht gespeichert und zählt nicht für"
+" deinen Rang. Melde dich an, um Partien zu behalten."
+
+msgid "play:go_free_play"
+msgstr "Stattdessen frei spielen"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr ""
+"Du hast eine nicht abgerechnete Wertungspartie. Schließe sie zuerst ab."
+
+msgid "research:login_required"
+msgstr ""
+"Die Gesamtanalyse läuft auf der Cloud-Engine und erfordert eine Anmeldung. "
+"Bearbeiten und Abspielen nicht."
+
+msgid "play:analysis_requires_login"
+msgstr "Nach Anmeldung verfügbar"
+
+msgid "play:analysis_requires_login_hint"
+msgstr "Gebiet / Rat / Verlauf sind nach der Anmeldung verfügbar"

@@ -143,8 +143,16 @@ def guard_ai_ladder_ranked_session(session, action: str) -> None:
 
 
 def guard_user_has_no_pending_ranked_game(app, current_user, action: str) -> None:
-    """Block sessionless/live analysis while this user has an unsettled ranked game."""
+    """Block sessionless/live analysis while this user has an unsettled ranked game.
 
+    没有账号就没有可查的账本：升降级对局是发给某个 `user_id` 的，游客不可能有一局未结算的
+    升降级棋。所以 `current_user is None` 在这里是「无可阻挡」而不是「拒绝」—— 早退，
+    别去解 `None.id`（那会把未登录自由对弈从明确的 401 变成 500）。
+    真正决定游客能不能用这个会话的是 `guard_session_reader`，不是这一条。
+    """
+
+    if current_user is None:
+        return
     repo = getattr(app.state, "ai_ladder_repo", None)
     if repo is not None and repo.get_pending_game(current_user.id) is not None:
         raise HTTPException(status_code=403, detail=f"{action} is unavailable during a ranked AI game")

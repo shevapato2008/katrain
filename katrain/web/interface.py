@@ -600,7 +600,9 @@ class WebKaTrain(KaTrainBase):
             state["commentary"] = ""
             state["history"] = [{**h, "score": None, "winrate": None} for h in state["history"]]
             # `stones` 每项是 [player, coords, score_loss, move_number]，第三格是逐手失分。
-            state["stones"] = [[player, coords, None, move_number] for player, coords, _, move_number in state["stones"]]
+            state["stones"] = [
+                [player, coords, None, move_number] for player, coords, _, move_number in state["stones"]
+            ]
         return state
 
     def _do_new_game(

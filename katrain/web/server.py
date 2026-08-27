@@ -1302,7 +1302,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         return {"session_id": session.session_id, "state": state}
 
     @app.post("/api/config/bulk")
-    def update_config_bulk(request: ConfigBulkUpdateRequest, current_user: User | None = Depends(get_current_user_optional)):
+    def update_config_bulk(
+        request: ConfigBulkUpdateRequest, current_user: User | None = Depends(get_current_user_optional)
+    ):
         session = _get_session_or_404(manager, request.session_id)
         guard_ai_ladder_ranked_session(session, "update-config-bulk")
         guard_session_reader(session, current_user, "update config")

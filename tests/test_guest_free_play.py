@@ -120,9 +120,16 @@ def test_a_claimed_session_still_refuses_a_credential_less_caller(client):
     # 2026-08-27 补上鉴权的那四个：在此之前它们**完全不看调用者**，任何人拿到 session_id
     # 就能改别人在跑的对局的配置和座位（session_id 也不用猜 ——
     # `GET /api/v1/games/active/multiplayer` 至今不鉴权，返回的正是全部多人局的 id）。
-    assert client.post("/api/config", json={"session_id": sid, "setting": "timer/main_time", "value": 1}).status_code == 401
-    assert client.post("/api/config/bulk", json={"session_id": sid, "updates": {"timer/paused": True}}).status_code == 401
-    assert client.post("/api/player", json={"session_id": sid, "bw": "W", "player_type": "player:ai"}).status_code == 401
+    assert (
+        client.post("/api/config", json={"session_id": sid, "setting": "timer/main_time", "value": 1}).status_code
+        == 401
+    )
+    assert (
+        client.post("/api/config/bulk", json={"session_id": sid, "updates": {"timer/paused": True}}).status_code == 401
+    )
+    assert (
+        client.post("/api/player", json={"session_id": sid, "bw": "W", "player_type": "player:ai"}).status_code == 401
+    )
     assert client.post("/api/player/swap", json={"session_id": sid}).status_code == 401
     assert client.get("/api/config", params={"session_id": sid, "setting": "ai/ai:human"}).status_code == 401
 
@@ -138,9 +145,10 @@ def test_a_claimed_session_still_refuses_a_different_account(client):
         assert client.get("/api/state", params={"session_id": sid}).status_code == 403
         assert client.post("/api/new-game", json={"session_id": sid}).status_code == 403
         assert client.post("/api/player/swap", json={"session_id": sid}).status_code == 403
-        assert client.post(
-            "/api/config", json={"session_id": sid, "setting": "timer/main_time", "value": 1}
-        ).status_code == 403
+        assert (
+            client.post("/api/config", json={"session_id": sid, "setting": "timer/main_time", "value": 1}).status_code
+            == 403
+        )
     finally:
         client.app.dependency_overrides.pop(get_current_user_optional, None)
 
@@ -329,10 +337,11 @@ def test_guest_can_still_configure_its_own_session(client):
     """反向：这四个端点对游客自己的匿名会话必须照常放行（游客开局链路要用它们）。"""
 
     sid = _guest_session(client)
-    assert client.post(
-        "/api/config", json={"session_id": sid, "setting": "timer/main_time", "value": 1}
-    ).status_code == 200
-    assert client.post(
-        "/api/config/bulk", json={"session_id": sid, "updates": {"timer/paused": True}}
-    ).status_code == 200
+    assert (
+        client.post("/api/config", json={"session_id": sid, "setting": "timer/main_time", "value": 1}).status_code
+        == 200
+    )
+    assert (
+        client.post("/api/config/bulk", json={"session_id": sid, "updates": {"timer/paused": True}}).status_code == 200
+    )
     assert client.post("/api/player/swap", json={"session_id": sid}).status_code == 200

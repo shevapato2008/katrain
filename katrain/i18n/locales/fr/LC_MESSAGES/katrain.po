@@ -3219,3 +3219,13 @@ msgstr ""
 
 msgid "play:go_free_play"
 msgstr "Jouer une partie libre"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr ""
+"Vous avez une partie classée non réglée. Terminez-la avant d'en commencer "
+"une autre."
+
+msgid "research:login_required"
+msgstr ""
+"L'analyse complète utilise le moteur cloud et nécessite une connexion. "
+"L'édition et la relecture non."

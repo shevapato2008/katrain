@@ -296,15 +296,26 @@ const AiSetupPage = () => {
             // Navigate to game page immediately - AI moves will be handled by the game page via WebSocket
             navigate(`/galaxy/play/game/${session.session_id}?mode=${mode}`);
         } catch (err: any) {
-            // 401/403 只有一个下一步，就是登录。把服务端的英文报文原样贴上去
-            // （`Request failed 401: {"detail":"Not authenticated"}`）既没说是什么事，
-            // 也没给可按的东西 —— 换成一句人话加一个入口。
-            if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+            // 把服务端的英文报文原样贴上去（`Request failed 401: {"detail":"Not
+            // authenticated"}`）既没说是什么事，也没给可按的东西。但**只有 401 才是「去登录」**：
+            //
+            // 403 在这条链上说的是「知道你是谁，可这件事现在不能做」——最常见的一种是
+            // `guard_user_has_no_pending_ranked_game` 的「你有一局升降级还没结算」。把它也
+            // 翻成「需要登录」，就是对一个明明登录着的人说假话，而且他照着做也解决不了。
+            // 未登录时的 403（`guard_session_reader` 的「不是这局的参与者」）仍然归登录引导：
+            // 那时候「去登录」确实是对的下一步。
+            const status = (err instanceof ApiError || err instanceof AiLadderApiError) ? err.status : null;
+            const isAuthFailure = status === 401 || (status === 403 && !isAuthenticated);
+            if (isAuthFailure) {
                 setError('');
                 setAuthPrompt(isRated
                     ? t('ladder:login_required', '升降级对弈会记录段位，需要登录后才能开始。')
                     : t('play:login_required_free', '开始对局需要登录，请先登录后再试。'));
+            } else if (status === 403 && /ranked AI game/.test(String(err.message || ''))) {
+                setAuthPrompt('');
+                setError(t('play:blocked_by_pending_ranked', '你有一局升降级对弈还没结算，先去「升降级对弈」把它处理掉再开新局。'));
             } else {
+                setAuthPrompt('');
                 setError(err.message || 'Failed to start game');
             }
             if (isRated) setStartPending(false);

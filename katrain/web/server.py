@@ -983,10 +983,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         guard_ai_ladder_ranked_session(session, "load-sgf")
         guard_session_reader(session, current_user, "load SGF")
         guard_user_has_no_pending_ranked_game(app, current_user, "SGF analysis")
-        if not request.skip_analysis:
+        # 无人认领的会话可以灌 SGF（盒上离线摆谱、游客复盘都走这里），但**不给它做全盘扫描**:
+        # `skip_analysis` 默认 False,一份 400 手的棋谱就是 400 次引擎查询,而这条路不需要
+        # 任何凭据、也不占任何按 user 记账的租约 —— 谁都能无上限地点。落子那条路每手一次、
+        # 有一局的上限,是另一回事。
+        skip_analysis = request.skip_analysis or not session_owner_ids(session)
+        if not skip_analysis:
             register_persistent_analysis(current_user, session, "load-sgf", "SGF analysis")
         with session.lock:
-            session.katrain("load_sgf", request.sgf, skip_initial_analysis=request.skip_analysis)
+            session.katrain("load_sgf", request.sgf, skip_initial_analysis=skip_analysis)
             state = session.katrain.get_state()
             session.last_state = state
         return {"session_id": session.session_id, "state": state}

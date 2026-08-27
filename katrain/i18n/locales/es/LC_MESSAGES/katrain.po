@@ -3077,3 +3077,13 @@ msgstr ""
 
 msgid "play:go_free_play"
 msgstr "Jugar una partida libre"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr ""
+"Tienes una partida de clasificación sin liquidar. Termínala antes de empezar"
+" otra."
+
+msgid "research:login_required"
+msgstr ""
+"El análisis completo usa el motor en la nube y requiere iniciar sesión. "
+"Editar y reproducir no."

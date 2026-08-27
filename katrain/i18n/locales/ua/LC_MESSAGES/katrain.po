@@ -3248,3 +3248,12 @@ msgstr ""
 
 msgid "play:go_free_play"
 msgstr "Зіграти вільну партію"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr ""
+"У вас є незавершена рейтингова партія. Завершіть її перед початком нової."
+
+msgid "research:login_required"
+msgstr ""
+"Повний аналіз використовує хмарний рушій і потребує входу. Розбір і перегляд"
+" — ні."

@@ -175,3 +175,101 @@ def test_anonymous_socket_is_told_it_cannot_chat_and_stays_alive(client):
         assert _next(ws, "error") == {"type": "error", "code": "chat_requires_identity"}
         ws.send_json({"type": "ping"})
         _next(ws, "pong")
+
+
+# --- 放开对弈，不等于放开分析 -----------------------------------------------------
+
+
+def _analysis_bearing_fields(state):
+    """state 里所有承载引擎分析结论的位置。"""
+
+    return {
+        "analysis": state.get("analysis"),
+        "commentary": state.get("commentary"),
+        "history_scores": [h.get("score") for h in state.get("history", [])],
+        "history_winrates": [h.get("winrate") for h in state.get("history", [])],
+        "stone_score_losses": [s[2] for s in state.get("stones", [])],
+    }
+
+
+def test_an_unclaimed_session_is_never_handed_analysis(client):
+    """游客能下棋，但拿不到引擎的胜率/目差/候选点。
+
+    这一条守的是反作弊：升降级对弈期间禁止分析（`guard_user_has_no_pending_ranked_game`），
+    而那道闸是按 user_id 判的 —— 一个正在下升降级的人只要开一个不带凭据的窗口、把当前
+    局面按手顺摆出来，就能从这里读到引擎的最佳点。`/api/analysis/*` 与 `/api/v1/hint`
+    至今都要求登录，这条只是把同一条线补到 `get_state` 上。
+    """
+
+    sid = _guest_session(client)
+    assert client.post("/api/new-game", json={"session_id": sid}).status_code == 200
+    state = client.post("/api/move", json={"session_id": sid, "coords": [3, 3], "pass_move": False}).json()["state"]
+
+    fields = _analysis_bearing_fields(state)
+    assert fields["analysis"] is None
+    assert fields["commentary"] == ""
+    assert all(v is None for v in fields["history_scores"])
+    assert all(v is None for v in fields["history_winrates"])
+    assert all(v is None for v in fields["stone_score_losses"])
+    # 同一份状态经 GET /api/state 再取一次也一样 —— 两条路读的是同一个 get_state。
+    assert _analysis_bearing_fields(client.get("/api/state", params={"session_id": sid}).json()["state"]) == fields
+
+
+def test_a_claimed_session_still_gets_its_analysis(client):
+    """变异闸：把交付条件写成「一律不交付」时这条必须红。登录用户的自由局照旧有分析字段。"""
+
+    session = client.app.state.session_manager.create_session(user_id=7)
+    assert session.katrain.deliver_analysis is True
+    state = session.katrain.get_state()
+    # 引擎在测试里是 NullEngine，不会真的算出胜率；能证明的是这些位置**没有被抹掉**：
+    # `history` 每项都带 score/winrate 两个键，`stones` 每项都是四格。
+    assert all("score" in h and "winrate" in h for h in state["history"])
+    assert all(len(s) == 4 for s in state["stones"])
+    assert state["commentary"] is not None
+
+
+def test_guest_sgf_load_never_runs_a_whole_game_scan(client, monkeypatch):
+    """灌 SGF 对游客是通的（摆谱/打谱要用），但不给它做全盘扫描。
+
+    `skip_analysis` 默认 False，一份 400 手的棋谱就是 400 次引擎查询，而这条路不需要任何
+    凭据、也不占任何按 user 记账的租约 —— 谁都能无上限地点。落子那条路每手一次、有一局
+    的上限，是另一回事。
+    """
+
+    seen = {}
+
+    real_load = None
+
+    def spy(self, sgf, skip_initial_analysis=False, **kwargs):
+        seen["skip"] = skip_initial_analysis
+        return real_load(self, sgf, skip_initial_analysis=skip_initial_analysis, **kwargs)
+
+    from katrain.web.interface import WebKaTrain
+
+    real_load = WebKaTrain._do_load_sgf
+    monkeypatch.setattr(WebKaTrain, "_do_load_sgf", spy)
+
+    sid = _guest_session(client)
+    r = client.post("/api/sgf/load", json={"session_id": sid, "sgf": "(;GM[1]FF[4]SZ[19];B[dd];W[pp])"})
+    assert r.status_code == 200, r.text
+    assert seen["skip"] is True
+
+
+def test_no_unauthenticated_endpoint_hands_out_an_unclaimed_session_id(client):
+    """「匿名会话的 id 不会漏给第三方」是放行无主会话的承重前提，钉在操作数这一侧。
+
+    `GET /api/v1/games/active/multiplayer` 至今不鉴权。它今天只列 `player_b_id is not None`
+    的局，所以匿名局不在其中 —— 但那是 `session.py` 里一句可以被改掉的过滤条件，
+    改掉的那天这条会红。
+    """
+
+    guest_sid = _guest_session(client)
+    manager = client.app.state.session_manager
+    multiplayer = manager.create_multiplayer_session(player_b_id=1, player_w_id=2)
+
+    r = client.get("/api/v1/games/active/multiplayer")
+    assert r.status_code == 200, r.text
+    listed = {row["session_id"] for row in r.json()}
+    # 正对照：这条端点确实在返回东西，不是空列表或挂了。
+    assert multiplayer.session_id in listed
+    assert guest_sid not in listed

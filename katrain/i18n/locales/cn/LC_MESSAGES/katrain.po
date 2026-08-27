@@ -3013,3 +3013,9 @@ msgstr "你正在以游客身份对弈：本局不会保存到棋谱库，也不
 
 msgid "play:go_free_play"
 msgstr "先去自由对弈"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr "你有一局升降级对弈还没结算，先去「升降级对弈」把它处理掉再开新局。"
+
+msgid "research:login_required"
+msgstr "全盘分析要用云端引擎，需要登录后才能使用。摆棋和打谱不需要登录。"

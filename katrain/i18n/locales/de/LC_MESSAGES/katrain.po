@@ -3249,3 +3249,12 @@ msgstr ""
 
 msgid "play:go_free_play"
 msgstr "Stattdessen frei spielen"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr ""
+"Du hast eine nicht abgerechnete Wertungspartie. Schließe sie zuerst ab."
+
+msgid "research:login_required"
+msgstr ""
+"Die Gesamtanalyse läuft auf der Cloud-Engine und erfordert eine Anmeldung. "
+"Bearbeiten und Abspielen nicht."

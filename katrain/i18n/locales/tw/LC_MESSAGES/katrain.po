@@ -3158,3 +3158,9 @@ msgstr "你正在以訪客身分對弈：本局不會儲存到棋譜庫，也不
 
 msgid "play:go_free_play"
 msgstr "先去自由對弈"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr "你有一局升降級對弈還沒結算，先去「升降級對弈」把它處理掉再開新局。"
+
+msgid "research:login_required"
+msgstr "全盤分析要用雲端引擎，需要登入後才能使用。擺棋和打譜不需要登入。"

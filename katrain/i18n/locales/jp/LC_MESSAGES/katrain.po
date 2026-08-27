@@ -3176,3 +3176,9 @@ msgstr "ゲストとして対局中です：この対局は棋譜に保存され
 
 msgid "play:go_free_play"
 msgstr "まずは自由対局へ"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr "未清算の昇降級対局があります。先に「昇降級対局」で処理してから新しい対局を始めてください。"
+
+msgid "research:login_required"
+msgstr "全局解析はクラウドエンジンを使うためログインが必要です。並べる・再生するだけならログイン不要です。"

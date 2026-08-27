@@ -3166,3 +3166,13 @@ msgstr ""
 
 msgid "play:go_free_play"
 msgstr "Сыграть свободную партию"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr ""
+"У вас есть незавершённая рейтинговая партия. Завершите её перед началом "
+"новой."
+
+msgid "research:login_required"
+msgstr ""
+"Полный анализ использует облачный движок и требует входа в аккаунт. Разбор и"
+" просмотр — нет."

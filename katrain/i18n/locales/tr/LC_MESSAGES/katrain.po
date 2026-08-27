@@ -3265,3 +3265,13 @@ msgstr ""
 
 msgid "play:go_free_play"
 msgstr "Önce serbest oyna"
+
+msgid "play:blocked_by_pending_ranked"
+msgstr ""
+"Sonuçlanmamış bir dereceli oyununuz var. Yenisine başlamadan önce onu "
+"bitirin."
+
+msgid "research:login_required"
+msgstr ""
+"Tam tahta analizi bulut motorunu kullanır ve giriş gerektirir. Dizmek ve "
+"oynatmak gerektirmez."

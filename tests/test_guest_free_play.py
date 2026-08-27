@@ -21,6 +21,30 @@ def client(isolated_session_factory):
     app.state.session_factory = isolated_session_factory
     with TestClient(app) as c:
         yield c
+        # 会话是进程级的,不跟着 TestClient 走。不收掉的话它们连同各自的引擎会活到本次
+        # pytest 结束 —— 全量跑时那是**跨文件污染**,而且落在看着毫不相干的文件里。
+        for session in list(c.app.state.session_manager._sessions.values()):
+            c.app.state.session_manager.remove_session(session.session_id)
+
+
+def _seat_two_humans(client, sid):
+    """两边都坐人。
+
+    **不是可有可无的布景**：只要有一边是 AI，落子就会开一条后台线程去生成回招
+    （`interface.py` 的 `_do_ai_move_and_broadcast`），而那条线程活得比本条用例长。
+    全量跑时它会在后面某个**看着毫不相干**的文件里冒出来 —— 实测把
+    `tests/web_ui/test_ladder_injection.py::test_new_game_serialized_against_inflight_ai_move`
+    打红了（它 monkeypatch 了全局 `generate_ai_move`，被我这边的残留线程抢先写了
+    `captured`）。游客跟 AI 对弈那条链由真浏览器那一关证（AI 回招经 WS 推回来），
+    这里要证的是鉴权，两件事分开。
+    """
+
+    for bw, name in (("B", "游客"), ("W", "游客2")):
+        r = client.post(
+            "/api/player",
+            json={"session_id": sid, "bw": bw, "player_type": "player:human", "player_subtype": "human", "name": name},
+        )
+        assert r.status_code == 200, r.text
 
 
 def _guest_session(client):
@@ -59,15 +83,7 @@ def test_guest_walks_the_whole_free_play_chain(client):
     )
     assert r.status_code == 200, r.text
 
-    for bw, ptype, subtype, name in (
-        ("B", "player:human", "human", "游客"),
-        ("W", "player:ai", "ai:human", "AI (Human-like)"),
-    ):
-        r = client.post(
-            "/api/player",
-            json={"session_id": sid, "bw": bw, "player_type": ptype, "player_subtype": subtype, "name": name},
-        )
-        assert r.status_code == 200, r.text
+    _seat_two_humans(client, sid)
 
     r = client.get("/api/state", params={"session_id": sid})
     assert r.status_code == 200, r.text
@@ -82,6 +98,7 @@ def test_guest_can_undo_in_a_free_game(client):
 
     sid = _guest_session(client)
     assert client.post("/api/new-game", json={"session_id": sid}).status_code == 200
+    _seat_two_humans(client, sid)
     assert client.post("/api/move", json={"session_id": sid, "coords": [3, 3], "pass_move": False}).status_code == 200
     r = client.post("/api/undo", json={"session_id": sid, "n_times": 1})
     assert r.status_code == 200, r.text
@@ -203,6 +220,7 @@ def test_an_unclaimed_session_is_never_handed_analysis(client):
 
     sid = _guest_session(client)
     assert client.post("/api/new-game", json={"session_id": sid}).status_code == 200
+    _seat_two_humans(client, sid)
     state = client.post("/api/move", json={"session_id": sid, "coords": [3, 3], "pass_move": False}).json()["state"]
 
     fields = _analysis_bearing_fields(state)
@@ -238,18 +256,19 @@ def test_guest_sgf_load_never_runs_a_whole_game_scan(client, monkeypatch):
 
     seen = {}
 
-    real_load = None
+    sid = _guest_session(client)
+    # 从**活对象**上取类，不要 `from katrain.web.interface import WebKaTrain`：
+    # `tests/web_ui/conftest.py` 会把 `sys.modules["katrain.web.interface"]` 整个换成
+    # MagicMock（进程级、collect 期就生效），全量跑时按模块路径导入拿到的是那个替身，
+    # patch 上去对真正在跑的类毫无作用 —— 这条用例会在单跑时绿、全量跑时红。
+    katrain_cls = type(client.app.state.session_manager.get_session(sid).katrain)
+    real_load = katrain_cls._do_load_sgf
 
     def spy(self, sgf, skip_initial_analysis=False, **kwargs):
         seen["skip"] = skip_initial_analysis
         return real_load(self, sgf, skip_initial_analysis=skip_initial_analysis, **kwargs)
 
-    from katrain.web.interface import WebKaTrain
-
-    real_load = WebKaTrain._do_load_sgf
-    monkeypatch.setattr(WebKaTrain, "_do_load_sgf", spy)
-
-    sid = _guest_session(client)
+    monkeypatch.setattr(katrain_cls, "_do_load_sgf", spy)
     r = client.post("/api/sgf/load", json={"session_id": sid, "sgf": "(;GM[1]FF[4]SZ[19];B[dd];W[pp])"})
     assert r.status_code == 200, r.text
     assert seen["skip"] is True

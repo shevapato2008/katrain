@@ -50,7 +50,9 @@ const AuthRequiredDialog = ({ open, onClose, message }: AuthRequiredDialogProps)
                     </Button>
                 </DialogActions>
             </Dialog>
-            <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+            {/* 按需挂载:`LoginModal` 自己调 `useSettings()`,在没有 SettingsProvider 的
+                地方(比如只渲染本页的单测)光是构造它就会抛。关着的时候不构造。 */}
+            {loginOpen && <LoginModal open onClose={() => setLoginOpen(false)} />}
         </>
     );
 };

@@ -913,3 +913,69 @@ game_update 推送 6 次
 在改配置**之前**（`http_url` 与 `LOCAL_KATAGO_URL` 明明不同、`backend` 也确是 `http`）
 日志里**没有**出现，改完之后反而出现了。条件看起来该成立却没走，本次没查到底 ——
 如果它当初正常执行，这个故障根本不会存在。**下一个碰这块的人从这里接。**
+
+---
+
+### 2026-08-27 — 发布 `7c268569`：未登录游客可下自由对弈（非迁移，无 DDL）
+
+发布内容：`release/ucloud-20260805` 合入 `origin/develop`（`6a3f605d`）。**自动合并零冲突**
+—— 两边在 `server.py` 的改动分处首尾（release 的 `PREVIEW_MODE` 守卫在 lifespan 段
+220–310 行，develop 的归属闸在 725 与 1274 之后）。合并后逐项复核：三处 `PREVIEW_MODE`
+守卫俱在；`git diff origin/develop HEAD -- katrain/web/server.py` 的**全部**差异就是那段
+lifespan 守卫，说明 develop 上跑过的全量测试覆盖的就是这份代码。
+
+功能面（用户可见）：
+- 未登录游客可以走完自由对弈（此前卡在 `POST /api/new-game` 的必需鉴权上，屏上是一串裸
+  `Request failed 401: {"detail":"Not authenticated"}`）。
+- 升降级对弈仍要登录，但给出原因与登录入口，不再复用「登录已失效」那句假话。
+- **无主会话不交付分析**（`analysis_delivered=false`）：堵掉「开一个不带凭据的窗口就能读到
+  引擎最佳点」这条绕过升降级反作弊的路。三个分析键在前端置灰并说明「登录后可用」。
+- 四个会话级写端点（`/api/config`、`/api/config/bulk`、`/api/player`、`/api/player/swap`）
+  补上归属闸；`GET /api/config` 另加可读键白名单（此前不鉴权可读 `server/database_url`
+  与 `contribute/*`）。
+
+**无 schema 变更**：本次改动不含任何 migration / DDL，未取新的 `pg_dump`（与 `e9a7889e`
+同口径）。
+
+- `git clone --depth 1` → `/opt/katrain/releases/7c268569`，**1.5G**（第四次，稳定）。
+- 镜像 `katrain-web:7c268569`，
+  `image_id=sha256:1490683a54380cc4f1f03fca091262c29a3b7bb9f4aa627bc90bd05ceaecd7d9`，
+  `size_bytes=542544116`（上一版 542526049，+18067）。`build-web.sh` 容器内容测试全过 ——
+  其中 `find /app/katrain/i18n/locales -name katrain.mo` 那条正是本次新增 11 个 i18n 键的闸：
+  **生产的 .mo 由 `Dockerfile.web` 的 source-pruner 阶段编译**，不需要在主机上跑 `i18n.py`
+  （测试机需要，见下）。
+- `CRON_IMAGE` **未动**：`Dockerfile.cron` 只 `COPY katrain/cron/`，本次改动全在 `katrain/web/`。
+- `--phase full` 仍只有那 2 条容量闸（`available_bytes=28438618112`，`required_bytes=38500000000`），
+  `checks=2`，**同因明示越过**（容量闸按迁移峰值标定；本次是替换一个已构建完的镜像，磁盘增量近似为零）。
+- env 备份 `/opt/katrain/backups/ucloud.env.20260827-1753`，diff 恰好 2 行（只有 `WEB_IMAGE`），
+  root:root 0600。
+- **回滚锚点：** 目录 `releases/e9a7889e` + 镜像
+  `sha256:53bfcb82ff9a163eb0b7849803aadc0bb264bba0a657cd655b14d5382c802f44`。
+
+**四条不变量逐条实测（发布后）：**
+
+| 项 | 值 |
+|---|---|
+| `Config.Image` | `sha256:1490683a…d9`（与 build 输出逐字符相符） |
+| `config_files` 标签 | **两个**文件（compose.yml + compose.production.yml —— 08-25 记的那个坑没再踩） |
+| `KATRAIN_PREVIEW_MODE` | `0` |
+| 挂载卷 | `katrain-ucloud_katrain-state-production` |
+
+**功能实测**（容器内 `127.0.0.1:8001` + 外网 `https://modelstella.com` 各一遍）：
+匿名建会话 → `new-game` 200 → `move` 200 → `state.analysis_delivered=false` 且 `analysis=null`；
+`/api/v1/ai-ladder/start` 401；`GET /api/config?setting=server/database_url` **403**、
+`setting=ai/ai:human` 200；`/api/v1/live/matches` 200（production profile 的活性判据）；
+五个新 i18n 键 cn 全部返回中文。探针会话跑完即 `DELETE`，不到终局 ⇒ 不落库。
+外网 `/`、`/galaxy`、`/galaxy/play/ai?mode=free`、`/api/v1/health` 全 200。
+
+盘面：71% → **72%（28G 可用）**。
+
+**同日测试机（home-ubuntu / go.sailorvoyage.top）另走一条路**：它用的是 develop 上那份
+单阶段 `Dockerfile.web`（`COPY . /app`），**不编译 .mo**，所以 `.mo` 必须先在**构建主机**上
+生成。该机 `python3` 受 PEP 668 管控且无 `polib`、无 `msgfmt`，用一次性 `python3 -m venv
+/tmp/i18nvenv` + `pip install polib` 跑 `i18n.py`（`.po` 零改动，只产出 `.mo`）。
+顺带发现：该机 `.mo` 停在 8-21，而 `.po` 8-24 就更新过 —— **三天里测试机的新文案一直没上线**。
+判据留给下一个人：`ls -la katrain/i18n/locales/cn/LC_MESSAGES/` 比一下两个文件的时间。
+
+**遗留（未处理）：** `releases/` 下现有 3 份（`a9b2485b` / `e9a7889e` / `7c268569`）。
+`a9b2485b` 已无引用可删（约 1.5G），`e9a7889e` 是回滚锚点、`7c268569` 是线上，**都不动**。

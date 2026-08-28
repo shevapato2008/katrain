@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
@@ -197,5 +197,30 @@ describe('GamePage', () => {
     renderPage();
     fireEvent.click(screen.getByText('悔棋'));
     expect(mockHandleAction).toHaveBeenCalledWith('undo');
+  });
+
+  /* --- 游客:服务端算了但不交付(develop 的 `analysis_delivered`) -------------------
+     后端那半是共享的,kiosk 自动吃到;这两条守的是**接线**——
+     只测组件的话,`GamePage` 忘了传那个 prop 照样全绿。 */
+  describe('无人认领的会话', () => {
+    afterEach(() => {
+      delete (mockGameState as Record<string, unknown>).analysis_delivered;
+    });
+
+    it('三个分析键灰掉,并且在屏上说出为什么', async () => {
+      (mockGameState as Record<string, unknown>).analysis_delivered = false;
+      renderPage();
+      expect(screen.getByRole('button', { name: /领地/ })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /AI支招/ })).toBeDisabled();
+      // 屏上那一句 —— **7 寸触屏够不着 tooltip,所以 `title` 不算数**,
+      // 必须落在开关排右端那格。
+      expect(document.querySelector('.gtoggles .ghint')).toHaveTextContent('登录后可用');
+    });
+
+    it('交付时一切照旧(老服务端不带这个字段 ⇒ undefined ⇒ 不触发)', async () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /领地/ })).not.toBeDisabled();
+      expect(document.querySelector('.gtoggles .ghint')).not.toHaveTextContent('登录后可用');
+    });
   });
 });

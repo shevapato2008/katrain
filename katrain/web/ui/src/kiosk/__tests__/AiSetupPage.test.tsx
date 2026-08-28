@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
@@ -27,8 +27,17 @@ vi.mock('../../api', () => ({
 vi.mock('../../features/aiLadder/api', () => ({ startAiLadderGame: vi.fn().mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1' }) }));
 vi.mock('../../features/aiLadder/useAiLadderStatus', () => ({ useAiLadderStatus: () => ({ status: { view_state: 'ready', placement_state: { phase: 'placement', completed_games: 2, total_games: 5 }, current_opponent: { rung: 12, rank_name: '9级', certification_status: 'certified', availability: 'available', route: 'server' }, recent_ranked_results: [], net_score: 0, pending_settlement: false }, retry: vi.fn() }) }));
 
+/* 登录态要能在用例之间变 —— 游客那三条断言全靠它。
+   ⚠️ **`token` 不是登录态**:strict box kiosk 上鉴权走 HttpOnly 的 `sb_go_token` cookie,
+   `token` 恒为 null 而人是登录着的。所以下面两者分开设,别用一个字段代替另一个。 */
+const authState = {
+  token: 'test-token' as string | null,
+  user: { id: 1, username: 'test' } as { id: number; username: string } | null,
+  isAuthenticated: true,
+  isLoading: false,
+};
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true }),
+  useAuth: () => authState,
 }));
 
 // 「怎么落子」读的是设备能力,不是设置项 —— 这一屏因此要 VisionProvider 的桩。
@@ -232,6 +241,86 @@ describe('AiSetupPage', () => {
     await user.click(screen.getByRole('button', { name: /开始对局/i }));
     await waitFor(() => {
       expect(screen.getByText('Network error')).toBeInTheDocument();
+    });
+  });
+
+  /* --- 游客(develop 的 feature/guest-free-play 放开了无人认领的会话) ---------------
+     后端那半是共享的,kiosk 自动吃到;这三条守的是 kiosk 前端那半 —— 在这之前
+     kiosk 一处都没跟上(改动全落在 `galaxy/`)。 */
+  describe('游客', () => {
+    afterEach(() => {
+      authState.isAuthenticated = true;
+      authState.isLoading = false;
+      authState.token = 'test-token';
+      authState.user = { id: 1, username: 'test' };
+    });
+
+    it('未登录时在自由对弈屏上说清这一局不会保存', async () => {
+      authState.isAuthenticated = false;
+      authState.user = null;
+      renderPage('free');
+      expect(await screen.findByTestId('setup-guest-notice')).toHaveTextContent('游客身份');
+    });
+
+    it('已登录时不说 —— 判据是 isAuthenticated,不是 token', async () => {
+      // 盒上 strict kiosk 的真实形态:cookie 鉴权,`token` 恒为 null 而人是登录着的。
+      // 拿 `!token` 当判据的话,这一条会红 —— 它会对每一个盒上用户说「你是游客」。
+      authState.isAuthenticated = true;
+      authState.token = null;
+      renderPage('free');
+      await screen.findByTestId('ai-setup-page');
+      expect(screen.queryByTestId('setup-guest-notice')).toBeNull();
+    });
+
+    it('`/me` 还没回来时不抢先说 —— 否则已登录用户每次进来都要闪一下', async () => {
+      authState.isAuthenticated = false;
+      authState.isLoading = true;
+      renderPage('free');
+      await screen.findByTestId('ai-setup-page');
+      expect(screen.queryByTestId('setup-guest-notice')).toBeNull();
+    });
+
+    it('开局被 401 拒时给的是「去登录」,不是一句英文报文', async () => {
+      const { API } = await import('../../api');
+      const err = Object.assign(new Error('Request failed 401: {"detail":"Not authenticated"}'), { status: 401 });
+      (API.createSession as ReturnType<typeof vi.fn>).mockRejectedValueOnce(err);
+      renderPage('free');
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /开始对局/i }));
+      const prompt = await screen.findByTestId('setup-auth-prompt');
+      expect(prompt).toHaveTextContent('需要登录');
+      expect(within(prompt).getByRole('button', { name: /去登录/ })).toBeInTheDocument();
+      // 原始英文报文不许再出现在屏上
+      expect(screen.queryByText(/Not authenticated/)).toBeNull();
+    });
+
+    it('🔴 已登录时的 403 **不是**「去登录」—— 那是对登录着的人说假话', async () => {
+      // 这一格是这组里最容易写错的:403 在这条链上最常见的是
+      // `guard_user_has_no_pending_ranked_game` 的「你有一局升降级还没结算」,
+      // 把它也翻成「需要登录」,用户照着做也解决不了。
+      const { API } = await import('../../api');
+      const err = Object.assign(new Error('You already have a pending ranked AI game'), { status: 403 });
+      (API.createSession as ReturnType<typeof vi.fn>).mockRejectedValueOnce(err);
+      authState.isAuthenticated = true;
+      renderPage('free');
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /开始对局/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/pending ranked AI game/)).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('setup-auth-prompt')).toBeNull();
+    });
+
+    it('未登录时的 403 仍归登录引导', async () => {
+      const { API } = await import('../../api');
+      const err = Object.assign(new Error('Forbidden'), { status: 403 });
+      (API.createSession as ReturnType<typeof vi.fn>).mockRejectedValueOnce(err);
+      authState.isAuthenticated = false;
+      authState.user = null;
+      renderPage('free');
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /开始对局/i }));
+      expect(await screen.findByTestId('setup-auth-prompt')).toHaveTextContent('需要登录');
     });
   });
 });

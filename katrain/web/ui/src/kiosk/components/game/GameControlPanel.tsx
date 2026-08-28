@@ -23,6 +23,15 @@ interface Props {
    * 上一版前端只是 `isRankedGameType` 早退不去请求,面板照样渲染,画出来是一条全 `—` 的空图。
    */
   isRanked?: boolean;
+  /**
+   * 这一局的分析**服务端根本不交付** —— 无人认领的会话(未登录游客建的那种)。
+   * 判据取服务端那一句(`get_state` 的 `analysis_delivered`),不是本地有没有 token:
+   * 决定交不交付的是「这个会话有没有主人」,而一个登录用户照样可能打开一个无主会话。
+   *
+   * 与 `isRanked` 分开:后者连悔棋一起禁(反作弊),而游客的悔棋是通的,
+   * 只有三个分析键点了没用。合在一起就会为了关掉分析顺手把能用的也关掉。
+   */
+  analysisRequiresLogin?: boolean;
   /** Golaxy 人机对弈: replace the local analysis toggles with the three star阵-tunnel buttons. */
   engineMode?: boolean;
   activeEngineKind?: 'area' | 'options' | 'variation' | null;
@@ -168,7 +177,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
  */
 const GameControlPanel = ({
   gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
-  isGameOver = false, isRanked = false, engineMode = false,
+  isGameOver = false, isRanked = false, analysisRequiresLogin = false, engineMode = false,
   activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null,
 }: Props) => {
   const { t, lang } = useTranslation();
@@ -191,7 +200,7 @@ const GameControlPanel = ({
 
   // 胜率块:自由对弈可开;升降级 / 本地两人 / 在线大厅 / 星阵人机一律**整块不渲染**。
   const evalAllowed = freeVsAi;
-  const showScore = evalAllowed && !!analysisToggles.score;
+  const showScore = evalAllowed && !analysisRequiresLogin && !!analysisToggles.score;
 
   /**
    * 悔棋 —— Fan 2026-08-25 亲裁:「**只有人机对弈的自由对弈允许悔棋**;升降级对弈、
@@ -247,20 +256,36 @@ const GameControlPanel = ({
     };
   };
 
+  /* 游客(无主会话)那一句。**灰而不说原因是这份稿子在别处专门骂过的事**,而
+     galaxy 那边把它挂在 tooltip 上 —— 那条在这里不成立:**这是 7 寸触屏,
+     悬浮提示够不着**。所以走 kiosk 自己那套:`reason` 上 `title`/`aria-description`,
+     屏上那句落在开关排右端的 `.ghint`(见下)。
+     **不整组隐藏**:隐藏之后登录用户和游客看到的键不一样多,而用户无从知道少了什么;
+     稿子骂的是「一排点不动的键」——那说的是终局时**四个键同时死掉且不可恢复**,
+     这里三个键灰着但**去登录就能用**,原因说得出来。 */
+  const guestAnalysisReason = t('play:analysis_requires_login', '登录后可用');
+
   const analysisActions: KioskAction[] = engineMode ? [] : [
     {
       key: 'ownership', icon: 'grid-nine', label: t('Territory', '领地'),
-      pressed: !!analysisToggles.ownership, onClick: () => onToggleAnalysis('ownership'),
+      pressed: !analysisRequiresLogin && !!analysisToggles.ownership,
+      onClick: () => onToggleAnalysis('ownership'),
+      disabled: analysisRequiresLogin,
+      reason: analysisRequiresLogin ? guestAnalysisReason : undefined,
     },
     {
       // AI 支招 = 一次性动作(顶部 N 个候选点,实体盘上白闪),**不是开关** ——
       // 所以它没有 `pressed`。原来那个独立的顶栏支招键在 kiosk-ui-redesign 里已经并进来了。
       key: 'hint', icon: 'lightbulb', label: t('Hints', 'AI支招'),
-      onClick: () => onHint?.(), disabled: !hintEnabled,
+      onClick: () => onHint?.(), disabled: !hintEnabled || analysisRequiresLogin,
+      reason: analysisRequiresLogin ? guestAnalysisReason : undefined,
     },
     ...(evalAllowed ? [{
       key: 'score', icon: 'trend-up' as const, label: t('Chart', '图表'),
-      pressed: showScore, onClick: () => onToggleAnalysis('score'),
+      pressed: !analysisRequiresLogin && showScore,
+      onClick: () => onToggleAnalysis('score'),
+      disabled: analysisRequiresLogin,
+      reason: analysisRequiresLogin ? guestAnalysisReason : undefined,
     }] : []),
   ];
 
@@ -385,11 +410,21 @@ const GameControlPanel = ({
         <button type="button" role="switch" aria-checked={!!analysisToggles.numbers} onClick={() => onToggleAnalysis('numbers')}>
           {t('Move Numbers', '手数')}
         </button>
+        {/* 三句话抢同一格,优先级是**按「这句话还会不会自己消失」排的**:
+              ① `hardwareFault` —— 故障,最急,而且要用红。
+              ② 游客 —— 三个键**不登录就永远不会亮**;这一句在触屏上是它们唯一的解释
+                 (`reason` 落在 `title`/`aria-description` 上,手指够不着)。
+              ③ 数子 —— 只关一个键,而且**下满手数它自己就好了**。
+            ⚠️ 代价说清楚:游客在前 100 手看不到「数子要下满 N 手」那句。可以接受 ——
+            数子键到时候自己会亮,而三个分析键不会。反过来排的话,游客整局都不知道
+            那三个键为什么是灰的。 */}
         <i className="ghint" data-fault={hardwareFault ? 'true' : undefined}>
           {hardwareFault
-            ?? (!isGameOver && !canCount
-              ? t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin))
-              : '')}
+            ?? (analysisRequiresLogin
+              ? t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')
+              : !isGameOver && !canCount
+                ? t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin))
+                : '')}
         </i>
       </div>
 

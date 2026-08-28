@@ -294,8 +294,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   useEffect(() => {
     if (engineMode || !wantAnalysis || !sessionId || !gs) return;
     if (isRankedGameType(gs.game_type)) return;
+    // 无人认领的会话:服务端**算了但不交付**(`analysis_delivered`)。开关那边已经灰了,
+    // 这里再早退一次是因为**这条 `.catch(() => undefined)` 会把失败整个吞掉** ——
+    // 不早退的话,每换一手就往一个注定拿不回结果的端点打一发,屏上和日志里都没有痕迹。
+    if (gs.analysis_delivered === false) return;
     API.analyzeCurrent(sessionId).catch(() => undefined);
-  }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type]);
+  }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type, gs?.analysis_delivered]);
 
 
   const closeHint = useCallback(() => {
@@ -459,10 +463,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   };
 
+  /* 三个操作数,各挡各的:`physicalPlay` 是「实体盘在不在」,`analysis_allowed` 是
+     「这一局允不允许分析」(升降级反作弊),`analysis_delivered` 是「算了交不交给你」
+     (无人认领的会话)。少了最后一条,游客的支招键是亮的,按下去 401 ——
+     而 `handleHint` 的 catch 只认得 `ranked_forbidden`/`disabled`/`insufficient`,
+     401 会落到那句「支招失败,请稍后再试」上,把一个**登录就能解决**的事说成了故障。 */
   const hintVisible =
     physicalPlay &&
     gameState.game_type === 'free' &&
-    gameState.analysis_allowed !== false;
+    gameState.analysis_allowed !== false &&
+    gameState.analysis_delivered !== false;
 
   const handleHint = async () => {
     if (!sessionId) return;
@@ -681,6 +691,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
             onHint={handleHint}
             hintEnabled={hintVisible}
+            /* 判据取**服务端说的那一句**,不是本地有没有 token:决定交不交付的是
+               「这个会话有没有主人」,而一个登录用户照样可能打开一个无主会话。
+               老服务端不带这个字段 ⇒ undefined ⇒ `=== false` 为假 ⇒ 一切照旧。 */
+            analysisRequiresLogin={gameState.analysis_delivered === false}
             isGameOver={isGameOver}
             isRanked={isRanked}
             engineMode={engineMode}

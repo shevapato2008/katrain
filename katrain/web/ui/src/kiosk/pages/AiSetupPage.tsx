@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Box } from '@mui/material';
+import { Alert, Box, Button } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
 import OptionChips from '../components/common/OptionChips';
 import { useVision } from '../context/VisionContext';
@@ -50,7 +50,7 @@ const AiSetupPage = () => {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { token, user } = useAuth();
+  const { token, user, isAuthenticated, isLoading: authLoading } = useAuth();
   // 「落子」那一格读的是它 —— 设备能力,不是设置项。
   const { isVisionEnabled } = useVision();
   const isRanked = mode === 'ranked';
@@ -84,6 +84,8 @@ const AiSetupPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  /* 未登录时该说的那句话。与 `error` 分开:它不是故障,而且**要给可按的东西**。 */
+  const [authPrompt, setAuthPrompt] = useState('');
   const [lifecyclePending, setLifecyclePending] = useState(false);
   const [lifecycleError, setLifecycleError] = useState('');
   const [syncRetryPending, setSyncRetryPending] = useState(false);
@@ -105,6 +107,7 @@ const AiSetupPage = () => {
 
   const handleStart = async () => {
     setError('');
+    setAuthPrompt('');
     setLoading(true);
     try {
       if (isRanked) {
@@ -145,7 +148,27 @@ const AiSetupPage = () => {
       });
       navigate(`/kiosk/play/ai/game/${session_id}`);
     } catch (e: any) {
-      setError(e.message || t('Failed to create game', '创建对局失败'));
+      /* 把服务端那句英文原样贴上去(`Request failed 401: {"detail":"Not authenticated"}`)
+         既没说是什么事,也没给可按的东西。但**只有 401 才是「去登录」**:
+         403 在这条链上说的是「知道你是谁,可这件事现在不能做」—— 最常见的是
+         `guard_user_has_no_pending_ranked_game` 的「你有一局升降级还没结算」。
+         把它也翻成「需要登录」,就是对一个明明登录着的人说假话,而且他照着做也解决不了。
+         **未登录时**的 403(`guard_session_reader` 的「不是这局的参与者」)仍归登录引导。 */
+      /* 读 `.status` 而不是 `e instanceof ApiError`:**这是 catch 块,它自己不许再抛**。
+         `instanceof` 依赖那个类在此刻真的是个构造函数 —— 模块被替换/摇树/mock 掉时它是
+         `undefined`,`e instanceof undefined` 当场 TypeError,于是下面一行 `setError` 根本
+         不会执行,用户点完开局屏上一个字都没有(实测:本文件的单测就是这么挂的)。
+         `ApiError` 和 `AiLadderApiError` 都带数字 `status`,这里认那个形状就够。 */
+      const status = typeof e?.status === 'number' ? e.status : null;
+      if (status === 401 || (status === 403 && !isAuthenticated)) {
+        setError('');
+        setAuthPrompt(isRanked
+          ? t('ladder:login_required', '升降级对弈会记录段位，需要登录后才能开始。')
+          : t('play:login_required_free', '开始对局需要登录，请先登录后再试。'));
+      } else {
+        setAuthPrompt('');
+        setError(e.message || t('Failed to create game', '创建对局失败'));
+      }
     } finally {
       setLoading(false);
     }
@@ -581,6 +604,48 @@ const AiSetupPage = () => {
             {/* 出错时那条横幅在**滚动区外面** —— 它说的是「刚才那次开局失败了」,
                 跟着设置一起滚走就等于没说。 */}
             {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
+
+            {/* 需要登录那一条。**与错误横幅互斥**(两个 setter 各自清掉对方),所以这一格
+                任何时刻最多只有一条横幅 —— 版式高度的上限没有变。
+                它不是故障,所以不用红;而且**要给可按的东西** —— 一句「需要登录」旁边
+                没有入口,跟没说一样。 */}
+            {authPrompt && (
+              <Alert
+                severity="warning"
+                sx={{ mb: 1 }}
+                data-testid="setup-auth-prompt"
+                action={
+                  /* 用 MUI 而不是新起一个 `.kiosk-*` 类:`src/kiosk-shell/` 带
+                     `MANIFEST.sha256`,是跨 track 校验过的共享资产,往里加类会动到校验。 */
+                  <Button size="small" color="inherit" onClick={() => navigate('/kiosk/login')}>
+                    {t('auth:go_login', '去登录')}
+                  </Button>
+                }
+              >
+                {authPrompt}
+              </Alert>
+            )}
+
+            {/* 🔴 **今天这一条在 kiosk 上走不到。** `KioskApp.tsx:81` 用 `KioskAuthGuard`
+                把除登录页外的**每一条** kiosk 路由都包住了,未登录会 `<Navigate to="/kiosk/login">`
+                ⇒ 游客根本到不了这一屏。**kiosk 没有游客模式,这是设计,不是漏做** ——
+                galaxy 允许不登录随便逛,kiosk 不允许。
+                留着这一条是因为它是**对的**:服务端(develop 的 guest-free-play)已经放行无主会话,
+                哪天产品决定盒上也开游客对弈(那是动鉴权边界,要 Fan 拍),这一条当天就生效,
+                不用再想一遍。**它不假装自己现在有用。**
+
+                下面那个判据本身:**是 `isAuthenticated` 不是 `!token`** —— strict box kiosk 上
+                鉴权走 HttpOnly 的 `sb_go_token` cookie,`token` 恒为 null,拿它判游客
+                会对盒上**每一个已登录用户**都说「你正在以游客身份对弈」。
+                `authLoading` 必须等:挂载时那次 `/me` 探针没回来之前 `isAuthenticated` 是
+                false,不等就会让已登录用户每次进这一屏都先闪一下这句话。
+                升降级那一屏不说 —— 它对游客根本开不了局,该说的是「需要登录」不是「你是游客」。 */}
+            {!isRanked && !authLoading && !isAuthenticated && !error && !authPrompt && (
+              <Alert severity="info" sx={{ mb: 1 }} data-testid="setup-guest-notice">
+                {t('play:guest_free_notice',
+                   '你正在以游客身份对弈：本局不会保存到棋谱库，也不计入段位。登录后可保存对局。')}
+              </Alert>
+            )}
 
             {/* **升降级那一屏没有这一段。** 稿子 03 屏从滚动区直接接主行动键 ——
                 该说的话已经在页控条副标(「计入段位 · 全程封分析」)和「对手」那组的提示行里

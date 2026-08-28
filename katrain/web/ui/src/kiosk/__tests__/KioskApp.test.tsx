@@ -46,17 +46,21 @@ const renderApp = (route = '/kiosk/play') =>
   );
 
 describe('KioskApp', () => {
-  it('renders login page when not authenticated', () => {
+  /* ⚠️ 这一条原来断言的是「游客到 /kiosk/play 会被弹到登录页」。
+     **Fan 2026-08-28 亲裁改了这条边界**:「把 KioskAuthGuard 从自由对弈那几条路由上摘掉,
+     其余(升降级、大厅、设置)保持。」所以它现在断言的是相反的事 ——
+     而「其余仍然被挡」那几格移到了下面那个 describe 里,一格都没少。 */
+  it('游客到得了自由对弈那条链的入口(不再被弹到登录页)', () => {
     mockUseAuth.mockReturnValue({
       isAuthenticated: false,
+      isLoading: false,
       user: null,
       login: vi.fn(),
       logout: vi.fn(),
       token: null,
     });
     renderApp('/kiosk/play');
-    // Auth guard redirects to login
-    expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^登录$/ })).toBeNull();
   });
 
   it('defaults the kiosk language to Chinese when no preference is saved', () => {
@@ -127,7 +131,42 @@ describe('KioskApp', () => {
       token: null,
     });
     renderApp('/kiosk');
-    // Should redirect to login (which then redirects to play after auth)
-    expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
+    // 游客也一样落到对弈页 —— index 重定向和兜底都在守卫**外面**。
+    expect(screen.queryByRole('button', { name: /^登录$/ })).toBeNull();
+  });
+
+  /* 🔴 边界的另一半。摘守卫只摘了自由对弈那条链,**这几格证明其余没跟着被摘掉** ——
+     少了它们,哪天有人把 `<Route element={<KioskAuthGuard />}>` 整个删掉,上面那几条
+     「游客到得了」照样全绿,而设置和大厅就裸了。 */
+  describe('仍然要登录的那些', () => {
+    const asGuest = () => mockUseAuth.mockReturnValue({
+      isAuthenticated: false, isLoading: false, user: null, login: vi.fn(), logout: vi.fn(), token: null,
+    });
+
+    it('设置', () => {
+      asGuest();
+      renderApp('/kiosk/settings');
+      expect(screen.queryByTestId('settings-page')).toBeNull();
+      expect(screen.getByRole('button', { name: /^登录$/ })).toBeInTheDocument();
+    });
+
+    it('复盘', () => {
+      asGuest();
+      renderApp('/kiosk/report');
+      expect(screen.queryByText('KIOSK_REPORT_PAGE')).toBeNull();
+      expect(screen.getByRole('button', { name: /^登录$/ })).toBeInTheDocument();
+    });
+
+    it('对战大厅', () => {
+      asGuest();
+      renderApp('/kiosk/play/pvp/lobby');
+      expect(screen.getByRole('button', { name: /^登录$/ })).toBeInTheDocument();
+    });
+
+    it('本地两人对局屏', () => {
+      asGuest();
+      renderApp('/kiosk/play/pvp/local/game/s1');
+      expect(screen.getByRole('button', { name: /^登录$/ })).toBeInTheDocument();
+    });
   });
 });

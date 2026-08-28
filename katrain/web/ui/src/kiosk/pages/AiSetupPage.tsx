@@ -58,10 +58,20 @@ const AiSetupPage = () => {
     status: aiLadderStatus,
     retry: retryAiLadderStatus,
     applyBlockingSync,
-  } = useAiLadderStatus(token ?? undefined, isRanked);
+  /* 第二个参数是「要不要拉」。游客拉这个必 401,而 `KioskAuthGuard` 2026-08-28 从这条
+     路由上摘掉之后,游客**真的能走到这一屏**(`:mode` 也匹配 ranked)⇒ 不加这一条就是
+     每次进屏一发注定失败的请求,外加一句「登录已失效」——对从没登录过的人那句是假的。 */
+  } = useAiLadderStatus(token ?? undefined, isRanked && isAuthenticated);
   // 挡着新局的那一局。有它的时候整个右栏换成挡局面板 —— 底下那些设置一个都用不上,
   // 摆着只会让用户以为改一改就能开局。
   const blockingGame = isRanked ? aiLadderBlockingGame(aiLadderStatus) : null;
+
+  /* 升降级的登录门**补在页面里,不在路由上** —— `play/ai/setup/:mode` 一条路由两种对弈,
+     Fan 只让摘自由对弈那条。段位记在账号上,没有账号就无处可记 ⇒ 这一屏对游客不是
+     「暂时不可用」而是**永远需要先有账号**,所以说的是原因不是故障。
+     `authLoading` 必须等:`/me` 没回来之前 `isAuthenticated` 是 false,
+     不等就会让已登录用户每次进来先闪一下「需要登录」。 */
+  const rankedNeedsLogin = isRanked && !authLoading && !isAuthenticated;
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
@@ -327,7 +337,20 @@ const AiSetupPage = () => {
             : t('play:free_setup_sub', '开局设置 · 人机 · 不计入段位')}
         />
 
-        {blockingGame ? (
+        {rankedNeedsLogin ? (
+          <Box data-testid="ranked-login-required" sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 1.5, justifyContent: 'center' }}>
+            <Alert severity="info">
+              {t('ladder:login_required', '升降级对弈会记录段位，需要登录后才能开始。')}
+            </Alert>
+            <button type="button" className="kiosk-primary-action" onClick={() => navigate('/kiosk/login')}>
+              {t('auth:go_login', '去登录')}
+            </button>
+            {/* 给第二条出路:他现在就能下的那一种。只说「去登录」等于把人堵在这儿。 */}
+            <Button size="small" color="inherit" onClick={() => navigate('/kiosk/play/ai/setup/free')}>
+              {t('play:go_free_play', '先去自由对弈')}
+            </Button>
+          </Box>
+        ) : blockingGame ? (
           // 有一局挡着的时候,整个右栏换成挡局面板:执子、用时、开始按钮此刻一个都用不上,
           // 摆着只会让用户以为改一改就能开局,而真正能推进事情的两三个按钮反倒被挤到看不见。
           // `:512`「按下按钮时骨架不动,只有右栏换内容」—— 这是同一个位置的两种内容。

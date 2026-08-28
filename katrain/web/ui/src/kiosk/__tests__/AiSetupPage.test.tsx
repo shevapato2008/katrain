@@ -311,6 +311,26 @@ describe('AiSetupPage', () => {
       expect(screen.queryByTestId('setup-auth-prompt')).toBeNull();
     });
 
+    it('🔴 升降级那一屏对游客说的是「需要登录」,而且给两条出路', async () => {
+      // 路由摘掉守卫之后 `:mode` 也匹配 ranked ⇒ 游客真的能走到这一屏。
+      // 段位记在账号上,没有账号就无处可记 —— 说原因,不是报故障。
+      authState.isAuthenticated = false;
+      authState.user = null;
+      renderPage('ranked');
+      const panel = await screen.findByTestId('ranked-login-required');
+      expect(panel).toHaveTextContent('需要登录');
+      expect(within(panel).getByRole('button', { name: /去登录/ })).toBeInTheDocument();
+      // 只说「去登录」等于把人堵在这儿 —— 他现在就能下的那一种也要给。
+      expect(within(panel).getByRole('button', { name: /先去自由对弈/ })).toBeInTheDocument();
+    });
+
+    it('已登录时升降级屏照常渲染设置,不弹登录', async () => {
+      authState.isAuthenticated = true;
+      renderPage('ranked');
+      await screen.findByTestId('ai-setup-page');
+      expect(screen.queryByTestId('ranked-login-required')).toBeNull();
+    });
+
     it('未登录时的 403 仍归登录引导', async () => {
       const { API } = await import('../../api');
       const err = Object.assign(new Error('Forbidden'), { status: 403 });

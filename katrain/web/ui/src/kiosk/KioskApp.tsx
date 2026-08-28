@@ -77,10 +77,37 @@ const KioskRoutes = () => {
       {/* Public */}
       <Route path="login" element={<LoginPage />} />
 
-      {/* Auth-protected */}
-      <Route element={<KioskAuthGuard />}>
-        <Route element={<KioskLayout username={user?.username} />}>
-          <Route index element={<Navigate to="play" replace />} />
+      {/* 🔴 **布局在守卫外面,守卫只包一部分路由。** Fan 2026-08-28 亲裁:
+          「把 KioskAuthGuard 从自由对弈那几条路由上摘掉,其余(升降级、大厅、设置)保持。」
+
+          在此之前守卫包着**除登录页外的全部** kiosk 路由 —— 于是服务端(develop 的
+          `feature/guest-free-play`)明明已经放行无人认领的会话,盒上的人却连那一屏都到不了。
+
+          **为什么布局必须挪到守卫外面**:不挪的话游客那几屏就没有顶栏和 Dock,
+          而规范 §5 防跳铁律 1 写死「顶栏永远占 y 0–56,任何层级、任何模块都不变高、不隐藏」。
+          `username` 本来就是可选的(`KioskLayoutProps`),游客态传 undefined 即可。
+
+          **摘出来的只有自由对弈那条链的三屏**,一条不多:
+            play                     入口枢纽 —— 不摘它游客哪儿也去不了(index 重定向到它)
+            play/ai/setup/:mode      开局设置
+            play/ai/game/:sessionId  对局屏
+          ⚠️ 后两条**两种对弈共用**,不能按路径分:
+            · `:mode` 也匹配 `ranked` ⇒ 升降级的门补在**页面里**(AiSetupPage 那一支:
+              未登录直接说「需要登录」并给入口),不是靠路由。
+            · 对局屏也承载升降级局 ⇒ 游客拿到一个升降级的 session_id 也打不开,
+              **挡它的是服务端**(`guard_session_reader`:有主人的会话要求「是这局的参与者」),
+              不是这一层。前端少一道门不等于后端少一道。
+          `*` 兜底也必须在守卫外面:留在里面的话,游客输一个不存在的路径会连兜底都匹配不到。 */}
+      <Route element={<KioskLayout username={user?.username} />}>
+        <Route index element={<Navigate to="play" replace />} />
+
+        {/* --- 游客可达:自由对弈那条链 --- */}
+        <Route path="play" element={<PlayPage />} />
+        <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
+        <Route path="play/ai/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
+
+        {/* --- 其余一律仍需登录 --- */}
+        <Route element={<KioskAuthGuard />}>
 
           {/* 对局屏。Task 4 之前这四条在 KioskLayout **外面**,所以对局屏连顶栏都没有 ——
               而规范 §5 防跳铁律 1 写死「顶栏永远占 y 0–56,任何层级、任何模块都不变高、
@@ -91,16 +118,10 @@ const KioskRoutes = () => {
               选了下在屏幕上」。开局设置屏那颗「屏幕 / 实体盘」不接到这儿的话,人选了屏幕
               进来还是被推去标定工作台,开关只做了半截。偏好默认开 ⇒ 对现有行为零影响。
               **不要退回裸的 `PhysicalBoardGuard`。** */}
-          <Route path="play/ai/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
           <Route path="play/pvp/local/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
           <Route path="play/pvp/room/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
           <Route path="play/cross-platform/engine/game/:sessionId" element={<PlayInputGuard><GamePage engineMode /></PlayInputGuard>} />
 
-          <Route path="play" element={<PlayPage />} />
-          {/* 升降级对弈 has its own page: nothing about the opponent is chosen here,
-              so it shares no controls with free play. Static path wins over the
-              dynamic :mode below in v6 best-match. */}
-          <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
           <Route path="play/pvp/setup" element={<PvpLocalSetupPage />} />
           <Route path="play/pvp/lobby" element={<LobbyPage />} />
           <Route path="play/cross-platform" element={<PlatformConnectPage />} />
@@ -137,8 +158,11 @@ const KioskRoutes = () => {
           <Route path="tutorial/section/:sectionId" element={<TutorialSectionPage />} />
           <Route path="vision/setup" element={<VisionSetupPage />} />
           <Route path="settings" element={<SettingsPage />} />
-          <Route path="*" element={<Navigate to="play" replace />} />
         </Route>
+
+        {/* 兜底在守卫**外面**:留在里面的话,游客输一个不存在的路径连它都匹配不到
+            (守卫会先把整棵子树换成 `<Navigate to="/kiosk/login">`),屏上是白的。 */}
+        <Route path="*" element={<Navigate to="play" replace />} />
       </Route>
     </Routes>
   );

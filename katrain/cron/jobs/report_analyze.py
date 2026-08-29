@@ -213,8 +213,6 @@ class ReportAnalyzerJob(BaseJob):
                 parsed=parsed,
                 move_number=move_number,
                 requested_visits=requested_visits,
-                initial_stones=initial_stones,
-                initial_player=initial_player,
             )
             with SessionLocal() as db:
                 task = db.query(ReportTaskDB).filter(ReportTaskDB.id == task_id).first()
@@ -263,8 +261,6 @@ class ReportAnalyzerJob(BaseJob):
         parsed: ParsedGame,
         move_number: int,
         requested_visits: int,
-        initial_stones: list[list[str]] | None = None,
-        initial_player: str = "B",
     ) -> dict[str, Any] | None:
         board_size = parsed.board_size
         moves = parsed.moves

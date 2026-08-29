@@ -3182,3 +3182,66 @@ msgstr "Доступно после входа"
 
 msgid "play:analysis_requires_login_hint"
 msgstr "Территория / Подсказка / График доступны после входа"
+
+msgid "grade:brilliant"
+msgstr "Блестящий"
+
+msgid "grade:best"
+msgstr "Лучший"
+
+msgid "grade:very_good"
+msgstr "Очень хорошо"
+
+msgid "grade:playable"
+msgstr "Приемлемо"
+
+msgid "grade:inaccuracy"
+msgstr "Неточность"
+
+msgid "grade:mistake"
+msgstr "Ошибка"
+
+msgid "grade:blunder"
+msgstr "Грубая ошибка"
+
+msgid "grade:phase_all"
+msgstr "Вся партия"
+
+msgid "grade:phase_opening"
+msgstr "Фусэки"
+
+msgid "grade:phase_midgame"
+msgstr "Середина партии"
+
+msgid "grade:phase_endgame"
+msgstr "Ёсэ"
+
+msgid "grade:player_both"
+msgstr "Оба"
+
+msgid "grade:player_B"
+msgstr "Чёрные"
+
+msgid "grade:player_W"
+msgstr "Белые"
+
+msgid "grade:performance"
+msgstr "Качество игры"
+
+msgid "grade:brilliance"
+msgstr "Изящество"
+
+msgid "grade:unrated"
+msgstr "Без оценки"
+
+msgid "grade:no_rated_moves"
+msgstr "В этой стадии нет оценённых ходов"
+
+msgid "grade:truncated_note"
+msgstr "Ещё {n} не показано — переключите стадию или игрока"
+
+msgid "grade:histogram_footer"
+msgstr "Оценено ходов: чёрные {b} / белые {w}"
+
+msgid "grade:unrated_count"
+msgstr "{n} без оценки"

@@ -1,6 +1,9 @@
 # Core dependencies for KataGo Python tools
 chardet==5.2.0
 polib>=1.2.0
+# 着手评价的阈值真源 katrain/core/move_grade.yaml 由 PyYAML 读取。
+# 这条也在 requirements-cron.txt 里 —— 两个容器各自装各自的。
+pyyaml>=6.0
 
 # Dependencies for Real-Time API (Step 2 Implementation)
 # fastapi 0.115 / starlette 0.41 are required for httpx>=0.28 compatibility

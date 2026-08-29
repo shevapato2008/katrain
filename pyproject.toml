@@ -29,6 +29,8 @@ dependencies = [
     "onnxslim>=0.1.90",
     "onnxruntime>=1.24.4",
     "anthropic>=0.86.0",
+    # 读 katrain/core/move_grade.yaml（着手评价阈值真源）
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]

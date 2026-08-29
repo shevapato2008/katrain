@@ -14,46 +14,50 @@ from katrain.cron import config
 from katrain.cron.clients.katago import KataGoClient
 from katrain.cron.db import SessionLocal
 from katrain.cron.jobs.base import BaseJob
+from katrain.core import move_grade
+from katrain.core.sgf_parser import SGF
 from katrain.cron.models import ReportTaskDB, ReportTaskMoveDB, UserGameDB
 
 logger = logging.getLogger("katrain_cron.report_analyze")
 
 MAX_RETRIES = 3
 
-# SGF parsing patterns
-SGF_MOVE_RE = re.compile(r";([BW])\[([a-z]{0,2})\]", re.IGNORECASE)
-SGF_SIZE_RE = re.compile(r"SZ\[(\d+)\]")
-SGF_KOMI_RE = re.compile(r"KM\[([^\]]+)\]")
-SGF_RULES_RE = re.compile(r"RU\[([^\]]+)\]", re.IGNORECASE)
+# SGF は katrain/core/sgf_parser.SGF で解析する —— 以前ここにあった正規表現版は
+# 置石(AB/AW)を丸ごと落とし、分岐を本譜に潰し、旧式の ;B[tt] を盤外座標にしていた。
+# 详见 docs/move-grading/current-state.md §5.2。
+#
+# 手写正则解析器曾造成的三个后果：
+#   1. AB[]/AW[] 不匹配 ⇒ 9 子局被当成分先、且起手方写死黑 ⇒ 白棋每手都像灾难；
+#   2. 分支被拍平进主线 ⇒ 出现非法重复落子，分析的局面与棋局无关；
+#   3. 老式 ;B[tt] 停一手 → 盘外坐标 U0 → KataGo 报错 → 整个任务失败。
 
 
-def _sgf_to_gtp(sgf_coord: str, board_size: int) -> str:
-    if not sgf_coord:
-        return "pass"
-    col_idx = ord(sgf_coord[0].lower()) - ord("a")
-    row_idx = ord(sgf_coord[1].lower()) - ord("a")
-    col_char = chr(ord("A") + col_idx + (1 if col_idx >= 8 else 0))
-    display_row = board_size - row_idx
-    return f"{col_char}{display_row}"
+def _parse_sgf(sgf: str) -> tuple[int, float, str, list[tuple[str, str]], list[list[str]], str]:
+    """解析 SGF。
 
+    返回 ``(board_size, komi, rules, moves, initial_stones, initial_player)``。
+    ``moves`` 只走主线（每个节点取 children[0]），停一手是 ``"pass"``。
+    ``initial_stones`` 是 ``[[player, gtp], ...]``，让子石就在这里。
+    ``initial_player`` 由 PL / 首手颜色 / 让子推出，不再写死 "B"。
+    """
+    root = SGF.parse_sgf(sgf or "")
 
-def _parse_sgf(sgf: str) -> tuple[int, float, str, list[tuple[str, str]]]:
-    board_size = int(SGF_SIZE_RE.search(sgf or "")[1]) if SGF_SIZE_RE.search(sgf or "") else 19
+    board_size = root.board_size[0]
+    komi = root.komi
+    rules = ((root.ruleset or "chinese").strip().lower()) or "chinese"
 
-    komi_match = SGF_KOMI_RE.search(sgf or "")
-    try:
-        komi = float(komi_match[1]) if komi_match else 7.5
-    except ValueError:
-        komi = 7.5
-
-    rules_match = SGF_RULES_RE.search(sgf or "")
-    rules = (rules_match[1].strip().lower() if rules_match else "chinese") or "chinese"
+    initial_stones = [[m.player, m.gtp()] for m in root.placements]
+    initial_player = root.initial_player
 
     moves: list[tuple[str, str]] = []
-    for color, coord in SGF_MOVE_RE.findall(sgf or ""):
-        gtp = _sgf_to_gtp(coord, board_size) if coord else "pass"
-        moves.append((color.upper(), gtp))
-    return board_size, komi, rules, moves
+    node = root
+    while node.children:
+        node = node.children[0]          # 只走主线，分支不进
+        mv = node.move
+        if mv is None:                   # 纯摆子节点（罕见），不算一手
+            continue
+        moves.append((mv.player, mv.gtp()))
+    return board_size, komi, rules, moves, initial_stones, initial_player
 
 
 def _ownership_grid(raw: Any, board_size: int) -> list[list[float]] | None:
@@ -223,7 +227,16 @@ class ReportAnalyzerJob(BaseJob):
                 db.commit()
                 return
 
-            board_size, komi, rules, moves = _parse_sgf(game.sgf_content)
+            try:
+                board_size, komi, rules, moves, initial_stones, initial_player = _parse_sgf(game.sgf_content)
+            except Exception as exc:
+                # 换成真 SGF 解析器之后，畸形 SGF 会抛而不是静默产出垃圾着法。
+                # 让任务明确失败并把原因写进去，而不是把异常抛穿整个调度循环。
+                logger.warning("Report task %d: SGF parse failed: %s", task_id, exc)
+                task.status = "failed"
+                task.error_message = f"SGF parse failed: {exc}"
+                db.commit()
+                return
             requested_visits = task.requested_visits or 500
             resume_from = self._get_resume_move_number(db, task_id)
             task.status = "running"
@@ -249,6 +262,8 @@ class ReportAnalyzerJob(BaseJob):
                 moves=moves,
                 move_number=move_number,
                 requested_visits=requested_visits,
+                initial_stones=initial_stones,
+                initial_player=initial_player,
             )
             with SessionLocal() as db:
                 task = db.query(ReportTaskDB).filter(ReportTaskDB.id == task_id).first()
@@ -300,6 +315,8 @@ class ReportAnalyzerJob(BaseJob):
         moves: list[tuple[str, str]],
         move_number: int,
         requested_visits: int,
+        initial_stones: list[list[str]] | None = None,
+        initial_player: str = "B",
     ) -> dict[str, Any] | None:
         played = [[color, coord] for color, coord in moves[:move_number]]
 
@@ -317,8 +334,8 @@ class ReportAnalyzerJob(BaseJob):
                     analyze_turns=[len(played)],
                     include_ownership=True,
                     include_policy=False,
-                    initial_stones=[],
-                    initial_player="B",
+                    initial_stones=initial_stones or [],
+                    initial_player=initial_player,
                     priority=config.REPORT_ANALYSIS_PRIORITY,
                 )
                 break
@@ -341,6 +358,8 @@ class ReportAnalyzerJob(BaseJob):
         # Compute delta relative to previous move
         previous_score = None
         previous_winrate = None
+        previous_top_moves = None
+        previous_visits = None
         if move_number > 0:
             with SessionLocal() as db:
                 prev = (
@@ -354,6 +373,10 @@ class ReportAnalyzerJob(BaseJob):
                 if prev:
                     previous_score = prev.score_lead
                     previous_winrate = prev.winrate
+                    # 评级要用落子前那个局面的候选列表：pointsLost 取自同一次搜索，
+                    # 而首选的 policy 先验是「难不难被想到」那根轴的输入。
+                    previous_top_moves = prev.top_moves
+                    previous_visits = prev.root_visits
 
         score_lead = root_info.get("scoreLead", 0.0)
         winrate = root_info.get("winrate", 0.5)
@@ -383,8 +406,27 @@ class ReportAnalyzerJob(BaseJob):
                 }
             )
 
+        # 着手评价。阈值真源是 katrain/core/move_grade.yaml。
+        # 注意 move_number 是「落子后」的局面序号，也就是这手棋的序号。
+        grade = move_grade.grade_move(
+            prev_top_moves=previous_top_moves,
+            prev_visits=previous_visits,
+            actual_move=actual_move,
+            actual_player=actual_player,
+            actual_score_lead=score_lead,
+            actual_winrate=winrate,
+            move_number=move_number,
+        )
+
         return {
             "status": "success",
+            "grade": grade["grade"],
+            "points_lost": grade["points_lost"],
+            "points_lost_source": grade["points_lost_source"],
+            "root_visits": root_info.get("visits"),
+            "is_top_move": grade["is_top_move"],
+            "top_prior": grade["top_prior"],
+            "brilliance": grade["brilliance"],
             "winrate": winrate,
             "score_lead": score_lead,
             "visits": max((m.get("visits", 0) for m in move_infos[:1]), default=0),

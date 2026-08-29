@@ -189,11 +189,20 @@ export function toMoveAnalysisMap(
       score_lead: move.score_lead,
       top_moves: move.top_moves ?? [],
       ownership: move.ownership,
+      // 这三个布尔量只为不破坏旧消费者而保留。判级已经移到服务端
+      // （阈值真源 katrain/core/move_grade.yaml），新代码请读 grade。
+      // 注意 is_brilliant 建在 delta_score 这根单边轴上，实测它基本只在
+      // 搜索噪声上触发 —— 别再往它上面加功能。
       is_brilliant: deltaScore >= 2,
       is_mistake: deltaScore <= -3,
       is_questionable: deltaScore <= -1.5,
       delta_score: deltaScore,
       delta_winrate: move.delta_winrate ?? 0,
+      grade: move.grade ?? null,
+      points_lost: move.points_lost ?? null,
+      is_top_move: move.is_top_move ?? null,
+      top_prior: move.top_prior ?? null,
+      brilliance: move.brilliance ?? null,
     };
   }
 

@@ -3264,3 +3264,66 @@ msgstr "Nach Anmeldung verfügbar"
 
 msgid "play:analysis_requires_login_hint"
 msgstr "Gebiet / Rat / Verlauf sind nach der Anmeldung verfügbar"
+
+msgid "grade:brilliant"
+msgstr "Brillant"
+
+msgid "grade:best"
+msgstr "Bester Zug"
+
+msgid "grade:very_good"
+msgstr "Sehr gut"
+
+msgid "grade:playable"
+msgstr "Spielbar"
+
+msgid "grade:inaccuracy"
+msgstr "Ungenau"
+
+msgid "grade:mistake"
+msgstr "Fehler"
+
+msgid "grade:blunder"
+msgstr "Grober Fehler"
+
+msgid "grade:phase_all"
+msgstr "Ganze Partie"
+
+msgid "grade:phase_opening"
+msgstr "Eröffnung"
+
+msgid "grade:phase_midgame"
+msgstr "Mittelspiel"
+
+msgid "grade:phase_endgame"
+msgstr "Endspiel"
+
+msgid "grade:player_both"
+msgstr "Beide"
+
+msgid "grade:player_B"
+msgstr "Schwarz"
+
+msgid "grade:player_W"
+msgstr "Weiß"
+
+msgid "grade:performance"
+msgstr "Leistung"
+
+msgid "grade:brilliance"
+msgstr "Genialität"
+
+msgid "grade:unrated"
+msgstr "Nicht bewertet"
+
+msgid "grade:no_rated_moves"
+msgstr "Keine bewerteten Züge in dieser Phase"
+
+msgid "grade:truncated_note"
+msgstr "{n} weitere nicht aufgeführt — Phase oder Spieler wechseln"
+
+msgid "grade:histogram_footer"
+msgstr "{b} Züge Schwarz / {w} Züge Weiß bewertet"
+
+msgid "grade:unrated_count"
+msgstr "{n} nicht bewertet"

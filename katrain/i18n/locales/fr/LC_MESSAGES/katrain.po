@@ -3235,3 +3235,66 @@ msgstr "Disponible après connexion"
 
 msgid "play:analysis_requires_login_hint"
 msgstr "Territoire / Conseil / Graphique sont disponibles après connexion"
+
+msgid "grade:brilliant"
+msgstr "Brillant"
+
+msgid "grade:best"
+msgstr "Meilleur"
+
+msgid "grade:very_good"
+msgstr "Très bon"
+
+msgid "grade:playable"
+msgstr "Jouable"
+
+msgid "grade:inaccuracy"
+msgstr "Imprécision"
+
+msgid "grade:mistake"
+msgstr "Erreur"
+
+msgid "grade:blunder"
+msgstr "Bourde"
+
+msgid "grade:phase_all"
+msgstr "Partie entière"
+
+msgid "grade:phase_opening"
+msgstr "Ouverture"
+
+msgid "grade:phase_midgame"
+msgstr "Milieu de partie"
+
+msgid "grade:phase_endgame"
+msgstr "Yose"
+
+msgid "grade:player_both"
+msgstr "Les deux"
+
+msgid "grade:player_B"
+msgstr "Noir"
+
+msgid "grade:player_W"
+msgstr "Blanc"
+
+msgid "grade:performance"
+msgstr "Performance"
+
+msgid "grade:brilliance"
+msgstr "Éclat"
+
+msgid "grade:unrated"
+msgstr "Non évalué"
+
+msgid "grade:no_rated_moves"
+msgstr "Aucun coup évalué dans cette phase"
+
+msgid "grade:truncated_note"
+msgstr "{n} autres non listés — changez de phase ou de joueur"
+
+msgid "grade:histogram_footer"
+msgstr "{b} coups Noir / {w} coups Blanc évalués"
+
+msgid "grade:unrated_count"
+msgstr "{n} non évalués"

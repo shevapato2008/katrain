@@ -1361,11 +1361,16 @@ class WebKaTrain(KaTrainBase):
                 if node.move:
                     entry["move"] = node.move.gtp()
                     entry["actual_player"] = node.move.player
-                # Delta from previous node
+                # Delta from previous node, from the MOVER's perspective.
+                # node.winrate / node.score are always Black-perspective, so White's
+                # delta has to be flipped -- without the flip every good White move
+                # reads as a loss and every blunder as a gain.
+                # (report_analyze.py does the same flip; this path used to omit it.)
+                sign = 1 if (node.move and node.move.player == "B") else -1
                 if prev_winrate is not None and node.winrate is not None:
-                    entry["delta_winrate"] = node.winrate - prev_winrate
+                    entry["delta_winrate"] = sign * (node.winrate - prev_winrate)
                 if prev_score is not None and node.score is not None:
-                    entry["delta_score"] = node.score - prev_score
+                    entry["delta_score"] = sign * (node.score - prev_score)
                 # Points lost (from player's perspective)
                 pl = node.points_lost
                 if pl is not None:

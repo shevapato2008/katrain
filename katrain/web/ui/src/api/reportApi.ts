@@ -41,6 +41,15 @@ export interface ReportTaskMove {
   actual_player: string | null;
   delta_score: number | null;
   delta_winrate: number | null;
+  // 着手评价（服务端算好；阈值真源是 katrain/core/move_grade.yaml）。
+  // grade 为 null / "unrated" = 这手没有被评级，前端要显示成「未评级」而不是「没问题」。
+  grade: string | null;
+  points_lost: number | null;
+  points_lost_source: string | null;
+  is_top_move: boolean | null;
+  top_prior: number | null;
+  brilliance: number | null;
+  root_visits: number | null;
 }
 
 async function authFetch<T>(path: string, token: string, options?: RequestInit): Promise<T> {

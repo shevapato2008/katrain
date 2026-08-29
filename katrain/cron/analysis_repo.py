@@ -10,6 +10,7 @@ from typing import Optional
 from sqlalchemy import and_, text
 from sqlalchemy.orm import Session
 
+from katrain.core import move_grade
 from katrain.cron.models import (
     LiveAnalysisDB,
     LiveMatchDB,
@@ -182,9 +183,13 @@ class AnalysisRepo:
 
         record.delta_winrate = delta_wr
         record.delta_score = delta_sc
-        record.is_brilliant = delta_sc > 2.0
-        record.is_mistake = delta_sc < -3.0
-        record.is_questionable = -3.0 <= delta_sc < -1.0
+        # 阈值取自 katrain/core/move_grade.yaml（全仓真源）。
+        # 这里以前写死 -1.0，与另外三处的 -1.5 不一致 —— 同一手棋在直播页和
+        # 报告页会得到不同结论。
+        _ladder = move_grade.load_config()["ladder_points"]
+        record.is_brilliant = delta_sc > 2.0  # 单边轴上的旧判据，待换成难度轴
+        record.is_mistake = delta_sc < -_ladder["inaccuracy"]
+        record.is_questionable = -_ladder["inaccuracy"] <= delta_sc < -_ladder["playable"]
         self.db.commit()
 
     # ── Pending task creation ────────────────────────────────

@@ -18,7 +18,24 @@ export interface GameState {
   ruleset: string;
   current_node_id: number;
   current_node_index: number;
-  history: { node_id: number; score: number | null; winrate: number | null }[];
+  /**
+   * 主线着法(从根到当前,再顺着首子往下),**含根节点** —— 所以 `history[0]` 的
+   * `move`/`player` 是 `null`,第 n 手在 `history[n]`。
+   *
+   * `move` / `player` 是着法本身,不是分析结果:`score`/`winrate` 没算出来时是 `null`,
+   * 而这两个照旧有值(`interface.py` 那个循环里 `node.move` 直接就在手边)。
+   * `move` 的口径是 `Move.gtp()`:普通着法 `"Q16"`、虚手 `"pass"`、根节点 `null`。
+   *
+   * ⚠️ 拼棋谱**只能用它**:`stones` 虽然带 `move_number`,却**不含被提掉的子** ——
+   * 拿 `stones` 拼出来的棋谱会缺手。
+   */
+  history: {
+    node_id: number;
+    score: number | null;
+    winrate: number | null;
+    move?: string | null;
+    player?: 'B' | 'W' | null;
+  }[];
   player_to_move: string;
   stones: [string, [number, number] | null, number | null, number | null][];
   last_move: [number, number] | null;

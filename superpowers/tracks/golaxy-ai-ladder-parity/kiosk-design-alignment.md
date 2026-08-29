@@ -540,3 +540,32 @@ expect(longCang.glyphCount).toBeLessThanOrEqual(3);   // 0 ≤ 3 —— 满分
 `.kiosk-seg` 分段…):**零引用是正常的,不要接**。
 
 ⇒ 只列不接,按协调方口径。A 组每一条都要单独判断,不能整批处理。
+
+### 17.3 A 组六条,2026-08-23 逐条销账
+
+`feature/kiosk-go-shell-align` 那条赛道把 A 组**六条全接了**——不是「接了同名类」，
+是那几块 UI 整个换成了共享外壳的构件：
+
+| A 组那一行 | 现在 | 接在哪一步 |
+|---|---|---|
+| 顶栏 13 个类 | `kiosk/shell/KioskTopbar.tsx`；`Header.tsx` **整个文件删了** | Task 3 |
+| 镜像栏 4 个类 | `kiosk/shell/KioskConsoleRail.tsx` + `components/layout/GoConsoleRail.tsx`（壳共享、接线归围棋）；`SmartBoardConsole.tsx` **整个文件删了** | Task 5/10 |
+| 模式卡 4 个类 | `kiosk/shell/KioskCard.tsx`；`ModeCard.tsx` 跟着退役 | Task 10 |
+| `.kiosk-layout-l1` | `KioskLayout` 直接用它；296 + 16 + 680 由真浏览器闸量着 | Task 1/5 |
+| `.kiosk-primary-action` | 开局那颗主键换成了它 | Task 10 |
+| `.kiosk-scrollzone` / `.kiosk-scrollbar` | `kiosk/shell/KioskScrollZone.tsx`，**两种形态都实现了**（整栏滚 / 头尾固定只中间滚），悬浮条自己画（规范 §5.2 那条「必须画一条」因此销账） | Task 7 |
+
+**B 组也少了一批**：Dock、折叠面板、`.kiosk-seg` 分段、着法导航、行列表、状态标、
+胜率图（`.kiosk-eval` 的近亲 `.wrbox`）都有了真消费者。
+**仍然零引用的是 `.kiosk-slider` 和 `.kiosk-swatch`** —— 它们要调的设置项本身不存在
+（设置屏七组里五组没内容，见 `kiosk-go-shell-align/scope.md` §9.1）。
+
+### §12.5 那条「另外 17 屏还在用 `SubPageBar`」销账
+
+`SubPageBar.tsx` **整个文件在 Task 8 删了**，所有二级页统一走 `kiosk/shell/KioskPagebar.tsx`。
+页控条的纵向位置由几何闸钉着：**有盘页与无盘页来回切，那条控件带一个像素都不许动**。
+
+⚠️ 顺带记一条**本轮才发现的**：`immersive` 会把顶栏整块不渲染，而 `.kiosk-content` 的
+`top` 仍然是 `--topbar-h` ⇒ **屏顶留一条 56 高的空黑带**。规范 §5 防跳铁律 1 写死
+「顶栏永远占 y 0–56，任何层级都不隐藏」。屏 20（复盘报告）那一处已经改掉，
+研究 / 摆谱 / 做题 / 直播四屏**照旧**——那笔账仍在 Task 4 名下。

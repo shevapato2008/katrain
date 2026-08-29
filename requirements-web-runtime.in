@@ -8,6 +8,10 @@ bcrypt==4.0.1
 
 # Text, localization, parsing, and external APIs
 chardet==5.2.0
+# 着手评价的阈值真源 katrain/core/move_grade.yaml 由它读取。
+# 之前 pyyaml 只是别的包的传递依赖，碰巧被 pin 进了 .txt —— 那种依赖会在
+# 上游哪天不再需要它时**静默消失**，而症状是 web 容器起不来。写成直接依赖。
+pyyaml>=6.0
 polib>=1.2.0,<2
 beautifulsoup4>=4.12.0
 lxml>=5.0.0

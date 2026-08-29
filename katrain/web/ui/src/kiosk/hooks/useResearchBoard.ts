@@ -6,11 +6,35 @@
  * 19-only). Imported SGFs on a non-19 size no longer switch the board size;
  * `lastLoadedSize`/`lastLoadClamped` signal this so the page can toast
  * "仅支持 19 路".
+ *
+ * ## 2026-08-24:两组模式合并成一个 `boardTool`
+ *
+ * 原来是 `placeMode: 'alternate'|'black'|'white'|null` 和
+ * `editMode: 'place'|'move'|'delete'|null` **两组互相清空**的状态 —— 调用方每换一个
+ * 工具要写两次 set,还多出一个「两组都 null」的第五态。稿子(屏 21)画的是**一个四段
+ * 分段控件**,而分段控件按定义总有一段是按下的。⇒ 合成一个 `boardTool`。
+ *
+ * 三件东西随之消失,各有各的理由:
+ *
+ * · **`'move'`(拖动已有的子)—— 删掉,因为它在触摸屏上是坏的,不是「用得少」。**
+ *   选中态原来存在一个 `useRef` 里(`selectedStoneRef`),**ref 不触发重渲染,屏上
+ *   零反馈**:第一下点在子上什么都不变,第二下点在别处那颗子瞬移过去;第一下点空
+ *   静默 return;换工具不清 ref,中途没有取消入口。留下它就得连带把选中态画进共享的
+ *   `LiveBoard` —— 买回来的是一个「删除 + 摆黑/摆白」两下就能替代、且每下都有反馈的
+ *   工具。**丢的是「一手挪一子」。**
+ * · **`'place'` —— 死枝。** 全仓从未被 set 过、也从未被读过,只活在类型声明里。
+ * · **「两组都 null」—— 取消。** 它的全部含义是「点盘完全无响应」(锁盘防误触),
+ *   而翻手键在右栏、不需要碰盘。
+ *
+ * 默认值 `'alternate'` 和原来的 `placeMode='alternate'/editMode=null` 是同一个初始态,
+ * 所以合并对「进屏长什么样」零影响。
  */
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { movesToSGF, sgfToMoves } from '../../utils/sgfSerializer';
 import type { SGFMetadata, SerializedSGF } from '../../utils/sgfSerializer';
-import type { PlaceMode, EditMode } from '../components/research/ResearchToolbar';
+
+/** 屏 21 那个四段分段控件的四段。**互斥** —— 同一根手指点在盘上只能是其中一个意思。 */
+export type BoardTool = 'alternate' | 'black' | 'white' | 'delete';
 
 export interface ResearchBoardState {
   // Board
@@ -19,10 +43,8 @@ export interface ResearchBoardState {
   currentMove: number;
   boardSize: number;
 
-  // Edit modes
-  placeMode: PlaceMode;
-  editMode: EditMode;
-  showMoveNumbers: boolean;
+  // 落子/删除工具(四选一,永远有一个选中)
+  boardTool: BoardTool;
 
   // Rules
   rules: string;
@@ -36,7 +58,7 @@ export interface ResearchBoardState {
 
 export interface UseResearchBoardReturn extends ResearchBoardState {
   // Computed
-  nextColor: 'B' | 'W' | null; // null when no placeMode and no editMode that places
+  nextColor: 'B' | 'W' | null; // 删除工具下没有落子预览 ⇒ null
   handicapCount: number; // Number of leading setup stones (from handicap)
 
   // Board actions
@@ -45,10 +67,7 @@ export interface UseResearchBoardReturn extends ResearchBoardState {
   handleClear: () => void;
   handleMoveChange: (move: number) => void;
 
-  // Edit mode
-  setPlaceMode: (mode: PlaceMode) => void;
-  setEditMode: (mode: EditMode) => void;
-  setShowMoveNumbers: (show: boolean) => void;
+  setBoardTool: (tool: BoardTool) => void;
 
   // Rules
   setBoardSize: (size: number) => void;
@@ -65,11 +84,6 @@ export interface UseResearchBoardReturn extends ResearchBoardState {
   loadFromSGF: (sgfContent: string) => { success: boolean; error?: string };
   openLocalSGF: () => void;
   saveLocalSGF: () => void;
-  copyToClipboard: () => void;
-
-  // Snapshot for L1↔L2 transitions
-  getSnapshot: () => ResearchBoardState;
-  restoreSnapshot: (snapshot: ResearchBoardState) => void;
 
   // Kiosk 19-only clamp signal (not present in galaxy): the board size the
   // most recently loaded SGF actually declared, and whether it was clamped
@@ -83,9 +97,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
   const [stoneColors, setStoneColors] = useState<('B' | 'W')[]>([]);
   const [currentMove, setCurrentMove] = useState(0);
   const [boardSize, setBoardSize] = useState(19);
-  const [placeMode, setPlaceMode] = useState<PlaceMode>('alternate');
-  const [editMode, setEditMode] = useState<EditMode>(null);
-  const [showMoveNumbers, setShowMoveNumbers] = useState(false);
+  const [boardTool, setBoardTool] = useState<BoardTool>('alternate');
   const [rules, setRules] = useState('chinese');
   const [komi, setKomi] = useState(7.5);
   const [handicap, setHandicap] = useState(0);
@@ -105,7 +117,6 @@ export function useResearchBoard(): UseResearchBoardReturn {
   // ── Board actions ──
 
   // Track selected stone for move mode
-  const selectedStoneRef = useRef<{ x: number; y: number; moveIndex: number } | null>(null);
 
   const handleIntersectionClick = useCallback((x: number, y: number) => {
     const letters = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
@@ -113,7 +124,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
     const row = y + 1;
     const moveStr = `${col}${row}`;
 
-    if (editMode === 'delete') {
+    if (boardTool === 'delete') {
       const newMoves = [...moves];
       const newColors = [...stoneColors];
       for (let i = newMoves.length - 1; i >= 0; i--) {
@@ -130,38 +141,11 @@ export function useResearchBoard(): UseResearchBoardReturn {
       return;
     }
 
-    if (editMode === 'move') {
-      // Two-click move mode: first click selects stone, second click moves it
-      if (!selectedStoneRef.current) {
-        // First click: find the stone at this position
-        for (let i = moves.length - 1; i >= 0; i--) {
-          if (moves[i] === moveStr) {
-            selectedStoneRef.current = { x, y, moveIndex: i };
-            return;
-          }
-        }
-        // No stone found at this position
-        return;
-      } else {
-        // Second click: move the stone to the new position
-        const { moveIndex } = selectedStoneRef.current;
-        const newMoves = [...moves];
-        newMoves[moveIndex] = moveStr;
-        setMoves(newMoves);
-        selectedStoneRef.current = null;
-        rawSgfRef.current = null;
-        return;
-      }
-    }
-
-    // No placeMode selected = do nothing on click
-    if (!placeMode) return;
-
-    // Determine stone color based on placeMode
+    // 剩下三段都是落子。颜色由工具决定。
     let color: 'B' | 'W';
-    if (placeMode === 'black') {
+    if (boardTool === 'black') {
       color = 'B';
-    } else if (placeMode === 'white') {
+    } else if (boardTool === 'white') {
       color = 'W';
     } else {
       // alternate: based on the last stone color in the truncated sequence
@@ -179,7 +163,7 @@ export function useResearchBoard(): UseResearchBoardReturn {
     setStoneColors(newColors);
     setCurrentMove(newMoves.length);
     rawSgfRef.current = null;
-  }, [moves, stoneColors, currentMove, editMode, placeMode]);
+  }, [moves, stoneColors, currentMove, boardTool]);
 
   const handlePass = useCallback(() => {
     const newMoves = moves.slice(0, currentMove);
@@ -287,44 +271,6 @@ export function useResearchBoard(): UseResearchBoardReturn {
     URL.revokeObjectURL(url);
   }, [serializeToSGF, playerBlack, playerWhite]);
 
-  const copyToClipboard = useCallback(() => {
-    const { sgf } = serializeToSGF();
-    navigator.clipboard.writeText(sgf).catch((err) => {
-      console.error('Failed to copy SGF to clipboard:', err);
-    });
-  }, [serializeToSGF]);
-
-  // ── Snapshot ──
-
-  const getSnapshot = useCallback((): ResearchBoardState => ({
-    moves: [...moves],
-    stoneColors: [...stoneColors],
-    currentMove,
-    boardSize,
-    placeMode,
-    editMode,
-    showMoveNumbers,
-    rules,
-    komi,
-    handicap,
-    playerBlack,
-    playerWhite,
-  }), [moves, stoneColors, currentMove, boardSize, placeMode, editMode, showMoveNumbers, rules, komi, handicap, playerBlack, playerWhite]);
-
-  const restoreSnapshot = useCallback((snapshot: ResearchBoardState) => {
-    setMoves(snapshot.moves);
-    setStoneColors(snapshot.stoneColors);
-    setCurrentMove(snapshot.currentMove);
-    setBoardSize(snapshot.boardSize);
-    setPlaceMode(snapshot.placeMode);
-    setEditMode(snapshot.editMode);
-    setShowMoveNumbers(snapshot.showMoveNumbers);
-    setRules(snapshot.rules);
-    setKomi(snapshot.komi);
-    setHandicap(snapshot.handicap);
-    setPlayerBlack(snapshot.playerBlack);
-    setPlayerWhite(snapshot.playerWhite);
-  }, []);
 
   // Compute handicap setup count: number of leading consecutive B stones
   // that correspond to the handicap metadata (these are AB[] setup, not game moves)
@@ -343,34 +289,31 @@ export function useResearchBoard(): UseResearchBoardReturn {
 
   // Compute the next stone color for hover preview
   const nextColor = useMemo((): 'B' | 'W' | null => {
-    if (!placeMode) return null; // No placeMode = no ghost stone
-    if (placeMode === 'black') return 'B';
-    if (placeMode === 'white') return 'W';
+    if (boardTool === 'delete') return null; // 删除工具没有落子预览
+    if (boardTool === 'black') return 'B';
+    if (boardTool === 'white') return 'W';
     // alternate: based on last stone color in truncated sequence
     const truncated = stoneColors.slice(0, currentMove);
     const lastColor = truncated.length > 0 ? truncated[truncated.length - 1] : 'W';
     return lastColor === 'B' ? 'W' : 'B';
-  }, [placeMode, stoneColors, currentMove]);
+  }, [boardTool, stoneColors, currentMove]);
 
   return {
     // State
-    moves, stoneColors, currentMove, boardSize, placeMode, editMode, showMoveNumbers,
+    moves, stoneColors, currentMove, boardSize, boardTool,
     rules, komi, handicap, playerBlack, playerWhite,
     // Computed
     nextColor,
     handicapCount,
     // Board actions
     handleIntersectionClick, handlePass, handleClear, handleMoveChange,
-    // Edit mode
-    setPlaceMode, setEditMode, setShowMoveNumbers: (v: boolean) => setShowMoveNumbers(v),
+    setBoardTool,
     // Rules
     setBoardSize, setRules, setKomi, setHandicap,
     // Players
     setPlayerBlack, setPlayerWhite,
     // SGF
-    serializeToSGF, loadFromSGF, openLocalSGF, saveLocalSGF, copyToClipboard,
-    // Snapshot
-    getSnapshot, restoreSnapshot,
+    serializeToSGF, loadFromSGF, openLocalSGF, saveLocalSGF,
     // Kiosk 19-only clamp signal
     lastLoadedSize, lastLoadClamped,
   };

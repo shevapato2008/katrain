@@ -1,0 +1,148 @@
+# 着手评价（move grade）唯一真源
+#
+# 这份文件是全仓唯一定义档位与阈值的地方。改这里，服务端评级、前端配色、
+# 桌面端梯子、以及从它生成的 TS 常量会一起变。
+#
+# 改完必须重新生成两份产物：
+#
+#     python -m katrain.core.move_grade --emit
+#
+#   1. katrain/cron/move_grade.py                                （cron 用，stdlib-only）
+#   2. katrain/web/ui/src/features/analysis/gradeTiers.generated.ts（前端用）
+#
+# 为什么 cron 要一份生成的副本而不是直接读本文件：Dockerfile.cron 只
+# `COPY katrain/cron/`，镜像里既没有 katrain.core、也没有 PyYAML
+# （tests/web_ui/test_cron_import_boundary.py 守这条，它守的那类错
+# **只在容器里炸、在本仓永远绿**）。
+#
+# 不同步、生成物里混进 import、或两侧判出不同档，
+# tests/test_move_grade.py 里各有一条闸会红。
+#
+# 单位：points = 目（KataGo scoreLead 差），winrate = 0..1。
+
+version: 1
+
+# ---------------------------------------------------------------------------
+# 用哪个量来度量「这手棋亏了多少」
+# ---------------------------------------------------------------------------
+metric:
+  # in_search : pointsLost = top_moves[0].score_lead - 实战手的 score_lead
+  #             两个数取自同一次搜索（第 N-1 手的 moveInfos），噪声远低于 two_search。
+  #             实测(kata1-b18c384nbt/500visits/3局)：出现「负损失」的比例
+  #             two_search 21.7%~37.2% → in_search 0%~5.8%。
+  # two_search: pointsLost = scoreLead(N-1) - scoreLead(N)，两次独立搜索之差。
+  #             实战手不在 top_moves 里时作为回退。
+  source: in_search
+  fallback: two_search
+
+  # 低于这个**根搜索量**的行不评级（grade = unrated），不进任何列表和直方图。
+  # 报告管线 normal=500 / deep=2000；这个值只挡明显没搜够的行。
+  # 注意闸量的是 report_task_moves.root_visits，不是 visits ——
+  # 后者存的是首选的 childVisits，拿它当闸会静默压制妙手。
+  min_visits: 100
+
+# ---------------------------------------------------------------------------
+# 目数损失梯子 —— KaTrain 上游自己的刻度 [12, 6, 3, 1.5, 0.5, 0]
+# 这里只用到后四个断点；>= mistake 的上面一档就是恶手。
+# ---------------------------------------------------------------------------
+ladder_points:
+  very_good: 0.5     # pointsLost <  0.5  → 很好
+  playable: 1.5      # pointsLost <  1.5  → 可下
+  inaccuracy: 3.0    # pointsLost <  3.0  → 欠佳
+  mistake: 6.0       # pointsLost <  6.0  → 失误 ; >= 6.0 → 恶手
+
+# ---------------------------------------------------------------------------
+# 妙手 —— 第二根轴：难度。不看收益，看「这手难不难被想到」。
+# ---------------------------------------------------------------------------
+brilliant:
+  # 必须走出引擎第一选点
+  require_top_move: true
+
+  # 且第一选点的 policy 先验低于此值（= 连引擎自己的直觉都没想到）
+  # 依据（实测）：职业局 P(top prior < 0.10) = 20%，其中职业棋手命中 16.7%
+  #              ⇒ 约 3.3% 的手会被判妙手 ⇒ 288 手对局每方约 4-5 手。
+  max_prior: 0.10
+
+  # 局面已经完全决定时不给妙手。
+  # 借自 Chess.com Brilliant 的成文条件：「即使你没找到这手，你也不能是已经完全赢定的」。
+  # 大优时找到一手妙棋没有意义，而且此时胜率/目数都已饱和。
+  require_undecided:
+    max_abs_score_lead: 20.0      # |scoreLead| 超过这个目数就不给
+    winrate_band: [0.05, 0.95]    # 胜率落在这个区间之外就不给
+
+  # 玄妙指数 1-5 的 prior 断点（越低越玄妙）。柱高 = 级数。
+  # prior < 0.01 → 5 级；< 0.02 → 4；< 0.03 → 3；< 0.05 → 2；< max_prior → 1
+  levels_prior: [0.05, 0.03, 0.02, 0.01, 0.0]
+
+  # 妙手判据要求「实战手 == 引擎首选」，而首选本身在重复搜索间会翻
+  # （实测 turn 30 / 500 visits：D3 4 次 vs P3 8 次）。
+  # 低于这个**根搜索量**不判妙手，避免把搜索抖动当成妙手。
+  # 普通报告是 500，所以这个值必须明显低于 500，否则普通报告里一个妙手都出不来。
+  min_visits: 400
+
+  # 已知限制，改阈值前先读：
+  #   1. 对 15k 一档几乎没有分辨力（命中率 12.5% → 33.3%，近乎平坦）。
+  #   2. 官子段 policy 天然更平（职业局首选 prior 中位数 布局 0.384 → 官子 0.243），
+  #      固定阈值会在官子段超额触发。phase_prior_scale 用来补偿。
+  phase_prior_scale:
+    opening: 1.0
+    midgame: 1.0
+    endgame: 0.6
+
+# ---------------------------------------------------------------------------
+# 档位表（顺序即直方图的柱子顺序）
+# color 同时供前端与桌面端使用；改 color 记得重新生成 TS。
+# ---------------------------------------------------------------------------
+tiers:
+  - id: brilliant   # 妙手
+    i18n: "grade:brilliant"
+    zh: "妙手"
+    color: "#3FA2E8"
+    bad: false
+  - id: best        # 最佳
+    i18n: "grade:best"
+    zh: "最佳"
+    color: "#2E8B57"
+    bad: false
+  - id: very_good   # 很好
+    i18n: "grade:very_good"
+    zh: "很好"
+    color: "#4DBE46"
+    bad: false
+  - id: playable    # 可下
+    i18n: "grade:playable"
+    zh: "可下"
+    color: "#A4B436"
+    bad: false
+  - id: inaccuracy  # 欠佳
+    i18n: "grade:inaccuracy"
+    zh: "欠佳"
+    color: "#D6A318"
+    bad: true
+  - id: mistake     # 失误
+    i18n: "grade:mistake"
+    zh: "失误"
+    color: "#CF6B09"
+    bad: true
+  - id: blunder     # 恶手
+    i18n: "grade:blunder"
+    zh: "恶手"
+    color: "#BB2121"
+    bad: true
+
+# ---------------------------------------------------------------------------
+# 展示口径
+# ---------------------------------------------------------------------------
+display:
+  # 妙手/问题手 列表每方最多显示几条（在所选阶段内各自重新计算）
+  per_side_limit: 5
+
+  # 阶段区间（含端点，按手数；null = 到终局）
+  # 与星阵实测生效值一致：全盘 0-end / 布局 0-59 / 中盘 60-149 / 官子 150-end
+  phases:
+    opening: [0, 59]
+    midgame: [60, 149]
+    endgame: [150, null]
+
+  # tab 上的计数要诚实：显示「失误 (5 / 50)」而不是只显示截断后的 5。
+  show_truncated_total: true

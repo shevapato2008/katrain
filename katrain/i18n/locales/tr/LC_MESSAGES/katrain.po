@@ -3281,3 +3281,66 @@ msgstr "Giriş yaptıktan sonra kullanılabilir"
 
 msgid "play:analysis_requires_login_hint"
 msgstr "Bölge / Tavsiye / Grafik giriş yaptıktan sonra kullanılabilir"
+
+msgid "grade:brilliant"
+msgstr "Parlak"
+
+msgid "grade:best"
+msgstr "En iyi"
+
+msgid "grade:very_good"
+msgstr "Çok iyi"
+
+msgid "grade:playable"
+msgstr "Oynanabilir"
+
+msgid "grade:inaccuracy"
+msgstr "Hatalı hamle"
+
+msgid "grade:mistake"
+msgstr "Hata"
+
+msgid "grade:blunder"
+msgstr "Büyük hata"
+
+msgid "grade:phase_all"
+msgstr "Tüm oyun"
+
+msgid "grade:phase_opening"
+msgstr "Açılış"
+
+msgid "grade:phase_midgame"
+msgstr "Orta oyun"
+
+msgid "grade:phase_endgame"
+msgstr "Son oyun"
+
+msgid "grade:player_both"
+msgstr "İkisi de"
+
+msgid "grade:player_B"
+msgstr "Siyah"
+
+msgid "grade:player_W"
+msgstr "Beyaz"
+
+msgid "grade:performance"
+msgstr "Performans"
+
+msgid "grade:brilliance"
+msgstr "Zarafet"
+
+msgid "grade:unrated"
+msgstr "Değerlendirilmedi"
+
+msgid "grade:no_rated_moves"
+msgstr "Bu aşamada değerlendirilmiş hamle yok"
+
+msgid "grade:truncated_note"
+msgstr "{n} tane daha var — aşamayı veya oyuncuyu değiştirin"
+
+msgid "grade:histogram_footer"
+msgstr "{b} siyah / {w} beyaz hamle değerlendirildi"
+
+msgid "grade:unrated_count"
+msgstr "{n} değerlendirilmedi"

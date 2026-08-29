@@ -59,6 +59,37 @@ describe('operator-trusted capture API', () => {
 
     const outcome = await BaipuAPI.capture({ game_id: 'kifu_24171', move_index: 0, sgf: '(;B[pd])' });
 
-    expect(outcome).toEqual({ kind: 'error', message: 'capture conflict' });
+    // 这一支**必须是 `other`**:把它归成「几何」会让屏上叫人去重新标定棋盘 ——
+    // 一件跟 qa mismatch 毫无关系的事。(第一版就是这么写的,被这条用例当场逮住。)
+    expect(outcome).toEqual({ kind: 'error', message: 'capture conflict', reason: 'other' });
+  });
+
+  /**
+   * 409 的两种**可分辨**形状,对站在盘前的人意味着完全不同的事:
+   *  · 几何没锁 → 再按一次永远是同一个 409,人得去重新标定;
+   *  · 灯不可用 → 再按一次有可能成。
+   * 混成一句「再按一次」会让几何坏掉的人一直按下去。
+   * 判别位是 `detail` 的**形状**不是关键词 —— 字符串内容是会被改的文案。
+   */
+  it('几何没锁那一种认得出来(detail 是纯字符串)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      detail: 'Geometry not locked; run /geometry/lock first',
+    }), { status: 409, headers: { 'Content-Type': 'application/json' } })));
+
+    const outcome = await BaipuAPI.capture({ game_id: 'k', move_index: 0, sgf: '(;B[pd])' });
+    expect(outcome).toEqual({
+      kind: 'error',
+      message: 'Geometry not locked; run /geometry/lock first',
+      reason: 'geometry',
+    });
+  });
+
+  it('灯不可用那一种认得出来(detail 是 {error:led_unavailable})', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      detail: { error: 'led_unavailable', message: 'LED bus down' },
+    }), { status: 409, headers: { 'Content-Type': 'application/json' } })));
+
+    const outcome = await BaipuAPI.capture({ game_id: 'k', move_index: 0, sgf: '(;B[pd])' });
+    expect(outcome).toEqual({ kind: 'error', message: 'LED bus down', reason: 'led' });
   });
 });

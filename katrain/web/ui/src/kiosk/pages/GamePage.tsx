@@ -3,16 +3,22 @@ import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, 
 // TipsAndUpdates is intentionally NOT imported: the standalone header hint button is gone
 // (AI 支招 is folded into the right-panel button in GameControlPanel). EmojiEvents is used
 // by the endgame result card below.
-import { ExitToApp, Videocam, Lightbulb, GpsFixed, Refresh, EmojiEvents } from '@mui/icons-material';
+// 顶条那三颗常亮状态灯(Videocam / GpsFixed)和 Refresh、ExitToApp 一起撤了 ——
+// 标题与返回归页控条,状态显示归 L1 镜像栏,重置识别成了页控条上那个唯一的页级图标键。
+// `Lightbulb` 留着:它在这儿不是状态灯,是「AI 已落子,请把子摆到亮灯处」那条横幅的图标。
+import { EmojiEvents, Lightbulb } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
 import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
+import { KioskPagebar } from '../shell/KioskPagebar';
+import { colsFor, rowsFor } from '../shell/goBoard';
 import KioskResultBadge from '../components/game/KioskResultBadge';
 import RecalibrationModal from '../components/game/RecalibrationModal';
 import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
 import { useVision } from '../context/VisionContext';
+import { readPlayOnBoard } from '../utils/playInput';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { useTranslation } from '../../hooks/useTranslation';
 import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChip';
@@ -21,7 +27,6 @@ import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog'
 import HintPanel from '../components/physical/HintPanel';
 import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
 import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
-import { usePlatformEvents } from '../hooks/usePlatformEvents';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
@@ -119,7 +124,7 @@ const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
       {/* Score breakdown — komi + captures only (display only). Full territory-adjusted
           目/子 breakdown needs dead-stone data from the backend; deferred (Gate S). */}
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-        {t('Komi', '贴目')} {gameState.komi} · {t('Captures', '提子')} {t('Black', '黑')} {gameState.prisoner_count.B} / {t('White', '白')} {gameState.prisoner_count.W}
+        {t('Komi', '贴目')} {gameState.komi} · {t('Captures', '提子')} {t('game:black_short', '黑')} {gameState.prisoner_count.B} / {t('game:white_short', '白')} {gameState.prisoner_count.W}
       </Typography>
       <Box sx={{ display: 'flex', gap: 1.5 }}>
         <Button variant="outlined" onClick={() => setDismissed(true)}>{t('Resume game', '继续对弈')}</Button>
@@ -136,10 +141,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { token, user } = useAuth();
   const session = useGameSession({ token: token ?? undefined });
-  // B2/D5 (engine-move commit protocol): while a Golaxy 人机对弈 move is in flight
-  // (genmove tunnel, up to ~180s), the backend already 409s undo/redo/nav — this
-  // mirrors that in the UI so the button doesn't sit there inviting a rejected tap.
-  const { pendingMove: platformPendingMove } = usePlatformEvents(session.wsRef, {});
   const [analysisToggles, setAnalysisToggles] = useState(() => ({
     ownership: false,
     hints: false,
@@ -169,9 +170,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [countError, setCountError] = useState<string | null>(null);
   const [resignError, setResignError] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState(false);
-  const [resyncing, setResyncing] = useState(false);
+  // 重置识别的「在制中」走 ref 不走 state:页控条那个图标键没有忙碌态可显示,
+  // 这个值不进渲染 —— 放进 state 就是一次没人看的重渲染。
+  const resyncingRef = useRef(false);
   const [resyncError, setResyncError] = useState(false);
-  const [syncStuck, setSyncStuck] = useState(false);
 
   // Golaxy 人机对弈 is the only engine-play platform today (§13). Revisit if/when
   // another platform gets engine-play analysis tunnels.
@@ -188,7 +190,22 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   // refreshStatus drives the 重置识别 recovery button clearing immediately on success.
   const { visionStatus, isVisionEnabled, refreshStatus } = useVision();
-  const visionSync = useVisionSync(isVisionEnabled ? sessionId ?? null : null);
+
+  // ── 这一局到底落在哪儿 ────────────────────────────────────────────────
+  // **`isVisionEnabled` 只是设备那一段。** 2026-08-23 起开局设置屏上有一颗真的
+  // 「屏幕 / 实体盘」,偏好存在 `utils/playInput.ts`;这一屏下面**每一处**实体盘 UI
+  // (识别绑定、AI 落子横幅、重标定弹层、硬件故障条、重置识别键、识别浮层、
+  // 引擎落子错误弹层)认的都得是**两段之和**,不是设备那一段。
+  //
+  // 偏好只在**挂载时读一次**:这一局落在哪儿是开局那一刻定的(开局设置屏上写着
+  // 「开局后不可改」),中途跟着 localStorage 变会把人从一块已经摆着子的盘上赶下来。
+  // 路数同理并进来 —— 盒子上那块盘是 19 路的,9 路 / 13 路的局本来就落不到盘上,
+  // 而开局设置屏正是这么答的,两边不能给出两个答案。
+  const [playOnBoard] = useState(readPlayOnBoard);
+  const physicalPlay = isVisionEnabled
+    && playOnBoard
+    && (session.gameState?.board_size?.[0] ?? 19) === 19;
+  const visionSync = useVisionSync(physicalPlay ? sessionId ?? null : null);
 
   useEffect(() => {
     if (!session.physicalReminder) return;
@@ -223,20 +240,20 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // Persistent amber banner when AI makes a move (vision mode: physical board player
   // needs a coordinate hint to place the matching stone). Cleared on the human's own move.
   useEffect(() => {
-    if (!isVisionEnabled || !session.gameState) return;
+    if (!physicalPlay || !session.gameState) return;
     const gs = session.gameState;
     const human = deriveHumanColor(gs);
     if (gs.last_move && gs.end_result === null && human && gs.player_to_move === human) {
       setAiMoveBanner(formatGtpCoord(gs.last_move[0], gs.last_move[1], gs.board_size[0]));
     }
-  }, [isVisionEnabled, session.gameState?.current_node_id]);
+  }, [physicalPlay, session.gameState?.current_node_id]);
 
   // Camera disconnect fallback
   useEffect(() => {
-    if (isVisionEnabled && !visionStatus.cameraConnected) {
+    if (physicalPlay && !visionStatus.cameraConnected) {
       setCameraDisconnectToast(true);
     }
-  }, [isVisionEnabled, visionStatus.cameraConnected]);
+  }, [physicalPlay, visionStatus.cameraConnected]);
 
   // Invalidate the 星阵 analysis overlay when the board position advances (a move
   // played, human or AI) — otherwise stale 领地/支招/变化图 markers keep drawing over
@@ -262,10 +279,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   useEffect(() => {
     const prevKind = prevEngineOptionsKindRef.current;
     prevEngineOptionsKindRef.current = activeEngineKind;
-    if (engineMode && isVisionEnabled && prevKind === 'options' && activeEngineKind !== 'options') {
+    if (engineMode && physicalPlay && prevKind === 'options' && activeEngineKind !== 'options') {
       API.hintDismiss().catch(() => undefined);
     }
-  }, [activeEngineKind, engineMode, isVisionEnabled]);
+  }, [activeEngineKind, engineMode, physicalPlay]);
 
   // Local free-play on-demand analysis for 领地(ownership)/图表(winrate/score). Board mode
   // suppresses per-move auto-eval, so the current position has no analysis until we ask.
@@ -277,8 +294,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   useEffect(() => {
     if (engineMode || !wantAnalysis || !sessionId || !gs) return;
     if (isRankedGameType(gs.game_type)) return;
+    // 无人认领的会话:服务端**算了但不交付**(`analysis_delivered`)。开关那边已经灰了,
+    // 这里再早退一次是因为**这条 `.catch(() => undefined)` 会把失败整个吞掉** ——
+    // 不早退的话,每换一手就往一个注定拿不回结果的端点打一发,屏上和日志里都没有痕迹。
+    if (gs.analysis_delivered === false) return;
     API.analyzeCurrent(sessionId).catch(() => undefined);
-  }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type]);
+  }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type, gs?.analysis_delivered]);
 
 
   const closeHint = useCallback(() => {
@@ -291,34 +312,21 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // status on success so the button clears immediately instead of after the ≤3s poll;
   // surface a failure instead of silently swallowing it.
   const handleResetSync = useCallback(async () => {
-    setResyncing(true);
+    if (resyncingRef.current) return;   // 双击守卫:页控条那个图标键没有忙碌态可显示
+    resyncingRef.current = true;
     try {
       await API.visionResetSync();
       await refreshStatus();
     } catch {
       setResyncError(true);
     } finally {
-      setResyncing(false);
+      resyncingRef.current = false;
     }
   }, [refreshStatus]);
 
-  // Offer the 重置识别 button only for genuinely-blocked sync states, and only after they
-  // PERSIST — a routine capture (capture_pending self-clears in a few seconds) or a hand
-  // over the board (board_lost) must not flash the warning button, while a real deadlock
-  // still recovers well under the 30s reminder / 120s escalation. 'unbound' / 'calibrating'
-  // / 'setup_in_progress' / 'synced' are never "stuck".
-  const stuckEligible =
-    isVisionEnabled && !session.gameState?.end_result &&
-    ['mismatch_warning', 'capture_pending', 'board_lost', 'degraded'].includes(visionStatus.syncState);
-  useEffect(() => {
-    if (!stuckEligible) {
-      setSyncStuck(false);
-      return;
-    }
-    const id = setTimeout(() => setSyncStuck(true), 10000);
-    return () => clearTimeout(id);
-  }, [stuckEligible]);
-
+  // 「卡了 10 秒才把重置识别键放出来」那一整套(`stuckEligible` + `syncStuck` 计时器)撤了:
+  // 它存在的唯一理由是「别在例行拍照时闪一个警告按钮」—— 而现在这个键不是警告,是页控条上
+  // 常驻的那个页级图标键(§11),实体模式下一直在。**必须先卡住一次才能自救**是上一版的形状。
   // Remaining-道具 counts for the button badges. Account-level (not per-game),
   // so it's safe to fetch once on mount and re-fetch after each analysis settles
   // (each call consumes a use; 7003 means it hit 0). Best-effort: a failed fetch
@@ -350,8 +358,27 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   }
 
   const gameState = session.gameState;
-  const gameTitle = `${gameState.players_info.B.name} vs ${gameState.players_info.W.name}`;
   const isGameOver = !!gameState.end_result;
+  const boardSize = gameState.board_size[0];
+  // 页控条标题 = **这一局是哪种对弈**,不是「张三 vs KataGo」。
+  // 名字在玩家卡里各占一行(还带段位、执色、提子),标题再写一遍是把 460 宽的一行
+  // 花在已经能看见的东西上;而「自由对弈 / 升降级对弈」是这一屏唯一说不出别处的事
+  // (悔棋能不能用、胜率图有没有,全跟它走)。
+  const gameTitle = engineMode ? t('game:golaxy_ai', '星阵围棋 · 人机')
+    : gameState.game_type === 'ai_ladder_ranked' ? t('Ranked Game', '升降级对弈')
+    : gameState.game_type === 'pvp_local' ? t('game:local_pvp', '本地对局')
+    : gameState.game_type === 'pvp_online' ? t('game:online_pvp', '在线对局')
+    : t('Free Game', '自由对弈');
+  // 副标 = **开局时定死的那几条**(路数 / 规则 / 贴目 / 让子)。它们不是过程量,
+  // 写在这里一次就够,不必像上一版那样占一整条 `Game info bar`。
+  const gameSetupLine = [
+    t('game:board_lines', '{n} 路').replace('{n}', String(boardSize)),
+    `${t(gameState.ruleset, gameState.ruleset)} ${t('Rules', '规则')}`,
+    `${t('Komi', '贴目')} ${gameState.komi}`,
+    gameState.handicap > 0
+      ? t('game:handicap_n', '让 {n} 子').replace('{n}', String(gameState.handicap))
+      : t('game:no_handicap', '不让子'),
+  ].join(' · ');
   // Ranked/rated games forbid undo server-side (anti-cheat); hide the controls too.
   const isRanked = isRankedGameType(gameState.game_type);
 
@@ -376,11 +403,26 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // generic 10s "board detection abnormal" dialog: recalOpen both gates RecalibrationModal
   // itself (further suppressed `&& !escalationOpen`) AND feeds into VisionSyncOverlay's
   // suppressBoardLost, so at most one board-loss surface is ever visible at a time.
-  const recalOpen = isVisionEnabled && !visionStatus.poseLocked && !isGameOver;
+  const recalOpen = physicalPlay && !visionStatus.poseLocked && !isGameOver;
 
   // State C: force territory coloring while scoring, without mutating the user's own
   // analysisToggles selection (so the toggle panel keeps reflecting their real picks).
   const boardAnalysisToggles = isGameOver ? { ...analysisToggles, ownership: true } : analysisToggles;
+
+  // 刻度带的字。`坐标` 关掉时给空数组 —— **带还在,只是没字**(撤了带落子区会从 460 跳成 516)。
+  const rulerCols = analysisToggles.coords ? colsFor(boardSize) : [];
+  const rulerRows = analysisToggles.coords ? rowsFor(boardSize) : [];
+
+  // 硬件故障那一句。上一版是顶条上**三颗常亮的灯**;§5 说状态显示归 L1 镜像栏,L3 上没它们的位置。
+  // 但「LED 掉线」在这一屏原来只有那颗灯说得出来 —— 撤了灯就等于撤了唯一的信号,那不行。
+  // ⇒ 只在**真出故障时**说一句,落在开关排右端那个本来就用来解释「为什么它是灰的」的位置,
+  //    平时不占地方。三条的优先级按「不修就没法下」排:摄像头 > 标定 > LED。
+  //    `ledConnected === null` 是**后端没说**,不是「没连上」—— 不报(见 `GoConsoleRail`)。
+  const hardwareFault = !physicalPlay ? null
+    : visionStatus.cameraConnected === false ? t('vision:camera_down', '摄像头未连接 · 已转触屏')
+    : visionStatus.poseLocked === false ? t('vision:pose_lost', '标定丢失 · 请重新标定')
+    : visionStatus.ledConnected === false ? t('vision:led_down', 'LED 未连接 · 不再亮灯引导')
+    : null;
 
   const handleAction = async (action: string) => {
     if (isRanked && ['undo', 'back', 'back-10', 'start'].includes(action)) return;
@@ -421,10 +463,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   };
 
+  /* 三个操作数,各挡各的:`physicalPlay` 是「实体盘在不在」,`analysis_allowed` 是
+     「这一局允不允许分析」(升降级反作弊),`analysis_delivered` 是「算了交不交给你」
+     (无人认领的会话)。少了最后一条,游客的支招键是亮的,按下去 401 ——
+     而 `handleHint` 的 catch 只认得 `ranked_forbidden`/`disabled`/`insufficient`,
+     401 会落到那句「支招失败,请稍后再试」上,把一个**登录就能解决**的事说成了故障。 */
   const hintVisible =
-    isVisionEnabled &&
+    physicalPlay &&
     gameState.game_type === 'free' &&
-    gameState.analysis_allowed !== false;
+    gameState.analysis_allowed !== false &&
+    gameState.analysis_delivered !== false;
 
   const handleHint = async () => {
     if (!sessionId) return;
@@ -494,7 +542,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </Box>
       {/* Persistent AI-move banner: physical board player needs a coordinate hint.
           Single-owner gate: vision on + an AI seat exists + a banner label is pending. */}
-      {isVisionEnabled && aiColor !== null && aiMoveBanner && (
+      {physicalPlay && aiColor !== null && aiMoveBanner && (
         <Box
           data-testid="ai-move-banner"
           sx={{
@@ -512,15 +560,17 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Box>
       )}
 
+      {/* 位置走 `.gthink`(go-screens.css)—— **居中在棋盘上,不是整页上**。
+          这两块共用同一个槽(构造上互斥,见 deriveAiTurnState),所以位置也共用一个类:
+          分开写过一次,结果是两处各写一遍 `left:'50%'`,改一处漏一处不会有人红。 */}
       {/* State A: AI 思考中 — jade spinner banner (design.md §5.1 state A). Single-owner
           gate via showThinking (deriveAiTurnState): suppressed for PVP (aiColor===null)
           and while the physical layer is confirming a move (move_pending), so it never
           stacks with PhysicalPlayStatusChip's 确认中 chip. Board interaction is already
           gated by playerColor={humanColor} (Board.tsx, consume-only) — no extra disable needed. */}
       {showThinking && (
-        <Box data-testid="ai-thinking"
-          sx={{ position: 'absolute', top: 44, left: '50%', transform: 'translateX(-50%)', zIndex: 55,
-                display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderRadius: 2,
+        <Box data-testid="ai-thinking" className="gthink"
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 0.75, borderRadius: 2,
                 bgcolor: 'var(--raise2)', border: '1px solid', borderColor: 'primary.main' }}>
           <CircularProgress size={16} sx={{ color: 'primary.main' }} />
           <Typography sx={{ color: 'primary.main' }}>{t('AI is thinking…', 'AI 思考中…')}</Typography>
@@ -533,9 +583,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           construction — see deriveAiTurnState) and says the two things the player needs:
           no move is coming, and this game will not touch their rank. */}
       {ladderStalled && (
-        <Box data-testid="ladder-stalled"
-          sx={{ position: 'absolute', top: 44, left: '50%', transform: 'translateX(-50%)', zIndex: 55,
-                maxWidth: 620, px: 2, py: 0.75, borderRadius: 2,
+        <Box data-testid="ladder-stalled" className="gthink"
+          sx={{ px: 2, py: 0.75, borderRadius: 2,
                 bgcolor: 'var(--raise2)', border: '1px solid', borderColor: 'warning.main' }}>
           <Typography sx={{ color: 'warning.main', fontSize: 14, textAlign: 'center' }}>
             {t('ladder:engine_stalled', '阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，请退出本局')}
@@ -543,10 +592,23 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Box>
       )}
 
-      {/* Error display */}
-      {session.error && <Alert severity="error" sx={{ mx: 2, mt: 1 }}>{session.error}</Alert>}
+      {/*
+        对局出错 —— **走浮层,不占流内高度。**
+        这一屏是布局 A 的固定画布:盘 516 贴 (16,70),整屏一共就 600 高。
+        原来这条是一块流内的 `<Alert>`(2026-03-26 从 galaxy 搬过来时就在),
+        平时 `session.error` 是空的所以看不出问题;`dc55f32e`(对局 WS 补上凭据)让
+        「实时连接被拒绝(Invalid token)」真的会填进来之后,它就成了盘上面 48+8 高的一条 ——
+        **盘被顶到 y=126、底边 642 掉出 600 的屏外**,右栏一起下移。
+        (`kiosk-screen-05-game.spec.ts` 的「盘顶不在 y=70」当场红,2026-08-25 逮到。)
+        这一屏另外六条错都在 `Snackbar` 里,这条本来就是那六条的同类。
+        ⚠️ **不自动消失**(`autoHideDuration={null}`):Fan 2026-08-21 裁过掉线 toast 这一条 ——
+        连接断了是持续状态,不是一闪而过的事件。
+      */}
+      <Snackbar open={!!session.error} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="error">{session.error}</Alert>
+      </Snackbar>
 
-      {isVisionEnabled && (
+      {physicalPlay && (
         <PhysicalPlayStatusChip
           latestEvent={visionSync.latestEvent}
           currentNodeId={session.gameState?.current_node_id ?? null}
@@ -556,7 +618,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* State B: RecalibrationModal (pose lost). Gated `&& !escalationOpen` so the
           escalation dialog (highest-priority board-loss surface) wins — see the
           precedence comment above recalOpen. */}
-      {isVisionEnabled && (
+      {physicalPlay && (
         <RecalibrationModal
           key={String(visionStatus.poseLocked)}
           open={recalOpen && !escalationOpen}
@@ -568,52 +630,59 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         />
       )}
 
-      {/* Header — kiosk-ui-redesign 方案A: title (left) · inline vision chips (right, no longer a
-          floating overlay that collided with the buttons) · 退出. AI 支招 is folded into the
-          right-panel 建议 button (GameControlPanel), so there is no standalone hint button here. */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, px: 2, py: 1, minHeight: 46 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {gameTitle}
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexShrink: 0 }}>
-          {isVisionEnabled && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mr: 0.5 }}>
-              <Videocam titleAccess={t('Camera', '摄像头')}
-                sx={{ fontSize: 20, color: visionStatus.cameraConnected ? 'success.main' : 'error.main' }} />
-              <GpsFixed titleAccess={t('Calibration', '标定')}
-                sx={{ fontSize: 20, color: visionStatus.poseLocked ? 'success.main' : 'warning.main' }} />
-              <Lightbulb titleAccess="LED"
-                sx={{
-                  fontSize: 20,
-                  color: visionStatus.ledConnected === false ? 'error.main'
-                    : visionStatus.ledConnected ? 'success.main' : 'text.disabled',
-                }} />
-            </Box>
-          )}
-          {syncStuck && (
-            <Button variant="outlined" size="small" color="warning" disabled={resyncing}
-              startIcon={resyncing ? <CircularProgress size={16} color="inherit" /> : <Refresh />}
-              onClick={handleResetSync}>
-              {t('Re-sync', '重置识别')}
-            </Button>
-          )}
-          <Button variant="outlined" size="small" startIcon={<ExitToApp />} onClick={handleExit}>
-            {t('Exit', '退出')}
-          </Button>
-        </Box>
-      </Box>
-      {/* Board + Panel */}
-      <Box sx={{ display: 'flex', flexDirection: 'row', flex: 1, overflow: 'hidden' }}>
-        <Box sx={{ height: '100%', aspectRatio: '1', position: 'relative' }}>
-          <Board
-            gameState={gameState}
-            onMove={handleBoardMove}
-            analysisToggles={boardAnalysisToggles}
-            playerColor={humanColor}
-            engineOverlay={engineOverlay}
+      {/* §11 布局 A:盘 516 贴 x16 + 16 + 右栏 460。三个数一个都不写死 ——
+          `.kiosk-layout-a` / `.kiosk-board` 用的是 `tokens.css` 的 `--board-size` / `--content-x`。
+
+          上一版这里是**一条 46 高的自定义顶条**(标题 + 三颗视觉状态灯 + 重置识别 + 退出)
+          加一个 `flex` 的盘/面板并排。两处不对:
+            · 标题和返回属于**页控条**(§11 恒在 y70–114),不许各屏自己搭一条;
+            · 三颗常亮状态灯是 **L1 镜像栏**的东西(§5),L3 上没有它们的位置。
+              它们**没有白丢**:出故障时那句话落在下面开关排右端的 `.ghint` 上
+              (`GameControlPanel`),平时不占地方 —— 比三颗一直亮着的灯说得还清楚。 */}
+      <div className="kiosk-layout-a">
+        <div className="kiosk-board" data-testid="game-board">
+          {/* 四条 28 刻度带。`坐标` 开关关掉时**只清字、不撤带** ——
+              撤了带落子区就从 460 变 516,盘会当场跳一下。 */}
+          <div className="kiosk-board__ruler kiosk-board__ruler--top">
+            {rulerCols.map((c) => <span key={`t${c}`}>{c}</span>)}
+          </div>
+          <div className="kiosk-board__ruler kiosk-board__ruler--left">
+            {rulerRows.map((r) => <span key={`l${r}`}>{r}</span>)}
+          </div>
+          <div className="kiosk-board__play">
+            <Board
+              gameState={gameState}
+              onMove={handleBoardMove}
+              analysisToggles={boardAnalysisToggles}
+              playerColor={humanColor}
+              engineOverlay={engineOverlay}
+              externalRulers
+            />
+          </div>
+          <div className="kiosk-board__ruler kiosk-board__ruler--right">
+            {rulerRows.map((r) => <span key={`r${r}`}>{r}</span>)}
+          </div>
+          <div className="kiosk-board__ruler kiosk-board__ruler--bottom">
+            {rulerCols.map((c) => <span key={`b${c}`}>{c}</span>)}
+          </div>
+        </div>
+
+        <div className="kiosk-rail">
+          <KioskPagebar
+            testId="game-pagebar"
+            backLabel={t('game:exit_game', '退出对局')}
+            onBack={handleExit}
+            title={gameTitle}
+            sub={gameSetupLine}
+            // §11 只允许一个页级图标按钮。重置识别在这一屏是**唯一**那个:
+            // 让屏幕重新以实体盘为准。上一版它只在 `syncStuck` 之后才出现 ——
+            // 也就是必须先卡住一次才能自救;实体模式下它现在一直在。
+            action={physicalPlay ? {
+              icon: 'arrows-clockwise',
+              label: t('Re-sync', '重置识别 · 让屏幕重新以实体盘为准'),
+              onClick: () => { void handleResetSync(); },
+            } : undefined}
           />
-        </Box>
-        <Box sx={{ flex: 1, overflow: 'auto' }}>
           <GameControlPanel
             gameState={gameState}
             onAction={handleAction}
@@ -622,15 +691,20 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onToggleAnalysis={(key) => setAnalysisToggles(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
             onHint={handleHint}
             hintEnabled={hintVisible}
+            /* 判据取**服务端说的那一句**,不是本地有没有 token:决定交不交付的是
+               「这个会话有没有主人」,而一个登录用户照样可能打开一个无主会话。
+               老服务端不带这个字段 ⇒ undefined ⇒ `=== false` 为假 ⇒ 一切照旧。 */
+            analysisRequiresLogin={gameState.analysis_delivered === false}
             isGameOver={isGameOver}
-            disableUndo={isRanked || !!platformPendingMove}
+            isRanked={isRanked}
             engineMode={engineMode}
             activeEngineKind={activeEngineKind}
             onEngineAnalysis={handleEngineAnalysis}
             engineItemCounts={engineItemCounts}
+            hardwareFault={hardwareFault}
           />
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {/* State C: 终局数子 — territory coloring is forced via boardAnalysisToggles above.
           继续对弈 ONLY flips EndgameCard's own local `dismissed` state to hide the card — the
@@ -650,7 +724,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             try {
               const { sgf } = await API.saveSGF(sessionId);
               sessionStorage.setItem('kioskReviewSgf', sgf);
-              navigate('/kiosk/research');
+              navigate('/kiosk/research?from=game');
             } catch (e) { console.error(e); setReviewError(true); }
           }}
         />
@@ -730,7 +804,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {/* Vision sync overlay — suppressBoardLost consolidates the board-loss surfaces
           (see the precedence comment above recalOpen): its own board_lost modal is
           suppressed whenever the escalation dialog OR the recalibration modal is up. */}
-      {isVisionEnabled && (
+      {physicalPlay && (
         <VisionSyncOverlay
           syncEvents={visionSync.syncEvents}
           sessionId={sessionId ?? null}
@@ -772,12 +846,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
       {/* Physical engine-move (Golaxy 隧道) bounded-retry failure — physical mode only;
           pure-screen engine games keep the existing engineErrorToast path (handleBoardMove)
-          untouched. Gate the ERROR PROP (not the mount) on isVisionEnabled so the dialog
-          component itself stays mounted across any isVisionEnabled flap without losing its
+          untouched. Gate the ERROR PROP (not the mount) on physicalPlay so the dialog
+          component itself stays mounted across any physicalPlay flap without losing its
           local dismissed-token bookkeeping (mirrors PhysicalSyncEscalationDialog's always-
           mounted pattern). */}
       <EngineMoveErrorDialog
-        error={isVisionEnabled ? session.physicalEngineError : null}
+        error={physicalPlay ? session.physicalEngineError : null}
         sessionId={sessionId ?? null}
         token={token ?? undefined}
         boardSize={gameState.board_size[0]}
@@ -811,8 +885,13 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Alert>
       </Snackbar>
 
-      {/* Engine error toast */}
-      <Snackbar open={engineErrorToast} autoHideDuration={6000} onClose={() => setEngineErrorToast(false)}
+      {/* 星阵掉线 —— **这一屏唯一说得出「连不上了」的地方**(平台条那三个值一个都喂不了,
+          见 scope.md 屏 10),所以它**不自动消失**:`autoHideDuration={null}`。
+          兄弟几条 toast 照旧 5–8 秒自己走,它们说的是「这一次操作失败了,再试一次」;
+          这一条说的是「对面没了,你现在要么重试落子、要么退出弃局」——
+          6 秒之后屏上什么都不剩,而那盘棋还卡在那儿,用户不知道自己在等什么。
+          `<Alert onClose>` 那颗 × 是唯一的关法,右上角,手指够得到。 */}
+      <Snackbar open={engineErrorToast} autoHideDuration={null} onClose={() => setEngineErrorToast(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="error" onClose={() => setEngineErrorToast(false)}>
           {t('AI connection error — please retry your move, or exit to abandon the game.', 'AI 连接出错，请重试落子，或退出以放弃对局。')}

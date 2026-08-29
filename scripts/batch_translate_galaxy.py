@@ -21,6 +21,142 @@ I18N_DIR = PROJECT_ROOT / "katrain" / "i18n" / "locales"
 # All Galaxy UI translation keys with translations for each language
 # Format: {msgid: {lang_code: msgstr}}
 GALAXY_TRANSLATIONS = {
+    # ── 着手评价（七档）──────────────────────────────────────────────────
+    # 档位与阈值的真源是 katrain/core/move_grade.yaml；这里只管文案。
+    # 注意 grade:phase_* 与 grade:player_* 在 TrendChart.tsx 里是用模板字符串
+    # 拼出来的（t(`grade:phase_${p}`)），grep 不到，改键名时必须手动对齐。
+    "grade:brilliant": {
+        "en": "Brilliant", "cn": "妙手", "tw": "妙手", "jp": "妙手", "ko": "묘수",
+        "de": "Brillant", "es": "Brillante", "fr": "Brillant", "ru": "Блестящий",
+        "tr": "Parlak", "ua": "Блискучий",
+    },
+    "grade:best": {
+        "en": "Best", "cn": "最佳", "tw": "最佳", "jp": "最善", "ko": "최선",
+        "de": "Bester Zug", "es": "Mejor", "fr": "Meilleur", "ru": "Лучший",
+        "tr": "En iyi", "ua": "Найкращий",
+    },
+    "grade:very_good": {
+        "en": "Very Good", "cn": "很好", "tw": "很好", "jp": "好手", "ko": "좋음",
+        "de": "Sehr gut", "es": "Muy bueno", "fr": "Très bon", "ru": "Очень хорошо",
+        "tr": "Çok iyi", "ua": "Дуже добре",
+    },
+    "grade:playable": {
+        "en": "Playable", "cn": "可下", "tw": "可下", "jp": "可", "ko": "둘만함",
+        "de": "Spielbar", "es": "Jugable", "fr": "Jouable", "ru": "Приемлемо",
+        "tr": "Oynanabilir", "ua": "Прийнятно",
+    },
+    "grade:inaccuracy": {
+        "en": "Inaccuracy", "cn": "欠佳", "tw": "欠佳", "jp": "緩手", "ko": "완착",
+        "de": "Ungenau", "es": "Imprecisión", "fr": "Imprécision", "ru": "Неточность",
+        "tr": "Hatalı hamle", "ua": "Неточність",
+    },
+    "grade:mistake": {
+        "en": "Mistake", "cn": "失误", "tw": "失誤", "jp": "悪手", "ko": "실착",
+        "de": "Fehler", "es": "Error", "fr": "Erreur", "ru": "Ошибка",
+        "tr": "Hata", "ua": "Помилка",
+    },
+    "grade:blunder": {
+        "en": "Blunder", "cn": "恶手", "tw": "惡手", "jp": "大悪手", "ko": "대악수",
+        "de": "Grober Fehler", "es": "Error grave", "fr": "Bourde", "ru": "Грубая ошибка",
+        "tr": "Büyük hata", "ua": "Груба помилка",
+    },
+    # ── 阶段筛选 ────────────────────────────────────────────────────────
+    "grade:phase_all": {
+        "en": "Whole game", "cn": "全盘", "tw": "全盤", "jp": "全局", "ko": "전체",
+        "de": "Ganze Partie", "es": "Partida completa", "fr": "Partie entière",
+        "ru": "Вся партия", "tr": "Tüm oyun", "ua": "Вся партія",
+    },
+    "grade:phase_opening": {
+        "en": "Opening", "cn": "布局", "tw": "布局", "jp": "布石", "ko": "포석",
+        "de": "Eröffnung", "es": "Apertura", "fr": "Ouverture", "ru": "Фусэки",
+        "tr": "Açılış", "ua": "Фусекі",
+    },
+    "grade:phase_midgame": {
+        "en": "Middlegame", "cn": "中盘", "tw": "中盤", "jp": "中盤", "ko": "중반",
+        "de": "Mittelspiel", "es": "Medio juego", "fr": "Milieu de partie",
+        "ru": "Середина партии", "tr": "Orta oyun", "ua": "Мітельшпіль",
+    },
+    "grade:phase_endgame": {
+        "en": "Endgame", "cn": "官子", "tw": "官子", "jp": "ヨセ", "ko": "끝내기",
+        "de": "Endspiel", "es": "Final", "fr": "Yose", "ru": "Ёсэ",
+        "tr": "Son oyun", "ua": "Йосе",
+    },
+    # ── 棋手筛选 ────────────────────────────────────────────────────────
+    "grade:player_both": {
+        "en": "Both", "cn": "双方", "tw": "雙方", "jp": "両者", "ko": "양쪽",
+        "de": "Beide", "es": "Ambos", "fr": "Les deux", "ru": "Оба",
+        "tr": "İkisi de", "ua": "Обидва",
+    },
+    "grade:player_B": {
+        "en": "Black", "cn": "黑方", "tw": "黑方", "jp": "黒番", "ko": "흑",
+        "de": "Schwarz", "es": "Negras", "fr": "Noir", "ru": "Чёрные",
+        "tr": "Siyah", "ua": "Чорні",
+    },
+    "grade:player_W": {
+        "en": "White", "cn": "白方", "tw": "白方", "jp": "白番", "ko": "백",
+        "de": "Weiß", "es": "Blancas", "fr": "Blanc", "ru": "Белые",
+        "tr": "Beyaz", "ua": "Білі",
+    },
+    # ── 其余文案 ────────────────────────────────────────────────────────
+    "grade:performance": {
+        "en": "Performance", "cn": "发挥水准", "tw": "發揮水準", "jp": "出来",
+        "ko": "기량", "de": "Leistung", "es": "Rendimiento", "fr": "Performance",
+        "ru": "Качество игры", "tr": "Performans", "ua": "Якість гри",
+    },
+    "grade:brilliance": {
+        "en": "Brilliance", "cn": "玄妙", "tw": "玄妙", "jp": "妙度", "ko": "묘도",
+        "de": "Genialität", "es": "Brillantez", "fr": "Éclat", "ru": "Изящество",
+        "tr": "Zarafet", "ua": "Витонченість",
+    },
+    "grade:unrated": {
+        "en": "Unrated", "cn": "未评级", "tw": "未評級", "jp": "未評価", "ko": "미평가",
+        "de": "Nicht bewertet", "es": "Sin evaluar", "fr": "Non évalué",
+        "ru": "Без оценки", "tr": "Değerlendirilmedi", "ua": "Без оцінки",
+    },
+    "grade:no_rated_moves": {
+        "en": "No rated moves in this phase",
+        "cn": "本阶段没有已评级的着手", "tw": "本階段沒有已評級的著手",
+        "jp": "この段階に評価済みの着手はありません", "ko": "이 구간에 평가된 수가 없습니다",
+        "de": "Keine bewerteten Züge in dieser Phase",
+        "es": "No hay jugadas evaluadas en esta fase",
+        "fr": "Aucun coup évalué dans cette phase",
+        "ru": "В этой стадии нет оценённых ходов",
+        "tr": "Bu aşamada değerlendirilmiş hamle yok",
+        "ua": "У цій стадії немає оцінених ходів",
+    },
+    "grade:truncated_note": {
+        "en": "{n} more not listed — switch phase or player to see them",
+        "cn": "另有 {n} 处未列出，可切换阶段或棋手查看",
+        "tw": "另有 {n} 處未列出，可切換階段或棋手查看",
+        "jp": "他に {n} 手あります。段階や対局者を切り替えてご覧ください",
+        "ko": "{n} 수가 더 있습니다 — 구간이나 대국자를 바꿔 보세요",
+        "de": "{n} weitere nicht aufgeführt — Phase oder Spieler wechseln",
+        "es": "{n} más sin listar: cambia de fase o jugador para verlas",
+        "fr": "{n} autres non listés — changez de phase ou de joueur",
+        "ru": "Ещё {n} не показано — переключите стадию или игрока",
+        "tr": "{n} tane daha var — aşamayı veya oyuncuyu değiştirin",
+        "ua": "Ще {n} не показано — перемкніть стадію або гравця",
+    },
+    "grade:histogram_footer": {
+        "en": "{b} Black / {w} White moves rated",
+        "cn": "黑 {b} 手 / 白 {w} 手已评级",
+        "tw": "黑 {b} 手 / 白 {w} 手已評級",
+        "jp": "黒 {b} 手 / 白 {w} 手を評価済み",
+        "ko": "흑 {b}수 / 백 {w}수 평가됨",
+        "de": "{b} Züge Schwarz / {w} Züge Weiß bewertet",
+        "es": "{b} jugadas de negras / {w} de blancas evaluadas",
+        "fr": "{b} coups Noir / {w} coups Blanc évalués",
+        "ru": "Оценено ходов: чёрные {b} / белые {w}",
+        "tr": "{b} siyah / {w} beyaz hamle değerlendirildi",
+        "ua": "Оцінено ходів: чорні {b} / білі {w}",
+    },
+    "grade:unrated_count": {
+        "en": "{n} unrated", "cn": "{n} 手未评级", "tw": "{n} 手未評級",
+        "jp": "{n} 手未評価", "ko": "{n}수 미평가", "de": "{n} nicht bewertet",
+        "es": "{n} sin evaluar", "fr": "{n} non évalués", "ru": "{n} без оценки",
+        "tr": "{n} değerlendirilmedi", "ua": "{n} без оцінки",
+    },
+
     # 未登录（游客）——2026-08-27：自由对弈对游客开放，升降级对弈不开放。
     # 后者要说清楚**原因**（段位记在账号上），不能沿用「登录已失效」那句：
     # 对从未登录过的人它是假的，而且旁边只有一个永远不会成功的「重试」。
@@ -172,19 +308,6 @@ GALAXY_TRANSLATIONS = {
     },
 
     # Dashboard
-    "dashboard:welcome": {
-        "en": "Welcome to Galaxy Go",
-        "cn": "欢迎来到 Galaxy Go",
-        "tw": "歡迎來到 Galaxy Go",
-        "jp": "Galaxy Goへようこそ",
-        "ko": "Galaxy Go에 오신 것을 환영합니다",
-        "de": "Willkommen bei Galaxy Go",
-        "es": "Bienvenido a Galaxy Go",
-        "fr": "Bienvenue sur Galaxy Go",
-        "ru": "Добро пожаловать в Galaxy Go",
-        "tr": "Galaxy Go'ya Hoş Geldiniz",
-        "ua": "Ласкаво просимо до Galaxy Go",
-    },
     "dashboard:tagline": {
         "en": "Your professional Go training and analysis platform.",
         "cn": "您的专业围棋训练与分析平台。",
@@ -226,8 +349,8 @@ GALAXY_TRANSLATIONS = {
     },
     "dashboard:report_desc": {
         "en": "Generate move-by-move analysis reports and review your games.",
-        "cn": "生成逐手分析报告，复盘你的棋局。",
-        "tw": "生成逐手分析報告，復盤你的棋局。",
+        "cn": "生成逐手分析报告，复盘你的对局。",
+        "tw": "生成逐手分析報告，復盤你的對局。",
         "jp": "一手ごとの分析レポートを生成し、対局を検討します。",
         "ko": "수순별 분석 보고서를 생성하고 대국을 복기합니다.",
         "de": "Erstellen Sie Zug-für-Zug-Analyseberichte und überprüfen Sie Ihre Partien.",
@@ -689,19 +812,6 @@ GALAXY_TRANSLATIONS = {
         "ru": "Пас",
         "tr": "Pas",
         "ua": "Пас",
-    },
-    "Advice": {
-        "en": "Advice",
-        "cn": "建议",
-        "tw": "建議",
-        "jp": "アドバイス",
-        "ko": "조언",
-        "de": "Ratschlag",
-        "es": "Consejo",
-        "fr": "Conseil",
-        "ru": "Совет",
-        "tr": "Tavsiye",
-        "ua": "Порада",
     },
     "Graph": {
         "en": "Graph",
@@ -2166,19 +2276,6 @@ GALAXY_TRANSLATIONS = {
         "ua": "Вільне дослідження без оцінки",
     },
     # Auth / Login Modal
-    "auth:login_title": {
-        "en": "Login to Galaxy Go",
-        "cn": "登录 Galaxy Go",
-        "tw": "登入 Galaxy Go",
-        "jp": "Galaxy Goにログイン",
-        "ko": "Galaxy Go 로그인",
-        "de": "Bei Galaxy Go anmelden",
-        "es": "Iniciar sesión en Galaxy Go",
-        "fr": "Connexion à Galaxy Go",
-        "ru": "Войти в Galaxy Go",
-        "tr": "Galaxy Go'ya Giriş Yap",
-        "ua": "Увійти до Galaxy Go",
-    },
     "auth:login_title_katrain": {
         "en": "Login to KaTrain",
         "cn": "登录 KaTrain",
@@ -2613,10 +2710,14 @@ GALAXY_TRANSLATIONS = {
         "tr": "Geri Al",
         "ua": "Скасувати",
     },
+    # 注意：这个 dict 里 "Advice" 出现两次，Python 只保留**后面**这一个。
+    # 值必须与 .po 保持一致，否则跑一次脚本就会把界面上的「支招」改成「建议」。
+    # 注意：这个 dict 里 "Advice" 出现两次，Python 只保留**后面**这一个。
+    # 值必须与 .po 保持一致，否则跑一次脚本就会把界面上的「支招」改成「建议」。
     "Advice": {
         "en": "Advice",
-        "cn": "建议",
-        "tw": "建議",
+        "cn": "支招",
+        "tw": "支招",
         "jp": "提案",
         "ko": "조언",
         "de": "Rat",
@@ -2628,8 +2729,8 @@ GALAXY_TRANSLATIONS = {
     },
     "live:show_advice": {
         "en": "Show Advice",
-        "cn": "显示建议",
-        "tw": "顯示建議",
+        "cn": "显示支招",
+        "tw": "顯示支招",
         "jp": "提案を表示",
         "ko": "조언 표시",
         "de": "Rat anzeigen",
@@ -2850,8 +2951,8 @@ GALAXY_TRANSLATIONS = {
     },
     "live:hide_advice": {
         "en": "Hide Advice",
-        "cn": "隐藏建议",
-        "tw": "隱藏建議",
+        "cn": "隐藏支招",
+        "tw": "隱藏支招",
         "jp": "提案を非表示",
         "ko": "조언 숨김",
         "de": "Rat ausblenden",
@@ -3142,8 +3243,8 @@ GALAXY_TRANSLATIONS = {
     },
     "research:analyzing_game": {
         "en": "Analyzing Game",
-        "cn": "正在分析棋局",
-        "tw": "正在分析棋局",
+        "cn": "正在分析对局",
+        "tw": "正在分析對局",
         "jp": "対局を分析中",
         "ko": "기보 분석 중",
         "de": "Partie wird analysiert",
@@ -3459,8 +3560,8 @@ GALAXY_TRANSLATIONS = {
     },
     "research:suggestions": {
         "en": "Advice",
-        "cn": "建议",
-        "tw": "建議",
+        "cn": "支招",
+        "tw": "支招",
         "jp": "アドバイス",
         "ko": "조언",
         "de": "Ratschlag",
@@ -3534,19 +3635,6 @@ GALAXY_TRANSLATIONS = {
         "ru": "Показать ИИ",
         "tr": "AI göster",
         "ua": "Показати ШІ",
-    },
-    "live:clear": {
-        "en": "Clear",
-        "cn": "清除",
-        "tw": "清除",
-        "jp": "クリア",
-        "ko": "초기화",
-        "de": "Löschen",
-        "es": "Limpiar",
-        "fr": "Effacer",
-        "ru": "Очистить",
-        "tr": "Temizle",
-        "ua": "Очистити",
     },
     "live:ai_recommendations": {
         "en": "AI Recommendations",
@@ -5149,8 +5237,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:title_import": {
         "en": "Imported Game",
-        "cn": "导入棋局",
-        "tw": "導入棋局",
+        "cn": "导入对局",
+        "tw": "導入對局",
         "jp": "インポート棋局",
         "ko": "불러온 기보",
         "de": "Importiertes Spiel",
@@ -5307,17 +5395,17 @@ GALAXY_TRANSLATIONS = {
         "ua": "Розбір",
     },
     "report:page_hint": {
-        "en": "Select a game on the right to preview. Create reports from the game card.",
-        "cn": "选择右侧棋局预览棋盘，报告生成和跳转都在棋局卡片上完成。",
-        "tw": "選擇右側棋局預覽棋盤，報告生成和跳轉都在棋局卡片上完成。",
-        "jp": "右側の対局を選択してプレビュー。レポートの作成は対局カードから行います。",
-        "ko": "오른쪽 대국을 선택하여 미리보기. 보고서 생성은 대국 카드에서 합니다.",
-        "de": "Wählen Sie rechts eine Partie zur Vorschau. Berichte werden über die Partiekarte erstellt.",
-        "es": "Selecciona una partida a la derecha para previsualizar. Los informes se crean desde la tarjeta.",
-        "fr": "Sélectionnez une partie à droite pour l'aperçu. Les rapports se créent depuis la carte.",
-        "ru": "Выберите партию справа для просмотра. Отчёты создаются через карточку партии.",
-        "tr": "Önizleme için sağdaki bir oyunu seçin. Raporlar oyun kartından oluşturulur.",
-        "ua": "Оберіть партію праворуч для перегляду. Звіти створюються через картку партії.",
+        "en": "Select a game to preview it. Reports are created from the game card.",
+        "cn": "选一局预览棋盘；报告生成和跳转都在对局卡片上完成。",
+        "tw": "選一局預覽棋盤；報告生成和跳轉都在對局卡片上完成。",
+        "jp": "対局を選ぶと棋盤をプレビューできます。レポートの作成は対局カードから行います。",
+        "ko": "대국을 선택하면 기보를 미리 볼 수 있습니다. 보고서 생성은 대국 카드에서 합니다.",
+        "de": "Wählen Sie eine Partie zur Vorschau. Berichte werden über die Partiekarte erstellt.",
+        "es": "Selecciona una partida para previsualizarla. Los informes se crean desde la tarjeta de la partida.",
+        "fr": "Sélectionnez une partie pour l'aperçu. Les rapports se créent depuis la carte de la partie.",
+        "ru": "Выберите партию для предпросмотра. Отчёты создаются на карточке партии.",
+        "tr": "Önizlemek için bir oyun seçin. Raporlar oyun kartından oluşturulur.",
+        "ua": "Виберіть партію для попереднього перегляду. Звіти створюються на картці партії.",
     },
     "report:select_game": {
         "en": "Select a game",
@@ -5334,8 +5422,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:select_game_hint": {
         "en": "Select a game from the right panel, or import a new SGF / library game.",
-        "cn": "从右侧选择棋局，或导入新的 SGF / 棋谱库对局。",
-        "tw": "從右側選擇棋局，或導入新的 SGF / 棋譜庫對局。",
+        "cn": "从右侧选择对局，或导入新的 SGF / 棋谱库对局。",
+        "tw": "從右側選擇對局，或導入新的 SGF / 棋譜庫對局。",
         "jp": "右パネルから対局を選択するか、新しいSGF/棋譜ライブラリの対局をインポートしてください。",
         "ko": "오른쪽 패널에서 대국을 선택하거나 새 SGF / 기보 라이브러리 대국을 가져오세요.",
         "de": "Wählen Sie eine Partie aus dem rechten Panel oder importieren Sie eine neue SGF-/Bibliothekspartie.",
@@ -5347,8 +5435,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:no_preview": {
         "en": "No game to preview yet.",
-        "cn": "还没有可预览的棋局。",
-        "tw": "還沒有可預覽的棋局。",
+        "cn": "还没有可预览的对局。",
+        "tw": "還沒有可預覽的對局。",
         "jp": "プレビューできる対局がありません。",
         "ko": "미리보기할 대국이 없습니다.",
         "de": "Noch keine Partie zur Vorschau.",
@@ -5360,8 +5448,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:game_list": {
         "en": "Game List",
-        "cn": "棋局列表",
-        "tw": "棋局列表",
+        "cn": "对局列表",
+        "tw": "對局列表",
         "jp": "対局リスト",
         "ko": "대국 목록",
         "de": "Partieliste",
@@ -5412,8 +5500,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:no_games": {
         "en": "No games yet. Import one to start generating reports.",
-        "cn": "还没有棋局，先导入一局再生成报告。",
-        "tw": "還沒有棋局，先導入一局再生成報告。",
+        "cn": "还没有对局，先导入一局再生成报告。",
+        "tw": "還沒有對局，先導入一局再生成報告。",
         "jp": "まだ対局がありません。インポートしてレポートを作成しましょう。",
         "ko": "아직 대국이 없습니다. 먼저 가져온 후 보고서를 생성하세요.",
         "de": "Noch keine Partien. Importieren Sie eine, um Berichte zu erstellen.",
@@ -5425,8 +5513,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:load_games_failed": {
         "en": "Failed to load game list",
-        "cn": "加载棋局列表失败",
-        "tw": "載入棋局列表失敗",
+        "cn": "加载对局列表失败",
+        "tw": "載入對局列表失敗",
         "jp": "対局リストの読み込みに失敗しました",
         "ko": "대국 목록을 불러오지 못했습니다",
         "de": "Partieliste konnte nicht geladen werden",
@@ -5490,8 +5578,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:delete_game": {
         "en": "Delete game",
-        "cn": "删除棋局",
-        "tw": "刪除棋局",
+        "cn": "删除对局",
+        "tw": "刪除對局",
         "jp": "対局を削除",
         "ko": "대국 삭제",
         "de": "Partie löschen",
@@ -5516,8 +5604,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:delete_confirm_body": {
         "en": "This will permanently delete the game and all associated analysis data. Are you sure?",
-        "cn": "删除后棋局及所有关联分析数据将不可恢复，确认删除？",
-        "tw": "刪除後棋局及所有關聯分析資料將無法恢復，確認刪除？",
+        "cn": "删除后对局及所有关联分析数据将不可恢复，确认删除？",
+        "tw": "刪除後對局及所有關聯分析資料將無法恢復，確認刪除？",
         "jp": "対局と関連する分析データが完全に削除されます。よろしいですか？",
         "ko": "대국 및 모든 관련 분석 데이터가 영구적으로 삭제됩니다. 계속하시겠습니까?",
         "de": "Die Partie und alle zugehörigen Analysedaten werden dauerhaft gelöscht. Sind Sie sicher?",
@@ -5529,8 +5617,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:delete_success": {
         "en": "Game deleted",
-        "cn": "棋局已删除",
-        "tw": "棋局已刪除",
+        "cn": "对局已删除",
+        "tw": "對局已刪除",
         "jp": "対局を削除しました",
         "ko": "대국이 삭제되었습니다",
         "de": "Partie gelöscht",
@@ -5542,8 +5630,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:delete_failed": {
         "en": "Failed to delete game",
-        "cn": "删除棋局失败",
-        "tw": "刪除棋局失敗",
+        "cn": "删除对局失败",
+        "tw": "刪除對局失敗",
         "jp": "対局の削除に失敗しました",
         "ko": "대국 삭제에 실패했습니다",
         "de": "Partie konnte nicht gelöscht werden",
@@ -5777,8 +5865,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:suggestions": {
         "en": "Hints",
-        "cn": "建议",
-        "tw": "建議",
+        "cn": "支招",
+        "tw": "支招",
         "jp": "候補手",
         "ko": "추천",
         "de": "Hinweise",
@@ -5790,8 +5878,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:hide_suggestions": {
         "en": "Hide hints",
-        "cn": "隐藏建议",
-        "tw": "隱藏建議",
+        "cn": "隐藏支招",
+        "tw": "隱藏支招",
         "jp": "候補手を隠す",
         "ko": "추천 숨기기",
         "de": "Hinweise ausblenden",
@@ -5803,8 +5891,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:show_suggestions": {
         "en": "Show hints",
-        "cn": "显示建议",
-        "tw": "顯示建議",
+        "cn": "显示支招",
+        "tw": "顯示支招",
         "jp": "候補手を表示",
         "ko": "추천 보기",
         "de": "Hinweise anzeigen",
@@ -5869,8 +5957,8 @@ GALAXY_TRANSLATIONS = {
     },
     "report:unnamed_game": {
         "en": "Untitled game",
-        "cn": "未命名棋局",
-        "tw": "未命名棋局",
+        "cn": "未命名对局",
+        "tw": "未命名對局",
         "jp": "無題の対局",
         "ko": "제목 없는 대국",
         "de": "Unbenannte Partie",
@@ -7037,11 +7125,6 @@ GALAXY_TRANSLATIONS = {
         "ko": "이번 대국 상대", "de": "Gegner dieser Partie", "es": "Rival de esta partida",
         "fr": "Adversaire de cette partie", "ru": "Соперник этой партии",
         "tr": "Bu oyundaki rakip", "ua": "Суперник цієї партії",
-    },
-    "ladder:fixed_setup": {
-        "en": "This game", "cn": "本局设定", "tw": "本局設定", "jp": "この局の設定",
-        "ko": "이번 대국 설정", "de": "Diese Partie", "es": "Esta partida",
-        "fr": "Cette partie", "ru": "Эта партия", "tr": "Bu oyun", "ua": "Ця партія",
     },
     # replaceAll is used for this one, so the doubled {n} is safe.
     "ladder:setup_size": {

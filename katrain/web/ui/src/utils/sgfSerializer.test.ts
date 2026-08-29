@@ -182,3 +182,45 @@ describe('variation handling', () => {
     expect(moves).toEqual(['Q16']);
   });
 });
+
+describe('复盘链要的那两样：RE[] 和摆子偏移', () => {
+  it('读得到 RE[] —— 本地导入的胜负没有别的来源', () => {
+    const { metadata } = sgfToMoves('(;FF[4]SZ[19]RE[B+2.5];B[pd];W[dd])');
+    expect(metadata.result).toBe('B+2.5');
+  });
+
+  it('没写 RE[] 就是没有,不编一个', () => {
+    expect(sgfToMoves('(;FF[4]SZ[19];B[pd])').metadata.result).toBeUndefined();
+  });
+
+  it('RE[] 能写回去 —— 导入再导出不该把胜负丢掉', () => {
+    const { sgf } = movesToSGF(['Q16'], {
+      boardSize: 19, komi: 7.5, handicap: 0, rules: 'chinese',
+      playerBlack: '', playerWhite: '', result: 'W+R',
+    });
+    expect(sgf).toContain('RE[W+R]');
+    expect(sgfToMoves(sgf).metadata.result).toBe('W+R');
+  });
+
+  /**
+   * `setupCount` 存在的唯一理由：**报告的 move_number 只数着手,而 `moves` 里前几个是摆子。**
+   * 两套下标差着一个让子数,让子局的报告因此整体错位 —— 盘面是对的、右边的分析不是那一手的,
+   * 屏上没有任何东西会说它错位了。后端那一半在 `katrain/cron/sgf.py`(摆子走 initialStones)。
+   */
+  it('让子石算 setupCount,不算着手', () => {
+    const parsed = sgfToMoves('(;FF[4]SZ[19]HA[2]AB[dd][pp];W[qq];B[cc])');
+    expect(parsed.setupCount).toBe(2);
+    // 盘面照旧：摆子仍然在 moves 里,渲染的时候它们就是盘上的子。
+    expect(parsed.moves).toEqual(['D16', 'Q4', 'R3', 'C17']);
+    expect(parsed.moves.length - parsed.setupCount).toBe(2);
+  });
+
+  it('分先局的 setupCount 是 0', () => {
+    expect(sgfToMoves('(;FF[4]SZ[19];B[pd];W[dd])').setupCount).toBe(0);
+  });
+
+  it('第一手之后的摆子不算 setupCount —— 那是中盘摆子,后端也表达不了', () => {
+    const parsed = sgfToMoves('(;FF[4]SZ[19];B[pd];W[dd];AB[qq])');
+    expect(parsed.setupCount).toBe(0);
+  });
+});

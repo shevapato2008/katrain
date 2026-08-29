@@ -3115,3 +3115,66 @@ msgstr "로그인 후 사용 가능"
 
 msgid "play:analysis_requires_login_hint"
 msgstr "집 / 조언 / 그래프 는 로그인 후 사용할 수 있습니다"
+
+msgid "grade:brilliant"
+msgstr "묘수"
+
+msgid "grade:best"
+msgstr "최선"
+
+msgid "grade:very_good"
+msgstr "좋음"
+
+msgid "grade:playable"
+msgstr "둘만함"
+
+msgid "grade:inaccuracy"
+msgstr "완착"
+
+msgid "grade:mistake"
+msgstr "실착"
+
+msgid "grade:blunder"
+msgstr "대악수"
+
+msgid "grade:phase_all"
+msgstr "전체"
+
+msgid "grade:phase_opening"
+msgstr "포석"
+
+msgid "grade:phase_midgame"
+msgstr "중반"
+
+msgid "grade:phase_endgame"
+msgstr "끝내기"
+
+msgid "grade:player_both"
+msgstr "양쪽"
+
+msgid "grade:player_B"
+msgstr "흑"
+
+msgid "grade:player_W"
+msgstr "백"
+
+msgid "grade:performance"
+msgstr "기량"
+
+msgid "grade:brilliance"
+msgstr "묘도"
+
+msgid "grade:unrated"
+msgstr "미평가"
+
+msgid "grade:no_rated_moves"
+msgstr "이 구간에 평가된 수가 없습니다"
+
+msgid "grade:truncated_note"
+msgstr "{n} 수가 더 있습니다 — 구간이나 대국자를 바꿔 보세요"
+
+msgid "grade:histogram_footer"
+msgstr "흑 {b}수 / 백 {w}수 평가됨"
+
+msgid "grade:unrated_count"
+msgstr "{n}수 미평가"

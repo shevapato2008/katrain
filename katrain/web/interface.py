@@ -437,11 +437,20 @@ class WebKaTrain(KaTrainBase):
 
         history = []
         for node in nodes:
+            # `move` / `player` 是**主线着法本身**,不是分析结果 —— 所以不受 analysis_exists 影响。
+            # 加它们是因为前端此前拼不出棋谱:`history` 只有 node_id/score/winrate(没坐标),
+            # 而 `stones` 虽有 move_number 却**不含被提掉的子** —— 拿它拼出来的棋谱会缺手。
+            # 这个循环本来就在遍历主线的每个 GameNode,坐标就在手边。
+            #   move   = GTP 坐标("Q16");虚手是 "pass"(Move.gtp() 的口径);根节点 None
+            #   player = "B" / "W";根节点 None
+            move = node.move
             history.append(
                 {
                     "node_id": id(node),
                     "score": node.score if node.analysis_exists else None,
                     "winrate": node.winrate if node.analysis_exists else None,
+                    "move": move.gtp() if move else None,
+                    "player": move.player if move else None,
                 }
             )
 
@@ -1361,11 +1370,16 @@ class WebKaTrain(KaTrainBase):
                 if node.move:
                     entry["move"] = node.move.gtp()
                     entry["actual_player"] = node.move.player
-                # Delta from previous node
+                # Delta from previous node, from the MOVER's perspective.
+                # node.winrate / node.score are always Black-perspective, so White's
+                # delta has to be flipped -- without the flip every good White move
+                # reads as a loss and every blunder as a gain.
+                # (report_analyze.py does the same flip; this path used to omit it.)
+                sign = 1 if (node.move and node.move.player == "B") else -1
                 if prev_winrate is not None and node.winrate is not None:
-                    entry["delta_winrate"] = node.winrate - prev_winrate
+                    entry["delta_winrate"] = sign * (node.winrate - prev_winrate)
                 if prev_score is not None and node.score is not None:
-                    entry["delta_score"] = node.score - prev_score
+                    entry["delta_score"] = sign * (node.score - prev_score)
                 # Points lost (from player's perspective)
                 pl = node.points_lost
                 if pl is not None:

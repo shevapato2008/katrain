@@ -3219,3 +3219,66 @@ msgstr "Available after signing in"
 
 msgid "play:analysis_requires_login_hint"
 msgstr "Territory / Advice / Graph become available after signing in"
+
+msgid "grade:brilliant"
+msgstr "Brilliant"
+
+msgid "grade:best"
+msgstr "Best"
+
+msgid "grade:very_good"
+msgstr "Very Good"
+
+msgid "grade:playable"
+msgstr "Playable"
+
+msgid "grade:inaccuracy"
+msgstr "Inaccuracy"
+
+msgid "grade:mistake"
+msgstr "Mistake"
+
+msgid "grade:blunder"
+msgstr "Blunder"
+
+msgid "grade:phase_all"
+msgstr "Whole game"
+
+msgid "grade:phase_opening"
+msgstr "Opening"
+
+msgid "grade:phase_midgame"
+msgstr "Middlegame"
+
+msgid "grade:phase_endgame"
+msgstr "Endgame"
+
+msgid "grade:player_both"
+msgstr "Both"
+
+msgid "grade:player_B"
+msgstr "Black"
+
+msgid "grade:player_W"
+msgstr "White"
+
+msgid "grade:performance"
+msgstr "Performance"
+
+msgid "grade:brilliance"
+msgstr "Brilliance"
+
+msgid "grade:unrated"
+msgstr "Unrated"
+
+msgid "grade:no_rated_moves"
+msgstr "No rated moves in this phase"
+
+msgid "grade:truncated_note"
+msgstr "{n} more not listed — switch phase or player to see them"
+
+msgid "grade:histogram_footer"
+msgstr "{b} Black / {w} White moves rated"
+
+msgid "grade:unrated_count"
+msgstr "{n} unrated"

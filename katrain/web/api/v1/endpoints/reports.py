@@ -7,6 +7,7 @@ from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session
 
 from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.core import move_grade
 from katrain.web.core import models_db
 from katrain.web.core.db import SessionLocal
 from katrain.web.core.repository import RemoteServiceUnavailableError
@@ -34,6 +35,21 @@ class ReportTaskStatus(BaseModel):
     total_moves: int
     analyzed_moves: int
     requested_visits: int
+    # ISO 8601, or null when the attempt has not started / not finished.
+    #
+    # `started_at` is when the *current* attempt series began, not when the row was
+    # created: the cron worker stamps it on claim with `started_at or now()`, so the
+    # automatic retries inside one series keep the first stamp, and `/retry` clears it
+    # so the next claim re-stamps. `completed_at` is set only on success and is cleared
+    # by every path that puts the task back in the queue -- so the pair is either a
+    # finished span or nothing, never a half-open one left over from an earlier run.
+    #
+    # Consumers show a duration as `completed_at - started_at`. Both come from the same
+    # column type, so on SQLite (dev) both are naive and on PostgreSQL (prod) both carry
+    # an offset -- the difference is right either way, only an absolute instant would
+    # need the caller to know which.
+    started_at: str | None = None
+    completed_at: str | None = None
 
 
 class ReportTaskMoveResponse(BaseModel):
@@ -50,6 +66,15 @@ class ReportTaskMoveResponse(BaseModel):
     actual_player: str | None = None
     delta_score: float | None = None
     delta_winrate: float | None = None
+    # 着手评价（服务端算好，前端只查表）。grade 为 None 或 "unrated" 表示
+    # 这手没有被评级 —— 前端要显示成「未评级」，不能当作「没问题」。
+    grade: str | None = None
+    points_lost: float | None = None
+    points_lost_source: str | None = None
+    is_top_move: bool | None = None
+    top_prior: float | None = None
+    brilliance: int | None = None
+    root_visits: int | None = None
 
 
 def get_report_db(request: Request):
@@ -70,6 +95,8 @@ def _task_to_dict(task: models_db.ReportTask) -> dict[str, Any]:
         "total_moves": task.total_moves,
         "analyzed_moves": task.analyzed_moves,
         "requested_visits": task.requested_visits,
+        "started_at": task.started_at.isoformat() if task.started_at else None,
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
     }
 
 
@@ -88,7 +115,50 @@ def _move_to_dict(move: models_db.ReportTaskMove) -> dict[str, Any]:
         "actual_player": move.actual_player,
         "delta_score": move.delta_score,
         "delta_winrate": move.delta_winrate,
+        "grade": move.grade,
+        "points_lost": move.points_lost,
+        "points_lost_source": move.points_lost_source,
+        "is_top_move": move.is_top_move,
+        "top_prior": move.top_prior,
+        "brilliance": move.brilliance,
+        "root_visits": move.root_visits,
     }
+
+
+def _moves_with_grades(moves: list[models_db.ReportTaskMove]) -> list[dict[str, Any]]:
+    """序列化，并给还没有评级的行**按需补算**。
+
+    改成服务端评级之前生成的报告，grade 列是 NULL。那些行里 top_moves / actual_move
+    都还在，所以不用重新分析棋局就能补出评级 —— 在这里补，而不是让前端自己再实现
+    一份判据（仓里为此已经散了五份阈值，这条路不能再走）。
+
+    补算是只读的，不写回库；重新生成报告时 cron 会把它们持久化。
+    """
+    out: list[dict[str, Any]] = []
+    prev: models_db.ReportTaskMove | None = None
+    for move in moves:
+        data = _move_to_dict(move)
+        if not data.get("grade") and prev is not None:
+            g = move_grade.grade_move(
+                prev_top_moves=prev.top_moves,
+                prev_visits=prev.root_visits,
+                actual_move=move.actual_move,
+                actual_player=move.actual_player,
+                actual_score_lead=move.score_lead,
+                actual_winrate=move.winrate,
+                move_number=move.move_number,
+            )
+            data.update(
+                grade=g["grade"],
+                points_lost=g["points_lost"],
+                points_lost_source=g["points_lost_source"],
+                is_top_move=g["is_top_move"],
+                top_prior=g["top_prior"],
+                brilliance=g["brilliance"],
+            )
+        out.append(data)
+        prev = move
+    return out
 
 
 def _upstream_error_detail(response: httpx.Response):
@@ -236,6 +306,11 @@ async def retry_report_task(
     task.status = "pending"
     task.retry_count = 0
     task.error_message = None
+    # Both stamps, not just `completed_at`. A failed task can sit here for a night before
+    # anyone presses retry; leaving the old `started_at` would make the next completion
+    # report a span that covers the waiting, and the screen would read "took 14 hours"
+    # for six minutes of analysis. Cleared here, the cron worker re-stamps it on claim.
+    task.started_at = None
     task.completed_at = None
     db.commit()
     db.refresh(task)
@@ -294,4 +369,4 @@ async def get_report_moves(
         .order_by(models_db.ReportTaskMove.move_number.asc(), models_db.ReportTaskMove.id.asc())
         .all()
     )
-    return [_move_to_dict(move) for move in moves]
+    return _moves_with_grades(moves)

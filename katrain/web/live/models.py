@@ -4,6 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, Field
+from katrain.core import move_grade
 
 
 class MatchSource(str, Enum):
@@ -54,15 +55,23 @@ class MoveAnalysis(BaseModel):
     def classify_move(
         cls,
         delta_score: float,
-        brilliant_threshold: float = 2.0,
-        mistake_threshold: float = -3.0,
-        questionable_threshold: float = -1.5,
+        brilliant_threshold: float | None = None,
+        mistake_threshold: float | None = None,
+        questionable_threshold: float | None = None,
     ) -> dict:
         """Classify a move based on score change thresholds.
 
         Returns dict with is_brilliant, is_mistake, is_questionable flags.
         Note: delta_score is from the perspective of the player who moved.
         """
+        # 默认值取自 katrain/core/move_grade.yaml（全仓真源），不再各处写死。
+        ladder = move_grade.load_config()["ladder_points"]
+        if brilliant_threshold is None:
+            brilliant_threshold = 2.0  # 单边轴上的旧判据，待换成难度轴
+        if mistake_threshold is None:
+            mistake_threshold = -ladder["inaccuracy"]
+        if questionable_threshold is None:
+            questionable_threshold = -ladder["playable"]
         return {
             "is_brilliant": delta_score >= brilliant_threshold,
             "is_mistake": delta_score <= mistake_threshold,
@@ -186,6 +195,12 @@ class LiveConfig(BaseModel):
     # Display thresholds
     pv_moves: int = 10  # Number of PV moves to show
     pv_anim_time: float = 0.3  # Animation time per move
-    brilliant_threshold: float = 2.0  # Score gain to mark as brilliant
-    mistake_threshold: float = -3.0  # Score loss to mark as mistake
-    questionable_threshold: float = -1.5  # Score loss for questionable
+    # 默认值来自 katrain/core/move_grade.yaml（全仓真源）。analyzer.py 会把这三个
+    # 显式传给 classify_move，所以真正生效的是这里 —— 写死的话 yaml 改了也不跟。
+    brilliant_threshold: float = 2.0  # 单边轴上的旧判据，待换成难度轴
+    mistake_threshold: float = Field(
+        default_factory=lambda: -move_grade.load_config()["ladder_points"]["inaccuracy"]
+    )
+    questionable_threshold: float = Field(
+        default_factory=lambda: -move_grade.load_config()["ladder_points"]["playable"]
+    )

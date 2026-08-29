@@ -1,9 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import PhysicalModeToggle from '../components/tsumego/PhysicalModeToggle';
+
+/**
+ * ⚠️ 2026-08-22(屏 14):`PhysicalModeToggle` 这个组件连同它那一组断言一起删了 ——
+ * 做题屏按稿子重画之后,「实体棋盘」是共享外壳那排 `role="switch"` 里的一个
+ * (Fan 2026-08-22:「galaxy 界面里都是开关这种形式,kiosk 也改成一样的」),
+ * 没有第二个消费方。留下来的是**这两个读写函数**:开关换了长相,存在哪儿没变。
+ */
 import { readPhysicalMode, writePhysicalMode } from '../pages/tsumegoUnits';
 
-describe('Physical mode persistence and component', () => {
+describe('Physical mode persistence', () => {
   beforeEach(() => {
     localStorage.clear();
   });
@@ -42,61 +47,6 @@ describe('Physical mode persistence and component', () => {
 
       getItem.mockRestore();
       setItem.mockRestore();
-    });
-  });
-
-  describe('PhysicalModeToggle component', () => {
-    it('should render with capable=true', () => {
-      const handleChange = vi.fn();
-      render(
-        <PhysicalModeToggle checked={false} onChange={handleChange} capable={true} />
-      );
-
-      expect(screen.getByTestId('physical-mode-toggle')).toBeInTheDocument();
-      expect(screen.getByText('使用物理棋盘')).toBeInTheDocument();
-    });
-
-    it('should render with capable=false and show disabled label', () => {
-      const handleChange = vi.fn();
-      render(
-        <PhysicalModeToggle checked={false} onChange={handleChange} capable={false} />
-      );
-
-      expect(screen.getByText('未检测到实体棋盘')).toBeInTheDocument();
-      const switchElement = screen.getByRole('switch');
-      expect(switchElement).toBeDisabled();
-    });
-
-    it('should call onChange with true when switch is clicked and capable=true', () => {
-      const handleChange = vi.fn();
-      render(
-        <PhysicalModeToggle checked={false} onChange={handleChange} capable={true} />
-      );
-
-      const switchElement = screen.getByRole('switch');
-      fireEvent.click(switchElement);
-
-      expect(handleChange).toHaveBeenCalledWith(true);
-    });
-
-    it('should render checked state when checked=true and capable=true', () => {
-      const handleChange = vi.fn();
-      render(
-        <PhysicalModeToggle checked={true} onChange={handleChange} capable={true} />
-      );
-
-      const switchElement = screen.getByRole('switch') as HTMLInputElement;
-      expect(switchElement.checked).toBe(true);
-    });
-
-    it('should not render checked when capable=false even if checked=true', () => {
-      const handleChange = vi.fn();
-      render(
-        <PhysicalModeToggle checked={true} onChange={handleChange} capable={false} />
-      );
-
-      const switchElement = screen.getByRole('switch') as HTMLInputElement;
-      expect(switchElement.checked).toBe(false);
     });
   });
 });

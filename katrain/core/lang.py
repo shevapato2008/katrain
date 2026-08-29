@@ -52,12 +52,30 @@ class Lang(Observable):
         if lang == self.lang:
             return
         # get the right locales directory, and instantiate a gettext
-        self.lang = lang
-        self.font_name = self.FONTS.get(lang) or Theme.DEFAULT_FONT
         i18n_dir, _ = os.path.split(find_package_resource("katrain/i18n/__init__.py"))
         locale_dir = os.path.join(i18n_dir, "locales")
-        locales = gettext.translation("katrain", locale_dir, languages=[lang, DEFAULT_LANGUAGE])
+        # `fallback=True`: the compiled `.mo` files are **not in the repo** (`.gitignore`),
+        # they only exist where someone ran `i18n.py` by hand. Without the fallback a clean
+        # checkout raises FileNotFoundError *here*, and because `i18n = Lang(...)` runs at
+        # module scope that is an **import-time crash of the whole app**, not a missing
+        # translation. `katrain/vision/README.md:78` documents the manual workaround, which
+        # is how we know this has been hit before. Degrade to the untranslated msgids and
+        # say so on stderr -- silently serving an empty catalog is the dishonest half.
+        locales = gettext.translation("katrain", locale_dir, languages=[lang, DEFAULT_LANGUAGE], fallback=True)
+        if not hasattr(locales, "_catalog"):
+            print(
+                f"No compiled translations for '{lang}' in {locale_dir} -- showing untranslated text. "
+                f"Run `python i18n.py` to build them.",
+                file=sys.stderr,
+            )
         self.ugettext = locales.gettext
+        # Assigned **after** the load, not before: `switch_lang` early-returns when
+        # `lang == self.lang`, so setting it first means a failed load (a truncated `.mo`
+        # from a partial rsync, say) leaves the object claiming to be in a language whose
+        # catalog it never loaded -- and the *next* call for that language returns 200 with
+        # the previous language's table and no error anywhere.
+        self.lang = lang
+        self.font_name = self.FONTS.get(lang) or Theme.DEFAULT_FONT
 
         # update all the kv rules attached to this text
         for widget, func, args in self.observers:

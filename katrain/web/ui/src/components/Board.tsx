@@ -20,6 +20,22 @@ export interface BoardProps {
   analysisToggles: Record<string, boolean>;
   playerColor?: 'B' | 'W' | null;
   engineOverlay?: EngineOverlay | null;
+  /**
+   * 「刻度带在外面」模式 —— kiosk 布局 A 的 `.kiosk-board` 自己有四条 28px 刻度带,
+   * 盘只负责 460×460 的落子区。默认 `false`,galaxy / ZenMode / 复盘一个字节都不变。
+   *
+   * 打开之后**三件事一起变,少一件就白改**(它们共同保证「刻度带的字心 = 盘上那条线」):
+   *   ① 留白 1.5 格 → **0.5 格**。共享外壳规范 §8 `:432` 要交叉点棋盘取 0.5:
+   *      外面 N 个字**均分**在 460 上、第 i 个字心落在 `(i+0.5)/N`,盘上第 i 条线在
+   *      `(0.5+i)/N` —— **两式相等当且仅当 margin = 0.5**。1.5 的盘配 0.5 的带,
+   *      字和线整整错开一格(≈24px)。
+   *   ② 容器 `padding: 4px` + `min(w,h) − 8` → **0**。落子区多大画布就多大,
+   *      否则线整体内缩 4px,而外面的字不缩。
+   *   ③ 格距 `Math.floor(...)` → **不取整**。460/19 = 24.21;取整成 24 之后盘只有 456,
+   *      两侧各偏 2px —— 一眼看不出、逐条量得出。
+   * 还有一件跟着关掉:**盘内不再画坐标**(`drawCoordinates`),那是外面那四条带的活。
+   */
+  externalRulers?: boolean;
 }
 
 const ASSETS = {
@@ -42,7 +58,7 @@ const EVAL_COLORS = [
   "rgba(74, 107, 92, 0.85)",   // Jade green <= 0.5 (excellent)
 ];
 
-const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, engineOverlay = null }) => {
+const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, engineOverlay = null, externalRulers = false }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
@@ -96,7 +112,8 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
         // Use the smaller dimension to keep the board square, minus padding
-        const size = Math.floor(Math.min(width, height) - 8);
+        // (externalRulers: no padding — the canvas fills the 460 play area exactly).
+        const size = Math.floor(Math.min(width, height) - (externalRulers ? 0 : 8));
         // Clamp between 200 and 1200 for reasonable bounds
         setCanvasSize(Math.max(200, Math.min(1200, size)));
       }
@@ -127,7 +144,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       window.removeEventListener('resize', updateCanvasSize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [externalRulers]);
 
   // Add a ref for animation time
   const startTimeRef = useRef<number>(Date.now());
@@ -143,13 +160,15 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       const interval = setInterval(renderBoard, 100);
       return () => clearInterval(interval);
     }
-  }, [gameState, analysisToggles, canvasSize, engineOverlay]);
+  }, [gameState, analysisToggles, canvasSize, engineOverlay, externalRulers]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
-    const gridMargins = { x: [1.5, 1.5], y: [1.5, 1.5] }; // Symmetric: Left/Right, Bottom/Top
+    const m = externalRulers ? 0.5 : 1.5;
+    const gridMargins = { x: [m, m], y: [m, m] }; // Symmetric: Left/Right, Bottom/Top
     const xGridSpaces = boardSize - 1 + gridMargins.x[0] + gridMargins.x[1];
     const yGridSpaces = boardSize - 1 + gridMargins.y[0] + gridMargins.y[1];
-    const gridSize = Math.floor(Math.min(canvas.width / xGridSpaces, canvas.height / yGridSpaces));
+    const raw = Math.min(canvas.width / xGridSpaces, canvas.height / yGridSpaces);
+    const gridSize = externalRulers ? raw : Math.floor(raw);
     const boardWidth = xGridSpaces * gridSize;
     const boardHeight = yGridSpaces * gridSize;
     const offsetX = Math.round((canvas.width - boardWidth) / 2);
@@ -191,7 +210,8 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
     // Grid, Stars, Coordinates
     drawGrid(ctx, layout, boardSize);
     drawStars(ctx, layout, boardSize);
-    if (analysisToggles.coords) {
+    // externalRulers: 坐标由外面那四条 `.kiosk-board__ruler` 画,盘内不再画一遍。
+    if (analysisToggles.coords && !externalRulers) {
       drawCoordinates(ctx, layout, boardSize);
     }
 
@@ -661,7 +681,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '4px'
+        padding: externalRulers ? 0 : '4px'
       }}
     >
       <canvas
@@ -675,8 +695,10 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
           maxWidth: '100%',
           maxHeight: '100%',
           display: 'block',
-          borderRadius: '4px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 80px rgba(212, 165, 116, 0.05)',
+          // externalRulers: 圆角和投影归 `.kiosk-board` 那个木框管(它自己 `border-radius:8px`
+          // + `overflow:hidden`)。盘再来一层 4px 圆角会在木框内缘露出四个缺口。
+          borderRadius: externalRulers ? 0 : '4px',
+          boxShadow: externalRulers ? 'none' : '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 80px rgba(212, 165, 116, 0.05)',
           cursor: 'pointer'
         }}
       />

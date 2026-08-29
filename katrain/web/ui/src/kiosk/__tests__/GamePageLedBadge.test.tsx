@@ -122,14 +122,55 @@ const renderGamePage = () =>
 
 // Import after mocks
 import GamePage from '../pages/GamePage';
+import { PLAY_ON_BOARD_KEY, writePlayOnBoard } from '../utils/playInput';
 
-describe('GamePage LED badge', () => {
+describe('GamePage 硬件故障', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // 「这一局落在哪儿」的偏好活在 localStorage 里。清掉 = 默认(实体盘)。
+    localStorage.removeItem(PLAY_ON_BOARD_KEY);
   });
 
-  it('shows a red LED badge when the LED board is down', () => {
+  // 上一版这里断言顶条上有一颗 MUI `LightbulbIcon`。那三颗**常亮**的状态灯
+  // (摄像头 / 标定 / LED)Task 11 撤了 —— §5 说状态显示归 L1 镜像栏,L3 上没它们的位置。
+  //
+  // **但撤灯不能等于撤信号**:LED 掉线在这一屏原来只有那颗灯说得出来。
+  // 现在改成「只在真出故障时说一句」,落在显示开关排右端那格 `.ghint`
+  // (它本来就是用来解释「为什么那个键是灰的」的位置),平时不占地方。
+  it('LED 掉线时,开关排右端把它说出来', () => {
     renderGamePage();
-    expect(document.querySelector('[data-testid="LightbulbIcon"]')).toBeTruthy();
+    expect(screen.getByText('LED 未连接 · 不再亮灯引导')).toBeInTheDocument();
+    // 落在那一格,不是随便找个地方冒出来的
+    expect(document.querySelector('.gtoggles .ghint')).toHaveTextContent('LED 未连接');
+  });
+
+  // 同一格还兼着「数子还差几手」。**故障优先** —— 差几手是常态提示,LED 掉了是坏了。
+  it('故障压过「数子要下满 100 手」那句', () => {
+    renderGamePage();
+    expect(screen.queryByText(/数子要下满/)).toBeNull();
+  });
+});
+
+/**
+ * 开局设置屏那颗「屏幕 / 实体盘」的**后半截**:选了屏幕,这一屏所有实体盘的东西都得消失。
+ *
+ * 这一条和上面两条**共用同一副桩** —— 摄像头开着、LED 报掉线、盘还是那块盘,
+ * **唯一的变量是偏好**。所以它证得干净:消失不是因为设备没了,是因为这一局不在盘上。
+ *
+ * 挑「LED 掉线」那句话当探针,是因为它只有 `physicalPlay` 一个来源
+ * (`hardwareFault` 的第一行就是 `!physicalPlay ? null`),而且它一让位,
+ * 同一格会换上「数子要下满 100 手」——**有东西顶上来**,比断言「某个字不见了」结实:
+ * 整块没渲染出来时,「不见了」也是满分。
+ */
+describe('GamePage:选了「屏幕」之后,实体盘那一套整个不出现', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    writePlayOnBoard(false);
+  });
+
+  it('设备一模一样,只是这一局不在盘上 ⇒ 硬件故障条让位给常态提示', () => {
+    renderGamePage();
+    expect(screen.queryByText('LED 未连接 · 不再亮灯引导')).toBeNull();
+    expect(document.querySelector('.gtoggles .ghint')).toHaveTextContent('数子要下满 100 手');
   });
 });

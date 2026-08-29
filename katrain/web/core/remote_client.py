@@ -298,6 +298,13 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
+    # ── Growth (box asks the cloud; falls back to its own cache) ──
+
+    async def get_growth_summary(self, days: int) -> Dict:
+        resp = await self._request("GET", "/api/v1/growth/summary", params={"days": days})
+        resp.raise_for_status()
+        return resp.json()
+
     # ── Reports (remote-only in board mode) ──
 
     async def list_reports(self) -> List[Dict]:

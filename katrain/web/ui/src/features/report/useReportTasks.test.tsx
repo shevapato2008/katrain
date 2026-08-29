@@ -36,6 +36,8 @@ function task(overrides: Partial<ReportTaskSummary> = {}): ReportTaskSummary {
     total_moves: 120,
     analyzed_moves: 0,
     requested_visits: 500,
+    started_at: null,
+    completed_at: null,
     ...overrides,
   };
 }

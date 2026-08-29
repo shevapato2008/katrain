@@ -648,7 +648,7 @@ const ResearchPage = () => {
                     modulePlate={(
                         <ModulePlate
                             title={t('Research', '研究')}
-                            subtitle={t('research:analyzing_game', '正在分析棋局')}
+                            subtitle={t('research:analyzing_game', '正在分析对局')}
                             backTo="/galaxy/research"
                             showBack={false}
                         />

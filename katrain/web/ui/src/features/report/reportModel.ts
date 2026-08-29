@@ -19,6 +19,8 @@ export interface LocalReportImportPayload {
   playerWhite?: string;
   blackRank?: string;
   whiteRank?: string;
+  /** `RE[]`。棋谱库那条(`toLibraryUserGameParams`)一直在传,本地导入这条以前漏了。 */
+  result?: string;
 }
 
 export interface ReportGameStatus {
@@ -55,6 +57,9 @@ export function createOptimisticReportTask(
     total_moves: moveCount,
     analyzed_moves: 0,
     requested_visits: reportType === 'deep' ? 2000 : 500,
+    // 乐观任务是还没到过后端的一行 —— 它按定义没有开始时间,更没有完成时间。
+    started_at: null,
+    completed_at: null,
   };
   if (baselineServerTaskIds !== undefined) {
     task.baseline_server_task_ids = [...baselineServerTaskIds];
@@ -139,6 +144,7 @@ export function toLocalUserGameParams(payload: LocalReportImportPayload): Create
     player_white: payload.playerWhite,
     black_rank: payload.blackRank,
     white_rank: payload.whiteRank,
+    result: payload.result,
     board_size: payload.boardSize,
     rules: payload.rules,
     komi: payload.komi,
@@ -189,11 +195,20 @@ export function toMoveAnalysisMap(
       score_lead: move.score_lead,
       top_moves: move.top_moves ?? [],
       ownership: move.ownership,
+      // 这三个布尔量只为不破坏旧消费者而保留。判级已经移到服务端
+      // （阈值真源 katrain/core/move_grade.yaml），新代码请读 grade。
+      // 注意 is_brilliant 建在 delta_score 这根单边轴上，实测它基本只在
+      // 搜索噪声上触发 —— 别再往它上面加功能。
       is_brilliant: deltaScore >= 2,
       is_mistake: deltaScore <= -3,
       is_questionable: deltaScore <= -1.5,
       delta_score: deltaScore,
       delta_winrate: move.delta_winrate ?? 0,
+      grade: move.grade ?? null,
+      points_lost: move.points_lost ?? null,
+      is_top_move: move.is_top_move ?? null,
+      top_prior: move.top_prior ?? null,
+      brilliance: move.brilliance ?? null,
     };
   }
 

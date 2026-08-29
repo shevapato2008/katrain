@@ -77,11 +77,20 @@ export interface MoveAnalysis {
   score_lead: number;
   top_moves: TopMove[];
   ownership: number[][] | null; // 2D grid of ownership values (-1 to 1, positive=Black)
+  // 旧的三个布尔量。直播链路仍由后端下发，报告链路改用下面的 grade。
+  // 它们建在 delta_score 这一根**单边**轴上，实测 is_brilliant 基本只在搜索噪声上触发，
+  // 新代码请用 grade / points_lost，不要再消费这三个。
   is_brilliant: boolean;
   is_mistake: boolean;
   is_questionable: boolean;
   delta_score: number;
   delta_winrate: number;
+  // 七档评价（服务端下发）。见 src/features/analysis/moveGrade.ts。
+  grade?: string | null;
+  points_lost?: number | null;
+  is_top_move?: boolean | null;
+  top_prior?: number | null;
+  brilliance?: number | null;
 }
 
 // Comment types

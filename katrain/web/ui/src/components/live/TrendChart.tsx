@@ -1,7 +1,20 @@
-import { Box, Typography, Tabs, Tab } from '@mui/material';
-import { useState, useMemo } from 'react';
+import { Box, Chip, Stack, Tab, Tabs, Typography } from '@mui/material';
+import { useMemo, useState } from 'react';
 import type { MoveAnalysis } from '../../types/live';
 import { useTranslation } from '../../hooks/useTranslation';
+import {
+  badnessRank,
+  brillianceRank,
+  buildHistogram,
+  GRADE_BY_ID,
+  GRADE_PHASES,
+  isBad,
+  isBrilliant,
+  selectPerSide,
+  type GradeId,
+  type PhaseId,
+  type PlayerFilter,
+} from '../../features/analysis/moveGrade';
 
 interface TrendChartProps {
   analysis: Record<number, MoveAnalysis>;
@@ -194,18 +207,118 @@ export default function TrendChart({
     );
   };
 
-  // Get brilliant and mistake moves
-  const brilliantMoves = useMemo(() => {
-    return Object.entries(analysis)
-      .filter(([_, a]) => a.is_brilliant)
-      .map(([move, a]) => ({ move: parseInt(move), analysis: a }));
-  }, [analysis]);
+  const [phase, setPhase] = useState<PhaseId>('all');
+  const [player, setPlayer] = useState<PlayerFilter>('both');
 
-  const mistakeMoves = useMemo(() => {
-    return Object.entries(analysis)
-      .filter(([_, a]) => a.is_mistake || a.is_questionable)
-      .map(([move, a]) => ({ move: parseInt(move), analysis: a }));
-  }, [analysis]);
+  const moves = useMemo(() => Object.values(analysis), [analysis]);
+
+  // 直播链路的 analysis 由后端下发旧的三个布尔量、没有 grade；报告链路有 grade。
+  // 两者共用这个组件，所以缺 grade 时退回旧布尔量，免得直播页整块空掉。
+  const graded = useMemo<MoveAnalysis[]>(() => {
+    if (moves.some((m) => m.grade)) return moves;
+    return moves.map((m) => ({
+      ...m,
+      grade: (m.is_brilliant
+        ? 'brilliant'
+        : m.is_mistake
+          ? 'mistake'
+          : m.is_questionable
+            ? 'inaccuracy'
+            : 'unrated') as GradeId,
+      points_lost: m.points_lost ?? -(m.delta_score ?? 0),
+    }));
+  }, [moves]);
+
+  const brilliants = useMemo(
+    () => selectPerSide(graded.filter(isBrilliant), brillianceRank, { phase, player }),
+    [graded, phase, player],
+  );
+  const bads = useMemo(
+    () => selectPerSide(graded.filter(isBad), badnessRank, { phase, player }),
+    [graded, phase, player],
+  );
+  const histogram = useMemo(() => buildHistogram(graded, phase), [graded, phase]);
+
+  // tab 上的计数必须诚实：截断了就写 "5 / 50"，不能只显示截断后的数，
+  // 否则用户会以为整盘只有 5 处问题。
+  const countLabel = (sel: { shown: unknown[]; total: number }) =>
+    sel.total > sel.shown.length ? `${sel.shown.length} / ${sel.total}` : `${sel.total}`;
+
+  const filterBar = (withPlayer: boolean) => (
+    <Stack direction="row" spacing={0.5} sx={{ mb: 1, flexWrap: 'wrap', gap: 0.5 }}>
+      {(['all', ...GRADE_PHASES.map((p) => p.id)] as PhaseId[]).map((p) => (
+        <Chip
+          key={p}
+          size="small"
+          label={t(`grade:phase_${p}`, p)}
+          color={phase === p ? 'primary' : 'default'}
+          variant={phase === p ? 'filled' : 'outlined'}
+          onClick={() => setPhase(p)}
+        />
+      ))}
+      {withPlayer &&
+        (['both', 'B', 'W'] as PlayerFilter[]).map((c) => (
+          <Chip
+            key={c}
+            size="small"
+            label={t(`grade:player_${c}`, c)}
+            color={player === c ? 'primary' : 'default'}
+            variant={player === c ? 'filled' : 'outlined'}
+            onClick={() => setPlayer(c)}
+          />
+        ))}
+    </Stack>
+  );
+
+  const truncationNote = (sel: { shown: unknown[]; total: number; truncated: number }) =>
+    sel.truncated > 0 ? (
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center', py: 1 }}>
+        {t('grade:truncated_note', '另有 {n} 处未列出，可切换阶段或棋手查看').replace(
+          '{n}',
+          String(sel.truncated),
+        )}
+      </Typography>
+    ) : null;
+
+  const moveRow = (a: MoveAnalysis) => {
+    const tier = GRADE_BY_ID[(a.grade as GradeId) ?? 'unrated'];
+    const color = tier?.color ?? '#888';
+    return (
+      <Box
+        key={a.move_number}
+        sx={{
+          p: 1.5,
+          mb: 1,
+          bgcolor: 'background.default',
+          borderRadius: 1,
+          cursor: 'pointer',
+          '&:hover': { bgcolor: 'action.hover' },
+          borderLeft: 3,
+          borderColor: color,
+        }}
+        onClick={() => onMoveClick?.(a.move_number)}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="body2" fontWeight="bold">
+            {t('live:move_number', 'Move')} {a.move_number} {a.move}
+          </Typography>
+          <Typography variant="caption" sx={{ color }}>
+            {a.points_lost != null && a.points_lost > 0
+              ? `-${a.points_lost.toFixed(1)} ${t('live:points', 'pts')}`
+              : a.brilliance
+                ? `${t('grade:brilliance', '玄妙')} ${a.brilliance}`
+                : ''}
+          </Typography>
+        </Box>
+        <Typography variant="caption" color="text.secondary">
+          {a.player === 'B' ? t('live:black', 'B') : t('live:white', 'W')}{' '}
+          <Box component="span" sx={{ color }}>
+            {tier ? t(tier.i18nKey, tier.zh) : t('grade:unrated', '未评级')}
+          </Box>
+        </Typography>
+      </Box>
+    );
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -222,8 +335,9 @@ export default function TrendChart({
         }}
       >
         <Tab label={t('live:trend_chart', 'Trend')} sx={{ minHeight: 36, py: 0 }} />
-        <Tab label={`${t('live:brilliant', 'Brilliant')} (${brilliantMoves.length})`} sx={{ minHeight: 36, py: 0 }} />
-        <Tab label={`${t('live:mistakes', 'Mistakes')} (${mistakeMoves.length})`} sx={{ minHeight: 36, py: 0 }} />
+        <Tab label={`${t('live:brilliant', 'Brilliant')} (${countLabel(brilliants)})`} sx={{ minHeight: 36, py: 0 }} />
+        <Tab label={`${t('live:mistakes', 'Mistakes')} (${countLabel(bads)})`} sx={{ minHeight: 36, py: 0 }} />
+        <Tab label={t('grade:performance', '发挥水准')} sx={{ minHeight: 36, py: 0 }} />
       </Tabs>
 
       {/* Scrollable content area */}
@@ -247,78 +361,83 @@ export default function TrendChart({
 
         {tab === 1 && (
           <Box>
-            {brilliantMoves.length === 0 ? (
+            {filterBar(true)}
+            {brilliants.shown.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
                 {t('live:no_brilliant', 'No brilliant moves')}
               </Typography>
             ) : (
-              brilliantMoves.map(({ move, analysis: a }) => (
-                <Box
-                  key={move}
-                  sx={{
-                    p: 1.5,
-                    mb: 1,
-                    bgcolor: 'background.default',
-                    borderRadius: 1,
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: 'action.hover' },
-                    borderLeft: 3,
-                    borderColor: 'success.main',
-                  }}
-                  onClick={() => onMoveClick?.(move)}
-                >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" fontWeight="bold">
-                      {t('live:move_number', 'Move')} {move} {a.move}
-                    </Typography>
-                    <Typography variant="caption" color="success.main">
-                      +{a.delta_score.toFixed(1)} {t('live:points', 'pts')}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {a.player === 'B' ? t('live:black', 'B') : t('live:white', 'W')} {t('live:brilliant_move', 'brilliant move')}
-                  </Typography>
-                </Box>
-              ))
+              <>
+                {brilliants.shown.map(moveRow)}
+                {truncationNote(brilliants)}
+              </>
             )}
           </Box>
         )}
 
         {tab === 2 && (
           <Box>
-            {mistakeMoves.length === 0 ? (
+            {filterBar(true)}
+            {bads.shown.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
                 {t('live:no_mistakes', 'No mistakes')}
               </Typography>
             ) : (
-              mistakeMoves.map(({ move, analysis: a }) => (
-                <Box
-                  key={move}
-                  sx={{
-                    p: 1.5,
-                    mb: 1,
-                    bgcolor: 'background.default',
-                    borderRadius: 1,
-                    cursor: 'pointer',
-                    '&:hover': { bgcolor: 'action.hover' },
-                    borderLeft: 3,
-                    borderColor: a.is_mistake ? 'error.main' : 'warning.main',
-                  }}
-                  onClick={() => onMoveClick?.(move)}
-                >
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="body2" fontWeight="bold">
-                      {t('live:move_number', 'Move')} {move} {a.move}
-                    </Typography>
-                    <Typography variant="caption" color={a.is_mistake ? 'error.main' : 'warning.main'}>
-                      {a.delta_score.toFixed(1)} {t('live:points', 'pts')}
-                    </Typography>
+              <>
+                {bads.shown.map(moveRow)}
+                {truncationNote(bads)}
+              </>
+            )}
+          </Box>
+        )}
+
+        {tab === 3 && (
+          <Box>
+            {/* 发挥水准：七档分布。分母是该方自己在所选阶段内被评级的手数，两方各自归一。 */}
+            {filterBar(false)}
+            {histogram.blackTotal + histogram.whiteTotal === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                {t('grade:no_rated_moves', '本阶段没有已评级的着手')}
+              </Typography>
+            ) : (
+              <>
+                {histogram.cells.map((cell) => (
+                  <Box key={cell.tier.id} sx={{ mb: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
+                      <Typography variant="caption" sx={{ color: cell.tier.color, fontWeight: 600 }}>
+                        {t(cell.tier.i18nKey, cell.tier.zh)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {cell.black} ({Math.round(cell.blackRate * 100)}%) · {cell.white} (
+                        {Math.round(cell.whiteRate * 100)}%)
+                      </Typography>
+                    </Box>
+                    {(['black', 'white'] as const).map((side) => (
+                      <Box
+                        key={side}
+                        sx={{ height: 6, bgcolor: 'action.hover', borderRadius: 0.5, mb: 0.25, overflow: 'hidden' }}
+                      >
+                        <Box
+                          sx={{
+                            width: `${(side === 'black' ? cell.blackRate : cell.whiteRate) * 100}%`,
+                            height: '100%',
+                            bgcolor: cell.tier.color,
+                            opacity: side === 'black' ? 1 : 0.55,
+                          }}
+                        />
+                      </Box>
+                    ))}
                   </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {a.player === 'B' ? t('live:black', 'B') : t('live:white', 'W')} {a.is_mistake ? t('live:mistake', 'mistake') : t('live:questionable', 'questionable')}
-                  </Typography>
-                </Box>
-              ))
+                ))}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                  {t('grade:histogram_footer', '黑 {b} 手 / 白 {w} 手已评级')
+                    .replace('{b}', String(histogram.blackTotal))
+                    .replace('{w}', String(histogram.whiteTotal))}
+                  {histogram.unrated > 0
+                    ? ` · ${t('grade:unrated_count', '{n} 手未评级').replace('{n}', String(histogram.unrated))}`
+                    : ''}
+                </Typography>
+              </>
             )}
           </Box>
         )}

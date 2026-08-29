@@ -75,16 +75,22 @@ async def list_user_games(
             q=q,
         )
 
+    # 没有 dispatcher = 这台机器就是权威(普通服务端 / 本机跑的 web UI)。
+    # `authority` 这一格的口径和 `growth/summary` 那个完全一致,三档同名 ——
+    # 屏上那句「本机 N 局 / 共 N 局」靠它才说得出真话。
     repo = request.app.state.user_game_repo
-    return repo.list(
-        user_id=current_user.id,
-        page=page,
-        page_size=page_size,
-        category=category,
-        source=source,
-        sort=sort,
-        q=q,
-    )
+    return {
+        **repo.list(
+            user_id=current_user.id,
+            page=page,
+            page_size=page_size,
+            category=category,
+            source=source,
+            sort=sort,
+            q=q,
+        ),
+        "authority": "this_node",
+    }
 
 
 @router.post("/")

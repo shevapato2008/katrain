@@ -867,7 +867,11 @@ describe('GamePage engine mode', () => {
       fireEvent.click(within(confirmDialog).getByText('认输'));
 
       expect(mockHandleAction).toHaveBeenCalledWith('resign');
-      expect(mockClearPhysicalEngineError).toHaveBeenCalledTimes(1);
+      // ⚠️ 这一句要等。`GamePage` 那颗确认键是 `await session.handleAction('resign')`
+      // **之后**才 `clearPhysicalEngineError()` —— 同步断言跑在那个微任务之前,
+      // 于是它常年红着,而红的原因和「认输之后错误弹窗关没关」毫无关系。
+      // (同一晚在 `ReportsPage.test.tsx` 上撞到同族的另一半:那边是**空过**。)
+      await waitFor(() => expect(mockClearPhysicalEngineError).toHaveBeenCalledTimes(1));
     });
   });
 });

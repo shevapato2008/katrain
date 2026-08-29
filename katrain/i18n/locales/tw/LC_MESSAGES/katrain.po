@@ -1352,7 +1352,7 @@ msgid "Library"
 msgstr "棋譜庫"
 
 msgid "dashboard:report_desc"
-msgstr "生成逐手分析報告，復盤你的棋局。"
+msgstr "生成逐手分析報告，復盤你的對局。"
 
 msgid "game_room:leave_forfeit"
 msgstr "離開並棄權"
@@ -1917,7 +1917,7 @@ msgid "research:return_to_edit"
 msgstr "返回編輯"
 
 msgid "research:analyzing_game"
-msgstr "正在分析棋局"
+msgstr "正在分析對局"
 
 msgid "research:progress"
 msgstr "已完成 {analyzed} / {total} 步"
@@ -2286,19 +2286,19 @@ msgid "report:my_reports"
 msgstr "復盤"
 
 msgid "report:page_hint"
-msgstr "選一局預覽棋盤；報告生成和跳轉都在棋局卡片上完成。"
+msgstr "選一局預覽棋盤；報告生成和跳轉都在對局卡片上完成。"
 
 msgid "report:select_game"
 msgstr "選擇一局棋譜"
 
 msgid "report:select_game_hint"
-msgstr "從右側選擇棋局，或導入新的 SGF / 棋譜庫對局。"
+msgstr "從右側選擇對局，或導入新的 SGF / 棋譜庫對局。"
 
 msgid "report:no_preview"
-msgstr "還沒有可預覽的棋局。"
+msgstr "還沒有可預覽的對局。"
 
 msgid "report:game_list"
-msgstr "棋局列表"
+msgstr "對局列表"
 
 msgid "report:game_list_hint"
 msgstr "共 {count} 局，支持按棋手、標題或賽事搜尋。"
@@ -2310,10 +2310,10 @@ msgid "report:no_match"
 msgstr "沒有找到與 \"{query}\" 匹配的棋局。"
 
 msgid "report:no_games"
-msgstr "還沒有棋局，先導入一局再生成報告。"
+msgstr "還沒有對局，先導入一局再生成報告。"
 
 msgid "report:load_games_failed"
-msgstr "載入棋局列表失敗"
+msgstr "載入對局列表失敗"
 
 msgid "report:load_tasks_failed"
 msgstr "載入報告任務失敗"
@@ -2370,7 +2370,7 @@ msgid "report:no_result"
 msgstr "未錄入結果"
 
 msgid "report:unnamed_game"
-msgstr "未命名棋局"
+msgstr "未命名對局"
 
 msgid "report:queuing"
 msgstr "排隊中"
@@ -2496,25 +2496,25 @@ msgid "report:title_human"
 msgstr "人人對弈"
 
 msgid "report:title_import"
-msgstr "導入棋局"
+msgstr "導入對局"
 
 msgid "report:title_kifu"
 msgstr "棋譜庫"
 
 msgid "report:delete_game"
-msgstr "刪除棋局"
+msgstr "刪除對局"
 
 msgid "report:delete_confirm_title"
 msgstr "確認刪除"
 
 msgid "report:delete_confirm_body"
-msgstr "刪除後棋局及所有關聯分析資料將無法恢復，確認刪除？"
+msgstr "刪除後對局及所有關聯分析資料將無法恢復，確認刪除？"
 
 msgid "report:delete_success"
-msgstr "棋局已刪除"
+msgstr "對局已刪除"
 
 msgid "report:delete_failed"
-msgstr "刪除棋局失敗"
+msgstr "刪除對局失敗"
 
 msgid "report:source_import"
 msgstr "匯入"
@@ -3170,3 +3170,66 @@ msgstr "登入後可用"
 
 msgid "play:analysis_requires_login_hint"
 msgstr "領地 / 支招 / 圖表 登入後可用"
+
+msgid "grade:brilliant"
+msgstr "妙手"
+
+msgid "grade:best"
+msgstr "最佳"
+
+msgid "grade:very_good"
+msgstr "很好"
+
+msgid "grade:playable"
+msgstr "可下"
+
+msgid "grade:inaccuracy"
+msgstr "欠佳"
+
+msgid "grade:mistake"
+msgstr "失誤"
+
+msgid "grade:blunder"
+msgstr "惡手"
+
+msgid "grade:phase_all"
+msgstr "全盤"
+
+msgid "grade:phase_opening"
+msgstr "布局"
+
+msgid "grade:phase_midgame"
+msgstr "中盤"
+
+msgid "grade:phase_endgame"
+msgstr "官子"
+
+msgid "grade:player_both"
+msgstr "雙方"
+
+msgid "grade:player_B"
+msgstr "黑方"
+
+msgid "grade:player_W"
+msgstr "白方"
+
+msgid "grade:performance"
+msgstr "發揮水準"
+
+msgid "grade:brilliance"
+msgstr "玄妙"
+
+msgid "grade:unrated"
+msgstr "未評級"
+
+msgid "grade:no_rated_moves"
+msgstr "本階段沒有已評級的著手"
+
+msgid "grade:truncated_note"
+msgstr "另有 {n} 處未列出，可切換階段或棋手查看"
+
+msgid "grade:histogram_footer"
+msgstr "黑 {b} 手 / 白 {w} 手已評級"
+
+msgid "grade:unrated_count"
+msgstr "{n} 手未評級"

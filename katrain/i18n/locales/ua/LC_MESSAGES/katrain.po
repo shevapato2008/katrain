@@ -3263,3 +3263,66 @@ msgstr "Доступно після входу"
 
 msgid "play:analysis_requires_login_hint"
 msgstr "Територія / Підказка / Графік доступні після входу"
+
+msgid "grade:brilliant"
+msgstr "Блискучий"
+
+msgid "grade:best"
+msgstr "Найкращий"
+
+msgid "grade:very_good"
+msgstr "Дуже добре"
+
+msgid "grade:playable"
+msgstr "Прийнятно"
+
+msgid "grade:inaccuracy"
+msgstr "Неточність"
+
+msgid "grade:mistake"
+msgstr "Помилка"
+
+msgid "grade:blunder"
+msgstr "Груба помилка"
+
+msgid "grade:phase_all"
+msgstr "Вся партія"
+
+msgid "grade:phase_opening"
+msgstr "Фусекі"
+
+msgid "grade:phase_midgame"
+msgstr "Мітельшпіль"
+
+msgid "grade:phase_endgame"
+msgstr "Йосе"
+
+msgid "grade:player_both"
+msgstr "Обидва"
+
+msgid "grade:player_B"
+msgstr "Чорні"
+
+msgid "grade:player_W"
+msgstr "Білі"
+
+msgid "grade:performance"
+msgstr "Якість гри"
+
+msgid "grade:brilliance"
+msgstr "Витонченість"
+
+msgid "grade:unrated"
+msgstr "Без оцінки"
+
+msgid "grade:no_rated_moves"
+msgstr "У цій стадії немає оцінених ходів"
+
+msgid "grade:truncated_note"
+msgstr "Ще {n} не показано — перемкніть стадію або гравця"
+
+msgid "grade:histogram_footer"
+msgstr "Оцінено ходів: чорні {b} / білі {w}"
+
+msgid "grade:unrated_count"
+msgstr "{n} без оцінки"

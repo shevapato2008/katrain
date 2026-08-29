@@ -69,3 +69,45 @@ katrain 是独立仓,拿不到 `@shared/kiosk-shell`(那在 smartbox 仓),所以
 顺带同一批查出来的:**`--accent` 和稿子是同一个值 `#58B57A`** ——
 `sample-go` 的调色板逐个取自我们自己的 `theme.ts`(那份文件第 10-14 行注释直说了)。
 觉得「稿子的绿更亮」是**用法**差异,不是取值差异。
+
+## 这轮抄进来的量（2026-08-23 回填）
+
+| 件 | 之前 | 现在 | 备注 |
+|---|---|---|---|
+| `icons/` | 1 个 | **82 个**（41 对，每个都有 `-fill`） | 整目录抄，不挑；`icons.tsx` 的名单有两条断言把它和目录对死（**两个方向都堵**） |
+| `MANIFEST.sha256` | 209 行 | **290 行** | `shasum -a 256 -c` 全过才算抄对 |
+| `go-screens.css` | 无 | **约 510 行** | 见下 |
+
+### `go-screens.css` **为什么这么小**
+
+它只装「围棋屏级、而共享包里没有」的那些类。**vendored 的 `tokens.css` 比设计稿新** ——
+稿子 `<style>` 里的 `.kiosk-row` / `.kiosk-tag` / `.kiosk-fold` / `.kiosk-seg` /
+`.kiosk-slider` / `.kiosk-swatch` / `.kiosk-navlist` 上游都已经收编了，抄进来就是**两份定义**，
+而两份定义迟早会漂。
+
+留在 `go-screens.css` 里的是三类：
+1. **围棋独有**：`.gob`（19 路盘）、`.disc`（黑白子行首）、`.gtoggles`（那排开关）；
+2. **稿子有、共享包还没收**：`.khero` / `.rhead` / `.foldrows` / `.wrbox`（复盘那条真胜率曲线）
+   / `.sbox`→`.ksearch`（搜索框，稿子画的是静止样子，实现是真 `<input>`）；
+3. **元素默认值的补丁**：`button.kiosk-row`（行本身可点时它就是个按钮）、
+   `.rvpick`（行分成两半：左半选中、右半动作 —— 按钮里套按钮是非法 DOM）。
+
+⚠️ 第 3 类里有一个坑值得记：**本仓没有全局重置**，而稿子那份样式表自带一个。
+`.khero p` / `.rhead p` 只写 `margin-top` 的话，浏览器默认的 `margin-bottom: 1em`
+会让整块高出 11.5px —— 屏 15 的四图上量出来过一次，右栏底下每一块跟着往下挪。
+**从稿子抄段落样式时，`margin` 要写全四个方向。**
+
+### 一条不变式，本轮在三个地方各实现了一遍
+
+**刻度带的节距必须逐像素等于盘的线节距**。坐标交给外壳画的时候，盘自己那圈坐标要关掉，
+**而边距必须从 1.5 格收回 0.5 格、且不许取整**：
+
+| 实现 | 在哪 | 什么时候修的 |
+|---|---|---|
+| canvas（做题屏） | `components/tsumego/TsumegoBoard.tsx` | Task 14 |
+| SVG（镜像栏 / 棋谱详情） | `kiosk/shell/GoBoardSvg.tsx` | 由构造保证（`GO_MARGIN = 0.5`） |
+| canvas（对局 / 复盘报告） | `components/board/boardUtils.ts` + `components/live/LiveBoard.tsx` | Task 16b，**闸量出来偏 11.9px** |
+
+判据只有一条，写在 `tests/kiosk-shell-geometry.spec.ts` 里：
+**盘上第一条和最后一条竖线，正对刻度带头尾两个字的字心（≤1.5px）**。
+它只有真浏览器量得出来 —— canvas 那两处是**读像素**找的线。

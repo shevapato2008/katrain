@@ -6,7 +6,6 @@ Uses the cron-side KataGo engine (port 8002) instead of the web gameplay engine.
 
 import asyncio
 import logging
-import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -15,45 +14,12 @@ from katrain.cron.clients.katago import KataGoClient
 from katrain.cron.db import SessionLocal
 from katrain.cron.jobs.base import BaseJob
 from katrain.cron.models import ReportTaskDB, ReportTaskMoveDB, UserGameDB
+from katrain.cron.sgf import ParsedGame, parse_game
+from katrain.cron import move_grade
 
 logger = logging.getLogger("katrain_cron.report_analyze")
 
 MAX_RETRIES = 3
-
-# SGF parsing patterns
-SGF_MOVE_RE = re.compile(r";([BW])\[([a-z]{0,2})\]", re.IGNORECASE)
-SGF_SIZE_RE = re.compile(r"SZ\[(\d+)\]")
-SGF_KOMI_RE = re.compile(r"KM\[([^\]]+)\]")
-SGF_RULES_RE = re.compile(r"RU\[([^\]]+)\]", re.IGNORECASE)
-
-
-def _sgf_to_gtp(sgf_coord: str, board_size: int) -> str:
-    if not sgf_coord:
-        return "pass"
-    col_idx = ord(sgf_coord[0].lower()) - ord("a")
-    row_idx = ord(sgf_coord[1].lower()) - ord("a")
-    col_char = chr(ord("A") + col_idx + (1 if col_idx >= 8 else 0))
-    display_row = board_size - row_idx
-    return f"{col_char}{display_row}"
-
-
-def _parse_sgf(sgf: str) -> tuple[int, float, str, list[tuple[str, str]]]:
-    board_size = int(SGF_SIZE_RE.search(sgf or "")[1]) if SGF_SIZE_RE.search(sgf or "") else 19
-
-    komi_match = SGF_KOMI_RE.search(sgf or "")
-    try:
-        komi = float(komi_match[1]) if komi_match else 7.5
-    except ValueError:
-        komi = 7.5
-
-    rules_match = SGF_RULES_RE.search(sgf or "")
-    rules = (rules_match[1].strip().lower() if rules_match else "chinese") or "chinese"
-
-    moves: list[tuple[str, str]] = []
-    for color, coord in SGF_MOVE_RE.findall(sgf or ""):
-        gtp = _sgf_to_gtp(coord, board_size) if coord else "pass"
-        moves.append((color.upper(), gtp))
-    return board_size, komi, rules, moves
 
 
 def _ownership_grid(raw: Any, board_size: int) -> list[list[float]] | None:
@@ -223,7 +189,8 @@ class ReportAnalyzerJob(BaseJob):
                 db.commit()
                 return
 
-            board_size, komi, rules, moves = _parse_sgf(game.sgf_content)
+            parsed = parse_game(game.sgf_content)
+            moves = parsed.moves
             requested_visits = task.requested_visits or 500
             resume_from = self._get_resume_move_number(db, task_id)
             task.status = "running"
@@ -243,10 +210,7 @@ class ReportAnalyzerJob(BaseJob):
 
             result = await self._analyze_position(
                 task_id=task_id,
-                board_size=board_size,
-                komi=komi,
-                rules=rules,
-                moves=moves,
+                parsed=parsed,
                 move_number=move_number,
                 requested_visits=requested_visits,
             )
@@ -294,13 +258,12 @@ class ReportAnalyzerJob(BaseJob):
     async def _analyze_position(
         self,
         task_id: int,
-        board_size: int,
-        komi: float,
-        rules: str,
-        moves: list[tuple[str, str]],
+        parsed: ParsedGame,
         move_number: int,
         requested_visits: int,
     ) -> dict[str, Any] | None:
+        board_size = parsed.board_size
+        moves = parsed.moves
         played = [[color, coord] for color, coord in moves[:move_number]]
 
         # Per-move retry (3 attempts, 2s delay)
@@ -310,15 +273,15 @@ class ReportAnalyzerJob(BaseJob):
                 response = await self._katago.analyze(
                     request_id=f"report_{task_id}_{move_number}",
                     moves=played,
-                    rules=rules,
-                    komi=komi,
+                    rules=parsed.rules,
+                    komi=parsed.komi,
                     board_size=board_size,
                     max_visits=requested_visits,
                     analyze_turns=[len(played)],
                     include_ownership=True,
                     include_policy=False,
-                    initial_stones=[],
-                    initial_player="B",
+                    initial_stones=parsed.initial_stones,
+                    initial_player=parsed.initial_player,
                     priority=config.REPORT_ANALYSIS_PRIORITY,
                 )
                 break
@@ -341,6 +304,8 @@ class ReportAnalyzerJob(BaseJob):
         # Compute delta relative to previous move
         previous_score = None
         previous_winrate = None
+        previous_top_moves = None
+        previous_visits = None
         if move_number > 0:
             with SessionLocal() as db:
                 prev = (
@@ -354,6 +319,10 @@ class ReportAnalyzerJob(BaseJob):
                 if prev:
                     previous_score = prev.score_lead
                     previous_winrate = prev.winrate
+                    # 评级要用落子前那个局面的候选列表：pointsLost 取自同一次搜索，
+                    # 而首选的 policy 先验是「难不难被想到」那根轴的输入。
+                    previous_top_moves = prev.top_moves
+                    previous_visits = prev.root_visits
 
         score_lead = root_info.get("scoreLead", 0.0)
         winrate = root_info.get("winrate", 0.5)
@@ -383,8 +352,28 @@ class ReportAnalyzerJob(BaseJob):
                 }
             )
 
+        # 着手评价。阈值真源是 katrain/core/move_grade.yaml；
+        # katrain/cron/move_grade.py 是由它生成的 stdlib-only 副本（不跨包、不需要 PyYAML）。
+        # 注意 move_number 是「落子后」的局面序号，也就是这手棋的序号。
+        grade = move_grade.grade(
+            prev_top_moves=previous_top_moves,
+            prev_visits=previous_visits,
+            actual_move=actual_move,
+            actual_player=actual_player,
+            actual_score_lead=score_lead,
+            actual_winrate=winrate,
+            move_number=move_number,
+        )
+
         return {
             "status": "success",
+            "grade": grade["grade"],
+            "points_lost": grade["points_lost"],
+            "points_lost_source": grade["points_lost_source"],
+            "root_visits": root_info.get("visits"),
+            "is_top_move": grade["is_top_move"],
+            "top_prior": grade["top_prior"],
+            "brilliance": grade["brilliance"],
             "winrate": winrate,
             "score_lead": score_lead,
             "visits": max((m.get("visits", 0) for m in move_infos[:1]), default=0),

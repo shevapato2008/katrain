@@ -110,13 +110,16 @@ const TeachingSettingsDialog: React.FC<TeachingSettingsDialogProps> = ({ open, s
     }
   };
 
+  // 顺序必须与 trainer/eval_thresholds 一致，也就是**降序**（index 0 = 最大损失阈值）。
+  // core/utils.py 的 evaluation_class、gui/theme.py 的 EVAL_COLORS、gui/popups.py 的
+  // 标签逻辑全部按降序取值。这个列表以前写成升序，是 katrain/config.json 被翻成升序的诱因。
   const dotColors = [
-    { label: t('Best'), color: '#30a06e' },
-    { label: t('Very Good'), color: '#5b9bd5' },
-    { label: t('Good'), color: '#e89639' },
-    { label: t('Slack'), color: '#e16b5c' },
-    { label: t('Mistake'), color: '#9c27b0' },
     { label: t('Blunder'), color: '#7a7772' },
+    { label: t('Mistake'), color: '#9c27b0' },
+    { label: t('Slack'), color: '#e16b5c' },
+    { label: t('Good'), color: '#e89639' },
+    { label: t('Very Good'), color: '#5b9bd5' },
+    { label: t('Best'), color: '#30a06e' },
   ];
 
   return (

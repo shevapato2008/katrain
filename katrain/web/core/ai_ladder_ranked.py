@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping, Optional
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from katrain.core.sgf_parser import ParseError, SGF
@@ -602,6 +603,56 @@ class AiLadderRankedRepository:
                 .all()
             )
             return [row[0] for row in rows]
+        finally:
+            session.close()
+
+    def growth_summary(self, user_id: int, *, since) -> dict:
+        """成长屏要的两组数,**都只算 `counted` 的行**。
+
+        为什么胜负只从这张账本读,不从 `UserGame.result` 读:`UserGame` 存的是
+        **哪一方赢**(`"B+R"`),而**没有一列记这个用户坐的是哪一方** ——
+        拿玩家名去猜(`player_black == username`?)就是在编。
+        这张账本有 `user_color`,`result` 本身就是**从这个用户视角**写的 win/loss,
+        所以「胜率」这一格只对升降级局成立,标签必须写明这一点。
+
+        `opponent_rung` 让「按对手强度」也能算:**没打过的档不会出现在 GROUP BY 结果里**,
+        正好就是稿子要的「没打过的档一律不列,不摆一排 0 胜 0 负」。
+
+        ⚠️ `since` 必须是**带时区**的 datetime:`settled_at` 是 `DateTime(timezone=True)`,
+        而 SQLite 不存时区(见 tests 里那条 skip)。生产是 PG,口径以 PG 为准。
+        """
+        session = self.session_factory()
+        try:
+            L = models_db.AiLadderGameLedger
+            counted = (L.user_id == user_id, L.counted.is_(True), L.result.in_(("win", "loss")))
+
+            total = session.query(func.count(L.id)).filter(*counted).scalar() or 0
+            in_window = (
+                session.query(L.result, func.count(L.id))
+                .filter(*counted, L.settled_at >= since)
+                .group_by(L.result)
+                .all()
+            )
+            tally = {row[0]: row[1] for row in in_window}
+
+            by_rung = (
+                session.query(L.opponent_rung, L.opponent_rank_name, L.result, func.count(L.id))
+                .filter(*counted, L.opponent_rung.isnot(None))
+                .group_by(L.opponent_rung, L.opponent_rank_name, L.result)
+                .all()
+            )
+            rungs: dict[int, dict] = {}
+            for rung, rank_name, result, n in by_rung:
+                entry = rungs.setdefault(rung, {"rung": rung, "rank_name": rank_name, "wins": 0, "losses": 0})
+                entry["wins" if result == "win" else "losses"] += n
+
+            return {
+                "ranked_total": int(total),
+                "ranked_wins_in_window": int(tally.get("win", 0)),
+                "ranked_losses_in_window": int(tally.get("loss", 0)),
+                # 从高档到低档 —— 屏上「按对手强度」那一列就是这个顺序。
+                "by_opponent_rung": [rungs[k] for k in sorted(rungs, reverse=True)],
+            }
         finally:
             session.close()
 

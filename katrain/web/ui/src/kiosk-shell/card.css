@@ -1,0 +1,24 @@
+/* `.kiosk-card` 的三个**状态**样式 —— 和 `seclabel.css` 同一个理由:
+ * 共享 `tokens.css` 里只有卡本体和 `.is-current` / `.is-todo`,
+ * `is-soon` / `.soon` / `.dot` 这三条它没有,四份样稿各自带着同样的局部 CSS。
+ * 下面五行逐字取自 `sample-go/go-kiosk.tmpl.html:101-107`。
+ *
+ * ⚠️ `.kiosk-card { position: relative }` 这一行也在这里 —— `.soon` 和 `.dot`
+ * 都是绝对定位,没有它两个都会跑到最近的定位祖先(`.kiosk` 那层)的角上去。
+ * 它看着像本体样式该待在 tokens.css 里,但 tokens.css 里确实没有,别去改那份(MANIFEST 钉着)。
+ *
+ * 「即将上线」不是「锁定」:锁定意味着东西在、满足条件就给。接口没通的平台不许摆成锁着的样子。
+ * 文案由调用方给(见 KioskCard 的 `soon` 参数),这里只管长相。
+ *
+ * 上游哪天把这几条收进 `tokens.css`,删掉本文件。
+ */
+.kiosk-card { position: relative; }
+.kiosk-card.is-soon { opacity: .5; filter: grayscale(.3); cursor: default; }
+.kiosk-card .soon {
+  position: absolute; top: 8px; right: 8px; font-size: 9.5px; letter-spacing: .1em;
+  color: var(--accent); border: 1px solid var(--hair); border-radius: 999px; padding: 1px 6px;
+}
+.kiosk-card .dot {
+  position: absolute; top: 10px; right: 10px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--good); box-shadow: 0 0 6px rgba(88, 181, 122, .6);
+}

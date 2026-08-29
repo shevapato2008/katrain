@@ -3093,3 +3093,66 @@ msgstr "Disponible al iniciar sesión"
 
 msgid "play:analysis_requires_login_hint"
 msgstr "Territorio / Consejo / Gráfico están disponibles al iniciar sesión"
+
+msgid "grade:brilliant"
+msgstr "Brillante"
+
+msgid "grade:best"
+msgstr "Mejor"
+
+msgid "grade:very_good"
+msgstr "Muy bueno"
+
+msgid "grade:playable"
+msgstr "Jugable"
+
+msgid "grade:inaccuracy"
+msgstr "Imprecisión"
+
+msgid "grade:mistake"
+msgstr "Error"
+
+msgid "grade:blunder"
+msgstr "Error grave"
+
+msgid "grade:phase_all"
+msgstr "Partida completa"
+
+msgid "grade:phase_opening"
+msgstr "Apertura"
+
+msgid "grade:phase_midgame"
+msgstr "Medio juego"
+
+msgid "grade:phase_endgame"
+msgstr "Final"
+
+msgid "grade:player_both"
+msgstr "Ambos"
+
+msgid "grade:player_B"
+msgstr "Negras"
+
+msgid "grade:player_W"
+msgstr "Blancas"
+
+msgid "grade:performance"
+msgstr "Rendimiento"
+
+msgid "grade:brilliance"
+msgstr "Brillantez"
+
+msgid "grade:unrated"
+msgstr "Sin evaluar"
+
+msgid "grade:no_rated_moves"
+msgstr "No hay jugadas evaluadas en esta fase"
+
+msgid "grade:truncated_note"
+msgstr "{n} más sin listar: cambia de fase o jugador para verlas"
+
+msgid "grade:histogram_footer"
+msgstr "{b} jugadas de negras / {w} de blancas evaluadas"
+
+msgid "grade:unrated_count"
+msgstr "{n} sin evaluar"

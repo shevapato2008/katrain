@@ -26,6 +26,7 @@ export interface LocalImportPayload {
   playerWhite?: string;
   blackRank?: string;
   whiteRank?: string;
+  result?: string;
 }
 
 interface ReportLocalImportDialogProps {
@@ -72,11 +73,13 @@ export default function ReportLocalImportDialog({
         boardSize: parsed.metadata.boardSize || 19,
         rules: parsed.metadata.rules || 'chinese',
         komi: parsed.metadata.komi || 7.5,
-        moveCount: parsed.moves.length,
+        // 摆子不是着手 —— 后端的 total_moves 只数着手,这里跟着收口径。
+        moveCount: parsed.moves.length - parsed.setupCount,
         playerBlack: parsed.metadata.playerBlack || undefined,
         playerWhite: parsed.metadata.playerWhite || undefined,
         blackRank: parsed.metadata.blackRank || undefined,
         whiteRank: parsed.metadata.whiteRank || undefined,
+        result: parsed.metadata.result || undefined,
       }
     : null;
 

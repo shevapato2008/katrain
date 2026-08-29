@@ -258,6 +258,28 @@ class UserGameRepository:
         finally:
             session.close()
 
+    def count_since(self, user_id: int, *, since) -> int:
+        """近 N 天下了多少局。**只数局数,不数胜负** —— 这张表存的是「哪一方赢」
+        (`result` = `"B+R"`),**没有一列记这个用户坐的是哪一方**,所以从这里算不出胜率。
+        胜率那一格只对升降级局成立,数据在 `AiLadderGameLedger`(它有 `user_color`)。
+
+        ⚠️ `since` 要**带时区**:`created_at` 是 `DateTime(timezone=True)`,
+        而 SQLite 不存时区。生产是 PG,口径以 PG 为准。
+        """
+        session = self.session_factory()
+        try:
+            return int(
+                session.query(func.count(models_db.UserGame.id))
+                .filter(
+                    models_db.UserGame.user_id == user_id,
+                    models_db.UserGame.created_at >= since,
+                )
+                .scalar()
+                or 0
+            )
+        finally:
+            session.close()
+
     def update(
         self, game_id: str, user_id: int, updated_at: Optional[str] = None, **kwargs
     ) -> Optional[Dict[str, Any]]:

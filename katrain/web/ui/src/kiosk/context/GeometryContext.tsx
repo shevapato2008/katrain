@@ -10,6 +10,15 @@ const DEFAULT_STATUS: GeometryStatus = {
 
 interface GeometryContextValue {
   status: GeometryStatus;
+  /**
+   * 第一次问过服务端了没有。
+   *
+   * **不是锦上添花:`DEFAULT_STATUS` 的三个 capability 全是 `false`**,直接拿去画状态格,
+   * 就会在**还没问过**的时候说「摄像头未连接」。而「还没读到状态」和「读到了没连上」
+   * 是两回事 —— `goHardware.ts` 的注释早就把这条判过一次(值给「—」、不给 tone)。
+   * 少了这个布尔,那条注释在标定屏上就落不了地。
+   */
+  loaded: boolean;
   refresh: () => Promise<void>;
   startCalibration: (trigger: 'auto' | 'manual') => Promise<void>;
   confirmExisting: () => Promise<void>;
@@ -21,15 +30,20 @@ const ACTIVE: GeometryPhase[] = ['waiting_empty', 'dark_reference', 'flashing_co
 
 export const GeometryProvider = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<GeometryStatus>(DEFAULT_STATUS);
+  const [loaded, setLoaded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refresh = useCallback(async () => {
     try {
       setStatus(await GeometryAPI.status() as GeometryStatus);
+      setLoaded(true);
     } catch (error) {
       if (error instanceof Error && error.message.includes('404')) {
+        // 404 = 这台盒子压根没起 capture 服务。**这是一个读到了的结论**,不是没读到 ⇒ 也算 loaded。
         setStatus({ ...DEFAULT_STATUS, phase: 'disabled' });
+        setLoaded(true);
       }
+      // 其它错误(502 / 超时)**故意不置 loaded** —— 那才是「还没问出来」。
     }
   }, []);
 
@@ -60,7 +74,7 @@ export const GeometryProvider = ({ children }: { children: ReactNode }) => {
   }, [refresh, status.phase]);
 
   return (
-    <GeometryContext.Provider value={{ status, refresh, startCalibration, confirmExisting, cancelCalibration }}>
+    <GeometryContext.Provider value={{ status, loaded, refresh, startCalibration, confirmExisting, cancelCalibration }}>
       {children}
     </GeometryContext.Provider>
   );

@@ -138,8 +138,8 @@ describe('ReportLibraryImportDialog data flow', () => {
     const { onImport } = renderDialog();
     await user.click(await screen.findByRole('button', { name: /赛事 2/ }));
     await user.click(screen.getByRole('button', { name: '仅导入' }));
-    await user.click(screen.getByRole('button', { name: '导入并生成普通复盘' }));
-    await user.click(screen.getByRole('button', { name: '导入并生成深度复盘' }));
+    await user.click(screen.getByRole('button', { name: '导入并生成普通报告' }));
+    await user.click(screen.getByRole('button', { name: '导入并生成深度报告' }));
     expect(onImport).toHaveBeenNthCalledWith(1, album(2));
     expect(onImport).toHaveBeenNthCalledWith(2, album(2), 'normal');
     expect(onImport).toHaveBeenNthCalledWith(3, album(2), 'deep');
@@ -152,7 +152,7 @@ describe('ReportLibraryImportDialog data flow', () => {
     expect(await screen.findByRole('button', { name: /赛事 1/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Go to page 2' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: '取消' }));
-    fireEvent.click(screen.getByRole('button', { name: '正在导入…' }));
+    fireEvent.click(screen.getByRole('button', { name: '导入中...' }));
     expect(onClose).not.toHaveBeenCalled();
     expect(onImport).not.toHaveBeenCalled();
   });
@@ -181,7 +181,7 @@ describe('ReportLibraryImportDialog 1024×600 layout', () => {
       overflowX: 'hidden',
       gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
     });
-    for (const label of ['取消', '仅导入', '导入并生成普通复盘', '导入并生成深度复盘']) {
+    for (const label of ['取消', '仅导入', '导入并生成普通报告', '导入并生成深度报告']) {
       expect(screen.getByRole('button', { name: label })).toHaveStyle({
         minHeight: '48px', minWidth: '48px', whiteSpace: 'normal',
       });

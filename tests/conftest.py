@@ -177,3 +177,50 @@ def _forbid_writes_to_the_real_db(conn, cursor, statement, parameters, context, 
         "\n"
         "只设 `app.state.user_repo` 不管用 —— lifespan 会把它连同另外 5 个 repo 一起覆盖掉。"
     )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# katrain/config.json 是**提交进仓的源文件**，但测试会把它改掉。
+#
+# `KaTrainBase(force_package_config=True)` 会把 _config_store 指向包内的
+# katrain/config.json，于是任何 update_config / save_config 都直接写进工作区的
+# 那个文件。tests/web_ui/test_settings_snapshot.py 就这么干：它把
+# trainer/eval_thresholds 写成 [0.5, 1.0, 2.0, 4.0, 8.0, 16.0] 并落盘。
+#
+# 后果不是「测试之间互相污染」这么轻——它会**静默改写一个被提交的源文件**：
+#   * 这大概就是仓里那份升序 eval_thresholds 的由来（升序会让 evaluation_class
+#     的六级梯子塌成两级，见 tests/test_move_grade.py）；
+#   * 本次实修那个方向时，它把修好的值吃掉过两次，每次都只表现为
+#     `git diff` 里多出一段看起来与本次改动无关的 diff。
+#
+# 这里在会话结束时把文件恢复原样，并说清楚是谁动的。根治要让
+# force_package_config 的实例写到临时文件去，那是另一件事。
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+@pytest.fixture(autouse=True)
+def _restore_packaged_config_json():
+    # 按用例恢复，不是按会话。按会话恢复挡不住**会话内的顺序耦合**：
+    # 先跑的用例把 eval_thresholds 写成升序，后跑的断言就读到脏值，
+    # 表现为「换个 -k 顺序结果就不一样」。
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "katrain", "config.json")
+    try:
+        with open(path, "rb") as f:
+            before = f.read()
+    except OSError:
+        yield
+        return
+    yield
+    try:
+        with open(path, "rb") as f:
+            after = f.read()
+    except OSError:
+        return
+    if after != before:
+        with open(path, "wb") as f:
+            f.write(before)
+        print(
+            "\n[conftest] 测试改写了被提交的 katrain/config.json，已恢复。"
+            "\n           写它的是 force_package_config=True 的实例上的 update_config/save_config"
+            "\n           （tests/web_ui/test_settings_snapshot.py 是已知的一处）。"
+        )

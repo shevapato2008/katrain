@@ -4,6 +4,7 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import type { MatchSummary } from '../../types/live';
 import { i18n } from '../../i18n';
 import { useTranslation } from '../../hooks/useTranslation';
+import { liveSourceMeta } from '../../utils/liveSources';
 
 interface MatchCardProps {
   match: MatchSummary;
@@ -12,17 +13,11 @@ interface MatchCardProps {
   onSelect?: (match: MatchSummary) => void;  // Callback when selected (doesn't navigate)
 }
 
-const SOURCE_LABELS: Record<string, { label: string; color: string }> = {
-  yike: { label: '弈客', color: '#1976d2' },
-  xingzhen: { label: '星阵', color: '#7b1fa2' },
-  pandanet: { label: 'IGS', color: '#e65100' },
-};
-
 export default function MatchCard({ match, compact = false, selected = false, onSelect }: MatchCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const isLive = match.status === 'live';
-  const sourceInfo = SOURCE_LABELS[match.source];
+  const sourceInfo = liveSourceMeta(match.source);
 
   // Format winrate as percentage
   const winratePercent = Math.round(match.current_winrate * 100);

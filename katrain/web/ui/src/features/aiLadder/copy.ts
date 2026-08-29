@@ -27,6 +27,10 @@ export const AI_LADDER_COPY = {
   // (the ledger's own CHECK constraint refuses it). Say so before the game, not after.
   get provisionalSeating() { return i18n.t('ladder:provisional_seating', '该档位尚未标定，可以试下，但本局不计入升降级'); },
   get currentOpponentPrefix() { return i18n.t('ladder:current_opponent_prefix', '当前对手：'); },
+  // 屏 03 那句话:**为什么这一格不给挑**。稿子把它和「你是几级、配到第几档」写成一句 ——
+  // 挑得动对手强弱的升降级不是升降级,这是规则本身,不是这台机器的限制。
+  // 放在这里而不是那一屏里:升降级的词只许有一套(和平台名那次是同一条判据)。
+  get boxPicksReason() { return i18n.t('ladder:box_picks_reason', '能挑对手强弱,升降级就不是升降级了'); },
   get currentRankPrefix() { return i18n.t('ladder:current_rank_prefix', '当前段位：'); },
   get available() { return i18n.t('ladder:available', '可挑战'); },
   get unavailable() { return i18n.t('ladder:unavailable_rung', '该档位暂不可挑战'); },

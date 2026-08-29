@@ -1,3 +1,28 @@
+// 共享外壳的样式,**全站只在这里引一次**,顺序不可换:
+//   fonts.css   先声明字族,tokens.css 的 --font-* 才指得到它;
+//   tokens.css  991 行几何与结构类,整份定义在 `.kiosk {}` 里(见 shell/KioskFrame.tsx);
+//   go-tokens.css 给共享外壳那组「各棋类必须自行赋值」的语义色赋围棋青毡,必须在 tokens.css 之后;
+//   seclabel.css 组标题;
+//   icon.css     `.kiosk-icon` 包裹层(display:contents);
+//   card.css     模式卡的 is-soon / .soon / .dot 三个状态(tokens.css 里没有);
+//   status.css   状态格的 min-width:0 + ellipsis 两条(少了它一格能撑到 3900px 宽)。
+// 后四个是**本地补的**(共享 tokens.css 里没有这些规则),必须排在 tokens.css 之后 ——
+// card.css 里有一条 `.kiosk-card { position: relative }` 和 tokens.css 的 `.kiosk-card`
+// 同名同权重,靠后来居上生效。
+//   go-screens.css 围棋屏级类 + 共享包缺的那几条(页控条 flex 兜底)。计划写的是 Task 9,
+//     实际 Task 8 就建了 —— §11「长标题不许挤到返回键」那条闸现在就要有被测对象。
+//
+// 引在 KioskApp.tsx 而不是 main.tsx:AppRouter 是 lazy(() => import('./kiosk/KioskApp')),
+// 引在这里 CSS 就落进 kiosk 分块,galaxy 不受影响;kiosk-2d 构建里 galaxy 整条被 DCE。
+import '../kiosk-shell/fonts.css';
+import '../kiosk-shell/tokens.css';
+import '../kiosk-shell/go-tokens.css';
+import '../kiosk-shell/seclabel.css';
+import '../kiosk-shell/icon.css';
+import '../kiosk-shell/card.css';
+import '../kiosk-shell/status.css';
+import '../kiosk-shell/go-screens.css';
+
 import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
@@ -9,15 +34,16 @@ import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
 import { GeometryProvider } from './context/GeometryContext';
 import PhysicalBoardGuard from './components/vision/PhysicalBoardGuard';
+import PlayInputGuard from './components/vision/PlayInputGuard';
 import RotationWrapper from './components/layout/RotationWrapper';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
 import LoginPage from './pages/LoginPage';
-import PlaceholderPage from './pages/PlaceholderPage';
 import PlayPage from './pages/PlayPage';
 import AiSetupPage from './pages/AiSetupPage';
 import PvpLocalSetupPage from './pages/PvpLocalSetupPage';
 import GamePage from './pages/GamePage';
+import GrowthPage from './pages/GrowthPage';
 import TsumegoPage from './pages/TsumegoPage';
 import TsumegoCategoriesPage from './pages/TsumegoCategoriesPage';
 import TsumegoLevelPage from './pages/TsumegoLevelPage';
@@ -26,7 +52,7 @@ import TsumegoUnitListPage from './pages/TsumegoUnitListPage';
 import TsumegoProblemPage from './pages/TsumegoProblemPage';
 import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
-import GameHistoryPage from './pages/GameHistoryPage';
+import KifuDetailPage from './pages/KifuDetailPage';
 import BaipuListPage from './pages/BaipuListPage';
 import BaipuSessionPage from './pages/BaipuSessionPage';
 import LivePage from './pages/LivePage';
@@ -41,7 +67,6 @@ import PlatformLobbyPage from './pages/PlatformLobbyPage';
 import PlatformEngineSetupPage from './pages/PlatformEngineSetupPage';
 import TutorialCategoriesPage from './pages/TutorialCategoriesPage';
 import TutorialBooksPage from './pages/TutorialBooksPage';
-import TutorialBookDetailPage from './pages/TutorialBookDetailPage';
 import TutorialSectionPage from './pages/TutorialSectionPage';
 
 const KioskRoutes = () => {
@@ -52,53 +77,92 @@ const KioskRoutes = () => {
       {/* Public */}
       <Route path="login" element={<LoginPage />} />
 
-      {/* Auth-protected */}
-      <Route element={<KioskAuthGuard />}>
-        {/* Fullscreen — no nav rail */}
-        <Route path="play/ai/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
-        <Route path="play/pvp/local/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
-        <Route path="play/pvp/room/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage /></PhysicalBoardGuard>} />
-        <Route path="play/cross-platform/engine/game/:sessionId" element={<PhysicalBoardGuard requireRecognition><GamePage engineMode /></PhysicalBoardGuard>} />
+      {/* 🔴 **布局在守卫外面,守卫只包一部分路由。** Fan 2026-08-28 亲裁:
+          「把 KioskAuthGuard 从自由对弈那几条路由上摘掉,其余(升降级、大厅、设置)保持。」
 
-        {/* Standard — with nav rail */}
-        <Route element={<KioskLayout username={user?.username} />}>
-          <Route index element={<Navigate to="play" replace />} />
-          <Route path="play" element={<PlayPage />} />
-          {/* 升降级对弈 has its own page: nothing about the opponent is chosen here,
-              so it shares no controls with free play. Static path wins over the
-              dynamic :mode below in v6 best-match. */}
-          <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
+          在此之前守卫包着**除登录页外的全部** kiosk 路由 —— 于是服务端(develop 的
+          `feature/guest-free-play`)明明已经放行无人认领的会话,盒上的人却连那一屏都到不了。
+
+          **为什么布局必须挪到守卫外面**:不挪的话游客那几屏就没有顶栏和 Dock,
+          而规范 §5 防跳铁律 1 写死「顶栏永远占 y 0–56,任何层级、任何模块都不变高、不隐藏」。
+          `username` 本来就是可选的(`KioskLayoutProps`),游客态传 undefined 即可。
+
+          **摘出来的只有自由对弈那条链的三屏**,一条不多:
+            play                     入口枢纽 —— 不摘它游客哪儿也去不了(index 重定向到它)
+            play/ai/setup/:mode      开局设置
+            play/ai/game/:sessionId  对局屏
+          ⚠️ 后两条**两种对弈共用**,不能按路径分:
+            · `:mode` 也匹配 `ranked` ⇒ 升降级的门补在**页面里**(AiSetupPage 那一支:
+              未登录直接说「需要登录」并给入口),不是靠路由。
+            · 对局屏也承载升降级局 ⇒ 游客拿到一个升降级的 session_id 也打不开,
+              **挡它的是服务端**(`guard_session_reader`:有主人的会话要求「是这局的参与者」),
+              不是这一层。前端少一道门不等于后端少一道。
+          `*` 兜底也必须在守卫外面:留在里面的话,游客输一个不存在的路径会连兜底都匹配不到。 */}
+      <Route element={<KioskLayout username={user?.username} />}>
+        <Route index element={<Navigate to="play" replace />} />
+
+        {/* --- 游客可达:自由对弈那条链 --- */}
+        <Route path="play" element={<PlayPage />} />
+        <Route path="play/ai/setup/:mode" element={<AiSetupPage />} />
+        <Route path="play/ai/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
+
+        {/* --- 其余一律仍需登录 --- */}
+        <Route element={<KioskAuthGuard />}>
+
+          {/* 对局屏。Task 4 之前这四条在 KioskLayout **外面**,所以对局屏连顶栏都没有 ——
+              而规范 §5 防跳铁律 1 写死「顶栏永远占 y 0–56,任何层级、任何模块都不变高、
+              不隐藏」。挪进来之后 `dockLevelOf` 把它们判成 2 级:有顶栏、没 Dock、
+              中间区 516 高,正是对局屏该有的样子。
+              ⚠️ 2026-08-23:这四条从 `PhysicalBoardGuard requireRecognition` 换成
+              `PlayInputGuard` —— 它在里面套的**就是**那道守卫,只多问一句「这一局是不是
+              选了下在屏幕上」。开局设置屏那颗「屏幕 / 实体盘」不接到这儿的话,人选了屏幕
+              进来还是被推去标定工作台,开关只做了半截。偏好默认开 ⇒ 对现有行为零影响。
+              **不要退回裸的 `PhysicalBoardGuard`。** */}
+          <Route path="play/pvp/local/game/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
+          <Route path="play/pvp/room/:sessionId" element={<PlayInputGuard><GamePage /></PlayInputGuard>} />
+          <Route path="play/cross-platform/engine/game/:sessionId" element={<PlayInputGuard><GamePage engineMode /></PlayInputGuard>} />
+
           <Route path="play/pvp/setup" element={<PvpLocalSetupPage />} />
           <Route path="play/pvp/lobby" element={<LobbyPage />} />
-          <Route path="play/pvp/history" element={<GameHistoryPage />} />
           <Route path="play/cross-platform" element={<PlatformConnectPage />} />
           <Route path="play/cross-platform/lobby" element={<PlatformLobbyPage />} />
           <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />
-          <Route path="tsumego/problem/:problemId" element={<PhysicalBoardGuard><TsumegoProblemPage /></PhysicalBoardGuard>} />
+          <Route path="tsumego/problem/:problemId" element={<PhysicalBoardGuard sub="实体做题要先让摄像头看清盘面"><TsumegoProblemPage /></PhysicalBoardGuard>} />
           <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
           <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
+          {/* ⚠️ research / baipu / live 三条**下了 Dock 但路由照旧存在**(规范 §3:
+              研究并进复盘、摆谱降为选中棋谱之后的落子方式、直播并进棋谱)。
+              入口在 Task 15(棋谱屏出 摆谱/直播)和 Task 16(复盘屏出 研究)里补。
+              **在那之前这三屏只能靠直接输 URL 到达** —— 可接受的中间态,不是终态。 */}
           <Route path="research" element={<ResearchPage />} />
           <Route path="kifu" element={<KifuPage />} />
-          <Route path="kifu/:kifuId" element={<PlaceholderPage />} />
+          <Route path="kifu/:kifuId" element={<KifuDetailPage />} />
           <Route path="baipu" element={<BaipuListPage />} />
-          <Route path="baipu/session/:source" element={<PhysicalBoardGuard><BaipuSessionPage /></PhysicalBoardGuard>} />
+          <Route path="baipu/session/:source" element={<PhysicalBoardGuard sub="摆谱要先让摄像头看清盘面"><BaipuSessionPage /></PhysicalBoardGuard>} />
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="report" element={<ReportsPage />} />
           <Route path="report/:taskId" element={<ReportDetailPage />} />
-          {/* Tutorial (read-only mirror) — static `book`/`section` win over dynamic `:category` in v6 best-match */}
+          {/* 成长(屏 22)。**Dock 第五项**,一级页 ⇒ 路径必须与 `DOCK_TABS` 里那条**全等**
+              (`dockLevelOf` 是全等比较,差一个尾斜杠就掉成 L2、中间区从 434 变 516)。 */}
+          <Route path="growth" element={<GrowthPage />} />
+          {/* 课程(只读镜像)。`tutorial/book/:bookId` 2026-08-24 连同 `TutorialBookDetailPage`
+              一起删了 —— 选书和目录合成了 `tutorial/:category?book=<id>` 一屏。
+              没留重定向:kiosk 是全屏 chromium,没有地址栏也没有书签。 */}
           <Route path="tutorial" element={<TutorialCategoriesPage />} />
           <Route path="tutorial/:category" element={<TutorialBooksPage />} />
-          <Route path="tutorial/book/:bookId" element={<TutorialBookDetailPage />} />
           <Route path="tutorial/section/:sectionId" element={<TutorialSectionPage />} />
           <Route path="vision/setup" element={<VisionSetupPage />} />
           <Route path="settings" element={<SettingsPage />} />
-          <Route path="*" element={<Navigate to="play" replace />} />
         </Route>
+
+        {/* 兜底在守卫**外面**:留在里面的话,游客输一个不存在的路径连它都匹配不到
+            (守卫会先把整棵子树换成 `<Navigate to="/kiosk/login">`),屏上是白的。 */}
+        <Route path="*" element={<Navigate to="play" replace />} />
       </Route>
     </Routes>
   );

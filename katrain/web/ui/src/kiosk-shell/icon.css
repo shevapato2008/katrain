@@ -1,0 +1,17 @@
+/* `.kiosk-icon` —— `<Icon>` 内联 SVG 时的包裹层。
+ *
+ * 和 `seclabel.css` 同一个理由:共享 `tokens.css` 里没有这条,而它是必需的。
+ * `tokens.css` 只写了 `.kiosk-dock__item svg { width/height: var(--dock-icon) }` ——
+ * 它假定 svg 是 Dock 项的**直接 flex 子元素**。React 侧要 `dangerouslySetInnerHTML`
+ * 就必须有一个宿主元素,而一个默认 `display:inline` 的 <span> 会把自己变成那个 flex 项,
+ * 图标与标签之间的 `gap` 就落到了 span 上、svg 的对齐也跟着偏。
+ *
+ * `display: contents` 让这个 span **不生成盒子**,svg 直接顶上去当 flex 项 ——
+ * 结构上等于没有包裹层,但 React 有地方挂 HTML。
+ *
+ * ⚠️ 别改成给 span 设 `display:flex`:那是"再造一个盒子去抵消这个盒子",
+ * Dock 之外的每一处消费点都得跟着调一遍。
+ *
+ * 上游哪天把这条收进 `tokens.css`,删掉本文件。
+ */
+.kiosk-icon { display: contents; }

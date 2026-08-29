@@ -75,12 +75,36 @@ def fixture_catalog(*, unavailable_rung: int | None = None, provisional_rung: in
     )
 
 
+class FakeLadderEngine:
+    """够 `_preflight_ladder_engine` 问一次的最小引擎。
+
+    默认放行,所以所有既有用例照旧走完 `/start` —— 但那道闸是**真的被执行到的**,
+    不是被 `getattr(..., None)` 悄悄跳过。要它拒绝,把 `FakeKaTrain.engine_error`
+    设成一句话即可(见 `test_start_refuses_...`)。
+    """
+
+    def __init__(self, error=None):
+        self.error = error
+        self.capability_calls = []
+
+    def require_ladder_capability(self, main_model, human_required):
+        self.capability_calls.append((main_model, human_required))
+        if self.error:
+            raise ValueError(self.error)
+        return {"selected_model": main_model or "fixture-net"}
+
+
 class FakeKaTrain:
+    #: 类属性而不是构造参数:会话是 `/start` 在请求里自己建的,用例够不着构造调用。
+    engine_error = None
+
     def __init__(self, username: str):
         self.calls = []
         self.config_updates = []
         self.game_type = "free"
         self.ladder_rung = None
+        self.last_ladder_error = False
+        self.engine = FakeLadderEngine(type(self).engine_error)
         self.game = SimpleNamespace(
             end_result=None,
             current_node=SimpleNamespace(end_state=None, player="B", score=3.5),
@@ -5092,3 +5116,106 @@ async def test_the_cloud_has_no_outbox_to_retry(api_app):
         response = await ac.post("/api/v1/ai-ladder/games/g-1/settlement/retry", headers=api_app.state._test_headers)
 
     assert response.status_code == 404
+
+
+# --- 引擎停摆:开局前的预检,与结算时的「不计入」 ------------------------------------
+#
+# 2026-08-29 生产实测(modelstella.com,user 10,game 7a6c8e42…)暴露的两件事:
+#   1. `/start` 把预约、pending 账本、玩家、时钟全部安排好之后,第一手棋才发现
+#      `require_ladder_capability` 过不去 —— 玩家拿到一局已经押上定级名额的死棋;
+#   2. 屏上写着「本局不计入升降级」,而「离开对局」走的 `/end` 没把 engine_stalled
+#      递给 `_ignored_reason`,账本里记下的是 `counted=t`,定级进度 0→1,且不可删。
+
+
+@pytest.mark.asyncio
+async def test_start_asks_the_engine_before_anything_is_written_down(api_app, client):
+    """放行分支:闸**确实被执行到**,不是被 getattr 默认值悄悄跳过。
+
+    没有这一条,下面那条拒绝用例即使把闸整个删掉也照样绿 —— 它只证明「拒绝时会拒绝」,
+    不证明「平时也在问」。
+    """
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "galaxy-a"}
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+
+    assert started.status_code == 201
+    engine = api_app.state._test_created_sessions[0].katrain.engine
+    # fixture 配方是 net_search / net="fixture-net" ⇒ main_model 就是它,不要人类模型。
+    assert engine.capability_calls == [("fixture-net", False)]
+
+
+@pytest.mark.asyncio
+async def test_start_refuses_to_seat_a_rung_the_engine_cannot_play(api_app, client, monkeypatch):
+    """引擎服务不了这一档时,`/start` 必须 503,并且**一个字都不许落账**。
+
+    判据不是「返回了错误码」,而是四张表加起来是空的 + 预约已撤 + 会话已回收:
+    留下任何一样,玩家的下一次开局就会撞上「你有一局还没结算」。
+    """
+    monkeypatch.setattr(FakeKaTrain, "engine_error", "HTTP engine does not advertise certified ladder capabilities")
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "galaxy-a"}
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+        status_after = await ac.get("/api/v1/ai-ladder/status", headers=headers)
+
+    assert started.status_code == 503
+    assert status_after.json()["blocking_game"] is None
+    with api_app.state._test_session_factory() as db:
+        assert db.query(models_db.AiLadderActiveGame).count() == 0
+        assert db.query(models_db.AiLadderPendingGame).count() == 0
+        assert db.query(models_db.AiLadderGameLedger).count() == 0
+        assert db.query(models_db.AiLadderProfile).count() == 0
+    seated = api_app.state._test_created_sessions[0].session_id
+    assert seated not in api_app.state.session_manager._sessions
+
+
+@pytest.mark.asyncio
+async def test_leaving_a_stalled_ranked_game_is_recorded_but_never_counted(api_app, client):
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "galaxy-a"}
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+        game_id = started.json()["game_id"]
+        # 引擎在第一手上就拒绝了:横幅已经在屏上,玩家按「离开对局」。
+        api_app.state._test_created_sessions[0].katrain.last_ladder_error = True
+        ended = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end", headers=headers, json={"reason": "user_resigned"}
+        )
+
+    assert ended.status_code == 200
+    assert ended.json()["receipt"] == {"counted": False, "reason": "engine_unavailable"}
+    with api_app.state._test_session_factory() as db:
+        ledger = db.query(models_db.AiLadderGameLedger).one()
+        # 记账不计分:这一局真的发生过(墓碑还得在,不然在途结算会撞上「查无此局」),
+        # 但它不许动段位。
+        assert (ledger.counted, ledger.reason) == (False, "engine_unavailable")
+        assert ledger.terminal_source == "remote_resign"
+        # 未定级玩家的第一局停摆后,连 profile 行都不该建出来 —— `_prepare_profile` 在
+        # ignored_reason 非空时直接不碰段位状态。生产上那一局恰恰建了(定级窗口
+        # 1..32 当场被砍成 1..16),这一断言就是那件事不许再发生。
+        assert db.query(models_db.AiLadderProfile).count() == 0
+
+
+@pytest.mark.asyncio
+async def test_leaving_a_healthy_ranked_game_still_counts_the_loss(api_app, client):
+    """对照组:没停摆的局照旧记一场负 —— 「不得靠断线躲掉一场负」这条规则不能被上面那条吃掉。"""
+    headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "galaxy-a"}
+    async with client as ac:
+        started = await ac.post(
+            "/api/v1/ai-ladder/start", headers=headers, json={"color": "black", "time_enabled": False}
+        )
+        game_id = started.json()["game_id"]
+        assert api_app.state._test_created_sessions[0].katrain.last_ladder_error is False
+        ended = await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/end", headers=headers, json={"reason": "user_resigned"}
+        )
+
+    assert ended.status_code == 200
+    with api_app.state._test_session_factory() as db:
+        ledger = db.query(models_db.AiLadderGameLedger).one()
+        assert (ledger.counted, ledger.reason) == (True, None)
+        assert db.query(models_db.AiLadderProfile).one().placement_completed == 1

@@ -3233,3 +3233,6 @@ msgstr "黑 {b} 手 / 白 {w} 手已評級"
 
 msgid "grade:unrated_count"
 msgstr "{n} 手未評級"
+
+msgid "ladder:engine_unavailable_start"
+msgstr "升降級引擎暫時無法使用，這次沒有開局，也不影響你的段位。請稍後再試。"

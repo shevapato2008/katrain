@@ -3178,3 +3178,7 @@ msgstr "흑 {b}수 / 백 {w}수 평가됨"
 
 msgid "grade:unrated_count"
 msgstr "{n}수 미평가"
+
+msgid "ladder:engine_unavailable_start"
+msgstr ""
+"승강 엔진을 일시적으로 사용할 수 없습니다. 대국은 시작되지 않았으며 단급에도 영향이 없습니다. 잠시 후 다시 시도해 주세요."

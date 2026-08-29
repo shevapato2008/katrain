@@ -12,6 +12,7 @@ Covers:
 
 import sys
 import threading
+import time
 from dataclasses import replace
 from types import SimpleNamespace
 
@@ -29,7 +30,7 @@ sys.modules.pop("katrain.web.interface", None)
 
 from katrain.core.constants import AI_LADDER, AI_POLICY, PLAYER_AI  # noqa: E402
 from katrain.core.game import Game, Move  # noqa: E402
-from katrain.web.interface import WebKaTrain, resolve_ladder_rung  # noqa: E402
+from katrain.web.interface import LADDER_STALL_RETRY_SCHEDULE, WebKaTrain, resolve_ladder_rung  # noqa: E402
 from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional  # noqa: E402
 from katrain.web.server import create_app  # noqa: E402
 from katrain.web.session import SessionManager  # noqa: E402
@@ -573,3 +574,105 @@ def test_ladder_unavailable_does_not_broadcast_rung_index(monkeypatch, caplog):
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+# --- 单向闩 -> 有界重试 --------------------------------------------------------------
+#
+# 上面三条钉的是「刚失败完不许立刻重生」(否则 _do_ai_move_and_broadcast 的 finally 会把
+# 自己再叫起来,成无限循环)。它们钉住的**只是那一刻**。从前判据是「失败过没有」,于是
+# 一次瞬时失败(引擎重启、一次查询丢了)就把整局的 AI 永久关掉 —— 引擎下一秒好了也不回来。
+# 现在判据是**截止时刻**:冷却期内照旧不重生,冷却期过了重试一次,排期用尽才真的闩死。
+
+
+class _FakeTimer:
+    """记录排期,不真的等。"""
+
+    instances = []
+
+    def __init__(self, delay, fn):
+        self.delay = delay
+        self.fn = fn
+        self.started = False
+        self.cancelled = False
+        _FakeTimer.instances.append(self)
+
+    def start(self):
+        self.started = True
+
+    def cancel(self):
+        self.cancelled = True
+
+
+def test_stalled_ladder_move_is_retried_once_the_cooldown_expires(monkeypatch):
+    wkt = _make_katrain()
+    next_bw = wkt.game.current_node.next_player
+    _make_ladder_player(wkt, next_bw)
+
+    wkt.last_ladder_error = True
+    wkt._ladder_retry_attempt = 1
+    wkt._ladder_retry_at = time.time() - 0.01  # 冷却已过
+    wkt._ai_move_pending = False
+
+    _FakeThread.calls = []
+    monkeypatch.setattr(threading, "Thread", _FakeThread)
+
+    wkt._do_update_state()
+
+    assert len(_FakeThread.calls) == 1  # 引擎恢复后这一局还能继续
+    assert wkt._ai_move_pending is True
+
+
+def test_an_exhausted_retry_schedule_leaves_the_game_latched(monkeypatch):
+    """排期用尽 = `_ladder_retry_at` 归 0。此后永远不再重生 —— 有界,不是无限重试。"""
+    wkt = _make_katrain()
+    next_bw = wkt.game.current_node.next_player
+    _make_ladder_player(wkt, next_bw)
+
+    wkt.last_ladder_error = True
+    wkt._ladder_retry_attempt = len(LADDER_STALL_RETRY_SCHEDULE)
+    wkt._ladder_retry_at = 0.0
+    wkt._ai_move_pending = False
+
+    _FakeThread.calls = []
+    monkeypatch.setattr(threading, "Thread", _FakeThread)
+
+    wkt._do_update_state()
+
+    assert _FakeThread.calls == []
+
+
+def test_each_stall_arms_the_next_delay_and_then_stops(monkeypatch):
+    wkt = _make_katrain()
+    monkeypatch.setattr(threading, "Timer", _FakeTimer)
+    _FakeTimer.instances = []
+
+    for expected_delay in LADDER_STALL_RETRY_SCHEDULE:
+        wkt._surface_ladder_unavailable()
+        armed = _FakeTimer.instances[-1]
+        assert (armed.delay, armed.started) == (expected_delay, True)
+        assert wkt._ladder_stall_blocks_retrigger() is True  # 冷却期内不许重生
+
+    armed_count = len(_FakeTimer.instances)
+    wkt._surface_ladder_unavailable()  # 第五次:排期已用尽
+    assert len(_FakeTimer.instances) == armed_count
+    assert wkt._ladder_retry_at == 0.0
+    assert wkt._ladder_stall_blocks_retrigger() is True
+
+
+def test_a_successful_ladder_move_and_a_new_game_both_clear_the_retry_state(monkeypatch):
+    """两个清除点都要清:少任何一处,上一局用掉的重试次数会算在下一局头上。"""
+    wkt = _make_katrain()
+    monkeypatch.setattr(threading, "Timer", _FakeTimer)
+    _FakeTimer.instances = []
+
+    wkt._surface_ladder_unavailable()
+    assert wkt._ladder_retry_attempt == 1
+    wkt._reset_ladder_stall_retry()  # 成功落子走的就是这一句
+    assert (wkt._ladder_retry_attempt, wkt._ladder_retry_at) == (0, 0.0)
+    assert _FakeTimer.instances[-1].cancelled is True
+
+    wkt._surface_ladder_unavailable()
+    assert wkt._ladder_retry_attempt == 1
+    wkt._do_new_game()
+    assert (wkt._ladder_retry_attempt, wkt._ladder_retry_at) == (0, 0.0)
+    assert wkt.last_ladder_error is False

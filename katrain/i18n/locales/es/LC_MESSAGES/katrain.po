@@ -3156,3 +3156,9 @@ msgstr "{b} jugadas de negras / {w} de blancas evaluadas"
 
 msgid "grade:unrated_count"
 msgstr "{n} sin evaluar"
+
+msgid "ladder:engine_unavailable_start"
+msgstr ""
+"El motor de partidas clasificatorias no está disponible temporalmente. No se"
+" ha iniciado ninguna partida y tu rango no se ve afectado. Inténtalo de "
+"nuevo más tarde."

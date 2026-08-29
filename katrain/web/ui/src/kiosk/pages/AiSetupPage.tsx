@@ -175,6 +175,11 @@ const AiSetupPage = () => {
         setAuthPrompt(isRanked
           ? t('ladder:login_required', '升降级对弈会记录段位，需要登录后才能开始。')
           : t('play:login_required_free', '开始对局需要登录，请先登录后再试。'));
+      } else if (status === 503 && isRanked) {
+        /* 开局前的引擎预检没过 —— 局没开成,名额也没押上。必须把后半句说出来,
+           否则用户会以为自己又废了一局定级。 */
+        setAuthPrompt('');
+        setError(t('ladder:engine_unavailable_start', '升降级引擎暂时不可用，本次没有开局，也不影响你的段位。请稍后再试。'));
       } else {
         setAuthPrompt('');
         setError(e.message || t('Failed to create game', '创建对局失败'));

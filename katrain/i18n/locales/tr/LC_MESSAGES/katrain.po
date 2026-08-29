@@ -3344,3 +3344,8 @@ msgstr "{b} siyah / {w} beyaz hamle değerlendirildi"
 
 msgid "grade:unrated_count"
 msgstr "{n} değerlendirilmedi"
+
+msgid "ladder:engine_unavailable_start"
+msgstr ""
+"Dereceli oyun motoru geçici olarak kullanılamıyor. Oyun başlatılmadı ve "
+"seviyeniz etkilenmedi. Lütfen daha sonra tekrar deneyin."

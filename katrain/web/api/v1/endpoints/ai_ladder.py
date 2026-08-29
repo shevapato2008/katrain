@@ -281,26 +281,62 @@ def _lifecycle_error(exc: Exception) -> HTTPException:
     return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
 
 
-def _active_session(request: Request, session_id: str) -> bool:
+def _session_by_id(request: Request, session_id: Optional[str]):
+    """The live session object for `session_id`, or None. Takes the manager's lock when it
+    has one (the test harness swaps in a plain dict)."""
+    if not session_id:
+        return None
     manager = request.app.state.session_manager
     lock = getattr(manager, "_lock", None)
     if lock is None:
-        session = getattr(manager, "_sessions", {}).get(session_id)
-    else:
-        with lock:
-            session = manager._sessions.get(session_id)
-    return session is not None
+        return getattr(manager, "_sessions", {}).get(session_id)
+    with lock:
+        return manager._sessions.get(session_id)
+
+
+def _active_session(request: Request, session_id: str) -> bool:
+    return _session_by_id(request, session_id) is not None
+
+
+def _engine_stalled_for(request: Request, lifecycle) -> bool:
+    """这一局的阶梯引擎是不是拒绝过落子。
+
+    `_ignored_reason` 早就写着「engine_stalled ⇒ 不计分」,可它只能判调用方递给它的东西,
+    而这条路**什么都没递** —— 于是屏上写着「本局不计入升降级」,账本里记的却是一场
+    counted 的负。生产实测:2026-08-29,user 10,game 7a6c8e42…,`counted=t`、`reason` 为空,
+    定级进度被这一局从 0 推到 1。
+
+    这个状态位活在下棋的那个进程里、不在行上,所以只能顺着 `origin_session_id`
+    (`activate_reservation` 写下的那个指针)回去读。**那个会话若已经没了**(服务重启、
+    会话超时),这里就问不出来,于是照旧计分 —— 这是把洞收窄,不是补上。要真补上,
+    得让停摆这件事写进 lifecycle 行里。
+    """
+    session = _session_by_id(request, getattr(lifecycle, "origin_session_id", None))
+    return bool(getattr(getattr(session, "katrain", None), "last_ladder_error", False))
+
+
+def _preflight_ladder_engine(session, frozen_recipe) -> None:
+    """开局之前先问引擎:这一档你到底能不能下。
+
+    从前是**先把一切写下来**(预约、pending 账本行、坐好玩家、开钟),第一手棋才发现引擎
+    服务不了这一档。玩家于是拿到一局已经押上定级名额的死棋 —— 用户看到的
+    「对局开出来了、对手标 6级、钟在跑、一手不落」正是这套顺序的必然输出。
+
+    这里问的就是 `LadderStrategy.generate_move` 开头那一句(`core/ai.py`),所以引擎服务不了
+    的部署会在 `/start` 拿到 503,而不是在第 2 手拿到一条横幅。
+    """
+    from katrain.core.ladder import rung_strength_spec
+
+    engine = getattr(getattr(session, "katrain", None), "engine", None)
+    if engine is None:
+        return
+    spec = rung_strength_spec(frozen_recipe)
+    engine.require_ladder_capability(spec.main_model, human_required=spec.human_model is not None)
 
 
 def _local_ranked_session_matches(request: Request, current_user: User, pending: dict, game_id: str) -> bool:
     session_id = pending.get("session_id")
-    manager = request.app.state.session_manager
-    lock = getattr(manager, "_lock", None)
-    if lock is None:
-        session = getattr(manager, "_sessions", {}).get(session_id)
-    else:
-        with lock:
-            session = manager._sessions.get(session_id)
+    session = _session_by_id(request, session_id)
     if session is None:
         return False
     snapshot = getattr(session, "ai_ladder_snapshot", None)
@@ -851,6 +887,9 @@ async def end_ranked_game(
             terminal_source="remote_resign",
             result="loss",
             deciding_device_id=deciding_device_id,
+            # 认输记一场负是有意的(「不得靠断线躲掉一场负」),但**引擎自己没落过子的那一局
+            # 不是一场负**。这一格从前不传,于是横幅上的「本局不计入升降级」是句空话。
+            engine_stalled=_engine_stalled_for(request, lifecycle),
         )
     except ValueError as exc:
         raise _lifecycle_error(exc) from exc
@@ -1036,6 +1075,36 @@ async def start_ranked_game(
 
     snapshot = snapshot_for(session.session_id)
     frozen_recipe = frozen_recipe_from_snapshot(opponent)
+
+    # 账本还一个字都没写的最后一刻 —— `create_pending_game` 是第一次落账。
+    try:
+        _preflight_ladder_engine(session, frozen_recipe)
+    except Exception as exc:
+        logging.getLogger("katrain_web").error(
+            "[ladder] refusing to seat rung %s (%s): %s", opponent.rung, opponent.rank_name, exc
+        )
+        if activity is not None:
+            activity.release_ranked_start(current_user.id)
+        try:
+            manager.remove_session(session.session_id)
+        except Exception:
+            pass
+        if board:
+            try:
+                await request.app.state.remote_client.cancel_ai_ladder_reservation(game_id, reservation_key)
+            except Exception:
+                pass
+        else:
+            request.app.state.ai_ladder_repo.cancel_reservation(
+                user_id=current_user.id,
+                game_id=game_id,
+                reservation_key=reservation_key,
+                origin_device_id=device_id,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Ranked engine cannot serve the seated rung",
+        ) from exc
 
     try:
         request.app.state.ai_ladder_repo.create_pending_game(snapshot, reservation_key=reservation_key)

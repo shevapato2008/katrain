@@ -68,7 +68,8 @@ describe('Kiosk navigation integration', () => {
         json: () => Promise.resolve(
           String(url).includes('/api/v1/platforms/status')
             ? { platforms: [] }
-            : [{ level: '15k', categories: { '手筋': 139 }, total: 1000 }],
+            // 分类键是后端真的会给的 slug(`TsumegoProblem.category`),不是中文名。
+            : [{ level: '15k', categories: { tesuji: 139 }, total: 1000 }],
         ),
       })) as unknown as typeof fetch;
     });
@@ -81,16 +82,12 @@ describe('Kiosk navigation integration', () => {
 
     it('nav rail items navigate correctly', async () => {
       renderApp('/kiosk/play');
-      fireEvent.click(screen.getByText('死活'));
-      // Phase B reskin composes the subtitle from two separate translated
-      // spans ("选择难度级别" + " · " + "练习死活以提高计算力"), so an exact
-      // getByText('选择难度级别') no longer matches a single text node. Match
-      // on the full composed subtitle instead — still proves the 死活 nav
-      // item landed on the tsumego levels page.
+      // Task 4:Dock 上这一项改叫「训练营」(规范 §3 共享词典),路由 `/kiosk/tsumego` 不变。
+      fireEvent.click(screen.getByText('训练营'));
+      // Task 12 把这一屏按稿子整屏换了(`shots/11-training.png`):原来那条
+      // 「选择难度级别 · 练习死活以提高计算力」的标题栏没有了,问候行取而代之。
       await waitFor(() => {
-        expect(
-          screen.getByText((_, node) => node?.textContent === '选择难度级别 · 练习死活以提高计算力')
-        ).toBeInTheDocument();
+        expect(screen.getByText('题在实体盘上摆好，落子即判')).toBeInTheDocument();
       });
     });
 
@@ -104,18 +101,26 @@ describe('Kiosk navigation integration', () => {
       expect(screen.getByText('人机对弈')).toBeInTheDocument();
     });
 
-    it('opens Settings from the header and returns to the originating route', async () => {
+    // Task 3(D9)把顶栏齿轮拆了,Task 4 把「设置」放进 Dock(规范 §1)——
+    // 入口换了地方,不是没有了。这里点的就是 Dock 上那一格。
+    //
+    // 不写成 `renderApp('/kiosk/settings')` 直接跳:那样测的是「从我这层往里通」,
+    // 而堵点按定义在更外面 —— 断路照样发通行证。入口在不在,只有从入口点进去才算数。
+    //
+    // 返回落到 `/kiosk/play`:Dock 不带 `location.state.from`,SettingsPage 的
+    // `handleBack` 因此走安全兜底(SettingsPage.tsx:73)。旧齿轮那条路会带上原路由,
+    // Task 18 重做设置屏时再决定 Dock 要不要带 —— 这条测试锁的是现状。
+    // ⚠️ 2026-08-23:设置屏**没有返回键了**。它是 Dock 项 ⇒ L1,而 L1 没有返回 ——
+    // 要退的是「回哪儿」,而 Dock 一直在。上一版那条「返回落到安全兜底」测的是死码:
+    // 全仓只有 Dock 会跳到这一屏,而 Dock 不带 `state.from`。
+    it('opens Settings from the Dock; L1 has no back button, the Dock is the way out', async () => {
       renderApp('/kiosk/play');
 
-      const headerSettings = screen
-        .getAllByRole('button', { name: '设置' })
-        .find((button) => button.querySelector('[data-testid="SettingsOutlinedIcon"]'));
-      expect(headerSettings).toBeDefined();
-      fireEvent.click(headerSettings!);
-      await waitFor(() => expect(screen.getByRole('heading', { name: '设置' })).toBeInTheDocument());
-      expect(screen.queryByText('复盘')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '设置' }));
+      await screen.findByTestId('settings-page');
+      expect(screen.queryByRole('button', { name: '返回' })).toBeNull();
 
-      fireEvent.click(screen.getByRole('button', { name: '返回' }));
+      fireEvent.click(screen.getByRole('button', { name: '对弈' }));
       await waitFor(() => expect(screen.getByText('人机对弈')).toBeInTheDocument());
     });
 
@@ -133,7 +138,9 @@ describe('Kiosk navigation integration', () => {
       }) as unknown as typeof fetch;
       renderApp('/kiosk/play');
       fireEvent.click(screen.getByText('复盘'));
-      await waitFor(() => expect(screen.getAllByText('复盘').length).toBeGreaterThanOrEqual(2));
+      // 屏 19 自己拼 L1 两栏(左栏是「选中这一局」不是实体盘镜像),所以判据是这块两栏在了,
+      // 不是「屏上有两处写着复盘」—— 那句原来靠的是旧页面里的一个标题,本轮已经没有了。
+      await screen.findByTestId('review-page');
       expect(screen.queryByText('智能棋盘')).not.toBeInTheDocument();
     });
 
@@ -184,7 +191,7 @@ describe('Kiosk navigation integration', () => {
         }
         if (/\/categories\/tesuji\?limit=1000/.test(u)) return json(problemIds);
         if (/\/levels\/15k\/categories$/.test(u)) return json([{ category: 'tesuji', name: '手筋', count: 25 }]);
-        if (/\/tsumego\/levels$/.test(u)) return json([{ level: '15k', categories: { '手筋': 25 }, total: 25 }]);
+        if (/\/tsumego\/levels$/.test(u)) return json([{ level: '15k', categories: { tesuji: 25 }, total: 25 }]);
         return json([]);
       }) as unknown as typeof fetch;
     });
@@ -192,22 +199,25 @@ describe('Kiosk navigation integration', () => {
     it('drills from levels → categories → units → unit list → problem', async () => {
       renderApp('/kiosk/tsumego');
 
-      // Level 1: levels grid → click 15K.
-      await waitFor(() => expect(screen.getByText('15K')).toBeInTheDocument());
-      fireEvent.click(screen.getByText('15K'));
+      // Level 1: 训练营「按级别」那一排 → 点 15 级。(Task 12 起卡上写的是中文档名,
+      // 不是 `15K` —— `levelChinese('15k')`。)
+      // 只有一档时「按级别」右端那个值也是「15 级」,所以按卡的可及名取,别按裸文本取。
+      const levelCard = await screen.findByRole('button', { name: /^15 级，/ });
+      fireEvent.click(levelCard);
 
       // Level 2: categories page → "选择分类" subtitle + 手筋 category card.
       await waitFor(() => expect(screen.getByText('手筋')).toBeInTheDocument());
       fireEvent.click(screen.getByText('手筋'));
 
-      // Level 3: units page → 2 units (1–20, 21–25). Click unit 1.
-      await waitFor(() => expect(screen.getByText('1–20')).toBeInTheDocument());
-      expect(screen.getByText('21–25')).toBeInTheDocument();
-      fireEvent.click(screen.getByText('1–20'));
+      // Level 3: 单元列表 → 2 个单元。(Task 13 起卡上写的是「第 1-20 题」,不是「1–20」。)
+      await waitFor(() => expect(screen.getByText('第 1-20 题')).toBeInTheDocument());
+      expect(screen.getByText('第 21-25 题')).toBeInTheDocument();
+      fireEvent.click(screen.getByText('第 1-20 题').closest('button')!);
 
-      // Level 4: unit list page → problem cards. The unit heading shows the range.
+      // Level 4: 题目列表 → 一格一题的 `.qgrid`。(屏 13 起不再是带缩略棋盘的 MUI 卡,
+      // 格子里只有题号和「试了几次」。)
       await waitFor(() => {
-        expect(document.querySelectorAll('.MuiCardActionArea-root').length).toBeGreaterThan(0);
+        expect(document.querySelectorAll('.qgrid button').length).toBe(20);
       });
 
       // The units page wrote the prev/next sequence to sessionStorage.
@@ -215,8 +225,8 @@ describe('Kiosk navigation integration', () => {
       expect(seq).not.toBeNull();
       expect(JSON.parse(seq!)).toHaveLength(25);
 
-      // Level 5: click the first problem card → problem page (board renders).
-      const firstCard = document.querySelector('.MuiCardActionArea-root') as HTMLElement;
+      // Level 5: 点第一格 → 做题屏(盘渲出来)。
+      const firstCard = document.querySelector('.qgrid button') as HTMLElement;
       fireEvent.click(firstCard);
       await waitFor(() => expect(screen.getByTestId('tsumego-board')).toBeInTheDocument());
     });

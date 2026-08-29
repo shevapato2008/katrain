@@ -25,6 +25,19 @@ export interface ReportTaskSummary {
   total_moves: number;
   analyzed_moves: number;
   requested_visits: number;
+  /**
+   * ISO 8601,没开跑 / 没跑完时是 `null`。**权威在后端**(cron 落库,`endpoints/reports.py`)。
+   *
+   * `started_at` 说的是**这一轮尝试**什么时候开始的,不是这一行什么时候建的:cron 认领时
+   * 用 `started_at or now()` 盖章,所以一轮里的自动重试沿用第一次的章;`/retry` 会把它清掉,
+   * 下次认领重新盖。`completed_at` 只在成功时写、每条回队列的路都会清它 ——
+   * 于是这一对要么是一段跑完的时间,要么什么都不是,**不会是上一轮剩下的半截**。
+   *
+   * 算耗时用 `completed_at − started_at`:两个值出自同一列,SQLite 上都不带时区、
+   * PG 上都带,差值两边都对(只有要**绝对时刻**时才需要关心是哪一种)。
+   */
+  started_at: string | null;
+  completed_at: string | null;
 }
 
 export interface ReportTaskMove {

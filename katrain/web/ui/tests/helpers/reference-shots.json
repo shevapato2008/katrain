@@ -1,0 +1,122 @@
+{
+  "01-play.png": {
+    "sha256": "0bebddec453c9c205f8a11a91efc26b75ef8e0cda89bca71ddb9096ab02dfbc6",
+    "shotFrom": "main"
+  },
+  "02-setup-free.png": {
+    "sha256": "6c482d106c1815e430409ffc699b940b132d8284ad2f546a2325bcc7065a0cfb",
+    "shotFrom": "main"
+  },
+  "03-setup-ranked.png": {
+    "sha256": "198a2038f7154d261a4b1b2757ec05857b0724a0ffe00e81f07e2e4ba159b8e0",
+    "shotFrom": "main"
+  },
+  "04-setup-local.png": {
+    "sha256": "1ae1f806888baea7b50ff7468998301a000844b850c0f09b59dae80b3868031b",
+    "shotFrom": "main"
+  },
+  "05-game.png": {
+    "sha256": "cea8fcf71526dccc7ab2662877533a18a00ddb9b8f62a021757d77b5fd536238",
+    "shotFrom": "main"
+  },
+  "06-lobby.png": {
+    "sha256": "604741673f630398665e7515f83a8f9f1258cc159ddd951697f6fb95eecb8d90",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "06b-lobby-guest.png": {
+    "sha256": "ee4b8876b344763c4b9eba17861a10ee94888480db042e9fe28f7f7e53615a95",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "06c-lobby-match.png": {
+    "sha256": "73c8b4ed73eb4404c0dfae846cac8ce8d7821dce29c628a4a2c42e3a1782dfa2",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "06d-lobby-inbox.png": {
+    "sha256": "a3826f11dc9a37f46ecafa87a082e99db1a3d35ec51cbb367c3de3703628e743",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "07-platform.png": {
+    "sha256": "abd99d7a42720339d00281ac0055d2fc8d044ce0cb659bf8167c3a3f90a0ae4d",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "08-platform-lobby.png": {
+    "sha256": "53e6f45e7761ab53c3cbaa4d50da67b8416b29ec0bc08163444218b5bab462be",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "09-platform-engine.png": {
+    "sha256": "d55f1cfb9cd95cde6a02f1e04d142ca9d59eaaabcec56054dcca759796c06028",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "10-platform-game.png": {
+    "sha256": "3983f256c0e60131b9bc11a00afe597a554f1cba98bdd55a2661b0d784c3c676",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "11-training.png": {
+    "sha256": "8b6bdf737cd09d8e01bb55ba8f041b3a358f780a10c2ba4ed1f4f62739dd9c62",
+    "shotFrom": "main"
+  },
+  "12-units.png": {
+    "sha256": "2fa496bc06aed5a49de32e6eb4a763aa1ebf2c6a47d1403a2031a716e9dab717",
+    "shotFrom": "main"
+  },
+  "13-problems.png": {
+    "sha256": "48fb1bb767a7e8cfe3896b4bbd5f834812248bb23d133fd82c15dfc565156bb8",
+    "shotFrom": "main"
+  },
+  "14-puzzle.png": {
+    "sha256": "913d61a1ed38a47d8465f0a882175c6943ce6ba03fd92f7bfd28f9d2a26e8a54",
+    "shotFrom": "main"
+  },
+  "15-kifu.png": {
+    "sha256": "342c3c7af5458ea653dc04ce24d653976fa50e204e361b6cf579d095bcd6f3e6",
+    "shotFrom": "main"
+  },
+  "16-kifu-detail.png": {
+    "sha256": "2ce96de24b8f98f829d770b8b105e8ab1156b04c3df6e33d600ba4abb31f315a",
+    "shotFrom": "main"
+  },
+  "17-baipu.png": {
+    "sha256": "5eb5674f03ce106b73977e599a417468dc7242df8ed1fc46c69d60cefbb4de73",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "18-live.png": {
+    "sha256": "923eb8c65277f31422a40077ebcdbcb9e1fc2a2d61939dd52b1f4918ce7b2b38",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "19-review.png": {
+    "sha256": "ca981b4849ae8230944ba72126d412a28f376ae6fd15ca6357207e30f73567e5",
+    "shotFrom": "main"
+  },
+  "20-report.png": {
+    "sha256": "1f090ec9ee532c53ea49c4a5a680f3bc74d608b2a8f781f87e0fd302dfd32bde",
+    "shotFrom": "main"
+  },
+  "21-research.png": {
+    "sha256": "777b96baee38c7ec95cff8a27986789c7fce2321c464c60f4d7786bc38c41734",
+    "shotFrom": "main"
+  },
+  "22-growth.png": {
+    "sha256": "f2171d9dc24d4813d7cb30f7f8acf5d9c814b222485c477c99b5a88aebc95dd2",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "23-courses.png": {
+    "sha256": "ca29f727a615cbb2c7be5495830872113a70032ffa2417a06ddd25b5c22c82d9",
+    "shotFrom": "main"
+  },
+  "24-books.png": {
+    "sha256": "8b923ba4e79c4757c01e98192e6a2c2e8235616b21beb510070d03de7de4beda",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "25-section.png": {
+    "sha256": "b0485e9ca314f5c358cbb4a93b71c02267889d58d9fa19a3fffa4a05a3e4ca69",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "26-calib.png": {
+    "sha256": "ebc129e9d48dd1c54457423b5372556a447db2a9ce2dd2f37ad9d821b1030754",
+    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+  },
+  "27-settings.png": {
+    "sha256": "919d247a61b5bd13cc080bbe83f92db10f2e76a7c31aaf942b9a9669985fa3d4",
+    "shotFrom": "main"
+  }
+}

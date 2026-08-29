@@ -7,7 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import ProgressDots from '../components/tsumego/ProgressDots';
-import SubPageBar from '../components/layout/SubPageBar';
+import { KioskPagebar } from '../shell/KioskPagebar';
 
 interface CategoryInfo {
   category: string;
@@ -113,14 +113,13 @@ const TsumegoCategoriesPage = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <SubPageBar
-        title={`${level?.toUpperCase()} ${t('tsumego:selectCategory', '选择分类')}`}
-        to="/kiosk/tsumego"
-        right={
-          <Typography variant="body2" color="text.secondary">
-            {totalCount} {t('tsumego:problems', '题')}
-          </Typography>
-        }
+      <KioskPagebar
+        title={`${level?.toUpperCase()} ${t('tsumego:selectCategory', '选择题型')}`}
+        backLabel={t('Back', '返回')}
+        onBack={() => navigate('/kiosk/tsumego')}
+        /* 原来挂在 right 插槽的题数是**副标性质**(它描述这一屏,不是一个动作),
+           §11 的右端只留给视图切换 —— 所以并进 sub。 */
+        sub={`${totalCount} ${t('tsumego:problems', '题')}`}
       />
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>

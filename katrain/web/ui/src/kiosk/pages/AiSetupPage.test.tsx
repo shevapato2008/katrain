@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import AiSetupPage from './AiSetupPage';
+import { PLAY_ON_BOARD_KEY, readPlayOnBoard } from '../utils/playInput';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -73,6 +74,17 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'test-token', user: { id: 1, username: 'test' }, isAuthenticated: true }),
 }));
 
+// 「怎么落子」那一格读的是**设备能力**(摄像头标没标定),不是设置项 ——
+// 所以它要有个桩,而且要能切:两态在屏上是两句不同的话。
+const vision = vi.hoisted(() => ({ enabled: false }));
+vi.mock('../context/VisionContext', () => ({
+  useVision: () => ({
+    visionStatus: { enabled: vision.enabled },
+    isVisionEnabled: vision.enabled,
+    refreshStatus: vi.fn(),
+  }),
+}));
+
 const renderPage = (mode = 'free') =>
   render(
     <ThemeProvider theme={kioskTheme}>
@@ -87,6 +99,9 @@ const renderPage = (mode = 'free') =>
 describe('AiSetupPage', () => {
   beforeEach(() => {
     sessionStorage.clear();
+    // 「这一局落在哪儿」的偏好活在 localStorage 里 —— **跨用例会串**,
+    // 上一条选了「屏幕」,下一条就会莫名其妙地也在屏幕上。清掉 = 回到默认(开)。
+    localStorage.removeItem(PLAY_ON_BOARD_KEY);
     mockNavigate.mockReset();
     writeActiveSession.mockReset();
     startRanked.mockClear();
@@ -97,6 +112,7 @@ describe('AiSetupPage', () => {
     applyBlockingSync.mockReset();
     retryRanked.mockReset();
     withBlocking(null);
+    vision.enabled = false;
     startRanked.mockResolvedValue({ session_id: 'ranked-s1', game_id: 'g1', status: rankedState.current });
   });
 
@@ -113,7 +129,7 @@ describe('AiSetupPage', () => {
   it('writes the active session and navigates to the game route on Start (free mode)', async () => {
     renderPage('free');
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: /开始对弈/i }));
+    await user.click(screen.getByRole('button', { name: /开始对局|开始计分局/i }));
 
     await waitFor(() => {
       expect(writeActiveSession).toHaveBeenCalledWith({
@@ -129,7 +145,7 @@ describe('AiSetupPage', () => {
   it('writes the ranked label on Start (ranked mode)', async () => {
     renderPage('ranked');
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: /开始对弈/i }));
+    await user.click(screen.getByRole('button', { name: /开始对局|开始计分局/i }));
 
     await waitFor(() => {
       expect(writeActiveSession).toHaveBeenCalledWith(
@@ -148,48 +164,156 @@ describe('AiSetupPage', () => {
   it('shows the server-selected ranked opponent instead of HumanSL strength', () => {
     renderPage('ranked');
     expect(screen.getByText('定级对手：9级')).toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: 'AI 棋力' })).not.toBeInTheDocument();
+    // 棋力那条轨在升降级屏**整组不渲染** —— 对手由盒子配档。
+    // (原来这里钉的是「没有 `combobox[name=AI 棋力]`」,而控件已经不是 combobox 了,
+    //  那条断言从此永远为真、什么都不再守。)
+    expect(screen.queryByTestId('setup-strength')).not.toBeInTheDocument();
   });
 
-  it('uses the rated-only 1024x600 no-scroll geometry with every required control and CTA visible', () => {
+  // 升降级那一屏上,规则 / 让子 / 贴目 / 路数**都是服务端定的**:给个能点的控件
+  // 只会是个改不动的旋钮。屏上因此是一格读数,不是一排灰掉的选择器。
+  it('升降级屏:服务端定的那几项是读数,不是控件', () => {
     renderPage('ranked');
-    const panel = screen.getByTestId('ranked-settings-panel');
-    // 原来这里还钉着 `padding: '16px'`。**那是一条自己造数、自己读回来的断言** ——
-    // jsdom 只是把我写进 sx 的字面量原样还给我,搬进真浏览器也不可能失败。
-    // 而且布局 A 之后右栏内容本来就该铺满 460(`:775` 主行动按钮满宽 460),padding 归零。
-    // `overflow: hidden` 留着:它是结构选择 —— 装不下的后果是**裁切**而不是滚,
-    // 而「裁切还是滚」正是承重那条闸要量的东西(在真浏览器里量,不在这儿)。
-    expect(panel).toHaveStyle({ overflow: 'hidden' });
-    expect(screen.queryByText('9路')).not.toBeInTheDocument();
-    expect(screen.queryByText('13路')).not.toBeInTheDocument();
-    // 规则/让子/贴目 are server-owned in ranked play, so the panel states them
-    // instead of offering knobs that the server would override.
-    expect(screen.queryByRole('combobox', { name: '规则' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('combobox', { name: '让子' })).not.toBeInTheDocument();
-    expect(screen.getByText('19 路 · 中国规则 · 贴 7.5 目 · 不让子')).toBeVisible();
-    expect(screen.getByRole('combobox', { name: '用时' })).toBeVisible();
-    expect(screen.getByRole('button', { name: /开始对弈/i })).toHaveStyle({ minHeight: '48px' });
-    expect(screen.getByTestId('ranked-start-action')).toHaveStyle({ flexShrink: '0' });
+    expect(screen.getByTestId('setup-ranked-fixed')).toHaveTextContent('19 路');
+    expect(screen.getByTestId('setup-ranked-fixed')).toHaveTextContent('中国规则 · 贴 7.5 目 · 不让子');
+    // 路数、让子、贴目、规则、棋力五组在这一屏一组都不该出现。
+    expect(screen.queryByTestId('setup-size')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('setup-handicap')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('setup-komi')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('setup-rules')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('setup-strength')).not.toBeInTheDocument();
+    // 用时和执子照旧是能选的。
+    expect(screen.getByTestId('setup-clock')).toBeInTheDocument();
+    expect(screen.getByTestId('setup-color')).toBeInTheDocument();
+    expect(screen.getByTestId('ranked-start-action')).toBeInTheDocument();
   });
 
-  it('keeps the free setup board-size choices unchanged', () => {
+  // 稿子那两格写的是「胜 · 升到 4 级」「负 · 退到 6 级」—— **那是净胜分正好 ±2 的特例**。
+  // 真规则在 `core/ai_ladder_ranked.py:1503-1506`:每局 ±1,到 ±3 才动档。
+  // 这三条守的就是「不把特例说成常态」。
+  it.each([
+    [0, '胜 · 净胜分 +1', '负 · 净胜分 -1'],
+    [2, '胜 · 升一档', '负 · 净胜分 +1'],
+    [-2, '胜 · 净胜分 -1', '负 · 退一档'],
+  ])('赌注按净胜分 %i 说话', (net, win, loss) => {
+    rankedState.current = { ...rankedState.current, net_score: net };
+    renderPage('ranked');
+    const stakes = screen.getByTestId('setup-stakes');
+    expect(stakes).toHaveTextContent(win);
+    expect(stakes).toHaveTextContent(loss);
+  });
+
+  it('自由对弈:路数三档照旧都在,而且是分段控件不是下拉', () => {
     renderPage('free');
-    expect(screen.getByText('9路')).toBeInTheDocument();
-    expect(screen.getByText('13路')).toBeInTheDocument();
-    expect(screen.getByText('19路')).toBeInTheDocument();
+    const size = screen.getByTestId('setup-size');
+    expect(size).toHaveTextContent('19 路');
+    expect(size).toHaveTextContent('13 路');
+    expect(size).toHaveTextContent('9 路');
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
+  // 规范 §11(v1.21):一屏之内所有选择组必须用同一种控件,项数上限 6。
+  // 这一条**倒过来了**:原来钉的是「规则要是下拉、AGA 不许可见」,
+  // 而稿子 02 屏画的正是四段并排。项数 4 ≤ 6,分段就是对的那一种。
+  it('规则四段并排 —— 不再是下拉', () => {
+    renderPage('free');
+    const rules = screen.getByTestId('setup-rules');
+    for (const label of ['中国', '日本', '韩国', 'AGA']) {
+      expect(rules).toHaveTextContent(label);
+    }
+  });
+
+  // 「怎么落子」是**两段之和**:设备能不能(`VisionContext`,后端给)+ 这一局想不想
+  // (`utils/playInput` 的偏好,默认开)。2026-08-23 之前这里画的是一格读数,
+  // 理由写着「全仓没有任何地方能让用户切」—— **那句话是错的**,做题屏早就有这颗开关。
+  //
+  // 选中态取的是**实际会落在哪**(两段之和),不是偏好本身:左边那块盘画的是
+  // 「按下按钮后真会出现的局面」,同一屏的控件不能说另一件事。
+  const seg = () => within(screen.getByTestId('setup-input'));
+  it.each([
+    [true, 'board'],
+    [false, 'screen'],
+  ])('没动过偏好时,落子跟着设备走:isVisionEnabled=%s', (enabled, expected) => {
+    vision.enabled = enabled;
+    renderPage('free');
+    expect(seg().getByRole('button', { name: '实体盘' }))
+      .toHaveAttribute('aria-pressed', String(expected === 'board'));
+    expect(seg().getByRole('button', { name: '屏幕' }))
+      .toHaveAttribute('aria-pressed', String(expected === 'screen'));
+  });
+
+  // 没摄像头时「实体盘」灰掉,**而「屏幕」永远按得动** —— 一组全灰的控件在屏上
+  // 和一段读数没区别,而读数该用虚线边的 `.igfix`,不是骗人的实线圆角。
+  // 灰了就得有人说为什么:那一行 `.kiosk-opthint` 就是那个人。
+  it('没标定摄像头时「实体盘」灰掉,「屏幕」照样能按,而且说得出为什么', () => {
+    vision.enabled = false;
+    renderPage('free');
+    expect(seg().getByRole('button', { name: '实体盘' })).toBeDisabled();
+    expect(seg().getByRole('button', { name: '屏幕' })).toBeEnabled();
+    expect(screen.getByTestId('setup-input-group'))
+      .toHaveTextContent('这台机器没有标定过摄像头,只能下在屏幕上');
+  });
+
+  // 盒子上那块盘是 19 路的 —— 选了 9 路,「实体盘」这条路就不成立了。
+  // **偏好不动**(调回 19 路它自己就回来),但屏上说的是这一局的真实去向。
+  it('切到 9 路,实体盘这条路自己塌掉;调回 19 路又回来', async () => {
+    vision.enabled = true;
+    renderPage('free');
+    const user = userEvent.setup();
+    expect(seg().getByRole('button', { name: '实体盘' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(within(screen.getByTestId('setup-size')).getByRole('button', { name: '9 路' }));
+    expect(seg().getByRole('button', { name: '实体盘' })).toBeDisabled();
+    expect(seg().getByRole('button', { name: '屏幕' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('盘上那块是 19 路');
+
+    await user.click(within(screen.getByTestId('setup-size')).getByRole('button', { name: '19 路' }));
+    expect(seg().getByRole('button', { name: '实体盘' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  // 选「屏幕」要**真的落进偏好里** —— 它是对局屏和 `PlayInputGuard` 唯一能读到的东西。
+  // 只改屏上那个高亮而不落盘,等于开局之后又被推回实体盘。
+  it('选了屏幕就写进偏好,对局屏和守卫读的是同一个值', async () => {
+    vision.enabled = true;
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(seg().getByRole('button', { name: '屏幕' }));
+    expect(readPlayOnBoard()).toBe(false);
+    expect(seg().getByRole('button', { name: '屏幕' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(seg().getByRole('button', { name: '实体盘' }));
+    expect(readPlayOnBoard()).toBe(true);
+  });
+
+  // 让子 > 0 时贴目那一组**整个换成一段话**,不是把控件灰掉:
+  // 灰掉说的是「你现在不能改」,而这一局是根本没有贴目这回事。
+  it('让子调上去,贴目那一组换成说明;调回 0 再变回档位轨', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    expect(screen.getByTestId('setup-komi')).toBeInTheDocument();
+    expect(screen.queryByTestId('setup-komi-explain')).not.toBeInTheDocument();
+
+    await user.click(within(screen.getByTestId('setup-handicap')).getByRole('button', { name: '多让一子' }));
+    expect(screen.getByTestId('setup-komi-explain')).toHaveTextContent('已经让了 1 子');
+    expect(screen.queryByTestId('setup-komi')).not.toBeInTheDocument();
+
+    await user.click(within(screen.getByTestId('setup-handicap')).getByRole('button', { name: '少让一子' }));
+    expect(screen.getByTestId('setup-komi')).toBeInTheDocument();
+  });
+
+  // 两头的键要禁用,**不是回绕**:让子从 0 按 `−` 绕到 9 子,是把一次误触变成
+  // 一局完全不同的棋 —— 而这一组标着「开局后不可改」。
+  it('档位轨两头到底就禁用', () => {
+    renderPage('free');
+    const handicap = within(screen.getByTestId('setup-handicap'));
+    expect(handicap.getByRole('button', { name: '少让一子' })).toBeDisabled();   // 默认 0 子
+    expect(handicap.getByRole('button', { name: '多让一子' })).toBeEnabled();
   });
 
   it('Start button is present without scrolling (rendered, not gated behind overflow)', () => {
     renderPage('free');
-    expect(screen.getByRole('button', { name: /开始对弈|start game/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /返回|back/i })).toBeInTheDocument();
-  });
-
-  it('rules render as a dropdown trigger, not 4 separate chips', () => {
-    renderPage('free');
-    // Compact form shows the current rule value as one control; the Japanese/Korean/AGA
-    // options are behind the dropdown (not all visible at once).
-    expect(screen.queryByText('AGA')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /开始对局|start game/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /返回对弈|back/i })).toBeInTheDocument();
   });
 });
 
@@ -215,7 +339,7 @@ describe('AiSetupPage — 升降级挡局面板', () => {
     // 而云端只知道预约还在。换成两种情形下都真的说法。
     expect(screen.getByText('这一局在你的另一台设备上，还没了结。')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/正在进行|还没下完/);
-    expect(screen.queryByRole('button', { name: /开始对弈/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /开始计分局/ })).not.toBeInTheDocument();
     // 「设置表单整个不在」用**下拉控件**当判据,不用「我执」那个标签 ——
     // 重设计之后挡局面板自己有一格事实也叫「我执」(对手档位/我执/状态/同步),
     // 拿标签文本判断会撞上它,红在一个不存在的缺陷上。下拉是设置表单独有的。

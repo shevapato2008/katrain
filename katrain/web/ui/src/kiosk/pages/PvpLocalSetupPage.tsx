@@ -1,27 +1,71 @@
-import { useState } from 'react';
-import { Box, Typography, Button, Slider, Switch, FormControlLabel, Alert, TextField } from '@mui/material';
+import { useMemo, useState } from 'react';
+import { Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { PlayArrow, ArrowBack } from '@mui/icons-material';
+import { useVision } from '../context/VisionContext';
+import { KioskOptSeg } from '../shell/KioskOptSeg';
+import { KioskPagebar } from '../shell/KioskPagebar';
+import { KioskScrollZone } from '../shell/KioskScrollZone';
+import { KioskSecLabel } from '../shell/KioskSecLabel';
+import { KioskStepTrack } from '../shell/KioskStepTrack';
+import KioskSetupBoard from '../components/board/KioskSetupBoard';
 import OptionChips from '../components/common/OptionChips';
+import { interpolate } from '../utils/interpolate';
+import { RULES_HINT, TIME_PRESETS, TIME_TRACK_ORDER } from '../utils/setupOptions';
+import { playInputState, writePlayOnBoard } from '../utils/playInput';
 import { API } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
-import LiveBoard from '../../components/live/LiveBoard';
 import { writeActiveSession } from '../utils/activeSession';
 
-// Local (同板双人) setup page — mirrors AiSetupPage's canonical kiosk setup skeleton
-// (left LiveBoard preview + right token-themed form), dropping AI strategy/rank/color
-// and adding black/white player-name fields plus a client-side move-sound toggle.
+/**
+ * 屏 04 本地对局 · 开局设置(`sample-go/shots/04-setup-local.png`,L2 布局 A)。
+ *
+ * 首页「本地对局」那张卡唯一的落点。**和屏 02/03 同一副骨架**(左盘 516 + 16 + 右栏 460,
+ * 右栏整栏滚,主行动键钉在栏底),差别是这一边**没有引擎对手**:没有棋力、没有 AI 策略、
+ * 也没有「我执」—— 两个人面对面坐着,谁执黑是他们自己坐好的,不是这块屏上的一次选择。
+ * 多出来的是**两个姓名输入**:四家里只有围棋有,因为面对面下完要记谱,谱上得有名字。
+ *
+ * ## 稿子这一屏有两处不成立,都按仓里的事实写
+ *
+ * ① **`.setnote` 第一句**。稿子写「这一边不接引擎,**没有提示也没有形势判断**」——
+ *    前半句对、后半句不对。`interface.py:253` 的 `SCORING_GAME_TYPES` 只有
+ *    `rated / ranked / ai_ladder_ranked` 三种,`pvp_local` **不在里面** ⇒
+ *    `analysis_allowed` 为真,对局屏上那颗「领地」键照样能按,而领地就是形势判断。
+ *    真正关掉的是另外两样:`GameControlPanel.tsx:113` 的 `evalAllowed` 把
+ *    `pvp_local` 排除在外 ⇒ **胜负走势图整块不渲染**;`GamePage.tsx:451` 的
+ *    `hintVisible` 要求 `game_type === 'free'` ⇒ **AI 支招是灰的**。
+ *
+ * ② **`.setnote` 第二句的后半**。稿子写「段位只有**在线大厅的定级队列**会改」——
+ *    定级赛不在在线大厅,在「升降级对弈」:`LobbyPage.tsx:151` 那句挡人的话原文是
+ *    「先在『升降级对弈』打完 5 局定级赛,才能进行人人排位」。而权威在
+ *    `interface.py:258`:`RANK_MOVING_GAME_TYPES = ("ai_ladder_ranked",)`,注释逐字写着
+ *    「Exactly one, by design」。照稿子写会把人指去一个改不了段位的地方。
+ *
+ * ③ **「白方 · 贴目的一方」反了**(稿子那一行)。贴目是**黑方贴给白方**的 ——
+ *    `core/game.py:372` 里黑棋的分数减去 komi,少的那一边是黑。白方是**收**的那一方。
+ *
+ * ## 「怎么落子」是**真开关**(2026-08-23 改回来的)
+ *
+ * 这一屏第一版把它画成了一格读数,理由写的是「全仓没有任何地方能让用户切」——
+ * **那句话是错的**:做题屏早就有这颗开关。设备能不能(`isVisionEnabled`)和这一局想不想
+ * 是两段,第一版把后一段抹掉了。现在两段都在:`utils/playInput.ts` 存偏好,
+ * `KioskApp` 的 `PlayInputGuard` 和 `GamePage` 都认它。
+ *
+ * 选中的是**这一局实际会落在哪**(`onBoard`),不是偏好本身 —— 屏上那块盘画的是
+ * 「按下按钮后真会出现的局面」,同一屏的控件不能说另一件事。
+ */
 const PvpLocalSetupPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { token } = useAuth();
+  const { isVisionEnabled } = useVision();
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
   const [rules, setRules] = useState<'chinese' | 'japanese' | 'korean' | 'aga'>('chinese');
 
-  // Player names
+  // Player names — 留空就不写 SGF 的 PB/PW(`server.py:1093`),对局屏回落到「黑方 / 白方」
+  // (`GameControlPanel.tsx:66`)。**不替用户编一个名字。**
   const [blackName, setBlackName] = useState('');
   const [whiteName, setWhiteName] = useState('');
 
@@ -40,6 +84,37 @@ const PvpLocalSetupPage = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const timePresets = TIME_PRESETS(t);
+  const currentTimeKey = !timeEnabled ? 'untimed' : mainTime === 0 ? 'byoOnly' : String(mainTime);
+  const timeTrack = [...TIME_TRACK_ORDER].map((key) => timePresets.find((p) => p.key === key)!);
+  const timeIndex = Math.max(0, timeTrack.findIndex((p) => p.key === currentTimeKey));
+  const applyTimePreset = (key: string) => {
+    const preset = timePresets.find((p) => p.key === key);
+    if (!preset) return;
+    setTimeEnabled(preset.enabled);
+    setMainTime(preset.main);
+    setByoyomiTime(preset.byo);
+    setByoyomiPeriods(preset.periods);
+  };
+
+  // 贴目 15 档(0.5 – 7.5,半目一档)—— 和屏 02 同一条轨、同一份档,理由写在那一屏。
+  const KOMI_MIN = 0.5;
+  const KOMI_STEP = 0.5;
+  const komiIndex = Math.round((komi - KOMI_MIN) / KOMI_STEP);
+
+  // 三段:设备能不能 / 这一局想不想 / 实际落在哪。`bumpInput` 只是为了让偏好写进
+  // localStorage 之后这一屏重算一次 —— 偏好不在 React state 里,它跨屏活着。
+  const [inputTick, setInputTick] = useState(0);
+  const playInput = useMemo(
+    () => playInputState(isVisionEnabled, boardSize),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- inputTick 就是「偏好刚被改过」这个信号
+    [isVisionEnabled, boardSize, inputTick],
+  );
+  const setPlayOnBoard = (next: boolean) => {
+    writePlayOnBoard(next);
+    setInputTick((n) => n + 1);
+  };
 
   const handleStart = async () => {
     setError('');
@@ -61,7 +136,9 @@ const PvpLocalSetupPage = () => {
       });
       writeActiveSession({
         kind: 'game',
-        label: `${blackName || t('Black', '黑方')} vs ${whiteName || t('White', '白方')}`,
+        // 铸的是新键,不套 PO 里的 `Black` / `White` —— 那两条是「黑棋 / 白棋」(说的是子),
+        // 这里说的是**人**(黑方 / 白方),和对局屏上那两张卡的回落值是同一句话。
+        label: `${blackName || t('setup:black_side', '黑方')} vs ${whiteName || t('setup:white_side', '白方')}`,
         route: `/kiosk/play/pvp/local/game/${session_id}`,
         ts: Date.now(),
       });
@@ -74,224 +151,242 @@ const PvpLocalSetupPage = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', height: '100%' }}>
-      {/* Left: board preview console — fixed 322px width (matches artifact .console).
-          Board wrapper below stays flex:1 so LiveBoard renders a square that fits this width. */}
-      <Box
-        sx={{
-          width: 322, height: '100%', flexShrink: 0, overflow: 'hidden',
-          bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
-          borderRadius: 3, p: 2, display: 'flex', flexDirection: 'column',
-        }}
-      >
-        <Typography variant="overline" sx={{ color: 'text.secondary', mb: 1 }}>
-          {t('Board Preview', '盘面预览')}
-        </Typography>
-        <Box sx={{ flex: 1, minHeight: 0 }}>
-          <LiveBoard
-            moves={[]}
-            currentMove={0}
-            boardSize={boardSize}
-            showCoordinates={true}
-          />
-        </Box>
-      </Box>
+    <div className="kiosk-layout-a" data-testid="pvp-local-setup-page">
+      {/* 左栏 = 按下「开始对局」后真会出现的那个局面(规范 `:512`)。
+          `color` 不传:这一屏没有「我执」那一次选择,见 `KioskSetupBoard` 的 prop 注释。 */}
+      <KioskSetupBoard size={boardSize} handicap={handicap} />
 
-      {/* Right: settings form */}
-      <Box sx={{ flex: 1, p: 3, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
-          <Button
-            onClick={() => navigate('/kiosk/play')}
-            startIcon={<ArrowBack />}
-            sx={{ minWidth: 40, p: 0.5 }}
-          />
-          <Typography variant="h5" sx={{ color: 'text.primary' }}>
-            {t('Local Game', '本地对局')}
-          </Typography>
-        </Box>
-
-        {/* Player names */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 2.5 }}>
-          <TextField
-            data-testid="black-name-input"
-            label={t('Black player', '黑方姓名')}
-            value={blackName}
-            onChange={(e) => setBlackName(e.target.value)}
-            fullWidth
-            size="small"
-          />
-          <TextField
-            data-testid="white-name-input"
-            label={t('White player', '白方姓名')}
-            value={whiteName}
-            onChange={(e) => setWhiteName(e.target.value)}
-            fullWidth
-            size="small"
-          />
-        </Box>
-
-        {/* Board size */}
-        <OptionChips
-          label={t('Board', '棋盘')}
-          options={[{ value: 9, label: t('9x9', '9路') }, { value: 13, label: t('13x13', '13路') }, { value: 19, label: t('19x19', '19路') }]}
-          value={boardSize}
-          onChange={setBoardSize}
+      <div className="kiosk-rail">
+        <KioskPagebar
+          testId="kiosk-setup-pagebar"
+          backLabel={t('Back to play', '返回对弈')}
+          onBack={() => navigate('/kiosk/play')}
+          title={t('game:local_pvp', '本地对局')}
+          sub={t('local:setup_sub', '开局设置 · 两人面对面')}
         />
 
-        {/* Ruleset */}
-        <OptionChips
-          label={t('Rules', '规则')}
-          options={[
-            { value: 'chinese' as const, label: t('Chinese', '中国') },
-            { value: 'japanese' as const, label: t('Japanese', '日本') },
-            { value: 'korean' as const, label: t('Korean', '韩国') },
-            { value: 'aga' as const, label: 'AGA' },
-          ]}
-          value={rules}
-          onChange={setRules}
-        />
-
-        {/* Handicap */}
-        <Box sx={{ mb: 2.5 }}>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-            {t('Handicap', '让子')}: {handicap === 0 ? t('None', '无') : `${handicap}${t('stones', '子')}`}
-          </Typography>
-          <Slider
-            value={handicap}
-            onChange={(_, v) => setHandicap(v as number)}
-            min={0}
-            max={9}
-            step={1}
-            valueLabelDisplay="auto"
-            valueLabelFormat={(v) => (v === 0 ? t('None', '无') : `${v}${t('stones', '子')}`)}
-          />
-        </Box>
-
-        {/* Komi (no handicap only) */}
-        {handicap === 0 && (
-          <Box sx={{ mb: 2.5 }}>
-            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-              {t('Komi', '贴目')}: {komi}
-            </Typography>
-            <Slider
-              value={komi}
-              onChange={(_, v) => setKomi(v as number)}
-              min={0.5}
-              max={7.5}
-              step={0.5}
-              valueLabelDisplay="auto"
+        <KioskScrollZone className="setgrp-scroll">
+          {/* ── 怎么落子 ── 开局后不可改的那一组,自带强调框 */}
+          <section className="setgrp inputgrp" data-testid="setup-input-group">
+            <KioskSecLabel
+              zh={t('setup:input', '怎么落子')}
+              en="Input"
+              value={t('setup:locked_after_start', '开局后不可改')}
             />
-          </Box>
-        )}
-
-        {/* Time control */}
-        <Box sx={{ mb: 2.5 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={timeEnabled}
-                onChange={(_, checked) => setTimeEnabled(checked)}
-              />
-            }
-            label={t('Time Control', '用时')}
-          />
-        </Box>
-
-        {timeEnabled && (
-          <>
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                {t('Main Time', '主时间')}: {mainTime === 0 ? t('Unlimited', '不限') : `${mainTime}${t('min', '分')}`}
-              </Typography>
-              <Slider
-                value={mainTime}
-                onChange={(_, v) => setMainTime(v as number)}
-                min={0}
-                max={60}
-                step={null}
-                marks={[
-                  { value: 0, label: t('Unlimited', '不限') },
-                  { value: 5, label: `5${t('min', '分')}` },
-                  { value: 10, label: `10${t('min', '分')}` },
-                  { value: 20, label: `20${t('min', '分')}` },
-                  { value: 30, label: `30${t('min', '分')}` },
-                  { value: 60, label: `60${t('min', '分')}` },
+            <div className="igrow">
+              <span className="iglab">{t('setup:input_where', '落子')}</span>
+              <KioskOptSeg
+                ariaLabel={t('setup:input_where', '落子')}
+                testId="setup-input"
+                value={playInput.onBoard ? 'board' : 'screen'}
+                onChange={(v) => setPlayOnBoard(v === 'board')}
+                options={[
+                  // 「屏幕」**永远选得了** —— 条件掉了不能把两个人锁在一块用不了的盘上。
+                  { value: 'screen', label: t('setup:on_screen', '屏幕') },
+                  { value: 'board', label: t('setup:on_board', '实体盘'), disabled: !playInput.available },
                 ]}
               />
-            </Box>
-
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                {t('Byoyomi', '读秒时间')}: {byoyomiTime}{t('sec', '秒')}
-              </Typography>
-              <Slider
-                value={byoyomiTime}
-                onChange={(_, v) => setByoyomiTime(v as number)}
-                min={10}
-                max={60}
-                step={null}
-                marks={[
-                  { value: 10, label: `10${t('sec', '秒')}` },
-                  { value: 20, label: `20${t('sec', '秒')}` },
-                  { value: 30, label: `30${t('sec', '秒')}` },
-                  { value: 60, label: `60${t('sec', '秒')}` },
+            </div>
+            <div className="igrow">
+              <span className="iglab">{t('setup:size', '路数')}</span>
+              <KioskOptSeg
+                ariaLabel={t('setup:size', '路数')}
+                testId="setup-size"
+                value={boardSize}
+                onChange={setBoardSize}
+                options={[
+                  { value: 19, label: t('19x19', '19 路') },
+                  { value: 13, label: t('13x13', '13 路') },
+                  { value: 9, label: t('9x9', '9 路') },
                 ]}
               />
-            </Box>
+            </div>
+            {/* 灰掉的那一段必须有人说为什么 —— 这一行就是那个人。 */}
+            <p className="kiosk-opthint">
+              {playInput.reason === 'noCamera'
+                ? t('setup:board_no_camera', '这台机器没有标定过摄像头,只能下在屏幕上')
+                : playInput.reason === 'notNineteen'
+                  ? t('setup:board_needs_19', '盘上那块是 19 路 —— 9 路和 13 路只有屏幕上有')
+                  : playInput.onBoard
+                    ? t('local:input_hint_board', '两人面对面下在这块盘上,屏幕只记谱和读秒')
+                    : t('local:input_hint_screen', '两人轮流点屏幕落子 —— 盘就在旁边,也可以切回实体盘')}
+            </p>
+          </section>
 
-            <Box sx={{ mb: 2.5 }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                {t('Byoyomi Periods', '读秒次数')}: {byoyomiPeriods}{t('times', '次')}
-              </Typography>
-              <Slider
-                value={byoyomiPeriods}
-                onChange={(_, v) => setByoyomiPeriods(v as number)}
-                min={1}
-                max={5}
-                step={null}
-                marks={[
-                  { value: 1, label: `1${t('times', '次')}` },
-                  { value: 3, label: `3${t('times', '次')}` },
-                  { value: 5, label: `5${t('times', '次')}` },
-                ]}
+          {/* ── 对局双方 ── 稿子那两颗「点此输入」药丸,在真页面上必须**真能输入** */}
+          <section className="setgrp" data-testid="setup-players-group">
+            <KioskSecLabel
+              zh={t('local:players', '对局双方')}
+              en="Players"
+              value={t('local:written_into_sgf', '会写进棋谱')}
+            />
+            <div className="kiosk-rows">
+              <div className="kiosk-row">
+                <span className="disc b" />
+                <div className="kiosk-row__t">
+                  <b>{t('setup:black_side', '黑方')}</b>
+                  <em>{t('local:black_role', '先行 · 让子局里摆子的一方')}</em>
+                </div>
+                <div className="kiosk-row__end">
+                  <input
+                    className="nameinput"
+                    data-testid="black-name-input"
+                    aria-label={t('local:black_name', '黑方姓名')}
+                    placeholder={t('local:tap_to_type', '点此输入')}
+                    maxLength={16}
+                    value={blackName}
+                    onChange={(e) => setBlackName(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="kiosk-row">
+                <span className="disc w" />
+                <div className="kiosk-row__t">
+                  <b>{t('setup:white_side', '白方')}</b>
+                  {/* 稿子这一行写的是「贴目的一方」—— **反了**:贴目是黑方贴给白方的
+                      (`core/game.py:372` 黑棋分数减 komi),白方是**收**的那一方。 */}
+                  <em>{t('local:white_role', '后行 · 收下贴目的一方')}</em>
+                </div>
+                <div className="kiosk-row__end">
+                  <input
+                    className="nameinput"
+                    data-testid="white-name-input"
+                    aria-label={t('local:white_name', '白方姓名')}
+                    placeholder={t('local:tap_to_type', '点此输入')}
+                    maxLength={16}
+                    value={whiteName}
+                    onChange={(e) => setWhiteName(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            <p className="kiosk-opthint">
+              {t('local:names_hint', '留空就记成「黑方 / 白方」,不编名字')}
+            </p>
+          </section>
+
+          <section className="setgrp">
+            <OptionChips
+              label={t('Rules', '规则')}
+              en="Rules"
+              testId="setup-rules"
+              secval={t('local:agree_first', '下之前先谈好')}
+              value={rules}
+              onChange={setRules}
+              options={[
+                { value: 'chinese' as const, label: t('Chinese', '中国') },
+                { value: 'japanese' as const, label: t('Japanese', '日本') },
+                { value: 'korean' as const, label: t('Korean', '韩国') },
+                { value: 'aga' as const, label: 'AGA' },
+              ]}
+              hint={RULES_HINT(t)[rules] ?? ''}
+            />
+          </section>
+
+          <section className="setgrp" data-testid="setup-handicap-group">
+            <KioskStepTrack
+              label={t('Handicap', '让子')}
+              en="Handicap"
+              testId="setup-handicap"
+              count={10}
+              index={handicap}
+              onChange={setHandicap}
+              decLabel={t('setup:handicap_down', '少让一子')}
+              incLabel={t('setup:handicap_up', '多让一子')}
+              value={handicap === 0
+                ? t('setup:no_handicap', '不让子')
+                : interpolate(t('setup:handicap_value', '让 {n} 子'), { n: handicap })}
+              meta={t('local:handicap_meta', '0 – 9 子 · 两人棋力差时用')}
+            />
+          </section>
+
+          <section className="setgrp" data-testid="setup-komi-group">
+            <KioskSecLabel
+              zh={t('Komi', '贴目')}
+              en="Komi"
+              value={handicap > 0 ? t('setup:not_applicable', '本局不适用') : undefined}
+            />
+            {handicap > 0 ? (
+              <p className="setexplain" data-testid="setup-komi-explain">
+                {interpolate(
+                  t('setup:komi_explain', '已经让了 {n} 子,这一局不贴目。让子和贴目是同一件事的两种做法——补的都是先行那一方的便宜,两样一起用会补两遍。'),
+                  { n: handicap },
+                )}
+                <br />
+                {t('setup:komi_explain_back', '把让子调回 0,这一组会变回可选的贴目档。')}
+              </p>
+            ) : (
+              <KioskStepTrack
+                testId="setup-komi"
+                count={15}
+                index={komiIndex}
+                onChange={(i) => setKomi(KOMI_MIN + i * KOMI_STEP)}
+                decLabel={t('setup:komi_down', '减少贴目')}
+                incLabel={t('setup:komi_up', '增加贴目')}
+                value={interpolate(t('setup:komi_value', '贴 {n} 目'), { n: komi })}
+                meta={t('setup:komi_meta', '0.5 – 7.5 · 中国规则常用 7.5')}
               />
-            </Box>
-          </>
-        )}
+            )}
+          </section>
 
-        {/* Move sound */}
-        <Box sx={{ mb: 2.5 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={confirmSound}
-                onChange={(_, checked) => setConfirmSound(checked)}
-              />
-            }
-            label={t('Move sound', '落子提示音')}
-          />
-        </Box>
+          <section className="setgrp" data-testid="setup-clock-group">
+            <KioskStepTrack
+              label={t('Time Control', '用时')}
+              en="Clock"
+              testId="setup-clock"
+              count={timeTrack.length}
+              index={timeIndex}
+              onChange={(i) => applyTimePreset(timeTrack[i].key)}
+              decLabel={t('setup:clock_down', '减少用时')}
+              incLabel={t('setup:clock_up', '增加用时')}
+              value={timeTrack[timeIndex]?.label ?? '—'}
+              meta={interpolate(t('local:clock_meta', '{n} 档 · 两边同一套用时'), { n: timeTrack.length })}
+              hint={t('local:clock_hint', '走完一步换对方的钟;不限时就只记谱不读秒')}
+            />
+          </section>
 
-        <Box sx={{ mt: 'auto', pt: 2 }}>
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          <Button
-            variant="contained"
-            fullWidth
-            size="large"
-            startIcon={<PlayArrow />}
-            disabled={loading}
-            onClick={handleStart}
-            sx={{
-              minHeight: 56, py: 2, fontSize: '1.1rem',
-              bgcolor: 'primary.main',
-              '&:hover': { bgcolor: 'primary.dark' },
-            }}
-          >
-            {loading ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}
-          </Button>
-        </Box>
-      </Box>
-    </Box>
+          <section className="setgrp" data-testid="setup-sound-group">
+            <OptionChips
+              label={t('local:move_sound', '落子提示音')}
+              en="Sound"
+              testId="setup-sound"
+              value={confirmSound ? 'on' : 'off'}
+              onChange={(v) => setConfirmSound(v === 'on')}
+              options={[
+                { value: 'on', label: t('local:sound_on', '开') },
+                { value: 'off', label: t('local:sound_off', '关') },
+              ]}
+              hint={t('local:sound_hint', '实体盘上落子后,屏幕出一声确认它已经认到了')}
+            />
+          </section>
+        </KioskScrollZone>
+
+        {/* 出错横幅在滚动区**外面** —— 它说的是「刚才那次开局失败了」,跟着设置滚走就等于没说。 */}
+        {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
+
+        <p className="setnote" data-testid="setup-note">
+          {t('local:note_a', '这一边')}
+          <b>{t('local:note_b', '没有引擎对手')}</b>
+          {t('local:note_c', ':AI 支招关着、不画胜负走势,')}
+          <b>{t('local:note_d', '终局死活两人自己确认')}</b>
+          {t('local:note_e', '。')}
+          <br />
+          {t('local:note_f', '这一局')}
+          <b>{t('local:note_g', '只留档,不动段位')}</b>
+          {t('local:note_h', '——段位只由「升降级对弈」那条阶梯决定。')}
+        </p>
+
+        <button
+          type="button"
+          className="kiosk-primary-action"
+          data-testid="local-start-action"
+          disabled={loading}
+          onClick={handleStart}
+        >
+          {loading ? t('Creating...', '创建中...') : t('setup:start', '开始对局')}
+        </button>
+      </div>
+    </div>
   );
 };
 

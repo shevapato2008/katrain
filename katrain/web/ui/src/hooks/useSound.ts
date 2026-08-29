@@ -5,7 +5,9 @@
  * Sound effects are served from /assets/sounds/
  */
 
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+
+import { readAudioPref } from '../utils/audioPrefs';
 
 export type SoundName = 'stone' | 'capture' | 'correct' | 'incorrect' | 'solved';
 
@@ -35,20 +37,23 @@ function preloadSounds() {
 
 export interface UseSoundReturn {
   play: (name: SoundName) => void;
-  setEnabled: (enabled: boolean) => void;
-  isEnabled: boolean;
 }
 
+/**
+ * ⚠️ 这里曾经有 `setEnabled` / `isEnabled`,它们**零个调用点**,而且关不掉声音:
+ * `enabledRef` 是 `useRef`(每个 hook 实例各一份)而 `audioCache` 是模块级的 ——
+ * A 组件静音,B 组件照响。开关搬到 `utils/audioPrefs`(模块级 + localStorage),
+ * 用户出口是屏 27 设置的「声音」组。详见那个文件顶上的说明。
+ */
 export function useSound(): UseSoundReturn {
-  const enabledRef = useRef(true);
-
   // Preload sounds on first hook mount
   useEffect(() => {
     preloadSounds();
   }, []);
 
   const play = useCallback((name: SoundName) => {
-    if (!enabledRef.current) return;
+    // **每次播放都现读**,不缓存进闭包:设置屏可以在任意一屏开着的时候被改。
+    if (!readAudioPref('sfx')) return;
 
     const audio = audioCache[name];
     if (audio) {
@@ -61,15 +66,7 @@ export function useSound(): UseSoundReturn {
     }
   }, []);
 
-  const setEnabled = useCallback((enabled: boolean) => {
-    enabledRef.current = enabled;
-  }, []);
-
-  return {
-    play,
-    setEnabled,
-    isEnabled: enabledRef.current,
-  };
+  return { play };
 }
 
 export default useSound;

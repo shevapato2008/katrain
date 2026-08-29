@@ -186,6 +186,25 @@ class User(BaseModel):
     created_at: Optional[Union[str, datetime]] = None
 
 
+class OnlineUser(BaseModel):
+    """大厅里「谁在线」这一行需要的**全部**字段,一个不多。
+
+    `/users/online` 原来直接回 `User`,那里面带着 `uuid`(注释写明是发给 KataGo 用的
+    标识)、`credits`、`is_admin`、`net_wins` —— 任何登录用户都能把整张在线用户表
+    连这些字段一起拉走,而前端一个都没用到(kiosk 只要 id/username,
+    galaxy 多要 rank/elo_points/avatar_url)。
+
+    收窄放在**响应模型**上而不是在端点里手工挑字段:手工挑的写法在 `User` 以后
+    加字段时会静默地把新字段漏出去,而这里加不进来。
+    """
+
+    id: int
+    username: str
+    rank: str = "20k"
+    elo_points: int = 0
+    avatar_url: Optional[str] = None
+
+
 class UserInDB(User):
     hashed_password: str
 

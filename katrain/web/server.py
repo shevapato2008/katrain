@@ -441,10 +441,20 @@ async def _lifespan_board(app: FastAPI, log):
 
     app.state.router = build_router(settings.LOCAL_KATAGO_URL, settings.CLOUD_KATAGO_URL)
 
-    # Lobby/matchmaker placeholders (not used in board mode but needed by endpoints)
+    # NOT placeholders -- these are the same real LobbyManager/Matchmaker the server mode
+    # builds above, and the box's lobby is LIVE: /ws/lobby is registered unconditionally
+    # (no KATRAIN_MODE branch guards it), the kiosk LobbyPage really connects to it, and a
+    # match here really calls create_multiplayer_session. The word "placeholder" used to sit
+    # on this line and it did damage: it was cited (as "server.py:353") in the four-game
+    # shared baseline `smartbox-software/superpowers/shared/lobby-consensus.md:23` to rule
+    # board mode out as evidence -- which is how "box = thin client" got settled on a survey
+    # where the only deployment that owns a physical board was excluded. Say what is true.
+    #
+    # What IS board-specific is the line below: with no game_repo, a multiplayer result is
+    # never recorded on a box.
     app.state.lobby_manager = LobbyManager()
     app.state.matchmaker = Matchmaker()
-    app.state.game_repo = None  # Multiplayer game_repo not used in board mode
+    app.state.game_repo = None  # Multiplayer results are not recorded in board mode
 
     manager = app.state.session_manager
     try:
@@ -1857,10 +1867,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         # Record game result for multiplayer
         if is_multiplayer and current_user:
+            winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
+            result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
             try:
-                winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
-                result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
-
                 app.state.game_repo.record_multiplayer_game(
                     sgf_content=session.katrain.get_sgf(),
                     result=result,
@@ -1868,13 +1877,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     black_id=session.player_b_id,
                     white_id=session.player_w_id,
                 )
-
-                manager._schedule_broadcast(
-                    session,
-                    {"type": "game_end", "data": {"reason": "resign", "winner_id": winner_id, "result": result}},
-                )
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
+
+            # 广播**不在** try 里:它告诉对面「这局结束了」,而 try 守的是落账。
+            # 两件事捆在一个 try 里时,落账一失败对面就永远收不到终局 —— 盒上
+            # `app.state.game_repo` 恒为 None(`server.py` board 模式那一段),
+            # 于是这条路上每一次认输/超时都会静默地把对面挂在「还在等你走」。
+            # 数子(`_complete_count`)和退出(forfeit)两处本来就是这么写的,这里对齐。
+            manager._schedule_broadcast(
+                session,
+                {"type": "game_end", "data": {"reason": "resign", "winner_id": winner_id, "result": result}},
+            )
         elif not is_multiplayer and current_user and session.user_id:
             result = state.get("end_result") or session.katrain.game.end_result
             if result:
@@ -2064,10 +2078,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         # Record game result for multiplayer
         if is_multiplayer and current_user:
+            winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
+            result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"
             try:
-                winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
-                result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"
-
                 app.state.game_repo.record_multiplayer_game(
                     sgf_content=session.katrain.get_sgf(),
                     result=result,
@@ -2075,13 +2088,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     black_id=session.player_b_id,
                     white_id=session.player_w_id,
                 )
-
-                manager._schedule_broadcast(
-                    session,
-                    {"type": "game_end", "data": {"reason": "timeout", "winner_id": winner_id, "result": result}},
-                )
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
+
+            # 广播**不在** try 里:它告诉对面「这局结束了」,而 try 守的是落账。
+            # 两件事捆在一个 try 里时,落账一失败对面就永远收不到终局 —— 盒上
+            # `app.state.game_repo` 恒为 None(`server.py` board 模式那一段),
+            # 于是这条路上每一次认输/超时都会静默地把对面挂在「还在等你走」。
+            # 数子(`_complete_count`)和退出(forfeit)两处本来就是这么写的,这里对齐。
+            manager._schedule_broadcast(
+                session,
+                {"type": "game_end", "data": {"reason": "timeout", "winner_id": winner_id, "result": result}},
+            )
         elif not is_multiplayer and current_user and session.user_id:
             result = session.katrain.game.end_result
             if result:
@@ -2538,6 +2556,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                                 except:
                                     pass
 
+                            # 记一笔 —— `accept_invite` 认的就是这份记录。
+                            lobby_manager.record_invite(current_user.id, target_id)
+
                             # Confirm to sender
                             await websocket.send_json({"type": "info", "message": "Invitation sent."})
                         else:
@@ -2545,7 +2566,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
                 elif msg_type == "accept_invite":
                     target_id = message.get("target_id")  # The inviter
-                    if target_id:
+                    # ⚠️ **判别位是「他邀请过我没有」,不是「target_id 是不是个在线用户」。**
+                    # 这里原来只判 `if target_id:` 就直接建局并把 match_found 推给对方 ——
+                    # 对方前端收到就导航进对局室 ⇒ 任何登录用户都能把任意在线用户
+                    # 拽进一局棋,被拽的人一次点击都没有过。
+                    # 「不是自己 + 对方在线」这类校验挡不住它(攻击者传的本来就是在线用户),
+                    # 只有这份 pending 记录能。`consume_invite` 是**一次性**的:
+                    # 同一封邀请开不出第二局。
+                    if (
+                        target_id
+                        and target_id != current_user.id
+                        and lobby_manager.consume_invite(target_id, current_user.id)
+                    ):
                         # Fetch Usernames
                         user_repo = app.state.user_repo
                         all_users = user_repo.list_users()
@@ -2576,6 +2608,25 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                                 await ws.send_json(match_payload)
                             except:
                                 pass
+                    else:
+                        # 🔴 **这个 else 原来没有。** 2026-08-25 给 `accept_invite` 加了
+                        # `consume_invite`(一次性 + `INVITE_TTL_SECONDS = 120`)之后,
+                        # 邀请过期或已被消费时这里**什么都不发**,而前端点完就关窗
+                        # ⇒ 用户按下「接受并开局」,屏上一点反应都没有。
+                        #
+                        # **是那次提交自己造出来的静默失败**:在它之前 accept 恒成功
+                        # (不安全,但不会没反应)。判据同「坏了和好着在用户那里看起来一样吗」——
+                        # 这里的答案曾经是「一样」。
+                        #
+                        # 只发 `code`,话由前端说:这条链上另一处(`PLACEMENT_REQUIRED`)
+                        # 就是这么办的,而后端的英文 detail 是写给运维的。
+                        await websocket.send_json(
+                            {
+                                "type": "error",
+                                "code": "INVITE_NOT_PENDING",
+                                "message": "invite expired or already used",
+                            }
+                        )
 
         except WebSocketDisconnect:
             logging.getLogger("katrain_web").info(f"User {current_user.username} disconnected from lobby.")
@@ -2583,6 +2634,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         finally:
             app.state.box_sso.discard_socket(websocket)
             app.state.matchmaker.remove_from_queue(current_user.id)
+            lobby_manager.discard_invites_for(current_user.id)
             lobby_manager.remove_user(current_user.id, websocket)
             await lobby_manager.broadcast(
                 {"type": "lobby_update", "online_count": len(lobby_manager.get_online_user_ids())}
@@ -2689,7 +2741,20 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             state["sockets_count"] = len(session.sockets)
             # Send initial state to this client
             await websocket.send_json({"type": "game_update", "state": state})
-            # Broadcast updated spectator count to all other clients (lightweight update)
+            # 🔴 名字撒谎:type 叫 `spectator_count`,`count` 却是**原始 socket 数**,不是观众数。
+            # 减 2 由消费方做(`GameRoomPage.tsx:194` 的 `sockets_count - 2`),因为这条消息只是
+            # 给 `state["sockets_count"]` 打的补丁 —— 它和上面那行 `state["sockets_count"]`
+            # 说的是同一个量,前端两处都存进 `sockets_count`。
+            #
+            # 而 REST 那条同名字段是**已经减过的**:`api/v1/endpoints/games.py:39`
+            # `len(s.sockets) - 2`,`HvHLobbyPage.tsx:291` 直接显示。
+            # ⇒ 全仓 **3 个产出方**(WS 两处:本处 + 离房那处;REST 一处)、**2 种语义**:
+            # 原料 × 2 与成品 × 1。今天各自算对了。
+            # **而「照着名字直接显示」这个动作已经存在两处**(`HvHLobbyPage.tsx:291`、
+            # kiosk `LobbyPage.tsx:358`,吃的都是成品那条)⇒ 屏上已经有两个先例在教下一个人
+            # 怎么接。**缺陷不是在等第一个消费者,是在等下一个人接错那一条。**
+            # 这条已登记进四棋类大厅裁决 §8.4(`variant_local.go` 那段的属主是围棋)。
+            # 改名要连着 wire 契约一起改,所以本轮只留话不动线。
             manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
             while True:
                 message = await websocket.receive_json()
@@ -2737,6 +2802,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 app.state.box_sso.discard_socket(websocket)
             session.sockets.discard(websocket)
             # Broadcast updated spectator count when someone leaves
+            # 🔴 这是 `spectator_count` 的**第二个**产出方,`count` 同样是原始 socket 数不是观众数 ——
+            # 完整说明见进房那处(本文件上方 `session.sockets.add(websocket)` 之后)。**改一处要改两处。**
+            # 只贴一处的后果就是:动到没贴的这一处的人照样看不到。(国象 track 复量出这一处,2026-08-27)
             if session.sockets:  # Only if there are still connected clients
                 manager.broadcast_to_session(session_id, {"type": "spectator_count", "count": len(session.sockets)})
 

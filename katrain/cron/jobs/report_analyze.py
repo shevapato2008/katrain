@@ -6,7 +6,6 @@ Uses the cron-side KataGo engine (port 8002) instead of the web gameplay engine.
 
 import asyncio
 import logging
-import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -14,50 +13,13 @@ from katrain.cron import config
 from katrain.cron.clients.katago import KataGoClient
 from katrain.cron.db import SessionLocal
 from katrain.cron.jobs.base import BaseJob
-from katrain.core import move_grade
-from katrain.core.sgf_parser import SGF
 from katrain.cron.models import ReportTaskDB, ReportTaskMoveDB, UserGameDB
+from katrain.cron.sgf import ParsedGame, parse_game
+from katrain.cron import move_grade
 
 logger = logging.getLogger("katrain_cron.report_analyze")
 
 MAX_RETRIES = 3
-
-# SGF は katrain/core/sgf_parser.SGF で解析する —— 以前ここにあった正規表現版は
-# 置石(AB/AW)を丸ごと落とし、分岐を本譜に潰し、旧式の ;B[tt] を盤外座標にしていた。
-# 详见 docs/move-grading/current-state.md §5.2。
-#
-# 手写正则解析器曾造成的三个后果：
-#   1. AB[]/AW[] 不匹配 ⇒ 9 子局被当成分先、且起手方写死黑 ⇒ 白棋每手都像灾难；
-#   2. 分支被拍平进主线 ⇒ 出现非法重复落子，分析的局面与棋局无关；
-#   3. 老式 ;B[tt] 停一手 → 盘外坐标 U0 → KataGo 报错 → 整个任务失败。
-
-
-def _parse_sgf(sgf: str) -> tuple[int, float, str, list[tuple[str, str]], list[list[str]], str]:
-    """解析 SGF。
-
-    返回 ``(board_size, komi, rules, moves, initial_stones, initial_player)``。
-    ``moves`` 只走主线（每个节点取 children[0]），停一手是 ``"pass"``。
-    ``initial_stones`` 是 ``[[player, gtp], ...]``，让子石就在这里。
-    ``initial_player`` 由 PL / 首手颜色 / 让子推出，不再写死 "B"。
-    """
-    root = SGF.parse_sgf(sgf or "")
-
-    board_size = root.board_size[0]
-    komi = root.komi
-    rules = ((root.ruleset or "chinese").strip().lower()) or "chinese"
-
-    initial_stones = [[m.player, m.gtp()] for m in root.placements]
-    initial_player = root.initial_player
-
-    moves: list[tuple[str, str]] = []
-    node = root
-    while node.children:
-        node = node.children[0]          # 只走主线，分支不进
-        mv = node.move
-        if mv is None:                   # 纯摆子节点（罕见），不算一手
-            continue
-        moves.append((mv.player, mv.gtp()))
-    return board_size, komi, rules, moves, initial_stones, initial_player
 
 
 def _ownership_grid(raw: Any, board_size: int) -> list[list[float]] | None:
@@ -227,16 +189,8 @@ class ReportAnalyzerJob(BaseJob):
                 db.commit()
                 return
 
-            try:
-                board_size, komi, rules, moves, initial_stones, initial_player = _parse_sgf(game.sgf_content)
-            except Exception as exc:
-                # 换成真 SGF 解析器之后，畸形 SGF 会抛而不是静默产出垃圾着法。
-                # 让任务明确失败并把原因写进去，而不是把异常抛穿整个调度循环。
-                logger.warning("Report task %d: SGF parse failed: %s", task_id, exc)
-                task.status = "failed"
-                task.error_message = f"SGF parse failed: {exc}"
-                db.commit()
-                return
+            parsed = parse_game(game.sgf_content)
+            moves = parsed.moves
             requested_visits = task.requested_visits or 500
             resume_from = self._get_resume_move_number(db, task_id)
             task.status = "running"
@@ -256,10 +210,7 @@ class ReportAnalyzerJob(BaseJob):
 
             result = await self._analyze_position(
                 task_id=task_id,
-                board_size=board_size,
-                komi=komi,
-                rules=rules,
-                moves=moves,
+                parsed=parsed,
                 move_number=move_number,
                 requested_visits=requested_visits,
                 initial_stones=initial_stones,
@@ -309,15 +260,14 @@ class ReportAnalyzerJob(BaseJob):
     async def _analyze_position(
         self,
         task_id: int,
-        board_size: int,
-        komi: float,
-        rules: str,
-        moves: list[tuple[str, str]],
+        parsed: ParsedGame,
         move_number: int,
         requested_visits: int,
         initial_stones: list[list[str]] | None = None,
         initial_player: str = "B",
     ) -> dict[str, Any] | None:
+        board_size = parsed.board_size
+        moves = parsed.moves
         played = [[color, coord] for color, coord in moves[:move_number]]
 
         # Per-move retry (3 attempts, 2s delay)
@@ -327,15 +277,15 @@ class ReportAnalyzerJob(BaseJob):
                 response = await self._katago.analyze(
                     request_id=f"report_{task_id}_{move_number}",
                     moves=played,
-                    rules=rules,
-                    komi=komi,
+                    rules=parsed.rules,
+                    komi=parsed.komi,
                     board_size=board_size,
                     max_visits=requested_visits,
                     analyze_turns=[len(played)],
                     include_ownership=True,
                     include_policy=False,
-                    initial_stones=initial_stones or [],
-                    initial_player=initial_player,
+                    initial_stones=parsed.initial_stones,
+                    initial_player=parsed.initial_player,
                     priority=config.REPORT_ANALYSIS_PRIORITY,
                 )
                 break
@@ -406,9 +356,10 @@ class ReportAnalyzerJob(BaseJob):
                 }
             )
 
-        # 着手评价。阈值真源是 katrain/core/move_grade.yaml。
+        # 着手评价。阈值真源是 katrain/core/move_grade.yaml；
+        # katrain/cron/move_grade.py 是由它生成的 stdlib-only 副本（不跨包、不需要 PyYAML）。
         # 注意 move_number 是「落子后」的局面序号，也就是这手棋的序号。
-        grade = move_grade.grade_move(
+        grade = move_grade.grade(
             prev_top_moves=previous_top_moves,
             prev_visits=previous_visits,
             actual_move=actual_move,

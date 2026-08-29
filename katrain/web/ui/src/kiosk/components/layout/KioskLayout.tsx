@@ -1,44 +1,93 @@
 import { Box } from '@mui/material';
-import { Outlet, useLocation } from 'react-router-dom';
-import { ImmersiveProvider, useImmersive } from '../../context/ImmersiveContext';
-import Header from './Header';
-import Dock from './Dock';
-import SmartBoardConsole from './SmartBoardConsole';
-import { L1_PATHS } from './navTabs';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { KioskFrame } from '../../shell/KioskFrame';
+import { KioskTopbar } from '../../shell/KioskTopbar';
+import { KioskDock } from '../../shell/KioskDock';
+import { dockLevelOf } from '../../shell/dockRoutes';
+import { GoConsoleRail } from './GoConsoleRail';
 
-const CONSOLE_ROUTES = ['/kiosk/play'];
+/**
+ * 哪些 L1 屏出左边的镜像栏。规范 §5 的判据是**「这个模块的活动会不会发生在实体盘上」**——
+ * 对弈/训练营/课程/棋谱会,看直播不会。
+ * 现在覆盖 `/kiosk/play`(Task 10)、`/kiosk/tsumego`(Task 12)、`/kiosk/kifu`(Task 15)
+ * 和 `/kiosk/tutorial`(Task 17)。**棋谱这一项过判据靠的是摆谱**:选中的谱要一手一手
+ * 摆到实体盘上、灯点着下一手,那正是「活动发生在实体盘上」;**课程过判据靠的是「课上的图
+ * 会摆到盘上」**,同步行那句话说的就是它。
+ * 复盘不走这条路 —— 它的左栏装的不是实体盘镜像,见下面的 `SELF_LAYOUT_ROUTES`。
+ * ⚠️ 比的是**整条 pathname 相等**,不是前缀 —— `/kiosk/tsumego/15k` 是 L2,`dockLevelOf` 已经
+ * 把它挡在外面了,但这里写成 `startsWith` 会让两条判据各说各的,而只有一条会被人记住。
+ */
+const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tsumego', '/kiosk/kifu', '/kiosk/tutorial'];
+
+/**
+ * 自己拼两栏的屏。**复盘的左栏装的不是实体盘镜像**,是「选中的那一局」——
+ * 它的内容跟着页面里的选中状态走,外壳拿不到那个状态,所以这一屏的
+ * `.kiosk-layout-l1` 由页面自己出。外壳只负责别再往它外面套一层滚动容器
+ * (那层 `<Box overflow:auto>` 会让 434 高的两栏在自己里面再滚一次)。
+ */
+const SELF_LAYOUT_ROUTES = ['/kiosk/report', '/kiosk/settings'];
 interface KioskLayoutProps { username?: string }
 
 const KioskShell = ({ username }: KioskLayoutProps) => {
-  const { immersive } = useImmersive();
   const location = useLocation();
-  const isL1 = L1_PATHS.includes(location.pathname);
-  const showConsole = !immersive && CONSOLE_ROUTES.includes(location.pathname);
-  const showDock = !immersive && isL1; // Dock only on first-level pages
+  const navigate = useNavigate();
+
+  // 层级**只**由 dockRoutes 的词典说了算,不由路由前缀说了算。
+  // 一个真相来源:Dock 出不出、中间区 434 还是 516、主页键给不给,全从这一个数派生。
+  const level = dockLevelOf(location.pathname);
+  const showRail = level === 1 && RAIL_ROUTES.includes(location.pathname);
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', bgcolor: 'background.default' }}>
-      {!immersive && (
-        <Header
-          username={username}
-          showHome={isL1}
-          onHome={() => window.location.assign('http://127.0.0.1:8080/launcher')}
+    <KioskFrame
+      level={level}
+      // 顶栏**无条件渲染** —— 规范 §5 防跳铁律 1:「顶栏永远占 y 0–56,任何层级、
+      // 任何模块都不变高、不隐藏」。这里曾经有一个 `immersive` 开关能把它抽掉,
+      // 而 `.kiosk-content` 的 `top` 是写死的 `var(--topbar-h)`(tokens.css:419)⇒
+      // 抽掉顶栏**并不会把那 56px 还给内容**,只是在屏顶留一条空黑带。
+      // 也就是说那个开关从来没有换来任何东西,代价却是屏上少了身份、时钟和退出口。
+      // 2026-08-26 删掉,`ImmersiveContext` 一并删(它已无第二个消费者)。
+      topbar={(
+        <KioskTopbar
+          identity={{ username }}
+          // 主页键只在一级页出现(规范 §6「一级页面可在固定系统动作区显示主页入口」)。
+          // 二/三级页要退的是**这一屏**,那是页控条上的返回,不是回智星盒主页。
+          onHome={level === 1 ? () => window.location.assign('http://127.0.0.1:8080/launcher') : undefined}
         />
       )}
-      <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        {showConsole && <SmartBoardConsole />}
-        <Box component="main" sx={{ flex: 1, minWidth: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+      dock={level === 1 ? (
+        <KioskDock pathname={location.pathname} onTab={(p) => navigate(p)} />
+      ) : undefined}
+    >
+      {/* ⚠️ `.kiosk-layout-l1` 是 `grid-template-columns: 296px 680px`(tokens.css:430),
+          **右栏由页面自己提供根节点** —— `<Outlet/>` 渲染出来的那一层就是第二列。
+          各屏改造完之前它们的老 `<Box>` 会直接落进网格第二列、尺寸当场变成 680,
+          这是**预期的中间态**;Task 7 之后各屏的根换成 `.kiosk-side`。
+
+          没有左栏的那一支保留旧的 `<Box component="main" overflow:auto>` 外壳:
+          计划写的是裸 `<Outlet/>`,但那会把**每一个**二级页的滚动容器一起抽掉,而
+          `.kiosk-content` 自己是 `overflow: visible` —— 内容会溢到 Dock 上。
+          本 Task 只动有左栏的那一支,一次只改一层。 */}
+      {showRail ? (
+        <div className="kiosk-layout-l1">
+          <GoConsoleRail
+            // 课程屏那句同步行是「课上的图会摆到盘上 / 等选课」—— 规范 §5 允许的唯一差别。
+            {...(location.pathname === '/kiosk/tutorial'
+              ? { syncLeft: '课上的图会摆到盘上', syncRight: '等选课' }
+              : {})}
+          />
+          <Outlet />
+        </div>
+      ) : level === 1 && SELF_LAYOUT_ROUTES.includes(location.pathname) ? (
+        <Outlet />
+      ) : (
+        <Box component="main" sx={{ height: '100%', minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
           <Outlet />
         </Box>
-      </Box>
-      {showDock && <Dock />}
-    </Box>
+      )}
+    </KioskFrame>
   );
 };
 
-const KioskLayout = ({ username }: KioskLayoutProps) => (
-  <ImmersiveProvider>
-    <KioskShell username={username} />
-  </ImmersiveProvider>
-);
+const KioskLayout = ({ username }: KioskLayoutProps) => <KioskShell username={username} />;
 
 export default KioskLayout;

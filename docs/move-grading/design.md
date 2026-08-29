@@ -201,13 +201,28 @@ AI Sensei 的做法（从它的 bundle 里读出来的）：
 （`python -m katrain.core.move_grade --emit-ts` →
 `katrain/web/ui/src/features/analysis/gradeTiers.generated.ts`）。
 
-两个部署边界必须显式处理，不然只会在容器里炸：
+**部署边界决定了文件怎么摆。** `Dockerfile.cron` 只 `COPY katrain/cron/`，
+镜像里既没有 `katrain.core`、也没有 PyYAML；develop 的
+`tests/web_ui/test_cron_import_boundary.py` 把这条钉死了，理由写得很清楚：
+这类错**只在容器里炸、在本仓永远绿**，而 cron 崩了在屏上就是「报告一直排队」。
 
-* `Dockerfile.cron` **只 `COPY katrain/cron/`**，且此前 `katrain/cron` 对外零跨包
-  import。现在显式加了一行 COPY 带上 `move_grade.py` / `move_grade.yaml` /
-  `sgf_parser.py`，并由 `tests/test_move_grade.py::test_cron_container_copies_the_grading_module` 守着。
-* **PyYAML 与 chardet 原本不在任何 requirements 里**，两个容器各自装各自的，
-  所以三处（`requirements-cron.txt` / `requirements-web.txt` / `pyproject.toml`）都补了。
+本 track 一度想给 Dockerfile 加一行 COPY 把 `katrain/core` 的东西带过去 ——
+那是错的方向，也确实会被那条闸挡下。最终的摆法是：
+
+| 文件 | 角色 |
+|---|---|
+| `katrain/core/move_grade.yaml` | **可编辑真源**，人只改这一份 |
+| `katrain/core/move_grade_core.py` | 判级逻辑，只用标准库、函数显式收 `cfg` |
+| `katrain/core/move_grade.py` | 读 yaml + 薄封装 + **生成器** |
+| `katrain/cron/move_grade.py` | **生成物**：字面量 CONFIG + 逐字节的逻辑副本，零 import |
+| `.../features/analysis/gradeTiers.generated.ts` | **生成物**：前端档位常量 |
+
+`python -m katrain.core.move_grade --emit` 同时生成后两个。三条闸守着它：
+生成物与真源不同步会红、生成的 cron 模块出现任何一条 `import` 会红、
+同一手棋在 core 与 cron 两侧判出不同档会红。
+
+PyYAML 只加进了 `requirements-web.txt` 与 `pyproject.toml`（读 yaml 的是它们）；
+`requirements-cron.txt` **不加**，并有一条闸从另一头守着别把它悄悄加回来。
 
 ## 第一层：换估计量 ✅
 
@@ -253,9 +268,11 @@ AI Sensei 的做法（从它的 bundle 里读出来的）：
    要降序）⇒ 六级梯子塌成两级，亏 ≥0.5 目全落最差档。已恢复
    `[12, 6, 3, 1.5, 0.5, 0]`，并把 `TeachingSettingsDialog.tsx` 里按位置配对的
    档位标签一起翻正（那份升序清单大概就是当初翻错方向的诱因）。
-2. 报告管线的 SGF 解析换成 `katrain/core/sgf_parser.SGF`：让子石不再被丢、
-   起手方不再写死黑、分支不再拍平进主线、老式 `;B[tt]` 不再变成盘外坐标 `U0`。
-   畸形 SGF 现在会抛，调用方捕获后把任务标 failed 并写明原因。
+2. ~~报告管线的 SGF 解析~~ —— **develop 已于 2026-08-25 独立修掉**
+   （`katrain/cron/sgf.py`），而且做法更对：解析器写在 `katrain/cron/` 里、
+   只用标准库，不违反部署边界。合并时本 track 的那份实现整段取了 develop 的，
+   配套测试也删了（`tests/web_ui/test_cron_sgf.py` 覆盖更全）。
+   **但 2026-08-25 之前生成的让子局报告仍然是从空盘算出来的，需要重新生成。**
 3. `interface.py` 的 `delta_score` 补上白棋符号翻转。
 4. **测试静默改写被提交的 `katrain/config.json`**（见 `current-state.md` §5.3）。
    这条是修第 1 条时被它咬出来的 —— 修好的值被吃掉过两次。

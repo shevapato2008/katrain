@@ -1,18 +1,12 @@
 import { Box, Typography, Card, CardContent, Skeleton, Link } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { LiveAPI } from '../../api/live';
-import type { UpcomingMatch, UpcomingSource } from '../../types/live';
+import type { UpcomingMatch } from '../../types/live';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { i18n } from '../../i18n';
 import { useTranslation } from '../../hooks/useTranslation';
-
-const UPCOMING_SOURCE_LABELS: Record<UpcomingSource, { label: string; color: string }> = {
-  foxwq: { label: '野狐', color: '#2e7d32' },
-  yike: { label: '弈客', color: '#1976d2' },
-  yugen: { label: '幽玄', color: '#c62828' },
-  nihonkiin: { label: '棋院', color: '#e65100' },
-};
+import { liveSourceMeta } from '../../utils/liveSources';
 
 interface UpcomingListProps {
   limit?: number;
@@ -121,7 +115,7 @@ export default function UpcomingList({ limit = 20 }: UpcomingListProps) {
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     {(() => {
-                      const sourceInfo = UPCOMING_SOURCE_LABELS[event.source as UpcomingSource];
+                      const sourceInfo = liveSourceMeta(event.source);
                       return sourceInfo ? (
                         <Typography variant="caption" sx={{
                           px: 0.5, py: 0.1, borderRadius: 0.5, fontSize: '0.6rem', lineHeight: 1.2,

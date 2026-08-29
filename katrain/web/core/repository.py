@@ -296,12 +296,23 @@ class RepositoryDispatcher:
         return result
 
     async def user_games_list(self, user_id: int, **params) -> Dict:
+        """列表带上 `authority` —— **这个数是谁数的**。
+
+        在线时这一份来自云端,`total` 是**跨设备**的总数;离线时才是本机那一份。
+        两者在屏上长得一模一样,而复盘屏那句标签写死着「本机 N 局」
+        —— 联网时它说的是假话(数其实来自云端),断网时才碰巧是真的。
+        口径和 `growth/summary` 的 `authority` 一致,三档同名。
+        """
         if self.is_online:
             try:
-                return await self.remote_user_games.list_games(**params)
+                remote = await self.remote_user_games.list_games(**params)
+                if isinstance(remote, dict):
+                    return {**remote, "authority": "cloud"}
+                return remote
             except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
                 logger.warning("user_games_list remote failed, falling back to local: %s", e)
-        return self._local_user_game_repo.list(user_id=user_id, **params)
+        local = self._local_user_game_repo.list(user_id=user_id, **params)
+        return {**local, "authority": "local_cache"} if isinstance(local, dict) else local
 
     async def user_games_get(self, game_id: str, user_id: int):
         if self.is_online:
@@ -310,6 +321,43 @@ class RepositoryDispatcher:
             except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
                 logger.warning("user_games_get remote failed, falling back to local: %s", e)
         return self._local_user_game_repo.get(game_id, user_id)
+
+    # ── Growth (跨设备的总数在云端;拿不到就退回本机缓存,**并说清是缓存**) ──
+
+    async def growth_summary_remote(self, days: int) -> tuple[dict | None, str]:
+        """→ `(云端那份汇总, "cloud")`,或 `(None, 退回本机的原因)`。
+
+        **不抛。** 这个端点的降级是「换一个数据源」,不是「这次请求失败了」——
+        调用方拿到 `None` 之后会自己数本机的,并把 `authority` 标成 `local_cache`。
+        ⚠️ 退回**不是静默的**:屏上那句「本机记录」就是它的出口。
+        这里只负责把**为什么退**记进日志,四种原因各写各的 ——
+        「盒子没联网」和「云端少了这个端点」在运维那儿是两件完全不同的事,
+        而它们在用户屏上长得一模一样(都是「本机记录」)。
+        """
+        if self._remote_client is None:
+            return None, "no_remote_client"
+        if not self.is_online:
+            return None, "offline"
+        try:
+            payload = await self._remote_client.get_growth_summary(days)
+        except httpx.TransportError as exc:
+            logger.warning("growth summary: cloud unreachable, using local cache (%s)", exc)
+            return None, "remote_unreachable"
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            if status == 404:
+                # 云端是**旧版本**,没有这个端点 —— 部署歪了,不是坏了。
+                logger.warning("growth summary: cloud has no /growth/summary (404) — deploy skew?")
+                return None, "remote_missing_endpoint"
+            if status >= 500:
+                logger.warning("growth summary: cloud failed with %s, using local cache", status)
+                return None, "remote_error"
+            logger.warning("growth summary: cloud refused with %s (credentials?), using local cache", status)
+            return None, "remote_refused"
+        if not isinstance(payload, dict):
+            logger.warning("growth summary: cloud answered 200 with a non-object body")
+            return None, "remote_bad_payload"
+        return payload, "cloud"
 
     # ── Remote-only operations ──
 

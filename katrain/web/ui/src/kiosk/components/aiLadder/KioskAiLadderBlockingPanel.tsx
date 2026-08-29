@@ -13,8 +13,6 @@ import {
 import { useCountdown } from '../../../features/aiLadder/countdown';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { AiLadderBlockingGame } from '../../../features/aiLadder/types';
-import '../../../kiosk-shell/tokens.css';
-import '../../../kiosk-shell/go-tokens.css';
 import './blockingPanel.css';
 
 interface KioskAiLadderBlockingPanelProps {
@@ -59,8 +57,11 @@ const formatDuration = (seconds: number | null | undefined, absent: string): str
  *
  * 右栏是**一叠卡**(`kiosk-section` × N),不是一张大卡里塞东西 —— 见 `sample-go/02-game.png`。
  *
- * ⚠️ 根节点必须挂 `.kiosk`:`tokens.css` 整份定义在那个类上,渲染到外面 `var()` 静默求空、
- * 字体掉回 sans、**且不报错**。
+ * ⚠️ `tokens.css` 整份定义在 `.kiosk` 上,渲染到外面 `var()` 静默求空、字体掉回 sans、
+ * **且不报错**。`.kiosk` 现在由 `shell/KioskFrame` 挂在 kiosk 应用根上(Task 1),
+ * 这块面板渲染在 `AiSetupPage` 里、在框内,所以这里不再自己挂一层。
+ * 里面那个确认 `Dialog` 会 portal 到 `body`(在 `.kiosk` 外),但它是纯 MUI、
+ * 一个 `.kiosk-*` 类和 `var(--…)` 都没用到 —— 查过了,不受影响。
  */
 const KioskAiLadderBlockingPanel = ({
   game,
@@ -90,7 +91,7 @@ const KioskAiLadderBlockingPanel = ({
   const statusLine = error || (game.sync ? settlementSyncText(game.sync, remaining) : '');
 
   return (
-    <div className="kiosk kiosk-side" data-testid="kiosk-ladder-blocking-panel">
+    <div className="kiosk-side" data-testid="kiosk-ladder-blocking-panel">
       <div className="kiosk-side__fixed">
         {/* ① 状态卡:标题就是那句「这是哪一局 / 为什么挡着」。主角是**问题**,不是段位名 ——
                段位名是被挡住那一局的对手,摆成最大的字会被读成「我正要开的这局」。 */}

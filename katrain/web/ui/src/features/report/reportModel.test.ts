@@ -21,6 +21,8 @@ const task = (overrides: Partial<ReportTaskSummary> = {}): ReportTaskSummary => 
   total_moves: 120,
   analyzed_moves: 0,
   requested_visits: 500,
+  started_at: null,
+  completed_at: null,
   ...overrides,
 });
 
@@ -71,6 +73,9 @@ describe('report task state', () => {
       total_moves: 0,
       analyzed_moves: 0,
       requested_visits: requestedVisits,
+      // 乐观任务还没到过后端 —— 两个章按定义都还没有。
+      started_at: null,
+      completed_at: null,
     });
   });
 

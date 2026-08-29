@@ -816,6 +816,13 @@
   cursor: pointer;
 }
 .kiosk-actions svg { width: var(--action-icon); height: var(--action-icon); }
+/* 不可撤销的那一个(认输 / 弃权):**描边 + 字色**走 --bad,不用实心红 ——
+   52 的格子里实心红比旁边三个重一大截,整排的视觉重心会被拉到最危险的那个键上。
+   2026-08-22 补。补之前四家的稿子**都**在认输上写着 `class="danger"`,而这条规则
+   一处都不存在 —— 也就是四家的「认输」和「悔棋」长得一模一样,写了半年没人看出来。
+   同批补 :disabled:星阵局的悔棋、国象的两处认输都写了 disabled,同样没有任何视觉差别。 */
+.kiosk-actions button.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+.kiosk-actions button:disabled { opacity: .38; cursor: default; }
 .kiosk-movenav { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--nav-cell-gap); }
 .kiosk-movenav button {
   height: var(--nav-cell-h);

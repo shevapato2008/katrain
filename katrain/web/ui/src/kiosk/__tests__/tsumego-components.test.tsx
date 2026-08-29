@@ -3,8 +3,9 @@ import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 
-// ProblemCard reads its own progress entry from the unified source — mock it with a
-// configurable map so border-state / last-time branches are deterministic.
+// 这些组件各自从统一进度源读自己那条记录 —— 用一张可配置的表 mock 掉,分支才确定。
+// ⚠️ 2026-08-22(屏 13):`ProblemCard` 连同它那一组断言一起删了 —— 题目列表按稿子重画成
+// `.qgrid` 之后没人再用它(缩略棋盘换成了题号格),留着就是一份没有消费方的生产代码。
 const { mockProgress } = vi.hoisted(() => ({ mockProgress: {} as Record<string, any> }));
 vi.mock('../../context/TsumegoProgressContext', () => ({
   useTsumegoProgress: () => ({
@@ -18,12 +19,9 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
 }));
 
 import ProgressDots from '../components/tsumego/ProgressDots';
-import ProblemCard from '../components/tsumego/ProblemCard';
 import SuccessOverlay from '../components/tsumego/SuccessOverlay';
 
 const FILLED = 'rgb(88, 181, 122)'; // #58b57a — the "filled dot" color
-const GREEN = 'rgb(88, 181, 122)'; // #58b57a — completed border
-const AMBER = 'rgb(224, 162, 74)'; // #e0a24a — attempted border
 
 const renderDots = (completed: number, total: number) =>
   render(
@@ -98,74 +96,6 @@ describe('ProgressDots thresholds', () => {
   it('handles total=0 without filling any dots', () => {
     const { container } = renderDots(0, 0);
     expect(countFilled(container)).toBe(0);
-  });
-});
-
-const renderCard = (problemId: string, index = 0) =>
-  render(
-    <ThemeProvider theme={kioskTheme}>
-      <ProblemCard
-        problemId={problemId}
-        index={index}
-        initialBlack={['pd']}
-        initialWhite={['dp']}
-        onClick={() => {}}
-      />
-    </ThemeProvider>
-  );
-
-describe('ProblemCard border-state & last-time', () => {
-  beforeEach(() => {
-    for (const k of Object.keys(mockProgress)) delete mockProgress[k];
-  });
-
-  it('untouched problem → gray border (neither green nor amber)', () => {
-    const { container } = renderCard('x1');
-    const card = container.querySelector('.MuiCard-root') as HTMLElement;
-    expect(card).not.toHaveStyle(`border-color: ${GREEN}`);
-    expect(card).not.toHaveStyle(`border-color: ${AMBER}`);
-  });
-
-  it('completed problem → green border', () => {
-    mockProgress['x1'] = { completed: true, attempts: 3 };
-    const { container } = renderCard('x1');
-    const card = container.querySelector('.MuiCard-root') as HTMLElement;
-    expect(card).toHaveStyle(`border-color: ${GREEN}`);
-  });
-
-  it('attempted-not-completed problem → amber border', () => {
-    mockProgress['x1'] = { completed: false, attempts: 2 };
-    const { container } = renderCard('x1');
-    const card = container.querySelector('.MuiCard-root') as HTMLElement;
-    expect(card).toHaveStyle(`border-color: ${AMBER}`);
-  });
-
-  it('shows the problem number (index + 1)', () => {
-    renderCard('x1', 4);
-    expect(screen.getAllByText((_, el) => el?.textContent === '第 5 题').length).toBeGreaterThan(0);
-  });
-
-  it('shows "上次用时" with formatted duration when completed with lastDuration', () => {
-    mockProgress['x1'] = { completed: true, attempts: 1, lastDuration: 95 }; // 1m35s
-    renderCard('x1');
-    expect(screen.getByText((_, el) => el?.textContent === '上次用时 1m35s')).toBeInTheDocument();
-  });
-
-  it('formats sub-minute durations as seconds', () => {
-    mockProgress['x1'] = { completed: true, attempts: 1, lastDuration: 42 };
-    renderCard('x1');
-    expect(screen.getByText((_, el) => el?.textContent === '上次用时 42s')).toBeInTheDocument();
-  });
-
-  it('shows the attempt count badge (xN) when attempts > 0', () => {
-    mockProgress['x1'] = { completed: false, attempts: 4 };
-    renderCard('x1');
-    expect(screen.getByText('x4')).toBeInTheDocument();
-  });
-
-  it('does NOT show last-time for an untouched problem', () => {
-    renderCard('x1');
-    expect(screen.queryByText(/上次用时/)).not.toBeInTheDocument();
   });
 });
 

@@ -1,5 +1,5 @@
 // AUTO-GENERATED from katrain/core/move_grade.yaml -- DO NOT EDIT BY HAND.
-// Regenerate:  python -m katrain.core.move_grade --emit-ts
+// Regenerate:  python -m katrain.core.move_grade --emit
 // A test (tests/test_move_grade.py::test_generated_ts_is_in_sync) fails if this
 // file drifts from the yaml.
 

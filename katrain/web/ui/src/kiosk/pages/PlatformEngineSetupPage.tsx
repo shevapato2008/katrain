@@ -1,391 +1,313 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Typography, Button, Alert, CircularProgress, ButtonBase, Menu, MenuItem, useTheme } from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
-import { PlayArrow, ChevronLeft, ChevronRight, SmartToy } from '@mui/icons-material';
+import { Alert } from '@mui/material';
+import { useNavigate, useParams } from 'react-router-dom';
 import { API, type EngineLevel } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
-import SubPageBar from '../components/layout/SubPageBar';
+import { useVision } from '../context/VisionContext';
+import { KioskOptSeg } from '../shell/KioskOptSeg';
+import { KioskPagebar } from '../shell/KioskPagebar';
+import { KioskScrollZone } from '../shell/KioskScrollZone';
+import { KioskSecLabel } from '../shell/KioskSecLabel';
+import { KioskStepTrack } from '../shell/KioskStepTrack';
+import KioskSetupBoard from '../components/board/KioskSetupBoard';
+import { PLATFORM_META } from '../constants/platforms';
+import { interpolate } from '../utils/interpolate';
+import { playInputState, writePlayOnBoard } from '../utils/playInput';
 
-type Translate = (en: string, zh: string) => string;
+/**
+ * 屏 09 跨平台 · 人机开局(`sample-go/shots/09-platform-engine.png`,L2 布局 A)。
+ *
+ * 星阵 `supports_engine_play`,所以屏 07 上它那张卡进的是这一屏而不是大厅 ——
+ * 星阵能给的对手是那 39 档 bot,不是人(它的 `get_online_users` 直接 `return []`)。
+ *
+ * **和「自由对弈 · 开局设置」(屏 02)同一副骨架**(左盘 516 + 16 + 右栏 460,右栏整栏滚,
+ * 主行动键钉栏底),但配的是**别人家的引擎**:
+ *
+ * · **棋力档由那边下发** —— `API.platformEngineLevels` 拉的是 `GOLAXY_AI_LEVELS`
+ *   那 39 档(星猛虎 / 星壮牛 / 星皮猴 …,每档带 `level_name` / `display_elo` / `ref_rank`)。
+ *   **加载失败就是加载失败**,不给一份写死的兜底表 —— 那会让人选中一个星阵不认识的档。
+ * · **让子和贴目是联动的**,贴目不是第二个可选项:分先→黑贴 7.5,让先→贴 0,让 N 子→黑贴 N 子
+ *   (`app.js` 的口径)。所以「这一局会是」那一行写的是**算出来的结果**。
+ * · **不计时**:星阵这条链不带钟。
+ *
+ * ## ⚠️ 稿子画的那段「39 档名单」**不做**(2026-08-24 裁定)
+ *
+ * 稿子在步进器**下面**还摊开了一段 `.rows`(名字 / 展示 Elo / 对标棋力 / 「选它」)。
+ * 不照做,三条理由,每条都能落到仓里一条已经落过锤的判例或一个量出来的数上:
+ *
+ * ① **规范逐字禁掉了这一处。** 共享 `tokens.css` 在 `.kiosk-optseg` 上面写着:
+ *    「一屏里所有选择组必须用同一种控件,**不许难度用列表**、执棋方用宫格、时间用 2×2 ——
+ *    那是一屏三套选择手势」。这一屏的选择组是 落子 / 对手 / 让子 / 我执;同为**有序档**的
+ *    让子只有步进器,给对手再加一段带「选它」的列表,屏内自相矛盾。
+ * ② **屏 02 的 29 档已经按同一条判过。** `KioskStepTrack` 的文件头写着为什么不是下拉、
+ *    不是分段:7″ 触屏上下拉要点两次,而弹层正好盖住左边那块盘。39 档同理。
+ * ③ **摊开之后装不下。** 真浏览器量:39×52 + 38×8 ⇒ 那一段 390 高,而滚动视口只有 400 ——
+ *    一段吃掉 97.5% 的视口,右栏 maxScroll 2627 ≈ 6.6 屏。
+ *
+ * **不掉功能**:39 个值一个不少、全都走得到。删的是**控件**不是**值** ——
+ * 这条 track 自己的定义在 `AiSetupPage`:「把 15 档收成 3 档是删功能,不是重画」。
+ * 名单上唯一不在步进器上的那一列(`ref_rank`)已经并进 `.catmeta`。
+ *
+ * ## 这一版改掉的三样
+ *
+ * ① **那块自己画的 300px `<svg>` 棋盘预览没了**,换成共享的 `KioskSetupBoard` ——
+ *    布局 A 的左栏是 516 的真盘,四棋类同一套刻度带与木框;原来那块是这一屏自己发明的。
+ * ② **两个 MUI `Menu` 下拉换成档位轨**(`KioskStepTrack`)。理由和屏 02 一样:
+ *    7″ 触屏上下拉要点两次才看得见选项,而弹层正好盖住左边那块盘 —— 那块盘画的就是
+ *    「按下开始之后会出现的局面」,调让子时它是唯一的反馈。
+ * ③ **补上「怎么落子」那颗开关**。屏 02/03/04 已经接了(`utils/playInput`),
+ *    这一屏之前漏了 —— 于是同一台盒子上,自由对弈选得了屏幕,跨平台却选不了。
+ *    这一屏路数恒 19(星阵只开 19 路),所以 `notNineteen` 那一条永远不成立。
+ */
 
-// Board wood — the goban surface, not a UI chrome color, so it stays a local literal
-// (not a theme token) even after the const-C palette reconcile below.
-const WOOD = '#d8b47e';
-
-// 让子 (handicap) options — mirrors Golaxy's 自由对弈 labels: 分先, 让先, 让2子..让9子 (no 1).
-const handicapOptions = (t: Translate): { value: number; label: string }[] => [
-  { value: 0, label: t('Even', '分先') },
-  { value: -1, label: t('Black first', '让先') },
-  { value: 2, label: t('Handicap 2', '让2子') },
-  { value: 3, label: t('Handicap 3', '让3子') },
-  { value: 4, label: t('Handicap 4', '让4子') },
-  { value: 5, label: t('Handicap 5', '让5子') },
-  { value: 6, label: t('Handicap 6', '让6子') },
-  { value: 7, label: t('Handicap 7', '让7子') },
-  { value: 8, label: t('Handicap 8', '让8子') },
-  { value: 9, label: t('Handicap 9', '让9子') },
-];
-
-// Derived komi label (display-only; server derives the actual komi). Matches the approved
-// mockup: 分先→黑贴 7.5, 让先→贴 0, 让N子→黑贴 N 子 (Golaxy app.js: komi 7.5/0/N chinese).
-const komiLabel = (handicap: number, t: Translate): string => {
-  if (handicap === 0) return t('Black komi 7.5', '黑贴 7.5');
-  if (handicap === -1) return t('No komi', '贴 0');
-  return t(`Black komi ${handicap}`, `黑贴 ${handicap} 子`);
-};
-
-const handicapShort = (handicap: number, t: Translate): string => {
-  if (handicap === 0) return t('Even', '分先');
-  if (handicap === -1) return t('Black first', '让先');
-  return t(`Handicap ${handicap} stones`, `让 ${handicap} 子`);
-};
-
-// (col, row) of the N standard handicap star points — same placement as the backend
-// (near=3, far=15, middle=9). Star points are symmetric, so orientation is irrelevant here.
-const handicapPoints = (n: number): [number, number][] => {
-  if (n < 2) return [];
-  const near = 3, far = 15, mid = 9;
-  const pts: [number, number][] = [[far, far], [near, near], [far, near], [near, far]];
-  if (n % 2 === 1) pts.push([mid, mid]);
-  pts.push([near, mid], [far, mid], [mid, near], [mid, far]);
-  return pts.slice(0, n);
-};
-
-const PREVIEW = 300;
-
-const BoardPreview = ({ handicap }: { handicap: number }) => {
-  const N = 19, pad = 14, S = PREVIEW;
-  const step = (S - pad * 2) / (N - 1);
-  const pt = (i: number) => pad + i * step;
-  const stars = [3, 9, 15];
-  const rad = step * 0.46;
-  const black = handicapPoints(handicap);
-  const white: [number, number][] = handicap >= 2 ? [[16, 3]] : []; // illustrative AI 白应手
-
-  return (
-    <Box
-      component="svg"
-      viewBox={`0 0 ${S} ${S}`}
-      sx={{ width: '100%', height: 'auto', display: 'block', borderRadius: 1, bgcolor: WOOD }}
-      role="img"
-      aria-label="19 路棋盘预览"
-    >
-      {Array.from({ length: N }).map((_, i) => (
-        <g key={i}>
-          <line x1={pt(0)} y1={pt(i)} x2={pt(N - 1)} y2={pt(i)} stroke="#7a5c34" strokeWidth={1} />
-          <line x1={pt(i)} y1={pt(0)} x2={pt(i)} y2={pt(N - 1)} stroke="#7a5c34" strokeWidth={1} />
-        </g>
-      ))}
-      {stars.map((r) => stars.map((c) => (
-        <circle key={`s${r}-${c}`} cx={pt(c)} cy={pt(r)} r={2.6} fill="#5a4022" />
-      )))}
-      {black.map(([c, r], i) => (
-        <circle key={`b${i}`} cx={pt(c)} cy={pt(r)} r={rad} fill="#141414" stroke="#000" strokeWidth={0.6} />
-      ))}
-      {white.map(([c, r], i) => (
-        <circle key={`w${i}`} cx={pt(c)} cy={pt(r)} r={rad} fill="#efeae0" stroke="#9c9484" strokeWidth={0.6} />
-      ))}
-    </Box>
-  );
-};
+/** 让子 10 挡:分先 / 让先 / 让 2 – 让 9 子。**两头禁用不回绕** —— 见 `KioskStepTrack`。 */
+const HANDICAP_TRACK = [0, -1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
 const PlatformEngineSetupPage = () => {
-  const { platform } = useParams<{ platform: string }>();
+  const { platform = 'golaxy' } = useParams<{ platform: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { token } = useAuth();
-  const theme = useTheme();
+  const { isVisionEnabled } = useVision();
+  const meta = PLATFORM_META[platform] ?? { label: platform, labelCn: platform, color: '#888' };
 
   const [levels, setLevels] = useState<EngineLevel[]>([]);
   const [levelsLoading, setLevelsLoading] = useState(true);
-  const [levelsError, setLevelsError] = useState('');
-
+  // ⚠️ `null` = 没失败;`''` = 失败了但服务端没给话。**存的不是译文** ——
+  // `useTranslation()` 的 `t` 每次渲染都是新函数,把它放进 effect 依赖,这个 effect
+  // 每帧重跑一次(屏 06 刚栽过同一个:`networkidle` 永远等不到)。
+  const [levelsError, setLevelsError] = useState<string | null>(null);
   const [level, setLevel] = useState<number | null>(null);
-  const [handicap, setHandicap] = useState<number>(0);
+  const [handicapIdx, setHandicapIdx] = useState(0);
   const [humanColor, setHumanColor] = useState<'B' | 'W' | 'nigiri'>('nigiri');
-
-  const [hcAnchor, setHcAnchor] = useState<null | HTMLElement>(null);
-  const [lvAnchor, setLvAnchor] = useState<null | HTMLElement>(null);
-
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState('');
 
+  const handicap = HANDICAP_TRACK[handicapIdx];
+
   useEffect(() => {
     let cancelled = false;
-    const fetchLevels = async () => {
-      if (!platform || !token) return;
-      setLevelsLoading(true);
-      setLevelsError('');
-      try {
-        const { levels: fetched } = await API.platformEngineLevels(platform, token);
+    if (!platform || !token) return () => { cancelled = true; };
+    setLevelsLoading(true);
+    setLevelsError(null);
+    API.platformEngineLevels(platform, token)
+      .then(({ levels: fetched }) => {
         if (cancelled) return;
         setLevels(fetched);
-        // Default to a mid/weak level: prefer level_name === '1级', else first row.
-        const defaultRow = fetched.find((l) => l.level_name === '1级') || fetched[0];
-        if (defaultRow) setLevel(defaultRow.elo_score);
-      } catch (e: any) {
-        if (!cancelled) setLevelsError(e.message || t('Failed to load levels', '加载棋力等级失败'));
-      } finally {
-        if (!cancelled) setLevelsLoading(false);
-      }
-    };
-    fetchLevels();
+        const sorted = [...fetched].sort((a, b) => a.elo_score - b.elo_score);
+        // 默认停在最弱那一档 —— 一个没打过的人被默认丢给中盘 bot,第一局就没法看。
+        if (sorted.length) setLevel(sorted[0].elo_score);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setLevelsError(e instanceof Error ? e.message : '');
+      })
+      .finally(() => { if (!cancelled) setLevelsLoading(false); });
     return () => { cancelled = true; };
   }, [platform, token]);
 
-  // Levels sorted weak→strong for the ◀ ▶ stepper.
-  const sortedLevels = useMemo(
-    () => [...levels].sort((a, b) => a.elo_score - b.elo_score),
-    [levels],
+  const sorted = useMemo(() => [...levels].sort((a, b) => a.elo_score - b.elo_score), [levels]);
+  const currentIdx = sorted.findIndex((l) => l.elo_score === level);
+  const current = currentIdx >= 0 ? sorted[currentIdx] : null;
+
+  // 三段:设备能不能 / 这一局想不想 / 实际落在哪。路数恒 19,所以只剩摄像头那一条。
+  const [inputTick, setInputTick] = useState(0);
+  const playInput = useMemo(
+    () => playInputState(isVisionEnabled, 19),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- inputTick 就是「偏好刚被改过」这个信号
+    [isVisionEnabled, inputTick],
   );
-  const currentIdx = sortedLevels.findIndex((l) => l.elo_score === level);
-  const currentLevel = currentIdx >= 0 ? sortedLevels[currentIdx] : null;
-  const stepLevel = (delta: number) => {
-    const next = currentIdx + delta;
-    if (next >= 0 && next < sortedLevels.length) setLevel(sortedLevels[next].elo_score);
-  };
 
-  const currentHandicapLabel = handicapOptions(t).find((o) => o.value === handicap)?.label ?? '';
-  const colorOptions = [
-    { value: 'nigiri' as const, label: t('Nigiri', '猜先') },
-    { value: 'B' as const, label: t('Take Black', '执黑') },
-    { value: 'W' as const, label: t('Take White', '执白') },
-  ];
-  const colorShort = humanColor === 'nigiri' ? t('Nigiri', '猜先')
-    : humanColor === 'B' ? t('Take Black', '执黑') : t('Take White', '执白');
+  const handicapLabel = handicap === 0 ? t('setup:even', '分先')
+    : handicap === -1 ? t('platform:black_first', '让先')
+      : interpolate(t('setup:handicap_n', '让 {n} 子'), { n: handicap });
+  const komiLabel = handicap === 0 ? t('platform:komi_75', '黑贴 7.5 目')
+    : handicap === -1 ? t('platform:komi_0', '不贴目')
+      : interpolate(t('platform:komi_n', '黑贴 {n} 子'), { n: handicap });
+  const colorLabel = humanColor === 'nigiri' ? t('platform:nigiri', '猜先')
+    : humanColor === 'B' ? t('setup:take_black', '执黑') : t('setup:take_white', '执白');
 
-  const boardNote = handicap >= 2
-    ? t(`Preview handicap ${handicap}`, `当前：让 ${handicap} 子（黑先摆 ${handicap} 星位，AI 白先应手）`)
-    : handicap === 0
-      ? t('Preview even', '当前：分先（黑先行 · 黑贴 7.5）')
-      : t('Preview sente', '当前：让先（黑先行 · 不贴目）');
-
-  const handleStart = async () => {
-    if (!platform || !token || level === null) return;
+  const start = async () => {
+    if (!token || level === null) return;
     setStartError('');
     setStarting(true);
     try {
       const { session_id } = await API.platformEngineStart(
-        platform,
-        { level, human_color: humanColor, handicap },
-        token,
+        platform, { level, human_color: humanColor, handicap }, token,
       );
       navigate(`/kiosk/play/cross-platform/engine/game/${session_id}`);
-    } catch (e: any) {
-      setStartError(e.message || t('Failed to start game', '创建对局失败'));
+    } catch (e) {
+      setStartError(e instanceof Error ? e.message : t('Failed to start game', '创建对局失败'));
     } finally {
       setStarting(false);
     }
   };
 
-  // ---- small styled control fragments (match mockup .dd / .chip / .level) ----
-  const fixedDd = (cap: string, val: string) => (
-    <Box sx={{
-      display: 'inline-flex', alignItems: 'center', gap: 1.25, minHeight: 46, px: 1.75,
-      borderRadius: 2.5, border: '1px dashed', borderColor: 'divider', bgcolor: 'var(--raise2)',
-    }}>
-      <Typography sx={{ color: 'text.disabled', fontSize: 13 }}>{cap}</Typography>
-      <Typography sx={{ color: 'text.secondary', fontSize: 15, fontWeight: 500 }}>{val}</Typography>
-    </Box>
-  );
-
-  const hint = (text: string) => (
-    <Typography sx={{ color: 'text.disabled', fontSize: 12, mt: 1, width: '100%' }}>{text}</Typography>
-  );
-
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <SubPageBar title={t('Play vs AI', '人机对弈')} to="/kiosk/play/cross-platform" />
-      <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        {/* Left: board preview console — fixed width, mirrors AiSetupPage's compact layout. */}
-        <Box
-          sx={{
-            width: 322, flexShrink: 0, overflow: 'hidden', m: 2, mr: 0,
-            bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider',
-            borderRadius: 3, p: 2, display: 'flex', flexDirection: 'column',
-          }}
+    <div className="kiosk-layout-a" data-testid="platform-engine-setup-page">
+      {/* 左栏 = 按下「开始对局」后真会出现的那个局面。让先(−1)盘上不摆子。 */}
+      <KioskSetupBoard
+        size={19}
+        handicap={handicap > 0 ? handicap : 0}
+        color={humanColor === 'B' ? 'black' : humanColor === 'W' ? 'white' : undefined}
+      />
+
+      <div className="kiosk-rail">
+        <KioskPagebar
+          testId="platform-engine-pagebar"
+          backLabel={t('platform:back_to_platforms', '跨平台')}
+          onBack={() => navigate('/kiosk/play/cross-platform')}
+          title={interpolate(t('platform:engine_title', '{name} · 人机'), { name: t(meta.label, meta.labelCn) })}
+          sub={t('platform:engine_sub', '开局设置 · 不计入盒内段位')}
+        />
+
+        <KioskScrollZone className="setgrp-scroll">
+          {/* ── 怎么落子 ── 开局后不可改的那一组,自带强调框 */}
+          <section className="setgrp inputgrp" data-testid="setup-input-group">
+            <KioskSecLabel
+              zh={t('setup:input', '怎么落子')}
+              en="Input"
+              value={t('setup:locked_after_start', '开局后不可改')}
+            />
+            <div className="igrow">
+              <span className="iglab">{t('setup:input_where', '落子')}</span>
+              <KioskOptSeg
+                ariaLabel={t('setup:input_where', '落子')}
+                testId="setup-input"
+                value={playInput.onBoard ? 'board' : 'screen'}
+                onChange={(v) => { writePlayOnBoard(v === 'board'); setInputTick((n) => n + 1); }}
+                options={[
+                  { value: 'screen', label: t('setup:on_screen', '屏幕') },
+                  { value: 'board', label: t('setup:on_board', '实体盘'), disabled: !playInput.available },
+                ]}
+              />
+            </div>
+            <div className="igrow">
+              <span className="iglab">{t('setup:size', '路数')}</span>
+              {/* 读数不是控件:星阵只开 19 路,画成一格可选的分段等于承诺一个不存在的选项。 */}
+              <span className="igfix" data-testid="setup-size-fixed">
+                <b>{t('19x19', '19 路')}</b>
+                {interpolate(t('platform:only_19', '{name}只开 19 路 · 中国规则'), { name: t(meta.label, meta.labelCn) })}
+              </span>
+            </div>
+            {!playInput.available && (
+              <p className="kiosk-opthint">
+                {t('setup:no_camera_hint', '这台盒子还没标定摄像头，实体盘这条路现在走不了')}
+              </p>
+            )}
+          </section>
+
+          {/* ── 对手 ── 39 档由平台下发 */}
+          <section className="setgrp" data-testid="setup-opponent">
+            {levelsLoading ? (
+              <>
+                <KioskSecLabel zh={t('platform:opponent', '对手')} en="Opponent" />
+                <p className="lobbyempty">{t('lobby:loading', '正在读…')}</p>
+              </>
+            ) : levelsError !== null ? (
+              <>
+                <KioskSecLabel zh={t('platform:opponent', '对手')} en="Opponent" />
+                {/* **不给兜底表。** 编一份档次出来,人选中的会是星阵不认识的那一档。 */}
+                <Alert severity="error" sx={{ fontSize: '0.75rem' }}>
+                  {levelsError || t('platform:levels_failed', '没能从平台取回棋力档')}
+                </Alert>
+              </>
+            ) : (
+              <>
+                <KioskStepTrack
+                  label={t('platform:opponent', '对手')}
+                  en="Opponent"
+                  secval={interpolate(
+                    t('platform:levels_from', '{name}下发 {n} 档'),
+                    { name: t(meta.label, meta.labelCn), n: sorted.length },
+                  )}
+                  count={sorted.length}
+                  index={Math.max(0, currentIdx)}
+                  onChange={(i) => setLevel(sorted[i].elo_score)}
+                  value={current ? `${current.name} · ${current.level_name}` : ''}
+                  meta={current ? (
+                    <>
+                      {interpolate(t('platform:rung_n', '第 {i} / {n} 档'), { i: currentIdx + 1, n: sorted.length })}
+                      {' · '}
+                      <b>{interpolate(t('platform:display_elo', '展示 Elo {v}'), { v: current.display_elo })}</b>
+                      {/* `ref_rank` 是那份名单里**唯一不在步进器上的一列** —— 顶上六档是
+                          「野狐 9D」「职业 / 野狐 9D+」,掉了就是掉事实。名单不做了,它得搬到这儿。 */}
+                      {current.ref_rank ? <> · {interpolate(t('platform:ref_rank', '对标{r}'), { r: current.ref_rank })}</> : null}
+                    </>
+                  ) : undefined}
+                  decLabel={t('platform:weaker', '换弱一档的对手')}
+                  incLabel={t('platform:stronger', '换强一档的对手')}
+                  testId="setup-level"
+                />
+              </>
+            )}
+          </section>
+
+          {/* ── 让子 ── */}
+          <section className="setgrp" data-testid="setup-handicap">
+            <KioskStepTrack
+              label={t('setup:handicap', '让子')}
+              en="Handicap"
+              count={HANDICAP_TRACK.length}
+              index={handicapIdx}
+              onChange={setHandicapIdx}
+              value={handicapLabel}
+              meta={interpolate(
+                t('platform:handicap_range', '{n} 挡 · 分先 / 让先 / 让 2 – 让 9 子'),
+                { n: HANDICAP_TRACK.length },
+              )}
+              decLabel={t('setup:handicap_less', '少让一子')}
+              incLabel={t('setup:handicap_more', '多让一子')}
+              testId="setup-handicap-track"
+            />
+          </section>
+
+          {/* ── 我执 ── 顺序照实现:猜先 / 执黑 / 执白 */}
+          <section className="setgrp" data-testid="setup-side">
+            <KioskSecLabel zh={t('setup:my_side', '我执')} en="Side" />
+            <KioskOptSeg
+              ariaLabel={t('setup:my_side', '我执')}
+              testId="setup-side-seg"
+              value={humanColor}
+              onChange={setHumanColor}
+              options={[
+                { value: 'nigiri', label: <><span className="disc rnd" />{t('platform:nigiri', '猜先')}</> },
+                { value: 'B', label: <><span className="disc b" />{t('setup:take_black', '执黑')}</> },
+                { value: 'W', label: <><span className="disc w" />{t('setup:take_white', '执白')}</> },
+              ]}
+            />
+          </section>
+
+          {/* ── 这一局会是 ── 贴目跟着让子算,不是另一个可选项 */}
+          <section className="setgrp" data-testid="setup-summary">
+            <KioskSecLabel zh={t('setup:this_game', '这一局会是')} en="Result" />
+            <p className="setexplain" data-testid="setup-summary-line">
+              <b>
+                {t('setup:chinese_rules', '中国规则')} · {handicapLabel} · {komiLabel} · {t('19x19', '19 路')}
+                {' · '}{t('platform:untimed', '不计时')} · {colorLabel}
+              </b>
+              <br />
+              {interpolate(
+                t('platform:summary_note', '贴目跟着让子算，不是另一个可选项；胜负只进{name}那边的账。'),
+                { name: t(meta.label, meta.labelCn) },
+              )}
+            </p>
+          </section>
+        </KioskScrollZone>
+
+        {startError && <Alert severity="error" sx={{ mb: 1 }}>{startError}</Alert>}
+
+        <button
+          type="button"
+          className="kiosk-primary-action"
+          data-testid="platform-engine-start"
+          disabled={starting || level === null}
+          onClick={() => { void start(); }}
         >
-          <Typography variant="overline" sx={{ color: 'text.secondary', mb: 0.5 }}>
-            {t('Board preview', '盘面预览')}
-          </Typography>
-          <Typography sx={{ color: 'text.disabled', fontSize: 12.5, mb: 1.5 }}>{boardNote}</Typography>
-          <BoardPreview handicap={handicap} />
-          <Box sx={{ display: 'flex', gap: 2, mt: 1.5, fontSize: 12.5, color: 'text.secondary' }}>
-            <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#141414', boxShadow: '0 0 0 1px #000' }} />
-              {t('Handicap (black)', '让子(黑)')}
-            </Box>
-            <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
-              <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#efeae0' }} />
-              {t('AI (white)', 'AI(白)')}
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Right: compact 2-column settings — structurally no-scroll (overflow:hidden). */}
-        <Box
-          data-testid="engine-setup-noscroll-root"
-          sx={{ flex: 1, p: 3, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}
-        >
-          <Typography sx={{ color: 'text.disabled', fontSize: 13, mb: 1.5 }}>
-            {t('Golaxy', '星阵围棋')} · <Box component="span" sx={{ color: 'primary.light', fontWeight: 600 }}>{t('Free game', '自由对弈')}</Box>
-          </Typography>
-
-          {levelsLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}><CircularProgress /></Box>
-          ) : levelsError ? (
-            <Alert severity="error">{levelsError}</Alert>
-          ) : (
-            <>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, alignContent: 'start' }}>
-                {/* Board — fixed */}
-                {fixedDd(t('Board', '棋盘'), t('19 lines', '19 路'))}
-
-                {/* Handicap — dropdown trigger */}
-                <ButtonBase
-                  aria-label={t('Select handicap', '选择让子')}
-                  onClick={(e) => setHcAnchor(e.currentTarget)}
-                  sx={{
-                    display: 'inline-flex', alignItems: 'center', gap: 1.25, minHeight: 46, px: 1.75,
-                    borderRadius: 2.5, border: '1px solid', borderColor: 'primary.main', bgcolor: 'background.paper',
-                    boxShadow: '0 0 0 1px rgba(93,130,112,.3)', justifyContent: 'space-between',
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                    <Typography sx={{ color: 'text.disabled', fontSize: 13 }}>{t('Handicap', '让子')}</Typography>
-                    <Typography sx={{ color: 'text.primary', fontSize: 15, fontWeight: 600 }}>{currentHandicapLabel}</Typography>
-                  </Box>
-                  <Typography sx={{ color: 'text.disabled', fontSize: 12 }}>▾</Typography>
-                </ButtonBase>
-                <Menu anchorEl={hcAnchor} open={Boolean(hcAnchor)} onClose={() => setHcAnchor(null)}>
-                  {handicapOptions(t).map((o) => (
-                    <MenuItem
-                      key={o.value}
-                      selected={o.value === handicap}
-                      onClick={() => { setHandicap(o.value); setHcAnchor(null); }}
-                    >
-                      {o.label}
-                    </MenuItem>
-                  ))}
-                </Menu>
-
-                {/* Komi — fixed, derived from handicap */}
-                {fixedDd(t('Komi points', '贴目'), komiLabel(handicap, t))}
-
-                {/* Timing — fixed */}
-                {fixedDd(t('Timing', '计时'), t('Untimed', '不计时'))}
-
-                {/* Take color — segmented, spans both columns */}
-                <Box sx={{ gridColumn: '1 / -1' }}>
-                  <Typography sx={{ fontSize: 13, color: 'text.disabled', mb: 0.5 }}>{t('First move', '先手')}</Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    {colorOptions.map((o) => {
-                      const sel = humanColor === o.value;
-                      return (
-                        <ButtonBase
-                          key={o.value}
-                          onClick={() => setHumanColor(o.value)}
-                          sx={{
-                            flex: 1, py: 1.25, px: 1.75, borderRadius: 2.5, fontSize: 15,
-                            border: '1px solid', borderColor: sel ? 'primary.main' : 'divider',
-                            bgcolor: sel ? 'primary.dark' : 'background.paper', color: sel ? '#fff' : 'text.secondary',
-                            fontWeight: sel ? 600 : 400, transition: 'all 100ms ease-out',
-                            '&:active': { transform: 'scale(0.96)' },
-                          }}
-                        >
-                          {o.label}
-                        </ButtonBase>
-                      );
-                    })}
-                  </Box>
-                </Box>
-
-                {/* Opponent level — stepper, spans both columns */}
-                <Box sx={{ gridColumn: '1 / -1' }}>
-                  <Typography sx={{ fontSize: 13, color: 'text.disabled', mb: 0.5 }}>{t('Opponent', '对手')}</Typography>
-                  <Box sx={{
-                    display: 'flex', alignItems: 'center', gap: 1.75, bgcolor: 'background.paper',
-                    border: '1px solid', borderColor: 'divider', borderRadius: 3, p: '10px 14px', width: '100%',
-                  }}>
-                    <ButtonBase
-                      aria-label={t('Weaker level', '降低等级')}
-                      disabled={currentIdx <= 0}
-                      onClick={() => stepLevel(-1)}
-                      sx={{ color: 'text.secondary', borderRadius: 1.5, p: 0.5, '&.Mui-disabled': { color: 'text.disabled', opacity: 0.4 } }}
-                    >
-                      <ChevronLeft />
-                    </ButtonBase>
-                    <ButtonBase
-                      aria-label={t('Choose opponent level', '选择对手等级')}
-                      onClick={(e) => setLvAnchor(e.currentTarget)}
-                      sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, justifyContent: 'flex-start', borderRadius: 2, py: 0.5 }}
-                    >
-                      <Box sx={{ width: 44, height: 44, borderRadius: 2.5, bgcolor: 'var(--raise2)', display: 'grid', placeItems: 'center', color: 'text.secondary' }}>
-                        <SmartToy fontSize="small" />
-                      </Box>
-                      <Box sx={{ textAlign: 'left' }}>
-                        <Typography sx={{ fontSize: 16, fontWeight: 600, color: 'text.primary' }}>{currentLevel?.name ?? '—'}</Typography>
-                        <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
-                          {currentLevel
-                            ? `${currentLevel.level_name} · 展示Elo ${currentLevel.display_elo} · ${currentLevel.ref_rank}`
-                            : ''}
-                        </Typography>
-                      </Box>
-                    </ButtonBase>
-                    <ButtonBase
-                      aria-label={t('Stronger level', '提高等级')}
-                      disabled={currentIdx < 0 || currentIdx >= sortedLevels.length - 1}
-                      onClick={() => stepLevel(1)}
-                      sx={{ color: 'text.secondary', borderRadius: 1.5, p: 0.5, '&.Mui-disabled': { color: 'text.disabled', opacity: 0.4 } }}
-                    >
-                      <ChevronRight />
-                    </ButtonBase>
-                  </Box>
-                  <Menu anchorEl={lvAnchor} open={Boolean(lvAnchor)} onClose={() => setLvAnchor(null)}>
-                    {sortedLevels.map((l) => (
-                      <MenuItem
-                        key={l.elo_score}
-                        selected={l.elo_score === level}
-                        onClick={() => { setLevel(l.elo_score); setLvAnchor(null); }}
-                      >
-                        {`${l.name} · ${l.level_name} · 展示Elo ${l.display_elo}`}
-                      </MenuItem>
-                    ))}
-                  </Menu>
-                </Box>
-              </Box>
-
-              {hint(t(
-                'Handicap dropdown: even / black-first / 2..9 stones. Komi follows handicap automatically. Board 19 is Chinese-rules only; 39-level Golaxy bots.',
-                '让子下拉：分先 / 让先 / 让2子…让9子。贴目随让子自动定，不单独设。19 路仅中国规则；星阵 39 级 bot。',
-              ))}
-
-              <Box sx={{ mt: 'auto', pt: 2 }}>
-                {startError && <Alert severity="error" sx={{ mb: 1.5 }}>{startError}</Alert>}
-                <Button
-                  fullWidth
-                  startIcon={<PlayArrow />}
-                  disabled={starting || level === null}
-                  onClick={handleStart}
-                  sx={{
-                    py: 2, borderRadius: 3.25, fontSize: 18, fontWeight: 650, letterSpacing: '2px', color: '#fff',
-                    background: `linear-gradient(180deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-                    '&:hover': { background: `linear-gradient(180deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})` },
-                    '&.Mui-disabled': { color: 'text.disabled', background: 'var(--raise2)' },
-                  }}
-                >
-                  {starting ? t('Creating...', '创建中...') : t('Start Game', '开始对弈')}
-                </Button>
-                <Typography sx={{ color: 'text.disabled', fontSize: 12.5, textAlign: 'center', mt: 1.5 }}>
-                  {`${t('Chinese rules', '中国规则')} · ${handicapShort(handicap, t)} · ${komiLabel(handicap, t)} · ${t('19 lines', '19 路')} · ${t('Untimed', '不计时')} · ${colorShort}`}
-                </Typography>
-              </Box>
-            </>
-          )}
-        </Box>
-      </Box>
-    </Box>
+          {starting ? t('Creating...', '创建中...') : t('setup:start', '开始对局')}
+        </button>
+      </div>
+    </div>
   );
 };
 

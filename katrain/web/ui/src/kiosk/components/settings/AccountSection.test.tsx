@@ -15,7 +15,9 @@ describe('AccountSection ladder summary', () => {
     expect(screen.getByText('累计净胜分：+1')).toBeInTheDocument();
     expect(screen.getByText('服务器对弈')).toBeInTheDocument();
     expect(screen.getByText('已认证')).toBeInTheDocument();
-    expect(screen.getByTestId('ai-ladder-account-summary')).toHaveStyle({ maxHeight: '132px', overflow: 'hidden' });
+    // 2026-08-23 重排成外壳的行之后,那一行的高度由 `.kiosk-row` 给(52) ——
+    // **不在 jsdom 里断言它**:类给的高度 jsdom 看不见,判据在真浏览器那份几何闸里。
+    expect(screen.getByTestId('ai-ladder-account-summary')).toHaveClass('kiosk-row');
     expect(screen.queryByText('最近5盘仅供展示，升降段只看累计净胜分')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '查看AI段位详情' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();

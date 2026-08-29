@@ -1,0 +1,669 @@
+import { expect, test, type Page } from '@playwright/test';
+
+/**
+ * 屏 02 · 对局中(§11 **布局 A**)—— 真浏览器 1024×600 实测。
+ *
+ * 这一条守三样,都是**浏览器算出来的数**,jsdom 一条都作不了证:
+ *   ① 骨架:盘 516×516 贴 (16,70)、右栏 460、页控条 460×44@y70、返回键 36。
+ *   ② 刻度带的字心 = **屏上那条线的横坐标**。这一屏的盘是 `<canvas>`,
+ *      所以线的位置**从像素里读**,不从公式里读 —— 判据是屏上那条线,
+ *      不是「字心应该落在 (i+0.5)/N」那个版式规则(拿后者当判据会「数字漂亮、结论全假」)。
+ *   ③ 承重:整屏不滚、右栏不滚;折叠块收起后**动作区一动不动**、标题行右端那个结论**还在**。
+ *
+ * 另外两条是「禁的时候整块不渲染」:升降级局里胜率块和「图表」键**一个都不许出现**,
+ * 不许渲成灰的或者一条全 `—` 的空图。
+ */
+
+/**
+ * ⚠️ **屏号 05 不是 02。** 计划书里这一屏写作「屏 02」,那是十屏稿的编号;
+ * 稿子 2026-08-21 扩到 27 屏后,对局中是第 5 屏(参考图 `sample-go/shots/05-game.png`)。
+ */
+
+test.use({ viewport: { width: 1024, height: 600 } });
+
+const COLS = 'ABCDEFGHJKLMNOPQRST';
+const xy = (c: string): [number, number] => [COLS.indexOf(c[0]), Number(c.slice(1)) - 1];
+
+const BLACK = ['Q16', 'Q4', 'C14', 'C11', 'Q6', 'Q10', 'K17', 'C7', 'C5', 'D8', 'R14', 'M16'];
+const WHITE = ['D4', 'D16', 'C16', 'O3', 'L3', 'F17', 'G3', 'D6', 'C4', 'F5', 'N17', 'P17'];
+
+/**
+ * 25 手的胜率/目差:第 17 手黑走坏,两条线一起掉(和稿子那张图说的是同一局)。
+ *
+ * `move`/`player` 是 2026-08-25 后端在主线循环里加的两个键(棋谱折叠块要用)。
+ * ⚠️ **`history[0]` 是根节点,没有着法** —— 口径就是这样,第 n 手落在 `history[n]`。
+ * 25 项 ⇒ 24 手 ⇒ 12 行,而星阵屏那块 body 只有一百来像素:**这份数据是造来会溢出的**,
+ * 装得下的数据量下量出来的滚动数字一概不算。
+ */
+const HISTORY = Array.from({ length: 25 }, (_, i) => ({
+  node_id: i,
+  winrate: i < 17 ? 0.5 - i * 0.004 : 0.5 - 17 * 0.004 - (i - 16) * 0.012,
+  score: i < 17 ? -i * 0.12 : -17 * 0.12 - (i - 16) * 0.55,
+  // 黑白交替,坐标就取盘上那两串 —— **谱和盘上的子对得上**,不是两套互不相干的假数据。
+  move: i === 0 ? null : (i % 2 === 1 ? BLACK[(i - 1) / 2] : WHITE[i / 2 - 1]),
+  player: i === 0 ? null : (i % 2 === 1 ? 'B' : 'W'),
+}));
+
+// `calculated_rank` 是**内部数值**,不是 `'5k'` 这种字符串:0 → 1 级、−4 → 5 级、1 → 1 段。
+// 上一版这里写了 `'5k'`,屏上画出来是「**5 段**」—— `internalToRank` 里那句
+// 「Fallback if it's already a rank string like "20k"」**从来没生效过**:
+// `parseInt('5k', 10)` = 5,不是 NaN,于是直接走了段位分支。
+// 后端给的一直是数值(`base_katrain.py:178` 的 `ai_rank_estimation`),所以那个坑是**休眠**的;
+// 但拿字符串造 fixture 会把它叫醒,而叫醒之后错的是**图**,不是代码。已登记,不在本 Task 修。
+const seat = (name: string, type: string, rank: number | string) => ({
+  player_type: type, player_subtype: '', name, calculated_rank: rank, periods_used: 0, main_time_used: 0,
+});
+
+const stateFor = (gameType: string) => ({
+  game_id: 'g-02',
+  board_size: [19, 19],
+  komi: 6.5,
+  handicap: 0,
+  ruleset: 'chinese',
+  game_type: gameType,
+  count_min_moves: 100,
+  current_node_id: 24,
+  current_node_index: 24,
+  history: HISTORY,
+  player_to_move: 'B',
+  stones: [
+    ...BLACK.map((c, i) => ['B', xy(c), null, i * 2 + 1]),
+    ...WHITE.map((c, i) => ['W', xy(c), null, i * 2 + 2]),
+  ],
+  last_move: xy('P17'),
+  prisoner_count: { B: 0, W: 0 },
+  analysis: null,
+  commentary: '',
+  is_root: false,
+  is_pass: false,
+  end_result: null,
+  children: [],
+  ghost_stones: [],
+  players_info: {
+    B: seat('访客（你）', 'player:human', ''),
+    W: seat('KataGo', 'player:ai', -4),
+  },
+  note: '',
+  ui_state: {
+    show_children: false, show_dots: false, show_hints: false, show_policy: false,
+    show_ownership: false, show_move_numbers: false, show_coordinates: true, zen_mode: false,
+  },
+});
+
+const stub = async (page: Page, gameType = 'free') => {
+  await page.addInitScript(() => {
+    localStorage.setItem('token', 'screen-02');
+    localStorage.setItem('katrain_language', 'cn');
+  });
+  await page.route('**/api/state**', (route) => route.fulfill({ json: { state: stateFor(gameType) } }));
+  await page.route('**/api/v1/**', (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === '/api/v1/auth/me') {
+      return route.fulfill({ json: { id: 1, username: '访客', rank: '5段', credits: 0 } });
+    }
+    // 取图机器上没有摄像头 —— 让实体识别整条关掉,这一屏就退成纯触屏,和硬件无关。
+    if (path === '/api/v1/vision/status') {
+      return route.fulfill({ json: { enabled: false, camera_connected: false, pose_locked: false,
+        sync_state: 'unbound', recognition_ready: false, led_connected: null, bound_session_id: null } });
+    }
+    if (path === '/api/v1/geometry/status') {
+      return route.fulfill({ status: 404, json: { detail: 'geometry disabled' } });
+    }
+    return route.fulfill({ json: {} });
+  });
+};
+
+const open = async (page: Page, gameType = 'free', route = '/kiosk/play/ai/game/g-02') => {
+  await stub(page, gameType);
+  await page.goto(route);
+  await page.waitForSelector('[data-testid="game-board"] canvas');
+  // 「图表」默认开着,但那块要等 history 到位才画得出线
+  await page.waitForLoadState('networkidle');
+};
+
+const geometry = (page: Page) => page.evaluate(() => {
+  const box = (sel: string) => {
+    const n = document.querySelector(sel) as HTMLElement | null;
+    if (!n) return null;
+    const r = n.getBoundingClientRect();
+    return {
+      x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height),
+      right: Math.round(r.right), bottom: Math.round(r.bottom),
+    };
+  };
+  const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+  return {
+    board: box('[data-testid="game-board"]'),
+    play: box('[data-testid="game-board"] .kiosk-board__play'),
+    canvas: box('[data-testid="game-board"] canvas'),
+    rail: box('.kiosk-rail'),
+    pagebar: box('[data-testid="game-pagebar"]'),
+    back: box('.kiosk-pagebar__back'),
+    actions: box('[data-testid="game-actions"]'),
+    canvasAttrW: (document.querySelector('[data-testid="game-board"] canvas') as HTMLCanvasElement).width,
+    railScrolls: rail.scrollHeight - rail.clientHeight,
+    docScrollWidth: document.documentElement.scrollWidth,
+    docScrollHeight: document.documentElement.scrollHeight,
+    innerWidth: window.innerWidth,
+    innerHeight: window.innerHeight,
+  };
+});
+
+test('布局 A 的外框:516 的盘贴 (16,70),右栏 460,页控条在右栏顶', async ({ page }) => {
+  await open(page);
+  const g = await geometry(page);
+  console.log('[02-game/geometry]', JSON.stringify(g));
+
+  /**
+   * ⚠️ **这一帧正处在报错态。** WS 没有 stub,服务端 `close(1008, "Invalid token")` 拒掉
+   * ⇒ 屏上有一条「实时连接被拒绝」。它必须走**浮层**、不占流内高度 ——
+   * 一旦回到流里(2026-03-26 从 galaxy 搬来的那块 `<Alert>` 就在流里,平时 `session.error`
+   * 是空的所以看不出来;`dc55f32e` 让它真的会填上之后),盘会被顶到 y=126、底边 642 掉出 600。
+   *
+   * 这一句把「量的是报错态」钉住:没有它,哪天有人给 WS 加了 stub,下面这一堆数就悄悄
+   * 变成「没报错时的几何」,而**真正会塌的那一态再也没人量**。
+   */
+  await expect(page.getByRole('alert')).toContainText('实时连接被拒绝');
+
+  expect(g.board!.w, '盘不是 516 宽').toBe(516);
+  expect(g.board!.h, '盘不是 516 高').toBe(516);
+  expect(g.board!.x, '盘没有贴 x=16').toBe(16);
+  expect(g.board!.y, '盘顶不在 y=70').toBe(70);
+
+  // 落子区 = 516 − 2×28(四条刻度带画在框内,不额外占外部空间)
+  expect(g.play!.w, '落子区不是 460').toBe(460);
+  expect(g.play!.h, '落子区不是 460').toBe(460);
+  expect(g.play!.x - g.board!.x, '左刻度带不是 28 宽').toBe(28);
+
+  expect(g.rail!.w, '右栏不是 460 宽').toBe(460);
+  expect(g.rail!.x - g.board!.right, '盘和右栏之间不是 16 的栏距').toBe(16);
+  expect(g.rail!.right, '右栏右缘没贴到 1008').toBe(g.innerWidth - 16);
+
+  expect(g.pagebar!.x, '页控条左缘没和右栏对齐 —— 那是布局 B 的做法').toBe(g.rail!.x);
+  expect(g.pagebar!.w, '页控条不是 460 宽').toBe(g.rail!.w);
+  expect(g.pagebar!.y, '页控条顶不在 70').toBe(70);
+  expect(g.pagebar!.h, '页控条不是 44 高').toBe(44);
+  expect(g.back!.h, '返回按钮不是 36 高').toBe(36);
+
+  expect(g.docScrollWidth, '页面横向溢出').toBeLessThanOrEqual(g.innerWidth);
+  expect(g.docScrollHeight, '页面纵向溢出 —— L3 布局 A 整屏不滚是首选形态').toBeLessThanOrEqual(g.innerHeight);
+});
+
+test('刻度带的字心 = 屏上那条线的横坐标(externalRulers 三件事一起成立才有的结果)', async ({ page }) => {
+  await open(page);
+
+  const m = await page.evaluate(() => {
+    const canvas = document.querySelector('[data-testid="game-board"] canvas') as HTMLCanvasElement;
+    const ctx = canvas.getContext('2d')!;
+    // 从**像素**里读竖线的位置:横着切一刀(取 40% 高,避开中间那条星位密集带),
+    // 找亮度的局部极小 —— 线是深色的 `--gb-line`,画在浅木底上。
+    const y = Math.round(canvas.height * 0.4);
+    const row = ctx.getImageData(0, y, canvas.width, 1).data;
+    const lum = new Float64Array(canvas.width);
+    for (let x = 0; x < canvas.width; x += 1) {
+      lum[x] = 0.299 * row[x * 4] + 0.587 * row[x * 4 + 1] + 0.114 * row[x * 4 + 2];
+    }
+    const dips: number[] = [];
+    for (let x = 3; x < canvas.width - 3; x += 1) {
+      // 比左右各 3px 都暗 8 以上 ⇒ 一条线;连着几个像素时取其中最暗的那个
+      if (lum[x] + 8 < lum[x - 3] && lum[x] + 8 < lum[x + 3]
+        && lum[x] <= lum[x - 1] && lum[x] <= lum[x + 1]) {
+        if (dips.length && x - dips[dips.length - 1] < 6) {
+          if (lum[x] < lum[dips[dips.length - 1]]) dips[dips.length - 1] = x;
+        } else dips.push(x);
+      }
+    }
+    const cRect = canvas.getBoundingClientRect();
+    // canvas 的 CSS 尺寸可能≠位图尺寸,换算回屏幕坐标
+    const k = cRect.width / canvas.width;
+    const lineCenters = dips.map((x) => cRect.x + (x + 0.5) * k);
+    const rulerCenters = Array.from(document.querySelectorAll('[data-testid="game-board"] .kiosk-board__ruler--top span'))
+      .map((s) => { const r = s.getBoundingClientRect(); return r.x + r.width / 2; });
+    const drift = lineCenters.length === rulerCenters.length
+      ? Math.max(...lineCenters.map((c, i) => Math.abs(c - rulerCenters[i])))
+      : null;
+    return {
+      lineCount: lineCenters.length,
+      rulerCount: rulerCenters.length,
+      maxDriftPx: drift === null ? null : Math.round(drift * 100) / 100,
+      // canvas 位图必须**正好等于**落子区:−8 的内边距或 floor 的格距都会在这儿露出来
+      canvasBitmapW: canvas.width,
+      canvasCssW: Math.round(cRect.width),
+      playW: Math.round((document.querySelector('[data-testid="game-board"] .kiosk-board__play') as HTMLElement).getBoundingClientRect().width),
+      topFirst: document.querySelector('[data-testid="game-board"] .kiosk-board__ruler--top span')?.textContent,
+      topLast: document.querySelector('[data-testid="game-board"] .kiosk-board__ruler--top span:last-child')?.textContent,
+      leftFirst: document.querySelector('[data-testid="game-board"] .kiosk-board__ruler--left span')?.textContent,
+      leftLast: document.querySelector('[data-testid="game-board"] .kiosk-board__ruler--left span:last-child')?.textContent,
+    };
+  });
+  console.log('[02-game/ruler]', JSON.stringify(m));
+
+  expect(m.canvasBitmapW, 'canvas 位图没有铺满落子区 —— `externalRulers` 的第 ② 件事没生效').toBe(m.playW);
+  expect(m.canvasCssW, 'canvas 的 CSS 宽没铺满落子区').toBe(m.playW);
+
+  expect(m.rulerCount, '上刻度不是 19 个字').toBe(19);
+  expect(m.topFirst).toBe('A');
+  expect(m.topLast, '跳 I 之后 19 路正好到 T').toBe('T');
+  expect(m.leftFirst, '行号 1 在最下 ⇒ 从上往下第一个是 19').toBe('19');
+  expect(m.leftLast).toBe('1');
+
+  expect(m.lineCount, `从像素里只数出 ${m.lineCount} 条竖线`).toBe(19);
+  // 门槛 1.5px:亚像素舍入允许,一个字宽的偏差不允许。
+  // margin 从 0.5 改回 1.5 时这个数会跳到 ≈24(整整一格),floor 格距时跳到 ≈2。
+  expect(m.maxDriftPx, `字和线最大错开 ${m.maxDriftPx}px`).not.toBeNull();
+  expect(m.maxDriftPx!).toBeLessThanOrEqual(1.5);
+});
+
+test('承重:右栏不滚;收起胜率块动作区一动不动,标题行右端那个结论还在', async ({ page }) => {
+  await open(page);
+
+  const before = await page.evaluate(() => {
+    const acts = document.querySelector('[data-testid="game-actions"]')!.getBoundingClientRect();
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    return {
+      actionsBottom: Math.round(acts.bottom),
+      railBottom: Math.round(rail.getBoundingClientRect().bottom),
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      foldValue: document.querySelector('.kiosk-fold[data-fold="eval"] .kiosk-fold__head b')?.textContent ?? null,
+      graphVisible: !!document.querySelector('.kiosk-fold[data-fold="eval"] [data-eval]'),
+      wrLine: !!document.querySelector('.kiosk-eval__plot polyline.wr'),
+      slLine: !!document.querySelector('.kiosk-eval__plot polyline.sl'),
+    };
+  });
+  console.log('[02-game/fold-before]', JSON.stringify(before));
+
+  expect(before.railOverflow, '右栏装不下,溢出了').toBeLessThanOrEqual(0);
+  expect(before.actionsBottom, '动作区没有贴右栏底').toBe(before.railBottom);
+  expect(before.graphVisible, '胜率图没画出来').toBe(true);
+  expect(before.wrLine, '绿线(胜率)没画').toBe(true);
+  expect(before.slLine, '橙线(目差)没画 —— 围棋这块是双轴,少一条就只剩一半').toBe(true);
+  expect(before.foldValue, '标题行右端没有当前值').toBeTruthy();
+  expect(before.foldValue, '当前值应当是「黑 xx.x% · 白 +x.x 目」这种结论').toContain('%');
+
+  await page.click('.kiosk-fold[data-fold="eval"] .kiosk-fold__head');
+
+  const after = await page.evaluate(() => {
+    const acts = document.querySelector('[data-testid="game-actions"]')!.getBoundingClientRect();
+    return {
+      open: document.querySelector('.kiosk-fold[data-fold="eval"]')?.getAttribute('data-open'),
+      actionsBottom: Math.round(acts.bottom),
+      foldValue: document.querySelector('.kiosk-fold[data-fold="eval"] .kiosk-fold__head b')?.textContent ?? null,
+      // 明细真的收了:body 的高度归零(`display:none`)
+      bodyH: Math.round((document.querySelector('.kiosk-fold[data-fold="eval"] .kiosk-fold__body') as HTMLElement).getBoundingClientRect().height),
+      headH: Math.round((document.querySelector('.kiosk-fold[data-fold="eval"] .kiosk-fold__head') as HTMLElement).getBoundingClientRect().height),
+      foldH: Math.round((document.querySelector('.kiosk-fold[data-fold="eval"]') as HTMLElement).getBoundingClientRect().height),
+    };
+  });
+  console.log('[02-game/fold-after]', JSON.stringify(after));
+
+  expect(after.open).toBe('false');
+  expect(after.bodyH, '收起了但明细还占着高度').toBe(0);
+  // 收起后整块 = 标题行 30 + 上下各 1px 描边 = 32。稿子那本账里胜率块记的是 **128**
+  // (30 + 96 + 2),不是 126 —— 描边在 `border-box` 下也占地方。
+  expect(after.headH, '标题行不是 30 高(--fold-head-h)').toBe(30);
+  expect(after.foldH, '收起后整块应当就剩标题行 + 上下描边').toBe(after.headH + 2);
+  // §11 第 2 条:**收起的是明细不是结论**
+  expect(after.foldValue, '收起之后标题行右端那个当前值也跟着没了').toBe(before.foldValue);
+  // §11 第 4 条:腾出的空白落在动作区**上面**,按钮不许跟着上移
+  expect(after.actionsBottom, '收个面板就把悔棋/认输挪走了 —— 那是肌肉记忆').toBe(before.actionsBottom);
+});
+
+test('认输是这一排里唯一的红:求得出值,且和兄弟键不同色', async ({ page }) => {
+  await open(page);
+
+  const colors = await page.evaluate(() => {
+    const btns = Array.from(document.querySelectorAll('[data-testid="game-actions"] button')) as HTMLElement[];
+    const resign = btns.find((b) => b.textContent?.includes('认输'))!;
+    const pass = btns.find((b) => b.textContent?.includes('停一手'))!;
+    const cs = (e: HTMLElement) => {
+      const s = getComputedStyle(e);
+      return { color: s.color, border: s.borderTopColor, bg: s.backgroundColor };
+    };
+    return { count: btns.length, resign: cs(resign), pass: cs(pass) };
+  });
+  console.log('[02-game/danger]', JSON.stringify(colors));
+
+  expect(colors.count, '自由对弈屏应当是七个键').toBe(7);
+  // 「求得出值」这一条不是形式:`--bad` 定义在 `.kiosk` 上,一旦这一排渲染到 `.kiosk` 外面
+  // (比如 MUI 的 portal 里),`var(--bad)` 会解析成 `rgba(0,0,0,0)` —— **看起来就是没红**。
+  expect(colors.resign.color, '认输的字色求不出值').not.toBe('rgba(0, 0, 0, 0)');
+  expect(colors.resign.border, '认输的描边求不出值').not.toBe('rgba(0, 0, 0, 0)');
+  expect(colors.resign.color, '认输和停一手一个色 —— 那条 danger 规则没生效').not.toBe(colors.pass.color);
+  // 描边+字色,**不是实心红**:52 的格子里实心红会把整排的视觉重心拉到最危险那个键上
+  expect(colors.resign.bg, '认输被做成了实心红').toBe(colors.pass.bg);
+
+  // 确认框在 MUI 的 portal 里(`.kiosk` 外面)—— 它那颗确认键也要求得出值
+  await page.click('[data-testid="game-actions"] button:has-text("认输")');
+  await page.waitForSelector('text=确认认输？');
+  const confirm = await page.evaluate(() => {
+    const dlg = Array.from(document.querySelectorAll('[role="dialog"]'))
+      .find((d) => d.textContent?.includes('确认认输？'))!;
+    const btn = Array.from(dlg.querySelectorAll('button')).find((b) => b.textContent?.includes('认输'))! as HTMLElement;
+    const s = getComputedStyle(btn);
+    return { inKiosk: !!btn.closest('.kiosk'), color: s.color };
+  });
+  console.log('[02-game/danger-confirm]', JSON.stringify(confirm));
+  expect(confirm.color, '确认框里那颗认输键的字色求不出值').not.toBe('rgba(0, 0, 0, 0)');
+});
+
+test('升降级局:胜率块和「图表」键**一个都不渲染**,不是灰的也不是一条全 — 的空图', async ({ page }) => {
+  await open(page, 'ai_ladder_ranked');
+
+  const g = await page.evaluate(() => ({
+    hasFold: !!document.querySelector('.kiosk-fold[data-fold="eval"]'),
+    hasEval: !!document.querySelector('.kiosk-eval'),
+    hasPlot: !!document.querySelector('[data-eval]'),
+    labels: Array.from(document.querySelectorAll('[data-testid="game-actions"] button')).map((b) => b.textContent?.trim()),
+    actionsBottom: Math.round(document.querySelector('[data-testid="game-actions"]')!.getBoundingClientRect().bottom),
+    railBottom: Math.round(document.querySelector('.kiosk-rail')!.getBoundingClientRect().bottom),
+    railOverflow: (() => { const r = document.querySelector('.kiosk-rail') as HTMLElement; return r.scrollHeight - r.clientHeight; })(),
+    title: document.querySelector('.kiosk-pagebar__title')?.firstChild?.textContent ?? null,
+  }));
+  console.log('[02-game/ranked]', JSON.stringify(g));
+
+  expect(g.hasFold, '升降级局里胜率折叠块还在').toBe(false);
+  expect(g.hasEval, '升降级局里胜率块还在').toBe(false);
+  expect(g.hasPlot, '升降级局里那张图还在').toBe(false);
+  expect(g.labels, '升降级局里还有「图表」键').not.toContain('图表');
+  // 悔棋在升降级局里后端本来就拒(反作弊),界面也不摆
+  expect(g.labels, '升降级局里还有「悔棋」键').not.toContain('悔棋');
+  expect(g.title, '页控条标题没说这是升降级局').toBe('升降级对弈');
+  // 少了一块之后动作区照旧贴底,右栏照旧不滚
+  expect(g.actionsBottom).toBe(g.railBottom);
+  expect(g.railOverflow).toBeLessThanOrEqual(0);
+});
+
+// ── 屏 10 · 星阵人机 —— **同一个 `GamePage`**,`engineMode` 只换右栏 ─────────────────
+// 单独量一遍是因为右栏换了内容就换了一本账:三个道具键(52)顶掉了胜率块(128),
+// 而「动作区贴底」「右栏不滚」两条对两屏都成立。两屏共用一个组件 ⇒ 改一屏必然动另一屏,
+// 只量一屏等于**只证了一半**。
+test('星阵人机屏:道具键在、胜率块不在,动作区照旧贴底且不滚', async ({ page }) => {
+  await open(page, 'free', '/kiosk/play/cross-platform/engine/game/g-02');
+
+  const g = await page.evaluate(() => ({
+    items: Array.from(document.querySelectorAll('.items button')).map((b) => b.lastChild?.textContent?.trim()),
+    badges: Array.from(document.querySelectorAll('.items .cnt')).map((b) => b.textContent?.trim()),
+    hasEval: !!document.querySelector('.kiosk-fold[data-fold="eval"]'),
+    actionLabels: Array.from(document.querySelectorAll('[data-testid="game-actions"] button')).map((b) => b.textContent?.trim()),
+    actionsBottom: Math.round(document.querySelector('[data-testid="game-actions"]')!.getBoundingClientRect().bottom),
+    railBottom: Math.round(document.querySelector('.kiosk-rail')!.getBoundingClientRect().bottom),
+    railOverflow: (() => { const r = document.querySelector('.kiosk-rail') as HTMLElement; return r.scrollHeight - r.clientHeight; })(),
+    title: document.querySelector('.kiosk-pagebar__title')?.firstChild?.textContent ?? null,
+    docScrollHeight: document.documentElement.scrollHeight,
+  }));
+  console.log('[10-platform-game]', JSON.stringify(g));
+
+  expect(g.items, '三个道具键(领地/支招/变化图)不全').toEqual(['领地', '支招', '变化图']);
+  // `—` = **这一次没取到数**,和 `0`(用完了)不是一回事。取图机器上接口是空桩,所以是 `—`。
+  expect(g.badges).toEqual(['—', '—', '—']);
+  expect(g.hasEval, '星阵局里不该有胜率块 —— 那一屏没有图表键').toBe(false);
+  // 悔棋不在里面 —— **跨平台对弈整局都没有这颗键**(Fan 2026-08-25 亲裁)。
+  // 上一版是四个键,第四个是「悔棋」,只在星阵算招期间撤掉 ⇒ 一局几十次四↔三来回翻,
+  // 而这一排是 `grid-auto-columns: 1fr`,翻一次「认输」就在用户手指底下挪一格。
+  expect(g.actionLabels, '星阵局的动作区不是三个键').toEqual(['停一手', '数子', '认输']);
+  expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
+  expect(g.railOverflow, '右栏溢出').toBeLessThanOrEqual(0);
+  expect(g.docScrollHeight, '整屏溢出').toBeLessThanOrEqual(600);
+  expect(g.title).toBe('星阵围棋 · 人机');
+});
+
+// ── 屏 10 · 棋谱折叠块 —— 承重:该滚的是它自己 ────────────────────────────────
+// 2026-08-25 补上稿子 `:1833` 那一块(此前 engineMode 下右栏中段空着约 148px)。
+// 数据来自后端在主线循环里新加的 `history[].move/player`。
+//
+// **这一关是「量」不是「看」**:四图对比看得见「有没有这一块」,看不见「装不下的时候它自己能不能滚」——
+// 被 `overflow` 裁掉的行在截图上根本不存在。清单先写死关系式,再读数:
+//   · 该滚的是 `.kiosk-fold__body.mvrows` **它自己**,不是 `.kiosk-rail`
+//   · 能滚:自己 scrollHeight > clientHeight;写入大 scrollTop 后**读回非 0**
+//   · 手指拨得动:真派一次滚轮,scrollTop 变化不为 0(程序化能滚 ≠ 拨得动)
+//   · 没被祖先裁掉:fold 的 border box 落在 `.kiosk-rail` 的裁切框内
+//   · 右栏本身照旧不滚、动作区照旧贴底(加了一块会长的东西,这两条最容易崩)
+// 具体像素只记录,判据是上面这几条关系式。
+//
+// **变异记录**(2026-08-25,逐个改坏逐个跑,不是推演):
+//   M1 `.gthink` 退回 `left:50%`            → 只红「药丸没居中在棋盘上」
+//   M2 去掉 `.kiosk-fold__body.mvrows` 的 `overflow-y:auto` → 只红「真滚轮拨不动」
+//   M3 棋谱折叠块去掉 `grow`                 → 红「棋谱没溢出」+「动作区没贴右栏底」
+//
+// ⚠️ **M2 把我的预测证伪了一半**:我以为 `overflow` 那条(`scrollHeight − clientHeight > 0`)
+// 和 ⑤ 那条(写 `scrollTop` 读回非 0)会跟着一起红,**两条都没红**。
+// 回落到 `overflow:hidden` 之后内容照样溢出(所以 ①绿)、`scrollTop` 照样写得进读得回
+// (Chromium 里 `overflow:hidden` 的元素**程序化仍可滚**,所以 ⑤绿)——
+// 分得出来的只有**真滚轮**。屏 21 `.aitab` 那次踩的是同一个坑,这里第二次实测确认。
+test('星阵屏棋谱:装不下时滚的是它自己,右栏照旧不滚、动作区照旧贴底', async ({ page }) => {
+  await open(page, 'free', '/kiosk/play/cross-platform/engine/game/g-02');
+  await page.waitForSelector('[data-testid="game-moves-fold"] .mvrows .mv');
+
+  const g = await page.evaluate(() => {
+    const body = document.querySelector('[data-testid="game-moves-fold"] .kiosk-fold__body') as HTMLElement;
+    const fold = document.querySelector('[data-testid="game-moves-fold"]') as HTMLElement;
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const acts = document.querySelector('[data-testid="game-actions"]') as HTMLElement;
+    const fb = fold.getBoundingClientRect(), rb = rail.getBoundingClientRect();
+    return {
+      bodyIsMvrows: body.classList.contains('mvrows'),
+      rows: body.querySelectorAll('.n').length,
+      firstRow: Array.from(body.querySelectorAll('span')).slice(0, 3).map((n) => n.textContent),
+      overflow: body.scrollHeight - body.clientHeight,
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      foldInsideRail: fb.top >= rb.top - 0.5 && fb.bottom <= rb.bottom + 0.5,
+      actionsBottom: Math.round(acts.getBoundingClientRect().bottom),
+      railBottom: Math.round(rb.bottom),
+      value: fold.querySelector('.kiosk-fold__head b')?.textContent ?? null,
+      nowCells: Array.from(body.querySelectorAll('.mv.now')).map((n) => n.textContent),
+    };
+  });
+  console.log('[10-moves/geometry]', JSON.stringify(g));
+
+  expect(g.bodyIsMvrows, '棋谱 body 不是 .mvrows —— 那条 overflow-y 挂在这个组合选择器上').toBe(true);
+  expect(g.rows, '24 手该叠成 12 行').toBe(12);
+  // 第 1、2 手 = BLACK[0] / WHITE[0]。**和盘上那两颗子是同一份数据**。
+  expect(g.firstRow, '第一行不是「1 / 黑 / 白」').toEqual(['1', 'Q16', 'D4']);
+  expect(g.value, '标题行右端没写到第几手').toBe('第 24 手');
+  // `now` 只能有一个 —— 两个说明 `bAt`/`wAt` 的下标口径和 current_node_index 对不上。
+  expect(g.nowCells.length, 'now 高亮不是恰好一个').toBe(1);
+
+  // ① 该滚的是它自己,而且真的装不下
+  expect(g.overflow, '棋谱没溢出 —— 数据没造够,这一轮量出来的数一概不算').toBeGreaterThan(0);
+  // ② 右栏本身不许滚:会长的那一块吃掉的应该是**自己**的高度,不是把栏顶破
+  expect(g.railOverflow, '加了会长的棋谱之后右栏被顶破了').toBeLessThanOrEqual(0);
+  // ③ 没被祖先裁掉
+  expect(g.foldInsideRail, '棋谱块被右栏裁掉了一截').toBe(true);
+  // ④ 动作区照旧贴底
+  expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
+
+  // ⑤ 程序化能滚 —— 写进去读得回来
+  const wrote = await page.evaluate(() => {
+    const b = document.querySelector('[data-testid="game-moves-fold"] .kiosk-fold__body') as HTMLElement;
+    b.scrollTop = 9999;
+    return b.scrollTop;
+  });
+  expect(wrote, '写了 scrollTop 读回来还是 0 —— 这块根本不是滚动容器').toBeGreaterThan(0);
+
+  // ⑥ **手指拨得动** —— 程序化能滚不等于拨得动(祖先上一个 touch-action / pointer-events 就废了)
+  await page.evaluate(() => {
+    const b = document.querySelector('[data-testid="game-moves-fold"] .kiosk-fold__body') as HTMLElement;
+    b.scrollTop = 0;
+  });
+  const body = page.locator('[data-testid="game-moves-fold"] .kiosk-fold__body');
+  const box = (await body.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, 300);
+  // ⚠️ `expect.poll` 不是保险起见:**Chromium 的滚轮滚动是异步的**,派完事件立刻读
+  // `scrollTop` 拿到的还是 0(第一版就是这么写的,红了一次而产品是好的)。
+  // 屏 14 / 屏 16 那两条同型断言(`kiosk-shell-geometry.spec.ts:702/813`)也是这么写的。
+  await expect.poll(() => body.evaluate((el) => el.scrollTop),
+    { message: '真滚轮拨不动 —— 程序化能滚只证明了 overflow,没证明手指能用' }).toBeGreaterThan(0);
+});
+
+/**
+ * 最空的那一态。**本来是照「塌陷要在最空状态下量」那条来的,而实测把它证伪了一半:**
+ *
+ * 这一屏的右栏固定件加起来 44+60+60+52+40+52 = 308,六道缝 72,合 380 —— 516 里只剩 **136**。
+ * 也就是「中段的空」总共就这么点。实测(2026-08-25,真浏览器逐个量右栏的直接子元素):
+ *   带 `grow`:fold 高 **136**;去掉 `grow`:**134**。差 2px。
+ * ⇒ **这一态分不出 `grow` 在不在**,写 `foldH > 100` 那种断言对它免疫,是个假闸,已删。
+ * `grow` 的红分支在**满态**那条上(变异 M3 实测:去掉 grow ⇒「棋谱没溢出」和上面那条
+ * 「动作区没贴右栏底」同时红)。
+ *
+ * 那这一条还守什么?**空态得自己说话**,以及**加了一块会长的东西之后动作区还贴不贴底**——
+ * 后者靠的是 `.kiosk-rail .kiosk-actions { margin-top: auto }`,和 `grow` 是两条链。
+ */
+test('星阵屏棋谱:一手没下时空态说话,动作区照旧贴底', async ({ page }) => {
+  await stub(page, 'free');
+  await page.route('**/api/state**', (route) => route.fulfill({
+    json: { state: { ...stateFor('free'), history: [{ node_id: 0, score: null, winrate: null, move: null, player: null }],
+                     stones: [], last_move: null, current_node_id: 0, current_node_index: 0 } },
+  }));
+  await page.goto('/kiosk/play/cross-platform/engine/game/g-02');
+  await page.waitForSelector('[data-testid="game-moves-fold"]');
+
+  const g = await page.evaluate(() => {
+    const fold = document.querySelector('[data-testid="game-moves-fold"]') as HTMLElement;
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const acts = document.querySelector('[data-testid="game-actions"]') as HTMLElement;
+    return {
+      empty: fold.querySelector('.kiosk-fold__body')?.textContent?.trim() ?? null,
+      foldH: Math.round(fold.getBoundingClientRect().height),
+      actionsBottom: Math.round(acts.getBoundingClientRect().bottom),
+      railBottom: Math.round(rail.getBoundingClientRect().bottom),
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+    };
+  });
+  console.log('[10-moves/empty]', JSON.stringify(g));
+
+  expect(g.empty, '一手没下时那块是空的 —— 空态得自己说话').toBe('这一局还没有着法');
+  // `foldH` 只**记录**不判据(见上面那段:这一态里 136 vs 134,分不出 grow 在不在)。
+  expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
+  expect(g.railOverflow, '右栏溢出').toBeLessThanOrEqual(0);
+});
+
+// ── 「AI 思考中…」药丸:居中在**棋盘**上,不是整页上 ─────────────────────────
+// 上一版是 `left:'50%'`,50% 相对的是 992 宽的定位祖先 ⇒ 落在视口 512,而盘右沿是 532:
+// 药丸横跨盘/栏接缝,压住第一张玩家卡的上沿。判据是**两个中心对齐**,不是某个像素值。
+test('AI 思考中那颗药丸的中心 = 棋盘的中心,整颗都在盘内', async ({ page }) => {
+  await stub(page, 'free');
+  // ⚠️ `showThinking` 要**轮到 AI 那一方**(`deriveAiTurnState`)。这份 fixture 默认
+  // `player_to_move: 'B'` 而黑是访客 ⇒ 药丸根本不出现,等它就是干等 30 秒。
+  await page.route('**/api/state**', (route) => route.fulfill({
+    json: { state: { ...stateFor('free'), player_to_move: 'W' } },
+  }));
+  await page.goto('/kiosk/play/cross-platform/engine/game/g-02');
+  await page.waitForSelector('[data-testid="ai-thinking"]');
+
+  const g = await page.evaluate(() => {
+    const pill = document.querySelector('[data-testid="ai-thinking"]')!.getBoundingClientRect();
+    const board = document.querySelector('[data-testid="game-board"]')!.getBoundingClientRect();
+    const rail = document.querySelector('.kiosk-rail')!.getBoundingClientRect();
+    return {
+      pillCx: Math.round(pill.x + pill.width / 2), boardCx: Math.round(board.x + board.width / 2),
+      pillLeft: Math.round(pill.x), pillRight: Math.round(pill.right),
+      boardLeft: Math.round(board.x), boardRight: Math.round(board.right),
+      railLeft: Math.round(rail.x),
+    };
+  });
+  console.log('[10-pill]', JSON.stringify(g));
+
+  expect(g.pillCx, '药丸没居中在棋盘上').toBe(g.boardCx);
+  expect(g.pillLeft, '药丸左沿探出盘外').toBeGreaterThanOrEqual(g.boardLeft);
+  expect(g.pillRight, '药丸右沿压到右栏上了 —— 这正是原来那个毛病').toBeLessThanOrEqual(g.boardRight);
+  expect(g.pillRight, '药丸压过了右栏左沿').toBeLessThan(g.railLeft);
+});
+
+// ── 屏 05 · 人人对弈 —— 悔棋按对弈方式判 ─────────────────────────────────────
+// Fan 2026-08-25:「只有人机对弈的自由对弈允许悔棋。」本地对局/对战大厅这一态在这份
+// spec 里**此前一条断言都没有**,而它的行为正是这次改掉的那一条 —— 所以它自己量一遍。
+//
+// 顺带守住「撤掉一颗键之后这一排还是两行、还贴底」:`.gacts` 是 4 列,
+// 六个键排 4+2、五个键排 4+1,**行数没变** ⇒ 动作区高度不该动。
+// 这个数只有浏览器算得出来,jsdom 无权作证。
+test('本地对局:没有悔棋、没有胜率块,动作区仍是两行且贴底', async ({ page }) => {
+  await open(page, 'pvp_local');
+
+  const g = await page.evaluate(() => {
+    const row = document.querySelector('[data-testid="game-actions"]') as HTMLElement;
+    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+    const tops = Array.from(row.querySelectorAll('button')).map((b) => Math.round(b.getBoundingClientRect().top));
+    return {
+      labels: Array.from(row.querySelectorAll('button')).map((b) => b.textContent?.trim()),
+      disabledLabels: Array.from(row.querySelectorAll('button'))
+        .filter((b) => (b as HTMLButtonElement).disabled).map((b) => b.textContent?.trim()),
+      rows: new Set(tops).size,
+      rowH: Math.round(row.getBoundingClientRect().height),
+      actionsBottom: Math.round(row.getBoundingClientRect().bottom),
+      railBottom: Math.round(rail.getBoundingClientRect().bottom),
+      railOverflow: rail.scrollHeight - rail.clientHeight,
+      hasEval: !!document.querySelector('.kiosk-fold[data-fold="eval"]'),
+      title: document.querySelector('.kiosk-pagebar__title')?.firstChild?.textContent ?? null,
+    };
+  });
+  console.log('[05-game/pvp_local]', JSON.stringify(g));
+
+  expect(g.title, '页控条标题没说这是本地对局').toBe('本地对局');
+  expect(g.labels, '本地对局里还有「悔棋」键').not.toContain('悔棋');
+  // 撤掉不是灰着:不许留一颗永远点不动的悔棋。
+  expect(g.disabledLabels, '本地对局里留了一颗灰着的悔棋').not.toContain('悔棋');
+  expect(g.labels).toEqual(['领地', 'AI支招', '数子', '停一手', '认输']);
+  expect(g.hasEval, '两个人面对面的局里还有胜率块').toBe(false);
+  // 关系式先写死再读数:五个键在 4 列的 `.gacts` 里 = 4+1 两行,和六个键时行数相同。
+  expect(g.rows, '动作区不是两行了').toBe(2);
+  expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
+  expect(g.railOverflow, '右栏溢出').toBeLessThanOrEqual(0);
+});
+
+// ── 坐标 / 手数:开关不是药丸键(Fan 2026-08-22)────────────────────────────
+// 判据落在**屏上那颗珠子挪没挪**,不落在类名或 `aria-checked` 上 ——
+// 后两者是输入,珠子的位置才是结论。上一版是「有没有那个小圆点」,
+// 圆点在两态下位置相同,所以那种断言对「开关根本没接上」免疫。
+test('显示开关:珠子真的从左滑到右,两态在屏上分得开', async ({ page }) => {
+  await open(page);
+
+  const read = () => page.evaluate(() => {
+    const btns = Array.from(document.querySelectorAll('.gtoggles button')) as HTMLElement[];
+    const one = (b: HTMLElement) => {
+      const knob = getComputedStyle(b, '::after');
+      const track = getComputedStyle(b, '::before');
+      return {
+        checked: b.getAttribute('aria-checked'),
+        role: b.getAttribute('role'),
+        knob: knob.transform,
+        knobBg: knob.backgroundColor,
+        trackW: track.width,
+        trackBg: track.backgroundColor,
+        color: getComputedStyle(b).color,
+      };
+    };
+    const hint = document.querySelector('.gtoggles .ghint')!.getBoundingClientRect();
+    const row = document.querySelector('.gtoggles')!.getBoundingClientRect();
+    return { coords: one(btns[0]), numbers: one(btns[1]), hintRight: Math.round(row.right - hint.right) };
+  });
+
+  const a = await read();
+  console.log('[05-game/switch]', JSON.stringify(a));
+
+  expect(a.coords.role, '不是 role="switch" —— aria-pressed 说的是「此刻被按住」').toBe('switch');
+  expect(a.coords.checked).toBe('true');
+  expect(a.numbers.checked).toBe('false');
+  // 轨 34 宽(galaxy 的 <Switch size="small"> 同一个观感)
+  expect(a.coords.trackW).toBe('34px');
+  // **开着的那个珠子被推到了右边**:关着是 translateY(-50%),开着多一个 18 的 X 位移。
+  expect(a.coords.knob, '开着的珠子没往右挪 —— 两态在屏上分不开').not.toBe(a.numbers.knob);
+  expect(a.coords.knob).toContain('18');
+  expect(a.numbers.knob).not.toContain('18');
+  // 颜色也分:开着的轨是半透明青玉、珠是实心青玉;关着的轨是发丝灰、珠是浅色
+  expect(a.coords.trackBg).not.toBe(a.numbers.trackBg);
+  expect(a.coords.knobBg).not.toBe(a.numbers.knobBg);
+  expect(a.coords.color, '开着的标签没变亮').not.toBe(a.numbers.color);
+
+  // 点一下必须真切换 —— 不然上面那些只证明了「两个不同的初始值长得不一样」
+  await page.click('.gtoggles button:nth-child(2)');
+  // 珠子有 .12s 的过渡:点完立刻读到的是**半路上**那个矩阵(实测 matrix(...,9.6,-7))。
+  // 等它落定再读 —— 不等的话这条断言会在**没有缺陷**的时候红。
+  await expect.poll(async () => (await read()).numbers.knob, { timeout: 2000 })
+    .toBe(a.coords.knob);
+  const b = await read();
+  expect(b.numbers.checked, '点了没切换').toBe('true');
+
+  // 右端那句提示靠 `margin-left:auto` 贴右(上一版靠 grid 第三列,换 flex 后没了)
+  expect(a.hintRight, '「数子要下满 100 手」没有贴到这一排的右端').toBe(0);
+});

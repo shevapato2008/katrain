@@ -343,6 +343,8 @@ class LobbyManager:
     def __init__(self):
         self._online_users: Dict[int, Set[WebSocket]] = {}
         self._lock = threading.Lock()
+        # (inviter_id, invitee_id) -> time.monotonic() 发出时刻。见 record_invite。
+        self._pending_invites: Dict[tuple[int, int], float] = {}
 
     def add_user(self, user_id: int, websocket: WebSocket):
         with self._lock:
@@ -360,6 +362,42 @@ class LobbyManager:
     def get_online_user_ids(self) -> List[int]:
         with self._lock:
             return list(self._online_users.keys())
+
+    # ── 直邀的 pending 记录（2026-08-25，S1）─────────────────────────────────
+    #
+    # `accept_invite` 原来拿客户端给的**任意** target_id 直接 create_multiplayer_session，
+    # 再把 match_found 推给对方的 socket —— 对方前端收到就导航进对局室
+    # ⇒ **任何登录用户都能把任意在线用户拽进一局棋**，被拽的人一次点击都没有过。
+    #
+    # 只校验「不是自己 + 对方在线」是**装饰品**：攻击者本来传的就是在线用户。
+    # 真正的判别位只能是「这个人到底邀请过我没有」，所以必须有一份记录。
+    #
+    # 放内存里就够，不进库：邀请只在**双方都连着 `/ws/lobby` 的那段时间**里有意义，
+    # 进程一重启大厅本来也空了。TTL 是为了不让一次没人理的邀请永久挂着。
+    INVITE_TTL_SECONDS = 120
+
+    def record_invite(self, inviter_id: int, invitee_id: int) -> None:
+        """记下 inviter → invitee 这一次邀请（同一对会被后一次覆盖，刷新 TTL）。"""
+        now = time.monotonic()
+        with self._lock:
+            # 顺手清掉过期的，省得这个 dict 随进程寿命单调增长。
+            self._pending_invites = {
+                k: t for k, t in self._pending_invites.items() if now - t < self.INVITE_TTL_SECONDS
+            }
+            self._pending_invites[(inviter_id, invitee_id)] = now
+
+    def consume_invite(self, inviter_id: int, invitee_id: int) -> bool:
+        """有未过期的邀请就消费掉并返回 True。**一次性** —— 同一封邀请不能开两局。"""
+        with self._lock:
+            issued = self._pending_invites.pop((inviter_id, invitee_id), None)
+        return issued is not None and time.monotonic() - issued < self.INVITE_TTL_SECONDS
+
+    def discard_invites_for(self, user_id: int) -> None:
+        """这个人下线了：他发出的和收到的邀请一并作废。"""
+        with self._lock:
+            self._pending_invites = {
+                (a, b): t for (a, b), t in self._pending_invites.items() if a != user_id and b != user_id
+            }
 
     async def broadcast(self, payload: Dict):
         with self._lock:

@@ -329,6 +329,11 @@ export default function LiveBoard({
   const containerRef = useRef<HTMLDivElement>(null);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
   const [canvasSize, setCanvasSize] = useState(600);
+  // 坐标交给外壳画时(kiosk 布局 A):边距从 1.5 收回 0.5,且**不许取整** ——
+  // 两者要一起改,只改一个照样对不上。详见 `calculateBoardLayout` 的注释。
+  const shellDrawsCoordinates = showCoordinates
+    ? undefined
+    : { margin: 0.5, exact: true };
   const [imagesLoaded, setImagesLoaded] = useState(false);
   // Animation ref for pulsing effect timing
   const startTimeRef = useRef<number>(Date.now());
@@ -363,7 +368,9 @@ export default function LiveBoard({
     const updateSize = () => {
       if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
-        const size = Math.floor(Math.min(width, height) - 8);
+        // 外壳画坐标时(kiosk 布局 A)那 8px 内边距要收掉:落子区是 460,盘就得是 460 ——
+        // 差 8px 摊到 18 个格上,线和外壳刻度带的字就对不上了(2026-08-23 实测偏 11.9px)。
+        const size = Math.floor(Math.min(width, height) - (showCoordinates ? 8 : 0));
         setCanvasSize(Math.max(minimumCanvasSize, Math.min(1200, size)));
       }
     };
@@ -424,7 +431,7 @@ export default function LiveBoard({
     if (!ctx) return;
 
     const { board, moveNumbers, lastMove, lastPlayer } = buildBoardState();
-    const layout = calculateBoardLayout(canvasSize, canvasSize, boardSize);
+    const layout = calculateBoardLayout(canvasSize, canvasSize, boardSize, shellDrawsCoordinates);
     const time = (Date.now() - startTimeRef.current) / 1000; // time in seconds for animation
 
     // Clear canvas
@@ -683,7 +690,7 @@ export default function LiveBoard({
     const mx = (e.clientX - rect.left) * scaleX;
     const my = (e.clientY - rect.top) * scaleY;
 
-    const layout = calculateBoardLayout(canvasSize, canvasSize, boardSize);
+    const layout = calculateBoardLayout(canvasSize, canvasSize, boardSize, shellDrawsCoordinates);
     const gridPos = canvasToGrid(layout, mx, my, boardSize);
     if (gridPos) {
       hoverPosRef.current = gridPos;
@@ -710,7 +717,7 @@ export default function LiveBoard({
     const clickX = (e.clientX - rect.left) * scaleX;
     const clickY = (e.clientY - rect.top) * scaleY;
 
-    const layout = calculateBoardLayout(canvasSize, canvasSize, boardSize);
+    const layout = calculateBoardLayout(canvasSize, canvasSize, boardSize, shellDrawsCoordinates);
     const gridPos = canvasToGrid(layout, clickX, clickY, boardSize);
 
     if (gridPos) {
@@ -738,7 +745,7 @@ export default function LiveBoard({
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: minContainerHeight,
-        padding: '4px',
+        padding: showCoordinates ? '4px' : 0,
       }}
     >
       <canvas

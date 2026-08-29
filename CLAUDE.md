@@ -39,8 +39,29 @@ cd katrain/web/ui
 npm install
 npm run dev                          # Dev server with HMR
 npm run build                        # Production build → katrain/web/static/
-npm test                             # Playwright e2e tests
+npm test                             # Unit tests (vitest)
+npm run test:e2e                     # Playwright e2e (serves the BUILT bundle from :8002 —
+                                     #   source edits need `npm run build` first)
+npm run fourup                       # 27-screen four-up visual capture (vite dev server, :5173)
 ```
+
+`npm run fourup` regenerates `superpowers/tracks/kiosk-go-shell-align/visual/**`. Judge the result
+**per screen, as a set of four**: an implementation shot committed without its side-by-side leaves a
+self-contradicting archive.
+
+**The jitter floor is not one number — it depends on what renders the board.** Screens whose board is
+DOM/SVG jitter under ~200 changed pixels; screens whose board is a `<canvas>` (`LiveBoard`, e.g. 05 /
+20 / 21 / 10) jitter by **~4500** run to run. A pixel count alone will therefore mislead you on canvas
+screens. The reliable discriminator is **run the capture twice and diff the two runs** — that gives
+this screen's own floor. Failing that, look at the bbox: jitter is scattered across the whole frame,
+a content change is clustered. Revert the jitter-only screens (`git checkout HEAD -- <screen dir>`)
+rather than committing them.
+
+The reference half of every four-up lives in **another repo** (`smartbox-software`), pinned by sha256
+in `tests/helpers/reference-shots.json`. If a shot's bytes don't match the pin, the harness fetches the
+pinned version from that repo's git by the recorded branch — so the capture does not depend on which
+branch that working tree happens to be on. A pin mismatch on the recorded branch means the design
+actually changed: look at what moved, re-shoot, and commit new images and new pins together.
 
 `python -m katrain --ui web` auto-builds the frontend on first run (creates `katrain/web/static/index.html`). Subsequent runs **reuse** the existing dist — critical on slow ARM SBCs where `npm run build` takes ~60s. To rebuild after pulling new UI code:
 ```bash
@@ -167,7 +188,9 @@ KaTrain ships **two web-UI build outputs** from a single codebase:
 - Files under `src/galaxy/**`, `src/pages/**`, and `src/ZenModeApp.tsx` may **not** import from `src/kiosk/**`
 
 **Shared territory (both builds may import):**
-`src/components/` (except `Board3D/`), `src/hooks/`, `src/context/`, `src/api.ts` + `src/api/`, `src/utils/`, `src/types/`, `src/theme.ts`, `src/i18n.ts`. ~10.6K LOC. **Modifying a shared file affects BOTH builds** — run both `npm run build` and `npm run build:kiosk-2d` before pushing.
+`src/components/` (except `Board3D/`), `src/hooks/`, `src/context/`, `src/features/`, `src/api.ts` + `src/api/`, `src/utils/`, `src/types/`, `src/theme.ts`, `src/i18n.ts`. ~10.6K LOC. **Modifying a shared file affects BOTH builds** — run both `npm run build` and `npm run build:kiosk-2d` before pushing.
+
+Shared code must **not** import from `src/kiosk/`, `src/galaxy/`, or `src/pages/` — a shared file that reaches back into one side drags that side into the *other* bundle, and the two rules above only see the import line as written, so one hop through shared territory is invisible to them. `eslint.config.js` enforces this (test files are exempt: they are in neither bundle).
 
 **When modifying the web UI:**
 - Adding a page/route in `src/kiosk/` → use only shared territory + `src/kiosk/`.

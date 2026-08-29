@@ -233,24 +233,79 @@ def test_generated_ts_carries_every_tier_and_the_limit():
 
 # --------------------------------------------------------------------------- 部署边界
 
-def test_cron_container_copies_the_grading_module():
-    """Dockerfile.cron 只 COPY katrain/cron/，跨目录 import 只会在容器里炸。
-
-    report_analyze.py 要 import katrain.core.move_grade，所以那两个文件必须被显式 COPY。
-    """
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    with open(os.path.join(root, "Dockerfile.cron"), encoding="utf-8") as f:
-        dockerfile = f.read()
-    assert "katrain/core/move_grade.py" in dockerfile
-    assert "katrain/core/move_grade.yaml" in dockerfile
-
-
-@pytest.mark.parametrize("req", ["requirements-cron.txt", "requirements-web.txt", "pyproject.toml"])
-def test_pyyaml_is_declared_everywhere_the_module_ships(req):
-    """两个容器各装各的依赖，任何一处漏了 pyyaml 都只会在那一处炸。"""
+@pytest.mark.parametrize("req", ["requirements-web.txt", "pyproject.toml"])
+def test_pyyaml_is_declared_where_the_yaml_is_actually_read(req):
+    """只有 web/desktop 侧会读 yaml —— cron 用的是生成的字面量副本，
+    所以 requirements-cron.txt **不该**出现 pyyaml（它也不在镜像里）。"""
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     with open(os.path.join(root, req), encoding="utf-8") as f:
         assert "pyyaml" in f.read().lower()
+
+
+def test_cron_requirements_do_not_grow_a_yaml_dependency():
+    """cron 镜像里没有 PyYAML，也不该有 —— 它用的是生成的字面量 CONFIG。
+
+    如果哪天有人往 katrain/cron 里写了 `import yaml` 再来加这条依赖，
+    develop 的 tests/web_ui/test_cron_import_boundary.py 会先红；
+    这条是从另一头守：别把依赖悄悄加进来。
+    """
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, "requirements-cron.txt"), encoding="utf-8") as f:
+        assert "yaml" not in f.read().lower()
+
+
+# --------------------------------------------------------------------------- 生成给 cron 的副本
+
+def test_generated_cron_module_is_in_sync():
+    """改了 yaml 或 move_grade_core.py 却忘了跑 --emit 时必须红。
+
+    cron 侧不能 import katrain.core、也没有 PyYAML，所以它用的是这份生成物。
+    不同步的后果是「阈值改了但报告没变」，而且不会有任何报错。
+
+    变异记录：把 yaml 里 ladder_points.mistake 改成 7.0 而不重新生成，本用例会红（实测）。
+    """
+    with open(move_grade.CRON_PATH, encoding="utf-8") as f:
+        on_disk = f.read()
+    assert on_disk == move_grade.emit_cron(), (
+        "katrain/cron/move_grade.py is stale -- run `python -m katrain.core.move_grade --emit`"
+    )
+
+
+def test_generated_cron_module_imports_nothing():
+    """生成物必须零 import：katrain/cron 的镜像里既没有 katrain.core，
+    第三方也只有 requirements-cron.txt 那几个。任何一条 import 溜进去
+    都只在容器里炸，而 cron 崩了在屏上就是「报告一直排队」。"""
+    import ast
+
+    with open(move_grade.CRON_PATH, encoding="utf-8") as f:
+        tree = ast.parse(f.read())
+    imports = [n for n in ast.walk(tree) if isinstance(n, (ast.Import, ast.ImportFrom))]
+    assert not imports, f"generated cron module must be import-free, found {len(imports)}"
+
+
+def test_cron_and_core_agree_on_a_grade():
+    """同一手棋在两侧必须判出同一档 —— 逻辑是逐字节副本，这条守的是「副本真的是副本」。"""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("cron_move_grade", move_grade.CRON_PATH)
+    cron = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cron)
+
+    cases = [
+        ([tm("D4", 0.0, prior=0.02)], "D4", "B", 0.0, 0.5, 30),
+        ([tm("D4", 10.0), tm("Q16", 6.0)], "Q16", "B", 6.0, 0.5, 30),
+        ([tm("D4", -10.0), tm("Q16", -9.6)], "Q16", "W", -9.6, 0.5, 200),
+    ]
+    for top, mv, player, lead, wr, n in cases:
+        a = grade_move(
+            prev_top_moves=top, prev_visits=500, actual_move=mv, actual_player=player,
+            actual_score_lead=lead, actual_winrate=wr, move_number=n,
+        )
+        b = cron.grade(
+            prev_top_moves=top, prev_visits=500, actual_move=mv, actual_player=player,
+            actual_score_lead=lead, actual_winrate=wr, move_number=n,
+        )
+        assert a == b, f"core and cron disagree on {mv}: {a} vs {b}"
 
 
 def test_phase_boundaries():
@@ -354,12 +409,20 @@ def test_research_panels_derive_their_thresholds_from_the_generated_module():
     判据落在「有没有从生成的常量取值」上，而不是「有没有出现某个数字」——
     后者换个写法就能绕过。
     """
+    import glob
+
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for rel in (
-        "katrain/web/ui/src/galaxy/components/research/ResearchAnalysisPanel.tsx",
-        "katrain/web/ui/src/kiosk/components/research/ResearchAnalysisPanel.tsx",
-    ):
-        with open(os.path.join(root, rel), encoding="utf-8") as f:
+    # 枚举现存的面板，而不是写死路径：kiosk 那份双胞胎已被 develop 的
+    # e395690a 删掉，写死路径的断言会在合并时红得莫名其妙。
+    panels = glob.glob(
+        os.path.join(root, "katrain", "web", "ui", "src", "**", "ResearchAnalysisPanel.tsx"),
+        recursive=True,
+    )
+    # 逐项断言对「整项没了」免疫 —— 全删光时上面的循环会空转并静默通过。
+    assert panels, "no ResearchAnalysisPanel found; did the gate outlive its target?"
+    for path in panels:
+        with open(path, encoding="utf-8") as f:
             src = f.read()
+        rel = os.path.relpath(path, root)
         assert "GRADE_LADDER_POINTS.inaccuracy" in src, rel
         assert "GRADE_LADDER_POINTS.playable" in src, rel

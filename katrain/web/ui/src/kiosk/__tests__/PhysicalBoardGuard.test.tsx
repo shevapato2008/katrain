@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
@@ -17,20 +18,27 @@ vi.mock('../../api/geometryApi', () => ({
   },
 }));
 
-const renderGuard = () => render(
+/**
+ * ⚠️ 2026-08-24 起要 `MemoryRouter`:守卫挡人时渲染的标定台**有返回键**了
+ * (它用 `useNavigate`)。加它之前那一屏一个出口都没有 —— L2 无 Dock、顶栏不带返回,
+ * 从做题/摆谱撞上「未标定」的人只能重启盒子。
+ *
+ * `sub` 是必填:说明**这一屏为什么需要摄像头**,做题和摆谱要说的不是同一句话。
+ */
+const wrap = (node: React.ReactNode) => render(
   <ThemeProvider theme={kioskTheme}>
-    <GeometryProvider>
-      <PhysicalBoardGuard><div>实体棋盘内容</div></PhysicalBoardGuard>
-    </GeometryProvider>
+    <MemoryRouter>
+      <GeometryProvider>{node}</GeometryProvider>
+    </MemoryRouter>
   </ThemeProvider>,
 );
 
-const renderGuardRequireRecognition = () => render(
-  <ThemeProvider theme={kioskTheme}>
-    <GeometryProvider>
-      <PhysicalBoardGuard requireRecognition><div>实体棋盘内容</div></PhysicalBoardGuard>
-    </GeometryProvider>
-  </ThemeProvider>,
+const renderGuard = () => wrap(
+  <PhysicalBoardGuard sub="实体做题要先让摄像头看清盘面"><div>实体棋盘内容</div></PhysicalBoardGuard>,
+);
+
+const renderGuardRequireRecognition = () => wrap(
+  <PhysicalBoardGuard requireRecognition sub="实体做题要先让摄像头看清盘面"><div>实体棋盘内容</div></PhysicalBoardGuard>,
 );
 
 describe('PhysicalBoardGuard', () => {
@@ -48,8 +56,11 @@ describe('PhysicalBoardGuard', () => {
     renderGuard();
 
     expect(screen.queryByText('实体棋盘内容')).not.toBeInTheDocument();
-    expect(await screen.findByText('请清空棋盘')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '已清空，开始自动标定' }));
+    // 口径换了、意图一字未改:「挡住了没有」原来看那句 `phaseHint`(已随四步清单一起撤掉),
+    // 现在看四步清单的第 1 步 —— 它说的是同一件事,而且多说了前后文。
+    expect(await screen.findByTestId('calib-screen')).toBeInTheDocument();
+    expect(screen.getAllByTestId('calib-step')[0]).toHaveTextContent('准备空盘标定');
+    fireEvent.click(screen.getByRole('button', { name: '重新开始标定' }));
     await waitFor(() => expect(GeometryAPI.calibrate).toHaveBeenCalledWith('auto'));
   });
 
@@ -89,7 +100,7 @@ describe('PhysicalBoardGuard', () => {
 
     renderGuard();
 
-    fireEvent.click(await screen.findByRole('button', { name: '网格无误，使用上次标定' }));
+    fireEvent.click(await screen.findByRole('button', { name: '沿用上次标定' }));
     expect(await screen.findByText('实体棋盘内容')).toBeInTheDocument();
   });
 

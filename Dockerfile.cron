@@ -6,11 +6,6 @@ COPY requirements-cron.txt .
 RUN pip install --no-cache-dir -r requirements-cron.txt
 
 COPY katrain/cron/ katrain/cron/
-# 着手评价的阈值真源。katrain/cron 之外只额外依赖这两个文件；
-# 这个容器只 COPY 上面那一行，所以跨目录 import 必须在这里显式带上，
-# 否则 report_analyze 的 `from katrain.core.move_grade import ...` 只会在容器里炸。
-# tests/test_move_grade.py::test_cron_container_copies_the_grading_module 守着这条。
-COPY katrain/core/__init__.py katrain/core/move_grade.py katrain/core/move_grade.yaml katrain/core/sgf_parser.py katrain/core/
 # Ensure katrain is a package (needs __init__.py at katrain level)
 RUN touch katrain/__init__.py
 

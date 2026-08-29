@@ -1,74 +1,23 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { KIOSK_MONO } from '../theme';
-import {
-  Box, Typography, Button, Chip, CircularProgress,
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, useTheme,
-} from '@mui/material';
-import { alpha } from '@mui/material/styles';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import LiveBoard from '../../components/live/LiveBoard';
+
 import { useTranslation } from '../../hooks/useTranslation';
-import {
+import { type BaipuCaptureErrorReason,
   BaipuAPI, getCachedSgf, saveProgress, getProgress, clearProgress,
-  canonToBoard, canonToGtp, type BaipuStep, type BaipuMeta, type BaipuGeometryCorrection,
+  canonToGtp, type BaipuStep, type BaipuMeta, type BaipuGeometryCorrection,
 } from '../../api/baipuApi';
 import { LedAPI, type LedColor } from '../../api/ledApi';
 import { LED_HEX } from '../constants/ledColors';
-import { useImmersive } from '../context/ImmersiveContext';
+import { replayBaipuSteps } from '../../utils/baipuReplay';
+import { GoBoardSvg } from '../shell/GoBoardSvg';
+import { colsFor, rowsFor } from '../shell/goBoard';
+import { KioskActions } from '../shell/KioskActions';
+import { KioskFold } from '../shell/KioskFold';
+import { KioskPagebar } from '../shell/KioskPagebar';
+import { driftLine } from '../utils/baipuDrift';
+import { interpolate } from '../utils/interpolate';
 
 const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
-
-// P11: per-move board-drift status. corrected+over-threshold = informational;
-// stale/frozen = the operator should check the board/reference points. corrected
-// (no drift) and off render nothing.
-export const DriftBanner = ({ correction }: { correction: BaipuGeometryCorrection | null }) => {
-  const { t } = useTranslation();
-  const theme = useTheme();
-  if (!correction) return null;
-  const { status, drift } = correction;
-  const warn = {
-    px: 3, py: 1.5,
-    bgcolor: alpha(theme.palette.warning.main, 0.20),
-    borderTop: `2px solid ${theme.palette.warning.main}`,
-    textAlign: 'center' as const, flexShrink: 0,
-  };
-  if (status === 'corrected') {
-    if (!drift?.over_threshold) return null;
-    return (
-      <Box
-        data-testid="baipu-drift-banner"
-        data-drift-status="corrected"
-        sx={{ px: 3, py: 1.5, bgcolor: alpha(LED_HEX.remove, 0.18), borderTop: `2px solid ${LED_HEX.remove}`, textAlign: 'center', flexShrink: 0 }}
-      >
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {t('Board movement detected; auto-corrected', '检测到棋盘移动，已自动校正')}
-        </Typography>
-      </Box>
-    );
-  }
-  if (status === 'stale') {
-    return (
-      <Box data-testid="baipu-drift-banner" data-drift-status="stale" sx={warn}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {t(
-            'Could not recalibrate this move; reusing last geometry — check the reference points are not covered',
-            '本手未能重新校正，沿用上次几何，请确认基准点未被遮挡',
-          )}
-        </Typography>
-      </Box>
-    );
-  }
-  if (status === 'frozen') {
-    return (
-      <Box data-testid="baipu-drift-banner" data-drift-status="frozen" sx={warn}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {t('Geometry not calibrated; check the board has not moved significantly', '几何未校正，请检查棋盘是否被大幅移动')}
-        </Typography>
-      </Box>
-    );
-  }
-  return null; // 'off'
-};
 
 const savedFilename = (path?: string): string | null => {
   if (!path) return null;
@@ -98,90 +47,108 @@ function playShutter() {
 
 type Phase = 'loading' | 'guiding' | 'await_removal' | 'done' | 'error';
 
-const HealthDot = ({ label, ok }: { label: string; ok: boolean | null }) => (
-  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-    <Box sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: ok == null ? 'text.disabled' : ok ? 'success.main' : 'error.main' }} />
-    <Typography variant="caption" sx={{ color: 'text.secondary' }}>{label}</Typography>
-  </Box>
-);
-
-const PlayerPanel = ({ color, name, active, t }: { color: 'B' | 'W'; name: string; active: boolean; t: (k: string, d?: string) => string }) => {
-  return (
-    <Box
-      data-testid={`baipu-player-${color}`}
-      data-active={active ? 'true' : 'false'}
-      sx={{
-        display: 'flex', alignItems: 'center', gap: 1, px: 2, py: 1.25, borderRadius: '10px',
-        border: active ? '2px solid' : '1px solid',
-        borderColor: active ? 'primary.main' : 'divider',
-        bgcolor: active ? 'primary.dark' : 'background.paper',
-      }}
-    >
-      <Box sx={{ width: 18, height: 18, borderRadius: '50%', bgcolor: color === 'B' ? '#1a1a1a' : '#e8e4df', border: '1px solid', borderColor: 'divider' }} />
-      <Typography variant="body2" noWrap sx={{ fontWeight: active ? 700 : 400 }}>{name || (color === 'B' ? t('Black', '黑方') : t('White', '白方'))}</Typography>
-      {active && <Chip size="small" label={t('to place', '落子中')} color="primary" sx={{ height: 20 }} />}
-    </Box>
-  );
-};
+/** 右栏此刻在说哪一件事。**互斥且有序** —— 见页面头注那张优先级表。 */
+type Mood = 'guiding' | 'removal' | 'failed' | 'done';
 
 /**
- * 摆谱 session: a DUMB player of backend `steps[]` (decision ②). The frontend
- * never computes captures — it plays back what `/baipu/load` returned.
+ * 屏 17 · 摆谱 · 进行中 `/kiosk/baipu/session/:source` —— L2 布局 A(左盘 516 + 16 + 右栏 460)。
  *
- * State machine (P7 operator-trusted collection):
- *   guiding(k): highlight steps[k] on screen (+ LED in P2); user places the stone
- *     └ 确认 → if steps[k].removed → await_removal(k) else advance
- *   await_removal(k): flash the captured stones; user removes them physically
- *     └ 已移除 → advance
- *   advance: k++ ; pass steps auto-advance ; k==N → done
- *   撤回上一手: physical-guided single-step undo
- *   退出: guarded (confirm dialog)
+ * **这一屏的主角不在屏幕上,在实体盘上。** 灯点着下一手该落哪儿,人把子摆上去,摄像头采一帧
+ * (那些帧是 YOLO 的训练数据)。提子要人**自己**把死子拿下来;拍照那一刻手不能在盘上。
+ * 屏幕在这儿只是副驾 —— 所以右栏第一块不是棋谱也不是记账,是「**现在轮到你摆哪一颗**」。
  *
- * Coordinates from the backend are canonical (row=0 top); we convert to
- * LiveBoard's y=0-bottom convention at the rendering boundary.
+ * ## 稿子那一帧有两行是错的(2026-08-24 裁定,已回报稿子作者)
+ *
+ * 稿子摄像头块右列写着「绿灯 = 该放上 / 红灯 = 该拿走」。**反了,而且漏了一色**:
+ * `constants/ledColors.ts` 定死 `black:#ff3b30(红)` / `white:#34c759(绿)` / `remove:#2f6fff(蓝)`,
+ * 后端 `COLOR_RGB`、`ledColors.test.ts` 那条精确相等、物理对弈与死活两条 track 的 PRD 全都一致。
+ * ⇒ 绿灯是**该放白子**,红灯是**该放黑子**,该拿走是**蓝灯**。
+ * 照稿子写,一局 241 手里每颗黑棋都会让操作员去拿一颗刚该放下的子。
+ * 这一屏的 track 自己早就写死了正确版本(`review-feedback-gstack.md` 建议 E,已采纳):
+ * **屏上必须常驻一条图例,而且屏上高亮色必须和灯同色**。所以盘上那个候选圈也跟着分色
+ * (`GoBoardSvg` 的 `ghostFor`)—— 稿子把黑棋 C7 的圈画成绿的,同一处错。
+ *
+ * ## 沉浸模式撤了
+ *
+ * 上一版 `setImmersive(true)` 把顶栏和 Dock 都藏了。`ReportDetailPage:52-58` 已为同一件事
+ * 判过一次,判据是量出来的:`immersive` 在 `KioskLayout` 里只让**顶栏不渲染**,而
+ * `.kiosk-content` 的 `top` 仍是 `var(--topbar-h)` ⇒ 屏顶留一条 56 高的空黑带。
+ * (2026-08-26:最后一个现场屏 14 也还完,`ImmersiveContext` 已删,这条开关不复存在。)
+ * 返回归页控条「← 棋谱」,**但二次确认留着** —— 它不是实现遗留,是这一屏已采纳的裁定
+ * (Blocker #2:「确认落子」一局按约 250 次,退出按一次,两颗不能同排;解法是移到角上 + 确认)。
+ *
+ * ## 四条通栏横幅一条都不进右栏
+ *
+ * 右栏的账是死的:页控条 44 + pcard 60 + 两个折叠头 30×2 + 动作区 52 + 四条间隙 48 = 264,
+ * **两个折叠块的 body 一共只剩 252**;ledger 约 89 ⇒ 着法那块 ~163 ≈ 6 行。
+ * 再插一块就把着法压到 3 行以下,右栏得整栏滚,而整栏一滚
+ * `.kiosk-rail .kiosk-actions{margin-top:auto}` 就保不住动作区贴底 ——
+ * **全 27 屏里最不能让「确认落子」动的就是这一屏**。所以:
+ *
+ * | 原来的横幅 | 现在 |
+ * |---|---|
+ * | 正在拍照,请勿伸手 | `.cdlg` 盖住**整个布局根**(不只是盘)—— 第一职责是挡住第二次按键 |
+ * | 请移除被提的子 | **pcard 换内容**(`.pcard.removal`,蓝,和 `LED_HEX.remove` 同色) |
+ * | 几何漂移三态 | 摄像头 ledger 一行 + 折叠头右端的结论词(收起也看得见) |
+ * | 采集失败 | **pcard 换内容**(`.pcard.failed`),`k` 不推进 ⇒ 重按「确认落子」就是重试 |
+ *
+ * 优先级写死:`拍照遮罩` > `采集失败` > `待移除` > `待摆` > `已完成`。
+ *
+ * ## 动作区三格,不是稿子那四格
+ *
+ * 稿子多画了一颗「虚手」。**不做**:这一屏是在重放一份既有的 SGF,而这条 track 的数据契约
+ * 把 pass 定义成「无物理动作」(`sbc-baipu-led-guide/plan.md`:pass 不产帧、
+ * `frames.length = 1 + 非 pass 落子数`、`next_guided_move_index` 跳过 pass)。
+ * 一颗人能按的「虚手」要么产帧、破坏那条等式,要么什么都不干。
+ * 「虚手」这个词留在着法表里做**记谱**(屏 16 同款)—— 它是事实,不是动作。
+ *
+ * 「完成」按稿子**常驻第三格**,但摆完之前一律灰 + 写明还差多少:常驻是为了格子不重排
+ * (那颗「确认落子」一局按 250 次,位置是肌肉记忆);常亮则会变成一颗写着「完成」
+ * 却在第 13 手把你送走的键 —— 提前收工是**返回**该做的事,不是它。
+ *
+ * ## 盘不用 `LiveBoard`
+ *
+ * 两条:① 它的 `gridMargins` 写死 1.5 格而刻度带按 0.5 格算,字和线错开约一格
+ * (`KioskSetupBoard` 头注那段推导);② 它在渲染路径里**自己算提子**,而 `baipuApi` 决策 ②
+ * 定死「前端是 `steps[]` 的笨播放器,永远不自己重算提子」—— 用它就是屏上画前端算的提子、
+ * 灯点后端算的提子,两套气规则同屏跑。盘面走共享的 `replayBaipuSteps`(屏 16 / 屏 19 同款)。
  */
 const BaipuSessionPage = () => {
   const { source = '' } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const theme = useTheme();
-  const { setImmersive } = useImmersive();
-
-  // Full-screen session view — hide the kiosk Header + Dock like ResearchPage;
-  // this page already has its own 退出 button + confirm dialog (below).
-  useEffect(() => {
-    setImmersive(true);
-    return () => setImmersive(false);
-  }, [setImmersive]);
 
   const [phase, setPhase] = useState<Phase>('loading');
-  const [error, setError] = useState<string | null>(null);
-  const [driftStatus, setDriftStatus] = useState<BaipuGeometryCorrection | null>(null);
+  // ⚠️ `null` = 没失败;`''` = 失败了但服务端没给话。**存的不是译文**(见 `driftLine` 那段)。
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+  /** 几何失效那一种「再按一次」永远不会成 —— 屏上得说另一句话。见 `BaipuCaptureErrorReason`。 */
+  const [captureReason, setCaptureReason] = useState<BaipuCaptureErrorReason>('other');
+  const [drift, setDrift] = useState<BaipuGeometryCorrection | null>(null);
   const [steps, setSteps] = useState<BaipuStep[]>([]);
   const [boardSize, setBoardSize] = useState(19);
   const [meta, setMeta] = useState<BaipuMeta | null>(null);
-  const [k, setK] = useState(0); // steps applied to the physical board
+  const [k, setK] = useState(0);                       // 已经摆到实体盘上的手数
   const [exitOpen, setExitOpen] = useState(false);
   const [undoOpen, setUndoOpen] = useState(false);
   const [resumePrompt, setResumePrompt] = useState<number | null>(null);
-  const [ledOk, setLedOk] = useState<boolean | null>(null); // null = unknown / not enabled
+  const [ledOk, setLedOk] = useState<boolean | null>(null);
   const [capturePending, setCapturePending] = useState(false);
+  const [captureDisabled, setCaptureDisabled] = useState(false);
   const [frameCount, setFrameCount] = useState(0);
   const [latestSavedFile, setLatestSavedFile] = useState<string | null>(null);
   const [overwriteExisting, setOverwriteExisting] = useState(false);
   const initialCapturedRef = useRef(false);
   const mountedRef = useRef(true);
+  const nowRef = useRef<HTMLSpanElement | null>(null);
 
-  // Resolve SGF: fresh navigation state first, then the offline localStorage cache.
+  const cached = useMemo(() => getCachedSgf(source), [source]);
   const sgf = useMemo(() => {
     const navSgf = (location.state as { sgf?: string } | null)?.sgf;
-    if (navSgf) return navSgf;
-    return getCachedSgf(source)?.sgf ?? null;
-  }, [location.state, source]);
+    return navSgf ?? cached?.sgf ?? null;
+  }, [location.state, cached]);
 
-  // Load per-step truth from the backend engine. (The "no SGF" case is rendered
-  // directly below — no effect-driven setState needed.)
   useEffect(() => {
     if (!sgf) return;
     let cancelled = false;
@@ -192,14 +159,12 @@ const BaipuSessionPage = () => {
         setBoardSize(resp.board_size);
         setMeta(resp.meta);
         const prog = getProgress(source);
-        if (prog && prog.k > 0 && prog.k < resp.steps.length) {
-          setResumePrompt(prog.k); // ask continue vs restart
-        }
+        if (prog && prog.k > 0 && prog.k < resp.steps.length) setResumePrompt(prog.k);
         setPhase('guiding');
       })
       .catch((err: Error) => {
         if (cancelled) return;
-        setError(err.message);
+        setLoadError(err.message);
         setPhase('error');
       });
     return () => { cancelled = true; };
@@ -208,66 +173,49 @@ const BaipuSessionPage = () => {
   const currentStep: BaipuStep | undefined = steps[k];
   const isPlaceable = !!currentStep && currentStep.kind !== 'pass' && currentStep.kind !== 'clear';
 
-  // Build LiveBoard inputs from canonical steps.
-  const moves = useMemo(
-    () => steps.map((s) => (s.kind === 'pass' || s.row == null || s.col == null ? 'pass' : canonToGtp(s.row, s.col, boardSize))),
-    [steps, boardSize],
-  );
-  const stoneColors = useMemo(() => steps.map((s) => (s.color ?? 'B') as 'B' | 'W'), [steps]);
-
   const advance = useCallback(() => {
     setK((prev) => {
       const next = prev + 1;
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now() });
+      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length });
       setPhase(next >= steps.length ? 'done' : 'guiding');
       return next;
     });
   }, [source, steps.length]);
 
-  // 带灯拍: trust the operator confirmation, then light-next + photo on the backend. Falls back
-  // to a plain advance when capture isn't enabled (404, dev/screen-only mode).
   const doCapture = useCallback(
     async (moveIndex: number) => {
       if (!sgf) return;
       setCapturePending(true);
-      setError(null);
+      setCaptureError(null);
       const out = await BaipuAPI.capture({
-        game_id: source,
-        move_index: moveIndex,
-        sgf,
+        game_id: source, move_index: moveIndex, sgf,
         overwrite_existing: overwriteExisting || undefined,
       });
-      if (!mountedRef.current) return; // navigated away mid-capture
+      if (!mountedRef.current) return;
       setCapturePending(false);
-      if (out.kind === 'error') {
-        setError(out.message);
-        return;
-      }
+      if (out.kind === 'error') { setCaptureError(out.message); setCaptureReason(out.reason); return; }
+      if (out.kind === 'disabled') setCaptureDisabled(true);
       if (out.kind === 'ok') {
         const filename = savedFilename(out.result.path);
         if (filename) setLatestSavedFile(filename);
-        setDriftStatus(out.result.geometry_correction ?? null);
+        setDrift(out.result.geometry_correction ?? null);
         setFrameCount((c) => c + 1);
-        playShutter(); // go-signal AFTER the frame is written
+        playShutter();   // 拍完才响 —— 它是「可以摆下一颗了」的信号
       }
-      // ok | disabled → advance (capture is advisory only in non-hardware modes)
       advance();
     },
     [sgf, source, overwriteExisting, advance],
   );
 
-  // Forced initial empty+LED frame (default ON) — best-effort, before the first move.
+  // 开局那一帧(空盘 + 全灯):尽力而为,失败不拦路。
   useEffect(() => {
     if (phase === 'guiding' && k === 0 && resumePrompt === null && !initialCapturedRef.current && sgf && steps.length > 0) {
       initialCapturedRef.current = true;
-      BaipuAPI.capture({
-        game_id: source,
-        move_index: -1,
-        sgf,
-        overwrite_existing: overwriteExisting || undefined,
-      })
+      BaipuAPI.capture({ game_id: source, move_index: -1, sgf, overwrite_existing: overwriteExisting || undefined })
         .then((out) => {
-          if (out.kind !== 'ok' || !mountedRef.current) return;
+          if (!mountedRef.current) return;
+          if (out.kind === 'disabled') { setCaptureDisabled(true); return; }
+          if (out.kind !== 'ok') return;
           const filename = savedFilename(out.result.path);
           if (filename) setLatestSavedFile(filename);
           setFrameCount((c) => c + 1);
@@ -276,7 +224,7 @@ const BaipuSessionPage = () => {
     }
   }, [phase, k, resumePrompt, sgf, source, steps.length, overwriteExisting]);
 
-  // Steps with no physical placement (pass, AE-clear) auto-advance (plan §1.3).
+  // 没有物理动作的步(pass / AE)自己往前走。
   useEffect(() => {
     if (phase === 'guiding' && currentStep && (currentStep.kind === 'pass' || currentStep.kind === 'clear')) {
       const timer = setTimeout(advance, 500);
@@ -284,320 +232,428 @@ const BaipuSessionPage = () => {
     }
   }, [phase, currentStep, advance]);
 
-  // Drive the LED board to mirror the on-screen guidance (UI-tolerant path:
-  // failures only gray out the health dot, they never block placement).
+  // 灯跟着屏走。**失败只让那颗键变红,永不拦住摆放** —— 没灯照坐标摆,一样产出可用的帧。
   useEffect(() => {
     if (phase === 'guiding' && currentStep && currentStep.kind !== 'pass' && currentStep.row != null && currentStep.col != null && currentStep.color) {
       LedAPI.point({ row: currentStep.row, col: currentStep.col, color: stoneToLedColor(currentStep.color) })
-        .then((r) => setLedOk(r.connected))
-        .catch(() => setLedOk(false));
+        .then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
     } else if (phase === 'await_removal' && currentStep && currentStep.removed.length > 0) {
       LedAPI.points(currentStep.removed.map((p) => ({ row: p.row, col: p.col, color: 'remove' as LedColor })))
-        .then((r) => setLedOk(r.connected))
-        .catch(() => setLedOk(false));
+        .then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
     } else if (phase === 'done') {
       LedAPI.clear().then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
     }
   }, [phase, k, currentStep]);
 
-  // Blackout the LED when leaving the session; flag unmount for async guards.
   useEffect(() => {
     mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      LedAPI.clear().catch(() => undefined);
-    };
+    return () => { mountedRef.current = false; LedAPI.clear().catch(() => undefined); };
   }, []);
+
+  // 着法表滚到当前那一手 —— 241 手的谱靠手指翻是翻不到第 200 手的。
+  useEffect(() => { nowRef.current?.scrollIntoView({ block: 'nearest' }); }, [k]);
 
   const relight = () => {
     if (currentStep && currentStep.kind !== 'pass' && currentStep.row != null && currentStep.col != null && currentStep.color) {
       LedAPI.point({ row: currentStep.row, col: currentStep.col, color: stoneToLedColor(currentStep.color) })
-        .then((r) => setLedOk(r.connected))
-        .catch(() => setLedOk(false));
+        .then((r) => setLedOk(r.connected)).catch(() => setLedOk(false));
     }
   };
 
   const handleConfirm = () => {
     if (!currentStep) return;
-    // Captured stones must be physically removed before saving the training frame;
-    // route through the independent removal mode first when this move captures.
-    if (currentStep.removed.length > 0) {
-      setPhase('await_removal');
-    } else {
-      void doCapture(k);
-    }
+    // 提子要人先把死子拿下来,拿完才存帧 —— 否则那一帧上是一个不该存在的局面。
+    if (currentStep.removed.length > 0 && phase === 'guiding') { setPhase('await_removal'); return; }
+    void doCapture(k);
   };
 
   const handleUndo = () => {
     setUndoOpen(false);
+    setCaptureError(null);
     setK((prev) => {
       const next = Math.max(0, prev - 1);
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now() });
+      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length });
       return next;
     });
     setPhase('guiding');
   };
 
-  const handleExit = () => {
-    setExitOpen(false);
-    navigate('/kiosk/baipu');
-  };
-
-  // --- guidance overlays (convert canonical -> LiveBoard y=0 bottom) ---
-  const nextMovePoint = useMemo(() => {
-    if (!['guiding', 'await_removal'].includes(phase) || !currentStep) return null;
-    if (currentStep.kind === 'pass' || currentStep.row == null || currentStep.col == null) return null;
-    return { ...canonToBoard(currentStep.row, currentStep.col, boardSize), color: (currentStep.color ?? 'B') as 'B' | 'W' };
+  // ── 盘面:笨播放器,一条气都不算 ──
+  const board = useMemo(() => replayBaipuSteps(steps, k, boardSize), [steps, k, boardSize]);
+  const ghost = useMemo(() => {
+    if (!['guiding', 'await_removal'].includes(phase) || !currentStep) return [];
+    if (currentStep.row == null || currentStep.col == null) return [];
+    return [canonToGtp(currentStep.row, currentStep.col, boardSize)];
   }, [phase, currentStep, boardSize]);
-
-  const capturedPositions = useMemo(() => {
-    if (phase !== 'await_removal' || !currentStep) return null;
-    return currentStep.removed.map((p) => canonToBoard(p.row, p.col, boardSize));
+  const atari = useMemo(() => {
+    if (phase !== 'await_removal' || !currentStep) return [];
+    return currentStep.removed.map((p) => canonToGtp(p.row, p.col, boardSize));
   }, [phase, currentStep, boardSize]);
-
-  // During await_removal keep the board at k (captured stones still visible);
-  // otherwise show steps[0..k-1].
-  const currentMove = k;
 
   const nextColor = currentStep?.color ?? null;
-  const nextColorLabel = nextColor === 'B' ? t('Black', '黑') : nextColor === 'W' ? t('White', '白') : '';
-  const ledColorLabel = nextColor === 'B' ? t('red LED', '红灯') : nextColor === 'W' ? t('green LED', '绿灯') : '';
+  const coord = currentStep?.row != null && currentStep.col != null
+    ? canonToGtp(currentStep.row, currentStep.col, boardSize) : null;
 
+  // 着法表:一行一个回合(黑 / 白)。
+  const rows = useMemo(() => {
+    const out: { n: number; b: string | null; w: string | null; bAt: number; wAt: number }[] = [];
+    steps.forEach((s, i) => {
+      if (s.kind === 'setup' || s.kind === 'clear') return;
+      const label = s.row != null && s.col != null ? canonToGtp(s.row, s.col, boardSize) : null;
+      const tail = out[out.length - 1];
+      if (s.color === 'B' || !tail || tail.w !== null) out.push({ n: out.length + 1, b: null, w: null, bAt: -1, wAt: -1 });
+      const cur = out[out.length - 1];
+      if (s.color === 'W') { cur.w = label; cur.wAt = i; } else { cur.b = label; cur.bAt = i; }
+    });
+    return out;
+  }, [steps, boardSize]);
+
+  const drifted = driftLine(drift);
+  const driftText = drifted && {
+    corrected: t('baipu:drift_corrected', '棋盘动过，已自动校正'),
+    stale: t('baipu:drift_stale', '这一帧没能重新校正，沿用了上次的几何'),
+    frozen: t('baipu:drift_frozen', '几何没有校正过'),
+  }[drifted.key];
+  const driftWord = drifted && {
+    corrected: t('baipu:drift_word_corrected', '已校正'),
+    stale: t('baipu:drift_word_stale', '沿用上次'),
+    frozen: t('baipu:drift_word_frozen', '未校正'),
+  }[drifted.key];
+
+  const title = (location.state as { name?: string } | null)?.name
+    ?? cached?.name
+    ?? (meta ? `${meta.player_black || t('baipu:black', '黑方')} vs ${meta.player_white || t('baipu:white', '白方')}` : t('baipu:title', '摆谱'));
+
+  // ── 读不到 / 还在读 ──
   if (!sgf || phase === 'error') {
     return (
-      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
-        <Typography color="error">{error ?? t('No SGF found for this session', '未找到该会话的棋谱')}</Typography>
-        <Button variant="contained" onClick={() => navigate('/kiosk/baipu')}>{t('Back', '返回')}</Button>
-      </Box>
+      <div className="kiosk-layout-b" data-testid="baipu-session-page">
+        <KioskPagebar
+          testId="baipu-pagebar"
+          backLabel={t('baipu:back_kifu', '棋谱')}
+          onBack={() => navigate('/kiosk/baipu')}
+          title={t('baipu:title', '摆谱')}
+        />
+        <div className="empty" data-testid="baipu-load-error">
+          <h4>{sgf ? t('baipu:load_failed', '没读出这份谱') : t('baipu:no_sgf', '这台盒子上没有这份谱')}</h4>
+          {loadError && <p>{loadError}</p>}
+        </div>
+      </div>
     );
   }
-
   if (phase === 'loading') {
     return (
-      <Box sx={{ height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <CircularProgress />
-      </Box>
+      <div className="kiosk-layout-b" data-testid="baipu-session-page">
+        <KioskPagebar
+          testId="baipu-pagebar"
+          backLabel={t('baipu:back_kifu', '棋谱')}
+          onBack={() => navigate('/kiosk/baipu')}
+          title={title}
+        />
+        <div className="empty" data-testid="baipu-loading"><h4>{t('baipu:loading', '正在读这份谱')}</h4></div>
+      </div>
     );
   }
 
+  // 优先级写死,互斥:采集失败 > 待移除 > 待摆 > 已完成。(拍照遮罩盖在最上面,不属于这一档。)
+  const mood: Mood = captureError !== null ? 'failed'
+    : phase === 'await_removal' ? 'removal'
+      : phase === 'done' ? 'done' : 'guiding';
+
+  const cols = colsFor(boardSize);
+  const boardRows = rowsFor(boardSize);
+
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-      {/* Persistent dashboard status bar — the screen is the instrument, the board is the subject. */}
-      <Box
-        data-testid="baipu-status-bar"
-        sx={{
-          display: 'flex', alignItems: 'center', gap: 2, px: 3, py: 1.5,
-          bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0,
-        }}
-      >
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          {phase === 'done'
-            ? t('Done', '已完成')
-            : <>{t('Place', '落子')} <Box component="span" sx={{ color: 'primary.main' }}>{nextColorLabel}</Box></>}
-        </Typography>
-        <Chip
-          data-testid="baipu-progress"
-          label={`${t('Move', '第')} ${Math.min(k + (phase === 'done' ? 0 : 1), steps.length)}/${steps.length} ${t('moves', '手')}`}
-          sx={{ bgcolor: 'var(--raise2)', fontFamily: KIOSK_MONO }}
-        />
-        <Typography variant="caption" sx={{ color: 'text.secondary' }} data-testid="baipu-frame-count">
-          {t('Captured', '已采集')} {frameCount} {t('frames', '帧')}
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        <HealthDot label="LED" ok={ledOk} />
-        <HealthDot label={t('Camera', '相机')} ok={null} />
-      </Box>
-
-      <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        {/* Board */}
-        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', bgcolor: 'background.default', minHeight: 0, p: 1 }}>
-          <LiveBoard
-            moves={moves}
-            stoneColors={stoneColors}
-            currentMove={currentMove}
-            boardSize={boardSize}
-            showCoordinates
-            nextMovePoint={nextMovePoint}
-            capturedPositions={capturedPositions}
+    <div className="kiosk-layout-a baipu-layout" data-testid="baipu-session-page" data-mood={mood}>
+      <div className="kiosk-board" data-testid="baipu-board">
+        <div className="kiosk-board__ruler kiosk-board__ruler--top">
+          {cols.map((c) => <span key={`t${c}`}>{c}</span>)}
+        </div>
+        <div className="kiosk-board__ruler kiosk-board__ruler--left">
+          {boardRows.map((r) => <span key={`l${r}`}>{r}</span>)}
+        </div>
+        <div className="kiosk-board__play">
+          <GoBoardSvg
+            size={boardSize}
+            black={board.black}
+            white={board.white}
+            last={board.last}
+            ghost={ghost}
+            // 屏上那个圈必须和盘上那颗灯同色 —— 黑子红、白子绿。
+            ghostFor={nextColor ?? undefined}
+            atari={atari}
+            label={t('baipu:board_label', '摆谱盘面：圈是下一手该落的点')}
           />
-        </Box>
+        </div>
+        <div className="kiosk-board__ruler kiosk-board__ruler--right">
+          {boardRows.map((r) => <span key={`r${r}`}>{r}</span>)}
+        </div>
+        <div className="kiosk-board__ruler kiosk-board__ruler--bottom">
+          {cols.map((c) => <span key={`b${c}`}>{c}</span>)}
+        </div>
+      </div>
 
-        {/* Right rail: players + next-color chip + controls */}
-        <Box sx={{ width: 280, display: 'flex', flexDirection: 'column', gap: 2, p: 2, borderLeft: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
-          <PlayerPanel color="B" name={meta?.player_black ?? ''} active={nextColor === 'B' && phase !== 'done'} t={t} />
-          <PlayerPanel color="W" name={meta?.player_white ?? ''} active={nextColor === 'W' && phase !== 'done'} t={t} />
-
-          {/* Most salient element: the next stone color = LED color */}
-          {phase !== 'done' && nextColor && (
-            <Box
-              data-testid="baipu-next-chip"
-              sx={{
-                mt: 1, p: 2, borderRadius: '12px', textAlign: 'center',
-                bgcolor: nextColor === 'B' ? alpha(LED_HEX.black, 0.14) : alpha(LED_HEX.white, 0.14),
-                border: `2px solid ${nextColor === 'B' ? LED_HEX.black : LED_HEX.white}`,
-              }}
-            >
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t('Next stone', '下一手')}</Typography>
-              <Typography variant="h5" sx={{ fontWeight: 800 }}>{nextColorLabel}</Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>{ledColorLabel}</Typography>
-              <Typography data-testid="baipu-current-move" variant="body2" sx={{ mt: 1, fontWeight: 700 }}>
-                {t('Current placement', '当前待摆')}：{t('Move', '第')} {k + 1} {t('moves', '手')}
-              </Typography>
-            </Box>
+      <div className="kiosk-rail">
+        <KioskPagebar
+          testId="baipu-pagebar"
+          backLabel={t('baipu:back_kifu', '棋谱')}
+          onBack={() => setExitOpen(true)}
+          title={title}
+          sub={interpolate(
+            t('baipu:pagebar_sub', '第 {i} / {n} 手 · 已采集 {f} 帧'),
+            { i: Math.min(k + (phase === 'done' ? 0 : 1), steps.length), n: steps.length, f: frameCount },
           )}
-
-          <Box sx={{ flex: 1 }} />
-
-          <Box
-            data-testid="baipu-latest-frame"
-            sx={{ px: 2, py: 1.5, borderRadius: '10px', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}
-          >
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t('Latest saved', '最近保存')}</Typography>
-            <Typography sx={{ mt: 0.25, fontFamily: KIOSK_MONO, fontWeight: 700 }}>
-              {latestSavedFile ?? t('None yet', '尚无')}
-            </Typography>
-          </Box>
-
-          {/* Primary action */}
-          {phase === 'guiding' && isPlaceable && (
-            <Button
-              fullWidth variant="contained" onClick={handleConfirm} disabled={capturePending} data-testid="baipu-confirm"
-              sx={{ minHeight: 88, fontSize: '1.3rem', borderRadius: '12px', fontWeight: 700 }}
-            >
-              {t('Confirm', '确认落子')}
-            </Button>
-          )}
-          {phase === 'guiding' && currentStep && !isPlaceable && (
-            <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary' }}>
-              {currentStep.kind === 'pass' ? t('Pass — continuing…', '虚手，继续…') : t('Clearing — continuing…', '清除，继续…')}
-            </Typography>
-          )}
-          {phase === 'await_removal' && (
-            <Button
-              fullWidth variant="contained" color="warning" onClick={() => void doCapture(k)} disabled={capturePending} data-testid="baipu-removed"
-              sx={{ minHeight: 88, fontSize: '1.2rem', borderRadius: '12px', fontWeight: 700 }}
-            >
-              {t('Removed', '已移除')} {currentStep?.removed.length} {t('stones', '子')}
-            </Button>
-          )}
-          {phase === 'done' && (
-            <Button fullWidth variant="contained" onClick={() => navigate('/kiosk/baipu')} data-testid="baipu-done-back" sx={{ minHeight: 64, borderRadius: '12px' }}>
-              {t('Done — back to list', '完成，返回列表')}
-            </Button>
-          )}
-
-          {/* Secondary controls (session-level kept away from the per-move primary) */}
-          {phase === 'guiding' && isPlaceable && (
-            <Button variant="text" onClick={relight} data-testid="baipu-relight" sx={{ color: 'text.secondary' }}>
-              {t('Re-light', '重新点灯')}
-            </Button>
-          )}
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button fullWidth variant="outlined" disabled={k === 0 || phase === 'done' || capturePending} onClick={() => setUndoOpen(true)} data-testid="baipu-undo" sx={{ borderRadius: '10px' }}>
-              {t('Undo', '撤回上一手')}
-            </Button>
-            <Button variant="text" color="inherit" disabled={capturePending} onClick={() => setExitOpen(true)} data-testid="baipu-exit" sx={{ color: 'text.secondary', minWidth: 64 }}>
-              {t('Exit', '退出')}
-            </Button>
-          </Box>
-        </Box>
-      </Box>
-
-      {/* 提子 independent mode: full-width banner to break the place→confirm rhythm */}
-      {phase === 'await_removal' && (
-        <Box
-          data-testid="baipu-removal-banner"
-          sx={{ px: 3, py: 1.5, bgcolor: alpha(LED_HEX.remove, 0.18), borderTop: `2px solid ${LED_HEX.remove}`, textAlign: 'center', flexShrink: 0 }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            {t('Remove the captured stones (flashing)', '请移除被提的子（闪烁处）')} — {currentStep?.removed.length}
-          </Typography>
-        </Box>
-      )}
-
-      {/* P11: board-drift status for the just-captured frame. */}
-      <DriftBanner correction={driftStatus} />
-
-      {/* Capture failures block advancement but keep the current move available for retry. */}
-      {error && (
-        <Box
-          data-testid="baipu-capture-error"
-          sx={{ px: 3, py: 1.5, bgcolor: alpha(theme.palette.error.main, 0.18), borderTop: `2px solid ${theme.palette.error.main}`, textAlign: 'center', flexShrink: 0 }}
-        >
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            {t('Capture failed; placement was not advanced', '采集失败，当前手未推进')}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>{error}</Typography>
-        </Box>
-      )}
-
-      {/* Capture-pending barrier: keep hands out of frame until the shutter fires */}
-      {capturePending && (
-        <Box
-          data-testid="baipu-capture-pending"
-          sx={{
-            position: 'absolute', inset: 0, zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center',
-            bgcolor: 'rgba(0,0,0,0.55)',
+          action={{
+            icon: 'lightbulb',
+            label: t('baipu:relight', '重新点灯'),
+            onClick: relight,
+            // 这颗键兼当 LED 的状态点 —— 它本来就是这个故障的补救动作。
+            state: ledOk === false ? 'bad' : undefined,
           }}
+        />
+
+        {/* ── 此刻你该做什么 ── 四态互斥,同一块 pcard 换内容 */}
+        <div className={`pcard ${mood === 'guiding' ? 'turn' : mood}`} data-testid="baipu-pcard" data-mood={mood}>
+          {mood === 'guiding' && nextColor && <span className={nextColor === 'B' ? 'disc b' : 'disc w'} />}
+          <div>
+            {mood === 'failed' ? (
+              <>
+                <h4>{t('baipu:failed_title', '这一手没采上')}</h4>
+                {/* 服务端原文塞 title,不上屏:`.pcard p` 是 11px 单行省略,印上去只会被截断,
+                    而站在盘前的人也不 debug HTTP。
+                    ⚠️ **几何那一种不能说「再按一次」** —— 它的 409 会一直是同一个,
+                    人照着做只会一直按下去。那一种要说的是「去哪儿修」。 */}
+                <p title={captureError || undefined}>
+                  {captureReason === 'geometry'
+                    ? t('baipu:failed_hint_geometry', '棋盘位置对不上了 —— 去设置里重新标定，再按一次没用')
+                    : t('baipu:failed_hint', '子先别动 —— 再按一次「确认落子」')}
+                </p>
+              </>
+            ) : mood === 'removal' ? (
+              <>
+                <h4>{interpolate(t('baipu:removal_title', '请拿走被提的 {n} 子'), { n: currentStep?.removed.length ?? 0 })}</h4>
+                <p>{t('baipu:removal_hint', '亮蓝灯的那几颗 —— 提子要人自己拿，拿完再按「已移除」')}</p>
+              </>
+            ) : mood === 'done' ? (
+              <>
+                <h4>{t('baipu:done_title', '这份谱摆完了')}</h4>
+                <p>{interpolate(t('baipu:done_hint', '一共 {n} 手 · 采到 {f} 帧'), { n: steps.length, f: frameCount })}</p>
+              </>
+            ) : (
+              <>
+                <h4>{coord
+                  ? interpolate(t('baipu:place_at', '当前待摆 · {c}'), { c: coord })
+                  : t('baipu:place_none', '这一步不用摆子')}</h4>
+                <p>{ledOk === false
+                  ? interpolate(t('baipu:led_down', '灯没亮 —— 按右上角重新点灯，或照坐标 {c} 自己找'), { c: coord ?? '' })
+                  : interpolate(
+                    t('baipu:led_on', '灯已点亮 —— 把{color}子放在亮着的那个交叉点'),
+                    { color: nextColor === 'W' ? t('baipu:white_s', '白') : t('baipu:black_s', '黑') },
+                  )}</p>
+              </>
+            )}
+          </div>
+          <div className="clock">
+            <b>{mood === 'removal' ? (currentStep?.removed.length ?? 0) : Math.min(k + (phase === 'done' ? 0 : 1), steps.length)}</b>
+            <span>{mood === 'removal' ? t('baipu:stones_unit', '子') : t('baipu:which_move', '第几手')}</span>
+          </div>
+        </div>
+
+        {/* ── 摄像头 ── 这本账既是采集记录,也是那条 LED 图例的落点 */}
+        <KioskFold
+          fold="cam"
+          testId="baipu-cam-fold"
+          title={t('baipu:cam_title', '摄像头 · 这一手要采一帧')}
+          // 收起的是明细不是结论:没接采集 / 几何有话说,这两句收起来也得看得见。
+          value={captureDisabled
+            ? t('baipu:capture_off', '这台机器没接采集')
+            : driftWord ?? t('baipu:hands_off', '手不要在盘上')}
+          bodyClassName="ledger"
         >
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#fff' }}>
-            {t('Capturing — keep hands clear', '正在拍照，请勿伸手')}
-          </Typography>
-        </Box>
+          <div className="lrow">
+            <b>{interpolate(t('baipu:frames_n', '已采集 {n} 帧'), { n: frameCount })}</b>
+            <span className="led" style={{ background: LED_HEX.black }} aria-hidden="true" />
+            <i>{t('baipu:legend_black', '红灯 = 放黑子')}</i>
+          </div>
+          <div className="lrow">
+            <b>{latestSavedFile
+              ? interpolate(t('baipu:latest_saved', '最近保存 {f}'), { f: latestSavedFile })
+              : t('baipu:no_frame_yet', '还没存过帧')}</b>
+            <span className="led" style={{ background: LED_HEX.white }} aria-hidden="true" />
+            <i>{t('baipu:legend_white', '绿灯 = 放白子')}</i>
+          </div>
+          <div className="lrow">
+            <b>{interpolate(
+              t('baipu:removed_n', '本手提子 {n} 子'),
+              { n: mood === 'removal' ? (currentStep?.removed.length ?? 0) : 0 },
+            )}</b>
+            <span className="led" style={{ background: LED_HEX.remove }} aria-hidden="true" />
+            <i>{t('baipu:legend_remove', '蓝灯 = 该拿走')}</i>
+          </div>
+          {driftText && (
+            <div className="lrow" data-testid="baipu-drift-row" data-drift-status={drifted?.key}>
+              <b style={drifted?.bad ? { color: 'var(--warn)' } : undefined}>{driftText}</b>
+            </div>
+          )}
+        </KioskFold>
+
+        {/* ── 已经摆过的 ── */}
+        <KioskFold
+          fold="moves"
+          grow
+          testId="baipu-moves-fold"
+          title={t('baipu:moves_title', '已经摆过的')}
+          value={interpolate(t('baipu:moves_value', '{k} 手 / 共 {n}'), { k, n: steps.length })}
+          bodyClassName="mvrows"
+        >
+          {rows.length === 0 ? (
+            <span className="n">{t('baipu:no_moves', '这份谱里没有着法')}</span>
+          ) : rows.map((r) => (
+            <BaipuMoveRow key={r.n} row={r} k={k} nowRef={nowRef} passLabel={t('baipu:pass', '虚手')} />
+          ))}
+        </KioskFold>
+
+        <KioskActions
+          testId="baipu-actions"
+          ariaLabel={t('baipu:actions', '摆谱操作')}
+          actions={[
+            mood === 'removal'
+              ? {
+                key: 'removed',
+                icon: 'camera',
+                label: interpolate(t('baipu:removed_done', '已移除 {n} 子'), { n: currentStep?.removed.length ?? 0 }),
+                disabled: capturePending,
+                onClick: () => { void doCapture(k); },
+              }
+              : {
+                key: 'confirm',
+                icon: 'camera',
+                label: t('baipu:confirm', '确认落子'),
+                disabled: capturePending || phase === 'done' || !isPlaceable,
+                reason: phase === 'done' ? t('baipu:confirm_done_reason', '这份谱已经摆完了') : undefined,
+                onClick: handleConfirm,
+              },
+            {
+              key: 'undo',
+              icon: 'arrow-counter-clockwise',
+              label: t('baipu:undo', '撤回上一手'),
+              disabled: k === 0 || capturePending,
+              reason: k === 0 ? t('baipu:undo_reason', '还没摆下第一颗') : undefined,
+              onClick: () => setUndoOpen(true),
+            },
+            {
+              key: 'finish',
+              icon: 'flag',
+              label: t('baipu:finish', '完成'),
+              // 常驻是为了格子不重排(「确认落子」一局按约 250 次,位置是肌肉记忆);
+              // 摆完之前一律灰 —— 提前收工是**返回**该做的事,不是它。
+              disabled: phase !== 'done',
+              reason: phase !== 'done'
+                ? interpolate(t('baipu:finish_reason', '还剩 {n} 手没摆'), { n: steps.length - k })
+                : undefined,
+              onClick: () => { clearProgress(source); navigate('/kiosk/baipu'); },
+            },
+          ]}
+        />
+      </div>
+
+      {/* 拍照遮罩:盖住**整个布局根**。第一职责是挡住第二次按下「确认落子」——
+          只盖盘的话右栏三颗键看着是活的、按下去没反应,那比一句偏了的提示更像假话。 */}
+      {capturePending && (
+        <div className="cdlg" data-testid="baipu-capture-pending">
+          <div className="cdlg__box" role="alertdialog" aria-modal="true">
+            <h3>{t('baipu:capturing', '正在拍照，请勿伸手')}</h3>
+            <p>{t('baipu:capturing_hint', '手挡住了这一手就采不到，得重来。')}</p>
+          </div>
+        </div>
       )}
 
-      {/* Resume prompt */}
-      <Dialog open={resumePrompt !== null} onClose={() => setResumePrompt(null)}>
-        <DialogTitle>{t('Continue last session?', '继续上次会话？')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {t('You were at move', '上次进行到第')} {resumePrompt} {t('moves', '手')}。
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => {
-            clearProgress(source);
-            setOverwriteExisting(true);
-            setFrameCount(0);
-            setLatestSavedFile(null);
-            setError(null);
-            initialCapturedRef.current = false;
-            setK(0);
-            setResumePrompt(null);
-          }}>{t('Restart', '重新开始')}</Button>
-          <Button variant="contained" onClick={() => { if (resumePrompt != null) setK(resumePrompt); setOverwriteExisting(false); setResumePrompt(null); }} data-testid="baipu-resume-continue">
-            {t('Continue', '继续上次')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {resumePrompt !== null && (
+        <div className="cdlg" data-testid="baipu-resume">
+          <div className="cdlg__box" role="dialog" aria-modal="true">
+            <h3>{t('baipu:resume_ask', '接着上次摆？')}</h3>
+            <p>{interpolate(t('baipu:resume_body', '上次摆到第 {n} 手。重新开始会覆盖已经采过的帧。'), { n: resumePrompt })}</p>
+            <div className="cdlg__acts">
+              <button
+                type="button" className="ghost" data-testid="baipu-resume-restart"
+                onClick={() => {
+                  clearProgress(source);
+                  setOverwriteExisting(true);
+                  setFrameCount(0); setLatestSavedFile(null); setCaptureError(null); setDrift(null);
+                  initialCapturedRef.current = false;
+                  setK(0); setResumePrompt(null);
+                }}
+              >{t('baipu:restart', '从头摆')}</button>
+              <button
+                type="button" className="main" data-testid="baipu-resume-continue"
+                onClick={() => { setK(resumePrompt); setOverwriteExisting(false); setResumePrompt(null); }}
+              >{t('baipu:resume', '接着摆')}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Undo confirm (physical-guided) */}
-      <Dialog open={undoOpen} onClose={() => setUndoOpen(false)}>
-        <DialogTitle>{t('Undo last move?', '撤回上一手？')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            {t('Physically remove the last stone you placed (and restore any captured stones), then confirm.', '请从棋盘上拿掉刚摆的子（并恢复被提的子），然后确认。')}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setUndoOpen(false)}>{t('Cancel', '取消')}</Button>
-          <Button variant="contained" color="warning" onClick={handleUndo}>{t('Undone', '已撤回')}</Button>
-        </DialogActions>
-      </Dialog>
+      {undoOpen && (
+        <div className="cdlg" data-testid="baipu-undo-confirm">
+          <div className="cdlg__box" role="dialog" aria-modal="true">
+            <h3>{t('baipu:undo_ask', '撤回上一手？')}</h3>
+            <p>{t('baipu:undo_body', '先把刚摆的那颗子从盘上拿下来（被提的子也放回去），再按「已撤回」。')}</p>
+            <div className="cdlg__acts">
+              <button type="button" className="ghost" onClick={() => setUndoOpen(false)}>{t('cancel', '取消')}</button>
+              <button type="button" className="main" data-testid="baipu-undo-confirm-action" onClick={handleUndo}>
+                {t('baipu:undo_done', '已撤回')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Exit confirm */}
-      <Dialog open={exitOpen} onClose={() => setExitOpen(false)}>
-        <DialogTitle>{t('Exit placement?', '退出摆谱？')}</DialogTitle>
-        <DialogContent>
-          <DialogContentText>{t('Your progress is saved and can be resumed.', '进度已保存，可稍后继续。')}</DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setExitOpen(false)}>{t('Cancel', '取消')}</Button>
-          <Button variant="contained" onClick={handleExit}>{t('Exit', '退出')}</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      {/* 退出确认。**不是实现遗留,是这一屏已采纳的裁定**:「确认落子」一局按约 250 次,
+          退出按一次,两颗不能同排;解法是移到角上(页控条)+ 二次确认,两半配套。 */}
+      {exitOpen && (
+        <div className="cdlg" data-testid="baipu-exit-confirm">
+          <div className="cdlg__box" role="dialog" aria-modal="true">
+            <h3>{t('baipu:exit_ask', '退出摆谱？')}</h3>
+            <p>{t('baipu:exit_body', '进度已经存下了，回来还能接着摆。')}</p>
+            <div className="cdlg__acts">
+              <button type="button" className="ghost" onClick={() => setExitOpen(false)}>{t('cancel', '取消')}</button>
+              <button
+                type="button" className="main" data-testid="baipu-exit-confirm-action"
+                onClick={() => navigate('/kiosk/baipu')}
+              >{t('baipu:exit', '退出')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
+
+/** 着法表一行:回合号 + 黑 + 白。当前那一手高亮,并把 ref 交出去好滚到视野里。 */
+function BaipuMoveRow({ row, k, nowRef, passLabel }: {
+  row: { n: number; b: string | null; w: string | null; bAt: number; wAt: number };
+  k: number;
+  nowRef: React.MutableRefObject<HTMLSpanElement | null>;
+  passLabel: string;
+}) {
+  const cell = (label: string | null, at: number) => {
+    if (at < 0) return <span className="mv" />;
+    // 「已经摆过的」= 下标 < k。当前那一手(下标 k)还没摆,不算。
+    const done = at < k;
+    const isNow = at === k - 1;
+    return (
+      <span ref={isNow ? nowRef : undefined} className={isNow ? 'mv now' : 'mv'} style={done ? undefined : { opacity: 0.35 }}>
+        {label ?? passLabel}
+      </span>
+    );
+  };
+  return (
+    <>
+      <span className="n">{row.n}</span>
+      {cell(row.b, row.bAt)}
+      {cell(row.w, row.wAt)}
+    </>
+  );
+}
 
 export default BaipuSessionPage;

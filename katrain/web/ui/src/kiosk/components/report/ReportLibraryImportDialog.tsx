@@ -137,7 +137,7 @@ export default function ReportLibraryImportDialog({
               onChange={(event) => setQueryInput(event.target.value)}
               onKeyDown={(event) => { if (event.key === 'Enter') search(); }}
               disabled={loading}
-              placeholder={t('report:search_placeholder_lib', '搜索棋手、赛事或日期')}
+              placeholder={t('report:search_placeholder_lib', '按棋手、赛事、日期搜索')}
               fullWidth
               slotProps={{
                 htmlInput: {
@@ -159,7 +159,7 @@ export default function ReportLibraryImportDialog({
 
           {fetching ? (
             <Box sx={{ minHeight: 96, display: 'grid', placeItems: 'center' }}>
-              <CircularProgress size={32} aria-label={t('report:loading', '正在加载')} />
+              <CircularProgress size={32} aria-label={t('report:loading', '加载中...')} />
             </Box>
           ) : fetchError ? (
             <Alert
@@ -169,7 +169,7 @@ export default function ReportLibraryImportDialog({
               {t('report:library_load_failed', '棋谱加载失败，请重试。')}
             </Alert>
           ) : items.length === 0 ? (
-            <Typography color="text.secondary">{t('report:no_results', '没有找到棋谱。')}</Typography>
+            <Typography color="text.secondary">{t('report:no_results', '没有搜索到棋谱。')}</Typography>
           ) : (
             <Stack spacing={1} sx={{ minWidth: 0 }}>
               {items.map((item) => {
@@ -250,13 +250,13 @@ export default function ReportLibraryImportDialog({
       >
         <Button disabled={loading} onClick={onClose} sx={actionButtonSx}>{t('common:cancel', '取消')}</Button>
         <Button disabled={loading || fetching || !selectedAlbum} onClick={() => submit()} sx={actionButtonSx}>
-          {loading ? t('report:importing', '正在导入…') : t('report:import_only', '仅导入')}
+          {loading ? t('report:importing', '导入中...') : t('report:import_only', '仅导入')}
         </Button>
         <Button variant="contained" disabled={loading || fetching || !selectedAlbum} onClick={() => submit('normal')} sx={actionButtonSx}>
-          {t('report:import_and_normal', '导入并生成普通复盘')}
+          {t('report:import_and_normal', '导入并生成普通报告')}
         </Button>
         <Button variant="outlined" disabled={loading || fetching || !selectedAlbum} onClick={() => submit('deep')} sx={actionButtonSx}>
-          {t('report:import_and_deep', '导入并生成深度复盘')}
+          {t('report:import_and_deep', '导入并生成深度报告')}
         </Button>
       </DialogActions>
     </Dialog>

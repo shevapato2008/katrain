@@ -1,0 +1,1320 @@
+/* 围棋屏级类 —— 以及**共享包缺、必须补在本地**的那几条。
+ *
+ * 共享 `tokens.css` 是四棋类共用的正本,我们不改它;它没覆盖到的,补在这里。
+ * 三家活样本(象棋/国象/五子棋)也各补了一份同样的,注释都写着「该提上游」。
+ *
+ * ⚠️ 本文件 Task 8 就建了,比计划里写的 Task 9 早一步 —— 因为 §11 那条
+ * 「长标题不许把返回键挤成两行」的闸现在就要有被测对象,而它靠的正是下面两条。
+ * Task 9 的屏级类往下加,不要另起一个文件。
+ */
+
+/* §11 页控条的 flex 兜底(G11 末尾三条之一)。
+ * 不补的话:长标题会把 36px 的返回键挤成两行、触点位置跟着跑 —— 而返回键的位置
+ * 在每一屏都一样,是肌肉记忆。国象、五子棋各自踩过一次。 */
+.kiosk-pagebar__back { flex: none; }
+.kiosk-pagebar__title {
+  /* `margin: 0` 不是多余的:标题是个 `<h2>`(要的是标题语义,不是长相),
+     UA 默认的 h2 上下 margin 会把 44 高的控件带顶破。
+     **不写成 `.kiosk h1,h2,h3,h4{margin:0}` 那种全局归零** —— 那条的特异性(0,1,1)
+     压得过 MUI emotion 类(0,1,0),会把全站 `<Typography gutterBottom>` 的下边距一起吃掉。 */
+  margin: 0;
+  /* 这里**不写** `min-width: 0`。flex 项默认 `min-width: auto`,但 CSS Sizing §4.1 规定:
+     `overflow` 不是 `visible` 时,自动最小尺寸就是 0 —— 下面这条 `overflow: hidden` 已经
+     把它办了。两条并存的后果不是「更保险」,是**互为冗余**:删掉任何一条行为都不变,
+     于是针对任一条的变异都杀不死闸,闸看起来有牙、实际是睡着的。实测过。 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 这里**没有**的两条,以及为什么 ──────────────────────────────────────
+ *
+ * ① `.kiosk button,input,select,textarea { font-family: inherit }`(G11 第 2 条)。
+ *    **这条在本仓是多余的,而且是量出来的、不是推出来的。** 往跨平台屏塞了一个裸
+ *    `<button>中文</button>` 当变异探针,字族闸**没红**;去查它的计算值:
+ *
+ *        computed: "SmartBox Sans", "SmartBox Kai", "Kaiti SC", system-ui, sans-serif
+ *        匹配到的规则:button → inherit(**两条**)
+ *
+ *    发这两条的是 **MUI `CssBaseline`**。三家活样本(象棋/国象/五子棋)都补了这条,
+ *    是因为**它们不是 MUI 栈** —— 纯 React + 手写 CSS,没人替它们发 `inherit`。
+ *    ⇒ 这不是「我们还没踩到」,是**这条坑在这个技术栈上不存在**。
+ *    照抄过来会多一条永远不承重的规则,而不承重的规则会让针对它的变异永远杀不死闸
+ *    (本轮已经在 `min-width:0` 上栽过一次:两条冗余规则互相顶着,谁都杀不死)。
+ *
+ *    真正守着这件事的是 `tests/kiosk-font-routing.spec.ts` —— 它问的是「屏上这段字最后
+ *    由谁画的」,与谁发的规则无关。Task 8 那三屏已经加进去了。
+ *
+ * ② `.kiosk h1,h2,h3,h4,p { margin: 0 }`(G11 第 1 条)。
+ *    它的特异性 (0,1,1) 压得过 MUI emotion 类 (0,1,0),会把全站 `<Typography gutterBottom>`
+ *    的下边距一起吃掉(现在 kiosk 里 gutterBottom 是 0 处,但逐屏重写时会出现)。
+ *    ⇒ 谁需要谁在自己那一屏的块里归零,像上面 `.kiosk-pagebar__title` 那样。
+ */
+
+/* ── 棋盘 SVG(`.gob`)—— 逐字取自稿子 `go-kiosk.tmpl.html:74-80` ────────────
+ * 算式在 `shell/goBoard.ts`,长相在这里。
+ * `isolation: isolate` 即使现在没抄木纹也留着:它同时是「这块盘自成一个混合上下文」
+ * 这件事本身(规范 §13③),下一个人加木纹时不会再踩一次穿透相乘。 */
+.gob { width: 100%; height: 100%; display: block; isolation: isolate; }
+.gob .ln { stroke: var(--gb-line); }
+.gob .star { fill: var(--gb-line); }
+/* 最后一手的圈 */
+.gob .mark { fill: none; stroke: var(--accent); stroke-width: 3.5; }
+/* 候选点:半透明青玉圈,不画成棋子 */
+.gob .ghost { fill: rgba(88, 181, 122, .40); stroke: rgba(88, 181, 122, .95); stroke-width: 4; stroke-dasharray: 10 8; }
+/* 摆谱屏(屏 17)的候选点:**颜色必须和实体盘上那颗灯一致** —— 黑子亮红灯、白子亮绿灯
+   (`constants/ledColors.ts` 的 `LED_HEX`:black `#ff3b30` / white `#34c759`,
+   四处独立来源一致)。上面那条不带修饰的青玉圈留给**没有灯**的场合(做题屏的提示),
+   借用灯的语义会让人以为盘上也亮着一颗。
+   ⚠️ 稿子那一帧把 C7(黑棋)的圈画成了绿的 —— 那是稿子错了,不是这里跑偏,已回报。 */
+.gob .ghost--b { fill: rgba(255, 59, 48, .32); stroke: rgba(255, 59, 48, .95); }
+.gob .ghost--w { fill: rgba(52, 199, 89, .32); stroke: rgba(52, 199, 89, .95); }
+
+/* 打吃:被叫吃那颗子上画红方框,不换子的颜色 */
+.gob .atari { fill: none; stroke: var(--bad); stroke-width: 5; }
+/* ── 教程图那几层(屏 25)。四个既有消费者一个都不画,所以这几条只在课程屏上承重。 ──
+   颜色**不许从 galaxy 那块 `SGFBoard` 搬**:`#d32f2f` / `#1565c0` 是 Material 调色板,
+   和这套外壳的 token 不是一家。也**不许复用 `--accent`**(这块盘上它已经是「最后一手」
+   和「候选点」)或 `--bad`(已经是「叫吃」)—— 一个颜色在同一块盘上说两件事,
+   读的人分不出哪一件。空点上的字母和记号走墨色 `--gb-line`,底下垫一颗盘色圆,
+   不然 24px 的格线从字底下穿过去,7″ 屏上读不出来。 */
+.gob .pad { stroke: none; }
+.gob .num, .gob .letter {
+  font-family: var(--font-sans); font-weight: 700;
+  text-anchor: middle; dominant-baseline: central;
+}
+.gob .num { font-size: 52px; }
+.gob .letter { font-size: 56px; fill: var(--gb-line); }
+/* 子上的号取对比色 —— 黑子上写白,白子上写深。 */
+.gob .num.on-b { fill: #F3F0E7; }
+.gob .num.on-w { fill: #1A1A1E; }
+.gob .shape { fill: none; stroke: var(--gb-line); stroke-width: 5; }
+.gob .hl { fill: none; stroke-width: 5; }
+.gob .hl.on-b { stroke: #F3F0E7; }
+.gob .hl.on-w { stroke: #1A1A1E; }
+
+/* **看不到盘** ≠ 盘上没子。镜像栏还没接到识别结果时压暗,和空盘区分开;
+   同步行那句「识别的盘面还没接进来」是同一件事的文字面。 */
+.gob.is-muted { opacity: .5; }   /* .32 试过,盘几乎看不见 —— 压暗是「我看不到盘」,不是「把盘藏起来」 */
+
+/* ── 屏 01 对弈首页 ────────────────────────────────────────────────────
+ * `.kiosk-greet` / `.kiosk-resume` 的**子元素** —— 共享 `tokens.css` 只给了这两个容器的高度
+ * (`--l1-greet-h` 56 / `--l1-resume-h` 60),里面长什么样它没有,三家各补了一份。
+ * 下面几条逐字取自稿子 `go-kiosk.tmpl.html:83-94`。 */
+.kiosk-greet b { font-family: var(--font-serif); font-size: 24px; font-weight: 500; }
+.kiosk-greet b i { font-style: normal; font-weight: 600; color: var(--accent); }
+.kiosk-greet span { font-size: 12px; color: var(--dim); margin-top: 2px; }
+/* 长名字兜底(G11 第 9 条):≥19 个汉字会让问候行变两行,56 的块撑成 65,整栏往下推。 */
+.kiosk-greet b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.kiosk-resume {
+  display: flex; align-items: center; gap: 12px; padding: 0 14px;
+  border: 1px solid var(--hair); border-radius: 12px; background: var(--raise);
+}
+.kiosk-resume .bar { width: 5px; height: 28px; border-radius: 3px; background: var(--accent); flex: none; }
+.kiosk-resume > div { min-width: 0; }
+.kiosk-resume h4 { font-family: var(--font-serif); font-size: 14px; font-weight: 600; margin: 0; }
+.kiosk-resume p { font-size: 11px; color: var(--dim); margin: 1px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kiosk-resume .pill { margin-left: auto; flex: none; }
+
+/* ── 棋盘木框 ──────────────────────────────────────────────────────────
+ * 取自稿子 `go-kiosk.tmpl.html:69` / `:70`,渐变和贴图尺寸逐字相同。
+ *
+ * 🔵 **2026-08-26 补上那层贴图。D6 当初登记的理由被证伪了一半。**
+ * 原话是「那张图不在共享资产包、不在 MANIFEST 管辖内,抄它等于往仓里塞一份**没人核的二进制**」——
+ * 前半句今天仍然对(上游 `MANIFEST.sha256` 里 `wood|oak|board` 零命中),
+ * **后半句是错的**:同一份字节早就是三家的生产资产 ——
+ * `smartbox-software/{chess,xiangqi,gomoku}/ui/src/assets/board/darkwood_512.jpg`
+ * 三份 **sha256 完全相同**(`58e43174…`,51733 字节),许可写在 `xiangqi/ui/src/skins.tsx:11`
+ * (**Poly Haven CC0**),而且三家都已上板。
+ * ⇒ 它不是没人核的二进制,是四家里三家在用、许可清楚、已上板的那一份。
+ * 而 Fan 2026-08-20 的授权判据(§7)恰恰是「去看那三家同一个模块怎么做的,照做」。
+ *
+ * **落点不是 `kiosk-shell/`** —— 那个目录整目录抄自上游、由 `MANIFEST.sha256` 钉住,
+ * 这张图不在上游清单里,塞进去等于伪造「和上游一致」。放在 `src/kiosk/assets/board/`,
+ * 走 CSS `url()`,和三家同构(出处和许可写在那个目录的 README 里)。
+ *
+ * 不补的代价是真的:稿子 `.kiosk-board` / `.kiosk-mini-board` 都带这层贴图,
+ * 而盘是布局 A 上最大的一块 —— 整盘 12 屏 + 迷你盘 5 屏,**17 屏的四图在盘面区域永远对不齐**。
+ *
+ * ⚠️ **只补外框那一层。** 落子区的木纹另有出处(`/assets/img/board.png`,画在 canvas 里,
+ * `boardUtils.ts:105`),而那是 galaxy 也在用的**共享资产** —— 换它是另一件事,不在这一轮。
+ * 稿子那边落子区取的是 `--oak`,和本仓的 `board.png` 不是同一张,色差已登记(`scope.md:969`)。
+ *
+ * 挂在 `.kiosk-board` 而不是某一屏的类上:本仓 `.kiosk-board` 只可能是围棋盘,木框对每一块都成立。 */
+.kiosk-board {
+  background:
+    linear-gradient(150deg, rgba(118, 80, 44, .94), rgba(56, 36, 20, .96) 75%),
+    url('../kiosk/assets/board/darkwood_512.jpg') center / 34% repeat;
+}
+/* 迷你盘同一层,尺寸照稿子的 40%(它比整盘小,纹理要按比例放大才看得出是木头)。
+   ⚠️ `.kiosk-mini-board` 的**几何**在共享 `tokens.css:460`,那份是上游的、不动;
+   这里只加背景一条 —— 同一个裸类在本文件里只许有这一处定义(见文件顶上 `.gside` 那条碰撞)。 */
+.kiosk-mini-board {
+  background:
+    linear-gradient(150deg, rgba(118, 80, 44, .94), rgba(56, 36, 20, .96) 75%),
+    url('../kiosk/assets/board/darkwood_512.jpg') center / 40% repeat;
+}
+
+/* ── 棋盘刻度带:轨道等分 ────────────────────────────────────────────────
+ * 共享 `tokens.css` 的 `.kiosk-board__ruler` 只写 `display:grid` + `grid-auto-flow:column`,
+ * 轨道按**字宽**取尺寸。围棋的 `M` 比 `J` 宽,字心因此不落在 `(i+0.5)/19` 上 ——
+ * 实测最大错开 **2.8px**,补成等分之后 **0**。
+ *
+ * 🔴 **不是上游缺口,是共享类覆盖不到的一格。** 象棋那两条带本来就是对齐的
+ * (字心 vs 真实竖线最大错开 0.02px:它装的是 `1`–`9` / `九`–`一`,同族等宽,`auto` 轨道被拉成等分),
+ * 而且**把 `1fr` 收进上游会当场打坏象棋** —— 象棋盘按 8:9 `xMidYMid meet` 居中、**不占满**落子区
+ * (盘宽 356.2,轨道 9×44.53 = 400.8,两者节距恰好都是 44.53 逐条重合);改成 `1fr` 后轨道撑满 460、
+ * 节距变 51.11,盘还是 44.53,**第一条字偏出 26px**。
+ * ⇒ 轨道尺寸取决于**盘占不占满落子区**:围棋/五子棋占满 ⇒ 等分;象棋窄 ⇒ 跟盘的节距。
+ * 两家都对、对的方式不同,正确的值不是同一个数 ⇒ 上游收敛不了,这条补丁**常驻**。
+ *
+ * 真正该往上游提的是那条**不变式**:**刻度带的节距必须等于盘的线节距**;
+ * 判据是**屏上那条线的横坐标**,不是「字心应该落在 `(i+0.5)/N`」那个版式规则 ——
+ * 象棋第一版探针拿后者当判据,量出「最大错开 26px」,数字漂亮、结论全假;而那个 26 恰好
+ * 就是「把 `1fr` 收进上游后会真实出现的错位」:**同一个数,一次是模型错、一次会是真缺陷**。
+ * 国象和五子棋未量。
+ *
+ * 选择器带一层 `.kiosk-board` 是**为了特异性**(0,2,0 > tokens 的 0,1,0):
+ * `go-screens.css` 与组件级 CSS 的相对顺序 Vite 不保证,同特异性时靠顺序赢是赌。
+ * 本仓 `.kiosk-board` 只可能是围棋盘,所以这里不再按屏分。
+ * (原先这条写在 `components/board/kioskSetupBoard.css`,只管开局屏那一块;
+ *  对局屏第二块盘进来时抄第二份 = 两处载荷、改一处不报错。) */
+.kiosk-board .kiosk-board__ruler--top,
+.kiosk-board .kiosk-board__ruler--bottom { grid-auto-columns: 1fr; }
+.kiosk-board .kiosk-board__ruler--left,
+.kiosk-board .kiosk-board__ruler--right { grid-auto-rows: 1fr; }
+
+/* ── 屏 02 对局中 / 屏 10 星阵人机 —— 同一个 `GamePage`,`engineMode` 换右栏 ────
+ * 逐字取自稿子 `go-kiosk.tmpl.html` 的 `.pcard` / `.gtoggles` / `.gacts` / `.gevax` /
+ * `.items` 那几组(`:117-146`、`:276-288`、`:428-475`)。**`.plat` 不在其列** ——
+ * 它故意没搬,理由在下面 `.items` 之后那段注释里(范围从 :482 收到 :475,
+ * 482 那一行正是 `.plat .led`;这行组头当索引用,不改的话下一个人会扑空)。
+ * 木框、刻度带、页控条、折叠块、动作区格子本体全部走共享 `tokens.css`,这里只补它没有的。 */
+
+/* 玩家卡。`.turn` 是**轮到谁**,不是「谁赢」—— 青玉描边在这一屏只表示当前手。 */
+.pcard {
+  display: flex; align-items: center; gap: 10px; height: 60px; padding: 0 12px; flex: none;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--panel);
+}
+.pcard.turn { border-color: var(--accent); background: var(--raise); }
+/* 圆珠就是棋子本身的样子:黑子 / 白子,不拿方块或字母凑数 */
+.disc { width: 26px; height: 26px; border-radius: 50%; flex: none; }
+.disc.b { background: radial-gradient(circle at 34% 30%, #4A4A52, #0A0A0C 72%); box-shadow: 0 0 0 1px rgba(0,0,0,.5); }
+.disc.w { background: radial-gradient(circle at 34% 30%, #FFFFFF, #CFC9BB 78%); box-shadow: 0 0 0 1px rgba(0,0,0,.35); }
+.pcard > div { min-width: 0; }
+.pcard h4 { font-family: var(--font-serif); font-size: 14px; font-weight: 600; margin: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcard p { font-size: 11px; color: var(--dim); margin: 1px 0 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pcard .clock { margin-left: auto; text-align: right; flex: none; }
+.pcard .clock b { font-family: var(--font-mono); font-size: 19px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.pcard .clock span { display: block; font-size: 10.5px; color: var(--dim); }
+
+/* 纯显示开关那一排。**不带图标不是漏了** —— 开关本来就没有图标,安一个反而像「按下去有后果」。
+ * 基态(药丸键)与稿子 `go-kiosk.tmpl.html:281-293` 逐字相同;直播屏和复盘屏也用它,
+ * 那两排里是「试下 / AI 推荐 / 跟到最新」这类**动作**,不是开关。 */
+.gtoggles { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; height: 40px; flex: none; }
+.gtoggles button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer;
+  border: 1px solid var(--hair); border-radius: 10px; background: var(--panel);
+  color: var(--dim); font-family: var(--font-sans); font-size: 12.5px;
+  /* 开关的字**不许折行**。屏 18 那排五个里「跟到最新」正好卡在边界上,折成两行之后
+     那颗键比邻居高出一截、整排的基线也散了(四图第一版看出来的)。
+     折行对一个 2–4 字的开关标签从来不是想要的结果 —— 装不下该换更短的词,不是叠起来。 */
+  white-space: nowrap;
+}
+/* 同一排右端挂一句「为什么那个键是灰的」。灰掉而不说原因,是稿子在别处专门骂过的事。 */
+.gtoggles .ghint { display: flex; align-items: center; justify-content: flex-end;
+  font-style: normal; font-size: 11px; color: var(--dim); }
+.gtoggles button::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--hair); flex: none; }
+.gtoggles button[aria-pressed="true"] { color: var(--accent); background: var(--raise); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.gtoggles button[aria-pressed="true"]::before { background: var(--accent); box-shadow: 0 0 5px color-mix(in srgb, var(--accent) 70%, transparent); }
+
+/* ── `.gtoggles--switch`:这一排全是**纯开关**时的长相 ────────────────────────
+ * ⚠️ 2026-08-22 Fan:「坐标和手数在 galaxy 界面里都是**开关**这种形式,kiosk 也改成一样的」。
+ * 药丸键读起来是「按一下发生一件事」,而坐标 / 手数是**状态**:开着就一直开着,没有「发生」。
+ * ⇒ 语义走 `role="switch"` + `aria-checked`(不是 `aria-pressed`:后者是「按钮此刻被按住」),
+ *   长相跟 galaxy 那两个 `<Switch size="small">`(`galaxy/components/game/RightSidebarPanel.tsx:243`)走。
+ *
+ * **为什么是修饰类,不是直接改 `.gtoggles`。** 那个类还在直播屏和复盘屏上用着,
+ * 那两排里的「试下」「AI 推荐」「跟到最新」不是开关,是动作和模式 ——
+ * 把它们一起做成开关,等于说「跟到最新」有一个可以一直开着的状态。
+ * (第一版就是直接改的 `.gtoggles`,当场把稿子那两屏的 `aria-pressed` 高亮全画没了,
+ *  取图时才看出来 —— 那两屏的参考图跟着一起变了。)
+ *
+ * 轨和珠都用伪元素,不加新标签:`::before` 是轨(参与 flex 排布),`::after` 是珠(绝对定位在轨上)。
+ * 轨 34×16、珠 14 —— 关着是灰轨 + 浅珠,开着是半透明青玉轨 + 实心青玉珠
+ * (MUI 的 track 就是 thumb 色 50% 透明)。与稿子 `:295-321` 逐字相同。 */
+.gtoggles--switch { display: flex; align-items: center; gap: 20px; }
+.gtoggles--switch button {
+  position: relative; justify-content: flex-start; gap: 9px;
+  border: 0; border-radius: 0; padding: 0; background: none;
+}
+/* `margin-left: auto` 是那句提示靠右的**唯一**依据 —— 基态靠的是 grid 第三列,flex 下没了。 */
+.gtoggles--switch .ghint { margin-left: auto; }
+.gtoggles--switch button::before { width: 34px; height: 16px; border-radius: 999px;
+  background: var(--hair); box-shadow: none; transition: background .12s ease; }
+.gtoggles--switch button::after { content: ""; position: absolute; left: 1px; top: 50%;
+  width: 14px; height: 14px; border-radius: 50%; background: #E9EFEC;
+  transform: translateY(-50%); transition: transform .12s ease, background .12s ease; }
+.gtoggles--switch button[aria-checked="true"] { color: var(--text); background: none; }
+.gtoggles--switch button[aria-checked="true"]::before { background: color-mix(in srgb, var(--accent) 45%, transparent); }
+.gtoggles--switch button[aria-checked="true"]::after { transform: translate(18px, -50%); background: var(--accent); }
+@media (prefers-reduced-motion: reduce) {
+  .gtoggles--switch button::before, .gtoggles--switch button::after { transition: none; }
+}
+
+/* 「AI 思考中…」/「阶梯引擎不可用」那颗药丸的位置。**居中在棋盘上,不是整页上。**
+   上一版写在组件的 `sx` 里:`left: 50%` + `translateX(-50%)`,而 50% 相对的是
+   **L3 内容区那个 992 宽的定位祖先** ⇒ 1024 下落在 496(视口 512),
+   而棋盘只到 **532** —— 药丸横跨盘/栏接缝,压住第一张玩家卡的上沿。
+   它说的是「盘上这一手在等」,就该居中在盘上:`--board-size` 是棋盘边长,
+   定位祖先的左沿和棋盘左沿是同一条(`.kiosk-layout-a` 第一列就是盘)。
+
+   `max-width` 也跟着盘走:阶梯停摆那一句是整句话(上一版写死 620,比盘还宽 104),
+   宽出去就又压回接缝上 —— 两条毛病其实是同一条。 */
+.gthink {
+  position: absolute; top: 44px; left: calc(var(--board-size) / 2);
+  transform: translateX(-50%); z-index: 55;
+  max-width: calc(var(--board-size) - 32px);
+}
+
+/* ── 屏 22 成长 ────────────────────────────────────────────────────────────
+   外壳那边早就为这一屏写好了三样(`tokens.css` 的注释直接点名):
+   `.kiosk-stats`/`.kiosk-stat`(「**成长首页顶上那排关键数字**」)、
+   `.kiosk-status--2`(「两格变体:**成长左栏底部**」)、`.kiosk-layout-l1`。
+   这里只补这一屏自己的那几件。
+
+   ⚠️ `.panel` 是 `flex: none` —— 直接拿它当**要长高的**容器会塌成内容高。
+   所以这一屏用 `.gsec` 覆盖成 flex 列 + `min-height: 0`。 */
+.gsec { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.gsec > h3 { display: flex; justify-content: space-between; align-items: baseline; flex: none; }
+.gsec > h3 em { font-family: var(--font-serif); font-style: italic; font-size: 11px;
+  letter-spacing: 0; text-transform: none; color: var(--dim); }
+.gsec__h { margin-top: 14px !important; }
+
+/* 段位那个大字。**不写「20 级」** —— 未定级时写「未定级」,那是这一屏最要紧的一句诚实话。 */
+.grank { font-family: var(--font-serif); font-weight: 600; font-size: 44px; line-height: 1.1;
+  text-align: center; margin-top: 6px; color: var(--text); }
+
+/* 大字底下那条进度。稿子只画了未定级那一态(定级局 n/5);定级之后那儿是空的,
+   而空的正是左栏那道缝 —— 定级后换成「净胜分 n/3」,数据同一个接口本来就在给。 */
+.gmetric { margin-top: 12px; flex: none; }
+.gmetric > span { display: flex; justify-content: space-between; align-items: baseline; }
+.gmetric b { font-family: var(--font-sans); font-size: 12px; font-weight: 600; }
+.gmetric i { font-family: var(--font-mono); font-style: normal; font-size: 12px;
+  color: var(--dim); font-variant-numeric: tabular-nums; }
+.gbar { margin-top: 6px; height: 4px; border-radius: 2px; background: var(--hair); overflow: hidden; }
+.gbar > span { display: block; height: 100%; background: var(--accent); }
+
+/* 升降规矩三条。
+   ⚠️ 稿子这三行用的是 `.row` + `.lead`,而 `.lead` **本仓从来没有过** ——
+   我先写了「走共享的 .lead」,一 grep 发现整个 `src/` 里只有我自己那句注释。
+   稿子 `:160` 的 `.row .lead` 是 46px 宽的等宽数字格(给手数 / 局数用的),
+   照搬到「1 2 3」上会空出 46px 的死区。⇒ 这一屏自己写一个窄的序号。 */
+.grules { display: flex; flex-direction: column; gap: 6px; }
+.grule { height: 44px; display: flex; align-items: center; gap: 10px;
+  padding: 0 10px; border: 1px solid var(--hair); border-radius: 9px; background: var(--raise); }
+.grule .lead { width: 18px; flex: none; font-family: var(--font-mono); font-size: 12px;
+  color: var(--dim); font-variant-numeric: tabular-nums; }
+.grule b { font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+
+/* 左栏底部那两格贴底 —— 和右栏动作区同一条口径:上面收窄腾出的空落在它**上面**。 */
+.gsec .kiosk-status { margin-top: auto; }
+
+/* 屏 22 成长的**右栏**。
+   ⚠️ 2026-08-25 从 `.gside` 改名过来:那个名字屏 06 早就在用了(执黑/执白那枚标,
+   本文件 `:841`)。两条同特异度、后面那条赢了 display/gap/font-size,可它**没设
+   flex-direction** ⇒ 这里的 `column` 漏了过去,把屏 06 的标变成竖排、撑破了对局卡。
+   两屏的单测和几何闸**全绿** —— 它们各自只看自己那一屏;是四图重取时逮到的。 */
+.gcol { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+/* 两块诊断并排,吃掉右栏剩下的高度。`min-height:0` 缺一个,里面的空态就顶破整栏。 */
+.gdiag { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; min-height: 0; }
+.gdiag .empty { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+/* 打过的档:一档一行。**没打过的档不在这里** —— 那是后端 GROUP BY 的结果,
+   前端不补零。列表会长,所以它自己滚(和棋谱那块同一条理由)。 */
+.grungs { display: flex; flex-direction: column; gap: 4px; flex: 1; min-height: 0;
+  overflow-y: auto; scrollbar-width: none; }
+.grungs::-webkit-scrollbar { width: 0; height: 0; }
+.grung { display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  padding: 5px 8px; border-radius: 7px; background: var(--raise); }
+.grung b { font-family: var(--font-sans); font-size: 12.5px; font-weight: 600; }
+.grung span { font-family: var(--font-mono); font-size: 11.5px; color: var(--dim);
+  font-variant-numeric: tabular-nums; }
+
+/* 动作区排成两行 —— 只有自由对弈那一屏有七个键(三个分析 + 四个动作)。
+   只换排布,格子高 / 图标 / 字号 / 圆角继续走共享 `.kiosk-actions button`:
+   **七个键必须一模一样大**(Fan 2026-08-22 原话)。 */
+.gacts { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); }
+/* 开着的那两个(领地 / 图表)按下去**留在按下的状态**,动作键按完就弹回来。
+   共享 `tokens.css` 的 `.kiosk-actions` 没有按下态 —— 四家的动作区里本来一个开关都没有,
+   围棋是第一个。 */
+.kiosk-actions button[aria-pressed="true"] { color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--raise));
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+
+/* 胜率走势:**双轴**。KataGo 一次分析同时吐 winrate 和 score_lead,两个都是原生量
+   (galaxy `ScoreGraph` 同样画法:左轴百分比绿线、右轴目差橙线)。右边那条刻度带不是装饰 ——
+   不写明「谁的 +10」就读不出方向。
+   **上黑下白**:`models_db.py:373` 的 winrate 本身就是黑方的,1.0 画在顶上;
+   复盘屏那条曲线同向,同一局在两屏之间不许上下颠倒。 */
+.gevax { display: flex; flex-direction: column; justify-content: space-between;
+  padding: 2px 0 2px 6px; text-align: left; border-left: 1px solid var(--hair);
+  font-family: var(--font-sans); font-size: 9.5px; line-height: 1; color: var(--dim); }
+.kiosk-eval--dual { grid-template-columns: var(--eval-axis-w) 1fr var(--eval-axis-w); }
+.kiosk-eval__axis i, .gevax i { font-style: normal; }
+.kiosk-eval__axis i { color: color-mix(in srgb, var(--accent) 72%, var(--dim)); }
+.gevax i { color: color-mix(in srgb, var(--warn) 72%, var(--dim)); }
+.kiosk-eval__plot { background: #131B19; }
+.kiosk-eval__plot .mid { stroke: var(--hair); stroke-width: 1.4; stroke-dasharray: 5 5; }
+.kiosk-eval__plot .grid { stroke: var(--hair); stroke-width: .8; opacity: .55; }
+.kiosk-eval__plot .wr { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linejoin: round; }
+.kiosk-eval__plot .sl { fill: none; stroke: var(--warn); stroke-width: 1.5; stroke-linejoin: round; opacity: .9; }
+.kiosk-eval__plot .now { fill: var(--accent); }
+
+/* 棋谱(星阵屏)。围棋的记法就是交叉点坐标(Q16 / D4),走等宽,列才对得齐。 */
+.mvrows { display: grid; grid-template-columns: 30px 1fr 1fr; align-content: start;
+  padding: 6px 12px 10px; column-gap: 6px; }
+.mvrows span { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.95; font-variant-numeric: tabular-nums; }
+.mvrows .n { color: var(--dim); font-size: 11px; }
+/* 空态那一句(「这一局还没有着法」)横跨三列。**不加这条它会掉进第一列那 30px 里**,
+   一个字一行竖着排下去 —— 屏 10 四图第一版就是这么露出来的。 */
+.mvrows .n--empty { grid-column: 1 / -1; }
+.mvrows .mv { color: var(--text); }
+.mvrows .mv.now { color: var(--accent); font-weight: 600; }
+
+/* 星阵道具键:**一个会扣次数的按钮和一个纯显示开关长成一样,是这一屏最容易犯的错**,
+   所以它们既不与动作区并排、也不与「坐标 / 手数」并排。
+   角标三态照实现分:数字 = 还剩几次;`0` 用红底**不灰掉**(去星阵 App 充了值马上又能用,
+   灰掉等于说「这个功能没有」);`—` = 这一次没取到数,和 0 不是一回事。 */
+.items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; flex: none; }
+.items button { position: relative; height: 52px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 4px; border: 1px solid var(--hair); border-radius: 11px;
+  background: var(--panel); color: var(--dim); font-size: 12.5px; cursor: pointer;
+  font-family: var(--font-sans); }
+.items button svg { width: 19px; height: 19px; }
+.items button[aria-pressed="true"] { color: var(--accent); background: var(--raise);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.items .cnt { position: absolute; top: 5px; right: 6px; min-width: 19px; height: 18px; padding: 0 5px;
+  display: grid; place-items: center; border-radius: 999px; font-size: 10.5px; font-weight: 600;
+  font-family: var(--font-mono); background: #0C1211; color: var(--dim); }
+.items .cnt.zero { background: var(--bad); color: #fff; }
+
+/* 平台条(稿子 `go-kiosk.tmpl.html:1856`)**故意没搬**,三个值一个都喂不了:
+     · 「哪一家」是 `GamePage.tsx:185` 的写死常量 `'golaxy'`,而页控条标题已经写着「星阵围棋 · 人机」;
+     · 「连没连上」**没有来源,而最近的候选会主动撒谎** —— WS 的 `platform_status` 全仓
+       没有任何 Python 处 emit(只有前端一个类型联合成员和一份计划稿);REST `/platforms/status`
+       的 `connected` 是 `golaxy/adapter.py` 的**登录闩**:4 处置真全在 `connect()` 里、
+       **置假只有 `disconnect()` 一处**,星阵服务器半夜死了它照样是 `true`。
+       和屏 18 `current_winrate` 写死 `0.5` 同形,而且更坏一档 —— 那个绿点唯一存在的理由
+       就是掉线那一刻,恰好那一刻它在说谎。
+     · 「上一手 4.2s」全链路没有这个字段。
+   **掉线不靠这条说**:星阵 genmove 跑在人类那次落子请求**里面**(`gateway.py:137/163`,同步 ≤180s),
+   不存在不由用户触发的往返 ⇒ 每次掉线都必然落成一次用户正在等的失败,由
+   `GamePage.tsx:455/521` 那条 `engineErrorToast` 说出来,而且失败时人类那手不本地落下、
+   盘面停在原处。它由**一次真的失败**触发,不是由心跳的缺席推断。
+   不留空规则:**不承重的规则会让针对它的变异永远杀不死闸**(见本文件开头那段「这里没有的两条」)。 */
+
+/* 空/加载/读不到:虚线框 + 标题 + 一句解释。逐字取自稿子 `go-kiosk.tmpl.html:424-427`
+   (稿子上是棋谱详情那屏「点进一局是敬请期待」用的,同一个构造)。
+   ⚠️ **这三态不许互相冒充**,也不许任何一态冒充成功:
+     · 正在读   —— 只有标题,没有结论;
+     · 读不到   —— 写出**为什么**,并给一个能再试一次的键;
+     · 真的没有 —— 说清楚东西从哪来、什么时候会有。
+   `<p>` 是虚线框自己的说明文字,不是 `.note`(那是写给读稿人的旁注,一律不上线)。 */
+.empty { border: 1px dashed var(--hair); border-radius: 12px; background: rgba(29, 39, 37, .55); padding: 14px; }
+.empty h4 { font-family: var(--font-serif); font-size: 15px; font-weight: 600; margin: 0; }
+.empty p { font-size: 11.5px; color: var(--dim); line-height: 1.55; margin: 5px 0 0; }
+.empty p b { color: var(--text); font-weight: 600; }
+.empty .pill { margin-top: 10px; }
+
+/* ── L2 布局 B 的骨架 ──────────────────────────────────────────────────
+ * 无棋盘 ⇒ 页控条通栏 x16–1008,下面是通栏 992×460 的内容区。
+ * 逐字对应稿子那句内联样式(`go-kiosk.tmpl.html` 的 `data-screen="units"` 那一行);
+ * 稿子写成内联是因为它是一份单文件,实现里该有名字。
+ * ⚠️ **纵向的账由 `.kiosk-content` 的内边距给**,这里不写死高度:
+ *   70(内容区上缘) + 44(页控条) + 12(gap) + 460(滚动区) = 586 = 内容区下缘。
+ *   写死高度会让这条账出现第二个来源,而两个来源必然有一天不一致。
+ * 布局 A 的那一份(`.kiosk-layout-a`)在共享 tokens.css:592;B 这一份共享包还没有,
+ * **该提上游** —— 四家的无盘页都是这个形状。 */
+.kiosk-layout-b { display: flex; flex-direction: column; gap: 12px; height: 100%; }
+
+/* 数据条那一格里的分母(`0 / 20` 的「/ 20」)。稿子写成内联 15px + dim;
+   分母比值小一号、灰一档,是为了让人一眼读到的是**值**,不是那条斜杠。
+   同样该提上游 —— 四家的数据条都有带分母的格。 */
+.kiosk-stat__v small { font-size: 15px; font-weight: inherit; color: var(--dim); }
+
+/* ── 题号格 `.qgrid`(屏 13 题目列表)────────────────────────────────────
+ * 一格一题,10 列铺满 992 通栏 ⇒ 格宽 (992 − 9×8) / 10 = 92。
+ * **不用 `.kiosk-card`**:那是 220×76 的模式卡,一屏摆 20 张既放不下、也太重 ——
+ * 这一层要回答的只有「第几题、做过没有」。也**不是 `.dots`**:点阵是**看的**
+ * (整单元一眼扫完),这里每一格是**能点的**。逐字对应稿子 `go-kiosk.tmpl.html:362-376`。
+ *
+ * 高度 76 是稿子 2026-08-21 从 58 调上来的:58 时格子又宽又扁,底下还白空一条 60px ——
+ * 那条空带原来被一段小字占着,把散文清出设备之后才露出来。**空间本来就在。**
+ *
+ * 状态只有三种,而且**只靠边框和数字的颜色分**,不加图标:
+ *   (无类)  没做过         —— 小字写「—」,**不写「0 次」**(0 次是一个次数,「没做过」不是)
+ *   .ok     做对了         —— `--good`
+ *   .now    下一道要做的   —— `--accent` + `--panel` 底 */
+.qgrid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 8px; }
+.qgrid button {
+  height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  border: 1px solid var(--hair); border-radius: 10px; background: var(--raise); color: var(--text); cursor: pointer;
+}
+.qgrid b { font-family: var(--font-serif); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.qgrid em { font-style: normal; font-size: 10px; color: var(--dim); }
+.qgrid button.ok { border-color: color-mix(in srgb, var(--good) 45%, transparent); }
+.qgrid button.ok b { color: var(--good); }
+.qgrid button.now { border-color: var(--accent); background: var(--panel); }
+.qgrid button.now b { color: var(--accent); }
+
+/* ── 屏 14 做题屏(L2 布局 A)────────────────────────────────────────────
+ * 逐字取自稿子 `go-kiosk.tmpl.html` 的 `.panel` / `.qtext` / `.railsec` / `.dots`
+ * (`:151-152`、`:240-241`、`:132-134`、`:180-183`)。
+ *
+ * ⚠️ **`.kiosk-board` 的四条刻度带这一屏不用。** `TsumegoBoard` 是一块 canvas,
+ * 坐标字母和数字**画在它自己里面**(`:200-224`);再套一层共享刻度带就是两套坐标。
+ * 所以落子区跨满整个 3×3 网格,木框由 `.kiosk-board` 自己的底色给。
+ * (对局屏那边相反:`Board` 不画坐标,刻度带是它唯一的坐标来源。) */
+.kiosk-board__play--full { grid-area: 1 / 1 / -1 / -1; }
+
+/* 右栏里的一块「面板」:一条 11.5px 的组标题 + 内容。和 `.kiosk-section` 不是一回事 ——
+   后者是**一组卡**的标题行(带渐隐横线),这里是一个有边框的盒子。 */
+.panel { border: 1px solid var(--hair); border-radius: 12px; background: var(--panel); padding: 14px; flex: none; }
+.panel > h3 { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; color: var(--dim); margin: 0 0 10px; }
+/* 题面正文。**这是给下棋的人看的正文,不是旁注** —— 2026-08-22 那次按 `.note` 批量清散文
+   把稿子上这一段一起清掉过,所以它在稿子里也换成了自己的类。 */
+.qtext { margin: 0; font-size: 12px; line-height: 1.6; color: var(--text); }
+.qtext b { font-weight: 600; color: var(--accent); }
+
+/* 会长的那一块:头是一条 30 高的标题行,身子吃掉右栏剩下的高度。 */
+.railsec { flex: 1; min-height: 0; display: flex; flex-direction: column;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--panel); overflow: hidden; }
+.railsec .rst { display: flex; align-items: center; justify-content: space-between; flex: none;
+  height: 30px; padding: 0 12px; border-bottom: 1px solid var(--hair);
+  font-size: 11px; color: var(--dim); letter-spacing: .08em; }
+.railsec .rst b { color: var(--accent); font-size: 11.5px; letter-spacing: 0; font-weight: 600; }
+.railsec .rst b.dim { color: var(--dim); font-weight: 400; }
+/* 身子自己滚。**不给它 `overflow` 的话**,着法一多整块会把动作区顶出右栏 —— 而动作区
+   贴底靠的是 `margin-top:auto`,顶出去之后它就在画布外面,点不到。 */
+.railsec__body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 10px 12px; }
+.railsec__body::-webkit-scrollbar { width: 0; height: 0; }
+
+/* 题目进度点阵:一个点一道题,**颜色就是状态,不需要图例**。
+   和屏 13 的 `.qgrid` 不是一回事:点阵是**看的**(整单元一眼扫完),那边每一格是**能点的**。 */
+.dots { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; }
+.dots i { height: 14px; border-radius: 4px; background: #1A2320;
+  border: 1px solid var(--hair); display: block; font-style: normal; }
+.dots i.ok { background: color-mix(in srgb, var(--good) 55%, transparent); border-color: color-mix(in srgb, var(--good) 50%, transparent); }
+.dots i.now { background: var(--accent); border-color: var(--accent); }
+
+/* ── 屏 16 棋谱详情:题头 `.khero` ────────────────────────────────────────
+   逐字取自稿子 `sample-go/go-kiosk.tmpl.html:379-382`。`b i`(那个「对」)
+   **不斜、不加粗、走 --dim** —— 它是连接词不是名字,和两边的名字同粗就分不出谁是谁了。
+   `em` 是段位,稿子没有:段位是库里真有的列(`black_rank`/`white_rank`),
+   跟在名字后面走小一号的 --dim,不去挤名字那一行的重量。 */
+.khero { padding: 11px 13px; flex: none; border: 1px solid var(--hair); border-radius: 11px; background: var(--panel); }
+.khero b { font-family: var(--font-serif); font-size: 15px; font-weight: 600; }
+.khero b i { font-style: normal; font-weight: 400; color: var(--dim); margin: 0 7px; }
+.khero b em { font-style: normal; font-weight: 400; font-size: 11.5px; color: var(--dim); margin-left: 5px; }
+/* `margin` 写全四边,不是只写 `margin-top` —— UA 给 `<p>` 的 `margin-bottom: 1em`
+   会在题头底下留出 11.5px 的空,整块比稿子高一截,右栏下面每一块跟着往下挪。
+   稿子那份 CSS 里只写了 `margin-top`,因为它自己有一段全局 reset,本仓没有。 */
+.khero p { margin: 4px 0 0; font-size: 11.5px; color: var(--dim); line-height: 1.5; }
+
+/* 折叠块里那份谱要能滚 —— 241 手的谱装不进 `.kiosk-fold__body` 那点高度,
+   而共享的 `.kiosk-fold__body` 是 `overflow: hidden`(它管的是收起时把内容裁掉)。
+   ⚠️ **这一条是承重的**:去掉之后每个盒子的矩形一模一样,四条几何断言全绿,
+   只有「它自己能不能滚」分得出来 —— 屏 14 的右栏闸上刚栽过一次同样的跟头。 */
+.kiosk-fold__body.mvrows { overflow-y: auto; scrollbar-width: none; }
+.kiosk-fold__body.mvrows::-webkit-scrollbar { width: 0; height: 0; }
+/* 谱上的每一格都能点(点哪手跳哪手),所以它得有可按的样子和够大的靶。 */
+.mvrows .mv[role="button"] { cursor: pointer; border-radius: 5px; padding: 0 4px; margin: 0 -4px; }
+.mvrows .mv[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── 屏 15 棋谱:「搜棋谱」展开出来的那一段 ────────────────────────────────
+   稿子这一组只有三张卡。搜索框和结果行是**收起态之外**的东西:
+   稿子画的是收起的样子,展开才有这一段(理由见 `KifuPage.tsx` 头上第 ② 条)。 */
+.ksearch { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.ksearch__box {
+  height: 44px; padding: 0 14px; border: 1px solid var(--hair); border-radius: 11px;
+  background: var(--panel); color: var(--text);
+  font-family: var(--font-sans); font-size: 14px;
+}
+.ksearch__box::placeholder { color: var(--dim); }
+.ksearch__box:focus-visible { outline: none; border-color: var(--accent); }
+.kpager { display: flex; align-items: center; justify-content: center; gap: 12px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--dim); }
+.kpager button:disabled { opacity: .4; }
+
+/* 行本身可点时它就是个按钮 —— 共享 `.kiosk-row` 是照 `<div>` 写的,
+   `<button>` 会自带居中的文字和 UA 字体。**改的是按钮的默认值,不是这一族的几何。** */
+button.kiosk-row { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 「直播中」不是胜负也不是警告,共享的四个 `.kiosk-tag--*` 里没有它的位置。 */
+.kiosk-tag--live { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+.kiosk-tag--live::before { content: ""; display: inline-block; width: 6px; height: 6px;
+  border-radius: 50%; background: var(--bad); margin-right: 5px; vertical-align: 1px;
+  box-shadow: 0 0 6px color-mix(in srgb, var(--bad) 70%, transparent); }
+
+/* ── 屏 19 复盘:胜率曲线 ──────────────────────────────────────────────
+   共享包里那份 `.kiosk-eval`(tokens.css:746)是**对局中**那条走势:两条轴、刻度带
+   靠一条右描边和画布贴着。复盘这条是稿子自己的一套 —— 画布带描边圆角、刻度带和画布之间
+   留 8 的空。两者不是同一个控件,不要拿 `.kiosk-eval` 顶替(几何差 8px,四图上看得出来)。
+
+   ⚠️ **上黑下白**:cron 那条分析线固定 `reportAnalysisWinratesAs: "BLACK"`
+   (`katrain/cron/clients/katago.py:83`),所以 `winrate` 恒为黑方胜率,1.0 画在顶上,
+   和 galaxy 的 `ScoreGraph` 同向。稿子 2026-08-22 翻过一次就是为了这个。
+   (共享包 `tokens.css:745` 那句注释还写着「白优在上」,已经过期 —— 上游的事,本轮不改它。) */
+.wrbox { display: flex; gap: 8px; }
+.wraxis { width: 38px; height: 96px; flex: none;
+  display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; }
+.wraxis i { font-style: normal; font-size: 9.5px; color: var(--dim); font-family: var(--font-mono); }
+.wrplot { flex: 1; height: 96px; border: 1px solid var(--hair); border-radius: 8px;
+  background: #131B19; overflow: hidden; }
+.wrplot svg { width: 100%; height: 100%; display: block; }
+.wrplot .mid { stroke: var(--hair); stroke-width: 1.4; stroke-dasharray: 5 5; }
+.wrplot .curve { fill: none; stroke: var(--accent); stroke-width: 2.6; stroke-linejoin: round; }
+/* 掉分的那一手单独一段红 —— 不换整条线的颜色,换了就读不出「哪一手」 */
+.wrplot .drop { stroke: var(--bad); stroke-width: 2.6; }
+.wrplot .now { fill: var(--accent); }
+/* 没算过的时候**留白并写明为什么空**,不许画一条贴中线的平线冒充均势 ——
+   那是把「没算过」伪装成「算过了,结果是均势」。配方抄自共享包的
+   `.kiosk-eval__plot.is-empty`(tokens.css:931),换个宿主类而已。 */
+.wrplot.is-empty { display: grid; place-items: center; text-align: center; padding: 0 12px; }
+.wrplot.is-empty span { font-size: 11.5px; color: var(--dim); line-height: 1.5; }
+
+/* 导进来的谱没有「你」,黑白各一半 —— 拿 `.disc.b` 或 `.disc.w` 顶替等于替它选了一方。 */
+.disc.rnd { background: linear-gradient(90deg, #F3F0E7 50%, #16161A 50%); }
+
+/* ── 屏 19 复盘:组标题右端那个开关 ────────────────────────────────────
+   稿子这一屏没画搜索框,但**稿子自己的 `.sbox` 注释把复盘列进了「有搜索的四屏」**
+   (`go-kiosk.tmpl.html:326`),而现状 `ReportsPage` 的搜索是通的 —— 是稿子漏画,不是没有。
+   常驻一条 44 的搜索框会把列表视口从 168 压到 116,「露一半」当场破(三行变两行整),
+   所以做成**开关**:收起时这一屏和稿子逐像素一样。
+   靶子按触摸屏来 —— 视觉 20、可点 48,靠内边距撑出去再用负外边距收回来,不动版式。 */
+.kiosk-seclabel__act {
+  flex: none; width: 20px; height: 20px; padding: 14px; margin: -14px -14px -14px 0;
+  box-sizing: content-box; display: grid; place-items: center;
+  background: none; border: 0; color: var(--dim); cursor: pointer;
+}
+.kiosk-seclabel__act[aria-expanded="true"] { color: var(--accent); }
+.kiosk-seclabel__act svg { width: 16px; height: 16px; }
+.kiosk-seclabel__act:focus-visible { outline: 2px solid var(--accent); outline-offset: -12px; border-radius: 8px; }
+/* 展开之后头部多了 44 的框 + 10 的空,渐隐要跟着往下挪,否则它盖在搜索框上。
+   共享包那条(`tokens.css:555`)按「头 = 一条组标题」写死,这是本屏的补丁。 */
+.kiosk-section--grow.has-search::before {
+  top: calc(var(--l1-sec-label-h) + var(--l1-sec-label-gap) + 54px);
+}
+
+/* 展开出来的搜索框 —— 高度 44 + 下边距 10 = 54,和上面 `has-search` 那条里的数是同一个。
+   两处必须一起改;改一处的话渐隐会从搜索框中间开始。 */
+/* 「筛 + 搜」那条带子。展开时头部多的正是 44 + 10 = 54,和
+   `.kiosk-section--grow.has-search::before` 那个 +54 是同一个数 —— 改这里要一起改。
+   ⚠️ `.kiosk-optseg` 是共享件(`tokens.css:691`,`width:100%; height:48`),
+   四家都在用。这里**按上下文**收窄它的盒子,不重定义那个裸类本身
+   (`goScreensCssCollision.test.ts` 守的正是「同一个裸单类只许有一处定义」)。 */
+.rvfind { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.rvfind .kiosk-optseg { flex: none; width: auto; height: 44px; }
+.rvfind .kiosk-optseg button { padding: 0 14px; font-size: 13px; }
+.rvsearch { flex: 1; min-width: 0; }
+
+/* 行分成两半:左半(整块)是「选中这一局」的靶,右半是这一行自己的动作。
+   **不能把整行做成 `<button>`** —— 按钮里套按钮是非法 DOM,React 会警告,
+   读屏也读不出来。左半吃掉除行尾之外的全部宽度,所以手感上还是「点整行」。 */
+.rvpick {
+  display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;
+  height: 100%; background: none; border: 0; padding: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.rvpick:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+/* 稿子没画选中态,但稿子左栏写着「**选中**这一局」—— 没有选中的样子,那三个字就没有出处。 */
+.kiosk-row[data-selected="true"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--raise));
+}
+/* 正在分析那一行的进度条 —— 它显示的正是「还剩几手没算」,和点进去看到的是同一个东西。 */
+.rvprog { width: 54px; height: 4px; border-radius: 999px; background: var(--hair); overflow: hidden; flex: none; }
+.rvprog i { display: block; height: 100%; background: var(--warn); }
+
+/* 不可逆的那一档按钮。配方和共享包 `.kiosk-actions button.danger`(tokens.css:824)同一份 ——
+   那条只对动作区里的按钮生效,这里是行尾的药丸,所以另挂一个类,**颜色配方不许另编**。 */
+.kiosk-btn--pill.rvdanger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, transparent); }
+
+/* 干活出错时那句话。它挨着「生成报告」那一组的组标题,占一行 —— 不进组标题里,
+   组标题右端那格是**数据**不是消息。 */
+.rverr {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 8px;
+  font-size: 11.5px; color: var(--bad);
+}
+
+/* 删除确认。整屏 1024×600 里盖一层,**不用 MUI Dialog** —— 它自带的 backdrop 和纸张
+   跟这套壳的配色不是一路,而且 `.kiosk` 的缩放对 portal 到 body 的层不生效。 */
+.rvconfirm {
+  position: absolute; inset: 0; z-index: 30;
+  display: grid; place-items: center; padding: 0 120px;
+  background: color-mix(in srgb, var(--ink) 78%, transparent);
+}
+.rvconfirm .empty { background: var(--panel); border-style: solid; width: 100%; }
+.rvconfirm__row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+
+/* ── 屏 20 复盘 · 报告 ────────────────────────────────────────────────
+   题头:状态 + 两个出口。和 `.khero` 是同一族,但它得放得下按钮,所以是横排定高 60。 */
+.rhead {
+  display: flex; align-items: center; gap: 10px; padding: 0 12px; height: 60px; flex: none;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--panel);
+}
+.rhead h4 { font-family: var(--font-serif); font-size: 14px; font-weight: 600; margin: 0; }
+/* 和 `.khero p` 同一个坑:本仓没有全局重置,只写 margin-top 会留着 UA 的下边距,
+   整块被顶高 11.5px(2026-08-22 在屏 15 上量出来过)。 */
+.rhead p { font-size: 11px; color: var(--dim); margin: 1px 0 0; }
+.rhead .end { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: none; }
+
+/* 折叠块里那条会长的行列表(重点手)。滚动条不占宽 —— 占了,460 就不是 460。 */
+.foldrows {
+  flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none;
+  display: flex; flex-direction: column; gap: 8px; padding: 8px 12px 10px;
+}
+.foldrows::-webkit-scrollbar { width: 0; height: 0; }
+/* 「该走 X」按掉得多少上色:最狠的那一手用 --bad,其余用 --warn。
+   **不是装饰** —— 三行并排时,颜色是唯一一眼能读出「先看哪一行」的东西。 */
+.foldrows .kiosk-row__t b[data-sev="bad"] { color: var(--bad); }
+.foldrows .kiosk-row__t b[data-sev="warn"] { color: var(--warn); }
+
+/* 曲线可点:点哪儿跳哪一手。`TrendChart` 原来就有这条,换成 `.wrplot` 之后不能丢 ——
+   187 手的谱靠四个翻手键一手一手挪是走不到第 120 手的。 */
+.wrplot.is-pickable { cursor: pointer; }
+.wrplot.is-pickable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 当前停在哪一手 —— 竖的一条,和曲线上那颗点说的是同一件事。 */
+.wrplot .cursor { stroke: var(--accent); stroke-width: 1.2; opacity: .55; }
+
+/* ── 屏 27 设置 ──────────────────────────────────────────────────────
+   组里那句说明。**不是旁注** —— 稿子 2026-08-22 把讲道理的小字都收进注释了,
+   留在屏上的这几句是**真 UI 文案**(「不登录也能用，成绩存在这台盒子上」这类)。 */
+.setnote { margin: 0 0 8px; font-size: 11.5px; line-height: 1.55; color: var(--dim); }
+.setnote b { color: var(--text); font-weight: 600; }
+
+/* 语言那一格的下拉。十一种语言摆不成分段控件(最多三段),用原生 select ——
+   借 `.ksearch__box` 的描边和圆角,但收成一行高、跟着行尾走。 */
+.kiosk-row__end select.ksearch__box {
+  height: var(--btn-secondary-h); padding: 0 10px; font-size: 13px; max-width: 180px;
+}
+
+/* ── 屏 02 / 03 / 04 开局设置三屏 ────────────────────────────────────
+   三屏同一副骨架(L2 布局 A),右栏是一叠 `.setgrp`。样式照 `sample-go` 稿子自己的
+   `<style>` 抄,只抄**共享包里没有的那几个**:`.kiosk-optseg` / `.kiosk-seclabel` /
+   `.secval` / `.kiosk-opthint` / `.kiosk-side` / `.kiosk-scrollzone` /
+   `.kiosk-primary-action` 都已经在 `tokens.css` 与 `seclabel.css` 里,一个都不重写。
+
+   ⚠️ `.ranked-state__stakes` 是**从象棋/国象自己的 `<style>` 里来的**,不在共享包 ——
+   借别家类名之前先 grep 它住在哪儿,这条在本分支上已经栽过两次。
+   字族一律走 token(`--font-sans` / `--font-serif` / `--font-mono`),
+   不抄稿子里那几个 `"SmartBox Sans", sans-serif` 字面量:回退链在 token 里多两跳
+   (`SmartBox Kai` / `Kaiti SC`),而盒子上 PingFang / Songti / Kaiti 一个都没有。 */
+.setgrp { flex: none; }
+.setgrp + .setgrp { margin-top: 20px; }
+.setgrp-scroll { flex: 1; min-height: 0; }
+.setgrp-scroll .kiosk-side__scroll { padding-right: 10px; }
+
+/* 「怎么落子」自己带一圈强调框 —— 三屏里只有这一组是**开局后不可改**的。 */
+.inputgrp {
+  background: var(--raise);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 13px; padding: 26px;
+}
+.inputgrp .kiosk-seclabel { margin-bottom: 12px; }
+.inputgrp .kiosk-optseg { height: 60px; }
+.inputgrp .kiosk-optseg button { font-size: 15px; }
+
+.igrow { display: flex; align-items: center; gap: 10px; }
+.igrow + .igrow { margin-top: 12px; }
+.igrow > .iglab { width: 52px; flex: none; font-size: 12.5px; color: var(--dim); }
+.igrow > .kiosk-optseg { flex: 1; }
+/* **读数,不是控件。** 虚线边是它和旁边那些能点的分段控件唯一的区别 ——
+   实线圆角一样、高度一样,不给个记号,用户会去戳一个戳不动的东西。 */
+.igfix {
+  flex: 1; height: 60px; display: flex; align-items: center; padding: 0 13px;
+  font-size: 13px; color: var(--dim);
+  border: 1px dashed var(--hair); border-radius: 11px; background: var(--panel);
+}
+.igfix b { color: var(--text); font-weight: 500; margin-right: 7px; }
+
+/* 档位轨:− / 一排点 / ＋。规范 §11(v1.21)给 `.kiosk-optseg` 定的**项数上限是 6**,
+   「超过就换下拉或滑条」。棋力 29 档、贴目 15 档、让子 10 档、用时 7 档都超了 ——
+   这条轨就是那个「滑条」。不选下拉:7″ 触屏上下拉要点两次才看得见选项,
+   而弹层正好盖住左边那块盘,那块盘画的偏偏是「按下开始之后会出现的局面」。 */
+.catpick { display: flex; align-items: center; gap: 10px; height: 44px; flex: none; }
+.catstep {
+  width: 44px; height: 44px; flex: none; cursor: pointer;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--raise);
+  color: var(--accent); font-family: var(--font-sans); font-size: 20px; line-height: 1;
+}
+.catstep:disabled { opacity: .38; cursor: default; }
+.cattrack { flex: 1; min-width: 0; position: relative; height: 44px; }
+.cattrack::before {
+  content: ""; position: absolute; left: 9px; right: 9px; top: 21px;
+  height: 2px; border-radius: 1px; background: var(--hair);
+}
+.catticks {
+  position: relative; height: 44px;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 5px;
+}
+.catticks i {
+  width: 6px; height: 6px; border-radius: 50%; flex: none;
+  background: var(--panel); border: 1px solid var(--hair);
+}
+.catticks i.on {
+  background: color-mix(in srgb, var(--accent) 50%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.catticks i.now {
+  width: 18px; height: 18px; background: var(--accent); border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.catmeta { display: flex; align-items: baseline; gap: 10px; min-height: 20px; margin-top: 7px; }
+.catmeta b { font-family: var(--font-serif); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.catmeta b i { font-style: normal; color: var(--accent); }
+.catmeta span { margin-left: auto; font-size: 11.5px; color: var(--dim); white-space: nowrap; }
+.catmeta span b { font-family: var(--font-sans); color: var(--accent); font-size: 11.5px; }
+
+/* 一整段说明顶掉一组控件 —— 让子 > 0 时贴目那一组就是这个形态。
+   **不是把控件灰掉**:灰掉说的是「你现在不能改」,这里要说的是「这一局没有这回事」。 */
+.setexplain {
+  margin: 0; padding: 12px 14px;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--panel);
+  font-size: 13px; line-height: 1.65; color: var(--dim);
+}
+.setexplain b { color: var(--text); font-weight: 600; }
+
+/* 升降级那两格「赌多少」。 */
+.ranked-state__stakes { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.ranked-state__stakes span {
+  min-height: 44px; display: grid; place-items: center;
+  border: 1px solid var(--hair); border-radius: 9px; background: var(--panel);
+  font: 600 12px var(--font-mono); color: var(--text);
+}
+
+/* 分段格里的黑白子比独立那颗小一圈 —— 26 的子会把 60 高的格子撑得没有余白。 */
+.kiosk-optseg .disc { width: 18px; height: 18px; }
+
+/* 分段控件里**此刻选不了**的那一段(屏 02/04 的「实体盘」:摄像头没标定,或这一局不是 19 路)。
+   照 `.catstep:disabled` 那一条的做法 —— 同一套外壳里「点不动」只有一种画法。
+   **不动几何**:灰掉不改高度也不改边框,否则这一组会在可用/不可用之间跳一下。 */
+.kiosk-optseg button:disabled { opacity: .38; cursor: default; }
+
+/* ── 屏 04 本地对局:「对局双方」那两行行尾的名字输入 ──────────────────────
+   稿子画的是一颗写着「点此输入」的药丸(`.kiosk-btn--pill`)—— 静态稿只能画到这一步。
+   真页面上它必须**真能输入**:药丸的样子照搬(同高 26、同圆角、同描边、同字号),
+   把 `<span>` 换成 `<input>`。**不做「点药丸弹一个输入框」** —— 那是稿子上没有的
+   一层流程,而且弹层正好盖住左边那块盘。
+   宽度不照药丸:药丸只装得下「点此输入」四个字,而输入框还要装得下人名。 */
+.nameinput {
+  width: 116px; height: var(--btn-pill-h); padding: 0 12px;
+  border: 1px solid var(--hair); border-radius: 999px;
+  background: var(--panel); color: var(--text);
+  font-family: var(--font-sans); font-size: 12px; text-align: center;
+}
+.nameinput::placeholder { color: var(--dim); }
+.nameinput:focus-visible { outline: none; border-color: var(--accent); }
+
+/* ── 屏 06 在线大厅(L2 两栏,无棋盘 → 页控条通栏)+ 未登录 / 匹配中 / 收到邀请 ──
+   稿子 `sample-go/go-kiosk.tmpl.html` 的 `[data-screen^="lobby"]` 那一段。**稿子按屏名
+   选中,真页面里没有 `data-screen`** —— 换成挂在布局根上的 `.lobby-layout`,选择器一一对应。
+   ⚠️ 稿子还有一条 `.rk`(段位那一列)—— **这里没有**,不是漏了,理由见 `LobbyPage.tsx` 头注。 */
+
+/* ① 大厅屏没有棋盘 ⇒ 页控条横跨两栏,两列各自从同一条基线起。
+   列宽仍是底座那对 516 | 1fr —— 换的是行,不是这一屏自己的比例。
+   `position:relative` 是**弹层的定位原点**,不是装饰:没有它 `.cdlg{inset:0}` 会一路
+   找到 `.kiosk-content`(带 14px 上下内边距),弹层比中间区高出 28、底边被画布裁掉。 */
+.kiosk-layout-a.lobby-layout {
+  position: relative;
+  grid-template-rows: var(--pagebar-h) minmax(0, 1fr);
+  row-gap: var(--rail-gap);
+}
+.lobby-layout .kiosk-pagebar { grid-column: 1 / -1; position: relative; z-index: 5; }
+/* ⚠️ 稿子在这儿多一条 `.kiosk-primary-action { flex: none; margin-top: 0 }`,理由是
+   「名单一溢出主按钮会被从 48 压成 24」。**这里没有照抄** —— 2026-08-24 变异实测:
+   去掉它,承重闸那条 `cta.h === 48` **照样绿**。原因是这一屏的列表用的是共享的
+   `KioskScrollZone`(`.kiosk-section--grow{flex:1; min-height:0}`),空间全由它让出来,
+   栏本身从不溢出,底下几块也就没被挤过。抄一条挡不住任何东西的规则,比没有更坏:
+   下一个读到它的人会以为这儿有过一个已经被治住的故障。 */
+
+/* 两栏各自是一条 flex 列:组标题定高 + 一段自己滚的列表 + 底下几块固定的。
+   滚动那一层直接用共享的 `KioskScrollZone`(形态 2)—— 渐隐、悬浮拇指、
+   `data-at` 状态机都在里面,这里只把列表的行距改成 `--row-gap`。 */
+.lobbycol { display: flex; flex-direction: column; gap: var(--rail-gap); min-width: 0; min-height: 0; }
+.gamelist .kiosk-side__scroll,
+.lobbylist .kiosk-side__scroll { gap: var(--row-gap); margin-top: var(--rail-gap); }
+/* ⚠️ `margin-top` 那一条不是留白偏好,是**对齐参考图**:稿子里组标题和列表是 `.lobbycol` 的
+   两个兄弟,中间隔着栏距 12,**外加**组标题自己的 `margin-bottom: 6`。搬进 `KioskScrollZone`
+   之后两者同属一节,只剩那 6 —— 列表整体上移 12,底下几块因为钉着栏底反而不动,
+   于是只有列表变高、四图上是「上面对不齐、下面对得齐」。补回那 12。
+   渐隐的起点跟着往下挪同样多,否则它会盖在组标题上。 */
+.gamelist.kiosk-section--grow::before,
+.lobbylist.kiosk-section--grow::before {
+  top: calc(var(--l1-sec-label-h) + var(--l1-sec-label-gap) + var(--rail-gap));
+}
+
+/* ② 左栏:进行中的对局 */
+.gcard {
+  display: flex; flex-direction: column; justify-content: center; gap: 6px; flex: none;
+  height: 78px; padding: 0 14px; text-align: left; color: var(--text);
+  font-family: var(--font-sans);
+  border: 1px solid var(--hair); border-radius: var(--row-radius); background: var(--panel);
+}
+/* 只有自己在里面的那一局点得进去(观战不存在,陌生人进去必 403)。
+   `cursor` 跟着可点性走 —— **看起来能按却按不动,比明确不能按更坏**:
+   前者让人以为是自己点歪了,会一直点下去。 */
+.gcard.is-mine { cursor: pointer; }
+.gcard.is-static { cursor: default; }
+.gcard__meta { display: flex; align-items: center; gap: 9px; font-size: var(--fs-eyebrow); color: var(--dim); }
+.gcard__meta b { font-family: var(--font-mono); font-weight: 500; letter-spacing: .04em; }
+.gcard__meta i { margin-left: auto; display: flex; align-items: center; gap: 4px; font-style: normal; }
+.gcard__meta i svg { width: 13px; height: 13px; }
+/* 每一侧是一个两行的块:名字在上、执哪一色在下,中间只剩「对」。
+   两侧块各自贴卡片左/右边缘 ⇒ 跨卡片依然对齐(靠边缘,不靠定宽)。 */
+.gcard__vs { display: grid; align-items: center; gap: 10px; grid-template-columns: minmax(0,1fr) 24px minmax(0,1fr); }
+.gcard__p { display: flex; flex-direction: column; gap: 3px; min-width: 0; align-items: flex-start; }
+.gcard__p.is-r { align-items: flex-end; }
+/* `max-width:100%` 而不是 `min-width:0`:块本身已经 `min-width:0`,名字要在**块**里省略号,
+   不是在网格轨道里 —— 少了这一条,长名字会把块撑过轨道再被裁掉,省略号不出现。 */
+.gcard__n { font-size: var(--fs-card-title); font-weight: 600; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gcard__mid { text-align: center; font-size: var(--fs-eyebrow); color: var(--dim); }
+/* 这一格国象放「等级 + 等级分」,围棋放「执黑 / 执白」——
+   `/api/v1/games/active/multiplayer` 对每一局只回两个名字字符串,谁执黑是它唯一多给的事实。 */
+.gside { display: flex; align-items: center; gap: 6px; font-size: var(--fs-card-sub); color: var(--dim); }
+.gside .disc { width: 14px; height: 14px; }
+
+/* ③ 右栏:在线棋手。名字之后两列定宽 ⇒ 状态和按钮跨行对齐。 */
+.lobbyrow {
+  display: flex; align-items: center; gap: 9px; height: var(--row-h); flex: none;
+  padding: 0 10px 0 13px; cursor: default;
+  border: 1px solid var(--hair); border-radius: var(--row-radius); background: var(--panel);
+}
+.lobbyrow.is-me { border-color: var(--accent); }
+.lobbyrow__id { min-width: 0; flex: 1 1 auto; }
+.lobbyrow__id h4 { margin: 0; font-size: var(--fs-card-title); font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 状态只用**两种**颜色:绿=可邀请、灰=不可邀请。哪一种「不可」由**词**说 ——
+   颜色本来就该只编码「能不能点」这一件事,而围棋这边只有两态。 */
+.lvst { flex: none; width: 44px; font-size: var(--fs-card-sub); color: var(--good); }
+.lvst.is-play { color: var(--dim); }
+.lobbyrow__act { flex: none; width: 56px; height: var(--btn-pill-h); border: 0; border-radius: 7px;
+  background: var(--accent); color: var(--ink); font-family: var(--font-sans);
+  font-size: var(--fs-card-sub); font-weight: 600; cursor: pointer; }
+.lobbyrow__act:disabled { background: transparent; color: var(--dim);
+  border: 1px solid var(--hair); cursor: not-allowed; }
+.lobbyrow__self { flex: none; width: 56px; text-align: center; font-size: var(--fs-eyebrow); color: var(--dim); }
+.lobbylist__note { margin: 0 2px; font-size: var(--fs-eyebrow); line-height: 1.55; color: var(--dim); flex: none; }
+.lobbylist__note b { color: var(--text); font-weight: 600; }
+/* 空态 / 读取中。**稿子没有这一态** —— 但一台孤零零的盒子上它才是常态,
+   而列表空着不画字,和「还没读完」在屏上是同一个样子。 */
+.lobbyempty { margin: 0; padding: 18px 2px; text-align: center;
+  font-size: var(--fs-card-sub); color: var(--dim); }
+
+/* ④ 主行动上面那一格:**围棋有两种对局,国象只有一种。** 排位那条队要先定级
+   (`server.py` 的 `PLACEMENT_REQUIRED`)⇒ 没定级时灰掉,并在底下一行说清为什么
+   —— 和开局设置三屏同一条规矩:灰了就得有人说原因。 */
+.matchpick { display: flex; flex-direction: column; gap: 7px; flex: none; }
+.matchpick .kiosk-seg { display: flex; width: 100%; }
+.matchpick .kiosk-seg__btn { flex: 1 1 0; }
+.matchpick .kiosk-seg__btn:disabled { opacity: .38; cursor: default; }
+.matchpick__why { margin: 0 2px; font-size: var(--fs-eyebrow); line-height: 1.5; color: var(--dim); }
+.matchpick__why b { color: var(--text); font-weight: 600; }
+
+/* ⑤ 弹窗骨架(围棋这套屏此前没有模态,这是第一处)。 */
+.cdlg { position: absolute; inset: 0; z-index: 10; background: rgba(8,6,4,.72); display: grid; place-items: center; }
+.cdlg__box { width: 430px; padding: 20px; border: 1px solid var(--hair); border-radius: 16px;
+  background: linear-gradient(165deg, #1b2420, var(--panel)); box-shadow: 0 24px 60px rgba(0,0,0,.6); }
+.cdlg__box h3 { margin: 0; font-family: var(--font-serif); font-size: 21px; font-weight: 600; }
+.cdlg__box p { margin: 12px 0 0; font-size: 13px; line-height: 1.6; color: var(--dim); }
+.cdlg__acts { display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px; }
+.cdlg__acts button { min-width: 128px; height: 48px; cursor: pointer; border-radius: 12px;
+  font-family: var(--font-serif); font-size: 15px; font-weight: 600; }
+.cdlg__acts .ghost { border: 1px solid var(--hair); background: var(--raise); color: var(--text); }
+.cdlg__acts .main { border: 0; background: var(--accent); color: var(--ink); }
+
+/* 等待类弹窗。**围棋只有「不定长」那一种进度条。** 等多久取决于队列里有没有第二个人,
+   这个数产不出来。而邀请那一屏**一条都不画**:`/ws/lobby` 的 `invite` 只转发一条消息,
+   没有 TTL、没有撤回 —— 画一条归零时后端什么都不做的条,是拿动画伪造一个不存在的裁定。 */
+.wdlg { text-align: left; }
+.wdlg__lead { margin-top: 10px !important; }
+.wdlg__lead b { color: var(--text); font-weight: 600; }
+.wbar { position: relative; height: 6px; margin-top: 16px; border-radius: 999px;
+  background: var(--raise); overflow: hidden; }
+.wbar__loop { position: absolute; top: 0; bottom: 0; left: 0; width: 34%; border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--accent) 26%, var(--accent) 74%, transparent);
+  animation: wloop 1.5s ease-in-out infinite; }
+@keyframes wloop { from { transform: translateX(-100%); } to { transform: translateX(295%); } }
+@media (prefers-reduced-motion: reduce) { .wbar__loop { animation-duration: 4s; } }
+.wdlg__row { display: flex; align-items: baseline; gap: 12px; margin-top: 9px; }
+.wdlg__num { font-size: var(--fs-card-sub); color: var(--dim); }
+.wdlg__num b { font-family: var(--font-mono); font-size: 17px; font-weight: 500;
+  color: var(--text); font-variant-numeric: tabular-nums; }
+.wdlg__tc { margin-left: auto; font-size: var(--fs-eyebrow); color: var(--dim); }
+/* 只有一个动作时把它铺满:`.cdlg__acts` 是 flex-end(为「取消 / 确定」那一对写的),
+   等待类弹窗只有一个「取消」,靠右吊着会在左边留一大块空,而且手指要伸到最右。 */
+.wdlg .cdlg__acts button:only-child { flex: 1 1 auto; }
+
+/* ⑥ 未登录门。没有棋盘 ⇒ 内容整栏,面板 460 宽居中 —— 460 就是大厅屏右栏的宽度,换屏不跳。
+   **横向居中、纵向铺满**:吊在上半屏会在栏底留一条没人负责的空带,
+   靠 `.rrule{margin:auto 0 0}` 把注脚和两颗按钮顶到栏底。 */
+.lobby-layout .gate-rail { grid-column: 1 / -1; width: 100%; max-width: 460px; margin: 0 auto; }
+.rgate { flex: none; padding: 16px 16px 14px; border: 1px solid var(--hair);
+  border-radius: 12px; background: var(--panel); }
+.rgate > span { width: 44px; height: 44px; display: grid; place-items: center;
+  border-radius: 12px; background: var(--raise); color: var(--accent); }
+.rgate svg { width: 23px; height: 23px; }
+.rgate h2 { margin: 11px 0 0; font-family: var(--font-serif); font-size: 17px; font-weight: 600; }
+.rgate p { margin: 5px 0 0; font-size: 12px; line-height: 1.6; color: var(--dim); }
+.rgate .fact { margin-top: 12px; padding: 9px 11px; border: 1px solid var(--hair);
+  border-radius: 10px; background: var(--ink); }
+.rgate .fact span, .rgate .fact small { display: block; font-size: 10.5px; color: var(--dim); }
+.rgate .fact b { display: block; margin: 2px 0; font-family: var(--font-serif); font-size: 15px; font-weight: 600; }
+.rrule { margin: auto 0 0; font-size: 11.5px; line-height: 1.55; color: var(--dim); }
+.rrule b { color: var(--text); font-weight: 600; }
+.rgate + .kiosk-primary-action, .rrule + .kiosk-primary-action { margin-top: 0; }
+/* 高度 44 是**它自己的盒子**,不是伪元素撑出来的命中区:视觉 40 高时那层 44 的 `::after`
+   会让它的 `scrollHeight` 比 `clientHeight` 大 4,「内容被裁」那一条当场红。
+   **能把盒子做够就别拿伪元素凑。** */
+.rsecond { height: 44px; flex: none; width: 100%; cursor: pointer;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--raise); color: var(--text);
+  font-family: var(--font-serif); font-size: 14px; font-weight: 600; }
+
+/* ⑦ 触控目标:7 寸电容屏 ⇒ 命中区不得小于 44×44。**扩命中区不改视觉** ——
+   视觉尺寸沿用底座节奏,用伪元素把可点范围撑到 44。对局卡整张就是按钮(78 高)、
+   名单行 52 高,本来就够;要扩的是行尾那颗 26 高的按钮、分段里 26 高的那两颗,
+   和页控条上那颗 36 高的返回。三处的父盒都不是滚动容器,撑不破谁。 */
+.lobby-layout .lobbyrow__act,
+.lobby-layout .kiosk-pagebar__back,
+.lobby-layout .kiosk-seg__btn { position: relative; }
+.lobby-layout .lobbyrow__act::after,
+.lobby-layout .kiosk-pagebar__back::after,
+.lobby-layout .kiosk-seg__btn::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%;
+  transform: translateY(-50%); height: 44px;
+}
+
+/* ── 屏 07/08/09 跨平台三屏 ────────────────────────────────────────────
+   行本身用共享的 `.kiosk-rows` / `.kiosk-row` / `.kiosk-row__t` / `.kiosk-row__end`
+   （`tokens.css:938`），这里只补稿子里共享包**没有**的三样：头像圆点、能力标、两种行高。
+   ⚠️ 稿子里还有一个 `.wip`（琥珀「对弈未接后端」/ 蓝「后端已有 · 界面未接」）——
+   **那是给读稿人看的进度标注，不上屏**，屏 15 / 屏 19 重画时已按这条处理过。这里同样不搬。 */
+
+/* 头像圆点。**不复用 `.kiosk-row__lead` 那一格** —— 那格是等宽数字（手数 / 局数），
+   塞头像进去会把行的左缘节奏打乱，而这几屏里同一列上下必须是同一种东西。 */
+.av {
+  width: 30px; height: 30px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  border: 1px solid var(--hair); background: var(--panel);
+  font-family: var(--font-serif); font-size: 13px; font-weight: 600; color: var(--accent);
+}
+.av.dim { color: var(--dim); }
+
+/* 能力标:每家支持什么由 `/platforms` 下发（`supports_live_play` 等四个布尔），
+   **不是界面写死的四个格子** —— 亮着的（`.on`）才是那一家真支持的。 */
+.caps { display: flex; flex-wrap: wrap; gap: 6px; }
+.caps span {
+  font-size: 10.5px; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--hair); color: var(--dim);
+}
+.caps span.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 42%, transparent); }
+
+/* 两种比 52 高的行。稿子写成内联 `style="height:72px"`，实现里该有名字。
+   72 = 名字一行 + 能力标一行；60 = 搜索那行（行尾要装下输入框和一颗次要按钮）。 */
+.kiosk-row--caps { height: 72px; }
+.kiosk-row--search { height: 60px; }
+
+/* 搜索那一格的输入框:和屏 04 的 `.nameinput` 同一副长相(药丸、同高、同描边),
+   只是宽度放到 168 —— 人名比「点此输入」四个字长,而这一格右边还要留住那颗次要按钮。 */
+.nameinput--search { width: 168px; text-align: left; }
+
+/* 这一屏也有模态(挑战前确认一次)。`.cdlg{inset:0}` 找的是最近的**定位祖先** ——
+   布局 B 不定位的话它会一路找到 `.kiosk-content`(带 14px 上下内边距),弹层比中间区
+   高出 28、底边被画布裁掉。屏 06 在布局 A 上踩过同一个,判据也一样(见承重闸)。
+   **只给有模态的那一屏加**,不动共享的 `.kiosk-layout-b`。 */
+.kiosk-layout-b.plat-layout { position: relative; }
+
+/* 屏 07 登录段:错误落点 + 提交键。稿子只画到两行输入 —— 错误没有落点等于没报错,
+   而「登录」这个动作稿子那一帧也没画(它把提交寄托在行尾那颗药丸上)。 */
+.loginerr { margin: 8px 2px 0; font-size: 11.5px; line-height: 1.5; color: var(--bad); }
+.loginsubmit { width: 100%; margin-top: 10px; justify-content: center; }
+
+/* ── 屏 24 课程 · 书目与章节 ────────────────────────────────────────────────
+   章行本身就是展开控件(稿子那三个行尾键「已看完 / 接着看 / 开始」不做 —— 盒上没有可信的
+   「谁看过什么」)。行尾那颗 caret 说的是**这一行现在是开是合**,展开时转 180°。
+   不用 `KioskFold`:它的 `__head` 是 30 高 11px 字,那是面板标题不是列表行 ——
+   拿它当章行既破 44 的靶子,又把章名压成 11px。 */
+.chrow .chcaret { display: grid; place-items: center; color: var(--dim);
+  transition: transform .15s ease; }
+.chrow[aria-expanded="true"] { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.chrow[aria-expanded="true"] .chcaret { transform: rotate(180deg); color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .chrow .chcaret { transition: none; } }
+
+/* 摊开的那几节。左边那条竖线是**层级**不是装饰:节缩进 20 之后,若不画线,
+   一列 52 高的章行里夹着一列 44 高的节行,读起来像两种行随机混排。 */
+.secrows { display: flex; flex-direction: column; gap: var(--row-gap);
+  margin: var(--row-gap) 0 0 20px; padding-left: 12px;
+  border-left: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+/* 44 是**触摸靶子的下限**(规范 §8),不是随手挑的一个比 52 小的数。 */
+.secrow { height: 44px; }
+.secrow .kiosk-row__t b { font-size: 13px; }
+.secrow .kiosk-row__end svg { width: 14px; height: 14px; color: var(--dim); }
+.secfig { font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+
+/* ── 屏 25 课程 · 小节讲解 ──────────────────────────────────────────────────
+   左边那一格有两种内容:一张变化图(`.kiosk-board.figure-board`)或者这张图的视频。
+   视频占的就是那块 516 —— 右栏摊完之后折叠块只剩两行(~120),而 460 宽的 16:9 要 259 高,
+   塞进讲解块会把折叠块压到一行不足。 */
+.figvideo {
+  width: var(--board-size); height: var(--board-size);
+  border-radius: 8px; overflow: hidden; background: #000;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* 刻度带**按节距摆,不按等分**。共享包那条 `1fr`(本文件上面那一组)对「盘占满落子区」
+   的屏是对的;这一屏的图可以只占一角,而且后端的半盘视口是 19×10 / 10×19 —— 非方。
+   盘按 `xMidYMid meet` 居中缩放,两轴共用同一个比例 `落子区 / max(cols, rows)`,
+   于是短轴那条带只占一部分、`*-content:center` 居中,和盘留出来的白对齐。
+   方窗(绝大多数)算出来就是 `落子区 / n`,和 `1fr` 数学上完全一致 —— 那三种形状下这条不改变任何东西。
+
+   ⚠️ **别去改上面那条通用的 `1fr`**:象棋盘按 8:9 不占满落子区,改了它第一条字偏出 26px
+   (那一段注释里量过)。这一条只挂在 `.figure-board` 上,特异性 (0,3,0) 压过 (0,2,0)。
+
+   `--gb-axis` = `max(cols, rows)`,由页面按当前窗口内联写进来 —— 它随「局部 / 全盘」变,
+   不是一个可以写死在 CSS 里的常数。落子区 = 516 − 2×28,这里用 token 算,不写 460 那个字面量。 */
+.kiosk-board.figure-board .kiosk-board__ruler--top,
+.kiosk-board.figure-board .kiosk-board__ruler--bottom {
+  grid-auto-columns: calc((var(--board-size) - 2 * var(--board-ruler)) / var(--gb-axis));
+  justify-content: center;
+}
+.kiosk-board.figure-board .kiosk-board__ruler--left,
+.kiosk-board.figure-board .kiosk-board__ruler--right {
+  grid-auto-rows: calc((var(--board-size) - 2 * var(--board-ruler)) / var(--gb-axis));
+  align-content: center;
+}
+
+/* 讲解那一段。书正文可以很长(实测有 140 字的),而这一屏的高度账是死的 ——
+   让它**自己滚**,不许把下面的折叠块顶掉。max-height 是四行:13px × 1.65 × 4 + 上下 12。 */
+.figexplain { max-height: 110px; overflow-y: auto; scrollbar-width: none; flex: none; }
+.figexplain::-webkit-scrollbar { width: 0; height: 0; }
+
+/* 图列表那一行:行首那格是**等宽手数**(规范给 `.kiosk-row__lead` 的定义就是「23 手」),
+   图自己的名字 `figure_label` 归标题位 —— 一个值不摆两处。
+   当前那一行用共享的 `[data-selected]` 高亮:那说的是「你正在看这一张」,屏上为真;
+   稿子那三态(已看过 / 正在看 / 还没看)里只有中间这一个盒上问得出来。 */
+button.kiosk-row.figrow { flex: none; }
+
+/* ── 屏 17 摆谱 · 进行中 ────────────────────────────────────────────────────
+   页控条那颗「重新点灯」同时是 LED 的状态点(见 `KioskPagebar` 的 `action.state`):
+   灯通不了时它变红。**不新开一个只会变色的点** —— 这一屏右栏只剩 252px 给两个折叠块分,
+   而这颗键本来就是那个故障的补救动作。 */
+.kiosk-pagebar__iconbtn.is-bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
+
+/* 摄像头折叠块里那本账。逐字取自稿子 `sample-go/go-kiosk.tmpl.html:144-148`。
+   右列 `<i>` 放的是**图例**(红=黑棋 / 绿=白棋 / 蓝=移除),不是解释文字 ——
+   规范建议 E 把「屏上必须常驻一条 LED 图例」定成硬性,理由是操作员照灯摆子,
+   而这台盒子上灯色和子色的对应关系没有第二处写着。 */
+.ledger { display: flex; flex-direction: column; gap: 7px; padding: 9px 12px; }
+.lrow { display: flex; align-items: center; gap: 9px; font-size: 12px; }
+.lrow b { font-family: var(--font-serif); font-size: 13px; font-weight: 600; }
+.lrow i { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+/* 图例那一列的色点 —— 和 `LED_HEX` 同源,别在这儿另写一遍十六进制以外的东西。
+   **`margin-left:auto` 挂在色点上而不是挂在 `<i>` 上**:挂错的话色点会贴着左边那句读数,
+   屏上读成「已采集 13 帧 ●」—— 那颗点看起来在给帧数分类,而它其实是右边那句图例的样本。
+   四图第一版就是这个样子,当场看出来的。 */
+.lrow .led { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-left: auto; }
+
+/* 这一屏的 pcard 有三态:待摆(青玉,共享 `.pcard.turn`)、待移除、采集失败。
+   后两个各自换描边和底色 —— **它们说的是「此刻你该做什么」,不是装饰**。
+   待移除走蓝(和 `LED_HEX.remove` 同色,盘上那几颗也亮蓝灯);失败走 `--bad`。 */
+.pcard.removal { border-color: rgba(47, 111, 255, .75); background: rgba(47, 111, 255, .10); }
+.pcard.failed { border-color: color-mix(in srgb, var(--bad) 65%, transparent); background: color-mix(in srgb, var(--bad) 10%, var(--panel)); }
+
+/* 「正在拍照,请勿伸手」那层遮罩盖的是**整个布局根**,不只是盘 —— 它的第一职责是
+   挡住第二次按下「确认落子」(拍照那一秒最不能发生的事)。只盖盘的话右栏三颗键
+   看着是活的、按下去没反应,那比一句偏了的提示更像假话。
+   `.cdlg{inset:0}` 找的是最近的**定位祖先**,所以这一屏的布局根要 `position:relative`
+   —— 屏 06(布局 A)和屏 08(布局 B)已经各踩过一次,判据一样。**只给这一屏加**。 */
+.kiosk-layout-a.baipu-layout { position: relative; }
+
+/* ── 屏 18 直播 · 观战 ──────────────────────────────────────────────────────
+   状态标(直播中 / 已结束)在页控条右端。它**不占流内高度** —— 这一屏右栏六块正好
+   摆满 516,一个像素的余量都没有;挪到内容区顶上要 44,那 44 会从着法表里扣掉近两行。 */
+.kiosk-pagebar__status { display: inline-flex; align-items: center; flex: none; }
+
+/* 这一屏的 `.setnote` 是右栏最后一个孩子。共享那条给它带了 `margin-bottom:8px`
+   (那是给屏 27 设置页写的),在一条 flex 栏里那 8px 会从上面 `grow` 的折叠块里偷走 8、
+   并在栏底留一条 8 的死空 —— 四图上看得出来。**只在右栏里归零,不动共享那条。** */
+.kiosk-rail > .setnote { margin-bottom: 0; }
+
+/* ── 屏 21 研究 ────────────────────────────────────────────────────────────
+   AI 推荐表:着手 / 推荐度 / 目差 / 胜率 四列。逐字取自稿子(`go-kiosk.tmpl.html:386-393`)。
+   等宽字 + `tabular-nums`,列才对得齐 —— 和 `.mvrows` 同一条理由,但列数和口径不同,
+   所以不复用那个类。
+
+   这块的高度**不是这里定的**,是右栏 516 减出来的:
+     44(页控条)+ 48(分段)+ 16+7(提示行及其 margin-top)+ 36(翻手条)+ 52(动作区)
+     + 5×12(rail-gap) = 263  ⇒  折叠块 253  ⇒  减掉 30 的折叠头,**表体 223**。
+   按下面的 12px / line-height 1.95(= 23.4)算,223 − 16(上下内边距)− 19.5(表头)
+   = 187.5 ⇒ **正好露出 8 行,第 9 行切一半**。参考图 `shots/21-research.png` 就是这样
+   (K3 那行被横切,D17 完全没露)。⇒ **稿子对「装不下就滚」是诚实的,不要为了让 10 行
+   全露出来去压行高或改预算。** */
+.aitab {
+  overflow-y: auto; scrollbar-width: none;
+  display: grid; grid-template-columns: 1.1fr 1fr 1fr 1fr; align-content: start;
+  padding: 6px 12px 10px; column-gap: 6px;
+}
+.aitab::-webkit-scrollbar { width: 0 }
+.aitab span {
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.95;
+  font-variant-numeric: tabular-nums; color: var(--text);
+}
+.aitab .hd { color: var(--dim); font-size: 10px; letter-spacing: .06em; }
+.aitab .best { color: var(--accent); font-weight: 600; }
+.aitab .neg { color: var(--bad); }
+
+/* `.cdlg{inset:0}` 找的是最近的**定位祖先**,所以这一屏的布局根要 `position:relative`
+   —— 屏 06(布局 A)、屏 08(布局 B)、屏 17(摆谱)已各踩过一次,判据一样。**只给这一屏加**。 */
+.kiosk-layout-a.research-layout { position: relative; }
+
+/* 不可撤销的那一个(清空整盘)。和 `.kiosk-actions` 里的 `danger` 同一条口径:
+   **描边 + 字色走 --bad,不用实心红** —— 弹层里实心红比旁边那颗「取消」重一大截,
+   而这两颗的分量本该是「留下」重于「擦掉」。 */
+.cdlg__acts .bad { border: 1px solid var(--bad); background: none; color: var(--bad); }
+
+/* 扫描进行中,占的是 AI 折叠块的体。**不另开一块** —— 右栏 516 没有余量,而且扫完之后
+   这块地方就是那张表,同一个位置换内容比多一块面板更少跳。 */
+.aiscan { padding: 14px 12px; display: flex; flex-direction: column; gap: 12px; }
+.aiscan h4 { margin: 0; font-family: var(--font-serif); font-size: 15px; font-weight: 600; }
+.aiscan__bar { height: 6px; border-radius: 999px; background: var(--raise); overflow: hidden; }
+.aiscan__bar i { display: block; height: 100%; border-radius: 999px; background: var(--accent);
+  transition: width .3s ease; }
+.aiscan__stats { display: flex; gap: 22px; margin: 0; }
+.aiscan__stats dt { font-size: 11px; color: var(--dim); letter-spacing: .06em; }
+.aiscan__stats dd { margin: 2px 0 0; font-family: var(--font-mono); font-size: 15px;
+  font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* ── 屏 26 棋盘标定 ────────────────────────────────────────────────────────
+   **布局 B**(无棋盘 ⇒ 页控条通栏 x16–1008),内容区 992×460 内部再切 516 | 16 | 460。
+
+   **不复用 `.kiosk-layout-a`**,两笔账:① 那个类的语义捆着「有棋盘 ⇒ 页控条在右栏顶部」,
+   复用会让「这屏是 A 还是 B」在闸和读码的人眼里说不清;② 它的 `height:100%` 在别处落在
+   **516** 的容器里,这里落在 **460** 的容器里 —— 同一个类量出两个高度,哪天有人拿它断言
+   516 就会误伤这屏。四行 CSS 比这两笔账便宜。 */
+.calib-screen { display: flex; flex-direction: column; gap: var(--rail-gap); height: 100%; min-height: 0; }
+.calib-body {
+  /* `flex:1` 不是可省的:少了它这一格按**内容**定高 —— 实测塌成 392(右栏那五块的高度),
+     摄像头画面跟着矮 68,而右栏中段永远不会溢出、那条滚动逻辑一辈子不响。 */
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: var(--board-size) 1fr;
+  grid-template-rows: minmax(0, 1fr); gap: 16px;
+}
+
+/* 摄像头画面。**故意不叫 `.kiosk-board`**,两条理由:
+   ① 稿子说的 —— 闸的真像素抽查按木色(平均亮度 120–185)去量 `.kiosk-board`,
+      而这儿画的是摄像头看到的东西,量它等于拿木盘的尺子量摄像头;
+   ② `.kiosk-board` 本身是 3×3 栅格 + 四条 28px 刻度带,把视频塞进去等于四边各内缩 28,
+      去给「没有东西可标」的刻度让位。
+   宽度**不再写第二个 516** —— 由上面那个栅格列给(量出来一样)。 */
+.camview {
+  position: relative; overflow: hidden; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column;
+  border-radius: 8px; border: 1px solid var(--hair);
+  background: radial-gradient(120% 100% at 50% 0%, #16211E, #0B1211 72%);
+
+  /* 叠加层是 `<canvas>` 不是 SVG,稿子的 `.camview .quad/.g/.cor/.star` 落不到它身上。
+     ⇒ **调色板仍然留在 CSS**(稿子把它放的地方),用这四个自定义属性传进去,
+     `CameraGeometryOverlay` 画的时候 `getComputedStyle` 读回。 */
+  --cam-line: var(--accent);
+  --cam-corner: var(--accent);
+  --cam-star: var(--warn);
+  --cam-stale: var(--bad);
+}
+/* `.cap` 的定位原点是 `.camview` 的 `position:relative` —— 屏 06/08/17 都为同一个坑栽过一次。 */
+.camview .cap {
+  position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 2;
+  display: flex; align-items: center; gap: 9px;
+  height: 34px; padding: 0 11px; border-radius: 9px;
+  background: rgba(11, 18, 17, .88); border: 1px solid var(--hair);
+  font-size: 11.5px; color: var(--dim);
+}
+.camview .cap b { color: var(--text); font-weight: 600; }
+.camview .cap i {
+  font-style: normal; margin-left: auto;
+  font-family: var(--font-mono); font-size: 11px; color: var(--accent);
+}
+
+/* 右栏:头(状态格)尾(按钮行)固定,中间那块滚。
+   **不叫 `.kiosk-rail`** —— 那个类的 gap 是 12,而稿子这一屏写的是 8;而且它第一个间隙的
+   语义是「页控条 → 状态区」,这屏的页控条通栏、根本不在栏里。让一个类同时表示两种几何,
+   和复用 `.kiosk-layout-a` 是同一笔账。 */
+.calib-rail { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+/* `.kiosk-rail > .setnote{margin-bottom:0}` 按选择器落不到这屏(这栏不叫 `.kiosk-rail`)。
+   ⚠️ **但这一条在这儿并不承重** —— 2026-08-24 变异实测:去掉它两条几何闸**全绿**。
+   屏 18 上它是承重的,因为那儿 `.setnote` 是 flex 栏的**直接子节点**、那 8px 直接进外层的账;
+   这屏它住在**会滚的容器里**,多出的 8 只是让滚动内容高 8。
+   留着只为省掉那 8px 没必要的滚动内容,**不要**把它当成高度账的一环。 */
+.calib-rail .setnote { margin-bottom: 0; }
+/* 形态 2 的顶部渐隐默认按「头是一条组标题」偏移(`tokens.css:555`),这屏没有组标题 ⇒ 归零。 */
+.calib-scroll.kiosk-section--grow::before { top: 0; }
+.calib-scroll .kiosk-side__scroll { display: flex; flex-direction: column; gap: 8px; }
+.calib-acts {
+  flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px;
+}
+/* 两颗键**等高** —— `--btn-secondary-h` 是 38 而主行动是 44,稿子画的是等高两列。 */
+.calib-acts .kiosk-btn { height: var(--btn-primary-h); justify-content: center; }
+/* 不可撤销 / 会毁掉一次运行的那一颗(取消标定):描边 + 字色走 `--bad`,**不用实心红** ——
+   和 `.kiosk-actions` 里 `danger` 同一条口径。 */
+.calib-acts .kiosk-btn.is-danger { border-color: var(--bad); color: var(--bad); background: none; }
+.calib-acts .kiosk-btn:disabled { opacity: .45; cursor: default; }
+.calib-diag__raw { font-family: var(--font-mono); font-size: 10.5px; color: var(--dim); opacity: .7; }
+
+/* 标定五步 → **四步**(见 `GeometryCalibrationScreen.tsx` 页头注)。
+   用共享 `.kiosk-row` 的骨架,只换序号那一格:稿子要圆的 26×26,不是等宽数字。
+   ⚠️ **绝不覆盖 `.kiosk-row` 的 `flex` 和 `height`** —— 那条 `flex:none` 的注释写着
+   「不写死的话 flex 会先把它们压扁再滚(2026-07-29 真浏览器量出来 18 行被压成 33px)」,
+   而这四行现在**真的住在一个会滚的容器里**,正是那条注释描述的场景。 */
+.kiosk-row--step > .kiosk-row__lead {
+  width: 26px; height: 26px; flex: none; display: grid; place-items: center;
+  border-radius: 50%; border: 1px solid var(--hair); background: var(--panel);
+  font-family: var(--font-mono); font-size: 11px; color: var(--dim);
+}
+.kiosk-row--step.is-done > .kiosk-row__lead,
+.kiosk-row--step.is-plain > .kiosk-row__lead {
+  border-color: color-mix(in srgb, var(--good) 45%, transparent); color: var(--good);
+}
+.kiosk-row--step.is-now { border-color: var(--accent); }
+.kiosk-row--step.is-now > .kiosk-row__lead { border-color: var(--accent); background: var(--accent); color: var(--ink); }
+.kiosk-row--step.is-bad { border-color: color-mix(in srgb, var(--bad) 55%, transparent); }
+.kiosk-row--step.is-bad > .kiosk-row__lead { border-color: var(--bad); color: var(--bad); }
+.kiosk-row--step.is-warn > .kiosk-row__lead { border-color: var(--warn); color: var(--warn); }
+
+/* ── 屏 03 升降级 ·「对手」那一格 ──────────────────────────────────────────
+   共享件 `features/aiLadder/AiLadderSetupOpponent` 用的是 MUI(Chip / LinearProgress /
+   Alert),而它同时是 galaxy 那屏的消费者 —— 在原地改样式会把另一家一起改了。
+   这里是外壳那一份视图(`kiosk/components/aiLadder/KioskAiLadderOpponent`)自己的几个类。
+   ⚠️ 名字都带 `ladder-` 前缀,**不重定义任何裸共享类**(见本文件顶上 `.gside` 那条碰撞)。 */
+.ladder-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+/* 警告那几行会换行(「该档位尚未标定,可以试下,但本局不计入升降级」有 23 个字),
+   所以**不能**用 `.kiosk-opthint` —— 那个类的高度是写死的 `var(--opthint-h)`、
+   行高等于高度,第二行会直接压出去。 */
+.ladder-warn {
+  margin: 8px 0 0; font-family: var(--font-sans); font-size: 12px; line-height: 1.6;
+  color: var(--warn);
+}
+
+/* 定级进度条。原生 `<progress>`:它自带 `value`/`max` 语义,读屏不用另外编 aria。 */
+.ladder-progress {
+  display: block; width: 100%; height: 8px; margin-top: 8px;
+  appearance: none; border: none; border-radius: 4px; background: var(--raise);
+}
+.ladder-progress::-webkit-progress-bar { border-radius: 4px; background: var(--raise); }
+.ladder-progress::-webkit-progress-value { border-radius: 4px; background: var(--accent); }
+
+.ladder-retry { margin-top: 10px; }

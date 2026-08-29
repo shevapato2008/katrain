@@ -12,6 +12,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "fourup": "playwright test --config=playwright.visual.config.ts tests/kiosk-screen-*.fourup.spec.ts",
     "preview": "vite preview"
   },
   "dependencies": {

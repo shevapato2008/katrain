@@ -35,6 +35,21 @@ class ReportTaskStatus(BaseModel):
     total_moves: int
     analyzed_moves: int
     requested_visits: int
+    # ISO 8601, or null when the attempt has not started / not finished.
+    #
+    # `started_at` is when the *current* attempt series began, not when the row was
+    # created: the cron worker stamps it on claim with `started_at or now()`, so the
+    # automatic retries inside one series keep the first stamp, and `/retry` clears it
+    # so the next claim re-stamps. `completed_at` is set only on success and is cleared
+    # by every path that puts the task back in the queue -- so the pair is either a
+    # finished span or nothing, never a half-open one left over from an earlier run.
+    #
+    # Consumers show a duration as `completed_at - started_at`. Both come from the same
+    # column type, so on SQLite (dev) both are naive and on PostgreSQL (prod) both carry
+    # an offset -- the difference is right either way, only an absolute instant would
+    # need the caller to know which.
+    started_at: str | None = None
+    completed_at: str | None = None
 
 
 class ReportTaskMoveResponse(BaseModel):
@@ -80,6 +95,8 @@ def _task_to_dict(task: models_db.ReportTask) -> dict[str, Any]:
         "total_moves": task.total_moves,
         "analyzed_moves": task.analyzed_moves,
         "requested_visits": task.requested_visits,
+        "started_at": task.started_at.isoformat() if task.started_at else None,
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
     }
 
 
@@ -289,6 +306,11 @@ async def retry_report_task(
     task.status = "pending"
     task.retry_count = 0
     task.error_message = None
+    # Both stamps, not just `completed_at`. A failed task can sit here for a night before
+    # anyone presses retry; leaving the old `started_at` would make the next completion
+    # report a span that covers the waiting, and the screen would read "took 14 hours"
+    # for six minutes of analysis. Cleared here, the cron worker re-stamps it on claim.
+    task.started_at = None
     task.completed_at = None
     db.commit()
     db.refresh(task)

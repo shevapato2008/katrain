@@ -181,3 +181,106 @@ async def test_create_report_task_force_and_report_type_create_distinct_tasks(ap
         assert deep_task.status_code == 200
         assert deep_task.json()["id"] not in {normal_first_id, normal_forced.json()["id"]}
         assert deep_task.json()["requested_visits"] > normal_first.json()["requested_visits"]
+
+
+async def _create_game_and_task(ac, headers, title):
+    game_resp = await ac.post(
+        "/api/v1/user-games/",
+        headers=headers,
+        json={
+            "sgf_content": "(;FF[4]SZ[19];B[pd];W[dp])",
+            "source": "import",
+            "move_count": 2,
+            "title": title,
+        },
+    )
+    assert game_resp.status_code == 200
+    task_resp = await ac.post(
+        "/api/v1/reports/",
+        headers=headers,
+        json={"user_game_id": game_resp.json()["id"], "report_type": "normal"},
+    )
+    assert task_resp.status_code == 200
+    return task_resp.json()["id"]
+
+
+@pytest.mark.asyncio
+async def test_report_status_exposes_both_timestamps(app):
+    """Screen 20 writes "took 6m12s" off this pair -- it has to reach the wire.
+
+    Registered as owed work in the go-kiosk alignment track: the columns existed and the
+    cron worker wrote them, but `_task_to_dict` dropped them, so the screen had no honest
+    way to say how long the analysis ran.
+    """
+    from datetime import datetime
+
+    headers = await _login_and_get_headers(app, username="stamps")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        task_id = await _create_game_and_task(ac, headers, "Timestamps")
+
+        # A pending task has neither stamp -- the keys are still present, as nulls.
+        fresh = await ac.get(f"/api/v1/reports/{task_id}", headers=headers)
+        assert fresh.status_code == 200
+        assert fresh.json()["started_at"] is None
+        assert fresh.json()["completed_at"] is None
+
+        from katrain.web.core import models_db
+
+        session = app.state.report_session_factory()
+        try:
+            task = session.query(models_db.ReportTask).filter(models_db.ReportTask.id == task_id).first()
+            task.status = "completed"
+            task.started_at = datetime(2026, 8, 23, 1, 0, 0)
+            task.completed_at = datetime(2026, 8, 23, 1, 6, 12)
+            session.commit()
+        finally:
+            session.close()
+
+        done = await ac.get(f"/api/v1/reports/{task_id}", headers=headers)
+        assert done.status_code == 200
+        body = done.json()
+        assert body["started_at"].startswith("2026-08-23T01:00:00")
+        assert body["completed_at"].startswith("2026-08-23T01:06:12")
+
+        # And on the list endpoint too -- the review screen reads that one.
+        listed = await ac.get("/api/v1/reports/", headers=headers)
+        assert listed.status_code == 200
+        row = next(row for row in listed.json() if row["id"] == task_id)
+        assert row["completed_at"].startswith("2026-08-23T01:06:12")
+
+
+@pytest.mark.asyncio
+async def test_retry_clears_started_at_so_the_wait_is_not_counted_as_analysis(app):
+    """`/retry` has to clear *both* stamps, not just `completed_at`.
+
+    A failed task can sit for a night before anyone presses retry. Keeping the old
+    `started_at` would make the next completion report a span covering that night, and
+    screen 20 would read "took 14 hours" for six minutes of analysis. Cleared here, the
+    cron worker re-stamps it on claim (`started_at or now()`).
+    """
+    from datetime import datetime
+
+    headers = await _login_and_get_headers(app, username="retrier")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        task_id = await _create_game_and_task(ac, headers, "Retry Stamps")
+
+        from katrain.web.core import models_db
+
+        session = app.state.report_session_factory()
+        try:
+            task = session.query(models_db.ReportTask).filter(models_db.ReportTask.id == task_id).first()
+            task.status = "failed"
+            task.started_at = datetime(2026, 8, 22, 11, 0, 0)  # yesterday morning
+            task.completed_at = None
+            session.commit()
+        finally:
+            session.close()
+
+        retried = await ac.post(f"/api/v1/reports/{task_id}/retry", headers=headers)
+        assert retried.status_code == 200
+        body = retried.json()
+        assert body["status"] == "pending"
+        assert body["started_at"] is None
+        assert body["completed_at"] is None

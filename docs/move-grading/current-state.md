@@ -97,21 +97,27 @@ D3 4 次 / P3 8 次；2000 visits：D3 10 次 / P3 2 次）。任何「他有没
 （失误音效、上/下一个错误、只重分析错误、web interface），
 上游是 3.0，本仓变成了 2.0。
 
-### 5.2 网页版报告的 SGF 解析吃不了让子棋
+### 5.2 网页版报告的 SGF 解析吃不了让子棋 —— **已由 develop 独立修掉**
 
-```
-katrain/cron/jobs/report_analyze.py:24   SGF_MOVE_RE = r";([BW])\[([a-z]{0,2})\]"
-katrain/cron/jobs/report_analyze.py:320-321   initial_stones=[], initial_player="B"
-```
+本文档第一版写这条时，报告管线还在用一条平铺正则解析 SGF：
+`AB[]/AW[]` 摆子全丢、起手方写死黑、分支被拍平进主线、老式 `;B[tt]` 变成
+盘外坐标 `U0`。
 
-`AB[]/AW[]` 摆子**全丢**，起手方**写死黑**。一盘 9 子局被当成分先黑先走 ⇒
-**白棋每一手都像灾难**。这是「分析业余选手棋局失误特别多」的直接嫌疑人。
+**2026-08-25 develop 已经修了**（`katrain/cron/sgf.py`，`ParsedGame` / `parse_game`），
+而且做法比本 track 一度采用的更对：它把解析器**写在 `katrain/cron/` 里**，
+只用标准库，因此不违反「Dockerfile.cron 只 COPY katrain/cron/」这条部署边界；
+本 track 当时的做法是去 import `katrain/core/sgf_parser.py` 并给 Dockerfile
+加一行 COPY —— 那会被 develop 新加的
+`tests/web_ui/test_cron_import_boundary.py` 挡下来（也应该被挡下来）。
 
-同一处还有两个坑（实测跑过解析器）：
-- 分支 SGF 被拍平进主线：`(;B[pd];W[dp](;B[qp];W[dc])(;B[dc];W[qp]))`
-  解析成 6 手，含两次非法重复落子 —— 分析的局面和棋局无关，算出来的评级是垃圾。
-- 老式 `;B[tt]` 停一手 → 盘外坐标 `U0` → KataGo 报错 → 3 次重试 → 整个任务失败。
-- `C[]` 注释里的 `;W[qq]` 会被当成真着法。
+合并时本 track 的那份实现整段取了 develop 的，配套的
+`tests/test_report_sgf_parse.py` 也删了 —— develop 的
+`tests/web_ui/test_cron_sgf.py` 覆盖同样的四类情形且更全
+（嵌套变化图、400 层主线、>19 路上的 `tt`）。
+
+**这条留在这里是因为它仍然是「业余局失误特别多」的历史成因之一**：
+在 2026-08-25 之前生成的所有让子局报告，都是从空盘、黑先算出来的。
+那些旧报告的评级不可信，需要重新生成才有意义。
 
 ### 5.3 测试会静默改写**被提交的** `katrain/config.json`
 

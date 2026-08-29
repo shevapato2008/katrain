@@ -15,6 +15,19 @@ COPY . /app
 RUN python3 -m pip install --trusted-host pypi.tuna.tsinghua.edu.cn -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip && \
     python3 -m pip install --trusted-host pypi.tuna.tsinghua.edu.cn -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements-web.txt -r requirements-desktop.txt
 
+# Compile the gettext catalogs. The `.mo` files are gitignored, so a clean checkout has
+# none and every string falls back to its untranslated msgid -- the whole UI in English.
+# `i18n.py`'s exit status is not a build signal. Its `errors` accumulator starts as a bool
+# and is later `+= 1`'d (i18n.py:20/38/123), so the status is "1 if any language still has
+# TODOs" PLUS "one per msgid used in code but absent from the catalogs" -- measured on this
+# tree 2026-08-26: exit 2, while all catalogs were written successfully. So the check below
+# is on the **artifacts**. `es` is in the script's INACTIVE_LANGS and gets no .mo.
+RUN python3 i18n.py || true; \
+    for d in katrain/i18n/locales/*/LC_MESSAGES; do \
+      case "$d" in */es/*) continue;; esac; \
+      test -f "$d/katrain.mo" || { echo "missing $d/katrain.mo"; exit 1; }; \
+    done
+
 # Build frontend during Docker build (not at runtime)
 RUN cd katrain/web/ui && npm install && npm run build
 

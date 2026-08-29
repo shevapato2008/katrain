@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>围棋 kiosk · 7″ 预览 1024×600</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: #0b0f10; color: #cfe0d9;
+    font: 13px/1.5 ui-sans-serif, system-ui, "PingFang SC", sans-serif;
+    display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 22px 16px 40px;
+  }
+  h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: .04em; }
+  h1 small { color: #7d9089; font-weight: 400; margin-left: 8px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 6px; max-width: 1080px; justify-content: center; }
+  .bar button {
+    font: inherit; padding: 5px 11px; border-radius: 999px; cursor: pointer;
+    background: #16211e; color: #cfe0d9; border: 1px solid #2b3a35;
+  }
+  .bar button:hover { background: #1d2b27; }
+  .bar button[aria-pressed="true"] { background: #58b57a; border-color: #58b57a; color: #0b0f10; font-weight: 600; }
+  /* 7 寸机器的实际可视区就是 1024×600。外面这圈只是壳,不参与布局。 */
+  .bezel { padding: 16px; border-radius: 22px; background: #14100c; box-shadow: 0 24px 60px -24px #000, inset 0 0 0 1px #2a231a; }
+  iframe { width: 1024px; height: 600px; border: 0; display: block; border-radius: 4px; background: #0f1416; }
+  .foot { color: #7d9089; font-size: 12px; text-align: center; max-width: 900px; }
+  .foot code { color: #cfe0d9; }
+  .err { color: #e2685c; }
+</style>
+</head>
+<body>
+  <h1>围棋 kiosk 外壳<small id="state">正在登录…</small></h1>
+  <div class="bar" id="bar"></div>
+  <div class="bezel"><iframe id="screen" title="kiosk 1024×600"></iframe></div>
+  <p class="foot">
+    画面固定 <code>1024 × 600</code>，和 7&Prime; 机器可视区一致；这一圈木色只是外壳，不参与布局。<br>
+    本页与应用**同源**，所以能直接写 <code>localStorage.token</code> 自动登录 —— 换成 file:// 打开会因存储分区而登不上。<br>
+    <span id="warn" class="err"></span>
+  </p>
+<script>
+// 开发专用预览页。**不进构建** —— vite 的 build input 只有 index.html,根目录下别的 HTML
+// 不会被打包(所以它不会漏进 ../static/ 或 ../static-kiosk-2d/)。
+const ROUTES = [
+  ['对弈首页', '/kiosk/play'],
+  ['训练营', '/kiosk/tsumego'],
+  ['棋谱', '/kiosk/kifu'],
+  ['复盘', '/kiosk/report'],
+  ['课程', '/kiosk/tutorial'],
+  ['设置', '/kiosk/settings'],
+  ['对弈设置(L2)', '/kiosk/play/ai/setup/free'],
+  ['本地对局(L2)', '/kiosk/play/pvp/setup'],
+  ['在线大厅(L2)', '/kiosk/play/pvp/lobby'],
+  ['跨平台(L2)', '/kiosk/play/cross-platform'],
+];
+const bar = document.getElementById('bar');
+const screenEl = document.getElementById('screen');
+const state = document.getElementById('state');
+const warn = document.getElementById('warn');
+let current = null;
+
+function go(path) {
+  current = path;
+  screenEl.src = path;
+  for (const b of bar.children) b.setAttribute('aria-pressed', String(b.dataset.path === path));
+}
+for (const [label, path] of ROUTES) {
+  const b = document.createElement('button');
+  b.textContent = label; b.dataset.path = path;
+  b.onclick = () => go(path);
+  bar.appendChild(b);
+}
+
+(async () => {
+  try {
+    if (!localStorage.getItem('token')) {
+      const r = await fetch('/api/v1/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: '预览', password: 'preview1234' }),
+      });
+      if (!r.ok) throw new Error('登录失败 HTTP ' + r.status);
+      localStorage.setItem('token', (await r.json()).access_token);
+    }
+    localStorage.setItem('katrain_language', 'cn');
+    state.textContent = '· 已登录 预览';
+    go('/kiosk/play');
+  } catch (e) {
+    state.textContent = '· 未登录';
+    warn.textContent = String(e && e.message || e) +
+      ' —— 后端(127.0.0.1:8001)没起来，或者预览账号不存在。';
+    go('/kiosk/play');
+  }
+})();
+</script>
+</body>
+</html>

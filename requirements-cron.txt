@@ -4,6 +4,3 @@ httpx
 apscheduler>=3.10
 beautifulsoup4
 lxml
-pyyaml>=6.0
-# katrain/core/sgf_parser.py（报告管线用它解析 SGF）依赖 chardet
-chardet>=5.2.0

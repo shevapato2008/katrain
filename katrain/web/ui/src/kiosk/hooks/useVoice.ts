@@ -4,6 +4,8 @@
 
 import { useCallback, useRef } from 'react';
 
+import { readAudioPref } from '../../utils/audioPrefs';
+
 export type VoiceName =
   | 'clear_board'
   | 'place_black'
@@ -18,6 +20,10 @@ export function useVoice() {
   const currentRef = useRef<HTMLAudioElement | null>(null);
 
   const speak = useCallback((name: VoiceName) => {
+    // 语音是**单独一把**开关(屏 27 设置「声音」组):它和落子音效不是一件事 ——
+    // 音效是几十毫秒的一声,引导语是一整句话,教室里最先想关掉的往往是后者。
+    // 每次现读,不缓存进闭包。
+    if (!readAudioPref('voice')) return;
     if (currentRef.current) {
       currentRef.current.pause();
     }

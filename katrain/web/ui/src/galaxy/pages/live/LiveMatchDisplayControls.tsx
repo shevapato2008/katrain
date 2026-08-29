@@ -21,6 +21,7 @@ import { Box, Button, Divider, Switch, Typography } from '@mui/material';
 
 import ToolGridButton from '../../components/board/ToolGridButton';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { railToggleRowSx } from '../../../components/railStyles';
 
 export interface LiveMatchDisplayControlsProps {
   tryMoveMode: boolean;
@@ -118,7 +119,7 @@ export default function LiveMatchDisplayControls({
       )}
 
       <Divider sx={{ mt: 1.5, mx: -2 }} />
-      <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box sx={{ mt: 0.5, ...railToggleRowSx }}>
         <Typography variant="body2" color="text.secondary">{coordinatesLabel}</Typography>
         <Switch
           data-testid="live-coordinate-toggle"

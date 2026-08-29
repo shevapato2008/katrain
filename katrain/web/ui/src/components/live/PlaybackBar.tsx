@@ -8,6 +8,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import SyncIcon from '@mui/icons-material/Sync';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
+import { RAIL_TIGHT } from '../railStyles';
 
 interface PlaybackBarProps {
   currentMove: number;
@@ -35,7 +36,9 @@ export default function PlaybackBar({
      只在 board-rail 这个具名容器里生效 —— 没有这个容器的调用方
      （kiosk 五个页面、直播列表页的旧版式）宽度本来就够，保持 40px 触摸尺寸不变。
      touchSized（盒端 48px）优先级更高，写在后面覆盖。 */
-  const NARROW = '@container board-rail (max-width: 340px)';
+  /* 收窄界统一到 `RAIL_TIGHT`（460）。原来写死 340 是照着「1200–1535 档右栏 340」定的，
+     那一档 2026-08-30 改成 360 之后，这条 340 就悄悄不再生效了。 */
+  const NARROW = RAIL_TIGHT;
   const compactIconSx = { [NARROW]: { width: 30, height: 30, padding: '3px' } };
   const compactPlaySx = { [NARROW]: { width: 42, height: 42, padding: '6px' } };
 

@@ -41,12 +41,14 @@ import PlaybackBar from '../../components/live/PlaybackBar';
 import BoardPageShell from '../components/board/BoardPageShell';
 import ModulePlate from '../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
+import { RAIL_TIGHT } from '../../components/railStyles';
 
 /* 右栏窄档（320 / 340）下的卡片压缩。整块列表从 520 搬进 320，卡片必须自己收 ——
    用具名容器查询，不用视口媒体查询：判据是「卡片实际拿到多少宽」，而右栏宽度是
    由 shell 的 `containerName: 'board-rail'` 决定的，跟视口不是一回事（左栏折叠、
    竖屏下沉都会改它）。同一手法见 `PlaybackBar.tsx` 的 NARROW。 */
-const RAIL_NARROW = '@container board-rail (max-width: 340px)';
+/* 收窄界统一到 `RAIL_TIGHT`（460）—— 原来的 340 是照着旧的「1200–1535 档右栏 340」定的。 */
+const RAIL_NARROW = RAIL_TIGHT;
 
 const PAGE_SIZE = 20;
 const ROW_STAGGER = 25;
@@ -489,7 +491,7 @@ export default function KifuLibraryPage() {
               但那是稿子对同一件东西的低保真画法（它标的图标 SkipPrevious /
               NavigateBefore 连实际用的都不是）。直播页和复盘页的动作区都是这一件，
               本轮的题目就是统一；顺带把这一页第五份手写播放控件也收掉了。
-              它自带 `@container board-rail (max-width:340px)` 的窄档收缩。 */}
+              它自带 `RAIL_TIGHT`（460）的窄档收缩。 */}
           {hasPreview && (
             <PlaybackBar
               currentMove={previewCurrentMove}

@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "fourup": "playwright test --config=playwright.visual.config.ts tests/kiosk-screen-*.fourup.spec.ts",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "audit:rail": "node ../../../superpowers/tracks/galaxy-ui-redesign/audit_rail_width.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

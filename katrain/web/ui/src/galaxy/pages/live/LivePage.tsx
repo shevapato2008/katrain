@@ -170,7 +170,7 @@ export default function LivePage() {
       actions={(
         <>
           {/* 播放条从棋盘底下挪进动作区（稿子同址）。它是共享件，自带
-              `@container board-rail (max-width:340px)` 的窄档收缩。 */}
+              `RAIL_TIGHT`（460）的窄档收缩。 */}
           {selectedMatch && (
             <PlaybackBar
               currentMove={currentMove}

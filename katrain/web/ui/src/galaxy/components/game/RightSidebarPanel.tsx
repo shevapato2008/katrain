@@ -23,6 +23,7 @@ import { type GameState, API } from '../../../api';
 import { useAuth } from '../../../context/AuthContext';
 import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { railToggleGroupSx } from '../../../components/railStyles';
 
 /** 右栏中段的一节：统一的内边距 + 一条分隔线。取代原来散落的 `<Divider/>`。 */
 const sectionSx: SxProps = { p: 2, borderBottom: '1px solid', borderColor: 'divider' };
@@ -329,8 +330,14 @@ const RightSidebarPanel = ({
                 {/* Other Settings */}
                 {/* 显示开关。冻结稿把它们做成**整行** —— 文字靠左、开关靠右、一行一个。
                     原来是 MUI 的默认排布（开关在前、文字在后、并排挤成一行），
-                    320 右栏下两个开关会挨在一起，读起来像一个控件的两半。 */}
-                <Box sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+                    320 右栏下两个开关会挨在一起，读起来像一个控件的两半。
+
+                    2026-08-30 右栏加宽后补 `auto-fit`：整行排布在 520 档下会把标签和
+                    滑块拉开近 480px，读起来不再像一个控件。`minmax(200px, 1fr)` 让它
+                    **只在装得下两列时**才分两列——320/360/420 三档可用宽分别是
+                    288/328/388，都小于 400，排布与加宽之前逐像素一致；520 档可用 488，
+                    分成两列各 244，标签与滑块重新贴在一起。 */}
+                <Box sx={{ p: 2, ...railToggleGroupSx }}>
                     {([
                         ['coords', t('Coordinates', 'Coordinates'), analysisToggles.coords, true],
                         ['numbers', t('Move Numbers', 'Move Numbers'), analysisToggles.numbers, true],

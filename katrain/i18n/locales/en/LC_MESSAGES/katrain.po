@@ -3282,3 +3282,8 @@ msgstr "{b} Black / {w} White moves rated"
 
 msgid "grade:unrated_count"
 msgstr "{n} unrated"
+
+msgid "ladder:engine_unavailable_start"
+msgstr ""
+"The ranked engine is temporarily unavailable. No game was started, and your "
+"rank is unaffected. Please try again later."

@@ -51,7 +51,7 @@
 
 ### R2 · 只有中间那一列可以被拉伸
 
-顶栏 52、左边栏 240/216/64、右边栏 380/340/320 —— 全是定值。窗口变化时它们按 §7 的档位切换，
+顶栏 52、左边栏 240/216/64、右边栏 520/420/360/320（2026-08-30 由 380/340/320 加宽，见 spec §2.3）—— 全是定值。窗口变化时它们按 §7 的档位切换，
 但在任一档位内都不随宽度连续变化。棋盘拿走全部余量。
 
 **为什么**：两侧定宽，中间才有唯一确定的余量。否则窗口一动四条边同时动，没有一处能对齐。
@@ -375,8 +375,9 @@ S0 把 A 实现出来了（`scripts/build_wenkai_chunks.py`，234 片 + 品牌 +
 
 | 档 | 宽度 | 左边栏 | 右边栏 | 棋盘边长（实测） |
 |---|---|---|---|---|
-| **宽** xl | ≥1536 | 240 | 380 | 受高度约束 |
-| **标准** lg | 1200–1535 | 216 | 340 | 受高度约束（1440×900 → **828**） |
+| **宽** xxl | ≥1920 | 240 | 520 | 受高度约束 |
+| **宽** xl | 1536–1919 | 240 | 420 | 受高度约束 |
+| **标准** lg | 1200–1535 | 216 | 360 | 受高度约束（1440×900 → **828**，加宽后不变） |
 | **窄** md | 900–1199 | 64 图标 | 320 | 受宽度约束（1024×768 → **620**；900×700 → **496**） |
 | **竖屏** | <900 | 底部标签栏 | 落到棋盘下方 | 满宽（430 → **418**） |
 
@@ -445,7 +446,7 @@ S0 把 A 实现出来了（`scripts/build_wenkai_chunks.py`，234 片 + 品牌 +
 | 1 | 删掉棋盘上方的横条（**四份近乎一样的拷贝**），模块名与退出移进模块牌 | `GamePage.tsx:340-354` · `GameRoomPage.tsx:268-302` · `ResearchPage.tsx:420-444` · `TsumegoProblemPage.tsx:365-398`（+ 移动版 `MobileControls.tsx:64-72`） | R1；顺带把四份拷贝合成一个组件 |
 | 2 | 把浮在棋盘上的绝对定位提示叠层移进右边栏 | `GamePage.tsx:268`（`top:12; zIndex:100`） | 它盖住棋盘顶部两行 |
 | 3 | 新增顶栏；品牌改 `智星盒 StellaBox`；左边栏补「首页」 | `MainLayout.tsx:9-13` · `GalaxySidebar.tsx:49-57,71-84` | 今天没有顶栏；`/galaxy` 无导航项 |
-| 4 | 右边栏统一到 380/340/320 | 500 ×7（`RightSidebarPanel.tsx:106`、`ResearchSetupPanel.tsx:84`、`ResearchAnalysisPanel.tsx:413`、`LiveMatchPage.tsx:144`、`ReportDetailPage.tsx:147`、`LivePage.tsx:106`、`KifuLibraryPage`）· 320 ×1（`TsumegoProblemPage.tsx:405`） | 500 那档在 1440 下把棋盘卡在 700 宽，高度白剩 |
+| 4 | 右边栏统一到 520/420/360/320（原 380/340/320，2026-08-30 加宽） | 500 ×7（`RightSidebarPanel.tsx:106`、`ResearchSetupPanel.tsx:84`、`ResearchAnalysisPanel.tsx:413`、`LiveMatchPage.tsx:144`、`ReportDetailPage.tsx:147`、`LivePage.tsx:106`、`KifuLibraryPage`）· 320 ×1（`TsumegoProblemPage.tsx:405`） | 500 那档在 1440 下把棋盘卡在 700 宽，高度白剩 |
 | 5 | 装字体（品牌/数字用固定子集，正文按 §3.2 分片 + `@font-face` + 改 `fontFamily`） | **`src/galaxy/assets/fonts/`**（不是 `public/`，理由见 §3.2） · galaxy 作用域样式 · `theme.ts:34-46` | Manrope 声明了但从未加载 |
 | 6 | 28 个瓦片改成真按钮 | `ResearchToolbar.tsx` ×12 · `RightSidebarPanel.tsx` ×8 · `BoardEditToolbar.tsx` ×8 | 停一手/悔棋/认输/摆黑摆白今天**全部键盘不可达** |
 | 7 | 补 `minContainerHeight` 或去掉 `LiveBoard` 的 400 硬底 | `LiveBoard.tsx:738`（组件自己的注释 `:47-51` 写明了这个坑）· 研究/直播/复盘/棋谱库四处调用点 | 窗口一矮棋盘被 `overflow:hidden` 切掉 |

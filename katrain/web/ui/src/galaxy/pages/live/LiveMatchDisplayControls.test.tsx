@@ -141,4 +141,18 @@ describe('LiveMatchDisplayControls', () => {
       gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
     });
   });
+
+  /* 跨页一致：坐标开关这一行在直播/复盘和对局页必须是同一种东西。
+     窄档两端对齐（冻结稿的形状）；宽档必须**关掉** space-between —— 对局页那一组在
+     520 档会排成两列，继续两端对齐的话每个滑块离下一列的标签只有 16px、离自己的标签 158px，
+     邻近性整个反过来。这里只有一个开关排不出第二列，但要跟对局页用**同一条规则**，
+     否则同一个「坐标」开关在两类页面上一个贴着标签、一个甩到 488px 外。
+     这条钉的是那条规则来自**共用常量** `railToggleRowSx`，不是各页各写一份。
+     变异验证：把 RAIL_WIDE 的 460 改成 9999（等于宽档规则永不生效），本条红。 */
+  it('drops space-between on the shared wide-rail band so the switch stays next to its label', () => {
+    renderControls();
+    const css = Array.from(document.querySelectorAll('style')).map((n) => n.textContent ?? '').join('\n');
+    expect(css).toContain('@container board-rail (min-width: 460px)');
+    expect(css).toMatch(/@container board-rail \(min-width: 460px\)\s*\{[^}]*justify-content:\s*flex-start/);
+  });
 });

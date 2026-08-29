@@ -3327,3 +3327,9 @@ msgstr "{b} Züge Schwarz / {w} Züge Weiß bewertet"
 
 msgid "grade:unrated_count"
 msgstr "{n} nicht bewertet"
+
+msgid "ladder:engine_unavailable_start"
+msgstr ""
+"Die Ranglisten-Engine ist vorübergehend nicht verfügbar. Es wurde keine "
+"Partie gestartet, und dein Rang bleibt unverändert. Bitte versuche es später"
+" erneut."

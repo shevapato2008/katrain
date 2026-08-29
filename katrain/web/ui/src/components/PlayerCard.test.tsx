@@ -27,3 +27,21 @@ describe('PlayerCard rank_display', () => {
     expect(screen.queryByText('超越职业')).not.toBeInTheDocument();
   });
 });
+
+/* 两条容器带别再被合回一条。
+   2026-08-30 右栏从 380 加宽到 520 之前，字号收窄和「我在右栏里」共用 899 一条带；
+   加宽之后 520 档里每张卡有 244 却还按 140 的字号画。这条钉的就是那次拆分：
+   **收窄归 460、语义归 899**。变异验证：把 RAIL_TIGHT 改回 899，第二条断言红
+   （emit 出来的样式里再也找不到 460 那条带）。 */
+describe('PlayerCard 的两条 board-rail 容器带', () => {
+  const emittedCss = () => Array.from(document.querySelectorAll('style'))
+    .map((node) => node.textContent ?? '').join('\n');
+
+  it('keeps the in-rail semantics on the 899 band and the size compaction on the 460 band', () => {
+    render(<PlayerCard player="B" info={humanInfo} captures={0} active />);
+    const css = emittedCss();
+    expect(css).toContain('@container board-rail (max-width: 899px)');
+    expect(css).toContain('@container board-rail (max-width: 460px)');
+  });
+});
+

@@ -30,6 +30,18 @@ from katrain.gui.theme import Theme
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("katrain_web")
 
+#: 阶梯落子失败有两种,在玩家眼里长得一模一样:**暂时的**(引擎刚重启、一次查询丢了)和
+#: **永久的**(这套部署的引擎根本服务不了这一档)。从前两种都走同一条单向闩 ——
+#: `last_ladder_error` 置位后 `_do_update_state` 再也不重新触发 AI,引擎哪怕下一秒好了,
+#: 这一局也永远不动一子。
+#:
+#: 这里是每次重试之前要等的秒数。**它有尽头**,因为闩本身不是多余的:
+#: `_do_ai_move_and_broadcast` 的 finally 会调 `update_state()`,而那正好又回到重新触发
+#: 那一段 —— 没有闩就是无限重生循环(见 tests/web_ui/test_ladder_injection.py 里那三条)。
+#: 有了截止时刻,「不许立刻重来」和「永远不许重来」才分得开。
+#: 排完这四次还不好(约 110 秒),那就是部署问题,再重试只是拿同一行 ERROR 刷日志。
+LADDER_STALL_RETRY_SCHEDULE = (5.0, 15.0, 30.0, 60.0)
+
 
 class NullEngine:
     def __init__(self):
@@ -180,6 +192,11 @@ class WebKaTrain(KaTrainBase):
         # Set when a LadderUnavailable failure suppresses a move; cleared on the next
         # successful AI move or new game. Surfaced via get_state() for the frontend.
         self.last_ladder_error = False
+        # 配套的重试状态,见 LADDER_STALL_RETRY_SCHEDULE。`_ladder_retry_at` 是「在这一刻
+        # 之前不许重新触发」;为 0 表示排期已用尽,这一局就此闩死。
+        self._ladder_retry_timer = None
+        self._ladder_retry_attempt = 0
+        self._ladder_retry_at = 0.0
         self.ai_ladder_remote_ended = False
         # R6: optional second engine for analysis/review (remote strong engine on kiosk).
         # None until start(); analysis_engine() falls back to self.engine.
@@ -662,6 +679,7 @@ class WebKaTrain(KaTrainBase):
                     raise ValueError("frozen ladder recipe does not match injected rung")
             self.frozen_ladder_recipe = frozen_ladder_recipe
             self.last_ladder_error = False
+            self._reset_ladder_stall_retry()
             with self.ai_ladder_commit_lock:
                 self.ai_ladder_remote_ended = False
             if self.engine:
@@ -835,7 +853,7 @@ class WebKaTrain(KaTrainBase):
                 and not cn.children
                 and not self.game.end_result
                 and not (teaching_undo and cn.auto_undo is None)
-                and not getattr(self, "last_ladder_error", False)
+                and not self._ladder_stall_blocks_retrigger()
             ):
                 if not self._ai_move_pending:
                     self._ai_move_pending = True
@@ -1119,6 +1137,7 @@ class WebKaTrain(KaTrainBase):
                         # AI resigned, state will be updated by the caller
                         return
                     self.last_ladder_error = False
+                    self._reset_ladder_stall_retry()
                     self.play_stone_sound()
                 else:
                     self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
@@ -1127,6 +1146,47 @@ class WebKaTrain(KaTrainBase):
         """Session flag so the frontend can render '棋力阶梯引擎暂不可用' after a
         LadderUnavailable failure. Cleared on the next successful AI move or new game."""
         self.last_ladder_error = True
+        self._schedule_ladder_stall_retry()
+
+    def _reset_ladder_stall_retry(self):
+        """把重试状态清回原样。成功落子和新开局各调一次 —— 少了任何一处,上一局用掉的
+        次数会算在下一局头上。"""
+        timer = getattr(self, "_ladder_retry_timer", None)
+        if timer is not None:
+            timer.cancel()
+        self._ladder_retry_timer = None
+        self._ladder_retry_attempt = 0
+        self._ladder_retry_at = 0.0
+
+    def _schedule_ladder_stall_retry(self):
+        """排下一次重试;排期用尽就让这一局闩死。
+
+        必须自己拿定时器驱动,不能等别人来调 `update_state()`:`GET /api/state` 只读
+        `session.last_state`(server.py 的 get_state),不会回到 `_do_update_state`,
+        所以「等下一次轮询」等于不重试。
+        """
+        attempt = getattr(self, "_ladder_retry_attempt", 0)
+        if attempt >= len(LADDER_STALL_RETRY_SCHEDULE):
+            self._ladder_retry_at = 0.0  # 用尽:_ladder_stall_blocks_retrigger 从此恒为 True
+            return
+        delay = LADDER_STALL_RETRY_SCHEDULE[attempt]
+        self._ladder_retry_attempt = attempt + 1
+        self._ladder_retry_at = time.time() + delay
+        timer = threading.Timer(delay, self.update_state)
+        timer.daemon = True
+        self._ladder_retry_timer = timer
+        timer.start()
+
+    def _ladder_stall_blocks_retrigger(self):
+        """这一刻允不允许重新触发一次失败过的阶梯落子。
+
+        判据是**截止时刻**,不是「失败过没有」。只看后者就是单向闩(引擎恢复了也不回来),
+        完全不看就是无限重生循环 —— 两边都错,中间这条才对。
+        """
+        if not getattr(self, "last_ladder_error", False):
+            return False
+        deadline = getattr(self, "_ladder_retry_at", 0.0)
+        return not deadline or time.time() < deadline
 
     def _do_play(self, coords):
         from katrain.core.game import IllegalMoveException, Move

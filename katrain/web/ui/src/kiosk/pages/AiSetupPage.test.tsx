@@ -161,6 +161,24 @@ describe('AiSetupPage', () => {
     });
   });
 
+  it('引擎开局前就被判不可用：说清「没开成、也没扣段位」，不贴英文原文', async () => {
+    // 这道预检是新加的。从前局照开，第一手棋才弹「阶梯引擎不可用」——而那时定级名额
+    // 已经押上去了（生产实测 2026-08-29）。挡在开局之前之后，屏上必须把后半句说出来，
+    // 否则刚被坑过一次的用户会以为自己又废了一局。
+    const err: Error & { status?: number } = new Error(
+      'Request failed 503: {"detail":"Ranked engine cannot serve the seated rung"}',
+    );
+    err.status = 503;
+    startRanked.mockRejectedValueOnce(err);
+    renderPage('ranked');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /开始对局|开始计分局/i }));
+
+    expect(await screen.findByText(/本次没有开局/)).toBeInTheDocument();
+    expect(screen.queryByText(/Ranked engine cannot serve/)).not.toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
   it('shows the server-selected ranked opponent instead of HumanSL strength', () => {
     renderPage('ranked');
     expect(screen.getByText('定级对手：9级')).toBeInTheDocument();

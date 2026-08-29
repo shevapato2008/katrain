@@ -314,6 +314,12 @@ const AiSetupPage = () => {
             } else if (status === 403 && /ranked AI game/.test(String(err.message || ''))) {
                 setAuthPrompt('');
                 setError(t('play:blocked_by_pending_ranked', '你有一局升降级对弈还没结算，先去「升降级对弈」把它处理掉再开新局。'));
+            } else if (status === 503 && isRated) {
+                // 开局前的引擎预检没过。这条从前不存在——局照开，第一手棋才弹
+                // 「阶梯引擎不可用」，而那时定级名额已经押上去了。现在它挡在开局之前，
+                // 所以这里必须说清「没开成，也没损失」，否则用户会以为自己又废了一局。
+                setAuthPrompt('');
+                setError(t('ladder:engine_unavailable_start', '升降级引擎暂时不可用，本次没有开局，也不影响你的段位。请稍后再试。'));
             } else {
                 setAuthPrompt('');
                 setError(err.message || 'Failed to start game');

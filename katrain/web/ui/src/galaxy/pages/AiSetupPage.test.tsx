@@ -762,6 +762,28 @@ describe('AiSetupPage — 未登录访客', () => {
     expect(await screen.findByTestId('login-required-message')).toHaveTextContent('升降级对弈会记录段位');
   });
 
+  it('升降级：引擎开局前就被判不可用时，说清「没开成、也没扣段位」', async () => {
+    // 这条闸是新加的：从前局照开，第一手棋才弹「阶梯引擎不可用」，而那时定级名额已经
+    // 押上去了。屏上只说「不可用」不够 —— 用户刚被坑过一次，必须明说这次没损失。
+    authState.current = loggedIn;
+    rankedState.current = {
+      view_state: 'ready',
+      placement_state: { phase: 'placement', completed_games: 0, total_games: 5 },
+      current_opponent: { rung: 15, rank_name: '6级', certification_status: 'certified', availability: 'available', route: 'server' },
+      recent_ranked_results: [], net_score: 0, pending_settlement: false,
+    };
+    mockStartRanked.mockRejectedValueOnce(
+      new AiLadderApiError(503, 'Request failed 503: {"detail":"Ranked engine cannot serve the seated rung"}'),
+    );
+    renderPage('rated');
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: '开始正式对局' }));
+
+    expect(await screen.findByText(/本次没有开局/)).toBeInTheDocument();
+    expect(screen.queryByText(/Ranked engine cannot serve/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('login-required-message')).not.toBeInTheDocument();
+  });
+
   it('已登录但有一局升降级没结算：说的是那件事，不是「需要登录」', async () => {
     authState.current = loggedIn;
     mockCreateSession.mockRejectedValueOnce(

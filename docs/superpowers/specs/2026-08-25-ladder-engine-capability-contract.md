@@ -134,3 +134,51 @@ human_sl_profile=rank_6k, max_visits=1, selection=human_weighted`），
   （2 主 + 2 人类），首次 TensorRT plan 构建会明显拉长「引擎不可用」的窗口，切换要挑时间。
 - **先打回滚标签再 build**：`katago-trt:latest` 是 `katago-gpu0/gpu1/katago-calib` 共用的标签，
   覆盖了就没有退路。测试机上现役那版已打成 `katago-trt:rollback-20260325`。
+
+## 2026-08-30 收口：生产的缺口已补，两处代码缺陷已修
+
+**部署（modelstella.com / ucloud-v100）。** 2026-08-25 那次实测的两台里，**测试机当天就换了镜像**
+（`katago-trt:new`，Compile Time Aug 25 2026，`/health` 已是 schema-1，b28 + b18 双模型），
+**生产没换** —— 镜像仍是 2026-03-31 那版，`/health` 只有
+`{"status":"ok","pid":…,"has_human_model":true,"model":"…"}`。用户 2026-08-29 在生产上
+用一个未定级账号开局，日志逐字：
+
+```
+ERROR:katrain_web:[ladder] engine unavailable at certified strength; no move:
+rung 15: HTTP engine does not advertise certified ladder capabilities
+```
+
+补法**不是重建镜像**：ucloud 外网时通时断，真正的重建很可能中途停死，而现役镜像一旦被覆盖
+就没有退路。改成在现役镜像上**叠一层**（`/tmp/katago-capability/Dockerfile`）：
+
+- `python/realtime_api/`  ← 取自测试机 `home-ubuntu:/home/fan/Repositories/KataGo` 的**工作树**
+  （`develop 74d7e7fe` + 7 个未提交的本地适配）。那些适配不是可有可无的：生产镜像里是
+  **Python 3.8.10**，`X | None` 必须靠 `from __future__ import annotations` 才能解析。
+- `config.yaml` ← 多模型格式，`default_model: b28`，b28/b18 各挂 humanv0。
+- `kata1-b18c384nbt-s9996604416-d4316597426.bin.gz` ← 生产机上早就有（旧 release 目录里），
+  sha256 与配置一致，**不需要联网下载**。b28 与 humanv0 镜像里本来就有，sha256 也对得上。
+- `ENV REALTIME_API_WARMUP_TIMEOUT=1800` ← 写进镜像而不是 compose：compose 归 release 管，
+  下一次部署会把手改覆盖掉。
+
+镜像 `katago-realtime:capability-schema-20260830`；旧镜像仍在，另打了
+`katago-realtime:base-20260331`。切换只改一个变量（`/etc/katrain/ucloud.env` 的
+`KATAGO_IMAGE`，备份在 `ucloud.env.bak-20260830-ladder`），回滚就是把那一行改回去再
+`docker compose ... up -d --no-deps katago-web`。
+
+**代码（本仓）。** 引擎补好之后仍有两条会独立地伤到用户，它们**与部署无关，galaxy 与 kiosk 同源**：
+
+1. **「本局不计入升降级」曾经是句空话。** `/ai-ladder/games/{id}/end`（前端「离开对局」）调
+   `finalize_reserved_game(terminal_source="remote_resign")` 时不传 `engine_stalled`，
+   于是 `_ignored_reason` 里那条 `if engine_stalled: return "engine_unavailable"` 永远看不到
+   停摆。生产账本第一行就是这么来的：`counted=t`、`reason` 为空，未定级用户的定级窗口
+   当场从 1..32 被砍成 1..16。现在从 `origin_session_id` 回读会话的 `last_ladder_error`。
+   **残留的洞**：那个会话若已经没了（重启/超时），这里问不出来，照旧计分 —— 要真补上，
+   得让停摆写进 lifecycle 行。
+2. **开局前没有人问过引擎。** 预约、pending 账本、坐玩家、开钟全部走完，第一手棋才发现
+   引擎服务不了这一档。现在 `/start` 在**第一次落账之前**问一次 `require_ladder_capability`，
+   过不去就 503 + 撤预约 + 回收会话，前端说「本次没有开局，也不影响你的段位」。
+3. 附带：`last_ladder_error` 从单向闩改成**有界重试**（5/15/30/60 秒），
+   瞬时故障（引擎重启）不再永久打死一局棋。
+
+`docs` 与代码不一致时以代码为准；上面每一条都有对应的用例（`tests/web_ui/test_ai_ladder_api.py`
+的四条、`tests/web_ui/test_ladder_injection.py` 的四条），且都做过变异检查（把修复摘掉会变红）。

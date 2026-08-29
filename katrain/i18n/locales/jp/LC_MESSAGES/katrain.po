@@ -3251,3 +3251,6 @@ msgstr "黒 {b} 手 / 白 {w} 手を評価済み"
 
 msgid "grade:unrated_count"
 msgstr "{n} 手未評価"
+
+msgid "ladder:engine_unavailable_start"
+msgstr "昇降級エンジンが一時的に利用できません。対局は開始されておらず、段位にも影響しません。しばらくしてからお試しください。"

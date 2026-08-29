@@ -3326,3 +3326,8 @@ msgstr "Оцінено ходів: чорні {b} / білі {w}"
 
 msgid "grade:unrated_count"
 msgstr "{n} без оцінки"
+
+msgid "ladder:engine_unavailable_start"
+msgstr ""
+"Рушій рейтингових партій тимчасово недоступний. Партію не розпочато, ваш "
+"ранг не змінено. Спробуйте пізніше."

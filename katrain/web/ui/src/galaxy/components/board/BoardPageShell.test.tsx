@@ -74,8 +74,16 @@ describe('BoardPageShell', () => {
 
     expect(css).toContain('@media (min-width:900px)');
     expect(css).toMatch(/min-width:900px[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 320px/);
-    expect(css).toMatch(/min-width:1200px[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 340px/);
-    expect(css).toMatch(/min-width:1536px[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 380px/);
+    expect(css).toMatch(/min-width:1200px[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 360px/);
+    expect(css).toMatch(/min-width:1536px[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 420px/);
+    expect(css).toMatch(/min-width:1920px[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 520px/);
+
+    /* 钉「一共就这四档」。逐条 toMatch 对**多出来的档**是免疫的：谁再补一条
+       `min-width:2560px` 它们全绿。所以这里把右栏那几条规则整个抽出来比集合。
+       变异验证：加一条 2400 档 → 断点集合多出 2400，红；把 520 改成 620 → 宽度集合变，红。 */
+    const railTiers = [...css.matchAll(/min-width:\s*(\d+)px\s*\)?\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*(\d+)px/g)]
+      .map(([, bp, w]) => [Number(bp), Number(w)] as const);
+    expect(railTiers).toEqual([[900, 320], [1200, 360], [1536, 420], [1920, 520]]);
     expect(screen.getByTestId('board-stage')).toHaveStyle({
       display: 'grid',
       placeItems: 'center',

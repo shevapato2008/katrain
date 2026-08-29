@@ -7,6 +7,7 @@ import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import { type PlayerInfo } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 import { localizedRank } from '../utils/rankUtils';
+import { RAIL_TIGHT } from './railStyles';
 
 interface PlayerCardProps {
   player: 'B' | 'W';
@@ -44,9 +45,19 @@ interface PlayerCardProps {
  * 只在 `board-rail` 这个具名容器里生效 —— 盒端对局面板（`kiosk/components/game/
  * GameControlPanel.tsx`）和禅模式没有这个容器，渲染结果一像素不变。
  */
-/* 上界取 899 —— 右栏在桌面档最宽 380，在 <900 的堆叠态是满宽（最大 899）。
-   也就是「只要在统一版式的右栏里」就收窄。盒端和禅模式没有这个容器，一律不受影响。 */
+/* 两条带，别再合成一条。
+   `RAIL` = 「我在统一版式的右栏里」。上界 899 覆盖桌面四档（最宽 520）和 <900 的
+   满宽堆叠态。归它的是**与宽度无关**的事：呼吸点上屏、名字不再被 140 截断、非行棋方压暗。
+   盒端对局面板和禅模式没有 `board-rail` 这个容器，这两条一律不生效，渲染一像素不变。
+
+   `RAIL_TIGHT` = 「右栏窄到放不下原尺寸」。归它的是**字号和内边距**那一组收窄。
+   2026-08-30 之前这组也挂在 899 上，前提是注释里写的「右栏最宽 380，两张卡并排各得约 140」；
+   右栏加宽到 520 之后那个前提不成立了 —— 每张卡有 244，却还在按 140 的字号画，
+   整张卡小一号、内边距像四舍五入的误差。460 这个界让 320/360/420 三档仍然全部收窄
+   （可用宽分别约 288/328/388），只有 520 档退回原尺寸。 */
 const RAIL = '@container board-rail (max-width: 899px)';
+// 收窄界与 `PlaybackBar` / `KifuLibraryPage` 同源，见 `railStyles.ts`。
+export { RAIL_TIGHT };
 
 const formatTime = (seconds: number) => {
   const totalSeconds = Math.ceil(Math.max(0, seconds));
@@ -187,13 +198,14 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         /* 轮次线索之四：不该谁下，谁压暗。冻结稿的原话是「四条线索是冗余的，
            不只靠颜色 —— 色盲和强光下的 7 寸屏上，只改一个色相等于没改」。
            另外三条是描边、外发光、名字前的呼吸点。 */
-        [RAIL]: { p: 1, opacity: active ? 1 : 0.62 },
+        [RAIL]: { opacity: active ? 1 : 0.62 },
+        [RAIL_TIGHT]: { p: 1 },
       }}
     >
       {/* Player Header —— 名字这一行只剩「棋子 + 名字」和右侧段位。关注键下沉到底行，
           和暂停键并排：340 右栏里它挤在名字旁边会把名字压到只剩两三个字。 */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 0.5, mb: 1, minWidth: 0, [RAIL]: { mb: 0.5 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1, [RAIL]: { gap: 0.75 } }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 0.5, mb: 1, minWidth: 0, [RAIL_TIGHT]: { mb: 0.5 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1, [RAIL_TIGHT]: { gap: 0.75 } }}>
           {/* 轮次线索之三：呼吸点。默认不上屏 —— 盒端和禅模式的卡片没有跟着改。 */}
           {active && (
             <Box sx={{
@@ -210,11 +222,11 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
               bgcolor: isBlack ? '#000' : '#fff',
               border: '1px solid #666'
           }} />
-          <Typography variant="body2" fontWeight={700} noWrap sx={{ maxWidth: 140, minWidth: 0, [RAIL]: { maxWidth: 'none', fontSize: '0.8rem' } }}>
+          <Typography variant="body2" fontWeight={700} noWrap sx={{ maxWidth: 140, minWidth: 0, [RAIL]: { maxWidth: 'none' }, [RAIL_TIGHT]: { fontSize: '0.8rem' } }}>
             {displayName}
           </Typography>
         </Box>
-        <Typography variant="caption" noWrap sx={{ color: 'primary.main', fontWeight: 700, flex: 'none', [RAIL]: { fontSize: '0.66rem' } }}>
+        <Typography variant="caption" noWrap sx={{ color: 'primary.main', fontWeight: 700, flex: 'none', [RAIL_TIGHT]: { fontSize: '0.66rem' } }}>
           {displayRank}
         </Typography>
       </Box>
@@ -223,7 +235,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
       <Box sx={{
           mb: 1.5,
           p: 1,
-          [RAIL]: { mb: 1, p: 0.5 },
+          [RAIL_TIGHT]: { mb: 1, p: 0.5 },
           bgcolor: 'rgba(0,0,0,0.3)',
           borderRadius: 2,
           border: showTimer && active ? '2px solid' : '1px solid transparent',
@@ -245,7 +257,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
                   textAlign: 'center',
                   color: showTimer ? (mainTimeLeft > 0 ? '#e89639' : '#4a4845') : '#3a3835',
                   lineHeight: 1.2,
-                  [RAIL]: { fontSize: '1.15rem' },
+                  [RAIL_TIGHT]: { fontSize: '1.15rem' },
               }}
           >
               {showTimer ? formatTime(mainTimeLeft) : '0:00'}
@@ -264,7 +276,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
                       fontSize: '1rem',
                       fontWeight: 600,
                       color: showTimer ? (isWarning ? '#e89639' : '#7a7772') : '#3a3835',
-                      [RAIL]: { fontSize: '0.82rem' },
+                      [RAIL_TIGHT]: { fontSize: '0.82rem' },
                   }}
               >
                   {showTimer ? `${Math.ceil(byoyomiLeft)}s` : '0s'}
@@ -285,7 +297,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
 
       {/* Footer Info —— 提子数 + 两个图标键（关注 / 暂停计时） */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
-        <Typography variant="caption" noWrap sx={{ color: '#7a7772', minWidth: 0, [RAIL]: { fontSize: '0.66rem' } }}>
+        <Typography variant="caption" noWrap sx={{ color: '#7a7772', minWidth: 0, [RAIL_TIGHT]: { fontSize: '0.66rem' } }}>
           {t("Captures")}: {captures}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flex: 'none' }}>

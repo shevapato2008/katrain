@@ -3,13 +3,20 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 const matchId = process.env.GALAXY_LIVE_MATCH_ID ?? 'yike_184016';
 const livePath = `/galaxy/live/${matchId}`;
 
+/* 右栏四档（spec §2.3，2026-08-30 由三档加宽而来）。每一档取边界前后 1px：
+   闸的每条分支都要被执行过一次，新加的 1920 档同样要有「前一档」（1919）那一行。
+   2560×1440 那行钉的是**顶档不再更宽**——没有第五档。 */
 const targets = [
-  { width: 1535, height: 900, rail: 340, sidebar: 216, mode: 'horizontal' },
-  { width: 1536, height: 900, rail: 380, sidebar: 240, mode: 'horizontal' },
-  { width: 1537, height: 900, rail: 380, sidebar: 240, mode: 'horizontal' },
-  { width: 1440, height: 900, rail: 340, sidebar: 216, mode: 'horizontal' },
-  { width: 1201, height: 800, rail: 340, sidebar: 216, mode: 'horizontal' },
-  { width: 1200, height: 800, rail: 340, sidebar: 216, mode: 'horizontal' },
+  { width: 2560, height: 1440, rail: 520, sidebar: 240, mode: 'horizontal' },
+  { width: 1921, height: 1080, rail: 520, sidebar: 240, mode: 'horizontal' },
+  { width: 1920, height: 1080, rail: 520, sidebar: 240, mode: 'horizontal' },
+  { width: 1919, height: 1080, rail: 420, sidebar: 240, mode: 'horizontal' },
+  { width: 1535, height: 900, rail: 360, sidebar: 216, mode: 'horizontal' },
+  { width: 1536, height: 900, rail: 420, sidebar: 240, mode: 'horizontal' },
+  { width: 1537, height: 900, rail: 420, sidebar: 240, mode: 'horizontal' },
+  { width: 1440, height: 900, rail: 360, sidebar: 216, mode: 'horizontal' },
+  { width: 1201, height: 800, rail: 360, sidebar: 216, mode: 'horizontal' },
+  { width: 1200, height: 800, rail: 360, sidebar: 216, mode: 'horizontal' },
   { width: 1199, height: 800, rail: 320, sidebar: 0, mode: 'horizontal' },
   { width: 1024, height: 768, rail: 320, sidebar: 0, mode: 'horizontal' },
   { width: 901, height: 700, rail: 320, sidebar: 0, mode: 'horizontal' },
@@ -190,7 +197,7 @@ test.describe('Galaxy sidebar journeys', () => {
     const canvasBefore = await rect(page.getByTestId('board-stage').locator('canvas'));
     await page.getByTestId('galaxy-sidebar-toggle').click();
     await expect.poll(async () => (await rect(page.getByTestId('galaxy-sidebar-wrapper'))).width).toBe(0);
-    expect((await rect(page.getByTestId('board-right-rail'))).width).toBe(380);
+    expect((await rect(page.getByTestId('board-right-rail'))).width).toBe(420);
     expect((await rect(page.getByTestId('board-stage').locator('canvas'))).width).toBeGreaterThanOrEqual(canvasBefore.width);
     expect((await rect(page.getByTestId('galaxy-sidebar-toggle'))).width).toBeGreaterThanOrEqual(44);
 

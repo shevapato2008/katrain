@@ -4,8 +4,8 @@
  * 断言对象全部是浏览器算出的布局结论：盒子的实际尺寸、能不能滚、有没有被裁。
  * jsdom 对这些无权作证，所以这一关只能在真浏览器里跑。
  *
- * 右栏宽度按 spec §2.3 的三档：≥1536→380，1200–1535→340，900–1199→320，
- * <900 不再是侧栏而是棋盘下方的全宽段。
+ * 右栏宽度按 spec §2.3 的四档：≥1920→520，1536–1919→420，1200–1535→360，
+ * 900–1199→320，<900 不再是侧栏而是棋盘下方的全宽段。
  */
 (() => {
   const q = (s) => document.querySelector(s);
@@ -28,7 +28,7 @@
 
   const vw = innerWidth, vh = innerHeight;
   const wide = vw >= 900;
-  const expectRail = vw >= 1536 ? 380 : vw >= 1200 ? 340 : vw >= 900 ? 320 : null;
+  const expectRail = vw >= 1920 ? 520 : vw >= 1536 ? 420 : vw >= 1200 ? 360 : vw >= 900 ? 320 : null;
 
   const b = { shell: box(shell), rail: box(rail), stage: box(stage), mod: box(mod), scroll: box(scroll), acts: box(acts), canvas: box(canvas) };
   const checks = [];

@@ -3298,3 +3298,9 @@ msgstr "{b} coups Noir / {w} coups Blanc évalués"
 
 msgid "grade:unrated_count"
 msgstr "{n} non évalués"
+
+msgid "ladder:engine_unavailable_start"
+msgstr ""
+"Le moteur des parties classées est momentanément indisponible. Aucune partie"
+" n'a été lancée et votre rang n'est pas affecté. Veuillez réessayer plus "
+"tard."

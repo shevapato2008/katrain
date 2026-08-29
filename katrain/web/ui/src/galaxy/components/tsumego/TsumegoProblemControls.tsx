@@ -26,6 +26,7 @@ import TimerIcon from '@mui/icons-material/Timer';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
 import ToolGridButton from '../board/ToolGridButton';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { railToggleRowSx } from '../../../components/railStyles';
 
 // mm:ss
 const formatTime = (seconds: number): string => {
@@ -217,7 +218,7 @@ export function TsumegoDisplayControls({
   return (
     <>
       <Divider />
-      <Box sx={{ px: 2, py: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box sx={{ px: 2, py: 0.5, ...railToggleRowSx }}>
         <Typography variant="body2" color="text.secondary">{t('Coordinates', '坐标')}</Typography>
         <Switch
           size="small"

@@ -3,11 +3,20 @@
 # 这份文件是全仓唯一定义档位与阈值的地方。改这里，服务端评级、前端配色、
 # 桌面端梯子、以及从它生成的 TS 常量会一起变。
 #
-# 改动须知：
-#   * 前端的 katrain/web/ui/src/features/analysis/gradeTiers.generated.ts 由本文件生成。
-#     改完跑 `python -m katrain.core.move_grade --emit-ts`，
-#     tests/test_move_grade.py::test_generated_ts_is_in_sync 会守住不同步。
-#   * katrain/cron 跑在自己的容器里，Dockerfile.cron 必须显式 COPY 本文件。
+# 改完必须重新生成两份产物：
+#
+#     python -m katrain.core.move_grade --emit
+#
+#   1. katrain/cron/move_grade.py                                （cron 用，stdlib-only）
+#   2. katrain/web/ui/src/features/analysis/gradeTiers.generated.ts（前端用）
+#
+# 为什么 cron 要一份生成的副本而不是直接读本文件：Dockerfile.cron 只
+# `COPY katrain/cron/`，镜像里既没有 katrain.core、也没有 PyYAML
+# （tests/web_ui/test_cron_import_boundary.py 守这条，它守的那类错
+# **只在容器里炸、在本仓永远绿**）。
+#
+# 不同步、生成物里混进 import、或两侧判出不同档，
+# tests/test_move_grade.py 里各有一条闸会红。
 #
 # 单位：points = 目（KataGo scoreLead 差），winrate = 0..1。
 

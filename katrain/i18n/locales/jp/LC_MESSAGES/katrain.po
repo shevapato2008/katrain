@@ -3188,3 +3188,66 @@ msgstr "ログイン後に利用できます"
 
 msgid "play:analysis_requires_login_hint"
 msgstr "地合い / ヒント / グラフ はログイン後に利用できます"
+
+msgid "grade:brilliant"
+msgstr "妙手"
+
+msgid "grade:best"
+msgstr "最善"
+
+msgid "grade:very_good"
+msgstr "好手"
+
+msgid "grade:playable"
+msgstr "可"
+
+msgid "grade:inaccuracy"
+msgstr "緩手"
+
+msgid "grade:mistake"
+msgstr "悪手"
+
+msgid "grade:blunder"
+msgstr "大悪手"
+
+msgid "grade:phase_all"
+msgstr "全局"
+
+msgid "grade:phase_opening"
+msgstr "布石"
+
+msgid "grade:phase_midgame"
+msgstr "中盤"
+
+msgid "grade:phase_endgame"
+msgstr "ヨセ"
+
+msgid "grade:player_both"
+msgstr "両者"
+
+msgid "grade:player_B"
+msgstr "黒番"
+
+msgid "grade:player_W"
+msgstr "白番"
+
+msgid "grade:performance"
+msgstr "出来"
+
+msgid "grade:brilliance"
+msgstr "妙度"
+
+msgid "grade:unrated"
+msgstr "未評価"
+
+msgid "grade:no_rated_moves"
+msgstr "この段階に評価済みの着手はありません"
+
+msgid "grade:truncated_note"
+msgstr "他に {n} 手あります。段階や対局者を切り替えてご覧ください"
+
+msgid "grade:histogram_footer"
+msgstr "黒 {b} 手 / 白 {w} 手を評価済み"
+
+msgid "grade:unrated_count"
+msgstr "{n} 手未評価"

@@ -40,6 +40,13 @@ const reportMove = (overrides: Partial<ReportTaskMove> = {}): ReportTaskMove => 
   actual_player: 'B',
   delta_score: 0,
   delta_winrate: 0,
+  grade: null,
+  points_lost: null,
+  points_lost_source: null,
+  is_top_move: null,
+  top_prior: null,
+  brilliance: null,
+  root_visits: 500,
   ...overrides,
 });
 
@@ -245,6 +252,14 @@ describe('report move analysis mapping', () => {
         is_questionable: false,
         delta_score: 0,
         delta_winrate: 0,
+        // 服务端下发的七档评价（阈值真源 katrain/core/move_grade.yaml）。
+        // 这一行的 fixture 没带评级，所以全是 null —— 前端必须把它当「未评级」，
+        // 而不是当「没问题」。
+        grade: null,
+        points_lost: null,
+        is_top_move: null,
+        top_prior: null,
+        brilliance: null,
       },
     });
   });
@@ -254,6 +269,24 @@ describe('report move analysis mapping', () => {
     ['score lead', { score_lead: null }],
   ])('skips rows with null %s', (_label, overrides) => {
     expect(toMoveAnalysisMap([reportMove(overrides)], 'game-7')).toEqual({});
+  });
+
+  it('passes the server grade through untouched', () => {
+    const graded = reportMove({
+      move_number: 9,
+      grade: 'brilliant',
+      points_lost: 0,
+      is_top_move: true,
+      top_prior: 0.02,
+      brilliance: 3,
+    });
+    expect(toMoveAnalysisMap([graded], 'game-7')[9]).toMatchObject({
+      grade: 'brilliant',
+      points_lost: 0,
+      is_top_move: true,
+      top_prior: 0.02,
+      brilliance: 3,
+    });
   });
 
   it('defaults nullable values and derives move classifications', () => {

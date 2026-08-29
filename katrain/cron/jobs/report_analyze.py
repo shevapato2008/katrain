@@ -15,6 +15,7 @@ from katrain.cron.db import SessionLocal
 from katrain.cron.jobs.base import BaseJob
 from katrain.cron.models import ReportTaskDB, ReportTaskMoveDB, UserGameDB
 from katrain.cron.sgf import ParsedGame, parse_game
+from katrain.cron import move_grade
 
 logger = logging.getLogger("katrain_cron.report_analyze")
 
@@ -303,6 +304,8 @@ class ReportAnalyzerJob(BaseJob):
         # Compute delta relative to previous move
         previous_score = None
         previous_winrate = None
+        previous_top_moves = None
+        previous_visits = None
         if move_number > 0:
             with SessionLocal() as db:
                 prev = (
@@ -316,6 +319,10 @@ class ReportAnalyzerJob(BaseJob):
                 if prev:
                     previous_score = prev.score_lead
                     previous_winrate = prev.winrate
+                    # 评级要用落子前那个局面的候选列表：pointsLost 取自同一次搜索，
+                    # 而首选的 policy 先验是「难不难被想到」那根轴的输入。
+                    previous_top_moves = prev.top_moves
+                    previous_visits = prev.root_visits
 
         score_lead = root_info.get("scoreLead", 0.0)
         winrate = root_info.get("winrate", 0.5)
@@ -345,8 +352,28 @@ class ReportAnalyzerJob(BaseJob):
                 }
             )
 
+        # 着手评价。阈值真源是 katrain/core/move_grade.yaml；
+        # katrain/cron/move_grade.py 是由它生成的 stdlib-only 副本（不跨包、不需要 PyYAML）。
+        # 注意 move_number 是「落子后」的局面序号，也就是这手棋的序号。
+        grade = move_grade.grade(
+            prev_top_moves=previous_top_moves,
+            prev_visits=previous_visits,
+            actual_move=actual_move,
+            actual_player=actual_player,
+            actual_score_lead=score_lead,
+            actual_winrate=winrate,
+            move_number=move_number,
+        )
+
         return {
             "status": "success",
+            "grade": grade["grade"],
+            "points_lost": grade["points_lost"],
+            "points_lost_source": grade["points_lost_source"],
+            "root_visits": root_info.get("visits"),
+            "is_top_move": grade["is_top_move"],
+            "top_prior": grade["top_prior"],
+            "brilliance": grade["brilliance"],
             "winrate": winrate,
             "score_lead": score_lead,
             "visits": max((m.get("visits", 0) for m in move_infos[:1]), default=0),

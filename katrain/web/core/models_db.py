@@ -822,6 +822,19 @@ class ReportTaskMove(Base):
     actual_player = Column(String(1), nullable=True)
     delta_score = Column(Float, nullable=True)
     delta_winrate = Column(Float, nullable=True)
+    # 着手评价（阈值真源：katrain/core/move_grade.yaml）。
+    # grade 为 NULL 或 'unrated' 表示这手没有被评级（上一手没分析 / visits 不够），
+    # 前端必须把它当作「不知道」，不能当作「没问题」。
+    grade = Column(String(16), nullable=True)
+    points_lost = Column(Float, nullable=True)          # 对落子方而言亏的目数，>=0
+    points_lost_source = Column(String(12), nullable=True)  # in_search | two_search | none
+    is_top_move = Column(Boolean, nullable=True)
+    top_prior = Column(Float, nullable=True)            # 引擎首选的 policy 先验
+    brilliance = Column(Integer, nullable=True)         # 玄妙指数 1-5，仅 grade='brilliant' 时有值
+    # 注意：上面的 `visits` 列存的是**首选的 childVisits**，不是根搜索量
+    # （report_analyze 取的是 move_infos[:1] 的 visits）。评级的「搜够了没有」闸
+    # 必须看根搜索量，否则会静默压制妙手，所以单独存一列。
+    root_visits = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     task = relationship("ReportTask", back_populates="moves")

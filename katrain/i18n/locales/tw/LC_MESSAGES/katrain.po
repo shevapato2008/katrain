@@ -3170,3 +3170,66 @@ msgstr "登入後可用"
 
 msgid "play:analysis_requires_login_hint"
 msgstr "領地 / 支招 / 圖表 登入後可用"
+
+msgid "grade:brilliant"
+msgstr "妙手"
+
+msgid "grade:best"
+msgstr "最佳"
+
+msgid "grade:very_good"
+msgstr "很好"
+
+msgid "grade:playable"
+msgstr "可下"
+
+msgid "grade:inaccuracy"
+msgstr "欠佳"
+
+msgid "grade:mistake"
+msgstr "失誤"
+
+msgid "grade:blunder"
+msgstr "惡手"
+
+msgid "grade:phase_all"
+msgstr "全盤"
+
+msgid "grade:phase_opening"
+msgstr "布局"
+
+msgid "grade:phase_midgame"
+msgstr "中盤"
+
+msgid "grade:phase_endgame"
+msgstr "官子"
+
+msgid "grade:player_both"
+msgstr "雙方"
+
+msgid "grade:player_B"
+msgstr "黑方"
+
+msgid "grade:player_W"
+msgstr "白方"
+
+msgid "grade:performance"
+msgstr "發揮水準"
+
+msgid "grade:brilliance"
+msgstr "玄妙"
+
+msgid "grade:unrated"
+msgstr "未評級"
+
+msgid "grade:no_rated_moves"
+msgstr "本階段沒有已評級的著手"
+
+msgid "grade:truncated_note"
+msgstr "另有 {n} 處未列出，可切換階段或棋手查看"
+
+msgid "grade:histogram_footer"
+msgstr "黑 {b} 手 / 白 {w} 手已評級"
+
+msgid "grade:unrated_count"
+msgstr "{n} 手未評級"

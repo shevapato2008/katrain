@@ -9,6 +9,7 @@ import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArro
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ResearchToolbar, { type PlaceMode, type EditMode } from './ResearchToolbar';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { GRADE_LADDER_POINTS } from '../../../features/analysis/gradeTiers.generated';
 
 // Convert Move.coords [x, y] to GTP notation (e.g., [3, 15] → "D16")
 // x = column index into GTP_LETTERS, y = 0-based row from bottom
@@ -89,10 +90,18 @@ interface ResearchAnalysisPanelProps {
   children?: [string, [number, number] | null][];
 }
 
-// Threshold for classifying moves (in score points, matching live module)
-const BRILLIANT_THRESHOLD = 2.0;      // gains >= 2.0 points → 妙手
-const MISTAKE_THRESHOLD = -3.0;       // loses >= 3.0 points → 问题手
-const QUESTIONABLE_THRESHOLD = -1.5;  // loses >= 1.5 points → 疑问手
+// 阈值不在这里定义 —— 真源是 katrain/core/move_grade.yaml，
+// 经 python -m katrain.core.move_grade --emit-ts 生成到
+// features/analysis/gradeTiers.generated.ts。以前这里写死了一份，
+// 于是全仓一共散了五份互相不一致的阈值。
+//
+// 注意：这个面板拿的是相邻局面 score 之差（两次搜索），不是报告链路那种
+// 同搜索内的 pointsLost，噪声大得多。BRILLIANT_THRESHOLD 尤其不可信 ——
+// 实测在 500 visits 下它基本只在搜索噪声上触发（见 docs/move-grading/design.md §1）。
+// 研究面板改用难度轴要等它也能拿到 top_moves[].prior，属于后续工作。
+const MISTAKE_THRESHOLD = -GRADE_LADDER_POINTS.inaccuracy;    // -3.0 目 → 问题手
+const QUESTIONABLE_THRESHOLD = -GRADE_LADDER_POINTS.playable; // -1.5 目 → 疑问手
+const BRILLIANT_THRESHOLD = 2.0;                              // 见上：这条建在单边轴上，待换
 
 const iconButtonStyle = {
   color: 'text.secondary',

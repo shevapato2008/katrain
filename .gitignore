@@ -222,3 +222,6 @@ test_lobby_api.db
 rknn_build/
 rknn_build_fp/
 rknn_build_split/
+
+# Playwright 每次 run 会整目录删除重建，不入库
+katrain/web/ui/test-results/

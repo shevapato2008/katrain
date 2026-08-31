@@ -3298,7 +3298,7 @@ msgid "grade:match_top3"
 msgstr "Within the AI's top 3"
 
 msgid "grade:match_offbook"
-msgstr "Not considered by the AI"
+msgstr "Outside the AI's top 10"
 
 msgid "grade:match_no_data"
 msgstr "No moves to compare in this phase"

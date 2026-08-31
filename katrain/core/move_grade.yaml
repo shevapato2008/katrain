@@ -47,8 +47,8 @@ metric:
 # ---------------------------------------------------------------------------
 ladder_points:
   very_good: 0.5     # pointsLost <  0.5  → 很好
-  playable: 1.5      # pointsLost <  1.5  → 可下
-  inaccuracy: 3.0    # pointsLost <  3.0  → 欠佳
+  playable: 1.5      # pointsLost <  1.5  → 尚可
+  inaccuracy: 3.0    # pointsLost <  3.0  → 小亏
   mistake: 6.0       # pointsLost <  6.0  → 失误 ; >= 6.0 → 恶手
 
 # ---------------------------------------------------------------------------

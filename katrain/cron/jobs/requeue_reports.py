@@ -4,11 +4,20 @@
 **旧报告补不出来** —— 那个数只有引擎能给，没有任何办法从已存字段推导。所以要么让老报告
 永远空着，要么重跑。
 
+**跑之前必须先确认两件事**，否则等于白删一遍数据：
+  1. **新的 web 镜像已经上线**。人类倾向那一列在前端 bundle 里，而 bundle 只在
+     Dockerfile.web 里产出。只发 cron 的话，重跑完数据是有的，屏幕上什么都不会变。
+  2. `CRON_HUMAN_SL_PROFILE` 配好了（本模块开头会拦一道）。
+
 用法（在 cron 容器里）：
 
     python -m katrain.cron.jobs.requeue_reports                # 只报告，不写库
     python -m katrain.cron.jobs.requeue_reports --commit       # 真的重排
     python -m katrain.cron.jobs.requeue_reports --commit --limit 5
+
+重排会保留原来的 ``created_at``（那承载「报告什么时候要的」这个事实，不该改），
+而 cron 是按 ``created_at`` 升序认领的 —— 所以一次性重排全部会**排在**迁移窗口内
+用户新点的报告前面。用 ``--limit`` 分批、挑低峰跑。
 
 **这个脚本会删掉被重排任务的 move 行。** 不删不行：`_get_resume_move_number` 是按
 `max(move_number)+1` 续跑的，行留着就等于「已经跑完了」，重排也不会重算。代价是重跑期间
@@ -22,24 +31,24 @@ import argparse
 import logging
 import sys
 
+from katrain.cron import config
 from katrain.cron.db import SessionLocal
 from katrain.cron.models import ReportTaskDB, ReportTaskMoveDB
 
 logger = logging.getLogger("katrain_cron.requeue_reports")
 
-# 判断一份报告有没有人类倾向时，最多看几行。整份报告是同一次引擎配置跑出来的，
-# 抽几行就够；取有候选表的行 —— 没有候选表的行本来就不该有 human_prior，
-# 拿它当「缺失」的证据会把好报告也重排掉。
-SAMPLE_ROWS = 5
-
-
 def _task_has_human_prior(db, task_id: int) -> bool | None:
-    """True=有；False=没有；None=判不了（这份报告一行候选表都没有）。"""
+    """True=全都有；False=有一行没有；None=判不了（这份报告一行候选表都没有）。
+
+    **不取样，从最早的手看起。** 原来的写法取最新 5 行 —— 方向正好反了：续跑是按
+    ``max(move_number)+1`` 往后接的，所以一份「跑到一半改了配置」的报告恰好是**新的
+    行有、老的行没有**，取最新几行会把它判成「已经有了」，那前 120 手就永久缺列且
+    再跑多少遍也修不回来。整个生产库才 2944 行，逐行看没有任何成本。
+    """
     rows = (
         db.query(ReportTaskMoveDB)
         .filter(ReportTaskMoveDB.task_id == task_id)
-        .order_by(ReportTaskMoveDB.move_number.desc())
-        .limit(200)
+        .order_by(ReportTaskMoveDB.move_number.asc())
         .all()
     )
     checked = 0
@@ -48,14 +57,18 @@ def _task_has_human_prior(db, task_id: int) -> bool | None:
         if not candidates:
             continue
         checked += 1
-        if any(c.get("human_prior") is not None for c in candidates if isinstance(c, dict)):
-            return True
-        if checked >= SAMPLE_ROWS:
-            break
-    return False if checked else None
+        if not any(c.get("human_prior") is not None for c in candidates if isinstance(c, dict)):
+            return False
+    return True if checked else None
 
 
 def requeue(commit: bool = False, limit: int | None = None) -> dict[str, int]:
+    # 没配 profile 的话重跑出来还是没有人类倾向 —— 白删一遍数据、白烧一轮 GPU。
+    if not config.HUMAN_SL_PROFILE:
+        raise SystemExit(
+            "CRON_HUMAN_SL_PROFILE 是空的：重跑出来仍然不会有人类倾向。先配好再来。"
+        )
+
     stats = {"completed": 0, "already_has": 0, "no_candidates": 0, "requeued": 0, "rows_deleted": 0}
 
     with SessionLocal() as db:

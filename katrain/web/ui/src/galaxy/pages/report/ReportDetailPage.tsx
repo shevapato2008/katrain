@@ -268,7 +268,7 @@ export default function ReportDetailPage() {
           />
 
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <AiAnalysis currentMove={currentMove} analysis={analysisByMove} onMoveHover={setPvMoves} />
+            <AiAnalysis currentMove={currentMove} analysis={analysisByMove} onMoveHover={setPvMoves} showHumanTendency />
           </Box>
           {/* TrendChart 自带 `height:100%` + 内部 `flex:1; overflow:auto` 的滚动壳。
               中段是唯一可滚的那一段，所以这里必须给它 `flex:'none'` 让它按内容占高，

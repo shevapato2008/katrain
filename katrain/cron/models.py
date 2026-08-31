@@ -238,7 +238,7 @@ class ReportTaskMoveDB(Base):
     points_lost_source = Column(String(12), nullable=True)  # in_search | two_search | none
     is_top_move = Column(Boolean, nullable=True)
     top_prior = Column(Float, nullable=True)            # 引擎首选的 policy 先验
-    brilliance = Column(Integer, nullable=True)         # 玄妙指数 1-5，仅 grade='brilliant' 时有值
+    brilliance = Column(Integer, nullable=True)         # 妙度 1-5，仅 grade='brilliant' 时有值
     # 注意：上面的 `visits` 列存的是**首选的 childVisits**，不是根搜索量
     # （report_analyze 取的是 move_infos[:1] 的 visits）。评级的「搜够了没有」闸
     # 必须看根搜索量，否则会静默压制妙手，所以单独存一列。

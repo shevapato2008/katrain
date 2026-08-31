@@ -138,7 +138,9 @@ export interface MatchRate {
 const MATCH_ROWS: { id: MatchRateId; i18nKey: string; zh: string; color: string }[] = [
   { id: 'top1', i18nKey: 'grade:match_top1', zh: '走中 AI 一选', color: '#2E8B57' },
   { id: 'top3', i18nKey: 'grade:match_top3', zh: '走进 AI 前三', color: '#4DBE46' },
-  { id: 'offbook', i18nKey: 'grade:match_offbook', zh: 'AI 完全没考虑', color: '#CF6B09' },
+  // 「完全没考虑」名不副实：report_analyze 只存前 10 个候选（move_infos[:10]），
+  // 排第 11 的手会被算进这一行。分子分母自洽，但文案必须说清是「前十选」。
+  { id: 'offbook', i18nKey: 'grade:match_offbook', zh: '不在 AI 前十选', color: '#CF6B09' },
 ];
 
 /** 实战手在上一手候选表里的名次；-1 = 不在表内；null = 判不了（没有候选表）。 */

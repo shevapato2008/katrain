@@ -3193,7 +3193,7 @@ msgid "grade:match_top3"
 msgstr "AI 상위 3순위 이내"
 
 msgid "grade:match_offbook"
-msgstr "AI가 고려하지 않음"
+msgstr "AI 상위 10순위 밖"
 
 msgid "grade:match_no_data"
 msgstr "이 구간에 비교할 수 있는 수가 없습니다"

@@ -211,11 +211,11 @@ GALAXY_TRANSLATIONS = {
         "tr": "YZ'nin ilk 3'ünde", "ua": "У трійці найкращих ходів ШІ",
     },
     "grade:match_offbook": {
-        "en": "Not considered by the AI", "cn": "AI 完全没考虑", "tw": "AI 完全沒考慮",
-        "jp": "AI が候補に挙げず", "ko": "AI가 고려하지 않음",
-        "de": "Von der KI nicht erwogen", "es": "No considerada por la IA",
-        "fr": "Non envisagé par l'IA", "ru": "ИИ не рассматривал",
-        "tr": "YZ hiç düşünmedi", "ua": "ШІ не розглядав",
+        "en": "Outside the AI's top 10", "cn": "不在 AI 前十选", "tw": "不在 AI 前十選",
+        "jp": "AI の上位 10 候補外", "ko": "AI 상위 10순위 밖",
+        "de": "Außerhalb der Top 10 der KI", "es": "Fuera de las 10 primeras de la IA",
+        "fr": "Hors du top 10 de l'IA", "ru": "Вне десятки лучших ходов ИИ",
+        "tr": "YZ'nin ilk 10'u dışında", "ua": "Поза десяткою найкращих ходів ШІ",
     },
     "grade:match_no_data": {
         "en": "No moves to compare in this phase",

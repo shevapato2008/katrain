@@ -139,6 +139,32 @@ async def test_empty_profile_is_a_real_kill_switch():
     assert result["top_moves"][0]["human_profile"] is None
 
 
+@pytest.mark.asyncio
+async def test_engine_error_in_a_200_response_is_treated_as_failure():
+    """:8002 的包装器用 HTTP 200 + {"error"} 表达拒绝，raise_for_status() 放行。
+
+    不拦的话 rootInfo 缺失被 .get 兜成 {} ⇒ 落库 50% 平线 + 零候选，任务还被标 completed。
+    """
+    SessionLocal = _make_session()
+    from katrain.cron.jobs import report_analyze
+
+    parsed = parse_game("(;FF[4]SZ[19];B[pd];W[dp])")
+    job = report_analyze.ReportAnalyzerJob()
+    job._katago = AsyncMock()
+    job._katago.analyze = AsyncMock(
+        return_value={"error": "Could not set settings: Unknown human SL network profile: rank_10d",
+                      "field": "overrideSettings", "id": "x"}
+    )
+
+    with patch.object(report_analyze.config, "HUMAN_SL_PROFILE", "rank_10d"), patch.object(
+        report_analyze, "SessionLocal", lambda: SessionLocal()
+    ):
+        result = await job._analyze_position(task_id=1, parsed=parsed, move_number=1, requested_visits=500)
+
+    # None ⇒ 走已有的重试/标失败路径；绝不能返回一份 winrate=0.5 的“成功”结果。
+    assert result is None
+
+
 # ── 4. 旧报告重跑 ──
 
 
@@ -248,3 +274,39 @@ def test_requeue_respects_limit():
     assert stats["requeued"] == 2
     with SessionLocal() as session:
         assert session.query(models_db.ReportTask).filter_by(status="pending").count() == 2
+
+
+def test_requeue_catches_a_report_that_only_has_human_prior_on_later_moves():
+    """续跑是按 max(move_number)+1 往后接的 —— 半途开启人类倾向的报告是**新行有、老行没有**。
+
+    原来按 move_number.desc() 取最新 5 行判断，正好把这种报告判成「已经有了」，
+    前面那一百多手就永久缺列且再跑多少遍也修不回来。
+    """
+    SessionLocal = _make_session()
+    with SessionLocal() as session:
+        user = models_db.User(username="half-done", hashed_password="x")
+        session.add(user); session.commit(); session.refresh(user)
+        game = models_db.UserGame(user_id=user.id, sgf_content="(;FF[4]SZ[19];B[pd])", source="import", move_count=10)
+        session.add(game); session.commit(); session.refresh(game)
+        task = models_db.ReportTask(
+            user_id=user.id, user_game_id=game.id, report_type="normal",
+            requested_visits=500, status="completed", total_moves=10, analyzed_moves=10,
+        )
+        session.add(task); session.commit(); session.refresh(task)
+        for n in range(10):
+            has = n >= 6  # 后 4 手才有
+            session.add(models_db.ReportTaskMove(
+                task_id=task.id, move_number=n,
+                top_moves=[{"move": "Q16", "prior": 0.2,
+                            "human_prior": 0.2 if has else None,
+                            "human_profile": "rank_5d" if has else None}],
+            ))
+        session.commit()
+        task_id = task.id
+
+    stats = _requeue(SessionLocal, commit=True)
+
+    assert stats["requeued"] == 1, "半途才有人类倾向的报告必须被重排"
+    assert stats["already_has"] == 0
+    with SessionLocal() as session:
+        assert session.get(models_db.ReportTask, task_id).status == "pending"

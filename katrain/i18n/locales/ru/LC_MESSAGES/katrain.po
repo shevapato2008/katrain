@@ -3261,7 +3261,7 @@ msgid "grade:match_top3"
 msgstr "В тройке лучших ходов ИИ"
 
 msgid "grade:match_offbook"
-msgstr "ИИ не рассматривал"
+msgstr "Вне десятки лучших ходов ИИ"
 
 msgid "grade:match_no_data"
 msgstr "В этой стадии нет ходов для сравнения"

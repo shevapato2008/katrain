@@ -64,7 +64,7 @@ const translationFixture: Record<string, string> = {
   'grade:truncated_note': '另有 {n} 处未列出，可切换阶段或棋手查看',
   'grade:match_top1': '走中 AI 一选',
   'grade:match_top3': '走进 AI 前三',
-  'grade:match_offbook': 'AI 完全没考虑',
+  'grade:match_offbook': '不在 AI 前十选',
   'grade:match_footer': '分母是能与 AI 比对的手数：黑 {b} 手 / 白 {w} 手',
   'grade:match_undecidable': '{n} 手无法比对',
   'grade:match_caveat': '一致率高低取决于局面难度，不能单独当作棋力或作弊的证据。',
@@ -325,3 +325,53 @@ test('Galaxy 复盘右栏四个统计 tab', async ({ page }) => {
   await expect(panel.getByText('走进 AI 前三')).toBeVisible();
   await expect(panel.getByText(/分母是能与 AI 比对的手数/)).toBeVisible();
 });
+
+/**
+ * AI 推荐表在**窄右栏**下的承重。加第五列之前这张表是四等分 fr，怎么挤都不会溢出；
+ * 加了带 minmax() 下限的第五列之后，下限之和是一条**硬地板**，右栏比它窄就会溢出，
+ * 而裁切祖先 [data-testid=board-rail-scroll] 在 ≥900px 是 overflowX:hidden ——
+ * 溢出的部分不是「可以滚过去看」，是**直接看不到**。
+ *
+ * 右栏宽度分档在 BoardPageShell.tsx:73/79：900-1199px 给 320px，≥1200px 才给 360px。
+ * 原来的 spec 只跑 1440，正好落在不会红的那一档。
+ */
+for (const width of [1024, 1180, 1440]) {
+  test(`AI 推荐表在 ${width}px 下不溢出右栏`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await prepare(page);
+    await page.goto('/galaxy/report/1');
+    await expect(page.locator('.MuiTabs-root').first()).toBeVisible({ timeout: 15000 });
+
+    const m = await page.evaluate(() => {
+      const header = document.querySelector('[data-testid="ai-table-header"]') as HTMLElement | null;
+      if (!header) return null;
+      const last = header.children[header.children.length - 1] as HTMLElement;
+      const rail = document.querySelector('[data-testid="board-rail-scroll"]') as HTMLElement | null;
+      return {
+        tracks: getComputedStyle(header).gridTemplateColumns.split(' ').length,
+        hasHumanCol: !!header.querySelector('[data-col="human"]'),
+        humanColShown: Array.from(header.querySelectorAll('[data-col="human"]')).some(
+          (el) => getComputedStyle(el as HTMLElement).display !== 'none',
+        ),
+        clientW: header.clientWidth,
+        scrollW: header.scrollWidth,
+        lastRight: Math.round(last.getBoundingClientRect().right),
+        railRight: rail ? Math.round(rail.getBoundingClientRect().right) : null,
+      };
+    });
+    expect(m).not.toBeNull();
+    // eslint-disable-next-line no-console
+    console.log('RAIL', width, JSON.stringify(m));
+    // 无论宽窄，都不许溢出、不许越过右栏右边缘（祖先是 overflowX:hidden，溢出=看不到）。
+    expect(m!.scrollW).toBeLessThanOrEqual(m!.clientW);
+    if (m!.railRight !== null) expect(m!.lastRight).toBeLessThanOrEqual(m!.railRight + 1);
+    // 窄栏（右栏 320px）必须已经退成四列并收掉人类列；宽栏才显示五列。
+    if (width < 1200) {
+      expect(m!.tracks).toBe(4);
+      expect(m!.humanColShown).toBe(false);
+    } else {
+      expect(m!.tracks).toBe(5);
+      expect(m!.humanColShown).toBe(true);
+    }
+  });
+}

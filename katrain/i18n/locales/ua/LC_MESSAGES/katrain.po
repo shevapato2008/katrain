@@ -3342,7 +3342,7 @@ msgid "grade:match_top3"
 msgstr "У трійці найкращих ходів ШІ"
 
 msgid "grade:match_offbook"
-msgstr "ШІ не розглядав"
+msgstr "Поза десяткою найкращих ходів ШІ"
 
 msgid "grade:match_no_data"
 msgstr "У цій стадії немає ходів для порівняння"

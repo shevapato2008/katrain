@@ -3344,7 +3344,7 @@ msgid "grade:match_top3"
 msgstr "Unter den Top 3 der KI"
 
 msgid "grade:match_offbook"
-msgstr "Von der KI nicht erwogen"
+msgstr "Außerhalb der Top 10 der KI"
 
 msgid "grade:match_no_data"
 msgstr "Keine vergleichbaren Züge in dieser Phase"

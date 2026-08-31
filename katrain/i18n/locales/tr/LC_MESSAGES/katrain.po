@@ -3360,7 +3360,7 @@ msgid "grade:match_top3"
 msgstr "YZ'nin ilk 3'ünde"
 
 msgid "grade:match_offbook"
-msgstr "YZ hiç düşünmedi"
+msgstr "YZ'nin ilk 10'u dışında"
 
 msgid "grade:match_no_data"
 msgstr "Bu aşamada karşılaştırılacak hamle yok"

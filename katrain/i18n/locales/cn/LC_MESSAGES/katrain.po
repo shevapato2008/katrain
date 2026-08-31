@@ -3102,7 +3102,7 @@ msgid "grade:match_top3"
 msgstr "走进 AI 前三"
 
 msgid "grade:match_offbook"
-msgstr "AI 完全没考虑"
+msgstr "不在 AI 前十选"
 
 msgid "grade:match_no_data"
 msgstr "本阶段还没有可比对的着手"

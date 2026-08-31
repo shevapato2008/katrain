@@ -304,6 +304,22 @@ class ReportAnalyzerJob(BaseJob):
             logger.warning("Report analysis failed for task %s move %s: %s", task_id, move_number, last_exc)
             return None
 
+        # :8002 的包装器用 **HTTP 200 + {"error": ...}** 表达拒绝（2026-08-31 实测：
+        # 非法 profile 回的是 200，body 里 error/field 两个键），所以 raise_for_status()
+        # 放行。不在这里拦一道的话，rootInfo 缺失会被 .get 兜成 {} ⇒ 落库 winrate=0.5、
+        # score_lead=0、top_moves=[]，而任务照样被标 completed —— 用户拿到一份「生成成功」
+        # 的报告：整局笔直 50%、零条 AI 推荐、全部未评级，日志里一个字都没有。
+        # 返 None 会走已有的重试/标失败路径，那是界面上可见、用户能自助重试的失败。
+        if isinstance(response, dict) and response.get("error"):
+            logger.error(
+                "KataGo rejected query for task %s move %s: %s (field=%s)",
+                task_id,
+                move_number,
+                response.get("error"),
+                response.get("field"),
+            )
+            return None
+
         root_info = response.get("rootInfo", {})
         move_infos = response.get("moveInfos", [])
         ownership = _ownership_grid(response.get("ownership"), board_size)

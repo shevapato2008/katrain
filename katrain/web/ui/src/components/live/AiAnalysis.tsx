@@ -11,14 +11,44 @@ import {
 } from '../../features/analysis/humanTendency';
 
 /**
- * 五列的宽度。用 minmax() 钉死每列的**内容下限**，而不是给纯 fr 权重 ——
- * 纯权重下「5段选择率」这个表头会被压到 41px 然后省略号截断（真浏览器量过）。
- * 下限之和 288px，右栏实测可用宽 293px，正好装得下且不横向溢出。
+ * 列宽。用 minmax() 钉死每列的**内容下限**而不是纯 fr 权重 —— 纯权重下
+ * 「5段选择率」这个表头会被压到 41px 然后省略号截断（真浏览器量过）。
+ *
+ * 但下限之和就是一条**硬地板**：五列 288px + 4×gap = 304px。右栏在 900-1199px
+ * 只有 320px（BoardPageShell.tsx:73），减掉滚动条留白与两层内边距后可用宽只有
+ * **285px** —— 实测溢出 27px，而裁切祖先是 overflowX:'hidden'，胜率列不是
+ * 「滚过去能看到」而是**直接看不到**。所以窄栏必须退回四列。
+ *
+ * 退的方式走 @container（BoardPageShell.tsx:129-130 已经声明了
+ * containerType:'inline-size' + containerName:'board-rail'），不走视口断点：
+ * 这是共享件，宽度由它所在的栏决定，不由窗口决定。
  */
-const HUMAN_GRID =
+const GRID_5 =
   'minmax(58px, 1.1fr) minmax(46px, 0.8fr) minmax(56px, 0.95fr) minmax(48px, 0.85fr) minmax(80px, 1.3fr)';
+const GRID_4 =
+  'minmax(58px, 1.15fr) minmax(46px, 0.85fr) minmax(48px, 0.9fr) minmax(80px, 1.4fr)';
+
+/** 窄栏（≤340px）下收掉人类倾向列，退回四列。 */
+const NARROW_RAIL = '@container board-rail (max-width: 340px)';
+
+const gridSx = (showHuman: boolean) =>
+  showHuman
+    ? {
+        gridTemplateColumns: GRID_5,
+        [NARROW_RAIL]: {
+          gridTemplateColumns: GRID_4,
+          '& > [data-col="human"]': { display: 'none' },
+        },
+      }
+    : { gridTemplateColumns: GRID_4 };
 
 interface AiAnalysisProps {
+  /**
+   * 显示「人类倾向」列。**默认关**：这个数只有报告链路有（cron 发查询时带了
+   * humanSLProfile），直播链路的 analyzer 没带，补一列永远是「—」的列等于告诉
+   * 用户「这局面没人会下」—— 和我们在 ResearchAnalysisPanel 里写的理由自相矛盾。
+   */
+  showHumanTendency?: boolean;
   currentMove: number;
   analysis: Record<number, MoveAnalysis>;
   onMoveHover?: (pv: string[] | null) => void;
@@ -51,6 +81,7 @@ export default function AiAnalysis({
   analysis,
   onMoveHover,
   topN = 3,  // Show top 3 + actual move if not in top 3
+  showHumanTendency = false,
   onMoveSelect,
   activeMove = null,
 }: AiAnalysisProps) {
@@ -176,9 +207,10 @@ export default function AiAnalysis({
 
       {/* Column headers */}
       <Box
+        data-testid="ai-table-header"
         sx={{
           display: 'grid',
-          gridTemplateColumns: HUMAN_GRID,
+          ...gridSx(showHumanTendency),
           gap: 0.5,
           mb: 0.25,
           px: 1,
@@ -189,16 +221,19 @@ export default function AiAnalysis({
       >
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.8rem' }}>{t('live:suggested_move', 'Move')}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:recommendation', 'Score')}</Typography>
-        <Tooltip title={humanHeaderHint}>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            noWrap
-            sx={{ textAlign: 'center', fontSize: '0.7rem', cursor: 'help' }}
-          >
-            {humanHeader}
-          </Typography>
-        </Tooltip>
+        {showHumanTendency && (
+          <Tooltip title={humanHeaderHint}>
+            <Typography
+              data-col="human"
+              variant="caption"
+              color="text.secondary"
+              noWrap
+              sx={{ textAlign: 'center', fontSize: '0.7rem', cursor: 'help' }}
+            >
+              {humanHeader}
+            </Typography>
+          </Tooltip>
+        )}
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:lead_pts', 'Lead')}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:winrate', 'Winrate')}</Typography>
       </Box>
@@ -214,6 +249,7 @@ export default function AiAnalysis({
             isActualMove={move.isActualMove || false}
             nextPlayer={nextPlayer}
             onHover={onMoveHover ? (hovering) => onMoveHover(hovering ? move.pv : null) : undefined}
+            showHumanTendency={showHumanTendency}
             isSelected={move.move === activeMove}
             onSelect={onMoveSelect ? () => onMoveSelect(move.move === activeMove ? null : move.move) : undefined}
           />
@@ -225,6 +261,7 @@ export default function AiAnalysis({
 
 interface MoveRowProps {
   move: TopMove;
+  showHumanTendency: boolean;
   rank: number;
   percentage: number;
   isActualMove: boolean;
@@ -234,7 +271,7 @@ interface MoveRowProps {
   onSelect?: () => void;      // touch variant: tap to toggle the variation
 }
 
-function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover, isSelected = false, onSelect }: MoveRowProps) {
+function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, showHumanTendency, onHover, isSelected = false, onSelect }: MoveRowProps) {
   const { t } = useTranslation();
   // Score lead from next player's perspective (who these recommendations are for)
   // KataGo reports score_lead from Black's perspective (positive = Black ahead)
@@ -251,7 +288,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover, is
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: HUMAN_GRID,
+        ...gridSx(showHumanTendency),
         gap: 0.5,
         py: 0.5,
         px: 1,
@@ -321,7 +358,9 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover, is
       {/* 人类倾向（每 100 人里 N 人）。刻意不用百分号：同一行里「推荐度」已经是百分比，
           两列都印 % 会被扫读成一对；差异放在字形层，不依赖颜色。
           微条是**绝对刻度**（0-100 人），不随同屏其它行归一化。 */}
+      {showHumanTendency && (
       <Box
+        data-col="human"
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -358,6 +397,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover, is
           </Box>
         )}
       </Box>
+      )}
 
       {/* Score lead (领先目数) - on colored background based on current player */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

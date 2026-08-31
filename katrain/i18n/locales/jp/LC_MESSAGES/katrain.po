@@ -3265,7 +3265,7 @@ msgid "grade:match_top3"
 msgstr "AI の上位 3 候補以内"
 
 msgid "grade:match_offbook"
-msgstr "AI が候補に挙げず"
+msgstr "AI の上位 10 候補外"
 
 msgid "grade:match_no_data"
 msgstr "この段階に比較できる着手はありません"

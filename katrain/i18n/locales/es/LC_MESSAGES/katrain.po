@@ -3173,7 +3173,7 @@ msgid "grade:match_top3"
 msgstr "Entre las 3 primeras de la IA"
 
 msgid "grade:match_offbook"
-msgstr "No considerada por la IA"
+msgstr "Fuera de las 10 primeras de la IA"
 
 msgid "grade:match_no_data"
 msgstr "No hay jugadas comparables en esta fase"

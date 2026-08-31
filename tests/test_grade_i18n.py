@@ -45,6 +45,11 @@ STATIC_KEYS = [
     "grade:match_footer",
     "grade:match_undecidable",
     "grade:match_caveat",
+    # 人类倾向列（AiAnalysis）。这四条也只有这一个闸在守。
+    "live:human_pick_rate",
+    "live:human_pick_rate_ranked",
+    "live:human_pick_rate_hint",
+    "live:human_pick_rate_hint_ranked",
 ]
 
 ALL_KEYS = [t["i18n"] for t in tiers()] + DYNAMIC_KEYS + STATIC_KEYS

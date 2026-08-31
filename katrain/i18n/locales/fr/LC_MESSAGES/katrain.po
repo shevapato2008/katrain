@@ -3304,3 +3304,47 @@ msgstr ""
 "Le moteur des parties classées est momentanément indisponible. Aucune partie"
 " n'a été lancée et votre rang n'est pas affecté. Veuillez réessayer plus "
 "tard."
+
+msgid "grade:match_rate"
+msgstr "Concordance IA"
+
+msgid "grade:match_top1"
+msgstr "Premier choix de l'IA joué"
+
+msgid "grade:match_top3"
+msgstr "Dans le top 3 de l'IA"
+
+msgid "grade:match_offbook"
+msgstr "Non envisagé par l'IA"
+
+msgid "grade:match_no_data"
+msgstr "Aucun coup comparable dans cette phase"
+
+msgid "grade:match_footer"
+msgstr ""
+"Le dénominateur est le nombre de coups comparables à l'IA : Noir {b} / Blanc"
+" {w}"
+
+msgid "grade:match_undecidable"
+msgstr "{n} coups non comparables"
+
+msgid "grade:match_caveat"
+msgstr ""
+"La concordance dépend de la difficulté des positions : seule, elle ne prouve"
+" ni le niveau ni la triche."
+
+msgid "live:human_pick_rate_ranked"
+msgstr "Choix {rank}"
+
+msgid "live:human_pick_rate"
+msgstr "Choix humain"
+
+msgid "live:human_pick_rate_hint_ranked"
+msgstr ""
+"Combien de joueurs {rank} sur 100 joueraient ici : combien le font, pas "
+"s'ils devraient."
+
+msgid "live:human_pick_rate_hint"
+msgstr ""
+"Part des joueurs humains qui jouent ce point, indépendamment du classement "
+"de l'IA."

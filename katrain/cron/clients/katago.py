@@ -39,6 +39,7 @@ class KataGoClient:
         priority: int = 0,
         initial_stones: list[list[str]] | None = None,
         initial_player: str = "B",
+        extra_override: dict | None = None,
     ) -> dict:
         """Send a single analysis request to KataGo.
 
@@ -79,8 +80,11 @@ class KataGoClient:
             "maxVisits": max_visits,
             "includeOwnership": include_ownership,
             "includePolicy": include_policy,
+            # 调用方塞进来的键**覆盖**默认值：默认这一层只有 reportAnalysisWinratesAs，
+            # 谁想改它得是明确写出来的那个人。
             "overrideSettings": {
                 "reportAnalysisWinratesAs": "BLACK",
+                **(extra_override or {}),
             },
             "priority": priority,
         }

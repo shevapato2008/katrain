@@ -3333,3 +3333,45 @@ msgstr ""
 "Die Ranglisten-Engine ist vorübergehend nicht verfügbar. Es wurde keine "
 "Partie gestartet, und dein Rang bleibt unverändert. Bitte versuche es später"
 " erneut."
+
+msgid "grade:match_rate"
+msgstr "KI-Übereinstimmung"
+
+msgid "grade:match_top1"
+msgstr "Topzug der KI gespielt"
+
+msgid "grade:match_top3"
+msgstr "Unter den Top 3 der KI"
+
+msgid "grade:match_offbook"
+msgstr "Von der KI nicht erwogen"
+
+msgid "grade:match_no_data"
+msgstr "Keine vergleichbaren Züge in dieser Phase"
+
+msgid "grade:match_footer"
+msgstr "Nenner sind mit der KI vergleichbare Züge: Schwarz {b} / Weiß {w}"
+
+msgid "grade:match_undecidable"
+msgstr "{n} Züge nicht vergleichbar"
+
+msgid "grade:match_caveat"
+msgstr ""
+"Die Übereinstimmung hängt von der Schwierigkeit der Stellungen ab - für sich"
+" genommen ist sie kein Beleg für Spielstärke oder Betrug."
+
+msgid "live:human_pick_rate_ranked"
+msgstr "{rank}-Wahl"
+
+msgid "live:human_pick_rate"
+msgstr "Menschliche Wahl"
+
+msgid "live:human_pick_rate_hint_ranked"
+msgstr ""
+"Wie viele von 100 {rank}-Spielern hier spielen würden - wie viele es TUN, "
+"nicht ob sie SOLLTEN."
+
+msgid "live:human_pick_rate_hint"
+msgstr ""
+"Anteil menschlicher Spieler, die diesen Punkt spielen - unabhängig vom KI-"
+"Ranking."

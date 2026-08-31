@@ -3254,3 +3254,39 @@ msgstr "{n} 手未評価"
 
 msgid "ladder:engine_unavailable_start"
 msgstr "昇降級エンジンが一時的に利用できません。対局は開始されておらず、段位にも影響しません。しばらくしてからお試しください。"
+
+msgid "grade:match_rate"
+msgstr "AI一致率"
+
+msgid "grade:match_top1"
+msgstr "AI の第一候補と一致"
+
+msgid "grade:match_top3"
+msgstr "AI の上位 3 候補以内"
+
+msgid "grade:match_offbook"
+msgstr "AI が候補に挙げず"
+
+msgid "grade:match_no_data"
+msgstr "この段階に比較できる着手はありません"
+
+msgid "grade:match_footer"
+msgstr "分母は AI と比較できた着手数：黒 {b} 手 / 白 {w} 手"
+
+msgid "grade:match_undecidable"
+msgstr "{n} 手は比較できません"
+
+msgid "grade:match_caveat"
+msgstr "一致率は局面の難易度に左右されます。単独では棋力や不正の証拠にはなりません。"
+
+msgid "live:human_pick_rate_ranked"
+msgstr "{rank}の選択率"
+
+msgid "live:human_pick_rate"
+msgstr "人間の選択率"
+
+msgid "live:human_pick_rate_hint_ranked"
+msgstr "{rank} の棋士 100 人のうち何人がこの点に打つか。「何人が打つか」であって「打つべきか」ではありません。"
+
+msgid "live:human_pick_rate_hint"
+msgstr "人間の棋士がこの点に打つ割合です。AI の推奨順位とは別物です。"

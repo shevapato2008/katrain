@@ -3036,10 +3036,10 @@ msgid "grade:very_good"
 msgstr "很好"
 
 msgid "grade:playable"
-msgstr "可下"
+msgstr "尚可"
 
 msgid "grade:inaccuracy"
-msgstr "欠佳"
+msgstr "小亏"
 
 msgid "grade:mistake"
 msgstr "失误"
@@ -3072,7 +3072,7 @@ msgid "grade:performance"
 msgstr "发挥水准"
 
 msgid "grade:brilliance"
-msgstr "玄妙"
+msgstr "妙度"
 
 msgid "grade:unrated"
 msgstr "未评级"
@@ -3091,3 +3091,39 @@ msgstr "{n} 手未评级"
 
 msgid "ladder:engine_unavailable_start"
 msgstr "升降级引擎暂时不可用，本次没有开局，也不影响你的段位。请稍后再试。"
+
+msgid "grade:match_rate"
+msgstr "AI吻合度"
+
+msgid "grade:match_top1"
+msgstr "走中 AI 一选"
+
+msgid "grade:match_top3"
+msgstr "走进 AI 前三"
+
+msgid "grade:match_offbook"
+msgstr "AI 完全没考虑"
+
+msgid "grade:match_no_data"
+msgstr "本阶段还没有可比对的着手"
+
+msgid "grade:match_footer"
+msgstr "分母是能与 AI 比对的手数：黑 {b} 手 / 白 {w} 手"
+
+msgid "grade:match_undecidable"
+msgstr "{n} 手无法比对"
+
+msgid "grade:match_caveat"
+msgstr "一致率高低取决于局面难度，不能单独当作棋力或作弊的证据。"
+
+msgid "live:human_pick_rate_ranked"
+msgstr "{rank}选择率"
+
+msgid "live:human_pick_rate"
+msgstr "人类选择率"
+
+msgid "live:human_pick_rate_hint_ranked"
+msgstr "每 100 位 {rank} 棋手里大约有几位会下这一点。这是「多少人会下」，不是「该不该下」。"
+
+msgid "live:human_pick_rate_hint"
+msgstr "这一列显示人类棋手会下这一点的比例，与 AI 的推荐顺位无关。"

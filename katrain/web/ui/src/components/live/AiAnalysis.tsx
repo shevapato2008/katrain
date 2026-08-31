@@ -3,6 +3,20 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import type { MoveAnalysis, TopMove } from '../../types/live';
 import { useMemo } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
+import {
+  dominantProfile,
+  formatHumanPickRate,
+  humanPickBarRatio,
+  rankLabel,
+} from '../../features/analysis/humanTendency';
+
+/**
+ * 五列的宽度。用 minmax() 钉死每列的**内容下限**，而不是给纯 fr 权重 ——
+ * 纯权重下「5段选择率」这个表头会被压到 41px 然后省略号截断（真浏览器量过）。
+ * 下限之和 288px，右栏实测可用宽 293px，正好装得下且不横向溢出。
+ */
+const HUMAN_GRID =
+  'minmax(58px, 1.1fr) minmax(46px, 0.8fr) minmax(56px, 0.95fr) minmax(48px, 0.85fr) minmax(80px, 1.3fr)';
 
 interface AiAnalysisProps {
   currentMove: number;
@@ -120,6 +134,20 @@ export default function AiAnalysis({
     }));
   }, [currentAnalysis, nextAnalysis, topN]);
 
+  // 表头要说清「这是谁的选择率」。档位来自数据本身（每个候选点都带 human_profile），
+  // 不是前端写死的常量 —— 服务端换档之后，老报告的数字仍然自证是按哪一档算的。
+  const humanProfile = dominantProfile(displayMoves);
+  const humanRank = rankLabel(humanProfile);
+  const humanHeader = humanRank
+    ? t('live:human_pick_rate_ranked', '{rank}选择率').replace('{rank}', humanRank)
+    : t('live:human_pick_rate', '人类选择率');
+  const humanHeaderHint = humanRank
+    ? t(
+        'live:human_pick_rate_hint_ranked',
+        '每 100 位 {rank} 棋手里大约有几位会下这一点。这是「多少人会下」，不是「该不该下」。',
+      ).replace('{rank}', humanRank)
+    : t('live:human_pick_rate_hint', '这一列显示人类棋手会下这一点的比例，与 AI 的推荐顺位无关。');
+
   if (!currentAnalysis) {
     return (
       <Box sx={{ px: 1.5, py: 1 }}>
@@ -150,7 +178,7 @@ export default function AiAnalysis({
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr 1fr',
+          gridTemplateColumns: HUMAN_GRID,
           gap: 0.5,
           mb: 0.25,
           px: 1,
@@ -161,6 +189,16 @@ export default function AiAnalysis({
       >
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.8rem' }}>{t('live:suggested_move', 'Move')}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:recommendation', 'Score')}</Typography>
+        <Tooltip title={humanHeaderHint}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            noWrap
+            sx={{ textAlign: 'center', fontSize: '0.7rem', cursor: 'help' }}
+          >
+            {humanHeader}
+          </Typography>
+        </Tooltip>
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:lead_pts', 'Lead')}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', fontSize: '0.7rem' }}>{t('live:winrate', 'Winrate')}</Typography>
       </Box>
@@ -213,7 +251,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover, is
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr 1fr',
+        gridTemplateColumns: HUMAN_GRID,
         gap: 0.5,
         py: 0.5,
         px: 1,
@@ -280,6 +318,47 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover, is
         </Box>
       </Box>
 
+      {/* 人类倾向（每 100 人里 N 人）。刻意不用百分号：同一行里「推荐度」已经是百分比，
+          两列都印 % 会被扫读成一对；差异放在字形层，不依赖颜色。
+          微条是**绝对刻度**（0-100 人），不随同屏其它行归一化。 */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 0.25,
+          minWidth: 0,
+        }}
+      >
+        <Typography
+          variant="body2"
+          fontWeight="bold"
+          noWrap
+          sx={{
+            lineHeight: 1,
+            fontSize: '0.8rem',
+            fontVariantNumeric: 'tabular-nums',
+            color: move.human_prior == null ? 'text.disabled' : 'text.primary',
+          }}
+        >
+          {formatHumanPickRate(move.human_prior)}
+        </Typography>
+        {/* 没有数据就不画条 —— 空轨道本身就是诚实的表达，画个 0 宽条反而像「有数据但是 0」。 */}
+        {move.human_prior != null && (
+          <Box sx={{ width: '100%', maxWidth: 44, height: 3, bgcolor: 'action.hover', borderRadius: 2 }}>
+            <Box
+              sx={{
+                width: `${humanPickBarRatio(move.human_prior) * 100}%`,
+                height: '100%',
+                bgcolor: 'info.main',
+                borderRadius: 2,
+              }}
+            />
+          </Box>
+        )}
+      </Box>
+
       {/* Score lead (领先目数) - on colored background based on current player */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Box
@@ -308,7 +387,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover, is
         {/* Current player winrate - on colored background */}
         <Box
           sx={{
-            minWidth: 40,
+            minWidth: 36,
             height: 24,
             px: 0.5,
             display: 'flex',
@@ -329,7 +408,7 @@ function MoveRow({ move, rank, percentage, isActualMove, nextPlayer, onHover, is
         {/* Opponent winrate - on opposite colored background */}
         <Box
           sx={{
-            minWidth: 40,
+            minWidth: 36,
             height: 24,
             px: 0.5,
             display: 'flex',

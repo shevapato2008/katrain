@@ -70,7 +70,7 @@ brilliant:
     max_abs_score_lead: 20.0      # |scoreLead| 超过这个目数就不给
     winrate_band: [0.05, 0.95]    # 胜率落在这个区间之外就不给
 
-  # 玄妙指数 1-5 的 prior 断点（越低越玄妙）。柱高 = 级数。
+  # 妙度 1-5 的 prior 断点（越低越难想到）。柱高 = 级数。
   # prior < 0.01 → 5 级；< 0.02 → 4；< 0.03 → 3；< 0.05 → 2；< max_prior → 1
   levels_prior: [0.05, 0.03, 0.02, 0.01, 0.0]
 
@@ -109,14 +109,14 @@ tiers:
     zh: "很好"
     color: "#4DBE46"
     bad: false
-  - id: playable    # 可下
+  - id: playable    # 尚可
     i18n: "grade:playable"
-    zh: "可下"
+    zh: "尚可"
     color: "#A4B436"
     bad: false
-  - id: inaccuracy  # 欠佳
+  - id: inaccuracy  # 小亏
     i18n: "grade:inaccuracy"
-    zh: "欠佳"
+    zh: "小亏"
     color: "#D6A318"
     bad: true
   - id: mistake     # 失误
@@ -138,7 +138,12 @@ display:
   per_side_limit: 5
 
   # 阶段区间（含端点，按手数；null = 到终局）
-  # 与星阵实测生效值一致：全盘 0-end / 布局 0-59 / 中盘 60-149 / 官子 150-end
+  # 全盘 0-end / 布局 0-59 / 中盘 60-149 / 官子 150-end。
+  #
+  # 这**不是**星阵那一套：星阵是 1 基、从第 11 手起、前 10 手不计（11-60 / 61-150 /
+  # 151-末），而且它的阶段是喂给「逐手 rank 取算术平均」的棋力测评用的；我们是 0 基、
+  # 全程计入，喂给七档直方图。割点看着接近是因为围棋的布局/中盘/官子本来就在这个量级，
+  # 抄它的数字会整体错开一手。
   phases:
     opening: [0, 59]
     midgame: [60, 149]

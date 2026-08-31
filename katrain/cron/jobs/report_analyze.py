@@ -266,6 +266,15 @@ class ReportAnalyzerJob(BaseJob):
         moves = parsed.moves
         played = [[color, coord] for color, coord in moves[:move_number]]
 
+        # 人类倾向：给每个候选点带上「该档人类会下这一点的概率」。
+        # 只要 moveInfos[].humanPrior，**不需要 includePolicy**（那是全盘 humanPolicy 数组的开关，
+        # 2026-08-31 本机 KataGo v1.18.0 实跑对照过：不带 includePolicy 时 humanPrior 照常返回）。
+        # 引擎没加载人类模型时设了 profile 会让整条 query 失败，所以用配置一键可关。
+        extra_override: dict[str, Any] = {}
+        if config.HUMAN_SL_PROFILE:
+            extra_override["humanSLProfile"] = config.HUMAN_SL_PROFILE
+            extra_override["rootNumSymmetriesToSample"] = config.HUMAN_SL_SYMMETRIES
+
         # Per-move retry (3 attempts, 2s delay)
         last_exc = None
         for attempt in range(3):
@@ -283,6 +292,7 @@ class ReportAnalyzerJob(BaseJob):
                     initial_stones=parsed.initial_stones,
                     initial_player=parsed.initial_player,
                     priority=config.REPORT_ANALYSIS_PRIORITY,
+                    extra_override=extra_override or None,
                 )
                 break
             except Exception as exc:
@@ -338,8 +348,17 @@ class ReportAnalyzerJob(BaseJob):
                 delta_winrate = previous_winrate - winrate
 
         # Build top moves
+        #
+        # human_prior 与 human_profile **成对存**：一个概率不说清是哪一档人给的就没有意义，
+        # 而且档位是可配置的，将来换档时老报告的数字必须还能自证是按哪一档算的。
+        # 引擎没返回 humanPrior 时两个都留 None —— 不能填 0，那是「没人会下」的意思。
+        # 说不清是谁给的数就不存：没配 profile 时即便引擎回了 humanPrior 也丢掉
+        # （正常情况下不会 —— 实跑确认过不设 profile 时引擎根本不返回 human 字段 ——
+        # 但存一个无法归档的概率比不存更坏，界面上没法说它是哪一档人的选择率）。
+        human_profile = config.HUMAN_SL_PROFILE or None
         top_moves = []
         for mi in move_infos[:10]:
+            human_prior = mi.get("humanPrior") if human_profile else None
             top_moves.append(
                 {
                     "move": mi.get("move"),
@@ -349,6 +368,8 @@ class ReportAnalyzerJob(BaseJob):
                     "prior": mi.get("prior"),
                     "pv": mi.get("pv"),
                     "psv": mi.get("playSelectionValue", 0.0),
+                    "human_prior": human_prior,
+                    "human_profile": human_profile if human_prior is not None else None,
                 }
             )
 

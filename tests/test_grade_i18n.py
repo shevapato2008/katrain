@@ -35,6 +35,16 @@ STATIC_KEYS = [
     "grade:truncated_note",
     "grade:histogram_footer",
     "grade:unrated_count",
+    # AI 一致率 tab（TrendChart 第 5 个 tab）。这张表是硬编码的：新加的 key 不写进来，
+    # 十一语缺翻这条闸对它就是永远绿的。
+    "grade:match_rate",
+    "grade:match_top1",
+    "grade:match_top3",
+    "grade:match_offbook",
+    "grade:match_no_data",
+    "grade:match_footer",
+    "grade:match_undecidable",
+    "grade:match_caveat",
 ]
 
 ALL_KEYS = [t["i18n"] for t in tiers()] + DYNAMIC_KEYS + STATIC_KEYS

@@ -47,6 +47,28 @@ ANALYSIS_REQUEST_TIMEOUT = float(os.getenv("CRON_ANALYSIS_REQUEST_TIMEOUT", "60.
 ANALYSIS_MAX_VISITS = int(os.getenv("CRON_ANALYSIS_MAX_VISITS", "500"))
 ANALYSIS_PREEMPT_THRESHOLD = int(os.getenv("CRON_ANALYSIS_PREEMPT_THRESHOLD", "500"))
 
+# 人类倾向（KataGo human SL 模型）。空字符串 = 关掉这个特性，报告里就不会有这一列。
+#
+# 引擎侧前置条件：分析服务必须是带 -human-model 启动的（生产/测试两台 2026-08-31 实测
+# 都满足，/health 的 has_human_model 为 true）。**只设 profile 而引擎没加载人类模型时，
+# KataGo 会让整条 query 失败**，不是静默降级 —— 所以这个开关要能一键关掉。
+#
+# 合法取值只有 KataGo 内置的那 29 档（rank_20k..rank_1k, rank_1d..rank_9d）加 preaz_* /
+# proyear_*；写错（比如 rank_10d 这种不存在的档）同样是整条 query 报错。
+HUMAN_SL_PROFILE = os.getenv("CRON_HUMAN_SL_PROFILE", "rank_5d")
+
+# 人类网前向的对称采样数。**这不是可选的调优项，删掉它会让同一手棋在两个页面上显示成
+# 不同的数字。** 2026-08-31 在测试机与生产机上实测（同一局面、同一 profile rank_5d）：
+#
+#   不设       测试 0.1897 vs 生产 0.1709  → 差 1.9pp，屏上是「19人」对「17人」
+#   设 8       测试 0.21017 vs 生产 0.21054 → 差 0.04pp，两边都是「21人」
+#              同机重复三次：测试完全相同，生产只差 1e-8
+#
+# 而同进程内因为有 NN cache 永远一致 —— 也就是说不设它，本地开发和单测永远不会红，
+# 只有用户屏幕上「报告里存的值」和「研究页现算的值」会打架。
+# 代价是人类网前向 ×8（相对 500 visits 的搜索可忽略）。已实测该键可以逐条 override。
+HUMAN_SL_SYMMETRIES = int(os.getenv("CRON_HUMAN_SL_SYMMETRIES", "8"))
+
 # XingZhen API
 XINGZHEN_BASE_URL = os.getenv("XINGZHEN_BASE_URL", "https://api.19x19.com/api/engine/golives")
 XINGZHEN_ENABLED = os.getenv("CRON_XINGZHEN_ENABLED", "true").lower() == "true"

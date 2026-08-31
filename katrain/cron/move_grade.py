@@ -31,12 +31,12 @@ CONFIG = {   'version': 1,
                      'bad': False},
                  {   'id': 'playable',
                      'i18n': 'grade:playable',
-                     'zh': '可下',
+                     'zh': '尚可',
                      'color': '#A4B436',
                      'bad': False},
                  {   'id': 'inaccuracy',
                      'i18n': 'grade:inaccuracy',
-                     'zh': '欠佳',
+                     'zh': '小亏',
                      'color': '#D6A318',
                      'bad': True},
                  {   'id': 'mistake',
@@ -117,7 +117,7 @@ def points_lost_in_search(prev_top_moves, actual_move, actual_player, actual_sco
 
 
 def brilliance_level(prior, cfg):
-    """policy 先验 → 玄妙指数 1..5（越低越玄妙）。
+    """policy 先验 → 妙度 1..5（越低越难想到）。
 
     levels_prior 是降序断点 [0.05, 0.03, 0.02, 0.01, 0.0]，
     级数 = 1 + 越过的断点数：>=0.05 → 1，<0.05 → 2，<0.03 → 3，<0.02 → 4，<0.01 → 5。
@@ -188,7 +188,7 @@ def grade_move(
 
 
 def _brilliant(out, score_lead, winrate, prev_visits, cfg):
-    """走了首选的前提下，判断够不够妙手；够则返回玄妙指数 1..5。"""
+    """走了首选的前提下，判断够不够妙手；够则返回妙度 1..5。"""
     bc = cfg["brilliant"]
     if bc["require_top_move"] and not out["is_top_move"]:
         return None

@@ -105,9 +105,118 @@ export function badnessRank(a: MoveAnalysis): number {
   return a.points_lost ?? -(a.delta_score ?? 0);
 }
 
-/** 妙手按玄妙指数排序，同级再按越难想到（prior 越低）越靠前。 */
+/** 妙手按妙度排序，同级再按越难想到（prior 越低）越靠前。 */
 export function brillianceRank(a: MoveAnalysis): number {
   return (a.brilliance ?? 1) * 1000 + (1 - (a.top_prior ?? 1)) * 100;
+}
+
+export type MatchRateId = 'top1' | 'top3' | 'offbook';
+
+export interface MatchRateRow {
+  id: MatchRateId;
+  i18nKey: string;
+  zh: string;
+  color: string;
+  black: number;
+  white: number;
+  /** 该行**自己的**分母：这一方有多少手能判定这件事。两行的分母可以不同。 */
+  blackTotal: number;
+  whiteTotal: number;
+  blackRate: number;
+  whiteRate: number;
+}
+
+export interface MatchRate {
+  rows: MatchRateRow[];
+  /** 至少能判定「是不是一选」的手数。 */
+  blackDecided: number;
+  whiteDecided: number;
+  /** 落在本阶段、但连一选都判不了的手数（上一手没分析 / visits 不够 / 旧数据）。 */
+  undecidable: number;
+}
+
+const MATCH_ROWS: { id: MatchRateId; i18nKey: string; zh: string; color: string }[] = [
+  { id: 'top1', i18nKey: 'grade:match_top1', zh: '走中 AI 一选', color: '#2E8B57' },
+  { id: 'top3', i18nKey: 'grade:match_top3', zh: '走进 AI 前三', color: '#4DBE46' },
+  { id: 'offbook', i18nKey: 'grade:match_offbook', zh: 'AI 完全没考虑', color: '#CF6B09' },
+];
+
+/** 实战手在上一手候选表里的名次；-1 = 不在表内；null = 判不了（没有候选表）。 */
+function rankInCandidates(prev: MoveAnalysis | undefined, played: string | null): number | null {
+  if (!played) return null;
+  const candidates = prev?.top_moves;
+  if (!candidates || candidates.length === 0) return null;
+  return candidates.findIndex((c) => c.move === played);
+}
+
+/**
+ * AI 一致率：实战手与引擎候选表的重合程度。
+ *
+ * 判定基准分两条路，缺一不可：
+ *  - 报告链路有服务端算好的 `is_top_move`（`move_grade_core.py` 判的），优先用它；
+ *  - 直播链路的 MoveAnalysis 根本没有这个字段，退回「上一手 top_moves[0] == 实战手」现算，
+ *    否则直播观战页这一屏会整块空掉。
+ *
+ * 「前三」与「完全没考虑」只能靠上一手的候选表算，所以它们**各有各的分母** ——
+ * 一条能判、另一条判不了的手不能混进同一个分母里，否则两个百分比会打架。
+ *
+ * 注意「一选」的定义：`top_moves[0]` 是按 KataGo 的 playSelectionValue 排的，
+ * 不等于目数最优的那个候选（实测 17.7%–34.4% 的局面两者不同）。界面上要说清楚。
+ */
+export function buildMatchRate(moves: MoveAnalysis[], phase: PhaseId = 'all'): MatchRate {
+  const byNumber = new Map<number, MoveAnalysis>();
+  for (const m of moves) byNumber.set(m.move_number, m);
+
+  const hit: Record<MatchRateId, { B: number; W: number }> = {
+    top1: { B: 0, W: 0 },
+    top3: { B: 0, W: 0 },
+    offbook: { B: 0, W: 0 },
+  };
+  const denom: Record<MatchRateId, { B: number; W: number }> = {
+    top1: { B: 0, W: 0 },
+    top3: { B: 0, W: 0 },
+    offbook: { B: 0, W: 0 },
+  };
+  let undecidable = 0;
+
+  for (const m of moves) {
+    if (!inPhase(m.move_number, phase)) continue;
+    if (m.player !== 'B' && m.player !== 'W') continue;
+    const side = m.player;
+    const rank = rankInCandidates(byNumber.get(m.move_number - 1), m.move);
+
+    const top1: boolean | null = m.is_top_move ?? (rank === null ? null : rank === 0);
+    if (top1 === null) {
+      undecidable += 1;
+      continue;
+    }
+    denom.top1[side] += 1;
+    if (top1) hit.top1[side] += 1;
+
+    if (rank !== null) {
+      denom.top3[side] += 1;
+      if (rank >= 0 && rank < 3) hit.top3[side] += 1;
+      denom.offbook[side] += 1;
+      if (rank < 0) hit.offbook[side] += 1;
+    }
+  }
+
+  const rate = (n: number, d: number) => (d ? n / d : 0);
+
+  return {
+    rows: MATCH_ROWS.map((r) => ({
+      ...r,
+      black: hit[r.id].B,
+      white: hit[r.id].W,
+      blackTotal: denom[r.id].B,
+      whiteTotal: denom[r.id].W,
+      blackRate: rate(hit[r.id].B, denom[r.id].B),
+      whiteRate: rate(hit[r.id].W, denom[r.id].W),
+    })),
+    blackDecided: denom.top1.B,
+    whiteDecided: denom.top1.W,
+    undecidable,
+  };
 }
 
 export interface HistogramCell {

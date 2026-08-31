@@ -1,4 +1,4 @@
-import { Box, Chip, Stack, Tab, Tabs, Typography } from '@mui/material';
+import { Box, Chip, Stack, Tab, Tabs, Typography, useTheme } from '@mui/material';
 import { useMemo, useState } from 'react';
 import type { MoveAnalysis } from '../../types/live';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -6,6 +6,7 @@ import {
   badnessRank,
   brillianceRank,
   buildHistogram,
+  buildMatchRate,
   GRADE_BY_ID,
   GRADE_PHASES,
   isBad,
@@ -30,6 +31,7 @@ export default function TrendChart({
   onMoveClick,
 }: TrendChartProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [tab, setTab] = useState(0);
 
   // Extract data for chart
@@ -238,6 +240,7 @@ export default function TrendChart({
     [graded, phase, player],
   );
   const histogram = useMemo(() => buildHistogram(graded, phase), [graded, phase]);
+  const matchRate = useMemo(() => buildMatchRate(graded, phase), [graded, phase]);
 
   // tab 上的计数必须诚实：截断了就写 "5 / 50"，不能只显示截断后的数，
   // 否则用户会以为整盘只有 5 处问题。
@@ -280,6 +283,203 @@ export default function TrendChart({
       </Typography>
     ) : null;
 
+  const sideLabel = (a: MoveAnalysis) =>
+    a.player === 'B' ? t('live:black', 'B') : t('live:white', 'W');
+  const tierLabel = (a: MoveAnalysis) => {
+    const tier = GRADE_BY_ID[(a.grade as GradeId) ?? 'unrated'];
+    return tier ? t(tier.i18nKey, tier.zh) : t('grade:unrated', '未评级');
+  };
+
+  /**
+   * 黑白靠透明度是分不出来的（旧实现 white bar 只是 opacity 0.55，截图上两条一模一样）。
+   * 改成**实心=黑、空心+斜纹=白**：形状差异不依赖色相，暗背景和色觉障碍下都立得住。
+   * 档位色仍然留给「七档」那根轴，不被黑白占用。
+   */
+  const stoneDot = (side: 'black' | 'white', color: string) => (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-block',
+        width: 9,
+        height: 9,
+        borderRadius: '50%',
+        mr: 0.5,
+        flexShrink: 0,
+        bgcolor: side === 'black' ? color : 'transparent',
+        border: side === 'white' ? `1.5px solid ${color}` : 'none',
+        boxSizing: 'border-box',
+      }}
+    />
+  );
+
+  /** 一档两条：上黑下白。黑白标记同时出现在数字旁和条形前，不再依赖底部脚注去解释顺序。 */
+  const pairedBars = (opts: {
+    rowKey: string;
+    label: string;
+    color: string;
+    black: number;
+    white: number;
+    blackRate: number;
+    whiteRate: number;
+    blackTotal?: number;
+    whiteTotal?: number;
+  }) => {
+    const fmt = (n: number, rate: number, total?: number) =>
+      total == null
+        ? `${n} (${Math.round(rate * 100)}%)`
+        : `${n}/${total} (${Math.round(rate * 100)}%)`;
+    return (
+      <Box key={opts.rowKey} sx={{ mb: 1.25 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5, gap: 1 }}>
+          <Typography variant="caption" sx={{ color: opts.color, fontWeight: 600 }}>
+            {opts.label}
+          </Typography>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}
+          >
+            {stoneDot('black', 'currentColor')}
+            {fmt(opts.black, opts.blackRate, opts.blackTotal)}
+            <Box component="span" sx={{ display: 'inline-block', width: 10 }} />
+            {stoneDot('white', 'currentColor')}
+            {fmt(opts.white, opts.whiteRate, opts.whiteTotal)}
+          </Typography>
+        </Box>
+        {(['black', 'white'] as const).map((side) => {
+          const rate = Math.max(0, Math.min(1, side === 'black' ? opts.blackRate : opts.whiteRate));
+          return (
+            <Box key={side} sx={{ display: 'flex', alignItems: 'center', mb: 0.25 }}>
+              {stoneDot(side, opts.color)}
+              <Box
+                sx={{
+                  flex: 1,
+                  height: 8,
+                  bgcolor: 'action.hover',
+                  borderRadius: 0.5,
+                  overflow: 'hidden',
+                  minWidth: 0,
+                }}
+              >
+                {rate > 0 && (
+                  <Box
+                    sx={{
+                      width: `${rate * 100}%`,
+                      height: '100%',
+                      boxSizing: 'border-box',
+                      ...(side === 'black'
+                        ? { bgcolor: opts.color }
+                        : {
+                            border: `1.5px solid ${opts.color}`,
+                            backgroundImage: `repeating-linear-gradient(45deg, ${opts.color} 0 2px, transparent 2px 5px)`,
+                            opacity: 0.85,
+                          }),
+                    }}
+                  />
+                )}
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+    );
+  };
+
+  /**
+   * 妙手 / 问题手的棒棒糖图：x 轴是**手数**（不是列表序），y 轴是幅度。
+   * 250 手宽度下纯柱会细到看不见，所以用「细杆 + 端点圆」；端点圆承载档位色，
+   * 实心=黑、空心=白，与上面的条形图同一套编码。端点即点击热区，保留原来的跳手行为。
+   */
+  const renderLollipop = (
+    items: MoveAnalysis[],
+    direction: 'up' | 'down',
+    magnitude: (a: MoveAnalysis) => number,
+    tipText: (a: MoveAnalysis) => string,
+  ) => {
+    if (items.length === 0) return null;
+    const width = 420;
+    // viewBox 宽 420 而右栏实宽约 330 ⇒ 整张图会被缩到 ~0.79。
+    // 这里的数是**缩放前**的，想要屏上 ~118px 就得写 150。
+    const height = 150;
+    const padX = 12;
+    const padTop = 16;
+    const padBottom = 18;
+    const plot = height - padTop - padBottom;
+    const span = Math.max(1, totalMoves);
+    const maxMag = Math.max(...items.map((a) => Math.max(0, magnitude(a))), 1e-6);
+    const baselineY = direction === 'up' ? height - padBottom : padTop;
+    const xOf = (n: number) => padX + (Math.max(0, Math.min(span, n)) / span) * (width - padX * 2);
+    const labelled: number[] = [];
+
+    return (
+      <Box sx={{ bgcolor: 'background.default', borderRadius: 1, px: 0.5, py: 0.5, mb: 1 }}>
+        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+          <line
+            x1={padX}
+            y1={baselineY}
+            x2={width - padX}
+            y2={baselineY}
+            stroke="rgba(255,255,255,0.28)"
+            strokeWidth="1"
+          />
+          {currentMove > 0 && (
+            <line
+              x1={xOf(currentMove)}
+              y1={padTop}
+              x2={xOf(currentMove)}
+              y2={height - padBottom}
+              stroke="rgba(255,255,255,0.45)"
+              strokeWidth="1"
+              strokeDasharray="3 3"
+            />
+          )}
+          {items.map((a) => {
+            const color = GRADE_BY_ID[(a.grade as GradeId) ?? 'unrated']?.color ?? '#888';
+            const len = (Math.max(0, magnitude(a)) / maxMag) * plot;
+            const x = xOf(a.move_number);
+            const tipY = direction === 'up' ? baselineY - len : baselineY + len;
+            const isBlack = a.player === 'B';
+            const showLabel = labelled.every((lx) => Math.abs(lx - x) >= 24);
+            if (showLabel) labelled.push(x);
+            return (
+              <g key={a.move_number} style={{ cursor: onMoveClick ? 'pointer' : 'default' }}>
+                <title>{tipText(a)}</title>
+                <line x1={x} y1={baselineY} x2={x} y2={tipY} stroke={color} strokeWidth="2" strokeOpacity="0.6" />
+                <circle
+                  cx={x}
+                  cy={tipY}
+                  r="5.5"
+                  fill={isBlack ? color : theme.palette.background.default}
+                  stroke={color}
+                  strokeWidth="2"
+                />
+                {showLabel && (
+                  <text
+                    x={x}
+                    /* 向下的图把手数标在基线**上方**：标在底部会和最深的那根杆撞上。 */
+                    y={direction === 'up' ? height - 5 : padTop - 3}
+                    textAnchor="middle"
+                    fill="rgba(255,255,255,0.55)"
+                    fontSize="11"
+                  >
+                    {a.move_number}
+                  </text>
+                )}
+                <circle
+                  cx={x}
+                  cy={tipY}
+                  r="10"
+                  fill="transparent"
+                  onClick={() => onMoveClick?.(a.move_number)}
+                />
+              </g>
+            );
+          })}
+        </svg>
+      </Box>
+    );
+  };
+
   const moveRow = (a: MoveAnalysis) => {
     const tier = GRADE_BY_ID[(a.grade as GradeId) ?? 'unrated'];
     const color = tier?.color ?? '#888';
@@ -303,10 +503,12 @@ export default function TrendChart({
             {t('live:move_number', 'Move')} {a.move_number} {a.move}
           </Typography>
           <Typography variant="caption" sx={{ color }}>
-            {a.points_lost != null && a.points_lost > 0
-              ? `-${a.points_lost.toFixed(1)} ${t('live:points', 'pts')}`
-              : a.brilliance
-                ? `${t('grade:brilliance', '玄妙')} ${a.brilliance}`
+            {/* 妙手优先显示妙度：走了首选也可能有小额目损（order-0 不等于目数最优，
+                实测 17.7%-34.4% 的局面两者不同），旧写法会让妙度标签被那点损失顶掉。 */}
+            {a.brilliance
+              ? `${t('grade:brilliance', '妙度')} ${a.brilliance}`
+              : a.points_lost != null && a.points_lost > 0
+                ? `-${a.points_lost.toFixed(1)} ${t('live:points', 'pts')}`
                 : ''}
           </Typography>
         </Box>
@@ -323,9 +525,15 @@ export default function TrendChart({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Sticky tabs header */}
+      {/* 五个 tab 在右栏（实测 349px）里放不下：内容宽 500px。MUI 默认 variant 是
+          standard —— 溢出部分被 overflow-x:hidden 切掉且**没有滚动按钮**，第 5 个 tab
+          用户够不到（Playwright 能点是因为它会程序化 scrollIntoView，不算数）。 */}
       <Tabs
         value={tab}
         onChange={(_, v) => setTab(v)}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
         sx={{
           borderBottom: 1,
           borderColor: 'divider',
@@ -338,6 +546,7 @@ export default function TrendChart({
         <Tab label={`${t('live:brilliant', 'Brilliant')} (${countLabel(brilliants)})`} sx={{ minHeight: 36, py: 0 }} />
         <Tab label={`${t('live:mistakes', 'Mistakes')} (${countLabel(bads)})`} sx={{ minHeight: 36, py: 0 }} />
         <Tab label={t('grade:performance', '发挥水准')} sx={{ minHeight: 36, py: 0 }} />
+        <Tab label={t('grade:match_rate', 'AI吻合度')} sx={{ minHeight: 36, py: 0 }} />
       </Tabs>
 
       {/* Scrollable content area */}
@@ -368,6 +577,13 @@ export default function TrendChart({
               </Typography>
             ) : (
               <>
+                {renderLollipop(
+                  brilliants.shown,
+                  'up',
+                  (a) => a.brilliance ?? 1,
+                  (a) =>
+                    `${t('live:move_number', 'Move')} ${a.move_number} ${a.move ?? ''} · ${sideLabel(a)} · ${t('grade:brilliance', '妙度')} ${a.brilliance ?? 1}`,
+                )}
                 {brilliants.shown.map(moveRow)}
                 {truncationNote(brilliants)}
               </>
@@ -384,6 +600,13 @@ export default function TrendChart({
               </Typography>
             ) : (
               <>
+                {renderLollipop(
+                  bads.shown,
+                  'down',
+                  (a) => badnessRank(a),
+                  (a) =>
+                    `${t('live:move_number', 'Move')} ${a.move_number} ${a.move ?? ''} · ${sideLabel(a)} · ${tierLabel(a)} · -${badnessRank(a).toFixed(1)} ${t('live:points', 'pts')}`,
+                )}
                 {bads.shown.map(moveRow)}
                 {truncationNote(bads)}
               </>
@@ -401,34 +624,17 @@ export default function TrendChart({
               </Typography>
             ) : (
               <>
-                {histogram.cells.map((cell) => (
-                  <Box key={cell.tier.id} sx={{ mb: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
-                      <Typography variant="caption" sx={{ color: cell.tier.color, fontWeight: 600 }}>
-                        {t(cell.tier.i18nKey, cell.tier.zh)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {cell.black} ({Math.round(cell.blackRate * 100)}%) · {cell.white} (
-                        {Math.round(cell.whiteRate * 100)}%)
-                      </Typography>
-                    </Box>
-                    {(['black', 'white'] as const).map((side) => (
-                      <Box
-                        key={side}
-                        sx={{ height: 6, bgcolor: 'action.hover', borderRadius: 0.5, mb: 0.25, overflow: 'hidden' }}
-                      >
-                        <Box
-                          sx={{
-                            width: `${(side === 'black' ? cell.blackRate : cell.whiteRate) * 100}%`,
-                            height: '100%',
-                            bgcolor: cell.tier.color,
-                            opacity: side === 'black' ? 1 : 0.55,
-                          }}
-                        />
-                      </Box>
-                    ))}
-                  </Box>
-                ))}
+                {histogram.cells.map((cell) =>
+                  pairedBars({
+                    rowKey: cell.tier.id,
+                    label: t(cell.tier.i18nKey, cell.tier.zh),
+                    color: cell.tier.color,
+                    black: cell.black,
+                    white: cell.white,
+                    blackRate: cell.blackRate,
+                    whiteRate: cell.whiteRate,
+                  }),
+                )}
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
                   {t('grade:histogram_footer', '黑 {b} 手 / 白 {w} 手已评级')
                     .replace('{b}', String(histogram.blackTotal))
@@ -436,6 +642,50 @@ export default function TrendChart({
                   {histogram.unrated > 0
                     ? ` · ${t('grade:unrated_count', '{n} 手未评级').replace('{n}', String(histogram.unrated))}`
                     : ''}
+                </Typography>
+              </>
+            )}
+          </Box>
+        )}
+
+        {tab === 4 && (
+          <Box>
+            {/* AI 一致率：实战手与引擎候选表的重合程度。三行**各有各的分母** ——
+                「一选」在报告链路用服务端的 is_top_move、直播链路退回上一手 top_moves[0]；
+                「前三」「完全没考虑」只能靠上一手的候选表算，判不了的手不进分母。 */}
+            {filterBar(false)}
+            {matchRate.blackDecided + matchRate.whiteDecided === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                {t('grade:match_no_data', '本阶段还没有可比对的着手')}
+              </Typography>
+            ) : (
+              <>
+                {matchRate.rows.map((row) =>
+                  pairedBars({
+                    rowKey: row.id,
+                    label: t(row.i18nKey, row.zh),
+                    color: row.color,
+                    black: row.black,
+                    white: row.white,
+                    blackRate: row.blackRate,
+                    whiteRate: row.whiteRate,
+                    blackTotal: row.blackTotal,
+                    whiteTotal: row.whiteTotal,
+                  }),
+                )}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                  {t('grade:match_footer', '分母是能与 AI 比对的手数：黑 {b} 手 / 白 {w} 手')
+                    .replace('{b}', String(matchRate.blackDecided))
+                    .replace('{w}', String(matchRate.whiteDecided))}
+                  {matchRate.undecidable > 0
+                    ? ` · ${t('grade:match_undecidable', '{n} 手无法比对').replace('{n}', String(matchRate.undecidable))}`
+                    : ''}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  {t(
+                    'grade:match_caveat',
+                    '一致率高低取决于局面难度，不能单独当作棋力或作弊的证据。',
+                  )}
                 </Typography>
               </>
             )}

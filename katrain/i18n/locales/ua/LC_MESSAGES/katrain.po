@@ -3331,3 +3331,43 @@ msgid "ladder:engine_unavailable_start"
 msgstr ""
 "Рушій рейтингових партій тимчасово недоступний. Партію не розпочато, ваш "
 "ранг не змінено. Спробуйте пізніше."
+
+msgid "grade:match_rate"
+msgstr "Збіг зі ШІ"
+
+msgid "grade:match_top1"
+msgstr "Зіграно перший вибір ШІ"
+
+msgid "grade:match_top3"
+msgstr "У трійці найкращих ходів ШІ"
+
+msgid "grade:match_offbook"
+msgstr "ШІ не розглядав"
+
+msgid "grade:match_no_data"
+msgstr "У цій стадії немає ходів для порівняння"
+
+msgid "grade:match_footer"
+msgstr "Знаменник — ходи, які можна порівняти зі ШІ: чорні {b} / білі {w}"
+
+msgid "grade:match_undecidable"
+msgstr "{n} ходів неможливо порівняти"
+
+msgid "grade:match_caveat"
+msgstr ""
+"Збіг залежить від складності позицій: сам по собі він не доводить ані силу "
+"гри, ані шахрайство."
+
+msgid "live:human_pick_rate_ranked"
+msgstr "Вибір {rank}"
+
+msgid "live:human_pick_rate"
+msgstr "Вибір людей"
+
+msgid "live:human_pick_rate_hint_ranked"
+msgstr ""
+"Скільки зі 100 гравців рівня {rank} зіграли б сюди: скільки грають, а не чи "
+"варто грати."
+
+msgid "live:human_pick_rate_hint"
+msgstr "Частка людей, які грають у цю точку, незалежно від рейтингу ШІ."

@@ -3287,3 +3287,44 @@ msgid "ladder:engine_unavailable_start"
 msgstr ""
 "The ranked engine is temporarily unavailable. No game was started, and your "
 "rank is unaffected. Please try again later."
+
+msgid "grade:match_rate"
+msgstr "AI Match Rate"
+
+msgid "grade:match_top1"
+msgstr "Played the AI's top choice"
+
+msgid "grade:match_top3"
+msgstr "Within the AI's top 3"
+
+msgid "grade:match_offbook"
+msgstr "Not considered by the AI"
+
+msgid "grade:match_no_data"
+msgstr "No moves to compare in this phase"
+
+msgid "grade:match_footer"
+msgstr "Denominator is moves comparable with the AI: Black {b} / White {w}"
+
+msgid "grade:match_undecidable"
+msgstr "{n} moves cannot be compared"
+
+msgid "grade:match_caveat"
+msgstr ""
+"Match rate depends on how difficult the positions were - on its own it is "
+"not evidence of strength or of cheating."
+
+msgid "live:human_pick_rate_ranked"
+msgstr "{rank} picks"
+
+msgid "live:human_pick_rate"
+msgstr "Human picks"
+
+msgid "live:human_pick_rate_hint_ranked"
+msgstr ""
+"Roughly how many out of 100 {rank} players would play here. This is how many"
+" DO play it, not whether they SHOULD."
+
+msgid "live:human_pick_rate_hint"
+msgstr ""
+"Share of human players who play this point, independent of the AI's ranking."

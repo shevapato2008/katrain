@@ -66,6 +66,12 @@ export interface TopMove {
   prior: number;
   pv: string[];
   psv: number;  // playSelectionValue - KataGo's composite ranking metric
+  // 人类倾向：某一档人类棋手会下这一点的概率（KataGo human SL 模型的 humanPrior）。
+  // 与上面的 prior **是两张网**：prior 是 KataGo 自己的 policy 先验。
+  // 成对出现，缺一个就都当没有 —— 一个概率不说清是哪一档人给的就没有意义。
+  // 旧报告、直播链路、引擎没开人类模型时都是 null，界面必须显示成「—」而不是 0。
+  human_prior?: number | null;
+  human_profile?: string | null;
 }
 
 export interface MoveAnalysis {

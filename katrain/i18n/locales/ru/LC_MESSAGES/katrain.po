@@ -3250,3 +3250,43 @@ msgid "ladder:engine_unavailable_start"
 msgstr ""
 "Движок рейтинговых партий временно недоступен. Партия не начата, ваш ранг не"
 " изменён. Пожалуйста, попробуйте позже."
+
+msgid "grade:match_rate"
+msgstr "Совпадение с ИИ"
+
+msgid "grade:match_top1"
+msgstr "Сыграл первый выбор ИИ"
+
+msgid "grade:match_top3"
+msgstr "В тройке лучших ходов ИИ"
+
+msgid "grade:match_offbook"
+msgstr "ИИ не рассматривал"
+
+msgid "grade:match_no_data"
+msgstr "В этой стадии нет ходов для сравнения"
+
+msgid "grade:match_footer"
+msgstr "Знаменатель — ходы, сравнимые с ИИ: чёрные {b} / белые {w}"
+
+msgid "grade:match_undecidable"
+msgstr "{n} ходов невозможно сравнить"
+
+msgid "grade:match_caveat"
+msgstr ""
+"Совпадение зависит от сложности позиций: само по себе оно не доказывает ни "
+"силу игры, ни жульничество."
+
+msgid "live:human_pick_rate_ranked"
+msgstr "Выбор {rank}"
+
+msgid "live:human_pick_rate"
+msgstr "Выбор людей"
+
+msgid "live:human_pick_rate_hint_ranked"
+msgstr ""
+"Сколько из 100 игроков уровня {rank} сыграли бы сюда: сколько играют, а не "
+"следует ли играть."
+
+msgid "live:human_pick_rate_hint"
+msgstr "Доля людей, играющих в эту точку, независимо от рейтинга ИИ."

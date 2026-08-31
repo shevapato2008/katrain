@@ -19,7 +19,14 @@ function coordsToGtp(coords: [number, number]): string {
   return `${GTP_LETTERS[x]}${y + 1}`;
 }
 
-// Shared column layout for AI recommendation tables — must match AiAnalysis in live module
+// 研究页的 AI 推荐表：**四列**，比 live/报告那张少一列「人类倾向」。
+//
+// 这不是漏改。人类倾向来自 KataGo human SL 的 humanPrior，而研究页走的是实时
+// quickAnalyze，那条路没有发 humanSLProfile，所以根本没有这个数；补一列空的只会
+// 让用户以为「这局面没人会下」。要对齐得先让研究页那条查询也带上 profile。
+//
+// 原来这里写的是「must match AiAnalysis in live module」—— 那句话在加了第五列之后
+// 就过期了，照着它把宽度改成五份会让这张表的四个单元格错位。
 const AI_TABLE_COLUMNS = '1fr 1fr 1fr 1fr';
 
 interface AnalysisMove {

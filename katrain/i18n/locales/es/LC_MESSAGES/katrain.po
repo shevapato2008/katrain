@@ -3162,3 +3162,47 @@ msgstr ""
 "El motor de partidas clasificatorias no está disponible temporalmente. No se"
 " ha iniciado ninguna partida y tu rango no se ve afectado. Inténtalo de "
 "nuevo más tarde."
+
+msgid "grade:match_rate"
+msgstr "Coincidencia con la IA"
+
+msgid "grade:match_top1"
+msgstr "Jugó la primera opción de la IA"
+
+msgid "grade:match_top3"
+msgstr "Entre las 3 primeras de la IA"
+
+msgid "grade:match_offbook"
+msgstr "No considerada por la IA"
+
+msgid "grade:match_no_data"
+msgstr "No hay jugadas comparables en esta fase"
+
+msgid "grade:match_footer"
+msgstr ""
+"El denominador son las jugadas comparables con la IA: negras {b} / blancas "
+"{w}"
+
+msgid "grade:match_undecidable"
+msgstr "{n} jugadas no comparables"
+
+msgid "grade:match_caveat"
+msgstr ""
+"La coincidencia depende de la dificultad de las posiciones: por sí sola no "
+"es prueba de nivel ni de trampas."
+
+msgid "live:human_pick_rate_ranked"
+msgstr "Elección {rank}"
+
+msgid "live:human_pick_rate"
+msgstr "Elección humana"
+
+msgid "live:human_pick_rate_hint_ranked"
+msgstr ""
+"Cuántos de cada 100 jugadores de {rank} jugarían aquí: cuántos lo hacen, no "
+"si deberían."
+
+msgid "live:human_pick_rate_hint"
+msgstr ""
+"Proporción de jugadores humanos que juegan este punto, al margen del orden "
+"de la IA."

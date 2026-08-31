@@ -3182,3 +3182,39 @@ msgstr "{n}수 미평가"
 msgid "ladder:engine_unavailable_start"
 msgstr ""
 "승강 엔진을 일시적으로 사용할 수 없습니다. 대국은 시작되지 않았으며 단급에도 영향이 없습니다. 잠시 후 다시 시도해 주세요."
+
+msgid "grade:match_rate"
+msgstr "AI 일치율"
+
+msgid "grade:match_top1"
+msgstr "AI 1순위와 일치"
+
+msgid "grade:match_top3"
+msgstr "AI 상위 3순위 이내"
+
+msgid "grade:match_offbook"
+msgstr "AI가 고려하지 않음"
+
+msgid "grade:match_no_data"
+msgstr "이 구간에 비교할 수 있는 수가 없습니다"
+
+msgid "grade:match_footer"
+msgstr "분모는 AI와 비교 가능한 수: 흑 {b} 수 / 백 {w} 수"
+
+msgid "grade:match_undecidable"
+msgstr "{n} 수는 비교할 수 없습니다"
+
+msgid "grade:match_caveat"
+msgstr "일치율은 국면의 난이도에 좌우됩니다. 그것만으로 기력이나 부정행위의 증거가 되지 않습니다."
+
+msgid "live:human_pick_rate_ranked"
+msgstr "{rank} 선택률"
+
+msgid "live:human_pick_rate"
+msgstr "사람 선택률"
+
+msgid "live:human_pick_rate_hint_ranked"
+msgstr "{rank} 기사 100명 중 몇 명이 이 곳에 두는지. 「몇 명이 두는가」이지 「두어야 하는가」가 아닙니다."
+
+msgid "live:human_pick_rate_hint"
+msgstr "사람 기사가 이 곳에 두는 비율입니다. AI 추천 순위와는 별개입니다."

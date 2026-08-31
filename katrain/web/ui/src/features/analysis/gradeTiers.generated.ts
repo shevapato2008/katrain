@@ -25,8 +25,8 @@ export const GRADE_TIERS: readonly GradeTier[] = [
   { id: "brilliant", i18nKey: "grade:brilliant", zh: "妙手", color: "#3FA2E8", bad: false },
   { id: "best", i18nKey: "grade:best", zh: "最佳", color: "#2E8B57", bad: false },
   { id: "very_good", i18nKey: "grade:very_good", zh: "很好", color: "#4DBE46", bad: false },
-  { id: "playable", i18nKey: "grade:playable", zh: "可下", color: "#A4B436", bad: false },
-  { id: "inaccuracy", i18nKey: "grade:inaccuracy", zh: "欠佳", color: "#D6A318", bad: true },
+  { id: "playable", i18nKey: "grade:playable", zh: "尚可", color: "#A4B436", bad: false },
+  { id: "inaccuracy", i18nKey: "grade:inaccuracy", zh: "小亏", color: "#D6A318", bad: true },
   { id: "mistake", i18nKey: "grade:mistake", zh: "失误", color: "#CF6B09", bad: true },
   { id: "blunder", i18nKey: "grade:blunder", zh: "恶手", color: "#BB2121", bad: true },
 ] as const;

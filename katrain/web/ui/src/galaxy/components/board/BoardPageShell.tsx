@@ -1,6 +1,7 @@
 /* spec-sync: 3.2 rev=2026-08-22 sha=f861d7e1 —— 见 check_spec_sync.py；规范 §3.2 一改这里就红。 */
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Box } from '@mui/material';
+import { RAIL_GUTTER, RAIL_TIERS, railWidth } from '../../../components/railStyles';
 
 interface BoardPageShellProps {
   board: ReactNode;
@@ -51,62 +52,47 @@ const BoardPageShell = ({
         flexDirection: 'column',
         boxSizing: 'border-box',
         pb: 'calc(64px + env(safe-area-inset-bottom))',
-        // 右栏四档宽（spec §2.3）。2026-08-30 从三档 320/340/380 加宽而来：
-        // 棋盘是**正方形**，所以在宽屏上它由**高度**封顶，棋盘列多出来的横向空间
-        // 全是死白边。实测（`/galaxy/live` 真浏览器，见 spec §3.3 的表）：2000×1050 上
-        // 棋盘 986，棋盘列却有 1380 —— 382px 白边；2560×1440 上 552px。
-        //
-        // 每一档的取值判据是**加宽之后棋盘边长不变**（新栏宽仍落在那一档最矮的常见
-        // 分辨率的白边之内），只有三处例外（1200×800 / 1280×800 各 −20，1536×960 −32），
-        // 那三处棋盘本来就是宽度受限的、白边为零，任何加宽都要棋盘出。
-        // 900–1199 因此**不动**：1024×768 上棋盘列 704 已经窄于可用高度 716。
-        //
-        // 顶档止于 520，卡住它的是**图表**不是棋盘。2560×1440 上棋盘另有一个上限
-        // （`components/Board.tsx:118` 的 `Math.min(1200, …)`），所以那一档右栏再加宽
-        // 一个像素都不花棋盘的 —— 换句话说「棋盘优先」在那一档根本不构成约束。
-        // 真正的约束是三个矢量图表的 viewBox 写死 420 宽、`xMidYMid meet`：栏宽超过 420
-        // 之后图不再变大，多出来的宽度全变成图表框内部的死区。520 时那块死区还能忍，
-        // 620 就明显了。**要先把图表改成按容器实测宽度驱动（spec §2.5「已知未解」），
-        // 再谈抬高顶档**。2560 下现在仍有约 410px 死白边，记账。
+        /* 右栏宽度：**档位下限 + 实测天花板**，取两者的大者（spec §2.3）。
+         *
+         * 棋盘是正方形，在宽屏上由**可用高度**封顶，所以「还能给右栏多少」是
+         * 「壳宽 − 棋盘需要的宽」。2026-09-01 在真浏览器里对 12 档二分搜过
+         * 「棋盘开始变小的那个栏宽」，反推出的关系式对 ≥1536 逐档精确：
+         *
+         *     天花板 = 壳宽 − 20 − min(1200, 视高 − 72)
+         *
+         * （20 是棋盘台的内边距，1200 是 `components/Board.tsx:118` 的棋盘边长上限，
+         *   72 是棋盘台上下的固定占用。）
+         *
+         * 实测对照（左=旧档位，右=本式）：
+         *     1440x900   360 → 376     1920x1080  620 → 652
+         *     1536x900   420 → 448     2000x1050  620 → 762   ← Fan 的屏
+         *     1680x1050  420 → 442     2560x1440  620 → 900
+         *     1920x1200  520 → 532     2560x1600  520 → 900
+         *     1280x800   360 → 360     1920x1440  520 → 520   ← 这两档式子比档位小，由下限兜住
+         *
+         * **下限必须留着**：1280x800 和 1920x1440 上式子算出来比现档窄（棋盘另有
+         * 一个上限，式子按 1200 估过头了），没有下限就会**变窄**。clamp 的第一参数
+         * 就是原来那一档的定值，所以任何一档都只可能变宽、不可能变窄，
+         * 棋盘边长在 12 档全部逐像素不变（实测）。
+         *
+         * 上限 900 是**可读性**上限不是几何上限：3440x1440 上式子给到 1980，
+         * 那么宽的一栏没人想读。Fan 2026-09-01 拍板保留 900。
+         *
+         * 这一条同时取代了原来那个 `min-aspect-ratio: 16/9` 分支 —— 宽高比只是
+         * 「壳宽 vs 视高」的一个粗代理，式子直接把两个量都用上了，不需要代理。 */
         '@media (min-width:900px)': {
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 320px',
+          gridTemplateColumns: `minmax(0, 1fr) ${railWidth(RAIL_TIERS[0][1])}`,
           gridTemplateRows: 'minmax(0, 1fr)',
           overflow: 'hidden',
           pb: 0,
         },
-        '@media (min-width:1200px)': {
-          gridTemplateColumns: 'minmax(0, 1fr) 360px',
-        },
-        '@media (min-width:1536px)': {
-          gridTemplateColumns: 'minmax(0, 1fr) 420px',
-        },
-        '@media (min-width:1920px)': {
-          gridTemplateColumns: 'minmax(0, 1fr) 520px',
-        },
-        /* 顶档在**宽扁屏**上再加一档到 620。
-         *
-         * 2026-09-01 Fan 提出右栏还是太窄（他的截图约 2000px 宽）。规范 §2.3 记着
-         * 2026-08-30 试过 620 但「栏内散架」——那次的三个前置现在都拆掉了
-         * （开关分列规则、图表按容器宽度驱动、工具键横排），所以可以谈加宽了。
-         *
-         * **但按视口宽度分档在这里是错的。** 逐视口实测「棋盘开始变小的那个栏宽」：
-         *
-         *     1920x1080  天花板 652   （死白边 132）
-         *     1920x1200  天花板 532   （死白边  12）
-         *     1920x1440  天花板 520   （死白边   0）← 同样是 1920 宽，一寸都不能加
-         *     2560x1440  天花板 932   （死白边 412）
-         *     3440x1440  天花板 1812
-         *
-         * 棋盘是正方形、在宽屏上由**高度**封顶，所以死白边由**宽高比**决定而不是宽度。
-         * 于是这一档挂在 `min-aspect-ratio: 16/9` 上：16:9 及更扁的屏才加宽，
-         * 1920x1200 / 1920x1440 这类高屏留在 520。代数上界 `7W/16 - 188`，
-         * W=1920 时是 652，与实测吻合；620 因此留了 32px 余量。
-         *
-         * 这条必须排在上面那条 min-width:1920 之后：两条都命中时后写的赢。 */
-        '@media (min-width:1920px) and (min-aspect-ratio: 16/9)': {
-          gridTemplateColumns: 'minmax(0, 1fr) 620px',
-        },
+        /* 其余三档由 `RAIL_TIERS` 摊开 —— 档数和下限只有那一处，
+           断言也就只需要盯那一处（jsdom 看不见 clamp 的值，见 BoardPageShell.test.tsx）。 */
+        ...Object.fromEntries(RAIL_TIERS.slice(1).map(([bp, floor]) => [
+          `@media (min-width:${bp}px)`,
+          { gridTemplateColumns: `minmax(0, 1fr) ${railWidth(floor)}` },
+        ])),
       }}
     >
       <Box
@@ -170,7 +156,11 @@ const BoardPageShell = ({
           },
         }}
       >
-        <Box data-testid="board-rail-module" sx={{ flex: 'none' }}>
+        {/* 三段共用同一个水槽。2026-09-01 之前模块牌和动作区**一点横向内距都没有**
+            （标题左内距实测 0px，而下面的卡片在 12px），页面各自在 railBody 里
+            写自己的 `p: 1.5` / `p: 2`，一栏里同时存在 0 / 12 / 16 / 25 四个值。
+            水槽收到这里之后，各页只留纵向内距。 */}
+        <Box data-testid="board-rail-module" sx={{ flex: 'none', px: RAIL_GUTTER }}>
           {modulePlate}
         </Box>
         <Box
@@ -180,6 +170,7 @@ const BoardPageShell = ({
             flexDirection: 'column',
             flex: 'none',
             overflow: 'visible',
+            px: RAIL_GUTTER,
             '@media (min-width:900px)': {
               flex: 1,
               minHeight: 0,
@@ -192,7 +183,7 @@ const BoardPageShell = ({
           {railBody}
           {displayControls}
         </Box>
-        <Box data-testid="board-rail-actions" sx={{ flex: 'none' }}>
+        <Box data-testid="board-rail-actions" sx={{ flex: 'none', px: RAIL_GUTTER }}>
           {actions}
         </Box>
       </Box>

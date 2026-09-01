@@ -599,7 +599,7 @@ const ResearchPage = () => {
                                 totalMoves={totalMoves}
                                 onMoveChange={handleL2MoveChange}
                             />
-                            <Box sx={{ px: 2, pb: 1.5 }}>
+                            <Box sx={{ pb: 1.5 }}>
                                 <Button
                                     fullWidth
                                     size="small"
@@ -654,7 +654,7 @@ const ResearchPage = () => {
                         />
                     )}
                     railBody={(
-                        <Box sx={{ p: 2 }}>
+                        <Box sx={{ py: 2 }}>
                             {progressError && (
                                 <Alert
                                     severity="error"
@@ -705,7 +705,7 @@ const ResearchPage = () => {
                         </Box>
                     )}
                     actions={(
-                        <Box sx={{ p: 2 }}>
+                        <Box sx={{ py: 2 }}>
                             <Button
                                 fullWidth
                                 size="small"

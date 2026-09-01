@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { RAIL_CEILING, RAIL_MAX, RAIL_TIERS, railWidth } from '../../../components/railStyles';
 import BoardPageShell from './BoardPageShell';
 
 type ResizeCallback = ConstructorParameters<typeof ResizeObserver>[0];
@@ -73,17 +74,32 @@ describe('BoardPageShell', () => {
     const css = cssText();
 
     expect(css).toContain('@media (min-width:900px)');
-    expect(css).toMatch(/min-width:900px[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 320px/);
-    expect(css).toMatch(/min-width:1200px[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 360px/);
-    expect(css).toMatch(/min-width:1536px[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 420px/);
-    expect(css).toMatch(/min-width:1920px[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\) 520px/);
 
-    /* 钉「一共就这四档」。逐条 toMatch 对**多出来的档**是免疫的：谁再补一条
-       `min-width:2560px` 它们全绿。所以这里把右栏那几条规则整个抽出来比集合。
-       变异验证：加一条 2400 档 → 断点集合多出 2400，红；把 520 改成 620 → 宽度集合变，红。 */
-    const railTiers = [...css.matchAll(/min-width:\s*(\d+)px\s*\)?\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s*(\d+)px/g)]
-      .map(([, bp, w]) => [Number(bp), Number(w)] as const);
-    expect(railTiers).toEqual([[900, 320], [1200, 360], [1536, 420], [1920, 520]]);
+    /* 2026-09-01：这里原来断言 emotion 吐出来的 `grid-template-columns: … 320px` 逐档字面量。
+       栏宽改成 `clamp(下限, calc(100% - 20px - min(1200px, 100vh - 72px)), 900px)` 之后，
+       **jsdom 的 CSS 解析器把整条声明丢掉了** —— 上面那几个 media 块在 jsdom 里是空的。
+       于是这条断言从「量宽度」退化成「量 jsdom 支不支持 clamp」，两个方向都不可信：
+       规则被整条删掉，和 jsdom 解析不了，在它眼里长得一模一样。
+
+       按仓库口径（jsdom 没有布局引擎，对布局事实无权作证），几何这一半整个搬走了：
+       `superpowers/tracks/galaxy-ui-redesign/audit_rail_width.mjs` 在真浏览器里
+       8 页 × 13 档断言两条不变式（① 不许比旧档位窄 ② 棋盘边长不许变），
+       另有 `audit_rail_gutter.mjs` 断言左右内边距。
+
+       留在这里的是 jsdom **有权作证**的那一半 —— 源码事实，不是布局结论：
+       档位表只有一份、就四档，且宽度式子确实由下限和天花板夹出来。
+       变异验证：给 RAIL_TIERS 加一条 [2400, 620] → 第一条红；
+       把 RAIL_CEILING 里的 `100%` 改成 `100vw` → 第三条红。 */
+    expect(RAIL_TIERS).toEqual([[900, 320], [1200, 360], [1536, 420], [1920, 520]]);
+    /* 比**去重后的断点集合**：整张样式表里棋盘台和右栏也各有一条 900 的规则，
+       逐条比会把它们算进来。去重之后集合仍然对「多加一档」敏感 —— 新档必然带来新断点。 */
+    const breakpoints = [...new Set([...css.matchAll(/@media \(min-width:(\d+)px\)/g)]
+      .map(([, bp]) => Number(bp)))].sort((a, b) => a - b);
+    expect(breakpoints).toEqual(RAIL_TIERS.map(([bp]) => bp));
+    for (const [, floor] of RAIL_TIERS) {
+      expect(railWidth(floor)).toBe(`clamp(${floor}px, ${RAIL_CEILING}, ${RAIL_MAX}px)`);
+    }
+    expect(RAIL_CEILING).toContain('100%');
     expect(screen.getByTestId('board-stage')).toHaveStyle({
       display: 'grid',
       placeItems: 'center',

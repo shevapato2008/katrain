@@ -157,14 +157,14 @@ export default function LivePage() {
       )}
       railBody={(
         <>
-          <Box sx={{ px: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs value={rightTab} onChange={(_, v) => setRightTab(v)}>
               <Tab label={t('live:top_matches')} />
               <Tab label={t('live:upcoming')} />
             </Tabs>
           </Box>
 
-          <Box sx={{ p: 1.5 }}>
+          <Box sx={{ py: 1.5 }}>
             {rightTab === 0 ? (
               <>
                 {liveCount > 0 && (
@@ -211,7 +211,7 @@ export default function LivePage() {
               isLive={selectedMatch.status === 'live'}
             />
           )}
-          <Box sx={{ p: 2, pt: matchReady ? 1 : 2 }}>
+          <Box sx={{ py: 2, pt: matchReady ? 1 : 2 }}>
             {/* 迁移前这个按钮在「赛事预告」页签下**整个不渲染**。它作用于选中的那局、
                 与页签无关，所以改成常驻：没有可进入的对局时禁用。 */}
             <Button

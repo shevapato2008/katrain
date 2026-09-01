@@ -420,7 +420,7 @@ export default function ResearchAnalysisPanel({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         {/* Player Info + Winrate Bar */}
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ py: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

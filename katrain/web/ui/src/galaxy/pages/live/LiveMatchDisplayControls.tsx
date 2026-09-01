@@ -59,7 +59,7 @@ export default function LiveMatchDisplayControls({
   const coordinatesLabel = t('Coordinates', 'Coordinates');
 
   return (
-    <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
+    <Box sx={{ py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
       <Box
         data-testid="live-match-display-controls-grid"
         sx={toolGridSx}

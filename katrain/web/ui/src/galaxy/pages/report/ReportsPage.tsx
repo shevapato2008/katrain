@@ -367,14 +367,14 @@ export default function ReportsPage() {
             />
           )}
           railBody={(
-            <Box sx={{ p: 2 }}>
+            <Box sx={{ py: 2 }}>
               <Alert severity="info">
                 {t('report:login_required', 'Please log in to view and generate game reviews.')}
               </Alert>
             </Box>
           )}
           actions={(
-            <Box sx={{ p: 2 }}>
+            <Box sx={{ py: 2 }}>
               {/* 稿子的未登录支给了这个按钮。左栏底部也有一个登录按钮，但那是全站的，
                   而「请先登录」这句话就写在这一屏上、旁边却没有可按的东西 ——
                   代价只是本页再挂一份 `LoginModal`（对话框状态，两份不会同时开）。 */}
@@ -440,7 +440,7 @@ export default function ReportsPage() {
         )}
         railBody={(
           <>
-            <Box sx={{ p: 2, pb: 1.5 }}>
+            <Box sx={{ pt: 2, pb: 1.5 }}>
               {/* 这句提示原来在页头第二行、S8 那轮下沉到正文首行，现在跟着列表进右栏。
                   措辞去掉了方位词：原文是「选择**右侧**棋局预览棋盘」，稿子改成
                   「选一局在**左边**预览棋盘」—— 两个在 <900px 堆叠档下都是假的
@@ -522,12 +522,12 @@ export default function ReportsPage() {
             </Box>
 
             {gamesError && (
-              <Box sx={{ px: 2, pb: 1.5 }}>
+              <Box sx={{ pb: 1.5 }}>
                 <Alert severity="error">{gamesError}</Alert>
               </Box>
             )}
 
-            <Box data-testid="reports-list" sx={{ px: 1.5, pb: 1 }}>
+            <Box data-testid="reports-list" sx={{ pb: 1 }}>
               {gamesLoading ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6 }}>
                   <CircularProgress size={28} />

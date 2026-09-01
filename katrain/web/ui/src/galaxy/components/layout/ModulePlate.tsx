@@ -9,6 +9,7 @@
 import type { ReactNode } from 'react';
 import { Box, IconButton, Typography } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { railTitleSx } from '../../../components/railStyles';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useGameNavigation } from '../../context/GameNavigationContext';
 
@@ -88,9 +89,12 @@ const ModulePlate = ({ title, subtitle, status, backTo, showBack = true, backLab
           component="h1"
           variant={isPage ? 'h4' : 'h6'}
           noWrap={!isPage}
+          /* 右栏那一档的字号跟着**栏宽**走（`railTitleSx`，容器查询），不跟着视口走：
+             同一个视口下右栏可宽可窄（侧边栏能折叠），跟视口会错。
+             内容页那一档是整幅宽度，仍按设计稿的固定值。 */
           sx={isPage
             ? { fontWeight: 800, letterSpacing: '-0.02em', textWrap: 'balance', fontSize: { xs: '1.5rem', sm: '2.125rem' } }
-            : undefined}
+            : railTitleSx}
         >
           {title}
         </Typography>

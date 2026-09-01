@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from 'react';
 import { ButtonBase, Tooltip, keyframes } from '@mui/material';
+import { railControlSx } from '../../../components/railStyles';
 
 const blink = keyframes`
   0%, 100% { opacity: 1; }
@@ -89,7 +90,7 @@ const ToolGridButton = ({
           justifyContent: 'center',
           gap: '9px',
           padding: '0 10px',
-          fontSize: '0.8125rem',
+          ...railControlSx,
           lineHeight: 1.2,
           borderRadius: '8px',
           border: '1px solid',

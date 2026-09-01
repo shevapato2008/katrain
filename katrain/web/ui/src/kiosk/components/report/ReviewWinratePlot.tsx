@@ -170,8 +170,18 @@ export function ReviewWinratePlot({
             </>
           )}
           {leadPath && <polyline className="lead" data-testid="review-lead-curve" points={leadPath} />}
-          <circle className="now" cx={x(last)} cy={y(last)} r="5" />
         </svg>
+        {/* 当前手那颗点**不画在 svg 里**。svg 是 `preserveAspectRatio="none"`(曲线要拉满盒子),
+            而 `<circle>` 会跟着一起被拉 —— 560×96 的画布铺进 436×153 的盒子,圆就成了竖椭圆。
+            2026-09-02 之前它已经是横向压扁的(436/560),`.evalpad` 让盒子长高之后更明显。
+            改成按百分比定位的 DOM 圆点:x / y 仍旧由同一对 `x()` / `y()` 算,只是换成比例,
+            **在任何盒子尺寸下都是正圆**。(棒棒糖图那次踩的是同一个坑,那边的修法是对齐 viewBox;
+            这里对不齐 —— 曲线本来就要被拉。) */}
+        <span
+          className="wrnow"
+          data-testid="review-winrate-now"
+          style={{ left: `${((x(last) / W) * 100).toFixed(2)}%`, top: `${((y(last) / H) * 100).toFixed(2)}%` }}
+        />
       </div>
       {leadPts && (
         <div className="wrlead" data-testid="review-lead-axis">

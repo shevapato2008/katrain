@@ -105,6 +105,14 @@ test('四图:复盘 · 报告 ←→ sample-go/shots/20-report.png', async ({ pa
   // 曲线搬进了「着手评价」折叠块的「走势」tab,默认收着 —— 再等
   // `review-winrate-plot` 会等到超时,而超时会把「版式变了」伪装成「页面坏了」。
   await page.waitForSelector('[data-testid="ai-recommend-row"]');
+  // 稿子那一帧画的是**着手评价展开、走势 tab**,所以取图前先点开它 ——
+  // AI 推荐那张表和屏 21 是同一个组件,在这儿再拍一遍什么都没多说;
+  // 五个 tab 才是这一屏新增的全部内容。左右两半必须停在同一态上。
+  await page.click('[data-testid="report-detail-grade"] .kiosk-fold__head');
+  await page.waitForSelector('[data-testid="review-winrate-plot"][data-state="plotted"]');
+  // 点完要**失焦**:焦点环是取图这个动作留下的痕迹,不是这一屏的默认长相,
+  // 留着它差异图上会多出一圈蓝框,而那圈框在真机上根本不存在。
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   // canvas 是图片加载完之后才画的 —— 早一步取到的是一张空白盘。
   await page.waitForFunction(() => {
     const c = document.querySelector('.kiosk-board__play canvas') as HTMLCanvasElement | null;
@@ -121,22 +129,20 @@ test('四图:复盘 · 报告 ←→ sample-go/shots/20-report.png', async ({ pa
     outDir: OUT,
     slug: '20-report',
     referenceCaption:
-      '⚠️ 参考图是**改版前**的 sample-go/shots/20-report.png —— 屏 20 于 2026-09-02 按 Fan 的裁定'
-      + '重做(AI 推荐表 + galaxy 那五个分析 tab + 单开手风琴),而 smartbox-software 的 '
-      + 'go-kiosk.tmpl.html 与这 27 张参照图**尚未跟着重出**。'
-      + '⇒ 这一轮的左右两半说的不是同一个版式,四图只能当「改了哪些地方」看,不能当验收。'
-      + '重出参照图要动另一个仓,等 Fan 定。',
+      'sample-go/shots/20-report.png(2026-09-02 随本次改版重出)。右栏是**单开手风琴**:'
+      + '收着的「AI 推荐」头上仍写着结论(黑 25.0%),展开的是「着手评价 · 七档」的**走势** tab。'
+      + '两块都展开要 380 而只有 300 —— 「都展开」在这一屏上不是默认值问题、是装不下;'
+      + '共享闸 screen-gate.mjs 为此开了 accordions 这个口,核的是「至少开一块」(变异验过)。',
     implementationCaption:
-      '实现(2026-09-02 改版后):/kiosk/report/:taskId @1024×600 · 时钟冻 16:40 · '
-      + '右栏两块折叠**同一时刻只开一块**,默认开「AI 推荐」(着点/推荐度/领先/胜率,列名与 galaxy 同一组 msgid)· '
-      + '「着手评价」里是 galaxy 那五个 tab(走势/妙手/失误/发挥水准/AI吻合度)+ 阶段筛选 · '
-      + '显示开关改成 试下/领地/手数/支招,顺序与图标逐个对上 galaxy · '
-      + '**盘那一圈坐标关掉、边距从 1.5 收回 0.5 且不取整** —— 线的节距要逐像素等于刻度带的轨道宽,'
-      + '这次修的是 `LiveBoard`(做题屏那块 canvas 上修过一次);闸量出来原本偏 11.9px · '
-      + '题头第二行写「每手算 2000 次 · 187 手」而不是稿子的「用了 6 分 12 秒」:**接口不吐时间戳**,编一个就是假数据 · '
-      + '盘上有手数和地色:实现跟着「领地 / 手数」两个开关走,稿子那块盘是静态图、不跟自己的开关走 · '
-      + '重点手三行是真算的(按走子方自己视角的胜率跌幅排),稿子那三行是示意值 · '
-      + '曲线可点(点哪儿跳哪一手)并画了一条竖游标 —— 稿子没有滑块,这条补的是滑块的功能',
+      '实现 /kiosk/report/:taskId @1024×600 · 时钟冻 16:40 · 取图前点开了「着手评价」并失焦。'
+      + '五个 tab 走势/妙手/失误/发挥水准/AI吻合度,名字与顺序逐个对上 galaxy 的 TrendChart;'
+      + '走势图两条曲线:绿读左轴(胜率,上黑下白)、橙读右轴(目差 ±12),0 目与 50% 都落在正中虚线上;'
+      + '显示开关 试下/领地/手数/支招 的顺序与图标逐个对上 galaxy(这一排推翻了「开关不带图标」那条老规矩,理由记在 go-screens.css)。'
+      + ' ⚠️ 四处已知差,都不是版式的:'
+      + '① 页控条 稿子「自由对弈 · KataGo 6 级 / 你执黑负」,实现「vs KataGo · 6 级 / 你(黑)中盘负」—— 两处措辞早就不一样,不是这次改的;'
+      + '② 状态区 稿子「深度复盘」实现「深度报告」—— 设备上 PO 赢,这一对登记在 PO_OVERRIDES_DEFAULT_BASELINE 里;'
+      + '③「领地」是灰的:这份 fixture 的逐手行没有 ownership,而按钮 disabled={!ownership};真报告有这份数据,稿子画的是有的那一态;'
+      + '④ 盘上有手数、曲线读数是 17 手 fixture 真算的 —— 稿子那块盘是静态图不跟自己的开关走,那条曲线是照 187 手的故事画的示意线。',
   });
   console.log(`[fourup 20-report] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

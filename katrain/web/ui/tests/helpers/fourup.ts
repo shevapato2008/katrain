@@ -117,8 +117,28 @@ export async function captureFourUp(o: FourUpOptions): Promise<FourUpResult> {
     const refEdges = edges(refCtx);
     const implEdges = edges(implCtx);
 
-    const band = 34;
     const gap = 20;
+    const LINE = 17;
+    const PAD = 6;
+    // 说明**要折行**。原来是一句 `fillText`,而 canvas 的 fillText 既不折也不裁 ——
+    // 两段各七八百字直接越过中缝压在对面那段上,最后谁都读不出来。
+    // 2026-09-02 实测:屏 20 那两段在旧写法下完全糊成一片。
+    const measure = document.createElement('canvas').getContext('2d')!;
+    measure.font = '600 14px system-ui, sans-serif';
+    const wrap = (text: string) => {
+      const out: string[] = [];
+      let line = '';
+      for (const ch of text) {
+        if (measure.measureText(line + ch).width > W - PAD * 2) { out.push(line); line = ch; }
+        else line += ch;
+      }
+      if (line) out.push(line);
+      return out;
+    };
+    const refLines = wrap(refCap);
+    const implLines = wrap(implCap);
+    const band = PAD * 2 + LINE * Math.max(refLines.length, implLines.length);
+
     const side = document.createElement('canvas');
     side.width = W * 2 + gap;
     side.height = H + band;
@@ -131,8 +151,8 @@ export async function captureFourUp(o: FourUpOptions): Promise<FourUpResult> {
     sideCtx.font = '600 14px system-ui, sans-serif';
     // ⚠️ 说明必须写在**图里**,不是写在旁边的文档里:图一旦离开它的说明,
     // 「界面对不对」和「稿子上那段旁注为什么没有」就混成一件事了。
-    sideCtx.fillText(refCap, 4, 21);
-    sideCtx.fillText(implCap, W + gap + 4, 21);
+    refLines.forEach((l, i) => sideCtx.fillText(l, PAD, PAD + LINE * (i + 1) - 4));
+    implLines.forEach((l, i) => sideCtx.fillText(l, W + gap + PAD, PAD + LINE * (i + 1) - 4));
 
     const diff = document.createElement('canvas');
     diff.width = W;

@@ -3282,3 +3282,6 @@ msgstr ""
 msgid "grade:match_longest_run"
 msgstr ""
 "{side}: jugadas {from}-{to}, {n} seguidas coincidieron con la primera opción"
+
+msgid "live:loading_match"
+msgstr "Cargando la partida…"

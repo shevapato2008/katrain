@@ -3443,3 +3443,6 @@ msgstr ""
 
 msgid "grade:match_longest_run"
 msgstr "{side}: ходи {from}–{to}, {n} поспіль збіглися з найкращим"
+
+msgid "live:loading_match"
+msgstr "Завантаження партії…"

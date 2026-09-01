@@ -3362,3 +3362,6 @@ msgstr ""
 
 msgid "grade:match_longest_run"
 msgstr "{side}: ходы {from}–{to}, {n} подряд совпали с лучшим"
+
+msgid "live:loading_match"
+msgstr "Загрузка партии…"

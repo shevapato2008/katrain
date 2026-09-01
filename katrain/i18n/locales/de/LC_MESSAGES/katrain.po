@@ -3447,3 +3447,6 @@ msgstr ""
 
 msgid "grade:match_longest_run"
 msgstr "{side}: Züge {from}-{to}, {n} in Folge der Topzug"
+
+msgid "live:loading_match"
+msgstr "Partie wird geladen …"

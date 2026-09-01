@@ -3355,3 +3355,6 @@ msgstr "手数順に並べた AI 一致度の分布。黒白それぞれ 1 本�
 
 msgid "grade:match_longest_run"
 msgstr "{side} 第 {from}–{to} 手、{n} 手連続で第一候補と一致"
+
+msgid "live:loading_match"
+msgstr "棋譜を読み込み中…"

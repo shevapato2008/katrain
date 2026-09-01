@@ -3403,3 +3403,6 @@ msgstr ""
 
 msgid "grade:match_longest_run"
 msgstr "{side}: moves {from}-{to}, {n} in a row matched the top choice"
+
+msgid "live:loading_match"
+msgstr "Loading game…"

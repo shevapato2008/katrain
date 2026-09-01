@@ -40,8 +40,18 @@ const detail: MatchDetail = {
 vi.mock('../../../hooks/live/useLiveMatches', () => ({
   useLiveMatches: () => ({ matches: [summary], liveCount: 1, loading: false }),
 }));
+/* useLiveMatch 的 mock 要能**记下调用参数**、也能被单条用例改返回值：
+   「列表页不该拉分析」这条判据落在传进去的 options 上，不在渲染出来的 DOM 上；
+   「切换中不该画上一局」这条要能造出「hook 返回的还是上一局」那个中间态。 */
+const liveMatch = vi.hoisted(() => ({
+  spy: vi.fn(),
+  result: { current: null as unknown as ReturnType<typeof Object> },
+}));
 vi.mock('../../../hooks/live/useLiveMatch', () => ({
-  useLiveMatch: () => ({ match: detail, loading: false, currentMove: 194, setCurrentMove: vi.fn() }),
+  useLiveMatch: (id: string | undefined, opts?: Record<string, unknown>) => {
+    liveMatch.spy(id, opts);
+    return liveMatch.result.current;
+  },
 }));
 vi.mock('../../../components/live/LiveBoard', () => ({
   default: () => <div data-testid="mock-live-board" />,
@@ -68,6 +78,10 @@ const renderPage = () => render(
 describe('LivePage（迁 BoardPageShell 之后）', () => {
   beforeEach(() => {
     vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+    liveMatch.spy.mockClear();
+    liveMatch.result.current = {
+      match: detail, loading: false, currentMove: 194, setCurrentMove: vi.fn(),
+    };
   });
 
   it('挂的是统一的棋盘页外壳，右栏三段齐全', () => {
@@ -82,6 +96,45 @@ describe('LivePage（迁 BoardPageShell 之后）', () => {
     renderPage();
     const plate = screen.getByTestId('module-plate');
     expect(plate.querySelector('button[aria-label^="返回"], button[aria-label^="Back"]')).toBeNull();
+  });
+
+  /* ---- 2026-09-01 Fan 报的两个问题，各一条守卫 ---- */
+
+  it('列表页的棋盘只用 moves —— 不许顺手把分析数据也拉下来', () => {
+    /* 实测（测试环境，服务端自量）：一盘棋的盘面是 816B–2.3KB，
+       而 `analysis/preload` 是 326KB–1.64MB，差 400–700 倍。
+       这一页 `analysis` 零引用（LiveBoard 只收 moves/currentMove），
+       所以那份下载**整份都是白拉的**，还要和盘面抢同一条链路的带宽。
+       判据落在传给 hook 的 options 上：hook 的默认档是 'poll'，
+       不显式传 'none' 就会发这个请求。 */
+    renderPage();
+    const opts = liveMatch.spy.mock.calls.at(-1)?.[1] as { analysisMode?: string } | undefined;
+    expect(opts?.analysisMode).toBe('none');
+  });
+
+  it('换一局的等待期里，棋盘位置显示加载态 —— 不是上一局的盘面', () => {
+    /* 造的是真实的中间态：用户已经点了 m1，hook 手里还是上一局 m0。
+       原来的判据是 `loading && !selectedMatch`，而那个 `loading` 是**列表**的，
+       列表早就加载完了 ⇒ 分支落到「有 selectedMatch」上，把上一局照常画出来，
+       整个等待期一个提示都没有。同族：[[reference_gate_measures_wrong_operand]]。 */
+    liveMatch.result.current = {
+      match: { ...detail, id: 'm0', move_count: 63 },
+      loading: true, currentMove: 194, setCurrentMove: vi.fn(),
+    };
+    renderPage();
+    expect(screen.getByTestId('live-board-loading')).toBeInTheDocument();
+    expect(screen.queryByTestId('mock-live-board')).toBeNull();
+  });
+
+  it('等待期里播放条不能显示上一局的手数', () => {
+    /* Fan 的截图里是「181 / 63 手」：181 来自更早选中的那局，63 是上一局的总手数，
+       而他刚点的是 272 手那局 —— 三个数分属三局。 */
+    liveMatch.result.current = {
+      match: { ...detail, id: 'm0', move_count: 63 },
+      loading: true, currentMove: 194, setCurrentMove: vi.fn(),
+    };
+    renderPage();
+    expect(screen.queryByTestId('playback-move-counter')).toBeNull();
   });
 
   it('「进入直播」在赛事预告页签下**仍然渲染** —— 它作用于选中的那局，与页签无关', async () => {

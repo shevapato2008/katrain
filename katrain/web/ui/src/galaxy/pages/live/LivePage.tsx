@@ -40,7 +40,18 @@ export default function LivePage() {
     loading: matchLoading,
     currentMove,
     setCurrentMove,
-  } = useLiveMatch(selectedMatchId || undefined, { pollInterval: 5000 });
+    /* `analysisMode: 'none'` 不是优化，是这一页的正确档位：本页 `analysis` 零引用
+       （`LiveBoard` 只收 moves/currentMove），而 hook 的默认档 'poll' 会在每次换局时
+       发 `analysis/preload`。测试环境实测：盘面 816B–2.3KB，那份分析 326KB–1.64MB，
+       差 400–700 倍，且和盘面抢同一条链路 —— 用户看到的就是「点了半天棋盘不出来」。
+       观战页（`LiveMatchPage`）要画 AI 标记，那边照旧用默认档。 */
+  } = useLiveMatch(selectedMatchId || undefined, { pollInterval: 5000, analysisMode: 'none' });
+
+  /* hook 换 matchId 时**不清空** `match`，所以等待期里 `selectedMatch` 仍是上一局。
+     判据不能用 `matchLoading`：从点击到 effect 里 `setLoading(true)` 之间还有一帧，
+     那一帧 loading 是 false 而 match 是旧的。用身份比对没有这个缝 ——
+     「手里这份是不是我点的那一局」是个确定的事实。 */
+  const matchReady = selectedMatch != null && selectedMatch.id === selectedMatchId;
 
   // Auto-select first match when matches load
   useEffect(() => {
@@ -69,14 +80,17 @@ export default function LivePage() {
      冻结稿把「赛事预告」画成整屏的一个分支（棋盘留空、副标题写「赛事预告」），
      那是稿子的分支枚举是平的、表达不了「选中对局 × 页签」这两维的正交组合。
      真页面里页签只换右栏那份列表：瞟一眼赛程就把已经选好的预览清掉，是白丢状态。 */
-  const plateSubtitle = selectedMatch
+  const plateSubtitle = matchReady && selectedMatch
     ? `${i18n.translatePlayer(selectedMatch.player_black)} vs ${i18n.translatePlayer(selectedMatch.player_white)}`
       + ` · ${selectedMatch.move_count} ${t('live:moves')}`
+    /* 等待期里说「正在加载」，不留上一局的名字 —— Fan 的截图里模块牌写着上上局的
+       两位棋手，而高亮的是刚点的那一局，三个数分属三局。 */
+    : selectedMatchId ? t('live:loading_match', '正在加载棋局…')
     : t('live:select_match');
 
   /* 状态徽章照抄 `LiveMatchPage.tsx:140`。稿子这一屏只画了「直播中」那一种，
      但列表页选得中已结束的对局 —— 同一个模块牌在两页上得长得一样。 */
-  const plateStatus = !selectedMatch ? undefined : selectedMatch.status === 'live' ? (
+  const plateStatus = !matchReady || !selectedMatch ? undefined : selectedMatch.status === 'live' ? (
     <Chip
       icon={<FiberManualRecordIcon sx={{ fontSize: 10 }} />}
       label={t('live:status_live')}
@@ -91,8 +105,26 @@ export default function LivePage() {
   return (
     <BoardPageShell
       onBoardSizeChange={setBoardEdge}
-      board={loading && !selectedMatch ? (
-        <CircularProgress />
+      /* 原来这里写的是 `loading && !selectedMatch`，而 `loading` 是**列表**的加载态。
+         列表一加载完它就是 false，于是换局的整个等待期都落到「有 selectedMatch」
+         这一支上：既没有任何提示，画的还是上一局。判据量错了操作数 ——
+         该看的是「手里这份是不是我点的那一局」。 */
+      board={!matchReady ? (
+        selectedMatchId || loading ? (
+          <Box
+            data-testid="live-board-loading"
+            sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}
+          >
+            <CircularProgress size={28} />
+            <Typography variant="body2" color="text.secondary">
+              {t('live:loading_match', '正在加载棋局…')}
+            </Typography>
+          </Box>
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ opacity: 0.5, textAlign: 'center', px: 2 }}>
+            {matches.length === 0 ? t('live:no_matches') : t('live:select_match')}
+          </Typography>
+        )
       ) : selectedMatch ? (
         <LiveBoard
           moves={selectedMatch.moves}
@@ -171,7 +203,7 @@ export default function LivePage() {
         <>
           {/* 播放条从棋盘底下挪进动作区（稿子同址）。它是共享件，自带
               `RAIL_TIGHT`（460）的窄档收缩。 */}
-          {selectedMatch && (
+          {matchReady && selectedMatch && (
             <PlaybackBar
               currentMove={currentMove}
               totalMoves={selectedMatch.move_count}
@@ -179,7 +211,7 @@ export default function LivePage() {
               isLive={selectedMatch.status === 'live'}
             />
           )}
-          <Box sx={{ p: 2, pt: selectedMatch ? 1 : 2 }}>
+          <Box sx={{ p: 2, pt: matchReady ? 1 : 2 }}>
             {/* 迁移前这个按钮在「赛事预告」页签下**整个不渲染**。它作用于选中的那局、
                 与页签无关，所以改成常驻：没有可进入的对局时禁用。 */}
             <Button
@@ -188,7 +220,7 @@ export default function LivePage() {
               fullWidth
               size="large"
               onClick={handleEnterMatch}
-              disabled={!selectedMatchId || matchLoading}
+              disabled={!matchReady || matchLoading}
               sx={{ py: 1.5 }}
             >
               {selectedMatch?.status === 'live' ? t('live:enter_live') : t('live:view_game')}

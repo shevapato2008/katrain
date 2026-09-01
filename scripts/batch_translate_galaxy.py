@@ -21,6 +21,16 @@ I18N_DIR = PROJECT_ROOT / "katrain" / "i18n" / "locales"
 # All Galaxy UI translation keys with translations for each language
 # Format: {msgid: {lang_code: msgstr}}
 GALAXY_TRANSLATIONS = {
+    # ── 直播加载态 ────────────────────────────────────────────────────────
+    # `LiveMatchPage.tsx` 早就在用这个键，但十一本目录里一条都没有 ⇒ 中文用户
+    # 一直看的是代码里那句英文兜底。2026-09-01 直播列表页也要用它，一并补上。
+    "live:loading_match": {
+        "en": "Loading game…", "cn": "正在加载棋局…", "tw": "正在載入棋局…",
+        "jp": "棋譜を読み込み中…", "ko": "기보 불러오는 중…",
+        "de": "Partie wird geladen …", "es": "Cargando la partida…",
+        "fr": "Chargement de la partie…", "ru": "Загрузка партии…",
+        "tr": "Oyun yükleniyor…", "ua": "Завантаження партії…",
+    },
     # ── 着手评价（七档）──────────────────────────────────────────────────
     # 档位与阈值的真源是 katrain/core/move_grade.yaml；这里只管文案。
     # 注意 grade:phase_* 与 grade:player_* 在 TrendChart.tsx 里是用模板字符串

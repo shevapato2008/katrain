@@ -3461,3 +3461,6 @@ msgstr ""
 
 msgid "grade:match_longest_run"
 msgstr "{side}: {from}-{to}. hamleler, üst üste {n} kez en iyi hamle"
+
+msgid "live:loading_match"
+msgstr "Oyun yükleniyor…"

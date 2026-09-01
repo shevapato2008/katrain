@@ -3335,3 +3335,6 @@ msgstr "按手數排列的 AI 吻合分佈，黑白各一條帶，連續吻合�
 
 msgid "grade:match_longest_run"
 msgstr "{side} 第{from}–{to}手連續{n}手中一選"
+
+msgid "live:loading_match"
+msgstr "正在載入棋局…"

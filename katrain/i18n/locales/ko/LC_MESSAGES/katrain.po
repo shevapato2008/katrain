@@ -3283,3 +3283,6 @@ msgstr "수순에 따라 배열한 AI 일치도 분포. 흑백 각각 한 줄이
 
 msgid "grade:match_longest_run"
 msgstr "{side} {from}–{to}수, {n}수 연속 1순위 일치"
+
+msgid "live:loading_match"
+msgstr "기보 불러오는 중…"

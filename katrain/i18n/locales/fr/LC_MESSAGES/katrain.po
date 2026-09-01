@@ -3422,3 +3422,6 @@ msgstr ""
 
 msgid "grade:match_longest_run"
 msgstr "{side} : coups {from}-{to}, {n} d'affilée au premier choix"
+
+msgid "live:loading_match"
+msgstr "Chargement de la partie…"

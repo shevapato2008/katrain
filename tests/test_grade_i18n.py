@@ -7,6 +7,7 @@
 """
 
 import os
+import re
 
 import polib
 import pytest
@@ -45,7 +46,31 @@ STATIC_KEYS = [
     "grade:match_footer",
     "grade:match_undecidable",
     "grade:match_caveat",
+    # 五个分析 tab 的改版（2026-09-01）。
+    "grade:filter_phase",
+    "grade:filter_player",
+    "grade:filter_match_view",
+    "grade:view_stats",
+    "grade:view_distribution",
+    "grade:axis_move_number",
+    "grade:axis_brilliance",
+    "grade:axis_points_lost",
+    "grade:axis_aria",
+    "grade:count_note",
+    "grade:histogram_unrated",
+    "grade:histogram_aria",
+    "grade:def_brilliant",
+    "grade:def_best",
+    "grade:def_points_lt",
+    "grade:def_blunder",
+    "grade:def_unrated",
+    "grade:brilliance_entry",
+    "grade:match_timeline_legend",
+    "grade:match_timeline_aria",
+    "grade:match_longest_run",
     # 人类倾向列（AiAnalysis）。这四条也只有这一个闸在守。
+    # 2026-09-01 那一列按 Fan 的裁定撤下了（`showHumanTendency` 不再传），但键留着 ——
+    # 组件里那条分支还在、还有单测，撤掉翻译等于把它变成半死的代码。
     "live:human_pick_rate",
     "live:human_pick_rate_ranked",
     "live:human_pick_rate_hint",
@@ -147,3 +172,45 @@ def test_batch_script_agrees_with_the_po_files(lang):
         f"{lang}: running scripts/batch_translate_galaxy.py would silently change "
         f"{len(drift)} existing translations: {list(drift)[:5]}"
     )
+
+
+# ── 这条闸补的是上面那份硬编码清单的洞 ────────────────────────────────────────
+
+SCANNED_SOURCES = [
+    "katrain/web/ui/src/components/live/TrendChart.tsx",
+    "katrain/web/ui/src/components/live/AiAnalysis.tsx",
+]
+
+# 模板字符串拼出来的前缀：``t(`grade:phase_${p}`)`` 这种，扫源码只看得见前缀。
+# 它们的完整键在 DYNAMIC_KEYS 里逐条列着，所以这里按前缀放行。
+DYNAMIC_PREFIXES = ("grade:phase_", "grade:player_")
+
+
+def test_no_grade_key_in_the_source_escapes_the_gate():
+    """源码里出现的 grade:* / live:human_* 键必须全部在 ALL_KEYS 里。
+
+    上面 STATIC_KEYS 是一份**硬编码清单**，它自己的注释就承认：新加的键不写进来，
+    「十一语缺翻」那条闸对它永远是绿的 —— 也就是说那条闸守的是「有人记得登记」，
+    不是「所有键都翻了」。这条把判据换成源码本身：漏登记会在这里红，
+    不必等到某个语言的用户看见英文。
+
+    为什么不干脆用扫描结果替掉 STATIC_KEYS：扫描看不见模板字符串拼出来的键
+    （DYNAMIC_KEYS 那七条），两者互补，谁也替代不了谁。
+
+    变异验证：把 STATIC_KEYS 里任意一条新键删掉，本用例红（实测删
+    "grade:view_stats" 会红）；把 TrendChart 里某个 t('grade:xxx') 改成一个
+    没登记的键名，同样红。
+    """
+    key_re = re.compile(r"""['"](grade:[a-z_0-9]+|live:human_[a-z_0-9]+)['"]""")
+    known = set(ALL_KEYS)
+    unregistered = {}
+    for rel in SCANNED_SOURCES:
+        path = os.path.join(ROOT, rel)
+        if not os.path.exists(path):
+            pytest.fail(f"扫描目标不存在：{rel}。文件挪了位置就要同步改 SCANNED_SOURCES，"
+                        f"否则这条闸会静默地什么都不扫。")
+        found = set(key_re.findall(open(path, encoding="utf-8").read()))
+        missing = {k for k in found if k not in known and not k.startswith(DYNAMIC_PREFIXES)}
+        if missing:
+            unregistered[rel] = sorted(missing)
+    assert not unregistered, f"这些键出现在源码里但没登记进 ALL_KEYS，十一语缺翻不会被发现：{unregistered}"

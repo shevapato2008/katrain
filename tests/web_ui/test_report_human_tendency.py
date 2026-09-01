@@ -206,10 +206,59 @@ def _seed_report(SessionLocal, *, human: bool, rows: int = 3, candidates: bool =
 
 
 def _requeue(SessionLocal, **kwargs):
+    """跑 requeue，并**显式**把 profile 设成一个合法档。
+
+    2026-09-01 起 `config.HUMAN_SL_PROFILE` 的默认值是空串（Fan 裁定这一列先不上），
+    而 `requeue()` 的第一件事就是「profile 为空就 SystemExit」—— 那条守卫是对的：
+    没配档位时重跑出来仍然没有人类倾向，白删数据白烧 GPU。
+    这几个用例测的是**重排机制**（选哪些报告、删不删行、limit 生效没有），
+    不是默认值，所以在这里把档位钉死，别让它跟着默认值漂。
+    默认值本身由 `test_requeue_refuses_when_profile_is_empty` 那条守着。
+    """
     from katrain.cron.jobs import requeue_reports
 
-    with patch.object(requeue_reports, "SessionLocal", lambda: SessionLocal()):
+    with patch.object(requeue_reports, "SessionLocal", lambda: SessionLocal()), patch.object(
+        requeue_reports.config, "HUMAN_SL_PROFILE", "rank_5d"
+    ):
         return requeue_reports.requeue(**kwargs)
+
+
+def test_requeue_refuses_when_profile_is_empty():
+    """profile 没配就必须拒绝，而不是删完 move 行再重跑出一份同样没有人类倾向的报告。
+
+    2026-09-01 起这是**默认走的分支**（`HUMAN_SL_PROFILE` 默认空串），所以它比另一支
+    更需要被守住：一旦有人把这条守卫删了，生产上任何一次 requeue 都会白删几千行。
+    变异验证：把 `requeue_reports.py` 里的 `if not config.HUMAN_SL_PROFILE:` 改成
+    `if False:`，这条会红（stats 正常返回而不是 SystemExit）。
+    """
+    SessionLocal = _make_session()
+    stale = _seed_report(SessionLocal, human=False)
+
+    from katrain.cron.jobs import requeue_reports
+
+    with patch.object(requeue_reports, "SessionLocal", lambda: SessionLocal()), patch.object(
+        requeue_reports.config, "HUMAN_SL_PROFILE", ""
+    ):
+        with pytest.raises(SystemExit):
+            requeue_reports.requeue(commit=True)
+
+    with SessionLocal() as session:
+        # 拒绝必须是**在动数据之前**拒绝。
+        assert session.query(models_db.ReportTaskMove).filter_by(task_id=stale).count() == 3
+        assert session.get(models_db.ReportTask, stale).status == "completed"
+
+
+def test_human_sl_is_off_by_default():
+    """默认关闭。Fan 2026-09-01 裁定人类倾向先不上，代价不只是多一列 ——
+    开着它每一手都要多做 8 次根节点对称采样（`HUMAN_SL_SYMMETRIES`）。
+    这条钉住默认值本身，免得有人「顺手」把它改回 rank_5d 而没人发现。
+    """
+    import importlib
+
+    from katrain.cron import config as cron_config
+
+    reloaded = importlib.reload(cron_config)
+    assert reloaded.HUMAN_SL_PROFILE == ""
 
 
 def test_requeue_dry_run_writes_nothing():

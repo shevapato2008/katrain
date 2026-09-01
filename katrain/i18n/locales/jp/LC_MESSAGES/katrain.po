@@ -3290,3 +3290,68 @@ msgstr "{rank} の棋士 100 人のうち何人がこの点に打つか。「何
 
 msgid "live:human_pick_rate_hint"
 msgstr "人間の棋士がこの点に打つ割合です。AI の推奨順位とは別物です。"
+
+msgid "grade:filter_phase"
+msgstr "局面"
+
+msgid "grade:filter_player"
+msgstr "対局者"
+
+msgid "grade:filter_match_view"
+msgstr "表示"
+
+msgid "grade:view_stats"
+msgstr "統計"
+
+msgid "grade:view_distribution"
+msgstr "分布"
+
+msgid "grade:axis_move_number"
+msgstr "手数"
+
+msgid "grade:axis_brilliance"
+msgstr "妙手度 1–5"
+
+msgid "grade:axis_points_lost"
+msgstr "損失目数（最大 {n}）"
+
+msgid "grade:axis_aria"
+msgstr "、黒は軸の上、白は軸の下、横軸は手数"
+
+msgid "grade:count_note"
+msgstr "この局面で {n} 手"
+
+msgid "grade:histogram_unrated"
+msgstr "{n} 手は未評価"
+
+msgid "grade:histogram_aria"
+msgstr "7 段階の着手評価の分布。黒い棒が黒番、白い棒が白番で、それぞれ自分の手数で正規化"
+
+msgid "grade:def_brilliant"
+msgstr "エンジンの第一候補で、しかもエンジンの直感が見落としていた手（事前確率 10% 未満）"
+
+msgid "grade:def_best"
+msgstr "エンジンの第一候補"
+
+msgid "grade:def_points_lt"
+msgstr "損失 {n} 目未満"
+
+msgid "grade:def_blunder"
+msgstr "損失 {n} 目以上"
+
+msgid "grade:def_unrated"
+msgstr "前の手が未解析、または探索量が足りず判定できない"
+
+msgid "grade:brilliance_entry"
+msgstr ""
+"次の 3 条件をすべて満たすこと：エンジンの第一候補を打った、その第一候補の事前確率が 10% "
+"未満（エンジンの直感も見落とした）、勝敗がまだ決まっていない。"
+
+msgid "grade:match_timeline_legend"
+msgstr "全高の塗り = 第一候補、半分の淡色 = 上位 3 候補、地色 = それ以外"
+
+msgid "grade:match_timeline_aria"
+msgstr "手数順に並べた AI 一致度の分布。黒白それぞれ 1 本の帯で、連続一致は塗りつぶしの塊として現れる"
+
+msgid "grade:match_longest_run"
+msgstr "{side} 第 {from}–{to} 手、{n} 手連続で第一候補と一致"

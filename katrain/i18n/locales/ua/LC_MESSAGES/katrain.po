@@ -3371,3 +3371,75 @@ msgstr ""
 
 msgid "live:human_pick_rate_hint"
 msgstr "Частка людей, які грають у цю точку, незалежно від рейтингу ШІ."
+
+msgid "grade:filter_phase"
+msgstr "Стадія"
+
+msgid "grade:filter_player"
+msgstr "Гравець"
+
+msgid "grade:filter_match_view"
+msgstr "Вигляд"
+
+msgid "grade:view_stats"
+msgstr "Зведення"
+
+msgid "grade:view_distribution"
+msgstr "Розподіл"
+
+msgid "grade:axis_move_number"
+msgstr "Номер ходу"
+
+msgid "grade:axis_brilliance"
+msgstr "Блиск 1–5"
+
+msgid "grade:axis_points_lost"
+msgstr "Втрата очок (макс. {n})"
+
+msgid "grade:axis_aria"
+msgstr ", чорні над віссю, білі під нею, горизонтальна вісь — номер ходу"
+
+msgid "grade:count_note"
+msgstr "{n} на цій стадії"
+
+msgid "grade:histogram_unrated"
+msgstr "{n} без оцінки"
+
+msgid "grade:histogram_aria"
+msgstr ""
+"Розподіл за сімома рівнями: чорні стовпці — чорні, білі — білі, нормовано за"
+" кожною стороною"
+
+msgid "grade:def_brilliant"
+msgstr ""
+"Найкращий хід рушія, який не побачила навіть його інтуїція (prior < 10 %)"
+
+msgid "grade:def_best"
+msgstr "Зіграно найкращий хід рушія"
+
+msgid "grade:def_points_lt"
+msgstr "Втрата < {n} очок"
+
+msgid "grade:def_blunder"
+msgstr "Втрата ≥ {n} очок"
+
+msgid "grade:def_unrated"
+msgstr "Неможливо оцінити: попередній хід без аналізу або замало симуляцій"
+
+msgid "grade:brilliance_entry"
+msgstr ""
+"Мають виконуватися всі три: зіграно найкращий хід рушія, його policy-prior "
+"був нижче 10 % (навіть інтуїція його не побачила), партія ще не вирішена."
+
+msgid "grade:match_timeline_legend"
+msgstr ""
+"Повна заливка — найкращий хід, половина світлим — у трійці найкращих, тло — "
+"інше"
+
+msgid "grade:match_timeline_aria"
+msgstr ""
+"Збіг з ШІ за номерами ходів, по одній смузі на колір; безперервний збіг "
+"виглядає суцільним блоком"
+
+msgid "grade:match_longest_run"
+msgstr "{side}: ходи {from}–{to}, {n} поспіль збіглися з найкращим"

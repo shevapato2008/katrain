@@ -3127,3 +3127,66 @@ msgstr "每 100 位 {rank} 棋手里大约有几位会下这一点。这是「�
 
 msgid "live:human_pick_rate_hint"
 msgstr "这一列显示人类棋手会下这一点的比例，与 AI 的推荐顺位无关。"
+
+msgid "grade:filter_phase"
+msgstr "阶段"
+
+msgid "grade:filter_player"
+msgstr "棋手"
+
+msgid "grade:filter_match_view"
+msgstr "视图"
+
+msgid "grade:view_stats"
+msgstr "统计"
+
+msgid "grade:view_distribution"
+msgstr "分布"
+
+msgid "grade:axis_move_number"
+msgstr "手数"
+
+msgid "grade:axis_brilliance"
+msgstr "妙度 1–5"
+
+msgid "grade:axis_points_lost"
+msgstr "目损（最大 {n}）"
+
+msgid "grade:axis_aria"
+msgstr "，黑方在轴上方、白方在下方，横轴是手数"
+
+msgid "grade:count_note"
+msgstr "本阶段共 {n} 处"
+
+msgid "grade:histogram_unrated"
+msgstr "{n} 手未评级"
+
+msgid "grade:histogram_aria"
+msgstr "七档发挥水准分布，黑柱为黑方、白柱为白方，各自归一"
+
+msgid "grade:def_brilliant"
+msgstr "走出引擎首选，且连引擎自己都没想到（先验 < 10%）"
+
+msgid "grade:def_best"
+msgstr "走出引擎首选"
+
+msgid "grade:def_points_lt"
+msgstr "目损 < {n} 目"
+
+msgid "grade:def_blunder"
+msgstr "目损 ≥ {n} 目"
+
+msgid "grade:def_unrated"
+msgstr "上一手没分析或搜索量不足，判不了"
+
+msgid "grade:brilliance_entry"
+msgstr "入选要同时满足三条：走出引擎首选、该首选的 policy 先验 < 10%（连引擎直觉都没想到）、局面还没定。"
+
+msgid "grade:match_timeline_legend"
+msgstr "满格实色 = 走中一选，半高浅色 = 进前三，底色 = 其他"
+
+msgid "grade:match_timeline_aria"
+msgstr "按手数排列的 AI 吻合分布，黑白各一条带，连续吻合段显示为连续实色块"
+
+msgid "grade:match_longest_run"
+msgstr "{side} 第{from}–{to}手连续{n}手中一选"

@@ -12,6 +12,7 @@
 import type { MoveAnalysis } from '../../types/live';
 import {
   GRADE_BY_ID,
+  GRADE_LADDER_POINTS,
   GRADE_PHASES,
   GRADE_TIERS,
   PER_SIDE_LIMIT,
@@ -19,7 +20,7 @@ import {
   type GradeTier,
 } from './gradeTiers.generated';
 
-export { GRADE_TIERS, GRADE_BY_ID, GRADE_PHASES, PER_SIDE_LIMIT };
+export { GRADE_TIERS, GRADE_BY_ID, GRADE_LADDER_POINTS, GRADE_PHASES, PER_SIDE_LIMIT };
 export type { GradeId, GradeTier };
 
 /** 未评级：上一手没分析、visits 不够、或旧数据。要显示成「未评级」，不能当作「没问题」。 */
@@ -280,4 +281,86 @@ export function buildHistogram(moves: MoveAnalysis[], phase: PhaseId = 'all'): H
     whiteTotal,
     unrated,
   };
+}
+
+export type MatchBand = 'top1' | 'top3' | 'mid' | 'off' | 'unknown';
+
+export interface MatchTimelineEntry {
+  move_number: number;
+  player: 'B' | 'W';
+  band: MatchBand;
+}
+
+/**
+ * 逐手的 AI 吻合档，按手数升序 —— 「AI吻合度 · 分布」那条带的数据源。
+ *
+ * 与 `buildMatchRate` 的关系：那个函数把同样的判定**汇总成三行比率**，
+ * 这个函数把它**摊平成时间线**。判定基准必须与它逐字相同，否则同一 tab 的
+ * 两个视图会给出互相打架的结论（统计说命中 50 手、带子上数出来 47 个格）。
+ * 所以两者共用同一个 `rankInCandidates`，并且都优先信服务端的 `is_top_move`。
+ *
+ * `band` 五档，**与 `buildMatchRate` 的三行逐字同义**：
+ *   top1    走中上一手候选表的第一名                      → 统计的「走中 AI 一选」
+ *   top3    进了前三但不是第一                            → 统计的「走进 AI 前三」减去 top1
+ *   mid     在候选表里但排在前三之外（名次 3..9）
+ *   off     **根本不在候选表里**                          → 统计的「不在 AI 前十选」
+ *   unknown 判不了 —— 上一手没分析 / visits 不够 / 旧数据
+ *
+ * `mid` 这一档是 2026-09-01 加的，加它的原因是一条测试抓到的真分叉：起初把
+ * 「名次 ≥ 3」和「不在表内」一起画成 `off`，而统计里的 `offbook` 只算 `rank < 0`。
+ * 于是同一手在统计里不计、在带子上却被算成「没命中」—— 同一个 tab 自相矛盾。
+ * 画图时 `mid` / `off` / `unknown` 都落到底色，看着一样；但**语义必须分开**，
+ * 否则下一个人照着带子去改统计就会改错。
+ *
+ * `unknown` 尤其**不能当作 off**：那会把「不知道」画成「没命中」，凭空造出难看的段落。
+ *
+ * 阶段筛选在这里做而不是在调用方：`phase` 之外的手直接不进结果，
+ * 于是带子的横轴范围随阶段收窄，与上面的统计口径一致。
+ */
+export function buildMatchTimeline(moves: MoveAnalysis[], phase: PhaseId = 'all'): MatchTimelineEntry[] {
+  const byNumber = new Map<number, MoveAnalysis>();
+  for (const m of moves) byNumber.set(m.move_number, m);
+
+  const out: MatchTimelineEntry[] = [];
+  for (const m of moves) {
+    if (!inPhase(m.move_number, phase)) continue;
+    if (m.player !== 'B' && m.player !== 'W') continue;
+    const rank = rankInCandidates(byNumber.get(m.move_number - 1), m.move);
+    const top1: boolean | null = m.is_top_move ?? (rank === null ? null : rank === 0);
+
+    let band: MatchBand;
+    if (top1 === null) band = 'unknown';
+    else if (top1) band = 'top1';
+    else if (rank === null) band = 'unknown';
+    else if (rank < 0) band = 'off';
+    else if (rank < 3) band = 'top3';
+    else band = 'mid';
+
+    out.push({ move_number: m.move_number, player: m.player, band });
+  }
+  out.sort((a, b) => a.move_number - b.move_number);
+  return out;
+}
+
+/** 某一方最长的连续「走中一选」段；没有则返回 null。用于在分布图上直接把话说出来。 */
+export function longestTop1Run(
+  timeline: MatchTimelineEntry[],
+  side: 'B' | 'W',
+): { from: number; to: number; length: number } | null {
+  let best: { from: number; to: number; length: number } | null = null;
+  let curFrom = 0;
+  let curLen = 0;
+  let curTo = 0;
+  for (const e of timeline) {
+    if (e.player !== side) continue;
+    if (e.band === 'top1') {
+      if (curLen === 0) curFrom = e.move_number;
+      curLen += 1;
+      curTo = e.move_number;
+      if (!best || curLen > best.length) best = { from: curFrom, to: curTo, length: curLen };
+    } else {
+      curLen = 0;
+    }
+  }
+  return best;
 }

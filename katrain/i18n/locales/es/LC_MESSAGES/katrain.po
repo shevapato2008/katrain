@@ -3206,3 +3206,79 @@ msgid "live:human_pick_rate_hint"
 msgstr ""
 "Proporción de jugadores humanos que juegan este punto, al margen del orden "
 "de la IA."
+
+msgid "grade:filter_phase"
+msgstr "Fase"
+
+msgid "grade:filter_player"
+msgstr "Jugador"
+
+msgid "grade:filter_match_view"
+msgstr "Vista"
+
+msgid "grade:view_stats"
+msgstr "Resumen"
+
+msgid "grade:view_distribution"
+msgstr "Distribución"
+
+msgid "grade:axis_move_number"
+msgstr "Número de jugada"
+
+msgid "grade:axis_brilliance"
+msgstr "Brillantez 1-5"
+
+msgid "grade:axis_points_lost"
+msgstr "Puntos perdidos (máx. {n})"
+
+msgid "grade:axis_aria"
+msgstr ""
+", negro sobre el eje y blanco debajo; el eje horizontal es el número de "
+"jugada"
+
+msgid "grade:count_note"
+msgstr "{n} en esta fase"
+
+msgid "grade:histogram_unrated"
+msgstr "{n} sin calificar"
+
+msgid "grade:histogram_aria"
+msgstr ""
+"Distribución en siete grados; las barras negras son Negras y las blancas, "
+"Blancas, normalizadas por bando"
+
+msgid "grade:def_brilliant"
+msgstr "La primera opción del motor que ni su intuición vio (prior < 10 %)"
+
+msgid "grade:def_best"
+msgstr "Jugó la primera opción del motor"
+
+msgid "grade:def_points_lt"
+msgstr "Pérdida < {n} puntos"
+
+msgid "grade:def_blunder"
+msgstr "Pérdida ≥ {n} puntos"
+
+msgid "grade:def_unrated"
+msgstr ""
+"No se puede juzgar: la jugada anterior no tiene análisis o pocas visitas"
+
+msgid "grade:brilliance_entry"
+msgstr ""
+"Deben cumplirse las tres: jugó la primera opción del motor, su prior de "
+"política era inferior al 10 % (ni su intuición la vio) y la partida seguía "
+"indecisa."
+
+msgid "grade:match_timeline_legend"
+msgstr ""
+"Bloque completo = primera opción, medio bloque claro = entre las 3 primeras,"
+" fondo = otras"
+
+msgid "grade:match_timeline_aria"
+msgstr ""
+"Coincidencia con la IA ordenada por jugada, una banda por color; la "
+"coincidencia continua aparece como un bloque sólido"
+
+msgid "grade:match_longest_run"
+msgstr ""
+"{side}: jugadas {from}-{to}, {n} seguidas coincidieron con la primera opción"

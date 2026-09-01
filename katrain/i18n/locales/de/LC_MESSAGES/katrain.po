@@ -3375,3 +3375,75 @@ msgid "live:human_pick_rate_hint"
 msgstr ""
 "Anteil menschlicher Spieler, die diesen Punkt spielen - unabhängig vom KI-"
 "Ranking."
+
+msgid "grade:filter_phase"
+msgstr "Phase"
+
+msgid "grade:filter_player"
+msgstr "Spieler"
+
+msgid "grade:filter_match_view"
+msgstr "Ansicht"
+
+msgid "grade:view_stats"
+msgstr "Übersicht"
+
+msgid "grade:view_distribution"
+msgstr "Verlauf"
+
+msgid "grade:axis_move_number"
+msgstr "Zugnummer"
+
+msgid "grade:axis_brilliance"
+msgstr "Brillanz 1-5"
+
+msgid "grade:axis_points_lost"
+msgstr "Punktverlust (max. {n})"
+
+msgid "grade:axis_aria"
+msgstr ""
+", Schwarz über der Achse, Weiß darunter, waagerechte Achse ist die Zugnummer"
+
+msgid "grade:count_note"
+msgstr "{n} in dieser Phase"
+
+msgid "grade:histogram_unrated"
+msgstr "{n} ohne Bewertung"
+
+msgid "grade:histogram_aria"
+msgstr ""
+"Verteilung über sieben Bewertungsstufen; schwarze Balken für Schwarz, weiße "
+"für Weiß, je auf die eigene Seite normiert"
+
+msgid "grade:def_brilliant"
+msgstr "Topzug der Engine, den selbst ihre Intuition übersah (Prior < 10 %)"
+
+msgid "grade:def_best"
+msgstr "Topzug der Engine gespielt"
+
+msgid "grade:def_points_lt"
+msgstr "Verlust < {n} Punkte"
+
+msgid "grade:def_blunder"
+msgstr "Verlust ≥ {n} Punkte"
+
+msgid "grade:def_unrated"
+msgstr "Nicht bewertbar: Vorzug ohne Analyse oder zu wenige Visits"
+
+msgid "grade:brilliance_entry"
+msgstr ""
+"Alle drei Bedingungen: Topzug der Engine gespielt, dessen Policy-Prior unter"
+" 10 % (selbst die Intuition übersah ihn) und die Partie war noch offen."
+
+msgid "grade:match_timeline_legend"
+msgstr ""
+"Volle Höhe = Topzug, halbe Höhe hell = unter den Top 3, Hintergrund = "
+"sonstige"
+
+msgid "grade:match_timeline_aria"
+msgstr ""
+"KI-Übereinstimmung nach Zugnummer, je ein Band pro Farbe; zusammenhängende "
+"Übereinstimmung erscheint als voller Block"
+
+msgid "grade:match_longest_run"
+msgstr "{side}: Züge {from}-{to}, {n} in Folge der Topzug"

@@ -268,7 +268,13 @@ export default function ReportDetailPage() {
           />
 
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <AiAnalysis currentMove={currentMove} analysis={analysisByMove} onMoveHover={setPvMoves} showHumanTendency />
+            {/* 人类倾向那一列**有意不开**。2026-09-01 Fan 裁定「先不加了，规则不统一，
+                没有很好的产品价值」—— 依据是同一手在 rank_5k 下 86.3%、rank_5d 下 27.4%
+                （实测第 98 手 H9，五档对照见当日会话），固定一个档位对职业棋谱和对新手
+                都不贴切，那个数没法自证该信谁。
+                组件侧的实现与测试保留（`AiAnalysis` 的 `showHumanTendency` 默认 false），
+                将来若按「跟看的人走」重做参照系，把这个 prop 加回来即可。 */}
+            <AiAnalysis currentMove={currentMove} analysis={analysisByMove} onMoveHover={setPvMoves} />
           </Box>
           {/* TrendChart 自带 `height:100%` + 内部 `flex:1; overflow:auto` 的滚动壳。
               中段是唯一可滚的那一段，所以这里必须给它 `flex:'none'` 让它按内容占高，

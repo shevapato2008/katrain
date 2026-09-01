@@ -6,7 +6,9 @@ import {
   brillianceRank,
   buildHistogram,
   buildMatchRate,
+  buildMatchTimeline,
   GRADE_TIERS,
+  longestTop1Run,
   PER_SIDE_LIMIT,
   phaseOf,
   selectPerSide,
@@ -216,5 +218,94 @@ describe('AI match rate', () => {
       'endgame',
     );
     expect(h.rows.find((r) => r.id === 'top1')!.blackTotal).toBe(1);
+  });
+});
+
+describe('buildMatchTimeline / longestTop1Run', () => {
+  /** 造一局：每手带上一手的候选表，实战手在候选里的名次由 rank 指定。
+   *  rank = 0 一选、1..2 前三、9 在表内但靠后、-1 不在表内、null 上一手没候选表。 */
+  const game = (ranks: (number | null)[]): MoveAnalysis[] => {
+    const CAND = ['A1', 'B2', 'C3', 'D4', 'E5', 'F6', 'G7', 'H8', 'J9', 'K10'];
+    return ranks.map((r, i) => {
+      const n = i + 1;
+      const played = r === null ? 'Z19' : r < 0 ? 'Z19' : CAND[r];
+      return move(n, n % 2 === 1 ? 'B' : 'W', 'best', {
+        move: played,
+        // 上一手的候选表挂在**上一行**上，所以这里给自己的 top_moves，
+        // 下一手读它。第一手没有上一手 ⇒ 判不了。
+        top_moves: r === null ? [] : CAND.map((m) => ({ move: m, visits: 1, winrate: 0.5, score_lead: 0, prior: 0.1, pv: [] })),
+        is_top_move: null,
+      });
+    });
+  };
+
+  it('把每手判成 top1 / top3 / off，判不了的记 unknown 而不是 off', () => {
+    // 第 1 手没有上一手 ⇒ unknown；之后按各自上一手的候选表判。
+    const moves = game([0, 0, 2, -1, 9, 0]);
+    const tl = buildMatchTimeline(moves);
+    expect(tl.map((e) => e.band)).toEqual([
+      'unknown', // 第 1 手：没有上一手，判不了
+      'top1',    // 第 2 手：走了 A1，一选
+      'top3',    // 第 3 手：走了 C3，名次 2 ⇒ 前三非一选
+      'off',     // 第 4 手：Z19 根本不在候选表里
+      'mid',     // 第 5 手：K10 名次 9 —— **在表内**，所以不是 off，只是排在前三之外
+      'top1',
+    ]);
+  });
+
+  /** 「判不了」不能画成「没命中」。
+   *  这是同族错误里最容易犯的一个：把缺席当成否定的答复，凭空造出难看的段落。
+   *  变异验证：把 buildMatchTimeline 里 `band = 'unknown'` 改成 `'off'`，本条红。 */
+  it('unknown 绝不折叠成 off', () => {
+    const moves = game([null, null, 0]);
+    const bands = buildMatchTimeline(moves).map((e) => e.band);
+    expect(bands.filter((b) => b === 'unknown').length).toBeGreaterThan(0);
+    expect(bands).not.toContain('off');
+  });
+
+  /**
+   * **统计与分布必须是同一份数据的两个视图。**
+   *
+   * 这两个函数各写各的循环，很容易在某一天分叉（一个改了判据、另一个没改），
+   * 于是同一个 tab 里「统计说黑方命中 3 手」而带子上只数得出 2 个格。
+   * 这条把两者钉死：逐方逐档的计数必须逐个相等。
+   */
+  it('与 buildMatchRate 的计数逐档一致', () => {
+    const moves = game([0, 2, -1, 0, 1, null, 0, 9]);
+    const rate = buildMatchRate(moves);
+    const tl = buildMatchTimeline(moves);
+    for (const side of ['B', 'W'] as const) {
+      const mine = tl.filter((e) => e.player === side);
+      const key = side === 'B' ? 'black' : 'white';
+      const top1Row = rate.rows.find((r) => r.id === 'top1')!;
+      const top3Row = rate.rows.find((r) => r.id === 'top3')!;
+      const offRow = rate.rows.find((r) => r.id === 'offbook')!;
+      expect(mine.filter((e) => e.band === 'top1').length).toBe(top1Row[key]);
+      // 统计的「前三」含一选，带子上的 top3 是「进前三但不是一选」——
+      // 所以要把 top1 加回去再比。口径不同不等于数据不同。
+      expect(mine.filter((e) => e.band === 'top3').length + mine.filter((e) => e.band === 'top1').length).toBe(
+        top3Row[key],
+      );
+      expect(mine.filter((e) => e.band === 'off').length).toBe(offRow[key]);
+    }
+  });
+
+  it('阶段筛选把范围收窄，与统计同一口径', () => {
+    const moves = game(Array.from({ length: 80 }, () => 0));
+    const all = buildMatchTimeline(moves, 'all');
+    const opening = buildMatchTimeline(moves, 'opening');
+    expect(opening.length).toBeLessThan(all.length);
+    expect(opening.every((e) => e.move_number <= 59)).toBe(true);
+  });
+
+  it('找出最长连续一选段；一次都没连上时返回 null', () => {
+    const tl = buildMatchTimeline(game([0, 0, 0, -1, 0, 0, 0, 0, 0, 0]));
+    const b = longestTop1Run(tl, 'B');
+    expect(b).not.toBeNull();
+    expect(b!.length).toBeGreaterThanOrEqual(2);
+    // 连续段只在**同一方内部**计算：黑白交替落子，不能把对手的手算进自己的连续段。
+    const w = longestTop1Run(tl, 'W');
+    expect(w!.from % 2).toBe(0);
+    expect(longestTop1Run([], 'B')).toBeNull();
   });
 });

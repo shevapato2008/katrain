@@ -3390,3 +3390,74 @@ msgstr ""
 msgid "live:human_pick_rate_hint"
 msgstr ""
 "Bu noktayı oynayan insan oyuncuların oranı; YZ sıralamasından bağımsızdır."
+
+msgid "grade:filter_phase"
+msgstr "Aşama"
+
+msgid "grade:filter_player"
+msgstr "Oyuncu"
+
+msgid "grade:filter_match_view"
+msgstr "Görünüm"
+
+msgid "grade:view_stats"
+msgstr "Özet"
+
+msgid "grade:view_distribution"
+msgstr "Dağılım"
+
+msgid "grade:axis_move_number"
+msgstr "Hamle sayısı"
+
+msgid "grade:axis_brilliance"
+msgstr "Parlaklık 1-5"
+
+msgid "grade:axis_points_lost"
+msgstr "Kaybedilen puan (en çok {n})"
+
+msgid "grade:axis_aria"
+msgstr ", Siyah eksenin üstünde, Beyaz altında; yatay eksen hamle sayısı"
+
+msgid "grade:count_note"
+msgstr "Bu aşamada {n} tane"
+
+msgid "grade:histogram_unrated"
+msgstr "{n} derecelendirilmedi"
+
+msgid "grade:histogram_aria"
+msgstr ""
+"Yedi kademeli dağılım; siyah çubuklar Siyah, beyaz çubuklar Beyaz, her taraf"
+" kendi içinde normalleştirildi"
+
+msgid "grade:def_brilliant"
+msgstr "Motorun sezgisinin bile kaçırdığı en iyi hamlesi (ön olasılık < %10)"
+
+msgid "grade:def_best"
+msgstr "Motorun en iyi hamlesi oynandı"
+
+msgid "grade:def_points_lt"
+msgstr "Kayıp < {n} puan"
+
+msgid "grade:def_blunder"
+msgstr "Kayıp ≥ {n} puan"
+
+msgid "grade:def_unrated"
+msgstr ""
+"Değerlendirilemiyor: önceki hamlenin analizi yok veya ziyaret sayısı az"
+
+msgid "grade:brilliance_entry"
+msgstr ""
+"Üçü birden gerekir: motorun en iyi hamlesi oynandı, o hamlenin politika ön "
+"olasılığı %10'un altındaydı (motorun sezgisi bile kaçırdı) ve oyun henüz "
+"belirlenmemişti."
+
+msgid "grade:match_timeline_legend"
+msgstr "Tam dolu = en iyi hamle, yarım açık ton = ilk 3'te, arka plan = diğer"
+
+msgid "grade:match_timeline_aria"
+msgstr ""
+"Hamle sayısına göre dizilmiş YZ uyumu, her renk için bir şerit; kesintisiz "
+"uyum dolu blok olarak görünür"
+
+msgid "grade:match_longest_run"
+msgstr "{side}: {from}-{to}. hamleler, üst üste {n} kez en iyi hamle"

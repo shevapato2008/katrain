@@ -23,7 +23,7 @@ import { type GameState, API } from '../../../api';
 import { useAuth } from '../../../context/AuthContext';
 import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { railToggleGroupSx } from '../../../components/railStyles';
+import { railToggleGroupSx, toolGridSx } from '../../../components/railStyles';
 
 /** 右栏中段的一节：统一的内边距 + 一条分隔线。取代原来散落的 `<Divider/>`。 */
 const sectionSx: SxProps = { p: 2, borderBottom: '1px solid', borderColor: 'divider' };
@@ -215,7 +215,7 @@ const RightSidebarPanel = ({
 
                 {/* 工具格 + 离开对局 */}
                 <Box sx={sectionSx}>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                    <Box sx={toolGridSx}>
                         <ToolGridButton
                             icon={<MapIcon />}
                             label={t('Territory', 'Territory')}

@@ -62,3 +62,24 @@ export const railToggleRowSx: SxProps<Theme> = {
   justifyContent: 'space-between',
   [RAIL_WIDE]: { justifyContent: 'flex-start', gap: '12px' },
 };
+
+/** 工具格一行四个键的栅格。
+ *
+ * 2026-09-01 之前这条规则在四个文件里各写了一份 `repeat(4, 1fr)`
+ * （`RightSidebarPanel` / `TsumegoProblemControls` / `BoardEditToolbar` /
+ * `ResearchToolbar` 两处 / `LiveMatchDisplayControls`）—— 和「标签↔开关」当初散三份
+ * 是同一个形状：右栏一加宽就会在同一档下长出几种样子。
+ *
+ * **为什么不用 `auto-fit`。** `repeat(auto-fit, minmax(N, 1fr))` 在中间宽度上会算出
+ * **3 列**，而这些工具条都是 4 个键 —— 3 列排 4 个键就是 3+1，最后一格孤零零占满一行。
+ * 用与 `RAIL_WIDE` 同一条界显式切两档，只有两种版式要看，不会漏掉中间那种难看的。
+ *
+ * 窄档（容器 <460px，对应右栏 320/360/420 三档）2×2；宽档 1×4。
+ * 窄档两列每格约 141px、宽档四列每格约 112px，都装得下「图标 + 两字标签」的横排。
+ */
+export const toolGridSx: SxProps<Theme> = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gap: '6px',
+  [RAIL_WIDE]: { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
+};

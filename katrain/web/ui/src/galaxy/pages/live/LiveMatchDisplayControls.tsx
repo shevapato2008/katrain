@@ -21,7 +21,7 @@ import { Box, Button, Divider, Switch, Typography } from '@mui/material';
 
 import ToolGridButton from '../../components/board/ToolGridButton';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { railToggleRowSx } from '../../../components/railStyles';
+import { railToggleRowSx, toolGridSx } from '../../../components/railStyles';
 
 export interface LiveMatchDisplayControlsProps {
   tryMoveMode: boolean;
@@ -62,7 +62,7 @@ export default function LiveMatchDisplayControls({
     <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
       <Box
         data-testid="live-match-display-controls-grid"
-        sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px' }}
+        sx={toolGridSx}
       >
         <ToolGridButton
           icon={<TouchAppIcon />}

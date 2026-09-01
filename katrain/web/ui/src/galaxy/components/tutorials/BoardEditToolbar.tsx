@@ -8,6 +8,7 @@ import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import { useState } from 'react';
 import ToolGridButton from '../board/ToolGridButton';
 import type { EditTool, StoneEditMode, ShapeType } from '../../../types/tutorial';
+import { toolGridSx } from '../../../components/railStyles';
 
 /* ── Stone icon components (matching ResearchToolbar style) ── */
 
@@ -97,7 +98,7 @@ export default function BoardEditToolbar({
 
   return (
     <Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+      <Box sx={toolGridSx}>
         <ToolGridButton
           icon={<BlackStoneIcon />} label="摆黑" toggle
           active={activeTool === 'stone' && stoneMode === 'black'}

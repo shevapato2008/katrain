@@ -41,7 +41,7 @@ const BACK_TO = '/galaxy/report';
 /* 占位不是控件 —— 与 `LiveMatchPage` 同一处修正（那份是原件，这份是抄件）。
    原来是 `<Button disabled><Skeleton/></Button>`，按构造就没有可及名。 */
 const LoadingControls = () => (
-  <Box sx={{ p: 2, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px' }}>
+  <Box sx={{ py: 2, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px' }}>
     {Array.from({ length: 4 }, (_, index) => (
       <Skeleton key={index} variant="rounded" height={54} />
     ))}
@@ -49,7 +49,7 @@ const LoadingControls = () => (
 );
 
 const LoadingActions = () => (
-  <Box sx={{ p: 2 }}>
+  <Box sx={{ py: 2 }}>
     <Skeleton variant="rounded" height={40} />
   </Box>
 );
@@ -124,7 +124,7 @@ export default function ReportDetailPage() {
         board={<Skeleton data-testid="board-unauthenticated-skeleton" variant="rectangular" animation={false} width="100%" height="100%" />}
         modulePlate={<ModulePlate title={t('report:review', '复盘')} backTo={BACK_TO} />}
         railBody={(
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ py: 2 }}>
             <Alert severity="info">{t('report:login_required_detail', 'Please log in to view report details.')}</Alert>
           </Box>
         )}
@@ -146,7 +146,7 @@ export default function ReportDetailPage() {
             backTo={BACK_TO}
           />
         )}
-        railBody={<Box sx={{ p: 2 }}><Skeleton height={120} /><Skeleton height={160} /><Skeleton height={180} /></Box>}
+        railBody={<Box sx={{ py: 2 }}><Skeleton height={120} /><Skeleton height={160} /><Skeleton height={180} /></Box>}
         displayControls={<LoadingControls />}
         actions={<LoadingActions />}
       />
@@ -160,7 +160,7 @@ export default function ReportDetailPage() {
         board={<Skeleton data-testid="board-error-skeleton" variant="rectangular" animation={false} width="100%" height="100%" />}
         modulePlate={<ModulePlate title={t('report:review', '复盘')} backTo={BACK_TO} />}
         railBody={(
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ py: 2 }}>
             <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
             <Button
               variant="outlined"
@@ -268,7 +268,13 @@ export default function ReportDetailPage() {
           />
 
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-            <AiAnalysis currentMove={currentMove} analysis={analysisByMove} onMoveHover={setPvMoves} showHumanTendency />
+            {/* 人类倾向那一列**有意不开**。2026-09-01 Fan 裁定「先不加了，规则不统一，
+                没有很好的产品价值」—— 依据是同一手在 rank_5k 下 86.3%、rank_5d 下 27.4%
+                （实测第 98 手 H9，五档对照见当日会话），固定一个档位对职业棋谱和对新手
+                都不贴切，那个数没法自证该信谁。
+                组件侧的实现与测试保留（`AiAnalysis` 的 `showHumanTendency` 默认 false），
+                将来若按「跟看的人走」重做参照系，把这个 prop 加回来即可。 */}
+            <AiAnalysis currentMove={currentMove} analysis={analysisByMove} onMoveHover={setPvMoves} />
           </Box>
           {/* TrendChart 自带 `height:100%` + 内部 `flex:1; overflow:auto` 的滚动壳。
               中段是唯一可滚的那一段，所以这里必须给它 `flex:'none'` 让它按内容占高，
@@ -284,7 +290,7 @@ export default function ReportDetailPage() {
           </Box>
           {/* 「进入研究室」是一次性的跳出动作，不是随手拨的开关，所以按冻结稿 V2 落在
               中段最末一节而不是动作区 —— 动作区留给播放条，跟直播页一致。 */}
-          <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+          <Box sx={{ py: 2, borderTop: 1, borderColor: 'divider' }}>
             <Button
               fullWidth
               variant="outlined"

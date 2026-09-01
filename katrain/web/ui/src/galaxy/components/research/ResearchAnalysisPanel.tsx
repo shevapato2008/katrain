@@ -8,6 +8,7 @@ import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrow
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ResearchToolbar, { type PlaceMode, type EditMode } from './ResearchToolbar';
+import { useMeasuredWidth } from '../../../hooks/useMeasuredWidth';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { GRADE_LADDER_POINTS } from '../../../features/analysis/gradeTiers.generated';
 
@@ -151,6 +152,8 @@ export default function ResearchAnalysisPanel({
   children,
 }: ResearchAnalysisPanelProps) {
   const { t } = useTranslation();
+  // 走势图宽度由容器实测驱动；绘图与点击映射共用它（见 renderTrendChart 的说明）。
+  const [chartRef, measuredWidth] = useMeasuredWidth();
   const [trendTab, setTrendTab] = useState(0);
   const audioCache = useRef<Record<string, HTMLAudioElement>>({});
 
@@ -283,7 +286,10 @@ export default function ResearchAnalysisPanel({
   }, [analysisMoves, actualMoveGtp]);
 
   const renderTrendChart = useCallback(() => {
-    const width = 420;
+    // 宽度由容器实测驱动。**这个组件有第二处要同步的常量**：下面 handleChartClick 里
+    // 原来也写死了 `svgWidth = 420`，画图和点击映射各拿一份宽度 —— 只改一处的话
+    // 点位映射会整体偏掉。规范 §2.5 专门点了这个坑。现在两处共用同一个 chartWidth。
+    const width = measuredWidth;
     const height = 140;
     const leftPad = 42;
     const rightPad = 42;
@@ -336,7 +342,7 @@ export default function ResearchAnalysisPanel({
     }
 
     return (
-      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+      <svg ref={chartRef} width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
         {/* Grid lines at 0%, 50%, 100% */}
         {[0, 0.5, 1].map((ratio, i) => {
           const y = topPad + chartHeight - ratio * chartHeight;
@@ -389,29 +395,32 @@ export default function ResearchAnalysisPanel({
         )}
       </svg>
     );
-  }, [history, currentMove, totalMoves]);
+  }, [history, currentMove, totalMoves, measuredWidth, chartRef]);
 
   const handleChartClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
     if (!history || history.length < 2 || totalMoves === 0) return;
     const svg = e.currentTarget;
     const rect = svg.getBoundingClientRect();
-    const svgWidth = 420;
+    // 与 renderTrendChart 同一个宽度（见那里的说明）。viewBox 宽 == CSS 宽之后
+    // `(clientX - left) / rect.width * svgWidth` 恒等于 `clientX - left`，
+    // 但保留这一步除法：它让「万一 viewBox 与 CSS 宽脱钩」时映射仍然是对的。
+    const svgWidth = measuredWidth;
     const leftPad = 42;
     const rightPad = 42;
-    const chartWidth = svgWidth - leftPad - rightPad;
+    const plotWidth = svgWidth - leftPad - rightPad;
     // Map click position to move index
     const relX = ((e.clientX - rect.left) / rect.width) * svgWidth - leftPad;
-    const ratio = Math.max(0, Math.min(1, relX / chartWidth));
+    const ratio = Math.max(0, Math.min(1, relX / plotWidth));
     const moveIdx = Math.round(ratio * totalMoves);
     onMoveChange(moveIdx);
-  }, [history, totalMoves, onMoveChange]);
+  }, [history, totalMoves, onMoveChange, measuredWidth]);
 
   /* 统一版式：右栏外框（宽 / 高 / 滚动 / 左边框）由 BoardPageShell 三段结构提供，
      这里只出中段内容；底部那条走子条拆到了 ResearchAnalysisActions。 */
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         {/* Player Info + Winrate Bar */}
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ py: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

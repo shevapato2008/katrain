@@ -41,7 +41,7 @@ import PlaybackBar from '../../components/live/PlaybackBar';
 import BoardPageShell from '../components/board/BoardPageShell';
 import ModulePlate from '../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
-import { RAIL_TIGHT } from '../../components/railStyles';
+import { RAIL_TIGHT, railBadgeSx, railBodySx, railMetaSx, railPlayerSx } from '../../components/railStyles';
 
 /* 右栏窄档（320 / 340）下的卡片压缩。整块列表从 520 搬进 320，卡片必须自己收 ——
    用具名容器查询，不用视口媒体查询：判据是「卡片实际拿到多少宽」，而右栏宽度是
@@ -64,8 +64,8 @@ function ResultBadge({ result, rules, t }: { result: string | null; rules?: stri
       component="span"
       sx={{
         display: 'inline-block',
-        fontSize: '0.65rem',
-        [RAIL_NARROW]: { fontSize: '0.6rem', px: 0.5 },
+        ...railBadgeSx,
+        [RAIL_NARROW]: { px: 0.5 },
         fontWeight: 700,
         lineHeight: 1,
         px: 0.7,
@@ -153,23 +153,23 @@ function GameRecordCard({
               最长的那条也装得下，只有真的长的那几张卡会高出一行。 */}
           <Typography variant="caption" color="text.secondary" sx={{
             flex: 1, minWidth: 0,
+            ...railBodySx,
             display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
             overflow: 'hidden', wordBreak: 'break-word',
-            [RAIL_NARROW]: { fontSize: '0.68rem' },
           }}>
             {album.event || ''}
             {album.round_name && (
-              <Typography component="span" sx={{ opacity: 0.6, fontSize: '0.7rem', ml: 0.5, [RAIL_NARROW]: { fontSize: '0.64rem' } }}>
+              <Typography component="span" sx={{ opacity: 0.6, ...railMetaSx, ml: 0.5 }}>
                 {album.round_name}
               </Typography>
             )}
           </Typography>
           {album.date_played && (
-            <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, fontSize: '0.7rem', opacity: 0.7, [RAIL_NARROW]: { fontSize: '0.64rem' } }}>
+            <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, ...railMetaSx, opacity: 0.7 }}>
               {album.date_played}
             </Typography>
           )}
-          <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, [RAIL_NARROW]: { fontSize: '0.64rem' } }}>
+          <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, ...railMetaSx }}>
             {album.move_count} {tMovesUnit}
           </Typography>
         </Box>
@@ -187,12 +187,12 @@ function GameRecordCard({
             <Typography
               variant="body2"
               noWrap
-              sx={{ fontWeight: blackWins ? 'bold' : 'normal', [RAIL_NARROW]: { fontSize: '0.8rem' } }}
+              sx={{ fontWeight: blackWins ? 'bold' : 'normal', ...railPlayerSx }}
             >
               {album.player_black}
             </Typography>
             {album.black_rank && (
-              <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', ml: 0.5, flexShrink: 0 }}>
+              <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, ml: 0.5, flexShrink: 0 }}>
                 {album.black_rank}
               </Typography>
             )}
@@ -204,14 +204,14 @@ function GameRecordCard({
 
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
             {album.white_rank && (
-              <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', mr: 0.5, flexShrink: 0 }}>
+              <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, mr: 0.5, flexShrink: 0 }}>
                 {album.white_rank}
               </Typography>
             )}
             <Typography
               variant="body2"
               noWrap
-              sx={{ fontWeight: !blackWins ? 'bold' : 'normal', [RAIL_NARROW]: { fontSize: '0.8rem' } }}
+              sx={{ fontWeight: !blackWins ? 'bold' : 'normal', ...railPlayerSx }}
             >
               {album.player_white}
             </Typography>
@@ -382,7 +382,7 @@ export default function KifuLibraryPage() {
       )}
       railBody={(
         <>
-          <Box sx={{ p: 2, pb: 1.5 }}>
+          <Box sx={{ pt: 2, pb: 1.5 }}>
             <TextField
               fullWidth
               size="small"
@@ -421,7 +421,7 @@ export default function KifuLibraryPage() {
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ display: 'block', mt: 1, fontSize: '0.72rem', opacity: 0.7 }}
+                sx={{ display: 'block', mt: 1, ...railMetaSx, opacity: 0.7 }}
               >
                 {total.toLocaleString()} {t('kifu:records', 'records')}
                 {totalPages > 1 && ` · ${t('kifu:page_x_of_y', '第 {page} / {total} 页')

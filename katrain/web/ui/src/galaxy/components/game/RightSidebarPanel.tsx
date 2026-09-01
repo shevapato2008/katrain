@@ -23,10 +23,12 @@ import { type GameState, API } from '../../../api';
 import { useAuth } from '../../../context/AuthContext';
 import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { railToggleGroupSx } from '../../../components/railStyles';
+import { railToggleGroupSx, toolGridSx } from '../../../components/railStyles';
 
 /** 右栏中段的一节：统一的内边距 + 一条分隔线。取代原来散落的 `<Divider/>`。 */
-const sectionSx: SxProps = { p: 2, borderBottom: '1px solid', borderColor: 'divider' };
+/* 横向内距由 `BoardPageShell` 的 `RAIL_GUTTER` 统一供给，这里只留纵向 ——
+   以前是 `p: 2`，和外壳那份叠成 36px，而模块牌的标题在 20px（实测）。 */
+const sectionSx: SxProps = { py: 2, borderBottom: '1px solid', borderColor: 'divider' };
 
 interface RightSidebarPanelProps {
     gameState: GameState;
@@ -215,7 +217,7 @@ const RightSidebarPanel = ({
 
                 {/* 工具格 + 离开对局 */}
                 <Box sx={sectionSx}>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                    <Box sx={toolGridSx}>
                         <ToolGridButton
                             icon={<MapIcon />}
                             label={t('Territory', 'Territory')}
@@ -337,7 +339,7 @@ const RightSidebarPanel = ({
                     **只在装得下两列时**才分两列——320/360/420 三档可用宽分别是
                     288/328/388，都小于 400，排布与加宽之前逐像素一致；520 档可用 488，
                     分成两列各 244，标签与滑块重新贴在一起。 */}
-                <Box sx={{ p: 2, ...railToggleGroupSx }}>
+                <Box sx={{ py: 2, ...railToggleGroupSx }}>
                     {([
                         ['coords', t('Coordinates', 'Coordinates'), analysisToggles.coords, true],
                         ['numbers', t('Move Numbers', 'Move Numbers'), analysisToggles.numbers, true],
@@ -359,7 +361,7 @@ const RightSidebarPanel = ({
                     reports the finished game. Leaving it up meant a resigned game still claimed
                     to be running. */}
                 {isRated && !gameState.end_result && (
-                    <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.dark' }}>
+                    <Box sx={{ py: 2, textAlign: 'center', bgcolor: 'primary.dark' }}>
                         <Typography variant="subtitle2" sx={{ color: '#fff' }}>
                             {t('rated_mode_active', 'Rated Mode: Progressing')}
                         </Typography>
@@ -404,7 +406,7 @@ export const RightSidebarActions = ({ onAction, isGameOver }: {
         ['end', 'game:nav_last', '跳到最后', <SkipNextIcon key="i" />],
     ];
     return (
-        <Box sx={{ p: 1.25, bgcolor: '#1a1a1a', borderTop: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ py: 1.25, bgcolor: '#1a1a1a', borderTop: '1px solid', borderColor: 'divider' }}>
             <Stack direction="row" justifyContent="center" spacing={0.5}>
                 {keys.map(([action, key, fallback, icon]) => {
                     const name = t(key, fallback);

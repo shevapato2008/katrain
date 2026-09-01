@@ -3290,3 +3290,78 @@ msgstr ""
 
 msgid "live:human_pick_rate_hint"
 msgstr "Доля людей, играющих в эту точку, независимо от рейтинга ИИ."
+
+msgid "grade:filter_phase"
+msgstr "Стадия"
+
+msgid "grade:filter_player"
+msgstr "Игрок"
+
+msgid "grade:filter_match_view"
+msgstr "Вид"
+
+msgid "grade:view_stats"
+msgstr "Сводка"
+
+msgid "grade:view_distribution"
+msgstr "Распределение"
+
+msgid "grade:axis_move_number"
+msgstr "Номер хода"
+
+msgid "grade:axis_brilliance"
+msgstr "Блеск 1–5"
+
+msgid "grade:axis_points_lost"
+msgstr "Потеря очков (макс. {n})"
+
+msgid "grade:axis_aria"
+msgstr ", чёрные над осью, белые под ней, горизонтальная ось — номер хода"
+
+msgid "grade:count_note"
+msgstr "{n} на этой стадии"
+
+msgid "grade:histogram_unrated"
+msgstr "{n} без оценки"
+
+msgid "grade:histogram_aria"
+msgstr ""
+"Распределение по семи уровням: чёрные столбцы — чёрные, белые — белые, "
+"нормировано по каждой стороне"
+
+msgid "grade:def_brilliant"
+msgstr ""
+"Лучший ход движка, который не увидела даже его интуиция (prior < 10 %)"
+
+msgid "grade:def_best"
+msgstr "Сыграл лучший ход движка"
+
+msgid "grade:def_points_lt"
+msgstr "Потеря < {n} очков"
+
+msgid "grade:def_blunder"
+msgstr "Потеря ≥ {n} очков"
+
+msgid "grade:def_unrated"
+msgstr "Нельзя оценить: предыдущий ход без анализа или мало симуляций"
+
+msgid "grade:brilliance_entry"
+msgstr ""
+"Должны выполняться все три: сыгран лучший ход движка, его policy-prior был "
+"ниже 10 % (даже интуиция его не увидела), партия ещё не решена."
+
+msgid "grade:match_timeline_legend"
+msgstr ""
+"Полная заливка — лучший ход, половина светлым — в тройке лучших, фон — "
+"прочее"
+
+msgid "grade:match_timeline_aria"
+msgstr ""
+"Совпадение с ИИ по номерам ходов, по одной полосе на цвет; непрерывное "
+"совпадение выглядит сплошным блоком"
+
+msgid "grade:match_longest_run"
+msgstr "{side}: ходы {from}–{to}, {n} подряд совпали с лучшим"
+
+msgid "live:loading_match"
+msgstr "Загрузка партии…"

@@ -3348,3 +3348,80 @@ msgid "live:human_pick_rate_hint"
 msgstr ""
 "Part des joueurs humains qui jouent ce point, indépendamment du classement "
 "de l'IA."
+
+msgid "grade:filter_phase"
+msgstr "Phase"
+
+msgid "grade:filter_player"
+msgstr "Joueur"
+
+msgid "grade:filter_match_view"
+msgstr "Vue"
+
+msgid "grade:view_stats"
+msgstr "Synthèse"
+
+msgid "grade:view_distribution"
+msgstr "Répartition"
+
+msgid "grade:axis_move_number"
+msgstr "Numéro de coup"
+
+msgid "grade:axis_brilliance"
+msgstr "Brillance 1-5"
+
+msgid "grade:axis_points_lost"
+msgstr "Points perdus (max {n})"
+
+msgid "grade:axis_aria"
+msgstr ""
+", Noir au-dessus de l'axe et Blanc en dessous ; l'axe horizontal est le "
+"numéro de coup"
+
+msgid "grade:count_note"
+msgstr "{n} dans cette phase"
+
+msgid "grade:histogram_unrated"
+msgstr "{n} non notés"
+
+msgid "grade:histogram_aria"
+msgstr ""
+"Répartition sur sept niveaux ; barres noires pour Noir, blanches pour Blanc,"
+" normalisées par camp"
+
+msgid "grade:def_brilliant"
+msgstr ""
+"Premier choix du moteur que son intuition n'avait pas vu (prior < 10 %)"
+
+msgid "grade:def_best"
+msgstr "Premier choix du moteur joué"
+
+msgid "grade:def_points_lt"
+msgstr "Perte < {n} points"
+
+msgid "grade:def_blunder"
+msgstr "Perte ≥ {n} points"
+
+msgid "grade:def_unrated"
+msgstr ""
+"Non évaluable : le coup précédent n'a pas d'analyse ou trop peu de visites"
+
+msgid "grade:brilliance_entry"
+msgstr ""
+"Les trois à la fois : premier choix du moteur joué, prior de politique sous "
+"10 % (son intuition ne l'avait pas vu), et partie encore indécise."
+
+msgid "grade:match_timeline_legend"
+msgstr ""
+"Bloc plein = premier choix, demi-bloc clair = dans le top 3, fond = autres"
+
+msgid "grade:match_timeline_aria"
+msgstr ""
+"Concordance avec l'IA par numéro de coup, une bande par couleur ; une "
+"concordance continue apparaît en bloc plein"
+
+msgid "grade:match_longest_run"
+msgstr "{side} : coups {from}-{to}, {n} d'affilée au premier choix"
+
+msgid "live:loading_match"
+msgstr "Chargement de la partie…"

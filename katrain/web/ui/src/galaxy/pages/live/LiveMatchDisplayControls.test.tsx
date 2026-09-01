@@ -134,12 +134,23 @@ describe('LiveMatchDisplayControls', () => {
     expect(screen.queryByRole('button', { name: 'translated:live:clear:Clear' })).not.toBeInTheDocument();
   });
 
-  it('uses the four-column tool grid shared with the tsumego rail', () => {
+  /* 工具格栅格必须来自共用常量 `railStyles.toolGridSx`，不是本页自己写一份。
+     2026-09-01 键改成「图标左、文字右」之后列数分了两档：窄档 2×2、宽档 1×4 ——
+     横排一格要装下「图标 + 间隙 + 两字」，四列在 320 档只剩 67px，装不下。
+     这条测试原来钉的是字面量 `repeat(4, minmax(0, 1fr))`：断言的对象变了，不是坏了，
+     所以改写成两档各断言一次，而不是删掉——删掉等于这条栅格从此没人守。
+     变异验证：把 `toolGridSx` 的 RAIL_WIDE 那一支删掉，下面第二条红；
+     把基础值改回 `repeat(4, ...)`，第一条红。 */
+  it('uses the shared tool grid: 2 columns narrow, 4 columns on a wide rail', () => {
     renderControls();
     expect(screen.getByTestId('live-match-display-controls-grid')).toHaveStyle({
       display: 'grid',
-      gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
     });
+    const css = Array.from(document.querySelectorAll('style')).map((n) => n.textContent ?? '').join('\n');
+    expect(css).toMatch(
+      /@container board-rail \(min-width: 460px\)\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/,
+    );
   });
 
   /* 跨页一致：坐标开关这一行在直播/复盘和对局页必须是同一种东西。

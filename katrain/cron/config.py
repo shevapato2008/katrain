@@ -55,7 +55,23 @@ ANALYSIS_PREEMPT_THRESHOLD = int(os.getenv("CRON_ANALYSIS_PREEMPT_THRESHOLD", "5
 #
 # 合法取值只有 KataGo 内置的那 29 档（rank_20k..rank_1k, rank_1d..rank_9d）加 preaz_* /
 # proyear_*；写错（比如 rank_10d 这种不存在的档）同样是整条 query 报错。
-HUMAN_SL_PROFILE = os.getenv("CRON_HUMAN_SL_PROFILE", "rank_5d")
+#
+# **默认关闭（2026-09-01）**。Fan 裁定这一列先不上：「规则不统一，没有很好的产品价值」。
+# 依据是当日在测试引擎上对同一个局面（report 16 第 98 手）逐档实测出来的：
+#
+#     rank_5k       H9=86.3%  J14=4.9%
+#     rank_1d       H9=51.3%  J14=31.9%
+#     rank_5d       J14=56.7%  H9=27.4%     ← 到这一档答案翻了个个儿
+#     rank_9d       J14=60.0%  H9=28.3%
+#     proyear_2023  J14=57.5%  H9=30.8%
+#
+# 也就是说**这个数完全由 profile 决定**，而 profile 是这里写死的一个常量 —— 对职业棋谱
+# 和对新手都不贴切，屏幕上那个百分比没法自证该信谁。要复活这个特性，先解决参照系：
+# 跟棋局档次走，或跟看报告的人自己的段位走（后者要在生成报告时定档，一份报告只能烤一档）。
+#
+# 开着它的代价不只是多一列：`rootNumSymmetriesToSample=8` 是为了让 humanPrior 在两台机器
+# 上稳定才加的（见下），每一手都要多做 8 次根节点对称采样。字段没人读的时候这是纯浪费。
+HUMAN_SL_PROFILE = os.getenv("CRON_HUMAN_SL_PROFILE", "")
 
 # 人类网前向的对称采样数。**这不是可选的调优项，删掉它会让同一手棋在两个页面上显示成
 # 不同的数字。** 2026-08-31 在测试机与生产机上实测（同一局面、同一 profile rank_5d）：

@@ -62,6 +62,14 @@ const translationFixture: Record<string, string> = {
   'grade:histogram_footer': '黑 {b} 手 / 白 {w} 手已评级',
   'grade:unrated_count': '{n} 手未评级',
   'grade:truncated_note': '另有 {n} 处未列出，可切换阶段或棋手查看',
+  'grade:view_stats': '统计',
+  'grade:view_distribution': '分布',
+  'grade:filter_phase': '阶段',
+  'grade:filter_player': '棋手',
+  'grade:filter_match_view': '视图',
+  'grade:count_note': '本阶段共 {n} 处',
+  'grade:def_points_lt': '目损 < {n} 目',
+  'grade:def_blunder': '目损 ≥ {n} 目',
   'grade:match_top1': '走中 AI 一选',
   'grade:match_top3': '走进 AI 前三',
   'grade:match_offbook': '不在 AI 前十选',
@@ -231,34 +239,30 @@ test('Galaxy 复盘右栏四个统计 tab', async ({ page }) => {
 
   const panel = tabs.locator('..');
 
-  // AI 推荐表：第五列「N段选择率」。这一段量的是**真浏览器算出来的布局结论**：
-  // 五列必须都装得下、表头不能被省略号截断、整行不能横向溢出。
-  // 纯 fr 权重下这个表头会被压到 41px 然后截断（量过），所以列宽用的是 minmax()。
+  // AI 推荐表：四列（着点 / 推荐度 / 领先 / 胜率），不横向溢出、表头不被截断。
+  //
+  // 2026-09-01：这里原本断言的是**五列**，第五列是「N段选择率」（人类倾向）。
+  // Fan 当日裁定那一列先不上（「规则不统一，没有很好的产品价值」），
+  // `ReportDetailPage` 不再传 `showHumanTendency`。所以断言的对象不是坏了、是**没有了** ——
+  // 按「闸也会过期」的口径改写成当下的事实，而不是把这条测试 skip 掉：
+  // skip 掉等于这张表从此没人量。`AiAnalysis` 里五列那条分支仍有单测覆盖。
   const aiTable = await page.evaluate(() => {
-    const header = Array.from(document.querySelectorAll('div')).find(
-      (d) => getComputedStyle(d).display === 'grid'
-        && getComputedStyle(d).gridTemplateColumns.split(' ').length === 5
-        && d.textContent?.includes('选择率'),
-    ) as HTMLElement | undefined;
+    const header = document.querySelector('[data-testid="ai-table-header"]') as HTMLElement | null;
     if (!header) return null;
     const cells = Array.from(header.children) as HTMLElement[];
     return {
       trackCount: getComputedStyle(header).gridTemplateColumns.split(' ').length,
       overflowX: header.scrollWidth - header.clientWidth,
-      humanHeaderClipped: cells[2].scrollWidth > cells[2].clientWidth,
-      humanHeaderText: cells[2].textContent,
+      humanCells: header.querySelectorAll('[data-col="human"]').length,
+      clippedCells: cells.filter((c) => c.scrollWidth > c.clientWidth).length,
     };
   });
   expect(aiTable).not.toBeNull();
-  expect(aiTable!.trackCount).toBe(5);
+  expect(aiTable!.trackCount).toBe(4);
   expect(aiTable!.overflowX).toBeLessThanOrEqual(0);
-  expect(aiTable!.humanHeaderClipped).toBe(false);
-  expect(aiTable!.humanHeaderText).toContain('选择率');
-
-  // 三种状态必须都能出现在同一屏：正常值 / 不足 1 人 / 没有数据。
-  // 「没有数据」显示成「—」而不是 0 —— 0 在中文里读起来像「绝对没人下」。
-  await expect(page.getByText('31人')).toBeVisible();
-  await expect(page.getByText('<1人')).toBeVisible();
+  // 那一列必须**一个格子都不渲染**，不是渲染了再用 display:none 藏起来。
+  expect(aiTable!.humanCells).toBe(0);
+  expect(aiTable!.clippedCells).toBe(0);
 
   const aiRegion = page.locator('[data-testid="report-trend-region"]').locator('xpath=preceding-sibling::div[1]');
   if (await aiRegion.count()) await aiRegion.screenshot({ path: `${OUT}/00-ai-table.png` });
@@ -317,13 +321,31 @@ test('Galaxy 复盘右栏四个统计 tab', async ({ page }) => {
   expect(docOverflow.y).toBeLessThanOrEqual(0);
   expect(docOverflow.x).toBeLessThanOrEqual(0);
 
-  // 内容闸：改完之后这四屏必须还有东西，空屏截图不算过关。
+  // 内容闸：改完之后这几屏必须还有东西，空屏截图不算过关。
+  //
+  // 2026-09-01：发挥水准那条原来写的是 `panel.getByText('最佳')`，现在会命中 4 个元素
+  // （两个柱子的悬停 `<title>`、横轴标签、定义带里的那一条）。**是断言变歧义了，不是
+  // 功能坏了** —— 那一屏比以前信息更多。所以把判据钉到具体位置，而不是给它加
+  // `.first()` 蒙混过去：`.first()` 会让「轴标签没了但 tooltip 还在」这种缺陷照样绿。
   await tabs.getByRole('tab').nth(3).click();
-  await expect(panel.getByText('最佳')).toBeVisible();
+  const histogram = page.getByTestId('trend-histogram-chart');
+  await expect(histogram).toBeVisible();
+  // 七档的横轴标签一个都不能少 —— 少一档就是少一根柱子。
+  for (const tier of ['妙手', '最佳', '很好', '尚可', '小亏', '失误', '恶手']) {
+    await expect(histogram.getByText(tier, { exact: true })).toBeVisible();
+  }
+  // 定义带常驻（Fan 要求「定义剪短写在图表下方」）。阈值来自 GRADE_LADDER_POINTS。
+  await expect(panel.getByText('目损 < 0.5 目')).toBeVisible();
+
   await tabs.getByRole('tab').nth(4).click();
   await expect(panel.getByText('走中 AI 一选')).toBeVisible();
   await expect(panel.getByText('走进 AI 前三')).toBeVisible();
   await expect(panel.getByText(/分母是能与 AI 比对的手数/)).toBeVisible();
+  // 分布视图是这次新增的，切过去必须真的换图。
+  await panel.getByRole('radio', { name: '分布' }).click();
+  await expect(page.getByTestId('trend-match-timeline')).toBeVisible();
+  // 免责声明在两个视图里都得在 —— 这条是硬性的。
+  await expect(panel.getByText(/不能单独当作棋力或作弊的证据/)).toBeVisible();
 });
 
 /**
@@ -350,9 +372,6 @@ for (const width of [1024, 1180, 1440]) {
       return {
         tracks: getComputedStyle(header).gridTemplateColumns.split(' ').length,
         hasHumanCol: !!header.querySelector('[data-col="human"]'),
-        humanColShown: Array.from(header.querySelectorAll('[data-col="human"]')).some(
-          (el) => getComputedStyle(el as HTMLElement).display !== 'none',
-        ),
         clientW: header.clientWidth,
         scrollW: header.scrollWidth,
         lastRight: Math.round(last.getBoundingClientRect().right),
@@ -365,13 +384,74 @@ for (const width of [1024, 1180, 1440]) {
     // 无论宽窄，都不许溢出、不许越过右栏右边缘（祖先是 overflowX:hidden，溢出=看不到）。
     expect(m!.scrollW).toBeLessThanOrEqual(m!.clientW);
     if (m!.railRight !== null) expect(m!.lastRight).toBeLessThanOrEqual(m!.railRight + 1);
-    // 窄栏（右栏 320px）必须已经退成四列并收掉人类列；宽栏才显示五列。
-    if (width < 1200) {
-      expect(m!.tracks).toBe(4);
-      expect(m!.humanColShown).toBe(false);
-    } else {
-      expect(m!.tracks).toBe(5);
-      expect(m!.humanColShown).toBe(true);
+    // 四列，**每一档都一样**。2026-09-01 撤掉人类倾向列之后不再有「宽栏五列」那一支；
+    // 这条循环留着的价值是：栏宽档位一改（正在做的加宽），四列会不会溢出仍然有人量。
+    expect(m!.tracks).toBe(4);
+    expect(m!.hasHumanCol).toBe(false);
+  });
+}
+
+/**
+ * 图表宽度跟随右栏 —— 规范 §2.5「已知未解」那一条的验收。
+ *
+ * **改造前的事实**：四张矢量图都写死 `viewBox="0 0 420 H"` + `xMidYMid meet`。
+ * 于是无论右栏多宽，viewBox 宽恒为 420：右栏窄于 420 时整张图被等比缩小
+ * （连轴标文字一起缩），宽于 420 时图**不再变大**、多出来的宽度变成图框内死区。
+ *
+ * **改造后要成立的关系式**（写关系不写像素，像素只记录）：
+ *   1. `viewBox.width === round(svg 的 CSS 宽)` —— 缩放比恒为 1，字号才等于写下的数值；
+ *   2. 两个不同视口下 svg 的 CSS 宽**必须不同** —— 证明它真的跟着右栏走。
+ *      这一条就是对旧行为的变异：旧代码在任何视口下 viewBox 都是 420，第 1 条必红。
+ *
+ * jsdom 对这两条都无权作证（没有布局引擎，且 `test/setup.ts` 里的 ResizeObserver
+ * 是空实现，单测里量到的永远是兜底值 420）。所以判据只能在这里。
+ */
+const CHART_TABS = [
+  { index: 0, name: '走势', testid: 'trend-dual-chart' },
+  { index: 2, name: '失误', testid: 'trend-lollipop-chart' },
+];
+
+for (const chart of CHART_TABS) {
+  test(`${chart.name}图的 viewBox 宽跟随右栏实宽`, async ({ page }) => {
+    const seen: Record<number, { css: number; viewBox: number; fontPx: number | null }> = {};
+
+    for (const width of [1024, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await prepare(page);
+      await page.goto('/galaxy/report/1');
+      await expect(page.locator('.MuiTabs-root').first()).toBeVisible({ timeout: 15000 });
+      await page.locator('.MuiTabs-root').first().getByRole('tab').nth(chart.index).click();
+      await page.waitForTimeout(200);
+
+      // 选择器必须钉在图表自己的 testid 上。第一版写的是
+      // `[data-testid="report-trend-region"] svg`，命中的是 tab 条上那个 MUI 滚动按钮
+      // 图标（23px 宽）—— 而且关系式 1 在那个错元素上**照样通过**（23 vs 24 差 1px）。
+      // 抓住它的是下面关系式 2。判据要挂在稳定标识上，不能挂在「区域里第一个 svg」这种结构巧合上。
+      const m = await page.evaluate((testid: string) => {
+        const svg = document.querySelector(`[data-testid="${testid}"]`) as SVGSVGElement | null;
+        if (!svg) return null;
+        const text = svg.querySelector('text');
+        return {
+          css: Math.round(svg.getBoundingClientRect().width),
+          viewBox: Math.round(svg.viewBox.baseVal.width),
+          // 屏上真实字号 = 标称字号 × 缩放比。缩放比为 1 时两者相等。
+          fontPx: text
+            ? Math.round(parseFloat(getComputedStyle(text).fontSize) * 10) / 10
+            : null,
+        };
+      }, chart.testid);
+      expect(m, `${chart.name} 图在 ${width} 下没找到 svg`).not.toBeNull();
+      seen[width] = m!;
+      // eslint-disable-next-line no-console
+      console.log('CHARTW', chart.name, width, JSON.stringify(m));
+
+      // 关系式 1：缩放比恒为 1。容许 1px 的取整误差。
+      expect(Math.abs(m!.viewBox - m!.css)).toBeLessThanOrEqual(1);
     }
+
+    // 关系式 2：右栏在这两档分别是 320 / 360，图必须跟着变宽。
+    // 旧代码（写死 420）在这里必红 —— 这一条就是它的变异守卫。
+    expect(seen[1440].css).toBeGreaterThan(seen[1024].css);
+    expect(seen[1440].viewBox).toBeGreaterThan(seen[1024].viewBox);
   });
 }

@@ -62,3 +62,68 @@ export const railToggleRowSx: SxProps<Theme> = {
   justifyContent: 'space-between',
   [RAIL_WIDE]: { justifyContent: 'flex-start', gap: '12px' },
 };
+
+/** 工具格一行四个键的栅格。
+ *
+ * 2026-09-01 之前这条规则在四个文件里各写了一份 `repeat(4, 1fr)`
+ * （`RightSidebarPanel` / `TsumegoProblemControls` / `BoardEditToolbar` /
+ * `ResearchToolbar` 两处 / `LiveMatchDisplayControls`）—— 和「标签↔开关」当初散三份
+ * 是同一个形状：右栏一加宽就会在同一档下长出几种样子。
+ *
+ * **为什么不用 `auto-fit`。** `repeat(auto-fit, minmax(N, 1fr))` 在中间宽度上会算出
+ * **3 列**，而这些工具条都是 4 个键 —— 3 列排 4 个键就是 3+1，最后一格孤零零占满一行。
+ * 用与 `RAIL_WIDE` 同一条界显式切两档，只有两种版式要看，不会漏掉中间那种难看的。
+ *
+ * 窄档（容器 <460px，对应右栏 320/360/420 三档）2×2；宽档 1×4。
+ * 窄档两列每格约 141px、宽档四列每格约 112px，都装得下「图标 + 两字标签」的横排。
+ */
+export const toolGridSx: SxProps<Theme> = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gap: '6px',
+  [RAIL_WIDE]: { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' },
+};
+
+/** 栏内左右内边距 —— **全档、全页面只有这一个值**（Fan 2026-09-01 拍板）。
+ *
+ * 改之前一栏里同时有四个：模块牌 0（标题贴着左框，就是他报的那一条）、
+ * 搜索框 16、卡片 12、卡内文字 25。收到 `BoardPageShell` 的三段上之后，
+ * 各页的 railBody 只留纵向内距。
+ *
+ * 窄档（320）曾经想留 16 的例外，Fan 问「什么是水槽」之后一并取消：
+ * 376 的栏上 20 比 16 只多吃 8px，换「以后没人再问这一档该用哪个」值。
+ */
+export const RAIL_GUTTER = '20px';
+
+/** 「右栏宽到可以把字放大一档」。
+ *
+ * 与 `RAIL_WIDE`（460，管**分不分列**）是两件事，所以是第二条界：
+ * 分列看的是「放不放得下第二列」，字号看的是「一行还剩多少字的余量」。
+ * 560 之上对应 620/652/762/900 这几档，实测一行仍装得下最长的赛事名。
+ */
+export const RAIL_ROOMY = '@container board-rail (min-width: 560px)';
+
+/** 栏内字号两档（spec §2.5）。改之前实测最小到 10.4px（结果徽章）、11.2px（日期），
+ *  Fan 2026-09-01：「卡片里的字体太小了」。窄档也抬了一档 —— 那些档位加宽帮不上忙。 */
+export const railTitleSx: SxProps<Theme> = { fontSize: '1.43rem', [RAIL_ROOMY]: { fontSize: '1.625rem' } };
+export const railPlayerSx: SxProps<Theme> = { fontSize: '0.9375rem', [RAIL_ROOMY]: { fontSize: '1.0625rem' } };
+export const railBodySx: SxProps<Theme> = { fontSize: '0.875rem', [RAIL_ROOMY]: { fontSize: '1rem' } };
+export const railControlSx: SxProps<Theme> = { fontSize: '0.875rem', [RAIL_ROOMY]: { fontSize: '0.9375rem' } };
+export const railMetaSx: SxProps<Theme> = { fontSize: '0.75rem', [RAIL_ROOMY]: { fontSize: '0.8125rem' } };
+export const railBadgeSx: SxProps<Theme> = { fontSize: '0.6875rem', [RAIL_ROOMY]: { fontSize: '0.75rem' } };
+
+/** 一档右栏宽 = `clamp(该档下限, 实测天花板, 可读性上限)`。
+ *
+ * 天花板那一项写成 CSS 而不是 JS，是因为它要跟着**壳的实际宽度**走：
+ * 侧边栏可以折叠，折叠后壳变宽、右栏就该跟着变宽。用 `100%` 让浏览器算，
+ * 不用 `100vw` 减一个写死的侧边栏宽度 —— 那个减数会在折叠时立刻过期。 */
+export const RAIL_MAX = 900;
+
+/** 四档的**下限**：`[断点, 下限px]`。下限只兜底、不封顶（见下面的注释）。 */
+export const RAIL_TIERS = [[900, 320], [1200, 360], [1536, 420], [1920, 520]] as const;
+
+/** 天花板那一项：壳自己还剩多少横向空间是棋盘吃不下的。
+ *  `100%` 是**壳的宽**不是视口宽 —— 侧边栏折叠后壳变宽，这一项自动跟上。 */
+export const RAIL_CEILING = 'calc(100% - 20px - min(1200px, 100vh - 72px))';
+
+export const railWidth = (floorPx: number) => `clamp(${floorPx}px, ${RAIL_CEILING}, ${RAIL_MAX}px)`;

@@ -1,4 +1,5 @@
 import { Box, Card, CardActionArea, Typography, Chip, LinearProgress } from '@mui/material';
+import { railBadgeSx, railBodySx, railMetaSx, railPlayerSx } from '../railStyles';
 import { useNavigate } from 'react-router-dom';
 import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 import type { MatchSummary } from '../../types/live';
@@ -55,18 +56,18 @@ export default function MatchCard({ match, compact = false, selected = false, on
             {isLive && (
               <FiberManualRecordIcon sx={{ fontSize: 10, color: 'error.main', animation: 'pulse 1.5s infinite' }} />
             )}
-            <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1 }}>
+            <Typography variant="caption" color="text.secondary" noWrap sx={{ flex: 1, ...railBodySx }}>
               {i18n.translateTournament(match.tournament)}
             </Typography>
             {sourceInfo && (
               <Typography variant="caption" sx={{
-                px: 0.6, py: 0.1, borderRadius: 0.5, fontSize: '0.65rem', lineHeight: 1.2,
+                px: 0.6, py: 0.1, borderRadius: 0.5, ...railBadgeSx, lineHeight: 1.2,
                 bgcolor: sourceInfo.color, color: '#fff', flexShrink: 0,
               }}>
                 {sourceInfo.label}
               </Typography>
             )}
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" sx={railMetaSx}>
               {match.move_count} {t('live:moves')}
             </Typography>
           </Box>
@@ -78,23 +79,23 @@ export default function MatchCard({ match, compact = false, selected = false, on
                 border: '1px solid rgba(255,255,255,0.18)',
                 boxShadow: 'inset 0 -0.5px 1px rgba(255,255,255,0.1)',
               }} />
-              <Typography variant="body2" fontWeight={blackAdvantage ? 'bold' : 'normal'} noWrap>
+              <Typography variant="body2" fontWeight={blackAdvantage ? 'bold' : 'normal'} noWrap sx={railPlayerSx}>
                 {i18n.translatePlayer(match.player_black)}
               </Typography>
               {match.black_rank && (
-                <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', ml: 0.5, flexShrink: 0 }}>
+                <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, ml: 0.5, flexShrink: 0 }}>
                   {match.black_rank}
                 </Typography>
               )}
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ px: 1, flexShrink: 0 }}>vs</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ px: 1, flexShrink: 0, ...railMetaSx }}>vs</Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
               {match.white_rank && (
-                <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', mr: 0.5, flexShrink: 0 }}>
+                <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, mr: 0.5, flexShrink: 0 }}>
                   {match.white_rank}
                 </Typography>
               )}
-              <Typography variant="body2" fontWeight={!blackAdvantage ? 'bold' : 'normal'} noWrap>
+              <Typography variant="body2" fontWeight={!blackAdvantage ? 'bold' : 'normal'} noWrap sx={railPlayerSx}>
                 {i18n.translatePlayer(match.player_white)}
               </Typography>
               <Box sx={{
@@ -119,8 +120,8 @@ export default function MatchCard({ match, compact = false, selected = false, on
               }}
             />
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-              <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{winratePercent}%</Typography>
-              <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{100 - winratePercent}%</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 'bold', ...railMetaSx }}>{winratePercent}%</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 'bold', ...railMetaSx }}>{100 - winratePercent}%</Typography>
             </Box>
           </Box>
         </CardActionArea>
@@ -151,7 +152,7 @@ export default function MatchCard({ match, compact = false, selected = false, on
               label={sourceInfo.label}
               size="small"
               sx={{
-                height: 20, fontSize: '0.7rem',
+                height: 20, ...railMetaSx,
                 bgcolor: sourceInfo.color, color: '#fff',
                 '& .MuiChip-label': { px: 0.8 },
               }}

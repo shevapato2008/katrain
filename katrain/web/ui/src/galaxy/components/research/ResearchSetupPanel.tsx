@@ -84,7 +84,7 @@ export default function ResearchSetupPanel({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         {/* Player Info */}
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ py: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'block', fontWeight: 600, letterSpacing: 0.5 }}>
             {t('research:game_info', '对局信息')}
           </Typography>
@@ -117,7 +117,7 @@ export default function ResearchSetupPanel({
         <Divider />
 
         {/* Rules Config */}
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ py: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, display: 'block', fontWeight: 600, letterSpacing: 0.5 }}>
             {t('research:rules_settings', '规则设置')}
           </Typography>
@@ -181,7 +181,7 @@ export default function ResearchSetupPanel({
         <Divider />
 
         {/* Toolbar */}
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ py: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'block', fontWeight: 600, letterSpacing: 0.5 }}>
             {t('research:edit_tools', '编辑工具')}
           </Typography>

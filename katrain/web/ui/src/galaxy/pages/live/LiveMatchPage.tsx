@@ -25,7 +25,7 @@ import LiveMatchDisplayControls from './LiveMatchDisplayControls';
    2026-08-22 全量控件账本量到：本页加载态/错误态各 6 个无名控件，
    报告详情页同款 5 个（那份是从这里抄过去的）。 */
 const LoadingControls = () => (
-  <Box sx={{ p: 2, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}>
+  <Box sx={{ py: 2, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 0.5 }}>
     {Array.from({ length: 5 }, (_, index) => (
       <Skeleton key={index} variant="rounded" height={40} />
     ))}
@@ -33,7 +33,7 @@ const LoadingControls = () => (
 );
 
 const LoadingActions = () => (
-  <Box sx={{ p: 2 }}>
+  <Box sx={{ py: 2 }}>
     <Skeleton variant="rounded" height={40} />
   </Box>
 );
@@ -96,7 +96,7 @@ export default function LiveMatchPage() {
             backTo="/galaxy/live"
           />
         )}
-        railBody={<Box sx={{ p: 2 }}><Skeleton height={120} /><Skeleton height={160} /><Skeleton height={180} /></Box>}
+        railBody={<Box sx={{ py: 2 }}><Skeleton height={120} /><Skeleton height={160} /><Skeleton height={180} /></Box>}
         displayControls={<LoadingControls />}
         actions={<LoadingActions />}
       />
@@ -114,7 +114,7 @@ export default function LiveMatchPage() {
         board={<Skeleton data-testid="board-error-skeleton" variant="rectangular" animation={false} width="100%" height="100%" />}
         modulePlate={<ModulePlate title={t('live:match', 'Live match')} backTo="/galaxy/live" />}
         railBody={(
-          <Box sx={{ p: 2 }}>
+          <Box sx={{ py: 2 }}>
             <Alert severity="error" sx={{ mb: 2 }}>
               {error?.message || t('live:load_error', 'Failed to load match data')}
             </Alert>

@@ -3218,3 +3218,71 @@ msgstr "{rank} 기사 100명 중 몇 명이 이 곳에 두는지. 「몇 명이 
 
 msgid "live:human_pick_rate_hint"
 msgstr "사람 기사가 이 곳에 두는 비율입니다. AI 추천 순위와는 별개입니다."
+
+msgid "grade:filter_phase"
+msgstr "국면"
+
+msgid "grade:filter_player"
+msgstr "대국자"
+
+msgid "grade:filter_match_view"
+msgstr "보기"
+
+msgid "grade:view_stats"
+msgstr "통계"
+
+msgid "grade:view_distribution"
+msgstr "분포"
+
+msgid "grade:axis_move_number"
+msgstr "수순"
+
+msgid "grade:axis_brilliance"
+msgstr "묘수도 1–5"
+
+msgid "grade:axis_points_lost"
+msgstr "손실 집 (최대 {n})"
+
+msgid "grade:axis_aria"
+msgstr ", 흑은 축 위, 백은 축 아래, 가로축은 수순"
+
+msgid "grade:count_note"
+msgstr "이 국면에서 {n}수"
+
+msgid "grade:histogram_unrated"
+msgstr "{n}수 미평가"
+
+msgid "grade:histogram_aria"
+msgstr "7단계 착수 평가 분포. 검은 막대는 흑, 흰 막대는 백이며 각자 기준으로 정규화"
+
+msgid "grade:def_brilliant"
+msgstr "엔진의 1순위이면서 엔진의 직관도 놓친 수 (사전확률 10% 미만)"
+
+msgid "grade:def_best"
+msgstr "엔진의 1순위"
+
+msgid "grade:def_points_lt"
+msgstr "손실 {n}집 미만"
+
+msgid "grade:def_blunder"
+msgstr "손실 {n}집 이상"
+
+msgid "grade:def_unrated"
+msgstr "이전 수가 분석되지 않았거나 탐색량이 부족해 판정 불가"
+
+msgid "grade:brilliance_entry"
+msgstr ""
+"세 가지를 모두 만족해야 함: 엔진의 1순위를 두었고, 그 1순위의 사전확률이 10% 미만이며(엔진의 직관도 놓침), 승부가 아직 "
+"결정되지 않았을 것."
+
+msgid "grade:match_timeline_legend"
+msgstr "가득 채운 색 = 1순위, 절반 높이 연한 색 = 상위 3순위, 바탕색 = 그 외"
+
+msgid "grade:match_timeline_aria"
+msgstr "수순에 따라 배열한 AI 일치도 분포. 흑백 각각 한 줄이며 연속 일치는 채워진 블록으로 나타남"
+
+msgid "grade:match_longest_run"
+msgstr "{side} {from}–{to}수, {n}수 연속 1순위 일치"
+
+msgid "live:loading_match"
+msgstr "기보 불러오는 중…"

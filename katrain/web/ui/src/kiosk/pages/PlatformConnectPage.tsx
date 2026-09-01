@@ -117,12 +117,15 @@ const PlatformConnectPage = () => {
     const inZone = (el: EventTarget | null) =>
       el instanceof HTMLElement && el.tagName === 'INPUT' && zone.contains(el);
 
+    let rafId = 0;
+    let blurTimer = 0;
     const onFocus = (e: FocusEvent) => {
       if (!inZone(e.target)) return;
       const el = e.target as HTMLElement;
       // 键盘挂在 body 上、在**缩放画布外面**,所以它量出来的 px 是屏幕 px,
       // 而内衬要写进画布坐标 —— 得先除以画布的缩放比。
-      requestAnimationFrame(() => {
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
         const keyboardPx = document.querySelector<HTMLElement>('.skbd')?.offsetHeight ?? 0;
         const canvasW = document.querySelector<HTMLElement>('.kiosk-screen')?.getBoundingClientRect().width;
         const scale = canvasW && canvasW > 0 ? canvasW / 1024 : 1;
@@ -132,7 +135,8 @@ const PlatformConnectPage = () => {
     };
     const onBlur = (e: FocusEvent) => {
       if (!inZone(e.target)) return;
-      setTimeout(() => {
+      blurTimer = window.setTimeout(() => {
+        blurTimer = 0;
         if (!inZone(document.activeElement)) zone.style.paddingBottom = '';
       }, 150);
     };
@@ -141,6 +145,14 @@ const PlatformConnectPage = () => {
     return () => {
       zone.removeEventListener('focusin', onFocus);
       zone.removeEventListener('focusout', onBlur);
+      // **摘掉监听器不等于取消已经排上队的回调。** 这两个回调都会去摸 `document`，
+      // 卸载之后再跑就是访问一个已经不存在的文档。在浏览器里这只是一次无害的写入，
+      // 在 jsdom 里它是 `ReferenceError: document is not defined` —— 一条**未捕获异常**，
+      // 于是 vitest 整批以非零退出码结束，而每一条用例都还是绿的
+      // （2026-09-01 实测：1695 条全过、rc=1）。
+      // 它是否触发只取决于测试调度，所以「今天没红」不代表没有这个洞。
+      if (rafId) cancelAnimationFrame(rafId);
+      if (blurTimer) clearTimeout(blurTimer);
       zone.style.paddingBottom = '';
     };
   }, []);

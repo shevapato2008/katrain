@@ -277,7 +277,7 @@ export default function TutorialFigurePage() {
   if (!section) return <Box p={3}><Typography>小节不存在</Typography></Box>;
   if (section.figures.length === 0) return <Box p={3}><Typography>该小节暂无变化图</Typography></Box>;
 
-  const SECTION = { p: 2, borderBottom: '1px solid', borderColor: 'divider' } as const;
+  const SECTION = { py: 2, borderBottom: '1px solid', borderColor: 'divider' } as const;
   const hasBoard = Boolean(displayPayload);
 
   const pageImage = currentFigure?.page_image_path ? (
@@ -443,7 +443,7 @@ export default function TutorialFigurePage() {
                   {/* 滑轨自己要留出横向余量：滑块拉到最右端时，它和它的水波纹会越过轨道
                       末端约 13px。竖屏下右栏是满宽、滚动段又不裁横向，这点溢出会一路顶到
                       右栏上，实测让整条右栏横向可滚 5px。 */}
-                  <Box sx={{ px: 1.5 }}>
+                  <Box>
                     <Slider
                       value={moveStep ?? maxMoveNumber}
                       onChange={(_, v) => setMoveStep(v as number)}
@@ -536,7 +536,7 @@ export default function TutorialFigurePage() {
         </>
       )}
       actions={(
-        <Box sx={{ p: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
           {!hasBoard ? (
             <Button fullWidth variant="contained" onClick={initEmptyBoard}>初始化空棋盘</Button>
           ) : editor.isEditing ? (

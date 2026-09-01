@@ -3328,3 +3328,81 @@ msgstr ""
 msgid "live:human_pick_rate_hint"
 msgstr ""
 "Share of human players who play this point, independent of the AI's ranking."
+
+msgid "grade:filter_phase"
+msgstr "Phase"
+
+msgid "grade:filter_player"
+msgstr "Player"
+
+msgid "grade:filter_match_view"
+msgstr "View"
+
+msgid "grade:view_stats"
+msgstr "Summary"
+
+msgid "grade:view_distribution"
+msgstr "Timeline"
+
+msgid "grade:axis_move_number"
+msgstr "Move number"
+
+msgid "grade:axis_brilliance"
+msgstr "Brilliance 1-5"
+
+msgid "grade:axis_points_lost"
+msgstr "Points lost (max {n})"
+
+msgid "grade:axis_aria"
+msgstr ""
+", Black above the axis and White below, horizontal axis is move number"
+
+msgid "grade:count_note"
+msgstr "{n} in this phase"
+
+msgid "grade:histogram_unrated"
+msgstr "{n} not rated"
+
+msgid "grade:histogram_aria"
+msgstr ""
+"Performance across seven grades; black bars are Black, white bars are White,"
+" each normalised to its own side"
+
+msgid "grade:def_brilliant"
+msgstr ""
+"Played the engine's top choice that even the engine's intuition missed "
+"(prior < 10%)"
+
+msgid "grade:def_best"
+msgstr "Played the engine's top choice"
+
+msgid "grade:def_points_lt"
+msgstr "Lost < {n} points"
+
+msgid "grade:def_blunder"
+msgstr "Lost {n} points or more"
+
+msgid "grade:def_unrated"
+msgstr "Cannot be judged: the previous move has no analysis or too few visits"
+
+msgid "grade:brilliance_entry"
+msgstr ""
+"All three must hold: played the engine's top choice, that choice's policy "
+"prior was under 10% (even the engine's intuition missed it), and the game "
+"was still undecided."
+
+msgid "grade:match_timeline_legend"
+msgstr ""
+"Full-height solid = top choice, half-height light = within top 3, background"
+" = other"
+
+msgid "grade:match_timeline_aria"
+msgstr ""
+"AI agreement laid out by move number, one band per colour; consecutive "
+"agreement appears as a solid block"
+
+msgid "grade:match_longest_run"
+msgstr "{side}: moves {from}-{to}, {n} in a row matched the top choice"
+
+msgid "live:loading_match"
+msgstr "Loading game…"

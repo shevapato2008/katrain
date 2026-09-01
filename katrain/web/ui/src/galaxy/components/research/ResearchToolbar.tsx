@@ -15,6 +15,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import { toolGridSx } from '../../../components/railStyles';
 
 export type PlaceMode = 'alternate' | 'black' | 'white' | null;
 export type EditMode = 'place' | 'move' | 'delete' | null;
@@ -163,7 +164,7 @@ export default function ResearchToolbar({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
       {/* Row 1: Edit tools — 4 per row, no gap */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <Box sx={toolGridSx}>
         <ToolGridButton
           icon={<FormatListNumberedIcon />}
           label={t('research:move_numbers', '手数')}
@@ -222,7 +223,7 @@ export default function ResearchToolbar({
       </Box>
 
       {/* Row 2: Analysis + File tools — 4 per row, no gap */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+      <Box sx={toolGridSx}>
         <ToolGridButton
           icon={<TipsAndUpdatesIcon />}
           label={t('research:suggestions', '支招')}

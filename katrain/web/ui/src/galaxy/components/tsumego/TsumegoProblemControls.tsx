@@ -26,7 +26,7 @@ import TimerIcon from '@mui/icons-material/Timer';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
 import ToolGridButton from '../board/ToolGridButton';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { railToggleRowSx } from '../../../components/railStyles';
+import { railToggleRowSx, toolGridSx } from '../../../components/railStyles';
 
 // mm:ss
 const formatTime = (seconds: number): string => {
@@ -92,13 +92,13 @@ const TsumegoProblemControls = ({
     <Box>
       {breadcrumb != null && (
         <>
-          <Box sx={{ px: 2, py: 1.5 }}>{breadcrumb}</Box>
+          <Box sx={{ py: 1.5 }}>{breadcrumb}</Box>
           <Divider />
         </>
       )}
 
       {/* 本题：状态 + 计时 + 尝试次数 */}
-      <Box sx={{ px: 2, py: 1.5 }}>
+      <Box sx={{ py: 1.5 }}>
         <Typography
           variant="caption"
           sx={{ display: 'block', mb: 1, letterSpacing: '.1em', textTransform: 'uppercase', color: 'text.disabled' }}
@@ -145,9 +145,9 @@ const TsumegoProblemControls = ({
       <Divider />
 
       {/* 工具格 */}
-      <Box sx={{ px: 2, py: 1.5 }}>
+      <Box sx={{ py: 1.5 }}>
         {/* 四列一行 —— 冻结稿的 `tgrid` 默认 4 列、gap 6px，与研究页工具格同一档 */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+        <Box sx={toolGridSx}>
           <ToolGridButton
             icon={<LightbulbIcon />}
             label={t('tsumego:hint', '提示')}

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Box, Typography } from '@mui/material';
 import { type GameState } from '../api';
+import { useMeasuredWidth } from '../hooks/useMeasuredWidth';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface ScoreGraphProps {
@@ -31,8 +32,10 @@ const ScoreGraph: React.FC<ScoreGraphProps> = ({ gameState, onNavigate, showScor
     return '--';
   }, [history, currentIndex]);
 
-  // Chart dimensions - larger for better visibility
-  const width = 420;
+  // Chart dimensions — 宽度由容器实测驱动（见 useMeasuredWidth 的说明）。
+  // 点击映射用的是同一个 `width`（`handleSvgClick` 里 `(clickX / rect.width) * width`），
+  // 所以宽度一变映射自动跟着对，不存在第二处要同步的常量。
+  const [svgRef, width] = useMeasuredWidth();
   const height = 180;
   const leftPadding = 42;
   const rightPadding = 42;
@@ -104,6 +107,7 @@ const ScoreGraph: React.FC<ScoreGraphProps> = ({ gameState, onNavigate, showScor
       </Box>
       <Box sx={{ bgcolor: 'background.default', borderRadius: 1, p: 0.5 }}>
         <svg
+          ref={svgRef}
           width="100%"
           height={height}
           viewBox={`0 0 ${width} ${height}`}

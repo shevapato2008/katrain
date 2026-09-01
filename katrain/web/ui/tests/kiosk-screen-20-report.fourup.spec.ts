@@ -101,8 +101,10 @@ test('四图:复盘 · 报告 ←→ sample-go/shots/20-report.png', async ({ pa
   await page.route('**/api/v1/user-games/g1', (route) => route.fulfill({ json: GAME }));
 
   await page.goto('/kiosk/report/41');
-  await page.waitForSelector('[data-testid="report-detail-key-row"]');
-  await page.waitForSelector('[data-testid="review-winrate-plot"][data-state="plotted"]');
+  // 2026-09-02:等的东西换了。屏 20 默认展开的是**AI 推荐**(逐手的东西),
+  // 曲线搬进了「着手评价」折叠块的「走势」tab,默认收着 —— 再等
+  // `review-winrate-plot` 会等到超时,而超时会把「版式变了」伪装成「页面坏了」。
+  await page.waitForSelector('[data-testid="ai-recommend-row"]');
   // canvas 是图片加载完之后才画的 —— 早一步取到的是一张空白盘。
   await page.waitForFunction(() => {
     const c = document.querySelector('.kiosk-board__play canvas') as HTMLCanvasElement | null;
@@ -119,10 +121,16 @@ test('四图:复盘 · 报告 ←→ sample-go/shots/20-report.png', async ({ pa
     outDir: OUT,
     slug: '20-report',
     referenceCaption:
-      '参考:sample-go/shots/20-report.png · L2 布局 A(盘 516 + 16 + 右栏 460)· '
-      + '上黑下白 · 题头两个出口(去研究 / 重算)取自 galaxy 同一屏',
+      '⚠️ 参考图是**改版前**的 sample-go/shots/20-report.png —— 屏 20 于 2026-09-02 按 Fan 的裁定'
+      + '重做(AI 推荐表 + galaxy 那五个分析 tab + 单开手风琴),而 smartbox-software 的 '
+      + 'go-kiosk.tmpl.html 与这 27 张参照图**尚未跟着重出**。'
+      + '⇒ 这一轮的左右两半说的不是同一个版式,四图只能当「改了哪些地方」看,不能当验收。'
+      + '重出参照图要动另一个仓,等 Fan 定。',
     implementationCaption:
-      '实现:/kiosk/report/:taskId @1024×600 · 时钟冻 16:40 · 十七手盘面逐点抄稿子,逐手分析是 fixture · '
+      '实现(2026-09-02 改版后):/kiosk/report/:taskId @1024×600 · 时钟冻 16:40 · '
+      + '右栏两块折叠**同一时刻只开一块**,默认开「AI 推荐」(着点/推荐度/领先/胜率,列名与 galaxy 同一组 msgid)· '
+      + '「着手评价」里是 galaxy 那五个 tab(走势/妙手/失误/发挥水准/AI吻合度)+ 阶段筛选 · '
+      + '显示开关改成 试下/领地/手数/支招,顺序与图标逐个对上 galaxy · '
       + '**盘那一圈坐标关掉、边距从 1.5 收回 0.5 且不取整** —— 线的节距要逐像素等于刻度带的轨道宽,'
       + '这次修的是 `LiveBoard`(做题屏那块 canvas 上修过一次);闸量出来原本偏 11.9px · '
       + '题头第二行写「每手算 2000 次 · 187 手」而不是稿子的「用了 6 分 12 秒」:**接口不吐时间戳**,编一个就是假数据 · '

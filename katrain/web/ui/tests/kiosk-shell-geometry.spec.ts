@@ -1076,12 +1076,30 @@ const REPORT_GAME = {
   }).join('')})`,
 };
 
-/** 逐手分析:每四手来一次大跌,保证「重点手」列得满三行。 */
+/**
+ * 逐手分析。每四手来一次大跌。
+ *
+ * 2026-09-02 补上**七档字段**:屏 20 的五个 tab 读的是服务端判好的 `grade` / `points_lost`,
+ * 不再是 `delta_score`。不补的话四个 tab 全落进空态,「把数据造到会溢出」这一步就没做到,
+ * 下面那些几何断言量的是一屏空图。
+ *
+ * `top_moves` 给满十个:AI 推荐那张表是这一屏**最高的那一块**(体装不下、要自己滚),
+ * 最坏那一档就在它身上。
+ */
 const reportMoveRows = () => Array.from({ length: 41 }, (_, n) => ({
   id: n, task_id: 7, move_number: n, status: 'success',
   winrate: 0.5 - n * 0.008, score_lead: -n * 0.4, visits: 500,
+  grade: n === 0 ? null : (n % 4 === 1 ? 'blunder' : (n % 7 === 3 ? 'brilliant' : 'best')),
+  points_lost: n === 0 ? null : (n % 4 === 1 ? 6 : 0),
+  points_lost_source: n === 0 ? null : 'in_search',
+  is_top_move: n % 4 !== 1,
+  top_prior: n % 7 === 3 ? 0.016 : 0.5,
+  brilliance: n % 7 === 3 ? 3 : null,
   top_moves: n % 2 === 0
-    ? [{ move: 'R11', visits: 400, winrate: 0.6, score_lead: 2, prior: 0.6, pv: ['R11'], psv: 1 }]
+    ? Array.from({ length: 10 }, (_, k) => ({
+      move: `R${11 + k}`, visits: 400 - k * 30, winrate: 0.6 - k * 0.02,
+      score_lead: 2 - k * 0.5, prior: 0.6 - k * 0.05, pv: [`R${11 + k}`], psv: 1,
+    }))
     : null,
   ownership: null,
   actual_move: n === 0 ? null : 'C3',
@@ -1177,17 +1195,27 @@ test('§8 复盘报告:盘上第一条和最后一条竖线,正对刻度带头�
 });
 
 /**
- * 右栏纵向账:页控条 + 题头 + 曲线 + **重点手(吃掉剩下的)** + 四个开关 + 四个翻手键 = 516。
- * 翻手键是这一屏的肌肉记忆位置,**任何一块长高都不许把它顶出画布**。
+ * 右栏纵向账:页控条 44 + 题头 60 + **两个折叠头 2×30** + 四个开关 40 + 四个翻手键 36
+ * + 5×12(rail-gap)= 300 ⇒ 展开那一块的体 216。翻手键是这一屏的肌肉记忆位置,
+ * **任何一块长高都不许把它顶出画布**。
+ *
+ * 2026-09-02 重写:上一版量的是「重点手」那张列表,而那一块**整个不存在了** ——
+ * 屏 20 换成了 galaxy 那五个 tab(走势/妙手/失误/发挥水准/AI吻合度)加一张 AI 推荐表,
+ * 两块折叠**同一时刻只开一块**。闸不是失效,是断言的对象换了:
+ * 守的仍然是「右栏 516、溢出由展开那一块自己吃掉、翻手键贴底」。
+ *
+ * **两个状态都要量** —— 单开手风琴有两种版式,只量一种等于放过另一种:
+ *   ① 默认态:AI 推荐展开(十个候选装不下 ⇒ 表自己滚);
+ *   ② 点开着手评价:五个 tab 里最高的那一个(AI吻合度·统计,三行 + 两句脚注)。
  */
-test('§11 复盘报告:重点手再多,翻手键也贴着右栏底,列表自己滚', async ({ page }) => {
+test('§11 复盘报告:两块折叠各自展开时,右栏都是 516、翻手键都贴底、溢出都由折叠体自己吃', async ({ page }) => {
   await bootReportDetail(page);
 
-  const m = await page.evaluate(() => {
+  const measure = () => page.evaluate(() => {
     const rail = document.querySelector('.kiosk-rail') as HTMLElement;
     const nav = document.querySelector('[data-testid="report-detail-movenav"]') as HTMLElement;
     const toggles = document.querySelector('[data-testid="report-detail-toggles"]') as HTMLElement;
-    const rows = document.querySelector('.kiosk-fold__body.foldrows') as HTMLElement;
+    const openBody = document.querySelector('.kiosk-fold[data-open="true"] .kiosk-fold__body') as HTMLElement;
     const screenEl = document.querySelector('.kiosk-screen') as HTMLElement;
     const r = rail.getBoundingClientRect();
     return {
@@ -1195,44 +1223,55 @@ test('§11 复盘报告:重点手再多,翻手键也贴着右栏底,列表自己
       railBottom: Math.round(r.bottom),
       navBottom: Math.round(nav.getBoundingClientRect().bottom),
       navCount: nav.querySelectorAll('button').length,
-      toggleCount: toggles.querySelectorAll('button').length,
-      keyRows: document.querySelectorAll('[data-testid="report-detail-key-row"]').length,
+      toggleNames: [...toggles.querySelectorAll('button')].map((b) => b.textContent),
       progressText: (document.querySelector('[data-testid="report-detail-progress"]') as HTMLElement).textContent,
-      // 一个块级 <p> 无论几行都只有一个 client rect —— 要数**行盒**只能拿 Range 量。
-      progressLines: (() => {
-        const p = document.querySelector('[data-testid="report-detail-progress"]') as HTMLElement;
-        const range = document.createRange();
-        range.selectNodeContents(p);
-        return range.getClientRects().length;
-      })(),
       rheadH: Math.round((document.querySelector('[data-testid="report-detail-rhead"]') as HTMLElement)
         .getBoundingClientRect().height),
       railOverflow: rail.scrollHeight - rail.clientHeight,
-      rowsOverflow: rows.scrollHeight - rows.clientHeight,
+      bodyOverflow: openBody.scrollHeight - openBody.clientHeight,
+      bodyH: Math.round(openBody.getBoundingClientRect().height),
       screenBottom: Math.round(screenEl.getBoundingClientRect().bottom),
-      plot: document.querySelector('[data-testid="review-winrate-plot"]')!.getAttribute('data-state'),
     };
   });
 
-  // 只记录、不作判据。2026-08-23 接耗时那次的承重反查结果就在这两个数里:
-  //   短行(40 手)rheadH=60 · 长行(128分36秒)rheadH=60 · **强行顶成两行 rheadH 还是 60**
-  // ⇒ `.rhead` 是 `height:60px; flex:none` 且内容 `align-items:center`,副行长短
-  //   既不长高也不溢出(两行时 `p` 底边比 `.rhead` 底边还高 4px),下面那块自己滚的
-  //   重点手列表可用高度**不随这一行变**。所以这一轮没有新的承重断言要留 ——
-  //   量出来是「不受影响」,就不该硬安一条理由是假的闸。
-  console.log('[report-rhead] rheadH=%d progressLines=%d text=%s', m.rheadH, m.progressLines, m.progressText);
-  expect(m.railH, '右栏不是 516 —— 布局 A 的高度账先崩了').toBe(516);
-  expect(m.navCount, '翻手键不是四个').toBe(4);
-  expect(m.toggleCount, '显示开关不是四个(领地 / 手数 / AI 推荐 / 试下)').toBe(4);
-  expect(m.keyRows, '造的数据没让重点手列出三行 —— 下面的断言是空的').toBe(3);
   // **这一条守的是「量的是不是最坏那一档」,不是版式本身。** 没有它,谁把 fixture 里
   // 那两个章删掉,下面整组几何断言就悄悄退回去量那条短行,而且照样全绿。
-  expect(m.progressText, '副行没写成耗时 —— 那这条闸量的不是接上耗时之后的版式')
+  const first = await measure();
+  console.log('[report-rhead] rheadH=%d text=%s', first.rheadH, first.progressText);
+  expect(first.progressText, '副行没写成耗时 —— 那这条闸量的不是接上耗时之后的版式')
     .toContain('用了 128分36秒');
-  expect(m.plot, '曲线没画出来 —— 这一屏的胜率是真数据,画不出来就不该判几何').toBe('plotted');
-  expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由重点手那一块吃掉').toBeLessThanOrEqual(0);
-  expect(m.navBottom, '翻手键没贴右栏底').toBe(m.railBottom);
-  expect(m.navBottom, '翻手键被顶到画布外面了').toBeLessThanOrEqual(m.screenBottom);
+
+  // ① 默认态:AI 推荐展开。十个候选装不下 ⇒ **表自己滚**,右栏不许被顶破。
+  expect(await page.locator('[data-testid="report-detail-ai"]').getAttribute('data-open')).toBe('true');
+  expect(first.railH, '右栏不是 516 —— 布局 A 的高度账先崩了').toBe(516);
+  expect(first.navCount, '翻手键不是四个').toBe(4);
+  // 名字与顺序都是判据:两端左起第一颗都得是「试下」,不然「一眼对应上」这句话不成立。
+  expect(first.toggleNames, '显示开关没按 galaxy 的名字与顺序排')
+    .toEqual(['试下', '领地', '手数', '支招']);
+  expect(first.bodyOverflow, 'AI 推荐表没溢出 —— 那这一条量的不是「装不下」那一档').toBeGreaterThan(0);
+  expect(first.railOverflow, '右栏自己被顶破了 —— 溢出该由折叠体吃掉').toBeLessThanOrEqual(0);
+  expect(first.navBottom, '翻手键没贴右栏底').toBe(first.railBottom);
+  expect(first.navBottom, '翻手键被顶到画布外面了').toBeLessThanOrEqual(first.screenBottom);
+
+  // ② 点开着手评价 —— AI 推荐必须跟着收起(单开),而账要照样平。
+  await page.getByRole('button', { name: /着手评价/ }).click();
+  expect(await page.locator('[data-testid="report-detail-ai"]').getAttribute('data-open')).toBe('false');
+  await expect(page.getByTestId('review-winrate-plot')).toHaveAttribute('data-state', 'plotted');
+
+  // 五个 tab 逐个量:每一个都不许把折叠体撑破,右栏都得是 516、翻手键都得贴底。
+  for (const tab of ['走势', '妙手', '失误', '发挥水准', 'AI吻合度']) {
+    await page.getByRole('button', { name: tab, exact: true }).click();
+    const m = await measure();
+    expect(m.railH, `${tab}:右栏不是 516`).toBe(516);
+    expect(m.railOverflow, `${tab}:右栏被顶破`).toBeLessThanOrEqual(0);
+    expect(m.bodyOverflow, `${tab}:折叠体内容被裁 ${m.bodyOverflow}px`).toBeLessThanOrEqual(0);
+    expect(m.navBottom, `${tab}:翻手键没贴右栏底`).toBe(m.railBottom);
+  }
+  // AI吻合度 的两个视图版式不同,分布那一支也得量。
+  await page.getByRole('button', { name: '分布', exact: true }).click();
+  const dist = await measure();
+  expect(dist.bodyOverflow, `分布视图:折叠体内容被裁 ${dist.bodyOverflow}px`).toBeLessThanOrEqual(0);
+  expect(dist.navBottom, '分布视图:翻手键没贴右栏底').toBe(dist.railBottom);
 });
 
 // ── D2 稿外五屏:只接壳,不推导版式 ──────────────────────────────────────

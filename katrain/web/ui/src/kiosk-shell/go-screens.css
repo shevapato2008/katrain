@@ -692,6 +692,157 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 /* 当前停在哪一手 —— 竖的一条,和曲线上那颗点说的是同一件事。 */
 .wrplot .cursor { stroke: var(--accent); stroke-width: 1.2; opacity: .55; }
 
+/* 目差那条曲线(走势 tab 的第二条)。和胜率同色就分不出两条,取 --warn ——
+   与 galaxy 走势 tab 上「黑胜率」绿 /「黑领先」橙 的那对颜色同一套。 */
+.wrplot .lead { fill: none; stroke: var(--warn); stroke-width: 1.8;
+  stroke-linejoin: round; opacity: .85; }
+/* 右侧那条目差刻度。左轴读胜率、右轴读目差,两条曲线各读各的。
+   **量程必须对称**(±max):右轴三格是 space-between,中间那格就在盒子正中 ——
+   量程不对称的话「0」这个字会指到不是 0 的高度上。而正中同时是胜率 50% 那条虚线,
+   两条曲线的「均势」因此重合,不是巧合是对的。 */
+.wrlead { width: 34px; flex: none; display: flex; flex-direction: column;
+  justify-content: space-between; align-items: flex-start; padding-left: 6px; }
+.wrlead i { font-style: normal; font-size: 9.5px; color: var(--warn);
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* ── 屏 20 着手评价(2026-09-02)————————————————————————————————————
+   把 galaxy `TrendChart` 的五个 tab 搬上盒子。**名字、顺序、功能与 galaxy 全等**,
+   只改摆放和画法(Fan 09-01:「可以改展示位置和展示方式,但要让用户一眼对应上」)。
+
+   460×516 装不下「AI 推荐表 + 五 tab」两块常驻,所以两块都是折叠、**同一时刻只开一块**。
+   算术:44(页控条)+ 60(状态区)+ 2×30(两个折叠头)+ 40(显示开关)+ 36(翻手条)
+   + 5×12(rail-gap)= 300 ⇒ 展开那块的体 216。两块都展开要 380。
+
+   **只有棋手筛选(双方/黑方/白方)被去掉。** 不是省事:`chartMarks.tsx` 那条铁律
+   「颜色给黑白,档位给位置」在这儿一样管用 —— 棒棒糖黑在轴上白在轴下、直方图黑柱白柱
+   并排、吻合度上黑下白两条带,黑白已经在图里分开了,再放一个筛选器是拿 34px 换屏上已有的
+   信息。7 寸触摸屏没有 hover,能不点就不点。
+
+   ⚠️ 七个档位色的**真源是 katrain/core/move_grade.yaml**,组件里一律从
+   `GRADE_BY_ID[id].color` 取。这份 CSS **不写任何档位色** —— 写了就会和 yaml 漂。 */
+.gradebody { display: flex; flex-direction: column; gap: 6px; height: 100%;
+  box-sizing: border-box; padding: 7px 12px 8px; }
+.gseg { flex: none; height: 34px; border-radius: 10px; }
+.gseg button { font-size: 13px; }
+.gseg5 button { font-size: 12.5px; padding: 0 2px; }
+.gsub { height: 30px; border-radius: 9px; width: auto; }
+.gsub button { font-size: 12px; padding: 0 10px; font-weight: 500; }
+.gfilters { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.gview { margin-left: auto; }
+/* 量程说明落在筛选行右端 —— 和 AI吻合度 tab 的「统计/分布」同一个位置:
+   一屏里同一条行只有一种含义,左边是筛选,右边是这张图读什么。 */
+.gunit { margin-left: auto; font-size: 11px; color: var(--dim); white-space: nowrap; }
+.gnote { margin: 0; font-size: 10.5px; line-height: 1.5; color: var(--dim); }
+/* 那句免责是**硬性**的(galaxy 注释:「不许在任何视图里省掉」)。
+   我们手上判作弊的证据一份都没有,界面上不能暗示我们有。琥珀把它和普通脚注分开。 */
+.gwarn { margin: 0; font-size: 10.5px; line-height: 1.5; color: var(--warn); }
+.gempty { margin: 0; padding: 14px 0; text-align: center; font-size: 12px; color: var(--dim); }
+
+/* 走势 tab 的两个当前值。 */
+.tline { margin: 0; display: flex; justify-content: space-between; font-size: 11.5px; color: var(--dim); }
+.tline b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.tline .wr b { color: var(--good); }
+.tline .sl b { color: var(--warn); }
+/* 走势那一块是 grow 的,体比内容高 —— 让曲线吃掉多出来的高度,别在底下留一条空带。
+   `--eval-graph-h: 96` 是共享包给的**下限**,不是上限。 */
+.evalpad { flex: 1; min-height: 0; display: flex; }
+.evalpad .wrbox { flex: 1; min-width: 0; }
+.evalpad .wraxis, .evalpad .wrplot { height: auto; }
+
+/* 棒棒糖图(妙手 / 失误)。黑在轴上、白在轴下 —— 与 galaxy `renderLollipop` 同构。
+
+   纵轴刻度**按真分数绝对定位**,不用 space-between 均分:妙度 5/3/1 落在整幅的
+   0/20/40%,均分会摆到 0/16.7/33.3%,那样刻度本身在说谎。svg 里的网格线用同一个分数画,
+   而 svg 是 `preserveAspectRatio="none"` ⇒ 横线的 y 分数在任何缩放下不变,两边对得死。 */
+.lolli { flex: 1; min-height: 0; display: flex; gap: 8px; }
+.laxis { position: relative; width: 42px; flex: none; margin-bottom: 14px; }
+.laxis u { position: absolute; right: 0; transform: translateY(-50%); text-decoration: none;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 9px; color: var(--dim); line-height: 1; }
+.lside { position: absolute; left: 0; transform: translateY(-50%); font-size: 10.5px; color: var(--dim); }
+.lplot { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.lplot svg { flex: 1; min-height: 0; width: 100%; display: block;
+  border: 1px solid var(--hair); border-radius: 8px; background: var(--ink); }
+.lplot.is-pickable svg { cursor: pointer; }
+.lplot.is-pickable:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lplot .lgrid { stroke: color-mix(in srgb, var(--text) 6%, transparent); stroke-width: 1; }
+.lplot .lax { stroke: var(--hair); stroke-width: 1.2; stroke-dasharray: 4 4; }
+.lplot .lstem { stroke-width: 2.4; }
+.lplot .lstem.on { stroke-width: 3.4; }
+.lplot .lhalo { fill: none; stroke-width: 1.6; opacity: .75; }
+.lscale { display: flex; justify-content: space-between; height: 14px;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 9.5px; color: var(--dim); }
+/* 图下那一行是**两态**的:没选中说计数与截断,选中说这一手。
+   一行两态是有意的 —— 7 寸屏多一行就要从图上扣 20px,而这两句不会同时想看。 */
+.selline { margin: 0; font-size: 10.5px; line-height: 1.5; color: var(--dim); }
+.selline.on { color: var(--text); padding-left: 8px;
+  border-left: 2px solid color-mix(in srgb, var(--accent) 70%, transparent); }
+.selline b { color: var(--accent); }
+
+/* 发挥水准。**颜色给黑白、档位给位置**(galaxy `chartMarks.tsx` 的铁律,
+   来自 Fan 09-01「我如何一眼就看出哪个是黑棋」)。柱子画成黑子/白子的材质,
+   档位交给横轴位置 + 标签下那条细色线。 */
+.hist { flex: 1; min-height: 0; display: flex; gap: 6px; }
+.hyaxis { width: 32px; flex: none; display: flex; flex-direction: column;
+  justify-content: space-between; align-items: flex-end; padding-bottom: 26px; }
+.hyaxis i { font-style: normal; font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 9px; color: var(--dim); }
+.hcols { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.hg { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.hbars { flex: 1; min-height: 0; display: flex; align-items: flex-end; justify-content: center;
+  gap: 3px; width: 100%; }
+.hb { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.hb u { text-decoration: none; font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  font-size: 9px; color: var(--text); line-height: 11px; }
+.hb b { display: block; width: 15px; border-radius: 2.5px 2.5px 0 0; }
+.hg em { font-style: normal; font-size: 10.5px; color: var(--dim); margin-top: 4px; }
+.hg > i { display: block; width: 22px; height: 2px; border-radius: 2px; margin-top: 3px; }
+
+/* AI 吻合度 · 统计。标记就是**真的一颗黑子 / 白子**,不另造图例。
+   galaxy 是三组各两条(45/组),460 宽下三组要 135 —— 体只有 212,装不下。
+   收成**一类一行、黑白两个单元并排**;绝对手数挪到下面那句分母里,一个数都没丢。 */
+.mtab { flex: none; display: flex; flex-direction: column; gap: 3px; }
+.mr { display: grid; grid-template-columns: 78px 1fr 1fr; gap: 8px; align-items: center; height: 20px; }
+.ml { font-size: 11px; color: var(--text); white-space: nowrap; }
+.mu { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.mu i { flex: 1; min-width: 0; height: 7px; border-radius: 4px; background: var(--panel); display: block; }
+.mu i b { display: block; height: 100%; border-radius: 4px; }
+.mu u { text-decoration: none; width: 28px; text-align: right; flex: none;
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 10px; color: var(--dim); }
+.sm { width: 12px; height: 12px; flex: none; display: block; }
+
+/* AI 吻合度 · 分布。「其他」**不能用 --panel** —— 铺在 --panel 的折叠体上就是隐形,
+   整条带只剩几块飘着的绿(共享包在 `--track--mini` 那段为同一个坑写过一次注)。
+   缝也归零:围棋一局 187 手摊在 398px 上每格 2.1px,再留 1px 缝就成条形码。 */
+.mband { flex: none; display: flex; flex-direction: column; gap: 2px; }
+.mband .kiosk-ribbon__lead { font-size: 10.5px; justify-content: flex-end; padding-right: 8px; }
+.mtrack { gap: 0; height: 13px; align-items: flex-end; }
+.mtrack i { flex: 1 1 0; min-width: 0; display: block; height: 100%;
+  background: color-mix(in srgb, var(--dim) 20%, var(--raise)); }
+.mtrack i[data-m="top1"] { background: var(--good); }
+.mtrack i[data-m="top3"] { height: 50%; background: color-mix(in srgb, var(--good) 42%, var(--panel)); }
+.mlegend { margin: 0; display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--dim); }
+.mlegend i { width: 12px; height: 11px; display: block; margin-left: 7px;
+  background: color-mix(in srgb, var(--dim) 20%, var(--raise)); }
+.mlegend i:first-child { margin-left: 0; }
+.mlegend i[data-m="top1"] { background: var(--good); }
+.mlegend i[data-m="top3"] { height: 6px; align-self: flex-end; margin-bottom: 2px;
+  background: color-mix(in srgb, var(--good) 42%, var(--panel)); }
+.mlegend em { font-style: normal; margin-left: auto; color: var(--text); }
+
+/* 显示开关带图标那一版。
+   ⚠️ **这一条推翻了本文件上面那句「开关本来就没有图标」**(2026-08-24 屏 18 重画时立的)。
+   推翻的依据是 Fan 2026-09-01 看着盒上与 galaxy 的两张图说的:
+   「几个按钮的 icon 还有名称也和 galaxy 界面中的不一致,这是不能接受的。」
+   —— 那条老规则解决的是「安个图标像按下去有后果」,而这里要解决的是**跨端认不出是同一件事**,
+   后者更贵。名字、顺序、图标逐个对上 galaxy 的 `LiveMatchDisplayControls`。
+   原来那颗状态点让位给图标:一排四个各说各的功能,而「开没开」已经由 aria-pressed 的
+   底色和边框在说。**是修饰类不是改 `.gtoggles`** —— 别的屏还在用无图标那一版。 */
+.gtoggles--icon button { gap: 5px; font-size: 12.5px; }
+.gtoggles--icon button::before { display: none; }
+.gtoggles--icon button svg { width: 15px; height: 15px; flex: none; }
+
 /* ── 屏 27 设置 ──────────────────────────────────────────────────────
    组里那句说明。**不是旁注** —— 稿子 2026-08-22 把讲道理的小字都收进注释了,
    留在屏上的这几句是**真 UI 文案**(「不登录也能用，成绩存在这台盒子上」这类)。 */
@@ -1153,7 +1304,8 @@ button.kiosk-row.figrow { flex: none; }
 .kiosk-rail > .setnote { margin-bottom: 0; }
 
 /* ── 屏 21 研究 ────────────────────────────────────────────────────────────
-   AI 推荐表:着手 / 推荐度 / 目差 / 胜率 四列。逐字取自稿子(`go-kiosk.tmpl.html:386-393`)。
+   AI 推荐表:着点 / 推荐度 / 领先 / 胜率 四列。列名 2026-09-02 按 galaxy 的 `AiAnalysis`
+   对齐(原来是「着手 / 推荐度 / 目差 / 胜率」)—— 屏 20 也用这张表,两屏同一个名字。
    等宽字 + `tabular-nums`,列才对得齐 —— 和 `.mvrows` 同一条理由,但列数和口径不同,
    所以不复用那个类。
 

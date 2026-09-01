@@ -12,6 +12,8 @@ import {
   buildHistogram,
   buildMatchRate,
   buildMatchTimeline,
+  gradedMoves,
+  BRILLIANCE_MAX,
   longestTop1Run,
   PER_SIDE_LIMIT,
   GRADE_BY_ID,
@@ -66,7 +68,6 @@ const TIER_DEF_TEXT = (t: (k: string, d: string) => string): Record<string, stri
   };
 };
 
-const BRILLIANCE_MAX = 5;
 const BRILLIANCE_BANDS: readonly { level: number; band: string }[] = [
   { level: 1, band: '5% ≤ prior < 10%' },
   { level: 2, band: '3% ≤ prior < 5%' },
@@ -270,24 +271,9 @@ export default function TrendChart({
   const [phase, setPhase] = useState<PhaseId>('all');
   const [player, setPlayer] = useState<PlayerFilter>('both');
 
-  const moves = useMemo(() => Object.values(analysis), [analysis]);
-
-  // 直播链路的 analysis 由后端下发旧的三个布尔量、没有 grade；报告链路有 grade。
-  // 两者共用这个组件，所以缺 grade 时退回旧布尔量，免得直播页整块空掉。
-  const graded = useMemo<MoveAnalysis[]>(() => {
-    if (moves.some((m) => m.grade)) return moves;
-    return moves.map((m) => ({
-      ...m,
-      grade: (m.is_brilliant
-        ? 'brilliant'
-        : m.is_mistake
-          ? 'mistake'
-          : m.is_questionable
-            ? 'inaccuracy'
-            : 'unrated') as GradeId,
-      points_lost: m.points_lost ?? -(m.delta_score ?? 0),
-    }));
-  }, [moves]);
+  // 摊平 + 缺 grade 时退回旧布尔量,现在住在 `features/analysis/moveGrade.ts`
+  // —— kiosk 屏 20 用的是同一份,退回规则不许两处各写各的。
+  const graded = useMemo(() => gradedMoves(analysis), [analysis]);
 
   const brilliants = useMemo(
     () => selectPerSide(graded.filter(isBrilliant), brillianceRank, { phase, player }),

@@ -17,11 +17,18 @@ import { syncScrollbar } from './scrollSync';
  *    这条不在本组件里,在共享 `tokens.css` 的 `.kiosk-rail .kiosk-actions { margin-top:auto }`。
  *    悔棋 / 认输的位置是肌肉记忆,收个面板就把它挪走是「切模块不跳」的同类问题。
  *
- * 开合状态**由本组件自己拿着**:它是纯粹的视图偏好,没有任何别的东西依赖它。
- * 需要受控时再加 `open`/`onToggle`,现在没有第二个使用者,先不提前泛化。
+ * 开合状态默认**由本组件自己拿着**:它是纯粹的视图偏好,没有任何别的东西依赖它。
+ *
+ * 2026-09-02 加了**受控**那一支(`open` + `onToggle` 同时给才生效)。第二个使用者到了:
+ * 屏 20 右栏里「AI 推荐」和「着手评价」两块**同一时刻只能开一块** —— 不是风格,是几何:
+ * 44(页控条)+ 60(状态区)+ 2×30(两个折叠头)+ 40(显示开关)+ 36(翻手条)+ 5×12
+ * = 300,展开那块的体只剩 216,而两块都展开要 380。手风琴的状态住在页面上,
+ * 所以这里必须能受控。**只给了 `open` 不给 `onToggle` 仍走自持**(那种半受控写法
+ * 会做出一个点不动的折叠头,比不支持更糟)。
  */
 export function KioskFold({
-  fold, title, value, defaultOpen = true, grow = false, bodyClassName, scrollbar = false, testId, children,
+  fold, title, value, defaultOpen = true, open: openProp, onToggle,
+  grow = false, bodyClassName, scrollbar = false, testId, children,
 }: {
   /** `data-fold`。规范拿它当这一块的身份(`eval` / `moves` / `ledger`),取图和断言都认它。 */
   fold: string;
@@ -29,6 +36,9 @@ export function KioskFold({
   /** 标题行右端的**当前值**。收起后仍然显示 —— 见上面第 2 条。 */
   value?: ReactNode;
   defaultOpen?: boolean;
+  /** 受控开合。**必须和 `onToggle` 成对给** —— 只给这个会做出一个点不动的折叠头。 */
+  open?: boolean;
+  onToggle?: () => void;
   /** 这一块吃掉同栏里剩下的高度(`.kiosk-fold--grow`)。一栏里最多一块。 */
   grow?: boolean;
   bodyClassName?: string;
@@ -48,7 +58,10 @@ export function KioskFold({
   testId?: string;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [selfOpen, setSelfOpen] = useState(defaultOpen);
+  const controlled = openProp !== undefined && onToggle !== undefined;
+  const open = controlled ? openProp : selfOpen;
+  const toggle = controlled ? onToggle : () => setSelfOpen((v) => !v);
 
   // callback ref + useState,**不能用 useRef + 空依赖 effect** —— 收起时体根本不在树上,
   // `useRef` 那种写法读到一次 null 就再也不重跑,展开回来条子永远不画。
@@ -70,7 +83,7 @@ export function KioskFold({
         type="button"
         className="kiosk-fold__head"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         <span className="kiosk-fold__toggle"><Icon name="caret-down" /></span>
         {title}

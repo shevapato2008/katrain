@@ -619,3 +619,48 @@ def test_warns_when_the_whole_roi_prefilter_round_evaporated(monkeypatch, caplog
     assert healthy.ok is True
     assert sum(1 for a in healthy.attempts if a.get("roi_fallback")) == 0
     assert _warnings_about_roi_prefilter(caplog) == [], "正常一轮不许报警(恒真守卫)"
+
+
+class ProbeScriptedCapture(FakeCapture):
+    """前几帧按脚本给「过曝 / 正常」,之后回到正常的合成帧。
+
+    `blown` 的第一项是**第一帧**,所以两个用例都能分辨「取 3 帧取中位」和
+    「只看第一帧」—— 两种用例的第一帧都跟多数派相反。"""
+
+    def __init__(self, led, camera_points, *, blown):
+        super().__init__(led, camera_points)
+        self.blown = list(blown)
+
+    def _frame(self):
+        if self.blown:
+            return np.full((900, 1000, 3), 253 if self.blown.pop(0) else 150, np.uint8)
+        return super()._frame()
+
+
+def test_exposure_gate_is_not_fooled_by_one_bad_frame_in_three():
+    """3 帧里只有 1 帧过曝(而且正好是第一帧)⇒ 闸应当放行。
+
+    单帧探针会被一帧噪声/AE 中间帧骗到。这里只做「取 3 帧取中位」,不加等待重试
+    ——「等」是标定入口那次曝光收敛的职责,两处都做会等两遍。"""
+    led = FakeLed()
+    capture = ProbeScriptedCapture(led, _synthetic_camera_points(), blown=[True, False, False])
+
+    result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
+
+    assert result.reason != "frame_overexposed"
+    assert result.ok is True
+
+
+def test_exposure_gate_still_rejects_when_two_of_three_frames_are_blown():
+    """3 帧里 2 帧过曝(第一帧正常)⇒ 仍然拒绝,而且一颗灯都不许闪。
+
+    反向对照:光「多取几帧」不够,判决必须跟着多数派走,不能变成「有一帧行就行」。"""
+    led = FakeLed()
+    capture = ProbeScriptedCapture(led, _synthetic_camera_points(), blown=[False, True, True])
+
+    result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
+
+    assert result.ok is False
+    assert result.reason == "frame_overexposed"
+    assert led.attempts == []
+    assert result.exposure_stats["median"] == pytest.approx(253, abs=1)

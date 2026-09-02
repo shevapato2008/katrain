@@ -23,6 +23,9 @@ logger = logging.getLogger(__name__)
 EXPOSURE_MEDIAN_MAX = 245.0   # 高于此:盘面接近削顶,lit-dark 差分趋近 0
 EXPOSURE_MEDIAN_MIN = 20.0    # 低于此:整帧欠曝,LED 之外什么都看不见
 EXPOSURE_CLIP_FRAC_MAX = 0.35  # >=250 的像素占比上限
+# 探针帧数。单帧会被一帧噪声、或者曝光逐帧离散生效时的那一帧中间态骗到
+# (camera.py 在 reader 线程两次 read 之间写 V4L2,中间态最多一帧)。
+EXPOSURE_PROBE_FRAMES = 3
 
 # 检测阶段容缺的下限 —— 必须与 fit_geometry_from_anchors 的 min_inliers 同源:
 # 拟合阶段本来就允许 13 个锚点里有 4 个外点(RANSAC min_inliers=9),检测阶段
@@ -117,6 +120,25 @@ def check_frame_exposure(frame: np.ndarray) -> tuple[bool, str | None, dict]:
     if stats["median"] <= EXPOSURE_MEDIAN_MIN:
         return False, "frame_underexposed", stats
     return True, None, stats
+
+
+def probe_frame_exposure(capture) -> tuple[bool, str | None, dict] | None:
+    """连取 EXPOSURE_PROBE_FRAMES 帧,按整帧 median 取**中位数那一帧**的判决。
+
+    判决跟着多数派走 —— 不是「有一帧行就行」,也不是「有一帧不行就毙」。
+    这里**不**等 AE 稳定、**不**重试:「等」是标定入口那次曝光收敛
+    (GeometryCalibrationService._converge_exposure)的职责,两处都做会等两遍。
+    这一层只保证不被单帧骗到。返回 None 表示一帧都没抓到(上游报 no_frames)。"""
+    samples = []
+    for _ in range(EXPOSURE_PROBE_FRAMES):
+        frame, _seq, _ts = capture.grab_fresh(settle_ms=0.0)
+        if frame is None:
+            break
+        samples.append(check_frame_exposure(frame))
+    if not samples:
+        return None
+    samples.sort(key=lambda sample: sample[2]["median"])
+    return samples[len(samples) // 2]
 
 
 def detect_led_centroid(
@@ -298,10 +320,10 @@ class LedGeometryCalibrator:
         detected = []
         attempts = []
         try:
-            probe, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
-            if probe is None:
+            probed = probe_frame_exposure(self.capture)
+            if probed is None:
                 return CalibrationResult(ok=False, reason="no_frames")
-            ok, reason, stats = check_frame_exposure(probe)
+            ok, reason, stats = probed
             logger.info(
                 "geometry exposure gate: ok=%s reason=%s median=%.0f clip=%.3f",
                 ok, reason, stats["median"], stats["clip_frac"],

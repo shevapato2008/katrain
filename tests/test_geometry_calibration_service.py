@@ -394,3 +394,42 @@ def test_status_publishes_anchor_snapshot_and_resets_it_on_new_start(tmp_path):
 
     release_second.set()
     service.wait(timeout=2)
+
+
+def test_failed_calibration_keeps_attempts_in_metrics():
+    """失败时 attempts 必须留在 status 里 —— 它是唯一能分辨 low_signal /
+    ambiguous_blobs / show_failed 的东西(见 spec §2.3)。"""
+    led, capture = FakeLed(), FreshFakeCapture()
+    attempts = (
+        {
+            "row": 0,
+            "col": 0,
+            "color": "green",
+            "ok": False,
+            "peak": 8.1,
+            "area": 0,
+            "margin": None,
+            "reason": "low_signal",
+        },
+    )
+
+    class FailingCalibrator:
+        def __init__(self, **_kwargs):
+            pass
+
+        def calibrate(self):
+            return CalibrationResult(ok=False, reason="anchor_not_found:0,0", attempts=attempts)
+
+    service = GeometryCalibrationService(
+        led=led,
+        capture=capture,
+        calibrator_factory=FailingCalibrator,
+        save_path="/tmp/unused.npz",
+    )
+    service.start(trigger="manual", empty_confirmed=True)
+    service.wait(5)
+
+    status = service.status()
+    assert status["phase"] == "failed"
+    assert status["error"] == "anchor_not_found:0,0"
+    assert status["metrics"]["attempts"] == [dict(attempts[0])]

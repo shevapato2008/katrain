@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from threading import Event
 from typing import Callable
@@ -11,6 +12,8 @@ import numpy as np
 
 from katrain.vision import stone_classifier
 from katrain.vision.geometry_lock import GeometryLock
+
+logger = logging.getLogger(__name__)
 
 
 CALIBRATION_ANCHORS = (
@@ -247,6 +250,17 @@ class LedGeometryCalibrator:
                     "margin": result.margin,
                     "reason": result.reason,
                 }
+            )
+            logger.info(
+                "geometry anchor (%d,%d) %s: ok=%s peak=%.1f area=%s margin=%s reason=%s",
+                row,
+                col,
+                color_name,
+                result.ok,
+                result.peak,
+                result.area,
+                result.margin,
+                result.reason,
             )
             if result.ok:
                 point = (float(result.centroid[0]), float(result.centroid[1]))

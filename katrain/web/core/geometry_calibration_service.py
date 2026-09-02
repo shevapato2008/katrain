@@ -195,6 +195,9 @@ class GeometryCalibrationService:
                 with self._lock:
                     self._status["phase"] = "failed"
                     self._status["error"] = result.reason or "calibration_failed"
+                    # 失败诊断是这一层唯一的可观测出口 —— 丢掉它,任何人都分不清
+                    # low_signal / ambiguous_blobs / show_failed(见 spec §2.3)。
+                    self._status["metrics"] = {"attempts": [dict(a) for a in result.attempts]}
                 return
 
             save_geometry_lock(result.lock, self.save_path)

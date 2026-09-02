@@ -231,3 +231,28 @@ def test_calibrate_fails_fast_on_overexposed_frame_without_flashing_any_led():
     assert result.reason == "frame_overexposed"
     # D2③ + 用户体验:环境不行的时候不要先闪 13 颗灯再说不行。
     assert led.attempts == []
+
+
+def test_check_frame_exposure_pins_clip_frac_alone():
+    """median 远低于 245,只有 clip_frac 越线 —— 单独钉住 EXPOSURE_CLIP_FRAC_MAX。"""
+    frame = np.full((480, 640, 3), 100, np.uint8)
+    frame[:192] = 255                      # 192/480 = 40% 的行削顶
+
+    ok, reason, stats = check_frame_exposure(frame)
+
+    assert ok is False
+    assert reason == "frame_overexposed"
+    assert stats["median"] == pytest.approx(100, abs=1)      # 远在 245 之下
+    assert stats["clip_frac"] == pytest.approx(0.40, abs=0.02)
+
+
+def test_check_frame_exposure_pins_median_alone():
+    """clip_frac 为 0,只有 median 越线 —— 单独钉住 EXPOSURE_MEDIAN_MAX。"""
+    frame = np.full((480, 640, 3), 246, np.uint8)            # 246 < 250 ⇒ 不算削顶
+
+    ok, reason, stats = check_frame_exposure(frame)
+
+    assert ok is False
+    assert reason == "frame_overexposed"
+    assert stats["median"] == pytest.approx(246, abs=1)
+    assert stats["clip_frac"] == pytest.approx(0.0, abs=0.01)  # 一个像素都没到 250

@@ -449,10 +449,16 @@ def test_first_nondegenerate_quad_rejects_the_collinear_corner_case():
     assert len(quad) == 4
 
 
-def test_missing_corner_does_not_poison_roi_prediction():
+def test_missing_corner_does_not_poison_roi_prediction(monkeypatch):
     """(18,0) 是真机 2026-09-02 实测唯一没定位到的那颗。用退化 4 子集拟出的单应会把
     后面 8 颗的 ROI 预测带偏,只能靠全画幅回退救回来 —— 回退次数就是那条退化路径的指纹。
-    result.ok 在这里没有判别力(回退会把它兜成 True)。"""
+    result.ok 在这里没有判别力(回退会把它兜成 True)。
+
+    `roi_fallback == 0` 这条断言是单边的:「ROI 被投毒 → 回退 8 次」和「压根没有
+    ROI(corner_h 永远是 None,retry 从未触发)→ 回退 0 次」长得一模一样,挡得住
+    退化单应、挡不住「非退化 4 子集重试路径压根没跑」。补一个 predict_anchor_roi
+    的 spy:ROI 真的被算过、真的被用在了后面的锚点上,才说明 first_nondegenerate_quad
+    的 `>= 4` 重试确实生效了。"""
     led = FakeLed()
     points = _synthetic_camera_points()
     invisible = {(18, 0)}
@@ -463,10 +469,22 @@ def test_missing_corner_does_not_poison_roi_prediction():
                 return np.full((900, 1000, 3), 90, np.uint8)
             return super()._frame()
 
+    calls = []
+    real_predict = led_geometry_calibrator.predict_anchor_roi
+
+    def spy(homography, row, col):
+        calls.append((row, col))
+        return real_predict(homography, row, col)
+
+    monkeypatch.setattr(led_geometry_calibrator, "predict_anchor_roi", spy)
+
     result = LedGeometryCalibrator(led=led, capture=PartialCapture(led, points)).calibrate()
 
     assert result.ok is True
     assert sum(1 for a in result.attempts if a.get("roi_fallback")) == 0
+    # 缺 (18,0) 时 corner_h 要等第 5 颗(3,9)补进来才能拟出非退化四边形;13 颗锚点里
+    # 其后还剩 7 颗要用 ROI。用 >=7 不用 ==7,免得将来锚点顺序微调就假红。
+    assert len(calls) >= 7
 
 
 def test_cancel_on_last_anchor_stops_before_baseline_capture():

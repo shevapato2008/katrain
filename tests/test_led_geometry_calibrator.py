@@ -95,7 +95,10 @@ class FakeCapture:
     def _frame(self):
         frame = np.full((900, 1000, 3), 90, np.uint8)
         if self.led.current is not None:
-            if self.green_missing_for == self.led.current and self.led.rgb == (0, 96, 0):
+            is_green = self.led.rgb[0] == 0 and self.led.rgb[2] == 0 and self.led.rgb[1] > 0
+            if self.green_missing_for == self.led.current and is_green:
+                # 缺失是彻底的(两档亮度都拍不到),不是「暗处偏弱」——所以不受
+                # FLASH_LEVELS 影响,模拟绿色通道在这颗锚点上真的坏了。
                 return frame
             x, y = self.camera_points[self.led.current]
             red, green, blue = self.led.rgb
@@ -148,7 +151,9 @@ def test_calibrator_retries_red_when_green_signal_is_missing():
 
     assert result.ok is True
     attempts = [rgb for coord, rgb in led.attempts if coord == (3, 15)]
-    assert attempts[:2] == [(0, 96, 0), (96, 0, 0)]
+    # green 在两档亮度上都拍不到信号(彻底缺失,不是可以靠拉满亮度救回的弱信号)
+    # 才换色到 red —— 换色本身就是本测试要钉住的行为。
+    assert attempts[:3] == [(0, 96, 0), (0, 255, 0), (96, 0, 0)]
 
 
 def test_build_lock_samples_each_baseline_frame_once(monkeypatch):
@@ -188,6 +193,42 @@ def test_calibrator_reports_each_detected_anchor():
     assert all(color == "green" for _row, _col, _point, color in observed)
     for row, col, point, _color in observed:
         assert point == pytest.approx(_synthetic_camera_points()[(row, col)], abs=1.0)
+
+
+def test_locate_anchor_retries_at_full_brightness_when_signal_is_weak():
+    """白天 96 档折算 peak≈7-28、闸是 20(spec §2.2)。弱信号必须换满亮度再试一次,
+    而不是直接判 anchor_not_found。"""
+    led = FakeLed()
+    points = _synthetic_camera_points()
+
+    class DimCapture(FakeCapture):
+        def _frame(self):
+            frame = np.full((900, 1000, 3), 150, np.uint8)
+            if self.led.current is not None:
+                x, y = self.camera_points[self.led.current]
+                # 96 档在这个场景下只抬 8 个灰阶(低于 peak>=20 的闸);255 档抬 40。
+                lift = 40 if max(self.led.rgb) == 255 else 8
+                cv2.circle(frame, (round(x), round(y)), 8, (0, 150 + lift, 0), -1)
+            return frame
+
+    capture = DimCapture(led, points)
+    result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
+
+    assert result.ok is True
+    levels = [a.get("level") for a in result.attempts if a.get("ok")]
+    assert levels and all(level == 255 for level in levels)
+    assert any(a["reason"] == "low_signal" and a["level"] == 96 for a in result.attempts)
+
+
+def test_dark_room_still_succeeds_at_the_dim_level_only():
+    """暗处 96 档就够(peak 94-198),不许无谓地把灯拉满 —— 削顶会把质心拉偏。"""
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+
+    result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
+
+    assert result.ok is True
+    assert all(a["level"] == 96 for a in result.attempts if a.get("ok"))
 
 
 def test_check_frame_exposure_rejects_blown_out_frame():

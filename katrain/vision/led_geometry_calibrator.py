@@ -188,11 +188,17 @@ def fit_geometry_from_anchors(
 class LedGeometryCalibrator:
     """Orchestrate strict LED flashes and fresh-frame geometry capture."""
 
-    COLOR_ATTEMPTS = (
-        ((0, 96, 0), 1, "green"),
-        ((96, 0, 0), 2, "red"),
-        ((0, 0, 96), 0, "blue"),
-    )
+    # (通道, 颜色名) —— 亮度由 FLASH_LEVELS 决定,不再写死在 RGB 里。
+    COLOR_CHANNELS = ((1, "green"), (2, "red"), (0, "blue"))
+    # 先暗后亮:暗处 96 档 peak 94-198 已充裕且不削顶;只在 low_signal 时才拉满。
+    FLASH_LEVELS = (96, 255)
+
+    @staticmethod
+    def _rgb_for(channel: int, level: int) -> tuple[int, int, int]:
+        """channel 用的是 BGR 序(detect_led_centroid 的 channel 参数),set_rgb_points 要 RGB。"""
+        rgb = [0, 0, 0]
+        rgb[{0: 2, 1: 1, 2: 0}[channel]] = level
+        return tuple(rgb)
 
     def __init__(
         self,
@@ -259,50 +265,55 @@ class LedGeometryCalibrator:
                 pass
 
     def _locate_anchor(self, row: int, col: int, attempts: list[dict]):
-        for rgb, channel, color_name in self.COLOR_ATTEMPTS:
-            if self.cancel_event.is_set():
-                return None
-            cleared = self.led.clear(strict=True)
-            if not cleared.get("ok"):
-                attempts.append({"row": row, "col": col, "color": color_name, "reason": "clear_failed"})
-                continue
-            dark, _seq, _ts = self.capture.grab_fresh(after_ts=cleared.get("shown_at"), settle_ms=self.settle_ms)
-            shown = self.led.set_rgb_points([{"row": row, "col": col, "rgb": rgb}], strict=True)
-            if not shown.get("ok"):
-                attempts.append({"row": row, "col": col, "color": color_name, "reason": "show_failed"})
-                continue
-            lit, _seq, _ts = self.capture.grab_fresh(after_ts=shown.get("shown_at"), settle_ms=self.settle_ms)
-            if dark is None or lit is None:
-                attempts.append({"row": row, "col": col, "color": color_name, "reason": "no_frame"})
-                continue
-            result = detect_led_centroid(dark, lit, channel=channel)
-            attempts.append(
-                {
-                    "row": row,
-                    "col": col,
-                    "color": color_name,
-                    "ok": result.ok,
-                    "peak": result.peak,
-                    "area": result.area,
-                    "margin": result.margin,
-                    "reason": result.reason,
-                }
-            )
-            logger.info(
-                "geometry anchor (%d,%d) %s: ok=%s peak=%.1f area=%s margin=%s reason=%s",
-                row,
-                col,
-                color_name,
-                result.ok,
-                result.peak,
-                result.area,
-                result.margin,
-                result.reason,
-            )
-            if result.ok:
-                point = (float(result.centroid[0]), float(result.centroid[1]))
-                self.anchor_observer(row, col, point, color_name)
-                return result.centroid
+        for channel, color_name in self.COLOR_CHANNELS:
+            for level in self.FLASH_LEVELS:
+                if self.cancel_event.is_set():
+                    return None
+                cleared = self.led.clear(strict=True)
+                if not cleared.get("ok"):
+                    attempts.append({"row": row, "col": col, "color": color_name,
+                                     "level": level, "reason": "clear_failed"})
+                    logger.warning(
+                        "geometry anchor (%d,%d) %s@%d: reason=clear_failed", row, col, color_name, level,
+                    )
+                    break
+                dark, _seq, _ts = self.capture.grab_fresh(
+                    after_ts=cleared.get("shown_at"), settle_ms=self.settle_ms)
+                shown = self.led.set_rgb_points(
+                    [{"row": row, "col": col, "rgb": self._rgb_for(channel, level)}], strict=True)
+                if not shown.get("ok"):
+                    attempts.append({"row": row, "col": col, "color": color_name,
+                                     "level": level, "reason": "show_failed"})
+                    logger.warning(
+                        "geometry anchor (%d,%d) %s@%d: reason=show_failed", row, col, color_name, level,
+                    )
+                    break
+                lit, _seq, _ts = self.capture.grab_fresh(
+                    after_ts=shown.get("shown_at"), settle_ms=self.settle_ms)
+                if dark is None or lit is None:
+                    attempts.append({"row": row, "col": col, "color": color_name,
+                                     "level": level, "reason": "no_frame"})
+                    logger.warning(
+                        "geometry anchor (%d,%d) %s@%d: reason=no_frame", row, col, color_name, level,
+                    )
+                    break
+                result = detect_led_centroid(dark, lit, channel=channel)
+                attempts.append({
+                    "row": row, "col": col, "color": color_name, "level": level,
+                    "ok": result.ok, "peak": result.peak, "area": result.area,
+                    "margin": result.margin, "reason": result.reason,
+                })
+                logger.info(
+                    "geometry anchor (%d,%d) %s@%d: ok=%s peak=%.1f area=%s margin=%s reason=%s",
+                    row, col, color_name, level, result.ok, result.peak,
+                    result.area, result.margin, result.reason,
+                )
+                if result.ok:
+                    point = (float(result.centroid[0]), float(result.centroid[1]))
+                    self.anchor_observer(row, col, point, color_name)
+                    return result.centroid
+                if result.reason != "low_signal":
+                    break  # 只有信号弱才值得升亮度
         return None
 
     def _build_lock(self, fit, frames, detected, attempts):

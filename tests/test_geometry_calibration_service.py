@@ -433,3 +433,32 @@ def test_failed_calibration_keeps_attempts_in_metrics():
     assert status["phase"] == "failed"
     assert status["error"] == "anchor_not_found:0,0"
     assert status["metrics"]["attempts"] == [dict(attempts[0])]
+
+
+def test_exposure_gate_stats_land_in_metrics_exposure_not_attempts():
+    """闸拒绝时 metrics 里要有 exposure(供界面说清「摄像头没适应光线」),
+    而 attempts 必须是空的 —— 消费方拿 attempts 的长度当真值判断。"""
+    stats = {"median": 253.0, "clip_frac": 0.61, "shadow_frac": 0.0}
+
+    class GatedCalibrator:
+        def __init__(self, **_kwargs):
+            pass
+
+        def calibrate(self):
+            return CalibrationResult(ok=False, reason="frame_overexposed", attempts=(), exposure_stats=stats)
+
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FreshFakeCapture(),
+        save_path="/tmp/unused.npz",
+        calibrator_factory=GatedCalibrator,
+    )
+    service.start(trigger="manual", empty_confirmed=True)
+    service.wait(5)
+
+    status = service.status()
+    assert status["phase"] == "failed"
+    assert status["error"] == "frame_overexposed"
+    assert status["metrics"]["exposure"] == stats
+    assert status["metrics"]["attempts"] == []
+    service.stop()

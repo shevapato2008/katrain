@@ -85,6 +85,10 @@ class CalibrationResult:
     reason: str | None = None
     fit: GeometryFitResult | None = None
     attempts: tuple[dict, ...] = ()
+    # 曝光闸的整帧统计。**不进 attempts** —— attempts 的每一条都是一次真的闪灯尝试
+    # (必带 row/col/color),消费方按它的长度当真值判断。闸是在门口拒绝的,一颗灯都
+    # 没闪过,混进去会让界面把「闸拒绝了」渲染成「找了 13 个位置一个都没找到」。
+    exposure_stats: dict | None = None
 
 
 def check_frame_exposure(frame: np.ndarray) -> tuple[bool, str | None, dict]:
@@ -294,7 +298,7 @@ class LedGeometryCalibrator:
                 ok, reason, stats["median"], stats["clip_frac"],
             )
             if not ok:
-                return CalibrationResult(ok=False, reason=reason, attempts=({"exposure": stats},))
+                return CalibrationResult(ok=False, reason=reason, exposure_stats=stats)
 
             total = len(CALIBRATION_ANCHORS)
             corner_h = None

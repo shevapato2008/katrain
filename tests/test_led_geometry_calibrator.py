@@ -554,3 +554,24 @@ def test_peak_floor_is_per_search_domain():
     assert with_roi.ok is True
     assert full_frame.ok is False
     assert full_frame.reason == "low_signal"
+
+
+def test_exposure_gate_reports_stats_outside_attempts():
+    """曝光闸是在门口拒绝的 —— 一颗灯都没闪过,attempts 必须是空的。
+
+    把 stats 塞进 attempts(旧形状 `({"exposure": stats},)`)会让消费方按
+    `attempts.length` 当真值判断,于是过曝失败的界面上会长出一句
+    「找到 0 / 13 个定位点」—— 这句话不假,但它把「闸在门口拒绝了」讲成了
+    「找了 13 个位置一个都没找到」。诊断数据改走自己的字段。"""
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    capture._frame = lambda: np.full((900, 1000, 3), 253, np.uint8)
+
+    result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
+
+    assert result.ok is False
+    assert result.reason == "frame_overexposed"
+    assert result.attempts == ()
+    assert result.exposure_stats is not None
+    assert result.exposure_stats["median"] == pytest.approx(253, abs=1)
+    assert result.exposure_stats["clip_frac"] > 0.5

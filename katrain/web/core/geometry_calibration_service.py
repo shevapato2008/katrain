@@ -197,7 +197,12 @@ class GeometryCalibrationService:
                     self._status["error"] = result.reason or "calibration_failed"
                     # 失败诊断是这一层唯一的可观测出口 —— 丢掉它,任何人都分不清
                     # low_signal / ambiguous_blobs / show_failed(见 spec §2.3)。
-                    self._status["metrics"] = {"attempts": [dict(a) for a in result.attempts]}
+                    metrics = {"attempts": [dict(a) for a in result.attempts]}
+                    # 曝光闸的统计走自己的键:它不是一次闪灯尝试,混进 attempts 会让
+                    # 界面把「闸在门口拒绝了」讲成「找了 13 个位置一个都没找到」。
+                    if result.exposure_stats is not None:
+                        metrics["exposure"] = dict(result.exposure_stats)
+                    self._status["metrics"] = metrics
                 return
 
             save_geometry_lock(result.lock, self.save_path)

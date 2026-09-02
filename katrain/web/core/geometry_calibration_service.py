@@ -245,22 +245,32 @@ class GeometryCalibrationService:
         # 这样日志里那个 outcome 说的就是**真的从哪条路出去的**,不是推出来的。
         outcome = "max_steps"
         steps = 0
-        for _step in range(self.EXPOSURE_CONVERGE_MAX_STEPS):
-            if self._cancel_event.wait(self.EXPOSURE_CONVERGE_POLL_S):
-                outcome = "cancelled"
-                break
-            if time.monotonic() >= deadline:
-                outcome = "timeout"
-                break
-            steps += 1
-            stats = self._measure_exposure(grab)
-            if stats is None:
-                outcome = "no_frame"
-                break
-            if self._in_target_band(stats):
-                outcome = "converged"
-                break
-        request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
+        try:
+            for _step in range(self.EXPOSURE_CONVERGE_MAX_STEPS):
+                if self._cancel_event.wait(self.EXPOSURE_CONVERGE_POLL_S):
+                    outcome = "cancelled"
+                    break
+                if time.monotonic() >= deadline:
+                    outcome = "timeout"
+                    break
+                steps += 1
+                stats = self._measure_exposure(grab)
+                if stats is None:
+                    outcome = "no_frame"
+                    break
+                if self._in_target_band(stats):
+                    outcome = "converged"
+                    break
+        finally:
+            # 关回手动必须**无条件**发生。cancelled/timeout/no_frame/max_steps 四条都是
+            # break,本来就走得到这里;唯一漏掉的是**抛异常**那条 —— 而它的代价最贵:
+            # AE 被留在开着的状态会跨到**下一次**标定,让每一颗锚点的 dark 帧和 lit 帧
+            # 落在两个不同曝光上,污染差分这个唯一的信号来源。本次失败是响的
+            # (phase=failed),下一次测错是哑的。
+            # 只把关闭动作放进来,**不吞异常**:异常照旧往上抛,由 _run 的 except 变成
+            # phase=failed。日志那几行故意留在 finally 外面 —— 它们要再取一帧,在异常
+            # 传播途中取帧再抛就会用新异常盖掉真正的那个。
+            request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
         settled = self._measure_exposure(grab)
         # 一行里四件事,每件都在回答一个自己回答不了的问题:
         #  - 交接前后两个 median:两个数接近 ⇒ 驱动保留了 AE 收敛值;后一个跳回高位

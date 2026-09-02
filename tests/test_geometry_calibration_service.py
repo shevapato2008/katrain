@@ -656,3 +656,59 @@ def test_converge_logs_both_medians_across_the_manual_handover(caplog):
         f"关回手动之后一帧都没再量 —— 两个数会是同一次测量: {events}"
     )
     service.stop()
+
+
+def test_hardware_ae_is_handed_back_to_manual_even_when_convergence_raises():
+    """收敛中途抛异常时,硬件 AE 不许被留在开着的状态。
+
+    这条异常路径**不是让本次标定失败,是让下一次标定悄悄地测错**:锚点定位是差分测量
+    (lit - dark),AE 连续作动会让同一颗锚点的 dark 帧和 lit 帧落在两个不同曝光上,
+    污染整条链上唯一的信号来源。本次失败是响的(phase=failed),下一次测错是哑的。
+
+    两条都要:只断言 ① 的话,一个「捕获并吞掉异常」的实现照样能过 —— 而吞掉异常会把
+    一次真实的相机故障伪装成一次普通的标定失败。"""
+    events = []
+
+    class ExplodingCapture(FakeAutoExposureCapture):
+        """在 AE 已经打开、正要量收敛结果的那一刻炸 —— 正好落在 ON 与 OFF 之间。
+
+        **只炸一次**(之后恢复正常)。这一点是判据的一部分,不是省事:一直炸的话,
+        「吞掉异常」的实现会在关回手动之后取 settled 那一帧时**再炸一次**,新异常照样
+        进到 status 里,断言 ② 就会因为一个错误的理由变绿 —— 变异实测撞到过。
+        只炸一次,吞掉异常的实现就会一路跑到底,status 里留下的是 "stopped"。"""
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.exploded = False
+
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            if self._auto_on and not self.exploded:
+                self.exploded = True
+                raise RuntimeError("camera exploded mid-convergence")
+            return super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+
+    capture = ExplodingCapture(events=events)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path="/tmp/unused.npz",
+        calibrator_factory=_stopped_calibrator_factory(events),
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    # ① AE 关回手动了 —— 不是停在 3.0 上跨到下一次标定。
+    assert capture.control_calls, "一次都没作动"
+    assert capture.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF), (
+        f"硬件 AE 被留在开着的状态: {capture.control_calls}"
+    )
+    # ② 异常照旧往上抛,没被 finally 吃掉 —— 它只能经由 _run 的 except 进到 status 里。
+    status = service.status()
+    assert status["phase"] == "failed"
+    assert status["error"] == "camera exploded mid-convergence", (
+        f"异常被吞了,一次相机故障被伪装成普通标定失败: {status['error']}"
+    )
+    assert "calibrate" not in events, "异常被吞掉之后还接着跑了标定"
+    service.stop()

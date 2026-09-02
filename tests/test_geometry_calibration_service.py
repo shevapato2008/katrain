@@ -1,10 +1,17 @@
+import logging
+import re
 import threading
 
 import numpy as np
 import pytest
 
-from katrain.vision.led_geometry_calibrator import CalibrationResult
-from katrain.web.core.geometry_calibration_service import CalibrationBusy, GeometryCalibrationService
+from katrain.vision.led_geometry_calibrator import CalibrationResult, check_frame_exposure
+from katrain.web.core.geometry_calibration_service import (
+    CAMERA_AUTO_EXPOSURE_OFF,
+    CAMERA_AUTO_EXPOSURE_ON,
+    CalibrationBusy,
+    GeometryCalibrationService,
+)
 from tests.test_geometry_lock import _synth
 
 
@@ -461,4 +468,171 @@ def test_exposure_gate_stats_land_in_metrics_exposure_not_attempts():
     assert status["error"] == "frame_overexposed"
     assert status["metrics"]["exposure"] == stats
     assert status["metrics"]["attempts"] == []
+    service.stop()
+
+
+class FakeAutoExposureCapture(FakeCapture):
+    """CameraHub 形状的假相机:曝光冻在开机那一刻的过曝值(spec §2.2 白天整帧 254),
+    只有硬件 AE 被打开之后才回到带内。
+
+    `converges=False` 模拟怎么调都回不来的相机(逆光/白纸打爆)。
+    关回手动**不改变**已经收敛出来的曝光 —— 这是 V4L2 的常规行为,也是本方案的
+    前提假设,待板上核实(假设不成立时不会假绿:曝光闸会重新量整帧并如实拒绝)。
+    """
+
+    def __init__(self, *, converges=True, events=None):
+        self.events = events if events is not None else []
+        self.converges = converges
+        self.control_calls = []
+        self.grab_calls = 0
+        self._auto_on = False
+
+    def is_connected(self):
+        return True
+
+    def grab_fresh(self, after_ts=None, settle_ms=150.0):
+        self.grab_calls += 1
+        level = 150 if (self._auto_on and self.converges) else 254
+        self.events.append(("grab", level))
+        return np.full((64, 64, 3), level, np.uint8), self.grab_calls, float(self.grab_calls)
+
+    def request_controls(self, exposure=None, auto_exposure=None):
+        self.control_calls.append((exposure, auto_exposure))
+        self.events.append(("controls", auto_exposure))
+        if auto_exposure is not None and auto_exposure >= CAMERA_AUTO_EXPOSURE_ON:
+            self._auto_on = True
+
+
+def _stopped_calibrator_factory(events):
+    return lambda **kwargs: RecordingCalibrator(CalibrationResult(ok=False, reason="stopped"), events, **kwargs)
+
+
+def test_exposure_is_actuated_before_calibration_when_there_is_no_geometry_lock():
+    """无几何锁时软件 AE 那条线整条不可达(worker `_warp_frame` 返回 (None, False)
+    ⇒ `_run_ae` 一次都进不去),曝光停在开机那一刻。「棋盘被挪了、请重新标定」之后
+    正好是这个状态,所以标定入口必须自己作动一次,否则白天标定永远停在曝光闸上。"""
+    events = []
+    capture = FakeAutoExposureCapture(events=events)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path="/tmp/unused.npz",
+        calibrator_factory=_stopped_calibrator_factory(events),
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert capture.control_calls, "过曝态下 request_controls 一次都没被调用 —— 曝光还是冻着的"
+    assert any(auto == CAMERA_AUTO_EXPOSURE_ON for _exp, auto in capture.control_calls)
+    # spec §2.1 实测:exposure_auto_priority=0 把积分时间钳在帧周期内,exposure_absolute
+    # 只调得下、调不上(166→10000 无效)。往「更亮」的方向只能靠硬件 AE。
+    assert all(exp is None for exp, _auto in capture.control_calls), (
+        f"不许用 exposure_absolute 调亮(实测无效),实际: {capture.control_calls}"
+    )
+    service.stop()
+
+
+def test_exposure_convergence_is_bounded_when_the_camera_never_comes_back():
+    """收不回来的相机不许把标定卡死:收敛在上限内退出,标定照样往下走,
+    最后由曝光闸诚实拒绝(而不是界面永远停在 waiting_empty)。"""
+    events = []
+    capture = FakeAutoExposureCapture(converges=False, events=events)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path="/tmp/unused.npz",
+        calibrator_factory=_stopped_calibrator_factory(events),
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    service.start(trigger="manual", empty_confirmed=True)
+
+    assert service.wait(timeout=5) is True, "收敛循环没有上限 —— 标定线程挂住了"
+    assert "calibrate" in events, "收敛失败之后必须继续跑标定,不能就地返回失败"
+    assert service.status()["phase"] == "failed"
+    # 字面上限(不是拿被测常量自己当期望值,否则把上限改大这条断言会跟着变松)。
+    assert capture.grab_calls <= 12, f"取帧次数没有封顶: {capture.grab_calls}"
+    service.stop()
+
+
+def test_exposure_gate_probe_is_taken_after_convergence_not_before():
+    """顺序判据:T3 的曝光闸探针必须取在收敛**之后**。
+
+    两者都发生过证明不了什么 —— 顺序反了的话闸量到的还是开机冻住的那一帧,
+    标定在自己的门口被拒。这里跑的是生产的 check_frame_exposure,不自写判据。"""
+    events = []
+    capture = FakeAutoExposureCapture(events=events)
+
+    class GateProbingCalibrator:
+        """复刻 LedGeometryCalibrator.calibrate() 开头那几行的真实形状。"""
+
+        def __init__(self, capture, **_kwargs):
+            self.capture = capture
+
+        def calibrate(self):
+            probe, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
+            ok, reason, stats = check_frame_exposure(probe)
+            events.append(("gate", ok))
+            if not ok:
+                return CalibrationResult(ok=False, reason=reason, exposure_stats=stats)
+            return CalibrationResult(ok=False, reason="stopped")
+
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path="/tmp/unused.npz",
+        calibrator_factory=GateProbingCalibrator,
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    gate_index = events.index(("gate", True))  # 闸没过就根本没有这一项 ⇒ 直接 ValueError
+    control_indices = [i for i, event in enumerate(events) if event[0] == "controls"]
+    assert control_indices, "一次都没作动曝光"
+    assert max(control_indices) < gate_index, f"曝光闸的探针取在收敛之前了: {events}"
+    assert service.status()["error"] != "frame_overexposed"
+    service.stop()
+
+
+def test_converge_logs_both_medians_across_the_manual_handover(caplog):
+    """交接前后各量一次,两个 median 并排写进 journal。
+
+    「关回手动时驱动保不保留 AE 收敛值」本机验不了,也没有实时回读曝光值的口
+    (controls_effective 是 bool,initial_exposure 是 open() 那一刻的读数)。
+    两个数并排就把这条板上事实从「要专门安排一次测量」变成「跑一次标定读一行 journal」:
+    接近 ⇒ 保留了;后一个跳回高位 ⇒ 弹回 default 的指纹。
+    不为「弹回」造场景 —— 那是驱动行为,本机造出来的也是假的。"""
+    events = []
+    capture = FakeAutoExposureCapture(events=events)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path="/tmp/unused.npz",
+        calibrator_factory=_stopped_calibrator_factory(events),
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    with caplog.at_level(logging.INFO, logger="katrain.web.core.geometry_calibration_service"):
+        service.start(trigger="manual", empty_confirmed=True)
+        assert service.wait(timeout=5) is True
+
+    lines = [record.getMessage() for record in caplog.records]
+    handover = [line for line in lines if "-> manual, median now" in line]
+    assert len(handover) == 1, f"交接那行日志没有出现(或出现多次): {lines}"
+    # 两个数都要真的印出来,而且都要是数 —— 只有一个数的话看不出「弹没弹回去」。
+    numbers = [int(n) for n in re.findall(r"median (?:now )?(\d+)", handover[0])]
+    assert len(numbers) == 2, f"这行要并排写两个 median,实际: {handover[0]}"
+    assert all(120 <= number <= 170 for number in numbers), handover[0]
+    # 顺序:先有收敛开始那行,再有交接这行。
+    assert lines.index(handover[0]) > next(i for i, line in enumerate(lines) if "converge: start" in line)
+    # 后一个数必须来自**交接之后的一次真取帧**。光看日志里有两个数分不出「重新量了」
+    # 和「把同一次的 stats 印了两遍」—— 后者永远相等,弹没弹回去照样看不出来。
+    restore = max(i for i, e in enumerate(events) if e[0] == "controls" and e[1] == CAMERA_AUTO_EXPOSURE_OFF)
+    assert any(e[0] == "grab" for e in events[restore + 1:]), (
+        f"关回手动之后一帧都没再量 —— 两个数会是同一次测量: {events}"
+    )
     service.stop()

@@ -679,11 +679,11 @@ def test_hardware_ae_is_handed_back_to_manual_even_when_convergence_raises():
 
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
-            self.exploded = False
+            self.explosions = 0
 
         def grab_fresh(self, after_ts=None, settle_ms=150.0):
-            if self._auto_on and not self.exploded:
-                self.exploded = True
+            if self._auto_on and not self.explosions:
+                self.explosions += 1
                 raise RuntimeError("camera exploded mid-convergence")
             return super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
 
@@ -711,4 +711,19 @@ def test_hardware_ae_is_handed_back_to_manual_even_when_convergence_raises():
         f"异常被吞了,一次相机故障被伪装成普通标定失败: {status['error']}"
     )
     assert "calibrate" not in events, "异常被吞掉之后还接着跑了标定"
+
+    # ③ 守住上面那个「只炸一次」的前提本身。断言 ② 的**全部判别力都寄生在它身上**,
+    # 而它长得恰好像一句可以顺手简化掉的条件(`and not self.explosions`)。
+    # 注意这里**不能**只写 `assert capture.explosions == 1`:生产代码正确时异常会在取
+    # settled 那一帧**之前**就抛出去,所以「一直炸」的假相机在这一轮里也只炸得成一次
+    # —— 那条断言两种 fixture 下都是 1,挡不住任何东西。有判别力的是**再问一次**:
+    # 一次性的假相机不会再炸,「一直炸」的会。
+    assert capture.explosions == 1, f"这一轮该正好炸一次,实际 {capture.explosions}"
+    try:
+        capture.grab_fresh()
+    except RuntimeError as exc:
+        raise AssertionError(
+            f"假相机不是一次性的 —— 它会一直炸。这样「吞掉异常」的实现会在取 settled "
+            f"那一帧时再炸一次,新异常照样进 status,断言 ② 就会因为一个错误的理由变绿:{exc}"
+        ) from exc
     service.stop()

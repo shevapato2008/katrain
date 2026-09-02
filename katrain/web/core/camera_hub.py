@@ -79,3 +79,21 @@ class CameraHub:
                 frames.append(frame)
             time.sleep(interval)
         return frames
+
+    # -- runtime camera controls (software AE) ------------------------------- #
+    # worker_inprocess._run_ae 通过 getattr 发现这三个成员;缺任何一个都会让软件 AE
+    # 永久落进 advisory 模式(见 worker_inprocess.py:222/229/233)。CameraHub 是
+    # board 模式下真正传给 VisionService 的对象(server.py:546),所以转发必须在这里。
+
+    def request_controls(self, exposure: float | None = None, auto_exposure: float | None = None) -> None:
+        if self._camera is None:
+            return
+        self._camera.request_controls(exposure=exposure, auto_exposure=auto_exposure)
+
+    @property
+    def controls_effective(self) -> bool | None:
+        return getattr(self._camera, "controls_effective", None) if self._camera is not None else None
+
+    @property
+    def initial_exposure(self) -> float | None:
+        return getattr(self._camera, "initial_exposure", None) if self._camera is not None else None

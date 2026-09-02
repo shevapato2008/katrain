@@ -537,3 +537,20 @@ def test_check_frame_exposure_pins_median_alone():
     assert reason == "frame_overexposed"
     assert stats["median"] == pytest.approx(246, abs=1)
     assert stats["clip_frac"] == pytest.approx(0.0, abs=0.01)  # 一个像素都没到 250
+
+
+def test_peak_floor_is_per_search_domain():
+    """真机实测唯一掉出去的那颗锚点 (18,0) 满亮度 peak=18.2 —— 在 ROI 里它跟噪声
+    (中位 7.7-12.6)分得很开,在全画幅里 20 已经贴着噪声(中位 16.5-19.5)。
+    同一对帧、同一个真实 peak,两个域必须给出相反的判决。"""
+    dark = np.full((900, 1000, 3), 90, np.uint8)
+    lit = dark.copy()
+    cv2.circle(lit, (300, 400), 8, (90, 108, 90), -1)   # 抬 18 个灰阶:落在 15 与 20 之间
+
+    with_roi = detect_led_centroid(dark, lit, channel=1, roi=(300.0, 400.0, 60.0))
+    full_frame = detect_led_centroid(dark, lit, channel=1, roi=None)
+
+    assert 15.0 < with_roi.peak < 20.0, f"这条测试要求真实 peak 落在两条门之间,实际 {with_roi.peak}"
+    assert with_roi.ok is True
+    assert full_frame.ok is False
+    assert full_frame.reason == "low_signal"

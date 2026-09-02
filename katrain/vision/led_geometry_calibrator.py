@@ -29,6 +29,16 @@ EXPOSURE_CLIP_FRAC_MAX = 0.35  # >=250 的像素占比上限
 # 少定位到几颗不该比拟合阶段更严。两处不同值会让这份余量白留。
 MIN_LOCATED_ANCHORS = 9
 
+# lit-dark 差分的信号下限。**按搜索域取值** —— 同一个数在两个域里意思完全不同:
+#   ROI 搜索(半径 47-64px ⇒ 面积 6.9k-12.9k px):域内 argmax 噪声中位实测 7.7-12.6,
+#     15 是噪声的 1.2-1.9 倍,同时放得过真机 2026-09-02 实测最弱的那颗锚点
+#     (18,0) 满亮度 peak=18.2 —— 它在 ROI 里跟噪声分得很开,却被原来的 20 判成 low_signal。
+#   全画幅回退(1920x1080 ≈ 2.07M px):整幅 argmax 噪声中位实测 16.5-19.5,20 已经
+#     贴着噪声底(只高 1.03-1.20 倍)。**这一半不动**:再往上抬会把"ROI 被投毒之后
+#     靠全画幅捞回来"的锚点一起毙掉,而没有实测数据支持某个具体的更高值。
+PEAK_MIN_ROI = 15.0
+PEAK_MIN_FULL = 20.0
+
 CALIBRATION_ANCHORS = (
     (0, 0),
     (0, 18),
@@ -101,8 +111,9 @@ def detect_led_centroid(
 ) -> LedCentroidResult:
     """Find the dominant positive light blob in a lit-minus-dark frame.
 
-    ``roi`` = (cx, cy, radius_px)。给了就只在这个圆内找 —— peak>=20 这个闸是照
-    73x73 的小窗口定的,用在整幅 1920x1080 上等于「找画面里最亮的噪声团」(spec §2.2)。"""
+    ``roi`` = (cx, cy, radius_px)。给了就只在这个圆内找 —— 原来那个 peak>=20 的闸是照
+    73x73 的小窗口定的,用在整幅 1920x1080 上等于「找画面里最亮的噪声团」(spec §2.2)。
+    信号下限随搜索域走:ROI 用 PEAK_MIN_ROI,全画幅用 PEAK_MIN_FULL(见常量注释)。"""
     if dark.shape != lit.shape or dark.ndim != 3:
         return LedCentroidResult(ok=False, reason="shape_mismatch")
     delta = lit[..., channel].astype(np.float32) - dark[..., channel].astype(np.float32)
@@ -113,7 +124,7 @@ def detect_led_centroid(
         cv2.circle(keep, (int(round(cx)), int(round(cy))), max(1, int(round(radius))), 1, -1)
         delta = np.where(keep.astype(bool), delta, 0.0)
     peak = float(delta.max(initial=0.0))
-    if peak < 20.0:
+    if peak < (PEAK_MIN_FULL if roi is None else PEAK_MIN_ROI):
         return LedCentroidResult(ok=False, peak=peak, reason="low_signal")
 
     threshold = max(12.0, peak * 0.45)

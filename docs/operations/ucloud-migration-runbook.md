@@ -980,6 +980,71 @@ lifespan 守卫，说明 develop 上跑过的全量测试覆盖的就是这份�
 **遗留（未处理）：** `releases/` 下现有 3 份（`a9b2485b` / `e9a7889e` / `7c268569`）。
 `a9b2485b` 已无引用可删（约 1.5G），`e9a7889e` 是回滚锚点、`7c268569` 是线上，**都不动**。
 
+### 2026-09-02 — 发布 `7a6069aa`：kiosk 屏 20 复盘五个分析 tab（非迁移，**无 DDL**）
+
+发布内容：`release/ucloud-20260805` 合入 `origin/develop`（合并提交 `7a6069aa`，
+develop 侧 `30071a5d`）。把 galaxy 的着手评价五个 tab（走势 / 妙手 / 失误 /
+发挥水准 / AI吻合度）搬上 kiosk 屏 20，右栏两块折叠改成单开手风琴，
+AI 推荐表与研究页收敛成同一个组件。
+
+**先测试环境后生产**（Fan 2026-08-31 的裁定）：home-ubuntu / go.sailorvoyage.top
+先发 `30071a5d` 并验过（web 重建 healthy、产物含 `ai-recommend-row` 与 `grade:tabs`、
+`/kiosk/report/1` 200、公网 200），再上生产。
+
+- 镜像（不可变 ID）：`WEB_IMAGE=sha256:1433d03c7b96faabcedc9b84b9ad046f2f195a3697cba37758bc538e3b1c72e8`
+  （tag `katrain-web:7a6069aa`，`size_bytes=542725705`；上一版 542672203，同量级）。
+  `build-web.sh` 的容器内容测试通过。
+- **CRON_IMAGE 不动**，仍 `sha256:8d3f0735f98ce06018ede612328748fcc753a3953b30330614f6489b3e32144f`。
+  08-29 那条记的是反面（改了 cron 却只换 WEB_IMAGE ⇒ cron 跑旧代码）；这次是正面，
+  所以**要拿证据不是拿印象**：`git diff --name-only f8f3582d 7a6069aa` 共 24 个文件，
+  **全部在 `katrain/web/ui/` 下**，`katrain/cron/` 与 `Dockerfile.cron` 各 0 处。
+- 回滚锚点：web `sha256:79b94765a8fd…`（tag `katrain-web:f8f3582d`），
+  `/opt/katrain/releases/f8f3582d` 未删除。
+- `/etc/katrain/ucloud.env` 只改 `WEB_IMAGE` 一行（`diff` 2 行 = 一去一来）；
+  改前副本 `/opt/katrain/backups/ucloud.env.20260902T175723.bak`，改后仍 root:root、mode 0600。
+- 数据库备份 `/opt/katrain/backups/prod-20260902-1752.dump`（`pg_dump -Fc`，194 MB）。
+  **已真恢复验证**：恢复进临时库 `katrain_restore_check`，`pg_restore` 退出码 0、
+  **stderr 零行**，逐表比对 38 张表的 `count(*)`，**0 处不一致**
+  （`report_task_moves` 2938、`user_games` 24）。验证库已 DROP。
+  ⚠️ 首次写比对脚本时嵌套引号被 shell 吃掉，`pg_tables` 查询报错 ⇒ 表清单为空，
+  而循环体一次都没进，脚本照样打印「不一致的表: 0」—— **什么都没量却报绿**。
+  重写时加了 `[ -s /tmp/t.prod ] || exit 2` 这一格。
+  （`pg_dump -U katrain` 会失败：这台的角色是 `katrain_user`，`postgres` 角色也不存在。）
+
+**本次无 schema 变更** —— 24 个改动文件全是 `.tsx` / `.css` / `.json` / 测试，
+`add_missing_columns` 这一趟是空跑。
+
+**闸门结果与一次明示越闸：**
+
+- `--structural`：**仅 2 条失败，且都是容量闸** —— `available_bytes=18748497920`、
+  `required_bytes=38500000000`，以及「projected filesystem use ≥ 75%」（实际 82%）。
+  与 2026-08-21 / 08-29 同形。错误文案写的是 “**migration** requires at least …”，
+  是一次性迁移的峰值口径；本次非迁移，`peak_bytes=13500000000` < 可用 18.7G。
+- `--structural` 的正向证据：**Compose preview 与 production profile 均渲染通过**、**GPU 可用**。
+- 单跑 `--phase runtime` 想补 08-29 缺的那几项正向证据，**没成功**：容量闸在 runtime 相
+  之前就快速失败。⇒ 那两项仍是手工核的：`stat -c "%U:%G %a"` 得 `root:root 600`；
+  三个 `*_IMAGE` 全写成 `sha256:` ID 而非 tag。
+- 属**明示越闸**，理由如上，回滚锚点齐备。
+
+**`up -d` 前先 `--dry-run`**（2026-08-30 那条教训：`up -d` 会连带重建依赖链上的服务，
+KataGo 一重建就是 15 分钟 TensorRT 预热、期间 `katrain-web` 卡在 `Created`）。
+本次 dry-run 只列出 `katrain-web` 与 `minio-setup` 两个 Recreate ——
+`minio-setup` 是一次性建桶容器（跑完 exit 0，幂等）。发布后 KataGo 两个容器的
+`STATUS` 仍是 `Up 2 days` / `Up 3 days`，postgres `Up 5 weeks`，cron `Up 21 hours`
+—— **没被动过**，这是事后的证据，不是 dry-run 的承诺。
+
+**发布后验证：** 6 个 katrain-ucloud 容器全部 healthy；
+`docker inspect` 确认 web 跑的就是 `sha256:1433d03c…`；
+`/api/v1/health` 返回 `{"status":"ok","engines":{"local":"reachable","cloud":"unconfigured"}}`；
+前端产物含 `ai-recommend-row` 与 `grade:tabs`；
+公网 `https://modelstella.com/` 200、`/kiosk/report/1` 200；
+`/api/translations?lang=cn` 下发 48 条不同的 `grade:*` 文案；
+cron 的 `poll_moves` 仍在 3 秒周期正常执行。发布后根分区 82%。
+
+**一处欠账（不是本次造成的）：** 上一次发布 `f8f3582d`（galaxy 右栏/报告改版）
+**没有留 runbook 条目** —— 本文件在 `f8f3582d` 上的最后一条还停在 08-29。
+镜像 ID、env 副本、库备份在机器上都还在，需要的话可以照实补回来。
+
 ### 2026-08-29 — develop 合并后重新发布（非迁移）
 
 发布内容：`release/ucloud-20260805` 合入 `origin/develop`（合并提交 `72024fcc`），

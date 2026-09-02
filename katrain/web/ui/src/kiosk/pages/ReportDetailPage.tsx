@@ -4,11 +4,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ReportsAPI, type ReportTaskSummary } from '../../api/reportApi';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
 import { useAuth } from '../../context/AuthContext';
-import { keyMoves, winrateSeries } from '../../features/report/reportStats';
+import { gradedMoves, isBad, isBrilliant } from '../../features/analysis/moveGrade';
+import { winrateSeries } from '../../features/report/reportStats';
 import { useReportDetail } from '../../features/report/useReportDetail';
 import { useSound } from '../../hooks/useSound';
 import { useTranslation } from '../../hooks/useTranslation';
 import { sgfToMoves } from '../../utils/sgfSerializer';
+import { AiRecommendRows } from '../components/report/AiRecommendRows';
+import MoveGradePanel from '../components/report/MoveGradePanel';
 import { ReviewWinratePlot } from '../components/report/ReviewWinratePlot';
 import { outcomeLine, rowTitle, yourColor } from '../components/report/reviewPresentation';
 import { colsFor, GO_COLS, rowsFor } from '../shell/goBoard';
@@ -124,6 +127,8 @@ export default function ReportDetailPage() {
     task, game, moves, analysisByMove, currentMove, setCurrentMove, loading, error, refresh,
   } = useReportDetail(isAuthenticated ? token : null, taskId);
 
+  /** 右栏里同一时刻只开一块 —— 见下面那两个 `KioskFold` 上的说明。 */
+  const [openFold, setOpenFold] = useState<'ai' | 'grade'>('ai');
   const [showAiMarkers, setShowAiMarkers] = useState(false);
   const [showMoveNumbers, setShowMoveNumbers] = useState(true);
   const [showTerritory, setShowTerritory] = useState(true);
@@ -225,7 +230,30 @@ export default function ReportDetailPage() {
   }, [activeMove, currentAnalysis]);
 
   const points = useMemo(() => winrateSeries(moves), [moves]);
-  const worst = useMemo(() => keyMoves(moves, 3), [moves]);
+
+  /** 目差那条曲线。和胜率同一条 x 轴(按手数),`score_lead` 与 winrate 同为**黑方视角**。 */
+  const leadPoints = useMemo(
+    () => moves
+      .filter((m) => m.score_lead != null)
+      .map((m) => ({ moveNumber: m.move_number, scoreLead: m.score_lead as number })),
+    [moves],
+  );
+
+  /** AI 推荐表的行 —— 和屏 21 研究同一个画法(`AiRecommendRows`)。 */
+  const aiRows = useMemo(() => (currentAnalysis?.top_moves ?? []).slice(0, 10).map((m) => ({
+    move: m.move,
+    share: (m.visits / Math.max(1, (currentAnalysis?.top_moves ?? []).reduce((n, x) => n + x.visits, 0))) * 100,
+    scoreLead: m.score_lead ?? 0,
+    winrate: m.winrate ?? 0,
+  })), [currentAnalysis]);
+
+  /** 折叠头右端那个**结论**:妙手几手、坏手几手(收起后仍然显示,规范第 2 条)。 */
+  const gradeSummary = useMemo(() => {
+    const graded = gradedMoves(analysisByMove);
+    const good = graded.filter(isBrilliant).length;
+    const bad = graded.filter(isBad).length;
+    return interpolate(t('grade:summary', '妙 {a} · 坏 {b}'), { a: good, b: bad });
+  }, [analysisByMove, t]);
 
   const handleMoveChange = useCallback((move: number) => {
     setActiveVariation(null);
@@ -322,7 +350,6 @@ export default function ReportDetailPage() {
     game.result ? `${game.move_count} ${t('report:moves_unit', '手')}` : null,
     Number.isNaN(savedAt) ? null : whenLabel(savedAt, t),
   ].filter(Boolean).join(' · ');
-  const worstOne = worst[0] ?? null;
 
   return (
     <div className="kiosk-layout-a" data-testid="report-detail-page">
@@ -426,85 +453,100 @@ export default function ReportDetailPage() {
           </p>
         )}
 
+        {/* 「AI 推荐」和「着手评价」**同一时刻只开一块**(单开手风琴)。不是风格,是几何:
+            44(页控条)+ 60(状态区)+ 2×30(两个折叠头)+ 40(显示开关)+ 36(翻手条)
+            + 5×12(rail-gap)= 300 ⇒ 展开那块的体只剩 216,而两块都展开要 380。
+            默认开 AI 推荐:它是**逐手**的东西(翻到哪手看哪手),而着手评价是整局的总结,
+            两者用在不同的时刻。 */}
         <KioskFold
-          fold="curve"
-          testId="report-detail-curve"
-          title={t('review:fold_curve', '逐手胜率 · 报告离线算出来的')}
-          value={worstOne
-            ? interpolate(t('review:worst_drop', '第 {n} 手掉 {d} 点'), {
-              n: worstOne.moveNumber, d: Math.round(worstOne.dropPct),
-            })
-            : t('review:no_drop', '没有明显失误')}
+          fold="ai"
+          grow={openFold === 'ai'}
+          open={openFold === 'ai'}
+          onToggle={() => setOpenFold(openFold === 'ai' ? 'grade' : 'ai')}
+          /* 表里十个候选而视口露不下 —— 没有条子,后面几行在触摸屏上就是不存在的。 */
+          scrollbar
+          bodyClassName="aitab"
+          testId="report-detail-ai"
+          title={interpolate(t('research:ai_after_move', 'AI 推荐 · 第 {n} 手之后'), { n: currentMove })}
+          value={currentAnalysis ? `${t('review:black', '黑')} ${(currentAnalysis.winrate * 100).toFixed(1)}%` : undefined}
         >
-          <ReviewWinratePlot
-            points={points}
-            empty={points.length < 2 ? t('review:plot_thin', '报告里还没有算出来的手') : ''}
-            axisTop={`${t('review:black', '黑')} 100`}
-            axisMid="50"
-            axisBottom={`${t('review:white', '白')} 100`}
-            label={t('review:plot_pick_label', '逐手胜率，点一下跳到那一手')}
-            cursor={currentMove}
-            onPick={handleMoveChange}
+          <AiRecommendRows rows={aiRows} />
+        </KioskFold>
+
+        <KioskFold
+          fold="grade"
+          grow={openFold === 'grade'}
+          open={openFold === 'grade'}
+          onToggle={() => setOpenFold(openFold === 'grade' ? 'ai' : 'grade')}
+          testId="report-detail-grade"
+          title={t('grade:tabs', '着手评价 · 七档')}
+          value={gradeSummary}
+        >
+          <MoveGradePanel
+            analysis={analysisByMove}
+            totalMoves={totalMoves}
+            onMoveClick={handleMoveChange}
+            trend={(
+              <>
+                <p className="tline">
+                  <span className="wr">
+                    {t('review:black_winrate', '黑胜率')}{' '}
+                    <b>{currentAnalysis ? `${(currentAnalysis.winrate * 100).toFixed(1)}%` : '—'}</b>
+                  </span>
+                  <span className="sl">
+                    {t('review:black_lead', '黑领先')}{' '}
+                    <b>
+                      {currentAnalysis
+                        ? `${currentAnalysis.score_lead >= 0 ? '+' : '\u2212'}${Math.abs(currentAnalysis.score_lead).toFixed(1)} ${t('report:points_unit', '目')}`
+                        : '—'}
+                    </b>
+                  </span>
+                </p>
+                <div className="evalpad">
+                  <ReviewWinratePlot
+                    points={points}
+                    lead={leadPoints}
+                    empty={points.length < 2 ? t('review:plot_thin', '报告里还没有算出来的手') : ''}
+                    axisTop={`${t('review:black', '黑')} 100`}
+                    axisMid="50"
+                    axisBottom={`${t('review:white', '白')} 100`}
+                    label={t('review:plot_pick_label', '逐手胜率，点一下跳到那一手')}
+                    cursor={currentMove}
+                    onPick={handleMoveChange}
+                  />
+                </div>
+              </>
+            )}
           />
         </KioskFold>
 
-        <KioskFold
-          fold="keys"
-          grow
-          testId="report-detail-keys"
-          bodyClassName="foldrows"
-          title={t('review:fold_keys', '重点手 · 只列掉得最多的')}
-          value={`${worst.length} ${t('report:moves_unit', '手')}`}
-        >
-          {worst.length === 0 ? (
-            <div className="empty">
-              <h4>{t('review:no_key_moves', '没有掉得明显的手')}</h4>
-              <p>{t('review:no_key_moves_hint', '这一局没有一手让形势掉过三目以上。')}</p>
-            </div>
-          ) : worst.map((k, i) => (
-            <div className="kiosk-row" key={k.moveNumber} data-testid="report-detail-key-row">
-              <span className="kiosk-row__lead">{k.moveNumber} {t('report:moves_unit', '手')}</span>
-              <span className="kiosk-row__t">
-                <b data-sev={i === 0 ? 'bad' : 'warn'}>
-                  {k.bestMove
-                    ? `${t('review:should_play', '该走')} ${k.bestMove}`
-                    : t('review:no_best_move', '这一手没存候选')}
-                </b>
-                <em>
-                  {k.player === 'B' ? t('review:black', '黑') : t('review:white', '白')}
-                  {' '}{Math.round(k.beforePct)}% → {Math.round(k.afterPct)}%
-                  {' · '}
-                  {interpolate(t('review:dropped', '掉 {d} 点'), { d: Math.round(k.dropPct) })}
-                </em>
-              </span>
-              <span className="kiosk-row__end">
-                <button
-                  type="button"
-                  className="kiosk-btn kiosk-btn--pill"
-                  onClick={() => handleMoveChange(k.moveNumber)}
-                >
-                  {t('review:see_this_move', '看这手')}
-                </button>
-              </span>
-            </div>
-          ))}
-        </KioskFold>
-
-        <div className="gtoggles" role="group" aria-label={t('review:toggles', '显示')} data-testid="report-detail-toggles">
+        {/* 名字、顺序、图标逐个对上 galaxy 的 `LiveMatchDisplayControls`
+            (Fan 2026-09-01:「几个按钮的 icon 还有名称也和 galaxy 界面中的不一致,
+            这是不能接受的」)。三处改动:
+              · 顺序 领地/手数/AI 推荐/试下 → **试下/领地/手数/支招**(galaxy 的顺序);
+              · 「AI 推荐」改叫**「支招」**(galaxy 的 `Advice`)—— 同一件事两个名字,
+                而「AI 推荐」这四个字在这一屏上还是那张表的名字,一屏两义;
+              · 加图标,`.gtoggles--icon`。⚠️ **这一条推翻了 `go-screens.css` 里
+                「开关本来就没有图标」那条**(2026-08-24 屏 18 重画时立的)——
+                那条解决的是「安个图标像按下去有后果」,这里要解决的是跨端认不出是同一件事,
+                后者更贵。是**修饰类不是改 `.gtoggles`**,别的屏不受影响。
+            galaxy 那排还有一个**坐标**开关,盒上没有:盒上那圈坐标由外壳的四条刻度带画,
+            是布局 A 几何的一部分,关掉棋盘会变尺寸,撞规范 §5 防跳铁律。⇒ 盒上坐标恒开。 */}
+        <div className="gtoggles gtoggles--icon" role="group" aria-label={t('review:toggles', '显示')} data-testid="report-detail-toggles">
+          <button type="button" aria-pressed={tryMoveMode} onClick={handleTryToggle}>
+            <Icon name="hand-pointing" />{t('report:try', '试下')}
+          </button>
           <button
             type="button" aria-pressed={showTerritory} disabled={!ownership}
             onClick={() => setShowTerritory((v) => !v)}
           >
-            {t('report:territory', '领地')}
+            <Icon name="map-trifold" />{t('report:territory', '领地')}
           </button>
           <button type="button" aria-pressed={showMoveNumbers} onClick={() => setShowMoveNumbers((v) => !v)}>
-            {t('report:move_numbers', '手数')}
+            <Icon name="list-numbers" />{t('report:move_numbers', '手数')}
           </button>
           <button type="button" aria-pressed={showAiMarkers} onClick={() => setShowAiMarkers((v) => !v)}>
-            {t('review:ai_hint', 'AI 推荐')}
-          </button>
-          <button type="button" aria-pressed={tryMoveMode} onClick={handleTryToggle}>
-            {t('report:try', '试下')}
+            <Icon name="lightbulb" />{t('Advice', '支招')}
           </button>
         </div>
 

@@ -35,6 +35,15 @@ const LivePage = () => {
     setCurrentMove,
   } = useLiveMatch(selectedMatchId || undefined, { pollInterval: 5000, analysisMode: 'none' });
 
+  /**
+   * **切局的等待期不许画上一局。** `useLiveMatch` 在拉新的一局时,`match` 仍然是上一局 ——
+   * 于是点了 B 局、盘上还是 A 局的棋,而屏上没有任何东西说它是旧的:
+   * **坏了和好着在用户那里看起来一模一样**。判据必须是「手上这份是不是我要的那一份」,
+   * 不能是 `loading` 的有无(它在轮询期间恒为 false)。
+   * galaxy 的 `live/LivePage` 同一处、同一个修法。
+   */
+  const matchReady = selectedMatch != null && selectedMatch.id === selectedMatchId;
+
   const handleSelectMatch = useCallback((match: MatchSummary) => {
     setPickedMatchId(match.id);
   }, []);
@@ -73,7 +82,7 @@ const LivePage = () => {
           p: 2,
         }}
       >
-        {selectedMatch ? (
+        {matchReady && selectedMatch ? (
           <>
             {selectedMatch.status === 'live' && (
               <Box sx={{ mb: 1 }}>
@@ -126,9 +135,17 @@ const LivePage = () => {
             />
           </>
         ) : (
-          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {matchLoading ? (
-              <CircularProgress />
+          <Box
+            sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}
+            data-testid={selectedMatchId || loading ? 'live-board-loading' : 'live-board-empty'}
+          >
+            {selectedMatchId || loading ? (
+              <>
+                {/* 加载要有话说:上一版这儿只有一个转圈(而且是在 `matchLoading` 为真时才有),
+                    切局那一秒屏上既不是新局也没有提示。 */}
+                <CircularProgress size={28} />
+                <Typography color="text.secondary">{t('live:loading_match', '正在加载棋局…')}</Typography>
+              </>
             ) : (
               <Typography color="text.secondary">{t('Select a match', '请选择对局')}</Typography>
             )}
@@ -221,10 +238,10 @@ const LivePage = () => {
               fullWidth
               size="large"
               onClick={handleEnterMatch}
-              disabled={!selectedMatchId || matchLoading}
+              disabled={!matchReady || matchLoading}
               sx={{ py: 1.5 }}
             >
-              {selectedMatch?.status === 'live' ? t('Enter Live', '进入直播') : t('Review', '复盘')}
+              {matchReady && selectedMatch?.status === 'live' ? t('Enter Live', '进入直播') : t('Review', '复盘')}
             </Button>
           </Box>
         )}

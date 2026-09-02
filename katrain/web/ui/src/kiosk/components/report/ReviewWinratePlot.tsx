@@ -21,6 +21,19 @@ import { MISTAKE_SCORE_LOSS, type WinratePoint } from '../../../features/report/
 const W = 560;
 const H = 96;
 
+/** 目差那条曲线的一个点。`scoreLead` 是**黑方**领先的目数(与 winrate 同一个参照系)。 */
+export interface LeadPoint { moveNumber: number; scoreLead: number }
+
+/**
+ * 目差纵轴的量程。**必须对称**(±top):右轴那三格是 space-between,中间那格就在盒子正中,
+ * 量程不对称的话「0」这个字会指到不是 0 的高度上。而正中同时是胜率 50% 那条虚线 ⇒
+ * 两条曲线的「均势」重合,这不是巧合,是对的。
+ */
+function leadTop(points: readonly LeadPoint[]): number {
+  const max = Math.max(1, ...points.map((p) => Math.abs(p.scoreLead)));
+  return Math.max(6, Math.ceil(max / 3) * 3);
+}
+
 /** 掉得最狠的那一手 —— 红的那一段就是它。返回的是**后一个点**在数组里的下标。 */
 function worstDropIndex(points: readonly WinratePoint[]): number | null {
   let worst: number | null = null;
@@ -44,7 +57,7 @@ function worstDropIndex(points: readonly WinratePoint[]): number | null {
 }
 
 export function ReviewWinratePlot({
-  points, empty, axisTop, axisMid, axisBottom, label, cursor, onPick,
+  points, empty, axisTop, axisMid, axisBottom, label, cursor, onPick, lead,
 }: {
   points: readonly WinratePoint[];
   /**
@@ -58,6 +71,11 @@ export function ReviewWinratePlot({
   label: string;
   /** 停在第几手 —— 画一条竖线。`undefined` = 不画(复盘列表那一屏没有游标)。 */
   cursor?: number;
+  /**
+   * 第二条曲线:逐手目差。**给了才画** —— 屏 19 复盘列表那张缩略图只要胜率一条。
+   * galaxy 的走势 tab(`renderDualChart`)画的就是这两条,盒上跟着画同样两条。
+   */
+  lead?: readonly LeadPoint[];
   /**
    * 点曲线跳到那一手。**不是锦上添花**:187 手的谱靠四个翻手键一手一手挪走不到第 120 手,
    * 而稿子把滑块拿掉了 —— 这条是那个滑块的替代品(`TrendChart` 原来就有)。
@@ -86,6 +104,15 @@ export function ReviewWinratePlot({
   const y = (p: WinratePoint) => (1 - p.winrate) * H;
   const path = (from: number, to: number) =>
     points.slice(from, to + 1).map((p) => `${x(p).toFixed(1)},${y(p).toFixed(1)}`).join(' ');
+
+  // 目差那条:x 用和胜率同一条(按手数),y 用自己的对称量程。
+  const leadPts = lead && lead.length >= 2 ? lead : null;
+  const leadMax = leadPts ? leadTop(leadPts) : 0;
+  const leadPath = leadPts
+    ? leadPts
+      .map((p) => `${((p.moveNumber / lastMove) * W).toFixed(1)},${(((leadMax - p.scoreLead) / (2 * leadMax)) * H).toFixed(1)}`)
+      .join(' ')
+    : null;
 
   const drop = worstDropIndex(points);
   const last = points[points.length - 1];
@@ -142,9 +169,25 @@ export function ReviewWinratePlot({
               <polyline className="curve" points={path(drop, points.length - 1)} />
             </>
           )}
-          <circle className="now" cx={x(last)} cy={y(last)} r="5" />
+          {leadPath && <polyline className="lead" data-testid="review-lead-curve" points={leadPath} />}
         </svg>
+        {/* 当前手那颗点**不画在 svg 里**。svg 是 `preserveAspectRatio="none"`(曲线要拉满盒子),
+            而 `<circle>` 会跟着一起被拉 —— 560×96 的画布铺进 436×153 的盒子,圆就成了竖椭圆。
+            2026-09-02 之前它已经是横向压扁的(436/560),`.evalpad` 让盒子长高之后更明显。
+            改成按百分比定位的 DOM 圆点:x / y 仍旧由同一对 `x()` / `y()` 算,只是换成比例,
+            **在任何盒子尺寸下都是正圆**。(棒棒糖图那次踩的是同一个坑,那边的修法是对齐 viewBox;
+            这里对不齐 —— 曲线本来就要被拉。) */}
+        <span
+          className="wrnow"
+          data-testid="review-winrate-now"
+          style={{ left: `${((x(last) / W) * 100).toFixed(2)}%`, top: `${((y(last) / H) * 100).toFixed(2)}%` }}
+        />
       </div>
+      {leadPts && (
+        <div className="wrlead" data-testid="review-lead-axis">
+          <i>{`+${leadMax}`}</i><i>0</i><i>{`\u2212${leadMax}`}</i>
+        </div>
+      )}
     </div>
   );
 }

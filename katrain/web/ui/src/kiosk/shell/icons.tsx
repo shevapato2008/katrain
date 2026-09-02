@@ -1,6 +1,12 @@
 // Phosphor v2(MIT)。规范 §10:图标只能从 Phosphor v2 出、成对导出,四个前端用**同一份字节**
-// —— 所以 `src/kiosk-shell/icons/` 是整目录抄来的 82 个文件(41 对),不挑,由
-// `kiosk-shell/MANIFEST.sha256` 钉住(290 行)。
+// —— 所以 `src/kiosk-shell/icons/` 是整目录抄来的 86 个文件(43 对),不挑,由
+// `kiosk-shell/MANIFEST.sha256` 钉住(294 行)。
+//
+// 2026-09-02 加了 `map-trifold` / `list-numbers` 两对:屏 20 的显示开关按 galaxy 对齐
+// 名字与图标(领地 = MUI Map、手数 = MUI FormatListNumbered),这两个同义件目录里没有。
+// **两个仓一起加**:真源是 `smartbox-software/superpowers/shared/kiosk-shell/assets/icons`,
+// 那边的 `MANIFEST.sha256` 与 `scripts/verify-assets.sh` 也同批更新过(295 行,已跑绿) ——
+// 只加这一份的话,下次从共享包同步会把它们冲掉。
 //
 // `?raw` 拿源码内联,**不能**用 `<img src>`:<img> 跟不了容器的 `color`,而
 // `.kiosk-dock__item[aria-current="page"] { color: var(--ink) }` 翻色全靠 `currentColor`,
@@ -35,7 +41,8 @@ export const ICON_NAMES = [
   'caret-double-left', 'caret-double-right', 'caret-down', 'caret-left', 'caret-right',
   'circuitry', 'corners-out', 'crown-simple', 'cube', 'flag', 'game-controller', 'gear',
   'globe-hemisphere-west', 'grid-nine', 'hand-pointing', 'handshake', 'house', 'info',
-  'lightbulb', 'magnifying-glass', 'puzzle-piece', 'qr-code', 'robot', 'skip-forward',
+  'lightbulb', 'list-numbers', 'magnifying-glass', 'map-trifold', 'puzzle-piece', 'qr-code',
+  'robot', 'skip-forward',
   'sliders-horizontal', 'speaker-high', 'squares-four', 'trend-up', 'trophy',
   'upload-simple', 'user-circle', 'users',
 ] as const;

@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskOptSeg } from '../shell/KioskOptSeg';
+import { AiRecommendRows } from '../components/report/AiRecommendRows';
 import { KioskFold } from '../shell/KioskFold';
 import { KioskActions, type KioskAction } from '../shell/KioskActions';
 import { Icon } from '../shell/icons';
@@ -665,25 +666,7 @@ const ResearchPage = () => {
             </div>
           ) : (
             <>
-              <span className="hd">{t('research:col_move', '着手')}</span>
-              <span className="hd">{t('research:col_recommendation', '推荐度')}</span>
-              <span className="hd">{t('research:col_score_diff', '目差')}</span>
-              <span className="hd">{t('research:col_winrate', '胜率')}</span>
-              {/* 有几行画几行,**下面留白,不补空行也不补占位** —— `.aitab` 的
-                  `align-content:start` 就是为这个写的。留白是真话:AI 只给出了这么多候选。 */}
-              {rows.map((r, i) => {
-                const best = i === 0 ? 'best' : '';
-                // **负目差一律走 `.neg`,连首行也不例外** —— 绿色的负数是自相矛盾的。
-                const scoreCls = r.scoreLead < 0 ? 'neg' : best;
-                return (
-                  <span key={r.move} style={{ display: 'contents' }} data-testid="research-ai-row">
-                    <span className={best}>{r.move}</span>
-                    <span className={best}>{r.share.toFixed(0)}%</span>
-                    <span className={scoreCls}>{r.scoreLead >= 0 ? '+' : '−'}{Math.abs(r.scoreLead).toFixed(1)}</span>
-                    <span className={best}>{(r.winrate * 100).toFixed(1)}%</span>
-                  </span>
-                );
-              })}
+              <AiRecommendRows rows={rows} />
             </>
           )}
         </KioskFold>

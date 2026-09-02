@@ -298,6 +298,8 @@ class LedGeometryCalibrator:
     def _locate_anchor(
         self, row: int, col: int, attempts: list[dict], roi: tuple[float, float, float] | None = None
     ):
+        # 复用最近一次成功抓到的 (dark, lit) 帧对做 ROI 回退,不必为回退再多闪一次灯(D2③)。
+        last_capture: tuple[np.ndarray, np.ndarray, int, str, int] | None = None
         for channel, color_name in self.COLOR_CHANNELS:
             for level in self.FLASH_LEVELS:
                 if self.cancel_event.is_set():
@@ -330,6 +332,7 @@ class LedGeometryCalibrator:
                         "geometry anchor (%d,%d) %s@%d: reason=no_frame", row, col, color_name, level,
                     )
                     break
+                last_capture = (dark, lit, channel, color_name, level)
                 result = detect_led_centroid(dark, lit, channel=channel, roi=roi)
                 attempts.append({
                     "row": row, "col": col, "color": color_name, "level": level,
@@ -347,6 +350,26 @@ class LedGeometryCalibrator:
                     return result.centroid
                 if result.reason != "low_signal":
                     break  # 只有信号弱才值得升亮度
+        if roi is not None and last_capture is not None:
+            # ROI 全画幅先验可能被投毒(某个角测偏 ⇒ 单应算偏),把可被 RANSAC 吸收的
+            # 离群锚点变成整条标定 hard-fail。带 ROI 的尝试全败后,退回全画幅用最近一次
+            # 已经拍到的帧再试一次 —— 不需要再多闪一次灯。
+            dark, lit, channel, color_name, level = last_capture
+            result = detect_led_centroid(dark, lit, channel=channel, roi=None)
+            attempts.append({
+                "row": row, "col": col, "color": color_name, "level": level,
+                "ok": result.ok, "peak": result.peak, "area": result.area,
+                "margin": result.margin, "reason": result.reason, "roi_fallback": True,
+            })
+            logger.info(
+                "geometry anchor (%d,%d) %s@%d: roi_fallback ok=%s peak=%.1f area=%s margin=%s reason=%s",
+                row, col, color_name, level, result.ok, result.peak,
+                result.area, result.margin, result.reason,
+            )
+            if result.ok:
+                point = (float(result.centroid[0]), float(result.centroid[1]))
+                self.anchor_observer(row, col, point, color_name)
+                return result.centroid
         return None
 
     def _build_lock(self, fit, frames, detected, attempts):

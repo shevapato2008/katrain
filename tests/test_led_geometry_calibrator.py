@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import pytest
 
-from katrain.vision import stone_classifier
+from katrain.vision import led_geometry_calibrator, stone_classifier
 from katrain.vision.led_geometry_calibrator import (
     CALIBRATION_ANCHORS,
     LedGeometryCalibrator,
@@ -327,6 +327,63 @@ def test_calibrate_uses_corner_homography_to_roi_the_star_points():
     for (row, col), got in zip(CALIBRATION_ANCHORS[4:], result.lock.diag["anchors"][4:]):
         want = points[(row, col)]
         assert (got["camera"][0], got["camera"][1]) == pytest.approx(tuple(want), abs=3.0)
+
+
+def test_roi_hit_costs_one_attempt_and_a_poisoned_roi_falls_back(monkeypatch):
+    """ROI 半径够 ⇒ 一次命中,不必回退。
+
+    这颗合成锚点的预测中心和真实相机坐标重合(dist≈0),所以只断言"命中一次"钉不住
+    ROI_CELLS —— 任何 >=1px 的半径都赢(连 ROI_RADIUS_MIN_PX=24px 那个地板都用不上就已经
+    够用),把 ROI_CELLS 改多小都是绿的。补一个 40px 的偏移:LED 画的是半径 8px 的圆,
+    地板半径 24px 时 ROI 边缘离真锚点只有 40-8=32px(> 24px)才能把整颗 LED 挡在圈外
+    ——挡不干净(比如偏移 30px 时只挡住 22px,还差 2px 才够着地板半径,ROI 会把 LED
+    的近侧那一小片圆弧漏进来,detect_led_centroid 照样命中,测试对 ROI_CELLS 的
+    改动完全不敏感)。40px 比 ROI_CELLS=1.5 在这颗锚点撑出的半径(约 64px)小,
+    真半径时 LED 整颗都在 ROI 内、不会被裁到只剩一角。"""
+    led = FakeLed()
+    points = _synthetic_camera_points()
+    capture = FakeCapture(led, points)
+
+    real_predict = led_geometry_calibrator.predict_anchor_roi
+
+    def offset_predict(homography, row, col):
+        cx, cy, radius = real_predict(homography, row, col)
+        if (row, col) == (3, 3):
+            cx += 40.0  # 见上:32px(=40-8px LED 半径)> ROI_RADIUS_MIN_PX(24px) 才挡得干净;
+            # 40px < ROI_CELLS(1.5)*local_cell(≈64px) 才不会连真半径都装不下整颗 LED。
+        return cx, cy, radius
+
+    monkeypatch.setattr(led_geometry_calibrator, "predict_anchor_roi", offset_predict)
+
+    result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
+    assert result.ok is True
+    star = [a for a in result.attempts if (a["row"], a["col"]) == (3, 3)]
+    assert len(star) == 1, f"ROI 半径够时该一次命中,实际 {len(star)} 次: {star}"
+
+
+def test_calibrate_recovers_when_predicted_roi_is_poisoned(monkeypatch):
+    """预测中心被投毒偏移 120px(≈2.8 格,复审实测过 70px 就已经 anchor_not_found)——
+    ROI 内找不到真 LED,六次带 ROI 的尝试全部 low_signal 之后必须回退到全画幅再试一次,
+    而不是让整条标定 anchor_not_found(离群锚点本该被 fit_geometry_from_anchors 的
+    RANSAC 吸收,不该先在 ROI 这一步就整体报废)。"""
+    led = FakeLed()
+    points = _synthetic_camera_points()
+    capture = FakeCapture(led, points)
+
+    real_predict = led_geometry_calibrator.predict_anchor_roi
+
+    def poisoned_predict(homography, row, col):
+        cx, cy, radius = real_predict(homography, row, col)
+        return cx + 120.0, cy, radius
+
+    monkeypatch.setattr(led_geometry_calibrator, "predict_anchor_roi", poisoned_predict)
+
+    result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
+
+    assert result.ok is True
+    star = [a for a in result.attempts if (a["row"], a["col"]) == (3, 3)]
+    assert star[-1].get("roi_fallback") is True
+    assert star[-1]["ok"] is True
 
 
 def test_check_frame_exposure_pins_median_alone():

@@ -6,6 +6,7 @@ from katrain.vision import stone_classifier
 from katrain.vision.led_geometry_calibrator import (
     CALIBRATION_ANCHORS,
     LedGeometryCalibrator,
+    check_frame_exposure,
     detect_led_centroid,
     fit_geometry_from_anchors,
 )
@@ -187,3 +188,46 @@ def test_calibrator_reports_each_detected_anchor():
     assert all(color == "green" for _row, _col, _point, color in observed)
     for row, col, point, _color in observed:
         assert point == pytest.approx(_synthetic_camera_points()[(row, col)], abs=1.0)
+
+
+def test_check_frame_exposure_rejects_blown_out_frame():
+    frame = np.full((480, 640, 3), 253, np.uint8)
+
+    ok, reason, stats = check_frame_exposure(frame)
+
+    assert ok is False
+    assert reason == "frame_overexposed"
+    assert stats["median"] == pytest.approx(253, abs=1)
+    assert stats["clip_frac"] > 0.5
+
+
+def test_check_frame_exposure_rejects_black_frame():
+    frame = np.full((480, 640, 3), 2, np.uint8)
+
+    ok, reason, _stats = check_frame_exposure(frame)
+
+    assert ok is False
+    assert reason == "frame_underexposed"
+
+
+def test_check_frame_exposure_accepts_the_band_that_worked_in_the_dark():
+    # 01:32 那次成功标定时盘面中位 ≈150(spec §2.1 表)。
+    frame = np.full((480, 640, 3), 150, np.uint8)
+
+    ok, reason, _stats = check_frame_exposure(frame)
+
+    assert ok is True
+    assert reason is None
+
+
+def test_calibrate_fails_fast_on_overexposed_frame_without_flashing_any_led():
+    led = FakeLed()
+    capture = FakeCapture(led, _synthetic_camera_points())
+    capture._frame = lambda: np.full((900, 1000, 3), 253, np.uint8)
+
+    result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
+
+    assert result.ok is False
+    assert result.reason == "frame_overexposed"
+    # D2③ + 用户体验:环境不行的时候不要先闪 13 颗灯再说不行。
+    assert led.attempts == []

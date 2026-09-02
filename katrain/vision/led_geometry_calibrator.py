@@ -15,6 +15,13 @@ from katrain.vision.geometry_lock import GeometryLock
 
 logger = logging.getLogger(__name__)
 
+# 标定入口的曝光闸。判据来自 spec §2.2 的实测:
+#   01:32 暗处成功那次盘面中位 ≈150、逐锚点 peak 94-198;
+#   白天 bright=254(60% 像素 ≥250)时 13 颗里 12 颗定位到噪声。
+# 这两个数不是审美偏好,是「亮减暗差分还剩不剩信号」的边界。
+EXPOSURE_MEDIAN_MAX = 245.0   # 高于此:盘面接近削顶,lit-dark 差分趋近 0
+EXPOSURE_MEDIAN_MIN = 20.0    # 低于此:整帧欠曝,LED 之外什么都看不见
+EXPOSURE_CLIP_FRAC_MAX = 0.35  # >=250 的像素占比上限
 
 CALIBRATION_ANCHORS = (
     (0, 0),
@@ -62,6 +69,25 @@ class CalibrationResult:
     reason: str | None = None
     fit: GeometryFitResult | None = None
     attempts: tuple[dict, ...] = ()
+
+
+def check_frame_exposure(frame: np.ndarray) -> tuple[bool, str | None, dict]:
+    """标定入口的曝光闸:过曝时 lit-dark 差分恒为 0,检测器只会在噪声里游走。
+
+    量的是**原始整帧**而不是 warp 后的盘面 —— 标定阶段还没有几何可用,
+    auto_exposure.meter_brightness 那条路在这里走不通。"""
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) if frame.ndim == 3 else frame
+    small = gray[::4, ::4]
+    stats = {
+        "median": float(np.median(small)),
+        "clip_frac": float((small >= 250).mean()),
+        "shadow_frac": float((small <= 10).mean()),
+    }
+    if stats["median"] >= EXPOSURE_MEDIAN_MAX or stats["clip_frac"] >= EXPOSURE_CLIP_FRAC_MAX:
+        return False, "frame_overexposed", stats
+    if stats["median"] <= EXPOSURE_MEDIAN_MIN:
+        return False, "frame_underexposed", stats
+    return True, None, stats
 
 
 def detect_led_centroid(dark: np.ndarray, lit: np.ndarray, *, channel: int) -> LedCentroidResult:
@@ -191,6 +217,17 @@ class LedGeometryCalibrator:
         detected = []
         attempts = []
         try:
+            probe, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
+            if probe is None:
+                return CalibrationResult(ok=False, reason="no_frames")
+            ok, reason, stats = check_frame_exposure(probe)
+            logger.info(
+                "geometry exposure gate: ok=%s reason=%s median=%.0f clip=%.3f",
+                ok, reason, stats["median"], stats["clip_frac"],
+            )
+            if not ok:
+                return CalibrationResult(ok=False, reason=reason, attempts=({"exposure": stats},))
+
             total = len(CALIBRATION_ANCHORS)
             for index, (row, col) in enumerate(CALIBRATION_ANCHORS, start=1):
                 if self.cancel_event.is_set():

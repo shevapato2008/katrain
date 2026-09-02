@@ -287,6 +287,48 @@ def test_check_frame_exposure_pins_clip_frac_alone():
     assert stats["clip_frac"] == pytest.approx(0.40, abs=0.02)
 
 
+def test_detect_led_centroid_ignores_a_brighter_blob_outside_the_roi():
+    """白天实测:(15,9) 被画面右上角眩光抢走,报到 (1807,142) 而真值在 (1286,629)。
+    ROI 内没有更亮的东西时,ROI 外再亮也不许赢。"""
+    dark = np.full((900, 1000, 3), 120, np.uint8)
+    lit = dark.copy()
+    cv2.circle(lit, (300, 400), 8, (120, 170, 120), -1)   # 真 LED:抬 50
+    cv2.circle(lit, (900, 80), 20, (120, 240, 120), -1)   # 眩光:抬 120,更亮更大
+
+    without_roi = detect_led_centroid(dark, lit, channel=1)
+    with_roi = detect_led_centroid(dark, lit, channel=1, roi=(300.0, 400.0, 60.0))
+
+    assert without_roi.centroid == pytest.approx((900, 80), abs=3.0)   # 现状:被抢走
+    assert with_roi.ok is True
+    assert with_roi.centroid == pytest.approx((300, 400), abs=2.0)
+
+
+def test_calibrate_uses_corner_homography_to_roi_the_star_points():
+    """四角先全画幅定位;随后 9 颗星位改用四角单应预测的 ROI 搜索,不再被
+    画面别处更亮的假货抢走 —— 只在非四角阶段出现的眩光复现 spec §2.2 的长相
+    (被抢走的是九星,四角当时是对的)。"""
+    led = FakeLed()
+    points = _synthetic_camera_points()
+    corners = set(CALIBRATION_ANCHORS[:4])
+
+    class GlareCapture(FakeCapture):
+        def _frame(self):
+            frame = super()._frame()
+            if self.led.current is not None and self.led.current not in corners:
+                cv2.circle(frame, (970, 20), 18, (255, 255, 255), -1)   # 只在九星阶段出现
+            return frame
+
+    capture = GlareCapture(led, points)
+    result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
+
+    assert result.ok is True
+    assert result.lock is not None
+    # 九星必须落回它们真正的位置,而不是那块假货。
+    for (row, col), got in zip(CALIBRATION_ANCHORS[4:], result.lock.diag["anchors"][4:]):
+        want = points[(row, col)]
+        assert (got["camera"][0], got["camera"][1]) == pytest.approx(tuple(want), abs=3.0)
+
+
 def test_check_frame_exposure_pins_median_alone():
     """clip_frac 为 0,只有 median 越线 —— 单独钉住 EXPOSURE_MEDIAN_MAX。"""
     frame = np.full((480, 640, 3), 246, np.uint8)            # 246 < 250 ⇒ 不算削顶

@@ -90,12 +90,22 @@ def check_frame_exposure(frame: np.ndarray) -> tuple[bool, str | None, dict]:
     return True, None, stats
 
 
-def detect_led_centroid(dark: np.ndarray, lit: np.ndarray, *, channel: int) -> LedCentroidResult:
-    """Find the dominant positive light blob in a lit-minus-dark frame."""
+def detect_led_centroid(
+    dark: np.ndarray, lit: np.ndarray, *, channel: int, roi: tuple[float, float, float] | None = None
+) -> LedCentroidResult:
+    """Find the dominant positive light blob in a lit-minus-dark frame.
+
+    ``roi`` = (cx, cy, radius_px)。给了就只在这个圆内找 —— peak>=20 这个闸是照
+    73x73 的小窗口定的,用在整幅 1920x1080 上等于「找画面里最亮的噪声团」(spec §2.2)。"""
     if dark.shape != lit.shape or dark.ndim != 3:
         return LedCentroidResult(ok=False, reason="shape_mismatch")
     delta = lit[..., channel].astype(np.float32) - dark[..., channel].astype(np.float32)
     delta = cv2.GaussianBlur(delta, (5, 5), 0)
+    if roi is not None:
+        cx, cy, radius = roi
+        keep = np.zeros(delta.shape, np.uint8)
+        cv2.circle(keep, (int(round(cx)), int(round(cy))), max(1, int(round(radius))), 1, -1)
+        delta = np.where(keep.astype(bool), delta, 0.0)
     peak = float(delta.max(initial=0.0))
     if peak < 20.0:
         return LedCentroidResult(ok=False, peak=peak, reason="low_signal")
@@ -185,6 +195,20 @@ def fit_geometry_from_anchors(
     )
 
 
+ROI_CELLS = 1.5  # ROI 半径 = 1.5 个格距。棋盘不会在一次标定里移动超过这个量级。
+ROI_RADIUS_MIN_PX = 24.0
+
+
+def predict_anchor_roi(homography: np.ndarray, row: int, col: int) -> tuple[float, float, float]:
+    """用四角拟出的临时单应预测某锚点的像素位置,半径按**该处局部**格距算 ——
+    透视下近端格子比远端大,用全局常数会在一端过紧、另一端过松。"""
+    here = cv2.perspectiveTransform(np.array([[[float(col), float(row)]]], np.float32), homography)[0][0]
+    diag = cv2.perspectiveTransform(
+        np.array([[[float(col) + 1.0, float(row) + 1.0]]], np.float32), homography)[0][0]
+    local_cell = float(np.hypot(diag[0] - here[0], diag[1] - here[1])) / float(np.sqrt(2.0))
+    return float(here[0]), float(here[1]), max(ROI_RADIUS_MIN_PX, ROI_CELLS * local_cell)
+
+
 class LedGeometryCalibrator:
     """Orchestrate strict LED flashes and fresh-frame geometry capture."""
 
@@ -235,15 +259,22 @@ class LedGeometryCalibrator:
                 return CalibrationResult(ok=False, reason=reason, attempts=({"exposure": stats},))
 
             total = len(CALIBRATION_ANCHORS)
+            corner_h = None
             for index, (row, col) in enumerate(CALIBRATION_ANCHORS, start=1):
                 if self.cancel_event.is_set():
                     return CalibrationResult(ok=False, reason="cancelled", attempts=tuple(attempts))
                 phase = "flashing_corners" if index <= 4 else "verifying"
                 self.progress(phase, index - 1, total)
-                centroid = self._locate_anchor(row, col, attempts)
+                roi = predict_anchor_roi(corner_h, row, col) if corner_h is not None else None
+                centroid = self._locate_anchor(row, col, attempts, roi=roi)
                 if centroid is None:
                     return CalibrationResult(ok=False, reason=f"anchor_not_found:{row},{col}", attempts=tuple(attempts))
                 detected.append(((row, col), centroid))
+                if index == 4:
+                    # CALIBRATION_ANCHORS[:4] 是四角,顺序 (0,0)(0,18)(18,18)(18,0)。
+                    src = np.array([[float(c), float(r)] for (r, c) in CALIBRATION_ANCHORS[:4]], np.float32)
+                    dst = np.array([point for _anchor, point in detected[:4]], np.float32)
+                    corner_h = cv2.getPerspectiveTransform(src, dst)
 
             fit = fit_geometry_from_anchors(detected, out_size=self.out_size)
             if not fit.ok:
@@ -264,7 +295,9 @@ class LedGeometryCalibrator:
             except Exception:
                 pass
 
-    def _locate_anchor(self, row: int, col: int, attempts: list[dict]):
+    def _locate_anchor(
+        self, row: int, col: int, attempts: list[dict], roi: tuple[float, float, float] | None = None
+    ):
         for channel, color_name in self.COLOR_CHANNELS:
             for level in self.FLASH_LEVELS:
                 if self.cancel_event.is_set():
@@ -297,7 +330,7 @@ class LedGeometryCalibrator:
                         "geometry anchor (%d,%d) %s@%d: reason=no_frame", row, col, color_name, level,
                     )
                     break
-                result = detect_led_centroid(dark, lit, channel=channel)
+                result = detect_led_centroid(dark, lit, channel=channel, roi=roi)
                 attempts.append({
                     "row": row, "col": col, "color": color_name, "level": level,
                     "ok": result.ok, "peak": result.peak, "area": result.area,

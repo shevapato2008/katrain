@@ -534,7 +534,7 @@ def test_exposure_is_actuated_before_calibration_when_there_is_no_geometry_lock(
     service.stop()
 
 
-def test_exposure_convergence_is_bounded_when_the_camera_never_comes_back():
+def test_exposure_convergence_is_bounded_when_the_camera_never_comes_back(caplog):
     """收不回来的相机不许把标定卡死:收敛在上限内退出,标定照样往下走,
     最后由曝光闸诚实拒绝(而不是界面永远停在 waiting_empty)。"""
     events = []
@@ -547,13 +547,25 @@ def test_exposure_convergence_is_bounded_when_the_camera_never_comes_back():
     )
     service.EXPOSURE_CONVERGE_POLL_S = 0.0
 
-    service.start(trigger="manual", empty_confirmed=True)
-
-    assert service.wait(timeout=5) is True, "收敛循环没有上限 —— 标定线程挂住了"
+    with caplog.at_level(logging.INFO, logger="katrain.web.core.geometry_calibration_service"):
+        service.start(trigger="manual", empty_confirmed=True)
+        assert service.wait(timeout=5) is True, "收敛循环没有上限 —— 标定线程挂住了"
     assert "calibrate" in events, "收敛失败之后必须继续跑标定,不能就地返回失败"
     assert service.status()["phase"] == "failed"
     # 字面上限(不是拿被测常量自己当期望值,否则把上限改大这条断言会跟着变松)。
     assert capture.grab_calls <= 12, f"取帧次数没有封顶: {capture.grab_calls}"
+
+    # 撞上限退出 = 带着**没收敛完的曝光**继续往下跑。这条路不该静默:级别必须是
+    # warning,而且要说清撞的是上限。
+    handover = [r for r in caplog.records if "-> manual, median now" in r.getMessage()]
+    assert len(handover) == 1, f"交接那行日志没有出现: {[r.getMessage() for r in caplog.records]}"
+    message = handover[0].getMessage()
+    assert handover[0].levelno == logging.WARNING, f"撞上限却只是 info: {message}"
+    assert "capped=True" in message, message
+    assert "outcome=max_steps" in message, message
+    # 钉的是关系式「真的走到上限了」,不是某个具体数 —— 上限改成别的值这条照样成立。
+    cap = service.EXPOSURE_CONVERGE_MAX_STEPS
+    assert f"steps={cap}/{cap}" in message, message
     service.stop()
 
 
@@ -627,6 +639,14 @@ def test_converge_logs_both_medians_across_the_manual_handover(caplog):
     numbers = [int(n) for n in re.findall(r"median (?:now )?(\d+)", handover[0])]
     assert len(numbers) == 2, f"这行要并排写两个 median,实际: {handover[0]}"
     assert all(120 <= number <= 170 for number in numbers), handover[0]
+    # 顺利收敛这条路:级别是 info,而且要说清走了几步 —— 这两个数是用来核实
+    # POLL_S/MAX_STEPS 那个 6 秒上限拍得对不对的(本机拍的,板上跑一次就知道)。
+    record = next(r for r in caplog.records if "-> manual, median now" in r.getMessage())
+    assert record.levelno == logging.INFO, f"顺利收敛却报了 warning: {handover[0]}"
+    assert "capped=False" in handover[0], handover[0]
+    assert "outcome=converged" in handover[0], handover[0]
+    # 这个假相机开了硬件 AE 之后下一帧就在带内 ⇒ 第一步就该收敛。
+    assert f"steps=1/{service.EXPOSURE_CONVERGE_MAX_STEPS}" in handover[0], handover[0]
     # 顺序:先有收敛开始那行,再有交接这行。
     assert lines.index(handover[0]) > next(i for i, line in enumerate(lines) if "converge: start" in line)
     # 后一个数必须来自**交接之后的一次真取帧**。光看日志里有两个数分不出「重新量了」

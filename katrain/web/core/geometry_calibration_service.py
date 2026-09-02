@@ -224,7 +224,9 @@ class GeometryCalibrationService:
         生效」,initial_exposure 是 open() 那一刻的读数,都不是当前值。)
 
         有界:轮询不超过 EXPOSURE_CONVERGE_MAX_STEPS 次、总时长不超过
-        EXPOSURE_CONVERGE_TIMEOUT_S 秒。超了就带着当前曝光往下走,不卡死也不失败。
+        EXPOSURE_CONVERGE_TIMEOUT_S 秒。超了就带着当前曝光往下走,不卡死也不失败 ——
+        但**不静默**:那条路上日志是 warning,并带 `steps=N/MAX` 与 `outcome`,
+        既说清「走了几步」也说清「从哪条路出去的」。
         """
         grab = getattr(self.capture, "grab_fresh", None)
         request = getattr(self.capture, "request_controls", None)
@@ -239,23 +241,49 @@ class GeometryCalibrationService:
         )
         request(auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
         deadline = time.monotonic() + self.EXPOSURE_CONVERGE_TIMEOUT_S
+        # 初值 = 「一路没 break,把步数用完了」。每条退出路径各自改写它,
+        # 这样日志里那个 outcome 说的就是**真的从哪条路出去的**,不是推出来的。
+        outcome = "max_steps"
+        steps = 0
         for _step in range(self.EXPOSURE_CONVERGE_MAX_STEPS):
-            if self._cancel_event.wait(self.EXPOSURE_CONVERGE_POLL_S) or time.monotonic() >= deadline:
+            if self._cancel_event.wait(self.EXPOSURE_CONVERGE_POLL_S):
+                outcome = "cancelled"
                 break
+            if time.monotonic() >= deadline:
+                outcome = "timeout"
+                break
+            steps += 1
             stats = self._measure_exposure(grab)
-            if stats is None or self._in_target_band(stats):
+            if stats is None:
+                outcome = "no_frame"
+                break
+            if self._in_target_band(stats):
+                outcome = "converged"
                 break
         request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
-        # 交接前后各一个 median,并排写进 journal:两个数接近 ⇒ 驱动保留了 AE 收敛值;
-        # 后一个跳回高位 ⇒ 就是「驱动把曝光弹回 default」的指纹,一眼看得出来。
-        # 归因靠这一行 —— 否则 journal 里只有一个 frame_overexposed,分不清是屋里太亮
-        # 还是这次收敛白做了,而这两件事的处置完全不同。
         settled = self._measure_exposure(grab)
-        logger.info(
-            "geometry exposure converge: median %s -> manual, median now %s (in_band=%s)",
+        # 一行里四件事,每件都在回答一个自己回答不了的问题:
+        #  - 交接前后两个 median:两个数接近 ⇒ 驱动保留了 AE 收敛值;后一个跳回高位
+        #    ⇒ 「驱动把曝光弹回 default」的指纹。否则 journal 里只有一个
+        #    frame_overexposed,分不清是屋里太亮还是这次收敛白做了。
+        #  - steps=N/MAX 与 outcome:POLL_S/MAX_STEPS 合计上限只有 6 秒,是拍的
+        #    (spec §2.2「exposure_auto=3 立刻有效」支持硬件 AE 收敛很快,但「大概率够」
+        #    和「板上确实够」是两件事)。这两个数一打出来,跑一次标定就知道拍得对不对。
+        # 撞上限/超时退出时,标定是**带着没收敛完的曝光继续往下跑**的 —— 这条路不该
+        # 静默,所以它是 warning 而不是 info。收敛/取消/没帧都不算(前者成功,后两者
+        # 上游自己会报)。
+        capped = outcome in {"max_steps", "timeout"}
+        emit = logger.warning if capped else logger.info
+        emit(
+            "geometry exposure converge: median %s -> manual, median now %s "
+            "(in_band=%s steps=%d/%d outcome=%s capped=%s)",
             None if stats is None else round(stats["median"]),
             None if settled is None else round(settled["median"]),
             None if settled is None else self._in_target_band(settled),
+            steps,
+            self.EXPOSURE_CONVERGE_MAX_STEPS,
+            outcome,
+            capped,
         )
 
     @staticmethod

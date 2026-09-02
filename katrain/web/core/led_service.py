@@ -118,6 +118,7 @@ class LedService:
         self._serial = None
         self._connected = False
         self._last_reconnect = 0.0
+        self._last_errors: List[str] = []
         # Set once pyserial itself is missing — a permanent condition, so we stop
         # retrying (and stop logging) instead of hammering every reconnect_interval.
         self._serial_unavailable = False
@@ -182,6 +183,15 @@ class LedService:
 
     def is_connected(self) -> bool:
         return self._connected
+
+    @property
+    def last_errors(self) -> List[str]:
+        """Firmware/serial errors from the most recently completed batch only —
+        not an accumulated history. A batch with no errors (including a batch that
+        runs after a failing one) overwrites this back to []. The non-strict path's
+        HTTP `ok: true` only means "enqueued"; this is where its real outcome — e.g.
+        firmware `ERR maxon` when a request exceeds MAX_ON — actually surfaces."""
+        return list(self._last_errors)
 
     # -- public API -------------------------------------------------------- #
     def set_points(self, points: List[Dict], *, strict: bool = False) -> Dict:
@@ -278,6 +288,12 @@ class LedService:
                 errors.append(f"{cmd} -> {resp}")
             if cmd.startswith("SHOW") and ok:
                 shown_at = self._clock()
+        if errors:
+            # The non-strict caller already got its ok:true back in _submit() and
+            # isn't waiting on this batch — this log line is these errors' only
+            # remaining exit. MAX_ON / ERR range and friends all land here.
+            log.warning("LED batch reported %d firmware error(s): %s", len(errors), "; ".join(errors[:5]))
+        self._last_errors = list(errors)
         self._finish(batch, ok=not errors, shown_at=shown_at, errors=errors)
 
     def _send_and_ack(self, cmd: str) -> tuple:

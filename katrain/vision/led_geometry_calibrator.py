@@ -23,6 +23,11 @@ EXPOSURE_MEDIAN_MAX = 245.0   # 高于此:盘面接近削顶,lit-dark 差分趋�
 EXPOSURE_MEDIAN_MIN = 20.0    # 低于此:整帧欠曝,LED 之外什么都看不见
 EXPOSURE_CLIP_FRAC_MAX = 0.35  # >=250 的像素占比上限
 
+# 检测阶段容缺的下限 —— 必须与 fit_geometry_from_anchors 的 min_inliers 同源:
+# 拟合阶段本来就允许 13 个锚点里有 4 个外点(RANSAC min_inliers=9),检测阶段
+# 少定位到几颗不该比拟合阶段更严。两处不同值会让这份余量白留。
+MIN_LOCATED_ANCHORS = 9
+
 CALIBRATION_ANCHORS = (
     (0, 0),
     (0, 18),
@@ -141,7 +146,7 @@ def fit_geometry_from_anchors(
     anchors: list[tuple[tuple[int, int], np.ndarray | tuple[float, float]]],
     *,
     out_size: int = 950,
-    min_inliers: int = 9,
+    min_inliers: int = MIN_LOCATED_ANCHORS,  # 同源:检测阶段容缺不能比这条 RANSAC 门槛更严
     max_rms_cells: float = 0.12,
     max_residual_cells: float = 0.25,
 ) -> GeometryFitResult:
@@ -268,13 +273,21 @@ class LedGeometryCalibrator:
                 roi = predict_anchor_roi(corner_h, row, col) if corner_h is not None else None
                 centroid = self._locate_anchor(row, col, attempts, roi=roi)
                 if centroid is None:
-                    return CalibrationResult(ok=False, reason=f"anchor_not_found:{row},{col}", attempts=tuple(attempts))
+                    continue  # 容缺:拟合阶段本来就允许 4 个外点(MIN_LOCATED_ANCHORS)
                 detected.append(((row, col), centroid))
-                if index == 4:
+                # index==4 时 detected 未必已有 4 个(前面可能已经容缺跳过);单应必须等
+                # 真正定位到 4 颗才求,否则 getPerspectiveTransform 会拿到 <4 个点直接炸。
+                if len(detected) == 4 and corner_h is None:
                     # CALIBRATION_ANCHORS[:4] 是四角,顺序 (0,0)(0,18)(18,18)(18,0)。
-                    src = np.array([[float(c), float(r)] for (r, c) in CALIBRATION_ANCHORS[:4]], np.float32)
+                    # 若这 4 个已定位的锚点里混进了非四角的星位(某个角缺失时会发生),
+                    # 单应依然可解(四点不共线即可),ROI 半径按局部格距算,误差可接受
+                    # ——参见本任务 report 里对这条退化路径的说明。
+                    src = np.array([[float(c), float(r)] for (r, c), _point in detected[:4]], np.float32)
                     dst = np.array([point for _anchor, point in detected[:4]], np.float32)
                     corner_h = cv2.getPerspectiveTransform(src, dst)
+
+            if len(detected) < MIN_LOCATED_ANCHORS:
+                return CalibrationResult(ok=False, reason="too_few_anchors", attempts=tuple(attempts))
 
             fit = fit_geometry_from_anchors(detected, out_size=self.out_size)
             if not fit.ok:

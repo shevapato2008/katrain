@@ -386,6 +386,43 @@ def test_calibrate_recovers_when_predicted_roi_is_poisoned(monkeypatch):
     assert star[-1]["ok"] is True
 
 
+def test_calibrate_tolerates_up_to_four_missing_anchors():
+    """min_inliers=9 已经允许 13 个里有 4 个外点;检测阶段不该比拟合阶段更严。"""
+    led = FakeLed()
+    points = _synthetic_camera_points()
+    invisible = {(3, 3), (9, 15)}
+
+    class PartialCapture(FakeCapture):
+        def _frame(self):
+            if self.led.current in invisible:
+                return np.full((900, 1000, 3), 90, np.uint8)  # 这两颗任何颜色都看不见
+            return super()._frame()
+
+    result = LedGeometryCalibrator(led=led, capture=PartialCapture(led, points)).calibrate()
+
+    assert result.ok is True
+    assert result.lock is not None
+
+
+def test_calibrate_stops_when_too_few_anchors_are_located():
+    led = FakeLed()
+    points = _synthetic_camera_points()
+    visible = {(0, 0), (0, 18), (18, 18), (18, 0)}
+
+    class MostlyBlindCapture(FakeCapture):
+        def _frame(self):
+            if self.led.current not in visible:
+                return np.full((900, 1000, 3), 90, np.uint8)
+            return super()._frame()
+
+    result = LedGeometryCalibrator(led=led, capture=MostlyBlindCapture(led, points)).calibrate()
+
+    assert result.ok is False
+    assert result.reason == "too_few_anchors"
+    # 诊断必须活着 —— 用户要知道是哪几颗没找到。
+    assert sum(1 for a in result.attempts if a.get("ok")) == 4
+
+
 def test_check_frame_exposure_pins_median_alone():
     """clip_frac 为 0,只有 median 越线 —— 单独钉住 EXPOSURE_MEDIAN_MAX。"""
     frame = np.full((480, 640, 3), 246, np.uint8)            # 246 < 250 ⇒ 不算削顶

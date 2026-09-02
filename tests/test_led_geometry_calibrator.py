@@ -1,3 +1,4 @@
+import logging
 from threading import Event
 
 import cv2
@@ -575,3 +576,46 @@ def test_exposure_gate_reports_stats_outside_attempts():
     assert result.exposure_stats is not None
     assert result.exposure_stats["median"] == pytest.approx(253, abs=1)
     assert result.exposure_stats["clip_frac"] > 0.5
+
+
+def _warnings_about_roi_prefilter(caplog):
+    return [r.getMessage() for r in caplog.records if "ROI prefilter did not take effect" in r.getMessage()]
+
+
+def test_warns_when_the_whole_roi_prefilter_round_evaporated(monkeypatch, caplog):
+    """静默失效:某个**角**被眩光抢到别处时,那颗错的相机点照样能过
+    first_nondegenerate_quad 的面积判据(判据只看 canonical 坐标,看不见相机点是不是
+    真实像),corner_h 于是是错的,九星 ROI 落到毫无关系的位置。
+
+    行为上兜得住(全部 low_signal ⇒ roi_fallback 退回全画幅 = 改动前行为),所以不改
+    控制流。问题是它静悄悄:整整一轮 T5 的收益蒸发,唯一的痕迹是一堆没有消费方的
+    `roi_fallback: True`。这里只补一条 warning 让它看得见。
+
+    两个方向都要:0 条的场景必须**不**出这条 warning,否则是恒真守卫。"""
+    points = _synthetic_camera_points()
+    real_predict = led_geometry_calibrator.predict_anchor_roi
+
+    def poisoned_predict(homography, row, col):
+        cx, cy, radius = real_predict(homography, row, col)
+        return cx + 120.0, cy, radius   # 复现「四角先验被投毒」:ROI 里找不到真 LED
+
+    # --- 方向一:先验不可信,九星整批退回全画幅 ---
+    led = FakeLed()
+    monkeypatch.setattr(led_geometry_calibrator, "predict_anchor_roi", poisoned_predict)
+    with caplog.at_level(logging.WARNING, logger="katrain.vision.led_geometry_calibrator"):
+        poisoned = LedGeometryCalibrator(led=led, capture=FakeCapture(led, points)).calibrate()
+    fallbacks = sum(1 for a in poisoned.attempts if a.get("roi_fallback"))
+    assert fallbacks >= 7, f"这个场景要造出 >=7 条 roi_fallback 才有判别力,实际 {fallbacks}"
+    warned = _warnings_about_roi_prefilter(caplog)
+    assert len(warned) == 1, f"整轮 ROI 蒸发却一条 warning 都没有: {caplog.records}"
+    assert str(fallbacks) in warned[0], f"warning 要说清是几颗退回的: {warned[0]}"
+
+    # --- 方向二(反向对照):正常一轮,0 条退回 ⇒ 一个字都不许说 ---
+    caplog.clear()
+    monkeypatch.setattr(led_geometry_calibrator, "predict_anchor_roi", real_predict)
+    led = FakeLed()
+    with caplog.at_level(logging.WARNING, logger="katrain.vision.led_geometry_calibrator"):
+        healthy = LedGeometryCalibrator(led=led, capture=FakeCapture(led, points)).calibrate()
+    assert healthy.ok is True
+    assert sum(1 for a in healthy.attempts if a.get("roi_fallback")) == 0
+    assert _warnings_about_roi_prefilter(caplog) == [], "正常一轮不许报警(恒真守卫)"

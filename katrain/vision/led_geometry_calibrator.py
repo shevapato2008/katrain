@@ -39,6 +39,15 @@ MIN_LOCATED_ANCHORS = 9
 PEAK_MIN_ROI = 15.0
 PEAK_MIN_FULL = 20.0
 
+# 「本轮 ROI 预筛整个没生效」的报警线。某个**角**被眩光抢到别处时(正是本分支要修的
+# 现象),那颗错的相机点照样能过 first_nondegenerate_quad 的面积判据 —— 判据只看
+# canonical 坐标,看不见相机点是不是各自 canonical 点的真实像。corner_h 于是是错的,
+# 九星 ROI 落到毫无关系的位置。行为上兜得住(全部 low_signal ⇒ roi_fallback 退回全画幅
+# = 改动前行为),所以不改控制流,只让它别再静悄悄地发生。
+# 阈值依据:正常有锁场景 roi_fallback 是 0 条;缺一个共线角(Ruling-9 已修)实测也是
+# 0 条;四角真被抢会让其后**全部**九星退回,实测量级 8-9 条。7 落在这两个量级之间。
+ROI_FALLBACK_WARN_MIN = 7
+
 CALIBRATION_ANCHORS = (
     (0, 0),
     (0, 18),
@@ -328,6 +337,16 @@ class LedGeometryCalibrator:
                 # 循环,不会再回到顶部)。这里补一次,让 cancelled 优先于 too_few_anchors
                 # ——也优先于收尾阶段(grab_burst + 8 次 warpPerspective + held-out 自检)。
                 return CalibrationResult(ok=False, reason="cancelled", attempts=tuple(attempts))
+
+            # 只报警、不改判决:这一轮 T5 的收益静静蒸发了,唯一的痕迹是这些
+            # roi_fallback,而这个键没有任何消费方(见 ROI_FALLBACK_WARN_MIN)。
+            fallbacks = sum(1 for attempt in attempts if attempt.get("roi_fallback"))
+            if fallbacks >= ROI_FALLBACK_WARN_MIN:
+                logger.warning(
+                    "geometry: corner prior may be untrustworthy — %d anchors fell back to "
+                    "full-frame; this run's ROI prefilter did not take effect",
+                    fallbacks,
+                )
 
             if len(detected) < MIN_LOCATED_ANCHORS:
                 return CalibrationResult(ok=False, reason="too_few_anchors", attempts=tuple(attempts))

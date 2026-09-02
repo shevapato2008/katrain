@@ -552,8 +552,10 @@ def test_exposure_convergence_is_bounded_when_the_camera_never_comes_back(caplog
         assert service.wait(timeout=5) is True, "收敛循环没有上限 —— 标定线程挂住了"
     assert "calibrate" in events, "收敛失败之后必须继续跑标定,不能就地返回失败"
     assert service.status()["phase"] == "failed"
-    # 字面上限(不是拿被测常量自己当期望值,否则把上限改大这条断言会跟着变松)。
-    assert capture.grab_calls <= 12, f"取帧次数没有封顶: {capture.grab_calls}"
+    # 字面上限(**故意**不拿被测常量当期望值,否则把上限改大这条断言会跟着变松,
+    # 就抓不到「压根没有上限」了)。当前预算是 1 次初测 + 20 次轮询 + 1 次交接后复测
+    # = 22;取 30 留点余量。抬 MAX_STEPS 时这个数要跟着人工确认一次,这是刻意的摩擦。
+    assert capture.grab_calls <= 30, f"取帧次数没有封顶: {capture.grab_calls}"
 
     # 撞上限退出 = 带着**没收敛完的曝光**继续往下跑。这条路不该静默:级别必须是
     # warning,而且要说清撞的是上限。

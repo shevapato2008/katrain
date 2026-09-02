@@ -35,9 +35,20 @@ class GeometryCalibrationService:
 
     # 标定入口那次曝光收敛的边界。用户正站在标定屏前等,不能无限等:超了就带着当前
     # 曝光继续往下走 —— 真收不回来,后面的曝光闸会诚实拒绝,不会伪装成功。
-    EXPOSURE_CONVERGE_MAX_STEPS = 6
-    EXPOSURE_CONVERGE_TIMEOUT_S = 12.0
+    # 步数预算 = 20 x 1s = **20 秒**,依据是板上实测,不是拍的:rk3562 2026-09-02 夜间,
+    # 把曝光钉到极暗(exposure_absolute=50 ⇒ bright=1)再开硬件 AE 计时,
+    # +5s 仍是 1、+10s 仍是 1、+15s 已回到 141 ⇒ **从极端值回到带内要 10-15 秒**
+    # (journal 采样粒度 5s,真值在这个区间内)。原来的 6 秒会直接撞上限。
+    # ⚠️ 这条实测只量了「暗 → 亮」一个方向,而生产上真正的场景是「过曝 → 带内」,
+    # 方向相反。缩短积分时间通常比拉长快(拉长要防振荡所以走缓坡),所以生产方向
+    # 很可能更快 —— 但那是推断不是测量,所以上限按**测到的那个方向**定。
+    EXPOSURE_CONVERGE_MAX_STEPS = 20
     EXPOSURE_CONVERGE_POLL_S = 1.0
+    # 墙钟只是**兜底**,防的是单次取帧阻塞(camera.grab_fresh 自己的 timeout 是 2.0s,
+    # 20 步全卡满就是 60 秒)。它**必须大于步数预算**,否则会悄悄变成真正的那道闸,
+    # 而 outcome 会报 timeout 而不是 max_steps —— 两个上限并存时小的那个说了算,
+    # 这正是上一版 12s < 20s 会踩的坑。
+    EXPOSURE_CONVERGE_TIMEOUT_S = 30.0
     # 目标带与 auto_exposure.ExposureController 的默认带同源(spec:中位落在 [120,170])。
     EXPOSURE_TARGET_LO = 120.0
     EXPOSURE_TARGET_HI = 170.0
@@ -218,10 +229,14 @@ class GeometryCalibrationService:
 
         ⚠️ 待板上核实:退回手动时驱动应当保留 AE 刚收敛出来的 exposure_absolute(V4L2 的
         常规行为)。万一它弹回 default,这次收敛白做 —— 但**不会假绿**:紧接着的曝光闸
-        会重新量整帧,该报 frame_overexposed 还是照报。核实不必专门安排一次测量:下面
-        那行日志把交接前后的两个 median 并排写出来,跑一次标定读一行 journal 就知道。
-        (没有实时回读曝光值的口:camera.py 的 controls_effective 是 bool「上次控制有没有
-        生效」,initial_exposure 是 open() 那一刻的读数,都不是当前值。)
+        会重新量整帧,该报 frame_overexposed 还是照报。核实只能靠下面那行日志把交接前后
+        的两个 median 并排写出来,跑一次标定读一行 journal 就知道。
+        **不要试图回读曝光值来核实**:没有实时回读的口(controls_effective 是 bool
+        「上次控制有没有生效」,initial_exposure 是 open() 那一刻的读数),而且板上实测
+        **硬件 AE 开着时 `v4l2-ctl -C exposure_absolute` 的回读恒为 166(driver default)**,
+        看不见 AE 实际收敛到的积分时间。
+        夜间实测的结果是「保留」(AE 141 → 手动 141-143),但**这个结论不成立**:同一晚
+        显式写 default 166 也是 143,两者区分不开。**要白天过曝时才测得出来**,已进验收单。
 
         有界:轮询不超过 EXPOSURE_CONVERGE_MAX_STEPS 次、总时长不超过
         EXPOSURE_CONVERGE_TIMEOUT_S 秒。超了就带着当前曝光往下走,不卡死也不失败 ——
@@ -276,9 +291,9 @@ class GeometryCalibrationService:
         #  - 交接前后两个 median:两个数接近 ⇒ 驱动保留了 AE 收敛值;后一个跳回高位
         #    ⇒ 「驱动把曝光弹回 default」的指纹。否则 journal 里只有一个
         #    frame_overexposed,分不清是屋里太亮还是这次收敛白做了。
-        #  - steps=N/MAX 与 outcome:POLL_S/MAX_STEPS 合计上限只有 6 秒,是拍的
-        #    (spec §2.2「exposure_auto=3 立刻有效」支持硬件 AE 收敛很快,但「大概率够」
-        #    和「板上确实够」是两件事)。这两个数一打出来,跑一次标定就知道拍得对不对。
+        #  - steps=N/MAX 与 outcome:上限现在是板上实测的 20 秒(见常量注释),但那条实测
+        #    只量了「暗→亮」方向,生产是「过曝→带内」。这两个数一打出来,跑一次白天的
+        #    标定就知道 20 秒对不对 —— 生产方向的收敛时间只能这么拿到。
         # 撞上限/超时退出时,标定是**带着没收敛完的曝光继续往下跑**的 —— 这条路不该
         # 静默,所以它是 warning 而不是 info。收敛/取消/没帧都不算(前者成功,后两者
         # 上游自己会报)。

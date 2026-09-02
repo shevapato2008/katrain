@@ -980,6 +980,109 @@ lifespan 守卫，说明 develop 上跑过的全量测试覆盖的就是这份�
 **遗留（未处理）：** `releases/` 下现有 3 份（`a9b2485b` / `e9a7889e` / `7c268569`）。
 `a9b2485b` 已无引用可删（约 1.5G），`e9a7889e` 是回滚锚点、`7c268569` 是线上，**都不动**。
 
+### 2026-08-29 — develop 合并后重新发布（非迁移）
+
+发布内容：`release/ucloud-20260805` 合入 `origin/develop`（合并提交 `72024fcc`），
+带上着手评价七档改造 —— 妙手从单边的目数损失轴挪到难度轴、新增「发挥水准」直方图、
+妙手/问题手列表每方前 5 并加阶段/棋手筛选。
+
+- 镜像（均为不可变 ID）：
+  `WEB_IMAGE=sha256:187662fc70b9bd6efa14d474db98698b3f5b82175a4e0c9932b7058be031841e`
+  （tag `katrain-web:72024fcc`，`size_bytes=542672203`；上一版 542197378，同量级），
+  `CRON_IMAGE=sha256:3aca246d00c5f23ddaee3375a9f3cd623e33687970d0f0b528fd31a2a9782d61`
+  （tag `katrain-cron:72024fcc`）。`build-web.sh` 的容器内容测试通过。
+  **本次 cron 镜像也重建了** —— 改动涉及 `katrain/cron/`，而 compose 里 `CRON_IMAGE`
+  是独立变量，只换 `WEB_IMAGE` 会让 cron 继续跑旧代码。
+- 上一版镜像 ID 保留作回滚锚点：web `sha256:1490683a5438…`（tag `katrain-web:7c268569`）、
+  cron `sha256:0c75181ec14c…`（tag `katrain-cron:c7f3eed7`）；
+  `/opt/katrain/releases/7c268569` 未删除。
+- `/etc/katrain/ucloud.env` 改动仅 `WEB_IMAGE` 与 `CRON_IMAGE` 两行；
+  改前副本 `/opt/katrain/backups/ucloud.env.20260829-1800`，改后仍 root 所有、mode 0600。
+- 数据库备份 `/opt/katrain/backups/prod-20260829-1747.dump`（`pg_dump -Fc`，196.2 MB）。
+  **已真恢复验证**：恢复进临时库 `pg_restore` 退出码 0、零 error，逐表比对 38 张表
+  的 `count(*)`，0 处不一致（含 `kifu_albums` 151197、`tsumego_problems` 21072、
+  `live_analysis` 63954、`report_task_moves` 2317）。验证库已 DROP。
+
+**本次有 schema 变更**（与 2026-08-21 那次不同）：`report_task_moves` 新增 7 列
+`grade` / `points_lost` / `points_lost_source` / `is_top_move` / `top_prior` /
+`brilliance` / `root_visits`，全部 nullable。仓里没有 Alembic，靠
+`katrain/web/core/migrations.py::add_missing_columns` 在 `init_db` 时自动
+`ALTER TABLE ADD COLUMN`。**这条路径先在测试环境（home-ubuntu）的真 PostgreSQL 上
+跑通后才上生产**；生产发布后实测 7 列全部就位，`report_task_moves` 仍为 2317 行。
+
+**闸门结果与一次明示越闸：**
+
+- `--phase full`：**仅 2 条失败，且都是容量闸** —— `available_bytes=20711616512`，
+  `required_bytes=38500000000`；以及「projected filesystem use ≥ 75%」（实际 77%）。
+  与 2026-08-21 那次同形（当时 20760682496）。错误文案本身写的是
+  “**migration** requires at least …”，即一次性迁移的峰值要求，不是发布要求；
+  本次为非迁移发布，`peak_bytes=13500000000` 远低于可用空间。
+- `--structural`：**Compose preview 与 production profile 均渲染通过**、**GPU 可用**。
+- 注意：preflight 在容量闸上**快速失败**，不会继续报告其余检查项，
+  所以本次没有取得 env mode / 镜像不可变 / WireGuard / 防火墙 等项的**正向**证据
+  （只有 `--structural` 那两条）。镜像不可变性是手工保证的：两个 `*_IMAGE`
+  都写成 `sha256:` ID 而非 tag。
+- 未按 runbook 的 stop condition 停止，属**明示越闸**，理由如上，
+  回滚锚点（旧镜像 ID、旧 release 目录、env 副本、已验证的库备份）齐备。
+
+**发布后验证：** 6 个 katrain-ucloud 容器全部 healthy；`/api/v1/health` 返回
+`{"status":"ok","engines":{"local":"reachable"}}`；前端产物含 `grade:performance`；
+`/api/translations?lang=cn` 下发 21 条 `grade:*` 文案；cron 的 `poll_moves` /
+`fetch_list` 正常执行。
+
+### 2026-09-01 — 发布 `f8f3582d`：galaxy 右栏 / 报告改版 + 撤人类倾向（非迁移，无 DDL）
+
+> **这条是 2026-09-02 事后补的。** 当天发布完没有留条目，本文件在 `f8f3582d` 上
+> 最后一条还停在 08-29。补的依据有两处，逐条标了出处:
+> **[机]** = 事后在生产机上还查得到的状态（镜像/目录/备份文件的时间戳与 ID）；
+> **[录]** = 当天那次会话自己的工具输出（本仓 transcript）。
+> 没有出处的项一律写「无记录」，**不补写、不追认**。
+
+发布内容：`release/ucloud-20260805` 合入 develop（`2b6b44c8`），合并提交 `f8f3582d`。
+galaxy 十个棋盘页右栏统一 20px 内边距 + 宽度改由实测式子决定 + 字号切两档、
+复盘五个分析 tab 改版、直播列表点开一盘棋的加载态、撤掉人类倾向。
+`git diff 683b71ab..f8f3582d` 共 **50 个文件**，其中含 `katrain/cron/config.py`
+（这就是 cron 镜像那次也重建的原因），无 models / 迁移文件 ⇒ **无 DDL**。
+
+- 镜像 **[机][录]**：`WEB_IMAGE=sha256:79b94765a8fdf5a351f67141b4ee5523e3a67d24ba4b2bf0766f0c4eb091b291`
+  （tag `katrain-web:f8f3582d`，`size_bytes=542720405`，建于 2026-09-01T21:07:46+08:00），
+  `CRON_IMAGE=sha256:8d3f0735f98ce06018ede612328748fcc753a3953b30330614f6489b3e32144f`
+  （tag `katrain-cron:f8f3582d`，68M，建于 21:10:30）。**两个都重建了**，因为改动落进了 `katrain/cron/`。
+- release 目录 **[机]**：`/opt/katrain/releases/f8f3582d`，`git clone --depth 1` 于 2026-09-01 21:04:09。
+- 回滚锚点 **[录]**：`katrain-web:683b71ab` / `katrain-cron:683b71ab` 未删除。
+- env 副本 **[机][录]**：`/opt/katrain/backups/ucloud.env.20260901T211058.bak`。
+  （这类副本的**文件名带备份时刻、mtime 带被备份文件自己的修改时刻**——`cp -p` 保原时间。
+  所以这份的 mtime 是 08-31 14:50，指的是上一版 `683b71ab` 写进去的那一刻，不是备份时刻。
+  拿 `ls` 的时间列当备份时间会读反一整代。）
+- 预检 **[录]**：`available_bytes=22133936128`、`peak_bytes=13500000000`、`required_bytes=38500000000`，
+  **2 条红且都是容量闸**（同历次）。
+  当天**另做了一次变异**：把 `WEB_IMAGE` 指向一个不存在的镜像 ⇒ 多报一条
+  `ERROR WEB_IMAGE is not available locally`、`checks=3` ——
+  证明容量闸之外的分支**确实在跑**，不是被快速失败跳过了。
+  （这一格 08-29 和 09-02 两次都没做到，是这次补记里唯一比它们强的一处。）
+- `up -d`：**无 dry-run 记录**。事后看结果是对的——`katrain-web` 与 `katrain-cron` 两个重建，
+  KataGo（`Up 30 hours`）与 postgres（`Up 5 weeks`）uptime 未断 **[录]**。
+  但「结果没出事」不等于「事前知道会动谁」，这一步 09-02 那次补上了。
+
+**⚠️ 一处偏离常规前置（如实记，不追认）：这次发布没有取数据库备份。**
+`/opt/katrain/backups/` 里 `f8f3582d` 之前最近的一份是 `prod-20260831-1410.dump`（08-31 14:08，
+属上一版 `683b71ab`），09-01 一份都没有 **[机]**；当天那次会话的发布表里也没有这一行 **[录]**。
+本次改动确无 DDL，事后也没有出问题，但**「无 DDL」不是免掉备份的理由**——
+备份是回滚锚点，不是迁移专用件。09-02 那次已按前置补回（含真恢复验证）。
+
+**发布后验证 [录]：** 6 个容器全部起来（web/cron `health: starting` → 随后 healthy）；
+`docker inspect` 确认 web/cron 跑的就是上面两个 ID；`/api/v1/health` 200；
+公网 `https://modelstella.com/` 200；`current -> /opt/katrain/releases/f8f3582d`。
+**发布前后同一组三探针**（这是当天做得好的一处，值得抄）：
+
+| 探针 | 前 | 后 |
+|---|---|---|
+| bundle 含 `min-width:560px` | 无 | `rankUtils-Bq-lsBox.js` |
+| `/api/translations` 的 `live:loading_match` | 缺失 | 正在加载棋局… |
+| cron 环境变量 `HUMAN_SL_PROFILE` | `'rank_5d'` | `''` |
+
+生产真浏览器实测（2000×1050）：右栏 762、标题左内距 20px、标题 26px、棋盘 978 未变 **[录]**。
+
 ### 2026-09-02 — 发布 `7a6069aa`：kiosk 屏 20 复盘五个分析 tab（非迁移，**无 DDL**）
 
 发布内容：`release/ucloud-20260805` 合入 `origin/develop`（合并提交 `7a6069aa`，
@@ -1041,56 +1144,7 @@ KataGo 一重建就是 15 分钟 TensorRT 预热、期间 `katrain-web` 卡在 `
 `/api/translations?lang=cn` 下发 48 条不同的 `grade:*` 文案；
 cron 的 `poll_moves` 仍在 3 秒周期正常执行。发布后根分区 82%。
 
-**一处欠账（不是本次造成的）：** 上一次发布 `f8f3582d`（galaxy 右栏/报告改版）
-**没有留 runbook 条目** —— 本文件在 `f8f3582d` 上的最后一条还停在 08-29。
-镜像 ID、env 副本、库备份在机器上都还在，需要的话可以照实补回来。
-
-### 2026-08-29 — develop 合并后重新发布（非迁移）
-
-发布内容：`release/ucloud-20260805` 合入 `origin/develop`（合并提交 `72024fcc`），
-带上着手评价七档改造 —— 妙手从单边的目数损失轴挪到难度轴、新增「发挥水准」直方图、
-妙手/问题手列表每方前 5 并加阶段/棋手筛选。
-
-- 镜像（均为不可变 ID）：
-  `WEB_IMAGE=sha256:187662fc70b9bd6efa14d474db98698b3f5b82175a4e0c9932b7058be031841e`
-  （tag `katrain-web:72024fcc`，`size_bytes=542672203`；上一版 542197378，同量级），
-  `CRON_IMAGE=sha256:3aca246d00c5f23ddaee3375a9f3cd623e33687970d0f0b528fd31a2a9782d61`
-  （tag `katrain-cron:72024fcc`）。`build-web.sh` 的容器内容测试通过。
-  **本次 cron 镜像也重建了** —— 改动涉及 `katrain/cron/`，而 compose 里 `CRON_IMAGE`
-  是独立变量，只换 `WEB_IMAGE` 会让 cron 继续跑旧代码。
-- 上一版镜像 ID 保留作回滚锚点：web `sha256:1490683a5438…`（tag `katrain-web:7c268569`）、
-  cron `sha256:0c75181ec14c…`（tag `katrain-cron:c7f3eed7`）；
-  `/opt/katrain/releases/7c268569` 未删除。
-- `/etc/katrain/ucloud.env` 改动仅 `WEB_IMAGE` 与 `CRON_IMAGE` 两行；
-  改前副本 `/opt/katrain/backups/ucloud.env.20260829-1800`，改后仍 root 所有、mode 0600。
-- 数据库备份 `/opt/katrain/backups/prod-20260829-1747.dump`（`pg_dump -Fc`，196.2 MB）。
-  **已真恢复验证**：恢复进临时库 `pg_restore` 退出码 0、零 error，逐表比对 38 张表
-  的 `count(*)`，0 处不一致（含 `kifu_albums` 151197、`tsumego_problems` 21072、
-  `live_analysis` 63954、`report_task_moves` 2317）。验证库已 DROP。
-
-**本次有 schema 变更**（与 2026-08-21 那次不同）：`report_task_moves` 新增 7 列
-`grade` / `points_lost` / `points_lost_source` / `is_top_move` / `top_prior` /
-`brilliance` / `root_visits`，全部 nullable。仓里没有 Alembic，靠
-`katrain/web/core/migrations.py::add_missing_columns` 在 `init_db` 时自动
-`ALTER TABLE ADD COLUMN`。**这条路径先在测试环境（home-ubuntu）的真 PostgreSQL 上
-跑通后才上生产**；生产发布后实测 7 列全部就位，`report_task_moves` 仍为 2317 行。
-
-**闸门结果与一次明示越闸：**
-
-- `--phase full`：**仅 2 条失败，且都是容量闸** —— `available_bytes=20711616512`，
-  `required_bytes=38500000000`；以及「projected filesystem use ≥ 75%」（实际 77%）。
-  与 2026-08-21 那次同形（当时 20760682496）。错误文案本身写的是
-  “**migration** requires at least …”，即一次性迁移的峰值要求，不是发布要求；
-  本次为非迁移发布，`peak_bytes=13500000000` 远低于可用空间。
-- `--structural`：**Compose preview 与 production profile 均渲染通过**、**GPU 可用**。
-- 注意：preflight 在容量闸上**快速失败**，不会继续报告其余检查项，
-  所以本次没有取得 env mode / 镜像不可变 / WireGuard / 防火墙 等项的**正向**证据
-  （只有 `--structural` 那两条）。镜像不可变性是手工保证的：两个 `*_IMAGE`
-  都写成 `sha256:` ID 而非 tag。
-- 未按 runbook 的 stop condition 停止，属**明示越闸**，理由如上，
-  回滚锚点（旧镜像 ID、旧 release 目录、env 副本、已验证的库备份）齐备。
-
-**发布后验证：** 6 个 katrain-ucloud 容器全部 healthy；`/api/v1/health` 返回
-`{"status":"ok","engines":{"local":"reachable"}}`；前端产物含 `grade:performance`；
-`/api/translations?lang=cn` 下发 21 条 `grade:*` 文案；cron 的 `poll_moves` /
-`fetch_list` 正常执行。
+**一处欠账（不是本次造成的，已还）：** 上一次发布 `f8f3582d`（galaxy 右栏/报告改版）
+当时没有留 runbook 条目。**2026-09-02 已照实补回**，见上一节 —— 依据是生产机上还查得到的
+状态与那次会话自己的工具输出，逐条标了 **[机]** / **[录]** 出处，取不到的写「无记录」。
+补的过程里查出那次**没有取数据库备份**，也一并如实记在那一节里。

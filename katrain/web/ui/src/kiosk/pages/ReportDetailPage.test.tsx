@@ -113,11 +113,44 @@ const reportMoves: ReportTaskMove[] = [
   },
 ];
 
+/**
+ * 带七档的逐手分析。**新的五个 tab 读的是 `analysisByMove`,不是 `moves`** ——
+ * 旧的「重点手」走 `reportStats.keyMoves(moves)`(按胜率掉点挑),
+ * 改版后走 `features/analysis/moveGrade`(按服务端判好的档位 + 目损挑),和 galaxy 同口径。
+ * 夹具因此必须把档位喂进 `analysisByMove`,只喂 `moves` 的话四个 tab 全是空态,
+ * 断言就成了「空的和空的一致」。
+ *
+ * `player` 一定要显式给:`selectPerSide` 按它分黑白,缺了会**静默**当成白方。
+ */
+const graded: Record<number, MoveAnalysis> = {
+  1: {
+    ...analysis, move_number: 1, player: 'W', move: 'D4', winrate: 0.62, score_lead: 3.2,
+    grade: 'best', points_lost: 0, is_top_move: true, top_prior: 0.5, brilliance: null,
+  },
+  2: {
+    ...analysis, player: 'B', move: 'C3', winrate: 0.30, score_lead: -1.8,
+    grade: 'blunder', points_lost: 5, is_top_move: false, top_prior: 0.02, brilliance: null,
+  },
+  3: {
+    ...analysis, move_number: 3, player: 'W', move: 'R11', winrate: 0.34, score_lead: -1.2,
+    grade: 'brilliant', points_lost: 0, is_top_move: true, top_prior: 0.016, brilliance: 3,
+  },
+};
+
 function baseDetail() {
   return {
-    task, game, moves: reportMoves, analysisByMove: { 2: analysis }, currentMove: 2,
+    task, game, moves: reportMoves, analysisByMove: graded, currentMove: 2,
     setCurrentMove, loading: false, error: null as string | null, refresh,
   };
+}
+
+/** 屏 20 默认展开的是「AI 推荐」—— 要看五个 tab 得先把「着手评价」点开。 */
+function openGrade() {
+  fireEvent.click(screen.getByRole('button', { name: /着手评价/ }));
+}
+/** 切到某个 tab。tab 条是 `.kiosk-optseg` 里的一排按钮。 */
+function pickTab(name: string) {
+  fireEvent.click(screen.getByRole('button', { name }));
 }
 
 function deferred<T>() {
@@ -254,7 +287,7 @@ describe('屏 20 · 题头与状态', () => {
 
 });
 
-describe('屏 20 · 胜率曲线与重点手', () => {
+describe('屏 20 · 着手评价的五个 tab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     auth = { token: 'token', isAuthenticated: true };
@@ -263,16 +296,41 @@ describe('屏 20 · 胜率曲线与重点手', () => {
     realHook.enabled = false;
   });
 
-  it('曲线按逐手数据画,折叠块右端写的是掉得最狠那一手', () => {
+  // 默认展开的是「AI 推荐」而不是曲线 —— 它是**逐手**的东西(翻到哪手看哪手),
+  // 而着手评价是整局的总结。两块同一时刻只开一块,理由是几何(体只有 216,两块要 380)。
+  it('默认开 AI 推荐、着手评价收起;点一下换过去,AI 推荐跟着收起', () => {
     renderPage();
+    expect(screen.getByTestId('report-detail-ai')).toHaveAttribute('data-open', 'true');
+    expect(screen.getByTestId('report-detail-grade')).toHaveAttribute('data-open', 'false');
+    openGrade();
+    expect(screen.getByTestId('report-detail-grade')).toHaveAttribute('data-open', 'true');
+    expect(screen.getByTestId('report-detail-ai')).toHaveAttribute('data-open', 'false');
+  });
+
+  it('AI 推荐表用的是 galaxy 那四个列名 —— 着点 / 推荐度 / 领先 / 胜率', () => {
+    renderPage();
+    const table = screen.getByTestId('report-detail-ai');
+    for (const col of ['着点', '推荐度', '领先', '胜率']) {
+      expect(table.textContent).toContain(col);
+    }
+    expect(screen.getAllByTestId('ai-recommend-row').length).toBeGreaterThan(0);
+  });
+
+  it('走势 tab:曲线按逐手数据画,并且多画一条目差', () => {
+    renderPage();
+    openGrade();
     expect(screen.getByTestId('review-winrate-plot')).toHaveAttribute('data-state', 'plotted');
-    expect(screen.getByTestId('report-detail-curve').textContent).toContain('第 2 手掉 32 点');
+    expect(screen.getByTestId('review-lead-curve')).toBeInTheDocument();
+    // 目差纵轴**必须对称** —— 不对称的话「0」这个字会指到不是 0 的高度上。
+    const axis = screen.getByTestId('review-lead-axis').textContent ?? '';
+    expect(axis).toMatch(/^\+(\d+)0\u2212\1$/);
   });
 
   // 稿子把滑块拿掉了,而 187 手的谱靠四个翻手键挪不到第 120 手 ——
   // 原来 `TrendChart` 的「点哪儿跳哪一手」落到曲线上,不能跟着控件一起丢。
   it('点曲线跳到那一手,并且画一条竖游标标出现在在哪', () => {
     renderPage();
+    openGrade();
     expect(screen.getByTestId('review-winrate-cursor')).toBeInTheDocument();
     const plot = screen.getByTestId('review-winrate-plot');
     plot.getBoundingClientRect = () => ({ left: 0, width: 100, top: 0, height: 96, right: 100, bottom: 96, x: 0, y: 0, toJSON: () => ({}) });
@@ -280,33 +338,73 @@ describe('屏 20 · 胜率曲线与重点手', () => {
     expect(setCurrentMove).toHaveBeenCalledWith(0);
   });
 
-  it('重点手列的是掉得最多的,「该走 X」取的是**上一行**的首选', () => {
+  it('失误 tab:按七档挑,不再按胜率掉点', () => {
     renderPage();
-    const rows = screen.getAllByTestId('report-detail-key-row');
-    expect(rows).toHaveLength(1);
-    expect(rows[0].textContent).toContain('2 手');
-    expect(rows[0].textContent).toContain('该走 Q10');
-    expect(rows[0].textContent).toContain('黑 62% → 30%');
-    expect(rows[0].textContent).toContain('掉 32 点');
+    openGrade();
+    pickTab('失误');
+    expect(screen.getByTestId('grade-lollipop')).toBeInTheDocument();
+    // 默认那一态说的是计数与截断 —— 截断了必须说。
+    expect(screen.getByTestId('grade-selline')).toHaveAttribute('data-state', 'hint');
   });
 
-  it('点「看这手」跳到那一手', () => {
+  // Fan 2026-09-02:「点击图表上每个点的时候下方会有具体解释文字」。
+  it('失误 tab:点图上那一手,底下换成这一手的结论,并且跳到那一手', () => {
     renderPage();
-    fireEvent.click(screen.getByRole('button', { name: '看这手' }));
+    openGrade();
+    pickTab('失误');
+    fireEvent.click(screen.getByTestId('grade-lollipop').querySelector('g') as Element);
     expect(setCurrentMove).toHaveBeenCalledWith(2);
+    const line = screen.getByTestId('grade-selline');
+    expect(line).toHaveAttribute('data-state', 'picked');
+    expect(line.textContent).toContain('第 2 手');
+    expect(line.textContent).toContain('恶手');
+    expect(line.textContent).toContain('目损 5.0 目');
   });
 
-  it('一手都没掉过的局照实说,不摆一张空表', () => {
-    detail = { ...baseDetail(), moves: reportMoves.map((m) => ({ ...m, delta_score: 0 })) };
+  it('妙手 tab:结论里要说清**为什么妙**(先验多低),不只报一个级数', () => {
     renderPage();
-    expect(screen.queryAllByTestId('report-detail-key-row')).toHaveLength(0);
-    expect(screen.getByText('没有掉得明显的手')).toBeInTheDocument();
-    expect(screen.getByTestId('report-detail-curve').textContent).toContain('没有明显失误');
+    openGrade();
+    pickTab('妙手');
+    fireEvent.click(screen.getByTestId('grade-lollipop').querySelector('g') as Element);
+    const line = screen.getByTestId('grade-selline');
+    expect(line.textContent).toContain('妙度 3');
+    expect(line.textContent).toContain('1.6%');
+  });
+
+  it('发挥水准 tab:七档一档不少,黑白各画一根柱', () => {
+    renderPage();
+    openGrade();
+    pickTab('发挥水准');
+    const cols = screen.getByTestId('grade-histogram').children;
+    expect(cols).toHaveLength(7);
+    expect(screen.getByTestId('grade-histogram').textContent).toContain('恶手');
+  });
+
+  // 这句是硬性的:一致率高低本来就取决于局面难度,而我们手上判作弊的证据一份都没有。
+  it('AI吻合度 tab:两个视图都带那句免责,一个都不许省', () => {
+    renderPage();
+    openGrade();
+    pickTab('AI吻合度');
+    expect(screen.getByTestId('grade-match-stats')).toBeInTheDocument();
+    expect(screen.getByText(/不能单独当作棋力或作弊的证据/)).toBeInTheDocument();
+    pickTab('分布');
+    expect(screen.getByTestId('grade-match-dist')).toBeInTheDocument();
+    expect(screen.getByText(/不能单独当作棋力或作弊的证据/)).toBeInTheDocument();
+  });
+
+  it('一手都评不出来时照实说,不摆一张空图', () => {
+    detail = { ...baseDetail(), analysisByMove: {} };
+    renderPage();
+    openGrade();
+    pickTab('发挥水准');
+    expect(screen.queryByTestId('grade-histogram')).toBeNull();
+    expect(screen.getByText('本阶段没有已评级的着手')).toBeInTheDocument();
   });
 
   it('一手都没算出来时曲线不画线,写明为什么空', () => {
     detail = { ...baseDetail(), moves: [] };
     renderPage();
+    openGrade();
     const plot = screen.getByTestId('review-winrate-plot');
     expect(plot).toHaveAttribute('data-state', 'empty');
     expect(plot.querySelector('polyline')).toBeNull();
@@ -327,12 +425,15 @@ describe('屏 20 · 盘上的交互', () => {
   // `:495` 按 `!ownership` 置灰 —— **开的就是 ownership 色块**。
   // 以前源码 fallback 写「形势」而 cn PO 写「领地」,`t()` 是翻译表赢 ⇒
   // **设备上一直是「领地」,而这条 jsdom 断言(翻译表不加载)一直在验一个屏上没有的词。**
-  it('四个开关都在,没有领地数据时「领地」按不了', () => {
+  // 2026-09-02:这一排的名字、顺序、图标全部按 galaxy 的 `LiveMatchDisplayControls` 对齐
+  // (Fan:「icon 还有名称也和 galaxy 界面中的不一致,这是不能接受的」)。
+  // **顺序也是判据** —— 两端左起第一颗都得是「试下」,不然「一眼对应上」这句话不成立。
+  it('四个开关按 galaxy 的名字与顺序排,没有领地数据时「领地」按不了', () => {
     detail = { ...baseDetail(), analysisByMove: { 2: { ...analysis, ownership: null } } };
     renderPage();
-    for (const name of ['领地', '手数', 'AI 推荐', '试下']) {
-      expect(screen.getByRole('button', { name })).toBeInTheDocument();
-    }
+    const row = screen.getByTestId('report-detail-toggles');
+    expect([...row.querySelectorAll('button')].map((b) => b.textContent))
+      .toEqual(['试下', '领地', '手数', '支招']);
     expect(screen.getByRole('button', { name: '领地' })).toBeDisabled();
   });
 
@@ -342,7 +443,7 @@ describe('屏 20 · 盘上的交互', () => {
     expect(boardProps.showTerritory).toBe(true);
     expect(boardProps.ownership).toEqual([[0.2]]);
     expect(boardProps.showAiMarkers).toBe(false);
-    fireEvent.click(screen.getByRole('button', { name: 'AI 推荐' }));
+    fireEvent.click(screen.getByRole('button', { name: '支招' }));
     expect(boardProps.showAiMarkers).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: '手数' }));
     expect(boardProps.showMoveNumbers).toBe(false);
@@ -355,7 +456,7 @@ describe('屏 20 · 盘上的交互', () => {
   // 不能跟着表一起没 —— 打开「AI 推荐」之后点盘上那个标记就是选它。
   it('点盘上的 AI 标记打开它的后续,点别处收起', () => {
     renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'AI 推荐' }));
+    fireEvent.click(screen.getByRole('button', { name: '支招' }));
     fireEvent.click(screen.getByText('tap Q10'));
     expect(boardProps.pvMoves).toEqual(['Q10', 'D10']);
     fireEvent.click(screen.getByText('tap A1'));
@@ -370,7 +471,7 @@ describe('屏 20 · 盘上的交互', () => {
 
   it('翻手之后变化收起', () => {
     renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'AI 推荐' }));
+    fireEvent.click(screen.getByRole('button', { name: '支招' }));
     fireEvent.click(screen.getByText('tap Q10'));
     fireEvent.click(screen.getByRole('button', { name: '上一手' }));
     expect(setCurrentMove).toHaveBeenCalledWith(1);
@@ -379,7 +480,7 @@ describe('屏 20 · 盘上的交互', () => {
 
   it('外部把游标挪走时变化收起', () => {
     const rendered = renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'AI 推荐' }));
+    fireEvent.click(screen.getByRole('button', { name: '支招' }));
     fireEvent.click(screen.getByText('tap Q10'));
     expect(boardProps.pvMoves).toEqual(['Q10', 'D10']);
     detail = { ...baseDetail(), currentMove: 1, analysisByMove: { 1: { ...analysis, move_number: 1 } } };
@@ -393,7 +494,7 @@ describe('屏 20 · 盘上的交互', () => {
 
   it('同一手的推荐被换掉时,选中的那条变化收起', () => {
     const rendered = renderPage();
-    fireEvent.click(screen.getByRole('button', { name: 'AI 推荐' }));
+    fireEvent.click(screen.getByRole('button', { name: '支招' }));
     fireEvent.click(screen.getByText('tap Q10'));
     detail = {
       ...baseDetail(),
@@ -451,7 +552,7 @@ describe('屏 20 · 盘上的交互', () => {
       </StrictMode>
     );
     const rendered = render(view('stable'));
-    fireEvent.click(screen.getByRole('button', { name: 'AI 推荐' }));
+    fireEvent.click(screen.getByRole('button', { name: '支招' }));
     fireEvent.click(screen.getByText('tap Q10'));
     detail = {
       ...baseDetail(),

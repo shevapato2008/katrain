@@ -364,3 +364,38 @@ export function longestTop1Run(
   }
   return best;
 }
+
+/**
+ * 妙度的量程。真源是 `move_grade.yaml` 的 `brilliant.levels_prior`
+ * (`[0.05, 0.03, 0.02, 0.01, 0.0]`,级数 = 1 + 越过的断点数,封顶 5)。
+ *
+ * **量程固定 1–5,不按本局最大值归一**:全局只有妙度 1 时,归一会把点顶到最高、
+ * 看着像满级(galaxy 在 report 16 上实测过)。
+ */
+export const BRILLIANCE_MAX = 5;
+
+/**
+ * 把 `analysis` 摊平成一串带档位的手。
+ *
+ * **直播链路的 analysis 由后端下发旧的三个布尔量、没有 grade;报告链路有 grade。**
+ * 两条链路共用这一份,所以缺 grade 时退回旧布尔量 —— 否则直播页整块空掉。
+ *
+ * 这段逻辑原来只长在 galaxy 的 `TrendChart` 里。2026-09-02 kiosk 的屏 20 要用同一套
+ * 五个 tab,**搬到这儿而不是抄一份**:退回规则一旦两处各写各的,某一天只改了一处,
+ * 两个端上同一局会显示成不同的档位,而这种漂移在屏上看不出来。
+ */
+export function gradedMoves(analysis: Record<number, MoveAnalysis>): MoveAnalysis[] {
+  const moves = Object.values(analysis);
+  if (moves.some((m) => m.grade)) return moves;
+  return moves.map((m) => ({
+    ...m,
+    grade: (m.is_brilliant
+      ? 'brilliant'
+      : m.is_mistake
+        ? 'mistake'
+        : m.is_questionable
+          ? 'inaccuracy'
+          : 'unrated') as GradeId,
+    points_lost: m.points_lost ?? -(m.delta_score ?? 0),
+  }));
+}

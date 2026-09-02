@@ -124,7 +124,7 @@ const renderPage = (entry = '/kiosk/research') =>
 
 /** 表是**防抖 400ms** 之后才有的 —— 每条要看表的用例都得等它。 */
 const table = () => screen.findByTestId('research-ai', {}, { timeout: 2000 });
-const rows = async () => within(await table()).findAllByTestId('research-ai-row');
+const rows = async () => within(await table()).findAllByTestId('ai-recommend-row');
 const actions = () => screen.getByTestId('research-actions');
 
 describe('屏 21 研究', () => {
@@ -213,7 +213,7 @@ describe('屏 21 研究', () => {
     renderPage();
     const err = await screen.findByTestId('research-ai-error', {}, { timeout: 2000 });
     expect(err).toHaveTextContent('引擎没起来');
-    expect(within(await table()).queryAllByTestId('research-ai-row')).toHaveLength(0);
+    expect(within(await table()).queryAllByTestId('ai-recommend-row')).toHaveLength(0);
   });
 
   it('AI 一个候选都没给:说这句话,不画一张空表', async () => {

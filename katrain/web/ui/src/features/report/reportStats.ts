@@ -156,6 +156,17 @@ export function winrateSeries(moves: readonly ReportTaskMove[]): WinratePoint[] 
   return points;
 }
 
+/**
+ * ⚠️ **2026-09-02 起 `keyMoves` 在产品代码里没有消费者了。**
+ * 屏 20 那张「重点手」列表按 Fan 的裁定还原成了 galaxy 的「妙手 / 失误」两个 tab,
+ * 判据也从「胜率掉点」换成了服务端判好的七档 + 目损(`features/analysis/moveGrade`)。
+ *
+ * 没删是因为它是**另一套口径**而不是错的口径:按胜率跌幅挑重点手在「只想看形势拐点」
+ * 这个问题上仍然成立,屏 19 复盘列表将来若要在行尾写一句「掉得最狠的一手」就是它。
+ * 但**它现在只被自己的单测覆盖** —— 一份只有测试在跑的代码给的是假的信心,
+ * 所以这条注写在这儿:再过一轮还没有消费者,就该删掉它和那 5 条单测。
+ * (同文件的 `winrateSeries` / `MISTAKE_SCORE_LOSS` 仍在用,别一起删。)
+ */
 export interface KeyMove {
   moveNumber: number;
   player: 'B' | 'W';

@@ -112,10 +112,18 @@ const reportMoves = (taskId: number) => Array.from({ length: 7 }, (_unused, move
   ownership: OWNERSHIP,
   actual_move: moveNumber === 0 ? null : ['Q16', 'D16', 'Q4', 'D4', 'F17', 'C14'][moveNumber - 1],
   actual_player: moveNumber === 0 ? null : moveNumber % 2 ? 'B' : 'W',
-  // 第 3 手黑掉 6.4 目 —— 「重点手」只列掉过三目以上的,一手都不掉时它是空态,
-  // 那一块的「看这手」就一次都没画过。
+  // 第 3 手黑掉 6.4 目。
   delta_score: moveNumber === 0 ? null : moveNumber === 3 ? -6.4 : 0.3,
   delta_winrate: moveNumber === 0 ? null : 0.01,
+  // 2026-09-02:补上**服务端判好的七档**。屏 20 的五个 tab 读的是 `grade` / `points_lost`,
+  // 不再是 `delta_score` —— 不补的话「失误」那一 tab 是空态,图上一个点都没有,
+  // 下面那条「点一手就跳」的断言就成了对着空图点。
+  grade: moveNumber === 0 ? null : moveNumber === 3 ? 'blunder' : 'best',
+  points_lost: moveNumber === 0 ? null : moveNumber === 3 ? 6.4 : 0,
+  points_lost_source: moveNumber === 0 ? null : 'in_search',
+  is_top_move: moveNumber !== 3,
+  top_prior: 0.3,
+  brilliance: null,
 }));
 
 const ALBUM = {
@@ -540,7 +548,7 @@ test.describe('kiosk Report at the exact seven-inch viewport', () => {
     expect(state.unhandledRequests).toEqual([]);
   });
 
-  test('报告详情：长元数据装得下、四个开关、重点手跳手、去研究带得回来', async ({ page }) => {
+  test('报告详情：长元数据装得下、四个开关、图上点一手就跳、去研究带得回来', async ({ page }) => {
     const state = await setupReportMocks(page);
     await page.goto('/kiosk/report/106');
 
@@ -556,9 +564,13 @@ test.describe('kiosk Report at the exact seven-inch viewport', () => {
     await expectReachable(page, page.getByRole('button', { name: '重算' }), 'Recompute');
 
     // 造的数据里有 ownership ⇒「领地」可点(那颗键开的就是 ownership 色块)。四个开关的初值写死在页面上，点一下必须翻面。
+    // 2026-09-02:名字与顺序按 galaxy 的 `LiveMatchDisplayControls` 对齐 ——
+    // 试下 / 领地 / 手数 / **支招**(原来第四颗叫「AI 推荐」，而 galaxy 叫「支招」，
+    // 同一件事两个名字；「AI 推荐」这四个字在这一屏上还是那张表的名字，一屏两义)。
     const toggles = page.getByTestId('report-detail-toggles');
+    await expect(toggles.getByRole('button')).toHaveText(['试下', '领地', '手数', '支招']);
     for (const [name, pressedAfter] of [
-      ['领地', 'false'], ['手数', 'false'], ['AI 推荐', 'true'], ['试下', 'true'],
+      ['领地', 'false'], ['手数', 'false'], ['支招', 'true'], ['试下', 'true'],
     ] as const) {
       const toggle = toggles.getByRole('button', { name });
       await expectReachable(page, toggle, `${name} toggle`);
@@ -577,12 +589,15 @@ test.describe('kiosk Report at the exact seven-inch viewport', () => {
     await expect(movenav.getByRole('button', { name: '回到开局' })).toBeDisabled();
     await expect(movenav.getByRole('button', { name: '下一手' })).toBeEnabled();
 
-    // 「重点手」那块每行一个「看这手」，点了就跳到那一手。
-    const keyRow = page.getByTestId('report-detail-key-row').first();
-    await keyRow.scrollIntoViewIfNeeded();
-    const seeMove = keyRow.getByRole('button', { name: '看这手' });
-    await expectReachable(page, seeMove, 'See this move');
-    await seeMove.click();
+    // 2026-09-02:「重点手」那张列表整个不在了 —— 屏 20 按 Fan 的裁定还原成 galaxy 的
+    // 「妙手 / 失误」两个 tab,行尾那颗「看这手」随之换成**点图上那一手**。
+    // 闸守的还是同一件事:**从这一块能跳到某一手**。
+    await page.getByRole('button', { name: /着手评价/ }).click();
+    await page.getByRole('button', { name: '失误', exact: true }).click();
+    const dot = page.getByTestId('grade-lollipop').locator('g').first();
+    await dot.click();
+    // 点中的那一手会写进图下那一行(两态里的「选中」那一态)。
+    await expect(page.getByTestId('grade-selline')).toHaveAttribute('data-state', 'picked');
     // 跳到某一手之后就不在开局了 —— 「回到开局」重新亮起来。
     await expect(movenav.getByRole('button', { name: '回到开局' })).toBeEnabled();
 

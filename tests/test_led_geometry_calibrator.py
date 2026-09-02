@@ -1,3 +1,5 @@
+from threading import Event
+
 import cv2
 import numpy as np
 import pytest
@@ -8,6 +10,7 @@ from katrain.vision.led_geometry_calibrator import (
     LedGeometryCalibrator,
     check_frame_exposure,
     detect_led_centroid,
+    first_nondegenerate_quad,
     fit_geometry_from_anchors,
 )
 
@@ -387,15 +390,20 @@ def test_calibrate_recovers_when_predicted_roi_is_poisoned(monkeypatch):
 
 
 def test_calibrate_tolerates_up_to_four_missing_anchors():
-    """min_inliers=9 已经允许 13 个里有 4 个外点;检测阶段不该比拟合阶段更严。"""
+    """min_inliers=9 已经允许 13 个里有 4 个外点;检测阶段不该比拟合阶段更严。
+
+    缺满 4 颗(不是 2 颗)才把 detected 顶到 MIN_LOCATED_ANCHORS=9 这条线上 ——
+    只缺 2 颗时 detected=11,测试对 MIN_LOCATED_ANCHORS 从 9 漂到 10、11 都不敏感
+    (复审变异实测:改成 10 或 11 这条测试原样全绿)。四角仍全部可见,不影响四角单应。
+    """
     led = FakeLed()
     points = _synthetic_camera_points()
-    invisible = {(3, 3), (9, 15)}
+    invisible = {(3, 3), (9, 15), (3, 9), (15, 3)}
 
     class PartialCapture(FakeCapture):
         def _frame(self):
             if self.led.current in invisible:
-                return np.full((900, 1000, 3), 90, np.uint8)  # 这两颗任何颜色都看不见
+                return np.full((900, 1000, 3), 90, np.uint8)  # 这四颗任何颜色都看不见
             return super()._frame()
 
     result = LedGeometryCalibrator(led=led, capture=PartialCapture(led, points)).calibrate()
@@ -421,6 +429,84 @@ def test_calibrate_stops_when_too_few_anchors_are_located():
     assert result.reason == "too_few_anchors"
     # 诊断必须活着 —— 用户要知道是哪几颗没找到。
     assert sum(1 for a in result.attempts if a.get("ok")) == 4
+
+
+def test_first_nondegenerate_quad_rejects_the_collinear_corner_case():
+    """缺 (18,0) 时最先定位到的 4 颗是 (0,0)(0,18)(18,18)(3,3) ——
+    (0,0)、(3,3)、(18,18) 在主对角线上共线,这个 4 子集不能用来求单应。"""
+    detected = [
+        ((0, 0), (0.0, 0.0)),
+        ((0, 18), (100.0, 0.0)),
+        ((18, 18), (100.0, 100.0)),
+        ((3, 3), (16.7, 16.7)),
+    ]
+
+    assert first_nondegenerate_quad(detected) is None
+
+    detected.append(((3, 9), (50.0, 16.7)))
+    quad = first_nondegenerate_quad(detected)
+    assert quad is not None
+    assert len(quad) == 4
+
+
+def test_missing_corner_does_not_poison_roi_prediction():
+    """(18,0) 是真机 2026-09-02 实测唯一没定位到的那颗。用退化 4 子集拟出的单应会把
+    后面 8 颗的 ROI 预测带偏,只能靠全画幅回退救回来 —— 回退次数就是那条退化路径的指纹。
+    result.ok 在这里没有判别力(回退会把它兜成 True)。"""
+    led = FakeLed()
+    points = _synthetic_camera_points()
+    invisible = {(18, 0)}
+
+    class PartialCapture(FakeCapture):
+        def _frame(self):
+            if self.led.current in invisible:
+                return np.full((900, 1000, 3), 90, np.uint8)
+            return super()._frame()
+
+    result = LedGeometryCalibrator(led=led, capture=PartialCapture(led, points)).calibrate()
+
+    assert result.ok is True
+    assert sum(1 for a in result.attempts if a.get("roi_fallback")) == 0
+
+
+def test_cancel_on_last_anchor_stops_before_baseline_capture():
+    """用户在第 13 颗(15,15)上按取消:_locate_anchor 读到 cancel_event 直接返回
+    None(见 :346),外层循环 `continue` 之后这已经是最后一次迭代 —— 循环顶部那条
+    cancel 检查再也不会执行。必须在循环结束后再补一次检查,让 cancelled 抢在收尾
+    (grab_burst 8 帧 + 8 次 950x950 warpPerspective + held-out 自检)前面返回。
+
+    判据不能只看 reason —— 把守卫挪到收尾之后一样能返回 reason='cancelled' 但仍然
+    先跑了收尾。真正有判别力的是收尾**有没有跑过**,用 grab_burst 的调用次数钉住。
+    """
+    led = FakeLed()
+    points = _synthetic_camera_points()
+    cancel_event = Event()
+    grab_burst_calls = []
+
+    class TrackingCapture(FakeCapture):
+        def grab_burst(self, n=8, interval=0.1):
+            grab_burst_calls.append(n)
+            return super().grab_burst(n=n, interval=interval)
+
+    capture = TrackingCapture(led, points)
+
+    def progress(phase, current, total):
+        # calibrate() 调用顺序是「顶部 cancel 检查 → progress(phase, index-1, total)
+        # → _locate_anchor」。current==12 就是 index==13,也就是第 13(最后一)颗
+        # (15,15)。在这里置位,能精确落在「顶部检查已经放行、_locate_anchor 尚未
+        # 开始」这道缝里 —— 用 anchor_observer 在第 12 颗上置位会落在缝外(那次置位
+        # 发生在 _locate_anchor 返回**之前**,回到外层循环顶部时旧的顶部检查就已经
+        # 先一步逮到,盖住了本该由本条测试单独钉住的收尾守卫)。
+        if current == 12:
+            cancel_event.set()
+
+    result = LedGeometryCalibrator(
+        led=led, capture=capture, cancel_event=cancel_event, progress=progress,
+    ).calibrate()
+
+    assert result.ok is False
+    assert result.reason == "cancelled"
+    assert grab_burst_calls == []
 
 
 def test_check_frame_exposure_pins_median_alone():

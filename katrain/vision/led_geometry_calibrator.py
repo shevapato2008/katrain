@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import logging
 from dataclasses import dataclass
 from threading import Event
@@ -214,6 +215,27 @@ def predict_anchor_roi(homography: np.ndarray, row: int, col: int) -> tuple[floa
     return float(here[0]), float(here[1]), max(ROI_RADIUS_MIN_PX, ROI_CELLS * local_cell)
 
 
+# 四角单应只能用**非退化**的 4 点子集来拟。getPerspectiveTransform 要的是
+# 任意三点不共线(不是任意四点):容缺之后 detected[:4] 可能是「3 个角 + (3,3)」,
+# 而 (0,0)、(3,3)、(18,18) 正在主对角线上。这种配置下单应不唯一,函数不报错也不出
+# NaN,返回一个有限但任意的解 —— 实测把后续 ROI 预测带偏中位 132px、最大 725px。
+MIN_QUAD_TRI_AREA = 20.0  # canonical 格单位^2。满盘半幅三角形 = 162,取 ~12%,同时挡住共线与细长四边形
+
+
+def _triangle_area(a, b, c) -> float:
+    return abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) / 2.0
+
+
+def first_nondegenerate_quad(detected):
+    """按定位顺序找第一个「任意三点围成的三角形面积都 >= MIN_QUAD_TRI_AREA」的 4 子集。
+    找不到就返回 None —— 调用方必须继续走全画幅,而不是拿一个退化单应去预测 ROI。"""
+    for quad in itertools.combinations(detected, 4):
+        pts = [(float(col), float(row)) for (row, col), _point in quad]
+        if all(_triangle_area(*tri) >= MIN_QUAD_TRI_AREA for tri in itertools.combinations(pts, 3)):
+            return list(quad)
+    return None
+
+
 class LedGeometryCalibrator:
     """Orchestrate strict LED flashes and fresh-frame geometry capture."""
 
@@ -275,16 +297,22 @@ class LedGeometryCalibrator:
                 if centroid is None:
                     continue  # 容缺:拟合阶段本来就允许 4 个外点(MIN_LOCATED_ANCHORS)
                 detected.append(((row, col), centroid))
-                # index==4 时 detected 未必已有 4 个(前面可能已经容缺跳过);单应必须等
-                # 真正定位到 4 颗才求,否则 getPerspectiveTransform 会拿到 <4 个点直接炸。
-                if len(detected) == 4 and corner_h is None:
-                    # CALIBRATION_ANCHORS[:4] 是四角,顺序 (0,0)(0,18)(18,18)(18,0)。
-                    # 若这 4 个已定位的锚点里混进了非四角的星位(某个角缺失时会发生),
-                    # 单应依然可解(四点不共线即可),ROI 半径按局部格距算,误差可接受
-                    # ——参见本任务 report 里对这条退化路径的说明。
-                    src = np.array([[float(c), float(r)] for (r, c), _point in detected[:4]], np.float32)
-                    dst = np.array([point for _anchor, point in detected[:4]], np.float32)
-                    corner_h = cv2.getPerspectiveTransform(src, dst)
+                # index==4 时 detected 未必已有 4 个(前面可能已经容缺跳过)。用
+                # >=4(不是 ==4)是因为第一个满足条件的 4 子集不一定在 detected 恰好
+                # 4 个时出现 —— first_nondegenerate_quad 可能在 4 个里全共线/退化,
+                # 要等第 5、第 6 颗补进来才有非退化的 4 子集可挑(见下方常量注释)。
+                if corner_h is None and len(detected) >= 4:
+                    quad = first_nondegenerate_quad(detected)
+                    if quad is not None:
+                        src = np.array([[float(c), float(r)] for (r, c), _point in quad], np.float32)
+                        dst = np.array([point for _anchor, point in quad], np.float32)
+                        corner_h = cv2.getPerspectiveTransform(src, dst)
+
+            if self.cancel_event.is_set():
+                # 循环顶部那条检查在最后一颗锚点上按了取消时够不着(continue 直接跳出
+                # 循环,不会再回到顶部)。这里补一次,让 cancelled 优先于 too_few_anchors
+                # ——也优先于收尾阶段(grab_burst + 8 次 warpPerspective + held-out 自检)。
+                return CalibrationResult(ok=False, reason="cancelled", attempts=tuple(attempts))
 
             if len(detected) < MIN_LOCATED_ANCHORS:
                 return CalibrationResult(ok=False, reason="too_few_anchors", attempts=tuple(attempts))

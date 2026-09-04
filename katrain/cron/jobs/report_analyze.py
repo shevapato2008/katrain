@@ -194,7 +194,13 @@ class ReportAnalyzerJob(BaseJob):
             requested_visits = task.requested_visits or 500
             resume_from = self._get_resume_move_number(db, task_id)
             task.status = "running"
-            task.total_moves = len(moves)
+            # total_moves 由 web 在建任务时解析并写死（那是计价的操作数）。
+            # 这里只在它缺失时兜底 —— 覆盖它会让「已付费的手数」与「实际分析的手数」
+            # 脱钩，客户端就能靠少报手数白嫖算力。
+            if not task.total_moves:
+                task.total_moves = len(moves)
+            paid_moves = task.total_moves
+            moves = moves[:paid_moves]
             task.analyzed_moves = min(task.analyzed_moves or 0, len(moves))
             task.started_at = task.started_at or datetime.now(timezone.utc)
             task.completed_at = None

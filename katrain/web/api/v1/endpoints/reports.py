@@ -15,6 +15,31 @@ from katrain.web.models import User
 
 router = APIRouter()
 
+
+def count_moves(sgf_content: str) -> int:
+    """从 SGF 数出实际手数。
+
+    **不要**信任 `UserGame.move_count`：那是 `UserGameCreate` 里客户端提交的字段
+    （`user_games.py:32` 默认 0），拿它计价等于让付款方自己填金额。
+
+    解析失败抛 ValueError —— 返回 0 会把「读不懂这份棋谱」伪装成「这份复盘不要钱」。
+    """
+    from katrain.core.sgf_parser import SGF, ParseError
+
+    if not sgf_content or not sgf_content.strip():
+        raise ValueError("空 SGF")
+    try:
+        root = SGF.parse_sgf(sgf_content)
+    except (ParseError, Exception) as exc:
+        raise ValueError(f"SGF 解析失败: {exc}") from exc
+    n, node = 0, root
+    while node.children:
+        node = node.children[0]
+        if node.move is not None:
+            n += 1
+    return n
+
+
 REPORT_VISITS = {
     "normal": 500,
     "deep": 2000,

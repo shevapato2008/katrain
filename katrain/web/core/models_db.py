@@ -76,8 +76,10 @@ class User(Base):
     net_wins = Column(Integer, default=0)
     elo_points = Column(Integer, default=0)
     credits = Column(
-        Integer, default=10000, nullable=False
-    )  # integer credit balance (single pool); server-authoritative
+        Integer, default=0, nullable=False
+    )  # integer credit balance (single pool); server-authoritative. New accounts start at 0 —
+    # any signup grant is a real, auditable ledger row (settings.BILLING_SIGNUP_GRANT), not a
+    # column default nobody can trace.
     is_admin = Column(Boolean, default=False, nullable=False)
     avatar_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -788,6 +790,9 @@ class ReportTask(Base):
     total_moves = Column(Integer, default=0)
     analyzed_moves = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
+    # 授权那一刻棋谱内容的指纹。cron 认领时比对，不一致就失败而不是拼一份
+    # 「旧棋谱前缀 + 新棋谱后缀」的报告出来。
+    sgf_hash = Column(String(64), nullable=True)
     # 账本幂等键。None = 没走积分扣费(用了免费周额度,或 BILLING_ENFORCED 关着,或历史数据)。
     charge_ref = Column(String(160), nullable=True, index=True)
     # 用掉的免费周额度的周期键(如 "W:2026-W36")。与 charge_ref 互斥。

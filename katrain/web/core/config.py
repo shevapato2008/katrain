@@ -93,7 +93,8 @@ class Settings(BaseModel):
         {"package_id": "p30", "credits": 3300, "amount_fen": 3000, "title": "30 元 3300 积分"},
         {"package_id": "p98", "credits": 12000, "amount_fen": 9800, "title": "98 元 12000 积分"},
     ]
-    BILLING_FREE_GRANT: int = 10000  # initial credits for a new account
+    # 注册赠额（>0 才发）。走 billing.grant，写一条可审计的账本行 —— 不是列默认值。
+    BILLING_SIGNUP_GRANT: int = 0
     BILLING_RESERVATION_TTL_SEC: int = 120  # stale 'reserved' refund threshold
     REDEEM_RATE_LIMIT: int = 5  # max failed redeem attempts / user / minute
 

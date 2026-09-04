@@ -189,6 +189,17 @@ class ReportAnalyzerJob(BaseJob):
                 db.commit()
                 return
 
+            # 授权时冻结的指纹对不上 ⇒ 棋谱在排队期间被改过。
+            # 继续跑会拼出「旧棋谱前缀 + 新棋谱后缀」的报告，且用户付的是旧棋谱的钱。
+            if task.sgf_hash:
+                import hashlib
+
+                if hashlib.sha256(game.sgf_content.encode("utf-8")).hexdigest() != task.sgf_hash:
+                    task.status = "failed"
+                    task.error_message = "棋谱在排队期间被修改，请重新发起复盘"
+                    db.commit()
+                    return
+
             parsed = parse_game(game.sgf_content)
             moves = parsed.moves
             requested_visits = task.requested_visits or 500

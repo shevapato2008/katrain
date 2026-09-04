@@ -45,6 +45,19 @@ def count_moves(sgf_content: str) -> int:
     return n
 
 
+def sgf_fingerprint(sgf_content: str) -> str:
+    """棋谱内容指纹。授权时冻结在任务上，cron 认领时比对（见 report_analyze.py）。
+
+    `PUT /user-games/{id}` 可以在任务排队期间改 `sgf_content`；
+    `moves[:paid_moves]` 只限得住手数，限不住内容 —— 没有这道指纹，配合
+    `_get_resume_move_number` 的断点续跑，报告会拼成「旧棋谱前缀 + 新棋谱
+    后缀」，且用户付的是旧棋谱的钱。
+    """
+    import hashlib
+
+    return hashlib.sha256(sgf_content.encode("utf-8")).hexdigest()
+
+
 REPORT_VISITS = {
     "normal": 500,
     "deep": 2000,
@@ -288,6 +301,7 @@ async def create_report_task(
         requested_visits=visits,
         status="authorizing",
         total_moves=moves,
+        sgf_hash=sgf_fingerprint(game.sgf_content),
     )
     db.add(report_task)
     db.commit()

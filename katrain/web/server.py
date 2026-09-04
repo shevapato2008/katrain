@@ -253,6 +253,34 @@ async def _lifespan_server(app: FastAPI, log):
     except Exception as e:  # pragma: no cover - defensive
         log.warning(f"Report settlement skipped: {e}")
 
+    # 结算器只按 ReportTask 行遍历，够不着「任务行本身已经不存在了」（级联删棋谱
+    # 带走了任务行）和「卡在 authorizing 半路」这两类钱。同样在启动时兜底一次。
+    try:
+        from katrain.web.core import report_reaper
+
+        _s_reaper = session_factory()
+        try:
+            report_reaper.reap_orphaned_report_charges(_s_reaper)
+            report_reaper.reap_stale_authorizing(_s_reaper)
+        finally:
+            _s_reaper.close()
+    except Exception as e:  # pragma: no cover - defensive
+        log.warning(f"Report reaper skipped: {e}")
+
+    # 给存量余额补开账账本行（幂等，收敛后不再动）。必须是循环到底的那个函数——
+    # 单批的 backfill_opening_balances 会把 batch 之外的用户永久留在不一致状态。
+    # 见 katrain/web/core/migrations_opening_balance.py。
+    try:
+        from katrain.web.core.migrations_opening_balance import backfill_all_opening_balances
+
+        _s4 = session_factory()
+        try:
+            backfill_all_opening_balances(_s4)
+        finally:
+            _s4.close()
+    except Exception as e:  # pragma: no cover - defensive
+        log.warning(f"Opening balance backfill skipped: {e}")
+
     app.state.user_repo = repo
     app.state.game_repo = game_repo
     app.state.user_game_repo = user_game_repo
@@ -2909,6 +2937,18 @@ async def _report_settlement_loop(session_factory):
                 db.close()
         except Exception:
             logging.getLogger("katrain_web").warning("report settlement sweep failed", exc_info=True)
+
+        try:
+            from katrain.web.core import report_reaper
+
+            db = session_factory()
+            try:
+                await asyncio.to_thread(report_reaper.reap_orphaned_report_charges, db)
+                await asyncio.to_thread(report_reaper.reap_stale_authorizing, db)
+            finally:
+                db.close()
+        except Exception:
+            logging.getLogger("katrain_web").warning("report reaper sweep failed", exc_info=True)
 
 
 # Boxes report in every 30s against a 5-minute takeover window, so ten consecutive failures

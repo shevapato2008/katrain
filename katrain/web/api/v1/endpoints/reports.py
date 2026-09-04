@@ -32,7 +32,11 @@ def count_moves(sgf_content: str) -> int:
         root = SGF.parse_sgf(sgf_content)
     except (ParseError, Exception) as exc:
         raise ValueError(f"SGF 解析失败: {exc}") from exc
-    n, node = 0, root
+    # 根节点自己也可能带一手：老式 SGF（如 tests/data/xmgt97.sgf）会把
+    # 第一手和 SZ/KM 等对局信息塞在同一个根节点里。漏掉它会比 cron 的
+    # parse_game 少数一手，于是 `moves[:paid_moves]` 会把最后一手真棋切掉。
+    node = root
+    n = 1 if node.move is not None else 0
     while node.children:
         node = node.children[0]
         if node.move is not None:

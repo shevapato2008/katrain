@@ -294,13 +294,31 @@ async def create_report_task(
     db.refresh(report_task)
 
     # 2) 先试免费周额度(不滚存,用掉就没);不够再扣积分。
+    #
+    # **顺序讲究**:两条路都是「先把意图落盘、再动钱」,不是反过来。
+    # 反过来写(先动钱、再在内存里赋值、等第 3 步一起 commit)会开一个窗口:
+    # 崩在中间时钱已经动了、任务上却没有 charge_ref / free_grant_period,
+    # 于是结算器(按 charge_ref 遍历)找不到它、孤儿回收器(按任务行是否存在判断)
+    # 也不退它 —— 积分被永久冻结、免费额度白白消失。
+    # 现在这个顺序的崩溃方向是安全的:意图落了但钱没动,回收器去退一笔不存在的
+    # 预扣(transaction_status 返回 None,跳过)或还一份没消费的额度
+    # (release 的 `used >= n` 守卫挡住),都无副作用。
     period = quota.period_key("week")
-    if task.report_type == "normal" and quota.try_consume(
-        db, current_user.id, "free_report:week", allowance=settings.FREE_WEEKLY_REPORTS
-    ):
+    if task.report_type == "normal" and settings.FREE_WEEKLY_REPORTS > 0:
         report_task.free_grant_period = period
-    else:
+        db.commit()
+        if quota.try_consume(
+            db, current_user.id, "free_report:week", allowance=settings.FREE_WEEKLY_REPORTS
+        ):
+            pass  # 免费额度拿到了,不扣积分
+        else:
+            report_task.free_grant_period = None
+            db.commit()
+
+    if report_task.free_grant_period is None:
         charge_ref = f"report:{report_task.id}"
+        report_task.charge_ref = charge_ref
+        db.commit()
         try:
             billing.reserve(db, current_user.id, cost, "report", charge_ref)
         except billing.InsufficientCredits:
@@ -314,7 +332,6 @@ async def create_report_task(
                     "have": billing.get_balance(db, current_user.id),
                 },
             )
-        report_task.charge_ref = charge_ref
 
     # 3) 计费落定之后才放给 cron。
     report_task.status = "pending"

@@ -23,6 +23,18 @@ logger = logging.getLogger("katrain_web")
 TERMINAL_STATUSES = ("completed",)
 
 
+def _incremental_cost(task) -> int:
+    """本次要结算的成本，按**增量手数**算。
+
+    不能用累计 `analyzed_moves`：`/retry` 的重新授权只预扣
+    `total_moves - analyzed_moves`（增量），而 `analyzed_moves` 是累计值
+    （cron 用 `max(analyzed_moves, move_number)`，完成时直接置 `len(moves)`）。
+    拿累计值去对增量预扣，会把上一轮已经结清的前缀**再收一遍**。
+    """
+    newly = max(0, (task.analyzed_moves or 0) - (task.settled_moves or 0))
+    return analysis_cost.report_cost(newly, task.requested_visits or 0)
+
+
 def settle_finished_reports(db: Session, limit: int = 200, user_id: int | None = None) -> int:
     """结算终态但仍持预扣的复盘任务。返回结算条数。幂等。"""
     from sqlalchemy import or_
@@ -66,6 +78,9 @@ def settle_finished_reports(db: Session, limit: int = 200, user_id: int | None =
                     "运维重排的复盘 %s 全额退还预扣（%s）", task.id, task.billing_exempt_reason
                 )
             task.charge_ref = None
+            # 运维重排会把 analyzed_moves 归零重跑，水位也要跟着回零，
+            # 否则下一轮 analyzed - settled 会算出负数。
+            task.settled_moves = 0
             db.commit()
             settled += 1
             continue
@@ -82,11 +97,12 @@ def settle_finished_reports(db: Session, limit: int = 200, user_id: int | None =
             # 退款行的 ref_id 是确定性的，据此判断该补不该补。
             # （不加这一段，用户会被永久按完整预估收费。）
             reserved = billing.reserved_amount(db, ref)
-            actual = analysis_cost.report_cost(task.analyzed_moves or 0, task.requested_visits or 0)
+            actual = _incremental_cost(task)
             if reserved > actual and not billing.has_transaction(db, f"{ref}:refund"):
                 billing.grant(db, task.user_id, reserved - actual,
                               reason="report_overestimate_refund", ref_id=f"{ref}:refund")
                 logger.info("补退复盘 %s 的估算差额 %s", task.id, reserved - actual)
+            task.settled_moves = task.analyzed_moves or 0
             task.charge_ref = None
             db.commit()
             settled += 1
@@ -97,7 +113,7 @@ def settle_finished_reports(db: Session, limit: int = 200, user_id: int | None =
             db.commit()
             continue
 
-        actual = analysis_cost.report_cost(task.analyzed_moves or 0, task.requested_visits or 0)
+        actual = _incremental_cost(task)
         try:
             if actual <= 0:
                 billing.refund(db, ref)
@@ -107,14 +123,17 @@ def settle_finished_reports(db: Session, limit: int = 200, user_id: int | None =
                 if reserved > actual:
                     billing.grant(db, task.user_id, reserved - actual,
                                   reason="report_overestimate_refund", ref_id=f"{ref}:refund")
-                # reserved < actual 在本设计里不可能：Task 4 让 total_moves 成为契约、
-                # cron 只分析已付费前缀，所以 analyzed_moves <= total_moves。
-                # 真出现了说明那条不变式破了 —— 报警，不要静默吞掉。
+                # 手数契约（Task 4：web 解析并写死 total_moves，cron 只分析已付费前缀）
+                # 保证 analyzed_moves <= total_moves，所以这里理应到不了。
+                # 曾经**每一次 post-grace retry 都会命中它** —— 那是因为 actual 用了
+                # 累计 analyzed_moves 去对增量预扣。按增量算之后不该再出现；
+                # 真出现了说明契约破了，报警别静默吞掉。
                 elif reserved < actual:
                     logger.error(
-                        "复盘 %s 实际成本 %s 超过预扣 %s —— total_moves 契约被破坏了",
+                        "复盘 %s 增量成本 %s 超过预扣 %s —— 手数契约被破坏了",
                         task.id, actual, reserved,
                     )
+            task.settled_moves = task.analyzed_moves or 0
             task.charge_ref = None
             db.commit()
             settled += 1

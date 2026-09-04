@@ -79,7 +79,17 @@ def reap_stale_authorizing(db: Session, ttl_sec: int = 600, limit: int = 200) ->
                 billing.refund(db, ref)
         if t.free_grant_period:
             # 按**任务上存着的**那个周期键还，不是当前周（见 quota.release 的注释）。
-            quota.release(db, t.user_id, "free_report", t.free_grant_period)
+            #
+            # ⚠️ free_grant_period 是**意图位**不是消费凭证：建任务路径先写它并 commit、
+            # 再调 quota.try_consume（"先落意图、再动钱"）。两句之间出错时桶里可能
+            # 根本没有这份消费，而 release 的 `used >= n` 守卫只保证不减成负数、
+            # **挡不住"减掉别人那一份"** —— 同一周内别的任务消费过就会被误减，
+            # 用户白得一次免费复盘。
+            # 所以还完立刻把意图位清掉：这一步幂等，重复回收不会二次释放。
+            released = quota.release(db, t.user_id, "free_report", t.free_grant_period)
+            t.free_grant_period = None
+            if not released:
+                logger.info("复盘 %s 的免费额度无需释放（桶里没有这份消费）", t.id)
         db.delete(t)
         db.commit()
         logger.info("回滚滞留的 authorizing 任务 %s", t.id)

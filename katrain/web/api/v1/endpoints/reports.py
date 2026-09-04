@@ -439,9 +439,24 @@ async def retry_report_task(
         while billing.has_transaction(db, f"{base_ref}:retry{n}"):
             n += 1
         new_ref = f"{base_ref}:retry{n}"
+
+        # **先落意图、再动钱** —— 与建任务路径同形（见 create_report_task 里那段注释）。
+        # 反过来写会开一个没有任何管理者的窗口：billing.reserve 内部自己 commit,
+        # 钱当场落盘;若在它与最终 db.commit() 之间断连/锁超时,任务上就没有 charge_ref,
+        # 而四个管理者一个都够不着 ——
+        #   结算器顶层过滤 charge_ref.isnot(None)
+        #   孤儿回收器看见任务行还在就跳过
+        #   滞留回收器只收 status == "authorizing",这个任务是 failed
+        #   通用 TTL 回收器被 LONG_RUNNING_REASONS 排除
+        # 那笔预扣就永久冻结。终审用 probe_retry_frozen.py 实测过这条。
+        task.charge_ref = new_ref
+        db.commit()
         try:
             billing.reserve(db, current_user.id, cost, "report", new_ref)
         except billing.InsufficientCredits:
+            # 意图落了但钱没动 —— 把引用摘掉,别让任务指着一笔不存在的预扣。
+            task.charge_ref = None
+            db.commit()
             raise HTTPException(
                 status_code=402,
                 detail={
@@ -450,7 +465,6 @@ async def retry_report_task(
                     "have": billing.get_balance(db, current_user.id),
                 },
             )
-        task.charge_ref = new_ref
 
     task.status = "pending"
     task.retry_count = 0

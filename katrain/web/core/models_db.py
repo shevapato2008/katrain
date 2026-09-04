@@ -793,14 +793,26 @@ class ReportTask(Base):
     # 授权那一刻棋谱内容的指纹。cron 认领时比对，不一致就失败而不是拼一份
     # 「旧棋谱前缀 + 新棋谱后缀」的报告出来。
     sgf_hash = Column(String(64), nullable=True)
+    # 已经结算过的手数水位。结算按**增量**收费：actual = cost(analyzed_moves - settled_moves)。
+    # 不记水位的话，/retry 之后的第二次结算会把第一次已结清的前缀再收一遍 ——
+    # retry 的预扣只覆盖增量（total_moves - analyzed_moves），而 analyzed_moves 是累计值，
+    # 两个操作数口径不同。cron 不读这一列，所以只加在 web 侧模型上。
+    settled_moves = Column(Integer, nullable=False, default=0)
     # 账本幂等键。None = 没走积分扣费(用了免费周额度,或 BILLING_ENFORCED 关着,或历史数据)。
     charge_ref = Column(String(160), nullable=True, index=True)
     # 用掉的免费周额度的周期键(如 "W:2026-W36")。与 charge_ref 互斥。
     free_grant_period = Column(String(32), nullable=True)
-    # 非 NULL = 这个任务不该被结算器收费(如运维 requeue_reports.py 重排)。
-    # 结算器看见它一律跳过，无论 charge_ref 是否还挂着。留痕用途：区分
-    # "从没计费过"(charge_ref 也是 None 且这一列也是 None)与
-    # "计费了但被运维豁免"。
+    # 非 NULL = 这个任务不该向用户收费(如运维 requeue_reports.py 重排)。
+    #
+    # 它决定**怎么结**，不决定**结不结**：结算器仍然会处理这类任务，
+    # 把还挂着的预扣**全额退还**（运维把报告结果删了重跑，用户不该为一份
+    # 已经不存在的报告付钱），然后把水位归零。
+    # 曾经的写法是让结算器直接跳过它 —— 那会让「被 requeue 时还持着 reserved
+    # 预扣」的任务永久无人处理，而 reason="report" 的预扣又被排除在通用 TTL
+    # 回收器之外，那笔积分就冻死在账本里。见 report_settlement.py 顶部的注释。
+    #
+    # 留痕用途：区分"从没计费过"(这一列与 charge_ref 都是 None)
+    # 与"计费了但被运维豁免"。
     billing_exempt_reason = Column(String(32), nullable=True)
     retry_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

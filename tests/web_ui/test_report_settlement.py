@@ -192,3 +192,69 @@ def test_requeued_task_still_holding_a_reservation_is_refunded_not_skipped(db):
     assert settle_finished_reports(db) == 1
     assert billing.get_balance(db, u.id) == 1000, "运维重排掉的报告必须全额退，不能把钱冻死"
     assert t.charge_ref is None
+
+
+def test_retry_then_settle_charges_each_move_exactly_once(db):
+    """回归：结算按**增量**收费，已结清的前缀不得再收一遍。
+
+    终审实测过的形状：250 手 / 500 visits。
+      建任务  预扣 125（250 手）        余额 875
+      结算①  analyzed=100 → 收 50      余额 950
+      retry   预扣 75（剩余 150 手）    余额 875
+      结算②  analyzed=180 → 增量 80 手 → 收 40   余额 910
+    合计扣 90 = cost(180 手)。
+
+    用累计 analyzed_moves 去对增量预扣时，结算②会按 180 手算成本（90）、
+    而预扣只有 75，于是不但不退差还报"契约被破坏"，前 100 手被收了两遍：
+    合计扣 125 而不是 90。
+    """
+    from katrain.web.core import analysis_cost
+    from katrain.web.core.report_settlement import settle_finished_reports
+
+    u = _user(db)                                    # credits=1000
+    t = _task(db, u, status="completed", total=250, analyzed=100, reserve=125)
+    assert billing.get_balance(db, u.id) == 875
+
+    assert settle_finished_reports(db) == 1
+    assert billing.get_balance(db, u.id) == 950, "第一次只该收 100 手的钱"
+    assert t.settled_moves == 100, "水位要跟着推进"
+
+    # 模拟 /retry 为剩余 150 手重新预扣
+    retry_ref = f"report:{t.id}:retry1"
+    remaining_cost = analysis_cost.report_cost(250 - 100, 500)
+    assert remaining_cost == 75
+    t.charge_ref = retry_ref
+    db.commit()
+    billing.reserve(db, u.id, remaining_cost, "report", retry_ref)
+    assert billing.get_balance(db, u.id) == 875
+
+    t.analyzed_moves = 180
+    db.commit()
+    assert settle_finished_reports(db) == 1
+
+    total_charged = 1000 - billing.get_balance(db, u.id)
+    assert total_charged == analysis_cost.report_cost(180, 500) == 90, (
+        f"180 手总共只该扣 90，实扣 {total_charged}"
+    )
+    assert t.settled_moves == 180
+
+
+def test_requeue_resets_the_settled_watermark(db):
+    """运维重排把 analyzed_moves 归零，水位也要回零，否则增量会算出负数。"""
+    from katrain.web.core.report_settlement import settle_finished_reports
+
+    u = _user(db)
+    t = _task(db, u, status="completed", total=250, analyzed=250, reserve=125)
+    settle_finished_reports(db)
+    assert t.settled_moves == 250
+
+    # 运维重排：删结果、回 pending、标豁免，并重新挂一笔预扣
+    t.status = "pending"
+    t.analyzed_moves = 0
+    t.billing_exempt_reason = "requeue"
+    t.charge_ref = f"report:{t.id}:retry1"
+    db.commit()
+    billing.reserve(db, u.id, 125, "report", t.charge_ref)
+
+    settle_finished_reports(db)
+    assert t.settled_moves == 0, "水位要跟着 analyzed_moves 一起回零"

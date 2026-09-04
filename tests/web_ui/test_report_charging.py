@@ -254,3 +254,60 @@ async def test_no_task_is_left_claimable_without_a_charge(app_with_game, monkeyp
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+@pytest.mark.asyncio
+async def test_first_report_of_the_week_is_free_second_is_charged(app_with_game, monkeypatch):
+    """端到端：本周第一份复盘走免费额度，第二份扣积分（裁决 D2）。
+
+    这条是免费额度唯一一条穿过真实端点的断言。本文件其它几条专测积分路径的用例
+    刻意把 FREE_WEEKLY_REPORTS 调到 0 隔离掉免费分支 —— 那样谁都没有真的验证过
+    「免费那一份从端点走得通」。这条补上。
+    """
+    client, token, game_id, user = app_with_game
+    monkeypatch.setattr(settings, "BILLING_ENFORCED", True)
+    monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 1)
+    _set_balance(user, 10_000)
+    before = _balance(user)
+
+    r1 = await client.post(
+        "/api/v1/reports/",
+        json={"user_game_id": game_id, "force": True},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r1.status_code == 200, r1.text
+    assert _balance(user) == before, "本周第一份应该走免费额度，不扣积分"
+
+    r2 = await client.post(
+        "/api/v1/reports/",
+        json={"user_game_id": game_id, "force": True},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r2.status_code == 200, r2.text
+    assert _balance(user) < before, "本周第二份免费额度已用尽，必须扣积分"
+
+
+@pytest.mark.asyncio
+async def test_free_report_records_its_period_not_a_charge_ref(app_with_game, monkeypatch, db):
+    """走免费额度的任务必须留下 free_grant_period，且不留 charge_ref。
+
+    这两个字段是回收器认路的凭据：崩在半路时它要靠 free_grant_period 知道
+    该把额度还给**哪一周**的桶（不能重算当前周，那会减错桶）。
+    """
+    from katrain.web.core import models_db, quota
+
+    client, token, game_id, user = app_with_game
+    monkeypatch.setattr(settings, "BILLING_ENFORCED", True)
+    monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 1)
+    _set_balance(user, 10_000)
+
+    r = await client.post(
+        "/api/v1/reports/",
+        json={"user_game_id": game_id, "force": True},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 200, r.text
+    task = db.query(models_db.ReportTask).filter_by(id=r.json()["id"]).one()
+    assert task.free_grant_period == quota.period_key("week")
+    assert task.charge_ref is None
+    assert task.status == "pending", "计费落定后才放给 cron"

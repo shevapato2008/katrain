@@ -31,6 +31,12 @@
 - **没有 Redis**。
 - **不要 `git stash`**：本仓 13 个 worktree 共用一条 stash 栈。
 - **`katrain/cron/` 是自足子树**：`Dockerfile.cron` 只 `COPY katrain/cron/`，且现有代码只 import `katrain.cron.*`。**不得**从 `katrain/cron/` import `katrain.web.*`。
+- **`report_tasks` 这张表有两个 ORM 模型**：`katrain/web/core/models_db.py:ReportTask` 与
+  `katrain/cron/models.py:ReportTaskDB`（`__tablename__` 相同，注释也写明"Maps to the same table"），
+  但**各自维护自己的列清单**。往 web 模型加列**不会**让 cron 看见那一列。
+  凡是 cron 需要读或写的新列（`sgf_hash`、`billing_exempt_reason`），**两个文件都要加**，
+  漏一个就是"只在容器里/只在 cron 里"表现出来的缺陷。cron 不需要的列（`charge_ref`、
+  `free_grant_period`）可以只加在 web 侧——SQLAlchemy 不会因为表里多出模型没声明的列而报错。
 - **状态诚实**：加载/错误/空态/重试不得伪装成成功。额度不足要说清差多少，不许静默降级成"成功但没分析"。
 - **测试分层**：跑 SQLite 的单测证明不了 PG 的行锁/时区行为。这类断言 `pytest.skip` 并写明"只能在 PG 上证"，**不许改绿**。
 - **账本表受保护**：`migrations.py:33` `PROTECTED_TABLES = {"credit_transactions", "redeem_codes", "recharge_orders"} | AI_LADDER_TABLES | {...}`。新增的 `quota_buckets` **要加进去**——它记录已消费的额度，重建即等于给所有人重置额度。
@@ -1299,7 +1305,14 @@ def test_cron_never_imports_katrain_web():
 0. **`config.py` 加 `REPORT_RETRY_GRACE_SEC: int = 3600`**（本计划别处引用了它，必须在这里定义）。
 1. **失败任务不立刻终结授权。** `settle_finished_reports` 的终态集合改成只含 `completed`；`failed` 交给一个**带宽限期**的分支：`failed` 且 `updated_at` 超过 `settings.REPORT_RETRY_GRACE_SEC`（默认 3600）才结算。宽限期内 `/retry` 能直接复用原预扣。
 2. **`/retry` 若发现 `charge_ref` 已被清掉**（超过宽限期），必须**重新走一次授权**：按 `total_moves - analyzed_moves` 的剩余量预扣，余额不足返 402。
-3. **`requeue_reports.py` 是运维工具**，它重排的任务写 `charge_ref = None` 且置 `billing_exempt_reason = "requeue"`（`ReportTask` 新增该列），结算器看到它一律跳过——**运维重跑不向用户收费**，但要留痕。
+3. **`requeue_reports.py` 是运维工具**，它重排的任务写 `charge_ref = None` 且置 `billing_exempt_reason = "requeue"`，结算器看到它一律跳过——**运维重跑不向用户收费**，但要留痕。
+   ⚠️ `billing_exempt_reason` 这一列**必须同时加进 `katrain/cron/models.py:ReportTaskDB`**，
+   否则 `requeue_reports.py` 那句赋值在 cron 容器里会抛 `AttributeError`——而这条路径本机
+   跑不到、只在运维执行 requeue 时才炸。另注意 `requeue_reports.py:114-119` 会把
+   `analyzed_moves` 归零并删掉 move 行：结算若已经跑过（`charge_ref` 已清），
+   重排后的任务对用户就是免费的——这正是要 `billing_exempt_reason` 留痕的原因。
+   还要注意 `report_analyze.py:176` 有**自动重试**（`status = "pending" if retry_count < MAX_RETRIES else "failed"`），
+   自动重试期间任务在 pending↔running 之间弹跳、预扣一直留着，这是对的，不要动它。
 
 ```python
 # tests/web_ui/test_report_retry_authorization.py
@@ -2175,6 +2188,7 @@ Task 6 把 `reason="report"` 排除出通用 TTL 回收器之后，**复盘预�
 - Modify: `katrain/web/core/migrations.py`
 - Create: `katrain/web/core/report_reaper.py`
 - Modify: `katrain/web/api/v1/endpoints/reports.py`（授权时记 hash）
+- Modify: `katrain/cron/models.py`（`ReportTaskDB` 补 `sgf_hash` 与 `billing_exempt_reason` 两列 —— **不补则 cron 读不到，校验永远走不进去**）
 - Modify: `katrain/cron/jobs/report_analyze.py`（认领时校验 hash）
 - Test: `tests/web_ui/test_report_reaper.py`（新建）
 

@@ -117,6 +117,14 @@ def requeue(commit: bool = False, limit: int | None = None) -> dict[str, int]:
                 task.started_at = None
                 task.error_message = None
                 task.retry_count = 0
+                # 运维重跑不向用户收费。billing_exempt_reason 是唯一真正生效的信号——
+                # ReportTaskDB（本文件用的模型）没有映射 charge_ref/free_grant_period
+                # 这两列（见 plan.md 的 Global Constraints：它们是 web-only 列），所以
+                # `task.charge_ref = None` 在这里只是意图记录，不会写回数据库；
+                # web 侧结算器（report_settlement.py）靠 billing_exempt_reason 一列
+                # 就足够跳过这个任务，不依赖 charge_ref 是否已被清掉。
+                task.billing_exempt_reason = "requeue"
+                task.charge_ref = None
 
         if commit:
             db.commit()

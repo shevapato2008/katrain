@@ -792,6 +792,11 @@ class ReportTask(Base):
     charge_ref = Column(String(160), nullable=True, index=True)
     # 用掉的免费周额度的周期键(如 "W:2026-W36")。与 charge_ref 互斥。
     free_grant_period = Column(String(32), nullable=True)
+    # 非 NULL = 这个任务不该被结算器收费(如运维 requeue_reports.py 重排)。
+    # 结算器看见它一律跳过，无论 charge_ref 是否还挂着。留痕用途：区分
+    # "从没计费过"(charge_ref 也是 None 且这一列也是 None)与
+    # "计费了但被运维豁免"。
+    billing_exempt_reason = Column(String(32), nullable=True)
     retry_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     started_at = Column(DateTime(timezone=True), nullable=True)

@@ -1,0 +1,166 @@
+"""终态结算 + 通用 TTL 回收器不得碰复盘预扣。"""
+from datetime import datetime, timedelta, timezone
+
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from katrain.web.core import billing, models_db
+
+
+@pytest.fixture
+def db():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    models_db.Base.metadata.create_all(bind=engine)
+    s = sessionmaker(bind=engine)()
+    yield s
+    s.close()
+
+
+def _user(db, credits=1000):
+    u = models_db.User(username="u1", hashed_password="x", credits=credits)
+    db.add(u); db.commit(); db.refresh(u)
+    return u
+
+
+def _task(db, user, *, status, total, analyzed, reserve):
+    g = models_db.UserGame(user_id=user.id, source="import", move_count=total)
+    db.add(g); db.commit(); db.refresh(g)
+    t = models_db.ReportTask(user_id=user.id, user_game_id=g.id, report_type="normal",
+                             requested_visits=500, status=status,
+                             total_moves=total, analyzed_moves=analyzed)
+    db.add(t); db.commit(); db.refresh(t)
+    ref = f"report:{t.id}"
+    billing.reserve(db, user.id, reserve, "report", ref)
+    t.charge_ref = ref
+    db.commit()
+    return t
+
+
+def test_ttl_reaper_leaves_a_running_report_reservation_alone(db):
+    """回归最要命的一条：web 重启不得把在跑的复盘退款。"""
+    u = _user(db)
+    t = _task(db, u, status="running", total=250, analyzed=40, reserve=125)
+    # 把预扣时间推到 TTL 之外
+    tx = db.query(models_db.CreditTransaction).filter_by(ref_id=t.charge_ref).one()
+    tx.created_at = datetime.now(timezone.utc) - timedelta(seconds=3600)
+    db.commit()
+
+    n = billing.reconcile_stale_reservations(db, 120)
+    assert n == 0, "复盘预扣不属于通用 TTL 回收器的管辖范围"
+    assert billing.get_balance(db, u.id) == 875
+    assert billing.transaction_status(db, t.charge_ref) == "reserved"
+
+
+def test_ttl_reaper_still_reaps_other_stale_reservations(db):
+    """隔离不能把回收器整个废掉 —— 别的预扣照收。"""
+    u = _user(db)
+    billing.reserve(db, u.id, 10, "analysis_territory", "hint:1")
+    tx = db.query(models_db.CreditTransaction).filter_by(ref_id="hint:1").one()
+    tx.created_at = datetime.now(timezone.utc) - timedelta(seconds=3600)
+    db.commit()
+    assert billing.reconcile_stale_reservations(db, 120) == 1
+    assert billing.get_balance(db, u.id) == 1000
+
+
+def test_settlement_refunds_the_unused_estimate(db):
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    t = _task(db, u, status="pending", total=250, analyzed=0, reserve=125)
+    t.status, t.analyzed_moves = "completed", 100      # 100 手认输
+    db.commit()
+    assert settle_finished_reports(db) == 1
+    assert billing.get_balance(db, u.id) == 950       # 125 预扣，实收 50
+
+
+def test_settlement_ignores_unfinished_tasks(db):
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    _task(db, u, status="running", total=250, analyzed=40, reserve=125)
+    assert settle_finished_reports(db) == 0
+    assert billing.get_balance(db, u.id) == 875
+
+
+def test_settlement_is_idempotent(db):
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    t = _task(db, u, status="completed", total=100, analyzed=100, reserve=50)
+    settle_finished_reports(db)
+    once = billing.get_balance(db, u.id)
+    settle_finished_reports(db)
+    assert billing.get_balance(db, u.id) == once
+
+
+def _past_grace(db, t):
+    """把 failed 任务的 updated_at 推到 REPORT_RETRY_GRACE_SEC 之外。
+
+    failed 不立刻结算（见 Task 6 Step 7：/retry 要能在宽限期内免费复用原预扣），
+    所以「failed 任务最终按 analyzed_moves 结算」这条断言必须先让宽限期过去，
+    否则测的其实是另一件事（宽限期内不结算，TTL 回收器同款用例已经覆盖）。
+    """
+    from katrain.web.core.config import settings
+
+    t.updated_at = datetime.now(timezone.utc) - timedelta(seconds=settings.REPORT_RETRY_GRACE_SEC + 1)
+    db.commit()
+
+
+def test_failed_within_grace_is_not_settled(db):
+    """宽限期内的 failed 任务必须原地不动 —— /retry 要能免费复用原预扣。"""
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    _task(db, u, status="failed", total=250, analyzed=60, reserve=125)
+    assert settle_finished_reports(db) == 0
+    assert billing.get_balance(db, u.id) == 875
+
+
+def test_failed_with_zero_analysis_is_fully_refunded(db):
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    t = _task(db, u, status="failed", total=250, analyzed=0, reserve=125)
+    _past_grace(db, t)
+    settle_finished_reports(db)
+    assert billing.get_balance(db, u.id) == 1000
+
+
+def test_failed_after_partial_analysis_charges_only_what_ran(db):
+    """跑挂了但已经烧了算力 —— 收已发生的那部分，不是全免也不是全收。"""
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    t = _task(db, u, status="failed", total=250, analyzed=60, reserve=125)
+    _past_grace(db, t)
+    settle_finished_reports(db)
+    assert billing.get_balance(db, u.id) == 1000 - 30   # 60×500 = 30 credits
+
+
+def test_settlement_resumes_a_half_done_commit(db):
+    """回归：上一轮在 commit 与 grant 之间崩了，差额必须补退，不能永久按预估收。"""
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    t = _task(db, u, status="completed", total=250, analyzed=100, reserve=125)
+    billing.commit(db, t.charge_ref)          # 模拟"只做了一半"
+    assert billing.get_balance(db, u.id) == 875
+    settle_finished_reports(db)
+    assert billing.get_balance(db, u.id) == 950, "125 预扣、实收 50，差额 75 必须退回"
+
+
+def test_resume_does_not_double_refund(db):
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    t = _task(db, u, status="completed", total=250, analyzed=100, reserve=125)
+    settle_finished_reports(db)
+    once = billing.get_balance(db, u.id)
+    t.charge_ref = f"report:{t.id}"            # 人为把引用放回去，模拟重复扫描
+    db.commit()
+    settle_finished_reports(db)
+    assert billing.get_balance(db, u.id) == once, "退款行已存在就不能再退一次"
+
+
+def test_settlement_skips_a_reservation_someone_else_already_refunded(db):
+    """防御：万一预扣已被别处退掉，结算必须原地跳过、不得再补一笔赠额。"""
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    t = _task(db, u, status="completed", total=250, analyzed=100, reserve=125)
+    billing.refund(db, t.charge_ref)
+    before = billing.get_balance(db, u.id)
+    settle_finished_reports(db)
+    assert billing.get_balance(db, u.id) == before, "已退款的预扣不得再生出一笔钱"

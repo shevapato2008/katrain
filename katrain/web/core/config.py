@@ -103,6 +103,10 @@ class Settings(BaseModel):
     BILLING_ENFORCED: bool = False
     # 每周免费复盘次数（裁决 D2）。不滚存 —— 见 katrain/web/core/quota.py。
     FREE_WEEKLY_REPORTS: int = 1
+    # failed 任务的重试宽限期：宽限期内 /retry 复用原预扣，不重新授权。
+    # 过了宽限期，结算器会把这笔预扣按 analyzed_moves 结掉 —— 之后再 /retry
+    # 就必须重新预扣剩余手数（见 report_settlement.py / reports.py:/retry）。
+    REPORT_RETRY_GRACE_SEC: int = 3600
 
     def __init__(self, **data):
         # Override with env vars if not provided in data

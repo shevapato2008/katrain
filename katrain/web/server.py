@@ -159,7 +159,7 @@ async def lifespan(app: FastAPI):
         live_service = getattr(app.state, "live_service", None)
         if live_service:
             await live_service.stop()
-    for attr in ("cleanup_task", "ai_ladder_heartbeat_task"):
+    for attr in ("cleanup_task", "ai_ladder_heartbeat_task", "report_settlement_task"):
         task = getattr(app.state, attr, None)
         if task:
             task.cancel()
@@ -238,6 +238,21 @@ async def _lifespan_server(app: FastAPI, log):
     except Exception as e:  # pragma: no cover - defensive
         log.warning(f"Billing reconcile skipped: {e}")
 
+    # Settle any report tasks that reached a terminal state while the server was
+    # down. Report reservations are excluded from the generic TTL reconcile above
+    # (billing.LONG_RUNNING_REASONS) precisely so this dedicated, terminal-state-driven
+    # settlement is the only thing that ever resolves them.
+    try:
+        from katrain.web.core import report_settlement
+
+        _s3 = session_factory()
+        try:
+            report_settlement.settle_finished_reports(_s3)
+        finally:
+            _s3.close()
+    except Exception as e:  # pragma: no cover - defensive
+        log.warning(f"Report settlement skipped: {e}")
+
     app.state.user_repo = repo
     app.state.game_repo = game_repo
     app.state.user_game_repo = user_game_repo
@@ -293,6 +308,11 @@ async def _lifespan_server(app: FastAPI, log):
     manager.attach_loop(asyncio.get_running_loop())
     app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
     app.state.ai_ladder_heartbeat_task = asyncio.create_task(_ai_ladder_heartbeat_loop(app))
+    # Board mode never spends locally (billing is proxied to the cloud, see
+    # billing.py's module docstring) so this loop only runs in server mode.
+    app.state.report_settlement_task = asyncio.create_task(
+        _report_settlement_loop(session_factory)
+    )
 
     # Initialize Live Broadcasting Service
     from katrain.web.live import create_live_service
@@ -2861,6 +2881,34 @@ async def _cleanup_loop(manager: SessionManager):
             await asyncio.to_thread(manager.cleanup_expired)
         except Exception:
             logging.getLogger("katrain_web").warning("session cleanup sweep failed", exc_info=True)
+
+
+REPORT_SETTLEMENT_INTERVAL_SECONDS = 60
+
+
+async def _report_settlement_loop(session_factory):
+    """定时对账：把终态但仍持预扣的复盘任务结清。
+
+    这是兜底，不是主路径 —— `/billing/quota` 在返回余额前会先结算本用户
+    （见 Task 11），用户看到的数不依赖这个循环的节奏。这个循环存在是为了
+    "没人正好去查额度" 的复盘任务也能在合理时间内把预扣落定，而不是无限期
+    停在 reserved（结算不是回收器：不结算不会退钱，只会一直不完整）。
+
+    一轮失败不停表，吞掉异常继续下一轮 —— 跟 `_cleanup_loop` 同一个理由：
+    循环悄悄死掉比一次失败更糟，所以记 warning 而不是让异常往外传。
+    """
+    while True:
+        await asyncio.sleep(REPORT_SETTLEMENT_INTERVAL_SECONDS)
+        try:
+            from katrain.web.core import report_settlement
+
+            db = session_factory()
+            try:
+                await asyncio.to_thread(report_settlement.settle_finished_reports, db)
+            finally:
+                db.close()
+        except Exception:
+            logging.getLogger("katrain_web").warning("report settlement sweep failed", exc_info=True)
 
 
 # Boxes report in every 30s against a 5-minute takeover window, so ten consecutive failures

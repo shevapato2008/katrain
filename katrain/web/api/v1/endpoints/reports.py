@@ -407,6 +407,37 @@ async def retry_report_task(
         raise HTTPException(status_code=404, detail="Report task not found")
     if task.status != "failed":
         raise HTTPException(status_code=400, detail="Only failed tasks can be retried")
+
+    # 计费闸开着、这个任务当初是走积分扣费的(不是免费周额度)、且它的预扣已经
+    # 被结算器清掉(charge_ref 变 None) —— 只可能是 settle_finished_reports 在
+    # 宽限期(REPORT_RETRY_GRACE_SEC)之后把它结清了。这时候原预扣已经不存在,
+    # 继续按"改回 pending"处理就是让用户免费续跑剩余手数。必须为剩余量重新预扣。
+    #
+    # 免费周额度(free_grant_period != None)不在这条判断里 —— 那笔额度从建任务
+    # 起就只消费一次,重试同一个任务不应该、也不会再扣第二次。
+    if settings.BILLING_ENFORCED and task.charge_ref is None and task.free_grant_period is None:
+        remaining = max(0, (task.total_moves or 0) - (task.analyzed_moves or 0))
+        cost = analysis_cost.report_cost(remaining, task.requested_visits or 0)
+        # 不能复用原 `report:{id}`：那笔已经 committed，billing.reserve 的幂等判断
+        # 会直接放行、不扣钱 —— 等于白送一次重试。每次重新授权开一个新的确定性 ref。
+        n = 1
+        base_ref = f"report:{task.id}"
+        while billing.has_transaction(db, f"{base_ref}:retry{n}"):
+            n += 1
+        new_ref = f"{base_ref}:retry{n}"
+        try:
+            billing.reserve(db, current_user.id, cost, "report", new_ref)
+        except billing.InsufficientCredits:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "code": "insufficient_credits",
+                    "need": cost,
+                    "have": billing.get_balance(db, current_user.id),
+                },
+            )
+        task.charge_ref = new_ref
+
     task.status = "pending"
     task.retry_count = 0
     task.error_message = None

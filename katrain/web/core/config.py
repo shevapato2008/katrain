@@ -97,6 +97,13 @@ class Settings(BaseModel):
     BILLING_RESERVATION_TTL_SEC: int = 120  # stale 'reserved' refund threshold
     REDEEM_RATE_LIMIT: int = 5  # max failed redeem attempts / user / minute
 
+    # 计费总闸。默认关 —— 打开的前置见 superpowers/tracks/galaxy-payment/plan.md 的
+    # Global Constraints（P3 手机绑定+注册限流 / P5 合规页脚 / U4 经营资质定性）。
+    # 关着时 POST /api/v1/reports/ 的行为必须与今天逐字节一致：不扣费、不消费额度、不返 402。
+    BILLING_ENFORCED: bool = False
+    # 每周免费复盘次数（裁决 D2）。不滚存 —— 见 katrain/web/core/quota.py。
+    FREE_WEEKLY_REPORTS: int = 1
+
     def __init__(self, **data):
         # Override with env vars if not provided in data
         data.setdefault("KATRAIN_HOST", os.getenv("KATRAIN_HOST", "0.0.0.0"))

@@ -784,10 +784,14 @@ class ReportTask(Base):
     user_game_id = Column(String(32), ForeignKey("user_games.id"), nullable=False, index=True)
     report_type = Column(String(20), default="normal")
     requested_visits = Column(Integer, default=500)
-    status = Column(String(20), default="pending")  # pending / running / completed / failed
+    status = Column(String(20), default="pending")  # authorizing / pending / running / completed / failed
     total_moves = Column(Integer, default=0)
     analyzed_moves = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
+    # 账本幂等键。None = 没走积分扣费(用了免费周额度,或 BILLING_ENFORCED 关着,或历史数据)。
+    charge_ref = Column(String(160), nullable=True, index=True)
+    # 用掉的免费周额度的周期键(如 "W:2026-W36")。与 charge_ref 互斥。
+    free_grant_period = Column(String(32), nullable=True)
     retry_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     started_at = Column(DateTime(timezone=True), nullable=True)

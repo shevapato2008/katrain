@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.core import move_grade
-from katrain.web.core import models_db
+from katrain.web.core import analysis_cost, billing, models_db, quota
+from katrain.web.core.config import settings
 from katrain.web.core.db import SessionLocal
 from katrain.web.core.repository import RemoteServiceUnavailableError
 from katrain.web.models import User
@@ -244,7 +245,9 @@ async def create_report_task(
                 models_db.ReportTask.user_id == current_user.id,
                 models_db.ReportTask.user_game_id == task.user_game_id,
                 models_db.ReportTask.report_type == task.report_type,
-                models_db.ReportTask.status.in_(["pending", "running", "completed"]),
+                # "authorizing" 必须在这个集合里 —— 否则第二个并发请求会在第一个
+                # 还在授权(计费)时穿过去重,造成两次真实扣费 + 两份 GPU 工作。
+                models_db.ReportTask.status.in_(["authorizing", "pending", "running", "completed"]),
             )
             .order_by(models_db.ReportTask.created_at.desc(), models_db.ReportTask.id.desc())
             .first()
@@ -252,14 +255,69 @@ async def create_report_task(
         if existing:
             return _task_to_dict(existing)
 
+    visits = REPORT_VISITS[task.report_type]
+
+    if not settings.BILLING_ENFORCED:
+        # 闸关着:行为与今天完全一致,一个字节都不改。
+        report_task = models_db.ReportTask(
+            user_id=current_user.id,
+            user_game_id=task.user_game_id,
+            report_type=task.report_type,
+            requested_visits=visits,
+            status="pending",
+        )
+        db.add(report_task)
+        db.commit()
+        db.refresh(report_task)
+        return _task_to_dict(report_task)
+
+    try:
+        moves = count_moves(game.sgf_content)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail={"code": "unparsable_sgf", "message": str(exc)})
+
+    cost = analysis_cost.report_cost(moves, visits)
+
+    # 1) 先落成 authorizing —— cron 只按 status == "pending" 认领(report_analyze.py),
+    #    这个状态它不会领走。计费落定之后(下面第 3 步)才翻成 pending 放给 cron,
+    #    避免「先 pending 再计费」两次 commit 之间被 cron 抢跑、崩溃后留下已运行未计费的任务。
     report_task = models_db.ReportTask(
         user_id=current_user.id,
         user_game_id=task.user_game_id,
         report_type=task.report_type,
-        requested_visits=REPORT_VISITS[task.report_type],
-        status="pending",
+        requested_visits=visits,
+        status="authorizing",
+        total_moves=moves,
     )
     db.add(report_task)
+    db.commit()
+    db.refresh(report_task)
+
+    # 2) 先试免费周额度(不滚存,用掉就没);不够再扣积分。
+    period = quota.period_key("week")
+    if task.report_type == "normal" and quota.try_consume(
+        db, current_user.id, "free_report:week", allowance=settings.FREE_WEEKLY_REPORTS
+    ):
+        report_task.free_grant_period = period
+    else:
+        charge_ref = f"report:{report_task.id}"
+        try:
+            billing.reserve(db, current_user.id, cost, "report", charge_ref)
+        except billing.InsufficientCredits:
+            db.delete(report_task)
+            db.commit()
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "code": "insufficient_credits",
+                    "need": cost,
+                    "have": billing.get_balance(db, current_user.id),
+                },
+            )
+        report_task.charge_ref = charge_ref
+
+    # 3) 计费落定之后才放给 cron。
+    report_task.status = "pending"
     db.commit()
     db.refresh(report_task)
     return _task_to_dict(report_task)

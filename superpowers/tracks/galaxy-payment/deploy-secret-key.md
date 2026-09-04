@@ -41,3 +41,32 @@ token 一律用 HS256 校验签名，换了密钥就全部验签失败——所�
    本身就是已公开的旧值之一）：代码回滚只影响这道启动闸存不存在，不影响哪把密钥在
    签发/校验 token；如果回滚后 `.env` 里的 `KATRAIN_SECRET_KEY` 被误改回旧值或删除，
    旧密钥重新生效，等于把这次修复撤销。
+
+
+## 发布顺序：web 必须先于 cron 起（终审补）
+
+数据库迁移只在 web 侧跑（`katrain/web/core/auth.py` 的 `add_missing_columns` /
+`create_missing_indexes`，由 `_lifespan_server` 触发）。而 `docker-compose.yml` 里
+`katrain-cron` **没有** `depends_on: katrain-web`。
+
+若 cron 先起，`report_analyze.py` 查 `report_tasks.sgf_hash` 会打在一个还缺列的库上
+直接炸。同时发布时风险低（web 通常先就绪），但**发布单里要写死这一句**：
+
+```
+docker compose up -d katrain-web        # 等它起来、迁移跑完
+docker compose up -d katrain-cron
+```
+
+或者给 compose 加 `depends_on`——本轮没改，因为改编排属于部署侧变更，
+应该和这次发布分开评估。
+
+## 部署当天就生效、不受 BILLING_ENFORCED 控制的三件事（终审补）
+
+「开闸前行为不变」这句只覆盖 `POST /api/v1/reports/` 这一个端点。下面三条
+**部署即生效**，别让那句话替它们背书：
+
+1. **没有 `KATRAIN_SECRET_KEY` 会拒绝启动**，且换密钥 = 全站登出一次（这是 D5 的本意）
+2. **新注册账号的 credits 从 10000 变成 0**（`BILLING_SIGNUP_GRANT` 默认 0）。
+   存量用户不受影响（开账迁移是 grandfather，只补账不改余额）
+3. **每次启动跑一遍开账回填**，给所有余额与账本对不上的存量用户各写一条
+   `opening_balance` 账本行。第一次跑完之后后续启动是空转

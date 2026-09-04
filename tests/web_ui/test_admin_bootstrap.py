@@ -19,6 +19,13 @@ def test_admin_flag_is_not_granted_by_username():
     )
 
 
-def test_bootstrap_password_setting_exists_and_defaults_empty():
-    from katrain.web.core.config import settings
-    assert settings.ADMIN_BOOTSTRAP_PASSWORD == ""
+def test_bootstrap_password_field_defaults_to_empty():
+    """断的是**字段默认值**，不是当前进程的装配结果。
+
+    `settings.ADMIN_BOOTSTRAP_PASSWORD` 来自 `os.getenv(...)`，开发机上设了
+    `KATRAIN_ADMIN_BOOTSTRAP_PASSWORD` 就会让断言变红 —— 那是环境差异，
+    不是被测行为出了问题。要守的是「不配就不建账号」这条默认语义。
+    """
+    from katrain.web.core.config import Settings
+
+    assert Settings.model_fields["ADMIN_BOOTSTRAP_PASSWORD"].default == ""

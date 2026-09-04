@@ -31,7 +31,11 @@ def count_moves(sgf_content: str) -> int:
         raise ValueError("空 SGF")
     try:
         root = SGF.parse_sgf(sgf_content)
-    except (ParseError, Exception) as exc:
+    except ParseError as exc:
+        # 只吞「这份棋谱解析不了」。**不要**写成 except Exception ——
+        # 那会把 count_moves 自己的编程错误也包成 ValueError，
+        # 端点返 400 unparsable_sgf，等于把我们的 bug 伪装成「你的棋谱有问题」，
+        # 用户照着改棋谱永远改不好，日志里也看不见真正的堆栈。
         raise ValueError(f"SGF 解析失败: {exc}") from exc
     # 根节点自己也可能带一手：老式 SGF（如 tests/data/xmgt97.sgf）会把
     # 第一手和 SZ/KM 等对局信息塞在同一个根节点里。漏掉它会比 cron 的

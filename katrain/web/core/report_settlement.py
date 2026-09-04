@@ -31,14 +31,22 @@ def settle_finished_reports(db: Session, limit: int = 200, user_id: int | None =
     grace_cutoff = datetime.now(timezone.utc) - timedelta(
         seconds=settings.REPORT_RETRY_GRACE_SEC
     )
+    # 注意这里**没有**过滤 `billing_exempt_reason`。
+    # 曾经有过 `billing_exempt_reason.is_(None)` 这个条件，那是个漏钱的写法：
+    # 运维 requeue 一个还持着 reserved 预扣的任务之后，它会被结算器永久跳过，
+    # 而 reason="report" 的预扣又被排除在通用 TTL 回收器之外
+    # （见 billing.LONG_RUNNING_REASONS）⇒ 那笔积分冻结在账本里，
+    # 没有任何管理者够得着。
+    # 现在 exempt 只决定**怎么结**（见下方全额退那一支），不决定**结不结**。
     q = db.query(models_db.ReportTask).filter(
         models_db.ReportTask.charge_ref.isnot(None),
-        models_db.ReportTask.billing_exempt_reason.is_(None),
         or_(
             models_db.ReportTask.status.in_(TERMINAL_STATUSES),
             # failed 过了宽限期才结算：宽限期内 /retry 可以复用原预扣。
             (models_db.ReportTask.status == "failed")
             & (models_db.ReportTask.updated_at < grace_cutoff),
+            # 运维重排掉的任务不论当前状态都要把挂着的预扣清掉（全额退，见下）。
+            models_db.ReportTask.billing_exempt_reason.isnot(None),
         ),
     )
     if user_id is not None:
@@ -48,6 +56,20 @@ def settle_finished_reports(db: Session, limit: int = 200, user_id: int | None =
     for task in q.limit(limit).all():
         ref = task.charge_ref
         status = billing.transaction_status(db, ref)
+
+        if task.billing_exempt_reason is not None:
+            # 运维重排：结果被删掉重跑，用户不该为一份已经不存在的报告付钱。
+            # 全额退，而不是按 analyzed_moves 结算 —— 那份分析的产出已经没了。
+            if status == "reserved":
+                billing.refund(db, ref)
+                logger.info(
+                    "运维重排的复盘 %s 全额退还预扣（%s）", task.id, task.billing_exempt_reason
+                )
+            task.charge_ref = None
+            db.commit()
+            settled += 1
+            continue
+
         if status == "refunded":
             # 已被别处退掉。原地摘掉引用，**不要**再动余额 ——
             # 在一个已退款的预扣上补"估多退款"就是凭空生钱。

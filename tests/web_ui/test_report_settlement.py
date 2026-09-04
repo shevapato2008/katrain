@@ -164,3 +164,31 @@ def test_settlement_skips_a_reservation_someone_else_already_refunded(db):
     before = billing.get_balance(db, u.id)
     settle_finished_reports(db)
     assert billing.get_balance(db, u.id) == before, "已退款的预扣不得再生出一笔钱"
+
+
+def test_requeued_task_still_holding_a_reservation_is_refunded_not_skipped(db):
+    """回归一条漏钱：运维 requeue 一个**还持着预扣**的任务。
+
+    曾经的写法是在结算查询里加 `billing_exempt_reason.is_(None)`，于是这类任务被
+    **永久跳过**；而 reason="report" 的预扣又被排除在通用 TTL 回收器之外
+    （billing.LONG_RUNNING_REASONS），那笔积分就冻结在账本里、没有任何管理者够得着。
+
+    现在 exempt 只决定**怎么结**（全额退），不决定**结不结**。
+    全额退而不是按 analyzed_moves 结算，是因为运维把那份报告的结果删掉重跑了 ——
+    用户不该为一份已经不存在的报告付钱。
+    """
+    from katrain.web.core.report_settlement import settle_finished_reports
+
+    u = _user(db)
+    t = _task(db, u, status="completed", total=250, analyzed=250, reserve=125)
+    assert billing.get_balance(db, u.id) == 875
+
+    # 运维重排：删结果、回到 pending、标记豁免（charge_ref 仍挂着）
+    t.status = "pending"
+    t.analyzed_moves = 0
+    t.billing_exempt_reason = "requeue"
+    db.commit()
+
+    assert settle_finished_reports(db) == 1
+    assert billing.get_balance(db, u.id) == 1000, "运维重排掉的报告必须全额退，不能把钱冻死"
+    assert t.charge_ref is None

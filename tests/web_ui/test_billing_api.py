@@ -50,7 +50,7 @@ def app():
         os.remove("./test_billing_api.db")
 
 
-async def _make_user(app, username, password="pw", is_admin=False, credits=10000):
+async def _make_user(app, username, password="pw", is_admin=False, credits=0):
     from passlib.context import CryptContext
     from katrain.web.core import models_db
 

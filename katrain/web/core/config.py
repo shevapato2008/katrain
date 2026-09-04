@@ -2,6 +2,39 @@ import os
 import uuid as uuid_module
 from pydantic import BaseModel
 
+# 仓库里跟着代码走的字面量默认值。**唯一真源**——生产装配（下方 env 装配处）与
+# 字段默认值都引用它，不得各自再抄一份，否则改一处漏一处（参见 assert_secret_key_is_safe）。
+INSECURE_DEFAULT_SECRET_KEY = "katrain-secret-key-change-this-in-production"
+
+# HS256 用短密钥可以离线穷举——拿到任意一个 token 就能反推密钥并伪造管理员。
+MIN_SECRET_KEY_CHARS = 32
+
+
+def assert_secret_key_is_safe(mode: str, secret_key: str) -> None:
+    """服务端模式下必须显式注入一个**足够长**的密钥。
+
+    盒子（board）跑本地库、不对外签发身份，放行。
+
+    为什么不只挡默认字面量：compose 的 `:?` 只保护 compose 这一条入口。
+    直接 `python -m katrain`、systemd、或别的部署路径传进来的空串、空白、
+    单字符都会通过，而 HS256 的短密钥可以离线穷举 —— 拿到任意一个 token
+    就能反推密钥并伪造管理员。
+    """
+    if mode != "server":
+        return
+    if not secret_key or not secret_key.strip():
+        raise RuntimeError("拒绝以空 SECRET_KEY 启动服务端：设置 KATRAIN_SECRET_KEY。")
+    if len(secret_key.strip()) < MIN_SECRET_KEY_CHARS:
+        raise RuntimeError(
+            f"SECRET_KEY 太短（{len(secret_key.strip())} 字符，至少 {MIN_SECRET_KEY_CHARS}）："
+            "HS256 短密钥可离线穷举。用 `python -c \"import secrets;print(secrets.token_urlsafe(48))\"` 生成。"
+        )
+    if secret_key == INSECURE_DEFAULT_SECRET_KEY:
+        raise RuntimeError(
+            "拒绝以内置默认 SECRET_KEY 启动服务端：任何人都能用仓库里的字面量伪造任意用户的 token。"
+            "请设置环境变量 KATRAIN_SECRET_KEY（建议 `python -c \"import secrets;print(secrets.token_urlsafe(48))\"`）。"
+        )
+
 
 class Settings(BaseModel):
     PROJECT_NAME: str = "KaTrain Web UI"
@@ -35,7 +68,7 @@ class Settings(BaseModel):
     S3_PRESIGN_TTL_SEC: int = 3600
 
     # Security
-    SECRET_KEY: str = "katrain-secret-key-change-this-in-production"
+    SECRET_KEY: str = INSECURE_DEFAULT_SECRET_KEY
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     REFRESH_TOKEN_EXPIRE_DAYS: int = 90
@@ -116,7 +149,7 @@ class Settings(BaseModel):
         data.setdefault("S3_PUBLIC_BASE_URL", os.getenv("KATRAIN_S3_PUBLIC_BASE_URL", ""))
         data.setdefault("S3_USE_PRESIGNED", os.getenv("KATRAIN_S3_USE_PRESIGNED", "false").lower() in ("1", "true", "yes"))
 
-        data.setdefault("SECRET_KEY", os.getenv("KATRAIN_SECRET_KEY", "katrain-secret-key-change-this-in-production"))
+        data.setdefault("SECRET_KEY", os.getenv("KATRAIN_SECRET_KEY", INSECURE_DEFAULT_SECRET_KEY))
         data.setdefault("ADMIN_BOOTSTRAP_PASSWORD", os.getenv("KATRAIN_ADMIN_BOOTSTRAP_PASSWORD", ""))
         data.setdefault("DEFAULT_LANG", os.getenv("KATRAIN_DEFAULT_LANG", "cn"))
 

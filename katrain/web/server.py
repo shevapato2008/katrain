@@ -168,6 +168,13 @@ async def lifespan(app: FastAPI):
 
 async def _lifespan_server(app: FastAPI, log):
     """Server mode initialization — existing logic, unchanged."""
+    from katrain.web.core.config import assert_secret_key_is_safe
+
+    # 必须是这个函数的第一件事——挡在任何 DB 连接、engine router 初始化之前。
+    # 拿不到显式注入的 SECRET_KEY 就不允许服务端继续启动：仓库里的字面量默认值
+    # 谁都读得到，凭它能自签任意用户的 token。
+    assert_secret_key_is_safe(settings.KATRAIN_MODE, settings.SECRET_KEY)
+
     from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
     from katrain.web.core.game_repo import GameRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository

@@ -1590,7 +1590,7 @@ def test_release_targets_the_stored_period_not_today(db_user):
 - [ ] **Step 2: 跑测试确认失败**
 
 Run: `uv run pytest tests/web_ui/test_quota.py -v`
-Expected: 新增 9 条 FAIL（`ModuleNotFoundError: katrain.web.core.quota`）
+Expected: 新增 10 条 FAIL（`ImportError: cannot import name 'quota'`）
 
 - [ ] **Step 3: 实现**
 

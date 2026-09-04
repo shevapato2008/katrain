@@ -11,6 +11,14 @@
 - `reconcile_stale_reservations` **无差别退还所有超过 `BILLING_RESERVATION_TTL_SEC=120` 秒的 reserved 行**、不看归属（`billing.py:273-299`，`server.py:226`）⇒ 复盘动辄数分钟，每次 web 重启都会把在跑的预扣全额退掉，随后结算再补一笔"估多退款" ⇒ 白嫖 + 凭空生钱。
 第 2 稿另补一条 codex 未发现的：**cron 有自己的 SGF 解析器**（`katrain/cron/sgf.py:200 parse_game`），与 web 侧 `katrain/core/sgf_parser.py` 是两套实现 ⇒ 只在 web 侧解析并不能保证 `actual <= reserved`，必须让**手数有唯一权威**（见 Task 4）。
 
+**Review（第 2 轮）:** 第 2 稿再次被判 **NO-SHIP**（9 findings）。我独立复核后确认两条新的事实指控**属实**，且其中一条比 SECRET_KEY 更严重：
+- `server.py:197-199` 在空库启动时创建 **`admin` / 密码 `admin`**，`:209-214` 随后把任何名为 `admin` 的账号**无条件**提权成 `is_admin`。**不需要伪造任何 token**，登录表单就能拿到管理员赠额与兑换码接口。→ 提升为 **Task 0**，与 SECRET_KEY 同属 Release 0。
+- `reports.py:283 /retry` 把 failed 任务直接改回 `pending` 且不重新授权；结算器若先跑并清掉 `charge_ref`，用户就能**免费续跑**剩余部分。`cron/jobs/requeue_reports.py` 对 completed 任务同理。→ Task 6 增加"可重试的失败不终结授权"。
+
+第 3 稿处置了 9 条中的 7 条。**明确延后的 2 条**（写在文末「已知限制」，不是遗漏）：
+- 「把 billing/quota 改成调用方管理事务」——那是重写一个正在工作的账本 API，与本切片的风险不相称。改用**确定性 ref + 孤儿回收器**达到可恢复性，残余风险已具体写明。
+- 「POST 的客户端幂等键」——本稿先用 `authorizing` 纳入去重集合 + 活跃任务唯一索引覆盖绝大多数，幂等键排进后续。
+
 **Tech Stack:** FastAPI + SQLAlchemy 2.0 + PostgreSQL（生产）/ SQLite（开发与单测）；迁移走 `katrain/web/core/migrations.py` 手写 ADD COLUMN / CREATE INDEX；pytest。
 
 **Spec:** `superpowers/tracks/galaxy-payment/requirements.md`（与本计划同目录，必须一起读）
@@ -55,6 +63,115 @@
 | `tests/web_ui/test_quota.py` | **新**：额度桶 | 建 |
 | `tests/web_ui/test_report_charging.py` | **新**：建任务→预扣→结算全链路 | 建 |
 | `tests/web_ui/test_secret_key_gate.py` | **新**：生产启动闸 | 建 |
+
+---
+
+## Task 0: 拆掉 admin/admin 默认凭据（Release 0，排在最前）
+
+`server.py:197-199`：空库启动时 `repo.create_user("admin", get_password_hash("admin"))`。
+`server.py:209-214`：随后**无条件**把任何名为 `admin` 的账号置 `is_admin=True`。
+合起来 = 一个公开已知的管理员口令。它绕过 JWT，直接命中 `/billing/admin/grant` 与 `/billing/admin/codes`。
+**修 SECRET_KEY 而不修这条，等于换了门锁却把钥匙留在门垫下。**
+
+**Files:**
+- Modify: `katrain/web/server.py:196-214`
+- Modify: `katrain/web/core/config.py`
+- Test: `tests/web_ui/test_admin_bootstrap.py`（新建）
+
+**Interfaces:**
+- Produces: `settings.ADMIN_BOOTSTRAP_PASSWORD: str = ""`；server 模式下为空则**不创建**任何默认账号
+
+- [ ] **Step 1: 写失败测试**
+
+```python
+# tests/web_ui/test_admin_bootstrap.py
+"""server 模式不得创建公开已知口令的管理员账号。"""
+import inspect
+
+from katrain.web import server
+
+
+def test_no_hardcoded_admin_password_in_bootstrap():
+    src = inspect.getsource(server)
+    assert 'get_password_hash("admin")' not in src, (
+        "空库启动时创建 admin/admin —— 那是一个公开已知的管理员口令，"
+        "不需要伪造 token 就能拿到赠额和兑换码接口"
+    )
+
+
+def test_admin_flag_is_not_granted_by_username():
+    src = inspect.getsource(server)
+    assert 'User.username == "admin"' not in src, (
+        "按用户名无条件提权 ⇒ 任何人注册叫 admin 的账号都可能被提权"
+    )
+
+
+def test_bootstrap_password_setting_exists_and_defaults_empty():
+    from katrain.web.core.config import settings
+    assert settings.ADMIN_BOOTSTRAP_PASSWORD == ""
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `uv run pytest tests/web_ui/test_admin_bootstrap.py -v`
+Expected: 前两条 FAIL
+
+- [ ] **Step 3: 实现**
+
+`config.py`：
+
+```python
+    # 空库首次启动时创建管理员账号用的口令。**默认空 = 不创建任何账号**。
+    # 从环境注入（KATRAIN_ADMIN_BOOTSTRAP_PASSWORD），用完即应清掉。
+    ADMIN_BOOTSTRAP_PASSWORD: str = ""
+```
+并在 `Settings` 的 env 装配处加 `data.setdefault("ADMIN_BOOTSTRAP_PASSWORD", os.getenv("KATRAIN_ADMIN_BOOTSTRAP_PASSWORD", ""))`。
+
+`server.py:196-214` 整段替换为：
+
+```python
+    # 首个管理员账号只在显式注入口令时创建。
+    # 曾经这里是 create_user("admin", get_password_hash("admin")) —— 一个公开已知的
+    # 管理员口令，配合下方"按用户名提权"等于把管理接口敞开。两者一起拆掉。
+    if not repo.list_users():
+        pwd = settings.ADMIN_BOOTSTRAP_PASSWORD
+        if pwd:
+            try:
+                repo.create_user("admin", get_password_hash(pwd))
+                _s = session_factory()
+                try:
+                    row = _s.query(models_db.User).filter(models_db.User.username == "admin").one()
+                    row.is_admin = True
+                    _s.commit()
+                finally:
+                    _s.close()
+                log.info("已按 ADMIN_BOOTSTRAP_PASSWORD 创建初始管理员")
+            except ValueError:
+                pass
+        else:
+            log.warning(
+                "数据库为空且未设置 KATRAIN_ADMIN_BOOTSTRAP_PASSWORD —— 未创建任何账号。"
+                "设置该环境变量后重启即可创建初始管理员。"
+            )
+```
+
+> 注意：**不要**保留"把名为 admin 的账号提权"那段独立逻辑。提权只发生在这一次创建里。
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `uv run pytest tests/web_ui/test_admin_bootstrap.py -v && uv run pytest tests/web_ui -q`
+Expected: 新测试 PASS；既有 web_ui 测试与基线比无新增失败（很多测试依赖 admin 账号存在 —— 它们的 fixture 要改成显式建号，**不要**为了让它们绿而把默认口令留着）
+
+- [ ] **Step 5: 写存量处置说明**
+
+在 `superpowers/tracks/galaxy-payment/deploy-secret-key.md` 里加一节：**上线前必须检查两台机器上是否存在用户名为 `admin` 且口令仍是 `admin` 的账号**，有就当场改掉或禁用。代码改动挡的是"以后不再产生"，挡不住"已经产生的那个"。
+
+- [ ] **Step 6: 提交**
+
+```bash
+git add katrain/web/server.py katrain/web/core/config.py tests/web_ui/test_admin_bootstrap.py superpowers/tracks/galaxy-payment/deploy-secret-key.md
+git commit -m "fix(auth): 拆掉 admin/admin 默认凭据与按用户名无条件提权"
+```
 
 ---
 
@@ -223,6 +340,17 @@ def test_server_mode_accepts_injected_key():
 def test_board_mode_tolerates_default_key():
     # 盒子上本地库不签发跨机身份，闸只管服务端。
     config.assert_secret_key_is_safe("board", config.INSECURE_DEFAULT_SECRET_KEY)
+
+
+@pytest.mark.parametrize("bad", ["", "   ", "\t\n", "x", "short-key-123"])
+def test_server_mode_rejects_empty_and_short_keys(bad):
+    """compose 的 :? 只保护 compose 一条入口；直接 python/systemd 启动照样能传空串。"""
+    with pytest.raises(RuntimeError):
+        config.assert_secret_key_is_safe("server", bad)
+
+
+def test_minimum_length_is_a_named_constant():
+    assert config.MIN_SECRET_KEY_CHARS >= 32
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -238,14 +366,29 @@ Expected: FAIL — `AttributeError: module 'katrain.web.core.config' has no attr
 INSECURE_DEFAULT_SECRET_KEY = "katrain-secret-key-change-this-in-production"
 
 
+MIN_SECRET_KEY_CHARS = 32
+
+
 def assert_secret_key_is_safe(mode: str, secret_key: str) -> None:
-    """服务端模式下必须显式注入密钥。
+    """服务端模式下必须显式注入一个**足够长**的密钥。
 
     盒子（board）跑本地库、不对外签发身份，放行。
-    这里故意不做「长度/熵」检查 —— 唯一要挡的是「忘了配」，
-    多加判据只会在部署时制造假红。
+
+    为什么不只挡默认字面量：compose 的 `:?` 只保护 compose 这一条入口。
+    直接 `python -m katrain`、systemd、或别的部署路径传进来的空串、空白、
+    单字符都会通过，而 HS256 的短密钥可以离线穷举 —— 拿到任意一个 token
+    就能反推密钥并伪造管理员。
     """
-    if mode == "server" and secret_key == INSECURE_DEFAULT_SECRET_KEY:
+    if mode != "server":
+        return
+    if not secret_key or not secret_key.strip():
+        raise RuntimeError("拒绝以空 SECRET_KEY 启动服务端：设置 KATRAIN_SECRET_KEY。")
+    if len(secret_key.strip()) < MIN_SECRET_KEY_CHARS:
+        raise RuntimeError(
+            f"SECRET_KEY 太短（{len(secret_key.strip())} 字符，至少 {MIN_SECRET_KEY_CHARS}）："
+            "HS256 短密钥可离线穷举。用 `python -c \"import secrets;print(secrets.token_urlsafe(48))\"` 生成。"
+        )
+    if secret_key == INSECURE_DEFAULT_SECRET_KEY:
         raise RuntimeError(
             "拒绝以内置默认 SECRET_KEY 启动服务端：任何人都能用仓库里的字面量伪造任意用户的 token。"
             "请设置环境变量 KATRAIN_SECRET_KEY（建议 `python -c \"import secrets;print(secrets.token_urlsafe(48))\"`）。"
@@ -720,6 +863,11 @@ Expected: 全 FAIL（`BILLING_ENFORCED` 不存在 / 无 402 / 无 charge_ref）
 
     cost = analysis_cost.report_cost(moves, visits)
 
+    # 0) 去重集合必须**包含 authorizing** —— 否则第二个并发请求会在第一个
+    #    还在授权时穿过去重，造成两次真实扣费 + 两份 GPU 工作。
+    #    （`reports.py:211` 现有的去重只查 pending/running/completed。）
+    #    完整的客户端幂等键排在后续，见文末「已知限制」。
+
     # 1) 先落成 authorizing —— cron 只认 pending，这个状态它不会领走。
     report_task = models_db.ReportTask(
         user_id=current_user.id, user_game_id=task.user_game_id,
@@ -895,6 +1043,29 @@ def test_failed_after_partial_analysis_charges_only_what_ran(db):
     assert billing.get_balance(db, u.id) == 1000 - 30   # 60×500 = 30 credits
 
 
+def test_settlement_resumes_a_half_done_commit(db):
+    """回归：上一轮在 commit 与 grant 之间崩了，差额必须补退，不能永久按预估收。"""
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    t = _task(db, u, status="completed", total=250, analyzed=100, reserve=125)
+    billing.commit(db, t.charge_ref)          # 模拟"只做了一半"
+    assert billing.get_balance(db, u.id) == 875
+    settle_finished_reports(db)
+    assert billing.get_balance(db, u.id) == 950, "125 预扣、实收 50，差额 75 必须退回"
+
+
+def test_resume_does_not_double_refund(db):
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    t = _task(db, u, status="completed", total=250, analyzed=100, reserve=125)
+    settle_finished_reports(db)
+    once = billing.get_balance(db, u.id)
+    t.charge_ref = f"report:{t.id}"            # 人为把引用放回去，模拟重复扫描
+    db.commit()
+    settle_finished_reports(db)
+    assert billing.get_balance(db, u.id) == once, "退款行已存在就不能再退一次"
+
+
 def test_settlement_skips_a_reservation_someone_else_already_refunded(db):
     """防御：万一预扣已被别处退掉，结算必须原地跳过、不得再补一笔赠额。"""
     from katrain.web.core.report_settlement import settle_finished_reports
@@ -993,10 +1164,29 @@ def settle_finished_reports(db: Session, limit: int = 200, user_id: int | None =
     for task in q.limit(limit).all():
         ref = task.charge_ref
         status = billing.transaction_status(db, ref)
-        if status != "reserved":
-            # 已被别处 commit/refund 过。原地摘掉引用，**不要**再动余额 ——
+        if status == "refunded":
+            # 已被别处退掉。原地摘掉引用，**不要**再动余额 ——
             # 在一个已退款的预扣上补"估多退款"就是凭空生钱。
-            logger.warning("复盘 %s 的预扣状态是 %s，跳过结算", task.id, status)
+            logger.warning("复盘 %s 的预扣已是 refunded，跳过结算", task.id)
+            task.charge_ref = None
+            db.commit()
+            continue
+        if status == "committed":
+            # 上一轮在 commit 与 grant 之间崩了 —— 预扣已落定，差额还没退。
+            # 退款行的 ref_id 是确定性的，据此判断该补不该补。
+            # （不加这一段，用户会被永久按完整预估收费。）
+            reserved = billing.reserved_amount(db, ref)
+            actual = analysis_cost.report_cost(task.analyzed_moves or 0, task.requested_visits or 0)
+            if reserved > actual and not billing.has_transaction(db, f"{ref}:refund"):
+                billing.grant(db, task.user_id, reserved - actual,
+                              reason="report_overestimate_refund", ref_id=f"{ref}:refund")
+                logger.info("补退复盘 %s 的估算差额 %s", task.id, reserved - actual)
+            task.charge_ref = None
+            db.commit()
+            settled += 1
+            continue
+        if status != "reserved":
+            logger.warning("复盘 %s 的预扣状态是 %s，跳过", task.id, status)
             task.charge_ref = None
             db.commit()
             continue
@@ -1064,11 +1254,65 @@ def test_cron_never_imports_katrain_web():
     )
 ```
 
-- [ ] **Step 7: 提交**
+- [ ] **Step 7: 处理 retry 与 requeue 的重新授权**
+
+`reports.py:283 /retry` 把 failed 任务直接改回 `pending`，`cron/jobs/requeue_reports.py` 对 completed 任务也会删结果并重回 pending。两者都**不重新授权** ⇒ 结算器先跑清掉 `charge_ref` 之后，用户按"断点续跑"免费拿完剩余部分。
+
+规则写死为：
+
+1. **失败任务不立刻终结授权。** `settle_finished_reports` 的终态集合改成只含 `completed`；`failed` 交给一个**带宽限期**的分支：`failed` 且 `updated_at` 超过 `settings.REPORT_RETRY_GRACE_SEC`（默认 3600）才结算。宽限期内 `/retry` 能直接复用原预扣。
+2. **`/retry` 若发现 `charge_ref` 已被清掉**（超过宽限期），必须**重新走一次授权**：按 `total_moves - analyzed_moves` 的剩余量预扣，余额不足返 402。
+3. **`requeue_reports.py` 是运维工具**，它重排的任务写 `charge_ref = None` 且置 `billing_exempt_reason = "requeue"`（`ReportTask` 新增该列），结算器看到它一律跳过——**运维重跑不向用户收费**，但要留痕。
+
+```python
+# tests/web_ui/test_report_retry_authorization.py
+"""失败→结算→重试 这条链上不得出现免费续跑。"""
+
+@pytest.mark.anyio
+async def test_retry_within_grace_reuses_the_original_reservation(app_failed_task, monkeypatch):
+    client, token, user, task = app_failed_task            # 刚失败，未超宽限期
+    before = _balance(user)
+    r = await client.post(f"/api/v1/reports/{task.id}/retry",
+                          headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+    assert _balance(user) == before, "宽限期内重试不该二次扣费"
+
+
+@pytest.mark.anyio
+async def test_retry_after_settlement_reauthorizes(app_settled_failed_task, monkeypatch):
+    """结算已把预扣落定 —— 重试必须为剩余手数重新预扣，不能白跑。"""
+    client, token, user, task = app_settled_failed_task
+    before = _balance(user)
+    r = await client.post(f"/api/v1/reports/{task.id}/retry",
+                          headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+    assert _balance(user) < before, "结算之后重试必须重新授权"
+
+
+@pytest.mark.anyio
+async def test_retry_without_credits_returns_402(app_settled_failed_task):
+    client, token, user, task = app_settled_failed_task
+    _set_balance(user, 0)
+    r = await client.post(f"/api/v1/reports/{task.id}/retry",
+                          headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 402
+
+
+def test_requeued_task_is_marked_exempt_and_skipped_by_settlement(db):
+    from katrain.web.core.report_settlement import settle_finished_reports
+    u = _user(db)
+    t = _task(db, u, status="completed", total=250, analyzed=250, reserve=125)
+    t.charge_ref = None
+    t.billing_exempt_reason = "requeue"
+    db.commit()
+    assert settle_finished_reports(db) == 0
+```
+
+- [ ] **Step 8: 提交**
 
 ```bash
-git add katrain/web/core/billing.py katrain/web/core/report_settlement.py katrain/web/server.py tests/web_ui/test_report_settlement.py tests/web_ui/test_cron_boundary.py
-git commit -m "feat(billing): 复盘终态对账结算，并把复盘预扣移出通用 120 秒 TTL 回收器"
+git add katrain/web/core/billing.py katrain/web/core/report_settlement.py katrain/web/core/models_db.py katrain/web/api/v1/endpoints/reports.py katrain/cron/jobs/requeue_reports.py katrain/web/server.py tests/web_ui/test_report_settlement.py tests/web_ui/test_report_retry_authorization.py tests/web_ui/test_cron_boundary.py
+git commit -m "feat(billing): 终态对账结算、预扣移出通用 TTL 回收器、retry/requeue 重新授权"
 ```
 
 ---
@@ -1200,7 +1444,7 @@ git commit -m "feat(quota): 额度桶表 —— 惰性周期键，并纳入 drif
 - Test: `tests/web_ui/test_quota.py`（追加）
 
 **Interfaces:**
-- Produces: `period_key(kind_period, now=None) -> str`；`peek(db, user_id, kind, allowance, now=None) -> (used, allowance)`；`try_consume(db, user_id, kind, allowance, n=1, now=None) -> bool`；`release(db, user_id, kind, n=1, now=None) -> bool`
+- Produces: `period_key(kind_period, now=None) -> str`；`peek(db, user_id, kind, allowance, now=None) -> (used, allowance)`；`try_consume(db, user_id, kind, allowance, n=1, now=None) -> bool`；`release(db, user_id, kind_name, period_key_value, n=1) -> bool`（**按存下来的周期键，不重算当前时间**）
 
 - [ ] **Step 1: 写失败测试（追加到 tests/web_ui/test_quota.py）**
 
@@ -1272,17 +1516,38 @@ def test_allowance_snapshot_survives_plan_change(db_user):
 def test_release_returns_a_consumed_unit(db_user):
     from katrain.web.core import quota
     db, u = db_user
-    assert quota.try_consume(db, u.id, "free_report:week", allowance=1) is True
-    assert quota.try_consume(db, u.id, "free_report:week", allowance=1) is False
-    assert quota.release(db, u.id, "free_report:week") is True
-    assert quota.try_consume(db, u.id, "free_report:week", allowance=1) is True
+    t = datetime(2026, 9, 5, 10, 0, tzinfo=CST)
+    pk = quota.period_key("week", t)
+    assert quota.try_consume(db, u.id, "free_report:week", allowance=1, now=t) is True
+    assert quota.try_consume(db, u.id, "free_report:week", allowance=1, now=t) is False
+    assert quota.release(db, u.id, "free_report", pk) is True
+    assert quota.try_consume(db, u.id, "free_report:week", allowance=1, now=t) is True
 
 
 def test_release_never_goes_below_zero(db_user):
     from katrain.web.core import quota
     db, u = db_user
-    assert quota.release(db, u.id, "free_report:week") is False
-    assert quota.peek(db, u.id, "free_report:week", allowance=1)[0] == 0
+    pk = quota.period_key("week")
+    assert quota.release(db, u.id, "free_report", pk) is False
+
+
+def test_release_targets_the_stored_period_not_today(db_user):
+    """回归：上周崩掉的任务下周才被回收，必须还回**上周**那个桶。
+
+    若 release 自己重算当前周期，就会既没还上旧桶、又把新周别人的 used 减掉。
+    """
+    from katrain.web.core import quota
+    db, u = db_user
+    t_old = datetime(2026, 9, 5, 10, 0, tzinfo=CST)     # W36
+    t_new = datetime(2026, 9, 12, 10, 0, tzinfo=CST)    # W37
+    old_pk = quota.period_key("week", t_old)
+    quota.try_consume(db, u.id, "free_report:week", allowance=1, now=t_old)
+    quota.try_consume(db, u.id, "free_report:week", allowance=1, now=t_new)
+
+    assert quota.release(db, u.id, "free_report", old_pk) is True
+    assert quota.peek(db, u.id, "free_report:week", allowance=1, now=t_old)[0] == 0
+    assert quota.peek(db, u.id, "free_report:week", allowance=1, now=t_new)[0] == 1, \
+        "新周的桶不得被误减"
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -1387,18 +1652,21 @@ def try_consume(db: Session, user_id: int, kind: str, allowance: int, n: int = 1
     return result.rowcount == 1
 
 
-def release(db: Session, user_id: int, kind: str, n: int = 1, now=None) -> bool:
-    """把已消费的 n 份额度还回去（建任务失败时用）。
+def release(db: Session, user_id: int, kind_name: str, period_key_value: str, n: int = 1) -> bool:
+    """把已消费的 n 份额度还回**指定周期**的桶。
+
+    **必须传入当初消费时那个 period_key，不能在这里重算当前时间**：
+    回收器可能在下一周才跑到一个上周崩掉的任务，重算会去减错桶——
+    既没还上旧桶，又把新周别人的 used 减掉了。调用方从
+    `ReportTask.free_grant_period` 取这个值（Task 5 已把它存在任务行上）。
 
     这是对**已提交行**的一次独立 UPDATE，不是「rollback 之后补偿」——
     后者正是 billing.reserve 当年的 bug（见 tests/web_ui/test_billing_race.py）。
     """
-    name, period = _split(kind)
-    key = period_key(period, now)
     result = db.execute(
         text("UPDATE quota_buckets SET used = used - :n "
              "WHERE user_id = :uid AND kind = :k AND period_key = :pk AND used >= :n"),
-        {"n": n, "uid": user_id, "k": name, "pk": key},
+        {"n": n, "uid": user_id, "k": kind_name, "pk": period_key_value},
     )
     db.commit()
     return result.rowcount == 1
@@ -1407,7 +1675,7 @@ def release(db: Session, user_id: int, kind: str, n: int = 1, now=None) -> bool:
 - [ ] **Step 4: 跑测试确认通过**
 
 Run: `uv run pytest tests/web_ui/test_quota.py -v`
-Expected: 12 passed
+Expected: 13 passed
 
 - [ ] **Step 5: 记一条只能在 PG 上证的事，并让它在有 DSN 时真的跑**
 
@@ -1604,12 +1872,37 @@ def test_backfill_is_idempotent(db):
     assert db.query(models_db.CreditTransaction).count() == 1
 
 
-def test_backfill_skips_users_who_already_have_ledger_rows(db):
+def test_backfill_covers_a_user_whose_ledger_only_explains_part_of_the_balance(db):
+    """最典型的一类人：列默认值给了 10000，又兑换过 500 ⇒ 余额 10500、账本只有 +500。
+
+    「跳过已有账本行的用户」这个写法会永久漏掉他们 —— 判据必须是残差。
+    """
     from katrain.web.core.migrations_opening_balance import backfill_opening_balances
-    u = models_db.User(username="active", hashed_password="x", credits=500)
+    u = models_db.User(username="mixed", hashed_password="x", credits=10000)
+    db.add(u); db.commit(); db.refresh(u)
+    billing.grant(db, u.id, 500, "redeem", "redeem:abc")     # 余额变 10500，账本 +500
+
+    assert backfill_opening_balances(db) == 1
+    row = db.query(models_db.CreditTransaction).filter_by(reason="opening_balance").one()
+    assert row.delta == 10000, "补的是残差，不是全额"
+    assert billing.get_balance(db, u.id) == 10500, "开账不得改变余额"
+
+
+def test_backfill_skips_users_whose_ledger_already_explains_the_balance(db):
+    from katrain.web.core.migrations_opening_balance import backfill_opening_balances
+    u = models_db.User(username="clean", hashed_password="x", credits=0)
     db.add(u); db.commit(); db.refresh(u)
     billing.grant(db, u.id, 500, "redeem", "redeem:abc")
-    assert backfill_opening_balances(db) == 0, "已有账本的用户不需要开账"
+    assert backfill_opening_balances(db) == 0, "残差为 0 不需要开账"
+
+
+def test_backfill_all_loops_until_converged(db):
+    """启动只调一次单批函数，batch 之外的用户会永久留在不一致状态。"""
+    from katrain.web.core.migrations_opening_balance import backfill_all_opening_balances
+    for i in range(7):
+        db.add(models_db.User(username=f"legacy{i}", hashed_password="x", credits=10000))
+    db.commit()
+    assert backfill_all_opening_balances(db, batch=3) == 7
 
 
 def test_backfill_skips_zero_balance_users(db):
@@ -1654,29 +1947,73 @@ logger = logging.getLogger("katrain_web")
 
 
 def backfill_opening_balances(db: Session, batch: int = 500) -> int:
-    """为「有余额但账本一行都没有」的用户各补一条 opening_balance。返回补的条数。"""
-    subq = db.query(models_db.CreditTransaction.user_id).distinct().subquery()
-    users = (
-        db.query(models_db.User)
-        .filter(models_db.User.credits > 0, ~models_db.User.id.in_(subq))
+    """给每个存量用户补一条**残差**开账行，直到全部处理完。返回补的条数。
+
+    **为什么不是「跳过已有账本的用户」**：那个写法漏掉最典型的一类人——
+    从列默认值拿了 10000、又兑换过 500 的用户，余额 10500 而账本只有 +500。
+    他有账本行，于是被跳过，那 10000 永远无法被账本解释。
+    正确的判据是**残差**：`residual = credits - sum(有效账本 delta)`，
+    残差非 0 就补一行。残差为 0 的用户天然跳过，不需要额外条件。
+
+    有效 delta = status in ('committed', 'reserved')。`reserved` 也算，因为它
+    已经从 users.credits 里扣掉了（见 billing.reserve 的条件 UPDATE）。
+
+    **这个迁移只补账、不改余额**：选 grandfather（保留存量余额）而不是清零——
+    清零会让老用户在毫无预告的情况下损失既得，那是产品决策，迁移替不了 Fan 做。
+    """
+    from sqlalchemy import func as sa_func
+
+    ledger = (
+        db.query(
+            models_db.CreditTransaction.user_id.label("uid"),
+            sa_func.coalesce(sa_func.sum(models_db.CreditTransaction.delta), 0).label("total"),
+        )
+        .filter(models_db.CreditTransaction.status.in_(("committed", "reserved")))
+        .group_by(models_db.CreditTransaction.user_id)
+        .subquery()
+    )
+    rows = (
+        db.query(models_db.User, sa_func.coalesce(ledger.c.total, 0))
+        .outerjoin(ledger, ledger.c.uid == models_db.User.id)
+        .filter(models_db.User.credits != sa_func.coalesce(ledger.c.total, 0))
         .limit(batch)
         .all()
     )
     n = 0
-    for u in users:
+    for u, ledger_total in rows:
+        residual = int(u.credits) - int(ledger_total)
+        if residual == 0:
+            continue
+        ref = f"opening_balance:{u.id}"
+        if db.query(models_db.CreditTransaction).filter_by(ref_id=ref).first() is not None:
+            # 已经补过一次却仍有残差 —— 说明账本之外还有别的写入路径，报警别静默。
+            logger.error("用户 %s 已有 opening_balance 行但残差仍为 %s", u.id, residual)
+            continue
         db.add(models_db.CreditTransaction(
-            user_id=u.id, delta=int(u.credits), reason="opening_balance",
-            ref_id=f"opening_balance:{u.id}", status="committed",
-            balance_after=int(u.credits),
+            user_id=u.id, delta=residual, reason="opening_balance",
+            ref_id=ref, status="committed", balance_after=int(u.credits),
         ))
         n += 1
     if n:
         db.commit()
-        logger.info("opening_balance: 为 %s 个存量用户补了开账行", n)
+        logger.info("opening_balance: 补了 %s 条开账行", n)
     return n
+
+
+def backfill_all_opening_balances(db: Session, batch: int = 500, max_rounds: int = 200) -> int:
+    """循环调用直到没有可补的为止。启动时只调一次 backfill_opening_balances
+    会把 batch 之外的用户永久留在不一致状态。"""
+    total = 0
+    for _ in range(max_rounds):
+        n = backfill_opening_balances(db, batch)
+        if n == 0:
+            return total
+        total += n
+    logger.error("opening_balance: 达到 max_rounds 仍未收敛，剩余用户未迁移")
+    return total
 ```
 
-在 `server.py` 启动流程里调一次（幂等，跑完就再也不动）。
+在 `server.py` 启动流程里调 `backfill_all_opening_balances`（**不是**单批的那个），幂等，收敛后就再也不动。
 
 - [ ] **Step 4: 改两处默认值与注册赠额**
 
@@ -1788,12 +2125,293 @@ git commit -m "feat(billing): 额度看板端点 —— 返回前先结算本用
 
 ---
 
+## Task 12: 孤儿与滞留回收器 + 冻结被分析的 SGF
+
+Task 6 把 `reason="report"` 排除出通用 TTL 回收器之后，**复盘预扣就只剩结算器一个管理者**，而结算器是按 `ReportTask` 行遍历的。于是出现三类它够不着的钱：
+
+1. **孤儿预扣**：`UserGame` 对 `ReportTask` 是 `cascade="all, delete-orphan"`（`models_db.py:733`）。`DELETE /user-games/{id}` 会把任务行删掉，**预扣却留在账本里**——用户的积分被永久冻结，没有任何人会退。
+2. **滞留 authorizing**：Task 5 的建任务路径跨多次提交（任务行 → 额度/预扣 → 翻 pending）。中间崩溃会留下 `authorizing` 任务：cron 不认领，结算器不看（它只看终态），额度已消费、积分已预扣。
+3. **改了棋谱**：`PUT /user-games/{id}` 可改 `sgf_content`（`user_games.py:42,178`）。`moves[:paid_moves]` 只限住**数量**，限不住**内容**；配合 `_get_resume_move_number` 的断点续跑，报告会由旧棋谱的前缀和新棋谱的后缀拼成。
+
+**Files:**
+- Modify: `katrain/web/core/models_db.py`（`ReportTask.sgf_hash`、`billing_exempt_reason`）
+- Modify: `katrain/web/core/migrations.py`
+- Create: `katrain/web/core/report_reaper.py`
+- Modify: `katrain/web/api/v1/endpoints/reports.py`（授权时记 hash）
+- Modify: `katrain/cron/jobs/report_analyze.py`（认领时校验 hash）
+- Test: `tests/web_ui/test_report_reaper.py`（新建）
+
+**Interfaces:**
+- Produces: `reap_orphaned_report_charges(db) -> int`；`reap_stale_authorizing(db, ttl_sec) -> int`；`ReportTask.sgf_hash: str | None`
+
+- [ ] **Step 1: 写失败测试**
+
+```python
+# tests/web_ui/test_report_reaper.py
+"""复盘预扣被移出通用 TTL 回收器之后，这三类钱谁来管。"""
+from datetime import datetime, timedelta, timezone
+
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from katrain.web.core import billing, models_db
+
+
+@pytest.fixture
+def db():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    models_db.Base.metadata.create_all(bind=engine)
+    s = sessionmaker(bind=engine)()
+    yield s
+    s.close()
+
+
+def _user(db, credits=1000):
+    u = models_db.User(username="u1", hashed_password="x", credits=credits)
+    db.add(u); db.commit(); db.refresh(u)
+    return u
+
+
+def test_deleting_the_game_does_not_freeze_credits_forever(db):
+    """回归：级联删除会带走任务行，而预扣留在账本里没人管。"""
+    from katrain.web.core.report_reaper import reap_orphaned_report_charges
+    u = _user(db)
+    g = models_db.UserGame(user_id=u.id, source="import", move_count=250)
+    db.add(g); db.commit(); db.refresh(g)
+    t = models_db.ReportTask(user_id=u.id, user_game_id=g.id, report_type="normal",
+                             requested_visits=500, status="pending", total_moves=250)
+    db.add(t); db.commit(); db.refresh(t)
+    ref = f"report:{t.id}"
+    billing.reserve(db, u.id, 125, "report", ref)
+    t.charge_ref = ref
+    db.commit()
+    assert billing.get_balance(db, u.id) == 875
+
+    db.delete(g); db.commit()                       # 级联把任务行也删了
+    assert db.query(models_db.ReportTask).count() == 0
+
+    assert reap_orphaned_report_charges(db) == 1
+    assert billing.get_balance(db, u.id) == 1000, "任务都没了，钱必须退回去"
+
+
+def test_reaper_leaves_charges_whose_task_still_exists(db):
+    from katrain.web.core.report_reaper import reap_orphaned_report_charges
+    u = _user(db)
+    g = models_db.UserGame(user_id=u.id, source="import", move_count=250)
+    db.add(g); db.commit(); db.refresh(g)
+    t = models_db.ReportTask(user_id=u.id, user_game_id=g.id, report_type="normal",
+                             requested_visits=500, status="running", total_moves=250)
+    db.add(t); db.commit(); db.refresh(t)
+    billing.reserve(db, u.id, 125, "report", f"report:{t.id}")
+    t.charge_ref = f"report:{t.id}"
+    db.commit()
+    assert reap_orphaned_report_charges(db) == 0
+    assert billing.get_balance(db, u.id) == 875
+
+
+def test_stale_authorizing_task_is_rolled_back(db):
+    """建任务途中崩溃：cron 不认领、结算器不看，额度和积分卡在半路。"""
+    from katrain.web.core.report_reaper import reap_stale_authorizing
+    from katrain.web.core import quota
+    u = _user(db)
+    g = models_db.UserGame(user_id=u.id, source="import", move_count=250)
+    db.add(g); db.commit(); db.refresh(g)
+    t = models_db.ReportTask(user_id=u.id, user_game_id=g.id, report_type="normal",
+                             requested_visits=500, status="authorizing", total_moves=250)
+    db.add(t); db.commit(); db.refresh(t)
+    billing.reserve(db, u.id, 125, "report", f"report:{t.id}")
+    t.charge_ref = f"report:{t.id}"
+    t.created_at = datetime.now(timezone.utc) - timedelta(seconds=3600)
+    db.commit()
+
+    assert reap_stale_authorizing(db, ttl_sec=600) == 1
+    assert billing.get_balance(db, u.id) == 1000
+    assert db.query(models_db.ReportTask).count() == 0
+
+
+def test_stale_authorizing_releases_the_free_weekly_unit(db):
+    """用免费额度那条路崩在半路 —— 额度也要还回**当初那个周**的桶。"""
+    from katrain.web.core.report_reaper import reap_stale_authorizing
+    from katrain.web.core import quota
+    u = _user(db)
+    g = models_db.UserGame(user_id=u.id, source="import", move_count=250)
+    db.add(g); db.commit(); db.refresh(g)
+    pk = quota.period_key("week")
+    quota.try_consume(db, u.id, "free_report:week", allowance=1)
+    t = models_db.ReportTask(user_id=u.id, user_game_id=g.id, report_type="normal",
+                             requested_visits=500, status="authorizing", total_moves=250,
+                             free_grant_period=pk)
+    db.add(t); db.commit(); db.refresh(t)
+    t.created_at = datetime.now(timezone.utc) - timedelta(seconds=3600)
+    db.commit()
+
+    assert reap_stale_authorizing(db, ttl_sec=600) == 1
+    assert quota.peek(db, u.id, "free_report:week", allowance=1)[0] == 0, "免费额度要还回去"
+
+
+def test_fresh_authorizing_task_is_left_alone(db):
+    """正在授权中的任务不能被回收器抢走。"""
+    from katrain.web.core.report_reaper import reap_stale_authorizing
+    u = _user(db)
+    g = models_db.UserGame(user_id=u.id, source="import", move_count=250)
+    db.add(g); db.commit(); db.refresh(g)
+    t = models_db.ReportTask(user_id=u.id, user_game_id=g.id, report_type="normal",
+                             requested_visits=500, status="authorizing", total_moves=250)
+    db.add(t); db.commit()
+    assert reap_stale_authorizing(db, ttl_sec=600) == 0
+
+
+def test_sgf_hash_is_frozen_at_authorization(db):
+    """授权时冻结棋谱指纹 —— 之后改棋谱不能悄悄换掉被分析的内容。"""
+    import hashlib
+    from katrain.web.api.v1.endpoints.reports import sgf_fingerprint
+    a = sgf_fingerprint("(;GM[1];B[pd])")
+    b = sgf_fingerprint("(;GM[1];B[dp])")
+    assert a != b
+    assert a == sgf_fingerprint("(;GM[1];B[pd])")
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `uv run pytest tests/web_ui/test_report_reaper.py -v`
+Expected: 全 FAIL（模块不存在）
+
+- [ ] **Step 3: 加两列并冻结指纹**
+
+`models_db.py` 的 `ReportTask` 追加：
+
+```python
+    # 授权那一刻棋谱内容的指纹。cron 认领时比对，不一致就失败而不是拼一份
+    # 「旧棋谱前缀 + 新棋谱后缀」的报告出来。
+    sgf_hash = Column(String(64), nullable=True)
+    # 运维重排（requeue）标记：这类任务不向用户收费，但要留痕。
+    billing_exempt_reason = Column(String(32), nullable=True)
+```
+
+`reports.py`：
+
+```python
+def sgf_fingerprint(sgf_content: str) -> str:
+    """棋谱内容指纹。授权时冻结在任务上，cron 认领时比对。"""
+    import hashlib
+    return hashlib.sha256(sgf_content.encode("utf-8")).hexdigest()
+```
+授权时 `report_task.sgf_hash = sgf_fingerprint(game.sgf_content)`。
+
+`katrain/cron/jobs/report_analyze.py` 在 `parsed = parse_game(game.sgf_content)` 之后：
+
+```python
+            # 授权时冻结的指纹对不上 ⇒ 棋谱在排队期间被改过。
+            # 继续跑会拼出「旧棋谱前缀 + 新棋谱后缀」的报告，且用户付的是旧棋谱的钱。
+            if task.sgf_hash:
+                import hashlib
+                if hashlib.sha256(game.sgf_content.encode("utf-8")).hexdigest() != task.sgf_hash:
+                    task.status = "failed"
+                    task.error_message = "棋谱在排队期间被修改，请重新发起复盘"
+                    db.commit()
+                    return
+```
+
+- [ ] **Step 4: 实现回收器**
+
+```python
+# katrain/web/core/report_reaper.py
+"""复盘预扣的兜底回收。
+
+Task 6 把 reason="report" 排除出通用 TTL 回收器之后，复盘预扣就**只剩
+结算器一个管理者**，而结算器按 ReportTask 行遍历。这里收两类它够不着的钱：
+任务行已经没了的孤儿预扣，和卡在 authorizing 的半成品。
+"""
+import logging
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy.orm import Session
+
+from katrain.web.core import billing, models_db, quota
+
+logger = logging.getLogger("katrain_web")
+
+
+def reap_orphaned_report_charges(db: Session, limit: int = 200) -> int:
+    """退还「任务行已经不存在」的复盘预扣。
+
+    UserGame 对 ReportTask 是 cascade delete-orphan，删棋谱会带走任务行，
+    预扣却留在账本里 —— 没有这个回收器，那笔钱永久冻结。
+    """
+    rows = (
+        db.query(models_db.CreditTransaction)
+        .filter(
+            models_db.CreditTransaction.status == "reserved",
+            models_db.CreditTransaction.reason == "report",
+        )
+        .limit(limit)
+        .all()
+    )
+    n = 0
+    for tx in rows:
+        try:
+            task_id = int(tx.ref_id.split(":", 1)[1])
+        except (IndexError, ValueError):
+            continue
+        if db.query(models_db.ReportTask.id).filter_by(id=task_id).first() is not None:
+            continue
+        billing.refund(db, tx.ref_id)
+        logger.info("退还孤儿复盘预扣 %s", tx.ref_id)
+        n += 1
+    return n
+
+
+def reap_stale_authorizing(db: Session, ttl_sec: int = 600, limit: int = 200) -> int:
+    """回滚卡在 authorizing 的任务：退积分、还额度、删任务行。
+
+    cron 只认 pending，结算器只看终态 —— 这个状态没有别的管理者。
+    ttl 要明显大于一次正常授权耗时（默认 600 秒），免得抢走正在进行的请求。
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=ttl_sec)
+    tasks = (
+        db.query(models_db.ReportTask)
+        .filter(models_db.ReportTask.status == "authorizing",
+                models_db.ReportTask.created_at < cutoff)
+        .limit(limit)
+        .all()
+    )
+    n = 0
+    for t in tasks:
+        if t.charge_ref and billing.transaction_status(db, t.charge_ref) == "reserved":
+            billing.refund(db, t.charge_ref)
+        if t.free_grant_period:
+            # 按**任务上存着的**那个周期键还，不是当前周（见 quota.release 的注释）。
+            quota.release(db, t.user_id, "free_report", t.free_grant_period)
+        db.delete(t)
+        db.commit()
+        logger.info("回滚滞留的 authorizing 任务 %s", t.id)
+        n += 1
+    return n
+```
+
+`server.py` 把这两个挂到与 `settle_finished_reports` 相同的周期调度上。
+
+- [ ] **Step 5: 跑测试确认通过**
+
+Run: `uv run pytest tests/web_ui/test_report_reaper.py tests/web_ui/test_report_settlement.py -v`
+Expected: 全部 PASS
+
+- [ ] **Step 6: 提交**
+
+```bash
+git add katrain/web/core/models_db.py katrain/web/core/migrations.py katrain/web/core/report_reaper.py katrain/web/api/v1/endpoints/reports.py katrain/cron/jobs/report_analyze.py katrain/web/server.py tests/web_ui/test_report_reaper.py
+git commit -m "feat(billing): 孤儿与滞留预扣的兜底回收，并在授权时冻结棋谱指纹"
+```
+
+---
+
 ## 发布顺序与回滚边界
 
 | 发布 | 内容 | 可回滚性 |
 |---|---|---|
-| **Release 0** | Task 1（账本竞争）+ Task 2（SECRET_KEY） | 代码可回滚。**但换过的密钥不得回退到已公开的旧值**——回滚代码时保留新密钥。副作用是全站登出一次，选低峰并公告。 |
-| **Release 1** | Task 3–11，`BILLING_ENFORCED=False` | 行为与今天一致，可随时回滚。 |
+| **Release 0** | Task 0（admin/admin）+ Task 1（账本竞争）+ Task 2（SECRET_KEY） | 代码可回滚。**但换过的密钥不得回退到已公开的旧值**——回滚代码时保留新密钥。副作用是全站登出一次，选低峰并公告。 |
+| **Release 1** | Task 3–12，`BILLING_ENFORCED=False` | 行为与今天一致，可随时回滚。 |
 | **开闸** | 把 `BILLING_ENFORCED` 置 True | **最难回滚的一步**：一旦开始写真实余额与账本，回滚代码不会回滚已扣的钱。前置：P3 手机绑定 + 注册限流已上线、P5 页脚已上线、U4 定性已完成、PG 并发用例已在 home-ubuntu 跑过。先在测试环境开一周。 |
 
 **开闸前必过的硬闸**（不是可选项）：
@@ -1801,6 +2419,24 @@ git commit -m "feat(billing): 额度看板端点 —— 返回前先结算本用
 2. 全量测试与基线名字集合差集为空
 3. 在测试环境走一遍真实链路：建任务 → cron 跑 → 终态 → 对账 → `/billing/quota` 的数对得上
 4. 故意重启一次 web，确认在跑的复盘预扣**没有**被退（Task 6 那条回归的现场版）
+5. 两台机器上检查是否存在用户名 `admin` 且口令仍是 `admin` 的账号（Task 0 只挡"以后不再产生"）
+6. `report_tasks` 的活跃任务部分唯一索引已建（见「已知限制」第 2 条）
+
+---
+
+## 已知限制（明确接受，不是遗漏）
+
+第 2 轮评审的 9 条里有 2 条我**没有**照单执行，理由与残余风险如下。开闸前需要 Fan 知情。
+
+**1. billing / quota 的 API 仍然自己 commit，没有改成"调用方管理事务"。**
+评审建议把任务行、额度消费、预扣、放行合进单个数据库事务。那需要重写一个**正在工作的**账本 API 的事务边界，波及 `redeem` / `settle_order` / `reconcile` 等所有既有调用方，与本切片的风险不相称。
+替代方案是**确定性 ref + 兜底回收器**（Task 12）：每一笔钱都能从 `report:{task_id}` 这个确定性键找回来，孤儿和滞留都有专门的回收者。
+**残余风险**：从崩溃到回收器跑到之间，用户的那笔预扣是被冻结的（默认 ttl 600 秒 + 一个调度周期）。用户看到的余额在这段窗口里偏低。这是**钱不会丢、但会短暂不可用**，不是钱会错。可以接受。
+
+**2. `POST /reports/` 没有客户端幂等键。**
+本稿用两件事覆盖绝大多数：去重集合纳入 `authorizing`；`force=false` 的路径依赖数据库查询。
+**残余风险**：两个真正并发的 `force=true` 请求仍可能造成两次扣费 + 两份 GPU 工作。`force=true` 是用户手动点"重新分析"才会走的路径，并发重放的概率低、且用户会看到两份任务而察觉。
+**开闸前要做的补救**：给 `report_tasks` 加一条部分唯一索引（`user_id, user_game_id, report_type` 且 `status IN ('authorizing','pending','running')`），把非 force 路径的竞争交给数据库。**这条要在开闸前完成，不能只留在文档里。**
 
 ---
 

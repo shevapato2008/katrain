@@ -838,7 +838,28 @@ Expected: 全 FAIL（`BILLING_ENFORCED` 不存在 / 无 402 / 无 charge_ref）
 
 - [ ] **Step 4: 实现端点里的计费顺序**
 
-`reports.py` 的 `create_report_task`，把建任务那段改成：
+`reports.py` 的 `create_report_task`。
+
+**插入位置是这个任务最容易做错的一步，先看清函数现有的结构：**
+
+```
+1. if task.report_type not in REPORT_VISITS:  -> 400
+2. dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+   if dispatcher is not None:
+       return await _dispatch_remote_only(...)      # ← 盒子模式在这里就走了
+3. game = db.query(UserGame)...                     # 拿到棋谱
+4. if not task.force:  <去重查询>
+5. report_task = models_db.ReportTask(...)          # ← 你要改的是这一段
+```
+
+**计费代码必须放在第 3 步之后**（要用 `game.sgf_content`），**绝不能放在第 2 步之前**：
+盒子模式会把整个请求转发到云端、由云端扣费（`requirements.md §1.3` 已写明账本权威在云端）。
+在盒子上再扣一次 = 同一份复盘收两次钱。
+
+另外**第 4 步的去重查询要改**：现有状态集合是 `["pending", "running", "completed"]`，
+必须把 `"authorizing"` 加进去，否则第二个并发请求会在第一个还在授权时穿过去重。
+
+把第 5 步那段改成：
 
 ```python
     from katrain.web.core import analysis_cost, billing, quota

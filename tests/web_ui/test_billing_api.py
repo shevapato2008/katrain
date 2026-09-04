@@ -144,3 +144,26 @@ async def test_board_mode_balance_needs_online(app):
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+@pytest.mark.asyncio
+async def test_quota_endpoint_shape(app):
+    await _make_user(app, "quotauser", credits=500)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        h = await _login(ac, "quotauser")
+        r = await ac.get("/api/v1/billing/quota", headers=h)
+        assert r.status_code == 200, r.text
+        b = r.json()
+        assert b["credits"] == 500
+        assert b["free_weekly"] == {"used": 0, "allowance": 1}
+        # 深度复盘是标准的 4 倍（2000 vs 500 visits）—— 估算之间的比例必须自洽
+        assert b["estimates"]["deep_250_moves"] == 4 * b["estimates"]["normal_250_moves"]
+        # 前端据此决定要不要显示价格；默认是关的
+        assert b["billing_enforced"] is False
+
+
+@pytest.mark.asyncio
+async def test_quota_endpoint_requires_auth(app):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        r = await ac.get("/api/v1/billing/quota")
+        assert r.status_code == 401

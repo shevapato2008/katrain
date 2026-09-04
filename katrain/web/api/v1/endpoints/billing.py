@@ -86,6 +86,38 @@ async def get_balance(current_user: User = Depends(get_current_user), db: Sessio
     return {"credits": billing.get_balance(db, current_user.id), "billing_online": True}
 
 
+@router.get("/quota")
+async def get_quota(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """余额、免费周额度、以及「这些钱大概够几份复盘」。
+
+    **先跑一次本用户的结算再报数**：对账器是 60 秒周期跑的，直接读余额会让用户
+    在复盘刚跑完的那段窗口里看到一个偏低的数（预扣还没退差），看起来像被多扣了。
+
+    `estimates` 就叫估算：真实成本按**实际分析到的手数**结算，认输的短棋更便宜。
+    前端不得把它显示成「你还能复盘 N 局」这种确定口径。
+    """
+    if _is_board():
+        _need_online()
+
+    from katrain.web.core import analysis_cost, quota
+    from katrain.web.core.report_settlement import settle_finished_reports
+
+    settle_finished_reports(db, user_id=current_user.id)
+    used, allowance = quota.peek(
+        db, current_user.id, "free_report:week", allowance=settings.FREE_WEEKLY_REPORTS
+    )
+    return {
+        "credits": billing.get_balance(db, current_user.id),
+        "free_weekly": {"used": used, "allowance": allowance},
+        "estimates": {
+            "normal_250_moves": analysis_cost.report_cost(250, 500),
+            "deep_250_moves": analysis_cost.report_cost(250, 2000),
+        },
+        "billing_enforced": bool(settings.BILLING_ENFORCED),
+        "billing_online": True,
+    }
+
+
 @router.get("/prices")
 async def get_prices(current_user: User = Depends(get_current_user)):
     return {"prices": settings.BILLING_PRICES, "packages": settings.BILLING_PACKAGES}

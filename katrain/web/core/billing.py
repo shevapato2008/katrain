@@ -106,13 +106,9 @@ def reserve(db: Session, user_id: int, amount: int, reason: str, ref_id: str) ->
         db.commit()
     except IntegrityError:
         # Lost an idempotency race: another request inserted the same ref_id.
-        # Roll back our debit by re-crediting, then return the winner's balance.
+        # db.rollback() already undoes our debit within this transaction —
+        # do NOT re-credit here, that would double-undo and gift `amount` for free.
         db.rollback()
-        db.execute(
-            text("UPDATE users SET credits = credits + :amt WHERE id = :uid"),
-            {"amt": amount, "uid": user_id},
-        )
-        db.commit()
         winner = _existing_tx(db, ref_id)
         return int(winner.balance_after) if winner else get_balance(db, user_id)
     return balance_after
@@ -192,13 +188,10 @@ def grant(db: Session, user_id: int, amount: int, reason: str, ref_id: str) -> i
     try:
         db.commit()
     except IntegrityError:
-        # Idempotency race — undo our credit and return the winner's balance.
+        # Idempotency race — db.rollback() already undoes our credit within this
+        # transaction. Do NOT debit again here, that would double-undo and dock
+        # the user for a grant they never received.
         db.rollback()
-        db.execute(
-            text("UPDATE users SET credits = credits - :amt WHERE id = :uid"),
-            {"amt": amount, "uid": user_id},
-        )
-        db.commit()
         winner = _existing_tx(db, ref_id)
         return int(winner.balance_after) if winner else get_balance(db, user_id)
     return balance_after

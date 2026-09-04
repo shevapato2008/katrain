@@ -34,6 +34,10 @@ def default_factor(model: Optional[str]) -> float:
 def report_cost(moves: int, visits_per_move: int, model: Optional[str] = None) -> int:
     """一份复盘的 credits 成本。
 
+    注意：**今天没有任何调用方传 `model`**，`MODEL_COST_FACTOR` 那张表目前是
+    文档（裁决 D8：不换 b40，要换先在生产 GPU 上实测 benchmark），不是活配置。
+    别以为它已经接线了。
+
     moves 为 0 时返回 0（还没分析过任何一手，不该收钱）；
     其余情况向上取整且下界为 1（分析发生了就不能免费）。
     """

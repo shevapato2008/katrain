@@ -24,15 +24,27 @@ TERMINAL_STATUSES = ("completed",)
 
 
 def _incremental_cost(task) -> int:
-    """本次要结算的成本，按**增量手数**算。
+    """本次要结算的成本 = **总额之差**，不是「差额的总额」。
 
-    不能用累计 `analyzed_moves`：`/retry` 的重新授权只预扣
+    不能用累计 `analyzed_moves` 直接算：`/retry` 的重新授权只预扣
     `total_moves - analyzed_moves`（增量），而 `analyzed_moves` 是累计值
     （cron 用 `max(analyzed_moves, move_number)`，完成时直接置 `len(moves)`）。
     拿累计值去对增量预扣，会把上一轮已经结清的前缀**再收一遍**。
+
+    但也**不能**写成 `report_cost(analyzed - settled)`：`report_cost` 里有
+    `ceil` 和 `max(1, ...)` 两道取整，那样每一次增量结算都至少收 1 credit。
+    实测：从 0 开始每次 +1 手结算到第 10 手，「差额的总额」收 10，
+    而按累计只该收 5 —— **翻倍**。
+
+    要守的不变式是：**累计扣款 == report_cost(累计手数)**。
+    只有「总额之差」满足它。
     """
-    newly = max(0, (task.analyzed_moves or 0) - (task.settled_moves or 0))
-    return analysis_cost.report_cost(newly, task.requested_visits or 0)
+    visits = task.requested_visits or 0
+    analyzed = task.analyzed_moves or 0
+    settled = task.settled_moves or 0
+    if analyzed <= settled:
+        return 0
+    return analysis_cost.report_cost(analyzed, visits) - analysis_cost.report_cost(settled, visits)
 
 
 def settle_finished_reports(db: Session, limit: int = 200, user_id: int | None = None) -> int:

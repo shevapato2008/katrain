@@ -258,3 +258,38 @@ def test_requeue_resets_the_settled_watermark(db):
 
     settle_finished_reports(db)
     assert t.settled_moves == 0, "水位要跟着 analyzed_moves 一起回零"
+
+
+def test_incremental_settlement_never_exceeds_the_cumulative_price(db):
+    """不变式：不管分几次结算，累计扣款必须等于 report_cost(累计手数)。
+
+    这条守的是「总额之差 vs 差额的总额」的区别。`report_cost` 里有 ceil 和
+    max(1, ...) 两道取整，写成 `report_cost(analyzed - settled)` 时每一次增量
+    结算都至少收 1 credit —— 实测每次 +1 手结算到第 10 手会收 10，
+    而按累计只该收 5，翻倍。
+
+    上面那条 250 手的用例两种写法**都是 90**，测不出这个差别，所以要这一条。
+    """
+    from katrain.web.core import analysis_cost
+    from katrain.web.core.report_settlement import settle_finished_reports
+
+    u = _user(db, credits=10_000)
+    t = _task(db, u, status="completed", total=10, analyzed=1, reserve=1)
+    start = billing.get_balance(db, u.id) + 1        # 预扣已从余额里出去了
+
+    # 逐手结算 10 次，每次为增量重新挂一笔预扣
+    for k in range(1, 11):
+        t.analyzed_moves = k
+        t.status = "completed"
+        db.commit()
+        settle_finished_reports(db)
+        if k < 10:
+            ref = f"report:{t.id}:retry{k}"
+            t.charge_ref = ref
+            db.commit()
+            billing.reserve(db, u.id, 1, "report", ref)
+
+    charged = start - billing.get_balance(db, u.id)
+    assert charged == analysis_cost.report_cost(10, 500), (
+        f"10 手总共只该扣 {analysis_cost.report_cost(10, 500)}，分 10 次结算后实扣 {charged}"
+    )

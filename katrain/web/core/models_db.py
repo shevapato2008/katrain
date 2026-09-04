@@ -996,3 +996,27 @@ class RechargeOrder(Base):
     confirm_note = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     settled_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class QuotaBucket(Base):
+    """会员额度桶：计数器，不是货币。
+
+    周期键惰性生成（`D:2026-09-05` / `W:2026-W36` / `M:2026-09`，Asia/Shanghai），
+    到点自然换一个新键 ⇒ **不需要任何重置任务**。
+    `allowance` 是开桶那一刻的套餐快照，中途改套餐不影响已开的桶。
+    """
+
+    __tablename__ = "quota_buckets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    kind = Column(String(32), nullable=False)
+    period_key = Column(String(32), nullable=False)
+    allowance = Column(Integer, nullable=False)
+    used = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "kind", "period_key", name="uq_quota_bucket"),
+        Index("ix_quota_bucket_lookup", "user_id", "kind", "period_key"),
+    )

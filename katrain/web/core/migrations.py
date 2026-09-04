@@ -30,7 +30,9 @@ AI_LADDER_LEGACY_TABLE = "ai_ladder_game_ledger_legacy_v1"
 # 象棋升降级的四张表已随模块搬去 lobby-platform(ranked_api/xiangqi/),这里不再有对应
 # 的 ORM 模型。已部署的库里那四张表**原样留着**:drift 循环只遍历
 # `models_db.Base.metadata.sorted_tables`,模型没了就永远进不了 drop 名单,数据不会被动。
-PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | {AI_LADDER_LEGACY_TABLE}
+# 额度桶记录已消费的额度；drift 重建它 = 给所有人白重置一次额度。
+QUOTA_TABLES = {"quota_buckets"}
+PROTECTED_TABLES = BILLING_TABLES | AI_LADDER_TABLES | QUOTA_TABLES | {AI_LADDER_LEGACY_TABLE}
 
 AI_LADDER_TERMINAL_AUDIT_CONDITION = (
     "(terminal_source IS NULL AND origin_device_id IS NULL "

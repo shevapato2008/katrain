@@ -193,29 +193,31 @@ async def _lifespan_server(app: FastAPI, log):
     user_game_analysis_repo = UserGameAnalysisRepository(session_factory)
     ai_ladder_repo = AiLadderRankedRepository(session_factory)
 
-    # Create default admin user if no users exist
+    # 首个管理员账号只在显式注入口令时创建。
+    # 曾经这里硬编码创建一个用户名和口令都固定为同一个公开已知词的账号，配合
+    # "按用户名无条件提权"等于把管理接口敞开。两者一起拆掉。
     if not repo.list_users():
-        log.info("No users found. Creating default admin user (admin/admin)")
-        try:
-            repo.create_user("admin", get_password_hash("admin"))
-        except ValueError:
-            pass  # Already exists race condition
+        pwd = settings.ADMIN_BOOTSTRAP_PASSWORD
+        if pwd:
+            try:
+                created = repo.create_user("admin", get_password_hash(pwd))
+                from katrain.web.core import models_db
 
-    # Ensure the default 'admin' account carries the is_admin flag (billing admin).
-    try:
-        from katrain.web.core import models_db
-
-        _s = session_factory()
-        try:
-            admin_row = _s.query(models_db.User).filter(models_db.User.username == "admin").one_or_none()
-            if admin_row is not None and not admin_row.is_admin:
-                admin_row.is_admin = True
-                _s.commit()
-                log.info("Marked default 'admin' account as is_admin=True")
-        finally:
-            _s.close()
-    except Exception as e:  # pragma: no cover - defensive
-        log.warning(f"Could not ensure admin flag: {e}")
+                _s = session_factory()
+                try:
+                    row = _s.query(models_db.User).filter(models_db.User.id == created["id"]).one()
+                    row.is_admin = True
+                    _s.commit()
+                finally:
+                    _s.close()
+                log.info("已按 ADMIN_BOOTSTRAP_PASSWORD 创建初始管理员")
+            except ValueError:
+                pass
+        else:
+            log.warning(
+                "数据库为空且未设置 KATRAIN_ADMIN_BOOTSTRAP_PASSWORD —— 未创建任何账号。"
+                "设置该环境变量后重启即可创建初始管理员。"
+            )
 
     # Reconcile any credit reservations stuck after a previous crash.
     try:

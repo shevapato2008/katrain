@@ -40,6 +40,10 @@ class Settings(BaseModel):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     REFRESH_TOKEN_EXPIRE_DAYS: int = 90
 
+    # 空库首次启动时创建管理员账号用的口令。**默认空 = 不创建任何账号**。
+    # 从环境注入（KATRAIN_ADMIN_BOOTSTRAP_PASSWORD），用完即应清掉。
+    ADMIN_BOOTSTRAP_PASSWORD: str = ""
+
     DEFAULT_LANG: str = "cn"
 
     # Board mode settings (see design.md Section 4.2)
@@ -113,6 +117,7 @@ class Settings(BaseModel):
         data.setdefault("S3_USE_PRESIGNED", os.getenv("KATRAIN_S3_USE_PRESIGNED", "false").lower() in ("1", "true", "yes"))
 
         data.setdefault("SECRET_KEY", os.getenv("KATRAIN_SECRET_KEY", "katrain-secret-key-change-this-in-production"))
+        data.setdefault("ADMIN_BOOTSTRAP_PASSWORD", os.getenv("KATRAIN_ADMIN_BOOTSTRAP_PASSWORD", ""))
         data.setdefault("DEFAULT_LANG", os.getenv("KATRAIN_DEFAULT_LANG", "cn"))
 
         # Board mode settings

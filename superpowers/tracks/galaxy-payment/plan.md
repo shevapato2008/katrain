@@ -545,13 +545,12 @@ def report_cost(moves: int, visits_per_move: int, model: Optional[str] = None) -
     return max(1, math.ceil(visits / VISITS_PER_CREDIT))
 ```
 
-在 `config.py` 的 `BILLING_PRICES` 旁边加一行注释指向它（**不要**在 `BILLING_PRICES` 里加 `report: N`——那正是按盘计价，与裁决 D6 相反）：
+在 `config.py` 的 `BILLING_PRICES` 旁边加一行注释指向它（**不要**在 `BILLING_PRICES` 里加 `report: N`——那正是按盘计价，与裁决 D6 相反）。**本任务不加任何免费额度常量**：免费复盘是不滚存的周桶（Task 9），不是积分。
 
 ```python
     # 复盘不在这张表里：它按算力计价，见 katrain/web/core/analysis_cost.py。
     # 往这里加 "report": N 等于回到按盘计价（裁决 D6 明确否掉）。
     BILLING_PRICES: dict = {"territory": 10, "hints": 10, "variations": 10}
-    FREE_WEEKLY_CREDITS: int = 150  # 约等于一份 300 手的标准复盘
 ```
 
 - [ ] **Step 4: 跑测试确认通过**
@@ -1141,6 +1140,7 @@ def transaction_status(db: Session, ref_id: str) -> Optional[str]:
 用户看到的数才是准的；后台周期跑只是兜底。
 """
 import logging
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -1148,14 +1148,29 @@ from katrain.web.core import analysis_cost, billing, models_db
 
 logger = logging.getLogger("katrain_web")
 
-TERMINAL_STATUSES = ("completed", "failed")
+# 只有 completed 是「可以立刻结算」的终态。
+# failed 不在这里 —— 它可能被 /retry 复活，立刻终结授权会让用户免费续跑
+# （见本任务 Step 7）。failed 走 _settleable_failed() 的宽限期分支。
+TERMINAL_STATUSES = ("completed",)
 
 
 def settle_finished_reports(db: Session, limit: int = 200, user_id: int | None = None) -> int:
     """结算终态但仍持预扣的复盘任务。返回结算条数。幂等。"""
+    from sqlalchemy import or_
+    from katrain.web.core.config import settings
+
+    grace_cutoff = datetime.now(timezone.utc) - timedelta(
+        seconds=settings.REPORT_RETRY_GRACE_SEC
+    )
     q = db.query(models_db.ReportTask).filter(
-        models_db.ReportTask.status.in_(TERMINAL_STATUSES),
         models_db.ReportTask.charge_ref.isnot(None),
+        models_db.ReportTask.billing_exempt_reason.is_(None),
+        or_(
+            models_db.ReportTask.status.in_(TERMINAL_STATUSES),
+            # failed 过了宽限期才结算：宽限期内 /retry 可以复用原预扣。
+            (models_db.ReportTask.status == "failed")
+            & (models_db.ReportTask.updated_at < grace_cutoff),
+        ),
     )
     if user_id is not None:
         q = q.filter(models_db.ReportTask.user_id == user_id)
@@ -1260,6 +1275,7 @@ def test_cron_never_imports_katrain_web():
 
 规则写死为：
 
+0. **`config.py` 加 `REPORT_RETRY_GRACE_SEC: int = 3600`**（本计划别处引用了它，必须在这里定义）。
 1. **失败任务不立刻终结授权。** `settle_finished_reports` 的终态集合改成只含 `completed`；`failed` 交给一个**带宽限期**的分支：`failed` 且 `updated_at` 超过 `settings.REPORT_RETRY_GRACE_SEC`（默认 3600）才结算。宽限期内 `/retry` 能直接复用原预扣。
 2. **`/retry` 若发现 `charge_ref` 已被清掉**（超过宽限期），必须**重新走一次授权**：按 `total_moves - analyzed_moves` 的剩余量预扣，余额不足返 402。
 3. **`requeue_reports.py` 是运维工具**，它重排的任务写 `charge_ref = None` 且置 `billing_exempt_reason = "requeue"`（`ReportTask` 新增该列），结算器看到它一律跳过——**运维重跑不向用户收费**，但要留痕。
@@ -1805,7 +1821,7 @@ async def test_second_report_in_same_week_is_charged(app_with_game, monkeypatch)
     assert _balance(user) < b0, "本周第二份应该扣费"
 ```
 
-- [ ] **Step 2-4**：`config.py` 加 `FREE_WEEKLY_REPORTS: int = 1`（并**删掉**死常量 `BILLING_FREE_GRANT`）；调用点已在 Task 5 写好。跑测试确认通过。
+- [ ] **Step 2-4**：`FREE_WEEKLY_REPORTS: int = 1` **已由 Task 5 加进 `config.py`**——本任务只需**确认它在**，另外**删掉**死常量 `BILLING_FREE_GRANT`（全仓零引用）。消费调用点也已在 Task 5 写好。跑测试确认通过。
 
 - [ ] **Step 5: 提交**
 

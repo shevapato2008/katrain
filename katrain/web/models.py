@@ -180,7 +180,7 @@ class User(BaseModel):
     rank: str = "20k"
     net_wins: int = 0
     elo_points: int = 0
-    credits: int = 10000
+    credits: int = 0
     is_admin: bool = False
     avatar_url: Optional[str] = None
     created_at: Optional[Union[str, datetime]] = None

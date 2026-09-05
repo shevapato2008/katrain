@@ -200,7 +200,7 @@ async def test_board_register_forwards_to_remote(board_app):
         "uuid": "abc123",
         "username": "newuser",
         "rank": "20k",
-        "credits": 10000.0,
+        "credits": 0.0,
     }
 
     async with AsyncClient(transport=ASGITransport(app=board_app), base_url="http://test") as ac:

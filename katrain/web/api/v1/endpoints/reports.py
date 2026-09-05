@@ -8,12 +8,59 @@ from sqlalchemy.orm import Session
 
 from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.core import move_grade
-from katrain.web.core import models_db
+from katrain.web.core import analysis_cost, billing, models_db, quota
+from katrain.web.core.config import settings
 from katrain.web.core.db import SessionLocal
 from katrain.web.core.repository import RemoteServiceUnavailableError
 from katrain.web.models import User
 
 router = APIRouter()
+
+
+def count_moves(sgf_content: str) -> int:
+    """从 SGF 数出实际手数。
+
+    **不要**信任 `UserGame.move_count`：那是 `UserGameCreate` 里客户端提交的字段
+    （`user_games.py:32` 默认 0），拿它计价等于让付款方自己填金额。
+
+    解析失败抛 ValueError —— 返回 0 会把「读不懂这份棋谱」伪装成「这份复盘不要钱」。
+    """
+    from katrain.core.sgf_parser import SGF, ParseError
+
+    if not sgf_content or not sgf_content.strip():
+        raise ValueError("空 SGF")
+    try:
+        root = SGF.parse_sgf(sgf_content)
+    except ParseError as exc:
+        # 只吞「这份棋谱解析不了」。**不要**写成 except Exception ——
+        # 那会把 count_moves 自己的编程错误也包成 ValueError，
+        # 端点返 400 unparsable_sgf，等于把我们的 bug 伪装成「你的棋谱有问题」，
+        # 用户照着改棋谱永远改不好，日志里也看不见真正的堆栈。
+        raise ValueError(f"SGF 解析失败: {exc}") from exc
+    # 根节点自己也可能带一手：老式 SGF（如 tests/data/xmgt97.sgf）会把
+    # 第一手和 SZ/KM 等对局信息塞在同一个根节点里。漏掉它会比 cron 的
+    # parse_game 少数一手，于是 `moves[:paid_moves]` 会把最后一手真棋切掉。
+    node = root
+    n = 1 if node.move is not None else 0
+    while node.children:
+        node = node.children[0]
+        if node.move is not None:
+            n += 1
+    return n
+
+
+def sgf_fingerprint(sgf_content: str) -> str:
+    """棋谱内容指纹。授权时冻结在任务上，cron 认领时比对（见 report_analyze.py）。
+
+    `PUT /user-games/{id}` 可以在任务排队期间改 `sgf_content`；
+    `moves[:paid_moves]` 只限得住手数，限不住内容 —— 没有这道指纹，配合
+    `_get_resume_move_number` 的断点续跑，报告会拼成「旧棋谱前缀 + 新棋谱
+    后缀」，且用户付的是旧棋谱的钱。
+    """
+    import hashlib
+
+    return hashlib.sha256(sgf_content.encode("utf-8")).hexdigest()
+
 
 REPORT_VISITS = {
     "normal": 500,
@@ -215,7 +262,9 @@ async def create_report_task(
                 models_db.ReportTask.user_id == current_user.id,
                 models_db.ReportTask.user_game_id == task.user_game_id,
                 models_db.ReportTask.report_type == task.report_type,
-                models_db.ReportTask.status.in_(["pending", "running", "completed"]),
+                # "authorizing" 必须在这个集合里 —— 否则第二个并发请求会在第一个
+                # 还在授权(计费)时穿过去重,造成两次真实扣费 + 两份 GPU 工作。
+                models_db.ReportTask.status.in_(["authorizing", "pending", "running", "completed"]),
             )
             .order_by(models_db.ReportTask.created_at.desc(), models_db.ReportTask.id.desc())
             .first()
@@ -223,14 +272,87 @@ async def create_report_task(
         if existing:
             return _task_to_dict(existing)
 
+    visits = REPORT_VISITS[task.report_type]
+
+    if not settings.BILLING_ENFORCED:
+        # 闸关着:行为与今天完全一致,一个字节都不改。
+        report_task = models_db.ReportTask(
+            user_id=current_user.id,
+            user_game_id=task.user_game_id,
+            report_type=task.report_type,
+            requested_visits=visits,
+            status="pending",
+        )
+        db.add(report_task)
+        db.commit()
+        db.refresh(report_task)
+        return _task_to_dict(report_task)
+
+    try:
+        moves = count_moves(game.sgf_content)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail={"code": "unparsable_sgf", "message": str(exc)})
+
+    cost = analysis_cost.report_cost(moves, visits)
+
+    # 1) 先落成 authorizing —— cron 只按 status == "pending" 认领(report_analyze.py),
+    #    这个状态它不会领走。计费落定之后(下面第 3 步)才翻成 pending 放给 cron,
+    #    避免「先 pending 再计费」两次 commit 之间被 cron 抢跑、崩溃后留下已运行未计费的任务。
     report_task = models_db.ReportTask(
         user_id=current_user.id,
         user_game_id=task.user_game_id,
         report_type=task.report_type,
-        requested_visits=REPORT_VISITS[task.report_type],
-        status="pending",
+        requested_visits=visits,
+        status="authorizing",
+        total_moves=moves,
+        sgf_hash=sgf_fingerprint(game.sgf_content),
     )
     db.add(report_task)
+    db.commit()
+    db.refresh(report_task)
+
+    # 2) 先试免费周额度(不滚存,用掉就没);不够再扣积分。
+    #
+    # **顺序讲究**:两条路都是「先把意图落盘、再动钱」,不是反过来。
+    # 反过来写(先动钱、再在内存里赋值、等第 3 步一起 commit)会开一个窗口:
+    # 崩在中间时钱已经动了、任务上却没有 charge_ref / free_grant_period,
+    # 于是结算器(按 charge_ref 遍历)找不到它、孤儿回收器(按任务行是否存在判断)
+    # 也不退它 —— 积分被永久冻结、免费额度白白消失。
+    # 现在这个顺序的崩溃方向是安全的:意图落了但钱没动,回收器去退一笔不存在的
+    # 预扣(transaction_status 返回 None,跳过)或还一份没消费的额度
+    # (release 的 `used >= n` 守卫挡住),都无副作用。
+    period = quota.period_key("week")
+    if task.report_type == "normal" and settings.FREE_WEEKLY_REPORTS > 0:
+        report_task.free_grant_period = period
+        db.commit()
+        if quota.try_consume(
+            db, current_user.id, "free_report:week", allowance=settings.FREE_WEEKLY_REPORTS
+        ):
+            pass  # 免费额度拿到了,不扣积分
+        else:
+            report_task.free_grant_period = None
+            db.commit()
+
+    if report_task.free_grant_period is None:
+        charge_ref = f"report:{report_task.id}"
+        report_task.charge_ref = charge_ref
+        db.commit()
+        try:
+            billing.reserve(db, current_user.id, cost, "report", charge_ref)
+        except billing.InsufficientCredits:
+            db.delete(report_task)
+            db.commit()
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "code": "insufficient_credits",
+                    "need": cost,
+                    "have": billing.get_balance(db, current_user.id),
+                },
+            )
+
+    # 3) 计费落定之后才放给 cron。
+    report_task.status = "pending"
     db.commit()
     db.refresh(report_task)
     return _task_to_dict(report_task)
@@ -303,6 +425,51 @@ async def retry_report_task(
         raise HTTPException(status_code=404, detail="Report task not found")
     if task.status != "failed":
         raise HTTPException(status_code=400, detail="Only failed tasks can be retried")
+
+    # 计费闸开着、这个任务当初是走积分扣费的(不是免费周额度)、且它的预扣已经
+    # 被结算器清掉(charge_ref 变 None) —— 只可能是 settle_finished_reports 在
+    # 宽限期(REPORT_RETRY_GRACE_SEC)之后把它结清了。这时候原预扣已经不存在,
+    # 继续按"改回 pending"处理就是让用户免费续跑剩余手数。必须为剩余量重新预扣。
+    #
+    # 免费周额度(free_grant_period != None)不在这条判断里 —— 那笔额度从建任务
+    # 起就只消费一次,重试同一个任务不应该、也不会再扣第二次。
+    if settings.BILLING_ENFORCED and task.charge_ref is None and task.free_grant_period is None:
+        remaining = max(0, (task.total_moves or 0) - (task.analyzed_moves or 0))
+        cost = analysis_cost.report_cost(remaining, task.requested_visits or 0)
+        # 不能复用原 `report:{id}`：那笔已经 committed，billing.reserve 的幂等判断
+        # 会直接放行、不扣钱 —— 等于白送一次重试。每次重新授权开一个新的确定性 ref。
+        n = 1
+        base_ref = f"report:{task.id}"
+        while billing.has_transaction(db, f"{base_ref}:retry{n}"):
+            n += 1
+        new_ref = f"{base_ref}:retry{n}"
+
+        # **先落意图、再动钱** —— 与建任务路径同形（见 create_report_task 里那段注释）。
+        # 反过来写会开一个没有任何管理者的窗口：billing.reserve 内部自己 commit,
+        # 钱当场落盘;若在它与最终 db.commit() 之间断连/锁超时,任务上就没有 charge_ref,
+        # 而四个管理者一个都够不着 ——
+        #   结算器顶层过滤 charge_ref.isnot(None)
+        #   孤儿回收器看见任务行还在就跳过
+        #   滞留回收器只收 status == "authorizing",这个任务是 failed
+        #   通用 TTL 回收器被 LONG_RUNNING_REASONS 排除
+        # 那笔预扣就永久冻结。终审用 probe_retry_frozen.py 实测过这条。
+        task.charge_ref = new_ref
+        db.commit()
+        try:
+            billing.reserve(db, current_user.id, cost, "report", new_ref)
+        except billing.InsufficientCredits:
+            # 意图落了但钱没动 —— 把引用摘掉,别让任务指着一笔不存在的预扣。
+            task.charge_ref = None
+            db.commit()
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "code": "insufficient_credits",
+                    "need": cost,
+                    "have": billing.get_balance(db, current_user.id),
+                },
+            )
+
     task.status = "pending"
     task.retry_count = 0
     task.error_message = None

@@ -76,8 +76,10 @@ class User(Base):
     net_wins = Column(Integer, default=0)
     elo_points = Column(Integer, default=0)
     credits = Column(
-        Integer, default=10000, nullable=False
-    )  # integer credit balance (single pool); server-authoritative
+        Integer, default=0, nullable=False
+    )  # integer credit balance (single pool); server-authoritative. New accounts start at 0 —
+    # any signup grant is a real, auditable ledger row (settings.BILLING_SIGNUP_GRANT), not a
+    # column default nobody can trace.
     is_admin = Column(Boolean, default=False, nullable=False)
     avatar_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -784,10 +786,34 @@ class ReportTask(Base):
     user_game_id = Column(String(32), ForeignKey("user_games.id"), nullable=False, index=True)
     report_type = Column(String(20), default="normal")
     requested_visits = Column(Integer, default=500)
-    status = Column(String(20), default="pending")  # pending / running / completed / failed
+    status = Column(String(20), default="pending")  # authorizing / pending / running / completed / failed
     total_moves = Column(Integer, default=0)
     analyzed_moves = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
+    # 授权那一刻棋谱内容的指纹。cron 认领时比对，不一致就失败而不是拼一份
+    # 「旧棋谱前缀 + 新棋谱后缀」的报告出来。
+    sgf_hash = Column(String(64), nullable=True)
+    # 已经结算过的手数水位。结算按**增量**收费：actual = cost(analyzed_moves - settled_moves)。
+    # 不记水位的话，/retry 之后的第二次结算会把第一次已结清的前缀再收一遍 ——
+    # retry 的预扣只覆盖增量（total_moves - analyzed_moves），而 analyzed_moves 是累计值，
+    # 两个操作数口径不同。cron 不读这一列，所以只加在 web 侧模型上。
+    settled_moves = Column(Integer, nullable=False, default=0)
+    # 账本幂等键。None = 没走积分扣费(用了免费周额度,或 BILLING_ENFORCED 关着,或历史数据)。
+    charge_ref = Column(String(160), nullable=True, index=True)
+    # 用掉的免费周额度的周期键(如 "W:2026-W36")。与 charge_ref 互斥。
+    free_grant_period = Column(String(32), nullable=True)
+    # 非 NULL = 这个任务不该向用户收费(如运维 requeue_reports.py 重排)。
+    #
+    # 它决定**怎么结**，不决定**结不结**：结算器仍然会处理这类任务，
+    # 把还挂着的预扣**全额退还**（运维把报告结果删了重跑，用户不该为一份
+    # 已经不存在的报告付钱），然后把水位归零。
+    # 曾经的写法是让结算器直接跳过它 —— 那会让「被 requeue 时还持着 reserved
+    # 预扣」的任务永久无人处理，而 reason="report" 的预扣又被排除在通用 TTL
+    # 回收器之外，那笔积分就冻死在账本里。见 report_settlement.py 顶部的注释。
+    #
+    # 留痕用途：区分"从没计费过"(这一列与 charge_ref 都是 None)
+    # 与"计费了但被运维豁免"。
+    billing_exempt_reason = Column(String(32), nullable=True)
     retry_count = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     started_at = Column(DateTime(timezone=True), nullable=True)
@@ -996,3 +1022,27 @@ class RechargeOrder(Base):
     confirm_note = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     settled_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class QuotaBucket(Base):
+    """会员额度桶：计数器，不是货币。
+
+    周期键惰性生成（`D:2026-09-05` / `W:2026-W36` / `M:2026-09`，Asia/Shanghai），
+    到点自然换一个新键 ⇒ **不需要任何重置任务**。
+    `allowance` 是开桶那一刻的套餐快照，中途改套餐不影响已开的桶。
+    """
+
+    __tablename__ = "quota_buckets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    kind = Column(String(32), nullable=False)
+    period_key = Column(String(32), nullable=False)
+    allowance = Column(Integer, nullable=False)
+    used = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "kind", "period_key", name="uq_quota_bucket"),
+        Index("ix_quota_bucket_lookup", "user_id", "kind", "period_key"),
+    )

@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import { GameNavigationProvider } from '../../context/GameNavigationContext';
 import GalaxyBottomNav from './GalaxyBottomNav';
+import IcpFooter from './IcpFooter';
 import GalaxySidebar from './GalaxySidebar';
 import GalaxyTopBar from './GalaxyTopBar';
 import { useGalaxySidebar } from './useGalaxySidebar';
@@ -35,6 +36,11 @@ const MainLayoutChrome = () => {
           <Outlet />
         </Box>
       </Box>
+      {/* ICP 备案号。`flex:none` ⇒ 它从内容行手里拿走 29px，不覆盖任何东西。
+          移动档不挂：屏幕最下沿归 `position:fixed` 的 GalaxyBottomNav，
+          页脚放在同一位置只会被盖住；要让它露出来，得让棋盘再退 92px
+          （页脚 28 + 底栏 64），代价与收益不成比例。移动端另起一版。 */}
+      {!mobile && <IcpFooter />}
       {mobile && <GalaxyBottomNav />}
     </Box>
   );

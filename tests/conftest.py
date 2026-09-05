@@ -52,6 +52,24 @@ import pytest
 from sqlalchemy import event
 from sqlalchemy.engine import Engine, make_url
 
+# --- 测试进程必须拿一个合规的 SECRET_KEY -------------------------------------
+#
+# `create_app()` 会调 `assert_secret_key_is_safe()`，服务端模式下拒绝以仓库里那个
+# 字面量默认值启动（那是个公开已知的 JWT 签名密钥，任何人都能拿它伪造任意用户）。
+# 测试如果不注入，所有建 app 的用例会集体红。
+#
+# **注入点选环境变量，不是给某个 settings 实例赋值**：`test_lobby_api.py` /
+# `test_social_api.py` 会 `importlib.reload(config)`，那会重新执行模块顶层、
+# 造出一个**全新的 Settings 实例**；给旧实例打的补丁在 reload 之后就没了。
+# 而 `Settings` 的装配每次都读 `os.getenv`，所以环境变量能穿过 reload —— 已实测。
+#
+# 这样测试走的是**和生产同一条路**（真的带着一个合规密钥启动），而不是给闸开后门。
+# 不要改成「测试时跳过这个闸」：那样闸在测试里就是死的，将来谁把它改坏都不会红。
+os.environ.setdefault(
+    "KATRAIN_SECRET_KEY",
+    "pytest-only-secret-key-not-for-any-deployment-0123456789",
+)
+
 from katrain.web.core.config import settings
 
 # 会话开始时解析出来的那一个。tests/conftest.py 在**任何测试模块导入之前**执行，

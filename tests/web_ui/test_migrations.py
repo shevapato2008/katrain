@@ -60,11 +60,18 @@ def test_asset_tables_are_protected_from_the_drift_rebuild():
     Credits are money. The ai_ladder tables are the sole derivation of every
     user's 段位 -- profile, decision ledger, the in-flight game, and the retained
     legacy ledger -- so rebuilding any of them would silently reset the ladder.
+    quota_buckets records how much of each period's allowance a user has already
+    spent; rebuilding it hands everyone a fresh allowance -- the same class of
+    silent give-away as resetting credits.
+
+    This asserts set EQUALITY on purpose: adding a table to the protected list is
+    a decision that has to be acknowledged here, not something that slips in.
     """
     assert {
         "credit_transactions",
         "redeem_codes",
         "recharge_orders",
+        "quota_buckets",
         "ai_ladder_profiles",
         "ai_ladder_game_ledger",
         "ai_ladder_pending_games",

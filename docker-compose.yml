@@ -68,6 +68,7 @@ services:
     ports:
       - "8001:8001"
     environment:
+      - KATRAIN_SECRET_KEY=${KATRAIN_SECRET_KEY:?KATRAIN_SECRET_KEY 必须在 .env 里设置}
       - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
       - LOCAL_KATAGO_URL=http://host.docker.internal:8000
       # Media storage → MinIO (S3). Swap these for Aliyun OSS values in phase 2 (no code change).
@@ -90,6 +91,7 @@ services:
     volumes:
       - ./data/tutorial_backups:/app/data/tutorial_backups
     environment:
+      - KATRAIN_SECRET_KEY=${KATRAIN_SECRET_KEY:?KATRAIN_SECRET_KEY 必须在 .env 里设置}
       - KATRAIN_DATABASE_URL=postgresql://katrain_user:${POSTGRES_PASSWORD:-katrain_secure_password_CHANGE_ME}@host.docker.internal:5432/katrain_db
       - KATAGO_URL=http://host.docker.internal:8002
       - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}

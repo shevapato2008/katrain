@@ -2,6 +2,39 @@ import os
 import uuid as uuid_module
 from pydantic import BaseModel
 
+# 仓库里跟着代码走的字面量默认值。**唯一真源**——生产装配（下方 env 装配处）与
+# 字段默认值都引用它，不得各自再抄一份，否则改一处漏一处（参见 assert_secret_key_is_safe）。
+INSECURE_DEFAULT_SECRET_KEY = "katrain-secret-key-change-this-in-production"
+
+# HS256 用短密钥可以离线穷举——拿到任意一个 token 就能反推密钥并伪造管理员。
+MIN_SECRET_KEY_CHARS = 32
+
+
+def assert_secret_key_is_safe(mode: str, secret_key: str) -> None:
+    """服务端模式下必须显式注入一个**足够长**的密钥。
+
+    盒子（board）跑本地库、不对外签发身份，放行。
+
+    为什么不只挡默认字面量：compose 的 `:?` 只保护 compose 这一条入口。
+    直接 `python -m katrain`、systemd、或别的部署路径传进来的空串、空白、
+    单字符都会通过，而 HS256 的短密钥可以离线穷举 —— 拿到任意一个 token
+    就能反推密钥并伪造管理员。
+    """
+    if mode != "server":
+        return
+    if not secret_key or not secret_key.strip():
+        raise RuntimeError("拒绝以空 SECRET_KEY 启动服务端：设置 KATRAIN_SECRET_KEY。")
+    if len(secret_key.strip()) < MIN_SECRET_KEY_CHARS:
+        raise RuntimeError(
+            f"SECRET_KEY 太短（{len(secret_key.strip())} 字符，至少 {MIN_SECRET_KEY_CHARS}）："
+            "HS256 短密钥可离线穷举。用 `python -c \"import secrets;print(secrets.token_urlsafe(48))\"` 生成。"
+        )
+    if secret_key == INSECURE_DEFAULT_SECRET_KEY:
+        raise RuntimeError(
+            "拒绝以内置默认 SECRET_KEY 启动服务端：任何人都能用仓库里的字面量伪造任意用户的 token。"
+            "请设置环境变量 KATRAIN_SECRET_KEY（建议 `python -c \"import secrets;print(secrets.token_urlsafe(48))\"`）。"
+        )
+
 
 class Settings(BaseModel):
     PROJECT_NAME: str = "KaTrain Web UI"
@@ -36,10 +69,14 @@ class Settings(BaseModel):
     S3_PRESIGN_TTL_SEC: int = 3600
 
     # Security
-    SECRET_KEY: str = "katrain-secret-key-change-this-in-production"
+    SECRET_KEY: str = INSECURE_DEFAULT_SECRET_KEY
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     REFRESH_TOKEN_EXPIRE_DAYS: int = 90
+
+    # 空库首次启动时创建管理员账号用的口令。**默认空 = 不创建任何账号**。
+    # 从环境注入（KATRAIN_ADMIN_BOOTSTRAP_PASSWORD），用完即应清掉。
+    ADMIN_BOOTSTRAP_PASSWORD: str = ""
 
     DEFAULT_LANG: str = "cn"
 
@@ -57,9 +94,26 @@ class Settings(BaseModel):
         {"package_id": "p30", "credits": 3300, "amount_fen": 3000, "title": "30 元 3300 积分"},
         {"package_id": "p98", "credits": 12000, "amount_fen": 9800, "title": "98 元 12000 积分"},
     ]
-    BILLING_FREE_GRANT: int = 10000  # initial credits for a new account
+    # 注册赠额（>0 才发）。走 billing.grant，写一条可审计的账本行 —— 不是列默认值。
+    BILLING_SIGNUP_GRANT: int = 0
     BILLING_RESERVATION_TTL_SEC: int = 120  # stale 'reserved' refund threshold
     REDEEM_RATE_LIMIT: int = 5  # max failed redeem attempts / user / minute
+
+    # 计费总闸。默认关 —— 打开的前置见 superpowers/tracks/galaxy-payment/plan.md 的
+    # Global Constraints（P3 手机绑定+注册限流 / P5 合规页脚 / U4 经营资质定性）。
+    # 关着时 POST /api/v1/reports/ 的行为必须与今天逐字节一致：不扣费、不消费额度、不返 402。
+    #
+    # ⚠️ 「P3 手机绑定 + 注册限流」是**硬前置**，不是"尽量"：
+    # 免费复盘桶的键是 user_id（不是手机号），而 /auth/register 至今无验证码无限流
+    # ⇒ 注册 N 个用户名 = 每周 N 份免费复盘 = N × 约 125 credits 的 GPU。
+    # 若 P3 未落地就要开这个闸，必须同时把 FREE_WEEKLY_REPORTS 配成 0。
+    BILLING_ENFORCED: bool = False
+    # 每周免费复盘次数（裁决 D2）。不滚存 —— 见 katrain/web/core/quota.py。
+    FREE_WEEKLY_REPORTS: int = 1
+    # failed 任务的重试宽限期：宽限期内 /retry 复用原预扣，不重新授权。
+    # 过了宽限期，结算器会把这笔预扣按 analyzed_moves 结掉 —— 之后再 /retry
+    # 就必须重新预扣剩余手数（见 report_settlement.py / reports.py:/retry）。
+    REPORT_RETRY_GRACE_SEC: int = 3600
 
     def __init__(self, **data):
         # Override with env vars if not provided in data
@@ -114,7 +168,8 @@ class Settings(BaseModel):
         data.setdefault("S3_PUBLIC_BASE_URL", os.getenv("KATRAIN_S3_PUBLIC_BASE_URL", ""))
         data.setdefault("S3_USE_PRESIGNED", os.getenv("KATRAIN_S3_USE_PRESIGNED", "false").lower() in ("1", "true", "yes"))
 
-        data.setdefault("SECRET_KEY", os.getenv("KATRAIN_SECRET_KEY", "katrain-secret-key-change-this-in-production"))
+        data.setdefault("SECRET_KEY", os.getenv("KATRAIN_SECRET_KEY", INSECURE_DEFAULT_SECRET_KEY))
+        data.setdefault("ADMIN_BOOTSTRAP_PASSWORD", os.getenv("KATRAIN_ADMIN_BOOTSTRAP_PASSWORD", ""))
         data.setdefault("DEFAULT_LANG", os.getenv("KATRAIN_DEFAULT_LANG", "cn"))
 
         # Board mode settings

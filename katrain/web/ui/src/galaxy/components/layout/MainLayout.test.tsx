@@ -1,18 +1,19 @@
 import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import BoardPageShell from '../board/BoardPageShell';
 import MainLayout from './MainLayout';
 
 vi.mock('./GalaxyTopBar', () => ({ default: () => <header>TOP</header> }));
 vi.mock('./GalaxyBottomNav', () => ({
-  default: () => <nav>BOTTOM</nav>,
+  default: () => <nav data-testid="galaxy-bottom-nav-stub">BOTTOM</nav>,
   GALAXY_BOTTOM_NAV_HEIGHT: 64,
 }));
 vi.mock('./GalaxySidebar', () => ({ default: () => <aside>SIDEBAR</aside> }));
+let sidebarMode = 'mobile';
 vi.mock('./useGalaxySidebar', () => ({
-  useGalaxySidebar: () => ({ mode: 'mobile' }),
+  useGalaxySidebar: () => ({ mode: sidebarMode }),
 }));
 vi.mock('../../context/GameNavigationContext', () => ({
   GameNavigationProvider: ({ children }: { children: ReactNode }) => children,
@@ -69,5 +70,61 @@ describe('MainLayout mobile board pages', () => {
       overflowY: 'auto',
       paddingBottom: 'calc(64px + env(safe-area-inset-bottom))',
     });
+  });
+});
+
+/* ICP 备案页脚（docs/superpowers/specs/2026-08-05-icp-footer-design.md）。
+ *
+ * 这里断言的是**它挂在承重链的哪一节**：`galaxy-root` 的最后一个子元素、`flex:none`，
+ * 也就是「从内容行手里拿高度」而不是「浮在内容行上面」。至于加了它之后 main 还滚不滚、
+ * 会不会横向滚，jsdom 没有布局引擎、无权作证 —— 那一半归真浏览器实测。 */
+const realLocation = window.location;
+const withHostname = (hostname: string) => {
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    value: { ...realLocation, hostname, href: `https://${hostname}/` },
+  });
+};
+
+afterEach(() => {
+  sidebarMode = 'mobile';
+  Object.defineProperty(window, 'location', { configurable: true, value: realLocation });
+});
+
+describe('MainLayout ICP footer', () => {
+  const renderLayout = () =>
+    render(
+      <MemoryRouter>
+        <Routes>
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<span>PAGE</span>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+  it('桌面档把备案页脚挂成 galaxy-root 的最后一个子元素,且不占浮层', () => {
+    sidebarMode = 'desktop';
+    withHostname('modelstella.com');
+    const { container } = renderLayout();
+
+    const root = container.querySelector('.galaxy-root') as HTMLElement;
+    const footer = screen.getByTestId('icp-footer');
+
+    expect(footer.parentElement).toBe(root);
+    expect(root.lastElementChild).toBe(footer);
+    // flex:none ⇒ 它拿走自己的高度;position 保持 static ⇒ 它不覆盖任何东西。
+    expect(footer).toHaveStyle({ flex: 'none' });
+    expect(footer).not.toHaveStyle({ position: 'fixed' });
+    expect(footer).not.toHaveStyle({ position: 'absolute' });
+  });
+
+  it('移动档不挂页脚 —— 屏幕最下沿归 position:fixed 的底部导航', () => {
+    sidebarMode = 'mobile';
+    withHostname('modelstella.com');
+    renderLayout();
+
+    expect(screen.getByTestId('galaxy-bottom-nav-stub')).toBeTruthy();
+    expect(screen.queryByTestId('icp-footer')).toBeNull();
   });
 });

@@ -1148,3 +1148,85 @@ cron 的 `poll_moves` 仍在 3 秒周期正常执行。发布后根分区 82%。
 当时没有留 runbook 条目。**2026-09-02 已照实补回**，见上一节 —— 依据是生产机上还查得到的
 状态与那次会话自己的工具输出，逐条标了 **[机]** / **[录]** 出处，取不到的写「无记录」。
 补的过程里查出那次**没有取数据库备份**，也一并如实记在那一节里。
+
+### 2026-09-06 — 发布 `29aa20f7`：galaxy 计费第一切片 + ICP 页脚（非迁移，**有 DDL**）
+
+发布内容：`release/ucloud-20260805` 合入 `origin/develop`（合并提交 `29aa20f7`，
+develop 侧 `f2fc3c01`）。按算力计价的复盘扣费第一切片、七个会漏钱的缺陷、
+拒绝以默认/空/过短 SECRET_KEY 启动、拆掉 admin/admin 默认凭据与按用户名无条件提权、
+新账号赠额 10000→0 并为存量余额补开账账本行，外加 galaxy 首页 ICP 备案号页脚。
+
+**先测试环境后生产**（Fan 2026-08-31 的裁定）：home-ubuntu / go.sailorvoyage.top
+先发 `f2fc3c01` 并验讫（web+cron 重建、`report_tasks.settled_moves` 迁移落地、
+`quota_buckets` 建表、开账回填 14 行、14 个用户逐个 `credits == 已提交账本之和`
+0 处不一致、公网 200、页脚按域名判据**不**渲染），再上生产。
+
+- **本次有 DDL**（这是与 08-29 / 09-02 两次的关键差别）：`report_tasks` 新增 5 列
+  （`sgf_hash` / `settled_moves` / `charge_ref` / `free_grant_period` /
+  `billing_exempt_reason`）+ 索引 `ix_report_tasks_charge_ref`，新表 `quota_buckets`。
+  另有一次性数据写入：启动时给存量余额补开账账本行。
+- **数据库备份 `/opt/katrain/backups/prod-20260906-0145.dump`（`pg_dump -Fc`，217 MB）。
+  已真恢复验证**：恢复进 `katrain_restore_verify_20260906` 后逐表比对 **38 张表行数，
+  0 处不一致**（含 `kifu_albums` 151197、`tsumego_problems` 21072、`live_analysis` 79611、
+  `user_games` 24、`report_tasks` 16、`users` 9）。验证库已 DROP。
+- 镜像（不可变 ID）：
+  `WEB_IMAGE=sha256:17f331273ea6f0003e9b7aa97cfe21a91c4bf60ec5529a43448e1a4c93f8f976`
+  （tag `katrain-web:29aa20f7`，`size_bytes=542749235`；上一版 542725705，同量级），
+  `CRON_IMAGE=sha256:613ce6b37e3b5692cd7a40cc3cdb53e59bcb7664e70187efdee06e63525c40f9`
+  （tag `katrain-cron:29aa20f7`，68696218）。`build-web.sh` 的容器内容测试通过；
+  cron 走 `docker build --pull=false -f Dockerfile.cron`。
+- **CRON_IMAGE 这次必须动**，理由拿的是证据不是印象：`git diff --name-only 7a6069aa 29aa20f7`
+  在 `katrain/cron/` 下命中 3 个文件（`models.py` 补两列、`jobs/report_analyze.py`
+  按已付手数截断并校验棋谱指纹、`jobs/requeue_reports.py` 标 `billing_exempt_reason`）。
+  另核过 cron 子树对 `katrain.web` **零 import**，`Dockerfile.cron` 的 `COPY katrain/cron/`
+  契约仍成立（同族教训见 08-29 那条：改了 cron 却只换 WEB_IMAGE ⇒ cron 跑旧代码）。
+- 回滚锚点：web `sha256:1433d03c7b96…`（tag `katrain-web:7a6069aa`）、
+  cron `sha256:8d3f0735f98c…`（tag `katrain-cron:f8f3582d`），
+  `/opt/katrain/releases/7a6069aa` 未删除。
+- env 副本 `/opt/katrain/backups/ucloud.env.20260906T014952.bak`；改后仍 root:root 0600。
+  **只改了 2 行**（diff 4 行 = 2 减 2 加），变化的变量名逐一打印确认只有
+  `WEB_IMAGE` / `CRON_IMAGE`，值未入日志。
+- 预检 `--phase full`：**2 条红且都是容量闸**（`available_bytes=15554187264`、
+  `required_bytes=38500000000`；以及 projected use ≥75%，实际 86%）。同历次，按迁移口径
+  **明示越过**——本次是替换已构建完成的镜像，磁盘增量近似为零。
+  **变异做了**：拿一份 `WEB_IMAGE` 指向全零 sha 的 env 副本重跑 ⇒ 多报
+  `ERROR WEB_IMAGE is not available locally`、`checks=3`，证明容量闸之外的分支确在执行。
+- **`up -d` 之前先 `--dry-run`**（09-02 补上的那一步，这次沿用）：结果是
+  `katrain-web` / `katrain-cron` 重建 + 一次性 `minio-setup` 重跑，
+  `katago-web` / `katago-cron` / `postgres` 只出现 `Waiting` / `Healthy`，**未被重建**。
+  实跑后 uptime 印证：katago 5–6 天、postgres 6 周未断。
+
+**发布前后同一组探针：**
+
+| 探针 | 前 | 后 |
+|---|---|---|
+| `/health` | ok | ok |
+| 公网 `https://modelstella.com/` | 200 | 200 |
+| 产物含 `2026047949` 的文件数 | 0 | 1 |
+| `report_tasks` 三个新列 | 0 | 3 |
+| `quota_buckets` 表 | 0 | 1 |
+| `credit_transactions` 行数 / 总额 | 0 / 0 | 9 / 90000 |
+| `credits <> 已提交账本之和` 的用户数 | —（无账本） | 0 |
+| 用户 / 管理员数 | 9 / 1 | 9 / 1（启动未新建账号） |
+
+容器不变量实测：`KATRAIN_PREVIEW_MODE=0`、`KATRAIN_SECRET_KEY` 长度 64、调度器恰好 1 个、
+web/cron 跑的就是上面两个 ID、两者 35 秒后 healthy。
+生产真浏览器实测（1440×900）：页脚文案 `京ICP备2026047949号`、
+`href=https://beian.miit.gov.cn/`、`target=_blank`、`rel=noopener noreferrer`；
+`footerTop == mainBottom == 872`（即页脚是从内容行拿走高度、不覆盖）、无横向滚动。
+
+**一处人工合并判断（记下来，因为 git 报的是「无冲突」）：** develop 新加的三块启动动作
+（终态结算 / 回收孤儿与滞留预扣 / 补开账账本行）被自动合并留在了 release 侧
+`if settings.PREVIEW_MODE:` 守卫**之外**。这三件都往库里写钱，而 preview 与生产共用
+同一套 postgres 与库名。已人工挪进 `else` 分支、周期结算循环同样加守卫，
+并把 `test_preview_mode_keeps_local_app_without_production_effects` 扩到这四个动作；
+变异验证：把结算那块挪回守卫之外 ⇒ `settle_reports.assert_not_called()` 当场红。
+**「合并无冲突」不等于「合并语义正确」。**
+
+**遗留（未处理，需决策）：**
+1. **`admin` / `admin` 仍可登录生产**（`verify_password("admin", hash)` 在生产容器里实测
+   返回 `True`；该账号 id=1、`is_admin=true`、建于 2026-01-19、名下 0 局 0 复盘）。
+   代码这次只堵住「以后不再产生」，**存量账号只能人工处置**（改口令或停用）。
+2. 根分区 86%（15G 可用）。旧 release 目录与旧镜像在回滚窗口内不得删除。
+3. 公安联网备案号未下发（数据码已生成，需 30 日内去全国互联网安全管理服务平台办理），
+   页脚按设计稿只放 ICP 一项。

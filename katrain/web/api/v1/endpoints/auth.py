@@ -14,7 +14,9 @@ from katrain.web.core.box_sso import (
     strict_box_sso_enabled,
 )
 from katrain.web.core.config import settings
+from katrain.web.core.db import get_db
 from katrain.web.models import User, UserInDB
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger("katrain_web")
 
@@ -319,7 +321,7 @@ async def refresh(request: Request, body: RefreshRequest) -> Any:
 
 
 @router.post("/register", response_model=User)
-async def register(request: Request, register_data: LoginRequest) -> Any:
+async def register(request: Request, register_data: LoginRequest, db: Session = Depends(get_db)) -> Any:
     if strict_box_sso_enabled():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Direct registration disabled")
     remote_client = getattr(request.app.state, "remote_client", None)
@@ -351,6 +353,19 @@ async def register(request: Request, register_data: LoginRequest) -> Any:
             username=register_data.username,
             hashed_password=get_password_hash(register_data.password),
         )
+        # New accounts start at 0 credits (models_db.User.credits default). Any signup
+        # grant is opt-in via settings.BILLING_SIGNUP_GRANT and goes through billing.grant
+        # so it lands as a real, auditable ledger row instead of a silent column default.
+        if settings.BILLING_SIGNUP_GRANT > 0:
+            from katrain.web.core import billing
+
+            user_dict["credits"] = billing.grant(
+                db,
+                user_dict["id"],
+                settings.BILLING_SIGNUP_GRANT,
+                "signup",
+                f"signup:{user_dict['id']}",
+            )
         return User(**user_dict)
     except ValueError as e:
         raise HTTPException(

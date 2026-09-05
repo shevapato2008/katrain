@@ -106,13 +106,9 @@ def reserve(db: Session, user_id: int, amount: int, reason: str, ref_id: str) ->
         db.commit()
     except IntegrityError:
         # Lost an idempotency race: another request inserted the same ref_id.
-        # Roll back our debit by re-crediting, then return the winner's balance.
+        # db.rollback() already undoes our debit within this transaction —
+        # do NOT re-credit here, that would double-undo and gift `amount` for free.
         db.rollback()
-        db.execute(
-            text("UPDATE users SET credits = credits + :amt WHERE id = :uid"),
-            {"amt": amount, "uid": user_id},
-        )
-        db.commit()
         winner = _existing_tx(db, ref_id)
         return int(winner.balance_after) if winner else get_balance(db, user_id)
     return balance_after
@@ -192,13 +188,10 @@ def grant(db: Session, user_id: int, amount: int, reason: str, ref_id: str) -> i
     try:
         db.commit()
     except IntegrityError:
-        # Idempotency race — undo our credit and return the winner's balance.
+        # Idempotency race — db.rollback() already undoes our credit within this
+        # transaction. Do NOT debit again here, that would double-undo and dock
+        # the user for a grant they never received.
         db.rollback()
-        db.execute(
-            text("UPDATE users SET credits = credits - :amt WHERE id = :uid"),
-            {"amt": amount, "uid": user_id},
-        )
-        db.commit()
         winner = _existing_tx(db, ref_id)
         return int(winner.balance_after) if winner else get_balance(db, user_id)
     return balance_after
@@ -270,11 +263,23 @@ def settle_order(db: Session, out_trade_no: str) -> int:
     return grant(db, order.user_id, int(order.credits), reason="order", ref_id=f"order:{out_trade_no}")
 
 
+# 这些 reason 的预扣有自己的生命周期管理者，通用 TTL 回收器一律不碰。
+# 复盘要跑几分钟到几十分钟，远超 BILLING_RESERVATION_TTL_SEC(120)；
+# 让通用回收器碰它 = 每次 web 重启把在跑的复盘全额退掉，之后结算再对一个
+# 已 refunded 的行 commit（无效）并补一笔"估多退款" —— 白嫖 + 凭空生钱。
+# 复盘预扣改由 report_settlement.settle_finished_reports 按任务终态回收。
+LONG_RUNNING_REASONS = frozenset({"report"})
+
+
 def reconcile_stale_reservations(db: Session, ttl_seconds: int) -> int:
     """Refund reservations older than ttl_seconds still stuck in 'reserved'.
 
     Called at startup to recover credits from spends whose deliver step never
     committed (crash/timeout). Returns the number of reservations refunded.
+
+    Reservations whose `reason` is in LONG_RUNNING_REASONS are excluded: those
+    have their own terminal-state-driven reconciler and can legitimately stay
+    'reserved' far longer than ttl_seconds.
     """
     from datetime import timedelta
 
@@ -284,6 +289,7 @@ def reconcile_stale_reservations(db: Session, ttl_seconds: int) -> int:
         .filter(
             models_db.CreditTransaction.status == "reserved",
             models_db.CreditTransaction.created_at < cutoff,
+            ~models_db.CreditTransaction.reason.in_(LONG_RUNNING_REASONS),
         )
         .all()
     )
@@ -297,3 +303,20 @@ def reconcile_stale_reservations(db: Session, ttl_seconds: int) -> int:
     if n:
         logger.info(f"reconcile: refunded {n} stale reservation(s)")
     return n
+
+
+def reserved_amount(db: Session, ref_id: str) -> int:
+    """某笔预扣的金额（正数）。找不到抛 BillingError。"""
+    tx = _existing_tx(db, ref_id)
+    if tx is None:
+        raise BillingError(f"no transaction for ref_id {ref_id}")
+    return abs(int(tx.delta))
+
+
+def has_transaction(db: Session, ref_id: str) -> bool:
+    return _existing_tx(db, ref_id) is not None
+
+
+def transaction_status(db: Session, ref_id: str) -> Optional[str]:
+    tx = _existing_tx(db, ref_id)
+    return None if tx is None else str(tx.status)

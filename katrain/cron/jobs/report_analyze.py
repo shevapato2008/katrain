@@ -189,12 +189,29 @@ class ReportAnalyzerJob(BaseJob):
                 db.commit()
                 return
 
+            # 授权时冻结的指纹对不上 ⇒ 棋谱在排队期间被改过。
+            # 继续跑会拼出「旧棋谱前缀 + 新棋谱后缀」的报告，且用户付的是旧棋谱的钱。
+            if task.sgf_hash:
+                import hashlib
+
+                if hashlib.sha256(game.sgf_content.encode("utf-8")).hexdigest() != task.sgf_hash:
+                    task.status = "failed"
+                    task.error_message = "棋谱在排队期间被修改，请重新发起复盘"
+                    db.commit()
+                    return
+
             parsed = parse_game(game.sgf_content)
             moves = parsed.moves
             requested_visits = task.requested_visits or 500
             resume_from = self._get_resume_move_number(db, task_id)
             task.status = "running"
-            task.total_moves = len(moves)
+            # total_moves 由 web 在建任务时解析并写死（那是计价的操作数）。
+            # 这里只在它缺失时兜底 —— 覆盖它会让「已付费的手数」与「实际分析的手数」
+            # 脱钩，客户端就能靠少报手数白嫖算力。
+            if not task.total_moves:
+                task.total_moves = len(moves)
+            paid_moves = task.total_moves
+            moves = moves[:paid_moves]
             task.analyzed_moves = min(task.analyzed_moves or 0, len(moves))
             task.started_at = task.started_at or datetime.now(timezone.utc)
             task.completed_at = None

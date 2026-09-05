@@ -69,7 +69,7 @@ async def test_user_profile_data(app):
         data = resp.json()
         assert data["username"] == "testplayer"
         assert data["rank"] == "20k"
-        assert data["credits"] == 10000.0
+        assert data["credits"] == 0.0
 
 
 @pytest.mark.asyncio

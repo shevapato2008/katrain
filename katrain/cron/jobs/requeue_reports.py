@@ -117,6 +117,17 @@ def requeue(commit: bool = False, limit: int | None = None) -> dict[str, int]:
                 task.started_at = None
                 task.error_message = None
                 task.retry_count = 0
+                # 运维重跑不向用户收费，但要留痕。
+                #
+                # 这一列在 web 与 cron 两个模型上都加过（它们映射同一张 report_tasks
+                # 表却各写各的列清单，见 plan.md 的 Global Constraints）——只加 web 侧
+                # 的话这句赋值会在 cron 容器里抛 AttributeError，而且只在运维执行
+                # requeue 时才炸。
+                #
+                # web 侧结算器（report_settlement.py）看到这个标记后，会把任务上还挂着的
+                # 预扣**全额退还**（结果都被删了，用户不该为一份不存在的报告付钱），
+                # 而不是按 analyzed_moves 结算。
+                task.billing_exempt_reason = "requeue"
 
         if commit:
             db.commit()

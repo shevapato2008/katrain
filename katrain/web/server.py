@@ -159,7 +159,7 @@ async def lifespan(app: FastAPI):
         live_service = getattr(app.state, "live_service", None)
         if live_service:
             await live_service.stop()
-    for attr in ("cleanup_task", "ai_ladder_heartbeat_task"):
+    for attr in ("cleanup_task", "ai_ladder_heartbeat_task", "report_settlement_task"):
         task = getattr(app.state, attr, None)
         if task:
             task.cancel()
@@ -168,6 +168,13 @@ async def lifespan(app: FastAPI):
 
 async def _lifespan_server(app: FastAPI, log):
     """Server mode initialization — existing logic, unchanged."""
+    from katrain.web.core.config import assert_secret_key_is_safe
+
+    # 必须是这个函数的第一件事——挡在任何 DB 连接、engine router 初始化之前。
+    # 拿不到显式注入的 SECRET_KEY 就不允许服务端继续启动：仓库里的字面量默认值
+    # 谁都读得到，凭它能自签任意用户的 token。
+    assert_secret_key_is_safe(settings.KATRAIN_MODE, settings.SECRET_KEY)
+
     from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
     from katrain.web.core.game_repo import GameRepository
     from katrain.web.core.user_game_repo import UserGameRepository, UserGameAnalysisRepository
@@ -193,29 +200,31 @@ async def _lifespan_server(app: FastAPI, log):
     user_game_analysis_repo = UserGameAnalysisRepository(session_factory)
     ai_ladder_repo = AiLadderRankedRepository(session_factory)
 
-    # Create default admin user if no users exist
+    # 首个管理员账号只在显式注入口令时创建。
+    # 曾经这里硬编码创建一个用户名和口令都固定为同一个公开已知词的账号，配合
+    # "按用户名无条件提权"等于把管理接口敞开。两者一起拆掉。
     if not repo.list_users():
-        log.info("No users found. Creating default admin user (admin/admin)")
-        try:
-            repo.create_user("admin", get_password_hash("admin"))
-        except ValueError:
-            pass  # Already exists race condition
+        pwd = settings.ADMIN_BOOTSTRAP_PASSWORD
+        if pwd:
+            try:
+                created = repo.create_user("admin", get_password_hash(pwd))
+                from katrain.web.core import models_db
 
-    # Ensure the default 'admin' account carries the is_admin flag (billing admin).
-    try:
-        from katrain.web.core import models_db
-
-        _s = session_factory()
-        try:
-            admin_row = _s.query(models_db.User).filter(models_db.User.username == "admin").one_or_none()
-            if admin_row is not None and not admin_row.is_admin:
-                admin_row.is_admin = True
-                _s.commit()
-                log.info("Marked default 'admin' account as is_admin=True")
-        finally:
-            _s.close()
-    except Exception as e:  # pragma: no cover - defensive
-        log.warning(f"Could not ensure admin flag: {e}")
+                _s = session_factory()
+                try:
+                    row = _s.query(models_db.User).filter(models_db.User.id == created["id"]).one()
+                    row.is_admin = True
+                    _s.commit()
+                finally:
+                    _s.close()
+                log.info("已按 ADMIN_BOOTSTRAP_PASSWORD 创建初始管理员")
+            except ValueError:
+                pass
+        else:
+            log.warning(
+                "数据库为空且未设置 KATRAIN_ADMIN_BOOTSTRAP_PASSWORD —— 未创建任何账号。"
+                "设置该环境变量后重启即可创建初始管理员。"
+            )
 
     # Reconcile any credit reservations stuck after a previous crash.
     try:
@@ -228,6 +237,49 @@ async def _lifespan_server(app: FastAPI, log):
             _s2.close()
     except Exception as e:  # pragma: no cover - defensive
         log.warning(f"Billing reconcile skipped: {e}")
+
+    # Settle any report tasks that reached a terminal state while the server was
+    # down. Report reservations are excluded from the generic TTL reconcile above
+    # (billing.LONG_RUNNING_REASONS) precisely so this dedicated, terminal-state-driven
+    # settlement is the only thing that ever resolves them.
+    try:
+        from katrain.web.core import report_settlement
+
+        _s3 = session_factory()
+        try:
+            report_settlement.settle_finished_reports(_s3)
+        finally:
+            _s3.close()
+    except Exception as e:  # pragma: no cover - defensive
+        log.warning(f"Report settlement skipped: {e}")
+
+    # 结算器只按 ReportTask 行遍历，够不着「任务行本身已经不存在了」（级联删棋谱
+    # 带走了任务行）和「卡在 authorizing 半路」这两类钱。同样在启动时兜底一次。
+    try:
+        from katrain.web.core import report_reaper
+
+        _s_reaper = session_factory()
+        try:
+            report_reaper.reap_orphaned_report_charges(_s_reaper)
+            report_reaper.reap_stale_authorizing(_s_reaper)
+        finally:
+            _s_reaper.close()
+    except Exception as e:  # pragma: no cover - defensive
+        log.warning(f"Report reaper skipped: {e}")
+
+    # 给存量余额补开账账本行（幂等，收敛后不再动）。必须是循环到底的那个函数——
+    # 单批的 backfill_opening_balances 会把 batch 之外的用户永久留在不一致状态。
+    # 见 katrain/web/core/migrations_opening_balance.py。
+    try:
+        from katrain.web.core.migrations_opening_balance import backfill_all_opening_balances
+
+        _s4 = session_factory()
+        try:
+            backfill_all_opening_balances(_s4)
+        finally:
+            _s4.close()
+    except Exception as e:  # pragma: no cover - defensive
+        log.warning(f"Opening balance backfill skipped: {e}")
 
     app.state.user_repo = repo
     app.state.game_repo = game_repo
@@ -284,6 +336,11 @@ async def _lifespan_server(app: FastAPI, log):
     manager.attach_loop(asyncio.get_running_loop())
     app.state.cleanup_task = asyncio.create_task(_cleanup_loop(manager))
     app.state.ai_ladder_heartbeat_task = asyncio.create_task(_ai_ladder_heartbeat_loop(app))
+    # Board mode never spends locally (billing is proxied to the cloud, see
+    # billing.py's module docstring) so this loop only runs in server mode.
+    app.state.report_settlement_task = asyncio.create_task(
+        _report_settlement_loop(session_factory)
+    )
 
     # Initialize Live Broadcasting Service
     from katrain.web.live import create_live_service
@@ -2852,6 +2909,46 @@ async def _cleanup_loop(manager: SessionManager):
             await asyncio.to_thread(manager.cleanup_expired)
         except Exception:
             logging.getLogger("katrain_web").warning("session cleanup sweep failed", exc_info=True)
+
+
+REPORT_SETTLEMENT_INTERVAL_SECONDS = 60
+
+
+async def _report_settlement_loop(session_factory):
+    """定时对账：把终态但仍持预扣的复盘任务结清。
+
+    这是兜底，不是主路径 —— `/billing/quota` 在返回余额前会先结算本用户
+    （见 Task 11），用户看到的数不依赖这个循环的节奏。这个循环存在是为了
+    "没人正好去查额度" 的复盘任务也能在合理时间内把预扣落定，而不是无限期
+    停在 reserved（结算不是回收器：不结算不会退钱，只会一直不完整）。
+
+    一轮失败不停表，吞掉异常继续下一轮 —— 跟 `_cleanup_loop` 同一个理由：
+    循环悄悄死掉比一次失败更糟，所以记 warning 而不是让异常往外传。
+    """
+    while True:
+        await asyncio.sleep(REPORT_SETTLEMENT_INTERVAL_SECONDS)
+        try:
+            from katrain.web.core import report_settlement
+
+            db = session_factory()
+            try:
+                await asyncio.to_thread(report_settlement.settle_finished_reports, db)
+            finally:
+                db.close()
+        except Exception:
+            logging.getLogger("katrain_web").warning("report settlement sweep failed", exc_info=True)
+
+        try:
+            from katrain.web.core import report_reaper
+
+            db = session_factory()
+            try:
+                await asyncio.to_thread(report_reaper.reap_orphaned_report_charges, db)
+                await asyncio.to_thread(report_reaper.reap_stale_authorizing, db)
+            finally:
+                db.close()
+        except Exception:
+            logging.getLogger("katrain_web").warning("report reaper sweep failed", exc_info=True)
 
 
 # Boxes report in every 30s against a 5-minute takeover window, so ten consecutive failures

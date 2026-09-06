@@ -175,3 +175,27 @@ nginx → 宿主 `127.0.0.1:8001` → Docker DNAT 进容器 ⇒ **容器看到�
 无论选哪条，**必须配一条断言：两个不同客户端 IP 拿到的限流桶不是同一个**。
 只断言"限流会拦"的用例对这个缺陷免疫——它在一个桶的世界里也是绿的。
 同族：[[reference_gate_measures_wrong_operand]]。
+
+## F11 ⚠️ 需求文档 §2.3 里 U1 的"为什么不能默认"**已经过期** —— 它描述的是没落地的第 1 稿
+
+需求原文说每周免费走 `billing.grant`，`ref_id` 全局唯一 ⇒ `weekly:None:2026-W36`
+会让第一个用户领到、其余 IntegrityError 静默不发。**实际落地的不是这样：**
+
+```
+grep -rn '"weekly\|weekly:' katrain/ --include=*.py | grep -v test   → 零命中
+billing.grant 的非测试调用者 → config 注释 / 结算退款×2 / 注册赠额 / 管理员发放
+                              （没有一个是每周免费）
+```
+
+真正落地的是**额度桶**：`reports.py:325-333` 调 `quota.try_consume(db, current_user.id,
+"free_report:week", allowance=settings.FREE_WEEKLY_REPORTS)`；`quota._ensure_bucket` 按
+`(user_id, kind, period_key)` 查行，**全模块不碰账本、没有 ref_id**。
+
+⇒ U1 的实质问题因此变了（正确版本）：桶按 `user_id` 分 ⇒ 只要"一个账号 = 一个已验证手机号"
+成立，桶就自动等价于按手机号分，**不需要改 `quota_buckets` 的键**。剩下要判的是：
+存量 23 个无手机账号怎么算 / 新注册是否强制手机 / **换绑与注销后重注册**（同号解绑换新账号
+= 新 user_id = 新桶，这才是真正剩下的刷号面）。
+
+**这条本身也是教训**：需求文档里标着"已核实"的事实，在设计改稿之后**不会自己跟着改**。
+把它当输入之前要先复核 —— 尤其是那些"为什么不能默认"的论证，它们最容易停在旧稿。
+同族：[[reference_a_gate_can_expire]]、[[project_kiosk_go_design_27_screens]]（稿子里断言代码的句子要当过期候选）。

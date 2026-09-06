@@ -245,3 +245,50 @@ i18n 语言**——`commentary` 由 `katrain/web/interface.py:554` 的 `cn.comme
 
 **不在本轨道修**：修它要决定"这份 fixture 该是哪种语言"（产品问题）且改的是另一条轨道的测试。
 已还原、已记录，作为非阻塞问题交回。
+
+---
+
+## F13 — 注册界面有**两套**，分居 SBC 构建边界两侧；两份裁决书都只看见了一套
+
+Fan 问的是 galaxy 登录页，两位裁决者也都只谈 galaxy。实测前端有**两个独立的注册入口**，
+共用同一个 `API.register`：
+
+| 界面 | 路径 | 所属 | 使用者 |
+|---|---|---|---|
+| `LoginModal.tsx`（133 行，登录/注册用 `isRegister` 切换） | `src/galaxy/components/auth/` | **galaxy 独有** | `AuthRequiredDialog` / `GalaxySidebar` / `AiSetupPage` / `ReportsPage` |
+| `RegisterDialog.tsx` | `src/components/` | **共享领土** | `ZenModeApp.tsx` |
+
+`AppRouter.tsx:24-26`：
+
+```ts
+const ZenModeApp = isStrictBoxKiosk ? null : lazy(() => import('./ZenModeApp'));
+// api.ts:279  const isStrictBoxKiosk = __KIOSK_2D_ONLY__ && import.meta.env.VITE_BOX_SSO_STRICT === 'true'
+```
+
+⇒ **只有 strict 盒子把 ZenModeApp DCE 掉；非 strict 的 kiosk-2d 包里它在**，
+于是 `RegisterDialog` 也在。这正是 U2 裁决里"board 非 strict 的注册转发"那条路的**用户入口**——
+两份裁决书都只处理了它的后端（改 410），没人提这个前端按钮还在原地。
+
+### 为什么这条会改变计划
+
+`api.ts:465` 的 `register: async (username, password)` 是**一个**共享函数，body 写死
+`{username, password}`。后端注册一旦要求 phone+code，**两套界面同时坏**，而且 `api.ts`
+和 `RegisterDialog.tsx` **都在共享领土** ⇒ 按项目契约，动它们必须两个构建都跑
+（`npm run build` + `npm run build:kiosk-2d`）。
+
+⇒ 计划里这一组必须**同时**动，一处都不能落：
+
+1. `src/api.ts` — `register` 的签名与 body（共享）
+2. `src/galaxy/components/auth/LoginModal.tsx` — galaxy 注册加手机号+验证码（Fan 要的那个）
+3. `src/components/RegisterDialog.tsx` — 共享，`ZenModeApp` 用（**两份裁决书都没提**）
+
+第 3 项若漏掉，非 strict 盒子上那个注册按钮点下去会拿到云端 pydantic 的 422 原文。
+按 U2 的 410 裁决，这个按钮在 board 模式下**根本不该显示**——后端返 410 是诚实的，
+但让用户点一个注定失败的按钮不是。板上的正确形状是：board 模式隐藏注册入口，
+文案指向"请在 modelstella.com 注册"（与 U2 给盒子用户的绑定文案同一处出口）。
+
+### 顺带纠正裁决书的一处指认错误
+
+p3-decider 的 F4 依据里写"让用户自己起名 = 现有 `RegisterDialog` 加两个字段"。
+组件确实存在（不是幻觉），但它**不是 galaxy 用的那个**——galaxy 走 `LoginModal`。
+结论（用户名自己起）不受影响，改动落点要按上表三项。

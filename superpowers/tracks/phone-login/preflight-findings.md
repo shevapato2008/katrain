@@ -111,3 +111,67 @@ strict 盒子上是不是 403？board 模式是转发还是 503 `need_online`？
 
 若最终确实非加不可，计划里必须把"同时更新 release 分支的 hash-pinned 清单"写成一个显式任务，
 不能靠实现者记得。
+
+## F9 仓里已经有「这个账号没有本地口令」的先例 —— 而它是 F3 那颗雷的**已埋版本**
+
+`auth.py:77`：
+```python
+SHADOW_USER_NO_LOCAL_AUTH = "SHADOW_USER_NO_LOCAL_AUTH"
+```
+`auth.py:187` 拿它当盒子影子用户的 `hashed_password`。**它是一个普通字符串，不是 bcrypt hash**
+⇒ 按 F3 实测，`verify_password(任意, "SHADOW_USER_NO_LOCAL_AUTH")` 会抛 `UnknownHashError`。
+
+**今天够不着**（读代码确认，不是"跑了没红"）：影子用户只在盒子本地库里产生 ——
+`_get_or_create_shadow_user` 的两个调用点分别在 `box_sso_bootstrap`（被 `_require_bridge`
+挡住，非 strict 一律 404）和 board 模式的 `login`（那条分支里 `/auth/login` 转发给云端，
+根本走不到本地 `verify_password`）；strict 盒子上 `/auth/login` 直接 403。云端不产生影子用户。
+
+⇒ 两条推论，都进计划：
+1. **先例可以抄**：纯手机用户沿用"哨兵字符串"这个既有约定，不要另发明一套。
+2. **但必须同时把 F3(b) 做掉**：`verify_password` 收口成"无法识别的 hash 返回 False"。
+   否则这颗雷只是从"够不着"变成"够得着" —— 纯手机用户是**云端**账号，
+   `/auth/login` 在云端走的正是本地 `verify_password` 那条路。
+   现在修它顺带把影子用户那颗一起拆了。
+
+## F10 🚨 生产上 `request.client.host` 对**所有用户都是同一个值** —— 按它做 IP 限流 = 全互联网一个桶
+
+需求写着限流键必须是 `(phone, purpose)` + `client_ip` 两组同时生效。照直写
+`request.client.host` 会造出一条**量错对象**的闸。三段实测：
+
+**① uvicorn 会用 XFF 改写 client.host —— 但只在直连对端可信时。**
+本机实跑（uvicorn 0.40.0，全默认，不显式传 `proxy_headers`）：
+```
+不带头             -> client_host = 127.0.0.1
+X-Forwarded-For: 203.0.113.9              -> client_host = 203.0.113.9
+X-Forwarded-For: 1.2.3.4, 203.0.113.9     -> client_host = 203.0.113.9   ← 取**最右**一跳
+```
+取最右是对的：nginx 用 `$proxy_add_x_forwarded_for`（**追加**自己看到的对端），
+所以最右一跳恒等于 nginx 亲眼看到的客户端，客户端自己伪造的部分被挤到左边。
+`Config.__init__` 默认：`proxy_headers=True`、`forwarded_allow_ips=None`（回落到 `127.0.0.1`）。
+
+**② 生产 nginx 确实在传头**（`/etc/nginx/sites-enabled/modelstella.com`）：
+`proxy_pass http://127.0.0.1:8001` + `X-Real-IP $remote_addr` + `X-Forwarded-For $proxy_add_x_forwarded_for`。
+
+**③ 但 web 跑在容器里，对端不是 127.0.0.1 —— 所以那个头压根不被信任。**
+```
+容器 FORWARDED_ALLOW_IPS = (空) ⇒ uvicorn 回落到默认 127.0.0.1
+NetworkMode = katrain-ucloud_app（bridge，不是 host）
+容器默认网关 /proc/net/route = 010014AC = 172.20.0.1
+```
+nginx → 宿主 `127.0.0.1:8001` → Docker DNAT 进容器 ⇒ **容器看到的对端是 172.20.0.1**，
+不在 `forwarded_allow_ips` 里 ⇒ **uvicorn 不改写** ⇒
+**`request.client.host` 对每一个用户都是 `172.20.0.1`。**
+
+⇒ 后果不是"限流失效"，是**反过来**：per-IP 限成 5 条/小时的话，全站第 6 个正常用户就被挡，
+而表现是「限流生效了」，不是报错。**这是自己给自己造的故障。**
+
+**三条路，计划里必须选一条并写死判据：**
+- (a) 给容器配 `FORWARDED_ALLOW_IPS=172.20.0.1`。缺点：网段在 compose 重建网络时会变，
+  变了之后**静默**退回全站一个桶。
+- (b) **应用自己解析 XFF**，用"可信代理跳数"配置（取右起第 N 跳），显式且可单测。
+- (c) `FORWARDED_ALLOW_IPS=*`。**不能用**：`8001` 除了 `127.0.0.1` 还发布在 `10.8.0.3`
+  （WireGuard），存在不经过 nginx 的到达路径，那条路上 XFF 完全由攻击者控制。
+
+无论选哪条，**必须配一条断言：两个不同客户端 IP 拿到的限流桶不是同一个**。
+只断言"限流会拦"的用例对这个缺陷免疫——它在一个桶的世界里也是绿的。
+同族：[[reference_gate_measures_wrong_operand]]。

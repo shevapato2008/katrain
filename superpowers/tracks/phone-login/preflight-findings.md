@@ -204,3 +204,44 @@ billing.grant 的非测试调用者 → config 注释 / 结算退款×2 / 注册
 **这条本身也是教训**：需求文档里标着"已核实"的事实，在设计改稿之后**不会自己跟着改**。
 把它当输入之前要先复核 —— 尤其是那些"为什么不能默认"的论证，它们最容易停在旧稿。
 同族：[[reference_a_gate_can_expire]]、[[project_kiosk_go_design_27_screens]]（稿子里断言代码的句子要当过期候选）。
+
+---
+
+## F12 — 跑一次 pytest 会改掉一份**已提交**的前端 fixture（本轨道的操作风险，非本轨道的缺陷）
+
+**实测**：在干净的 `feature/phone-login`（相对 develop 只有 3 个文档文件的差异）上跑全量
+`pytest tests`，跑完 `git status --porcelain` 出现：
+
+```
+ M katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+```
+
+diff 只有一行，是**语言**变了：
+
+```
+-  "commentary": "贴目: 7.5\n规则: 中国\n",
++  "commentary": "komi: 7.5\nruleset: chinese\n",
+```
+
+**机制**：`tests/platforms/test_engine_manager.py::test_dump_engine_game_state_fixture`
+是**故意**把这份 checked-in fixture 重新生成并写回工作区的。它自带一条"确定性闸"：
+
+```python
+state_again = await self._start_engine_game_state()
+assert dumped == dumped_again   # 注释里写着这条"保护 checked-in fixture 不被每次跑测试改写"
+```
+
+这条闸**量错了对象**。它比的是**同一个进程内**的两次调用，而真正会变的那根轴是**进程全局的
+i18n 语言**——`commentary` 由 `katrain/web/interface.py:554` 的 `cn.comment(...)` 生成，
+走 i18n。同进程两次当然一致，所以闸恒绿；而全量跑时语言由**别的测试**留下的全局状态决定，
+谁最后跑谁说了算。⇒ **跑子集和跑全量得到的 fixture 内容不同**，闸对这个差异免疫。
+
+（仓里提交的是中文版 ⇒ 当初那次提交是在语言为 cn 的进程里跑出来的。）
+
+**对本轨道的意义（这才是记它的理由）**：本轨道要跑几十次 pytest，每次跑完工作区都会脏一个
+**不属于本轨道**的文件。⇒ **本轨道任何提交都不许用 `git add -A` / `git commit -a`**，
+一律显式列文件；每次提交前先看一眼 `git status --porcelain` 里有没有这一行，有就
+`git checkout --` 还原。
+
+**不在本轨道修**：修它要决定"这份 fixture 该是哪种语言"（产品问题）且改的是另一条轨道的测试。
+已还原、已记录，作为非阻塞问题交回。

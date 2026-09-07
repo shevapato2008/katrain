@@ -1242,7 +1242,7 @@ def test_server_mode_accepts_aliyun():
 
 
 def test_board_mode_is_allowed_without_a_provider():
-    """盒子不发短信（三个端点在盒子上 403/503），不该因此拒绝启动。"""
+    """盒子不发短信（四个端点在盒子上 403/503），不该因此拒绝启动。"""
     assert assert_sms_provider_is_configured("board", "") is None
 
 
@@ -1452,7 +1452,7 @@ def assert_sms_provider_is_configured(mode: str, provider: str, allow_console: b
 
     为什么不让 console 在生产兜底：那会让 send-code 一路返回 200 而用户
     **永远收不到码** —— 一种"坏了"和"好着"在用户那里长得一模一样的故障
-    （spec §2.1）。盒子不发短信（三个端点在盒子上 403/503），放行。
+    （spec §2.1）。盒子不发短信（四个端点在盒子上 403/503），放行。
 
     为什么未知名也拒：`KATRAIN_SMS_PROVIDER=aliyu` 这种手滑今天能正常启动，
     直到第一个用户点"发送验证码"才在 get_provider() 里炸成 502。
@@ -2922,7 +2922,7 @@ async def test_the_ip_daily_cap_is_per_client_ip(phone_client, monkeypatch):
     assert r3.status_code == 200, "换了客户端 IP 还被拦 ⇒ 全站一个桶"
 
 
-# ---- 盒子三答（spec §2.6 / F6：三个端点每一个都要显式回答，一个都不能漏） ----
+# ---- 盒子四答（spec §2.6 / F6：四个端点每一个都要显式回答，一个都不能漏） ----
 async def test_send_code_403_on_strict_box(phone_strict_client):
     r = await phone_strict_client.post(SEND, json={"phone": "13800138000", "purpose": "login"})
     assert r.status_code == 403
@@ -3254,7 +3254,7 @@ git commit -m "feat(auth): POST /auth/phone/send-code(不鉴权)+ /auth/register
 '今天全站关闭注册'开关且没有绕过口。限流挂在 remote_client 转发分支**之后**,
 盒子上的注册一个字节不变。signup_ip 不进 _to_dict(白名单),所以不外泄。
 
-盒子三答抽成 _guard_phone_endpoint,四个手机端点共用:strict 403、board 503
+盒子四答抽成 _guard_phone_endpoint,四个手机端点共用:strict 403、board 503
 need_online 且**不转发**。"
 ```
 

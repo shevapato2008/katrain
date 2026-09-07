@@ -8473,3 +8473,8 @@ Expected: 提交里**只有这两个文件**（`docker-compose.yml` 不在其中
     空凭据即可起来，发码会 502，这是诚实的不可用）。顺序照既定规矩：先测试环境再生产。
 16. **`SMS_DAILY_CAP_INTL` 定为 50**（此前 requirements §3 D-U4 表里标着"⚠️ 待核 100"，
     现作废）。取低的那个，理由是国际号是最贵的攻击面，封顶要比国内低一个量级而不是低三成。
+17. **`sms_challenges` 的建表与 `users` 两列的迁移只在 SQLite 上验证过。** 生产是
+    PostgreSQL，本机没有 PG 实例，所以"PG 上 `ALTER TABLE ADD COLUMN` 不带 UNIQUE、
+    `CREATE UNIQUE INDEX` 保留唯一性"这一条只能在 PG 上证。部署到 home-ubuntu 测试
+    环境后应当在真 PG 上跑一次 `add_missing_columns()` + `create_missing_indexes()`
+    并核对 `\d users` / `\d sms_challenges`。

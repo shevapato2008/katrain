@@ -97,22 +97,38 @@ def test_two_users_cannot_share_a_phone_number(tmp_path):
     session.add(models_db.User(username="a", hashed_password="h", phone_e164="+8613800138000"))
     session.commit()
     session.add(models_db.User(username="b", hashed_password="h", phone_e164="+8613800138000"))
-    with pytest.raises(IntegrityError):
+    # match= 把判据钉在被测对象上：SQLite/PostgreSQL 的完整性冲突报错文本不同，
+    # 但两边都会在错误里带上冲突的列名，"phone_e164" 是两边共有的最小子串
+    # （2026-09-08 SQLite 实测：`UNIQUE constraint failed: users.phone_e164`）。
+    with pytest.raises(IntegrityError, match="phone_e164"):
         session.commit()
     session.rollback()
     session.close()
 
 
 def test_sms_challenges_table_shape(tmp_path):
+    """`sms_challenges` 是本 Task 独有的新表 —— 列集合用 `==`，多一列也要红。
+
+    （`users` 那张表不这么断言：它还有一堆既有列，`==` 会立刻错。）
+    """
     insp = inspect(_fresh_engine(tmp_path, "t5"))
     cols = {c["name"] for c in insp.get_columns("sms_challenges")}
-    assert cols >= {
+    assert cols == {
         "id", "challenge_id", "phone_e164", "purpose", "code_hash", "attempts",
         "consumed_at", "provider_charged", "delivered_ok", "is_intl", "client_ip",
         "created_at", "expires_at",
     }
     idx = {i["name"]: i for i in insp.get_indexes("sms_challenges")}
     assert bool(idx["ix_sms_challenge_cid"]["unique"]) is True
+    # 四条索引里之前只断言了一条：删掉另外三条中的任意一条（同号冷却查询、
+    # 全站日额度查询、按 IP 查询各自要用的那条），8 条用例照样全绿——
+    # 丢了不报错，只会让 Task 6 的查询退化成全表扫描。
+    assert set(idx) >= {
+        "ix_sms_challenge_cid",
+        "ix_sms_challenge_phone_purpose",
+        "ix_sms_challenge_cap",
+        "ix_sms_challenge_ip",
+    }
 
 
 def test_delivered_ok_is_a_mapped_column_not_a_stray_attribute(tmp_path):
@@ -163,6 +179,29 @@ def test_add_missing_columns_migrates_an_existing_users_table(tmp_path):
     insp = inspect(eng)
     assert {"phone_e164", "phone_verified_at"} <= {c["name"] for c in insp.get_columns("users")}
     assert ("phone_e164",) in _unique_column_sets(insp, "users")
+
+
+def test_migrated_users_table_also_rejects_duplicate_phone(tmp_path):
+    """迁移路径的唯一性不能只靠 inspector 反射证明。
+
+    `test_two_users_cannot_share_a_phone_number` 验的是 create_all 那条路；
+    `test_add_missing_columns_migrates_an_existing_users_table` 只断言
+    `_unique_column_sets()` 反射出来"看着是 unique"——反射读的是真库 schema，
+    覆盖不是零，但缺"索引存在且反射为 unique、但库不真拦"这一格。这条测
+    在迁移出来的库上真插两行同号，拿 `IntegrityError`。
+    """
+    eng = _legacy_users_db(tmp_path, "old3")
+    migrations.add_missing_columns(eng)
+    migrations.create_missing_indexes(eng)
+    Session = sessionmaker(bind=eng)
+    session = Session()
+    session.add(models_db.User(username="a", hashed_password="h", phone_e164="+8613800138000"))
+    session.commit()
+    session.add(models_db.User(username="b", hashed_password="h", phone_e164="+8613800138000"))
+    with pytest.raises(IntegrityError, match="phone_e164"):
+        session.commit()
+    session.rollback()
+    session.close()
 
 
 def test_migrated_old_db_and_fresh_db_agree_on_users(tmp_path):

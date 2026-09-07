@@ -73,6 +73,11 @@ class Settings(BaseModel):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     REFRESH_TOKEN_EXPIRE_DAYS: int = 90
 
+    # 限流分桶取 X-Forwarded-For 右起第几跳。见 core/client_ip.py（preflight F10）。
+    # 我们的部署是 nginx 一层 ⇒ 1。0 = 完全不信任该头，退回 request.client.host
+    # （只有在**没有**反向代理时才对）。
+    TRUSTED_PROXY_HOPS: int = 1
+
     # 空库首次启动时创建管理员账号用的口令。**默认空 = 不创建任何账号**。
     # 从环境注入（KATRAIN_ADMIN_BOOTSTRAP_PASSWORD），用完即应清掉。
     ADMIN_BOOTSTRAP_PASSWORD: str = ""
@@ -189,6 +194,7 @@ class Settings(BaseModel):
             device_id = uuid_module.uuid4().hex
         data.setdefault("DEVICE_ID", device_id)
         data.setdefault("REFRESH_TOKEN_EXPIRE_DAYS", int(os.getenv("KATRAIN_REFRESH_TOKEN_EXPIRE_DAYS", 90)))
+        data.setdefault("TRUSTED_PROXY_HOPS", int(os.getenv("KATRAIN_TRUSTED_PROXY_HOPS", 1)))
 
         # Board mode always uses local SQLite — ignore any PostgreSQL URL from config.json
         if data.get("KATRAIN_MODE") == "board" and not os.getenv("KATRAIN_DATABASE_URL"):

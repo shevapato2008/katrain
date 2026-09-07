@@ -33,6 +33,9 @@ def test_normalize_accepts_and_canonicalizes(raw, expected):
         "+0123456789",            # 国家码首位为 0
         "+861380013800",          # +86 但只有 10 位本体
         "+8623800138000",         # +86、11 位，但首位不是 1（座机/短号，发不了短信）
+        "+861３800138000",        # 全角 3（U+FF13）：Python str 模式的 \d 是 Unicode 的，
+                                   # 只挡开头 [1-9]/1 不够，本体也要收紧到 ASCII [0-9]
+        "+8613800138٠٠٠",         # 阿拉伯-印度数字（U+0660 等）：同一个 Unicode-\d 陷阱
     ],
 )
 def test_normalize_rejects_garbage(raw):
@@ -41,6 +44,28 @@ def test_normalize_rejects_garbage(raw):
     **拆掉实现也不会红**的假绿断言。表里每一条都是真的靠新增判据才红的。"""
     with pytest.raises(ValueError):
         normalize_e164(raw)
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "13800138000",
+        "+86 138 0013 8000",
+        "+86-138-0013-8000",
+        "008613800138000",
+        "+85298765432",
+        "+14155552671",
+        "+6831234",
+    ],
+)
+def test_normalize_result_is_always_ascii(raw):
+    """归一后只可能是 ASCII —— 把这条写成契约，比逐个列举坏字符耐用。
+
+    `\\d` 在 Python str 模式下是 Unicode 的，会匹配全角数字、阿拉伯-印度数字等。
+    这个模块唯一的职责就是把同一个真号码收敛成同一个字符串，下游拿它当键
+    （per-phone 限流桶、users.phone_e164 唯一索引）—— 允许非 ASCII 数字混入，
+    同一个号码就能生成任意多个互不相等的"合法归一值"。"""
+    assert normalize_e164(raw)[1:].isascii()
 
 
 def test_short_country_code_international_is_not_collateral_damage():
@@ -68,6 +93,15 @@ def test_is_domestic_only_for_mainland_11_digit():
     assert is_domestic("+861380013800") is False
 
 
+def test_is_domestic_rejects_full_width_digits_even_at_correct_length():
+    """`is_domestic` 是可以被单独调用的公开函数，不是只有 `normalize_e164` 的
+    输出才会喂给它。全角 3 顶替 ASCII 3 之后长度和前缀都对，如果只查长度和前缀，
+    这种库里手工插入的行会被误判成国内号、被路由去发国内模板短信。
+    改完 `normalize_e164` 之后它不会再产出这种号，但 `is_domestic` 自己这条边
+    也要守住，不能只靠上游挡。"""
+    assert is_domestic("+861３800138000") is False
+
+
 def test_mask_keeps_country_code_and_last_four():
     assert mask_e164("+8613800138000") == "+86 138****8000"
     assert mask_e164("+14155552671") == "+1 415****2671"
@@ -86,3 +120,5 @@ def test_mask_rejects_non_e164():
         mask_e164("8613800138000")   # 没有前导 +
     with pytest.raises(ValueError):
         mask_e164("+86-138")         # 本体不是纯数字
+    with pytest.raises(ValueError):
+        mask_e164("+86138001380²²")  # 上标数字：`str.isdigit()` 对它是 True 但不是 ASCII

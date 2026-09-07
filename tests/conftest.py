@@ -90,11 +90,22 @@ os.environ.setdefault(
 # SECRET_KEY 完全同一条口径 —— 测试走**和生产同一条路**（真的带着一个合法的
 # 提供方名字启动）。不要改成"测试时跳过这个闸"：那样闸在测试里就是死的。
 #
+# **强制赋值，不是 setdefault**：`config.py` 邀请开发者在本机 shell 里导出
+# `KATRAIN_SMS_PROVIDER=console` + `KATRAIN_SMS_ALLOW_CONSOLE=1` 做真浏览器验收
+# （闸的 `allow_console` 放行口就是为它开的）。如果这里用 setdefault，在**那台机器
+# 的那个 shell**里跑 pytest 会读到 shell 里的 console，闸放行，整套测试用
+# ConsoleProvider 跑完 —— 和 CI 跑的不是同一条路，而那台机器恰恰是做验收的那台。
+# 失败方式是安静的：ConsoleProvider.send() 永远成功，Task 6 起任何依赖
+# SmsRejected/SmsUnreachable 分流的用例都不会走到该走的分支。同一条推理也适用于
+# ALLOW_CONSOLE 本身：不强制清空，放行开关会从 shell 漏进测试进程，让闸在测试里
+# 比在生产里松。两行都用强制赋值，覆盖任何开发机 shell 里已经导出的值。
+#
 # **代价说清楚**：凭据是空的，所以任何**没打桩**就走到 `sms.get_provider().send()`
 # 的用例会真的去打 dysmsapi（3 秒超时后抛 SmsUnreachable，或拿到 Code != OK 抛
 # SmsRejected）。Task 6 起，凡是会走到 `sms_challenge.issue()` 的用例一律要打
 # `monkeypatch.setattr(sms, "get_provider", lambda: stub)`。
-os.environ.setdefault("KATRAIN_SMS_PROVIDER", "aliyun")
+os.environ["KATRAIN_SMS_PROVIDER"] = "aliyun"
+os.environ["KATRAIN_SMS_ALLOW_CONSOLE"] = ""
 # 凭据在测试进程里**强制清空**，不是 setdefault：`setdefault` 不会覆盖开发机或
 # 线上机器 shell 里可能已经存在的 KATRAIN_SMS_ACCESS_KEY_*，而那意味着一个漏打桩
 # 的用例会**真发短信、真花钱**。清空之后最坏结果是阿里云拒收，不是账单。

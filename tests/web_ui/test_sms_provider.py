@@ -101,16 +101,52 @@ def test_every_known_provider_name_can_actually_be_constructed(monkeypatch):
         assert isinstance(sms.get_provider(), sms.SmsProvider), name
 
 
+# 15 个短信字段各配一条 (env 名, env 字符串值, 装配后的期望值)。测试值全部**不同于
+# 字段默认值**（不然 env 没接上也会碰巧通过），且**互不相同**（不然两个字段被
+# 误接到同一个 env 变量也测不出来）。删掉任何一行 `data.setdefault(...)`，
+# 这张表就能抓到对应那一个字段——之前只抽样 3 个时，删掉 SMS_PHONE_HOURLY
+# 那行装配不会让任何测试变红。
+_SMS_ENV_FIELDS = {
+    "SMS_PROVIDER": ("KATRAIN_SMS_PROVIDER", "aliyun", "aliyun"),
+    "SMS_ACCESS_KEY_ID": ("KATRAIN_SMS_ACCESS_KEY_ID", "test-ak-id", "test-ak-id"),
+    "SMS_ACCESS_KEY_SECRET": ("KATRAIN_SMS_ACCESS_KEY_SECRET", "test-ak-secret", "test-ak-secret"),
+    "SMS_SIGN_NAME": ("KATRAIN_SMS_SIGN_NAME", "测试签名", "测试签名"),
+    "SMS_TEMPLATE_CODE": ("KATRAIN_SMS_TEMPLATE_CODE", "SMS_TEST_TPL", "SMS_TEST_TPL"),
+    "SMS_CODE_TTL_SEC": ("KATRAIN_SMS_CODE_TTL_SEC", "301", 301),
+    "SMS_COOLDOWN_SEC": ("KATRAIN_SMS_COOLDOWN_SEC", "61", 61),
+    "SMS_PHONE_HOURLY": ("KATRAIN_SMS_PHONE_HOURLY", "6", 6),
+    "SMS_PHONE_DAILY": ("KATRAIN_SMS_PHONE_DAILY", "12", 12),
+    "SMS_IP_DAILY": ("KATRAIN_SMS_IP_DAILY", "22", 22),
+    "SMS_MAX_ATTEMPTS": ("KATRAIN_SMS_MAX_ATTEMPTS", "7", 7),
+    "SMS_DAILY_CAP_CN": ("KATRAIN_SMS_DAILY_CAP_CN", "302", 302),
+    "SMS_DAILY_CAP_INTL": ("KATRAIN_SMS_DAILY_CAP_INTL", "52", 52),
+    "SMS_ALLOW_CONSOLE": ("KATRAIN_SMS_ALLOW_CONSOLE", "1", True),
+    "REGISTER_IP_DAILY": ("KATRAIN_REGISTER_IP_DAILY", "13", 13),
+}
+
+
 def test_sms_settings_are_wired_to_env_not_only_declared(monkeypatch):
     """字段声明了但 `Settings.__init__` 里没装配 ⇒ 线上设了 env 也不生效，
-    表现是"限流参数怎么调都不动"这种没有任何报错的故障。两处都要写。"""
-    monkeypatch.setenv("KATRAIN_SMS_PROVIDER", "aliyun")
-    monkeypatch.setenv("KATRAIN_SMS_DAILY_CAP_INTL", "7")
-    monkeypatch.setenv("KATRAIN_SMS_COOLDOWN_SEC", "11")
+    表现是"限流参数怎么调都不动"这种没有任何报错的故障。两处都要写。
+
+    覆盖任务书 Interfaces 一节列的全部 15 个字段（含 `REGISTER_IP_DAILY`），
+    不是抽样几个——抽样版本对"漏写某一行装配"这种坏法免疫，因为没被抽到的
+    那个字段坏了也不会被发现。
+    """
+    assert set(_SMS_ENV_FIELDS) == {
+        "SMS_PROVIDER", "SMS_ACCESS_KEY_ID", "SMS_ACCESS_KEY_SECRET", "SMS_SIGN_NAME",
+        "SMS_TEMPLATE_CODE", "SMS_CODE_TTL_SEC", "SMS_COOLDOWN_SEC", "SMS_PHONE_HOURLY",
+        "SMS_PHONE_DAILY", "SMS_IP_DAILY", "SMS_MAX_ATTEMPTS", "SMS_DAILY_CAP_CN",
+        "SMS_DAILY_CAP_INTL", "SMS_ALLOW_CONSOLE", "REGISTER_IP_DAILY",
+    }, "字段表本身要覆盖 15 个 —— 少一个，那个字段就退回没测"
+
+    for env_name, env_value, _expected in _SMS_ENV_FIELDS.values():
+        monkeypatch.setenv(env_name, env_value)
+
     fresh = config.Settings()
-    assert fresh.SMS_PROVIDER == "aliyun"
-    assert fresh.SMS_DAILY_CAP_INTL == 7
-    assert fresh.SMS_COOLDOWN_SEC == 11
+
+    for field, (env_name, _env_value, expected) in _SMS_ENV_FIELDS.items():
+        assert getattr(fresh, field) == expected, f"{field}（{env_name}）没接上 env 装配"
 
 
 # --- 两个提供方 -------------------------------------------------------------
@@ -221,6 +257,22 @@ async def test_aliyun_timeout_raises_sms_unreachable():
         await p.send("+8613800138000", "123456", is_intl=False)
 
 
+@pytest.mark.asyncio
+async def test_aliyun_non_object_json_raises_sms_unreachable():
+    """`resp.json()` 能成功解析出 list / str / null 等非对象，`.get()` 不存在。
+
+    不单独判这一层的话，`body.get("Code", "")` 会抛裸 AttributeError，穿过调用方的
+    `except SmsRejected` / `except SmsUnreachable` 变成 500，而额度/冷却记账
+    一条都不执行——既没计入也没释放。语义上它和"非 JSON"同族：不知道收没收，保守计入。
+    """
+    def handler(request):
+        return httpx.Response(200, json=[])
+
+    p = _doc_provider(transport=httpx.MockTransport(handler))
+    with pytest.raises(sms.SmsUnreachable):
+        await p.send("+8613800138000", "123456", is_intl=False)
+
+
 def test_rejected_is_not_swallowed_by_except_unreachable():
     """两个类必须是**兄弟**，不是父子。
 
@@ -268,3 +320,28 @@ def test_sms_gate_runs_before_any_database_work():
     assert gate_at < first_db, (
         f"闸在第 {gate_at} 行，而第一处 DB 动作在第 {first_db} 行 —— 闸必须在前面"
     )
+
+
+def test_sms_gate_actually_raises_when_the_lifespan_runs(monkeypatch):
+    """端到端一点：真的调用 `_lifespan_server`，证明闸不是被注释掉/塞进死分支的摆设。
+
+    上面两条源码字符串断言（`test_sms_gate_is_wired_into_the_server_lifespan` /
+    `test_sms_gate_runs_before_any_database_work`）挡不住"注释掉调用"或"包进
+    `if False:`"——它们只搜子串，注释和死分支里的调用照样匹配。这条不读源码，
+    真的跑 `_lifespan_server`：如果闸没接上或被绕过，函数会往下走到
+    `SQLAlchemyUserRepository(...).init_db()`（真连库），而不是在这里抛。
+    抛在这里同时证明了「接上了」和「在任何 DB 动作之前」——因为如果它跑过了
+    DB 初始化才抛，前面就该是别的报错（连库失败），不会是这条 RuntimeError。
+    """
+    import asyncio
+    import logging
+
+    from fastapi import FastAPI
+
+    from katrain.web import server
+    from katrain.web.core import config
+
+    monkeypatch.setattr(config.settings, "SMS_PROVIDER", "")
+    monkeypatch.setattr(config.settings, "KATRAIN_MODE", "server")
+    with pytest.raises(RuntimeError, match="KATRAIN_SMS_PROVIDER"):
+        asyncio.run(server._lifespan_server(FastAPI(), logging.getLogger("test-sms-gate")))

@@ -13,6 +13,7 @@ ImportError（F8）；(2) 官方 SDK 是同步的，而这里必须 async ——
 import base64
 import hashlib
 import hmac
+import logging
 import urllib.parse
 import uuid
 from datetime import datetime, timezone
@@ -21,6 +22,14 @@ import httpx
 
 from katrain.web.core.config import settings
 from katrain.web.core.phone import mask_e164
+
+# httpx 在 INFO 级把完整请求 URL 打进日志（httpx/_client.py 的 logger.info("HTTP Request: ...")）。
+# 我们用 GET + query string 传参，完整手机号（PhoneNumbers/To）和验证码（TemplateParam/Message）
+# 都在这个 URL 里。仓库今天没有 basicConfig、root logger 默认 WARNING，所以现在不会响 ——
+# 但那是巧合级的保护：一行 `logging.basicConfig(level=INFO)` 或一份 uvicorn 的 `--log-config`
+# 就会让完整手机号和验证码进日志文件。这里显式摁住这个 logger 的级别，不依赖调用方今天
+# 有没有配置全局日志。
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 class SmsProviderError(Exception):
@@ -115,9 +124,15 @@ class AliyunProvider(SmsProvider):
         if is_intl:
             params.update({"To": phone_e164, "Message": f"Your verification code is {code}"})
         else:
+            if not phone_e164.startswith("+86"):
+                # 不盲切：以前是 `phone_e164[len("+86"):]`，如果调用方以 is_intl=False 传进
+                # 非 +86 号（判定逻辑改了 / 港澳号被划进"国内"），会静默砍掉头三个字符发出
+                # 一个错号，失败形态是阿里云侧 MOBILE_NUMBER_ILLEGAL ⇒ 归 SmsRejected ⇒
+                # 连额度都不占，日志上看不出是我们切错了。这里显式拒掉。
+                raise SmsRejected(f"国内通道只接受 +86 号码，收到: {mask_e164(phone_e164)}")
             params.update(
                 {
-                    "PhoneNumbers": phone_e164[len("+86"):],
+                    "PhoneNumbers": phone_e164.removeprefix("+86"),
                     "SignName": self.sign_name,
                     "TemplateCode": self.template_code,
                     "TemplateParam": f'{{"code":"{code}"}}',
@@ -128,7 +143,10 @@ class AliyunProvider(SmsProvider):
         try:
             async with httpx.AsyncClient(timeout=3.0, transport=self._transport) as client:
                 resp = await client.get(self._endpoint(is_intl), params=params)
-        except Exception as exc:
+        except (httpx.HTTPError, OSError) as exc:
+            # 只收窄成网络/传输层的失败。`except Exception` 太宽会把 AsyncClient 构造期的
+            # TypeError/ValueError 之类的代码 bug 也翻译成"供应商不可达" ⇒ 按语义计入全站
+            # 日额度（一个 bug 去啃短信预算），而且报错方向会把排查引偏。
             # 连不上 / 超时：**不知道**阿里收没收 ⇒ 调用方保守计入日额度。
             raise SmsUnreachable(f"短信供应商不可达: {exc}") from exc
 
@@ -138,6 +156,13 @@ class AliyunProvider(SmsProvider):
             body = resp.json()
         except ValueError as exc:
             raise SmsUnreachable(f"短信供应商返回了非 JSON（{resp.status_code}）") from exc
+        if not isinstance(body, dict):
+            # 合法 JSON 但不是对象（`[]` / `"blocked"` / `null` 等都能通过 resp.json()）。
+            # 和"非 JSON"同一族：不知道它收没收 ⇒ 保守计入日额度。不做这层判断的话，
+            # 下面 body.get(...) 会抛裸 AttributeError，穿过调用方的
+            # except SmsRejected / except SmsUnreachable 变成 500，
+            # 而 Task 6 的额度/冷却记账一条都不执行。
+            raise SmsUnreachable(f"短信供应商返回了非预期的 JSON 结构（{resp.status_code}）")
 
         if str(body.get("Code", "")).upper() != "OK":
             # HTTP 200 且 Code != OK：阿里**明确拒收**，确定没计费。

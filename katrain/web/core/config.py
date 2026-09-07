@@ -272,7 +272,9 @@ class Settings(BaseModel):
 
         # 短信。字段声明 + 这里的 env 装配是两件事，缺一个就"env 设了不生效"。
         data.setdefault("SMS_PROVIDER", os.getenv("KATRAIN_SMS_PROVIDER", ""))
-        data.setdefault("SMS_ALLOW_CONSOLE", os.getenv("KATRAIN_SMS_ALLOW_CONSOLE", "") == "1")
+        data.setdefault(
+            "SMS_ALLOW_CONSOLE", os.getenv("KATRAIN_SMS_ALLOW_CONSOLE", "").lower() in ("1", "true", "yes")
+        )
         data.setdefault("REGISTER_IP_DAILY", int(os.getenv("KATRAIN_REGISTER_IP_DAILY", 10)))
         data.setdefault("SMS_ACCESS_KEY_ID", os.getenv("KATRAIN_SMS_ACCESS_KEY_ID", ""))
         data.setdefault("SMS_ACCESS_KEY_SECRET", os.getenv("KATRAIN_SMS_ACCESS_KEY_SECRET", ""))

@@ -12,8 +12,28 @@ logger = logging.getLogger("katrain_web")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """校验口令。**无法识别的 hash 返回 False，不抛。**
+
+    passlib 对空串/哨兵值/任何非 bcrypt 串抛 `UnknownHashError`。让它抛出去的后果是
+    这类账号被打 /auth/login 时 **500 而不是 401** —— 而 500 与 401 可区分,
+    于是任何人都能免费枚举出"哪些账号存在但没有可用口令"。
+
+    仓里已经有这样的哨兵：`SHADOW_USER_NO_LOCAL_AUTH`
+    （`katrain/web/api/v1/endpoints/auth.py:77`，`:187` 的 `_get_or_create_shadow_user`
+    拿它建盒子影子用户）。今天够不着,因为 board 模式先把 /auth/login 转发给云端了 ——
+    那是**调用顺序**保住的,不是结构。这里收口之后就与调用顺序无关。
+
+    **只吞 `ValueError` 与 `TypeError`，不写 `except Exception`**：
+    `UnknownHashError` 是 `ValueError` 的子类（实跑确认过 MRO），密码超长这类也是
+    `ValueError`，它们都该当"口令不匹配"。而 bcrypt 后端缺失抛的是
+    `passlib.exc.MissingBackendError`（`RuntimeError` 的子类）—— 那种故障必须原样炸成
+    500 让人看见，吞掉它的表现是"全站所有人的密码都突然不对了"，一声不吭。
+    """
+    try:
+        return bool(pwd_context.verify(plain_password, hashed_password))
+    except (ValueError, TypeError):
+        return False
 
 
 def get_password_hash(password):

@@ -793,8 +793,17 @@ def assert_sms_provider_is_configured(mode: str, provider: str) -> None:
     SMS_PHONE_DAILY: int = 10
     SMS_IP_DAILY: int = 20
     SMS_MAX_ATTEMPTS: int = 5
-    SMS_DAILY_CAP_CN: int = 300
-    SMS_DAILY_CAP_INTL: int = 100
+    # 日额度。**两个独立常数,不是"一个 cap 加一个比例"** —— 比例是式子,
+    # 调其中一个会静默改另一个;两个独立常数改哪个就是哪个。
+    # 定标依据(写在这里,免得后人以为是拍的):
+    #   国内 500:按上线首月峰值 100 个新注册/日 x 1.6 条(含一次重发) ≈ 160,留 3 倍余量。
+    #            按 ~¥0.045/条 ⇒ **封顶约 ¥22.5/日**。选 500 的判据不是"够用",
+    #            是**这个上限被打满时的损失,是我们愿意在没人值班的夜里承受的**。
+    #   国际 50:单价按最坏目的地约 $0.15/条 ⇒ **封顶约 $7.5/日**。国际号是长尾
+    #            (要求是"要能绑"不是"主力市场"),而它是**最贵的攻击面** ——
+    #            所以封顶必须比国内低一个量级,不是低三成。
+    SMS_DAILY_CAP_CN: int = 500
+    SMS_DAILY_CAP_INTL: int = 50
 
     # __init__
     data.setdefault("SMS_PROVIDER", os.getenv("KATRAIN_SMS_PROVIDER", ""))
@@ -808,8 +817,8 @@ def assert_sms_provider_is_configured(mode: str, provider: str) -> None:
     data.setdefault("SMS_PHONE_DAILY", int(os.getenv("KATRAIN_SMS_PHONE_DAILY", 10)))
     data.setdefault("SMS_IP_DAILY", int(os.getenv("KATRAIN_SMS_IP_DAILY", 20)))
     data.setdefault("SMS_MAX_ATTEMPTS", int(os.getenv("KATRAIN_SMS_MAX_ATTEMPTS", 5)))
-    data.setdefault("SMS_DAILY_CAP_CN", int(os.getenv("KATRAIN_SMS_DAILY_CAP_CN", 300)))
-    data.setdefault("SMS_DAILY_CAP_INTL", int(os.getenv("KATRAIN_SMS_DAILY_CAP_INTL", 100)))
+    data.setdefault("SMS_DAILY_CAP_CN", int(os.getenv("KATRAIN_SMS_DAILY_CAP_CN", 500)))
+    data.setdefault("SMS_DAILY_CAP_INTL", int(os.getenv("KATRAIN_SMS_DAILY_CAP_INTL", 50)))
 ```
 
 调用点：与 `assert_secret_key_is_safe(...)` 同一处（`config.py` 里现有那次调用的紧邻位置）。
@@ -1440,11 +1449,22 @@ async def send_phone_code(request: Request, body: SendCodeRequest, db: Session =
     try:
         cid = await sms_challenge.issue(db, phone, body.purpose, ip)
     except sms_challenge.RateLimited as e:
-        detail = {"code": e.code}
+        detail = {"code": e.code, "retry_after_sec": e.retry_after_sec}
+        # **字段恒在**(没有时为 None),不要"有理由才有字段" ——
+        # 后者逼前端写 `'retry_after_sec' in x` 而不是 `x.retry_after_sec`。
+        headers = {}
         if e.retry_after_sec is not None:
-            detail["retry_after_sec"] = e.retry_after_sec
-        raise HTTPException(status_code=503 if e.code == "sms_capacity" else 429, detail=detail)
+            headers["Retry-After"] = str(e.retry_after_sec)   # 标准头,顺手给
+        # **日总量打满是 503 不是 429**:那是服务端自己容量到顶,跟这个用户快不快无关。
+        # 给一个今天只发过一条码的人返 429,是在撒谎说这是他的错。
+        raise HTTPException(
+            status_code=503 if e.code == "sms_capacity" else 429,
+            detail=detail, headers=headers or None,
+        )
     except sms.SmsProviderError:
+        # **502 而不是 503,是刻意与上面那条区分开的。**
+        # 两者的重试建议完全不同:日额度打满要等到明天(我们自己的闸),
+        # 供应商抖动几秒后就该重试。合成同一个码,前端就只能给一句含糊的"稍后再试"。
         raise HTTPException(status_code=502, detail={"code": "sms_provider_failed"})
 
     # **响应对"这个号有没有账号"必须一模一样** —— 否则这个不鉴权端点就是账号枚举器。
@@ -1860,7 +1880,13 @@ async def set_password(
     db: Session = Depends(get_db),
 ):
     """改密码。**要验证码不要当前密码** —— 解开"忘密码的人给不出当前密码"这个死结,
-    同时比只验当前密码更强:会话被劫持的攻击者拿不到手机,改不了密码。"""
+    同时比只验当前密码更强:会话被劫持的攻击者拿不到手机,改不了密码。
+
+    **为什么有了手机验证码登录还要这个端点**(两位裁决者在这条上判反,这是裁定理由):
+    手机登录让人"进得来",这个端点让人"把密码修好"。少了它,一个忘了密码的用户
+    可以用验证码登录网页版,但**永远无法恢复口令登录** —— 而口令登录是**上盒子的唯一路**
+    (kiosk 登录页只有用户名与密码两个控件)。⇒ 他会被永久挡在自己买的那台设备之外。
+    """
     _guard_phone_endpoint(request)
     repo = request.app.state.user_repo
     me = repo.get_by_username(current_user.username)
@@ -1985,6 +2011,15 @@ Expected: FAIL — `KeyError: 'blocked_reason'`；`test_quota_does_not_create_a_
     # (quota.py:56-57,peek 的 docstring 明写"限额取桶上的快照")。
     # 拿 allowance=0 去 peek 一个未绑号用户 ⇒ 当周开出一个 allowance=0 的桶,
     # 该用户当周绑了手机也永远拿不到额度。所以在这里短路,一行桶都不建。
+    #
+    # 不只是"少建一行":这两种写法编码的是**不同的事实**。
+    # "没有桶" = 没资格(权限事实);"allowance=0 的桶" = 有资格但额度为零(额度事实)。
+    # 把前者写成后者,将来做"付费会员每周 3 次 / 免费用户 1 次 / 未绑手机 0 次"时
+    # 就分不出后两者了 —— 而它们该有完全不同的引导文案。
+    #
+    # ⚠️ **这条短路的正确性有一个前提:不存在"解绑手机"的路径。**
+    # 本轮不建换绑/解绑(见 plan 收尾清单),所以自洽。若哪天加了解绑,
+    # 要回来重看这里:那时一个 used=1 的桶行会在 /quota 上突然变得不可见。
     if current_user.phone_bound:
         used, allowance = quota.peek(
             db, current_user.id, "free_report:week", allowance=settings.FREE_WEEKLY_REPORTS

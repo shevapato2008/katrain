@@ -52,7 +52,7 @@ class RateLimited(Exception):    .code: str   .retry_after_sec: int | None
 class ChallengeInvalid(Exception): .code: str
 
 # katrain/web/core/config.py
-assert_sms_provider_is_configured(mode: str, provider: str) -> None
+assert_sms_provider_is_configured(mode: str, provider: str, allow_console: bool = False) -> None
 # 调用点：server.py 的 _lifespan_server,紧跟 assert_secret_key_is_safe(server.py:176) 之后
 
 # katrain/web/core/auth.py :: UserRepository(ABC) 与 SQLAlchemyUserRepository 各加

@@ -1,0 +1,19 @@
+# 前端（vitest）测试基线 —— feature/phone-login @ 41a37b3f，2026-09-07 捕获
+#
+# 命令：cd katrain/web/ui && npx vitest run
+# 环境：node_modules 由 `npm ci` 装出（378 个包），非跨 worktree 复用
+#
+# 结果：
+#   Test Files  161 passed (161)
+#   Tests       1710 passed | 5 skipped (1715)
+#   失败用例：0
+#
+# 判据（给后续 Task 13–17 用）：
+#   跑 `npx vitest run` 之后，**失败用例的名字集合**必须仍然是空集。
+#   任何一条失败都是本轮引入的 —— 这个基线里没有可以推给别人的既有失败。
+#   （对比 test-baseline.txt：那份是 pytest 的 85 条既有失败，与前端无关，
+#    不要拿它去比 vitest 的结果。）
+#
+# 下面这一段是空的，因为基线里没有失败用例。保留这个文件是为了让"和基线比对"
+# 这句话有一个真实的操作数 —— 而不是让它去比一份根本不含前端条目的文件。
+# ---- 失败用例名字集合（基线）----

@@ -29,7 +29,7 @@
    成功文案写「验证码已提交发送」而**不是**「已发送到您的手机」。
 4. **`verify` 只收 `challenge_id` 不收手机号**，失败计数挂在 challenge 行上。
 5. **per-IP 限流不得用 `request.client.host`**（F10：生产上它对所有用户恒为 `172.20.0.1`）。
-6. **三个新端点每一个都要显式回答盒子问题**（F6），一个都不能漏。
+6. **四个新端点每一个都要显式回答盒子问题**（F6），一个都不能漏。
 7. **迁移零手写 DDL**：列上不写 `unique=True`，唯一性走 `__table_args__` 里的 `Index(..., unique=True)`（F1/F2）。
 8. **i18n 默认值写中文**：`t('key', '中文默认')`。现有 `LoginModal.tsx` 写英文默认值，是反例，别照抄。
 9. 供应商调用 `async` + `httpx.AsyncClient(timeout=3.0)`。单进程下同步阻塞拖垮整站。
@@ -555,7 +555,7 @@ Docker 重建网络还会变,变了是静默退回全站一个桶。
 
 **Files:**
 - Modify: `katrain/web/core/auth.py`（只改 `verify_password`，`:15-16`）
-- Test: `tests/web_ui/test_phone_auth.py`（新建，本 Task 起头，后续 Task 继续往里加）
+- Test: `tests/web_ui/test_phone_auth.py`（新建，本 Task 起头）
 
 **Interfaces:**
 - Consumes: 无
@@ -1125,13 +1125,15 @@ provider_charged 与 delivered_ok 是两件事不是一件:前者管日额度(�
   （`mask_e164("+8613800138000")` → `"+86 138****8000"`）。
 - Produces:
   - `config.KNOWN_SMS_PROVIDERS: tuple = ("console", "aliyun")`
-  - `config.assert_sms_provider_is_configured(mode: str, provider: str) -> None`
-    —— server 模式下 `""` / `"console"` / 未知名一律抛 `RuntimeError`；board 模式一律放行。
-  - `settings` 新增 **13 个字段**，每个都配一条 `KATRAIN_SMS_*` 的 env 装配：
+  - `config.assert_sms_provider_is_configured(mode: str, provider: str, allow_console: bool = False) -> None`
+    —— server 模式下 `""` / 未知名一律抛 `RuntimeError`；`"console"` 在 `allow_console=False`（默认）
+    时也抛，`allow_console=True` 时放行；board 模式一律放行。
+  - `settings` 新增 **15 个字段**，每个都配一条 env 装配（13 个是 `KATRAIN_SMS_*`；
+    `REGISTER_IP_DAILY` 例外，是 `KATRAIN_REGISTER_IP_DAILY`）：
     `SMS_PROVIDER / SMS_ACCESS_KEY_ID / SMS_ACCESS_KEY_SECRET / SMS_SIGN_NAME /
     SMS_TEMPLATE_CODE / SMS_CODE_TTL_SEC / SMS_COOLDOWN_SEC / SMS_PHONE_HOURLY /
     SMS_PHONE_DAILY / SMS_IP_DAILY / SMS_MAX_ATTEMPTS / SMS_DAILY_CAP_CN /
-    SMS_DAILY_CAP_INTL`
+    SMS_DAILY_CAP_INTL / SMS_ALLOW_CONSOLE / REGISTER_IP_DAILY`
   - `sms.SmsProviderError(Exception)` / `sms.SmsRejected(SmsProviderError)` /
     `sms.SmsUnreachable(SmsProviderError)`
   - `sms.SmsProvider.send(phone_e164: str, code: str, is_intl: bool) -> None`
@@ -2577,11 +2579,11 @@ verify 只收 challenge_id 不收手机号:收手机号的话任何人可以拿�
     `config.py`。Step 3 第 0 步有一条前置校验命令，没过就回 Task 5 补，别在这里补。
 - Produces:
   - `POST /api/v1/auth/phone/send-code` → `200 {"challenge_id": str, "cooldown_sec": int}`
-  - `endpoints/auth.py :: _guard_phone_endpoint(request: Request) -> None`（Task 8/9/10 三个端点共用）
+  - `endpoints/auth.py :: _guard_phone_endpoint(request: Request) -> None`（Task 8/9/10 三个端点共用，
+    加上本 Task 自己的 send-code 端点，四个手机端点共用同一道盒子闸，见 3255 行）
   - `endpoints/auth.py :: VALID_PURPOSES = {"login", "bind", "set_password"}`
   - `models_db.User.signup_ip`（`String(64)`、`nullable=True`；**不进 `_to_dict`**）
   - `UserRepository.create_user(username, hashed_password, signup_ip: Optional[str] = None)`
-  - `sms_challenge.today_start() -> datetime`（公开名）
   - **`tests/web_ui/conftest.py` 里的夹具，Task 8/9/10 直接用，不许各自再发明一份**：
     `sms_outbox`（记码的 provider 替身，`.last_code`、`.fail_with`）、`phone_app`、
     `phone_db`、`phone_client`、`phone_auth_client`、`phone_board_app`、`phone_board_client`、
@@ -3040,6 +3042,9 @@ Expected: FAIL —— `16 failed`。三种红因，逐条对得上：
 
 **Step 3.0 —— 两条前置校验，先跑再写代码：**
 
+第一条校 Task 5 的产出，第二条校 **Task 6** 的产出（不是本 Task 自己改过名之后的自检 ——
+本 Task 从不改 `sms_challenge.py`，这条 grep 只是确认「要调用的那个公开名真的已经在那儿」）：
+
 ```bash
 grep -n "REGISTER_IP_DAILY" katrain/web/core/config.py     # 必须 2 处命中（Settings 字段 + __init__ 装配）
 grep -c "today_start" katrain/web/core/sms_challenge.py   # 应为 2；_today_start 应为 0
@@ -3048,8 +3053,6 @@ grep -c "today_start" katrain/web/core/sms_challenge.py   # 应为 2；_today_st
 第一条不到 2 处 ⇒ 回 Task 5 补上并由 **Task 5 的提交**带上 `config.py`；本 Task 不动 config.py。
 第二条：Task 6 落的**已经是公开名** `today_start`（1 处定义 + `issue()` 里 1 处调用，共 2 处），
 `_today_start` 零命中。**本 Task 不改名，只调用** —— 跨模块不拿私有名是接口契约的口径。
-本 Task 把它改名为公开的 `today_start` 并同步改这 2 处 —— 注册的"今天"和短信额度的
-"今天"必须是同一个日界，跨模块去拿别人的私有函数是另一个错。
 
 **① `katrain/web/core/models_db.py`** —— `User` 类里 `avatar_url` 之后加一列：
 
@@ -3111,7 +3114,8 @@ from katrain.web.core.phone import normalize_e164
 
 `models.py` 那一行改成 `from katrain.web.models import SendCodeRequest, User, UserInDB`。
 
-新端点（`_guard_phone_endpoint` 是 Task 8/9/10 共用的，写在 `router` 定义之后）：
+新端点（`_guard_phone_endpoint` 是 Task 8/9/10 共用的，加上本 Task 自己的 send-code，
+四个手机端点共用，写在 `router` 定义之后）：
 
 ```python
 VALID_PURPOSES = {"login", "bind", "set_password"}
@@ -3233,7 +3237,7 @@ Expected: PASS（全部）
 # F12：跑 pytest 会改掉这个 kiosk fixture，提交前先还原，免得它混进来
 git checkout -- katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json 2>/dev/null || true
 git status --porcelain
-git add katrain/web/core/models_db.py katrain/web/core/auth.py katrain/web/core/sms_challenge.py \
+git add katrain/web/core/models_db.py katrain/web/core/auth.py \
         katrain/web/api/v1/endpoints/auth.py katrain/web/models.py \
         tests/web_ui/conftest.py tests/web_ui/test_phone_endpoints.py
 git commit -m "feat(auth): POST /auth/phone/send-code(不鉴权)+ /auth/register 补真 per-IP 限流
@@ -3285,7 +3289,7 @@ need_online 且**不转发**。"
 
 **口径（接口契约"三条口径"第 2 条）：只加布尔 `phone_bound`，不把 `phone_e164` 加进
 pydantic `User` 或 `_to_dict`。** 原始号只由 `repo.get_phone_e164(user_id)` 单点取
-（Task 9 落）。灌原始号会让它随 `User` 泄进每一个回 `User` 的响应。
+（Task 10 落）。灌原始号会让它随 `User` 泄进每一个回 `User` 的响应。
 
 - [ ] **Step 1: 写失败的测试**
 
@@ -4008,7 +4012,7 @@ Claude-Session: https://claude.ai/code/session_01GGNBSL4QhRA2vCDcZL83oF"
   - `models.SetPasswordRequest{challenge_id: str, code: str, new_password: str}`
   - `UserRepository.set_password_hash(user_id: int, hashed: str) -> None`
   - `UserRepository.get_phone_e164(user_id: int) -> Optional[str]`
-  - **给 Task 14/15 的文案（必须在成功页上说出来）**：
+  - **给 Task 17 的文案（必须在成功页上说出来）**：
     `auth:set_password_other_devices` 默认值
     `'密码已经改好了。已经登录的设备不会被强制退出，最长 90 天内仍可继续使用。'`
     —— 见下面 `test_old_access_and_refresh_tokens_survive_the_password_change` 的理由。
@@ -4902,6 +4906,7 @@ Claude-Session: https://claude.ai/code/session_01GGNBSL4QhRA2vCDcZL83oF"
 **Files:**
 - Modify: `katrain/web/server.py`（对局聊天，WS）
 - Modify: `katrain/web/api/v1/endpoints/live.py`（直播评论）
+- Modify: `tests/web_ui/test_game_termination_and_chat_identity.py`（`_make_user` 加手机号参数）
 - Test: `tests/web_ui/test_posting_requires_phone.py`（新建，自带夹具）
 
 **Interfaces:**
@@ -5338,7 +5343,7 @@ Claude-Session: https://claude.ai/code/session_01GGNBSL4QhRA2vCDcZL83oF"
   `POST /api/v1/auth/phone/send-code {phone, purpose}` → `{challenge_id, cooldown_sec}`；
   `POST /api/v1/auth/phone/login {challenge_id, code}` → `{access_token, token_type}`；
   `POST /api/v1/auth/phone/bind {challenge_id, code}`（鉴权）→ `{phone_masked}`；
-  `POST /api/v1/auth/set-password {challenge_id, code, new_password}`（鉴权）→ `{}`。
+  `POST /api/v1/auth/set-password {challenge_id, code, new_password}`（鉴权）→ `{"ok": true}`。
   失败一律 `{"detail": {"code": str, "message"?: str, "retry_after_sec"?: int}}`。
   Task 8 已把 `phone_bound: bool` 加进 pydantic `User` ⇒ `GET /api/v1/auth/me` 带这一格。
 - Produces（后面三个 Task 全部按这些确切签名调用）：
@@ -6231,8 +6236,8 @@ Expected: `git diff` 里新增的 `msgid` **只有本 Task 那 14 个**。多出
 cd katrain/web/ui && npm test 2>&1 | tail -30
 npm run build && npm run build:kiosk-2d
 ```
-Expected: `npm test` 的失败集合与 `superpowers/tracks/phone-login/test-baseline.txt` 记的**基线一致**
-（比的是**用例名字集合**，不是条数）；两个构建各退出 0。
+Expected: `npm test` 的失败集合与 `superpowers/tracks/phone-login/test-baseline-frontend.txt` 记的**基线一致**
+（比的是**失败用例名字集合仍为空集**，不是条数）；两个构建各退出 0。
 本 Task 只动 galaxy 文件，kiosk 包吃不到，但 `tsc -b` 是全 `src` 的，所以两个构建都得跑。
 
 - [ ] **Step 8: 提交**
@@ -6291,6 +6296,8 @@ switchTo,成功后的复位把手机号/验证码/challenge/倒计时一起清�
 - Modify: `katrain/web/ui/src/legal/privacy.ts`（补手机号那一段 + 导出路由常量）
 - Modify: `katrain/web/ui/src/GalaxyApp.tsx`（加 `privacy` 路由）
 - Modify: `katrain/web/ui/src/galaxy/components/auth/LoginModal.tsx`（挂同意项 + 闸住发码按钮）
+- Modify: `katrain/web/ui/src/galaxy/components/auth/__tests__/LoginModal.phone.test.tsx`
+  （Task 14 产出的测试文件；发码按钮多了 `!consent` 前置条件，`requestCode` 助手补一行勾选同意框）
 - Modify: `scripts/batch_translate_galaxy.py` + 11 本 `.po`
 - Test: 见上面两个测试文件
 
@@ -6689,6 +6696,7 @@ git checkout -- katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.js
 git add katrain/web/ui/src/galaxy/components/auth/PhoneConsent.tsx \
         katrain/web/ui/src/galaxy/components/auth/LoginModal.tsx \
         katrain/web/ui/src/galaxy/components/auth/__tests__/PhoneConsent.test.tsx \
+        katrain/web/ui/src/galaxy/components/auth/__tests__/LoginModal.phone.test.tsx \
         katrain/web/ui/src/galaxy/pages/PrivacyPage.tsx \
         katrain/web/ui/src/galaxy/pages/__tests__/PrivacyPage.test.tsx \
         katrain/web/ui/src/legal/privacy.ts \
@@ -7474,7 +7482,7 @@ cd katrain/web/ui && npm test 2>&1 | tail -40
 npm run build && npm run build:kiosk-2d
 ```
 Expected: 新增 msgid 恰好 10 个；
-`npm test` 的**失败用例名字集合**与 `superpowers/tracks/phone-login/test-baseline.txt` 一致
+`npm test` 的**失败用例名字集合**与 `superpowers/tracks/phone-login/test-baseline-frontend.txt` 一致（仍为空集）
 （`ReportsPage.test.tsx` 的 18 条已登录支现在会多渲染一个 `FreeQuotaNotice`，它在 jsdom 里取不到
 额度、走"取不到"那一支多出一行文字——那些用例按 testid 与具体文本断言，不该受影响；
 **万一有一条红了，它就是本 Task 造成的，不许算进既有噪声**）；两个构建各退出 0。
@@ -7548,6 +7556,8 @@ api.ts 与 api/live.ts 在共享领土 ⇒ 两个构建都跑过;live.ts 的报�
 - Modify: `katrain/web/ui/src/galaxy/components/auth/BindPhoneDialog.tsx`（加 `purpose` 参数，复用同一个壳）
 - Modify: `katrain/web/ui/src/galaxy/components/layout/GalaxySidebar.tsx`（设置菜单加一项）
 - Modify: `katrain/web/ui/src/galaxy/pages/report/ReportsPage.tsx`（402 的文案）
+- Modify: `scripts/batch_translate_galaxy.py`
+- Modify: `katrain/i18n/locales/{en,cn,tw,jp,ko,de,es,fr,ru,tr,ua}/LC_MESSAGES/katrain.po`（11 本）
 - Test: `katrain/web/ui/src/galaxy/components/auth/__tests__/SetPasswordDialog.test.tsx`
 - Test: `katrain/web/ui/src/galaxy/pages/report/__tests__/ReportsPage.phone402.test.tsx`
 
@@ -7563,6 +7573,7 @@ api.ts 与 api/live.ts 在共享领土 ⇒ 两个构建都跑过;live.ts 的报�
 // src/galaxy/components/auth/__tests__/SetPasswordDialog.test.tsx
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsProvider } from '../../../../context/SettingsContext';
 import { API } from '../../../../api';
@@ -7631,6 +7642,37 @@ describe('改密码对话框（与绑定共用一个壳，只换 purpose）', ()
     // 用户以为改完就安全了 —— 不说出来就是给他一个错的安全承诺。
     await waitFor(() => expect(screen.getByText(/其它设备.*不会.*退出|最长 90 天/)).toBeTruthy());
   });
+
+  it('purpose=set_password 时不渲染同意勾选框，也不要求勾选就能发验证码', async () => {
+    /* 裁定:set_password 的前置就是这个号已经绑在这个账号上(未绑号已经改成引导去绑),
+       收集手机号的同意在绑定那一刻已经给过 —— 再问一次是为已经持有的数据要同意。 */
+    const spy = vi.spyOn(API, 'sendPhoneCode').mockResolvedValue({ challenge_id: 'c1', cooldown_sec: 60 });
+    renderDlg('set_password');
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    fireEvent.click(screen.getByText('获取验证码'));
+    await waitFor(() => expect(spy).toHaveBeenCalled());
+  });
+
+  it('本 Task 新增的每个文案键都有中文默认值', () => {
+    /* 与 Task 14/16 同一条闸，射程换成本 Task 触碰的两个文件。
+       `\bt\(` 同时命中 `i18n.t(` 与解构出来的 `t(`。 */
+    const NEW_KEYS = [
+      'auth:set_password_other_devices', 'auth:report_402_phone', 'auth:report_402_credits',
+    ];
+    const src = [
+      new URL('../BindPhoneDialog.tsx', import.meta.url),
+      new URL('../../../pages/report/ReportsPage.tsx', import.meta.url),
+    ].map((u) => readFileSync(u, 'utf8')).join('\n');
+
+    const missing: string[] = [];
+    const notChinese: string[] = [];
+    for (const key of NEW_KEYS) {
+      const m = src.match(new RegExp(`\\bt\\(\\s*(['"\`])${key}\\1\\s*,\\s*(['"\`])([\\s\\S]*?)\\2`));
+      if (!m) { missing.push(key); continue; }
+      if (!/[一-龥]/.test(m[3])) notChinese.push(`${key} => ${m[3]}`);
+    }
+    expect({ missing, notChinese }).toEqual({ missing: [], notChinese: [] });
+  });
 });
 ```
 
@@ -7664,7 +7706,8 @@ it('402 但已绑手机时不出现绑定引导（只是真的没钱）', async 
 - [ ] **Step 2: 跑，确认它红**
 
 Run: `cd katrain/web/ui && npx vitest run src/galaxy/components/auth/__tests__/SetPasswordDialog.test.tsx src/galaxy/pages/report/__tests__/ReportsPage.phone402.test.tsx`
-Expected: FAIL — `BindPhoneDialog` 不接受 `purpose` prop（5 条全红）；402 两条红在找不到文案。
+Expected: FAIL — `BindPhoneDialog` 不接受 `purpose` prop、也没有 `requireConsent` 分支、
+i18n 键还没登记（7 条全红）；402 两条红在找不到文案。
 
 - [ ] **Step 3: 写最小实现**
 
@@ -7672,7 +7715,18 @@ Expected: FAIL — `BindPhoneDialog` 不接受 `purpose` prop（5 条全红）�
 - `set_password` 时手机号框只读、值取 `mask` 后的号（来自 `/auth/me` 的派生字段或绑定时的返回），
   多渲染一个「新密码」框，提交调 `API.setPassword`；
 - `set_password` 且 `!user.phone_bound` ⇒ 整个表单换成一句「先绑定手机号」+ 一个跳到绑定的按钮；
-- 成功文案带上那句 90 天。
+- 成功文案带上那句 90 天，用
+  `i18n.t('auth:set_password_other_devices', '密码已经改好了。已经登录的设备不会被强制退出，最长 90 天内仍可继续使用。')`
+  （默认值与 Task 10 Produces 里给的原文一致）。
+
+**同一个壳还要处理同意闸**（裁定：`set_password` 的前置就是这个号已经绑在这个账号上——
+未绑号 Step 3 上一条已经改成引导去绑——收集手机号的同意在绑定那一刻已经给过，
+再问一次是为已经持有的数据要同意，所以这个模式下不渲染同意区、也不拿 `!consent` 卡发码按钮）：
+`BindPhoneDialog` 再加一个 `requireConsent?: boolean`（默认 `true`），`purpose='set_password'` 时传 `false`：
+`{requireConsent && <PhoneConsent checked={consent} onChange={setConsent} disabled={loading} />}`，
+发码按钮的 `disabled` 从 `!consent` 改成 `(requireConsent && !consent)`。
+`purpose='bind'` 时不传这个新 prop、走默认值 `true`——Task 16 的 `BindPhoneDialog.test.tsx` 不用改，
+它测的正是默认值这条路径，Step 6 的 `npx vitest run` 会把它当回归一起跑绿。
 
 `GalaxySidebar` 的设置菜单在「绑定手机号」下面加「修改密码」，`purpose='set_password'` 打开同一个对话框。
 
@@ -7690,7 +7744,7 @@ setError(blocked === 'phone_unbound'
 - [ ] **Step 4: 跑，确认它绿**
 
 Run: 同 Step 2
-Expected: PASS（7 条）
+Expected: PASS（9 条）
 
 - [ ] **Step 5: 变异验证**
 
@@ -7700,12 +7754,22 @@ Expected: PASS（7 条）
 | `!user.phone_bound` 那一支 | 未绑手机那条 |
 | 成功文案里的 90 天那句 | 成功文案那条 |
 | 402 里 `free_weekly_blocked` 那一支 | 402 两条同时红 |
+| `requireConsent` 判断（发码按钮永远卡 `!consent`，PhoneConsent 永远渲染） | 不渲染同意勾选框那条 |
+| 把 `i18n.t('auth:report_402_phone', …)` 的默认值改成双引号包的英文 | `本 Task 新增的每个文案键都有中文默认值`（`notChinese` 非空） |
 
 - [ ] **Step 6: 新键进 11 本 `.po` + 两个构建**
 
+本 Task 新增的键：`auth:set_password_other_devices`、`auth:report_402_phone`、
+`auth:report_402_credits`（3 个）。
+
 ```bash
+./.venv/bin/python scripts/batch_translate_galaxy.py
+git diff katrain/i18n/locales | grep '^+msgid' | sort -u    # 只该出现这 3 个
+uv run python i18n.py
 cd katrain/web/ui && npx vitest run && npm run build && npm run build:kiosk-2d
 ```
+Expected: 新增 msgid 恰好 3 个；`npx vitest run` 的失败用例名字集合与
+`superpowers/tracks/phone-login/test-baseline-frontend.txt` 一致（仍为空集）；两个构建各退出 0。
 
 - [ ] **Step 7: 提交**
 
@@ -7716,7 +7780,18 @@ git add katrain/web/ui/src/galaxy/components/auth/BindPhoneDialog.tsx \
         katrain/web/ui/src/galaxy/components/layout/GalaxySidebar.tsx \
         katrain/web/ui/src/galaxy/pages/report/ReportsPage.tsx \
         katrain/web/ui/src/galaxy/pages/report/__tests__/ReportsPage.phone402.test.tsx \
-        katrain/i18n/
+        scripts/batch_translate_galaxy.py \
+        katrain/i18n/locales/en/LC_MESSAGES/katrain.po \
+        katrain/i18n/locales/cn/LC_MESSAGES/katrain.po \
+        katrain/i18n/locales/tw/LC_MESSAGES/katrain.po \
+        katrain/i18n/locales/jp/LC_MESSAGES/katrain.po \
+        katrain/i18n/locales/ko/LC_MESSAGES/katrain.po \
+        katrain/i18n/locales/de/LC_MESSAGES/katrain.po \
+        katrain/i18n/locales/es/LC_MESSAGES/katrain.po \
+        katrain/i18n/locales/fr/LC_MESSAGES/katrain.po \
+        katrain/i18n/locales/ru/LC_MESSAGES/katrain.po \
+        katrain/i18n/locales/tr/LC_MESSAGES/katrain.po \
+        katrain/i18n/locales/ua/LC_MESSAGES/katrain.po
 git commit -m "feat(ui): 改密码入口 + 402 的「没绑手机」文案
 
 补两处后端做完却没有任何读者的产出:/auth/set-password 整条(Task 10)与
@@ -7731,7 +7806,16 @@ Task 10 当初力保下来的理由只有在有入口时才成立:忘了密码�
 真没钱 → 去充值。合成一句「余额不足」是把前者的出路藏起来。
 
 成功文案必须说「其它设备上的登录最长 90 天不会掉」:改密码踢不掉已签发的
-token,而 refresh token 是 90 天 —— 不说出来就是给用户一个错的安全承诺。"
+token,而 refresh token 是 90 天 —— 不说出来就是给用户一个错的安全承诺。
+
+set_password 模式不重复要求同意:前置就是这个号已经绑在这个账号上,收集手机号
+的同意在绑定那一刻已经给过。BindPhoneDialog 加 requireConsent(默认 true),
+只有 set_password 传 false;bind 路径走默认值不受影响,Task 16 的
+BindPhoneDialog.test.tsx 不用改。
+
+三个新键(auth:set_password_other_devices / auth:report_402_phone /
+auth:report_402_credits)同时写进 11 本 .po,否则非中文用户在这两处看到
+的是整段中文,与需求 §0.3「所有国家的手机号都要支持」顶上。"
 ```
 
 ---
@@ -7739,14 +7823,15 @@ token,而 refresh token 是 90 天 —— 不说出来就是给用户一个错�
 ### Task 18: 真浏览器验收 + 基线比对 + 两个构建 + 部署前置
 
 **Files:**
-- Modify: `docker-compose.yml`（给 `katrain-web` 加一行 `KATRAIN_SMS_PROVIDER`）
 - Create: `tests/web_ui/test_compose_declares_sms_provider.py`
 - Create: `superpowers/tracks/phone-login/verification.md`
 
+（`docker-compose.yml` 那一行由 Task 5 落，本 Task 不再重复改它 —— 只断言它在、并对它做变异验证。）
+
 **Interfaces:**
 - Consumes:
-  - Task 5：`assert_sms_provider_is_configured(mode: str, provider: str) -> None`（接在
-    `server.py:176` 的 `assert_secret_key_is_safe(...)` 紧邻下一行）、`settings.SMS_PROVIDER`
+  - Task 5：`assert_sms_provider_is_configured(mode: str, provider: str, allow_console: bool = False) -> None`
+    （接在 `server.py:176` 的 `assert_secret_key_is_safe(...)` 紧邻下一行）、`settings.SMS_PROVIDER`
     （env `KATRAIN_SMS_PROVIDER`）、以及 Task 5 为 console 开的那个显式放行开关
     （env `KATRAIN_SMS_ALLOW_CONSOLE`，默认关、生产不设）
   - Task 7：`POST /api/v1/auth/phone/send-code`（JSON `{"phone","purpose"}` → `{"challenge_id","cooldown_sec"}`）
@@ -7809,16 +7894,20 @@ Expected: `comm -23` **输出为空**（新增失败为零）；`git diff --stat
 
 比的是**失败名字集合**不是条数 —— 条数相同也可能是「修好一条、弄坏一条」。
 
-**`tests/conftest.py` 在这一轮被改过**（Task 5）：它照抄 `KATRAIN_SECRET_KEY` 那段的形状，
-`os.environ.setdefault("KATRAIN_SMS_PROVIDER", "console")` + 放行开关。没有这一改，闸接进
-`_lifespan_server` 之后所有建 app 的用例会集体红，这次比对根本跑不到底。确认它在：
+**`tests/conftest.py` 在这一轮被改过**（Task 5）：它注入 `os.environ.setdefault("KATRAIN_SMS_PROVIDER",
+"aliyun")`，并把两个凭据 env（`KATRAIN_SMS_ACCESS_KEY_ID` / `KATRAIN_SMS_ACCESS_KEY_SECRET`）强制清空
+（不是 `setdefault`，是直接赋空串 —— 防止漏打桩的用例拿开发机/线上机器 shell 里可能存在的真凭据真的发短信）。
+**不注入 `KATRAIN_SMS_ALLOW_CONSOLE`**：闸禁止 server 模式用 `console`，让 pytest 进程跑 `console`
+等于整套测试从不走生产形状那条路，还要求测试进程设一个**生产绝不许存在**的放行开关。
+没有这一改，闸接进 `_lifespan_server` 之后所有建 app 的用例会集体红，这次比对根本跑不到底。确认它在：
 
 ```bash
 grep -n "KATRAIN_SMS_PROVIDER\|KATRAIN_SMS_ALLOW_CONSOLE" tests/conftest.py
 ```
-Expected: 两个名字都命中，且注入方式是 `os.environ.setdefault(...)`（不是给某个 settings
-实例赋值 —— `test_lobby_api.py` / `test_social_api.py` 会 `importlib.reload(config)`，
-打在旧实例上的补丁 reload 之后就没了）。
+Expected: `KATRAIN_SMS_PROVIDER` 命中，且注入方式是 `os.environ.setdefault(...)`、值是
+`"aliyun"`（不是给某个 settings 实例赋值 —— `test_lobby_api.py` / `test_social_api.py` 会
+`importlib.reload(config)`，打在旧实例上的补丁 reload 之后就没了）；
+`KATRAIN_SMS_ALLOW_CONSOLE` 在 `tests/conftest.py` 里**零命中**（pytest 进程不需要、也不该有这个开关）。
 
 - [ ] **Step 3: 两个前端构建 + 全量 vitest**
 
@@ -7855,7 +7944,12 @@ vitest 红了：前端没有基线文件，所以判据取保守的那一侧 —
      非 None，`/auth/register`、四个手机端点全部转发或 503
      （Task 7–10 的 `*_503_on_board_and_does_not_forward` 守的就是这个）；
   ③ `config.py:194` 会把 `DATABASE_URL` 强拉回本地 sqlite，验的不再是服务端那条路。
-- ✅ **本地绕法：显式打开 console 放行开关**，也就是 `tests/conftest.py` 走的同一条路
+- ✅ **本地绕法：显式打开 console 放行开关**（`KATRAIN_SMS_ALLOW_CONSOLE=1`）。
+  **这不是 `tests/conftest.py` 走的那条路** —— pytest 进程注入的是 `KATRAIN_SMS_PROVIDER=aliyun`
+  且不设放行开关（见 Step 2）；本机验收起的是一个**真服务进程**（`python -m katrain --ui web`），
+  这里改用 `console` + 放行开关是为了能在服务端日志里**读到验证码**（`aliyun` 空凭据只会 502，
+  拿不到码，V1–V4 那几项走不下去）。两条路服务的目的不同，并存不矛盾：pytest 要证的是「闸接在
+  生产路径上、且默认拒 console」；这里要的是「本机能人工走一遍完整流程」。
   （测试进程的 `KATRAIN_MODE` 默认就是 `"server"`，`config.py:83/174`）。
 
 先探一下闸放不放行，**不要靠猜变量名**：
@@ -7866,12 +7960,13 @@ KATRAIN_SMS_PROVIDER=console KATRAIN_SMS_ALLOW_CONSOLE=1 \
 KATRAIN_SECRET_KEY=acceptance-only-secret-key-0123456789abcdef \
 ./.venv/bin/python - <<'PY'
 from katrain.web.core.config import assert_sms_provider_is_configured, settings
-assert_sms_provider_is_configured(settings.KATRAIN_MODE, settings.SMS_PROVIDER)
+assert_sms_provider_is_configured(settings.KATRAIN_MODE, settings.SMS_PROVIDER, settings.SMS_ALLOW_CONSOLE)
 print("mode=", settings.KATRAIN_MODE, "provider=", settings.SMS_PROVIDER)
 PY
 ```
 Expected: 打印 `mode= server provider= console`，不抛异常。
-抛 `RuntimeError` 就回 Task 5 读它实际实现的放行开关叫什么，用那个名字 —— 这一条不许猜着改。
+抛 `RuntimeError` 就先确认第三个实参传了 `settings.SMS_ALLOW_CONSOLE`、且 `KATRAIN_SMS_ALLOW_CONSOLE=1`
+确实在这个进程的环境里 —— 开关名字本来就是对的（Task 5 落的就叫这个），错的通常是这一行没把它传进去。
 
 起服务（后台跑，日志落盘；`--log-level info`；`--disable-engine` 免得等一个本机没有的 KataGo）：
 
@@ -8155,10 +8250,13 @@ Expected: `git status` 里**没有** `~/.katrain/config.json` 之外的意外改
 若出现 `katrain/config.json`（跑 pytest 会改写仓里这份）或 `engine_game_state.json`（F12），
 `git checkout -- <该文件>` 还原，**不要 add**。
 
-- [ ] **Step 8: 部署前置 —— 先写会红的 compose 闸**
+- [ ] **Step 8: 部署前置 —— 断言 Task 5 落的那一行确实在**
 
 Task 5 的 fail-fast 让 `KATRAIN_SMS_PROVIDER` 为空的服务端**拒绝启动**，而这个变量今天两台线上
 机器都没设。仓库根的 `docker-compose.yml` 是**测试机那半**的操作数，闸就建在这里。
+
+**这一行本身由 Task 5 落**（`katrain-web.environment` 里紧跟 `KATRAIN_SECRET_KEY` 那行之后）。
+本 Task 不重复加它，也不是 TDD 的红灯步骤 —— 这里只负责把「它确实在」接成一条会一直守着的测试。
 
 ```python
 # tests/web_ui/test_compose_declares_sms_provider.py
@@ -8213,36 +8311,28 @@ def test_the_env_name_matches_what_config_actually_reads():
 ```
 
 Run: `./.venv/bin/python -m pytest tests/web_ui/test_compose_declares_sms_provider.py -q`
-Expected: FAIL —— `2 failed, 1 passed`。红的是
-`test_web_service_declares_the_sms_provider_env`（`AssertionError: docker-compose.yml 的
-katrain-web 没有 KATRAIN_SMS_PROVIDER …`）与
-`test_it_fails_loudly_instead_of_defaulting_to_empty`（`StopIteration`，因为那行还不存在）；
-绿的是 `test_the_env_name_matches_what_config_actually_reads`（Task 5 已经在 `config.py` 里读它了）。
-第三条也红的话，先回 Task 5 把 `data.setdefault("SMS_PROVIDER", os.getenv("KATRAIN_SMS_PROVIDER", ""))`
-这行补上，别在这里改断言。
+Expected: **PASS（3 条）**。Task 5 已经把这一行加进了 `docker-compose.yml` 的
+`katrain-web.environment`（紧跟 `KATRAIN_SECRET_KEY` 那行之后，`:?` 形式），
+`config.py` 也已经在读它 —— 这里不是 TDD 的红灯步骤，是确认性断言。
+三条里有任何一条红，回 Task 5 核对它实际落的内容，不要在这里改断言迁就。
 
-- [ ] **Step 9: 写最小实现 —— 给 compose 加一行，跑绿，做变异**
+- [ ] **Step 9: 变异验证 —— 证明这三条测试真的守得住**
 
-`docker-compose.yml` 的 `katrain-web.environment` 里，紧跟 `KATRAIN_SECRET_KEY` 那行之后加：
+**不新增任何 env 行**（那一行是 Task 5 落的，本 Task 只验证它、不重复加）。
+Step 8 的断言只证明「今天是对的」，没有变异验证的话它可能是一条恒真式 ——
+比如断言条件写错、`_web_env()` 解析错了 key 却凑巧不报错。这一格不许省。
 
-```yaml
-      - KATRAIN_SMS_PROVIDER=${KATRAIN_SMS_PROVIDER:?KATRAIN_SMS_PROVIDER 必须在 .env 里设置；没有阿里云凭据时填 aliyun（服务能起，send-code 会 502），绝不许填 console}
-```
+逐条改坏、跑测试、确认变红、立刻还原（`git checkout -- <该文件>`）：
 
-**只加到 `katrain-web`，不加到 `katrain-cron`。**
+| 变异 | 具体操作 | 期待变红的用例 | 还原命令 |
+|---|---|---|---|
+| 删掉 Task 5 加的那一行 | 编辑 `docker-compose.yml`，删掉 `katrain-web.environment` 里的 `KATRAIN_SMS_PROVIDER=${KATRAIN_SMS_PROVIDER:?...}` 那一行 | `test_web_service_declares_the_sms_provider_env`、`test_it_fails_loudly_instead_of_defaulting_to_empty` | `git checkout -- docker-compose.yml` |
+| 把那行的 `:?...` 改成 `:-`（默认值形式，任意内容） | 编辑同一行 | 只 `test_it_fails_loudly_instead_of_defaulting_to_empty` | `git checkout -- docker-compose.yml` |
+| 把 `config.py` 里 `os.getenv("KATRAIN_SMS_PROVIDER", ...)` 的字面量改成 `"KATRAIN_SMS_VENDOR"` | 编辑 `katrain/web/core/config.py` | 只 `test_the_env_name_matches_what_config_actually_reads` | `git checkout -- katrain/web/core/config.py` |
 
-Run: `./.venv/bin/python -m pytest tests/web_ui/test_compose_declares_sms_provider.py -q`
-Expected: PASS（3 条）
-
-变异验证（三次，每次只改一处、跑完立刻还原）：
-
-| 变异 | 应当变红的用例 |
-|---|---|
-| 删掉刚加的那一行 | `test_web_service_declares_the_sms_provider_env`、`test_it_fails_loudly_instead_of_defaulting_to_empty` |
-| 把那行改成 `${KATRAIN_SMS_PROVIDER:-}` | 只 `test_it_fails_loudly_instead_of_defaulting_to_empty` |
-| 把 `config.py` 里的 `os.getenv("KATRAIN_SMS_PROVIDER", ...)` 改成 `KATRAIN_SMS_VENDOR` | 只 `test_the_env_name_matches_what_config_actually_reads` |
-
-三次都实际跑一遍并确认红的正是那几条，再改回去。
+三次都实际跑一遍并确认红的正是那几条（不多不少），再改回去。跑完这一步后
+`git status --porcelain -- docker-compose.yml katrain/web/core/config.py` 必须为空 ——
+这两个文件在本 Task 里只被临时改坏又还原，不进最终提交。
 
 - [ ] **Step 10: 部署前置 —— 两台机器的 env 必须在合并前配好**
 
@@ -8315,8 +8405,7 @@ Expected: 日志里没有 `RuntimeError`、`Application startup complete`；
 ```bash
 cd /Users/fan/Repositories/katrain-phone-login
 git status --porcelain
-git add docker-compose.yml \
-        tests/web_ui/test_compose_declares_sms_provider.py \
+git add tests/web_ui/test_compose_declares_sms_provider.py \
         superpowers/tracks/phone-login/verification.md
 git commit -m "test(phone-login): 真浏览器验收 + 基线比对零新增失败 + 部署前置
 
@@ -8331,11 +8420,13 @@ Task 11 主动改动的三条(test_quota_endpoint_shape / 两条 report_charging
 overflow-y 挂在 DialogContent 上,量错盒子这一关会静默报绿。
 
 部署前置:fail-fast 闸会让 KATRAIN_SMS_PROVIDER 为空的服务端拒绝启动,
-而这个变量今天两台线上机器都没设。根 compose 加 \${...:?} 一行 + 三条测试守着,
-但那只是测试机那半 —— 生产读的 compose 不在本仓,靠容器里 env 回显取证。
-取值定死 aliyun(空凭据):服务起得来,send-code 一律 502,这一条交回 Fan 定何时露出入口。"
+而这个变量今天两台线上机器都没设。Task 5 已经加了根 compose 那一行 \${...:?},
+本 Task 补三条测试 + 变异验证守着它 —— 但那只是测试机那半,生产读的 compose 不在本仓,
+靠容器里 env 回显取证。取值定死 aliyun(空凭据):服务起得来,send-code 一律 502,
+这一条交回 Fan 定何时露出入口。"
 ```
-Expected: 提交里**只有这三个文件**。`git status` 里若还留着 `katrain/config.json`
+Expected: 提交里**只有这两个文件**（`docker-compose.yml` 不在其中 —— 它是 Task 5 的
+产出，本 Task 只对它做了变异验证并已还原）。`git status` 里若还留着 `katrain/config.json`
 （跑 pytest 会改写仓里这份）或 `engine_game_state.json`（F12），一律不 add。
 
 ---

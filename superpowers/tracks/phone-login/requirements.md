@@ -169,7 +169,7 @@ quota 消费的永远是**云端** user id，盒子上那行影子用户不是�
 | Action | `SendSms` | `SendMessageToGlobe` |
 | Endpoint | `dysmsapi.aliyuncs.com` | `dysmsapi.ap-southeast-1.aliyuncs.com` |
 | 报备 | 签名【万智星】+ 模板，5–10 工作日 | **不需要签名与模板** |
-| 日额度 | `SMS_DAILY_CAP_CN = 300` | `SMS_DAILY_CAP_INTL = 100` ⚠️ 待核 |
+| 日额度 | `SMS_DAILY_CAP_CN = 300` | `SMS_DAILY_CAP_INTL = 50` |
 
 两个额度**独立计数器，互不借用**。国际那条不被报备阻塞 ⇒ **端到端可以先用国际通道跑通**，
 不必等国内签名下来。零新增 Python 依赖（标准库 `hmac`/`hashlib` + 已有 `httpx` 手签，F8）。
@@ -178,8 +178,8 @@ quota 消费的永远是**云端** user id，盒子上那行影子用户不是�
 ⇒ 供应商超时/报错的也要计入日额度（我们不知道阿里收没收，保守计），但**不计入该号 60s 冷却**
 （一次抖动不该锁用户 60 秒）。这正是两个计数器必须分开记的理由。
 
-⚠️ **`SMS_DAILY_CAP_INTL` 两家给的数不一致**（300/100 vs 顺口提到的 50）。已向 p3-decider-2 索要
-其定标依据，未回前按 100 写进计划，**实现时以本行的最终值为准**。
+✅ **已定 `SMS_DAILY_CAP_INTL = 50`**（两家给的数不一致，取低的那个）。理由：国际号是**最贵的
+攻击面**，封顶要比国内低**一个量级**而不是低三成；按最坏单价 ~$0.15/条算，50 条封顶约 $7.5/日。
 
 一张表 `sms_challenges`（不是两张）：日额度、同号冷却、per-IP 计数**全部从这张表数 SQL**，
 不用进程内字典（F5：`billing.py:58` 那个 defaultdict 进程重启即清零）。

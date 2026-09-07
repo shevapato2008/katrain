@@ -168,12 +168,18 @@ async def lifespan(app: FastAPI):
 
 async def _lifespan_server(app: FastAPI, log):
     """Server mode initialization — existing logic, unchanged."""
-    from katrain.web.core.config import assert_secret_key_is_safe
+    from katrain.web.core.config import assert_secret_key_is_safe, assert_sms_provider_is_configured
 
     # 必须是这个函数的第一件事——挡在任何 DB 连接、engine router 初始化之前。
     # 拿不到显式注入的 SECRET_KEY 就不允许服务端继续启动：仓库里的字面量默认值
     # 谁都读得到，凭它能自签任意用户的 token。
     assert_secret_key_is_safe(settings.KATRAIN_MODE, settings.SECRET_KEY)
+    # 同一条口径的第二道闸：生产不许在"没有短信通道"或"console"的状态下起来。
+    # console 在生产静默生效的表现是 send-code 一路 200 而用户永远收不到码 ——
+    # 坏了和好着在用户那里长得一样。必须和 SECRET_KEY 闸一样挡在任何 DB 动作之前。
+    assert_sms_provider_is_configured(
+        settings.KATRAIN_MODE, settings.SMS_PROVIDER, settings.SMS_ALLOW_CONSOLE
+    )
 
     from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
     from katrain.web.core.game_repo import GameRepository

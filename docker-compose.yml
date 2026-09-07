@@ -79,6 +79,11 @@ services:
       - KATRAIN_S3_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minio_secure_password_CHANGE_ME}
       - KATRAIN_S3_PUBLIC_BASE_URL=${MEDIA_PUBLIC_BASE_URL:-http://localhost:9000/tutorial-assets}
       - KATRAIN_S3_USE_PRESIGNED=false
+      - KATRAIN_SMS_PROVIDER=${KATRAIN_SMS_PROVIDER:?KATRAIN_SMS_PROVIDER 必须在 .env 里设置，本轮唯一合法值是 aliyun}
+      - KATRAIN_SMS_ACCESS_KEY_ID=${KATRAIN_SMS_ACCESS_KEY_ID:-}
+      - KATRAIN_SMS_ACCESS_KEY_SECRET=${KATRAIN_SMS_ACCESS_KEY_SECRET:-}
+      - KATRAIN_SMS_SIGN_NAME=${KATRAIN_SMS_SIGN_NAME:-万智星}
+      - KATRAIN_SMS_TEMPLATE_CODE=${KATRAIN_SMS_TEMPLATE_CODE:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

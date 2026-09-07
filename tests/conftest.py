@@ -70,6 +70,37 @@ os.environ.setdefault(
     "pytest-only-secret-key-not-for-any-deployment-0123456789",
 )
 
+# --- 测试进程必须拿一个显式的短信提供方 -------------------------------------
+#
+# `_lifespan_server` 在 SECRET_KEY 闸的下一行调 `assert_sms_provider_is_configured()`。
+# 测试进程的 `KATRAIN_MODE` 默认就是 "server"（config.py 的 `KATRAIN_MODE: str = "server"`），
+# 不注入的话**每一个跑 lifespan 的用例都会在 startup 抛 RuntimeError**。
+# 2026-09-07 用一个模拟该闸的 pytest 插件跑了全量实测：**8 个今天全绿的文件、49 条**
+#   tests/test_guest_free_play.py                         (15)
+#   tests/test_local_play_recording.py                    ( 2)
+#   tests/test_local_play_setup.py                        ( 2)
+#   tests/web_ui/test_ai_ladder_api.py                    ( 1)
+#   tests/web_ui/test_game_termination_and_chat_identity.py (15)
+#   tests/web_ui/test_ladder_injection.py                 ( 3)
+#   tests/web_ui/test_lobby_boundaries.py                 ( 7)
+#   tests/web_ui/test_ranked_rules.py                     ( 4)
+# 加上这一行之后再跑同一套，相对基线的新增失败回到 **0**（同日实测）。
+#
+# **只能注入 "aliyun"**：闸禁止 server 模式用 console。这不是绕开闸，是与
+# SECRET_KEY 完全同一条口径 —— 测试走**和生产同一条路**（真的带着一个合法的
+# 提供方名字启动）。不要改成"测试时跳过这个闸"：那样闸在测试里就是死的。
+#
+# **代价说清楚**：凭据是空的，所以任何**没打桩**就走到 `sms.get_provider().send()`
+# 的用例会真的去打 dysmsapi（3 秒超时后抛 SmsUnreachable，或拿到 Code != OK 抛
+# SmsRejected）。Task 6 起，凡是会走到 `sms_challenge.issue()` 的用例一律要打
+# `monkeypatch.setattr(sms, "get_provider", lambda: stub)`。
+os.environ.setdefault("KATRAIN_SMS_PROVIDER", "aliyun")
+# 凭据在测试进程里**强制清空**，不是 setdefault：`setdefault` 不会覆盖开发机或
+# 线上机器 shell 里可能已经存在的 KATRAIN_SMS_ACCESS_KEY_*，而那意味着一个漏打桩
+# 的用例会**真发短信、真花钱**。清空之后最坏结果是阿里云拒收，不是账单。
+os.environ["KATRAIN_SMS_ACCESS_KEY_ID"] = ""
+os.environ["KATRAIN_SMS_ACCESS_KEY_SECRET"] = ""
+
 from katrain.web.core.config import settings
 
 # 会话开始时解析出来的那一个。tests/conftest.py 在**任何测试模块导入之前**执行，

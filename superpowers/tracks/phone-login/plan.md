@@ -560,7 +560,10 @@ Docker 重建网络还会变,变了是静默退回全站一个桶。
 **Interfaces:**
 - Consumes: 无
 - Produces: `verify_password(plain_password: str, hashed_password: str) -> bool` —— **永不抛
-  `UnknownHashError` / `ValueError` / `TypeError`**。Task 8（手机验证码登录，给没有可用口令的
+  `UnknownHashError` / `ValueError`**（`TypeError` 不在收口范围内——复审实测确认需求要
+  收口的 5 个哨兵值全部落在 `ValueError` 一侧，`TypeError` 只在调用方传了非 str 时才出现，
+  那是调用方的编程错误而非"口令不匹配"，必须原样炸出来；吞掉它的表现是仓储层哪天回来的
+  不是 str 时全站每次登录静默变 401，日志不响）。Task 8（手机验证码登录，给没有可用口令的
   账号签 token）与 Task 10（`/auth/set-password`，给这类账号补密码）都建在"这个函数遇到
   哨兵值返回 False 而不是把 500 抛出去"上。
 

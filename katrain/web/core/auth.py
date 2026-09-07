@@ -24,15 +24,22 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     拿它建盒子影子用户）。今天够不着,因为 board 模式先把 /auth/login 转发给云端了 ——
     那是**调用顺序**保住的,不是结构。这里收口之后就与调用顺序无关。
 
-    **只吞 `ValueError` 与 `TypeError`，不写 `except Exception`**：
+    **只吞 `ValueError`，不写 `except Exception`，也故意不收 `TypeError`**：
     `UnknownHashError` 是 `ValueError` 的子类（实跑确认过 MRO），密码超长这类也是
     `ValueError`，它们都该当"口令不匹配"。而 bcrypt 后端缺失抛的是
     `passlib.exc.MissingBackendError`（`RuntimeError` 的子类）—— 那种故障必须原样炸成
     500 让人看见，吞掉它的表现是"全站所有人的密码都突然不对了"，一声不吭。
+
+    `TypeError`（调用方传了非 str，比如仓储层哪天回来的是 `int`、ORM 的 `Column`、
+    BYTEA 的 `memoryview`，或者拿错成 `User.hashed_password` 而不是
+    `user.hashed_password`）是同一个形状的故障，不是"口令不匹配"，必须一样原样炸出来
+    ——吞掉它的表现是"全站每次登录静默变 401"，`or` 短路会让它跟"密码错了"长得一模
+    一样，日志里什么都不会响。需求要收口的 5 个哨兵值全部落在 `ValueError` 一侧，
+    没有任何调用方需要 `TypeError` 被吞掉。
     """
     try:
         return bool(pwd_context.verify(plain_password, hashed_password))
-    except (ValueError, TypeError):
+    except ValueError:
         return False
 
 

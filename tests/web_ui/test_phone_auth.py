@@ -1,4 +1,4 @@
-"""P3 手机绑定与验证码登录的鉴权侧用例。Task 3 起头，后续 Task 继续往这个文件加。"""
+"""P3 手机绑定与验证码登录的鉴权侧用例。Task 3 起头。"""
 
 import pytest
 
@@ -21,6 +21,20 @@ def test_verify_password_returns_false_for_unparsable_hash(bad_hash):
     `None` 故意不在这张表里：passlib 今天对 `None` 已经返回 False，
     写进来就是一条**拆掉实现也不会红**的假绿断言。表里 5 条都实跑确认过今天抛。"""
     assert verify_password("anything", bad_hash) is False
+
+
+def test_verify_password_raises_typeerror_for_non_str_hash():
+    """`TypeError` 故意**不**收，正面断言这一支是开着的。
+
+    上一条表里的 5 个哨兵值全部落在 `ValueError` 一侧——`UnknownHashError`
+    是它的子类。`TypeError` 只在调用方传了非 str（`int`、ORM 的 `Column`、
+    BYTEA 的 `memoryview`、拿成了 `User.hashed_password` 而不是
+    `user.hashed_password`）时才出现，那是调用方的编程错误，不是"口令不匹配"。
+    吞掉它的后果和吞掉 `MissingBackendError` 是同一个形状：仓储层哪天回来的
+    不是 str，全站每次登录静默变 401，`or` 短路让它跟"密码错了"长得一模一样，
+    日志里什么都不会响。"""
+    with pytest.raises(TypeError):
+        verify_password("x", 12345)
 
 
 def test_verify_password_still_works_for_real_hashes():
@@ -54,6 +68,8 @@ def client_with_sentinel_user(isolated_session_factory):
     app.state.session_factory = isolated_session_factory
     with TestClient(app) as c:
         app.state.user_repo.create_user("shadowy", SHADOW_USER_NO_LOCAL_AUTH)
+        # 建上了才往下走：不然下面的 401 可能是"用户不存在"而不是"哨兵口令"。
+        assert app.state.user_repo.get_user_by_username("shadowy")
         app.state.user_repo.create_user("normal", get_password_hash("pw"))
         yield c
 

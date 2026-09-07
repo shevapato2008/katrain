@@ -82,6 +82,14 @@ class User(Base):
     # column default nobody can trace.
     is_admin = Column(Boolean, default=False, nullable=False)
     avatar_url = Column(String, nullable=True)
+    # 手机号。**列上不写 unique**：唯一性走下面 __table_args__ 里的 Index。
+    # migrations.add_missing_columns() 拼的 ADD COLUMN 不带 UNIQUE，而
+    # create_missing_indexes() 用 index.create() 会保留 index 的 unique ⇒
+    # 只有写成 Index，「新建库」和「迁移旧库」才得到同一个结构（F1/F2）。
+    # 存量账号留 NULL：SQLite 与 PostgreSQL 的唯一索引都不管 NULL，
+    # 所以不需要给老账号造占位号。
+    phone_e164 = Column(String(20), nullable=True)
+    phone_verified_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -89,6 +97,8 @@ class User(Base):
     following = relationship("Relationship", foreign_keys="[Relationship.follower_id]", back_populates="follower")
     tsumego_progress = relationship("UserTsumegoProgress", back_populates="user")
     ai_ladder_profile = relationship("AiLadderProfile", back_populates="user", uselist=False)
+
+    __table_args__ = (Index("ix_users_phone_e164", "phone_e164", unique=True),)
 
 
 class Relationship(Base):
@@ -1045,4 +1055,66 @@ class QuotaBucket(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "kind", "period_key", name="uq_quota_bucket"),
         Index("ix_quota_bucket_lookup", "user_id", "kind", "period_key"),
+    )
+
+
+class SmsChallenge(Base):
+    """验证码。**一张表同时承载三件事**：验证码本身、同号冷却、日额度计数。
+
+    为什么不用进程内字典：字典**重启即清零**（F5：`billing.py` 里那个 defaultdict
+    就是这个形状，而且它记的是"失败计数"不是冷却）。从表里数 SQL 天然跨重启，
+    也不需要第二个存储。
+
+    ⚠️ **跨重启成立，跨 worker 不成立 —— 别把这句读成"已经解决了"。**
+    `sms_challenge.issue()` 是「先 `SELECT count(*)` 判额度、再 `INSERT`」，
+    中间没有锁、没有条件 UPDATE、也没有唯一约束 ⇒ 多进程并发时 N 个请求会读到
+    同一个计数并全部放行，`SMS_DAILY_CAP_*` 这个需求里称作"硬闸"的东西退化成建议值。
+    **今天安全的全部理由只有两条**：
+      1. 生产是单进程 —— `server.py` 里 `uvicorn.run(app, ...)` 没传 `workers`；
+      2. 判额度与 `db.commit()` 之间没有 `await`，同一个事件循环里不会被切走。
+    任何一条不成立就失效，而失效表现是**限流变松、没有任何报错**。
+    要上多 worker，先把日额度换成 `core/quota.py` 的 `try_consume()` 那种
+    `UPDATE … WHERE used + :n <= allowance` + `rowcount == 1` 的条件更新 ——
+    同一个仓、同一类问题、已经解对过一次。
+
+    **不进 PROTECTED_TABLES**（`migrations.PROTECTED_TABLES`）：表里没钱也没历史。
+    漂移重建会把当天额度计数清零 —— 但 drop+create 只在 SQLite 上跑
+    （`SQLAlchemyUserRepository.init_db()` 里那个 `if engine.dialect.name == "sqlite"`
+    分支），生产 PG 不可能发生。写在这里免得下一个人误判成漏洞。
+
+    **保留期：没有。** 任何人对 `send-code` 打过的号都会在这里永久留一行明文，
+    包括从来不会成为用户的号。本轮不做清理任务 —— 这条要进收尾清单交回给 Fan 定
+    保留期，不能只留在代码里没人看见。
+    """
+
+    __tablename__ = "sms_challenges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # 不可猜串。verify 只认这个、不收手机号 —— 否则任何人可以拿别人的号
+    # 打满失败次数，零成本远程锁死任意用户的登录，受害者手机上一条短信都不响。
+    challenge_id = Column(String(43), nullable=False)
+    phone_e164 = Column(String(20), nullable=False)
+    purpose = Column(String(16), nullable=False)      # login | bind | set_password
+    code_hash = Column(String(64), nullable=False)    # 只存 hash，永不存明文
+    attempts = Column(Integer, nullable=False, default=0)
+    consumed_at = Column(DateTime(timezone=True), nullable=True)
+    # 这一条算不算**全站日额度**。阿里云按提交计费、运营商回执失败也照收，
+    # 所以分母是"已提交"不是"已送达"；超时/不可达也算（我们不知道它收没收）。
+    # 唯一置 False 的情况是供应商**明确拒收**（HTTP 200 且 Code != OK）：
+    # 那一条确定没花钱，算进去等于让攻击者拿必被拒的号零成本打满全站额度。
+    provider_charged = Column(Boolean, nullable=False, default=False)
+    # 这一条算不算**同号 60s 冷却**。只有真交出去并被接收才算。
+    # **必须是真列**：只在实例上挂同名属性时，同一个 session 因 identity map
+    # 读回来还是改过的值（测试绿），而生产的下一个请求是新 session，读回来相反。
+    delivered_ok = Column(Boolean, nullable=False, default=True)
+    is_intl = Column(Boolean, nullable=False, default=False)
+    client_ip = Column(String(64), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_sms_challenge_cid", "challenge_id", unique=True),
+        Index("ix_sms_challenge_phone_purpose", "phone_e164", "purpose", "created_at"),
+        Index("ix_sms_challenge_cap", "provider_charged", "is_intl", "created_at"),
+        Index("ix_sms_challenge_ip", "client_ip", "created_at"),
     )

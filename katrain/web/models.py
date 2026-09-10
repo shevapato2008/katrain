@@ -189,6 +189,15 @@ class User(BaseModel):
     is_admin: bool = False
     avatar_url: Optional[str] = None
     created_at: Optional[Union[str, datetime]] = None
+    # 所有闸一律读这个布尔（Task 11 的免费额度、Task 12 的发言）。
+    # 有默认值 ⇒ 属性必然存在 ⇒ 闸里直接 `current_user.phone_bound`，
+    # 不用 getattr 兜底：getattr 会把"字段没加上"这个错误掩盖成"所有人都被拒"。
+    phone_bound: bool = False
+
+
+class PhoneLoginRequest(BaseModel):
+    challenge_id: str
+    code: str
 
 
 class OnlineUser(BaseModel):

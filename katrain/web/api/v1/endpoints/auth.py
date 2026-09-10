@@ -18,7 +18,7 @@ from katrain.web.core.client_ip import client_ip_for_ratelimit
 from katrain.web.core.config import settings
 from katrain.web.core.db import get_db
 from katrain.web.core.phone import normalize_e164
-from katrain.web.models import SendCodeRequest, User, UserInDB
+from katrain.web.models import PhoneLoginRequest, SendCodeRequest, User, UserInDB
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -92,6 +92,29 @@ async def send_phone_code(request: Request, body: SendCodeRequest, db: Session =
 
     # **响应对"这个号有没有账号"必须一模一样** —— 多一个字段这里就是账号枚举器。
     return {"challenge_id": cid, "cooldown_sec": settings.SMS_COOLDOWN_SEC}
+
+
+@router.post("/phone/login")
+async def phone_login(request: Request, body: PhoneLoginRequest, db: Session = Depends(get_db)):
+    _guard_phone_endpoint(request)
+    try:
+        # purpose 写死 "login"：绑定用的码不能拿来登录。
+        phone = sms_challenge.verify_and_consume(db, body.challenge_id, body.code, "login")
+    except sms_challenge.ChallengeInvalid as e:
+        raise HTTPException(status_code=400, detail={"code": e.code})
+
+    user = request.app.state.user_repo.get_by_phone(phone)
+    if user is None:
+        # 本轮不做手机注册（见 plan 开头的收窄说明）。给一条能走的路，不静默建号。
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "phone_not_bound",
+                    "message": "这个手机号还没有绑定账号。请先用用户名密码登录，再到设置里绑定。"},
+        )
+    return {
+        "access_token": create_access_token(data={"sub": user["username"]}),
+        "token_type": "bearer",
+    }
 
 
 def _resolve_token(request: Request, header_token: Optional[str]) -> Optional[str]:

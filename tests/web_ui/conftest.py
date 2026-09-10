@@ -260,6 +260,31 @@ def send_code():
     return _send
 
 
+@pytest.fixture
+def bound_user(phone_app):
+    """一个**已绑手机号**的账号。绑定直接写库 —— Task 9 才有 bind 端点，
+    Task 8 不该依赖它。"""
+    from katrain.web.core import models_db
+    from katrain.web.core.auth import get_password_hash
+
+    phone_app.state.user_repo.create_user(
+        username="bound", hashed_password=get_password_hash("pw123456")
+    )
+    session = phone_app.state.phone_test_session_factory()
+    try:
+        u = session.query(models_db.User).filter_by(username="bound").one()
+        u.phone_e164 = "+8613800138000"
+        session.commit()
+    finally:
+        session.close()
+    return {
+        "username": "bound",
+        "password": "pw123456",
+        "phone": "13800138000",
+        "phone_e164": "+8613800138000",
+    }
+
+
 @contextlib.contextmanager
 def isolated_core_db(database_url):
     """把 `core.config/db/auth` 临时重绑到 `database_url`，退出时**原样还原**。

@@ -248,3 +248,105 @@ async def test_register_on_a_board_is_forwarded_without_touching_the_local_cap(
     )
     assert r.status_code == 200, r.text
     assert remote_spy.register.await_count == 1
+
+
+LOGIN = "/api/v1/auth/phone/login"
+ME = "/api/v1/auth/me"
+
+
+async def test_phone_login_issues_a_token_for_a_bound_user(
+    phone_client, sms_outbox, send_code, bound_user
+):
+    cid = await send_code(phone_client, bound_user["phone"], "login")
+    r = await phone_client.post(LOGIN, json={"challenge_id": cid, "code": sms_outbox.last_code})
+    assert r.status_code == 200, r.text
+    assert r.json()["token_type"] == "bearer"
+
+    me = await phone_client.get(
+        ME, headers={"Authorization": f"Bearer {r.json()['access_token']}"}
+    )
+    assert me.status_code == 200, me.text
+    assert me.json()["username"] == bound_user["username"]   # JWT 的 sub 是 username（F4）
+    # `phone_bound` 必须真的从库里长出来。pydantic 默认值是 False ⇒ `_to_dict` 漏了
+    # 那一行、或 models.User 少了那个字段时，失败方向是**所有人都"没绑手机"**，
+    # 而不是报错 —— Task 11/12 的闸会静默地对每个人关上。这一句就是盯它的。
+    assert me.json()["phone_bound"] is True
+    # 原始号不许随 User 外溢（接口契约口径 2）
+    assert "phone_e164" not in me.json()
+    assert bound_user["phone"] not in me.text
+
+
+async def test_phone_login_on_an_unbound_phone_is_404_not_a_silent_signup(
+    phone_client, phone_db, sms_outbox, send_code
+):
+    """本轮**不做**手机注册（见计划开头那节收窄说明）：注册仍需用户名，
+    没有用户名就建不了号。未绑号必须给一条能走的路，不许静默建号。"""
+    from katrain.web.core import models_db
+
+    cid = await send_code(phone_client, "13900139000", "login")
+    r = await phone_client.post(LOGIN, json={"challenge_id": cid, "code": sms_outbox.last_code})
+    assert r.status_code == 404
+    assert r.json()["detail"]["code"] == "phone_not_bound"
+    # 没有静默建号：库里一个 user 行都不该多出来
+    assert phone_db.query(models_db.User).count() == 0
+
+
+async def test_phone_login_rejects_a_bind_purpose_challenge(
+    phone_client, sms_outbox, send_code, bound_user
+):
+    """拿绑定用的码去登录 —— 必须拒。端点写死 purpose="login"。"""
+    cid = await send_code(phone_client, bound_user["phone"], "bind")
+    r = await phone_client.post(LOGIN, json={"challenge_id": cid, "code": sms_outbox.last_code})
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "challenge_purpose_mismatch"
+
+
+async def test_phone_login_challenge_is_single_use(
+    phone_client, sms_outbox, send_code, bound_user
+):
+    cid = await send_code(phone_client, bound_user["phone"], "login")
+    code = sms_outbox.last_code
+    first = await phone_client.post(LOGIN, json={"challenge_id": cid, "code": code})
+    assert first.status_code == 200, first.text
+    second = await phone_client.post(LOGIN, json={"challenge_id": cid, "code": code})
+    assert second.status_code == 400
+    assert second.json()["detail"]["code"] == "challenge_consumed"
+
+
+def test_repo_get_by_phone_reports_phone_bound_and_keeps_the_raw_number_out(
+    phone_app, bound_user
+):
+    """`_to_dict`（core/auth.py:323）是显式白名单，全仓只有这一个生产实现，
+    加字段只此一处。两个方向都要钉住：绑了的必须 True（漏了那一行的表现是
+    静默 False，不是报错），原始号必须**不在**里面（口径 2）。"""
+    repo = phone_app.state.user_repo
+
+    d = repo.get_by_phone(bound_user["phone_e164"])
+    assert d is not None
+    assert d["username"] == bound_user["username"]
+    assert d["phone_bound"] is True
+    assert "phone_e164" not in d
+
+    # 端点真正读的是 get_user_by_username 那条路（get_user_from_token → User(**user_dict)），
+    # 所以同一条断言在那条路上再钉一次。
+    assert repo.get_user_by_username(bound_user["username"])["phone_bound"] is True
+    assert repo.get_by_phone("+8613900139000") is None
+
+
+async def test_me_reports_phone_bound_false_for_an_unbound_account(phone_auth_client):
+    """诚实的默认方向：没绑就是 False，字段必须存在（不是缺席）。"""
+    r = await phone_auth_client.get(ME)
+    assert r.status_code == 200, r.text
+    assert r.json()["phone_bound"] is False
+
+
+async def test_phone_login_403_on_strict_box(phone_strict_client):
+    r = await phone_strict_client.post(LOGIN, json={"challenge_id": "x", "code": "123456"})
+    assert r.status_code == 403
+
+
+async def test_phone_login_503_on_board_and_does_not_forward(phone_board_client, remote_spy):
+    r = await phone_board_client.post(LOGIN, json={"challenge_id": "x", "code": "123456"})
+    assert r.status_code == 503
+    assert r.json()["detail"]["code"] == "need_online_phone"
+    assert remote_spy.mock_calls == []

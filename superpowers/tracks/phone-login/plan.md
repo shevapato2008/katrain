@@ -3442,8 +3442,10 @@ async def test_phone_login_503_on_board_and_does_not_forward(phone_board_client,
 Run: `./.venv/bin/python -m pytest tests/web_ui/test_phone_endpoints.py -q`
 
 Expected: FAIL —— `8 failed, 16 passed`（Task 7 的 16 条仍绿）。红因：
-- 5 条打 `/api/v1/auth/phone/login` 的：路由不存在 ⇒ `assert 404 == 200` /
-  `assert 404 == 400` / `assert 404 == 403` / `assert 404 == 503`。
+- 5 条打 `/api/v1/auth/phone/login` 的：路由不存在 ⇒ **`405` 不是 404**
+  （SPA 兜底路由 `/{path}` 会匹配任何未被 API 认领的路径，POST 打过去得
+  Method Not Allowed）⇒ `assert 405 == 200` / `== 400` / `== 403` / `== 503`。
+  ⚠️ 2026-09-10 实跑修正，与 Task 7 Step 2 同一处。
 - `test_repo_get_by_phone_reports_phone_bound_and_keeps_the_raw_number_out`：
   `AttributeError: 'SQLAlchemyUserRepository' object has no attribute 'get_by_phone'`。
 - `test_me_reports_phone_bound_false_for_an_unbound_account`：`KeyError: 'phone_bound'`。
@@ -3547,7 +3549,7 @@ Expected: PASS（全部）
 | 删掉 `_to_dict` 里 `"phone_bound": ...` 那一行 | `test_repo_get_by_phone_reports_phone_bound_and_keeps_the_raw_number_out`（`KeyError`）、`test_phone_login_issues_a_token_for_a_bound_user`（`/auth/me` 那句变成 False） |
 | 删掉 pydantic `User.phone_bound` 字段 | `test_phone_login_issues_a_token_for_a_bound_user`、`test_me_reports_phone_bound_false_for_an_unbound_account`（都 `KeyError: 'phone_bound'` —— pydantic v2 `extra='ignore'` 会把 `_to_dict` 里的值静默丢掉） |
 | `_to_dict` 里改成 `"phone_e164": user_obj.phone_e164` | `test_repo_..._keeps_the_raw_number_out`、`test_phone_login_issues_a_token_for_a_bound_user`（`me.text` 那句） |
-| `verify_and_consume(..., "login")` 的第 4 个实参改成 `"bind"` | `test_phone_login_issues_a_token_for_a_bound_user`、`test_phone_login_challenge_is_single_use`（证明这个字面量真的在被检查，不是摆设） |
+| `verify_and_consume(..., "login")` 的第 4 个实参改成 `"bind"` | `test_phone_login_issues_a_token_for_a_bound_user`、`test_phone_login_challenge_is_single_use`（证明这个字面量真的在被检查，不是摆设）**外加两条必然同红**（⚠️ 2026-09-10 实跑补上）：`test_phone_login_on_an_unbound_phone_is_404_not_a_silent_signup`（送的是 login 码 ⇒ 现在被判 purpose_mismatch ⇒ 400 不是 404）与 `test_phone_login_rejects_a_bind_purpose_challenge`（它送的正是 bind 码 ⇒ 变异后**不再被拒**）。后者其实是这条变异最对症的用例 |
 | 删掉 `if user is None:` 那条 404 短路 | `test_phone_login_on_an_unbound_phone_is_404_not_a_silent_signup`（`user["username"]` 对 None 取下标 ⇒ 500） |
 | 注释掉 `_guard_phone_endpoint(request)` | `test_phone_login_403_on_strict_box`、`test_phone_login_503_on_board_and_does_not_forward` |
 

@@ -92,6 +92,10 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
+    def get_by_phone(self, phone_e164: str) -> Optional[Dict[str, Any]]:
+        pass
+
+    @abstractmethod
     def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
         pass
 
@@ -249,6 +253,18 @@ class SQLAlchemyUserRepository(UserRepository):
         finally:
             session.close()
 
+    def get_by_phone(self, phone_e164: str) -> Optional[Dict[str, Any]]:
+        session = self.session_factory()
+        try:
+            user = (
+                session.query(models_db.User)
+                .filter(models_db.User.phone_e164 == phone_e164)
+                .first()
+            )
+            return self._to_dict(user) if user else None
+        finally:
+            session.close()
+
     def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
         session = self.session_factory()
         try:
@@ -364,4 +380,8 @@ class SQLAlchemyUserRepository(UserRepository):
             "is_admin": bool(user_obj.is_admin),
             "avatar_url": user_obj.avatar_url,
             "created_at": user_obj.created_at,
+            # 发言闸/免费额度闸只需要"绑没绑"这一个布尔。原始号不进这里：
+            # 它会随 pydantic `User` 泄进每一个回 User 的响应（models.py 的
+            # `OnlineUser` 收窄注释正是为防这类外溢）。要原始号走 get_phone_e164()。
+            "phone_bound": user_obj.phone_e164 is not None,
         }

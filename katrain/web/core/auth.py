@@ -104,6 +104,14 @@ class UserRepository(ABC):
         """返回 "ok" | "phone_taken" | "already_bound"。三个字符串是契约，不许换。"""
 
     @abstractmethod
+    def get_phone_e164(self, user_id: int) -> Optional[str]:
+        ...
+
+    @abstractmethod
+    def set_password_hash(self, user_id: int, hashed: str) -> None:
+        ...
+
+    @abstractmethod
     def list_users(self) -> List[Dict[str, Any]]:
         pass
 
@@ -296,6 +304,29 @@ class SQLAlchemyUserRepository(UserRepository):
                 session.rollback()
                 return "phone_taken"
             return "ok"
+        finally:
+            session.close()
+
+    def get_phone_e164(self, user_id: int) -> Optional[str]:
+        """原始号的**唯一**取用点。
+
+        它不进 `_to_dict`、不进 pydantic `User` —— 灌进去会随 `User` 泄进
+        每一个回 `User` 的响应（`models.py` 的 `OnlineUser` 收窄注释
+        正是为防这类外溢）。闸一律读 `phone_bound` 那个布尔。
+        """
+        session = self.session_factory()
+        try:
+            u = session.query(models_db.User).filter_by(id=user_id).one_or_none()
+            return u.phone_e164 if u is not None else None
+        finally:
+            session.close()
+
+    def set_password_hash(self, user_id: int, hashed: str) -> None:
+        """`create_user` 之外的**第二个** `hashed_password` 写入点。"""
+        session = self.session_factory()
+        try:
+            session.query(models_db.User).filter_by(id=user_id).update({"hashed_password": hashed})
+            session.commit()
         finally:
             session.close()
 

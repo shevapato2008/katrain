@@ -4276,7 +4276,9 @@ async def test_set_password_503_on_board_and_does_not_forward(app, client, sms, 
 - [ ] **Step 2: 跑，确认它红**
 
 Run: `./.venv/bin/python -m pytest tests/web_ui/test_set_password.py -q`
-Expected: FAIL — 8 failed。全部因为 `POST /api/v1/auth/set-password` 路由不存在而拿到 `404`。
+Expected: FAIL — 8 failed。全部因为 `POST /api/v1/auth/set-password` 路由不存在。
+⚠️ **2026-09-10 实跑修正：拿到的是 `405 Method Not Allowed` 不是 404**（SPA 兜底路由 `/{path}`
+会匹配任何未被 API 认领的路径）。这是本计划**第四次**把同一个数写成 404 —— T7/T8/T9 的 Step 2 同此。
 
 - [ ] **Step 3: 写最小实现**
 
@@ -4396,7 +4398,7 @@ Expected: PASS（8 条）
 |---|---|---|
 | 注释掉 `_guard_phone_endpoint(request)` | `pytest tests/web_ui/test_set_password.py -q` | `test_set_password_503_on_board_and_does_not_forward` |
 | 删掉 `if phone != repo.get_phone_e164(...)` 那两行 | 同上 | `test_challenge_phone_must_match_the_current_users_phone` |
-| 把 `if not current_user.phone_bound:` 换成 `if not getattr(current_user, "phone_e164", None):` | 同上 | `test_sets_password_and_the_old_one_stops_working`（**已绑号的人也被判 `phone_unbound`** —— pydantic `User` 上没有 `phone_e164`，`extra='ignore'` 把它静默丢掉，getattr 恒为 None。这就是接口契约口径 1 禁止 getattr 的原因） |
+| 把 `if not current_user.phone_bound:` 换成 `if not getattr(current_user, "phone_e164", None):` | 同上 | **四条**（⚠️ 2026-09-10 实跑补全，原来只写了第一条）：`test_sets_password_and_the_old_one_stops_working`、`test_old_access_and_refresh_tokens_survive_the_password_change`（也期望 200）、`test_challenge_phone_must_match_the_current_users_phone`（期望 403，实得 400）、`test_rejects_a_login_purpose_challenge`（期望 400 `challenge_purpose_mismatch`，实得 400 `phone_unbound`）。原因是**已绑号的人一律被判 `phone_unbound`** —— pydantic `User` 上没有 `phone_e164`，`extra='ignore'` 把它静默丢掉，getattr 恒为 None ⇒ 凡是要走过这道闸的用例全过不去。这就是接口契约口径 1 禁止 getattr 的原因，也正好说明这个错误的失败面有多宽 |
 
 三次都确认红了再改回来，最后重跑 Step 4 确认 8 条全绿。
 

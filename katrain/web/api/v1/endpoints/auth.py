@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
-from katrain.web.core.auth import verify_password, create_access_token, create_refresh_token
+from katrain.web.core.auth import verify_password, get_password_hash, create_access_token, create_refresh_token
 from katrain.web.core.box_sso import (
     BRIDGE_KEY_HEADER,
     resolve_http_token,
@@ -18,7 +18,7 @@ from katrain.web.core.client_ip import client_ip_for_ratelimit
 from katrain.web.core.config import settings
 from katrain.web.core.db import get_db
 from katrain.web.core.phone import normalize_e164, mask_e164
-from katrain.web.models import PhoneLoginRequest, SendCodeRequest, User, UserInDB
+from katrain.web.models import PhoneLoginRequest, SendCodeRequest, SetPasswordRequest, User, UserInDB
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -518,6 +518,52 @@ async def bind_phone(
                     "message": "这个账号已经绑定了手机号。换绑请联系客服。"},
         )
     return {"phone_masked": mask_e164(phone)}
+
+
+@router.post("/set-password")
+async def set_password(
+    request: Request,
+    body: SetPasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """改密码。**要验证码，不要当前密码。**
+
+    解开「忘密码的人给不出当前密码」这个死结，同时比只验当前密码更强：
+    会话被劫持的攻击者拿不到手机，改不了密码。
+
+    **为什么有了手机验证码登录还要这个端点**：手机登录让人「进得来」，
+    这个端点让人「把口令修好」。少了它，忘了密码的用户可以用验证码登录网页版，
+    但永远无法恢复口令登录 —— 而口令登录是上盒子的唯一路
+    （kiosk 登录页只有用户名与密码两个控件）⇒ 他会被永久挡在自己买的那台设备之外。
+
+    **已知限制**：JWT 没有密码版本位，`/auth/refresh` 也只验签名 + 用户名存在，
+    而 `REFRESH_TOKEN_EXPIRE_DAYS = 90` ⇒ 改密码踢不掉已签发的凭据，**最长 90 天**。
+    UI 必须把这句说出来（`auth:set_password_other_devices`）。
+    """
+    _guard_phone_endpoint(request)
+    # `phone_bound` 是 Task 8 加进 pydantic `User` 与 `_to_dict` 的字段，直接读。
+    # 不再多查一次库（原计划那次 `repo.get_by_username(...)` 的方法名在仓储上也不存在，
+    # 真名是 `get_user_by_username`）。
+    if not current_user.phone_bound:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "phone_unbound", "message": "改密码需要先绑定手机号。"},
+        )
+    try:
+        phone = sms_challenge.verify_and_consume(db, body.challenge_id, body.code, "set_password")
+    except sms_challenge.ChallengeInvalid as e:
+        raise HTTPException(status_code=400, detail={"code": e.code})
+
+    repo = request.app.state.user_repo
+    # 少了这一步，一个人可以拿自己号上的码去改别人的密码。
+    # 核销在比对之前：`verify_and_consume` 是取该 challenge 手机号的唯一途径，
+    # 而攻击者本来就拿不到受害者号上的码，所以这个顺序不多开任何面。
+    if phone != repo.get_phone_e164(current_user.id):
+        raise HTTPException(status_code=403, detail={"code": "challenge_phone_mismatch"})
+
+    repo.set_password_hash(current_user.id, get_password_hash(body.new_password))
+    return {"ok": True}
 
 
 @router.post("/logout")

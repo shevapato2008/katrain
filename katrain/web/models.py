@@ -200,6 +200,15 @@ class PhoneLoginRequest(BaseModel):
     code: str
 
 
+class SetPasswordRequest(BaseModel):
+    challenge_id: str
+    code: str
+    new_password: str
+    # **本轮不加最短长度校验**：`/auth/register` 今天也没有，
+    # 在这里单加一条会让「改密码」比「注册」更严，是两套口径。
+    # 要加就两处一起加，那是另一件事。
+
+
 class OnlineUser(BaseModel):
     """大厅里「谁在线」这一行需要的**全部**字段,一个不多。
 

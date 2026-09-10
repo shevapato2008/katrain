@@ -1,0 +1,689 @@
+<title>短信登录报备手册</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F4F1; --surface:#FFFFFF; --sunk:#E9EBE5;
+  --ink:#15191B; --ink-soft:#4C5450; --ink-faint:#7A817C;
+  --rule:#D2D6CF; --rule-soft:#E3E6E0;
+  --accent:#1D4E6B; --accent-soft:#E2EAEF; --accent-line:#B9CDDA;
+  --seal:#A33127; --seal-soft:#F3E2DF;
+  --ok:#2E6B4E; --ok-soft:#DEEAE2;
+  --wait:#7F5A10; --wait-soft:#F1E8D3;
+  --block:#95291F; --block-soft:#F2DDDA;
+  --shadow:0 1px 2px rgba(20,28,32,.06), 0 8px 24px -16px rgba(20,28,32,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#121618; --surface:#191E20; --sunk:#222829;
+    --ink:#E7EAE7; --ink-soft:#A6AEA9; --ink-faint:#7B837E;
+    --rule:#2D3437; --rule-soft:#242A2C;
+    --accent:#78AECD; --accent-soft:#1B2E39; --accent-line:#2E4A5A;
+    --seal:#D8796C; --seal-soft:#301E1B;
+    --ok:#7CC09E; --ok-soft:#182720;
+    --wait:#D6B168; --wait-soft:#2A2416;
+    --block:#DF8C86; --block-soft:#2D1B1A;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121618; --surface:#191E20; --sunk:#222829;
+  --ink:#E7EAE7; --ink-soft:#A6AEA9; --ink-faint:#7B837E;
+  --rule:#2D3437; --rule-soft:#242A2C;
+  --accent:#78AECD; --accent-soft:#1B2E39; --accent-line:#2E4A5A;
+  --seal:#D8796C; --seal-soft:#301E1B;
+  --ok:#7CC09E; --ok-soft:#182720;
+  --wait:#D6B168; --wait-soft:#2A2416;
+  --block:#DF8C86; --block-soft:#2D1B1A;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  font-size:15px; line-height:1.75; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1000px; margin:0 auto; padding-inline:20px; padding-block:0 72px}
+h1,h2,h3,h4{font-family:"Noto Serif SC",Georgia,"Songti SC",serif; text-wrap:balance; margin:0}
+p{margin:0}
+a{color:var(--accent); text-underline-offset:3px}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace; font-variant-numeric:tabular-nums}
+code{font-size:.88em; background:var(--sunk); padding:.12em .38em; border-radius:3px; word-break:break-all}
+
+/* ── 页眉 ─────────────────────────────── */
+.masthead{border-bottom:2px solid var(--ink); padding-block:36px 18px; margin-bottom:8px}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--seal); display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+}
+.eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--seal);display:inline-block}
+h1{font-size:clamp(28px,5.4vw,42px); line-height:1.25; letter-spacing:-.01em; margin-block:14px 10px}
+.standfirst{font-size:17px; color:var(--ink-soft); max-width:62ch; line-height:1.7}
+.docmeta{
+  display:flex; flex-wrap:wrap; gap:0 28px; margin-top:22px; padding-top:14px;
+  border-top:1px solid var(--rule-soft);
+  font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-faint);
+}
+.docmeta b{color:var(--ink-soft); font-weight:500}
+
+/* ── 章节 ─────────────────────────────── */
+section{margin-top:52px; scroll-margin-top:20px}
+.sechead{display:flex; align-items:baseline; gap:12px; border-bottom:1px solid var(--rule); padding-bottom:10px; margin-bottom:22px}
+.secnum{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--seal); letter-spacing:.08em; flex:none; padding-top:4px}
+h2{font-size:23px; letter-spacing:-.005em}
+.sechead .aside{margin-left:auto; font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-faint); text-align:right}
+.prose{max-width:70ch; display:flex; flex-direction:column; gap:14px}
+.prose h3{font-size:17px; margin-top:8px}
+
+/* ── 结论盒 ───────────────────────────── */
+.verdict{
+  background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--seal);
+  padding:22px 24px; display:flex; flex-direction:column; gap:14px; box-shadow:var(--shadow);
+}
+.verdict .lede{font-family:"Noto Serif SC",serif; font-size:19px; line-height:1.6; font-weight:600}
+.verdict ul{margin:0; padding-left:1.1em; display:flex; flex-direction:column; gap:8px}
+.verdict li::marker{color:var(--seal)}
+
+/* ── 时间线图 ─────────────────────────── */
+.chartbox{background:var(--surface); border:1px solid var(--rule); box-shadow:var(--shadow); padding:22px 8px 16px}
+.chartscroll{overflow-x:auto}
+.chart{min-width:680px; padding-inline:14px}
+.chartgrid{position:relative; margin-right:152px; border-left:1px solid var(--rule); border-bottom:1px solid var(--rule)}
+.tick{position:absolute; top:0; bottom:0; width:1px; background:var(--rule-soft)}
+.ticklabels{position:relative; height:22px; margin-top:6px; margin-right:152px; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-faint)}
+.ticklabels span{position:absolute; transform:translateX(-50%); white-space:nowrap}
+.barrow{position:relative; height:38px; display:flex; align-items:center}
+.bar{position:absolute; height:19px; border-radius:2px; display:flex; align-items:center}
+.bar .cap{position:absolute; left:calc(100% + 9px); white-space:nowrap; font-size:12.5px; color:var(--ink-soft)}
+.bar.short .cap{left:calc(100% + 7px)}
+.b-acc{background:var(--accent)}
+.b-wait{background:var(--wait)}
+.b-seal{background:var(--seal)}
+.b-hatch{background:repeating-linear-gradient(45deg,var(--accent-line) 0 5px,transparent 5px 10px); border:1px solid var(--accent-line)}
+.rowlabel{
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-faint);
+  padding-left:2px; margin-bottom:-4px; letter-spacing:.04em;
+}
+.chartlegend{display:flex; flex-wrap:wrap; gap:6px 20px; margin-top:16px; padding-inline:14px; font-size:12.5px; color:var(--ink-soft)}
+.chartlegend i{display:inline-block; width:22px; height:9px; border-radius:2px; margin-right:7px; vertical-align:middle}
+
+/* ── 盘点表 ───────────────────────────── */
+.tablescroll{overflow-x:auto; border:1px solid var(--rule); background:var(--surface); box-shadow:var(--shadow)}
+table{border-collapse:collapse; width:100%; min-width:600px; font-size:14px}
+th,td{text-align:left; padding:11px 16px; border-bottom:1px solid var(--rule-soft); vertical-align:top}
+thead th{
+  background:var(--sunk); font-family:"IBM Plex Mono",monospace; font-weight:500;
+  font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-soft); border-bottom:1px solid var(--rule);
+}
+tbody tr:last-child td{border-bottom:none}
+td.mono{font-size:13px}
+
+.chip{
+  display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.05em;
+  padding:2px 8px; border-radius:2px; white-space:nowrap; font-weight:500;
+}
+.chip.ok{background:var(--ok-soft); color:var(--ok)}
+.chip.wait{background:var(--wait-soft); color:var(--wait)}
+.chip.block{background:var(--block-soft); color:var(--block)}
+.chip.na{background:var(--sunk); color:var(--ink-faint)}
+.chip.acc{background:var(--accent-soft); color:var(--accent)}
+
+/* ── 受理单（步骤卡） ─────────────────── */
+.steps{display:flex; flex-direction:column; gap:18px}
+.step{
+  background:var(--surface); border:1px solid var(--rule); box-shadow:var(--shadow);
+  display:grid; grid-template-columns:58px 1fr;
+}
+.step.critical{border-left:3px solid var(--seal)}
+.rail{
+  border-right:1px solid var(--rule-soft); background:var(--sunk);
+  display:flex; flex-direction:column; align-items:center; padding-top:18px; gap:8px;
+}
+.rail .n{font-family:"IBM Plex Mono",monospace; font-size:17px; font-weight:500; color:var(--accent); line-height:1}
+.rail .tag{
+  font-family:"IBM Plex Mono",monospace; font-size:9.5px; letter-spacing:.06em; color:var(--seal);
+  writing-mode:vertical-rl; text-orientation:upright; margin-top:2px;
+}
+.stepbody{padding:18px 22px 20px; display:flex; flex-direction:column; gap:12px; min-width:0}
+.steptop{display:flex; flex-wrap:wrap; align-items:baseline; gap:10px}
+.step h3{font-size:18px}
+.dl{display:grid; grid-template-columns:82px 1fr; gap:6px 14px; font-size:14px; align-items:baseline}
+.dl dt{
+  font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.07em; color:var(--ink-faint);
+  text-transform:uppercase; padding-top:3px;
+}
+.dl dd{margin:0; color:var(--ink)}
+.dl dd ul{margin:0; padding-left:1.05em; display:flex; flex-direction:column; gap:4px}
+.note{
+  background:var(--seal-soft); border-left:2px solid var(--seal); padding:11px 14px;
+  font-size:13.5px; line-height:1.65; color:var(--ink);
+}
+.note b{color:var(--seal)}
+.note.calm{background:var(--accent-soft); border-left-color:var(--accent)}
+.note.calm b{color:var(--accent)}
+
+/* ── 代码块 ───────────────────────────── */
+pre{
+  margin:0; background:var(--sunk); border:1px solid var(--rule-soft); border-left:2px solid var(--accent-line);
+  padding:14px 16px; overflow-x:auto; font-family:"IBM Plex Mono",monospace; font-size:12.5px;
+  line-height:1.7; color:var(--ink);
+}
+pre .c{color:var(--ink-faint)}
+
+/* ── 输入清单 ─────────────────────────── */
+.asklist{display:grid; grid-template-columns:repeat(auto-fit,minmax(268px,1fr)); gap:12px}
+.ask{background:var(--surface); border:1px solid var(--rule); padding:14px 16px; display:flex; flex-direction:column; gap:5px}
+.ask .q{font-weight:500; font-size:14.5px}
+.ask .why{font-size:13px; color:var(--ink-soft); line-height:1.6}
+.ask .blank{
+  margin-top:5px; border-bottom:1px dashed var(--rule); height:22px;
+  font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-faint);
+}
+
+/* ── 脚注 ─────────────────────────────── */
+.sources{font-size:12.5px; color:var(--ink-faint); line-height:1.9}
+.sources a{color:var(--ink-soft)}
+footer{margin-top:56px; padding-top:18px; border-top:2px solid var(--ink); font-size:12.5px; color:var(--ink-faint)}
+
+@media (max-width:560px){
+  .dl{grid-template-columns:1fr; gap:2px}
+  .dl dt{padding-top:8px}
+  .step{grid-template-columns:44px 1fr}
+  .rail .tag{display:none}
+  .docmeta{gap:0 18px}
+}
+@media (prefers-reduced-motion:no-preference){
+  a{transition:opacity .15s ease}
+}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">
+    <span>P3 · feature/phone-login</span><span class="dot"></span>
+    <span>对外申请清单</span><span class="dot"></span>
+    <span>关键路径 12–19 工作日</span>
+  </div>
+  <h1>短信登录报备手册</h1>
+  <p class="standfirst">
+    手机验证码登录的代码这一侧已经写完并测过；它现在卡在一件代码解决不了的事上——
+    向阿里云和运营商申请短信签名、模板与资质。本手册把这条路拆成可以一步一步办的动作，
+    每一步都写明去哪办、要交什么、多久、以及<b>怎么判断它真的成了</b>。
+  </p>
+  <div class="docmeta">
+    <span><b>编制</b> 2026-09-11</span>
+    <span><b>适用主体</b> 万智星（以营业执照全称为准）</span>
+    <span><b>关联分支</b> <code>feature/phone-login</code> @ 2e61c449</span>
+    <span><b>依据</b> 阿里云短信服务官方文档 · 已于本日核对</span>
+  </div>
+</header>
+
+<!-- ═══ 0 结论 ═══ -->
+<section id="verdict">
+  <div class="sechead">
+    <span class="secnum">00</span>
+    <h2>一页纸结论</h2>
+    <span class="aside">先读这一节，其余是它的展开</span>
+  </div>
+  <div class="verdict">
+    <p class="lede">要办的只有一件事：<b>让阿里云的短信签名通过运营商实名报备</b>。其余步骤都是它的前置或后续。</p>
+    <ul>
+      <li><b>关键路径 12–19 个工作日</b>，约 3–4 周。其中 10–17 天是<b>等待</b>（运营商报备 + 报备验证期），不是我们能加快的部分——所以越早提交越好。</li>
+      <li><b>阿里云账号必须是企业实名认证。</b>个人认证账号申请的自用资质<b>无法通过</b>运营商实名报备。这是第一个要确认的事，确认不了后面全白做。</li>
+      <li><b>签名【万智星】按现行规范很可能报不过。</b>规范要求企业简称<b>必须包含省/市/区等地域名称</b>且不少于 4 字——轨道文档里"万智星是企业全称子集所以可用"这条判据，只对上了"连续子集"那一半。建议改报「<span class="mono">〈地域〉万智星</span>」或营业执照全称。</li>
+      <li><b>签名审核通过 ≠ 能发短信。</b>之后还有运营商实名报备，状态会停在「已报备待验证」，必须靠<b>真实发送测试短信</b>去激活。这段要发五到七个工作日的测试短信，失败的短信也算数、且不计费。</li>
+      <li><b>国际通道不再是"零门槛先跑通"那条路。</b>它确实不需要签名和模板，但发往美国、加拿大、新加坡等地必须注册 SenderID；且自 2026-08-20 起部分国家的 SenderID 开始收注册费与<b>月租费，注册后不发短信也照收</b>。</li>
+      <li><b>合并这条分支之前，两台线上机器的 <code>.env</code> 必须先有 <code>KATRAIN_SMS_PROVIDER</code></b>，否则 compose 在插值期就报错，整份文件失效，连 cron 都起不来。这一条与申请无关，但它会先咬人。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══ 1 时间线 ═══ -->
+<section id="timeline">
+  <div class="sechead">
+    <span class="secnum">01</span>
+    <h2>关键路径</h2>
+    <span class="aside">横轴 = 工作日</span>
+  </div>
+  <div class="chartbox">
+    <div class="chartscroll">
+      <div class="chart">
+        <div class="chartgrid" style="padding-block:6px 4px">
+          <span class="tick" style="left:0%"></span>
+          <span class="tick" style="left:25%"></span>
+          <span class="tick" style="left:50%"></span>
+          <span class="tick" style="left:75%"></span>
+          <span class="tick" style="left:100%"></span>
+
+          <div class="rowlabel">① 企业实名认证（若账号已是企业认证则跳过）</div>
+          <div class="barrow"><div class="bar b-hatch" style="left:0%; width:5%"><span class="cap">当天 – 1 工作日</span></div></div>
+
+          <div class="rowlabel">② 短信资质审核（阿里云）</div>
+          <div class="barrow"><div class="bar b-acc" style="left:0%; width:10%"><span class="cap">2 个工作日</span></div></div>
+
+          <div class="rowlabel">③ 签名审核（阿里云）</div>
+          <div class="barrow"><div class="bar b-acc short" style="left:10%; width:2%"><span class="cap">约 2 小时（工作时间内）</span></div></div>
+
+          <div class="rowlabel">④ 模板审核（阿里云）· 须在签名通过之后</div>
+          <div class="barrow"><div class="bar b-acc short" style="left:12%; width:2%"><span class="cap">约 2 小时</span></div></div>
+
+          <div class="rowlabel">⑤ 运营商实名制报备 · 等待，不可加速</div>
+          <div class="barrow"><div class="bar b-wait" style="left:12%; width:50%"><span class="cap">5 – 10 个工作日</span></div></div>
+
+          <div class="rowlabel">⑥ 报备验证期 · 需持续发测试短信激活</div>
+          <div class="barrow"><div class="bar b-seal" style="left:62%; width:35%"><span class="cap">5 – 7 个工作日</span></div></div>
+        </div>
+        <div class="ticklabels">
+          <span style="left:0%">0</span>
+          <span style="left:25%">5</span>
+          <span style="left:50%">10</span>
+          <span style="left:75%">15</span>
+          <span style="left:100%">20 工作日</span>
+        </div>
+      </div>
+    </div>
+    <div class="chartlegend">
+      <span><i class="b-acc"></i>阿里云侧审核，可预期</span>
+      <span><i class="b-wait"></i>运营商侧等待，不可加速</span>
+      <span><i class="b-seal"></i>需要我们持续动作</span>
+      <span><i class="b-hatch"></i>可能已完成</span>
+    </div>
+  </div>
+  <div class="prose" style="margin-top:16px">
+    <p>⑤ 与 ④ 可以并行：模板只要求<b>签名审核通过</b>，不要求报备完成。所以签名一批下来就立刻提模板，别等。</p>
+    <p>⑥ 这一段最容易被漏掉——很多人以为签名显示"审核通过"就完事了，然后在上线当天发现验证码送达率极低。</p>
+  </div>
+</section>
+
+<!-- ═══ 2 盘点 ═══ -->
+<section id="inventory">
+  <div class="sechead">
+    <span class="secnum">02</span>
+    <h2>现状盘点</h2>
+    <span class="aside">代码侧 / 申请侧</span>
+  </div>
+  <div class="tablescroll">
+    <table>
+      <thead><tr><th style="width:30%">事项</th><th style="width:14%">状态</th><th>依据 / 说明</th></tr></thead>
+      <tbody>
+        <tr><td>短信发送代码（阿里云国内 + 国际两条 API）</td><td><span class="chip ok">已就绪</span></td><td class="">自签名实现，零新增依赖；<code>katrain/web/core/sms.py</code></td></tr>
+        <tr><td>验证码发放/核销、限流、日额度硬闸</td><td><span class="chip ok">已就绪</span></td><td>Task 6–7；冷却与额度全部从库里数，不靠进程内存</td></tr>
+        <tr><td>四个手机端点（发码 / 登录 / 绑定 / 改密）</td><td><span class="chip ok">已就绪</span></td><td>Task 7–10，已提交</td></tr>
+        <tr><td>免费额度的手机闸</td><td><span class="chip ok">已就绪</span></td><td>Task 11 · <code>2e61c449</code>（本机未推）</td></tr>
+        <tr><td>发言闸、前端登录框、隐私政策页</td><td><span class="chip wait">未开始</span></td><td>Task 12–18，与申请并行推进</td></tr>
+        <tr><td>阿里云账号</td><td><span class="chip ok">已有</span></td><td>推断自 <code>docker-compose.yml</code> 在用 <code>DASHSCOPE_API_KEY</code>（阿里云百炼）</td></tr>
+        <tr><td>阿里云账号 <b>企业</b>实名认证</td><td><span class="chip block">待确认</span></td><td><b>第一个卡点</b>：个人认证账号的自用资质无法通过运营商实名报备</td></tr>
+        <tr><td>短信资质（自用）</td><td><span class="chip wait">待办</span></td><td>见步骤 02</td></tr>
+        <tr><td>短信签名</td><td><span class="chip wait">待办</span></td><td>见步骤 03 —— 名字可能要改，别直接报【万智星】</td></tr>
+        <tr><td>短信模板（验证码类）</td><td><span class="chip wait">待办</span></td><td>见步骤 05；变量名必须是 <code>code</code></td></tr>
+        <tr><td>RAM 子账号 + AccessKey</td><td><span class="chip wait">待办</span></td><td>见步骤 06</td></tr>
+        <tr><td>国际/港澳台短信 + SenderID</td><td><span class="chip wait">待定</span></td><td>见第 04 节，涉及月租费，要先定目标国家</td></tr>
+        <tr><td>ICP 备案（modelstella.com）</td><td><span class="chip acc">据记录已有</span></td><td>需确认<b>备案主体 = 营业执照主体 = 签名主体</b>三者一致</td></tr>
+        <tr><td>公安联网备案</td><td><span class="chip block">待确认</span></td><td>网站上线后 30 日内应办；不阻塞短信申请，但属同一合规面</td></tr>
+        <tr><td>隐私政策 / 用户协议页</td><td><span class="chip wait">待办</span></td><td>Task 15；<b>同时是签名审核的佐证材料</b>，建议提前于报备完成</td></tr>
+        <tr><td>增值电信业务经营许可证</td><td><span class="chip na">不需要</span></td><td>我们只是短信的使用方，不转售短信服务</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 3 国内通道分步 ═══ -->
+<section id="domestic">
+  <div class="sechead">
+    <span class="secnum">03</span>
+    <h2>国内通道 · 分步办理</h2>
+    <span class="aside">带红边的是关键路径</span>
+  </div>
+  <div class="steps">
+
+    <div class="step critical">
+      <div class="rail"><span class="n">01</span><span class="tag">前置</span></div>
+      <div class="stepbody">
+        <div class="steptop"><h3>确认并升级为企业实名认证</h3><span class="chip block">阻塞全部后续</span></div>
+        <dl class="dl">
+          <dt>在哪办</dt><dd>阿里云控制台 → 账号中心 → 实名认证</dd>
+          <dt>要确认</dt><dd>当前账号是「企业认证」还是「个人认证」。</dd>
+          <dt>为什么</dt><dd>官方原文：个人认证用户申请<b>自用资质</b>无法通过签名实名制报备；只能改申请「他用资质」（要资质归属方证照 + 委托授权书），或把账号升级为企业认证。</dd>
+          <dt>怎样算成</dt><dd>账号中心显示企业名称，且该名称与营业执照全称<b>逐字一致</b>。</dd>
+          <dt>时长</dt><dd>已是企业认证则为 0；需升级约当天至 1 个工作日</dd>
+        </dl>
+        <div class="note"><b>要点</b> 这里认证成什么名字，决定了后面签名能报成什么名字。三者必须同一主体：阿里云账号认证名 = 营业执照全称 = 网站 ICP 备案主体。</div>
+      </div>
+    </div>
+
+    <div class="step critical">
+      <div class="rail"><span class="n">02</span><span class="tag">资质</span></div>
+      <div class="stepbody">
+        <div class="steptop"><h3>申请短信资质（自用）</h3><span class="chip acc">2 个工作日</span></div>
+        <dl class="dl">
+          <dt>在哪办</dt><dd>短信服务控制台 → 资质管理 → 添加资质 → 选「自用资质」</dd>
+          <dt>要交</dt><dd><ul>
+            <li>营业执照 或 统一社会信用代码证书（彩色原件，或加盖公章的复印件）</li>
+            <li>法定代表人证件（身份证等，支持 6 种证件类型）</li>
+            <li>管理员证件正反面照片</li>
+            <li>可选补充材料：网站链接、业务功能截图</li>
+          </ul></dd>
+          <dt>怎样算成</dt><dd>资质状态为「审核通过」。签名必须挂在一份审核通过的资质上。</dd>
+          <dt>时长</dt><dd>预计 2 个工作日内（审核时间 周一至周日 9:00–21:00，法定节假日顺延）</dd>
+        </dl>
+        <div class="note calm"><b>顺手准备</b> 「业务功能截图」这一栏建议放<b>登录页 + 隐私政策页</b>的截图——审核方要看到你确实在做一个需要验证码的登录。这正好是 Task 14/15 的产出，两件事可以对齐时间。</div>
+      </div>
+    </div>
+
+    <div class="step critical">
+      <div class="rail"><span class="n">03</span><span class="tag">签名</span></div>
+      <div class="stepbody">
+        <div class="steptop"><h3>申请短信签名</h3><span class="chip acc">约 2 小时</span><span class="chip block">名字需先定</span></div>
+        <dl class="dl">
+          <dt>在哪办</dt><dd>短信服务控制台 → 国内消息 → 签名管理 → 添加签名</dd>
+          <dt>签名来源</dt><dd>选「企事业单位名（全称或简称）」。<span class="chip na">已下线</span> 旧的「已上线 APP」「已备案网站」「公众号/小程序」等来源均已下线。</dd>
+          <dt>命名规范</dt><dd><ul>
+            <li>长度 2–18 个字符，不可解除</li>
+            <li>简称<b>必须包含省/市/区等地域名称</b>，不支持省略地域信息（合规示例：北京启音科技）</li>
+            <li>简称必须是营业执照全称的<b>连续子集</b>，严禁跳字、乱序、增字</li>
+            <li>建议 4 字以上，不能过于简化</li>
+            <li>不支持括号、空格、【】、[]、繁体字；不支持中性签名（如"客服通知"）；不得含"测试"字样</li>
+          </ul></dd>
+          <dt>怎样算成</dt><dd>签名状态「审核通过」——<b>但这不等于能发短信</b>，见步骤 04。</dd>
+          <dt>时长</dt><dd>预计 2 小时内（工作时间 9:00–21:00）</dd>
+        </dl>
+        <div class="note">
+          <b>与轨道文档冲突的一条，请先裁</b><br>
+          轨道 <code>requirements.md §2.10</code> 记的是「签名可用【万智星】（企业全称子集）」。按现行规范复核：连续子集这一半成立，
+          但<b>「简称必须包含地域名称」这一半不成立</b>。若营业执照全称形如「〈某市〉万智星科技有限公司」，
+          则【万智星】是<b>无地域信息的简称</b>，很可能被驳回，代价是重排 5–10 个工作日的报备队列。<br>
+          建议报「〈地域〉万智星」形式，或直接用全称（不超过 18 字时）。
+          <b>代码这一侧不受影响</b>：<code>KATRAIN_SMS_SIGN_NAME</code> 是可配的环境变量（默认值才是"万智星"），
+          批下来叫什么就配什么。
+        </div>
+      </div>
+    </div>
+
+    <div class="step critical">
+      <div class="rail"><span class="n">04</span><span class="tag">报备</span></div>
+      <div class="stepbody">
+        <div class="steptop"><h3>运营商实名制报备 + 验证激活</h3><span class="chip wait">5–10 工作日 + 5–7 工作日</span></div>
+        <dl class="dl">
+          <dt>谁发起</dt><dd>阿里云自动发起：资质与签名通过后，为你生成子端口号并向运营商报备。不需要我们提交额外材料。</dd>
+          <dt>依据</dt><dd>工信部及各级运营商要求——所有短信必须在完成运营商侧实名制报备后方可发送。</dd>
+          <dt>状态</dt><dd><ul>
+            <li><span class="chip ok">报备成功</span> 完成</li>
+            <li><span class="chip wait">已报备待验证</span> 需要<b>实际发送测试短信</b>触发系统自动检测</li>
+            <li><span class="chip block">可用-异常</span> 报备失败，发送成功率会严重受影响甚至中断</li>
+          </ul></dd>
+          <dt>验证动作</dt><dd>官方建议：用移动、联通、电信<b>各一个号码</b>；一周内至少 3 天，每天每个运营商不少于 10 条；持续 5–7 个工作日。<b>发送失败的短信同样能触发报备流程，且不产生费用。</b></dd>
+          <dt>怎样算成</dt><dd>签名状态变为「报备成功」，且三家运营商的测试号码都能真实收到短信。</dd>
+        </dl>
+        <div class="note calm">
+          <b>与我们自己的限流对齐</b> 代码里 <code>SMS_PHONE_DAILY=10</code>（同号每天 10 条）正好等于阿里云官方上限，
+          所以"每天每个运营商 10 条"可以用同一个号码打满，不需要额外准备号码池。
+          这段测试期建议直接用生产站点的真实发码接口做，顺带就是端到端验收。
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><span class="n">05</span><span class="tag">模板</span></div>
+      <div class="stepbody">
+        <div class="steptop"><h3>申请验证码模板</h3><span class="chip acc">约 2 小时</span></div>
+        <dl class="dl">
+          <dt>前置</dt><dd><b>必须在签名审核通过之后</b>才能申请模板（可与运营商报备并行，不必等报备完成）。</dd>
+          <dt>在哪办</dt><dd>短信服务控制台 → 国内消息 → 模板管理 → 添加模板 → 类型选「验证码」</dd>
+          <dt>正文规范</dt><dd><ul>
+            <li>必须包含"验证码、注册码、校验码、动态码（动态密码）"中的任意一个</li>
+            <li>必须体现"使用平台、用途、失效时间"中的任意一种</li>
+            <li>不得含通知/营销/广告词语、退订方式、任何联系方式、任何链接</li>
+            <li>仅支持单变量或双变量，不支持全变量模板</li>
+          </ul></dd>
+          <dt>变量名</dt><dd><b>必须是 <code>code</code></b>。代码里拼的是 <code>TemplateParam={"code":"……"}</code>（<code>sms.py</code>），变量名不一致会被阿里云判为参数错误。</dd>
+          <dt>建议正文</dt><dd>
+            <pre>您正在登录万智星，验证码 ${code}，5 分钟内有效，请勿泄露给他人。</pre>
+          </dd>
+          <dt>怎样算成</dt><dd>拿到模板 CODE，形如 <code>SMS_123456789</code>——它就是 <code>KATRAIN_SMS_TEMPLATE_CODE</code> 的值。</dd>
+        </dl>
+        <div class="note calm"><b>与代码对齐</b> "5 分钟内有效"要与 <code>SMS_CODE_TTL_SEC=300</code> 一致。改了一边就要改另一边，否则短信里说的和系统实际做的不是一回事。</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="rail"><span class="n">06</span><span class="tag">凭据</span></div>
+      <div class="stepbody">
+        <div class="steptop"><h3>创建 RAM 子账号与 AccessKey</h3><span class="chip acc">10 分钟</span></div>
+        <dl class="dl">
+          <dt>在哪办</dt><dd>阿里云 RAM 访问控制 → 用户 → 创建用户（勾选「使用永久 AccessKey 访问」）</dd>
+          <dt>授权</dt><dd>只授短信发送相关权限（<code>AliyunDysmsFullAccess</code>，或自定义策略只放 <code>SendSms</code> / <code>SendMessageToGlobe</code>）。<b>不要用主账号 AccessKey。</b></dd>
+          <dt>产出</dt><dd><code>AccessKeyId</code> 与 <code>AccessKeySecret</code>——Secret 只在创建时显示一次。</dd>
+          <dt>怎样算成</dt><dd>拿到一对凭据，且这对凭据不能用来做短信以外的任何事。</dd>
+        </dl>
+        <div class="note"><b>不要把凭据贴进任何聊天窗口、issue 或提交</b>。落地方式见第 06 节：只进两台机器的 <code>.env</code>，文件权限 600。</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ 4 国际 ═══ -->
+<section id="intl">
+  <div class="sechead">
+    <span class="secnum">04</span>
+    <h2>国际 / 港澳台通道</h2>
+    <span class="aside">需要你先做一个范围决定</span>
+  </div>
+  <div class="prose">
+    <p>产品要求是"所有国家的手机号都要支持"。这条通道<b>不需要国内签名、模板和资质</b>——轨道文档这一条复核成立。但它有另外两个门槛，其中一个是新出现的：</p>
+  </div>
+  <div class="steps" style="margin-top:18px">
+    <div class="step">
+      <div class="rail"><span class="n">07</span><span class="tag">开通</span></div>
+      <div class="stepbody">
+        <div class="steptop"><h3>开通国际/港澳台短信</h3><span class="chip acc">当天</span></div>
+        <dl class="dl">
+          <dt>在哪办</dt><dd>短信服务控制台 → 国际/港澳台消息</dd>
+          <dt>说明</dt><dd>已升级为 SenderID 模式，无需申请签名和模板，也无需提交资质。</dd>
+          <dt>计费</dt><dd>按提交计费——<b>接口调用成功即按条计费，发送返回"失败"同样计费</b>。这正是代码里"供应商超时也保守计入日额度"的现实依据。</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="step critical">
+      <div class="rail"><span class="n">08</span><span class="tag">范围</span></div>
+      <div class="stepbody">
+        <div class="steptop"><h3>SenderID 报备 —— 先定目标国家清单</h3><span class="chip block">涉及月租费</span></div>
+        <dl class="dl">
+          <dt>强制注册</dt><dd>美国、加拿大（须完成 10 DLC / TFN 注册，用运营商下发的 Sender ID）；新加坡（须完成 IMDA SSIR 注册）。其余国家按当地规则各不相同。</dd>
+          <dt>费用</dt><dd>自 <b>2026-08-20</b> 起，部分国家/地区的 SenderID 开始收费：注册费 ¥61 – ¥61,607（一次性）、月租费 ¥61 – ¥13,405/月，随国家与号码类型差异极大。涉及国家包括美国、加拿大、越南、俄罗斯、沙特、阿联酋、哈萨克斯坦等。</dd>
+          <dt>关键性质</dt><dd>官方原文：<b>SenderID 一旦注册成功，无论是否活跃发送短信，均会按月产生月租费。</b></dd>
+          <dt>建议</dt><dd>不要一次性铺开。先只放开<b>不需要 SenderID 的国家/地区</b>（含港澳台），把端到端跑通；等真有该国用户再逐国注册。</dd>
+        </dl>
+        <div class="note"><b>这条改变了原计划的一个判断。</b> 轨道文档写的是"国际通道不被报备阻塞，可以先用它端到端跑通"。这在<b>不涉及强制 SenderID 的国家</b>依然成立，但对美加新等地已不成立。要么接受"这些国家暂不支持"，要么为它们单独付注册费与月租。<b>这是要你拍的一件事。</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 5 站点合规 ═══ -->
+<section id="compliance">
+  <div class="sechead">
+    <span class="secnum">05</span>
+    <h2>站点合规</h2>
+    <span class="aside">不在阿里云控制台里，但同属一件事</span>
+  </div>
+  <div class="tablescroll">
+    <table>
+      <thead><tr><th style="width:26%">事项</th><th style="width:15%">状态</th><th>说明与动作</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>ICP 备案主体一致性</td><td><span class="chip block">待确认</span></td>
+          <td>据部署记录 modelstella.com 已过备案。需确认<b>备案主体名称</b>与营业执照全称、阿里云企业认证名三者一致——不一致时签名审核会以"与业务主体不一致"驳回。</td>
+        </tr>
+        <tr>
+          <td>公安联网备案</td><td><span class="chip block">待确认</span></td>
+          <td>网站开通后 30 日内应在全国互联网安全管理服务平台备案。不阻塞短信申请，但既然在做实名这一面，一并确认。</td>
+        </tr>
+        <tr>
+          <td>隐私政策 + 单独同意</td><td><span class="chip wait">Task 15</span></td>
+          <td>手机号属个人信息，收集前须告知并取得<b>单独同意</b>。这既是《个人信息保护法》的要求，也是步骤 02 的佐证材料。建议提前做，别排在最后。</td>
+        </tr>
+        <tr>
+          <td>实名制义务的落点</td><td><span class="chip wait">Task 12</span></td>
+          <td>《网络安全法》（2025 修正，2026-01-01 施行）第二十六条：提供<b>信息发布、即时通讯</b>服务的，应当要求用户提供真实身份信息。我们的落点是<b>未绑手机不得发言</b>，不是关掉注册。</td>
+        </tr>
+        <tr>
+          <td>网络安全等级保护备案</td><td><span class="chip na">本轮不做</span></td>
+          <td>法规上存在，但不阻塞短信开通。记在这里，由你决定何时启动。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 6 落地 ═══ -->
+<section id="wiring">
+  <div class="sechead">
+    <span class="secnum">06</span>
+    <h2>拿到凭据之后</h2>
+    <span class="aside">零申请，纯配置</span>
+  </div>
+  <div class="prose">
+    <p>五个环境变量，写进两台机器（home-ubuntu 测试 / ucloud-v100 生产）的 <code>.env</code>。按项目裁定，<b>先测试环境、再生产</b>。</p>
+  </div>
+  <pre style="margin-top:16px"><span class="c"># .env —— 两台机器都要有，权限 600</span>
+KATRAIN_SMS_PROVIDER=aliyun
+KATRAIN_SMS_ACCESS_KEY_ID=&lt;RAM 子账号的 AccessKeyId&gt;
+KATRAIN_SMS_ACCESS_KEY_SECRET=&lt;AccessKeySecret&gt;
+KATRAIN_SMS_TEMPLATE_CODE=SMS_123456789
+KATRAIN_SMS_SIGN_NAME=&lt;实际批下来的签名名&gt;   <span class="c"># 若不是"万智星"必须显式配</span></pre>
+  <div class="steps" style="margin-top:20px">
+    <div class="step critical">
+      <div class="rail"><span class="n">!</span><span class="tag">先咬人</span></div>
+      <div class="stepbody">
+        <div class="steptop"><h3>合并分支之前必须先做的一件事</h3><span class="chip block">会让线上起不来</span></div>
+        <div class="prose" style="max-width:none">
+          <p><code>docker-compose.yml:82</code> 用的是 <code>${KATRAIN_SMS_PROVIDER:?…}</code> 语法——<b>缺这个变量时 compose 在插值期就失败，整份文件失效</b>，不只是 web 服务，连 katrain-cron 也一起起不来。</p>
+          <p>所以顺序是：<b>先把两台机器的 <code>.env</code> 补上这一行，再合并分支</b>。还没拿到凭据时，配 <code>KATRAIN_SMS_PROVIDER=aliyun</code> + 空凭据即可正常启动，发码会返回 <code>502 sms_provider_failed</code>——那是诚实的不可用，不是伪装成功。</p>
+          <p>顺带：<code>.env.example</code> 里连 <code>KATRAIN_SECRET_KEY</code> 都没有，这五行也应该补进去，否则下一个部署的人会重踩。</p>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="rail"><span class="n">✓</span><span class="tag">验收</span></div>
+      <div class="stepbody">
+        <div class="steptop"><h3>本机真浏览器验收怎么拿到验证码</h3></div>
+        <div class="prose" style="max-width:none">
+          <p>库里只存验证码的哈希，本机跑不出明文。为此留了显式开关：<code>KATRAIN_SMS_ALLOW_CONSOLE=1</code> 配合 <code>KATRAIN_SMS_PROVIDER=console</code>，验证码打到终端。</p>
+          <p><b>两台线上机器都不设这个开关</b>——不设时启动闸会拒绝 console 提供方，因为它"接口一路返回成功而用户永远收不到码"，是一种坏了和好着长得一模一样的故障。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 7 长期规则 ═══ -->
+<section id="longterm">
+  <div class="sechead">
+    <span class="secnum">07</span>
+    <h2>上线之后的两条长期规则</h2>
+    <span class="aside">今天不办，但会在几个月后咬人</span>
+  </div>
+  <div class="tablescroll">
+    <table>
+      <thead><tr><th style="width:24%">规则</th><th style="width:18%">阈值</th><th>后果与应对</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>签名长期未使用自动冻结</td><td class="mono">连续 180 天</td>
+          <td>官方原文：签名在连续 180 天内未成功发送过短信时，平台将自动冻结该签名。解冻后若<b>短于 6 个月</b>内再无发送行为，会被重新置为"冻结"。<b>应对</b>：签名批下来就投入使用，或设一个季度性的巡检提醒。</td>
+        </tr>
+        <tr>
+          <td>同号发送频率上限</td><td class="mono">1 / 分钟<br>5 / 小时<br>10 / 天</td>
+          <td>同一签名对同一手机号的验证码上限；另有全平台同号 40 条/天。代码里 <code>SMS_COOLDOWN_SEC=60</code> / <code>SMS_PHONE_HOURLY=5</code> / <code>SMS_PHONE_DAILY=10</code> 就是照这个配的，不比它松——<b>这样用户先撞的是我们能解释的墙</b>，而不是运营商那面无法解释的墙。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 8 输入 ═══ -->
+<section id="inputs">
+  <div class="sechead">
+    <span class="secnum">08</span>
+    <h2>需要你提供的信息</h2>
+    <span class="aside">填完这张表就可以开始第一步</span>
+  </div>
+  <div class="asklist">
+    <div class="ask">
+      <span class="q">营业执照全称（逐字）</span>
+      <span class="why">决定签名能报成什么名字，以及简称是否合规。</span>
+      <span class="blank"></span>
+    </div>
+    <div class="ask">
+      <span class="q">统一社会信用代码</span>
+      <span class="why">资质申请必填。</span>
+      <span class="blank"></span>
+    </div>
+    <div class="ask">
+      <span class="q">阿里云账号当前是企业认证还是个人认证</span>
+      <span class="why">个人认证会在报备那一步失败，且要走完全套才知道。</span>
+      <span class="blank"></span>
+    </div>
+    <div class="ask">
+      <span class="q">modelstella.com 的 ICP 备案主体名称</span>
+      <span class="why">与营业执照不一致时签名会被以"主体不一致"驳回。</span>
+      <span class="blank"></span>
+    </div>
+    <div class="ask">
+      <span class="q">签名报哪个名字</span>
+      <span class="why">建议「〈地域〉万智星」或全称。你定了我就把 <code>KATRAIN_SMS_SIGN_NAME</code> 对齐。</span>
+      <span class="blank"></span>
+    </div>
+    <div class="ask">
+      <span class="q">国际短信首批放开哪些国家/地区</span>
+      <span class="why">美加新需注册 SenderID 且有月租；建议先只放不需要注册的。</span>
+      <span class="blank"></span>
+    </div>
+    <div class="ask">
+      <span class="q">三家运营商各一个测试手机号</span>
+      <span class="why">报备验证期要连续发 5–7 个工作日，缺一家就验不全。</span>
+      <span class="blank"></span>
+    </div>
+    <div class="ask">
+      <span class="q">法定代表人与管理员证件</span>
+      <span class="why">资质申请要正反面照片。不必发给我，办的时候你自己上传即可。</span>
+      <span class="blank"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 出处 ═══ -->
+<section id="sources">
+  <div class="sechead">
+    <span class="secnum">09</span>
+    <h2>出处</h2>
+    <span class="aside">本日核对</span>
+  </div>
+  <div class="sources">
+    <p>阿里云官方文档：
+      <a href="https://help.aliyun.com/zh/sms/user-guide/apply-qualification">申请短信资质</a> ·
+      <a href="https://help.aliyun.com/zh/sms/user-guide/create-signatures">申请短信签名</a> ·
+      <a href="https://help.aliyun.com/zh/sms/user-guide/signature-specifications-1">短信签名规范</a> ·
+      <a href="https://help.aliyun.com/zh/sms/user-guide/sms-signature-faq">短信签名常见问题（180 天冻结）</a> ·
+      <a href="https://help.aliyun.com/zh/sms/product-overview/suggestions-on-sms-sign-real-name-system-reporting">实名制报备操作指南</a> ·
+      <a href="https://help.aliyun.com/zh/sms/user-guide/message-template-specifications">短信模板规范</a> ·
+      <a href="https://help.aliyun.com/zh/sms/getting-started/get-started-with-sms">短信服务使用流程</a> ·
+      <a href="https://help.aliyun.com/zh/sms/sendmessagetoglobe-1/">SendMessageToGlobe</a> ·
+      <a href="https://help.aliyun.com/zh/sms/user-guide/senderid-report">SenderID 报备</a> ·
+      <a href="https://help.aliyun.com/zh/sms/product-overview/sender-id-billing-effective-in-some-countries-regions">SenderID 计费通知（2026-07-16）</a>
+    </p>
+    <p>法规：<a href="https://www.cac.gov.cn/2025-12/29/c_1768735112911946.htm">《中华人民共和国网络安全法》（2025 修正，2026-01-01 施行）第二十六条</a></p>
+    <p>仓内依据：<code>katrain/web/core/sms.py</code>、<code>katrain/web/core/config.py</code>、<code>docker-compose.yml:82</code>、<code>superpowers/tracks/phone-login/requirements.md §2.10</code></p>
+  </div>
+</section>
+
+<footer>
+  本手册的每一条阿里云规则都在 2026-09-11 逐条核对过官方文档。标注「待确认」的项目是我无权限查证的事实，
+  不是我没查——它们需要你在控制台或执照上确认。与轨道文档冲突的两处（签名地域规则、国际 SenderID 收费）已在正文中明示。
+</footer>
+
+</div>

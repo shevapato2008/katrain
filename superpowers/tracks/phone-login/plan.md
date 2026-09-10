@@ -3050,12 +3050,15 @@ Expected: FAIL —— `16 failed`。三种红因，逐条对得上：
 
 ```bash
 grep -n "REGISTER_IP_DAILY" katrain/web/core/config.py     # 必须 2 处命中（Settings 字段 + __init__ 装配）
-grep -c "today_start" katrain/web/core/sms_challenge.py   # 应为 2；_today_start 应为 0
+grep -c "today_start" katrain/web/core/sms_challenge.py   # 应为 3；_today_start 应为 0
 ```
 
 第一条不到 2 处 ⇒ 回 Task 5 补上并由 **Task 5 的提交**带上 `config.py`；本 Task 不动 config.py。
-第二条：Task 6 落的**已经是公开名** `today_start`（1 处定义 + `issue()` 里 1 处调用，共 2 处），
-`_today_start` 零命中。**本 Task 不改名，只调用** —— 跨模块不拿私有名是接口契约的口径。
+第二条：Task 6 落的**已经是公开名** `today_start`，`_today_start` 零命中。
+⚠️ **数字在 2026-09-10 修正为 3**：写计划时算的是「1 处定义 + `issue()` 里 1 处调用」，
+漏了模块 docstring 里那句「见 `today_start()`」。照原来的 2 跑会把一个完好的 Task 6
+误判成没做完 —— 判据（公开名在、私有名不在）本身是对的，错的只是那个计数。
+**本 Task 不改名，只调用** —— 跨模块不拿私有名是接口契约的口径。
 
 **① `katrain/web/core/models_db.py`** —— `User` 类里 `avatar_url` 之后加一列：
 

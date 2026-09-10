@@ -322,7 +322,19 @@ async def create_report_task(
     # 预扣(transaction_status 返回 None,跳过)或还一份没消费的额度
     # (release 的 `used >= n` 守卫挡住),都无副作用。
     period = quota.period_key("week")
-    if task.report_type == "normal" and settings.FREE_WEEKLY_REPORTS > 0:
+    # 「这次请求本来有没有免费额度可拿」与「是不是手机挡住了」拆成两个名字,
+    # **下面的分支和 402 的 free_weekly_blocked 必须用同一对**。
+    # 分开写过一版:分支写全三项、402 只写了 phone_bound 那一项 —— 于是深度复盘
+    # (对谁都不免费)和 FREE_WEEKLY_REPORTS=0(对谁都不发)时,未绑号的人会被告知
+    # 「去绑手机」,绑完再试还是同一个 402。那正是本文件在 /retry 那处明文拒绝写的谎。
+    free_weekly_applies = task.report_type == "normal" and settings.FREE_WEEKLY_REPORTS > 0
+    # `phone_bound`:免费额度只发给已绑手机的人(P3/Task 11)。
+    # 免费桶的键是 user_id 而不是手机号 ⇒ 没有这一项,注册 N 个用户名就是每周
+    # N 份免费复盘(config.py 里 BILLING_ENFORCED 上方那条警告说的正是这件事)。
+    # 这一项还顺带保证未绑号用户**一行桶都不建**:try_consume 会 _ensure_bucket,
+    # 把 allowance 快照钉死在桶行上,那样该用户当周绑了号也拿不到额度。
+    free_weekly_blocked_by_phone = free_weekly_applies and not current_user.phone_bound
+    if free_weekly_applies and current_user.phone_bound:
         report_task.free_grant_period = period
         db.commit()
         if quota.try_consume(
@@ -348,6 +360,16 @@ async def create_report_task(
                     "code": "insufficient_credits",
                     "need": cost,
                     "have": billing.get_balance(db, current_user.id),
+                    # 未绑号时说清楚:否则我们在把「你还没绑手机」伪装成「你没钱」。
+                    #
+                    # **这个键只加在这里,不加到 /retry 那个同样是 402 的出口。**
+                    # 那不是遗漏:重试的重新授权只按**剩余手数扣积分**,从不查额度桶
+                    # (见 retry 里"免费周额度不在这条判断里"那段)⇒ 此刻绑上手机
+                    # 不会让那次 retry 变免费,写 "phone_unbound" 就是假话。
+                    # (别把理由写成"已绑号的人会拿到一模一样的 402" —— 那句不成立:
+                    #  走过免费臂的任务 free_grant_period 非空,retry 压根到不了那个出口。)
+                    # 用上面那个谓词,**不要**在这里重写一遍条件:重写就是它们走偏的方式。
+                    "free_weekly_blocked": "phone_unbound" if free_weekly_blocked_by_phone else None,
                 },
             )
 

@@ -192,6 +192,14 @@ class User(BaseModel):
     # 所有闸一律读这个布尔（Task 11 的免费额度、Task 12 的发言）。
     # 有默认值 ⇒ 属性必然存在 ⇒ 闸里直接 `current_user.phone_bound`，
     # 不用 getattr 兜底：getattr 会把"字段没加上"这个错误掩盖成"所有人都被拒"。
+    #
+    # ⚠️ **board（盒子）模式下这个值恒为 False**：盒上用户是
+    # `_get_or_create_shadow_user` 建的影子用户（不传手机号），而四个手机端点
+    # 被 `_guard_phone_endpoint` 在盒上一律 403/503 ⇒ 结构上不可能变 True。
+    # Task 11 的两个调用点碰巧在盒上都到不了（`/billing/quota` 先 503、
+    # `POST /reports/` 整包转发云端），**但那是调用点的性质，不是这个判据的性质**。
+    # ⇒ 加新闸之前先问「这条分支在盒子上跑不跑」。跑的话（例如对局聊天那条
+    # 本地 WS）直接读这个布尔会把每一台 kiosk 上的每个用户永久拒掉。
     phone_bound: bool = False
 
 

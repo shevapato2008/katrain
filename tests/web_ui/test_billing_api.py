@@ -50,7 +50,7 @@ def app():
         os.remove("./test_billing_api.db")
 
 
-async def _make_user(app, username, password="pw", is_admin=False, credits=0):
+async def _make_user(app, username, password="pw", is_admin=False, credits=0, phone=None):
     from passlib.context import CryptContext
     from katrain.web.core import models_db
 
@@ -61,6 +61,8 @@ async def _make_user(app, username, password="pw", is_admin=False, credits=0):
         u = s.query(models_db.User).filter_by(username=username).one()
         u.is_admin = is_admin
         u.credits = credits
+        if phone is not None:
+            u.phone_e164 = phone
         s.commit()
     finally:
         s.close()
@@ -148,14 +150,18 @@ if __name__ == "__main__":
 
 @pytest.mark.asyncio
 async def test_quota_endpoint_shape(app):
-    await _make_user(app, "quotauser", credits=500)
+    # 免费周额度自 P3 起只发给已绑手机的人（endpoints/billing.py 的短路），
+    # 所以这个用户先绑上号；未绑号那一档的形状由
+    # tests/web_ui/test_phone_quota_gate.py 覆盖。
+    await _make_user(app, "quotauser", credits=500, phone="+8613800138000")
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         h = await _login(ac, "quotauser")
         r = await ac.get("/api/v1/billing/quota", headers=h)
         assert r.status_code == 200, r.text
         b = r.json()
         assert b["credits"] == 500
-        assert b["free_weekly"] == {"used": 0, "allowance": 1}
+        # 保留**精确比较** —— 它顺带守着「不许多出别的键」。
+        assert b["free_weekly"] == {"used": 0, "allowance": 1, "blocked_reason": None}
         # 深度复盘是标准的 4 倍（2000 vs 500 visits）—— 估算之间的比例必须自洽
         assert b["estimates"]["deep_250_moves"] == 4 * b["estimates"]["normal_250_moves"]
         # 前端据此决定要不要显示价格；默认是关的

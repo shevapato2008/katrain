@@ -98,6 +98,24 @@ def _balance(user) -> int:
         db.close()
 
 
+def _bind_phone(user, phone: str = "+8613800138000") -> None:
+    """给这个用户绑一个手机号。
+
+    免费周额度自 P3 起只发给已绑号的人（reports.py 的免费分支多了一项
+    `current_user.phone_bound`）。本文件其余用例把 FREE_WEEKLY_REPORTS 调到 0
+    只测积分路径，不受影响；下面两条是**专测免费分支**的，不绑号的话它们
+    量到的是扣费路径 —— 断言会红，而且红的原因与它们要证的事情无关。
+    """
+    from katrain.web.core import models_db
+
+    db = _session_factory()
+    try:
+        db.query(models_db.User).filter_by(id=user.id).update({"phone_e164": phone})
+        db.commit()
+    finally:
+        db.close()
+
+
 def _set_balance(user, n: int) -> None:
     from katrain.web.core import models_db
 
@@ -237,7 +255,14 @@ async def test_insufficient_credits_returns_402_and_leaves_no_task(app_with_game
 
 @pytest.mark.asyncio
 async def test_no_task_is_left_claimable_without_a_charge(app_with_game, monkeypatch, db):
-    """任何时刻，status=pending 的任务必须已经有 charge_ref 或已用免费额度。"""
+    """任何时刻，status=pending 的任务必须已经有 charge_ref 或已用免费额度。
+
+    **本文件唯一不 monkeypatch FREE_WEEKLY_REPORTS 的用例**，跑的是真默认值 1。
+    P3 的手机闸落地后它**没变红，但换了证明的那一侧**：这个用户没绑号，于是免费
+    分支被跳过、由**扣费臂**满足下面这个 `or`（此前是免费臂）。这里不给它绑号 ——
+    免费臂由下面两条专测免费分支的用例覆盖，而「未绑号也不许留下未计费的 pending」
+    恰恰是本轮新引入的那条路径，让它由这条守着更值。
+    """
     client, token, game_id, user = app_with_game
     from katrain.web.core import models_db
 
@@ -267,6 +292,7 @@ async def test_first_report_of_the_week_is_free_second_is_charged(app_with_game,
     client, token, game_id, user = app_with_game
     monkeypatch.setattr(settings, "BILLING_ENFORCED", True)
     monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 1)
+    _bind_phone(user)
     _set_balance(user, 10_000)
     before = _balance(user)
 
@@ -299,6 +325,7 @@ async def test_free_report_records_its_period_not_a_charge_ref(app_with_game, mo
     client, token, game_id, user = app_with_game
     monkeypatch.setattr(settings, "BILLING_ENFORCED", True)
     monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 1)
+    _bind_phone(user)
     _set_balance(user, 10_000)
 
     r = await client.post(

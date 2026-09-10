@@ -4461,7 +4461,9 @@ Claude-Session: https://claude.ai/code/session_01GGNBSL4QhRA2vCDcZL83oF"
   - 两个键名不同是**两条不同响应上的两个字段**，Task 13-15 分别读：`/quota` 读
     `free_weekly.blocked_reason`，402 读 `detail.free_weekly_blocked`。本轮不合并。
 
-**机制**（亲验 `katrain/web/core/quota.py:47-77`）：`_ensure_bucket` **只在行不存在时**
+**机制**（亲验 `katrain/web/core/quota.py`，⚠️ 实际是 `_ensure_bucket` :46-73 / `peek` :75-78，
+本文写的 :47-77 偏一行；写进代码注释时**按函数名引用，别写行号** —— 行号正是最先过期的东西）：
+`_ensure_bucket` **只在行不存在时**
 写 `allowance`，`peek` 取的是**桶上的快照**（`peek` 的 docstring 明写）⇒ 拿 `allowance=0`
 去 `peek` 一个未绑号用户，**当周就开出一个 `allowance=0` 的桶，该用户当周绑了手机也永远拿不到额度**。
 ⇒ **在触碰 quota 之前短路，一行桶都不建。**
@@ -4493,8 +4495,14 @@ UserGame.user_id == current_user.id` 查，查不到直接 `404 "Game not found"
 「付费会员每周 3 次 / 免费用户 1 次 / 未绑手机 0 次」时就分不出后两者了 ——
 而它们该有完全不同的引导文案。
 
-夹具接线照抄 tests/web_ui/test_report_charging.py:57-95（那份是仓里唯一同时接住
-两条库接缝的先例）。
+⚠️ **2026-09-10 实跑修正：下面这句「夹具接线照抄 tests/web_ui/test_report_charging.py:57-95
+（那份是仓里唯一同时接住两条库接缝的先例）」两处都不成立，别把它抄进新文件的 docstring：**
+(1) 行号错——那个夹具是 `_test_app`，在 :28-88，:91 起已经是 `_balance` 了；
+(2)「唯一」是假的——全仓 **7 个**测试文件设了 `report_session_factory`（`test_report_retry_authorization.py`
+    也同样两条都接）。
+**更近的照抄对象是同轨道 Task 9/10 留下的 `tests/web_ui/test_phone_bind.py` 与 `test_set_password.py`**
+（tmp_path + monkeypatch，不必手工还原全局 `settings.DATABASE_URL`），只需另加 `/user-games/`
+与 `/reports/` 要用的四个 state。下面这份夹具代码本身是对的，照抄代码、别照抄那句出处。
 """
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -4736,9 +4744,11 @@ Expected: FAIL — **7 failed, 2 passed**。逐条：
 | `test_quota_does_not_create_a_bucket_for_an_unbound_user` | 红 —— 今天谁来都建桶，`count()` 是 1 |
 | `test_binding_takes_effect_in_the_same_week` | 红 —— `KeyError: 'blocked_reason'` |
 | `test_unbound_user_report_does_not_consume_free_quota` | 红 —— 今天走了免费分支：`free_grant_period` 有值、`charge_ref` 为 None、桶是 1 |
-| `test_402_says_phone_not_just_no_money` | 红 —— `KeyError: 'free_weekly_blocked'` |
-| `test_402_for_a_bound_user_says_nothing_about_the_phone` | 红 —— 同上 |
+| `test_402_says_phone_not_just_no_money` | 红 —— ⚠️ **2026-09-10 实跑修正：不是 `KeyError`，是 `assert 200 == 402`**。未绑号用户在 `FREE_WEEKLY_REPORTS=1` 时今天走的正是免费分支，`try_consume` 成功 ⇒ 根本走不到 402。总数 7/2 不变 |
+| `test_402_for_a_bound_user_says_nothing_about_the_phone` | 红 —— `KeyError: 'free_weekly_blocked'`（这条才是 KeyError：已绑号 + `FREE_WEEKLY_REPORTS=0` ⇒ 免费分支本就跳过，真到得了 402） |
 | `test_billing_gate_off_is_unchanged_for_everyone` | **绿**（正对照） |
+
+⚠️ **2026-09-10 实跑：上表逐条命中，`7 failed, 2 passed`，绿的正是那两条正对照。**
 
 - [ ] **Step 3: 写最小实现**
 
@@ -4776,13 +4786,21 @@ Expected: FAIL — **7 failed, 2 passed**。逐条：
         # …以下 estimates / billing_enforced / billing_online 三行原样不动
 ```
 
-**(b) `katrain/web/api/v1/endpoints/reports.py`** 免费额度分支的条件（:324）加一项：
+**(b) `katrain/web/api/v1/endpoints/reports.py`** 免费额度分支的条件（~~:324~~ ⚠️ **实际在 :325**，
+:324 是它上面那行 `period = quota.period_key("week")` —— 按行号盲改会把这一项追加到那行上）加一项：
 
 ```python
     if task.report_type == "normal" and settings.FREE_WEEKLY_REPORTS > 0 and current_user.phone_bound:
 ```
 
-**(c) 同文件** 402 的 `detail`（:346-352）加一格：
+**(c) 同文件** 402 的 `detail`（~~:346-352~~ ⚠️ 整条语句是 **:345-352**，`raise HTTPException(` 在 :345）加一格。
+
+⚠️ **2026-09-10 实施时才发现：这个文件里有两处一模一样的 402 `detail`**（`create_report_task` 的 :353
+与 `retry_report_task` 的 :472），本计划只点了一处。**`/retry` 那处故意不加这个键**，不是遗漏：
+重试的重新授权按设计就不消费免费额度（见 `retry_report_task` 里「免费周额度不在这条判断里」那段），
+已绑号的人在同样情形下会拿到一模一样的 402 —— 在那里写 `"phone_unbound"` 等于告诉用户
+「绑了手机就能重试」，而那是假的。**⇒ Task 13-17 前端读 402 时必须用 `.get('free_weekly_blocked')`，
+不能假定这个键在所有 402 上都存在。** 这条不对称已写进 `reports.py` 的注释，别当成 bug 去"修平"。
 
 ```python
             raise HTTPException(
@@ -4846,6 +4864,14 @@ def _bind_phone(user, phone: str = "+8613800138000") -> None:
 - `test_first_report_of_the_week_is_free_second_is_charged`：在
   `monkeypatch.setattr(settings, "FREE_WEEKLY_REPORTS", 1)` 之后加一行 `_bind_phone(user)`。
 - `test_free_report_records_its_period_not_a_charge_ref`：同样位置加一行 `_bind_phone(user)`。
+
+⚠️ **2026-09-10 实跑补记：本文件还有第四条会被这次改动影响，但它不会红 ——
+`test_no_task_is_left_claimable_without_a_charge`**（本文件唯一不 monkeypatch `FREE_WEEKLY_REPORTS`
+的用例，跑真默认值 1）。它断言的是 `charge_ref is not None or free_grant_period is not None`：
+改动前由**免费臂**成立，改动后该用户未绑号 ⇒ 走扣费，由**扣费臂**成立。
+不红，但证明的东西被静默换了一侧。**本轮的裁定是不给它绑号**——免费臂由上面那两条专测用例覆盖，
+而「未绑号也不许留下未计费的 pending」恰恰是本轮新引入的路径，让它由这条守着更值。
+理由已写进它的 docstring，免得日后被当成漏改而"修平"。
 
 - [ ] **Step 4: 跑，确认它绿**
 
@@ -8472,6 +8498,42 @@ Expected: 提交里**只有这两个文件**（`docker-compose.yml` 不在其中
    （存储期限、如何撤回、如何删除）需要 Fan 或法务定稿。
 
 10. **F12：跑 pytest 会改掉 `engine_game_state.json`**，非本轨道缺陷，已记，本轨道靠"不用 `git add -A`"规避。
+    （2026-09-10 补根因：commentary 那栏来自 `i18n._('komi')`，取决于有没有编译好的 `.mo`；
+    本 worktree 的 `katrain/i18n/locales/*/LC_MESSAGES/` 只有 `.po`，所以跑测试会把它改写成未翻译的英文。）
+
+10b. **⚠️ `BILLING_ENFORCED` 与 `FREE_WEEKLY_REPORTS` 没有 env 装配 —— 只能改代码重发**
+    （Task 11 实施时实测发现，2026-09-10）。`Settings` 是普通 `pydantic.BaseModel`，env 全靠
+    `__init__` 里那张手写的 `data.setdefault(...)` 清单（42 条），这两个字段**不在清单里**；
+    compose 与 `.env.example` 也没传。实测：`KATRAIN_BILLING_ENFORCED=1 KATRAIN_FREE_WEEKLY_REPORTS=0`
+    连同裸名一起设，读出来仍是 `False` / `1`。两个后果：
+    - **Task 11 在两台线上机器上今天是不可见的**：`BILLING_ENFORCED` 恒 False ⇒
+      `create_report_task` 早退，`reports.py` 那一半走不到；前端也还没有 `/quota` 的消费者。
+      验收话术里**不能**说「上线后未绑号用户就拿不到免费额度了」——只能说「闸已就位，开闸时生效」。
+    - **`config.py` 里「若 P3 未落地就要开这个闸，必须同时把 `FREE_WEEKLY_REPORTS` 配成 0」
+      这条安全指令今天执行不了**（没有 env 开关）。开闸那次发布必须连代码一起改，
+      或者先补两行 env 装配。**这是开闸前要 Fan 拍的一件事，Task 11 没有代为决定。**
+
+10d. **交给 Task 13-17 的三条读法（Task 11 复审查出来的，都不改后端）**：
+    - **`/quota` 的 `free_weekly` 只描述 `normal` 复盘那份额度**，响应里没有任何一格带
+      report_type 维度。⇒ **不得把「本周还有 N 次免费」显示在深度复盘按钮旁边** ——
+      深度复盘对谁都不免费，那样显示等于骗用户点下去被扣费。已写进 `get_quota` 的 docstring。
+    - **402 的手机原因在 `detail.free_weekly_blocked`，不在 `detail.code`**（同层的 `code`
+      是 `insufficient_credits`）。仓里别处「没绑手机」都写在 `detail.code` 里
+      （`/auth/set-password` 的 `phone_unbound`、`/auth/phone/login` 的 `phone_not_bound`），
+      按那个习惯写的集中式 handler 会漏掉这一处，把用户引去充值。
+      且该键在 `/retry` 的 402 上**根本不存在** ⇒ 只能用真值判断 `if (detail.free_weekly_blocked)`，
+      不许用 `'free_weekly_blocked' in detail` 或 `!== undefined`。
+    - **`POST /reports/` 的 200 响应里没有任何计费信号**（`_task_to_dict` 九个键既无
+      `charge_ref` 也无 `free_grant_period`）⇒ 「这次是不是免费的」只能靠下单前另拉一次
+      `/quota` 推断。要在成功响应上说清，得给 `ReportTaskStatus` 加一格，本轮没做。
+
+10c. **同一个事实在两条响应里取值不同，是有意的**：`/billing/quota` 用
+    `blocked_reason: "phone_required"`，`POST /reports/` 的 402 用
+    `free_weekly_blocked: "phone_unbound"`，`/auth/set-password` 的 400 用 `code: "phone_unbound"`。
+    计划本来只裁定了两个**字段名**不合并；取值也是两套。保留两套的理由：`blocked_reason`
+    将来还会有别的值（额度关着 / 本周用完 / 会员分档），它是「被挡的原因」这一维，
+    而 `free_weekly_blocked` 是「免费那条路为什么没走成」这一维。
+    **⇒ Task 13-15 要维护两个常量，这不是漏改，别去「修平」。**
 
 11. **日额度只在单进程下是硬闸**：`SELECT count(*)` 与 `INSERT` 之间无锁，多进程下并发会全部放行。
     今天安全只因单进程部署。**改 `--workers` 之前必须先把它换成 `quota.try_consume` 那种条件 UPDATE**，

@@ -237,6 +237,13 @@ async def test_retry_without_credits_returns_402(app_settled_failed_task):
     )
     assert r.status_code == 402
     assert r.json()["detail"]["code"] == "insufficient_credits"
+    # P3/Task 11：建任务那处的 402 会带 `free_weekly_blocked`，**这一处故意不带**。
+    # 重试的重新授权只按剩余手数扣积分、从不查额度桶 ⇒ 此刻绑上手机不会让这次
+    # retry 变免费，写 "phone_unbound" 就是假话。这个用户正是未绑号的
+    # （夹具走 SQLAlchemyUserRepository.create_user，phone_e164 为 NULL），
+    # 所以这条断言真的在守那个裁定，不是在守一个恰好成立的巧合。
+    # 没有它，日后一次"一致性清理"把这个键补到 retry 上，不会有任何测试变红。
+    assert "free_weekly_blocked" not in r.json()["detail"]
 
 
 @pytest.mark.asyncio

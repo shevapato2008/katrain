@@ -17,7 +17,7 @@ from katrain.web.core import models_db, sms, sms_challenge
 from katrain.web.core.client_ip import client_ip_for_ratelimit
 from katrain.web.core.config import settings
 from katrain.web.core.db import get_db
-from katrain.web.core.phone import normalize_e164
+from katrain.web.core.phone import normalize_e164, mask_e164
 from katrain.web.models import PhoneLoginRequest, SendCodeRequest, User, UserInDB
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -478,6 +478,46 @@ async def register(request: Request, register_data: LoginRequest, db: Session = 
 @router.get("/me", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_user)) -> Any:
     return current_user
+
+
+@router.post("/phone/bind")
+async def bind_phone(
+    request: Request,
+    body: PhoneLoginRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """把手机号绑到当前账号上。**先核销验证码，再查号码归属。**
+
+    反过来这个端点就是号码枚举器 —— 任何登录用户可逐个探测「这个号有没有账号」。
+    核销在前意味着你必须先控制这个号，才配知道它被占了。
+
+    （位置：它不能跟 send-code / phone-login 放在一起 —— 那两个在模块前半段，
+    而 `get_current_user` 定义在本文件中段，`Depends(get_current_user)` 在函数定义时
+    就要解析这个名字。）
+    """
+    _guard_phone_endpoint(request)
+    try:
+        phone = sms_challenge.verify_and_consume(db, body.challenge_id, body.code, "bind")
+    except sms_challenge.ChallengeInvalid as e:
+        raise HTTPException(status_code=400, detail={"code": e.code})
+
+    outcome = request.app.state.user_repo.bind_phone(current_user.id, phone)
+    if outcome == "phone_taken":
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "phone_taken",
+                    "message": "这个手机号已经有账号了。可以直接用验证码登录那个账号。"},
+        )
+    if outcome == "already_bound":
+        # **不做自助换绑。** 换绑就是旧号的解绑，而「一号一账号」的经济论证与
+        # Task 11 那条「未绑号不建桶」的短路都以「不存在解绑路径」为前提。
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "already_bound",
+                    "message": "这个账号已经绑定了手机号。换绑请联系客服。"},
+        )
+    return {"phone_masked": mask_e164(phone)}
 
 
 @router.post("/logout")

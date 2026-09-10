@@ -3853,8 +3853,11 @@ async def test_bind_503_on_board_and_does_not_forward(app, client, sms, monkeypa
 - [ ] **Step 2: 跑，确认它红**
 
 Run: `./.venv/bin/python -m pytest tests/web_ui/test_phone_bind.py -q`
-Expected: FAIL — 8 failed。全部因为 `POST /api/v1/auth/phone/bind` 路由还不存在而拿到
-`404 Not Found`（`test_bind_requires_auth` 期望 401、其余期望 200/409/400/401/503，一条都对不上）。
+Expected: FAIL — 8 failed。全部因为 `POST /api/v1/auth/phone/bind` 路由还不存在。
+⚠️ **2026-09-10 实跑修正：拿到的是 `405 Method Not Allowed`，不是 404**（SPA 兜底路由
+`/{path}` 会匹配任何未被 API 认领的路径，POST 打过去就是 405 —— 与 Task 7/8 的 Step 2 同一处，
+这是本计划第三次写错同一个数）。`test_bind_requires_auth` 期望 401、其余期望 200/409/400/401/503，
+一条都对不上。
 
 - [ ] **Step 3: 写最小实现**
 

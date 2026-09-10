@@ -1,6 +1,6 @@
 import sqlite3
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 from abc import ABC, abstractmethod
 from jose import JWTError, jwt
@@ -98,6 +98,10 @@ class UserRepository(ABC):
     @abstractmethod
     def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
         pass
+
+    @abstractmethod
+    def bind_phone(self, user_id: int, phone_e164: str) -> str:
+        """返回 "ok" | "phone_taken" | "already_bound"。三个字符串是契约，不许换。"""
 
     @abstractmethod
     def list_users(self) -> List[Dict[str, Any]]:
@@ -262,6 +266,36 @@ class SQLAlchemyUserRepository(UserRepository):
                 .first()
             )
             return self._to_dict(user) if user else None
+        finally:
+            session.close()
+
+    def bind_phone(self, user_id: int, phone_e164: str) -> str:
+        """绑号。
+
+        三个返回值：
+          "ok"            —— 绑上了（含「本来就绑着同一个号」这种幂等重试）
+          "already_bound" —— 这个账号已经绑着**另一个**号。**不覆盖** ——
+                             覆盖就是一条自助换绑路径，而换绑同时是旧号的解绑，
+                             「一号一账号」的经济论证与 Task 11 那条短路都建在
+                             「不存在解绑路径」上。
+          "phone_taken"   —— 这个号被别人占了。靠唯一索引兜底，不靠「先查后写」
+                             那条竞态（两个请求同时到达时先查后写都会判成没占）。
+        """
+        from sqlalchemy.exc import IntegrityError
+
+        session = self.session_factory()
+        try:
+            u = session.query(models_db.User).filter_by(id=user_id).one()
+            if u.phone_e164 is not None:
+                return "ok" if u.phone_e164 == phone_e164 else "already_bound"
+            u.phone_e164 = phone_e164
+            u.phone_verified_at = datetime.now(timezone.utc)
+            try:
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                return "phone_taken"
+            return "ok"
         finally:
             session.close()
 

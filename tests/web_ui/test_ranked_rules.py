@@ -25,10 +25,19 @@ from katrain.web.server import create_app
 
 
 @pytest.fixture
-def client():
-    app = create_app(enable_engine=False)
-    with TestClient(app) as c:
-        yield c
+def client(tmp_path):
+    # `with TestClient(app)` 会跑 lifespan ⇒ 会**真连数据库**。仓里默认的
+    # DATABASE_URL 指向 docker 里的 PostgreSQL，本机没起时这四条就 error。
+    # 2026-09-10 之前它们「绿」的真实原因是 tests/web_ui/test_lobby_api.py 换库之后
+    # 从不还原（按文件名排序它跑在前面），把 core.db 的 engine 留成了 sqlite ——
+    # 也就是说这四条一直靠另一个文件的副作用活着，单独跑一直是 error。
+    # 那份泄漏一修就露馅，所以这里自带一个 SQLite。实测：任意可用的库都能让它们全绿。
+    from conftest import isolated_core_db
+
+    with isolated_core_db(f"sqlite:///{tmp_path / 'ranked.db'}"):
+        app = create_app(enable_engine=False)
+        with TestClient(app) as c:
+            yield c
 
 
 def _make_mock_session(game_type):

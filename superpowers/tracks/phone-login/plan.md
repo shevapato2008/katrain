@@ -3031,8 +3031,13 @@ async def test_register_on_a_board_is_forwarded_without_touching_the_local_cap(
 
 Run: `./.venv/bin/python -m pytest tests/web_ui/test_phone_endpoints.py -q`
 
-Expected: FAIL —— `16 failed`。三种红因，逐条对得上：
-- 12 条 send-code 用例：路由不存在 ⇒ `assert 404 == 200`（或 `KeyError: 'detail'`）。
+Expected: FAIL。⚠️ **2026-09-10 实跑修正为 `15 failed, 1 passed`**，红因也要改一条：
+- 12 条 send-code 用例：**`assert 405 == 200`，不是 404**。SPA 兜底路由 `/{path}` 会匹配
+  任何未被 API 路由认领的路径，POST 打过去得到的是 405 Method Not Allowed 而不是 404。
+  （不影响这道闸：红照样是红。但拿 404 当判据会让人以为哪里配错了。）
+- `test_register_on_a_board_is_forwarded_without_touching_the_local_cap` **这一条本来就是绿的**：
+  它断言盒子上的注册被转发且不碰本地上限，而本地上限此刻还不存在 ⇒ 空条件恒真。
+  它的价值在实现落地之后才出现，红分支由 Step 5 的第 4 条变异负责执行。
 - `test_signup_ip_column_migrates_onto_an_existing_users_table`：
   `AssertionError`（`signup_ip` 不在列集合里，模型上还没有这一列）。
 - `test_register_records_the_forwarded_ip_and_keeps_it_out_of_the_user_dict`：
@@ -3235,7 +3240,7 @@ Expected: PASS（全部）
 | 注释掉 `_guard_phone_endpoint(request)` | `test_send_code_403_on_strict_box`、`test_send_code_503_on_board_and_does_not_forward` |
 | 把 register 那段限流从 `# Server mode: local registration` 之后挪到 `strict_box_sso_enabled()` 检查之后 | `test_register_on_a_board_is_forwarded_without_touching_the_local_cap` |
 | 限流查询去掉 `models_db.User.signup_ip == ip` 这一条 filter（退成全站每日上限） | `test_register_is_rate_limited_per_client_ip` 的最后一句 |
-| `create_user(..., signup_ip=ip)` 改回 `create_user(...)`（不传） | `test_register_records_the_forwarded_ip_and_keeps_it_out_of_the_user_dict` |
+| `create_user(..., signup_ip=ip)` 改回 `create_user(...)`（不传） | `test_register_records_the_forwarded_ip_and_keeps_it_out_of_the_user_dict` **与** `test_register_is_rate_limited_per_client_ip`（⚠️ 2026-09-10 实跑补上第二条：两条分别站在 `signup_ip` 这一列的**写侧与读侧**，没人写就没人数得到，闸永远不响 ⇒ `assert 200 == 429`。必然同红，不是实现有问题） |
 
 - [ ] **Step 6: 提交**
 

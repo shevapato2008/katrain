@@ -82,7 +82,9 @@ from katrain.web.core import models_db
 
 class UserRepository(ABC):
     @abstractmethod
-    def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
+    def create_user(
+        self, username: str, hashed_password: str, signup_ip: Optional[str] = None
+    ) -> Dict[str, Any]:
         pass
 
     @abstractmethod
@@ -214,11 +216,15 @@ class SQLAlchemyUserRepository(UserRepository):
         #      PROTECTED_TABLES 里不会被重建,但顺序放在后面就不必依赖那个事实。
         ledger_immutability.install(engine)
 
-    def create_user(self, username: str, hashed_password: str) -> Dict[str, Any]:
+    def create_user(
+        self, username: str, hashed_password: str, signup_ip: Optional[str] = None
+    ) -> Dict[str, Any]:
         session = self.session_factory()
         try:
             # Defaults are handled by SQLAlchemy model
-            db_user = models_db.User(username=username, hashed_password=hashed_password)
+            db_user = models_db.User(
+                username=username, hashed_password=hashed_password, signup_ip=signup_ip
+            )
             session.add(db_user)
             session.commit()
             session.refresh(db_user)

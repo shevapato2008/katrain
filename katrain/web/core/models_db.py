@@ -82,6 +82,11 @@ class User(Base):
     # column default nobody can trace.
     is_admin = Column(Boolean, default=False, nullable=False)
     avatar_url = Column(String, nullable=True)
+    # 注册来源 IP（per-IP 注册限流的键）。**不进 `_to_dict`** —— 那是显式白名单，
+    # 进去了就会随 `User` 漏进 /auth/me、/users/online、/api/v1/social。
+    # nullable 且无 scalar default ⇒ migrations._default_clause 返 None，
+    # 拼出 `ALTER TABLE "users" ADD COLUMN "signup_ip" VARCHAR(64)`，两个方言都过。
+    signup_ip = Column(String(64), nullable=True)
     # 手机号。**列上不写 unique**：唯一性走下面 __table_args__ 里的 Index。
     # migrations.add_missing_columns() 拼的 ADD COLUMN 不带 UNIQUE，而
     # create_missing_indexes() 用 index.create() 会保留 index 的 unique ⇒

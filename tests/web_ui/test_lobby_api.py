@@ -6,34 +6,31 @@ from katrain.web.server import create_app
 
 @pytest.fixture
 def app():
+    # 换库 + 退出时原样还原，见 conftest.isolated_core_db 的 docstring。
+    # 不还原会让别的文件里的用例静默变红（覆盖与 monkeypatch 都按对象身份匹配）。
     db_file = "test_lobby_api.db"
     if os.path.exists(db_file):
         os.remove(db_file)
-    os.environ["KATRAIN_DATABASE_URL"] = f"sqlite:///{db_file}"
 
-    import importlib
-    from katrain.web.core import config, db, auth
+    from conftest import isolated_core_db
 
-    importlib.reload(config)
-    importlib.reload(db)
-    importlib.reload(auth)
+    with isolated_core_db(f"sqlite:///{db_file}"):
+        from katrain.web.core.db import engine
+        from katrain.web.core.models_db import Base
 
-    from katrain.web.core.db import engine
-    from katrain.web.core.models_db import Base
+        Base.metadata.create_all(bind=engine)
 
-    Base.metadata.create_all(bind=engine)
+        app = create_app(enable_engine=False)
 
-    app = create_app(enable_engine=False)
+        # Mock repos and manager
+        from katrain.web.core.auth import SQLAlchemyUserRepository
+        from katrain.web.core.db import SessionLocal
+        from katrain.web.session import LobbyManager
 
-    # Mock repos and manager
-    from katrain.web.core.auth import SQLAlchemyUserRepository
-    from katrain.web.core.db import SessionLocal
-    from katrain.web.session import LobbyManager
+        app.state.user_repo = SQLAlchemyUserRepository(SessionLocal)
+        app.state.lobby_manager = LobbyManager()
 
-    app.state.user_repo = SQLAlchemyUserRepository(SessionLocal)
-    app.state.lobby_manager = LobbyManager()
-
-    return app
+        yield app
 
 
 @pytest.mark.asyncio

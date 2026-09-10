@@ -13,9 +13,13 @@ from katrain.web.core.box_sso import (
     resolve_http_token,
     strict_box_sso_enabled,
 )
+from katrain.web.core import models_db, sms, sms_challenge
+from katrain.web.core.client_ip import client_ip_for_ratelimit
 from katrain.web.core.config import settings
 from katrain.web.core.db import get_db
-from katrain.web.models import User, UserInDB
+from katrain.web.core.phone import normalize_e164
+from katrain.web.models import SendCodeRequest, User, UserInDB
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger("katrain_web")
@@ -32,6 +36,62 @@ oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/a
 # authentication.
 SSO_COOKIE_NAME = "sb_token"
 SSO_LOOPBACK_HOST = "127.0.0.1"
+
+
+VALID_PURPOSES = {"login", "bind", "set_password"}
+
+
+def _guard_phone_endpoint(request: Request) -> None:
+    """四个手机端点共用的盒子闸（spec §2.6）。
+
+    strict 盒子：云端账号体系的事，盒子上没有入口 ⇒ 403，与 /login /register 同形。
+    board 非 strict：**不转发**。remote_client 是逐方法手写的，加转发方法等于给盒子
+    多开几个故障面；而盒子是共用触摸设备，在上面输手机号收码是最差的绑定场景。
+    """
+    if strict_box_sso_enabled():
+        raise HTTPException(status_code=403, detail={"code": "phone_disabled_on_device",
+                                       "message": "请在 modelstella.com 上完成手机号相关操作"})
+    if getattr(request.app.state, "remote_client", None) is not None:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "need_online_phone",
+                    "message": "请在 modelstella.com 登录后绑定手机号"},
+        )
+
+
+@router.post("/phone/send-code")
+async def send_phone_code(request: Request, body: SendCodeRequest, db: Session = Depends(get_db)):
+    _guard_phone_endpoint(request)
+    if body.purpose not in VALID_PURPOSES:
+        raise HTTPException(status_code=400, detail={"code": "bad_purpose"})
+    try:
+        phone = normalize_e164(body.phone)
+    except ValueError:
+        raise HTTPException(status_code=400, detail={"code": "bad_phone"})
+
+    # **不要用 request.client.host**（F10：生产上它对所有用户恒为 172.20.0.1）。
+    ip = client_ip_for_ratelimit(request)
+    try:
+        cid = await sms_challenge.issue(db, phone, body.purpose, ip)
+    except sms_challenge.RateLimited as e:
+        # 字段恒在（没有理由时为 None），不要"有理由才有字段" ——
+        # 后者逼前端写 `'retry_after_sec' in x` 而不是 `x.retry_after_sec`。
+        detail = {"code": e.code, "retry_after_sec": e.retry_after_sec}
+        headers = {}
+        if e.retry_after_sec is not None:
+            headers["Retry-After"] = str(e.retry_after_sec)
+        # **日总量打满是 503 不是 429**：那是服务端自己容量到顶，跟这个用户快不快无关。
+        raise HTTPException(
+            status_code=503 if e.code == "sms_capacity" else 429,
+            detail=detail, headers=headers or None,
+        )
+    except sms.SmsProviderError:
+        # **502 而不是 503，是刻意与上面那条区分开的。** 日额度打满要等到明天（我们自己的闸），
+        # 供应商抖动几秒后就该重试。合成一个码，前端只能给一句含糊的"稍后再试"。
+        raise HTTPException(status_code=502, detail={"code": "sms_provider_failed"})
+
+    # **响应对"这个号有没有账号"必须一模一样** —— 多一个字段这里就是账号枚举器。
+    return {"challenge_id": cid, "cooldown_sec": settings.SMS_COOLDOWN_SEC}
 
 
 def _resolve_token(request: Request, header_token: Optional[str]) -> Optional[str]:
@@ -347,11 +407,29 @@ async def register(request: Request, register_data: LoginRequest, db: Session = 
     # Server mode: local registration
     from katrain.web.core.auth import get_password_hash
 
+    # /auth/register 至今零限流。P3 建了 per-IP 限流器就给它用上。
+    # **位置在 remote_client 转发分支之后**：盒子上的注册原样转发给云端，
+    # 不许先在本地库上数一遍 —— 那是给盒子凭空多开一个故障面（D-U3）。
+    # 日界与短信额度共用 sms_challenge.today_start()（东八区零点换算成 UTC）；
+    # SQLite 的 CURRENT_TIMESTAMP 与 PG 的 now() 存的都是 UTC，两边比的都是 UTC。
+    ip = client_ip_for_ratelimit(request)
+    signups_today = (
+        db.query(func.count(models_db.User.id))
+        .filter(
+            models_db.User.signup_ip == ip,
+            models_db.User.created_at >= sms_challenge.today_start(),
+        )
+        .scalar()
+    )
+    if signups_today >= settings.REGISTER_IP_DAILY:
+        raise HTTPException(status_code=429, detail={"code": "register_ip_daily"})
+
     repo = request.app.state.user_repo
     try:
         user_dict = repo.create_user(
             username=register_data.username,
             hashed_password=get_password_hash(register_data.password),
+            signup_ip=ip,
         )
         # New accounts start at 0 credits (models_db.User.credits default). Any signup
         # grant is opt-in via settings.BILLING_SIGNUP_GRANT and goes through billing.grant

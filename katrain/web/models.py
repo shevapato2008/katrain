@@ -3,6 +3,11 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
+class SendCodeRequest(BaseModel):
+    phone: str
+    purpose: str            # login | bind | set_password
+
+
 class MoveRequest(BaseModel):
     session_id: str
     coords: Optional[List[int]] = Field(default=None, min_length=2, max_length=2)

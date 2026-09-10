@@ -4947,6 +4947,45 @@ Claude-Session: https://claude.ai/code/session_01GGNBSL4QhRA2vCDcZL83oF"
 
 ### Task 12: 发言闸（实名义务的正确落点）
 
+⚠️ **2026-09-11 实跑修正（本 Task 计划漏了一整根轴：盒子）。**
+计划的两处闸写成同一形状 `if not current_user.phone_bound:`。**对局聊天那一处照写会把
+每台 kiosk 上的每个用户永久禁言**，逐条核实如下：
+
+| 事实 | 出处（本日亲验） |
+|---|---|
+| 盒上用户只有 username + `SHADOW_USER_NO_LOCAL_AUTH`，**不写手机号列** | `endpoints/auth.py:265` `_get_or_create_shadow_user`，两个调用点 `:294`/`:346` |
+| 四个手机端点在盒上一律 403/503 ⇒ **盒上没有绑定入口** | `endpoints/auth.py:44` `_guard_phone_endpoint` |
+| 盒子确实跑这条 WS | kiosk `GamePage` → `useGameSession.ts:221` 打本机 `/ws/{session_id}` |
+
+⇒ 两条合起来是「永久禁言 + 无法自救」，**且连在云端已经绑了号的人也一起挡掉**
+（绑没绑这件事盒子本地根本不知道）。故 `server.py` 那处加一项
+`settings.KATRAIN_MODE != "board"`；判据写进代码：**「盒子本地知不知道这个人绑没绑」，
+不是「盒子要不要守实名」** —— 哪天 `box_sso_bootstrap` 把云端绑定状态带下来，回来删掉它。
+
+**`live.py` 那处不加这一项，是查证的结果不是漏抄**：`Depends(get_live_service)`
+（`live.py:129-144`）在盒上先一步抛 503，而 `app.state.live_service` 全仓只有一处赋值
+（`server.py:355`，在 `_lifespan_server` 里），盒子走 `_lifespan_board` 压根不建
+⇒ 盒上到不了函数体，加那一项是死代码。两处注释里互相点名了对方，避免下一个人
+把这处不对称当成遗漏「顺手统一」掉。
+
+其余实跑差异：
+- **Step 2 的红态是 `3 failed, 3 passed`，不是计划写的 `3 failed, 2 passed`** —— 多出来的
+  那条绿是新增的盒子正对照 `test_chat_on_the_box_is_not_phone_gated`（实现前后都绿，
+  靠 M3 变异证明它有杀伤力）。三条红因与计划逐条吻合。
+- Step 4 的 `_make_user` 改用 `app.state.session_factory`（夹具显式设、且 `_lifespan_server`
+  会用它重建 repo），不是计划写的 `app.state.user_repo.session_factory()`。两者等价，
+  前者是本文件夹具里唯一「真正生效的那处」，少一层间接。
+- 只给**发言人** alice 绑号，bob 不动 —— bob 在那四条里只是对局另一方，不发言。
+- 变异矩阵扩到 6 条（计划 3 条），补的三条是：M3 删盒子豁免、M4 盒子豁免写反、
+  M6 `live.py` 也换成 `getattr(phone_e164)`。M3 是唯一能证明盒子那条正对照非惰性的一格。
+
+📌 **给 Task 13–17 的一条读法（本日查证）：这两处闸今天都没有可点的验收路径。**
+`sendChat`（`hooks/useGameSession.ts:219`）全仓只有测试在调；`CommentSection.tsx` 全仓
+无人 `import`。协议在、UI 不在 ⇒ 真浏览器验收那一关（Task 18）**验不了这两处**，
+只能靠接口测。要么在 Task 16 顺手把入口接上，要么在 Task 18 的验收清单里显式写明
+「本项不走浏览器，理由：无入口」——**不要让它在验收表里以「通过」的形式静默略过**。
+
+
 **Files:**
 - Modify: `katrain/web/server.py`（对局聊天，WS）
 - Modify: `katrain/web/api/v1/endpoints/live.py`（直播评论）

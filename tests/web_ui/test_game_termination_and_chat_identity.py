@@ -80,12 +80,27 @@ def client(app):
         yield c
 
 
-def _make_user(app, name: str):
+def _make_user(app, name: str, phone: str | None = None):
+    """建一个用户；`phone` 非空时顺手绑上号。
+
+    P3/Task 12 起**未绑手机不得发言**（server.py 的 chat 分支，闸在
+    `chat_text_required` 等判断**之前**）⇒ 走聊天的用例必须建带号的用户，
+    否则它们量到的是那道新闸，而不是各自要证的那件事（冒名 / 超长 / 畸形 / 正对照）。
+    终结守卫那几条不走聊天，保持不带号。
+    """
     from passlib.context import CryptContext
+    from katrain.web.core import models_db
 
     unique = f"{name}-{uuid.uuid4().hex[:8]}"
     hashed = CryptContext(schemes=["bcrypt"], deprecated="auto").hash("password")
     user = app.state.user_repo.create_user(unique, hashed)
+    if phone is not None:
+        session = app.state.session_factory()
+        try:
+            session.query(models_db.User).filter_by(id=user["id"]).update({"phone_e164": phone})
+            session.commit()
+        finally:
+            session.close()
     return user["id"], unique
 
 
@@ -261,7 +276,7 @@ def test_the_client_cannot_choose_who_it_speaks_as(app, client):
     这一条同时钉住**字段名**:契约要求 `from_name`,而不是 katrain 原来那个 `sender`。
     只断言「身份对」而不断言字段名的话,四家前端仍然各读各的键。
     """
-    black_id, black_name = _make_user(app, "alice")
+    black_id, black_name = _make_user(app, "alice", phone="+8613800138000")
     white_id, _ = _make_user(app, "bob")
     session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=white_id)
 
@@ -281,7 +296,7 @@ def test_over_length_chat_is_rejected_not_truncated(app, client):
     截断的话,发送方看到自己发出的是一句话、房间里收到的是另一句,而发送方看不出被改过。
     共享侧 `platform_core.config.CHAT_MAX_LEN` 上方那段写的是同一个理由。
     """
-    black_id, black_name = _make_user(app, "alice")
+    black_id, black_name = _make_user(app, "alice", phone="+8613800138000")
     session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=black_id)
 
     with _chat_socket(client, session.session_id, _token(client, black_name)) as ws:
@@ -305,7 +320,7 @@ def test_malformed_chat_gets_a_code_not_silence(app, client, payload, code):
     契约 `_doc` 写着「前端一律按 code 出本地化文案」—— 只关掉不回话的话,中文界面上
     这几种拒绝**没有文案可出**,用户看到的是消息凭空消失。
     """
-    black_id, black_name = _make_user(app, "alice")
+    black_id, black_name = _make_user(app, "alice", phone="+8613800138000")
     session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=black_id)
 
     with _chat_socket(client, session.session_id, _token(client, black_name)) as ws:
@@ -318,7 +333,7 @@ def test_malformed_chat_gets_a_code_not_silence(app, client, payload, code):
 def test_a_well_formed_chat_still_goes_through(app, client):
     """**正对照。** 上面四条拒绝之后,得证明这条 socket 上聊天本来是通的 ——
     否则「拒绝生效」和「聊天整个坏了」是同一个观测值。"""
-    black_id, black_name = _make_user(app, "alice")
+    black_id, black_name = _make_user(app, "alice", phone="+8613800138000")
     session = _inject_session(app, user_id=black_id, player_b_id=black_id, player_w_id=black_id)
 
     with _chat_socket(client, session.session_id, _token(client, black_name)) as ws:

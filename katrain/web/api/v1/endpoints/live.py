@@ -596,6 +596,24 @@ async def create_comment(
 
     Requires authentication. Only works for live matches.
     """
+    # 未绑手机不得发言。闸在发言不在注册(网安法二十六条约束的是「提供信息发布服务」,
+    # 不是「有账号」)。与 server.py 的对局聊天读**同一个属性**:两处的 current_user
+    # 是同一个 pydantic User(都出自 endpoints/auth.py:125 `return User(**user_dict)`),
+    # 所以两处都写 `current_user.phone_bound`,**不写 getattr(..., "phone_e164")**
+    # —— 那个模型上没有 phone_e164,pydantic v2 的 extra='ignore' 会静默丢掉它,
+    # getattr 恒为 None ⇒ 所有人(含已绑号)都发不了言。
+    #
+    # **这里没有 server.py 那条 `KATRAIN_MODE != "board"`,是查证的结果不是漏抄:**
+    # 本函数的 `Depends(get_live_service)`(:129-144)在盒上先一步抛 503 ——
+    # `app.state.live_service` 全仓只有一处赋值(server.py:355,在 `_lifespan_server` 里),
+    # 盒子走 `_lifespan_board`,压根不建这个服务 ⇒ 盒上的请求到不了本函数体,
+    # 在这里加那一项是死代码。判据:哪天盒子也起 live_service,回来重看这里。
+    if not current_user.phone_bound:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "comment_requires_phone", "message": "发表评论需要先绑定手机号。"},
+        )
+
     from katrain.web.core.db import SessionLocal
     from katrain.web.live.comment_repo import LiveCommentRepo
 

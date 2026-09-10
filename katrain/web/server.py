@@ -2830,6 +2830,31 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     if current_user is None:
                         await websocket.send_json({"type": "error", "code": "chat_requires_identity"})
                         continue
+                    # 未绑手机不得发言(网安法二十六条约束的是「提供信息发布/即时通讯服务」,
+                    # 不是「有账号」⇒ 闸的落点是发言不是注册,见轨道裁决 D-U2)。
+                    # 口径与上面那条一致:说一句,不静默丢弃。
+                    #
+                    # **`KATRAIN_MODE != "board"` 不是「盒子以后再说」,是这个闸在盒上必然判错:**
+                    # 盒上用户由 `_get_or_create_shadow_user`(endpoints/auth.py:265)建 ——
+                    # 只有 username + SHADOW_USER_NO_LOCAL_AUTH,**不写手机号列**
+                    # ⇒ `phone_bound` 在盒上结构性恒为 False;而四个手机端点被
+                    # `_guard_phone_endpoint`(endpoints/auth.py:44)在盒上一律 403/503
+                    # ⇒ 盒上没有任何绑定入口。两条合起来 = 每台 kiosk 上的每个用户被**永久
+                    # 禁言且无法自救**,包括在云端明明已经绑了号的人(绑没绑盒子本地不知道)。
+                    # 而盒上这条 WS 是本机 LAN 广播(`broadcast_to_session` 只发给连着这台盒子
+                    # 这一局的 socket),发言的人就在这块棋盘旁边。
+                    # ⚠️ **判据是「盒子本地知不知道这个人绑没绑」,不是「盒子要不要守实名」。**
+                    # 哪天 box_sso_bootstrap 把云端的绑定状态带下来了,回来删掉这一项。
+                    #
+                    # 读 `phone_bound` **不用 getattr**:这里的 current_user 与 live.py 里
+                    # Depends(get_current_user) 拿到的是**同一个** pydantic User(两处都出自
+                    # endpoints/auth.py:125 `return User(**user_dict)`)。那个模型上没有
+                    # `phone_e164`,pydantic v2 默认 extra='ignore' 会把 _to_dict 里的原始号
+                    # 静默丢掉 ⇒ 写 getattr(...,"phone_e164") 恒为 None,**所有人(含已绑号)
+                    # 都发不了言**。字段有默认值 ⇒ 属性必然存在,缺了应该当场响。
+                    if settings.KATRAIN_MODE != "board" and not current_user.phone_bound:
+                        await websocket.send_json({"type": "error", "code": "chat_requires_phone"})
+                        continue
                     # 身份两项由**服务端**填,正文是唯一采信的客户端输入。
                     # 在这之前这里是 `broadcast_to_session(session_id, message)` —— 把客户端
                     # 原样送来的 dict 整包广播回房间,于是 `sender` 是发送方自己写的

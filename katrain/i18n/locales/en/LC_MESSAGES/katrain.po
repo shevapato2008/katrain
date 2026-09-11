@@ -3510,3 +3510,12 @@ msgstr "Please complete mobile-number actions on modelstella.com"
 
 msgid "auth:err_need_online"
 msgstr "Please complete mobile-number actions on modelstella.com"
+
+msgid "auth:phone_consent"
+msgstr ""
+"I agree that Beijing Wanzhixing Technology Co., Ltd., the operator of "
+"StellaBox, may collect my mobile number solely for identity verification and"
+" sign-in."
+
+msgid "auth:privacy_policy"
+msgstr "Privacy Policy"

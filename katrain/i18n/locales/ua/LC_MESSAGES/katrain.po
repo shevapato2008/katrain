@@ -3546,3 +3546,12 @@ msgstr "Дії з номером телефону виконуйте на models
 
 msgid "auth:err_need_online"
 msgstr "Дії з номером телефону виконуйте на modelstella.com"
+
+msgid "auth:phone_consent"
+msgstr ""
+"Я погоджуюсь, що Beijing Wanzhixing Technology Co., Ltd. — оператор "
+"StellaBox — збирає мій номер телефону виключно для підтвердження особи та "
+"входу."
+
+msgid "auth:privacy_policy"
+msgstr "Політика конфіденційності"

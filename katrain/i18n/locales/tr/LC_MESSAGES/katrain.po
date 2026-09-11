@@ -3569,3 +3569,12 @@ msgstr ""
 msgid "auth:err_need_online"
 msgstr ""
 "Cep telefonu numarasıyla ilgili işlemleri modelstella.com üzerinden yapın"
+
+msgid "auth:phone_consent"
+msgstr ""
+"StellaBox işletmecisi Beijing Wanzhixing Technology Co., Ltd. şirketinin cep"
+" telefonu numaramı yalnızca kimlik doğrulama ve oturum açma amacıyla "
+"toplamasını kabul ediyorum."
+
+msgid "auth:privacy_policy"
+msgstr "Gizlilik Politikası"

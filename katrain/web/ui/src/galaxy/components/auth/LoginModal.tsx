@@ -5,6 +5,7 @@ import { useSettings } from '../../../context/SettingsContext';
 import { API } from '../../../api';
 import { i18n } from '../../../i18n';
 import CountryCodeSelect from './CountryCodeSelect';
+import PhoneConsent from './PhoneConsent';
 
 interface LoginModalProps {
     open: boolean;
@@ -27,6 +28,11 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     const [smsCode, setSmsCode] = useState('');
     const [challengeId, setChallengeId] = useState('');
     const [cooldown, setCooldown] = useState(0);
+    /* 同意状态**只在本次会话内有效，不持久化** —— 持久化就要谈留存期限，本轮不做。
+       注：这个 `false` 初值今天**没有任何一条路径看得见**（进 phone 模式必经 `switchTo`、
+       关闭必经 `handleClose`，两者都会把它设回 false），所以变异它不会有测试变红。
+       写 false 是为了「将来有人加一个直接以 phone 模式打开的入口」时不出事。 */
+    const [consent, setConsent] = useState(false);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
@@ -139,16 +145,10 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
             onClose();
             // Reset state slightly after close for smooth transition
             setTimeout(() => {
-                setUsername('');
-                setPassword('');
-                setConfirmPassword('');
                 // 不清 = 下次打开对话框带着上一位用户的手机号和一个还在跑的倒计时。
-                setPhone('');
-                setSmsCode('');
-                setChallengeId('');
-                setCooldown(0);
+                setUsername('');
+                resetTransient();
                 setMode('login');
-                setSuccessMsg('');
             }, 500);
         } catch (err) {
             setError(describeError(err));
@@ -158,9 +158,9 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
     };
 
     /** 用户名**不清** —— 与原来的 `toggleMode` 一致（填了名字再决定去注册是常态）。
-     *  手机那一组反过来必须清干净：号码是个人信息，模式切走了就不该留在框里。 */
-    const switchTo = (next: LoginMode) => {
-        setMode(next);
+     *  手机那一组反过来必须清干净：号码是个人信息，同意是一次性的授权，
+     *  模式切走了就不该留给下一个人。 */
+    const resetTransient = () => {
         setError('');
         setSuccessMsg('');
         setPassword('');
@@ -169,12 +169,30 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
         setSmsCode('');
         setChallengeId('');
         setCooldown(0);
+        setConsent(false);
+    };
+
+    const switchTo = (next: LoginMode) => {
+        setMode(next);
+        resetTransient();
+    };
+
+    /** 关掉弹窗走这里，不直接调 `onClose`。
+     *
+     *  Dialog 关着的时候 **LoginModal 仍然挂载**，state 不会自己没 —— 不清的话，
+     *  下一个人打开看到的是上一位填的手机号和一个**已经勾上的同意项**。
+     *  切模式那条路（`switchTo`）本来就清，但「点取消 / 点遮罩」才是更常走的那条，
+     *  而它此前一句都没清。 */
+    const handleClose = () => {
+        resetTransient();
+        setMode('login');
+        onClose();
     };
 
     const linkSx = { textDecoration: 'none' } as const;
 
     return (
-        <Dialog open={open} onClose={onClose} PaperProps={{ sx: { borderRadius: 3, p: 1, minWidth: 350 } }}>
+        <Dialog open={open} onClose={handleClose} PaperProps={{ sx: { borderRadius: 3, p: 1, minWidth: 350 } }}>
             <DialogTitle>
                 {/* 登录与验证码两模式共用一个标题：否则标题里的「验证码登录」会和切换链接的同名文本撞在一起。 */}
                 {mode === 'register' ? i18n.t('auth:register_title', '注册账号') : i18n.t('auth:login_title', '登录智星盒')}
@@ -252,7 +270,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
                             />
                             <Button
                                 onClick={handleSendCode}
-                                disabled={loading || cooldown > 0}
+                                disabled={loading || cooldown > 0 || !consent}
                                 sx={{ flex: 'none', whiteSpace: 'nowrap' }}
                             >
                                 {cooldown > 0
@@ -260,6 +278,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
                                     : i18n.t('auth:get_code', '获取验证码')}
                             </Button>
                         </Box>
+                        <PhoneConsent checked={consent} onChange={setConsent} disabled={loading} />
                     </>
                 )}
 
@@ -292,7 +311,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 </Box>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
-                <Button onClick={onClose} disabled={loading}>{i18n.t('auth:cancel_btn', '取消')}</Button>
+                <Button onClick={handleClose} disabled={loading}>{i18n.t('auth:cancel_btn', '取消')}</Button>
                 <Button onClick={handleSubmit} variant="contained" disabled={loading}>
                     {mode === 'register' ? i18n.t('auth:register_btn', '注册') : i18n.t('auth:login_btn', '登录')}
                 </Button>

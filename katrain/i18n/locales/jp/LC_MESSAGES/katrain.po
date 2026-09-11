@@ -3448,3 +3448,9 @@ msgstr "携帯電話番号に関する操作は modelstella.com で行ってく�
 
 msgid "auth:err_need_online"
 msgstr "携帯電話番号に関する操作は modelstella.com で行ってください"
+
+msgid "auth:phone_consent"
+msgstr "「智星盒」の運営者である北京万智星科技有限公司が、本人確認とログインのためにのみ私の携帯電話番号を収集することに同意します。"
+
+msgid "auth:privacy_policy"
+msgstr "プライバシーポリシー"

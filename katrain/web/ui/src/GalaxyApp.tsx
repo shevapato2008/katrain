@@ -7,6 +7,7 @@ import { createGalaxyTheme } from './galaxy/theme';
 import './galaxy/assets/fonts/galaxy-fonts.css';
 import MainLayout from './galaxy/components/layout/MainLayout';
 import Dashboard from './galaxy/pages/Dashboard';
+import PrivacyPage from './galaxy/pages/PrivacyPage';
 import ResearchPage from './galaxy/pages/ResearchPage';
 import PlayMenu from './galaxy/pages/PlayMenu';
 import AiSetupPage from './galaxy/pages/AiSetupPage';
@@ -58,6 +59,10 @@ const GalaxyApp = () => {
       >
         <TsumegoProgressProvider>
           <Routes>
+          {/* 隐私策略独立于 MainLayout：外链打开的公开页，不要求登录、不套导航壳。
+              静态段 privacy 胜过 MainLayout 里那条 `*` 兜底（GalaxyApp.tsx 末尾），
+              而那条兜底**在 MainLayout 里面** —— 命中它时先渲染壳再跳，galaxy-main 会留在文档里。 */}
+          <Route path="privacy" element={<PrivacyPage />} />
           <Route element={<MainLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="play" element={<PlayMenu />} />

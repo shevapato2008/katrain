@@ -1,6 +1,6 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -48,6 +48,9 @@ const toPhoneMode = () => fireEvent.click(screen.getByText('验证码登录'));
    （散在五条用例里各写一遍，Task 15 就要改五处，漏一处红一条。） */
 const requestCode = (phone = '13800138000') => {
   fireEvent.change(screen.getByLabelText('手机号'), { target: { value: phone } });
+  // Task 15：发码按钮多了「必须先勾同意项」这个前置条件。改在助手里的这一行，
+  // 六条走 requestCode 的用例一起跟上。
+  fireEvent.click(screen.getByRole('checkbox', { name: /隐私/ }));
   fireEvent.click(screen.getByRole('button', { name: '获取验证码' }));
 };
 
@@ -57,6 +60,30 @@ const fillCodeFlow = async (phone = '13800138000', code = '123456') => {
   fireEvent.change(screen.getByLabelText('验证码'), { target: { value: code } });
   fireEvent.click(screen.getByRole('button', { name: '登录' }));
 };
+
+/* ── 本轨道新增文案键的两道闸共用的清单 ────────────────────────────────────
+   它管的是三个组件文件，不只是 LoginModal —— 闸的操作数在哪它就住哪，
+   拆成每个组件各写一份会让键清单出现两份，改一份不会有人告诉你另一份坏了。 */
+const HERE = dirname(fileURLToPath(import.meta.url));
+const NEW_KEYS = [
+  // 界面文案（14）
+  'auth:switch_to_phone', 'auth:switch_to_password', 'auth:forgot_password',
+  'auth:phone', 'auth:country_code', 'auth:sms_code', 'auth:get_code',
+  'auth:resend_after', 'auth:code_submitted', 'auth:err_phone_required',
+  'auth:err_code_required', 'auth:err_phone_not_bound', 'auth:err_cooldown',
+  'auth:seconds',
+  // `describeError` 的 BY_CODE 表（16）—— 计划的键清单漏了这一批，但它们同样是
+  // 本 Task 造出来的用户可见文案，同样要中文默认值、同样要进 11 本 .po。
+  'auth:err_code_mismatch', 'auth:err_code_expired', 'auth:err_code_used',
+  'auth:err_code_locked', 'auth:err_code_not_found', 'auth:err_code_purpose',
+  'auth:err_bad_phone', 'auth:err_bad_purpose', 'auth:err_quota_phone',
+  'auth:err_capacity', 'auth:err_provider', 'auth:err_phone_taken',
+  'auth:err_already_bound', 'auth:err_phone_unbound', 'auth:err_on_device',
+  'auth:err_need_online',
+  // Task 15 的告知与同意（2）
+  'auth:phone_consent', 'auth:privacy_policy',
+];
+const SOURCES = ['../LoginModal.tsx', '../CountryCodeSelect.tsx', '../PhoneConsent.tsx'];
 
 describe('LoginModal 手机验证码模式', () => {
   beforeEach(() => {
@@ -161,6 +188,13 @@ describe('LoginModal 手机验证码模式', () => {
     // 上一位用户的手机号不许留在框里，倒计时也不许还在跑。
     expect(screen.getByLabelText('手机号')).toHaveValue('');
     expect(screen.getByLabelText('验证码')).toHaveValue('');
+    /* 倒计时复位的判据落在**按钮文案**上，不落在 disabled 上：
+       Task 15 给发码按钮加了第二个前置条件（必须先勾同意项），
+       disabled 从此是「倒计时 OR 未同意」的合成量，拿它判倒计时会把两件事混在一起。 */
+    expect(screen.queryByRole('button', { name: /秒后可重发/ })).toBeNull();
+    // 同意项也一并复位了 —— 上一位用户的同意不替下一位作数，所以此刻按钮**应当**禁用。
+    expect(screen.getByRole('button', { name: '获取验证码' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('checkbox', { name: /隐私/ }));
     expect(screen.getByRole('button', { name: '获取验证码' })).not.toBeDisabled();
   });
 
@@ -176,30 +210,12 @@ describe('LoginModal 手机验证码模式', () => {
 
        它扫的是**源码文本**，不去注释里绕 —— 所以这两个文件里不要写形如
        `i18n.t('auth:xxx', '...')` 的注释，那会让闸读到注释里的那一条。 */
-    const NEW_KEYS = [
-      // 界面文案（14）
-      'auth:switch_to_phone', 'auth:switch_to_password', 'auth:forgot_password',
-      'auth:phone', 'auth:country_code', 'auth:sms_code', 'auth:get_code',
-      'auth:resend_after', 'auth:code_submitted', 'auth:err_phone_required',
-      'auth:err_code_required', 'auth:err_phone_not_bound', 'auth:err_cooldown',
-      'auth:seconds',
-      // `describeError` 的 BY_CODE 表（16）—— 计划的键清单漏了这一批，但它们同样是
-      // 本 Task 造出来的用户可见文案，同样要中文默认值、同样要进 11 本 .po。
-      'auth:err_code_mismatch', 'auth:err_code_expired', 'auth:err_code_used',
-      'auth:err_code_locked', 'auth:err_code_not_found', 'auth:err_code_purpose',
-      'auth:err_bad_phone', 'auth:err_bad_purpose', 'auth:err_quota_phone',
-      'auth:err_capacity', 'auth:err_provider', 'auth:err_phone_taken',
-      'auth:err_already_bound', 'auth:err_phone_unbound', 'auth:err_on_device',
-      'auth:err_need_online',
-    ];
     /* ⚠️ 不能写 `new URL('../LoginModal.tsx', import.meta.url)`：Vite 会把
        **字面量**形式的 `new URL(..., import.meta.url)` 当成资源引用，在 transform 期
        改写成 `http://localhost:3000/src/...`，readFileSync 当场 `The URL must be of scheme file`。
        仓里 `src/components/liveBoardWiring.test.ts:13` 那个写法能活，是因为它传的是**变量**，
        Vite 的静态分析只认字面量。这里走 `src/api/__tests__/tutorialReadonly.guard.test.ts:11` 那条路。 */
-    const HERE = dirname(fileURLToPath(import.meta.url));
-    const src = ['../LoginModal.tsx', '../CountryCodeSelect.tsx']
-      .map((rel) => readFileSync(resolve(HERE, rel), 'utf8')).join('\n');
+    const src = SOURCES.map((rel) => readFileSync(resolve(HERE, rel), 'utf8')).join('\n');
 
     const missing: string[] = [];
     const notChinese: string[] = [];
@@ -209,5 +225,27 @@ describe('LoginModal 手机验证码模式', () => {
       if (!/[一-龥]/.test(m[3])) notChinese.push(`${key} => ${m[3]}`);
     }
     expect({ missing, notChinese }).toEqual({ missing: [], notChinese: [] });
+  });
+
+  it('本轮新增的每个文案键都真的落进了 11 本 .po', () => {
+    /* 上面那条闸只读**源码**，只证「默认值是中文」。它对「键根本没进字典」是绿的 ——
+       而那正是 Task 14/15 最容易漏的一步（batch 脚本是写死字典，不改字典跑它，
+       `git diff | grep '^+msgid'` 输出是空的，空差异很容易被读成「没有污染」）。
+       后果与 Task 14 花一整个步骤解决掉的问题同款：10 种语言在登录框看到整段中文。
+       这一条量的是**落地**，不是意图。 */
+    const LOCALES = ['en', 'cn', 'tw', 'jp', 'ko', 'de', 'es', 'fr', 'ru', 'tr', 'ua'];
+    // __tests__ → auth → components → galaxy → src → ui → web → katrain
+    const I18N_ROOT = resolve(HERE, '../../../../../../../i18n/locales');
+    // 路径写错时要当场响，不能因为「一个都没找到」而静默变成另一种红。
+    expect(existsSync(I18N_ROOT), `i18n 目录没找到：${I18N_ROOT}`).toBe(true);
+
+    const missing: string[] = [];
+    for (const lang of LOCALES) {
+      const po = readFileSync(resolve(I18N_ROOT, lang, 'LC_MESSAGES/katrain.po'), 'utf8');
+      for (const key of NEW_KEYS) {
+        if (!po.includes(`msgid "${key}"\n`)) missing.push(`${lang}/${key}`);
+      }
+    }
+    expect(missing).toEqual([]);
   });
 });

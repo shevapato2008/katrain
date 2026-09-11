@@ -3556,3 +3556,12 @@ msgstr "Bitte führen Sie Aktionen zur Mobilnummer auf modelstella.com durch"
 
 msgid "auth:err_need_online"
 msgstr "Bitte führen Sie Aktionen zur Mobilnummer auf modelstella.com durch"
+
+msgid "auth:phone_consent"
+msgstr ""
+"Ich stimme zu, dass Beijing Wanzhixing Technology Co., Ltd., der Betreiber "
+"von StellaBox, meine Mobilnummer ausschließlich zur Identitätsprüfung und "
+"Anmeldung erhebt."
+
+msgid "auth:privacy_policy"
+msgstr "Datenschutzerklärung"

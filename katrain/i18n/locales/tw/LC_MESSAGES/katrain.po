@@ -3428,3 +3428,9 @@ msgstr "請在 modelstella.com 上完成手機號碼相關操作"
 
 msgid "auth:err_need_online"
 msgstr "請在 modelstella.com 上完成手機號碼相關操作"
+
+msgid "auth:phone_consent"
+msgstr "我同意「智星盒」的營運方北京萬智星科技有限公司收集我的手機號碼，僅用於身分驗證與登入。"
+
+msgid "auth:privacy_policy"
+msgstr "《隱私策略》"

@@ -3385,3 +3385,12 @@ msgstr "Realiza las acciones relacionadas con el móvil en modelstella.com"
 
 msgid "auth:err_need_online"
 msgstr "Realiza las acciones relacionadas con el móvil en modelstella.com"
+
+msgid "auth:phone_consent"
+msgstr ""
+"Acepto que Beijing Wanzhixing Technology Co., Ltd., operadora de StellaBox, "
+"recopile mi número de móvil únicamente para la verificación de identidad y "
+"el inicio de sesión."
+
+msgid "auth:privacy_policy"
+msgstr "Política de privacidad"

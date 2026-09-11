@@ -3376,3 +3376,9 @@ msgstr "휴대폰 번호 관련 작업은 modelstella.com 에서 진행해 주�
 
 msgid "auth:err_need_online"
 msgstr "휴대폰 번호 관련 작업은 modelstella.com 에서 진행해 주세요"
+
+msgid "auth:phone_consent"
+msgstr "「스텔라박스」 운영사 북경만지성과기유한공사가 본인 확인 및 로그인 목적으로만 제 휴대폰 번호를 수집하는 데 동의합니다."
+
+msgid "auth:privacy_policy"
+msgstr "개인정보 처리방침"

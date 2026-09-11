@@ -3463,3 +3463,12 @@ msgstr "Действия с номером телефона выполняйте
 
 msgid "auth:err_need_online"
 msgstr "Действия с номером телефона выполняйте на modelstella.com"
+
+msgid "auth:phone_consent"
+msgstr ""
+"Я согласен, что Beijing Wanzhixing Technology Co., Ltd. — оператор StellaBox"
+" — собирает мой номер телефона исключительно для подтверждения личности и "
+"входа."
+
+msgid "auth:privacy_policy"
+msgstr "Политика конфиденциальности"

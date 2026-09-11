@@ -6623,6 +6623,239 @@ switchTo,成功后的复位把手机号/验证码/challenge/倒计时一起清�
 
 ### Task 15: 隐私政策页与手机号收集的单独同意
 
+> **⛑ 实跑修正（2026-09-11，动手前的并行核验，5 组 55 条断言：40 CONFIRMED / 3 STALE / 12 WRONG）**
+>
+> T13 揪出 5 条、T14 揪出 10 条，这轮 15 条。**以本块为准。**
+>
+> **一、致命：`PrivacyPage.test.tsx` 的 `renderAt` 跑不起来（WRONG，两个 agent 各自独立实跑证实）**
+>
+> 只包 `MemoryRouter + SettingsProvider` 渲染 `<GalaxyApp />` **当场抛**：
+> ```
+> THROWN: useAuth must be used within an AuthProvider
+>   at useAuth (src/context/AuthContext.tsx:211)
+>   at TsumegoProgressProvider (src/context/TsumegoProgressContext.tsx:292)
+> ```
+> 链路：`GalaxyApp.tsx:59` 无条件包 `<TsumegoProgressProvider>` → 它主体第一句 `useAuth()`。
+> **与 privacy 路由挂不挂 MainLayout 无关** —— 那个 Provider 包住整个 `<Routes>`。
+>
+> 后果比"红一条"严重得多：Step 2 会红（红因是装配缺 Provider），Step 4 写完路由**还是红**，
+> 而第 1、3 条真正的判据**一次都没被执行过**。预期的 red→green 变成 red→red，
+> 作者会去翻路由表而问题在测试装配里 —— [[reference_gate_measures_wrong_operand]]。
+>
+> **修法**（实跑通过）：`renderAt` 在 `SettingsProvider` 外面再包一层 `AuthProvider`
+> （`import { AuthProvider } from '../../context/AuthContext'`）。只差这一个：
+> `GameNavigationProvider` 由 `MainLayout.tsx:50` 自己包、`TsumegoProgressProvider` 由 `GalaxyApp.tsx:59` 自己包、
+> `ThemeProvider` 由 `GalaxyApp.tsx:37` 自己建。顺序照生产（`AppRouter.tsx:33-34`，Auth 在外）。
+>
+> **⚠️ 先例会骗人**：`src/galaxy/theme.test.tsx:90-97` 确实裸渲染 GalaxyApp 且连 SettingsProvider 都没有 ——
+> 但它在 `:28-45` 用 `vi.mock` 把 SettingsContext / **TsumegoProgressContext** / MainLayout / Dashboard 全换掉了。
+> 走的不是同一条路。同族 [[reference_existing_consumers_may_use_a_different_source]]。
+>
+> **二、`new URL('字面量', import.meta.url)` 又来了（WRONG）**
+>
+> 计划 `PhoneConsent.test.tsx` 里 `readFileSync(new URL('../PhoneConsent.tsx', import.meta.url))` ——
+> 与 T14 踩的是同一个坑，Vite 把它改写成 `http://localhost:3000/...`，`readFileSync` 报
+> `The URL must be of scheme file`。而且它抛在 href 断言**之后**，看起来像 i18n 键的问题。
+> 照抄 T14 已落地的写法（`LoginModal.phone.test.tsx:198-202`）：`dirname(fileURLToPath(import.meta.url))`。
+> 见 [[reference_vite_rewrites_new_url_literal]]。
+>
+> **三、中文默认值闸看不见 `PhoneConsent.tsx`（WRONG）**
+>
+> T14 那条闸写死读两个文件、一张 30 键清单，新文件对它**不存在** ⇒ PhoneConsent 里漏了中文默认值会**静默报绿**。
+> 计划本来打算在 `PhoneConsent.test.tsx` 里再写一份内联闸 —— 两条同形的闸分居两处，改一处不会有人告诉你另一处。
+> **改为：扩既有那条**（`NEW_KEYS` 30→32、文件列表加 `'../PhoneConsent.tsx'`），PhoneConsent.test.tsx 只留 href 断言。
+> 按 [[reference_every_gate_branch_must_execute_once]]，加宽既有闸要补一格变异证明**旧闸对同一缺陷是绿的**。
+>
+> **四、Step 6 的操作块漏了一步，而且没有任何闸量得到「键有没有落地」（WRONG）**
+>
+> Task 14 的 Step 6 第一行写了前置「把键加进 `GALAXY_TRANSLATIONS`」，Task 15 的**没写**，直接就跑脚本。
+> 脚本是写死字典（`batch_translate_galaxy.py:23`），不改字典跑它，`git diff | grep '^+msgid'` 输出是**空的** ——
+> 而 Expected 写的是「恰好两个」，空差异极易被读成「没有污染」。
+> 更要命的是守门那条用例只读**源码**、只断言默认值里有汉字，**完全不看 `.po`** ⇒ 键没落地照样全绿，
+> 结局与 Task 14 花一整个步骤解决掉的问题同款：10 种语言看到整段中文的同意行。
+> ⇒ **补一条真闸**：断言两个 msgid 在 11 本 `.po` 里各自存在。这条量的是**落地**，不是意图。
+>
+> **五、`inputProps={{'aria-label': …}}` 要删掉（WRONG，为测试牺牲了可及性）**
+>
+> 实测它**不必需**：`FormControlLabel` 渲染的 `<label>` 直接包住 input，隐式关联本来就成立，
+> 不给 aria-label 时 `getByRole('checkbox', { name: /隐私/ })` 照样命中。
+> 给了反而把可及名**截短**：
+> ```
+> 不给 → accessible name = "我已阅读并同意 《隐私策略》"
+> 给了 → accessible name = "《隐私策略》"   ← 「我已阅读并同意」听不到了
+> ```
+> 一个**同意勾选框**丢掉的恰好是「同意」那半句。另：`inputProps` 已被 MUI 标 deprecated
+> （`SwitchBase.d.ts:73`，改用 `slotProps.input`），**运行时不告警**，升 MUI 8 会静默失效。
+> ⇒ 两个都不写。
+> （附一条会误导复审的：仓里 `TsumegoProblemControls.tsx:227-229` 与 `LiveMatchDisplayControls.tsx:129-130`
+> 的注释说「MUI v7 的 `inputProps` 到不了里面那个 input」—— 那对 `<Switch>` 成立、对 `<Checkbox>` **不成立**
+> （`Checkbox.js:138` 显式 `slotProps.input ?? inputProps`，`Switch.js:284-289` 压根不看）。
+> 别把那条注释的**结论**搬过来 —— [[reference_transfer_criteria_not_conclusions]]。）
+>
+> **六、三条断言没有分辨力（WRONG）**
+>
+> | 计划写的 | 毛病 | 改成 |
+> |---|---|---|
+> | `expect(PRIVACY_CONTENT).toMatch(/删除\|注销/)` | **今天就绿**（章四第 3 条「注销账号后…删除或匿名化」、章六第 3 条「删除您的个人信息」）。把新插的整段删掉它依旧绿 | 先把含「手机号」的行筛出来，再在**那几行内**断 `/撤回/`、`/删除\|匿名化/` |
+> | `label.textContent` 的 `not.toMatch(/服务条款\|用户协议/)` | 对「文案整项没了」免疫 —— 实测把 label 换成空的，这条 **PASS** | 同一处再配一条正判（`toHaveTextContent(PRIVACY_LABEL)`） |
+> | `expect(text).toMatch(/身份验证\|登录/)` | 「登录」太弱，同一个 Dialog 里到处是「登录」 | 只断 `/身份验证/`（本句独有） |
+>
+> **七、主体名：计划的依据是错的，而仓里有更好的（WRONG ×2）**
+>
+> (a) 计划说「§2.10 已查证【智星盒】不是企业全称的子集」—— `requirements.md:73-78` 原文只写了
+> 「签名可用【万智星】（企业全称子集），**不能**用【智星盒】」，**没写原因**；「不是子集」是计划自己补的推断。
+> 而且整条的辖域是「**阿里云侧**的已知事实」，管的是签名能不能过审，**不是** PIPL 十七条的「个人信息处理者的名称」。
+> 拿签名审核规则当法定告知主体的判据 = 转结论不转判据。
+>
+> (b) 仓里已有法定全称的书面记录，计划没用：`icpFiling.ts:1`
+> 「工信部下发给 modelstella.com 的网站备案号（主办单位：**北京万智星科技有限公司**）」，
+> 提交 `f2fc3c01` 正文同样点名。即「万智星」是**简称**。
+> 而同轨道手册 `sms-application-guide.html:237` 判定【万智星】作为签名「**很可能报不过**」、
+> `:396-400` 小节标题就叫「与轨道文档冲突的一条，请先裁」—— 计划等于把一个**已被标记为待裁且大概率不通过**
+> 的名字固化成 UI 默认文案。手册特意论证「代码这一侧不受影响（签名走 env）」，
+> 而写死进 tsx + 11 本 `.po` 正好把那条豁免抵消掉。
+>
+> (c) 真实后果（CONFIRMED）：同一个 `<Dialog>` 里标题是「登录**智星盒**」（`LoginModal.tsx:180`），
+> 勾选行写「**万智星**」，点进《隐私策略》正文自称「**智星盒团队**」，收到的短信签名是「【万智星】」——
+> **一条告知链上四个名字**。Task 15 的目的是把告知做对，结果是合规价值为负。
+>
+> ⇒ **本 Task 的落法**：同意句写「**北京万智星科技有限公司**」，并**显式写清它与产品名的关系**
+> （「「智星盒」的运营方…」）。这是仓里唯一有文书依据的名字。
+> **仍然要 Fan 按营业执照核一次**，写进收尾。
+> **不动 `privacy.ts` 正文里的「智星盒团队」** —— `tests/web_ui/test_stellabox_branding.py:35-37`
+> 明确断言 privacy 正文里必须有「智星盒团队」，那是**刻意的**，改它要 Fan 先裁。
+>
+> **八、存储期限：不替 Fan 拍那个数（WRONG → 改设计）**
+>
+> 计划拟插的第 4 条写死「账号注销后 **30 日**内删除」。但 `plan.md` 收尾自己记着「保留期多久要 Fan 定」，
+> 而章四第 3 条现有的承诺是「合理期限」—— 一章里一条说「合理期限」、下一条给具体 30 日，读者会问别的信息到底多久。
+> ⇒ 新条目**不写具体天数**，指回章四第 3 条；把「把『合理期限』换成具体天数」作为**一处**改动交回 Fan，别散成两处。
+>
+> **九、行号与缩进（STALE ×3）**
+>
+> - `AppRouter.tsx:38` → **`:39`**（`:38` 是编译期守卫 `{!__KIOSK_2D_ONLY__ && GalaxyApp && (`，真行号但指向别处）
+> - 计划 (3c) 的替换片段把 `<Route element={<MainLayout />}>` 写成 **12 空格**，文件里 `GalaxyApp.tsx:61` 是 **10 空格**
+>   （与 `:60` 的 `<Routes>` 平齐）。整块替换会匹配不上；手工插入若照抄片段缩进会顺手多改一行。
+>   ⇒ 只插两行，缩进跟 `:61` 走。
+> - `AppRouter.tsx:46-47` 那条描述再精确一格：`/*` → `<ZenModeApp />` 的 Route 本身在 `:47`；
+>   strict 那条 Navigate 在 `:45`。两档是**构建期**分的（`AppRouter.tsx:8-9`，两个操作数都被 define/env 内联掉），
+>   实测两份产物里 `VITE_BOX_SSO_STRICT` 与 `import.meta.env` 均 0 命中 —— 同一份代码在三种构建里是三张路由表。
+>
+> **十、文件落点改同级（WRONG，惯例）**
+>
+> `src/galaxy/pages/__tests__/` 今天不存在；galaxy/pages 下 8 个页面测试**全是同级 `*.test.tsx`**
+> （`Dashboard.test.tsx`、`ResearchPage.test.tsx`、`live/LivePage.test.tsx`、`report/ReportsPage.test.tsx`…）。
+> 全仓 5 个 `__tests__` 目录里，galaxy 侧唯一那个是本轨道 T14 自己建的。
+> ⇒ `PrivacyPage.test.tsx` 放**同级** `src/galaxy/pages/PrivacyPage.test.tsx`，相对路径全部退一级（`../../`）。
+> `PhoneConsent.test.tsx` 留在 `auth/__tests__/`（跟 T14 产出的两个文件同处）。
+> `git check-ignore` 实测：`Phone*` 安全（`log*` 只吃 `Login*`/`Log*` 开头）。
+>
+> **十一、几条不改但必须知道的事实**
+>
+> 1. **`privacy.ts` 不是零消费者**：`tests/web_ui/test_stellabox_branding.py:8` 按**路径**读它的原文，
+>    断言不得出现「弈航 / BoardNavi / Galaxy Go」、必须出现「智星盒隐私策略 / 智星盒团队 /"智星盒"（StellaBox）」。
+>    ⇒ 改完 `privacy.ts` **必须跑一次 pytest**，Task 15 的验证步骤原本只跑 vitest，这条红会漏到别人的全量跑里。
+>    （`batch_translate_galaxy.py:9002` 的注释也写着「legal/terms.ts 与 legal/privacy.ts 一律不动 —— 那涉及法律主体」。）
+> 2. **`test_stellabox_branding.py` 今天就有一条红**，且**在 `develop` 上同样红**（逐 commit 回溯 develop / T10 / T13 / T14 结果一字不差）：
+>    `test_brand_specific_translations_use_chinese_brand_only_for_cn_and_tw` 要求非 cn/tw 一律 `StellaBox`，
+>    而 jp 的 `dashboard:welcome` 是「智星盒へようこそ」、ko 是「스텔라박스…」。
+>    **既有红，不在本 Task 射程内，不改绿**；新键的品牌词按仓里既有实践走
+>    （cn/tw/jp → 智星盒，ko → 스텔라박스，其余 → StellaBox）。
+> 3. `<Link href>` 渲染的是**原生 `<a>`**、不走 react-router，`getAttribute('href')` 拿到原样字符串
+>    （**不能用 `.href` 属性** —— jsdom 会解析成 `http://localhost:3000/galaxy/privacy`，`toBe` 当场红）。
+>    计划已有 `target="_blank"`，所以点它不会冲掉填了一半的登录框。
+> 4. `fetch` 桩够用且**必须是纯对象**：渲染 `/galaxy` 只有 3 个 fetch
+>    （`/api/translations`、`/api/v1/auth/me`、`/api/v1/live/translations`），全走全局 fetch。
+>    **别抄 `src/features/aiLadder/api.test.ts:29` 那种 `mockResolvedValue(new Response(...))`** ——
+>    同一个 Response 实例被返回三次，第二次就 `Body is unusable: Body has already been read`。
+>    那个先例安全只因为它每条用例只调一次 fetch。
+> 5. `GalaxyApp.tsx:83` 的 `*` 兜底 `<Navigate to="/galaxy" replace />` **在 MainLayout 里面**
+>    （:61–:84 之间）⇒ 命中它时先渲染 MainLayout 再跳，`galaxy-main` 一直在文档里。
+>    这正是 Step 5 第三条变异期望成立的原因，写注释时要带上这半句。
+> 6. MainLayout **没有任何登录守卫**（全文 55 行，无 `useAuth`/`Navigate`/`AuthRequired`）。
+>    「政策页在 MainLayout 之外」这条断言的理由是**不该套导航壳**，
+>    计划注释里「不该被导航壳与登录守卫拦一道」的后半句是想象出来的。
+> 7. 用词：仓里与设计稿一律是「隐私**策略**」（`PRIVACY_TITLE = '智星盒隐私策略'`、`smart-board.pen` 两处
+>    `《隐私策略》`），计划里 19 处写「隐私**政策**」。
+>    ⇒ UI 文案统一用「《隐私策略》」，并把它提成 `PRIVACY_LABEL` 从 `privacy.ts` 导出，
+>    测试与组件共用同一个字面量，别在两处各写一份（否则日后一次文案统一会让判据凭空变红）。
+> 8. 章节编号实测：「一、关于如何收集用户的个人信息」（`:8`）下现有 4 条（`1、`…`4、`），新增即 `5、`；
+>    「四、关于信息存储」（`:42`）下现有 3 条，新增即 `4、`。分隔符是表意顿号 `U+3001` 不是 `.`。
+>    `PRIVACY_CONTENT` 是模板串、真换行、无 `${}` 插值，直接按行插即可。
+> 9. 项目**没有 `@/` 路径别名**（`vite.config.ts` 无 alias、`tsconfig.app.json` 无 paths），只能相对路径。
+> 10. `PRIVACY_TITLE` 是中文字面量、不是 i18n 键 ⇒ 任何语言打开政策页标题都是「智星盒隐私策略」。
+>     计划两处口径都写成「正文只有中文」，**射程写窄了**，收尾清单要把标题一并写上。
+> 11. `terms.ts`（用户服务协议）同样零消费者、至今打不开。本 Task **不扩范围**，记进收尾非阻塞项。
+
+
+> **✅ 实跑结果（2026-09-11，Task 15 落地）**
+>
+> **Step 2 的红因与计划预测不同（但方向对）**：计划预测收集阶段 `SyntaxError: … does not provide an
+> export named 'PRIVACY_PATH'`。实际 Vite 的 ESM interop 给的是 **`undefined`**，于是
+> `renderAt(undefined)` → `initialEntries=[undefined]` → `TypeError: Cannot read properties of
+> undefined (reading 'state')`（`@remix-run/router/history.ts:238`）。**底下的原因是同一个**（导出不存在），
+> 但「按报错原文判红因对不对」这条会对不上。三个文件合计 **18 条红**。
+>
+> **Step 5 变异矩阵：13 条，12 红 1 绿。**
+>
+> | # | 变异 | 结果 |
+> |---|---|---|
+> | M2 | 发码按钮去掉 `\|\| !consent` | RED |
+> | M3 | `switchTo` 不再复位同意状态 | RED |
+> | M4 | 注释掉 `GalaxyApp` 里那条 privacy 路由 | RED（两条：路由渲染 + MainLayout 之外）。**这条最值钱**：它证明判据落在路由上而不是链接文本上 —— 同样的改动下，「grep href」那种写法是全绿的 |
+> | M5 | 同意句改成与《服务条款》打包 | RED |
+> | M6 | 同意句整项删掉 | RED（正判那半句起作用了；纯反判对这条免疫，实测过） |
+> | M7a | 政策正文删掉整条第 5 项 | RED |
+> | M7b | 两处「撤回」同时删掉 | RED |
+> | M8 | `auth:privacy_policy` 默认值改英文 | RED |
+> | M9 | 从 de 的 `.po` 里删掉 `auth:phone_consent` | RED ← **新加的落地闸**，它是本 Task 唯一量得到「键有没有真进字典」的东西 |
+> | M10 | 链接去掉 `target="_blank"` | RED |
+> | M11 | `handleClose` 不复位（退回裸 `onClose`） | RED |
+> | M1 | `useState(false)` → `useState(true)` | **STILL-GREEN，如实记账** |
+>
+> **M1 为什么绿，以及它牵出的真缺口**：
+> 进 phone 模式**必经 `switchTo`**、关闭**必经 `handleClose`**，两者都把 consent 设回 false
+> ⇒ 那个初值今天**没有任何一条路径看得见**，不是测试写漏了。已在代码里就地注明，不硬凑一条用例
+> （硬凑的变异比没有更坏）。
+>
+> 但顺着 M1 查下去发现一处**两份计划都漏掉的真缺口**：**点「取消」或点遮罩关掉弹窗时，一句都没清。**
+> Dialog 关着的时候 `LoginModal` 仍然挂载，state 不会自己没 ⇒ 下一个人打开看到的是
+> **上一位填的手机号**和一个**已经勾上的同意项**。Task 14 的「上一位用户的手机号不许留在框里」
+> 与 Task 15 的「上一位用户的同意不替下一位作数」两条判据**都只覆盖了切模式那条路**，
+> 而「点取消」才是更常走的那条。已补 `handleClose`（`switchTo` 与成功后的复位共用 `resetTransient`）
+> 并配一条用例，M11 证明它是活的。
+>
+> **Step 6**：`batch_translate_galaxy.py` 报 `Total entries updated: 22` = 2 × 11；
+> `git diff --numstat katrain/i18n/locales` **11 本删除数全 0**；新增唯一 msgid **恰好 2 个**；
+> `i18n.py` 跑完 `.po` 内容一字未变。**计划漏掉的那一步（先把键加进 `GALAXY_TRANSLATIONS`）已补回。**
+>
+> **Step 7**：三个构建全退 0；全量前端单测 **166 files / 1745 passed / 7 skipped**
+> （Task 14 收尾时是 164 / 1732 / 7 ⇒ 增量恰好 2 个文件 13 条：PhoneConsent 8 + PrivacyPage 3 + 落地闸 1 + 取消复位 1）。
+>
+> **pytest（计划完全没有的一步，但必须跑）**：`privacy.ts` 与 `LoginModal.tsx` 都在
+> `tests/web_ui/test_stellabox_branding.py:6-12` 的 `PRODUCT_FILES` 里。
+> 实跑：读这两个文件的那条 `test_product_facing_…_use_stellabox_brand` **通过**；
+> `test_brand_specific_translations_…` 失败 —— 但它**在 develop 上就失败**
+> （逐 commit 回溯 develop / T10 / T13 / T14，失败内容一字不差：jp 的 `dashboard:welcome` 是
+> 「智星盒へようこそ」而闸要求非 cn/tw 一律 `StellaBox`）。**既有红，不改绿**，见收尾。
+> `test_posting_requires_phone.py` + `test_sms_challenge.py` 27 passed。
+>
+> **本 Task 有意没做 / 交回 Fan 的（写进收尾）**：
+> 1. **主体名**：同意句用「北京万智星科技有限公司」（依据 `icpFiling.ts:1` 记的 ICP 备案主办单位），
+>    **需按营业执照核一次**。计划原稿的「万智星」依据不成立 —— 那是阿里云签名规则，不是 PIPL 规则，
+>    而且同轨道手册判定它作为签名很可能报不过。
+> 2. **告知链上仍有三个名字**：勾选行「北京万智星科技有限公司」/ 政策正文自称「智星盒团队」/ 产品名「智星盒」。
+>    **没动 `privacy.ts` 的自称**，因为 `test_stellabox_branding.py:35-37` 明确断言正文里必须有
+>    「智星盒团队」—— 那是刻意的，改它要 Fan 先裁。
+> 3. **存储期限没写具体天数**：新第 4 条指回章四第 3 条的「合理期限」。要换成具体天数应当**只改一处**
+>    （章四第 3 条），别散成两条互相解释。
+> 4. **政策标题与正文都是中文字面量、不进 `.po`**：外语用户打开政策页看到的是中文。
+>    计划两处口径都只说「正文」，**标题也一样**。
+> 5. **后端没有同意留痕**（要一张表 + 留存期限策略）⇒ 同意状态只挡住发码按钮，
+>    **不构成可举证的合规记录，不要在任何地方声称它是**。
+> 6. `terms.ts`（用户服务协议）同样零消费者、至今打不开。本 Task 不扩范围。
+> 7. `test_brand_specific_translations_use_chinese_brand_only_for_cn_and_tw` 在 develop 上就红
+>    （jp/ko 各用自己的品牌写法），是一条**需要 Fan 裁口径**的闸，不属本轨道。
 **Files:**
 - Create: `katrain/web/ui/src/galaxy/components/auth/PhoneConsent.tsx`
 - Create: `katrain/web/ui/src/galaxy/pages/PrivacyPage.tsx`

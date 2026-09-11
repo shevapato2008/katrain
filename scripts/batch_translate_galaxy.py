@@ -3204,6 +3204,38 @@ GALAXY_TRANSLATIONS = {
         "tr": "Cep telefonu numarasıyla ilgili işlemleri modelstella.com üzerinden yapın",
         "ua": "Дії з номером телефону виконуйте на modelstella.com",
     },
+    # === 手机号收集的告知与单独同意（phone-login Task 15）===
+    # ⚠️ 品牌词按仓里既有实践走，不按「非 cn/tw 一律 StellaBox」那条闸走：
+    #    jp 的 auth:login_title 本来就是「智星盒にログイン」、ko 是「스텔라박스 로그인」。
+    #    （那条闸 tests/web_ui/test_stellabox_branding.py 今天在 develop 上就是红的，属既有问题。）
+    # ⚠️ 主体名是**法定全称**不是简称：PIPL 十七条要告知的是个人信息处理者的名称。
+    #    依据是 icpFiling.ts:1 记的备案主办单位，上线前仍需按营业执照核一次。
+    "auth:phone_consent": {
+        "en": "I agree that Beijing Wanzhixing Technology Co., Ltd., the operator of StellaBox, may collect my mobile number solely for identity verification and sign-in.",
+        "cn": "我同意「智星盒」的运营方北京万智星科技有限公司收集我的手机号，仅用于身份验证与登录。",
+        "tw": "我同意「智星盒」的營運方北京萬智星科技有限公司收集我的手機號碼，僅用於身分驗證與登入。",
+        "jp": "「智星盒」の運営者である北京万智星科技有限公司が、本人確認とログインのためにのみ私の携帯電話番号を収集することに同意します。",
+        "ko": "「스텔라박스」 운영사 북경만지성과기유한공사가 본인 확인 및 로그인 목적으로만 제 휴대폰 번호를 수집하는 데 동의합니다.",
+        "de": "Ich stimme zu, dass Beijing Wanzhixing Technology Co., Ltd., der Betreiber von StellaBox, meine Mobilnummer ausschließlich zur Identitätsprüfung und Anmeldung erhebt.",
+        "es": "Acepto que Beijing Wanzhixing Technology Co., Ltd., operadora de StellaBox, recopile mi número de móvil únicamente para la verificación de identidad y el inicio de sesión.",
+        "fr": "J'accepte que Beijing Wanzhixing Technology Co., Ltd., l'exploitant de StellaBox, collecte mon numéro de mobile uniquement à des fins de vérification d'identité et de connexion.",
+        "ru": "Я согласен, что Beijing Wanzhixing Technology Co., Ltd. — оператор StellaBox — собирает мой номер телефона исключительно для подтверждения личности и входа.",
+        "tr": "StellaBox işletmecisi Beijing Wanzhixing Technology Co., Ltd. şirketinin cep telefonu numaramı yalnızca kimlik doğrulama ve oturum açma amacıyla toplamasını kabul ediyorum.",
+        "ua": "Я погоджуюсь, що Beijing Wanzhixing Technology Co., Ltd. — оператор StellaBox — збирає мій номер телефону виключно для підтвердження особи та входу.",
+    },
+    "auth:privacy_policy": {
+        "en": "Privacy Policy",
+        "cn": "《隐私策略》",
+        "tw": "《隱私策略》",
+        "jp": "プライバシーポリシー",
+        "ko": "개인정보 처리방침",
+        "de": "Datenschutzerklärung",
+        "es": "Política de privacidad",
+        "fr": "Politique de confidentialité",
+        "ru": "Политика конфиденциальности",
+        "tr": "Gizlilik Politikası",
+        "ua": "Політика конфіденційності",
+    },
     # === Live Broadcast - First Level (List Page) ===
     "live:top_matches": {
         "en": "Top Matches",

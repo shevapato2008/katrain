@@ -3528,3 +3528,12 @@ msgstr "Veuillez effectuer les opérations liées au mobile sur modelstella.com"
 
 msgid "auth:err_need_online"
 msgstr "Veuillez effectuer les opérations liées au mobile sur modelstella.com"
+
+msgid "auth:phone_consent"
+msgstr ""
+"J'accepte que Beijing Wanzhixing Technology Co., Ltd., l'exploitant de "
+"StellaBox, collecte mon numéro de mobile uniquement à des fins de "
+"vérification d'identité et de connexion."
+
+msgid "auth:privacy_policy"
+msgstr "Politique de confidentialité"

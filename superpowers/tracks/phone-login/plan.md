@@ -8291,6 +8291,92 @@ api.ts 与 api/live.ts 在共享领土 ⇒ 两个构建都跑过;live.ts 的报�
 
 ### Task 17: 改密码入口 + 402 的「没绑手机」文案（补两个没有读者的后端产出）
 
+> **⛑ 实跑修正（2026-09-11，动手前核验，主会话自己逐条 grep —— T16 那轮 5 个 agent 整批证书失败，
+> 结果一条都捞不回来，纯查证类的活自己做更快）**
+>
+> **一、「号码框是只读的掩码」建不出来（WRONG，推翻 Step 3 的一条设计）**
+>
+> 计划写「`set_password` 时手机号框只读、值取 `mask` 后的号（来自 `/auth/me` 的派生字段或绑定时的返回）」，
+> 并配了 `expect(el.value).toMatch(/\*{4}/)`。**两个来源都不存在**：
+> - `/auth/me` **永不返回手机号，连掩码都不给** —— `phone_masked` 全仓唯一产出口是
+>   `endpoints/auth.py:520` 的 bind 成功那一次；`AuthContext.tsx:11-13` 的注释（Task 13 写的）已经记过这条。
+> - 「绑定时的返回」只在那一次内存里，刷新页面就没了。
+>
+> 而后端的真实契约是**要用户自己填号**：`POST /auth/set-password`（`auth.py:553-563`）
+> 先 `verify_and_consume(..., "set_password")` 拿到该 challenge 的手机号，再
+> `if phone != repo.get_phone_e164(current_user.id): 403 {"code": "challenge_phone_mismatch"}`。
+> ⇒ **手机号框是普通可编辑框**；填错号的出路靠把 `challenge_phone_mismatch` 映射成一句人话，
+> 不是靠一个填不出来的只读框。那条用例改成钉这个映射。
+> （想显示掩码就得加后端字段 —— `plan.md` 给 T14–17 的读法第 3 条已经写明「那是新需求，不在四端点契约内」。）
+>
+> **二、402 那条会真的发出去坏的（WRONG，且是 T16 刚踩过的同一个形状）**
+>
+> 计划让 `ReportsPage` 读 `err.detail.free_weekly_blocked`，并在测试里**自己造一个带 `detail` 的错误对象**。
+> 实测 `src/api/reportApi.ts:79` 抛的是**裸** `new Error(\`Request failed ${status}: ${body}\`)`
+> —— **没有 `status`、没有 `detail`、没有 `code`**。
+> ⇒ 照计划写，生产里 `blocked` **永远是 undefined**，所有 402 都显示「余额不足」，
+> 而那条测试**永远绿** —— 夹具造在断点里面，堵点按定义在更外面。
+> 这正是 Task 16 的 M6（`api/live.ts` 不挂 code 而 `useComments` 测试照样绿）那条，只是这次会真的上线。
+> 见 [[reference_reachability_fixture_certifies_broken_path]]。
+>
+> **⇒ 落法改三处：**
+> 1. **`src/api/reportApi.ts`（共享领土）** 照 T16 对 `api/live.ts` 做过的那样挂上 `status` + `detail`，
+>    **message 一个字不改**（`src/api/reportApi.test.ts:118` 正按文本断言
+>    `'Request failed 409: report already exists'`）。
+> 2. **映射点不在 `ReportsPage.tsx`，在 `src/features/report/useReportTasks.ts`**。
+>    实测调用链：`ReportsPage:192 createReportForGame` → `useReportTasks:168 createReport`
+>    → `:220 catch` → `:223 setError(errorMessage(createError, fallback))` → `ReportsPage` 渲染
+>    `reportTasksError`。`ReportsPage` 自己**没有**接这条 402 的 catch。
+>    改 `useReportTasks.ts:41` 那个 `errorMessage()` helper（三条 catch 共用它）。
+> 3. **判据分两层**：一条在 `reportApi` 那层（真 fetch → 断言错误对象带 `status`/`detail`），
+>    一条在 `useReportTasks` 那层（402 + `free_weekly_blocked` → 中文）。
+>    **不写 ReportsPage 级、手搓 detail 的那种用例** —— 那种正是本条要防的东西。
+>
+> 顺带记一条**本 Task 不修的既有缺口**：`ReportsPage:242/:267/:300` 三处自己的 catch 一律
+> `error.message` 原样显示，对**任何**失败都是裸报错串（不只 402）。那是既有状态，不在本 Task 射程。
+>
+> **三、`/retry` 的 402 没有 `free_weekly_blocked`，这是有意的**
+>
+> `reports.py:365` 原文：「**这个键只加在这里，不加到 `/retry` 那个同样是 402 的出口**」。
+> ⇒ `errorMessage()` 在 `detail.free_weekly_blocked` 缺席时落到「余额不足」那一支，对 retry 正好是对的，
+> 不要为 retry 另造一支。
+>
+> **四、i18n 闸会长出第五份（WRONG）**
+>
+> 计划又要在 `SetPasswordDialog.test.tsx` 里写一份 3 键 / 2 文件的闸。
+> Task 16 已经把它抽成 `src/galaxy/components/auth/__tests__/i18nKeys.guard.test.ts`
+> （41 键 / 7 文件 / 两条闸：中文默认值 + 真的落进 11 本 `.po`）。
+> ⇒ **本 Task 只往那一处加键与文件**，不再新写。
+>
+> **五、`new URL('字面量', import.meta.url)` 第四次出现（WRONG）**
+>
+> 计划的闸又用了它。Vite 会改写成 `http://`，`readFileSync` 报 `The URL must be of scheme file`。
+> 既然闸并进 `i18nKeys.guard.test.ts`，这条自然消失 —— 那个文件用的是
+> `dirname(fileURLToPath(import.meta.url))`。见 [[reference_vite_rewrites_new_url_literal]]。
+>
+> **六、按钮文案与键名（计划写窄了）**
+>
+> 计划测试点 `screen.getByText('确定')`，而 `BindPhoneDialog` 今天的提交按钮是
+> `i18n.t('auth:bind_btn', '绑定')`。`set_password` 模式要有自己的标题与按钮文案。
+> 另：计划把 402 两个键起名 `auth:report_402_*`，但映射点已经挪到 `src/features/report/`，
+> 用 `report:` 前缀更贴 —— 改成 `report:err_402_phone` / `report:err_402_credits`。
+> 本 Task 新增 **8 个键**（不是计划说的 3 个）：
+> `auth:set_password`、`auth:set_password_btn`、`auth:new_password`、
+> `auth:set_password_other_devices`、`auth:set_password_needs_phone`、
+> `auth:err_challenge_phone_mismatch`、`report:err_402_phone`、`report:err_402_credits`。
+>
+> **七、确认成立的（CONFIRMED）**
+>
+> - `API.setPassword` 今天仍是共享领土里的**零调用者死代码**（`api.ts:571` 只有定义）。
+> - `auth.py:548-552`：未绑号调 set-password 得 400 `{"code": "phone_unbound", "message": "改密码需要先绑定手机号。"}`
+>   ⇒ 计划「未绑号换成引导去绑」的设计与后端一致。
+> - `auth.py:540-542` 的 docstring 明写「改密码踢不掉已签发的凭据，**最长 90 天**。
+>   **UI 必须把这句说出来**（`auth:set_password_other_devices`）」—— 这是后端作者写下的硬要求，不是润色。
+> - `requireConsent` 那条裁定成立：`set_password` 的前置是这个号已经绑在这个账号上
+>   （未绑号已改成引导去绑），收集手机号的同意在绑定那一刻给过，再问一次是**为已经持有的数据要同意**。
+> - Task 16 的 `BindPhoneDialog.test.tsx` 测的正是 `requireConsent` 默认值那条路径 ⇒ 不用改它，
+>   Step 6 全量跑会把它当回归一起跑绿。
+
 **为什么单独一个 Task**：查出来两处后端做完却没有任何读者——
 `POST /auth/set-password`（Task 10 整条）与 `POST /reports` 402 里的 `free_weekly_blocked`（Task 11）。
 `API.setPassword` 是共享领土里的零调用者死代码。
@@ -8299,6 +8385,49 @@ api.ts 与 api/live.ts 在共享领土 ⇒ 两个构建都跑过;live.ts 的报�
 但**口令登录是上盒子的唯一路**（kiosk 登录页只有用户名与密码两个控件）——
 没有改密码入口，他就被永久挡在自己买的那台设备之外。
 
+
+> **✅ 实跑结果（2026-09-11，Task 17 落地）**
+>
+> **Step 2 的红因**：10 条（`reportApi.errorShape` 2 + `useReportTasks.phone402` 2 + `SetPasswordDialog` 6），
+> 红因逐条对得上（`expected undefined to be 402`、`expected 'Request failed 402: {}' to match /绑定手机号/`、
+> `Unable to find a label with the text of: 新密码` …）。
+>
+> **两条推翻计划的设计改动，落地后确认可行：**
+> 1. **手机号框是可编辑的**，不是只读掩码（`/auth/me` 根本不给号）。出路靠把
+>    `challenge_phone_mismatch` 映射成一句人话，M4 钉住它。
+> 2. **402 的落点不在 `ReportsPage`，在 `src/features/report/useReportTasks.ts` 的 `errorMessage()`**；
+>    而它能读到 `detail` 的前提是 `src/api/reportApi.ts` 先把 `status`/`detail` 挂上去。
+>    **判据分两层**（M6 钉前一层、M7/M8 钉后一层）—— 只写后一层的话，前一层坏掉时它照样绿，
+>    那正是 Task 16 的 M6 那条。**这次 M6 一开始就是红的。**
+>
+> **Step 5 变异矩阵：8 条，全红。**
+>
+> | # | 变异 | 结果 |
+> |---|---|---|
+> | M1 | purpose 写死 `'bind'` | RED |
+> | M2 | 未绑号那一支拿掉（让他填完整张表再被拒） | RED |
+> | M3 | 成功文案删掉 90 天那句 | RED |
+> | M4 | `challenge_phone_mismatch` 的映射拿掉 | RED |
+> | M5 | `requireConsent` 判断拿掉（set_password 也卡同意） | RED |
+> | M6 | `reportApi` 不再挂 `detail` | RED ← 两层判据的前一层 |
+> | M7 | `useReportTasks` 的 402 分支拿掉 | RED |
+> | M8 | 402 里 `free_weekly_blocked` 那一支拿掉（两种合成一句） | RED |
+>
+> **Step 6**：新键 **9 个**（不是计划说的 3 个），`Total entries updated: 99` = 9 × 11，
+> 11 本 `.po` 删除行数 **0**，新增唯一 msgid 恰好 9 个。
+> 闸没有新写第五份 —— 并进 Task 16 抽出来的 `i18nKeys.guard.test.ts`，现在是
+> **50 键 / 8 文件 / 两条闸**。
+>
+> **Step 7**：三个构建**全退 0**（`api/reportApi.ts` 与 `features/report/` 都在共享领土）。
+> 全量前端单测 **1775 passed / 7 skipped**（T16 收尾是 1762 / 7 ⇒ 增量 13 条），失败集合仍为空集。
+> pytest：`test_stellabox_branding`（读 `PRODUCT_FILES`，含本轮改过的 `GalaxySidebar.tsx`）那两条通过，
+> 另一条仍是 develop 起就有的既有红；`test_phone_auth / test_phone_endpoints / test_billing_api` 全过（42 passed）。
+>
+> **交回 Fan / 留给 T18 的**：
+> - 改密码成功后**不关窗**，先把「最长 90 天」那句显示出来 —— 这是后端 docstring 点名要求的，
+>   不是客套话。T18 走浏览器时要看见它。
+> - `ReportsPage:242/:267/:300` 三处自己的 catch 仍然对**任何**失败原样显示裸报错串
+>   （不只 402）。既有状态，本 Task 没修，记在这里。
 **Files:**
 - Modify: `katrain/web/ui/src/galaxy/components/auth/BindPhoneDialog.tsx`（加 `purpose` 参数，复用同一个壳）
 - Modify: `katrain/web/ui/src/galaxy/components/layout/GalaxySidebar.tsx`（设置菜单加一项）

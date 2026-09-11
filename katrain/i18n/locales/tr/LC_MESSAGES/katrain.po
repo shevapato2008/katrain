@@ -3608,3 +3608,38 @@ msgid "live:comment_requires_phone"
 msgstr ""
 "Yorum yapmak için önce cep telefonu numarası bağlamalısınız. Sol alttaki "
 "«Ayarlar → Cep telefonu numarası bağla» bölümünü açın."
+
+msgid "auth:set_password"
+msgstr "Parolayı değiştir"
+
+msgid "auth:set_password_btn"
+msgstr "Değiştir"
+
+msgid "auth:new_password"
+msgstr "Yeni parola"
+
+msgid "auth:err_new_password_required"
+msgstr "Lütfen yeni bir parola girin"
+
+msgid "auth:set_password_other_devices"
+msgstr ""
+"Parolanız değiştirildi. Zaten oturum açmış cihazlar çıkış yapmaz ve en fazla"
+" 90 gün boyunca açık kalabilir."
+
+msgid "auth:set_password_needs_phone"
+msgstr ""
+"Parolanızı değiştirmek için önce bir cep telefonu numarası bağlamalısınız. "
+"«Ayarlar → Cep telefonu numarası bağla» bölümünden bağlayıp geri dönün."
+
+msgid "auth:err_challenge_phone_mismatch"
+msgstr ""
+"Kod, bu hesaba bağlı olmayan bir numaraya gönderildi. Lütfen bağladığınız "
+"numarayı girin."
+
+msgid "report:err_402_phone"
+msgstr ""
+"Her hafta bir ücretsiz standart analiz için cep telefonu numaranızı "
+"bağlayın. Sol alttaki «Ayarlar → Cep telefonu numarası bağla»."
+
+msgid "report:err_402_credits"
+msgstr "Bakiye yetersiz. Lütfen önce yükleme yapın."

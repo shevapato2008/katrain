@@ -7,6 +7,7 @@ import {
   type ReportType,
 } from '../../api/reportApi';
 import { useTranslation } from '../../hooks/useTranslation';
+import { i18n } from '../../i18n';
 import {
   buildReportStatesByGame,
   createOptimisticReportTask,
@@ -38,6 +39,17 @@ export interface UseReportTasksResult {
 }
 
 function errorMessage(error: unknown, fallback: string): string {
+  /* 402 有两种，用户该做的事完全不同：没绑手机 → 去绑（一步就有免费额度）；
+     真没钱 → 去充值。合成一句「余额不足」是把前者的出路藏起来。
+     `detail` 由 api/reportApi.ts 在 !response.ok 那里挂上来。
+     注：`/retry` 的 402 **有意不带** `free_weekly_blocked`（reports.py:365 明写
+     「这个键只加在这里，不加到 /retry」）⇒ 那里落到「余额不足」那一支，正好是对的。 */
+  const e = error as { status?: number; detail?: { free_weekly_blocked?: string | null } } | null;
+  if (e?.status === 402) {
+    return e.detail?.free_weekly_blocked === 'phone_unbound'
+      ? i18n.t('report:err_402_phone', '绑定手机号可每周免费复盘一局。到左下角「设置 → 绑定手机号」。')
+      : i18n.t('report:err_402_credits', '余额不足，请先充值。');
+  }
   return error instanceof Error ? error.message : fallback;
 }
 

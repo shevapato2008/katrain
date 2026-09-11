@@ -3425,3 +3425,38 @@ msgid "live:comment_requires_phone"
 msgstr ""
 "Para comentar necesitas vincular un número de móvil. Abre «Ajustes → "
 "Vincular número de móvil» abajo a la izquierda."
+
+msgid "auth:set_password"
+msgstr "Cambiar contraseña"
+
+msgid "auth:set_password_btn"
+msgstr "Confirmar cambio"
+
+msgid "auth:new_password"
+msgstr "Nueva contraseña"
+
+msgid "auth:err_new_password_required"
+msgstr "Introduce una nueva contraseña"
+
+msgid "auth:set_password_other_devices"
+msgstr ""
+"Se ha cambiado tu contraseña. Los dispositivos que ya iniciaron sesión no se"
+" cierran y pueden seguir así hasta 90 días."
+
+msgid "auth:set_password_needs_phone"
+msgstr ""
+"Para cambiar la contraseña primero debes vincular un número de móvil. Hazlo "
+"en «Ajustes → Vincular número de móvil» y vuelve."
+
+msgid "auth:err_challenge_phone_mismatch"
+msgstr ""
+"El código se envió a un número que no está vinculado a esta cuenta. "
+"Introduce el número que vinculaste."
+
+msgid "report:err_402_phone"
+msgstr ""
+"Vincula un número de móvil para un análisis estándar gratuito cada semana. "
+"Ve a «Ajustes → Vincular número de móvil» abajo a la izquierda."
+
+msgid "report:err_402_credits"
+msgstr "Saldo insuficiente. Recarga primero."

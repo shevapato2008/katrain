@@ -3596,3 +3596,39 @@ msgid "live:comment_requires_phone"
 msgstr ""
 "Zum Kommentieren müssen Sie eine Mobilnummer verknüpfen. Öffnen Sie unten "
 "links „Einstellungen → Mobilnummer verknüpfen“."
+
+msgid "auth:set_password"
+msgstr "Passwort ändern"
+
+msgid "auth:set_password_btn"
+msgstr "Ändern"
+
+msgid "auth:new_password"
+msgstr "Neues Passwort"
+
+msgid "auth:err_new_password_required"
+msgstr "Bitte geben Sie ein neues Passwort ein"
+
+msgid "auth:set_password_other_devices"
+msgstr ""
+"Ihr Passwort wurde geändert. Bereits angemeldete Geräte werden nicht "
+"abgemeldet und können bis zu 90 Tage angemeldet bleiben."
+
+msgid "auth:set_password_needs_phone"
+msgstr ""
+"Zum Ändern des Passworts müssen Sie zuerst eine Mobilnummer verknüpfen. Tun "
+"Sie das unter „Einstellungen → Mobilnummer verknüpfen“ und kommen Sie "
+"zurück."
+
+msgid "auth:err_challenge_phone_mismatch"
+msgstr ""
+"Der Code wurde an eine Nummer gesendet, die nicht mit diesem Konto verknüpft"
+" ist. Bitte geben Sie Ihre verknüpfte Nummer ein."
+
+msgid "report:err_402_phone"
+msgstr ""
+"Verknüpfen Sie eine Mobilnummer für eine kostenlose Standard-Analyse pro "
+"Woche. Unten links unter „Einstellungen → Mobilnummer verknüpfen“."
+
+msgid "report:err_402_credits"
+msgstr "Nicht genügend Guthaben. Bitte zuerst aufladen."

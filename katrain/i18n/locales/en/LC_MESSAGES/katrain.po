@@ -3548,3 +3548,38 @@ msgid "live:comment_requires_phone"
 msgstr ""
 "You need to link a mobile number before posting comments. Open Settings → "
 "Link mobile number in the bottom-left corner."
+
+msgid "auth:set_password"
+msgstr "Change password"
+
+msgid "auth:set_password_btn"
+msgstr "Change password"
+
+msgid "auth:new_password"
+msgstr "New password"
+
+msgid "auth:err_new_password_required"
+msgstr "Please enter a new password"
+
+msgid "auth:set_password_other_devices"
+msgstr ""
+"Your password has been changed. Devices already signed in are not signed "
+"out, and may stay signed in for up to 90 days."
+
+msgid "auth:set_password_needs_phone"
+msgstr ""
+"You need to link a mobile number before changing your password. Link one "
+"under Settings → Link mobile number, then come back."
+
+msgid "auth:err_challenge_phone_mismatch"
+msgstr ""
+"The code was sent to a number that is not the one linked to this account. "
+"Please enter the number you linked."
+
+msgid "report:err_402_phone"
+msgstr ""
+"Link a mobile number to get one free standard review each week. Go to "
+"Settings → Link mobile number in the bottom-left corner."
+
+msgid "report:err_402_credits"
+msgstr "Not enough credits. Please top up first."

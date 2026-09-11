@@ -22,7 +22,7 @@ import { describe, it, expect } from 'vitest';
    本轨道在这一个坑上已经栽过三次（T14 实际踩到，T15/T16 的计划原稿各写了一遍）。 */
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-/** 闸的操作数在哪它就住哪：这七个文件是本轨道写下新文案键的全部落点。 */
+/** 闸的操作数在哪它就住哪：这八个文件是本轨道写下新文案键的全部落点。 */
 const SOURCES = [
   '../LoginModal.tsx',
   '../CountryCodeSelect.tsx',
@@ -31,6 +31,7 @@ const SOURCES = [
   '../../billing/FreeQuotaNotice.tsx',
   '../../layout/GalaxySidebar.tsx',
   '../../../hooks/live/useComments.ts',
+  '../../../../features/report/useReportTasks.ts',
 ];
 
 const NEW_KEYS = [
@@ -59,6 +60,11 @@ const NEW_KEYS = [
   'report:free_quota_phone_required', 'report:free_quota_remaining_prefix',
   'report:free_quota_remaining_suffix', 'report:free_quota_used_up',
   'report:free_quota_unavailable', 'live:comment_requires_phone',
+  // Task 17 的改密码入口与 402 分支（9）
+  'auth:set_password', 'auth:set_password_btn', 'auth:new_password',
+  'auth:err_new_password_required', 'auth:set_password_other_devices',
+  'auth:set_password_needs_phone', 'auth:err_challenge_phone_mismatch',
+  'report:err_402_phone', 'report:err_402_credits',
 ];
 
 describe('本轨道新增文案键', () => {

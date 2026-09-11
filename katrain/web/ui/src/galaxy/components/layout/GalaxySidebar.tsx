@@ -19,6 +19,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
+import KeyIcon from '@mui/icons-material/Key';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import LanguageIcon from '@mui/icons-material/Language';
@@ -46,6 +47,7 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
   const [loginOpen, setLoginOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<HTMLElement | null>(null);
   const [bindOpen, setBindOpen] = useState(false);
+  const [setPwOpen, setSetPwOpen] = useState(false);
 
   const navigate = (path: string) => {
     if (overlay) closeOverlay();
@@ -121,6 +123,15 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
               <ListItemText primary={t('auth:bind_phone', '绑定手机号')} />
             </MenuItem>
           )}
+          {user && (
+            <MenuItem
+              onClick={() => { setSetPwOpen(true); setSettingsAnchorEl(null); }}
+              sx={{ minWidth: 160, display: 'flex', gap: 1 }}
+            >
+              <KeyIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+              <ListItemText primary={t('auth:set_password', '修改密码')} />
+            </MenuItem>
+          )}
           {/* 已绑号只报状态，不给「换绑 / 解绑」—— 本轮没做那条路径，
               而 Task 11 的额度短路（不给未绑号建 allowance=0 的桶）正是以「不存在解绑」为前提的。 */}
           {user && user.phone_bound && (
@@ -146,6 +157,8 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
       </Box>
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
       <BindPhoneDialog open={bindOpen} onClose={() => setBindOpen(false)} />
+      {/* 同一个壳，只换 purpose —— 改密码的前四步与绑定一模一样。 */}
+      <BindPhoneDialog open={setPwOpen} purpose="set_password" onClose={() => setSetPwOpen(false)} />
     </Box>
   );
 };

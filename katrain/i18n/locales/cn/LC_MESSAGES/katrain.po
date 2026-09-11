@@ -3316,3 +3316,30 @@ msgstr "免费额度信息暂时取不到"
 
 msgid "live:comment_requires_phone"
 msgstr "发表评论需要先绑定手机号。请在左下角「设置 → 绑定手机号」完成绑定。"
+
+msgid "auth:set_password"
+msgstr "修改密码"
+
+msgid "auth:set_password_btn"
+msgstr "确认修改"
+
+msgid "auth:new_password"
+msgstr "新密码"
+
+msgid "auth:err_new_password_required"
+msgstr "请填写新密码"
+
+msgid "auth:set_password_other_devices"
+msgstr "密码已经改好了。已经登录的设备不会被强制退出，最长 90 天内仍可继续使用。"
+
+msgid "auth:set_password_needs_phone"
+msgstr "修改密码需要先绑定手机号。请先在「设置 → 绑定手机号」完成绑定，再回来改密码。"
+
+msgid "auth:err_challenge_phone_mismatch"
+msgstr "验证码发到的号码不是这个账号绑定的手机号。请填写你绑定过的那个号。"
+
+msgid "report:err_402_phone"
+msgstr "绑定手机号可每周免费复盘一局。到左下角「设置 → 绑定手机号」。"
+
+msgid "report:err_402_credits"
+msgstr "余额不足，请先充值。"

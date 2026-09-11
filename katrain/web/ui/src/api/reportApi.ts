@@ -76,7 +76,16 @@ async function authFetch<T>(path: string, token: string, options?: RequestInit):
   });
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Request failed ${response.status}: ${body}`);
+    /* 报错串保持**原样**（reportApi.test.ts:118 正按文本断言），另挂两格结构化字段。
+       402 有两种、用户该做的事完全不同（没绑手机 vs 真没钱），而分辨它们的
+       `detail.free_weekly_blocked` 只写在 body 里 —— 不挂上来，上层就只能拿正则去啃这串 JSON，
+       或者干脆把两种合成一句「余额不足」，把「去绑手机」这条出路藏起来。 */
+    const err = new Error(`Request failed ${response.status}: ${body}`) as Error & {
+      status?: number; detail?: { code?: string; free_weekly_blocked?: string | null };
+    };
+    err.status = response.status;
+    try { err.detail = JSON.parse(body)?.detail; } catch { /* 非 JSON 响应（网关 502 之类） */ }
+    throw err;
   }
   return response.json();
 }

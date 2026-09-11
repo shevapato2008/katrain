@@ -3503,3 +3503,38 @@ msgid "live:comment_requires_phone"
 msgstr ""
 "Чтобы оставлять комментарии, привяжите номер телефона. Откройте «Настройки →"
 " Привязать номер телефона» внизу слева."
+
+msgid "auth:set_password"
+msgstr "Изменить пароль"
+
+msgid "auth:set_password_btn"
+msgstr "Подтвердить"
+
+msgid "auth:new_password"
+msgstr "Новый пароль"
+
+msgid "auth:err_new_password_required"
+msgstr "Введите новый пароль"
+
+msgid "auth:set_password_other_devices"
+msgstr ""
+"Пароль изменён. Уже вошедшие устройства не выходят из аккаунта и могут "
+"оставаться в нём до 90 дней."
+
+msgid "auth:set_password_needs_phone"
+msgstr ""
+"Чтобы изменить пароль, сначала привяжите номер телефона в разделе «Настройки"
+" → Привязать номер телефона», затем вернитесь сюда."
+
+msgid "auth:err_challenge_phone_mismatch"
+msgstr ""
+"Код отправлен на номер, не привязанный к этому аккаунту. Введите привязанный"
+" номер."
+
+msgid "report:err_402_phone"
+msgstr ""
+"Привяжите номер телефона, чтобы получать один бесплатный обычный разбор в "
+"неделю. Внизу слева: «Настройки → Привязать номер телефона»."
+
+msgid "report:err_402_credits"
+msgstr "Недостаточно средств. Сначала пополните баланс."

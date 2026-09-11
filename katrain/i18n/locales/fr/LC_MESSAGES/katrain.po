@@ -3569,3 +3569,39 @@ msgid "live:comment_requires_phone"
 msgstr ""
 "Vous devez associer un numéro de mobile pour commenter. Ouvrez « Paramètres "
 "→ Associer un numéro de mobile » en bas à gauche."
+
+msgid "auth:set_password"
+msgstr "Modifier le mot de passe"
+
+msgid "auth:set_password_btn"
+msgstr "Confirmer"
+
+msgid "auth:new_password"
+msgstr "Nouveau mot de passe"
+
+msgid "auth:err_new_password_required"
+msgstr "Veuillez saisir un nouveau mot de passe"
+
+msgid "auth:set_password_other_devices"
+msgstr ""
+"Votre mot de passe a été modifié. Les appareils déjà connectés ne sont pas "
+"déconnectés et peuvent le rester jusqu'à 90 jours."
+
+msgid "auth:set_password_needs_phone"
+msgstr ""
+"Vous devez d'abord associer un numéro de mobile pour modifier votre mot de "
+"passe. Faites-le dans « Paramètres → Associer un numéro de mobile », puis "
+"revenez."
+
+msgid "auth:err_challenge_phone_mismatch"
+msgstr ""
+"Le code a été envoyé à un numéro qui n'est pas associé à ce compte. Veuillez"
+" saisir le numéro que vous avez associé."
+
+msgid "report:err_402_phone"
+msgstr ""
+"Associez un numéro de mobile pour une analyse standard gratuite par semaine."
+" Voir « Paramètres → Associer un numéro de mobile » en bas à gauche."
+
+msgid "report:err_402_credits"
+msgstr "Solde insuffisant. Veuillez d'abord recharger."

@@ -2848,7 +2848,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     #
                     # 读 `phone_bound` **不用 getattr**:这里的 current_user 与 live.py 里
                     # Depends(get_current_user) 拿到的是**同一个** pydantic User(两处都出自
-                    # endpoints/auth.py:125 `return User(**user_dict)`)。那个模型上没有
+                    # endpoints/auth.py:208 `return User(**user_dict)`)。那个模型上没有
                     # `phone_e164`,pydantic v2 默认 extra='ignore' 会把 _to_dict 里的原始号
                     # 静默丢掉 ⇒ 写 getattr(...,"phone_e164") 恒为 None,**所有人(含已绑号)
                     # 都发不了言**。字段有默认值 ⇒ 属性必然存在,缺了应该当场响。

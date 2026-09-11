@@ -2,7 +2,7 @@
 
 闸读 `current_user.phone_bound` —— Task 8 加进 pydantic `User` 与 `_to_dict` 的那个布尔。
 **不读 `phone_e164`、不用 getattr**：WS 的 `current_user` 与 live.py 的
-`Depends(get_current_user)` 是同一个 pydantic `User`（都出自 endpoints/auth.py:125
+`Depends(get_current_user)` 是同一个 pydantic `User`（都出自 endpoints/auth.py:208
 `return User(**user_dict)`），那个模型上没有 `phone_e164`，
 `extra='ignore'` 会把它静默丢掉 ⇒ getattr 恒为 None ⇒ 所有人都发不了言。
 

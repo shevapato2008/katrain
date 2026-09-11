@@ -598,7 +598,7 @@ async def create_comment(
     """
     # 未绑手机不得发言。闸在发言不在注册(网安法二十六条约束的是「提供信息发布服务」,
     # 不是「有账号」)。与 server.py 的对局聊天读**同一个属性**:两处的 current_user
-    # 是同一个 pydantic User(都出自 endpoints/auth.py:125 `return User(**user_dict)`),
+    # 是同一个 pydantic User(都出自 endpoints/auth.py:208 `return User(**user_dict)`),
     # 所以两处都写 `current_user.phone_bound`,**不写 getattr(..., "phone_e164")**
     # —— 那个模型上没有 phone_e164,pydantic v2 的 extra='ignore' 会静默丢掉它,
     # getattr 恒为 None ⇒ 所有人(含已绑号)都发不了言。

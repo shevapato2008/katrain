@@ -8698,6 +8698,50 @@ auth:report_402_credits)同时写进 11 本 .po,否则非中文用户在这两�
 
 ### Task 18: 真浏览器验收 + 基线比对 + 两个构建 + 部署前置
 
+> **⛑ 实跑修正（2026-09-11，执行中实测 —— 本 Task 是验收不是实现，所以修正来自跑的过程本身）**
+> 全部读数见 `superpowers/tracks/phone-login/verification.md`。
+>
+> - **WRONG｜标题说「两个构建」，实际三个。** `build:smartbox-kiosk-2d` 是唯一跑
+>   `verify-kiosk.sh` 严格 localStorage-token dist 扫描的那一档，漏掉它等于那条闸从没验过。
+>   三个实测退出码都是 0。另：`${PIPESTATUS[0]}` 在 zsh 下恒为空，不能当退出码证据。
+> - **WRONG｜`$B js` / `$B eval` 都不 await promise。** V1/V3/V4/V5/V6 里所有
+>   `await new Promise(r=>setTimeout(r,1200)); …` 写法**静默返回空**，命令看着跑过了、
+>   实际什么都没断言到。改法：结果挂 `window.__x`，再 until 轮询 `window.__x!==undefined`。
+> - **WRONG｜「点按钮一律用 `$B js` … `.click()`」不成立。** `$B goto` 之后 React 还没
+>   hydrate 就点会静默无效；掀掉 disabled 的 MUI 按钮 `.click()` 也不触发 handler。
+>   保住本意（不绑别人的类名）的改法：`$B js` 按文案找 → 打 `data-acc` 标记 → `$B click` 真点，
+>   并在 goto 后先 `waitfor` hydrate。
+> - **WRONG（假绿判据）｜V3 的 `grep -Ec '等待|[0-9]+ ?秒'`** 会被**倒计时按钮**
+>   「38 秒后可重发」命中。实测第一次尝试里错误压根没出现（屏上还挂着上次的成功提示），
+>   那条 grep 照样返回 1。判据必须落在错误文案「发送太频繁」上。典型的「闸量错了对象」。
+> - **WRONG｜V3 的触发路径。** 计划说「手工掀掉按钮 `disabled` 就能逼后端走 429」。实测
+>   `handleSendCode` **本来就没有**前端冷却短路（它总是发请求），真正挡住的是按钮 disabled；
+>   而掀掉之后 `.click()` 仍不触发 handler。走得通**且是真实用户会走**的那条路是
+>   「切回密码模式再切回验证码模式」——`switchTo` → `resetTransient` 把 cooldown 清零，
+>   后端 60 秒冷却仍在，一点就是真 429。
+> - **WRONG｜V5 的 grep 路径过期。** 是 `galaxy/components/game/ChatPanel.tsx`，
+>   不是 `components/game/ChatPanel.tsx`。三条 grep 修正后全部零命中，结论不变。
+> - **WRONG（量错盒子的第二种形状）｜Step 6。** 计划警告「量 `.MuiDialogContent-root`
+>   不要量 `[role=dialog]`」是对的，但漏了：**900–1199 档侧栏是 MUI Drawer，自己也带
+>   `role=dialog`** ⇒ DOM 里有两个，`querySelector` 抓到的是侧栏，脚本一路返回 `NOT_OPEN`
+>   而不是报错。判据要改成「含 `.MuiDialogContent-root` 的那个」。
+> - **WRONG｜Step 6 的换档写法。** `$B viewport` 会重置页面、对话框当场消失，不能
+>   「开框之后再缩视口」；要先设视口再开框。而且 **430 宽下根本没有登录入口**
+>   （`MainLayout.tsx:21` 宽度 <900 时 `GalaxySidebar` 整个不挂）。真能量的是 ≥1200
+>   的 docked 档配短高度：1280x420 下四条关系式同时成立。
+> - **NEW｜必须 `PYTHONUNBUFFERED=1`。** `ConsoleProvider.send` 用 `print`（`sms.py:61`），
+>   重定向到文件时块缓冲，V2/V4/V6 取不到码。
+> - **NEW｜`KATRAIN_DATABASE_URL` 不是可选项。** 本机默认走 PostgreSQL（`config.py:207`）。
+> - **NEW｜没有 uvicorn 访问日志**（`--log-level info` 也没有）⇒「请求打没打出去」只能用
+>   `$B network | grep -c` 数，grep 服务端日志恒 0、会得出「前端根本没发请求」的错误结论。
+> - **CONFIRMED**：`/quota` 的两组取值、`phone_bound` 进 pydantic `User`、日志掩码、
+>   `PRIVACY_TITLE`、侧栏入口在「设置」<Menu> 里要先展开、cron 不吃这条闸、
+>   Task 5 落的 compose 那一行与 `config.py` 的读取字面量。
+> - **CONFIRMED（但是坏消息）**：两台线上机器 `KATRAIN_SMS_PROVIDER` **都是空**，
+>   且两台的 `config_files` 都是**逗号分隔的两份**；生产容器名是
+>   `katrain-ucloud-katrain-web-1` 不是 `katrain-web`，compose 路径是 release 钉死的
+>   `/opt/katrain/releases/29aa20f7/deploy/ucloud/`。
+
 **Files:**
 - Create: `tests/web_ui/test_compose_declares_sms_provider.py`
 - Create: `superpowers/tracks/phone-login/verification.md`
@@ -8728,7 +8772,7 @@ auth:report_402_credits)同时写进 11 本 .po,否则非中文用户在这两�
 为空的服务端**拒绝启动**，而这个变量今天在两台线上机器上都没设。Step 8–10 不是收尾装饰，
 是这条分支能不能合的前置条件。
 
-- [ ] **Step 1: 先跑 Task 11 主动改动的那三条，确认它们的新状态是绿的**
+- [x] **Step 1: 先跑 Task 11 主动改动的那三条，确认它们的新状态是绿的**
 
 Task 11 把 `free_weekly` 的形状和「未绑号不走免费分支」落地之后，会**主动弄红三条今天绿的
 测试**（review-findings [50] 点名）。这三条必须由 Task 11 自己改好；在基线比对之前先单独跑一遍，
@@ -8750,7 +8794,7 @@ Expected: PASS（3 条）。
 `test_report_charging.py` 那两条的 `app_with_game` / `_make_user` 夹具要给用户绑上号
 （它们建用户走的是 `SQLAlchemyUserRepository`，`phone_e164` 是 NULL，不绑号就走不到免费分支）。
 
-- [ ] **Step 2: 全量 pytest 与分支基线比对**
+- [x] **Step 2: 全量 pytest 与分支基线比对**
 
 ```bash
 cd /Users/fan/Repositories/katrain-phone-login
@@ -8785,7 +8829,7 @@ Expected: `KATRAIN_SMS_PROVIDER` 命中，且注入方式是 `os.environ.setdefa
 `importlib.reload(config)`，打在旧实例上的补丁 reload 之后就没了）；
 `KATRAIN_SMS_ALLOW_CONSOLE` 在 `tests/conftest.py` 里**零命中**（pytest 进程不需要、也不该有这个开关）。
 
-- [ ] **Step 3: 两个前端构建 + 全量 vitest**
+- [x] **Step 3: 两个前端构建 + 全量 vitest**
 
 ```bash
 cd /Users/fan/Repositories/katrain-phone-login/katrain/web/ui
@@ -8804,7 +8848,7 @@ vitest 红了：前端没有基线文件，所以判据取保守的那一侧 —
 红的那条只要 import 链上有其中任何一个（`api.ts` / `AuthContext.tsx` 尤其要当心，
 半个前端都 import 它们），就当作**本轮造成的**，不许推给既有噪声。
 
-- [ ] **Step 4: 起本地验收服务**
+- [x] **Step 4: 起本地验收服务**
 
 `KATRAIN_SMS_PROVIDER` 现在**不能只填 `console`**：Task 5 的闸在 `server` 模式下拒绝裸 console
 （否则验证码会印进生产日志，谁能读日志谁就能登任何人的账号）。两条路只有一条能走：
@@ -8880,7 +8924,7 @@ Expected: 两条都返回 JSON user 对象，且**各含 `"phone_bound": false`*
 若 Step 5 的 V5 里 `POST /api/session` 返 503，去掉 `--disable-engine` 重起一次
 （本机不需要真 KataGo，会话建得起来就够）。
 
-- [ ] **Step 5: 真浏览器逐项走**
+- [x] **Step 5: 真浏览器逐项走**
 
 用 gstack 的 `/browse`（项目规定：所有网页浏览走它，不用 `mcp__claude-in-chrome__*`）。
 
@@ -9062,7 +9106,7 @@ Expected: `HREF` 不是 `NONE`；`智星盒隐私策略`（`src/legal/privacy.ts
 （`AppRouter.tsx` 的 `/*` → `ZenModeApp`），只 grep `href="/privacy"` 会被自己刚写的那行命中、恒绿。
 第二条 grep 守的是「政策正文里真的写了收手机号」—— 仓里那份 4.3KB 正文原本一个字没提手机号。
 
-- [ ] **Step 6: 承重实测**（登录框长高了 —— 这条链变了）
+- [x] **Step 6: 承重实测**（登录框长高了 —— 这条链变了）
 
 ```bash
 cat > /tmp/phone-acc/loadbearing.js <<'JS'
@@ -9112,7 +9156,7 @@ Expected（在 `overflows === true` 的那一档上，四条同时成立）：
 Paper 拿 `max-height: calc(100% - 64px)` 且 `display:flex`，`overflow-y:auto` 挂在 DialogContent 上。
 量错盒子的话 Paper 的 `scrollHeight === clientHeight` 恒成立，这一关会静默报绿。
 
-- [ ] **Step 7: 停服务并还原**
+- [x] **Step 7: 停服务并还原**
 
 ```bash
 kill "$(cat /tmp/phone-acc/server.pid)" 2>/dev/null || true
@@ -9126,7 +9170,7 @@ Expected: `git status` 里**没有** `~/.katrain/config.json` 之外的意外改
 若出现 `katrain/config.json`（跑 pytest 会改写仓里这份）或 `engine_game_state.json`（F12），
 `git checkout -- <该文件>` 还原，**不要 add**。
 
-- [ ] **Step 8: 部署前置 —— 断言 Task 5 落的那一行确实在**
+- [x] **Step 8: 部署前置 —— 断言 Task 5 落的那一行确实在**
 
 Task 5 的 fail-fast 让 `KATRAIN_SMS_PROVIDER` 为空的服务端**拒绝启动**，而这个变量今天两台线上
 机器都没设。仓库根的 `docker-compose.yml` 是**测试机那半**的操作数，闸就建在这里。
@@ -9192,7 +9236,7 @@ Expected: **PASS（3 条）**。Task 5 已经把这一行加进了 `docker-compo
 `config.py` 也已经在读它 —— 这里不是 TDD 的红灯步骤，是确认性断言。
 三条里有任何一条红，回 Task 5 核对它实际落的内容，不要在这里改断言迁就。
 
-- [ ] **Step 9: 变异验证 —— 证明这三条测试真的守得住**
+- [x] **Step 9: 变异验证 —— 证明这三条测试真的守得住**
 
 **不新增任何 env 行**（那一行是 Task 5 落的，本 Task 只验证它、不重复加）。
 Step 8 的断言只证明「今天是对的」，没有变异验证的话它可能是一条恒真式 ——
@@ -9265,7 +9309,7 @@ Expected: 日志里没有 `RuntimeError`、`Application startup complete`；
 **这一步的输出是两条实测回显（两台各一条 `SMS=[aliyun]`），贴进 `verification.md`。
 拿不到这两条 ⇒ 这条分支不许合。**
 
-- [ ] **Step 11: 把证据写进 track**
+- [x] **Step 11: 把证据写进 track**
 
 新建 `superpowers/tracks/phone-login/verification.md`，逐项记：Step 5 的 V1–V7（每项一段命令回显
 或截图）、Step 6 的四条关系式与当时的像素读数、Step 10 的两条 `SMS=[aliyun]` 回显。
@@ -9382,6 +9426,22 @@ Expected: 提交里**只有这两个文件**（`docker-compose.yml` 不在其中
     空凭据即可起来，发码会 502，这是诚实的不可用）。顺序照既定规矩：先测试环境再生产。
 16. **`SMS_DAILY_CAP_INTL` 定为 50**（此前 requirements §3 D-U4 表里标着"⚠️ 待核 100"，
     现作废）。取低的那个，理由是国际号是最贵的攻击面，封顶要比国内低一个量级而不是低三成。
+18. **⚠️ 手机宽度下绑不了号、改不了密码（Task 18 实测发现，2026-09-11）。**
+    `MainLayout.tsx:21/44`：宽度 < 900px 时 `GalaxySidebar` **整个不挂**，改挂 `GalaxyBottomNav`；
+    而 Task 16 的「绑定手机号」与 Task 17 的「修改密码」两个入口**都在 `GalaxySidebar` 的设置菜单里**。
+    实测 430 宽下「更多」里只有直播/棋谱库/教程。两半要分开看：登录入口在 mobile 档缺席是
+    **既有的**（`develop` 上 `LoginModal` 就挂在 `GalaxySidebar`，本轮没碰那三个布局文件），
+    但**这两个新入口是本轮加的** ⇒ 本轮新做的功能在手机上不可达。
+    同时它让 V4 的引导文案在手机上落空：屏上说「到左下角「设置 → 绑定手机号」」，
+    而手机宽度下左下角没有那个菜单。**补不补、怎么补（挪进 BottomNav 的「更多」/ 顶栏头像菜单）
+    是产品决定，交回 Fan。**
+
+19. **部署前置的实测回显（Task 18 Step 10，只读探测，2026-09-11）：两台都是 `SMS=[]`。**
+    详见 `verification.md` 第 5 节的表。合并前必须两台各配 `KATRAIN_SMS_PROVIDER=aliyun`
+    并回显 `SMS=[aliyun]`。三条操作要点：`config_files` 两台都是**逗号分隔两份**，
+    `docker compose` 每份各给一个 `-f`；生产容器名是 `katrain-ucloud-katrain-web-1`；
+    **不许加 `--remove-orphans`**。cron 两台都不吃这条闸，不用配。
+
 17. **`sms_challenges` 的建表与 `users` 两列的迁移只在 SQLite 上验证过。** 生产是
     PostgreSQL，本机没有 PG 实例，所以"PG 上 `ALTER TABLE ADD COLUMN` 不带 UNIQUE、
     `CREATE UNIQUE INDEX` 保留唯一性"这一条只能在 PG 上证。部署到 home-ubuntu 测试

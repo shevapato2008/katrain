@@ -274,6 +274,35 @@ export class ApiError extends Error {
   }
 }
 
+// 手机验证码四个端点的错误。**继承 ApiError，不另起炉灶** —— 后端把失败原因放在
+// `detail.code` 里（"sms_cooldown" / "phone_taken" / "challenge_expired" …），
+// ApiError 只装得下 status，所以需要多两格；但如果为此新写一个不继承 ApiError 的类，
+// 所有按 `err instanceof ApiError` 分流的消费者对它整个不认。
+// 本仓已经这样踩过一次并留了用例钉着：galaxy/pages/AiSetupPage.test.tsx:747
+// 「AiLadderApiError 不是 ApiError 的子类」⇒ 登录引导那一支成死代码，屏上退回裸报文。
+export class PhoneApiError extends ApiError {
+  /** 后端 detail.code；detail 不是对象时（401 是字符串、422 是数组）为 undefined。 */
+  code?: string;
+  /** 仅 sms_cooldown 带数字；其余限流码后端给的是 null ⇒ 这里是 undefined。 */
+  retryAfterSec?: number;
+  constructor(status: number, message: string, code?: string, retryAfterSec?: number) {
+    super(status, message);
+    this.name = "PhoneApiError";
+    this.code = code;
+    this.retryAfterSec = retryAfterSec;
+  }
+}
+
+export interface SendCodeResponse {
+  challenge_id: string;
+  /** 冷却**时长**常量（后端 SMS_COOLDOWN_SEC，默认 60），不是剩余秒数。 */
+  cooldown_sec: number;
+}
+/** 注意：它比 /auth/login 少一个 refresh_token —— 手机登录拿到的是纯 Bearer 会话。 */
+export interface PhoneLoginResponse { access_token: string; token_type: string }
+/** 只在 bind 成功那一次出现；/auth/me 永远不给手机号，刷新后只剩 phone_bound 布尔。 */
+export interface BindPhoneResponse { phone_masked: string }
+
 /* 严格盒端 SSO（kiosk 构建 + VITE_BOX_SSO_STRICT）那一档故意不持有 token，
    鉴权只走 HttpOnly 的 sb_go_token cookie，这里绝不能自己造 Bearer 头。 */
 const isStrictBoxKiosk = __KIOSK_2D_ONLY__ && import.meta.env.VITE_BOX_SSO_STRICT === 'true';
@@ -474,6 +503,74 @@ export const API = {
     }
     return response.json();
   },
+
+  /** 手机相关端点共用的 POST。
+   *
+   *  后端的失败码要**原样带到 UI** —— 吞成通用错误的话用户看到「操作失败」，
+   *  而我们已经知道是「还需等待 42 秒」或「这个号还没绑过账号」。
+   *
+   *  `auth` 只对 bind / set-password 为 true：send-code 与 phone/login 是**不鉴权**端点，
+   *  给它们递 token 没有用处，只是多一个外泄面。
+   *
+   *  鉴权头走本文件 :297 那个模块级 `authHeaders()`，**不要另写一个**：
+   *  :298 那句 `if (isStrictBoxKiosk) return {}` 是严格盒端「绝不能自己造 Bearer 头」
+   *  的唯一落点，复制一份等于在共享领土里把这条规矩绕过去。
+   */
+  _phonePost: async (path: string, body: Record<string, unknown>, auth = false): Promise<any> => {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(auth ? authHeaders() : {}) },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      let detail: { code?: string; message?: string; retry_after_sec?: number } = {};
+      try {
+        const parsed = await response.json();
+        // **detail 并非一律是对象**（本轮实测）：401 给的是字符串 "Not authenticated"
+        // （endpoints/auth.py:214-218 与 :190-194），422 给的是 pydantic 的数组
+        // [{loc,msg,type}]（FastAPI 默认形状，全仓没有 handler 改它）。
+        // 所以这三项合起来是标准的「是不是普通对象」判断，下面才敢读 .code/.message。
+        //
+        // ⚠️ **诚实交代**：`!Array.isArray` 这一项今天**没有行为差异**，也没有测试守着 ——
+        // 变异实测（去掉它，两档 14 条用例全绿）证明了这一点：数组的 .code/.message/
+        // .retry_after_sec 本来就都是 undefined，收下它和收下 {} 的结果一样。
+        // 留着它是因为这三项是这个判断的惯用写法，少一项会让下一个读的人以为是漏写。
+        // 真正承重的是 typeof/null 那两项 —— 401 的**字符串**如果被收下，
+        // `detail.message` 会是 undefined 但 `err.code` 仍是 undefined，同样无害；
+        // 会出事的是有人把 `parsed.detail` 整个赋给 code（那条由本行下方的用例钉着）。
+        if (parsed && typeof parsed.detail === "object" && parsed.detail !== null
+            && !Array.isArray(parsed.detail)) {
+          detail = parsed.detail;
+        }
+      } catch { /* 非 JSON 响应（网关 502 之类），detail 保持空 */ }
+      // 兜底文案保持本文件既有的英文形状（`<动作> failed <status>`）：api.ts:266-267
+      // 写明这里的 message 文本是被测试按文本断言钉着的承重物。
+      // detail.message 是后端给用户看的中文，有就用它。
+      throw new PhoneApiError(
+        response.status,
+        detail.message || `Request failed ${response.status}`,
+        detail.code,
+        // 后端「字段恒在，没有理由时为 null」⇒ 这里统一成 undefined，
+        // 免得调用方把 null 塞进倒计时。
+        detail.retry_after_sec ?? undefined,
+      );
+    }
+    return response.json();
+  },
+
+  sendPhoneCode: (phone: string, purpose: 'login' | 'bind' | 'set_password'): Promise<SendCodeResponse> =>
+    API._phonePost("/api/v1/auth/phone/send-code", { phone, purpose }),
+
+  loginByPhone: (challengeId: string, code: string): Promise<PhoneLoginResponse> =>
+    API._phonePost("/api/v1/auth/phone/login", { challenge_id: challengeId, code }),
+
+  bindPhone: (challengeId: string, code: string): Promise<BindPhoneResponse> =>
+    API._phonePost("/api/v1/auth/phone/bind", { challenge_id: challengeId, code }, true),
+
+  // purpose 是 `set_password`（下划线），URL 是 `/auth/set-password`（连字符）—— 后端就是这么定的。
+  setPassword: (challengeId: string, code: string, newPassword: string): Promise<void> =>
+    API._phonePost("/api/v1/auth/set-password",
+      { challenge_id: challengeId, code, new_password: newPassword }, true),
   getMe: async (token: string): Promise<any> => {
     const response = await fetch("/api/v1/auth/me", {
       headers: { "Authorization": `Bearer ${token}` },

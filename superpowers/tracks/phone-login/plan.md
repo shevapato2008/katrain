@@ -5415,6 +5415,71 @@ Claude-Session: https://claude.ai/code/session_01GGNBSL4QhRA2vCDcZL83oF"
 
 ### Task 13: 前端 API 与 AuthContext（共享领土）
 
+⚠️ **2026-09-11 实跑修正（五条承重断言过期/错误，其中两条改变了实现）。**
+
+| 计划说 | 实际 | 后果 |
+|---|---|---|
+| 本 worktree 没有 `node_modules`，先 `npm ci` | **存在**（266 项，vitest 4.1.8，mtime 09-07） | 照做会白删重装，且这台机器装包会中途停死 |
+| 失败一律 `{"detail": {...}}` 对象 | **401 的 detail 是字符串**（`endpoints/auth.py:214-218`、`:190-194`）、**422 是数组**（pydantic 默认，全仓无 handler 改） | 只判 `typeof === "object"` 会把数组收下；实现里补了 `!Array.isArray`（但见下方诚实交代） |
+| `AuthContext.login` 在 `:88-124`，「要点两次」注释在 `:105-108` | 实际 `:91-127` / `:109-112` | 按行号打补丁会插进 bootstrap 的清理函数里 |
+| 门控照抄 `AuthContext.test.tsx:41-47` | 实际 `:42-48`，而且是**四档**（`strictKioskIt`/`legacyKioskIt`/`nonStrictIt`/`galaxyIt`） | 抄 41-47 会切掉 `galaxyIt` 并把注释当成第一行 |
+| （隐含）新错误形状与既有一致 | api.ts 有**两种**形状：`ApiError`（2 处）与裸 `Error`（22 处） | 见下 |
+
+**实现相对计划的三处改动，每条都有依据：**
+
+1. **抛 `PhoneApiError extends ApiError`，不抛裸 Error。** 计划写的裸 Error（挂 code/retryAfterSec/status）
+   会成为本仓第四种错误形状，且 `instanceof ApiError === false`。**这个分叉在本仓已经造成过一次缺陷
+   并有用例钉着**：`galaxy/pages/AiSetupPage.test.tsx:747`「AiLadderApiError 不是 ApiError 的子类」
+   ⇒ 按 instanceof 分流的登录引导成了死代码，屏上退回裸报文。继承之后，既有的
+   `err instanceof ApiError` 消费者（`EngineMoveErrorDialog.tsx:80`、`galaxy/AiSetupPage.tsx:307`）都认得它。
+   变异 M2 钉住这条。
+2. **`refreshUser` 失败时抛，不静默不动。** 计划写的是 `if (res.ok) setUser(...)` —— 刷新失败时
+   什么都不做也什么都不说，Task 16 的「绑定成功后文案翻面」会静默不翻，用户看到「明明绑成功了
+   却还提示我去绑」。这正是生产代码底线里「加载/错误不得伪装成成功」。旧 user 保留（一次 /me 失败
+   不构成把人踢下线的理由），但调用方**知道**失败了。变异 M4 钉住这条。
+3. **兜底文案用英文 `Request failed ${status}`，不用计划的中文。** `api.ts:266-267` 写明本文件的
+   message 文本是被测试按文本断言钉着的承重物，现有 22 处 throw 全是英文。后端给的中文
+   `detail.message` 照常透传（那是给用户看的）。
+
+**变异矩阵 8 条，7 条被抓、1 条如实记为未抓：**
+
+| | 变异 | 结果 |
+|---|---|---|
+| M1 | 鉴权头改成手搓 Bearer | ✅ 只有**严格档**红（默认档全绿）—— 证明只有那一档挡得住 |
+| M2 | `PhoneApiError` 不再继承 `ApiError` | ✅ 两档各红 2 条 |
+| M3 | `bindPhone` 忘传 `auth=true` | ✅ 默认档红 |
+| M4 | `refreshUser` 改回「失败静默不动」 | ✅ 默认档红 |
+| M5 | `loginByPhone` 先写 token 再验 `/auth/me` | ✅ 默认档红 |
+| M6 | 去掉 `!Array.isArray` | 🔴 **两档全绿，没人发现** |
+| M7 | `new_password` 写成驼峰 | ✅ 两档都红 |
+| M8 | `isStrictBoxKiosk` 换成运行时判断（DCE 吃不掉） | ✅ `build:smartbox-kiosk-2d` 当场红 |
+
+**M6 的处置**：`!Array.isArray` 今天**没有行为差异**（数组的 `.code`/`.message`/`.retry_after_sec`
+本来就都是 undefined），所以任何测试都杀不了它。留着它是因为三项合起来才是「是不是普通对象」的
+惯用写法，少一项会被下一个人当成漏写；**但这件事写进了代码注释**，不让人误以为有测试在守它。
+（同族教训见 Task 11 那条惰性用例：没有杀伤力的东西必须明说，不能让它冒充覆盖。）
+
+**验收命令与判读**（计划 Step 4/5 的口径要补两条）：
+- 严格档是 `VITE_KIOSK_2D_ONLY=true VITE_BOX_SSO_STRICT=true npx vitest run ...`，
+  与 `package.json:10` 的 `build:smartbox-kiosk-2d` 同一对变量。**已实测这对变量确实能换档**
+  （`loadEnv` 会把前缀命中的 `process.env` 覆盖进来）。
+- **别只看 passed/skipped 的数字判断换档成功** —— 不同档的汇总数字可能相同，只有用例名能分辨。
+  用 `--reporter=verbose`（`--reporter=basic` 在 vitest 4 已被移除，会直接报错退出）。
+- **构建要跑三个不是两个**：`build`、`build:kiosk-2d`、以及 **`build:smartbox-kiosk-2d`** ——
+  只有第三个会跑 `scripts/verify-kiosk.sh:44-57` 那道「dist 里不许出现 `localStorage.getItem/setItem('token')`」
+  的扫描闸，而 `refreshUser` 正好新增了一处这样的调用（靠编译期常量 DCE 才过）。M8 证明这道闸是活的。
+
+📌 **给 Task 14–17 的三条读法（本轮查证）：**
+1. **没有任何一层给测试文件做类型检查。** `tsconfig.app.json:28` 把 `src` 下的 `.test.ts(x)` exclude 了，
+   vitest 也不做类型检查（`vite.config.ts` 的 test 段没有 `typecheck`）。161 个测试文件的类型错误，
+   两条闸都看不见 ⇒ 改了签名必须**真跑一次** `npx vitest run`。
+2. **CI 上不跑 vitest，也不跑 eslint。** `.github/workflows/` 里只有 `kiosk_build.yml` 碰前端，
+   跑的是 `npm run build:kiosk-2d`。本 Task 的单测只有本地跑才会被执行。
+3. **`/auth/me` 永远不给手机号，连掩码都不给。** `phone_masked` 全仓唯一产出口是 bind 成功那一次
+   （`endpoints/auth.py:520`）⇒ 设置页刷新后只能显示「已绑定」，显示不了 `+86 138****8000`。
+   要显示就得加后端字段，那是新需求，不在四端点契约内。
+
+
 **Files:**
 - Modify: `katrain/web/ui/src/api.ts`（**共享领土**）
 - Modify: `katrain/web/ui/src/context/AuthContext.tsx`（**共享领土**）

@@ -5916,6 +5916,193 @@ api.ts 与 AuthContext.tsx 都在共享领土 ⇒ 两个构建都跑过。"
 
 ### Task 14: 登录框第三种模式 + 区号选择器 + i18n 登记
 
+> **⛑ 实跑修正（2026-09-11，动手前的并行核验，4 组 26 条断言：14 CONFIRMED / 3 STALE / 7 WRONG + 2 条计划外补充 WRONG）**
+>
+> 上一轮 Task 13 的同类核验揪出 5 条过期断言，这轮 8 条。**下面这些以本块为准，正文没改的地方按正文走。**
+>
+> **一、行号过期（3 条）**
+>
+> | 正文写的 | 实际 | 怎么来的 |
+> |---|---|---|
+> | `AuthContext.tsx:153-157` 是 `useAuth` 无 Provider 时 throw | **`:208-214`**（throw 在 `:211`，守卫是 `context === undefined`） | 是我自己 T13（`e563d2c9`）把它推下去的；今天的 `:153-157` 落在 `loginByPhone` 里的 `throw new Error('Login failed')` —— **是个真行号，指向别处**，同族见 [[reference-sampling-excluded-what-breaks]] |
+> | `ReportsPage.test.tsx:12-37` 是 `vi.mock` + 可变 fixture | `vi.mock` 本体在 **`:35-37`**；`:12-21` 是一批 `vi.fn()`，`:26` 才是 `let authFixture` | 区间起点写宽了 |
+> | `LoginModal.tsx:103` 是"确认密码框" | `:103` 是**条件开关行** `{isRegister && (`，TextField 本体是 `:104-114`，`)}` 收在 `:115` | 手机模式那块若按"在 :103 附近插"会**插进 `isRegister &&` 的条件内部** |
+>
+> **二、`comboboxForLabel` 助手不要抄（STALE，且抄了有害）**
+>
+> 正文抄了 `AiSetupPage.test.tsx:143-148`，理由是「MUI Select 的 combobox 没有 labelId 接线，
+> `getByRole('combobox', {name})` 解析不出可访问名」。**这句话对 `FormControl + InputLabel + Select`
+> 成立（AiSetupPage 就是那么写的，它测试文件 `:140-142` 自己写明了），对我们要写的
+> `<TextField select label="X">` 不成立** —— TextField 自己把 labelId 接上了。实测：
+>
+> ```
+> D: TextField select -> getByRole combobox name 国家A = true
+> D: TextField select -> getByLabelText 国家A role = combobox   ← 返回的是 DIV 不是 input
+> D: bare Select      -> getByRole combobox name 国家B = false  ← AiSetupPage 那种写法
+> ```
+>
+> ⇒ **删掉这个助手**，直接 `screen.getByRole('combobox', { name: '国家/地区' })`。
+> 抄了它不只是白写 14 行：更坏的后果是它会让人以为「MUI 7 的 combobox 都取不到可访问名」，
+> 进而在别处退回按 `.MuiFormControl-root` 这个 class 取元素 —— **那是把判据从可访问性挪到实现细节上**。
+> 附带记一条：`getByLabelText('国家/地区')` 拿到的是 combobox **DIV**，对它 `userEvent.type` 无效，只能 click + 选 option。
+>
+> **三、「13 处英文默认值改中文」不是顺带，是第 1 条用例能绿的前提**
+>
+> 正文把它写在 ⚠️ 段里，读起来像附带项。实测 LoginModal 今天 **14 个默认值里 13 个是英文**，
+> 唯一的中文是 `:75` 的 `'登录智星盒'`。所以 `expect(screen.getByLabelText('用户名'))`
+> 在改掉 `auth:username` 的默认值**之前永远红**。它属于 Step 3 的必做项，不是可选。
+> （`.po` 里的 msgstr 一律不动 ⇒ 英/日/韩用户看到的还是各自语言，只有"字典为空"这个退化态跟着变。
+> `src/components/LoginDialog.tsx` 复用了 `auth:username`/`auth:password`/`auth:cancel_btn`/`auth:login_btn`
+> 四个键但有它自己的英文默认值 —— **不在本 Task 射程内**，两边默认值不一致是既有状态。）
+>
+> **四、`auth:switch_to_register` 的默认值是双引号**（`"Don't have an account? Register"`，因为文案里有撇号），
+> 全文件唯一一处。这正是 Step 5 第二条变异要钉的东西：**只吃单引号的闸对这条现成的反例是瞎的**。
+> 正文第 10 条用例已经写成两种引号+模板串都认，对。
+>
+> **五、`onKeyPress` 不报 warning（WRONG，两处）**
+>
+> React 实装 **19.2.3**。实测：渲染带 `onKeyPress` 的 TextField，`console.error`/`console.warn` 调用数 **都是 0**；
+> `grep -c onKeyPress node_modules/react-dom/cjs/*.js` = **0**（react-dom 里根本没有这个字面量），
+> 而 `keypress` 仍在 `react-dom-client.development.js` 的事件注册表里（13 处），照常派发。
+> 废弃**只在类型层**：`@types/react/index.d.ts:2282` 的 `@deprecated` 注释 —— IDE 划删除线，`tsc` 不报错。
+> ⇒ **新增的手机号/验证码两格沿用 `onKeyPress`**，与既有 `:99`/`:112` 保持一致。
+> 要换就四处一起换（仓里还有 `ChatPanel.tsx:83`、`CommentSection.tsx:152`），那是另一件事，
+> 本 Task 不做没有收益的改动。**别把「会报 warning」写进提交信息** —— 那个理由是假的。
+> 反过来也别指望靠 warning 发现它。
+>
+> **六、"跑既有 LoginModal 测试观察 warning"这一步做不了（WRONG）**
+>
+> 仓里**没有任何 LoginModal 的测试**。三个渲染点（`ReportsPage.tsx:395` / `AiSetupPage.tsx:533` /
+> `GalaxySidebar.tsx:125`）的 `loginOpen` 初值全是 `false`，MUI Dialog 关着不挂 children
+> ⇒ **带 onKeyPress 的那两个 TextField 在现有任何一条用例里都没被挂载过**。
+> 本 Task 产出的是 LoginModal 的**第一个**测试文件 —— 也就是说现在改它**没有任何回归网**，改动必须自带用例。
+>
+> **七、`vi.mock('hooks/useTranslation')` 控不住 LoginModal 的文案（WRONG）**
+>
+> LoginModal 走的是 `i18n.t(...)` 单例调用（`:6` import，全文 14 处），**不用** `useTranslation`；
+> 用 `useTranslation` 的是它同目录的兄弟 `AuthRequiredDialog.tsx:27`。
+> 照抄 `GalaxySidebar.test.tsx:13` 那行去装配 ⇒ 文案完全不受控。
+> 正文的做法（真 `SettingsProvider` + 空翻译字典 ⇒ `i18n.ts:52` `translations[key] || defaultText || key` 恒返默认值）是对的，
+> 但**理由要写准**：字典为空靠的不是那个 mock。
+> 另：`CountryCodeSelect` 若用 `useTranslation()` 订阅，父子两套订阅并存（功能上都对，都落到同一个 i18n 单例），
+> 但**测试里如果有人 mock 掉 `useTranslation`，只 mock 得到子组件那一半** —— 会出现"中文取不到、英文也取不到"的假红。
+> ⇒ 本 Task 的测试**不 mock `useTranslation`**。
+>
+> **八、fetch stub 不是必需，`useAuth` 的桩才是（正文两个都写了，但轻重说反了）**
+>
+> 实证：`ReportsPage.test.tsx` **既没有 `vi.stubGlobal('fetch')` 也没 mock `../../../api`**，
+> 却包了真 `SettingsProvider` 并无条件挂载 LoginModal，20 条全绿、输出里 `Failed to load|act(|Warning` 零命中
+> —— 因为 `i18n.ts:28-30` 与 `:44-49` 两条支路各自 try/catch 吞掉异常，不产生 unhandled rejection。
+> 真正**漏了会当场抛**的是 `useAuth`（`AuthContext.tsx:211`）。fetch stub 保留（更确定），但知道它是"更稳"不是"必需"。
+> 其余全局桩（`ResizeObserver` / canvas / `scrollIntoView`）`src/test/setup.ts:4-28` 已备好，不用自己加。
+>
+> **九、Step 6 的三处改正（i18n 管线）**
+>
+> 1. **`uv run python i18n.py` 会改 `.po`，不只是生成 `.mo`**（正文说"只生成 .mo"，WRONG）：
+>    `i18n.py:105` 每本原地重存；`:69-77` 把任何在非默认语言里缺失的 msgid **整条从 en 抄过去并打 `#. TODO`**。
+>    ⇒ **必须先跑 batch 脚本把 11 本都填满、再跑 i18n.py**。顺序反了（只填 en）会让 9 本 `.po` 被灌进带 TODO 的英文条目。
+> 2. **不能拿 `i18n.py` 的退出码当闸**：它在本轮改动**之前**就 `exit 1`（`i18n.py:125 sys.exit(int(errors))`，
+>    既有的 `MISSING IN DEFAULT AND tw More` 等）。判据只能是 `git diff` 的范围 + "catalog 查得到新键"。
+>    另：`i18n.py:19 INACTIVE_LANGS = ["es"]` ⇒ **es 被整体跳过，不产出 `es/katrain.mo`**，
+>    es 用户按 `[es, en]` 链式回退到**英文**（不是中文）。
+> 3. **Step 6 的核查命令看不见"旧条目被改回"**：`git diff | grep '^+msgid'` 只看得见新增的 msgid，
+>    msgstr 被改回显示为 `+msgstr`/`-msgstr`。**补一条 `git diff --numstat katrain/i18n/locales`**：
+>    每本应当是「新增 ~42 行、删除 0 行」，**删除数 >0 就是脚本动了旧条目**。
+>    （实测今天风险为 0：把 708 键字典对 11 本 `.po` 做只读 dry-run，全部 `msgstr-would-change=0 / new-entries=0 / TODO-strip=0`。）
+>
+> **十、`/api/translations` 读的是 `.mo` 不是 `.po`，而本 worktree 一个 `.mo` 都没有（WRONG）**
+>
+> `server.py:2308-2317` → `katrain/core/lang.py:65` 的 `gettext.translation(...)` 只认 `LC_MESSAGES/katrain.mo`。
+> 本 worktree `find katrain/i18n/locales -name '*.mo'` **是空的**（主仓有 11 个）⇒ 本地 `/api/translations`
+> 恒返 `{"translations": {}}`。两个后果：
+> - **好的一半**：测试里"空字典 ⇒ `t()` 恒返默认值"这件事在本 worktree 结构性成立，不是运气。
+> - **会误判的一半**：Step 6 写完 `.po` 之后**在本 worktree 里看不出任何变化**，别据此断定"写了没用"。
+>   部署路径上是够的 —— `katrain/__main__.py:68-91 _compile_translations()` 每次启动都把新于 `.mo` 的 `.po` 重编译，
+>   `Dockerfile.web:36` 正是 `CMD [... "--ui","web" ...]`。要在本地看效果得先跑一次 `i18n.py` 或启动一次 app。
+> - 别把 `src/api/live.ts:166` → `endpoints/live.py:461` 的 `/live/translations` 当同一条链 —— 那是棋手/赛事名的库表翻译。
+>
+> **十一、目录与先例（CONFIRMED，但正文举的先例是错的）**
+>
+> - `src/galaxy/components/auth/` 今天只有 `AuthRequiredDialog.tsx` + `LoginModal.tsx`，**无测试、无 `__tests__`**。
+>   galaxy 侧惯例是同级 `*.test.tsx`；全仓 `__tests__` 只有 4 处（context / api / kiosk / Board3D）。
+>   **本 Task 仍用 `__tests__/`**，理由是 `renderLoginModal.tsx` 不是测试文件但也不该躺在组件目录里被人误 import
+>   （它 import `@testing-library/react` 这个 devDependency）。已核实这样放的三条前提都成立：
+>   `tsconfig.app.json:28` 的 exclude 只排 `*.test.ts(x)` ⇒ **助手会被 `tsc -b` 检查**（正文这条对，这正是要的）；
+>   vitest 无显式 include，默认只收 `*.{test,spec}.*` ⇒ 助手不会被当成空测试文件；
+>   `eslint.config.js:105` 的 ignores 含 `**/__tests__/**`。
+> - **`PlatformConnectPage.test.tsx:119` 不是 MUI 先例**（正文举错）：它取到的是一个**裸 `<input aria-label=...>`**
+>   （`PlatformConnectPage.tsx:360-368`），整屏没有 MUI。抄它会得到一个不走 MUI 主题的控件。
+>   真 MUI 先例是 `ReportLocalImportDialog.tsx:91-97` ←→ `ReportsPage.test.tsx:243`（今天 20 条全绿），
+>   以及 `TimeSettingsDialog.tsx:82` ←→ `TimeSettingsDialog.test.tsx:40`。
+>   同族教训 [[reference-existing-consumers-may-use-a-different-source]]：**搜索命中不等于来源相同**。
+> - `readFileSync(new URL('../X.tsx', import.meta.url), 'utf8')` 在仓里有现成先例：`src/components/liveBoardWiring.test.ts:13-14`。
+> - 顺带核出一条过期注释：`AiSetupPage.test.tsx:16-20` 说 `kiosk/pages/AiSetupPage.tsx` 接了 `labelId`
+>   —— 那个文件今天 `grep -ci select` = **0**，一个 Select 都没有。照它去找正面样板会扑空。
+
+
+> **✅ 实跑结果（2026-09-11，Task 14 落地）**
+>
+> **Step 2 的红因**（10 条全红，且都红在该红的地方 —— 不是「Provider 缺失当场抛」）：
+> #1 `Unable to find a label with the text of: 用户名`（旧默认值是英文 `'Username'`）；
+> #2–#7、#9 `Unable to find an element with the text: 验证码登录`；#8 同形但找的是 `忘记密码？`；
+> #10 `ENOENT: … CountryCodeSelect.tsx`。
+>
+> **⚠️ 写测试时撞上一个会骗人的坑（值得单独记）**：
+> `new URL('../LoginModal.tsx', import.meta.url)` **在 vitest 里拿不到 file URL** ——
+> Vite 把**字面量**形式的 `new URL(..., import.meta.url)` 当成资源引用，在 transform 期
+> 改写成 `http://localhost:3000/src/...`，`readFileSync` 当场
+> `TypeError: The URL must be of scheme file`。`import.meta.url` 本身是对的
+> （实测 `file:///.../probe.test.tsx`），被改写的是**那一支表达式**。
+> 仓里的先例 `src/components/liveBoardWiring.test.ts:13` 之所以活着，是因为它传的是**变量**，
+> Vite 的静态分析只认字面量 —— 又一次「搜索命中不等于来源相同」。
+> 改走 `src/api/__tests__/tutorialReadonly.guard.test.ts:11` 那条：
+> `resolve(dirname(fileURLToPath(import.meta.url)), rel)`。
+>
+> **Step 5 变异矩阵 —— 计划列了 2 条，实跑 7 条全红**（每条各自还原、grep 回读）：
+>
+> | # | 变异 | 变红的用例 |
+> |---|---|---|
+> | M1 | 守卫改回无差别的 `!username \|\| !password` | 「必填校验说的是手机号」+「未绑号的 404」**两条** |
+> | M2 | `auth:get_code` 默认值改成**双引号**包的英文 | **8 条**（含目标闸）。单独跑闸那条，断言差异是 `notChinese: ["auth:get_code => Get code"]` —— 双引号确实被吃进去了。另 7 条是连带：按钮文案变了，`requestCode` 的 `getByRole('button', { name: '获取验证码' })` 跟着找不到。**期望写窄了，同 T7 变异 6 / T8 变异 4 那一类** |
+> | M3 | `switchTo` 不再清手机号 | 「切回密码模式再切回来…全部复位」 |
+> | M4 | 成功文案改成替运营商担保的「已发送到您的手机」 | 「成功文案是『已提交发送』」 |
+> | M5 | `describeError` 去掉限流分支 | 「限流时显示后端给的具体原因」 |
+> | M6 | `fullPhone` 忘了拼区号 | 「区号选择器默认 +86，改成 +81…」 |
+> | M7 | `auth:err_capacity`（新纳入射程的 16 个之一）默认值改英文 | 中文默认值闸，`notChinese: ["auth:err_capacity => SMS channel is at capacity today"]` |
+>
+> 另验了一条**不在源码里的闸**：把 `renderLoginModal.tsx` 的 props 写错一个，
+> `npx tsc -b` 当场 `TS2322` 退出码 2（还原后退 0）。
+> 计划说「助手会被 `tsc -b` 检查」是**活的闸，不是纸上的**。
+>
+> **Step 6 比计划多做了一件事：键从 14 变成 30。**
+> Step 3 那张 `describeError` 的 `BY_CODE` 表**自己又造了 16 个用户可见文案键**
+> （`auth:err_code_mismatch` … `auth:err_need_online`），计划的 14 键清单漏了它们。
+> 不登记的后果与那 14 个**完全一样**：10 种语言的用户在最需要看懂的地方（错误提示）看到整段中文。
+> ⇒ 16 个一并写进 `batch_translate_galaxy.py` 与 11 本 `.po`，并把第 10 条用例的射程从 14 扩到 30
+> （M7 就是证明扩进去的那批也真被守着）。
+> `GALAXY_TRANSLATIONS` 708 → 738 键，`auth:` 前缀 20 → 50。
+>
+> **Step 6 的实测数**：`batch_translate_galaxy.py` 报 `Total entries updated: 330` = 30 × 11，
+> `git diff --numstat katrain/i18n/locales` **11 本删除数全 0**（我加的那条判据，证明脚本没动旧条目），
+> 新增唯一 msgid **恰好 30 个**。`i18n.py` 跑完 `.po` 内容**一字未变**（只顶 mtime）。
+> 编译出 **10 本 `.mo`**（`es` 被 `i18n.py:19 INACTIVE_LANGS` 跳过），
+> 逐语言查 catalog：11 种全部查得到新键，`es` 按 `[es, en]` 链式回退到**英文**
+> （它的 `.po` 里有正确的西班牙语，只是没人编译 —— 既有状态，不是本 Task 引入的）。
+>
+> **Step 7**：`build` / `build:kiosk-2d` / `build:smartbox-kiosk-2d` **三个全退 0**，
+> 两道 `verify-kiosk.sh` 闸都报 ✅。全量单测 **164 files / 1732 passed / 7 skipped**
+> （基线 163 / 1722 / 7）—— 失败集合仍为空集，增量恰好是本 Task 的 1 个文件 10 条。
+>
+> **两处本 Task 有意没做，记在这里别当成已完成**：
+> 1. `CountryCodeSelect` 的**国家名是写死的中文**，没进 i18n（10 国 × 11 语 = 110 条）。
+>    日/韩/英文用户会在那个下拉里看到中文国家名。
+> 2. `auth:resend_after` / `auth:err_cooldown` + `auth:seconds` 是**拼接片段**不是独立词条
+>    （前端拼 `${秒数} ${resend_after}`、`${err_cooldown} ${秒数} ${seconds}`）。
+>    各语言按自己的语序把动词分在哪一半，已在 batch 脚本里写了注释；
+>    真要做对是 ICU 复数/占位符，那是另一件事。
+> 3. `LoginModal.phone.test.tsx` **被 `.gitignore:16` 的 `log*` 吞掉**（macOS `core.ignorecase`，
+>    `Login*` 大小写不敏感地命中 `log*`）。`git check-ignore -v` 实证。提交要 `git add -f`。
+>    同族 [[reference-gitignore-swallows-new-files]] —— 这次是它第二回咬人。
 **Files:**
 - Create: `katrain/web/ui/src/galaxy/components/auth/CountryCodeSelect.tsx`
 - Create: `katrain/web/ui/src/galaxy/components/auth/__tests__/renderLoginModal.tsx`（测试装配助手，Task 15/15.5 复用）

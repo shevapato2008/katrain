@@ -3406,3 +3406,107 @@ msgstr "{side}: moves {from}-{to}, {n} in a row matched the top choice"
 
 msgid "live:loading_match"
 msgstr "Loading game…"
+
+msgid "auth:switch_to_phone"
+msgstr "Sign in with SMS code"
+
+msgid "auth:switch_to_password"
+msgstr "Sign in with password"
+
+msgid "auth:forgot_password"
+msgstr "Forgot your password?"
+
+msgid "auth:phone"
+msgstr "Mobile number"
+
+msgid "auth:country_code"
+msgstr "Country/Region"
+
+msgid "auth:sms_code"
+msgstr "Verification code"
+
+msgid "auth:get_code"
+msgstr "Get code"
+
+msgid "auth:resend_after"
+msgstr "seconds until resend"
+
+msgid "auth:code_submitted"
+msgstr "The code has been submitted for sending. Please check your SMS."
+
+msgid "auth:err_phone_required"
+msgstr "Please enter your mobile number"
+
+msgid "auth:err_code_required"
+msgstr "Please enter the verification code"
+
+msgid "auth:err_phone_not_bound"
+msgstr ""
+"No account is linked to this number yet. Sign in with your username and "
+"password first, then link it under Settings → Link mobile number."
+
+msgid "auth:err_cooldown"
+msgstr "Too many code requests. Please wait another"
+
+msgid "auth:seconds"
+msgstr "seconds"
+
+msgid "auth:err_code_mismatch"
+msgstr "That code is incorrect. Please check it and try again."
+
+msgid "auth:err_code_expired"
+msgstr "That code has expired. Please request a new one."
+
+msgid "auth:err_code_used"
+msgstr "That code has already been used. Please request a new one."
+
+msgid "auth:err_code_locked"
+msgstr "Too many wrong attempts. Please request a new code."
+
+msgid "auth:err_code_not_found"
+msgstr "That code is no longer valid. Please request a new one."
+
+msgid "auth:err_code_purpose"
+msgstr "That code was issued for something else. Please request a new one."
+
+msgid "auth:err_bad_phone"
+msgstr ""
+"That mobile number looks wrong. Please check the country code and the "
+"number."
+
+msgid "auth:err_bad_purpose"
+msgstr ""
+"Something went wrong with the request. Please refresh the page and try "
+"again."
+
+msgid "auth:err_quota_phone"
+msgstr ""
+"This number has reached today's code limit. Try again tomorrow or contact "
+"support."
+
+msgid "auth:err_capacity"
+msgstr ""
+"The SMS channel has reached today's limit. Please try later, or sign in with"
+" your password."
+
+msgid "auth:err_provider"
+msgstr "Sending failed. Please try again."
+
+msgid "auth:err_phone_taken"
+msgstr ""
+"This number already has an account. You can sign in to it directly with an "
+"SMS code."
+
+msgid "auth:err_already_bound"
+msgstr ""
+"Your account already has a mobile number linked. To change it, please "
+"contact support."
+
+msgid "auth:err_phone_unbound"
+msgstr "Please link a mobile number first"
+
+msgid "auth:err_on_device"
+msgstr "Please complete mobile-number actions on modelstella.com"
+
+msgid "auth:err_need_online"
+msgstr "Please complete mobile-number actions on modelstella.com"

@@ -3193,3 +3193,93 @@ msgstr "{side} 第{from}–{to}手连续{n}手中一选"
 
 msgid "live:loading_match"
 msgstr "正在加载棋局…"
+
+msgid "auth:switch_to_phone"
+msgstr "验证码登录"
+
+msgid "auth:switch_to_password"
+msgstr "密码登录"
+
+msgid "auth:forgot_password"
+msgstr "忘记密码？"
+
+msgid "auth:phone"
+msgstr "手机号"
+
+msgid "auth:country_code"
+msgstr "国家/地区"
+
+msgid "auth:sms_code"
+msgstr "验证码"
+
+msgid "auth:get_code"
+msgstr "获取验证码"
+
+msgid "auth:resend_after"
+msgstr "秒后可重发"
+
+msgid "auth:code_submitted"
+msgstr "验证码已提交发送，请查收短信"
+
+msgid "auth:err_phone_required"
+msgstr "请填写手机号"
+
+msgid "auth:err_code_required"
+msgstr "请填写验证码"
+
+msgid "auth:err_phone_not_bound"
+msgstr "这个手机号还没有绑定账号。请先用用户名密码登录，再到左下角「设置 → 绑定手机号」绑定。"
+
+msgid "auth:err_cooldown"
+msgstr "验证码发送太频繁，还需等待"
+
+msgid "auth:seconds"
+msgstr "秒"
+
+msgid "auth:err_code_mismatch"
+msgstr "验证码不对，请检查后重填"
+
+msgid "auth:err_code_expired"
+msgstr "验证码已过期，请重新获取"
+
+msgid "auth:err_code_used"
+msgstr "这个验证码已经用过了，请重新获取"
+
+msgid "auth:err_code_locked"
+msgstr "错误次数太多，请重新获取验证码"
+
+msgid "auth:err_code_not_found"
+msgstr "验证码已失效，请重新获取"
+
+msgid "auth:err_code_purpose"
+msgstr "验证码用途不对，请重新获取"
+
+msgid "auth:err_bad_phone"
+msgstr "手机号格式不对，请检查区号与号码"
+
+msgid "auth:err_bad_purpose"
+msgstr "请求有误，请刷新页面重试"
+
+msgid "auth:err_quota_phone"
+msgstr "这个号码今天的验证码已达上限，请明天再试或联系客服"
+
+msgid "auth:err_capacity"
+msgstr "短信通道今日已达上限，请稍后再试，或改用密码登录"
+
+msgid "auth:err_provider"
+msgstr "发送失败，请重试"
+
+msgid "auth:err_phone_taken"
+msgstr "这个号已经有账号了，可以直接用验证码登录那个账号"
+
+msgid "auth:err_already_bound"
+msgstr "你的账号已经绑过手机号了。换号请联系客服"
+
+msgid "auth:err_phone_unbound"
+msgstr "请先绑定手机号"
+
+msgid "auth:err_on_device"
+msgstr "请在 modelstella.com 上完成手机号相关操作"
+
+msgid "auth:err_need_online"
+msgstr "请在 modelstella.com 上完成手机号相关操作"

@@ -3358,3 +3358,93 @@ msgstr "{side} 第 {from}–{to} 手、{n} 手連続で第一候補と一致"
 
 msgid "live:loading_match"
 msgstr "棋譜を読み込み中…"
+
+msgid "auth:switch_to_phone"
+msgstr "SMS認証コードでログイン"
+
+msgid "auth:switch_to_password"
+msgstr "パスワードでログイン"
+
+msgid "auth:forgot_password"
+msgstr "パスワードをお忘れですか？"
+
+msgid "auth:phone"
+msgstr "携帯電話番号"
+
+msgid "auth:country_code"
+msgstr "国／地域"
+
+msgid "auth:sms_code"
+msgstr "認証コード"
+
+msgid "auth:get_code"
+msgstr "コードを取得"
+
+msgid "auth:resend_after"
+msgstr "秒後に再送信できます"
+
+msgid "auth:code_submitted"
+msgstr "認証コードの送信を受け付けました。SMSをご確認ください"
+
+msgid "auth:err_phone_required"
+msgstr "携帯電話番号を入力してください"
+
+msgid "auth:err_code_required"
+msgstr "認証コードを入力してください"
+
+msgid "auth:err_phone_not_bound"
+msgstr "この番号に紐づくアカウントがまだありません。先にユーザー名とパスワードでログインし、「設定 → 携帯電話番号の連携」から連携してください。"
+
+msgid "auth:err_cooldown"
+msgstr "コードの送信が頻繁すぎます。あと"
+
+msgid "auth:seconds"
+msgstr "秒お待ちください"
+
+msgid "auth:err_code_mismatch"
+msgstr "認証コードが正しくありません。確認して入力し直してください"
+
+msgid "auth:err_code_expired"
+msgstr "認証コードの有効期限が切れました。再取得してください"
+
+msgid "auth:err_code_used"
+msgstr "この認証コードは使用済みです。再取得してください"
+
+msgid "auth:err_code_locked"
+msgstr "入力の誤りが多すぎます。認証コードを再取得してください"
+
+msgid "auth:err_code_not_found"
+msgstr "認証コードが無効になりました。再取得してください"
+
+msgid "auth:err_code_purpose"
+msgstr "この認証コードは別の用途のものです。再取得してください"
+
+msgid "auth:err_bad_phone"
+msgstr "携帯電話番号の形式が正しくありません。国番号と番号をご確認ください"
+
+msgid "auth:err_bad_purpose"
+msgstr "リクエストに問題があります。ページを再読み込みしてお試しください"
+
+msgid "auth:err_quota_phone"
+msgstr "この番号は本日の送信上限に達しました。明日再度お試しいただくか、サポートにご連絡ください"
+
+msgid "auth:err_capacity"
+msgstr "本日のSMS送信上限に達しました。しばらくしてからお試しいただくか、パスワードでログインしてください"
+
+msgid "auth:err_provider"
+msgstr "送信に失敗しました。もう一度お試しください"
+
+msgid "auth:err_phone_taken"
+msgstr "この番号には既にアカウントがあります。認証コードでそのアカウントにログインできます"
+
+msgid "auth:err_already_bound"
+msgstr "お使いのアカウントには既に携帯電話番号が連携されています。変更はサポートにご連絡ください"
+
+msgid "auth:err_phone_unbound"
+msgstr "先に携帯電話番号を連携してください"
+
+msgid "auth:err_on_device"
+msgstr "携帯電話番号に関する操作は modelstella.com で行ってください"
+
+msgid "auth:err_need_online"
+msgstr "携帯電話番号に関する操作は modelstella.com で行ってください"

@@ -3446,3 +3446,103 @@ msgstr "{side}: ходи {from}–{to}, {n} поспіль збіглися з �
 
 msgid "live:loading_match"
 msgstr "Завантаження партії…"
+
+msgid "auth:switch_to_phone"
+msgstr "Вхід за SMS-кодом"
+
+msgid "auth:switch_to_password"
+msgstr "Вхід за паролем"
+
+msgid "auth:forgot_password"
+msgstr "Забули пароль?"
+
+msgid "auth:phone"
+msgstr "Номер телефону"
+
+msgid "auth:country_code"
+msgstr "Країна або регіон"
+
+msgid "auth:sms_code"
+msgstr "Код підтвердження"
+
+msgid "auth:get_code"
+msgstr "Отримати код"
+
+msgid "auth:resend_after"
+msgstr "сек. до повторного надсилання"
+
+msgid "auth:code_submitted"
+msgstr "Код передано на надсилання. Перевірте SMS."
+
+msgid "auth:err_phone_required"
+msgstr "Введіть номер телефону"
+
+msgid "auth:err_code_required"
+msgstr "Введіть код підтвердження"
+
+msgid "auth:err_phone_not_bound"
+msgstr ""
+"До цього номера ще не прив'язано облікового запису. Спершу увійдіть за "
+"іменем користувача та паролем, а потім прив'яжіть номер у розділі "
+"«Налаштування → Прив'язати номер телефону»."
+
+msgid "auth:err_cooldown"
+msgstr "Забагато запитів коду. Зачекайте ще"
+
+msgid "auth:seconds"
+msgstr "сек."
+
+msgid "auth:err_code_mismatch"
+msgstr "Невірний код. Перевірте та введіть ще раз."
+
+msgid "auth:err_code_expired"
+msgstr "Термін дії коду минув. Запросіть новий."
+
+msgid "auth:err_code_used"
+msgstr "Цей код уже використано. Запросіть новий."
+
+msgid "auth:err_code_locked"
+msgstr "Забагато невдалих спроб. Запросіть новий код."
+
+msgid "auth:err_code_not_found"
+msgstr "Код більше недійсний. Запросіть новий."
+
+msgid "auth:err_code_purpose"
+msgstr "Цей код видано для іншої дії. Запросіть новий."
+
+msgid "auth:err_bad_phone"
+msgstr "Невірний формат номера. Перевірте код країни та номер."
+
+msgid "auth:err_bad_purpose"
+msgstr "Помилка запиту. Оновіть сторінку та спробуйте ще раз."
+
+msgid "auth:err_quota_phone"
+msgstr ""
+"Для цього номера досягнуто денного ліміту. Спробуйте завтра або зверніться "
+"до підтримки."
+
+msgid "auth:err_capacity"
+msgstr ""
+"Досягнуто денного ліміту SMS. Спробуйте пізніше або увійдіть за паролем."
+
+msgid "auth:err_provider"
+msgstr "Не вдалося надіслати. Спробуйте ще раз."
+
+msgid "auth:err_phone_taken"
+msgstr ""
+"До цього номера вже прив'язано обліковий запис. Увійдіть до нього за SMS-"
+"кодом."
+
+msgid "auth:err_already_bound"
+msgstr ""
+"До вашого облікового запису вже прив'язано номер телефону. Щоб змінити, "
+"зверніться до підтримки."
+
+msgid "auth:err_phone_unbound"
+msgstr "Спершу прив'яжіть номер телефону"
+
+msgid "auth:err_on_device"
+msgstr "Дії з номером телефону виконуйте на modelstella.com"
+
+msgid "auth:err_need_online"
+msgstr "Дії з номером телефону виконуйте на modelstella.com"

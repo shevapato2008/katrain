@@ -3450,3 +3450,109 @@ msgstr "{side}: Züge {from}-{to}, {n} in Folge der Topzug"
 
 msgid "live:loading_match"
 msgstr "Partie wird geladen …"
+
+msgid "auth:switch_to_phone"
+msgstr "Mit SMS-Code anmelden"
+
+msgid "auth:switch_to_password"
+msgstr "Mit Passwort anmelden"
+
+msgid "auth:forgot_password"
+msgstr "Passwort vergessen?"
+
+msgid "auth:phone"
+msgstr "Mobilnummer"
+
+msgid "auth:country_code"
+msgstr "Land/Region"
+
+msgid "auth:sms_code"
+msgstr "Bestätigungscode"
+
+msgid "auth:get_code"
+msgstr "Code anfordern"
+
+msgid "auth:resend_after"
+msgstr "Sekunden bis zum erneuten Senden"
+
+msgid "auth:code_submitted"
+msgstr "Der Code wurde zum Versand übermittelt. Bitte prüfen Sie Ihre SMS."
+
+msgid "auth:err_phone_required"
+msgstr "Bitte geben Sie Ihre Mobilnummer ein"
+
+msgid "auth:err_code_required"
+msgstr "Bitte geben Sie den Bestätigungscode ein"
+
+msgid "auth:err_phone_not_bound"
+msgstr ""
+"Mit dieser Nummer ist noch kein Konto verknüpft. Melden Sie sich zuerst mit "
+"Benutzername und Passwort an und verknüpfen Sie sie unter „Einstellungen → "
+"Mobilnummer verknüpfen“."
+
+msgid "auth:err_cooldown"
+msgstr "Zu viele Code-Anfragen. Bitte warten Sie noch"
+
+msgid "auth:seconds"
+msgstr "Sekunden"
+
+msgid "auth:err_code_mismatch"
+msgstr "Der Code ist falsch. Bitte prüfen und erneut eingeben."
+
+msgid "auth:err_code_expired"
+msgstr "Der Code ist abgelaufen. Bitte fordern Sie einen neuen an."
+
+msgid "auth:err_code_used"
+msgstr ""
+"Dieser Code wurde bereits verwendet. Bitte fordern Sie einen neuen an."
+
+msgid "auth:err_code_locked"
+msgstr "Zu viele Fehlversuche. Bitte fordern Sie einen neuen Code an."
+
+msgid "auth:err_code_not_found"
+msgstr "Der Code ist nicht mehr gültig. Bitte fordern Sie einen neuen an."
+
+msgid "auth:err_code_purpose"
+msgstr ""
+"Dieser Code wurde für einen anderen Zweck ausgestellt. Bitte fordern Sie "
+"einen neuen an."
+
+msgid "auth:err_bad_phone"
+msgstr ""
+"Die Mobilnummer scheint ungültig. Bitte prüfen Sie Ländervorwahl und Nummer."
+
+msgid "auth:err_bad_purpose"
+msgstr ""
+"Bei der Anfrage ist etwas schiefgelaufen. Bitte laden Sie die Seite neu."
+
+msgid "auth:err_quota_phone"
+msgstr ""
+"Für diese Nummer ist das Tageslimit erreicht. Versuchen Sie es morgen erneut"
+" oder wenden Sie sich an den Support."
+
+msgid "auth:err_capacity"
+msgstr ""
+"Das SMS-Tageslimit ist erreicht. Bitte später erneut versuchen oder mit "
+"Passwort anmelden."
+
+msgid "auth:err_provider"
+msgstr "Senden fehlgeschlagen. Bitte erneut versuchen."
+
+msgid "auth:err_phone_taken"
+msgstr ""
+"Für diese Nummer existiert bereits ein Konto. Sie können sich direkt per "
+"SMS-Code anmelden."
+
+msgid "auth:err_already_bound"
+msgstr ""
+"Ihrem Konto ist bereits eine Mobilnummer zugeordnet. Für eine Änderung "
+"wenden Sie sich an den Support."
+
+msgid "auth:err_phone_unbound"
+msgstr "Bitte verknüpfen Sie zuerst eine Mobilnummer"
+
+msgid "auth:err_on_device"
+msgstr "Bitte führen Sie Aktionen zur Mobilnummer auf modelstella.com durch"
+
+msgid "auth:err_need_online"
+msgstr "Bitte führen Sie Aktionen zur Mobilnummer auf modelstella.com durch"

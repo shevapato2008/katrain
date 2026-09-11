@@ -3425,3 +3425,106 @@ msgstr "{side} : coups {from}-{to}, {n} d'affilée au premier choix"
 
 msgid "live:loading_match"
 msgstr "Chargement de la partie…"
+
+msgid "auth:switch_to_phone"
+msgstr "Se connecter par code SMS"
+
+msgid "auth:switch_to_password"
+msgstr "Se connecter par mot de passe"
+
+msgid "auth:forgot_password"
+msgstr "Mot de passe oublié ?"
+
+msgid "auth:phone"
+msgstr "Numéro de mobile"
+
+msgid "auth:country_code"
+msgstr "Pays/Région"
+
+msgid "auth:sms_code"
+msgstr "Code de vérification"
+
+msgid "auth:get_code"
+msgstr "Obtenir le code"
+
+msgid "auth:resend_after"
+msgstr "secondes avant de renvoyer"
+
+msgid "auth:code_submitted"
+msgstr "Le code a été soumis pour envoi. Veuillez consulter vos SMS."
+
+msgid "auth:err_phone_required"
+msgstr "Veuillez saisir votre numéro de mobile"
+
+msgid "auth:err_code_required"
+msgstr "Veuillez saisir le code de vérification"
+
+msgid "auth:err_phone_not_bound"
+msgstr ""
+"Aucun compte n'est encore associé à ce numéro. Connectez-vous d'abord avec "
+"votre identifiant et votre mot de passe, puis associez-le dans « Paramètres "
+"→ Associer un numéro de mobile »."
+
+msgid "auth:err_cooldown"
+msgstr "Trop de demandes de code. Veuillez patienter encore"
+
+msgid "auth:seconds"
+msgstr "secondes"
+
+msgid "auth:err_code_mismatch"
+msgstr "Ce code est incorrect. Veuillez le vérifier et réessayer."
+
+msgid "auth:err_code_expired"
+msgstr "Ce code a expiré. Veuillez en demander un nouveau."
+
+msgid "auth:err_code_used"
+msgstr "Ce code a déjà été utilisé. Veuillez en demander un nouveau."
+
+msgid "auth:err_code_locked"
+msgstr "Trop de tentatives erronées. Veuillez demander un nouveau code."
+
+msgid "auth:err_code_not_found"
+msgstr "Ce code n'est plus valide. Veuillez en demander un nouveau."
+
+msgid "auth:err_code_purpose"
+msgstr ""
+"Ce code a été émis pour un autre usage. Veuillez en demander un nouveau."
+
+msgid "auth:err_bad_phone"
+msgstr ""
+"Ce numéro de mobile semble incorrect. Vérifiez l'indicatif et le numéro."
+
+msgid "auth:err_bad_purpose"
+msgstr ""
+"Un problème est survenu avec la requête. Rechargez la page et réessayez."
+
+msgid "auth:err_quota_phone"
+msgstr ""
+"Ce numéro a atteint la limite du jour. Réessayez demain ou contactez le "
+"support."
+
+msgid "auth:err_capacity"
+msgstr ""
+"Le canal SMS a atteint sa limite du jour. Réessayez plus tard ou connectez-"
+"vous par mot de passe."
+
+msgid "auth:err_provider"
+msgstr "L'envoi a échoué. Veuillez réessayer."
+
+msgid "auth:err_phone_taken"
+msgstr ""
+"Ce numéro possède déjà un compte. Vous pouvez vous y connecter par code SMS."
+
+msgid "auth:err_already_bound"
+msgstr ""
+"Un numéro de mobile est déjà associé à votre compte. Pour le changer, "
+"contactez le support."
+
+msgid "auth:err_phone_unbound"
+msgstr "Veuillez d'abord associer un numéro de mobile"
+
+msgid "auth:err_on_device"
+msgstr "Veuillez effectuer les opérations liées au mobile sur modelstella.com"
+
+msgid "auth:err_need_online"
+msgstr "Veuillez effectuer les opérations liées au mobile sur modelstella.com"

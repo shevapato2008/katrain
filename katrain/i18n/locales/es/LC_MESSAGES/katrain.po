@@ -3285,3 +3285,103 @@ msgstr ""
 
 msgid "live:loading_match"
 msgstr "Cargando la partida…"
+
+msgid "auth:switch_to_phone"
+msgstr "Iniciar sesión con código SMS"
+
+msgid "auth:switch_to_password"
+msgstr "Iniciar sesión con contraseña"
+
+msgid "auth:forgot_password"
+msgstr "¿Olvidaste tu contraseña?"
+
+msgid "auth:phone"
+msgstr "Número de móvil"
+
+msgid "auth:country_code"
+msgstr "País o región"
+
+msgid "auth:sms_code"
+msgstr "Código de verificación"
+
+msgid "auth:get_code"
+msgstr "Obtener código"
+
+msgid "auth:resend_after"
+msgstr "segundos para reenviar"
+
+msgid "auth:code_submitted"
+msgstr "El código se ha enviado a la operadora. Revisa tus mensajes."
+
+msgid "auth:err_phone_required"
+msgstr "Introduce tu número de móvil"
+
+msgid "auth:err_code_required"
+msgstr "Introduce el código de verificación"
+
+msgid "auth:err_phone_not_bound"
+msgstr ""
+"Todavía no hay ninguna cuenta vinculada a este número. Inicia sesión con tu "
+"usuario y contraseña y vincúlalo en «Ajustes → Vincular número de móvil»."
+
+msgid "auth:err_cooldown"
+msgstr "Demasiadas solicitudes de código. Espera otros"
+
+msgid "auth:seconds"
+msgstr "segundos"
+
+msgid "auth:err_code_mismatch"
+msgstr "El código no es correcto. Compruébalo e inténtalo de nuevo."
+
+msgid "auth:err_code_expired"
+msgstr "El código ha caducado. Solicita uno nuevo."
+
+msgid "auth:err_code_used"
+msgstr "Este código ya se ha usado. Solicita uno nuevo."
+
+msgid "auth:err_code_locked"
+msgstr "Demasiados intentos fallidos. Solicita un código nuevo."
+
+msgid "auth:err_code_not_found"
+msgstr "El código ya no es válido. Solicita uno nuevo."
+
+msgid "auth:err_code_purpose"
+msgstr "Ese código se emitió para otra finalidad. Solicita uno nuevo."
+
+msgid "auth:err_bad_phone"
+msgstr "El número de móvil no es válido. Comprueba el prefijo y el número."
+
+msgid "auth:err_bad_purpose"
+msgstr ""
+"Ha habido un problema con la solicitud. Recarga la página e inténtalo de "
+"nuevo."
+
+msgid "auth:err_quota_phone"
+msgstr ""
+"Este número ha alcanzado el límite diario. Inténtalo mañana o contacta con "
+"soporte."
+
+msgid "auth:err_capacity"
+msgstr ""
+"El canal de SMS ha alcanzado el límite diario. Inténtalo más tarde o inicia "
+"sesión con contraseña."
+
+msgid "auth:err_provider"
+msgstr "No se ha podido enviar. Inténtalo de nuevo."
+
+msgid "auth:err_phone_taken"
+msgstr ""
+"Este número ya tiene una cuenta. Puedes iniciar sesión con un código SMS."
+
+msgid "auth:err_already_bound"
+msgstr ""
+"Tu cuenta ya tiene un móvil vinculado. Para cambiarlo, contacta con soporte."
+
+msgid "auth:err_phone_unbound"
+msgstr "Primero vincula un número de móvil"
+
+msgid "auth:err_on_device"
+msgstr "Realiza las acciones relacionadas con el móvil en modelstella.com"
+
+msgid "auth:err_need_online"
+msgstr "Realiza las acciones relacionadas con el móvil en modelstella.com"

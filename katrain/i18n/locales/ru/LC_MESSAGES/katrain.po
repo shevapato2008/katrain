@@ -3365,3 +3365,101 @@ msgstr "{side}: ходы {from}–{to}, {n} подряд совпали с лу�
 
 msgid "live:loading_match"
 msgstr "Загрузка партии…"
+
+msgid "auth:switch_to_phone"
+msgstr "Вход по SMS-коду"
+
+msgid "auth:switch_to_password"
+msgstr "Вход по паролю"
+
+msgid "auth:forgot_password"
+msgstr "Забыли пароль?"
+
+msgid "auth:phone"
+msgstr "Номер телефона"
+
+msgid "auth:country_code"
+msgstr "Страна или регион"
+
+msgid "auth:sms_code"
+msgstr "Код подтверждения"
+
+msgid "auth:get_code"
+msgstr "Получить код"
+
+msgid "auth:resend_after"
+msgstr "сек. до повторной отправки"
+
+msgid "auth:code_submitted"
+msgstr "Код отправлен оператору. Проверьте SMS."
+
+msgid "auth:err_phone_required"
+msgstr "Введите номер телефона"
+
+msgid "auth:err_code_required"
+msgstr "Введите код подтверждения"
+
+msgid "auth:err_phone_not_bound"
+msgstr ""
+"К этому номеру пока не привязан аккаунт. Сначала войдите по имени "
+"пользователя и паролю, затем привяжите номер в разделе «Настройки → "
+"Привязать номер телефона»."
+
+msgid "auth:err_cooldown"
+msgstr "Слишком частые запросы кода. Подождите ещё"
+
+msgid "auth:seconds"
+msgstr "сек."
+
+msgid "auth:err_code_mismatch"
+msgstr "Неверный код. Проверьте и введите ещё раз."
+
+msgid "auth:err_code_expired"
+msgstr "Срок действия кода истёк. Запросите новый."
+
+msgid "auth:err_code_used"
+msgstr "Этот код уже использован. Запросите новый."
+
+msgid "auth:err_code_locked"
+msgstr "Слишком много неверных попыток. Запросите новый код."
+
+msgid "auth:err_code_not_found"
+msgstr "Код больше недействителен. Запросите новый."
+
+msgid "auth:err_code_purpose"
+msgstr "Этот код выдан для другой операции. Запросите новый."
+
+msgid "auth:err_bad_phone"
+msgstr "Неверный формат номера. Проверьте код страны и номер."
+
+msgid "auth:err_bad_purpose"
+msgstr "Ошибка запроса. Обновите страницу и попробуйте снова."
+
+msgid "auth:err_quota_phone"
+msgstr ""
+"Для этого номера достигнут дневной лимит. Попробуйте завтра или обратитесь в"
+" поддержку."
+
+msgid "auth:err_capacity"
+msgstr "Достигнут дневной лимит SMS. Попробуйте позже или войдите по паролю."
+
+msgid "auth:err_provider"
+msgstr "Не удалось отправить. Попробуйте ещё раз."
+
+msgid "auth:err_phone_taken"
+msgstr ""
+"К этому номеру уже привязан аккаунт. Вы можете войти в него по SMS-коду."
+
+msgid "auth:err_already_bound"
+msgstr ""
+"К вашему аккаунту уже привязан номер телефона. Для смены обратитесь в "
+"поддержку."
+
+msgid "auth:err_phone_unbound"
+msgstr "Сначала привяжите номер телефона"
+
+msgid "auth:err_on_device"
+msgstr "Действия с номером телефона выполняйте на modelstella.com"
+
+msgid "auth:err_need_online"
+msgstr "Действия с номером телефона выполняйте на modelstella.com"

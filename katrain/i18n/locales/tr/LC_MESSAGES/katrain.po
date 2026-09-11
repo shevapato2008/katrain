@@ -3464,3 +3464,108 @@ msgstr "{side}: {from}-{to}. hamleler, üst üste {n} kez en iyi hamle"
 
 msgid "live:loading_match"
 msgstr "Oyun yükleniyor…"
+
+msgid "auth:switch_to_phone"
+msgstr "SMS koduyla giriş yap"
+
+msgid "auth:switch_to_password"
+msgstr "Parolayla giriş yap"
+
+msgid "auth:forgot_password"
+msgstr "Parolanızı mı unuttunuz?"
+
+msgid "auth:phone"
+msgstr "Cep telefonu numarası"
+
+msgid "auth:country_code"
+msgstr "Ülke/Bölge"
+
+msgid "auth:sms_code"
+msgstr "Doğrulama kodu"
+
+msgid "auth:get_code"
+msgstr "Kod al"
+
+msgid "auth:resend_after"
+msgstr "saniye sonra tekrar gönderilebilir"
+
+msgid "auth:code_submitted"
+msgstr "Kod gönderim için iletildi. Lütfen SMS'lerinizi kontrol edin."
+
+msgid "auth:err_phone_required"
+msgstr "Lütfen cep telefonu numaranızı girin"
+
+msgid "auth:err_code_required"
+msgstr "Lütfen doğrulama kodunu girin"
+
+msgid "auth:err_phone_not_bound"
+msgstr ""
+"Bu numaraya bağlı bir hesap henüz yok. Önce kullanıcı adı ve parolanızla "
+"giriş yapın, ardından «Ayarlar → Cep telefonu numarası bağla» bölümünden "
+"bağlayın."
+
+msgid "auth:err_cooldown"
+msgstr "Çok sık kod isteği. Lütfen"
+
+msgid "auth:seconds"
+msgstr "saniye bekleyin"
+
+msgid "auth:err_code_mismatch"
+msgstr "Kod hatalı. Lütfen kontrol edip tekrar girin."
+
+msgid "auth:err_code_expired"
+msgstr "Kodun süresi doldu. Lütfen yeni bir kod isteyin."
+
+msgid "auth:err_code_used"
+msgstr "Bu kod daha önce kullanıldı. Lütfen yeni bir kod isteyin."
+
+msgid "auth:err_code_locked"
+msgstr "Çok fazla hatalı deneme. Lütfen yeni bir kod isteyin."
+
+msgid "auth:err_code_not_found"
+msgstr "Kod artık geçerli değil. Lütfen yeni bir kod isteyin."
+
+msgid "auth:err_code_purpose"
+msgstr "Bu kod başka bir işlem için verilmişti. Lütfen yeni bir kod isteyin."
+
+msgid "auth:err_bad_phone"
+msgstr ""
+"Cep telefonu numarası hatalı görünüyor. Ülke kodunu ve numarayı kontrol "
+"edin."
+
+msgid "auth:err_bad_purpose"
+msgstr "İstekte bir sorun oluştu. Lütfen sayfayı yenileyip tekrar deneyin."
+
+msgid "auth:err_quota_phone"
+msgstr ""
+"Bu numara günlük sınıra ulaştı. Yarın tekrar deneyin veya destekle iletişime"
+" geçin."
+
+msgid "auth:err_capacity"
+msgstr ""
+"SMS kanalı günlük sınıra ulaştı. Daha sonra deneyin veya parolayla giriş "
+"yapın."
+
+msgid "auth:err_provider"
+msgstr "Gönderilemedi. Lütfen tekrar deneyin."
+
+msgid "auth:err_phone_taken"
+msgstr ""
+"Bu numaraya ait bir hesap zaten var. SMS koduyla doğrudan giriş "
+"yapabilirsiniz."
+
+msgid "auth:err_already_bound"
+msgstr ""
+"Hesabınıza zaten bir cep telefonu numarası bağlı. Değiştirmek için destekle "
+"iletişime geçin."
+
+msgid "auth:err_phone_unbound"
+msgstr "Lütfen önce bir cep telefonu numarası bağlayın"
+
+msgid "auth:err_on_device"
+msgstr ""
+"Cep telefonu numarasıyla ilgili işlemleri modelstella.com üzerinden yapın"
+
+msgid "auth:err_need_online"
+msgstr ""
+"Cep telefonu numarasıyla ilgili işlemleri modelstella.com üzerinden yapın"

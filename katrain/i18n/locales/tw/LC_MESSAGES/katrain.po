@@ -3338,3 +3338,93 @@ msgstr "{side} 第{from}–{to}手連續{n}手中一選"
 
 msgid "live:loading_match"
 msgstr "正在載入棋局…"
+
+msgid "auth:switch_to_phone"
+msgstr "驗證碼登入"
+
+msgid "auth:switch_to_password"
+msgstr "密碼登入"
+
+msgid "auth:forgot_password"
+msgstr "忘記密碼？"
+
+msgid "auth:phone"
+msgstr "手機號碼"
+
+msgid "auth:country_code"
+msgstr "國家/地區"
+
+msgid "auth:sms_code"
+msgstr "驗證碼"
+
+msgid "auth:get_code"
+msgstr "取得驗證碼"
+
+msgid "auth:resend_after"
+msgstr "秒後可重發"
+
+msgid "auth:code_submitted"
+msgstr "驗證碼已提交發送，請查收簡訊"
+
+msgid "auth:err_phone_required"
+msgstr "請填寫手機號碼"
+
+msgid "auth:err_code_required"
+msgstr "請填寫驗證碼"
+
+msgid "auth:err_phone_not_bound"
+msgstr "這個手機號碼還沒有綁定帳號。請先用使用者名稱與密碼登入，再到左下角「設定 → 綁定手機號碼」綁定。"
+
+msgid "auth:err_cooldown"
+msgstr "驗證碼發送太頻繁，還需等待"
+
+msgid "auth:seconds"
+msgstr "秒"
+
+msgid "auth:err_code_mismatch"
+msgstr "驗證碼不對，請檢查後重填"
+
+msgid "auth:err_code_expired"
+msgstr "驗證碼已過期，請重新取得"
+
+msgid "auth:err_code_used"
+msgstr "這個驗證碼已經用過了，請重新取得"
+
+msgid "auth:err_code_locked"
+msgstr "錯誤次數太多，請重新取得驗證碼"
+
+msgid "auth:err_code_not_found"
+msgstr "驗證碼已失效，請重新取得"
+
+msgid "auth:err_code_purpose"
+msgstr "驗證碼用途不對，請重新取得"
+
+msgid "auth:err_bad_phone"
+msgstr "手機號碼格式不對，請檢查國碼與號碼"
+
+msgid "auth:err_bad_purpose"
+msgstr "請求有誤，請重新整理頁面後再試"
+
+msgid "auth:err_quota_phone"
+msgstr "這個號碼今天的驗證碼已達上限，請明天再試或聯絡客服"
+
+msgid "auth:err_capacity"
+msgstr "簡訊通道今日已達上限，請稍後再試，或改用密碼登入"
+
+msgid "auth:err_provider"
+msgstr "發送失敗，請重試"
+
+msgid "auth:err_phone_taken"
+msgstr "這個號碼已經有帳號了，可以直接用驗證碼登入那個帳號"
+
+msgid "auth:err_already_bound"
+msgstr "你的帳號已經綁過手機號碼了。換號請聯絡客服"
+
+msgid "auth:err_phone_unbound"
+msgstr "請先綁定手機號碼"
+
+msgid "auth:err_on_device"
+msgstr "請在 modelstella.com 上完成手機號碼相關操作"
+
+msgid "auth:err_need_online"
+msgstr "請在 modelstella.com 上完成手機號碼相關操作"

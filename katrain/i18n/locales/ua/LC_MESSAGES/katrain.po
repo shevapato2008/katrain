@@ -3555,3 +3555,34 @@ msgstr ""
 
 msgid "auth:privacy_policy"
 msgstr "Політика конфіденційності"
+
+msgid "auth:bind_phone"
+msgstr "Прив'язати номер телефону"
+
+msgid "auth:bind_btn"
+msgstr "Прив'язати"
+
+msgid "auth:phone_bound_already"
+msgstr "Номер телефону прив'язано"
+
+msgid "report:free_quota_phone_required"
+msgstr ""
+"Прив'яжіть номер телефону, щоб щотижня отримувати безкоштовні звичайні "
+"розбори"
+
+msgid "report:free_quota_remaining_prefix"
+msgstr "Залишилось цього тижня:"
+
+msgid "report:free_quota_remaining_suffix"
+msgstr "безкоштовних звичайних розборів"
+
+msgid "report:free_quota_used_up"
+msgstr "Безкоштовні звичайні розбори цього тижня вичерпано"
+
+msgid "report:free_quota_unavailable"
+msgstr "Інформація про безкоштовну квоту тимчасово недоступна"
+
+msgid "live:comment_requires_phone"
+msgstr ""
+"Щоб залишати коментарі, прив'яжіть номер телефону. Відкрийте «Налаштування →"
+" Прив'язати номер телефону» внизу ліворуч."

@@ -18,6 +18,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
+import PhoneIphoneIcon from '@mui/icons-material/PhoneIphone';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import LanguageIcon from '@mui/icons-material/Language';
@@ -27,6 +28,7 @@ import { useSettings } from '../../../context/SettingsContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useGameNavigation } from '../../context/GameNavigationContext';
 import LoginModal from '../auth/LoginModal';
+import BindPhoneDialog from '../auth/BindPhoneDialog';
 import { getGalaxyNavigation, isGalaxyNavigationActive } from './galaxyNavigation';
 import type { GalaxySidebarState } from './useGalaxySidebar';
 
@@ -43,6 +45,7 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
   const items = useMemo(() => getGalaxyNavigation(t), [t]);
   const [loginOpen, setLoginOpen] = useState(false);
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<HTMLElement | null>(null);
+  const [bindOpen, setBindOpen] = useState(false);
 
   const navigate = (path: string) => {
     if (overlay) closeOverlay();
@@ -108,6 +111,25 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
               <ListItemText primary={lang.name} />
             </MenuItem>
           ))}
+          {user && <Divider sx={{ my: 0.5 }} />}
+          {user && !user.phone_bound && (
+            <MenuItem
+              onClick={() => { setBindOpen(true); setSettingsAnchorEl(null); }}
+              sx={{ minWidth: 160, display: 'flex', gap: 1 }}
+            >
+              <PhoneIphoneIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+              <ListItemText primary={t('auth:bind_phone', '绑定手机号')} />
+            </MenuItem>
+          )}
+          {/* 已绑号只报状态，不给「换绑 / 解绑」—— 本轮没做那条路径，
+              而 Task 11 的额度短路（不给未绑号建 allowance=0 的桶）正是以「不存在解绑」为前提的。 */}
+          {user && user.phone_bound && (
+            <Box sx={{ px: 2, py: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                {t('auth:phone_bound_already', '手机号已绑定')}
+              </Typography>
+            </Box>
+          )}
         </Menu>
         {user ? (
           <Box sx={{ p: 1.5, bgcolor: 'background.default', borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -123,6 +145,7 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
         )}
       </Box>
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      <BindPhoneDialog open={bindOpen} onClose={() => setBindOpen(false)} />
     </Box>
   );
 };

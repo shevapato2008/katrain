@@ -3565,3 +3565,34 @@ msgstr ""
 
 msgid "auth:privacy_policy"
 msgstr "Datenschutzerklärung"
+
+msgid "auth:bind_phone"
+msgstr "Mobilnummer verknüpfen"
+
+msgid "auth:bind_btn"
+msgstr "Verknüpfen"
+
+msgid "auth:phone_bound_already"
+msgstr "Mobilnummer verknüpft"
+
+msgid "report:free_quota_phone_required"
+msgstr ""
+"Verknüpfen Sie eine Mobilnummer für wöchentliche kostenlose Standard-"
+"Analysen"
+
+msgid "report:free_quota_remaining_prefix"
+msgstr "Diese Woche verbleibend:"
+
+msgid "report:free_quota_remaining_suffix"
+msgstr "kostenlose Standard-Analyse(n)"
+
+msgid "report:free_quota_used_up"
+msgstr "Die kostenlosen Standard-Analysen dieser Woche sind aufgebraucht"
+
+msgid "report:free_quota_unavailable"
+msgstr "Informationen zum Freikontingent sind vorübergehend nicht verfügbar"
+
+msgid "live:comment_requires_phone"
+msgstr ""
+"Zum Kommentieren müssen Sie eine Mobilnummer verknüpfen. Öffnen Sie unten "
+"links „Einstellungen → Mobilnummer verknüpfen“."

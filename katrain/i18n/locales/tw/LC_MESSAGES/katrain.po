@@ -3434,3 +3434,30 @@ msgstr "我同意「智星盒」的營運方北京萬智星科技有限公司收
 
 msgid "auth:privacy_policy"
 msgstr "《隱私策略》"
+
+msgid "auth:bind_phone"
+msgstr "綁定手機號碼"
+
+msgid "auth:bind_btn"
+msgstr "綁定"
+
+msgid "auth:phone_bound_already"
+msgstr "手機號碼已綁定"
+
+msgid "report:free_quota_phone_required"
+msgstr "綁定手機號碼後可享每週免費普通複盤"
+
+msgid "report:free_quota_remaining_prefix"
+msgstr "本週剩餘"
+
+msgid "report:free_quota_remaining_suffix"
+msgstr "次免費普通複盤"
+
+msgid "report:free_quota_used_up"
+msgstr "本週免費普通複盤次數已用完"
+
+msgid "report:free_quota_unavailable"
+msgstr "免費額度資訊暫時取不到"
+
+msgid "live:comment_requires_phone"
+msgstr "發表留言需要先綁定手機號碼。請在左下角「設定 → 綁定手機號碼」完成綁定。"

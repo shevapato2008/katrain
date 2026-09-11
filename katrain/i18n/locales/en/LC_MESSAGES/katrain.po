@@ -3519,3 +3519,32 @@ msgstr ""
 
 msgid "auth:privacy_policy"
 msgstr "Privacy Policy"
+
+msgid "auth:bind_phone"
+msgstr "Link mobile number"
+
+msgid "auth:bind_btn"
+msgstr "Link"
+
+msgid "auth:phone_bound_already"
+msgstr "Mobile number linked"
+
+msgid "report:free_quota_phone_required"
+msgstr "Link a mobile number to get free standard reviews every week"
+
+msgid "report:free_quota_remaining_prefix"
+msgstr "Remaining this week:"
+
+msgid "report:free_quota_remaining_suffix"
+msgstr "free standard review(s)"
+
+msgid "report:free_quota_used_up"
+msgstr "You have used all free standard reviews this week"
+
+msgid "report:free_quota_unavailable"
+msgstr "Free quota information is temporarily unavailable"
+
+msgid "live:comment_requires_phone"
+msgstr ""
+"You need to link a mobile number before posting comments. Open Settings → "
+"Link mobile number in the bottom-left corner."

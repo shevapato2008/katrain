@@ -57,7 +57,17 @@ async function apiPostAuth<T>(path: string, token: string, payload?: any): Promi
   });
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Request failed ${response.status}: ${body}`);
+    /* 报错串保持**原样**（别处按文本断言的用例照旧有效），另挂两格结构化字段，
+       好让调用方按 code 分支，而不是去正则匹配这串 JSON。
+       不挂的话，未绑手机发评论的人看到的是
+       `Request failed 403: {"detail":{"code":"comment_requires_phone"}}` ——
+       原因就写在串里，只是没人翻译给他。 */
+    const err = new Error(`Request failed ${response.status}: ${body}`) as Error & {
+      status?: number; code?: string;
+    };
+    err.status = response.status;
+    try { err.code = JSON.parse(body)?.detail?.code; } catch { /* 非 JSON 响应（网关 502 之类） */ }
+    throw err;
   }
   return response.json();
 }

@@ -3454,3 +3454,30 @@ msgstr "「智星盒」の運営者である北京万智星科技有限公司が
 
 msgid "auth:privacy_policy"
 msgstr "プライバシーポリシー"
+
+msgid "auth:bind_phone"
+msgstr "携帯電話番号を連携"
+
+msgid "auth:bind_btn"
+msgstr "連携する"
+
+msgid "auth:phone_bound_already"
+msgstr "携帯電話番号は連携済みです"
+
+msgid "report:free_quota_phone_required"
+msgstr "携帯電話番号を連携すると、毎週の無料通常検討をご利用いただけます"
+
+msgid "report:free_quota_remaining_prefix"
+msgstr "今週の残り"
+
+msgid "report:free_quota_remaining_suffix"
+msgstr "回の無料通常検討"
+
+msgid "report:free_quota_used_up"
+msgstr "今週の無料通常検討はすべて使い切りました"
+
+msgid "report:free_quota_unavailable"
+msgstr "無料枠の情報を一時的に取得できません"
+
+msgid "live:comment_requires_phone"
+msgstr "コメントを投稿するには携帯電話番号の連携が必要です。左下の「設定 → 携帯電話番号を連携」から行ってください。"

@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { LiveAPI } from '../../../api/live';
 import { useAuth } from '../../../context/AuthContext';
+/* 这是 hook 不是组件，`i18n.t` 不配 useTranslation 订阅：错误串在事件发生那一刻定型，
+   而渲染它的 CommentSection.tsx 自己已经调了 useTranslation()。 */
+import { i18n } from '../../../i18n';
 import type { Comment } from '../../../types/live';
 
 interface UseCommentsOptions {
@@ -110,7 +113,16 @@ export function useComments(
         lastCommentIdRef.current = Math.max(lastCommentIdRef.current, newComment.id);
         return true;
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to post comment');
+        // 后端 403 的 detail.code 现在由 api/live.ts 挂在错误对象上。
+        // 不分支的话用户看到的是 `Request failed 403: {"detail":{...}}` ——
+        // 报错串里其实写着原因，只是没人翻译给他。
+        const code = (err as { code?: string } | null)?.code;
+        if (code === 'comment_requires_phone') {
+          setError(i18n.t('live:comment_requires_phone',
+            '发表评论需要先绑定手机号。请在左下角「设置 → 绑定手机号」完成绑定。'));
+        } else {
+          setError(err instanceof Error ? err.message : 'Failed to post comment');
+        }
         return false;
       }
     },

@@ -3382,3 +3382,30 @@ msgstr "「스텔라박스」 운영사 북경만지성과기유한공사가 본
 
 msgid "auth:privacy_policy"
 msgstr "개인정보 처리방침"
+
+msgid "auth:bind_phone"
+msgstr "휴대폰 번호 연결"
+
+msgid "auth:bind_btn"
+msgstr "연결"
+
+msgid "auth:phone_bound_already"
+msgstr "휴대폰 번호가 연결되어 있습니다"
+
+msgid "report:free_quota_phone_required"
+msgstr "휴대폰 번호를 연결하면 매주 무료 일반 복기를 이용할 수 있습니다"
+
+msgid "report:free_quota_remaining_prefix"
+msgstr "이번 주 남은 횟수"
+
+msgid "report:free_quota_remaining_suffix"
+msgstr "회 무료 일반 복기"
+
+msgid "report:free_quota_used_up"
+msgstr "이번 주 무료 일반 복기를 모두 사용했습니다"
+
+msgid "report:free_quota_unavailable"
+msgstr "무료 사용량 정보를 일시적으로 가져올 수 없습니다"
+
+msgid "live:comment_requires_phone"
+msgstr "댓글을 작성하려면 먼저 휴대폰 번호를 연결해야 합니다. 왼쪽 아래 «설정 → 휴대폰 번호 연결»에서 진행하세요."

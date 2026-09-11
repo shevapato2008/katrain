@@ -3537,3 +3537,35 @@ msgstr ""
 
 msgid "auth:privacy_policy"
 msgstr "Politique de confidentialité"
+
+msgid "auth:bind_phone"
+msgstr "Associer un numéro de mobile"
+
+msgid "auth:bind_btn"
+msgstr "Associer"
+
+msgid "auth:phone_bound_already"
+msgstr "Numéro de mobile associé"
+
+msgid "report:free_quota_phone_required"
+msgstr ""
+"Associez un numéro de mobile pour bénéficier d'analyses standard gratuites "
+"chaque semaine"
+
+msgid "report:free_quota_remaining_prefix"
+msgstr "Restant cette semaine :"
+
+msgid "report:free_quota_remaining_suffix"
+msgstr "analyse(s) standard gratuite(s)"
+
+msgid "report:free_quota_used_up"
+msgstr "Vous avez épuisé les analyses standard gratuites de cette semaine"
+
+msgid "report:free_quota_unavailable"
+msgstr ""
+"Les informations sur le quota gratuit sont momentanément indisponibles"
+
+msgid "live:comment_requires_phone"
+msgstr ""
+"Vous devez associer un numéro de mobile pour commenter. Ouvrez « Paramètres "
+"→ Associer un numéro de mobile » en bas à gauche."

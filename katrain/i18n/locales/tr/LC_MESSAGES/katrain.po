@@ -3578,3 +3578,33 @@ msgstr ""
 
 msgid "auth:privacy_policy"
 msgstr "Gizlilik Politikası"
+
+msgid "auth:bind_phone"
+msgstr "Cep telefonu numarası bağla"
+
+msgid "auth:bind_btn"
+msgstr "Bağla"
+
+msgid "auth:phone_bound_already"
+msgstr "Cep telefonu numarası bağlı"
+
+msgid "report:free_quota_phone_required"
+msgstr ""
+"Her hafta ücretsiz standart analiz için cep telefonu numaranızı bağlayın"
+
+msgid "report:free_quota_remaining_prefix"
+msgstr "Bu hafta kalan:"
+
+msgid "report:free_quota_remaining_suffix"
+msgstr "ücretsiz standart analiz"
+
+msgid "report:free_quota_used_up"
+msgstr "Bu haftaki ücretsiz standart analiz hakkınız doldu"
+
+msgid "report:free_quota_unavailable"
+msgstr "Ücretsiz kota bilgisi şu anda alınamıyor"
+
+msgid "live:comment_requires_phone"
+msgstr ""
+"Yorum yapmak için önce cep telefonu numarası bağlamalısınız. Sol alttaki "
+"«Ayarlar → Cep telefonu numarası bağla» bölümünü açın."

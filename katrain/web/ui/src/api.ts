@@ -293,6 +293,24 @@ export class PhoneApiError extends ApiError {
   }
 }
 
+export interface FreeWeeklyQuota {
+  used: number;
+  allowance: number;
+  /** 'phone_required' = 没绑手机所以**没有资格**；null = 有资格。
+   *  它与 `allowance: 0` 编码的是**不同的事实**：没资格 vs 有资格但额度为零。
+   *  少了它，前端分不出「还没绑号」和「这周用完了」，只能二选一地猜错一半人。 */
+  blocked_reason: string | null;
+}
+export interface BillingQuota {
+  credits: number;
+  free_weekly: FreeWeeklyQuota;
+  /** 「这些钱大概够几份复盘」的估算。端点自己的 docstring 写明**不得**显示成
+   *  「你还能复盘 N 局」这种确定口径 —— 真实成本按实际手数结算。 */
+  estimates?: { normal_250_moves: number; deep_250_moves: number };
+  billing_enforced: boolean;
+  billing_online: boolean;
+}
+
 export interface SendCodeResponse {
   challenge_id: string;
   /** 冷却**时长**常量（后端 SMS_COOLDOWN_SEC，默认 60），不是剩余秒数。 */
@@ -471,6 +489,15 @@ export const API = {
   getLadderRungs: async (): Promise<{ rungs: LadderRung[] }> => {
     const response = await fetch('/api/ladder-rungs');
     if (!response.ok) throw new Error("Failed to fetch ladder rungs");
+    return response.json();
+  },
+  /** 余额与免费周额度。**需要鉴权**（后端 `Depends(get_current_user)`）⇒ 未登录调用得 401，
+   *  所以只能挂在已登录支里。
+   *  ⚠️ `free_weekly` **只描述 `report_type="normal"` 那份额度**（后端 billing.py:99-102
+   *  明写：深度复盘对谁都不免费，前端不得把它显示在深度复盘按钮旁边）。 */
+  getBillingQuota: async (token?: string): Promise<BillingQuota> => {
+    const response = await fetch("/api/v1/billing/quota", { headers: authHeaders(token) });
+    if (!response.ok) throw new ApiError(response.status, `Request failed ${response.status}`);
     return response.json();
   },
   getTranslations: async (lang: string) => {

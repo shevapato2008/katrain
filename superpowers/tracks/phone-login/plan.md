@@ -7309,6 +7309,185 @@ git commit -m "feat(ui): 隐私政策页 + 手机号收集的单独同意
 
 ### Task 16: 绑定手机的用户入口（侧栏设置 + 复盘额度文案 + 发言被拒回执）
 
+> **⛑ 实跑修正（2026-09-11，动手前核验）**
+>
+> ⚠️ **这一轮的并行核验 workflow 整批失败**（5 个 agent 全部 `UNKNOWN_CERTIFICATE_VERIFICATION_ERROR`，
+> 烧掉 676k tokens、248 次工具调用，journal 里只有 `started`/`failed`，**结果一条都捞不回来**）。
+> 下面是主会话自己逐条实跑得到的，范围比前三轮的 agent 核验窄——只覆盖计划明确写出来的承重断言，
+> 没有做「隔离工程跑探针」那一类。**凡本块没提的，落地时仍要当场验。**
+>
+> **一、我事先担心的那条不成立（好消息）**
+>
+> 我原以为 `BILLING_ENFORCED` 写死 False 会让 `blocked_reason` 恒为 null、
+> 从而「未绑号」分支在真环境里今天走不到、T18 第 4 项还是做不了。**实测不是**：
+> `endpoints/billing.py:138` 与 `:157` 的条件是 **`settings.FREE_WEEKLY_REPORTS > 0`**，
+> 与 `BILLING_ENFORCED` 无关；而 `config.py:156` 是 `FREE_WEEKLY_REPORTS: int = 1`。
+> ⇒ 未绑号用户今天就会拿到 `blocked_reason: "phone_required"`，**T18 第 4 项可执行**。
+>
+> **二、后端 docstring 里有一条计划没接住的硬约束（WRONG，会误导用户掏钱）**
+>
+> `endpoints/billing.py:99-102` 逐字：
+> > ⚠️ **`free_weekly` 只描述 `report_type="normal"` 那份额度**：免费分支写死了
+> > `task.report_type == "normal"`（reports.py），深度复盘对谁都不免费。而本响应里
+> > 没有任何一格带 report_type 维度 —— 所以**前端不得把 `free_weekly` 显示在
+> > 深度复盘按钮旁边**，那会让用户以为这次免费、实际照价扣费。
+>
+> 而计划把文案挂在 `railBody` 顶部，**下面紧跟的就是每张卡都带「普通/深度」两个按钮的列表**
+> （`ReportsPage.tsx` 的 `reportType: 'normal' | 'deep'` 那批 handler）。
+> 计划的文案是「本周剩余 N 次免费复盘」——没有任何字眼把深度排除在外。
+> ⇒ **四条额度文案一律写明「普通复盘」**（`次免费普通复盘` / `本周免费普通复盘次数已用完` /
+> `绑定手机号后可享每周免费普通复盘`），测试断言跟着改。这不是润色，是后端作者写下来的约束。
+>
+> **三、行号与插入点（STALE）**
+>
+> | 计划写的 | 实际 |
+> |---|---|
+> | 设置 `<Menu>` 在 `GalaxySidebar.tsx:92-108` | **`:98-111`**。`:92` 是 `<Divider />`、`:93` 是账号区 `<Box>`；触发它的 `ListItemButton` 在 **`:94-97`**；语言 `.map()` 收在 `:110`，`</Menu>` 在 `:111` ⇒ **插入点是 `:110` 之后、`:111` 之前** |
+> | 设置 `<Menu>`「今天只有语言列表」 | CONFIRMED（`:99` 一个 `Language` 小标题 + `:100-110` 的语言 MenuItem） |
+> | `ReportsPage.tsx:441` 右栏 `railBody`、`report:page_hint` | CONFIRMED：`railBody={(` 在 `:441`，`page_hint` 的 `<Typography>` 是 `:448-450` ⇒ 插在 `:450` 之后（计划说「约 :447-449」，差一行） |
+> | `CommentSection.tsx:100-105` 渲染 error | CONFIRMED 逐字（`{error && (<Alert severity="error" …>{error}</Alert>)}`） |
+> | `useGameSession.ts:83-130` 的 onmessage 没有 error 分支 | CONFIRMED：onmessage 起于 `:83`，`grep -c "msg.type === 'error'"` = **0** |
+>
+> **四、可访问名与夹具（CONFIRMED，但有一处计划漏抄）**
+>
+> - 触发按钮：`GalaxySidebar.tsx:96` 是 `<ListItemText primary={t('Settings', 'Settings')} />`，
+>   外层 `ListItemButton` 渲染成 `role="button"` ⇒ 配上计划那条
+>   `vi.mock('../../../hooks/useTranslation', …t: (_k, fallback) => fallback)`，
+>   `getByRole('button', { name: 'Settings' })` **成立**。
+>   该文件用的是**解构出来的 `t`**（9 处）、`i18n.t(` **0 处** ⇒ mock `useTranslation` 是对的那一种。
+> - `GalaxySidebarState` 确实从 `./useGalaxySidebar` 具名导出（`:9`）；props 名确实是 `sidebarState`（`:130-132`）。
+> - `GalaxySidebar` 在 `mode === 'mobile'` 时 **`return null`**（`:134`）⇒ 夹具必须给非 mobile 的 mode，
+>   计划的 `'wide-docked'` 对。
+> - `User` 接口里有 `phone_bound`（`AuthContext.tsx:16`，还带着 Task 13 写的那条陷阱注释）。
+> - **计划漏抄一条**：既有 `GalaxySidebar.test.tsx:11` 有
+>   `vi.mock('../../../api', () => ({ API: { getTranslations: … } }))`，计划的新文件没有它。
+>   **不要补**：本 Task 要在同一棵树里挂 `BindPhoneDialog`，它 `import { API }`，
+>   把整个 `api` 模块换成只有 `getTranslations` 的假对象会让 `API.sendPhoneCode` 变成 undefined。
+>   新文件只开对话框、不点发码，所以不 mock 反而是对的 —— 但要在注释里写明**为什么与隔壁文件不一样**。
+>
+> **五、三条「零消费者」断言全部 CONFIRMED（这是本 Task 存在的理由）**
+>
+> - `grep -rn 'v1/billing\|getBillingQuota\|billing/quota' src` → **0 命中**
+> - `bindPhone` → 只有 `api.ts:567` 的**定义**与 `api.phone.test.ts` 里它自己的用例，**真实调用者 0**
+> - `API.setPassword` → 只有 `api.ts:571` 的定义（其余命中全是无关的 React `setPassword` state setter）
+> - `chat_requires_identity` / `chat_requires_phone` → 前端 **0 命中**
+> - `sendChat` / `chatMessages` 的非测试消费者 → 只有 `useGameSession.ts` 自己三行（`:32`/`:219`/`:232`）
+> - **`CommentSection.tsx` 今天仍然零 importer** ⇒ 本 Task 把 403 映射成中文之后，
+>   **真人今天仍然看不到它**。这一条要如实写进收尾，别让 T18 以为验得了。
+>
+> **六、接口形状（CONFIRMED + 一处计划写窄了）**
+>
+> `GET /api/v1/billing/quota`（`endpoints/billing.py:158-169`）实际返回：
+> ```
+> {credits, ..., free_weekly:{used, allowance, blocked_reason},
+>  estimates:{normal_250_moves, deep_250_moves}, billing_enforced, billing_online}
+> ```
+> 计划的 `BillingQuota` 接口漏了 `estimates`（运行时多出的字段 TS 不管，但接口应当照实写）。
+> 端点走 `Depends(get_current_user)` ⇒ **未登录 401**，所以只能挂在已登录支
+> —— `ReportsPage.tsx:353` 有 `if (!isAuthenticated) { … }` 的早退，`:441` 在它之后，成立。
+> 盒子上 `_is_board()` → `_need_online()`，但 ReportsPage 只在 galaxy，无关。
+>
+> `useComments` 签名实测 `useComments(matchId: string|undefined, isLive: boolean, options = {})`，
+> `options.pollInterval` 存在（`:27`，默认 3000）；返回含 `loading`/`error`/`postComment`；
+> `postComment` 的 catch 在 `:112-115`。计划的调用写法成立。
+> `api/live.ts` 的 `apiPostAuth` 在 `:49-63`，错误在 `:60`；`LiveAPI.createComment` 在 `:212` 走它。
+>
+> **七、三个已知坑的重演（WRONG）**
+>
+> 1. **`new URL('../BindPhoneDialog.tsx', import.meta.url)` —— 这是本轨道第三次**。
+>    Vite 把字面量形式改写成 `http://`，`readFileSync` 报 `The URL must be of scheme file`。
+>    见 [[reference_vite_rewrites_new_url_literal]]。
+> 2. **`getByRole('checkbox', { name: /隐私政策/ })` 取不到**：Task 15 已把 `PhoneConsent` 的链接文案
+>    定成 **《隐私策略》**（与 `PRIVACY_TITLE = '智星盒隐私策略'` 和设计稿一致）。一律写 `{ name: /隐私/ }`。
+> 3. **中文默认值闸会长出第四份**。T14 建了一条（30 键 / 2 文件），T15 把它扩成 32 键 / 3 文件
+>    并另加了一条「键必须真的落进 11 本 `.po`」的闸；T16 又要照抄一份 10 键 / 4 文件的。
+>    两份同形的闸分居两处，改一处不会有人告诉你另一处坏了 —— 这正是 T15 刚避开的形状。
+>    ⇒ **把两条闸抽到一个独立文件** `src/galaxy/components/auth/__tests__/i18nKeys.guard.test.ts`
+>    （命名照仓里现成的 `src/api/__tests__/tutorialReadonly.guard.test.ts`），
+>    `SOURCES` 扩到 6 个文件、`NEW_KEYS` 扩到 42 个键。T17 再加键时只动这一处。
+>    相对路径实测可达：从 `auth/__tests__/` 出发 `../../layout/GalaxySidebar.tsx`、
+>    `../../../hooks/live/useComments.ts`、`../../billing/FreeQuotaNotice.tsx` 都通。
+>
+> **八、目录与落点（CONFIRMED）**
+>
+> - `src/galaxy/pages/` 全量列出，**确实没有任何 Settings/Profile 页** ⇒ 侧栏那个 Menu 就是本产品里「设置」的实体。
+>   T18 的验收文案要写「侧栏『设置』菜单」，不是「设置页」。
+> - `src/galaxy/components/` 下现有 11 个子目录（aiLadder/auth/board/game/guards/layout/live/report/research/tsumego/tutorials），
+>   新建 `billing/` 与惯例一致。
+> - `src/galaxy/hooks/live/` 今天只有 `useComments.ts`，无测试先例。
+> - 四个新文件 `git check-ignore --no-index` 逐个实测 **全部 NOT-IGNORED**（`Phone*`/`Free*`/`Galaxy*`/`use*` 都不撞 `log*`）。
+
+
+> **✅ 实跑结果（2026-09-11，Task 16 落地）**
+>
+> **Step 2 的红因**（与计划预测的形状一致）：`BindPhoneDialog.test.tsx` 与
+> `FreeQuotaNotice.test.tsx` 在**收集阶段**整文件报 `Failed to resolve import`；
+> 另外 5 条用例级失败 + **2 条天生绿**（「未登录：设置菜单里根本没有这一项」与
+> 「别的失败不被误伤」—— 它们守的是「别越权」，实现前后都该绿，留着是防实现时把条件写反）。
+>
+> **计划的键清单多算了一个。** 它列 10 个新键，其中 `auth:err_phone_taken`
+> **Task 14 就已经在 LoginModal 的 BY_CODE 表里了**。真正的新键是 **9 个**。
+> BindPhoneDialog 复用那一份默认值，不给同一个键写第二份文案 —— msgstr 在生产里只有一份，
+> 两份默认值只会在「字典为空」那个退化态里打架，而那正是没人会去看的状态。
+> 测试断言跟着改成按既有那份文案走（`/已经有账号/` + `/验证码登录/`）。
+>
+> **两条闸抽成了独立文件。** T14 建第一条（30 键 / 2 文件），T15 扩成 32 键 / 3 文件并加了
+> 「键必须真落进 11 本 `.po`」那条，T16 的计划原稿又要照抄一份 10 键 / 4 文件的 ——
+> **两份同形的闸分居两处，改一处不会有人告诉你另一处坏了**。已抽到
+> `src/galaxy/components/auth/__tests__/i18nKeys.guard.test.ts`（命名照仓里现成的
+> `src/api/__tests__/tutorialReadonly.guard.test.ts`）：**一张 41 键清单、两条闸、七个源文件**。
+> T17 再加键只动这一处。
+>
+> **Step 5 变异矩阵：8 条，全红。** 计划列了 5 条，另加 3 条。
+>
+> | # | 变异 | 结果 |
+> |---|---|---|
+> | M1 | `FreeQuotaNotice` 删掉 `blocked === 'phone_required'` 那一支 | RED —— 证明 Task 11 的 `blocked_reason` **真有读者**，不是白加的字段 |
+> | M2 | 发码 purpose 从 `'bind'` 改回 `'login'` | RED |
+> | M3 | 绑定成功后不 `refreshUser()` | RED |
+> | M4 | `useComments` 去掉 code 分支 | RED |
+> | M5 | 侧栏条件 `!user.phone_bound` 反过来 | RED |
+> | M7 | 额度文案去掉「普通」二字 | RED ← 钉后端那条约束，见下 |
+> | M8 | 从 tr 的 `.po` 删掉一个键 | RED ← 钉抽出来的落地闸 |
+> | M6 | `live.ts` 不再把 `code` 挂上错误对象 | **第一轮 STILL-GREEN**，补判据后 RED，见下 |
+>
+> **M6 那次绿，是「到达性测试给断路发通行证」的教科书形状。**
+> `useComments.phone.test.tsx` 把 `LiveAPI.createComment` 整个 mock 掉，并**自己造一个已经带
+> `.code` 的错误对象** —— 它从来没执行过 `api/live.ts` 里那行 `JSON.parse(body)?.detail?.code`。
+> 夹具造在断点**里面**，堵点按定义总在更外面。
+> 已补 `src/api/live.errorShape.test.ts`（3 条），从**全局 fetch** 那一层进去走真的 `apiPostAuth`：
+> 403 的 code 被挂上、报错串一个字没改、非 JSON 的 502 不把整件事搞崩。补完 M6 当场变红。
+> 同族 [[reference_reachability_fixture_certifies_broken_path]]。
+>
+> **比计划多做的一件（后端作者写下来的约束，计划没接住）**：
+> `endpoints/billing.py:99-102` 明写「`free_weekly` 只描述 `report_type="normal"`，深度复盘对谁都不免费，
+> **前端不得把它显示在深度复盘按钮旁边**」。而这行文案下面紧跟的列表里，每张卡都带
+> 「普通/深度」两个按钮。⇒ 四条额度文案一律写明「**普通**复盘」，M7 钉住它。
+>
+> **我事先担心的那条不成立（已写进上面的修正块）**：`blocked_reason` 的条件是
+> `FREE_WEEKLY_REPORTS > 0`（默认 **1**），与 `BILLING_ENFORCED` 无关 ⇒ 未绑号分支今天真的走得到，
+> **T18 第 4 项可执行**。
+>
+> **Step 6**：`batch_translate_galaxy.py` 报 `Total entries updated: 99` = 9 × 11；
+> `git diff --numstat katrain/i18n/locales` 删除行数 **0**；新增唯一 msgid **恰好 9 个**；
+> `i18n.py` 跑完 `.po` 内容一字未变。
+>
+> **Step 7**：三个构建**全退 0**（`api.ts` 与 `api/live.ts` 在共享领土，所以三档都跑）。
+> 全量前端单测 **172 files / 1762 passed / 7 skipped**（T15 收尾是 166 / 1745 / 7 ⇒ 增量
+> 6 个文件 17 条），失败集合仍为空集。**`ReportsPage.test.tsx` 那 20 条挂上 `FreeQuotaNotice`
+> 之后仍然全绿**。
+> pytest：`test_stellabox_branding.py` 读 `PRODUCT_FILES`（含本轮改过的 `GalaxySidebar.tsx`）那两条**通过**，
+> 另一条仍是 develop 起就有的既有红；
+> `test_posting_requires_phone / test_sms_challenge / test_billing* / test_quota` 83 passed 1 skipped，
+> `test_phone_quota_gate / test_billing_api / test_phone_bind / test_phone_endpoints` 54 passed。
+>
+> **如实记账：本 Task 修好的三条里，只有两条今天有真人能走到的路径。**
+> - 侧栏绑定入口 ✅ 真人可点
+> - 复盘页额度文案 ✅ 真人可见（`FREE_WEEKLY_REPORTS=1` ⇒ 未绑号分支今天就会出现）
+> - 评论被拒回执 ❌ **`CommentSection.tsx` 今天仍然零 importer**（复核过）——
+>   403 映射成中文之后，**真人今天仍然看不到它**，只有第三方客户端可见。
+>   连同 Task 12 的对局聊天闸（`chatMessages`/`sendChat` 零消费者）一起写进收尾：
+>   **T18 的验收清单里这两项要显式写「本项不走浏览器，理由：无入口」，不许以「通过」的形式静默略过。**
 **Files:**
 - Create: `katrain/web/ui/src/galaxy/components/auth/BindPhoneDialog.tsx`
 - Create: `katrain/web/ui/src/galaxy/components/billing/FreeQuotaNotice.tsx`

@@ -3394,3 +3394,34 @@ msgstr ""
 
 msgid "auth:privacy_policy"
 msgstr "Política de privacidad"
+
+msgid "auth:bind_phone"
+msgstr "Vincular número de móvil"
+
+msgid "auth:bind_btn"
+msgstr "Vincular"
+
+msgid "auth:phone_bound_already"
+msgstr "Número de móvil vinculado"
+
+msgid "report:free_quota_phone_required"
+msgstr ""
+"Vincula un número de móvil para disfrutar de análisis estándar gratuitos "
+"cada semana"
+
+msgid "report:free_quota_remaining_prefix"
+msgstr "Restantes esta semana:"
+
+msgid "report:free_quota_remaining_suffix"
+msgstr "análisis estándar gratuito(s)"
+
+msgid "report:free_quota_used_up"
+msgstr "Has agotado los análisis estándar gratuitos de esta semana"
+
+msgid "report:free_quota_unavailable"
+msgstr "La información de la cuota gratuita no está disponible por ahora"
+
+msgid "live:comment_requires_phone"
+msgstr ""
+"Para comentar necesitas vincular un número de móvil. Abre «Ajustes → "
+"Vincular número de móvil» abajo a la izquierda."

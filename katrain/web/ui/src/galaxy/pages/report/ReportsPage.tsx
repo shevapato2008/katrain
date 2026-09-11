@@ -39,6 +39,7 @@ import {
 } from '../../../features/report/reportModel';
 import PlaybackBar from '../../../components/live/PlaybackBar';
 import ReportGameCard from '../../components/report/ReportGameCard';
+import FreeQuotaNotice from '../../components/billing/FreeQuotaNotice';
 import ReportImportMenu from '../../components/report/ReportImportMenu';
 import ReportLibraryImportDialog from '../../components/report/ReportLibraryImportDialog';
 import ReportLocalImportDialog, {
@@ -448,6 +449,12 @@ export default function ReportsPage() {
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                 {t('report:page_hint', 'Select a game to preview it. Reports are created from the game card.')}
               </Typography>
+
+              {/* 免费额度提示。挂在已登录支里 —— /billing/quota 走 Depends(get_current_user)，
+                  未登录调用得 401（本页 :353 已有 !isAuthenticated 的早退，这里在它之后）。
+                  「它真的被挂上了」这一条由 Task 18 在真浏览器里证：FreeQuotaNotice 自己那 5 条
+                  用例是单独渲染这个组件跑的，证不了它被挂进了本页。 */}
+              <FreeQuotaNotice />
 
               {(taskError || reportTasksError) && (
                 <Alert

@@ -3289,3 +3289,30 @@ msgstr "我同意「智星盒」的运营方北京万智星科技有限公司收
 
 msgid "auth:privacy_policy"
 msgstr "《隐私策略》"
+
+msgid "auth:bind_phone"
+msgstr "绑定手机号"
+
+msgid "auth:bind_btn"
+msgstr "绑定"
+
+msgid "auth:phone_bound_already"
+msgstr "手机号已绑定"
+
+msgid "report:free_quota_phone_required"
+msgstr "绑定手机号后可享每周免费普通复盘"
+
+msgid "report:free_quota_remaining_prefix"
+msgstr "本周剩余"
+
+msgid "report:free_quota_remaining_suffix"
+msgstr "次免费普通复盘"
+
+msgid "report:free_quota_used_up"
+msgstr "本周免费普通复盘次数已用完"
+
+msgid "report:free_quota_unavailable"
+msgstr "免费额度信息暂时取不到"
+
+msgid "live:comment_requires_phone"
+msgstr "发表评论需要先绑定手机号。请在左下角「设置 → 绑定手机号」完成绑定。"

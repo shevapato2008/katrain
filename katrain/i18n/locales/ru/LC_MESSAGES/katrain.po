@@ -3472,3 +3472,34 @@ msgstr ""
 
 msgid "auth:privacy_policy"
 msgstr "Политика конфиденциальности"
+
+msgid "auth:bind_phone"
+msgstr "Привязать номер телефона"
+
+msgid "auth:bind_btn"
+msgstr "Привязать"
+
+msgid "auth:phone_bound_already"
+msgstr "Номер телефона привязан"
+
+msgid "report:free_quota_phone_required"
+msgstr ""
+"Привяжите номер телефона, чтобы получать бесплатные обычные разборы каждую "
+"неделю"
+
+msgid "report:free_quota_remaining_prefix"
+msgstr "Осталось на этой неделе:"
+
+msgid "report:free_quota_remaining_suffix"
+msgstr "бесплатных обычных разбора(ов)"
+
+msgid "report:free_quota_used_up"
+msgstr "Бесплатные обычные разборы на этой неделе закончились"
+
+msgid "report:free_quota_unavailable"
+msgstr "Информация о бесплатной квоте временно недоступна"
+
+msgid "live:comment_requires_phone"
+msgstr ""
+"Чтобы оставлять комментарии, привяжите номер телефона. Откройте «Настройки →"
+" Привязать номер телефона» внизу слева."

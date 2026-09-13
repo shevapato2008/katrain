@@ -298,9 +298,53 @@ const paper = [...document.querySelectorAll('[role="dialog"]')]
 - **cron 两台都不吃这条闸**（`Dockerfile.cron` 只 `COPY katrain/cron/`），所以 cron 不用配。
   哪天 `Dockerfile.cron` 改成 `COPY . /app`，这一行回显会变，那时 cron 也得配上。
 
-待办（需 Fan 批准后执行，顺序照 2026-08-31 的裁定：先测试环境再生产）：
-两台各配 `KATRAIN_SMS_PROVIDER=aliyun`（凭据留空），`docker compose -f <份1> -f <份2> up -d <web 服务>`，
-然后回显 `SMS=[aliyun]` 并贴回本文件。**不许加 `--remove-orphans`**（这台机器的磁盘 compose
+### 2026-09-13 已执行（Fan 批准）：两台 env 都配上了，但**生产还差一处，不在本仓**
+
+**先修正上一轮的说法。**「两台各配 `KATRAIN_SMS_PROVIDER=aliyun` 就行」对测试机成立，
+**对生产不成立** —— 探测发现两台读的根本不是同一份 compose：
+
+- 测试机读**仓库根**的 `docker-compose.yml`，我这条分支已经给它加了
+  `- KATRAIN_SMS_PROVIDER=${KATRAIN_SMS_PROVIDER:?...}`（Task 5 落的）⇒ 合并即生效。
+- 生产读 `deploy/ucloud/compose.yml` + `compose.production.yml`，两份里 `KATRAIN_SMS` 命中 **0**，
+  而 `deploy/ucloud/` **只存在于 `release/ucloud-20260805`（部署的是 `29aa20f7`）与
+  `feat/ucloud-production-migration`**，develop 的 `deploy/` 下只有 `minio/`。
+  ⇒ **合并本分支对生产的 compose 一个字都不改**，容器 env 仍是空，闸仍会拒绝启动。
+  且两份文件的写法也不同（生产是 `KEY: ${VAR}` 映射式，仓库根是 `- KEY=${VAR}` 列表式）。
+
+**今天做了什么（两台都没重启容器 —— 今天重启证明不了任何事，纯停机）：**
+
+| | home-ubuntu | ucloud-v100 |
+|---|---|---|
+| 分支/版本 | `develop` @ `f2fc3c01` | `release/ucloud-20260805` @ `29aa20f7` |
+| env 文件 | `/home/fan/Repositories/katrain/.env`（compose 默认读） | `/etc/katrain/ucloud.env`（部署脚本 `--env-file` 传入） |
+| 写入 | `KATRAIN_SMS_PROVIDER=aliyun`（第 23 行）+ 三行注释 | 同（第 21 行）+ 四行注释 |
+| 备份 | `/tmp/env.bak.<ts>` | `/etc/katrain/ucloud.env.bak.20260913` |
+| 插值链实测 | probe overlay 渲染出 `KATRAIN_SMS_PROVIDER: aliyun` | 同，`config` 第 167 行 |
+| 现有栈渲染 | `config OK` | `config OK` |
+| 容器 | `katrain-web Up 7 days`（未动） | `katrain-ucloud-katrain-web-1 Up 7 days (healthy)`（未动） |
+
+**插值链是实测出来的，不是推的。** 做法：写一份临时 overlay，把「将来要加的那一行」原样复刻，
+连同真实的 compose 与真实的 env 文件一起 `docker compose config`，看它渲染成什么。
+渲染出 `aliyun` ⇒ 「env 文件 → 插值 → 容器 environment」这条链在这台机器上是通的，
+而这一步**不碰运行中的栈**。之后删掉 overlay。
+
+选 env 文件而不是改容器的 `environment`：两处都不在 git 里、跨发布持久
+（生产的 release 目录是版本钉死的 `releases/29aa20f7/`，往那儿写下次发布就没了，
+`/etc/katrain/` 不会）。加一个**没人引用**的变量对现有栈是惰性的，两台的 `config --quiet` 都过。
+
+**⛔ 仍然卡着的一件（需 Fan 定，本仓做不了）：**
+`release/ucloud-20260805` 的 `deploy/ucloud/compose.yml`，`katrain-web.environment` 下要加
+
+```yaml
+      KATRAIN_SMS_PROVIDER: ${KATRAIN_SMS_PROVIDER:?KATRAIN_SMS_PROVIDER is required}
+```
+
+（照该文件既有的 `KATRAIN_SECRET_KEY: ${KATRAIN_SECRET_KEY:?...}` 那一行的形状写。）
+少了它，**本分支合并并发到生产的那一刻，`katrain-ucloud-katrain-web-1` 会拒绝启动**。
+`compose.production.yml` 不用动（它只有 143 字节的 profile 覆盖）。cron 两台都不吃这条闸。
+
+发布那次的验证：`docker exec <web 容器> sh -lc 'echo SMS=[$KATRAIN_SMS_PROVIDER]'` 回显
+`SMS=[aliyun]`，贴回本文件。**不许加 `--remove-orphans`**（这台机器的磁盘 compose
 与正在跑的 stack 对不上过，加上它会把教学媒体的对象存储一起删掉）。
 
 ---

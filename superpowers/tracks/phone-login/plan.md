@@ -9436,7 +9436,21 @@ Expected: 提交里**只有这两个文件**（`docker-compose.yml` 不在其中
     而手机宽度下左下角没有那个菜单。**补不补、怎么补（挪进 BottomNav 的「更多」/ 顶栏头像菜单）
     是产品决定，交回 Fan。**
 
+19b. **⛔ 生产还差一处，而它不在本仓（2026-09-13 探测发现，修正 19 的说法）。**
+    两台读的不是同一份 compose：测试机读**仓库根**的 `docker-compose.yml`（Task 5 已加那一行，
+    合并即生效）；**生产读 `deploy/ucloud/compose.yml` + `compose.production.yml`，两份里
+    `KATRAIN_SMS` 命中 0**，而 `deploy/ucloud/` 只存在于 `release/ucloud-20260805`
+    （部署的是 `29aa20f7`）与 `feat/ucloud-production-migration`，develop 的 `deploy/` 下只有 `minio/`。
+    ⇒ **合并本分支对生产的 compose 一个字都不改**，容器 env 仍是空，闸仍会拒绝启动。
+    要在那条 release 分支上给 `katrain-web.environment` 加
+    `KATRAIN_SMS_PROVIDER: ${KATRAIN_SMS_PROVIDER:?KATRAIN_SMS_PROVIDER is required}`
+    （照同文件 `KATRAIN_SECRET_KEY` 那一行的映射式写法，不是仓库根的列表式）。**归谁改、何时改要 Fan 定。**
+
 19. **部署前置的实测回显（Task 18 Step 10，只读探测，2026-09-11）：两台都是 `SMS=[]`。**
+    **2026-09-13 已按 Fan 批准配好两台的 env**（home-ubuntu 的 `.env`、ucloud 的
+    `/etc/katrain/ucloud.env`，各写 `KATRAIN_SMS_PROVIDER=aliyun` 并留了备份），
+    插值链在两台上都用 probe overlay 实测渲染出 `aliyun`，**两台容器都没重启**
+    （今天重启证明不了任何事：变量还没人引用）。详见 `verification.md` 第 5 节。
     详见 `verification.md` 第 5 节的表。合并前必须两台各配 `KATRAIN_SMS_PROVIDER=aliyun`
     并回显 `SMS=[aliyun]`。三条操作要点：`config_files` 两台都是**逗号分隔两份**，
     `docker compose` 每份各给一个 `-f`；生产容器名是 `katrain-ucloud-katrain-web-1`；

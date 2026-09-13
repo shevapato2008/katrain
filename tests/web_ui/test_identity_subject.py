@@ -40,7 +40,7 @@ test_auth_api,test_phone_endpoints}.py -q -p no:randomly`
 
   M6 get_user_by_uuid 改回 .first() → **休眠，本轮未执行**。
      实测（非转述）：`ix_users_uuid` 今天是 UNIQUE 索引，把第二行 uuid 改成重复
-     会被 `UNIQUE constraint failed: users.uuid` 挡回 ⇒ 构造不出重复行。
+     会被 `UNIQUE constraint failed: users.uuid` 挡回 ⇒ 正常写入路径构造不出重复行。
      **一个要留痕的判断**：闸 1/3 用 `PRAGMA writable_schema` 摘 NOT NULL 是允许的，
      因为「迁移旧库上 token_epoch 可空」这个形状**线上真实存在**；同样的手法也能摘掉
      uuid 的唯一索引把 M6 跑起来，但那造出来的是**今天任何真实库都没有的形状**。
@@ -52,7 +52,17 @@ test_auth_api,test_phone_endpoints}.py -q -p no:randomly`
      而且比「没闸」更糟：临时探针实测，改坏之后**没改过密码的正常换发也返 401**
      （同一探针在干净代码上是 200）⇒ 全体用户的 token 续期永久失效，
      而闸 1 那两条仍然绿 —— 它们断言的正是 401，只是这次 401 来自另一个病因。
-     **本轮不补闸**（超出 Task 6 范围），如实记在这里等裁定。探针跑完即删，未入库。
+
+     **已补（Task 6b，2026-09-13）**：两条断言并入闸 2 —— 不新开一条闸，理由是
+     闸 2 已经在同一个函数里问过「这次登录签出来的 access token 的 sub 对不对」，
+     refresh 是同一次登录的另一张票，问法相同。补法：decode 登录响应里的
+     `refresh_token`，重复闸 2 对 access 做的两条形状断言（32 位十六进制、不等于
+     用户名），再拿它去打一次 `/auth/refresh` 断言 200 —— 前两句认形状，最后一句
+     认行为（全仓另两处 refresh-200 断言喂的都是 `refresh_token_for` 自己签的票，
+     量的不是这个操作数）。重跑同一条全量命令验证：**恰好 1 红**——
+     `test_minted_subject_is_the_account_uuid_not_the_username`，停在新加的
+     `refresh 的 sub 不是 32 位十六进制：'alice'` 那句，其余 53 条不受影响；
+     还原 `auth.py` 后回到 54 passed。
 """
 import re
 
@@ -119,6 +129,23 @@ async def test_minted_subject_is_the_account_uuid_not_the_username(phone_auth_cl
     assert _HEX32.match(payload["sub"]), f"sub 不是 32 位十六进制：{payload['sub']!r}"
     assert payload["sub"] != "alice"
     assert "epoch" in payload, "token 里没有 epoch ⇒ 改密码失效闸形同虚设"
+
+    # M7（2026-09-13 变异实测）：refresh 的铸造点原本无人守 —— 把它的 sub 改回用户名，
+    # 全量 54 条一条不红，而真实后果是所有人的续期永久 401。闸 1 那条 e2e 挡不住它：
+    # 它断言的正是 refresh 返回 401，换个病因照样绿。
+    refresh_payload = jwt.decode(
+        resp.json()["refresh_token"], settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+    )
+    assert _HEX32.match(refresh_payload["sub"]), f"refresh 的 sub 不是 32 位十六进制：{refresh_payload['sub']!r}"
+    assert refresh_payload["sub"] != "alice"
+
+    # 上面两句认的是形状，这句认的是行为。全仓另外两处 refresh 的 200 断言，
+    # 喂进去的 token 都是 `refresh_token_for` 自己签的 ⇒ 它们量的不是这个操作数。
+    # 这是唯一一条「登录签出来的 refresh 票真的换得出新票」。
+    renewed = await phone_auth_client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": resp.json()["refresh_token"]}
+    )
+    assert renewed.status_code == 200, f"登录签出来的 refresh token 换不出新票：{renewed.status_code} {renewed.text}"
 
 
 # ---------- 闸 3：迁移库那条 nullable 分叉 ----------

@@ -31,12 +31,14 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: auth.token, user: auth.user }),
+  useAuth: () => ({ token: auth.token, user: auth.user, isAuthenticated: auth.isAuthenticated }),
 }));
 const { getAiLadderStatus } = vi.hoisted(() => ({ getAiLadderStatus: vi.fn() }));
 vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus }));
 
-const auth = { token: 'tok' as string | null, user: { id: 1, username: '我' } };
+// isAuthenticated 与 token 是**两个量**：严格盒端 token 恒 null 而人是登录的，
+// 所以夹具必须能分别置位，不能让一个推另一个。
+const auth = { token: 'tok' as string | null, user: { id: 1, username: '我' }, isAuthenticated: true };
 
 const GAMES = [
   { session_id: 'aaaa1111', player_b: '小满', player_w: '云在青天', spectator_count: 3, move_count: 87 },
@@ -71,6 +73,7 @@ beforeEach(() => {
   sent.length = 0;
   auth.token = 'tok';
   auth.user = { id: 1, username: '我' };
+  auth.isAuthenticated = true;
   vi.stubGlobal('WebSocket', FakeWS);
   vi.stubGlobal('fetch', vi.fn((url: string) => {
     const body = url.includes('/users/online') ? USERS
@@ -240,8 +243,35 @@ describe('屏 06 在线大厅', () => {
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/room/sess-9'));
   });
 
+  /**
+   * 回归钉子（2026-09-13 板上实测）：严格盒端 SSO 里 token 恒为 null 而人是登录的
+   * （凭据在 HttpOnly sb_go_token cookie 里）。这一屏原来四道闸全建在 token 上，
+   * 于是**已登录**的盒端用户看到的是「登录后进在线大厅」那道门，名单、定级、WS 全死。
+   * 而 KioskAuthGuard 判的正是 isAuthenticated —— 能走到这一屏的人按定义都已登录。
+   * 变异验证：把本页任一处 `!isAuthenticated` 改回 `!token`，这条立刻红。
+   */
+  it('盒端:token 恒 null 而已登录 —— 大厅照常开,不摆那道门,凭据交给 cookie', async () => {
+    auth.token = null;
+    auth.isAuthenticated = true;
+    renderPage();
+
+    await waitFor(() => expect(screen.getAllByTestId('lobby-player')).toHaveLength(5));
+    expect(screen.queryByTestId('lobby-guest')).not.toBeInTheDocument();
+    // 定级 effect 也真的跑了（没有 token 时传 undefined，让 cookie 去认证）
+    expect(getAiLadderStatus).toHaveBeenCalledWith(undefined);
+    // 两个列表请求发出去了，且**不打 Authorization 头**
+    const calls = (fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    const listCalls = calls.filter((c) => typeof c[0] === 'string'
+      && ((c[0] as string).includes('/users/online') || (c[0] as string).includes('/games/active/multiplayer')));
+    expect(listCalls).toHaveLength(2);
+    for (const c of listCalls) {
+      expect((c[1] as { headers?: unknown } | undefined)?.headers).toBeUndefined();
+    }
+  });
+
   it('没登录:走那道门,一份灰名单都不摆', async () => {
     auth.token = null;
+    auth.isAuthenticated = false;
     renderPage();
     expect(await screen.findByTestId('lobby-guest')).toBeInTheDocument();
     expect(screen.getByText('登录后进在线大厅')).toBeInTheDocument();
@@ -258,10 +288,12 @@ describe('屏 06 在线大厅', () => {
    */
   it('访客态和登录态是同一条 hook 序列 —— 同一个实例上登录不许炸', async () => {
     auth.token = null;
+    auth.isAuthenticated = false;
     const view = renderPage();
     expect(await screen.findByTestId('lobby-guest')).toBeInTheDocument();
 
     auth.token = 'tok';
+    auth.isAuthenticated = true;
     view.rerender(
       <ThemeProvider theme={kioskTheme}><MemoryRouter><LobbyPage /></MemoryRouter></ThemeProvider>,
     );

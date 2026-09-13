@@ -28,7 +28,7 @@ const { platformStatus, platformUsers, platformSendChallenge, platformStartAutom
 vi.mock('../../api', () => ({
   API: { platformStatus, platformUsers, platformSendChallenge, platformStartAutomatch, platformCancelAutomatch },
 }));
-vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: 'tok', user: { id: 1, username: 'u' } }) }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: 'tok', user: { id: 1, username: 'u' }, isAuthenticated: true }) }));
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');

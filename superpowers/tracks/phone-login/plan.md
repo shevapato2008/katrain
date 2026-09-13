@@ -9471,6 +9471,29 @@ Expected: 提交里**只有这两个文件**（`docker-compose.yml` 不在其中
     开机 `server.py:469` 调 `set_refresh_token` 会把它清成 False（`remote_client.py:61-63`）
     ⇒ **盒子每重启一次就再打死一条**。交 P4。
 
+    **2026-09-14 更正（国际象棋 track 给出出厂镜像是严格包的硬结论之后自查出来的）**：
+    上面那句「盒子每重启一次就再打死一条」**只在非严格 board 模式成立**。
+    `server.py:463` 有 `if not strict_box_sso_enabled():` 守着凭据文件的开机读回，
+    注释写明「严格档的云端票只经认证过的 loopback bridge 进来，绝不恢复设备级凭据」。
+    ⇒ **出厂盒子（严格包）上 katrain 的云端票只从 `/box-sso/bootstrap`（`auth.py:331`
+    的 `set_tokens`）来、只在内存里、重启即空**，根本没有「原样重新装上」这回事；
+    `save_refresh_token`（`auth.py:383`）挂在 `/auth/login` 上，而该端点严格档恒 403。
+    严格档重启后的表现是另一回事：票全没了 + `active_generation` 也在内存里一起没了
+    ⇒ 必须由 launcher 重新 bootstrap。
+    出厂镜像是严格包这一条的依据在 smartbox-software：`provisioning/provision.sh` 的
+    production board mode 走 `validate_smartbox_kiosk_build()`，硬闸要求
+    `.smartbox-build.json` 逐字等于 `{"box_sso_strict": true, "schema": 1}`，
+    并把 `build:kiosk-2d` 明写成 "not deployable"（`:446`、`:700-701`，
+    `provisioning/tests/test_box_sso_provisioning.py:73,77` 钉住）。
+    **教训：我把非严格 board 模式读到的路径当成了盒子的路径 —— 两条路在同一个文件里，
+    分叉点是一个我没去查的 flag。**
+
+    另：盒上其实有**两张**云端 refresh token —— katrain 进程这一张（上述），
+    以及 launcher 自己存的那张（`setup-wizard/routers/auth.py:71` 写进 box_identity）。
+    国际象棋 track 实测后者在生产代码里**只被写过、零读取方**
+    （`services/identity.py:51` 的 `async def refresh` 全仓零调用方），
+    所以它死不死是个非事件。本条讲的自始至终是 katrain 那一张。
+
 23. **盒子的"在线"指示对鉴权失效是瞎的（P1 发现，非 P1 引入）。** 在线判定走**不带鉴权**的
     `/health`（`remote_client.py:451-460` + `connectivity.py:83`），云端会话已经死掉时
     指示灯仍然是绿的。同一个 401 在 `ai_ladder` 那一股会说成"登录已失效，请重新登录后再试"，

@@ -445,6 +445,9 @@ class SQLAlchemyUserRepository(UserRepository):
             "is_admin": bool(user_obj.is_admin),
             "avatar_url": user_obj.avatar_url,
             "created_at": user_obj.created_at,
+            # 解析侧要拿它和 token 里的 epoch 比。pydantic `User`(models.py:181) 没有
+            # 这个字段，v2 默认 extra='ignore' 会静默丢掉它 —— 那是对的，前端不需要。
+            "token_epoch": user_obj.token_epoch,
             # 发言闸/免费额度闸只需要"绑没绑"这一个布尔。原始号不进这里：
             # 它会随 pydantic `User` 泄进每一个回 User 的响应（models.py 的
             # `OnlineUser` 收窄注释正是为防这类外溢）。要原始号走 get_phone_e164()。

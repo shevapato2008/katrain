@@ -95,6 +95,13 @@ class User(Base):
     # 所以不需要给老账号造占位号。
     phone_e164 = Column(String(20), nullable=True)
     phone_verified_at = Column(DateTime(timezone=True), nullable=True)
+    # 凭据世代。改密码时 +1 ⇒ 之前签发的 access/refresh token 全部立即失效。
+    # 少了它，`/auth/refresh` 只验签名 + 主体存在，改完密码的人仍能连续换发
+    # 最长 REFRESH_TOKEN_EXPIRE_DAYS = 90 天（config.py:114）。
+    # ⚠️ **读的时候一律 `(d.get("token_epoch") or 0)`**：migrations.add_missing_columns
+    # 拼的 ADD COLUMN 不带 NOT NULL ⇒ 迁移旧库上这一列可空，与新建库结构不同。
+    # 那条分叉由 tests/web_ui/test_token_epoch_migration.py 钉着。
+    token_epoch = Column(Integer, nullable=False, default=0, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

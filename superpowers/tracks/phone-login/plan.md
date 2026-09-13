@@ -9361,10 +9361,11 @@ Expected: 提交里**只有这两个文件**（`docker-compose.yml` 不在其中
    有换绑就有"A 号绑账号1拿一份，解绑再绑账号2拿第二份"。
    **上量后要补自助换绑时，必须同时补「旧号 N 天内不可再注册」，否则这个前提当场失效。**
 4. **手机丢了 = 账号丢了**（没有邮箱、密保、人工申诉）。
-5. **改密码踢不掉已签发的 token，最长 90 天。** access token 是 7 天，但
-   `REFRESH_TOKEN_EXPIRE_DAYS = 90` 且 `/auth/refresh` 只验签名 + 用户名存在、
-   **不看密码改没改** ⇒ 持有 refresh token 的人改完密码仍能连续换发长达 90 天。
-   Task 17 要求把这句在改密码成功页上说出来 —— 不说就是给用户一个错的安全承诺。
+5. ~~**改密码踢不掉已签发的 token，最长 90 天。**~~ **已由 P1 身份主体换轨解决
+   （2026-09-13，`feature/phone-login`）**：`users` 新增 `token_epoch`，改密码在同一条
+   UPDATE 里 `coalesce(token_epoch,0)+1`，access 与 refresh 两条解析路径都比对 epoch
+   ⇒ 之前签发的每一张票立刻 401。文案也已翻正（`740125a3`，11 本 `.po` 全部填齐，
+   并明说"包括当前这台设备"）。**这一条不再是遗留项，保留在此只为留痕。**
 6. **不做手机注册**（见开头收窄说明）。
 7. **`billing.py:5-10` 的模块头注释说反话**（写着 balance 会 fall through 到远程，实际直接 503），
    非本轮修，已记。
@@ -9461,3 +9462,30 @@ Expected: 提交里**只有这两个文件**（`docker-compose.yml` 不在其中
     `CREATE UNIQUE INDEX` 保留唯一性"这一条只能在 PG 上证。部署到 home-ubuntu 测试
     环境后应当在真 PG 上跑一次 `add_missing_columns()` + `create_missing_indexes()`
     并核对 `\d users` / `\d sms_challenges`。
+
+18. **换轨瞬间在飞的同步队列项会被永久丢掉（P1 发现，非 P1 引入）。** 云端改密码后盒子
+    下一次带鉴权打云端拿到 401 ⇒ `PermanentError`（`sync_worker.py:174-175`）⇒
+    `status="failed"` 终态（`:131-135`）。`_is_permanent_refusal(401)` 为真
+    （`:38-41`，401 不在 `TRANSIENT_CLIENT_STATUSES` 里）⇒ 重连不复活（`:249-250`）、
+    手动重试也拒绝（`:325-326`）。**重新登录救不回来。** 叠加 `_auth_required` 只活在内存里、
+    开机 `server.py:469` 调 `set_refresh_token` 会把它清成 False（`remote_client.py:61-63`）
+    ⇒ **盒子每重启一次就再打死一条**。交 P4。
+
+19. **盒子的"在线"指示对鉴权失效是瞎的（P1 发现，非 P1 引入）。** 在线判定走**不带鉴权**的
+    `/health`（`remote_client.py:451-460` + `connectivity.py:83`），云端会话已经死掉时
+    指示灯仍然是绿的。同一个 401 在 `ai_ladder` 那一股会说成"登录已失效，请重新登录后再试"，
+    而 `repository.py` 十处 `except`（`196/205/214/223/233/258/267/277/312/321`）把它与断网
+    同处置 ⇒ 死活题/棋谱/对局列表静默退回本机那份、大厅排位入口静默灰掉、成长页显示未定级。
+    **恢复方式只有"用新密码在盒子上重新登录"一条，而仓里没有任何地方提示用户去做。** 交 P4。
+
+20. **`tests/web_ui/test_social_api.py` 每跑一次就往仓库根漏一个未被 gitignore 的
+    `test_social_api.db`（638KB）。** 根因：第 5 行在**模块顶层**写进程全局
+    `KATRAIN_DATABASE_URL = "sqlite:///test_social_api.db"`（相对路径 ⇒ 落在进程 CWD），
+    而 `app` 夹具只在 setup 阶段 `os.remove`、**没有 teardown**。同一文件还对
+    `config/db/auth` 做 `importlib.reload` 且不还原 —— 属已知的"进程全局在模块顶层写、
+    在夹具执行期读"那一族，会让**别的文件**里的用例随收集集合变红变绿。交 P4。
+
+21. **`RemoteAPIClient.heartbeat`（`remote_client.py:428-447`）在本仓零调用者。**
+    它本来会是一条周期性、会自动发现 401 的路径。是死代码还是被盒端另一进程/launcher 调，
+    本仓答不了。（注意与**有**调用者的 `send_ai_ladder_heartbeat`（`:271-278` ←
+    `server.py:3002`）区分。）交 P4 确认。

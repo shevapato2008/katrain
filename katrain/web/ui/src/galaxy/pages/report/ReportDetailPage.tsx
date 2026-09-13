@@ -68,7 +68,7 @@ export default function ReportDetailPage() {
     setCurrentMove,
     loading,
     error,
-  } = useReportDetail(isAuthenticated ? token : null, taskId);
+  } = useReportDetail(token, taskId, isAuthenticated);
   const [pvMoves, setPvMoves] = useState<string[] | null>(null);
   const [showAiMarkers, setShowAiMarkers] = useState(true);
   const [showMoveNumbers, setShowMoveNumbers] = useState(false);

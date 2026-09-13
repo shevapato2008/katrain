@@ -65,12 +65,23 @@ export interface ReportTaskMove {
   root_visits: number | null;
 }
 
-async function authFetch<T>(path: string, token: string, options?: RequestInit): Promise<T> {
+/**
+ * **凭据可以是 `null`，那不代表没登录。**
+ *
+ * 严格盒端 SSO(`VITE_BOX_SSO_STRICT`)里 JS 永远拿不到 token —— 身份在 HttpOnly
+ * `sb_go_token` cookie 里，同源请求由浏览器自动带上。所以这里只在**真有** token 时
+ * 才打 Authorization 头，没有就把认证交给 cookie。
+ *
+ * ⚠️ 「该不该发这个请求」是调用方按 `isAuthenticated` 判的，**不是按有没有 token**。
+ * 拿 `!token` 当「未登录」用，在盒子上等于把每一个已登录用户都当成未登录
+ * (实测：复盘列表因此恒显示「本机 0 局」，而接口本身 200、云端有 21 局)。
+ */
+async function authFetch<T>(path: string, token: string | null | undefined, options?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...(options?.headers || {}),
     },
   });
@@ -82,20 +93,20 @@ async function authFetch<T>(path: string, token: string, options?: RequestInit):
 }
 
 export const ReportsAPI = {
-  list: (token: string): Promise<ReportTaskSummary[]> => {
+  list: (token: string | null | undefined): Promise<ReportTaskSummary[]> => {
     return authFetch('/api/v1/reports/', token);
   },
 
-  summary: (token: string): Promise<ReportQueueSummary> => {
+  summary: (token: string | null | undefined): Promise<ReportQueueSummary> => {
     return authFetch('/api/v1/reports/summary', token);
   },
 
-  get: (token: string, taskId: number): Promise<ReportTaskSummary> => {
+  get: (token: string | null | undefined, taskId: number): Promise<ReportTaskSummary> => {
     return authFetch(`/api/v1/reports/${taskId}`, token);
   },
 
   create: (
-    token: string,
+    token: string | null | undefined,
     params: { user_game_id: string; report_type?: ReportType; force?: boolean },
   ): Promise<ReportTaskSummary> => {
     return authFetch('/api/v1/reports/', token, {
@@ -104,11 +115,11 @@ export const ReportsAPI = {
     });
   },
 
-  retry: (token: string, taskId: number): Promise<ReportTaskSummary> => {
+  retry: (token: string | null | undefined, taskId: number): Promise<ReportTaskSummary> => {
     return authFetch(`/api/v1/reports/${taskId}/retry`, token, { method: 'POST' });
   },
 
-  getMoves: (token: string, taskId: number): Promise<ReportTaskMove[]> => {
+  getMoves: (token: string | null | undefined, taskId: number): Promise<ReportTaskMove[]> => {
     return authFetch(`/api/v1/reports/${taskId}/moves`, token);
   },
 };

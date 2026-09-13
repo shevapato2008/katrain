@@ -65,6 +65,13 @@ function nextAvailableCursor(
 export function useReportDetail(
   token: string | null | undefined,
   taskId: string | number | null | undefined,
+  /**
+   * 认证就绪与否 —— **由调用方按 `isAuthenticated` 传，不能从 `token` 推**。
+   * 严格盒端 SSO 里 `token` 恒为 `null` 而人是登录的(凭据在 HttpOnly cookie 里)，
+   * 原来这里的 `!token` 闸会让**屏 20 报告详情主加载在盒上一次都不跑**。
+   * `token` 只剩身份键这一个用途。
+   */
+  enabled: boolean,
 ): UseReportDetailResult {
   const parsedTaskId = useMemo(() => parseTaskId(taskId), [taskId]);
   const currentTokenRef = useRef(token);
@@ -81,21 +88,21 @@ export function useReportDetail(
     currentMoveRef.current = move;
     setCurrentMoveState(move);
   }, []);
-  const [loading, setLoading] = useState(Boolean(token && parsedTaskId));
+  const [loading, setLoading] = useState(Boolean(enabled && parsedTaskId));
   const [error, setError] = useState<string | null>(
-    token && parsedTaskId === null ? INVALID_TASK_ID_ERROR : null,
+    enabled && parsedTaskId === null ? INVALID_TASK_ID_ERROR : null,
   );
   const frontierRef = useRef(0);
   const lifecycleGenerationRef = useRef(0);
   const activeRefreshRef = useRef<{
-    token: string;
+    token: string | null | undefined;
     taskId: number;
     lifecycleGeneration: number;
     promise: Promise<void>;
   } | null>(null);
 
   const isCurrentLifecycle = useCallback(
-    (lifecycleGeneration: number, requestToken: string, requestTaskId: number) => (
+    (lifecycleGeneration: number, requestToken: string | null | undefined, requestTaskId: number) => (
       lifecycleGenerationRef.current === lifecycleGeneration
       && currentTokenRef.current === requestToken
       && currentTaskIdRef.current === requestTaskId
@@ -104,13 +111,16 @@ export function useReportDetail(
   );
 
   const refresh = useCallback(async () => {
-    if (!token || parsedTaskId === null) return;
+    if (!enabled || parsedTaskId === null) return;
     if (currentTokenRef.current !== token || currentTaskIdRef.current !== parsedTaskId) return;
 
     const lifecycleGeneration = lifecycleGenerationRef.current;
     const activeRefresh = activeRefreshRef.current;
     if (
-      activeRefresh?.token === token
+      // 不能写 `activeRefresh?.token === token` —— token 可为 undefined 时，
+      // activeRefresh 为 null 那一支会**判真**，下一行当场 TypeError。
+      activeRefresh !== null
+      && activeRefresh.token === token
       && activeRefresh.taskId === parsedTaskId
       && activeRefresh.lifecycleGeneration === lifecycleGeneration
     ) return activeRefresh.promise;
@@ -164,7 +174,7 @@ export function useReportDetail(
     activeEntry.promise = trackedRequest;
     activeRefreshRef.current = activeEntry;
     return trackedRequest;
-  }, [isCurrentLifecycle, parsedTaskId, setCurrentMove, token]);
+  }, [enabled, isCurrentLifecycle, parsedTaskId, setCurrentMove, token]);
 
   useEffect(() => {
     const lifecycleGeneration = lifecycleGenerationRef;
@@ -174,17 +184,17 @@ export function useReportDetail(
     setMoves([]);
     setCurrentMove(0);
     frontierRef.current = 0;
-    setLoading(Boolean(token && parsedTaskId));
-    setError(token && parsedTaskId === null ? INVALID_TASK_ID_ERROR : null);
-    if (token && parsedTaskId !== null) void refresh();
+    setLoading(Boolean(enabled && parsedTaskId));
+    setError(enabled && parsedTaskId === null ? INVALID_TASK_ID_ERROR : null);
+    if (enabled && parsedTaskId !== null) void refresh();
 
     return () => {
       ++lifecycleGeneration.current;
     };
-  }, [parsedTaskId, refresh, setCurrentMove, token]);
+  }, [enabled, parsedTaskId, refresh, setCurrentMove, token]);
 
   useEffect(() => {
-    if (!token || parsedTaskId === null || !task || !isActiveReportStatus(task.status)) return;
+    if (!enabled || parsedTaskId === null || !task || !isActiveReportStatus(task.status)) return;
     let cancelled = false;
     let timer: number | undefined;
 
@@ -201,7 +211,7 @@ export function useReportDetail(
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [parsedTaskId, refresh, task, token]);
+  }, [enabled, parsedTaskId, refresh, task, token]);
 
   const analysisByMove = useMemo(
     () => toMoveAnalysisMap(moves, task?.user_game_id ?? ''),

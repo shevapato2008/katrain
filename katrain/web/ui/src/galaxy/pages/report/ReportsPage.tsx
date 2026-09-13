@@ -79,7 +79,7 @@ export default function ReportsPage() {
     refresh: refreshTasks,
     createReport,
     retryReport,
-  } = useReportTasks(isAuthenticated ? token : null);
+  } = useReportTasks(token, isAuthenticated);
 
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<UserGameDetail | null>(null);

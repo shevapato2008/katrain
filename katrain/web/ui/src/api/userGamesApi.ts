@@ -1,6 +1,7 @@
 /**
  * API client for personal game library (user_games) and analysis data.
- * Requires JWT auth token for all requests.
+ * 认证：有 JWT 就打 Authorization 头；严格盒端 SSO 里没有 JWT，靠同源 HttpOnly
+ * cookie，所以每个方法的 `token` 都允许为 `null`（见下方 authFetch 的说明）。
  */
 
 const API_BASE = '/api/v1/user-games';
@@ -92,12 +93,23 @@ export interface CreateUserGameParams {
   game_date?: string;
 }
 
-async function authFetch<T>(path: string, token: string, options?: RequestInit): Promise<T> {
+/**
+ * **凭据可以是 `null`，那不代表没登录。**
+ *
+ * 严格盒端 SSO(`VITE_BOX_SSO_STRICT`)里 JS 永远拿不到 token —— 身份在 HttpOnly
+ * `sb_go_token` cookie 里，同源请求由浏览器自动带上。所以这里只在**真有** token 时
+ * 才打 Authorization 头，没有就把认证交给 cookie。
+ *
+ * ⚠️ 「该不该发这个请求」是调用方按 `isAuthenticated` 判的，**不是按有没有 token**。
+ * 拿 `!token` 当「未登录」用，在盒子上等于把每一个已登录用户都当成未登录
+ * (实测：复盘列表因此恒显示「本机 0 局」，而接口本身 200、云端有 21 局)。
+ */
+async function authFetch<T>(path: string, token: string | null | undefined, options?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...(options?.headers || {}),
     },
   });
@@ -110,7 +122,7 @@ async function authFetch<T>(path: string, token: string, options?: RequestInit):
 
 export const UserGamesAPI = {
   list: (
-    token: string,
+    token: string | null | undefined,
     options?: {
       page?: number;
       page_size?: number;
@@ -131,11 +143,11 @@ export const UserGamesAPI = {
     return authFetch(`${API_BASE}/${query ? `?${query}` : ''}`, token);
   },
 
-  get: (token: string, gameId: string): Promise<UserGameDetail> => {
+  get: (token: string | null | undefined, gameId: string): Promise<UserGameDetail> => {
     return authFetch(`${API_BASE}/${gameId}`, token);
   },
 
-  create: (token: string, params: CreateUserGameParams): Promise<UserGameDetail> => {
+  create: (token: string | null | undefined, params: CreateUserGameParams): Promise<UserGameDetail> => {
     return authFetch(`${API_BASE}/`, token, {
       method: 'POST',
       body: JSON.stringify(params),
@@ -143,7 +155,7 @@ export const UserGamesAPI = {
   },
 
   update: (
-    token: string,
+    token: string | null | undefined,
     gameId: string,
     params: Partial<{
       title: string;
@@ -161,14 +173,14 @@ export const UserGamesAPI = {
     });
   },
 
-  delete: (token: string, gameId: string): Promise<{ status: string }> => {
+  delete: (token: string | null | undefined, gameId: string): Promise<{ status: string }> => {
     return authFetch(`${API_BASE}/${gameId}`, token, {
       method: 'DELETE',
     });
   },
 
   getAnalysis: (
-    token: string,
+    token: string | null | undefined,
     gameId: string,
     startMove?: number,
     limit?: number,
@@ -180,12 +192,12 @@ export const UserGamesAPI = {
     return authFetch(`${API_BASE}/${gameId}/analysis${query ? `?${query}` : ''}`, token);
   },
 
-  getMoveAnalysis: (token: string, gameId: string, moveNumber: number): Promise<MoveAnalysis> => {
+  getMoveAnalysis: (token: string | null | undefined, gameId: string, moveNumber: number): Promise<MoveAnalysis> => {
     return authFetch(`${API_BASE}/${gameId}/analysis/${moveNumber}`, token);
   },
 
   saveAnalysisFromSession: (
-    token: string,
+    token: string | null | undefined,
     gameId: string,
     sessionId: string,
   ): Promise<{ game_id: string; saved_moves: number; total_moves: number }> => {

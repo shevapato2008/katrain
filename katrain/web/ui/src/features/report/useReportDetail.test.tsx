@@ -124,8 +124,28 @@ afterEach(() => {
 });
 
 describe('useReportDetail', () => {
+  /**
+   * 回归钉子：屏 20（报告详情）的主加载。严格盒端 token 恒为 null，
+   * 原来的 `!token` 闸让它在盒上一次都不跑 —— 报告生成得出来，详情页却是空的。
+   * 变异验证：把 refresh 里的 `!enabled` 改回 `!token`，这条立刻红。
+   */
+  it('still loads the report when the credential is null but the caller says authenticated', async () => {
+    const { result } = renderHook(() => useReportDetail(null, '7', true));
+    await settle();
+
+    expect(mockReportGet).toHaveBeenCalledWith(null, 7);
+    expect(result.current.error).toBeNull();
+  });
+
+  it('does not load when the caller says not authenticated, even with a credential', async () => {
+    renderHook(() => useReportDetail('token-a', '7', false));
+    await settle();
+
+    expect(mockReportGet).not.toHaveBeenCalled();
+  });
+
   it('rejects a malformed task ID without making requests', async () => {
-    const { result } = renderHook(() => useReportDetail('token-a', '7oops'));
+    const { result } = renderHook(() => useReportDetail('token-a', '7oops', true));
     await settle();
 
     expect(mockReportGet).not.toHaveBeenCalled();
@@ -142,7 +162,7 @@ describe('useReportDetail', () => {
     mockReportGetMoves.mockReturnValue(movesRequest.promise);
     mockUserGameGet.mockReturnValue(gameRequest.promise);
 
-    const { result } = renderHook(() => useReportDetail('token-a', '7'));
+    const { result } = renderHook(() => useReportDetail('token-a', '7', true));
     const initialRefresh = result.current.refresh;
 
     expect(mockReportGet).toHaveBeenCalledWith('token-a', 7);
@@ -171,7 +191,7 @@ describe('useReportDetail', () => {
       .mockResolvedValueOnce(task({ status: 'pending', analyzed_moves: 0 }))
       .mockResolvedValueOnce(task({ status: 'running', analyzed_moves: 1 }))
       .mockResolvedValueOnce(task({ status: 'completed', analyzed_moves: 2 }));
-    const { result } = renderHook(() => useReportDetail('token-a', '7'));
+    const { result } = renderHook(() => useReportDetail('token-a', '7', true));
     await settle();
 
     await act(async () => vi.advanceTimersByTimeAsync(1999));
@@ -188,7 +208,7 @@ describe('useReportDetail', () => {
 
   it('exposes a failed task and does not poll it', async () => {
     mockReportGet.mockResolvedValue(task({ status: 'failed', analyzed_moves: 1 }));
-    const { result } = renderHook(() => useReportDetail('token-a', '7'));
+    const { result } = renderHook(() => useReportDetail('token-a', '7', true));
     await settle();
 
     expect(result.current.task?.status).toBe('failed');
@@ -203,7 +223,7 @@ describe('useReportDetail', () => {
       .mockResolvedValueOnce(task({ status: 'pending' }))
       .mockReturnValueOnce(slowTask.promise)
       .mockResolvedValueOnce(task({ status: 'completed' }));
-    renderHook(() => useReportDetail('token-a', '7'));
+    renderHook(() => useReportDetail('token-a', '7', true));
     await settle();
 
     await act(async () => vi.advanceTimersByTimeAsync(2000));
@@ -219,7 +239,7 @@ describe('useReportDetail', () => {
   });
 
   it('keeps prior detail data when a refresh fails', async () => {
-    const { result } = renderHook(() => useReportDetail('token-a', '7'));
+    const { result } = renderHook(() => useReportDetail('token-a', '7', true));
     await settle();
     const priorTask = result.current.task;
     const priorMoves = result.current.moves;
@@ -239,7 +259,7 @@ describe('useReportDetail', () => {
 
   it('keeps a failed detail pair single-flight until its slower sibling settles', async () => {
     const slowGame = deferred<UserGameDetail>();
-    const { result } = renderHook(() => useReportDetail('token-a', '7'));
+    const { result } = renderHook(() => useReportDetail('token-a', '7', true));
     await settle();
     const priorTask = result.current.task;
     const priorMoves = result.current.moves;
@@ -308,7 +328,7 @@ describe('useReportDetail', () => {
   ])('derives the available cursor from usable $label', async ({ analyzedMoves, rows, expected }) => {
     mockReportGet.mockResolvedValue(task({ analyzed_moves: analyzedMoves }));
     mockReportGetMoves.mockResolvedValue(rows);
-    const { result } = renderHook(() => useReportDetail('token-a', '7'));
+    const { result } = renderHook(() => useReportDetail('token-a', '7', true));
     await settle();
 
     expect(result.current.currentMove).toBe(expected);
@@ -324,7 +344,7 @@ describe('useReportDetail', () => {
       .mockResolvedValueOnce([move(1), move(2)])
       .mockResolvedValueOnce([move(1), move(2), move(3)])
       .mockResolvedValueOnce([move(1)]);
-    const { result } = renderHook(() => useReportDetail('token-a', '7'));
+    const { result } = renderHook(() => useReportDetail('token-a', '7', true));
     await settle();
     expect(result.current.currentMove).toBe(2);
 
@@ -341,7 +361,7 @@ describe('useReportDetail', () => {
     mockReportGetMoves
       .mockResolvedValueOnce([move(1), move(2)])
       .mockResolvedValueOnce([move(1), move(2), move(3)]);
-    const { result } = renderHook(() => useReportDetail('token-a', '7'));
+    const { result } = renderHook(() => useReportDetail('token-a', '7', true));
     await settle();
     act(() => result.current.setCurrentMove(1));
 
@@ -357,7 +377,7 @@ describe('useReportDetail', () => {
     );
     mockUserGameGet.mockResolvedValueOnce(game('game-2'));
     const { result, rerender, unmount } = renderHook(
-      ({ token, taskId }) => useReportDetail(token, taskId),
+      ({ token, taskId }) => useReportDetail(token, taskId, Boolean(token)),
       { initialProps: { token: 'token-a', taskId: '7' } },
     );
     rerender({ token: 'token-b', taskId: '8' });
@@ -376,7 +396,7 @@ describe('useReportDetail', () => {
     const slowMoves = deferred<ReportTaskMove[]>();
     const slowGame = deferred<UserGameDetail>();
     mockReportGet.mockResolvedValue(task({ status: 'pending' }));
-    const { unmount } = renderHook(() => useReportDetail('token-a', '7'));
+    const { unmount } = renderHook(() => useReportDetail('token-a', '7', true));
     await settle();
     expect(vi.getTimerCount()).toBe(1);
 
@@ -396,7 +416,7 @@ describe('useReportDetail', () => {
 
   it('survives StrictMode effect replay without accepting the cancelled lifecycle', async () => {
     mockReportGet.mockResolvedValue(task({ status: 'completed' }));
-    const { result } = renderHook(() => useReportDetail('token-a', '7'), { wrapper: StrictMode });
+    const { result } = renderHook(() => useReportDetail('token-a', '7', true), { wrapper: StrictMode });
     await settle();
 
     expect(mockReportGet).toHaveBeenCalledTimes(2);

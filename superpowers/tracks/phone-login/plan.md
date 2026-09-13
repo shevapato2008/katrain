@@ -9490,9 +9490,21 @@ Expected: 提交里**只有这两个文件**（`docker-compose.yml` 不在其中
 
     另：盒上其实有**两张**云端 refresh token —— katrain 进程这一张（上述），
     以及 launcher 自己存的那张（`setup-wizard/routers/auth.py:71` 写进 box_identity）。
-    国际象棋 track 实测后者在生产代码里**只被写过、零读取方**
-    （`services/identity.py:51` 的 `async def refresh` 全仓零调用方），
-    所以它死不死是个非事件。本条讲的自始至终是 katrain 那一张。
+    **两张是同一对票的两次持有**：`box_identity.py:466-471` 的 `bootstrap_transaction`
+    把 access + refresh 一起 yield，`routers/launcher.py:62` 在每次真身份「切到围棋」时
+    走这条路，经 `bootstrap_go()` 送进 `/box-sso/bootstrap` ⇒ **launcher 存的那张正是
+    喂给 katrain 那张的来源。**（国际象棋 track 先报「launcher 那张零读取方」，
+    随后自己撤回并给出上述路径；仍成立的那半是 `services/identity.py:51` 的
+    `async def refresh()` 确实零调用方 ⇒ **他们存着那对票、每次 bootstrap 原样交出，
+    但从不拿 refresh 去换新的**，没有刷新循环、没有 401 处理。）
+
+    **由此得到的、比本条更严重的一格**：`/box-sso/bootstrap`（`auth.py` 的
+    `box_sso_bootstrap`）**不校验收到的云端票是否还活着** —— 只检查两个串非空，
+    然后 `set_tokens` 存下、取/建影子用户、`activate(generation)`、用**影子用户**的
+    uuid+epoch 签一张**本地** access token 返回，全程零网络调用。
+    ⇒ 云端改密码之后，用户点「围棋」照样切换成功、屏上一切正常，
+    而云端功能安静退化；**重启也修不好**（重启后重新 bootstrap，交的还是同一对死票）。
+    恢复只能靠用户在 launcher 上用新密码重新登录，而没有任何一侧会提示他。
 
 23. **盒子的"在线"指示对鉴权失效是瞎的（P1 发现，非 P1 引入）。** 在线判定走**不带鉴权**的
     `/health`（`remote_client.py:451-460` + `connectivity.py:83`），云端会话已经死掉时

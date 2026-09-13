@@ -195,6 +195,13 @@ async def get_user_from_token(token: str, repo: Any, box_sso: Any = None) -> Use
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         subject: str = payload.get("sub")
+        # 这句是**安全承重件，不是防御性冗余**。`users.uuid` 没写 `nullable=False`
+        # （models_db.py:70-72，那个 32 位 hex 只由一个 Python 侧的 default lambda 保证，
+        # 全仓也没有回填），而 SQLAlchemy 会把 `uuid == None` 翻成 `WHERE uuid IS NULL`
+        # —— 删掉这句之后，`sub: null` 的 token 会匹配上**任意一个** NULL-uuid 行；
+        # 这类行有两个以上时 `.one_or_none()` 抛 MultipleResultsFound ⇒ 500。
+        # 2026-09-13 实测：两台线上机器的 NULL-uuid 行数都是 0，所以今天够不着；
+        # 这句守的是那天。（列定义归身份服务 Phase 3，P1 不碰，见 test_account_subject_contract.py。）
         if subject is None:
             raise credentials_exception
         if strict_box_sso_enabled() and (box_sso is None or not box_sso.validates(payload.get("box_generation"))):
@@ -397,6 +404,13 @@ async def refresh(request: Request, body: RefreshRequest) -> Any:
         payload = jwt.decode(body.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_type: str = payload.get("type")
         subject: str = payload.get("sub")
+        # 这句是**安全承重件，不是防御性冗余**。`users.uuid` 没写 `nullable=False`
+        # （models_db.py:70-72，那个 32 位 hex 只由一个 Python 侧的 default lambda 保证，
+        # 全仓也没有回填），而 SQLAlchemy 会把 `uuid == None` 翻成 `WHERE uuid IS NULL`
+        # —— 删掉这句之后，`sub: null` 的 token 会匹配上**任意一个** NULL-uuid 行；
+        # 这类行有两个以上时 `.one_or_none()` 抛 MultipleResultsFound ⇒ 500。
+        # 2026-09-13 实测：两台线上机器的 NULL-uuid 行数都是 0，所以今天够不着；
+        # 这句守的是那天。（列定义归身份服务 Phase 3，P1 不碰，见 test_account_subject_contract.py。）
         if token_type != "refresh" or subject is None:
             raise credentials_exception
     except JWTError:

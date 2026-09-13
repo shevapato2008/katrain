@@ -8,7 +8,7 @@
 import re
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 
 from katrain.web.core.auth import SQLAlchemyUserRepository
@@ -73,7 +73,76 @@ async def test_minted_subject_is_the_account_uuid_not_the_username(phone_auth_cl
 # ---------- 闸 3：迁移库那条 nullable 分叉 ----------
 
 
-async def test_a_user_row_with_null_token_epoch_still_authenticates(phone_app, phone_auth_client):
+@pytest.fixture
+async def migrated_phone_app(tmp_path, monkeypatch):
+    """一个**真的走过迁移**的 app —— 不是长得像迁移结果的库。
+
+    `phone_app`（conftest.py:152）建库走 `Base.metadata.create_all`，那是**新建库**那一半，
+    `token_epoch` 上带 NOT NULL。而闸 3 要证的是「走过迁移的库还能不能鉴权」——两台线上机器
+    和每一台盒子的库都是迁移库，这是 P1 里最贴近生产的一条闸，所以它必须跑真的迁移。
+
+    做法：先按模型建全套表，再把 `users` 换成**本次改动之前**的形状（没有 token_epoch），
+    然后真跑一次 `migrations.add_missing_columns` —— 那条 ADD COLUMN 不带 NOT NULL
+    （migrations.py:341），于是 `token_epoch` 在这里是**可空**的，与线上一致。
+
+    SQLite 默认不强制外键（SQLAlchemy 不开 `PRAGMA foreign_keys`），所以 `DROP TABLE users`
+    不会被别的表的外键拦住。
+    """
+    from httpx import ASGITransport, AsyncClient
+
+    from katrain.web.core import migrations, models_db
+    from katrain.web.core.auth import get_password_hash
+    from katrain.web.core.config import settings
+    from katrain.web.core.db import get_db
+    from katrain.web.server import create_app
+
+    monkeypatch.setattr(settings, "KATRAIN_MODE", "server")
+    monkeypatch.setattr(settings, "KATRAIN_BOX_SSO", False)
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'migrated.db'}", connect_args={"check_same_thread": False})
+    models_db.Base.metadata.create_all(bind=engine)
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE users"))
+        conn.execute(
+            text(
+                "CREATE TABLE users ("
+                " id INTEGER NOT NULL PRIMARY KEY,"
+                " uuid VARCHAR, username VARCHAR, hashed_password VARCHAR,"
+                " rank VARCHAR, net_wins INTEGER, elo_points INTEGER, credits INTEGER,"
+                " is_admin BOOLEAN, avatar_url VARCHAR, signup_ip VARCHAR,"
+                " phone_e164 VARCHAR(20), phone_verified_at DATETIME,"
+                " created_at DATETIME, updated_at DATETIME)"
+            )
+        )
+    migrations.add_missing_columns(engine)  # 这一步才把 token_epoch 加上，且不带 NOT NULL
+    migrations.create_missing_indexes(engine)  # users.uuid / users.username / phone_e164 的唯一索引
+
+    # 前提断言：哪天迁移路径变了、这个夹具静默退化成新建库，要当场说破，
+    # 而不是让闸 3 在一个 NOT NULL 的库上跑然后报绿（那就是「闸量错了对象」）。
+    col = {c["name"]: c for c in inspect(engine).get_columns("users")}["token_epoch"]
+    assert col["nullable"] is True, "迁移路径没造出可空的 token_epoch —— 闸 3 在新建库上跑，量错对象了"
+
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    app = create_app(enable_engine=False)
+    app.state.user_repo = SQLAlchemyUserRepository(SessionLocal)
+
+    def _override_get_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = _override_get_db
+    # 这个 app 不是 phone_app，`phone_auth_client` 绑的是那一个，所以 alice 要自己建。
+    app.state.user_repo.create_user(username="alice", hashed_password=get_password_hash("oldpw123456"))
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield app, ac
+    engine.dispose()
+
+
+async def test_a_user_row_with_null_token_epoch_still_authenticates(migrated_phone_app):
     """迁移旧库上 token_epoch 可空（见 test_token_epoch_migration.py）。
 
     把该用户的 epoch 直接置 NULL，再用他的 token 打 /auth/me —— 必须仍然 200。
@@ -81,36 +150,17 @@ async def test_a_user_row_with_null_token_epoch_still_authenticates(phone_app, p
 
     仓储上**没有** `.engine` 属性，拿 engine 的方法是 `repo._bind()`
     （core/auth.py:143，它自己的 docstring 解释了为什么不能抓模块级全局 engine）。
-    同时请求 `phone_app` 与 `phone_auth_client` 拿到的是同一个 app（pytest 夹具按用例缓存）。
-
-    **为什么要先改建表语句**：`phone_app`(conftest.py:152) 建库走的是
-    `Base.metadata.create_all`，也就是「全新建库」那条分叉，`token_epoch` 上带
-    NOT NULL —— 直接置 NULL 会 IntegrityError。而本闸要断言的行为属于「迁移旧库」
-    那一半（`migrations.add_missing_columns` 拼的 ADD COLUMN 不带 NOT NULL，
-    migrations.py:341）。所以先把这张表改成迁移库的形状，再置 NULL：造的是**输入**，
-    结论（/auth/me 仍 200）仍由真实 HTTP 路径量出来。
     """
-    resp = await phone_auth_client.post(
-        "/api/v1/auth/login", json={"username": "alice", "password": "oldpw123456"}
-    )
+    app, ac = migrated_phone_app
+
+    resp = await ac.post("/api/v1/auth/login", json={"username": "alice", "password": "oldpw123456"})
+    assert resp.status_code == 200, resp.text
     token = resp.json()["access_token"]
 
-    repo = phone_app.state.user_repo
-    engine = repo._bind()
-    with engine.begin() as conn:
-        ddl = conn.execute(text("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'")).scalar()
-    patched = re.sub(r"(token_epoch\s+INTEGER[^,\n]*?)\s+NOT NULL", r"\1", ddl)
-    assert patched != ddl, "users 上 token_epoch 没有 NOT NULL —— 这条正则过期了，本闸在假装造了迁移库"
-    with engine.begin() as conn:
-        conn.execute(text("PRAGMA writable_schema=ON"))
-        conn.execute(text("UPDATE sqlite_master SET sql=:s WHERE type='table' AND name='users'"), {"s": patched})
-        conn.execute(text("PRAGMA writable_schema=OFF"))
-    engine.dispose()  # 让 SQLite 重新解析 schema；conftest 收尾本来也 dispose，提前一次无害
-    with engine.begin() as conn:
+    repo = app.state.user_repo
+    with repo._bind().begin() as conn:
         conn.execute(text("UPDATE users SET token_epoch = NULL WHERE username = 'alice'"))
-    assert repo.get_user_by_username("alice")["token_epoch"] is None, "没造出 NULL，本闸下面那句是空跑"
+    assert repo.get_user_by_username("alice")["token_epoch"] is None, "没造出 NULL，下面那句是空跑"
 
-    me = await phone_auth_client.get(
-        "/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"}
-    )
+    me = await ac.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert me.status_code == 200, f"token_epoch 为 NULL 的行鉴权失败了：{me.status_code} {me.text}"

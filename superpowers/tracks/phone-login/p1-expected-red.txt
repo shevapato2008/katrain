@@ -252,6 +252,12 @@ tests/web_ui/test_lobby_sso_websocket.py::test_lobby_same_origin_cookie_authenti
 # `await entered.get()`，事件只有请求过了鉴权、进到 router 才会被 set。token 形状一变，
 # 请求在到达 router 之前就 401 ⇒ 事件永不触发 ⇒ **永久挂住，不会变红**。
 # 基线里它们是绿的（test-baseline.txt 里 test_ai_ladder_api 命中数为 0）。
+#
+# **为什么 comm 的结果不受它们影响 —— 这一节不是漏项，别去「补」**：
+#   comm 比的是两个**名字集合**。这 5 个 id 在**基线集合**里不存在（基线里它们是绿的，
+#   不进 FAILED/ERROR 清单）；在**新清单集合**里也不存在（这次带 --deselect 没跑，
+#   而且就算跑了它们也是挂死、不产出 FAILED 行）。两边都不在集合里 ⇒ `comm -23` 的
+#   输出一条不多一条不少。所以它们必须**手工**记在这里，否则就没有任何地方记着它们。
 # Task 4 修完必须去掉 --deselect 重跑全量，否则没人证明挂死解除了。
 tests/web_ui/test_ai_ladder_api.py::test_v1_session_analysis_in_flight_does_not_return_after_ranked_game_starts
 tests/web_ui/test_ai_ladder_api.py::test_quick_analysis_in_flight_does_not_return_after_ranked_game_starts

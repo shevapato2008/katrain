@@ -88,6 +88,13 @@ async def test_strict_bridge_bootstrap_returns_generation_bound_local_token(stri
     token = response.json()["access_token"]
     payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     # sub 装的是那一行的 uuid，不是用户名（2026-09-13 身份主体换轨）。
+    #
+    # ⚠️ **这一行在本分支上从未执行过。** `strict_app` 夹具在 setup 期就 error
+    # （:39 `session_module.WebKaTrain.return_value` ⇒ AttributeError，因为那个类
+    # 在这条路径上不是 MagicMock），与身份换轨无关；这条用例连同本文件另外 7 条
+    # 一起，在换轨**之前**就已经是红的（`superpowers/tracks/phone-login/test-baseline.txt:45`）。
+    # 所以下面这句是 2026-09-13 按换轨后的 token 形状改写的，**未经执行验证**。
+    # 夹具修好之后第一次真正跑到这里的人：请连带核一下这条断言。
     assert payload["sub"] == strict_app.state.user_repo.get_user_by_username("alice")["uuid"]
     assert payload["box_generation"] == 7
     strict_app.state.remote_client.set_tokens.assert_called_once_with(

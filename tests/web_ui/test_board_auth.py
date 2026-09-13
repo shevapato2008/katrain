@@ -21,7 +21,9 @@ from sqlalchemy.orm import sessionmaker
 
 from katrain.web.api.v1.endpoints.auth import SHADOW_USER_NO_LOCAL_AUTH
 from katrain.web.core import models_db
-from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token, create_refresh_token
+from katrain.web.core.auth import SQLAlchemyUserRepository
+
+from conftest import refresh_token_for, token_for
 from katrain.web.core.config import settings
 from katrain.web.server import create_app
 from katrain.web.session import LobbyManager, Matchmaker, SessionManager
@@ -94,15 +96,16 @@ async def test_board_login_creates_shadow_user(board_app):
     # Verify remote refresh_token was persisted
     mock_save.assert_called_once_with(settings.DEVICE_ID, "remote_rt")
 
-    # Verify local token is signed with local SECRET_KEY
-    payload = jwt.decode(data["access_token"], settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    assert payload["sub"] == "alice"
-    assert payload["type"] == "access"
-
     # Verify shadow user was created in local DB
     shadow = board_app.state.user_repo.get_user_by_username("alice")
     assert shadow is not None
     assert shadow["hashed_password"] == SHADOW_USER_NO_LOCAL_AUTH
+
+    # Verify local token is signed with local SECRET_KEY
+    payload = jwt.decode(data["access_token"], settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    # sub 装的是**影子用户那一行的 uuid**（2026-09-13 身份主体换轨），不再是用户名。
+    assert payload["sub"] == shadow["uuid"]
+    assert payload["type"] == "access"
 
 
 @pytest.mark.asyncio
@@ -251,7 +254,7 @@ async def test_board_refresh_issues_local_token(board_app):
     repo.create_user(username="charlie", hashed_password=SHADOW_USER_NO_LOCAL_AUTH)
 
     # Create a local refresh_token
-    local_refresh = create_refresh_token(data={"sub": "charlie"})
+    local_refresh = refresh_token_for(repo, "charlie")
 
     async with AsyncClient(transport=ASGITransport(app=board_app), base_url="http://test") as ac:
         resp = await ac.post("/api/v1/auth/refresh", json={"refresh_token": local_refresh})
@@ -262,7 +265,8 @@ async def test_board_refresh_issues_local_token(board_app):
 
     # Verify new local access_token
     payload = jwt.decode(data["access_token"], settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    assert payload["sub"] == "charlie"
+    # 换发出来的票认的是 uuid，不是用户名（2026-09-13 身份主体换轨）。
+    assert payload["sub"] == repo.get_user_by_username("charlie")["uuid"]
     assert payload["type"] == "access"
 
     # Verify remote refresh was attempted (best-effort)
@@ -274,7 +278,7 @@ async def test_board_refresh_remote_failure_still_succeeds(board_app):
     """Remote refresh failure doesn't block local token issuance."""
     repo = board_app.state.user_repo
     repo.create_user(username="dave", hashed_password=SHADOW_USER_NO_LOCAL_AUTH)
-    local_refresh = create_refresh_token(data={"sub": "dave"})
+    local_refresh = refresh_token_for(repo, "dave")
 
     # Remote refresh fails
     board_app.state.remote_client._refresh_access_token.side_effect = Exception("Network error")
@@ -296,7 +300,7 @@ async def test_board_logout_clears_remote_tokens(board_app):
     # Create shadow user and get a local token
     repo = board_app.state.user_repo
     repo.create_user(username="eve", hashed_password=SHADOW_USER_NO_LOCAL_AUTH)
-    local_token = create_access_token(data={"sub": "eve"})
+    local_token = token_for(repo, "eve")
 
     with patch("katrain.web.core.credentials.delete_credentials") as mock_delete:
         async with AsyncClient(transport=ASGITransport(app=board_app), base_url="http://test") as ac:
@@ -315,7 +319,7 @@ async def test_board_me_works_with_shadow_user(board_app):
     """get_current_user resolves shadow user from local token."""
     repo = board_app.state.user_repo
     repo.create_user(username="frank", hashed_password=SHADOW_USER_NO_LOCAL_AUTH)
-    local_token = create_access_token(data={"sub": "frank"})
+    local_token = token_for(repo, "frank")
 
     async with AsyncClient(transport=ASGITransport(app=board_app), base_url="http://test") as ac:
         resp = await ac.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {local_token}"})

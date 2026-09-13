@@ -5,7 +5,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from katrain.web.core import models_db
-from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token
+from katrain.web.core.auth import SQLAlchemyUserRepository
+
+from conftest import token_for
 from katrain.web.core.db import get_db
 
 
@@ -271,7 +273,7 @@ def client_with_auth():
     app.dependency_overrides[get_db] = override_db
     app.state.user_repo = SQLAlchemyUserRepository(TestSession)
 
-    token = create_access_token(data={"sub": "testadmin"})
+    token = token_for(app.state.user_repo, "testadmin")
     return TestClient(app), token
 
 

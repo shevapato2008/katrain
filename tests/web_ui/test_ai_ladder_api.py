@@ -20,13 +20,23 @@ from sqlalchemy.orm import sessionmaker
 
 from katrain.web.core import models_db
 from katrain.web.core.ai_ladder_ranked import AiLadderRankedRepository
-from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token
+from katrain.web.core.auth import SQLAlchemyUserRepository
 from katrain.web.core.db import Base
 from katrain.web.core.engine_recovery import EngineRecoveryConfig, EngineRecoveryTracker
 from katrain.web.core.ranked_session_guard import RankedAnalysisActivity
 from katrain.web.core.user_game_repo import UserGameAnalysisRepository, UserGameRepository
 from katrain.web import server
 from katrain.web.server import create_app
+
+from conftest import token_for
+
+
+# 这个文件里有几条用例，在测试体里等一个「请求已经进到 router」的事件（`entered`），
+# 而那个事件只有请求**过了鉴权**才会被 set。凡是让请求在到达 router 之前就被拒的改动
+# —— 换 token 形状、加一道鉴权、改一个路由前缀 —— 都会让事件永不触发，于是裸 `await`
+# 不是变红而是**永久挂住**：CI 停在那里，没有任何信号。所以这类等待一律带上限。
+# 2026-09-13 身份主体换轨（JWT sub: username → uuid）就恰好触发过这一次。
+ENTERED_TIMEOUT = 10
 
 
 class FixtureRecipe:
@@ -251,7 +261,7 @@ def _build_ladder_app(tmp_path, monkeypatch, *, db_name: str = "ai-ladder-api.db
         return session
 
     monkeypatch.setattr(app.state.session_manager, "create_session", create_session)
-    token = create_access_token({"sub": username})
+    token = token_for(app.state.user_repo, username)
     app.state._test_session_factory = sessions
     app.state._test_created_sessions = created_sessions
     app.state._test_user_id = user_id
@@ -584,7 +594,7 @@ async def test_settled_receipt_is_hidden_from_other_accounts(api_app, client):
         db.add(models_db.User(username="receipt-attacker", hashed_password="x", rank="20k"))
         db.commit()
     owner = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "owner-board"}
-    attacker = {"Authorization": f"Bearer {create_access_token({'sub': 'receipt-attacker'})}"}
+    attacker = {"Authorization": f"Bearer {token_for(api_app.state.user_repo, 'receipt-attacker')}"}
     async with client as ac:
         reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=owner, json=reservation_payload())
         game_id = reserved.json()["game_id"]
@@ -938,7 +948,7 @@ async def test_other_user_cannot_read_free_session_state(api_app, client):
     with api_app.state._test_session_factory() as db:
         db.add(models_db.User(username="state-other", hashed_password="x", rank="20k"))
         db.commit()
-    other_headers = {"Authorization": f"Bearer {create_access_token({'sub': 'state-other'})}"}
+    other_headers = {"Authorization": f"Bearer {token_for(api_app.state.user_repo, 'state-other')}"}
     free = api_app.state.session_manager.create_session(user_id=api_app.state._test_user_id)
 
     async with client as ac:
@@ -996,7 +1006,7 @@ async def test_legacy_analysis_requires_auth_but_other_user_free_session_remains
     with api_app.state._test_session_factory() as db:
         db.add(models_db.User(username="analysis-other", hashed_password="x", rank="20k"))
         db.commit()
-    other_headers = {"Authorization": f"Bearer {create_access_token({'sub': 'analysis-other'})}"}
+    other_headers = {"Authorization": f"Bearer {token_for(api_app.state.user_repo, 'analysis-other')}"}
     free = api_app.state.session_manager.create_session()
     async with client as ac:
         anonymous = await ac.post("/api/analysis/current", json={"session_id": free.session_id})
@@ -1029,7 +1039,7 @@ async def test_v1_session_analysis_in_flight_does_not_return_after_ranked_game_s
                 json={"session_id": free.session_id, "payload": {"maxVisits": 50}},
             )
         )
-        await entered.wait()
+        await asyncio.wait_for(entered.wait(), timeout=ENTERED_TIMEOUT)
         started = await start_ranked(api_app, ac)
         release.set()
         analysis = await analysis_task
@@ -1169,7 +1179,7 @@ async def test_quick_analysis_in_flight_does_not_return_after_ranked_game_starts
         analysis_task = asyncio.create_task(
             ac.post("/api/v1/analysis/quick-analyze", headers=api_app.state._test_headers, json={"moves": []})
         )
-        await entered.wait()
+        await asyncio.wait_for(entered.wait(), timeout=ENTERED_TIMEOUT)
         started = await start_ranked(api_app, ac)
         release.set()
         analysis = await analysis_task
@@ -1203,8 +1213,8 @@ async def test_concurrent_quick_analysis_leases_are_reference_counted(api_app, c
             )
             for _ in range(2)
         ]
-        await entered.get()
-        await entered.get()
+        await asyncio.wait_for(entered.get(), timeout=ENTERED_TIMEOUT)
+        await asyncio.wait_for(entered.get(), timeout=ENTERED_TIMEOUT)
         releases[0].set()
         assert (await tasks[0]).status_code == 200
         while_first_finished = await start_ranked(api_app, ac)
@@ -1238,7 +1248,7 @@ async def test_session_reset_or_delete_cannot_clear_inflight_temporary_analysis_
                 json={"session_id": free.session_id, "payload": {"maxVisits": 50}},
             )
         )
-        await entered.wait()
+        await asyncio.wait_for(entered.wait(), timeout=ENTERED_TIMEOUT)
         if interrupt == "invalid-reset":
             interrupted = await ac.post(
                 "/api/new-game",
@@ -1392,7 +1402,7 @@ async def test_ranked_vision_bind_rejects_unauthenticated_and_non_owner(api_app,
         other = models_db.User(username="vision-other", hashed_password="x", rank="20k")
         db.add(other)
         db.commit()
-    other_headers = {"Authorization": f"Bearer {create_access_token({'sub': 'vision-other'})}"}
+    other_headers = {"Authorization": f"Bearer {token_for(api_app.state.user_repo, 'vision-other')}"}
     async with client as ac:
         started = await start_ranked(api_app, ac)
         body = {"session_id": started.json()["session_id"]}
@@ -1645,7 +1655,7 @@ async def test_ranked_non_owner_cannot_resign(api_app, client):
     with api_app.state._test_session_factory() as db:
         db.add(models_db.User(username="resign-other", hashed_password="x", rank="20k"))
         db.commit()
-    other_headers = {"Authorization": f"Bearer {create_access_token({'sub': 'resign-other'})}"}
+    other_headers = {"Authorization": f"Bearer {token_for(api_app.state.user_repo, 'resign-other')}"}
     async with client as ac:
         started = await start_ranked(api_app, ac)
         response = await ac.post(
@@ -2595,7 +2605,7 @@ async def test_game_lifecycle_is_private_and_requests_are_strict(api_app, client
         db.add(other_user)
         db.commit()
     other_auth = {
-        "Authorization": f"Bearer {create_access_token({'sub': 'other-lifecycle-user'})}",
+        "Authorization": f"Bearer {token_for(api_app.state.user_repo, 'other-lifecycle-user')}",
         "X-StellaBox-Device-ID": "x",
     }
     headers = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "board-a"}
@@ -2728,7 +2738,7 @@ async def test_other_account_cannot_legacy_settle_an_active_global_game_id(api_a
         db.add(models_db.User(username="game-id-attacker", hashed_password="x", rank="20k"))
         db.commit()
     attacker = {
-        "Authorization": f"Bearer {create_access_token({'sub': 'game-id-attacker'})}",
+        "Authorization": f"Bearer {token_for(api_app.state.user_repo, 'game-id-attacker')}",
         "X-StellaBox-Device-ID": "attacker-board",
     }
     owner = {**api_app.state._test_headers, "X-StellaBox-Device-ID": "owner-board"}

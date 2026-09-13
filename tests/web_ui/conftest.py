@@ -327,3 +327,29 @@ def isolated_core_db(database_url):
             os.environ.pop("KATRAIN_DATABASE_URL", None)
         else:
             os.environ["KATRAIN_DATABASE_URL"] = saved_url
+
+
+def token_for(repo, username: str, *, box_generation: int | None = None) -> str:
+    """按用户名找到那一行，用它的 **uuid + 当前 epoch** 签一张 access token。
+
+    测试里不许再手写 `create_access_token({"sub": <用户名>})` —— 主体换轨之后
+    那种 token 解不出用户，表现是 401，而错误信息会指向业务逻辑不是 token 形状，
+    极易误诊。
+    """
+    from katrain.web.core.auth import create_access_token
+
+    user = repo.get_user_by_username(username)
+    assert user is not None, f"token_for: 库里没有用户 {username!r}"
+    return create_access_token(
+        data={"sub": user["uuid"], "epoch": user.get("token_epoch") or 0},
+        box_generation=box_generation,
+    )
+
+
+def refresh_token_for(repo, username: str) -> str:
+    """同上，签 refresh token。"""
+    from katrain.web.core.auth import create_refresh_token
+
+    user = repo.get_user_by_username(username)
+    assert user is not None, f"refresh_token_for: 库里没有用户 {username!r}"
+    return create_refresh_token(data={"sub": user["uuid"], "epoch": user.get("token_epoch") or 0})

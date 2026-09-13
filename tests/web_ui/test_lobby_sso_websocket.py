@@ -4,7 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from katrain.web.core.auth import SQLAlchemyUserRepository, create_access_token
+from katrain.web.core.auth import SQLAlchemyUserRepository
+
+from conftest import token_for
 from katrain.web.core import models_db
 from katrain.web.server import create_app
 from katrain.web.session import LobbyManager, Matchmaker
@@ -37,7 +39,7 @@ def lobby_app(tmp_path):
 
 def create_token(app, username):
     user = app.state.user_repo.create_user(username, "unused-password-hash")
-    return create_access_token(data={"sub": username}), user["id"]
+    return token_for(app.state.user_repo, username), user["id"]
 
 
 def test_lobby_query_token_authenticates_without_origin(lobby_app):

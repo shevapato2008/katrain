@@ -266,7 +266,10 @@ async def test_phone_login_issues_a_token_for_a_bound_user(
         ME, headers={"Authorization": f"Bearer {r.json()['access_token']}"}
     )
     assert me.status_code == 200, me.text
-    assert me.json()["username"] == bound_user["username"]   # JWT 的 sub 是 username（F4）
+    # 登录发的这张票**认得出是谁**。2026-09-13 身份主体换轨之后 sub 里装的是
+    # `users.uuid` 不再是 username，所以这一句量的是「解回来仍是本人」，
+    # 不是「sub 就是用户名」。
+    assert me.json()["username"] == bound_user["username"]
     # `phone_bound` 必须真的从库里长出来。pydantic 默认值是 False ⇒ `_to_dict` 漏了
     # 那一行、或 models.User 少了那个字段时，失败方向是**所有人都"没绑手机"**，
     # 而不是报错 —— Task 11/12 的闸会静默地对每个人关上。这一句就是盯它的。

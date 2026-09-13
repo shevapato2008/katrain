@@ -87,7 +87,8 @@ async def test_strict_bridge_bootstrap_returns_generation_bound_local_token(stri
     assert "set-cookie" not in response.headers
     token = response.json()["access_token"]
     payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-    assert payload["sub"] == "alice"
+    # sub 装的是那一行的 uuid，不是用户名（2026-09-13 身份主体换轨）。
+    assert payload["sub"] == strict_app.state.user_repo.get_user_by_username("alice")["uuid"]
     assert payload["box_generation"] == 7
     strict_app.state.remote_client.set_tokens.assert_called_once_with(
         "remote-access", "remote-refresh"
@@ -142,7 +143,9 @@ async def test_strict_browser_accepts_only_go_cookie_and_current_generation(stri
 
 @pytest.mark.asyncio
 async def test_strict_mode_disables_direct_login_register_and_refresh(strict_app):
-    refresh_token = create_access_token({"sub": "legacy"})
+    # 刻意签一张**解不出用户**的 token：这条用例要证的是 strict 模式在碰 token 之前
+    # 就 403，而不是「token 无效」。所以这里不能用 token_for —— 库里本来就没有这一行。
+    refresh_token = create_access_token({"sub": "00000000000000000000000000000000"})
     async with AsyncClient(
         transport=ASGITransport(app=strict_app), base_url="http://127.0.0.1:8081"
     ) as client:

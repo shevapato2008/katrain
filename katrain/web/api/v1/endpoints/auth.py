@@ -112,7 +112,7 @@ async def phone_login(request: Request, body: PhoneLoginRequest, db: Session = D
                     "message": "这个手机号还没有绑定账号。请先用用户名密码登录，再到设置里绑定。"},
         )
     return {
-        "access_token": create_access_token(data={"sub": user["username"]}),
+        "access_token": create_access_token(data={"sub": user["uuid"], "epoch": user.get("token_epoch") or 0}),
         "token_type": "bearer",
     }
 
@@ -194,16 +194,25 @@ async def get_user_from_token(token: str, repo: Any, box_sso: Any = None) -> Use
     )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        subject: str = payload.get("sub")
+        if subject is None:
             raise credentials_exception
         if strict_box_sso_enabled() and (box_sso is None or not box_sso.validates(payload.get("box_generation"))):
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    user_dict = repo.get_user_by_username(username)
+    user_dict = repo.get_user_by_uuid(subject)
     if user_dict is None:
+        raise credentials_exception
+    # 改密码会把 token_epoch +1 ⇒ 之前签发的每一张票立刻对不上。
+    # `or 0`：迁移旧库上这一列可空（migrations.py:341 的 ADD COLUMN 不带 NOT NULL）。
+    # `int(...)` 包 try：伪造的 token 里 epoch 可以是任意 JSON 值，不能炸成 500。
+    try:
+        token_epoch = int(payload.get("epoch", 0))
+    except (TypeError, ValueError):
+        raise credentials_exception
+    if token_epoch != (user_dict.get("token_epoch") or 0):
         raise credentials_exception
     return User(**user_dict)
 
@@ -296,7 +305,10 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     # can tell whose session is currently up on a shared board.
     remote_client.bind_user(shadow_user["id"])
     await state.activate(body.generation)
-    local_access = create_access_token(data={"sub": shadow_user["username"]}, box_generation=body.generation)
+    local_access = create_access_token(
+        data={"sub": shadow_user["uuid"], "epoch": shadow_user.get("token_epoch") or 0},
+        box_generation=body.generation,
+    )
     return {"access_token": local_access, "token_type": "bearer"}
 
 
@@ -347,8 +359,12 @@ async def login(request: Request, login_data: LoginRequest, response: Response) 
         remote_client.bind_user(shadow_user["id"])
 
         # Issue local tokens (design 5.2)
-        local_access = create_access_token(data={"sub": shadow_user["username"]})
-        local_refresh = create_refresh_token(data={"sub": shadow_user["username"]})
+        local_access = create_access_token(
+            data={"sub": shadow_user["uuid"], "epoch": shadow_user.get("token_epoch") or 0}
+        )
+        local_refresh = create_refresh_token(
+            data={"sub": shadow_user["uuid"], "epoch": shadow_user.get("token_epoch") or 0}
+        )
         _issue_loopback_sso_cookie(request, response, local_access)
         return {"access_token": local_access, "token_type": "bearer", "refresh_token": local_refresh}
 
@@ -361,8 +377,8 @@ async def login(request: Request, login_data: LoginRequest, response: Response) 
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub": user_dict["username"]})
-    refresh_token = create_refresh_token(data={"sub": user_dict["username"]})
+    access_token = create_access_token(data={"sub": user_dict["uuid"], "epoch": user_dict.get("token_epoch") or 0})
+    refresh_token = create_refresh_token(data={"sub": user_dict["uuid"], "epoch": user_dict.get("token_epoch") or 0})
     _issue_loopback_sso_cookie(request, response, access_token)
     return {"access_token": access_token, "token_type": "bearer", "refresh_token": refresh_token}
 
@@ -380,15 +396,21 @@ async def refresh(request: Request, body: RefreshRequest) -> Any:
     try:
         payload = jwt.decode(body.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_type: str = payload.get("type")
-        username: str = payload.get("sub")
-        if token_type != "refresh" or username is None:
+        subject: str = payload.get("sub")
+        if token_type != "refresh" or subject is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
     repo = request.app.state.user_repo
-    user_dict = repo.get_user_by_username(username)
+    user_dict = repo.get_user_by_uuid(subject)
     if user_dict is None:
+        raise credentials_exception
+    try:
+        token_epoch = int(payload.get("epoch", 0))
+    except (TypeError, ValueError):
+        raise credentials_exception
+    if token_epoch != (user_dict.get("token_epoch") or 0):
         raise credentials_exception
 
     # Board mode: also refresh remote tokens (best-effort, design 5.1)
@@ -399,7 +421,8 @@ async def refresh(request: Request, body: RefreshRequest) -> Any:
         except Exception:
             logger.debug("Remote token refresh failed (best-effort), local refresh continues")
 
-    new_access_token = create_access_token(data={"sub": username})
+    # 换发用**当前** epoch，不是 token 里那个：否则改密码后拿旧 refresh 还能换出新票。
+    new_access_token = create_access_token(data={"sub": subject, "epoch": (user_dict.get("token_epoch") or 0)})
     return {"access_token": new_access_token, "token_type": "bearer"}
 
 

@@ -1,10 +1,13 @@
 """鉴权主体换轨：JWT 的 sub 装 users.uuid，并用 token_epoch 让改密码即刻失效会话。
 
-三条闸：
+四条闸：
   闸 1 改密码后旧 access 与旧 refresh 双双 401、而新签的票仍 200（P1 的核心价值，此前无人守）
         —— 外加一条：`token_epoch` 为 NULL 的迁移库行也必须 bump 得动
   闸 2 token 的 sub 是 32 位十六进制且不等于用户名（防有人改回去）
   闸 3 token_epoch 为 NULL 的行（迁移旧库的形状）仍能正常鉴权
+  闸 4 epoch 已经**离开 0** 的账号（改过密码、再用新密码登录）续期照常 200，
+        且换发回来的 access 带的是当前 epoch —— 这条守的是「0 == 0 恒成立」的反面：
+        闸 1 只证了旧票被拒，没有任何用例证过本人重新登录之后续期还走得通
 
 变异验证（2026-09-13，逐条实跑：改坏 → 跑 → 还原 → grep 回读）：
 
@@ -63,6 +66,30 @@ test_auth_api,test_phone_endpoints}.py -q -p no:randomly`
      `test_minted_subject_is_the_account_uuid_not_the_username`，停在新加的
      `refresh 的 sub 不是 32 位十六进制：'alice'` 那句，其余 53 条不受影响；
      还原 `auth.py` 后回到 54 passed。
+
+  M8 见闸 4 自己的 docstring（新加的那条 refresh 往返闸）。
+
+  M9 / M10（2026-09-13，终审 must_fix 的可选项：把两个解析点的
+     `int(payload.get("epoch", 0))` 收紧成「缺 epoch 键即 401」）——
+     这一对是**同一个变异跑两遍**，一遍在收紧前、一遍在收紧后，量的是收紧本身值多少：
+
+       M10b 收紧**前**：`/auth/register` 的铸造点整个删掉 `epoch` 键
+            → **68 passed / 0 failed，一条都没红**。缺键被读成 0，而所有测试账号的
+            `token_epoch` 也是 0 ⇒ `0 == 0` 恒成立，这一整类「铸造点漏写 epoch」
+            的缺陷对 CI 完全不可见。
+       M10a 收紧**后**：同一个变异 → **1 红**
+            （test_phone_endpoints.py::test_phone_login_issues_a_token_for_a_bound_user）。
+
+       M9b / M9a 是同一对跑在 `/auth/login` 的 access 铸造点上：收紧前 3 红、
+            收紧后 15 红。那个点本来就有闸（闸 2 的 `"epoch" in payload` 与闸 4），
+            所以它证不了「不可见」，只证了射程 —— 真正「不可见」的那一格是 M10b。
+
+     命令：`./.venv/bin/python -m pytest tests/web_ui/{test_identity_subject,
+     test_set_password,test_auth_api,test_board_auth,test_phone_endpoints}.py
+     -q -p no:randomly`（基线 68 passed / 0 failed）。
+     收紧的射程实测只碰到**一个**测试铸造点：test_box_sso.py 那张刻意签坏的票
+     （它在 strict 的 403 之前就返回了，走不到解析侧；给它补 epoch 只为让
+     「全仓每个铸造点都写 epoch」不留例外）。
 """
 import re
 
@@ -284,3 +311,79 @@ async def test_old_access_and_refresh_tokens_both_stop_working_after_a_password_
     assert (
         fresh.status_code == 200
     ), f"改密码后新签的票也被拒了 ⇒ 拒的是所有票不是旧票：{fresh.status_code} {fresh.text}"
+
+
+async def test_refresh_round_trip_still_works_after_the_epoch_left_zero(phone_app, phone_auth_client):
+    """改完密码、用**新密码**重新登录之后，续期这条路必须照常走得通。
+
+    这是 P1 核心承诺的后半句（前半句「旧票立刻失效」由上面闸 1 那条守）。它此前零覆盖：
+    全仓断言 `/auth/refresh` 返 200 的三条用例，账号 `token_epoch` 全是 0，而
+    **`0 == 0` 恒成立** ⇒ 把 auth.py 里换发那一处、或 /auth/login 铸造那一处的
+    epoch 参数写坏，全量测试与基线 comm 依旧「新增失败为空」。真实后果是**只有用过
+    改密码功能的人**（也就是这个特性的全部用户）在票过期后续期永久 401；盒子上更隐蔽
+    —— remote_client.py 在 refresh 返 200 时主动把 `_auth_required` 清成 False，
+    `is_authenticated` 因此恒为 True，用户看到的是「功能静默不工作」而不是「请重新登录」。
+
+    **两句 `!= 0` 是这条闸的全部价值所在** —— 少了它们，这条用例在 epoch 恒为 0 的
+    世界里照样绿，等于白写。所以断言写成「等于库里那个值**并且**不是 0」，两半都要：
+    只比库值会被「两边一起是 0」蒙混，只比 0 又不认换发有没有跟上当前 epoch。
+
+    改密码必须写真的 `get_password_hash(<新密码>)`：闸 1 那条 e2e 传的
+    `"whatever-new-hash"` 是个假 hash，`verify_password` 过不了 —— 照抄它，第 2 步就登不进去。
+
+    变异验证（2026-09-13，实跑：改坏 → 跑 → 还原 → grep 回读）：
+
+      M8 /auth/refresh 换发那一处（auth.py 的 `create_access_token(data={"sub": subject,
+         "epoch": ...})`）把 epoch 写死 `0` → **恰好 1 红**，就是本条，停在
+         `换发的 access epoch 与库里对不上：0 vs 1`。
+         命令：`./.venv/bin/python -m pytest tests/web_ui/{test_identity_subject,
+         test_set_password,test_auth_api,test_board_auth}.py -q -p no:randomly`
+         —— 基线（未改动、同一条命令）**44 passed / 0 failed**，改坏后
+         **1 failed / 43 passed**，所以那一条红是新增的。同一条命令下另外两处断言
+         refresh 返 200 的用例（本文件闸 2、test_board_auth.py 的 charlie/dave）全绿
+         ⇒ 它们量的确实不是这个操作数，那三个账号的 epoch 都还是 0。
+    """
+    from jose import jwt
+
+    from katrain.web.core.auth import get_password_hash
+    from katrain.web.core.config import settings
+
+    repo = phone_app.state.user_repo
+    user = repo.get_user_by_username("alice")
+    repo.set_password_hash(user["id"], get_password_hash("newpw654321"))
+
+    db_epoch = repo.get_user_by_username("alice")["token_epoch"]
+    assert db_epoch != 0, f"改密码没把 epoch 抬离 0（拿到 {db_epoch!r}）⇒ 下面两句 != 0 全是空跑"
+
+    resp = await phone_auth_client.post(
+        "/api/v1/auth/login", json={"username": "alice", "password": "newpw654321"}
+    )
+    assert resp.status_code == 200, f"改完密码用新密码登不进去：{resp.status_code} {resp.text}"
+    login = resp.json()
+
+    minted = jwt.decode(login["access_token"], settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    assert (
+        minted.get("epoch") == db_epoch
+    ), f"登录铸出来的 access epoch 与库里对不上：{minted.get('epoch')!r} vs {db_epoch!r}"
+    assert minted.get("epoch") != 0, "铸出来的 epoch 是 0 ⇒ 这条闸退化成 0 == 0，什么都没量"
+
+    renewed = await phone_auth_client.post(
+        "/api/v1/auth/refresh", json={"refresh_token": login["refresh_token"]}
+    )
+    assert (
+        renewed.status_code == 200
+    ), f"epoch≥1 的账号换不出新票 ⇒ 改过密码的人续期永久 401：{renewed.status_code} {renewed.text}"
+
+    rotated = jwt.decode(
+        renewed.json()["access_token"], settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+    )
+    assert (
+        rotated.get("epoch") == db_epoch
+    ), f"换发的 access epoch 与库里对不上：{rotated.get('epoch')!r} vs {db_epoch!r}"
+    assert rotated.get("epoch") != 0, "换发出来的 epoch 是 0 ⇒ 拿它打任何接口都会被 epoch 闸拒掉"
+
+    me = await phone_auth_client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {renewed.json()['access_token']}"},
+    )
+    assert me.status_code == 200, f"换发回来的 access token 用不了：{me.status_code} {me.text}"

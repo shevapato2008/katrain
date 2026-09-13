@@ -152,7 +152,10 @@ async def test_strict_browser_accepts_only_go_cookie_and_current_generation(stri
 async def test_strict_mode_disables_direct_login_register_and_refresh(strict_app):
     # 刻意签一张**解不出用户**的 token：这条用例要证的是 strict 模式在碰 token 之前
     # 就 403，而不是「token 无效」。所以这里不能用 token_for —— 库里本来就没有这一行。
-    refresh_token = create_access_token({"sub": "00000000000000000000000000000000"})
+    # 带上 `epoch` 只是为了让「全仓每个铸造点都写 epoch」这句话不留例外（解析侧现在
+    # 缺键即 401，见 endpoints/auth.py 的 get_user_from_token）；strict 的 403 发生在
+    # 解析之前，这个值走不到那里。
+    refresh_token = create_access_token({"sub": "00000000000000000000000000000000", "epoch": 0})
     async with AsyncClient(
         transport=ASGITransport(app=strict_app), base_url="http://127.0.0.1:8081"
     ) as client:

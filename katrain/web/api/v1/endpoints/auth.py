@@ -215,11 +215,33 @@ async def get_user_from_token(token: str, repo: Any, box_sso: Any = None) -> Use
     # 改密码会把 token_epoch +1 ⇒ 之前签发的每一张票立刻对不上。
     # `or 0`：迁移旧库上这一列可空（migrations.py:341 的 ADD COLUMN 不带 NOT NULL）。
     # `int(...)` 包 try：伪造的 token 里 epoch 可以是任意 JSON 值，不能炸成 500。
+    #
+    # **键必须存在，不给默认值**：这里原本写的是 `payload.get("epoch", 0)`，而所有
+    # 测试账号的 `token_epoch` 也都是 0 ⇒ `0 == 0` 恒成立 ⇒ **任何铸造点漏写 epoch，
+    # CI 全绿**（实测：删掉 /auth/register 铸造点的 epoch 键，五个 auth 测试文件
+    # 68 条一条不红），线上却只对「改过密码的人」在票过期后永久 401 —— 一股无法
+    # 归因的 401 涓流。要求键存在之后，漏写会当场对所有人失效、既有闸立刻变红。
+    # 这么收紧是安全的：pre-P1 的老票 `sub` 装的是用户名，在上面 get_user_by_uuid
+    # 那一步就已经查不到行，够不到这里。
+    if "epoch" not in payload:
+        raise credentials_exception
     try:
-        token_epoch = int(payload.get("epoch", 0))
+        token_epoch = int(payload["epoch"])
     except (TypeError, ValueError):
         raise credentials_exception
     if token_epoch != (user_dict.get("token_epoch") or 0):
+        # 这套机制在生产上坏掉时**全程零日志** ⇒ 表现是一股无法归因的 401 涓流，
+        # 既不会红也不会有人发现，只能靠用户来报。所以单独记 epoch 不匹配这一种 401：
+        # 它是「本人用过改密码」与「某个铸造点漏写 epoch」的唯一线索。
+        # 只记这一种、只记 uuid 与两边的 epoch —— 不记 token 本身、不记用户名，
+        # 也不给其他 401 分支加（那会开出账号存在性探测面）。这条是给**服务端运维**
+        # 看的、不出网，跟「要不要对外可分辨」（已交身份 track）是两回事。
+        logger.info(
+            "auth reject: epoch mismatch uuid=%s token_epoch=%s db_epoch=%s",
+            subject,
+            token_epoch,
+            user_dict.get("token_epoch"),
+        )
         raise credentials_exception
     return User(**user_dict)
 
@@ -420,11 +442,24 @@ async def refresh(request: Request, body: RefreshRequest) -> Any:
     user_dict = repo.get_user_by_uuid(subject)
     if user_dict is None:
         raise credentials_exception
+    # 键必须存在、不给默认值 —— 理由与 get_user_from_token 里那段逐字相同（见上）。
+    if "epoch" not in payload:
+        raise credentials_exception
     try:
-        token_epoch = int(payload.get("epoch", 0))
+        token_epoch = int(payload["epoch"])
     except (TypeError, ValueError):
         raise credentials_exception
     if token_epoch != (user_dict.get("token_epoch") or 0):
+        # 同 get_user_from_token 里那段：只记 epoch 不匹配这一种，口径逐字相同。
+        # 这一半单独重要 —— 它命中的是「改过密码的人在票过期后续期」那条路，
+        # 而客户端那边（remote_client）在 refresh 返 200 时会把 `_auth_required`
+        # 清成 False，失败侧是静默的。
+        logger.info(
+            "auth reject: epoch mismatch on refresh uuid=%s token_epoch=%s db_epoch=%s",
+            subject,
+            token_epoch,
+            user_dict.get("token_epoch"),
+        )
         raise credentials_exception
 
     # Board mode: also refresh remote tokens (best-effort, design 5.1)
@@ -576,7 +611,8 @@ async def set_password(
 
     **改密码会立刻踢掉此前签发的每一张票**（P1）：下面那句 `set_password_hash` 在写
     密码的同一条 UPDATE 里把 `users.token_epoch` +1，而 access 与 refresh 两个解析点
-    都拿 token 里的 `epoch` 跟库里比（本文件 `:222`、`:427`）。refresh 那一半单独重要 ——
+    都拿 token 里的 `epoch` 跟库里比（本文件的 `get_user_from_token` 与 `refresh`
+    两个函数，两边都是「缺 epoch 键即 401」）。refresh 那一半单独重要 ——
     `REFRESH_TOKEN_EXPIRE_DAYS = 90`，少了这道比较，持票人改完密码仍能连续换发三个月。
 
     **本端点不发新票**：返回的 `{"ok": True}` 里没有 access/refresh ⇒ 用户在

@@ -5,6 +5,54 @@
         —— 外加一条：`token_epoch` 为 NULL 的迁移库行也必须 bump 得动
   闸 2 token 的 sub 是 32 位十六进制且不等于用户名（防有人改回去）
   闸 3 token_epoch 为 NULL 的行（迁移旧库的形状）仍能正常鉴权
+
+变异验证（2026-09-13，逐条实跑：改坏 → 跑 → 还原 → grep 回读）：
+
+口径是**恰好**不是至少 —— 既确认该红的红了，也确认没有别的红。
+基线（未改动、同一条命令）：**54 passed / 0 failed**，所以下面每一条红都是新增的。
+命令：`./.venv/bin/python -m pytest tests/web_ui/{test_identity_subject,test_set_password,
+test_auth_api,test_phone_endpoints}.py -q -p no:randomly`
+
+  M1 get_user_from_token 删掉 epoch 比较 → **2 红**（预期 1）
+     本文件 test_old_access_and_refresh_tokens_both_stop_working_after_a_password_change
+     + test_set_password.py::test_old_access_and_refresh_tokens_are_rejected_after_the_password_change。
+     两条都停在 **access** 那句断言。多出来的那条不是作用域失控：同一件事
+     test_set_password.py 也守着一份，只跑本文件时看不见它。
+
+  M2 refresh 端点删掉 epoch 比较 → **同样那 2 条**，但停在 **refresh** 那句断言
+     ⇒ 闸 1 的两半确实分得开，不是一句断言兼管两件事。
+
+  M3 set_password_hash 删掉整个 "token_epoch" 键 → **4 红**（预期 2）
+     闸 1 的两条 repo 级 + 上面两条 e2e。多出的两条是同一缺陷在 HTTP 层的样子。
+
+  M3b（窄变异，复核 Task 5）coalesce 退回裸 `User.token_epoch + 1` → **恰好 1 红**：
+     test_changing_the_password_bumps_epoch_even_when_the_column_is_null。
+     与 Task 5 的结论一致（本轮自己重跑，未转述）。M3 是「完全不 bump」，
+     M3b 才是「只有 NULL 行 bump 不动」—— 后者是那个 coalesce 真正守的东西。
+
+  M4 /auth/login 的 **access** 铸造改回 username → **15 红**（预期 1）
+     闸 2 是唯一**点名病因**的那条（"sub 不是 32 位十六进制：'alice'"）；
+     其余 14 条只报 401 —— sub='alice' 时 get_user_by_uuid 查不到行，
+     整个已登录面当场塌掉。闸 2 在这里的价值是**诊断**，不是发现。
+
+  M5 读取侧 `(user_dict.get("token_epoch") or 0)` → `user_dict["token_epoch"]`
+     → **恰好 1 红**：闸 3。矩阵里唯一一条严格「恰好」的。
+
+  M6 get_user_by_uuid 改回 .first() → **休眠，本轮未执行**。
+     实测（非转述）：`ix_users_uuid` 今天是 UNIQUE 索引，把第二行 uuid 改成重复
+     会被 `UNIQUE constraint failed: users.uuid` 挡回 ⇒ 构造不出重复行。
+     **一个要留痕的判断**：闸 1/3 用 `PRAGMA writable_schema` 摘 NOT NULL 是允许的，
+     因为「迁移旧库上 token_epoch 可空」这个形状**线上真实存在**；同样的手法也能摘掉
+     uuid 的唯一索引把 M6 跑起来，但那造出来的是**今天任何真实库都没有的形状**。
+     差别就在这儿 —— 所以这一格记休眠，不硬凑。硬凑的闸比没有更坏。
+
+  M7（brief 之外，专为探覆盖缺口而加，允许它什么都不红）
+     /auth/login 的 **refresh** 铸造改回 username → **一条都没红，54 全绿**。
+     ⇒ 这个铸造点今天**无人守**。7 个铸造点里只有登录那张 access 被闸 2 盯着。
+     而且比「没闸」更糟：临时探针实测，改坏之后**没改过密码的正常换发也返 401**
+     （同一探针在干净代码上是 200）⇒ 全体用户的 token 续期永久失效，
+     而闸 1 那两条仍然绿 —— 它们断言的正是 401，只是这次 401 来自另一个病因。
+     **本轮不补闸**（超出 Task 6 范围），如实记在这里等裁定。探针跑完即删，未入库。
 """
 import re
 

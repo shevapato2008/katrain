@@ -21,7 +21,12 @@ describe('useReportTasks 的 402 分支', () => {
   });
 
   const mount = async () => {
-    const hook = renderHook(() => useReportTasks('tok'));
+    // 第二参 `enabled` 是 develop 的 2c2034e0 加的必填参数（盒端 token 恒为 null 而人是
+    // 登录的，所以「该不该发请求」不能从 token 推）。这里固定传 true —— 本文件测的是
+    // **已认证之后**创建报告撞上 402 的分支，认证与否不是本文件的变量。
+    // 漏传不会有类型错：`*.test.tsx` 被 tsconfig exclude，tsc -b 看不见它，
+    // 只会在运行时静默变成 undefined ⇒ refresh 早退 ⇒ list 一次都不调。
+    const hook = renderHook(() => useReportTasks('tok', true));
     await waitFor(() => expect(ReportsAPI.list).toHaveBeenCalled());
     return hook;
   };

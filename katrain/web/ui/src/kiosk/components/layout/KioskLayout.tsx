@@ -5,6 +5,7 @@ import { KioskTopbar } from '../../shell/KioskTopbar';
 import { KioskDock } from '../../shell/KioskDock';
 import { dockLevelOf } from '../../shell/dockRoutes';
 import { GoConsoleRail } from './GoConsoleRail';
+import { leaveToLauncher } from '../../shell/boxUrls';
 
 /**
  * 哪些 L1 屏出左边的镜像栏。规范 §5 的判据是**「这个模块的活动会不会发生在实体盘上」**——
@@ -51,7 +52,7 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
           identity={{ username }}
           // 主页键只在一级页出现(规范 §6「一级页面可在固定系统动作区显示主页入口」)。
           // 二/三级页要退的是**这一屏**,那是页控条上的返回,不是回智星盒主页。
-          onHome={level === 1 ? () => window.location.assign('http://127.0.0.1:8080/launcher') : undefined}
+          onHome={level === 1 ? () => leaveToLauncher() : undefined}
         />
       )}
       dock={level === 1 ? (

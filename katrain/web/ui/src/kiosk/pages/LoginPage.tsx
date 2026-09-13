@@ -1,17 +1,18 @@
 import { useState, type KeyboardEvent } from 'react';
 import { Box, TextField, Button, Typography, Alert, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { KIOSK_SERIF } from '../theme';
+import { LAUNCHER_LOGIN_URL, isStrictBoxKiosk } from '../shell/boxUrls';
 
 // Brand lockup matches the Header (智星盒 / StellaBox) — Newsreader serif, jade console palette.
 const BRAND_SERIF = KIOSK_SERIF;
 
 const LoginPage = () => {
   const theme = useTheme();
-  const { login } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [username, setUsername] = useState('');
@@ -52,8 +53,14 @@ const LoginPage = () => {
 
   const inputSx = { '& .MuiOutlinedInput-root': { bgcolor: 'var(--raise2)' } };
 
+  // 已经登录的人不该停在登录页。两个构建都需要这一条:盒端会在挂载探针跑完之前
+  // 就把人弹到这里(守卫等 isLoading,但 `navigate('/kiosk/login')` 那几个调用点不等),
+  // 非盒端则是「cookie 还有效却手敲了 /kiosk/login」。少了它,这一屏对已登录用户
+  // 也是死的 —— 表单在盒端注定抛,在非盒端要他把已经有效的密码再输一遍。
+  if (!isLoading && isAuthenticated) return <Navigate to="/kiosk/play" replace />;
+
   return (
-    <Box sx={{ display: 'flex', width: '100%', height: '100%', bgcolor: 'background.default' }}>
+    <Box data-testid="kiosk-login-page" sx={{ display: 'flex', width: '100%', height: '100%', bgcolor: 'background.default' }}>
       {/* ── Left: brand panel — centered lockup, enlarged mark ── */}
       <Box
         sx={{
@@ -113,7 +120,7 @@ const LoginPage = () => {
         </Typography>
       </Box>
 
-      {/* ── Right: sign-in form ── */}
+      {/* ── Right: sign-in form — 或者，在出厂盒子上，一扇指回 launcher 的门 ── */}
       <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 3 }}>
         <Box
           sx={{
@@ -129,6 +136,52 @@ const LoginPage = () => {
             gap: 2,
           }}
         >
+          {isStrictBoxKiosk ? (
+            /*
+             * 出厂盒子上这里**不能画登录表单**：`login()` 第一行就抛
+             * (`AuthContext.tsx` 的 strict 分支)，后端 `POST /api/v1/auth/login` 也恒 403。
+             * 画了就是一个怎么填都只会跳「登录失败」的表单 ——
+             * 而这一屏在 `KioskLayout` **外面**(`KioskApp.tsx` 里两者平级)，
+             * 没顶栏、没 Dock、没主页键，人进来了就出不去。
+             *
+             * 没把 `signed_out` 与 `identity_unavailable` 分开画(横向规范 §8.1 规则 1)
+             * 是有意的：那条规则的理由是「后者用户解决不了，给登录 CTA 等于推责任」，
+             * 而在盒上两种情形的动作恰好相同且都有效：回主页。launcher 跑在另一个
+             * 进程(:8080)上，围棋这边挂了它照样开。分两屏只会多一个状态，
+             * 不多一条出路。(AuthContext 今天也区分不了这两者。)
+             */
+            <>
+              <Typography sx={{ fontFamily: BRAND_SERIF, fontSize: 22, fontWeight: 500 }}>
+                {t('login:box_gate_title', '请在智星盒主页登录')}
+              </Typography>
+              <Typography sx={{ fontSize: 14, color: 'text.secondary', lineHeight: 1.9 }}>
+                {t(
+                  'login:box_gate_body',
+                  '智星盒的账号是整台设备共用的：在主页登录一次，围棋和其他棋类模块就都是同一个身份。',
+                )}
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: 'text.disabled', lineHeight: 1.8 }}>
+                {t(
+                  'login:box_gate_hint',
+                  '如果你刚才还在下棋，多半是这台盒子上的会话过期了 —— 回主页重新进入围棋即可，已下的棋不会丢。',
+                )}
+              </Typography>
+              {/* 写成 `<a href>` 而不是 `onClick` —— 目标在另一个源上，
+                  这是一次**整页离开**，不是本 SPA 的路由。 */}
+              <Button
+                fullWidth
+                component="a"
+                href={LAUNCHER_LOGIN_URL}
+                variant="contained"
+                color="primary"
+                data-testid="login-go-launcher"
+                sx={{ minHeight: 52, mt: 0.5, fontSize: '1rem', letterSpacing: '0.1em' }}
+              >
+                {t('login:box_gate_cta', '前往智星盒主页')}
+              </Button>
+            </>
+          ) : (
+          <>
           {error && <Alert severity="error">{error}</Alert>}
           <TextField
             fullWidth
@@ -157,6 +210,8 @@ const LoginPage = () => {
           >
             {loading ? t('Logging in...', '登录中...') : t('Login', '登录')}
           </Button>
+          </>
+          )}
         </Box>
       </Box>
     </Box>

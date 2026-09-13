@@ -49,7 +49,9 @@ describe('Kiosk navigation integration', () => {
 
     it('unauthenticated user is redirected to login for any route', () => {
       renderApp('/kiosk/tsumego');
-      expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
+      // 判据是「落在登录页」，不是「有一颗登录按钮」—— 严格盒端构建里
+      // 那一屏根本不画表单(登录归 launcher)，拿控件当判据会把正确行为判成回归。
+      expect(screen.getByTestId('kiosk-login-page')).toBeInTheDocument();
     });
   });
 

@@ -12,8 +12,9 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from conftest import token_for
 from katrain.web.core.auth import SQLAlchemyUserRepository
+
+from conftest import token_for
 
 
 @pytest.fixture()
@@ -205,4 +206,6 @@ async def test_old_access_and_refresh_tokens_both_stop_working_after_a_password_
     fresh = await phone_auth_client.get(
         "/api/v1/auth/me", headers={"Authorization": f"Bearer {token_for(repo, 'alice')}"}
     )
-    assert fresh.status_code == 200, f"改密码后新签的票也被拒了 ⇒ 拒的是所有票不是旧票：{fresh.status_code} {fresh.text}"
+    assert (
+        fresh.status_code == 200
+    ), f"改密码后新签的票也被拒了 ⇒ 拒的是所有票不是旧票：{fresh.status_code} {fresh.text}"

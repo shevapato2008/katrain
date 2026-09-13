@@ -155,17 +155,23 @@ async def test_rejects_a_login_purpose_challenge(app, client, sms):
     assert r.json()["detail"]["code"] == "challenge_purpose_mismatch"
 
 
-async def test_old_access_and_refresh_tokens_survive_the_password_change(app, client, sms):
-    """**已知限制，不是缺陷 —— 但期限是 90 天，不是 7 天。**
+async def test_old_access_and_refresh_tokens_are_rejected_after_the_password_change(app, client, sms):
+    """改密码**立刻**作废此前签发的 access 与 refresh（P1，2026-09-13 换轨）。
 
-    JWT 载荷只有 sub/exp/type，没有密码版本位；`/auth/refresh`
-    （endpoints/auth.py:288-310）只验签名 + 用户名存在，**不看密码改没改**，
-    而 `REFRESH_TOKEN_EXPIRE_DAYS = 90`（core/config.py:74）⇒ 手上有 refresh token
-    的人在改密码之后还能**连续换发 90 天**，不是 access token 那 7 天
-    （`ACCESS_TOKEN_EXPIRE_MINUTES = 60*24*7`，config.py:73）。
+    **这条原来钉的是反面**：那时 JWT 载荷只有 sub/exp/type、没有密码版本位，
+    `/auth/refresh` 只验签名 + 用户名存在，而 `REFRESH_TOKEN_EXPIRE_DAYS = 90`
+    ⇒ 持票人改完密码还能连续换发三个月。P1 把主体换成 `users.uuid` 并加了
+    `token_epoch`：`set_password_hash` 在写密码的同一条 UPDATE 里 +1，两个解析点
+    都拿票里的 epoch 跟库里比。所以断言整个翻过来了 —— **不是功能坏了，是被断言的
+    那个限制不存在了**。原样 skip 掉等于这条路以后再没人量。
 
-    这条与用户直觉相反，而轨道上写着「状态必须诚实」⇒ 把 90 说成 7 是给用户
-    一个错的安全承诺。所以：这里钉住现状，UI 上照 Produces 里那句文案说出来。
+    与 `test_identity_subject.py` 那条同名闸**不重叠**：那条直接调
+    `repo.set_password_hash`，量的是仓储；这条走真的 `/auth/set-password`
+    （验证码那一路），量的是**端点确实调到了它** —— 哪天有人把那句改成别的写法，
+    仓储那条仍绿、这条会红。
+
+    最后两句是反向断言：新口令必须登得进来、新签的票必须 200。少了它，一个把所有
+    票都打成 401 的实现（epoch 比较写反之类）也能让上面两句全绿，而那是把登录打死。
     """
     _make_user(app, "pwuser", password="oldpw123456", phone="+8613800138000")
     login = await _login(client, "pwuser", "oldpw123456")
@@ -177,9 +183,15 @@ async def test_old_access_and_refresh_tokens_survive_the_password_change(app, cl
     r = await client.post(SET, json={"challenge_id": cid, "code": sms.codes[-1], "new_password": "newpw123456"}, headers=h)
     assert r.status_code == 200, r.text
 
-    assert (await client.get("/api/v1/auth/me", headers=h)).status_code == 200, "旧 access token 仍然有效"
+    me = await client.get("/api/v1/auth/me", headers=h)
+    assert me.status_code == 401, f"改密码后旧 access token 仍然有效：{me.status_code}"
     again = await client.post("/api/v1/auth/refresh", json={"refresh_token": old_refresh})
-    assert again.status_code == 200, "旧 refresh token 仍能换发新 access token —— 这才是那 90 天"
+    assert again.status_code == 401, f"改密码后旧 refresh token 仍能换发：{again.status_code} {again.text}"
+
+    fresh = await _auth(client, "pwuser", "newpw123456")
+    assert (await client.get("/api/v1/auth/me", headers=fresh)).status_code == 200, (
+        "新口令签出来的票也被拒了 ⇒ 拒的是所有票不是旧票"
+    )
 
 
 async def test_set_password_is_unreachable_on_a_strict_box(app, client, sms, monkeypatch):

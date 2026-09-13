@@ -3623,8 +3623,9 @@ msgstr "Lütfen yeni bir parola girin"
 
 msgid "auth:set_password_other_devices"
 msgstr ""
-"Parolanız değiştirildi. Zaten oturum açmış cihazlar çıkış yapmaz ve en fazla"
-" 90 gün boyunca açık kalabilir."
+"Parolanız değiştirildi. Hesabınızın güvenliği için bu cihaz dahil tüm "
+"cihazlardaki oturumlar kapatıldı. Lütfen yeni parolanızla tekrar giriş "
+"yapın."
 
 msgid "auth:set_password_needs_phone"
 msgstr ""

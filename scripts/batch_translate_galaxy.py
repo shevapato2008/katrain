@@ -3383,20 +3383,23 @@ GALAXY_TRANSLATIONS = {
         "fr": "Veuillez saisir un nouveau mot de passe", "ru": "Введите новый пароль",
         "tr": "Lütfen yeni bir parola girin", "ua": "Введіть новий пароль",
     },
-    # ⚠️ 这一条是后端 auth.py:540-542 的 docstring 明确要求 UI 说出来的：
-    #    改密码踢不掉已签发的凭据，refresh token 最长 90 天。不说 = 给用户一个错的安全承诺。
+    # ⚠️ 这句必须把「**包括当前这台**」说出来。P1 之后改密码在写密码的同一条 UPDATE 里
+    #    把 `users.token_epoch` +1，access 与 refresh 两个解析点都拿 token 里的 epoch
+    #    跟库里比 ⇒ 此前签发的每一张票当场作废。而 `/auth/set-password` 返回
+    #    `{"ok": True}` 不发新票 ⇒ 用户在**自己正用的这台设备上**也会被踢回登录页。
+    #    不说出来 = 让他莫名其妙掉线。（旧口径「不会被强制退出、最长 90 天」现在是反的。）
     "auth:set_password_other_devices": {
-        "en": "Your password has been changed. Devices already signed in are not signed out, and may stay signed in for up to 90 days.",
-        "cn": "密码已经改好了。已经登录的设备不会被强制退出，最长 90 天内仍可继续使用。",
-        "tw": "密碼已經改好了。已經登入的裝置不會被強制登出，最長 90 天內仍可繼續使用。",
-        "jp": "パスワードを変更しました。すでにログイン済みの端末は強制ログアウトされず、最長 90 日間そのまま使用できます。",
-        "ko": "비밀번호를 변경했습니다. 이미 로그인한 기기는 강제로 로그아웃되지 않으며 최대 90일간 계속 사용할 수 있습니다.",
-        "de": "Ihr Passwort wurde geändert. Bereits angemeldete Geräte werden nicht abgemeldet und können bis zu 90 Tage angemeldet bleiben.",
-        "es": "Se ha cambiado tu contraseña. Los dispositivos que ya iniciaron sesión no se cierran y pueden seguir así hasta 90 días.",
-        "fr": "Votre mot de passe a été modifié. Les appareils déjà connectés ne sont pas déconnectés et peuvent le rester jusqu'à 90 jours.",
-        "ru": "Пароль изменён. Уже вошедшие устройства не выходят из аккаунта и могут оставаться в нём до 90 дней.",
-        "tr": "Parolanız değiştirildi. Zaten oturum açmış cihazlar çıkış yapmaz ve en fazla 90 gün boyunca açık kalabilir.",
-        "ua": "Пароль змінено. Пристрої, на яких уже виконано вхід, не виходять з облікового запису і можуть залишатися в ньому до 90 днів.",
+        "en": "Password changed. For your account's security, all devices \u2014 including this one \u2014 have been signed out. Please sign in again with your new password.",
+        "cn": "密码已修改。为保护账号安全，所有设备（包括当前这台）的登录都已失效，请用新密码重新登录。",
+        "tw": "密碼已修改。為保護帳號安全，所有裝置（包括目前這台）的登入都已失效，請用新密碼重新登入。",
+        "jp": "パスワードを変更しました。アカウント保護のため、現在お使いの端末を含むすべての端末のログインが無効になりました。新しいパスワードで再度ログインしてください。",
+        "ko": "비밀번호를 변경했습니다. 계정 보호를 위해 현재 사용 중인 기기를 포함한 모든 기기의 로그인이 해제되었습니다. 새 비밀번호로 다시 로그인하세요.",
+        "de": "Passwort geändert. Zum Schutz Ihres Kontos wurden alle Geräte \u2013 auch dieses \u2013 abgemeldet. Bitte melden Sie sich mit dem neuen Passwort erneut an.",
+        "es": "Contraseña cambiada. Para proteger tu cuenta se ha cerrado la sesión en todos los dispositivos, incluido este. Vuelve a iniciar sesión con tu nueva contraseña.",
+        "fr": "Mot de passe modifié. Pour protéger votre compte, tous les appareils \u2014 y compris celui-ci \u2014 ont été déconnectés. Veuillez vous reconnecter avec votre nouveau mot de passe.",
+        "ru": "Пароль изменён. В целях безопасности аккаунта выполнен выход на всех устройствах, включая это. Войдите снова с новым паролем.",
+        "tr": "Parolanız değiştirildi. Hesabınızın güvenliği için bu cihaz dahil tüm cihazlardaki oturumlar kapatıldı. Lütfen yeni parolanızla tekrar giriş yapın.",
+        "ua": "Пароль змінено. Задля безпеки облікового запису виконано вихід на всіх пристроях, зокрема на цьому. Увійдіть знову з новим паролем.",
     },
     "auth:set_password_needs_phone": {
         "en": "You need to link a mobile number before changing your password. Link one under Settings \u2192 Link mobile number, then come back.",

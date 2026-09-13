@@ -3423,7 +3423,9 @@ msgid "auth:err_new_password_required"
 msgstr "새 비밀번호를 입력하세요"
 
 msgid "auth:set_password_other_devices"
-msgstr "비밀번호를 변경했습니다. 이미 로그인한 기기는 강제로 로그아웃되지 않으며 최대 90일간 계속 사용할 수 있습니다."
+msgstr ""
+"비밀번호를 변경했습니다. 계정 보호를 위해 현재 사용 중인 기기를 포함한 모든 기기의 로그인이 해제되었습니다. 새 비밀번호로 다시 "
+"로그인하세요."
 
 msgid "auth:set_password_needs_phone"
 msgstr "비밀번호를 변경하려면 먼저 휴대폰 번호를 연결해야 합니다. «설정 → 휴대폰 번호 연결»에서 연결한 뒤 다시 시도하세요."

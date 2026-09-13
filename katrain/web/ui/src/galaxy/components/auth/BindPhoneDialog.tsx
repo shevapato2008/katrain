@@ -98,11 +98,12 @@ const BindPhoneDialog = ({ open, onClose, purpose = 'bind' }: {
     try {
       if (isSetPassword) {
         await API.setPassword(challengeId, smsCode.trim(), newPassword);
-        /* 不关窗，先把这句说出来：改密码**踢不掉**已签发的凭据，refresh token 是 90 天
-           （auth.py:540-542 的 docstring 明写「UI 必须把这句说出来」）。
-           用户以为改完就安全了 —— 不说出来就是给他一个错的安全承诺。 */
+        /* 不关窗，先把这句说出来：改密码**当场作废已签发的每一张票**（写密码的同一条
+           UPDATE 把 users.token_epoch +1，access 与 refresh 两个解析点都比 epoch），
+           而 /auth/set-password 只返回 {ok:true}、不发新票 —— 所以**连当前这台设备**
+           下一次请求就会被踢回登录页。不说出来 = 让用户莫名其妙掉线。 */
         setSuccessMsg(i18n.t('auth:set_password_other_devices',
-          '密码已经改好了。已经登录的设备不会被强制退出，最长 90 天内仍可继续使用。'));
+          '密码已修改。为保护账号安全，所有设备（包括当前这台）的登录都已失效，请用新密码重新登录。'));
       } else {
         await API.bindPhone(challengeId, smsCode.trim());
         await refreshUser();      // 不刷新 = 额度文案与侧栏入口都还停在旧状态

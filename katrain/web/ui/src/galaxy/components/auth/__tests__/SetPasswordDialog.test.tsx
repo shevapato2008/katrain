@@ -79,7 +79,7 @@ describe('改密码对话框（与绑定共用一个壳，只换 purpose）', ()
     expect(screen.queryByLabelText('新密码')).toBeNull();
   });
 
-  it('成功后把「其它设备上的登录不会掉」这句说出来', async () => {
+  it('成功后把「所有设备（含当前这台）都要重新登录」这句说出来', async () => {
     vi.spyOn(API, 'sendPhoneCode').mockResolvedValue({ challenge_id: 'c1', cooldown_sec: 60 });
     vi.spyOn(API, 'setPassword').mockResolvedValue(undefined as never);
     renderDlg('set_password');
@@ -89,10 +89,12 @@ describe('改密码对话框（与绑定共用一个壳，只换 purpose）', ()
     fireEvent.change(screen.getByLabelText('验证码'), { target: { value: '123456' } });
     fireEvent.change(screen.getByLabelText('新密码'), { target: { value: 'newpw123456' } });
     fireEvent.click(screen.getByRole('button', { name: '确认修改' }));
-    /* 这不是客套话：改密码**踢不掉**已签发的 token，refresh token 是 90 天
-       （auth.py:540-542 的 docstring 明写「UI 必须把这句说出来」）。
-       用户以为改完就安全了 —— 不说出来就是给他一个错的安全承诺。 */
-    await waitFor(() => expect(screen.getByText(/90 天/)).toBeInTheDocument());
+    /* 这不是客套话：P1 之后改密码**当场作废已签发的每一张票**，而 /auth/set-password
+       不发新票 ⇒ 用户在**自己正用的这台设备上**也会被踢回登录页。文案不把这两句说出来，
+       用户就是莫名其妙掉线。两条断言分别钉住「范围含当前这台」与「要重新登录」——
+       把旧文案（不会被强制退出 / 90 天）放回兜底串，两条都会红。 */
+    await waitFor(() => expect(screen.getByText(/包括当前这台/)).toBeInTheDocument());
+    expect(screen.getByText(/重新登录/)).toBeInTheDocument();
   });
 
   it('purpose=set_password 时不渲染同意勾选框，也不要求勾选就能发验证码', async () => {

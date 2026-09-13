@@ -3611,8 +3611,8 @@ msgstr "Bitte geben Sie ein neues Passwort ein"
 
 msgid "auth:set_password_other_devices"
 msgstr ""
-"Ihr Passwort wurde geändert. Bereits angemeldete Geräte werden nicht "
-"abgemeldet und können bis zu 90 Tage angemeldet bleiben."
+"Passwort geändert. Zum Schutz Ihres Kontos wurden alle Geräte – auch dieses "
+"– abgemeldet. Bitte melden Sie sich mit dem neuen Passwort erneut an."
 
 msgid "auth:set_password_needs_phone"
 msgstr ""

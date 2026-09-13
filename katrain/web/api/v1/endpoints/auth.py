@@ -579,9 +579,11 @@ async def set_password(
     都拿 token 里的 `epoch` 跟库里比（本文件 `:222`、`:427`）。refresh 那一半单独重要 ——
     `REFRESH_TOKEN_EXPIRE_DAYS = 90`，少了这道比较，持票人改完密码仍能连续换发三个月。
 
-    ⚠️ **UI 文案还停在改这之前**：`auth:set_password_other_devices` 至今说的是
-    「已经登录的设备不会被强制退出，最长 90 天内仍可继续使用」（11 个 .po 全是这个口径,
-    `BindPhoneDialog.tsx:104` 的兜底串也是）—— 那句现在是反的，待随 i18n 一并改。
+    **本端点不发新票**：返回的 `{"ok": True}` 里没有 access/refresh ⇒ 用户在
+    **自己正用的这台设备上**也会被踢回登录页（Fan 裁定接受这个行为：为了账号安全请重新登录）。
+    `auth:set_password_other_devices` 这条 UI 文案必须把「包括当前这台」说出来，
+    否则用户就是莫名其妙掉线；11 本 .po 与 `BindPhoneDialog.tsx` 的兜底串都是这个口径，
+    `SetPasswordDialog.test.tsx` 里那条断言钉着它。
     """
     _guard_phone_endpoint(request)
     # `phone_bound` 是 Task 8 加进 pydantic `User` 与 `_to_dict` 的字段，直接读。

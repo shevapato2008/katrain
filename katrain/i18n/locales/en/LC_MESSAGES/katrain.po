@@ -3563,8 +3563,8 @@ msgstr "Please enter a new password"
 
 msgid "auth:set_password_other_devices"
 msgstr ""
-"Your password has been changed. Devices already signed in are not signed "
-"out, and may stay signed in for up to 90 days."
+"Password changed. For your account's security, all devices — including this "
+"one — have been signed out. Please sign in again with your new password."
 
 msgid "auth:set_password_needs_phone"
 msgstr ""

@@ -3330,7 +3330,7 @@ msgid "auth:err_new_password_required"
 msgstr "请填写新密码"
 
 msgid "auth:set_password_other_devices"
-msgstr "密码已经改好了。已经登录的设备不会被强制退出，最长 90 天内仍可继续使用。"
+msgstr "密码已修改。为保护账号安全，所有设备（包括当前这台）的登录都已失效，请用新密码重新登录。"
 
 msgid "auth:set_password_needs_phone"
 msgstr "修改密码需要先绑定手机号。请先在「设置 → 绑定手机号」完成绑定，再回来改密码。"

@@ -3440,8 +3440,9 @@ msgstr "Introduce una nueva contraseña"
 
 msgid "auth:set_password_other_devices"
 msgstr ""
-"Se ha cambiado tu contraseña. Los dispositivos que ya iniciaron sesión no se"
-" cierran y pueden seguir así hasta 90 días."
+"Contraseña cambiada. Para proteger tu cuenta se ha cerrado la sesión en "
+"todos los dispositivos, incluido este. Vuelve a iniciar sesión con tu nueva "
+"contraseña."
 
 msgid "auth:set_password_needs_phone"
 msgstr ""

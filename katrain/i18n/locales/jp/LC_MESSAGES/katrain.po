@@ -3495,7 +3495,8 @@ msgid "auth:err_new_password_required"
 msgstr "新しいパスワードを入力してください"
 
 msgid "auth:set_password_other_devices"
-msgstr "パスワードを変更しました。すでにログイン済みの端末は強制ログアウトされず、最長 90 日間そのまま使用できます。"
+msgstr ""
+"パスワードを変更しました。アカウント保護のため、現在お使いの端末を含むすべての端末のログインが無効になりました。新しいパスワードで再度ログインしてください。"
 
 msgid "auth:set_password_needs_phone"
 msgstr "パスワードの変更には携帯電話番号の連携が必要です。「設定 → 携帯電話番号を連携」で連携してからお戻りください。"

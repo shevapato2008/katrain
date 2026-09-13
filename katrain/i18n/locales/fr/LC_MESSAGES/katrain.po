@@ -3584,8 +3584,9 @@ msgstr "Veuillez saisir un nouveau mot de passe"
 
 msgid "auth:set_password_other_devices"
 msgstr ""
-"Votre mot de passe a été modifié. Les appareils déjà connectés ne sont pas "
-"déconnectés et peuvent le rester jusqu'à 90 jours."
+"Mot de passe modifié. Pour protéger votre compte, tous les appareils — y "
+"compris celui-ci — ont été déconnectés. Veuillez vous reconnecter avec votre"
+" nouveau mot de passe."
 
 msgid "auth:set_password_needs_phone"
 msgstr ""

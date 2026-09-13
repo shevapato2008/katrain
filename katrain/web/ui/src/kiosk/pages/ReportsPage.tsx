@@ -144,12 +144,12 @@ export default function ReportsPage() {
   const {
     reportStatesByGame, error: tasksError, clearError: clearTasksError,
     refresh: refreshTasks, createReport, retryReport,
-  } = useReportTasks(isAuthenticated ? token : null);
+  } = useReportTasks(token, isAuthenticated);
 
   // ── 列表 ────────────────────────────────────────────────────────────────
   const loadGames = useCallback(async () => {
     const requestGeneration = ++listRequestGenerationRef.current;
-    if (!token || !isAuthenticated) {
+    if (!isAuthenticated) {
       if (requestGeneration === listRequestGenerationRef.current) setGamesLoading(false);
       return null;
     }
@@ -193,7 +193,7 @@ export default function ReportsPage() {
   // 终局盘要减掉被提的子,而提子**不在前端算** —— `/baipu/load` 每一步给的 `removed[]`
   // 就是那份名单(`baipuApi.ts` 决定 ②)。屏 16 逐手回放用的是同一条路、同一个播放器。
   useEffect(() => {
-    if (!token || !selectedGameId) return;
+    if (!isAuthenticated || !selectedGameId) return;
     if (selectedGame?.id === selectedGameId) return;
     const request = ++detailRequestRef.current;
     UserGamesAPI.get(token, selectedGameId)
@@ -220,7 +220,7 @@ export default function ReportsPage() {
         setDetailError(messageOf(error, translationRef.current('report:preview_failed', '棋谱预览加载失败')));
       });
     return () => { detailRequestRef.current += 1; };
-  }, [selectedGame?.id, selectedGameId, token]);
+  }, [isAuthenticated, selectedGame?.id, selectedGameId, token]);
 
   // ── 选中那一局的报告逐手 ────────────────────────────────────────────────
   const selectedState: RowState | null = useMemo(() => {
@@ -231,7 +231,7 @@ export default function ReportsPage() {
   const completedTaskId = selectedState?.kind === 'analyzed' ? selectedState.taskId : null;
 
   useEffect(() => {
-    if (!token || completedTaskId == null) {
+    if (!isAuthenticated || completedTaskId == null) {
       setMoves(null);
       return;
     }
@@ -252,7 +252,7 @@ export default function ReportsPage() {
         if (request === movesRequestRef.current) setMovesLoading(false);
       });
     return () => { movesRequestRef.current += 1; };
-  }, [completedTaskId, token]);
+  }, [completedTaskId, isAuthenticated, token]);
 
   // ── 左栏三格 ────────────────────────────────────────────────────────────
   const selectedSummary = games.find((g) => g.id === selectedGameId) ?? null;
@@ -333,7 +333,7 @@ export default function ReportsPage() {
   }, [loadGames, page, query, setSearchParams, source]);
 
   const handleLocalImport = useCallback(async (payload: LocalImportPayload, reportType?: ReportType) => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     setLocalImporting(reportType ?? 'save');
     setLocalImportError(null);
     try {
@@ -348,10 +348,10 @@ export default function ReportsPage() {
     } finally {
       setLocalImporting(null);
     }
-  }, [createForGame, focusImportedGame, refreshTasks, token]);
+  }, [createForGame, focusImportedGame, isAuthenticated, refreshTasks, token]);
 
   const handleLibraryImport = useCallback(async (album: KifuAlbumSummary, reportType?: ReportType) => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     setLibraryImporting(reportType ?? 'save');
     setLibraryImportError(null);
     try {
@@ -367,10 +367,10 @@ export default function ReportsPage() {
     } finally {
       setLibraryImporting(null);
     }
-  }, [createForGame, focusImportedGame, refreshTasks, token]);
+  }, [createForGame, focusImportedGame, isAuthenticated, refreshTasks, token]);
 
   const confirmDelete = useCallback(async () => {
-    if (!token || !deleteTarget) return;
+    if (!isAuthenticated || !deleteTarget) return;
     const deletedId = deleteTarget;
     setDeleteLoading(true);
     setActionError(null);
@@ -390,7 +390,7 @@ export default function ReportsPage() {
     } finally {
       setDeleteLoading(false);
     }
-  }, [deleteTarget, loadGames, page, query, refreshTasks, selectedGameId, token, updateLocation]);
+  }, [deleteTarget, isAuthenticated, loadGames, page, query, refreshTasks, selectedGameId, token, updateLocation]);
 
   if (!isAuthenticated) {
     return (

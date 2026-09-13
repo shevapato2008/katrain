@@ -341,7 +341,12 @@ const isStrictBoxKiosk = __KIOSK_2D_ONLY__ && import.meta.env.VITE_BOX_SSO_STRIC
  * 顺序上兜底是安全的：非严格档 cookie 优先于 header，所以盒端/本机行为不变；
  * 只有本来就没有 cookie 的远端会用上这个头。
  */
-export function authHeaders(token?: string): Record<string, string> {
+/**
+ * 凭据允许为 `null`/`undefined` —— 那**不代表没登录**。严格盒端 SSO 里 JS 永远拿不到
+ * token（身份在 HttpOnly `sb_go_token` cookie 里），所以这里第一行就直接返回 `{}`，
+ * 由同源 cookie 去认证。**「该不该发请求」要判 `isAuthenticated`，不是判有没有 token。**
+ */
+export function authHeaders(token?: string | null): Record<string, string> {
   if (isStrictBoxKiosk) return {};
   let resolved = token;
   if (!resolved) {
@@ -354,7 +359,7 @@ export function authHeaders(token?: string): Record<string, string> {
   return resolved ? { Authorization: `Bearer ${resolved}` } : {};
 }
 
-export async function apiPost(path: string, payload: any, token?: string) {
+export async function apiPost(path: string, payload: any, token?: string | null) {
   const headers: Record<string, string> = { "Content-Type": "application/json", ...authHeaders(token) };
   const response = await fetch(path, {
     method: "POST",
@@ -693,13 +698,13 @@ export const API = {
   platformLogin: (
     platform: string,
     credentials: { username: string; password?: string; sms_code?: string },
-    token: string,
+    token: string | null | undefined,
   ) => apiPost(`/api/v1/platforms/${platform}/login`, credentials, token),
-  platformSmsRequest: (platform: string, phone: string, token: string) =>
+  platformSmsRequest: (platform: string, phone: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/sms/request`, { phone }, token),
-  platformEngineLevels: async (platform: string, token: string): Promise<{ levels: EngineLevel[] }> => {
+  platformEngineLevels: async (platform: string, token: string | null | undefined): Promise<{ levels: EngineLevel[] }> => {
     const response = await fetch(`/api/v1/platforms/${platform}/engine/levels`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get engine levels");
     return response.json();
@@ -707,68 +712,68 @@ export const API = {
   platformEngineStart: (
     platform: string,
     body: { level: number; human_color: "B" | "W" | "nigiri"; handicap: number },
-    token: string,
+    token: string | null | undefined,
   ): Promise<{ session_id: string; human_color?: "B" | "W" }> =>
     apiPost(`/api/v1/platforms/${platform}/engine/start`, body, token),
   platformEngineAnalysis: (
     platform: string,
     sessionId: string,
     kind: "area" | "options" | "judge" | "variation",
-    token: string,
+    token: string | null | undefined,
   ): Promise<EngineAnalysisResponse> =>
     apiPost(`/api/v1/platforms/${platform}/engine/analysis`, { session_id: sessionId, kind }, token),
-  platformEngineItems: async (platform: string, token: string): Promise<EngineItemCounts> => {
+  platformEngineItems: async (platform: string, token: string | null | undefined): Promise<EngineItemCounts> => {
     const response = await fetch(`/api/v1/platforms/${platform}/engine/items`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get engine item counts");
     return response.json();
   },
-  platformLogout: async (platform: string, token: string) => {
+  platformLogout: async (platform: string, token: string | null | undefined) => {
     const response = await fetch(`/api/v1/platforms/${platform}/logout`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error(`Logout failed: ${response.status}`);
     return response.json();
   },
-  platformStatus: async (token: string): Promise<PlatformStatusResponse> => {
+  platformStatus: async (token: string | null | undefined): Promise<PlatformStatusResponse> => {
     const response = await fetch("/api/v1/platforms/status", {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get platform status");
     return response.json();
   },
-  platformUsers: async (platform: string, token: string, query?: string): Promise<{ users: PlatformUser[] }> => {
+  platformUsers: async (platform: string, token: string | null | undefined, query?: string): Promise<{ users: PlatformUser[] }> => {
     const params = query ? `?q=${encodeURIComponent(query)}` : '';
     const response = await fetch(`/api/v1/platforms/${platform}/users${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get users");
     return response.json();
   },
-  platformRooms: async (platform: string, token: string) => {
+  platformRooms: async (platform: string, token: string | null | undefined) => {
     const response = await fetch(`/api/v1/platforms/${platform}/rooms`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get rooms");
     return response.json();
   },
-  platformChallenges: async (platform: string, token: string) => {
+  platformChallenges: async (platform: string, token: string | null | undefined) => {
     const response = await fetch(`/api/v1/platforms/${platform}/challenges`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get challenges");
     return response.json();
   },
-  platformSendChallenge: (platform: string, data: object, token: string) =>
+  platformSendChallenge: (platform: string, data: object, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/challenge`, data, token),
-  platformAcceptChallenge: (platform: string, challengeId: string, token: string) =>
+  platformAcceptChallenge: (platform: string, challengeId: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/challenge/accept`, { challenge_id: challengeId }, token),
-  platformDeclineChallenge: (platform: string, challengeId: string, token: string) =>
+  platformDeclineChallenge: (platform: string, challengeId: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/challenge/decline`, { challenge_id: challengeId }, token),
-  platformStartAutomatch: (platform: string, prefs: object, token: string) =>
+  platformStartAutomatch: (platform: string, prefs: object, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/automatch/start`, prefs, token),
-  platformCancelAutomatch: (platform: string, token: string) =>
+  platformCancelAutomatch: (platform: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/automatch/cancel`, {}, token),
 };

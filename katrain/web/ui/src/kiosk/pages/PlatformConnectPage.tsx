@@ -64,7 +64,9 @@ const canLogIn = (platform: string): boolean => {
 
 const PlatformConnectPage = () => {
   const { t } = useTranslation();
-  const { token } = useAuth();
+  // token 只当**凭据**用（严格盒端恒为 null，身份在 HttpOnly sb_go_token cookie 里）；
+  // 「认没认证」一律判 isAuthenticated —— 判 token 会让盒上每个已登录用户都进不来。
+  const { token, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [platforms, setPlatforms] = useState<PlatformInfo[]>(defaultPlatforms);
@@ -80,7 +82,7 @@ const PlatformConnectPage = () => {
   const loginSectionRef = useRef<HTMLElement | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!token) { setLoaded(true); return; }
+    if (!isAuthenticated) { setLoaded(true); return; }
     try {
       const data = await API.platformStatus(token);
       setPlatforms(mergePlatformStatus(data.platforms));
@@ -90,7 +92,7 @@ const PlatformConnectPage = () => {
     } finally {
       setLoaded(true);
     }
-  }, [token]);
+  }, [isAuthenticated, token]);
 
   useEffect(() => { void refresh(); }, [refresh]);
 
@@ -176,7 +178,7 @@ const PlatformConnectPage = () => {
   };
 
   const sendSms = async () => {
-    if (!loginTarget || !token) return;
+    if (!loginTarget || !isAuthenticated) return;
     if (!form.user.trim()) { setLoginError(t('platform:need_phone', '请先输入手机号')); return; }
     setSmsBusy(true);
     setLoginError('');
@@ -191,7 +193,7 @@ const PlatformConnectPage = () => {
   };
 
   const submitLogin = async () => {
-    if (!loginTarget || !token) return;
+    if (!loginTarget || !isAuthenticated) return;
     setLoginBusy(true);
     setLoginError('');
     try {
@@ -212,7 +214,7 @@ const PlatformConnectPage = () => {
 
   const doLogout = async (platform: string) => {
     setLogoutTarget(null);
-    if (!token) return;
+    if (!isAuthenticated) return;
     try {
       await API.platformLogout(platform, token);
       await refresh();

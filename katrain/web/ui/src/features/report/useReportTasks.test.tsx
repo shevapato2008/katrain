@@ -71,11 +71,38 @@ afterEach(() => {
 });
 
 describe('useReportTasks', () => {
+  /**
+   * 回归钉子（2026-09-13 板上实测）：`enabled` 必须由调用方按 `isAuthenticated` 传，
+   * **不能从 token 推**。严格盒端 SSO 里 token 恒为 null 而人是登录的；
+   * 原来的 `!token` 闸让盒上复盘页一个请求都不发，屏上恒显示「本机 0 局」，
+   * 而同一时刻接口自己回 200、云端有 21 局。
+   * 变异验证：把 useReportTasks 里的 `!enabled` 改回 `!token`，这条立刻红。
+   */
+  it('still loads when the credential is null but the caller says authenticated (strict box SSO)', async () => {
+    mockList.mockResolvedValue([task()]);
+    mockSummary.mockResolvedValue(emptySummary);
+
+    const { result } = renderHook(() => useReportTasks(null, true));
+    await act(async () => { await Promise.resolve(); });
+
+    expect(mockList).toHaveBeenCalledWith(null);
+    expect(mockSummary).toHaveBeenCalledWith(null);
+    expect(result.current.tasks).toHaveLength(1);
+  });
+
+  it('does not load when the caller says not authenticated, even with a credential', async () => {
+    renderHook(() => useReportTasks('token-a', false));
+    await act(async () => { await Promise.resolve(); });
+
+    expect(mockList).not.toHaveBeenCalled();
+    expect(mockSummary).not.toHaveBeenCalled();
+  });
+
   it('loads from the current lifecycle when StrictMode replays mount effects', async () => {
     mockList.mockResolvedValue([task()]);
     mockSummary.mockResolvedValue({ ...emptySummary, pending: 1 });
 
-    const { result } = renderHook(() => useReportTasks('token-a'), { wrapper: StrictMode });
+    const { result } = renderHook(() => useReportTasks('token-a', true), { wrapper: StrictMode });
     await settle();
 
     expect(mockList).toHaveBeenCalledTimes(2);
@@ -91,7 +118,7 @@ describe('useReportTasks', () => {
     mockList.mockReturnValue(listRequest.promise);
     mockSummary.mockReturnValue(summaryRequest.promise);
 
-    const { result } = renderHook(() => useReportTasks('token-a'));
+    const { result } = renderHook(() => useReportTasks('token-a', true));
     const initialRefresh = result.current.refresh;
 
     expect(mockList).toHaveBeenCalledWith('token-a');
@@ -115,7 +142,7 @@ describe('useReportTasks', () => {
       .mockResolvedValueOnce([task({ status: 'running' })])
       .mockResolvedValueOnce([task({ status: 'completed' })]);
 
-    const { result } = renderHook(() => useReportTasks('token-a'));
+    const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
     await act(async () => vi.advanceTimersByTimeAsync(1999));
@@ -135,7 +162,7 @@ describe('useReportTasks', () => {
 
   it('does not poll when all tasks are terminal', async () => {
     mockList.mockResolvedValue([task({ status: 'failed' })]);
-    renderHook(() => useReportTasks('token-a'));
+    renderHook(() => useReportTasks('token-a', true));
     await settle();
 
     await act(async () => vi.advanceTimersByTimeAsync(6000));
@@ -155,7 +182,7 @@ describe('useReportTasks', () => {
       .mockResolvedValueOnce({ ...emptySummary, pending: 1 })
       .mockReturnValueOnce(slowSummary.promise)
       .mockResolvedValueOnce({ ...emptySummary, completed: 1 });
-    const { result } = renderHook(() => useReportTasks('token-a'));
+    const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
     await act(async () => vi.advanceTimersByTimeAsync(2000));
@@ -181,7 +208,7 @@ describe('useReportTasks', () => {
     mockList.mockResolvedValue([historical]);
     mockCreate.mockReturnValueOnce(firstCreate.promise).mockReturnValueOnce(secondCreate.promise);
 
-    const { result } = renderHook(() => useReportTasks('token-a'));
+    const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
     let firstPromise!: Promise<ReportTaskSummary>;
@@ -219,7 +246,7 @@ describe('useReportTasks', () => {
       .mockResolvedValueOnce([historical])
       .mockResolvedValueOnce([historical, task({ id: 10, status: 'running' })]);
     mockCreate.mockReturnValueOnce(firstCreate.promise).mockReturnValueOnce(secondCreate.promise);
-    const { result } = renderHook(() => useReportTasks('token-a'));
+    const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
     act(() => {
@@ -241,7 +268,7 @@ describe('useReportTasks', () => {
       task({ id: 4, status: 'pending' }),
     ]);
     mockRetry.mockResolvedValue(task({ id: 4, status: 'pending' }));
-    const { result } = renderHook(() => useReportTasks('token-a'));
+    const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
     await act(async () => {
@@ -269,7 +296,7 @@ describe('useReportTasks', () => {
       .mockReturnValueOnce(staleSummary.promise)
       .mockResolvedValueOnce({ ...emptySummary, pending: 1 });
     mockRetry.mockReturnValue(retryRequest.promise);
-    const { result } = renderHook(() => useReportTasks('token-a'));
+    const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
     const staleRefreshPromise = result.current.refresh();
@@ -297,7 +324,7 @@ describe('useReportTasks', () => {
     const original = task({ id: 3, status: 'completed' });
     const recovered = task({ id: 5, status: 'failed' });
     mockList.mockResolvedValueOnce([original]);
-    const { result } = renderHook(() => useReportTasks('token-a'));
+    const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
     mockList.mockRejectedValueOnce(new Error('temporary outage'));
@@ -317,7 +344,7 @@ describe('useReportTasks', () => {
   it('clears a visible error without changing the current task snapshot', async () => {
     const original = task({ id: 3, status: 'completed' });
     mockList.mockResolvedValueOnce([original]);
-    const { result } = renderHook(() => useReportTasks('token-a'));
+    const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
     mockList.mockRejectedValueOnce(new Error('temporary outage'));
@@ -334,7 +361,7 @@ describe('useReportTasks', () => {
   it('uses the translated fallback for non-Error failures and recovers from a failed create', async () => {
     const createRequest = deferred<ReportTaskSummary>();
     mockCreate.mockReturnValue(createRequest.promise);
-    const { result } = renderHook(() => useReportTasks('token-a'));
+    const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
     let createPromise!: Promise<ReportTaskSummary>;
@@ -358,7 +385,7 @@ describe('useReportTasks', () => {
     mockList.mockReturnValueOnce(staleList.promise).mockResolvedValueOnce([task({ id: 22, user_game_id: 'game-b' })]);
     mockSummary.mockReturnValueOnce(staleSummary.promise).mockResolvedValueOnce({ ...emptySummary, pending: 1 });
 
-    const { result, rerender, unmount } = renderHook(({ token }) => useReportTasks(token), {
+    const { result, rerender, unmount } = renderHook(({ token }) => useReportTasks(token, Boolean(token)), {
       initialProps: { token: 'token-a' as string | null },
     });
 
@@ -381,7 +408,7 @@ describe('useReportTasks', () => {
   it('does not apply an old-token create response after the token changes', async () => {
     const createRequest = deferred<ReportTaskSummary>();
     mockCreate.mockReturnValue(createRequest.promise);
-    const { result, rerender } = renderHook(({ token }) => useReportTasks(token), {
+    const { result, rerender } = renderHook(({ token }) => useReportTasks(token, Boolean(token)), {
       initialProps: { token: 'token-a' as string | null },
     });
     await settle();
@@ -400,7 +427,7 @@ describe('useReportTasks', () => {
   });
 
   it('does not let callbacks captured for an old token make requests after rerender', async () => {
-    const { result, rerender } = renderHook(({ token }) => useReportTasks(token), {
+    const { result, rerender } = renderHook(({ token }) => useReportTasks(token, Boolean(token)), {
       initialProps: { token: 'token-a' as string | null },
     });
     await settle();
@@ -430,7 +457,7 @@ describe('useReportTasks', () => {
     mockSummary.mockResolvedValueOnce(emptySummary).mockReturnValueOnce(staleSummary.promise);
     mockCreate.mockReturnValue(createRequest.promise);
 
-    const { result } = renderHook(() => useReportTasks('token-a'));
+    const { result } = renderHook(() => useReportTasks('token-a', true));
     await settle();
 
     let createPromise!: Promise<ReportTaskSummary>;

@@ -197,7 +197,7 @@ describe('ReportDetailPage', () => {
     expect(screen.queryByText('精彩手')).not.toBeInTheDocument();
     expect(screen.queryByText('失误手')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open in Research' })).toBeInTheDocument();
-    expect(mockUseReportDetail).toHaveBeenCalledWith('token', '7');
+    expect(mockUseReportDetail).toHaveBeenCalledWith('token', '7', true);
   });
 
   // Fan 2026-08-22 点头：「进入研究室」不再是空跳转，要把这一局带过去。

@@ -361,14 +361,19 @@ export default function MoveGradePanel({
                   ] as const).map((b) => (
                     <span className="hb" key={b.black ? 'b' : 'w'}>
                       <u>{b.v}</u>
-                      <b
-                        style={{
-                          // 有值就至少 2px —— 0.5% 画出来是 0.3px,等于「有」和「没有」长得一样。
-                          height: `${b.v > 0 ? Math.max(2, (b.rate / maxRate) * 100) : 0}%`,
-                          background: b.black ? STONE_BLACK : STONE_WHITE,
-                          boxShadow: `inset 0 0 0 1.4px ${b.black ? STONE_BLACK_RIM : STONE_WHITE_RIM}`,
-                        }}
-                      />
+                      {/* `.hbt` 是柱子百分比高度的**参照物**。不能把 `<b>` 直接挂在
+                          `.hb` 下：那一层的高度是内容撑出来的，百分比会解析成 auto ⇒ 恒 0。
+                          详见 `go-screens.css` 里 `.hbt` 头上那段。 */}
+                      <span className="hbt">
+                        <b
+                          style={{
+                            // 有值就至少 2px —— 0.5% 画出来是 0.3px,等于「有」和「没有」长得一样。
+                            height: `${b.v > 0 ? Math.max(2, (b.rate / maxRate) * 100) : 0}%`,
+                            background: b.black ? STONE_BLACK : STONE_WHITE,
+                            boxShadow: `inset 0 0 0 1.4px ${b.black ? STONE_BLACK_RIM : STONE_WHITE_RIM}`,
+                          }}
+                        />
+                      </span>
                     </span>
                   ))}
                 </span>

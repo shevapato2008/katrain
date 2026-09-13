@@ -54,7 +54,9 @@ import { interpolate } from '../utils/interpolate';
 
 const PlatformLobbyPage = () => {
   const { t } = useTranslation();
-  const { token } = useAuth();
+  // token 只当**凭据**用（严格盒端恒为 null，身份在 HttpOnly sb_go_token cookie 里）；
+  // 「认没认证」一律判 isAuthenticated —— 判 token 会让盒上每个已登录用户都进不来。
+  const { token, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const platform = searchParams.get('platform') || 'ogs';
@@ -71,17 +73,17 @@ const PlatformLobbyPage = () => {
   const [toast, setToast] = useState<{ text: string; bad: boolean } | null>(null);
 
   useEffect(() => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     API.platformStatus(token)
       .then((d) => setSupportsAutomatch(
         d.platforms.some((p) => p.platform === platform && p.connected && p.supports_automatch),
       ))
       // 读不到能力就当**没有** —— 摆一颗按不动或按了报错的键,比不摆更糟。
       .catch(() => setSupportsAutomatch(false));
-  }, [token, platform]);
+  }, [isAuthenticated, token, platform]);
 
   const fetchUsers = useCallback(async (q: string) => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     setLoaded(false);
     try {
       const data = await API.platformUsers(platform, token, q || undefined);
@@ -93,12 +95,12 @@ const PlatformLobbyPage = () => {
     } finally {
       setLoaded(true);
     }
-  }, [token, platform]);
+  }, [isAuthenticated, token, platform]);
 
   useEffect(() => { void fetchUsers(query); }, [fetchUsers, query]);
 
   const sendChallenge = async (user: PlatformUser) => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     try {
       // 这三项实现里写死,屏上那一行读数说的就是它们 —— 两处必须同源地对得上。
       await API.platformSendChallenge(platform, {
@@ -113,7 +115,7 @@ const PlatformLobbyPage = () => {
   };
 
   const toggleAutomatch = async () => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     try {
       if (automatch) {
         await API.platformCancelAutomatch(platform, token);

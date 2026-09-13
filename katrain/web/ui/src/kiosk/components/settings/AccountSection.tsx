@@ -6,6 +6,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAiLadderStatus } from '../../../features/aiLadder/useAiLadderStatus';
 import AiLadderStatusCard from '../../../features/aiLadder/AiLadderStatusCard';
+import { LAUNCHER_LOGIN_URL, isStrictBoxKiosk, leaveToLauncher } from '../../shell/boxUrls';
 
 /**
  * 设置屏「账号与平台」那一组的前两行。
@@ -24,7 +25,27 @@ export default function AccountSection() {
   const { status, retry } = useAiLadderStatus(token ?? undefined, Boolean(user));
   const [detailsOpen, setDetailsOpen] = useState(false);
 
+  /**
+   * 出厂盒子上**围棋退不了登录**，所以这里不假装自己能。三条实测事实：
+   *
+   * 1. `POST /api/v1/auth/logout` 在 strict 档下函数体第一句就 403
+   *    (`katrain/web/api/v1/endpoints/auth.py:382-386`，文案“Use Box SSO bridge clear”)，
+   *    而前端把它 catch 掉只 `console.warn`。
+   * 2. 就算那一行 403 不在，它要清的 key 也是 `sb_token`，而盒端的 cookie 叫
+   *    `sb_go_token` —— **整个 katrain 包里没有任何一行 Python 写过 `sb_go_token`**，
+   *    种它和清它的都是 launcher(`setup-wizard`)。
+   * 3. 于是旧写法的真实效果是：只清 React state → 弹到登录页 → 刷新一下
+   *    又被同一张 cookie 认回来。一颗“退出吗退不掉”的键，还顺手把人送进
+   *    `KioskLayout` 外面那一屏(无顶栏/无 Dock/无主页键)。
+   *
+   * 另外三家(象棋/五子棋/国象)根本没有模块内退出登录 —— 身份归 launcher。
+   * 所以盒端走“去主页切账号”。**不能带 `?logout=1`**，理由见 `shell/boxUrls.ts`。
+   */
   const handleLogout = async () => {
+    if (isStrictBoxKiosk) {
+      leaveToLauncher();
+      return;
+    }
     await logout();
     navigate('/kiosk/login', { replace: true });
   };
@@ -43,7 +64,9 @@ export default function AccountSection() {
           <b>{user?.username ?? t('Guest', '访客')}</b>
           <em>
             {user
-              ? `${t('Signed in', '已登录')} · ${t('StellaBox account', '智星盒账户')}`
+              ? `${t('Signed in', '已登录')} · ${isStrictBoxKiosk
+                  ? t('settings:box_account_owned_by_home', '智星盒账户，全盒共用')
+                  : t('StellaBox account', '智星盒账户')}`
               : t('settings:guest_sub', '这台盒子上的本地档案')}
           </em>
         </span>
@@ -51,17 +74,19 @@ export default function AccountSection() {
           {user ? (
             <button
               type="button"
-              className="kiosk-btn kiosk-btn--pill rvdanger"
+              className={isStrictBoxKiosk ? 'kiosk-btn kiosk-btn--pill' : 'kiosk-btn kiosk-btn--pill rvdanger'}
               data-testid="settings-logout"
               onClick={() => void handleLogout()}
             >
-              {t('Sign out', '退出登录')}
+              {isStrictBoxKiosk
+                ? t('settings:switch_account_at_home', '在主页切账号')
+                : t('Sign out', '退出登录')}
             </button>
           ) : (
             <button
               type="button"
               className="kiosk-btn kiosk-btn--secondary"
-              onClick={() => navigate('/kiosk/login')}
+              onClick={() => (isStrictBoxKiosk ? leaveToLauncher(LAUNCHER_LOGIN_URL) : navigate('/kiosk/login'))}
             >
               {t('settings:sign_in', '登录')}
             </button>

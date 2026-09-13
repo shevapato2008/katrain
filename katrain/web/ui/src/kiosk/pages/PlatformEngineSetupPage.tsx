@@ -68,7 +68,9 @@ const PlatformEngineSetupPage = () => {
   const { platform = 'golaxy' } = useParams<{ platform: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { token } = useAuth();
+  // token 只当**凭据**用（严格盒端恒为 null，身份在 HttpOnly sb_go_token cookie 里）；
+  // 「认没认证」一律判 isAuthenticated —— 判 token 会让盒上每个已登录用户都进不来。
+  const { token, isAuthenticated } = useAuth();
   const { isVisionEnabled } = useVision();
   const meta = PLATFORM_META[platform] ?? { label: platform, labelCn: platform, color: '#888' };
 
@@ -88,7 +90,7 @@ const PlatformEngineSetupPage = () => {
 
   useEffect(() => {
     let cancelled = false;
-    if (!platform || !token) return () => { cancelled = true; };
+    if (!platform || !isAuthenticated) return () => { cancelled = true; };
     setLevelsLoading(true);
     setLevelsError(null);
     API.platformEngineLevels(platform, token)
@@ -104,7 +106,7 @@ const PlatformEngineSetupPage = () => {
       })
       .finally(() => { if (!cancelled) setLevelsLoading(false); });
     return () => { cancelled = true; };
-  }, [platform, token]);
+  }, [isAuthenticated, platform, token]);
 
   const sorted = useMemo(() => [...levels].sort((a, b) => a.elo_score - b.elo_score), [levels]);
   const currentIdx = sorted.findIndex((l) => l.elo_score === level);
@@ -128,7 +130,7 @@ const PlatformEngineSetupPage = () => {
     : humanColor === 'B' ? t('setup:take_black', '执黑') : t('setup:take_white', '执白');
 
   const start = async () => {
-    if (!token || level === null) return;
+    if (!isAuthenticated || level === null) return;
     setStartError('');
     setStarting(true);
     try {

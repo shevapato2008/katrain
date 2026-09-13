@@ -125,7 +125,7 @@ export default function ReportDetailPage() {
   const { play: playSound } = useSound();
   const {
     task, game, moves, analysisByMove, currentMove, setCurrentMove, loading, error, refresh,
-  } = useReportDetail(isAuthenticated ? token : null, taskId);
+  } = useReportDetail(token, taskId, isAuthenticated);
 
   /** 右栏里同一时刻只开一块 —— 见下面那两个 `KioskFold` 上的说明。 */
   const [openFold, setOpenFold] = useState<'ai' | 'grade'>('ai');
@@ -274,7 +274,7 @@ export default function ReportDetailPage() {
 
   const handleRetryReport = useCallback(async () => {
     const id = Number(taskId);
-    if (!token || !Number.isSafeInteger(id) || id <= 0) return;
+    if (!isAuthenticated || !Number.isSafeInteger(id) || id <= 0) return;
     const requestIdentity = reportIdentity;
     setRetryingIdentity(requestIdentity);
     setRetryFailure(null);
@@ -292,7 +292,7 @@ export default function ReportDetailPage() {
     } finally {
       if (identityRef.current === requestIdentity) setRetryingIdentity(null);
     }
-  }, [refresh, reportIdentity, taskId, token]);
+  }, [isAuthenticated, refresh, reportIdentity, taskId, token]);
 
   const shell = (body: React.ReactNode) => (
     <div className="kiosk-rail" data-testid="report-detail-shell">

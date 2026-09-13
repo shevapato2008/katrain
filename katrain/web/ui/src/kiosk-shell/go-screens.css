@@ -797,11 +797,21 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
   font-size: 9px; color: var(--dim); }
 .hcols { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 .hg { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
-.hbars { flex: 1; min-height: 0; display: flex; align-items: flex-end; justify-content: center;
+/* ⚠️ 柱子的高度是**百分比**（`.hb b` 的行内 style）。百分比要对着一个
+   **指定过高度**的父元素解析；父元素是 auto 时它自己也变 auto，而 `<b>` 没有内容
+   ⇒ **恒为 0 高**。2026-09-13 盒上实测到的就是这个：14 根柱子全在、数字全对、
+   高度全是 0 —— 图是空的而测试全绿（jsdom 没有布局引擎，对布局事实无权作证）。
+
+   修法是给百分比一根**真轨道** `.hbt`：它在 `.hb` 里 `flex:1`，而 `.hb` 被
+   `.hbars` 拉满（`align-items: stretch`，原来是 `flex-end` 所以 `.hb` 只有内容高）。
+   标签 `<u>` 留在 `.hb` 里、轨道外，所以它不占柱子的百分比基准 ——
+   也就不用把 `line-height: 11px` 那个值再拄到 `calc()` 里再写一遍。 */
+.hbars { flex: 1; min-height: 0; display: flex; align-items: stretch; justify-content: center;
   gap: 3px; width: 100%; }
 .hb { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
-.hb u { text-decoration: none; font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+.hb u { flex: none; text-decoration: none; font-family: var(--font-mono); font-variant-numeric: tabular-nums;
   font-size: 9px; color: var(--text); line-height: 11px; }
+.hbt { flex: 1; min-height: 0; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
 .hb b { display: block; width: 15px; border-radius: 2.5px 2.5px 0 0; }
 .hg em { font-style: normal; font-size: 10.5px; color: var(--dim); margin-top: 4px; }
 .hg > i { display: block; width: 22px; height: 2px; border-radius: 2px; margin-top: 3px; }

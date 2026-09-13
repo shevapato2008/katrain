@@ -138,6 +138,8 @@ describe('KioskApp', () => {
   /* 🔴 边界的另一半。摘守卫只摘了自由对弈那条链,**这几格证明其余没跟着被摘掉** ——
      少了它们,哪天有人把 `<Route element={<KioskAuthGuard />}>` 整个删掉,上面那几条
      「游客到得了」照样全绿,而设置和大厅就裸了。 */
+  // 这组断言的是「守卫把人弹到了登录页」。判据用 `kiosk-login-page` 而不用
+  // 「登录」按钮：严格盒端构建里那一屏画的是回 launcher 的门，没有表单也没有那颗键。
   describe('仍然要登录的那些', () => {
     const asGuest = () => mockUseAuth.mockReturnValue({
       isAuthenticated: false, isLoading: false, user: null, login: vi.fn(), logout: vi.fn(), token: null,
@@ -147,26 +149,26 @@ describe('KioskApp', () => {
       asGuest();
       renderApp('/kiosk/settings');
       expect(screen.queryByTestId('settings-page')).toBeNull();
-      expect(screen.getByRole('button', { name: /^登录$/ })).toBeInTheDocument();
+      expect(screen.getByTestId('kiosk-login-page')).toBeInTheDocument();
     });
 
     it('复盘', () => {
       asGuest();
       renderApp('/kiosk/report');
       expect(screen.queryByText('KIOSK_REPORT_PAGE')).toBeNull();
-      expect(screen.getByRole('button', { name: /^登录$/ })).toBeInTheDocument();
+      expect(screen.getByTestId('kiosk-login-page')).toBeInTheDocument();
     });
 
     it('对战大厅', () => {
       asGuest();
       renderApp('/kiosk/play/pvp/lobby');
-      expect(screen.getByRole('button', { name: /^登录$/ })).toBeInTheDocument();
+      expect(screen.getByTestId('kiosk-login-page')).toBeInTheDocument();
     });
 
     it('本地两人对局屏', () => {
       asGuest();
       renderApp('/kiosk/play/pvp/local/game/s1');
-      expect(screen.getByRole('button', { name: /^登录$/ })).toBeInTheDocument();
+      expect(screen.getByTestId('kiosk-login-page')).toBeInTheDocument();
     });
   });
 });

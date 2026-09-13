@@ -100,6 +100,10 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
+    def get_user_by_uuid(self, user_uuid: str) -> Optional[Dict[str, Any]]:
+        pass
+
+    @abstractmethod
     def bind_phone(self, user_id: int, phone_e164: str) -> str:
         """返回 "ok" | "phone_taken" | "already_bound"。三个字符串是契约，不许换。"""
 
@@ -334,6 +338,25 @@ class SQLAlchemyUserRepository(UserRepository):
         session = self.session_factory()
         try:
             user = session.query(models_db.User).filter(models_db.User.id == user_id).first()
+            if user:
+                return self._to_dict(user)
+            return None
+        finally:
+            session.close()
+
+    def get_user_by_uuid(self, user_uuid: str) -> Optional[Dict[str, Any]]:
+        """按 account_subject 查行。**用 `.one_or_none()` 不用 `.first()`。**
+
+        `users.uuid` 有唯一索引（models_db.py:70-71），所以结果集基数 ≤ 1。
+        用 `.one_or_none()` 的理由是：万一哪天那条唯一索引没了（迁移漏删、
+        有人改了模型），它会**抛** MultipleResultsFound 而不是静默取一行 ——
+        而静默取一行在鉴权路径上就是跨账号串号。
+        同文件的 `get_user_by_username`(:258) 用的是 `.first()`，那是既有行为，
+        本轮不动它（P3 去掉用户名唯一性时必须一起重裁）。
+        """
+        session = self.session_factory()
+        try:
+            user = session.query(models_db.User).filter(models_db.User.uuid == user_uuid).one_or_none()
             if user:
                 return self._to_dict(user)
             return None

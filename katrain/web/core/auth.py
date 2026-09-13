@@ -76,6 +76,7 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from katrain.web.core import models_db
 
@@ -326,10 +327,31 @@ class SQLAlchemyUserRepository(UserRepository):
             session.close()
 
     def set_password_hash(self, user_id: int, hashed: str) -> None:
-        """`create_user` 之外的**第二个** `hashed_password` 写入点。"""
+        """`create_user` 之外的**第二个** `hashed_password` 写入点，顺带把 `token_epoch` +1。
+
+        **必须与密码写入落在同一条 UPDATE**，且用 SQL 表达式而不是先读出来再加：
+        分两条或读-改-写在并发下会丢 bump，而丢一次 bump 的表现是「改完密码，
+        别人手里那张票还能用最长 90 天」—— 不报错、不可见。
+
+        **`coalesce` 不是防御性冗余**：迁移旧库上这一列可空
+        （`migrations.add_missing_columns` 拼的 ADD COLUMN 不带 NOT NULL，
+        migrations.py:341），而 SQL 里 **`NULL + 1` 还是 `NULL`**。写成
+        `User.token_epoch + 1` 时那些行永远 bump 不动，读取侧又把 NULL 读成 0
+        （models_db.py:101）⇒ 改完密码旧票照样有效，而且一声不响。
+        `tests/web_ui/test_identity_subject.py` 里
+        `test_changing_the_password_bumps_epoch_even_when_the_column_is_null` 钉着这一句。
+
+        `create_user` 建的是新行、epoch 默认 0，不需要 bump。
+        """
         session = self.session_factory()
         try:
-            session.query(models_db.User).filter_by(id=user_id).update({"hashed_password": hashed})
+            session.query(models_db.User).filter_by(id=user_id).update(
+                {
+                    "hashed_password": hashed,
+                    "token_epoch": func.coalesce(models_db.User.token_epoch, 0) + 1,
+                },
+                synchronize_session=False,
+            )
             session.commit()
         finally:
             session.close()

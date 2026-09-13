@@ -574,9 +574,14 @@ async def set_password(
     但永远无法恢复口令登录 —— 而口令登录是上盒子的唯一路
     （kiosk 登录页只有用户名与密码两个控件）⇒ 他会被永久挡在自己买的那台设备之外。
 
-    **已知限制**：JWT 没有密码版本位，`/auth/refresh` 也只验签名 + 用户名存在，
-    而 `REFRESH_TOKEN_EXPIRE_DAYS = 90` ⇒ 改密码踢不掉已签发的凭据，**最长 90 天**。
-    UI 必须把这句说出来（`auth:set_password_other_devices`）。
+    **改密码会立刻踢掉此前签发的每一张票**（P1）：下面那句 `set_password_hash` 在写
+    密码的同一条 UPDATE 里把 `users.token_epoch` +1，而 access 与 refresh 两个解析点
+    都拿 token 里的 `epoch` 跟库里比（本文件 `:222`、`:427`）。refresh 那一半单独重要 ——
+    `REFRESH_TOKEN_EXPIRE_DAYS = 90`，少了这道比较，持票人改完密码仍能连续换发三个月。
+
+    ⚠️ **UI 文案还停在改这之前**：`auth:set_password_other_devices` 至今说的是
+    「已经登录的设备不会被强制退出，最长 90 天内仍可继续使用」（11 个 .po 全是这个口径,
+    `BindPhoneDialog.tsx:104` 的兜底串也是）—— 那句现在是反的，待随 i18n 一并改。
     """
     _guard_phone_endpoint(request)
     # `phone_bound` 是 Task 8 加进 pydantic `User` 与 `_to_dict` 的字段，直接读。

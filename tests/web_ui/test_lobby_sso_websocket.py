@@ -5,11 +5,11 @@ from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from katrain.web.core.auth import SQLAlchemyUserRepository
-
-from conftest import token_for
 from katrain.web.core import models_db
 from katrain.web.server import create_app
 from katrain.web.session import LobbyManager, Matchmaker
+
+from conftest import token_for
 
 
 @asynccontextmanager

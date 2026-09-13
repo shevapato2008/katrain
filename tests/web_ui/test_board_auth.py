@@ -22,11 +22,11 @@ from sqlalchemy.orm import sessionmaker
 from katrain.web.api.v1.endpoints.auth import SHADOW_USER_NO_LOCAL_AUTH
 from katrain.web.core import models_db
 from katrain.web.core.auth import SQLAlchemyUserRepository
-
-from conftest import refresh_token_for, token_for
 from katrain.web.core.config import settings
 from katrain.web.server import create_app
 from katrain.web.session import LobbyManager, Matchmaker, SessionManager
+
+from conftest import refresh_token_for, token_for
 
 
 @pytest.fixture

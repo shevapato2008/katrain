@@ -598,13 +598,28 @@ async def test_settled_receipt_is_hidden_from_other_accounts(api_app, client):
     async with client as ac:
         reserved = await ac.post("/api/v1/ai-ladder/games/reserve", headers=owner, json=reservation_payload())
         game_id = reserved.json()["game_id"]
+        # **这一步是这条用例有没有判别力的分水岭。** 停在 `reserved` 上直接按结束,走的是
+        # 「让掉」那条路:账本什么都不写,于是这张收据**对 owner 自己也是 404**
+        # (见 test_a_released_reservation_leaves_no_receipt_because_nothing_was_decided)。
+        # 少了 activate,下面那个 404 的成因就是「根本没有这张收据」而不是「不是你的」,
+        # 把 attacker 原样换成 owner 用例照样绿 —— 一条自称守越权、实际什么都不守的闸。
+        await ac.post(
+            f"/api/v1/ai-ladder/games/{game_id}/activate",
+            headers=owner,
+            json={"reservation_key": reserved.json()["reservation_key"], "session_id": "receipt-session"},
+        )
         await ac.post(
             f"/api/v1/ai-ladder/games/{game_id}/end",
             headers=owner,
             json={"reason": "user_resigned"},
         )
+        mine = await ac.get(f"/api/v1/ai-ladder/settlements/{game_id}", headers=owner)
         response = await ac.get(f"/api/v1/ai-ladder/settlements/{game_id}", headers=attacker)
 
+    # **成对断言**:同一张收据,owner 读得到 / 他人读不到。判据是「把 attacker 换成 owner,
+    # 这条用例必须变红」—— 只断言他人那一半的话,404 可以来自收据不存在,证不了任何事。
+    assert mine.status_code == 200
+    assert mine.json()["state"] == "settled"
     assert response.status_code == 404
     assert response.json() == {"detail": "Ranked game not found"}
 

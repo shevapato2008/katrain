@@ -6,9 +6,9 @@ from sqlalchemy.pool import StaticPool
 
 from katrain.web.core import models_db
 from katrain.web.core.auth import SQLAlchemyUserRepository
+from katrain.web.core.db import get_db
 
 from conftest import token_for
-from katrain.web.core.db import get_db
 
 
 @pytest.fixture

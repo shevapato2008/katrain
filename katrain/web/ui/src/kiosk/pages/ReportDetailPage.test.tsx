@@ -140,7 +140,7 @@ const graded: Record<number, MoveAnalysis> = {
 function baseDetail() {
   return {
     task, game, moves: reportMoves, analysisByMove: graded, currentMove: 2,
-    setCurrentMove, loading: false, error: null as string | null, refresh,
+    setCurrentMove, loading: false, error: null as string | null, errorKind: null as string | null, refresh,
   };
 }
 
@@ -632,14 +632,15 @@ describe('屏 20 · 翻手、出口与出错', () => {
     expect(refresh).toHaveBeenCalled();
   });
 
-  it('重算失败时话说出来,盘和数据还在;重试加载能把那条错清掉', async () => {
-    retry.mockRejectedValueOnce(new Error('重试服务不可用'));
+  it('重算失败时话说出来(不印原文),盘和数据还在;重试加载能把那条错清掉', async () => {
+    retry.mockRejectedValueOnce(Object.assign(new Error('Request failed 503: {"detail":"x"}'), { status: 503 }));
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
-    expect(await screen.findByText(/重试服务不可用/)).toBeInTheDocument();
+    expect(await screen.findByText('重算没发出去 · 连不上云端')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
     expect(screen.getByTestId('live-board')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: '重试加载' }));
-    await waitFor(() => expect(screen.queryByText(/重试服务不可用/)).toBeNull());
+    await waitFor(() => expect(screen.queryByText('重算没发出去 · 连不上云端')).toBeNull());
   });
 
   it('没登录时只给一条路:回复盘列表', () => {
@@ -658,19 +659,41 @@ describe('屏 20 · 翻手、出口与出错', () => {
     expect(refresh).toHaveBeenCalled();
   });
 
-  it('整局读不到时报错并给重试', () => {
-    detail = { ...baseDetail(), game: null, error: 'Request failed 404: Not found' };
+  it('整份报告没有了:说「未找到复盘。」,不印原文,给重试', () => {
+    detail = {
+      ...baseDetail(), game: null,
+      error: 'Request failed 404: {"detail":"Report task not found"}', errorKind: 'not_found',
+    };
     renderPage();
-    expect(screen.getByText(/Not found/)).toBeInTheDocument();
+    expect(screen.getByText('未找到复盘。')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '重试加载' }));
     expect(refresh).toHaveBeenCalled();
   });
 
-  it('一时的错不许把已经在屏上的东西清掉', () => {
-    detail = { ...baseDetail(), error: '网络暂时不可用' };
+  /**
+   * N24 回归钉子(2026-09-14 调研):盒上报告接口全走云端,断网就是 503。
+   * 以前这里写「未找到复盘。」,下面再印 `Request failed 503: {…}` —— 把「连不上」说成「找不到」。
+   */
+  it('连不上云端时说「这份报告没读出来 · 连不上云端」,不说「未找到」', () => {
+    detail = {
+      ...baseDetail(), game: null,
+      error: 'Request failed 503: {"detail":"Remote report service unavailable"}', errorKind: 'offline',
+    };
+    renderPage();
+    const block = screen.getByTestId('report-detail-error');
+    expect(within(block).getByText('这份报告没读出来')).toBeInTheDocument();
+    expect(within(block).getByText('连不上云端')).toBeInTheDocument();
+    expect(screen.queryByText('未找到复盘。')).toBeNull();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+  });
+
+  it('一时的错不许把已经在屏上的东西清掉,也不印原文', () => {
+    detail = { ...baseDetail(), error: 'Request failed 503: {"detail":"x"}', errorKind: 'offline' };
     renderPage();
     expect(screen.getByTestId('live-board')).toBeVisible();
-    expect(screen.getByText(/网络暂时不可用/)).toBeInTheDocument();
+    expect(screen.getByText('没刷新成功 · 连不上云端')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
   });
 
   it('换一份报告时,上一份的变化、试下和错都不许跟过来', async () => {
@@ -686,7 +709,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
     fireEvent.click(screen.getByRole('button', { name: '试下' }));
     fireEvent.click(screen.getByText('place try'));
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
-    expect(await screen.findByText(/旧任务重试失败/)).toBeVisible();
+    expect(await screen.findByText('重算没发出去')).toBeVisible();
 
     detail = {
       ...baseDetail(),
@@ -696,7 +719,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
     fireEvent.click(screen.getByRole('link', { name: 'change report' }));
     expect(screen.queryByTestId('report-detail-variation')).toBeNull();
     expect(screen.queryByTestId('report-detail-try')).toBeNull();
-    expect(screen.queryByText(/旧任务重试失败/)).toBeNull();
+    expect(screen.queryByText('重算没发出去')).toBeNull();
   });
 });
 

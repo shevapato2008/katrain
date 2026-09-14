@@ -15,6 +15,7 @@ import {
   type OptimisticReportTask,
   type ReportStatesByGame,
 } from './reportModel';
+import { requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -31,14 +32,24 @@ export interface UseReportTasksResult {
   reportStatesByGame: ReportStatesByGame;
   loading: boolean;
   error: string | null;
+  /**
+   * 这条错属于哪一类(`utils/requestFailure.ts`)。**屏上说什么由调用方按它定** ——
+   * `error` 是原文(列表 / 创建 / 重试任一处失败),盒上断网时是 `Request failed 503: {…}`。
+   */
+  errorKind: RequestFailureKind | null;
   clearError: () => void;
   refresh: () => Promise<void>;
   createReport: (params: CreateReportParams) => Promise<ReportTaskSummary>;
   retryReport: (taskId: number) => Promise<ReportTaskSummary>;
 }
 
-function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
+interface Failure {
+  message: string;
+  kind: RequestFailureKind;
+}
+
+function failureOf(error: unknown, fallback: string): Failure {
+  return { message: error instanceof Error ? error.message : fallback, kind: requestFailureKind(error) };
 }
 
 export function useReportTasks(
@@ -63,8 +74,8 @@ export function useReportTasks(
   const [optimisticTasks, setOptimisticTasks] = useState<OptimisticReportTask[]>([]);
   const [queueSummary, setQueueSummary] = useState<ReportQueueSummary | null>(null);
   const [loading, setLoading] = useState(enabled);
-  const [error, setError] = useState<string | null>(null);
-  const clearError = useCallback(() => setError(null), []);
+  const [failure, setFailure] = useState<Failure | null>(null);
+  const clearError = useCallback(() => setFailure(null), []);
   const lifecycleGenerationRef = useRef(0);
   const nextOptimisticIdRef = useRef(0);
   const activeRefreshRef = useRef<{
@@ -103,13 +114,13 @@ export function useReportTasks(
 
         setServerTasks(nextTasks);
         setQueueSummary(nextSummary);
-        setError(null);
+        setFailure(null);
       } catch (refreshError) {
         if (
           lifecycleGeneration !== lifecycleGenerationRef.current
           || currentTokenRef.current !== token
         ) return;
-        setError(errorMessage(
+        setFailure(failureOf(
           refreshError,
           translationRef.current('report:load_tasks_failed', 'Failed to load report tasks'),
         ));
@@ -152,7 +163,7 @@ export function useReportTasks(
     setServerTasks([]);
     setOptimisticTasks([]);
     setQueueSummary(null);
-    setError(null);
+    setFailure(null);
     setLoading(enabled);
     if (enabled) void refresh();
 
@@ -199,7 +210,7 @@ export function useReportTasks(
       baselineServerTaskIds,
     );
     setOptimisticTasks((current) => [optimisticTask, ...current]);
-    setError(null);
+    setFailure(null);
 
     try {
       const created = await ReportsAPI.create(token, {
@@ -232,12 +243,12 @@ export function useReportTasks(
             baseline_server_task_ids: [...(task.baseline_server_task_ids ?? []), created.id],
           };
         }));
-      setError(null);
+      setFailure(null);
       return created;
     } catch (createError) {
       if (lifecycleGeneration !== lifecycleGenerationRef.current) throw createError;
       setOptimisticTasks((current) => current.filter((task) => task.id !== optimisticId));
-      setError(errorMessage(
+      setFailure(failureOf(
         createError,
         translationRef.current('report:create_task_failed', 'Failed to create report task'),
       ));
@@ -248,7 +259,7 @@ export function useReportTasks(
   const retryReport = useCallback(async (taskId: number) => {
     if (!enabled || currentTokenRef.current !== token) throw new Error('Report task token changed');
     const lifecycleGeneration = lifecycleGenerationRef.current;
-    setError(null);
+    setFailure(null);
     try {
       const retried = await ReportsAPI.retry(token, taskId);
       if (lifecycleGeneration !== lifecycleGenerationRef.current) return retried;
@@ -256,7 +267,7 @@ export function useReportTasks(
       return retried;
     } catch (retryError) {
       if (lifecycleGeneration !== lifecycleGenerationRef.current) throw retryError;
-      setError(errorMessage(
+      setFailure(failureOf(
         retryError,
         translationRef.current('report:retry_failed', 'Failed to retry report'),
       ));
@@ -269,7 +280,8 @@ export function useReportTasks(
     queueSummary,
     reportStatesByGame,
     loading,
-    error,
+    error: failure?.message ?? null,
+    errorKind: failure?.kind ?? null,
     clearError,
     refresh,
     createReport,

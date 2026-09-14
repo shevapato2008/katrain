@@ -53,6 +53,10 @@ interface Props {
    * 判负与否由服务端核实(`/api/timeout`),这里只负责「屏上算出来到点了」。
    */
   onTimeExpired?: () => void;
+  /** 自动数子正在进行中(F1)。进行中不能重复按「数子」——按了会撞后端「这一局已经结束了」。 */
+  counting?: boolean;
+  /** 右栏状态条(F4:设计稿位置是「开关行之上」,不是压在玩家卡上方)。GamePage 传 `null` 时不占地方。 */
+  statusSlot?: React.ReactNode;
 }
 
 /** 两个人面对面下的局:胜率图整块不渲染(规范 §8 那张「按对弈方式判」的表)。 */
@@ -164,7 +168,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
   captures: number;
   turn: boolean;
   state: string;
-  clock: { value: string; label: string } | null;
+  clock: { value: string; label: string; phase?: 'byoyomi' | 'expired' } | null;
   lang: string;
   t: (key: string, fallback?: string) => string;
 }) {
@@ -181,7 +185,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
   //  设备上设置页承诺「黑方」、对局页给「黑棋」,而注释说它们是同一句话。)
   const name = info.name || (color === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'));
   return (
-    <div className={turn ? 'pcard turn' : 'pcard'} data-testid={`player-card-${color}`}>
+    <div className={turn ? 'pcard turn' : 'pcard'} data-testid={`player-card-${color}`} data-clock={clock?.phase}>
       <span className={color === 'B' ? 'disc b' : 'disc w'} />
       <div>
         <h4>{rank ? `${name} · ${rank}` : name}</h4>
@@ -218,6 +222,7 @@ const GameControlPanel = ({
   gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
   isGameOver = false, isRanked = false, analysisRequiresLogin = false, engineMode = false,
   activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, onTimeExpired,
+  counting = false, statusSlot = null,
 }: Props) => {
   const { t, lang } = useTranslation();
 
@@ -231,7 +236,7 @@ const GameControlPanel = ({
   // 双 pass 之后后端在等数子(`awaiting_count`),`/api/count/request` 跳过手数门槛 ⇒ 键跟着亮。
   // 只认自动数子那两种局(大厅 / 星阵局后端也可能报这个位,但数子在那儿是另一条协议)。
   const awaitingCount = !!gameState.awaiting_count && autoCountEligible(gameState, engineMode);
-  const canCount = !isGameOver && (awaitingCount || moves >= countMin);
+  const canCount = !isGameOver && !counting && (awaitingCount || moves >= countMin);
 
   // 本地对局(两个人面对面)。v2 D1:**不接引擎辅助** ——「领地」「AI 支招」整颗撤掉(不是灰着:
   // 开局就定死没有,永久不可用 → 撤掉)。后台分析照跑、只给数子用,见 `GamePage` 的 `wantAnalysis`。
@@ -294,7 +299,7 @@ const GameControlPanel = ({
   // 不限时那一档服务端写的是 main_time=0 / byo_length=0,`computeClock` 判 `showTimer: false`,同样落到后半段。
   const timer = gameState.timer;
   const localClockOn = gameState.game_type === 'pvp_local' && !!timer;
-  const ticking = localClockOn && !isGameOver && !timer?.paused;
+  const ticking = localClockOn && !isGameOver && !awaitingCount && !timer?.paused;
   const clientElapsed = useClientElapsed(timer, ticking);
   const localClock = (c: 'B' | 'W'): ClockView => computeClock({
     settings: localClockOn ? timer?.settings : null,
@@ -307,11 +312,17 @@ const GameControlPanel = ({
   });
 
   // 到点那一刻调一次。回调走 ref:调用方每次渲染都给一个新函数,放进依赖会让「停在 0」连调。
-  const timeExpired = !isGameOver && localClock(toMove).phase === 'expired';
+  const timeExpired = !isGameOver && !awaitingCount && localClock(toMove).phase === 'expired';
   const onTimeExpiredRef = useRef(onTimeExpired);
   useEffect(() => { onTimeExpiredRef.current = onTimeExpired; });
+  // F3:到点后**一直重试**直到状态变化(判负成功 → isGameOver 变真;409 带回新 state → 钟重算,
+  // timeExpired 翻假),不是只发一次。timeoutRequestRef(GamePage 那边)已经防了并发调用,
+  // 这里只负责「网络抖一次不会让钟永远停在 00:00、局却判不了负」。
   useEffect(() => {
-    if (timeExpired) onTimeExpiredRef.current?.();
+    if (!timeExpired) return;
+    onTimeExpiredRef.current?.();
+    const id = window.setInterval(() => onTimeExpiredRef.current?.(), 5000);
+    return () => window.clearInterval(id);
   }, [timeExpired]);
 
   // 时钟栏(非本地对局,或本地对局不限时)。`main_time_used` 只有在真配了时限时才累加 ——
@@ -319,14 +330,15 @@ const GameControlPanel = ({
   // **当前是第几手**,而那是**局面的量、不是某一方的量** ⇒ 只挂在轮到的那张卡上,
   // 另一张卡的时钟栏不渲染。两张都写「不限时」是把同一句话说两遍;
   // 写 `0:00 本局已下` 更糟 —— 那不是「用了 0 秒」,是「压根没在计」。
-  const clockFor = (c: 'B' | 'W'): { value: string; label: string } | null => {
+  const clockFor = (c: 'B' | 'W'): { value: string; label: string; phase?: 'byoyomi' | 'expired' } | null => {
     const lc = localClock(c);
     if (lc.showTimer) {
-      if (lc.phase === 'expired') return { value: formatClock(0), label: t('game:clock_timeout', '超时') };
+      if (lc.phase === 'expired') return { value: formatClock(0), label: t('game:clock_timeout', '超时'), phase: 'expired' };
       if (lc.phase === 'byoyomi') {
         return {
           value: formatClock(lc.byoyomiLeft),
           label: t('game:clock_byo_left', '读秒 · 剩 {n} 次').replace('{n}', String(lc.periodsLeft)),
+          phase: 'byoyomi',
         };
       }
       return {
@@ -487,6 +499,8 @@ const GameControlPanel = ({
         </div>
       )}
 
+      {statusSlot}
+
       {/* 纯显示开关。`role="switch"` 不是 `aria-pressed`:后者是「这个按钮此刻被按住」,
           而这两个是**状态** —— 开着就一直开着。长相跟 galaxy 那两个 `<Switch size="small">` 走
           (Fan 2026-08-22:「galaxy 界面里都是开关这种形式,kiosk 也改成一样的」),
@@ -511,9 +525,15 @@ const GameControlPanel = ({
           {hardwareFault
             ?? (analysisRequiresLogin && analysisActions.length > 0
               ? t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')
-              : !isGameOver && !canCount
-                ? t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin))
-                : '')}
+              // F4:双 pass 之后(awaitingCount)不再说「数子要下满 N 手」—— 门槛已经满足了,
+              // 这里说的是正在等数子,和右栏状态条(statusSlot)同一件事的另一句。必须排在
+              // 「!canCount」那条前面:F1 之后 counting 期间 canCount 也是假,顺序反了会被
+              // 「数子要下满 N 手」这句盖掉。
+              : awaitingCount && !isGameOver
+                ? t('game:both_passed', '双方都停了一手')
+                : !isGameOver && !canCount
+                  ? t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin))
+                  : '')}
         </i>
       </div>
 

@@ -515,7 +515,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
     }
 
     // Game End Result
-    if (gameState.end_result) {
+    if (gameState.end_result && !gameState.awaiting_count) {
       const centerX = layout.offsetX + layout.boardWidth / 2;
       const centerY = layout.offsetY + layout.boardHeight / 2;
 

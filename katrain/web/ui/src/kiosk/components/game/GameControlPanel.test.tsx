@@ -211,7 +211,8 @@ describe('GameControlPanel', () => {
 
   test('双 pass 后后端在等数子(awaiting_count)⇒ 手数不够也亮,右端不再说门槛', () => {
     panel({
-      game_type: 'pvp_local', count_min_moves: 100, awaiting_count: true,
+      // end_result 照后端真实形状写(F1):双 pass 后一定非空,判据是 awaiting_count 不是它。
+      game_type: 'pvp_local', count_min_moves: 100, awaiting_count: true, end_result: '终局',
       history: hist([['Q16', 'B'], ['pass', 'W'], ['pass', 'B']]),
       players_info: {
         ...mockGameState.players_info,

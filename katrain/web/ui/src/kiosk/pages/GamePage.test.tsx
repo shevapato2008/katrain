@@ -25,7 +25,11 @@ vi.mock('../../components/Board', () => ({
 // logic lives in GameControlPanel itself, already covered by GameControlPanel.clock.test.tsx —
 // here we only need to prove GamePage wires/omits the prop and reacts to it correctly) AND
 // exposed via a button so tests can fire it like GameControlPanel's real edge-trigger effect would.
-interface MockControlPanelProps { onAction: (action: string) => void; onTimeExpired?: () => void }
+interface MockControlPanelProps {
+  onAction: (action: string) => void;
+  onTimeExpired?: () => void;
+  statusSlot?: React.ReactNode;
+}
 const { capturedControlPanelProps } = vi.hoisted(() => ({
   capturedControlPanelProps: { current: null as MockControlPanelProps | null },
 }));
@@ -34,6 +38,9 @@ vi.mock('../components/game/GameControlPanel', () => ({
     capturedControlPanelProps.current = props;
     return (
       <div data-testid="game-control-panel">
+        {/* F4: 状态条现在由 GamePage 经 statusSlot 传入、GameControlPanel 渲染 —— mock 照实转发,
+            否则「auto-count-status」相关断言对 GamePage 完全不渲染它这个回归免疫。 */}
+        {props.statusSlot}
         <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
         <button onClick={() => props.onAction('count')}>MOCK_COUNT</button>
         <button onClick={() => props.onTimeExpired?.()}>MOCK_TIMEOUT</button>
@@ -543,7 +550,7 @@ describe('GamePage', () => {
       mockGameState = local();
       renderPage();
       fireEvent.click(screen.getByText('MOCK_RESIGN'));
-      expect(screen.getByText('谁认输？')).toBeInTheDocument();
+      expect(screen.getByText('哪一方认输？')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '黑方认输' })).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: '白方认输' }));
       await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('resign', { color: 'W' }));
@@ -563,7 +570,7 @@ describe('GamePage', () => {
       try {
         renderPage();
         fireEvent.click(screen.getByText('退出对局'));
-        expect(screen.getByText('这局还没下完，退出后不会保存')).toBeInTheDocument();
+        expect(screen.getByText('退出这局？')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: '退出不保存' }));
         expect(await screen.findByText('PLAY_PAGE')).toBeInTheDocument();
         expect(del).toHaveBeenCalledWith('test-session');
@@ -608,7 +615,10 @@ describe('GamePage', () => {
     });
 
     it('awaiting_count ⇒ 自动数子,屏上说「正在数子…」', async () => {
-      mockGameState = local({ awaiting_count: true });
+      // 后端真实行为(core/game.py):双 pass 后 end_result 一定非空(终局提示语或人工比分),
+      // 同时带 awaiting_count=true;数子判据是「有没有 awaiting_count」,不是「有没有 end_result」——
+      // fixture 照后端的形状写,否则这条测试对 F1 那个 bug 免疫(改之前也是绿的)。
+      mockGameState = local({ awaiting_count: true, end_result: '终局' });
       const rc = vi.spyOn(API, 'requestCount').mockReturnValue(new Promise(() => {}));
       try {
         renderPage();

@@ -83,7 +83,7 @@ export function deriveAiTurnState(gameState: GameState, latestEventType: string 
     return pt === 'player:ai' || pt === 'ai' || c === gameState.platform_engine_color;
   };
   const aiColor = isAI('B') ? 'B' : isAI('W') ? 'W' : null;
-  const aiThinking = !!aiColor && gameState.player_to_move === aiColor && !gameState.end_result;
+  const aiThinking = !!aiColor && gameState.player_to_move === aiColor && !(gameState.end_result && !gameState.awaiting_count);
   // One owner for the AI-turn indicator: while the physical layer is confirming a
   // move (chip shows 确认中), suppress the 思考中 banner so they never stack.
   const physicalConfirming = latestEventType === 'move_pending';
@@ -238,7 +238,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   useEffect(() => {
     const gs = session.gameState;
     if (!gs || !sessionId) return;
-    if (gs.end_result) { clearActiveSession('game'); return; }
+    if (gs.end_result && !gs.awaiting_count) { clearActiveSession('game'); return; }
     writeActiveSession({
       kind: 'game',
       label: `${gs.players_info.B.name} vs ${gs.players_info.W.name}`,
@@ -315,7 +315,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 判据取服务端下发的 `awaiting_count`,前端不自己数 pass。
   const autoCount = useAutoCount({
     sessionId,
-    awaitingCount: !!gs && !gs.end_result && !!gs.awaiting_count && autoCountEligible(gs, engineMode),
+    awaitingCount: !!gs && !!gs.awaiting_count && autoCountEligible(gs, engineMode),
     nodeId: gs?.current_node_id,
     onState: session.setGameState,
   });
@@ -376,7 +376,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   }
 
   const gameState = session.gameState;
-  const isGameOver = !!gameState.end_result;
+  const isGameOver = !!gameState.end_result && !gameState.awaiting_count;
   // 本地对局(两个人面对面):退出 = 删会话不存谱;认输要说是哪一方(v2 D2)。
   const localGame = gameState.game_type === 'pvp_local';
   const boardSize = gameState.board_size[0];
@@ -620,6 +620,40 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     variation: t('Variation Line', '变化图'),
   };
 
+  // 右栏状态条(F4,设计稿 05 附 B/C):**开关行之上、右栏里的一块常驻区块**,不是弹出的
+  // Snackbar/Alert —— 进行中与失败都不自动消失,失败那句是这一局唯一的出路说明,重试键挂在它上面。
+  // 通过 `statusSlot` 传给 `GameControlPanel`,由它渲染在开关行之前(设计稿的位置)。
+  const statusSlot = (timeoutLoserColor || autoCount.status !== 'idle') ? (
+    <div className="gstatus" data-testid="auto-count-status" data-tone={timeoutLoserColor || autoCount.status === 'failed' ? 'bad' : undefined}>
+      {!timeoutLoserColor && autoCount.status === 'counting' && <CircularProgress size={14} />}
+      <div>
+        <b>
+          {timeoutLoserColor
+            ? (timeoutLoserColor === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方')) + t('game:timeout_loss_suffix', '超时负')
+            : autoCount.status === 'failed' ? t('game:count_failed', '数子没有完成')
+            : t('game:counting', '正在数子…')}
+        </b>
+        <span>
+          {timeoutLoserColor
+            ? (timeoutWinnerColor === 'B' ? t('game:black_short', '黑') : t('game:white_short', '白')) + t('game:timeout_win_suffix', '超时胜')
+              + ' · ' + t('game:move_n', '第 {n} 手').replace('{n}', String((gameState.current_node_index ?? 0) + 1))
+              + ' · ' + t('game:saved_to_history', '已存进历史对局')
+            : autoCount.status === 'failed' ? `${autoCount.reason} · ${t('game:check_network_retry', '检查网络后重试')}`
+            : null}
+        </span>
+      </div>
+      {(timeoutLoserColor || autoCount.status === 'failed') && (
+        <button
+          type="button"
+          className="kiosk-btn kiosk-btn--pill"
+          onClick={() => { if (timeoutLoserColor) void handleReview(); else autoCount.retry(); }}
+        >
+          {timeoutLoserColor ? t('Review this game', '复盘本局') : t('game:retry', '重试')}
+        </button>
+      )}
+    </div>
+  ) : null;
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: 'background.default', position: 'relative' }}>
       <Box sx={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 90, minWidth: 300 }}>
@@ -768,37 +802,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               onClick: () => { void handleResetSync(); },
             } : undefined}
           />
-          {/* 右栏状态条(设计稿 05 附 B / C) —— 一个常驻区块,不是弹出的 Snackbar/Alert:
-              进行中与失败都**不自动消失**,失败那句是这一局唯一的出路说明,重试键挂在它上面。
-              精确到「开关行之上」那一行像素由 S5-2 的真浏览器视觉核对定,这里先保证语义与
-              `data-testid` 落地(S3-5 会在同一个块上补「超时判负后」那一态)。 */}
-          {(autoCount.status !== 'idle' || timeoutLoserColor) && (
-            <Alert
-              data-testid="auto-count-status"
-              severity={timeoutLoserColor ? 'error' : autoCount.status === 'failed' ? 'warning' : 'info'}
-              icon={!timeoutLoserColor && autoCount.status === 'counting' ? <CircularProgress size={18} /> : undefined}
-              action={timeoutLoserColor
-                ? <Button color="inherit" size="small" onClick={() => { void handleReview(); }}>{t('Review this game', '复盘本局')}</Button>
-                : autoCount.status === 'failed'
-                  ? <Button color="inherit" size="small" onClick={autoCount.retry}>{t('game:retry', '重试')}</Button>
-                  : undefined}
-            >
-              {timeoutLoserColor ? (
-                <>
-                  <Typography component="div" sx={{ fontWeight: 600 }}>
-                    {(timeoutLoserColor === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'))
-                      + t('game:timeout_loss_suffix', '超时负')}
-                  </Typography>
-                  <Typography component="div" variant="caption">
-                    {(timeoutWinnerColor === 'B' ? t('game:black_short', '黑') : t('game:white_short', '白'))
-                      + t('game:timeout_win_suffix', '超时胜')}
-                    {' · '}{t('game:move_n', '第 {n} 手').replace('{n}', String((gameState.current_node_index ?? 0) + 1))}
-                    {' · '}{t('game:saved_to_history', '已存进历史对局')}
-                  </Typography>
-                </>
-              ) : autoCount.status === 'failed' ? autoCount.reason : t('game:counting', '正在数子…')}
-            </Alert>
-          )}
           <GameControlPanel
             gameState={gameState}
             onAction={handleAction}
@@ -821,6 +824,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             /* 只有本地对局在钟/超时判负范围内(Global Constraints #1);其它模式不传,
                `GameControlPanel` 就不会去调 `/api/timeout`。 */
             onTimeExpired={localGame ? handleTimeExpired : undefined}
+            counting={autoCount.status === 'counting'}
+            statusSlot={statusSlot}
           />
         </div>
       </div>
@@ -849,15 +854,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {localGame ? (
         /* 本地对局:两个人都在屏前,「认输」不能默认判轮到走的那一方(P5)—— 先问谁认输。 */
         <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
-          <DialogTitle sx={{ color: 'text.primary' }}>{t('game:who_resigns', '谁认输？')}</DialogTitle>
-          <DialogActions>
-            <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
-            <Button color="error" onClick={() => { void handleLocalResign('B'); }}>
-              {t('game:black_resigns', '黑方认输')}
-            </Button>
-            <Button color="error" onClick={() => { void handleLocalResign('W'); }}>
-              {t('game:white_resigns', '白方认输')}
-            </Button>
+          <DialogTitle sx={{ color: 'text.primary' }}>{t('game:which_side_resigns', '哪一方认输？')}</DialogTitle>
+          <DialogContent><Typography>{t('game:resign_local_body', '对方记中盘胜，这局会存进历史对局。')}</Typography></DialogContent>
+          <DialogActions disableSpacing sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button variant="contained" color="error" sx={{ flex: 1 }} startIcon={<span className="disc b" />} onClick={() => { void handleLocalResign('B'); }}>
+                {t('game:black_resigns', '黑方认输')}
+              </Button>
+              <Button variant="contained" color="error" sx={{ flex: 1 }} startIcon={<span className="disc w" />} onClick={() => { void handleLocalResign('W'); }}>
+                {t('game:white_resigns', '白方认输')}
+              </Button>
+            </Box>
+            <Button fullWidth onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
           </DialogActions>
         </Dialog>
       ) : (
@@ -892,7 +900,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       {localGame ? (
         /* 本地对局退出 = 删会话、不存谱(v2 D2)。已终局不会走到这里(handleExit 直接离开)。 */
         <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
-          <DialogTitle>{t('game:exit_unsaved_title', '这局还没下完，退出后不会保存')}</DialogTitle>
+          <DialogTitle>{t('game:exit_confirm_title', '退出这局？')}</DialogTitle>
+          <DialogContent><Typography>{t('game:exit_unsaved_body', '这局还没下完，退出后不会保存。')}</Typography></DialogContent>
           <DialogActions>
             <Button onClick={() => setShowExitConfirm(false)}>{t('game:keep_playing', '继续下')}</Button>
             <Button color="error" onClick={() => { void handleExitWithoutSaving(); }}>

@@ -167,7 +167,9 @@ export function GeometryCalibrationScreen({
   }, [active, rawFrame, layout, phase, status.detected_anchors]);
 
   const warpedModelForViewport = useCallback((viewport: OverlayViewport) => (
-    layout ? buildWarpedGeometryModel(layout.out_size, phase, viewport) : null
+    layout ? buildWarpedGeometryModel(
+      layout.out_size, layout.stale ? 'degraded' : phase, viewport, layout.warped_margin_cells ?? 0,
+    ) : null
   ), [layout, phase]);
 
   // ── 视图切换 ───────────────────────────────────────────────────────────────

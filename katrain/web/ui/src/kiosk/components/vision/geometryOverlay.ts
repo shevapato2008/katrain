@@ -136,7 +136,8 @@ export const buildWarpedGeometryModel = (
   outSize: number,
   phase: GeometryPhase,
   viewport: OverlayViewport,
-  marginCells = 0,
+  // Required on purpose: the 屏 26 rewrite (869aced6) silently dropped it and the default 0 drew the grid flush.
+  marginCells: number,
 ): GeometryOverlayModel => {
   const last = outSize - 1;
   // The backend warp_with_margin pads the warped image by `pad` px on each side (margin_px_for):

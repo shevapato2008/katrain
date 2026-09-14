@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
-import { CATEGORY_META, UNIT_SIZE, levelChinese, loadErrorCopy, readAutoAdvance, writeLastCategory, writeSequence } from './tsumegoUnits';
+import { CATEGORY_META, UNIT_SIZE, isWrongEntry, levelChinese, loadErrorCopy, readAutoAdvance, writeLastCategory, writeSequence } from './tsumegoUnits';
 import { interpolate } from '../utils/interpolate';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
@@ -29,18 +29,19 @@ interface ProblemSummary {
  * 是**算得出来的**。⇒ `0%` = 「真的一道没做」,不是「读不到」。
  * **屏 11 那边写「—」是因为那一层算不到这个数,两屏的差别不许抹平。**
  *
- * ── 「只做错过的」为什么是灰的 ────────────────────────────────────────
- * 「做错过的」这个集合**算得出来**(本地进度里 `attempts > 0 && !completed`),但**没有地方去**:
- * 后端没有按错题筛的接口,前端也没有一条能只播这批题的路由 —— 做题屏的上/下一题读的是
- * `sessionStorage` 里那条**整类**的顺序表(`sequenceKey`),塞一份筛过的进去会把正常的上下一题弄坏。
- * ⇒ 卡照画(§14:后端没有的块要标出来,不是藏起来),标成「还没接」,
- * **但副标里写真数**——「现在有 N 道」是这一层真的知道的事。
+ * ── 「只做错过的」(T1,2026-09-14 接通)──────────────────────────────────
+ * 「做错过的」= 试过、还没做对(`isWrongEntry`),整类口径。去处是错题页
+ * `/kiosk/tsumego/:level/:category/wrong` —— 屏 13 同一副骨架,只换题从哪儿来(稿子原注)。
+ * 做题屏的上/下一题认 `?set=wrong` 的快照,不动整类那条顺序表。
+ * 0 道时灰(`disabled`,不是 `soon`:功能接好了,只是这会儿没有可作用的对象)。
+ * 做题记录没读到(`serverLoadFailed`)而本机算出 0 道 ⇒ 那个 0 是**算不出来**,不是「一道没错」:
+ * 不写「0 道」、不灰,点进错题页那边有重试。
  */
 const TsumegoUnitsPage = () => {
   const { level, category } = useParams<{ level: string; category: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { unitProgress, progress } = useTsumegoProgress();
+  const { unitProgress, progress, serverLoadFailed } = useTsumegoProgress();
   const { user } = useAuth();
 
   const [problemIds, setProblemIds] = useState<string[] | null>(null);
@@ -140,8 +141,10 @@ const TsumegoUnitsPage = () => {
   const firstUnsolved = current.ids.findIndex((id) => !progress[id]?.completed);
   const resumeIndex = firstUnsolved < 0 ? 0 : firstUnsolved;
 
-  // 做错过的 = 试过、但还没做对。这个数算得出来,去处没有 —— 见文件头。
-  const wrongCount = problemIds.filter((id) => (progress[id]?.attempts ?? 0) > 0 && !progress[id]?.completed).length;
+  // 做错过的 = 试过、但还没做对。口径只在 `isWrongEntry` 写一次。
+  const wrongCount = problemIds.filter((id) => isWrongEntry(progress[id])).length;
+  // 0 道而做题记录没读到 ⇒ 这个 0 是编的(和 `GrowthPage` 的 `solved` 同一条)。见文件头。
+  const wrongUnknown = serverLoadFailed && wrongCount === 0;
 
   return (
     <div className="kiosk-layout-b">
@@ -217,10 +220,14 @@ const TsumegoUnitsPage = () => {
             />
             <KioskCard
               title={t('Only the ones I got wrong', '只做错过的')}
-              // 数是真的,去处还没有 —— 两件事都说出来,不含糊成一个灰按钮。
-              sub={interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongCount })}
+              sub={
+                wrongUnknown
+                  ? t('tsumego:progressUnread', '做题记录没读到')
+                  : interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongCount })
+              }
               icon="arrow-clockwise"
-              soon={t('Not wired up yet', '还没接')}
+              disabled={wrongCount === 0 && !wrongUnknown}
+              onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/wrong`)}
             />
           </div>
         </section>

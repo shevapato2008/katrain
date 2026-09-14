@@ -17,9 +17,11 @@ import type { TsumegoProgressEntry } from '../../context/TsumegoProgressContext'
  *   · 「试了几次」= `attempts + (做对了 ? 1 : 0)` —— `attempts` 数的是**失败**的那几次。
  */
 
-const { mockNavigate, progressMap } = vi.hoisted(() => ({
+const { mockNavigate, mockRefresh, progressMap, progressFlags } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
+  mockRefresh: vi.fn(),
   progressMap: {} as Record<string, TsumegoProgressEntry>,
+  progressFlags: { failed: false },
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -37,7 +39,8 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
       total: ids.length,
     }),
     categoryProgress: () => ({ completed: 0, total: 0 }),
-    refresh: vi.fn(),
+    serverLoadFailed: progressFlags.failed,
+    refresh: mockRefresh,
   }),
 }));
 
@@ -63,6 +66,7 @@ const seedSequence = (level = '15k', category = 'capturing', ids: string[] = all
 beforeEach(() => {
   vi.clearAllMocks();
   for (const k of Object.keys(progressMap)) delete progressMap[k];
+  progressFlags.failed = false;
   sessionStorage.clear();
   localStorage.clear();
   installFetch();
@@ -80,6 +84,20 @@ const renderPage = (level = '15k', category = 'capturing', unit = '1') =>
       </MemoryRouter>
     </ThemeProvider>
   );
+
+/** 错题页。**两条路由都挂上**:顺带证明静态段 `wrong` 在 v6 的最佳匹配里赢过 `:unit`。
+ *  树单独拿出来,是给「重读回来」那条用例 `rerender` 用的。 */
+const wrongTree = (level = '15k', category = 'capturing') => (
+  <ThemeProvider theme={kioskTheme}>
+    <MemoryRouter initialEntries={[`/kiosk/tsumego/${level}/${category}/wrong`]}>
+      <Routes>
+        <Route path="/kiosk/tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
+        <Route path="/kiosk/tsumego/:level/:category/wrong" element={<TsumegoUnitListPage set="wrong" />} />
+      </Routes>
+    </MemoryRouter>
+  </ThemeProvider>
+);
+const renderWrong = (level = '15k', category = 'capturing') => render(wrongTree(level, category));
 
 const cells = () => Array.from(document.querySelectorAll('.qgrid button')) as HTMLButtonElement[];
 const cellText = () => cells().map((b) => [b.querySelector('b')?.textContent, b.querySelector('em')?.textContent]);
@@ -234,7 +252,7 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/3d/all');
   });
 
-  it('「只做错过的」按不动,数是整类的真数,而且点名了 scope', async () => {
+  it('「只做错过的」:数是整类的真数、点名了 scope,「开始」进这一类的错题页(T1)', async () => {
     progressMap['q0'] = { completed: false, attempts: 2 };   // 错过,还没对
     progressMap['q7'] = { completed: true, attempts: 3 };    // 做对了 ⇒ 不算
     progressMap['q9'] = { completed: false, attempts: 0 };   // 没试过 ⇒ 不算
@@ -244,9 +262,27 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
     await waitFor(() => expect(cells()).toHaveLength(UNIT_SIZE));
     const row = screen.getByTestId('row-wrong');
     expect(within(row).getByText(/把这一类做错的重来一遍 · 现在有 2 道/)).toBeInTheDocument();
-    expect(within(row).getByText('还没接')).toBeInTheDocument();
-    // 按不动的键都不给 —— 摆一个灰「开始」等于说「这儿有路,只是暂时走不通」。
-    expect(row.querySelector('button')).toBeNull();
+    expect(within(row).queryByText('还没接')).toBeNull();
+    fireEvent.click(within(row).getByRole('button', { name: '开始' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/capturing/wrong');
+  });
+
+  it('一道错题都没有时错题那一行的「开始」灰着', async () => {
+    seedSequence();
+    renderPage();
+    await waitFor(() => expect(cells()).toHaveLength(UNIT_SIZE));
+    expect(within(screen.getByTestId('row-wrong')).getByRole('button', { name: '开始' })).toBeDisabled();
+  });
+
+  it('做题记录没读到时错题那一行不说「现在有 0 道」,「开始」也不灰 —— 错题页那边有重试', async () => {
+    progressFlags.failed = true;
+    seedSequence();
+    renderPage();
+    await waitFor(() => expect(cells()).toHaveLength(UNIT_SIZE));
+    const row = screen.getByTestId('row-wrong');
+    expect(within(row).getByText(/做题记录没读到/)).toBeInTheDocument();
+    expect(within(row).queryByText(/现在有 0 道/)).toBeNull();
+    expect(within(row).getByRole('button', { name: '开始' })).not.toBeDisabled();
   });
 
   it('加载中说的是加载中,不是「这一类没有题」', () => {
@@ -298,5 +334,76 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
     seedSequence('15k', 'semeai');
     renderPage('15k', 'semeai', '1');
     await waitFor(() => expect(localStorage.getItem('kiosk_tsumego_last_category:u7')).toBe('semeai'));
+  });
+
+  describe('错题页(T1)', () => {
+    beforeEach(() => {
+      progressMap['q3'] = { completed: false, attempts: 1 };
+      progressMap['q7'] = { completed: true, attempts: 3 };    // 做对了 ⇒ 不在错题里
+      progressMap['q9'] = { completed: false, attempts: 0 };   // 没试过 ⇒ 不在
+      progressMap['q41'] = { completed: false, attempts: 2 };  // 第 3 单元的 —— 整类都算
+      seedSequence();
+    });
+
+    it('页控条写「这一档 · 这一类 · 错题」;格子只有试过没做对的,格上是整类真题号', async () => {
+      renderWrong();
+      await waitFor(() => expect(cells()).toHaveLength(2));
+      expect(screen.getByText(/15 级 · 吃子 · 错题/)).toBeInTheDocument();
+      expect(cellText()).toEqual([['4', '1 次'], ['42', '2 次']]);
+      expect(cells()[0].getAttribute('aria-label')).toBe('第 4 题，做错过，1 次');
+      // 每一道都没做对,不许随便指一格当「下一道」。
+      expect(document.querySelector('.qgrid button.now')).toBeNull();
+    });
+
+    it('数据条三格:现在有几道 / 平均尝试次数 / 这一类已做对', async () => {
+      renderWrong();
+      await waitFor(() => expect(cells()).toHaveLength(2));
+      expect(screen.getByTestId('stat-wrong-count').textContent).toBe('2 道');
+      expect(screen.getByTestId('stat-avg-tries').textContent).toBe('1.5');
+      expect(screen.getByTestId('stat-solved-in-category').textContent).toBe('1 / 45');
+    });
+
+    it('点一格:先把这份题单存成**这个账号的**快照,再带着 ?set=wrong 进做题屏', async () => {
+      renderWrong();
+      await waitFor(() => expect(cells()).toHaveLength(2));
+      fireEvent.click(cells()[1]);
+      // 按账号存(useAuth mock 是 id 7):错题是「这个人」做错的,同一个标签页里换人不许读到。
+      expect(JSON.parse(sessionStorage.getItem('kiosk_problems_15k_capturing_wrong:u7')!)).toEqual(['q3', 'q41']);
+      expect(sessionStorage.getItem('kiosk_problems_15k_capturing_wrong')).toBeNull();
+      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/q41?set=wrong');
+    });
+
+    it('换一批只剩「整级」—— 错题那一行指向自己,不画', async () => {
+      renderWrong();
+      await waitFor(() => expect(cells()).toHaveLength(2));
+      expect(screen.queryByTestId('row-wrong')).toBeNull();
+      expect(screen.getByText('15 级全部')).toBeInTheDocument();
+    });
+
+    it('这一类一道错题都没有时说清楚,并给回单元的路', async () => {
+      for (const k of Object.keys(progressMap)) delete progressMap[k];
+      renderWrong();
+      await waitFor(() => expect(screen.getByTestId('problems-no-wrong')).toBeInTheDocument());
+      fireEvent.click(within(screen.getByTestId('problems-no-wrong')).getByRole('button', { name: '单元' }));
+      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/capturing');
+    });
+
+    it('题号读到了、做题记录没读到:不说「没有做错过的题」,给重试;重读回来就出格子', async () => {
+      for (const k of Object.keys(progressMap)) delete progressMap[k];
+      progressFlags.failed = true;
+      const view = renderWrong();
+      const box = await screen.findByTestId('problems-wrong-unknown');
+      expect(within(box).getByText('做题记录没读到')).toBeInTheDocument();
+      expect(screen.queryByTestId('problems-no-wrong')).toBeNull();
+      fireEvent.click(within(box).getByRole('button', { name: '重试' }));
+      expect(mockRefresh).toHaveBeenCalledTimes(1);
+
+      // 重读回来了:Provider 合并进度、清掉失败标志、重渲(Provider 那一半在 TsumegoProgressContext.test.tsx 里守)。
+      progressMap['q3'] = { completed: false, attempts: 1 };
+      progressFlags.failed = false;
+      view.rerender(wrongTree());
+      await waitFor(() => expect(cells()).toHaveLength(1));
+      expect(screen.queryByTestId('problems-wrong-unknown')).toBeNull();
+    });
   });
 });

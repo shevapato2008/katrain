@@ -137,6 +137,9 @@ const KioskRoutes = () => {
           <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
           <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
+          {/* 错题页(T1):屏 13 同一副骨架,题从「这一类里试过、还没做对的」来。
+              静态段 `wrong` 在 v6 最佳匹配里本来就赢过 `:unit`,放在前面是给人读的。 */}
+          <Route path="tsumego/:level/:category/wrong" element={<TsumegoUnitListPage set="wrong" />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
           {/* ⚠️ research / baipu / live 三条**下了 Dock 但路由照旧存在**(规范 §3:
               研究并进复盘、摆谱降为选中棋谱之后的落子方式、直播并进棋谱)。

@@ -238,6 +238,8 @@ export interface TsumegoProgressContextValue {
    * (`GrowthPage` 头上那段:「拿不到就写 —,并说一句」),而不区分这两者的话
    * 一个刚断网的老用户会看到「累计已解题 0」。
    * 只在**本地也是空的**时候才有分别:本地有数就至少是个下界,照常显示。
+   * **重读途中保持原值**,读成功才清(见 `fetchAndMerge`)—— 否则「重试」按下去那一刻就像读到了一份空的。
+   * 盒子没拿到云端、回的是本机缓存(`TsumegoProgressAnswer.degraded`)**也算没读到**:那份常常是 `{}`。
    */
   serverLoadFailed: boolean;
   /** Write progress for one problem: localStorage always, in-memory + server only under Provider. */
@@ -317,11 +319,33 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
   // Guard against double server-fetch (e.g. React StrictMode) for the same account.
   const fetchedUserRef = useRef<number | string | null>(null);
 
+  // 每读一次服务端领一个号。回答回来时号已经不是最新的 ⇒ 作废。见 `fetchAndMerge`。
+  const latestRequestRef = useRef(0);
+
   const fetchAndMerge = useCallback((authToken?: string) => {
-    setServerLoadFailed(false);
+    // ⚠️ 2026-09-15(T1 错题页的「重试」):失败标志**只在读成功时清**,不在发请求时清。
+    // 发请求时就清的话,重读途中本机进度还是空的、标志却已是 false —— 下游看到的正是
+    // 「读到了,一道错题都没有」,等于把重试说成了成功。换人时的清零在上面 render 期那段,不受影响。
+    //
+    // ⚠️ 2026-09-15(Codex 对抗审查第 2 轮 #1):**回答只认发请求那一刻的账号和最新的号。**
+    // 非严格 kiosk / galaxy 换账号时这个 Provider 不卸载(登出 → `/kiosk/login` → 登录在同一棵树里)。
+    // 甲按了「重试」、请求还在路上,乙登录了 —— 甲那份回来时 `prev` 已是乙的进度、`activeScopeKey` 已是乙的钥匙,
+    // 而 `completed` 按 OR 合并是单调的 ⇒ 甲做对的题永久记进乙的本机缓存;`pushLocalAhead` 还会拿乙的本机进度
+    // 带着甲的 token 往甲的云端账里推。号:连按两次「重试」时先发的后回来,旧的失败不许盖掉新的成功。
+    // **不在卸载时作废**:`main.tsx` 开着 StrictMode,会先卸再挂一次,而 `fetchedUserRef` 挡掉了第二次拉取 ——
+    // 卸载时作废会让开发环境里唯一那次拉取的回答永远落不了地。卸载之后的 setState 本来就是空操作。
+    const request = ++latestRequestRef.current;
+    const scope = activeScopeKey;
+    const stale = () => request !== latestRequestRef.current || scope !== activeScopeKey;
     TsumegoAPI.getProgress(authToken)
-      .then((serverMap) => {
+      .then(({ progress: serverMap, degraded }) => {
+        if (stale()) return;
+        // 盒子没拿到云端、给的是本机缓存(契约见 `api/tsumegoApi.ts` 的 `PROGRESS_AUTHORITY_HEADER`):
+        // 那份是真的下界,照样并进来;但它**不是**这个人的全部进度 ⇒ 仍算「没读到」,错题页照样给重试。
+        setServerLoadFailed(degraded);
         setProgress((prev) => {
+          // 更新函数可能被更高优先级的更新(换人那一帧)插队、之后才重放 ⇒ 落缓存、回推之前再核一次账号。
+          if (scope !== activeScopeKey) return prev;
           const merged = mergeProgressMaps(prev, serverMap);
           try {
             localStorage.setItem(activeScopeKey, JSON.stringify(merged));
@@ -329,11 +353,13 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
             // best-effort cache
           }
           // 拉得回来 = 服务端此刻够得着 ⇒ 把**本机比服务端多的**那几条补上去。
-          pushLocalAhead(prev, serverMap, authToken);
+          // 本机缓存那份不算「够得着」:拿它比,几乎每一条都会被判成「本机更多」,整库回推一遍。
+          if (!degraded) pushLocalAhead(prev, serverMap, authToken);
           return merged;
         });
       })
       .catch(() => {
+        if (stale()) return;
         // offline / unauthorized — keep localStorage-only progress，但**要说出去**:
         // 吞掉的话下游分不清「一题没做」和「没读到」。
         setServerLoadFailed(true);

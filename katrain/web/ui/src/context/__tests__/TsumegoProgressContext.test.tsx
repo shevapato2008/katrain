@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
@@ -33,6 +33,7 @@ import {
   type TsumegoProgressEntry,
   type TsumegoProgressMap,
 } from '../TsumegoProgressContext';
+import type { TsumegoProgressAnswer } from '../../api/tsumegoApi';
 
 /** 2026-08-25 之前那把**不分人**的钥匙。只出现在「它该被删掉」那条用例里。 */
 const LEGACY_KEY = 'tsumego_progress';
@@ -48,13 +49,16 @@ const auth = (over: { token?: string | null; user?: { id: number } | null } = {}
   ...over,
 });
 
+/** `getProgress` 的回答(2026-09-15 起带 `degraded`)。云端 / 服务端模式那一份 = `degraded: false`。 */
+const served = (progress: TsumegoProgressMap, degraded = false): TsumegoProgressAnswer => ({ progress, degraded });
+
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   // 作用域是模块级的 ⇒ 每条用例都要归零,否则上一条的账号会漏到下一条。
   setProgressScope(null);
   mockUseAuth.mockReturnValue(auth());
-  mockGetProgress.mockResolvedValue({});
+  mockGetProgress.mockResolvedValue(served({}));
   mockSaveProgress.mockResolvedValue({});
 });
 
@@ -159,10 +163,10 @@ describe('TsumegoProgressProvider', () => {
   it('merges the server map (localStorage ⊕ server) when signed in', async () => {
     mockUseAuth.mockReturnValue(auth({ token: 'tok', user: { id: 7 } }));
     seedLocal({ p1: { completed: false, attempts: 4 }, p2: { completed: false, attempts: 1 } }, 7);
-    mockGetProgress.mockResolvedValue({
+    mockGetProgress.mockResolvedValue(served({
       p1: { completed: true, attempts: 1 }, // completed OR -> true, attempts max(4,1) -> 4
       p3: { completed: true, attempts: 2 }, // server-only
-    });
+    }));
 
     const { result } = renderHook(() => useTsumegoProgress(), { wrapper });
 
@@ -247,6 +251,96 @@ describe('TsumegoProgressProvider', () => {
     // local progress is intact despite the failed server fetch.
     expect(result.current.progress.p1).toMatchObject({ completed: true, attempts: 1 });
   });
+
+  it('读失败之后重读:回来之前仍算「没读到」,读成功才清掉 —— 重读途中不许看起来像「读到了、是空的」', async () => {
+    // 盒上的样子:token=null,身份在 user 上。
+    mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
+    mockGetProgress.mockRejectedValueOnce(new Error('offline'));
+    const { result } = renderHook(() => useTsumegoProgress(), { wrapper });
+    await waitFor(() => expect(result.current.serverLoadFailed).toBe(true));
+
+    let resolve!: (answer: TsumegoProgressAnswer) => void;
+    mockGetProgress.mockReturnValueOnce(new Promise<TsumegoProgressAnswer>((r) => { resolve = r; }));
+    act(() => result.current.refresh());
+    expect(mockGetProgress).toHaveBeenCalledTimes(2);
+    // 请求发出去了、还没回来:本机进度仍是空的,标志若在这时清掉,下游看到的就是「读到了,一道错题都没有」。
+    expect(result.current.serverLoadFailed).toBe(true);
+
+    await act(async () => { resolve(served({ p1: { completed: false, attempts: 2 } })); });
+    expect(result.current.serverLoadFailed).toBe(false);
+    expect(result.current.progress.p1).toMatchObject({ completed: false, attempts: 2 });
+  });
+
+  it('重试还在路上时换了账号:甲那份回来作废 —— 不并进乙的进度、不写乙的钥匙、不拿乙的本机进度去回推(Codex 第 2 轮 #1)', async () => {
+    // 非严格 kiosk / galaxy:登出 → 登录都在同一棵树里,这个 Provider 不卸载。
+    mockUseAuth.mockReturnValue(auth({ token: 'tok-a', user: { id: 7 } }));
+    mockGetProgress.mockRejectedValueOnce(new Error('offline'));
+    const { result, rerender } = renderHook(() => useTsumegoProgress(), { wrapper });
+    await waitFor(() => expect(result.current.serverLoadFailed).toBe(true));
+
+    // 甲按「重试」,请求挂在路上。
+    let resolveA!: (answer: TsumegoProgressAnswer) => void;
+    mockGetProgress.mockReturnValueOnce(new Promise<TsumegoProgressAnswer>((r) => { resolveA = r; }));
+    act(() => result.current.refresh());
+
+    // 甲登出、乙登录;乙自己那次读成功了。
+    mockGetProgress.mockResolvedValueOnce(served({ b1: { completed: false, attempts: 1 } }));
+    mockUseAuth.mockReturnValue(auth({ token: 'tok-b', user: { id: 8 } }));
+    rerender();
+    await waitFor(() => expect(result.current.progress.b1).toMatchObject({ completed: false, attempts: 1 }));
+
+    // 甲那份这时才回来。`completed` 按 OR 合并是单调的 —— 并进去就再也退不回来。
+    await act(async () => { resolveA(served({ a1: { completed: true, attempts: 1 } })); });
+    expect(result.current.progress.a1).toBeUndefined();
+    expect(readRaw(8).a1).toBeUndefined();
+    // 并进去的话 `pushLocalAhead(乙的进度, 甲的回答, 'tok-a')` 会把乙的 b1 推进甲的云端账。
+    expect(mockSaveProgress).not.toHaveBeenCalled();
+  });
+
+  it('连按两次「重试」、先发的那次后回来:以后发的为准,旧的失败不许把状态翻回「没读到」(Codex 第 2 轮 #1)', async () => {
+    mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
+    mockGetProgress.mockRejectedValueOnce(new Error('offline'));
+    const { result } = renderHook(() => useTsumegoProgress(), { wrapper });
+    await waitFor(() => expect(result.current.serverLoadFailed).toBe(true));
+
+    let rejectFirst!: (err: Error) => void;
+    mockGetProgress.mockReturnValueOnce(new Promise<TsumegoProgressAnswer>((_resolve, reject) => { rejectFirst = reject; }));
+    act(() => result.current.refresh());
+    mockGetProgress.mockResolvedValueOnce(served({ p1: { completed: false, attempts: 2 } }));
+    act(() => result.current.refresh());
+    await waitFor(() => expect(result.current.progress.p1).toMatchObject({ completed: false, attempts: 2 }));
+    expect(result.current.serverLoadFailed).toBe(false);
+
+    await act(async () => { rejectFirst(new Error('timeout')); });
+    expect(result.current.serverLoadFailed).toBe(false);
+  });
+
+  describe('盒子退回本机缓存(契约另一半:tests/web_ui/test_tsumego_board_unavailable.py)', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    // 走**真的** `getProgress` + stub 的 `fetch`:响应头字面量在这里钉死,和后端那条 pytest 各钉一次。
+    it.each([
+      ['local_cache', true, 0],
+      ['cloud', false, 1],
+    ] as const)('200 + X-Data-Authority: %s ⇒ serverLoadFailed=%s,回推 %i 次', async (authority, failed, pushes) => {
+      const real = await vi.importActual<typeof import('../../api/tsumegoApi')>('../../api/tsumegoApi');
+      mockGetProgress.mockImplementation(real.TsumegoAPI.getProgress);
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(
+        JSON.stringify({ p1: { completed: false, attempts: 2 } }),
+        { status: 200, headers: { 'Content-Type': 'application/json', 'X-Data-Authority': authority } },
+      )));
+      // 本机有一条比回答多的:只有云端那份才拿它去回推。拿本机缓存比,几乎每一条都会被判成「本机更多」。
+      seedLocal({ p9: { completed: true, attempts: 1 } }, 7);
+      mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
+
+      const { result } = renderHook(() => useTsumegoProgress(), { wrapper });
+
+      // 本机缓存那份是真的下界,照样并进来;但它不是这个人的全部进度 ⇒ 仍算没读到(错题页据此给重试)。
+      await waitFor(() => expect(result.current.progress.p1).toMatchObject({ completed: false, attempts: 2 }));
+      expect(result.current.serverLoadFailed).toBe(failed);
+      expect(mockSaveProgress).toHaveBeenCalledTimes(pushes);
+    });
+  });
 });
 
 // ============ 共享设备:钥匙分人(2026-08-25) ============
@@ -309,7 +403,7 @@ describe('共享设备:进度按账号隔离', () => {
 describe('出厂盒子:token 恒为 null,身份靠 cookie', () => {
   it('token 是 null 但有账号时,照样去拉服务端进度', async () => {
     mockUseAuth.mockReturnValue(auth({ token: null, user: { id: 5 } }));
-    mockGetProgress.mockResolvedValue({ s1: { completed: true, attempts: 1 } });
+    mockGetProgress.mockResolvedValue(served({ s1: { completed: true, attempts: 1 } }));
     const { result } = renderHook(() => useTsumegoProgress(), { wrapper });
 
     // 变异:把闸改回 `if (!token) return` ⇒ 这一条当场红。
@@ -358,7 +452,7 @@ describe('做题进度:拉得回来就把本机多出来的补上去', () => {
   it('本机解出来了而服务端没有 ⇒ 补一次', async () => {
     seedLocal({ p1: entry({ completed: true, attempts: 2 }) }, 7);
     mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
-    mockGetProgress.mockResolvedValue({ p1: entry({ completed: false, attempts: 1 }) });
+    mockGetProgress.mockResolvedValue(served({ p1: entry({ completed: false, attempts: 1 }) }));
 
     renderHook(() => useTsumegoProgress(), { wrapper });
 
@@ -370,7 +464,7 @@ describe('做题进度:拉得回来就把本机多出来的补上去', () => {
   it('服务端根本没有这一条 ⇒ 也补', async () => {
     seedLocal({ p9: entry({ completed: true, attempts: 1 }) }, 7);
     mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
-    mockGetProgress.mockResolvedValue({});
+    mockGetProgress.mockResolvedValue(served({}));
 
     renderHook(() => useTsumegoProgress(), { wrapper });
 
@@ -382,7 +476,7 @@ describe('做题进度:拉得回来就把本机多出来的补上去', () => {
     const same = entry({ completed: true, attempts: 3 });
     seedLocal({ p1: same }, 7);
     mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
-    mockGetProgress.mockResolvedValue({ p1: { ...same } });
+    mockGetProgress.mockResolvedValue(served({ p1: { ...same } }));
 
     renderHook(() => useTsumegoProgress(), { wrapper });
 
@@ -393,7 +487,7 @@ describe('做题进度:拉得回来就把本机多出来的补上去', () => {
   it('服务端比本机靠前时不回推 —— 那会把服务端的数往回按', async () => {
     seedLocal({ p1: entry({ completed: false, attempts: 1 }) }, 7);
     mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
-    mockGetProgress.mockResolvedValue({ p1: entry({ completed: true, attempts: 5 }) });
+    mockGetProgress.mockResolvedValue(served({ p1: entry({ completed: true, attempts: 5 }) }));
 
     renderHook(() => useTsumegoProgress(), { wrapper });
 

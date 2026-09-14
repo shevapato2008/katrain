@@ -195,6 +195,48 @@ export function writePracticeResume(userId: TsumegoUserId, resume: PracticeResum
 }
 
 /**
+ * 「只做错过的」那份题单的**快照**(T1)。点错题页格子的**那一刻**写:
+ * 做题途中做对一道,它不会从上/下一题的序列里消失;回到错题页时再按最新进度重算。
+ * 形状和整类那条顺序表一样(`string[]`,整类顺序),钥匙多一个 `_wrong`。
+ *
+ * ⚠️ **按账号存**(和上面三样「上次」同一个 `scopedKey`)。整类顺序表不分人没问题 —— 那是题库的事实;
+ * 错题快照是**这个人**做错了哪几道。sessionStorage 登出不清(`AuthContext.logout` 只清 token;
+ * 盒端换人是整页跳 launcher 再回来,标签页不变)⇒ 不分人的话,同一个标签页里甲→乙→甲:
+ * 甲存下的「接着上次 · …?set=wrong」会读到乙写的快照,只要这道题两人都错过就过得了 `includes`,
+ * 甲从此在乙的错题里翻页。
+ */
+export const wrongSequenceKey = (userId: TsumegoUserId, level: string, category: string): string | null =>
+  scopedKey(`${sequenceKey(level, category)}_wrong`, userId);
+
+/** 读快照。读不到 / 没有账号返回 `null` —— 做题屏据此退回整类行为,不假装还在错题里。 */
+export function readWrongSequence(userId: TsumegoUserId, level: string, category: string): string[] | null {
+  const key = wrongSequenceKey(userId, level, category);
+  if (!key) return null;
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (raw === null) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeWrongSequence(userId: TsumegoUserId, level: string, category: string, ids: string[]): void {
+  const key = wrongSequenceKey(userId, level, category);
+  if (!key) return;
+  try {
+    sessionStorage.setItem(key, JSON.stringify(ids));
+  } catch {
+    /* best-effort */
+  }
+}
+
+/** 「做错过的」= 试过、还没做对。屏 12 的卡、屏 13 的行、错题页三处**同一个口径**,只许在这里写一次。 */
+export const isWrongEntry = (entry: { attempts?: number; completed?: boolean } | undefined): boolean =>
+  (entry?.attempts ?? 0) > 0 && !entry?.completed;
+
+/**
  * 题库自带的六个标签(`life-death / tesuji / semeai / capturing / endgame / opening`),
  * 从每道题的 SGF 注释里解析出来 —— **不是界面自己分的**。所以这张表只负责给它们配
  * 中文名、图标和一句话说明,**有哪几类由 `/levels` 说了算**:表里有、题库里没有的不画,

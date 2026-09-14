@@ -445,8 +445,10 @@ const TsumegoProblemPage = () => {
             {/* `tsumego:loadError` 在 PO 里是「死活题库加载失败，请稍后重试。」——
                 那是**一句话**,而这里要的是一个标题;原因写在下面那行。
                 503 = 盒子连不上云端(N9),这时「这道题读不到」会被读成题坏了。 */}
-            <h4>{isCloudUnreachable(error) ? loadErrorCopy(t, error).title : t('tsumego:problemLoadError', '这道题读不到')}</h4>
-            <p>{loadErrorCopy(t, error).body}</p>
+            {/* 这一屏没有重试键(`useTsumegoProblem` 不出 reload,不往那个共用 hook 上加)——
+                503 那句话传 `{ retry: false }`,换一句不叫人「点重试」的收尾。 */}
+            <h4>{isCloudUnreachable(error) ? loadErrorCopy(t, error, { retry: false }).title : t('tsumego:problemLoadError', '这道题读不到')}</h4>
+            <p>{loadErrorCopy(t, error, { retry: false }).body}</p>
           </div>
         ) : (
           <div className="empty" data-testid="puzzle-loading">

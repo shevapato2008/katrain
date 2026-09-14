@@ -512,6 +512,16 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       expect(box).toHaveTextContent('连不上云端题库');
       expect(box).not.toHaveTextContent('这道题读不到');
     });
+
+    // 做题屏没有重试键(useTsumegoProblem 不出 reload) —— 503 那句话不能叫人「点重试」,
+    // 也不能真的画一个按了没用的「重试」按钮。
+    it('连不上云端(HTTP 503)时不提「重试」、也没有重试按钮', () => {
+      hookReturn = { ...defaultHookReturn, error: 'HTTP 503' };
+      renderPage();
+      const box = screen.getByTestId('puzzle-error');
+      expect(box).not.toHaveTextContent('重试');
+      expect(screen.queryByRole('button', { name: '重试' })).toBeNull();
+    });
   });
 
   // ---- SuccessOverlay + 自动下一题 ----

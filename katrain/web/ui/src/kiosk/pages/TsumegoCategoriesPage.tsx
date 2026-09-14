@@ -105,9 +105,21 @@ const TsumegoCategoriesPage = () => {
     return (
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 4 }}>
         <Alert severity="error">{`${loadErrorCopy(t, error).title} · ${loadErrorCopy(t, error).body}`}</Alert>
-        <Button variant="outlined" onClick={() => navigate('/kiosk/tsumego')}>
-          {t('Back', '返回')}
-        </Button>
+        {/* `loadCategories` 是这一屏自己的 fetch 函数,能干净地再调一次 —— 503 那句话说了
+            「点重试」就得有一个真按钮,不能只有返回。 */}
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              if (level) loadCategories(level, new AbortController().signal);
+            }}
+          >
+            {t('Retry', '重试')}
+          </Button>
+          <Button variant="outlined" onClick={() => navigate('/kiosk/tsumego')}>
+            {t('Back', '返回')}
+          </Button>
+        </Box>
       </Box>
     );
   }

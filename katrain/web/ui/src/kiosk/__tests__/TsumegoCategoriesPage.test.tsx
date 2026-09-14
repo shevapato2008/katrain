@@ -172,4 +172,29 @@ describe('TsumegoCategoriesPage', () => {
       expect(screen.getByText('返回')).toBeInTheDocument();
     });
   });
+
+  // 连不上云端(503)这一屏有自己的 loadCategories,能干净地再调一次 —— 补一个真的重试键(选项 A),
+  // 不能只把话说成「点重试」却没有按钮。
+  it('连不上云端(HTTP 503)时说「连不上云端题库」,并有一个能用的重试按钮', async () => {
+    let categoriesCalls = 0;
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (/\/categories$/.test(url)) {
+        categoriesCalls += 1;
+        return categoriesCalls === 1
+          ? Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve({}) })
+          : Promise.resolve({ ok: true, json: () => Promise.resolve(mockCategories) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
+    }) as any;
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText(/连不上云端题库/)).toBeInTheDocument();
+    });
+    const retryButton = screen.getByRole('button', { name: '重试' });
+    fireEvent.click(retryButton);
+    await waitFor(() => {
+      expect(screen.getByText('手筋')).toBeInTheDocument();
+    });
+    expect(categoriesCalls).toBe(2);
+  });
 });

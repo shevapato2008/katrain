@@ -270,15 +270,23 @@ export const isCloudUnreachable = (error: string | null | undefined): boolean =>
 /**
  * 错误块的两行字。503 说「连不上」并说清题在哪;其它错误照旧「读不到」+ 原因,
  * **不许把所有错误都说成没网** —— 404 / 500 各有各的原因。
+ *
+ * `opts.retry`(默认 `true`)—— 有的屏(如做题屏)没有重试键(§ 见做题屏 error 块,
+ * `useTsumegoProblem` 不出 reload,不在这个共用 hook 上加),503 那句话就不能叫人「点重试」。
+ * 传 `{ retry: false }` 换一句不提「重试」的收尾;标题和非 503 的分支不变。
  */
 export function loadErrorCopy(
   t: (key: string, defaultText?: string) => string,
   error: string,
+  opts?: { retry?: boolean },
 ): { title: string; body: string } {
+  const retry = opts?.retry ?? true;
   return isCloudUnreachable(error)
     ? {
         title: t('tsumego:cloudUnreachable', '连不上云端题库'),
-        body: t('tsumego:cloudUnreachableBody', '题库在云端，盒子上不存题。等网络或云端恢复后再点重试。'),
+        body: retry
+          ? t('tsumego:cloudUnreachableBody', '题库在云端，盒子上不存题。等网络或云端恢复后再点重试。')
+          : t('tsumego:cloudUnreachableBodyNoRetry', '题库在云端，盒子上不存题。等网络或云端恢复后，返回再进来。'),
       }
     : { title: t('Problem set unavailable', '题库读不到'), body: error };
 }

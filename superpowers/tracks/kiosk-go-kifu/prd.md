@@ -79,13 +79,13 @@
 
 **期望（推荐方案，本轮落地）：**
 - 服务端加采集模式开关：CLI `--baipu-collect` / 环境变量 `KATRAIN_BAIPU_COLLECT`，**默认关**。关着时 `/baipu/capture` 一律 404（即使采集服务存在）；新增 `GET /api/v1/baipu/mode` → `{"collect": bool}`，`collect` = 采集服务存在 **且** 开关打开。
-- 前端进摆谱先问 `mode`：问不到（旧后端、网络错、非 200）一律按 `collect=false`——**不知道就不拍照**。
-- 上线态（`collect=false`）：不套 `PhysicalBoardGuard`；「确认落子」/「已移除 N 子」只推进，不发 `/capture`、不拍开局帧、不响快门；页控条只写「第 i / n 手」；折叠块换成「灯 · 颜色对照 / 摆好再按确认」，三行图例沿用现有文案（红灯 = 放黑子 / 绿灯 = 放白子 / 蓝灯 = 该拿走，行数与现在相同）；确认键图标换 `hand-pointing`；摆完写「一共 n 手」；接着摆弹窗写「从头摆要先把盘上的子都拿下来」。灯没亮时照旧提示「照坐标自己找」，不拦摆放。
+- 前端进摆谱先问 `mode`：问不到（旧后端、网络错、非 200、3 秒内没问完——含连接挂着和 body 读不完）一律按 `collect=false`——**不知道就不拍照**；超时之后才回来的结果丢掉，不在摆谱途中把页面切到采集态。
+- 上线态（`collect=false`）：不套 `PhysicalBoardGuard`（唯一例外：**标定线程正在后台跑**时——`geometry/status` 的 phase 属于 `waiting_empty / dark_reference / flashing_corners / verifying / building_baseline`——先显示标定进度与「取消标定」，跑完或取消后直接进摆谱。标定屏的返回键不取消标定，而摆谱屏一挂就点灯、`/led/point` 先 CLEAR 再点，与标定逐个锚点的 clear→拍→点亮→拍互相冲掉灯；今天是守卫顺带挡住的）；「确认落子」/「已移除 N 子」只推进，不发 `/capture`、不拍开局帧、不响快门；页控条只写「第 i / n 手」；折叠块换成「灯 · 颜色对照 / 摆好再按确认」，三行图例沿用现有文案（红灯 = 放黑子 / 绿灯 = 放白子 / 蓝灯 = 该拿走，行数与现在相同）；确认键图标换 `hand-pointing`；摆完写「一共 n 手」；接着摆弹窗写「从头摆要先把盘上的子都拿下来」。灯没亮时照旧提示「照坐标自己找」，不拦摆放。
 - 采集态（`collect=true`）：与今天完全一致（守卫、拍照、409 分型、遮罩、文案）。
 
 **验收：**
 - 后端：采集服务存在但未开开关时 `POST /baipu/capture` 回 404、`GET /baipu/mode` 回 `{"collect": false}`；开关打开时 `mode` 回 true、`/capture` 行为与现有测试一致；`resolve_baipu_collect(None, None)` 为 False，`KATRAIN_BAIPU_COLLECT=1` 为 True。
-- 前端上线态：进 `/kiosk/baipu/session/:id` 不出现标定台（即使 `geometry/status` 为 `required`）；从第 1 手按到摆完，网络面板里 `/api/v1/baipu/capture` **零请求**；屏上无「帧」「拍照」「摄像头」字样。
+- 前端上线态：进 `/kiosk/baipu/session/:id` 不出现标定台（即使 `geometry/status` 为 `required`）；标定线程在跑（phase 属于上面五态）时不挂摆谱屏、显示「棋盘标定还在进行」，phase 离开这五态后直接进摆谱；`/baipu/mode` 挂起时 3 秒后按上线态进门；从第 1 手按到摆完，网络面板里 `/api/v1/baipu/capture` **零请求**；屏上无「帧」「拍照」「摄像头」字样。
 - 前端采集态：`mode` 回 true 时现有 e2e 四条采集用例（初始帧、失败不推进、legacy mismatch、重开覆盖）照绿。
 - 盒上验证（board 模式、token=null）：盒子不改 provisioning（开关默认关即为上线态）；在未标定状态下从屏 16 进摆谱能直接摆，`/root/.katrain/baipu_captures/` 不新增目录（服务以 root 跑、drop-in 没给 `--capture-dir`，默认 `~/.katrain/baipu_captures` 展开到 **root 的**家目录；用别的 ssh 账号看 `~` 永远是空的，等于没验）。此条需上板一次（见 §7）。
 - 屏 17 上线态四图过 Fan 确认（文案与图标偏离参考图，见 §4 D6）。
@@ -155,7 +155,7 @@
 
 ### D7 · 新增文案要不要补 PO（全局口径）
 
-本轮新增 key（全部 `t('ns:key', '中文默认')`，不往 PO 加）：`baipu:pagebar_sub_placed`、`baipu:done_hint_placed`、`baipu:led_title`、`baipu:led_value`、`baipu:resume_body_placed`、`baipu:wrong_size`、`baipu:wrong_size_hint`、`baipu:guard_sub_collect`、`kifu:wrong_size_reason`、`kifu:list_offline`、`kifu:list_offline_hint`、`kifu:detail_offline`、`kifu:detail_offline_hint`。补不补 11 语言 PO 待 Fan 统一裁定。
+本轮新增 key（全部 `t('ns:key', '中文默认')`，不往 PO 加）：`baipu:pagebar_sub_placed`、`baipu:done_hint_placed`、`baipu:led_title`、`baipu:led_value`、`baipu:resume_body_placed`、`baipu:wrong_size`、`baipu:wrong_size_hint`、`baipu:guard_sub_collect`、`baipu:calib_running_title`、`baipu:calib_running_sub`、`kifu:wrong_size_reason`、`kifu:list_offline`、`kifu:list_offline_hint`、`kifu:detail_offline`、`kifu:detail_offline_hint`。补不补 11 语言 PO 待 Fan 统一裁定。
 
 ## 5. 不在本轮
 
@@ -235,15 +235,15 @@
 | `katrain/web/ui/tests/kiosk-shell-scroll.spec.ts` | `bootBaipu` 加 `mode` 桩 | 其它赛道加自己屏的闸时同文件尾部 |
 | `superpowers/tracks/kiosk-go-shell-align/visual/17-baipu/**` | 重出屏 17 四图 | 任何人跑全量 `npm run fourup` 都会重写它；只提交自己那一屏目录，别人的抖动 `git checkout HEAD --` 还原 |
 | `katrain/web/ui/src/kiosk/pages/TutorialCategoriesPage.tsx`（+test） | 「去摆谱」改指 `/kiosk/kifu` | 无赛道认领课程，低 |
-| `katrain/web/ui/src/kiosk/components/vision/PhysicalBoardGuard.tsx` | **只消费不改**（`sub` prop） | tsumego T9 可能改它的接口——若改了 `sub` 以外的签名，本赛道 `BaipuSessionRoute` 要跟 |
+| `katrain/web/ui/src/kiosk/components/vision/PhysicalBoardGuard.tsx`、`GeometryCalibrationScreen.tsx`、`src/kiosk/context/GeometryContext.tsx` | **只消费不改**（守卫的 `sub` prop；标定屏的 `backLabel/onBack/title/sub`；`useGeometry().status.phase`） | tsumego T9 可能改守卫接口——若改了 `sub` 以外的签名，或改了标定屏 props / 进行中 phase 名单，本赛道 `BaipuSessionRoute` 要跟 |
 
 ## 7. 验证方式
 
-- **基线 diff：** 动手前在 worktree 里跑一次 `npx vitest run`（JSON 报告）与 `CI=true uv run pytest tests`，记下失败用例**名字集合**；每个任务后只跑相关文件，收尾再全量跑一次比名字集合，不比条数。
-- **前端单测（vitest，行为 / 调用级，不作布局证据）：** `KifuPage.test.tsx`（K1 卡、N9 503）、`KifuDetailPage.test.tsx`（K2 灰键、N9 503）、`TutorialCategoriesPage.test.tsx`（K1）、`KioskApp.test.tsx`（K1 重定向）、新增 `BaipuSessionPage.test.tsx`（K1 出口、K2 路数、K4 上线态不发 capture / 采集态发 capture）、新增 `BaipuSessionRoute.test.tsx`（K4 上线态不套标定守卫）、`src/api/baipuApi.test.ts`（K4 `mode()` 问不到当不拍）。
+- **基线 diff：** 动手前在 worktree 里跑一次 `npx vitest run`（JSON 报告 + 默认报告的日志）与 `CI=true uv run pytest tests --continue-on-collection-errors`（环境要 `uv sync --extra web --extra vision`），记下失败**名字集合**——含 vitest 整文件加载失败、未处理异常与 pytest 收集错误，并先确认两边会话真的跑了（汇总行含 passed、无 Interrupted）才认「集合为空」；每个任务后只跑相关文件，收尾再全量跑一次比名字集合，不比条数。
+- **前端单测（vitest，行为 / 调用级，不作布局证据）：** `KifuPage.test.tsx`（K1 卡、N9 503）、`KifuDetailPage.test.tsx`（K2 灰键、N9 503）、`TutorialCategoriesPage.test.tsx`（K1）、`KioskApp.test.tsx`（K1 重定向）、新增 `BaipuSessionPage.test.tsx`（K1 出口、K2 路数、K4 上线态不发 capture / 采集态发 capture）、新增 `BaipuSessionRoute.test.tsx`（K4 上线态不套标定守卫、标定线程在跑时不挂摆谱屏）、`src/api/baipuApi.test.ts`（K4 `mode()` 问不到当不拍、挂起超时当不拍）。
 - **后端单测：** `tests/test_baipu_api.py`（K4 开关、`/mode`、capture 404；既有用例补 `baipu_collect=True`）、`tests/test_baipu_capture.py`（`resolve_baipu_collect`）、新增 `tests/web_ui/test_kifu_offline.py`（N9）。
 - **类型与两套构建：** `npx tsc -b`；动了共享领地（`src/api/baipuApi.ts`、`src/api/kifuApi.ts`）⇒ `npm run build` 与 `npm run build:kiosk-2d` 都要绿，后者末尾 `✅ kiosk boundary clean`。
 - **e2e（打构建产物）：** 先 `npm run build`，再 `npx playwright test tests/baipu.spec.ts`（默认配置起 :8002 真后端；跑前备份、跑后还原 `~/.katrain/config.json`）。`kiosk-shell-scroll.spec.ts -g 摆谱`、`kiosk-shell-geometry.spec.ts`、`kiosk-shell-contract.spec.ts` 用 `--config=playwright.visual.config.ts`（vite dev server，全桩）。
 - **四图关卡：** 只适用 **K4 屏 17 上线态**（文案、图标变了）。`npx playwright test --config=playwright.visual.config.ts tests/kiosk-screen-17-baipu.fourup.spec.ts`，四张图逐项比对，**Fan 确认之前不进 K4 后端任务**。K1/K2/N9 改的是导航、错误态文案（参考图里没有这些态），按相称性各取一张真运行时截图给 Fan 过目即可，不做四图。
 - **承重关卡：** 反查——K4 上线态折叠块三行换三行、页控条副标题变短、无新增节点，撤回改动不改变任何高度来源 ⇒ 不新增测量；但既有真浏览器闸 `kiosk-shell-scroll.spec.ts` 摆谱三条就量在这条链上（241 手造溢出、右栏 516、动作区贴底、着法块 ≥3 行），默认路径现在是上线态，必须跑绿作为证据；两条采集态用例（失败、遮罩）改为显式 `collect=true` 继续守采集态。
-- **必须上板（RK3562，一次只跑一家；前端部署 `build:smartbox-kiosk-2d` 严格包，不是 `build:kiosk-2d`）：** ① K4：盒子默认 provisioning 下，未标定时从屏 16 进摆谱可直接摆完，`/root/.katrain/baipu_captures/` 无新目录（服务以 root 跑），灯色正确；② K1：摆完 / 退出落在棋谱屏，Dock 可见；③ N9：拔网后屏 15 搜索说「要联网」；④ 顺带记录 S5 屏 15「导入 SGF」能否弹出文件选择器、上线态有无误触连跳。结果回填本节。
+- **必须上板（RK3562，一次只跑一家；前端部署 `build:smartbox-kiosk-2d` 严格包，不是 `build:kiosk-2d`）：** ① K4：盒子默认 provisioning 下，未标定时从屏 16 进摆谱可直接摆完，`/root/.katrain/baipu_captures/` 无新目录（服务以 root 跑），灯色正确；设置里开始重新标定后按返回再进摆谱，先看到「棋盘标定还在进行」、取消后才进摆谱；② K1：摆完 / 退出落在棋谱屏，Dock 可见；③ N9：拔网后屏 15 搜索说「要联网」；④ 顺带记录 S5 屏 15「导入 SGF」能否弹出文件选择器、上线态有无误触连跳。结果回填本节。

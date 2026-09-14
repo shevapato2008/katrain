@@ -4,7 +4,7 @@
 
 **Goal:** 让盒上的摆谱走得完、不拍照：出口回棋谱屏、非 19 路谱进门即拦、上线态只用灯不用摄像头；断网时棋谱库说「要联网」。
 
-**Architecture:** K1 把 `/kiosk/baipu` 死页换成到 `/kiosk/kifu` 的重定向并改掉五处入口；K4 在服务端加默认关的采集模式开关（`--baipu-collect` + `GET /api/v1/baipu/mode`），前端新增 `BaipuSessionRoute` 先问模式、只在采集态套标定守卫，`BaipuSessionPage` 按 `collect` prop 分上线态 / 采集态；K2 在摆谱屏（所有入口的汇合点）拦非 19 路；N9 让 board 模式棋谱库两条 dispatcher 路径走现成的 `_remote_only`（离线 → 503），前端按 `ApiError.status === 503` 换文案。
+**Architecture:** K1 把 `/kiosk/baipu` 死页换成到 `/kiosk/kifu` 的重定向并改掉五处入口；K4 在服务端加默认关的采集模式开关（`--baipu-collect` + `GET /api/v1/baipu/mode`），前端新增 `BaipuSessionRoute` 先问模式（3 秒超时当不拍）、只在采集态套标定守卫（上线态只在标定线程正在跑时先给标定屏，免得和标定抢灯阵），`BaipuSessionPage` 按 `collect` prop 分上线态 / 采集态；K2 在摆谱屏（所有入口的汇合点）拦非 19 路；N9 让 board 模式棋谱库两条 dispatcher 路径走现成的 `_remote_only`（离线 → 503），前端按 `ApiError.status === 503` 换文案。
 
 **Tech Stack:** React + TypeScript + Vite（vitest / Playwright），FastAPI + pytest，KaTrain board 模式 `RepositoryDispatcher`。
 
@@ -17,10 +17,10 @@
 - 在 worktree `/Users/fan/Repositories/katrain-kiosk-go-kifu`（分支 `feature/kiosk-go-kifu`）里开发；**不 push、不合并 develop**，合并由 Fan 决定；不在别的 worktree 里 checkout；做基线对照实验要开 `git worktree add`，不在本 worktree 里 `git checkout HEAD -- <dir>`（会冲掉未提交的活）。
 - 改了共享领地（本计划动 `src/api/baipuApi.ts`、`src/api/kifuApi.ts`）⇒ `npm run build` 与 `npm run build:kiosk-2d` 都必须绿，后者末尾 `✅ kiosk boundary clean`；kiosk 边界（`verify:kiosk-2d`、`eslint.config.js` 边界规则）不许破。`src/kiosk/**` 不得 import `src/galaxy/**`、`Board3D`、`VideoRecorderPage*`。
 - 类型检查用 `npx tsc -b`（`npx tsc --noEmit` 检查 0 个文件）；`*.test.ts(x)` 不在 tsc 范围内，测试文件的类型错误不会被它抓到。
-- 盒上 token 恒为 null：任何「发不发请求 / 渲不渲染」的判别位用 `isAuthenticated`，不用 token。本计划新增的判别位只有 `collect`（来自 `/baipu/mode`）与 `ApiError.status`，都不读 token。
-- 新文案一律 `t('ns:key', '中文默认')`；**不往 PO 里加 key**（补不补待 Fan 裁定，prd §4 D7 列了本轮新增的 13 个 key）；新 key 不得与 PO 已有 msgid 同名（已核对 13 个均为 0 命中）。
+- 盒上 token 恒为 null：任何「发不发请求 / 渲不渲染」的判别位用 `isAuthenticated`，不用 token。本计划新增的判别位只有 `collect`（来自 `/baipu/mode`）、`useGeometry().status.phase` 是否属于「标定线程在跑」五态（Task 2 `BaipuSessionRoute`）与 `ApiError.status`，都不读 token。
+- 新文案一律 `t('ns:key', '中文默认')`；**不往 PO 里加 key**（补不补待 Fan 裁定，prd §4 D7 列了本轮新增的 15 个 key）；新 key 不得与 PO 已有 msgid 同名（已核对 15 个均为 0 命中）。
 - Python 用 `uv run black -l 120`，但**只让它改本任务写的代码**：`server.py`、`tests/test_baipu_api.py`、`tests/test_baipu_capture.py` 在基线上就不是 black 干净的，对它们只跑 `--diff`（见 Task 4 Step 7）；后端测试 `CI=true uv run pytest <文件>`（测试在 `tests/test_baipu_api.py`、`tests/test_baipu_capture.py`、`tests/web_ui/`）；前端单测 `cd katrain/web/ui && npx vitest run <文件>`。
-- 测试判据是**基线 diff**：Task 0 记录失败用例**名字集合**，Task 7 比名字集合，不比条数。已知负载相关不稳定名单（`ReportsPage.test.tsx`、`ReportsPage.polling.test.tsx`、`TutorialFigurePage.test.tsx` 超时）变红时先单独跑一遍，绿就不算回归。
+- 测试判据是**基线 diff**：Task 0 记录失败用例**名字集合**，Task 7 比名字集合，不比条数。集合里除了失败断言，还必须有**文件级失败**（vitest 整个文件加载 / 收集就炸、`assertionResults` 为空）、**未处理异常**与 pytest **收集错误**；「集合为空」只有在报告自检通过（vitest 脚本 stderr 末行 `REPORT_OK`、pytest 打印 `PYTEST_RAN`）时才算数 —— 会话没跑起来和全绿在集合上长得一样。已知负载相关不稳定名单（`ReportsPage.test.tsx`、`ReportsPage.polling.test.tsx`、`TutorialFigurePage.test.tsx` 超时）变红时先单独跑一遍，绿就不算回归。
 - Playwright e2e 打的是构建产物：`tests/baipu.spec.ts` 用默认 `playwright.config.ts`（起 :8002 真后端、服务 `katrain/web/static`）⇒ **改源码后先 `npm run build` 再跑**。它会在退出时改写 `~/.katrain/config.json`：跑前 `cp` 备份、跑后还原。`kiosk-shell-*.spec.ts` 与四图用 `--config=playwright.visual.config.ts`（vite dev server :5173，不起 Python 后端，接口全靠 `page.route` 桩）。
 - 视觉 / 布局改动走 CLAUDE.md 的四图对比与承重实测关卡（`npx playwright test --config=playwright.visual.config.ts tests/kiosk-screen-17-baipu.fourup.spec.ts`；jsdom 不作布局证据），**视觉通过需 Fan 确认**；K4 后端任务（Task 4）必须在 Fan 确认屏 17 上线态四图之后才开始。
 - pytest 之后查一次 `git status --short katrain/config.json`：测试可能改写被提交的 `katrain/config.json`，有变动就 `git checkout -- katrain/config.json` 还原，不提交它。
@@ -33,7 +33,7 @@
 |---|---|---|
 | `katrain/web/ui/src/kiosk/KioskApp.tsx` | Modify | `/kiosk/baipu` 改重定向（T1）；会话路由换 `BaipuSessionRoute`（T2） |
 | `katrain/web/ui/src/kiosk/pages/BaipuListPage.tsx` | Delete | 不可达的旧选谱页（T1） |
-| `katrain/web/ui/src/kiosk/pages/BaipuSessionRoute.tsx` | Create | 问 `/baipu/mode`，决定套不套 `PhysicalBoardGuard`（T2） |
+| `katrain/web/ui/src/kiosk/pages/BaipuSessionRoute.tsx` | Create | 问 `/baipu/mode`（有限超时），决定套不套 `PhysicalBoardGuard`；上线态遇标定线程在跑时先给标定进度、不挂摆谱屏（T2） |
 | `katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx` | Modify | 出口（T1）、`collect` 两态（T2）、非 19 路拦截（T5） |
 | `katrain/web/ui/src/api/baipuApi.ts` | Modify | `BaipuAPI.mode()`（T2）、`forgetSgf()`（T5） |
 | `katrain/web/ui/src/kiosk/pages/KifuPage.tsx` | Modify | 「摆到实体盘」卡开搜索（T1）、503 文案（T6） |
@@ -46,7 +46,7 @@
 | `katrain/vision/README.md` | Modify | 采集启动命令加 `--baipu-collect`（T4） |
 | `katrain/web/core/repository.py` | Modify | `kifu_list_albums` / `kifu_get_album` 走 `_remote_only`（T6） |
 | `katrain/web/api/v1/endpoints/kifu.py` | Modify | dispatcher 分支映射 503 / 404（T6） |
-| 测试（vitest） | Create/Modify | `src/kiosk/__tests__/BaipuSessionPage.test.tsx`（新，T1/T2/T5）、`src/kiosk/__tests__/BaipuSessionRoute.test.tsx`（新，T2）、`src/api/baipuApi.test.ts`（T2）、`src/kiosk/__tests__/KifuPage.test.tsx`（T1/T6）、`src/kiosk/__tests__/KifuDetailPage.test.tsx`（T5/T6）、`src/kiosk/pages/TutorialCategoriesPage.test.tsx`（T1）、`src/kiosk/__tests__/KioskApp.test.tsx`（T1） |
+| 测试（vitest） | Create/Modify | `src/kiosk/__tests__/BaipuSessionPage.test.tsx`（新，T1/T2/T5）、`src/kiosk/__tests__/BaipuSessionRoute.test.tsx`（新，T2，含标定进行中不挂摆谱屏）、`src/api/baipuApi.test.ts`（T2，含 `mode()` 超时）、`src/kiosk/__tests__/KifuPage.test.tsx`（T1/T6）、`src/kiosk/__tests__/KifuDetailPage.test.tsx`（T5/T6）、`src/kiosk/pages/TutorialCategoriesPage.test.tsx`（T1）、`src/kiosk/__tests__/KioskApp.test.tsx`（T1） |
 | 测试（Playwright） | Modify | `tests/baipu.spec.ts`（T1/T2）、`tests/kiosk-shell-scroll.spec.ts`（T2）、`tests/kiosk-shell-contract.spec.ts`（T1）、`tests/kiosk-shell-geometry.spec.ts`（T1）、`tests/kiosk-screen-17-baipu.fourup.spec.ts`（T3） |
 | 测试（pytest） | Create/Modify | `tests/test_baipu_api.py`、`tests/test_baipu_capture.py`（T4）、`tests/web_ui/test_kifu_offline.py`（新，T6） |
 
@@ -60,22 +60,31 @@
 
 **Interfaces:**
 - Consumes: 无
-- Produces: `$BASE/vitest-fail.txt`、`$BASE/pytest-fail.txt`（排序后的失败用例名集合），供 Task 7 比对；`$BASE/config.json.bak`
+- Produces: `$BASE/vitest-fail.txt`、`$BASE/pytest-fail.txt`（排序后的失败名字集合，含文件级失败 / 未处理异常 / 收集错误），供 Task 7 比对；`$BASE/vitest_failset.py`（提取脚本，Task 7 用**同一份**）；`$BASE/config.json.bak`
 
 - [ ] **Step 1: 确认位置与分支**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-kifu
 git rev-parse --abbrev-ref HEAD      # 期望:feature/kiosk-go-kifu
-git log --oneline -1                 # 期望:6f7dc629 或本赛道自己之后的提交
-git status --short                   # 期望:只有 superpowers/tracks/kiosk-go-kifu/ 下的文档
+git log --oneline -3                 # 期望:顶上是本赛道的文档提交(6561784d「本轮 PRD 与实施计划」及其后的 plan 修订提交),再往下是 develop bad0c1fb
+git merge-base --is-ancestor bad0c1fb HEAD && echo BASE_OK   # 期望:BASE_OK
+git status --short                   # 期望:空,或只有 superpowers/tracks/kiosk-go-kifu/ 下的文档
 ```
+
+（本计划的源码行号仍以 `6f7dc629` 为准：`6f7dc629..bad0c1fb` 之间 28 个提交不碰本计划要改的文件，见 prd §6.0。）
 
 - [ ] **Step 2: 装依赖、编 .mo（worktree 里没有 `.venv` 和 `node_modules`）**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-kifu
-uv sync
+uv sync --extra web --extra vision
+# ⚠️ 不是裸 `uv sync`:fastapi / pydantic / sqlalchemy 在 pyproject 的 `[project.optional-dependencies] web` 里,
+#    裸 sync 不装 extras ⇒ tests/conftest.py 一导入 `katrain.web.*` 就 ModuleNotFoundError(主会话实测报的是 fastapi),
+#    pytest 在收集阶段整场退出,FAILED / ERROR 一行都不打 ⇒ Step 4 的「基线 0 失败」是假的。
+#    也不是 `--all-extras`:extra `vision-rknn` 的 rknn-toolkit-lite2 在 uv.lock 里只有 cp311 / cp312 轮子,
+#    本机 .venv 是 3.13 ⇒ sync 直接退 2。
+uv run python -c "import fastapi, cv2, respx; print('PY_DEPS_OK', fastapi.__version__)"   # 期望:PY_DEPS_OK 0.115.x
 uv run python i18n.py || true        # 今天会退 1(有语言没翻完),判据看产物不看退出码
 ls katrain/i18n/locales/*/LC_MESSAGES/katrain.mo | wc -l   # 期望:≥ 10
 cd katrain/web/ui && npm ci
@@ -83,35 +92,87 @@ cd katrain/web/ui && npm ci
 
 - [ ] **Step 3: 备份 config.json，记前端基线**
 
+先把失败集合的提取脚本写进 `$BASE`（Task 7 Step 2 用同一份，两边口径才一致）：
+
 ```bash
 BASE="$HOME/.cache/kiosk-go-kifu/baseline"; mkdir -p "$BASE"
+cat > "$BASE/vitest_failset.py" <<'EOF'
+"""vitest JSON 报告 + 控制台日志 → 失败名字集合(一行一个)。Task 0 记基线、Task 7 比对,两边用同一份。
+
+三类失败都要进集合,只数 assertionResults 会漏掉后两类:
+  <file> > <断言全名>           普通失败断言
+  <file> > <FILE-LEVEL FAILURE>  整个文件红了却没有一条失败断言:import / 转换 / 收集阶段就炸(共享 API
+                                 改坏某个消费者的导入时正是这一种),或 beforeAll / afterAll 这类钩子失败
+  <file> > <UNHANDLED ERROR>     用例都绿、跑的过程中抛了未处理异常(vitest 照样退 1)
+报告自检不过就退非 0 并在 stderr 说为什么 ——「集合为空」只有 stderr 末行是 REPORT_OK 时才算数。
+"""
+import json
+import re
+import sys
+
+report, log = sys.argv[1], sys.argv[2]
+d = json.load(open(report, encoding="utf-8"))
+names = set()
+for f in d["testResults"]:
+    rel = f["name"].split("katrain/web/ui/")[-1]
+    failed = [a for a in f["assertionResults"] if a["status"] == "failed"]
+    names.update(f'{rel} > {a["fullName"]}' for a in failed)
+    if f["status"] == "failed" and not failed:
+        names.add(f"{rel} > <FILE-LEVEL FAILURE>")
+text = re.sub(r"\x1b\[[0-9;]*m", "", open(log, encoding="utf-8", errors="replace").read())
+for m in re.finditer(r'This error originated in "([^"]+)" test file', text):
+    names.add(f"{m.group(1)} > <UNHANDLED ERROR>")
+caught = re.search(r"Vitest caught (\d+) unhandled error", text)
+if caught and not any(n.endswith("<UNHANDLED ERROR>") for n in names):
+    names.add("<run> > <UNHANDLED ERROR>")
+for n in sorted(names):
+    print(n)
+print(
+    f'files={len(d["testResults"])} tests={d["numTotalTests"]} failedSuites={d["numFailedTestSuites"]} '
+    f'failedTests={d["numFailedTests"]} success={d["success"]} unhandled={caught.group(1) if caught else 0}',
+    file=sys.stderr,
+)
+if not d["testResults"] or d["numTotalTests"] == 0:
+    sys.exit("REPORT_EMPTY: 一个用例都没跑 —— 不是全绿,是没跑起来")
+if (not d["success"] or caught) and not names:
+    sys.exit("REPORT_INCONSISTENT: 报告说有失败,提取出的集合却是空的 —— 提取漏了一类失败")
+print("REPORT_OK", file=sys.stderr)
+EOF
+```
+
+再跑：
+
+```bash
+BASE="$HOME/.cache/kiosk-go-kifu/baseline"
 cp ~/.katrain/config.json "$BASE/config.json.bak" 2>/dev/null || true
 cd /Users/fan/Repositories/katrain-kiosk-go-kifu/katrain/web/ui
-npx vitest run --reporter=json --outputFile="$BASE/vitest.json" > "$BASE/vitest.log" 2>&1 || true
-python3 - "$BASE/vitest.json" > "$BASE/vitest-fail.txt" <<'EOF'
-import json, sys
-d = json.load(open(sys.argv[1]))
-for f in d["testResults"]:
-    for a in f["assertionResults"]:
-        if a["status"] == "failed":
-            print(f'{f["name"].split("katrain/web/ui/")[-1]} > {a["fullName"]}')
-EOF
-sort -o "$BASE/vitest-fail.txt" "$BASE/vitest-fail.txt"; wc -l "$BASE/vitest-fail.txt"
+# 两个 reporter:json 给结构化结果;default 把「未处理异常」打进日志(json reporter 不记它们)。
+npx vitest run --reporter=default --reporter=json --outputFile.json="$BASE/vitest.json" > "$BASE/vitest.log" 2>&1 || true
+python3 "$BASE/vitest_failset.py" "$BASE/vitest.json" "$BASE/vitest.log" | sort > "$BASE/vitest-fail.txt"   # 再过一遍 sort:comm 按本机 locale 的排序比,不认 Python 的码位序
+wc -l "$BASE/vitest-fail.txt"
 npx tsc -b && echo TSC_OK
 ```
 
-Expected: `TSC_OK`；`vitest-fail.txt` 行数记下（scope §8 记过的形状是个位数）。
+Expected: 脚本 stderr 打印一行 `files=… tests=… failedSuites=… failedTests=… success=… unhandled=…`，末行 `REPORT_OK`；`TSC_OK`；`vitest-fail.txt` 行数记下（scope §8 记过的形状是个位数）。**末行不是 `REPORT_OK`（`REPORT_EMPTY` / `REPORT_INCONSISTENT` / Python 报错说 json 不存在）= 基线无效**：先看 `vitest.log` 修环境，不许拿空文件当「基线 0 失败」往下走。
 
 - [ ] **Step 4: 记后端基线**
 
 ```bash
 BASE="$HOME/.cache/kiosk-go-kifu/baseline"
 cd /Users/fan/Repositories/katrain-kiosk-go-kifu
-CI=true uv run pytest tests -q -rfE > "$BASE/pytest.txt" 2>&1 || true
+# --continue-on-collection-errors:不加的话任何一个模块收集失败,pytest 就整场 `Interrupted`、退 2、一个用例都不跑。
+# 基线上就有两个收集失败(主会话实测):tests/test_storage_s3.py 缺 boto3、tests/web_ui/test_build_galaxy_fonts.py 缺 fontTools
+# —— 两者都不在 pyproject 里。加上这个参数后它们以 `ERROR <文件>` 进集合,其余照跑。
+CI=true uv run pytest tests -q -rfE --continue-on-collection-errors > "$BASE/pytest.txt" 2>&1; echo $? > "$BASE/pytest-exit.txt"
 grep -E '^(FAILED|ERROR) ' "$BASE/pytest.txt" | sed -E 's/ - .*//' | sort -u > "$BASE/pytest-fail.txt"
-tail -3 "$BASE/pytest.txt"; wc -l "$BASE/pytest-fail.txt"
+SUMMARY=$(grep -E '[0-9]+ passed.* in [0-9.]+s' "$BASE/pytest.txt" | tail -1); EXIT=$(cat "$BASE/pytest-exit.txt")
+echo "summary: $SUMMARY"; echo "exit: $EXIT"; wc -l "$BASE/pytest-fail.txt"
+# 会话真的跑了 = 汇总行含 passed、全文没有 Interrupted、退出码 0/1(2 中断 / 3 内部错 / 4 conftest 导入失败 / 5 没收集到用例)
+if [ -n "$SUMMARY" ] && ! grep -q 'Interrupted' "$BASE/pytest.txt" && { [ "$EXIT" = 0 ] || [ "$EXIT" = 1 ]; }; then echo PYTEST_RAN; else echo 'PYTEST_DID_NOT_RUN —— 不是 0 失败,是没跑起来:先修环境再记基线'; fi
 git status --short katrain/config.json   # 期望:空;有变动就 git checkout -- katrain/config.json
 ```
+
+Expected: `PYTEST_RAN`；`pytest-fail.txt` 里至少有 `ERROR tests/test_storage_s3.py` 与 `ERROR tests/web_ui/test_build_galaxy_fonts.py` 两行（它们是基线的一部分，不是本轮要修的）。打印 `PYTEST_DID_NOT_RUN` 时停下修环境，不许往下走。
 
 - [ ] **Step 5: 不提交**（本任务无源码改动）
 
@@ -447,29 +508,29 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ### Task 2: K4 前端 · 上线态摆谱不拍照、不先标定
 
 **Files:**
-- Modify: `katrain/web/ui/src/api/baipuApi.ts:75-132`（`BaipuMode` 类型 + `BaipuAPI.mode()`）
-- Create: `katrain/web/ui/src/kiosk/pages/BaipuSessionRoute.tsx`
+- Modify: `katrain/web/ui/src/api/baipuApi.ts:75-132`（`BaipuMode` 类型 + `BAIPU_MODE_TIMEOUT_MS` + `BaipuAPI.mode()`）
+- Create: `katrain/web/ui/src/kiosk/pages/BaipuSessionRoute.tsx`（**只消费不改**：`useGeometry`（`src/kiosk/context/GeometryContext.tsx`）、`GeometryCalibrationScreen`、`PhysicalBoardGuard`）
 - Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx:57,145`（行号是 `6f7dc629` 上的；Task 1 改过这个文件后会偏移 1–3 行，**按下文引用的原文定位**，本计划所有行号同此口径）
 - Modify: `katrain/web/ui/src/kiosk/pages/BaipuSessionPage.tsx:53-58,116,210-225,263-268,402-405,440,462-498,520-531,575`
-- Modify: `katrain/web/ui/src/api/baipuApi.test.ts`（加 `mode()` 两条）
+- Modify: `katrain/web/ui/src/api/baipuApi.test.ts`（加 `mode()` 四条：采集态、问不到、连接挂起超时、body 挂起超时）
 - Create: `katrain/web/ui/src/kiosk/__tests__/BaipuSessionRoute.test.tsx`
 - Modify: `katrain/web/ui/src/kiosk/__tests__/BaipuSessionPage.test.tsx`（`renderPage` 收 `collect`，加 K4 三条）
 - Modify: `katrain/web/ui/tests/baipu.spec.ts:30-55` 及四条采集用例
 - Modify: `katrain/web/ui/tests/kiosk-shell-scroll.spec.ts:1185-1210,1261,1279`
 
 **Interfaces:**
-- Consumes: Task 1 的 `BaipuSessionPage.test.tsx` 夹具（`renderPage`、`move`、`STEPS`、`META`、`baipuCapture`、`mockNavigate`）
+- Consumes: Task 1 的 `BaipuSessionPage.test.tsx` 夹具（`renderPage`、`move`、`STEPS`、`META`、`baipuCapture`、`mockNavigate`）；现成的 `useGeometry().status.phase`（`GeometryProvider` 包在整个 kiosk 外面，每 1 秒 / 标定中每 300ms 轮询 `/geometry/status`）与 `GeometryCalibrationScreen({ backLabel, onBack, title, sub })`
 - Produces:
-  - `export interface BaipuMode { collect: boolean }`（`src/api/baipuApi.ts`）
-  - `BaipuAPI.mode(): Promise<BaipuMode>` —— 永不 reject；非 200 / 网络错 / `collect !== true` 一律 `{ collect: false }`
-  - `default export function BaipuSessionRoute(): JSX.Element`（`src/kiosk/pages/BaipuSessionRoute.tsx`）
+  - `export interface BaipuMode { collect: boolean }`、`export const BAIPU_MODE_TIMEOUT_MS = 3000`（`src/api/baipuApi.ts`）
+  - `BaipuAPI.mode(): Promise<BaipuMode>` —— 永不 reject、**恰好 settle 一次**；非 200 / 网络错 / `collect !== true` / 超过 `BAIPU_MODE_TIMEOUT_MS`（含读 body）一律 `{ collect: false }`，超时之后才回来的结果被丢弃
+  - `default export function BaipuSessionRoute(): JSX.Element`（`src/kiosk/pages/BaipuSessionRoute.tsx`）—— 采集态套 `PhysicalBoardGuard`；上线态在 `status.phase ∈ {waiting_empty, dark_reference, flashing_corners, verifying, building_baseline}`（标定线程在跑）时渲染标定屏（进度 + 「取消标定」），其余 phase 直接挂 `BaipuSessionPage collect={false}`
   - `BaipuSessionPage` 签名变为 `({ collect }: { collect: boolean }) => JSX.Element`
   - 上线态折叠块 `data-testid="baipu-led-fold"`；采集态沿用 `baipu-cam-fold`
   - HTTP 契约（Task 4 实现）：`GET /api/v1/baipu/mode` → `{"collect": boolean}`
 
 - [ ] **Step 1: 写失败的单测**
 
-`src/api/baipuApi.test.ts` 末尾追加：
+`src/api/baipuApi.test.ts`：第 2 行 import 换成 `import { BAIPU_MODE_TIMEOUT_MS, BaipuAPI, canonToBoard, canonToGtp } from './baipuApi';`，末尾追加：
 
 ```ts
 describe('摆谱拍不拍照:BaipuAPI.mode()', () => {
@@ -489,6 +550,35 @@ describe('摆谱拍不拍照:BaipuAPI.mode()', () => {
     expect(await BaipuAPI.mode()).toEqual({ collect: false });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ collect: 'yes' }), { status: 200 })));
     expect(await BaipuAPI.mode()).toEqual({ collect: false });
+  });
+
+  // 后端卡住(事件循环被别的同步调用堵着)时 fetch 既不 reject 也不 resolve —— 光有 catch 兜不住,
+  // 摆谱入口会一直停在「正在读这份谱」,缓存谱和导入的 SGF 都进不去。
+  it('问了不回:到点当不拍;超时之后才回来的 collect:true 也不改判', async () => {
+    vi.useFakeTimers();
+    try {
+      let late!: (r: Response) => void;
+      vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((resolve) => { late = resolve; })));
+      const asked = BaipuAPI.mode();
+      await vi.advanceTimersByTimeAsync(BAIPU_MODE_TIMEOUT_MS);
+      // 迟到的「拍」不许在摆谱途中把页面切到采集态:mode() 只 settle 一次,这一次已经是「不拍」。
+      late(new Response(JSON.stringify({ collect: true }), { status: 200 }));
+      await expect(asked).resolves.toEqual({ collect: false });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('回包头到了、body 一直不结束:超时同样覆盖读 body 那一段', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => new Promise(() => {}) }));
+      const asked = BaipuAPI.mode();
+      await vi.advanceTimersByTimeAsync(BAIPU_MODE_TIMEOUT_MS);
+      await expect(asked).resolves.toEqual({ collect: false });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 ```
@@ -512,17 +602,42 @@ vi.mock('../pages/BaipuSessionPage', () => ({
 vi.mock('../components/vision/PhysicalBoardGuard', () => ({
   default: ({ children }: { children: React.ReactNode }) => <div data-testid="guard">{children}</div>,
 }));
+// 标定线程在不在跑,读的是 GeometryProvider 轮询到的 phase。这里直接给值,不起 Provider(它会去 fetch)。
+const { geometry } = vi.hoisted(() => ({ geometry: { status: { phase: 'required' } as { phase: string } } }));
+vi.mock('../context/GeometryContext', () => ({ useGeometry: () => geometry }));
+vi.mock('../components/vision/GeometryCalibrationScreen', () => ({
+  default: ({ title }: { title: string }) => <div data-testid="calib-running">{title}</div>,
+}));
 
 const renderRoute = () => render(<MemoryRouter><BaipuSessionRoute /></MemoryRouter>);
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  geometry.status = { phase: 'required' };   // 服务重启后没标定:上线态照样直接进
+});
 
 describe('摆谱入口:拍不拍照决定要不要先标定(K4)', () => {
-  it('上线态不套标定守卫 —— 只用灯,灯的行列换算不需要摄像头', async () => {
+  it('上线态不套标定守卫(即使 geometry 是 required)—— 只用灯,灯的行列换算不需要摄像头', async () => {
     modeMock.mockResolvedValue({ collect: false });
     renderRoute();
     expect(await screen.findByTestId('session')).toHaveAttribute('data-collect', 'false');
     expect(screen.queryByTestId('guard')).toBeNull();
+    expect(screen.queryByTestId('calib-running')).toBeNull();
+  });
+
+  // 设置里开始标定 → 按返回(返回不取消,服务端标定线程接着跑)→ 进摆谱。摆谱屏一挂就点灯,
+  // 而标定每个锚点都是 clear → 拍熄灯帧 → 点亮 → 拍亮灯帧;`/led/point` 先 CLEAR 再点、没有忙检查
+  // ⇒ 两边互相冲掉对方的灯:摆谱指错、标定失败。采集态没这个问题 —— 守卫在标定进行中本来就不放行。
+  it('上线态但标定线程还在跑:先不挂摆谱屏,给标定进度;标定结束(这里是取消)才进摆谱', async () => {
+    modeMock.mockResolvedValue({ collect: false });
+    geometry.status = { phase: 'flashing_corners' };
+    const { rerender } = renderRoute();
+    expect(await screen.findByTestId('calib-running')).toHaveTextContent('棋盘标定还在进行');
+    expect(screen.queryByTestId('session')).toBeNull();
+    geometry.status = { phase: 'cancelled' };
+    rerender(<MemoryRouter><BaipuSessionRoute /></MemoryRouter>);
+    expect(await screen.findByTestId('session')).toHaveAttribute('data-collect', 'false');
+    expect(screen.queryByTestId('calib-running')).toBeNull();
   });
 
   it('采集态照旧先过标定守卫 —— 拍照要几何锁', async () => {
@@ -532,6 +647,8 @@ describe('摆谱入口:拍不拍照决定要不要先标定(K4)', () => {
     expect(screen.getByTestId('guard')).toBeInTheDocument();
   });
 
+  // 只守「问的那几百毫秒里有出口」。问不回来会不会一直停在这儿,由 baipuApi.test.ts 的两条超时用例守
+  // (`mode()` 到点必回 `{collect:false}`),不靠这一条。
   it('还没问到时屏上有页控条 —— 不许再造一块没有出口的屏', () => {
     modeMock.mockReturnValue(new Promise(() => {}));
     renderRoute();
@@ -601,7 +718,7 @@ cd /Users/fan/Repositories/katrain-kiosk-go-kifu/katrain/web/ui
 npx vitest run src/api/baipuApi.test.ts src/kiosk/__tests__/BaipuSessionRoute.test.tsx src/kiosk/__tests__/BaipuSessionPage.test.tsx
 ```
 
-Expected: FAIL —— `BaipuAPI.mode is not a function`；`BaipuSessionRoute` 模块不存在；上线态两条里 `baipuCapture` 被调用、`baipu-led-fold` 不存在。
+Expected: FAIL —— `BaipuAPI.mode is not a function`（含两条超时用例）；`BaipuSessionRoute` 模块不存在（整个文件加载失败，所以这一步证明不了路由那几条各自会红 —— 见 Step 6 末尾的核对）；上线态两条里 `baipuCapture` 被调用、`baipu-led-fold` 不存在。
 
 - [ ] **Step 3: `baipuApi.ts` 加 `mode()`**
 
@@ -612,6 +729,13 @@ Expected: FAIL —— `BaipuAPI.mode is not a function`；`BaipuSessionRoute` �
 export interface BaipuMode {
   collect: boolean;
 }
+
+/**
+ * `BaipuAPI.mode` 最多等多久(毫秒,**含读 body**)。到点当「不拍」。
+ * 这一问在盒上打的是本机后端、回的是一个布尔,正常几十毫秒;等满 3 秒说明后端卡住了,
+ * 而摆谱入口在问到之前只有一块「正在读这份谱」—— 不能让它无限转圈。
+ */
+export const BAIPU_MODE_TIMEOUT_MS = 3000;
 ```
 
 在 `BaipuAPI` 对象里 `capture` 之后（`:131` 那个 `},` 后面）加：
@@ -619,19 +743,35 @@ export interface BaipuMode {
 ```ts
   /**
    * 摆谱拍不拍照(`GET /baipu/mode`)。拍照只为采 YOLO 训练数据,上线版不拍(Fan 2026-09-14)。
-   * **问不到一律当「不拍」**:旧后端没这个端点(404)、网络错、回包不认识,全落到上线态。
+   * **问不到一律当「不拍」**:旧后端没这个端点(404)、网络错、回包不认识、`BAIPU_MODE_TIMEOUT_MS`
+   * 内没问完(连接挂着或 body 读不完),全落到上线态。
    * 猜成「拍」的代价是盒上每一手都可能被几何 / 灯的 409 卡住;猜成「不拍」的代价是
    * 采数据的人一眼看见屏上没有「已采集 N 帧」。
+   * **只 settle 一次**:超时之后才回来的结果被丢掉 —— 调用方拿到「不拍」就进了摆谱,
+   * 迟到的「拍」不许在摆谱途中把页面切到采集态。
    * ⚠️ 不要拿 `/capture` 回不回 404 去猜:盒子为了几何标定总是带着 `--capture-camera` 起。
    */
   mode: async (): Promise<BaipuMode> => {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // 超时靠 race 兜底,不靠 abort:abort 只是顺手释放连接,测试里被桩掉的 fetch 根本不认 signal。
+    const timedOut = new Promise<BaipuMode>((resolve) => {
+      timer = setTimeout(() => { controller.abort(); resolve({ collect: false }); }, BAIPU_MODE_TIMEOUT_MS);
+    });
+    const asked = (async (): Promise<BaipuMode> => {
+      try {
+        const response = await fetch(`${API_BASE}/mode`, { signal: controller.signal });
+        if (!response.ok) return { collect: false };
+        const body = await response.json().catch(() => null);
+        return { collect: body?.collect === true };
+      } catch {
+        return { collect: false };
+      }
+    })();
     try {
-      const response = await fetch(`${API_BASE}/mode`);
-      if (!response.ok) return { collect: false };
-      const body = await response.json().catch(() => null);
-      return { collect: body?.collect === true };
-    } catch {
-      return { collect: false };
+      return await Promise.race([asked, timedOut]);
+    } finally {
+      clearTimeout(timer);
     }
   },
 ```
@@ -642,10 +782,21 @@ export interface BaipuMode {
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BaipuAPI } from '../../api/baipuApi';
+import type { GeometryPhase } from '../../api/geometryApi';
 import { useTranslation } from '../../hooks/useTranslation';
+import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationScreen';
 import PhysicalBoardGuard from '../components/vision/PhysicalBoardGuard';
+import { useGeometry } from '../context/GeometryContext';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import BaipuSessionPage from './BaipuSessionPage';
+
+/**
+ * 标定线程还在跑的那五个 phase。与 `GeometryContext.tsx` 的 `ACTIVE`、服务端
+ * `GeometryCalibrationService.ACTIVE_PHASES` 是同一份名单(那两处都没导出,这里不为它改别人的文件)。
+ */
+const CALIBRATION_RUNNING: readonly GeometryPhase[] = [
+  'waiting_empty', 'dark_reference', 'flashing_corners', 'verifying', 'building_baseline',
+];
 
 /**
  * `/kiosk/baipu/session/:source` 的入口:先问这台机器摆谱拍不拍照,再决定要不要先标定。
@@ -653,14 +804,22 @@ import BaipuSessionPage from './BaipuSessionPage';
  * - **上线态(`collect=false`,盒子默认)**:不套 `PhysicalBoardGuard`。摆谱只用灯,灯的
  *   (行,列)→灯珠是公式 LUT,不需要摄像头。以前这条路由无条件套守卫 ⇒ 服务每次重启
  *   `session_calibrated=false`,不先标定摄像头就进不了摆谱,而上线版摆谱根本不用摄像头。
- * - **采集态(`collect=true`,`--baipu-collect` 起的采集机)**:照旧先过守卫 —— 拍照要几何锁。
+ *   **唯一的例外:标定线程正在跑。** 标定屏的返回键不取消标定(设置 → 开始标定 → 返回,服务端线程
+ *   接着跑),而摆谱屏一挂就点灯;标定每个锚点都是 clear → 拍熄灯帧 → 点亮 → 拍亮灯帧,`/led/point`
+ *   先 CLEAR 再点、没有忙检查 ⇒ 两边互相冲掉对方的灯。以前是守卫顺带挡住的,摘掉守卫要把这一条留下。
+ *   这时给标定屏(进度 + 「取消标定」),跑完或取消后 phase 离开这五态,直接挂摆谱屏。
+ *   required / failed / cancelled / disabled / ready / degraded 一律直接放行。
+ * - **采集态(`collect=true`,`--baipu-collect` 起的采集机)**:照旧先过守卫 —— 拍照要几何锁
+ *   (守卫在标定进行中本来就不放行,不用另管)。
  *
  * 守卫必须包在**页面外面**、不能挪进页面里:页面挂着时它的效应会点灯,而标定台也在点灯。
  * 还没问到时也给页控条:这一屏不许再是一块没有出口的屏(K1 修的就是这个)。
+ * `collect` 只会从 null 变一次:`BaipuAPI.mode()` 恰好 settle 一次(超时即「不拍」,迟到的结果丢掉)。
  */
 export default function BaipuSessionRoute() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { status } = useGeometry();
   const [collect, setCollect] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -682,14 +841,28 @@ export default function BaipuSessionRoute() {
       </div>
     );
   }
-  if (!collect) return <BaipuSessionPage collect={false} />;
-  return (
-    <PhysicalBoardGuard sub={t('baipu:guard_sub_collect', '采集训练数据要先让摄像头看清盘面')}>
-      <BaipuSessionPage collect />
-    </PhysicalBoardGuard>
-  );
+  if (collect) {
+    return (
+      <PhysicalBoardGuard sub={t('baipu:guard_sub_collect', '采集训练数据要先让摄像头看清盘面')}>
+        <BaipuSessionPage collect />
+      </PhysicalBoardGuard>
+    );
+  }
+  if (CALIBRATION_RUNNING.includes(status.phase)) {
+    return (
+      <GeometryCalibrationScreen
+        backLabel={t('baipu:back_kifu', '棋谱')}
+        onBack={() => navigate('/kiosk/kifu')}
+        title={t('baipu:calib_running_title', '棋盘标定还在进行')}
+        sub={t('baipu:calib_running_sub', '标定也在用灯 · 跑完或取消后直接进摆谱')}
+      />
+    );
+  }
+  return <BaipuSessionPage collect={false} />;
 }
 ```
+
+（已知不处理的一小段窗口：服务端先把 phase 写成终态、再在 `finally` 里 `led.clear`，轮询恰好卡在两者之间时摆谱第一颗灯会被清掉一次，屏上「重新点灯」即可恢复；摆谱屏挂着时标定才开始只可能来自别的客户端，盒上不会发生。都不为它加东西。）
 
 `KioskApp.tsx`：`:57` `import BaipuSessionPage from './pages/BaipuSessionPage';` → `import BaipuSessionRoute from './pages/BaipuSessionRoute';`；`:145` 整行 →
 
@@ -840,6 +1013,12 @@ rg -n "collect" src/kiosk/pages/BaipuSessionPage.tsx | wc -l   # 回读:应 ≥ 
 
 Expected: 全部 PASS（含 Task 1 的三条 K1 用例，它们现在走上线态）；`TSC_OK`。
 
+再做两次「新加的三条用例（两条超时、一条标定进行中）真的会红」的核对（Step 2 那次红是因为 `mode` 与路由模块都不存在，证明不了它们各自的判据）：
+1. 把 Step 3 `mode()` 里的 `return await Promise.race([asked, timedOut]);` 临时改成 `return await asked;`，跑 `npx vitest run src/api/baipuApi.test.ts` —— 两条超时用例应红（第一条 `{collect:true}` 不等于期望，第二条用例超时）。
+2. 把 Step 4 `BaipuSessionRoute.tsx` 里 `if (CALIBRATION_RUNNING.includes(status.phase)) { … }` 整个 if 临时删掉，跑 `npx vitest run src/kiosk/__tests__/BaipuSessionRoute.test.tsx` —— 「标定线程还在跑」那条应红。
+
+两处都改回去后用 `rg -n "Promise.race\(\[asked, timedOut\]\)" src/api/baipuApi.ts` 与 `rg -n "CALIBRATION_RUNNING.includes" src/kiosk/pages/BaipuSessionRoute.tsx` 回读（各应 1 处；`BaipuSessionRoute.tsx` 还没 add，`git diff` 看不见它），再跑一遍本步第一条 vitest 命令确认全绿。
+
 - [ ] **Step 7: e2e 与真浏览器闸挂上 `mode` 桩**
 
 `tests/baipu.spec.ts`：
@@ -950,7 +1129,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 `boot` 里 geometry 那段注释第一行 `// ⚠️ **这条不是装饰,是这一屏的四图能不能自己站住的前提。**` 之后加一行：
 
 ```ts
-  // (2026-09-14 起只有采集态套守卫;上线态这条桩不再是前提,留着:mode 桩哪天被误删、页面退回采集态时,不至于整屏换成标定台。)
+  // (2026-09-14 起只有采集态套守卫;上线态只在 phase 是「标定线程在跑」那五态时才换标定屏,这条桩给的 disabled 不会触发。
+  //  留着:mode 桩哪天被误删、页面退回采集态时,不至于整屏换成标定台。)
 ```
 
 把 `:96-99` 这段
@@ -1847,7 +2027,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 **Files:** 无新改动（只有发现回归时回到对应任务修）；上板结果回填 `superpowers/tracks/kiosk-go-kifu/prd.md` §7。
 
 **Interfaces:**
-- Consumes: Task 0 的 `$BASE/vitest-fail.txt`、`$BASE/pytest-fail.txt`；Task 1–6 全部提交
+- Consumes: Task 0 的 `$BASE/vitest-fail.txt`、`$BASE/pytest-fail.txt`、`$BASE/vitest_failset.py`；Task 1–6 全部提交
 - Produces: 「新增失败 = 空集」的证据；上板清单
 
 - [ ] **Step 1: 类型与两套构建**
@@ -1869,34 +2049,30 @@ Expected: `TSC_OK`；末尾 `✅ kiosk boundary clean`；eslint 没有 `no-restr
 ```bash
 BASE="$HOME/.cache/kiosk-go-kifu/baseline"
 cd /Users/fan/Repositories/katrain-kiosk-go-kifu/katrain/web/ui
-npx vitest run --reporter=json --outputFile="$BASE/vitest-after.json" > "$BASE/vitest-after.log" 2>&1 || true
-python3 - "$BASE/vitest-after.json" > "$BASE/vitest-after-fail.txt" <<'EOF'
-import json, sys
-d = json.load(open(sys.argv[1]))
-for f in d["testResults"]:
-    for a in f["assertionResults"]:
-        if a["status"] == "failed":
-            print(f'{f["name"].split("katrain/web/ui/")[-1]} > {a["fullName"]}')
-EOF
-sort -o "$BASE/vitest-after-fail.txt" "$BASE/vitest-after-fail.txt"
+npx vitest run --reporter=default --reporter=json --outputFile.json="$BASE/vitest-after.json" > "$BASE/vitest-after.log" 2>&1 || true
+# 与 Task 0 同一份脚本:文件级失败(<FILE-LEVEL FAILURE>)与未处理异常(<UNHANDLED ERROR>)都在集合里。
+python3 "$BASE/vitest_failset.py" "$BASE/vitest-after.json" "$BASE/vitest-after.log" | sort > "$BASE/vitest-after-fail.txt"
 echo "== 新增失败 =="; comm -13 "$BASE/vitest-fail.txt" "$BASE/vitest-after-fail.txt"
 echo "== 不再失败 =="; comm -23 "$BASE/vitest-fail.txt" "$BASE/vitest-after-fail.txt"
 ```
 
-Expected: 「新增失败」为空。不为空时：属于已知负载相关名单的，单独 `npx vitest run <文件>` 跑一遍，绿就不算；其余一律当本轮造成的回归处理（按文件名判「看着不相关」不算数 —— 进程级共享状态的污染恰恰落在无关文件里）。
+Expected: 脚本 stderr 末行 `REPORT_OK`，且 `files=` 不少于 Task 0 那次（本轮只新增 `BaipuSessionPage.test.tsx`、`BaipuSessionRoute.test.tsx` 两个文件，应恰好多 2）；「新增失败」为空。末行不是 `REPORT_OK` 时「新增失败为空」不作数，先查 `vitest-after.log`。「新增失败」里出现 `<FILE-LEVEL FAILURE>`：那个文件整个没跑起来，多半是本轮改的共享文件（`baipuApi.ts` / `kifuApi.ts`）打断了它的导入，按回归处理。不为空时：属于已知负载相关名单的，单独 `npx vitest run <文件>` 跑一遍，绿就不算；其余一律当本轮造成的回归处理（按文件名判「看着不相关」不算数 —— 进程级共享状态的污染恰恰落在无关文件里）。
 
 - [ ] **Step 3: 后端全量，比名字集合**
 
 ```bash
 BASE="$HOME/.cache/kiosk-go-kifu/baseline"
 cd /Users/fan/Repositories/katrain-kiosk-go-kifu
-CI=true uv run pytest tests -q -rfE > "$BASE/pytest-after.txt" 2>&1 || true
+CI=true uv run pytest tests -q -rfE --continue-on-collection-errors > "$BASE/pytest-after.txt" 2>&1; echo $? > "$BASE/pytest-after-exit.txt"
 grep -E '^(FAILED|ERROR) ' "$BASE/pytest-after.txt" | sed -E 's/ - .*//' | sort -u > "$BASE/pytest-after-fail.txt"
+SUMMARY=$(grep -E '[0-9]+ passed.* in [0-9.]+s' "$BASE/pytest-after.txt" | tail -1); EXIT=$(cat "$BASE/pytest-after-exit.txt")
+echo "summary: $SUMMARY"; echo "exit: $EXIT"
+if [ -n "$SUMMARY" ] && ! grep -q 'Interrupted' "$BASE/pytest-after.txt" && { [ "$EXIT" = 0 ] || [ "$EXIT" = 1 ]; }; then echo PYTEST_RAN; else echo 'PYTEST_DID_NOT_RUN —— 「新增失败为空」不作数'; fi
 echo "== 新增失败 =="; comm -13 "$BASE/pytest-fail.txt" "$BASE/pytest-after-fail.txt"
 git status --short katrain/config.json   # 期望:空
 ```
 
-Expected: 「新增失败」为空；`katrain/config.json` 无变动（有就 `git checkout -- katrain/config.json`，不提交）。
+Expected: `PYTEST_RAN`；「新增失败」为空（基线里那两条 `ERROR` 收集失败两边都有，`comm` 不会报）；`katrain/config.json` 无变动（有就 `git checkout -- katrain/config.json`，不提交）。打印 `PYTEST_DID_NOT_RUN` 时先查环境（`.venv` 是不是被裸 `uv sync` 冲掉了 extras —— 回 Task 0 Step 2 那条命令），不许宣称无回归。
 
 - [ ] **Step 4: e2e 与真浏览器闸全跑一遍**
 
@@ -1913,7 +2089,7 @@ Expected: `baipu.spec.ts` 全 PASS；三份外壳闸没有红。若有红的用�
 - [ ] **Step 5: 上板清单交给 Fan（RK3562，一次只跑一家，人工在场）**
 
 部署本分支的后端与 **`npm run build:smartbox-kiosk-2d`** 产物后，逐条走并把结果回填 prd §7。⚠️ 不是 `build:kiosk-2d`：盒子是 `KATRAIN_BOX_SSO=1`，非严格包不得部署上去（`smartbox-software/provisioning/README.md:359-361`），部署错包会先卡在登录链上，下面四条一条都走不到。
-1. **K4**：不改 provisioning（开关默认关）；服务重启后**不做标定**，从屏 15 搜一局 → 屏 16 →「摆到实体盘」，能直接进摆谱、灯色正确（黑红 / 白绿 / 提子蓝），按到摆完；摆之前先记 `sudo ls /root/.katrain/baipu_captures/`，摆完再看一次，没有新目录（服务以 root 跑、drop-in 没给 `--capture-dir` ⇒ 目录在 **root 的**家目录下，用别的账号看 `~` 等于没验）；`curl -s http://127.0.0.1:8081/api/v1/baipu/mode` 回 `{"collect":false}`。
+1. **K4**：不改 provisioning（开关默认关）；服务重启后**不做标定**，从屏 15 搜一局 → 屏 16 →「摆到实体盘」，能直接进摆谱、灯色正确（黑红 / 白绿 / 提子蓝），按到摆完；摆之前先记 `sudo ls /root/.katrain/baipu_captures/`，摆完再看一次，没有新目录（服务以 root 跑、drop-in 没给 `--capture-dir` ⇒ 目录在 **root 的**家目录下，用别的账号看 `~` 等于没验）；`curl -s http://127.0.0.1:8081/api/v1/baipu/mode` 回 `{"collect":false}`。再走一次灯阵互斥：设置 →「重新标定棋盘」→ 开始后按返回 → 进一局摆谱，应看到「棋盘标定还在进行」那一屏而不是摆谱屏、实体盘上只有标定的锚点灯；按「取消标定」后直接进摆谱，第一颗灯颜色位置正确。
 2. **K1**：摆谱中「← 棋谱 → 退出」、摆完「完成」都落在棋谱屏，Dock 可见。
 3. **N9**：拔掉外网，屏 15 展开搜索看到「棋谱库要联网才能搜」；屏 16 进一局看到「这一局要联网才能读」。
 4. **顺带记录**：屏 15「导入 SGF」在全屏 Chromium 里能不能弹出文件选择器（S5）；上线态连按「确认落子」有没有出现一次触摸跳两手（prd §5 观察项）。
@@ -1929,7 +2105,7 @@ Expected: `baipu.spec.ts` 全 PASS；三份外壳闸没有红。若有红的用�
 | prd 条目 | 任务 |
 |---|---|
 | K1 五处入口 + 重定向 + 删页 + e2e 落点 | Task 1 |
-| K4 前端：`mode()`、问不到当不拍、上线态不套守卫 / 不发 capture / 文案图标、采集态原样 | Task 2 |
+| K4 前端：`mode()`（有限超时、只 settle 一次）、问不到当不拍、上线态不套守卫（标定线程在跑时先给标定屏）/ 不发 capture / 文案图标、采集态原样 | Task 2 |
 | K4 屏 17 上线态四图 + Fan 确认 + 承重复核 | Task 3 |
 | K4 后端：`--baipu-collect` / `KATRAIN_BAIPU_COLLECT` 默认关、`/mode`、`/capture` 门、README | Task 4 |
 | K2 摆谱屏拦非 19 路 + 从最近摆过拿掉 + 详情灰键 | Task 5 |
@@ -1939,6 +2115,16 @@ Expected: `baipu.spec.ts` 全 PASS；三份外壳闸没有红。若有红的用�
 
 **2. 占位扫描：** 无 TBD / 「适当处理」/「同 Task N」。唯一的条件步骤是 Task 6 Step 6（本机起不了 board 模式时跳过，由 Task 7 Step 5 第 ③ 条上板补）。行号全部以 `6f7dc629` 为准，前序任务改过同一文件时按引用原文定位（Task 2 Files 已注明）。
 
-**3. 名字一致性（跨任务核对过）：** `BaipuMode` / `BaipuAPI.mode()`（T2 定义，T4 实现的契约 `{"collect": bool}`）；`BaipuSessionPage({ collect })`（T2）与 `renderPage(collect = false)` 夹具（T2 改、T5 用）；`baipu-led-fold` / `baipu-cam-fold`（T2、T3）；`forgetSgf(id)`（T5）；`resolve_baipu_collect(cli, env)`、`_collect_enabled(request)`、`app.state.baipu_collect`、`settings._baipu_collect`（T4）；`_from_dispatcher(call, not_found_detail)`（T6）；503 的 `detail` 串 `"Remote kifu service unavailable"`（T6 实现与测试一致）。
+**3. 名字一致性（跨任务核对过）：** `BaipuMode` / `BaipuAPI.mode()` / `BAIPU_MODE_TIMEOUT_MS`（T2 定义，T4 实现的契约 `{"collect": bool}`）；`CALIBRATION_RUNNING`（T2 路由内部常量，与 `GeometryContext` 的 `ACTIVE` 同一份名单）与 `calib-running`（T2 路由测试里 `GeometryCalibrationScreen` 桩的 testid）；`vitest_failset.py`、`REPORT_OK`、`PYTEST_RAN`（T0 定义，T7 用同一份）；`BaipuSessionPage({ collect })`（T2）与 `renderPage(collect = false)` 夹具（T2 改、T5 用）；`baipu-led-fold` / `baipu-cam-fold`（T2、T3）；`forgetSgf(id)`（T5）；`resolve_baipu_collect(cli, env)`、`_collect_enabled(request)`、`app.state.baipu_collect`、`settings._baipu_collect`（T4）；`_from_dispatcher(call, not_found_detail)`（T6）；503 的 `detail` 串 `"Remote kifu service unavailable"`（T6 实现与测试一致）。
 
-**4. 相称性自查：** 新增测试只落在本轮真正改变的行为上（出口去向、上线态零 capture、采集态不变、路数拦截、503 文案、开关默认关、端点挂载）；没有新写 jsdom 布局断言，布局证据复用 `kiosk-shell-scroll.spec.ts` 既有三条；四图只做屏 17 上线态这一屏，导航与错误态文案各一张运行时截图；没有为双击误触、非方形 SGF、PO 翻译预先加工作（prd §5 记录）。
+**4. 相称性自查：** 新增测试只落在本轮真正改变的行为上（出口去向、上线态零 capture、采集态不变、路数拦截、503 文案、开关默认关、端点挂载）；没有新写 jsdom 布局断言，布局证据复用 `kiosk-shell-scroll.spec.ts` 既有三条；四图只做屏 17 上线态这一屏，导航与错误态文案各一张运行时截图；没有为双击误触、非方形 SGF、PO 翻译预先加工作（prd §5 记录）。第 1 轮审查补的三处也按最小修法：灯阵互斥只在路由里多一个 phase 判断、复用现成标定屏，不改守卫、不给 LED 端点加忙锁；`mode()` 超时只在函数内部 race；失败集合只换提取脚本与 pytest 参数，不加新工具。
+
+## 修订记录
+
+### 第 1 轮（Codex 对抗审查）
+
+- **[high] 上线态绕过守卫后与后台标定争用灯阵 —— 成立。** 标定屏返回键只 `navigate(-1)`（`VisionSetupPage.tsx:18`、`PhysicalBoardGuard.tsx:35`），服务端线程照跑（`geometry_calibration_service.py:122-123`，锚点循环 `led_geometry_calibrator.py:421-441`）；`/led/point` 无忙检查且 `set_points` 先 CLEAR（`endpoints/led.py:39-50`、`led_service.py:207`）；今天是守卫在进行中五态不放行顺带挡住的。改 Task 2：Interfaces / Step 1 路由测试加「标定线程在跑时不挂摆谱屏」一条（桩 `useGeometry` 与 `GeometryCalibrationScreen`）/ Step 4 路由在上线态遇五态时渲染现成标定屏（required / disabled 等直接放行，不改守卫）/ Step 6 加变异核对；Task 3 Step 1 一行注释；Task 7 Step 5 上板 K4 加一次互斥走查；Global Constraints 判别位与 key 数（13→15）；prd K4 期望 / 验收、D7、§6.1、§7 同步。
+- **[medium] `/mode` 挂起不回退 —— 成立。** 原片段 `fetch` 与 `response.json()` 都无超时，只靠 `catch`。改 Task 2：Step 3 `BaipuAPI.mode()` 用 `Promise.race` 加 `BAIPU_MODE_TIMEOUT_MS = 3000`（覆盖读 body，顺手 abort），恰好 settle 一次、迟到结果丢弃；Step 1 `baipuApi.test.ts` 加连接挂起 + 迟到 `collect:true` 不改判、body 挂起两条（fake timers）；路由测试「还没问到时有页控条」保留并注明不是超时的证据；Interfaces 与 prd K4 期望 / 验收同步。
+- **[medium] Vitest 失败集合漏整文件加载失败 —— 成立。** 核对 vitest 4.1.8 JSON reporter 源码：文件级失败是 `status:'failed'` + 空 `assertionResults`，未处理异常不进 JSON。改 Task 0 Step 3：提取脚本写成 `$BASE/vitest_failset.py`（收 `<FILE-LEVEL FAILURE>` / `<UNHANDLED ERROR>`，自检 `REPORT_EMPTY` / `REPORT_INCONSISTENT` / `REPORT_OK`），跑 `--reporter=default --reporter=json`；Task 7 Step 2 用同一份脚本并核 `files=` 数；Global Constraints 基线 diff 口径同步。
+- **（主会话）Task 0 Step 2 裸 `uv sync` 装不出后端测试环境 —— 成立。** fastapi 等在 `[project.optional-dependencies] web`；`--all-extras` 也不行（`uv.lock` 里 rknn-toolkit-lite2 只有 cp311/cp312，`.venv` 是 3.13）。改 Task 0 Step 2 为 `uv sync --extra web --extra vision` 并加 `PY_DEPS_OK` 导入检查；pytest 侧 Task 0 Step 4 / Task 7 Step 3 加 `--continue-on-collection-errors`（基线上 `test_storage_s3.py` 缺 boto3、`test_build_galaxy_fonts.py` 缺 fontTools 会让整场 `Interrupted`），记退出码，判据「汇总行含 passed、无 Interrupted、退出码 0/1」→ `PYTEST_RAN`。
+- **（主会话）Task 0 Step 1 期望的 HEAD 不对 —— 成立。** 分支头是文档提交 `6561784d`（基于 develop `bad0c1fb`）。改 Task 0 Step 1：看 `git log -3` + `git merge-base --is-ancestor bad0c1fb HEAD`，并注明源码行号仍以 `6f7dc629` 为准（prd §6.0）。

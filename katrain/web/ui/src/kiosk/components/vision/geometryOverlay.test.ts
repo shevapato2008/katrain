@@ -64,7 +64,7 @@ describe('geometry overlay model', () => {
   });
 
   it('builds a complete evenly-spaced grid for the warped preview', () => {
-    const model = buildWarpedGeometryModel(950, 'ready', { width: 500, height: 400 });
+    const model = buildWarpedGeometryModel(950, 'ready', { width: 500, height: 400 }, 0);
 
     expect(model.lines).toHaveLength(38);
     expect(model.points).toHaveLength(361);

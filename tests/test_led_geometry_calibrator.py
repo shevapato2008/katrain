@@ -59,6 +59,32 @@ def test_fit_geometry_uses_human_orientation_and_ransac_outliers():
         assert recovered == pytest.approx((col * 40.0, row * 40.0), abs=2.0)
 
 
+def test_fit_geometry_readmits_anchor_that_ransac_rejected_but_the_refined_model_accepts(monkeypatch):
+    """板上 OpenCV 4.11 的 RANSAC 拒掉 (18,0),而它在精修后的 M 下在门槛内;Mac 的 OpenCV 5 不拒。
+    为了在任何 OpenCV 版本上都复现,把 RANSAC 的判决钉成板上那一份:(18,0) 为外点。"""
+    import json
+    from pathlib import Path
+
+    status = json.loads((Path(__file__).parent / "data" / "rk3562_calib_anchors_20260914.json").read_text())
+    anchors = [((a["row"], a["col"]), (a["x"], a["y"])) for a in status["detected_anchors"]]
+    board_mask = np.array([[0 if coord == (18, 0) else 1] for coord, _ in anchors], np.uint8)
+    real_find = cv2.findHomography
+
+    def board_ransac(src, dst, method=0, *args, **kwargs):
+        if method == cv2.RANSAC:
+            M, _ = real_find(src[board_mask[:, 0] == 1], dst[board_mask[:, 0] == 1], 0)
+            return M, board_mask.copy()
+        return real_find(src, dst, method, *args, **kwargs)
+
+    monkeypatch.setattr(led_geometry_calibrator.cv2, "findHomography", board_ransac)
+
+    fit = fit_geometry_from_anchors(anchors, out_size=950)
+
+    assert fit.ok is True
+    assert fit.inlier_count == 13
+    assert fit.max_residual < 13.18 / 2  # 13 点一起拟合实测 4.2px;旧逻辑下被拒的那颗离模型 11.6px
+
+
 def test_fit_geometry_rejects_large_residual():
     rng = np.random.default_rng(4)
     camera = rng.uniform(0, 900, size=(len(CALIBRATION_ANCHORS), 2))

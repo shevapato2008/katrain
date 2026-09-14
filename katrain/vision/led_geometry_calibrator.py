@@ -203,15 +203,32 @@ def fit_geometry_from_anchors(
     spacing = (out_size - 1) / 18.0
     camera_points = np.asarray([point for _coord, point in anchors], np.float32)
     canonical_points = np.asarray([[col * spacing, row * spacing] for (row, col), _point in anchors], np.float32)
+    threshold = max(2.0, spacing * max_residual_cells)
     M, mask = cv2.findHomography(
         camera_points,
         canonical_points,
         cv2.RANSAC,
-        ransacReprojThreshold=max(2.0, spacing * max_residual_cells),
+        ransacReprojThreshold=threshold,
     )
     if M is None or mask is None:
         return GeometryFitResult(ok=False, reason="homography_failed")
     inliers = mask.reshape(-1).astype(bool)
+    # OpenCV 定的 mask 是「最佳 4 点样本模型」下的判决,之后只在这批内点上精修 M,
+    # 被拒的点**不再对精修后的 M 复核**。rk3562(OpenCV 4.11)上它每次都拒掉离镜头最近的
+    # (18,0) 角 —— 那颗 LED 离真交点 0.9px,在精修 M 下残差 11.6px、门槛 13.2px ⇒ 每次标定都「12/13」。
+    # 按精修后的模型重新分内点并重拟合,直到内点集不再变。
+    for attempt in range(4):
+        if int(inliers.sum()) < 4:
+            break
+        refit, _ = cv2.findHomography(camera_points[inliers], canonical_points[inliers], 0)
+        if refit is None:
+            break
+        M = refit
+        projected = cv2.perspectiveTransform(camera_points.reshape(-1, 1, 2), M).reshape(-1, 2)
+        within = np.linalg.norm(projected - canonical_points, axis=1) <= threshold
+        if np.array_equal(within, inliers) or attempt == 3:
+            break  # 最后一轮不改 inliers:保证 M 就是在这批内点上拟出来的
+        inliers = within
     inlier_count = int(inliers.sum())
     if inlier_count < min_inliers:
         return GeometryFitResult(

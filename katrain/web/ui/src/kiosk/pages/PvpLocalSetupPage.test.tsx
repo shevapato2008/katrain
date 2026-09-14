@@ -140,11 +140,12 @@ describe('PvpLocalSetupPage', () => {
     vision.enabled = true;
     renderPage();
     expect(seg().getByRole('button', { name: '实体盘' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('两人面对面下在这块盘上');
+    // F7:实体盘/屏幕两态统一成同一句提示(不再各说各的),见 local:input_hint_v2。
+    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('实体盘只有 19 路');
 
     await userEvent.click(seg().getByRole('button', { name: '屏幕' }));
     expect(readPlayOnBoard()).toBe(false);
-    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('两人轮流点屏幕落子');
+    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('实体盘只有 19 路');
   });
 
   // 盒子上那块盘是 19 路的 —— 选 9 路,实体盘这条路自己塌掉,偏好不动。
@@ -207,20 +208,22 @@ describe('PvpLocalSetupPage', () => {
     await userEvent.click(screen.getByRole('button', { name: /开始对局/ }));
     await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());
     expect(localStorage.getItem('kioskPlaySound')).toBeNull();
-    expect(screen.getByTestId('setup-sound-group')).toHaveTextContent('和设置里的「落子音效」是同一个开关');
+    expect(screen.getByTestId('setup-sound-group')).toHaveTextContent('和「设置 · 声音」里的落子音是同一个开关');
   });
 
   // P10/P11:说明要说实际发生的事 —— 没有死子交互,数子是 AI 估算;段位只在升降级对弈改。
-  it('底下那段说明如实:自动数子由 AI 估算,不说「两人自己确认死活」,也不指去在线大厅', () => {
+  // F7:文案表定稿版 —— 「由 AI 估算胜负」换成「死活按引擎判断」,并补上「中途退出不存谱」(D2),
+  // 不再提「在线大厅」(定级赛权威在「升降级对弈」,见文件头注释②)。
+  it('底下那段说明如实:自动数子后死活按引擎判断,只留档不动段位,中途退出不存谱', () => {
     renderPage();
     const note = screen.getByTestId('setup-note');
     expect(note).toHaveTextContent('双方各停一手后自动数子');
-    expect(note).toHaveTextContent('由 AI 估算胜负');
-    expect(note).toHaveTextContent('只留档,不动段位');
-    expect(note).toHaveTextContent('升降级对弈');
+    expect(note).toHaveTextContent('死活按引擎判断');
+    expect(note).toHaveTextContent('只留档，不动段位');
+    expect(note).toHaveTextContent('中途退出');
+    expect(note).toHaveTextContent('不存谱');
     expect(note).not.toHaveTextContent('自己确认');
     expect(note).not.toHaveTextContent('在线大厅');
-    // 用时副标照稿子原文(tmpl:865)
-    expect(screen.getByTestId('setup-clock-group')).toHaveTextContent('两边共用一套钟');
+    expect(note).not.toHaveTextContent('由 AI 估算胜负');
   });
 });

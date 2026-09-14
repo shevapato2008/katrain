@@ -30,8 +30,9 @@ import { writeActiveSession } from '../utils/activeSession';
  *
  * ① **`.setnote` 第一句**。稿子写「终局两人自己确认死活」—— 仓里没有死子交互,
  *    数子是 KataGo 目差估计(`server.py` 的 `/api/count/request`)。v2 §2 D1 撤掉对局屏的
- *    「领地」「AI 支招」,双 pass 后自动数子(§3.4)⇒ 说明改成「不给提示、不看形势;
- *    双方各停一手后自动数子,由 AI 估算胜负」。**这句话要等 v2 S2 合入才成立。**
+ *    「领地」「AI 支招」,双 pass 后自动数子(§3.4)⇒ 说明改成「屏上不给提示和形势判断;
+ *    双方各停一手后自动数子,死活按引擎判断」,并补上「中途退出不存谱」(D2)。
+ *    **这句话要等 v2 S2 合入才成立。**(F7,2026-09-14:文案表定稿后再收一版,见 note3_*)
  *
  * ② **`.setnote` 第二句的后半**。稿子写「段位只有**在线大厅的定级队列**会改」——
  *    定级赛不在在线大厅,在「升降级对弈」:`LobbyPage.tsx:151` 那句挡人的话原文是
@@ -206,11 +207,7 @@ const PvpLocalSetupPage = () => {
             <p className="kiosk-opthint">
               {playInput.reason === 'noCamera'
                 ? t('setup:board_no_camera', '这台机器没有标定过摄像头,只能下在屏幕上')
-                : playInput.reason === 'notNineteen'
-                  ? t('setup:board_needs_19', '盘上那块是 19 路 —— 9 路和 13 路只有屏幕上有')
-                  : playInput.onBoard
-                    ? t('local:input_hint_board', '两人面对面下在这块盘上,屏幕只记谱和读秒')
-                    : t('local:input_hint_screen', '两人轮流点屏幕落子 —— 盘就在旁边,也可以切回实体盘')}
+                : t('local:input_hint_v2', '实体盘只有 19 路 · 选 13 路或 9 路就在屏幕上下')}
             </p>
           </section>
 
@@ -326,6 +323,7 @@ const PvpLocalSetupPage = () => {
                 incLabel={t('setup:komi_up', '增加贴目')}
                 value={interpolate(t('setup:komi_value', '贴 {n} 目'), { n: komi })}
                 meta={t('setup:komi_meta', '0.5 – 7.5 · 中国规则常用 7.5')}
+                hint={t('local:komi_hint', '让子局贴 0 目 · 选了让子这一组就收起')}
               />
             )}
           </section>
@@ -341,8 +339,8 @@ const PvpLocalSetupPage = () => {
               decLabel={t('setup:clock_down', '减少用时')}
               incLabel={t('setup:clock_up', '增加用时')}
               value={timeTrack[timeIndex]?.label ?? '—'}
-              meta={interpolate(t('local:clock_meta_shared', '{n} 档 · 两边共用一套钟'), { n: timeTrack.length })}
-              hint={t('local:clock_hint', '走完一步换对方的钟;不限时就只记谱不读秒')}
+              meta={interpolate(t('local:clock_meta_count', '{n} 档'), { n: timeTrack.length })}
+              hint={t('local:clock_hint_v2', '钟在玩家卡上倒数 · 读秒用完判超时负 · 不限时就只记谱')}
             />
           </section>
 
@@ -357,7 +355,7 @@ const PvpLocalSetupPage = () => {
                 { value: 'on', label: t('local:sound_on', '开') },
                 { value: 'off', label: t('local:sound_off', '关') },
               ]}
-              hint={t('local:sound_hint_shared', '落子和提子的声音,和设置里的「落子音效」是同一个开关')}
+              hint={t('local:sound_hint_v2', '和「设置 · 声音」里的落子音是同一个开关')}
             />
           </section>
         </KioskScrollZone>
@@ -366,15 +364,17 @@ const PvpLocalSetupPage = () => {
         {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
 
         <p className="setnote" data-testid="setup-note">
-          {t('local:note2_a', '这一局')}
-          <b>{t('local:note2_b', '不给提示、不看形势')}</b>
-          {t('local:note2_c', ';双方各停一手后')}
-          <b>{t('local:note2_d', '自动数子,由 AI 估算胜负')}</b>
-          {t('local:note2_e', '。')}
+          {t('local:note3_a', '屏上')}
+          <b>{t('local:note3_b', '不给提示和形势判断')}</b>
+          {t('local:note3_c', ';双方各停一手后')}
+          <b>{t('local:note3_d', '自动数子')}</b>
+          {t('local:note3_e', '，死活按引擎判断。')}
           <br />
-          {t('local:note2_f', '这一局')}
-          <b>{t('local:note2_g', '只留档,不动段位')}</b>
-          {t('local:note2_h', '——段位只由「升降级对弈」那条阶梯决定。')}
+          {t('local:note3_f', '这一局')}
+          <b>{t('local:note3_g', '只留档，不动段位')}</b>
+          {t('local:note3_h', '；中途退出')}
+          <b>{t('local:note3_i', '不存谱')}</b>
+          {t('local:note3_j', '。')}
         </p>
 
         <button

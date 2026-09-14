@@ -19,7 +19,7 @@ import ReportLibraryImportDialog from '../components/report/ReportLibraryImportD
 import ReportLocalImportDialog, { type LocalImportPayload } from '../components/report/ReportLocalImportDialog';
 import { ReviewWinratePlot } from '../components/report/ReviewWinratePlot';
 import {
-  outcomeLine, rowDisc, rowState, rowTitle, yourColor, type RowState,
+  isPlaySource, outcomeLine, rowDisc, rowState, rowTitle, yourColor, type RowState,
 } from '../components/report/reviewPresentation';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { Icon } from '../shell/icons';
@@ -116,7 +116,9 @@ export default function ReportsPage() {
    * 老服务端不带这一格 ⇒ `null` = 不知道,而**不知道要退到最保守的那句话**。
    */
   const [authority, setAuthority] = useState<DataAuthority | null>(null);
-  const [gamesLoading, setGamesLoading] = useState(Boolean(token));
+  // ⚠️ 首帧按 `isAuthenticated` 判,**不按 token**(P17)。严格盒端 SSO 里 token 恒为 null ——
+  // 按 token 判的话,盒上每次进这一屏首帧都先闪一下「还没有下过的棋」,下一帧才变成「正在读」。
+  const [gamesLoading, setGamesLoading] = useState(isAuthenticated);
   const [gamesError, setGamesError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const listRequestGenerationRef = useRef(0);
@@ -409,6 +411,8 @@ export default function ReportsPage() {
    * ⚠️ 判别位是「**这局结束了没有**」——**不是「算不算分」**。用 `isRated` 去管它,
    * 就又变成一个 prop 兼管两件事、逼调用方撒谎(计分局下完了照样该有报告,
    * 国象稿子明写两者进的是同一条复盘线)。
+   * 「未终局」只由 `rowState` 给**对弈局**(`isPlaySource`)—— 导入的谱、棋谱库、研究存档
+   * 没写结果不算没下完,没有「回去接着下」这回事,照样能分析(P14)。这里不另写一份判定。
    */
   const canAnalyzeSelected = Boolean(selectedSummary) && selectedState?.kind !== 'unfinished';
   /**
@@ -713,9 +717,10 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport,
   const mine = yourColor(game, username);
   const ts = savedAt(game);
   // 没下完的那句话自己就带着手数(「下到第 22 手就退出了」),再挂一段「22 手」是同一个数说两遍。
+  // 只有对弈局会念那一句;导入的谱没写结果时念「谱里没写结果」,手数照常挂在后面。
   const sub = [
     outcomeLine(game, mine, t),
-    game.result ? `${game.move_count} ${t('report:moves_unit', '手')}` : null,
+    game.result || !isPlaySource(game.source) ? `${game.move_count} ${t('report:moves_unit', '手')}` : null,
     ts == null ? null : whenLabel(ts, t),
   ].filter(Boolean).join(' · ');
 

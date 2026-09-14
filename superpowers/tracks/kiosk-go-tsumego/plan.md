@@ -16,7 +16,7 @@
 
 - 在 worktree `/Users/fan/Repositories/katrain-kiosk-go-tsumego`(分支 `feature/kiosk-go-tsumego`)里开发;**不 push、不合并 develop**,合并由 Fan 决定;**不在别的 worktree 里 checkout**(10 个 katrain worktree 共用一条 stash 栈,也不要 `git stash pop`)。
 - 这个 worktree 起步时**没有 `.venv` 也没有 `node_modules`**:第一次先 `cd /Users/fan/Repositories/katrain-kiosk-go-tsumego && uv sync`,再 `cd katrain/web/ui && npm ci`。
-- 改了共享领地(`src/components`、`src/hooks`、`src/api*`、`src/features`、`src/context`、`src/utils` 等)必须 `npm run build` 与 `npm run build:kiosk-2d` 都绿;kiosk 边界(`verify:kiosk-2d`)不许破。本计划只有 Task 3 动共享领地(`src/hooks/useTsumegoProblem.ts`)。
+- 改了共享领地(`src/components`、`src/hooks`、`src/api*`、`src/features`、`src/context`、`src/utils` 等)必须 `npm run build` 与 `npm run build:kiosk-2d` 都绿;kiosk 边界(`verify:kiosk-2d`)不许破。本计划动共享领地的只有 Task 3(`src/hooks/useTsumegoProblem.ts`)与 Task 7(`src/context/TsumegoProgressContext.tsx` 的 `fetchAndMerge` 一处:失败标志改成读成功才清),两个任务收尾都跑两套构建。
 - 类型检查用 `cd katrain/web/ui && npx tsc -b`。`npx tsc --noEmit` 检查 0 个文件,**不算数**;`*.test.ts(x)` 不在 tsc 范围内,测试文件里的类型错误只有 vitest 跑到才会暴露。
 - 盒上 token 恒为 null:任何「发不发请求 / 渲不渲染」的判别位用 `isAuthenticated` / `user`,**不用 `token`**。本计划按人存的 id 取 `useAuth().user?.id`。
 - 新文案一律 `t('tsumego:<camelKey>', '中文默认')`;**不往 PO 里加 key**(补不补 PO 待 Fan 裁定)。新 key 不许与 cn PO 里已有 msgid 撞名(翻译表赢过默认值):每个任务写完跑 `grep -o 'msgid "tsumego:[^"]*"' /Users/fan/Repositories/katrain-kiosk-go-tsumego/katrain/i18n/locales/cn/LC_MESSAGES/katrain.po`,本计划用到的新 key 一个都不应出现在输出里。
@@ -42,11 +42,13 @@
 | `katrain/web/api/v1/endpoints/tsumego.py` | 盒上分支把「连不上」翻成 503、云端 4xx 原样转回 | 2 |
 | `tests/web_ui/test_tsumego_board_unavailable.py`(新) | 上面两件的契约 | 2 |
 | `katrain/web/ui/src/hooks/useTsumegoProblem.ts` | 非 404 错误抛 `HTTP <status>` | 3 |
-| `katrain/web/ui/src/kiosk/pages/tsumegoUnits.ts` | 503 判别与错误文案;三个按人存的指针;错题快照读写 | 3、4、7 |
+| `katrain/web/ui/src/kiosk/pages/tsumegoUnits.ts` | 503 判别与错误文案;三个按人存的指针;错题快照读写(也按人存) | 3、4、7 |
+| `katrain/web/ui/src/context/TsumegoProgressContext.tsx`(**共享领地**) | `serverLoadFailed` 只在读成功时清(重读途中不清) | 7 |
+| `katrain/web/ui/src/context/__tests__/TsumegoProgressContext.test.tsx` | 上面那一条的契约 | 7 |
 | `katrain/web/ui/src/kiosk/pages/TsumegoPage.tsx` | 错误 / 空态文案;按人读指针;问候副标 | 3、4、5 |
-| `katrain/web/ui/src/kiosk/pages/TsumegoUnitsPage.tsx` | 错误 / 空态;按人写分类;整级文案;错题卡接通 | 3、4、5、7 |
-| `katrain/web/ui/src/kiosk/pages/TsumegoUnitListPage.tsx` | 错误 / 空态;按人写分类;整级文案;`set="wrong"` 错题页 | 3、4、5、7 |
-| `katrain/web/ui/src/kiosk/pages/TsumegoProblemPage.tsx` | 实体开关认「几何本次开机确认过」;错误文案;按人写指针;退一手原因;删死键调用;`?set=wrong` | 1、3、4、5、6、8 |
+| `katrain/web/ui/src/kiosk/pages/TsumegoUnitsPage.tsx` | 错误 / 空态;按人写分类;整级文案;错题卡接通(做题记录没读到时不说 0 道) | 3、4、5、7 |
+| `katrain/web/ui/src/kiosk/pages/TsumegoUnitListPage.tsx` | 错误 / 空态;按人写分类;整级文案;`set="wrong"` 错题页(做题记录没读到 ⇒ 重试) | 3、4、5、7 |
+| `katrain/web/ui/src/kiosk/pages/TsumegoProblemPage.tsx` | 实体开关认「几何本次开机确认过」、开关开着时也说不可用的原因;错误文案;按人写指针;退一手原因;删死键调用;`?set=wrong` | 1、3、4、5、6、8 |
 | `katrain/web/ui/src/kiosk/pages/TsumegoCategoriesPage.tsx`、`TsumegoLevelPage.tsx` | 只改错误提示那一处 | 3 |
 | `katrain/web/ui/src/kiosk/components/vision/BoardSetupGuide.tsx` | 删「开始答题」;文案走 `t()` | 6 |
 | `katrain/web/ui/src/kiosk/components/tsumego/PhysicalStatePanel.tsx` | 拿除标签写棋盘坐标 | 6 |
@@ -63,8 +65,8 @@
 - Create: `katrain/web/ui/src/kiosk/components/vision/TsumegoInputGuard.tsx`
 - Create: `katrain/web/ui/src/kiosk/__tests__/TsumegoInputGuard.test.tsx`
 - Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx:36-37`(import)、`:132`(做题路由)
-- Modify: `katrain/web/ui/src/kiosk/pages/TsumegoProblemPage.tsx:91-92`(`physicalAvailable` 加「几何本次开机确认过」,见 Step 7)
-- Test: `katrain/web/ui/src/kiosk/__tests__/TsumegoProblemPage.test.tsx`(加 `GeometryContext` mock 与两条用例,见 Step 7)
+- Modify: `katrain/web/ui/src/kiosk/pages/TsumegoProblemPage.tsx:91-92`(`physicalAvailable` 加「几何本次开机确认过」)、`:101-104`(`physicalHint` 在开关开着时也说原因),见 Step 7
+- Test: `katrain/web/ui/src/kiosk/__tests__/TsumegoProblemPage.test.tsx`(加 `GeometryContext` mock 与三条用例,见 Step 7)
 
 **Interfaces:**
 - Consumes: `readPhysicalMode(): boolean`(`src/kiosk/pages/tsumegoUnits.ts:116`,默认 `false`);`PhysicalBoardGuard({ children, sub, requireRecognition? })`(不改);`PHYSICAL_MODE_KEY = 'kiosk_tsumego_physical'`;`useOptionalGeometry(): { status: GeometryStatus } | null`(`src/kiosk/context/GeometryContext.tsx`)
@@ -191,7 +193,8 @@ import { readPhysicalMode } from '../../pages/tsumegoUnits';
  * 渲染时读的话,人在做题屏里一拨开关、下一次上层重渲染时这里的子树就从「守卫包着」变成
  * 「直接渲染」,做题屏会被整个卸载重挂,这一题的计时和落子全没了。
  * 读一次够用:做题屏里要**打开**实体开关,要求识别就绪**且几何本次开机确认过**
- * (`TsumegoProblemPage` 的 `physicalAvailable`,放行条件照抄 `PhysicalBoardGuard`)。
+ * (`TsumegoProblemPage` 的 `physicalAvailable`,放行条件照抄 `PhysicalBoardGuard`);
+ * 页内打开之后几何又失效,这里不接管 —— 做题屏开关旁说原因并挂「去标定」(`physicalHint`)。
  * 已知边角:同一次进入里先关掉开关、之后几何又失效,这一次仍会被标定台拦下 —— 按返回再进就好。
  */
 const TsumegoInputGuard = ({ children }: { children: ReactNode }) => {
@@ -240,6 +243,8 @@ import TsumegoInputGuard from './components/vision/TsumegoInputGuard';
 
 为什么必须有这一步:守卫摘掉之后,「标定没确认」只剩页内那颗实体开关把关,而它今天只看 `visionStatus.recognitionReady`(`TsumegoProblemPage.tsx:92`)。`server.py` 启动时会把持久化的标定锁**直接推进识别 worker**(`Push a persisted geometry lock into the vision worker at startup` 那段,`app.state.vision.set_geometry(app.state.geometry)`)⇒ 盒子一重启 `recognition_ready` 就是真,而几何是 `required / session_calibrated=false`。不补这一步:屏幕做题的人进题后能直接把实体开关拨开,在一份本次开机没人确认过的标定上判对错、记进度;PRD 验收里那句「物理棋盘需先确认棋盘标定」也渲染不到(它只在 `!physicalAvailable` 时出现)。
 
+同一处还要改 `physicalHint`(`TsumegoProblemPage.tsx:102-104`,`physicalMode || physicalAvailable ? null`):它在**开关开着时一律不说话**。改之前没事 —— 路由恒套 `PhysicalBoardGuard`,几何一失效守卫就整屏接管(`PhysicalBoardGuard.tsx:25-30`,`GeometryProvider` 每秒轮询)。守卫改成挂载时决定之后:屏幕模式进来(守卫没套上)→ 页内打开开关 → 被动漂移检测把几何翻成 `degraded`(`geometry_calibration_service.py:423-440`)⇒ `physicalEnabled` 变假、实体流程停了,开关却还亮着,旁边没有原因、页控条没有「去标定」。
+
 (a) `src/kiosk/__tests__/TsumegoProblemPage.test.tsx`,在 `vi.mock('../hooks/useVisionSync', …)` 之前加:
 
 ```tsx
@@ -285,10 +290,45 @@ vi.mock('../context/GeometryContext', async (importOriginal) => {
     renderPage('p1');
     expect(screen.getByTestId('physical-mode-toggle')).not.toBeDisabled();
   });
+
+  it('屏幕进入、页内打开实体开关之后几何失效:开关还开着,旁边照样写原因并给「去标定」(T9)', () => {
+    // 屏幕模式进来 ⇒ `TsumegoInputGuard` 挂载时没套 `PhysicalBoardGuard`,几何中途失效时没有守卫接管,
+    // 只剩页内的提示能说话。改之前 `physicalHint` 在开关开着时一律返回 null。
+    mockVision.enabled = true;
+    mockVision.recognitionReady = true;
+    hookReturn = { ...defaultHookReturn, boardSize: 19 };
+    const geo = (phase: 'ready' | 'degraded') => ({
+      status: {
+        phase, session_calibrated: true, last_valid: true,
+        capabilities: { camera_ready: true, led_ready: true, geometry_ready: phase === 'ready' },
+      },
+    });
+    mockGeometry.value = geo('ready');
+    const view = renderPage('p1');
+    fireEvent.click(screen.getByTestId('physical-mode-toggle'));
+    expect(screen.getByTestId('physical-mode-toggle')).toHaveAttribute('aria-checked', 'true');
+
+    // 被动漂移检测把 ready 翻成 degraded,`GeometryProvider` 的轮询带回来。
+    mockGeometry.value = geo('degraded');
+    view.rerender(
+      <ThemeProvider theme={kioskTheme}>
+        <MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}>
+          <Routes>
+            <Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    const toggle = screen.getByTestId('physical-mode-toggle');
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+    expect(toggle).not.toBeDisabled();   // 关掉永远允许
+    expect(screen.getByTestId('puzzle-toggle-hint')).toHaveTextContent('棋盘标定已失效');
+    expect(screen.getByRole('button', { name: '去标定' })).toBeInTheDocument();
+  });
 ```
 
 Run: `cd /Users/fan/Repositories/katrain-kiosk-go-tsumego/katrain/web/ui && npx vitest run src/kiosk/__tests__/TsumegoProblemPage.test.tsx`
-Expected: FAIL —— 第一条(开关没灰、提示为空、没有「去标定」);第二条现在就 PASS(守的是改完别把开关锁死)。
+Expected: FAIL —— 第一条(开关没灰、提示为空、没有「去标定」);第三条(失效后提示为空,停在 `toHaveTextContent('棋盘标定已失效')`);第二条现在就 PASS(守的是改完别把开关锁死)。
 
 (b) `src/kiosk/pages/TsumegoProblemPage.tsx:91-92`,把
 
@@ -312,9 +352,33 @@ Expected: FAIL —— 第一条(开关没灰、提示为空、没有「去标定
     visionStatus.enabled && visionStatus.recognitionReady && geometryConfirmed && boardSize === 19;
 ```
 
-(`geometry` 在 `:75` 已经由 `useOptionalGeometry()` 取到;`physicalHint` 那一串不用改 —— `!physicalAvailable` 之后它按 `geoPhase` 自己说「需先确认」/「已失效」并挂「去标定」。)
+(`geometry` 在 `:75` 已经由 `useOptionalGeometry()` 取到。)
 
-再跑一次同一条命令,Expected: PASS。
+(c) 同一文件 `:101-104`,把
+
+```tsx
+  const geoPhase = geometry?.status.phase;
+  const physicalHint: { text: string; calibrate?: boolean; severity: 'info' | 'warning' } | null =
+    physicalMode || physicalAvailable
+      ? null
+```
+
+换成
+
+```tsx
+  const geoPhase = geometry?.status.phase;
+  // ⚠️ 2026-09-15(T9):**开关开着时也要说**。原来是 `physicalMode || physicalAvailable ? null` ——
+  // 那时做题路由恒套 `PhysicalBoardGuard`,几何一失效守卫整屏接管,开关开着时轮不到这里说话。
+  // 守卫改成挂载时决定之后:屏幕模式进来、页内打开、几何中途失效 ⇒ 实体流程停了
+  // (`physicalEnabled` 变假),开关却还亮着 —— 不说原因、不给「去标定」,人只会觉得盘坏了。
+  const physicalHint: { text: string; calibrate?: boolean; severity: 'info' | 'warning' } | null =
+    physicalAvailable
+      ? null
+```
+
+(后面按 `boardSize` / `visionStatus.enabled` / `geoPhase` 分的那几句一个字不动:开关开着、条件不够时,说的就是同一组原因。)
+
+再跑一次同一条命令,Expected: PASS(三条都绿;原有「只开开关、视觉没就绪时进不去」那条不断言提示,不受影响)。
 
 - [ ] **Step 8: 类型检查、路由相关测试、基线比较**
 
@@ -1521,23 +1585,51 @@ git commit -m "fix(kiosk-tsumego): 实体做题右栏 —— 删掉永远按不�
 ### Task 7: T1(上)「只做错过的」接通入口 + 错题页(屏 13 同一副骨架)
 
 **Files:**
-- Modify: `katrain/web/ui/src/kiosk/pages/tsumegoUnits.ts`(`writeSequence` 之后加错题快照读写与口径函数)
-- Modify: `katrain/web/ui/src/kiosk/pages/TsumegoUnitsPage.tsx:31-36`(文件头那段「为什么是灰的」)、`:142-143`(`wrongCount`)、`:215-221`(卡)
+- Modify: `katrain/web/ui/src/kiosk/pages/tsumegoUnits.ts`(Task 4 加的 `writePracticeResume` 之后加错题快照读写与口径函数 —— 快照复用那一段的 `scopedKey`,按账号存)
+- Modify: `katrain/web/ui/src/context/TsumegoProgressContext.tsx:233-242`(`serverLoadFailed` 说明)、`:320-325`(`fetchAndMerge`:失败标志只在读成功时清)—— **共享领地**,见 Step 3(b)
+- Modify: `katrain/web/ui/src/kiosk/pages/TsumegoUnitsPage.tsx:31-36`(文件头那段「为什么是灰的」)、`:42`(取 `serverLoadFailed`)、`:142-143`(`wrongCount`)、`:215-221`(卡)
 - Modify: `katrain/web/ui/src/kiosk/pages/TsumegoUnitListPage.tsx`(import 区 + 组件整段,见 Step 5)
 - Modify: `katrain/web/ui/src/kiosk/KioskApp.tsx:136`(在它前面加一条路由)
-- Test: `src/kiosk/__tests__/TsumegoUnitsPage.test.tsx:174-185`、`TsumegoUnitListPage.test.tsx:230-243`,并在后者新增 `describe('错题页(T1)')`
+- Test: `src/kiosk/__tests__/TsumegoUnitsPage.test.tsx:18-38`(进度 mock 加 `serverLoadFailed`)、`:174-185`;`TsumegoUnitListPage.test.tsx:20-42`(进度 mock 加 `serverLoadFailed` / `refresh`)、`:230-243`,并在后者新增 `describe('错题页(T1)')`;`src/context/__tests__/TsumegoProgressContext.test.tsx:240-249` 之后加一条
 - Create: `katrain/web/ui/tests/kiosk-tsumego-wrong.spec.ts`(错题页承重闸,e2e 配置;见 Step 7–9 —— **错题页一建好就当场量**,不攒到 Task 9 的取图关卡)
 
 **Interfaces:**
-- Consumes: Task 3 的 `loadErrorCopy`;Task 4 的 `writeLastCategory(userId, category)` 与 `useAuth`;Task 5 改好的整级文案 `tsumego:wholeLevelRow`
-- Produces(Task 8 依赖):
-  - `wrongSequenceKey(level: string, category: string): string` —— `kiosk_problems_<level>_<category>_wrong`
-  - `readWrongSequence(level: string, category: string): string[] | null`(读不到 = `null`)
-  - `writeWrongSequence(level: string, category: string, ids: string[]): void`
+- Consumes: Task 3 的 `loadErrorCopy`;Task 4 的 `TsumegoUserId`、`scopedKey`(`tsumegoUnits.ts` 模块内)、`writeLastCategory(userId, category)` 与 `useAuth`;Task 5 改好的整级文案 `tsumego:wholeLevelRow`;`useTsumegoProgress()` 的 `serverLoadFailed: boolean`(`TsumegoProgressContext.tsx:242`)与 `refresh(): void`(`:385`,重读服务端;今天没有调用方)
+- Produces(Task 8 / 9 依赖):
+  - `wrongSequenceKey(userId: TsumegoUserId, level: string, category: string): string | null` —— `kiosk_problems_<level>_<category>_wrong:u<id>`;`userId` 为 `null/undefined` ⇒ `null`
+  - `readWrongSequence(userId: TsumegoUserId, level: string, category: string): string[] | null`(读不到 / 没有 userId = `null`)
+  - `writeWrongSequence(userId: TsumegoUserId, level: string, category: string, ids: string[]): void`(没有 userId 什么都不写)
+  - `serverLoadFailed` 的语义收紧为「最近一次读失败了、之后还没读成功过」:**重读途中保持为真**,读成功才清
   - `isWrongEntry(entry: { attempts?: number; completed?: boolean } | undefined): boolean` —— `attempts > 0 && !completed`
   - 路由 `/kiosk/tsumego/:level/:category/wrong` → `<TsumegoUnitListPage set="wrong" />`;点格导航到 `/kiosk/tsumego/problem/<id>?set=wrong`
 
 - [ ] **Step 1: 写失败的测试**
+
+`TsumegoUnitsPage.test.tsx` 与 `TsumegoUnitListPage.test.tsx` 两个文件的进度 mock 都要能造「做题记录没读到」。两个文件各做三处:
+
+- `vi.hoisted` 那一段:`TsumegoUnitsPage.test.tsx:18-22` 换成
+
+  ```tsx
+  const { mockNavigate, mockUnitProgress, progressMap, progressFlags } = vi.hoisted(() => ({
+    mockNavigate: vi.fn(),
+    mockUnitProgress: vi.fn(() => ({ completed: 0, total: 0 })),
+    progressMap: {} as Record<string, TsumegoProgressEntry>,
+    progressFlags: { failed: false },
+  }));
+  ```
+
+  `TsumegoUnitListPage.test.tsx:20-23` 换成
+
+  ```tsx
+  const { mockNavigate, mockRefresh, progressMap, progressFlags } = vi.hoisted(() => ({
+    mockNavigate: vi.fn(),
+    mockRefresh: vi.fn(),
+    progressMap: {} as Record<string, TsumegoProgressEntry>,
+    progressFlags: { failed: false },
+  }));
+  ```
+- `vi.mock('../../context/TsumegoProgressContext', …)` 里 `refresh: vi.fn(),` 那一行:`TsumegoUnitsPage.test.tsx` 换成 `serverLoadFailed: progressFlags.failed,` + `refresh: vi.fn(),` 两行;`TsumegoUnitListPage.test.tsx` 换成 `serverLoadFailed: progressFlags.failed,` + `refresh: mockRefresh,` 两行;
+- 最外层 `beforeEach` 里 `for (const k of Object.keys(progressMap)) delete progressMap[k];` 下面加一行 `progressFlags.failed = false;`。
 
 `TsumegoUnitsPage.test.tsx:174-185`,那条 `it('「只做错过的」按不动,但道数是真的 …', …)` 整条换成:
 
@@ -1564,23 +1656,37 @@ git commit -m "fix(kiosk-tsumego): 实体做题右栏 —— 删掉永远按不�
     expect(within(card).getByText('现在有 0 道')).toBeInTheDocument();
     expect(card.disabled).toBe(true);
   });
+
+  it('做题记录没读到时「只做错过的」不说「现在有 0 道」,也不灰 —— 点进错题页才有重试', async () => {
+    // 服务端那次读失败了,本机也没有这个人的缓存 ⇒ 0 是算不出来的数,不是「一道都没错」。
+    progressFlags.failed = true;
+    renderPage();
+    await waitFor(() => expect(screen.getByText('只做错过的')).toBeInTheDocument());
+    const card = screen.getByText('只做错过的').closest('button') as HTMLButtonElement;
+    expect(within(card).getByText('做题记录没读到')).toBeInTheDocument();
+    expect(within(card).queryByText(/现在有 0 道/)).toBeNull();
+    expect(card.disabled).toBe(false);
+    fireEvent.click(card);
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/capturing/wrong');
+  });
 ```
 
 `TsumegoUnitListPage.test.tsx`:在 `renderPage` 定义下面加:
 
 ```tsx
-/** 错题页。**两条路由都挂上**:顺带证明静态段 `wrong` 在 v6 的最佳匹配里赢过 `:unit`。 */
-const renderWrong = (level = '15k', category = 'capturing') =>
-  render(
-    <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter initialEntries={[`/kiosk/tsumego/${level}/${category}/wrong`]}>
-        <Routes>
-          <Route path="/kiosk/tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
-          <Route path="/kiosk/tsumego/:level/:category/wrong" element={<TsumegoUnitListPage set="wrong" />} />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
-  );
+/** 错题页。**两条路由都挂上**:顺带证明静态段 `wrong` 在 v6 的最佳匹配里赢过 `:unit`。
+ *  树单独拿出来,是给「重读回来」那条用例 `rerender` 用的。 */
+const wrongTree = (level = '15k', category = 'capturing') => (
+  <ThemeProvider theme={kioskTheme}>
+    <MemoryRouter initialEntries={[`/kiosk/tsumego/${level}/${category}/wrong`]}>
+      <Routes>
+        <Route path="/kiosk/tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
+        <Route path="/kiosk/tsumego/:level/:category/wrong" element={<TsumegoUnitListPage set="wrong" />} />
+      </Routes>
+    </MemoryRouter>
+  </ThemeProvider>
+);
+const renderWrong = (level = '15k', category = 'capturing') => render(wrongTree(level, category));
 ```
 
 `:230-243` 那条 `it('「只做错过的」按不动,数是整类的真数,而且点名了 scope', …)` 整条换成:
@@ -1606,6 +1712,17 @@ const renderWrong = (level = '15k', category = 'capturing') =>
     renderPage();
     await waitFor(() => expect(cells()).toHaveLength(UNIT_SIZE));
     expect(within(screen.getByTestId('row-wrong')).getByRole('button', { name: '开始' })).toBeDisabled();
+  });
+
+  it('做题记录没读到时错题那一行不说「现在有 0 道」,「开始」也不灰 —— 错题页那边有重试', async () => {
+    progressFlags.failed = true;
+    seedSequence();
+    renderPage();
+    await waitFor(() => expect(cells()).toHaveLength(UNIT_SIZE));
+    const row = screen.getByTestId('row-wrong');
+    expect(within(row).getByText(/做题记录没读到/)).toBeInTheDocument();
+    expect(within(row).queryByText(/现在有 0 道/)).toBeNull();
+    expect(within(row).getByRole('button', { name: '开始' })).not.toBeDisabled();
   });
 ```
 
@@ -1639,11 +1756,13 @@ const renderWrong = (level = '15k', category = 'capturing') =>
       expect(screen.getByTestId('stat-solved-in-category').textContent).toBe('1 / 45');
     });
 
-    it('点一格:先把这份题单存成快照,再带着 ?set=wrong 进做题屏', async () => {
+    it('点一格:先把这份题单存成**这个账号的**快照,再带着 ?set=wrong 进做题屏', async () => {
       renderWrong();
       await waitFor(() => expect(cells()).toHaveLength(2));
       fireEvent.click(cells()[1]);
-      expect(JSON.parse(sessionStorage.getItem('kiosk_problems_15k_capturing_wrong')!)).toEqual(['q3', 'q41']);
+      // 按账号存(useAuth mock 是 id 7):错题是「这个人」做错的,同一个标签页里换人不许读到。
+      expect(JSON.parse(sessionStorage.getItem('kiosk_problems_15k_capturing_wrong:u7')!)).toEqual(['q3', 'q41']);
+      expect(sessionStorage.getItem('kiosk_problems_15k_capturing_wrong')).toBeNull();
       expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/q41?set=wrong');
     });
 
@@ -1661,30 +1780,80 @@ const renderWrong = (level = '15k', category = 'capturing') =>
       fireEvent.click(within(screen.getByTestId('problems-no-wrong')).getByRole('button', { name: '单元' }));
       expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/capturing');
     });
+
+    it('题号读到了、做题记录没读到:不说「没有做错过的题」,给重试;重读回来就出格子', async () => {
+      for (const k of Object.keys(progressMap)) delete progressMap[k];
+      progressFlags.failed = true;
+      const view = renderWrong();
+      const box = await screen.findByTestId('problems-wrong-unknown');
+      expect(within(box).getByText('做题记录没读到')).toBeInTheDocument();
+      expect(screen.queryByTestId('problems-no-wrong')).toBeNull();
+      fireEvent.click(within(box).getByRole('button', { name: '重试' }));
+      expect(mockRefresh).toHaveBeenCalledTimes(1);
+
+      // 重读回来了:Provider 合并进度、清掉失败标志、重渲(Provider 那一半在 TsumegoProgressContext.test.tsx 里守)。
+      progressMap['q3'] = { completed: false, attempts: 1 };
+      progressFlags.failed = false;
+      view.rerender(wrongTree());
+      await waitFor(() => expect(cells()).toHaveLength(1));
+      expect(screen.queryByTestId('problems-wrong-unknown')).toBeNull();
+    });
+  });
+```
+
+`src/context/__tests__/TsumegoProgressContext.test.tsx`,在 `describe('TsumegoProgressProvider', …)` 里 `it('keeps localStorage-only progress when the server fetch fails', …)` 之后追加:
+
+```tsx
+  it('读失败之后重读:回来之前仍算「没读到」,读成功才清掉 —— 重读途中不许看起来像「读到了、是空的」', async () => {
+    // 盒上的样子:token=null,身份在 user 上。
+    mockUseAuth.mockReturnValue(auth({ user: { id: 7 } }));
+    mockGetProgress.mockRejectedValueOnce(new Error('offline'));
+    const { result } = renderHook(() => useTsumegoProgress(), { wrapper });
+    await waitFor(() => expect(result.current.serverLoadFailed).toBe(true));
+
+    let resolve!: (map: TsumegoProgressMap) => void;
+    mockGetProgress.mockReturnValueOnce(new Promise<TsumegoProgressMap>((r) => { resolve = r; }));
+    act(() => result.current.refresh());
+    expect(mockGetProgress).toHaveBeenCalledTimes(2);
+    // 请求发出去了、还没回来:本机进度仍是空的,标志若在这时清掉,下游看到的就是「读到了,一道错题都没有」。
+    expect(result.current.serverLoadFailed).toBe(true);
+
+    await act(async () => { resolve({ p1: { completed: false, attempts: 2 } }); });
+    expect(result.current.serverLoadFailed).toBe(false);
+    expect(result.current.progress.p1).toMatchObject({ completed: false, attempts: 2 });
   });
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
 
-Run: `cd /Users/fan/Repositories/katrain-kiosk-go-tsumego/katrain/web/ui && npx vitest run src/kiosk/__tests__/TsumegoUnitsPage.test.tsx src/kiosk/__tests__/TsumegoUnitListPage.test.tsx`
-Expected: FAIL —— 卡仍 `disabled` 且挂「还没接」;行里没有「开始」键;`TsumegoUnitListPage` 不认 `set` prop,错题页渲染的是第 1 单元的 20 格。
+Run: `cd /Users/fan/Repositories/katrain-kiosk-go-tsumego/katrain/web/ui && npx vitest run src/kiosk/__tests__/TsumegoUnitsPage.test.tsx src/kiosk/__tests__/TsumegoUnitListPage.test.tsx src/context/__tests__/TsumegoProgressContext.test.tsx`
+Expected: FAIL —— 卡仍 `disabled` 且挂「还没接」;行里没有「开始」键;两处都找不到「做题记录没读到」;`TsumegoUnitListPage` 不认 `set` prop,错题页渲染的是第 1 单元的 20 格(快照钥匙、`problems-wrong-unknown` 都不存在);Provider 新加那条停在「重读途中 `serverLoadFailed` 仍为 true」(今天发请求时就清成 false)。Provider 文件原有用例 PASS。
 
-- [ ] **Step 3: `tsumegoUnits.ts` 加错题快照与口径**
+- [ ] **Step 3: `tsumegoUnits.ts` 加错题快照与口径;进度 Provider 的失败标志只在读成功时清**
 
-在 `writeSequence` 函数之后(`:45` 之后)插入:
+(a) 在 Task 4 Step 3 加的 `writePracticeResume` 函数之后插入(放在这里是为了用上面那段已经定义好的 `scopedKey` / `TsumegoUserId`):
 
 ```ts
 /**
  * 「只做错过的」那份题单的**快照**(T1)。点错题页格子的**那一刻**写:
  * 做题途中做对一道,它不会从上/下一题的序列里消失;回到错题页时再按最新进度重算。
  * 形状和整类那条顺序表一样(`string[]`,整类顺序),钥匙多一个 `_wrong`。
+ *
+ * ⚠️ **按账号存**(和上面三样「上次」同一个 `scopedKey`)。整类顺序表不分人没问题 —— 那是题库的事实;
+ * 错题快照是**这个人**做错了哪几道。sessionStorage 登出不清(`AuthContext.logout` 只清 token;
+ * 盒端换人是整页跳 launcher 再回来,标签页不变)⇒ 不分人的话,同一个标签页里甲→乙→甲:
+ * 甲存下的「接着上次 · …?set=wrong」会读到乙写的快照,只要这道题两人都错过就过得了 `includes`,
+ * 甲从此在乙的错题里翻页。
  */
-export const wrongSequenceKey = (level: string, category: string) => `${sequenceKey(level, category)}_wrong`;
+export const wrongSequenceKey = (userId: TsumegoUserId, level: string, category: string): string | null =>
+  scopedKey(`${sequenceKey(level, category)}_wrong`, userId);
 
-/** 读快照。读不到返回 `null` —— 做题屏据此退回整类行为,不假装还在错题里。 */
-export function readWrongSequence(level: string, category: string): string[] | null {
+/** 读快照。读不到 / 没有账号返回 `null` —— 做题屏据此退回整类行为,不假装还在错题里。 */
+export function readWrongSequence(userId: TsumegoUserId, level: string, category: string): string[] | null {
+  const key = wrongSequenceKey(userId, level, category);
+  if (!key) return null;
   try {
-    const raw = sessionStorage.getItem(wrongSequenceKey(level, category));
+    const raw = sessionStorage.getItem(key);
     if (raw === null) return null;
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : null;
@@ -1693,9 +1862,11 @@ export function readWrongSequence(level: string, category: string): string[] | n
   }
 }
 
-export function writeWrongSequence(level: string, category: string, ids: string[]): void {
+export function writeWrongSequence(userId: TsumegoUserId, level: string, category: string, ids: string[]): void {
+  const key = wrongSequenceKey(userId, level, category);
+  if (!key) return;
   try {
-    sessionStorage.setItem(wrongSequenceKey(level, category), JSON.stringify(ids));
+    sessionStorage.setItem(key, JSON.stringify(ids));
   } catch {
     /* best-effort */
   }
@@ -1706,9 +1877,51 @@ export const isWrongEntry = (entry: { attempts?: number; completed?: boolean } |
   (entry?.attempts ?? 0) > 0 && !entry?.completed;
 ```
 
+(b) `src/context/TsumegoProgressContext.tsx`(**共享领地**,galaxy 也挂这个 Provider;今天 `serverLoadFailed` 只有 `GrowthPage` 在读、`refresh` 没有调用方 ⇒ 除「重读途中」外行为不变)。
+
+`serverLoadFailed` 那段说明的最后一行
+
+```ts
+   * 只在**本地也是空的**时候才有分别:本地有数就至少是个下界,照常显示。
+   */
+  serverLoadFailed: boolean;
+```
+
+换成
+
+```ts
+   * 只在**本地也是空的**时候才有分别:本地有数就至少是个下界,照常显示。
+   * **重读途中保持原值**,读成功才清(见 `fetchAndMerge`)—— 否则「重试」按下去那一刻就像读到了一份空的。
+   */
+  serverLoadFailed: boolean;
+```
+
+`fetchAndMerge` 开头
+
+```ts
+  const fetchAndMerge = useCallback((authToken?: string) => {
+    setServerLoadFailed(false);
+    TsumegoAPI.getProgress(authToken)
+      .then((serverMap) => {
+        setProgress((prev) => {
+```
+
+换成
+
+```ts
+  const fetchAndMerge = useCallback((authToken?: string) => {
+    // ⚠️ 2026-09-15(T1 错题页的「重试」):失败标志**只在读成功时清**,不在发请求时清。
+    // 发请求时就清的话,重读途中本机进度还是空的、标志却已是 false —— 下游看到的正是
+    // 「读到了,一道错题都没有」,等于把重试说成了成功。换人时的清零在上面 render 期那段,不受影响。
+    TsumegoAPI.getProgress(authToken)
+      .then((serverMap) => {
+        setServerLoadFailed(false);
+        setProgress((prev) => {
+```
+
 - [ ] **Step 4: 屏 12 的卡接通,路由加一条**
 
-`TsumegoUnitsPage.tsx`:`./tsumegoUnits` 的 import 补上 `isWrongEntry`。
+`TsumegoUnitsPage.tsx`:`./tsumegoUnits` 的 import 补上 `isWrongEntry`;`:42` 那行 `const { unitProgress, progress } = useTsumegoProgress();` 换成 `const { unitProgress, progress, serverLoadFailed } = useTsumegoProgress();`。
 
 文件头 `:31-36`(「── 「只做错过的」为什么是灰的 ──」那一段,不含最后的 ` */`)换成:
 
@@ -1718,6 +1931,8 @@ export const isWrongEntry = (entry: { attempts?: number; completed?: boolean } |
  * `/kiosk/tsumego/:level/:category/wrong` —— 屏 13 同一副骨架,只换题从哪儿来(稿子原注)。
  * 做题屏的上/下一题认 `?set=wrong` 的快照,不动整类那条顺序表。
  * 0 道时灰(`disabled`,不是 `soon`:功能接好了,只是这会儿没有可作用的对象)。
+ * 做题记录没读到(`serverLoadFailed`)而本机算出 0 道 ⇒ 那个 0 是**算不出来**,不是「一道没错」:
+ * 不写「0 道」、不灰,点进错题页那边有重试。
 ```
 
 `:142-143`(`// 做错过的 = 试过、但还没做对。这个数算得出来,去处没有 —— 见文件头。` 那行注释 + 下一行 `const wrongCount = …`)换成:
@@ -1725,6 +1940,8 @@ export const isWrongEntry = (entry: { attempts?: number; completed?: boolean } |
 ```tsx
   // 做错过的 = 试过、但还没做对。口径只在 `isWrongEntry` 写一次。
   const wrongCount = problemIds.filter((id) => isWrongEntry(progress[id])).length;
+  // 0 道而做题记录没读到 ⇒ 这个 0 是编的(和 `GrowthPage` 的 `solved` 同一条)。见文件头。
+  const wrongUnknown = serverLoadFailed && wrongCount === 0;
 ```
 
 `:215-221` 那张卡换成:
@@ -1732,9 +1949,13 @@ export const isWrongEntry = (entry: { attempts?: number; completed?: boolean } |
 ```tsx
             <KioskCard
               title={t('Only the ones I got wrong', '只做错过的')}
-              sub={interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongCount })}
+              sub={
+                wrongUnknown
+                  ? t('tsumego:progressUnread', '做题记录没读到')
+                  : interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongCount })
+              }
               icon="arrow-clockwise"
-              disabled={wrongCount === 0}
+              disabled={wrongCount === 0 && !wrongUnknown}
               onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/wrong`)}
             />
 ```
@@ -1777,8 +1998,10 @@ import {
  *   · 格子 = 这一类里「试过、还没做对」的全部题(`isWrongEntry`),格上写**整类真题号**;
  *   · 数据条三格换成「现在有几道 / 平均尝试次数 / 这一类已做对」—— 「本单元已做对」恒 0、
  *     「平均用时」对没做对的题恒「—」,两格在这里没话可说;
- *   · 点格那一刻写快照(`writeWrongSequence`),做题屏靠 `?set=wrong` 只在快照里翻页;
- *   · 「换一批」只留整级那一行 —— 错题那一行指向自己。
+ *   · 点格那一刻写快照(`writeWrongSequence`,**按账号存**),做题屏靠 `?set=wrong` 只在快照里翻页;
+ *   · 「换一批」只留整级那一行 —— 错题那一行指向自己;
+ *   · 一道错题都算不出来时分两种说:做题记录没读到(`serverLoadFailed`)⇒「做题记录没读到」+ 重试
+ *     (Provider 不会自己重拉);读到了、真没有 ⇒「这一类现在没有做错过的题」。屏 13 那一行同一条。
  * 错题多于 20 道时这一屏**会滚**(屏 13 本来那一支断言的是「满编 20 格不滚」),
  * 能不能滚归 `tests/kiosk-tsumego-wrong.spec.ts` 那条真浏览器闸。
 ```
@@ -1793,7 +2016,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
   const { level, category, unit } = useParams<{ level: string; category: string; unit: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { progress } = useTsumegoProgress();
+  const { progress, serverLoadFailed, refresh } = useTsumegoProgress();
   const { user } = useAuth();
   const isWrongSet = set === 'wrong';
 
@@ -1847,6 +2070,8 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
   const unitIds = allIds ? allIds.slice(offset, offset + UNIT_SIZE) : [];
   // 做错过的 = 试过、还没做对,整类口径(和屏 12 的卡同一个数)。错题页的格子就是它。
   const wrongIds = allIds ? allIds.filter((id) => isWrongEntry(progress[id])) : [];
+  // 0 道而做题记录没读到 ⇒ 这个 0 是编的:错题页不说「没有」、屏 13 那一行不写「0 道」也不灰。见文件头。
+  const wrongUnknown = serverLoadFailed && wrongIds.length === 0;
   const listIds = isWrongSet ? wrongIds : unitIds;
   const judged = t('Judged on placement', '落子即判');
 
@@ -1901,8 +2126,21 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
             <div className="empty" data-testid="problems-empty">
               <h4>{t('No problems in this category yet', '这一类下面还没有题')}</h4>
             </div>
+          ) : isWrongSet && wrongUnknown ? (
+            // 做题记录没读到 ≠ 没有错题。Provider 读失败后不会自己重拉 ⇒ 这里给重试(`refresh`);
+            // 重读途中 `serverLoadFailed` 保持为真(读成功才清),所以按下去不会闪一下「没有做错过的题」。
+            // 返回走页控条的「单元」,这里不再摆第二颗键。
+            <div className="empty" data-testid="problems-wrong-unknown">
+              <h4>{t('tsumego:progressUnread', '做题记录没读到')}</h4>
+              <p>{t('tsumego:progressUnreadBody', '读不到做题记录，就说不出这一类错过哪几道。等网络恢复后再点重试。')}</p>
+              <button type="button" className="kiosk-btn kiosk-btn--pill pill" onClick={() => refresh()}>
+                {t('Retry', '重试')}
+              </button>
+            </div>
           ) : isWrongSet ? (
-            // 这一类里没有「试过、还没做对」的题。进度先读本地、再合并服务端,合并到了会自己重渲。
+            // 这一类里没有「试过、还没做对」的题,而且做题记录读到了(或本来就只有本机那份)。
+            // 已知边角:初次读还在路上时这里会先说「没有」—— Provider 没有「在读」标志,读回来会自己重渲;
+            // 那一刻入口(屏 12 卡 / 屏 13 行)按「0 道、没失败」是灰的,只有深链会先看到这一句。
             <div className="empty" data-testid="problems-no-wrong">
               <h4>{t('tsumego:noWrong', '这一类现在没有做错过的题')}</h4>
               <button type="button" className="kiosk-btn kiosk-btn--pill pill" onClick={backToUnits}>
@@ -1955,8 +2193,8 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
       navigate(`/kiosk/tsumego/problem/${id}`);
       return;
     }
-    // 快照在**点下去那一刻**写:做题途中做对一道,它不会从上/下一题里消失(T1)。
-    if (level && category) writeWrongSequence(level, category, wrongIds);
+    // 快照在**点下去那一刻**写:做题途中做对一道,它不会从上/下一题里消失(T1)。按账号存。
+    if (level && category) writeWrongSequence(user?.id, level, category, wrongIds);
     navigate(`/kiosk/tsumego/problem/${id}?set=wrong`);
   };
 
@@ -2081,15 +2319,18 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
                   <em>
                     {t('Redo the ones you got wrong in this category', '把这一类做错的重来一遍')}
                     {' · '}
-                    {interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongIds.length })}
+                    {wrongUnknown
+                      ? t('tsumego:progressUnread', '做题记录没读到')
+                      : interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongIds.length })}
                   </em>
                 </div>
                 <div className="kiosk-row__end">
-                  {/* 0 道时灰:没有可作用的对象。有就进错题页(T1)。 */}
+                  {/* 0 道时灰:没有可作用的对象。有就进错题页(T1)。
+                      做题记录没读到时不灰:0 是算不出来,错题页那边有重试。 */}
                   <button
                     type="button"
                     className="kiosk-btn kiosk-btn--pill"
-                    disabled={wrongIds.length === 0}
+                    disabled={wrongIds.length === 0 && !wrongUnknown}
                     onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/wrong`)}
                   >
                     {t('Start', '开始')}
@@ -2105,17 +2346,19 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
 };
 ```
 
-- [ ] **Step 6: 跑测试确认通过,类型检查,新 key 不撞 PO**
+- [ ] **Step 6: 跑测试确认通过,类型检查,新 key 不撞 PO,两套构建(动了共享领地)**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-tsumego/katrain/web/ui
-npx vitest run src/kiosk/__tests__/TsumegoUnitsPage.test.tsx src/kiosk/__tests__/TsumegoUnitListPage.test.tsx src/kiosk/__tests__/navigation.integration.test.tsx
+npx vitest run src/kiosk/__tests__/TsumegoUnitsPage.test.tsx src/kiosk/__tests__/TsumegoUnitListPage.test.tsx src/kiosk/__tests__/navigation.integration.test.tsx src/context/__tests__/TsumegoProgressContext.test.tsx src/kiosk/__tests__/GrowthPage.test.tsx
 npx tsc -b
 grep -rn "还没接" src/kiosk/pages/TsumegoUnitsPage.tsx src/kiosk/pages/TsumegoUnitListPage.tsx
-grep -o 'msgid "tsumego:[^"]*"' ../../../katrain/i18n/locales/cn/LC_MESSAGES/katrain.po | grep -E 'wrongSet|noWrong|"tsumego:dao"|wrongStatLabel|solvedInCategory|wrongState'
+grep -rn "kiosk_problems_[^'\"]*_wrong['\"]" src tests | grep -v "__tests__/TsumegoUnitListPage.test.tsx"
+grep -o 'msgid "tsumego:[^"]*"' ../../../katrain/i18n/locales/cn/LC_MESSAGES/katrain.po | grep -E 'wrongSet|noWrong|"tsumego:dao"|wrongStatLabel|solvedInCategory|wrongState|progressUnread'
+npm run build && npm run build:kiosk-2d
 ```
 
-Expected:vitest 全 PASS(屏 13 原有用例一条不少,外加本任务新增的错题页 5 条与入口 2 条);tsc 无输出;两个 `grep` 都无输出(`TsumegoUnitsPage.tsx` 文件头那段旧说明已在 Step 4 换掉;`TsumegoUnitListPage.tsx` 行内那句「§14 那个琥珀标」随 Step 5 整段替换一起没了)。然后跑「基线比较」。
+Expected:vitest 全 PASS(屏 13 原有用例一条不少,外加本任务新增的错题页 6 条、入口 6 条(屏 12 卡 3 条、屏 13 行 3 条)、Provider 1 条;`GrowthPage` 是 `serverLoadFailed` 另一个读者,照旧绿);tsc 无输出;三个 `grep` 都无输出(`TsumegoUnitsPage.tsx` 文件头那段旧说明已在 Step 4 换掉;`TsumegoUnitListPage.tsx` 行内那句「§14 那个琥珀标」随 Step 5 整段替换一起没了;第二个 `grep` 找的是**不带 `:u<id>`** 的错题快照钥匙字面量 —— 排除的那个测试文件里它是**有意**出现的(`toBeNull()` 断言不分人的钥匙没被写),别处出现就是漏了按账号);两次 build 成功,`verify:kiosk-2d` 退出码 0。然后跑「基线比较」。
 
 - [ ] **Step 7: 写错题页承重闸(当场量,不攒到 Task 9)**
 
@@ -2229,9 +2472,9 @@ Expected:FAIL,停在「没造出 60 道错题」(或「60 道还装得下」)—
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-tsumego
-git add katrain/web/ui/src/kiosk/pages/tsumegoUnits.ts katrain/web/ui/src/kiosk/pages/TsumegoUnitsPage.tsx katrain/web/ui/src/kiosk/pages/TsumegoUnitListPage.tsx katrain/web/ui/src/kiosk/KioskApp.tsx katrain/web/ui/src/kiosk/__tests__/TsumegoUnitsPage.test.tsx katrain/web/ui/src/kiosk/__tests__/TsumegoUnitListPage.test.tsx katrain/web/ui/tests/kiosk-tsumego-wrong.spec.ts
+git add katrain/web/ui/src/kiosk/pages/tsumegoUnits.ts katrain/web/ui/src/kiosk/pages/TsumegoUnitsPage.tsx katrain/web/ui/src/kiosk/pages/TsumegoUnitListPage.tsx katrain/web/ui/src/kiosk/KioskApp.tsx katrain/web/ui/src/context/TsumegoProgressContext.tsx katrain/web/ui/src/context/__tests__/TsumegoProgressContext.test.tsx katrain/web/ui/src/kiosk/__tests__/TsumegoUnitsPage.test.tsx katrain/web/ui/src/kiosk/__tests__/TsumegoUnitListPage.test.tsx katrain/web/ui/tests/kiosk-tsumego-wrong.spec.ts
 git diff --cached --stat
-git commit -m "feat(kiosk-tsumego): 「只做错过的」接通 —— 屏 12/13 可点,错题页用屏 13 同一副骨架,点格写快照"
+git commit -m "feat(kiosk-tsumego): 「只做错过的」接通 —— 屏 12/13 可点,错题页用屏 13 同一副骨架,点格写按账号存的快照;做题记录没读到时不说「没有错题」、给重试"
 ```
 
 ---
@@ -2243,7 +2486,7 @@ git commit -m "feat(kiosk-tsumego): 「只做错过的」接通 —— 屏 12/13
 - Test: `katrain/web/ui/src/kiosk/__tests__/TsumegoProblemPage.test.tsx:6`(import),文件末尾最外层 `describe` 里新增 `describe('错题模式 ?set=wrong(T1)')`
 
 **Interfaces:**
-- Consumes: Task 7 的 `readWrongSequence(level, category): string[] | null`、`wrongSequenceKey(level, category)`;Task 4 的 `writePracticeResume(userId, { label, route })`
+- Consumes: Task 7 的 `readWrongSequence(userId, level, category): string[] | null`、`wrongSequenceKey(userId, level, category): string | null`(测试里用);Task 4 的 `writePracticeResume(userId, { label, route })` 与已接进这一屏的 `const { user } = useAuth();`
 - Produces: 做题屏内部的 `inWrongSet: boolean` 与派生出的 `sequence: string[]`(错题模式 = 快照,否则 = 整类顺序表);所有导航在错题模式下带 `?set=wrong`,回错题页 `/kiosk/tsumego/<level>/<category>/wrong`
 
 - [ ] **Step 1: 写失败的测试**
@@ -2273,7 +2516,8 @@ import { AUTO_ADVANCE_KEY, sequenceKey, wrongSequenceKey } from '../pages/tsumeg
     const button = (name: string) => screen.getByRole('button', { name });
 
     beforeEach(() => {
-      sessionStorage.setItem(wrongSequenceKey('15k', '手筋'), JSON.stringify(['q3', 'p1', 'q41']));
+      // 快照按账号存;这个文件的 useAuth mock 是 id 7(Task 4 加的)。
+      sessionStorage.setItem(wrongSequenceKey(7, '15k', '手筋')!, JSON.stringify(['q3', 'p1', 'q41']));
     });
 
     it('页控条写「错题 第 i / n 道」;上/下一题只在快照里走,而且带着 ?set=wrong', () => {
@@ -2305,7 +2549,7 @@ import { AUTO_ADVANCE_KEY, sequenceKey, wrongSequenceKey } from '../pages/tsumeg
       // 造的是**输入**(45 道错题);断言的是组件算出来的 <i> 个数,不是布局结论。
       // 上限 20 = 整类模式一个单元的点数 ⇒ 右栏的高度来源和改之前同一个最大值。
       const long = Array.from({ length: 45 }, (_, i) => (i === 25 ? 'p1' : `w${i}`));
-      sessionStorage.setItem(wrongSequenceKey('15k', '手筋'), JSON.stringify(long));
+      sessionStorage.setItem(wrongSequenceKey(7, '15k', '手筋')!, JSON.stringify(long));
       renderWrong('p1');
       expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('错题 第 26 / 45 道');
       expect(screen.getByTestId('puzzle-unit')).toHaveTextContent('错题 · 45 道');
@@ -2322,7 +2566,18 @@ import { AUTO_ADVANCE_KEY, sequenceKey, wrongSequenceKey } from '../pages/tsumeg
     });
 
     it('快照里没有这道题(深链、换了标签页)⇒ 退回整类,不假装还在错题里', () => {
-      sessionStorage.setItem(wrongSequenceKey('15k', '手筋'), JSON.stringify(['x', 'y']));
+      sessionStorage.setItem(wrongSequenceKey(7, '15k', '手筋')!, JSON.stringify(['x', 'y']));
+      renderWrong('p1');
+      expect(screen.getByText('第 2 题')).toBeInTheDocument();
+      fireEvent.click(button('下一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p2');
+    });
+
+    it('同一标签页甲→乙→甲:别的账号写下的快照不认,就算里面恰好有这道题 —— 退回整类', () => {
+      // 甲(u7)自己的快照没了,标签页里只剩乙(u8)点错题页时写的那份,而它恰好也含 p1。
+      // 不分人的钥匙在这里会过 `includes('p1')`,甲点「继续」就进了乙的错题、下一题去 b2。
+      sessionStorage.removeItem(wrongSequenceKey(7, '15k', '手筋')!);
+      sessionStorage.setItem(wrongSequenceKey(8, '15k', '手筋')!, JSON.stringify(['p1', 'b2']));
       renderWrong('p1');
       expect(screen.getByText('第 2 题')).toBeInTheDocument();
       fireEvent.click(button('下一题'));
@@ -2347,7 +2602,7 @@ import { render, screen, fireEvent, act, within } from '@testing-library/react';
 - [ ] **Step 2: 跑测试确认失败**
 
 Run: `cd /Users/fan/Repositories/katrain-kiosk-go-tsumego/katrain/web/ui && npx vitest run src/kiosk/__tests__/TsumegoProblemPage.test.tsx`
-Expected: FAIL —— 前五条失败(页控条仍写「第 2 题」、导航不带 `?set=wrong`、没有「返回错题」、单元块写「第 1 单元」、点阵个数不对、续做路由不带查询串);后两条(退回整类)现在就 PASS,它们守的是改完别把整类行为弄坏。
+Expected: FAIL —— 前五条失败(页控条仍写「第 2 题」、导航不带 `?set=wrong`、没有「返回错题」、单元块写「第 1 单元」、点阵个数不对、续做路由不带查询串);后三条(退回整类、别人的快照不认)现在就 PASS,它们守的是改完别把整类行为弄坏、别读错账号 —— 「别人的快照不认」那条要和第一条合起来看:第一条证明本账号的快照读得到,这条才不是因为错题模式整个没接上而绿。
 
 - [ ] **Step 3: 顺序表拆成「整类」和「这一趟在走的」**
 
@@ -2380,11 +2635,12 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
   // `?set=wrong` 且错题快照里有这道题 ⇒ 上/下一题、做对自动下一题、实体模式做对后的翻页,
   // 全部只在快照里走(快照由错题页在点格那一刻写,见 `TsumegoUnitListPage`)。
   // 快照读不到 / 不含这道题(深链、换了标签页)⇒ 退回整类,**不假装还在错题里**。
+  // 快照按账号读(`user` 是 Task 4 在组件体开头取的):同一标签页换人,读不到别人点错题页时写的那份。
   const [searchParams] = useSearchParams();
   const wantWrongSet = searchParams.get('set') === 'wrong';
   const wrongSequence = useMemo(
-    () => (wantWrongSet && problem ? readWrongSequence(problem.level, problem.category) : null),
-    [wantWrongSet, problem],
+    () => (wantWrongSet && problem ? readWrongSequence(user?.id, problem.level, problem.category) : null),
+    [wantWrongSet, problem, user?.id],
   );
   const inWrongSet = !!problemId && !!wrongSequence && wrongSequence.includes(problemId);
   const sequence = inWrongSet && wrongSequence ? wrongSequence : categorySequence;
@@ -2528,7 +2784,7 @@ git commit -m "feat(kiosk-tsumego): 做题屏认 ?set=wrong —— 错题快照�
 - (错题页承重闸 `tests/kiosk-tsumego-wrong.spec.ts` 已在 Task 7 Step 7–9 写好并跑过 —— 承重关卡要求当场量,不在这里补。)
 
 **Interfaces:**
-- Consumes: Task 4 的钥匙 `tsumego_progress:u<id>`(进度,已有)与 `kiosk_tsumego_*:u<id>`;Task 7 的路由 `/kiosk/tsumego/:level/:category/wrong` 与快照钥匙 `kiosk_problems_<level>_<category>_wrong`;`captureFourUp` / `freezeClock` / `stubBackendStatics` / `KIOSK_VIEWPORT`(`tests/helpers/fourup.ts`)
+- Consumes: Task 4 的钥匙 `tsumego_progress:u<id>`(进度,已有)与 `kiosk_tsumego_*:u<id>`;Task 7 的路由 `/kiosk/tsumego/:level/:category/wrong` 与快照钥匙 `kiosk_problems_<level>_<category>_wrong:u<id>`(按账号);`captureFourUp` / `freezeClock` / `stubBackendStatics` / `KIOSK_VIEWPORT`(`tests/helpers/fourup.ts`)
 - Produces: 无代码接口;产出是四图存档
 
 - [ ] **Step 1: 改屏 12 / 13 四图的标签带文字**
@@ -2556,7 +2812,7 @@ git commit -m "feat(kiosk-tsumego): 做题屏认 ?set=wrong —— 错题快照�
 `katrain/web/ui/tests/kiosk-tsumego-wrong.fourup.spec.ts`:
 
 ```ts
-import { test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { resolve } from 'node:path';
 import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
@@ -2594,7 +2850,8 @@ const boot = async (page: Page, snapshot: string[] | null) => {
     localStorage.setItem('katrain_language', 'cn');
     localStorage.setItem('kiosk_tsumego_physical', 'false');
     localStorage.setItem('tsumego_progress:u1', JSON.stringify(progress));
-    if (snap) sessionStorage.setItem('kiosk_problems_15k_capturing_wrong', JSON.stringify(snap));
+    // 错题快照按账号存(Task 7),下面 auth/me 回 id=1 ⇒ `:u1`。钥匙写错的话做题屏会静默退回整类,四图照样出图。
+    if (snap) sessionStorage.setItem('kiosk_problems_15k_capturing_wrong:u1', JSON.stringify(snap));
   }, { progress: PROGRESS, snap: snapshot });
   await stubBackendStatics(page);
   await page.route('**/api/v1/**', (route) => {
@@ -2632,6 +2889,8 @@ test('四图:做题屏错题模式 ←→ sample-go/shots/14-puzzle.png(同一�
   await boot(page, [PROBLEM.id, 'p8', 'p20', 'p33']);
   await page.goto(`/kiosk/tsumego/problem/${PROBLEM.id}?set=wrong`);
   await page.waitForSelector('.kiosk-layout-a .dots i:nth-child(4)');
+  // 前置:真的在错题模式里。快照钥匙没对上时做题屏退回整类(45 道 ⇒ 点阵照样有第 4 个),上面那句等待拦不住。
+  await expect(page.getByTestId('puzzle-pagebar')).toContainText('错题 第 1 / 4 道');
   await page.waitForLoadState('networkidle');
   const r = await captureFourUp({
     page,
@@ -2699,7 +2958,7 @@ git commit -m "test(kiosk-tsumego): 屏 11–13 四图重取 + 错题页 / 做�
 
 | prd.md §3 条目 | 落在哪 | 验收里「必须上板」的那一半 |
 |---|---|---|
-| T9 做题页不再无条件套标定守卫(含页内实体开关认几何确认) | Task 1 | Task 9 Step 6 清单第 1 条 |
+| T9 做题页不再无条件套标定守卫(含页内实体开关认几何确认;开关开着、几何中途失效时照样说原因并挂「去标定」) | Task 1 | Task 9 Step 6 清单第 1 条 |
 | N9(训练营)503 与文案 | Task 2(后端契约)→ Task 3(前端) | 清单第 2 条 |
 | N10(训练营)「上次」按账号存 | Task 4(含两份 e2e fixture) | 清单第 3 条 |
 | N26③ 问候副标 | Task 5;四图屏 11 在 Task 9 | —— |
@@ -2707,8 +2966,8 @@ git commit -m "test(kiosk-tsumego): 屏 11–13 四图重取 + 错题页 / 做�
 | T4(文案)退一手原因 | Task 5 | 清单第 4 条(实体模式) |
 | T8(死键)删「开始答题」 | Task 6 | 清单第 4 条 |
 | N12 拿除写棋盘坐标 | Task 6 | 清单第 4 条(与蓝灯位置一致只能在板上看) |
-| T1 只做错过的 | Task 7(入口 + 错题页 + 承重闸)→ Task 8(做题屏快照翻页,点阵上限 20)→ Task 9(两组新四图) | —— |
-| §7 两套构建 / tsc -b / 基线 diff / 四图 / 承重 | Task 3 Step 6(共享领地那一次)、每个任务收尾的「基线比较」、Task 7 Step 7–9(承重闸,当场量)、Task 9 Step 1–4 | —— |
+| T1 只做错过的 | Task 7(入口 + 错题页 + 承重闸;快照按账号存;做题记录没读到 ⇒ 不说 0 道 / 没有,错题页给重试)→ Task 8(做题屏快照翻页,点阵上限 20,按账号读快照)→ Task 9(两组新四图) | —— |
+| §7 两套构建 / tsc -b / 基线 diff / 四图 / 承重 | Task 3 Step 6 与 Task 7 Step 6(动共享领地的两次)、每个任务收尾的「基线比较」、Task 7 Step 7–9(承重闸,当场量)、Task 9 Step 1–4 | —— |
 
 §4 的 D1 / D2 / D3 与 §5 的全部条目**没有**任务 —— 按 PRD 的约定,待拍板与不在本轮的不进计划。
 
@@ -2719,13 +2978,27 @@ git commit -m "test(kiosk-tsumego): 屏 11–13 四图重取 + 错题页 / 做�
 - `readLastLevel / writeLastLevel / readLastCategory / writeLastCategory` 在 Task 4 定义为**首参 `userId`**;Task 4 的四个页面、Task 7 Step 5 的整段组件、Task 8 Step 4 的 effect 都按 `(user?.id, …)` 调用。
 - `readPracticeResume / writePracticeResume(userId, { label, route })`:Task 4 定义,Task 4 首页读、Task 8 做题屏写(错题模式 route 带 `?set=wrong`)。
 - `isCloudUnreachable / loadErrorCopy(t, error)`:Task 3 定义,Task 3 六个页面与 Task 7 Step 5 的错误块使用。
-- `wrongSequenceKey / readWrongSequence / writeWrongSequence / isWrongEntry`:Task 7 Step 3 定义;Task 7 屏 12 卡 / 错题页用 `isWrongEntry` 与 `writeWrongSequence`,Task 8 用 `readWrongSequence`,Task 8 测试用 `wrongSequenceKey`,Task 9 四图 fixture 用字面量 `kiosk_problems_15k_capturing_wrong`(与 `wrongSequenceKey('15k','capturing')` 同值)。
+- `wrongSequenceKey(userId, level, category) / readWrongSequence(userId, level, category) / writeWrongSequence(userId, level, category, ids)`(**首参 `userId`**,同 Task 4 那一组,复用 `scopedKey`)与 `isWrongEntry`:Task 7 Step 3(a) 定义;Task 7 屏 12 卡 / 错题页用 `isWrongEntry` 与 `writeWrongSequence(user?.id, …)`,Task 8 用 `readWrongSequence(user?.id, …)`(`useMemo` 依赖含 `user?.id`),Task 8 测试用 `wrongSequenceKey(7 | 8, …)!`,Task 7 测试用字面量 `kiosk_problems_15k_capturing_wrong:u7`,Task 9 四图 fixture 用字面量 `kiosk_problems_15k_capturing_wrong:u1`(与 `wrongSequenceKey(1,'15k','capturing')` 同值;fourup 里有一句页控条断言兜住钥匙写错时的静默退回)。
+- `useTsumegoProgress()` 的 `serverLoadFailed` / `refresh`:Task 7 Step 3(b) 把「清失败标志」挪到读成功之后;Task 7 屏 12 卡读 `serverLoadFailed`,`TsumegoUnitListPage` 读 `serverLoadFailed` 与 `refresh`;两个页面测试的进度 mock 补上这两项。`GrowthPage` 是它另一个读者,不调 `refresh`,行为不变。
+- 新文案 key `tsumego:progressUnread` / `tsumego:progressUnreadBody`(Task 7):已对 cn PO 查过不撞名,Task 7 Step 6 的 `grep` 复查。Task 1 Step 7(c) 没有新文案(复用 `physicalHint` 原有几句)。
 - 路由 `/kiosk/tsumego/:level/:category/wrong`:Task 7 Step 4 加路由,Task 7 测试 / Task 8 返回去处 / Task 9 两个 spec 用同一条。
 - `BoardSetupGuide` 删掉 `isComplete` / `onStartProblem`:Task 6 Step 3 改组件,Step 4 改唯一调用点,Step 6 `grep` 确认零残留。
 - `TSUMEGO_UNAVAILABLE`(后端常量)只在 `repository.py` 内使用;端点只认异常类型,不认这句字符串。
 
-**4. 已知的顺序依赖** —— Task 3 → Task 7(错误块写法)、Task 4 → Task 7 / 8(`userId` 签名)、Task 5 → Task 7(整级那行文案在 Task 7 的整段替换里必须保持 Task 5 的新句)、Task 2 → Task 3(503 契约)、Task 7 → Task 8 → Task 9。Task 1 / 3 / 4 / 5 / 6 / 8 都改 `TsumegoProblemPage.tsx` 与 `TsumegoProblemPage.test.tsx`,**按编号顺序串行做**(后面的锚点建立在前面改完的文本上),不要并行派发。
+**4. 已知的顺序依赖** —— Task 3 → Task 7(错误块写法)、Task 4 → Task 7 / 8(`userId` 签名)、Task 5 → Task 7(整级那行文案在 Task 7 的整段替换里必须保持 Task 5 的新句)、Task 2 → Task 3(503 契约)、Task 7 → Task 8 → Task 9。Task 4 → Task 7 还多一层:错题快照放在 Task 4 加的 `writePracticeResume` 之后、复用它上面的 `scopedKey`。Task 1 / 3 / 4 / 5 / 6 / 8 都改 `TsumegoProblemPage.tsx` 与 `TsumegoProblemPage.test.tsx`,**按编号顺序串行做**(后面的锚点建立在前面改完的文本上),不要并行派发。Task 7 动共享领地 `TsumegoProgressContext.tsx`(一处),收尾要跑两套构建。
 
 ## 执行交接
 
 计划写完后由主会话决定执行方式:推荐 superpowers:subagent-driven-development(每个任务一个新子代理,任务之间复审);或 superpowers:executing-plans 在同一会话里分批执行。无论哪种,**Task 9 Step 6 的 Fan 视觉确认与上板清单不可跳过**,确认前本赛道不算完成、不合并。
+
+## 修订记录
+
+### 2026-09-15 · Codex 对抗审查第 1 轮
+
+每条都先对着源码核过(行号按 `6f7dc629`,与当前 HEAD 同):
+
+| # | 发现 | 裁定 | 理由(一行) | 改了哪儿 |
+|---|---|---|---|---|
+| 1 | [high] 错题快照钥匙不分账号,甲→乙→甲会在乙的错题里翻页 | **采纳** | `AuthContext.tsx:129-144` 登出只清 token,盒端换人整页跳 launcher 再回来、标签页不变 ⇒ sessionStorage 留着;快照是「这个人做错了哪几道」,和 N10 那三样同一类,整类顺序表才是不分人的题库事实 | Task 7 Interfaces / Step 1(快照钥匙断言带 `:u7`、不写不分人的那把)/ Step 3(a)(三个函数首参 `userId`,复用 Task 4 的 `scopedKey`,插入点改到 `writePracticeResume` 之后)/ Step 5(`writeWrongSequence(user?.id, …)`)/ Step 6(grep 不分人的钥匙字面量);Task 8 Interfaces / Step 1(三处 `wrongSequenceKey(7, …)!` + 甲→乙→甲一条)/ Step 2 / Step 3(`useMemo` 依赖 `user?.id`);Task 9 Interfaces / fourup fixture `:u1` + 页控条前置断言;Self-Review §3 |
+| 2 | [medium] 屏幕进入、页内开实体、几何中途失效:开关亮着却无原因无「去标定」 | **采纳** | `TsumegoProblemPage.tsx:102-104` `physicalMode \|\| physicalAvailable ? null`;改之前 `PhysicalBoardGuard.tsx:25-30` 随 `GeometryProvider` 每秒轮询整屏接管,T9 之后守卫挂载时就没套上;`geometry_calibration_service.py:423-440` 运行中会把 ready 翻成 degraded。原计划 Step 7「`physicalHint` 不用改」不成立 | Task 1 Files / Step 4 守卫注释 / Step 7 说明段 + 第三条用例(打开 → degraded → rerender)+ (c) 条件改成 `physicalAvailable ? null`;Self-Review §1 |
+| 3 | [medium] 做题记录读失败被说成「这一类现在没有做错过的题」,且无从恢复 | **换法采纳** | `TsumegoProgressContext.tsx:336-340` 失败只置 `serverLoadFailed`、不重拉;`:321` 发请求时就清标志 ⇒ 重试途中会闪成「读到了、是空的」。只改错题页不够:同一个 0 在屏 12 卡 / 屏 13 行上是「现在有 0 道」+ 灰,常路根本进不了错题页。**「加载中」这一态不单独做**:Provider 没有在读标志,补一个要扩共享 context 的形状;初次读从登录就开始、读回来自己重渲,入口在「0 道且没失败」时是灰的,只有深链会先看到那句(已写进注释当已知边角) | Task 7 Files / Interfaces / Step 1(两份进度 mock 加 `serverLoadFailed`/`refresh`;屏 12 卡、屏 13 行各一条「没读到不说 0 道、不灰」;错题页「没读到 → 重试 → 重读回来出格子」一条;Provider 一条「重读途中仍为真」)/ Step 2 / Step 3(b)(`fetchAndMerge` 读成功才清标志,共享领地一处)/ Step 4 / Step 5(`wrongUnknown`、`problems-wrong-unknown` 块、行尾文案与 `disabled`)/ Step 6(加跑 Provider 与 `GrowthPage` 测试、两套构建、PO grep 加 `progressUnread`)/ Step 10 `git add`;Global Constraints 共享领地一句;File Structure;Self-Review §1 §3 §4 |

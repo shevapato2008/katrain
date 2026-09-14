@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
-import { BaipuAPI, canonToBoard, canonToGtp } from './baipuApi';
+import { BAIPU_MODE_TIMEOUT_MS, BaipuAPI, canonToBoard, canonToGtp } from './baipuApi';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -91,5 +91,54 @@ describe('operator-trusted capture API', () => {
 
     const outcome = await BaipuAPI.capture({ game_id: 'k', move_index: 0, sgf: '(;B[pd])' });
     expect(outcome).toEqual({ kind: 'error', message: 'LED bus down', reason: 'led' });
+  });
+});
+
+describe('摆谱拍不拍照:BaipuAPI.mode()', () => {
+  it('后端明说 collect:true 才是采集态', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ collect: true }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    })));
+    expect(await BaipuAPI.mode()).toEqual({ collect: true });
+  });
+
+  // 猜成「拍」的代价:盒上每一手都可能被几何 / 灯的 409 卡住;猜成「不拍」的代价:
+  // 采数据的人一眼看见屏上没有「已采集 N 帧」。所以问不到一律当「不拍」。
+  it('问不到一律当不拍:旧后端 404 / 网络错 / 不认识的回包', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{"detail":"Not Found"}', { status: 404 })));
+    expect(await BaipuAPI.mode()).toEqual({ collect: false });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+    expect(await BaipuAPI.mode()).toEqual({ collect: false });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ collect: 'yes' }), { status: 200 })));
+    expect(await BaipuAPI.mode()).toEqual({ collect: false });
+  });
+
+  // 后端卡住(事件循环被别的同步调用堵着)时 fetch 既不 reject 也不 resolve —— 光有 catch 兜不住,
+  // 摆谱入口会一直停在「正在读这份谱」,缓存谱和导入的 SGF 都进不去。
+  it('问了不回:到点当不拍;超时之后才回来的 collect:true 也不改判', async () => {
+    vi.useFakeTimers();
+    try {
+      let late!: (r: Response) => void;
+      vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((resolve) => { late = resolve; })));
+      const asked = BaipuAPI.mode();
+      await vi.advanceTimersByTimeAsync(BAIPU_MODE_TIMEOUT_MS);
+      // 迟到的「拍」不许在摆谱途中把页面切到采集态:mode() 只 settle 一次,这一次已经是「不拍」。
+      late(new Response(JSON.stringify({ collect: true }), { status: 200 }));
+      await expect(asked).resolves.toEqual({ collect: false });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('回包头到了、body 一直不结束:超时同样覆盖读 body 那一段', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => new Promise(() => {}) }));
+      const asked = BaipuAPI.mode();
+      await vi.advanceTimersByTimeAsync(BAIPU_MODE_TIMEOUT_MS);
+      await expect(asked).resolves.toEqual({ collect: false });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

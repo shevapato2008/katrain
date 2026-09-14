@@ -77,6 +77,18 @@ export type BaipuCaptureOutcome =
   | { kind: 'disabled' } // 404: capture/geometry not available
   | { kind: 'error'; message: string; reason: BaipuCaptureErrorReason };
 
+/** 这台机器摆谱时拍不拍照。见 `BaipuAPI.mode`。 */
+export interface BaipuMode {
+  collect: boolean;
+}
+
+/**
+ * `BaipuAPI.mode` 最多等多久(毫秒,**含读 body**)。到点当「不拍」。
+ * 这一问在盒上打的是本机后端、回的是一个布尔,正常几十毫秒;等满 3 秒说明后端卡住了,
+ * 而摆谱入口在问到之前只有一块「正在读这份谱」—— 不能让它无限转圈。
+ */
+export const BAIPU_MODE_TIMEOUT_MS = 3000;
+
 export const BaipuAPI = {
   load: async (req: { sgf?: string; kifu_id?: number }): Promise<BaipuLoadResponse> => {
     const response = await fetch(`${API_BASE}/load`, {
@@ -128,6 +140,40 @@ export const BaipuAPI = {
       return { kind: 'error', message: message ?? 'capture conflict', reason };
     }
     return { kind: 'error', message: `capture failed ${response.status}`, reason: 'other' };
+  },
+
+  /**
+   * 摆谱拍不拍照(`GET /baipu/mode`)。拍照只为采 YOLO 训练数据,上线版不拍(Fan 2026-09-14)。
+   * **问不到一律当「不拍」**:旧后端没这个端点(404)、网络错、回包不认识、`BAIPU_MODE_TIMEOUT_MS`
+   * 内没问完(连接挂着或 body 读不完),全落到上线态。
+   * 猜成「拍」的代价是盒上每一手都可能被几何 / 灯的 409 卡住;猜成「不拍」的代价是
+   * 采数据的人一眼看见屏上没有「已采集 N 帧」。
+   * **只 settle 一次**:超时之后才回来的结果被丢掉 —— 调用方拿到「不拍」就进了摆谱,
+   * 迟到的「拍」不许在摆谱途中把页面切到采集态。
+   * ⚠️ 不要拿 `/capture` 回不回 404 去猜:盒子为了几何标定总是带着 `--capture-camera` 起。
+   */
+  mode: async (): Promise<BaipuMode> => {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // 超时靠 race 兜底,不靠 abort:abort 只是顺手释放连接,测试里被桩掉的 fetch 根本不认 signal。
+    const timedOut = new Promise<BaipuMode>((resolve) => {
+      timer = setTimeout(() => { controller.abort(); resolve({ collect: false }); }, BAIPU_MODE_TIMEOUT_MS);
+    });
+    const asked = (async (): Promise<BaipuMode> => {
+      try {
+        const response = await fetch(`${API_BASE}/mode`, { signal: controller.signal });
+        if (!response.ok) return { collect: false };
+        const body = await response.json().catch(() => null);
+        return { collect: body?.collect === true };
+      } catch {
+        return { collect: false };
+      }
+    })();
+    try {
+      return await Promise.race([asked, timedOut]);
+    } finally {
+      clearTimeout(timer);
+    }
   },
 };
 

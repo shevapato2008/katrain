@@ -36,11 +36,11 @@ const move = (i: number, row: number, col: number, color: 'B' | 'W'): BaipuStep 
 const STEPS: BaipuStep[] = [move(0, 3, 15, 'B'), move(1, 15, 3, 'W')];
 const META = { player_black: '申真谞', player_white: '柯洁', handicap: 0, komi: 7.5, ruleset: 'chinese' };
 
-const renderPage = () =>
+const renderPage = (collect = false) =>
   render(
     <MemoryRouter initialEntries={['/kiosk/baipu/session/g1']}>
       <Routes>
-        <Route path="/kiosk/baipu/session/:source" element={<BaipuSessionPage />} />
+        <Route path="/kiosk/baipu/session/:source" element={<BaipuSessionPage collect={collect} />} />
       </Routes>
     </MemoryRouter>,
   );
@@ -83,5 +83,44 @@ describe('屏 17 摆谱 · 出口都回棋谱屏(K1)', () => {
     fireEvent.click(screen.getByRole('button', { name: '完成' }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
     expect(localStorage.getItem('baipu:progress:g1')).toBeNull();
+  });
+});
+
+describe('屏 17 摆谱 · 上线态不拍照(K4,Fan 2026-09-14)', () => {
+  it('确认落子只推进:一次 /capture 都不发(开局帧也不拍),屏上没有「帧 / 拍照 / 摄像头」', async () => {
+    renderPage(false);
+    await screen.findByTestId('baipu-pcard');
+    fireEvent.click(screen.getByRole('button', { name: '确认落子' }));
+    await waitFor(() => expect(screen.getByTestId('baipu-pagebar')).toHaveTextContent('第 2 / 2 手'));
+    expect(baipuCapture).not.toHaveBeenCalled();
+    expect(screen.getByTestId('baipu-led-fold')).toHaveTextContent('红灯 = 放黑子');
+    expect(screen.queryByTestId('baipu-cam-fold')).toBeNull();
+    expect(screen.getByTestId('baipu-session-page').textContent).not.toMatch(/帧|拍照|摄像头/);
+  });
+
+  it('提子那一手:「已移除」之后照样只推进,不拍照', async () => {
+    baipuLoad.mockResolvedValue({
+      board_size: 19, meta: META,
+      steps: [move(0, 3, 15, 'B'), { ...move(1, 0, 0, 'W'), removed: [{ row: 3, col: 15 }] }],
+    });
+    renderPage(false);
+    await screen.findByTestId('baipu-pcard');
+    fireEvent.click(screen.getByRole('button', { name: '确认落子' }));
+    await waitFor(() => expect(screen.getByTestId('baipu-pcard')).toHaveTextContent('把白子放'));
+    fireEvent.click(screen.getByRole('button', { name: '确认落子' }));
+    await waitFor(() => expect(screen.getByTestId('baipu-pcard')).toHaveAttribute('data-mood', 'removal'));
+    fireEvent.click(screen.getByRole('button', { name: '已移除 1 子' }));
+    await waitFor(() => expect(screen.getByTestId('baipu-pcard')).toHaveAttribute('data-mood', 'done'));
+    expect(baipuCapture).not.toHaveBeenCalled();
+  });
+
+  it('采集态一个字没变:开局帧照拍,确认落子发 /capture', async () => {
+    baipuCapture.mockResolvedValue({ kind: 'ok', result: { ok: true, path: '/c/g1/frame_001.jpg' } });
+    renderPage(true);
+    await screen.findByTestId('baipu-pcard');
+    await waitFor(() => expect(baipuCapture).toHaveBeenCalledWith(expect.objectContaining({ move_index: -1 })));
+    fireEvent.click(screen.getByRole('button', { name: '确认落子' }));
+    await waitFor(() => expect(baipuCapture).toHaveBeenCalledWith(expect.objectContaining({ move_index: 0 })));
+    expect(screen.getByTestId('baipu-cam-fold')).toBeInTheDocument();
   });
 });

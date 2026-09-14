@@ -1182,7 +1182,18 @@ const BAIPU_STEPS = (n: number) => ({
   })),
 });
 
-const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang' } = {}) => {
+const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang'; collect?: boolean } = {}) => {
+  // 上线态(默认)不拍照、不套标定守卫;采集失败 / 拍照遮罩那两态要显式 `collect: true`。
+  await page.route('**/api/v1/baipu/mode', (route) => route.fulfill({ json: { collect: opts.collect ?? false } }));
+  // geometry **两态都要桩**:不桩的话 vite 代理连不上 :8001(或连上别的赛道起的后端)⇒ 状态读不到,
+  // 采集态整屏换成标定台,上线态停在「正在检查棋盘状态」(没读到过就不挂摆谱屏,见 BaipuSessionRoute 页头注)。
+  // 以前这几条绿不绿取决于 :8001 在不在(§33 那条「闸绿取决于另一个进程」)。
+  await page.route('**/api/v1/geometry/status', (route) => route.fulfill({
+    json: {
+      phase: 'disabled', session_calibrated: false, last_error: null,
+      capabilities: { camera_ready: false, led_ready: false, geometry_ready: false, recognition_ready: false },
+    },
+  }));
   await page.route('**/api/v1/baipu/load', (route) => route.fulfill({ json: BAIPU_STEPS(241) }));
   await page.route('**/api/v1/led/**', (route) => route.fulfill({
     json: { ok: true, connected: true, shown_at: null, errors: [] },
@@ -1258,7 +1269,7 @@ test('摆谱:241 手四态轮一遍,「确认落子」始终贴右栏底、盘�
 });
 
 test('摆谱:采集失败那一态,右栏照样不溢出、键照样贴底', async ({ page }) => {
-  await bootBaipu(page, { capture: 'fail' });
+  await bootBaipu(page, { capture: 'fail', collect: true });
   await page.getByRole('button', { name: '确认落子' }).click();
   await expect(page.getByTestId('baipu-pcard')).toHaveAttribute('data-mood', 'failed');
 
@@ -1276,7 +1287,7 @@ test('摆谱:采集失败那一态,右栏照样不溢出、键照样贴底', asy
  * 于是 top 差 14、高多 28,底边被画布裁掉。
  */
 test('摆谱:拍照遮罩的定位原点是布局根,而且真的盖住了那三颗键', async ({ page }) => {
-  await bootBaipu(page, { capture: 'hang' });
+  await bootBaipu(page, { capture: 'hang', collect: true });
   await page.getByRole('button', { name: '确认落子' }).click();
   await page.waitForSelector('[data-testid="baipu-capture-pending"]');
 

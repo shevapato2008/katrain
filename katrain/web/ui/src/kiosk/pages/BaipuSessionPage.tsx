@@ -53,9 +53,20 @@ type Mood = 'guiding' | 'removal' | 'failed' | 'done';
 /**
  * 屏 17 · 摆谱 · 进行中 `/kiosk/baipu/session/:source` —— L2 布局 A(左盘 516 + 16 + 右栏 460)。
  *
- * **这一屏的主角不在屏幕上,在实体盘上。** 灯点着下一手该落哪儿,人把子摆上去,摄像头采一帧
- * (那些帧是 YOLO 的训练数据)。提子要人**自己**把死子拿下来;拍照那一刻手不能在盘上。
- * 屏幕在这儿只是副驾 —— 所以右栏第一块不是棋谱也不是记账,是「**现在轮到你摆哪一颗**」。
+ * **这一屏的主角不在屏幕上,在实体盘上。** 灯点着下一手该落哪儿,人把子摆上去,按一下确认。
+ * 提子要人**自己**把死子拿下来。屏幕在这儿只是副驾 —— 所以右栏第一块不是棋谱也不是记账,
+ * 是「**现在轮到你摆哪一颗**」。
+ *
+ * ## 两态:上线态不拍照,采集态拍(2026-09-14,Fan 纠正)
+ *
+ * 「拍照」只为收集 YOLO 训练数据,上线版不需要。`collect` 由 `BaipuSessionRoute` 问
+ * `GET /api/v1/baipu/mode` 得来(问不到 = `false`):
+ *  · `collect=false`(上线态,盒子默认):确认只推进,不发 `/capture`、不拍开局帧、不响快门;
+ *    摄像头那块换成「灯 · 颜色对照」(同样三行,右栏的账不变);确认键图标不画相机。
+ *  · `collect=true`(`--baipu-collect` 起的采集机):下面写的这一整页原样 —— 拍照那一刻手不能
+ *    在盘上,那些帧是训练数据。
+ * ⚠️ 判别位只有 `collect`。盒子为了几何标定总是带着 `--capture-camera` 起,
+ *    「有采集服务」**不等于**「要拍照」。
  *
  * ## 稿子那一帧有两行是错的(2026-08-24 裁定,已回报稿子作者)
  *
@@ -113,7 +124,7 @@ type Mood = 'guiding' | 'removal' | 'failed' | 'done';
  * 定死「前端是 `steps[]` 的笨播放器,永远不自己重算提子」—— 用它就是屏上画前端算的提子、
  * 灯点后端算的提子,两套气规则同屏跑。盘面走共享的 `replayBaipuSteps`(屏 16 / 屏 19 同款)。
  */
-const BaipuSessionPage = () => {
+const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const { source = '' } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -207,9 +218,9 @@ const BaipuSessionPage = () => {
     [sgf, source, overwriteExisting, advance],
   );
 
-  // 开局那一帧(空盘 + 全灯):尽力而为,失败不拦路。
+  // 开局那一帧(空盘 + 全灯):尽力而为,失败不拦路。**只有采集态拍。**
   useEffect(() => {
-    if (phase === 'guiding' && k === 0 && resumePrompt === null && !initialCapturedRef.current && sgf && steps.length > 0) {
+    if (collect && phase === 'guiding' && k === 0 && resumePrompt === null && !initialCapturedRef.current && sgf && steps.length > 0) {
       initialCapturedRef.current = true;
       BaipuAPI.capture({ game_id: source, move_index: -1, sgf, overwrite_existing: overwriteExisting || undefined })
         .then((out) => {
@@ -222,7 +233,7 @@ const BaipuSessionPage = () => {
         })
         .catch(() => undefined);
     }
-  }, [phase, k, resumePrompt, sgf, source, steps.length, overwriteExisting]);
+  }, [collect, phase, k, resumePrompt, sgf, source, steps.length, overwriteExisting]);
 
   // 没有物理动作的步(pass / AE)自己往前走。
   useEffect(() => {
@@ -264,7 +275,7 @@ const BaipuSessionPage = () => {
     if (!currentStep) return;
     // 提子要人先把死子拿下来,拿完才存帧 —— 否则那一帧上是一个不该存在的局面。
     if (currentStep.removed.length > 0 && phase === 'guiding') { setPhase('await_removal'); return; }
-    void doCapture(k);
+    if (collect) void doCapture(k); else advance();
   };
 
   const handleUndo = () => {
@@ -400,7 +411,9 @@ const BaipuSessionPage = () => {
           onBack={() => setExitOpen(true)}
           title={title}
           sub={interpolate(
-            t('baipu:pagebar_sub', '第 {i} / {n} 手 · 已采集 {f} 帧'),
+            collect
+              ? t('baipu:pagebar_sub', '第 {i} / {n} 手 · 已采集 {f} 帧')
+              : t('baipu:pagebar_sub_placed', '第 {i} / {n} 手'),
             { i: Math.min(k + (phase === 'done' ? 0 : 1), steps.length), n: steps.length, f: frameCount },
           )}
           action={{
@@ -437,7 +450,9 @@ const BaipuSessionPage = () => {
             ) : mood === 'done' ? (
               <>
                 <h4>{t('baipu:done_title', '这份谱摆完了')}</h4>
-                <p>{interpolate(t('baipu:done_hint', '一共 {n} 手 · 采到 {f} 帧'), { n: steps.length, f: frameCount })}</p>
+                <p>{collect
+                  ? interpolate(t('baipu:done_hint', '一共 {n} 手 · 采到 {f} 帧'), { n: steps.length, f: frameCount })
+                  : interpolate(t('baipu:done_hint_placed', '一共 {n} 手'), { n: steps.length })}</p>
               </>
             ) : (
               <>
@@ -459,43 +474,68 @@ const BaipuSessionPage = () => {
           </div>
         </div>
 
-        {/* ── 摄像头 ── 这本账既是采集记录,也是那条 LED 图例的落点 */}
-        <KioskFold
-          fold="cam"
-          testId="baipu-cam-fold"
-          title={t('baipu:cam_title', '摄像头 · 这一手要采一帧')}
-          // 收起的是明细不是结论:没接采集 / 几何有话说,这两句收起来也得看得见。
-          value={captureDisabled
-            ? t('baipu:capture_off', '这台机器没接采集')
-            : driftWord ?? t('baipu:hands_off', '手不要在盘上')}
-          bodyClassName="ledger"
-        >
-          <div className="lrow">
-            <b>{interpolate(t('baipu:frames_n', '已采集 {n} 帧'), { n: frameCount })}</b>
-            <span className="led" style={{ background: LED_HEX.black }} aria-hidden="true" />
-            <i>{t('baipu:legend_black', '红灯 = 放黑子')}</i>
-          </div>
-          <div className="lrow">
-            <b>{latestSavedFile
-              ? interpolate(t('baipu:latest_saved', '最近保存 {f}'), { f: latestSavedFile })
-              : t('baipu:no_frame_yet', '还没存过帧')}</b>
-            <span className="led" style={{ background: LED_HEX.white }} aria-hidden="true" />
-            <i>{t('baipu:legend_white', '绿灯 = 放白子')}</i>
-          </div>
-          <div className="lrow">
-            <b>{interpolate(
-              t('baipu:removed_n', '本手提子 {n} 子'),
-              { n: mood === 'removal' ? (currentStep?.removed.length ?? 0) : 0 },
-            )}</b>
-            <span className="led" style={{ background: LED_HEX.remove }} aria-hidden="true" />
-            <i>{t('baipu:legend_remove', '蓝灯 = 该拿走')}</i>
-          </div>
-          {driftText && (
-            <div className="lrow" data-testid="baipu-drift-row" data-drift-status={drifted?.key}>
-              <b style={drifted?.bad ? { color: 'var(--warn)' } : undefined}>{driftText}</b>
+        {/* ── 摄像头(采集态)/ 灯(上线态)── 这本账也是那条 LED 图例的落点 */}
+        {collect ? (
+          <KioskFold
+            fold="cam"
+            testId="baipu-cam-fold"
+            title={t('baipu:cam_title', '摄像头 · 这一手要采一帧')}
+            // 收起的是明细不是结论:没接采集 / 几何有话说,这两句收起来也得看得见。
+            value={captureDisabled
+              ? t('baipu:capture_off', '这台机器没接采集')
+              : driftWord ?? t('baipu:hands_off', '手不要在盘上')}
+            bodyClassName="ledger"
+          >
+            <div className="lrow">
+              <b>{interpolate(t('baipu:frames_n', '已采集 {n} 帧'), { n: frameCount })}</b>
+              <span className="led" style={{ background: LED_HEX.black }} aria-hidden="true" />
+              <i>{t('baipu:legend_black', '红灯 = 放黑子')}</i>
             </div>
-          )}
-        </KioskFold>
+            <div className="lrow">
+              <b>{latestSavedFile
+                ? interpolate(t('baipu:latest_saved', '最近保存 {f}'), { f: latestSavedFile })
+                : t('baipu:no_frame_yet', '还没存过帧')}</b>
+              <span className="led" style={{ background: LED_HEX.white }} aria-hidden="true" />
+              <i>{t('baipu:legend_white', '绿灯 = 放白子')}</i>
+            </div>
+            <div className="lrow">
+              <b>{interpolate(
+                t('baipu:removed_n', '本手提子 {n} 子'),
+                { n: mood === 'removal' ? (currentStep?.removed.length ?? 0) : 0 },
+              )}</b>
+              <span className="led" style={{ background: LED_HEX.remove }} aria-hidden="true" />
+              <i>{t('baipu:legend_remove', '蓝灯 = 该拿走')}</i>
+            </div>
+            {driftText && (
+              <div className="lrow" data-testid="baipu-drift-row" data-drift-status={drifted?.key}>
+                <b style={drifted?.bad ? { color: 'var(--warn)' } : undefined}>{driftText}</b>
+              </div>
+            )}
+          </KioskFold>
+        ) : (
+          /* 上线态没有摄像头这回事。**行数和采集态一样是三行** —— 右栏的账是死的(页头「四条通栏横幅一条都不进右栏」那段),
+             这一块一变高就压着法表。图例文案沿用那三句,色点仍是灯的真值。 */
+          <KioskFold
+            fold="led"
+            testId="baipu-led-fold"
+            title={t('baipu:led_title', '灯 · 颜色对照')}
+            value={t('baipu:led_value', '摆好再按确认')}
+            bodyClassName="ledger"
+          >
+            <div className="lrow">
+              <b>{t('baipu:legend_black', '红灯 = 放黑子')}</b>
+              <span className="led" style={{ background: LED_HEX.black }} aria-hidden="true" />
+            </div>
+            <div className="lrow">
+              <b>{t('baipu:legend_white', '绿灯 = 放白子')}</b>
+              <span className="led" style={{ background: LED_HEX.white }} aria-hidden="true" />
+            </div>
+            <div className="lrow">
+              <b>{t('baipu:legend_remove', '蓝灯 = 该拿走')}</b>
+              <span className="led" style={{ background: LED_HEX.remove }} aria-hidden="true" />
+            </div>
+          </KioskFold>
+        )}
 
         {/* ── 已经摆过的 ── */}
         <KioskFold
@@ -520,14 +560,15 @@ const BaipuSessionPage = () => {
             mood === 'removal'
               ? {
                 key: 'removed',
-                icon: 'camera',
+                // 相机图标只在真拍照时出现 —— 上线态画个相机,等于屏上说「这一下要拍照」。
+                icon: collect ? 'camera' : 'hand-pointing',
                 label: interpolate(t('baipu:removed_done', '已移除 {n} 子'), { n: currentStep?.removed.length ?? 0 }),
                 disabled: capturePending,
-                onClick: () => { void doCapture(k); },
+                onClick: () => { if (collect) void doCapture(k); else advance(); },
               }
               : {
                 key: 'confirm',
-                icon: 'camera',
+                icon: collect ? 'camera' : 'hand-pointing',
                 label: t('baipu:confirm', '确认落子'),
                 disabled: capturePending || phase === 'done' || !isPlaceable,
                 reason: phase === 'done' ? t('baipu:confirm_done_reason', '这份谱已经摆完了') : undefined,
@@ -572,7 +613,12 @@ const BaipuSessionPage = () => {
         <div className="cdlg" data-testid="baipu-resume">
           <div className="cdlg__box" role="dialog" aria-modal="true">
             <h3>{t('baipu:resume_ask', '接着上次摆？')}</h3>
-            <p>{interpolate(t('baipu:resume_body', '上次摆到第 {n} 手。重新开始会覆盖已经采过的帧。'), { n: resumePrompt })}</p>
+            <p>{interpolate(
+              collect
+                ? t('baipu:resume_body', '上次摆到第 {n} 手。重新开始会覆盖已经采过的帧。')
+                : t('baipu:resume_body_placed', '上次摆到第 {n} 手。从头摆要先把盘上的子都拿下来。'),
+              { n: resumePrompt },
+            )}</p>
             <div className="cdlg__acts">
               <button
                 type="button" className="ghost" data-testid="baipu-resume-restart"

@@ -15,6 +15,10 @@ import { test, expect, type Page } from '@playwright/test';
  *   · 「请移除被提的子」→ 不再是横幅,是 pcard 的 `removal` 态(固定 516 里没有横幅的位置)
  *   · 「采集失败」→ 同上,`failed` 态
  *   · 退出 → 页控条返回键 + `.cdlg` 二次确认(那颗独立的「退出」键没了)
+ *
+ * ⚠️ **2026-09-14 摆谱分两态**(Fan:拍照只为采训练数据,上线版不拍)。`setupSession` 默认挂
+ * `/baipu/mode → {collect:false}`(上线态:不发 `/capture`);要测拍照的四条用例自己再挂
+ * `collectMode(page)`。这份跑在默认配置起的真后端上,那台没起采集服务 ⇒ geometry 404 ⇒ 读到 disabled ⇒ 放行。
  */
 
 const STEPS = {
@@ -40,24 +44,23 @@ async function setupSession(page: Page) {
     route.fulfill({ json: { id: 1, username: 'tester', email: 't@example.com' } }),
   );
   await page.route('**/api/v1/baipu/load', (route) => route.fulfill({ json: STEPS }));
+  await page.route('**/api/v1/baipu/mode', (route) => route.fulfill({ json: { collect: false } }));
   // LED is advisory in the UI; ack everything.
   await page.route('**/api/v1/led/**', (route) =>
     route.fulfill({ json: { ok: true, connected: true, shown_at: null, errors: [] } }),
   );
 }
 
-// Capture disabled (dev/screen-only): /baipu/capture 404s → the UI falls back to a
-// plain advance. This keeps the screen-only flow deterministic without hardware.
-async function captureDisabled(page: Page) {
-  await page.route('**/api/v1/baipu/capture', (route) =>
-    route.fulfill({ status: 404, json: { detail: 'Capture service not enabled' } }),
-  );
+// 采集态(`--baipu-collect` 起的采集机)。Playwright 后挂的 route 先匹配,盖过 setupSession 那条。
+async function collectMode(page: Page) {
+  await page.route('**/api/v1/baipu/mode', (route) => route.fulfill({ json: { collect: true } }));
 }
 
 test.describe('baipu session', () => {
   test('guides through moves, removal, and completion', async ({ page }) => {
     await setupSession(page);
-    await captureDisabled(page);
+    const captures: string[] = [];
+    page.on('request', (r) => { if (r.url().includes('/api/v1/baipu/capture')) captures.push(r.url()); });
     await page.goto('/kiosk/baipu/session/test1');
 
     // 第 1 手是黑 —— pcard 说的是「放黑子」,而**盘上那个圈必须同时是红的**
@@ -86,6 +89,7 @@ test.describe('baipu session', () => {
     // 摆完了:pcard 说完,而「完成」这时才亮
     await expect(pcard).toHaveAttribute('data-mood', 'done');
     await expect(page.getByRole('button', { name: '完成' })).toBeEnabled();
+    expect(captures, '上线态一次都不许拍照').toEqual([]);
 
     // 「完成」回棋谱屏(K1)—— 以前回的 `/kiosk/baipu` 没有任何出口。
     await page.getByRole('button', { name: '完成' }).click();
@@ -94,7 +98,6 @@ test.describe('baipu session', () => {
 
   test('undo steps back one move', async ({ page }) => {
     await setupSession(page);
-    await captureDisabled(page);
     await page.goto('/kiosk/baipu/session/test1');
 
     await page.getByRole('button', { name: '确认落子' }).click();   // 到第 2 手(白)
@@ -110,7 +113,6 @@ test.describe('baipu session', () => {
   // 它和「移到角上」是配套采纳的。
   test('退出走页控条,并且要再确认一次', async ({ page }) => {
     await setupSession(page);
-    await captureDisabled(page);
     await page.goto('/kiosk/baipu/session/test1');
     await expect(page.getByTestId('baipu-pcard')).toBeVisible();
 
@@ -130,7 +132,6 @@ test.describe('baipu session', () => {
   // 要么破坏 `frames.length = 1 + 非 pass 落子数`,要么什么都不干。
   test('动作区三格,没有「虚手」;「完成」摆完之前一直灰着', async ({ page }) => {
     await setupSession(page);
-    await captureDisabled(page);
     await page.goto('/kiosk/baipu/session/test1');
     await expect(page.getByTestId('baipu-pcard')).toBeVisible();
 
@@ -143,6 +144,7 @@ test.describe('baipu session', () => {
 
   test('operator confirmation captures once and advances without override UI', async ({ page }) => {
     await setupSession(page);
+    await collectMode(page);
     const bodies: Record<string, unknown>[] = [];
     await page.route('**/api/v1/baipu/capture', async (route) => {
       const body = route.request().postDataJSON() as Record<string, unknown>;
@@ -176,6 +178,7 @@ test.describe('baipu session', () => {
 
   test('legacy mismatch response is an error and never exposes override controls', async ({ page }) => {
     await setupSession(page);
+    await collectMode(page);
     await page.route('**/api/v1/baipu/capture', async (route) => {
       const body = route.request().postDataJSON();
       if (body.move_index === 0) {
@@ -198,6 +201,7 @@ test.describe('baipu session', () => {
 
   test('capture failure keeps the current move and latest successful filename', async ({ page }) => {
     await setupSession(page);
+    await collectMode(page);
     await page.route('**/api/v1/baipu/capture', async (route) => {
       const body = route.request().postDataJSON();
       if (body.move_index === -1) {
@@ -221,6 +225,7 @@ test.describe('baipu session', () => {
 
   test('restart uses same directory overwrite mode and waits for operator choice before initial capture', async ({ page }) => {
     await setupSession(page);
+    await collectMode(page);
     await page.addInitScript(() => {
       localStorage.setItem('baipu:progress:test1', JSON.stringify({ k: 2, frames: 3, updatedAt: 2 }));
     });

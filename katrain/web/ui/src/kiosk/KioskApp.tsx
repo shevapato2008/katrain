@@ -53,7 +53,7 @@ import TsumegoProblemPage from './pages/TsumegoProblemPage';
 import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
 import KifuDetailPage from './pages/KifuDetailPage';
-import BaipuSessionPage from './pages/BaipuSessionPage';
+import BaipuSessionRoute from './pages/BaipuSessionRoute';
 import LivePage from './pages/LivePage';
 import LiveMatchPage from './pages/LiveMatchPage';
 import LobbyPage from './pages/LobbyPage';
@@ -143,7 +143,7 @@ const KioskRoutes = () => {
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<KifuDetailPage />} />
           <Route path="baipu" element={<Navigate to="/kiosk/kifu" replace />} />
-          <Route path="baipu/session/:source" element={<PhysicalBoardGuard sub="摆谱要先让摄像头看清盘面"><BaipuSessionPage /></PhysicalBoardGuard>} />
+          <Route path="baipu/session/:source" element={<BaipuSessionRoute />} />
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="report" element={<ReportsPage />} />

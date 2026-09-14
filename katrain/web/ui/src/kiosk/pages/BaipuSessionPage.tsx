@@ -331,7 +331,7 @@ const BaipuSessionPage = () => {
         <KioskPagebar
           testId="baipu-pagebar"
           backLabel={t('baipu:back_kifu', '棋谱')}
-          onBack={() => navigate('/kiosk/baipu')}
+          onBack={() => navigate('/kiosk/kifu')}
           title={t('baipu:title', '摆谱')}
         />
         <div className="empty" data-testid="baipu-load-error">
@@ -347,7 +347,7 @@ const BaipuSessionPage = () => {
         <KioskPagebar
           testId="baipu-pagebar"
           backLabel={t('baipu:back_kifu', '棋谱')}
-          onBack={() => navigate('/kiosk/baipu')}
+          onBack={() => navigate('/kiosk/kifu')}
           title={title}
         />
         <div className="empty" data-testid="baipu-loading"><h4>{t('baipu:loading', '正在读这份谱')}</h4></div>
@@ -551,7 +551,7 @@ const BaipuSessionPage = () => {
               reason: phase !== 'done'
                 ? interpolate(t('baipu:finish_reason', '还剩 {n} 手没摆'), { n: steps.length - k })
                 : undefined,
-              onClick: () => { clearProgress(source); navigate('/kiosk/baipu'); },
+              onClick: () => { clearProgress(source); navigate('/kiosk/kifu'); },
             },
           ]}
         />
@@ -619,7 +619,7 @@ const BaipuSessionPage = () => {
               <button type="button" className="ghost" onClick={() => setExitOpen(false)}>{t('cancel', '取消')}</button>
               <button
                 type="button" className="main" data-testid="baipu-exit-confirm-action"
-                onClick={() => navigate('/kiosk/baipu')}
+                onClick={() => navigate('/kiosk/kifu')}
               >{t('baipu:exit', '退出')}</button>
             </div>
           </div>

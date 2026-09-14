@@ -53,7 +53,6 @@ import TsumegoProblemPage from './pages/TsumegoProblemPage';
 import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
 import KifuDetailPage from './pages/KifuDetailPage';
-import BaipuListPage from './pages/BaipuListPage';
 import BaipuSessionPage from './pages/BaipuSessionPage';
 import LivePage from './pages/LivePage';
 import LiveMatchPage from './pages/LiveMatchPage';
@@ -134,14 +133,16 @@ const KioskRoutes = () => {
           <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
-          {/* ⚠️ research / baipu / live 三条**下了 Dock 但路由照旧存在**(规范 §3:
-              研究并进复盘、摆谱降为选中棋谱之后的落子方式、直播并进棋谱)。
-              入口在 Task 15(棋谱屏出 摆谱/直播)和 Task 16(复盘屏出 研究)里补。
-              **在那之前这三屏只能靠直接输 URL 到达** —— 可接受的中间态,不是终态。 */}
+          {/* ⚠️ research / live 两条**下了 Dock 但路由照旧存在**(规范 §3:研究并进复盘、直播并进棋谱)。
+              `baipu` 这一条 2026-09-14 改成重定向:它原来挂的 `BaipuListPage` 是 7 月的选谱页,
+              没有页控条、不在 Dock 词典里 ⇒ 盒上进去就出不来,而摆谱屏的返回 / 退出 / 完成、
+              屏 15「摆到实体盘」、屏 23「去摆谱」全都指着它。选谱早被屏 15 搜索 + 屏 16 详情取代
+              (稿子屏 15 注释:「摆到实体盘」和「导入 SGF」进的是同一条摆谱流程),
+              所以删页,留一条重定向接住旧链接。 */}
           <Route path="research" element={<ResearchPage />} />
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<KifuDetailPage />} />
-          <Route path="baipu" element={<BaipuListPage />} />
+          <Route path="baipu" element={<Navigate to="/kiosk/kifu" replace />} />
           <Route path="baipu/session/:source" element={<PhysicalBoardGuard sub="摆谱要先让摄像头看清盘面"><BaipuSessionPage /></PhysicalBoardGuard>} />
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />

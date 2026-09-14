@@ -19,7 +19,7 @@ import type { KifuAlbumDetail } from '../../types/kifu';
  * 稿子 `sample-go/go-kiosk.tmpl.html` 的 `data-screen="kifu-detail"`。**它在计划书里没有
  * 对应的 Task**(计划的 Task 15 只到屏 15),和屏 13 一样是稿子后来长出来的一屏 ——
  * 记成 Task 15b。做它的直接理由:屏 15 那张列表点下去总得有个落点,而这一屏的三件事
- * (逐手回放 / 摆到实体盘 / 去研究)现在散在 `KifuPage` 的预览栏和 `BaipuListPage` 里。
+ * (逐手回放 / 摆到实体盘 / 去研究)原来散在 `KifuPage` 的预览栏和 `BaipuListPage`(2026-09-14 已删)里。
  *
  * ## 盘为什么不复用 `LiveBoard`
  *

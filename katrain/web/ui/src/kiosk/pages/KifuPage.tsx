@@ -226,7 +226,9 @@ const KifuPage = () => {
             title={t('kifu:place_on_board', '摆到实体盘')}
             sub={t('kifu:place_sub', '灯一手一手指着摆')}
             icon="grid-nine"
-            onClick={() => navigate('/kiosk/baipu')}
+            // 摆谱没有自己的选谱页(2026-09-14 删了 `/kiosk/baipu`,那一页盒上进去出不来):
+            // 挑谱就是在这儿搜,点进屏 16 再按「摆到实体盘」。所以这张卡**展开搜索**,不跳转。
+            onClick={() => setSearchOpen(true)}
           />
           <KioskCard
             title={t('kifu:import_sgf', '导入 SGF')}

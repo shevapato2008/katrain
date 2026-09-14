@@ -112,10 +112,12 @@ describe('屏 15 棋谱 · 问候与三张卡', () => {
     expect(cards).toEqual(['搜棋谱', '摆到实体盘', '导入 SGF']);
   });
 
-  it('「摆到实体盘」进 /kiosk/baipu —— Task 4 把摆谱下了 Dock,入口就是这张卡', () => {
+  it('「摆到实体盘」展开名局搜索 —— 摆谱没有自己的选谱页,挑谱就在这儿', async () => {
     renderPage();
     fireEvent.click(screen.getByText('摆到实体盘').closest('button')!);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/baipu');
+    expect(screen.getByTestId('kifu-search')).toBeInTheDocument();
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: undefined, page: 1, page_size: 6 }));
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
   it('「导入 SGF」按下去开的是本地文件选择框', () => {

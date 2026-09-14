@@ -34,6 +34,10 @@ vi.mock('../pages/ReportsPage', () => ({
   default: () => <h1>KIOSK_REPORT_PAGE</h1>,
 }));
 
+vi.mock('../pages/KifuPage', () => ({
+  default: () => <h1>KIOSK_KIFU_PAGE</h1>,
+}));
+
 import KioskApp from '../KioskApp';
 
 const renderApp = (route = '/kiosk/play') =>
@@ -133,6 +137,17 @@ describe('KioskApp', () => {
     renderApp('/kiosk');
     // 游客也一样落到对弈页 —— index 重定向和兜底都在守卫**外面**。
     expect(screen.queryByRole('button', { name: /^登录$/ })).toBeNull();
+  });
+
+  it('/kiosk/baipu 重定向到棋谱屏 —— 那一页没有任何出口,旧链接不许再落进去', () => {
+    // token 给 null:盒上 token 恒为 null,守卫判的是 isAuthenticated。
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true, isLoading: false,
+      user: { id: 1, username: '张三', rank: '2D', credits: 0 },
+      login: vi.fn(), logout: vi.fn(), token: null,
+    });
+    renderApp('/kiosk/baipu');
+    expect(screen.getByRole('heading', { name: 'KIOSK_KIFU_PAGE' })).toBeInTheDocument();
   });
 
   /* 🔴 边界的另一半。摘守卫只摘了自由对弈那条链,**这几格证明其余没跟着被摘掉** ——

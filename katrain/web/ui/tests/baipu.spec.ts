@@ -86,6 +86,10 @@ test.describe('baipu session', () => {
     // 摆完了:pcard 说完,而「完成」这时才亮
     await expect(pcard).toHaveAttribute('data-mood', 'done');
     await expect(page.getByRole('button', { name: '完成' })).toBeEnabled();
+
+    // 「完成」回棋谱屏(K1)—— 以前回的 `/kiosk/baipu` 没有任何出口。
+    await page.getByRole('button', { name: '完成' }).click();
+    await expect(page).toHaveURL(/\/kiosk\/kifu$/);
   });
 
   test('undo steps back one move', async ({ page }) => {
@@ -119,7 +123,7 @@ test.describe('baipu session', () => {
 
     await page.getByRole('button', { name: /棋谱/ }).click();
     await page.getByTestId('baipu-exit-confirm-action').click();
-    await expect(page).toHaveURL(/\/kiosk\/baipu$/);
+    await expect(page).toHaveURL(/\/kiosk\/kifu$/);
   });
 
   // 稿子画了四格,实现三格。这一条钉的是**那颗「虚手」不在**:它在重放既有 SGF 的屏上

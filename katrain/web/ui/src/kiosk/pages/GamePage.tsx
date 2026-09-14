@@ -25,7 +25,7 @@ import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChi
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
 import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog';
 import HintPanel from '../components/physical/HintPanel';
-import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
+import { API, ApiError, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
 import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
@@ -173,6 +173,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [resignError, setResignError] = useState<string | null>(null);
   const [exitError, setExitError] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState(false);
+  const [timeoutError, setTimeoutError] = useState(false);
+  // 到点只发一次核实请求:请求在途时钟仍是 0(`GameControlPanel` 的边沿触发已经防了连调),
+  // 这里再防一层「一次边沿触发期间被并发调用两次」。
+  const timeoutRequestRef = useRef(false);
   // 重置识别的「在制中」走 ref 不走 state:页控条那个图标键没有忙碌态可显示,
   // 这个值不进渲染 —— 放进 state 就是一次没人看的重渲染。
   const resyncingRef = useRef(false);
@@ -373,6 +377,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 本地对局(两个人面对面):退出 = 删会话不存谱;认输要说是哪一方(v2 D2)。
   const localGame = gameState.game_type === 'pvp_local';
   const boardSize = gameState.board_size[0];
+  // 超时判负后(spec §3.3 步骤 3):`end_result` 由 `_do_timeout` 写成 `{赢家}+T`
+  // (`current_node.player` = 上一手落子方 = 赢家,见 `interface.py:_do_timeout`)。
+  // 只在本地对局说这句话 —— Global Constraints #1:钟/超时判负只对 `pvp_local` 生效。
+  const timeoutResult = localGame && isGameOver && gameState.end_result?.endsWith('+T') ? gameState.end_result : null;
+  const timeoutWinnerColor = (timeoutResult?.[0] as 'B' | 'W' | undefined) ?? null;
+  const timeoutLoserColor = timeoutWinnerColor === 'B' ? 'W' : timeoutWinnerColor === 'W' ? 'B' : null;
   // 页控条标题 = **这一局是哪种对弈**,不是「张三 vs KataGo」。
   // 名字在玩家卡里各占一行(还带段位、执色、提子),标题再写一遍是把 460 宽的一行
   // 花在已经能看见的东西上;而「自由对弈 / 升降级对弈」是这一屏唯一说不出别处的事
@@ -497,6 +507,41 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       setShowResignConfirm(false);
     } catch (error) {
       setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+    }
+  };
+
+  // 复盘本局:终局卡与(超时判负后的)右栏状态条**共用同一个入口**(v2-plan S3-5:
+  // 「有复盘本局键(复用终局已有的复盘入口)」)—— 存的是当前对局的 SGF,不是持久化的
+  // user_games id(那时可能还没落库),同一份 SGF 塞进 sessionStorage 给研究页读。
+  const handleReview = async () => {
+    if (!sessionId) return;
+    try {
+      const { sgf } = await API.saveSGF(sessionId);
+      sessionStorage.setItem('kioskReviewSgf', sgf);
+      navigate('/kiosk/research?from=game');
+    } catch (e) { console.error(e); setReviewError(true); }
+  };
+
+  // 钟走到 0(`GameControlPanel` 边沿触发)⇒ 请后端核实。后端说没用完就用它附带的最新
+  // state 重算(D3:「后端核实确实用完了才判」),不弹错误 —— 这是钟和服务端一时对不上的
+  // 正常路径,不是故障。其它失败(网络断、非 409)才说「超时判定没有完成」。
+  const handleTimeExpired = async () => {
+    if (!sessionId || timeoutRequestRef.current) return;
+    timeoutRequestRef.current = true;
+    try {
+      const res = await API.timeout(sessionId);
+      session.setGameState(res.state);
+    } catch (error) {
+      const detail = error instanceof ApiError && error.status === 409
+        ? (error.detail as { code?: string; state?: GameState } | undefined)
+        : undefined;
+      if (detail?.code === 'time_not_expired' && detail.state) {
+        session.setGameState(detail.state);
+      } else {
+        setTimeoutError(true);
+      }
+    } finally {
+      timeoutRequestRef.current = false;
     }
   };
 
@@ -724,16 +769,31 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               进行中与失败都**不自动消失**,失败那句是这一局唯一的出路说明,重试键挂在它上面。
               精确到「开关行之上」那一行像素由 S5-2 的真浏览器视觉核对定,这里先保证语义与
               `data-testid` 落地(S3-5 会在同一个块上补「超时判负后」那一态)。 */}
-          {autoCount.status !== 'idle' && (
+          {(autoCount.status !== 'idle' || timeoutLoserColor) && (
             <Alert
               data-testid="auto-count-status"
-              severity={autoCount.status === 'failed' ? 'warning' : 'info'}
-              icon={autoCount.status === 'counting' ? <CircularProgress size={18} /> : undefined}
-              action={autoCount.status === 'failed'
-                ? <Button color="inherit" size="small" onClick={autoCount.retry}>{t('game:retry', '重试')}</Button>
-                : undefined}
+              severity={timeoutLoserColor ? 'error' : autoCount.status === 'failed' ? 'warning' : 'info'}
+              icon={!timeoutLoserColor && autoCount.status === 'counting' ? <CircularProgress size={18} /> : undefined}
+              action={timeoutLoserColor
+                ? <Button color="inherit" size="small" onClick={() => { void handleReview(); }}>{t('Review this game', '复盘本局')}</Button>
+                : autoCount.status === 'failed'
+                  ? <Button color="inherit" size="small" onClick={autoCount.retry}>{t('game:retry', '重试')}</Button>
+                  : undefined}
             >
-              {autoCount.status === 'failed' ? autoCount.reason : t('game:counting', '正在数子…')}
+              {timeoutLoserColor ? (
+                <>
+                  <Typography component="div" sx={{ fontWeight: 600 }}>
+                    {(timeoutLoserColor === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方'))
+                      + t('game:timeout_loss_suffix', '超时负')}
+                  </Typography>
+                  <Typography component="div" variant="caption">
+                    {(timeoutWinnerColor === 'B' ? t('game:black_short', '黑') : t('game:white_short', '白'))
+                      + t('game:timeout_win_suffix', '超时胜')}
+                    {' · '}{t('game:move_n', '第 {n} 手').replace('{n}', String((gameState.current_node_index ?? 0) + 1))}
+                    {' · '}{t('game:saved_to_history', '已存进历史对局')}
+                  </Typography>
+                </>
+              ) : autoCount.status === 'failed' ? autoCount.reason : t('game:counting', '正在数子…')}
             </Alert>
           )}
           <GameControlPanel
@@ -755,6 +815,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onEngineAnalysis={handleEngineAnalysis}
             engineItemCounts={engineItemCounts}
             hardwareFault={hardwareFault}
+            /* 只有本地对局在钟/超时判负范围内(Global Constraints #1);其它模式不传,
+               `GameControlPanel` 就不会去调 `/api/timeout`。 */
+            onTimeExpired={localGame ? handleTimeExpired : undefined}
           />
         </div>
       </div>
@@ -765,21 +828,17 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           would be a silent no-op). 确认终局 (handleExit) navigates out. `key={sessionId}`
           remounts EndgameCard fresh (dismissed=false) whenever a new session/game loads.
           DESCOPED: dead-stone dimming + red-X needs a backend dead_stones field + a
-          kiosk-only overlay (Gate S) — not shipped in this cut; Board.tsx is untouched. */}
-      {isGameOver && (
+          kiosk-only overlay (Gate S) — not shipped in this cut; Board.tsx is untouched.
+
+          `!timeoutLoserColor`:超时判负那一态已经在右栏状态条里说完了(设计稿 05b 就是
+          只有状态条、没有这张居中卡),两处同时出现会是两个「复盘本局」键叠在一起。 */}
+      {isGameOver && !timeoutLoserColor && (
         <EndgameCard
           key={sessionId}
           gameState={gameState}
           t={t}
           onExit={handleExit}
-          onReview={async () => {
-            if (!sessionId) return;
-            try {
-              const { sgf } = await API.saveSGF(sessionId);
-              sessionStorage.setItem('kioskReviewSgf', sgf);
-              navigate('/kiosk/research?from=game');
-            } catch (e) { console.error(e); setReviewError(true); }
-          }}
+          onReview={handleReview}
         />
       )}
 
@@ -952,6 +1011,15 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </Snackbar>
       <Snackbar open={!!exitError} autoHideDuration={5000} onClose={() => setExitError(null)}>
         <Alert severity="error" onClose={() => setExitError(null)}>{exitError}</Alert>
+      </Snackbar>
+
+      {/* 超时核实失败(非 409,如网络层)—— 409(没用完)由 handleTimeExpired 静默重算,
+          不走这里;这一条说的是「这次核实没有完成」,不是「你没超时」。 */}
+      <Snackbar open={timeoutError} autoHideDuration={5000} onClose={() => setTimeoutError(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="error" onClose={() => setTimeoutError(false)}>
+          {t('game:timeout_check_failed', '超时判定没有完成')}
+        </Alert>
       </Snackbar>
 
       {/* Re-sync (重置识别) failure toast */}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
@@ -21,15 +21,25 @@ vi.mock('../../components/Board', () => ({
 }));
 
 // Exposes onAction so state-D (resign) tests can drive the real GamePage resign flow
-// without a full GameControlPanel render.
-interface MockControlPanelProps { onAction: (action: string) => void }
+// without a full GameControlPanel render. `onTimeExpired` is captured (S3-5: real edge-trigger
+// logic lives in GameControlPanel itself, already covered by GameControlPanel.clock.test.tsx —
+// here we only need to prove GamePage wires/omits the prop and reacts to it correctly) AND
+// exposed via a button so tests can fire it like GameControlPanel's real edge-trigger effect would.
+interface MockControlPanelProps { onAction: (action: string) => void; onTimeExpired?: () => void }
+const { capturedControlPanelProps } = vi.hoisted(() => ({
+  capturedControlPanelProps: { current: null as MockControlPanelProps | null },
+}));
 vi.mock('../components/game/GameControlPanel', () => ({
-  default: (props: MockControlPanelProps) => (
-    <div data-testid="game-control-panel">
-      <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
-      <button onClick={() => props.onAction('count')}>MOCK_COUNT</button>
-    </div>
-  ),
+  default: (props: MockControlPanelProps) => {
+    capturedControlPanelProps.current = props;
+    return (
+      <div data-testid="game-control-panel">
+        <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
+        <button onClick={() => props.onAction('count')}>MOCK_COUNT</button>
+        <button onClick={() => props.onTimeExpired?.()}>MOCK_TIMEOUT</button>
+      </div>
+    );
+  },
 }));
 
 const { writeActiveSession, clearActiveSession } = vi.hoisted(() => ({
@@ -63,6 +73,7 @@ const mockSetSessionId = vi.fn();
 const mockHandleAction = vi.fn();
 const mockOnMove = vi.fn().mockResolvedValue(undefined);
 const mockOnNavigate = vi.fn();
+const mockSetGameState = vi.fn();
 
 let mockGameState: GameState;
 let mockPhysicalReminder: { kind: 'reminder' | 'escalation'; to_place: number[][]; to_remove: number[][] } | null = null;
@@ -72,7 +83,7 @@ vi.mock('../../hooks/useGameSession', () => ({
     sessionId: 'test-session',
     setSessionId: mockSetSessionId,
     gameState: mockGameState,
-    setGameState: vi.fn(),
+    setGameState: mockSetGameState,
     error: null,
     onMove: mockOnMove,
     onNavigate: mockOnNavigate,
@@ -148,6 +159,7 @@ describe('GamePage', () => {
     mockPoseLocked = true;
     mockPhysicalReminder = null;
     capturedBoardProps.current = null;
+    capturedControlPanelProps.current = null;
     mockCalibrate.mockClear().mockResolvedValue({});
     sessionStorage.clear();
     localStorage.clear();
@@ -618,6 +630,69 @@ describe('GamePage', () => {
       fireEvent.click(screen.getByText('MOCK_RESIGN'));
       fireEvent.click(screen.getByRole('button', { name: '认输' }));
       await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('resign'));
+    });
+  });
+
+  describe('超时判负 (S3-5)', () => {
+    const human = { ...basePlayer, name: '' };
+    const localPair: GameState['players_info'] = {
+      B: { ...human, player_type: 'player:human' }, W: { ...human, player_type: 'player:human' },
+    };
+    const local = (over: Partial<GameState> = {}) =>
+      makeGameState({ players_info: localPair, game_type: 'pvp_local', ...over });
+
+    it('到点 ⇒ 调一次 API.timeout,成功用返回的 state', async () => {
+      mockGameState = local();
+      const newState = local({ current_node_id: 9 });
+      const to = vi.spyOn(API, 'timeout').mockResolvedValue({ session_id: 'test-session', state: newState });
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_TIMEOUT'));
+        await waitFor(() => expect(to).toHaveBeenCalledWith('test-session'));
+        await waitFor(() => expect(mockSetGameState).toHaveBeenCalledWith(newState));
+      } finally { to.mockRestore(); }
+    });
+
+    it('409 time_not_expired ⇒ 用附带的最新 state 重算,不弹错误', async () => {
+      mockGameState = local();
+      const newState = local({ current_node_id: 9 });
+      const to = vi.spyOn(API, 'timeout')
+        .mockRejectedValue(new ApiError(409, 'x', { code: 'time_not_expired', state: newState }));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_TIMEOUT'));
+        await waitFor(() => expect(mockSetGameState).toHaveBeenCalledWith(newState));
+        expect(screen.queryByText('超时判定没有完成')).toBeNull();
+      } finally { to.mockRestore(); }
+    });
+
+    it('非 409 错误 ⇒ 说「超时判定没有完成」,不崩', async () => {
+      mockGameState = local();
+      const to = vi.spyOn(API, 'timeout').mockRejectedValue(new Error('network down'));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_TIMEOUT'));
+        expect(await screen.findByText('超时判定没有完成')).toBeInTheDocument();
+      } finally { to.mockRestore(); }
+    });
+
+    it('终局且 end_result 以 +T 结尾 ⇒ 右栏状态条写明谁超时负、谁胜、第几手,并有复盘本局键', () => {
+      mockGameState = local({ end_result: 'W+T', current_node_index: 130 });
+      renderPage();
+      const bar = screen.getByTestId('auto-count-status');
+      expect(bar).toHaveTextContent('黑方超时负');
+      expect(bar).toHaveTextContent('白超时胜');
+      expect(bar).toHaveTextContent('第 131 手');
+      expect(bar).toHaveTextContent('已存进历史对局');
+      expect(within(bar).getByRole('button', { name: '复盘本局' })).toBeInTheDocument();
+      // 超时判负那一态由右栏状态条说完 —— 居中的终局卡不再重复一遍(见 GamePage.tsx 注释)。
+      expect(screen.queryByTestId('endgame-card')).toBeNull();
+    });
+
+    it('非 pvp_local 局不传 onTimeExpired', () => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
+      renderPage();
+      expect(capturedControlPanelProps.current?.onTimeExpired).toBeUndefined();
     });
   });
 

@@ -18,7 +18,7 @@ from katrain.web.api.v1.api import api_router
 from katrain.web.api.v1.endpoints.ai_ladder import mark_ai_ladder_remote_terminal
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
-from katrain.web.core.game_end_rules import scaled_count_min_moves
+from katrain.web.core.game_end_rules import is_time_exhausted, scaled_count_min_moves
 from katrain.web.core.ranked_session_guard import (
     guard_ai_ladder_ranked_owner,
     guard_ai_ladder_ranked_human_action,
@@ -2163,8 +2163,20 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         with session.lock:
             guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
-            session.katrain("timeout")
-            state = session.katrain.get_state()
+            katrain = session.katrain
+            if getattr(session, "game_type", None) == "pvp_local":
+                # 前端的钟只说明「屏上算到 0 了」；判负前服务端自己核一遍（spec D3）。
+                # 已终局的局不改写结果。
+                if not katrain.game.end_result:
+                    katrain.update_timer()
+                    if not is_time_exhausted(katrain):
+                        state = katrain.get_state()
+                        session.last_state = state
+                        raise HTTPException(status_code=409, detail={"code": "time_not_expired", "state": state})
+                    katrain("timeout")
+            else:
+                katrain("timeout")
+            state = katrain.get_state()
             session.last_state = state
 
         # Record game result for multiplayer

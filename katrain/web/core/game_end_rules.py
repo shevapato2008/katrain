@@ -47,3 +47,20 @@ def is_awaiting_count(iface) -> bool:
     if parent is None or not node.is_pass or not parent.is_pass:
         return False
     return not node.end_state
+
+
+def is_time_exhausted(iface) -> bool:
+    """轮到的一方钟走完了没有。调用方先 `iface.update_timer()`。
+
+    判据与 `WebKaTrain.update_timer`（`interface.py`）同一套：暂停（不限时）恒 False；
+    主时间剩余 ≤ 0；`periods_used` ≥ `max(1, byo_periods)`。`update_timer` 的读秒循环在
+    `periods_used` 到 `byo_periods` 时停住，所以 `≥` 与「用尽」等价。
+    """
+    if getattr(iface, "timer_paused", True):
+        return False
+    timer = getattr(iface, "active_game_timer", None) or {}
+    player = iface.next_player_info.player
+    main_left = timer.get("main_time", 0) * 60 - iface.main_time_used_by_player.get(player, 0)
+    if main_left > 0:
+        return False
+    return iface.next_player_info.periods_used >= max(1, timer.get("byo_periods", 5))

@@ -149,6 +149,11 @@ export default function ReportsPage() {
     refresh: refreshTasks, createReport, retryReport,
   } = useReportTasks(token, isAuthenticated);
 
+  // 屏上只说分出来的类别,原文不印 —— 但排障时总得有个地方能看见它。
+  useEffect(() => {
+    if (tasksError != null) console.warn('[review] report tasks', tasksError);
+  }, [tasksError]);
+
   // ── 列表 ────────────────────────────────────────────────────────────────
   const loadGames = useCallback(async () => {
     const requestGeneration = ++listRequestGenerationRef.current;
@@ -171,6 +176,8 @@ export default function ReportsPage() {
       return response;
     } catch (error) {
       if (requestGeneration !== listRequestGenerationRef.current) return null;
+      // 屏上只说分出来的类别,原文不上屏 —— 但排障时总得有个地方能看见它。
+      console.warn('[review] list', error);
       setGamesFailure(requestFailureKind(error));
       return null;
     } finally {
@@ -218,6 +225,7 @@ export default function ReportsPage() {
       })
       .catch((error: Error) => {
         if (request !== detailRequestRef.current) return;
+        console.warn('[review] preview', error);
         setSelectedGame(null);
         setBoard(null);
         // 预览读的是 GET /user-games/{id}:盒上云端失败会退本机缓存,缓存没有也回 404 ⇒ 404 不能说成「已经不在了」。
@@ -235,6 +243,9 @@ export default function ReportsPage() {
   const completedTaskId = selectedState?.kind === 'analyzed' ? selectedState.taskId : null;
 
   useEffect(() => {
+    // 上一局读不出来时留下的那句话只在成功时才清 —— 选中一局没报告的新局,
+    // `plotEmpty` 先查 `movesError`,会把上一局的错粘到这一局身上。新选择 / 新请求先清白板。
+    setMovesError(null);
     if (!isAuthenticated || completedTaskId == null) {
       setMoves(null);
       return;
@@ -249,6 +260,7 @@ export default function ReportsPage() {
       })
       .catch((error: Error) => {
         if (request !== movesRequestRef.current) return;
+        console.warn('[review] moves', error);
         setMoves(null);
         setMovesError(failureLine(translationRef.current('review:moves_failed', '报告读不出来'), requestFailureKind(error), translationRef.current));
       })
@@ -340,15 +352,26 @@ export default function ReportsPage() {
     if (!isAuthenticated) return;
     setLocalImporting(reportType ?? 'save');
     setLocalImportError(null);
+    // 一记住 `created` 就知道 `create` 那一步过没过 —— 过了之后再炸(多半是
+    // `createForGame` 的 402 积分不足),对局已经存上了,不是「导入失败」,再点一次会重复导入。
+    let created: UserGameDetail | null = null;
     try {
-      const created = await UserGamesAPI.create(token, toLocalUserGameParams(payload));
+      created = await UserGamesAPI.create(token, toLocalUserGameParams(payload));
       await focusImportedGame(created);
       if (reportType) await createForGame(created, reportType);
       setLocalImportOpen(false);
       setLocalImportError(null);
       await refreshTasks();
     } catch (error) {
-      setLocalImportError(failureLine(translationRef.current('report:import_failed', '导入 SGF 失败'), requestFailureKind(error), translationRef.current));
+      console.warn('[review] import-local', error);
+      if (created) {
+        // 导入本身成功了 —— 建报告那一步失败已经由 `useReportTasks.createReport` 落到
+        // 「生成报告」告警行(它在 rethrow 之前设了 error/errorKind),这里不重复说一遍。
+        setLocalImportOpen(false);
+        setLocalImportError(null);
+      } else {
+        setLocalImportError(failureLine(translationRef.current('report:import_failed', '导入 SGF 失败'), requestFailureKind(error), translationRef.current));
+      }
     } finally {
       setLocalImporting(null);
     }
@@ -358,18 +381,28 @@ export default function ReportsPage() {
     if (!isAuthenticated) return;
     setLibraryImporting(reportType ?? 'save');
     setLibraryImportError(null);
+    // 同上:`created` 记住的是「对局存上了没有」,不是「这一趟全走完了没有」。
+    let created: UserGameDetail | null = null;
     try {
       const albumDetail = await KifuAPI.getAlbum(album.id);
-      const created = await UserGamesAPI.create(token, toLibraryUserGameParams(album, albumDetail.sgf_content));
+      created = await UserGamesAPI.create(token, toLibraryUserGameParams(album, albumDetail.sgf_content));
       await focusImportedGame(created);
       if (reportType) await createForGame(created, reportType);
       setLibraryImportOpen(false);
       setLibraryImportError(null);
       await refreshTasks();
     } catch (error) {
-      // 这个 catch 前面还有 `KifuAPI.getAlbum`:今天它抛的错不带 status ⇒ 那一步失败落 other、只说前半句。
-      // kifu 赛道 T6 改抛 ApiError(status) 后自动分得出;本赛道不改 kifuApi.ts(归 kifu 赛道,改了必冲突)。
-      setLibraryImportError(failureLine(translationRef.current('report:library_import_failed', '从棋谱库导入失败'), requestFailureKind(error), translationRef.current));
+      console.warn('[review] import-library', error);
+      if (created) {
+        // 导入本身成功了 —— 建报告那一步失败已经由 `useReportTasks.createReport` 落到
+        // 「生成报告」告警行,这里不重复说一遍。
+        setLibraryImportOpen(false);
+        setLibraryImportError(null);
+      } else {
+        // 这个 catch 前面还有 `KifuAPI.getAlbum`:今天它抛的错不带 status ⇒ 那一步失败落 other、只说前半句。
+        // kifu 赛道 T6 改抛 ApiError(status) 后自动分得出;本赛道不改 kifuApi.ts(归 kifu 赛道,改了必冲突)。
+        setLibraryImportError(failureLine(translationRef.current('report:library_import_failed', '从棋谱库导入失败'), requestFailureKind(error), translationRef.current));
+      }
     } finally {
       setLibraryImporting(null);
     }
@@ -392,6 +425,7 @@ export default function ReportsPage() {
       if (next && next.items.length === 0 && page > 1 && next.total > 0) updateLocation(query, page - 1);
       setDeleteTarget(null);
     } catch (error) {
+      console.warn('[review] delete', error);
       setActionError(failureLine(translationRef.current('report:delete_failed', '删除对局失败'), requestFailureKind(error), translationRef.current));
     } finally {
       setDeleteLoading(false);
@@ -409,6 +443,9 @@ export default function ReportsPage() {
   }
 
   const totalPages = Math.max(1, Math.ceil(totalGames / PAGE_SIZE));
+  // 列表读不到时的原因。**一整张列表不会「已经不在了」** —— `not_found` 只在单局取谱时才成立
+  // (那局被删了),对列表本身没有意义,这里不说。
+  const gamesFailureReason = gamesFailure && gamesFailure !== 'not_found' ? failureReason(gamesFailure, t) : '';
   /**
    * **没下完的局不给生成报告。** 半局的报告本身没意义;而且离线 KataGo 把残局算完再回去
    * 接着下,那是一条真作弊通道。
@@ -539,7 +576,7 @@ export default function ReportsPage() {
               {gamesFailure ? (
                 <div className="empty">
                   <h4>{t('review:list_failed', '对局列表读不到')}</h4>
-                  {failureReason(gamesFailure, t) && <p>{failureReason(gamesFailure, t)}</p>}
+                  {gamesFailureReason && <p>{gamesFailureReason}</p>}
                   <button type="button" className="kiosk-btn kiosk-btn--pill pill" onClick={() => void loadGames()}>
                     {t('kifu:retry', '重试')}
                   </button>
@@ -611,9 +648,10 @@ export default function ReportsPage() {
               />
               {(actionError || tasksError) && (
                 <p className="rverr" role="status">
-                  {/* 报告任务那条错可能来自列表、创建或重试,前半句说不准是哪件 ⇒ 只说原因,
-                      分不出原因时才用一句笼统的。不印原文(盒上断网时是 Request failed 503: {…})。 */}
-                  {actionError || failureReason(tasksErrorKind ?? 'other', t) || t('review:tasks_failed', '报告任务出错了')}
+                  {/* 报告任务那条错可能来自列表、创建或重试,前半句说不准是哪件 ⇒ 前半句固定说
+                      「报告任务出错了」,后半句按类别接原因;分不出原因时只说前半句,不能只剩
+                      一句「已经不在了」没有主语。不印原文(盒上断网时是 Request failed 503: {…})。 */}
+                  {actionError || failureLine(t('review:tasks_failed', '报告任务出错了'), tasksErrorKind ?? 'other', t)}
                   <button
                     type="button" className="kiosk-btn kiosk-btn--pill"
                     onClick={() => { setActionError(null); clearTasksError(); void refreshTasks(); }}

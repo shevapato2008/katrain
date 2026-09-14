@@ -263,7 +263,7 @@ describe('屏 19 · 列表与选中', () => {
     );
     renderPage();
     expect(await screen.findByText('对局列表读不到')).toBeInTheDocument();
-    expect(screen.getByText('连不上云端')).toBeInTheDocument();
+    expect(screen.getByText('云端暂时不可用')).toBeInTheDocument();
     expect(screen.queryByText(/Request failed/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitFor(() => expect(rows()).toHaveLength(2));
@@ -480,6 +480,21 @@ describe('屏 19 · 这一局的胜率', () => {
     expect(screen.getByTestId('review-winrate-plot')).toHaveAttribute('data-state', 'empty');
   });
 
+  // F2 回归钉子:`movesError` 只在成功时才清,选中一局读不出来的报告之后,再选一局
+  // 没分析过的新局,`plotEmpty` 先查 `movesError` ⇒ 上一局的错粘到了这一局身上。
+  it('上一局报告读不出来的错不会粘到下一局身上', async () => {
+    mocks.hookResult = { ...mocks.hookResult, reportStatesByGame: { a: { completedNormal: task() } } };
+    mocks.getMoves.mockRejectedValue(
+      Object.assign(new Error('Request failed 404: {"detail":"Report task not found"}'), { status: 404 }),
+    );
+    renderPage();
+    expect(await screen.findByText('报告读不出来 · 已经不在了')).toBeInTheDocument();
+    fireEvent.click(within(rows()[1]).getByRole('button', { name: /vs 柯洁/ }));
+    await waitFor(() => expect(rows()[1]).toHaveAttribute('data-selected', 'true'));
+    await waitFor(() => expect(screen.queryByText('报告读不出来 · 已经不在了')).toBeNull());
+    expect(screen.getByText('这一局还没分析 —— 在下面「生成报告」里挑一档')).toBeInTheDocument();
+  });
+
   /**
    * R1 回归钉子(2026-09-14 调研):三格与红段都要和屏 20 用同一套判据。
    * 第 1 手「两次搜索之差」掉 4 分(过了旧失误线),可服务端在同一次搜索里只算它亏 1 目、判「尚可」。
@@ -660,6 +675,24 @@ describe('屏 19 · 生成报告那一组', () => {
     expect(box).toHaveValue('(;SZ[19];B[aa])');
   });
 
+  // F1 回归钉子:`create` 成功之后 `createForGame` 再炸(典型是 402 积分不足),对局已经
+  // 存上了 —— 不是「导入失败」。那条错已经由 `useReportTasks.createReport` 落到「生成报告」
+  // 告警行,对话框这边不重复说、也不许留着等下一次误触发重复导入。
+  it('对局已经存上、建报告失败时不说「导入失败」,对话框关掉,不会被重复导入', async () => {
+    mocks.createReport.mockRejectedValueOnce(
+      Object.assign(new Error('Request failed 402: {"detail":{"code":"insufficient_credits"}}'), { status: 402 }),
+    );
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '从本地导入 SGF' }));
+    fireEvent.change(await screen.findByLabelText('SGF 内容'), { target: { value: '(;SZ[19];B[aa])' } });
+    fireEvent.click(screen.getByRole('button', { name: '导入并生成普通报告' }));
+    await waitFor(() => expect(mocks.createReport).toHaveBeenCalled());
+    expect(mocks.create).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByLabelText('SGF 内容')).toBeNull());
+    expect(screen.queryByText('导入 SGF 失败')).toBeNull();
+  });
+
   it('从棋谱库导入走的是同一条路 —— 把那一局复制进你自己的对局表', async () => {
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
@@ -671,7 +704,7 @@ describe('屏 19 · 生成报告那一组', () => {
   });
 
   // 棋谱库在云端;今天 KifuAPI 抛的错不带 status ⇒ 分不出原因,只说前半句,不印原文。
-  // kifu 赛道 T6 把它改抛 ApiError(status) 之后,这里自动能说「连不上云端」(分类器只认数字 status)。
+  // kifu 赛道 T6 把它改抛 ApiError(status) 之后,这里自动能说「云端暂时不可用」(分类器只认数字 status)。
   it('从棋谱库导入失败:只说「从棋谱库导入失败」,不印原文,也不往下建对局', async () => {
     mocks.getAlbum.mockRejectedValueOnce(new Error('Request failed 503: {"detail":"Remote server unavailable"}'));
     renderPage();
@@ -739,6 +772,19 @@ describe('屏 19 · 报告任务出错怎么说', () => {
     await waitFor(() => expect(rows()).toHaveLength(2));
     expect(document.querySelector('.rverr')).toHaveTextContent('报告任务出错了');
     expect(screen.queryByText(/Request failed/)).toBeNull();
+  });
+
+  // F4 回归钉子:`not_found` 的 `failureReason` 是「已经不在了」,不带主语 —— 单独当告警行会
+  // 变成一句没头没尾的「已经不在了」。前缀要恒在,原因分得出来就接在后面。
+  it('列表 404 时告警行说「报告任务出错了 · 已经不在了」,不是光秃秃一句', async () => {
+    mocks.hookResult = {
+      ...mocks.hookResult,
+      error: 'Request failed 404: {"detail":"not found"}',
+      errorKind: 'not_found',
+    };
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    expect(document.querySelector('.rverr')).toHaveTextContent('报告任务出错了 · 已经不在了');
   });
 });
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
+import { ApiError } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
 import { BaipuAPI, cacheSgf, canonToGtp, type BaipuStep } from '../../api/baipuApi';
 import { replayBaipuSteps } from '../../utils/baipuReplay';
@@ -88,6 +89,8 @@ const KifuDetailPage = () => {
   const [steps, setSteps] = useState<BaipuStep[] | null>(null);
   const [boardSize, setBoardSize] = useState(19);
   const [error, setError] = useState<string | null>(null);
+  /** 读不到是不是「连不上云端」(503)—— 棋谱库只在云端。 */
+  const [offline, setOffline] = useState(false);
   const [reload, setReload] = useState(0);
   const [cursor, setCursor] = useState(0);   // 已经走到第几手(0 = 开局)
   const nowRef = useRef<HTMLSpanElement | null>(null);
@@ -110,7 +113,10 @@ const KifuDetailPage = () => {
         setCursor(0);
       })
       .catch((e: Error) => {
-        if (!cancelled) setError(e.message);
+        if (!cancelled) {
+          setError(e.message);
+          setOffline(e instanceof ApiError && e.status === 503);
+        }
       });
     return () => { cancelled = true; };
   }, [kifuId, reload]);
@@ -246,8 +252,8 @@ const KifuDetailPage = () => {
 
         {error ? (
           <div className="empty" data-testid="kifu-detail-error">
-            <h4>{t('kifu:load_failed', '这一局读不到')}</h4>
-            <p>{error}</p>
+            <h4>{offline ? t('kifu:detail_offline', '这一局要联网才能读') : t('kifu:load_failed', '这一局读不到')}</h4>
+            <p>{offline ? t('kifu:detail_offline_hint', '棋谱库在云端，这台盒子现在连不上。') : error}</p>
             <button
               type="button"
               className="kiosk-btn kiosk-btn--pill pill"

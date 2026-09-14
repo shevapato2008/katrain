@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
+import { ApiError } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
 import {
   cacheSgf, getCachedSgf, getProgress, listRecent,
@@ -89,6 +90,8 @@ const KifuPage = () => {
   const [albums, setAlbums] = useState<KifuAlbumSummary[] | null>(null);
   const [total, setTotal] = useState<number | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  /** 列表失败是不是「连不上云端」(503)。棋谱库只在云端,这一种要说「要联网」,别的照原样报。 */
+  const [listOffline, setListOffline] = useState(false);
   const [reload, setReload] = useState(0);
 
   const { matches, error: liveError } = useLiveMatches({ limit: 8 });
@@ -126,7 +129,11 @@ const KifuPage = () => {
         setTotal(resp.total);
       })
       .catch((err: Error) => {
-        if (!cancelled) { setListError(err.message); setAlbums(null); }
+        if (!cancelled) {
+          setListError(err.message);
+          setListOffline(err instanceof ApiError && err.status === 503);
+          setAlbums(null);
+        }
       });
     return () => { cancelled = true; };
   }, [searchOpen, query, page, reload]);
@@ -257,8 +264,10 @@ const KifuPage = () => {
             />
             {listError ? (
               <div className="empty">
-                <h4>{t('kifu:list_failed', '棋谱库读不到')}</h4>
-                <p>{listError}</p>
+                <h4>{listOffline ? t('kifu:list_offline', '棋谱库要联网才能搜') : t('kifu:list_failed', '棋谱库读不到')}</h4>
+                <p>{listOffline
+                  ? t('kifu:list_offline_hint', '这台盒子现在连不上云端。摆过的谱和导入的 SGF 不受影响。')
+                  : listError}</p>
                 <button
                   type="button"
                   className="kiosk-btn kiosk-btn--pill pill"

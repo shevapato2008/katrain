@@ -5,6 +5,7 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import KifuDetailPage from '../pages/KifuDetailPage';
 import type { BaipuStep } from '../../api/baipuApi';
+import { ApiError } from '../../api';
 
 /**
  * 屏 16 · 棋谱详情 `/kiosk/kifu/:kifuId`(计划外补的一屏,记作 Task 15b)。
@@ -98,6 +99,15 @@ describe('屏 16 棋谱详情 · 三种状态', () => {
     expect(screen.getByText('404')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitFor(() => expect(getAlbum).toHaveBeenCalledTimes(2));
+    await waitLoaded();
+  });
+
+  it('连不上云端(503)时说「要联网」,不印原文;重试照样再拉一次', async () => {
+    getAlbum.mockRejectedValueOnce(new ApiError(503, 'Request failed 503: {"detail":"Remote kifu service unavailable"}'));
+    renderPage();
+    expect(await screen.findByText('这一局要联网才能读')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitLoaded();
   });
 

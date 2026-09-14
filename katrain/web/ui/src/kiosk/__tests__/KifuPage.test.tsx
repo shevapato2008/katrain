@@ -6,6 +6,7 @@ import { kioskTheme } from '../theme';
 import KifuPage from '../pages/KifuPage';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import type { MatchSummary } from '../../types/live';
+import { ApiError } from '../../api';
 
 /**
  * 屏 15 · 棋谱 `/kiosk/kifu`。
@@ -194,6 +195,18 @@ describe('屏 15 棋谱 · 搜棋谱是开关不是跳转', () => {
     const before = getAlbums.mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitFor(() => expect(getAlbums.mock.calls.length).toBe(before + 1));
+  });
+
+  it('棋谱库连不上云端(503)时说「要联网」,不印原文,也不说「没搜到」', async () => {
+    getAlbums.mockImplementation((o: { page_size?: number }) => (o?.page_size === 6
+      ? Promise.reject(new ApiError(503, 'Request failed 503: {"detail":"Remote kifu service unavailable"}'))
+      : Promise.resolve({ items: [], total: 0, page: 1, page_size: 1 })));
+    renderPage();
+    fireEvent.click(screen.getByText('搜棋谱').closest('button')!);
+    expect(await screen.findByText('棋谱库要联网才能搜')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+    expect(screen.queryByText('没有对得上的谱')).toBeNull();
+    expect(screen.getByRole('button', { name: '重试' })).toBeInTheDocument();
   });
 });
 

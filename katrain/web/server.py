@@ -18,6 +18,7 @@ from katrain.web.api.v1.api import api_router
 from katrain.web.api.v1.endpoints.ai_ladder import mark_ai_ladder_remote_terminal
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
+from katrain.web.core.game_end_rules import scaled_count_min_moves
 from katrain.web.core.ranked_session_guard import (
     guard_ai_ladder_ranked_owner,
     guard_ai_ladder_ranked_human_action,
@@ -1985,7 +1986,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         if score is None:
             raise HTTPException(
-                status_code=400, detail="Analysis not available yet. Please wait for KataGo analysis to complete."
+                status_code=400,
+                detail={
+                    "code": "analysis_pending",
+                    "message": "Analysis not available yet. Please wait for KataGo analysis to complete.",
+                },
             )
 
         # Format result: positive = Black leads, negative = White leads
@@ -2028,18 +2033,28 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
+        # 数子会写终局结果并落账(记在调用者名下),和认输、超时同一道归属闸(P18)。
+        guard_session_terminator(session, current_user, "request-count")
         guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
         await _guard_ai_ladder_cloud_active(app, session, current_user)
 
-        # Verify move count >= configured minimum
         state = session.katrain.get_state()
-        count_min_moves = session.katrain.config("game/count_min_moves", 100)
-        if len(state.get("history", [])) < count_min_moves:
-            raise HTTPException(status_code=400, detail=f"Cannot count before {count_min_moves} moves")
-
-        # Check if game is already over
-        if state.get("end_result"):
-            raise HTTPException(status_code=400, detail="Game is already over")
+        # 盒上模式双方各停一手(`awaiting_count`):这时 end_result 只是「终局」回落串或分析估计,
+        # 不是真结果;手数门槛也不适用 —— 两人都停了,就该数。
+        if not state.get("awaiting_count"):
+            # 400 的 detail 是 {code, message}:前端按 code 说出真实原因,message 与旧字符串逐字相同。
+            board_size_val = state.get("board_size", [19, 19])
+            board_size = board_size_val[0] if isinstance(board_size_val, (list, tuple)) else board_size_val
+            count_min_moves = scaled_count_min_moves(
+                session.katrain.config("game/count_min_moves", 100), int(board_size)
+            )
+            if len(state.get("history", [])) < count_min_moves:
+                raise HTTPException(
+                    status_code=400,
+                    detail={"code": "below_min_moves", "message": f"Cannot count before {count_min_moves} moves"},
+                )
+            if state.get("end_result"):
+                raise HTTPException(status_code=400, detail={"code": "game_over", "message": "Game is already over"})
 
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 

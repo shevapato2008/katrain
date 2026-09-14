@@ -240,3 +240,118 @@ def test_board_mode_scoring_game_type_double_pass_records_as_today(client, monke
 
     assert state["awaiting_count"] is False
     assert _recorded_results(client) == [state["end_result"]]
+
+
+# ------------------------------------------------------------------ /api/count/request（§3.4、P6、P7、P18）
+
+
+def test_count_threshold_scales_on_9x9_and_reports_codes(client, monkeypatch):
+    session = _owned_game(client, monkeypatch, game_type="pvp_local", board_mode=False, size=9, base=100)
+    sid = session.session_id
+    for i in range(10):  # 黑落子、白停一手，交替 10 轮：20 手 + 根节点 = 21；从不连续两手 pass
+        _move(client, sid, [i % 9, i // 9])
+        _move(client, sid)
+    assert len(session.katrain.get_state()["history"]) == 21
+
+    below = client.post("/api/count/request", json={"session_id": sid})
+    assert below.status_code == 400, below.text
+    assert below.json()["detail"] == {"code": "below_min_moves", "message": "Cannot count before 22 moves"}
+
+    _move(client, sid, [1, 1])  # 第 22 个节点，过门槛；没有分析
+    pending = client.post("/api/count/request", json={"session_id": sid})
+    assert pending.status_code == 400, pending.text
+    assert pending.json()["detail"]["code"] == "analysis_pending"
+
+
+def test_count_on_a_finished_galaxy_game_reports_game_over(client, monkeypatch):
+    session = _owned_game(client, monkeypatch, game_type="free", board_mode=False, base=1)
+    _move(client, session.session_id, [3, 3])
+    _move(client, session.session_id)
+    _move(client, session.session_id)
+
+    r = client.post("/api/count/request", json={"session_id": session.session_id})
+
+    assert r.status_code == 400, r.text
+    assert r.json()["detail"] == {"code": "game_over", "message": "Game is already over"}
+
+
+def test_board_mode_double_pass_counts_without_threshold_once_analysis_arrives(client, monkeypatch):
+    session = _owned_game(client, monkeypatch, game_type="pvp_local", board_mode=True, base=100)
+    sid = session.session_id
+    _move(client, sid, [3, 3])
+    _move(client, sid)
+    _move(client, sid)  # history = 4，远低于 100
+
+    pending = client.post("/api/count/request", json={"session_id": sid})
+    assert pending.status_code == 400, pending.text
+    assert pending.json()["detail"]["code"] == "analysis_pending"  # 绕过了门槛，卡在分析上
+
+    # 分析回来（生产里是前端 analyzeCurrent 触发的那一份）。此刻 game.manual_score 已非空，
+    # end_result 变成 "黑+3.0?" 这种估计串 —— awaiting_count 必须仍为真，否则下面会被判「已终局」。
+    session.katrain.game.current_node.analysis["root"] = {"scoreLead": 3.2, "winrate": 0.6, "visits": 10}
+    assert session.katrain.game.manual_score is not None
+    assert session.katrain.get_state()["awaiting_count"] is True
+
+    r = client.post("/api/count/request", json={"session_id": sid})
+
+    assert r.status_code == 200, r.text
+    assert r.json()["result"] == "B+3.2"
+    assert r.json()["state"]["end_result"] == "B+3.2"
+    assert r.json()["state"]["awaiting_count"] is False
+    assert _recorded_results(client) == ["B+3.2"]
+
+
+def test_free_game_ended_by_a_pass_outside_api_move_is_recordable(client, monkeypatch):
+    """spec §3.4 待核实那一条。
+
+    AI 的着手不经 `/api/move`：`WebKaTrain._do_ai_move`（后台线程）→ `katrain/core/ai.py`
+    `generate_ai_move` → `game.play(move)`，之后 `_do_ai_move_and_broadcast` 的 finally 只调
+    `update_state()`。所以「人先停、AI 再停」收尾的局，`/api/move` 的钩子从来走不到，也没有别的
+    落账路径。这里不真起 AI（NullEngine 下 genmove 线程会挂住并活过用例），而是照那条线程的
+    做法直接 `game.play` + `update_state()`。
+    """
+    from katrain.core.game import Move
+
+    session = _owned_game(client, monkeypatch, game_type="free", board_mode=True, base=100)
+    sid = session.session_id
+    _move(client, sid, [3, 3])
+    _move(client, sid)  # 人（白）停一手
+    with session.lock:  # 「AI」（黑）停一手，走的是 genmove 线程那条路
+        session.katrain.game.play(Move(None, player=session.katrain.game.current_node.next_player))
+    session.katrain.update_state()
+    assert _recorded_results(client) == []  # 今天到这里为止就是没落账
+    assert session.katrain.get_state()["awaiting_count"] is True
+
+    session.katrain.game.current_node.analysis["root"] = {"scoreLead": -4.5, "winrate": 0.3, "visits": 10}
+    r = client.post("/api/count/request", json={"session_id": sid})
+
+    assert r.status_code == 200, r.text
+    assert _recorded_results(client) == ["W+4.5"]
+
+
+def test_count_is_restricted_to_the_owner(client, monkeypatch):
+    session = _owned_game(client, monkeypatch, game_type="pvp_local", board_mode=False)
+    sid = session.session_id
+
+    client.app.dependency_overrides[get_current_user_optional] = lambda: STRANGER
+    assert client.post("/api/count/request", json={"session_id": sid}).status_code == 403
+    client.app.dependency_overrides[get_current_user_optional] = lambda: None
+    assert client.post("/api/count/request", json={"session_id": sid}).status_code == 401
+    assert session.katrain.game.current_node.end_state is None
+
+    # 正对照：主人本人打得到端点本身（被门槛挡，不是被归属闸挡）。
+    client.app.dependency_overrides[get_current_user_optional] = lambda: OWNER
+    owner = client.post("/api/count/request", json={"session_id": sid})
+    assert owner.status_code == 400, owner.text
+    assert owner.json()["detail"]["code"] == "below_min_moves"
+
+
+def test_count_on_an_unclaimed_session_needs_no_login(client, monkeypatch):
+    """无人认领（游客开的）会话不设闸 —— 与认输、超时同一口径。"""
+    session = _owned_game(client, monkeypatch, game_type="free", board_mode=False, user_id=None)
+    client.app.dependency_overrides[get_current_user_optional] = lambda: None
+
+    r = client.post("/api/count/request", json={"session_id": session.session_id})
+
+    assert r.status_code == 400, r.text
+    assert r.json()["detail"]["code"] == "below_min_moves"

@@ -776,6 +776,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               playerColor={humanColor}
               engineOverlay={engineOverlay}
               externalRulers
+              suppressEndResultOverlay={!!timeoutLoserColor}
             />
           </div>
           <div className="kiosk-board__ruler kiosk-board__ruler--right">

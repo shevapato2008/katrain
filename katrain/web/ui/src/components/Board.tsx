@@ -36,6 +36,12 @@ export interface BoardProps {
    * 还有一件跟着关掉:**盘内不再画坐标**(`drawCoordinates`),那是外面那四条带的活。
    */
   externalRulers?: boolean;
+  /**
+   * 超时判负态:kiosk GamePage 右栏状态条(`.gstatus`)已经说过一遍结果,
+   * 棋盘不再叠加半透明遮罩 + 大字(设计稿 05b 棋盘完整可见)。默认 `false`,
+   * galaxy 与其它终局态(数子/认输等)逐字不变。
+   */
+  suppressEndResultOverlay?: boolean;
 }
 
 const ASSETS = {
@@ -58,7 +64,7 @@ const EVAL_COLORS = [
   "rgba(74, 107, 92, 0.85)",   // Jade green <= 0.5 (excellent)
 ];
 
-const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, engineOverlay = null, externalRulers = false }) => {
+const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisToggles, playerColor, engineOverlay = null, externalRulers = false, suppressEndResultOverlay = false }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imagesRef = useRef<Record<string, HTMLImageElement>>({});
@@ -160,7 +166,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
       const interval = setInterval(renderBoard, 100);
       return () => clearInterval(interval);
     }
-  }, [gameState, analysisToggles, canvasSize, engineOverlay, externalRulers]);
+  }, [gameState, analysisToggles, canvasSize, engineOverlay, externalRulers, suppressEndResultOverlay]);
 
   const boardLayout = (canvas: HTMLCanvasElement, boardSize: number) => {
     const m = externalRulers ? 0.5 : 1.5;
@@ -515,7 +521,7 @@ const Board: React.FC<BoardProps> = ({ gameState, onMove, onNavigate, analysisTo
     }
 
     // Game End Result
-    if (gameState.end_result && !gameState.awaiting_count) {
+    if (gameState.end_result && !gameState.awaiting_count && !suppressEndResultOverlay) {
       const centerX = layout.offsetX + layout.boardWidth / 2;
       const centerY = layout.offsetY + layout.boardHeight / 2;
 

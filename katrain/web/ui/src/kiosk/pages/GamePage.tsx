@@ -866,7 +866,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
                 {t('game:white_resigns', '白方认输')}
               </Button>
             </Box>
-            <Button fullWidth onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
+            <Button variant="outlined" fullWidth onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
           </DialogActions>
         </Dialog>
       ) : (
@@ -903,9 +903,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
           <DialogTitle>{t('game:exit_confirm_title', '退出这局？')}</DialogTitle>
           <DialogContent><Typography>{t('game:exit_unsaved_body', '这局还没下完，退出后不会保存。')}</Typography></DialogContent>
-          <DialogActions>
-            <Button onClick={() => setShowExitConfirm(false)}>{t('game:keep_playing', '继续下')}</Button>
-            <Button color="error" onClick={() => { void handleExitWithoutSaving(); }}>
+          <DialogActions sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="outlined" sx={{ flex: 1 }} onClick={() => setShowExitConfirm(false)}>{t('game:keep_playing', '继续下')}</Button>
+            <Button variant="outlined" color="error" sx={{ flex: 1 }} onClick={() => { void handleExitWithoutSaving(); }}>
               {t('game:exit_unsaved', '退出不保存')}
             </Button>
           </DialogActions>

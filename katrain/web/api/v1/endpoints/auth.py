@@ -109,7 +109,7 @@ async def phone_login(request: Request, body: PhoneLoginRequest, db: Session = D
         raise HTTPException(
             status_code=404,
             detail={"code": "phone_not_bound",
-                    "message": "这个手机号还没有绑定账号。请先用用户名密码登录，再到设置里绑定。"},
+                    "message": "这个手机号还没有绑定账号。请先用用户名密码登录，再完成「绑定手机号」。"},
         )
     return {
         "access_token": create_access_token(data={"sub": user["uuid"], "epoch": user.get("token_epoch") or 0}),

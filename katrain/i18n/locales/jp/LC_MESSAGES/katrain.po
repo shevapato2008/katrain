@@ -3358,3 +3358,126 @@ msgstr "{side} 第 {from}–{to} 手、{n} 手連続で第一候補と一致"
 
 msgid "live:loading_match"
 msgstr "棋譜を読み込み中…"
+
+msgid "game:black_resigns"
+msgstr "黒番投了"
+
+msgid "game:white_resigns"
+msgstr "白番投了"
+
+msgid "game:who_resigns"
+msgstr "どちらが投了しますか？"
+
+msgid "game:black_short"
+msgstr "黒"
+
+msgid "game:white_short"
+msgstr "白"
+
+msgid "game:black_side"
+msgstr "黒番"
+
+msgid "game:white_side"
+msgstr "白番"
+
+msgid "game:clock_timeout"
+msgstr "時間切れ"
+
+msgid "game:clock_byo_left"
+msgstr "秒読み · 残り{n}回"
+
+msgid "game:clock_byo_spec"
+msgstr "秒読み{len}秒×{n}"
+
+msgid "game:move_n"
+msgstr "第{n}手"
+
+msgid "game:timeout_loss_suffix"
+msgstr "時間切れ負け"
+
+msgid "game:timeout_win_suffix"
+msgstr "時間切れ勝ち"
+
+msgid "game:saved_to_history"
+msgstr "対局履歴に保存しました"
+
+msgid "game:timeout_check_failed"
+msgstr "時間切れの判定が完了しませんでした"
+
+msgid "game:count_err_analysis_pending"
+msgstr "この手の形勢をまだ計算中です。少し待ってから数え直してください"
+
+msgid "game:count_err_below_min"
+msgstr "まだ手数が足りないため、いまは数えられません"
+
+msgid "game:count_err_game_over"
+msgstr "この対局はすでに終了しています"
+
+msgid "game:count_err_network"
+msgstr "解析サービスに接続できません"
+
+msgid "game:count_err_http"
+msgstr "数え上げに失敗しました（{status}）。もう一度お試しください"
+
+msgid "game:counting"
+msgstr "計算中…"
+
+msgid "game:retry"
+msgstr "再試行"
+
+msgid "game:exit_failed"
+msgstr "退出に失敗しました。もう一度お試しください"
+
+msgid "game:exit_unsaved_title"
+msgstr "この対局はまだ終わっていません。退出すると保存されません"
+
+msgid "game:keep_playing"
+msgstr "対局を続ける"
+
+msgid "game:exit_unsaved"
+msgstr "保存せずに退出"
+
+msgid "local:clock_meta_shared"
+msgstr "{n}段階 · 両者共通の一つの時計"
+
+msgid "local:sound_hint_shared"
+msgstr "着手・アゲハマの音は設定の「着手音」と同じスイッチです"
+
+msgid "local:note2_a"
+msgstr "この対局は"
+
+msgid "local:note2_b"
+msgstr "ヒントなし・形勢判断なしで、"
+
+msgid "local:note2_c"
+msgstr "双方が一度パスすると"
+
+msgid "local:note2_d"
+msgstr "自動的に数え上げ、AIが目算します"
+
+msgid "local:note2_e"
+msgstr "。"
+
+msgid "local:note2_f"
+msgstr "この対局は"
+
+msgid "local:note2_g"
+msgstr "記録されるだけで段位には影響しません"
+
+msgid "local:note2_h"
+msgstr "——段位は「昇降級戦」のはしごでのみ決まります。"
+
+msgid "play:local_needs_login"
+msgstr "先にログインが必要 · 終局後は自動で保存されます"
+
+msgid "review:no_result_line"
+msgstr "棋譜に結果が記録されていません"
+
+msgid "review:row_local"
+msgstr "対面対局 · 二人"
+
+msgid "review:row_local_unnamed"
+msgstr "対面対局 · 名前なし"
+
+msgid "review:row_research"
+msgstr "研究アーカイブ"

@@ -3406,3 +3406,128 @@ msgstr "{side}: moves {from}-{to}, {n} in a row matched the top choice"
 
 msgid "live:loading_match"
 msgstr "Loading game…"
+
+msgid "game:black_resigns"
+msgstr "Black resigns"
+
+msgid "game:white_resigns"
+msgstr "White resigns"
+
+msgid "game:who_resigns"
+msgstr "Who resigns?"
+
+msgid "game:black_short"
+msgstr "B"
+
+msgid "game:white_short"
+msgstr "W"
+
+msgid "game:black_side"
+msgstr "Black"
+
+msgid "game:white_side"
+msgstr "White"
+
+msgid "game:clock_timeout"
+msgstr "Timeout"
+
+msgid "game:clock_byo_left"
+msgstr "Byo-yomi · {n} left"
+
+msgid "game:clock_byo_spec"
+msgstr "Byo-yomi {len}s×{n}"
+
+msgid "game:move_n"
+msgstr "Move {n}"
+
+msgid "game:timeout_loss_suffix"
+msgstr " loses on time"
+
+msgid "game:timeout_win_suffix"
+msgstr " wins on time"
+
+msgid "game:saved_to_history"
+msgstr "Saved to game history"
+
+msgid "game:timeout_check_failed"
+msgstr "Couldn't confirm the timeout"
+
+msgid "game:count_err_analysis_pending"
+msgstr "Still analyzing this move, try counting again shortly"
+
+msgid "game:count_err_below_min"
+msgstr "Not enough moves yet, can't count the score"
+
+msgid "game:count_err_game_over"
+msgstr "This game has already ended"
+
+msgid "game:count_err_network"
+msgstr "Can't reach the analysis service"
+
+msgid "game:count_err_http"
+msgstr "Counting failed ({status}), please retry"
+
+msgid "game:counting"
+msgstr "Counting…"
+
+msgid "game:retry"
+msgstr "Retry"
+
+msgid "game:exit_failed"
+msgstr "Exit failed, please retry"
+
+msgid "game:exit_unsaved_title"
+msgstr "This game isn't finished — exiting won't save it"
+
+msgid "game:keep_playing"
+msgstr "Keep playing"
+
+msgid "game:exit_unsaved"
+msgstr "Exit without saving"
+
+msgid "local:clock_meta_shared"
+msgstr "{n} presets · one shared clock for both sides"
+
+msgid "local:sound_hint_shared"
+msgstr ""
+"The stone-placement and capture sound — same toggle as \"Move sound\" in "
+"Settings"
+
+msgid "local:note2_a"
+msgstr "This game "
+
+msgid "local:note2_b"
+msgstr "gives no hints and shows no position read"
+
+msgid "local:note2_c"
+msgstr "; after both players pass once, "
+
+msgid "local:note2_d"
+msgstr "it auto-counts the score, estimated by the AI"
+
+msgid "local:note2_e"
+msgstr "."
+
+msgid "local:note2_f"
+msgstr "This game "
+
+msgid "local:note2_g"
+msgstr "is recorded only, doesn't affect your rank"
+
+msgid "local:note2_h"
+msgstr " — rank is set only by the Ranked Play ladder."
+
+msgid "play:local_needs_login"
+msgstr "Sign in first · saved automatically when done"
+
+msgid "review:no_result_line"
+msgstr "No result recorded"
+
+msgid "review:row_local"
+msgstr "Local Game · Two players"
+
+msgid "review:row_local_unnamed"
+msgstr "Local Game · Unnamed"
+
+msgid "review:row_research"
+msgstr "Research archive"

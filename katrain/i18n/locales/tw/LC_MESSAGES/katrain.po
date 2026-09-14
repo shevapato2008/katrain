@@ -3338,3 +3338,126 @@ msgstr "{side} 第{from}–{to}手連續{n}手中一選"
 
 msgid "live:loading_match"
 msgstr "正在載入棋局…"
+
+msgid "game:black_resigns"
+msgstr "黑方認輸"
+
+msgid "game:white_resigns"
+msgstr "白方認輸"
+
+msgid "game:who_resigns"
+msgstr "誰認輸？"
+
+msgid "game:black_short"
+msgstr "黑"
+
+msgid "game:white_short"
+msgstr "白"
+
+msgid "game:black_side"
+msgstr "黑方"
+
+msgid "game:white_side"
+msgstr "白方"
+
+msgid "game:clock_timeout"
+msgstr "超時"
+
+msgid "game:clock_byo_left"
+msgstr "讀秒 · 剩 {n} 次"
+
+msgid "game:clock_byo_spec"
+msgstr "讀秒 {len}秒×{n}"
+
+msgid "game:move_n"
+msgstr "第 {n} 手"
+
+msgid "game:timeout_loss_suffix"
+msgstr "超時負"
+
+msgid "game:timeout_win_suffix"
+msgstr "超時勝"
+
+msgid "game:saved_to_history"
+msgstr "已存進歷史對局"
+
+msgid "game:timeout_check_failed"
+msgstr "超時判定沒有完成"
+
+msgid "game:count_err_analysis_pending"
+msgstr "還在算這一手的形勢，稍等再數"
+
+msgid "game:count_err_below_min"
+msgstr "手數還不夠，暫時不能數子"
+
+msgid "game:count_err_game_over"
+msgstr "這一局已經結束了"
+
+msgid "game:count_err_network"
+msgstr "分析服務連不上"
+
+msgid "game:count_err_http"
+msgstr "數子失敗（{status}），請重試"
+
+msgid "game:counting"
+msgstr "正在數子…"
+
+msgid "game:retry"
+msgstr "重試"
+
+msgid "game:exit_failed"
+msgstr "退出失敗，請重試"
+
+msgid "game:exit_unsaved_title"
+msgstr "這局還沒下完，退出後不會保存"
+
+msgid "game:keep_playing"
+msgstr "繼續下"
+
+msgid "game:exit_unsaved"
+msgstr "退出不保存"
+
+msgid "local:clock_meta_shared"
+msgstr "{n} 檔 · 兩邊共用一套鐘"
+
+msgid "local:sound_hint_shared"
+msgstr "落子和提子的聲音，和設定裡的「落子音效」是同一個開關"
+
+msgid "local:note2_a"
+msgstr "這一局"
+
+msgid "local:note2_b"
+msgstr "不給提示、不看形勢"
+
+msgid "local:note2_c"
+msgstr ";雙方各停一手後"
+
+msgid "local:note2_d"
+msgstr "自動數子，由 AI 估算勝負"
+
+msgid "local:note2_e"
+msgstr "。"
+
+msgid "local:note2_f"
+msgstr "這一局"
+
+msgid "local:note2_g"
+msgstr "只留檔，不動段位"
+
+msgid "local:note2_h"
+msgstr "——段位只由「升降級對弈」那條階梯決定。"
+
+msgid "play:local_needs_login"
+msgstr "要先登入 · 下完自動存譜"
+
+msgid "review:no_result_line"
+msgstr "譜裡沒寫結果"
+
+msgid "review:row_local"
+msgstr "本地對局 · 兩人"
+
+msgid "review:row_local_unnamed"
+msgstr "本地對局 · 未記名"
+
+msgid "review:row_research"
+msgstr "研究存檔"

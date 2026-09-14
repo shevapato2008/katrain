@@ -3425,3 +3425,128 @@ msgstr "{side} : coups {from}-{to}, {n} d'affilée au premier choix"
 
 msgid "live:loading_match"
 msgstr "Chargement de la partie…"
+
+msgid "game:black_resigns"
+msgstr "Noir abandonne"
+
+msgid "game:white_resigns"
+msgstr "Blanc abandonne"
+
+msgid "game:who_resigns"
+msgstr "Qui abandonne ?"
+
+msgid "game:black_short"
+msgstr "N"
+
+msgid "game:white_short"
+msgstr "B"
+
+msgid "game:black_side"
+msgstr "Noir"
+
+msgid "game:white_side"
+msgstr "Blanc"
+
+msgid "game:clock_timeout"
+msgstr "Temps écoulé"
+
+msgid "game:clock_byo_left"
+msgstr "Byo-yomi · {n} restantes"
+
+msgid "game:clock_byo_spec"
+msgstr "Byo-yomi {len}s×{n}"
+
+msgid "game:move_n"
+msgstr "Coup {n}"
+
+msgid "game:timeout_loss_suffix"
+msgstr " perd au temps"
+
+msgid "game:timeout_win_suffix"
+msgstr " gagne au temps"
+
+msgid "game:saved_to_history"
+msgstr "Enregistré dans l'historique des parties"
+
+msgid "game:timeout_check_failed"
+msgstr "Impossible de confirmer le dépassement de temps"
+
+msgid "game:count_err_analysis_pending"
+msgstr "Analyse du coup en cours, réessayez de compter dans un instant"
+
+msgid "game:count_err_below_min"
+msgstr "Pas encore assez de coups, impossible de compter pour l'instant"
+
+msgid "game:count_err_game_over"
+msgstr "Cette partie est déjà terminée"
+
+msgid "game:count_err_network"
+msgstr "Impossible de joindre le service d'analyse"
+
+msgid "game:count_err_http"
+msgstr "Le comptage a échoué ({status}), veuillez réessayer"
+
+msgid "game:counting"
+msgstr "Comptage…"
+
+msgid "game:retry"
+msgstr "Réessayer"
+
+msgid "game:exit_failed"
+msgstr "Échec de la sortie, veuillez réessayer"
+
+msgid "game:exit_unsaved_title"
+msgstr "Cette partie n'est pas terminée — quitter ne l'enregistrera pas"
+
+msgid "game:keep_playing"
+msgstr "Continuer la partie"
+
+msgid "game:exit_unsaved"
+msgstr "Quitter sans enregistrer"
+
+msgid "local:clock_meta_shared"
+msgstr "{n} préréglages · une horloge partagée pour les deux côtés"
+
+msgid "local:sound_hint_shared"
+msgstr ""
+"Le son de pose et de capture des pierres — le même réglage que « Son des "
+"coups » dans les Paramètres"
+
+msgid "local:note2_a"
+msgstr "Cette partie "
+
+msgid "local:note2_b"
+msgstr "ne donne aucun indice et n'affiche pas l'évaluation de la position"
+
+msgid "local:note2_c"
+msgstr "; après que les deux joueurs ont passé une fois, "
+
+msgid "local:note2_d"
+msgstr "le score est compté automatiquement, estimé par l'IA"
+
+msgid "local:note2_e"
+msgstr "."
+
+msgid "local:note2_f"
+msgstr "Cette partie "
+
+msgid "local:note2_g"
+msgstr "n'est enregistrée qu'à titre d'archive, sans effet sur votre rang"
+
+msgid "local:note2_h"
+msgstr " — le rang n'est déterminé que par l'échelle des Parties classées."
+
+msgid "play:local_needs_login"
+msgstr "Connectez-vous d'abord · enregistré automatiquement à la fin"
+
+msgid "review:no_result_line"
+msgstr "Aucun résultat enregistré"
+
+msgid "review:row_local"
+msgstr "Partie locale · Deux joueurs"
+
+msgid "review:row_local_unnamed"
+msgstr "Partie locale · Sans nom"
+
+msgid "review:row_research"
+msgstr "Archive de recherche"

@@ -3286,3 +3286,126 @@ msgstr "{side} {from}–{to}수, {n}수 연속 1순위 일치"
 
 msgid "live:loading_match"
 msgstr "기보 불러오는 중…"
+
+msgid "game:black_resigns"
+msgstr "흑번 기권"
+
+msgid "game:white_resigns"
+msgstr "백번 기권"
+
+msgid "game:who_resigns"
+msgstr "누가 기권하나요?"
+
+msgid "game:black_short"
+msgstr "흑"
+
+msgid "game:white_short"
+msgstr "백"
+
+msgid "game:black_side"
+msgstr "흑번"
+
+msgid "game:white_side"
+msgstr "백번"
+
+msgid "game:clock_timeout"
+msgstr "시간 초과"
+
+msgid "game:clock_byo_left"
+msgstr "초읽기 · {n}회 남음"
+
+msgid "game:clock_byo_spec"
+msgstr "초읽기 {len}초×{n}"
+
+msgid "game:move_n"
+msgstr "{n}수"
+
+msgid "game:timeout_loss_suffix"
+msgstr " 시간초과패"
+
+msgid "game:timeout_win_suffix"
+msgstr " 시간초과승"
+
+msgid "game:saved_to_history"
+msgstr "대국 기록에 저장됨"
+
+msgid "game:timeout_check_failed"
+msgstr "시간 초과 판정을 완료하지 못했습니다"
+
+msgid "game:count_err_analysis_pending"
+msgstr "이 수의 형세를 아직 계산 중입니다. 잠시 후 다시 시도하세요"
+
+msgid "game:count_err_below_min"
+msgstr "아직 착수 수가 부족해 지금은 계가할 수 없습니다"
+
+msgid "game:count_err_game_over"
+msgstr "이 대국은 이미 끝났습니다"
+
+msgid "game:count_err_network"
+msgstr "분석 서비스에 연결할 수 없습니다"
+
+msgid "game:count_err_http"
+msgstr "계가에 실패했습니다({status}). 다시 시도해 주세요"
+
+msgid "game:counting"
+msgstr "계가 중…"
+
+msgid "game:retry"
+msgstr "다시 시도"
+
+msgid "game:exit_failed"
+msgstr "나가기에 실패했습니다. 다시 시도해 주세요"
+
+msgid "game:exit_unsaved_title"
+msgstr "이 대국은 아직 끝나지 않았습니다. 나가면 저장되지 않습니다"
+
+msgid "game:keep_playing"
+msgstr "계속 두기"
+
+msgid "game:exit_unsaved"
+msgstr "저장하지 않고 나가기"
+
+msgid "local:clock_meta_shared"
+msgstr "{n}단계 · 양쪽이 시계 하나를 공유"
+
+msgid "local:sound_hint_shared"
+msgstr "착수·따냄 소리는 설정의 「착수 소리」와 같은 스위치입니다"
+
+msgid "local:note2_a"
+msgstr "이 대국은 "
+
+msgid "local:note2_b"
+msgstr "힌트나 형세 판단을 보여주지 않으며, "
+
+msgid "local:note2_c"
+msgstr "양쪽이 한 번씩 착수를 쉬면 "
+
+msgid "local:note2_d"
+msgstr "AI가 추정한 계가를 자동으로 보여줍니다"
+
+msgid "local:note2_e"
+msgstr "."
+
+msgid "local:note2_f"
+msgstr "이 대국은 "
+
+msgid "local:note2_g"
+msgstr "기록만 될 뿐 단급에는 영향을 주지 않습니다"
+
+msgid "local:note2_h"
+msgstr " — 단급은 「승강 대국」 사다리로만 정해집니다."
+
+msgid "play:local_needs_login"
+msgstr "먼저 로그인하세요 · 끝나면 자동 저장됩니다"
+
+msgid "review:no_result_line"
+msgstr "기보에 결과가 기록되지 않았습니다"
+
+msgid "review:row_local"
+msgstr "로컬 대국 · 두 명"
+
+msgid "review:row_local_unnamed"
+msgstr "로컬 대국 · 이름 없음"
+
+msgid "review:row_research"
+msgstr "연구 보관함"

@@ -3365,3 +3365,128 @@ msgstr "{side}: ходы {from}–{to}, {n} подряд совпали с лу�
 
 msgid "live:loading_match"
 msgstr "Загрузка партии…"
+
+msgid "game:black_resigns"
+msgstr "Чёрные сдаются"
+
+msgid "game:white_resigns"
+msgstr "Белые сдаются"
+
+msgid "game:who_resigns"
+msgstr "Кто сдаётся?"
+
+msgid "game:black_short"
+msgstr "Ч"
+
+msgid "game:white_short"
+msgstr "Б"
+
+msgid "game:black_side"
+msgstr "Чёрные"
+
+msgid "game:white_side"
+msgstr "Белые"
+
+msgid "game:clock_timeout"
+msgstr "Время истекло"
+
+msgid "game:clock_byo_left"
+msgstr "Бёми · осталось {n}"
+
+msgid "game:clock_byo_spec"
+msgstr "Бёми {len}с×{n}"
+
+msgid "game:move_n"
+msgstr "Ход {n}"
+
+msgid "game:timeout_loss_suffix"
+msgstr " проигрывают по времени"
+
+msgid "game:timeout_win_suffix"
+msgstr " побеждают по времени"
+
+msgid "game:saved_to_history"
+msgstr "Сохранено в истории партий"
+
+msgid "game:timeout_check_failed"
+msgstr "Не удалось подтвердить истечение времени"
+
+msgid "game:count_err_analysis_pending"
+msgstr "Ещё идёт анализ этого хода, попробуйте посчитать снова чуть позже"
+
+msgid "game:count_err_below_min"
+msgstr "Пока сделано слишком мало ходов, подсчёт недоступен"
+
+msgid "game:count_err_game_over"
+msgstr "Эта партия уже завершена"
+
+msgid "game:count_err_network"
+msgstr "Не удаётся подключиться к сервису анализа"
+
+msgid "game:count_err_http"
+msgstr "Не удалось подсчитать очки ({status}), попробуйте снова"
+
+msgid "game:counting"
+msgstr "Подсчёт очков…"
+
+msgid "game:retry"
+msgstr "Повторить"
+
+msgid "game:exit_failed"
+msgstr "Не удалось выйти, попробуйте снова"
+
+msgid "game:exit_unsaved_title"
+msgstr "Партия ещё не завершена — при выходе она не сохранится"
+
+msgid "game:keep_playing"
+msgstr "Продолжить игру"
+
+msgid "game:exit_unsaved"
+msgstr "Выйти без сохранения"
+
+msgid "local:clock_meta_shared"
+msgstr "{n} пресетов · общие часы на обоих игроков"
+
+msgid "local:sound_hint_shared"
+msgstr ""
+"Звук постановки и взятия камней — тот же переключатель, что и «Звук хода» в "
+"настройках"
+
+msgid "local:note2_a"
+msgstr "Эта партия "
+
+msgid "local:note2_b"
+msgstr "не даёт подсказок и не показывает оценку позиции"
+
+msgid "local:note2_c"
+msgstr "; после того как оба игрока один раз спасуют, "
+
+msgid "local:note2_d"
+msgstr "очки подсчитываются автоматически, по оценке ИИ"
+
+msgid "local:note2_e"
+msgstr "."
+
+msgid "local:note2_f"
+msgstr "Эта партия "
+
+msgid "local:note2_g"
+msgstr "только сохраняется в истории и не влияет на ваш рейтинг"
+
+msgid "local:note2_h"
+msgstr " — рейтинг определяется только лестницей рейтинговых партий."
+
+msgid "play:local_needs_login"
+msgstr "Сначала войдите в систему · сохранится автоматически по окончании"
+
+msgid "review:no_result_line"
+msgstr "Результат не записан"
+
+msgid "review:row_local"
+msgstr "Локальная партия · Два игрока"
+
+msgid "review:row_local_unnamed"
+msgstr "Локальная партия · Без имён"
+
+msgid "review:row_research"
+msgstr "Архив исследования"

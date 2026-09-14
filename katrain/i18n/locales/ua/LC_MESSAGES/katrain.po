@@ -3446,3 +3446,128 @@ msgstr "{side}: ходи {from}–{to}, {n} поспіль збіглися з �
 
 msgid "live:loading_match"
 msgstr "Завантаження партії…"
+
+msgid "game:black_resigns"
+msgstr "Чорні здаються"
+
+msgid "game:white_resigns"
+msgstr "Білі здаються"
+
+msgid "game:who_resigns"
+msgstr "Хто здається?"
+
+msgid "game:black_short"
+msgstr "Ч"
+
+msgid "game:white_short"
+msgstr "Б"
+
+msgid "game:black_side"
+msgstr "Чорні"
+
+msgid "game:white_side"
+msgstr "Білі"
+
+msgid "game:clock_timeout"
+msgstr "Час вичерпано"
+
+msgid "game:clock_byo_left"
+msgstr "Бьомі · залишилось {n}"
+
+msgid "game:clock_byo_spec"
+msgstr "Бьомі {len}с×{n}"
+
+msgid "game:move_n"
+msgstr "Хід {n}"
+
+msgid "game:timeout_loss_suffix"
+msgstr " програють за часом"
+
+msgid "game:timeout_win_suffix"
+msgstr " перемагають за часом"
+
+msgid "game:saved_to_history"
+msgstr "Збережено в історії партій"
+
+msgid "game:timeout_check_failed"
+msgstr "Не вдалося підтвердити закінчення часу"
+
+msgid "game:count_err_analysis_pending"
+msgstr "Ще триває аналіз цього ходу, спробуйте порахувати трохи пізніше"
+
+msgid "game:count_err_below_min"
+msgstr "Ще недостатньо ходів, підрахунок поки недоступний"
+
+msgid "game:count_err_game_over"
+msgstr "Ця партія вже завершена"
+
+msgid "game:count_err_network"
+msgstr "Не вдається під'єднатися до сервісу аналізу"
+
+msgid "game:count_err_http"
+msgstr "Не вдалося підрахувати очки ({status}), спробуйте ще раз"
+
+msgid "game:counting"
+msgstr "Підрахунок…"
+
+msgid "game:retry"
+msgstr "Повторити"
+
+msgid "game:exit_failed"
+msgstr "Не вдалося вийти, спробуйте ще раз"
+
+msgid "game:exit_unsaved_title"
+msgstr "Ця партія ще не завершена — вихід без збереження"
+
+msgid "game:keep_playing"
+msgstr "Продовжити гру"
+
+msgid "game:exit_unsaved"
+msgstr "Вийти без збереження"
+
+msgid "local:clock_meta_shared"
+msgstr "{n} пресетів · один спільний годинник на обидва боки"
+
+msgid "local:sound_hint_shared"
+msgstr ""
+"Звук постановки та взяття каменів — той самий перемикач, що й «Звук ходу» в "
+"налаштуваннях"
+
+msgid "local:note2_a"
+msgstr "Ця партія "
+
+msgid "local:note2_b"
+msgstr "не дає підказок і не показує оцінку позиції"
+
+msgid "local:note2_c"
+msgstr "; після того як обидва гравці один раз спасують, "
+
+msgid "local:note2_d"
+msgstr "рахунок підраховується автоматично, за оцінкою ШІ"
+
+msgid "local:note2_e"
+msgstr "."
+
+msgid "local:note2_f"
+msgstr "Ця партія "
+
+msgid "local:note2_g"
+msgstr "лише зберігається в історії, не впливає на ваш рівень"
+
+msgid "local:note2_h"
+msgstr " — рівень визначається лише драбиною рейтингових партій."
+
+msgid "play:local_needs_login"
+msgstr "Спершу увійдіть · зберігається автоматично після завершення"
+
+msgid "review:no_result_line"
+msgstr "Результат не записано"
+
+msgid "review:row_local"
+msgstr "Локальна партія · Два гравці"
+
+msgid "review:row_local_unnamed"
+msgstr "Локальна партія · Без імен"
+
+msgid "review:row_research"
+msgstr "Архів дослідження"

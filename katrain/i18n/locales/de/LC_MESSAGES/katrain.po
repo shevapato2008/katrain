@@ -3450,3 +3450,129 @@ msgstr "{side}: Züge {from}-{to}, {n} in Folge der Topzug"
 
 msgid "live:loading_match"
 msgstr "Partie wird geladen …"
+
+msgid "game:black_resigns"
+msgstr "Schwarz gibt auf"
+
+msgid "game:white_resigns"
+msgstr "Weiß gibt auf"
+
+msgid "game:who_resigns"
+msgstr "Wer gibt auf?"
+
+msgid "game:black_short"
+msgstr "S"
+
+msgid "game:white_short"
+msgstr "W"
+
+msgid "game:black_side"
+msgstr "Schwarz"
+
+msgid "game:white_side"
+msgstr "Weiß"
+
+msgid "game:clock_timeout"
+msgstr "Zeitüberschreitung"
+
+msgid "game:clock_byo_left"
+msgstr "Byo-yomi · noch {n}"
+
+msgid "game:clock_byo_spec"
+msgstr "Byo-yomi {len}s×{n}"
+
+msgid "game:move_n"
+msgstr "Zug {n}"
+
+msgid "game:timeout_loss_suffix"
+msgstr " verliert durch Zeitüberschreitung"
+
+msgid "game:timeout_win_suffix"
+msgstr " gewinnt durch Zeitüberschreitung"
+
+msgid "game:saved_to_history"
+msgstr "In der Spielhistorie gespeichert"
+
+msgid "game:timeout_check_failed"
+msgstr "Zeitüberschreitung konnte nicht bestätigt werden"
+
+msgid "game:count_err_analysis_pending"
+msgstr "Der Zug wird noch analysiert, bitte gleich erneut zählen"
+
+msgid "game:count_err_below_min"
+msgstr "Noch nicht genug Züge, Zählen momentan nicht möglich"
+
+msgid "game:count_err_game_over"
+msgstr "Diese Partie ist bereits beendet"
+
+msgid "game:count_err_network"
+msgstr "Analyse-Dienst nicht erreichbar"
+
+msgid "game:count_err_http"
+msgstr "Zählen fehlgeschlagen ({status}), bitte erneut versuchen"
+
+msgid "game:counting"
+msgstr "Zählen…"
+
+msgid "game:retry"
+msgstr "Erneut versuchen"
+
+msgid "game:exit_failed"
+msgstr "Beenden fehlgeschlagen, bitte erneut versuchen"
+
+msgid "game:exit_unsaved_title"
+msgstr ""
+"Diese Partie ist noch nicht beendet — beim Beenden wird nicht gespeichert"
+
+msgid "game:keep_playing"
+msgstr "Weiterspielen"
+
+msgid "game:exit_unsaved"
+msgstr "Ohne Speichern beenden"
+
+msgid "local:clock_meta_shared"
+msgstr "{n} Voreinstellungen · eine gemeinsame Uhr für beide Seiten"
+
+msgid "local:sound_hint_shared"
+msgstr ""
+"Der Ton für Steinlegen und Schlagen — derselbe Schalter wie „Zugton“ in den "
+"Einstellungen"
+
+msgid "local:note2_a"
+msgstr "Diese Partie "
+
+msgid "local:note2_b"
+msgstr "gibt keine Hinweise und zeigt keine Stellungsbewertung"
+
+msgid "local:note2_c"
+msgstr "; nachdem beide einmal gepasst haben, "
+
+msgid "local:note2_d"
+msgstr "wird automatisch gezählt, geschätzt von der KI"
+
+msgid "local:note2_e"
+msgstr "."
+
+msgid "local:note2_f"
+msgstr "Diese Partie "
+
+msgid "local:note2_g"
+msgstr "wird nur aufgezeichnet und ändert nichts an deinem Rang"
+
+msgid "local:note2_h"
+msgstr " — der Rang wird nur durch die Ranglistenpartien bestimmt."
+
+msgid "play:local_needs_login"
+msgstr "Zuerst anmelden · wird nach der Partie automatisch gespeichert"
+
+msgid "review:no_result_line"
+msgstr "Kein Ergebnis vermerkt"
+
+msgid "review:row_local"
+msgstr "Lokale Partie · Zwei Spieler"
+
+msgid "review:row_local_unnamed"
+msgstr "Lokale Partie · Ohne Namen"
+
+msgid "review:row_research"
+msgstr "Recherche-Archiv"

@@ -3464,3 +3464,126 @@ msgstr "{side}: {from}-{to}. hamleler, üst üste {n} kez en iyi hamle"
 
 msgid "live:loading_match"
 msgstr "Oyun yükleniyor…"
+
+msgid "game:black_resigns"
+msgstr "Siyah pes ediyor"
+
+msgid "game:white_resigns"
+msgstr "Beyaz pes ediyor"
+
+msgid "game:who_resigns"
+msgstr "Kim pes ediyor?"
+
+msgid "game:black_short"
+msgstr "S"
+
+msgid "game:white_short"
+msgstr "B"
+
+msgid "game:black_side"
+msgstr "Siyah"
+
+msgid "game:white_side"
+msgstr "Beyaz"
+
+msgid "game:clock_timeout"
+msgstr "Süre doldu"
+
+msgid "game:clock_byo_left"
+msgstr "Byo-yomi · {n} kaldı"
+
+msgid "game:clock_byo_spec"
+msgstr "Byo-yomi {len}sn×{n}"
+
+msgid "game:move_n"
+msgstr "{n}. hamle"
+
+msgid "game:timeout_loss_suffix"
+msgstr " süre aşımı ile kaybetti"
+
+msgid "game:timeout_win_suffix"
+msgstr " süre aşımı ile kazandı"
+
+msgid "game:saved_to_history"
+msgstr "Oyun geçmişine kaydedildi"
+
+msgid "game:timeout_check_failed"
+msgstr "Süre aşımı doğrulanamadı"
+
+msgid "game:count_err_analysis_pending"
+msgstr "Bu hamle hâlâ analiz ediliyor, birazdan tekrar saymayı deneyin"
+
+msgid "game:count_err_below_min"
+msgstr "Henüz yeterli hamle yok, şu an sayım yapılamıyor"
+
+msgid "game:count_err_game_over"
+msgstr "Bu oyun zaten bitti"
+
+msgid "game:count_err_network"
+msgstr "Analiz servisine ulaşılamıyor"
+
+msgid "game:count_err_http"
+msgstr "Sayım başarısız oldu ({status}), lütfen tekrar deneyin"
+
+msgid "game:counting"
+msgstr "Sayılıyor…"
+
+msgid "game:retry"
+msgstr "Tekrar dene"
+
+msgid "game:exit_failed"
+msgstr "Çıkış başarısız oldu, lütfen tekrar deneyin"
+
+msgid "game:exit_unsaved_title"
+msgstr "Bu oyun henüz bitmedi — çıkarsanız kaydedilmez"
+
+msgid "game:keep_playing"
+msgstr "Oynamaya devam et"
+
+msgid "game:exit_unsaved"
+msgstr "Kaydetmeden çık"
+
+msgid "local:clock_meta_shared"
+msgstr "{n} ön ayar · her iki taraf için tek ortak saat"
+
+msgid "local:sound_hint_shared"
+msgstr "Taş koyma ve alma sesi — Ayarlar'daki \"Hamle sesi\" ile aynı anahtar"
+
+msgid "local:note2_a"
+msgstr "Bu oyunda "
+
+msgid "local:note2_b"
+msgstr "ipucu verilmez ve pozisyon değerlendirmesi gösterilmez"
+
+msgid "local:note2_c"
+msgstr "; her iki taraf bir kez pas geçtikten sonra "
+
+msgid "local:note2_d"
+msgstr "puanlar otomatik sayılır, yapay zekâ tarafından tahmin edilir"
+
+msgid "local:note2_e"
+msgstr "."
+
+msgid "local:note2_f"
+msgstr "Bu oyunda "
+
+msgid "local:note2_g"
+msgstr "yalnızca kaydedilir, derecenizi etkilemez"
+
+msgid "local:note2_h"
+msgstr " — dereceniz yalnızca Dereceli oyun basamaklarına göre belirlenir."
+
+msgid "play:local_needs_login"
+msgstr "Önce giriş yapın · bitince otomatik kaydedilir"
+
+msgid "review:no_result_line"
+msgstr "Sonuç kaydedilmemiş"
+
+msgid "review:row_local"
+msgstr "Yerel oyun · İki oyuncu"
+
+msgid "review:row_local_unnamed"
+msgstr "Yerel oyun · İsimsiz"
+
+msgid "review:row_research"
+msgstr "Araştırma arşivi"

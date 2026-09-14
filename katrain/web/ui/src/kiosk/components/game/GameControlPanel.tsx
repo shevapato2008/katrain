@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../shell/icons';
 import { KioskFold } from '../../shell/KioskFold';
 import { KioskActions, type KioskAction } from '../../shell/KioskActions';
@@ -8,6 +8,7 @@ import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import { autoCountEligible } from '../../hooks/useAutoCount';
 import type { EngineItemCounts, GameState, PlayerInfo } from '../../../api';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { computeClock, type ClockView } from '../../../utils/gameClock';
 
 interface Props {
   gameState: GameState;
@@ -46,6 +47,12 @@ interface Props {
    * 但撤了灯就等于撤了 LED 掉线在这一屏唯一的信号,所以留下**只在出事时说话**的这一句。
    */
   hardwareFault?: string | null;
+  /**
+   * 本地对局、设了用时,**轮到的一方**的钟走到 0(主时间 0 且读秒次数用满)的那一刻调一次。
+   * 边沿触发:钟停在 0 不会连调;服务端回 409 带来新状态、钟重新有了余量,再走到 0 才会再调。
+   * 判负与否由服务端核实(`/api/timeout`),这里只负责「屏上算出来到点了」。
+   */
+  onTimeExpired?: () => void;
 }
 
 /** 两个人面对面下的局:胜率图整块不渲染(规范 §8 那张「按对弈方式判」的表)。 */
@@ -118,6 +125,34 @@ const formatTime = (seconds: number) => {
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 };
 
+/** 本地对局钟的读数:分钟也补两位(`09:42`、`00:24`),照 spec §3.3 那张表。 */
+const formatClock = (seconds: number) => {
+  const total = Math.ceil(Math.max(0, seconds));
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+};
+
+/**
+ * 「上一份服务端状态到现在,客户端过了几秒」。
+ *
+ * **按快照对象的身份归零,不按某个数归零。** 服务端每推一次状态(WS、HTTP 返回体、409 附带的状态)
+ * 都是一个新的 `timer` 对象,里面的已用时间已经包含了到那一刻为止的流逝 —— 不归零会把同一段时间算两遍。
+ * galaxy `PlayerCard` 只在 `main_time_used` 变化时归零,读秒阶段那个数不变,于是会重复计时;这里不照抄。
+ * 归零不在 effect 里 `setState(0)`(`react-hooks/set-state-in-effect`):记下这次计时属于哪个快照,
+ * 快照换了就当 0 返回,等下一拍再写新值。
+ */
+function useClientElapsed(snapshot: object | undefined, running: boolean): number {
+  const [tick, setTick] = useState<{ snapshot: object | undefined; elapsed: number }>({ snapshot: undefined, elapsed: 0 });
+  useEffect(() => {
+    if (!running) return;
+    const startedAt = Date.now();
+    const id = window.setInterval(() => {
+      setTick({ snapshot, elapsed: (Date.now() - startedAt) / 1000 });
+    }, 200);
+    return () => window.clearInterval(id);
+  }, [snapshot, running]);
+  return running && tick.snapshot === snapshot ? tick.elapsed : 0;
+}
+
 /**
  * 玩家卡(稿子 `.pcard`)。提子挂在副行上 —— galaxy 就是把它印在玩家卡里的,
  * 不是另起一块面板;规则和贴目同理,它们是**这一局开局时定死的**,写在页控条副标里
@@ -182,7 +217,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
 const GameControlPanel = ({
   gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
   isGameOver = false, isRanked = false, analysisRequiresLogin = false, engineMode = false,
-  activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null,
+  activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, onTimeExpired,
 }: Props) => {
   const { t, lang } = useTranslation();
 
@@ -254,12 +289,53 @@ const GameControlPanel = ({
       : isAiSeat(c) ? t('game:thinking', '思考中')
       : t('game:your_turn', '轮到你');
 
-  // 时钟栏。kiosk 的局**不设时限**(开局设置里没有时间控件),`main_time_used` 只有在
-  // 真配了时限时才累加 —— 那时才有「本局已下」可写。没有时限时,这一栏唯一为真的量是
+  // ── 本地对局的钟(spec §3.3)────────────────────────────────────────────
+  // 只有 `pvp_local` 走共享的 `computeClock`;自由对弈 / 升降级 / 星阵的钟栏一字不改(见 `clockFor` 后半段)。
+  // 不限时那一档服务端写的是 main_time=0 / byo_length=0,`computeClock` 判 `showTimer: false`,同样落到后半段。
+  const timer = gameState.timer;
+  const localClockOn = gameState.game_type === 'pvp_local' && !!timer;
+  const ticking = localClockOn && !isGameOver && !timer?.paused;
+  const clientElapsed = useClientElapsed(timer, ticking);
+  const localClock = (c: 'B' | 'W'): ClockView => computeClock({
+    settings: localClockOn ? timer?.settings : null,
+    mainTimeUsed: gameState.players_info[c].main_time_used,
+    periodsUsed: gameState.players_info[c].periods_used,
+    // 服务端只下发**轮到的一方**的本节点已用;另一方下一手从一段完整的读秒开始。
+    nodeTimeUsed: c === toMove ? (timer?.current_node_time_used ?? 0) : 0,
+    active: ticking && c === toMove,
+    clientElapsed,
+  });
+
+  // 到点那一刻调一次。回调走 ref:调用方每次渲染都给一个新函数,放进依赖会让「停在 0」连调。
+  const timeExpired = !isGameOver && localClock(toMove).phase === 'expired';
+  const onTimeExpiredRef = useRef(onTimeExpired);
+  useEffect(() => { onTimeExpiredRef.current = onTimeExpired; });
+  useEffect(() => {
+    if (timeExpired) onTimeExpiredRef.current?.();
+  }, [timeExpired]);
+
+  // 时钟栏(非本地对局,或本地对局不限时)。`main_time_used` 只有在真配了时限时才累加 ——
+  // 那时才有「本局已下」可写。没有时限时,这一栏唯一为真的量是
   // **当前是第几手**,而那是**局面的量、不是某一方的量** ⇒ 只挂在轮到的那张卡上,
   // 另一张卡的时钟栏不渲染。两张都写「不限时」是把同一句话说两遍;
   // 写 `0:00 本局已下` 更糟 —— 那不是「用了 0 秒」,是「压根没在计」。
   const clockFor = (c: 'B' | 'W'): { value: string; label: string } | null => {
+    const lc = localClock(c);
+    if (lc.showTimer) {
+      if (lc.phase === 'expired') return { value: formatClock(0), label: t('game:clock_timeout', '超时') };
+      if (lc.phase === 'byoyomi') {
+        return {
+          value: formatClock(lc.byoyomiLeft),
+          label: t('game:clock_byo_left', '读秒 · 剩 {n} 次').replace('{n}', String(lc.periodsLeft)),
+        };
+      }
+      return {
+        value: formatClock(lc.mainTimeLeft),
+        label: t('game:clock_byo_spec', '读秒 {len}秒×{n}')
+          .replace('{len}', String(timer?.settings.byo_length ?? 0))
+          .replace('{n}', String(timer?.settings.byo_periods ?? 0)),
+      };
+    }
     const used = gameState.players_info[c].main_time_used;
     if (used > 0) return { value: formatTime(used), label: t('game:spent_this_game', '本局已下') };
     if (c !== toMove || isGameOver) return null;

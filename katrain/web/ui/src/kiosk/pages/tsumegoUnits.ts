@@ -179,3 +179,26 @@ export const categoryRank = (key: string) => {
   const i = CATEGORY_ORDER.indexOf(key);
   return i < 0 ? CATEGORY_ORDER.length : i;
 };
+
+/**
+ * 盒上题库读取为什么失败(N9)。盒上题库是**在线直读**的(`core/repository.py` 的 `tsumego_*`
+ * 走 `_remote_only`):盒子上不存题,也没有任何同步。连不上云端 / 云端 5xx ⇒ 后端回 503。
+ * 各页 fetch 失败时抛的都是 `HTTP <status>`,所以判别就是这一个字面量。
+ */
+export const isCloudUnreachable = (error: string | null | undefined): boolean => error === 'HTTP 503';
+
+/**
+ * 错误块的两行字。503 说「连不上」并说清题在哪;其它错误照旧「读不到」+ 原因,
+ * **不许把所有错误都说成没网** —— 404 / 500 各有各的原因。
+ */
+export function loadErrorCopy(
+  t: (key: string, defaultText?: string) => string,
+  error: string,
+): { title: string; body: string } {
+  return isCloudUnreachable(error)
+    ? {
+        title: t('tsumego:cloudUnreachable', '连不上云端题库'),
+        body: t('tsumego:cloudUnreachableBody', '题库在云端，盒子上不存题。等网络或云端恢复后再点重试。'),
+      }
+    : { title: t('Problem set unavailable', '题库读不到'), body: error };
+}

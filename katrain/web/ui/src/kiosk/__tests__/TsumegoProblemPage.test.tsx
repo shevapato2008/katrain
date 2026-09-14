@@ -499,6 +499,14 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       renderPage();
       expect(screen.getByTestId('puzzle-error')).toHaveTextContent('Problem not found');
     });
+
+    it('连不上云端(HTTP 503)时说「连不上云端题库」,不说「这道题读不到」', () => {
+      hookReturn = { ...defaultHookReturn, error: 'HTTP 503' };
+      renderPage();
+      const box = screen.getByTestId('puzzle-error');
+      expect(box).toHaveTextContent('连不上云端题库');
+      expect(box).not.toHaveTextContent('这道题读不到');
+    });
   });
 
   // ---- SuccessOverlay + 自动下一题 ----

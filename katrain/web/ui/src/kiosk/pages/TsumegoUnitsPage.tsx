@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
-import { CATEGORY_META, UNIT_SIZE, levelChinese, readAutoAdvance, writeLastCategory, writeSequence } from './tsumegoUnits';
+import { CATEGORY_META, UNIT_SIZE, levelChinese, loadErrorCopy, readAutoAdvance, writeLastCategory, writeSequence } from './tsumegoUnits';
 import { interpolate } from '../utils/interpolate';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
@@ -98,8 +98,8 @@ const TsumegoUnitsPage = () => {
         <KioskScrollZone>
           {error ? (
             <div className="empty" data-testid="units-error">
-              <h4>{t('Problem set unavailable', '题库读不到')}</h4>
-              <p>{error}</p>
+              <h4>{loadErrorCopy(t, error).title}</h4>
+              <p>{loadErrorCopy(t, error).body}</p>
               <button
                 type="button"
                 className="kiosk-btn kiosk-btn--pill pill"
@@ -117,7 +117,6 @@ const TsumegoUnitsPage = () => {
           ) : (
             <div className="empty" data-testid="units-empty">
               <h4>{t('No problems in this category yet', '这一类下面还没有题')}</h4>
-              <p>{t('The problem set syncs down from the cloud.', '题库随云端同步下来，同步过来才有题可做。')}</p>
             </div>
           )}
         </KioskScrollZone>

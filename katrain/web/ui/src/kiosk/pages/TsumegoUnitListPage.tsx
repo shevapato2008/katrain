@@ -6,6 +6,7 @@ import {
   CATEGORY_META,
   UNIT_SIZE,
   levelChinese,
+  loadErrorCopy,
   readSequence,
   writeLastCategory,
   writeSequence,
@@ -134,8 +135,8 @@ const TsumegoUnitListPage = () => {
         <KioskScrollZone>
           {error ? (
             <div className="empty" data-testid="problems-error">
-              <h4>{t('Problem set unavailable', '题库读不到')}</h4>
-              <p>{error}</p>
+              <h4>{loadErrorCopy(t, error).title}</h4>
+              <p>{loadErrorCopy(t, error).body}</p>
               <button
                 type="button"
                 className="kiosk-btn kiosk-btn--pill pill"
@@ -153,7 +154,6 @@ const TsumegoUnitListPage = () => {
           ) : allIds.length === 0 ? (
             <div className="empty" data-testid="problems-empty">
               <h4>{t('No problems in this category yet', '这一类下面还没有题')}</h4>
-              <p>{t('The problem set syncs down from the cloud.', '题库随云端同步下来，同步过来才有题可做。')}</p>
             </div>
           ) : (
             // 单元号越界(手打的地址 / 题库缩了)。**说清楚一共有几个单元**,别只说「没有」。

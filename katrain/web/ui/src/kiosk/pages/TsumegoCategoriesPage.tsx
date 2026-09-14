@@ -7,6 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import ProgressDots from '../components/tsumego/ProgressDots';
+import { loadErrorCopy } from './tsumegoUnits';
 import { KioskPagebar } from '../shell/KioskPagebar';
 
 interface CategoryInfo {
@@ -103,7 +104,7 @@ const TsumegoCategoriesPage = () => {
   if (error) {
     return (
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 4 }}>
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="error">{`${loadErrorCopy(t, error).title} · ${loadErrorCopy(t, error).body}`}</Alert>
         <Button variant="outlined" onClick={() => navigate('/kiosk/tsumego')}>
           {t('Back', '返回')}
         </Button>

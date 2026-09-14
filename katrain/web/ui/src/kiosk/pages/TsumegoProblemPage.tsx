@@ -15,6 +15,8 @@ import {
   CATEGORY_META,
   UNIT_SIZE,
   sequenceKey,
+  isCloudUnreachable,
+  loadErrorCopy,
   readAutoAdvance,
   levelChinese,
   readPhysicalMode,
@@ -401,9 +403,10 @@ const TsumegoProblemPage = () => {
         {error ? (
           <div className="empty" data-testid="puzzle-error">
             {/* `tsumego:loadError` 在 PO 里是「死活题库加载失败，请稍后重试。」——
-                那是**一句话**,而这里要的是一个标题;原因写在下面那行。 */}
-            <h4>{t('tsumego:problemLoadError', '这道题读不到')}</h4>
-            <p>{error}</p>
+                那是**一句话**,而这里要的是一个标题;原因写在下面那行。
+                503 = 盒子连不上云端(N9),这时「这道题读不到」会被读成题坏了。 */}
+            <h4>{isCloudUnreachable(error) ? loadErrorCopy(t, error).title : t('tsumego:problemLoadError', '这道题读不到')}</h4>
+            <p>{loadErrorCopy(t, error).body}</p>
           </div>
         ) : (
           <div className="empty" data-testid="puzzle-loading">

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { readActiveSession } from '../utils/activeSession';
-import { CATEGORY_META, categoryRank, levelChinese, readLastCategory, readLastLevel } from './tsumegoUnits';
+import { CATEGORY_META, categoryRank, levelChinese, loadErrorCopy, readLastCategory, readLastLevel } from './tsumegoUnits';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
@@ -98,8 +98,8 @@ const TsumegoPage = () => {
         {resumeBar}
         {error ? (
           <div className="empty" data-testid="tsumego-error">
-            <h4>{t('Problem set unavailable', '题库读不到')}</h4>
-            <p>{error}</p>
+            <h4>{loadErrorCopy(t, error).title}</h4>
+            <p>{loadErrorCopy(t, error).body}</p>
             <button type="button" className="kiosk-btn kiosk-btn--pill pill" onClick={load}>
               {t('Retry', '重试')}
             </button>
@@ -110,8 +110,8 @@ const TsumegoPage = () => {
           </div>
         ) : (
           <div className="empty" data-testid="tsumego-empty">
-            <h4>{t('No problems on this box yet', '这台盒子上还没有题')}</h4>
-            <p>{t('The problem set syncs down from the cloud.', '题库随云端同步下来，同步过来才有题可做。')}</p>
+            {/* 接口真回了空。**不说「随云端同步下来」**:盒上题库是在线直读的,没有同步这回事(N9)。 */}
+            <h4>{t('tsumego:bankEmpty', '题库里还没有题')}</h4>
           </div>
         )}
       </KioskScrollZone>

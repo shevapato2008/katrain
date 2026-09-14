@@ -149,11 +149,23 @@ describe('TsumegoPage · 屏 11 训练营', () => {
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
-  it('题库是空的时候说的是「还没同步」,不是「读不到」', async () => {
+  it('题库真是空的时候说「还没有题」,不说「随云端同步下来」—— 盒上题库是在线直读的,没有同步', async () => {
     (global.fetch as any).mockResolvedValue({ ok: true, json: () => Promise.resolve([]) });
     renderPage();
     await waitFor(() => expect(screen.getByTestId('tsumego-empty')).toBeInTheDocument());
+    expect(screen.getByText('题库里还没有题')).toBeInTheDocument();
+    expect(screen.queryByText(/随云端同步/)).toBeNull();
     expect(screen.queryByTestId('tsumego-error')).toBeNull();
+  });
+
+  it('连不上云端(503)时说「连不上云端题库」,不说「没有题」,重试键还在', async () => {
+    (global.fetch as any).mockResolvedValueOnce({ ok: false, status: 503, json: () => Promise.resolve({}) });
+    renderPage();
+    const box = await screen.findByTestId('tsumego-error');
+    expect(within(box).getByText('连不上云端题库')).toBeInTheDocument();
+    expect(within(box).getByText('题库在云端，盒子上不存题。等网络或云端恢复后再点重试。')).toBeInTheDocument();
+    expect(within(box).getByRole('button', { name: '重试' })).toBeInTheDocument();
+    expect(screen.queryByTestId('tsumego-empty')).toBeNull();
   });
 
   it('有未完成的练习才出「接着上次」', async () => {

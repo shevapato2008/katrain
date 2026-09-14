@@ -263,6 +263,16 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
     renderPage();
     await waitFor(() => expect(screen.getByTestId('problems-empty')).toBeInTheDocument());
     expect(screen.queryByTestId('problems-error')).toBeNull();
+    expect(screen.queryByText(/随云端同步/)).toBeNull();
+  });
+
+  it('连不上云端(503)时说「连不上云端题库」,不把状态码甩给人看', async () => {
+    (global.fetch as any).mockResolvedValueOnce({ ok: false, status: 503, json: () => Promise.resolve({}) });
+    renderPage();
+    const box = await screen.findByTestId('problems-error');
+    expect(within(box).getByText('连不上云端题库')).toBeInTheDocument();
+    expect(within(box).queryByText(/HTTP 503/)).toBeNull();
+    expect(within(box).getByRole('button', { name: '重试' })).toBeInTheDocument();
   });
 
   it('单元号越界时说清楚一共有几个单元,并给一条回去的路', async () => {

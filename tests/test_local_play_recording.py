@@ -107,6 +107,46 @@ async def test_record_is_idempotent_within_session():
 # never recorded (idempotency guard from game 1 stays latched forever).
 
 
+def _named_session(game_type, black_name, white_name, both_human=True):
+    s = _make_session(both_human=both_human)
+    s.game_type = game_type
+    s.katrain.players_info = {"B": _Info(True, black_name), "W": _Info(both_human, white_name)}
+    return s
+
+
+async def _recorded_data(session, username="fan"):
+    app = MagicMock()
+    app.state.repository_dispatcher.user_games_create = AsyncMock(return_value={"id": "g1"})
+    await server._RECORD_FN(session, app, types.SimpleNamespace(id=42, username=username), "B+R")
+    app.state.repository_dispatcher.user_games_create.assert_awaited_once()
+    return app.state.repository_dispatcher.user_games_create.await_args.kwargs["data"]
+
+
+# P12:屏 04 承诺「名字留空就不编名字」。以前两个座位都是 human ⇒ 登录用户名被同时写进黑白两方,
+# 屏 19 那一行就成了「fan — fan」,「本地对局 · 未记名」永远认不出来。
+@pytest.mark.asyncio
+async def test_pvp_local_blank_names_stay_blank():
+    data = await _recorded_data(_named_session("pvp_local", "", ""))
+    assert data["source"] == "play_local"
+    assert data["player_black"] == ""
+    assert data["player_white"] == ""
+
+
+@pytest.mark.asyncio
+async def test_pvp_local_keeps_the_one_name_given():
+    data = await _recorded_data(_named_session("pvp_local", "小明", ""))
+    assert data["player_black"] == "小明"
+    assert data["player_white"] == ""
+
+
+@pytest.mark.asyncio
+async def test_ai_game_still_fills_username_into_the_human_seat():
+    data = await _recorded_data(_named_session("free", "", "", both_human=False))
+    assert data["source"] == "play_ai"
+    assert data["player_black"] == "fan"
+    assert data["player_white"] != "fan"
+
+
 @pytest.fixture
 def client(isolated_session_factory):
     app = server.create_app(enable_engine=False)

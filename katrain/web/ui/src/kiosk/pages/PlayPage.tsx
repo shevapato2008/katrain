@@ -48,7 +48,9 @@ const PlayPage = () => {
     let current = true;
     setPlatforms(defaultPlatforms());
 
-    if (token) {
+    // 闸挂在「登录了没有」,**不挂 token**(P16):严格盒端 SSO 里 token 恒为 null,凭据在 cookie 里。
+    // 游客仍不请求 —— `/api/v1/platforms/status` 要登录(`platforms.py` 的 `get_current_user`)。
+    if (isAuthenticated) {
       API.platformStatus(token).then((d) => {
         if (current) setPlatforms(mergePlatformStatus(d.platforms));
       }).catch(() => {
@@ -57,7 +59,7 @@ const PlayPage = () => {
     }
 
     return () => { current = false; };
-  }, [token]);
+  }, [isAuthenticated, token]);
 
   const hour = new Date().getHours();
   const [greetKey, greetZh] =

@@ -437,7 +437,10 @@ const ResearchPage = () => {
   const userGameRef = useRef(false);
   useEffect(() => {
     const id = searchParams.get('user_game_id');
-    if (!id || userGameRef.current || !token) return;
+    // ⚠️ **不许再挂 `!token`**(P13)。严格盒端 SSO 里 token 恒为 null,身份在 HttpOnly cookie 里 ——
+    // 挂着它,盒上从报告点「去研究」落到的是一块空棋盘。这一屏在 `KioskAuthGuard` 里,
+    // 走到这儿的人按定义都已登录;`token` 只当凭据传,有就带 Authorization 头,没有就靠 cookie。
+    if (!id || userGameRef.current) return;
     userGameRef.current = true;
     UserGamesAPI.get(token, id).then(async (detail) => {
       if (!detail.sgf_content) return;
@@ -452,7 +455,7 @@ const ResearchPage = () => {
       });
       if (searchParams.get('analyze') === '1') await startScan(detail.sgf_content);
     }).catch((err) => console.error('Failed to load user game for deep link:', err));
-  }, [searchParams, token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 对局刚结束的「复盘本局」:`GamePage` 用 sessionStorage 交接(那局刚在本机下完,没有 id)。
   // key **进来就删** —— 所以**刷新之后这一支不再成立**:盘是空的、出处也没有,

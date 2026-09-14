@@ -25,6 +25,7 @@ from katrain.core.engine import create_engine
 from katrain.core.game import Game
 from katrain.core.lang import i18n
 from katrain.gui.theme import Theme
+from katrain.web.core.game_end_rules import is_awaiting_count, scaled_count_min_moves
 
 # Configure standard logging
 logging.basicConfig(level=logging.INFO)
@@ -608,7 +609,13 @@ class WebKaTrain(KaTrainBase):
                 "zen_mode": self.zen_mode,
             },
             "engine": getattr(self, "last_engine", None),
-            "count_min_moves": self.config("game/count_min_moves", 100),
+            # 按路数缩放（19 路 100、13 路 47、9 路 22）。`/api/count/request` 的门槛用同一个函数。
+            "count_min_moves": scaled_count_min_moves(
+                self.config("game/count_min_moves", 100), self.game.board_size[0]
+            ),
+            # 盒上模式双方各停一手、还没数子。为真时 `end_result` 照样非空（"终局"，或分析到了之后
+            # 的 "B+3.0?" 估计串），前端要以这一位为准去数子，而不是把 end_result 当成终局结果。
+            "awaiting_count": is_awaiting_count(self),
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
             "analysis_allowed": self.analysis_allowed,

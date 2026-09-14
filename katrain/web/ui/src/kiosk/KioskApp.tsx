@@ -35,6 +35,7 @@ import { VisionProvider } from './context/VisionContext';
 import { GeometryProvider } from './context/GeometryContext';
 import PhysicalBoardGuard from './components/vision/PhysicalBoardGuard';
 import PlayInputGuard from './components/vision/PlayInputGuard';
+import TsumegoInputGuard from './components/vision/TsumegoInputGuard';
 import RotationWrapper from './components/layout/RotationWrapper';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
@@ -129,7 +130,10 @@ const KioskRoutes = () => {
           <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />
-          <Route path="tsumego/problem/:problemId" element={<PhysicalBoardGuard sub="实体做题要先让摄像头看清盘面"><TsumegoProblemPage /></PhysicalBoardGuard>} />
+          {/* ⚠️ 2026-09-14(T9):不再裸套 `PhysicalBoardGuard`。做题的实体开关默认关,
+              屏幕做题的人不该被标定台挡住 —— 和对弈那四条换成 `PlayInputGuard` 是同一件事。
+              **不要退回裸的 `PhysicalBoardGuard`。** */}
+          <Route path="tsumego/problem/:problemId" element={<TsumegoInputGuard><TsumegoProblemPage /></TsumegoInputGuard>} />
           <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
           <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />

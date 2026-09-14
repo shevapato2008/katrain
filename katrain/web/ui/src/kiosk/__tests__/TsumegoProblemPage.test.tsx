@@ -53,6 +53,13 @@ vi.mock('../context/VisionContext', () => ({
   }),
 }));
 
+// 几何状态:默认 null(= 没有 GeometryProvider,页面不管几何,和改之前一样);单条用例按需造。
+const { mockGeometry } = vi.hoisted(() => ({ mockGeometry: { value: null as null | { status: unknown } } }));
+vi.mock('../context/GeometryContext', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../context/GeometryContext')>();
+  return { ...actual, useOptionalGeometry: () => mockGeometry.value };
+});
+
 vi.mock('../hooks/useVisionSync', () => ({
   useVisionSync: () => ({
     syncEvents: [],
@@ -172,6 +179,7 @@ beforeEach(() => {
   mockReadPhysicalMode.mockReturnValue(false);
   mockVision.enabled = false;
   mockVision.recognitionReady = false;
+  mockGeometry.value = null;
   // Seed the prev/next sequence the units page would have written.
   sessionStorage.setItem(sequenceKey('15k', '手筋'), JSON.stringify(SEQUENCE));
 });
@@ -284,6 +292,71 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
     expect(screen.getByTestId('physical-mode-toggle')).toBeDisabled();
     // 9 路题 ⇒ 这条分支根本不该开。
     expect(screen.getByTestId('puzzle-toggle-hint')).toHaveTextContent('19 路');
+  });
+
+  it('服务重启后识别已就绪、几何本次开机没确认:实体开关按不动,提示去确认并给「去标定」(T9)', () => {
+    mockVision.enabled = true;
+    mockVision.recognitionReady = true;   // 启动时持久化的锁已经推进识别 worker
+    hookReturn = { ...defaultHookReturn, boardSize: 19 };
+    mockGeometry.value = {
+      status: {
+        phase: 'required', session_calibrated: false, last_valid: true,
+        capabilities: { camera_ready: true, led_ready: true, geometry_ready: false },
+      },
+    };
+    renderPage('p1');
+    expect(screen.getByTestId('physical-mode-toggle')).toBeDisabled();
+    expect(screen.getByTestId('puzzle-toggle-hint')).toHaveTextContent('物理棋盘需先确认棋盘标定');
+    expect(screen.getByRole('button', { name: '去标定' })).toBeInTheDocument();
+  });
+
+  it('几何本次开机确认过了,实体开关才按得动', () => {
+    mockVision.enabled = true;
+    mockVision.recognitionReady = true;
+    hookReturn = { ...defaultHookReturn, boardSize: 19 };
+    mockGeometry.value = {
+      status: {
+        phase: 'ready', session_calibrated: true, last_valid: true,
+        capabilities: { camera_ready: true, led_ready: true, geometry_ready: true },
+      },
+    };
+    renderPage('p1');
+    expect(screen.getByTestId('physical-mode-toggle')).not.toBeDisabled();
+  });
+
+  it('屏幕进入、页内打开实体开关之后几何失效:开关还开着,旁边照样写原因并给「去标定」(T9)', () => {
+    // 屏幕模式进来 ⇒ `TsumegoInputGuard` 挂载时没套 `PhysicalBoardGuard`,几何中途失效时没有守卫接管,
+    // 只剩页内的提示能说话。改之前 `physicalHint` 在开关开着时一律返回 null。
+    mockVision.enabled = true;
+    mockVision.recognitionReady = true;
+    hookReturn = { ...defaultHookReturn, boardSize: 19 };
+    const geo = (phase: 'ready' | 'degraded') => ({
+      status: {
+        phase, session_calibrated: true, last_valid: true,
+        capabilities: { camera_ready: true, led_ready: true, geometry_ready: phase === 'ready' },
+      },
+    });
+    mockGeometry.value = geo('ready');
+    const view = renderPage('p1');
+    fireEvent.click(screen.getByTestId('physical-mode-toggle'));
+    expect(screen.getByTestId('physical-mode-toggle')).toHaveAttribute('aria-checked', 'true');
+
+    // 被动漂移检测把 ready 翻成 degraded,`GeometryProvider` 的轮询带回来。
+    mockGeometry.value = geo('degraded');
+    view.rerender(
+      <ThemeProvider theme={kioskTheme}>
+        <MemoryRouter initialEntries={['/kiosk/tsumego/problem/p1']}>
+          <Routes>
+            <Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    const toggle = screen.getByTestId('physical-mode-toggle');
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+    expect(toggle).not.toBeDisabled();   // 关掉永远允许
+    expect(screen.getByTestId('puzzle-toggle-hint')).toHaveTextContent('棋盘标定已失效');
+    expect(screen.getByRole('button', { name: '去标定' })).toBeInTheDocument();
   });
 
   it('做对了显示成功提示', () => {

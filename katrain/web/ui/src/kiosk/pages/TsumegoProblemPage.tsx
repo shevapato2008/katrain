@@ -89,7 +89,15 @@ const TsumegoProblemPage = () => {
     setResyncKey((k) => k + 1);
   }, [reset]);
   // recognition_ready = 相机+模型+几何全就绪；物理盘固定 19 路（PRD Q1：非 19 路题隐藏物理模式）
-  const physicalAvailable = visionStatus.enabled && visionStatus.recognitionReady && boardSize === 19;
+  // ⚠️ 2026-09-14(T9):recognition_ready **不含「本次开机确认过」**。服务启动时持久化的标定锁
+  // 直接推进识别 worker ⇒ 盒子一重启它就是真,而几何是 required / session_calibrated=false。
+  // 做题路由不再无条件套 `PhysicalBoardGuard` 之后,这颗开关是唯一的关 ⇒ 放行条件照抄那道守卫。
+  // 没有 GeometryProvider(单测)时不管几何,和改之前一样;`disabled` = 没有摄像头服务,也放行。
+  const geoStatus = geometry?.status;
+  const geometryConfirmed = !geoStatus || geoStatus.phase === 'disabled'
+    || (geoStatus.phase === 'ready' && geoStatus.session_calibrated && geoStatus.capabilities.geometry_ready);
+  const physicalAvailable =
+    visionStatus.enabled && visionStatus.recognitionReady && geometryConfirmed && boardSize === 19;
   // problem 数据必须与当前路由匹配，防止题目切换途中用旧 stones 启动新题流程
   const physicalProblemReady = !!problem && problem.id === problemId;
   const physicalEnabled = physicalMode && physicalAvailable && physicalProblemReady;
@@ -99,8 +107,12 @@ const TsumegoProblemPage = () => {
   // restart: the saved geometry lock reloads but session_calibrated resets, so it needs a one-tap
   // re-confirm on the calibration page (not a full recalibration).
   const geoPhase = geometry?.status.phase;
+  // ⚠️ 2026-09-15(T9):**开关开着时也要说**。原来是 `physicalMode || physicalAvailable ? null` ——
+  // 那时做题路由恒套 `PhysicalBoardGuard`,几何一失效守卫整屏接管,开关开着时轮不到这里说话。
+  // 守卫改成挂载时决定之后:屏幕模式进来、页内打开、几何中途失效 ⇒ 实体流程停了
+  // (`physicalEnabled` 变假),开关却还亮着 —— 不说原因、不给「去标定」,人只会觉得盘坏了。
   const physicalHint: { text: string; calibrate?: boolean; severity: 'info' | 'warning' } | null =
-    physicalMode || physicalAvailable
+    physicalAvailable
       ? null
       : boardSize !== 19
         ? { text: t('tsumego:physNeed19', '物理棋盘仅支持 19 路题目'), severity: 'info' }

@@ -46,7 +46,9 @@ const { writeActiveSession, clearActiveSession } = vi.hoisted(() => ({
   writeActiveSession: vi.fn(),
   clearActiveSession: vi.fn(),
 }));
-vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSession }));
+// `readSessionPlayOnBoard`(泳道 B)从活动会话读开局那一刻定下的 onBoard;这里桩成「没有活动会话」,
+// 走回落到偏好的那一支 —— 即合并前本文件各用例依赖的行为。
+vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSession, readActiveSession: () => null }));
 
 const { mockCalibrate } = vi.hoisted(() => ({ mockCalibrate: vi.fn().mockResolvedValue({}) }));
 vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: (...a: unknown[]) => mockCalibrate(...a) } }));

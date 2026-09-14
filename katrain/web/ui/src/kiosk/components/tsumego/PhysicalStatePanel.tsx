@@ -14,6 +14,9 @@ import type { SvgIconProps } from '@mui/material';
 import { PanTool, TouchApp, Reply, DeleteSweep, EmojiEvents, Close } from '@mui/icons-material';
 import { LED_HEX, LED_LABEL, type LedIntent } from '../../constants/ledColors';
 import type { PhysicalTsumegoState, PhysicalPhase } from '../../hooks/usePhysicalTsumego';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { interpolate } from '../../utils/interpolate';
+import { xyToCoord } from '../../shell/goBoard';
 
 interface PhysicalStatePanelProps {
   state: PhysicalTsumegoState;
@@ -71,6 +74,7 @@ const doubleBlink = keyframes`
 `;
 
 const PhysicalStatePanel = ({ state, onDismiss }: PhysicalStatePanelProps) => {
+  const { t } = useTranslation();
   const visual = phaseVisual(state.phase);
   if (!visual) return null;
 
@@ -125,13 +129,16 @@ const PhysicalStatePanel = ({ state, onDismiss }: PhysicalStatePanelProps) => {
 
       {state.phase === 'removing' && (state.extra ?? []).length > 0 && (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-          {/* voice-cue slot: real track wires speak('wrong_remove') here — stub silent */}
+          {/* 标签写**棋盘坐标**(跳 I、行号 1 在最下),不写识别网格的 0 起下标 —— 蓝灯常被
+              要拿的那颗子压住,这一排是主通道,「(3,15)」普通人对不上是哪颗(N12)。
+              换算只许走 `shell/goBoard.ts` 那一份;实体盘固定 19 路。
+              语音 `wrong_remove` 由状态机念(`physicalTsumegoMachine.ts`),这里不管。 */}
           {(state.extra ?? []).map(([row, col], i) => (
             <Chip
               key={`${row}-${col}-${i}`}
               data-testid="removal-item"
               size="small"
-              label={`拿除 (${row},${col})`}
+              label={interpolate(t('tsumego:removeAt', '拿除 {coord}'), { coord: xyToCoord(col, row, 19) })}
               sx={{ bgcolor: LED_HEX.remove, color: 'common.white' }}
             />
           ))}

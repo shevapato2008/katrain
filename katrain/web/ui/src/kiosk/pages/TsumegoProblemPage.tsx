@@ -531,8 +531,6 @@ const TsumegoProblemPage = () => {
                     missing={physical.missing}
                     extra={physical.extra}
                     stage={physical.stage}
-                    isComplete={false}
-                    onStartProblem={() => {}}
                     onSkip={() => setPhysical(false)}
                   />
                 )}

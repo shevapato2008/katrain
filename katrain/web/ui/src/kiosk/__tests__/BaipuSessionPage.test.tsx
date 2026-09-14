@@ -124,3 +124,22 @@ describe('屏 17 摆谱 · 上线态不拍照(K4,Fan 2026-09-14)', () => {
     expect(screen.getByTestId('baipu-cam-fold')).toBeInTheDocument();
   });
 });
+
+describe('屏 17 摆谱 · 只摆 19 路(K2)', () => {
+  // 实体盘和灯阵都是 19 路。13 路的行列发给灯,会亮在实体盘左上角那一块 —— 每一颗都错位。
+  it('13 路的谱:说清摆不了、一颗灯都不点,并从「最近摆过」和本地缓存里拿掉', async () => {
+    localStorage.setItem('baipu:recent', JSON.stringify([
+      { id: 'g1', name: '三星杯', savedAt: 1 }, { id: 'other', name: '别的', savedAt: 1 },
+    ]));
+    localStorage.setItem('baipu:progress:g1', JSON.stringify({ k: 0, frames: 0, updatedAt: 1 }));
+    baipuLoad.mockResolvedValue({ board_size: 13, steps: [move(0, 3, 3, 'B')], meta: META });
+    renderPage();
+    expect(await screen.findByText('这是 13 路的谱，摆不了')).toBeInTheDocument();
+    expect(ledPoint).not.toHaveBeenCalled();
+    expect(localStorage.getItem('baipu:sgf:g1')).toBeNull();
+    expect(localStorage.getItem('baipu:progress:g1')).toBeNull();
+    expect(JSON.parse(localStorage.getItem('baipu:recent')!)).toEqual([{ id: 'other', name: '别的', savedAt: 1 }]);
+    fireEvent.click(screen.getByRole('button', { name: /棋谱/ }));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
+  });
+});

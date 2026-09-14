@@ -259,6 +259,21 @@ export function clearProgress(id: string): void {
   }
 }
 
+/**
+ * 把一份谱从「最近摆过」、本地缓存和进度里整份拿掉。
+ * 只给「这份谱摆不了」那一种用(K2:非 19 路)—— 留着它,棋谱屏会给一颗点了还是摆不了的「接着摆」。
+ */
+export function forgetSgf(id: string): void {
+  try {
+    localStorage.removeItem(SGF_KEY(id));
+    localStorage.removeItem(PROGRESS_KEY(id));
+    const recent = (safeParse<BaipuRecentEntry[]>(localStorage.getItem(RECENT_KEY)) ?? []).filter((e) => e.id !== id);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+  } catch {
+    // localStorage 不可用时没有东西可删
+  }
+}
+
 // --------------------------------------------------------------------------- //
 // Coordinate conversion: canonical (row=0 top) <-> LiveBoard (y=0 bottom)
 // --------------------------------------------------------------------------- //

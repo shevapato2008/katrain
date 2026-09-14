@@ -231,4 +231,16 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
     fireEvent.click(within(screen.getByTestId('kifu-detail-pagebar')).getByRole('button'));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
   });
+
+  it('13 路的谱「摆到实体盘」灰着,并说明实体盘只摆得了 19 路', async () => {
+    baipuLoad.mockResolvedValue({
+      board_size: 13, meta: {},
+      steps: [step({ move_index: 0, property: 'B', row: 3, col: 3, color: 'B' })],
+    });
+    renderPage();
+    await waitLoaded();
+    const btn = screen.getByRole('button', { name: '摆到实体盘' });
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute('title', expect.stringContaining('13 路'));
+  });
 });

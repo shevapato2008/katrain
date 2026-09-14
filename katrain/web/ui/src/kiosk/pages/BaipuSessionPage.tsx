@@ -3,7 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { useTranslation } from '../../hooks/useTranslation';
 import { type BaipuCaptureErrorReason,
-  BaipuAPI, getCachedSgf, saveProgress, getProgress, clearProgress,
+  BaipuAPI, getCachedSgf, saveProgress, getProgress, clearProgress, forgetSgf,
   canonToGtp, type BaipuStep, type BaipuMeta, type BaipuGeometryCorrection,
 } from '../../api/baipuApi';
 import { LedAPI, type LedColor } from '../../api/ledApi';
@@ -133,6 +133,8 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
   const [phase, setPhase] = useState<Phase>('loading');
   // ⚠️ `null` = 没失败;`''` = 失败了但服务端没给话。**存的不是译文**(见 `driftLine` 那段)。
   const [loadError, setLoadError] = useState<string | null>(null);
+  /** 读到的谱不是 19 路时记下它的路数。实体盘和灯阵只有 19 路。 */
+  const [wrongSize, setWrongSize] = useState<number | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
   /** 几何失效那一种「再按一次」永远不会成 —— 屏上得说另一句话。见 `BaipuCaptureErrorReason`。 */
   const [captureReason, setCaptureReason] = useState<BaipuCaptureErrorReason>('other');
@@ -166,6 +168,15 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
     BaipuAPI.load({ sgf })
       .then((resp) => {
         if (cancelled) return;
+        // 实体盘和灯阵都是 19 路。别的路数的行列发给灯会亮在左上角那一块 —— 每一颗都错位。
+        // **这里是所有入口(屏 16 / 导入 SGF / 接着摆)的唯一汇合点**,所以拦在这儿,不在入口各拦一遍。
+        // 顺手把它从「最近摆过」里拿掉:留着的话棋谱屏会给一颗点了还是摆不了的「接着摆」。
+        if (resp.board_size !== 19) {
+          forgetSgf(source);
+          setWrongSize(resp.board_size);
+          setPhase('error');
+          return;
+        }
         setSteps(resp.steps);
         setBoardSize(resp.board_size);
         setMeta(resp.meta);
@@ -346,8 +357,17 @@ const BaipuSessionPage = ({ collect }: { collect: boolean }) => {
           title={t('baipu:title', '摆谱')}
         />
         <div className="empty" data-testid="baipu-load-error">
-          <h4>{sgf ? t('baipu:load_failed', '没读出这份谱') : t('baipu:no_sgf', '这台盒子上没有这份谱')}</h4>
-          {loadError && <p>{loadError}</p>}
+          {wrongSize !== null ? (
+            <>
+              <h4>{interpolate(t('baipu:wrong_size', '这是 {n} 路的谱，摆不了'), { n: wrongSize })}</h4>
+              <p>{t('baipu:wrong_size_hint', '实体盘和灯都是 19 路的 —— 别的路数摆上去每一颗都会错位。')}</p>
+            </>
+          ) : (
+            <>
+              <h4>{sgf ? t('baipu:load_failed', '没读出这份谱') : t('baipu:no_sgf', '这台盒子上没有这份谱')}</h4>
+              {loadError && <p>{loadError}</p>}
+            </>
+          )}
         </div>
       </div>
     );

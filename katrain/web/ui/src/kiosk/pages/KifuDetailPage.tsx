@@ -5,6 +5,7 @@ import { KifuAPI } from '../../api/kifuApi';
 import { BaipuAPI, cacheSgf, canonToGtp, type BaipuStep } from '../../api/baipuApi';
 import { replayBaipuSteps } from '../../utils/baipuReplay';
 import { translateResult } from '../../utils/resultTranslation';
+import { interpolate } from '../utils/interpolate';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { KioskPagebar } from '../shell/KioskPagebar';
@@ -182,8 +183,11 @@ const KifuDetailPage = () => {
       icon: 'grid-nine',
       label: t('kifu:place_on_board', '摆到实体盘'),
       onClick: goBaipu,
-      disabled: !album?.sgf_content,
-      reason: t('kifu:need_sgf', '这一局还没读到谱'),
+      // 实体盘和灯阵只有 19 路。摆谱屏自己也会拦(它是所有入口的汇合点),这里先灰掉,别让人白跳一趟。
+      disabled: !album?.sgf_content || boardSize !== 19,
+      reason: album?.sgf_content && boardSize !== 19
+        ? interpolate(t('kifu:wrong_size_reason', '这是 {n} 路的谱 —— 实体盘只摆得了 19 路'), { n: boardSize })
+        : t('kifu:need_sgf', '这一局还没读到谱'),
     },
     {
       key: 'research',

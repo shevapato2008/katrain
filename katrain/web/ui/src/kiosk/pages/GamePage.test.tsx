@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
-import { API, type GameState } from '../../api';
+import { API, ApiError, type GameState } from '../../api';
 import GamePage, { deriveAiTurnState } from './GamePage';
 
 // --- Mocks -----------------------------------------------------------------
@@ -27,6 +27,7 @@ vi.mock('../components/game/GameControlPanel', () => ({
   default: (props: MockControlPanelProps) => (
     <div data-testid="game-control-panel">
       <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
+      <button onClick={() => props.onAction('count')}>MOCK_COUNT</button>
     </div>
   ),
 }));
@@ -82,6 +83,9 @@ vi.mock('../../hooks/useGameSession', () => ({
     sendChat: vi.fn(),
     gameEndData: null,
     physicalReminder: mockPhysicalReminder,
+    // 新覆盖的「非本地对局认输成功」路径会调用它(GamePage.tsx 里未包在 try 里);
+    // 缺了这一项此前从未被真调用过,加上后只是补全 mock、不改任何断言。
+    clearPhysicalEngineError: vi.fn(),
   }),
 }));
 
@@ -510,6 +514,110 @@ describe('GamePage', () => {
       fireEvent.click(screen.getByRole('button', { name: '认输' }));
       expect(await screen.findByText('认输请求失败')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '认输' })).toBeInTheDocument();
+    });
+  });
+
+  describe('本地对局 v2:两个出口 + 数子', () => {
+    const human = { ...basePlayer, name: '' };
+    const localPair: GameState['players_info'] = {
+      B: { ...human, player_type: 'player:human' }, W: { ...human, player_type: 'player:human' },
+    };
+    const local = (over: Partial<GameState> = {}) =>
+      makeGameState({ players_info: localPair, game_type: 'pvp_local', ...over });
+
+    it('认输先问谁认输,按「白方认输」⇒ handleAction 带 color=W', async () => {
+      mockGameState = local();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_RESIGN'));
+      expect(screen.getByText('谁认输？')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '黑方认输' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '白方认输' }));
+      await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('resign', { color: 'W' }));
+    });
+
+    it('认输框按「取消」⇒ 不发请求', () => {
+      mockGameState = local();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_RESIGN'));
+      fireEvent.click(screen.getByRole('button', { name: '取消' }));
+      expect(mockHandleAction).not.toHaveBeenCalled();
+    });
+
+    it('未终局退出 ⇒ 删会话、清活动会话、回对弈首页,绝不认输', async () => {
+      mockGameState = local();
+      const del = vi.spyOn(API, 'deleteSession').mockResolvedValue(undefined);
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('退出对局'));
+        expect(screen.getByText('这局还没下完，退出后不会保存')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: '退出不保存' }));
+        expect(await screen.findByText('PLAY_PAGE')).toBeInTheDocument();
+        expect(del).toHaveBeenCalledWith('test-session');
+        expect(clearActiveSession).toHaveBeenCalledWith('game');
+        expect(mockHandleAction).not.toHaveBeenCalled();
+      } finally { del.mockRestore(); }
+    });
+
+    it('删会话失败 ⇒ 不离开、说出来(不能装作已退出)', async () => {
+      mockGameState = local();
+      const del = vi.spyOn(API, 'deleteSession').mockRejectedValue(new ApiError(500, 'Request failed 500: boom'));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('退出对局'));
+        fireEvent.click(screen.getByRole('button', { name: '退出不保存' }));
+        expect(await screen.findByText('退出失败，请重试')).toBeInTheDocument();
+        expect(screen.queryByText('PLAY_PAGE')).toBeNull();
+        expect(clearActiveSession).not.toHaveBeenCalledWith('game');
+      } finally { del.mockRestore(); }
+    });
+
+    it('已终局 ⇒ 直接离开,不弹框、不删会话', async () => {
+      mockGameState = local({ end_result: 'W+R' });
+      const del = vi.spyOn(API, 'deleteSession').mockResolvedValue(undefined);
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('退出对局'));
+        expect(await screen.findByText('PLAY_PAGE')).toBeInTheDocument();
+        expect(del).not.toHaveBeenCalled();
+      } finally { del.mockRestore(); }
+    });
+
+    it('手动数子失败按原因码说真话,不再一律「手数不足或已结束」', async () => {
+      mockGameState = local();
+      const rc = vi.spyOn(API, 'requestCount')
+        .mockRejectedValue(new ApiError(400, 'x', { code: 'analysis_pending', message: 'x' }));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_COUNT'));
+        expect(await screen.findByText('还在算这一手的形势，稍等再数')).toBeInTheDocument();
+      } finally { rc.mockRestore(); }
+    });
+
+    it('awaiting_count ⇒ 自动数子,屏上说「正在数子…」', async () => {
+      mockGameState = local({ awaiting_count: true });
+      const rc = vi.spyOn(API, 'requestCount').mockReturnValue(new Promise(() => {}));
+      try {
+        renderPage();
+        expect(await screen.findByText('正在数子…')).toBeInTheDocument();
+        expect(rc).toHaveBeenCalledWith('test-session');
+      } finally { rc.mockRestore(); }
+    });
+
+    it('本地对局后台分析照跑(数子读这份分数)—— 不许把 pvp_local 排除出 analyzeCurrent', () => {
+      mockGameState = local();
+      const an = vi.spyOn(API, 'analyzeCurrent').mockResolvedValue({} as never);
+      try {
+        renderPage();
+        expect(an).toHaveBeenCalledWith('test-session');
+      } finally { an.mockRestore(); }
+    });
+
+    it('非本地对局的认输框逐字不变:确认后 handleAction 只带 action', async () => {
+      mockGameState = makeGameState({ players_info: localPair, game_type: 'free' });
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_RESIGN'));
+      fireEvent.click(screen.getByRole('button', { name: '认输' }));
+      await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('resign'));
     });
   });
 

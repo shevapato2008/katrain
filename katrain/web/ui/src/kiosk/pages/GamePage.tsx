@@ -30,6 +30,8 @@ import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
+import { useAutoCount, autoCountEligible } from '../hooks/useAutoCount';
+import { countErrorMessage } from '../utils/countErrors';
 
 type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
@@ -169,6 +171,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [engineErrorToast, setEngineErrorToast] = useState(false);
   const [countError, setCountError] = useState<string | null>(null);
   const [resignError, setResignError] = useState<string | null>(null);
+  const [exitError, setExitError] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState(false);
   // 重置识别的「在制中」走 ref 不走 state:页控条那个图标键没有忙碌态可显示,
   // 这个值不进渲染 —— 放进 state 就是一次没人看的重渲染。
@@ -301,6 +304,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     API.analyzeCurrent(sessionId).catch(() => undefined);
   }, [engineMode, wantAnalysis, sessionId, gs?.current_node_id, gs?.game_type, gs?.analysis_delivered]);
 
+  // 双 pass 之后自动数子(v2-design §3.4)。只给本地对局与人机自由对弈(`autoCountEligible`);
+  // 判据取服务端下发的 `awaiting_count`,前端不自己数 pass。
+  const autoCount = useAutoCount({
+    sessionId,
+    awaitingCount: !!gs && !gs.end_result && !!gs.awaiting_count && autoCountEligible(gs, engineMode),
+    nodeId: gs?.current_node_id,
+    onState: session.setGameState,
+  });
 
   const closeHint = useCallback(() => {
     setHint(null);
@@ -359,6 +370,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
   const gameState = session.gameState;
   const isGameOver = !!gameState.end_result;
+  // 本地对局(两个人面对面):退出 = 删会话不存谱;认输要说是哪一方(v2 D2)。
+  const localGame = gameState.game_type === 'pvp_local';
   const boardSize = gameState.board_size[0];
   // 页控条标题 = **这一局是哪种对弈**,不是「张三 vs KataGo」。
   // 名字在玩家卡里各占一行(还带段位、执色、提子),标题再写一遍是把 460 宽的一行
@@ -432,13 +445,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
     if (action === 'count') {
       // 数子: for human-vs-AI the backend counts immediately and ends the game (no opponent
-      // handshake, no auth). Errors are usually the min-move guard or an already-finished game.
+      // handshake, no auth).
       if (!sessionId) return;
       try {
         const res = await API.requestCount(sessionId);
         if (res?.state) session.setGameState(res.state);
-      } catch {
-        setCountError(t('Cannot count yet (not enough moves, or the game is over)', '暂时不能数子（对局手数不足或已结束）'));
+      } catch (error) {
+        // 按原因码说真话(P6):盒上最常见的是分析还没回来,不是手数不足。
+        setCountError(countErrorMessage(error, t));
       }
       return;
     }
@@ -460,6 +474,29 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       setShowExitConfirm(true);
     } else {
       navigate(gameState.game_type === 'ai_ladder_ranked' ? '/kiosk/play/ai/setup/ranked' : '/kiosk/play');
+    }
+  };
+
+  // 本地对局「退出不保存」。删除失败**不离开**:装作退出了,会话却还在进程里、活动会话也还指着它。
+  const handleExitWithoutSaving = async () => {
+    if (!sessionId) return;
+    try {
+      await API.deleteSession(sessionId);
+    } catch {
+      setExitError(t('game:exit_failed', '退出失败，请重试'));
+      return;
+    }
+    setShowExitConfirm(false);
+    clearActiveSession('game');
+    navigate('/kiosk/play');
+  };
+
+  const handleLocalResign = async (color: 'B' | 'W') => {
+    try {
+      await session.handleAction('resign', { color });
+      setShowResignConfirm(false);
+    } catch (error) {
+      setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
     }
   };
 
@@ -683,6 +720,22 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               onClick: () => { void handleResetSync(); },
             } : undefined}
           />
+          {/* 右栏状态条(设计稿 05 附 B / C) —— 一个常驻区块,不是弹出的 Snackbar/Alert:
+              进行中与失败都**不自动消失**,失败那句是这一局唯一的出路说明,重试键挂在它上面。
+              精确到「开关行之上」那一行像素由 S5-2 的真浏览器视觉核对定,这里先保证语义与
+              `data-testid` 落地(S3-5 会在同一个块上补「超时判负后」那一态)。 */}
+          {autoCount.status !== 'idle' && (
+            <Alert
+              data-testid="auto-count-status"
+              severity={autoCount.status === 'failed' ? 'warning' : 'info'}
+              icon={autoCount.status === 'counting' ? <CircularProgress size={18} /> : undefined}
+              action={autoCount.status === 'failed'
+                ? <Button color="inherit" size="small" onClick={autoCount.retry}>{t('game:retry', '重试')}</Button>
+                : undefined}
+            >
+              {autoCount.status === 'failed' ? autoCount.reason : t('game:counting', '正在数子…')}
+            </Alert>
+          )}
           <GameControlPanel
             gameState={gameState}
             onAction={handleAction}
@@ -731,57 +784,86 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       )}
 
       {/* Resign confirmation (state D) */}
-      <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
-        <DialogTitle sx={{ color: 'text.primary' }}>{t('Confirm resign?', '确认认输？')}</DialogTitle>
-        <DialogActions>
-          <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
-          <Button
-            color="error"
-            onClick={async () => {
-              try {
-                await session.handleAction('resign');
-                setShowResignConfirm(false);
-              } catch (error) {
-                setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
-                return;
-              }
-              // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
-              // not it was reached via EngineMoveErrorDialog's 认输 button — so the
-              // physical engine-error recovery dialog (if open) is now irrelevant.
-              // No-op if it was never open (clearPhysicalEngineError just sets null->null).
-              session.clearPhysicalEngineError();
-            }}
-          >
-            {t('Resign', '认输')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {localGame ? (
+        /* 本地对局:两个人都在屏前,「认输」不能默认判轮到走的那一方(P5)—— 先问谁认输。 */
+        <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
+          <DialogTitle sx={{ color: 'text.primary' }}>{t('game:who_resigns', '谁认输？')}</DialogTitle>
+          <DialogActions>
+            <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
+            <Button color="error" onClick={() => { void handleLocalResign('B'); }}>
+              {t('game:black_resigns', '黑方认输')}
+            </Button>
+            <Button color="error" onClick={() => { void handleLocalResign('W'); }}>
+              {t('game:white_resigns', '白方认输')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      ) : (
+        <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
+          <DialogTitle sx={{ color: 'text.primary' }}>{t('Confirm resign?', '确认认输？')}</DialogTitle>
+          <DialogActions>
+            <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
+            <Button
+              color="error"
+              onClick={async () => {
+                try {
+                  await session.handleAction('resign');
+                  setShowResignConfirm(false);
+                } catch (error) {
+                  setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+                  return;
+                }
+                // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
+                // not it was reached via EngineMoveErrorDialog's 认输 button — so the
+                // physical engine-error recovery dialog (if open) is now irrelevant.
+                // No-op if it was never open (clearPhysicalEngineError just sets null->null).
+                session.clearPhysicalEngineError();
+              }}
+            >
+              {t('Resign', '认输')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
       {/* Exit confirmation */}
-      <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
-        <DialogTitle>{t('Game in progress. Resign and exit?', '对局进行中，认输并退出？')}</DialogTitle>
-        <DialogActions>
-          <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
-          <Button
-            color="error"
-            onClick={async () => {
-              try {
-                await session.handleAction('resign');
-              } catch (error) {
-                setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
-                return;
-              }
-              // Same as the resign-confirm dialog above: this is another path that
-              // confirms a resign, so the engine-error recovery dialog (if open) must
-              // close too — no-op if it wasn't open.
-              session.clearPhysicalEngineError();
-              navigate('/kiosk/play');
-            }}
-          >
-            {t('Exit', '退出')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {localGame ? (
+        /* 本地对局退出 = 删会话、不存谱(v2 D2)。已终局不会走到这里(handleExit 直接离开)。 */
+        <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
+          <DialogTitle>{t('game:exit_unsaved_title', '这局还没下完，退出后不会保存')}</DialogTitle>
+          <DialogActions>
+            <Button onClick={() => setShowExitConfirm(false)}>{t('game:keep_playing', '继续下')}</Button>
+            <Button color="error" onClick={() => { void handleExitWithoutSaving(); }}>
+              {t('game:exit_unsaved', '退出不保存')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      ) : (
+        <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
+          <DialogTitle>{t('Game in progress. Resign and exit?', '对局进行中，认输并退出？')}</DialogTitle>
+          <DialogActions>
+            <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
+            <Button
+              color="error"
+              onClick={async () => {
+                try {
+                  await session.handleAction('resign');
+                } catch (error) {
+                  setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+                  return;
+                }
+                // Same as the resign-confirm dialog above: this is another path that
+                // confirms a resign, so the engine-error recovery dialog (if open) must
+                // close too — no-op if it wasn't open.
+                session.clearPhysicalEngineError();
+                navigate('/kiosk/play');
+              }}
+            >
+              {t('Exit', '退出')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
 
       {/* 星阵道具次数不足 (7003) — 本终端不代充，引导去星阵充值 */}
       <Dialog open={insufficientKind !== null} onClose={() => setInsufficientKind(null)}>
@@ -867,6 +949,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </Snackbar>
       <Snackbar open={!!resignError} autoHideDuration={5000} onClose={() => setResignError(null)}>
         <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>
+      </Snackbar>
+      <Snackbar open={!!exitError} autoHideDuration={5000} onClose={() => setExitError(null)}>
+        <Alert severity="error" onClose={() => setExitError(null)}>{exitError}</Alert>
       </Snackbar>
 
       {/* Re-sync (重置识别) failure toast */}

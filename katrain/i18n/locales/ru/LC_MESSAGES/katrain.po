@@ -3444,38 +3444,6 @@ msgstr "Продолжить игру"
 msgid "game:exit_unsaved"
 msgstr "Выйти без сохранения"
 
-msgid "local:clock_meta_shared"
-msgstr "{n} пресетов · общие часы на обоих игроков"
-
-msgid "local:sound_hint_shared"
-msgstr ""
-"Звук постановки и взятия камней — тот же переключатель, что и «Звук хода» в "
-"настройках"
-
-msgid "local:note2_a"
-msgstr "Эта партия "
-
-msgid "local:note2_b"
-msgstr "не даёт подсказок и не показывает оценку позиции"
-
-msgid "local:note2_c"
-msgstr "; после того как оба игрока один раз спасуют, "
-
-msgid "local:note2_d"
-msgstr "очки подсчитываются автоматически, по оценке ИИ"
-
-msgid "local:note2_e"
-msgstr "."
-
-msgid "local:note2_f"
-msgstr "Эта партия "
-
-msgid "local:note2_g"
-msgstr "только сохраняется в истории и не влияет на ваш рейтинг"
-
-msgid "local:note2_h"
-msgstr " — рейтинг определяется только лестницей рейтинговых партий."
-
 msgid "play:local_needs_login"
 msgstr "Сначала войдите в систему · сохранится автоматически по окончании"
 
@@ -3490,3 +3458,74 @@ msgstr "Локальная партия · Без имён"
 
 msgid "review:row_research"
 msgstr "Архив исследования"
+
+msgid "game:count_failed"
+msgstr "Подсчёт не завершён"
+
+msgid "game:check_network_retry"
+msgstr "Проверьте сеть и повторите попытку"
+
+msgid "game:both_passed"
+msgstr "Оба игрока пропустили ход"
+
+msgid "game:exit_confirm_title"
+msgstr "Выйти из этой партии?"
+
+msgid "game:exit_unsaved_body"
+msgstr "Партия ещё не завершена — при выходе она не сохранится."
+
+msgid "game:which_side_resigns"
+msgstr "Какая сторона сдаётся?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"Соперник будет засчитан победителем по сдаче; партия сохранится в истории "
+"игр."
+
+msgid "local:input_hint_v2"
+msgstr ""
+"Физическая доска только 19×19 — выберите 13×13 или 9×9 для игры на экране"
+
+msgid "local:komi_hint"
+msgstr "В партиях с форой коми = 0 — эта группа сворачивается при выборе форы"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"Часы отсчитывают время на карточке игрока · истёкший бёй-ёми — поражение по "
+"времени · без лимита только запись партии"
+
+msgid "local:clock_meta_count"
+msgstr "{n} уровней"
+
+msgid "local:sound_hint_v2"
+msgstr "Тот же переключатель, что и звук хода в Настройках · Звук"
+
+msgid "local:note3_a"
+msgstr "На экране"
+
+msgid "local:note3_b"
+msgstr "нет подсказок и оценки позиции"
+
+msgid "local:note3_c"
+msgstr "; как только оба пропустят ход,"
+
+msgid "local:note3_d"
+msgstr "подсчёт выполняется автоматически"
+
+msgid "local:note3_e"
+msgstr " статус групп (жива/мертва) определяет движок."
+
+msgid "local:note3_f"
+msgstr "Эта партия"
+
+msgid "local:note3_g"
+msgstr "только фиксируется, ваш разряд не меняется"
+
+msgid "local:note3_h"
+msgstr "; выход посреди партии"
+
+msgid "local:note3_i"
+msgstr "не сохранит запись"
+
+msgid "local:note3_j"
+msgstr "."

@@ -3417,36 +3417,6 @@ msgstr "繼續下"
 msgid "game:exit_unsaved"
 msgstr "退出不保存"
 
-msgid "local:clock_meta_shared"
-msgstr "{n} 檔 · 兩邊共用一套鐘"
-
-msgid "local:sound_hint_shared"
-msgstr "落子和提子的聲音，和設定裡的「落子音效」是同一個開關"
-
-msgid "local:note2_a"
-msgstr "這一局"
-
-msgid "local:note2_b"
-msgstr "不給提示、不看形勢"
-
-msgid "local:note2_c"
-msgstr ";雙方各停一手後"
-
-msgid "local:note2_d"
-msgstr "自動數子，由 AI 估算勝負"
-
-msgid "local:note2_e"
-msgstr "。"
-
-msgid "local:note2_f"
-msgstr "這一局"
-
-msgid "local:note2_g"
-msgstr "只留檔，不動段位"
-
-msgid "local:note2_h"
-msgstr "——段位只由「升降級對弈」那條階梯決定。"
-
 msgid "play:local_needs_login"
 msgstr "要先登入 · 下完自動存譜"
 
@@ -3461,3 +3431,69 @@ msgstr "本地對局 · 未記名"
 
 msgid "review:row_research"
 msgstr "研究存檔"
+
+msgid "game:count_failed"
+msgstr "數子沒有完成"
+
+msgid "game:check_network_retry"
+msgstr "檢查網路後重試"
+
+msgid "game:both_passed"
+msgstr "雙方都停了一手"
+
+msgid "game:exit_confirm_title"
+msgstr "退出這局？"
+
+msgid "game:exit_unsaved_body"
+msgstr "這局還沒下完，退出後不會保存。"
+
+msgid "game:which_side_resigns"
+msgstr "哪一方認輸？"
+
+msgid "game:resign_local_body"
+msgstr "對方記中盤勝，這局會存進歷史對局。"
+
+msgid "local:input_hint_v2"
+msgstr "實體盤只有 19 路 · 選 13 路或 9 路就在螢幕上下"
+
+msgid "local:komi_hint"
+msgstr "讓子局貼 0 目 · 選了讓子這一組就收起"
+
+msgid "local:clock_hint_v2"
+msgstr "鐘在玩家卡上倒數 · 讀秒用完判超時負 · 不限時就只記譜"
+
+msgid "local:clock_meta_count"
+msgstr "{n} 檔"
+
+msgid "local:sound_hint_v2"
+msgstr "和「設定 · 聲音」裡的落子音是同一個開關"
+
+msgid "local:note3_a"
+msgstr "螢幕上"
+
+msgid "local:note3_b"
+msgstr "不給提示和形勢判斷"
+
+msgid "local:note3_c"
+msgstr "；雙方各停一手後"
+
+msgid "local:note3_d"
+msgstr "自動數子"
+
+msgid "local:note3_e"
+msgstr "，死活按引擎判斷。"
+
+msgid "local:note3_f"
+msgstr "這一局"
+
+msgid "local:note3_g"
+msgstr "只留檔，不動段位"
+
+msgid "local:note3_h"
+msgstr "；中途退出"
+
+msgid "local:note3_i"
+msgstr "不存譜"
+
+msgid "local:note3_j"
+msgstr "。"

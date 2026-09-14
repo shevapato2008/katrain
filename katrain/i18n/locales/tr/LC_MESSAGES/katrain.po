@@ -3543,36 +3543,6 @@ msgstr "Oynamaya devam et"
 msgid "game:exit_unsaved"
 msgstr "Kaydetmeden çık"
 
-msgid "local:clock_meta_shared"
-msgstr "{n} ön ayar · her iki taraf için tek ortak saat"
-
-msgid "local:sound_hint_shared"
-msgstr "Taş koyma ve alma sesi — Ayarlar'daki \"Hamle sesi\" ile aynı anahtar"
-
-msgid "local:note2_a"
-msgstr "Bu oyunda "
-
-msgid "local:note2_b"
-msgstr "ipucu verilmez ve pozisyon değerlendirmesi gösterilmez"
-
-msgid "local:note2_c"
-msgstr "; her iki taraf bir kez pas geçtikten sonra "
-
-msgid "local:note2_d"
-msgstr "puanlar otomatik sayılır, yapay zekâ tarafından tahmin edilir"
-
-msgid "local:note2_e"
-msgstr "."
-
-msgid "local:note2_f"
-msgstr "Bu oyunda "
-
-msgid "local:note2_g"
-msgstr "yalnızca kaydedilir, derecenizi etkilemez"
-
-msgid "local:note2_h"
-msgstr " — dereceniz yalnızca Dereceli oyun basamaklarına göre belirlenir."
-
 msgid "play:local_needs_login"
 msgstr "Önce giriş yapın · bitince otomatik kaydedilir"
 
@@ -3587,3 +3557,75 @@ msgstr "Yerel oyun · İsimsiz"
 
 msgid "review:row_research"
 msgstr "Araştırma arşivi"
+
+msgid "game:count_failed"
+msgstr "Sayma tamamlanamadı"
+
+msgid "game:check_network_retry"
+msgstr "Bağlantıyı kontrol edip tekrar deneyin"
+
+msgid "game:both_passed"
+msgstr "Her iki oyuncu da pas geçti"
+
+msgid "game:exit_confirm_title"
+msgstr "Bu oyundan çıkılsın mı?"
+
+msgid "game:exit_unsaved_body"
+msgstr "Bu oyun henüz bitmedi — çıkarsanız kaydedilmeyecek."
+
+msgid "game:which_side_resigns"
+msgstr "Hangi taraf pes ediyor?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"Rakip terk galibiyeti olarak kaydedilir; bu oyun oyun geçmişine "
+"kaydedilecek."
+
+msgid "local:input_hint_v2"
+msgstr ""
+"Fiziksel tahta yalnızca 19×19 — 13×13 veya 9×9 seçilirse ekranda oynanır"
+
+msgid "local:komi_hint"
+msgstr ""
+"Taş verme oyunlarında komi 0'dır — taş verme seçilince bu grup kapanır"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"Saat oyuncu kartında geri sayar · byo-yomi biterse süre kaybı olur · süresiz"
+" modda yalnızca kayıt tutulur"
+
+msgid "local:clock_meta_count"
+msgstr "{n} kademe"
+
+msgid "local:sound_hint_v2"
+msgstr "Ayarlar · Ses bölümündeki taş sesiyle aynı anahtardır"
+
+msgid "local:note3_a"
+msgstr "Ekranda"
+
+msgid "local:note3_b"
+msgstr "ipucu ve pozisyon değerlendirmesi yoktur"
+
+msgid "local:note3_c"
+msgstr "; her iki oyuncu da pas geçtiğinde"
+
+msgid "local:note3_d"
+msgstr "otomatik sayım yapılır"
+
+msgid "local:note3_e"
+msgstr " ölü-diri durumu motor tarafından belirlenir."
+
+msgid "local:note3_f"
+msgstr "Bu oyun"
+
+msgid "local:note3_g"
+msgstr "yalnızca kaydedilir, seviyeniz değişmez"
+
+msgid "local:note3_h"
+msgstr "; oyundan yarıda çıkmak"
+
+msgid "local:note3_i"
+msgstr "kaydı saklamaz"
+
+msgid "local:note3_j"
+msgstr "."

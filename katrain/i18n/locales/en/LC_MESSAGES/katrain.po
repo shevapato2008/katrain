@@ -3485,38 +3485,6 @@ msgstr "Keep playing"
 msgid "game:exit_unsaved"
 msgstr "Exit without saving"
 
-msgid "local:clock_meta_shared"
-msgstr "{n} presets · one shared clock for both sides"
-
-msgid "local:sound_hint_shared"
-msgstr ""
-"The stone-placement and capture sound — same toggle as \"Move sound\" in "
-"Settings"
-
-msgid "local:note2_a"
-msgstr "This game "
-
-msgid "local:note2_b"
-msgstr "gives no hints and shows no position read"
-
-msgid "local:note2_c"
-msgstr "; after both players pass once, "
-
-msgid "local:note2_d"
-msgstr "it auto-counts the score, estimated by the AI"
-
-msgid "local:note2_e"
-msgstr "."
-
-msgid "local:note2_f"
-msgstr "This game "
-
-msgid "local:note2_g"
-msgstr "is recorded only, doesn't affect your rank"
-
-msgid "local:note2_h"
-msgstr " — rank is set only by the Ranked Play ladder."
-
 msgid "play:local_needs_login"
 msgstr "Sign in first · saved automatically when done"
 
@@ -3531,3 +3499,74 @@ msgstr "Local Game · Unnamed"
 
 msgid "review:row_research"
 msgstr "Research archive"
+
+msgid "game:count_failed"
+msgstr "Scoring did not finish"
+
+msgid "game:check_network_retry"
+msgstr "Check your connection and retry"
+
+msgid "game:both_passed"
+msgstr "Both players passed"
+
+msgid "game:exit_confirm_title"
+msgstr "Exit this game?"
+
+msgid "game:exit_unsaved_body"
+msgstr "This game isn't finished — exiting won't save it."
+
+msgid "game:which_side_resigns"
+msgstr "Which side resigns?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"The opponent is recorded as the winner by resignation; this game will be "
+"saved to game history."
+
+msgid "local:input_hint_v2"
+msgstr ""
+"The physical board is 19×19 only — pick 13×13 or 9×9 to play on screen"
+
+msgid "local:komi_hint"
+msgstr "Handicap games use 0 komi — this group collapses once handicap is set"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"The clock counts down on the player card · running out of byo-yomi loses on "
+"time · untimed just records moves"
+
+msgid "local:clock_meta_count"
+msgstr "{n} presets"
+
+msgid "local:sound_hint_v2"
+msgstr "Same switch as the move sound in Settings · Sound"
+
+msgid "local:note3_a"
+msgstr "On screen, "
+
+msgid "local:note3_b"
+msgstr "no hints and no position judgment"
+
+msgid "local:note3_c"
+msgstr "; once both players pass, "
+
+msgid "local:note3_d"
+msgstr "scoring happens automatically"
+
+msgid "local:note3_e"
+msgstr ", life and death is judged by the engine."
+
+msgid "local:note3_f"
+msgstr "This game "
+
+msgid "local:note3_g"
+msgstr "only gets logged, your rank doesn't change"
+
+msgid "local:note3_h"
+msgstr "; exiting partway through "
+
+msgid "local:note3_i"
+msgstr "won't save the record"
+
+msgid "local:note3_j"
+msgstr "."

@@ -3365,36 +3365,6 @@ msgstr "계속 두기"
 msgid "game:exit_unsaved"
 msgstr "저장하지 않고 나가기"
 
-msgid "local:clock_meta_shared"
-msgstr "{n}단계 · 양쪽이 시계 하나를 공유"
-
-msgid "local:sound_hint_shared"
-msgstr "착수·따냄 소리는 설정의 「착수 소리」와 같은 스위치입니다"
-
-msgid "local:note2_a"
-msgstr "이 대국은 "
-
-msgid "local:note2_b"
-msgstr "힌트나 형세 판단을 보여주지 않으며, "
-
-msgid "local:note2_c"
-msgstr "양쪽이 한 번씩 착수를 쉬면 "
-
-msgid "local:note2_d"
-msgstr "AI가 추정한 계가를 자동으로 보여줍니다"
-
-msgid "local:note2_e"
-msgstr "."
-
-msgid "local:note2_f"
-msgstr "이 대국은 "
-
-msgid "local:note2_g"
-msgstr "기록만 될 뿐 단급에는 영향을 주지 않습니다"
-
-msgid "local:note2_h"
-msgstr " — 단급은 「승강 대국」 사다리로만 정해집니다."
-
 msgid "play:local_needs_login"
 msgstr "먼저 로그인하세요 · 끝나면 자동 저장됩니다"
 
@@ -3409,3 +3379,69 @@ msgstr "로컬 대국 · 이름 없음"
 
 msgid "review:row_research"
 msgstr "연구 보관함"
+
+msgid "game:count_failed"
+msgstr "계가가 완료되지 않았습니다"
+
+msgid "game:check_network_retry"
+msgstr "네트워크를 확인한 후 다시 시도하세요"
+
+msgid "game:both_passed"
+msgstr "두 사람 모두 착수를 쉬었습니다"
+
+msgid "game:exit_confirm_title"
+msgstr "이 대국을 나가시겠습니까?"
+
+msgid "game:exit_unsaved_body"
+msgstr "아직 끝나지 않은 대국입니다. 나가면 저장되지 않습니다."
+
+msgid "game:which_side_resigns"
+msgstr "어느 쪽이 기권하나요?"
+
+msgid "game:resign_local_body"
+msgstr "상대방의 불계승으로 기록되며, 이 대국은 대국 기록에 저장됩니다."
+
+msgid "local:input_hint_v2"
+msgstr "실물 바둑판은 19로만 지원 · 13로/9로는 화면에서 둡니다"
+
+msgid "local:komi_hint"
+msgstr "접바둑은 덤 0 · 접바둑을 선택하면 이 항목은 접힙니다"
+
+msgid "local:clock_hint_v2"
+msgstr "시계는 플레이어 카드에서 카운트다운 · 초읽기를 다 쓰면 시간패 · 무제한이면 기보만 기록"
+
+msgid "local:clock_meta_count"
+msgstr "{n} 단계"
+
+msgid "local:sound_hint_v2"
+msgstr "'설정 · 소리'의 착수음과 같은 스위치입니다"
+
+msgid "local:note3_a"
+msgstr "화면에서는"
+
+msgid "local:note3_b"
+msgstr "힌트와 형세 판단이 제공되지 않습니다"
+
+msgid "local:note3_c"
+msgstr ". 두 사람 모두 착수를 쉬면"
+
+msgid "local:note3_d"
+msgstr "자동으로 계가합니다"
+
+msgid "local:note3_e"
+msgstr ", 사활은 엔진이 판정합니다."
+
+msgid "local:note3_f"
+msgstr "이 대국은"
+
+msgid "local:note3_g"
+msgstr "기록만 남고 단급위는 바뀌지 않습니다"
+
+msgid "local:note3_h"
+msgstr ". 도중에 나가면"
+
+msgid "local:note3_i"
+msgstr "기록이 저장되지 않습니다"
+
+msgid "local:note3_j"
+msgstr "."

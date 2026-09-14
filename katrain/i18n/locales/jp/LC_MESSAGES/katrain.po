@@ -3437,36 +3437,6 @@ msgstr "対局を続ける"
 msgid "game:exit_unsaved"
 msgstr "保存せずに退出"
 
-msgid "local:clock_meta_shared"
-msgstr "{n}段階 · 両者共通の一つの時計"
-
-msgid "local:sound_hint_shared"
-msgstr "着手・アゲハマの音は設定の「着手音」と同じスイッチです"
-
-msgid "local:note2_a"
-msgstr "この対局は"
-
-msgid "local:note2_b"
-msgstr "ヒントなし・形勢判断なしで、"
-
-msgid "local:note2_c"
-msgstr "双方が一度パスすると"
-
-msgid "local:note2_d"
-msgstr "自動的に数え上げ、AIが目算します"
-
-msgid "local:note2_e"
-msgstr "。"
-
-msgid "local:note2_f"
-msgstr "この対局は"
-
-msgid "local:note2_g"
-msgstr "記録されるだけで段位には影響しません"
-
-msgid "local:note2_h"
-msgstr "——段位は「昇降級戦」のはしごでのみ決まります。"
-
 msgid "play:local_needs_login"
 msgstr "先にログインが必要 · 終局後は自動で保存されます"
 
@@ -3481,3 +3451,69 @@ msgstr "対面対局 · 名前なし"
 
 msgid "review:row_research"
 msgstr "研究アーカイブ"
+
+msgid "game:count_failed"
+msgstr "目算が完了しませんでした"
+
+msgid "game:check_network_retry"
+msgstr "ネットワークを確認して再試行してください"
+
+msgid "game:both_passed"
+msgstr "両者ともパスしました"
+
+msgid "game:exit_confirm_title"
+msgstr "この対局を終了しますか？"
+
+msgid "game:exit_unsaved_body"
+msgstr "この対局はまだ終わっていません。終了すると保存されません。"
+
+msgid "game:which_side_resigns"
+msgstr "どちらが投了しますか？"
+
+msgid "game:resign_local_body"
+msgstr "相手の中押し勝ちとして記録され、この対局は対局履歴に保存されます。"
+
+msgid "local:input_hint_v2"
+msgstr "実盤は19路のみ・13路や9路を選ぶと画面上で対局します"
+
+msgid "local:komi_hint"
+msgstr "置き碁はコミ0・置石を選ぶとこのグループは畳まれます"
+
+msgid "local:clock_hint_v2"
+msgstr "時計はプレイヤーカード上でカウントダウン・秒読みを使い切ると時間切れ負け・無制限なら記譜のみ"
+
+msgid "local:clock_meta_count"
+msgstr "{n} 段階"
+
+msgid "local:sound_hint_v2"
+msgstr "「設定・サウンド」内の着手音と同じスイッチです"
+
+msgid "local:note3_a"
+msgstr "画面上では"
+
+msgid "local:note3_b"
+msgstr "ヒントや形勢判断はありません"
+
+msgid "local:note3_c"
+msgstr "。両者がパスすると"
+
+msgid "local:note3_d"
+msgstr "自動的に目算します"
+
+msgid "local:note3_e"
+msgstr "、死活は思考エンジンが判定します。"
+
+msgid "local:note3_f"
+msgstr "この対局は"
+
+msgid "local:note3_g"
+msgstr "記録だけ残り、段位は変わりません"
+
+msgid "local:note3_h"
+msgstr "。途中で終了すると"
+
+msgid "local:note3_i"
+msgstr "記録は保存されません"
+
+msgid "local:note3_j"
+msgstr "。"

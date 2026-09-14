@@ -3525,38 +3525,6 @@ msgstr "Продовжити гру"
 msgid "game:exit_unsaved"
 msgstr "Вийти без збереження"
 
-msgid "local:clock_meta_shared"
-msgstr "{n} пресетів · один спільний годинник на обидва боки"
-
-msgid "local:sound_hint_shared"
-msgstr ""
-"Звук постановки та взяття каменів — той самий перемикач, що й «Звук ходу» в "
-"налаштуваннях"
-
-msgid "local:note2_a"
-msgstr "Ця партія "
-
-msgid "local:note2_b"
-msgstr "не дає підказок і не показує оцінку позиції"
-
-msgid "local:note2_c"
-msgstr "; після того як обидва гравці один раз спасують, "
-
-msgid "local:note2_d"
-msgstr "рахунок підраховується автоматично, за оцінкою ШІ"
-
-msgid "local:note2_e"
-msgstr "."
-
-msgid "local:note2_f"
-msgstr "Ця партія "
-
-msgid "local:note2_g"
-msgstr "лише зберігається в історії, не впливає на ваш рівень"
-
-msgid "local:note2_h"
-msgstr " — рівень визначається лише драбиною рейтингових партій."
-
 msgid "play:local_needs_login"
 msgstr "Спершу увійдіть · зберігається автоматично після завершення"
 
@@ -3571,3 +3539,73 @@ msgstr "Локальна партія · Без імен"
 
 msgid "review:row_research"
 msgstr "Архів дослідження"
+
+msgid "game:count_failed"
+msgstr "Підрахунок не завершено"
+
+msgid "game:check_network_retry"
+msgstr "Перевірте мережу і спробуйте ще раз"
+
+msgid "game:both_passed"
+msgstr "Обидва гравці пасували"
+
+msgid "game:exit_confirm_title"
+msgstr "Вийти з цієї партії?"
+
+msgid "game:exit_unsaved_body"
+msgstr "Ця партія ще не завершена — при виході вона не збережеться."
+
+msgid "game:which_side_resigns"
+msgstr "Яка сторона здається?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"Суперника буде зараховано переможцем за здачею; ця партія збережеться в "
+"історії ігор."
+
+msgid "local:input_hint_v2"
+msgstr "Фізична дошка лише 19×19 — оберіть 13×13 або 9×9, щоб грати на екрані"
+
+msgid "local:komi_hint"
+msgstr "У партіях з форою комі = 0 — ця група згортається при виборі фори"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"Годинник відлічує час на картці гравця · вичерпаний бьоймі — поразка за "
+"часом · без ліміту лише запис партії"
+
+msgid "local:clock_meta_count"
+msgstr "{n} рівнів"
+
+msgid "local:sound_hint_v2"
+msgstr "Той самий перемикач, що й звук ходу в Налаштуваннях · Звук"
+
+msgid "local:note3_a"
+msgstr "На екрані"
+
+msgid "local:note3_b"
+msgstr "немає підказок і оцінки позиції"
+
+msgid "local:note3_c"
+msgstr "; щойно обидва пасують,"
+
+msgid "local:note3_d"
+msgstr "підрахунок виконується автоматично"
+
+msgid "local:note3_e"
+msgstr " статус груп (жива/мертва) визначає рушій."
+
+msgid "local:note3_f"
+msgstr "Ця партія"
+
+msgid "local:note3_g"
+msgstr "лише фіксується, ваш розряд не змінюється"
+
+msgid "local:note3_h"
+msgstr "; вихід посеред партії"
+
+msgid "local:note3_i"
+msgstr "не збереже запис"
+
+msgid "local:note3_j"
+msgstr "."

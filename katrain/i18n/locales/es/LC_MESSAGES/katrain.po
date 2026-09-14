@@ -3365,38 +3365,6 @@ msgstr "Seguir jugando"
 msgid "game:exit_unsaved"
 msgstr "Salir sin guardar"
 
-msgid "local:clock_meta_shared"
-msgstr "{n} preajustes · un reloj compartido para ambos lados"
-
-msgid "local:sound_hint_shared"
-msgstr ""
-"El sonido de colocar y capturar piedras — el mismo interruptor que \"Sonido "
-"de jugada\" en Ajustes"
-
-msgid "local:note2_a"
-msgstr "Esta partida "
-
-msgid "local:note2_b"
-msgstr "no da pistas ni muestra el análisis de la posición"
-
-msgid "local:note2_c"
-msgstr "; después de que ambos pasen una vez, "
-
-msgid "local:note2_d"
-msgstr "cuenta automáticamente, estimado por la IA"
-
-msgid "local:note2_e"
-msgstr "."
-
-msgid "local:note2_f"
-msgstr "Esta partida "
-
-msgid "local:note2_g"
-msgstr "solo queda registrada, no afecta tu rango"
-
-msgid "local:note2_h"
-msgstr " — el rango solo lo determina la escalera de Partidas clasificadas."
-
 msgid "play:local_needs_login"
 msgstr "Inicia sesión primero · se guarda automáticamente al terminar"
 
@@ -3411,3 +3379,76 @@ msgstr "Partida local · Sin nombre"
 
 msgid "review:row_research"
 msgstr "Archivo de investigación"
+
+msgid "game:count_failed"
+msgstr "El conteo no se completó"
+
+msgid "game:check_network_retry"
+msgstr "Comprueba la conexión y vuelve a intentarlo"
+
+msgid "game:both_passed"
+msgstr "Ambos jugadores pasaron"
+
+msgid "game:exit_confirm_title"
+msgstr "¿Salir de esta partida?"
+
+msgid "game:exit_unsaved_body"
+msgstr "Esta partida no ha terminado; si sales, no se guardará."
+
+msgid "game:which_side_resigns"
+msgstr "¿Qué lado se rinde?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"El rival quedará registrado como ganador por rendición; esta partida se "
+"guardará en el historial."
+
+msgid "local:input_hint_v2"
+msgstr ""
+"El tablero físico solo es 19×19 — elige 13×13 o 9×9 para jugar en pantalla"
+
+msgid "local:komi_hint"
+msgstr ""
+"Las partidas con hándicap usan komi 0 — este grupo se oculta al fijar el "
+"hándicap"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"El reloj cuenta en la tarjeta del jugador · agotar el byoyomi pierde por "
+"tiempo · sin límite solo se registra la partida"
+
+msgid "local:clock_meta_count"
+msgstr "{n} niveles"
+
+msgid "local:sound_hint_v2"
+msgstr "Es el mismo interruptor que el sonido de jugada en Ajustes · Sonido"
+
+msgid "local:note3_a"
+msgstr "En pantalla"
+
+msgid "local:note3_b"
+msgstr "no hay pistas ni evaluación de la posición"
+
+msgid "local:note3_c"
+msgstr "; cuando ambos pasan,"
+
+msgid "local:note3_d"
+msgstr "se cuenta automáticamente"
+
+msgid "local:note3_e"
+msgstr " la vida y muerte la decide el motor."
+
+msgid "local:note3_f"
+msgstr "Esta partida"
+
+msgid "local:note3_g"
+msgstr "solo queda registrada, tu rango no cambia"
+
+msgid "local:note3_h"
+msgstr "; salir a mitad de partida"
+
+msgid "local:note3_i"
+msgstr "no guarda la partida"
+
+msgid "local:note3_j"
+msgstr "."

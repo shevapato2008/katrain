@@ -3530,38 +3530,6 @@ msgstr "Weiterspielen"
 msgid "game:exit_unsaved"
 msgstr "Ohne Speichern beenden"
 
-msgid "local:clock_meta_shared"
-msgstr "{n} Voreinstellungen · eine gemeinsame Uhr für beide Seiten"
-
-msgid "local:sound_hint_shared"
-msgstr ""
-"Der Ton für Steinlegen und Schlagen — derselbe Schalter wie „Zugton“ in den "
-"Einstellungen"
-
-msgid "local:note2_a"
-msgstr "Diese Partie "
-
-msgid "local:note2_b"
-msgstr "gibt keine Hinweise und zeigt keine Stellungsbewertung"
-
-msgid "local:note2_c"
-msgstr "; nachdem beide einmal gepasst haben, "
-
-msgid "local:note2_d"
-msgstr "wird automatisch gezählt, geschätzt von der KI"
-
-msgid "local:note2_e"
-msgstr "."
-
-msgid "local:note2_f"
-msgstr "Diese Partie "
-
-msgid "local:note2_g"
-msgstr "wird nur aufgezeichnet und ändert nichts an deinem Rang"
-
-msgid "local:note2_h"
-msgstr " — der Rang wird nur durch die Ranglistenpartien bestimmt."
-
 msgid "play:local_needs_login"
 msgstr "Zuerst anmelden · wird nach der Partie automatisch gespeichert"
 
@@ -3576,3 +3544,79 @@ msgstr "Lokale Partie · Ohne Namen"
 
 msgid "review:row_research"
 msgstr "Recherche-Archiv"
+
+msgid "game:count_failed"
+msgstr "Auszählung nicht abgeschlossen"
+
+msgid "game:check_network_retry"
+msgstr "Verbindung prüfen und erneut versuchen"
+
+msgid "game:both_passed"
+msgstr "Beide haben gepasst"
+
+msgid "game:exit_confirm_title"
+msgstr "Diese Partie verlassen?"
+
+msgid "game:exit_unsaved_body"
+msgstr ""
+"Diese Partie ist noch nicht beendet — beim Verlassen wird sie nicht "
+"gespeichert."
+
+msgid "game:which_side_resigns"
+msgstr "Welche Seite gibt auf?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"Der Gegner wird als Sieger durch Aufgabe vermerkt; diese Partie wird in der "
+"Partienhistorie gespeichert."
+
+msgid "local:input_hint_v2"
+msgstr ""
+"Das physische Brett hat nur 19×19 — für 13×13 oder 9×9 wird auf dem "
+"Bildschirm gespielt"
+
+msgid "local:komi_hint"
+msgstr ""
+"Vorgabepartien haben 0 Komi — diese Gruppe klappt zu, sobald ein "
+"Vorgabestein gesetzt ist"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"Die Uhr läuft auf der Spielerkarte herunter · aufgebrauchte Bedenkzeit führt"
+" zum Zeitverlust · ohne Zeitlimit wird nur mitgeschrieben"
+
+msgid "local:clock_meta_count"
+msgstr "{n} Stufen"
+
+msgid "local:sound_hint_v2"
+msgstr "Derselbe Schalter wie der Zugton unter Einstellungen · Ton"
+
+msgid "local:note3_a"
+msgstr "Auf dem Bildschirm"
+
+msgid "local:note3_b"
+msgstr "keine Hinweise und keine Stellungsbewertung"
+
+msgid "local:note3_c"
+msgstr "; sobald beide gepasst haben,"
+
+msgid "local:note3_d"
+msgstr "wird automatisch ausgezählt"
+
+msgid "local:note3_e"
+msgstr " der Lebend-Tot-Status wird von der Engine bestimmt."
+
+msgid "local:note3_f"
+msgstr "Diese Partie"
+
+msgid "local:note3_g"
+msgstr "wird nur protokolliert, dein Rang ändert sich nicht"
+
+msgid "local:note3_h"
+msgstr "; ein vorzeitiger Ausstieg"
+
+msgid "local:note3_i"
+msgstr "speichert die Partie nicht"
+
+msgid "local:note3_j"
+msgstr "."

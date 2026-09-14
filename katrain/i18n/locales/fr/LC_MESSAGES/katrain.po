@@ -3504,38 +3504,6 @@ msgstr "Continuer la partie"
 msgid "game:exit_unsaved"
 msgstr "Quitter sans enregistrer"
 
-msgid "local:clock_meta_shared"
-msgstr "{n} préréglages · une horloge partagée pour les deux côtés"
-
-msgid "local:sound_hint_shared"
-msgstr ""
-"Le son de pose et de capture des pierres — le même réglage que « Son des "
-"coups » dans les Paramètres"
-
-msgid "local:note2_a"
-msgstr "Cette partie "
-
-msgid "local:note2_b"
-msgstr "ne donne aucun indice et n'affiche pas l'évaluation de la position"
-
-msgid "local:note2_c"
-msgstr "; après que les deux joueurs ont passé une fois, "
-
-msgid "local:note2_d"
-msgstr "le score est compté automatiquement, estimé par l'IA"
-
-msgid "local:note2_e"
-msgstr "."
-
-msgid "local:note2_f"
-msgstr "Cette partie "
-
-msgid "local:note2_g"
-msgstr "n'est enregistrée qu'à titre d'archive, sans effet sur votre rang"
-
-msgid "local:note2_h"
-msgstr " — le rang n'est déterminé que par l'échelle des Parties classées."
-
 msgid "play:local_needs_login"
 msgstr "Connectez-vous d'abord · enregistré automatiquement à la fin"
 
@@ -3550,3 +3518,79 @@ msgstr "Partie locale · Sans nom"
 
 msgid "review:row_research"
 msgstr "Archive de recherche"
+
+msgid "game:count_failed"
+msgstr "Le comptage n'a pas abouti"
+
+msgid "game:check_network_retry"
+msgstr "Vérifiez la connexion et réessayez"
+
+msgid "game:both_passed"
+msgstr "Les deux joueurs ont passé"
+
+msgid "game:exit_confirm_title"
+msgstr "Quitter cette partie ?"
+
+msgid "game:exit_unsaved_body"
+msgstr ""
+"Cette partie n'est pas terminée — elle ne sera pas enregistrée si vous "
+"quittez."
+
+msgid "game:which_side_resigns"
+msgstr "Quel camp abandonne ?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"L'adversaire est enregistré comme vainqueur par abandon ; cette partie sera "
+"sauvegardée dans l'historique."
+
+msgid "local:input_hint_v2"
+msgstr ""
+"Le plateau physique n'est qu'en 19×19 — choisissez 13×13 ou 9×9 pour jouer à"
+" l'écran"
+
+msgid "local:komi_hint"
+msgstr ""
+"Les parties avec handicap ont un komi de 0 — ce groupe se replie dès qu'un "
+"handicap est choisi"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"L'horloge décompte sur la carte du joueur · un byo-yomi épuisé fait perdre "
+"au temps · sans limite, seule la partie est enregistrée"
+
+msgid "local:clock_meta_count"
+msgstr "{n} paliers"
+
+msgid "local:sound_hint_v2"
+msgstr "Même interrupteur que le son de coup dans Réglages · Son"
+
+msgid "local:note3_a"
+msgstr "À l'écran"
+
+msgid "local:note3_b"
+msgstr "pas d'indices ni d'évaluation de la position"
+
+msgid "local:note3_c"
+msgstr "; une fois que les deux ont passé,"
+
+msgid "local:note3_d"
+msgstr "le comptage se fait automatiquement"
+
+msgid "local:note3_e"
+msgstr " la vie et la mort sont jugées par le moteur."
+
+msgid "local:note3_f"
+msgstr "Cette partie"
+
+msgid "local:note3_g"
+msgstr "n'est que consignée, votre rang ne change pas"
+
+msgid "local:note3_h"
+msgstr "; quitter en cours de partie"
+
+msgid "local:note3_i"
+msgstr "n'enregistre pas la partie"
+
+msgid "local:note3_j"
+msgstr "."

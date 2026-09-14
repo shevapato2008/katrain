@@ -168,7 +168,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         await API.navigate(sessionId, nodeId, token);
     }, [sessionId, token]);
 
-    const handleAction = useCallback(async (action: string) => {
+    const handleAction = useCallback(async (action: string, opts?: { color?: 'B' | 'W' }) => {
         if (!sessionId) return;
         try {
             let result: any;
@@ -185,7 +185,11 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             // already return the finished state; relying on the broadcast instead left
             // the acting client sitting in a game the server had already ended (and,
             // for 升降级对弈, never showing the settlement that follows it).
-            else if (action === 'resign') result = await API.resign(sessionId, token);
+            // 本地对局(pvp_local)的认输要说**是哪一方**认输(后端不带 color 回 400);
+            // 其它模式不许带(带了同样 400)⇒ 没给 color 时调用形状与原来逐字一致。
+            else if (action === 'resign') result = opts?.color
+                ? await API.resign(sessionId, token, opts.color)
+                : await API.resign(sessionId, token);
             else if (action === 'timeout') result = await API.timeout(sessionId, token);
             else if (action === 'rotate') await API.rotate(sessionId);
             else if (action === 'mistake-prev') result = await API.findMistake(sessionId, 'undo');

@@ -5,6 +5,12 @@ import { useGameNavigation } from '../../context/GameNavigationContext';
 import GalaxyBottomNav from './GalaxyBottomNav';
 
 vi.mock('../../context/GameNavigationContext', () => ({ useGameNavigation: vi.fn() }));
+/* GalaxyBottomNav 现在也读 useAuth（账号那两项的显示条件），而真 useAuth 在没有
+   AuthProvider 的树里是抛异常的。本文件量的是导航，与账号无关 ⇒ 钉成未登录。
+   账号那两项归 GalaxyBottomNav.bindPhone.test.tsx。 */
+vi.mock('../../../context/AuthContext', async (importOriginal) => ({
+  ...await importOriginal<object>(), useAuth: () => ({ user: null }),
+}));
 vi.mock('../../../hooks/useTranslation', () => ({ useTranslation: () => ({ t: (_key: string, fallback: string) => fallback }) }));
 
 const RouteChange = () => {

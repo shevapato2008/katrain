@@ -6,6 +6,12 @@ export interface ActiveSession {
   label: string;
   route: string;
   ts: number;
+  /**
+   * 这一局下不下实体盘 —— 开局设置屏在按下「开始对局」那一刻用 `playInputState(...).onBoard`
+   * 算出来写进来(设备能用 ∧ 偏好开着 ∧ 19 路)。对局路由外的 `PlayInputGuard` 和 `GamePage`
+   * 都读它,不再各自判断(v2 §3.5 / P8)。**可选**:旧版本写下的记录没有它,读的一方回落偏好。
+   */
+  onBoard?: boolean;
 }
 
 const KEY: Record<ActiveSessionKind, string> = {
@@ -24,6 +30,7 @@ export function readActiveSession(kind: ActiveSessionKind): ActiveSession | null
       typeof p.route === 'string' &&
       typeof p.ts === 'number'
     ) {
+      // onBoard 可选,不参与有效性判断 —— 见接口注释。
       return p as ActiveSession;
     }
     return null;

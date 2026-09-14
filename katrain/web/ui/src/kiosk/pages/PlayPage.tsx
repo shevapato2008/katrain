@@ -40,7 +40,7 @@ const PLATFORM_ICON: Record<string, IconName> = {
 const PlayPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, token } = useAuth();
+  const { user, token, isAuthenticated } = useAuth();
   const resume = readActiveSession('game');
   const [platforms, setPlatforms] = useState<PlatformInfo[]>(defaultPlatforms);
 
@@ -117,7 +117,11 @@ const PlayPage = () => {
         <div className="kiosk-cards">
           <KioskCard
             title={t('Local Game', '本地对局')}
-            sub={t('Two players on the same physical board', '两人在同一块实体盘上下')}
+            sub={
+              isAuthenticated
+                ? t('Two players on the same physical board', '两人在同一块实体盘上下')
+                : t('play:local_needs_login', '要先登录 · 下完自动存谱')
+            }
             icon="users"
             onClick={() => navigate('/kiosk/play/pvp/setup')}
           />

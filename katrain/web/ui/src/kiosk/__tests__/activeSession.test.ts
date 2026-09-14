@@ -52,4 +52,11 @@ describe('activeSession', () => {
     localStorage.setItem('kiosk_active_practice', JSON.stringify({ ...sample, kind: 'game' }));
     expect(readActiveSession('practice')).toBeNull();
   });
+
+  it('onBoard 可选:带着能原样读回,缺了也不判无效', () => {
+    writeActiveSession({ ...sample, onBoard: false });
+    expect(readActiveSession('game')).toEqual({ ...sample, onBoard: false });
+    writeActiveSession(sample);
+    expect(readActiveSession('game')).toEqual(sample);
+  });
 });

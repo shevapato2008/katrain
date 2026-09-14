@@ -265,6 +265,24 @@ describe('PlayPage', () => {
     expect(platformButtons()[1]).toHaveTextContent('点击登录');   // [1] = 星阵,不是野狐
   });
 
+  it('本地对局卡片未登录时说要先登录', () => {
+    useAuthMock.mockReturnValue({ user: null, isAuthenticated: false, token: null });
+    renderPage();
+
+    const card = screen.getByText('本地对局').closest('button')!;
+    expect(card).toHaveTextContent('要先登录 · 下完自动存谱');
+    expect(card).not.toHaveTextContent('两人在同一块实体盘上下');
+  });
+
+  it('本地对局卡片已登录时仍说两人在同一块实体盘上下', () => {
+    useAuthMock.mockReturnValue({ user: { username: 'fan' }, isAuthenticated: true, token: null });
+    renderPage();
+
+    const card = screen.getByText('本地对局').closest('button')!;
+    expect(card).toHaveTextContent('两人在同一块实体盘上下');
+    expect(card).not.toHaveTextContent('要先登录');
+  });
+
   it('keeps disconnected defaults after logout when an older request resolves', async () => {
     let auth = { user: { username: '友' }, isAuthenticated: true, token: 'A' as string | null };
     const requestA = deferred<{ platforms: PlatformInfo[] }>();

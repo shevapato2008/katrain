@@ -192,6 +192,9 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
   it('「整级一起做」进的是这一档的全部题', async () => {
     renderPage('3d', 'capturing');
     await waitFor(() => expect(screen.getByText('3 段全部')).toBeInTheDocument());
+    // 整级页是按分类排好的(N8),不许说「六类混在一起」。
+    expect(screen.getByText('按分类排好，不分单元')).toBeInTheDocument();
+    expect(screen.queryByText(/混在一起/)).toBeNull();
     fireEvent.click(screen.getByText('3 段全部').closest('button')!);
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/3d/all');
   });

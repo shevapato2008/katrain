@@ -71,7 +71,9 @@ const TsumegoPage = () => {
   const greet = (
     <div className="kiosk-greet">
       <b>{greetHead}<i>{t('what', '什么')}</i>{greetTail}</b>
-      <span>{t('Problems are set on the physical board · judged as you place', '题在实体盘上摆好，落子即判')}</span>
+      {/* 稿子写「题在实体盘上摆好，落子即判」—— 实体做题开关默认关,无摄像头的盒子根本没有实体盘,
+          那句只在一种情况下成立(N26③)。换成屏幕 / 实体盘 / 有无摄像头都成立的一句。 */}
+      <span>{t('tsumego:greetSub', '落子即判，走错当场退回')}</span>
     </div>
   );
 

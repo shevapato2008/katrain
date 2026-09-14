@@ -209,7 +209,9 @@ const TsumegoUnitsPage = () => {
           <div className="kiosk-cards">
             <KioskCard
               title={`${levelName}${t('all', '全部')}`}
-              sub={t('All categories mixed, no units', '六类混在一起，不分单元')}
+              // 全部题目页按分类再按题号排、卡上贴着分类、做题屏上/下一题只在本分类里走 ⇒
+              // 不是「混在一起」(N8)。真混排待 Fan 拍板(prd.md §4 D2)。
+              sub={t('tsumego:wholeLevelSub', '按分类排好，不分单元')}
               icon="squares-four"
               onClick={() => navigate(`/kiosk/tsumego/${level}/all`)}
             />

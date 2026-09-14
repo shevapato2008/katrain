@@ -56,12 +56,14 @@ const cardTitles = () =>
   Array.from(document.querySelectorAll('.kiosk-card__t > b')).map(n => n.textContent);
 
 describe('TsumegoPage · 屏 11 训练营', () => {
-  it('问候行和副标照稿子', async () => {
+  it('问候行照稿子;副标说的是在哪儿做题都成立的那句,不说「题在实体盘上摆好」', async () => {
     renderPage();
     await waitFor(() => {
       expect(document.querySelector('.kiosk-greet b')?.textContent).toBe('今天练点什么');
     });
-    expect(screen.getByText('题在实体盘上摆好，落子即判')).toBeInTheDocument();
+    // 实体做题开关默认关、无摄像头的盒子根本没有实体盘 —— 稿子那句只在一种情况下成立(N26③)。
+    expect(screen.getByText('落子即判，走错当场退回')).toBeInTheDocument();
+    expect(screen.queryByText(/实体盘上摆好/)).toBeNull();
   });
 
   it('按分类:题库返回哪几类就画哪几类，顺序照稿子那六张', async () => {

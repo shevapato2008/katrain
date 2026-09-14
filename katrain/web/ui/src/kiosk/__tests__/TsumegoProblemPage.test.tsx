@@ -605,7 +605,8 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       renderPage('p1');
       const undoBtn = action('退一手');
       expect(undoBtn).toBeDisabled();
-      expect(undoBtn).toHaveAttribute('title', expect.stringContaining('拿掉'));
+      // 原来写「请直接把子拿掉，按灯光提示走」—— 状态机里没有这条流程,拿掉子机器毫无反应(T4)。
+      expect(undoBtn).toHaveAttribute('title', '实体棋盘上退不了一手；想重来，按「重摆」');
     });
 
     it('LED 没连上要说出来 —— 不然人只会觉得灯坏了', () => {

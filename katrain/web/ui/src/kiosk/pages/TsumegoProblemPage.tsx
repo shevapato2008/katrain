@@ -362,9 +362,11 @@ const TsumegoProblemPage = () => {
       // 屏上会写「悔棋」。做题没有对手,悔的是自己上一手,稿子写的是「退一手」。
       label: t('tsumego:undoMove', '退一手'),
       onClick: undo,
-      // 实体模式下悔棋要**从盘上拿子**(LED 引导),屏幕上按一下会让机器和盘对不上。
+      // 实体模式下屏幕上按一下会让机器和盘对不上,所以灰着。**原因只许说做得到的事**:
+      // 状态机里没有「用户主动收回一手」这条流程,拿掉子机器毫无反应(T4);
+      // 「重摆」在实体模式下会重走清盘 → 摆题(`handleReset`),这句是真的。真流程待 Fan 拍板(prd.md §4 D1)。
       disabled: physicalEnabled,
-      reason: t('tsumego:undoPhysical', '实体棋盘上请直接把子拿掉，按灯光提示走'),
+      reason: t('tsumego:undoPhysicalReset', '实体棋盘上退不了一手；想重来，按「重摆」'),
     },
     { key: 'reset', icon: 'arrows-clockwise', label: t('Reset', '重摆'), onClick: handleReset },
     {

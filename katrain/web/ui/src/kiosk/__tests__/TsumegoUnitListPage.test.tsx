@@ -228,6 +228,8 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
     seedSequence('3d', 'capturing');
     renderPage('3d', 'capturing', '1');
     await waitFor(() => expect(cells()).toHaveLength(UNIT_SIZE));
+    expect(screen.getByText('这一级的全部题，按分类排好')).toBeInTheDocument();
+    expect(screen.queryByText(/混在一起|认出这是哪一类/)).toBeNull();
     fireEvent.click(screen.getByText('3 段全部').closest('.kiosk-row')!.querySelector('button')!);
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/3d/all');
   });

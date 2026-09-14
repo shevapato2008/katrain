@@ -279,7 +279,8 @@ const TsumegoUnitListPage = () => {
               <span className="kiosk-row__lead">{t('Whole level', '整级')}</span>
               <div className="kiosk-row__t">
                 <b>{`${levelName}${t('all', '全部')}`}</b>
-                <em>{t('All six categories mixed — practise telling them apart', '六类混在一起，练「认出这是哪一类」')}</em>
+                {/* 同屏 12 那张卡(N8):不是混排,不说「认出这是哪一类」。 */}
+                <em>{t('tsumego:wholeLevelRow', '这一级的全部题，按分类排好')}</em>
               </div>
               <div className="kiosk-row__end">
                 <button

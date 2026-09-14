@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { UserGameSummary } from '../../../api/userGamesApi';
-import { outcomeLine, rowDisc, rowState, rowTitle, yourColor } from './reviewPresentation';
+import { failureLine, failureReason, outcomeLine, rowDisc, rowState, rowTitle, yourColor } from './reviewPresentation';
 
 /**
  * 这些判断错了**屏上看不出来** —— 出来的还是一句通顺的中文,只是说的是另一局棋。
@@ -145,5 +145,17 @@ describe('rowState —— 分析到哪一步了', () => {
   it('没有任务时,下完的叫「未分析」、没下完的叫「未终局」', () => {
     expect(rowState(game(), {})).toEqual({ kind: 'unanalyzed' });
     expect(rowState(game({ result: null }), {})).toEqual({ kind: 'unfinished' });
+  });
+});
+
+describe('failureLine —— 请求失败时屏上怎么说', () => {
+  // 分不出原因时**不编一个**:「稍后再试」对一个永久的 409 是假话。也不印后端原文。
+  it('分得出原因就说「做什么没成 · 为什么」,分不出只说前半句', () => {
+    expect(failureLine('删除对局失败', 'offline', t)).toBe('删除对局失败 · 连不上云端');
+    expect(failureLine('报告读不出来', 'not_found', t)).toBe('报告读不出来 · 已经不在了');
+    expect(failureLine('生成报告', 'no_credits', t)).toBe('生成报告 · 积分不足');
+    expect(failureLine('导入 SGF 失败', 'bad_sgf', t)).toBe('导入 SGF 失败 · 这份谱读不出来');
+    expect(failureLine('删除对局失败', 'other', t)).toBe('删除对局失败');
+    expect(failureReason('other', t)).toBe('');
   });
 });

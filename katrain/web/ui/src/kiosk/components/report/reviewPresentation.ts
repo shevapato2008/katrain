@@ -2,6 +2,7 @@ import type { ReportGameStatus } from '../../../features/report/reportModel';
 import type { UserGameSummary } from '../../../api/userGamesApi';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import { interpolate } from '../../utils/interpolate';
+import type { RequestFailureKind } from '../../../utils/requestFailure';
 
 export type TFn = (key: string, fallback?: string) => string;
 
@@ -181,4 +182,27 @@ export function rowState(game: UserGameSummary, state: ReportGameStatus): RowSta
     return { kind: 'failed', taskId: failed.id };
   }
   return game.result ? { kind: 'unanalyzed' } : { kind: 'unfinished' };
+}
+
+/**
+ * 请求失败时屏上那半句「为什么」。**不印后端原文**:以前屏 20 写「未找到复盘。」,
+ * 下面直接是 `Request failed 503: {"detail":"Remote server unavailable"}`,用户看不懂,
+ * 也看不出是网络的事(2026-09-14 调研 N24)。
+ *
+ * 分不出原因(`other`)时返回空串,**不编一个原因**:「稍后再试」对一个永久的 409 是假话。
+ */
+export function failureReason(kind: RequestFailureKind, t: TFn): string {
+  switch (kind) {
+    case 'offline': return t('review:failure_offline', '连不上云端');
+    case 'not_found': return t('review:failure_not_found', '已经不在了');
+    case 'no_credits': return t('review:failure_no_credits', '积分不足');
+    case 'bad_sgf': return t('review:failure_bad_sgf', '这份谱读不出来');
+    default: return '';
+  }
+}
+
+/** 「做什么没成 · 为什么」。原因分不出时只说前半句。 */
+export function failureLine(prefix: string, kind: RequestFailureKind, t: TFn): string {
+  const reason = failureReason(kind, t);
+  return reason ? `${prefix} · ${reason}` : prefix;
 }

@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
@@ -18,6 +18,7 @@ import {
   sequenceKey,
   isCloudUnreachable,
   loadErrorCopy,
+  readWrongSequence,
   readAutoAdvance,
   levelChinese,
   readPhysicalMode,
@@ -131,7 +132,7 @@ const TsumegoProblemPage = () => {
   // ---- Prev/Next sequence (4.1) ----
   // Sequence of problem ids for the whole category, sourced from sessionStorage (written by
   // the units pages). If missing (deep-link), fetch the full category list once and cache it.
-  const [sequence, setSequence] = useState<string[]>([]);
+  const [categorySequence, setCategorySequence] = useState<string[]>([]);
 
   useEffect(() => {
     if (!problem) return;
@@ -148,7 +149,7 @@ const TsumegoProblemPage = () => {
     }
 
     if (seq.length > 0) {
-      setSequence(seq);
+      setCategorySequence(seq);
       return;
     }
 
@@ -165,13 +166,27 @@ const TsumegoProblemPage = () => {
         } catch {
           /* best-effort */
         }
-        setSequence(ids);
+        setCategorySequence(ids);
       })
       .catch(() => {
         /* best-effort; prev/next stay disabled if we can't build the sequence */
       });
     return () => controller.abort();
   }, [problem]);
+
+  // ---- 错题模式(T1)----
+  // `?set=wrong` 且错题快照里有这道题 ⇒ 上/下一题、做对自动下一题、实体模式做对后的翻页,
+  // 全部只在快照里走(快照由错题页在点格那一刻写,见 `TsumegoUnitListPage`)。
+  // 快照读不到 / 不含这道题(深链、换了标签页)⇒ 退回整类,**不假装还在错题里**。
+  // 快照按账号读(`user` 是 Task 4 在组件体开头取的):同一标签页换人,读不到别人点错题页时写的那份。
+  const [searchParams] = useSearchParams();
+  const wantWrongSet = searchParams.get('set') === 'wrong';
+  const wrongSequence = useMemo(
+    () => (wantWrongSet && problem ? readWrongSequence(user?.id, problem.level, problem.category) : null),
+    [wantWrongSet, problem, user?.id],
+  );
+  const inWrongSet = !!problemId && !!wrongSequence && wrongSequence.includes(problemId);
+  const sequence = inWrongSet && wrongSequence ? wrongSequence : categorySequence;
 
   const currentIndex = useMemo(
     () => (problemId ? sequence.indexOf(problemId) : -1),
@@ -183,16 +198,23 @@ const TsumegoProblemPage = () => {
   const nextId = currentIndex >= 0 && currentIndex < sequence.length - 1 ? sequence[currentIndex + 1] : null;
 
   // 训练营首页「接着上次」+ 两处高亮(B2.2/B2.4),每进一道题写一次 —— 按账号存(N10)。
+  // 错题模式下记带 `?set=wrong` 的路由:点「继续」回来还在错题里(T1)。
   useEffect(() => {
     if (!problem) return;
     writeLastLevel(user?.id, problem.level);
     writeLastCategory(user?.id, problem.category);
-    writePracticeResume(user?.id, {
-      label: `${levelChinese(problem.level)} · ${t(`tsumego:${problem.category}`, problem.category)} · 第 ${currentIndex + 1} 题`,
-      route: `/kiosk/tsumego/problem/${problem.id}`,
-    });
+    const head = `${levelChinese(problem.level)} · ${t(`tsumego:${problem.category}`, problem.category)}`;
+    writePracticeResume(
+      user?.id,
+      inWrongSet
+        ? {
+            label: `${head} · ${interpolate(t('tsumego:wrongResume', '错题第 {n} 道'), { n: currentIndex + 1 })}`,
+            route: `/kiosk/tsumego/problem/${problem.id}?set=wrong`,
+          }
+        : { label: `${head} · 第 ${currentIndex + 1} 题`, route: `/kiosk/tsumego/problem/${problem.id}` },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot label written once per problem; `t` intentionally excluded
-  }, [problem, currentIndex, user?.id]);
+  }, [problem, currentIndex, user?.id, inWrongSet]);
 
   // "Last time" for this problem (4.3) — from the unified progress source.
   const lastDuration = problemId ? progress[problemId]?.lastDuration : undefined;
@@ -201,19 +223,20 @@ const TsumegoProblemPage = () => {
   const navigateToProblem = useCallback(
     (id: string) => {
       flushProgress(); // persist the leaving problem's attempt (4.1/4.2)
-      navigate(`/kiosk/tsumego/problem/${id}`);
+      // 错题模式下翻页要带着 `?set=wrong`,否则下一道就掉回整类了(T1)。
+      navigate(`/kiosk/tsumego/problem/${id}${inWrongSet ? '?set=wrong' : ''}`);
     },
-    [navigate, flushProgress],
+    [navigate, flushProgress, inWrongSet],
   );
 
   const goToUnits = useCallback(() => {
     flushProgress();
     if (problem) {
-      navigate(`/kiosk/tsumego/${problem.level}/${problem.category}`);
+      navigate(`/kiosk/tsumego/${problem.level}/${problem.category}${inWrongSet ? '/wrong' : ''}`);
     } else {
       navigate(-1);
     }
-  }, [navigate, problem, flushProgress]);
+  }, [navigate, problem, flushProgress, inWrongSet]);
 
   const handlePrev = useCallback(() => {
     if (prevId) navigateToProblem(prevId);
@@ -319,18 +342,28 @@ const TsumegoProblemPage = () => {
   const levelName = problem ? levelChinese(problem.level) : '';
 
   // 这一题属于第几单元 —— 顺序表算得出来就算,算不出来(深链 + 取不到)就退回类目那一层。
-  const unitNumber = currentIndex >= 0 ? Math.floor(currentIndex / UNIT_SIZE) + 1 : null;
-  const unitIds = unitNumber === null
-    ? []
-    : sequence.slice((unitNumber - 1) * UNIT_SIZE, unitNumber * UNIT_SIZE);
+  // 错题模式下没有「第几单元」:单元块画的是这份错题快照,返回去错题页(T1)。
+  // ⚠️ 点阵**最多 20 个**(当前这道所在的那 20 个):右栏五块摆满 516、没有滚动,`.dots` 是
+  // 10 列网格 —— 快照 60 道就是 6 行,把动作区顶出画布。和整类模式一个单元同一个上限 ⇒ 右栏高度来源不变。
+  const unitNumber = !inWrongSet && currentIndex >= 0 ? Math.floor(currentIndex / UNIT_SIZE) + 1 : null;
+  const wrongPage = inWrongSet && currentIndex >= 0 ? Math.floor(currentIndex / UNIT_SIZE) : 0;
+  const unitIds = inWrongSet
+    ? sequence.slice(wrongPage * UNIT_SIZE, (wrongPage + 1) * UNIT_SIZE)
+    : unitNumber === null
+      ? []
+      : sequence.slice((unitNumber - 1) * UNIT_SIZE, unitNumber * UNIT_SIZE);
   const backTarget = problem
-    ? unitNumber === null
-      ? `/kiosk/tsumego/${problem.level}/${problem.category}`
-      : `/kiosk/tsumego/${problem.level}/${problem.category}/${unitNumber}`
+    ? inWrongSet
+      ? `/kiosk/tsumego/${problem.level}/${problem.category}/wrong`
+      : unitNumber === null
+        ? `/kiosk/tsumego/${problem.level}/${problem.category}`
+        : `/kiosk/tsumego/${problem.level}/${problem.category}/${unitNumber}`
     : null;
-  const backLabel = unitNumber === null
-    ? categoryName
-    : interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber });
+  const backLabel = inWrongSet
+    ? t('tsumego:wrongSet', '错题')
+    : unitNumber === null
+      ? categoryName
+      : interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber });
   const backToUnit = useCallback(() => {
     flushProgress();
     if (backTarget) navigate(backTarget);
@@ -380,7 +413,12 @@ const TsumegoProblemPage = () => {
         : t('tsumego:isFirst', '这是第一题'),
     },
     isLast
-      ? { key: 'next', icon: 'squares-four', label: t('tsumego:backToUnit', '返回单元'), onClick: backToUnit }
+      ? {
+          key: 'next',
+          icon: 'squares-four',
+          label: inWrongSet ? t('tsumego:backToWrong', '返回错题') : t('tsumego:backToUnit', '返回单元'),
+          onClick: backToUnit,
+        }
       : {
           key: 'next',
           icon: 'skip-forward',
@@ -475,7 +513,11 @@ const TsumegoProblemPage = () => {
           testId="puzzle-pagebar"
           backLabel={backLabel}
           onBack={backToUnit}
-          title={interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: currentIndex >= 0 ? currentIndex + 1 : 1 })}
+          title={
+            inWrongSet
+              ? interpolate(t('tsumego:wrongProgress', '错题 第 {i} / {n} 道'), { i: currentIndex + 1, n: sequence.length })
+              : interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: currentIndex >= 0 ? currentIndex + 1 : 1 })
+          }
           sub={`${levelName} · ${categoryName}`}
           // §11 只允许一个页级图标键。这一屏它只在**标定失效**时出现 ——
           // 实体棋盘开不了的时候,得有一条走得通的路,而不只是一句解释。
@@ -643,9 +685,11 @@ const TsumegoProblemPage = () => {
 
         <div className="panel" data-testid="puzzle-unit">
           <h3>
-            {unitNumber === null
-              ? t('tsumego:unitUnknown', '这一单元')
-              : `${interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber })} · ${interpolate(t('tsumego:unit_total', '{n} 题'), { n: unitIds.length })}`}
+            {inWrongSet
+              ? `${t('tsumego:wrongSet', '错题')} · ${interpolate(t('tsumego:wrong_total', '{n} 道'), { n: sequence.length })}`
+              : unitNumber === null
+                ? t('tsumego:unitUnknown', '这一单元')
+                : `${interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber })} · ${interpolate(t('tsumego:unit_total', '{n} 题'), { n: unitIds.length })}`}
           </h3>
           {unitIds.length > 0 ? (
             <div className="dots" data-testid="puzzle-dots">

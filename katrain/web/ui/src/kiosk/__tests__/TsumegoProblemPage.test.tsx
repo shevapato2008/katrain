@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
-import { AUTO_ADVANCE_KEY, sequenceKey } from '../pages/tsumegoUnits';
+import { AUTO_ADVANCE_KEY, sequenceKey, wrongSequenceKey } from '../pages/tsumegoUnits';
 import type { PhysicalTsumegoState } from '../hooks/usePhysicalTsumego';
 
 // ---- Hoisted spies referenced by the mock factories below ----
@@ -628,5 +628,97 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
     // 不分人的旧钥匙一个都不写。
     expect(localStorage.getItem('kiosk_tsumego_last_level')).toBeNull();
     expect(localStorage.getItem('kiosk_active_practice')).toBeNull();
+  });
+
+  describe('错题模式 ?set=wrong(T1)', () => {
+    // 整类顺序表是 ['p0','p1','p2'](最外层 beforeEach 写的);错题快照是另一条。
+    // hook mock 恒返回 id 'p1' 的题,**路由参数**决定这一道在序列里排第几 —— 与原有用例同一个做法。
+    const renderWrong = (problemId: string, search = '?set=wrong') =>
+      render(
+        <ThemeProvider theme={kioskTheme}>
+          <MemoryRouter initialEntries={[`/kiosk/tsumego/problem/${problemId}${search}`]}>
+            <Routes>
+              <Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+            </Routes>
+          </MemoryRouter>
+        </ThemeProvider>
+      );
+    const button = (name: string) => screen.getByRole('button', { name });
+
+    beforeEach(() => {
+      // 快照按账号存;这个文件的 useAuth mock 是 id 7(Task 4 加的)。
+      sessionStorage.setItem(wrongSequenceKey(7, '15k', '手筋')!, JSON.stringify(['q3', 'p1', 'q41']));
+    });
+
+    it('页控条写「错题 第 i / n 道」;上/下一题只在快照里走,而且带着 ?set=wrong', () => {
+      renderWrong('p1');
+      expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('错题 第 2 / 3 道');
+      fireEvent.click(button('上一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/q3?set=wrong');
+      fireEvent.click(button('下一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/q41?set=wrong');
+    });
+
+    it('最后一道时键写「返回错题」,回错题页;页控条返回键同一个去处', () => {
+      renderWrong('q41');
+      fireEvent.click(button('返回错题'));
+      expect(mockFlush).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/15k/手筋/wrong');
+      fireEvent.click(within(screen.getByTestId('puzzle-pagebar')).getByText('错题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/15k/手筋/wrong');
+    });
+
+    it('单元块换成「错题 · n 道」,点阵画的是快照那几道', () => {
+      renderWrong('p1');
+      expect(screen.getByTestId('puzzle-unit')).toHaveTextContent('错题 · 3 道');
+      expect(screen.getByTestId('puzzle-dots').querySelectorAll('i')).toHaveLength(3);
+      expect(screen.getByTestId('puzzle-dots').querySelectorAll('i.now')).toHaveLength(1);
+    });
+
+    it('快照很长时点阵最多画 20 个(当前这道所在的那 20 个)—— 右栏不滚,多一行就把动作区顶出画布', () => {
+      // 造的是**输入**(45 道错题);断言的是组件算出来的 <i> 个数,不是布局结论。
+      // 上限 20 = 整类模式一个单元的点数 ⇒ 右栏的高度来源和改之前同一个最大值。
+      const long = Array.from({ length: 45 }, (_, i) => (i === 25 ? 'p1' : `w${i}`));
+      sessionStorage.setItem(wrongSequenceKey(7, '15k', '手筋')!, JSON.stringify(long));
+      renderWrong('p1');
+      expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('错题 第 26 / 45 道');
+      expect(screen.getByTestId('puzzle-unit')).toHaveTextContent('错题 · 45 道');
+      expect(screen.getByTestId('puzzle-dots').querySelectorAll('i')).toHaveLength(20);
+      expect(screen.getByTestId('puzzle-dots').querySelectorAll('i.now')).toHaveLength(1);
+    });
+
+    it('「接着上次」记下带 ?set=wrong 的路由 —— 点「继续」回来还在错题里', () => {
+      renderWrong('p1');
+      expect(JSON.parse(localStorage.getItem('kiosk_tsumego_resume:u7')!)).toEqual({
+        label: '15 级 · 手筋 · 错题第 2 道',
+        route: '/kiosk/tsumego/problem/p1?set=wrong',
+      });
+    });
+
+    it('快照里没有这道题(深链、换了标签页)⇒ 退回整类,不假装还在错题里', () => {
+      sessionStorage.setItem(wrongSequenceKey(7, '15k', '手筋')!, JSON.stringify(['x', 'y']));
+      renderWrong('p1');
+      expect(screen.getByText('第 2 题')).toBeInTheDocument();
+      fireEvent.click(button('下一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p2');
+    });
+
+    it('同一标签页甲→乙→甲:别的账号写下的快照不认,就算里面恰好有这道题 —— 退回整类', () => {
+      // 甲(u7)自己的快照没了,标签页里只剩乙(u8)点错题页时写的那份,而它恰好也含 p1。
+      // 不分人的钥匙在这里会过 `includes('p1')`,甲点「继续」就进了乙的错题、下一题去 b2。
+      sessionStorage.removeItem(wrongSequenceKey(7, '15k', '手筋')!);
+      sessionStorage.setItem(wrongSequenceKey(8, '15k', '手筋')!, JSON.stringify(['p1', 'b2']));
+      renderWrong('p1');
+      expect(screen.getByText('第 2 题')).toBeInTheDocument();
+      fireEvent.click(button('下一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p2');
+    });
+
+    it('没带 ?set=wrong 时,就算 sessionStorage 里有快照也照整类走', () => {
+      renderWrong('p1', '');
+      expect(screen.getByText('第 2 题')).toBeInTheDocument();
+      fireEvent.click(button('下一题'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p2');
+    });
   });
 });

@@ -574,10 +574,11 @@ test('AI 思考中那颗药丸的中心 = 棋盘的中心,整颗都在盘内', a
 // Fan 2026-08-25:「只有人机对弈的自由对弈允许悔棋。」本地对局/对战大厅这一态在这份
 // spec 里**此前一条断言都没有**,而它的行为正是这次改掉的那一条 —— 所以它自己量一遍。
 //
-// 顺带守住「撤掉一颗键之后这一排还是两行、还贴底」:`.gacts` 是 4 列,
-// 六个键排 4+2、五个键排 4+1,**行数没变** ⇒ 动作区高度不该动。
+// kiosk-local-play v2 D1(commit 51e6e2e8)把本地对局右栏进一步收到只剩
+// `数子`/`停一手`/`认输` 三颗(不接引擎辅助,「领地」「AI支招」整颗撤掉)——
+// 三颗键落在 4 列的 `.gacts` 里是 1 行,不是旧断言假设的「五颗键 4+1 两行」。
 // 这个数只有浏览器算得出来,jsdom 无权作证。
-test('本地对局:没有悔棋、没有胜率块,动作区仍是两行且贴底', async ({ page }) => {
+test('本地对局:没有悔棋、没有胜率块,动作区只有一行且贴底', async ({ page }) => {
   await open(page, 'pvp_local');
 
   const g = await page.evaluate(() => {
@@ -603,10 +604,10 @@ test('本地对局:没有悔棋、没有胜率块,动作区仍是两行且贴底
   expect(g.labels, '本地对局里还有「悔棋」键').not.toContain('悔棋');
   // 撤掉不是灰着:不许留一颗永远点不动的悔棋。
   expect(g.disabledLabels, '本地对局里留了一颗灰着的悔棋').not.toContain('悔棋');
-  expect(g.labels).toEqual(['领地', 'AI支招', '数子', '停一手', '认输']);
+  expect(g.labels).toEqual(['数子', '停一手', '认输']);
   expect(g.hasEval, '两个人面对面的局里还有胜率块').toBe(false);
-  // 关系式先写死再读数:五个键在 4 列的 `.gacts` 里 = 4+1 两行,和六个键时行数相同。
-  expect(g.rows, '动作区不是两行了').toBe(2);
+  // 关系式先写死再读数:三个键在 4 列的 `.gacts` 里排得下 = 1 行。
+  expect(g.rows, '动作区不是一行了').toBe(1);
   expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
   expect(g.railOverflow, '右栏溢出').toBeLessThanOrEqual(0);
 });

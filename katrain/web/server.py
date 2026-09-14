@@ -1614,8 +1614,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             # Determine player names
             player_black = players_info["B"].name or ""
             player_white = players_info["W"].name or ""
-            # Fill in username for the human side if still empty
-            if current_user:
+            game_type = getattr(session, "game_type", "free")
+            # Fill in username for the human side if still empty —— 只对人机局。
+            # 本地两人对局(pvp_local)两个座位都是 human,回填会把登录用户名同时写进黑白两方;
+            # 而屏 04 承诺「名字留空就不编名字」,屏 19 要靠两个名字都空才认得出「未记名」(P12)。
+            if current_user and game_type != "pvp_local":
                 if players_info["B"].human and not player_black:
                     player_black = current_user.username
                 if players_info["W"].human and not player_white:
@@ -1650,7 +1653,6 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             move_count = len(state.get("history", []))
             komi = state.get("komi", 7.5)
             rules = state.get("ruleset", "chinese")
-            game_type = getattr(session, "game_type", "free")
 
             from datetime import datetime
 

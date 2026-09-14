@@ -91,12 +91,12 @@
      - 数据条三格:「N 道 / 做错过、还没做对」「平均尝试次数」「X / 总数 / 这一类已做对」;
      - 格子是这一类里「试过、还没做对」的全部题,格上写**该题在这一类里的真题号**和「N 次」,不画 `now`;
      - 「换一批」只留「整级」一行(错题那一行指向自己,不画);
-     - 0 道时空态「这一类现在没有做错过的题」+ 回「单元」的键;**做题记录没读到**(`serverLoadFailed`)时不说「没有」,写「做题记录没读到」+「重试」(重读服务端;重读途中仍按没读到说,读成功才算读到)。
+     - 0 道时空态「这一类现在没有做错过的题」+ 回「单元」的键;**做题记录没读到**(`serverLoadFailed`;盒上 `GET /progress` 离线 / 云端读失败时回的是 200 + 本机缓存,后端在响应头 `X-Data-Authority: local_cache` 里说出来,也算没读到)时不说「没有」,写「做题记录没读到」+「重试」(重读服务端;重读途中仍按没读到说,读成功才算读到;换了账号或已被后一次重试取代的回答作废)。
   2. 点一格的那一刻,把**当前这份错题题号列表**写进 `sessionStorage` 的 `kiosk_problems_<level>_<category>_wrong:u<id>`(快照,**按账号存**),再进 `/kiosk/tsumego/problem/<id>?set=wrong`。快照是为了做题途中做对一道、它不会从上/下一题的序列里消失;按账号是因为 sessionStorage 登出不清,同一标签页甲→乙→甲时甲的「接着上次」不许读到乙的错题。
   3. 做题屏在 `?set=wrong` **且快照里有这道题**时:上/下一题、做对自动下一题、实体模式做对后的翻页,全部只在快照里走(导航带着 `?set=wrong`);页控条标题「错题 第 i / n 道」;返回键和最后一题的「返回错题」回错题页;「第 N 单元」那一块换成「错题 · n 道」+ 点阵(**点阵最多 20 个**,取当前这道所在的那 20 个 —— 右栏五块摆满 516 不滚,`.dots` 10 列,快照 60 道就是 6 行、把动作区顶出画布;上限与整类模式一个单元相同 ⇒ 右栏高度来源不变);「接着上次」记下带 `?set=wrong` 的路由与「… · 错题第 i 道」。快照读不到或不含这道题(深链、换了标签页、换了账号)⇒ 退回整类行为,**不假装还在错题里**。
   4. 屏 12 卡、屏 13 行:有错题时可点 / 有「开始」键,都进错题页;0 道时 `disabled`,副标照写「现在有 0 道」;做题记录没读到而算出 0 道时不写「0 道」、不灰(写「做题记录没读到」,进错题页重试)。两处不再出现「还没接」。
 - **验收:**
-  1. vitest:屏 12 卡 2 道时可点并导航到 `/kiosk/tsumego/15k/capturing/wrong`,0 道时 `disabled`;屏 13 行「开始」同理;错题页只列 `attempts>0 && !completed` 的题、格上是整类真题号、点格写 `…_wrong:u<id>` 快照并导航到 `…?set=wrong`;0 道空态;做题记录没读到时出「重试」而不是空态,重读回来出格子(屏 12 卡 / 屏 13 行同一态不写 0 道、不灰);进度 Provider 重读途中 `serverLoadFailed` 仍为真。做题屏:`?set=wrong` + 快照 `['q3','q9','q12']`、当前 `q9` → 标题「错题 第 2 / 3 道」、上一题去 `q3?set=wrong`、下一题去 `q12?set=wrong`;当前是最后一道时键写「返回错题」并回错题页;快照 45 道、当前第 26 道时点阵是 20 个;快照不含本题时上/下一题走整类序列;标签页里只有别的账号写的快照(且恰好含本题)时同样走整类序列。
+  1. vitest:屏 12 卡 2 道时可点并导航到 `/kiosk/tsumego/15k/capturing/wrong`,0 道时 `disabled`;屏 13 行「开始」同理;错题页只列 `attempts>0 && !completed` 的题、格上是整类真题号、点格写 `…_wrong:u<id>` 快照并导航到 `…?set=wrong`;0 道空态;做题记录没读到时出「重试」而不是空态,重读回来出格子(屏 12 卡 / 屏 13 行同一态不写 0 道、不灰);进度 Provider 重读途中 `serverLoadFailed` 仍为真;重试还在路上时换了账号,回来的那份不并进新账号、不写新账号的钥匙;连按两次重试、先发的后回来不盖掉后发的;真 `getProgress` 收到 `X-Data-Authority: local_cache` ⇒ `serverLoadFailed` 为真。pytest:盒上 `GET /progress` 离线 / 云端不可达 / 云端 5xx ⇒ 200 + `X-Data-Authority: local_cache`,云端读成功 ⇒ `cloud`。做题屏:`?set=wrong` + 快照 `['q3','q9','q12']`、当前 `q9` → 标题「错题 第 2 / 3 道」、上一题去 `q3?set=wrong`、下一题去 `q12?set=wrong`;当前是最后一道时键写「返回错题」并回错题页;快照 45 道、当前第 26 道时点阵是 20 个;快照不含本题时上/下一题走整类序列;标签页里只有别的账号写的快照(且恰好含本题)时同样走整类序列。
   2. 真浏览器承重关:错题 60 道时错题页滚动区**确实溢出**(先断言前置),真滚轮滚到 `data-at="end"` 且最后一格在视口内;屏 13 原有「满编 20 格一屏装得下」闸照旧绿。
   3. 四图:错题页对屏 13 参考图、做题屏错题模式对屏 14 参考图各取一组,**Fan 视觉确认**。
   4. 盒上:做错两题后回屏 12,卡上「现在有 2 道」可点,进去做对一道,回到错题页只剩 1 道。
@@ -246,14 +246,15 @@
 | `katrain/web/ui/src/kiosk/KioskApp.tsx` | 做题路由换 `TsumegoInputGuard`(T9);加 `tsumego/:level/:category/wrong` 路由(T1)。只动 `:131-137` 训练营那几行和一行 import | play-ai / cross-platform(对局路由、守卫)、kifu(L1 直播路由) |
 | `katrain/web/core/repository.py` | `tsumego_get_levels / get_all_problems / get_problems / get_problem` 四个方法改走 `_remote_only`;`RemoteTsumegoRepository.get_all_problems` 去掉 `return_exceptions`(N9)。**不改 `_remote_only` 本身** | kifu(N9 棋谱那一半,同文件 `kifu_*`)、review(N24 报告 503,若动 `_remote_only` 需互通) |
 | `katrain/web/ui/src/hooks/useTsumegoProblem.ts`(共享领地,galaxy 也用) | 非 404 的错误抛 `HTTP <status>` 而不是一律 `Problem not found`(N9)。一行 | 预计无;galaxy 做题页会看到更准的错误字 |
-| `katrain/web/ui/src/context/TsumegoProgressContext.tsx`(共享领地,galaxy 也挂这个 Provider) | `fetchAndMerge` 里 `serverLoadFailed` 改成读成功才清,不在发请求时清(T1 错题页的重试)。一处 | 预计无(其它四条赛道的 plan 都不改它);今天另一个读者 `GrowthPage` 不调 `refresh`,行为不变 |
+| `katrain/web/ui/src/context/TsumegoProgressContext.tsx`(共享领地,galaxy 也挂这个 Provider) | `fetchAndMerge` 一段(T1 错题页的重试):`serverLoadFailed` 读成功才清、不在发请求时清;回答只认发请求时的账号和最新的号(换了账号 / 已过期就作废);盒子退回本机缓存算没读到、不回推 | 预计无(其它四条赛道的 plan 都不改它);另一个读者 `GrowthPage` 不调 `refresh`,盒上降级时那格在本机也空时写「—」(它本来要的) |
+| `katrain/web/ui/src/api/tsumegoApi.ts`(共享领地) | `getProgress` 回 `{ progress, degraded }`,读响应头 `X-Data-Authority`(T1)。唯一的非测试调用方是上面那个 Provider | 预计无;galaxy / 服务端模式不带这个头 ⇒ 行为不变 |
 | `katrain/web/ui/src/kiosk/__tests__/navigation.integration.test.tsx` | 断言的问候副标换新句(N26③) | 任何改首页 / 导航的赛道 |
 | `katrain/web/ui/tests/kiosk-shell-scroll.spec.ts` | 只改训练营那段 fixture 的三把钥匙(`:151-161`,N10) | 所有动滚动闸的赛道(改的是不同段落) |
 | `katrain/web/ui/src/kiosk/utils/activeSession.ts` | **不改**(见 §5) | play-ai |
 | `katrain/web/ui/src/kiosk/components/vision/`(新增 `TsumegoInputGuard.tsx`;改 `BoardSetupGuide.tsx`) | T9 / T8。`BoardSetupGuide` 只有做题屏一个调用方 | play-ai(`PlayInputGuard` / `PhysicalBoardGuard` 若有人改) |
 | `superpowers/tracks/kiosk-go-shell-align/visual/{11-training,12-units,13-problems}/` 四图存档 | 重取这三屏(文案与 T1 的键变了;屏 14 默认态无可见变化,不重取) | 任何重取四图的赛道 —— **只提交本赛道改到的这四屏** |
 
-本赛道独占(不与别家重叠):`kiosk/pages/Tsumego*.tsx`、`kiosk/pages/tsumegoUnits.ts`、`kiosk/components/tsumego/PhysicalStatePanel.tsx`、`katrain/web/api/v1/endpoints/tsumego.py`、对应的 `__tests__` 与 `tests/kiosk-screen-1[1-3]-*.fourup.spec.ts`,以及新增的 `tests/web_ui/test_tsumego_board_unavailable.py`、`tests/kiosk-tsumego-wrong.spec.ts`、`tests/kiosk-tsumego-wrong.fourup.spec.ts`。
+本赛道独占(不与别家重叠):`kiosk/pages/Tsumego*.tsx`、`kiosk/pages/tsumegoUnits.ts`、`kiosk/components/tsumego/PhysicalStatePanel.tsx`、`katrain/web/api/v1/endpoints/tsumego.py`(N9 的 503;T1 的盒上 `GET /progress` 响应头 `X-Data-Authority: cloud / local_cache`,服务端模式不带)、对应的 `__tests__` 与 `tests/kiosk-screen-1[1-3]-*.fourup.spec.ts`,以及新增的 `tests/web_ui/test_tsumego_board_unavailable.py`、`tests/kiosk-tsumego-wrong.spec.ts`、`tests/kiosk-tsumego-wrong.fourup.spec.ts`。
 
 ---
 
@@ -262,8 +263,8 @@
 | 层 | 覆盖条目 | 怎么验 |
 |---|---|---|
 | 前端单测(vitest) | 全部 | 每个任务跑它改到的测试文件;判据是**基线 diff**:动手前全量跑一次记下失败用例**名字集合**,改完比名字集合,不比条数 |
-| 后端单测(pytest) | N9 | `uv run pytest tests/web_ui/test_tsumego_board_unavailable.py tests/web_ui/test_tsumego_offline.py` |
-| 类型 + 两套构建 | 全部(N9 动了共享领地 `useTsumegoProblem.ts`,T1 动了 `TsumegoProgressContext.tsx` 一处) | `npx tsc -b`;`npm run build` 与 `npm run build:kiosk-2d` 都绿(后者含 `verify:kiosk-2d`) |
+| 后端单测(pytest) | N9、T1(盒上进度响应头) | `uv run pytest tests/web_ui/test_tsumego_board_unavailable.py tests/web_ui/test_tsumego_offline.py` |
+| 类型 + 两套构建 | 全部(N9 动了共享领地 `useTsumegoProblem.ts`,T1 动了 `TsumegoProgressContext.tsx` 的 `fetchAndMerge` 与 `api/tsumegoApi.ts` 的 `getProgress`) | `npx tsc -b`;`npm run build` 与 `npm run build:kiosk-2d` 都绿(后者含 `verify:kiosk-2d`) |
 | 承重实测(真浏览器) | T1 错题页 | 新 `tests/kiosk-tsumego-wrong.spec.ts`:造 60 道错题 ⇒ 先断言溢出成立,再真滚轮滚到底;屏 13 原有「满编 20 格一屏装得下」、训练营两条滚动闸照旧绿。jsdom 不作布局证据 |
 | 四图对比 | N26③(屏 11)、N8 + T1(屏 12 / 13)、T1(屏 14 错题模式、错题页)、N10 fixture(屏 11) | 重取屏 11–13 四图(屏 14 默认态没有可见变化:T4 的原因只挂在按钮 `title` 上,T8 / N12 只在实体模式出现);新增 `tests/kiosk-tsumego-wrong.fourup.spec.ts` 取错题页(对屏 13 参考图)与做题屏错题模式(对屏 14 参考图),输出到本赛道 `visual/`;**Fan 视觉确认**后才算过。T9 / T4 / T8 / N12 / N9 视觉增量很小:T8 / N12 在右栏里,只能上板看;N9 错误态走现有 `.empty` 块 |
 | 上板(RK3562,board 模式,token=null) | T9、N9、N10、T8、N12、T4 | ① 重启 katrain 服务,实体开关关着时直接进题且开关灰、提示去确认标定,开关开着时进标定台(开关按盒存,两种状态各走一次);② 断网进训练营看「连不上云端题库」,恢复后重试;③ 甲做题退出、乙登录看不到甲的「接着上次」;④ 实体做题:摆题时引导里没有「开始答题」;故意答错,右栏写「拿除 Q16」这类坐标、且与蓝灯位置一致;「退一手」灰且原因是新句;⑤ 顺带走一次 kiosk-physical-tsumego PRD §6 全项,留记录(T10)。**板上一次只跑一家的测试**(RK3562 2G 内存) |

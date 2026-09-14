@@ -71,7 +71,9 @@ vi.mock('../../hooks/useResearchSession', () => ({
     toggleOwnership: vi.fn(),
   }),
 }));
-vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: 'tok' }) }));
+// 可以逐条改 token:盒上(严格盒端 SSO)token 恒为 null 而人是登录的。
+const { auth } = vi.hoisted(() => ({ auth: { token: 'tok' as string | null } }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
 const { get } = vi.hoisted(() => ({
   get: vi.fn().mockResolvedValue({ id: 'g1', sgf_content: '(;GM[1]FF[4])' }),
 }));
@@ -79,7 +81,7 @@ vi.mock('../../api/userGamesApi', () => ({ UserGamesAPI: { get, list: vi.fn() } 
 
 import ResearchPage from './ResearchPage';
 
-beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
+beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); auth.token = 'tok'; });
 
 const renderAt = (path: string) =>
   render(<ThemeProvider theme={kioskTheme}><MemoryRouter initialEntries={[path]}><ResearchPage /></MemoryRouter></ThemeProvider>);
@@ -95,6 +97,18 @@ describe('ResearchPage local-play review entry', () => {
   it('loads a recorded game by ?user_game_id', async () => {
     renderAt('/kiosk/research?user_game_id=g1');
     await waitFor(() => expect(get).toHaveBeenCalledWith('tok', 'g1'));
+    await waitFor(() => expect(loadFromSGF).toHaveBeenCalledWith('(;GM[1]FF[4])'));
+  });
+
+  /**
+   * 回归钉子(P13):上一条把 token mock 成 'tok',**正好避开了盒子上那条路**。
+   * 严格盒端 SSO 里 token 恒为 null;原来的 `!token` 早退让盒上从报告点「去研究」落到空棋盘,
+   * 而 `GET /api/v1/user-games/{id}` 本来就认 cookie。
+   */
+  it('盒上 token 恒为 null 时照样按 ?user_game_id 读谱', async () => {
+    auth.token = null;
+    renderAt('/kiosk/research?user_game_id=g1');
+    await waitFor(() => expect(get).toHaveBeenCalledWith(null, 'g1'));
     await waitFor(() => expect(loadFromSGF).toHaveBeenCalledWith('(;GM[1]FF[4])'));
   });
 });

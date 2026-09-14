@@ -116,7 +116,10 @@ export default function ReportsPage() {
    * 老服务端不带这一格 ⇒ `null` = 不知道,而**不知道要退到最保守的那句话**。
    */
   const [authority, setAuthority] = useState<DataAuthority | null>(null);
-  const [gamesLoading, setGamesLoading] = useState(Boolean(token));
+  // 初值判 `isAuthenticated` 不判 `token`:盒上 token 恒为 null,判 token 时首帧 gamesLoading=false、
+  // games=[],列表回来之前会先闪一帧「还没有下过的棋」(2026-09-14 调研 N7)。
+  // 不配单测:jsdom 的 render 包在 act 里,effect 在断言前已经跑完,「effect 之前那一帧」测不到。
+  const [gamesLoading, setGamesLoading] = useState(isAuthenticated);
   const [gamesError, setGamesError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const listRequestGenerationRef = useRef(0);

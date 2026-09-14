@@ -20,6 +20,9 @@ interface AuthContextType {
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
+    /** 这台服务器有没有手机功能（验证码登录 / 绑号 / 改密码）。
+     *  **取不到一律 false**（fail-closed）—— 见下面 `phoneLoginEnabled` 的 state。 */
+    phoneLoginEnabled: boolean;
     login: (username: string, password: string) => Promise<void>;
     loginByPhone: (challengeId: string, code: string) => Promise<void>;
     refreshUser: () => Promise<void>;
@@ -46,6 +49,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // OR the shared box-SSO cookie) flashes the login page on every fresh page
     // load — e.g. re-entering 围棋, which is a full :8080→:8081 navigation.
     const [isLoading, setIsLoading] = useState(true);
+
+    /* 手机功能的总开关，由服务端的 `GET /api/v1/auth/features` 说了算
+       （后端那一侧与四个手机端点的放行判断是**同一个函数**，见
+       `endpoints/auth.py::_phone_endpoint_block`，所以"画得出入口"⟺"点得动"）。
+
+       **初值必须是 false，出错也必须留在 false。** 两个理由：
+         * 加载中的那一帧不能先把入口画出来再撤掉（闪烁）；
+         * 请求失败时默认开着，等于给用户一个点下去必然报错的按钮 ——
+           那正是这次要避免的东西。宁可少一个入口。
+       为它单开一个 effect 而不是并进下面那个 /me 探针：两件事的失败模式不该互相牵连
+       （/me 401 是常态，不该顺带把功能开关也判成未知）。 */
+    const [phoneLoginEnabled, setPhoneLoginEnabled] = useState(false);
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch('/api/v1/auth/features');
+                if (cancelled || !res.ok) return;
+                const data = await res.json();
+                // `=== true` 而不是取真值：后端漏发这一格时 undefined 要当关着，
+                // 而不是当成"有个对象就算开着"。
+                if (!cancelled) setPhoneLoginEnabled(data?.phone_login === true);
+            } catch {
+                /* fail-closed：保持 false。 */
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     useEffect(() => {
         let cancelled = false;
@@ -199,7 +230,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }, [token]);
 
     return (
-        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, loginByPhone, refreshUser, logout, token }}>
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, phoneLoginEnabled, login, loginByPhone, refreshUser, logout, token }}>
             {children}
         </AuthContext.Provider>
     );

@@ -8,7 +8,7 @@ import { renderLoginModal } from './renderLoginModal';
 let authFixture: Record<string, unknown>;
 function resetAuth() {
   authFixture = {
-    user: null, isAuthenticated: false, isLoading: false, token: null,
+    user: null, isAuthenticated: false, isLoading: false, token: null, phoneLoginEnabled: true,
     login: vi.fn(), loginByPhone: vi.fn(), refreshUser: vi.fn(), logout: vi.fn(),
   };
 }

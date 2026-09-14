@@ -128,8 +128,13 @@ def sms_outbox(monkeypatch):
 
 
 @pytest.fixture
-def phone_app(tmp_path, monkeypatch, sms_outbox):
-    """server 模式 + 独立 SQLite。照 tests/web_ui/test_billing_api.py:22 那个形状。
+def phone_app_unflagged(tmp_path, monkeypatch, sms_outbox):
+    """server 模式 + 独立 SQLite，**不碰 `PHONE_LOGIN_ENABLED`**。
+
+    要测「功能关着」的用例用这个（见 tests/web_ui/test_phone_feature_flag.py）——
+    它拿到的是这个进程里真实的默认值，所以默认值哪天被改掉，那组用例会红。
+
+    照 tests/web_ui/test_billing_api.py:22 那个形状。
 
     用 httpx.ASGITransport 驱动（见 phone_client）⇒ **不跑 lifespan**，
     所以 `_lifespan_server` 不会覆盖 app.state.user_repo，也不会有
@@ -167,6 +172,23 @@ def phone_app(tmp_path, monkeypatch, sms_outbox):
     app.state.phone_test_session_factory = SessionLocal
     yield app
     engine.dispose()
+
+
+@pytest.fixture
+def phone_app(phone_app_unflagged, monkeypatch):
+    """上面那个 + **把手机功能开关打开**。
+
+    `PHONE_LOGIN_ENABLED` 默认是 False（手机功能要等短信签名报备），于是既有的手机
+    用例走的会是新加的那条 404 分支。正确做法是让它们继续测「功能开着」那条路，
+    **而不是**把断言改成期望 404 —— 它们测的是手机功能本身，不是开关。
+
+    **不要改成 autouse**：那会让「关着」这条路在整个测试进程里无法被测到，
+    而"关着"正是两台线上机器今天的状态。
+    """
+    from katrain.web.core.config import settings
+
+    monkeypatch.setattr(settings, "PHONE_LOGIN_ENABLED", True)
+    return phone_app_unflagged
 
 
 @pytest.fixture

@@ -43,6 +43,10 @@ def app(tmp_path, monkeypatch, sms):
     monkeypatch.setattr(settings, "DATABASE_URL", f"sqlite:///{tmp_path / 'set_password.db'}")
     monkeypatch.setattr(settings, "KATRAIN_MODE", "server")
     monkeypatch.setattr(settings, "KATRAIN_BOX_SSO", False)
+    # 手机功能总开关默认关（`PHONE_LOGIN_ENABLED`，等阿里云短信签名报备）。
+    # 本文件测的是手机功能**本身**，不是那个开关 ⇒ 在这里打开，继续测「功能开着」那条路。
+    # 「关着」那条路由 tests/web_ui/test_phone_feature_flag.py 单独守着。
+    monkeypatch.setattr(settings, "PHONE_LOGIN_ENABLED", True)
 
     engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})
     Base.metadata.create_all(bind=engine)

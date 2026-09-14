@@ -253,7 +253,7 @@ def test_chat_on_the_box_is_not_phone_gated(app, client, monkeypatch):
     1. 盒上的用户是 `_get_or_create_shadow_user`（endpoints/auth.py:265）建的影子用户，
        只有 username + `SHADOW_USER_NO_LOCAL_AUTH`，**根本没写手机号列**
        ⇒ `phone_bound` 在盒上结构性恒为 False；
-    2. 四个手机端点被 `_guard_phone_endpoint`（endpoints/auth.py:44）在盒上一律
+    2. 四个手机端点被 `_guard_phone_endpoint`（endpoints/auth.py:76）在盒上一律
        403/503 ⇒ **盒上没有任何绑定入口**。
 
     ⇒ 在盒上照读这个布尔 = 每台 kiosk 上的每个用户被永久禁言、且无法自救，

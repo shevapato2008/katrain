@@ -343,5 +343,9 @@ def test_sms_gate_actually_raises_when_the_lifespan_runs(monkeypatch):
 
     monkeypatch.setattr(config.settings, "SMS_PROVIDER", "")
     monkeypatch.setattr(config.settings, "KATRAIN_MODE", "server")
+    # 闸只在手机功能**开着**时要求短信提供方（功能关着的服务器不发短信）。
+    # 这一条测的是闸会抛，所以要把功能打开；关着那一侧由
+    # tests/web_ui/test_phone_feature_flag.py::test_a_disabled_server_starts_with_an_empty_sms_provider 守。
+    monkeypatch.setattr(config.settings, "PHONE_LOGIN_ENABLED", True)
     with pytest.raises(RuntimeError, match="KATRAIN_SMS_PROVIDER"):
         asyncio.run(server._lifespan_server(FastAPI(), logging.getLogger("test-sms-gate")))

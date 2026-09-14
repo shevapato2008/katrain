@@ -41,22 +41,58 @@ SSO_LOOPBACK_HOST = "127.0.0.1"
 VALID_PURPOSES = {"login", "bind", "set_password"}
 
 
-def _guard_phone_endpoint(request: Request) -> None:
-    """四个手机端点共用的盒子闸（spec §2.6）。
+def _phone_endpoint_block(request: Request) -> Optional[tuple[int, dict]]:
+    """四个手机端点会不会被拒；不拒返回 None。**唯一真源。**
 
-    strict 盒子：云端账号体系的事，盒子上没有入口 ⇒ 403，与 /login /register 同形。
-    board 非 strict：**不转发**。remote_client 是逐方法手写的，加转发方法等于给盒子
-    多开几个故障面；而盒子是共用触摸设备，在上面输手机号收码是最差的绑定场景。
+    `_guard_phone_endpoint`（拒的那一侧）与 `GET /auth/features`（告诉前端画不画入口的
+    那一侧）都从这里取答案。两处各判一套时，"入口画出来了但点下去必报错"或者反过来
+    "功能明明开着却没有入口"是迟早的事 —— 而那两种错在前端看起来都不像 bug。
+
+    三种拒绝是**三个不同的事实**，不合并：
+
+    * **404 `phone_login_disabled`**：这台服务器没有这个功能（总开关关着）。
+      404 而不是 403：功能关着时这几个路由在语义上根本不存在，403 会被读成
+      "有这个功能但你没权限"，那是另一件事。
+    * **403 `phone_disabled_on_device`**：strict 盒子上没有入口（云端账号体系的事，
+      与 /login /register 同形）。
+    * **503 `need_online_phone`**：board 非 strict，**不转发**。remote_client 是逐方法
+      手写的，加转发方法等于给盒子多开几个故障面；而盒子是共用触摸设备，在上面输手机号
+      收码是最差的绑定场景。
+
+    顺序是「这台服务器有没有」在前、「这台设备能不能」在后：总开关关着的盒子应该说
+    "没这功能"，而不是"去官网做"——官网上也没有。
     """
+    if not settings.PHONE_LOGIN_ENABLED:
+        return 404, {"code": "phone_login_disabled", "message": "本服务器未启用手机号相关功能"}
     if strict_box_sso_enabled():
-        raise HTTPException(status_code=403, detail={"code": "phone_disabled_on_device",
-                                       "message": "请在 modelstella.com 上完成手机号相关操作"})
+        return 403, {"code": "phone_disabled_on_device",
+                     "message": "请在 modelstella.com 上完成手机号相关操作"}
     if getattr(request.app.state, "remote_client", None) is not None:
-        raise HTTPException(
-            status_code=503,
-            detail={"code": "need_online_phone",
-                    "message": "请在 modelstella.com 登录后绑定手机号"},
-        )
+        return 503, {"code": "need_online_phone",
+                     "message": "请在 modelstella.com 登录后绑定手机号"}
+    return None
+
+
+def _guard_phone_endpoint(request: Request) -> None:
+    """四个手机端点共用的闸（spec §2.6）。判据全在 `_phone_endpoint_block`。"""
+    blocked = _phone_endpoint_block(request)
+    if blocked is not None:
+        status_code, detail = blocked
+        raise HTTPException(status_code=status_code, detail=detail)
+
+
+@router.get("/features")
+async def auth_features(request: Request):
+    """前端问"这台服务器有没有手机功能"。**公开、不鉴权、不被盒子闸挡。**
+
+    登录框里的"验证码登录"要在**登录之前**就决定画不画 ⇒ 不能要 token。
+    盒子也要问得出"这里没有手机功能" ⇒ 不能被 strict 闸挡在外面（strict 盒子上
+    这个布尔本来就是 false，因为 `_phone_endpoint_block` 在那里返回 403）。
+
+    返回的是**这台服务器对这个请求的真实能力**，不是配置项的转述：同一个
+    `_phone_endpoint_block` 说了算 ⇒ 前端画得出入口 ⟺ 那四个端点放得行。
+    """
+    return {"phone_login": _phone_endpoint_block(request) is None}
 
 
 @router.post("/phone/send-code")

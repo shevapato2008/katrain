@@ -40,7 +40,7 @@ interface GalaxySidebarProps {
 const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOverlay: () => void }) => {
   const { requestNavigation } = useGameNavigation();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, phoneLoginEnabled } = useAuth();
   const { language, setLanguage, languages } = useSettings();
   const { t } = useTranslation();
   const items = useMemo(() => getGalaxyNavigation(t), [t]);
@@ -113,8 +113,11 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
               <ListItemText primary={lang.name} />
             </MenuItem>
           ))}
-          {user && <Divider sx={{ my: 0.5 }} />}
-          {user && !user.phone_bound && (
+          {/* 账号那几项整组挂在 `phoneLoginEnabled` 上：绑号与改密码都要验证码，
+              这台服务器没有手机功能时它们点下去只会撞上 404（`_guard_phone_endpoint`）。
+              连分隔线一起收掉，否则菜单底部会剩一条指向空处的线。 */}
+          {user && phoneLoginEnabled && <Divider sx={{ my: 0.5 }} />}
+          {user && phoneLoginEnabled && !user.phone_bound && (
             <MenuItem
               onClick={() => { setBindOpen(true); setSettingsAnchorEl(null); }}
               sx={{ minWidth: 160, display: 'flex', gap: 1 }}
@@ -123,7 +126,7 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
               <ListItemText primary={t('auth:bind_phone', '绑定手机号')} />
             </MenuItem>
           )}
-          {user && (
+          {user && phoneLoginEnabled && (
             <MenuItem
               onClick={() => { setSetPwOpen(true); setSettingsAnchorEl(null); }}
               sx={{ minWidth: 160, display: 'flex', gap: 1 }}
@@ -134,7 +137,7 @@ const SidebarContents = ({ overlay, closeOverlay }: { overlay: boolean; closeOve
           )}
           {/* 已绑号只报状态，不给「换绑 / 解绑」—— 本轮没做那条路径，
               而 Task 11 的额度短路（不给未绑号建 allowance=0 的桶）正是以「不存在解绑」为前提的。 */}
-          {user && user.phone_bound && (
+          {user && phoneLoginEnabled && user.phone_bound && (
             <Box sx={{ px: 2, py: 1 }}>
               <Typography variant="caption" color="text.secondary">
                 {t('auth:phone_bound_already', '手机号已绑定')}

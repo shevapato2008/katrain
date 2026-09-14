@@ -17,7 +17,7 @@ import BindPhoneDialog from '../auth/BindPhoneDialog';
  *  而这一行下面紧跟的列表里，每张卡都带「普通/深度」两个按钮 —— 不写明就是在替深度报免费。 */
 const FreeQuotaNotice = () => {
   useTranslation();
-  const { user } = useAuth();
+  const { user, phoneLoginEnabled } = useAuth();
   const [quota, setQuota] = useState<BillingQuota | null>(null);
   const [failed, setFailed] = useState(false);
   const [bindOpen, setBindOpen] = useState(false);
@@ -49,6 +49,13 @@ const FreeQuotaNotice = () => {
 
   const { used, allowance, blocked_reason: blocked } = quota.free_weekly;
   const remaining = Math.max(0, allowance - used);
+
+  /* 这台服务器没有手机功能时，`phone_required` 这条提示是个**死胡同**：
+     绑号的门在这台机器上不存在（四个手机端点一律 404），告诉用户"绑了就有免费额度"
+     等于指着一扇没有的门。整条提示收掉，不退回下面那两句 ——
+     `allowance` 此时是 0，"本周已用完"会把"没资格"说成"额度耗尽"，
+     用户会去等下周（spec §3.1 状态诚实）。 */
+  if (blocked === 'phone_required' && !phoneLoginEnabled) return null;
 
   return (
     <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>

@@ -26,9 +26,11 @@ vi.mock('./GalaxySidebar', () => ({ default: () => <aside>SIDEBAR</aside> }));
 let sidebarMode = 'mobile';
 vi.mock('./useGalaxySidebar', () => ({ useGalaxySidebar: () => ({ mode: sidebarMode }) }));
 
-const asUser = (phoneBound: boolean) => vi.mocked(useAuth).mockReturnValue({
+/* `phoneLoginEnabled` 默认 true：既有这几条测的是账号入口本身，走的是「这台服务器
+   有手机功能」那条路。关着那条由本文件末尾那条单独守。 */
+const asUser = (phoneBound: boolean, phoneLoginEnabled = true) => vi.mocked(useAuth).mockReturnValue({
   user: { id: 1, username: 'u', rank: '5k', credits: 0, phone_bound: phoneBound },
-  logout: vi.fn(), refreshUser: vi.fn(),
+  logout: vi.fn(), refreshUser: vi.fn(), phoneLoginEnabled,
 } as never);
 
 const renderNav = () => render(<MemoryRouter><GalaxyBottomNav /></MemoryRouter>);
@@ -70,8 +72,20 @@ describe('GalaxyBottomNav 账号入口（移动档唯一的那一处）', () => 
     expect(screen.queryByRole('menuitem', { name: '绑定手机号' })).toBeNull();
   });
 
+  it('这台服务器没有手机功能：「更多」里两项都不画', () => {
+    // 与侧栏同一条口径（GalaxySidebar.bindPhone.test.tsx 里那条）。
+    asUser(false, false);
+    renderNav();
+    openMore();
+    expect(screen.queryByRole('menuitem', { name: '绑定手机号' })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: '修改密码' })).toBeNull();
+    // 导航那几项还在 —— 证明菜单确实开着。
+    expect(screen.getByRole('menuitem', { name: 'Live' })).toBeInTheDocument();
+  });
+
   it('未登录：两项都没有 —— 没有账号就没有可绑的对象、也没有可改的密码', () => {
-    vi.mocked(useAuth).mockReturnValue({ user: null, logout: vi.fn(), refreshUser: vi.fn() } as never);
+    vi.mocked(useAuth).mockReturnValue(
+      { user: null, logout: vi.fn(), refreshUser: vi.fn(), phoneLoginEnabled: true } as never);
     renderNav();
     openMore();
     expect(screen.queryByRole('menuitem', { name: '绑定手机号' })).toBeNull();

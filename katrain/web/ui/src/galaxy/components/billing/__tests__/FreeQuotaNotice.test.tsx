@@ -6,9 +6,11 @@ import { API } from '../../../../api';
 import FreeQuotaNotice from '../FreeQuotaNotice';
 
 let authFixture: { user: { id: number; username: string; phone_bound: boolean } | null;
-                   refreshUser: ReturnType<typeof vi.fn> };
-function setBound(bound: boolean) {
-  authFixture = { user: { id: 1, username: 'u', phone_bound: bound }, refreshUser: vi.fn() };
+                   refreshUser: ReturnType<typeof vi.fn>; phoneLoginEnabled: boolean };
+/** `phoneLoginEnabled` 默认给 true：既有这几条测的是免费额度文案本身，走的是
+ *  「这台服务器有手机功能」那条路。关着那条另有一条用例（文件末尾）。 */
+function setBound(bound: boolean, phoneLoginEnabled = true) {
+  authFixture = { user: { id: 1, username: 'u', phone_bound: bound }, refreshUser: vi.fn(), phoneLoginEnabled };
 }
 setBound(false);
 vi.mock('../../../../context/AuthContext', () => ({ useAuth: () => authFixture }));
@@ -63,6 +65,22 @@ describe('FreeQuotaNotice', () => {
     vi.spyOn(API, 'getBillingQuota').mockRejectedValue(new Error('boom'));
     renderNotice();
     await waitFor(() => expect(screen.getByText(/额度信息暂时取不到/)).toBeInTheDocument());
+  });
+
+  it('这台服务器没有手机功能：phone_required 这条提示整条不画', async () => {
+    /* 关着时绑号的门在这台机器上不存在（四个手机端点一律 404）⇒「绑了就有免费额度」
+       是指着一扇没有的门。也**不能**退回下面那两句：allowance=0 会被写成
+       「本周已用完」，把"没资格"说成"额度耗尽"，用户会去等下周（spec §3.1 状态诚实）。 */
+    setBound(false, false);
+    vi.spyOn(API, 'getBillingQuota').mockResolvedValue(
+      quota({ used: 0, allowance: 0, blocked_reason: 'phone_required' }));
+    const { container } = renderNotice();
+    await waitFor(() => expect(API.getBillingQuota).toHaveBeenCalled());
+    expect(screen.queryByText(/绑定手机号后可享每周免费普通复盘/)).toBeNull();
+    expect(screen.queryByRole('button', { name: '绑定手机号' })).toBeNull();
+    expect(screen.queryByText(/已用完/)).toBeNull();
+    expect(screen.queryByText(/本周剩余/)).toBeNull();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('绑定之后当场重新取数、文案翻面 —— 这就是 Task 18 验收第 4 项', async () => {

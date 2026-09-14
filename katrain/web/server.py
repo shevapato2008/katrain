@@ -177,8 +177,11 @@ async def _lifespan_server(app: FastAPI, log):
     # 同一条口径的第二道闸：生产不许在"没有短信通道"或"console"的状态下起来。
     # console 在生产静默生效的表现是 send-code 一路 200 而用户永远收不到码 ——
     # 坏了和好着在用户那里长得一样。必须和 SECRET_KEY 闸一样挡在任何 DB 动作之前。
+    # 第四个参数不是可选的：手机功能关着的服务器不需要短信通道，漏传它 = 两台线上机器
+    # （`KATRAIN_SMS_PROVIDER` 都是空的）当场拒绝启动。
     assert_sms_provider_is_configured(
-        settings.KATRAIN_MODE, settings.SMS_PROVIDER, settings.SMS_ALLOW_CONSOLE
+        settings.KATRAIN_MODE, settings.SMS_PROVIDER, settings.SMS_ALLOW_CONSOLE,
+        settings.PHONE_LOGIN_ENABLED,
     )
 
     from katrain.web.core.auth import SQLAlchemyUserRepository, get_password_hash
@@ -2838,7 +2841,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     # 盒上用户由 `_get_or_create_shadow_user`(endpoints/auth.py:265)建 ——
                     # 只有 username + SHADOW_USER_NO_LOCAL_AUTH,**不写手机号列**
                     # ⇒ `phone_bound` 在盒上结构性恒为 False;而四个手机端点被
-                    # `_guard_phone_endpoint`(endpoints/auth.py:44)在盒上一律 403/503
+                    # `_guard_phone_endpoint`(endpoints/auth.py:76)在盒上一律 403/503
                     # ⇒ 盒上没有任何绑定入口。两条合起来 = 每台 kiosk 上的每个用户被**永久
                     # 禁言且无法自救**,包括在云端明明已经绑了号的人(绑没绑盒子本地不知道)。
                     # 而盒上这条 WS 是本机 LAN 广播(`broadcast_to_session` 只发给连着这台盒子

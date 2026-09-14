@@ -28,7 +28,7 @@ type MoreEntry =
 
 const GalaxyBottomNav = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, phoneLoginEnabled } = useAuth();
   const { requestNavigation } = useGameNavigation();
   const { pathname } = useLocation();
   const items = useMemo(() => getGalaxyNavigation(t), [t]);
@@ -44,7 +44,10 @@ const GalaxyBottomNav = () => {
      侧栏不挂（MainLayout.tsx:21）⇒ 拿手机打开的人**绑不了号也改不了密码**，而验证码
      登录本身就是个手机功能。这里是侧栏那个「设置」菜单在移动档的对应物，逐条照搬它的
      显示条件：没账号就没有可绑的对象；已绑号本轮不做换绑/解绑（同 :135-136 的口径）。 */
-  const accountEntries: MoreEntry[] = [
+  /* 整组挂在 `phoneLoginEnabled` 上 —— 与侧栏那个「设置」菜单同一条口径
+     （GalaxySidebar.tsx 的 `user && phoneLoginEnabled && …`）：绑号与改密码都要验证码，
+     这台服务器没有手机功能时它们点下去只会撞上 404。 */
+  const accountEntries: MoreEntry[] = !phoneLoginEnabled ? [] : [
     ...(user && !user.phone_bound
       ? [{
         kind: 'dialog' as const,

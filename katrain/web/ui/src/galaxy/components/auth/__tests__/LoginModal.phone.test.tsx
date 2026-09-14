@@ -12,6 +12,7 @@ let authFixture: {
   isAuthenticated: boolean;
   isLoading: boolean;
   token: null;
+  phoneLoginEnabled: boolean;
   login: ReturnType<typeof vi.fn>;
   loginByPhone: ReturnType<typeof vi.fn>;
   refreshUser: ReturnType<typeof vi.fn>;
@@ -20,7 +21,7 @@ let authFixture: {
 
 function resetAuth() {
   authFixture = {
-    user: null, isAuthenticated: false, isLoading: false, token: null,
+    user: null, isAuthenticated: false, isLoading: false, token: null, phoneLoginEnabled: true,
     login: vi.fn().mockResolvedValue(undefined),
     loginByPhone: vi.fn().mockResolvedValue(undefined),
     refreshUser: vi.fn().mockResolvedValue(undefined),
@@ -141,6 +142,17 @@ describe('LoginModal 手机验证码模式', () => {
     requestCode('9012345678');
     // 断言落在「发出去的号」上，不落在「下拉里显示什么」上 —— 后者选中了也可能没接进去。
     await waitFor(() => expect(send).toHaveBeenCalledWith('+819012345678', 'login'));
+  });
+
+  it('这台服务器没有手机功能：登录框里「验证码登录」与「忘记密码？」都不画', () => {
+    /* 「忘记密码？」也在内 —— 它走的就是验证码登录那条路（下一条用例钉着），
+       不是另一条独立的重置流程。画出来点下去只会撞上 404。
+       注册那一项与手机无关，必须还在：否则这条断言证明的是「整个链接区没渲染」。 */
+    authFixture.phoneLoginEnabled = false;
+    renderLoginModal();
+    expect(screen.queryByText('验证码登录')).toBeNull();
+    expect(screen.queryByText('忘记密码？')).toBeNull();
+    expect(screen.getByText('还没有账号？注册')).toBeInTheDocument();
   });
 
   it('「忘记密码？」切到验证码登录，不跳独立重置流程', () => {

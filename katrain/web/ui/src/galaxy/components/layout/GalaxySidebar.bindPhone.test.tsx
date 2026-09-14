@@ -48,7 +48,7 @@ describe('GalaxySidebar 绑定手机入口', () => {
   it('已登录未绑号：设置菜单里有「绑定手机号」，点开出绑定对话框', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 1, username: 'u', rank: '5k', credits: 0, phone_bound: false },
-      logout: vi.fn(), refreshUser: vi.fn(),
+      logout: vi.fn(), refreshUser: vi.fn(), phoneLoginEnabled: true,
     } as never);
     renderSidebar();
     openSettings();
@@ -59,7 +59,7 @@ describe('GalaxySidebar 绑定手机入口', () => {
   it('已绑号：只报状态、不再给绑定入口（本轮不做换绑/解绑）', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 1, username: 'u', rank: '5k', credits: 0, phone_bound: true },
-      logout: vi.fn(), refreshUser: vi.fn(),
+      logout: vi.fn(), refreshUser: vi.fn(), phoneLoginEnabled: true,
     } as never);
     renderSidebar();
     openSettings();
@@ -67,8 +67,26 @@ describe('GalaxySidebar 绑定手机入口', () => {
     expect(screen.queryByRole('menuitem', { name: '绑定手机号' })).toBeNull();
   });
 
+  it('这台服务器没有手机功能：绑号与改密码两项都不画 —— 点下去只会撞上 404', () => {
+    /* `phoneLoginEnabled` 为 false 时四个手机端点一律 404（后端
+       `_phone_endpoint_block`）。画出来的入口点下去必然报错，所以整组收掉。
+       两项都断言：改密码那项的显示条件是 `user &&`（不看 phone_bound），
+       只测绑号那一项的话，漏掉改密码不会红。 */
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 1, username: 'u', rank: '5k', credits: 0, phone_bound: false },
+      logout: vi.fn(), refreshUser: vi.fn(), phoneLoginEnabled: false,
+    } as never);
+    renderSidebar();
+    openSettings();
+    expect(screen.queryByRole('menuitem', { name: '绑定手机号' })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: '修改密码' })).toBeNull();
+    // 菜单确实是开着的 —— 否则上面两条是「菜单没开」的假绿。
+    expect(screen.getByRole('menuitem', { name: 'English' })).toBeInTheDocument();
+  });
+
   it('未登录：设置菜单里根本没有这一项 —— 没有账号就没有可绑的对象', () => {
-    vi.mocked(useAuth).mockReturnValue({ user: null, logout: vi.fn(), refreshUser: vi.fn() } as never);
+    vi.mocked(useAuth).mockReturnValue(
+      { user: null, logout: vi.fn(), refreshUser: vi.fn(), phoneLoginEnabled: true } as never);
     renderSidebar();
     openSettings();
     expect(screen.queryByRole('menuitem', { name: '绑定手机号' })).toBeNull();

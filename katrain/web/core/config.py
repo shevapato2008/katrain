@@ -41,7 +41,9 @@ def assert_secret_key_is_safe(mode: str, secret_key: str) -> None:
 KNOWN_SMS_PROVIDERS = ("console", "aliyun")
 
 
-def assert_sms_provider_is_configured(mode: str, provider: str, allow_console: bool = False) -> None:
+def assert_sms_provider_is_configured(
+    mode: str, provider: str, allow_console: bool = False, phone_login_enabled: bool = True
+) -> None:
     """服务端模式下必须显式选一个**真**提供方。
 
     为什么不让 console 在生产兜底：那会让 send-code 一路返回 200 而用户
@@ -51,8 +53,20 @@ def assert_sms_provider_is_configured(mode: str, provider: str, allow_console: b
     为什么未知名也拒：`KATRAIN_SMS_PROVIDER=aliyu` 这种手滑今天能正常启动，
     直到第一个用户点"发送验证码"才在 get_provider() 里炸成 502。
     启动期判得了的事，不要留到请求期。
+
+    `phone_login_enabled=False` 时整条闸不适用（见下面那条早退）。**功能开着时，
+    上面那三条判断一条都不许放松** —— 它们防的是"接口一路返回成功而用户永远收不到码"。
     """
     if mode != "server":
+        return
+    # 功能关着的服务端**不需要**短信提供方 —— 四个手机端点在这种服务器上一律 404
+    # （`_guard_phone_endpoint`），没有任何一条路会走到 `sms.get_provider()`。
+    # 这一条是这次解掉的第二个堵点：两台线上机器今天 `KATRAIN_SMS_PROVIDER` 都是空的，
+    # 不早退就是**拒绝启动**，于是一个和短信零关系的安全修复要陪着短信一起等报备。
+    #
+    # **默认值是 True（"当作开着"）而不是 False**：闸的默认必须是更严那一侧。
+    # 漏传参数的调用者会拿到今天的行为（照旧要求配提供方），不会拿到一个静默放行的闸。
+    if not phone_login_enabled:
         return
     name = (provider or "").strip()
     if not name:
@@ -160,6 +174,17 @@ class Settings(BaseModel):
     REPORT_RETRY_GRACE_SEC: int = 3600
 
     # --- 短信 -----------------------------------------------------------
+    # 手机功能（验证码登录 / 绑号 / 改密码）的总开关。**默认关。**
+    # 关着时：四个手机端点一律 404、`/auth/features` 报 false、启动闸不要求短信提供方。
+    # 开着时：上面三件事一件都不变，闸的三条判断一条不松。
+    # 打开它之前必须先有真短信通道（阿里云签名报备）—— 见 `assert_sms_provider_is_configured`。
+    #
+    # ⚠️ 下面 `__init__` 里那句 `data.setdefault(..., os.getenv(...))` **一定会写这个键**
+    # （`Settings()` 的 data 是空字典）⇒ 真正在生产生效的"默认关"是那一行的
+    # `os.getenv("KATRAIN_PHONE_LOGIN_ENABLED", "")`，不是这里的 `= False`。
+    # 本行的字面量只在有人 `Settings(**{...})` 且显式漏掉这个键时才看得见。
+    # 本文件每一个有 env 装配的字段都是这个形状（`SMS_ALLOW_CONSOLE` 同理）。
+    PHONE_LOGIN_ENABLED: bool = False
     SMS_PROVIDER: str = ""                 # console | aliyun；服务端为空即拒绝启动
     SMS_ACCESS_KEY_ID: str = ""
     SMS_ACCESS_KEY_SECRET: str = ""
@@ -271,6 +296,10 @@ class Settings(BaseModel):
         data.setdefault("TRUSTED_PROXY_HOPS", int(os.getenv("KATRAIN_TRUSTED_PROXY_HOPS", 1)))
 
         # 短信。字段声明 + 这里的 env 装配是两件事，缺一个就"env 设了不生效"。
+        # `KATRAIN_PHONE_LOGIN_ENABLED` 是手机功能的总开关，**不设就是关**。
+        data.setdefault(
+            "PHONE_LOGIN_ENABLED", os.getenv("KATRAIN_PHONE_LOGIN_ENABLED", "").lower() in ("1", "true", "yes")
+        )
         data.setdefault("SMS_PROVIDER", os.getenv("KATRAIN_SMS_PROVIDER", ""))
         data.setdefault(
             "SMS_ALLOW_CONSOLE", os.getenv("KATRAIN_SMS_ALLOW_CONSOLE", "").lower() in ("1", "true", "yes")

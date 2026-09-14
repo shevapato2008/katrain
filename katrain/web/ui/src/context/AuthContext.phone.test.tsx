@@ -113,6 +113,68 @@ describe('AuthContext 手机验证码登录', () => {
     expect(result.current.user?.username).toBe('u');
   });
 
+  /* --- 手机功能开关（`GET /auth/features`）---------------------------------
+     这四条守的是同一件事的两面：**服务端说有才有，其余一切情况都当没有。**
+     开关是 false 时那四个手机端点一律 404，所以"多画一个入口"= 给用户一个点了必然
+     报错的按钮。这几条用 `it` 不用 `nonStrictIt`：这个探针在严格盒端也照跑
+     （盒子也要问得出"这里没有手机功能"）。 */
+
+  const featuresReturning = (body: unknown, ok = true) =>
+    mockFetch.mockImplementation((input: RequestInfo | URL) => {
+      if (String(input).includes('/auth/features')) {
+        return ok ? Promise.resolve({ ok: true, status: 200, json: async () => body } as Response) : notOk(500);
+      }
+      return notOk();
+    });
+
+  it('服务端说 true ⇒ 入口可以画', async () => {
+    featuresReturning({ phone_login: true });
+    const { result } = await mountAuth();
+    await waitFor(() => expect(result.current.phoneLoginEnabled).toBe(true));
+  });
+
+  it('服务端说 false ⇒ 关着', async () => {
+    featuresReturning({ phone_login: false });
+    const { result } = await mountAuth();
+    expect(result.current.phoneLoginEnabled).toBe(false);
+  });
+
+  it('请求失败 ⇒ 当关着，不是当开着（fail-closed）', async () => {
+    // 默认开着的话，服务端一抖动就会冒出一个点下去必然报错的按钮。
+    featuresReturning(null, false);
+    const { result } = await mountAuth();
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.phoneLoginEnabled).toBe(false);
+  });
+
+  it('fetch 直接抛（断网）⇒ 当关着', async () => {
+    mockFetch.mockImplementation((input: RequestInfo | URL) => {
+      if (String(input).includes('/auth/features')) return Promise.reject(new Error('offline'));
+      return notOk();
+    });
+    const { result } = await mountAuth();
+    expect(result.current.phoneLoginEnabled).toBe(false);
+  });
+
+  it('后端漏发 phone_login 这一格 ⇒ 当关着，不是"有个对象就算开着"', async () => {
+    featuresReturning({});
+    const { result } = await mountAuth();
+    expect(result.current.phoneLoginEnabled).toBe(false);
+  });
+
+  it('初值就是 false —— 加载中的那一帧不许先把入口画出来再撤掉', async () => {
+    /* 探针挂着不回（真实的慢网络）。这一帧 `phoneLoginEnabled` 必须已经是 false，
+       否则用户会看见入口闪一下再消失。 */
+    mockFetch.mockImplementation((input: RequestInfo | URL) => {
+      if (String(input).includes('/auth/features')) return new Promise<Response>(() => {});
+      return notOk();
+    });
+    const hook = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    expect(hook.result.current.phoneLoginEnabled).toBe(false);
+    await waitFor(() => expect(hook.result.current.isLoading).toBe(false));
+    expect(hook.result.current.phoneLoginEnabled).toBe(false);
+  });
+
   strictKioskIt('严格盒端不允许直接登录 —— loginByPhone 与 login 同一条口径', async () => {
     // D-U3「盒子什么都不改」：盒端身份是云端账号经 box_sso_bootstrap 交下来的，
     // 本地再开一条发码登录会造出第二个身份来源。

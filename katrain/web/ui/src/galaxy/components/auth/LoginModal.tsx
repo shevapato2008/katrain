@@ -18,7 +18,7 @@ type LoginMode = 'login' | 'register' | 'phone';
 
 const LoginModal = ({ open, onClose }: LoginModalProps) => {
     useSettings(); // Subscribe to translation changes
-    const { login, loginByPhone } = useAuth();
+    const { login, loginByPhone, phoneLoginEnabled } = useAuth();
     const [mode, setMode] = useState<LoginMode>('login');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -285,14 +285,22 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
                 <Box sx={{ mt: 2, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                     {mode === 'login' && (
                         <>
-                            <Link component="button" variant="body2" onClick={() => switchTo('phone')} disabled={loading} sx={linkSx}>
-                                {i18n.t('auth:switch_to_phone', '验证码登录')}
-                            </Link>
-                            {/* 「忘记密码？」走的就是验证码登录 —— 验证码登录本身已经是完整的
-                                「忘了密码也能进」出路，再做一个免鉴权 reset 是同一件事实现两遍。 */}
-                            <Link component="button" variant="body2" onClick={() => switchTo('phone')} disabled={loading} sx={linkSx}>
-                                {i18n.t('auth:forgot_password', '忘记密码？')}
-                            </Link>
+                            {/* 这台服务器没有手机功能时这两个入口一个都不画：点进去只会撞上 404。
+                                「忘记密码？」也在内 —— 它走的就是验证码登录那条路，不是另一条。
+                                `phoneLoginEnabled` 取不到时是 false（AuthContext），所以这里
+                                fail-closed：宁可少一个入口。 */}
+                            {phoneLoginEnabled && (
+                                <>
+                                    <Link component="button" variant="body2" onClick={() => switchTo('phone')} disabled={loading} sx={linkSx}>
+                                        {i18n.t('auth:switch_to_phone', '验证码登录')}
+                                    </Link>
+                                    {/* 「忘记密码？」走的就是验证码登录 —— 验证码登录本身已经是完整的
+                                        「忘了密码也能进」出路，再做一个免鉴权 reset 是同一件事实现两遍。 */}
+                                    <Link component="button" variant="body2" onClick={() => switchTo('phone')} disabled={loading} sx={linkSx}>
+                                        {i18n.t('auth:forgot_password', '忘记密码？')}
+                                    </Link>
+                                </>
+                            )}
                             <Link component="button" variant="body2" onClick={() => switchTo('register')} disabled={loading} sx={linkSx}>
                                 {i18n.t('auth:switch_to_register', '还没有账号？注册')}
                             </Link>

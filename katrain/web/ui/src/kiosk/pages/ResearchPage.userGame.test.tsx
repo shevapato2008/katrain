@@ -19,7 +19,7 @@ vi.mock('../../api/kifuApi', () => ({
   },
 }));
 
-const { loadFromSGF } = vi.hoisted(() => ({ loadFromSGF: vi.fn() }));
+const { loadFromSGF } = vi.hoisted(() => ({ loadFromSGF: vi.fn().mockReturnValue({ success: true }) }));
 vi.mock('../hooks/useResearchBoard', () => ({
   useResearchBoard: () => ({
     loadFromSGF,
@@ -130,6 +130,24 @@ describe('ResearchPage local-play review entry', () => {
     expect(await screen.findByText('这一局读不到')).toBeInTheDocument();
   });
 
+  // F6 回归钉子:谱是空字符串时以前直接 `return`,留一块没有副标题的空盘,
+  // 和「还没开始摆」长得一模一样。
+  it('谱是空字符串时也说读不到,不留一块没有解释的空盘', async () => {
+    get.mockResolvedValueOnce({ id: 'g1', sgf_content: '' });
+    renderAt('/kiosk/research?user_game_id=g1&from=report');
+    expect(await screen.findByText('这一局读不到')).toBeInTheDocument();
+    expect(loadFromSGF).not.toHaveBeenCalled();
+  });
+
+  // F6 回归钉子:`loadFromSGF` 的结果以前不检查(kifu 那条深链紧挨着的分支已经在查 `r.success`),
+  // 谱解析失败时照样说「我的对局」,盘却是空的。
+  it('loadFromSGF 解析失败时说读不到,不说「我的对局」', async () => {
+    loadFromSGF.mockReturnValueOnce({ success: false, error: 'bad sgf' });
+    renderAt('/kiosk/research?user_game_id=g1&from=report');
+    expect(await screen.findByText('这一局读不到')).toBeInTheDocument();
+    expect(screen.queryByText(/我的对局/)).toBeNull();
+  });
+
   /**
    * 盒上以前 provenance 永远是 null,返回键落在组件里算好的 `backPath`(带 `task` ⇒ 这一份报告)。
    * S1 修通之后 provenance 有了,它若还写 `BACK` 表里的 `backTo.path`(报告**列表**),
@@ -152,5 +170,26 @@ describe('ResearchPage local-play review entry', () => {
     await waitFor(() => expect(bar.querySelector('.kiosk-pagebar__sub')).toHaveTextContent('我的对局'));
     fireEvent.click(within(bar).getByRole('button', { name: /复盘/ }));
     expect(await screen.findByText('报告屏')).toBeInTheDocument();
+  });
+
+  // F8 回归钉子:`?task=` 被原样拼进 `/kiosk/report/${task}`,`?task=../../play` 能把
+  // 「返回」带去任意路由。只收数字 id,认不出来就退回常量表里的报告列表。
+  it('?task= 带路径参数时不原样拼进路由,退回复盘列表', async () => {
+    auth.current = { token: null, isAuthenticated: true };
+    render(
+      <ThemeProvider theme={kioskTheme}>
+        <MemoryRouter initialEntries={['/kiosk/research?user_game_id=g1&from=report&task=..%2F..%2Fplay']}>
+          <Routes>
+            <Route path="/kiosk/research" element={<ResearchPage />} />
+            <Route path="/kiosk/report" element={<div>复盘屏</div>} />
+            <Route path="/kiosk/report/:taskId" element={<div>报告屏</div>} />
+          </Routes>
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+    const bar = screen.getByTestId('research-pagebar');
+    await waitFor(() => expect(bar.querySelector('.kiosk-pagebar__sub')).toHaveTextContent('我的对局'));
+    fireEvent.click(within(bar).getByRole('button', { name: /复盘/ }));
+    expect(await screen.findByText('复盘屏')).toBeInTheDocument();
   });
 });

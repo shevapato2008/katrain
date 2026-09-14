@@ -195,10 +195,14 @@ const ResearchPage = () => {
   const [provenance, setProvenance] = useState<Provenance | null>(null);
   const from = searchParams.get('from');
   const backTo = (from && BACK[from]) || BACK_FALLBACK;
-  const backPath = from === 'report' && searchParams.get('task')
-    ? `/kiosk/report/${searchParams.get('task')}`
-    : from === 'kifu' && searchParams.get('kifu_id')
-      ? `/kiosk/kifu/${searchParams.get('kifu_id')}`
+  // 只收数字 id —— 查询值原样拼进路由会被注入(`?task=..%2F..%2Fplay` 能把「返回」
+  // 带去任意路由),认不出这个形状就退回上面那张常量表,不让 URL 自己决定去哪。
+  const taskParam = searchParams.get('task');
+  const kifuIdParam = searchParams.get('kifu_id');
+  const backPath = from === 'report' && taskParam && /^\d+$/.test(taskParam)
+    ? `/kiosk/report/${taskParam}`
+    : from === 'kifu' && kifuIdParam && /^\d+$/.test(kifuIdParam)
+      ? `/kiosk/kifu/${kifuIdParam}`
       : backTo.path;
 
   // ── 分析:跟着局面走,不跟折叠块走 ─────────────────────────────────────────
@@ -442,9 +446,20 @@ const ResearchPage = () => {
     // 带 `user_game_id` 进来的入口,盒上打开的就是一块空盘(2026-09-14 调研 S1)。
     if (!id || userGameRef.current || !isAuthenticated) return;
     userGameRef.current = true;
+    // 谱是空的、`loadFromSGF` 解析失败、或者请求本身就没成 —— 三条路都不留一块没有解释的
+    // 空盘,说的是同一句(取不到就说取不到,和 kifu_id 那条分支同一个说法)。
+    const failProvenance = () => setProvenance({
+      label: t('research:user_game_failed', '这一局读不到'),
+      backPath, backLabel: backTo.label,
+    });
     UserGamesAPI.get(token, id).then(async (detail) => {
-      if (!detail.sgf_content) return;
-      board.loadFromSGF(detail.sgf_content);
+      if (!detail.sgf_content) { failProvenance(); return; }
+      const r = board.loadFromSGF(detail.sgf_content);
+      if (!r.success) {
+        console.error('Failed to load user game for deep link:', r.error);
+        failProvenance();
+        return;
+      }
       const head = detail.title
         || `${detail.player_black ?? t('research:black', '黑方')} vs ${detail.player_white ?? t('research:white', '白方')}`;
       const stamp = detail.game_date ?? detail.created_at;
@@ -458,11 +473,7 @@ const ResearchPage = () => {
       if (searchParams.get('analyze') === '1') await startScan(detail.sgf_content);
     }).catch((err) => {
       console.error('Failed to load user game for deep link:', err);
-      // 取不到就说取不到:一块没有副标题的空盘,看起来和「还没开始摆」一模一样。
-      setProvenance({
-        label: t('research:user_game_failed', '这一局读不到'),
-        backPath, backLabel: backTo.label,
-      });
+      failProvenance();
     });
   }, [searchParams, token, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 

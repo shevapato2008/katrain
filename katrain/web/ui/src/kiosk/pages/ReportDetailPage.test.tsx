@@ -636,11 +636,11 @@ describe('屏 20 · 翻手、出口与出错', () => {
     retry.mockRejectedValueOnce(Object.assign(new Error('Request failed 503: {"detail":"x"}'), { status: 503 }));
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
-    expect(await screen.findByText('重算没发出去 · 连不上云端')).toBeInTheDocument();
+    expect(await screen.findByText('重算没成 · 云端暂时不可用')).toBeInTheDocument();
     expect(screen.queryByText(/Request failed/)).toBeNull();
     expect(screen.getByTestId('live-board')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: '重试加载' }));
-    await waitFor(() => expect(screen.queryByText('重算没发出去 · 连不上云端')).toBeNull());
+    await waitFor(() => expect(screen.queryByText('重算没成 · 云端暂时不可用')).toBeNull());
   });
 
   it('没登录时只给一条路:回复盘列表', () => {
@@ -675,7 +675,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
    * N24 回归钉子(2026-09-14 调研):盒上报告接口全走云端,断网就是 503。
    * 以前这里写「未找到复盘。」,下面再印 `Request failed 503: {…}` —— 把「连不上」说成「找不到」。
    */
-  it('连不上云端时说「这份报告没读出来 · 连不上云端」,不说「未找到」', () => {
+  it('云端暂时不可用时说「这份报告没读出来 · 云端暂时不可用」,不说「未找到」', () => {
     detail = {
       ...baseDetail(), game: null,
       error: 'Request failed 503: {"detail":"Remote report service unavailable"}', errorKind: 'offline',
@@ -683,7 +683,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
     renderPage();
     const block = screen.getByTestId('report-detail-error');
     expect(within(block).getByText('这份报告没读出来')).toBeInTheDocument();
-    expect(within(block).getByText('连不上云端')).toBeInTheDocument();
+    expect(within(block).getByText('云端暂时不可用')).toBeInTheDocument();
     expect(screen.queryByText('未找到复盘。')).toBeNull();
     expect(screen.queryByText(/Request failed/)).toBeNull();
   });
@@ -692,7 +692,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
     detail = { ...baseDetail(), error: 'Request failed 503: {"detail":"x"}', errorKind: 'offline' };
     renderPage();
     expect(screen.getByTestId('live-board')).toBeVisible();
-    expect(screen.getByText('没刷新成功 · 连不上云端')).toBeInTheDocument();
+    expect(screen.getByText('没刷新成功 · 云端暂时不可用')).toBeInTheDocument();
     expect(screen.queryByText(/Request failed/)).toBeNull();
   });
 
@@ -709,7 +709,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
     fireEvent.click(screen.getByRole('button', { name: '试下' }));
     fireEvent.click(screen.getByText('place try'));
     fireEvent.click(screen.getByRole('button', { name: '重算' }));
-    expect(await screen.findByText('重算没发出去')).toBeVisible();
+    expect(await screen.findByText('重算没成')).toBeVisible();
 
     detail = {
       ...baseDetail(),
@@ -719,7 +719,7 @@ describe('屏 20 · 翻手、出口与出错', () => {
     fireEvent.click(screen.getByRole('link', { name: 'change report' }));
     expect(screen.queryByTestId('report-detail-variation')).toBeNull();
     expect(screen.queryByTestId('report-detail-try')).toBeNull();
-    expect(screen.queryByText('重算没发出去')).toBeNull();
+    expect(screen.queryByText('重算没成')).toBeNull();
   });
 });
 

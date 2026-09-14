@@ -146,6 +146,11 @@ export default function ReportDetailPage() {
   const retryError = retryFailure?.identity === reportIdentity ? retryFailure.message : null;
   const retrying = retryingIdentity === reportIdentity;
 
+  // 屏上只说分出来的类别,原文不印 —— 但排障时总得有个地方能看见它。
+  useEffect(() => {
+    if (error != null) console.warn('[report-detail] error', error);
+  }, [error]);
+
   const previousPosition = useRef<{ identity: string; move: number } | null>(null);
   useEffect(() => {
     if (!game) {
@@ -283,11 +288,14 @@ export default function ReportDetailPage() {
       await refresh();
       if (identityRef.current === requestIdentity) setRetryFailure(null);
     } catch (failure) {
+      console.warn('[report-detail] recompute', failure);
       if (identityRef.current === requestIdentity) {
         // 不印原文:盒上断网时 failure.message 是 `Request failed 503: {…}`。
+        // 「没发出去」这四个字只对连不上网成立 —— 402/400 是服务端收到了、判断之后拒收的,
+        // 说「没发出去」是在替一个已经处理过的请求撒谎。
         setRetryFailure({
           identity: requestIdentity,
-          message: failureLine(t('review:recompute_failed', '重算没发出去'), requestFailureKind(failure), t),
+          message: failureLine(t('review:recompute_failed', '重算没成'), requestFailureKind(failure), t),
         });
       }
     } finally {

@@ -193,7 +193,10 @@ export function rowState(game: UserGameSummary, state: ReportGameStatus): RowSta
  */
 export function failureReason(kind: RequestFailureKind, t: TFn): string {
   switch (kind) {
-    case 'offline': return t('review:failure_offline', '连不上云端');
+    // 不写「连不上云端」:`core/repository.py` 的 `_remote_only` 在云端真连不上、和云端
+    // 自己回 ≥500 这两种情况下都抛同一个 `RemoteServiceUnavailableError`,两者到前端都是
+    // 503(`endpoints/reports.py` 的 `_dispatch_remote_only`),分不出到底是哪一种。
+    case 'offline': return t('review:failure_offline', '云端暂时不可用');
     case 'not_found': return t('review:failure_not_found', '已经不在了');
     case 'no_credits': return t('review:failure_no_credits', '积分不足');
     case 'bad_sgf': return t('review:failure_bad_sgf', '这份谱读不出来');

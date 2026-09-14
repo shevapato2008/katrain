@@ -2,8 +2,10 @@
  * 请求失败分几类 —— **屏上怎么说由调用方定,这里只分类**。
  *
  * 为什么要分:盒上报告与对局接口经本机服务代理云端(`RepositoryDispatcher._remote_only`),
- * 云端连不上时回 503。屏 20 以前一律写「未找到复盘。」,再把 `Request failed 503: {…}`
- * 印在下面:「连不上」被说成「找不到」,那段原文用户也看不懂(2026-09-14 调研 N24)。
+ * 云端真连不上、和云端自己回 ≥500 这两种情况都落回同一个 503(`_remote_only` 两条都抛
+ * `RemoteServiceUnavailableError`,分不出到底是哪一种,所以这一档只敢说「暂时不可用」,
+ * 不敢说「连不上」)。屏 20 以前一律写「未找到复盘。」,再把 `Request failed 503: {…}`
+ * 印在下面:「服务不可用」被说成「找不到」,那段原文用户也看不懂(2026-09-14 调研 N24)。
  *
  * 判据只认**数字 `status`**,不认类。`reportApi` / `userGamesApi` 的 `authFetch`、`api.ts` 的
  * `ApiError`、`AiLadderApiError` 都带它。在 catch 块里做 `instanceof`,模块被 mock 掉时会自己抛

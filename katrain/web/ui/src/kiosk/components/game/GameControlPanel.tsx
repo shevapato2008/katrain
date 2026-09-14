@@ -5,6 +5,7 @@ import { KioskActions, type KioskAction } from '../../shell/KioskActions';
 import { GoEvalGraph, goEvalSummary } from './GoEvalGraph';
 import { localizedRank } from '../../../utils/rankUtils';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
+import { autoCountEligible } from '../../hooks/useAutoCount';
 import type { EngineItemCounts, GameState, PlayerInfo } from '../../../api';
 import { useTranslation } from '../../../hooks/useTranslation';
 
@@ -174,6 +175,9 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
  *
  * 右栏 516 的账(自由对弈):44(页控条)+ 60 + 60(玩家卡)+ 126(胜率块 30+96)
  * + 40(两个显示开关)+ 111(七个键 52×2 + 7)+ 5×12(缝)= 501,余 15 落在动作区上面。
+ *
+ * 本地对局:44 + 60 + 60 + 40 + 52(三个键一行)+ 4×12 = 304,余 212 **全落在动作区上面**
+ * —— 这个数只在真浏览器里量,见 `tests/kiosk-screen-05-game.spec.ts` 的本地对局那几条。
  */
 const GameControlPanel = ({
   gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
@@ -187,7 +191,16 @@ const GameControlPanel = ({
   // 理由写在开关排右端那句 `.ghint` 上。
   const countMin = gameState.count_min_moves ?? 100;
   const moves = gameState.history?.length ?? 0;
-  const canCount = !isGameOver && moves >= countMin;
+  // N 取服务端下发的 `count_min_moves`(S2a 起按路数缩放:19 路 100 / 13 路 47 / 9 路 22);
+  // `?? 100` 只兜「老服务端不带这个字段」,不是前端自己的门槛。
+  // 双 pass 之后后端在等数子(`awaiting_count`),`/api/count/request` 跳过手数门槛 ⇒ 键跟着亮。
+  // 只认自动数子那两种局(大厅 / 星阵局后端也可能报这个位,但数子在那儿是另一条协议)。
+  const awaitingCount = !!gameState.awaiting_count && autoCountEligible(gameState, engineMode);
+  const canCount = !isGameOver && (awaitingCount || moves >= countMin);
+
+  // 本地对局(两个人面对面)。v2 D1:**不接引擎辅助** ——「领地」「AI 支招」整颗撤掉(不是灰着:
+  // 开局就定死没有,永久不可用 → 撤掉)。后台分析照跑、只给数子用,见 `GamePage` 的 `wantAnalysis`。
+  const localGame = gameState.game_type === 'pvp_local';
 
   // 这一局是不是**人机自由对弈**。规范 §8 那张「按对弈方式判」的表只有一句话:
   // 自由对弈能用的,另外四种(升降级 / 本地两人 / 在线大厅 / 星阵人机)一概不能。
@@ -265,7 +278,7 @@ const GameControlPanel = ({
      这里三个键灰着但**去登录就能用**,原因说得出来。 */
   const guestAnalysisReason = t('play:analysis_requires_login', '登录后可用');
 
-  const analysisActions: KioskAction[] = engineMode ? [] : [
+  const analysisActions: KioskAction[] = (engineMode || localGame) ? [] : [
     {
       key: 'ownership', icon: 'grid-nine', label: t('Territory', '领地'),
       pressed: !analysisRequiresLogin && !!analysisToggles.ownership,
@@ -420,7 +433,7 @@ const GameControlPanel = ({
             那三个键为什么是灰的。 */}
         <i className="ghint" data-fault={hardwareFault ? 'true' : undefined}>
           {hardwareFault
-            ?? (analysisRequiresLogin
+            ?? (analysisRequiresLogin && analysisActions.length > 0
               ? t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')
               : !isGameOver && !canCount
                 ? t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin))

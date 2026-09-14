@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, test, expect } from 'vitest';
 import GameControlPanel from './GameControlPanel';
 import type { GameState } from '../../../api';
@@ -175,5 +175,51 @@ describe('GameControlPanel', () => {
   test('不该有悔棋的局里,也不许留一颗灰着的悔棋', () => {
     panel({ game_type: 'pvp_online' });
     expect(screen.queryByRole('button', { name: /悔棋/ })).toBeNull();
+  });
+
+  // ── 本地对局右栏(v2 D1)────────────────────────────────────────────────
+  // 「领地」「AI 支招」**撤掉不是灰着**:这一局开局就定死不接引擎辅助,永久不可用 → 不渲染。
+  // 结构断言(在不在 DOM),不是布局断言;右栏高度与滚动在 kiosk-screen-05-game.spec.ts 里量。
+  const actionLabels = () =>
+    within(screen.getByTestId('game-actions')).getAllByRole('button').map((b) => b.textContent?.trim());
+
+  test('本地对局:右栏只有 数子 · 停一手 · 认输', () => {
+    panel({ game_type: 'pvp_local', history: hist([]) });
+    expect(actionLabels()).toEqual(['数子', '停一手', '认输']);
+    expect(screen.queryByText('领地')).toBeNull();
+    expect(screen.queryByText('AI支招')).toBeNull();
+    expect(screen.getByRole('switch', { name: '坐标' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: '手数' })).toBeInTheDocument();
+  });
+
+  test('自由对弈右栏不受影响:领地仍在', () => {
+    panel({ game_type: 'free' });
+    expect(screen.getByText('领地')).toBeInTheDocument();
+  });
+
+  test('「数子要下满 N 手」的 N 读服务端下发的 count_min_moves(9 路 22)', () => {
+    panel({ game_type: 'pvp_local', board_size: [9, 9], count_min_moves: 22, history: hist([['E5', 'B']]) });
+    expect(screen.getByText('数子要下满 22 手')).toBeInTheDocument();
+    expect(screen.getByText('数子').closest('button')).toBeDisabled();
+  });
+
+  test('本地对局登录态之外也不说「领地 / 支招 / 图表 登录后可用」—— 那三颗键这一局根本没有', () => {
+    panel({ game_type: 'pvp_local', count_min_moves: 22, history: hist([['E5', 'B']]) }, { analysisRequiresLogin: true });
+    expect(screen.queryByText('领地 / 支招 / 图表 登录后可用')).toBeNull();
+    expect(screen.getByText('数子要下满 22 手')).toBeInTheDocument();
+  });
+
+  test('双 pass 后后端在等数子(awaiting_count)⇒ 手数不够也亮,右端不再说门槛', () => {
+    panel({
+      game_type: 'pvp_local', count_min_moves: 100, awaiting_count: true,
+      history: hist([['Q16', 'B'], ['pass', 'W'], ['pass', 'B']]),
+      players_info: {
+        ...mockGameState.players_info,
+        B: { ...mockGameState.players_info.B, player_type: 'player:human' },
+        W: { ...mockGameState.players_info.W, player_type: 'player:human' },
+      },
+    });
+    expect(screen.getByText('数子').closest('button')).not.toBeDisabled();
+    expect(screen.queryByText(/数子要下满/)).toBeNull();
   });
 });

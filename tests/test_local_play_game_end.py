@@ -189,3 +189,54 @@ def test_free_resign_without_color_is_unchanged(client, monkeypatch):
     assert r.status_code == 200, r.text
     assert r.json()["state"]["end_result"] == "B+R"
     assert _recorded_results(client) == ["B+R"]
+
+
+# ------------------------------------------------------------------ 双 pass 落账钩子（§3.4、P4、§7-3）
+
+
+@pytest.mark.parametrize("game_type", ["pvp_local", "free"])
+def test_board_mode_double_pass_records_nothing(client, monkeypatch, game_type):
+    """P4：盒上不自动分析，end_result 此刻只是回落串「终局」；落账就是一条没有胜负的记录。"""
+    session = _owned_game(client, monkeypatch, game_type=game_type, board_mode=True)
+    _move(client, session.session_id, [3, 3])
+    _move(client, session.session_id)
+
+    state = _move(client, session.session_id)
+
+    assert state["awaiting_count"] is True
+    assert _recorded_results(client) == []
+
+
+def test_galaxy_double_pass_records_exactly_as_today(client, monkeypatch):
+    """spec §7-3：galaxy（非盒上模式）双 pass 的落账与今天逐字一致 —— 仍是没有胜负的回落串。
+
+    这条在改动前后都必须绿：它钉的是「不变」，不是新行为。
+    """
+    from katrain.core.lang import i18n
+
+    session = _owned_game(client, monkeypatch, game_type="free", board_mode=False)
+    _move(client, session.session_id, [3, 3])
+    _move(client, session.session_id)
+
+    state = _move(client, session.session_id)
+
+    assert state["awaiting_count"] is False
+    assert state["end_result"] == i18n._("board-game-end")
+    assert _recorded_results(client) == [state["end_result"]]
+
+
+def test_board_mode_scoring_game_type_double_pass_records_as_today(client, monkeypatch):
+    """反作弊类型(rated / ranked / ai_ladder_ranked)不进 awaiting_count，盒上也照旧落账。
+
+    这里直接改 `game_type` 模拟，不走真的 rated 开局（那条要引擎与段位配置）；
+    判定本身的类型排除已由 tests/test_game_end_rules.py 逐个类型钉住。
+    """
+    session = _owned_game(client, monkeypatch, game_type="free", board_mode=True)
+    session.katrain.game_type = "rated"
+    _move(client, session.session_id, [3, 3])
+    _move(client, session.session_id)
+
+    state = _move(client, session.session_id)
+
+    assert state["awaiting_count"] is False
+    assert _recorded_results(client) == [state["end_result"]]

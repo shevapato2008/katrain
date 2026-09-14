@@ -997,8 +997,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # Natural (two-pass) game end never hits resign/count/timeout — record here so
         # local face-to-face games ending by both passing are still saved (end_result
         # auto-becomes truthy on two consecutive passes; requestCount then refuses).
+        #
+        # 盒上模式（`awaiting_count`）例外：那里不自动分析，end_result 此刻只是回落串「终局」，
+        # 落账就是一条没有胜负的记录。改由前端看到 awaiting_count 后调 /api/count/request，
+        # 数出结果再落账。galaxy 走不到 awaiting_count，这一处对它逐字不变。
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
-        if state.get("end_result") and not is_multiplayer and current_user and session.user_id:
+        if (
+            state.get("end_result")
+            and not state.get("awaiting_count")
+            and not is_multiplayer
+            and current_user
+            and session.user_id
+        ):
             await _record_ai_game(session, app, current_user, state["end_result"])
         return {"session_id": session.session_id, "state": state}
 

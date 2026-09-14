@@ -7,7 +7,7 @@ import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, 
 // 标题与返回归页控条,状态显示归 L1 镜像栏,重置识别成了页控条上那个唯一的页级图标键。
 // `Lightbulb` 留着:它在这儿不是状态灯,是「AI 已落子,请把子摆到亮灯处」那条横幅的图标。
 import { EmojiEvents, Lightbulb } from '@mui/icons-material';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
 import Board, { type EngineOverlay } from '../../components/Board';
@@ -18,7 +18,7 @@ import KioskResultBadge from '../components/game/KioskResultBadge';
 import RecalibrationModal from '../components/game/RecalibrationModal';
 import VisionSyncOverlay from '../components/vision/VisionSyncOverlay';
 import { useVision } from '../context/VisionContext';
-import { readPlayOnBoard } from '../utils/playInput';
+import { readSessionPlayOnBoard } from '../utils/playInput';
 import { useVisionSync } from '../hooks/useVisionSync';
 import { useTranslation } from '../../hooks/useTranslation';
 import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChip';
@@ -201,10 +201,13 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 「开局后不可改」),中途跟着 localStorage 变会把人从一块已经摆着子的盘上赶下来。
   // 路数同理并进来 —— 盒子上那块盘是 19 路的,9 路 / 13 路的局本来就落不到盘上,
   // 而开局设置屏正是这么答的,两边不能给出两个答案。
-  const [playOnBoard] = useState(readPlayOnBoard);
-  const physicalPlay = isVisionEnabled
-    && playOnBoard
-    && (session.gameState?.board_size?.[0] ?? 19) === 19;
+  // 开局那一刻定下的值优先(见 `readSessionPlayOnBoard`),与 `PlayInputGuard` 读同一个函数。
+  // 回落分支保留今天的三段式:从房间 / 跨平台引擎进来的局没有开局屏写下的 onBoard。
+  const { pathname } = useLocation();
+  const [playOnBoard] = useState(() => readSessionPlayOnBoard(pathname));
+  const physicalPlay = isVisionEnabled && playOnBoard.onBoard && (
+    playOnBoard.fromSession || (session.gameState?.board_size?.[0] ?? 19) === 19
+  );
   const visionSync = useVisionSync(physicalPlay ? sessionId ?? null : null);
 
   useEffect(() => {

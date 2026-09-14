@@ -1,5 +1,8 @@
 import { describe, expect, it, beforeEach, vi, afterEach } from 'vitest';
-import { PLAY_ON_BOARD_KEY, playInputState, readPlayOnBoard, writePlayOnBoard } from './playInput';
+import {
+  PLAY_ON_BOARD_KEY, playInputState, readPlayOnBoard, writePlayOnBoard, readSessionPlayOnBoard,
+} from './playInput';
+import { writeActiveSession, clearActiveSession } from './activeSession';
 
 /**
  * 这里只钉**两个方向**,不重复页面已经测过的组合:
@@ -31,5 +34,30 @@ describe('playInput', () => {
     // 想不想那一段关掉时:**不是「不可用」** —— 实体盘还选得回来,所以没有理由可说。
     writePlayOnBoard(false);
     expect(playInputState(true, 19)).toMatchObject({ onBoard: false, available: true, reason: null });
+  });
+});
+
+describe('readSessionPlayOnBoard —— 这一局落在哪儿以开局那一刻为准', () => {
+  const ROUTE = '/kiosk/play/pvp/local/game/s1';
+  beforeEach(() => { localStorage.removeItem(PLAY_ON_BOARD_KEY); clearActiveSession('game'); });
+
+  it('活动会话就是当前这一局且记了 onBoard:用它,不看偏好(9 路局偏好开着也不去标定)', () => {
+    writePlayOnBoard(true);
+    writeActiveSession({ kind: 'game', label: 'x', route: ROUTE, ts: 1, onBoard: false });
+    expect(readSessionPlayOnBoard(ROUTE)).toEqual({ onBoard: false, fromSession: true });
+    expect(readSessionPlayOnBoard(`${ROUTE}/`)).toEqual({ onBoard: false, fromSession: true });
+  });
+
+  it('活动会话是另一局:回落偏好 —— 不许按前缀认成同一局', () => {
+    writePlayOnBoard(true);
+    writeActiveSession({ kind: 'game', label: 'x', route: ROUTE, ts: 1, onBoard: false });
+    expect(readSessionPlayOnBoard('/kiosk/play/pvp/local/game/s10')).toEqual({ onBoard: true, fromSession: false });
+    expect(readSessionPlayOnBoard('/kiosk/play/pvp/room/s1')).toEqual({ onBoard: true, fromSession: false });
+  });
+
+  it('旧版本写下的活动会话没有 onBoard:回落偏好', () => {
+    writePlayOnBoard(false);
+    writeActiveSession({ kind: 'game', label: 'x', route: ROUTE, ts: 1 });
+    expect(readSessionPlayOnBoard(ROUTE)).toEqual({ onBoard: false, fromSession: false });
   });
 });

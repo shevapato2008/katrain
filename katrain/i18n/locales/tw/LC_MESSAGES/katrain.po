@@ -3373,7 +3373,7 @@ msgid "auth:err_code_required"
 msgstr "請填寫驗證碼"
 
 msgid "auth:err_phone_not_bound"
-msgstr "這個手機號碼還沒有綁定帳號。請先用使用者名稱與密碼登入，再到左下角「設定 → 綁定手機號碼」綁定。"
+msgstr "這個手機號碼還沒有綁定帳號。請先用使用者名稱與密碼登入，再完成「綁定手機號碼」。"
 
 msgid "auth:err_cooldown"
 msgstr "驗證碼發送太頻繁，還需等待"
@@ -3460,7 +3460,7 @@ msgid "report:free_quota_unavailable"
 msgstr "免費額度資訊暫時取不到"
 
 msgid "live:comment_requires_phone"
-msgstr "發表留言需要先綁定手機號碼。請在左下角「設定 → 綁定手機號碼」完成綁定。"
+msgstr "發表留言需要先綁定手機號碼。請先完成「綁定手機號碼」。"
 
 msgid "auth:set_password"
 msgstr "修改密碼"
@@ -3484,7 +3484,7 @@ msgid "auth:err_challenge_phone_mismatch"
 msgstr "驗證碼發到的號碼不是這個帳號綁定的手機號碼。請填寫你綁定過的那個號碼。"
 
 msgid "report:err_402_phone"
-msgstr "綁定手機號碼可每週免費複盤一局。到左下角「設定 → 綁定手機號碼」。"
+msgstr "綁定手機號碼可每週免費複盤一局，完成「綁定手機號碼」即可領取。"
 
 msgid "report:err_402_credits"
 msgstr "餘額不足，請先儲值。"

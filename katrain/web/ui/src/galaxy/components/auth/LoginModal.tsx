@@ -61,7 +61,7 @@ const LoginModal = ({ open, onClose }: LoginModalProps) => {
         }
         if (e?.code === 'phone_not_bound') {
             return i18n.t('auth:err_phone_not_bound',
-                '这个手机号还没有绑定账号。请先用用户名密码登录，再到左下角「设置 → 绑定手机号」绑定。');
+                '这个手机号还没有绑定账号。请先用用户名密码登录，再完成「绑定手机号」。');
         }
         const BY_CODE: Record<string, string> = {
             challenge_code_mismatch: i18n.t('auth:err_code_mismatch', '验证码不对，请检查后重填'),

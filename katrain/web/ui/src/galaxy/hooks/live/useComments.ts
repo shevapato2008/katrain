@@ -119,7 +119,7 @@ export function useComments(
         const code = (err as { code?: string } | null)?.code;
         if (code === 'comment_requires_phone') {
           setError(i18n.t('live:comment_requires_phone',
-            '发表评论需要先绑定手机号。请在左下角「设置 → 绑定手机号」完成绑定。'));
+            '发表评论需要先绑定手机号。请先完成「绑定手机号」。'));
         } else {
           setError(err instanceof Error ? err.message : 'Failed to post comment');
         }

@@ -3228,7 +3228,7 @@ msgid "auth:err_code_required"
 msgstr "请填写验证码"
 
 msgid "auth:err_phone_not_bound"
-msgstr "这个手机号还没有绑定账号。请先用用户名密码登录，再到左下角「设置 → 绑定手机号」绑定。"
+msgstr "这个手机号还没有绑定账号。请先用用户名密码登录，再完成「绑定手机号」。"
 
 msgid "auth:err_cooldown"
 msgstr "验证码发送太频繁，还需等待"
@@ -3315,7 +3315,7 @@ msgid "report:free_quota_unavailable"
 msgstr "免费额度信息暂时取不到"
 
 msgid "live:comment_requires_phone"
-msgstr "发表评论需要先绑定手机号。请在左下角「设置 → 绑定手机号」完成绑定。"
+msgstr "发表评论需要先绑定手机号。请先完成「绑定手机号」。"
 
 msgid "auth:set_password"
 msgstr "修改密码"
@@ -3339,7 +3339,7 @@ msgid "auth:err_challenge_phone_mismatch"
 msgstr "验证码发到的号码不是这个账号绑定的手机号。请填写你绑定过的那个号。"
 
 msgid "report:err_402_phone"
-msgstr "绑定手机号可每周免费复盘一局。到左下角「设置 → 绑定手机号」。"
+msgstr "绑定手机号可每周免费复盘一局，完成「绑定手机号」即可领取。"
 
 msgid "report:err_402_credits"
 msgstr "余额不足，请先充值。"

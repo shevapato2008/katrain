@@ -3393,7 +3393,7 @@ msgid "auth:err_code_required"
 msgstr "認証コードを入力してください"
 
 msgid "auth:err_phone_not_bound"
-msgstr "この番号に紐づくアカウントがまだありません。先にユーザー名とパスワードでログインし、「設定 → 携帯電話番号の連携」から連携してください。"
+msgstr "この番号に紐づくアカウントがまだありません。先にユーザー名とパスワードでログインし、「携帯電話番号を連携」を完了してください。"
 
 msgid "auth:err_cooldown"
 msgstr "コードの送信が頻繁すぎます。あと"
@@ -3480,7 +3480,7 @@ msgid "report:free_quota_unavailable"
 msgstr "無料枠の情報を一時的に取得できません"
 
 msgid "live:comment_requires_phone"
-msgstr "コメントを投稿するには携帯電話番号の連携が必要です。左下の「設定 → 携帯電話番号を連携」から行ってください。"
+msgstr "コメントを投稿するには携帯電話番号の連携が必要です。まず「携帯電話番号を連携」を完了してください。"
 
 msgid "auth:set_password"
 msgstr "パスワードを変更"
@@ -3505,7 +3505,7 @@ msgid "auth:err_challenge_phone_mismatch"
 msgstr "認証コードの送信先が、このアカウントに連携された番号と異なります。連携済みの番号を入力してください。"
 
 msgid "report:err_402_phone"
-msgstr "携帯電話番号を連携すると、毎週 1 局を無料で検討できます。左下の「設定 → 携帯電話番号を連携」へ。"
+msgstr "携帯電話番号を連携すると、毎週 1 局を無料で検討できます。「携帯電話番号を連携」を完了すると受け取れます。"
 
 msgid "report:err_402_credits"
 msgstr "残高が不足しています。先にチャージしてください。"

@@ -47,7 +47,7 @@ function errorMessage(error: unknown, fallback: string): string {
   const e = error as { status?: number; detail?: { free_weekly_blocked?: string | null } } | null;
   if (e?.status === 402) {
     return e.detail?.free_weekly_blocked === 'phone_unbound'
-      ? i18n.t('report:err_402_phone', '绑定手机号可每周免费复盘一局。到左下角「设置 → 绑定手机号」。')
+      ? i18n.t('report:err_402_phone', '绑定手机号可每周免费复盘一局，完成「绑定手机号」即可领取。')
       : i18n.t('report:err_402_credits', '余额不足，请先充值。');
   }
   return error instanceof Error ? error.message : fallback;

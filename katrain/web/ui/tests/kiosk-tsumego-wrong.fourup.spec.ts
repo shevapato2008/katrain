@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
 
@@ -89,4 +90,60 @@ test('四图:做题屏错题模式 ←→ sample-go/shots/14-puzzle.png(同一�
       + '页控条「错题 第 1 / 4 道」、返回键「错题」、单元块「错题 · 4 道」;其余与屏 14 同',
   });
   console.log(`[fourup 14w-puzzle-wrong] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
+});
+
+/**
+ * 屏 12 补一张滚到底的实现图(review round 1)。**不是四图**:
+ * 屏 12 本尊钉在参考稿的 1024×600,「整级一起做」那一段(N8 新副标 + T1「只做错过的」卡)
+ * 在那个高度之外 —— 稿子没画滚到底那一态,没有参考图可比,`captureFourUp` 用不上。
+ * 这里只证明:真滚到底之后,这两句话真的在屏上、在视口里,不是写在标签带里的空话。
+ */
+const UNITS_IDS = Array.from({ length: 180 }, (_, i) => ({ id: `p${i}` }));
+const UNITS_PROGRESS = {
+  // 做错过、还没做对(`isWrongEntry`)⇒「只做错过的」卡可点、写着真数,不是 disabled 的灰卡。
+  p5: { completed: false, attempts: 2 },
+};
+
+test('滚到底:屏 12 下半屏(整级一起做 + 只做错过的)真的在视口里', async ({ page }) => {
+  await freezeClock(page);
+  await page.addInitScript((progress) => {
+    localStorage.setItem('token', 'fourup');
+    localStorage.setItem('katrain_language', 'cn');
+    localStorage.setItem('tsumego_progress:u1', JSON.stringify(progress));
+  }, UNITS_PROGRESS);
+  await stubBackendStatics(page);
+  await page.route('**/api/v1/**', (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === '/api/v1/auth/me') {
+      return route.fulfill({ json: { id: 1, username: '访客', rank: '5段', credits: 0 } });
+    }
+    if (path.startsWith('/api/v1/tsumego/levels/') && path.includes('/categories/')) {
+      return route.fulfill({ json: UNITS_IDS });
+    }
+    if (path === '/api/v1/tsumego/progress') return route.fulfill({ json: {} });
+    return route.fulfill({ json: {} });
+  });
+  await page.goto('/kiosk/tsumego/15k/capturing');
+  await page.waitForSelector('.kiosk-cards .kiosk-card:nth-child(9)');
+  await page.waitForLoadState('networkidle');
+
+  // **真滚轮**,和 `kiosk-tsumego-wrong.spec.ts` 那条承重闸同一手法 —— `scrollTop = n` 证明不了用户能滚到。
+  const zone = page.locator('.kiosk-scrollzone').first();
+  await page.mouse.move(500, 300);
+  await page.mouse.wheel(0, 5000);
+  await expect.poll(() => zone.getAttribute('data-at')).toBe('end');
+
+  // 两句都要真的在 1024×600 视口里 —— 不是在 DOM 里、被滚动区裁掉。future 的裁切要在这里当场红,
+  // 不能再靠人肉逐张打开四图才发现(round 1 finding 的成因)。
+  const wholeLevelSub = page.getByText('按分类排好，不分单元');
+  const wrongCard = page.getByText('只做错过的', { exact: true });
+  await expect(wholeLevelSub).toBeInViewport();
+  await expect(wrongCard).toBeInViewport();
+
+  const outDir = OUT('12s-units-scrolled');
+  mkdirSync(outDir, { recursive: true });
+  await page.screenshot({
+    path: resolve(outDir, '12s-units-scrolled--implementation.png'),
+    animations: 'disabled',
+  });
 });

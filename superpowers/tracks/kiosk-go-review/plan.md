@@ -444,6 +444,21 @@ const FIGHTING: ReportTaskMove[] = [
     expect(black.brilliants + white.brilliants).toBe(screen20.filter(isBrilliant).length);
     expect(black.mistakes + white.mistakes).toBe(screen20.filter(isBad).length);
   });
+
+  // 服务端给了 grade、这一行却没有 delta_score(`toMoveAnalysisMap` 只要胜率与目差就收这一手,
+  // `_moves_with_grades` 只补 grade 不补 delta_score):屏 20 照样把它数进「坏」。
+  // 准确率要 delta_score、算不了是它自己的事,两格不许跟着归零。
+  // 变异验证:把「counted === 0 就整体返回 0」那种提前返回放回去,这条红。
+  it('grade 有值而 delta_score 为 null:准确率是 null,失误照数,与屏 20、红段一致', () => {
+    const noDelta = [
+      move({ move_number: 0, winrate: 0.5, score_lead: 0 }),
+      move({ move_number: 1, winrate: 0.2, score_lead: -8, actual_player: 'B', delta_score: null, grade: 'blunder' }),
+    ];
+    const s = summarizeReportMoves(noDelta, 'B');
+    expect(s).toMatchObject({ accuracy: null, counted: 0, mistakes: 1, brilliants: 0 });
+    expect(s.mistakes).toBe(gradedMoves(toMoveAnalysisMap(noDelta, 'g')).filter(isBad).length);
+    expect(winrateSeries(noDelta).find((p) => p.moveNumber === 1)?.bad).toBe(true);
+  });
 ```
 
 5)把 `describe('winrateSeries —— 曲线的点', …)` 里第一条 `it` 整条换成下面两条:
@@ -500,6 +515,7 @@ Run: `cd /Users/fan/Repositories/katrain-kiosk-go-review/katrain/web/ui && npx v
 预期 FAIL:
 - 「白方:只算白走的那一手」(旧实现 mistakes=0);
 - 「失误 / 妙手按服务端七档数」「黑的格 + 白的格 = 屏 20」(旧实现合计 妙2 失1,屏 20 是 妙1 失2);
+- 「grade 有值而 delta_score 为 null」(旧实现 counted=0 提前返回 mistakes=0,且没有 `bad` 字段);
 - winrateSeries 两条(`bad` 字段不存在);
 - 屏 19「三格和红段都按服务端七档」(旧实现写「1 手」、有红段)。
 
@@ -552,7 +568,7 @@ export interface ReportSummary {
   accuracy: number | null;
   mistakes: number;
   brilliants: number;
-  /** 被算进准确率的手数 —— 判断上面三个数值不值得信,只有这一个来源。 */
+  /** 被算进**准确率**的手数(有 delta_score 的那些)。失误 / 妙手两格不看它 —— 它们走判级管线。 */
   counted: number;
 }
 
@@ -635,15 +651,14 @@ export function summarizeReportMoves(
     weightSum += adjWeight;
   }
 
-  if (counted === 0) return { accuracy: null, mistakes: 0, brilliants: 0, counted: 0 };
+  // 两格**不看 counted**:`counted` 只数有 delta_score 的手(准确率要它),而判级那条管线只要胜率与目差。
+  // 服务端给了 grade、这一行没有 delta_score 时,屏 20 照样数它 —— 这里若跟着 counted 归零,等式就破了。
   const mine = gradedReportMoves(moves).filter((m) => m.player === color);
+  const mistakes = mine.filter(isBad).length;
+  const brilliants = mine.filter(isBrilliant).length;
+  if (counted === 0) return { accuracy: null, mistakes, brilliants, counted: 0 };
   const weightedLoss = lossSum / (weightSum || 1e-6);
-  return {
-    accuracy: 100 * 0.75 ** weightedLoss,
-    mistakes: mine.filter(isBad).length,
-    brilliants: mine.filter(isBrilliant).length,
-    counted,
-  };
+  return { accuracy: 100 * 0.75 ** weightedLoss, mistakes, brilliants, counted };
 }
 
 export interface WinratePoint {
@@ -802,6 +817,7 @@ EOF
 - Produces:
   - `export type RequestFailureKind = 'offline' | 'not_found' | 'no_credits' | 'bad_sgf' | 'other';`
   - `export function requestFailureKind(error: unknown): RequestFailureKind;`(`src/utils/requestFailure.ts`,共享领地,零 import)
+  - `export function cacheBackedReadFailureKind(error: unknown): RequestFailureKind;`(同文件;`not_found` 降为 `other`,给「云端失败退本机缓存」的 `GET /user-games/{id}` 用)
   - `ReportsAPI.*` / `UserGamesAPI.*` 非 2xx 时拒绝的 `Error` 上多两个自有属性:`status: number`、`body: string`;`message` 不变。
   - `export function failureReason(kind: RequestFailureKind, t: TFn): string;`(`other` 返回 `''`)
   - `export function failureLine(prefix: string, kind: RequestFailureKind, t: TFn): string;`(有原因时 `${prefix} · ${reason}`,否则 `prefix`)——都在 `kiosk/components/report/reviewPresentation.ts`。
@@ -813,7 +829,7 @@ EOF
 ```ts
 import { describe, expect, it } from 'vitest';
 
-import { requestFailureKind } from './requestFailure';
+import { cacheBackedReadFailureKind, requestFailureKind } from './requestFailure';
 
 const httpError = (status: number, body = '') =>
   Object.assign(new Error(`Request failed ${status}: ${body}`), { status, body });
@@ -855,6 +871,16 @@ describe('requestFailureKind —— 请求失败分几类', () => {
   // `api.ts` 的 `ApiError`、`features/aiLadder` 的 `AiLadderApiError` 只带 status 不带 body。
   it('只带 status 不带 body 的错(ApiError 形状)也能分', () => {
     expect(requestFailureKind(Object.assign(new Error('Request failed 503: x'), { status: 503 }))).toBe('offline');
+  });
+});
+
+describe('cacheBackedReadFailureKind —— 读的是「云端失败退本机缓存」的接口', () => {
+  // 盒上 GET /user-games/{id}:云端连不上 / 超时 / 回任何 HTTP 错都退本机缓存,缓存里没有也回 404。
+  // 这条 404 证明不了「云端没有这一局」,不许被说成「已经不在了」。
+  it('404 降为 other,其余照 requestFailureKind', () => {
+    expect(cacheBackedReadFailureKind(httpError(404, '{"detail":"Game not found"}'))).toBe('other');
+    expect(cacheBackedReadFailureKind(httpError(503))).toBe('offline');
+    expect(cacheBackedReadFailureKind(new Error('boom'))).toBe('other');
   });
 });
 ```
@@ -979,6 +1005,21 @@ export function requestFailureKind(error: unknown): RequestFailureKind {
   if (status === 400 && code === 'unparsable_sgf') return 'bad_sgf';
   return 'other';
 }
+
+/**
+ * 读的是「云端失败就退本机缓存」的接口时用这个。今天只有盒上的 `GET /user-games/{id}`:
+ * `core/repository.py` 的 `user_games_get` 在云端连不上 / 超时 / 回任何 HTTP 错时都退回本机缓存,
+ * 缓存里没有,`endpoints/user_games.py` 的 `get_user_game` 也回 404。
+ * ⇒ 这条 404 **证明不了云端没有这一局**(列表从云端读到、随后断网、点一局本机没缓存过的,就是它),
+ * 说「已经不在了」是编原因。降为 `other`,屏上只说「做什么没成」。
+ *
+ * 报告接口(`endpoints/reports.py` 的 `_dispatch_remote_only`)与删除(`_remote_only`)不退缓存,
+ * 上游 404 原码透传,那里的 404 是云端说的,照用 `requestFailureKind`。
+ */
+export function cacheBackedReadFailureKind(error: unknown): RequestFailureKind {
+  const kind = requestFailureKind(error);
+  return kind === 'not_found' ? 'other' : kind;
+}
 ```
 
 - [ ] **Step 6: 两个 `authFetch` 挂 `status` / `body`**
@@ -1069,6 +1110,7 @@ reportApi / userGamesApi 的 authFetch 抛的是 Error('Request failed 503: {…
 错误上没有状态码,调用方只能把原文上屏。现在挂上 status / body(message 不变,
 galaxy 与既有单测照旧),新增共享纯函数 utils/requestFailure.ts 按数字 status 与
 detail.code 分五类(402 insufficient_credits 是计费闸开闸后的防御,不改默认值);
+cacheBackedReadFailureKind 给「云端失败退本机缓存」的读接口用,404 不当「没有」;
 kiosk 复盘用 failureLine 说「做什么没成 · 为什么」,分不出原因时不编。
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
@@ -1080,7 +1122,7 @@ EOF
 ### Task 6: N24 · 两个复盘钩子暴露 `errorKind`
 
 **Files:**
-- Modify: `katrain/web/ui/src/features/report/useReportDetail.ts:1-11`, `:14-39`, `:91-94`, `:156-159`, `:188`, `:221-231`
+- Modify: `katrain/web/ui/src/features/report/useReportDetail.ts:1-11`, `:14-39`, `:91-94`, `:128-139`, `:156-159`, `:188`, `:221-231`
 - Modify: `katrain/web/ui/src/features/report/useReportTasks.ts:1-42`, `:66-67`, 8 处 `setError(…)`, `:268-278`
 - Test: `katrain/web/ui/src/features/report/useReportDetail.test.tsx`, `katrain/web/ui/src/features/report/useReportTasks.test.tsx`
 
@@ -1117,6 +1159,26 @@ EOF
     expect(result.current.error).toBe(`Request failed 503: ${body}`);
     expect(result.current.errorKind).toBe('offline');
   });
+
+  // 报告接口不退缓存,上游 404 原码透传 ⇒ 那是云端说「没有这份报告」。
+  // 对局那一路(GET /user-games/{id})盒上云端失败会退本机缓存,缓存没有也 404 ⇒ 证明不了「没有」,降为 other。
+  // 变异验证:把对局那一路也改用 requestFailureKind,第二段红。
+  it('报告 404 ⇒ not_found;对局那一路 404 ⇒ other(可能只是本机缓存里没有)', async () => {
+    const notFound = (detail: string) => Object.assign(
+      new Error(`Request failed 404: {"detail":"${detail}"}`), { status: 404, body: `{"detail":"${detail}"}` },
+    );
+    mockReportGet.mockRejectedValueOnce(notFound('Report task not found'));
+    const first = renderHook(() => useReportDetail(null, '7', true));
+    await settle();
+    expect(first.result.current.errorKind).toBe('not_found');
+    first.unmount();
+
+    mockUserGameGet.mockRejectedValueOnce(notFound('Game not found'));
+    const second = renderHook(() => useReportDetail(null, '7', true));
+    await settle();
+    expect(second.result.current.game).toBeNull();
+    expect(second.result.current.errorKind).toBe('other');
+  });
 ```
 
 `useReportTasks.test.tsx`,在 `it('clears a visible error without changing the current task snapshot', …)` 之后追加:
@@ -1148,14 +1210,14 @@ EOF
 
 Run: `cd /Users/fan/Repositories/katrain-kiosk-go-review/katrain/web/ui && npx vitest run src/features/report/useReportDetail.test.tsx src/features/report/useReportTasks.test.tsx`
 
-预期:三处新断言 FAIL(`errorKind` 是 `undefined`),其余 PASS。
+预期:四条新 / 改的用例 FAIL(`errorKind` 是 `undefined`),其余 PASS。
 
 - [ ] **Step 3: 改 `useReportDetail.ts`**
 
 1)第 11 行 `import { nextReportCursor, toMoveAnalysisMap } from './reportModel';` 之后加:
 
 ```ts
-import { requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
+import { cacheBackedReadFailureKind, requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 ```
 
 2)`UseReportDetailResult` 里 `error: string | null;` 之后加:
@@ -1187,10 +1249,10 @@ interface Failure {
 /** 非法 task id 在屏上就是「没有这份报告」。 */
 const INVALID_TASK_FAILURE: Failure = { message: INVALID_TASK_ID_ERROR, kind: 'not_found' };
 
-function failureOf(error: unknown): Failure {
+function failureOf(error: unknown, classify: (error: unknown) => RequestFailureKind = requestFailureKind): Failure {
   return {
     message: error instanceof Error ? error.message : 'Failed to load report',
-    kind: requestFailureKind(error),
+    kind: classify(error),
   };
 }
 ```
@@ -1211,7 +1273,30 @@ function failureOf(error: unknown): Failure {
   );
 ```
 
-5)第 156 行 `setError(null);` → `setFailure(null);`;第 159 行 `setError(errorMessage(refreshError));` → `setFailure(failureOf(refreshError));`
+5)`refresh` 里那段请求(第 128-160 行):
+- 第 128 行 `const request = (async () => {` 之后、`try {` 之前加:
+
+```ts
+      // 对局那一路(GET /user-games/{id})盒上云端失败会退本机缓存,缓存没有也回 404 ——
+      // 那条 404 证明不了「没有」,分类时要降级(见 `cacheBackedReadFailureKind`)。
+      let gameReadFailed = false;
+```
+
+- 第 139 行 `if (gameResult.status === 'rejected') throw gameResult.reason;` 换成:
+
+```ts
+        if (gameResult.status === 'rejected') {
+          gameReadFailed = true;
+          throw gameResult.reason;
+        }
+```
+
+- 第 156 行 `setError(null);` → `setFailure(null);`
+- 第 159 行 `setError(errorMessage(refreshError));` 换成:
+
+```ts
+        setFailure(failureOf(refreshError, gameReadFailed ? cacheBackedReadFailureKind : requestFailureKind));
+```
 
 6)第 188 行 `setError(enabled && parsedTaskId === null ? INVALID_TASK_ID_ERROR : null);` → `setFailure(enabled && parsedTaskId === null ? INVALID_TASK_FAILURE : null);`
 
@@ -1331,7 +1416,9 @@ feat(report): 复盘两个钩子带出 errorKind —— 屏上说什么由调用
 
 useReportDetail / useReportTasks 原来只给一句 error 原文。内部改存
 { message, kind },对外 error 不变(galaxy 照旧),新增 errorKind:
-503 ⇒ offline、404 / 非法 id ⇒ not_found、402 insufficient_credits ⇒ no_credits。
+503 ⇒ offline、报告 404 / 非法 id ⇒ not_found、402 insufficient_credits ⇒ no_credits。
+对局那一路(GET /user-games/{id})盒上云端失败会退本机缓存、缓存没有也 404,
+那条 404 证明不了「没有」⇒ 降为 other。
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 EOF
@@ -1477,6 +1564,7 @@ import { failureLine, failureReason, outcomeLine, rowTitle, yourColor } from '..
   if (!game) {
     // 「连不上」和「没有这份报告」是两件事。以前一律写「未找到复盘。」,再把后端原文印在下面 ——
     // 盒上报告接口全走云端,断网时就是 503,屏上却说「未找到」(2026-09-14 调研 N24)。
+    // `not_found` 只来自报告接口(云端 404 原码透传)或非法 id;对局那一路的 404 钩子里已降为 other。
     const kind = error ? (errorKind ?? 'other') : 'not_found';
     const reason = kind === 'not_found' ? '' : failureReason(kind, t);
     return shell(
@@ -1532,10 +1620,10 @@ EOF
 
 **Files:**
 - Modify: `katrain/web/ui/src/kiosk/pages/ReportsPage.tsx`(行号按 `6f7dc629` 标注;Task 3 / Task 4 之后会偏移一两行,**按下面引用的原文定位**):`:16`、`:21-23`、`:75`、`:120`、`:144-147`、`:157`、`:171`、`:220`、`:249`、`:347`、`:366`、`:389`、`:533-536`、`:606-608`
-- Test: `katrain/web/ui/src/kiosk/pages/ReportsPage.test.tsx`(`:243`、`:452`、`:606`、`:650`,并在 `:662` 之前新增一个 describe)
+- Test: `katrain/web/ui/src/kiosk/pages/ReportsPage.test.tsx`(`:185` 之后新增一条、`:243`、`:452`、`:606`、`:627` 之后新增一条、`:650`,并在 `:662` 之前新增一个 describe)
 
 **Interfaces:**
-- Consumes:`useReportTasks(...).errorKind`(Task 6);`requestFailureKind` / `RequestFailureKind`、`failureLine` / `failureReason`(Task 5)。
+- Consumes:`useReportTasks(...).errorKind`(Task 6);`requestFailureKind` / `cacheBackedReadFailureKind` / `RequestFailureKind`、`failureLine` / `failureReason`(Task 5)。
 - Produces:新增文案 key `review:tasks_failed`(「报告任务出错了」)。复用已有 key:`report:preview_failed`、`review:moves_failed`、`report:import_failed`、`report:library_import_failed`、`report:delete_failed`、`review:list_failed`(默认串与 cn PO 一致,不改)。
 
 - [ ] **Step 1: 改 / 加测试**
@@ -1543,7 +1631,9 @@ EOF
 1)第 243-249 行 `it('列表读不到时报错,重试能反复点', …)` 整条换成:
 
 ```tsx
-  it('列表读不到时报错(连不上就说连不上,不印原文),重试能反复点', async () => {
+  // 注意:盒上列表断网时 `user_games_list` 退本机缓存(200 + authority=local_cache),走不到这里;
+  // 这条钉的是「分得出原因就说原因、不印原文」这根接线,不是盒上断网的真实路径。
+  it('列表读不到时报错(分得出原因说原因,不印原文),重试能反复点', async () => {
     mocks.list.mockRejectedValueOnce(
       Object.assign(new Error('Request failed 503: {"detail":"Remote server unavailable"}'), { status: 503 }),
     );
@@ -1570,12 +1660,49 @@ EOF
   });
 ```
 
+2b)在 `describe('屏 19 · 列表与选中', …)` 里、`it('点另一行换选中,左栏跟着换那一局', …)` 之后追加:
+
+```tsx
+  /**
+   * N24 反例(2026-09-15 计划审查):盒上 GET /user-games/{id} 云端失败会退本机缓存,缓存没有也回 404。
+   * 列表从云端读到、随后断网、点一局本机没缓存过的 ⇒ 预览 404。这条 404 证明不了「云端没有」,
+   * 不许说「已经不在了」,也不印原文。变异验证:预览那处改用 requestFailureKind,这条红。
+   */
+  it('预览 404 只说「棋谱预览加载失败」,不说「已经不在了」、不印原文', async () => {
+    mocks.get.mockRejectedValue(
+      Object.assign(new Error('Request failed 404: {"detail":"Game not found"}'), { status: 404 }),
+    );
+    renderPage();
+    expect(await screen.findByText('棋谱预览加载失败')).toBeInTheDocument();
+    expect(screen.queryByText(/已经不在了/)).toBeNull();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+  });
+```
+
 3)`it('导入失败时错留在对话框里,输入不丢', …)` 里 `expect(await screen.findByText('SGF 不合法')).toBeInTheDocument();` 换成:
 
 ```tsx
     // 没有 status 的错落 other ⇒ 只说「做什么没成」,不把 error.message 贴进对话框。
     expect(await screen.findByText('导入 SGF 失败')).toBeInTheDocument();
     expect(screen.queryByText('SGF 不合法')).toBeNull();
+```
+
+3b)在 `it('从棋谱库导入走的是同一条路 —— 把那一局复制进你自己的对局表', …)` 之后追加。桩用的是**今天 `KifuAPI` 真实抛出的形状**(`src/api/kifuApi.ts:8-12`,普通 `Error`、不带 `status`),不替生产代码加它没有的字段:
+
+```tsx
+  // 棋谱库在云端;今天 KifuAPI 抛的错不带 status ⇒ 分不出原因,只说前半句,不印原文。
+  // kifu 赛道 T6 把它改抛 ApiError(status) 之后,这里自动能说「连不上云端」(分类器只认数字 status)。
+  it('从棋谱库导入失败:只说「从棋谱库导入失败」,不印原文,也不往下建对局', async () => {
+    mocks.getAlbum.mockRejectedValueOnce(new Error('Request failed 503: {"detail":"Remote server unavailable"}'));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '从棋谱库导入' }));
+    fireEvent.click(await screen.findByText('库赛事'));
+    fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
+    expect(await screen.findByText('从棋谱库导入失败')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
 ```
 
 4)`it('删除失败时说出来,并且留在原地', …)` 里 `expect(await screen.findByText('删不掉')).toBeInTheDocument();` 换成:
@@ -1616,14 +1743,14 @@ describe('屏 19 · 报告任务出错怎么说', () => {
 
 Run: `cd /Users/fan/Repositories/katrain-kiosk-go-review/katrain/web/ui && npx vitest run src/kiosk/pages/ReportsPage.test.tsx`
 
-预期 FAIL:上面改 / 加的六条(屏上仍是原文);其余 PASS。
+预期 FAIL:上面改 / 加的八条(屏上仍是原文);其余 PASS。
 
 - [ ] **Step 3: 改 `ReportsPage.tsx`**
 
 1)`import { replayBaipuSteps, type BoardState } from '../../utils/baipuReplay';` 之后加:
 
 ```tsx
-import { requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
+import { cacheBackedReadFailureKind, requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 ```
 
 `reviewPresentation` 那条 import 换成:
@@ -1677,10 +1804,11 @@ const messageOf = (error: unknown, fallback: string) => (error instanceof Error 
       setGamesFailure(requestFailureKind(error));
 ```
 
-6)五处 `messageOf(error, <前半句>)` 换成 `failureLine(<前半句>, requestFailureKind(error), translationRef.current)`,前半句原样保留:
+6)五处 `messageOf(error, <前半句>)` 换成 `failureLine(<前半句>, <分类>, translationRef.current)`,前半句原样保留。**预览那一处分类用 `cacheBackedReadFailureKind`**(它读的是 `UserGamesAPI.get`,盒上云端失败退本机缓存、缓存没有也 404),其余四处用 `requestFailureKind`:
 
 ```tsx
-        setDetailError(failureLine(translationRef.current('report:preview_failed', '棋谱预览加载失败'), requestFailureKind(error), translationRef.current));
+        // 预览读的是 GET /user-games/{id}:盒上云端失败会退本机缓存,缓存没有也回 404 ⇒ 404 不能说成「已经不在了」。
+        setDetailError(failureLine(translationRef.current('report:preview_failed', '棋谱预览加载失败'), cacheBackedReadFailureKind(error), translationRef.current));
 ```
 
 ```tsx
@@ -1692,6 +1820,8 @@ const messageOf = (error: unknown, fallback: string) => (error instanceof Error 
 ```
 
 ```tsx
+      // 这个 catch 前面还有 `KifuAPI.getAlbum`:今天它抛的错不带 status ⇒ 那一步失败落 other、只说前半句。
+      // kifu 赛道 T6 改抛 ApiError(status) 后自动分得出;本赛道不改 kifuApi.ts(归 kifu 赛道,改了必冲突)。
       setLibraryImportError(failureLine(translationRef.current('report:library_import_failed', '从棋谱库导入失败'), requestFailureKind(error), translationRef.current));
 ```
 
@@ -1758,7 +1888,8 @@ fix(kiosk): 屏 19 七处出错把后端原文直接上屏 —— 改说「做�
 列表、预览、逐手、删除、两种导入、报告任务告警行,原来都是 error.message 原样上屏,
 盒上断网时就是 Request failed 503: {"detail":…}。现在按请求失败类别说原因,
 分不出时只说前半句;报告任务那条 402 insufficient_credits 说「积分不足」
-(计费闸今天关着,这是防御,不改默认值)。
+(计费闸今天关着,这是防御,不改默认值)。预览读的对局接口在盒上会退本机缓存,
+它的 404 不说「已经不在了」;棋谱库那一步的 KifuAPI 错今天不带 status,只说前半句。
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 EOF
@@ -1903,6 +2034,9 @@ git -C /Users/fan/Repositories/katrain-kiosk-go-review status --short
 | N24 | 验收 6(真运行时预览) | Task 9 Step 4 |
 | N24 | 验收 7(PO 闸) | Task 9 Step 3 |
 | R5 防御半 | 402 → `no_credits` → 「积分不足」 | Task 5 Step 1(分类器)、Task 6 Step 1(钩子)、Task 8 Step 1(5)(屏 19) |
+| R1 补(2026-09-15 计划审查) | grade 有值而 delta_score 为 null 时两格照数、与屏 20 / 红段一致 | Task 4 Step 1(4)、Step 4 |
+| N24 补(2026-09-15 计划审查) | 盒上 `GET /user-games/{id}` 退本机缓存 ⇒ 它的 404 不说「已经不在了」(钩子对局那一路、屏 19 预览) | Task 5 `cacheBackedReadFailureKind`、Task 6 Step 1 / 3(5)、Task 8 Step 1(2b) / 3(6) |
+| N24 补(2026-09-15 计划审查) | 棋谱库导入:`KifuAPI` 今天不带 status ⇒ 只说前半句、不印原文;不改 `kifuApi.ts`(归 kifu 赛道 T6) | Task 8 Step 1(3b) / 3(6) |
 | PRD §7 | 基线 diff、tsc -b、两套构建、eslint | Task 1、Task 9 Step 1-2 |
 
 待拍板的 R6 与已定不补的 I18N-PO 按 PRD §4 不进任务;§5 各项不进任务。
@@ -1911,7 +2045,8 @@ git -C /Users/fan/Repositories/katrain-kiosk-go-review status --short
 
 **3. 类型与命名一致性:**
 - `RequestFailureKind` 五个值 `'offline' | 'not_found' | 'no_credits' | 'bad_sgf' | 'other'`:Task 5 定义,Task 6 / 7 / 8 与各测试只用这五个。
-- `requestFailureKind(error: unknown)`(Task 5)→ Task 6 `failureOf`、Task 7 重算 catch、Task 8 六处。
+- `requestFailureKind(error: unknown)`(Task 5)→ Task 6 `failureOf` 默认分类、Task 7 重算 catch、Task 8 列表与四处 `failureLine`。
+- `cacheBackedReadFailureKind(error: unknown)`(Task 5)→ Task 6 `useReportDetail` 对局那一路、Task 8 预览那一处。
 - `failureReason(kind, t)` / `failureLine(prefix, kind, t)`(Task 5)→ Task 7、8 调用参数顺序一致。
 - 钩子字段名 `errorKind`(Task 6)→ Task 7 解构 `errorKind`、Task 8 解构为 `errorKind: tasksErrorKind`;测试桩字段名同为 `errorKind`。
 - `WinratePoint.bad`(Task 4)→ `ReviewWinratePlot.worstDropIndex` 读 `p.bad`;`deltaScore` 字段删除,Task 4 Step 7 用 `rg` 与 `tsc -b` 确认没有残留读者。

@@ -65,6 +65,7 @@
 - **期望**:
   - 屏 19 两格与屏 20 走**同一条管线**:`toMoveAnalysisMap → gradedMoves`。「失误」= `isBad`(小亏 / 失误 / 恶手,与屏 20「失误」tab 同一个桶),「妙手」= `isBrilliant`。两格**只数视角那一方**,屏 20 折叠头是双方合计。
   - 云端太旧、整份报告一手 `grade` 都没有时,退回规则只在 `gradedMoves` 一处,不另写。
+  - 两格**不看准确率的 `counted`**(2026-09-15 计划审查补):`toMoveAnalysisMap` 只要胜率与目差就收一手,`_moves_with_grades` 只补 `grade` 不补 `delta_score`;某方的手都没有 `delta_score` 时准确率是 null,但失误 / 妙手照数,否则与屏 20 的等式破。
   - 胜率图红段只在上面那个「坏手」桶里挑胜率跌幅最大的一手(走子方视角,算法不变)。
   - 删掉 `keyMoves`、`KeyMove`、`BRILLIANT_SCORE_GAIN`、`MISTAKE_SCORE_LOSS` 以及 `keyMoves` 的 6 条单测(源码注释写的「5 条」已过期)。产品代码里不再有任何按 `delta_score` 阈值判妙手 / 失误的地方(`reportModel.ts:202-204` 那三个布尔量只是 `gradedMoves` 的退回输入,保留)。
   - **准确率那一格不换轴**:仍照搬 `katrain/core/ai.py` 的 `game_report()`,与桌面版、web 版对局报告同一个数。ai.py 换轴属于 move-grading 登记的遗留(R2),必须两边一起动。
@@ -85,6 +86,9 @@
 - **期望**:
   - 两个 `authFetch` 在错误对象上挂 `status` 与 `body`,**message 不变**(galaxy 屏上与既有单测都认这句)。
   - 共享的纯函数 `utils/requestFailure.ts` 按**数字 status**分类:502 / 503 / 504 → `offline`;404 → `not_found`;402 且 `detail.code === 'insufficient_credits'` → `no_credits`(R5 防御半,见下);400 且 `detail.code === 'unparsable_sgf'` → `bad_sgf`;其余及没有 status 的一律 `other`,**不猜**。
+  - **404 不是处处都权威(2026-09-15 计划审查补)**:报告接口(`_dispatch_remote_only`)与删除(`_remote_only`)上游 404 原码透传,是云端说的;而盒上 `GET /user-games/{id}`(`repository.py` `user_games_get`)云端连不上 / 超时 / 回任何 HTTP 错都退本机缓存,缓存没有也回 404。⇒ 读这个接口的两处(`useReportDetail` 取对局那一路、屏 19 预览)用 `cacheBackedReadFailureKind`,404 降为 `other`,不说「已经不在了」。
+  - 棋谱库导入前一步是 `KifuAPI.getAlbum`,今天抛的错不带 status ⇒ 那一步失败落 `other`,只说前半句。本赛道**不改** `kifuApi.ts`(kifu 赛道 T6 改它抛 `ApiError(status)`,合并后自动分得出)。
+  - 盒上列表断网时 `user_games_list` 退本机缓存(200 + `authority=local_cache`),不会走到列表错误块;列表那条单测钉的是接线,不是盒上断网路径。
   - `useReportDetail`、`useReportTasks` 在原有 `error` 之外加一个 `errorKind`。只增字段,galaxy 不受影响。
   - kiosk 屏上的话由 `reviewPresentation.ts` 的 `failureReason` / `failureLine` 给出,格式是「做什么没成 · 为什么」。原因分不出(`other`)时只说前半句,**不编原因**(「稍后再试」对一个永久的 409 是假话)。原因词:连不上云端 / 已经不在了 / 积分不足 / 这份谱读不出来。
   - 屏 20 整份读不到时:`not_found` → 「未找到复盘。」;其余 → 「这份报告没读出来」,下面一行写原因。
@@ -203,6 +207,7 @@
 | `katrain/web/ui/src/utils/requestFailure.ts`(新建,共享领地) | 请求失败分类纯函数 | tsumego(N9)、kifu(N9、棋谱详情)、play-ai(N25)、cross-platform(X9)都是同类「印原文」问题,可能各自新建同名 / 同义工具。建议统一用这一个 |
 | `katrain/web/ui/src/api/userGamesApi.ts`(共享) | `authFetch` 错误对象挂 `status` / `body`,message 不变 | play-ai(A6 可能读对局数)、cross-platform(N13 存谱)、kifu |
 | `katrain/web/ui/src/api/reportApi.ts`(共享) | 同上 | play-ai(A6 可能读报告数) |
+| `katrain/web/ui/src/api/kifuApi.ts`(共享) | **本赛道不改** | **kifu**(T6 改为抛 `ApiError(status)`)。合并后屏 19「从棋谱库导入」那一步失败自动能说原因;kifu 合并时顺手确认 `ReportsPage.test.tsx`「从棋谱库导入失败」那条(桩是今天不带 status 的普通 `Error`)仍绿 |
 | `katrain/web/ui/src/kiosk/pages/ResearchPage.tsx` + `ResearchPage.userGame.test.tsx` | S1 判别位与取谱失败副标题(`:134`、`:438-455`) | kifu(S5 研究屏打开 / 保存;棋谱详情 → 研究 `?kifu_id` 深链) |
 | `katrain/web/ui/src/features/report/reportStats.ts`、`useReportDetail.ts`、`useReportTasks.ts`(共享,仅复盘消费) | R1 管线;N24 `errorKind` | 预计无 |
 | `katrain/web/ui/src/kiosk/pages/ReportsPage.tsx`(+`.test.tsx`)、`ReportDetailPage.tsx`(+`.test.tsx`)、`kiosk/components/report/ReviewWinratePlot.tsx`、`tests/report-kiosk.spec.ts`(一行注释) | R1 / N7 / N24 | 预计无(A6 若要在对弈首页显示报告数,读的是 API 不是这两屏);kifu 计划把 `ReportsPage.test.tsx` 列为负载下易超时名单 |

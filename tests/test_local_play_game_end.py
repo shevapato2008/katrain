@@ -207,6 +207,30 @@ def test_board_mode_double_pass_records_nothing(client, monkeypatch, game_type):
     assert _recorded_results(client) == []
 
 
+def test_timeout_during_awaiting_count_does_not_record_and_count_still_can(client, monkeypatch):
+    """F2：等数子期间 end_result 是回落串「终局」，不是真实结果 —— /api/timeout 不能把它当成
+    「已判过」而放行落账，之后数子成功也必须还能正常落账（不是已经被 `_recorded` 卡死）。
+    """
+    session = _owned_game(client, monkeypatch, game_type="pvp_local", board_mode=True, base=100)
+    sid = session.session_id
+    _move(client, sid, [3, 3])
+    _move(client, sid)
+    state = _move(client, sid)
+    assert state["awaiting_count"] is True
+
+    r = client.post("/api/timeout", json={"session_id": sid})
+
+    assert r.status_code == 200, r.text
+    assert r.json()["state"]["awaiting_count"] is True
+    assert _recorded_results(client) == []  # 没有落账「终局」这个无胜负占位符
+
+    session.katrain.game.current_node.analysis["root"] = {"scoreLead": 3.2, "winrate": 0.6, "visits": 10}
+    count_r = client.post("/api/count/request", json={"session_id": sid})
+
+    assert count_r.status_code == 200, count_r.text
+    assert _recorded_results(client) == ["B+3.2"]  # 数子结果照样能存进去
+
+
 def test_galaxy_double_pass_records_exactly_as_today(client, monkeypatch):
     """spec §7-3：galaxy（非盒上模式）双 pass 的落账与今天逐字一致 —— 仍是没有胜负的回落串。
 

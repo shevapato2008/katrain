@@ -18,7 +18,7 @@ from katrain.web.api.v1.api import api_router
 from katrain.web.api.v1.endpoints.ai_ladder import mark_ai_ladder_remote_terminal
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
-from katrain.web.core.game_end_rules import is_time_exhausted, scaled_count_min_moves
+from katrain.web.core.game_end_rules import is_awaiting_count, is_time_exhausted, scaled_count_min_moves
 from katrain.web.core.ranked_session_guard import (
     guard_ai_ladder_ranked_owner,
     guard_ai_ladder_ranked_human_action,
@@ -2168,8 +2168,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             katrain = session.katrain
             if getattr(session, "game_type", None) == "pvp_local":
                 # 前端的钟只说明「屏上算到 0 了」；判负前服务端自己核一遍（spec D3）。
-                # 已终局的局不改写结果。
-                if not katrain.game.end_result:
+                # 已终局的局不改写结果；等数子期间 end_result 会是「终局」但还没有
+                # 真正的胜负结果（F2）,这里不能当成"已判过"而跳过。
+                if not katrain.game.current_node.end_state and not is_awaiting_count(katrain):
                     katrain.update_timer()
                     if not is_time_exhausted(katrain):
                         state = katrain.get_state()
@@ -2206,7 +2207,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 {"type": "game_end", "data": {"reason": "timeout", "winner_id": winner_id, "result": result}},
             )
         elif not is_multiplayer and current_user and session.user_id:
-            result = session.katrain.game.end_result
+            # 只有认输/超时/数子写过的结果才落账（F2）：等数子期间 end_result 是
+            # 「终局」占位符,不是真实胜负,不能落账,否则数子完成后再也存不进去。
+            result = session.katrain.game.current_node.end_state
             if result:
                 await _record_ai_game(session, app, current_user, result)
 

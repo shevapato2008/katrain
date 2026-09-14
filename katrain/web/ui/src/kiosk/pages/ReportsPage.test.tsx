@@ -183,6 +183,21 @@ describe('屏 19 · 列表与选中', () => {
     await waitFor(() => expect(mocks.get).toHaveBeenCalledWith('token', 'b'));
   });
 
+  /**
+   * N24 反例(2026-09-15 计划审查):盒上 GET /user-games/{id} 云端失败会退本机缓存,缓存没有也回 404。
+   * 列表从云端读到、随后断网、点一局本机没缓存过的 ⇒ 预览 404。这条 404 证明不了「云端没有」,
+   * 不许说「已经不在了」,也不印原文。变异验证:预览那处改用 requestFailureKind,这条红。
+   */
+  it('预览 404 只说「棋谱预览加载失败」,不说「已经不在了」、不印原文', async () => {
+    mocks.get.mockRejectedValue(
+      Object.assign(new Error('Request failed 404: {"detail":"Game not found"}'), { status: 404 }),
+    );
+    renderPage();
+    expect(await screen.findByText('棋谱预览加载失败')).toBeInTheDocument();
+    expect(screen.queryByText(/已经不在了/)).toBeNull();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+  });
+
   it('刷新后仍在的那一局保持选中,不跳回第一行', async () => {
     renderPage();
     await waitFor(() => expect(rows()).toHaveLength(2));
@@ -240,10 +255,16 @@ describe('屏 19 · 列表与选中', () => {
     expect(screen.queryByText('过期')).toBeNull();
   });
 
-  it('列表读不到时报错,重试能反复点', async () => {
-    mocks.list.mockRejectedValueOnce(new Error('断网了'));
+  // 注意:盒上列表断网时 `user_games_list` 退本机缓存(200 + authority=local_cache),走不到这里;
+  // 这条钉的是「分得出原因就说原因、不印原文」这根接线,不是盒上断网的真实路径。
+  it('列表读不到时报错(分得出原因说原因,不印原文),重试能反复点', async () => {
+    mocks.list.mockRejectedValueOnce(
+      Object.assign(new Error('Request failed 503: {"detail":"Remote server unavailable"}'), { status: 503 }),
+    );
     renderPage();
-    expect(await screen.findByText('断网了')).toBeInTheDocument();
+    expect(await screen.findByText('对局列表读不到')).toBeInTheDocument();
+    expect(screen.getByText('连不上云端')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitFor(() => expect(rows()).toHaveLength(2));
   });
@@ -449,11 +470,13 @@ describe('屏 19 · 这一局的胜率', () => {
     expect(screen.getByTestId('review-winrate-drop')).toBeInTheDocument();
   });
 
-  it('报告读不出来时那句话就是错误本身,不是一条假曲线', async () => {
+  it('报告读不出来时那句话说的是这件事(不印原文),不是一条假曲线', async () => {
     mocks.hookResult = { ...mocks.hookResult, reportStatesByGame: { a: { completedNormal: task() } } };
-    mocks.getMoves.mockRejectedValue(new Error('报告没了'));
+    mocks.getMoves.mockRejectedValue(
+      Object.assign(new Error('Request failed 404: {"detail":"Report task not found"}'), { status: 404 }),
+    );
     renderPage();
-    expect(await screen.findByText('报告没了')).toBeInTheDocument();
+    expect(await screen.findByText('报告读不出来 · 已经不在了')).toBeInTheDocument();
     expect(screen.getByTestId('review-winrate-plot')).toHaveAttribute('data-state', 'empty');
   });
 
@@ -631,7 +654,9 @@ describe('屏 19 · 生成报告那一组', () => {
     const box = await screen.findByLabelText('SGF 内容');
     fireEvent.change(box, { target: { value: '(;SZ[19];B[aa])' } });
     fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
-    expect(await screen.findByText('SGF 不合法')).toBeInTheDocument();
+    // 没有 status 的错落 other ⇒ 只说「做什么没成」,不把 error.message 贴进对话框。
+    expect(await screen.findByText('导入 SGF 失败')).toBeInTheDocument();
+    expect(screen.queryByText('SGF 不合法')).toBeNull();
     expect(box).toHaveValue('(;SZ[19];B[aa])');
   });
 
@@ -643,6 +668,20 @@ describe('屏 19 · 生成报告那一组', () => {
     fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
     await waitFor(() => expect(mocks.getAlbum).toHaveBeenCalledWith(10));
     await waitFor(() => expect(mocks.create).toHaveBeenCalled());
+  });
+
+  // 棋谱库在云端;今天 KifuAPI 抛的错不带 status ⇒ 分不出原因,只说前半句,不印原文。
+  // kifu 赛道 T6 把它改抛 ApiError(status) 之后,这里自动能说「连不上云端」(分类器只认数字 status)。
+  it('从棋谱库导入失败:只说「从棋谱库导入失败」,不印原文,也不往下建对局', async () => {
+    mocks.getAlbum.mockRejectedValueOnce(new Error('Request failed 503: {"detail":"Remote server unavailable"}'));
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: /导入棋谱复盘/ }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: '从棋谱库导入' }));
+    fireEvent.click(await screen.findByText('库赛事'));
+    fireEvent.click(screen.getByRole('button', { name: '仅导入' }));
+    expect(await screen.findByText('从棋谱库导入失败')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+    expect(mocks.create).not.toHaveBeenCalled();
   });
 });
 
@@ -674,8 +713,32 @@ describe('屏 19 · 删除', () => {
     await waitFor(() => expect(rows()[0]).toHaveAttribute('data-selected', 'true'));
     fireEvent.click(within(rows()[0]).getByRole('button', { name: '删除' }));
     fireEvent.click(await screen.findByRole('button', { name: '删除对局' }));
-    expect(await screen.findByText('删不掉')).toBeInTheDocument();
+    expect(await screen.findByText('删除对局失败')).toBeInTheDocument();
+    expect(screen.queryByText('删不掉')).toBeNull();
     expect(rows()).toHaveLength(2);
+  });
+});
+
+describe('屏 19 · 报告任务出错怎么说', () => {
+  // R5 防御半:计费闸开闸后,创建报告会被 402 insufficient_credits 拒收(今天闸关着)。
+  it('被 402 积分不足拒收:告警行说「积分不足」,不把 JSON 原文贴上屏', async () => {
+    mocks.hookResult = {
+      ...mocks.hookResult,
+      error: 'Request failed 402: {"detail":{"code":"insufficient_credits","need":125,"have":0}}',
+      errorKind: 'no_credits',
+    };
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    expect(document.querySelector('.rverr')).toHaveTextContent('积分不足');
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+  });
+
+  it('分不出原因时说一句笼统的,也不印原文', async () => {
+    mocks.hookResult = { ...mocks.hookResult, error: 'Request failed 409: report already exists', errorKind: 'other' };
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    expect(document.querySelector('.rverr')).toHaveTextContent('报告任务出错了');
+    expect(screen.queryByText(/Request failed/)).toBeNull();
   });
 });
 

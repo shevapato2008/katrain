@@ -2,13 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { ReportTaskMove } from '../../api/reportApi';
 import type { TopMove } from '../../types/live';
-import {
-  BRILLIANT_SCORE_GAIN,
-  keyMoves,
-  MISTAKE_SCORE_LOSS,
-  summarizeReportMoves,
-  winrateSeries,
-} from './reportStats';
+import { gradedMoves, isBad, isBrilliant } from '../analysis/moveGrade';
+import { toMoveAnalysisMap } from './reportModel';
+import { summarizeReportMoves, winrateSeries } from './reportStats';
 
 /**
  * 准确率那条**期望值是手算的**,不是把实现跑一遍抄下来的 —— 抄下来的期望值
@@ -43,6 +39,26 @@ const GAME: ReportTaskMove[] = [
   move({ move_number: 3, winrate: 0.72, score_lead: 4, actual_move: 'C3', actual_player: 'B', delta_score: 3 }),
 ];
 
+/**
+ * R1 回归夹具(2026-09-14 调研):grade 与 delta_score **故意打架**,而且打架的方式让
+ * 「旧口径的黑 + 白」与「屏 20 的双方合计」**两个数都不相等** —— 否则等式那条改前也是绿的。
+ *   旧口径(delta ≥2 妙 / ≤−3 失误):黑 妙1 失1,白 妙1 失0 ⇒ 合计 妙2 失1
+ *   七档(isBrilliant / isBad):     黑 妙0 失1,白 妙1 失1 ⇒ 合计 妙1 失2
+ */
+const FIGHTING: ReportTaskMove[] = [
+  move({ move_number: 0, winrate: 0.5, score_lead: 0 }),
+  // 黑:两次搜索之差 +3(旧口径妙手),服务端判「最佳」
+  move({ move_number: 1, winrate: 0.6, score_lead: 3, actual_player: 'B', delta_score: 3, grade: 'best' }),
+  // 白:旧口径 −1(不算失误),服务端判「小亏」
+  move({ move_number: 2, winrate: 0.62, score_lead: 4, actual_player: 'W', delta_score: -1, grade: 'inaccuracy' }),
+  // 黑:旧口径 −4(失误),服务端在同一次搜索里只算亏 1 目,判「尚可」
+  move({ move_number: 3, winrate: 0.45, score_lead: 0, actual_player: 'B', delta_score: -4, grade: 'playable' }),
+  // 白:旧口径 +2.5(妙手),服务端也判「妙手」
+  move({ move_number: 4, winrate: 0.4, score_lead: -1, actual_player: 'W', delta_score: 2.5, grade: 'brilliant' }),
+  // 黑:两次搜索之差只有 −2(旧口径不算),服务端同一次搜索里算亏 7 目,判「恶手」
+  move({ move_number: 5, winrate: 0.2, score_lead: -8, actual_player: 'B', delta_score: -2, grade: 'blunder' }),
+];
+
 describe('summarizeReportMoves —— 三格指标', () => {
   it('黑方:准确率按加权丢分算,妙手那一手数进来了', () => {
     const s = summarizeReportMoves(GAME, 'B');
@@ -59,7 +75,8 @@ describe('summarizeReportMoves —— 三格指标', () => {
     const s = summarizeReportMoves(GAME, 'W');
     expect(s.counted).toBe(1);
     expect(s.brilliants).toBe(0);
-    expect(s.mistakes).toBe(0);
+    // 夹具不带 grade ⇒ 走 gradedMoves 的退回规则:亏 2 目 ≤ −1.5 是「小亏」,与屏 20「失误」tab 同桶。
+    expect(s.mistakes).toBe(1);
     // 丢 2.0 分、上一行没候选 ⇒ 复杂度 0、权重 = max(.05, min(1, 0.5)) = 0.5
     // 加权丢分 = 2.0 ⇒ 100 × 0.75² = 56.25
     expect(s.accuracy).toBeCloseTo(56.25, 6);
@@ -78,19 +95,21 @@ describe('summarizeReportMoves —— 三格指标', () => {
     expect(summarizeReportMoves(withHole, 'W').counted).toBe(1);
   });
 
-  it('阈值就是仓里已有的那两个数 —— 换了就和报告详情对不上', () => {
-    expect(BRILLIANT_SCORE_GAIN).toBe(2);
-    expect(MISTAKE_SCORE_LOSS).toBe(-3);
+  // 云端太旧、整份报告一手 grade 都没有时,退回规则**只在 gradedMoves 一处** —— 这里不另写一份。
+  it('整份报告都没有 grade 时,退回规则和屏 20 是同一条', () => {
     const edge = [
       move({ move_number: 0, score_lead: 0, winrate: 0.5 }),
       move({ move_number: 1, actual_player: 'B', delta_score: 2, score_lead: 2, winrate: 0.6 }),
       move({ move_number: 2, actual_player: 'B', delta_score: -3, score_lead: -1, winrate: 0.4 }),
       move({ move_number: 3, actual_player: 'B', delta_score: 1.99, score_lead: 1, winrate: 0.5 }),
-      move({ move_number: 4, actual_player: 'B', delta_score: -2.99, score_lead: -2, winrate: 0.4 }),
+      move({ move_number: 4, actual_player: 'B', delta_score: -1.49, score_lead: -2, winrate: 0.4 }),
     ];
     const s = summarizeReportMoves(edge, 'B');
+    const screen20 = gradedMoves(toMoveAnalysisMap(edge, 'g'));
+    expect(s.brilliants).toBe(screen20.filter(isBrilliant).length);
+    expect(s.mistakes).toBe(screen20.filter(isBad).length);
     expect(s.brilliants).toBe(1);   // 正好 2 算,1.99 不算
-    expect(s.mistakes).toBe(1);     // 正好 -3 算,-2.99 不算
+    expect(s.mistakes).toBe(1);     // 正好 -3 算,-1.49 不到小亏线
   });
 
   it('先验缺席时复杂度退回 0,不整条崩掉', () => {
@@ -101,16 +120,49 @@ describe('summarizeReportMoves —— 三格指标', () => {
     // 复杂度 0 ⇒ 权重 = max(.05, min(1, 2/4)) = 0.5 ⇒ 加权丢分 2 ⇒ 56.25
     expect(summarizeReportMoves(noPrior, 'B').accuracy).toBeCloseTo(56.25, 6);
   });
+
+  // R1 回归钉子。变异验证:把 summarizeReportMoves 退回按 delta_score 阈值数,这两条都红。
+  it('失误 / 妙手按服务端七档数,不按两次搜索之差', () => {
+    expect(summarizeReportMoves(FIGHTING, 'B')).toMatchObject({ brilliants: 0, mistakes: 1 });
+    expect(summarizeReportMoves(FIGHTING, 'W')).toMatchObject({ brilliants: 1, mistakes: 1 });
+  });
+
+  it('黑的格 + 白的格 = 屏 20 折叠头「妙 a · 坏 b」那两个数', () => {
+    const screen20 = gradedMoves(toMoveAnalysisMap(FIGHTING, 'g'));
+    const black = summarizeReportMoves(FIGHTING, 'B');
+    const white = summarizeReportMoves(FIGHTING, 'W');
+    expect(black.brilliants + white.brilliants).toBe(screen20.filter(isBrilliant).length);
+    expect(black.mistakes + white.mistakes).toBe(screen20.filter(isBad).length);
+  });
+
+  // 服务端给了 grade、这一行却没有 delta_score(`toMoveAnalysisMap` 只要胜率与目差就收这一手,
+  // `_moves_with_grades` 只补 grade 不补 delta_score):屏 20 照样把它数进「坏」。
+  // 准确率要 delta_score、算不了是它自己的事,两格不许跟着归零。
+  // 变异验证:把「counted === 0 就整体返回 0」那种提前返回放回去,这条红。
+  it('grade 有值而 delta_score 为 null:准确率是 null,失误照数,与屏 20、红段一致', () => {
+    const noDelta = [
+      move({ move_number: 0, winrate: 0.5, score_lead: 0 }),
+      move({ move_number: 1, winrate: 0.2, score_lead: -8, actual_player: 'B', delta_score: null, grade: 'blunder' }),
+    ];
+    const s = summarizeReportMoves(noDelta, 'B');
+    expect(s).toMatchObject({ accuracy: null, counted: 0, mistakes: 1, brilliants: 0 });
+    expect(s.mistakes).toBe(gradedMoves(toMoveAnalysisMap(noDelta, 'g')).filter(isBad).length);
+    expect(winrateSeries(noDelta).find((p) => p.moveNumber === 1)?.bad).toBe(true);
+  });
 });
 
 describe('winrateSeries —— 曲线的点', () => {
-  it('黑方胜率原样带出来,谁走的那一手也带着', () => {
+  it('黑方胜率原样带出来,谁走的那一手也带着;坏手标记走七档的退回规则', () => {
     expect(winrateSeries(GAME)).toEqual([
-      { moveNumber: 0, winrate: 0.5, player: null, deltaScore: null },
-      { moveNumber: 1, winrate: 0.46, player: 'B', deltaScore: -1 },
-      { moveNumber: 2, winrate: 0.55, player: 'W', deltaScore: -2 },
-      { moveNumber: 3, winrate: 0.72, player: 'B', deltaScore: 3 },
+      { moveNumber: 0, winrate: 0.5, player: null, bad: false },
+      { moveNumber: 1, winrate: 0.46, player: 'B', bad: false },
+      { moveNumber: 2, winrate: 0.55, player: 'W', bad: true },    // 亏 2 目 ⇒ 小亏
+      { moveNumber: 3, winrate: 0.72, player: 'B', bad: false },
     ]);
+  });
+
+  it('红段候选(bad)与三格里的「失误」是同一个桶 —— 按 grade,不按 delta_score', () => {
+    expect(winrateSeries(FIGHTING).filter((p) => p.bad).map((p) => p.moveNumber)).toEqual([2, 5]);
   });
 
   // 断掉的手数**不补点**。补了就等于说「这一段也算过」——「只算到第 40 手」的报告
@@ -126,69 +178,3 @@ describe('winrateSeries —— 曲线的点', () => {
   });
 });
 
-describe('keyMoves —— 重点手', () => {
-  // 白走坏的时候**黑方胜率是涨的**。按黑方胜率的绝对变化排,会把白的失误排成「黑的好手」,
-  // 而且方向反了还看不出来 —— 屏上照样是一行通顺的中文。
-  it('按走子方自己视角的跌幅排,黑白各按各的算', () => {
-    const rows = [
-      move({ move_number: 0, winrate: 0.5, score_lead: 0 }),
-      // 黑走坏:黑胜率 50 → 30,掉 20
-      move({ move_number: 1, actual_player: 'B', winrate: 0.3, score_lead: -6, delta_score: -6 }),
-      // 白走坏:黑胜率 30 → 65 ⇒ 白自己 70 → 35,掉 35
-      move({ move_number: 2, actual_player: 'W', winrate: 0.65, score_lead: 4, delta_score: -10 }),
-    ];
-    const k = keyMoves(rows);
-    expect(k.map((x) => x.moveNumber)).toEqual([2, 1]);
-    expect(k[0].player).toBe('W');
-    expect(k[0].beforePct).toBeCloseTo(70, 6);
-    expect(k[0].afterPct).toBeCloseTo(35, 6);
-    expect(k[0].dropPct).toBeCloseTo(35, 6);
-    expect(k[1].dropPct).toBeCloseTo(20, 6);
-  });
-
-  // 「该走 X」在**上一行**里 —— 本行已经是走完之后的局面,它的首选说的是「下一手该走哪儿」。
-  it('「该走 X」取上一行的首选,不是本行的', () => {
-    const cand = (m: string) => [{ move: m, visits: 1, winrate: 0.5, prior: 0.9, pv: [m], score_lead: 0 }] as unknown as TopMove[];
-    const rows = [
-      move({ move_number: 0, winrate: 0.5, score_lead: 0, top_moves: cand('R11') }),
-      move({ move_number: 1, actual_player: 'B', winrate: 0.2, score_lead: -8, delta_score: -8, actual_move: 'C3', top_moves: cand('S8') }),
-    ];
-    expect(keyMoves(rows)[0]).toMatchObject({ bestMove: 'R11', playedMove: 'C3' });
-  });
-
-  it('上一行没存候选时说「没有」,不拿本行的顶替', () => {
-    const rows = [
-      move({ move_number: 0, winrate: 0.5, score_lead: 0 }),
-      move({ move_number: 1, actual_player: 'B', winrate: 0.2, score_lead: -8, delta_score: -8 }),
-    ];
-    expect(keyMoves(rows)[0].bestMove).toBeNull();
-  });
-
-  it('门槛就是失误线 —— 屏上列的这几手和三格里数的那些手是同一批', () => {
-    const rows = [
-      move({ move_number: 0, winrate: 0.5, score_lead: 0 }),
-      move({ move_number: 1, actual_player: 'B', winrate: 0.4, score_lead: -3, delta_score: MISTAKE_SCORE_LOSS }),
-      move({ move_number: 2, actual_player: 'W', winrate: 0.45, score_lead: -2, delta_score: -2.99 }),
-    ];
-    expect(keyMoves(rows).map((k) => k.moveNumber)).toEqual([1]);
-  });
-
-  it('丢了目却没丢胜率的手不进这张表', () => {
-    const rows = [
-      move({ move_number: 0, winrate: 0.5, score_lead: 0 }),
-      move({ move_number: 1, actual_player: 'B', winrate: 0.52, score_lead: -9, delta_score: -9 }),
-    ];
-    expect(keyMoves(rows)).toEqual([]);
-  });
-
-  it('最多只列 limit 条', () => {
-    const rows = [move({ move_number: 0, winrate: 0.9, score_lead: 0 })];
-    for (let n = 1; n <= 6; n += 1) {
-      rows.push(move({
-        move_number: n, actual_player: 'B',
-        winrate: 0.9 - n * 0.1, score_lead: -n * 4, delta_score: -4 - n,
-      }));
-    }
-    expect(keyMoves(rows, 3)).toHaveLength(3);
-  });
-});

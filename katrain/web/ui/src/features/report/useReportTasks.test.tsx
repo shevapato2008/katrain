@@ -358,6 +358,27 @@ describe('useReportTasks', () => {
     expect(result.current.queueSummary).toEqual(emptySummary);
   });
 
+  // N24 / R5:计费闸开闸后,创建报告会被 402 insufficient_credits 拒收(今天闸关着)。
+  it('创建被 402 insufficient_credits 拒收时 errorKind = no_credits;clearError 一起清', async () => {
+    const { result } = renderHook(() => useReportTasks(null, true));
+    await settle();
+    const body = '{"detail":{"code":"insufficient_credits","need":125,"have":0}}';
+    mockCreate.mockRejectedValueOnce(
+      Object.assign(new Error(`Request failed 402: ${body}`), { status: 402, body }),
+    );
+
+    await act(async () => {
+      await expect(result.current.createReport({ userGameId: 'game-2', totalMoves: 80 })).rejects.toThrow();
+    });
+
+    expect(result.current.error).toBe(`Request failed 402: ${body}`);
+    expect(result.current.errorKind).toBe('no_credits');
+
+    act(() => result.current.clearError());
+    expect(result.current.error).toBeNull();
+    expect(result.current.errorKind).toBeNull();
+  });
+
   it('uses the translated fallback for non-Error failures and recovers from a failed create', async () => {
     const createRequest = deferred<ReportTaskSummary>();
     mockCreate.mockReturnValue(createRequest.promise);

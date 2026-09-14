@@ -65,7 +65,7 @@ test('四图:题目列表 ←→ sample-go/shots/13-problems.png', async ({ page
     implementationCaption:
       '实现:/kiosk/tsumego/15k/capturing/1 @1024×600 · 时钟冻 16:40 · 题号 45 个是 fixture,进度造进 tsumego_progress:u1(真存储真格式,钥匙分人)· '
       + '三处按 Fan「别写那么多小字」改了:两条组标题右端的说明去掉、数据条标签去掉「· 当前单元」、错题那行点名「这一类」 · '
-      + '「只做错过的」不摆按不动的「开始」,只挂 §14 琥珀标',
+      + '「只做错过的」已接通(T1):行尾是「开始」,进错题页 · 「整级」那行改成「这一级的全部题，按分类排好」(N8:不是混排)',
   });
   console.log(`[fourup 13-problems] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

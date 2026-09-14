@@ -78,7 +78,8 @@ test('四图:训练营 ←→ sample-go/shots/11-training.png', async ({ page })
     referenceCaption:
       '参考:sample-go/shots/11-training.png · 2026-08-22 起稿子上不再有旁注小字(Fan 裁:那些字收进 HTML 注释)',
     implementationCaption:
-      '实现:/kiosk/tsumego @1024×600 · 时钟冻 16:40 · 题库六档是 fixture(题量由页面从接口算,不是图上写死)· 接着上次 / 两处高亮 / 硬件三格都是 fixture · 镜像盘压暗=还没接到识别结果 · 环恒「—」是真的:这一层算不出每档进度',
+      '实现:/kiosk/tsumego @1024×600 · 时钟冻 16:40 · 题库六档是 fixture(题量由页面从接口算,不是图上写死)· 接着上次 / 两处高亮 / 硬件三格都是 fixture · 镜像盘压暗=还没接到识别结果 · 环恒「—」是真的:这一层算不出每档进度'
+      + ' · 问候副标是「落子即判，走错当场退回」不是稿子的「题在实体盘上摆好」(N26③:实体开关默认关)',
   });
   console.log(`[fourup 11-training] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

@@ -32,6 +32,9 @@ const OUT = resolve(process.cwd(),
  *    相机那颗**删** —— 唯一现成的数据源 `vision/status` 在摆谱专用部署(有相机、有采集、
  *    无 vision 模型)下恒返回 `camera_connected:false`,挂上去就是在好机器上画红点。
  *  · 「完成」常驻但摆完之前灰着 + 写明还剩几手(常驻是为了那颗按 250 次的键位置不跳)。
+ *  · **2026-09-14 起取的是上线态**(Fan:拍照只为采 YOLO 训练数据,上线版不拍)。稿子那块
+ *    「摄像头 · 这一手要采一帧 / 已采集 12 帧 / 最近保存」整块换成「灯 · 颜色对照」三行;
+ *    页控条副标题不写帧数;「确认落子」图标是 hand-pointing。采集态不取四图(只在采集机上出现)。
  */
 
 /** 稿子那 12 手,换成后端 `steps[]`(row 从上往下数)。 */
@@ -76,6 +79,8 @@ const boot = async (page: import('@playwright/test').Page) => {
     json: { id: 1, username: '访客', rank: '5段', credits: 0 },
   }));
   // ⚠️ **这条不是装饰,是这一屏的四图能不能自己站住的前提。**
+  // (2026-09-14 起只有采集态套守卫,但**上线态同样离不开这条桩**:上线态要等棋盘状态读到过才挂摆谱屏
+  //  —— 不桩就停在「正在检查棋盘状态」,`baipu-pcard` 照样永远不出现。)
   // `baipu/session/:source` 外面套着 `PhysicalBoardGuard`,它读 `GeometryContext`;
   // 而 `GeometryProvider` 只在**接口 404** 时才落到 `disabled`(那是「这台盒子没摄像头」
   // 这个**读到了的结论**),接口连不上时 phase 停在 `required` ⇒ 整屏被换成标定台,
@@ -93,10 +98,9 @@ const boot = async (page: import('@playwright/test').Page) => {
   await page.route('**/api/v1/led/**', (route) => route.fulfill({
     json: { ok: true, connected: true, shown_at: null, errors: [] },
   }));
-  // 采集在这台机器上是通的:回一份成功,好让「已采集 N 帧 / 最近保存」有真数。
-  await page.route('**/api/v1/baipu/capture', (route) => route.fulfill({
-    json: { path: '/data/baipu/s1/move_012.jpg', geometry_correction: null },
-  }));
+  // 取的是**上线态**(盒子默认)。钉死 `collect:false`:不让这张图随 :8001 上起的是不是采集机而变 ——
+  // 与上面 `geometry/status` 那条同一个判据(一张随后端在不在而变的实现图,不是这一屏的实现图)。
+  await page.route('**/api/v1/baipu/mode', (route) => route.fulfill({ json: { collect: false } }));
   await page.goto('/kiosk/baipu/session/s1');
   await page.waitForSelector('[data-testid="baipu-pcard"]');
 };
@@ -133,10 +137,10 @@ test('四图:摆谱 · 进行中 ←→ sample-go/shots/17-baipu.png', async ({ 
       + '**通栏状态条删了**:LED 那颗健康点由右上角「重新点灯」兼任(它就是这个故障的补救)，'
       + '相机那颗删——唯一数据源在摆谱专用部署下恒报 false，挂上去就是在好机器上画红点 · '
       + '「完成」常驻但摆完前灰着(常驻是为了那颗按 250 次的键位置不跳)· '
-      + '**「已采集 13 帧」比稿子多一帧,是稿子少算了**:数据契约写着 '
-      + '`frames.length = 1(开局空盘那帧) + 非 pass 落子数`，摆到第 13 手 = 1 + 12 = 13 · '
-      + '「最近保存」印的是**文件名**不是稿子那句「第 12 手」——盘前的人要拿它去磁盘上对，'
-      + '而手数在同一块账的第一行已经有了',
+      + '**上线态不拍照(Fan 2026-09-14:拍照只为采 YOLO 训练数据)**:'
+      + '稿子「摄像头 · 这一手要采一帧 / 已采集 12 帧 / 最近保存」整块换成「灯 · 颜色对照 / 摆好再按确认」，'
+      + '同样三行,右栏的账不变 · 页控条副标题只写「第 13 / 241 手」,不写帧数 · '
+      + '「确认落子」图标是 hand-pointing 不是相机——上线态画相机等于屏上说「这一下要拍照」',
   });
   console.log(`[fourup 17-baipu] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

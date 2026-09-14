@@ -115,7 +115,7 @@ const reportMoves: ReportTaskMove[] = [
 
 /**
  * 带七档的逐手分析。**新的五个 tab 读的是 `analysisByMove`,不是 `moves`** ——
- * 旧的「重点手」走 `reportStats.keyMoves(moves)`(按胜率掉点挑),
+ * 旧的「重点手」按胜率掉点挑(那份实现 2026-09-14 已删),
  * 改版后走 `features/analysis/moveGrade`(按服务端判好的档位 + 目损挑),和 galaxy 同口径。
  * 夹具因此必须把档位喂进 `analysisByMove`,只喂 `moves` 的话四个 tab 全是空态,
  * 断言就成了「空的和空的一致」。

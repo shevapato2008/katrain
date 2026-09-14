@@ -99,8 +99,8 @@ const reportMoves = (taskId: number) => Array.from({ length: 7 }, (_unused, move
   task_id: taskId,
   move_number: moveNumber,
   status: 'completed',
-  // 第 3 手是黑走的,黑的胜率从 54% 掉到 30% —— `keyMoves` 要**目和胜率同时掉**才收，
-  // 只把 `delta_score` 写成负数、胜率却一路上扬,那一手一样进不了「重点手」。
+  // 第 3 手是黑走的,黑的胜率从 54% 掉到 30% —— 胜率图的红段要**这一手是坏手、胜率也真掉了**才画,
+  // 只把分数写成负数、胜率却一路上扬,那一手一样不会标红。
   winrate: moveNumber === 3 ? 0.30 : 0.52 + moveNumber * 0.01,
   score_lead: 1.2 + moveNumber * 0.3,
   visits: 1200,

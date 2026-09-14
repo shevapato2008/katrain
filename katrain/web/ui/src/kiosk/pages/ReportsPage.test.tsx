@@ -411,7 +411,7 @@ describe('屏 19 · 左栏(选中这一局)', () => {
     expect(mocks.getMoves).not.toHaveBeenCalled();
   });
 
-  it('有报告时三格是真数字 —— 妙手那一格数的是 delta_score ≥ 2 的手', async () => {
+  it('有报告时三格是真数字(夹具不带 grade,走 gradedMoves 的退回规则)', async () => {
     mocks.hookResult = { ...mocks.hookResult, reportStatesByGame: { a: { completedNormal: task() } } };
     renderPage();
     await waitFor(() => expect(mocks.getMoves).toHaveBeenCalledWith('token', 41));
@@ -455,6 +455,26 @@ describe('屏 19 · 这一局的胜率', () => {
     renderPage();
     expect(await screen.findByText('报告没了')).toBeInTheDocument();
     expect(screen.getByTestId('review-winrate-plot')).toHaveAttribute('data-state', 'empty');
+  });
+
+  /**
+   * R1 回归钉子(2026-09-14 调研):三格与红段都要和屏 20 用同一套判据。
+   * 第 1 手「两次搜索之差」掉 4 分(过了旧失误线),可服务端在同一次搜索里只算它亏 1 目、判「尚可」。
+   * 旧实现会在这里数出「失误 1 手」并画红段;按七档,这一局没有坏手。
+   */
+  it('三格和红段都按服务端七档 —— 旧失误线上的「尚可」不算失误、不画红', async () => {
+    mocks.getMoves.mockResolvedValue([
+      reportMove({ move_number: 0, winrate: 0.5, score_lead: 0 }),
+      reportMove({ move_number: 1, winrate: 0.3, score_lead: -4, actual_player: 'B', delta_score: -4, grade: 'playable' }),
+      reportMove({ move_number: 2, winrate: 0.35, score_lead: -5, actual_player: 'W', delta_score: -1, grade: 'very_good' }),
+      reportMove({ move_number: 3, winrate: 0.55, score_lead: -2, actual_player: 'B', delta_score: 3, grade: 'best' }),
+    ]);
+    mocks.hookResult = { ...mocks.hookResult, reportStatesByGame: { a: { completedNormal: task() } } };
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('review-winrate-plot')).toHaveAttribute('data-state', 'plotted'));
+    expect(cellValue('失误')).toBe('0 手');
+    expect(cellValue('妙手')).toBe('0 手');
+    expect(screen.queryByTestId('review-winrate-drop')).toBeNull();
   });
 });
 

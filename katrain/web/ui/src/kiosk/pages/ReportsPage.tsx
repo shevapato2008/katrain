@@ -50,9 +50,8 @@ import { whenLabel } from '../utils/whenLabel';
  * 国象同一格 2026-07-28 把「妙手」撤成了「漏着」,理由是**它的分析跑在盒子自己身上**:
  * 单线程 12 万节点、13–16 层,同一局面能摆 45cp,噪声吃掉了判据。
  * **围棋这条线不是**:报告是 cron 离线跑的(`katrain/cron/jobs/report_analyze.py`),
- * 每手 500 或 2000 次计算,跟盒子算力无关;而且这个仓里已经有一份妙手口径
- * (`features/report/reportModel.ts:192`,`delta_score >= 2`),不用现发明。
- * ⇒ 照稿子写「妙手」。算式和出处见 `features/report/reportStats.ts`。
+ * 每手 500 或 2000 次计算,跟盒子算力无关;判级在服务端(`katrain/core/move_grade.yaml` 七档)。
+ * ⇒ 照稿子写「妙手」。2026-09-14 起两格与屏 20 走同一条判级管线,见 `features/report/reportStats.ts`。
  *
  * ## 和稿子不一样的地方(每条都有理由,四图上会红)
  *

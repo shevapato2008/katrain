@@ -3630,7 +3630,7 @@ msgstr ""
 msgid "auth:set_password_needs_phone"
 msgstr ""
 "Parolanızı değiştirmek için önce bir cep telefonu numarası bağlamalısınız. "
-"«Ayarlar → Cep telefonu numarası bağla» bölümünden bağlayıp geri dönün."
+"Önce «Cep telefonu numarası bağla» adımını tamamlayın, ardından geri dönün."
 
 msgid "auth:err_challenge_phone_mismatch"
 msgstr ""

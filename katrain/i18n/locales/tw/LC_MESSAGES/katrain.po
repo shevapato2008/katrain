@@ -3478,7 +3478,7 @@ msgid "auth:set_password_other_devices"
 msgstr "密碼已修改。為保護帳號安全，所有裝置（包括目前這台）的登入都已失效，請用新密碼重新登入。"
 
 msgid "auth:set_password_needs_phone"
-msgstr "修改密碼需要先綁定手機號碼。請先在「設定 → 綁定手機號碼」完成綁定，再回來改密碼。"
+msgstr "修改密碼需要先綁定手機號碼。請先完成「綁定手機號碼」，再回來修改密碼。"
 
 msgid "auth:err_challenge_phone_mismatch"
 msgstr "驗證碼發到的號碼不是這個帳號綁定的手機號碼。請填寫你綁定過的那個號碼。"

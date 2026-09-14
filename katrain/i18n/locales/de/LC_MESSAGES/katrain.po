@@ -3616,9 +3616,8 @@ msgstr ""
 
 msgid "auth:set_password_needs_phone"
 msgstr ""
-"Zum Ändern des Passworts müssen Sie zuerst eine Mobilnummer verknüpfen. Tun "
-"Sie das unter „Einstellungen → Mobilnummer verknüpfen“ und kommen Sie "
-"zurück."
+"Zum Ändern des Passworts müssen Sie zuerst eine Mobilnummer verknüpfen. "
+"Schließen Sie zuerst „Mobilnummer verknüpfen“ ab und kommen Sie dann zurück."
 
 msgid "auth:err_challenge_phone_mismatch"
 msgstr ""

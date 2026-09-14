@@ -3428,7 +3428,7 @@ msgstr ""
 "로그인하세요."
 
 msgid "auth:set_password_needs_phone"
-msgstr "비밀번호를 변경하려면 먼저 휴대폰 번호를 연결해야 합니다. «설정 → 휴대폰 번호 연결»에서 연결한 뒤 다시 시도하세요."
+msgstr "비밀번호를 변경하려면 먼저 휴대폰 번호를 연결해야 합니다. 먼저 «휴대폰 번호 연결»을 완료한 뒤 다시 시도하세요."
 
 msgid "auth:err_challenge_phone_mismatch"
 msgstr "인증번호를 보낸 번호가 이 계정에 연결된 번호와 다릅니다. 연결한 번호를 입력하세요."

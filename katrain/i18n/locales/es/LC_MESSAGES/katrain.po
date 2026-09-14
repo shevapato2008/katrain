@@ -3446,8 +3446,8 @@ msgstr ""
 
 msgid "auth:set_password_needs_phone"
 msgstr ""
-"Para cambiar la contraseña primero debes vincular un número de móvil. Hazlo "
-"en «Ajustes → Vincular número de móvil» y vuelve."
+"Para cambiar la contraseña primero debes vincular un número de móvil. "
+"Completa primero «Vincular número de móvil» y vuelve."
 
 msgid "auth:err_challenge_phone_mismatch"
 msgstr ""

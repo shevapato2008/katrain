@@ -3568,8 +3568,8 @@ msgstr ""
 
 msgid "auth:set_password_needs_phone"
 msgstr ""
-"You need to link a mobile number before changing your password. Link one "
-"under Settings → Link mobile number, then come back."
+"You need to link a mobile number before changing your password. Complete "
+"\"Link mobile number\" first, then come back."
 
 msgid "auth:err_challenge_phone_mismatch"
 msgstr ""

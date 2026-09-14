@@ -134,7 +134,7 @@ const BindPhoneDialog = ({ open, onClose, purpose = 'bind' }: {
         {needsPhoneFirst ? (
           <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
             {i18n.t('auth:set_password_needs_phone',
-              '修改密码需要先绑定手机号。请先在「设置 → 绑定手机号」完成绑定，再回来改密码。')}
+              '修改密码需要先绑定手机号。请先完成「绑定手机号」，再回来修改密码。')}
           </Typography>
         ) : (
         <>

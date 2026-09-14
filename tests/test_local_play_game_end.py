@@ -134,3 +134,58 @@ def test_state_count_min_moves_scales_with_board_size(client, monkeypatch, size,
 
     assert state["board_size"] == [size, size]
     assert state["count_min_moves"] == expected
+
+
+# ------------------------------------------------------------------ 认输（§3.2）
+
+
+@pytest.mark.parametrize(
+    "stones, color, expected",
+    [
+        ([], "W", "B+R"),  # 开局即认输：今天会判「落最后一手的一方」胜 = W+R
+        ([[3, 3]], "B", "W+R"),  # 黑下一手后黑认输：今天会判 B+R
+    ],
+)
+def test_local_resign_scores_the_named_side(client, monkeypatch, stones, color, expected):
+    session = _owned_game(client, monkeypatch, game_type="pvp_local", board_mode=True)
+    for coords in stones:
+        _move(client, session.session_id, coords)
+
+    r = client.post("/api/resign", json={"session_id": session.session_id, "color": color})
+
+    assert r.status_code == 200, r.text
+    assert r.json()["state"]["end_result"] == expected
+    assert _recorded_results(client) == [expected]
+
+
+def test_local_resign_without_color_is_rejected_before_mutation(client, monkeypatch):
+    session = _owned_game(client, monkeypatch, game_type="pvp_local", board_mode=True)
+    _move(client, session.session_id, [3, 3])
+
+    r = client.post("/api/resign", json={"session_id": session.session_id})
+
+    assert r.status_code == 400, r.text
+    assert session.katrain.game.current_node.end_state is None
+    assert _recorded_results(client) == []
+
+
+def test_free_resign_with_color_is_rejected(client, monkeypatch):
+    session = _owned_game(client, monkeypatch, game_type="free", board_mode=True)
+    _move(client, session.session_id, [3, 3])
+
+    r = client.post("/api/resign", json={"session_id": session.session_id, "color": "B"})
+
+    assert r.status_code == 400, r.text
+    assert session.katrain.game.current_node.end_state is None
+
+
+def test_free_resign_without_color_is_unchanged(client, monkeypatch):
+    """正对照：其它模式不带 color，行为与今天一致（落最后一手的一方胜）。"""
+    session = _owned_game(client, monkeypatch, game_type="free", board_mode=False)
+    _move(client, session.session_id, [3, 3])
+
+    r = client.post("/api/resign", json={"session_id": session.session_id})
+
+    assert r.status_code == 200, r.text
+    assert r.json()["state"]["end_result"] == "B+R"
+    assert _recorded_results(client) == ["B+R"]

@@ -1468,8 +1468,13 @@ class WebKaTrain(KaTrainBase):
         thresholds = self.config("trainer/eval_thresholds")
         return game_report(self.game, thresholds, depth_filter=depth_filter)
 
-    def _do_resign(self):
-        self.game.current_node.end_state = f"{self.game.current_node.player}+R"
+    def _do_resign(self, color=None):
+        """认输。`color` 是认输的一方；不给时保持旧行为（`current_node.player` 胜，即落最后一手的一方）。"""
+        if color is None:
+            self.game.current_node.end_state = f"{self.game.current_node.player}+R"
+            return
+        winner = "W" if color == "B" else "B"
+        self.game.current_node.end_state = f"{winner}+R"
 
     def _do_timeout(self):
         """End game due to timeout - current player loses on time"""

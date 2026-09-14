@@ -1872,9 +1872,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     globals()["_RECORD_FN"] = _record_ai_game
 
     @app.post("/api/resign")
-    async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
+    async def resign(request: ResignRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         guard_session_terminator(session, current_user, "resign")
+        # 本地对局两人共用一块屏:「轮到谁」不等于「谁按的键」,认输必须说清是哪一方。
+        # 其它模式由服务端从座位推,带了 color 就拒,免得被静默忽略。两个 400 都在任何状态改动之前。
+        local_pvp = getattr(session, "game_type", "free") == "pvp_local"
+        if local_pvp and request.color is None:
+            raise HTTPException(status_code=400, detail="color is required to resign a local two-player game")
+        if not local_pvp and request.color is not None:
+            raise HTTPException(status_code=400, detail="color is only accepted for local two-player games")
         ranked_ai = is_ai_ladder_ranked_session(session)
         if ranked_ai:
             guard_ai_ladder_ranked_owner(session, current_user, "resign")
@@ -1914,8 +1921,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     # forever, the cloud reservation never becomes takeable, and the account is
                     # locked out of ranked play on every device it owns.
                     session.game_ended = True
-                else:
+                elif request.color is None:
                     session.katrain("resign")
+                else:
+                    session.katrain("resign", color=request.color)
                 state = session.katrain.get_state()
                 session.last_state = state
         else:

@@ -8,6 +8,7 @@ import { type PlayerInfo } from '../api';
 import { useTranslation } from '../hooks/useTranslation';
 import { localizedRank } from '../utils/rankUtils';
 import { RAIL_TIGHT } from './railStyles';
+import { computeClock } from '../utils/gameClock';
 
 interface PlayerCardProps {
   player: 'B' | 'W';
@@ -106,67 +107,34 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   const displayRank = rawRank === "No Rank" ? t("No Rank", "No Rank") : rawRank;
   const displayName = info.name || (isBlack ? t('Black') : t('White'));
 
-  // Timer Breakdown
-  let mainTimeLeft = 0;
-  let byoyomiLeft = 0;
-  let periodsLeft = 0;
-  let showTimer = false;
+  // Timer Breakdown —— 算法在 utils/gameClock.ts；kiosk 本地对局的钟用的是同一份，别在这里再写一遍。
+  const clock = computeClock({
+    settings: timer?.settings,
+    mainTimeUsed: info.main_time_used,
+    periodsUsed: info.periods_used,
+    nodeTimeUsed: timer?.current_node_time_used ?? 0,
+    active,
+    clientElapsed,
+  });
+  const { showTimer, mainTimeLeft, byoyomiLeft, periodsLeft } = clock;
 
-  if (timer && timer.settings && (timer.settings.main_time > 0 || timer.settings.byo_length > 0)) {
-    showTimer = true;
-    const byoNum = timer.settings.byo_periods;
-    const byoLen = timer.settings.byo_length;
-    const mainTimeTotal = timer.settings.main_time * 60; // Minutes to seconds
+  // Countdown beep in last 5 seconds of byoyomi
+  if (clock.phase === 'byoyomi' && active && timer?.settings.sound && onPlaySound) {
+    const secondsRemaining = Math.ceil(byoyomiLeft);
 
-    const currentMainUsed = info.main_time_used + (active && mainTimeTotal > info.main_time_used ? clientElapsed : 0);
-    mainTimeLeft = Math.max(0, mainTimeTotal - currentMainUsed);
+    if (secondsRemaining <= 5 && secondsRemaining >= 1 && secondsRemaining !== lastCountdownSecondRef.current) {
+      onPlaySound('countdownbeep');
+      lastCountdownSecondRef.current = secondsRemaining;
+    }
 
-    if (mainTimeLeft > 0) {
-        byoyomiLeft = byoLen;
-        periodsLeft = byoNum - info.periods_used;
-    } else {
-        // Main time available at start of this node
-        const mainTimeAvailableAtNodeStart = Math.max(0, mainTimeTotal - info.main_time_used);
-        // Total time spent on this node
-        const totalNodeTime = timer.current_node_time_used + (active ? clientElapsed : 0);
-        // Only time BEYOND main time goes into byoyomi
-        let effectiveNodeTimeUsed = Math.max(0, totalNodeTime - mainTimeAvailableAtNodeStart);
-        let currentPeriodsUsed = info.periods_used;
-
-        while (effectiveNodeTimeUsed > byoLen && currentPeriodsUsed < byoNum) {
-            effectiveNodeTimeUsed -= byoLen;
-            currentPeriodsUsed += 1;
-        }
-
-        // Check if all periods are exhausted
-        if (currentPeriodsUsed >= byoNum) {
-            // All periods exhausted - no time left
-            byoyomiLeft = 0;
-            periodsLeft = 0;
-        } else {
-            byoyomiLeft = Math.max(0, byoLen - effectiveNodeTimeUsed);
-            periodsLeft = byoNum - currentPeriodsUsed;
-
-            // Countdown beep in last 5 seconds of byoyomi
-            if (active && timer.settings.sound && onPlaySound) {
-                const secondsRemaining = Math.ceil(byoyomiLeft);
-
-                if (secondsRemaining <= 5 && secondsRemaining >= 1 && secondsRemaining !== lastCountdownSecondRef.current) {
-                    onPlaySound('countdownbeep');
-                    lastCountdownSecondRef.current = secondsRemaining;
-                }
-
-                // Reset when exiting countdown zone (entering new period or time > 6s)
-                if (byoyomiLeft > 6) {
-                    lastCountdownSecondRef.current = null;
-                }
-            }
-        }
+    // Reset when exiting countdown zone (entering new period or time > 6s)
+    if (byoyomiLeft > 6) {
+      lastCountdownSecondRef.current = null;
     }
   }
 
   // Timeout detection - trigger forfeit when time exhausted
-  const hasTimedOut = showTimer && mainTimeLeft <= 0 && periodsLeft <= 0 && byoyomiLeft <= 0;
+  const hasTimedOut = clock.phase === 'expired';
   useEffect(() => {
     if (active && hasTimedOut && onTimeout && !timeoutTriggeredRef.current) {
       timeoutTriggeredRef.current = true;

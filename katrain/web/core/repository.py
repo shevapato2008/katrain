@@ -24,6 +24,10 @@ class RemoteServiceUnavailableError(RuntimeError):
     """A board-mode remote-only operation can be retried when online."""
 
 
+# 盒上题库读取在云端不可用时的说明。前端只认 503 这个状态码,这句只进日志与响应 detail。
+TSUMEGO_UNAVAILABLE = "Remote tsumego service unavailable"
+
+
 # ── Protocol Definitions ──
 
 
@@ -95,15 +99,13 @@ class RemoteTsumegoRepository:
             raw = await self._client.get_problems(level, cat, offset=0, limit=count)
             return [{"id": p["id"], "category": p.get("category", cat), "hint": p.get("hint", "")} for p in raw]
 
-        results = await asyncio.gather(
-            *(fetch_category(cat, cnt) for cat, cnt in categories.items()),
-            return_exceptions=True,
-        )
+        # 任一分类取失败就整体失败(N9)。吞掉它会返回一份缺块的列表,而 `total` 仍是全量 ——
+        # 「全部题目」页照样画、照样翻页,缺的那一类没人看得出来。
+        results = await asyncio.gather(*(fetch_category(cat, cnt) for cat, cnt in categories.items()))
 
         all_problems: List[Dict] = []
         for result in results:
-            if isinstance(result, list):
-                all_problems.extend(result)
+            all_problems.extend(result)
 
         # Step 3: paginate
         start = (page - 1) * page_size
@@ -186,43 +188,28 @@ class RepositoryDispatcher:
     def is_online(self) -> bool:
         return self._connectivity.is_online
 
-    # ── Tsumego (online-only, offline = unavailable) ──
+    # ── Tsumego (online-only) ──
+    #
+    # 盒上题库是**在线直读**的:盒子上不存题,也没有任何同步。所以连不上云端时**不许**回空列表 ——
+    # 前端会把空列表说成「这台盒子上还没有题」、把 None → 404 说成「这道题不存在」(N9)。
+    # 走 `_remote_only`:离线 / 传输失败 / 云端 5xx ⇒ RemoteServiceUnavailableError(端点翻成 503);
+    # 云端 4xx 原样抛(端点转回同一个状态码)。
 
     async def tsumego_get_levels(self):
-        if not self.is_online:
-            return []
-        try:
-            return await self.remote_tsumego.get_levels()
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("tsumego_get_levels remote failed: %s", e)
-            return []
+        return await self._remote_only(lambda: self.remote_tsumego.get_levels(), TSUMEGO_UNAVAILABLE)
 
     async def tsumego_get_all_problems(self, level, page=1, page_size=50):
-        if not self.is_online:
-            return {"items": [], "total": 0, "page": page, "page_size": page_size}
-        try:
-            return await self.remote_tsumego.get_all_problems(level, page, page_size)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("tsumego_get_all_problems remote failed: %s", e)
-            return {"items": [], "total": 0, "page": page, "page_size": page_size}
+        return await self._remote_only(
+            lambda: self.remote_tsumego.get_all_problems(level, page, page_size), TSUMEGO_UNAVAILABLE
+        )
 
     async def tsumego_get_problems(self, level, category, offset=0, limit=20):
-        if not self.is_online:
-            return []
-        try:
-            return await self.remote_tsumego.get_problems(level, category, offset, limit)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("tsumego_get_problems remote failed: %s", e)
-            return []
+        return await self._remote_only(
+            lambda: self.remote_tsumego.get_problems(level, category, offset, limit), TSUMEGO_UNAVAILABLE
+        )
 
     async def tsumego_get_problem(self, problem_id):
-        if not self.is_online:
-            return None
-        try:
-            return await self.remote_tsumego.get_problem(problem_id)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("tsumego_get_problem remote failed: %s", e)
-            return None
+        return await self._remote_only(lambda: self.remote_tsumego.get_problem(problem_id), TSUMEGO_UNAVAILABLE)
 
     # ── Tsumego progress (online→remote, offline→local+sync) ──
 

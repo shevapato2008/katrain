@@ -4,7 +4,7 @@ import logging
 from typing import Optional, List
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import TsumegoProblem, UserTsumegoProgress
 from katrain.web.core.tsumego_progress_repo import merge_tsumego_progress
+from katrain.web.core.repository import RemoteServiceUnavailableError
 from katrain.web.api.v1.endpoints.auth import get_current_user, get_current_user_optional
 from katrain.web.models import User
 
@@ -85,6 +86,27 @@ class ProgressUpdate(BaseModel):
     lastDuration: Optional[int] = None
 
 
+async def _board_read(call):
+    """盒上题库读取(N9):连不上云端 ⇒ 503;云端自己回 4xx ⇒ 同一个状态码。**不许折成空列表或 404。**"""
+    try:
+        return await call()
+    except RemoteServiceUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except httpx.HTTPStatusError as exc:
+        status = exc.response.status_code
+        raise HTTPException(status_code=status, detail=f"Cloud tsumego service returned {status}") from exc
+
+
+# 盒上 `GET /progress` 这一份是谁给的(T1 错题页;Codex 对抗审查第 2 轮 #2)。
+# 三档词沿用 `growth.py` / `repository.user_games_list` 的 `authority`:`cloud` = 云端读成功;
+# `local_cache` = 离线或云端读失败、退回本机缓存。服务端模式(`this_node`)**不带这个头**,响应一行不变。
+# 为什么走响应头不走字段:响应体是「题号 → 进度」的 map,塞一个 `authority` 进去就成了一道叫 authority 的题。
+# 为什么必须说:退回本机缓存时仍是 **200**,而在线写成功不落本机缓存 ⇒ 那份常常是 `{}` ——
+# 不说的话前端把「没读到」当成「一道没错」。
+# ⚠️ 前端 `katrain/web/ui/src/api/tsumegoApi.ts` 的 `PROGRESS_AUTHORITY_HEADER` 写的是同一个字面量,改一边必须改另一边。
+PROGRESS_AUTHORITY_HEADER = "X-Data-Authority"
+
+
 def level_sort_key(level: str) -> tuple:
     """Sort levels: 15K, 14K, ..., 1K, 1D, 2D, ..., 7D (weakest to strongest)."""
     level = level.upper()
@@ -100,10 +122,10 @@ def level_sort_key(level: str) -> tuple:
 @router.get("/levels", response_model=List[LevelInfo])
 async def get_levels(request: Request, db: Session = Depends(get_db)):
     """Get all available difficulty levels with category counts."""
-    # Board mode: delegate to repository dispatcher (online → remote, offline → empty)
+    # Board mode: delegate to repository dispatcher (online → remote; cloud unreachable → 503, see _board_read)
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await dispatcher.tsumego_get_levels()
+        return await _board_read(dispatcher.tsumego_get_levels)
 
     rows = (
         db.query(
@@ -138,7 +160,7 @@ async def get_categories(request: Request, level: str, db: Session = Depends(get
     # Board mode: categories are included in levels response from remote
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        levels = await dispatcher.tsumego_get_levels()
+        levels = await _board_read(dispatcher.tsumego_get_levels)
         for lvl in levels:
             if lvl.get("level", "").lower() == level.lower():
                 cats = lvl.get("categories", {})
@@ -191,7 +213,7 @@ async def get_all_problems(
     """Get problems for a level with pagination (slim response for list views)."""
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await dispatcher.tsumego_get_all_problems(level, page, page_size)
+        return await _board_read(lambda: dispatcher.tsumego_get_all_problems(level, page, page_size))
 
     level = level.lower()
 
@@ -225,7 +247,7 @@ async def get_problems(
     """Get problems for a level/category with pagination."""
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await dispatcher.tsumego_get_problems(level, category, offset, limit)
+        return await _board_read(lambda: dispatcher.tsumego_get_problems(level, category, offset, limit))
 
     level = level.lower()
 
@@ -266,7 +288,7 @@ async def get_problem(request: Request, problem_id: str, db: Session = Depends(g
     """Get full problem details including SGF content."""
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        result = await dispatcher.tsumego_get_problem(problem_id)
+        result = await _board_read(lambda: dispatcher.tsumego_get_problem(problem_id))
         if not result:
             raise HTTPException(status_code=404, detail=f"Problem {problem_id} not found")
         return result
@@ -288,20 +310,30 @@ async def get_problem(request: Request, problem_id: str, db: Session = Depends(g
 
 
 @router.get("/progress", response_model=dict[str, ProgressData])
-async def get_progress(request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_progress(
+    request: Request,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Get current user's progress on all problems."""
-    # Board mode: online → remote; offline → local SQLite cache
+    # Board mode: online → remote; offline → local SQLite cache.
+    # 两条路都是 200,只有响应头说得清是哪一份(见 PROGRESS_AUTHORITY_HEADER)。服务端模式不带。
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
         if not dispatcher.is_online:
+            response.headers[PROGRESS_AUTHORITY_HEADER] = "local_cache"
             return await dispatcher.tsumego_get_progress_local(current_user.id)
         try:
-            return await dispatcher.remote_tsumego.get_progress()
+            remote = await dispatcher.remote_tsumego.get_progress()
         except httpx.HTTPError as e:
             # Online check passed but the read failed mid-request — serve the local cache
             # instead of 500ing, mirroring the write path's resilience.
             logger.warning("tsumego get_progress remote failed, falling back to local cache: %s", e)
+            response.headers[PROGRESS_AUTHORITY_HEADER] = "local_cache"
             return await dispatcher.tsumego_get_progress_local(current_user.id)
+        response.headers[PROGRESS_AUTHORITY_HEADER] = "cloud"
+        return remote
 
     progress_list = db.query(UserTsumegoProgress).filter(UserTsumegoProgress.user_id == current_user.id).all()
 

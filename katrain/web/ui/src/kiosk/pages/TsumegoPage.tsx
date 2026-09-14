@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
-import { readActiveSession } from '../utils/activeSession';
-import { CATEGORY_META, categoryRank, levelChinese, loadErrorCopy, readLastCategory, readLastLevel } from './tsumegoUnits';
+import { useAuth } from '../../context/AuthContext';
+import { CATEGORY_META, categoryRank, levelChinese, loadErrorCopy, readLastCategory, readLastLevel, readPracticeResume } from './tsumegoUnits';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
@@ -41,9 +41,11 @@ const TsumegoPage = () => {
   const { t } = useTranslation();
   const [levels, setLevels] = useState<LevelInfo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const resume = readActiveSession('practice');
-  const lastLevel = readLastLevel();
-  const lastCategory = readLastCategory();
+  const { user } = useAuth();
+  const userId = user?.id;
+  const resume = readPracticeResume(userId);
+  const lastLevel = readLastLevel(userId);
+  const lastCategory = readLastCategory(userId);
 
   const load = useCallback(() => {
     setLevels(null);

@@ -37,6 +37,11 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
   }),
 }));
 
+// 训练营的「上次」三样按账号存(N10)。盒上 token 恒为 null、身份在 user 上 —— 这里照盒上的样子造。
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 7, username: '甲', rank: '5段', credits: 0 }, isAuthenticated: true, token: null }),
+}));
+
 // 45 道题 → ceil(45/20) = 3 个单元(20 / 20 / 5)。
 const TOTAL = 45;
 const allIds = Array.from({ length: TOTAL }, (_, i) => ({ id: `q${i}` }));
@@ -193,7 +198,7 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
 
   it('进了这一类就记下来 —— 训练营那一排的高亮靠它', async () => {
     renderPage('15k', 'semeai');
-    await waitFor(() => expect(localStorage.getItem('kiosk_tsumego_last_category')).toBe('semeai'));
+    await waitFor(() => expect(localStorage.getItem('kiosk_tsumego_last_category:u7')).toBe('semeai'));
   });
 
   it('加载中说的是加载中,不是「这一类没有题」', () => {

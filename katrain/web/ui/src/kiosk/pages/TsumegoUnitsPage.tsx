@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useAuth } from '../../context/AuthContext';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import { CATEGORY_META, UNIT_SIZE, levelChinese, loadErrorCopy, readAutoAdvance, writeLastCategory, writeSequence } from './tsumegoUnits';
 import { interpolate } from '../utils/interpolate';
@@ -40,6 +41,7 @@ const TsumegoUnitsPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { unitProgress, progress } = useTsumegoProgress();
+  const { user } = useAuth();
 
   const [problemIds, setProblemIds] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,10 +73,10 @@ const TsumegoUnitsPage = () => {
     return () => controller.abort();
   }, [level, category, loadUnits]);
 
-  // 进了这一类就记下来 —— 训练营那一排的 `is-current` 靠它。**指针不是进度。**
+  // 进了这一类就记下来 —— 训练营那一排的 `is-current` 靠它。**指针不是进度**,按账号存(N10)。
   useEffect(() => {
-    if (category) writeLastCategory(category);
-  }, [category]);
+    if (category) writeLastCategory(user?.id, category);
+  }, [category, user?.id]);
 
   const meta = category ? CATEGORY_META[category] : undefined;
   const categoryName = category ? t(`tsumego:${category}`, meta?.zh ?? category) : '';

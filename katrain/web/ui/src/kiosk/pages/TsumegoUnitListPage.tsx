@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useAuth } from '../../context/AuthContext';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import {
   CATEGORY_META,
@@ -60,6 +61,7 @@ const TsumegoUnitListPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { progress } = useTsumegoProgress();
+  const { user } = useAuth();
 
   const [allIds, setAllIds] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,10 +100,10 @@ const TsumegoUnitListPage = () => {
     return () => controller.abort();
   }, [level, category, load]);
 
-  // 深链直接进这一层时,训练营那一排的 `is-current` 也要跟上。**指针不是进度。**
+  // 深链直接进这一层时,训练营那一排的 `is-current` 也要跟上。**指针不是进度**,按账号存(N10)。
   useEffect(() => {
-    if (category) writeLastCategory(category);
-  }, [category]);
+    if (category) writeLastCategory(user?.id, category);
+  }, [category, user?.id]);
 
   const meta = category ? CATEGORY_META[category] : undefined;
   const categoryName = category ? t(`tsumego:${category}`, meta?.zh ?? category) : '';

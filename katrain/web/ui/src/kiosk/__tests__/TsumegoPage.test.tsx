@@ -5,6 +5,11 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 
+// 训练营的「上次」三样按账号存(N10)。盒上 token 恒为 null、身份在 user 上 —— 这里照盒上的样子造。
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 7, username: '甲', rank: '5段', credits: 0 }, isAuthenticated: true, token: null }),
+}));
+
 /**
  * 屏 11 · 训练营。**文案在 2026-08-22 按稿子整屏换过**(Task 12),所以这一份的断言
  * 和上一版对不上是预期的 —— 上一版断的是 `死活题 / 选择难度级别 / 15K / 手筋: 139`,
@@ -74,7 +79,7 @@ describe('TsumegoPage · 屏 11 训练营', () => {
   });
 
   it('上次做的那一档决定分类的作用域，不是恒取最弱那档', async () => {
-    localStorage.setItem('kiosk_tsumego_last_level', '14k');
+    localStorage.setItem('kiosk_tsumego_last_level:u7', '14k');
     renderPage();
     await waitFor(() => expect(screen.getByText('14 级 · 2 类')).toBeInTheDocument());
     // 14 级只有 capturing / semeai 两类 —— 15 级才有的「死活」不许出现在这一排。
@@ -103,8 +108,8 @@ describe('TsumegoPage · 屏 11 训练营', () => {
   });
 
   it('上次那一档和上次那一类各自高亮，互不冒充', async () => {
-    localStorage.setItem('kiosk_tsumego_last_level', '14k');
-    localStorage.setItem('kiosk_tsumego_last_category', 'semeai');
+    localStorage.setItem('kiosk_tsumego_last_level:u7', '14k');
+    localStorage.setItem('kiosk_tsumego_last_category:u7', 'semeai');
     renderPage();
     await waitFor(() => expect(screen.getByText('对杀')).toBeInTheDocument());
     const current = Array.from(document.querySelectorAll('.kiosk-card.is-current'));
@@ -114,7 +119,7 @@ describe('TsumegoPage · 屏 11 训练营', () => {
 
   it('分类卡进的是「这一档 + 这一类」', async () => {
     const user = userEvent.setup();
-    localStorage.setItem('kiosk_tsumego_last_level', '14k');
+    localStorage.setItem('kiosk_tsumego_last_level:u7', '14k');
     renderPage();
     await waitFor(() => expect(screen.getByText('对杀')).toBeInTheDocument());
     await user.click(screen.getByText('对杀').closest('button')!);
@@ -170,8 +175,8 @@ describe('TsumegoPage · 屏 11 训练营', () => {
 
   it('有未完成的练习才出「接着上次」', async () => {
     localStorage.setItem(
-      'kiosk_active_practice',
-      JSON.stringify({ kind: 'practice', label: '15 级 · 吃子 · 第 1 题', route: '/kiosk/tsumego/problem/p12', ts: Date.now() })
+      'kiosk_tsumego_resume:u7',
+      JSON.stringify({ label: '15 级 · 吃子 · 第 1 题', route: '/kiosk/tsumego/problem/p12' })
     );
     renderPage();
     await waitFor(() => {
@@ -184,5 +189,22 @@ describe('TsumegoPage · 屏 11 训练营', () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('死活')).toBeInTheDocument());
     expect(screen.queryByTestId('tsumego-resume-card')).toBeNull();
+  });
+
+  it('别人的「上次」不串过来:另一个账号存下的三样,这个账号一样都看不见', async () => {
+    localStorage.setItem('kiosk_tsumego_last_level:u8', '14k');
+    localStorage.setItem('kiosk_tsumego_last_category:u8', 'semeai');
+    localStorage.setItem(
+      'kiosk_tsumego_resume:u8',
+      JSON.stringify({ label: '14 级 · 对杀 · 第 3 题', route: '/kiosk/tsumego/problem/x' })
+    );
+    // 2026-09-14 之前那几把不分人的旧钥匙:没有主人,不迁移、不再读。
+    localStorage.setItem('kiosk_tsumego_last_level', '14k');
+    localStorage.setItem('kiosk_active_practice', JSON.stringify({ kind: 'practice', label: '旧的', route: '/x', ts: 1 }));
+    renderPage();
+    // 作用域退回最弱那一档,而不是 u8 / 旧钥匙上的 14 级。
+    await waitFor(() => expect(screen.getByText('15 级 · 3 类')).toBeInTheDocument());
+    expect(screen.queryByTestId('tsumego-resume-card')).toBeNull();
+    expect(document.querySelectorAll('.kiosk-card.is-current')).toHaveLength(0);
   });
 });

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
+import { useAuth } from '../../context/AuthContext';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import TsumegoBoard from '../../components/tsumego/TsumegoBoard';
 import SuccessOverlay from '../components/tsumego/SuccessOverlay';
@@ -23,9 +24,9 @@ import {
   writePhysicalMode,
   writeLastLevel,
   writeLastCategory,
+  writePracticeResume,
 } from './tsumegoUnits';
 import { interpolate } from '../utils/interpolate';
-import { writeActiveSession } from '../utils/activeSession';
 import PhysicalStatePanel from '../components/tsumego/PhysicalStatePanel';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskActions, type KioskAction } from '../shell/KioskActions';
@@ -47,6 +48,7 @@ const TsumegoProblemPage = () => {
   const { t } = useTranslation();
   const { play: playSound } = useSound();
   const { progress } = useTsumegoProgress();
+  const { user } = useAuth();
   const {
     problem,
     loading,
@@ -180,19 +182,17 @@ const TsumegoProblemPage = () => {
   const prevId = currentIndex > 0 ? sequence[currentIndex - 1] : null;
   const nextId = currentIndex >= 0 && currentIndex < sequence.length - 1 ? sequence[currentIndex + 1] : null;
 
-  // Populate the hub 继续练习 card + 上次 level highlight (B2.2/B2.4) whenever a problem loads.
+  // 训练营首页「接着上次」+ 两处高亮(B2.2/B2.4),每进一道题写一次 —— 按账号存(N10)。
   useEffect(() => {
     if (!problem) return;
-    writeLastLevel(problem.level);
-    writeLastCategory(problem.category);
-    writeActiveSession({
-      kind: 'practice',
+    writeLastLevel(user?.id, problem.level);
+    writeLastCategory(user?.id, problem.category);
+    writePracticeResume(user?.id, {
       label: `${levelChinese(problem.level)} · ${t(`tsumego:${problem.category}`, problem.category)} · 第 ${currentIndex + 1} 题`,
       route: `/kiosk/tsumego/problem/${problem.id}`,
-      ts: Date.now(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot label written once per problem; `t` intentionally excluded
-  }, [problem, currentIndex]);
+  }, [problem, currentIndex, user?.id]);
 
   // "Last time" for this problem (4.3) — from the unified progress source.
   const lastDuration = problemId ? progress[problemId]?.lastDuration : undefined;

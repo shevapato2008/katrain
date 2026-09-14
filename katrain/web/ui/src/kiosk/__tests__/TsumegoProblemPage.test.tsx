@@ -18,6 +18,11 @@ vi.mock('react-router-dom', async (importOriginal) => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
+// 训练营的「上次」三样按账号存(N10)。盒上 token 恒为 null、身份在 user 上 —— 这里照盒上的样子造。
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 7, username: '甲', rank: '5段', credits: 0 }, isAuthenticated: true, token: null }),
+}));
+
 // Only `readPhysicalMode` is mocked (D1.3) — every other export (sequenceKey,
 // AUTO_ADVANCE_KEY, PHYSICAL_MODE_KEY, readAutoAdvance, levelChinese, ...) passes through
 // unmocked so the rest of the test file's existing behavior is unaffected.
@@ -609,5 +614,18 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       renderPage('p1');
       expect(screen.getByTestId('puzzle-led-down')).toBeInTheDocument();
     });
+  });
+
+  it('进一道题就把「上次」三样记在这个账号名下(N10)', () => {
+    renderPage('p1');
+    expect(localStorage.getItem('kiosk_tsumego_last_level:u7')).toBe('15k');
+    expect(localStorage.getItem('kiosk_tsumego_last_category:u7')).toBe('手筋');
+    expect(JSON.parse(localStorage.getItem('kiosk_tsumego_resume:u7')!)).toEqual({
+      label: '15 级 · 手筋 · 第 2 题',
+      route: '/kiosk/tsumego/problem/p1',
+    });
+    // 不分人的旧钥匙一个都不写。
+    expect(localStorage.getItem('kiosk_tsumego_last_level')).toBeNull();
+    expect(localStorage.getItem('kiosk_active_practice')).toBeNull();
   });
 });

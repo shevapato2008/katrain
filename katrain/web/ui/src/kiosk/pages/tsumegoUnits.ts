@@ -82,28 +82,50 @@ export function levelChinese(level: string): string {
 }
 
 /**
- * localStorage key for the last difficulty level the user browsed into (hub 上次 highlight).
- * Single string, cheap to store — does NOT reintroduce the deliberately-omitted per-level
- * completion stat (R2 / §3.5): it's just a pointer, not progress data.
+ * 训练营的三样「上次」—— 上次那一档、上次那一类、接着上次 —— **按账号存**(N10)。
+ * 盒子是共用设备:不分人的话,乙登录会看到甲的「接着上次 · 15 级 · 吃子 · 第 3 题」。
+ * 钥匙照做题进度那把的命名(`TsumegoProgressContext` 的 `tsumego_progress:u<id>`)。
+ * 2026-09-14 之前那几把不分人的旧钥匙**不迁移、不再读**:它们没有主人。
+ *
+ * 实体开关 `kiosk_tsumego_physical` **不在这里,仍按盒存** —— 它说的是这台盒子那块盘接好没有,
+ * 和谁登录无关。
+ *
+ * 这三样是**指针不是进度**(R2 / §3.5):不重新引入「每一档做完了多少」那个刻意没做的数。
  */
-export const LAST_LEVEL_KEY = 'kiosk_tsumego_last_level';
+export type TsumegoUserId = number | string | null | undefined;
 
-/** Read the last-practiced level, or null if never set / unavailable. */
-export function readLastLevel(): string | null {
+const scopedKey = (base: string, userId: TsumegoUserId): string | null =>
+  userId === null || userId === undefined ? null : `${base}:u${userId}`;
+
+function readScoped(base: string, userId: TsumegoUserId): string | null {
+  const key = scopedKey(base, userId);
+  if (!key) return null;
   try {
-    return localStorage.getItem(LAST_LEVEL_KEY);
+    return localStorage.getItem(key);
   } catch {
     return null;
   }
 }
 
-/** Persist the last-practiced level. */
-export function writeLastLevel(level: string): void {
+function writeScoped(base: string, userId: TsumegoUserId, value: string): void {
+  const key = scopedKey(base, userId);
+  if (!key) return;
   try {
-    localStorage.setItem(LAST_LEVEL_KEY, level);
+    localStorage.setItem(key, value);
   } catch {
     /* best-effort */
   }
+}
+
+export const LAST_LEVEL_KEY = 'kiosk_tsumego_last_level';
+
+/** 这个账号上次进的那一档,没有就 `null`。 */
+export function readLastLevel(userId: TsumegoUserId): string | null {
+  return readScoped(LAST_LEVEL_KEY, userId);
+}
+
+export function writeLastLevel(userId: TsumegoUserId, level: string): void {
+  writeScoped(LAST_LEVEL_KEY, userId, level);
 }
 
 /**
@@ -131,29 +153,45 @@ export function writePhysicalMode(v: boolean): void {
 }
 
 /**
- * localStorage key for the last category the user practised in (训练营 hub 的 `is-current`).
- * Same shape and same rationale as {@link LAST_LEVEL_KEY}: **a pointer, not progress** —
- * it says "这是你上次做的那一类", never "你做完了多少". The hub cannot compute per-category
- * completion without pulling every problem id for the level (R2 / §3.5), and it doesn't try.
+ * 这个账号上次做的那一类(训练营「按分类」那一排的 `is-current`)。和上次那一档同一种东西:
+ * **指针不是进度**,也按账号存 —— 见 `LAST_LEVEL_KEY` 上面那段。
  */
 export const LAST_CATEGORY_KEY = 'kiosk_tsumego_last_category';
 
-/** Read the last-practised category key (e.g. 'capturing'), or null if never set. */
-export function readLastCategory(): string | null {
+export function readLastCategory(userId: TsumegoUserId): string | null {
+  return readScoped(LAST_CATEGORY_KEY, userId);
+}
+
+export function writeLastCategory(userId: TsumegoUserId, category: string): void {
+  writeScoped(LAST_CATEGORY_KEY, userId, category);
+}
+
+/**
+ * 训练营「接着上次」那一条。原来借 `utils/activeSession.ts` 的 `practice` 槽存,那把钥匙不分人;
+ * 挪到这里按账号存。`activeSession.ts` 本身不动(对弈也用它),`practice` 槽从此没有消费者 —— 已登记。
+ */
+export const RESUME_KEY = 'kiosk_tsumego_resume';
+
+export interface PracticeResume {
+  /** 屏上那一行,如「15 级 · 吃子 · 第 3 题」。 */
+  label: string;
+  /** 点「继续」去哪儿,如 `/kiosk/tsumego/problem/1014`(错题模式带 `?set=wrong`)。 */
+  route: string;
+}
+
+export function readPracticeResume(userId: TsumegoUserId): PracticeResume | null {
+  const raw = readScoped(RESUME_KEY, userId);
+  if (!raw) return null;
   try {
-    return localStorage.getItem(LAST_CATEGORY_KEY);
+    const p = JSON.parse(raw) as Partial<PracticeResume> | null;
+    return p && typeof p.label === 'string' && typeof p.route === 'string' ? { label: p.label, route: p.route } : null;
   } catch {
     return null;
   }
 }
 
-/** Persist the last-practised category key. */
-export function writeLastCategory(category: string): void {
-  try {
-    localStorage.setItem(LAST_CATEGORY_KEY, category);
-  } catch {
-    /* best-effort */
-  }
+export function writePracticeResume(userId: TsumegoUserId, resume: PracticeResume): void {
+  writeScoped(RESUME_KEY, userId, JSON.stringify({ label: resume.label, route: resume.route }));
 }
 
 /**

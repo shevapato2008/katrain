@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API, type GameState, type PhysicalEngineErrorState } from '../api';
 import { websocketUrl, WS_POLICY_VIOLATION } from '../utils/websocketUrl';
+import { readAudioPref } from '../utils/audioPrefs';
 
 interface GameEndData {
     reason: 'resign' | 'forfeit' | 'timeout' | 'count' | 'normal';
@@ -51,7 +52,9 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const lastSoundRef = useRef<{name: string, time: number} | null>(null);
 
     const playSound = useCallback((sound: string) => {
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('kioskPlaySound') === '0') return;
+        // 提示音只留一把:设置屏「落子音效」、屏 04「落子提示音」、这里读的都是 audioPrefs 的 sfx
+        // (v2 §4.1)。galaxy 也走这个 hook —— 它从不写这把键,readAudioPref 缺键当开,行为不变。
+        if (!readAudioPref('sfx')) return;
         const now = Date.now();
         // Prevent duplicate rapid sounds
         if (lastSoundRef.current && lastSoundRef.current.name === sound && now - lastSoundRef.current.time < 300) {

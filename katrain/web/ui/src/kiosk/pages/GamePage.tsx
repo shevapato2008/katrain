@@ -70,6 +70,10 @@ export function deriveHumanColor(gameState: GameState): 'B' | 'W' | null {
 // kiosk 按整局终局事实冻结；旧服务端回退到游标结果。
 const endResultOf = (gs: GameState): string | null => gs.end_result || gs.terminal_result || null;
 
+const readScreenFallback = (key: string): boolean => {
+  try { return sessionStorage.getItem(key) === '1'; } catch { return false; }
+};
+
 // Single-owner AI-turn arbitration (state A source for B1.4). Exported as a pure
 // function so it's unit-testable without rendering the page, and so B1.4 can reuse it.
 // Per-color AI detection — accept BOTH literals: 'player:ai' (kiosk HvAI, server.py:723/727)
@@ -222,9 +226,26 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 路数同理并进来 —— 盒子上那块盘是 19 路的,9 路 / 13 路的局本来就落不到盘上,
   // 而开局设置屏正是这么答的,两边不能给出两个答案。
   const [playOnBoard] = useState(readPlayOnBoard);
-  const physicalPlay = isVisionEnabled
+  // 本局降级刷新后仍保留；路由复用 GamePage 时，降级与锁定历史都不能带进下一局。
+  const screenFallbackKey = `kiosk_screen_fallback:${sessionId ?? ''}`;
+  const [physicalSession, setPhysicalSession] = useState(() => ({
+    sessionId, screenFallback: readScreenFallback(screenFallbackKey), poseEverLocked: false,
+  }));
+  if (physicalSession.sessionId !== sessionId) {
+    setPhysicalSession({ sessionId, screenFallback: readScreenFallback(screenFallbackKey), poseEverLocked: false });
+  }
+  const fallBackToScreen = useCallback(() => {
+    try { sessionStorage.setItem(screenFallbackKey, '1'); } catch { /* 本页仍降级，刷新后可能无法保留 */ }
+    setPhysicalSession((previous) => ({ ...previous, screenFallback: true }));
+  }, [screenFallbackKey]);
+  const physicalPlay = !physicalSession.screenFallback && isVisionEnabled
     && playOnBoard
     && (session.gameState?.board_size?.[0] ?? 19) === 19;
+  const poseEverLocked = physicalSession.poseEverLocked;
+  // 初次等待识别不是棋盘移动；只在本 session 锁定过之后提醒。
+  if (physicalSession.sessionId === sessionId && physicalPlay && visionStatus.poseLocked && !poseEverLocked) {
+    setPhysicalSession({ ...physicalSession, poseEverLocked: true });
+  }
   const visionSync = useVisionSync(physicalPlay ? sessionId ?? null : null);
 
   useEffect(() => {
@@ -519,7 +540,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // generic 10s "board detection abnormal" dialog: recalOpen both gates RecalibrationModal
   // itself (further suppressed `&& !escalationOpen`) AND feeds into VisionSyncOverlay's
   // suppressBoardLost, so at most one board-loss surface is ever visible at a time.
-  const recalOpen = physicalPlay && !visionStatus.poseLocked && !isGameOver;
+  const recalOpen = physicalPlay && poseEverLocked && !visionStatus.poseLocked && !isGameOver;
 
   // State C: force territory coloring while scoring, without mutating the user's own
   // analysisToggles selection (so the toggle panel keeps reflecting their real picks).
@@ -536,7 +557,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   //    `ledConnected === null` 是**后端没说**,不是「没连上」—— 不报(见 `GoConsoleRail`)。
   const hardwareFault = !physicalPlay ? null
     : visionStatus.cameraConnected === false ? t('vision:camera_down', '摄像头未连接 · 已转触屏')
-    : visionStatus.poseLocked === false ? t('vision:pose_lost', '标定丢失 · 请重新标定')
+    : poseEverLocked && visionStatus.poseLocked === false ? t('vision:pose_lost', '标定丢失 · 请重新标定')
     : visionStatus.ledConnected === false ? t('vision:led_down', 'LED 未连接 · 不再亮灯引导')
     : null;
 
@@ -943,7 +964,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }} message={hintError} />
 
       {/* Camera disconnect toast */}
-      <Snackbar open={cameraDisconnectToast} autoHideDuration={5000} onClose={() => setCameraDisconnectToast(false)}
+      <Snackbar open={physicalPlay && cameraDisconnectToast} autoHideDuration={5000} onClose={() => setCameraDisconnectToast(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="warning" onClose={() => setCameraDisconnectToast(false)}>
           {t('Camera disconnected, switched to touch mode', '摄像头断开，已切换为触屏模式')}
@@ -952,7 +973,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
       {/* Physical catch-up reminder toast */}
       <Snackbar
-        open={reminderOpen}
+        open={physicalPlay && reminderOpen}
         autoHideDuration={8000}
         onClose={() => setReminderOpen(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
@@ -961,10 +982,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
       {/* Physical desync escape hatch */}
       <PhysicalSyncEscalationDialog
-        open={escalationOpen}
+        open={physicalPlay && escalationOpen}
         toPlace={session.physicalReminder?.to_place ?? []}
         toRemove={session.physicalReminder?.to_remove ?? []}
         onClose={() => setEscalationOpen(false)}
+        onScreenPlay={fallBackToScreen}
       />
 
       {/* Physical engine-move (Golaxy 隧道) bounded-retry failure — physical mode only;

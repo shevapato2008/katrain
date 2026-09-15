@@ -7,19 +7,22 @@ interface Props {
   toPlace: number[][];
   toRemove: number[][];
   onClose: () => void;
+  /** 页面降级回调；传入时解绑由页面的 useVisionSync cleanup 负责。 */
+  onScreenPlay?: () => void;
 }
 
 /** Review B escape hatch: after escalate_after_s of physical lag, force a decision
  * instead of stalling the game forever. '改用屏幕落子' unbinds vision (orchestrator
  * clears the lamps, detection stops) and the game continues via on-screen taps. */
-const PhysicalSyncEscalationDialog = ({ open, toPlace, toRemove, onClose }: Props) => {
+const PhysicalSyncEscalationDialog = ({ open, toPlace, toRemove, onClose, onScreenPlay }: Props) => {
   const { t } = useTranslation();
   const restored = () => {
     API.visionResetSync().catch(() => undefined);
     onClose();
   };
   const screenPlay = () => {
-    API.visionUnbind().catch(() => undefined);
+    if (onScreenPlay) onScreenPlay();
+    else API.visionUnbind().catch(() => undefined);
     onClose();
   };
   return (

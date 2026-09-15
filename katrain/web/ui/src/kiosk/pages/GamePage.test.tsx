@@ -390,9 +390,11 @@ describe('GamePage', () => {
   describe('State B — RecalibrationModal (B1.4)', () => {
     it('opens when pose is lost mid-game, and 重新标定 calls GeometryAPI.calibrate("manual")', async () => {
       mockIsVisionEnabled = true;
-      mockPoseLocked = false;
+      mockPoseLocked = true;
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
-      renderPage();
+      const view = renderPage();
+      mockPoseLocked = false;
+      view.rerender(pageTree());
       expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
       fireEvent.click(screen.getByText('重新标定'));
       await waitFor(() => expect(mockCalibrate).toHaveBeenCalledWith('manual'));
@@ -415,9 +417,11 @@ describe('GamePage', () => {
     // the board moves again.
     it('re-opens on a fresh pose-loss after being dismissed and the board regaining lock', async () => {
       mockIsVisionEnabled = true;
-      mockPoseLocked = false;
+      mockPoseLocked = true;
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
       const view = renderPage();
+      mockPoseLocked = false;
+      view.rerender(pageTree());
 
       // 1. Initial pose-loss opens the modal.
       expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();

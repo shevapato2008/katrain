@@ -5616,75 +5616,138 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ### Task 10: A20 + A21(前端部分)实体盘降级后关掉实体盘 UI;重标定弹层说真话、不在进局时闪
 
+**执行记录（2026-09-15，Task 10 已完成）**：首轮 6 条新增行为用例均正确红；照原计划由弹框先解绑再降级，真实 `useVisionSync` 用例报「期望 1 次、实际 2 次」。改成页面回调触发 hook cleanup 唯一解绑后，计划四文件加既有独立弹框测试共 87 passed；`npx tsc -b` 绿。删除 session 切换重置的变异使两条路由用例均红，恢复后重跑。ESLint 无新增问题：GamePage 原有 4 warnings，VisionSyncOverlay 原有 `react-hooks/refs` 1 error（与 HEAD stdin 检查一致）。日志为 `/tmp/kgpa-task10-{red,red-unbind,red-session-reset,green,tsc,eslint}.log`。
+
+**完整验收**：后端 3646 passed / 69 failed / 46 errors，前端 1808 passed / 5 skipped；新增失败名称均为空（`/tmp/kgpa-task10-pytest.log`、`/tmp/kgpa-task10-vitest.log`），后端三处污染已清理。普通构建及最终 tsc 通过；未改共享前端领地，本 Task 不额外重复 kiosk-2d 构建。1024×600 的 Vite 真实预览已确认新文案正常换行、弹层与按钮未裁切，截图 `visual/a21-recalibration-1024x600.png` **待 Fan 确认**（`/tmp/kgpa-task10-preview-final.log` 1 passed）。临时夹具一度覆盖翻译接口导致页面异常，恢复既有翻译夹具后正常；临时脚本移至 `/tmp/kgpa-task10-preview.spec.ts`，无产品修补或新增测试设施。RK3562 实体盘流程仍留待上板清单执行。
+
+**源码偏差与处理**：
+- `KioskApp` 的 GamePage 路由没有按 session 加 key；只做一次 `useState` 初始化会让降级和位姿历史串局。用带 `sessionId` 的局部状态，在同组件切 session 时重新读该局 storage 并清空位姿历史，不改路由和共享 hook。
+- `useVisionSync` 在 sessionId 从本局变 null 的 cleanup 中已解绑；弹框传了 `onScreenPlay` 时只交给页面降级，未传回调的既有调用仍直接解绑。测试选择性使用真实 hook 和轻量 WebSocket 替身，证明 bind/unbind 各一次。
+- 原计划只关主要物理组件，排队中的 reminder/escalation 和摄像头 toast 仍可能出现；三处 `open` 同样加 `physicalPlay` 闸，降级后旧通知不能重开实体盘提示。
+
 **Files:**
 - Modify: `katrain/web/ui/src/kiosk/pages/GamePage.tsx:204-208`(`physicalPlay`)、`:406`(`recalOpen`)、`:421-425`(`hardwareFault`)、`:840-845`(`<PhysicalSyncEscalationDialog>`)
 - Modify: `katrain/web/ui/src/kiosk/components/physical/PhysicalSyncEscalationDialog.tsx`(`onScreenPlay` prop)
 - Modify: `katrain/web/ui/src/kiosk/components/game/RecalibrationModal.tsx:63`(正文)
 - Modify: `katrain/web/ui/src/kiosk/components/vision/VisionSyncOverlay.tsx:295`(「横幅中的重新定位」那一句)
-- Test: `katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx`(追加)
+- Test: `katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx`(追加)、`GamePage.test.tsx`(既有两条位姿用例先 locked 后 lost)；回归覆盖既有 `kiosk/__tests__/PhysicalSyncEscalationDialog.test.tsx`
 
 **Interfaces:**
 - Consumes: Task 1 测试文件的 `vision` / `sessionMock` / `pageTree` / `renderPage` / `makeState`
-- Produces: `PhysicalSyncEscalationDialog` 新 prop `onScreenPlay?: () => void`;sessionStorage 键 `kiosk_screen_fallback:<sessionId>` = `'1'` 表示本局已降级为屏幕落子
+- Produces: `PhysicalSyncEscalationDialog` 新 prop `onScreenPlay?: () => void`;按 session 隔离的 `physicalSession`（screenFallback / poseEverLocked）；sessionStorage 键 `kiosk_screen_fallback:<sessionId>` = `'1'` 表示本局已降级为屏幕落子
 
-- [ ] **Step 1: 写失败的测试(追加到 `GamePage.playAi.test.tsx` 末尾)**
+- [x] **Step 1: 写失败的测试(追加到 `GamePage.playAi.test.tsx` 末尾)**
 
 ```tsx
 describe('A20 + A21 · 实体盘降级与重标定弹层', () => {
   const physical = () => {
     vision.enabled = true;
-    localStorage.removeItem('kiosk_play_on_board');   // 偏好默认开(utils/playInput.ts)
+    localStorage.removeItem('kiosk_play_on_board');
     sessionMock.gameState = makeState();
   };
 
-  it('进局头几秒还没锁定过位姿:不弹「棋盘可能被移动」', () => {
+  it('进局还没锁定过位姿:不弹移动警告', () => {
     physical();
     vision.poseLocked = false;
     renderPage();
     expect(screen.queryByText('棋盘可能被移动')).toBeNull();
   });
 
-  it('锁定过之后又丢了才弹,而且说真话:要亮灯、要先清空棋盘', () => {
+  it('锁定后丢失才提示，而且说明亮灯和清空棋盘', () => {
     physical();
-    vision.poseLocked = true;
     const view = renderPage();
     vision.poseLocked = false;
     view.rerender(pageTree());
     expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
-    expect(screen.getByText(/要先把棋盘上的子全部拿走/)).toBeInTheDocument();
+    expect(screen.getByText(/重新标定会亮灯.*要先把棋盘上的子全部拿走/)).toBeInTheDocument();
     expect(screen.queryByText(/无需 LED/)).toBeNull();
   });
 
-  it('「改用屏幕落子」之后:解绑一次,实体盘那一串 UI 撤掉;同一局重挂载仍是屏幕模式', async () => {
+  it('降级撤掉实体盘 UI，同局重挂载仍可在屏幕落子', async () => {
     physical();
     sessionMock.physicalReminder = { kind: 'escalation', to_place: [], to_remove: [] };
-    const unbind = vi.spyOn(API, 'visionUnbind').mockResolvedValue(undefined);
     const view = renderPage();
-    // `hidden: true` 是承重的:升级弹窗开着时 MUI 给页面根挂 `aria-hidden`,默认的 ByRole 查不到页控条上的键 ——
-    // 不加它,第一条会误红;后面几条 `toBeNull()` 会在弹窗退场期间「因为被藏了」而误绿。
+    // MUI 弹框为页面加 aria-hidden；否定断言也必须包含隐藏元素，不能因过渡期被藏而误绿。
     expect(screen.getByRole('button', { name: /重置识别/, hidden: true })).toBeInTheDocument();
-
     fireEvent.click(screen.getByRole('button', { name: '改用屏幕落子' }));
-    expect(unbind).toHaveBeenCalledTimes(1);
-    vision.poseLocked = false;   // 解绑后识别状态机回到未绑定
+    vision.poseLocked = false;
     view.rerender(pageTree());
-
     await waitFor(() => expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull());
     expect(screen.queryByText('棋盘可能被移动')).toBeNull();
     expect(sessionStorage.getItem('kiosk_screen_fallback:play-ai-s1')).toBe('1');
+    // 解绑前已排队的旧实体盘通知不能把提示重新打开。
+    sessionMock.physicalReminder = { kind: 'reminder', to_place: [[3, 3]], to_remove: [] };
+    view.rerender(pageTree());
+    expect(screen.queryByText('请先将 AI 棋子摆到棋盘亮灯处')).toBeNull();
+    sessionMock.physicalReminder = { kind: 'escalation', to_place: [[3, 3]], to_remove: [] };
+    view.rerender(pageTree());
+    await waitFor(() => expect(screen.queryByRole('button', { name: '改用屏幕落子', hidden: true })).toBeNull());
+    fireEvent.click(screen.getByTestId('board'));
+    expect(sessionMock.onMove).toHaveBeenCalledWith(3, 3);
 
     view.unmount();
     sessionMock.physicalReminder = null;
     renderPage();
     expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull();
+    expect(screen.queryByText('棋盘可能被移动')).toBeNull();
+  });
+
+  it('同一组件切换 session 时，各局只读自己的降级记录', () => {
+    physical();
+    sessionStorage.setItem('kiosk_screen_fallback:play-ai-s2', '1');
+    render(pageTree(true));
+    expect(screen.getByRole('button', { name: /重置识别/, hidden: true })).toBeInTheDocument();
+    fireEvent.click(screen.getByText('SESSION_2'));
+    expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull();
+    fireEvent.click(screen.getByText('SESSION_1'));
+    expect(screen.getByRole('button', { name: /重置识别/, hidden: true })).toBeInTheDocument();
+    expect(sessionStorage.getItem('kiosk_screen_fallback:play-ai-s1')).toBeNull();
+  });
+
+  it('上一局锁定过的位姿历史不会让新局首次未锁定误报移动', () => {
+    physical();
+    const view = render(pageTree(true));
+    vision.poseLocked = false;
+    fireEvent.click(screen.getByText('SESSION_2'));
+    expect(screen.queryByText('棋盘可能被移动')).toBeNull();
+    // 同一新局锁定后再丢失仍须提示，不能通过永久禁用弹层使上面的断言变绿。
+    vision.poseLocked = true;
+    view.rerender(pageTree(true));
+    vision.poseLocked = false;
+    view.rerender(pageTree(true));
+    expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
+  });
+
+  it('真实 useVisionSync 生命周期:绑定一次，屏幕降级只解绑一次', async () => {
+    physical();
+    vision.realSync = true;
+    sessionMock.physicalReminder = { kind: 'escalation', to_place: [], to_remove: [] };
+    const bind = vi.spyOn(API, 'visionBind').mockResolvedValue(undefined);
+    const unbind = vi.spyOn(API, 'visionUnbind').mockResolvedValue(undefined);
+    vi.stubGlobal('WebSocket', class { close = vi.fn(); });
+    const view = renderPage();
+    try {
+      await waitFor(() => expect(bind).toHaveBeenCalledWith('play-ai-s1'));
+      fireEvent.click(screen.getByRole('button', { name: '改用屏幕落子' }));
+      await waitFor(() => expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull());
+      expect(bind).toHaveBeenCalledTimes(1);
+      expect(unbind).toHaveBeenCalledTimes(1);
+      view.unmount();
+      expect(unbind).toHaveBeenCalledTimes(1);
+    } finally {
+      view.unmount();
+      vi.unstubAllGlobals();
+    }
   });
 });
 ```
 
-Run: `cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui && npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx -t "A20"`
-Expected: 第一条 FAIL(弹层出现了);第二条 FAIL(文案是「无需 LED,对齐外框即可」);第三条 FAIL(重置识别键还在)。
+测试桩增加 `vision.realSync`（默认 false）；该标志为 true 的单个用例用 `importOriginal` 返回的真实 `useVisionSync`，其余沿用原桩。`pageTree(true)` 在同一个 MemoryRouter 添加 SESSION_1 / SESSION_2 链接，保持 GamePage 组件身份。
 
-- [ ] **Step 2: 实现**
+Run: `cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui && NODE_OPTIONS=--no-experimental-webstorage npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx -t "A20"`
+Expected: 6 条均 FAIL（初始误报、文案、降级未撤 UI、同组件跨 session 状态未隔离）；先按原计划接入降级后，真实 hook 单次解绑用例仍 FAIL（实际 2 次）。
+
+- [x] **Step 2: 实现**
 
 `PhysicalSyncEscalationDialog.tsx`:`Props` 里 `onClose: () => void;` 之后加
 
@@ -5700,10 +5763,18 @@ Expected: 第一条 FAIL(弹层出现了);第二条 FAIL(文案是「无需 LED,
 
 ```tsx
   const screenPlay = () => {
-    API.visionUnbind().catch(() => undefined);
-    onScreenPlay?.();
+    if (onScreenPlay) onScreenPlay();
+    else API.visionUnbind().catch(() => undefined);
     onClose();
   };
+```
+
+`GamePage.tsx` 增加本页 storage 读取函数（拒绝读取时默认 false）：
+
+```tsx
+const readScreenFallback = (key: string): boolean => {
+  try { return sessionStorage.getItem(key) === '1'; } catch { return false; }
+};
 ```
 
 `GamePage.tsx`,把
@@ -5719,24 +5790,26 @@ Expected: 第一条 FAIL(弹层出现了);第二条 FAIL(文案是「无需 LED,
 
 ```tsx
   const [playOnBoard] = useState(readPlayOnBoard);
-  // A20:本局已从实体盘降级为屏幕落子(`PhysicalSyncEscalationDialog` 的「改用屏幕落子」)。
-  // 按 sessionId 记在 sessionStorage:同一局刷新 / 从「继续上一局」回来仍是屏幕模式,换一局不受影响。
+  // 本局降级刷新后仍保留；路由复用 GamePage 时，降级与锁定历史都不能带进下一局。
   const screenFallbackKey = `kiosk_screen_fallback:${sessionId ?? ''}`;
-  const [screenFallback, setScreenFallback] = useState(() => {
-    try { return sessionStorage.getItem(screenFallbackKey) === '1'; } catch { return false; }
-  });
+  const [physicalSession, setPhysicalSession] = useState(() => ({
+    sessionId, screenFallback: readScreenFallback(screenFallbackKey), poseEverLocked: false,
+  }));
+  if (physicalSession.sessionId !== sessionId) {
+    setPhysicalSession({ sessionId, screenFallback: readScreenFallback(screenFallbackKey), poseEverLocked: false });
+  }
   const fallBackToScreen = useCallback(() => {
-    try { sessionStorage.setItem(screenFallbackKey, '1'); } catch { /* 隐私模式:本页照样降级,只是刷新后记不住 */ }
-    setScreenFallback(true);
+    try { sessionStorage.setItem(screenFallbackKey, '1'); } catch { /* 本页仍降级，刷新后可能无法保留 */ }
+    setPhysicalSession((previous) => ({ ...previous, screenFallback: true }));
   }, [screenFallbackKey]);
-  const physicalPlay = !screenFallback
-    && isVisionEnabled
+  const physicalPlay = !physicalSession.screenFallback && isVisionEnabled
     && playOnBoard
     && (session.gameState?.board_size?.[0] ?? 19) === 19;
-  // A21:「棋盘可能被移动」只在**本页锁定过位姿之后又丢了**时才算数。进局头几秒识别还没绑定 / 刚绑定,
-  // `poseLocked` 本来就是假 —— 那不是棋盘被挪了。(渲染中按条件调整 state 的写法,不走 effect。)
-  const [poseEverLocked, setPoseEverLocked] = useState(false);
-  if (physicalPlay && visionStatus.poseLocked && !poseEverLocked) setPoseEverLocked(true);
+  const poseEverLocked = physicalSession.poseEverLocked;
+  // 初次等待识别不是棋盘移动；只在本 session 锁定过之后提醒。
+  if (physicalSession.sessionId === sessionId && physicalPlay && visionStatus.poseLocked && !poseEverLocked) {
+    setPhysicalSession({ ...physicalSession, poseEverLocked: true });
+  }
 ```
 
 `const recalOpen = physicalPlay && !visionStatus.poseLocked && !isGameOver;` 改为
@@ -5745,7 +5818,7 @@ Expected: 第一条 FAIL(弹层出现了);第二条 FAIL(文案是「无需 LED,
 `hardwareFault` 里 `: visionStatus.poseLocked === false ? t('vision:pose_lost', '标定丢失 · 请重新标定')` 改为
 `: poseEverLocked && visionStatus.poseLocked === false ? t('vision:pose_lost', '标定丢失 · 请重新标定')`。
 
-`<PhysicalSyncEscalationDialog` 那一段加一个 prop:`onScreenPlay={fallBackToScreen}`。
+`<PhysicalSyncEscalationDialog` 加 `onScreenPlay={fallBackToScreen}`，`open` 改 `physicalPlay && escalationOpen`；实体盘 reminder 与 camera disconnect toast 的 `open` 同样加 `physicalPlay`，防止已排队通知在降级后重新出现。
 
 `RecalibrationModal.tsx` 第 63 行那句正文改为:
 
@@ -5762,16 +5835,16 @@ Expected: 第一条 FAIL(弹层出现了);第二条 FAIL(文案是「无需 LED,
             {t('vision:board_lost_hint', '看一下摄像头有没有被挡住、棋盘有没有被挪动；挪动过的话要重新标定')}
 ```
 
-- [ ] **Step 3: 验证并提交**
+- [x] **Step 3: 验证并提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
-npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx src/kiosk/pages/GamePage.test.tsx src/kiosk/__tests__/GamePageLedBadge.test.tsx src/kiosk/__tests__/GamePage.test.tsx
+npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx src/kiosk/pages/GamePage.test.tsx src/kiosk/__tests__/GamePageLedBadge.test.tsx src/kiosk/__tests__/GamePage.test.tsx src/kiosk/__tests__/PhysicalSyncEscalationDialog.test.tsx
 npx tsc -b && echo TSC_OK
 npx eslint src/kiosk/pages/GamePage.tsx src/kiosk/components/physical/PhysicalSyncEscalationDialog.tsx src/kiosk/components/game/RecalibrationModal.tsx src/kiosk/components/vision/VisionSyncOverlay.tsx
 ```
-Expected:`GamePage.playAi.test.tsx` 全 PASS;`TSC_OK`;eslint 无新增 error(若 `if (…) setPoseEverLocked(true)` 被 `react-hooks` 规则判为 error,
-先停下来在报告里说明,不要加 `eslint-disable`)。
+Expected:`GamePage.playAi.test.tsx` 全 PASS;`TSC_OK`;eslint 无新增 error(若 `if (…) setPhysicalSession(…)` 被 `react-hooks` 规则判为 error,
+按源码选择最小合规写法并记录偏差，不加 `eslint-disable`)。
 **既有 `src/kiosk/pages/GamePage.test.tsx` 的 `State B — RecalibrationModal` 组里有两条会红,而且红得对**(它们从 `mockPoseLocked = false` 起步,
 按 A21 的新判据「没锁定过就不是棋盘被挪」本就不该弹)。按下面改,其余不动:
 
@@ -5840,7 +5913,7 @@ git add katrain/web/ui/src/kiosk/pages/GamePage.test.tsx
 git diff --cached --stat
 git commit -m "fix(kiosk): 改用屏幕落子后页面仍当自己在实体盘上;重标定弹层说「无需 LED」而实际要亮灯清盘
 
-A20(P2):本局降级记在 sessionStorage,关掉识别绑定与整串实体盘 UI。A21 前端部分:弹层只在锁定过又丢失时出现,
+A20(P2):本局降级记在 sessionStorage，路由复用时按 session 重置；按真实 hook cleanup 只解绑一次，关掉整串实体盘 UI。A21 前端部分:弹层只在锁定过又丢失时出现,
 文案改成它真会做的事;「棋盘检测异常」不再指向不存在的横幅。无 LED 外框重定位(V1)归视觉/标定模块。
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"

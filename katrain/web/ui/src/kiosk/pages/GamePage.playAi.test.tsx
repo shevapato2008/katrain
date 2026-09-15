@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { API, ApiError, type GameState } from '../../api';
@@ -43,7 +43,7 @@ vi.mock('../utils/activeSession', () => ({ clearActiveSession, writeActiveSessio
 vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: vi.fn().mockResolvedValue({}) } }));
 vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus: vi.fn() }));
 
-const vision = vi.hoisted(() => ({ enabled: false, poseLocked: true }));
+const vision = vi.hoisted(() => ({ enabled: false, poseLocked: true, realSync: false }));
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({
     visionStatus: {
@@ -54,9 +54,14 @@ vi.mock('../context/VisionContext', () => ({
     refreshStatus: vi.fn(),
   }),
 }));
-vi.mock('../hooks/useVisionSync', () => ({
-  useVisionSync: () => ({ syncEvents: [], latestEvent: null, setupProgress: null, isSetupComplete: false }),
-}));
+vi.mock('../hooks/useVisionSync', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../hooks/useVisionSync')>();
+  return {
+    useVisionSync: (sessionId: string | null) => vision.realSync
+      ? actual.useVisionSync(sessionId)
+      : { syncEvents: [], latestEvent: null, setupProgress: null, isSetupComplete: false },
+  };
+});
 
 const sessionMock = vi.hoisted(() => ({
   gameState: null as unknown,
@@ -105,9 +110,13 @@ const makeState = (over: Partial<GameState> = {}): GameState => ({
 } as GameState);
 
 // 单独拎出来,是为了 `rerender(pageTree())` 能用同一棵树:改完桩的值再重渲,组件身份不变。
-const pageTree = () => (
+const pageTree = (sessionLinks = false) => (
   <ThemeProvider theme={kioskTheme}>
     <MemoryRouter initialEntries={['/kiosk/play/ai/game/play-ai-s1']}>
+      {sessionLinks && <>
+        <Link to="/kiosk/play/ai/game/play-ai-s1">SESSION_1</Link>
+        <Link to="/kiosk/play/ai/game/play-ai-s2">SESSION_2</Link>
+      </>}
       <Routes>
         <Route path="/kiosk/play/ai/game/:sessionId" element={<GamePage />} />
         <Route path="/kiosk/play" element={<div>PLAY_PAGE</div>} />
@@ -125,6 +134,7 @@ beforeEach(() => {
   sessionMock.connectionLost = null;
   sessionMock.physicalReminder = null;
   vision.enabled = false;
+  vision.realSync = false;
   vision.poseLocked = true;
   sessionStorage.clear();
   sessionMock.handleAction.mockResolvedValue(undefined);
@@ -456,5 +466,108 @@ describe('A9(与拍板无关的一半)· 不渲染胜率块的局不白算分析
     sessionMock.gameState = makeState();
     renderPage();
     expect(spy).toHaveBeenCalledWith('play-ai-s1');
+  });
+});
+
+
+describe('A20 + A21 · 实体盘降级与重标定弹层', () => {
+  const physical = () => {
+    vision.enabled = true;
+    localStorage.removeItem('kiosk_play_on_board');
+    sessionMock.gameState = makeState();
+  };
+
+  it('进局还没锁定过位姿:不弹移动警告', () => {
+    physical();
+    vision.poseLocked = false;
+    renderPage();
+    expect(screen.queryByText('棋盘可能被移动')).toBeNull();
+  });
+
+  it('锁定后丢失才提示，而且说明亮灯和清空棋盘', () => {
+    physical();
+    const view = renderPage();
+    vision.poseLocked = false;
+    view.rerender(pageTree());
+    expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
+    expect(screen.getByText(/重新标定会亮灯.*要先把棋盘上的子全部拿走/)).toBeInTheDocument();
+    expect(screen.queryByText(/无需 LED/)).toBeNull();
+  });
+
+  it('降级撤掉实体盘 UI，同局重挂载仍可在屏幕落子', async () => {
+    physical();
+    sessionMock.physicalReminder = { kind: 'escalation', to_place: [], to_remove: [] };
+    const view = renderPage();
+    // MUI 弹框为页面加 aria-hidden；否定断言也必须包含隐藏元素，不能因过渡期被藏而误绿。
+    expect(screen.getByRole('button', { name: /重置识别/, hidden: true })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '改用屏幕落子' }));
+    vision.poseLocked = false;
+    view.rerender(pageTree());
+    await waitFor(() => expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull());
+    expect(screen.queryByText('棋盘可能被移动')).toBeNull();
+    expect(sessionStorage.getItem('kiosk_screen_fallback:play-ai-s1')).toBe('1');
+    // 解绑前已排队的旧实体盘通知不能把提示重新打开。
+    sessionMock.physicalReminder = { kind: 'reminder', to_place: [[3, 3]], to_remove: [] };
+    view.rerender(pageTree());
+    expect(screen.queryByText('请先将 AI 棋子摆到棋盘亮灯处')).toBeNull();
+    sessionMock.physicalReminder = { kind: 'escalation', to_place: [[3, 3]], to_remove: [] };
+    view.rerender(pageTree());
+    await waitFor(() => expect(screen.queryByRole('button', { name: '改用屏幕落子', hidden: true })).toBeNull());
+    fireEvent.click(screen.getByTestId('board'));
+    expect(sessionMock.onMove).toHaveBeenCalledWith(3, 3);
+
+    view.unmount();
+    sessionMock.physicalReminder = null;
+    renderPage();
+    expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull();
+    expect(screen.queryByText('棋盘可能被移动')).toBeNull();
+  });
+
+  it('同一组件切换 session 时，各局只读自己的降级记录', () => {
+    physical();
+    sessionStorage.setItem('kiosk_screen_fallback:play-ai-s2', '1');
+    render(pageTree(true));
+    expect(screen.getByRole('button', { name: /重置识别/, hidden: true })).toBeInTheDocument();
+    fireEvent.click(screen.getByText('SESSION_2'));
+    expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull();
+    fireEvent.click(screen.getByText('SESSION_1'));
+    expect(screen.getByRole('button', { name: /重置识别/, hidden: true })).toBeInTheDocument();
+    expect(sessionStorage.getItem('kiosk_screen_fallback:play-ai-s1')).toBeNull();
+  });
+
+  it('上一局锁定过的位姿历史不会让新局首次未锁定误报移动', () => {
+    physical();
+    const view = render(pageTree(true));
+    vision.poseLocked = false;
+    fireEvent.click(screen.getByText('SESSION_2'));
+    expect(screen.queryByText('棋盘可能被移动')).toBeNull();
+    // 同一新局锁定后再丢失仍须提示，不能通过永久禁用弹层使上面的断言变绿。
+    vision.poseLocked = true;
+    view.rerender(pageTree(true));
+    vision.poseLocked = false;
+    view.rerender(pageTree(true));
+    expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
+  });
+
+  it('真实 useVisionSync 生命周期:绑定一次，屏幕降级只解绑一次', async () => {
+    physical();
+    vision.realSync = true;
+    sessionMock.physicalReminder = { kind: 'escalation', to_place: [], to_remove: [] };
+    const bind = vi.spyOn(API, 'visionBind').mockResolvedValue(undefined);
+    const unbind = vi.spyOn(API, 'visionUnbind').mockResolvedValue(undefined);
+    vi.stubGlobal('WebSocket', class { close = vi.fn(); });
+    const view = renderPage();
+    try {
+      await waitFor(() => expect(bind).toHaveBeenCalledWith('play-ai-s1'));
+      fireEvent.click(screen.getByRole('button', { name: '改用屏幕落子' }));
+      await waitFor(() => expect(screen.queryByRole('button', { name: /重置识别/, hidden: true })).toBeNull());
+      expect(bind).toHaveBeenCalledTimes(1);
+      expect(unbind).toHaveBeenCalledTimes(1);
+      view.unmount();
+      expect(unbind).toHaveBeenCalledTimes(1);
+    } finally {
+      view.unmount();
+      vi.unstubAllGlobals();
+    }
   });
 });

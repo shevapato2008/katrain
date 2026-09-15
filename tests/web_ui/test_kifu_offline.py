@@ -78,7 +78,31 @@ async def test_cloud_404_stays_404():
 
 @pytest.mark.asyncio
 async def test_online_passes_through():
-    d = _dispatcher()
-    listed = await kifu.list_kifu_albums(request=_request(d), q=None, page=1, page_size=6, db=None)
-    assert listed["total"] == 0
-    assert await kifu.get_kifu_album(request=_request(d), album_id=7, db=None) == {"id": 7}
+    # 非空数据和非默认参数:丢掉远端结果或查询参数都必须红,不能拿空库兜底当成功。
+    payload = {"items": [{"id": 23, "event": "三星杯"}], "total": 19, "page": 3, "page_size": 6}
+    detail = {"id": 23, "sgf_content": "(;SZ[19];B[pd])"}
+    search = AsyncMock(return_value=payload)
+    get = AsyncMock(return_value=detail)
+    d = _dispatcher(search=search, get=get)
+    listed = await kifu.list_kifu_albums(request=_request(d), q="三星杯", page=3, page_size=6, db=None)
+    assert listed == payload
+    search.assert_awaited_once_with(q="三星杯", page=3, page_size=6)
+    assert await kifu.get_kifu_album(request=_request(d), album_id=23, db=None) == detail
+    get.assert_awaited_once_with(23)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("endpoint", ["list", "detail"])
+@pytest.mark.parametrize("upstream_status, expected_status", [(403, 403), (500, 503)])
+async def test_cloud_errors_keep_4xx_and_map_5xx(endpoint, upstream_status, expected_status):
+    remote_call = AsyncMock(side_effect=_status_error(upstream_status))
+    d = _dispatcher(**{"search" if endpoint == "list" else "get": remote_call})
+    with pytest.raises(HTTPException) as exc:
+        if endpoint == "list":
+            await kifu.list_kifu_albums(request=_request(d), q=None, page=1, page_size=6, db=None)
+        else:
+            await kifu.get_kifu_album(request=_request(d), album_id=7, db=None)
+    assert exc.value.status_code == expected_status
+    assert exc.value.detail == (
+        "Remote kifu service unavailable" if expected_status == 503 else "Remote kifu request failed (403)"
+    )

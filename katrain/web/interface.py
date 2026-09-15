@@ -253,6 +253,9 @@ class WebKaTrain(KaTrainBase):
         self.analysis_engine_instance = None
         self.pondering = False
         self.timer_paused = True
+        # A18:这一局的时限是不是**开局设置**写的(`/api/game/setup`、升降级 `/start` 都经 update_config("timer/…"))。
+        # 没写过的局(星阵人机、大厅房间)继承 config.json 默认时限且不暂停,前端不许把它当计时局。
+        self.timer_configured = False
         self.last_timer_update = time.time()
         self.main_time_used_by_player = {"B": 0, "W": 0}
         self.show_children = False
@@ -694,6 +697,7 @@ class WebKaTrain(KaTrainBase):
                 "current_node_time_used": cn.time_used,
                 "next_player_periods_used": self.next_player_info.periods_used,
                 "settings": self.active_game_timer,
+                "configured": bool(getattr(self, "timer_configured", False)),
             },
             "ui_state": {
                 "show_children": self.show_children,
@@ -1657,11 +1661,65 @@ class WebKaTrain(KaTrainBase):
             winner = "W" if loser == "B" else "B"
             return self._commit_end_state(f"{winner}+R")
 
-    def _do_timeout(self):
-        """End game due to timeout - current player loses on time"""
-        # r1:语义与从前相同,只多了「已经结束过就拒」。带轮次绑定的版本在 Task 6。
+    def clock_exhausted(self) -> bool:
+        """轮到的一方用时是否已经耗尽 —— 服务端判超时的唯一依据(r1 C1)。
+
+        与前端 `kiosk/components/game/goClock.ts` 的 `isTimedGame` / `readGoClock` 逐条同口径:
+          · 暂停 / 不在对局模式 / 没有对局 / 非叶子 / 时限不是开局设置写的(`timer_configured`)→ False;
+          · 主时间与读秒长度都为 0(不计时)→ False;
+          · 主时间还没用完 → False;
+          · 只有主时间(读秒长度或次数为 0)→ True —— **不许**借用 `update_timer` 的 `max(1, …)`;
+          · 否则读秒次数用完 → True。
+        核实不了一律 False(fail-closed):把一个核实不了的「到点」写成输棋,代价不可逆。先 `update_timer()` 结算到此刻。"""
         with self.ai_ladder_commit_lock:
-            return self._commit_end_state(f"{self.game.current_node.player}+T")
+            self.update_timer()
+            if (
+                self.timer_paused
+                or self.play_analyze_mode != MODE_PLAY
+                or not self.game
+                or self.game.current_node.children
+                or not getattr(self, "timer_configured", False)
+            ):
+                return False
+            main_total = self.active_game_timer.get("main_time", 0) * 60
+            byo_length = self.active_game_timer.get("byo_length", 0)
+            byo_periods = self.active_game_timer.get("byo_periods", 0)
+            if main_total <= 0 and byo_length <= 0:
+                return False
+            if self.main_time_used_by_player.get(self.game.current_node.next_player, 0) < main_total:
+                return False
+            if byo_length <= 0 or byo_periods <= 0:
+                return True
+            return self.next_player_info.periods_used >= byo_periods
+
+    def _do_timeout(self, expected_game_id=None, expected_node_id=None, color=None):
+        """End game due to timeout - current player loses on time.
+
+        不带绑定(galaxy 旧调用):语义照旧 —— 最后落子的一方胜,不核时钟;只多了「已经结束过就拒」。
+        带绑定(kiosk,r1 C1):整段在对局提交锁里按顺序判 ——
+          1. 这一手所在的局面线已经结束过 → `already_ended`;
+          2. 局 id 不符、`id(current_node)` 不符、轮到的不是 `color`、或当前手不在叶子上 → `stale_turn`
+             (服务端已经走过了请求方以为的那一手:人在最后一刻落子、AI 提交在途、翻到了前面);
+          3. 服务端时钟没耗尽(`clock_exhausted`)→ `clock_not_expired`;
+          4. 都通过 → `color` 一方超时负。
+        已知残留:服务端只在叶子上走钟,翻到前面看棋的那段时间不计入任何一方(今天就有的语义,本轮不改);盒上服务重启后会话就没了。"""
+        with self.ai_ladder_commit_lock:
+            cn = self.game.current_node
+            if expected_node_id is None:
+                return self._commit_end_state(f"{cn.player}+T")
+            if cn.end_state or self.game.ended_at(cn):
+                raise EndgameConflict("already_ended")
+            if (
+                self.game.game_id != expected_game_id
+                or id(cn) != expected_node_id
+                or cn.next_player != color
+                or cn.children
+            ):
+                raise EndgameConflict("stale_turn")
+            if not self.clock_exhausted():
+                raise EndgameConflict("clock_not_expired")
+            winner = "W" if color == "B" else "B"
+            return self._commit_end_state(f"{winner}+T")
 
     def _do_engine_recovery_popup(self, error_message, code):
         # Sync global i18n before logging translated strings
@@ -1688,6 +1746,9 @@ class WebKaTrain(KaTrainBase):
         if setting == "general/language":
             i18n.switch_lang(value)
             self.update_state()
+
+        if setting.startswith("timer/"):
+            self.timer_configured = True
 
         if setting == "timer/paused":
             self.timer_paused = value

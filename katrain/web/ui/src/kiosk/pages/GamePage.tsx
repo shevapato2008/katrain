@@ -25,7 +25,7 @@ import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChi
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
 import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog';
 import HintPanel from '../components/physical/HintPanel';
-import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
+import { API, ApiError, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
 import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
@@ -170,6 +170,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [hint, setHint] = useState<HintResponse | null>(null);
   const [hintError, setHintError] = useState<string | null>(null);
   const [engineErrorToast, setEngineErrorToast] = useState(false);
+  const [timeoutError, setTimeoutError] = useState<{ scope: string; message: string } | null>(null);
+  const timeoutAttemptRef = useRef<{
+    key: string; checks: number; retries: number; timer: number | null;
+  } | null>(null);
+  const timeoutState = session.gameState;
+  const timeoutScope = `${sessionId}|${timeoutState?.game_id}|${timeoutState?.current_node_id}|${timeoutState?.player_to_move}|${timeoutState?.end_result}|${timeoutState?.terminal_result}|${timeoutState?.children?.length}|${timeoutState?.last_ladder_error}|${timeoutState?.game_type}|${timeoutState ? deriveHumanColor(timeoutState) : ""}`;
+  useEffect(() => () => {
+    const attempt = timeoutAttemptRef.current;
+    if (attempt?.timer != null) window.clearTimeout(attempt.timer);
+    timeoutAttemptRef.current = null;
+  }, [timeoutScope]);
+
   const [countError, setCountError] = useState<string | null>(null);
   // A12:数子可能要等几秒(当前手没有分数时服务端先补一次分析,上限 15 秒)。
   // ref 挡同一帧里的连点(state 要等下一次渲染才看得见),state 负责屏上那句「正在数子…」。
@@ -434,6 +446,50 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // returns null for both-human local PvP so Board lets whichever side is to move play
   // (touchscreen fallback works for BOTH colors — see the helper's both-human guard).
   const humanColor = deriveHumanColor(gameState);
+  const handleClockExpired = (color: 'B' | 'W') => {
+    if (!sessionId || isGameOver || gameState.player_to_move !== color || gameState.children.length > 0) return;
+    if (gameState.last_ladder_error || (isRanked && humanColor !== color)) return;
+    const key = `${gameState.game_id}|${gameState.current_node_id}|${color}`;
+    if (timeoutAttemptRef.current?.key === key) return;
+    const attempt = { key, checks: 1, retries: 0, timer: null as number | null };
+    timeoutAttemptRef.current = attempt;
+    const expect = { expected_game_id: gameState.game_id, expected_node_id: gameState.current_node_id, color };
+    const current = () => timeoutAttemptRef.current === attempt;
+    const later = (ms: number) => {
+      attempt.timer = window.setTimeout(() => { if (current()) void send(); }, ms);
+    };
+    const retryDelivery = () => {
+      if (!current()) return;
+      const delay = [2000, 5000, 10000][attempt.retries++];
+      if (delay !== undefined) later(delay);
+      else setTimeoutError({ scope: timeoutScope, message: t('game:timeout_not_delivered', '超时判定没有送达，请检查连接后重新进入这一局') });
+    };
+    const send = async (): Promise<void> => {
+      if (!current()) return;
+      try {
+        const res = await API.timeout(sessionId, token ?? undefined, expect);
+        if (!current()) return;
+        if (res?.state) session.setGameState(res.state);
+        setTimeoutError(null);
+      } catch (e) {
+        if (!current()) return;
+        if (e instanceof ApiError && (e.status === 409 || e.status === 403)) {
+          try {
+            const fresh = await API.getState(sessionId, token ?? undefined);
+            if (!current()) return;
+            if (fresh?.state) session.setGameState(fresh.state);
+            if (e.message.includes('clock_not_expired') && attempt.checks < 2) {
+              attempt.checks += 1;
+              later(1000);
+            }
+          } catch { retryDelivery(); }
+        } else retryDelivery();
+      }
+    };
+    setTimeoutError(null);
+    void send();
+  };
+
   // 本地双人局按轮到落子的一方认输，人机局始终按人的座位认输。
   const bothHuman = gameState.players_info.B.player_type === 'player:human'
     && gameState.players_info.W.player_type === 'player:human';
@@ -747,6 +803,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             } : undefined}
           />
           <GameControlPanel
+            onTimeout={handleClockExpired}
             gameState={gameState}
             onAction={handleAction}
             onNavigate={session.onNavigate}
@@ -932,6 +989,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       <Snackbar open={!!countError} autoHideDuration={5000} onClose={() => setCountError(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="warning" onClose={() => setCountError(null)}>{countError}</Alert>
+      </Snackbar>
+      <Snackbar open={!!timeoutError && timeoutError.scope === timeoutScope}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }} onClose={() => setTimeoutError(null)}>
+        <Alert severity="error" onClose={() => setTimeoutError(null)}>{timeoutError?.message}</Alert>
       </Snackbar>
       <Snackbar open={!!resignError} autoHideDuration={5000} onClose={() => setResignError(null)}>
         <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>

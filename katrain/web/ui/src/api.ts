@@ -67,6 +67,9 @@ export interface GameState {
     main_time_used: number;
     current_node_time_used: number;
     next_player_periods_used: number;
+    /** 这一局的时限是开局设置写的(服务端 `timer_configured`)。星阵 / 大厅局没有,别把它们当计时局。 */
+    configured?: boolean;
+
     settings: {
       main_time: number;
       byo_length: number;
@@ -390,8 +393,10 @@ export const API = {
     apiPost("/api/player/swap", { session_id: sessionId }),
   resign: (sessionId: string, token?: string): Promise<SessionResponse> =>
     apiPost("/api/resign", { session_id: sessionId }, token),
-  timeout: (sessionId: string, token?: string): Promise<SessionResponse> =>
-    apiPost("/api/timeout", { session_id: sessionId }, token),
+  timeout: (sessionId: string, token?: string, expect?: {
+    expected_game_id: string; expected_node_id: number; color: 'B' | 'W';
+  }): Promise<SessionResponse> =>
+    apiPost("/api/timeout", { session_id: sessionId, ...expect }, token),
   requestCount: (sessionId: string, token?: string): Promise<any> =>
     apiPost("/api/count/request", { session_id: sessionId }, token),
   respondCount: (sessionId: string, accept: boolean, token?: string): Promise<any> =>

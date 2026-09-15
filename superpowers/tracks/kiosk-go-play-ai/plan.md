@@ -3815,6 +3815,18 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ### Task 6: A18 玩家卡倒计时 / 读秒 / 到点判超时(r1:超时绑定轮次,服务端时钟核实)
 
+**执行记录（2026-09-15，Task 6 已完成）**
+
+- 已用真类与 HTTP 两条独立命令取得正确红灯：真类 15 failed / 3 passed，含 `timer_is_configured` 与只主时间恰好 60 秒；HTTP 8 failed / 3 passed，缺字段组合与非法颜色均从 200 变为期望 422。AI 锁测试收集线程异常并始终放行 AI，避免线程残留；`_timed_game` 复用头部捕获的真实 `interface_module`，不晚导入被 web_ui 替换的模块。
+- 后端绿灯：`tests/test_play_ai_endgame.py` 65 passed；HTTP endgame / ladder / termination / autosave 四文件 298 passed。新增不可核实时钟（暂停、未配置、不计时、分析模式、非叶子、无对局）与错局/错方/非叶子绑定拒绝覆盖。`clock_exhausted()` 本身也检查叶子，与注释及前端闸保持一致。
+- 前端初轮红灯为 9 failed / 19 passed（另一个 suite 因新 `goClock` 尚不存在而红）；补齐文字要求的退避与清理测试后 A18 18 failed / 5 passed。最终五个时钟/右栏/页面文件 90 passed。覆盖 403 重同步、401/网络失败有限退避、恢复成功、专用提示可关闭/随轮次清除、换局/换手/换方/终局/非叶子/引擎停摆/升降级座位变化与卸载清理，旧响应不覆盖新局。
+- 定向反证：移除叶子/终局条件时 2 条红；去掉换手回调依赖时 1 条红，均已恢复。另新增 `src/api.timeout.test.ts` 两条，mock fetch 直接核实绑定字段进入 POST JSON，省略绑定保持旧请求；临时移除 `...expect` 得 1 failed / 1 passed，恢复后 2 passed。
+- 源码校正：`get_state()` 也结算时钟，删除计划旧有「仅换手结算／刷新清零」注释；本手字段是已记读秒用时。hook 基准包含 game id 与时限设置，避免换局复用旧外推；页面清理 scope 加对局类型与人的执色，专用提示绑定 scope，旧轮次提示不跨局保留。
+- `npx tsc -b` 通过；eslint 无新增 error（共享 api.ts 基线 26 errors，GamePage 基线 4 warnings）；Python 已 Black，server 的 `_report_settlement_loop` 三行基线已还原，`git diff --check` 通过。日志 `/tmp/kgpa-task6-red-*.log`、`/tmp/kgpa-task6-green-*.log`、`/tmp/kgpa-task6-tsc.log`、`/tmp/kgpa-task6-eslint.log`。
+- 完整验证：后端 3646 passed / 69 failed / 46 errors，前端 1795 passed / 5 skipped，两个新增失败名称集合均为空（`/tmp/kgpa-task6-pytest.log`、`/tmp/kgpa-task6-vitest.log`）。两套构建、kiosk 边界和再次 `npx tsc -b` 通过，三处测试污染已清理。
+- 用本 worktree 的 Python 服务提供已构建静态产物，临时 SQLite、关闭引擎；测试密钥长度不足后按现有约束更正，服务正常启动。1024×600 的 A18 浏览器测试 1 passed（`/tmp/kgpa-task6-e2e.log`），轮到的一方倒计时、另一方停表，时钟未溢出，logo 正常；截图 `visual/a18-timed-game-1024x600.png` 已查看，**待 Fan 确认**。测试服务已停止，用户配置已恢复。
+- 屏 05 四图两次均通过，四张 PNG 两次像素差均为 0；参考与实现的棋盘/右栏主几何一致，现有差异包括棋盘线对比、末手标记、图表数值与曲线、参考中虚构的白方时钟及无摄像头时的重标定入口。实现图相对 HEAD 无内容变化，仅并排说明图变化，按 Step 6 还原，不追加图片噪声。完整四图已逐张查看，**待 Fan 确认**；上板仍列入 Task 12。不改 PRD、账本/目录或跨平台两处 token 闸。
+
 **Files:**
 - Modify: `katrain/web/models.py`(`TimeoutRequest`;typing / pydantic import)
 - Modify: `katrain/web/interface.py:205`(`__init__` 加 `timer_configured`)、`update_config`(`timer/` 分支)、`get_state` 的 `"timer"` 字典(`:593-599`);Task 2 改过的 `_do_timeout`(整段替换)与它之前新增的 `clock_exhausted`
@@ -3822,6 +3834,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Modify: `katrain/web/ui/src/api.ts:63-75`(`timer` 类型加 `configured?: boolean`)、`:391-392`(`API.timeout` 加可选第三参)—— **共享领地**
 - Create: `katrain/web/ui/src/kiosk/components/game/goClock.ts`、`goClock.test.ts`、`GameControlPanel.playAi.test.tsx`
 - Create: `katrain/web/ui/tests/kiosk-screen-05-play-ai.spec.ts`
+- Create: `katrain/web/ui/src/api.timeout.test.ts`（真实 POST body 的绑定/legacy 两条护栏）
 - Modify: `katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx`(import、Props、`clockFor` 注释、两处 `<PlayerRow>` 换成 `<SeatRow>`)
 - Modify: `katrain/web/ui/src/kiosk/pages/GamePage.tsx`(import 加 `ApiError`;`handleClockExpired` / `sendTimeout` / 没送达的 `Snackbar` 与传参)
 - Test: `tests/test_play_ai_endgame.py`、`tests/web_ui/test_play_ai_endgame_api.py`、`katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx`(追加)
@@ -3841,7 +3854,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
   - `GameControlPanel` 新 prop `onTimeout?: (color: 'B' | 'W') => void`(Task 9 同文件继续改)
   - `tests/kiosk-screen-05-play-ai.spec.ts` 的 `open(page, state)` / `baseState(over)` / `seat()` 供 Task 9 追加
 
-- [ ] **Step 1: 后端判别位(测试 → 实现)**
+- [x] **Step 1: 后端判别位(测试 → 实现)**
 
 追加到 `tests/test_play_ai_endgame.py` 末尾:
 
@@ -3914,8 +3927,6 @@ class _FakeClock:
 
 def _timed_game(monkeypatch, *, main_time=0, byo_length=30, byo_periods=3):
     """两人座位、开局设置配过时限(`timer_configured`)、不暂停的真 WebKaTrain,时钟由测试拨。默认「仅读秒 30 秒 × 3」。"""
-    import katrain.web.interface as interface_module
-
     clock = _FakeClock()
     monkeypatch.setattr(interface_module, "time", clock)
     w = _web_katrain()
@@ -4085,7 +4096,7 @@ def test_timeout_expectations_come_all_or_nothing(client):
 Run（分两条）：
 
 ```bash
-cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py -q -k "timeout or clock"
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py --continue-on-collection-errors -q -k "timer_is_configured or timeout or clock or main_time_only"
 CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py -q -k timeout
 ```
 Expected:
@@ -4134,7 +4145,7 @@ class TimeoutRequest(BaseModel):
         """轮到的一方用时是否已经耗尽 —— 服务端判超时的唯一依据(r1 C1)。
 
         与前端 `kiosk/components/game/goClock.ts` 的 `isTimedGame` / `readGoClock` 逐条同口径:
-          · 暂停 / 不在对局模式 / 没有对局 / 时限不是开局设置写的(`timer_configured`)→ False;
+          · 暂停 / 不在对局模式 / 没有对局 / 非叶子 / 时限不是开局设置写的(`timer_configured`)→ False;
           · 主时间与读秒长度都为 0(不计时)→ False;
           · 主时间还没用完 → False;
           · 只有主时间(读秒长度或次数为 0)→ True —— **不许**借用 `update_timer` 的 `max(1, …)`;
@@ -4146,6 +4157,7 @@ class TimeoutRequest(BaseModel):
                 self.timer_paused
                 or self.play_analyze_mode != MODE_PLAY
                 or not self.game
+                or self.game.current_node.children
                 or not getattr(self, "timer_configured", False)
             ):
                 return False
@@ -4188,6 +4200,7 @@ class TimeoutRequest(BaseModel):
                 raise EndgameConflict("clock_not_expired")
             winner = "W" if color == "B" else "B"
             return self._commit_end_state(f"{winner}+T")
+
 ```
 
 `katrain/web/server.py` `/api/timeout`(`:2119-2165`,Task 2 / Task 5 改过)整段替换为:
@@ -4265,7 +4278,7 @@ class TimeoutRequest(BaseModel):
 
 Run 同上 → Expected: 全 PASS;另跑 `CI=true uv run pytest tests/web_ui/test_ai_ladder_api.py tests/web_ui/test_game_termination_and_chat_identity.py tests/web_ui/test_ai_game_autosave.py -q -k "timeout or terminal"` 仍全绿(它们发的都是只带 `session_id` 的旧请求);`git status --short katrain/config.json` 为空。
 
-- [ ] **Step 2: 计时纯函数(测试 → 实现)**
+- [x] **Step 2: 计时纯函数(测试 → 实现)**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
@@ -4319,9 +4332,9 @@ import type { GameState } from '../../../api';
  * 对局屏玩家卡的时钟(A18)。
  *
  * 算法与服务端 `interface.py` `update_timer` 一致:主时间先扣;扣完之后,**这一手**里超出主时间的部分才进读秒,
- * 每满一次读秒长度记一次;次数用完即超时。服务端只在换手时结算,两次推送之间由这里按本地流逝时间外推
+ * 每满一次读秒长度记一次;次数用完即超时。服务端在 get_state、落子和导航时结算,两次推送之间按本地流逝时间外推
  * (galaxy `components/PlayerCard.tsx` 同一套 —— 那个文件是 galaxy 的 MUI 卡,kiosk 不引它,只对齐算法)。
- * 已知局限:刷新页面会把「这一手已想了多久」清零(服务端不在手中途结算),与 galaxy 相同。
+ * 服务端快照携带主时间累计、已用读秒次数与本手已记读秒用时;新基准到达后,本地外推从零重新开始。
  */
 export interface GoClockReading {
   /** 主时间还剩几秒;用完或没有主时间时为 0。 */
@@ -4392,7 +4405,7 @@ export function useGoClock(gameState: GameState, color: 'B' | 'W', onExpired?: (
     && (gameState.children?.length ?? 0) === 0 && gameState.player_to_move === color;
   const info = gameState.players_info[color];
   // 计时基准:服务端最近一次给的量。任何一个变了(换手、结算),本地流逝就从 0 重新数。
-  const baseKey = `${active}|${info.main_time_used}|${info.periods_used}|${timer?.current_node_time_used ?? 0}|${gameState.current_node_id}`;
+  const baseKey = `${gameState.game_id}|${timer?.settings.main_time}|${timer?.settings.byo_length}|${timer?.settings.byo_periods}|${active}|${info.main_time_used}|${info.periods_used}|${timer?.current_node_time_used ?? 0}|${gameState.current_node_id}`;
   const [tick, setTick] = useState({ key: baseKey, elapsed: 0 });
 
   useEffect(() => {
@@ -4440,9 +4453,11 @@ export function useGoClock(gameState: GameState, color: 'B' | 'W', onExpired?: (
     apiPost("/api/timeout", { session_id: sessionId, ...expect }, token),
 ```
 
-Run: `npx vitest run src/kiosk/components/game/goClock.test.ts` → Expected: 5 条 PASS。
+Run: `NODE_OPTIONS=--no-experimental-webstorage npx vitest run src/kiosk/components/game/goClock.test.ts src/api.timeout.test.ts` → Expected: 7 条 PASS。
 
-- [ ] **Step 3: 玩家卡接时钟(测试 → 实现)**
+`src/api.timeout.test.ts` 只核实本次接线的两个请求体：第三参的局/手/方写入 `/api/timeout` POST JSON；省略第三参仍只发 session_id。通过临时移除 `...expect` 的失败反证确认用例会发现绑定字段丢失。
+
+- [x] **Step 3: 玩家卡接时钟(测试 → 实现)**
 
 `src/kiosk/components/game/GameControlPanel.playAi.test.tsx`:
 
@@ -4628,7 +4643,7 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }:
 
 Run: `npx vitest run src/kiosk/components/game/GameControlPanel.playAi.test.tsx src/kiosk/components/game/GameControlPanel.test.tsx` → Expected: 全 PASS。
 
-- [ ] **Step 4: GamePage 发绑定超时、重同步与退避(测试 → 实现)**
+- [x] **Step 4: GamePage 发绑定超时、重同步与退避(测试 → 实现)**
 
 测试文件补 `act`、`ApiError` import。A18 describe 内每条先 stub `API.timeout` 与 `API.getState`，不要真实请求；断言 API 调用，不再断言 `handleAction('timeout')`。补以下用例：
 
@@ -4720,12 +4735,12 @@ Run: `npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx -t A18` → 确认
 实现：状态声明区增加以下 ref/state；清理 effect **放在所有早退之前**。`timeoutScope` 同时含 session / game / node / color 及可发送条件，换轮次、终局、翻手、引擎停摆或卸载即取消旧请求后续操作。
 
 ```tsx
-  const [timeoutError, setTimeoutError] = useState<string | null>(null);
+  const [timeoutError, setTimeoutError] = useState<{ scope: string; message: string } | null>(null);
   const timeoutAttemptRef = useRef<{
     key: string; checks: number; retries: number; timer: number | null;
   } | null>(null);
   const timeoutState = session.gameState;
-  const timeoutScope = `${sessionId}|${timeoutState?.game_id}|${timeoutState?.current_node_id}|${timeoutState?.player_to_move}|${timeoutState?.end_result}|${timeoutState?.terminal_result}|${timeoutState?.children?.length}|${timeoutState?.last_ladder_error}`;
+  const timeoutScope = `${sessionId}|${timeoutState?.game_id}|${timeoutState?.current_node_id}|${timeoutState?.player_to_move}|${timeoutState?.end_result}|${timeoutState?.terminal_result}|${timeoutState?.children?.length}|${timeoutState?.last_ladder_error}|${timeoutState?.game_type}|${timeoutState ? deriveHumanColor(timeoutState) : ""}`;
   useEffect(() => () => {
     const attempt = timeoutAttemptRef.current;
     if (attempt?.timer != null) window.clearTimeout(attempt.timer);
@@ -4752,7 +4767,7 @@ Run: `npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx -t A18` → 确认
       if (!current()) return;
       const delay = [2000, 5000, 10000][attempt.retries++];
       if (delay !== undefined) later(delay);
-      else setTimeoutError(t('game:timeout_not_delivered', '超时判定没有送达，请检查连接后重新进入这一局'));
+      else setTimeoutError({ scope: timeoutScope, message: t('game:timeout_not_delivered', '超时判定没有送达，请检查连接后重新进入这一局') });
     };
     const send = async (): Promise<void> => {
       if (!current()) return;
@@ -4785,7 +4800,7 @@ Run: `npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx -t A18` → 确认
 
 Run: `npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx src/kiosk/pages/GamePage.test.tsx` → 全 PASS。
 
-- [ ] **Step 5: 真实运行时证据(Playwright,打构建产物)**
+- [x] **Step 5: 真实运行时证据(Playwright,打构建产物)**
 
 `katrain/web/ui/tests/kiosk-screen-05-play-ai.spec.ts`:
 
@@ -4884,12 +4899,12 @@ cp /tmp/kgpa-katrain-config.json ~/.katrain/config.json 2>/dev/null || true
 ```
 Expected: 1 passed;截图 `superpowers/tracks/kiosk-go-play-ai/visual/a18-timed-game-1024x600.png` 生成。**交 Fan 单图确认**(稿子没有计时态参考图)。
 
-- [ ] **Step 6: 两套构建 + 四图 + 提交**
+- [x] **Step 6: 两套构建 + 四图 + 提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
 npx tsc -b && echo TSC_OK
-npx eslint src/kiosk/components/game/goClock.ts src/kiosk/components/game/GameControlPanel.tsx src/kiosk/pages/GamePage.tsx src/api.ts
+npx eslint src/api.timeout.test.ts src/kiosk/components/game/goClock.ts src/kiosk/components/game/GameControlPanel.tsx src/kiosk/pages/GamePage.tsx src/api.ts
 npm run build && npm run build:kiosk-2d          # api.ts 是共享领地:两套都要绿
 lsof -nP -iTCP:5173 -sTCP:LISTEN
 npx playwright test --config=playwright.visual.config.ts tests/kiosk-screen-05-game.fourup.spec.ts   # 只跑屏 05;`npm run fourup` 会跑全部 27 屏
@@ -4913,7 +4928,7 @@ grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$/
 LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/models.py katrain/web/server.py tests/web_ui/test_play_ai_endgame_api.py \
-  katrain/web/interface.py katrain/web/ui/src/api.ts katrain/web/ui/src/kiosk/components/game/goClock.ts \
+  katrain/web/interface.py katrain/web/ui/src/api.ts katrain/web/ui/src/api.timeout.test.ts katrain/web/ui/src/kiosk/components/game/goClock.ts \
   katrain/web/ui/src/kiosk/components/game/goClock.test.ts katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx \
   katrain/web/ui/src/kiosk/components/game/GameControlPanel.playAi.test.tsx katrain/web/ui/src/kiosk/pages/GamePage.tsx \
   katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx katrain/web/ui/tests/kiosk-screen-05-play-ai.spec.ts \

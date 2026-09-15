@@ -267,3 +267,63 @@ def test_count_still_says_why_when_no_score_can_be_had(client):
 
     assert resp.status_code == 400
     assert resp.json()["detail"].startswith("Analysis not available")
+
+
+# ---------------------------------------------------------------- r1 C1 超时绑定(端点接线)
+
+
+def test_timeout_passes_the_expected_turn_and_maps_a_refusal_to_409(client):
+    session = _inject_session(client)
+
+    def refuse(action, *args, **kwargs):
+        if action == "timeout":
+            raise EndgameConflict("stale_turn")
+
+    session.katrain.side_effect = refuse
+
+    resp = client.post(
+        "/api/timeout",
+        json={"session_id": session.session_id, "expected_game_id": "g", "expected_node_id": 5, "color": "W"},
+    )
+
+    assert resp.status_code == 409, resp.text
+    assert resp.json()["detail"] == "timeout rejected: stale_turn"
+    session.katrain.assert_any_call("timeout", expected_game_id="g", expected_node_id=5, color="W")
+
+
+@pytest.mark.parametrize("conflict", [None, "already_ended"])
+def test_an_unbound_timeout_keeps_the_old_call_and_an_ended_game_is_a_no_op(client, conflict):
+    """galaxy 的旧调用只带 session_id:照旧 `katrain("timeout")`;撞上已结束的局是 200 空操作,不弹红条。"""
+    session = _inject_session(client)
+    if conflict is not None:
+
+        def refuse(action, *args, **kwargs):
+            if action == "timeout":
+                raise EndgameConflict(conflict)
+
+        session.katrain.side_effect = refuse
+
+    resp = client.post("/api/timeout", json={"session_id": session.session_id})
+
+    assert resp.status_code == 200, resp.text
+    session.katrain.assert_any_call("timeout")
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"expected_node_id": 5},
+        {"expected_game_id": "g"},
+        {"color": "W"},
+        {"expected_game_id": "g", "expected_node_id": 5},
+        {"expected_game_id": "g", "color": "W"},
+        {"expected_node_id": 5, "color": "W"},
+        {"expected_game_id": "g", "expected_node_id": 5, "color": "X"},
+    ],
+)
+def test_timeout_expectations_come_all_or_nothing(client, fields):
+    session = _inject_session(client)
+
+    resp = client.post("/api/timeout", json={"session_id": session.session_id, **fields})
+
+    assert resp.status_code == 422, resp.text

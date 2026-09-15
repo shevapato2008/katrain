@@ -892,3 +892,196 @@ def test_a_resign_on_a_game_already_being_finished_returns_at_once(web_client):
     assert resign["elapsed"] < 1.0, "认输排在补分后面等了"
     assert len(calls) == 1
     assert w.game.terminal.node.end_state is None  # 认输没有改写双停终局
+
+
+# ---------------------------------------------------------------- A18 计时判别位
+
+
+def test_timer_is_configured_only_after_a_setup_wrote_it():
+    """星阵人机 / 大厅房间局没人设过时限,却继承 config.json 默认的 20 分 + 30 秒×5 且不暂停;
+    前端必须能分出「这局的时限是开局设置定的」,否则星阵局会凭空倒计时、20 分钟后自己判负。"""
+    w = _web_katrain()
+    assert w.get_state()["timer"]["configured"] is False
+    w.update_config("timer/main_time", 5)
+    assert w.get_state()["timer"]["configured"] is True
+
+
+# ---------------------------------------------------------------- r1 C1 超时绑定轮次 + 服务端时钟
+
+
+class _FakeClock:
+    """`katrain.web.interface.time` 的替身:只有 `time()` 可以被拨快;`monotonic` / `sleep` 照真的走。"""
+
+    def __init__(self):
+        import time as real_time
+
+        self._real = real_time
+        self.now = real_time.time()
+
+    def time(self):
+        return self.now
+
+    def monotonic(self):
+        return self._real.monotonic()
+
+    def sleep(self, seconds):
+        self._real.sleep(seconds)
+
+    def advance(self, seconds):
+        self.now += seconds
+
+
+def _timed_game(monkeypatch, *, main_time=0, byo_length=30, byo_periods=3):
+    """两人座位、开局设置配过时限(`timer_configured`)、不暂停的真 WebKaTrain,时钟由测试拨。默认「仅读秒 30 秒 × 3」。"""
+    clock = _FakeClock()
+    monkeypatch.setattr(interface_module, "time", clock)
+    w = _web_katrain()
+    _seat(w, human_colors={"B", "W"})
+    w.update_config("timer/main_time", main_time)
+    w.update_config("timer/byo_length", byo_length)
+    w.update_config("timer/byo_periods", byo_periods)
+    w.update_config("timer/paused", False)
+    w.last_timer_update = clock.now
+    return w, clock
+
+
+def test_a_timeout_for_a_turn_the_server_has_moved_past_is_refused(monkeypatch):
+    """C1:前端那一帧还轮到白,服务端已经落了白(人在最后一刻落子 / 在途)。黑随后也把钟用完了 ——
+    只核时钟不核轮次的实现会把这一帧的「白超时」写成结果。"""
+    w, clock = _timed_game(monkeypatch)
+    w._do_play((3, 3), guard=True)
+    stale = w.get_state()
+    assert stale["player_to_move"] == "W"
+    w._do_play((15, 15), guard=True)
+    clock.advance(91)
+
+    with pytest.raises(EndgameConflict, match="stale_turn"):
+        w._do_timeout(stale["game_id"], stale["current_node_id"], "W")
+    assert w.game.end_result is None and w.game.terminal is None
+
+    fresh = w.get_state()
+    w._do_timeout(fresh["game_id"], fresh["current_node_id"], "B")
+    assert w.game.end_result == "W+T"
+
+
+def test_a_timeout_for_an_older_node_of_the_same_colour_is_refused(monkeypatch):
+    """同色不同手:漏收了两手广播,两帧都轮到黑。只核 `color` 不核节点的实现会放行。"""
+    w, clock = _timed_game(monkeypatch)
+    w._do_play((3, 3), guard=True)
+    w._do_play((15, 15), guard=True)
+    stale = w.get_state()
+    w._do_play((4, 4), guard=True)
+    w._do_play((16, 16), guard=True)
+    clock.advance(91)
+
+    with pytest.raises(EndgameConflict, match="stale_turn"):
+        w._do_timeout(stale["game_id"], stale["current_node_id"], "B")
+    assert w.game.terminal is None
+
+
+def test_the_server_clock_must_have_run_out(monkeypatch):
+    """轮次与方都对,但服务端时钟还没耗尽:拒绝;耗尽之后同一个请求被接受。"""
+    w, clock = _timed_game(monkeypatch)
+    w._do_play((3, 3), guard=True)  # 轮到白
+    clock.advance(89)
+    s = w.get_state()
+
+    with pytest.raises(EndgameConflict, match="clock_not_expired"):
+        w._do_timeout(s["game_id"], s["current_node_id"], "W")
+    assert w.game.terminal is None
+
+    clock.advance(2)
+    w._do_timeout(s["game_id"], s["current_node_id"], "W")
+    assert w.game.end_result == "B+T"
+
+
+def test_main_time_only_game_expires_exactly_at_main_time_end(monkeypatch):
+    """只有主时间(读秒 0 / 0):主时间用完那一刻就算耗尽,与前端 `readGoClock` 同口径。
+    复用 `update_timer` 的 `max(1, …)` 会要 61 秒以上 —— 前端停在「超时」而服务端永远不判。"""
+    w, clock = _timed_game(monkeypatch, main_time=1, byo_length=0, byo_periods=0)
+    w._do_play((3, 3), guard=True)
+    clock.advance(60)
+    s = w.get_state()
+
+    w._do_timeout(s["game_id"], s["current_node_id"], "W")
+    assert w.game.end_result == "B+T"
+
+
+def test_a_bound_timeout_that_waited_for_the_ai_commit_is_stale(monkeypatch):
+    """AI 停在提交段里;另一线程拿 AI 提交之前那一帧做带绑定的超时 —— 它必须等 AI 提交完,然后发现轮次过期。
+    轮次核对放在对局提交锁外的实现会读到旧节点、写到 AI 那一手上。"""
+    w, clock = _timed_game(monkeypatch)
+    _seat(w, human_colors={"B"})  # 白是 AI
+    w._do_play((3, 3), guard=True)
+    clock.advance(91)  # 白(AI)的钟也耗尽了
+    stale = w.get_state()
+    finish = _ai_parked_inside_its_commit(monkeypatch, w, "test:instant")
+
+    outcome = {}
+
+    def bound_timeout():
+        try:
+            w._do_timeout(stale["game_id"], stale["current_node_id"], "W")
+            outcome["error"] = None
+        except Exception as e:
+            outcome["error"] = getattr(e, "reason", str(e))
+
+    worker = threading.Thread(target=bound_timeout, daemon=True)
+    worker.start()
+    worker.join(0.1)
+    was_blocked = worker.is_alive()
+    result, errors = finish()
+    assert was_blocked, "带绑定的超时没等 AI 的提交段"
+    worker.join(2)
+    assert errors == [] and result is not None
+    assert outcome == {"error": "stale_turn"}
+    assert w.game.end_result is None and w.game.terminal is None
+
+
+def test_an_unbound_timeout_keeps_its_old_meaning(monkeypatch):
+    """galaxy 的旧调用不带绑定:语义照旧(最后落子的一方胜、不核时钟),只多了「已经结束过就拒」。"""
+    w, _clock = _timed_game(monkeypatch)
+    w._do_play((3, 3), guard=True)
+    w._do_timeout()
+    assert w.game.end_result == "B+T"
+    with pytest.raises(EndgameConflict, match="already_ended"):
+        w._do_timeout()
+
+
+@pytest.mark.parametrize("condition", ["paused", "unconfigured", "untimed", "analyze", "nonleaf", "missing_game"])
+def test_unverifiable_clocks_never_count_as_exhausted(monkeypatch, condition):
+    w, clock = _timed_game(monkeypatch)
+    w._do_play((3, 3), guard=True)
+    clock.advance(91)
+    w.update_timer()
+    if condition == "paused":
+        w.timer_paused = True
+    elif condition == "unconfigured":
+        w.timer_configured = False
+    elif condition == "untimed":
+        w.update_config("timer/main_time", 0)
+        w.update_config("timer/byo_length", 0)
+    elif condition == "analyze":
+        w.play_analyze_mode = "analyze"
+    elif condition == "nonleaf":
+        w._do_play((15, 15), guard=True)
+        w.game.undo(1)
+    else:
+        w.game = None
+    assert w.clock_exhausted() is False
+
+
+@pytest.mark.parametrize("field", ["game", "color", "nonleaf"])
+def test_bound_timeout_rejects_wrong_identity_and_history(monkeypatch, field):
+    w, clock = _timed_game(monkeypatch)
+    w._do_play((3, 3), guard=True)
+    clock.advance(91)
+    state = w.get_state()
+    if field == "nonleaf":
+        w._do_play((15, 15), guard=True)
+        w.game.undo(1)
+    with pytest.raises(EndgameConflict, match="stale_turn"):
+        w._do_timeout(
+            "other" if field == "game" else state["game_id"], state["current_node_id"], "B" if field == "color" else "W"
+        )
+    assert w.game.terminal is None

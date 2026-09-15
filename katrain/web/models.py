@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, NamedTuple, Optional, Union
+from typing import Any, Dict, List, Literal, NamedTuple, Optional, Union
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class MoveRequest(BaseModel):
@@ -236,3 +236,20 @@ class EndgameConflict(Exception):
     def __init__(self, reason: str):
         super().__init__(reason)
         self.reason = reason
+
+
+class TimeoutRequest(BaseModel):
+    """`/api/timeout`(r1 C1)。kiosk 带上它以为超时的那一局、那一手、那一方,由服务端在对局提交锁里核对轮次并用
+    服务端时钟核实;galaxy 的旧调用只带 `session_id`,语义照旧。三个 expected 字段要么都给、要么都不给。"""
+
+    session_id: str
+    expected_game_id: Optional[str] = None
+    expected_node_id: Optional[int] = None
+    color: Optional[Literal["B", "W"]] = None
+
+    @model_validator(mode="after")
+    def _expected_fields_come_together(self):
+        given = [value is not None for value in (self.expected_game_id, self.expected_node_id, self.color)]
+        if any(given) and not all(given):
+            raise ValueError("expected_game_id, expected_node_id and color must be given together")
+        return self

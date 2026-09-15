@@ -2287,8 +2287,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return {"session_id": session.session_id, "accepted": False}
 
     @app.post("/api/timeout")
-    async def timeout(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
-        """End game due to timeout - current player loses on time"""
+    async def timeout(request: TimeoutRequest, current_user: User = Depends(get_current_user_optional)):
+        """End game due to timeout - current player loses on time.
+
+        r1 C1:kiosk 带上期望的局 / 手 / 方,`_do_timeout` 在对局提交锁里核对轮次、用服务端时钟核实;核实不了一律拒绝(409),
+        不判负。galaxy 的旧调用不带这三个字段,语义照旧(撞上已结束的局是 200 空操作)。"""
         session = _get_session_or_404(manager, request.session_id)
         guard_session_terminator(session, current_user, "timeout")
         guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
@@ -2296,16 +2299,25 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         # For multiplayer games, record the result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
-
-        # r1:撞上已经结束过的局是 200 空操作(不落账、不广播),同 `/api/resign`。
+        bound = request.expected_node_id is not None
         wrote = True
         with session.lock:
             guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
             before = _terminal_of(session)
             try:
-                session.katrain("timeout")
+                if bound:
+                    session.katrain(
+                        "timeout",
+                        expected_game_id=request.expected_game_id,
+                        expected_node_id=request.expected_node_id,
+                        color=request.color,
+                    )
+                else:
+                    session.katrain("timeout")
             except EndgameConflict as e:
-                if e.reason != "already_ended":
+                # 被拒前先刷新 last_state:随后的 GET /api/state 给出此刻的局面与计时基准,前端据此重同步。
+                session.last_state = session.katrain.get_state()
+                if bound or e.reason != "already_ended":
                     raise
                 wrote = False
             end = _new_terminal(session, before) if wrote else None

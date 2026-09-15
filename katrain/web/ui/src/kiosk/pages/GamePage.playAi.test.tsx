@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
-import { API, type GameState } from '../../api';
+import { API, ApiError, type GameState } from '../../api';
 import GamePage from './GamePage';
 
 /**
@@ -260,4 +260,182 @@ describe('A12 · 数子在途与失败原因', () => {
     fireEvent.click(screen.getByText('MOCK_COUNT'));
     expect(await screen.findByText('数子这几秒里局面变了，请重新数子')).toBeInTheDocument();
   });
+});
+
+describe('A18 · 时间耗尽判超时', () => {
+  beforeEach(() => {
+    vi.spyOn(API, 'timeout').mockResolvedValue({ state: makeState({ terminal_result: 'W+T' }) });
+    vi.spyOn(API, 'getState').mockResolvedValue({ state: makeState() });
+  });
+
+  it('到点带局/手/方；同一帧回调两次只发一次；盒上 token 为 null 仍发', () => {
+    sessionMock.gameState = makeState();
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+    fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+    expect(API.timeout).toHaveBeenCalledExactlyOnceWith('play-ai-s1', undefined, {
+      expected_game_id: 'g', expected_node_id: 5, color: 'B',
+    });
+    expect(sessionMock.handleAction).not.toHaveBeenCalled();
+  });
+
+  it.each([[409, 'stale_turn'], [409, 'already_ended'], [403, 'only allowed on the human turn']] as const)('%s %s 只重同步，不上红条', async (status, reason) => {
+    vi.mocked(API.timeout).mockRejectedValue(new ApiError(status, `timeout rejected: ${reason}`));
+    const fresh = makeState({ current_node_id: 6 });
+    vi.mocked(API.getState).mockResolvedValue({ state: fresh });
+    sessionMock.gameState = makeState();
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+    await waitFor(() => expect(sessionMock.setGameState).toHaveBeenCalledWith(fresh));
+    expect(API.getState).toHaveBeenCalledWith('play-ai-s1', undefined);
+    fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+    expect(API.timeout).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/超时判定没有送达|Request failed/)).toBeNull();
+  });
+
+  it('clock_not_expired 重同步后同一手只再核一次，不依赖时钟再次从假变真', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(API.timeout).mockRejectedValue(new ApiError(409, 'timeout rejected: clock_not_expired'));
+      sessionMock.gameState = makeState();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+      expect(API.timeout).toHaveBeenCalledTimes(2);
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
+      expect(API.timeout).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it.each([
+    { children: [['W', [3, 3]]] },
+    { terminal_result: 'W+R' },
+    { player_to_move: 'W' },
+    { last_ladder_error: true },
+    { game_type: 'ai_ladder_ranked', players_info: { B: seat('player:ai', 'AI'), W: seat('player:human', '我') } },
+  ])('翻手/终局/非回合/引擎停摆/升降级 AI 回合不发超时 %j', (over) => {
+    sessionMock.gameState = makeState(over as Partial<GameState>);
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+    expect(API.timeout).not.toHaveBeenCalled();
+  });
+
+  it('503 等失败按 2/5/10 秒退避，三次重发后显示未送达', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(API.timeout).mockRejectedValue(new ApiError(503, 'unavailable'));
+      sessionMock.gameState = makeState();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(1999); });
+      expect(API.timeout).toHaveBeenCalledTimes(1);
+      for (const [ms, count] of [[1, 2], [5000, 3], [10000, 4]]) {
+        await act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+        expect(API.timeout).toHaveBeenCalledTimes(count);
+      }
+      expect(screen.getByText('超时判定没有送达，请检查连接后重新进入这一局')).toBeInTheDocument();
+      await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+      expect(API.timeout).toHaveBeenCalledTimes(4);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it.each([new ApiError(401, 'unauthorized'), new TypeError('Failed to fetch')])('401/网络错误有限退避且提示可关闭: %s', async (error) => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(API.timeout).mockRejectedValue(error);
+      sessionMock.gameState = makeState();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(17_000); });
+      expect(API.timeout).toHaveBeenCalledTimes(4);
+      const message = '超时判定没有送达，请检查连接后重新进入这一局';
+      const alert = screen.getByText(message).closest('[role="alert"]')!;
+      fireEvent.click(alert.querySelector('button')!);
+      await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+      expect(screen.queryByText(message)).toBeNull();
+      expect(API.timeout).toHaveBeenCalledTimes(4);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('第一次发送失败后恢复：退避重发结果交回会话，不显示未送达', async () => {
+    vi.useFakeTimers();
+    try {
+      const fresh = makeState({ terminal_result: 'W+T' });
+      vi.mocked(API.timeout).mockRejectedValueOnce(new ApiError(503, 'unavailable')).mockResolvedValue({ state: fresh });
+      sessionMock.gameState = makeState();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+      expect(API.timeout).toHaveBeenCalledTimes(2);
+      expect(sessionMock.setGameState).toHaveBeenCalledWith(fresh);
+      expect(screen.queryByText(/超时判定没有送达/)).toBeNull();
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('未送达提示随旧轮次结束；下一手恢复成功不会保留旧提示', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(API.timeout).mockRejectedValue(new ApiError(503, 'unavailable'));
+      sessionMock.gameState = makeState();
+      const { rerender } = renderPage();
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(17_000); });
+      expect(screen.getByText(/超时判定没有送达/)).toBeInTheDocument();
+      sessionMock.gameState = makeState({ current_node_id: 7 });
+      rerender(pageTree());
+      const fresh = makeState({ current_node_id: 7, terminal_result: 'W+T' });
+      vi.mocked(API.timeout).mockResolvedValue({ state: fresh });
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+      expect(API.timeout).toHaveBeenCalledTimes(5);
+      expect(sessionMock.setGameState).toHaveBeenCalledWith(fresh);
+      expect(screen.queryByText(/超时判定没有送达/)).toBeNull();
+    } finally { vi.useRealTimers(); }
+  });
+
+  it.each([
+    { current_node_id: 6 }, { game_id: 'new-game' }, { player_to_move: 'W' },
+    { end_result: 'W+R' }, { terminal_result: 'W+R' }, { children: [['W', [3, 3]]] },
+    { last_ladder_error: true },
+    { game_type: 'ai_ladder_ranked', players_info: { B: seat('player:ai', 'AI'), W: seat('player:human', '我') } },
+  ])('旧轮次失败之后状态变化清理重试: %j', async (over) => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(API.timeout).mockRejectedValue(new ApiError(503, 'unavailable'));
+      sessionMock.gameState = makeState();
+      const { rerender } = renderPage();
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+      sessionMock.gameState = makeState(over as Partial<GameState>);
+      rerender(pageTree());
+      await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+      expect(API.timeout).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText(/超时判定没有送达/)).toBeNull();
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('卸载取消重试，换局也不接受旧请求晚到的结果', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(API.timeout).mockRejectedValue(new ApiError(503, 'unavailable'));
+      sessionMock.gameState = makeState();
+      const first = renderPage();
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+      first.unmount();
+      await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+      expect(API.timeout).toHaveBeenCalledTimes(1);
+
+      let finish!: (result: { state: GameState }) => void;
+      vi.mocked(API.timeout).mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+      const second = renderPage();
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      sessionMock.gameState = makeState({ game_id: 'new-game' });
+      second.rerender(pageTree());
+      await act(async () => { finish({ state: makeState({ terminal_result: 'W+T' }) }); });
+      expect(sessionMock.setGameState).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
+  });
+
 });

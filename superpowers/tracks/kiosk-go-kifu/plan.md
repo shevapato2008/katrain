@@ -175,7 +175,7 @@ cd /Users/fan/Repositories/katrain-kiosk-go-kifu
 # 基线上就有两个收集失败(主会话实测):tests/test_storage_s3.py 缺 boto3、tests/web_ui/test_build_galaxy_fonts.py 缺 fontTools
 # —— 两者都不在 pyproject 里。加上这个参数后它们以 `ERROR <文件>` 进集合,其余照跑。
 CI=true uv run pytest tests -q -rfE --continue-on-collection-errors > "$BASE/pytest.txt" 2>&1; echo $? > "$BASE/pytest-exit.txt"
-grep -E '^(FAILED|ERROR) ' "$BASE/pytest.txt" | sed -E 's/ - .*//' | sort -u > "$BASE/pytest-fail.txt"
+grep -E '^(FAILED|ERROR) tests/' "$BASE/pytest.txt" | sed -E 's/ - .*//' | sort -u > "$BASE/pytest-fail.txt"
 SUMMARY=$(grep -E '[0-9]+ passed.* in [0-9.]+s' "$BASE/pytest.txt" | tail -1); EXIT=$(cat "$BASE/pytest-exit.txt")
 echo "summary: $SUMMARY"; echo "exit: $EXIT"; wc -l "$BASE/pytest-fail.txt"
 # 会话真的跑了 = 汇总行含 passed、全文没有 Interrupted、退出码 0/1(2 中断 / 3 内部错 / 4 conftest 导入失败 / 5 没收集到用例)
@@ -2198,7 +2198,7 @@ Expected: 脚本 stderr 末行 `REPORT_OK`，且 `files=` 不少于 Task 0 那�
 BASE="$HOME/.cache/kiosk-go-kifu/baseline"
 cd /Users/fan/Repositories/katrain-kiosk-go-kifu
 CI=true uv run pytest tests -q -rfE --continue-on-collection-errors > "$BASE/pytest-after.txt" 2>&1; echo $? > "$BASE/pytest-after-exit.txt"
-grep -E '^(FAILED|ERROR) ' "$BASE/pytest-after.txt" | sed -E 's/ - .*//' | sort -u > "$BASE/pytest-after-fail.txt"
+grep -E '^(FAILED|ERROR) tests/' "$BASE/pytest-after.txt" | sed -E 's/ - .*//' | sort -u > "$BASE/pytest-after-fail.txt"
 SUMMARY=$(grep -E '[0-9]+ passed.* in [0-9.]+s' "$BASE/pytest-after.txt" | tail -1); EXIT=$(cat "$BASE/pytest-after-exit.txt")
 echo "summary: $SUMMARY"; echo "exit: $EXIT"
 if [ -n "$SUMMARY" ] && ! grep -q 'Interrupted' "$BASE/pytest-after.txt" && { [ "$EXIT" = 0 ] || [ "$EXIT" = 1 ]; }; then echo PYTEST_RAN; else echo 'PYTEST_DID_NOT_RUN —— 「新增失败为空」不作数'; fi

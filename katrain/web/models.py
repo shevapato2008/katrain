@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, NamedTuple, Optional, Union
 from datetime import datetime
 from pydantic import BaseModel, Field
 
@@ -216,3 +216,23 @@ class CountRequest(BaseModel):
 class CountResponse(BaseModel):
     session_id: str
     accept: bool
+
+
+class GameEnd(NamedTuple):
+    """这一局在哪一手、以什么结果结束(r1)。不随游标变 —— 翻手看棋不会让它消失。
+
+    `game` / `node` 是运行时对象(`WebGame` / `GameNode`)。类型放 models 而不放 interface:
+    `tests/web_ui/conftest.py` 把 `katrain.web.interface` 整个换成 MagicMock,定义在那里的类在 web_ui 测试里是假的。"""
+
+    game: Any
+    node: Any
+    result: str
+
+
+class EndgameConflict(Exception):
+    """终局 / 提交判别没通过(r1)。`reason` ∈ already_ended | position_changed | stale_turn | not_your_turn
+    | clock_not_expired | remote_ended。server 在 `create_app` 里统一映射成 409。"""
+
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.reason = reason

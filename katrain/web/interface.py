@@ -16,6 +16,7 @@ from katrain.core.constants import (
     OUTPUT_DEBUG,
     OUTPUT_ERROR,
     OUTPUT_INFO,
+    STATUS_ERROR,
     PLAYING_NORMAL,
     PRIORITY_DEFAULT,
     PRIORITY_GAME_ANALYSIS,
@@ -25,6 +26,7 @@ from katrain.core.engine import create_engine
 from katrain.core.game import Game
 from katrain.core.lang import i18n
 from katrain.gui.theme import Theme
+from katrain.web.models import EndgameConflict, GameEnd
 
 # Configure standard logging
 logging.basicConfig(level=logging.INFO)
@@ -90,34 +92,80 @@ class MockControls:
 
 
 class WebGame(Game):
+    #: r1:这一局在哪一手、以什么结果结束(`GameEnd`),不随游标变。只有两处写它,都在对局提交锁里:
+    #: `WebKaTrain._commit_end_state` 与 `record_two_pass_end`。新开局 / 载入 SGF / `game/setup` 都会新建 WebGame,
+    #: 事实自然清掉;载入棋谱再翻到双停终点不经过这两处,所以不会被当成「在这里下完的一局」。
+    terminal: Optional[GameEnd] = None
+
+    def ended_at(self, node) -> bool:
+        """`node` 所在的局面线是否已经结束过:终局那一手就是 `node` 或它的祖先。
+
+        翻回终局之前另开分支**不算** —— galaxy / ZenMode「悔棋后接着下」照旧可用(评审 r1 M2)。
+        kiosk 要的「这一局结束了」认 `get_state()["terminal_result"]`,不认这里。"""
+        terminal = self.terminal
+        cursor = node
+        while terminal is not None and cursor is not None:
+            if cursor is terminal.node:
+                return True
+            cursor = cursor.parent
+        return False
+
+    def record_two_pass_end(self, node):
+        """双停第二手落下时记终局事实;结果先是「终局」(`end_result`),分数由收尾补(Task 5)。
+
+        **只由本地对局路径调**:`WebKaTrain._do_play(guard=True)` 与 `core/ai.py` 的 AI 提交段。`play` 本身不记 ——
+        研究会话与跨平台网关的落子不带 guard,OGS 双停后进点目阶段还能恢复对局,记了就会把它冻住(评审 r1 m9)。"""
+        with self.katrain.ai_ladder_commit_lock:
+            if (
+                node is self.current_node
+                and node.is_pass
+                and node.parent is not None
+                and node.parent.is_pass
+                and self.katrain.play_analyze_mode == MODE_PLAY
+                and not node.end_state
+                and not self.ended_at(node)
+            ):
+                self.terminal = GameEnd(self, node, self.end_result)
+
     def set_current_node(self, node):
-        # Update timer for the *previous* node/player before switching
-        if self.katrain and hasattr(self.katrain, "update_timer"):
-            self.katrain.update_timer()
+        # r1:挪游标进对局提交锁。AI 在锁里核完「当前手仍是开算那一手」之后、`Game.play` 读 `current_node`
+        # 之前,一次导航若能插进来,着法会落到别的节点上(S2)。`ai_ladder_commit_lock` 在
+        # `WebKaTrain.__init__` 调 `super().__init__` 之前就赋值了(`:144`),构造期间调到这里锁也已经在。
+        with self.katrain.ai_ladder_commit_lock:
+            # Update timer for the *previous* node/player before switching
+            if self.katrain and hasattr(self.katrain, "update_timer"):
+                self.katrain.update_timer()
 
-        super().set_current_node(node)
+            blocked = self.insert_mode
+            if not blocked:
+                super().set_current_node(node)
 
-        # Reset timer baseline for the *new* node/player
-        if self.katrain and hasattr(self.katrain, "last_timer_update"):
-            self.katrain.last_timer_update = time.time()
+            # Reset timer baseline for the *new* node/player
+            if self.katrain and hasattr(self.katrain, "last_timer_update"):
+                self.katrain.last_timer_update = time.time()
+        # Game.set_current_node emits this refusal synchronously; keep it outside the commit lock.
+        if blocked:
+            self.katrain.controls.set_status(i18n._("finish inserting before navigating"), STATUS_ERROR)
 
     def play(self, move, ignore_ko=False, analyze=True):
-        # Update timer for the *previous* node/player before switching
-        if self.katrain and hasattr(self.katrain, "update_timer"):
-            self.katrain.update_timer()
+        # r1:整段进对局提交锁(RLock 可重入:`_do_play` 与 AI 提交段调到这里时已经拿着它)。
+        with self.katrain.ai_ladder_commit_lock:
+            # Update timer for the *previous* node/player before switching
+            if self.katrain and hasattr(self.katrain, "update_timer"):
+                self.katrain.update_timer()
 
-        # R1: board-mode play suppresses the per-node auto eval (genmove still runs).
-        if analyze and self.katrain and getattr(self.katrain, "should_suppress_auto_eval", None):
-            if self.katrain.should_suppress_auto_eval():
-                analyze = False
+            # R1: board-mode play suppresses the per-node auto eval (genmove still runs).
+            if analyze and self.katrain and getattr(self.katrain, "should_suppress_auto_eval", None):
+                if self.katrain.should_suppress_auto_eval():
+                    analyze = False
 
-        node = super().play(move, ignore_ko=ignore_ko, analyze=analyze)
+            node = super().play(move, ignore_ko=ignore_ko, analyze=analyze)
 
-        # Reset timer baseline for the *new* node/player
-        if self.katrain and hasattr(self.katrain, "last_timer_update"):
-            self.katrain.last_timer_update = time.time()
+            # Reset timer baseline for the *new* node/player
+            if self.katrain and hasattr(self.katrain, "last_timer_update"):
+                self.katrain.last_timer_update = time.time()
 
-        return node
+            return node
 
 
 def resolve_ladder_rung(n):
@@ -558,6 +606,9 @@ class WebKaTrain(KaTrainBase):
             "is_root": cn.is_root,
             "is_pass": cn.is_pass,
             "end_result": self.game.end_result,
+            # r1 S1:「这一局结束过没有」—— 对局级的终局事实,翻手看棋不会让它变回 None(`end_result` 读的是游标)。
+            # kiosk 据此冻结对局屏;galaxy 不读它。
+            "terminal_result": self.game.terminal.result if self.game.terminal is not None else None,
             "children": [
                 [c.move.player, list(c.move.coords) if c.move.coords else None] for c in cn.children if c.move
             ],
@@ -852,6 +903,8 @@ class WebKaTrain(KaTrainBase):
                 next_player.ai
                 and not cn.children
                 and not self.game.end_result
+                # r1:局面线已经结束过就不起算 —— 否则「AI 提交被拒 → finally 里 update_state → 再起算」会空转。
+                and not self.game.ended_at(cn)
                 and not (teaching_undo and cn.auto_undo is None)
                 and not self._ladder_stall_blocks_retrigger()
             ):
@@ -882,35 +935,39 @@ class WebKaTrain(KaTrainBase):
                 self.engine.stop_pondering()
 
     def update_timer(self):
-        now = time.time()
-        dt = now - self.last_timer_update
-        self.last_timer_update = now
+        # r1:整段进对局提交锁。`get_state` 会被广播线程、引擎回调线程、请求线程并发调用;两次结算读到同一个
+        # `last_timer_update` 会把同一段 dt 记两遍 —— 超时由服务端时钟核实(Task 6)以后,这就是「提前判负」。
+        # RLock:`play` / `set_current_node` / `_do_play` 里再调它可以重入。
+        with self.ai_ladder_commit_lock:
+            now = time.time()
+            dt = now - self.last_timer_update
+            self.last_timer_update = now
 
-        if self.timer_paused or self.play_analyze_mode != MODE_PLAY or not self.game:
-            return
+            if self.timer_paused or self.play_analyze_mode != MODE_PLAY or not self.game:
+                return
 
-        cn = self.game.current_node
-        if cn.children:  # Only count time for the active leaf node
-            return
+            cn = self.game.current_node
+            if cn.children:  # Only count time for the active leaf node
+                return
 
-        main_time = self.active_game_timer.get("main_time", 0) * 60
-        byo_len = max(1, self.active_game_timer.get("byo_length", 30))
-        byo_num = max(1, self.active_game_timer.get("byo_periods", 5))
+            main_time = self.active_game_timer.get("main_time", 0) * 60
+            byo_len = max(1, self.active_game_timer.get("byo_length", 30))
+            byo_num = max(1, self.active_game_timer.get("byo_periods", 5))
 
-        current_player = self.next_player_info.player
-        main_time_used = self.main_time_used_by_player.get(current_player, 0)
-        main_time_left = main_time - main_time_used
+            current_player = self.next_player_info.player
+            main_time_used = self.main_time_used_by_player.get(current_player, 0)
+            main_time_left = main_time - main_time_used
 
-        if main_time_left > 0:
-            used_main = min(dt, main_time_left)
-            self.main_time_used_by_player[current_player] = main_time_used + used_main
-            dt -= used_main
+            if main_time_left > 0:
+                used_main = min(dt, main_time_left)
+                self.main_time_used_by_player[current_player] = main_time_used + used_main
+                dt -= used_main
 
-        if dt > 0:
-            cn.time_used += dt
-            while cn.time_used > byo_len and self.next_player_info.periods_used < byo_num:
-                cn.time_used -= byo_len
-                self.next_player_info.periods_used += 1
+            if dt > 0:
+                cn.time_used += dt
+                while cn.time_used > byo_len and self.next_player_info.periods_used < byo_num:
+                    cn.time_used -= byo_len
+                    self.next_player_info.periods_used += 1
 
     def __call__(self, message, *args, **kwargs):
         """
@@ -1188,39 +1245,65 @@ class WebKaTrain(KaTrainBase):
         deadline = getattr(self, "_ladder_retry_at", 0.0)
         return not deadline or time.time() < deadline
 
-    def _do_play(self, coords):
+    def _do_play(self, coords, guard=False, expected_player=None):
+        """落一手。
+
+        `guard=True` 是**本地对局路径**(`/api/move` 的非研究会话、视觉的两支):这一手所在的局面线已经结束过、
+        升降级已在别的设备上结束、或者人机局轮到 AI,就拒绝;落下的是双停第二手时记终局事实。
+        `expected_player` 是调用方以为轮到的那一方(视觉按棋子颜色传),与服务端不符就拒。
+        研究会话与跨平台网关(`_local_play`、`_on_opponent_move`)不带 guard:打谱或照镜像落子,双停后还可能恢复对局。
+        判别与落子在对局提交锁里一次做完 —— 否则 AI 线程可以在「查完」与「落下」之间提交(C3 / S4)。
+        冲突抛 `EndgameConflict`;落子音在锁外发。"""
         from katrain.core.game import IllegalMoveException, Move
         from katrain.core.constants import STATUS_TEACHING
 
-        self.update_timer()
-        game = self.game
-        current_node = game and self.game.current_node
-        if (
-            current_node
-            and not current_node.children
-            and not self.next_player_info.ai
-            and not self.timer_paused
-            and self.play_analyze_mode == MODE_PLAY
-            and self.active_game_timer.get("main_time", 0) * 60
-            - self.main_time_used_by_player.get(self.next_player_info.player, 0)
-            <= 0
-            and current_node.time_used < self.active_game_timer.get("minimal_use", 0)
-        ):
-            self.controls.set_status(
-                i18n._("move too fast").format(num=self.active_game_timer.get("minimal_use", 0)), STATUS_TEACHING
-            )
-            return
-
-        try:
-            self.game.play(Move(coords, player=self.next_player_info.player))
+        played = False
+        status_message = error_message = None
+        with self.ai_ladder_commit_lock:
+            self.update_timer()
+            game = self.game
+            current_node = game and self.game.current_node
+            if guard and current_node:
+                if getattr(self, "ai_ladder_remote_ended", False):
+                    raise EndgameConflict("remote_ended")
+                if current_node.end_state or game.ended_at(current_node):
+                    raise EndgameConflict("already_ended")
+                if self.play_analyze_mode == MODE_PLAY and self.next_player_info.ai:
+                    raise EndgameConflict("not_your_turn")
+            if expected_player is not None and current_node and current_node.next_player != expected_player:
+                raise EndgameConflict("stale_turn")
+            if (
+                current_node
+                and not current_node.children
+                and not self.next_player_info.ai
+                and not self.timer_paused
+                and self.play_analyze_mode == MODE_PLAY
+                and self.active_game_timer.get("main_time", 0) * 60
+                - self.main_time_used_by_player.get(self.next_player_info.player, 0)
+                <= 0
+                and current_node.time_used < self.active_game_timer.get("minimal_use", 0)
+            ):
+                status_message = i18n._("move too fast").format(num=self.active_game_timer.get("minimal_use", 0))
+            else:
+                try:
+                    node = self.game.play(Move(coords, player=self.next_player_info.player))
+                    played = True
+                    if guard:
+                        self.game.record_two_pass_end(node)
+                except IllegalMoveException as e:
+                    # 坐标必须记 —— 2026-08-25 查「自由对弈无法落子」时，日志里 4 条
+                    # `Illegal Move: Space occupied` 拿不出**点的是哪一路**，只能靠时间戳
+                    # 间隔（5 秒、3 秒）反推「是人在反复点」。少这一个字段，定位多花了几小时。
+                    error_message = f"Illegal Move at {coords}: {e}"
+                finally:
+                    self.last_timer_update = time.time()
+        # Status and log callbacks may broadcast; emit them after releasing the commit lock.
+        if status_message is not None:
+            self.controls.set_status(status_message, STATUS_TEACHING)
+        if error_message is not None:
+            self.log(error_message, OUTPUT_ERROR)
+        if played:
             self.play_stone_sound()
-        except IllegalMoveException as e:
-            # 坐标必须记 —— 2026-08-25 查「自由对弈无法落子」时，日志里 4 条
-            # `Illegal Move: Space occupied` 拿不出**点的是哪一路**，只能靠时间戳
-            # 间隔（5 秒、3 秒）反推「是人在反复点」。少这一个字段，定位多花了几小时。
-            self.log(f"Illegal Move at {coords}: {e}", OUTPUT_ERROR)
-        finally:
-            self.last_timer_update = time.time()
 
     def _do_undo(self, n_times=1):
         if n_times == "smart":
@@ -1461,12 +1544,62 @@ class WebKaTrain(KaTrainBase):
         thresholds = self.config("trainer/eval_thresholds")
         return game_report(self.game, thresholds, depth_filter=depth_filter)
 
-    def _do_resign(self):
-        self.game.current_node.end_state = f"{self.game.current_node.player}+R"
+    def _commit_end_state(self, result, *, node=None, fill_pending=False):
+        """终局结果的**唯一**写入口(r1)—— 认输、超时、数子、双停补分、升降级认输、AI 认输都从这里写。
+
+        在对局提交锁里一次做完「判 → 写」,先写者胜:
+          · 普通写:`node` 缺省为当前手。它的局面线已经结束过、或节点上已有结果 → `already_ended`;
+            它已不是当前手(等分析的这几秒里人悔了棋)→ `position_changed`。
+          · 补分(`fill_pending=True`):只给「双停、还没有结果」的那一手写上数出来的分数 —— `node` 必须仍是这一局的
+            终局手(否则 `position_changed`)且节点上还没有结果(否则 `already_ended`)。**不要求它是当前手**:
+            补分期间人点了「上一手」,结果照样写在终局那一手上,游标留在人挪到的地方(C4)。
+        局面线之外(翻回终局之前另开的分支)可以再结束一次,`game.terminal` 换成新分支的终局(评审 r1 M2)。
+        升降级已在别的设备上结束 → `remote_ended`(与 `mark_ai_ladder_remote_terminal` 同一把锁,S11)。
+        持锁时不 await、不做 IO、不调 `update_state`(见 Global Constraints「对局提交锁」)。"""
+        with self.ai_ladder_commit_lock:
+            if getattr(self, "ai_ladder_remote_ended", False):
+                raise EndgameConflict("remote_ended")
+            game = self.game
+            target = game.current_node if node is None else node
+            if fill_pending:
+                terminal = game.terminal
+                if terminal is None or terminal.node is not target:
+                    raise EndgameConflict("position_changed")
+                if target.end_state:
+                    raise EndgameConflict("already_ended")
+            else:
+                if target.end_state or game.ended_at(target):
+                    raise EndgameConflict("already_ended")
+                if target is not game.current_node:
+                    raise EndgameConflict("position_changed")
+            target.end_state = result
+            game.game_result = result  # 只写不读(grep 核过),与数子 / 升降级认输原写法一致
+            game.terminal = GameEnd(game, target, result)
+            return game.terminal
+
+    def _do_resign(self, loser: Optional[str] = None):
+        """认输。`loser` 是认输的那一方(`"B"`/`"W"`);不给时从这一局的座位推。
+
+        从前写的是 `current_node.player + "+R"` —— 胜方 = **最后落子的一方**。人刚落子、AI 还在算时按认输,
+        最后落子的正是人自己,于是这盘被记成人赢(N21)。判据改成「谁在认输」,不是「轮到谁」:
+          · 恰好一方是 `player:human`(人机局):认输的一定是人;
+          · 两方都是人(本地对局)或都不是(多人局的座位是裸 `human` 字面量):退回「轮到落子的一方」——
+            多人局由 `/api/resign` 按请求者座位显式传 `loser`,不走这条回退。
+        星阵(跨平台)局认输走平台网关,网关落回本地时同样经这里。
+        推算与写入在同一次持锁里:这一局已经结束过就抛 `already_ended`,由 server 当成 200 空操作。
+        """
+        with self.ai_ladder_commit_lock:
+            if loser not in ("B", "W"):
+                humans = [bw for bw, info in self.players_info.items() if info.human]
+                loser = humans[0] if len(humans) == 1 else self.game.current_node.next_player
+            winner = "W" if loser == "B" else "B"
+            return self._commit_end_state(f"{winner}+R")
 
     def _do_timeout(self):
         """End game due to timeout - current player loses on time"""
-        self.game.current_node.end_state = f"{self.game.current_node.player}+T"
+        # r1:语义与从前相同,只多了「已经结束过就拒」。带轮次绑定的版本在 Task 6。
+        with self.ai_ladder_commit_lock:
+            return self._commit_end_state(f"{self.game.current_node.player}+T")
 
     def _do_engine_recovery_popup(self, error_message, code):
         # Sync global i18n before logging translated strings

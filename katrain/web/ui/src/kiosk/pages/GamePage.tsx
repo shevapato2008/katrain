@@ -66,6 +66,9 @@ export function deriveHumanColor(gameState: GameState): 'B' | 'W' | null {
     : null;
 }
 
+// kiosk 按整局终局事实冻结；旧服务端回退到游标结果。
+const endResultOf = (gs: GameState): string | null => gs.end_result || gs.terminal_result || null;
+
 // Single-owner AI-turn arbitration (state A source for B1.4). Exported as a pure
 // function so it's unit-testable without rendering the page, and so B1.4 can reuse it.
 // Per-color AI detection — accept BOTH literals: 'player:ai' (kiosk HvAI, server.py:723/727)
@@ -81,7 +84,7 @@ export function deriveAiTurnState(gameState: GameState, latestEventType: string 
     return pt === 'player:ai' || pt === 'ai' || c === gameState.platform_engine_color;
   };
   const aiColor = isAI('B') ? 'B' : isAI('W') ? 'W' : null;
-  const aiThinking = !!aiColor && gameState.player_to_move === aiColor && !gameState.end_result;
+  const aiThinking = !!aiColor && gameState.player_to_move === aiColor && !endResultOf(gameState);
   // One owner for the AI-turn indicator: while the physical layer is confirming a
   // move (chip shows 确认中), suppress the 思考中 banner so they never stack.
   const physicalConfirming = latestEventType === 'move_pending';
@@ -120,7 +123,7 @@ const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, px: 3, py: 2, borderRadius: 3,
           bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
       <EmojiEvents sx={{ color: 'primary.main' }} />
-      <KioskResultBadge result={gameState.end_result!} rules={gameState.ruleset} />
+      <KioskResultBadge result={endResultOf(gameState)!} rules={gameState.ruleset} />
       {/* Score breakdown — komi + captures only (display only). Full territory-adjusted
           目/子 breakdown needs dead-stone data from the backend; deferred (Gate S). */}
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -228,14 +231,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   useEffect(() => {
     const gs = session.gameState;
     if (!gs || !sessionId) return;
-    if (gs.end_result) { clearActiveSession('game'); return; }
+    if (endResultOf(gs)) { clearActiveSession('game'); return; }
     writeActiveSession({
       kind: 'game',
       label: `${gs.players_info.B.name} vs ${gs.players_info.W.name}`,
       route: window.location.pathname,
       ts: Date.now(),
     });
-  }, [session.gameState?.current_node_id, session.gameState?.end_result, sessionId]);
+  }, [session.gameState?.current_node_id, session.gameState?.end_result, session.gameState?.terminal_result, sessionId]);
 
   // 没有取到局面且请求失败时，清掉失效的「继续上一局」入口。
   // 已有局面后的连接错误由对局屏处理，不切换成打不开状态。
@@ -250,7 +253,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (!physicalPlay || !session.gameState) return;
     const gs = session.gameState;
     const human = deriveHumanColor(gs);
-    if (gs.last_move && gs.end_result === null && human && gs.player_to_move === human) {
+    if (gs.last_move && !endResultOf(gs) && human && gs.player_to_move === human) {
       setAiMoveBanner(formatGtpCoord(gs.last_move[0], gs.last_move[1], gs.board_size[0]));
     }
   }, [physicalPlay, session.gameState?.current_node_id]);
@@ -386,7 +389,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   }
 
   const gameState = session.gameState;
-  const isGameOver = !!gameState.end_result;
+  const isGameOver = !!endResultOf(gameState);
   const boardSize = gameState.board_size[0];
   // 页控条标题 = **这一局是哪种对弈**,不是「张三 vs KataGo」。
   // 名字在玩家卡里各占一行(还带段位、执色、提子),标题再写一遍是把 460 宽的一行
@@ -415,6 +418,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // returns null for both-human local PvP so Board lets whichever side is to move play
   // (touchscreen fallback works for BOTH colors — see the helper's both-human guard).
   const humanColor = deriveHumanColor(gameState);
+  // 本地双人局按轮到落子的一方认输，人机局始终按人的座位认输。
+  const bothHuman = gameState.players_info.B.player_type === 'player:human'
+    && gameState.players_info.W.player_type === 'player:human';
+  const resignSide = gameState.player_to_move === 'B' ? t('game:black_side', '黑方') : t('game:white_side', '白方');
+  const resignTitle = bothHuman
+    ? t('game:resign_confirm_side', '{side}认输？').replace('{side}', resignSide)
+    : t('Confirm resign?', '确认认输？');
+  const exitResignTitle = bothHuman
+    ? t('game:exit_resign_confirm_side', '对局进行中，{side}认输并退出？').replace('{side}', resignSide)
+    : t('Game in progress. Resign and exit?', '对局进行中，认输并退出？');
 
   // showThinking is the single-owner gate for the "AI 思考中" surface (state A, B1.4).
   // aiColor also gates the persistent move banner above; physicalConfirming is folded
@@ -474,6 +487,8 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   };
 
   const handleBoardMove = async (x: number, y: number) => {
+    // 服务端允许退回历史后另开分支，kiosk 终局后只允许查看。
+    if (isGameOver) return;
     try {
       await session.onMove(x, y);
       setAiMoveBanner(null);
@@ -760,7 +775,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
       {/* Resign confirmation (state D) */}
       <Dialog open={showResignConfirm} onClose={() => setShowResignConfirm(false)}>
-        <DialogTitle sx={{ color: 'text.primary' }}>{t('Confirm resign?', '确认认输？')}</DialogTitle>
+        <DialogTitle sx={{ color: 'text.primary' }}>{resignTitle}</DialogTitle>
         <DialogActions>
           <Button onClick={() => setShowResignConfirm(false)}>{t('Cancel', '取消')}</Button>
           <Button
@@ -787,7 +802,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
 
       {/* Exit confirmation */}
       <Dialog open={showExitConfirm} onClose={() => setShowExitConfirm(false)}>
-        <DialogTitle>{t('Game in progress. Resign and exit?', '对局进行中，认输并退出？')}</DialogTitle>
+        <DialogTitle>{exitResignTitle}</DialogTitle>
         <DialogActions>
           <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
           <Button

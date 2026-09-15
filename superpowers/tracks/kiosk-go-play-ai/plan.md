@@ -443,6 +443,21 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ### Task 2: N21 认输判错方;终局之后 AI 着法不再落下 —— 终局事实 + 对局提交锁(r1)
 
+**执行记录（2026-09-15，已完成）**
+- TDD 红测：根目录 20 failed / 4 passed，首条真类断言通过；HTTP 4 failed / 3 passed。日志 `/tmp/kgpa-task2-red-root.log`、`/tmp/kgpa-task2-red-web.log`。Kivy 在沙盒内收集时崩溃，真类测试改在已授权沙盒外运行。
+- 以源码修正三处计划遗漏：`_complete_count` 本 Task 即改走唯一终局写入口；`_do_play` 快着状态及非法落子日志在提交锁外发出；认输/超时单机落账也以 `wrote` 为闸。新增测试先红分别见 `/tmp/kgpa-task2-red-count.log`（200 而非 409）、`/tmp/kgpa-task2-red-notices.log`（另一线程两次均拿不到提交锁）、`/tmp/kgpa-task2-red-noop.log`（两个空操作均重入落账）。对应代码片段已同步。
+- 最终指定回归：根目录 **93 passed / 4 skipped**；独立 web_ui **326 passed**，日志 `/tmp/kgpa-task2-green-root.log`、`/tmp/kgpa-task2-green-web.log`。第二组在最终 `wrote` 条件修正后重跑；第一组代码未再改动。现存 warnings 为 auth 的 `datetime.utcnow()` 弃用提示。
+- 唯一写入闸通过：server 无 `end_state` 赋值；interface 仅 `_commit_end_state` 的 `target.end_state`；core 仅桌面回退 `cn.end_state`（grep 增词边界，避免把局部变量 `commit_end_state` 当字段写入）。`git diff --check` 通过；两份账本、PRD 均未改；三处测试污染文件检查为干净；server 的原有 `_report_settlement_loop` 三行格式保持。
+
+- 前端红灯 3 failed / 4 passed（本地认输方、终局回看状态、终局禁止落子），修复后三文件 84 passed；全量 1732 passed / 5 skipped。tsc 与两套构建通过；kiosk 边界干净。api.ts 原有 26 条 eslint error，新增为零。
+- 只读并发复审补出插入模式导航提示：`Game.set_current_node` 会调用 `controls.set_status`，WebGame 改为锁内仅判别/导航、锁外发拒绝提示。跨线程探针先红（`[False]` 而非 `[True]`），修复后最终真类组 **94 passed / 4 skipped**。日志 `/tmp/kgpa-task2-red-insert.log`、`/tmp/kgpa-task2-green-root-final.log`。
+- 首次全量新增 3 个失败名称已定位：时钟测试在执行时重新 import 被 web_ui 替换的 interface，改为收集时保留真模块；`test_board_lifespan_camera_degraded.py` 的空 models 模块补 `EndgameConflict` / `GameEnd` 两个真类型。测试适配随本 Task 提交，不修改生产实现迁就替身。
+
+
+- 最终后端全量：69 failed / 3589 passed / 46 errors，名称集合对原始基线 **新增为空**；前端集合新增也为空。完整日志 `/tmp/kgpa-task2-pytest-final.log`、`/tmp/kgpa-task2-vitest.log`；web_ui 最终为 **328 passed**（含两条相机启动替身适配）。全量后的三处污染均已清理。
+
+补充导入：`interface.py` constants import 增加 `STATUS_ERROR`，用于锁外的插入模式导航拒绝提示。
+
 **Files:**
 - Modify: `katrain/web/models.py`(文件末尾加 `GameEnd`、`EndgameConflict`;typing import)
 - Modify: `katrain/web/interface.py`:import 区;`:92-120`(`WebGame` 整段:`terminal` / `ended_at` / `record_two_pass_end`,`play` / `set_current_node` 进锁);`:560` 附近 `get_state`(`terminal_result`);`:852` 附近 `_do_update_state`(AI 触发闸);`:884-913`(`update_timer` 进锁);`:1191-1223`(`_do_play`);`:1464-1469`(`_do_resign` / `_do_timeout`,之前加 `_commit_end_state`)
@@ -451,6 +466,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Modify: `katrain/web/ui/src/api.ts`(`GameState` 加 `terminal_result?`)—— **共享领地**
 - Modify: `katrain/web/ui/src/kiosk/pages/GamePage.tsx`(两个确认框的 `DialogTitle`;`endResultOf` 与它的五个读者;`handleBoardMove` 开头)
 - Modify(测试替身与绊线): `tests/web_ui/test_ai_ladder_api.py`(`FakeKaTrain` `:97` 起;`test_every_place_that_writes_a_terminal_result_by_hand_also_ends_the_game` 与它的正对照 `:4318-4371`)
+- Modify(全量测试替身): `tests/web_ui/test_board_lifespan_camera_degraded.py`（models 替身补真异常/终局类型）
 - Create: `tests/test_play_ai_endgame.py`、`tests/core/test_ai_commit_after_end.py`、`tests/web_ui/test_play_ai_endgame_api.py`
 - Test: `katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx`(追加)
 
@@ -468,7 +484,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
   - 测试文件 `tests/test_play_ai_endgame.py` 的 `_web_katrain()` / `_seat()` / `_Instant` / `_ai_parked_inside_its_commit()` 与
     `tests/web_ui/test_play_ai_endgame_api.py` 的 `client` / `_make_user` / `_login` / `_inject_session` 供 Task 3/4/5/6 追加用例
 
-- [ ] **Step 1: 写失败的后端测试**
+- [x] **Step 1: 写失败的后端测试**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
@@ -523,6 +539,7 @@ import pytest
 from katrain.core import ai
 from katrain.core.constants import AI_DEFAULT, AI_LADDER, PLAYER_AI, PLAYER_HUMAN
 from katrain.core.sgf_parser import Move
+import katrain.web.interface as interface_module
 from katrain.web.interface import WebKaTrain
 from katrain.web.models import EndgameConflict, GameEnd
 
@@ -700,7 +717,9 @@ def test_a_resign_during_generation_does_not_wait_for_the_engine(monkeypatch):
     w.game.play(Move(coords=(3, 3), player="B"))
     human_node = w.game.current_node
     out = {}
-    worker = threading.Thread(target=lambda: out.update(result=ai.generate_ai_move(w.game, "test:slow", {})), daemon=True)
+    worker = threading.Thread(
+        target=lambda: out.update(result=ai.generate_ai_move(w.game, "test:slow", {})), daemon=True
+    )
     worker.start()
     assert thinking.wait(2)
 
@@ -876,8 +895,7 @@ def test_two_threads_settling_the_clock_do_not_count_the_same_seconds_twice(monk
     """W11:`update_timer` 读 `last_timer_update` → 记 dt → 写回,不互斥时两个并发结算读到同一个基准、把同一段 dt
     记两遍 —— 超时由服务端时钟核实以后(Task 6),这会直接变成「提前判负」。假 `time` 让第一个结算者停在读时钟那一刻,
     第二个结算者 0.2 秒内不许读到时钟(没有锁就会立刻读到)。"""
-    import katrain.web.interface as interface_module
-
+    # interface_module 在模块收集时 import，避免 web_ui/conftest 随后换掉真模块。
     w = _web_katrain()
     real_time = interface_module.time
     first_reading, release, second_read = threading.Event(), threading.Event(), threading.Event()
@@ -909,6 +927,43 @@ def test_two_threads_settling_the_clock_do_not_count_the_same_seconds_twice(monk
     first.join(2)
     second.join(2)
     assert second_read.is_set()
+
+
+@pytest.mark.parametrize("notice", ["too_fast", "illegal_move"])
+def test_play_notices_are_emitted_after_releasing_the_commit_lock(monkeypatch, notice):
+    """UI callbacks can broadcast; they must never run inside the commit lock."""
+    w = _web_katrain()
+    _seat(w, human_colors={"B", "W"})
+    if notice == "too_fast":
+        w.timer_paused = False
+        w.active_game_timer.update(main_time=0, minimal_use=100)
+    else:
+        w._do_play((3, 3), guard=True)
+    before = w.game.current_node
+    emitted, lock_available = [], []
+
+    def capture(message, *args, **kwargs):
+        emitted.append(message)
+
+        def probe():
+            acquired = w.ai_ladder_commit_lock.acquire(blocking=False)
+            lock_available.append(acquired)
+            if acquired:
+                w.ai_ladder_commit_lock.release()
+
+        worker = threading.Thread(target=probe)
+        worker.start()
+        worker.join(2)
+        assert not worker.is_alive()
+
+    monkeypatch.setattr(w, "log", capture)
+    w._do_play((3, 3), guard=True)
+
+    assert w.game.current_node is before
+    assert len(emitted) == 1
+    assert lock_available == [True], "状态/错误回调正在持有提交锁时发出"
+    if notice == "illegal_move":
+        assert "Illegal Move at (3, 3)" in emitted[0]
 ```
 
 `tests/core/test_ai_commit_after_end.py`:
@@ -1154,7 +1209,9 @@ def test_resign_writes_one_ledger_row_or_none(client, monkeypatch, where, alread
         client.app.state.platform_gateway = _PlatformGateway(session, local_conflict=already_ended)
     client.app.state.game_repo = MagicMock()
     sent = []
-    monkeypatch.setattr(client.app.state.session_manager, "_schedule_broadcast", lambda s, payload: sent.append(payload))
+    monkeypatch.setattr(
+        client.app.state.session_manager, "_schedule_broadcast", lambda s, payload: sent.append(payload)
+    )
 
     resp = client.post("/api/resign", json={"session_id": session.session_id}, headers=_login(client, my_name))
 
@@ -1162,15 +1219,50 @@ def test_resign_writes_one_ledger_row_or_none(client, monkeypatch, where, alread
     expected_rows = 0 if already_ended else 1
     assert client.app.state.game_repo.record_multiplayer_game.call_count == expected_rows
     assert [p["type"] for p in sent if p.get("type") == "game_end"] == ["game_end"] * expected_rows
+
+
+def test_count_uses_the_same_atomic_result_writer(client):
+    """Count must not bypass the result lock used by resignation and AI commits."""
+    session = _inject_session(client)
+    session.katrain.config.return_value = 0
+    session.katrain.game.current_node.score = 3.5
+    session.katrain._commit_end_state.side_effect = EndgameConflict("already_ended")
+
+    resp = client.post("/api/count/request", json={"session_id": session.session_id})
+
+    assert resp.status_code == 409, resp.text
+    session.katrain._commit_end_state.assert_called_once()
+    assert session.katrain._commit_end_state.call_args.args == ("B+3.5",)
+
+
+@pytest.mark.parametrize("action", ["resign", "timeout"])
+def test_already_ended_single_player_request_does_not_retry_recording(client, action):
+    """An already-ended response is a no-op even if a prior save has not completed."""
+    me, my_name = _make_user(client, "already-ended-solo")
+    session = _inject_session(client, user_id=me)
+    session.katrain.game.end_result = "W+R"
+    session.katrain.get_state.return_value = {"end_result": "W+R", "history": []}
+
+    def refuse(received_action, *args, **kwargs):
+        if received_action == action:
+            raise EndgameConflict("already_ended")
+
+    session.katrain.side_effect = refuse
+    resp = client.post(f"/api/{action}", json={"session_id": session.session_id}, headers=_login(client, my_name))
+
+    assert resp.status_code == 200, resp.text
+    # Recording always starts by obtaining this game's SGF; no-op requests must not enter it.
+    session.katrain.get_sgf.assert_not_called()
+    assert session._recorded is False
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run(两条命令,理由见 Global Constraints「不许同跑」):
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-CI=true uv run pytest tests/test_play_ai_endgame.py tests/core/test_ai_commit_after_end.py -q
-CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py -q
+CI=true uv run pytest --continue-on-collection-errors tests/test_play_ai_endgame.py tests/core/test_ai_commit_after_end.py -q
+CI=true uv run pytest --continue-on-collection-errors tests/web_ui/test_play_ai_endgame_api.py -q
 ```
 Expected(原 5 条 + r1 新增,各自红的理由):
 - `test_resigning_while_the_ai_is_thinking…`(得到 `B+R`)、`test_an_explicit_loser…`(`TypeError: _do_resign() takes 1 positional argument`)、
@@ -1189,7 +1281,7 @@ Expected(原 5 条 + r1 新增,各自红的理由):
 两条正对照、`test_resign_writes_one_ledger_row_or_none` 的 `already_ended=False` 两格 —— 这两格是改动后的回归护栏:`wrote` 若只在非平台分支里赋值,`platform` 那格会变 500(评审 r1 M4)。
 **若 `test_this_module_runs_against_the_real_interface` 红,停下来** —— 说明拿到的是 conftest 的替身,这个文件的其余结论都不作数。
 
-- [ ] **Step 3: 实现后端**
+- [x] **Step 3: 实现后端**
 
 (`katrain/web/models.py` 的两个类型在 Step 1 已加。)
 
@@ -1249,11 +1341,15 @@ class WebGame(Game):
             if self.katrain and hasattr(self.katrain, "update_timer"):
                 self.katrain.update_timer()
 
-            super().set_current_node(node)
+            blocked = self.insert_mode
+            if not blocked:
+                super().set_current_node(node)
 
             # Reset timer baseline for the *new* node/player
             if self.katrain and hasattr(self.katrain, "last_timer_update"):
                 self.katrain.last_timer_update = time.time()
+        if blocked:
+            self.katrain.controls.set_status(i18n._("finish inserting before navigating"), STATUS_ERROR)
 
     def play(self, move, ignore_ko=False, analyze=True):
         # r1:整段进对局提交锁(RLock 可重入:`_do_play` 与 AI 提交段调到这里时已经拿着它)。
@@ -1365,6 +1461,7 @@ class WebGame(Game):
         from katrain.core.constants import STATUS_TEACHING
 
         played = False
+        status_message = error_message = None
         with self.ai_ladder_commit_lock:
             self.update_timer()
             game = self.game
@@ -1389,23 +1486,25 @@ class WebGame(Game):
                 <= 0
                 and current_node.time_used < self.active_game_timer.get("minimal_use", 0)
             ):
-                self.controls.set_status(
-                    i18n._("move too fast").format(num=self.active_game_timer.get("minimal_use", 0)), STATUS_TEACHING
-                )
-                return
-
-            try:
-                node = self.game.play(Move(coords, player=self.next_player_info.player))
-                played = True
-                if guard:
-                    self.game.record_two_pass_end(node)
-            except IllegalMoveException as e:
-                # 坐标必须记 —— 2026-08-25 查「自由对弈无法落子」时，日志里 4 条
-                # `Illegal Move: Space occupied` 拿不出**点的是哪一路**，只能靠时间戳
-                # 间隔（5 秒、3 秒）反推「是人在反复点」。少这一个字段，定位多花了几小时。
-                self.log(f"Illegal Move at {coords}: {e}", OUTPUT_ERROR)
-            finally:
-                self.last_timer_update = time.time()
+                status_message = i18n._("move too fast").format(num=self.active_game_timer.get("minimal_use", 0))
+            else:
+                try:
+                    node = self.game.play(Move(coords, player=self.next_player_info.player))
+                    played = True
+                    if guard:
+                        self.game.record_two_pass_end(node)
+                except IllegalMoveException as e:
+                    # 坐标必须记 —— 2026-08-25 查「自由对弈无法落子」时，日志里 4 条
+                    # `Illegal Move: Space occupied` 拿不出**点的是哪一路**，只能靠时间戳
+                    # 间隔（5 秒、3 秒）反推「是人在反复点」。少这一个字段，定位多花了几小时。
+                    error_message = f"Illegal Move at {coords}: {e}"
+                finally:
+                    self.last_timer_update = time.time()
+        # Status and log callbacks may broadcast; emit them after releasing the commit lock.
+        if status_message is not None:
+            self.controls.set_status(status_message, STATUS_TEACHING)
+        if error_message is not None:
+            self.log(error_message, OUTPUT_ERROR)
         if played:
             self.play_stone_sound()
 ```
@@ -1706,7 +1805,7 @@ ENDGAME_CONFLICT_DETAIL = {
                 session,
                 {"type": "game_end", "data": {"reason": "resign", "winner_id": winner_id, "result": result}},
             )
-        elif not is_multiplayer and current_user and session.user_id:
+        elif not is_multiplayer and current_user and session.user_id and wrote:
             result = state.get("end_result") or session.katrain.game.end_result
             if result:
                 await _record_ai_game(session, app, current_user, result)
@@ -1746,6 +1845,17 @@ ENDGAME_CONFLICT_DETAIL = {
         # Record game result for multiplayer
         if is_multiplayer and current_user and wrote:
 ```
+
+**Task 2 执行修正（2026-09-15）**：`/api/timeout` 的单机落账 `elif` 同认输补上 `and wrote`，已结束请求的 200 空操作不得重试落账。两条接口回归用 `get_sgf.assert_not_called()` 钉住记录入口，原写法两格都红。
+
+`_complete_count` 的结果写入也在本 Task 改走唯一入口（Task 4 再补显式 `node` 绑定）：
+
+```python
+        session.katrain._commit_end_state(result)
+        session.game_ended = True
+```
+
+删除它原来的 `game.game_result = result` / `game.current_node.end_state = result`。原计划 Step 3 留直写到 Task 4，与本 Task Step 4「server 不再直写」的验收冲突；补的 `test_count_uses_the_same_atomic_result_writer` 先在原写法上得到 200（期望 409），再改为提交入口。断言只钉住结果与调用次数，Task 4 的节点绑定由其新增竞态用例验证。
 
 视觉升降级分支(`:3184-3186`)
 
@@ -1880,7 +1990,7 @@ def _writes_a_terminal_result_by_hand(line: str) -> bool:
     assert hits == [0, 2], "扫描逻辑抓不到缺失的置位 —— 上面那条断言说明不了任何事情"
 ```
 
-- [ ] **Step 4: 跑后端测试确认通过**
+- [x] **Step 4: 跑后端测试确认通过**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
@@ -1888,22 +1998,22 @@ uv run black -l 120 katrain/web/models.py katrain/web/interface.py katrain/core/
   tests/test_play_ai_endgame.py tests/core/test_ai_commit_after_end.py tests/web_ui/test_play_ai_endgame_api.py tests/web_ui/test_ai_ladder_api.py
 git diff katrain/web/server.py | grep -n "_report_settlement_loop"   # 见 Global Constraints「格式化」:black 顺手压行的那一处要还原
 # 根目录(真 WebKaTrain)与 tests/web_ui 分两条跑。提交锁与 `_do_play` 的改动会波及几份用真类的既有测试,一并跑:
-CI=true uv run pytest tests/test_play_ai_endgame.py tests/core/test_ai_commit_after_end.py tests/core/test_ladder_strategy.py \
+CI=true uv run pytest --continue-on-collection-errors tests/test_play_ai_endgame.py tests/core/test_ai_commit_after_end.py tests/core/test_ladder_strategy.py \
   tests/test_ai_resignation.py tests/test_vision_move_poller.py tests/test_guest_free_play.py -q
-CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py tests/web_ui/test_game_termination_and_chat_identity.py tests/web_ui/test_ai_game_autosave.py \
+CI=true uv run pytest --continue-on-collection-errors tests/web_ui/test_play_ai_endgame_api.py tests/web_ui/test_game_termination_and_chat_identity.py tests/web_ui/test_ai_game_autosave.py \
   tests/web_ui/test_ai_ladder_api.py tests/web_ui/test_ladder_injection.py tests/web_ui/test_navigation_guards.py -q
 git status --short katrain/config.json   # 期望:空
 # 唯一写入口的源码闸(判读前先去掉注释行):
-grep -n "end_state *=" katrain/web/server.py      # 期望:无
-grep -n "end_state *=" katrain/web/interface.py   # 期望:只有 `_commit_end_state` 里 `target.end_state = result` 一处
-grep -n "end_state *=" katrain/core/ai.py         # 期望:只有桌面版回退那一处 `cn.end_state = result`
+grep -nE '(^|[^[:alnum:]_])end_state[[:space:]]*=' katrain/web/server.py      # 期望:无
+grep -nE '(^|[^[:alnum:]_])end_state[[:space:]]*=' katrain/web/interface.py   # 期望:只有 `_commit_end_state` 里 `target.end_state = result` 一处
+grep -nE '(^|[^[:alnum:]_])end_state[[:space:]]*=' katrain/core/ai.py         # 期望:只有桌面版回退那一处 `cn.end_state = result`
 ```
-Expected: 全 PASS(`tests/test_ai_resignation.py` 两条 GPU 用例在 `CI=true` 下 skip);三条 grep 如注释所写。
+Expected: 全 PASS(`tests/test_ai_resignation.py` 四条引擎用例在 `CI=true` 下 skip);三条 grep 如注释所写。
 `test_ladder_injection.py` 模块顶部 `sys.modules.pop` 换回真类,它的三条「无限重生循环」用例是 `_do_update_state` 加 `ended_at` 之后最可能打红的地方;
 `test_ai_ladder_api.py` 的 `test_ranked_resign_supports_real_game_read_only_end_result`、`test_repeated_ranked_resign_is_rejected_without_changing_authoritative_result`、
 终局绊线两条是替身与绊线改动最可能打红的地方。
 
-- [ ] **Step 5: 写失败的前端测试(追加到 `GamePage.playAi.test.tsx` 末尾)**
+- [x] **Step 5: 写失败的前端测试(追加到 `GamePage.playAi.test.tsx` 末尾)**
 
 ```tsx
 describe('N21 · 本地对局的认输框说出是哪一方', () => {
@@ -1950,7 +2060,7 @@ describe('S1(r1)· 「本局已结束」认服务端的终局事实,翻手看棋
 Run: `cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui && npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx`
 Expected: 「白方认输？」那条 FAIL;S1 两条 FAIL(`panel-over` 是 `false`、没有 `endgame-card`、`writeActiveSession` 被调;`onMove` 被调一次);其余 PASS。
 
-- [ ] **Step 6: 实现前端**
+- [x] **Step 6: 实现前端**
 
 `GamePage.tsx` 里 `const humanColor = deriveHumanColor(gameState);` 之后加:
 
@@ -2004,7 +2114,7 @@ const endResultOf = (gs: GameState): string | null => gs.end_result || gs.termin
     if (isGameOver) return;
 ```
 
-- [ ] **Step 7: 验证并提交**
+- [x] **Step 7: 验证并提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui

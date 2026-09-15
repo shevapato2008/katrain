@@ -10,7 +10,7 @@ from typing import Any, List, Optional, Union, Dict
 import numpy as np
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, Depends
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager, contextmanager, nullcontext
 
@@ -32,6 +32,7 @@ from katrain.web.core.ranked_session_guard import (
 )
 from katrain.web.session import SessionManager, LobbyManager, Matchmaker
 from katrain.web.models import *
+from katrain.web.models import EndgameConflict, GameEnd
 
 # 房间聊天单条正文的码点上限。超长拒绝、不截断,理由见发送处。
 #
@@ -46,6 +47,17 @@ from katrain.web.models import *
 # 比硬编码更容易骗人。真要让四家一致,得让这个数在**每一家的源码里都是字面量**(env 解析出来
 # 的值,任何读源码的闸都看不见),再由契约钉住。已把这条判据交给共享侧,取值待定。
 CHAT_MAX_LEN = 200
+
+#: r1:`EndgameConflict.reason` → 409 detail。`already_ended` 那句与数子旧文案同形 ——
+#: kiosk `countFailureMessage`(Task 4)按 `already over` 分支说「这一局已经结束了」。
+ENDGAME_CONFLICT_DETAIL = {
+    "already_ended": "Game is already over",
+    "position_changed": "Position changed while counting",
+    "stale_turn": "timeout rejected: stale_turn",
+    "clock_not_expired": "timeout rejected: clock_not_expired",
+    "not_your_turn": "Not your turn",
+    "remote_ended": "Ranked game has ended on another device",
+}
 
 
 def _json_safe(obj):
@@ -753,6 +765,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     app = FastAPI(lifespan=lifespan)
     app.state.ranked_analysis_activity = RankedAnalysisActivity()
 
+    @app.exception_handler(EndgameConflict)
+    async def endgame_conflict_to_409(request: Request, exc: EndgameConflict):
+        """r1:运行时的终局 / 提交判别没通过 → 409。端点自己接住的只有两种:认输与不带绑定的超时撞上 `already_ended`
+        (200 空操作)。其余一律到这里 —— 没有它就是 500。"""
+        detail = ENDGAME_CONFLICT_DETAIL.get(exc.reason, f"Endgame conflict: {exc.reason}")
+        return JSONResponse(status_code=409, content={"detail": detail})
+
     @contextmanager
     def persistent_analysis_activity(current_user, session, kind: str, action: str):
         # 这套记账整个是**以 user_id 为键**的（`RankedAnalysisActivity` 在「同一用户的自由局
@@ -991,7 +1010,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         with analysis_context:
             with session.lock:
                 guard_ai_ladder_ranked_human_action(session, current_user, "play-move")
-                session.katrain("play", None if coords is None else tuple(coords))
+                # r1:非研究会话带 guard —— 这一手所在的局面线已结束 / 轮到 AI 就拒(409),双停第二手记终局事实。
+                # 研究会话照旧打谱,不冻结。
+                session.katrain("play", None if coords is None else tuple(coords), guard=session.mode != "research")
                 state = session.katrain.get_state()
                 session.last_state = state
         # Natural (two-pass) game end never hits resign/count/timeout — record here so
@@ -1880,6 +1901,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             guard_ai_ladder_ranked_owner(session, current_user, "resign")
             await _guard_ai_ladder_cloud_active(app, session, current_user)
 
+        # For multiplayer games, record the result
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+        # r1:这次认输有没有真的写出终局。撞上一局已经结束过的(退出框在终局上点「认输并退出」、galaxy 离页即认输、
+        # 连点、平台远端认输成功而本地早已结束)是 200 空操作:返回真实局面,不落账、不广播。
+        # **在所有分支之前**赋值 —— 平台局也会走到下面的多人局落账,只在某一支里赋值就是 UnboundLocalError → 500(评审 r1 M4)。
+        wrote = True
+
         # Route through platform gateway for cross-platform games
         gateway = getattr(app.state, "platform_gateway", None)
         platform_game = bool(not ranked_ai and gateway and gateway.is_platform_game(request.session_id))
@@ -1891,31 +1919,49 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 await gateway.resign(request.session_id, user_id)
             except PlatformMoveRejectedError as e:
                 raise HTTPException(status_code=409, detail=str(e))
-
-        # For multiplayer games, record the result
-        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+            except EndgameConflict as e:
+                # 远端认输已经成功,网关落回本地(`_local_resign`)时撞上本地早已结束的局:按空操作处理。
+                if e.reason != "already_ended":
+                    raise
+                wrote = False
 
         if not platform_game:
             with session.lock:
-                if ranked_ai:
-                    snapshot = guard_ai_ladder_ranked_owner(session, current_user, "resign")
-                    guard_ai_ladder_ranked_not_ended(session, "resign")
-                    winner = "W" if snapshot.user_color == "B" else "B"
-                    result = f"{winner}+R"
-                    session.katrain.game.game_result = result
-                    session.katrain.game.current_node.end_state = result
-                    if hasattr(session.katrain, "_state"):
-                        session.katrain._state["end_result"] = result
-                    # This branch writes the result straight onto the tree instead of going
-                    # through `session.katrain(...)`, so the `update_state` -> `_on_state`
-                    # callback that normally sets `game_ended` never fires. Nothing else sets
-                    # it on this path, and it is the only thing that stops the ranked heartbeat:
-                    # without this line a resigned game goes on reporting a player at the board
-                    # forever, the cloud reservation never becomes takeable, and the account is
-                    # locked out of ranked play on every device it owns.
-                    session.game_ended = True
-                else:
-                    session.katrain("resign")
+                try:
+                    if ranked_ai:
+                        snapshot = guard_ai_ladder_ranked_owner(session, current_user, "resign")
+                        guard_ai_ladder_ranked_not_ended(session, "resign")
+                        winner = "W" if snapshot.user_color == "B" else "B"
+                        result = f"{winner}+R"
+                        # r1:结果只经对局提交锁里的唯一写入口写(与 AI 提交、远端终局标记互斥)。
+                        session.katrain._commit_end_state(result)
+                        if hasattr(session.katrain, "_state"):
+                            session.katrain._state["end_result"] = result
+                        # This branch writes the result straight onto the tree instead of going
+                        # through `session.katrain(...)`, so the `update_state` -> `_on_state`
+                        # callback that normally sets `game_ended` never fires. Nothing else sets
+                        # it on this path, and it is the only thing that stops the ranked heartbeat:
+                        # without this line a resigned game goes on reporting a player at the board
+                        # forever, the cloud reservation never becomes takeable, and the account is
+                        # locked out of ranked play on every device it owns.
+                        session.game_ended = True
+                    else:
+                        # N21:多人局按**请求者的座位**判负(`winner_id` 下面也是这么算的,两边必须一致);
+                        # 单机局不传,交给 `_do_resign` 从座位推。
+                        loser = None
+                        if is_multiplayer and current_user is not None:
+                            if current_user.id == session.player_b_id:
+                                loser = "B"
+                            elif current_user.id == session.player_w_id:
+                                loser = "W"
+                        if loser is None:
+                            session.katrain("resign")
+                        else:
+                            session.katrain("resign", loser)
+                except EndgameConflict as e:
+                    if e.reason != "already_ended":
+                        raise
+                    wrote = False
                 state = session.katrain.get_state()
                 session.last_state = state
         else:
@@ -1923,7 +1969,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             session.last_state = state
 
         # Record game result for multiplayer
-        if is_multiplayer and current_user:
+        if is_multiplayer and current_user and wrote:
             winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
             result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
             try:
@@ -1946,7 +1992,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 session,
                 {"type": "game_end", "data": {"reason": "resign", "winner_id": winner_id, "result": result}},
             )
-        elif not is_multiplayer and current_user and session.user_id:
+        elif not is_multiplayer and current_user and session.user_id and wrote:
             result = state.get("end_result") or session.katrain.game.end_result
             if result:
                 await _record_ai_game(session, app, current_user, result)
@@ -1977,9 +2023,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             result = f"W+{abs(score):.1f}"
             winner_color = "W"
 
-        # Set end state on the current node (game.end_result reads from current_node.end_state)
-        session.katrain.game.game_result = result
-        session.katrain.game.current_node.end_state = result
+        # All result writes share the game commit lock; Task 4 binds the scoring node explicitly.
+        session.katrain._commit_end_state(result)
         session.game_ended = True
 
         # Record multiplayer game result
@@ -2127,14 +2172,21 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # For multiplayer games, record the result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 
+        # r1:撞上已经结束过的局是 200 空操作(不落账、不广播),同 `/api/resign`。
+        wrote = True
         with session.lock:
             guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
-            session.katrain("timeout")
+            try:
+                session.katrain("timeout")
+            except EndgameConflict as e:
+                if e.reason != "already_ended":
+                    raise
+                wrote = False
             state = session.katrain.get_state()
             session.last_state = state
 
         # Record game result for multiplayer
-        if is_multiplayer and current_user:
+        if is_multiplayer and current_user and wrote:
             winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
             result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"
             try:
@@ -2157,7 +2209,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 session,
                 {"type": "game_end", "data": {"reason": "timeout", "winner_id": winner_id, "result": result}},
             )
-        elif not is_multiplayer and current_user and session.user_id:
+        elif not is_multiplayer and current_user and session.user_id and wrote:
             result = session.katrain.game.end_result
             if result:
                 await _record_ai_game(session, app, current_user, result)
@@ -3182,8 +3234,9 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
                     raise HTTPException(status_code=403, detail="physical move color does not match the human seat")
                 guard_ai_ladder_ranked_human_action(session, SimpleNamespace(id=binding.user_id), "physical-play")
                 move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
-                session.katrain("play", move.coords)
-        except (HTTPException, ValueError) as exc:
+                # r1:守卫在对局提交锁里再判一次(已终局 / 远端已结束 / 不是这颗子的颜色)。
+                session.katrain("play", move.coords, guard=True, expected_player=move_player)
+        except (HTTPException, ValueError, EndgameConflict) as exc:
             log.info("Ranked vision move rejected for session %s: %s", session_id, exc)
             _rearm_detection()
             return 0.5
@@ -3238,8 +3291,16 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
             if tracker is not None:
                 tracker.on_success()
     else:
-        with session.lock:
-            session.katrain("play", move.coords)
+        # r1(S7):上面按 `last_state` 做的轮次检查读的是可能过期的广播帧;真正的判别在对局提交锁里
+        # (已终局 / 轮到 AI / 不是这颗子的颜色)。被拒时照「不轮到」那一支重新布防、节流 0.5 秒。
+        # 与跨平台 N13 在同一函数相邻改动,合并时逐段对。
+        try:
+            with session.lock:
+                session.katrain("play", move.coords, guard=True, expected_player=move_player)
+        except EndgameConflict as exc:
+            log.info("Vision move %s refused for session %s: %s", move_player, session_id, exc.reason)
+            _rearm_detection()
+            return 0.5
 
     log.info(
         "Vision move submitted: col=%d row=%d color=%d",

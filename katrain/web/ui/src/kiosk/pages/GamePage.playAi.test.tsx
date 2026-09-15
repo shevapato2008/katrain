@@ -158,3 +158,43 @@ describe('N17 · 取状态失败时对局屏给出口', () => {
     expect(clearActiveSession).not.toHaveBeenCalled();
   });
 });
+
+describe('N21 · 本地对局的认输框说出是哪一方', () => {
+  it('两个人面对面、轮到白:标题是「白方认输？」', () => {
+    sessionMock.gameState = makeState({
+      game_type: 'pvp_local', player_to_move: 'W',
+      players_info: { B: seat('player:human', '小明'), W: seat('player:human', '小红') },
+    });
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_RESIGN'));
+    expect(screen.getByText('白方认输？')).toBeInTheDocument();
+  });
+
+  it('人机局仍是「确认认输？」—— 认输的一定是人,不用点名', () => {
+    sessionMock.gameState = makeState();
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_RESIGN'));
+    expect(screen.getByText('确认认输？')).toBeInTheDocument();
+  });
+});
+
+describe('S1(r1)· 「本局已结束」认服务端的终局事实,翻手看棋不回退', () => {
+  // 终局之后按了「上一手」:游标上的 end_result 变回 null,但这一局的终局事实还在。
+  const steppedBack = () => makeState({ end_result: null, terminal_result: 'W+R', children: [['W', [3, 3]]] });
+
+  it('终局后退到前一手:右栏与终局卡仍是终局,「继续上一局」照样清掉、不写回来', async () => {
+    sessionMock.gameState = steppedBack();
+    renderPage();
+    expect(screen.getByTestId('panel-over').textContent).toBe('true');
+    expect(screen.getByTestId('endgame-card')).toBeInTheDocument();
+    await waitFor(() => expect(clearActiveSession).toHaveBeenCalledWith('game'));
+    expect(writeActiveSession).not.toHaveBeenCalled();
+  });
+
+  it('终局之后点棋盘不发落子 —— 服务端只冻住终局那一手之后,翻回去的局面它照样收', () => {
+    sessionMock.gameState = steppedBack();
+    renderPage();
+    fireEvent.click(screen.getByTestId('board'));
+    expect(sessionMock.onMove).not.toHaveBeenCalled();
+  });
+});

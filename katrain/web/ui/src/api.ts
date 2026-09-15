@@ -45,6 +45,8 @@ export interface GameState {
   is_root: boolean;
   is_pass: boolean;
   end_result: string | null;
+  /** 对局级终局事实；游标退回后仍保留。旧服务端可不带。 */
+  terminal_result?: string | null;
   children: [string, [number, number] | null][];
   ghost_stones: [string, [number, number] | null][];
   players_info: { B: PlayerInfo; W: PlayerInfo };

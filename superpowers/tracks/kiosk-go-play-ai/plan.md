@@ -15,7 +15,7 @@
 
 ## 修订记录
 
-**r1(2026-09-15)** —— Codex adversarial review 5 条发现(五份独立验证全部 confirmed)、同类扫描 S1–S11、设计评审 4 major + 7 minor。
+**r1(2026-09-15，阶段 A 已补齐并自查)** —— Codex adversarial review 5 条发现(五份独立验证全部 confirmed)、同类扫描 S1–S11、设计评审 4 major + 7 minor。
 五条发现是同一个病:「这局结束了没有」由游标上的 `end_state` 临时推,检查与写入之间没有互斥,await 之后又按游标重推一遍。
 所以不逐条打补丁,立两件东西:**终局事实** `WebGame.terminal`(按局面线判,`WebGame.ended_at`)与**对局提交锁**(复用 `ai_ladder_commit_lock`)。
 
@@ -27,24 +27,26 @@
 - **执行流程审计** → 证据包里 `procedures` 为 `null`(审计没产出结论,不替它编问题);本修订自带的流程改动已落:共享领地 `api.ts` 从 Task 2 起跑两套构建、既有真类测试补进运行清单、替身跟上真接口、合并 grep 前移到各 Task、依赖改为主链串行、派发约束 → Global Constraints、File Structure、依赖行、Task 2/4/5/12。
 - **设计评审吸收**(详见 `superpowers/tracks/kiosk-go-play-ai/r1/design-r1.md` §7):M1 空操作不进收尾;M2 冻结收窄到局面线(`_commit_end_state` 也按局面线,另开分支可以再结束一次);M3 合并指引写成代码 + 行为验收;M4 `/api/resign` 平台分支 `wrote`;m5–m11 夹具 / 异常面 / 超时退避 / 换局判定 / 平台双停 / 锁的确定性用例 / 升降级读终局事实 → 各 Task 内标「评审 r1」处。
 
+- **本次补齐**:Task 6 叶子/终局闸、timeout 第三参、409/403 重同步和 2/5/10 秒退避;Task 11 不认输离开及同局返回测试;Task 12 源码闸、合并行为验收、上板与后续项;Self-Review 接口清单。Task 0 实测基线为 116 个失败名称，收集错误继续运行、失败行锚定和三处测试污染清理已写进所有 Task 的基线命令。视觉证据只标「待 Fan 确认」。
+
 ## Global Constraints
 
 > **开工前先读 `prd.md` §6.0**：五条赛道的共享文件归属与合并顺序（尤其 `server.py` 终局落账只留一条入口）。与本 plan 冲突时以 §6.0 为准。
 
 - 在 worktree `/Users/fan/Repositories/katrain-kiosk-go-play-ai`(分支 `feature/kiosk-go-play-ai`)里开发;**不 push、不合并 develop**,合并由 Fan 决定;**不在别的 worktree 里 checkout**。所有命令用绝对路径或先 `cd` 到本 worktree。
-- 环境(2026-09-14 实测):本 worktree 的 `.venv` 没有 fastapi、`katrain/web/ui` 没有 `node_modules`。Task 0 先 `uv sync --extra web` 与 `npm ci`,不要借用主仓的环境跑本仓代码。
+- 环境(2026-09-15 handoff 实测):本 worktree 已完成 `uv sync --extra web` 与 `npm ci`;vitest 161 文件绿(1725 passed / 5 skipped)、`npx tsc -b` 绿。复用本仓环境，不借主仓环境。macOS 系统 git 的 xcrun 临时缓存受限时用 `/opt/homebrew/bin/git`。
 - 改了共享领地(`src/components`、`src/hooks`、`src/api.ts` + `src/api/`、`src/features`、`src/context`、`src/utils`、`src/types`)必须 `npm run build` 与 `npm run build:kiosk-2d` 都绿;kiosk 边界(`npm run verify:kiosk-2d`,已串在 `build:kiosk-2d` 里)不许破。共享文件不许 import `src/kiosk`/`src/galaxy`/`src/pages`。
 - 类型检查用 `npx tsc -b`(`npx tsc --noEmit` 检查 0 个文件);`*.test.ts(x)` 不在 tsc 范围内,测试文件的类型错不会红。
 - 盒上 token 恒为 null:任何「发不发请求 / 渲不渲染」的判别位用 `isAuthenticated`(或服务端下发的 `analysis_delivered` 等字段),不用 `token`。
 - 新文案一律 `t('ns:key', '中文默认')`;**不往 PO 里加 key**(补不补 PO 待 Fan 裁定)。
 - 格式化:Python `uv run black -l 120 <改到的 .py>`(⚠️ `katrain/web/server.py` 基线就有一处 black 不合规 —— `:341-343` 那个 `asyncio.create_task(_report_settlement_loop(...))` 三行;black 会顺手把它压成一行。提交前 `git diff katrain/web/server.py` 看到这一处就还原,不夹带:另外四条赛道也在改 server.py);前端 `npx eslint <改到的文件>` 不新增 error(基线已有的不算)。
-- 前端单测:`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui && npx vitest run <文件>`;后端:`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest <文件> -q`。
-- **测试判据是基线 diff**:Task 0 在干净树上记录失败用例名字集合;每个 Task 结束比名字集合(`comm -13 基线 本次`),不比条数。报告里写「新增失败 = 空」。
+- 前端单测:`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui && npx vitest run <文件>`;后端:`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest <文件> --continue-on-collection-errors -q`。
+- **测试判据是基线 diff**:Task 0 在干净树上记录失败用例名字集合;每个 Task 结束比名字集合(`comm -13 基线 本次`),不比条数。报告里写「新增失败 = 空」。每个 Task 都跑后端和前端全量；后端基线在 `/tmp/kgpa-baseline/pytest-failed.txt`，可从 `r1/baseline-pytest-failed.txt` 恢复（70 failed / 46 errors，共 116 个名字，两次一致）。全量必须带 `--continue-on-collection-errors`（缺 cv2/boto3/fontTools 导致 28 个模块收集失败，否则一条也不跑）；日志仅提取 `^(FAILED|ERROR) tests/`，避免把 logger 的 ERROR 行当成用例。
 - **真 `WebKaTrain` 的后端测试放 `tests/` 根目录**:`tests/web_ui/conftest.py:90` 把 `sys.modules["katrain.web.interface"]` 整个换成 MagicMock,放进 `tests/web_ui/` 就只是在测替身(`tests/web_ui/test_count_api.py` 的 `TestIntegration` 就是这样恒绿的)。这类测试文件首个用例断言拿到的是真类。
 - **单跑时 `tests/test_play_ai_endgame.py` 不许和任何 `tests/web_ui/…` 文件放进同一条 pytest 命令**:参数里只要有一个 `tests/web_ui/` 下的文件,pytest 在**收集任何模块之前**就加载 `tests/web_ui/conftest.py`(initial conftest),`sys.modules["katrain.web.interface"]` 当场变成 MagicMock,根目录文件的 `from katrain.web.interface import WebKaTrain` 拿到的就是替身 —— 首条「真类」用例红,其余结论全不作数(2026-09-14 审查时用玩具目录复现)。本计划里凡是两者同跑的地方都已拆成两条命令;全量 `pytest tests` 不受影响(按名字排序,根目录的 `test_play_ai_endgame.py` 先于 `web_ui/` 被收集)。
-- 跑完任何后端测试查 `git -C /Users/fan/Repositories/katrain-kiosk-go-play-ai status --short katrain/config.json` 为空 —— `force_package_config=True` 的实例会把仓里的 `katrain/config.json` 写回去。
+- 后端测试污染：跑前确认 `katrain/config.json`、`katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json` 无待保留改动，且没有既存 `test_user_data.db`；跑后检查。每次全量结束均 `git restore --source=HEAD --` 这两个文件并删除本次生成的 `test_user_data.db`，绝不提交。前者由 `force_package_config=True` 写回；后者由 `tests/platforms/test_engine_manager.py::test_dump_engine_game_state_fixture` 改写。若已有用户改动先备份恢复，不覆盖。
 - **Playwright e2e 打的是构建产物**(`playwright.config.ts` 起 `python -m katrain --ui=web --port 8002` 服务 `katrain/web/static`):改源码后先 `npm run build` 再跑。跑前 `lsof -nP -iTCP:8002 -sTCP:LISTEN`(四图用 `:5173`),端口若被**别的 worktree** 的进程占着(`lsof -p <PID> | grep cwd` 看目录),`reuseExistingServer` 会让你测到别人的包 —— 等它结束或与对方协调,不要杀别人的进程。`--ui web` 退出时会改 `~/.katrain/config.json`:跑 e2e 前 `cp ~/.katrain/config.json /tmp/kgpa-katrain-config.json`,跑完拷回。
-- 视觉/布局改动走 CLAUDE.md 的四图对比与承重实测关卡:`npm run fourup` 重跑被改到的屏,跑两次 diff 两次结果得本屏抖动地板,只提交有内容变化的屏(`git checkout HEAD -- <屏目录>` 前先确认没有未提交的活);jsdom 不作布局证据;**视觉通过需 Fan 确认**,确认前不算完成。
+- 视觉/布局改动走 CLAUDE.md 的四图对比与承重实测关卡:`npm run fourup` 重跑被改到的屏,跑两次 diff 两次结果得本屏抖动地板,只提交有内容变化的屏(`git checkout HEAD -- <屏目录>` 前先确认没有未提交的活);jsdom 不作布局证据;**视觉通过需 Fan 确认**；本次只产截图和对比，标「待 Fan 确认」，继续已授权的后续 Task，不自行判通过。
 - 升降级账本:`katrain/web/core/ai_ladder_ranked.py` 与 `ai_ladder_catalog.py` 本计划**一行不改**;升降级局不补分析(`analysis_allowed` 为假时一律不补)。
 - 新建文件前先 `git ls-files <路径>` 与 `ls <路径>` 确认不存在,不用 `cat >` 覆盖既有文件;zsh 不做词分割,循环文件列表用数组或逐个写。
 - 每个 Task 一次提交,提交信息结尾带 `Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`;提交前 `git add` 明确列文件后用 `git diff --cached --stat` 确认(仓里 `.gitignore` 有 `log*`,macOS 大小写不敏感,新文件可能被静默吞掉)。
@@ -99,8 +101,8 @@
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-git status --short            # 期望:只有 `?? superpowers/tracks/kiosk-go-play-ai/`(本赛道 prd/plan,尚未提交);除此之外不空就停下来问,不要清
-git rev-parse HEAD            # 记下来,期望 6f7dc629… 或本分支后续提交
+git status --short            # 记录现有改动，不覆盖；prd/plan 已提交，Task 0 已完成
+git rev-parse HEAD            # 记录实际提交号，不硬编码旧 HEAD
 uv sync --extra web
 cd katrain/web/ui && npm ci
 ```
@@ -112,10 +114,12 @@ Expected: 两条安装都成功;`uv run python -c "import fastapi"` 不报错。
 mkdir -p /tmp/kgpa-baseline
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git status --short katrain/config.json   # 期望:空
-CI=true uv run pytest tests -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-baseline/pytest.log
-grep -E '^(FAILED|ERROR) ' /tmp/kgpa-baseline/pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-baseline/pytest-failed.txt
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-baseline/pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-baseline/pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-baseline/pytest-failed.txt
 wc -l /tmp/kgpa-baseline/pytest-failed.txt
-git status --short katrain/config.json   # 期望:空;不空就 `git diff katrain/config.json` 看是哪条测试写的,记进报告后 `git checkout -- katrain/config.json`
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 ```
 Expected: 跑完(失败条数不重要,名字集合才是判据)。
 
@@ -132,13 +136,21 @@ Expected: `TSC_OK`;若 tsc 在干净树上就红,把输出存 `/tmp/kgpa-baselin
 
 - [ ] **Step 4: 不提交**(本 Task 没有源码改动)
 
-每个后续 Task 的「基线 diff」一步统一这样做(以后端为例,前端把文件名换成 vitest):
+每个后续 Task 的「基线 diff」都用下面两套命令；只能在本 worktree 串行运行，不与其它 agent 的全量并行。失败日志必须保留完整 summary，不能把中断当成空集合。
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-CI=true uv run pytest tests -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) ' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
 comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 ```
 
 ---
@@ -399,9 +411,21 @@ npm run dev -- --host 127.0.0.1 --port 5173
 `/Users/fan/Repositories/katrain-kiosk-go-play-ai/superpowers/tracks/kiosk-go-play-ai/visual/n17-game-unavailable-1024x600.png`。
 Expected: 屏上是标题 + 原因句 + 「回到对弈」按钮,按钮可见不被裁;点按钮到对弈首页。截图交 Fan 确认。
 
-- [ ] **Step 6: 基线 diff(前端)后提交**
+- [ ] **Step 6: 基线 diff(后端 + 前端)后提交**
 
 ```bash
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
+# 基线 diff(后端 + 前端)，两个 comm -13 均须为空
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/kiosk/pages/GamePage.tsx katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx superpowers/tracks/kiosk-go-play-ai/visual/n17-game-unavailable-1024x600.png
 git diff --cached --stat
@@ -428,7 +452,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Test: `katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx`(追加)
 
 **Interfaces:**
-- Consumes: 无
+- Consumes: Task 1 的 `sessionMock` / `makeState` / `renderPage` / `pageTree` 前端测试桩
 - Produces:
   - `katrain.web.models.GameEnd(NamedTuple: game, node, result: str)`;`katrain.web.models.EndgameConflict(reason: str)`,`reason ∈ already_ended | position_changed | stale_turn | not_your_turn | clock_not_expired | remote_ended`
   - `WebGame.terminal: Optional[GameEnd]`(类属性默认 None);`WebGame.ended_at(node) -> bool`;`WebGame.record_two_pass_end(node) -> None`
@@ -1986,7 +2010,18 @@ npx tsc -b && echo TSC_OK
 npx eslint src/kiosk/pages/GamePage.tsx src/api.ts
 npm run build && npm run build:kiosk-2d          # api.ts 是共享领地:两套都要绿
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-# 基线 diff(后端 + 前端,按 Task 0 Step 4 的写法),期望 comm -13 无输出
+# 基线 diff(后端 + 前端)，两个 comm -13 均须为空
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/models.py katrain/web/interface.py katrain/core/ai.py katrain/web/server.py katrain/web/ui/src/api.ts \
   katrain/web/ui/src/kiosk/pages/GamePage.tsx katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx \
   tests/test_play_ai_endgame.py tests/core/test_ai_commit_after_end.py tests/web_ui/test_play_ai_endgame_api.py tests/web_ui/test_ai_ladder_api.py
@@ -2050,7 +2085,12 @@ def test_count_refuses_with_the_threshold_the_session_reports(client):
     assert resp.json()["detail"] == "Cannot count before 22 moves"
 ```
 
-Run(分两条):`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py -q -k "threshold"; CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py -q -k "threshold"`
+Run（分两条）：
+
+```bash
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py -q -k "threshold"
+CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py -q -k "threshold"
+```
 Expected: 13/9 路两条 FAIL(`AttributeError: 'WebKaTrain' object has no attribute 'count_min_moves'`,19 路那条同样 FAIL);API 那条 FAIL(detail 是 `…before 100 moves` 或 `MagicMock` 相关)。
 
 - [ ] **Step 2: 实现**
@@ -2105,6 +2145,18 @@ Expected: 全 PASS(`test_ai_ladder_api.py` 里三条 `terminal_actions` 参数�
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
+# 基线 diff(后端 + 前端)，两个 comm -13 均须为空
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/interface.py katrain/web/server.py tests/test_play_ai_endgame.py tests/web_ui/test_play_ai_endgame_api.py
 git diff --cached --stat
 git commit -m "fix(play): 9 路与多数 13 路整局数不了子 —— 数子门槛按交叉点数缩放,前后端同源
@@ -2120,7 +2172,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ### Task 4: A12 数子前服务端补分;数子在途与失败原因说真话
 
 **Files:**
-- Modify: `katrain/web/interface.py`(`count_min_moves()` 之后加 `ENSURE_SCORE_TIMEOUT_S` 与 `ensure_current_score()`)
+- Modify: `katrain/web/interface.py`(`count_min_moves()` 之后加 `ENSURE_SCORE_TIMEOUT_S` 与 `ensure_current_score(timeout_s=None, node=None)`)
 - Modify: `katrain/web/server.py`:`create_app` 之前加模块级 `_terminal_of` / `_count_result`;`:1956-2006`(`_complete_count` 整段);`:2066-2076`(`/api/count/request` 的 HvAI / pvp_local 分支:await 之前取节点、补分、按节点数)
 - Modify: `katrain/web/ui/src/kiosk/pages/GamePage.tsx:433-444`(`handleAction` 的 `count` 分支)+ 状态声明区 + 一个 `Snackbar`
 - Test: `tests/test_play_ai_endgame.py`、`tests/web_ui/test_play_ai_endgame_api.py`、`katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx`(追加)
@@ -2128,7 +2180,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
   `test_ranked_session_allows_human_turn_terminal_actions[/api/count/request]` 会从 200 变 500
 
 **Interfaces:**
-- Consumes: Task 3 的 `count_min_moves()`;Task 2 的 `_commit_end_state` / `EndgameConflict` / 409 处理器与测试夹具
+- Consumes: Task 1 的 `sessionMock` / `makeState` / `renderPage` / `pageTree`； Task 3 的 `count_min_moves()`;Task 2 的 `_commit_end_state` / `EndgameConflict` / 409 处理器与测试夹具
 - Produces:
   - `WebKaTrain.ENSURE_SCORE_TIMEOUT_S: float = 15.0`;`WebKaTrain.ensure_current_score(self, timeout_s: Optional[float] = None, node=None) -> Optional[float]`
     (阻塞;`node` 为 None 时补当前手;升降级局与无引擎时不请求、立即返回已有值)。Task 5 以 `node=` 调用。
@@ -2350,7 +2402,12 @@ def test_count_still_says_why_when_no_score_can_be_had(client):
     assert resp.json()["detail"].startswith("Analysis not available")
 ```
 
-Run(分两条):`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py -q; CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py -q`
+Run（分两条）：
+
+```bash
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py -q
+CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py -q
+```
 Expected:
 - 五条 interface 用例 FAIL(`AttributeError: … 'ensure_current_score'`,含 `test_an_explicit_node_is_scored_even_when_the_cursor_has_moved`);
 - `test_count_that_waited_for_analysis_does_not_overwrite_a_resignation` FAIL(端点不调补分,阻塞函数里的认输从没发生:`KeyError: 'resign'`;若只补了分而不按节点复核,则是 count 200 并把结果改写成 `B+2.5`);
@@ -2640,7 +2697,18 @@ npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx src/kiosk/pages/GamePage
 npx tsc -b && echo TSC_OK
 npx eslint src/kiosk/pages/GamePage.tsx
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-# 基线 diff(后端 + 前端),期望 comm -13 无输出
+# 基线 diff(后端 + 前端)，两个 comm -13 均须为空
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/interface.py katrain/web/server.py katrain/web/ui/src/kiosk/pages/GamePage.tsx \
   katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx tests/test_play_ai_endgame.py tests/web_ui/test_play_ai_endgame_api.py \
   tests/web_ui/test_ai_ladder_api.py
@@ -2670,6 +2738,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: Task 2 的 `GameEnd` / `WebGame.terminal` / `_commit_end_state(…, fill_pending=True)` / `record_two_pass_end`;Task 4 的 `ensure_current_score(node=)`、`_terminal_of`、`_count_result`、`web_client` / `_two_human_guest_game`;既有 `_record_ai_game(session, app, current_user, result)`(不改)
 - Produces:
+  - `_complete_count(session, app, current_user, node=None) -> str`（覆盖 Task 4 的 `tuple[str, bool]`；收尾由调用方拿新 GameEnd 触发）
   - `WebSession.end_game_lock: asyncio.Lock`
   - `WebKaTrain.game_ended_callback: Optional[Callable[[GameEnd], None]]`(**只有 AI 后台线程调**:`_do_ai_move_and_broadcast` 结束时这一局的终局事实与开始时不是同一个)
   - `SessionManager.on_game_ended: Optional[Callable[[WebSession, GameEnd], Awaitable[None]]]`(server 装上;`create_session` 把 `katrain.game_ended_callback` 接到 `SessionManager._on_game_ended(session_id, end)`,后者置 `game_ended` 并对非研究模式的会话调度一次钩子);`SessionManager._schedule_game_ended(session, end)`
@@ -3016,7 +3085,12 @@ def test_a_resign_on_a_game_already_being_finished_returns_at_once(web_client):
     assert w.game.terminal.node.end_state is None  # 认输没有改写双停终局
 ```
 
-Run(分两条):`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py -q; CI=true uv run pytest tests/web_ui/test_game_end_hook.py -q`
+Run（分两条）：
+
+```bash
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py -q
+CI=true uv run pytest tests/web_ui/test_game_end_hook.py -q
+```
 Expected: hook 文件里 `test_the_ai_thread_ending_a_game_runs_the_hook`、`test_research_sessions_never_run_the_hook`(两条都是 `AttributeError: … '_on_game_ended'`)、
 `test_create_session_wires_the_ai_thread_callback`(`called == []`:`game_ended_callback` 没装,调到的是替身属性)FAIL,`test_a_broadcast_that_merely_shows…` PASS(现状本来就不叫);
 根目录文件里:
@@ -3306,60 +3380,121 @@ def _new_terminal(session, before):
         return {"session_id": session.session_id, "state": state}
 ```
 
-**`/api/resign`**(Task 2 版)三处:
+**`/api/resign`**：完整替换 Task 2 版本。本地派发前后捕获位于同一 `session.lock`；平台 gateway await 前后单独捕获，不跨 await 持线程锁。
 
 ```python
+    @app.post("/api/resign")
+    async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
+        session = _get_session_or_404(manager, request.session_id)
+        guard_session_terminator(session, current_user, "resign")
+        ranked_ai = is_ai_ladder_ranked_session(session)
+        if ranked_ai:
+            guard_ai_ladder_ranked_owner(session, current_user, "resign")
+            await _guard_ai_ladder_cloud_active(app, session, current_user)
+
+        # For multiplayer games, record the result
+        is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+        # r1:这次认输有没有真的写出终局。撞上一局已经结束过的(退出框在终局上点「认输并退出」、galaxy 离页即认输、
+        # 连点、平台远端认输成功而本地早已结束)是 200 空操作:返回真实局面,不落账、不广播。
+        # **在所有分支之前**赋值 —— 平台局也会走到下面的多人局落账,只在某一支里赋值就是 UnboundLocalError → 500(评审 r1 M4)。
         wrote = True
+        end = None
 
         # Route through platform gateway for cross-platform games
-```
+        gateway = getattr(app.state, "platform_gateway", None)
+        platform_game = bool(not ranked_ai and gateway and gateway.is_platform_game(request.session_id))
+        if platform_game:
+            from katrain.web.platforms.gateway import PlatformMoveRejectedError
 
-改为
+            before = _terminal_of(session)
 
-```python
-        wrote = True
-        # r1 M1:收尾只认**本次请求造出来的**终局。派发前记下这一局此刻的终局事实,派发后比身份。
-        before = _terminal_of(session)
+            try:
+                user_id = current_user.id if current_user else 0
+                await gateway.resign(request.session_id, user_id)
+            except PlatformMoveRejectedError as e:
+                raise HTTPException(status_code=409, detail=str(e))
+            except EndgameConflict as e:
+                # 远端认输已经成功,网关落回本地(`_local_resign`)时撞上本地早已结束的局:按空操作处理。
+                if e.reason != "already_ended":
+                    raise
+                wrote = False
 
-        # Route through platform gateway for cross-platform games
-```
-
-```python
+        if not platform_game:
+            with session.lock:
+                before = _terminal_of(session)
+                try:
+                    if ranked_ai:
+                        snapshot = guard_ai_ladder_ranked_owner(session, current_user, "resign")
+                        guard_ai_ladder_ranked_not_ended(session, "resign")
+                        winner = "W" if snapshot.user_color == "B" else "B"
+                        result = f"{winner}+R"
+                        # r1:结果只经对局提交锁里的唯一写入口写(与 AI 提交、远端终局标记互斥)。
+                        session.katrain._commit_end_state(result)
+                        if hasattr(session.katrain, "_state"):
+                            session.katrain._state["end_result"] = result
+                        # This branch writes the result straight onto the tree instead of going
+                        # through `session.katrain(...)`, so the `update_state` -> `_on_state`
+                        # callback that normally sets `game_ended` never fires. Nothing else sets
+                        # it on this path, and it is the only thing that stops the ranked heartbeat:
+                        # without this line a resigned game goes on reporting a player at the board
+                        # forever, the cloud reservation never becomes takeable, and the account is
+                        # locked out of ranked play on every device it owns.
+                        session.game_ended = True
+                    else:
+                        # N21:多人局按**请求者的座位**判负(`winner_id` 下面也是这么算的,两边必须一致);
+                        # 单机局不传,交给 `_do_resign` 从座位推。
+                        loser = None
+                        if is_multiplayer and current_user is not None:
+                            if current_user.id == session.player_b_id:
+                                loser = "B"
+                            elif current_user.id == session.player_w_id:
+                                loser = "W"
+                        if loser is None:
+                            session.katrain("resign")
+                        else:
+                            session.katrain("resign", loser)
+                except EndgameConflict as e:
+                    if e.reason != "already_ended":
+                        raise
+                    wrote = False
+                end = _new_terminal(session, before) if wrote else None
+                state = session.katrain.get_state()
+                session.last_state = state
         else:
+            end = _new_terminal(session, before) if wrote else None
             state = session.katrain.get_state()
             session.last_state = state
 
         # Record game result for multiplayer
         if is_multiplayer and current_user and wrote:
-```
+            winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
+            result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
+            try:
+                app.state.game_repo.record_multiplayer_game(
+                    sgf_content=session.katrain.get_sgf(),
+                    result=result,
+                    game_type=getattr(session, "game_type", "free"),
+                    black_id=session.player_b_id,
+                    white_id=session.player_w_id,
+                )
+            except Exception as e:
+                logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
 
-改为
-
-```python
-        else:
-            state = session.katrain.get_state()
-            session.last_state = state
-        end = _new_terminal(session, before) if wrote else None
-
-        # Record game result for multiplayer
-        if is_multiplayer and current_user and wrote:
-```
-
-```python
-        elif not is_multiplayer and current_user and session.user_id:
-            result = state.get("end_result") or session.katrain.game.end_result
-            if result:
-                await _record_ai_game(session, app, current_user, result)
-```
-
-改为
-
-```python
+            # 广播**不在** try 里:它告诉对面「这局结束了」,而 try 守的是落账。
+            # 两件事捆在一个 try 里时,落账一失败对面就永远收不到终局 —— 盒上
+            # `app.state.game_repo` 恒为 None(`server.py` board 模式那一段),
+            # 于是这条路上每一次认输/超时都会静默地把对面挂在「还在等你走」。
+            # 数子(`_complete_count`)和退出(forfeit)两处本来就是这么写的,这里对齐。
+            manager._schedule_broadcast(
+                session,
+                {"type": "game_end", "data": {"reason": "resign", "winner_id": winner_id, "result": result}},
+            )
         elif not is_multiplayer and end is not None:
-            # N22:单机 / 本地对局一律经收尾函数(游客局也进:落不落账由收尾函数自己判)。
             await _finish_ended_game(session, app, current_user, end)
             state = session.katrain.get_state()
             session.last_state = state
+
+        return {"session_id": session.session_id, "state": state}
 ```
 
 **`/api/count/request` 单机分支**(Task 4 版)
@@ -3498,11 +3633,22 @@ grep -n "_record_ai_game(" katrain/web/server.py
 Expected: 全 PASS。`test_ai_ladder_api.py` 里 `test_ranked_session_still_allows_human_move_and_pass`、`test_ranked_natural_result_saves_once_then_settles_once` 必须仍绿 —— 它们守的是升降级账本只落一次。
 grep 恰好两行:`async def _record_ai_game(` 定义,以及 `_finish_ended_game` 里那一次调用;四个请求入口与 `_on_game_ended_off_request` 都不再直接调它。
 
-- [ ] **Step 5: 基线 diff(全量后端)后提交**
+- [ ] **Step 5: 基线 diff(后端 + 前端)后提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-# Task 0 Step 4 的写法,期望 comm -13 无输出
+# 基线 diff(后端 + 前端)，两个 comm -13 均须为空
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/interface.py katrain/web/session.py katrain/web/server.py tests/web_ui/test_game_end_hook.py tests/test_play_ai_endgame.py \
   tests/web_ui/test_ai_game_autosave.py
 git diff --cached --stat
@@ -3512,8 +3658,6 @@ N22(P1)。AI 线程下出双停第二手或认输时只置 game_ended、不落�
 SessionManager.on_game_ended,与 /api/move、认输、超时、数子四个请求入口共用 _finish_ended_game:会话内串行,
 先补分(非升降级)再落账,每局一次。收尾按捕获的终局事实落账、不看游标;请求路径只收尾本次请求造出来的终局
 (撞上已结束的认输 / 超时是空操作,不排队、不再补分)。账本代码未改。
-
-Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
@@ -3535,7 +3679,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Test: `tests/test_play_ai_endgame.py`、`tests/web_ui/test_play_ai_endgame_api.py`、`katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx`(追加)
 
 **Interfaces:**
-- Consumes: Task 2 的对局提交锁 / `_commit_end_state` / `EndgameConflict` 处理器 / `terminal_result` / `_ai_parked_inside_its_commit`;Task 5 的 `_terminal_of` / `_new_terminal` / `_finish_ended_game`;
+- Consumes: Task 2 的对局提交锁 / `_commit_end_state` / `EndgameConflict` 处理器 / `terminal_result` / `_ai_parked_inside_its_commit`;Task 4 的 `_terminal_of`；Task 5 的 `_new_terminal` / `_finish_ended_game`;
   Task 1 测试文件的 `sessionMock` / `makeState` / `seat` / `pageTree`
 - Produces:
   - `katrain.web.models.TimeoutRequest(session_id, expected_game_id?, expected_node_id?, color?: 'B'|'W')`(三个 expected 字段要么都给、要么都不给,否则 422)
@@ -3790,7 +3934,12 @@ def test_timeout_expectations_come_all_or_nothing(client):
     assert resp.status_code == 422, resp.text
 ```
 
-Run(分两条):`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py -q -k "timeout or clock"; CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py -q -k timeout`
+Run（分两条）：
+
+```bash
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py -q -k "timeout or clock"
+CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py -q -k timeout
+```
 Expected:
 - 根目录前五条 FAIL(`TypeError: _do_timeout() takes 1 positional argument`);`test_an_unbound_timeout_keeps_its_old_meaning` PASS(Task 2 已经让它「已经结束过就拒」)——
   它是改动后的回归护栏:错把 galaxy 旧调用也改成核时钟,它会红(不暂停但钟没到 ⇒ `clock_not_expired`)。
@@ -4134,6 +4283,15 @@ export function useGoClock(gameState: GameState, color: 'B' | 'W', onExpired?: (
     configured?: boolean;
 ```
 
+`api.ts` 中 `timeout` 改为（第三参可选，galaxy / 共享 hook 旧两参调用兼容）：
+
+```ts
+  timeout: (sessionId: string, token?: string, expect?: {
+    expected_game_id: string; expected_node_id: number; color: 'B' | 'W';
+  }): Promise<SessionResponse> =>
+    apiPost("/api/timeout", { session_id: sessionId, ...expect }, token),
+```
+
 Run: `npx vitest run src/kiosk/components/game/goClock.test.ts` → Expected: 5 条 PASS。
 
 - [ ] **Step 3: 玩家卡接时钟(测试 → 实现)**
@@ -4322,68 +4480,162 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }:
 
 Run: `npx vitest run src/kiosk/components/game/GameControlPanel.playAi.test.tsx src/kiosk/components/game/GameControlPanel.test.tsx` → Expected: 全 PASS。
 
-- [ ] **Step 4: GamePage 发超时(测试 → 实现)**
+- [ ] **Step 4: GamePage 发绑定超时、重同步与退避(测试 → 实现)**
 
-追加到 `src/kiosk/pages/GamePage.playAi.test.tsx` 末尾:
+测试文件补 `act`、`ApiError` import。A18 describe 内每条先 stub `API.timeout` 与 `API.getState`，不要真实请求；断言 API 调用，不再断言 `handleAction('timeout')`。补以下用例：
 
 ```tsx
 describe('A18 · 时间耗尽判超时', () => {
-  it('轮到的一方耗尽 → 调一次 timeout,同一手不重复', () => {
-    sessionMock.gameState = makeState({ player_to_move: 'B' });
+  beforeEach(() => {
+    vi.spyOn(API, 'timeout').mockResolvedValue({ state: makeState({ terminal_result: 'W+T' }) });
+    vi.spyOn(API, 'getState').mockResolvedValue({ state: makeState() });
+  });
+
+  it('到点带局/手/方；同一帧回调两次只发一次；盒上 token 为 null 仍发', () => {
+    sessionMock.gameState = makeState();
     renderPage();
     fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
     fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
-    expect(sessionMock.handleAction).toHaveBeenCalledTimes(1);
-    expect(sessionMock.handleAction).toHaveBeenCalledWith('timeout');
-  });
-
-  it('升降级局 AI 回合耗尽不发(服务端在 AI 回合回 403)', () => {
-    sessionMock.gameState = makeState({
-      game_type: 'ai_ladder_ranked', player_to_move: 'B',
-      players_info: { B: seat('player:ai', 'AI'), W: seat('player:human', '我') },
+    expect(API.timeout).toHaveBeenCalledExactlyOnceWith('play-ai-s1', undefined, {
+      expected_game_id: 'g', expected_node_id: 5, color: 'B',
     });
-    renderPage();
-    fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
     expect(sessionMock.handleAction).not.toHaveBeenCalled();
   });
 
-  it('升降级引擎停摆时不判超时 —— 那是一局没人下的棋', () => {
-    sessionMock.gameState = makeState({ player_to_move: 'B', last_ladder_error: true });
+  it.each(['stale_turn', 'already_ended'])('409 %s 只重同步，不上红条', async (reason) => {
+    vi.mocked(API.timeout).mockRejectedValue(new ApiError(409, `timeout rejected: ${reason}`));
+    const fresh = makeState({ current_node_id: 6 });
+    vi.mocked(API.getState).mockResolvedValue({ state: fresh });
+    sessionMock.gameState = makeState();
     renderPage();
     fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
-    expect(sessionMock.handleAction).not.toHaveBeenCalled();
+    await waitFor(() => expect(sessionMock.setGameState).toHaveBeenCalledWith(fresh));
+    expect(API.getState).toHaveBeenCalledWith('play-ai-s1', undefined);
+    fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+    expect(API.timeout).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/超时判定没有送达|Request failed/)).toBeNull();
+  });
+
+  it('clock_not_expired 重同步后同一手只再核一次，不依赖时钟再次从假变真', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(API.timeout).mockRejectedValue(new ApiError(409, 'timeout rejected: clock_not_expired'));
+      sessionMock.gameState = makeState();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+      expect(API.timeout).toHaveBeenCalledTimes(2);
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
+      expect(API.timeout).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it.each([
+    { children: [['W', [3, 3]]] },
+    { terminal_result: 'W+R' },
+    { player_to_move: 'W' },
+    { last_ladder_error: true },
+    { game_type: 'ai_ladder_ranked', players_info: { B: seat('player:ai', 'AI'), W: seat('player:human', '我') } },
+  ])('翻手/终局/非回合/引擎停摆/升降级 AI 回合不发超时 %j', (over) => {
+    sessionMock.gameState = makeState(over as Partial<GameState>);
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+    expect(API.timeout).not.toHaveBeenCalled();
+  });
+
+  it('503 等失败按 2/5/10 秒退避，三次重发后显示未送达', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(API.timeout).mockRejectedValue(new ApiError(503, 'unavailable'));
+      sessionMock.gameState = makeState();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_TIMEOUT_B'));
+      await act(async () => { await vi.advanceTimersByTimeAsync(1999); });
+      expect(API.timeout).toHaveBeenCalledTimes(1);
+      for (const [ms, count] of [[1, 2], [5000, 3], [10000, 4]]) {
+        await act(async () => { await vi.advanceTimersByTimeAsync(ms); });
+        expect(API.timeout).toHaveBeenCalledTimes(count);
+      }
+      expect(screen.getByText('超时判定没有送达，请检查连接后重新进入这一局')).toBeInTheDocument();
+      await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+      expect(API.timeout).toHaveBeenCalledTimes(4);
+    } finally { vi.useRealTimers(); }
   });
 });
 ```
 
-Run: `npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx` → Expected: 第一条 FAIL(没调用),后两条 PASS(现状本来就不发)。
+再加一个假时钟用例：第一次 503 后 `rerender(pageTree())` 到另一手，推进 20 秒，旧轮次不再发；卸载也清理重试。恢复成功时 `setGameState` 收到结果，提示消失。403 同样重同步，401/网络错误走有限退避。错误实现下：旧 handleAction 路径不带字段，缺叶子闸会发请求，吞掉失败无重试，无限重试超出四次。
 
-实现 —— `GamePage.tsx` 状态声明区(`countingRef` 之后)加:
+Run: `npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx -t A18` → 确认上述失败来自缺功能。
+
+实现：状态声明区增加以下 ref/state；清理 effect **放在所有早退之前**。`timeoutScope` 同时含 session / game / node / color 及可发送条件，换轮次、终局、翻手、引擎停摆或卸载即取消旧请求后续操作。
 
 ```tsx
-  // A18:同一手只发一次超时 —— 时钟每 250ms 重算一次,耗尽之后的每一帧都「耗尽」。
-  const timeoutSentForNodeRef = useRef<number | null>(null);
+  const [timeoutError, setTimeoutError] = useState<string | null>(null);
+  const timeoutAttemptRef = useRef<{
+    key: string; checks: number; retries: number; timer: number | null;
+  } | null>(null);
+  const timeoutState = session.gameState;
+  const timeoutScope = `${sessionId}|${timeoutState?.game_id}|${timeoutState?.current_node_id}|${timeoutState?.player_to_move}|${timeoutState?.end_result}|${timeoutState?.terminal_result}|${timeoutState?.children?.length}|${timeoutState?.last_ladder_error}`;
+  useEffect(() => () => {
+    const attempt = timeoutAttemptRef.current;
+    if (attempt?.timer != null) window.clearTimeout(attempt.timer);
+    timeoutAttemptRef.current = null;
+  }, [timeoutScope]);
 ```
 
-`const humanColor = deriveHumanColor(gameState);` 之后(Task 2 加的 `bothHuman` 那段之前)加:
+`humanColor` 之后增加（API import 加 `ApiError`；token 与数子取同源的 `token ?? undefined`，**不以 token 真值作闸**）：
 
 ```tsx
-  // A18:轮到的一方时间耗尽 → 判超时负。服务端不自己判(`/api/timeout` 由客户端触发),kiosk 从前一处都没调。
   const handleClockExpired = (color: 'B' | 'W') => {
-    if (gameState.end_result || gameState.player_to_move !== color) return;
-    // 升降级 AI 停摆时它的钟照样走完;判它超时负 = 把一局没人下的棋记成人赢(galaxy GamePage `handleTimeout` 同一条)。
-    if (gameState.last_ladder_error) return;
-    // 升降级局的超时只许在人的回合发(`guard_ai_ladder_ranked_human_action` 在 AI 回合回 403)。
-    if (isRanked && humanColor !== color) return;
-    if (timeoutSentForNodeRef.current === gameState.current_node_id) return;
-    timeoutSentForNodeRef.current = gameState.current_node_id;
-    void session.handleAction('timeout').catch(() => undefined);
+    if (!sessionId || isGameOver || gameState.player_to_move !== color || gameState.children.length > 0) return;
+    if (gameState.last_ladder_error || (isRanked && humanColor !== color)) return;
+    const key = `${gameState.game_id}|${gameState.current_node_id}|${color}`;
+    if (timeoutAttemptRef.current?.key === key) return;
+    const attempt = { key, checks: 1, retries: 0, timer: null as number | null };
+    timeoutAttemptRef.current = attempt;
+    const expect = { expected_game_id: gameState.game_id, expected_node_id: gameState.current_node_id, color };
+    const current = () => timeoutAttemptRef.current === attempt;
+    const later = (ms: number) => {
+      attempt.timer = window.setTimeout(() => { if (current()) void send(); }, ms);
+    };
+    const retryDelivery = () => {
+      if (!current()) return;
+      const delay = [2000, 5000, 10000][attempt.retries++];
+      if (delay !== undefined) later(delay);
+      else setTimeoutError(t('game:timeout_not_delivered', '超时判定没有送达，请检查连接后重新进入这一局'));
+    };
+    const send = async (): Promise<void> => {
+      if (!current()) return;
+      try {
+        const res = await API.timeout(sessionId, token ?? undefined, expect);
+        if (!current()) return;
+        if (res?.state) session.setGameState(res.state);
+        setTimeoutError(null);
+      } catch (e) {
+        if (!current()) return;
+        if (e instanceof ApiError && (e.status === 409 || e.status === 403)) {
+          try {
+            const fresh = await API.getState(sessionId, token ?? undefined);
+            if (!current()) return;
+            if (fresh?.state) session.setGameState(fresh.state);
+            if (e.message.includes('clock_not_expired') && attempt.checks < 2) {
+              attempt.checks += 1;
+              later(1000);
+            }
+          } catch { retryDelivery(); }
+        } else retryDelivery();
+      }
+    };
+    setTimeoutError(null);
+    void send();
   };
 ```
 
-`<GameControlPanel … hardwareFault={hardwareFault} />` 里加一个 prop `onTimeout={handleClockExpired}`。
+`GameControlPanel` 传 `onTimeout={handleClockExpired}`；增加独立的 `Snackbar` / `Alert` 展示 `timeoutError`，可关闭。换局后旧请求结果不覆盖新局（`current()`）；同轮次最多两次服务端核实，每次发送遇网络等失败最多额外三次退避。Task 11 的通用错误条不接管这个专用提示。
 
-Run: `npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx src/kiosk/pages/GamePage.test.tsx` → Expected: 全 PASS。
+Run: `npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx src/kiosk/pages/GamePage.test.tsx` → 全 PASS。
 
 - [ ] **Step 5: 真实运行时证据(Playwright,打构建产物)**
 
@@ -4500,8 +4752,20 @@ Expected: `TSC_OK`;两套构建绿;屏 05 的 fixture 没有 `timer` ⇒ 右栏�
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-# 基线 diff(后端 + 前端),期望 comm -13 无输出
-git add katrain/web/interface.py katrain/web/ui/src/api.ts katrain/web/ui/src/kiosk/components/game/goClock.ts \
+# 基线 diff(后端 + 前端)，两个 comm -13 均须为空
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
+git add katrain/web/models.py katrain/web/server.py tests/web_ui/test_play_ai_endgame_api.py \
+  katrain/web/interface.py katrain/web/ui/src/api.ts katrain/web/ui/src/kiosk/components/game/goClock.ts \
   katrain/web/ui/src/kiosk/components/game/goClock.test.ts katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx \
   katrain/web/ui/src/kiosk/components/game/GameControlPanel.playAi.test.tsx katrain/web/ui/src/kiosk/pages/GamePage.tsx \
   katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx katrain/web/ui/tests/kiosk-screen-05-play-ai.spec.ts \
@@ -4512,6 +4776,7 @@ git commit -m "feat(kiosk): 开局选了用时,对局屏却不倒计时、不读
 A18(P1)。08-22 重画屏 05 时按「kiosk 没有时间控件」的错误前提撤了计时。服务端新增 timer.configured
 (星阵 / 大厅局继承默认时限但没人配过,不能当计时局);玩家卡按 update_timer 同一算法外推剩余与读秒,
 轮到的一方耗尽调 /api/timeout(升降级 AI 回合与引擎停摆时不发)。
+超时绑定局/手/方，提交锁内核轮次与服务端时钟；核实不了不判负。409/403 重同步，网络等失败 2/5/10 秒退避后提示未送达。
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
@@ -4624,9 +4889,21 @@ Expected: 全 PASS;`TSC_OK`。
 截图存 `superpowers/tracks/kiosk-go-play-ai/visual/a3-strategy-hint-territory-1024x600.png`。
 Expected: 说明行一行或两行内放下,下面的组没有被推动。交 Fan 单图确认。屏 02 四图默认选中「拟人」,那一帧不变,不重跑。
 
-- [ ] **Step 4: 基线 diff(前端)后提交**
+- [ ] **Step 4: 基线 diff(后端 + 前端)后提交**
 
 ```bash
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
+# 基线 diff(后端 + 前端)，两个 comm -13 均须为空
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/kiosk/pages/AiSetupPage.tsx katrain/web/ui/src/kiosk/pages/AiSetupPage.test.tsx \
   superpowers/tracks/kiosk-go-play-ai/visual/a3-strategy-hint-territory-1024x600.png
@@ -4815,7 +5092,18 @@ npx tsc -b && echo TSC_OK
 npx eslint src/features/aiLadder/startErrors.ts src/features/aiLadder/useAiLadderStatus.ts src/kiosk/pages/AiSetupPage.tsx
 npm run build && npm run build:kiosk-2d
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-# 基线 diff(前端),期望 comm -13 无输出
+# 基线 diff(后端 + 前端)，两个 comm -13 均须为空
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/features/aiLadder/startErrors.ts katrain/web/ui/src/features/aiLadder/startErrors.test.ts \
   katrain/web/ui/src/features/aiLadder/useAiLadderStatus.ts katrain/web/ui/src/kiosk/pages/AiSetupPage.tsx katrain/web/ui/src/kiosk/pages/AiSetupPage.test.tsx
 git diff --cached --stat
@@ -4842,7 +5130,7 @@ Expected: 全 PASS;`TSC_OK`;两套构建绿(`verify:kiosk-2d` exit 0)。
 - Test: `GameControlPanel.playAi.test.tsx`、`GamePage.playAi.test.tsx`、`tests/kiosk-screen-05-play-ai.spec.ts`(追加)
 
 **Interfaces:**
-- Consumes: Task 6 的 `SeatRow` 改动(同文件,先做 Task 6);Task 6 spec 的 `open` / `baseState` / `seat` / `SHOTS`
+- Consumes: Task 1 的页面测试桩；Task 6 的 `GameControlPanel.playAi.test.tsx` 的 `panel` / `base`； Task 6 的 `SeatRow` 改动(同文件,先做 Task 6);Task 6 spec 的 `open` / `baseState` / `seat` / `SHOTS`
 - Produces: `gameKinds.ts` 导出 `TWO_HUMAN_GAME_TYPES: Set<string>` 与
   `isFreeVsAi({ gameType, engineMode, isRanked }: { gameType: string | null | undefined; engineMode?: boolean; isRanked?: boolean }): boolean`
 
@@ -5115,7 +5403,18 @@ Expected: 屏 05(开着图表的自由对弈)与屏 10(星阵)这两帧的内容
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-# 基线 diff(前端),期望 comm -13 无输出
+# 基线 diff(后端 + 前端)，两个 comm -13 均须为空
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/kiosk/components/game/gameKinds.ts katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx \
   katrain/web/ui/src/kiosk/components/game/GameControlPanel.test.tsx katrain/web/ui/src/kiosk/components/game/GameControlPanel.playAi.test.tsx \
   katrain/web/ui/src/kiosk/pages/GamePage.tsx katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx \
@@ -5339,10 +5638,21 @@ Expected:`GamePage.playAi.test.tsx` 全 PASS;`TSC_OK`;eslint 无新增 error(若
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-# 基线 diff(前端),期望 comm -13 无输出
 git add katrain/web/ui/src/kiosk/pages/GamePage.tsx katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx \
   katrain/web/ui/src/kiosk/components/physical/PhysicalSyncEscalationDialog.tsx katrain/web/ui/src/kiosk/components/game/RecalibrationModal.tsx \
   katrain/web/ui/src/kiosk/components/vision/VisionSyncOverlay.tsx
+# 基线 diff(后端 + 前端)，两个 comm -13 均须为空
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/kiosk/pages/GamePage.test.tsx
 git diff --cached --stat
 git commit -m "fix(kiosk): 改用屏幕落子后页面仍当自己在实体盘上;重标定弹层说「无需 LED」而实际要亮灯清盘
@@ -5365,8 +5675,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Test: `katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx`(追加)
 
 **Interfaces:**
-- Consumes: Task 1 测试文件的 `sessionMock`(`connectionLost` 已按本 Task 的类型建好)
-- Produces: `useGameSession()` 额外返回 `connectionLost: 'rejected' | 'dropped' | null`(1008 被拒 / 意外断开 / 连着)与 `clearError(): void`;`error` 的文案与写入时机不变
+- Consumes: Task 1 测试文件的 `sessionMock` / `pageTree`、Task 2 的退出确认框；`connectionLost` 测试桩已按本 Task 的类型建好
+- Produces: `useGameSession()` 额外返回 `connectionLost: 'rejected' | 'dropped' | null`(1008 被拒 / 意外断开 / 连着)与 `clearError(): void`;`error` 的文案与写入时机不变；退出框在 dropped / rejected 时提供 `exit-leave-keep`（只导航，不认输、不清指针）
 
 - [ ] **Step 1: 写失败的测试**
 
@@ -5472,6 +5782,43 @@ describe('N25 · 对局屏错误条', () => {
 });
 ```
 
+N25 describe 追加下面测试；imports 加 `within`、`Link`，`sessionMock` 增加稳定的 `setSessionId: vi.fn()` 并让 hook 桩返回它。
+为证明「继续上一局」用的是真指针，activeSession mock 用 `vi.importActual` 包装真实 read/write/clear，保留 spy；beforeEach 清 localStorage。
+`pageTree` 的 `/kiosk/play` 测试页读取 `readActiveSession('game')` 并把其 `route` 渲染成「继续上一局」Link，不硬编码返回路由。
+
+```tsx
+  it.each(['dropped', 'rejected'] as const)('断线 %s：从退出框先离开，不认输，回来仍是同一局', (reason) => {
+    const original = makeState();
+    sessionMock.gameState = original;
+    sessionMock.connectionLost = reason;
+    renderPage();
+    const saved = readActiveSession('game');
+    expect(saved?.route).toBe('/kiosk/play/ai/game/play-ai-s1');
+    fireEvent.click(screen.getByRole('button', { name: '退出对局' }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: '先离开，不认输' }));
+    expect(screen.getByText('PLAY_PAGE')).toBeInTheDocument();
+    expect(sessionMock.handleAction).not.toHaveBeenCalledWith('resign');
+    expect(clearActiveSession).not.toHaveBeenCalled();
+    expect(readActiveSession('game')).toEqual(saved);
+    sessionMock.setSessionId.mockClear();
+    fireEvent.click(screen.getByRole('link', { name: '继续上一局' }));
+    expect(sessionMock.setSessionId).toHaveBeenCalledWith('play-ai-s1');
+    expect(screen.getByTestId('game-control-panel')).toBeInTheDocument();
+    expect(sessionMock.gameState).toBe(original);
+  });
+
+  it('连着时退出框没有先离开', () => {
+    sessionMock.gameState = makeState();
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '退出对局' }));
+    expect(within(screen.getByRole('dialog')).queryByText('先离开，不认输')).toBeNull();
+  });
+```
+
+两种断线分别运行。hook 文件另加真实连接生命周期测试：挂载→`setSessionId('session-123')`→1006→卸载→重新挂载并设置同一 id，断言 `API.getState` 再请求该 id、创建第二条 WS，未调用 resign/newGame；用来补足页面桩不能证明的重新取状态与建连。
+旧实现下没有按钮或复用认输回调都会红；清掉真实指针会让继续链接消失，回来换局会让 setSessionId 断言红。
+
 Run: `npx vitest run src/hooks/useGameSession.connection.test.tsx src/kiosk/pages/GamePage.playAi.test.tsx -t "N25|断线"`
 Expected: hook 三条 FAIL(`connectionLost` 为 undefined / `clearError is not a function`);GamePage 前两条 FAIL(印的是原文),第三条 PASS。
 
@@ -5528,7 +5875,7 @@ Expected: hook 三条 FAIL(`connectionLost` 为 undefined / `clearError is not a
       </Snackbar>
 
       {/* N25:连接断了是持续状态(Fan 2026-08-21)—— 不自动消失,× 可关。意外断开时盒上全屏 chromium 没有刷新键,
-          给真能做的出口:退出对局,再从「继续上一局」回来就会重新建连。被拒(1008)照旧显示 hook 的原句
+          给真能做的出口:退出对局 → 先离开，不认输，再从「继续上一局」回来重新建连。被拒(1008)也提供该按钮，照旧显示 hook 的原句
           (带原因与「请重新登录」;`kiosk-screen-05-game.spec.ts` 的几何闸量的就是那一态)。 */}
       <Snackbar
         open={!!session.connectionLost && !connectionNoticeDismissed}
@@ -5536,11 +5883,26 @@ Expected: hook 三条 FAIL(`connectionLost` 为 undefined / `clearError is not a
       >
         <Alert severity="error" onClose={() => setConnectionNoticeDismissed(true)}>
           {session.connectionLost === 'dropped'
-            ? t('game:connection_dropped', '实时连接断了，棋盘不会自动更新。先退出对局，再从「继续上一局」回来就会重新连上')
+            ? t('game:connection_dropped', '实时连接断了，棋盘不会自动更新。点「退出对局」→「先离开，不认输」，再从「继续上一局」回来就会重新连上')
             : session.error}
         </Alert>
       </Snackbar>
 ```
+
+Task 2 修改过的退出确认框 `DialogActions` 中，在「取消」与认输退出之间加：
+
+```tsx
+{session.connectionLost && (
+  <Button data-testid="exit-leave-keep" onClick={() => {
+    setShowExitConfirm(false);
+    navigate('/kiosk/play');
+  }}>
+    {t('game:leave_keep_game', '先离开，不认输')}
+  </Button>
+)}
+```
+
+这条出口不调用 `handleAction('resign')`、`clearActiveSession` 或 `clearPhysicalEngineError`。`rejected` 同样给出口，因为凭据失效时认输也可能被拒。返回仍使用持久化的原 session 路由，重新挂载 hook 拉状态；服务重启导致会话消失时由 Task 1 兜底。
 
 - [ ] **Step 3: 验证(共享领地 ⇒ 两套构建;e2e 几何闸)并提交**
 
@@ -5559,14 +5921,25 @@ Expected: 全 PASS;`TSC_OK`;两套构建绿;「布局 A 的外框」那条仍绿
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-# 基线 diff(前端),期望 comm -13 无输出
+# 基线 diff(后端 + 前端)，两个 comm -13 均须为空
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
+comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
+cd katrain/web/ui
+npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
+comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/hooks/useGameSession.ts katrain/web/ui/src/hooks/useGameSession.connection.test.tsx \
   katrain/web/ui/src/kiosk/pages/GamePage.tsx katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx
 git diff --cached --stat
 git commit -m "fix(kiosk): 对局屏红条一出现就关不掉、印后端原文;断线让盒上用户「刷新页面」
 
 N25(P3)。useGameSession 纯增量加 connectionLost / clearError:一次性失败说人话、6 秒自走、可关;
-意外断开持续显示并给「退出后从继续上一局回来」的出口;1008 被拒仍显示原句。WS 自动重连不在本轮。
+断线时退出框多一个「先离开，不认输」，保留继续上一局；意外断开持续提示这条出口;1008 被拒仍显示原句。WS 自动重连不在本轮。
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
@@ -5587,11 +5960,13 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
-git status --short        # 期望:只剩本赛道未提交的 prd.md / plan.md(Task 0 时就在);源码与测试不许有未提交改动
-CI=true uv run pytest tests -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-final-pytest.log
-grep -E '^(FAILED|ERROR) ' /tmp/kgpa-final-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-final-pytest-failed.txt
+git status --short        # 期望:前序 Task 均已提交，无待提交源码或测试；不硬编码文档未提交状态
+CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-final-pytest.log
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-final-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-final-pytest-failed.txt
 comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-final-pytest-failed.txt      # 期望:无输出
-git status --short katrain/config.json                                              # 期望:空
+git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
+rm -f test_user_data.db
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-final-vitest.log
 grep -E '^\s+×' /tmp/kgpa-final-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-final-vitest-failed.txt
@@ -5600,6 +5975,28 @@ npx tsc -b && echo TSC_OK
 npm run build && npm run build:kiosk-2d
 ```
 Expected: 两个 `comm -13` 都无输出;`TSC_OK`;两套构建绿。有输出就逐条查:是本轮造的就修,是进程级共享状态污染(落在无关文件里)也算本轮造的。
+
+**源码闸（先排除注释行，逐行确认所在函数）：**
+
+```bash
+sed '/^[[:space:]]*#/d' katrain/web/server.py | grep -n "end_state *="       # 期望:无
+sed '/^[[:space:]]*#/d' katrain/web/interface.py | grep -n "end_state *="    # 期望:只在 _commit_end_state
+sed '/^[[:space:]]*#/d' katrain/web/server.py | grep -n "_record_ai_game(\|_record_platform_engine_game("  # 定义 + _finish_ended_game 内唯一终局调用
+CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py --continue-on-collection-errors -q -k resign_writes_one_ledger_row_or_none
+```
+
+grep 绿不代表落账没丢；本分支平台 / 大厅认输的写入 1/0 行行为测试必须绿。
+**合并指引（仅记录，当前任务不合并、不改 PRD §6.0）：**跨平台 helper 将来合入时，在 `_finish_ended_game` 的多人局早退之前插入：
+
+```python
+        if is_platform_engine_session(session):
+            await _record_platform_engine_game(session, app, current_user, end.result)
+            return
+```
+
+保持该 helper 为薄适配，overrides 由它构造；不预加本分支没有调用方的参数。
+`_do_end_without_result` 改走 `_commit_end_state("Void")`；仅当前手已有双停待补分事实且尚无 end_state 时传 `fill_pending=True`。
+本分支不带 guard 的平台双停不会产生该事实。合并后还须单独跑 `tests/platforms/test_engine_game_ledger_e2e.py` 三条行为测试；与 web_ui 拆命令。
 
 - [ ] **Step 2: e2e(打构建产物)**
 
@@ -5614,10 +6011,10 @@ Expected: 全 passed。
 
 - [ ] **Step 3: 视觉确认记录**
 
-确认以下截图都已交 Fan 且得到确认(没有确认的在报告里列为「待确认」,本轮不算完成):
+产出以下截图与对比，统一标注「待 Fan 确认」；不自行判视觉通过，也不因尚未确认停止本轮已授权实施：
 `superpowers/tracks/kiosk-go-play-ai/visual/` 下 `n17-game-unavailable-1024x600.png`、`a18-timed-game-1024x600.png`、
 `a3-strategy-hint-territory-1024x600.png`、`n14-a11-ranked-rail-1024x600.png`、`n14-a11-pvp-local-rail-1024x600.png`;
-屏 05 / 屏 10 四图重跑结论(抖动级、未提交)。
+屏 05 / 屏 02 四图参考、实现、并排、叠加/差异与两次截图抖动比较；屏 10 仅按受影响的既有测试验证。
 
 - [ ] **Step 4: 写上板清单**
 
@@ -5643,6 +6040,22 @@ git ls-files superpowers/tracks/kiosk-go-play-ai/board-checklist.md; ls superpow
 | 5 | A18 读秒判负 | 自由对弈选「仅读秒 30秒×3」,轮到自己时不下 | 时钟从「读秒 · 剩 3 次」数到「超时」,结果卡为对方超时胜 |
 | 6 | A20 改用屏幕落子 | 实体盘对局,制造一次长时间跟不上(不摆 AI 的子)→ 弹层「改用屏幕落子」 | 10 秒内没有「棋盘可能被移动」弹层、开关排没有「标定丢失」;屏幕点子能继续下 |
 | 7 | N17 失效的继续上一局 | 开一局后重启 katrain 服务,回屏 01 点「继续上一局」 | 对局屏显示「这一局已经打不开了」+「回到对弈」;回屏 01 后「继续上一局」消失 |
+| 8 | 终局后翻手 | 已登录自由对弈认输/双停结束，立刻上一手、最后一手 | 结果卡与打谱键始终在；屏 01 无继续上一局；全部对局只有一局 |
+| 9 | 断线出口 | 对局中重启服务，断线红条 → 退出对局 → 先离开，不认输 → 继续上一局 | 看到打不开与回到对弈；全程无认输、无卡死；仅断连接未重启时回来仍是同一局 |
+
+## 视觉证据
+
+屏 05/02 的参考、实现、并排、叠加/差异与相关状态截图：待 Fan 确认。记录实际路径与观察，不自行判通过。
+
+## 本轮登记的后续项（非上板）
+
+1. 本地对局连点停一手可能把两人的停都按掉：共享 `/api/move` 需带 expected_node_id，与 galaxy 一起验收。
+2. galaxy 的超时仍不带绑定；前端尚不读 terminal_result。本轮服务端仅冻结终局所在局面线，悔棋另开分支仍兼容；kiosk 前端整局冻结。
+3. 视觉 orchestrator 缺终局暂停原因：结束后识别仍在跑，提交被拒再布防。
+4. 大厅多人局：leave/登出判负可能重复落账、认输不清 pending_count_request、timeout 胜方按请求者而盘面按轮次；终局后导航另开分支再认输可再记一行。归人人对弈模块。
+5. 本地认输框点名方来自浏览器，请求未绑定该方。
+6. 服务端翻手期间不计时，盒上服务重启后计时状态丢失；本轮保持现有语义。
+
 ```
 
 - [ ] **Step 5: 提交清单**
@@ -5679,16 +6092,21 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 PRD §4(A12-R、A2 修法、A9 默认值、A7、A14、A17、A19、Z6)与 §5 均未进任务 —— 符合「待拍板不进计划」。
 
-**2. Placeholder scan**:全文无 TBD / TODO / 「类似 Task N」;每个改代码的步骤都给了代码;条件分支(eslint 若判 error)写明了停下来报告而非自由发挥。
+**2. 片段自查**：核心并发与超时路径给出具体代码；改动位置对照真实源码。环境或源码差异在本计划与提交中说明，除 PRD §4 待拍板事项外继续处理。
 
-**3. Type consistency**:
-- `_do_resign(loser: Optional[str])` —— Task 2 定义,`/api/resign` 以位置参数传,测试以位置参数调用,一致。
-- `ensure_current_score(timeout_s: Optional[float] = None) -> Optional[float]` —— Task 4 定义,Task 4 端点与 Task 5 `_score_two_pass_end` 均无参调用,一致。
-- `_FINISH_ENDED_GAME_FN(session, app, current_user)` —— Task 5 定义与测试调用参数顺序一致;`manager.on_game_ended(session)` 单参,由 `_on_game_ended_off_request` 适配;
-  `WebKaTrain.game_ended_callback()` 无参,由 `create_session` 的 `lambda sid=session_id: self._on_game_ended(sid)` 适配。
-- `GameState['timer']['configured']` / `isTimedGame` / `useGoClock(gameState, color, onExpired)` / `GameControlPanel` 的 `onTimeout(color)` —— Task 6 内一致;Task 9 不改签名。
-- `isFreeVsAi({ gameType, engineMode, isRanked })` —— Task 9 定义,`GameControlPanel` 与 `GamePage` 两处调用字段名一致。
-- `useGameSession().connectionLost: 'rejected' | 'dropped' | null` —— Task 11 定义;Task 1 测试桩按此类型建、beforeEach 置 `null`。
-- 测试共用件:`GamePage.playAi.test.tsx` 的 `sessionMock` / `vision` / `makeState` / `seat` / `pageTree` / `renderPage`(Task 1)被 Task 2/4/6/9/10/11 引用;
-  `tests/test_play_ai_endgame.py` 的 `_web_katrain` / `_seat`(Task 2)被 Task 3/4/6 引用;`tests/web_ui/test_play_ai_endgame_api.py` 的 `client` / `_inject_session`(Task 2)被 Task 3/4 引用;
-  `kiosk-screen-05-play-ai.spec.ts` 的 `open` / `baseState` / `seat` / `SHOTS`(Task 6)被 Task 9 引用。
+**3. Type consistency（r1 已核）**：
+
+- 对局提交锁统一为 `WebKaTrain.ai_ladder_commit_lock`（RLock），锁序 `session.lock → ai_lock → 提交锁 → Game._lock`；协程收尾另用 `end_game_lock`，不以它代替线程互斥。
+- `GameEnd(game, node, result)`；`WebGame.ended_at(node)` 按局面线；`record_two_pass_end(node)` 只由 guarded 本地落子和 AI 提交调用。
+- `_commit_end_state(result, *, node=None, fill_pending=False) -> GameEnd`；同局面线先写者胜，待补分例外。
+- `_do_resign(loser: Optional[str] = None) -> GameEnd`；`_do_play(coords, guard=False, expected_player=None)`；Task 2 的无绑定 `_do_timeout` 由 Task 6 扩为 `_do_timeout(expected_game_id=None, expected_node_id=None, color=None)`。
+- `ensure_current_score(timeout_s=None, node=None) -> Optional[float]`：Task 4 端点与 Task 5 补分均带 `node=`；默认当前手只给兼容的直接调用使用。
+- `_terminal_of(session) -> Optional[GameEnd]` / `_count_result(score)` 在 Task 4 产出；`_new_terminal(session, before)` / `_score_two_pass_end(session, end)` 在 Task 5 产出。
+- `_complete_count(session, app, current_user, node=None)`：Task 4 返回 `(result, needs_record)`，Task 5 明确替换为 `result: str` 并移除旧调用解包。
+- `_FINISH_ENDED_GAME_FN(session, app, current_user, end)` 对应 `_finish_ended_game`，`end` 必填；`game_ended_callback(end)` → `_on_game_ended(sid, end)` → `on_game_ended(session, end)` → `_on_game_ended_off_request(session, end)`。
+- `API.timeout(sessionId, token?, expect?)`；`GameState.terminal_result?: string | null`；`timer.configured?: boolean`；`useGoClock(gameState, color, onExpired)` / `onTimeout(color)` 在 Task 6 内一致，Task 9 不改签名。
+- `isFreeVsAi({ gameType, engineMode, isRanked })` 在 Task 9 定义，两处调用字段一致。
+- `connectionLost: 'rejected' | 'dropped' | null` / `clearError(): void`，Task 11 产出；前端测试桩预先兼容。离开按钮只导航，真实 activeSession 指针测试证明回来仍取原会话。
+- 明确列文件运行时，根目录真实类测试与 `tests/web_ui` 始终拆命令；全量只传 `tests`，继续收集错误；所有 Task 的后端/前端失败名称集合都用 `comm -13`，全量后清三处污染。
+
+**4. 本次一致性自查**：补齐 Task 2/4/9 Consumes 与 Task 5 返回类型变化；修正 Task 5 本地 resign 捕获锁范围及提交说明重复尾行。旧接口若作为明确的替换前片段出现不代表保留；源码实作以实际定义为准，差异更新计划并记入对应 Task 中文提交。

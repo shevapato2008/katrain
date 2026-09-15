@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
-import { BAIPU_MODE_TIMEOUT_MS, BaipuAPI, canonToBoard, canonToGtp } from './baipuApi';
+import { BaipuAPI, canonToBoard, canonToGtp } from './baipuApi';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -120,11 +120,17 @@ describe('摆谱拍不拍照:BaipuAPI.mode()', () => {
     try {
       let late!: (r: Response) => void;
       vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((resolve) => { late = resolve; })));
-      const asked = BaipuAPI.mode();
-      await vi.advanceTimersByTimeAsync(BAIPU_MODE_TIMEOUT_MS);
+      const settled = vi.fn();
+      const asked = BaipuAPI.mode().then(settled);
+      // 独立锁定 PRD 的 3 秒,不能跟着实现的超时常量一起变成 30 秒还全绿。
+      await vi.advanceTimersByTimeAsync(2999);
+      expect(settled).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(settled).toHaveBeenCalledExactlyOnceWith({ collect: false });
       // 迟到的「拍」不许在摆谱途中把页面切到采集态:mode() 只 settle 一次,这一次已经是「不拍」。
       late(new Response(JSON.stringify({ collect: true }), { status: 200 }));
-      await expect(asked).resolves.toEqual({ collect: false });
+      await asked;
+      expect(settled).toHaveBeenCalledExactlyOnceWith({ collect: false });
     } finally {
       vi.useRealTimers();
     }
@@ -135,8 +141,34 @@ describe('摆谱拍不拍照:BaipuAPI.mode()', () => {
     try {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => new Promise(() => {}) }));
       const asked = BaipuAPI.mode();
-      await vi.advanceTimersByTimeAsync(BAIPU_MODE_TIMEOUT_MS);
+      await vi.advanceTimersByTimeAsync(3000);
       await expect(asked).resolves.toEqual({ collect: false });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('超时触发真实 signal 的 abort 后 fetch 才 reject，也只返回一次不拍照', async () => {
+    vi.useFakeTimers();
+    try {
+      let rejected = false;
+      const aborted = vi.fn();
+      vi.stubGlobal('fetch', vi.fn((_url: string, { signal }: RequestInit) => new Promise<Response>((_resolve, reject) => {
+        signal!.addEventListener('abort', () => {
+          aborted();
+          setTimeout(() => { rejected = true; reject(new DOMException('Aborted', 'AbortError')); }, 1);
+        }, { once: true });
+      })));
+      const settled = vi.fn();
+      const asked = BaipuAPI.mode().then(settled);
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(aborted).toHaveBeenCalledOnce();
+      expect(rejected).toBe(false);
+      expect(settled).toHaveBeenCalledExactlyOnceWith({ collect: false });
+      await vi.advanceTimersByTimeAsync(1);
+      await asked;
+      expect(rejected).toBe(true);
+      expect(settled).toHaveBeenCalledExactlyOnceWith({ collect: false });
     } finally {
       vi.useRealTimers();
     }

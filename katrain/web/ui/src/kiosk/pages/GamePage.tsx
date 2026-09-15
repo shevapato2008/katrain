@@ -237,6 +237,13 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     });
   }, [session.gameState?.current_node_id, session.gameState?.end_result, sessionId]);
 
+  // 没有取到局面且请求失败时，清掉失效的「继续上一局」入口。
+  // 已有局面后的连接错误由对局屏处理，不切换成打不开状态。
+  const loadFailed = !session.gameState && !!session.error;
+  useEffect(() => {
+    if (loadFailed) clearActiveSession('game');
+  }, [loadFailed]);
+
   // Persistent amber banner when AI makes a move (vision mode: physical board player
   // needs a coordinate hint to place the matching stone). Cleared on the human's own move.
   useEffect(() => {
@@ -350,9 +357,30 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   );
 
   if (!session.gameState) {
+    // 盒上全屏没有浏览器后退入口，加载中和加载失败都要能回到对弈。
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-        <CircularProgress />
+      <Box
+        data-testid={loadFailed ? 'game-unavailable' : 'game-loading'}
+        sx={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          gap: 2, height: '100%', px: 4, textAlign: 'center',
+        }}
+      >
+        {loadFailed ? (
+          <>
+            <Typography sx={{ color: 'text.primary', fontSize: 18, fontWeight: 600 }}>
+              {t('game:unavailable_title', '这一局已经打不开了')}
+            </Typography>
+            <Typography sx={{ color: 'text.secondary', fontSize: 14, maxWidth: 520 }}>
+              {t('game:unavailable_reason', '可能是盒子重启过、这一局闲置太久被清理，或者它属于另一个账号。')}
+            </Typography>
+          </>
+        ) : (
+          <CircularProgress />
+        )}
+        <button type="button" className="kiosk-btn kiosk-btn--secondary" onClick={() => navigate('/kiosk/play')}>
+          {t('game:back_to_play', '回到对弈')}
+        </button>
       </Box>
     );
   }

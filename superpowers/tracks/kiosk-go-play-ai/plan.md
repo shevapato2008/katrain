@@ -42,6 +42,7 @@
 - 格式化:Python `uv run black -l 120 <改到的 .py>`(⚠️ `katrain/web/server.py` 基线就有一处 black 不合规 —— `:341-343` 那个 `asyncio.create_task(_report_settlement_loop(...))` 三行;black 会顺手把它压成一行。提交前 `git diff katrain/web/server.py` 看到这一处就还原,不夹带:另外四条赛道也在改 server.py);前端 `npx eslint <改到的文件>` 不新增 error(基线已有的不算)。
 - 前端单测:`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui && npx vitest run <文件>`;后端:`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest <文件> --continue-on-collection-errors -q`。
 - **测试判据是基线 diff**:Task 0 在干净树上记录失败用例名字集合;每个 Task 结束比名字集合(`comm -13 基线 本次`),不比条数。报告里写「新增失败 = 空」。每个 Task 都跑后端和前端全量；后端基线在 `/tmp/kgpa-baseline/pytest-failed.txt`，可从 `r1/baseline-pytest-failed.txt` 恢复（70 failed / 46 errors，共 116 个名字，两次一致）。全量必须带 `--continue-on-collection-errors`（缺 cv2/boto3/fontTools 导致 28 个模块收集失败，否则一条也不跑）；日志仅提取 `^(FAILED|ERROR) tests/`，避免把 logger 的 ERROR 行当成用例。
+- 基线名单排序固定 `LC_ALL=C`，读取 handoff 的既有名单先用 `LC_ALL=C sort -u <文件> -o <文件>` 规范顺序（名称集合不变）；否则 macOS `C.UTF-8` 与此前排序不同会让 comm 假报新增。Node 26 的原生 Web Storage 若覆盖 jsdom，vitest 加 `NODE_OPTIONS=--no-experimental-webstorage`，不修改测试基础设施。
 - **真 `WebKaTrain` 的后端测试放 `tests/` 根目录**:`tests/web_ui/conftest.py:90` 把 `sys.modules["katrain.web.interface"]` 整个换成 MagicMock,放进 `tests/web_ui/` 就只是在测替身(`tests/web_ui/test_count_api.py` 的 `TestIntegration` 就是这样恒绿的)。这类测试文件首个用例断言拿到的是真类。
 - **单跑时 `tests/test_play_ai_endgame.py` 不许和任何 `tests/web_ui/…` 文件放进同一条 pytest 命令**:参数里只要有一个 `tests/web_ui/` 下的文件,pytest 在**收集任何模块之前**就加载 `tests/web_ui/conftest.py`(initial conftest),`sys.modules["katrain.web.interface"]` 当场变成 MagicMock,根目录文件的 `from katrain.web.interface import WebKaTrain` 拿到的就是替身 —— 首条「真类」用例红,其余结论全不作数(2026-09-14 审查时用玩具目录复现)。本计划里凡是两者同跑的地方都已拆成两条命令;全量 `pytest tests` 不受影响(按名字排序,根目录的 `test_play_ai_endgame.py` 先于 `web_ui/` 被收集)。
 - 后端测试污染：跑前确认 `katrain/config.json`、`katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json` 无待保留改动，且没有既存 `test_user_data.db`；跑后检查。每次全量结束均 `git restore --source=HEAD --` 这两个文件并删除本次生成的 `test_user_data.db`，绝不提交。前者由 `force_package_config=True` 写回；后者由 `tests/platforms/test_engine_manager.py::test_dump_engine_game_state_fixture` 改写。若已有用户改动先备份恢复，不覆盖。
@@ -97,7 +98,7 @@
 - Consumes: 无
 - Produces: `/tmp/kgpa-baseline/pytest-failed.txt`、`/tmp/kgpa-baseline/vitest-failed.txt`(失败用例名,每行一个,已排序去重),后续每个 Task 用它做 `comm -13`
 
-- [ ] **Step 1: 装环境**
+- [x] **Step 1: 装环境**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
@@ -108,14 +109,14 @@ cd katrain/web/ui && npm ci
 ```
 Expected: 两条安装都成功;`uv run python -c "import fastapi"` 不报错。
 
-- [ ] **Step 2: 后端基线**
+- [x] **Step 2: 后端基线**
 
 ```bash
 mkdir -p /tmp/kgpa-baseline
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git status --short katrain/config.json   # 期望:空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-baseline/pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-baseline/pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-baseline/pytest-failed.txt
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-baseline/pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-baseline/pytest-failed.txt
 wc -l /tmp/kgpa-baseline/pytest-failed.txt
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
@@ -123,33 +124,33 @@ git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtur
 ```
 Expected: 跑完(失败条数不重要,名字集合才是判据)。
 
-- [ ] **Step 3: 前端基线**
+- [x] **Step 3: 前端基线**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-baseline/vitest.log
-grep -E '^\s+×' /tmp/kgpa-baseline/vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-baseline/vitest-failed.txt
+grep -E '^\s+×' /tmp/kgpa-baseline/vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-baseline/vitest-failed.txt
 wc -l /tmp/kgpa-baseline/vitest-failed.txt
 npx tsc -b && echo TSC_OK
 ```
 Expected: `TSC_OK`;若 tsc 在干净树上就红,把输出存 `/tmp/kgpa-baseline/tsc.log` 并在报告里说明,后续 Task 以「不新增 tsc 错误」为准。
 
-- [ ] **Step 4: 不提交**(本 Task 没有源码改动)
+- [x] **Step 4: 不提交**(本 Task 没有源码改动)
 
 每个后续 Task 的「基线 diff」都用下面两套命令；只能在本 worktree 串行运行，不与其它 agent 的全量并行。失败日志必须保留完整 summary，不能把中断当成空集合。
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 ```
 
@@ -159,6 +160,8 @@ cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 
 ### Task 1: N17 对局屏取状态失败时给出口(P0)
 
+**执行记录（2026-09-15）**：红灯 2 failed / 1 passed（缺两种出口）；三文件 80 passed；全量前端 1728 passed / 5 skipped；后端与前端新增失败名称均为空；tsc 绿、eslint 无新增 error。截图已产出并验证返回 `/kiosk/play`，**待 Fan 确认**；截图后端不可达，因此后端提供的顶栏 logo 未加载。环境差异是 Node 26 原生 Web Storage 与名单排序口径，已按 Global Constraints 处理，无业务实现偏离。
+
 **Files:**
 - Modify: `katrain/web/ui/src/kiosk/pages/GamePage.tsx`(`activeSession` 那个 effect 之后加一个 effect;`:352-357` 早退分支整段替换)
 - Create: `katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx`(本赛道 GamePage 行为测试的共用测试文件,后续 Task 往里追加 `describe`)
@@ -167,7 +170,7 @@ cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 - Consumes: `useGameSession()` 已有返回值 `gameState`、`error`;`clearActiveSession(kind)`(`kiosk/utils/activeSession.ts`)
 - Produces: 对局屏两种早退态 —— `data-testid="game-loading"`(转圈 + 「回到对弈」)与 `data-testid="game-unavailable"`(标题「这一局已经打不开了」+ 原因句 + 「回到对弈」);测试文件导出的桩对象 `sessionMock` / `vision` / `makeState` 形状供 Task 2/4/6/9/10/11 复用(同文件内)
 
-- [ ] **Step 1: 写失败的测试(新建测试文件,含本赛道共用的桩)**
+- [x] **Step 1: 写失败的测试(新建测试文件,含本赛道共用的桩)**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
@@ -339,12 +342,12 @@ describe('N17 · 取状态失败时对局屏给出口', () => {
 });
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui && npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx`
 Expected: 前两条 FAIL(找不到 `game-loading` / `game-unavailable`),第三条 PASS。
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 在 `GamePage.tsx` 里 `activeSession write-on-load / clear-on-end` 那个 `useEffect`(`:227-238`)之后插入:
 
@@ -390,7 +393,7 @@ Expected: 前两条 FAIL(找不到 `game-loading` / `game-unavailable`),第三�
   }
 ```
 
-- [ ] **Step 4: 跑测试确认通过 + 类型 + lint**
+- [x] **Step 4: 跑测试确认通过 + 类型 + lint**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
@@ -400,7 +403,7 @@ npx eslint src/kiosk/pages/GamePage.tsx
 ```
 Expected: 三个文件全 PASS;`TSC_OK`;eslint 只有基线就有的 warning,无新增 error。
 
-- [ ] **Step 5: 真实运行时看一眼(一张图,不做四图 —— 稿子没有这一态)**
+- [x] **Step 5: 真实运行时看一眼(一张图,不做四图 —— 稿子没有这一态)**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
@@ -411,21 +414,21 @@ npm run dev -- --host 127.0.0.1 --port 5173
 `/Users/fan/Repositories/katrain-kiosk-go-play-ai/superpowers/tracks/kiosk-go-play-ai/visual/n17-game-unavailable-1024x600.png`。
 Expected: 屏上是标题 + 原因句 + 「回到对弈」按钮,按钮可见不被裁;点按钮到对弈首页。截图交 Fan 确认。
 
-- [ ] **Step 6: 基线 diff(后端 + 前端)后提交**
+- [x] **Step 6: 基线 diff(后端 + 前端)后提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 # 基线 diff(后端 + 前端)，两个 comm -13 均须为空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/kiosk/pages/GamePage.tsx katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx superpowers/tracks/kiosk-go-play-ai/visual/n17-game-unavailable-1024x600.png
 git diff --cached --stat
@@ -2012,15 +2015,15 @@ npm run build && npm run build:kiosk-2d          # api.ts 是共享领地:两套
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 # 基线 diff(后端 + 前端)，两个 comm -13 均须为空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/models.py katrain/web/interface.py katrain/core/ai.py katrain/web/server.py katrain/web/ui/src/api.ts \
   katrain/web/ui/src/kiosk/pages/GamePage.tsx katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx \
@@ -2147,15 +2150,15 @@ Expected: 全 PASS(`test_ai_ladder_api.py` 里三条 `terminal_actions` 参数�
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 # 基线 diff(后端 + 前端)，两个 comm -13 均须为空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/interface.py katrain/web/server.py tests/test_play_ai_endgame.py tests/web_ui/test_play_ai_endgame_api.py
 git diff --cached --stat
@@ -2699,15 +2702,15 @@ npx eslint src/kiosk/pages/GamePage.tsx
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 # 基线 diff(后端 + 前端)，两个 comm -13 均须为空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/interface.py katrain/web/server.py katrain/web/ui/src/kiosk/pages/GamePage.tsx \
   katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx tests/test_play_ai_endgame.py tests/web_ui/test_play_ai_endgame_api.py \
@@ -3639,15 +3642,15 @@ grep 恰好两行:`async def _record_ai_game(` 定义,以及 `_finish_ended_game
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 # 基线 diff(后端 + 前端)，两个 comm -13 均须为空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/interface.py katrain/web/session.py katrain/web/server.py tests/web_ui/test_game_end_hook.py tests/test_play_ai_endgame.py \
   tests/web_ui/test_ai_game_autosave.py
@@ -4754,15 +4757,15 @@ Expected: `TSC_OK`;两套构建绿;屏 05 的 fixture 没有 `timer` ⇒ 右栏�
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 # 基线 diff(后端 + 前端)，两个 comm -13 均须为空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/models.py katrain/web/server.py tests/web_ui/test_play_ai_endgame_api.py \
   katrain/web/interface.py katrain/web/ui/src/api.ts katrain/web/ui/src/kiosk/components/game/goClock.ts \
@@ -4895,15 +4898,15 @@ Expected: 说明行一行或两行内放下,下面的组没有被推动。交 Fa
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 # 基线 diff(后端 + 前端)，两个 comm -13 均须为空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/kiosk/pages/AiSetupPage.tsx katrain/web/ui/src/kiosk/pages/AiSetupPage.test.tsx \
   superpowers/tracks/kiosk-go-play-ai/visual/a3-strategy-hint-territory-1024x600.png
@@ -5094,15 +5097,15 @@ npm run build && npm run build:kiosk-2d
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 # 基线 diff(后端 + 前端)，两个 comm -13 均须为空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/features/aiLadder/startErrors.ts katrain/web/ui/src/features/aiLadder/startErrors.test.ts \
   katrain/web/ui/src/features/aiLadder/useAiLadderStatus.ts katrain/web/ui/src/kiosk/pages/AiSetupPage.tsx katrain/web/ui/src/kiosk/pages/AiSetupPage.test.tsx
@@ -5405,15 +5408,15 @@ Expected: 屏 05(开着图表的自由对弈)与屏 10(星阵)这两帧的内容
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 # 基线 diff(后端 + 前端)，两个 comm -13 均须为空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/kiosk/components/game/gameKinds.ts katrain/web/ui/src/kiosk/components/game/GameControlPanel.tsx \
   katrain/web/ui/src/kiosk/components/game/GameControlPanel.test.tsx katrain/web/ui/src/kiosk/components/game/GameControlPanel.playAi.test.tsx \
@@ -5643,15 +5646,15 @@ git add katrain/web/ui/src/kiosk/pages/GamePage.tsx katrain/web/ui/src/kiosk/pag
   katrain/web/ui/src/kiosk/components/vision/VisionSyncOverlay.tsx
 # 基线 diff(后端 + 前端)，两个 comm -13 均须为空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/kiosk/pages/GamePage.test.tsx
 git diff --cached --stat
@@ -5923,15 +5926,15 @@ Expected: 全 PASS;`TSC_OK`;两套构建绿;「布局 A 的外框」那条仍绿
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 # 基线 diff(后端 + 前端)，两个 comm -13 均须为空
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-now-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-now-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-now-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-now-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-now-pytest-failed.txt   # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-now-vitest.log
-grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-now-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-now-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/hooks/useGameSession.ts katrain/web/ui/src/hooks/useGameSession.connection.test.tsx \
   katrain/web/ui/src/kiosk/pages/GamePage.tsx katrain/web/ui/src/kiosk/pages/GamePage.playAi.test.tsx
@@ -5962,15 +5965,15 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git status --short        # 期望:前序 Task 均已提交，无待提交源码或测试；不硬编码文档未提交状态
 CI=true uv run pytest tests --continue-on-collection-errors -q -rfE -p no:cacheprovider 2>&1 | tee /tmp/kgpa-final-pytest.log
-grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-final-pytest.log | sed -E 's/ - .*//' | sort -u > /tmp/kgpa-final-pytest-failed.txt
-comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-final-pytest-failed.txt      # 期望:无输出
+grep -E '^(FAILED|ERROR) tests/' /tmp/kgpa-final-pytest.log | sed -E 's/ - .*//' | LC_ALL=C sort -u > /tmp/kgpa-final-pytest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/pytest-failed.txt /tmp/kgpa-final-pytest-failed.txt      # 期望:无输出
 git restore --source=HEAD -- katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json
 rm -f test_user_data.db
 git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json test_user_data.db   # 期望:空
 cd katrain/web/ui
 npx vitest run --reporter=verbose 2>&1 | tee /tmp/kgpa-final-vitest.log
-grep -E '^\s+×' /tmp/kgpa-final-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | sort -u > /tmp/kgpa-final-vitest-failed.txt
-comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-final-vitest-failed.txt      # 期望:无输出
+grep -E '^\s+×' /tmp/kgpa-final-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$//' | LC_ALL=C sort -u > /tmp/kgpa-final-vitest-failed.txt
+LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-final-vitest-failed.txt      # 期望:无输出
 npx tsc -b && echo TSC_OK
 npm run build && npm run build:kiosk-2d
 ```

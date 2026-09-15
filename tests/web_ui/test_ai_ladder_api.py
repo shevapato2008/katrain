@@ -191,6 +191,10 @@ class FakeKaTrain:
     def shutdown(self):
         return None
 
+    def ensure_current_score(self, timeout_s=None, node=None):
+        # 真 WebKaTrain 对升降级局不补分析,原样返回那一手已有的分数(A12);替身的当前手本来就带 3.5。
+        return (self.game.current_node if node is None else node).score
+
     def config(self, setting, default=None):
         if setting == "game/count_min_moves":
             return 0

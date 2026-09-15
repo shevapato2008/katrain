@@ -488,3 +488,155 @@ class TestIntegration:
         state = wkt.get_state()
         assert "history" in state
         assert isinstance(state["history"], list)
+
+
+# ---------------------------------------------------------------- A12 数子前补分
+
+
+class _InstantEngine:
+    """一请求就同步回一份分析的假引擎 —— 只实现 GameNode.analyze 用到的那一个方法。"""
+
+    def __init__(self, score):
+        self.score = score
+        self.requests = 0
+
+    def request_analysis(self, node, callback, **kwargs):
+        self.requests += 1
+        callback({"rootInfo": {"scoreLead": self.score, "winrate": 0.6, "visits": 5}, "moveInfos": []}, False)
+
+
+def _free_game_with_moves(engine):
+    w = _web_katrain()
+    _seat(w, human_colors={"B"})
+    w.game.play(Move(coords=(3, 3), player="B"))
+    w.game.play(Move(coords=(15, 15), player="W"))
+    w.engine = engine  # 落子之后再换:game.play 用的是开局时的 NullEngine,不会先把分补上
+    return w
+
+
+def test_missing_score_is_filled_by_one_analysis():
+    engine = _InstantEngine(score=3.5)
+    w = _free_game_with_moves(engine)
+    assert w.game.current_node.score is None
+    assert w.ensure_current_score(timeout_s=1) == 3.5
+    assert engine.requests == 1
+
+
+def test_an_existing_score_is_not_requested_again():
+    engine = _InstantEngine(score=-2.0)
+    w = _free_game_with_moves(engine)
+    w.ensure_current_score(timeout_s=1)
+    w.ensure_current_score(timeout_s=1)
+    assert engine.requests == 1
+
+
+def test_ranked_games_are_never_analysed_for_a_score():
+    """升降级终局怎么判目等 Fan 拍板(PRD §4 A12-R);在那之前一次都不许替它算。"""
+    engine = _InstantEngine(score=3.5)
+    w = _free_game_with_moves(engine)
+    w.game_type = "ai_ladder_ranked"
+    assert w.ensure_current_score(timeout_s=1) is None
+    assert engine.requests == 0
+
+
+def test_no_engine_returns_at_once_instead_of_waiting_out_the_timeout():
+    import time
+
+    w = _web_katrain()  # enable_engine=False ⇒ NullEngine,请求永远不会回来
+    started = time.monotonic()
+    assert w.ensure_current_score(timeout_s=5) is None
+    assert time.monotonic() - started < 1
+
+
+def test_an_explicit_node_is_scored_even_when_the_cursor_has_moved():
+    """C2 / C4:补的是「开始数子 / 双停」的那一手,不是游标此刻那一手。"""
+    engine = _InstantEngine(score=1.5)
+    w = _free_game_with_moves(engine)
+    counted = w.game.current_node
+    w.game.undo(1)
+    assert w.ensure_current_score(timeout_s=1, node=counted) == 1.5
+    assert counted.score == 1.5 and w.game.current_node.score is None
+
+
+# ---------------------------------------------------------------- C2 数子等分析的这几秒里局面变了(真 create_app)
+
+
+@pytest.fixture
+def web_client(isolated_session_factory):
+    """真 `create_app` + 真 SessionManager / WebKaTrain 的 TestClient。
+    会话收尾照 tests/test_guest_free_play.py:进程级会话不跟着 TestClient 走,不收掉会污染后面的文件。"""
+    from fastapi.testclient import TestClient
+
+    from katrain.web.server import create_app
+
+    app = create_app(enable_engine=False)
+    app.state.session_factory = isolated_session_factory  # 必须在 TestClient 之前:lifespan 用它重建全部 repo
+    with TestClient(app) as c:
+        yield c
+        for s in list(c.app.state.session_manager._sessions.values()):
+            c.app.state.session_manager.remove_session(s.session_id)
+
+
+def _two_human_guest_game(client, moves):
+    """游客会话、两边坐人(不起 AI 线程),按 `/api/move` 下完 `moves`(None = 停一手)。返回 `(session_id, WebKaTrain)`。"""
+    sid = client.post("/api/session", json={}).json()["session_id"]
+    for bw, name in (("B", "游客"), ("W", "游客2")):
+        r = client.post(
+            "/api/player",
+            json={"session_id": sid, "bw": bw, "player_type": "player:human", "player_subtype": "human", "name": name},
+        )
+        assert r.status_code == 200, r.text
+    for coords in moves:
+        body = {"session_id": sid, "pass_move": True} if coords is None else {"session_id": sid, "coords": list(coords)}
+        r = client.post("/api/move", json=body)
+        assert r.status_code == 200, r.text
+    w = client.app.state.session_manager.get_session(sid).katrain
+    assert isinstance(w, WebKaTrain)
+    return sid, w
+
+
+def test_count_that_waited_for_analysis_does_not_overwrite_a_resignation(web_client):
+    """C2:补分的阻塞里有人认输了。数子不许把认输改写成目数结果,回 409「这一局已经结束了」。"""
+    sid, w = _two_human_guest_game(web_client, [(3, 3), (15, 15)])
+    counted = w.game.current_node
+    w.count_min_moves = lambda: 0
+    seen = {}
+
+    def score_while_someone_resigns(timeout_s=None, node=None):
+        assert node is counted  # 补的是开始数子那一手
+        seen["resign"] = web_client.post("/api/resign", json={"session_id": sid})
+        node.set_analysis({"rootInfo": {"scoreLead": 2.5, "winrate": 0.6, "visits": 5}, "moveInfos": []})
+        return 2.5
+
+    w.ensure_current_score = score_while_someone_resigns
+    r = web_client.post("/api/count/request", json={"session_id": sid})
+
+    assert seen["resign"].status_code == 200, seen["resign"].text
+    assert r.status_code == 409, r.text
+    assert "already over" in r.json()["detail"]
+    assert w.game.terminal.result == "W+R"  # 两人座位、轮到黑 ⇒ 黑认输
+    assert w.game.end_result == "W+R"
+
+
+def test_count_does_not_finish_a_position_that_changed_while_it_waited(web_client):
+    """C2:补分的阻塞里人悔了一手。数子不许把游标上那一手记成结束,回 409「局面变了」。"""
+    sid, w = _two_human_guest_game(web_client, [(3, 3), (15, 15)])
+    counted = w.game.current_node
+    w.count_min_moves = lambda: 0
+    seen = {}
+
+    def score_while_someone_undoes(timeout_s=None, node=None):
+        assert node is counted
+        seen["undo"] = web_client.post("/api/undo", json={"session_id": sid, "n_times": 1})
+        node.set_analysis({"rootInfo": {"scoreLead": -1.5, "winrate": 0.4, "visits": 5}, "moveInfos": []})
+        return -1.5
+
+    w.ensure_current_score = score_while_someone_undoes
+    r = web_client.post("/api/count/request", json={"session_id": sid})
+
+    assert seen["undo"].status_code == 200, seen["undo"].text
+    assert r.status_code == 409, r.text
+    assert "Position changed" in r.json()["detail"]
+    assert w.game.terminal is None
+    assert w.game.current_node is counted.parent
+    assert counted.end_state is None and counted.parent.end_state is None

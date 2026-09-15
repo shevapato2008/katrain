@@ -2290,7 +2290,14 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ### Task 4: A12 数子前服务端补分;数子在途与失败原因说真话
 
+**执行记录（2026-09-15，已完成）**：后端红灯为真类 7 failed / 29 passed（缺补分方法、端点未进入认输/悔棋回调），HTTP 1 failed / 13 passed（补分未接入，仍回 400）；后端指定两条独立命令分别 51 passed、316 passed。前端新增 4 条先红（旧错误文案与缺少在途提示），三文件回归 89 passed；tsc 绿、eslint 0 errors / 4 条既有 warnings。源码偏差：`GameNode.score` 是只读属性，真实并发测试通过 `set_analysis` 写入根分数；Task 2 已让数子走 `_commit_end_state`，因此 runtime 拒绝 → 409 用例现为既有行为正对照，不再期望红灯。测试不重导入 `interface`，继续使用模块收集时捕获的真类。另补正常点击重试的正对照：错误刚显示后重试进入在途，旧 Snackbar 由既有 clickaway 关闭；该测试首次即绿，未为未复现的遮挡问题改生产代码。
+
+首次后端全量唯一新增 `test_http_engine_no_spawn.py::test_concurrent_post_json_share_one_session`（本机并发请求 502）；该文件单独复核 **9 passed**，未改引擎或测试代码，第二次全量同一用例再次出现单路 502。检查发现 stdlib 测试服务器 listen backlog 为 5，低于该用例同时创建的 8 个连接；仅将本地测试服务器 backlog 提到 16，保留 8 路并发、结果与会话复用断言，生产引擎不改，再做全量验证。前端全量 **1737 passed / 5 skipped**，名称集合新增为空。
+
+最终全量：后端 **69 failed / 3603 passed / 46 errors**，前端 **1737 passed / 5 skipped**，对原始基线两个名称集合 **新增均为空**；三处污染已清理。日志 `/tmp/kgpa-task4-pytest-verified.log`、`/tmp/kgpa-task4-vitest.log`。本 Task 未改共享前端，无需重复两套构建。
+
 **Files:**
+- Modify(基线稳定性): `tests/test_http_engine_no_spawn.py`（本地测试服务器 backlog 容纳既有 8 路并发）
 - Modify: `katrain/web/interface.py`(`count_min_moves()` 之后加 `ENSURE_SCORE_TIMEOUT_S` 与 `ensure_current_score(timeout_s=None, node=None)`)
 - Modify: `katrain/web/server.py`:`create_app` 之前加模块级 `_terminal_of` / `_count_result`;`:1956-2006`(`_complete_count` 整段);`:2066-2076`(`/api/count/request` 的 HvAI / pvp_local 分支:await 之前取节点、补分、按节点数)
 - Modify: `katrain/web/ui/src/kiosk/pages/GamePage.tsx:433-444`(`handleAction` 的 `count` 分支)+ 状态声明区 + 一个 `Snackbar`
@@ -2307,7 +2314,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
   - server 闭包 `_complete_count(session, app, current_user, node=None) -> tuple[str, bool]`(写入经 `_commit_end_state(result, node=node)`,冲突 409)
   - 测试夹具 `web_client`(真 `create_app` + TestClient)与 `_two_human_guest_game(client, moves)`,供 Task 5 复用
 
-- [ ] **Step 1: 写失败的后端测试**
+- [x] **Step 1: 写失败的后端测试**
 
 追加到 `tests/test_play_ai_endgame.py` 末尾:
 
@@ -2427,7 +2434,7 @@ def test_count_that_waited_for_analysis_does_not_overwrite_a_resignation(web_cli
     def score_while_someone_resigns(timeout_s=None, node=None):
         assert node is counted  # 补的是开始数子那一手
         seen["resign"] = web_client.post("/api/resign", json={"session_id": sid})
-        node.score = 2.5
+        node.set_analysis({"rootInfo": {"scoreLead": 2.5, "winrate": 0.6, "visits": 5}, "moveInfos": []})
         return 2.5
 
     w.ensure_current_score = score_while_someone_resigns
@@ -2450,7 +2457,7 @@ def test_count_does_not_finish_a_position_that_changed_while_it_waited(web_clien
     def score_while_someone_undoes(timeout_s=None, node=None):
         assert node is counted
         seen["undo"] = web_client.post("/api/undo", json={"session_id": sid, "n_times": 1})
-        node.score = -1.5
+        node.set_analysis({"rootInfo": {"scoreLead": -1.5, "winrate": 0.4, "visits": 5}, "moveInfos": []})
         return -1.5
 
     w.ensure_current_score = score_while_someone_undoes
@@ -2524,17 +2531,17 @@ def test_count_still_says_why_when_no_score_can_be_had(client):
 Run（分两条）：
 
 ```bash
-cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py -q
-CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py -q
+cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py --continue-on-collection-errors -q
+CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py --continue-on-collection-errors -q
 ```
 Expected:
 - 五条 interface 用例 FAIL(`AttributeError: … 'ensure_current_score'`,含 `test_an_explicit_node_is_scored_even_when_the_cursor_has_moved`);
 - `test_count_that_waited_for_analysis_does_not_overwrite_a_resignation` FAIL(端点不调补分,阻塞函数里的认输从没发生:`KeyError: 'resign'`;若只补了分而不按节点复核,则是 count 200 并把结果改写成 `B+2.5`);
 - `test_count_does_not_finish_a_position_that_changed_while_it_waited` FAIL(同理 `KeyError: 'undo'`;若补了分但数的是游标那一手,则是 400 而不是 409);
-- web_ui:`test_count_fills_the_missing_score_before_counting` FAIL(400,端点没调补分);`test_a_count_refused_by_the_runtime_is_a_409` FAIL(200:旧 `_complete_count` 直写 `end_state`,不经唯一写入口);
+- web_ui:`test_count_fills_the_missing_score_before_counting` FAIL(400,端点没调补分);`test_a_count_refused_by_the_runtime_is_a_409` PASS(Task 2 已统一原子写入,作为 409 正对照);
 - `test_count_still_says_why…` PASS(现状就是 400)。
 
-- [ ] **Step 2: 实现后端**
+- [x] **Step 2: 实现后端**
 
 `katrain/web/interface.py`,`count_min_moves()` 之后加:
 
@@ -2691,15 +2698,15 @@ Run:
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 uv run black -l 120 katrain/web/interface.py katrain/web/server.py tests/test_play_ai_endgame.py tests/web_ui/test_play_ai_endgame_api.py tests/web_ui/test_ai_ladder_api.py
-CI=true uv run pytest tests/test_play_ai_endgame.py tests/test_guest_free_play.py -q
+CI=true uv run pytest tests/test_play_ai_endgame.py tests/test_guest_free_play.py --continue-on-collection-errors -q
 CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py tests/web_ui/test_count_api.py tests/web_ui/test_ai_ladder_api.py \
-  tests/web_ui/test_ai_game_autosave.py tests/web_ui/test_game_termination_and_chat_identity.py tests/web_ui/test_navigation_guards.py -q
+  tests/web_ui/test_ai_game_autosave.py tests/web_ui/test_game_termination_and_chat_identity.py tests/web_ui/test_navigation_guards.py --continue-on-collection-errors -q
 git status --short katrain/config.json
 grep -n "end_state *=" katrain/web/server.py   # 期望:无(判读前去掉注释行)
 ```
 Expected: 全 PASS;config.json 无改动;grep 无输出。
 
-- [ ] **Step 3: 写失败的前端测试(追加到 `GamePage.playAi.test.tsx` 末尾)**
+- [x] **Step 3: 写失败的前端测试(追加到 `GamePage.playAi.test.tsx` 末尾)**
 
 ```tsx
 describe('A12 · 数子在途与失败原因', () => {
@@ -2738,6 +2745,24 @@ describe('A12 · 数子在途与失败原因', () => {
     await waitFor(() => expect(screen.queryByText('正在数子…')).toBeNull());
   });
 
+  it('失败后重试在途时清掉旧错误，只显示正在数子', async () => {
+    sessionMock.gameState = countable();
+    let finish!: (v: unknown) => void;
+    const spy = vi.spyOn(API, 'requestCount')
+      .mockRejectedValueOnce(new Error(noScore))
+      .mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_COUNT'));
+    expect(await screen.findByText('形势分析没算出来，暂时数不了子，请稍后再试')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('MOCK_COUNT'));
+    expect(screen.queryByText('形势分析没算出来，暂时数不了子，请稍后再试')).toBeNull();
+    expect(screen.getByText('正在数子…')).toBeInTheDocument();
+    expect(spy).toHaveBeenCalledTimes(2);
+    finish({ state: sessionMock.gameState });
+    await waitFor(() => expect(screen.queryByText('正在数子…')).toBeNull());
+  });
+
   it('r1 C2:等分析的这几秒里局面变了 → 说「局面变了，请重新数子」', async () => {
     sessionMock.gameState = countable();
     vi.spyOn(API, 'requestCount').mockRejectedValue(new Error('Request failed 409: {"detail":"Position changed while counting"}'));
@@ -2751,7 +2776,7 @@ describe('A12 · 数子在途与失败原因', () => {
 Run: `cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui && npx vitest run src/kiosk/pages/GamePage.playAi.test.tsx`
 Expected: 四条 A12 用例 FAIL(文案仍是「暂时不能数子（对局手数不足或已结束）」、没有「正在数子…」、spy 被调两次;「局面变了」那条同样落在旧文案上)。
 
-- [ ] **Step 4: 实现前端**
+- [x] **Step 4: 实现前端**
 
 `GamePage.tsx` 状态声明区(`const [countError, setCountError] = useState<string | null>(null);` 之后)加:
 
@@ -2808,7 +2833,7 @@ Expected: 四条 A12 用例 FAIL(文案仍是「暂时不能数子（对局手�
       </Snackbar>
 ```
 
-- [ ] **Step 5: 验证并提交**
+- [x] **Step 5: 验证并提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui

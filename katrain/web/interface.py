@@ -339,6 +339,43 @@ class WebKaTrain(KaTrainBase):
         width, height = self.game.board_size
         return max(1, int(configured * width * height / 361))
 
+    #: 数子 / 双停终局时服务端自己补一次形势分析,最多等这么久(秒)。
+    ENSURE_SCORE_TIMEOUT_S = 15.0
+
+    def ensure_current_score(self, timeout_s: Optional[float] = None, node=None) -> Optional[float]:
+        """`node`(缺省为当前手)的目差(`scoreLead`,正数黑领先);没有就补一次快速分析并**同步等它算完**。
+
+        盒上逐手分析是关的(`should_suppress_auto_eval`),当前手常常没有分数;从前数子全靠前端「图表」开关每手补一次,
+        游客、关了开关、分析没回来就点,一律 400(A12)。这里让判胜负不再依赖前端开关。
+
+        · `node`:数子 / 双停收尾在 await **之前**捕获的那一手(r1 C2 / C4)。等分析的这几秒里人可能悔棋 / 导航,
+          补的必须是开始数子的那一手,不是游标此刻那一手。
+        · 只给允许分析的局补(`analysis_allowed`):升降级局原样返回已有值(通常是 None)——
+          升降级终局怎么判目等 Fan 拍板(PRD §4 A12-R)。
+        · 不走 `__call__` 的 ANALYSIS_ACTIONS 闸:这不是交付给玩家看的分析,是判胜负用的内部量;上一条就是它的闸。
+        · 阻塞调用,**不许在事件循环线程里直接调**,也**不许持对局提交锁调** —— 服务端用 `asyncio.to_thread`。
+        """
+        timeout_s = self.ENSURE_SCORE_TIMEOUT_S if timeout_s is None else timeout_s
+        if not self.game:
+            return None
+        node = self.game.current_node if node is None else node
+        if node.analysis_complete and node.score is not None:
+            return node.score
+        if not self.analysis_allowed:
+            return node.score
+        try:
+            engine = self.analysis_engine()
+        except Exception:
+            engine = self.engine
+        if engine is None or isinstance(engine, NullEngine):
+            return node.score
+        if not node.analysis_exists:
+            node.analyze(engine, analyze_fast=True)
+        deadline = time.monotonic() + timeout_s
+        while not node.analysis_complete and time.monotonic() < deadline:
+            time.sleep(0.1)
+        return node.score
+
     def analysis_engine(self):
         """R6: engine used for analysis/review. The remote strong engine when configured
         (kiosk), otherwise the play engine. Always returns a usable engine."""

@@ -60,6 +60,19 @@ ENDGAME_CONFLICT_DETAIL = {
 }
 
 
+def _terminal_of(session):
+    """这一局的终局事实(`WebGame.terminal`);没有、或会话是替身(MagicMock 属性)时为 None。"""
+    terminal = getattr(getattr(getattr(session, "katrain", None), "game", None), "terminal", None)
+    return terminal if isinstance(terminal, GameEnd) else None
+
+
+def _count_result(score):
+    """目差 → 终局结果(正数黑领先)。数子与双停补分(Task 5)共用同一种格式。返回 `(result, winner_color)`。"""
+    if score >= 0:
+        return f"B+{abs(score):.1f}", "B"
+    return f"W+{abs(score):.1f}", "W"
+
+
 def _json_safe(obj):
     """Recursively convert numpy scalars/arrays to native Python types.
 
@@ -1999,32 +2012,29 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         return {"session_id": session.session_id, "state": state}
 
-    def _complete_count(session, app, current_user):
-        """Helper to complete counting and record result.
+    def _complete_count(session, app, current_user, node=None):
+        """数子并结束对局。返回 `(result, needs_record)`:needs_record 为真时调用方在**放开 session.lock 之后**落账
+        (单机 / 本地对局);多人局在这里同步记录并广播。
 
-        Returns (result, needs_record). needs_record is True when the caller must
-        await _record_ai_game(...) AFTER releasing session.lock (single-player/local
-        games only — multiplayer games are recorded synchronously here instead).
+        `node` 是开始数子时的那一手(`/api/count/request` 在 await 补分之前取);不给就数当前手。
+        写入走 `_commit_end_state(result, node=node)`:它在对局提交锁里核「没被别人先结束、仍是当前手」,
+        冲突抛 `EndgameConflict` → 409,**在多人局记录与广播之前**(r1 C2;多人局「对方接受数子」的路也因此不再覆盖结果)。
         """
-        # Get the score from current node's analysis
-        current_node = session.katrain.game.current_node
-        score = current_node.score
+        node = session.katrain.game.current_node if node is None else node
+        terminal = _terminal_of(session)
+        if terminal is not None and terminal.node is node:
+            # 非原子预检,只为说对原因:等分析的这几秒里这一局被认输 / 超时了,分数多半也没补上,
+            # 不预检的话会先撞上下面的 400「分析没算出来」。真正的判别在 `_commit_end_state` 里。
+            raise EndgameConflict("already_ended")
+        score = node.score
 
         if score is None:
             raise HTTPException(
                 status_code=400, detail="Analysis not available yet. Please wait for KataGo analysis to complete."
             )
 
-        # Format result: positive = Black leads, negative = White leads
-        if score >= 0:
-            result = f"B+{abs(score):.1f}"
-            winner_color = "B"
-        else:
-            result = f"W+{abs(score):.1f}"
-            winner_color = "W"
-
-        # All result writes share the game commit lock; Task 4 binds the scoring node explicitly.
-        session.katrain._commit_end_state(result)
+        result, winner_color = _count_result(score)
+        session.katrain._commit_end_state(result, node=node)
         session.game_ended = True
 
         # Record multiplayer game result
@@ -2114,9 +2124,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             return {"session_id": session.session_id, "status": "pending"}
         else:
             # HvAI / pvp_local: complete immediately
+            # A12:当前手没有分数就先补一次分析再数。阻塞等待放线程里,不占事件循环;
+            # 升降级局在 interface 里就不补,照旧走到 _complete_count 的 400。
+            # r1 C2:数的是**这一局这一手** —— 在 await 之前取。等分析的这几秒里局面可能变(认输 / 悔棋 / 新开局),
+            # 复核不在这里写,交给 `_complete_count` 里的 `_commit_end_state(result, node=node)` 在对局提交锁里原子地做。
+            node = session.katrain.game.current_node
+            await asyncio.to_thread(session.katrain.ensure_current_score, node=node)
             with session.lock:
                 guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
-                result, needs_record = _complete_count(session, app, current_user)
+                result, needs_record = _complete_count(session, app, current_user, node=node)
                 state = session.katrain.get_state()
                 session.last_state = state
             if needs_record:

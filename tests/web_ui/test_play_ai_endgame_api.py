@@ -213,3 +213,57 @@ def test_count_refuses_with_the_threshold_the_session_reports(client):
 
     assert resp.status_code == 400, resp.text
     assert resp.json()["detail"] == "Cannot count before 22 moves"
+
+
+# ---------------------------------------------------------------- A12
+
+
+def _countable(session):
+    session.katrain.get_state.return_value = {"end_result": None, "history": [{}] * 101, "count_min_moves": 100}
+    session.katrain.game.current_node.score = None
+
+
+def test_count_fills_the_missing_score_before_counting(client):
+    session = _inject_session(client)
+    _countable(session)
+
+    def fill_score(*_args, **_kwargs):
+        session.katrain.game.current_node.score = 2.5
+        return 2.5
+
+    session.katrain.ensure_current_score.side_effect = fill_score
+
+    resp = client.post("/api/count/request", json={"session_id": session.session_id})
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["result"] == "B+2.5"
+    counted = session.katrain.game.current_node
+    # C2:补的、数的、写的都是 await 之前取的那一手;写入只经唯一写入口(在对局提交锁里复核)
+    session.katrain.ensure_current_score.assert_called_once_with(node=counted)
+    session.katrain._commit_end_state.assert_called_once_with("B+2.5", node=counted)
+
+
+def test_a_count_refused_by_the_runtime_is_a_409(client):
+    """`_commit_end_state` 在锁里发现局面已结束 / 变了 → 处理器回 409,不是 500、也不是 200。"""
+    session = _inject_session(client)
+    _countable(session)
+    session.katrain.ensure_current_score.return_value = 2.5
+    session.katrain.game.current_node.score = 2.5
+    session.katrain._commit_end_state.side_effect = EndgameConflict("position_changed")
+
+    resp = client.post("/api/count/request", json={"session_id": session.session_id})
+
+    assert resp.status_code == 409, resp.text
+    assert resp.json()["detail"] == "Position changed while counting"
+
+
+def test_count_still_says_why_when_no_score_can_be_had(client):
+    """补不出来(升降级局 / 引擎不可用)时照旧 400,detail 原样 —— 前端靠它说对原因。"""
+    session = _inject_session(client)
+    _countable(session)
+    session.katrain.ensure_current_score.return_value = None
+
+    resp = client.post("/api/count/request", json={"session_id": session.session_id})
+
+    assert resp.status_code == 400
+    assert resp.json()["detail"].startswith("Analysis not available")

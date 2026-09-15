@@ -198,3 +198,66 @@ describe('S1(r1)· 「本局已结束」认服务端的终局事实,翻手看棋
     expect(sessionMock.onMove).not.toHaveBeenCalled();
   });
 });
+
+describe('A12 · 数子在途与失败原因', () => {
+  const countable = () => makeState({
+    history: Array.from({ length: 120 }, (_, i) => ({ node_id: i, score: null, winrate: null })) as GameState['history'],
+  });
+  const noScore = 'Request failed 400: {"detail":"Analysis not available yet. Please wait for KataGo analysis to complete."}';
+
+  it('服务端说「分析没算出来」时照实说,不再说成手数不够', async () => {
+    sessionMock.gameState = countable();
+    vi.spyOn(API, 'requestCount').mockRejectedValue(new Error(noScore));
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_COUNT'));
+    expect(await screen.findByText('形势分析没算出来，暂时数不了子，请稍后再试')).toBeInTheDocument();
+    expect(screen.queryByText(/手数不足/)).toBeNull();
+  });
+
+  it('升降级局同一个 400 说「升降级对局现在数不了子」', async () => {
+    sessionMock.gameState = { ...countable(), game_type: 'ai_ladder_ranked' };
+    vi.spyOn(API, 'requestCount').mockRejectedValue(new Error(noScore));
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_COUNT'));
+    expect(await screen.findByText('升降级对局现在数不了子（本局不做形势分析）')).toBeInTheDocument();
+  });
+
+  it('在途时说「正在数子…」,重复点击不发第二个请求', async () => {
+    sessionMock.gameState = countable();
+    let finish!: (v: unknown) => void;
+    const spy = vi.spyOn(API, 'requestCount').mockImplementation(() => new Promise((r) => { finish = r; }));
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_COUNT'));
+    fireEvent.click(screen.getByText('MOCK_COUNT'));
+    expect(await screen.findByText('正在数子…')).toBeInTheDocument();
+    expect(spy).toHaveBeenCalledTimes(1);
+    finish({ state: sessionMock.gameState });
+    await waitFor(() => expect(screen.queryByText('正在数子…')).toBeNull());
+  });
+
+  it('失败后重试在途时清掉旧错误，只显示正在数子', async () => {
+    sessionMock.gameState = countable();
+    let finish!: (v: unknown) => void;
+    const spy = vi.spyOn(API, 'requestCount')
+      .mockRejectedValueOnce(new Error(noScore))
+      .mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_COUNT'));
+    expect(await screen.findByText('形势分析没算出来，暂时数不了子，请稍后再试')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('MOCK_COUNT'));
+    expect(screen.queryByText('形势分析没算出来，暂时数不了子，请稍后再试')).toBeNull();
+    expect(screen.getByText('正在数子…')).toBeInTheDocument();
+    expect(spy).toHaveBeenCalledTimes(2);
+    finish({ state: sessionMock.gameState });
+    await waitFor(() => expect(screen.queryByText('正在数子…')).toBeNull());
+  });
+
+  it('r1 C2:等分析的这几秒里局面变了 → 说「局面变了，请重新数子」', async () => {
+    sessionMock.gameState = countable();
+    vi.spyOn(API, 'requestCount').mockRejectedValue(new Error('Request failed 409: {"detail":"Position changed while counting"}'));
+    renderPage();
+    fireEvent.click(screen.getByText('MOCK_COUNT'));
+    expect(await screen.findByText('数子这几秒里局面变了，请重新数子')).toBeInTheDocument();
+  });
+});

@@ -171,6 +171,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [hintError, setHintError] = useState<string | null>(null);
   const [engineErrorToast, setEngineErrorToast] = useState(false);
   const [countError, setCountError] = useState<string | null>(null);
+  // A12:数子可能要等几秒(当前手没有分数时服务端先补一次分析,上限 15 秒)。
+  // ref 挡同一帧里的连点(state 要等下一次渲染才看得见),state 负责屏上那句「正在数子…」。
+  const countingRef = useRef(false);
+  const [counting, setCounting] = useState(false);
   const [resignError, setResignError] = useState<string | null>(null);
   const [reviewError, setReviewError] = useState(false);
   // 重置识别的「在制中」走 ref 不走 state:页控条那个图标键没有忙碌态可显示,
@@ -413,6 +417,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // Ranked/rated games forbid undo server-side (anti-cheat); hide the controls too.
   const isRanked = isRankedGameType(gameState.game_type);
 
+  // A12:数子失败**按服务端给的原因**说话。从前一律「对局手数不足或已结束」,
+  // 把盒上最常见的「这一手还没有分数」也说成了手数不够。
+  const countFailureMessage = (message: string) =>
+    message.includes('Cannot count before') ? t('game:count_too_early', '手数还不够，暂时不能数子')
+    : message.includes('already over') ? t('game:count_game_over', '这一局已经结束了')
+    : message.includes('Position changed') ? t('game:count_position_changed', '数子这几秒里局面变了，请重新数子')
+    : message.includes('only allowed on the human turn') ? t('game:count_not_your_turn', '轮到你落子时才能数子')
+    : message.includes('Analysis not available') ? (isRanked
+      ? t('game:count_ranked_unscored', '升降级对局现在数不了子（本局不做形势分析）')
+      : t('game:count_no_score', '形势分析没算出来，暂时数不了子，请稍后再试'))
+    : t('game:count_failed', '数子没有成功，请稍后再试');
+
 
   // Determine which color the human plays (for turn enforcement). deriveHumanColor now
   // returns null for both-human local PvP so Board lets whichever side is to move play
@@ -472,14 +488,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       return;
     }
     if (action === 'count') {
-      // 数子: for human-vs-AI the backend counts immediately and ends the game (no opponent
-      // handshake, no auth). Errors are usually the min-move guard or an already-finished game.
-      if (!sessionId) return;
+      // 数子:人机 / 本地对局由服务端当场数完并结束对局(没有对手握手)。
+      if (!sessionId || countingRef.current) return;
+      countingRef.current = true;
+      setCounting(true);
       try {
         const res = await API.requestCount(sessionId);
         if (res?.state) session.setGameState(res.state);
-      } catch {
-        setCountError(t('Cannot count yet (not enough moves, or the game is over)', '暂时不能数子（对局手数不足或已结束）'));
+      } catch (e) {
+        setCountError(countFailureMessage(e instanceof Error ? e.message : ''));
+      } finally {
+        countingRef.current = false;
+        setCounting(false);
       }
       return;
     }
@@ -902,6 +922,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         onDismiss={session.clearPhysicalEngineError}
         onResign={() => setShowResignConfirm(true)}
       />
+
+      {/* 数子在途 —— 服务端可能正在给这一手补分析,这几秒里屏上不能什么都不说 */}
+      <Snackbar open={counting} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="info">{t('game:counting', '正在数子…')}</Alert>
+      </Snackbar>
 
       {/* Count (数子) error toast */}
       <Snackbar open={!!countError} autoHideDuration={5000} onClose={() => setCountError(null)}

@@ -198,3 +198,18 @@ def test_already_ended_single_player_request_does_not_retry_recording(client, ac
     # Recording always starts by obtaining this game's SGF; no-op requests must not enter it.
     session.katrain.get_sgf.assert_not_called()
     assert session._recorded is False
+
+
+# ---------------------------------------------------------------- N23
+
+
+def test_count_refuses_with_the_threshold_the_session_reports(client):
+    """门槛只有一个来源:`get_state()` 下发的 `count_min_moves`(前端读的也是它)。"""
+    session = _inject_session(client)
+    session.katrain.config.return_value = 100
+    session.katrain.get_state.return_value = {"end_result": None, "history": [{}] * 21, "count_min_moves": 22}
+
+    resp = client.post("/api/count/request", json={"session_id": session.session_id})
+
+    assert resp.status_code == 400, resp.text
+    assert resp.json()["detail"] == "Cannot count before 22 moves"

@@ -443,3 +443,48 @@ def test_play_notices_are_emitted_after_releasing_the_commit_lock(monkeypatch, n
     assert lock_available == [True], "状态/错误回调正在持有提交锁时发出"
     if notice == "illegal_move":
         assert "Illegal Move at (3, 3)" in emitted[0]
+
+
+# ---------------------------------------------------------------- N23 数子门槛按路数
+
+
+@pytest.mark.parametrize("size,expected", [(19, 100), (13, 46), (9, 22)])
+def test_count_threshold_scales_with_board_size(size, expected):
+    """配置里的 100 是 19 路的数;小棋盘按交叉点数等比缩小,和 AI 认输门槛(core/ai.py should_ai_resign)同一种缩放。"""
+    w = _web_katrain()
+    w._do_new_game(size=size)
+    assert w.count_min_moves() == expected
+    assert w.get_state()["count_min_moves"] == expected
+
+
+class TestIntegration:
+    """Integration tests using WebKaTrain."""
+
+    def test_count_button_disabled_check(self):
+        """Verify count button should be disabled with < 100 moves."""
+        wkt = _web_katrain()
+        _seat(wkt, human_colors={"B", "W"})
+
+        state = wkt.get_state()
+        history_length = len(state.get("history", []))
+
+        # At start, should be 1 (root node)
+        assert history_length < 100, "New game should have < 100 moves"
+
+        # Make a few moves
+        wkt("play", (3, 3))
+        wkt("play", (15, 15))
+        wkt("play", (3, 15))
+
+        state = wkt.get_state()
+        history_length = len(state.get("history", []))
+        assert history_length < 100, "Few moves should still be < 100"
+
+    def test_game_state_has_history(self):
+        """Verify game state includes history for move counting."""
+        wkt = _web_katrain()
+        _seat(wkt, human_colors={"B", "W"})
+
+        state = wkt.get_state()
+        assert "history" in state
+        assert isinstance(state["history"], list)

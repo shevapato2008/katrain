@@ -43,7 +43,7 @@
 - 前端单测:`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui && npx vitest run <文件>`;后端:`cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest <文件> --continue-on-collection-errors -q`。
 - **测试判据是基线 diff**:Task 0 在干净树上记录失败用例名字集合;每个 Task 结束比名字集合(`comm -13 基线 本次`),不比条数。报告里写「新增失败 = 空」。每个 Task 都跑后端和前端全量；后端基线在 `/tmp/kgpa-baseline/pytest-failed.txt`，可从 `r1/baseline-pytest-failed.txt` 恢复（70 failed / 46 errors，共 116 个名字，两次一致）。全量必须带 `--continue-on-collection-errors`（缺 cv2/boto3/fontTools 导致 28 个模块收集失败，否则一条也不跑）；日志仅提取 `^(FAILED|ERROR) tests/`，避免把 logger 的 ERROR 行当成用例。
 - 基线名单排序固定 `LC_ALL=C`，读取 handoff 的既有名单先用 `LC_ALL=C sort -u <文件> -o <文件>` 规范顺序（名称集合不变）；否则 macOS `C.UTF-8` 与此前排序不同会让 comm 假报新增。Node 26 的原生 Web Storage 若覆盖 jsdom，vitest 加 `NODE_OPTIONS=--no-experimental-webstorage`，不修改测试基础设施。
-- **真 `WebKaTrain` 的后端测试放 `tests/` 根目录**:`tests/web_ui/conftest.py:90` 把 `sys.modules["katrain.web.interface"]` 整个换成 MagicMock,放进 `tests/web_ui/` 就只是在测替身(`tests/web_ui/test_count_api.py` 的 `TestIntegration` 就是这样恒绿的)。这类测试文件首个用例断言拿到的是真类。
+- **真 `WebKaTrain` 的后端测试放 `tests/` 根目录**:`tests/web_ui/conftest.py:90` 把 `sys.modules["katrain.web.interface"]` 整个换成 MagicMock,放进 `tests/web_ui/` 就只是在测替身（原 `tests/web_ui/test_count_api.py::TestIntegration` 随 Task 3 移到真类文件，消除这类替身误判）。这类测试文件首个用例断言拿到的是真类。
 - **单跑时 `tests/test_play_ai_endgame.py` 不许和任何 `tests/web_ui/…` 文件放进同一条 pytest 命令**:参数里只要有一个 `tests/web_ui/` 下的文件,pytest 在**收集任何模块之前**就加载 `tests/web_ui/conftest.py`(initial conftest),`sys.modules["katrain.web.interface"]` 当场变成 MagicMock,根目录文件的 `from katrain.web.interface import WebKaTrain` 拿到的就是替身 —— 首条「真类」用例红,其余结论全不作数(2026-09-14 审查时用玩具目录复现)。本计划里凡是两者同跑的地方都已拆成两条命令;全量 `pytest tests` 不受影响(按名字排序,根目录的 `test_play_ai_endgame.py` 先于 `web_ui/` 被收集)。
 - 后端测试污染：跑前确认 `katrain/config.json`、`katrain/web/ui/src/kiosk/__tests__/fixtures/engine_game_state.json` 无待保留改动，且没有既存 `test_user_data.db`；跑后检查。每次全量结束均 `git restore --source=HEAD --` 这两个文件并删除本次生成的 `test_user_data.db`，绝不提交。前者由 `force_package_config=True` 写回；后者由 `tests/platforms/test_engine_manager.py::test_dump_engine_game_state_fixture` 改写。若已有用户改动先备份恢复，不覆盖。
 - **Playwright e2e 打的是构建产物**(`playwright.config.ts` 起 `python -m katrain --ui=web --port 8002` 服务 `katrain/web/static`):改源码后先 `npm run build` 再跑。跑前 `lsof -nP -iTCP:8002 -sTCP:LISTEN`(四图用 `:5173`),端口若被**别的 worktree** 的进程占着(`lsof -p <PID> | grep cwd` 看目录),`reuseExistingServer` 会让你测到别人的包 —— 等它结束或与对方协调,不要杀别人的进程。`--ui web` 退出时会改 `~/.katrain/config.json`:跑 e2e 前 `cp ~/.katrain/config.json /tmp/kgpa-katrain-config.json`,跑完拷回。
@@ -2155,16 +2155,21 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ### Task 3: N23 数子门槛按路数缩放
 
+**执行记录（2026-09-15，已完成）**：真类红灯 3 failed；HTTP 门槛红灯 1 failed（100 而非 22）。按源码将计划夹具的 config 明确为 100，让测试因门槛来源错误变红，避免 MagicMock 的 TypeError。生产实现无偏离。指定回归复现旧 `test_count_api.py::TestIntegration` 因 MagicMock 缺 history 失败（此前全量依赖其他文件赋值才绿）；将这两条原断言迁到根目录真类文件，复用 `_web_katrain` 并双人座位隔离 AI 线程。
+
+最终验证：真类 **29 passed**、web_ui **278 passed**，tsc 绿；后端全量 69 failed / 3593 passed / 46 errors，前端全量 1732 passed / 5 skipped，两个基线名称集合 **新增均为空**；三处测试污染已清理。日志 `/tmp/kgpa-task3-green-root-final.log`、`/tmp/kgpa-task3-green-web-final.log`、`/tmp/kgpa-task3-pytest.log`、`/tmp/kgpa-task3-vitest.log`。未改共享前端，无需重复两套构建。
+
 **Files:**
 - Modify: `katrain/web/interface.py:281-284`(`analysis_allowed` 之后加 `count_min_moves()`)、`:611`(`get_state` 的 `count_min_moves` 键)
 - Modify: `katrain/web/server.py:2015-2019`(`/api/count/request` 的门槛)
+- Modify(真类测试归位): `tests/web_ui/test_count_api.py` 的 `TestIntegration` 移到 `tests/test_play_ai_endgame.py`
 - Test: `tests/test_play_ai_endgame.py`、`tests/web_ui/test_play_ai_endgame_api.py`(追加)
 
 **Interfaces:**
 - Consumes: Task 2 的测试夹具 `_web_katrain()`、`client`、`_inject_session()`
 - Produces: `WebKaTrain.count_min_moves(self) -> int`;`get_state()["count_min_moves"]` 即它的值;`/api/count/request` 只读 `get_state()` 下发的这个值(前后端同源)
 
-- [ ] **Step 1: 写失败的测试**
+- [x] **Step 1: 写失败的测试**
 
 追加到 `tests/test_play_ai_endgame.py` 末尾:
 
@@ -2190,6 +2195,7 @@ def test_count_threshold_scales_with_board_size(size, expected):
 def test_count_refuses_with_the_threshold_the_session_reports(client):
     """门槛只有一个来源:`get_state()` 下发的 `count_min_moves`(前端读的也是它)。"""
     session = _inject_session(client)
+    session.katrain.config.return_value = 100
     session.katrain.get_state.return_value = {"end_result": None, "history": [{}] * 21, "count_min_moves": 22}
 
     resp = client.post("/api/count/request", json={"session_id": session.session_id})
@@ -2204,9 +2210,9 @@ Run（分两条）：
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tests/test_play_ai_endgame.py -q -k "threshold"
 CI=true uv run pytest tests/web_ui/test_play_ai_endgame_api.py -q -k "threshold"
 ```
-Expected: 13/9 路两条 FAIL(`AttributeError: 'WebKaTrain' object has no attribute 'count_min_moves'`,19 路那条同样 FAIL);API 那条 FAIL(detail 是 `…before 100 moves` 或 `MagicMock` 相关)。
+Expected: 13/9 路两条 FAIL(`AttributeError: 'WebKaTrain' object has no attribute 'count_min_moves'`,19 路那条同样 FAIL);API 那条 FAIL(detail 是 `…before 100 moves` 而非 `…before 22 moves`)。
 
-- [ ] **Step 2: 实现**
+- [x] **Step 2: 实现**
 
 `katrain/web/interface.py`,`analysis_allowed` 属性之后加:
 
@@ -2243,7 +2249,7 @@ Expected: 13/9 路两条 FAIL(`AttributeError: 'WebKaTrain' object has no attrib
             count_min_moves = session.katrain.config("game/count_min_moves", 100)
 ```
 
-- [ ] **Step 3: 跑测试确认通过**
+- [x] **Step 3: 跑测试确认通过**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
@@ -2254,7 +2260,7 @@ git status --short katrain/config.json   # 期望:空
 ```
 Expected: 全 PASS(`test_ai_ladder_api.py` 里三条 `terminal_actions` 参数化用例是改 `/api/count/request` 最可能打红的地方)。前端无改动:`GameControlPanel.tsx:188` 读的就是 `gameState.count_min_moves`,「数子要下满 N 手」自动变成 22/46/100。
 
-- [ ] **Step 4: 基线 diff 后提交**
+- [x] **Step 4: 基线 diff 后提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai

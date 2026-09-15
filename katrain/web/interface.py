@@ -331,6 +331,14 @@ class WebKaTrain(KaTrainBase):
         """R3/R5: games that move a rank forbid ALL analysis (anti-cheat). Free games allow it."""
         return getattr(self, "game_type", "free") not in self.SCORING_GAME_TYPES
 
+    def count_min_moves(self) -> int:
+        """配置以 19 路为基准，小棋盘按交叉点数缩放数子门槛。"""
+        configured = self.config("game/count_min_moves", 100)
+        if not self.game:
+            return configured
+        width, height = self.game.board_size
+        return max(1, int(configured * width * height / 361))
+
     def analysis_engine(self):
         """R6: engine used for analysis/review. The remote strong engine when configured
         (kiosk), otherwise the play engine. Always returns a usable engine."""
@@ -659,7 +667,7 @@ class WebKaTrain(KaTrainBase):
                 "zen_mode": self.zen_mode,
             },
             "engine": getattr(self, "last_engine", None),
-            "count_min_moves": self.config("game/count_min_moves", 100),
+            "count_min_moves": self.count_min_moves(),
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
             "analysis_allowed": self.analysis_allowed,

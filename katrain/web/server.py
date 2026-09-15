@@ -2059,7 +2059,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         # Verify move count >= configured minimum
         state = session.katrain.get_state()
-        count_min_moves = session.katrain.config("game/count_min_moves", 100)
+        # 与前端读取同一缩放门槛；旧状态没有该字段时保留配置回退。
+        count_min_moves = state.get("count_min_moves")
+        if count_min_moves is None:
+            count_min_moves = session.katrain.config("game/count_min_moves", 100)
         if len(state.get("history", [])) < count_min_moves:
             raise HTTPException(status_code=400, detail=f"Cannot count before {count_min_moves} moves")
 

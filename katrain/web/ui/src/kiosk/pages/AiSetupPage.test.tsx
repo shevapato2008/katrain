@@ -614,3 +614,23 @@ describe('A3 · AI 策略', () => {
     expect(screen.getByText(hint)).toBeInTheDocument();
   });
 });
+
+describe('A15 · 升降级开局 503 分原因', () => {
+  beforeEach(() => {
+    startRanked.mockReset();
+    mockNavigate.mockReset();
+    withBlocking(null);
+  });
+
+  it('盒子断网:说「连不上云端」,不说引擎不可用', async () => {
+    const err: Error & { status?: number } = new Error('Remote server unavailable');
+    err.status = 503;
+    startRanked.mockRejectedValueOnce(err);
+    renderPage('ranked');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /开始对局|开始计分局/i }));
+    expect(await screen.findByText(/连不上云端/)).toBeInTheDocument();
+    expect(screen.queryByText(/升降级引擎暂时不可用/)).not.toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+});

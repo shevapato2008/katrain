@@ -5074,6 +5074,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 **Files:**
 - Create: `katrain/web/ui/src/features/aiLadder/startErrors.ts`、`startErrors.test.ts` —— **共享领地**(不许 import kiosk/galaxy/pages)
 - Modify: `katrain/web/ui/src/features/aiLadder/useAiLadderStatus.ts:16-22`(`aiLadderStatusErrorMessage` 的 503 分支)
+- Test: `katrain/web/ui/src/features/aiLadder/useAiLadderStatus.test.tsx`(追加断网 503 的实际 hook 接线测试)
 - Modify: `katrain/web/ui/src/kiosk/pages/AiSetupPage.tsx:178-182`(`handleStart` 的 503 分支)+ import
 - Test: `katrain/web/ui/src/kiosk/pages/AiSetupPage.test.tsx`(末尾追加)
 
@@ -5082,7 +5083,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Produces: `type AiLadderUnavailableReason = 'offline' | 'not_authoritative' | 'engine_cannot_serve' | 'cloud_unconfirmed' | 'unknown'`;
   `aiLadderUnavailableReason(detail: string): AiLadderUnavailableReason`;`aiLadderStatusUnavailableMessage(detail: string): string`;`aiLadderStartUnavailableMessage(detail: string): string`
 
-- [ ] **Step 1: 写失败的测试**
+- [x] **Step 1: 写失败的测试**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
@@ -5166,7 +5167,9 @@ describe('A15 · 升降级开局 503 分原因', () => {
 Run: `npx vitest run src/features/aiLadder/startErrors.test.ts src/kiosk/pages/AiSetupPage.test.tsx -t "503|按服务端"`
 Expected: `startErrors.test.ts` 整个 FAIL(模块不存在);A15 那条 FAIL(屏上是「升降级引擎暂时不可用…」)。
 
-- [ ] **Step 2: 实现**
+接线护栏:另在 `useAiLadderStatus.test.tsx` 追加 `AiLadderApiError(503, 'Remote server unavailable')` 的 `renderHook` 用例,断言状态消息含「连不上云端」、不含「本机不记」。临时把 hook 的 503 分支换回旧行时该用例红(实际收到「本机不记…」),再恢复新行。
+
+- [x] **Step 2: 实现**
 
 `src/features/aiLadder/startErrors.ts`:
 
@@ -5234,7 +5237,7 @@ export function aiLadderStartUnavailableMessage(detail: string): string {
         setError(aiLadderStartUnavailableMessage(typeof e?.message === 'string' ? e.message : ''));
 ```
 
-- [ ] **Step 3: 验证(共享领地 ⇒ 两套构建)并提交**
+- [x] **Step 3: 验证(共享领地 ⇒ 两套构建)并提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
@@ -5256,7 +5259,8 @@ grep -E '^\s+×' /tmp/kgpa-now-vitest.log | sed -E 's/^\s+×\s+//; s/ [0-9]+ms$/
 LC_ALL=C comm -13 /tmp/kgpa-baseline/vitest-failed.txt /tmp/kgpa-now-vitest-failed.txt   # 期望:无输出
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
 git add katrain/web/ui/src/features/aiLadder/startErrors.ts katrain/web/ui/src/features/aiLadder/startErrors.test.ts \
-  katrain/web/ui/src/features/aiLadder/useAiLadderStatus.ts katrain/web/ui/src/kiosk/pages/AiSetupPage.tsx katrain/web/ui/src/kiosk/pages/AiSetupPage.test.tsx
+  katrain/web/ui/src/features/aiLadder/useAiLadderStatus.ts katrain/web/ui/src/features/aiLadder/useAiLadderStatus.test.tsx \
+  katrain/web/ui/src/kiosk/pages/AiSetupPage.tsx katrain/web/ui/src/kiosk/pages/AiSetupPage.test.tsx
 git diff --cached --stat
 git commit -m "fix(ladder): 升降级 503 一律说成「本机不记成绩 / 引擎暂时不可用」—— 按服务端 detail 分原因
 
@@ -5266,6 +5270,8 @@ A15(P2)+ A2 文案。断网说连不上云端;引擎带不动这一档不再叫�
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 Expected: 全 PASS;`TSC_OK`;两套构建绿(`verify:kiosk-2d` exit 0)。
+
+**执行记录（2026-09-15，Task 8 已完成）**：新建文件前 `git ls-files` 与 `ls` 均确认不存在；服务端实际 `detail` 与上表一致，节点文案为 `on this node`，旧 kiosk 桩还使用完整 `Request failed 503: {...}`。红灯：分类模块不存在、A15 页面仍显示引擎不可用；hook 接线测试在临时恢复旧 503 行时收到「本机不记…」而红。恢复新行后四文件 **107 passed**（`/tmp/kgpa-task8-red.log`、`/tmp/kgpa-task8-green.log`），`npx tsc -b` 绿（`/tmp/kgpa-task8-tsc.log`）。ESLint 三条 error 均在 HEAD 已存在：`useAiLadderStatus.ts` 的 `_dropped` 与 effect、`AiSetupPage.tsx` 的 `catch(e: any)`；本次源码无新增 error（`/tmp/kgpa-task8-eslint.log`）。源码与计划样例的偏差仅为注释收短、测试多核对「不影响你的段位」和 hook 接线，无行为偏差。**完整验证**：后端 3620 passed / 69 failed / 46 errors，前端 1757 passed / 5 skipped，后端与前端新增失败名称集合均为空（`/tmp/kgpa-task8-pytest.log`、`/tmp/kgpa-task8-vitest.log`）。普通与 kiosk-2d 两套构建通过，kiosk 边界检查通过，再次 `npx tsc -b` 通过；测试污染已清理。
 
 ---
 

@@ -581,3 +581,36 @@ describe('AiSetupPage — 升降级挡局面板', () => {
     expect(screen.queryByText('结束对局失败，请重试')).not.toBeInTheDocument();
   });
 });
+
+describe('A3 · AI 策略', () => {
+  beforeEach(() => {
+    localStorage.removeItem(PLAY_ON_BOARD_KEY);
+    createSession.mockClear();
+    gameSetup.mockClear();
+    mockNavigate.mockReset();
+  });
+
+  it.each([
+    ['实地', 'ai:p:territory'],
+    ['厚势', 'ai:p:influence'],
+  ])('选「%s」开局,送出的是真实策略 id %s', async (name, id) => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(within(screen.getByTestId('setup-strategy')).getByRole('button', { name }));
+    await user.click(screen.getByRole('button', { name: /开始对局|开始计分局/i }));
+    await waitFor(() => expect(gameSetup).toHaveBeenCalledWith('s1', 'free', expect.objectContaining({ ai_strategy: id })));
+  });
+
+  it.each([
+    ['拟人', '拟人:按所选棋力下出该水平的棋,包括那个水平会犯的错'],
+    ['KataGo', 'KataGo:每手都下引擎搜索后的第一选择,不放水'],
+    ['实地', '实地:偏爱三线及以下的低位,在随机抽出的一批候选里按这个偏好挑,不是全力'],
+    ['厚势', '厚势:偏爱四线及以上的高位,在随机抽出的一批候选里按这个偏好挑,不是全力'],
+    ['策略', '策略:不看搜索结果,直接下策略网络的第一直觉;开局阶段随机一些'],
+  ])('选中「%s」时说明行说它真在干什么', async (name, hint) => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(within(screen.getByTestId('setup-strategy')).getByRole('button', { name }));
+    expect(screen.getByText(hint)).toBeInTheDocument();
+  });
+});

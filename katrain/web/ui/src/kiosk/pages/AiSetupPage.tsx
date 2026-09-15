@@ -32,17 +32,19 @@ import KioskSetupBoard from '../components/board/KioskSetupBoard';
 /**
  * `.kiosk-opthint` 写的是**当前选中项**的大白话(规范 §11 v1.21)。
  *
- * **策略那四条空着是有意的。** 稿子只给了「拟人」一条;另外四条说的是引擎干什么,
- * 那是**对产品行为的断言**,不是文案润色 —— 编一句「实地:偏好占地」听起来通顺,
- * 可仓里没有任何一处证明它就是 `ai:territory` 的行为。`.kiosk-opthint` 定高
- * (`--opthint-h`),留空不会让下面那些组跳,所以空着的代价只是少一句话。
- * 补齐要去核 `core/ai.py` 里那几个策略的实现,登记为下一轮。
+ * 五句说明已按 `core/ai.py` 的真实策略核对：KataGo 取搜索首选；实地与厚势
+ * 在随机抽出的候选里分别偏向低位和高位；策略网络在开局阶段会改用加权选点。
+ * `.kiosk-opthint` 定高(`--opthint-h`),切换说明不会推动下面的组。
  */
 const AI_STRATEGY_HINT = (t: (en: string, zh: string) => string): Record<string, string> => ({
   'ai:human': t(
     'Human-like: plays at the chosen strength, mistakes of that level included',
     '拟人:按所选棋力下出该水平的棋,包括那个水平会犯的错',
   ),
+  'ai:default': t('setup:strategy_hint_default', 'KataGo:每手都下引擎搜索后的第一选择,不放水'),
+  'ai:p:territory': t('setup:strategy_hint_territory', '实地:偏爱三线及以下的低位,在随机抽出的一批候选里按这个偏好挑,不是全力'),
+  'ai:p:influence': t('setup:strategy_hint_influence', '厚势:偏爱四线及以上的高位,在随机抽出的一批候选里按这个偏好挑,不是全力'),
+  'ai:policy': t('setup:strategy_hint_policy', '策略:不看搜索结果,直接下策略网络的第一直觉;开局阶段随机一些'),
 });
 
 // Canonical kiosk setup skeleton: left preview console + right token-themed form. pvp/cross-platform setup pages restyle against this — tokens only, no flow change.
@@ -506,8 +508,8 @@ const AiSetupPage = () => {
                       options={[
                         { value: 'ai:human', label: t('Human-like', '拟人') },
                         { value: 'ai:default', label: 'KataGo' },
-                        { value: 'ai:territory', label: t('setup:style_territory', '实地') },
-                        { value: 'ai:influence', label: t('Influence', '厚势') },
+                        { value: 'ai:p:territory', label: t('setup:style_territory', '实地') },
+                        { value: 'ai:p:influence', label: t('Influence', '厚势') },
                         { value: 'ai:policy', label: t('Policy', '策略') },
                       ]}
                       hint={AI_STRATEGY_HINT(t)[aiStrategy] ?? ''}

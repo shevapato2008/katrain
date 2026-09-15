@@ -4942,7 +4942,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: 既有 `/api/game/setup`(`ai_strategy` 原样交给 `update_player(player_subtype=…)`,再由 `core/ai.py` `STRATEGY_REGISTRY` 与 `ai_rank_estimation` 查表)
 - Produces: 开局设置送出的策略 id 集合 = `ai:human` / `ai:default` / `ai:p:territory` / `ai:p:influence` / `ai:policy`(全部是 `core/constants.py` 里真实存在的 id)
 
-- [ ] **Step 1: 写失败的测试(追加到 `AiSetupPage.test.tsx` 末尾)**
+- [x] **Step 1: 写失败的测试(追加到 `AiSetupPage.test.tsx` 末尾)**
 
 ```tsx
 // ── A3 · AI 策略(kiosk-go-play-ai)──────────────────────────────────────────
@@ -4973,7 +4973,7 @@ describe('A3 · AI 策略', () => {
     ['KataGo', 'KataGo:每手都下引擎搜索后的第一选择,不放水'],
     ['实地', '实地:偏爱三线及以下的低位,在随机抽出的一批候选里按这个偏好挑,不是全力'],
     ['厚势', '厚势:偏爱四线及以上的高位,在随机抽出的一批候选里按这个偏好挑,不是全力'],
-    ['策略', '策略:不看搜索结果,直接下策略网络的第一直觉;开局前 22 手随机一些'],
+    ['策略', '策略:不看搜索结果,直接下策略网络的第一直觉;开局阶段随机一些'],
   ])('选中「%s」时说明行说它真在干什么', async (name, hint) => {
     renderPage('free');
     const user = userEvent.setup();
@@ -4986,7 +4986,7 @@ describe('A3 · AI 策略', () => {
 Run: `cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui && npx vitest run src/kiosk/pages/AiSetupPage.test.tsx -t "A3"`
 Expected: 两条 id 用例 FAIL(收到 `ai:territory` / `ai:influence`);说明行除「拟人」外 4 条 FAIL。
 
-- [ ] **Step 2: 实现**
+- [x] **Step 2: 实现**
 
 `AiSetupPage.tsx` 把 `AI_STRATEGY_HINT` 上面那段注释与函数整段替换为:
 
@@ -4999,7 +4999,7 @@ Expected: 两条 id 用例 FAIL(收到 `ai:territory` / `ai:influence`);说明�
  *   · 实地 `ai:p:territory` → `TerritoryStrategy`:`generate_influence_territory_weights` 按离边距离加权,
  *     `threshold 3.5` ⇒ 三线及以内满权、往里衰减;走 `PickBasedStrategy`(`pick_n 5` + `pick_frac 0.3` 随机抽候选);
  *   · 厚势 `ai:p:influence` → `InfluenceStrategy`:同一个函数反过来,三线及以内按 `line_weight 10` 压权;
- *   · 策略 `ai:policy` → `PolicyStrategy`:照常等分析回来,但只取 `policy_ranking[0]`(不看搜索结果);`opening_moves 22` 手内改走 `WeightedStrategy`。
+ *   · 策略 `ai:policy` → `PolicyStrategy`:照常等分析回来,但只取 `policy_ranking[0]`(不看搜索结果);当前局面深度 `self.cn.depth <= opening_moves` 时改走 `WeightedStrategy`(配置默认 22,不是固定「前 22 手」)。
  * `.kiosk-opthint` 定高(`--opthint-h`),说明换一句不会让下面那些组跳。
  */
 const AI_STRATEGY_HINT = (t: (en: string, zh: string) => string): Record<string, string> => ({
@@ -5010,7 +5010,7 @@ const AI_STRATEGY_HINT = (t: (en: string, zh: string) => string): Record<string,
   'ai:default': t('setup:strategy_hint_default', 'KataGo:每手都下引擎搜索后的第一选择,不放水'),
   'ai:p:territory': t('setup:strategy_hint_territory', '实地:偏爱三线及以下的低位,在随机抽出的一批候选里按这个偏好挑,不是全力'),
   'ai:p:influence': t('setup:strategy_hint_influence', '厚势:偏爱四线及以上的高位,在随机抽出的一批候选里按这个偏好挑,不是全力'),
-  'ai:policy': t('setup:strategy_hint_policy', '策略:不看搜索结果,直接下策略网络的第一直觉;开局前 22 手随机一些'),
+  'ai:policy': t('setup:strategy_hint_policy', '策略:不看搜索结果,直接下策略网络的第一直觉;开局阶段随机一些'),
 });
 ```
 
@@ -5023,7 +5023,7 @@ const AI_STRATEGY_HINT = (t: (en: string, zh: string) => string): Record<string,
                         { value: 'ai:p:influence', label: t('Influence', '厚势') },
 ```
 
-- [ ] **Step 3: 验证**
+- [x] **Step 3: 验证**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
@@ -5033,11 +5033,10 @@ npx eslint src/kiosk/pages/AiSetupPage.tsx
 ```
 Expected: 全 PASS;`TSC_OK`。
 
-真实运行时一张图(说明行定高、最长那句不溢出):`npm run dev -- --host 127.0.0.1 --port 5173`(先 `lsof` 看端口),`/browse` 打开 `http://127.0.0.1:5173/kiosk/play/ai/setup/free`,1024×600,点「实地」,
-截图存 `superpowers/tracks/kiosk-go-play-ai/visual/a3-strategy-hint-territory-1024x600.png`。
-Expected: 说明行一行或两行内放下,下面的组没有被推动。交 Fan 单图确认。屏 02 四图默认选中「拟人」,那一帧不变,不重跑。
+真实运行时一张图：确认 5173 属于本 worktree，`/browse` 打开 `http://127.0.0.1:5173/kiosk/play/ai/setup/free`，1024×600，点「实地」。截图存 `superpowers/tracks/kiosk-go-play-ai/visual/a3-strategy-hint-territory-1024x600.png`。最长说明应完整放下，下面的组不被推动；单图标「待 Fan 确认」。
+本轮 02 / 05 两屏都取四图(参考、实现、并排、差异),两组均交 Fan 确认；确认前只标「待 Fan 确认」。
 
-- [ ] **Step 4: 基线 diff(后端 + 前端)后提交**
+- [x] **Step 4: 基线 diff(后端 + 前端)后提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
@@ -5064,7 +5063,11 @@ update_player 查 AI_STRENGTH 抛 KeyError。
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
 
+**执行记录（2026-09-15，Task 7 已完成）**：A3 红灯 6 failed / 1 passed（两个旧策略 id、四条缺失说明）；改真实 id 与五句说明后，两份 AiSetup 单测 71 passed，`npx tsc -b` 通过；eslint 仅报页面第 162 行既有 `catch (e: any)` 一处 error（HEAD 同行存在），无新增 error。源码核对偏差：`PolicyStrategy` 用 `self.cn.depth <= self.settings.get("opening_moves", 0)` 判断开局阶段（配置默认 22），不能把它写成固定「前 22 手」；文案及上面两个片段已改为「开局阶段随机一些」。02 四图脚本只同步了旧 AI 说明和旧落子控件的文字事实，截图动作与目录不变。本轮 02 / 05 四图均待 Fan 确认；真实预览已保存 A3 单图：最长说明的 client/scroll 尺寸均为 450×16，无裁切和布局推动，无需 CSS 改动；本地后端未运行，因此图中 logo 未加载，待最终运行时截图补齐。
+
 ---
+
+**全量证据**：后端 3620 passed / 69 failed / 46 errors，前端 1744 passed / 5 skipped；两套基线新增失败名称集合均为空（`/tmp/kgpa-task7-pytest.log`、`/tmp/kgpa-task7-vitest.log`）。测试污染已清理；本 Task 不改共享前端，无需两套构建。
 
 ### Task 8: A2(文案)+ A15 升降级 503 按原因说话
 

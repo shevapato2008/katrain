@@ -80,3 +80,87 @@ test('A18 计时局:轮到的一方时钟真的在走,另一方停着,时钟格�
   expect(g.clockRight, '时钟格溢出了玩家卡').toBeLessThanOrEqual(g.cardRight);
   await page.screenshot({ path: `${SHOTS}/a18-timed-game-1024x600.png` });
 });
+
+// ── Task 9 · N14 + A11:胜率块不在的局,右栏中段是棋谱 ───────────────────────────────
+const COLS = 'ABCDEFGHJKLMNOPQRST';
+const longHistory = (n: number) => [
+  { node_id: 0, score: null, winrate: null, move: null, player: null },
+  ...Array.from({ length: n }, (_, i) => ({
+    node_id: i + 1, score: null, winrate: null,
+    move: `${COLS[i % 19]}${(Math.floor(i / 19) % 19) + 1}`, player: i % 2 === 0 ? 'B' : 'W',
+  })),
+];
+
+const railChain = (page: Page) => page.evaluate(() => {
+  const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+  const fold = document.querySelector('[data-testid="game-moves-fold"]') as HTMLElement | null;
+  const body = fold?.querySelector('.kiosk-fold__body') as HTMLElement | null;
+  const toggles = document.querySelector('.kiosk-rail .gtoggles') as HTMLElement;
+  const acts = document.querySelector('[data-testid="game-actions"]') as HTMLElement;
+  const rb = rail.getBoundingClientRect();
+  const fb = fold?.getBoundingClientRect();
+  return {
+    hasFold: !!fold,
+    hasEval: !!document.querySelector('.kiosk-fold[data-fold="eval"]'),
+    labels: Array.from(acts.querySelectorAll('button')).map((b) => b.textContent?.trim()),
+    bodyOverflow: body ? body.scrollHeight - body.clientHeight : null,
+    foldH: fb ? Math.round(fb.height) : null,
+    foldInsideRail: fb ? fb.top >= rb.top - 0.5 && fb.bottom <= rb.bottom + 0.5 : null,
+    railOverflow: rail.scrollHeight - rail.clientHeight,
+    togglesBottom: Math.round(toggles.getBoundingClientRect().bottom),
+    actionsTop: Math.round(acts.getBoundingClientRect().top),
+    actionsBottom: Math.round(acts.getBoundingClientRect().bottom),
+    railBottom: Math.round(rb.bottom),
+    docScrollHeight: document.documentElement.scrollHeight,
+    innerHeight: window.innerHeight,
+  };
+});
+
+const KINDS = [
+  ['ranked', { game_type: 'ai_ladder_ranked' }],
+  ['pvp-local', { game_type: 'pvp_local', players_info: { B: seat('小明', 'player:human'), W: seat('小红', 'player:human') } }],
+] as const;
+
+for (const [kind, over] of KINDS) {
+  test(`承重 · ${kind}:200 手时棋谱自己滚、右栏不滚、中段没有洞、动作区贴底`, async ({ page }) => {
+    await open(page, baseState({ ...over, history: longHistory(200), current_node_id: 200, current_node_index: 200 }));
+    await page.waitForSelector('[data-testid="game-moves-fold"] .mvrows .mv');
+    const g = await railChain(page);
+    console.log(`[play-ai/${kind}/full]`, JSON.stringify(g));
+
+    expect(g.hasEval, '胜率块不该在').toBe(false);
+    expect(g.hasFold, '棋谱块没出来').toBe(true);
+    expect(g.bodyOverflow, '棋谱没溢出 —— 数据没造够,这一轮量出来的数一概不算').toBeGreaterThan(0);
+    expect(g.railOverflow, '右栏被棋谱顶破了').toBeLessThanOrEqual(0);
+    expect(g.foldInsideRail, '棋谱块被右栏裁掉一截').toBe(true);
+    expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
+    expect(g.actionsTop - g.togglesBottom, '显示开关与动作区之间有洞 —— 棋谱没把中段吃满').toBeLessThanOrEqual(13);
+    expect(g.docScrollHeight, '整页纵向溢出').toBeLessThanOrEqual(g.innerHeight);
+
+    const body = page.locator('[data-testid="game-moves-fold"] .kiosk-fold__body');
+    await body.evaluate((el) => { el.scrollTop = 0; });
+    const box = (await body.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, 300);
+    // Chromium 的滚轮滚动是异步的,派完立刻读 scrollTop 还是 0 —— 用 poll
+    await expect.poll(() => body.evaluate((el) => el.scrollTop), { message: '真滚轮拨不动' }).toBeGreaterThan(0);
+    await page.screenshot({ path: `${SHOTS}/n14-a11-${kind}-rail-1024x600.png` });
+  });
+
+  test(`承重 · ${kind}:0 手时空态说话、中段没有洞、动作区贴底`, async ({ page }) => {
+    await open(page, baseState({ ...over }));
+    await page.waitForSelector('[data-testid="game-moves-fold"]');
+    const g = await railChain(page);
+    console.log(`[play-ai/${kind}/empty]`, JSON.stringify(g));
+
+    await expect(page.locator('[data-testid="game-moves-fold"] .kiosk-fold__body')).toHaveText('这一局还没有着法');
+    expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
+    expect(g.actionsTop - g.togglesBottom, '最空态下中段塌出一个洞').toBeLessThanOrEqual(13);
+    expect(g.railOverflow, '右栏溢出').toBeLessThanOrEqual(0);
+  });
+}
+
+test('升降级局动作区:没有领地、AI支招、图表、悔棋', async ({ page }) => {
+  await open(page, baseState({ game_type: 'ai_ladder_ranked' }));
+  expect((await railChain(page)).labels).toEqual(['数子', '停一手', '认输']);
+});

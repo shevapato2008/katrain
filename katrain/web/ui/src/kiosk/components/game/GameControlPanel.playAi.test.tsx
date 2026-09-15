@@ -102,3 +102,34 @@ describe('A18 · 玩家卡时钟', () => {
     expect(onTimeout).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('N14 + A11 · 右栏按对局类型', () => {
+  const hist = [
+    { node_id: 0, score: null, winrate: null, move: null, player: null },
+    { node_id: 1, score: null, winrate: null, move: 'Q16', player: 'B' },
+    { node_id: 2, score: null, winrate: null, move: 'D4', player: 'W' },
+  ] as GameState['history'];
+  const labels = () => Array.from(screen.getByTestId('game-actions').querySelectorAll('button'))
+    .map((b) => b.textContent?.trim());
+
+  test('升降级局:不渲染「领地」「AI支招」(规范 §8:禁的时候整块不渲染)', () => {
+    panel(base({ game_type: 'ai_ladder_ranked' }), { isRanked: true });
+    expect(labels()).toEqual(['数子', '停一手', '认输']);
+  });
+
+  test.each([
+    ['升降级', { game_type: 'ai_ladder_ranked' }, { isRanked: true, analysisToggles: { score: true } }],
+    ['本地对局', { game_type: 'pvp_local' }, { analysisToggles: { score: true } }],
+    ['关掉图表的自由对弈', { game_type: 'free' }, { analysisToggles: { score: false } }],
+  ])('%s:胜率块不在时,右栏中段是棋谱', (_name, over, props) => {
+    panel(base({ ...(over as Partial<GameState>), history: hist, current_node_index: 2 }), props);
+    expect(screen.getByTestId('game-moves-fold')).toBeInTheDocument();
+    expect(document.querySelector('.kiosk-fold[data-fold="eval"]')).toBeNull();
+  });
+
+  test('开着图表的自由对弈:胜率块在、棋谱不在(屏 05 不变)', () => {
+    panel(base({ history: hist, current_node_index: 2 }), { analysisToggles: { score: true } });
+    expect(screen.queryByTestId('game-moves-fold')).toBeNull();
+    expect(document.querySelector('.kiosk-fold[data-fold="eval"]')).not.toBeNull();
+  });
+});

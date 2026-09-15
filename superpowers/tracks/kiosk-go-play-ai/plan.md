@@ -5306,7 +5306,7 @@ Expected: 全 PASS;`TSC_OK`;两套构建绿(`verify:kiosk-2d` exit 0)。
 - Produces: `gameKinds.ts` 导出 `TWO_HUMAN_GAME_TYPES: Set<string>` 与
   `isFreeVsAi({ gameType, engineMode, isRanked }: { gameType: string | null | undefined; engineMode?: boolean; isRanked?: boolean }): boolean`
 
-- [ ] **Step 1: 写失败的测试**
+- [x] **Step 1: 写失败的测试**
 
 追加到 `src/kiosk/components/game/GameControlPanel.playAi.test.tsx` 末尾:
 
@@ -5389,7 +5389,7 @@ describe('A9(与拍板无关的一半)· 不渲染胜率块的局不白算分析
 Run: `cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui && npx vitest run src/kiosk/components/game/GameControlPanel.playAi.test.tsx src/kiosk/components/game/GameControlPanel.test.tsx src/kiosk/pages/GamePage.playAi.test.tsx`
 Expected: N14 标签那条 FAIL(多了「领地」「AI支招」);三条「中段是棋谱」FAIL;「本地对局不请求」FAIL;其余 PASS。
 
-- [ ] **Step 2: 实现**
+- [x] **Step 2: 实现**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
@@ -5453,7 +5453,7 @@ export function isFreeVsAi({ gameType, engineMode = false, isRanked = false }: {
 
 Run: 同 Step 1 的命令 → Expected: 全 PASS。另跑 `npx vitest run src/kiosk/__tests__/GamePageLedBadge.test.tsx src/kiosk/__tests__/GamePageEngine.test.tsx src/kiosk/pages/GamePage.test.tsx` → 全 PASS。
 
-- [ ] **Step 3: 承重实测(真浏览器)—— 追加到 `tests/kiosk-screen-05-play-ai.spec.ts` 末尾**
+- [x] **Step 3: 承重实测(真浏览器)—— 构建产物与 grow 变异均已验证**
 
 判据先写死:① 满态棋谱 body 自己溢出(数据造到装不下,否则这一轮的数不算);② 右栏不滚;③ 棋谱块不被右栏裁;
 ④ 动作区贴右栏底;⑤ **中段没有洞**:显示开关排的底 + 12(`--rail-gap`)= 动作区的顶(没有 `grow` 时洞就出在这两者之间,
@@ -5556,7 +5556,7 @@ cp /tmp/kgpa-katrain-config.json ~/.katrain/config.json 2>/dev/null || true
 Expected: 全 passed(含既有 `kiosk-screen-05-game.spec.ts` —— 屏 05 / 屏 10 的几何闸不许红)。
 **变异自检(一次,不提交)**:把 `KioskFold fold="moves"` 的 `grow` 删掉、重新 build、只跑本 spec,预期「中段没有洞」两态都红;红了再恢复。没红说明判据选错了,停下来重想。
 
-- [ ] **Step 4: 四图 + 视觉确认 + 提交**
+- [x] **Step 4: 四图 + 视觉确认 + 提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
@@ -5571,7 +5571,7 @@ Expected: 屏 05(开着图表的自由对弈)与屏 10(星阵)这两帧的内容
 `git checkout HEAD -- superpowers/tracks/kiosk-go-shell-align/visual/05-game superpowers/tracks/kiosk-go-shell-align/visual/10-platform-game`(先确认这两个目录没有要留的未提交改动)。
 若变化聚在右栏,停下来查,不要提交。
 
-把 `superpowers/tracks/kiosk-go-play-ai/visual/n14-a11-ranked-rail-1024x600.png`、`n14-a11-pvp-local-rail-1024x600.png` 交 Fan 视觉确认(稿子没有这两态的参考图),**确认前本 Task 不算完成**。
+把 `superpowers/tracks/kiosk-go-play-ai/visual/n14-a11-ranked-rail-1024x600.png`、`n14-a11-pvp-local-rail-1024x600.png` 交 Fan 视觉确认(稿子没有这两态的参考图),**标注「待 Fan 确认」，本次不自行判视觉通过；产出截图与对比后继续已授权的后续 Task**。
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
@@ -5600,6 +5600,17 @@ N14(P2):升降级局整块不渲染领地 / AI支招。A11(P3):胜率块不在�
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
+
+**Task 9 执行记录（2026-09-15，已完成）**
+
+- 新建前已用 `git ls-files` 与 `ls` 确认 `gameKinds.ts` 不存在。按 Task 6 的实际 `panel` / `base` 与页面桩追加测试，保持盒上 `token: null`。
+- 红灯：3 文件 **5 failed / 59 passed**（`/tmp/kgpa-task9-red.log`）。分别是升降级动作多出「领地 / AI支招」、三种无胜率块的局缺棋谱、本地两人局仍调用 `analyzeCurrent`；自由对弈正例通过，失败原因均符合预期。
+- 实现：共用 `isFreeVsAi`，升降级分析动作整块撤除，无胜率块时复用带 `grow` 的棋谱折叠块；页面的图表按需分析使用同一局型判据。Task 6 的 `SeatRow` / `useGoClock` 与跨平台两处 token 闸未改。
+- 绿灯：计划中的 6 个相关文件 **144 passed**（`/tmp/kgpa-task9-green.log`）；`npx tsc -b` 退出 0（`/tmp/kgpa-task9-tsc.log`）；所有本次前端改动文件 eslint **0 errors / 4 个 GamePage 既有 warnings**（`/tmp/kgpa-task9-eslint.log`）；`git diff --check` 通过。
+- 已追加真浏览器 spec：ranked / pvp-local 各 200 手满态与 0 手空态，含棋谱自身滚动、右栏不滚、棋谱未裁切、动作贴底、中段间距、真滚轮和升降级动作集合。构建产物首次两份 spec 17 passed；去掉 `grow` 并重建后 4 failed / 2 passed：满态自滚失效且溢出，空态间距变成 143 / 84 px。恢复源码并重建后 6 passed，最终 tsc 通过；日志 `/tmp/kgpa-task9-e2e.log`、`/tmp/kgpa-task9-mutant-e2e.log`、`/tmp/kgpa-task9-restored-e2e.log`。实际几何验证间距 12 px、动作底与右栏底均 586 px，两个新局型截图已查看，**待 Fan 确认**。
+- 计划校正：旧句「确认前本 Task 不算完成」与本次用户明确要求冲突，改为截图和对比标「待 Fan 确认」，继续后续任务。源码按当前结构接入，无额外接口偏差。
+- 完整基线：后端 3646 passed / 69 failed / 46 errors，前端 1802 passed / 5 skipped；两个新增失败名称集合均为空（`/tmp/kgpa-task9-pytest.log`、`/tmp/kgpa-task9-vitest.log`）。三处后端污染、Playwright 运行标记已清理；预览服务已停止，用户配置已恢复。
+- 05 / 10 四图各跑两次。05 四图像素差全为 0；10 实现/并排仅 AI 思考动画 48 像素变化，参考/差异图 0。相对 HEAD 的实现内容保持，说明图高度变化与本次代码无关，已还原这些存档变化。四图显示既有参考差异（平台条无数据未画、动作集合、图表/棋谱及落子提示等），不将其判为视觉通过，统一**待 Fan 确认**。
 
 ---
 

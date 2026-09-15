@@ -7,6 +7,7 @@ import { localizedRank } from '../../../utils/rankUtils';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import type { EngineItemCounts, GameState, PlayerInfo } from '../../../api';
 import { useGoClock } from './goClock';
+import { isFreeVsAi } from './gameKinds';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface Props {
@@ -52,9 +53,6 @@ interface Props {
    */
   hardwareFault?: string | null;
 }
-
-/** 两个人面对面下的局:胜率图整块不渲染(规范 §8 那张「按对弈方式判」的表)。 */
-const TWO_HUMAN_GAME_TYPES = new Set(['pvp_local', 'pvp_online']);
 
 /**
  * 把主线着法叠成「一行 = 一个黑白回合」。
@@ -234,7 +232,7 @@ const GameControlPanel = ({
   // 只认前者的话,少传一次 prop 就等于把闸打开 —— 而这里挂着的是「悔棋能不能按」,
   // 升降级局里那是反作弊的一环(后端 `handleAction` 也拒,但界面不该先摆出来邀请他点)。
   const rankedGame = isRanked || isRankedGameType(gameState.game_type);
-  const freeVsAi = !engineMode && !rankedGame && !TWO_HUMAN_GAME_TYPES.has(gameState.game_type ?? 'free');
+  const freeVsAi = isFreeVsAi({ gameType: gameState.game_type, engineMode, isRanked: rankedGame });
 
   // 胜率块:自由对弈可开;升降级 / 本地两人 / 在线大厅 / 星阵人机一律**整块不渲染**。
   const evalAllowed = freeVsAi;
@@ -257,11 +255,12 @@ const GameControlPanel = ({
   const undoAllowed = freeVsAi;
 
   /**
-   * 棋谱(星阵屏)。稿子只在这一屏画它 —— 屏 05 那块地方归胜率图,两者共用同一段高度。
+   * 棋谱与胜率块共用同一段高度;胜率块不在的局(星阵 / 升降级 / 本地对局 / 关掉图表)都显示棋谱。
    * 数据来自 `history` 的 `move`/`player`(2026-08-25 后端在**已有的那个主线循环**里加的两个键);
    * ⚠️ 不许改用 `stones`:它带 `move_number` 但**不含被提掉的子**,拼出来的谱会缺手。
    */
-  const moveRows = engineMode ? toMoveRows(gameState.history) : [];
+  const showMoves = engineMode || !showScore;
+  const moveRows = showMoves ? toMoveRows(gameState.history) : [];
   const nowIndex = gameState.current_node_index ?? 0;
   const nowRef = useRef<HTMLSpanElement | null>(null);
   // 跟到当前那一手。live 那一屏(`LiveMatchPage.tsx:110`)同一句 —— 对局中「当前」永远是最后一行,
@@ -303,7 +302,8 @@ const GameControlPanel = ({
      这里三个键灰着但**去登录就能用**,原因说得出来。 */
   const guestAnalysisReason = t('play:analysis_requires_login', '登录后可用');
 
-  const analysisActions: KioskAction[] = engineMode ? [] : [
+  // N14:升降级局整块不渲染「领地」「AI支招」;按需分析已由页面与服务端禁止。
+  const analysisActions: KioskAction[] = engineMode || rankedGame ? [] : [
     {
       key: 'ownership', icon: 'grid-nine', label: t('Territory', '领地'),
       pressed: !analysisRequiresLogin && !!analysisToggles.ownership,
@@ -382,11 +382,11 @@ const GameControlPanel = ({
         untimed={clockFor('B')} lang={lang} t={t} onTimeout={onTimeout}
       />
 
-      {/* 棋谱 —— 只有星阵屏有(稿子 `:1833`)。`grow` 让它吃掉这一栏剩下的高度:
+      {/* 棋谱 —— 胜率块不在的局都有(星阵屏稿子 `:1833`;A11 扩到升降级 / 本地对局 / 关掉图表)。`grow` 让它吃掉这一栏剩下的高度:
           在此之前 engineMode 下右栏中段是**空着约 148px** 的,登记在 scope.md 屏 10。
           `scrollbar` 是显式画的那根 —— `.kiosk-fold__body.mvrows` 把原生条宽度设成 0
           (460 的算术不许被滚动条改),所以「能滚」这件事得自己说出来。 */}
-      {engineMode && (
+      {showMoves && (
         <KioskFold
           fold="moves"
           grow

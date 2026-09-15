@@ -12,6 +12,7 @@ import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
 import Board, { type EngineOverlay } from '../../components/Board';
 import GameControlPanel from '../components/game/GameControlPanel';
+import { isFreeVsAi } from '../components/game/gameKinds';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import KioskResultBadge from '../components/game/KioskResultBadge';
@@ -315,7 +316,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // Trigger when either toggle is on, and re-trigger when the current node changes. The
   // result streams back over the game WebSocket (get_state broadcast). Ranked/rated games
   // block this server-side (analysis_allowed). Not used in engineMode (star阵 tunnel instead).
-  const wantAnalysis = analysisToggles.ownership || analysisToggles.score;
+  // A9:「图表」只在胜率块会渲染的人机自由对弈请求分析,避免本地两人局每手白算一次。
+  const wantAnalysis = analysisToggles.ownership
+    || (analysisToggles.score && isFreeVsAi({ gameType: session.gameState?.game_type, engineMode }));
   const gs = session.gameState;
   useEffect(() => {
     if (engineMode || !wantAnalysis || !sessionId || !gs) return;

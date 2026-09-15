@@ -439,3 +439,22 @@ describe('A18 · 时间耗尽判超时', () => {
   });
 
 });
+
+describe('A9(与拍板无关的一半)· 不渲染胜率块的局不白算分析', () => {
+  it('本地对局:「图表」开关默认开着,也不请求按需分析', () => {
+    const spy = vi.spyOn(API, 'analyzeCurrent').mockResolvedValue({});
+    sessionMock.gameState = makeState({
+      game_type: 'pvp_local',
+      players_info: { B: seat('player:human', '小明'), W: seat('player:human', '小红') },
+    });
+    renderPage();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('人机自由对弈照旧请求(默认开还是关等 Fan 定,本轮不动)', () => {
+    const spy = vi.spyOn(API, 'analyzeCurrent').mockResolvedValue({});
+    sessionMock.gameState = makeState();
+    renderPage();
+    expect(spy).toHaveBeenCalledWith('play-ai-s1');
+  });
+});

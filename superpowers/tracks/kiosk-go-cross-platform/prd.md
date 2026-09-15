@@ -109,6 +109,7 @@
   4. 单测：`outcomeLine` 对 `Void` 输出「这盘没有判出胜负」；其他认不出的写法仍原样念。
   5. **端到端**（新文件 `tests/platforms/test_engine_game_ledger_e2e.py`：真端点 → 真 gateway / GolaxyAdapter / WebKaTrain → 真 `_record_ai_game` → `repository_dispatcher.user_games_create`；只 mock 星阵网络与最外层写库，**不许 mock 任何中间层**）：AI 终局（HTTP）、认输（HTTP，且再认输一次不多写）、实体盘 AI 终局（认会话主人）三条各写**恰好 1 行**，`source=play_ai`、人那一方是账号名。它同时是 §6.0 第 1 条的合并验收。
   6. 上板：盒上下一盘星阵人机并认输 → 屏 19 历史对局出现「vs [golaxy] …」一行、结果「你(黑)中盘负」，能送去复盘；断网时认输 → 本地有行、联网后同步上云。
+  7. 共用盒子临时归属闸（Task 6b，X11 最终规则未拍板）：会话主人甲的棋谱在云端会话切到乙后才结束，在线直发和离线补传都不进乙云库；先留本机甲名下 `pending`。401 等待期间换人不拿乙凭据重试、不覆盖乙 token，同一人 401 仍可刷新直发。仅换回甲不立即触发同步、未绑定整机凭据仍沿用既有行为，见 §4 X11 / §5。
 - **不含**：OGS 平台侧自然终局落账（`manager.end_platform_game` 只清内存），依赖 X4。
 
 ### X10-a（P2）实体盘「等待拿回棋子」弹层给出口 + 终局时释放恢复暂停并熄灯
@@ -129,7 +130,7 @@
 
 | # | 问题 | 选项 | 推荐与理由 | 不拍板时本轮怎么处理 |
 |---|---|---|---|---|
-| X11 | 一台盒子多人共用时，星阵 / OGS 平台账号归谁？（今天整台盒子一份连接：甲登星阵，launcher 切到乙，乙看到「已连接」、下人机和用付费道具都记在甲的星阵账号上；乙点登出会断掉甲的连接但只删乙自己的凭证） | A. **连接归连上它的那个 KaTrain 用户**：状态 / 开局 / 道具 / 分析 / 登出都校验归属，别人看到「未连接」；launcher 换身份时断开全部平台连接<br>B. 整台盒子共享一个平台账号，屏 07 明写「这台盒子的星阵账号：xxx（由甲连接）」，登出前提示会影响所有人<br>C. 每个用户一份适配器实例，并存多条连接 | **A**。付费道具扣的是连接者的钱、对局记在连接者的星阵账号上，这是隐私与计费边界，不能靠「大家都知道」；C 在 2G 的 RK3562 上多开长连接不值；B 让乙在不知情时花甲的钱。A 的实现量小（`_platform_user_ids` 已存归属，只是没人读） | 不改。X8 修好后屏 01 与屏 07 口径一致地显示全局连接状态；没有请求的两条落账路（视觉 poller、恢复框重试）本轮记在**会话主人**名下（乙在甲开的局上按「重试」，这盘进甲的棋谱库） |
+| X11 | 一台盒子多人共用时，星阵 / OGS 平台账号归谁？（今天整台盒子一份连接：甲登星阵，launcher 切到乙，乙看到「已连接」、下人机和用付费道具都记在甲的星阵账号上；乙点登出会断掉甲的连接但只删乙自己的凭证） | A. **连接归连上它的那个 KaTrain 用户**：状态 / 开局 / 道具 / 分析 / 登出都校验归属，别人看到「未连接」；launcher 换身份时断开全部平台连接<br>B. 整台盒子共享一个平台账号，屏 07 明写「这台盒子的星阵账号：xxx（由甲连接）」，登出前提示会影响所有人<br>C. 每个用户一份适配器实例，并存多条连接 | **A**。付费道具扣的是连接者的钱、对局记在连接者的星阵账号上，这是隐私与计费边界，不能靠「大家都知道」；C 在 2G 的 RK3562 上多开长连接不值；B 让乙在不知情时花甲的钱。A 的实现量小（`_platform_user_ids` 已存归属，只是没人读） | 平台连接归属仍待拍板：X8 修好后屏 01 / 07 仍显示全局连接。棋谱写库单独按**会话主人**保护：乙换上盒子云端会话后甲的局才结束，就先存本机甲名下并入队，不发到乙库；甲回来且下一次同步触发时才补传。401 等待时换人不拿后来者 bearer 重试，也不覆盖后来者 token。未绑定的整机凭据仍按既有直发（§5）；补传未发生前，在线云端列表可能暂看不到本机待传那盘。请 Fan 确认这段临时行为，平台账号到底归谁仍未定 |
 | X4 | OGS 真人对局回到盒子（对方接受 / 自动匹配配上后建本地局、跳对局屏、接收别人发来的挑战）排不排进下一轮？ | A. 下一轮做：先定「用户级（非 session 级）平台事件通道」，再接 `active_game` / `automatch_found` 与收挑战四个 API；需要 Fan 提供一个真 OGS 账号做端到端<br>B. 押后到 X11 定了之后 | **B**。事件要推给「哪个用户」取决于 X11 的归属规则；没有真账号端到端，适配器里没抓过的报文（`_on_active_game` 只 debug 打印）无法验证。X5（对手计时 / 读秒）、N4（会话类型与远端亮灯）、OGS 平台侧终局落账都挂在它下面 | 只做 X4-a（挑战文案说实话） |
 | X6 | ① 做不做和星阵上的真人对弈（需抓 STOMP 报文）？② 屏 07 能力标（「实时对弈 · 房间」）说的是「平台有什么」还是「这台盒子能做什么」？③ 屏 07「连上之后」三句（用实体盘下 / 自动存谱 / 盒内段位不受影响）对 OGS 前两句不成立，要不要按平台分说？ | ① A 做 / B 不做<br>② A 维持「平台有什么」/ B 改成「盒子能做什么」（星阵只亮「人机对弈」，OGS 在 X4 通之前不亮「实时对弈」）<br>③ A 维持 / B 在 OGS 那一行尾注明「对局在 OGS 上下」 | ① **B**（星阵人机计划 2026-07-02 已列为非目标，协议未抓）；② **B**：同一页标题是「用这块实体盘下」，读者读到的是盒子能力；③ **B**：本轮 N13 让星阵那两句成立了，剩 OGS 不成立 | 不改 |
 | X2 | KGS 排不排期？（2026-07-12 选型定为「工程下一步」，但 07-13 README 又列为待决，此后无答复；脚手架里接受 / 发挑战仍是 `NotImplementedError`，未注册、无入口） | A. 排进 X4 之后<br>B. 押后到上市后 | **A**。KGS 回盒需要的正是 X4 那条用户级事件通道，先有通道再接 KGS，否则会重复踩 OGS 的「挑战发出去回不来」 | 不动，界面上没有 KGS，用户不会被误导 |
@@ -153,6 +154,8 @@
 | 非严格部署的网页登出对坐着的星阵会话一律判负并 `record_multiplayer_game`（`api/v1/endpoints/auth.py:418-468`） | 后续项 | 只影响服务端网页登出时手上还有星阵会话的人（严格盒端 `:383-384` 直接 403）；与 N13 同一个「星阵局按人机局落账、已结束就跳过」的判据，下一轮收 |
 | 已绑定实体盘的**本地**局认输后，盘上多一颗子会被识别成新一手把局复活 | 归对弈·AI（A20）/ 实体盘模块 | 既有缺陷，不经过本轮改动（恢复暂停只由星阵 gateway 失败进入）；本轮只把星阵局收成终态 |
 | 开局第一手就是 AI 且 AI 回非落点 | 低优先 | 会话还没建、无局可记；端点 500，下一轮给可读错误 |
+| 未绑定整机凭据的棋谱云端归属 | X11 后续项 | 非严格部署重启后可有 token 而没有本机用户绑定；本轮沿用既有直发，不能证明它替谁写，需随 X11 一起定归属 / 登录恢复规则 |
+| 主人重新登录后队列不立即补传 | X11 后续项 | 被换人挡住的棋谱留本机 `pending`，现有同步由网络恢复等事件触发；仅换回主人尚不会启动同步，在线云端列表可暂漏这盘 |
 | 新文案补 PO | 全局待裁（Z1） | 本轮新 key 一律 `t('ns:key', '中文默认')`，不往 PO 里加 |
 
 ## 6. 与其它四条赛道的协调与共享文件
@@ -195,9 +198,10 @@
    - 对弈·AI **不要顺手改那两处 token 闸**（归跨平台）。
    - `tests/kiosk-screen-05-game.spec.ts` 两家都改，后合并方保留两边断言。
 5. **`KioskApp.tsx`**：训练营 T9 改 `:132` 做题路由守卫；棋谱 K1/K4 改 `:56` import 与 `:137-145` 摆谱路由。hunk 相邻，属文本冲突，两边都留。
-6. **`repository.py`**：两家都只**调用** `RepositoryDispatcher._remote_only`，都不改它本身。
+6. **`repository.py`**：训练营 / 棋谱各改自己的业务段；本赛道 Task 6b 另改 `user_games_create` 的主人闸。合并时保留三个段落的行为，并复核相邻 hunk。
    - 训练营改 `tsumego_*`（`:189-225`）与 `get_all_problems`（`:98-106`）。
    - 棋谱改 `kifu_list_albums` / `kifu_get_album`（`:251-270`）。
+   - 跨平台改 `user_games_create`（`:273-279`）：已绑定的云端会话若是别人，本机记主人名下并入队；`sync_worker.py` 补传同判据，`remote_client.py` 的 401 身份切换快照防重试 / token 污染。
 7. **请求失败分类**：复盘赛道新建 `src/utils/requestFailure.ts`。其它赛道本轮不依赖它，**也不要另建同职责的共享文件**（各自在本页内处理即可）。五家都合并后再收口，已登记为后续项。
 8. **i18n**：五家都只写 `t('ns:key','中文默认')`，本轮不改任何 `.po`（并行改 11 份 `.po` 必冲突）。合并完统一交 `katrain-i18n-expert` 补 11 种语言，各赛道交付时附新增 key 清单。补不补、何时补仍由 Fan 定。
 9. **四图存档**：取图目录各家不同，不冲突。跨平台重取 01/10，对弈·AI 重取 05，训练营 11，棋谱 17，复盘 19/20。重取前按 CLAUDE.md 跑两次比对，排除抖动。
@@ -225,6 +229,7 @@
 | `katrain/web/ui/src/kiosk/pages/PlayPage.tsx`（+ `.test.tsx`） | `:43-60` 状态请求 effect、`:140-148` 野狐卡 `soon`；测试文件改 `expectAllDisconnected` 与登出用例夹具、末尾加盒端用例 | play-ai（A6 全部对局卡、N17 继续上一局）、kifu/tsumego（N10 继续上一局存储）、tsumego（N26「约战 · 有定级队列」文案） |
 | `katrain/web/server.py` | `/api/move` 平台分支路由与 except（`:967-984`）、`/api/resign` 路由 + 已结束幂等 + 落账分支（`:1883-1938`）、`_record_ai_game(_locked)` 签名与 data 合并（`:1599-1677`、`:1864-1870`）、`_handle_confirmed_move` 的 import / 路由 / except（`:3152-3224`）、新增模块级 `_session_owner` / `_record_platform_engine_game` / `_record_platform_engine_game_off_request`（`:3107` 之前） | play-ai（A12 数子、N21 认输、N22 `_finish_ended_game` 须加星阵分支——§6.0 第 1 条）、review（报告）、所有改服务端的赛道 |
 | `katrain/web/interface.py` | `_do_resign` 旁新增 `_do_end_without_result`（`:1464-1469` 附近） | play-ai |
+| `katrain/web/core/repository.py`、`sync_worker.py`、`remote_client.py` | Task 6b：`user_games_create` 在线主人闸；`create_user_game` 补传主人闸与换人回 pending；401 刷新会话快照 | 训练营 / 棋谱改 `repository.py` 的其它业务段；共享客户端 / 队列需语义复核 |
 | `katrain/web/ui/src/kiosk/components/report/reviewPresentation.ts`（+ `.test.ts`） | `outcomeLine` 认 `Void` | review（复盘 / 报告） |
 | `katrain/web/core/physical_play_orchestrator.py`（+ `tests/test_physical_play_orchestrator.py`、`tests/test_engine_physical_integration.py` 末尾 Case 7） | `_run` 开头加一步、新增 `_release_recovery_on_game_end` | play-ai（A20 改用屏幕落子） |
 | `katrain/web/ui/src/kiosk/__tests__/GamePageEngine.test.tsx` | auth mock 改可变、改写「停一手可按」用例、新增盒端用例 | play-ai（若动 engineMode 相关断言） |
@@ -236,8 +241,8 @@
 
 | 层 | 做法 | 适用条目 |
 |---|---|---|
-| 前端单测 | `cd katrain/web/ui && npx vitest run <文件>`；结束时全量跑、由 plan Task 0 写下的闸脚本读 JSON 报告：新增失败、基线有而这次没跑到的用例、导入失败 / 未处理异常 / 没跑完都算红（不比条数，也不 grep 日志） | X7 X8 X1 X4-a X9-a X9-b N13（presentation） X10-a |
-| 后端测试 | `uv run pytest <文件>`（依赖须 `uv sync --extra web --extra vision --extra board` + `uv pip install boto3 fonttools brotli moto`）；结束时 `CI=true uv run pytest tests` 由同一个闸读 junit XML 与基线比（收集失败、conftest 失败、中断都算红；新增失败再跑一轮取交集排除基线抖动）；跑完还原被改写的 `katrain/config.json` 与 `engine_game_state.json` | X9-b N13 X10-a |
+| 前端单测 | `cd katrain/web/ui && npx vitest run <文件>`；结束时全量跑、由 plan Task 0 写下的闸脚本读 JSON 报告：新增失败、基线有而这次没跑到的用例、这次新增没执行（skip / todo / pending）的用例、导入失败 / 未处理异常 / 没跑完都算红（不比条数，也不 grep 日志） | X7 X8 X1 X4-a X9-a X9-b N13（presentation） X10-a |
+| 后端测试 | `uv run pytest <文件>`（依赖须 `uv sync --extra web --extra vision --extra board` + `uv pip install boto3 fonttools brotli moto`）；结束时 `CI=true uv run pytest tests` 由同一个闸读 junit XML 与基线比（收集失败、conftest 失败、中断、基线跑过而本轮 skip / xfail 或新增未执行都算红；任一轮新增失败保持红，只有基线既有失败或基线提交同环境聚焦复跑也失败 / 抖动可判为基线问题，解释不了的间歇失败如实保留）；跑完还原被改写的 `katrain/config.json` 与 `engine_game_state.json` | X9-b N13 X10-a |
 | 真栈时序 / 端到端 | 真 `SessionManager` + `PlatformManager` + gateway + `GolaxyAdapter`，genmove 停在 `asyncio.Event` 上造「等待期间认输 / 换局」；落账端到端只 mock 星阵网络与最外层写库 | X9-b N13 X10-a |
 | 类型检查 | `npx tsc -b`（`npx tsc --noEmit` 检查 0 个文件，无效） | 全部前端条目 |
 | 两套构建 | `npm run build` 与 `npm run build:kiosk-2d` 都绿（`GamePage` / `api` 调用处在共享消费链上；`verify:kiosk-2d` 不许破） | 全部前端条目 |

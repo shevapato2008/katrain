@@ -640,3 +640,255 @@ def test_count_does_not_finish_a_position_that_changed_while_it_waited(web_clien
     assert w.game.terminal is None
     assert w.game.current_node is counted.parent
     assert counted.end_state is None and counted.parent.end_state is None
+
+
+# ---------------------------------------------------------------- N22 终局收尾
+
+
+import asyncio  # noqa: E402
+import time  # noqa: E402
+import types  # noqa: E402
+from unittest.mock import AsyncMock, MagicMock  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def server_module():
+    import katrain.web.server as server
+
+    # `_FINISH_ENDED_GAME_FN` 是 create_app 里的闭包,建一次 app 才会挂到模块上(同 tests/test_local_play_recording.py)
+    server.create_app(enable_engine=False)
+    return server
+
+
+def _ended_session(*, how="two_pass", game_type="free", user_id=42, mode="play"):
+    """真 WebKaTrain + 真 WebSession(r1:MagicMock 版证不出「补分写在哪一手」):两人座位下 B、W 各一手,
+    再按 `how` 结束 —— 双停(终局事实已记、结果待补分)或认输(两人座位、轮到黑 ⇒ 黑认输,`W+R`)。
+    返回 `(session, end)`;`end` 就是这一局的终局事实,收尾函数只认它,不看游标。
+    `game_type` 同时写在会话和运行时上:`"ranked"` 让 `analysis_allowed` 为假,又不走升降级账本那一支。"""
+    from katrain.web.session import WebSession
+
+    w = _web_katrain()
+    _seat(w, human_colors={"B", "W"})
+    w._do_play((3, 3), guard=True)
+    w._do_play((15, 15), guard=True)
+    if how == "two_pass":
+        w._do_play(None, guard=True)
+        w._do_play(None, guard=True)
+    else:
+        w._do_resign()
+    w.game_type = game_type
+    session = WebSession(session_id=f"s-{how}-{game_type}-{mode}", katrain=w, user_id=user_id, mode=mode)
+    session.game_type = game_type
+    return session, w.game.terminal
+
+
+def _recording_app():
+    app = MagicMock()
+    app.state.repository_dispatcher.user_games_create = AsyncMock(return_value={"id": "g1"})
+    return app
+
+
+_USER = types.SimpleNamespace(id=42, username="小明")
+
+
+def test_create_app_installs_the_off_request_hook(server_module):
+    app = server_module.create_app(enable_engine=False)
+    assert app.state.session_manager.on_game_ended is not None
+
+
+class _Reply(ai.AIStrategy):
+    """AI 线程的桩策略:回 `REPLY`(None = 停一手)。走真 `generate_ai_move` —— 双停终局事实是在它的提交段里记的,
+    直接调 `game.play` 的替身会绕过那一步(r1)。"""
+
+    REPLY = None
+
+    def generate_move(self):
+        return Move(coords=type(self).REPLY, player=self.cn.next_player), "reply"
+
+
+def _ai_thread_game(monkeypatch, human_first, ai_reply, step_back_on_broadcast=False):
+    """真 WebKaTrain:人(黑)先下 `human_first`,AI 线程(`_do_ai_move_and_broadcast`)回 `ai_reply`。
+    `ai:default` 换成桩策略;`update_state` 置空 —— 只证回调,不起下一条 AI 线程。
+    `step_back_on_broadcast=True`:广播那一刻人点了「上一手」(`update_state` 里悔一手)。"""
+    w = _web_katrain()
+    _seat(w, human_colors={"B"})
+    w._do_play(human_first, guard=True)
+    calls = []
+    w.game_ended_callback = lambda end: calls.append(end)
+    if step_back_on_broadcast:
+        w.update_state = lambda **_kwargs: w.game.undo(1)
+    else:
+        w.update_state = lambda **_kwargs: None
+    monkeypatch.setattr(_Reply, "REPLY", ai_reply)
+    monkeypatch.setitem(ai.STRATEGY_REGISTRY, AI_DEFAULT, _Reply)
+    w._do_ai_move_and_broadcast(w.game.current_node)
+    return w, calls
+
+
+def test_the_ai_thread_reports_a_game_it_ended(monkeypatch):
+    """人先停一手、AI 跟停 —— 盒上最常见的收官。这条回调就是 N22 收尾在 AI 这条路上的唯一入口。"""
+    w, calls = _ai_thread_game(monkeypatch, human_first=None, ai_reply=None)
+    assert len(calls) == 1
+    assert calls[0] is w.game.terminal and calls[0].node.is_pass
+
+
+def test_the_ai_thread_captures_the_end_before_anyone_can_step_back(monkeypatch):
+    """C4:广播之后人立刻点「上一手」,回调拿到的仍是那一局、那一手的终局事实。
+    错误实现(在 `update_state()` 之后按游标取 `end_result`)在这里一次都不叫。"""
+    w, calls = _ai_thread_game(monkeypatch, human_first=None, ai_reply=None, step_back_on_broadcast=True)
+    assert len(calls) == 1
+    assert calls[0].node.is_pass and calls[0].node.parent.is_pass
+    assert w.game.current_node is calls[0].node.parent  # 游标确实被挪走了
+
+
+def test_an_ordinary_ai_move_reports_nothing(monkeypatch):
+    """正对照:没结束就不叫 —— 否则上一条的「叫了一次」可能只是每手都叫。"""
+    _, calls = _ai_thread_game(monkeypatch, human_first=(3, 3), ai_reply=(15, 15))
+    assert calls == []
+
+
+async def test_two_pass_end_is_scored_before_it_is_recorded(server_module):
+    session, end = _ended_session()
+    assert end is not None and end.node.end_state is None  # 双停:终局事实已记,结果待补分
+    asked = []
+    session.katrain.ensure_current_score = lambda timeout_s=None, node=None: asked.append(node) or 2.5
+    app = _recording_app()
+
+    await server_module._FINISH_ENDED_GAME_FN(session, app, _USER, end)
+
+    assert asked == [end.node]  # 补的是终局那一手
+    data = app.state.repository_dispatcher.user_games_create.await_args.kwargs["data"]
+    assert data["result"] == "B+2.5"
+    assert end.node.end_state == "B+2.5"
+    assert session.katrain.game.terminal.result == "B+2.5"
+
+
+async def test_games_that_forbid_analysis_are_recorded_without_a_score(server_module):
+    """升降级局走的就是这一支:不补分,照旧按「终局」落账(无结论)—— 怎么判目等 Fan 拍板。"""
+    session, end = _ended_session(game_type="ranked")
+    asked = []
+    session.katrain.ensure_current_score = lambda timeout_s=None, node=None: asked.append(node)
+    app = _recording_app()
+
+    await server_module._FINISH_ENDED_GAME_FN(session, app, _USER, end)
+
+    assert asked == []
+    data = app.state.repository_dispatcher.user_games_create.await_args.kwargs["data"]
+    assert data["result"] == end.result
+    assert end.node.end_state is None
+
+
+async def test_a_resigned_game_is_recorded_as_is(server_module):
+    session, end = _ended_session(how="resign")
+    asked = []
+    session.katrain.ensure_current_score = lambda timeout_s=None, node=None: asked.append(node)
+    app = _recording_app()
+
+    await server_module._FINISH_ENDED_GAME_FN(session, app, _USER, end)
+
+    assert asked == []
+    assert app.state.repository_dispatcher.user_games_create.await_args.kwargs["data"]["result"] == "W+R"
+
+
+async def test_request_and_ai_thread_finishing_together_score_and_record_once(server_module):
+    session, end = _ended_session()
+    calls = []
+    session.katrain.ensure_current_score = lambda timeout_s=None, node=None: calls.append(node) or 2.5
+    app = _recording_app()
+
+    await asyncio.gather(
+        server_module._FINISH_ENDED_GAME_FN(session, app, _USER, end),
+        server_module._FINISH_ENDED_GAME_FN(session, app, _USER, end),
+    )
+
+    assert len(calls) == 1
+    create = app.state.repository_dispatcher.user_games_create
+    assert create.await_count == 1
+    assert create.await_args.kwargs["data"]["result"] == "B+2.5"  # 后到的那次收尾认的是补过分的终局事实
+
+
+@pytest.mark.parametrize("action,score", [("undo", 2.5), ("undo", None), ("new_game", 2.5)])
+async def test_stepping_back_or_starting_over_while_the_end_is_scored(server_module, action, score):
+    """C4:收尾按捕获的终局落账,不看游标。补分的那几秒里人点了「上一手」或开了新局:
+    落账的是**那一局那一手**(新局就不落),游标留在人挪到的地方,结果不写到游标那一手上。"""
+    session, end = _ended_session()
+    w = session.katrain
+
+    def scoring(timeout_s=None, node=None):
+        if action == "undo":
+            with session.lock:
+                w("undo", 1)
+        else:
+            w._do_new_game()
+        return score if node is end.node else 99.0
+
+    w.ensure_current_score = scoring
+    app = _recording_app()
+
+    await server_module._FINISH_ENDED_GAME_FN(session, app, _USER, end)
+
+    create = app.state.repository_dispatcher.user_games_create
+    if action == "new_game":
+        create.assert_not_awaited()  # 旧局的 SGF 已经不在会话上,落了就是把新局的空谱记成那一局
+        return
+    assert w.game.current_node is end.node.parent
+    assert create.await_count == 1
+    assert create.await_args.kwargs["data"]["result"] == ("B+2.5" if score is not None else end.result)
+    assert end.node.parent.end_state is None
+
+
+async def test_multiplayer_research_and_guest_games_are_not_recorded_here(server_module):
+    lobby, lobby_end = _ended_session()
+    lobby.player_b_id, lobby.player_w_id = 1, 2
+    research, research_end = _ended_session(mode="research")
+    guest, guest_end = _ended_session(user_id=None)
+    asked = {"lobby": [], "research": []}
+    lobby.katrain.ensure_current_score = lambda timeout_s=None, node=None: asked["lobby"].append(node)
+    research.katrain.ensure_current_score = lambda timeout_s=None, node=None: asked["research"].append(node)
+    guest.katrain.ensure_current_score = lambda timeout_s=None, node=None: 1.5
+    app = _recording_app()
+
+    await server_module._FINISH_ENDED_GAME_FN(lobby, app, _USER, lobby_end)
+    await server_module._FINISH_ENDED_GAME_FN(research, app, _USER, research_end)
+    await server_module._FINISH_ENDED_GAME_FN(guest, app, None, guest_end)
+
+    assert asked == {"lobby": [], "research": []}
+    assert guest_end.node.end_state == "B+1.5"  # 游客的局照样分出胜负,只是不落账
+    app.state.repository_dispatcher.user_games_create.assert_not_awaited()
+
+
+def test_a_resign_on_a_game_already_being_finished_returns_at_once(web_client):
+    """评审 r1 M1:撞上已结束的认输是空操作 —— 不许排进正在补分的那次收尾后面(最多 15 秒),也不许再补一次分。
+    真实触发路径:galaxy 离页即认输、kiosk 引擎出错框的「认输」、连点。
+
+    双停第二手的 `/api/move` 在补分里被挡住;挡住期间另起线程发 `/api/resign`,最多等 1 秒。
+    错误实现(收尾看的是「这局结束过」而不是「这次请求写出了终局」)下认输排在 `end_game_lock` 后面:
+    1 秒到了照样放行补分,认输随后进收尾、**再补一次分**(第二次调用立即返回)—— 不会挂死,只会红。"""
+    sid, w = _two_human_guest_game(web_client, [None])  # 黑先停一手
+    calls = []
+    resign = {}
+
+    def blocking_score(timeout_s=None, node=None):
+        calls.append(node)
+        if len(calls) == 1:
+            started = time.monotonic()
+
+            def send():
+                resign["response"] = web_client.post("/api/resign", json={"session_id": sid})
+                resign["elapsed"] = time.monotonic() - started
+
+            sender = threading.Thread(target=send, daemon=True)
+            sender.start()
+            sender.join(1.0)
+            resign["thread"] = sender
+        return None  # 补不出分:收尾照「终局」处理
+
+    w.ensure_current_score = blocking_score
+    r = web_client.post("/api/move", json={"session_id": sid, "pass_move": True})  # 白跟停 ⇒ 双停
+
+    resign["thread"].join(5)
+    assert r.status_code == 200, r.text
+    assert resign["response"].status_code == 200, resign["response"].text
+    assert resign["elapsed"] < 1.0, "认输排在补分后面等了"
+    assert len(calls) == 1
+    assert w.game.terminal.node.end_state is None  # 认输没有改写双停终局

@@ -208,6 +208,8 @@ class WebKaTrain(KaTrainBase):
 
         self.engine = None
         self.update_state_callback: Optional[Callable] = None
+        # N22:AI 后台线程写出新的终局事实(AI 跟停 / AI 认输)时调一次,参数是那个 `GameEnd`;SessionManager 装上。
+        self.game_ended_callback: Optional[Callable[[GameEnd], None]] = None
         self.controls = MockControls(self)
         self.play_analyze_mode = MODE_PLAY
         # R1: kiosk (board mode) suppresses per-node auto eval during MODE_PLAY so the
@@ -1185,16 +1187,31 @@ class WebKaTrain(KaTrainBase):
 
     def _do_ai_move_and_broadcast(self, cn):
         """Background thread: generate AI move then broadcast state update."""
+        game = self.game
+        before = getattr(game, "terminal", None)
         try:
             self._do_ai_move(cn)
         except Exception as e:
             self.log(f"Error in AI move generation: {e}", OUTPUT_ERROR)
         finally:
             self._ai_move_pending = False
+            # r1 C4:终局事实要在 update_state() **之前**取 —— 广播之后人可能立刻点「上一手」,
+            # 而收尾要的是「哪一局、在哪一手结束」,不是游标此刻在哪。
+            end = getattr(game, "terminal", None) if game is not None else None
             # Use update_state() instead of bare callback — this both broadcasts
             # AND re-runs _do_update_state(), which re-triggers AI if the game
             # tree changed (e.g., user undid + replayed while this thread ran).
             self.update_state()
+            # N22:这条线程跑完时这一局的终局事实与开始时不是同一个 —— 告诉会话去收尾(补分、落账、进结算)。
+            # 用「不是同一个」而不是「开始时没有」:悔棋另开分支后的第二次终局也要叫(局面线语义,评审 r1 M2)。
+            # 若终局是人在生成期间发请求写的,这里也会叫一次,与请求自己的收尾在 `end_game_lock` 下串行,
+            # `_recorded` 让第二次落账成为空操作 —— 有意接受的重复调用,不另立判别位。
+            callback = getattr(self, "game_ended_callback", None)
+            if callback is not None and end is not None and end is not before and self.game is game:
+                try:
+                    callback(end)
+                except Exception as e:
+                    self.log(f"Error in game-ended callback: {e}", OUTPUT_ERROR)
 
     def _do_ai_move(self, node=None):
         with self.ai_lock:

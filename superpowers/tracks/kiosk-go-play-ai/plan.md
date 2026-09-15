@@ -2871,6 +2871,10 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ### Task 5: N22 终局收尾一个函数:双停先补分再落账;AI 收尾的局也落账/进结算
 
+**执行记录（2026-09-15，已完成）**：根目录真类红灯 12 failed / 37 passed（缺收尾入口、AI 回调与 move 补分），hook 红灯 3 failed / 1 passed；日志分别为 `/tmp/kgpa-task5-red-root.log`、`/tmp/kgpa-task5-red-web.log`。实施后两条独立聚焦后端回归分别 86 passed、349 passed（后者有 311 条既有 `datetime.utcnow` 弃用警告），日志 `/tmp/kgpa-task5-green-root-1.log`、`/tmp/kgpa-task5-green-web-1.log`。Black 已运行，保留 server.py 的 `_report_settlement_loop(session_factory)` 原三行；`git diff --check` 绿，`_record_ai_game(` 源码闸仅定义与 `_finish_ended_game` 中一次调用。平台／大厅原落账入口与将来跨平台薄 helper 合并指引保留，升降级账本两文件未改。
+
+源码偏差：Task 2 已将 timeout 单机落账的旧 `elif` 补上 `and wrote`，本 Task 替换前片段同步到真实源码；hook 接线测试因旧类缺 `_on_game_ended`，在 `monkeypatch.setattr` 即正确失败，而非走到计划描述的 `called == []`。业务实现按 r1 §7，无新增决策。全量后端 3620 passed / 69 failed / 46 errors（`/tmp/kgpa-task5-pytest.log`），前端 1737 passed / 5 skipped（`/tmp/kgpa-task5-vitest.log`），后端和前端新增失败名称集合均为空；`npx tsc -b` 通过。本 Task 无共享前端改动，无需两套构建；三处测试污染已清理。本轮未做视觉，既有视觉仍待 Fan 确认。
+
 **Files:**
 - Modify: `katrain/web/interface.py`(`__init__` 加 `game_ended_callback`;`_do_ai_move_and_broadcast`(`:1084-1095`)在 AI 线程写出新的终局事实时调它一次)
 - Modify: `katrain/web/session.py:6-12`(typing import 与 `GameEnd` import)、`:15-33`(`WebSession` 加 `end_game_lock`)、`:36-45`(`SessionManager.__init__` 加 `on_game_ended`)、`create_session`(`:80-81`,装 `game_ended_callback`)+ 新方法 `_on_game_ended` / `_schedule_game_ended`。**`_on_state` 不动**(理由见 Step 2)
@@ -2890,7 +2894,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
     `async _finish_ended_game(session, app, current_user, end: GameEnd) -> None`(`end` 必填、无默认值)、`async _on_game_ended_off_request(session, end)`;测试钩子 `katrain.web.server._FINISH_ENDED_GAME_FN`
   - 删掉旧版 plan 的 `_apply_counted_result`:写入职责归 `_commit_end_state`,格式化归 `_count_result`
 
-- [ ] **Step 1: 写失败的测试**
+- [x] **Step 1: 写失败的测试**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
@@ -3236,7 +3240,7 @@ cd /Users/fan/Repositories/katrain-kiosk-go-play-ai && CI=true uv run pytest tes
 CI=true uv run pytest tests/web_ui/test_game_end_hook.py -q
 ```
 Expected: hook 文件里 `test_the_ai_thread_ending_a_game_runs_the_hook`、`test_research_sessions_never_run_the_hook`(两条都是 `AttributeError: … '_on_game_ended'`)、
-`test_create_session_wires_the_ai_thread_callback`(`called == []`:`game_ended_callback` 没装,调到的是替身属性)FAIL,`test_a_broadcast_that_merely_shows…` PASS(现状本来就不叫);
+`test_create_session_wires_the_ai_thread_callback`(`monkeypatch.setattr` 时 `AttributeError`:旧类尚无 `_on_game_ended`)FAIL,`test_a_broadcast_that_merely_shows…` PASS(现状本来就不叫);
 根目录文件里:
 - `test_create_app_installs_the_off_request_hook` 与 6 条 `_FINISH_ENDED_GAME_FN` 用例(含 `test_stepping_back_or_starting_over_while_the_end_is_scored` 3 格)FAIL(`AttributeError: module 'katrain.web.server' has no attribute '_FINISH_ENDED_GAME_FN'`);
   这些用例改用真对象之后,各自在错误实现下的红法:比游标 + 游标回退值 → 两个 `undo` 格记不上;结果写到游标那一手 → `parent.end_state` 非空;补分漏传 `node` → 得到 `B+99.0`;
@@ -3245,7 +3249,7 @@ Expected: hook 文件里 `test_the_ai_thread_ending_a_game_runs_the_hook`、`tes
 - `test_a_resign_on_a_game_already_being_finished_returns_at_once` FAIL(`/api/move` 还不补分,`blocking_score` 从没被调:`KeyError: 'thread'`)。
 - `test_an_ordinary_ai_move_reports_nothing` PASS。
 
-- [ ] **Step 2: 实现 `interface.py` 与 `session.py`**
+- [x] **Step 2: 实现 `interface.py` 与 `session.py`**
 
 **为什么触发点放在 AI 线程、不放在 `_on_state`**:`_on_state` 看到的是「这一帧状态带 `end_result`」,它分不出「这一局刚在这里下完」和
 「有人把一份载入的 SGF 翻到了双停终点」(galaxy `ZenModeApp` 就是 play 会话 + `loadSGF`)。放在那里会把别人的棋谱补分、再记成这个用户的对局。
@@ -3351,7 +3355,7 @@ typing import 行改为 `from typing import Awaitable, Callable, Dict, Optional,
             asyncio.run_coroutine_threadsafe(hook(session, end), self._loop).add_done_callback(_log_failure)
 ```
 
-- [ ] **Step 3: 实现 `server.py`**
+- [x] **Step 3: 实现 `server.py`**
 
 ① 模块级 `_count_result`(Task 4 加的)之后加:
 
@@ -3710,7 +3714,7 @@ def _new_terminal(session, before):
 ```
 
 ```python
-        elif not is_multiplayer and current_user and session.user_id:
+        elif not is_multiplayer and current_user and session.user_id and wrote:
             result = session.katrain.game.end_result
             if result:
                 await _record_ai_game(session, app, current_user, result)
@@ -3759,7 +3763,7 @@ import 区 `from katrain.web.server import create_app` 之后加 `from katrain.w
     katrain.side_effect = _dispatch
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- [x] **Step 4: 跑测试确认通过**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
@@ -3777,7 +3781,7 @@ grep -n "_record_ai_game(" katrain/web/server.py
 Expected: 全 PASS。`test_ai_ladder_api.py` 里 `test_ranked_session_still_allows_human_move_and_pass`、`test_ranked_natural_result_saves_once_then_settles_once` 必须仍绿 —— 它们守的是升降级账本只落一次。
 grep 恰好两行:`async def _record_ai_game(` 定义,以及 `_finish_ended_game` 里那一次调用;四个请求入口与 `_on_game_ended_off_request` 都不再直接调它。
 
-- [ ] **Step 5: 基线 diff(后端 + 前端)后提交**
+- [x] **Step 5: 基线 diff(后端 + 前端)后提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai

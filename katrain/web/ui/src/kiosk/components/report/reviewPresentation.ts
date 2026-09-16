@@ -2,6 +2,8 @@ import type { ReportGameStatus } from '../../../features/report/reportModel';
 import type { UserGameSummary } from '../../../api/userGamesApi';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import { interpolate } from '../../utils/interpolate';
+import { withRank } from '../../../utils/rank';
+import type { RequestFailureKind } from '../../../utils/requestFailure';
 
 export type TFn = (key: string, fallback?: string) => string;
 
@@ -48,11 +50,16 @@ const seat = (game: UserGameSummary, color: 'B' | 'W') => ({
   rank: color === 'B' ? game.black_rank : game.white_rank,
 });
 
-function opponentLabel(game: UserGameSummary, mine: 'B' | 'W' | null): string | null {
+/**
+ * 「AI · 6级」。等级走 `withRank` 本地化 —— 库里存的是语言中性的 "6k"/"3d"
+ * (服务端的 i18n 语言是进程全局的,写库时格式化会把别人的语言记下来,而且事后
+ * 再也转不回去),所以显示这一步必须自己转成级/段。导入棋谱的自由文本等级原样透出。
+ */
+function opponentLabel(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn): string | null {
   if (!mine) return null;
   const other = seat(game, mine === 'B' ? 'W' : 'B');
   if (!other.name) return null;
-  return other.rank ? `${other.name} · ${other.rank}` : other.name;
+  return withRank(other.name, other.rank, t);
 }
 
 /** 行首那颗子的颜色。没有「你」的局用黑白各半 —— 拿黑或白顶替等于替它选了一方。 */
@@ -75,7 +82,7 @@ export function rowTitle(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn):
   }
   if (game.source === 'play_local') return t('review:row_local', '本地对局 · 两人');
   // 判不出「你」的时候没有「对手」可言,退回两个名字并排 —— 不挑一方当对手。
-  const opponent = opponentLabel(game, mine)
+  const opponent = opponentLabel(game, mine, t)
     || [game.player_black, game.player_white].filter(Boolean).join(' — ');
   if (isRankedGameType(game.game_type)) {
     return opponent
@@ -98,6 +105,9 @@ export function outcomeLine(game: UserGameSummary, mine: 'B' | 'W' | null, t: TF
   if (!raw) {
     return interpolate(t('review:unfinished_line', '下到第 {n} 手就退出了'), { n: game.move_count });
   }
+  // SGF 的 `Void` = 不判胜负。今天只由星阵人机局写进来(AI 停手或认输,本终端分不出是哪种,
+  // server.py `_record_platform_engine_game`)。规范里有定义的值,照它的意思念,不算猜。
+  if (/^void$/i.test(raw)) return t('review:no_result_line', '这盘没有判出胜负');
   const m = raw.match(/^([BW])\+(.+)$/i);
   if (!m) return raw;                       // 后端存了别的写法就原样念,不猜
   const winner = m[1].toUpperCase() as 'B' | 'W';
@@ -181,4 +191,30 @@ export function rowState(game: UserGameSummary, state: ReportGameStatus): RowSta
     return { kind: 'failed', taskId: failed.id };
   }
   return game.result ? { kind: 'unanalyzed' } : { kind: 'unfinished' };
+}
+
+/**
+ * 请求失败时屏上那半句「为什么」。**不印后端原文**:以前屏 20 写「未找到复盘。」,
+ * 下面直接是 `Request failed 503: {"detail":"Remote server unavailable"}`,用户看不懂,
+ * 也看不出是网络的事(2026-09-14 调研 N24)。
+ *
+ * 分不出原因(`other`)时返回空串,**不编一个原因**:「稍后再试」对一个永久的 409 是假话。
+ */
+export function failureReason(kind: RequestFailureKind, t: TFn): string {
+  switch (kind) {
+    // 不写「连不上云端」:`core/repository.py` 的 `_remote_only` 在云端真连不上、和云端
+    // 自己回 ≥500 这两种情况下都抛同一个 `RemoteServiceUnavailableError`,两者到前端都是
+    // 503(`endpoints/reports.py` 的 `_dispatch_remote_only`),分不出到底是哪一种。
+    case 'offline': return t('review:failure_offline', '云端暂时不可用');
+    case 'not_found': return t('review:failure_not_found', '已经不在了');
+    case 'no_credits': return t('review:failure_no_credits', '积分不足');
+    case 'bad_sgf': return t('review:failure_bad_sgf', '这份谱读不出来');
+    default: return '';
+  }
+}
+
+/** 「做什么没成 · 为什么」。原因分不出时只说前半句。 */
+export function failureLine(prefix: string, kind: RequestFailureKind, t: TFn): string {
+  const reason = failureReason(kind, t);
+  return reason ? `${prefix} · ${reason}` : prefix;
 }

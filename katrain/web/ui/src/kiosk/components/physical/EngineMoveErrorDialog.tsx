@@ -179,6 +179,15 @@ const EngineMoveErrorDialog = ({ error, sessionId, token, boardSize, reminderTic
                 {t('Please remove the stone at {coord}', '请拿回 {coord} 处的棋子').replace('{coord}', coordLabel)}
               </Typography>
             </DialogContent>
+            {/* M2(2026-07-11 登记):等待态原来一颗键都没有、点背景也关不掉,而解除条件是
+                「识别盘面与数字盘面整盘一致连续 N 帧」—— 反光、手影、识别不到盘面时会一直挂住。
+                给一个始终成立的出口:认输,走页面既有的确认流(与出错态同一个 handleResign,
+                同样不自行关弹层 —— 确认之后由 GamePage 清掉)。 */}
+            <DialogActions>
+              <Button onClick={handleResign} color="error">
+                {t('Resign', '认输')}
+              </Button>
+            </DialogActions>
           </>
         )}
       </Dialog>

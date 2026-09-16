@@ -135,4 +135,19 @@ describe('UserGamesAPI', () => {
     await expect(UserGamesAPI.get('token', 'game-1'))
       .rejects.toThrow('Request failed 422: invalid game');
   });
+
+  it('非 2xx 时拒绝的错误带 status 与原始 body,message 不变', async () => {
+    const body = '{"detail":"Remote server unavailable"}';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      text: vi.fn().mockResolvedValue(body),
+    }));
+
+    await expect(UserGamesAPI.delete(null, 'game-1')).rejects.toMatchObject({
+      message: `Request failed 503: ${body}`,
+      status: 503,
+      body,
+    });
+  });
 });

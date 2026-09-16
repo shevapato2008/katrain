@@ -14,6 +14,20 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+# HBV UVC camera values observed through this board's V4L2/OpenCV backend.
+# These are native V4L2 menu values, not OpenCV's backend-dependent 0.25/0.75
+# aliases: on rk3562, writing 0.25 is rejected while 1.0 reliably selects
+# manual exposure and 3.0 lets hardware AE converge.
+CAMERA_AUTO_EXPOSURE_MANUAL = 1.0
+CAMERA_AUTO_EXPOSURE_ON = 3.0
+
+
+def _auto_exposure_readback_matches(target: float, readback: float) -> bool:
+    """Verify that the driver accepted the requested native V4L2 menu value."""
+    if not np.isfinite(readback):
+        return False
+    return abs(target - readback) <= 0.01
+
 
 def _device_to_capture_arg(device_id: int | str) -> str | int:
     """Convert device ID to the argument for cv2.VideoCapture.
@@ -163,10 +177,9 @@ class CameraManager:
             cap.set(cv2.CAP_PROP_AUTOFOCUS, 1)
 
             # Optionally lock exposure / white balance for capture (plan §3.1).
-            # CAP_PROP_AUTO_EXPOSURE=0.25 is the V4L2 "manual" sentinel; the exact
-            # value is backend/camera-specific and tuned on the box.
+            # The HBV camera exposes native V4L2 menu values through OpenCV on rk3562.
             if self._lock_exposure:
-                cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
+                cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_MANUAL)
                 if self._exposure is not None:
                     cap.set(cv2.CAP_PROP_EXPOSURE, self._exposure)
             # White balance: only DISABLE auto-WB when explicitly locking (plan §3.1). The SBC's
@@ -261,10 +274,17 @@ class CameraManager:
     def request_controls(self, exposure: float | None = None, auto_exposure: float | None = None) -> None:
         """Queue camera control changes; the reader thread applies them between reads."""
         with self._controls_lock:
+            changed = False
             if auto_exposure is not None:
                 self._pending_controls["auto_exposure"] = float(auto_exposure)
+                changed = True
             if exposure is not None:
                 self._pending_controls["exposure"] = float(exposure)
+                changed = True
+            if changed:
+                # Do not let a caller mistake the preceding control batch's result for
+                # this queued request. The reader thread replaces None with its readback.
+                self._controls_effective = None
 
     @property
     def controls_effective(self) -> bool | None:
@@ -289,7 +309,10 @@ class CameraManager:
         try:
             ok = True
             if "auto_exposure" in pending:
-                ok = bool(self._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, pending["auto_exposure"])) and ok
+                target = pending["auto_exposure"]
+                ok = bool(self._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, target)) and ok
+                readback = float(self._cap.get(cv2.CAP_PROP_AUTO_EXPOSURE))
+                ok = ok and _auto_exposure_readback_matches(target, readback)
             if "exposure" in pending:
                 target = pending["exposure"]
                 ok = bool(self._cap.set(cv2.CAP_PROP_EXPOSURE, target)) and ok

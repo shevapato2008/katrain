@@ -385,6 +385,20 @@ test('星阵人机屏:道具键在、胜率块不在,动作区照旧贴底且不
     badges: Array.from(document.querySelectorAll('.items .cnt')).map((b) => b.textContent?.trim()),
     hasEval: !!document.querySelector('.kiosk-fold[data-fold="eval"]'),
     actionLabels: Array.from(document.querySelectorAll('[data-testid="game-actions"] button')).map((b) => b.textContent?.trim()),
+    actionRects: Array.from(document.querySelectorAll('[data-testid="game-actions"] button')).map((b) => {
+      const r = b.getBoundingClientRect();
+      return [Math.round(r.width), Math.round(r.height)];
+    }),
+    clickRects: Array.from(document.querySelectorAll('[data-testid="engine-button-cluster"] button')).map((b) => {
+      const r = b.getBoundingClientRect();
+      return [Math.round(r.width), Math.round(r.height)];
+    }),
+    disabledActions: Array.from(document.querySelectorAll('[data-testid="game-actions"] button:disabled')).map((b) => b.textContent?.trim()),
+    switchLabels: Array.from(document.querySelectorAll('.gtoggles[role="group"] button[role="switch"]')).map((b) => b.textContent?.trim()),
+    switchBottom: Math.round(document.querySelector('.gtoggles[role="group"]')!.getBoundingClientRect().bottom),
+    itemTop: Math.round(document.querySelector('.items')!.getBoundingClientRect().top),
+    itemBottom: Math.round(document.querySelector('.items')!.getBoundingClientRect().bottom),
+    actionTop: Math.round(document.querySelector('[data-testid="game-actions"]')!.getBoundingClientRect().top),
     actionsBottom: Math.round(document.querySelector('[data-testid="game-actions"]')!.getBoundingClientRect().bottom),
     railBottom: Math.round(document.querySelector('.kiosk-rail')!.getBoundingClientRect().bottom),
     railOverflow: (() => { const r = document.querySelector('.kiosk-rail') as HTMLElement; return r.scrollHeight - r.clientHeight; })(),
@@ -397,10 +411,14 @@ test('星阵人机屏:道具键在、胜率块不在,动作区照旧贴底且不
   // `—` = **这一次没取到数**,和 `0`(用完了)不是一回事。取图机器上接口是空桩,所以是 `—`。
   expect(g.badges).toEqual(['—', '—', '—']);
   expect(g.hasEval, '星阵局里不该有胜率块 —— 那一屏没有图表键').toBe(false);
-  // 悔棋不在里面 —— **跨平台对弈整局都没有这颗键**(Fan 2026-08-25 亲裁)。
-  // 上一版是四个键,第四个是「悔棋」,只在星阵算招期间撤掉 ⇒ 一局几十次四↔三来回翻,
-  // 而这一排是 `grid-auto-columns: 1fr`,翻一次「认输」就在用户手指底下挪一格。
-  expect(g.actionLabels, '星阵局的动作区不是三个键').toEqual(['停一手', '数子', '认输']);
+  // 点击动作排在同一组；平台原界面的悔棋保留为灰色，四颗尺寸完全一致。
+  expect(g.actionLabels, '星阵局动作区应为悔棋/停一手/数子/认输').toEqual(['悔棋', '停一手', '数子', '认输']);
+  expect(g.disabledActions, '机器人隧道没有悔棋接口，只有悔棋应置灰').toEqual(['悔棋']);
+  expect(g.clickRects, '七颗点击按钮没有全部进入同一组').toHaveLength(7);
+  expect(new Set(g.clickRects.map((r) => r.join('×'))).size, '七颗点击按钮尺寸不一致').toBe(1);
+  expect(g.switchLabels, '滑动性质的坐标/手数应单独成组').toEqual(['坐标', '手数']);
+  expect(g.switchBottom, '滑动开关应与点击按钮分组').toBeLessThan(g.itemTop);
+  expect(g.actionTop - g.itemBottom, '两行点击按钮没有连续摆放').toBeLessThanOrEqual(8);
   expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
   expect(g.railOverflow, '右栏溢出').toBeLessThanOrEqual(0);
   expect(g.docScrollHeight, '整屏溢出').toBeLessThanOrEqual(600);

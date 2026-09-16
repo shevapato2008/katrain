@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { UserGameSummary } from '../../../api/userGamesApi';
-import { outcomeLine, rowDisc, rowState, rowTitle, yourColor } from './reviewPresentation';
+import { failureLine, failureReason, outcomeLine, rowDisc, rowState, rowTitle, yourColor } from './reviewPresentation';
 
 /**
  * 这些判断错了**屏上看不出来** —— 出来的还是一句通顺的中文,只是说的是另一局棋。
@@ -96,8 +96,15 @@ describe('outcomeLine —— 这一局怎么结束的', () => {
     expect(outcomeLine(game({ result: null, move_count: 22 }), 'B', t)).toBe('下到第 22 手就退出了');
   });
 
+  // `Void` 是 SGF 规范里定义好的「不判胜负」,今天由星阵人机局写进来(AI 停手或认输,分不出是哪种)。
+  // 照它的意思念,不是猜;规范之外的写法仍原样念。
+  it('Void 念成「这盘没有判出胜负」', () => {
+    expect(outcomeLine(game({ result: 'Void' }), 'B', t)).toBe('这盘没有判出胜负');
+    expect(outcomeLine(game({ result: 'void' }), null, t)).toBe('这盘没有判出胜负');
+  });
+
   it('后端存了别的写法就原样念,不猜', () => {
-    expect(outcomeLine(game({ result: 'Void' }), 'B', t)).toBe('Void');
+    expect(outcomeLine(game({ result: 'Unknown' }), 'B', t)).toBe('Unknown');
   });
 });
 
@@ -145,5 +152,17 @@ describe('rowState —— 分析到哪一步了', () => {
   it('没有任务时,下完的叫「未分析」、没下完的叫「未终局」', () => {
     expect(rowState(game(), {})).toEqual({ kind: 'unanalyzed' });
     expect(rowState(game({ result: null }), {})).toEqual({ kind: 'unfinished' });
+  });
+});
+
+describe('failureLine —— 请求失败时屏上怎么说', () => {
+  // 分不出原因时**不编一个**:「稍后再试」对一个永久的 409 是假话。也不印后端原文。
+  it('分得出原因就说「做什么没成 · 为什么」,分不出只说前半句', () => {
+    expect(failureLine('删除对局失败', 'offline', t)).toBe('删除对局失败 · 云端暂时不可用');
+    expect(failureLine('报告读不出来', 'not_found', t)).toBe('报告读不出来 · 已经不在了');
+    expect(failureLine('生成报告', 'no_credits', t)).toBe('生成报告 · 积分不足');
+    expect(failureLine('导入 SGF 失败', 'bad_sgf', t)).toBe('导入 SGF 失败 · 这份谱读不出来');
+    expect(failureLine('删除对局失败', 'other', t)).toBe('删除对局失败');
+    expect(failureReason('other', t)).toBe('');
   });
 });

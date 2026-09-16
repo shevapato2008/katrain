@@ -3285,3 +3285,24 @@ msgstr ""
 
 msgid "live:loading_match"
 msgstr "Cargando la partida…"
+
+msgid "vision:offcenter_at"
+msgstr ": la piedra no está centrada"
+
+msgid "vision:offcenter_plain"
+msgstr "Esta piedra no está centrada"
+
+msgid "vision:offcenter_hint"
+msgstr "Mueve la piedra a"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "; se detectará automáticamente"
+
+msgid "vision:play_here_anyway"
+msgstr "Jugar de todos modos en"
+
+msgid "vision:offcenter_dismiss"
+msgstr "La ajustaré"
+
+msgid "review:start_analysis"
+msgstr "Iniciar análisis"

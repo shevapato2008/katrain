@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useAuth } from '../../context/AuthContext';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import { CATEGORY_META, UNIT_SIZE, fetchTsumegoSequence, isWrongEntry, levelChinese, loadErrorCopy, readAutoAdvance, writeLastCategory, writeSequence } from './tsumegoUnits';
 import { interpolate } from '../utils/interpolate';
@@ -38,7 +37,6 @@ const TsumegoUnitsPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { unitProgress, progress, serverLoadFailed } = useTsumegoProgress();
-  const { user } = useAuth();
 
   const [problemIds, setProblemIds] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,8 +65,8 @@ const TsumegoUnitsPage = () => {
 
   // 进了这一类就记下来 —— 训练营那一排的 `is-current` 靠它。**指针不是进度**,按账号存(N10)。
   useEffect(() => {
-    if (category) writeLastCategory(user?.id, category);
-  }, [category, user?.id]);
+    if (category) writeLastCategory(category);
+  }, [category]);
 
   const isAll = category === 'all';
   const meta = category ? CATEGORY_META[category] : undefined;

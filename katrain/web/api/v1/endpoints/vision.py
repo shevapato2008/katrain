@@ -345,6 +345,8 @@ async def retry_engine_move(
       re-arms the orchestrator's engine_error context with it (detection stays
       paused throughout — never resumed mid-retry), HTTP 200 {"ok": false, "detail",
       "recovery_token": <new>}.
+    - game_ended -> clear the recovery pause, record the terminal game for its
+      session owner, and return {"ok": true, "game_ended": true}.
     """
     episode = _consume_recovery_episode(request, body, current_user)
     tracker = request.app.state.engine_recovery
@@ -357,6 +359,22 @@ async def retry_engine_move(
             raise RuntimeError("Platform gateway not available")
         await gateway.play_move(body.session_id, col, row, user_id=0)
     except Exception as e:
+        from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+        if isinstance(e, PlatformMoveRejectedError) and e.reason == "game_ended":
+            # Import here to avoid the server/router import cycle during package setup.
+            from katrain.web.server import _record_platform_engine_game_off_request
+
+            if orchestrator is not None:
+                orchestrator.clear_engine_error()
+            manager = getattr(request.app.state, "session_manager", None)
+            try:
+                session = manager.get_session(body.session_id) if manager is not None else None
+            except KeyError:
+                session = None
+            if session is not None:
+                await _record_platform_engine_game_off_request(session, request.app)
+            return {"ok": True, "game_ended": True}
         new_episode = tracker.trip_now(game_id=episode.game_id, coords=episode.coords, detail=str(e))
         if orchestrator is not None:
             orchestrator.enter_engine_error(episode.coords, new_episode.recovery_token)

@@ -29,11 +29,13 @@ exercising the REAL guard code in server.py without ever touching real Kivy.
 import threading
 import time
 import uuid
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from katrain.web.api.v1.endpoints.auth import get_current_user
 from katrain.web.platforms.gateway import PlatformCommandGateway
 from katrain.web.platforms.manager import PlatformManager
 from katrain.web.platforms.models import PlatformGameContext
@@ -48,6 +50,9 @@ def _make_mock_session(session_id=None):
     session.last_access = time.time()
     session.pending_count_request = None
     session.pending_count_timestamp = None
+    session.user_id = None
+    session.player_b_id = None
+    session.player_w_id = None
     katrain = MagicMock()
     katrain.game_type = "free"
     katrain.get_state.return_value = {"game_type": "free"}
@@ -57,6 +62,7 @@ def _make_mock_session(session_id=None):
 
 def _build_app():
     app = create_app(enable_engine=False)
+    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(id=1)
     pm = PlatformManager(app.state.session_manager)
     app.state.platform_manager = pm
     app.state.platform_gateway = PlatformCommandGateway(pm, app.state.session_manager)

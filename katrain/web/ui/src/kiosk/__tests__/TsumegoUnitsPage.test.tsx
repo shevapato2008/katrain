@@ -5,6 +5,9 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { sequenceKey, UNIT_SIZE } from '../pages/tsumegoUnits';
 import type { TsumegoProgressEntry } from '../../context/TsumegoProgressContext';
+import { __resetKioskActivityStorageForTests, setKioskIdentity } from '../storage/kioskActivityStorage';
+
+const TEST_UUID = 'tsumego-units-test-user';
 
 /**
  * 屏 12 · 单元列表。**文案在 2026-08-22 按稿子整屏换过**(Task 13),所以和上一版对不上是预期的:
@@ -59,6 +62,8 @@ beforeEach(() => {
   progressFlags.failed = false;
   sessionStorage.clear();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   installFetch();
 });
 
@@ -104,7 +109,7 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
     expect(screen.queryByText('整级一起做')).toBeNull();
     expect(screen.queryByText('只做错过的')).toBeNull();
     expect(JSON.parse(sessionStorage.getItem(sequenceKey('15k', 'all'))!)).toEqual(allIds.map((item) => item.id));
-    expect(localStorage.getItem('kiosk_tsumego_last_category:u7')).toBe('all');
+    expect(localStorage.getItem(`kiosk_tsumego_last_category:${TEST_UUID}`)).toBe('all');
   });
 
   it('综合训练会把整级接口的多页题序完整拼起来', async () => {
@@ -207,7 +212,7 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
       total: ids.length,
     }));
     for (let i = 0; i < 3; i += 1) progressMap[`q${i}`] = { completed: true, attempts: 1 };
-    localStorage.setItem('kiosk_tsumego_autoadvance', 'false');
+    localStorage.setItem(`kiosk_tsumego_autoadvance:${TEST_UUID}`, 'false');
     renderPage();
     await waitFor(() => expect(screen.getByText('第 1-20 题')).toBeInTheDocument());
     const stats = Array.from(document.querySelectorAll('.kiosk-stat')).map((s) => [
@@ -267,7 +272,7 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
 
   it('进了这一类就记下来 —— 训练营那一排的高亮靠它', async () => {
     renderPage('15k', 'semeai');
-    await waitFor(() => expect(localStorage.getItem('kiosk_tsumego_last_category:u7')).toBe('semeai'));
+    await waitFor(() => expect(localStorage.getItem(`kiosk_tsumego_last_category:${TEST_UUID}`)).toBe('semeai'));
   });
 
   it('加载中说的是加载中,不是「这一类没有题」', () => {

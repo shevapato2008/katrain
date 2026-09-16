@@ -258,12 +258,18 @@ class RepositoryDispatcher:
     # ── User Games (online→remote, offline→local+sync) ──
 
     async def user_games_create(self, user_id: int, data: Dict) -> Dict:
-        if self.is_online:
+        # The cloud attributes this POST to its bearer. If the shared box is
+        # currently signed in as somebody else, keep the owner's game local and
+        # queue it until their cloud session is active.
+        bound = getattr(self._remote_client, "bound_user_id", None)
+        if self.is_online and (bound is None or str(bound) == str(user_id)):
             try:
                 return await self.remote_user_games.create_game(data)
             except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
                 logger.warning("user_games_create remote failed, falling back to local: %s", e)
-        # Offline or remote failed — write locally
+        elif self.is_online:
+            logger.info("user_games_create: cloud session is user %s, keeping user %s's game local", bound, user_id)
+        # Offline, remote failed, or another user's cloud session is active.
         result = self._local_user_game_repo.create(
             user_id=user_id,
             sgf_content=data.get("sgf_content", ""),

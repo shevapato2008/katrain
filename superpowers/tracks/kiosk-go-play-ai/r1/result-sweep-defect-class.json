@@ -1,0 +1,104 @@
+{
+  "instances": [
+    {
+      "shape": "终局判定读「游标上有没有结果」而不是对局级终局标记(cursor-relative terminal)",
+      "location": "katrain/core/game.py:313-317(end_result 只看 current_node);kiosk GameControlPanel.tsx:443-448(终局后才出现的着法导航)→ hooks/useGameSession.ts:177(「上一手」= API.undo(sid,1))→ server.py:1005-1017;GamePage.tsx:231、361;服务端终局/落子入口 server.py:994、1918、2022、2132 的「已结束」判断同样读游标;计划新代码 plan:1640-1676、1924、2177 全部建在它上面",
+      "description": "终局结果写在节点上,end_result 读游标。kiosk 终局卡片下方唯一能点的就是着法导航,按一次「上一手」,get_state 的 end_result 就变成 None。前端随即 isGameOver=false:终局卡片和导航排消失,数子/悔棋/停一手/认输重新出现,writeActiveSession 把这局已结束的棋重新写成「继续上一局」。此时这些键全部被服务端接受:认输和数子在旧节点写出与账上不同的结果(_recorded 已置,账里留第一次结果,屏上和 SGF 是新的);停一手或落子开出新分支,对局继续,轮到 AI 时 AI 线程接着下,之后的终局不再落账。C4 只点到计划 _finish_ended_game 回退这一个消费者。根子是「终局 = 游标上有结果」这个判别位本身,计划的 A18 时钟、A12 数子、N21 AI 提交守卫都依赖它。升降级的 undo/redo 被 guard_ai_ladder_ranked_session 挡住,不受影响。",
+      "evidence": "scratchpad/r1/repro_cursor_terminal.py(真 WebKaTrain):认输后 end_result=W+R;_do_undo(1) 后 end_result=None、player_to_move=W;再 _do_resign() 在旧节点写 B+R,终局节点仍是 W+R;_do_play 后新节点 end_result=None;双停 board-game-end 后退一手同样得到 None。GameControlPanel.tsx:443 `{isGameOver && (<div className=\"kiosk-movenav\" data-testid=\"nav-controls\">`;GamePage.tsx:361 `const isGameOver = !!gameState.end_result;`",
+      "severity": "high",
+      "already_covered_by_codex_finding": "none",
+      "suggested_fix": "给对局一个不随游标变的终局标记:第一次写终局时记下终局节点和结果(例如 WebKaTrain.game_over),新开局/loadSGF 时清掉,get_state 另发 game_over 字段。kiosk 的 isGameOver、activeSession、时钟 active 改读 game_over。/api/move、resign、timeout、count/request、视觉落子在 session.lock 内见到 game_over 一律 409。终局后的导航只移动查看游标。补真 WebKaTrain 用例:终局→上一手→认输/落子被拒,结果不变。"
+    },
+    {
+      "shape": "AI 后台生成完成后不复核自己算的是哪个节点就提交(await 之后不复核身份)",
+      "location": "katrain/web/interface.py:1102(只在生成前比一次 current_node);katrain/core/ai.py:1974-1981(提交到提交时刻的 game.current_node);计划 plan:698-721(_game_already_ended 只看 end_state);触发:GameControlPanel.tsx:301-304(人机自由对弈 AI 思考中悔棋照样可按)、server.py:1005-1017(_guard_engine_move_pending 只挡星阵引擎局)",
+      "description": "流程:人落子,AI 开算(盒上要几秒),人按「悔棋」。'smart' 在 AI 回合只退 1 手,游标回到轮黑的节点。AI 算完后 game.play(Move(W)) 仍落在这个轮黑的节点下,白连下两手,棋谱顺序坏掉;用户看到的是悔棋没生效、AI 还多下了一手。计划的 N21 守卫只问当前节点有没有 end_state,对「节点已经换了」这种情况无效。_do_ai_move_and_broadcast 注释里指望「重新触发 AI」兜底,但错误的提交已经落进了树。",
+      "evidence": "scratchpad/r1/repro_ai_commit_after_undo.py(真 WebKaTrain + 真 generate_ai_move,策略桩在 generate_move 中途调 _do_undo('smart')):输出 AI computed for node depth 3 -> committed under parent depth 2 | parent.next_player = B | committed move player = W | same node? False",
+      "severity": "high",
+      "already_covered_by_codex_finding": "none",
+      "suggested_fix": "_do_ai_move 把开算时的 cn 传进 generate_ai_move。提交时在与悔棋/导航/终局写入共用的短锁里检查 game.current_node is cn 且对局未终局,不满足就丢弃并重新 update_state。或者:/api/undo、/api/nav 在 _ai_move_pending 期间回 409。用例用真 WebKaTrain,在 generate_move 内部调 undo,断言没有生成新节点。"
+    },
+    {
+      "shape": "终局守卫只认一种终局写法(end_state),漏掉双停派生的终局",
+      "location": "计划 plan:698-705 `_game_already_ended = bool(current_node.end_state)`、plan:715-721;katrain/core/game.py:313-317(双停终局不写 end_state);计划 Task 5 只在允许分析且拿到分数时才补写 end_state(plan:1641-1652),升降级、无引擎、补分超过 15 秒的双停终局永远没有 end_state",
+      "description": "流程:人停一手,AI 线程开算;人又点一次「停一手」(按钮在 AI 回合不禁用,双击很常见,见下条)。服务端把第二手停记成白,双停终局。/api/move 进入 _finish_ended_game,等最多 15 秒补分。这期间 AI 线程算完,守卫读到 end_state=None 放行,白子落在双停终局之后,局面复活。_score_two_pass_end 醒来发现 current_node 变了,返回 None;回退读新节点 end_result=None ⇒ 这一局不落账。计划 Task 5 的 AI 线程回调也补救不了:提交后 game.end_result 为假,不会触发回调。",
+      "evidence": "scratchpad/r1/repro_move_attributed_to_ai.py:黑落子后连续两次 _do_play(None) → end_result='board-game-end'、current_node.end_state=None,计划守卫的值为 False",
+      "severity": "high",
+      "already_covered_by_codex_finding": "none",
+      "suggested_fix": "守卫至少改读 game.end_result(包含双停),最好读上一条的对局级 game_over 标记。双停在 /api/move 的锁内就立即记下终局标记;之后补分只改结果文字,不动「已终局」这一位。补用例:双停且没有 end_state 时 generate_ai_move 不落子。"
+    },
+    {
+      "shape": "单机局落子/停一手只信浏览器侧轮次,服务端按游标当前轮到谁记颜色",
+      "location": "server.py:951-960(轮次校验只覆盖多人局,另有升降级守卫)、server.py:992-995;interface.py:1215 `Move(coords, player=self.next_player_info.player)`(不看这一座是不是 AI);components/Board.tsx:647-648(轮次只在浏览器判);hooks/useGameSession.ts:161-164(onMove 不应用响应里的 state,只等 WS);GameControlPanel.tsx:305(停一手在 AI 回合不禁用);kiosk/shell/KioskActions.tsx:60-62(无防连点)",
+      "description": "自由对弈人机局:浏览器还没收到自己那手的广播时(节流 250ms;或 WS 断了,Task 11 恰好让人留在这块不更新的盘上)再点一个点,服务端把这一子记成 AI 的颜色,AI 线程随后再提交自己的白子 ⇒ 白连下。「停一手」双击 = 一次操作停两手(黑停+白停),对局当场按双停结束;pvp_local 双击也会把两人的停都按掉。与 C1 同一形状(请求不带期望节点/颜色),但出在 /api/move 这条最常用的路上,并且是上一条双停缺陷最直接的触发方式。",
+      "evidence": "scratchpad/r1/repro_move_attributed_to_ai.py:黑下 (3,3) 后立即再 _do_play((4,4)) → 输出 second human tap recorded as: W;AI 回合内 _do_play(None) → 输出 pass during AI turn recorded as: W",
+      "severity": "high",
+      "already_covered_by_codex_finding": "none",
+      "suggested_fix": "/api/move 带上 expected_node_id(或期望颜色),在 session.lock 内与 id(current_node) 比对,不符回 409。有 AI 座位的局在 next_player_info.ai 时一律 409。onMove 和停一手应用 HTTP 响应里的 state。停一手按钮在非本方回合禁用,并加在途闩。"
+    },
+    {
+      "shape": "终局写入口不检查已有终局,后写者覆盖先写者(缺少先写者胜)",
+      "location": "interface.py:1464-1469(_do_resign/_do_timeout 无条件写);server.py:1918、2132(非升降级分支锁内不复核);katrain/core/ai.py:1953-1961(AI 认输分支无条件写 {opponent}+R);计划 plan:678-693 重写 _do_resign 时未加闸,plan:724-740。升降级有 guard_ai_ladder_ranked_not_ended(ranked_session_guard.py:225-241),自由局和本地局没有",
+      "description": "方向与 C2 相反:数子、双停补分或 AI 认输已经写下结果后,又到达一个基于过期浏览器状态的认输(断线时「退出」即认输,正是 C5 那条出口)或超时,服务端照写不误。按计划改了判负方之后,覆盖还会翻转胜负:人执黑数子得 B+2.5,再认输就成了 W+R。_recorded 已置 ⇒ 账里是第一次的结果,屏上和之后的 SGF 是第二次的。AI 认输分支同样可能覆盖人刚写下的 W+R(要等 ai_lock,窗口小)。",
+      "evidence": "scratchpad/r1/repro_cursor_terminal.py 第 3 段:end_state='B+2.5' 后 _do_resign() → 'B+R',_do_timeout() → 'B+T'(这是现状的判负方;换成计划的 _do_resign,人执黑时得到 W+R)。server.py:1917-1918 与 2129-2133 锁内没有任何终局检查。",
+      "severity": "medium",
+      "already_covered_by_codex_finding": "none",
+      "suggested_fix": "认输、超时、数子、双停补分、AI 认输统一走一个写终局的函数:在 C3 建议的共用短锁里,已有终局标记就拒绝(409 Game is already over);AI 认输分支也在同一把锁内复核。补真 WebKaTrain 用例:数子后认输被拒,结果不变。"
+    },
+    {
+      "shape": "计划 A18 时钟按游标判断谁在走钟,不看是否停在叶子节点",
+      "location": "计划 plan:1924(active = timed && !paused && !end_result && player_to_move === color)、plan:2176-2185(handleClockExpired 只看浏览器 state);interface.py:893-894(update_timer 只给叶子计时);interface.py:1467-1469(_do_timeout 写在游标所在节点)",
+      "description": "计时局终局后按「上一手」(见第一条),游标离开叶子,end_result 变 null,客户端就把那一手轮到的一方当成正在走钟。main_time_used/periods_used 是全局累计量,current_node_time_used 却取自那个旧节点,读秒局在旧节点停留一个读秒长度就判「耗尽」⇒ 发 /api/timeout ⇒ 服务端在非叶子的旧节点写 X+T。服务端的钟在非叶子节点本来不走,两边判据不一致。与 C1 是同一个处理函数,但这里由导航触发,不是漏收广播;C1 的「校验轮次」挡不住,因为此时轮次恰好对得上。",
+      "evidence": "plan:1924 的代码没有引用 gameState.children;get_state 同时下发 children(interface.py:561-563)与游标的 player_to_move(:549);update_timer 在 cn.children 非空时直接 return(:893)",
+      "severity": "medium",
+      "already_covered_by_codex_finding": "none",
+      "suggested_fix": "active 加上 gameState.children.length === 0 和对局级 game_over 两个条件。超时请求带 node id,服务端要求该节点是叶子、对局未终局、且按服务端时钟确实耗尽。补用例:state 带 children 时时钟不走、不回调。"
+    },
+    {
+      "shape": "视觉落子:锁外用缓存判轮次,锁内不复核轮次和终局,且颜色取服务端游标而非识别结果",
+      "location": "server.py:3198-3208(expected_player 取自 session.last_state,在锁外);server.py:3241-3242(锁内直接 katrain(\"play\"));interface.py:1215;core/physical_play_orchestrator.py:326-329(终局只关灯,不暂停识别)。升降级分支 server.py:3176-3185 锁内有 guard_ai_ladder_ranked_human_action,非升降级分支没有",
+      "description": "自由对弈或本地对局用实体盘时有两种情况:① 终局(认输/数子/AI 认输)后识别仍在运行,盘上再放一子,只要颜色恰好是终局节点的下一手,服务端就在终局节点后落子,局面复活,之后不落账;② last_state 是上一次广播的缓存,锁外判完轮次、进锁之前换了手(AI 落子、屏幕悔棋),_do_play 就按服务端当前轮次记颜色,识别到的黑子被记成白子。",
+      "evidence": "_handle_confirmed_move 非升降级分支锁内只有一行 session.katrain(\"play\", move.coords);orchestrator 的暂停原因只有 lag/hint/engine_error/awaiting_removal,没有终局(grep _add_pause_reason)。未上板复现。",
+      "severity": "medium",
+      "already_covered_by_codex_finding": "none",
+      "suggested_fix": "锁内复核:对局级终局标记存在就拒绝;katrain.game.current_node.next_player 与识别到的颜色不符也拒绝,并 re-arm 识别。orchestrator 加一个终局暂停原因。"
+    },
+    {
+      "shape": "大厅多人局终局落账没有幂等,也不检查是否已终局",
+      "location": "server.py:1925-1948(resign)、1985-2003(_complete_count 多人分支)、2040-2050(第二人请求数子视为接受)、2078-2111(respond_count 无终局检查)、2137-2159(timeout)、2167-2209(leave);api/v1/endpoints/auth.py:419-472(登出判负);core/game_repo.py:25-80(每次新增行,无唯一约束);计划 plan:724-740 在这个块里改了判负方,但没加闸",
+      "description": "几种情况:一方认输后,对方屏上还开着「对方请求数子」的弹窗,点接受 ⇒ _complete_count 覆盖 W+R、再记一行 UserGame、再广播一次胜方相反的 game_end;认输后离开或登出 ⇒ 又记一行 F;两人几乎同时认输 ⇒ 两行结果相反;认输时 pending_count_request 不清。timeout 的胜方按「调用者的对手」计算,树上判负的却是轮到方,两者只在调用者恰好是轮到方时一致。只影响云端(盒上 game_repo 为 None)。",
+      "evidence": "上述每处调用 record_multiplayer_game 之前都没有检查 session.game_ended 或 end_result;game_repo.record_multiplayer_game 每次都 session.add 新行",
+      "severity": "medium",
+      "already_covered_by_codex_finding": "none",
+      "suggested_fix": "多人局终局写入也走「已终局即拒」的共用函数:锁内先查再写,用会话级记录标记或唯一约束保证只落一次账。认输和超时时清掉 pending_count_request。timeout 的胜方按服务端轮次推导。"
+    },
+    {
+      "shape": "计划的测试用替身和同步桩,对真实的并发交错无效",
+      "location": "plan:526-548(_EndsMidGeneration 在检查之前同步写 end_state);plan:1397-1415(_ai_thread_game 用 monkeypatch 换掉 generate_ai_move,守卫不在测试路径上);plan:1464-1481(gather 用例用 MagicMock 会话,session.katrain.game.current_node 永远是同一个 Mock,身份检查恒过);plan:1024-1038(数子端点用 MagicMock + 同步 side_effect,等待期间状态不可能变);plan:1296-1336(hook 测试用 MagicMock katrain);plan:2134-2160(MOCK_TIMEOUT_B 绕过时钟,state 固定);plan:2019-2057(GameControlPanel 时钟用例的 state 没有 children)",
+      "description": "前 7 条里的每一条,在计划的测试中都不可能变红:没有任何用例在 await 或线程窗口里移动游标、换手、写终局或打出双停,替身的 current_node 身份也永远不变。C2/C3/C4 各建议补一条回归测试,但没有指出现有用例在结构上就测不出这类问题;照原计划补用例,仍会沿用这些替身。",
+      "evidence": "见上述计划行;例如 plan:1650 的 `game.current_node is not node` 在 MagicMock 下恒为 False",
+      "severity": "medium",
+      "already_covered_by_codex_finding": "none",
+      "suggested_fix": "在 tests/ 根目录用真 WebKaTrain 构造交错:在 strategy.generate_move 或 ensure_current_score 的桩内部执行 undo、resign、第二次 pass、nav。前端时钟用例补两条:一条 children 非空,一条 player_to_move 与回调颜色不一致。"
+    },
+    {
+      "shape": "本地对局认输框点名的一方来自浏览器状态,请求本身不携带这一方",
+      "location": "计划 plan:784-799(标题用 gameState.player_to_move);plan:688-690(服务端回退为请求到达时的 current_node.next_player);api.ts:389-390(resign 只发 session_id)",
+      "description": "两人面对面对局(尤其是实体盘:弹窗开着时识别照样落子)或 WS 有延迟时,确认框写的是「黑方认输？」,请求到达服务端时却已轮到白,结果被判负的是白。与 C1 同一形状。",
+      "evidence": "计划代码:标题的判别位与服务端判负方的判别位取自不同时刻,请求体里没有 loser",
+      "severity": "low",
+      "already_covered_by_codex_finding": "none",
+      "suggested_fix": "确认时把标题里的那一方作为 loser、连同 expected_node_id 一起发给 /api/resign,服务端不符回 409。"
+    },
+    {
+      "shape": "升降级的远端终局标记只在 await 云端状态之前检查,拿锁后不复核",
+      "location": "server.py:66-104(_guard_ai_ladder_cloud_active 先 await 云端 lifecycle 再返回);core/ranked_session_guard.py:225-255(not_ended 与 human_action 都不看 ai_ladder_remote_ended);api/v1/endpoints/ai_ladder.py:354-367(标记在 ai_ladder_commit_lock 下写,而 /api/resign、timeout、count、move 拿的是 session.lock)",
+      "description": "盒上的认输、超时、数子或双停第二手,在 await 到云端 lifecycle=active 之后、拿到 session.lock 之前,另一台设备结束了这局,心跳把 remote_ended 置上。本机照样在树上写本地结果并走结算。云端是权威,账本有墓碑和幂等键,主要后果是盒上显示与云端结果不一致。计划 Task 5 给 /api/move 双停加的 _finish_ended_game 也不检查这个标记。",
+      "evidence": "guard_ai_ladder_ranked_not_ended 只检查 end_result、end_state、_recorded;mark_ai_ladder_remote_terminal 用的是 commit_lock",
+      "severity": "low",
+      "already_covered_by_codex_finding": "none",
+      "suggested_fix": "guard_ai_ladder_ranked_not_ended 加上 session.ai_ladder_remote_ended 检查;终局写入与 mark_ai_ladder_remote_terminal 共用同一把锁。"
+    }
+  ],
+  "searched": "搜过的位置:\n- 计划:plan.md Task 0-12 全文。重点是 Task 2 的 _do_resign 与 _game_already_ended、/api/resign;Task 4 的 ensure_current_score 与 count 端点的 await;Task 5 的 _do_ai_move_and_broadcast 回调、_score_two_pass_end、_finish_ended_game、/api/move;Task 6 的 useGoClock 与 handleClockExpired;Task 10、11;以及各 Task 的测试替身。\n- 后端源码:\n  - server.py:/api/move、undo、redo、nav、new-game、game/setup、sgf/load、ai-move、resign、count/request、count/respond、timeout、multiplayer/leave;_complete_count、_record_ai_game(_locked);_guard_ai_ladder_cloud_active;_handle_confirmed_move(视觉)。\n  - interface.py:_do_play、_do_undo、_do_nav、_do_new_game、_do_load_sgf、_do_resign、_do_timeout、_do_ai_move(_and_broadcast)、update_state、_do_update_state、update_timer、WebGame.play/set_current_node、get_state 的 timer/children/end_result。\n  - core/ai.py:generate_ai_move 的 AI 认输分支与提交段、LadderStrategy。\n  - core/game.py:play、undo、end_result。\n  - session.py:_on_state、create_session、cleanup。\n  - ranked_session_guard.py 全部守卫。\n  - ai_ladder.py:mark_ai_ladder_remote_terminal、/games/{id}/end。\n  - auth.py 登出判负、game_repo.record_multiplayer_game、physical_play_orchestrator 的暂停原因。\n- 用 grep 穷举过的写法:katrain(\"play\"、end_state =、record_multiplayer_game、ai_ladder_remote_ended/commit_lock、update_timer/last_timer_update、ai_lock、timer/ 配置写入口。\n- 前端:\n  - kiosk GamePage.tsx 的 handleAction、handleExit、activeSession effect、isGameOver、两个认输弹窗。\n  - GameControlPanel.tsx 的 playActions 与终局导航排、KioskActions、Board.tsx 的点击闸。\n  - useGameSession.ts 的 onMove、handleAction、WS onclose。\n  - galaxy GamePage 与 GameRoomPage 的 timeout/leave 调用方,确认多人房间前端不发 timeout。\n- 核过后排除的:\n  - AI 思考时间被记到人头上:不成立,WebGame.play 与 get_state 都会调 update_timer。\n  - timer_configured 跨局不复位:kiosk 每局新建会话,走不到。\n  - 平台网关(星阵)的终局路径:按 §6.0 归跨平台赛道。\n  - 数子在途期间 AI 落子、同一局第二次数子:与 C2 同一位置、同一修法,记为已覆盖。\n  - 补分期间 undo/new-game/game/setup 让回退读到新游标:与 C4 同一位置,记为已覆盖。\n- 复现:三个脚本在 scratchpad/r1/ 下(repro_cursor_terminal.py、repro_move_attributed_to_ai.py、repro_ai_commit_after_undo.py),都用真 WebKaTrain(force_package_config=True,save_config 置空,enable_engine=False)。没有跑 pytest/vitest,跑完 git status --short 为空,没有造成污染。\n- 未验证:视觉路径没有上板;多人局、升降级远端终局只读了源码,没有写复现。"
+}

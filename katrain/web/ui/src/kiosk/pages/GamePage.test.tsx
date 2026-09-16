@@ -5,6 +5,7 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { API, type GameState } from '../../api';
 import GamePage, { deriveAiTurnState } from './GamePage';
+import { getCurrentKioskActivityStorage, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
 // --- Mocks -----------------------------------------------------------------
 
@@ -148,6 +149,7 @@ describe('GamePage', () => {
     sessionStorage.clear();
     localStorage.clear();
     mockLadderStatus.mockReset();
+    __resetKioskActivityStorageForTests();
   });
 
   it('renders authoritative ranked settlement feedback after end_result', async () => {
@@ -390,9 +392,11 @@ describe('GamePage', () => {
   describe('State B — RecalibrationModal (B1.4)', () => {
     it('opens when pose is lost mid-game, and 重新标定 calls GeometryAPI.calibrate("manual")', async () => {
       mockIsVisionEnabled = true;
-      mockPoseLocked = false;
+      mockPoseLocked = true;
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
-      renderPage();
+      const view = renderPage();
+      mockPoseLocked = false;
+      view.rerender(pageTree());
       expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
       fireEvent.click(screen.getByText('重新标定'));
       await waitFor(() => expect(mockCalibrate).toHaveBeenCalledWith('manual'));
@@ -415,9 +419,11 @@ describe('GamePage', () => {
     // the board moves again.
     it('re-opens on a fresh pose-loss after being dismissed and the board regaining lock', async () => {
       mockIsVisionEnabled = true;
-      mockPoseLocked = false;
+      mockPoseLocked = true;
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
       const view = renderPage();
+      mockPoseLocked = false;
+      view.rerender(pageTree());
 
       // 1. Initial pose-loss opens the modal.
       expect(screen.getByText('棋盘可能被移动')).toBeInTheDocument();
@@ -486,7 +492,10 @@ describe('GamePage', () => {
         fireEvent.click(screen.getByText('复盘本局'));
         expect(await screen.findByText('RESEARCH_PAGE')).toBeInTheDocument();
         expect(saveSGFSpy).toHaveBeenCalledWith('test-session');
-        expect(sessionStorage.getItem('kioskReviewSgf')).toBe('(;GM[1]FF[4]SZ[19])');
+        // Box-SSO guest mode (client-side zero-persistence, 4th layer): the handoff is
+        // routed through the identity-scoped singleton, not raw sessionStorage directly.
+        expect(getCurrentKioskActivityStorage().getItem('kioskReviewSgf')).toBe('(;GM[1]FF[4]SZ[19])');
+        expect(sessionStorage.getItem('kioskReviewSgf')).toBeNull();
       } finally {
         saveSGFSpy.mockRestore();
       }

@@ -35,6 +35,12 @@ import {
 } from 'react';
 import { useAuth } from './AuthContext';
 import { TsumegoAPI, type TsumegoProgressEntry } from '../api/tsumegoApi';
+import {
+  kioskActivityStorage,
+  getCurrentKioskActivityStorage,
+  setKioskIdentity,
+  type KioskActivityStorage,
+} from '../kiosk/storage/kioskActivityStorage';
 
 export type { TsumegoProgressEntry } from '../api/tsumegoApi';
 
@@ -55,7 +61,8 @@ export interface MarkProgressInput {
  * 同一条理由本 track 在屏 24 课程进度上用过一次(scope.md §20 D1:「按机器存会把
  * 甲的进度显示成乙的 —— 那是关于一个人的假话,比不显示更坏」),做题这边一直没照做。
  */
-const STORAGE_PREFIX = 'tsumego_progress';
+const STORAGE_KEY = 'tsumego_progress';
+const STORAGE_PREFIX = STORAGE_KEY;
 
 /** 2026-08-25 之前那把不分人的旧钥匙。**不迁移**,理由见 `dropLegacyUnscopedProgress`。 */
 const LEGACY_UNSCOPED_KEY = 'tsumego_progress';
@@ -74,11 +81,9 @@ export function progressStorageKey(userId: number | string | null | undefined): 
  *    context 连 hook 都不能调 ⇒ 身份没法顺着参数传下去。
  * Provider 在 `user` 变化时设置它;没设置过就是 anon。
  */
-let activeScopeKey = progressStorageKey(null);
-
 /** 只给 Provider(和测试)用。幂等。 */
 export function setProgressScope(userId: number | string | null | undefined): void {
-  activeScopeKey = progressStorageKey(userId);
+  setKioskIdentity(userId === null || userId === undefined ? null : `u${userId}`, false);
 }
 
 /**
@@ -131,9 +136,11 @@ export function mergeProgressEntry(
 }
 
 /** Read the full progress map from localStorage (safe — never throws). */
-export function readLocalProgress(): TsumegoProgressMap {
+export function readLocalProgress(
+  store: KioskActivityStorage = getCurrentKioskActivityStorage(),
+): TsumegoProgressMap {
   try {
-    const stored = localStorage.getItem(activeScopeKey);
+    const stored = store.getItem(STORAGE_KEY);
     if (!stored) return {};
     const parsed = JSON.parse(stored);
     return parsed && typeof parsed === 'object' ? (parsed as TsumegoProgressMap) : {};
@@ -147,12 +154,16 @@ export function readLocalProgress(): TsumegoProgressMap {
  * Returns the merged entry (so the caller can also update in-memory state).
  * This is the pure write used by BOTH the default context and the provider.
  */
-export function writeLocalProgress(id: string, incoming: TsumegoProgressEntry): TsumegoProgressEntry {
-  const map = readLocalProgress();
+export function writeLocalProgress(
+  id: string,
+  incoming: TsumegoProgressEntry,
+  store: KioskActivityStorage = getCurrentKioskActivityStorage(),
+): TsumegoProgressEntry {
+  const map = readLocalProgress(store);
   const merged = mergeProgressEntry(map[id], incoming);
   map[id] = merged;
   try {
-    localStorage.setItem(activeScopeKey, JSON.stringify(map));
+    store.setItem(STORAGE_KEY, JSON.stringify(map));
   } catch {
     // best-effort cache; ignore quota/serialization failures
   }
@@ -238,8 +249,7 @@ export interface TsumegoProgressContextValue {
    * (`GrowthPage` 头上那段:「拿不到就写 —,并说一句」),而不区分这两者的话
    * 一个刚断网的老用户会看到「累计已解题 0」。
    * 只在**本地也是空的**时候才有分别:本地有数就至少是个下界,照常显示。
-   * **重读途中保持原值**,读成功才清(见 `fetchAndMerge`)—— 否则「重试」按下去那一刻就像读到了一份空的。
-   * 盒子没拿到云端、回的是本机缓存(`TsumegoProgressAnswer.degraded`)**也算没读到**:那份常常是 `{}`。
+   * 重读途中保持原值；只有云端权威读取成功才清除。盒端本机降级缓存仍算读取失败。
    */
   serverLoadFailed: boolean;
   /** Write progress for one problem: localStorage always, in-memory + server only under Provider. */
@@ -291,101 +301,91 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
    * ⇒ **服务端一直是通的,是前端自己用 `if (token)` 把门关上了**:
    * 盒子上从不拉、也从不写,进度只活在本机 localStorage 里。
    */
-  const { user, token } = useAuth();
-  const userId = user?.id ?? null;
+  const { user, token, isGuest = false, isLoading = false } = useAuth();
+  // Newer accounts expose uuid; the id fallback preserves existing web accounts and their
+  // `tsumego_progress:u<id>` cache keys.
+  const identityKey = user?.uuid ?? (user?.id !== undefined ? `u${user.id}` : null);
+  const signature = isLoading ? null : isGuest ? 'guest' : identityKey ? `user:${identityKey}` : 'anonymous';
 
-  // 作用域必须在**第一次读之前**就位。用惰性初始化跑一次:它先于任何子组件的 render。
-  const [progress, setProgress] = useState<TsumegoProgressMap>(() => {
-    dropLegacyUnscopedProgress();
-    setProgressScope(userId);
-    return readLocalProgress();
-  });
-
-  /**
-   * 账号一变(含登出 → null)就**整份换掉,不是合并** —— 别人的进度不许流进来。
-   * 在 render 期间调整,不放 effect:同一帧里子组件的 `cacheLocalProgress`
-   * (`useTsumegoProblem.ts`)会直接写 localStorage,effect 太晚,那一下会落到上一个人的钥匙上。
-   */
+  // Identity is resolved asynchronously. The first paint must never read another user's
+  // cache; unresolved, anonymous and guest identities all start in ephemeral memory.
+  const initialStore = isLoading
+    ? kioskActivityStorage(null, false)
+    : kioskActivityStorage(isGuest ? null : identityKey, isGuest || !identityKey);
+  const [progress, setProgress] = useState<TsumegoProgressMap>(() => readLocalProgress(initialStore));
   const [serverLoadFailed, setServerLoadFailed] = useState(false);
-  const [scopedUser, setScopedUser] = useState<number | string | null>(userId);
-  if (scopedUser !== userId) {
-    setScopedUser(userId);
-    setProgressScope(userId);
-    setProgress(readLocalProgress());
-    // 换人了,上一个人那次读失败与否与这个人无关。
-    setServerLoadFailed(false);
-  }
-
-  // Guard against double server-fetch (e.g. React StrictMode) for the same account.
-  const fetchedUserRef = useRef<number | string | null>(null);
-
-  // 每读一次服务端领一个号。回答回来时号已经不是最新的 ⇒ 作废。见 `fetchAndMerge`。
+  const storeRef = useRef<KioskActivityStorage>(initialStore);
+  const resolvedSignatureRef = useRef<string | null>(null);
+  const fetchedSignatureRef = useRef<string | null>(null);
   const latestRequestRef = useRef(0);
 
-  const fetchAndMerge = useCallback((authToken?: string) => {
-    // ⚠️ 2026-09-15(T1 错题页的「重试」):失败标志**只在读成功时清**,不在发请求时清。
-    // 发请求时就清的话,重读途中本机进度还是空的、标志却已是 false —— 下游看到的正是
-    // 「读到了,一道错题都没有」,等于把重试说成了成功。换人时的清零在上面 render 期那段,不受影响。
-    //
-    // ⚠️ 2026-09-15(Codex 对抗审查第 2 轮 #1):**回答只认发请求那一刻的账号和最新的号。**
-    // 非严格 kiosk / galaxy 换账号时这个 Provider 不卸载(登出 → `/kiosk/login` → 登录在同一棵树里)。
-    // 甲按了「重试」、请求还在路上,乙登录了 —— 甲那份回来时 `prev` 已是乙的进度、`activeScopeKey` 已是乙的钥匙,
-    // 而 `completed` 按 OR 合并是单调的 ⇒ 甲做对的题永久记进乙的本机缓存;`pushLocalAhead` 还会拿乙的本机进度
-    // 带着甲的 token 往甲的云端账里推。号:连按两次「重试」时先发的后回来,旧的失败不许盖掉新的成功。
-    // **不在卸载时作废**:`main.tsx` 开着 StrictMode,会先卸再挂一次,而 `fetchedUserRef` 挡掉了第二次拉取 ——
-    // 卸载时作废会让开发环境里唯一那次拉取的回答永远落不了地。卸载之后的 setState 本来就是空操作。
+  const fetchAndMerge = useCallback((authToken: string | undefined, store: KioskActivityStorage) => {
     const request = ++latestRequestRef.current;
-    const scope = activeScopeKey;
-    const stale = () => request !== latestRequestRef.current || scope !== activeScopeKey;
+    const stale = () => request !== latestRequestRef.current || store !== storeRef.current;
     TsumegoAPI.getProgress(authToken)
       .then(({ progress: serverMap, degraded }) => {
         if (stale()) return;
-        // 盒子没拿到云端、给的是本机缓存(契约见 `api/tsumegoApi.ts` 的 `PROGRESS_AUTHORITY_HEADER`):
-        // 那份是真的下界,照样并进来;但它**不是**这个人的全部进度 ⇒ 仍算「没读到」,错题页照样给重试。
         setServerLoadFailed(degraded);
         setProgress((prev) => {
-          // 更新函数可能被更高优先级的更新(换人那一帧)插队、之后才重放 ⇒ 落缓存、回推之前再核一次账号。
-          if (scope !== activeScopeKey) return prev;
+          if (stale()) return prev;
           const merged = mergeProgressMaps(prev, serverMap);
           try {
-            localStorage.setItem(activeScopeKey, JSON.stringify(merged));
+            store.setItem(STORAGE_KEY, JSON.stringify(merged));
           } catch {
             // best-effort cache
           }
-          // 拉得回来 = 服务端此刻够得着 ⇒ 把**本机比服务端多的**那几条补上去。
-          // 本机缓存那份不算「够得着」:拿它比,几乎每一条都会被判成「本机更多」,整库回推一遍。
           if (!degraded) pushLocalAhead(prev, serverMap, authToken);
           return merged;
         });
       })
       .catch(() => {
-        if (stale()) return;
-        // offline / unauthorized — keep localStorage-only progress，但**要说出去**:
-        // 吞掉的话下游分不清「一题没做」和「没读到」。
-        setServerLoadFailed(true);
+        if (!stale()) setServerLoadFailed(true);
       });
   }, []);
 
   useEffect(() => {
-    if (userId === null) {
-      fetchedUserRef.current = null;
+    if (signature === null) return;
+
+    let store = storeRef.current;
+    if (resolvedSignatureRef.current !== signature) {
+      latestRequestRef.current += 1;
+      resolvedSignatureRef.current = signature;
+      store = kioskActivityStorage(isGuest ? null : identityKey, isGuest || !identityKey);
+      storeRef.current = store;
+      setKioskIdentity(isGuest ? null : identityKey, isGuest || !identityKey);
+
+      // The unscoped cache has no provable owner. A real identity may delete it; guests must
+      // neither read nor mutate it.
+      if (!isGuest && identityKey) dropLegacyUnscopedProgress();
+
+      setProgress(readLocalProgress(store));
+      setServerLoadFailed(false);
+      fetchedSignatureRef.current = null;
+    }
+
+    // Strict box SSO uses a cookie and deliberately has no bearer token, so `user` is the
+    // authentication gate. Guests are local-only and must never write progress to the server.
+    const shouldSync = Boolean(user && !isGuest);
+    if (!shouldSync) {
+      fetchedSignatureRef.current = null;
       return;
     }
-    if (fetchedUserRef.current === userId) return;
-    fetchedUserRef.current = userId;
-    fetchAndMerge(token ?? undefined);
-  }, [userId, token, fetchAndMerge]);
+    const fetchSignature = `${signature}:${token ?? 'cookie'}`;
+    if (fetchedSignatureRef.current === fetchSignature) return;
+    fetchedSignatureRef.current = fetchSignature;
+    fetchAndMerge(token ?? undefined, store);
+  }, [signature, isGuest, identityKey, user, token, fetchAndMerge]);
 
   const markProgress = useCallback(
     (id: string, input: MarkProgressInput) => {
       const incoming = entryFromMark(input);
       // 1) localStorage live write (field-merge) — immediate cache for UI/offline.
-      const merged = writeLocalProgress(id, incoming);
+      const merged = writeLocalProgress(id, incoming, storeRef.current);
       // 2) in-memory state update with the same merged entry.
       setProgress((prev) => ({ ...prev, [id]: merged }));
       // 3) server fire-and-forget —— 闸是**有没有账号**,不是有没有 Bearer。
       //    盒子上 token 恒为 null 而 cookie 有效,`authHeaders()` 会自己处理这两种情形。
-      if (user) {
+      if (user && !isGuest) {
         TsumegoAPI.saveProgress(
           id,
           { completed: input.completed, attempts: input.attempts, lastDuration: input.lastDuration },
@@ -405,14 +405,14 @@ export const TsumegoProgressProvider = ({ children }: { children: ReactNode }) =
         });
       }
     },
-    [user, token],
+    [user, isGuest, token],
   );
 
   const refresh = useCallback(() => {
     // Re-sync from localStorage + server. 闸同样是 `user` 不是 `token`(见上)。
-    setProgress((prev) => mergeProgressMaps(prev, readLocalProgress()));
-    if (user) fetchAndMerge(token ?? undefined);
-  }, [user, token, fetchAndMerge]);
+    setProgress((prev) => mergeProgressMaps(prev, readLocalProgress(storeRef.current)));
+    if (user && !isGuest) fetchAndMerge(token ?? undefined, storeRef.current);
+  }, [user, isGuest, token, fetchAndMerge]);
 
   const isCompleted = useCallback((id: string) => !!progress[id]?.completed, [progress]);
 

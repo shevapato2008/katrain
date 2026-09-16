@@ -10,6 +10,8 @@ from types import ModuleType
 import pytest
 from fastapi import APIRouter
 
+from katrain.web.models import EndgameConflict, GameEnd
+
 
 class _Repository:
     def __init__(self, *args, **kwargs):
@@ -88,6 +90,9 @@ def server_module(monkeypatch):
     web.api = api
     web.core = core
     api.v1 = api_v1
+    models = ModuleType("katrain.web.models")
+    models.EndgameConflict = EndgameConflict
+    models.GameEnd = GameEnd
     modules = {
         "katrain": katrain,
         "katrain.web": web,
@@ -109,7 +114,7 @@ def server_module(monkeypatch):
             LobbyManager=lambda: object(),
             Matchmaker=lambda: object(),
         ),
-        "katrain.web.models": ModuleType("katrain.web.models"),
+        "katrain.web.models": models,
     }
     for name, module in modules.items():
         monkeypatch.setitem(sys.modules, name, module)

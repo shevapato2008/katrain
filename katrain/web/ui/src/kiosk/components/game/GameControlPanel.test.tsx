@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import GameControlPanel from './GameControlPanel';
 import type { GameState } from '../../../api';
 
@@ -54,8 +54,8 @@ describe('GameControlPanel', () => {
   });
 
   // ── 悔棋按对弈方式判 ────────────────────────────────────────────────────────
-  // Fan 2026-08-25 亲裁:「**只有人机对弈的自由对弈允许悔棋**;人机对弈的升降级对弈、
-  // 人人对弈的对战大厅、跨平台对弈等都不允许,悔棋按钮可以撤销。」
+  // 只有本地人机自由对弈允许悔棋。星阵机器人页按平台原界面保留灰色按钮，
+  // 其余不支持悔棋的对局仍不显示。
   //
   // 五种对弈方式**逐个都要出现在这张表里** —— 少一行就等于那一种没被裁过。
   // 判据落在**屏上有没有这颗键**,不落在 `undoAllowed` 那个变量上:
@@ -93,7 +93,7 @@ describe('GameControlPanel', () => {
     ['人机 · 升降级对弈(调用方漏传 isRanked)', { game_type: 'ai_ladder_ranked' }, {}, false],
     ['人人 · 本地对局', { game_type: 'pvp_local' }, {}, false],
     ['人人 · 对战大厅', { game_type: 'pvp_online' }, {}, false],
-    ['跨平台 · 星阵人机', { game_type: 'free' }, { engineMode: true }, false],
+    ['跨平台 · 星阵人机（保留灰色平台按钮）', { game_type: 'free' }, { engineMode: true }, true],
   ] as const)('悔棋:%s → %s', (_name, over, props, expected) => {
     panel(over as Partial<GameState>, props as Record<string, unknown>);
     const undo = screen.queryByText('悔棋');
@@ -101,6 +101,23 @@ describe('GameControlPanel', () => {
     // 「认输」在五种里都在 —— 用它证这一排本身渲染了,
     // 否则整块没渲染时上面那句对「不该有」的四行会**全绿**。
     expect(screen.getByText('认输')).toBeInTheDocument();
+  });
+
+  test('星阵人机局固定显示四颗动作键；悔棋禁用，数子接到免费形势判断', () => {
+    const history = Array.from({ length: 120 }, (_, i) => ({ node_id: i, score: 0, winrate: 0.5 }));
+    const onAction = vi.fn();
+    const onEngineAnalysis = vi.fn();
+    const { container } = panel(
+      { game_type: 'free', history },
+      { engineMode: true, onAction, onEngineAnalysis },
+    );
+    expect(screen.getByRole('button', { name: '悔棋' })).toBeDisabled();
+    screen.getByRole('button', { name: '停一手' }).click();
+    screen.getByRole('button', { name: '数子' }).click();
+    expect(screen.getByText('认输')).toBeInTheDocument();
+    expect(onAction).toHaveBeenCalledWith('pass');
+    expect(onEngineAnalysis).toHaveBeenCalledWith('judge');
+    expect(container.querySelector('.gtoggles .ghint')).toHaveTextContent('数子只查看当前形势，不结束对局');
   });
 
   // ── 棋谱折叠块(星阵屏)────────────────────────────────────────────────────
@@ -132,8 +149,10 @@ describe('GameControlPanel', () => {
     return out;
   };
 
-  test('棋谱只在星阵屏出现 —— 屏 05 那块地方归胜率图', () => {
-    panel({ history: hist([['Q16', 'B'], ['D4', 'W']]) });
+  // A11(kiosk-go-play-ai,2026-09-14)推翻了「棋谱只在星阵屏」:scope §27 那条概念债说的就是
+  // 「没有哪种对局原则上拿不到自己下过的手」。现在胜率块不在的局中段都是棋谱;只有胜率块开着时那块地方归胜率图。
+  test('胜率块开着时棋谱不出现 —— 屏 05 那块地方归胜率图', () => {
+    panel({ history: hist([['Q16', 'B'], ['D4', 'W']]) }, { analysisToggles: { score: true } });
     expect(screen.queryByTestId('game-moves-fold')).toBeNull();
   });
 

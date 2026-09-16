@@ -98,6 +98,11 @@ i18n = Lang(DEFAULT_LANGUAGE)
 
 
 def rank_label(rank):
+    """Rank rendered in the CURRENT UI language — "6级" under cn, "6k" under en.
+
+    Only for text that is displayed immediately.  For anything stored or sent over the
+    wire use :func:`rank_key`; see the note there.
+    """
     if rank is None:
         return "??k"
 
@@ -105,3 +110,27 @@ def rank_label(rank):
         return f"{rank:.0f}{i18n._('strength:dan')}"
     else:
         return f"{1-rank:.0f}{i18n._('strength:kyu')}"
+
+
+def rank_key(rank) -> str:
+    """Rank as a language-neutral SGF-style string: ``"6k"`` / ``"3d"``, ``""`` if unknown.
+
+    Use this for every value that is STORED or transmitted, and let the UI localize it.
+
+    ``rank_label`` must not be used for those. ``i18n`` is a process-wide singleton and
+    five call sites switch its language, last writer wins: ``web/interface.py`` at 231
+    (every session construction), 1344, 1474 and 1494, plus ``web/server.py:2309`` —
+    which is ``GET /api/translations?lang=X``, unauthenticated, hit by every browser on
+    page load (the comment right above it already says "but i18n.switch_lang is global").
+    A rank formatted at write time therefore records whichever language some *other*
+    user's page load happened to leave behind: a French reader refreshing makes a Chinese
+    player's game record read "5d". And once that is in the database it can never be
+    re-localized, because the number it came from is gone.
+
+    ``rank`` is KaTrain's integer scale (6 kyu is -5, 3 dan is 3); None and NaN -> "".
+    """
+    if rank is None or rank != rank:  # NaN is the only value unequal to itself
+        return ""
+    if rank >= 0.5:
+        return f"{rank:.0f}d"
+    return f"{1 - rank:.0f}k"

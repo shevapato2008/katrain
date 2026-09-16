@@ -4,12 +4,13 @@ import time
 import uuid
 import asyncio
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Set, List
+from typing import Awaitable, Callable, Dict, Optional, Set, List
 
 from starlette.websockets import WebSocket
 
 from katrain.web.core.ai_ladder_ranked import AI_LADDER_GAME_TYPE
 from katrain.web.interface import WebKaTrain
+from katrain.web.models import GameEnd
 
 
 @dataclass
@@ -17,11 +18,15 @@ class WebSession:
     session_id: str
     katrain: WebKaTrain
     user_id: Optional[int] = None  # Primary user (usually for AI play)
+    owner_user_id: Optional[int] = None  # Transient management owner (guest OR real); independent of user_id persistence key
     player_b_id: Optional[int] = None  # For HvH
     player_w_id: Optional[int] = None  # For HvH
     mode: str = "play"  # "play" or "research"
     lock: threading.Lock = field(default_factory=threading.Lock)
     record_game_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
+    # N22:终局收尾(先补分、再落账)的会话级串行锁。人发出的双停第二手和 AI 线程触发的收尾可能同时到,
+    # 不串行的话先落账的那一方会把「终局」写进账,补出来的分数就再也进不去了(`_recorded` 已置)。
+    end_game_lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
     sockets: Set[WebSocket] = field(default_factory=set)
     last_access: float = field(default_factory=time.time)
     last_state: Optional[Dict] = None
@@ -42,6 +47,9 @@ class SessionManager:
         self._lock = threading.Lock()
         self._loop = None
         self._loop_thread_id = None
+        #: N22:对局在**请求之外**结束(AI 后台线程下出双停第二手 / AI 认输)时调用的收尾函数,由 server.py 装上。
+        #: 人发出的请求自己也调同一个函数;两边靠 `WebSession.end_game_lock` 与 `_record_ai_game` 的幂等只收尾一次。
+        self.on_game_ended: Optional[Callable[[WebSession, GameEnd], Awaitable[None]]] = None
 
     def attach_loop(self, loop):
         self._loop = loop
@@ -80,6 +88,7 @@ class SessionManager:
 
         session.katrain.update_state_callback = lambda state, sid=session_id: self._on_state(sid, state)
         session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(sid, msg_type, data)
+        session.katrain.game_ended_callback = lambda end, sid=session_id: self._on_game_ended(sid, end)
         katrain.start(game_type=initial_game_type, skip_initial_analysis=skip_initial_analysis)
         session.last_state = katrain.get_state()
         return session
@@ -247,6 +256,37 @@ class SessionManager:
         session.last_state = state
         state["sockets_count"] = len(session.sockets)
         self._schedule_broadcast(session, {"type": "game_update", "state": state})
+
+    def _on_game_ended(self, session_id: str, end: GameEnd):
+        """AI 后台线程写出新的终局事实时由 `WebKaTrain.game_ended_callback` 调(N22)。只有这一个触发点 ——
+        `_on_state` 分不出「刚在这里下完」和「翻到了一份载入棋谱的双停终点」。
+        `end` 是 AI 线程在广播**之前**捕获的终局事实,原样交给收尾;事件循环里不按游标重推(r1 C4)。"""
+        try:
+            session = self.get_session(session_id)
+        except KeyError:
+            return
+        session.game_ended = True
+        self._schedule_game_ended(session, end)
+
+    def _schedule_game_ended(self, session: WebSession, end: GameEnd):
+        """把收尾交给事件循环。研究模式不收尾:那里下出的双停不是「下完了一局」。"""
+        hook = self.on_game_ended
+        if hook is None or session.mode == "research":
+            return
+        if not self._loop or not self._loop.is_running():
+            return
+
+        def _log_failure(fut):
+            if fut.cancelled():
+                return
+            exc = fut.exception()
+            if exc is not None:
+                logging.getLogger("katrain_web").error("game-ended hook failed for %s: %s", session.session_id, exc)
+
+        if threading.get_ident() == self._loop_thread_id:
+            self._loop.create_task(hook(session, end)).add_done_callback(_log_failure)
+        else:
+            asyncio.run_coroutine_threadsafe(hook(session, end), self._loop).add_done_callback(_log_failure)
 
     def _on_message(self, session_id: str, msg_type: str, data: Dict):
         try:

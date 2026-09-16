@@ -1,6 +1,7 @@
 """PAUSE/RESUME/SET_LIT_POINTS must be handled by BOTH dispatchers (SET_GEOMETRY 前车之鉴)."""
 
 import queue
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -35,6 +36,236 @@ class TestInProcessDispatcher:
         _drain_with(w)
 
 
+def _inprocess_worker(camera=None):
+    from katrain.vision.worker_inprocess import InProcessAdapter
+
+    with patch("katrain.vision.worker_inprocess.StoneDetector"):
+        return InProcessAdapter({"board_size": 19}, camera=camera)
+
+
+def _geometry(source_width=600, source_height=400):
+    return SimpleNamespace(
+        corners=[(120, 80), (480, 80), (480, 320), (120, 320)],
+        source_width=source_width,
+        source_height=source_height,
+        M=np.eye(3),
+        out_size=1000,
+    )
+
+
+class TestInProcessMotionGating:
+    def test_motion_mask_without_geometry_is_none(self):
+        w = _inprocess_worker()
+
+        assert w._motion_mask(np.zeros((200, 300, 3), dtype=np.uint8)) is None
+
+    def test_geometry_lock_builds_mask_from_lock_corners_and_source_size(self):
+        w = _inprocess_worker()
+        geometry = _geometry()
+        w.set_geometry(geometry)
+        w._motion_mask_cache = MagicMock()
+        frame = np.zeros((200, 300, 3), dtype=np.uint8)
+
+        w._motion_mask(frame)
+
+        w._motion_mask_cache.get.assert_called_once_with(frame.shape, geometry.corners, (600, 400))
+
+    def test_each_geometry_assignment_invalidates_roi_cache_and_motion_baseline(self):
+        w = _inprocess_worker()
+        w._motion_mask_cache = MagicMock()
+        w._motion_filter = MagicMock()
+
+        w.set_geometry(_geometry())
+        w.set_geometry(None)
+
+        assert w._geometry is None
+        assert w._motion_mask_cache.invalidate.call_count == 2
+        assert w._motion_filter.reset.call_count == 2
+
+    def test_unbind_resets_motion_history(self):
+        w = _inprocess_worker()
+        w._motion_filter = MagicMock()
+        w._cmd_queue.put(WorkerCommand(action=CommandType.UNBIND))
+
+        w._drain_commands()
+
+        w._motion_filter.reset.assert_called_once_with()
+
+    def test_reset_sync_keeps_motion_history_and_roi_cache(self):
+        w = _inprocess_worker()
+        w._motion_filter = MagicMock()
+        w._motion_mask_cache = MagicMock()
+        w._cmd_queue.put(WorkerCommand(action=CommandType.RESET_SYNC))
+
+        w._drain_commands()
+
+        w._motion_filter.reset.assert_not_called()
+        w._motion_mask_cache.invalidate.assert_not_called()
+
+    def test_frame_size_change_rebuilds_mask_and_establishes_fresh_motion_baseline(self):
+        w = _inprocess_worker()
+        w.set_geometry(_geometry())
+        small = np.zeros((200, 300, 3), dtype=np.uint8)
+        large = np.ones((400, 600, 3), dtype=np.uint8) * 255
+
+        first_mask = w._motion_mask(small)
+        assert w._motion_is_stable(small) is True
+        resized_mask = w._motion_mask(large)
+
+        assert resized_mask is not first_mask
+        assert w._motion_is_stable(large) is True
+        assert w._last_motion_roi_ratio is None
+        assert w._last_motion_full_ratio == 0.0
+
+    def test_motion_gate_passes_generated_mask_to_region_filter(self):
+        w = _inprocess_worker()
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+        mask = np.ones((10, 10), dtype=bool)
+        w._motion_mask = MagicMock(return_value=mask)
+        w._motion_filter = MagicMock()
+        w._motion_filter.is_stable_with_regions.return_value = (True, 0.01, 0.02)
+
+        assert w._motion_is_stable(frame) is True
+
+        w._motion_filter.is_stable_with_regions.assert_called_once_with(frame, mask)
+        assert w._last_motion_roi_ratio == 0.01
+        assert w._last_motion_full_ratio == 0.02
+
+    def test_rejected_motion_resets_averager_and_returns_false(self):
+        w = _inprocess_worker()
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+        w._motion_mask = MagicMock(return_value=None)
+        w._motion_filter = MagicMock()
+        w._motion_filter.is_stable_with_regions.return_value = (False, None, 0.31)
+        w._averager = MagicMock()
+
+        assert w._motion_is_stable(frame) is False
+        w._averager.reset.assert_called_once_with()
+
+    def test_rejection_logs_immediately_then_at_most_once_per_five_seconds(self, monkeypatch, caplog):
+        w = _inprocess_worker()
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+        w._motion_mask = MagicMock(return_value=None)
+        w._motion_filter = MagicMock()
+        w._motion_filter.is_stable_with_regions.return_value = (False, None, 0.31)
+        w._averager = MagicMock()
+        clock = iter((100.0, 101.0, 106.0))
+        monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: next(clock))
+
+        with caplog.at_level("INFO"):
+            w._motion_is_stable(frame)
+            w._motion_is_stable(frame)
+            w._motion_is_stable(frame)
+
+        assert sum("motion rejected" in record.message for record in caplog.records) == 2
+
+    def test_motion_diagnostic_formats_roi_and_full_or_full_fallback(self):
+        w = _inprocess_worker()
+        w._last_motion_roi_ratio = 0.125
+        w._last_motion_full_ratio = 0.25
+        assert w._motion_diagnostic() == "roi:0.125/full:0.250"
+
+        w._last_motion_roi_ratio = None
+        assert w._motion_diagnostic() == "full:N/A/full:0.250"
+
+    def test_motion_rejection_skips_all_recognition_work_for_one_loop_iteration(self):
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+
+        class OneFrameCamera:
+            is_connected = True
+
+            def __init__(self):
+                self.worker = None
+
+            def read_frame(self):
+                self.worker._running = False
+                return frame
+
+        camera = OneFrameCamera()
+        w = _inprocess_worker(camera)
+        camera.worker = w
+        w._running = True
+        w._motion_filter = MagicMock()
+        w._motion_filter.is_stable_with_regions.return_value = (False, None, 0.31)
+        w._warp_frame = MagicMock()
+        w._detector.detect = MagicMock()
+        w._active_extractor = MagicMock()
+        w._move_detector.detect_new_move = MagicMock()
+        w._averager = MagicMock()
+
+        w._loop()
+
+        w._averager.reset.assert_called_once_with()
+        w._warp_frame.assert_not_called()
+        w._detector.detect.assert_not_called()
+        w._active_extractor.assert_not_called()
+        w._move_detector.detect_new_move.assert_not_called()
+
+    def test_camera_dropout_resets_averager_once_without_recognition_work(self):
+        class DropoutCamera:
+            is_connected = True
+
+            def __init__(self):
+                self.worker = None
+
+            def read_frame(self):
+                self.worker._running = False
+                return None
+
+        camera = DropoutCamera()
+        w = _inprocess_worker(camera)
+        camera.worker = w
+        w._running = True
+        w._config["capture_fps"] = 100000
+        w._warp_frame = MagicMock()
+        w._detector.detect = MagicMock()
+        w._active_extractor = MagicMock()
+        w._move_detector.detect_new_move = MagicMock()
+        w._averager = MagicMock()
+
+        w._loop()
+
+        w._averager.reset.assert_called_once_with()
+        w._warp_frame.assert_not_called()
+        w._detector.detect.assert_not_called()
+        w._active_extractor.assert_not_called()
+        w._move_detector.detect_new_move.assert_not_called()
+
+    def test_periodic_stable_log_includes_motion_roi_and_full_ratios(self, caplog):
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+
+        class OneFrameCamera:
+            is_connected = True
+
+            def __init__(self):
+                self.worker = None
+
+            def read_frame(self):
+                self.worker._running = False
+                return frame
+
+        camera = OneFrameCamera()
+        w = _inprocess_worker(camera)
+        camera.worker = w
+        w._running = True
+        w._config["capture_fps"] = 100000
+        w._frame_count = 29
+        w._motion_filter = MagicMock()
+        w._motion_filter.is_stable_with_regions.return_value = (True, 0.125, 0.25)
+        w._warp_frame = MagicMock(return_value=(frame, True))
+        w._averager = MagicMock()
+        w._averager.add.return_value = frame
+        w._detector.detect.return_value = []
+        extractor = MagicMock()
+        extractor.detections_to_board.return_value = np.zeros((19, 19), dtype=int)
+        w._active_extractor = MagicMock(return_value=extractor)
+
+        with caplog.at_level("INFO"):
+            w._loop()
+
+        assert any("motion=roi:0.125/full:0.250" in record.message for record in caplog.records)
+
+
 class TestSubprocessDispatcher:
     def test_pause_lit_resume(self):
         # NOTE: the brief calls this class "VisionWorker", but the actual class
@@ -49,6 +280,247 @@ class TestSubprocessDispatcher:
         w._running = True
         w._drain_or_process = w._process_commands
         _drain_with(w)
+
+
+def _subprocess_motion_worker():
+    from katrain.vision.worker import _VisionWorkerLoop
+
+    w = _VisionWorkerLoop.__new__(_VisionWorkerLoop)
+    w._board_locked = False
+    w._board_finder = MagicMock()
+    w._board_finder.camera_config = None
+    w._board_finder.pre_corner_point = [(60, 40), (240, 40), (240, 160), (60, 160)]
+    w._motion_mask_cache = MagicMock()
+    w._motion_filter = MagicMock()
+    w._averager = MagicMock()
+    w._last_motion_log = None
+    w._last_motion_roi_ratio = None
+    w._last_motion_full_ratio = None
+    return w
+
+
+class TestSubprocessMotionGating:
+    def test_unlocked_worker_uses_full_frame_fallback(self):
+        w = _subprocess_motion_worker()
+        frame = np.zeros((200, 300, 3), dtype=np.uint8)
+
+        assert w._motion_mask(frame) is None
+        w._motion_mask_cache.get.assert_not_called()
+
+    def test_locked_uncalibrated_worker_builds_mask_from_raw_corners(self):
+        w = _subprocess_motion_worker()
+        w._board_locked = True
+        frame = np.zeros((200, 300, 3), dtype=np.uint8)
+
+        w._motion_mask(frame)
+
+        w._motion_mask_cache.get.assert_called_once_with(frame.shape, w._board_finder.pre_corner_point, (None, None))
+
+    def test_locked_calibrated_worker_uses_full_frame_fallback(self):
+        w = _subprocess_motion_worker()
+        w._board_locked = True
+        w._board_finder.camera_config = SimpleNamespace(is_calibrated=True)
+        frame = np.zeros((200, 300, 3), dtype=np.uint8)
+
+        assert w._motion_mask(frame) is None
+        w._motion_mask_cache.get.assert_not_called()
+
+    def test_full_frame_fallback_is_passed_to_hybrid_filter(self):
+        w = _subprocess_motion_worker()
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+        w._motion_filter.is_stable_with_regions.return_value = (True, None, 0.02)
+
+        assert w._motion_is_stable(frame) is True
+
+        w._motion_filter.is_stable_with_regions.assert_called_once_with(frame, None)
+        assert w._last_motion_roi_ratio is None
+        assert w._last_motion_full_ratio == 0.02
+
+    def test_motion_gate_passes_generated_mask_and_rejection_resets_average(self):
+        w = _subprocess_motion_worker()
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+        mask = np.ones((10, 10), dtype=bool)
+        w._motion_mask = MagicMock(return_value=mask)
+        w._motion_filter.is_stable_with_regions.return_value = (False, 0.06, 0.10)
+
+        assert w._motion_is_stable(frame) is False
+
+        w._motion_filter.is_stable_with_regions.assert_called_once_with(frame, mask)
+        w._averager.reset.assert_called_once_with()
+        assert w._last_motion_roi_ratio == 0.06
+        assert w._last_motion_full_ratio == 0.10
+
+    def test_rejection_logs_immediately_then_at_most_once_per_five_seconds(self, monkeypatch, caplog):
+        w = _subprocess_motion_worker()
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+        w._motion_filter.is_stable_with_regions.return_value = (False, None, 0.31)
+        clock = iter((100.0, 101.0, 106.0))
+        monkeypatch.setattr("katrain.vision.worker.time.monotonic", lambda: next(clock))
+
+        with caplog.at_level("INFO"):
+            w._motion_is_stable(frame)
+            w._motion_is_stable(frame)
+            w._motion_is_stable(frame)
+
+        assert sum("motion rejected" in record.message for record in caplog.records) == 2
+
+    def test_motion_diagnostic_formats_roi_and_full_or_full_fallback(self):
+        w = _subprocess_motion_worker()
+        w._last_motion_roi_ratio = 0.125
+        w._last_motion_full_ratio = 0.25
+        assert w._motion_diagnostic() == "roi:0.125/full:0.250"
+
+        w._last_motion_roi_ratio = None
+        assert w._motion_diagnostic() == "full:N/A/full:0.250"
+
+    @pytest.mark.parametrize(
+        ("action", "starts_locked", "ends_locked"),
+        [
+            (CommandType.CONFIRM_POSE_LOCK, False, True),
+            (CommandType.RESET_SYNC, True, False),
+            (CommandType.UNBIND, True, True),
+        ],
+    )
+    def test_command_boundary_resets_motion_region(self, action, starts_locked, ends_locked):
+        from katrain.vision.sync import SyncStateMachine
+
+        w = _subprocess_motion_worker()
+        w._cmd_queue = queue.Queue()
+        w._running = True
+        w._board_locked = starts_locked
+        w._sync = SyncStateMachine()
+        w._move_detector = MagicMock()
+        w._last_stable_board = None
+        w._prev_observed_board = None
+        w._prev_conf_map = {}
+        w._ambig_last_emit = {}
+        w._promoter = MagicMock()
+        w._cmd_queue.put(WorkerCommand(action=action))
+
+        w._process_commands()
+
+        assert w._board_locked is ends_locked
+        w._motion_mask_cache.invalidate.assert_called_once_with()
+        w._motion_filter.reset.assert_called_once_with()
+
+    def test_auto_unlock_resets_motion_region(self):
+        w = _subprocess_motion_worker()
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+
+        class OneFrameCamera:
+            is_connected = True
+
+            def read_frame(self):
+                w._running = False
+                return frame
+
+        w._running = True
+        w._camera = OneFrameCamera()
+        w._process_commands = MagicMock()
+        w._motion_is_stable = MagicMock(return_value=True)
+        w._frame_count = 0
+        w._board_locked = True
+        w._board_finder.last_transform_matrix = None
+        w._board_finder.find_focus.return_value = (None, False)
+        w._consecutive_failures = 9
+        w._config = {"use_clahe": False}
+        w._overlay_lock = MagicMock()
+        w._overlay = MagicMock()
+        w._bound = False
+        w._monitor = False
+        w._paused = False
+        w._move_armed = False
+        w._sync = MagicMock()
+        w._maybe_publish_status = MagicMock()
+        w._reset_motion_region = MagicMock()
+
+        w._processing_loop()
+
+        assert w._board_locked is False
+        w._reset_motion_region.assert_called_once_with()
+        w._averager.reset.assert_called_once_with()
+
+    def test_motion_rejection_skips_all_recognition_work_for_one_loop_iteration(self):
+        w = _subprocess_motion_worker()
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+
+        class OneFrameCamera:
+            is_connected = True
+
+            def read_frame(self):
+                w._running = False
+                return frame
+
+        w._running = True
+        w._camera = OneFrameCamera()
+        w._process_commands = MagicMock()
+        w._frame_count = 0
+        w._motion_is_stable = MagicMock(return_value=False)
+        w._board_finder.find_focus = MagicMock()
+        w._detector = MagicMock()
+        w._state_extractor = MagicMock()
+        w._move_detector = MagicMock()
+        w._bound = False
+        w._monitor = False
+        w._paused = False
+        w._sync = MagicMock()
+        w._maybe_publish_status = MagicMock()
+
+        w._processing_loop()
+
+        w._board_finder.find_focus.assert_not_called()
+        w._detector.detect.assert_not_called()
+        w._state_extractor.detections_to_board.assert_not_called()
+        w._move_detector.detect_new_move.assert_not_called()
+
+    def test_periodic_stable_log_includes_motion_roi_and_full_ratios(self, caplog):
+        w = _subprocess_motion_worker()
+        frame = np.zeros((10, 10, 3), dtype=np.uint8)
+
+        class OneFrameCamera:
+            is_connected = True
+
+            def read_frame(self):
+                w._running = False
+                return frame
+
+        w._running = True
+        w._camera = OneFrameCamera()
+        w._process_commands = MagicMock()
+        w._frame_count = 29
+        w._motion_is_stable = MagicMock(return_value=True)
+        w._last_motion_roi_ratio = 0.125
+        w._last_motion_full_ratio = 0.25
+        w._board_finder.find_focus.return_value = (frame, True)
+        w._config = {"use_clahe": False, "enhance": "none"}
+        w._enhance_mode = "none"
+        w._add_threshold = 0.5
+        w._ae = None
+        w._last_bstats = None
+        w._averager.add.return_value = frame
+        w._detector = MagicMock()
+        w._detector.detect.return_value = []
+        w._overlay_lock = MagicMock()
+        w._overlay = MagicMock()
+        w._lit_points = set()
+        w._expected_np = None
+        w._state_extractor = MagicMock()
+        w._state_extractor.detections_to_board.return_value = np.zeros((19, 19), dtype=int)
+        w._prev_observed_board = None
+        w._last_stable_board = None
+        w._last_detected_board = None
+        w._bound = False
+        w._monitor = False
+        w._paused = False
+        w._move_armed = False
+        w._sync = MagicMock()
+        w._maybe_publish_status = MagicMock()
+        w._consecutive_failures = 0
+
+        with caplog.at_level("INFO"):
+            w._processing_loop()
+
+        assert any("motion=roi:0.125/full:0.250" in record.message for record in caplog.records)
 
 
 # ---------------------------------------------------------------------------
@@ -113,6 +585,8 @@ class TestResyncReinjectionGuard:
         w._expected_np = None
         w._prev_conf_map = {}
         w._ambig_last_emit = {}
+        w._motion_mask_cache = MagicMock()
+        w._motion_filter = MagicMock()
         w._averager = MagicMock()
         w._promoter = MagicMock()
         w._lit_points = set()

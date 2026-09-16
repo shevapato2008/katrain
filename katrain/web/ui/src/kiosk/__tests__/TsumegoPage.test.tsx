@@ -4,6 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
+import { __resetKioskActivityStorageForTests, setKioskIdentity } from '../storage/kioskActivityStorage';
+
+const TEST_UUID = 'tsumego-page-test-user';
 
 // 训练营的「上次」三样按账号存(N10)。盒上 token 恒为 null、身份在 user 上 —— 这里照盒上的样子造。
 vi.mock('../../context/AuthContext', () => ({
@@ -20,6 +23,8 @@ const mockLevels = [
 beforeEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: () => Promise.resolve(mockLevels),
@@ -82,8 +87,8 @@ describe('TsumegoPage · 屏 11 训练营', () => {
   });
 
   it('上次练习的难度标成「你的水平」，题型指针不在这一层出现', async () => {
-    localStorage.setItem('kiosk_tsumego_last_level:u7', '14k');
-    localStorage.setItem('kiosk_tsumego_last_category:u7', 'semeai');
+    localStorage.setItem(`kiosk_tsumego_last_level:${TEST_UUID}`, '14k');
+    localStorage.setItem(`kiosk_tsumego_last_category:${TEST_UUID}`, 'semeai');
     renderPage();
     await waitFor(() => expect(screen.getByText('你的水平')).toBeInTheDocument());
     const current = document.querySelector('.tsumego-level-row.is-current');
@@ -139,7 +144,7 @@ describe('TsumegoPage · 屏 11 训练营', () => {
 
   it('有未完成的练习才出「接着上次」', async () => {
     localStorage.setItem(
-      'kiosk_tsumego_resume:u7',
+      `kiosk_tsumego_resume:${TEST_UUID}`,
       JSON.stringify({ label: '15 级 · 吃子 · 第 1 题', route: '/kiosk/tsumego/problem/p12' })
     );
     renderPage();
@@ -156,9 +161,9 @@ describe('TsumegoPage · 屏 11 训练营', () => {
   });
 
   it('别人的「上次」不串过来:另一个账号存下的三样,这个账号一样都看不见', async () => {
-    localStorage.setItem('kiosk_tsumego_last_level:u8', '14k');
+    localStorage.setItem('kiosk_tsumego_last_level:another-user', '14k');
     localStorage.setItem(
-      'kiosk_tsumego_resume:u8',
+      'kiosk_tsumego_resume:another-user',
       JSON.stringify({ label: '14 级 · 对杀 · 第 3 题', route: '/kiosk/tsumego/problem/x' })
     );
     // 2026-09-14 之前那几把不分人的旧钥匙:没有主人,不迁移、不再读。

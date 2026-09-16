@@ -9,21 +9,15 @@ from pathlib import Path
 
 import numpy as np
 
+from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CAMERA_AUTO_EXPOSURE_ON
 from katrain.vision.geometry_lock import save_geometry_lock
 from katrain.vision.led_geometry_calibrator import LedGeometryCalibrator, check_frame_exposure
 
 logger = logging.getLogger(__name__)
 
-# CAP_PROP_AUTO_EXPOSURE 的两个值。都是板上实测过的,不是按名字猜的:
-#   3.0  = 硬件 AE。spec §2.2:手工 `v4l2-ctl -c exposure_auto=3` 当场把整帧中位从
-#          254 拉回 128-153。这是唯一被证实能把画面调**亮**的手段 ——
-#          `exposure_auto_priority=0` 把积分时间钳在帧周期(≈33ms)内,所以
-#          exposure_absolute 只调得下、调不上(166→10000 实测无效)。
-#   0.25 = 手动。spec §2.1:camera.py 在 open() 里写这个值,板上量到 v4l2
-#          `exposure_auto` 由 3(自动)变成 1(手动);worker_inprocess._run_ae
-#          用的也是同一个哨兵,两处必须同源。
-CAMERA_AUTO_EXPOSURE_ON = 3.0
-CAMERA_AUTO_EXPOSURE_OFF = 0.25
+# 保留旧名供现有调用者；值由 camera.py 单点定义。板上实测：3.0 是硬件
+# AE，1.0 是手动；常见的 OpenCV 0.25 别名在这个 V4L2 后端会被拒绝。
+CAMERA_AUTO_EXPOSURE_OFF = CAMERA_AUTO_EXPOSURE_MANUAL
 
 
 class CalibrationBusy(RuntimeError):
@@ -52,6 +46,10 @@ class GeometryCalibrationService:
     # 目标带与 auto_exposure.ExposureController 的默认带同源(spec:中位落在 [120,170])。
     EXPOSURE_TARGET_LO = 120.0
     EXPOSURE_TARGET_HI = 170.0
+    # request_controls is consumed by the camera reader between reads. If the request
+    # lands while a read is already in flight, the first fresh frame can legitimately
+    # arrive before its readback; allow the next two frames before declaring failure.
+    EXPOSURE_CONTROL_VERIFY_MAX_FRAMES = 3
 
     def __init__(
         self,
@@ -225,18 +223,12 @@ class GeometryCalibrationService:
            别处的假定,是这个测量方法自己的要求。
         2. 标定末尾要拍空盘基线,而 GeometryLock.baseline 是曝光相关的,AE 一直开着会让它
            随光线漂,落子分类静默退化。
-        3. camera.py 的 lock_exposure 与 worker `_run_ae` 的 auto_exposure=0.25 都假定手动。
+        3. camera.py 的 lock_exposure 与 worker `_run_ae` 都使用同一个原生手动模式值。
 
-        ⚠️ 待板上核实:退回手动时驱动应当保留 AE 刚收敛出来的 exposure_absolute(V4L2 的
-        常规行为)。万一它弹回 default,这次收敛白做 —— 但**不会假绿**:紧接着的曝光闸
-        会重新量整帧,该报 frame_overexposed 还是照报。核实只能靠下面那行日志把交接前后
-        的两个 median 并排写出来,跑一次标定读一行 journal 就知道。
-        **不要试图回读曝光值来核实**:没有实时回读的口(controls_effective 是 bool
-        「上次控制有没有生效」,initial_exposure 是 open() 那一刻的读数),而且板上实测
-        **硬件 AE 开着时 `v4l2-ctl -C exposure_absolute` 的回读恒为 166(driver default)**,
-        看不见 AE 实际收敛到的积分时间。
-        夜间实测的结果是「保留」(AE 141 → 手动 141-143),但**这个结论不成立**:同一晚
-        显式写 default 166 也是 143,两者区分不开。**要白天过曝时才测得出来**,已进验收单。
+        2026-09-16 板上实测已确认交接会保留亮度：原生自动模式 3 收敛到 median=124，
+        切原生手动模式 1 后连续三秒保持 median=125，且模式读回为 1。
+        exposure_absolute 没有可靠实时回读，但 exposure_auto 模式本身必须通过
+        CameraManager.controls_effective 校验；否则不能继续做 lit-dark 差分。
 
         有界:轮询不超过 EXPOSURE_CONVERGE_MAX_STEPS 次、总时长不超过
         EXPOSURE_CONVERGE_TIMEOUT_S 秒。超了就带着当前曝光往下走,不卡死也不失败 ——
@@ -249,7 +241,16 @@ class GeometryCalibrationService:
             return  # 没有运行时控制的相机(macOS 上 UVC 写入被静默拒绝):没什么可收敛的
         stats = self._measure_exposure(grab)
         if stats is None or self._in_target_band(stats):
-            return  # 已经在带内:不动它
+            # 亮度合格不代表曝光已经锁住。标定的 lit-dark 差分要求两帧使用同一曝光，
+            # 所以这条短路也必须切到手动并验证驱动读回，而不是直接进入锚点循环。
+            request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
+            settled = self._wait_for_manual_exposure_readback(grab)
+            logger.info(
+                "geometry exposure lock: median %s -> manual verified, median now %s",
+                None if stats is None else round(stats["median"]),
+                None if settled is None else round(settled["median"]),
+            )
+            return
         logger.info(
             "geometry exposure converge: start median=%.0f clip=%.3f -> hardware AE",
             stats["median"], stats["clip_frac"],
@@ -286,7 +287,7 @@ class GeometryCalibrationService:
             # phase=failed。日志那几行故意留在 finally 外面 —— 它们要再取一帧,在异常
             # 传播途中取帧再抛就会用新异常盖掉真正的那个。
             request(auto_exposure=CAMERA_AUTO_EXPOSURE_OFF)
-        settled = self._measure_exposure(grab)
+        settled = self._wait_for_manual_exposure_readback(grab)
         # 一行里四件事,每件都在回答一个自己回答不了的问题:
         #  - 交接前后两个 median:两个数接近 ⇒ 驱动保留了 AE 收敛值;后一个跳回高位
         #    ⇒ 「驱动把曝光弹回 default」的指纹。否则 journal 里只有一个
@@ -310,6 +311,19 @@ class GeometryCalibrationService:
             outcome,
             capped,
         )
+
+    def _verify_manual_exposure_lock(self) -> None:
+        if getattr(self.capture, "controls_effective", None) is not True:
+            raise RuntimeError("manual exposure lock readback failed")
+
+    def _wait_for_manual_exposure_readback(self, grab) -> dict | None:
+        settled = None
+        for _attempt in range(self.EXPOSURE_CONTROL_VERIFY_MAX_FRAMES):
+            settled = self._measure_exposure(grab)
+            if getattr(self.capture, "controls_effective", None) is not None:
+                break
+        self._verify_manual_exposure_lock()
+        return settled
 
     @staticmethod
     def _measure_exposure(grab) -> dict | None:

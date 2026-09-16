@@ -3,7 +3,6 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
-import { useAuth } from '../../context/AuthContext';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import TsumegoBoard from '../../components/tsumego/TsumegoBoard';
 import SuccessOverlay from '../components/tsumego/SuccessOverlay';
@@ -47,7 +46,6 @@ const TsumegoProblemPage = () => {
   const { t } = useTranslation();
   const { play: playSound } = useSound();
   const { progress } = useTsumegoProgress();
-  const { user } = useAuth();
   const {
     problem,
     loading,
@@ -189,10 +187,10 @@ const TsumegoProblemPage = () => {
   // `?set=wrong` 且错题快照里有这道题 ⇒ 上/下一题、做对自动下一题、实体模式做对后的翻页,
   // 全部只在快照里走(快照由错题页在点格那一刻写,见 `TsumegoUnitListPage`)。
   // 快照读不到 / 不含这道题(深链、换了标签页)⇒ 退回整类,**不假装还在错题里**。
-  // 快照按账号读(`user` 是 Task 4 在组件体开头取的):同一标签页换人,读不到别人点错题页时写的那份。
+  // 快照由统一 activity store 按账号隔离:同一标签页换人,读不到别人点错题页时写的那份。
   const wrongSequence = useMemo(
-    () => (wantWrongSet && problem ? readWrongSequence(user?.id, problem.level, problem.category) : null),
-    [wantWrongSet, problem, user?.id],
+    () => (wantWrongSet && problem ? readWrongSequence(problem.level, problem.category) : null),
+    [wantWrongSet, problem],
   );
   const inWrongSet = !!problemId && !!wrongSequence && wrongSequence.includes(problemId);
   const inAllSet = wantAllSet && sequenceCategory === 'all' && !!problemId && categorySequence.includes(problemId);
@@ -211,14 +209,13 @@ const TsumegoProblemPage = () => {
   // 错题模式下记带 `?set=wrong` 的路由:点「继续」回来还在错题里(T1)。
   useEffect(() => {
     if (!problem) return;
-    writeLastLevel(user?.id, problem.level);
-    writeLastCategory(user?.id, inAllSet ? 'all' : problem.category);
+    writeLastLevel(problem.level);
+    writeLastCategory(inAllSet ? 'all' : problem.category);
     const journeyName = inAllSet
       ? t('Mixed training', '综合训练')
       : t(`tsumego:${problem.category}`, problem.category);
     const head = `${levelChinese(problem.level)} · ${journeyName}`;
     writePracticeResume(
-      user?.id,
       inWrongSet
         ? {
             label: `${head} · ${interpolate(t('tsumego:wrongResume', '错题第 {n} 道'), { n: currentIndex + 1 })}`,
@@ -230,7 +227,7 @@ const TsumegoProblemPage = () => {
           },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot label written once per problem; `t` intentionally excluded
-  }, [problem, currentIndex, user?.id, inWrongSet, inAllSet]);
+  }, [problem, currentIndex, inWrongSet, inAllSet]);
 
   // "Last time" for this problem (4.3) — from the unified progress source.
   const lastDuration = problemId ? progress[problemId]?.lastDuration : undefined;

@@ -39,9 +39,20 @@ class MoveDetector:
         self.count = 0
         self.misses = 0
 
-    def detect_new_move(self, board: np.ndarray, ignore_cells: set | None = None) -> tuple[int, int, int] | None:
+    def detect_new_move(
+        self, board: np.ndarray, ignore_cells: set | None = None, *, required_frames: int | None = None
+    ) -> tuple[int, int, int] | None:
         """
         Compare current board with previous accepted state.
+
+        ``required_frames``: how many sightings confirm THIS move, overriding
+        ``consistency_frames`` for this call only. The caller passes a smaller number
+        when it can already see the stone clearly (see the confidence-adaptive gate in
+        the workers). None — including "the caller has no confidence reading yet" —
+        keeps the full ``consistency_frames``: an unknown stone is a weak stone, and the
+        slow path is the safe one. The value is read fresh on every frame rather than
+        stored, so a candidate whose confidence decays mid-window is held to the longer
+        count instead of being confirmed on the strength of one good early frame.
 
         ``ignore_cells``: (row, col) intersections that can never be a new move — the
         frame's removal-lit ∩ expected-empty mask. A stone physically sitting on a
@@ -92,7 +103,8 @@ class MoveDetector:
             self.count = 1
             self.misses = 0
 
-        if self.count >= self.consistency_frames:
+        needed = self.consistency_frames if required_frames is None else max(1, int(required_frames))
+        if self.count >= needed:
             # Baseline deliberately NOT advanced (see class docstring): the caller
             # force_syncs once the move is actually accepted downstream.
             self.count = 0
@@ -149,6 +161,17 @@ class PendingConfidencePeak:
         if self._cell == (row, col):
             return max(instant_conf, self._peak)
         return instant_conf
+
+    def peak_for(self, pending: tuple | None) -> float | None:
+        """Window peak for ``pending``, or None when this window is about someone else.
+
+        None means "no reading", which callers must treat as "not confident" rather than
+        as a zero — the confidence-adaptive confirmation gate relies on that distinction
+        to keep an unmeasured stone on the slow path.
+        """
+        if pending is None or self._cell != (pending[0], pending[1]):
+            return None
+        return self._peak
 
 
 class AmbiguousPromoter:

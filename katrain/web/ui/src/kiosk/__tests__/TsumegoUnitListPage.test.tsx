@@ -5,6 +5,9 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { sequenceKey, UNIT_SIZE } from '../pages/tsumegoUnits';
 import type { TsumegoProgressEntry } from '../../context/TsumegoProgressContext';
+import { __resetKioskActivityStorageForTests, setKioskIdentity } from '../storage/kioskActivityStorage';
+
+const TEST_UUID = 'tsumego-unit-list-test-user';
 
 /**
  * 屏 13 · 题目列表。**2026-08-22 按稿子整屏换过**,所以和上一版对不上是预期的:
@@ -69,6 +72,8 @@ beforeEach(() => {
   progressFlags.failed = false;
   sessionStorage.clear();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   installFetch();
 });
 
@@ -356,7 +361,7 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
   it('深链进来也记下这一类 —— 训练营那一排的高亮靠它', async () => {
     seedSequence('15k', 'semeai');
     renderPage('15k', 'semeai', '1');
-    await waitFor(() => expect(localStorage.getItem('kiosk_tsumego_last_category:u7')).toBe('semeai'));
+    await waitFor(() => expect(localStorage.getItem(`kiosk_tsumego_last_category:${TEST_UUID}`)).toBe('semeai'));
   });
 
   describe('错题页(T1)', () => {
@@ -390,9 +395,8 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
       renderWrong();
       await waitFor(() => expect(cells()).toHaveLength(2));
       fireEvent.click(cells()[1]);
-      // 按账号存(useAuth mock 是 id 7):错题是「这个人」做错的,同一个标签页里换人不许读到。
-      expect(JSON.parse(sessionStorage.getItem('kiosk_problems_15k_capturing_wrong:u7')!)).toEqual(['q3', 'q41']);
-      expect(sessionStorage.getItem('kiosk_problems_15k_capturing_wrong')).toBeNull();
+      expect(JSON.parse(localStorage.getItem(`kiosk_problems_15k_capturing_wrong:${TEST_UUID}`)!)).toEqual(['q3', 'q41']);
+      expect(localStorage.getItem('kiosk_problems_15k_capturing_wrong')).toBeNull();
       expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/q41?set=wrong');
     });
 

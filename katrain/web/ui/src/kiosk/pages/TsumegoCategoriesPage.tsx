@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { KioskCard } from '../shell/KioskCard';
@@ -35,7 +34,6 @@ const TsumegoCategoriesPage = () => {
   const { level } = useParams<{ level: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { user } = useAuth();
   const { categoryProgress } = useTsumegoProgress();
 
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
@@ -92,7 +90,7 @@ const TsumegoCategoriesPage = () => {
   );
   const totalCount = categories.reduce((sum, category) => sum + category.count, 0);
   const levelName = level ? levelChinese(level) : '';
-  const lastCategory = readLastCategory(user?.id);
+  const lastCategory = readLastCategory();
 
   const pagebar = (
     <KioskPagebar

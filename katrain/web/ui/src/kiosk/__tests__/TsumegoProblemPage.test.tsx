@@ -5,6 +5,11 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { AUTO_ADVANCE_KEY, sequenceKey, wrongSequenceKey } from '../pages/tsumegoUnits';
 import type { PhysicalTsumegoState } from '../hooks/usePhysicalTsumego';
+import { setKioskIdentity, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
+
+// AUTO_ADVANCE_KEY is identity-scoped (box-SSO guest mode, R9-F1) — these tests exercise a
+// resolved real user, so seed the NAMESPACED key via this fixed uuid, not the legacy raw one.
+const TEST_UUID = 'test-uuid';
 
 // ---- Hoisted spies referenced by the mock factories below ----
 const { mockNavigate, mockFlush, mockReadPhysicalMode } = vi.hoisted(() => ({
@@ -179,6 +184,8 @@ beforeEach(() => {
   for (const k of Object.keys(mockProgress)) delete mockProgress[k];
   sessionStorage.clear();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   // vi.clearAllMocks() clears call history but not a prior mockReturnValue override —
   // reset explicitly so physical mode defaults OFF for every test unless a case opts in.
   mockReadPhysicalMode.mockReturnValue(false);
@@ -545,8 +552,8 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/p2');
     });
 
-    it('设置里关了就不自动翻', () => {
-      localStorage.setItem(AUTO_ADVANCE_KEY, 'false');
+    it('does NOT auto-advance when the preference is disabled', () => {
+      localStorage.setItem(`${AUTO_ADVANCE_KEY}:${TEST_UUID}`, 'false');
       hookReturn = { ...defaultHookReturn, isSolved: true };
       renderPage('p1');
       act(() => {
@@ -555,8 +562,8 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('最后一题没有下一题,不翻', () => {
-      localStorage.setItem(AUTO_ADVANCE_KEY, 'true');
+    it('does NOT auto-advance on the last problem (no next)', () => {
+      localStorage.setItem(`${AUTO_ADVANCE_KEY}:${TEST_UUID}`, 'true');
       hookReturn = { ...defaultHookReturn, isSolved: true };
       renderPage('p2');
       act(() => {
@@ -565,8 +572,8 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('没做对不翻', () => {
-      localStorage.setItem(AUTO_ADVANCE_KEY, 'true');
+    it('does NOT auto-advance while unsolved', () => {
+      localStorage.setItem(`${AUTO_ADVANCE_KEY}:${TEST_UUID}`, 'true');
       hookReturn = { ...defaultHookReturn, isSolved: false };
       renderPage('p1');
       act(() => {
@@ -629,9 +636,9 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
 
   it('进一道题就把「上次」三样记在这个账号名下(N10)', () => {
     renderPage('p1');
-    expect(localStorage.getItem('kiosk_tsumego_last_level:u7')).toBe('15k');
-    expect(localStorage.getItem('kiosk_tsumego_last_category:u7')).toBe('手筋');
-    expect(JSON.parse(localStorage.getItem('kiosk_tsumego_resume:u7')!)).toEqual({
+    expect(localStorage.getItem(`kiosk_tsumego_last_level:${TEST_UUID}`)).toBe('15k');
+    expect(localStorage.getItem(`kiosk_tsumego_last_category:${TEST_UUID}`)).toBe('手筋');
+    expect(JSON.parse(localStorage.getItem(`kiosk_tsumego_resume:${TEST_UUID}`)!)).toEqual({
       label: '15 级 · 手筋 · 第 2 题',
       route: '/kiosk/tsumego/problem/p1',
     });
@@ -672,8 +679,8 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       expect(tags).toEqual(['手筋', '15 级']);
       fireEvent.click(within(screen.getByTestId('puzzle-pagebar')).getByText('第 1 单元'));
       expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/15k/all/1');
-      expect(localStorage.getItem('kiosk_tsumego_last_category:u7')).toBe('all');
-      expect(JSON.parse(localStorage.getItem('kiosk_tsumego_resume:u7')!)).toEqual({
+      expect(localStorage.getItem(`kiosk_tsumego_last_category:${TEST_UUID}`)).toBe('all');
+      expect(JSON.parse(localStorage.getItem(`kiosk_tsumego_resume:${TEST_UUID}`)!)).toEqual({
         label: '15 级 · 综合训练 · 第 2 题',
         route: '/kiosk/tsumego/problem/p1?set=all',
       });
@@ -704,8 +711,7 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
     const button = (name: string) => screen.getByRole('button', { name });
 
     beforeEach(() => {
-      // 快照按账号存;这个文件的 useAuth mock 是 id 7(Task 4 加的)。
-      sessionStorage.setItem(wrongSequenceKey(7, '15k', '手筋')!, JSON.stringify(['q3', 'p1', 'q41']));
+      localStorage.setItem(`${wrongSequenceKey('15k', '手筋')}:${TEST_UUID}`, JSON.stringify(['q3', 'p1', 'q41']));
     });
 
     it('页控条写「错题 第 i / n 道」;上/下一题只在快照里走,而且带着 ?set=wrong', () => {
@@ -737,7 +743,7 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
       // 造的是**输入**(45 道错题);断言的是组件算出来的 <i> 个数,不是布局结论。
       // 上限 20 = 整类模式一个单元的点数 ⇒ 右栏的高度来源和改之前同一个最大值。
       const long = Array.from({ length: 45 }, (_, i) => (i === 25 ? 'p1' : `w${i}`));
-      sessionStorage.setItem(wrongSequenceKey(7, '15k', '手筋')!, JSON.stringify(long));
+      localStorage.setItem(`${wrongSequenceKey('15k', '手筋')}:${TEST_UUID}`, JSON.stringify(long));
       renderWrong('p1');
       expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('错题 第 26 / 45 道');
       expect(screen.getByTestId('puzzle-unit')).toHaveTextContent('错题 · 45 道');
@@ -747,14 +753,14 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
 
     it('「接着上次」记下带 ?set=wrong 的路由 —— 点「继续」回来还在错题里', () => {
       renderWrong('p1');
-      expect(JSON.parse(localStorage.getItem('kiosk_tsumego_resume:u7')!)).toEqual({
+      expect(JSON.parse(localStorage.getItem(`kiosk_tsumego_resume:${TEST_UUID}`)!)).toEqual({
         label: '15 级 · 手筋 · 错题第 2 道',
         route: '/kiosk/tsumego/problem/p1?set=wrong',
       });
     });
 
     it('快照里没有这道题(深链、换了标签页)⇒ 退回整类,不假装还在错题里', () => {
-      sessionStorage.setItem(wrongSequenceKey(7, '15k', '手筋')!, JSON.stringify(['x', 'y']));
+      localStorage.setItem(`${wrongSequenceKey('15k', '手筋')}:${TEST_UUID}`, JSON.stringify(['x', 'y']));
       renderWrong('p1');
       expect(screen.getByText('第 2 题')).toBeInTheDocument();
       fireEvent.click(button('下一题'));
@@ -762,10 +768,10 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
     });
 
     it('同一标签页甲→乙→甲:别的账号写下的快照不认,就算里面恰好有这道题 —— 退回整类', () => {
-      // 甲(u7)自己的快照没了,标签页里只剩乙(u8)点错题页时写的那份,而它恰好也含 p1。
+      // 当前账号自己的快照没了,标签页里只剩另一账号点错题页时写的那份,而它恰好也含 p1。
       // 不分人的钥匙在这里会过 `includes('p1')`,甲点「继续」就进了乙的错题、下一题去 b2。
-      sessionStorage.removeItem(wrongSequenceKey(7, '15k', '手筋')!);
-      sessionStorage.setItem(wrongSequenceKey(8, '15k', '手筋')!, JSON.stringify(['p1', 'b2']));
+      localStorage.removeItem(`${wrongSequenceKey('15k', '手筋')}:${TEST_UUID}`);
+      localStorage.setItem(`${wrongSequenceKey('15k', '手筋')}:another-user`, JSON.stringify(['p1', 'b2']));
       renderWrong('p1');
       expect(screen.getByText('第 2 题')).toBeInTheDocument();
       fireEvent.click(button('下一题'));

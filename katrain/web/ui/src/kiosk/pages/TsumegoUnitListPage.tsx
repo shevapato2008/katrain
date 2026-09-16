@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useAuth } from '../../context/AuthContext';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import {
   CATEGORY_META,
@@ -76,7 +75,6 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { progress, serverLoadFailed, refresh } = useTsumegoProgress();
-  const { user } = useAuth();
   const isWrongSet = set === 'wrong';
 
   const [allIds, setAllIds] = useState<string[] | null>(null);
@@ -113,8 +111,8 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
 
   // 深链直接进这一层时,训练营那一排的 `is-current` 也要跟上。**指针不是进度**,按账号存(N10)。
   useEffect(() => {
-    if (category) writeLastCategory(user?.id, category);
-  }, [category, user?.id]);
+    if (category) writeLastCategory(category);
+  }, [category]);
 
   const isAll = category === 'all';
   const meta = category ? CATEGORY_META[category] : undefined;
@@ -251,7 +249,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
       return;
     }
     // 快照在**点下去那一刻**写:做题途中做对一道,它不会从上/下一题里消失(T1)。按账号存。
-    if (level && category) writeWrongSequence(user?.id, level, category, wrongIds);
+    if (level && category) writeWrongSequence(level, category, wrongIds);
     navigate(`/kiosk/tsumego/problem/${id}?set=wrong`);
   };
 

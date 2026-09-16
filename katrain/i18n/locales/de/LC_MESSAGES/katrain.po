@@ -492,8 +492,8 @@ msgid "aihelp:p:weighted"
 msgstr ""
 "Wählt den Zug gemäß der Policy-Wahrscheinlichkeit, beeinflusst durch "
 "'weaken_fac' wie wahrscheinlich schlechtere Züge gespielt werden. Mit einem "
-"kleinen Wert spielt wie die AI 'Policy'. 'pick_override' legt fest, wann der"
-" beste Zug gewählt wird ohne Zufall und 'lower_bound' bestimmt die untere "
+"kleinen Wert spielt wie die AI 'Policy'. 'pick_override' legt fest, wann der "
+"beste Zug gewählt wird ohne Zufall und 'lower_bound' bestimmt die untere "
 "Grenze des erlaubten Policy-Wertes."
 
 msgid "ai:p:pick"
@@ -503,8 +503,8 @@ msgid "aihelp:p:pick"
 msgstr ""
 "Wählt 'pick_n + pick_frac * <number of legal moves>' gewichtete Züge "
 "zufällig und spielt den besten. Spielt wie die AI 'Policy', wenn "
-"'pick_frac=1'. Spielt besten Zug, wenn Policy-Wert höher als 'pick_override'"
-" ist, um offensichtliche Fehler zu vermeiden."
+"'pick_frac=1'. Spielt besten Zug, wenn Policy-Wert höher als 'pick_override' "
+"ist, um offensichtliche Fehler zu vermeiden."
 
 msgid "ai:p:local"
 msgstr "Lokaler Stil"
@@ -613,8 +613,8 @@ msgstr "Kata-Vorgabesteine"
 msgid "aihelp:handicap"
 msgstr ""
 "Optimiertes KataGo für höhere Vorgabe-Spiele. Die Einstellung 'pda' "
-"entspricht 'playoutDoublingAdvantage' in KataGo, aus Sicht von Schwarz. Wenn"
-" 'automatic' eingestellt ist, wird KaTrain automatischeinen geeigneten Wert "
+"entspricht 'playoutDoublingAdvantage' in KataGo, aus Sicht von Schwarz. Wenn "
+"'automatic' eingestellt ist, wird KaTrain automatischeinen geeigneten Wert "
 "finden."
 
 msgid "estimated strength"
@@ -657,16 +657,16 @@ msgstr "Alle verfügbaren Programme wurden bereits heruntergeladen"
 
 msgid "Engine missing DLL"
 msgstr ""
-"Konnte KataGo wegen fehlender DLL nicht starten. Überprüfe die Anforderungen"
-" in der KataGo-Dokumentation oder versuche, KataGo alleine zu starten, um "
+"Konnte KataGo wegen fehlender DLL nicht starten. Überprüfe die Anforderungen "
+"in der KataGo-Dokumentation oder versuche, KataGo alleine zu starten, um "
 "Einzelheiten zu erfahren."
 
 msgid "teaching undo message"
 msgstr ""
 "Zug {move} zurückgenommen, da er {points_lost:.1f} Punkte verliert. Bitte "
 "versuche es erneut. Bewege den Mauszeiger über den Zug, um die erwartete "
-"Widerlegung zu sehen, oder setze ein Häkchen bei “Erwartetes Gebiet” (t), um"
-" die Bereiche des Bretts zu sehen, wo Punktverlust zu erwarten ist."
+"Widerlegung zu sehen, oder setze ein Häkchen bei “Erwartetes Gebiet” (t), um "
+"die Bereiche des Bretts zu sehen, wo Punktverlust zu erwarten ist."
 
 #. resign the game
 msgid "resign"
@@ -777,8 +777,8 @@ msgstr "Einfügen beendet, {num_copied} Züge kopiert"
 #. mode
 msgid "finish inserting before navigating"
 msgstr ""
-"Navigation ist im Einfüge-Modus deaktiviert, beende erst Einfüge-Modus durch"
-" Drücken von 'i'"
+"Navigation ist im Einfüge-Modus deaktiviert, beende erst Einfüge-Modus durch "
+"Drücken von 'i'"
 
 #. In new game options
 msgid "player names"
@@ -906,8 +906,8 @@ msgstr "Position aufsetzen"
 msgid "setup position explanation"
 msgstr ""
 "Dies generiert ein Teil eines Spieles, von dem ihr anfangen könnt, zu "
-"spielen. Zum Beispiel könnt ihr es benutzen um im Vorteil gegen stärkere KIs"
-" in verschiedene Mittel- oder Endspielsituationen zu Spielen."
+"spielen. Zum Beispiel könnt ihr es benutzen um im Vorteil gegen stärkere KIs "
+"in verschiedene Mittel- oder Endspielsituationen zu Spielen."
 
 #. change komi etc in current game
 msgid "editgame"
@@ -1060,8 +1060,7 @@ msgstr ""
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a human-like KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening "
-"style."
+"ticked, the model will play according to a post-2016 AlphaZero opening style."
 
 #. TODO
 msgid "engine:humanlike_model"
@@ -2465,8 +2464,7 @@ msgid "report:choose_file"
 msgstr "Lokale Datei auswählen"
 
 msgid "report:choose_file_hint"
-msgstr ""
-"Wählen Sie eine lokale SGF-Datei oder fügen Sie SGF-Inhalt direkt ein."
+msgstr "Wählen Sie eine lokale SGF-Datei oder fügen Sie SGF-Inhalt direkt ein."
 
 msgid "report:board_size"
 msgstr "Brett"
@@ -2569,8 +2567,8 @@ msgstr "Löschen bestätigen"
 
 msgid "report:delete_confirm_body"
 msgstr ""
-"Die Partie und alle zugehörigen Analysedaten werden dauerhaft gelöscht. Sind"
-" Sie sicher?"
+"Die Partie und alle zugehörigen Analysedaten werden dauerhaft gelöscht. Sind "
+"Sie sicher?"
 
 msgid "report:delete_success"
 msgstr "Partie gelöscht"
@@ -2933,8 +2931,8 @@ msgstr "Erneut versuchen"
 
 msgid "ladder:engine_stalled"
 msgstr ""
-"Ladder-Engine nicht verfügbar — die KI kann nicht ziehen. Diese Partie zählt"
-" nicht; bitte verlasse sie."
+"Ladder-Engine nicht verfügbar — die KI kann nicht ziehen. Diese Partie zählt "
+"nicht; bitte verlasse sie."
 
 msgid "ladder:unscored_engine"
 msgstr ""
@@ -2962,8 +2960,8 @@ msgstr "Ranglistenstatus konnte nicht geladen werden"
 
 msgid "ladder:load_error_not_authoritative"
 msgstr ""
-"Dieses Gerät wertet keine Ranglistenpartien, daher kann hier nicht gestartet"
-" werden"
+"Dieses Gerät wertet keine Ranglistenpartien, daher kann hier nicht gestartet "
+"werden"
 
 msgid "ladder:load_error_unauthorized"
 msgstr "Sitzung abgelaufen — bitte erneut anmelden"
@@ -3011,8 +3009,8 @@ msgstr "Ergebnisse der letzten 5 KI-Ranglistenpartien"
 
 msgid "ladder:recent_display_note"
 msgstr ""
-"Die letzten 5 Partien dienen nur der Übersicht; entscheidend sind allein die"
-" Nettopunkte"
+"Die letzten 5 Partien dienen nur der Übersicht; entscheidend sind allein die "
+"Nettopunkte"
 
 msgid "ladder:recent_empty"
 msgstr "Noch keine KI-Ranglistenpartien"
@@ -3244,8 +3242,8 @@ msgstr ""
 
 msgid "play:guest_free_notice"
 msgstr ""
-"Du spielst als Gast: Diese Partie wird nicht gespeichert und zählt nicht für"
-" deinen Rang. Melde dich an, um Partien zu behalten."
+"Du spielst als Gast: Diese Partie wird nicht gespeichert und zählt nicht für "
+"deinen Rang. Melde dich an, um Partien zu behalten."
 
 msgid "play:go_free_play"
 msgstr "Stattdessen frei spielen"
@@ -3331,8 +3329,8 @@ msgstr "{n} nicht bewertet"
 msgid "ladder:engine_unavailable_start"
 msgstr ""
 "Die Ranglisten-Engine ist vorübergehend nicht verfügbar. Es wurde keine "
-"Partie gestartet, und dein Rang bleibt unverändert. Bitte versuche es später"
-" erneut."
+"Partie gestartet, und dein Rang bleibt unverändert. Bitte versuche es später "
+"erneut."
 
 msgid "grade:match_rate"
 msgstr "KI-Übereinstimmung"
@@ -3357,8 +3355,8 @@ msgstr "{n} Züge nicht vergleichbar"
 
 msgid "grade:match_caveat"
 msgstr ""
-"Die Übereinstimmung hängt von der Schwierigkeit der Stellungen ab - für sich"
-" genommen ist sie kein Beleg für Spielstärke oder Betrug."
+"Die Übereinstimmung hängt von der Schwierigkeit der Stellungen ab - für sich "
+"genommen ist sie kein Beleg für Spielstärke oder Betrug."
 
 msgid "live:human_pick_rate_ranked"
 msgstr "{rank}-Wahl"
@@ -3432,8 +3430,8 @@ msgstr "Nicht bewertbar: Vorzug ohne Analyse oder zu wenige Visits"
 
 msgid "grade:brilliance_entry"
 msgstr ""
-"Alle drei Bedingungen: Topzug der Engine gespielt, dessen Policy-Prior unter"
-" 10 % (selbst die Intuition übersah ihn) und die Partie war noch offen."
+"Alle drei Bedingungen: Topzug der Engine gespielt, dessen Policy-Prior unter "
+"10 % (selbst die Intuition übersah ihn) und die Partie war noch offen."
 
 msgid "grade:match_timeline_legend"
 msgstr ""
@@ -3450,6 +3448,176 @@ msgstr "{side}: Züge {from}-{to}, {n} in Folge der Topzug"
 
 msgid "live:loading_match"
 msgstr "Partie wird geladen …"
+
+msgid "game:black_resigns"
+msgstr "Schwarz gibt auf"
+
+msgid "game:white_resigns"
+msgstr "Weiß gibt auf"
+
+msgid "game:who_resigns"
+msgstr "Wer gibt auf?"
+
+msgid "game:black_short"
+msgstr "S"
+
+msgid "game:white_short"
+msgstr "W"
+
+msgid "game:black_side"
+msgstr "Schwarz"
+
+msgid "game:white_side"
+msgstr "Weiß"
+
+msgid "game:clock_timeout"
+msgstr "Zeitüberschreitung"
+
+msgid "game:clock_byo_left"
+msgstr "Byo-yomi · noch {n}"
+
+msgid "game:clock_byo_spec"
+msgstr "Byo-yomi {len}s×{n}"
+
+msgid "game:move_n"
+msgstr "Zug {n}"
+
+msgid "game:timeout_loss_suffix"
+msgstr " verliert durch Zeitüberschreitung"
+
+msgid "game:timeout_win_suffix"
+msgstr " gewinnt durch Zeitüberschreitung"
+
+msgid "game:saved_to_history"
+msgstr "In der Spielhistorie gespeichert"
+
+msgid "game:timeout_check_failed"
+msgstr "Zeitüberschreitung konnte nicht bestätigt werden"
+
+msgid "game:count_err_analysis_pending"
+msgstr "Der Zug wird noch analysiert, bitte gleich erneut zählen"
+
+msgid "game:count_err_below_min"
+msgstr "Noch nicht genug Züge, Zählen momentan nicht möglich"
+
+msgid "game:count_err_game_over"
+msgstr "Diese Partie ist bereits beendet"
+
+msgid "game:count_err_network"
+msgstr "Analyse-Dienst nicht erreichbar"
+
+msgid "game:count_err_http"
+msgstr "Zählen fehlgeschlagen ({status}), bitte erneut versuchen"
+
+msgid "game:counting"
+msgstr "Zählen…"
+
+msgid "game:retry"
+msgstr "Erneut versuchen"
+
+msgid "game:exit_failed"
+msgstr "Beenden fehlgeschlagen, bitte erneut versuchen"
+
+msgid "game:exit_unsaved_title"
+msgstr ""
+"Diese Partie ist noch nicht beendet — beim Beenden wird nicht gespeichert"
+
+msgid "game:keep_playing"
+msgstr "Weiterspielen"
+
+msgid "game:exit_unsaved"
+msgstr "Ohne Speichern beenden"
+
+msgid "play:local_needs_login"
+msgstr "Zuerst anmelden · wird nach der Partie automatisch gespeichert"
+
+msgid "review:no_result_line"
+msgstr "Kein Ergebnis vermerkt"
+
+msgid "review:row_local"
+msgstr "Lokale Partie · Zwei Spieler"
+
+msgid "review:row_local_unnamed"
+msgstr "Lokale Partie · Ohne Namen"
+
+msgid "review:row_research"
+msgstr "Recherche-Archiv"
+
+msgid "game:count_failed"
+msgstr "Auszählung nicht abgeschlossen"
+
+msgid "game:check_network_retry"
+msgstr "Verbindung prüfen und erneut versuchen"
+
+msgid "game:both_passed"
+msgstr "Beide haben gepasst"
+
+msgid "game:exit_confirm_title"
+msgstr "Diese Partie verlassen?"
+
+msgid "game:exit_unsaved_body"
+msgstr ""
+"Diese Partie ist noch nicht beendet — beim Verlassen wird sie nicht "
+"gespeichert."
+
+msgid "game:which_side_resigns"
+msgstr "Welche Seite gibt auf?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"Der Gegner wird als Sieger durch Aufgabe vermerkt; diese Partie wird in der "
+"Partienhistorie gespeichert."
+
+msgid "local:input_hint_v2"
+msgstr ""
+"Das physische Brett hat nur 19×19 — für 13×13 oder 9×9 wird auf dem "
+"Bildschirm gespielt"
+
+msgid "local:komi_hint"
+msgstr ""
+"Vorgabepartien haben 0 Komi — diese Gruppe klappt zu, sobald ein "
+"Vorgabestein gesetzt ist"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"Die Uhr läuft auf der Spielerkarte herunter · aufgebrauchte Bedenkzeit führt "
+"zum Zeitverlust · ohne Zeitlimit wird nur mitgeschrieben"
+
+msgid "local:clock_meta_count"
+msgstr "{n} Stufen"
+
+msgid "local:sound_hint_v2"
+msgstr "Derselbe Schalter wie der Zugton unter Einstellungen · Ton"
+
+msgid "local:note3_a"
+msgstr "Auf dem Bildschirm"
+
+msgid "local:note3_b"
+msgstr "keine Hinweise und keine Stellungsbewertung"
+
+msgid "local:note3_c"
+msgstr "; sobald beide gepasst haben,"
+
+msgid "local:note3_d"
+msgstr "wird automatisch ausgezählt"
+
+msgid "local:note3_e"
+msgstr " der Lebend-Tot-Status wird von der Engine bestimmt."
+
+msgid "local:note3_f"
+msgstr "Diese Partie"
+
+msgid "local:note3_g"
+msgstr "wird nur protokolliert, dein Rang ändert sich nicht"
+
+msgid "local:note3_h"
+msgstr "; ein vorzeitiger Ausstieg"
+
+msgid "local:note3_i"
+msgstr "speichert die Partie nicht"
+
+msgid "local:note3_j"
+msgstr "."
 
 msgid "vision:offcenter_at"
 msgstr ": Stein liegt nicht auf dem Schnittpunkt"

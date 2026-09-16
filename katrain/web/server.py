@@ -18,6 +18,7 @@ from katrain.web.api.v1.api import api_router
 from katrain.web.api.v1.endpoints.ai_ladder import mark_ai_ladder_remote_terminal
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
+from katrain.web.core.game_end_rules import is_awaiting_count
 from katrain.web.core.ranked_session_guard import (
     guard_ai_ladder_ranked_owner,
     guard_ai_ladder_ranked_human_action,
@@ -1071,14 +1072,29 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 before = _terminal_of(session)
                 # r1:非研究会话带 guard —— 这一手所在的局面线已结束 / 轮到 AI 就拒(409),双停第二手记终局事实。
                 # 研究会话照旧打谱,不冻结。
-                session.katrain("play", None if coords is None else tuple(coords), guard=session.mode != "research")
+                katrain = session.katrain
+                if getattr(session, "game_type", None) == "pvp_local" and not is_awaiting_count(katrain):
+                    # The server owns the clock verdict. A move arriving after the deadline must
+                    # not switch turns before `/api/timeout` can identify the player who expired.
+                    cn = katrain.game.current_node
+                    if katrain.clock_exhausted():
+                        katrain(
+                            "timeout",
+                            expected_game_id=katrain.game.game_id,
+                            expected_node_id=id(cn),
+                            color=cn.next_player,
+                        )
+                    else:
+                        katrain("play", None if coords is None else tuple(coords), guard=session.mode != "research")
+                else:
+                    katrain("play", None if coords is None else tuple(coords), guard=session.mode != "research")
                 end = _new_terminal(session, before)
                 state = session.katrain.get_state()
                 session.last_state = state
         # 自然终局(双停)不经过认输 / 数子 / 超时,在这里收尾:先补分出胜负,再落账(N22)。只收尾**这一手造出来的**终局(r1 M1)。
         # AI 线程下出双停第二手时走的是 `manager.on_game_ended`,两条路是同一个函数、会话内串行。
         # 收尾必须在 `analysis_context` 之外:`persistent_analysis_activity` 在 `activity.lock` 里 yield,那把锁不许跨 await。
-        if end is not None:
+        if end is not None and not state.get("awaiting_count"):
             await _finish_ended_game(session, app, current_user, end)
             state = session.katrain.get_state()
             session.last_state = state
@@ -1700,8 +1716,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             # Determine player names
             player_black = players_info["B"].name or ""
             player_white = players_info["W"].name or ""
-            # Fill in username for the human side if still empty
-            if current_user:
+            game_type = getattr(session, "game_type", "free")
+            # Local two-player names are optional. Filling the logged-in user into both human
+            # seats would turn an unnamed game into a misleading same-name game.
+            if current_user and game_type != "pvp_local":
                 if players_info["B"].human and not player_black:
                     player_black = current_user.username
                 if players_info["W"].human and not player_white:
@@ -1745,7 +1763,6 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             move_count = len(state.get("history", []))
             komi = state.get("komi", 7.5)
             rules = state.get("ruleset", "chinese")
-            game_type = getattr(session, "game_type", "free")
 
             from datetime import datetime
 
@@ -1979,10 +1996,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     globals()["_RECORD_FN"] = _record_ai_game
 
     @app.post("/api/resign")
-    async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
+    async def resign(request: ResignRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         _require_multiplayer_participant(session, current_user)
         guard_session_terminator(session, current_user, "resign")
+        local_pvp = getattr(session, "game_type", "free") == "pvp_local"
+        if local_pvp and request.color is None:
+            raise HTTPException(status_code=400, detail="color is required to resign a local two-player game")
+        if not local_pvp and request.color is not None:
+            raise HTTPException(status_code=400, detail="color is only accepted for local two-player games")
         ranked_ai = is_ai_ladder_ranked_session(session)
         if ranked_ai:
             guard_ai_ladder_ranked_owner(session, current_user, "resign")
@@ -2052,6 +2074,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                                 loser = "B"
                             elif current_user.id == session.player_w_id:
                                 loser = "W"
+                        if local_pvp:
+                            loser = request.color
                         if loser is None:
                             session.katrain("resign")
                         else:
@@ -2113,7 +2137,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         """
         node = session.katrain.game.current_node if node is None else node
         terminal = _terminal_of(session)
-        if terminal is not None and terminal.node is node:
+        awaiting_count = node is session.katrain.game.current_node and is_awaiting_count(session.katrain)
+        if terminal is not None and terminal.node is node and not awaiting_count:
             # 非原子预检,只为说对原因:等分析的这几秒里这一局被认输 / 超时了,分数多半也没补上,
             # 不预检的话会先撞上下面的 400「分析没算出来」。真正的判别在 `_commit_end_state` 里。
             raise EndgameConflict("already_ended")
@@ -2121,11 +2146,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         if score is None:
             raise HTTPException(
-                status_code=400, detail="Analysis not available yet. Please wait for KataGo analysis to complete."
+                status_code=400,
+                detail={
+                    "code": "analysis_pending",
+                    "message": "Analysis not available yet. Please wait for KataGo analysis to complete.",
+                },
             )
 
         result, winner_color = _count_result(score)
-        session.katrain._commit_end_state(result, node=node)
+        session.katrain._commit_end_state(result, node=node, fill_pending=awaiting_count)
         session.game_ended = True
 
         # Record multiplayer game result
@@ -2233,21 +2262,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_terminator(session, current_user, "request-count")
         guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
         await _guard_ai_ladder_cloud_active(app, session, current_user)
 
-        # Verify move count >= configured minimum
         state = session.katrain.get_state()
-        # 与前端读取同一缩放门槛；旧状态没有该字段时保留配置回退。
-        count_min_moves = state.get("count_min_moves")
-        if count_min_moves is None:
-            count_min_moves = session.katrain.config("game/count_min_moves", 100)
-        if len(state.get("history", [])) < count_min_moves:
-            raise HTTPException(status_code=400, detail=f"Cannot count before {count_min_moves} moves")
-
-        # Check if game is already over
-        if state.get("end_result"):
-            raise HTTPException(status_code=400, detail="Game is already over")
+        # Two passes in board mode deliberately pause at an explicit counting state. It bypasses
+        # the manual-count move threshold and the placeholder end_result is not a final result.
+        if not state.get("awaiting_count"):
+            count_min_moves = state.get("count_min_moves")
+            if count_min_moves is None:
+                count_min_moves = session.katrain.config("game/count_min_moves", 100)
+            if len(state.get("history", [])) < count_min_moves:
+                raise HTTPException(
+                    status_code=400,
+                    detail={"code": "below_min_moves", "message": f"Cannot count before {count_min_moves} moves"},
+                )
+            if state.get("end_result"):
+                raise HTTPException(
+                    status_code=400, detail={"code": "game_over", "message": "Game is already over"}
+                )
 
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 
@@ -2368,23 +2402,40 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # For multiplayer games, record the result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
         bound = request.expected_node_id is not None
+        local_pvp = getattr(session, "game_type", None) == "pvp_local"
         wrote = True
         with session.lock:
             guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
             before = _terminal_of(session)
             try:
-                if bound:
+                katrain = session.katrain
+                if local_pvp and (is_awaiting_count(katrain) or katrain.game.current_node.end_state):
+                    wrote = False
+                elif bound:
                     session.katrain(
                         "timeout",
                         expected_game_id=request.expected_game_id,
                         expected_node_id=request.expected_node_id,
                         color=request.color,
                     )
+                elif local_pvp:
+                    # Backward-compatible local caller: bind the verdict to the current turn here,
+                    # then run the same authoritative clock check as the newer kiosk client.
+                    cn = katrain.game.current_node
+                    katrain(
+                        "timeout",
+                        expected_game_id=katrain.game.game_id,
+                        expected_node_id=id(cn),
+                        color=cn.next_player,
+                    )
                 else:
                     session.katrain("timeout")
             except EndgameConflict as e:
                 # 被拒前先刷新 last_state:随后的 GET /api/state 给出此刻的局面与计时基准,前端据此重同步。
-                session.last_state = session.katrain.get_state()
+                state = session.katrain.get_state()
+                session.last_state = state
+                if local_pvp and e.reason == "clock_not_expired":
+                    raise HTTPException(status_code=409, detail={"code": "time_not_expired", "state": state})
                 if bound or e.reason != "already_ended":
                     raise
                 wrote = False

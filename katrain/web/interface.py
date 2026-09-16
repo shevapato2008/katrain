@@ -26,6 +26,7 @@ from katrain.core.engine import create_engine
 from katrain.core.game import Game
 from katrain.core.lang import i18n
 from katrain.gui.theme import Theme
+from katrain.web.core.game_end_rules import is_awaiting_count, scaled_count_min_moves
 from katrain.web.models import EndgameConflict, GameEnd
 
 # Configure standard logging
@@ -341,8 +342,7 @@ class WebKaTrain(KaTrainBase):
         configured = self.config("game/count_min_moves", 100)
         if not self.game:
             return configured
-        width, height = self.game.board_size
-        return max(1, int(configured * width * height / 361))
+        return scaled_count_min_moves(configured, self.game.board_size[0])
 
     #: 数子 / 双停终局时服务端自己补一次形势分析,最多等这么久(秒)。
     ENSURE_SCORE_TIMEOUT_S = 15.0
@@ -711,6 +711,9 @@ class WebKaTrain(KaTrainBase):
             },
             "engine": getattr(self, "last_engine", None),
             "count_min_moves": self.count_min_moves(),
+            # 盒上模式双方各停一手、还没数子。为真时 `end_result` 照样非空（"终局"，或分析到了之后
+            # 的 "B+3.0?" 估计串），前端要以这一位为准去数子，而不是把 end_result 当成终局结果。
+            "awaiting_count": is_awaiting_count(self),
             "game_type": getattr(self, "game_type", "free"),
             "platform_engine_color": getattr(self, "platform_engine_color", None),
             "analysis_allowed": self.analysis_allowed,

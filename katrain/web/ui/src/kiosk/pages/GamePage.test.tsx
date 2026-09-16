@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
-import { API, type GameState } from '../../api';
+import { API, ApiError, type GameState } from '../../api';
 import GamePage, { deriveAiTurnState } from './GamePage';
 import { getCurrentKioskActivityStorage, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
@@ -22,21 +22,42 @@ vi.mock('../../components/Board', () => ({
 }));
 
 // Exposes onAction so state-D (resign) tests can drive the real GamePage resign flow
-// without a full GameControlPanel render.
-interface MockControlPanelProps { onAction: (action: string) => void }
+// without a full GameControlPanel render. `onTimeExpired` is captured (S3-5: real edge-trigger
+// logic lives in GameControlPanel itself, already covered by GameControlPanel.clock.test.tsx —
+// here we only need to prove GamePage wires/omits the prop and reacts to it correctly) AND
+// exposed via a button so tests can fire it like GameControlPanel's real edge-trigger effect would.
+interface MockControlPanelProps {
+  onAction: (action: string) => void;
+  onTimeExpired?: () => void;
+  statusSlot?: React.ReactNode;
+}
+const { capturedControlPanelProps } = vi.hoisted(() => ({
+  capturedControlPanelProps: { current: null as MockControlPanelProps | null },
+}));
 vi.mock('../components/game/GameControlPanel', () => ({
-  default: (props: MockControlPanelProps) => (
-    <div data-testid="game-control-panel">
-      <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
-    </div>
-  ),
+  default: (props: MockControlPanelProps) => {
+    capturedControlPanelProps.current = props;
+    return (
+      <div data-testid="game-control-panel">
+        {/* F4: 状态条现在由 GamePage 经 statusSlot 传入、GameControlPanel 渲染 —— mock 照实转发,
+            否则「auto-count-status」相关断言对 GamePage 完全不渲染它这个回归免疫。 */}
+        {props.statusSlot}
+        <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
+        <button onClick={() => props.onAction('count')}>MOCK_COUNT</button>
+        <button onClick={() => props.onTimeExpired?.()}>MOCK_TIMEOUT</button>
+      </div>
+    );
+  },
 }));
 
-const { writeActiveSession, clearActiveSession } = vi.hoisted(() => ({
+const { writeActiveSession, clearActiveSession, readActiveSession } = vi.hoisted(() => ({
   writeActiveSession: vi.fn(),
   clearActiveSession: vi.fn(),
+  readActiveSession: vi.fn(),
 }));
-vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSession }));
+// `readSessionPlayOnBoard`(泳道 B)从活动会话读开局那一刻定下的 onBoard;这里桩成「没有活动会话」,
+// 走回落到偏好的那一支 —— 即合并前本文件各用例依赖的行为。
+vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSession, readActiveSession }));
 
 const { mockCalibrate } = vi.hoisted(() => ({ mockCalibrate: vi.fn().mockResolvedValue({}) }));
 vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: (...a: unknown[]) => mockCalibrate(...a) } }));
@@ -63,6 +84,7 @@ const mockSetSessionId = vi.fn();
 const mockHandleAction = vi.fn();
 const mockOnMove = vi.fn().mockResolvedValue(undefined);
 const mockOnNavigate = vi.fn();
+const mockSetGameState = vi.fn();
 
 let mockGameState: GameState;
 let mockPhysicalReminder: { kind: 'reminder' | 'escalation'; to_place: number[][]; to_remove: number[][] } | null = null;
@@ -72,7 +94,7 @@ vi.mock('../../hooks/useGameSession', () => ({
     sessionId: 'test-session',
     setSessionId: mockSetSessionId,
     gameState: mockGameState,
-    setGameState: vi.fn(),
+    setGameState: mockSetGameState,
     error: null,
     onMove: mockOnMove,
     onNavigate: mockOnNavigate,
@@ -83,6 +105,9 @@ vi.mock('../../hooks/useGameSession', () => ({
     sendChat: vi.fn(),
     gameEndData: null,
     physicalReminder: mockPhysicalReminder,
+    // 新覆盖的「非本地对局认输成功」路径会调用它(GamePage.tsx 里未包在 try 里);
+    // 缺了这一项此前从未被真调用过,加上后只是补全 mock、不改任何断言。
+    clearPhysicalEngineError: vi.fn(),
   }),
 }));
 
@@ -145,9 +170,11 @@ describe('GamePage', () => {
     mockPoseLocked = true;
     mockPhysicalReminder = null;
     capturedBoardProps.current = null;
+    capturedControlPanelProps.current = null;
     mockCalibrate.mockClear().mockResolvedValue({});
     sessionStorage.clear();
     localStorage.clear();
+    readActiveSession.mockReturnValue(null);
     mockLadderStatus.mockReset();
     __resetKioskActivityStorageForTests();
   });
@@ -353,6 +380,23 @@ describe('GamePage', () => {
       expect(clearActiveSession).not.toHaveBeenCalled();
     });
 
+    it('keeps the setup choice to play on screen when refreshing a 9-line game', () => {
+      readActiveSession.mockReturnValue({
+        kind: 'game', label: '两人', route: window.location.pathname, ts: 1, onBoard: false,
+      });
+      mockGameState = makeGameState({
+        game_type: 'pvp_local', board_size: [9, 9], end_result: null,
+        players_info: {
+          B: { ...basePlayer, player_type: 'player:human', name: '' },
+          W: { ...basePlayer, player_type: 'player:human', name: '' },
+        },
+      });
+
+      renderPage();
+
+      expect(writeActiveSession).toHaveBeenCalledWith(expect.objectContaining({ onBoard: false }));
+    });
+
     it('clears the active session when the game has ended', () => {
       mockGameState = makeGameState({
         players_info: {
@@ -519,6 +563,176 @@ describe('GamePage', () => {
       fireEvent.click(screen.getByRole('button', { name: '认输' }));
       expect(await screen.findByText('认输请求失败')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '认输' })).toBeInTheDocument();
+    });
+  });
+
+  describe('本地对局 v2:两个出口 + 数子', () => {
+    const human = { ...basePlayer, name: '' };
+    const localPair: GameState['players_info'] = {
+      B: { ...human, player_type: 'player:human' }, W: { ...human, player_type: 'player:human' },
+    };
+    const local = (over: Partial<GameState> = {}) =>
+      makeGameState({ players_info: localPair, game_type: 'pvp_local', ...over });
+
+    it('认输先问谁认输,按「白方认输」⇒ handleAction 带 color=W', async () => {
+      mockGameState = local();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_RESIGN'));
+      expect(screen.getByText('哪一方认输？')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '黑方认输' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '白方认输' }));
+      await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('resign', { color: 'W' }));
+    });
+
+    it('认输框按「取消」⇒ 不发请求', () => {
+      mockGameState = local();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_RESIGN'));
+      fireEvent.click(screen.getByRole('button', { name: '取消' }));
+      expect(mockHandleAction).not.toHaveBeenCalled();
+    });
+
+    it('未终局退出 ⇒ 删会话、清活动会话、回对弈首页,绝不认输', async () => {
+      mockGameState = local();
+      const del = vi.spyOn(API, 'deleteSession').mockResolvedValue(undefined);
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('退出对局'));
+        expect(screen.getByText('退出这局？')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: '退出不保存' }));
+        expect(await screen.findByText('PLAY_PAGE')).toBeInTheDocument();
+        expect(del).toHaveBeenCalledWith('test-session');
+        expect(clearActiveSession).toHaveBeenCalledWith('game');
+        expect(mockHandleAction).not.toHaveBeenCalled();
+      } finally { del.mockRestore(); }
+    });
+
+    it('删会话失败 ⇒ 不离开、说出来(不能装作已退出)', async () => {
+      mockGameState = local();
+      const del = vi.spyOn(API, 'deleteSession').mockRejectedValue(new ApiError(500, 'Request failed 500: boom'));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('退出对局'));
+        fireEvent.click(screen.getByRole('button', { name: '退出不保存' }));
+        expect(await screen.findByText('退出失败，请重试')).toBeInTheDocument();
+        expect(screen.queryByText('PLAY_PAGE')).toBeNull();
+        expect(clearActiveSession).not.toHaveBeenCalledWith('game');
+      } finally { del.mockRestore(); }
+    });
+
+    it('已终局 ⇒ 直接离开,不弹框、不删会话', async () => {
+      mockGameState = local({ end_result: 'W+R' });
+      const del = vi.spyOn(API, 'deleteSession').mockResolvedValue(undefined);
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('退出对局'));
+        expect(await screen.findByText('PLAY_PAGE')).toBeInTheDocument();
+        expect(del).not.toHaveBeenCalled();
+      } finally { del.mockRestore(); }
+    });
+
+    it('手动数子失败按原因码说真话,不再一律「手数不足或已结束」', async () => {
+      mockGameState = local();
+      const rc = vi.spyOn(API, 'requestCount')
+        .mockRejectedValue(new ApiError(400, 'x', { code: 'analysis_pending', message: 'x' }));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_COUNT'));
+        expect(await screen.findByText('还在算这一手的形势，稍等再数')).toBeInTheDocument();
+      } finally { rc.mockRestore(); }
+    });
+
+    it('awaiting_count ⇒ 自动数子,屏上说「正在数子…」', async () => {
+      // 后端真实行为(core/game.py):双 pass 后 end_result 一定非空(终局提示语或人工比分),
+      // 同时带 awaiting_count=true;数子判据是「有没有 awaiting_count」,不是「有没有 end_result」——
+      // fixture 照后端的形状写,否则这条测试对 F1 那个 bug 免疫(改之前也是绿的)。
+      mockGameState = local({ awaiting_count: true, end_result: '终局' });
+      const rc = vi.spyOn(API, 'requestCount').mockReturnValue(new Promise(() => {}));
+      try {
+        renderPage();
+        expect(await screen.findByText('正在数子…')).toBeInTheDocument();
+        expect(rc).toHaveBeenCalledWith('test-session');
+      } finally { rc.mockRestore(); }
+    });
+
+    it('本地对局后台分析照跑(数子读这份分数)—— 不许把 pvp_local 排除出 analyzeCurrent', () => {
+      mockGameState = local();
+      const an = vi.spyOn(API, 'analyzeCurrent').mockResolvedValue({} as never);
+      try {
+        renderPage();
+        expect(an).toHaveBeenCalledWith('test-session');
+      } finally { an.mockRestore(); }
+    });
+
+    it('非本地对局的认输框逐字不变:确认后 handleAction 只带 action', async () => {
+      mockGameState = makeGameState({ players_info: localPair, game_type: 'free' });
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_RESIGN'));
+      fireEvent.click(screen.getByRole('button', { name: '认输' }));
+      await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('resign'));
+    });
+  });
+
+  describe('超时判负 (S3-5)', () => {
+    const human = { ...basePlayer, name: '' };
+    const localPair: GameState['players_info'] = {
+      B: { ...human, player_type: 'player:human' }, W: { ...human, player_type: 'player:human' },
+    };
+    const local = (over: Partial<GameState> = {}) =>
+      makeGameState({ players_info: localPair, game_type: 'pvp_local', ...over });
+
+    it('到点 ⇒ 调一次 API.timeout,成功用返回的 state', async () => {
+      mockGameState = local();
+      const newState = local({ current_node_id: 9 });
+      const to = vi.spyOn(API, 'timeout').mockResolvedValue({ session_id: 'test-session', state: newState });
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_TIMEOUT'));
+        await waitFor(() => expect(to).toHaveBeenCalledWith('test-session'));
+        await waitFor(() => expect(mockSetGameState).toHaveBeenCalledWith(newState));
+      } finally { to.mockRestore(); }
+    });
+
+    it('409 time_not_expired ⇒ 用附带的最新 state 重算,不弹错误', async () => {
+      mockGameState = local();
+      const newState = local({ current_node_id: 9 });
+      const to = vi.spyOn(API, 'timeout')
+        .mockRejectedValue(new ApiError(409, 'x', { code: 'time_not_expired', state: newState }));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_TIMEOUT'));
+        await waitFor(() => expect(mockSetGameState).toHaveBeenCalledWith(newState));
+        expect(screen.queryByText('超时判定没有完成')).toBeNull();
+      } finally { to.mockRestore(); }
+    });
+
+    it('非 409 错误 ⇒ 说「超时判定没有完成」,不崩', async () => {
+      mockGameState = local();
+      const to = vi.spyOn(API, 'timeout').mockRejectedValue(new Error('network down'));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_TIMEOUT'));
+        expect(await screen.findByText('超时判定没有完成')).toBeInTheDocument();
+      } finally { to.mockRestore(); }
+    });
+
+    it('终局且 end_result 以 +T 结尾 ⇒ 右栏状态条写明谁超时负、谁胜、第几手,并有复盘本局键', () => {
+      mockGameState = local({ end_result: 'W+T', current_node_index: 130 });
+      renderPage();
+      const bar = screen.getByTestId('auto-count-status');
+      expect(bar).toHaveTextContent('黑方超时负');
+      expect(bar).toHaveTextContent('白超时胜');
+      expect(bar).toHaveTextContent('第 131 手');
+      expect(bar).toHaveTextContent('已存进历史对局');
+      expect(within(bar).getByRole('button', { name: '复盘本局' })).toBeInTheDocument();
+      // 超时判负那一态由右栏状态条说完 —— 居中的终局卡不再重复一遍(见 GamePage.tsx 注释)。
+      expect(screen.queryByTestId('endgame-card')).toBeNull();
+    });
+
+    it('非 pvp_local 局不传 onTimeExpired', () => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
+      renderPage();
+      expect(capturedControlPanelProps.current?.onTimeExpired).toBeUndefined();
     });
   });
 

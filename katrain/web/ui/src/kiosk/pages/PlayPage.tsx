@@ -48,6 +48,8 @@ const PlayPage = () => {
     let current = true;
     setPlatforms(defaultPlatforms());
 
+    // 闸挂在「登录了没有」,**不挂 token**(P16):严格盒端 SSO 里 token 恒为 null,凭据在 cookie 里。
+    // 游客仍不请求 —— `/api/v1/platforms/status` 要登录(`platforms.py` 的 `get_current_user`)。
     if (isAuthenticated) {
       API.platformStatus(token).then((d) => {
         if (current) setPlatforms(mergePlatformStatus(d.platforms));
@@ -117,7 +119,11 @@ const PlayPage = () => {
         <div className="kiosk-cards">
           <KioskCard
             title={t('Local Game', '本地对局')}
-            sub={t('Two players on the same physical board', '两人在同一块实体盘上下')}
+            sub={
+              isAuthenticated
+                ? t('Two players on the same physical board', '两人在同一块实体盘上下')
+                : t('play:local_needs_login', '要先登录 · 下完自动存谱')
+            }
             icon="users"
             onClick={() => navigate('/kiosk/play/pvp/setup')}
           />

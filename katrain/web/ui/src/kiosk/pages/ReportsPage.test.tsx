@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { ThemeProvider } from '@mui/material';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -38,11 +39,12 @@ const mocks = vi.hoisted(() => ({
   refreshTasks: vi.fn(),
   clearError: vi.fn(),
   hookResult: {} as Record<string, unknown>,
+  auth: { token: 'token' as string | null, isAuthenticated: true, user: { username: '阿福' } },
 }));
 
-vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: 'token', isAuthenticated: true, user: { username: '阿福' } }),
-}));
+// 可以逐条改:严格盒端 SSO 里 token 恒为 null 而人是登录的 —— 这两个量在盒上本来就不同步,
+// 夹具只给「token 非空」就永远测不到盒子上的那条路。
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => mocks.auth }));
 vi.mock('../../api/userGamesApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api/userGamesApi')>();
   return { ...actual, UserGamesAPI: { ...actual.UserGamesAPI, list: mocks.list, get: mocks.get, create: mocks.create, delete: mocks.deleteGame } };
@@ -135,6 +137,28 @@ function renderPage(route = '/kiosk/report') {
   );
 }
 
+/**
+ * 只读**第一帧**:外层的 layout effect 在子树第一次提交之后、任何 `useEffect` 之前跑,
+ * 读到的正是「列表请求还没发出去」那一刻屏上写着什么。`render` 返回时 effect 早跑完了,
+ * 直接查 DOM 看不见这一帧。
+ */
+function renderFirstFrame(route = '/kiosk/report') {
+  const frames: string[] = [];
+  function FirstFrame({ children }: { children: ReactNode }) {
+    const ref = useRef<HTMLDivElement>(null);
+    useLayoutEffect(() => { frames.push(ref.current?.textContent ?? ''); }, []);
+    return <div ref={ref}>{children}</div>;
+  }
+  render(
+    <ThemeProvider theme={kioskTheme}>
+      <MemoryRouter initialEntries={[route]}>
+        <FirstFrame><ReportsPage /></FirstFrame>
+      </MemoryRouter>
+    </ThemeProvider>,
+  );
+  return frames;
+}
+
 const rows = () => screen.getAllByTestId('review-row');
 const cellValue = (label: string) =>
   screen.getByText(label).closest('.kiosk-status__cell')!.querySelector('.kiosk-status__v')!.textContent;
@@ -143,6 +167,7 @@ const stoneAt = (coord: string) => document.querySelector(`.kiosk-mini-board [da
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.auth = { token: 'token', isAuthenticated: true, user: { username: '阿福' } };
   mocks.list.mockResolvedValue(response([game('a'), game('b', { player_white: '柯洁', white_rank: '九段' })]));
   mocks.get.mockImplementation(async (_token: string, id: string) => detail(game(id)));
   mocks.create.mockResolvedValue(detail(game('new')));
@@ -267,6 +292,19 @@ describe('屏 19 · 列表与选中', () => {
     expect(screen.queryByText(/Request failed/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitFor(() => expect(rows()).toHaveLength(2));
+  });
+
+  /**
+   * 回归钉子(P17):严格盒端 SSO 里 token 恒为 null。首帧的「正在读」原来按 `Boolean(token)` 判,
+   * 盒上每次进屏都先闪一下「还没有下过的棋」。
+   */
+  it('盒上 token 为 null 但已登录:首帧就是「正在读」,不闪「还没有下过的棋」,列表照常拉', async () => {
+    mocks.auth = { token: null, isAuthenticated: true, user: { username: '阿福' } };
+    const frames = renderFirstFrame();
+    expect(frames[0]).toContain('正在读你的对局');
+    expect(frames[0]).not.toContain('还没有下过的棋');
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    expect(mocks.list).toHaveBeenCalledWith(null, expect.objectContaining({ page: 1 }));
   });
 
   it('一局都没有时说的是「还没有下过的棋」,不是一片空白', async () => {
@@ -607,6 +645,20 @@ describe('屏 19 · 行的五种状态', () => {
     expect(within(rows()[0]).queryByText(/就退出了 · 22 手/)).toBeNull();
     expect(screen.getByRole('button', { name: /标准/ })).toBeDisabled();
     expect(screen.getByRole('button', { name: /精读/ })).toBeDisabled();
+  });
+
+  // P14:导入的谱没写 RE 不是「没下完」。以前被标「未终局」、念成「下到第 187 手就退出了」、不给报告。
+  it('导入的谱没写结果:标「未分析」、不说「就退出了」,两张档位卡能按', async () => {
+    mocks.list.mockResolvedValue(response([game('a', { source: 'import', title: '老谱', result: null, move_count: 187 })]));
+    renderPage();
+    await waitFor(() => expect(rows()[0]).toHaveAttribute('data-state', 'unanalyzed'));
+    await selectedRow();
+    expect(within(rows()[0]).getByText('未分析')).toBeInTheDocument();
+    expect(within(rows()[0]).getByText(/^谱里没写结果 · 187 手/)).toBeInTheDocument();
+    expect(within(rows()[0]).queryByText(/就退出了/)).toBeNull();
+    expect(screen.getByRole('button', { name: /标准/ })).not.toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /标准/ }));
+    expect(mocks.createReport).toHaveBeenCalledWith({ userGameId: 'a', reportType: 'normal', totalMoves: 187 });
   });
 
   it('计分局下完了照样能分析 —— 挡的是没下完,不是算不算分', async () => {

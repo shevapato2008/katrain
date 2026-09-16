@@ -80,6 +80,11 @@ export interface GameState {
   };
   language: string;
   count_min_moves?: number;
+  /**
+   * 盒上模式、双方各停一手、这一局还没有结果 ⇒ 后端等前端来数子(v2-design §3.4)。
+   * 为真时 `/api/count/request` 跳过手数门槛。老服务端不带这个字段 ⇒ undefined ⇒ 不自动数。
+   */
+  awaiting_count?: boolean;
   engine?: "local" | "cloud";
   trainer_settings?: {
     eval_thresholds: number[];
@@ -272,10 +277,17 @@ export interface HintResponse { moves: HintMove[]; engine: string; timeout_s: nu
 // (e.g. KifuPage.test.tsx's "Request failed 500") keep working.
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  /**
+   * 服务端 JSON body 里的 `detail`(FastAPI `HTTPException` 那一格),**原样**挂上:
+   * 对象(`{ code, message }`,数子那三种 400)、字符串(绝大多数老端点),
+   * body 不是 JSON 或没有这一格时是 `undefined`。按原因码出文案的一方读它,不要去 parse `message`。
+   */
+  detail?: unknown;
+  constructor(status: number, message: string, detail?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -326,13 +338,32 @@ export async function apiPost(path: string, payload: any, token?: string | null)
   });
   if (!response.ok) {
     const body = await response.text();
-    throw new ApiError(response.status, `Request failed ${response.status}: ${body}`);
+    let detail: unknown;
+    try {
+      detail = (JSON.parse(body) as { detail?: unknown }).detail;
+    } catch {
+      detail = undefined; // 不是 JSON(网关 502 页)或 JSON 是 null —— 没有 detail 可读
+    }
+    throw new ApiError(response.status, `Request failed ${response.status}: ${body}`, detail);
   }
   return response.json();
 }
 
 export const API = {
   createSession: (token?: string): Promise<SessionResponse> => apiPost("/api/session", {}, token),
+  /* 本地对局「退出不保存」:删掉进程里这个会话,什么都不落账。
+     研究页那两处(`useResearchSession.ts`、galaxy `ResearchPage.tsx`)是裸 fetch 且吞掉失败 ——
+     那边是「离开时顺手收拾」;这里失败了**不能装作已退出**,所以抛。 */
+  deleteSession: async (sessionId: string): Promise<void> => {
+    const response = await fetch(`/api/session/${encodeURIComponent(sessionId)}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new ApiError(response.status, `Request failed ${response.status}: ${body}`);
+    }
+  },
   // GET /api/state requires an authenticated user (server.py: Depends(get_current_user)).
   // It used to send no Authorization header, which only worked because the server also
   // accepts the `sb_token` cookie -- and that cookie is issued ONLY on the 127.0.0.1
@@ -391,8 +422,10 @@ export const API = {
     apiPost("/api/player", { session_id: sessionId, bw, player_type: playerType, player_subtype: playerSubtype, name }),
   swapPlayers: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/player/swap", { session_id: sessionId }),
-  resign: (sessionId: string, token?: string): Promise<SessionResponse> =>
-    apiPost("/api/resign", { session_id: sessionId }, token),
+  /* `color` 只给本地对局(pvp_local):后端对 pvp_local **必须**带、对其它模式**带了就 400**
+     ⇒ 没给时 body 里绝不能出现这个键。 */
+  resign: (sessionId: string, token?: string, color?: 'B' | 'W'): Promise<SessionResponse> =>
+    apiPost("/api/resign", color ? { session_id: sessionId, color } : { session_id: sessionId }, token),
   timeout: (sessionId: string, token?: string, expect?: {
     expected_game_id: string; expected_node_id: number; color: 'B' | 'W';
   }): Promise<SessionResponse> =>

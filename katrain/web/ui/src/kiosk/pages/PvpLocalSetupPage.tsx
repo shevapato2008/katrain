@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useVision } from '../context/VisionContext';
@@ -12,6 +12,7 @@ import OptionChips from '../components/common/OptionChips';
 import { interpolate } from '../utils/interpolate';
 import { RULES_HINT, TIME_PRESETS, TIME_TRACK_ORDER } from '../utils/setupOptions';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
+import { readAudioPref, subscribeAudioPref, writeAudioPref } from '../../utils/audioPrefs';
 import { API } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
@@ -27,13 +28,11 @@ import { writeActiveSession } from '../utils/activeSession';
  *
  * ## 稿子这一屏有两处不成立,都按仓里的事实写
  *
- * ① **`.setnote` 第一句**。稿子写「这一边不接引擎,**没有提示也没有形势判断**」——
- *    前半句对、后半句不对。`interface.py:253` 的 `SCORING_GAME_TYPES` 只有
- *    `rated / ranked / ai_ladder_ranked` 三种,`pvp_local` **不在里面** ⇒
- *    `analysis_allowed` 为真,对局屏上那颗「领地」键照样能按,而领地就是形势判断。
- *    真正关掉的是另外两样:`GameControlPanel.tsx:113` 的 `evalAllowed` 把
- *    `pvp_local` 排除在外 ⇒ **胜负走势图整块不渲染**;`GamePage.tsx:451` 的
- *    `hintVisible` 要求 `game_type === 'free'` ⇒ **AI 支招是灰的**。
+ * ① **`.setnote` 第一句**。稿子写「终局两人自己确认死活」—— 仓里没有死子交互,
+ *    数子是 KataGo 目差估计(`server.py` 的 `/api/count/request`)。v2 §2 D1 撤掉对局屏的
+ *    「领地」「AI 支招」,双 pass 后自动数子(§3.4)⇒ 说明改成「屏上不给提示和形势判断;
+ *    双方各停一手后自动数子,死活按引擎判断」,并补上「中途退出不存谱」(D2)。
+ *    **这句话要等 v2 S2 合入才成立。**(F7,2026-09-14:文案表定稿后再收一版,见 note3_*)
  *
  * ② **`.setnote` 第二句的后半**。稿子写「段位只有**在线大厅的定级队列**会改」——
  *    定级赛不在在线大厅,在「升降级对弈」:`LobbyPage.tsx:151` 那句挡人的话原文是
@@ -79,11 +78,9 @@ const PvpLocalSetupPage = () => {
   const [byoyomiTime, setByoyomiTime] = useState(30);
   const [byoyomiPeriods, setByoyomiPeriods] = useState(3);
 
-  // Move sound — client-side preference, persisted in localStorage (shared useGameSession.playSound reads it).
-  // Box-SSO guest mode (client-side zero-persistence, 4th layer, R9-F1): deliberately LEFT
-  // GLOBAL — a mute/audio preference tied to the physical kiosk's environment (e.g. a quiet
-  // room), not per-account activity or content, so it carries no identity-linkable residue.
-  const [confirmSound, setConfirmSound] = useState(localStorage.getItem('kioskPlaySound') !== '0');
+  // 提示音只留一把:读写全局 audioPrefs 的 sfx —— 和设置屏「落子音效」是同一把(v2 §4.1 / P9)。
+  // 订阅而不是自存一份 state:两份状态迟早走散,走散的样子正是「屏上写着关、喇叭还在响」。
+  const soundOn = useSyncExternalStore(subscribeAudioPref, () => readAudioPref('sfx'), () => true);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -123,13 +120,13 @@ const PvpLocalSetupPage = () => {
     setError('');
     setLoading(true);
     try {
-      localStorage.setItem('kioskPlaySound', confirmSound ? '1' : '0');
       const { session_id } = await API.createSession(token ?? undefined);
       await API.gameSetup(session_id, 'pvp_local', {
         board_size: boardSize,
         rules,
         handicap,
-        komi,
+        // 屏上写「已经让了 N 子,这一局不贴目」—— 载荷必须说同一件事(P3)。
+        komi: handicap > 0 ? 0 : komi,
         black_name: blackName,
         white_name: whiteName,
         time_enabled: timeEnabled,
@@ -144,6 +141,8 @@ const PvpLocalSetupPage = () => {
         label: `${blackName || t('setup:black_side', '黑方')} vs ${whiteName || t('setup:white_side', '白方')}`,
         route: `/kiosk/play/pvp/local/game/${session_id}`,
         ts: Date.now(),
+        // 这一局下不下实体盘,开局这一刻定下(v2 §3.5):守卫和对局屏都读它,不再各自判断。
+        onBoard: playInput.onBoard,
       });
       navigate(`/kiosk/play/pvp/local/game/${session_id}`);
     } catch (e) {
@@ -208,11 +207,7 @@ const PvpLocalSetupPage = () => {
             <p className="kiosk-opthint">
               {playInput.reason === 'noCamera'
                 ? t('setup:board_no_camera', '这台机器没有标定过摄像头,只能下在屏幕上')
-                : playInput.reason === 'notNineteen'
-                  ? t('setup:board_needs_19', '盘上那块是 19 路 —— 9 路和 13 路只有屏幕上有')
-                  : playInput.onBoard
-                    ? t('local:input_hint_board', '两人面对面下在这块盘上,屏幕只记谱和读秒')
-                    : t('local:input_hint_screen', '两人轮流点屏幕落子 —— 盘就在旁边,也可以切回实体盘')}
+                : t('local:input_hint_v2', '实体盘只有 19 路 · 选 13 路或 9 路就在屏幕上下')}
             </p>
           </section>
 
@@ -328,6 +323,7 @@ const PvpLocalSetupPage = () => {
                 incLabel={t('setup:komi_up', '增加贴目')}
                 value={interpolate(t('setup:komi_value', '贴 {n} 目'), { n: komi })}
                 meta={t('setup:komi_meta', '0.5 – 7.5 · 中国规则常用 7.5')}
+                hint={t('local:komi_hint', '让子局贴 0 目 · 选了让子这一组就收起')}
               />
             )}
           </section>
@@ -343,8 +339,8 @@ const PvpLocalSetupPage = () => {
               decLabel={t('setup:clock_down', '减少用时')}
               incLabel={t('setup:clock_up', '增加用时')}
               value={timeTrack[timeIndex]?.label ?? '—'}
-              meta={interpolate(t('local:clock_meta', '{n} 档 · 两边同一套用时'), { n: timeTrack.length })}
-              hint={t('local:clock_hint', '走完一步换对方的钟;不限时就只记谱不读秒')}
+              meta={interpolate(t('local:clock_meta_count', '{n} 档'), { n: timeTrack.length })}
+              hint={t('local:clock_hint_v2', '钟在玩家卡上倒数 · 读秒用完判超时负 · 不限时就只记谱')}
             />
           </section>
 
@@ -353,13 +349,13 @@ const PvpLocalSetupPage = () => {
               label={t('local:move_sound', '落子提示音')}
               en="Sound"
               testId="setup-sound"
-              value={confirmSound ? 'on' : 'off'}
-              onChange={(v) => setConfirmSound(v === 'on')}
+              value={soundOn ? 'on' : 'off'}
+              onChange={(v) => writeAudioPref('sfx', v === 'on')}
               options={[
                 { value: 'on', label: t('local:sound_on', '开') },
                 { value: 'off', label: t('local:sound_off', '关') },
               ]}
-              hint={t('local:sound_hint', '实体盘上落子后,屏幕出一声确认它已经认到了')}
+              hint={t('local:sound_hint_v2', '和「设置 · 声音」里的落子音是同一个开关')}
             />
           </section>
         </KioskScrollZone>
@@ -368,15 +364,17 @@ const PvpLocalSetupPage = () => {
         {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
 
         <p className="setnote" data-testid="setup-note">
-          {t('local:note_a', '这一边')}
-          <b>{t('local:note_b', '没有引擎对手')}</b>
-          {t('local:note_c', ':AI 支招关着、不画胜负走势,')}
-          <b>{t('local:note_d', '终局死活两人自己确认')}</b>
-          {t('local:note_e', '。')}
+          {t('local:note3_a', '屏上')}
+          <b>{t('local:note3_b', '不给提示和形势判断')}</b>
+          {t('local:note3_c', ';双方各停一手后')}
+          <b>{t('local:note3_d', '自动数子')}</b>
+          {t('local:note3_e', '，死活按引擎判断。')}
           <br />
-          {t('local:note_f', '这一局')}
-          <b>{t('local:note_g', '只留档,不动段位')}</b>
-          {t('local:note_h', '——段位只由「升降级对弈」那条阶梯决定。')}
+          {t('local:note3_f', '这一局')}
+          <b>{t('local:note3_g', '只留档，不动段位')}</b>
+          {t('local:note3_h', '；中途退出')}
+          <b>{t('local:note3_i', '不存谱')}</b>
+          {t('local:note3_j', '。')}
         </p>
 
         <button

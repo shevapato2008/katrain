@@ -88,6 +88,18 @@ class ToggleAnalysisRequest(BaseModel):
     session_id: str
 
 
+class ResignRequest(BaseModel):
+    """`/api/resign` 的请求体。`color` 是**认输的一方**。
+
+    本地对局（`pvp_local`）两个人共用一块屏，「轮到谁」不等于「谁按的键」，所以必须说清是哪一方
+    认输；其它模式不收它（服务端从座位推），带了就 400，免得被静默忽略。
+    单独一个模型、不往共享的 `ToggleAnalysisRequest` 里加字段：那个模型被十几个端点共用。
+    """
+
+    session_id: str
+    color: Optional[Literal["B", "W"]] = None
+
+
 class PVRequest(BaseModel):
     session_id: str
     pv: str

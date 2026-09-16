@@ -1,4 +1,4 @@
-import { MISTAKE_SCORE_LOSS, type WinratePoint } from '../../../features/report/reportStats';
+import type { WinratePoint } from '../../../features/report/reportStats';
 
 /**
  * 屏 19 复盘 ·「这一局的胜率」那条曲线。**四种棋里只有围棋这条是真的** ——
@@ -40,10 +40,9 @@ function worstDropIndex(points: readonly WinratePoint[]): number | null {
   let worstSwing = 0;
   for (let i = 1; i < points.length; i += 1) {
     const p = points[i];
-    // 判据借的是仓里已有的失误线,不另立一个「掉多少算掉」——
-    // 屏上标红的那一手和三格里数进「失误」的那些手必须是同一批。
-    if (p.deltaScore == null || p.deltaScore > MISTAKE_SCORE_LOSS) continue;
-    if (p.player == null) continue;
+    // 候选只在坏手(小亏 / 失误 / 恶手)里挑 —— 与三格里的「失误」、屏 20 失误 tab 同一个桶(服务端七档)。
+    // 以前卡的是 `delta_score ≤ −3` 那条旧线,标红的那一手可能根本不在失误 tab 里。
+    if (!p.bad || p.player == null) continue;
     // 走子方的损失换算成胜率:黑走坏 → 黑胜率跌;白走坏 → 黑胜率涨。
     const swing = p.player === 'B'
       ? points[i - 1].winrate - p.winrate

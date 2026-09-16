@@ -11,6 +11,7 @@ from httpx import ASGITransport, AsyncClient
 from katrain.web.core.config import settings
 from katrain.web.core.db import Base
 from katrain.web.server import create_app
+from katrain.web.models import GameEnd
 
 settings.DATABASE_URL = "sqlite:///./test_ai_autosave.db"
 
@@ -40,6 +41,15 @@ def _make_mock_session(user_id, sgf="(;FF[4]SZ[19];B[pd];W[dp])", end_result="B+
     game.current_node.player = "B"  # Last move was by Black
     game.current_node.score = 5.5
     katrain.game = game
+    # r1:收尾只认「这次请求写出来的」终局事实(Task 5 `_new_terminal`)。真 WebKaTrain 在认输 / 超时 / 双停那一刻才写它,
+    # 替身也在收到派发时写 —— 预先挂上的话,端点会当成「早就结束了」,这个文件的自动落账用例全红。
+    game.terminal = None
+
+    def _dispatch(action, *args, **kwargs):
+        if action in ("resign", "timeout", "play") and end_result and game.terminal is None:
+            game.terminal = GameEnd(game, game.current_node, end_result)
+
+    katrain.side_effect = _dispatch
 
     # Mock players_info
     black_player = MagicMock()

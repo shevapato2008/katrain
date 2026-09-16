@@ -314,7 +314,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
             棋盘检测异常，请检查摄像头和棋盘位置
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-            {t('If the board was bumped, use Re-align in the banner', '若棋盘被碰动，请使用横幅中的「重新定位」')}
+            {t('vision:board_lost_hint', '看一下摄像头有没有被挡住、棋盘有没有被挪动；挪动过的话要重新标定')}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>

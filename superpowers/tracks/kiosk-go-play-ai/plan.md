@@ -5924,6 +5924,13 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ### Task 11: N25 对局屏红条可关、不印后端原文;断线给盒上真能做的出口
 
+**执行记录（2026-09-15～16，已完成）**：正确红灯 10 failed / 2 passed（44 skipped），缺少连接状态、关闭/6秒清除、中文提示与不认输出口；实现后计划五文件 91 passed（`/tmp/kgpa-task11-red.log`、`/tmp/kgpa-task11-green.log`）。2026-09-16 聚焦复验 91 passed、前端全量 1820 passed / 5 skipped（`/tmp/kgpa-final-vitest.log`）；后端全量 3646 passed / 69 failed / 46 errors，失败名字比基线少 1、无新增（`/tmp/kgpa-final-pytest.log`）。类型检查、两套构建、kiosk 2D 边界检查通过，三份 Playwright spec 30 passed（`/tmp/kgpa-final-playwright.log`）。ESLint 与 HEAD 一致：useGameSession 既有 1 error / 1 warning，GamePage 既有 4 warnings，无新增。共享 hook 原 error 文案及写入时机保持。
+
+- activeSession 测试改为 importActual 包装真实指针，页面桩从持久化 route 生成继续链接；MemoryRouter 不写浏览器地址，因此测试在 beforeEach 设真实 window 路径，与产品 `window.location.pathname` 保存逻辑一致，不改产品迎合替身。
+- dropped / rejected 两种退出都保持真实指针，同局返回调用原 sessionId，并断言未认输、未新建局、未清实体错误；连着时不提供此出口。hook 用真实生命周期证明卸载后同 id 再次 GET 状态、建立第二条 WS；新连接打开清掉断线状态，旧连接事件不覆盖新连接。
+- 一次性错误 5999 ms 不清、6000 ms 清；断线持续 10 秒后仍显示，可手动关闭。Task 10 的路由状态与真实 vision hook 用例保留，盒上 token null 的身份桩保持。
+
+
 **Files:**
 - Modify: `katrain/web/ui/src/hooks/useGameSession.ts`(`connectionLost` 状态、`ws.onopen`、`ws.onclose` 两个分支、`clearError`、返回值)—— **共享领地,纯增量**
 - Create: `katrain/web/ui/src/hooks/useGameSession.connection.test.tsx`
@@ -5934,7 +5941,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: Task 1 测试文件的 `sessionMock` / `pageTree`、Task 2 的退出确认框；`connectionLost` 测试桩已按本 Task 的类型建好
 - Produces: `useGameSession()` 额外返回 `connectionLost: 'rejected' | 'dropped' | null`(1008 被拒 / 意外断开 / 连着)与 `clearError(): void`;`error` 的文案与写入时机不变；退出框在 dropped / rejected 时提供 `exit-leave-keep`（只导航，不认输、不清指针）
 
-- [ ] **Step 1: 写失败的测试**
+- [x] **Step 1: 写失败的测试**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
@@ -6078,7 +6085,7 @@ N25 describe 追加下面测试；imports 加 `within`、`Link`，`sessionMock` 
 Run: `npx vitest run src/hooks/useGameSession.connection.test.tsx src/kiosk/pages/GamePage.playAi.test.tsx -t "N25|断线"`
 Expected: hook 三条 FAIL(`connectionLost` 为 undefined / `clearError is not a function`);GamePage 前两条 FAIL(印的是原文),第三条 PASS。
 
-- [ ] **Step 2: 实现**
+- [x] **Step 2: 实现**
 
 `useGameSession.ts`:
 
@@ -6160,7 +6167,7 @@ Task 2 修改过的退出确认框 `DialogActions` 中，在「取消」与认�
 
 这条出口不调用 `handleAction('resign')`、`clearActiveSession` 或 `clearPhysicalEngineError`。`rejected` 同样给出口，因为凭据失效时认输也可能被拒。返回仍使用持久化的原 session 路由，重新挂载 hook 拉状态；服务重启导致会话消失时由 Task 1 兜底。
 
-- [ ] **Step 3: 验证(共享领地 ⇒ 两套构建;e2e 几何闸)并提交**
+- [x] **Step 3: 验证(共享领地 ⇒ 两套构建;e2e 几何闸)并提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui

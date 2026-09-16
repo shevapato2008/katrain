@@ -198,6 +198,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 这个值不进渲染 —— 放进 state 就是一次没人看的重渲染。
   const resyncingRef = useRef(false);
   const [resyncError, setResyncError] = useState(false);
+  const [connectionNoticeDismissed, setConnectionNoticeDismissed] = useState(false);
 
   // Golaxy 人机对弈 is the only engine-play platform today (§13). Revisit if/when
   // another platform gets engine-play analysis tunnels.
@@ -747,8 +748,28 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         ⚠️ **不自动消失**(`autoHideDuration={null}`):Fan 2026-08-21 裁过掉线 toast 这一条 ——
         连接断了是持续状态,不是一闪而过的事件。
       */}
-      <Snackbar open={!!session.error} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert severity="error">{session.error}</Alert>
+      {/* 一次性操作失败说人话，6 秒后清除，也可手动关闭。 */}
+      <Snackbar
+        open={!!session.error && !session.connectionLost}
+        autoHideDuration={6000}
+        onClose={() => session.clearError()}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity="error" onClose={() => session.clearError()}>
+          {t('game:action_failed', '这一步没有成功，请再试一次')}
+        </Alert>
+      </Snackbar>
+
+      {/* 断线持续显示；退出时可以保留这一局，回来重新取状态和建连。1008 保留原来的原因与登录提示。 */}
+      <Snackbar
+        open={!!session.connectionLost && !connectionNoticeDismissed}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity="error" onClose={() => setConnectionNoticeDismissed(true)}>
+          {session.connectionLost === 'dropped'
+            ? t('game:connection_dropped', '实时连接断了，棋盘不会自动更新。点「退出对局」→「先离开，不认输」，再从「继续上一局」回来就会重新连上')
+            : session.error}
+        </Alert>
       </Snackbar>
 
       {physicalPlay && (
@@ -906,6 +927,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         <DialogTitle>{exitResignTitle}</DialogTitle>
         <DialogActions>
           <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
+          {session.connectionLost && (
+            <Button data-testid="exit-leave-keep" onClick={() => {
+              setShowExitConfirm(false);
+              navigate('/kiosk/play');
+            }}>
+              {t('game:leave_keep_game', '先离开，不认输')}
+            </Button>
+          )}
           <Button
             color="error"
             onClick={async () => {

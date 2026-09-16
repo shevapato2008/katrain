@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { API, ApiError, type GameState } from '../../api';
 import GamePage from './GamePage';
+import { clearActiveSession, readActiveSession, writeActiveSession } from '../utils/activeSession';
 
 /**
  * 对弈·AI/升降级赛道(superpowers/tracks/kiosk-go-play-ai)的 GamePage 行为测试。
@@ -35,11 +36,15 @@ vi.mock('../components/game/GameControlPanel', () => ({
   ),
 }));
 
-const { clearActiveSession, writeActiveSession } = vi.hoisted(() => ({
-  clearActiveSession: vi.fn(),
-  writeActiveSession: vi.fn(),
-}));
-vi.mock('../utils/activeSession', () => ({ clearActiveSession, writeActiveSession }));
+vi.mock('../utils/activeSession', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/activeSession')>();
+  return {
+    ...actual,
+    readActiveSession: vi.fn(actual.readActiveSession),
+    writeActiveSession: vi.fn(actual.writeActiveSession),
+    clearActiveSession: vi.fn(actual.clearActiveSession),
+  };
+});
 vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: vi.fn().mockResolvedValue({}) } }));
 vi.mock('../../features/aiLadder/api', () => ({ getAiLadderStatus: vi.fn() }));
 
@@ -71,12 +76,14 @@ const sessionMock = vi.hoisted(() => ({
   handleAction: vi.fn(),
   onMove: vi.fn(),
   setGameState: vi.fn(),
+  setSessionId: vi.fn(),
   clearError: vi.fn(),
+  clearPhysicalEngineError: vi.fn(),
 }));
 vi.mock('../../hooks/useGameSession', () => ({
   useGameSession: () => ({
     sessionId: 'play-ai-s1',
-    setSessionId: vi.fn(),
+    setSessionId: sessionMock.setSessionId,
     gameState: sessionMock.gameState,
     setGameState: sessionMock.setGameState,
     error: sessionMock.error,
@@ -87,7 +94,7 @@ vi.mock('../../hooks/useGameSession', () => ({
     handleAction: sessionMock.handleAction,
     physicalReminder: sessionMock.physicalReminder,
     physicalEngineError: null,
-    clearPhysicalEngineError: vi.fn(),
+    clearPhysicalEngineError: sessionMock.clearPhysicalEngineError,
     awaitingRemovalReminder: null,
   }),
 }));
@@ -109,6 +116,11 @@ const makeState = (over: Partial<GameState> = {}): GameState => ({
   ...over,
 } as GameState);
 
+function PlayPageStub() {
+  const active = readActiveSession('game');
+  return <div>PLAY_PAGE{active && <Link to={active.route}>继续上一局</Link>}</div>;
+}
+
 // 单独拎出来,是为了 `rerender(pageTree())` 能用同一棵树:改完桩的值再重渲,组件身份不变。
 const pageTree = (sessionLinks = false) => (
   <ThemeProvider theme={kioskTheme}>
@@ -119,13 +131,101 @@ const pageTree = (sessionLinks = false) => (
       </>}
       <Routes>
         <Route path="/kiosk/play/ai/game/:sessionId" element={<GamePage />} />
-        <Route path="/kiosk/play" element={<div>PLAY_PAGE</div>} />
+        <Route path="/kiosk/play" element={<PlayPageStub />} />
       </Routes>
     </MemoryRouter>
   </ThemeProvider>
 );
 
 const renderPage = () => render(pageTree());
+
+describe('N25 · 对局屏错误条与断线出口', () => {
+  it('一次性操作失败说人话，不印后端原文，× 能关', () => {
+    sessionMock.gameState = makeState();
+    sessionMock.error = 'Request failed 409: {"detail":"Not your turn"}';
+    renderPage();
+    expect(screen.getByText('这一步没有成功，请再试一次')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /close/i }));
+    expect(sessionMock.clearError).toHaveBeenCalledOnce();
+  });
+
+  it('一次性错误 6 秒后调用清除，之前保持可见', () => {
+    vi.useFakeTimers();
+    sessionMock.gameState = makeState();
+    sessionMock.error = 'Request failed 409';
+    const view = renderPage();
+    try {
+      act(() => { vi.advanceTimersByTime(5999); });
+      expect(sessionMock.clearError).not.toHaveBeenCalled();
+      act(() => { vi.advanceTimersByTime(1); });
+      expect(sessionMock.clearError).toHaveBeenCalledOnce();
+    } finally { view.unmount(); vi.useRealTimers(); }
+  });
+
+  it('意外断开持续显示实际出口，超过 6 秒不消失，可以手动关', () => {
+    vi.useFakeTimers();
+    sessionMock.gameState = makeState();
+    sessionMock.error = '实时连接已断开，棋盘不会自动更新，请刷新页面';
+    sessionMock.connectionLost = 'dropped';
+    const view = renderPage();
+    try {
+      const copy = /点「退出对局」→「先离开，不认输」，再从「继续上一局」回来/;
+      expect(screen.getByText(copy)).toBeInTheDocument();
+      expect(screen.queryByText(/请刷新页面/)).toBeNull();
+      act(() => { vi.advanceTimersByTime(10000); });
+      expect(screen.getByText(copy)).toBeInTheDocument();
+      expect(sessionMock.clearError).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole('button', { name: /close/i }));
+      act(() => { vi.advanceTimersByTime(1000); });
+      expect(screen.queryByText(copy)).toBeNull();
+      expect(sessionMock.connectionLost).toBe('dropped');
+    } finally { view.unmount(); vi.useRealTimers(); }
+  });
+
+  it('被服务端拒绝仍显示原句，保留原因与重新登录提示', () => {
+    sessionMock.gameState = makeState();
+    sessionMock.error = '实时连接被拒绝（Invalid token），棋盘不会自动更新，请重新登录后重试';
+    sessionMock.connectionLost = 'rejected';
+    renderPage();
+    expect(screen.getByText(sessionMock.error)).toBeInTheDocument();
+  });
+
+  it.each(['dropped', 'rejected'] as const)('断线 %s：先离开不认输，真实继续指针返回同一局', (reason) => {
+    const original = makeState();
+    sessionMock.gameState = original;
+    sessionMock.connectionLost = reason;
+    sessionMock.error = reason === 'dropped' ? '连接已断开' : '连接被拒绝';
+    const resign = vi.spyOn(API, 'resign').mockResolvedValue({ state: original });
+    const newGame = vi.spyOn(API, 'newGame').mockResolvedValue({ state: original });
+    const createSession = vi.spyOn(API, 'createSession').mockResolvedValue({ session_id: 'unexpected' });
+    renderPage();
+    const saved = readActiveSession('game');
+    expect(saved?.route).toBe('/kiosk/play/ai/game/play-ai-s1');
+    fireEvent.click(screen.getByRole('button', { name: '退出对局' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '先离开，不认输' }));
+    expect(screen.getByText('PLAY_PAGE')).toBeInTheDocument();
+    expect(clearActiveSession).not.toHaveBeenCalled();
+    expect(readActiveSession('game')).toEqual(saved);
+    sessionMock.setSessionId.mockClear();
+    fireEvent.click(screen.getByRole('link', { name: '继续上一局' }));
+    expect(sessionMock.setSessionId).toHaveBeenCalledExactlyOnceWith('play-ai-s1');
+    expect(screen.getByTestId('game-control-panel')).toBeInTheDocument();
+    expect(sessionMock.gameState).toBe(original);
+    expect(sessionMock.handleAction).not.toHaveBeenCalled();
+    expect(sessionMock.clearPhysicalEngineError).not.toHaveBeenCalled();
+    expect(resign).not.toHaveBeenCalled();
+    expect(newGame).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
+  });
+
+  it('连着时退出框没有先离开', () => {
+    sessionMock.gameState = makeState();
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: '退出对局' }));
+    expect(within(screen.getByRole('dialog')).queryByText('先离开，不认输')).toBeNull();
+  });
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -136,7 +236,10 @@ beforeEach(() => {
   vision.enabled = false;
   vision.realSync = false;
   vision.poseLocked = true;
+  localStorage.clear();
   sessionStorage.clear();
+  // MemoryRouter 不改真实 location；产品用它记录继续路由，测试也须提供真实页面路径。
+  window.history.replaceState(null, '', '/kiosk/play/ai/game/play-ai-s1');
   sessionMock.handleAction.mockResolvedValue(undefined);
   sessionMock.onMove.mockResolvedValue(undefined);
   vi.spyOn(API, 'hintDismiss').mockResolvedValue({ ok: true });

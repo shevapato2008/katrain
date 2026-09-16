@@ -3450,3 +3450,24 @@ msgstr "{side}: Züge {from}-{to}, {n} in Folge der Topzug"
 
 msgid "live:loading_match"
 msgstr "Partie wird geladen …"
+
+msgid "vision:offcenter_at"
+msgstr ": Stein liegt nicht auf dem Schnittpunkt"
+
+msgid "vision:offcenter_plain"
+msgstr "Dieser Stein liegt nicht auf dem Schnittpunkt"
+
+msgid "vision:offcenter_hint"
+msgstr "Verschiebe den Stein auf"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "; er wird automatisch erkannt"
+
+msgid "vision:play_here_anyway"
+msgstr "Trotzdem spielen auf"
+
+msgid "vision:offcenter_dismiss"
+msgstr "Ich richte ihn aus"
+
+msgid "review:start_analysis"
+msgstr "Analyse starten"

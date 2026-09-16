@@ -24,10 +24,10 @@ pofile = {}
 todos = defaultdict(list)
 
 for lang in locales:
-    if lang in INACTIVE_LANGS:
-        continue
     pofile[lang] = os.path.join(localedir, lang, "LC_MESSAGES", "katrain.po")
     po[lang] = polib.pofile(pofile[lang])
+    if lang in INACTIVE_LANGS:
+        continue
     for entry in po[lang].translated_entries():
         if "TODO" in entry.comment and "DEPRECATED" not in entry.comment:
             todos[lang].append(entry)
@@ -47,6 +47,9 @@ for lang in locales:
 
 for lang in locales:
     if lang in INACTIVE_LANGS:
+        mofile = pofile[lang].replace(".po", ".mo")
+        po[lang].save_as_mofile(mofile)
+        print("Converted inactive locale ->", mofile)
         continue
     if lang != DEFAULT_LANG:
         for msgid in lang_to_strings[lang]:

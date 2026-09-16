@@ -3338,3 +3338,24 @@ msgstr "{side} 第{from}–{to}手連續{n}手中一選"
 
 msgid "live:loading_match"
 msgstr "正在載入棋局…"
+
+msgid "vision:offcenter_at"
+msgstr " 子沒放正"
+
+msgid "vision:offcenter_plain"
+msgstr "這顆子沒放正"
+
+msgid "vision:offcenter_hint"
+msgstr "請把它移到"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "的交叉點上，系統會自動辨識"
+
+msgid "vision:play_here_anyway"
+msgstr "仍下在"
+
+msgid "vision:offcenter_dismiss"
+msgstr "我移一下"
+
+msgid "review:start_analysis"
+msgstr "開始分析"

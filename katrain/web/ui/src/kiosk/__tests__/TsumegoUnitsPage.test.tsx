@@ -3,8 +3,12 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
-import { sequenceKey, UNIT_SIZE } from '../pages/tsumegoUnits';
+import { LAST_CATEGORY_KEY, sequenceKey, UNIT_SIZE, writeAutoAdvance } from '../pages/tsumegoUnits';
 import type { TsumegoProgressEntry } from '../../context/TsumegoProgressContext';
+import {
+  __resetKioskActivityStorageForTests,
+  setKioskIdentity,
+} from '../storage/kioskActivityStorage';
 
 /**
  * 屏 12 · 单元列表。**文案在 2026-08-22 按稿子整屏换过**(Task 13),所以和上一版对不上是预期的:
@@ -20,6 +24,7 @@ const { mockNavigate, mockUnitProgress, progressMap } = vi.hoisted(() => ({
   mockUnitProgress: vi.fn(() => ({ completed: 0, total: 0 })),
   progressMap: {} as Record<string, TsumegoProgressEntry>,
 }));
+const TEST_UUID = 'tsumego-units-test-user';
 
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
@@ -51,6 +56,8 @@ beforeEach(() => {
   for (const k of Object.keys(progressMap)) delete progressMap[k];
   sessionStorage.clear();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   installFetch();
 });
 
@@ -157,7 +164,7 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
       total: ids.length,
     }));
     for (let i = 0; i < 3; i += 1) progressMap[`q${i}`] = { completed: true, attempts: 1 };
-    localStorage.setItem('kiosk_tsumego_autoadvance', 'false');
+    writeAutoAdvance(false);
     renderPage();
     await waitFor(() => expect(screen.getByText('第 1-20 题')).toBeInTheDocument());
     const stats = Array.from(document.querySelectorAll('.kiosk-stat')).map((s) => [
@@ -193,7 +200,7 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
 
   it('进了这一类就记下来 —— 训练营那一排的高亮靠它', async () => {
     renderPage('15k', 'semeai');
-    await waitFor(() => expect(localStorage.getItem('kiosk_tsumego_last_category')).toBe('semeai'));
+    await waitFor(() => expect(localStorage.getItem(`${LAST_CATEGORY_KEY}:${TEST_UUID}`)).toBe('semeai'));
   });
 
   it('加载中说的是加载中,不是「这一类没有题」', () => {

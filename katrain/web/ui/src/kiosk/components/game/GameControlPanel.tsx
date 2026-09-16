@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Icon } from '../../shell/icons';
 import { KioskFold } from '../../shell/KioskFold';
 import { KioskActions, type KioskAction } from '../../shell/KioskActions';
@@ -6,6 +6,8 @@ import { GoEvalGraph, goEvalSummary } from './GoEvalGraph';
 import { localizedRank } from '../../../utils/rankUtils';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import type { EngineItemCounts, GameState, PlayerInfo } from '../../../api';
+import { useGoClock } from './goClock';
+import { isFreeVsAi } from './gameKinds';
 import { useTranslation } from '../../../hooks/useTranslation';
 
 interface Props {
@@ -14,6 +16,11 @@ interface Props {
   onNavigate: (nodeId: number) => void;
   analysisToggles: Record<string, boolean>;
   onToggleAnalysis: (key: string) => void;
+  /**
+   * A18:轮到的一方时间耗尽。GamePage 决定发不发 `/api/timeout`(升降级 AI 回合、引擎停摆时不发)。
+   * 只在开局设置配过时限的局里会被调用(`timer.configured`)。
+   */
+  onTimeout?: (color: 'B' | 'W') => void;
   onHint?: () => void;
   hintEnabled?: boolean;
   isGameOver?: boolean;
@@ -46,9 +53,6 @@ interface Props {
    */
   hardwareFault?: string | null;
 }
-
-/** 两个人面对面下的局:胜率图整块不渲染(规范 §8 那张「按对弈方式判」的表)。 */
-const TWO_HUMAN_GAME_TYPES = new Set(['pvp_local', 'pvp_online']);
 
 /**
  * 把主线着法叠成「一行 = 一个黑白回合」。
@@ -165,6 +169,38 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
 }
 
 /**
+ * 一方的玩家卡 + 时钟(A18)。时钟跟着本地时间走,所以 hook 挂在每张卡自己身上 ——
+ * 放在父组件里算,每 250ms 一次的重渲会把胜率图、棋谱一起带着重画。
+ */
+function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }: {
+  gameState: GameState;
+  color: 'B' | 'W';
+  turn: boolean;
+  state: string;
+  /** 这一局不计时时那一格写什么(原来的「第 N 手 · 不限时」/「本局已下」)。 */
+  untimed: { value: string; label: string } | null;
+  lang: string;
+  t: (key: string, fallback?: string) => string;
+  onTimeout?: (color: 'B' | 'W') => void;
+}) {
+  const onExpired = useCallback(() => onTimeout?.(color), [onTimeout, color]);
+  const reading = useGoClock(gameState, color, onExpired);
+  const clock = reading === null ? untimed
+    : reading.expired ? { value: '0:00', label: t('game:time_up', '超时') }
+    : reading.byoLeft === null ? { value: formatTime(reading.mainLeft), label: t('game:time_left', '剩余') }
+    : {
+      value: formatTime(reading.byoLeft),
+      label: t('game:byo_left', '读秒 · 剩 {n} 次').replace('{n}', String(reading.periodsLeft)),
+    };
+  return (
+    <PlayerRow
+      color={color} info={gameState.players_info[color]} captures={gameState.prisoner_count[color]}
+      turn={turn} state={state} clock={clock} lang={lang} t={t}
+    />
+  );
+}
+
+/**
  * 对局屏右栏(稿子 `data-screen="game"` / `data-screen="platform-game"`)。
  *
  * **返回的是 Fragment,不是一个包住一切的 `<div>`** —— 这些块必须是 `.kiosk-rail` 的
@@ -178,7 +214,7 @@ function PlayerRow({ color, info, captures, turn, state, clock, lang, t }: {
 const GameControlPanel = ({
   gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
   isGameOver = false, isRanked = false, analysisRequiresLogin = false, engineMode = false,
-  activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null,
+  activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, onTimeout,
 }: Props) => {
   const { t, lang } = useTranslation();
 
@@ -196,7 +232,7 @@ const GameControlPanel = ({
   // 只认前者的话,少传一次 prop 就等于把闸打开 —— 而这里挂着的是「悔棋能不能按」,
   // 升降级局里那是反作弊的一环(后端 `handleAction` 也拒,但界面不该先摆出来邀请他点)。
   const rankedGame = isRanked || isRankedGameType(gameState.game_type);
-  const freeVsAi = !engineMode && !rankedGame && !TWO_HUMAN_GAME_TYPES.has(gameState.game_type ?? 'free');
+  const freeVsAi = isFreeVsAi({ gameType: gameState.game_type, engineMode, isRanked: rankedGame });
 
   // 胜率块:自由对弈可开;升降级 / 本地两人 / 在线大厅 / 星阵人机一律**整块不渲染**。
   const evalAllowed = freeVsAi;
@@ -206,11 +242,12 @@ const GameControlPanel = ({
   const undoAllowed = freeVsAi;
 
   /**
-   * 棋谱(星阵屏)。稿子只在这一屏画它 —— 屏 05 那块地方归胜率图,两者共用同一段高度。
+   * 棋谱与胜率块共用同一段高度;胜率块不在的局(星阵 / 升降级 / 本地对局 / 关掉图表)都显示棋谱。
    * 数据来自 `history` 的 `move`/`player`(2026-08-25 后端在**已有的那个主线循环**里加的两个键);
    * ⚠️ 不许改用 `stones`:它带 `move_number` 但**不含被提掉的子**,拼出来的谱会缺手。
    */
-  const moveRows = engineMode ? toMoveRows(gameState.history) : [];
+  const showMoves = engineMode || !showScore;
+  const moveRows = showMoves ? toMoveRows(gameState.history) : [];
   const nowIndex = gameState.current_node_index ?? 0;
   const nowRef = useRef<HTMLSpanElement | null>(null);
   // 跟到当前那一手。live 那一屏(`LiveMatchPage.tsx:110`)同一句 —— 对局中「当前」永远是最后一行,
@@ -228,7 +265,7 @@ const GameControlPanel = ({
       : isAiSeat(c) ? t('game:thinking', '思考中')
       : t('game:your_turn', '轮到你');
 
-  // 时钟栏。kiosk 的局**不设时限**(开局设置里没有时间控件),`main_time_used` 只有在
+  // 时钟栏。**不计时的局**(开局选了「不限时」,或星阵 / 大厅这类没配过时限的局;计时局由 SeatRow 接管),`main_time_used` 只有在
   // 真配了时限时才累加 —— 那时才有「本局已下」可写。没有时限时,这一栏唯一为真的量是
   // **当前是第几手**,而那是**局面的量、不是某一方的量** ⇒ 只挂在轮到的那张卡上,
   // 另一张卡的时钟栏不渲染。两张都写「不限时」是把同一句话说两遍;
@@ -252,7 +289,8 @@ const GameControlPanel = ({
      这里三个键灰着但**去登录就能用**,原因说得出来。 */
   const guestAnalysisReason = t('play:analysis_requires_login', '登录后可用');
 
-  const analysisActions: KioskAction[] = engineMode ? [] : [
+  // N14:升降级局整块不渲染「领地」「AI支招」;按需分析已由页面与服务端禁止。
+  const analysisActions: KioskAction[] = engineMode || rankedGame ? [] : [
     {
       key: 'ownership', icon: 'grid-nine', label: t('Territory', '领地'),
       pressed: !analysisRequiresLogin && !!analysisToggles.ownership,
@@ -323,20 +361,20 @@ const GameControlPanel = ({
 
   return (
     <>
-      <PlayerRow
-        color="W" info={gameState.players_info.W} captures={gameState.prisoner_count.W}
-        turn={toMove === 'W' && !isGameOver} state={stateWord('W')} clock={clockFor('W')} lang={lang} t={t}
+      <SeatRow
+        gameState={gameState} color="W" turn={toMove === 'W' && !isGameOver} state={stateWord('W')}
+        untimed={clockFor('W')} lang={lang} t={t} onTimeout={onTimeout}
       />
-      <PlayerRow
-        color="B" info={gameState.players_info.B} captures={gameState.prisoner_count.B}
-        turn={toMove === 'B' && !isGameOver} state={stateWord('B')} clock={clockFor('B')} lang={lang} t={t}
+      <SeatRow
+        gameState={gameState} color="B" turn={toMove === 'B' && !isGameOver} state={stateWord('B')}
+        untimed={clockFor('B')} lang={lang} t={t} onTimeout={onTimeout}
       />
 
-      {/* 棋谱 —— 只有星阵屏有(稿子 `:1833`)。`grow` 让它吃掉这一栏剩下的高度:
+      {/* 棋谱 —— 胜率块不在的局都有(星阵屏稿子 `:1833`;A11 扩到升降级 / 本地对局 / 关掉图表)。`grow` 让它吃掉这一栏剩下的高度:
           在此之前 engineMode 下右栏中段是**空着约 148px** 的,登记在 scope.md 屏 10。
           `scrollbar` 是显式画的那根 —— `.kiosk-fold__body.mvrows` 把原生条宽度设成 0
           (460 的算术不许被滚动条改),所以「能滚」这件事得自己说出来。 */}
-      {engineMode && (
+      {showMoves && (
         <KioskFold
           fold="moves"
           grow

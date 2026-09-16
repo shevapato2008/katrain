@@ -151,7 +151,42 @@ describe('useReportDetail', () => {
     expect(mockReportGet).not.toHaveBeenCalled();
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBe('Invalid report task ID');
+    expect(result.current.errorKind).toBe('not_found');
     expect(result.current.task).toBeNull();
+  });
+
+  // N24:盒上云端连不上时本机回 503。屏 20 要据此说「连不上」,不说「未找到」,也不印原文。
+  it('读失败时 errorKind 给出是哪一类(503 ⇒ offline),error 原文照旧', async () => {
+    const body = '{"detail":"Remote report service unavailable"}';
+    mockReportGet.mockRejectedValueOnce(
+      Object.assign(new Error(`Request failed 503: ${body}`), { status: 503, body }),
+    );
+    const { result } = renderHook(() => useReportDetail(null, '7', true));
+    await settle();
+
+    expect(result.current.game).toBeNull();
+    expect(result.current.error).toBe(`Request failed 503: ${body}`);
+    expect(result.current.errorKind).toBe('offline');
+  });
+
+  // 报告接口不退缓存,上游 404 原码透传 ⇒ 那是云端说「没有这份报告」。
+  // 对局那一路(GET /user-games/{id})盒上云端失败会退本机缓存,缓存没有也 404 ⇒ 证明不了「没有」,降为 other。
+  // 变异验证:把对局那一路也改用 requestFailureKind,第二段红。
+  it('报告 404 ⇒ not_found;对局那一路 404 ⇒ other(可能只是本机缓存里没有)', async () => {
+    const notFound = (detail: string) => Object.assign(
+      new Error(`Request failed 404: {"detail":"${detail}"}`), { status: 404, body: `{"detail":"${detail}"}` },
+    );
+    mockReportGet.mockRejectedValueOnce(notFound('Report task not found'));
+    const first = renderHook(() => useReportDetail(null, '7', true));
+    await settle();
+    expect(first.result.current.errorKind).toBe('not_found');
+    first.unmount();
+
+    mockUserGameGet.mockRejectedValueOnce(notFound('Game not found'));
+    const second = renderHook(() => useReportDetail(null, '7', true));
+    await settle();
+    expect(second.result.current.game).toBeNull();
+    expect(second.result.current.errorKind).toBe('other');
   });
 
   it('looks up the task before fetching moves and the corresponding game in parallel', async () => {

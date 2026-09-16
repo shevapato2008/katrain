@@ -27,6 +27,7 @@ from katrain.web.core.ranked_session_guard import RankedAnalysisActivity
 from katrain.web.core.user_game_repo import UserGameAnalysisRepository, UserGameRepository
 from katrain.web import server
 from katrain.web.server import create_app
+from katrain.web.models import EndgameConflict, GameEnd
 
 
 class FixtureRecipe:
@@ -99,6 +100,7 @@ class FakeKaTrain:
     engine_error = None
 
     def __init__(self, username: str):
+        self.ai_ladder_commit_lock = threading.RLock()
         self.calls = []
         self.config_updates = []
         self.game_type = "free"
@@ -107,6 +109,7 @@ class FakeKaTrain:
         self.engine = FakeLadderEngine(type(self).engine_error)
         self.game = SimpleNamespace(
             end_result=None,
+            terminal=None,
             current_node=SimpleNamespace(end_state=None, player="B", score=3.5),
         )
         self.players_info = {
@@ -156,16 +159,28 @@ class FakeKaTrain:
                 ruleset=kwargs.get("rules", "chinese"),
             )
         elif action == "resign":
-            self.game.end_result = "W+R"
-            self.game.current_node.end_state = "W+R"
-            self._state["end_result"] = "W+R"
+            self._commit_end_state("W+R")
         elif action == "timeout":
-            self.game.end_result = "W+T"
-            self.game.current_node.end_state = "W+T"
-            self._state["end_result"] = "W+T"
+            self._commit_end_state("W+T")
         elif action == "play":
             self._state["history"].append({"move": args[0]})
             self._state["player_to_move"] = "W"
+
+    def _commit_end_state(self, result, *, node=None, fill_pending=False):
+        # 与真 `WebKaTrain._commit_end_state` 同口径:已有终局事实或节点上已有结果就拒(`already_ended`);
+        # 写结果、终局事实与替身自己的 `_state`。替身没有导航,不必分局面线。
+        with self.ai_ladder_commit_lock:
+            target = self.game.current_node if node is None else node
+            if getattr(self.game, "terminal", None) is not None or target.end_state:
+                raise EndgameConflict("already_ended")
+            target.end_state = result
+            try:
+                self.game.end_result = result
+            except AttributeError:
+                pass  # `test_ranked_resign_supports_real_game_read_only_end_result` 换上的对局 `end_result` 只读
+            self.game.terminal = GameEnd(self.game, target, result)
+            self._state["end_result"] = result
+            return self.game.terminal
 
     def update_config(self, setting, value):
         self.config_updates.append((setting, value))
@@ -175,6 +190,10 @@ class FakeKaTrain:
 
     def shutdown(self):
         return None
+
+    def ensure_current_score(self, timeout_s=None, node=None):
+        # 真 WebKaTrain 对升降级局不补分析,原样返回那一手已有的分数(A12);替身的当前手本来就带 3.5。
+        return (self.game.current_node if node is None else node).score
 
     def config(self, setting, default=None):
         if setting == "game/count_min_moves":
@@ -4315,6 +4334,12 @@ async def test_a_real_resign_stops_the_heartbeat_without_anyone_setting_the_flag
     ), "认输之后还在报生存 —— 心跳唯一的停止条件在最常用的终局路径上没被置位"
 
 
+def _writes_a_terminal_result_by_hand(line: str) -> bool:
+    """r1:server.py 不再直写 `end_state`,终局一律经 `WebKaTrain._commit_end_state` —— 那同样绕过了
+    `session.katrain(...)`,同样不触发 `_on_state`。只认前一种写法的话,这条绊线在 Task 2 之后就扫不到任何东西了。"""
+    return "current_node.end_state = " in line or "._commit_end_state(" in line
+
+
 def test_every_place_that_writes_a_terminal_result_by_hand_also_ends_the_game():
     """绊线:凡是绕过 `session.katrain(...)` 直接把终局写到树上的地方,都必须自己置 `game_ended`。
 
@@ -4334,7 +4359,7 @@ def test_every_place_that_writes_a_terminal_result_by_hand_also_ends_the_game():
     lines = source.splitlines()
     offenders = []
     for index, line in enumerate(lines):
-        if "current_node.end_state = " not in line:
+        if not _writes_a_terminal_result_by_hand(line):
             continue
         # 直写终局之后 12 行内必须出现 game_ended 置真(两处现存写法都在 4 行以内)。
         window = "\n".join(lines[index : index + 12])
@@ -4354,15 +4379,18 @@ def test_the_tripwire_can_actually_see_a_missing_flag():
     """
 
     fake = (
-        "                    session.katrain.game.current_node.end_state = result\n" * 1 + "                    pass\n"
+        "                    session.katrain.game.current_node.end_state = result\n"
+        "                    pass\n"
+        "                    session.katrain._commit_end_state(result)\n"
+        "                    pass\n"
     )
     lines = fake.splitlines()
     hits = [
         i
         for i, line in enumerate(lines)
-        if "current_node.end_state = " in line and "session.game_ended = True" not in "\n".join(lines[i : i + 12])
+        if _writes_a_terminal_result_by_hand(line) and "session.game_ended = True" not in "\n".join(lines[i : i + 12])
     ]
-    assert hits, "扫描逻辑抓不到缺失的置位 —— 上面那条断言说明不了任何事情"
+    assert hits == [0, 2], "扫描逻辑抓不到缺失的置位 —— 上面那条断言说明不了任何事情"
 
 
 def _lifespan_create_task_targets() -> list[str]:

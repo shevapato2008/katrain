@@ -3464,3 +3464,24 @@ msgstr "{side}: {from}-{to}. hamleler, üst üste {n} kez en iyi hamle"
 
 msgid "live:loading_match"
 msgstr "Oyun yükleniyor…"
+
+msgid "vision:offcenter_at"
+msgstr ": taş kesişime düzgün oturmamış"
+
+msgid "vision:offcenter_plain"
+msgstr "Bu taş kesişime düzgün oturmamış"
+
+msgid "vision:offcenter_hint"
+msgstr "Taşı"
+
+msgid "vision:offcenter_hint_tail"
+msgstr " kesişimine taşıyın; otomatik algılanacaktır"
+
+msgid "vision:play_here_anyway"
+msgstr "Yine de buraya oyna:"
+
+msgid "vision:offcenter_dismiss"
+msgstr "Düzelteceğim"
+
+msgid "review:start_analysis"
+msgstr "Analizi başlat"

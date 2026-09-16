@@ -9,11 +9,12 @@ import { winrateSeries } from '../../features/report/reportStats';
 import { useReportDetail } from '../../features/report/useReportDetail';
 import { useSound } from '../../hooks/useSound';
 import { useTranslation } from '../../hooks/useTranslation';
+import { requestFailureKind } from '../../utils/requestFailure';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import { AiRecommendRows } from '../components/report/AiRecommendRows';
 import MoveGradePanel from '../components/report/MoveGradePanel';
 import { ReviewWinratePlot } from '../components/report/ReviewWinratePlot';
-import { outcomeLine, rowTitle, yourColor } from '../components/report/reviewPresentation';
+import { failureLine, failureReason, outcomeLine, rowTitle, yourColor } from '../components/report/reviewPresentation';
 import { colsFor, GO_COLS, rowsFor } from '../shell/goBoard';
 import { Icon } from '../shell/icons';
 import { KioskFold } from '../shell/KioskFold';
@@ -69,10 +70,6 @@ const BACK_PATH = '/kiosk/report';
  */
 const coordAt = (x: number, y: number): string => `${GO_COLS[x] ?? '?'}${y + 1}`;
 
-function messageFrom(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 type Translate = (key: string, fallback?: string) => string;
 
 function taskStatusLabel(status: string | undefined, t: Translate): string {
@@ -124,7 +121,7 @@ export default function ReportDetailPage() {
   const { t } = useTranslation();
   const { play: playSound } = useSound();
   const {
-    task, game, moves, analysisByMove, currentMove, setCurrentMove, loading, error, refresh,
+    task, game, moves, analysisByMove, currentMove, setCurrentMove, loading, error, errorKind, refresh,
   } = useReportDetail(token, taskId, isAuthenticated);
 
   /** 右栏里同一时刻只开一块 —— 见下面那两个 `KioskFold` 上的说明。 */
@@ -148,6 +145,11 @@ export default function ReportDetailPage() {
     : [];
   const retryError = retryFailure?.identity === reportIdentity ? retryFailure.message : null;
   const retrying = retryingIdentity === reportIdentity;
+
+  // 屏上只说分出来的类别,原文不印 —— 但排障时总得有个地方能看见它。
+  useEffect(() => {
+    if (error != null) console.warn('[report-detail] error', error);
+  }, [error]);
 
   const previousPosition = useRef<{ identity: string; move: number } | null>(null);
   useEffect(() => {
@@ -286,13 +288,20 @@ export default function ReportDetailPage() {
       await refresh();
       if (identityRef.current === requestIdentity) setRetryFailure(null);
     } catch (failure) {
+      console.warn('[report-detail] recompute', failure);
       if (identityRef.current === requestIdentity) {
-        setRetryFailure({ identity: requestIdentity, message: messageFrom(failure) });
+        // 不印原文:盒上断网时 failure.message 是 `Request failed 503: {…}`。
+        // 「没发出去」这四个字只对连不上网成立 —— 402/400 是服务端收到了、判断之后拒收的,
+        // 说「没发出去」是在替一个已经处理过的请求撒谎。
+        setRetryFailure({
+          identity: requestIdentity,
+          message: failureLine(t('review:recompute_failed', '重算没成'), requestFailureKind(failure), t),
+        });
       }
     } finally {
       if (identityRef.current === requestIdentity) setRetryingIdentity(null);
     }
-  }, [isAuthenticated, refresh, reportIdentity, taskId, token]);
+  }, [isAuthenticated, refresh, reportIdentity, t, taskId, token]);
 
   const shell = (body: React.ReactNode) => (
     <div className="kiosk-rail" data-testid="report-detail-shell">
@@ -319,10 +328,15 @@ export default function ReportDetailPage() {
     );
   }
   if (!game) {
+    // 「连不上」和「没有这份报告」是两件事。以前一律写「未找到复盘。」,再把后端原文印在下面 ——
+    // 盒上报告接口全走云端,断网时就是 503,屏上却说「未找到」(2026-09-14 调研 N24)。
+    // `not_found` 只来自报告接口(云端 404 原码透传)或非法 id;对局那一路的 404 钩子里已降为 other。
+    const kind = error ? (errorKind ?? 'other') : 'not_found';
+    const reason = kind === 'not_found' ? '' : failureReason(kind, t);
     return shell(
-      <div className="empty" data-testid="report-detail-error">
-        <h4>{t('report:not_found', '未找到复盘。')}</h4>
-        {error && <p>{error}</p>}
+      <div className="empty" data-testid="report-detail-error" data-failure={kind}>
+        <h4>{kind === 'not_found' ? t('report:not_found', '未找到复盘。') : t('review:detail_failed', '这份报告没读出来')}</h4>
+        {reason && <p>{reason}</p>}
         <button type="button" className="kiosk-btn kiosk-btn--pill pill" onClick={() => void handleRefresh()}>
           {t('report:retry_load', '重试加载')}
         </button>
@@ -446,7 +460,7 @@ export default function ReportDetailPage() {
 
         {(error || retryError) && (
           <p className="rverr" role="status" data-testid="report-detail-alert">
-            {retryError || error}
+            {retryError ?? failureLine(t('review:refresh_failed', '没刷新成功'), errorKind ?? 'other', t)}
             <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={() => void handleRefresh()}>
               {t('report:retry_load', '重试加载')}
             </button>

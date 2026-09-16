@@ -27,6 +27,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
+    // 断线是持续状态，与一次性操作失败分开；保留 error 的既有文案供其它调用方使用。
+    const [connectionLost, setConnectionLost] = useState<'rejected' | 'dropped' | null>(null);
     const [lastLog, setLastLog] = useState<string | null>(null);
     // wire 契约 `shapes.Chat`:身份两项由服务端填,字段叫 `from_name` **不叫 `sender`**。
     const [chatMessages, setChatMessages] = useState<{from_id: number, from_name: string, text: string}[]>([]);
@@ -51,6 +53,9 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const lastSoundRef = useRef<{name: string, time: number} | null>(null);
 
     const playSound = useCallback((sound: string) => {
+        // Box-SSO guest mode (client-side zero-persistence, 4th layer, R9-F1): 'kioskPlaySound'
+        // is deliberately LEFT GLOBAL — a room/environment audio preference, not per-account
+        // activity — see the justification comment at its write site in PvpLocalSetupPage.tsx.
         if (typeof localStorage !== 'undefined' && localStorage.getItem('kioskPlaySound') === '0') return;
         const now = Date.now();
         // Prevent duplicate rapid sounds
@@ -79,6 +84,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                        utils/websocketUrl.ts 里记的那次回归。 */
                     const ws = new WebSocket(websocketUrl(`/ws/${sessionId}`, token));
                     wsRef.current = ws;
+                    ws.onopen = () => { if (wsRef.current === ws) setConnectionLost(null); };
                     
                     ws.onmessage = (event) => {
                         const msg = JSON.parse(event.data);
@@ -138,9 +144,11 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                         if (wsRef.current !== ws) return;  // 已被新连接替换或组件卸载
                         if (event.code === WS_POLICY_VIOLATION) {
                             console.error("Game WebSocket rejected:", event.reason);
+                            setConnectionLost('rejected');
                             setError(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新，请重新登录后重试`);
                         } else if (!event.wasClean) {
                             console.warn("Game WebSocket closed:", event.code, event.reason);
+                            setConnectionLost('dropped');
                             setError("实时连接已断开，棋盘不会自动更新，请刷新页面");
                         }
                     };
@@ -203,6 +211,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         }
     }, [sessionId, token]);
 
+    const clearError = useCallback(() => setError(null), []);
+
     const initNewSession = useCallback(async () => {
         const data = await API.createSession(token);
         setSessionId(data.session_id);
@@ -228,7 +238,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     // disable-while-pending wiring). This hook's own onmessage switch above only handles
     // the generic game-session message types and deliberately ignores platform_* ones.
     return {
-        sessionId, setSessionId, gameState, setGameState, error, onMove, onNavigate, handleAction,
+        sessionId, setSessionId, gameState, setGameState, error, connectionLost, clearError, onMove, onNavigate, handleAction,
         initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder,
         physicalEngineError, clearPhysicalEngineError, awaitingRemovalReminder, wsRef,
     };

@@ -18,12 +18,13 @@ import numpy as np
 from katrain.vision.auto_exposure import ExposureController, meter_brightness
 from katrain.vision.board_finder import BoardFinder
 from katrain.vision.board_state import EMPTY, BoardStateExtractor
-from katrain.vision.camera import CameraManager
+from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
 from katrain.vision.enhance import enhance_for_inference
 from katrain.vision.gating import mean_detection_confidence, move_event, should_detect_moves, should_feed_sync
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
+from katrain.vision.motion_roi import MotionRoiMaskCache
 from katrain.vision.move_detector import AmbiguousPromoter, MoveDetector, PendingConfidencePeak
 from katrain.vision.stone_detector import StoneDetector
 from katrain.vision.temporal import FrameAverager
@@ -67,6 +68,10 @@ class InProcessAdapter:
         self._require_geometry = camera is not None
         self._camera = camera or CameraManager(device_id=config.get("camera_device", 0))
         self._motion_filter = MotionFilter()
+        self._motion_mask_cache = MotionRoiMaskCache()
+        self._last_motion_log: float | None = None
+        self._last_motion_roi_ratio: float | None = None
+        self._last_motion_full_ratio: float | None = None
         self._board_finder = BoardFinder(camera_config=CameraConfig())
         # Hysteresis (weak-light flicker fix): the detector runs at the lower "keep"
         # threshold; board assignment requires the full "add" threshold for cells that
@@ -116,6 +121,12 @@ class InProcessAdapter:
         self._lit_points: set[tuple[int, int]] = set()
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
+        # Confidence-adaptive confirmation: a stone we can already see clearly does not
+        # need the full frame count. Defaults mirror VisionServiceConfig; keep them in
+        # step with it (the literal here is the fallback when a caller builds a worker
+        # config by hand, e.g. tests and the CLI path).
+        self._fast_confirm_frames = int(self._config.get("move_confirm_fast_frames", 3))
+        self._fast_confirm_confidence = float(self._config.get("move_confirm_fast_confidence", 0.70))
         self._prev_conf_map: dict = {}  # previous frame's cell confidences (flicker tolerance)
         self._conf_peak = PendingConfidencePeak()  # ambiguous gate uses the window peak, not one frame
         self._ambig_last_emit: dict = {}  # cell -> frame_count of last ambiguous prompt (cooldown)
@@ -135,6 +146,40 @@ class InProcessAdapter:
 
     def set_geometry(self, geometry) -> None:
         self._geometry = geometry
+        self._motion_mask_cache.invalidate()
+        self._motion_filter.reset()
+
+    def _motion_mask(self, frame: np.ndarray) -> np.ndarray | None:
+        """Return the cached board-region mask for the active geometry lock."""
+        if self._geometry is None:
+            return None
+        return self._motion_mask_cache.get(
+            frame.shape,
+            getattr(self._geometry, "corners", None),
+            (getattr(self._geometry, "source_width", None), getattr(self._geometry, "source_height", None)),
+        )
+
+    def _motion_diagnostic(self) -> str:
+        """Format the latest region and full-frame motion ratios for periodic logs."""
+        full = "N/A" if self._last_motion_full_ratio is None else f"{self._last_motion_full_ratio:.3f}"
+        if self._last_motion_roi_ratio is None:
+            return f"full:N/A/full:{full}"
+        return f"roi:{self._last_motion_roi_ratio:.3f}/full:{full}"
+
+    def _motion_is_stable(self, frame: np.ndarray) -> bool:
+        """Apply board-region motion gating and reset the average when the scene moves."""
+        stable, roi_ratio, full_ratio = self._motion_filter.is_stable_with_regions(frame, self._motion_mask(frame))
+        self._last_motion_roi_ratio = roi_ratio
+        self._last_motion_full_ratio = full_ratio
+        if stable:
+            return True
+
+        self._averager.reset()
+        now = time.monotonic()
+        if self._last_motion_log is None or now - self._last_motion_log >= 5.0:
+            logger.info("motion rejected: %s", self._motion_diagnostic())
+            self._last_motion_log = now
+        return False
 
     def _warp_frame(self, frame):
         if self._geometry is not None:
@@ -235,7 +280,7 @@ class InProcessAdapter:
             self._ae_advisory = True
             logger.info("AE: camera has no runtime controls — advisory mode only")
             return
-        request(exposure=new_exp, auto_exposure=0.25)
+        request(exposure=new_exp, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
         self._averager.reset()  # the brightness step must not blend into the average
         logger.info("AE: median=%.0f clip=%.1f%% -> exposure %.0f", stats.median, stats.clip_frac * 100, new_exp)
 
@@ -289,7 +334,7 @@ class InProcessAdapter:
             observed_board = None
             mean_confidence = 0.0
 
-            if frame is not None and self._motion_filter.is_stable(frame):
+            if frame is not None and self._motion_is_stable(frame):
                 warped, found = self._warp_frame(frame)
                 if found and warped is not None:
                     board_detected = True
@@ -309,10 +354,12 @@ class InProcessAdapter:
                     if self._frame_count % 30 == 0:
                         _mc = (sum(d.confidence for d in detections) / len(detections)) if detections else 0.0
                         logger.info(
-                            "vision: %d stones, mean_conf=%.2f, %s enh=%.0fms infer=%.0fms, bound=%s paused=%s geom=%s",
+                            "vision: %d stones, mean_conf=%.2f, %s motion=%s enh=%.0fms infer=%.0fms, "
+                            "bound=%s paused=%s geom=%s",
                             len(detections),
                             _mc,
                             self._brightness_log(),
+                            self._motion_diagnostic(),
                             _enh_ms,
                             _infer_ms,
                             self._bound,
@@ -369,7 +416,22 @@ class InProcessAdapter:
                         # a leftover on a captured point is a "remove this", not a placement.
                         # Passing it here makes that protection survive the SET_EXPECTED_BOARD
                         # baseline clobber (the resync re-injection window — review wzceinjdc).
-                        move_result = self._move_detector.detect_new_move(observed_board, ignore_cells=masked)
+                        # Confidence-adaptive confirmation. Waiting out the frame count IS
+                        # the recognition latency the user feels — nothing is computed
+                        # during it — and at ~2.3 fps the full 5 frames are 1.73s. A stone
+                        # the detector can already see clearly does not need that proof:
+                        # measured over a real 117-move game, 80% of moves peak at >=0.70,
+                        # and those confirm in 3 frames instead of 5. The peak is the
+                        # window maximum (a marginal stone's per-frame value oscillates),
+                        # and it is re-read every frame, so a candidate that decays back
+                        # below the line loses the fast path instead of keeping it.
+                        pending_peak = self._conf_peak.peak_for(self._move_detector.pending_move)
+                        fast = pending_peak is not None and pending_peak >= self._fast_confirm_confidence
+                        move_result = self._move_detector.detect_new_move(
+                            observed_board,
+                            ignore_cells=masked,
+                            required_frames=self._fast_confirm_frames if fast else None,
+                        )
                         if move_result is not None:
                             row, col, color = move_result
                             if not self._bound:
@@ -414,11 +476,24 @@ class InProcessAdapter:
                                                     "col": int(col),
                                                     "color": int(color),
                                                     "confidence": round(float(conf), 3),
+                                                    # Exactly 0.0 means NO detection box backed this
+                                                    # cell in either frame (see the comment above):
+                                                    # the stone sits between intersections and got
+                                                    # spill-assigned, or it rounded onto an occupied
+                                                    # point. A merely weak stone reads 0.30-0.41.
+                                                    # The two need different words on screen —
+                                                    # "confirm this move?" is useless advice when the
+                                                    # fix is to nudge the stone onto the line — so the
+                                                    # distinction the detector already knows is
+                                                    # published rather than left for the UI to guess.
+                                                    "unbacked": conf <= 0.0,
                                                 },
                                             }
                                         )
                                 else:
-                                    logger.info("move confirmed: (%d,%d) color=%d peak_conf=%.2f", row, col, color, conf)
+                                    logger.info(
+                                        "move confirmed: (%d,%d) color=%d peak_conf=%.2f", row, col, color, conf
+                                    )
                                     self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
@@ -445,9 +520,8 @@ class InProcessAdapter:
 
                     self._maybe_send_preview(warped, detections)
 
-            else:
-                # Motion (or camera dropout): the scene is changing — restart the average
-                # so pre-move frames never blend with the post-move board.
+            elif frame is None:
+                # Camera dropout has no motion-frame decision to reset the average for us.
                 self._averager.reset()
 
             if should_feed_sync(self._bound, self._monitor, self._paused):
@@ -502,6 +576,7 @@ class InProcessAdapter:
             elif cmd.action == CommandType.UNBIND:
                 self._bound = False
                 self._sync = SyncStateMachine()
+                self._motion_filter.reset()
                 self._prev_observed_board = None  # drop voting state across sessions
                 self._last_stable_board = None
                 self._prev_conf_map = {}

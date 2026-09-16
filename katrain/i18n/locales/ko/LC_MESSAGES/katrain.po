@@ -3286,3 +3286,24 @@ msgstr "{side} {from}–{to}수, {n}수 연속 1순위 일치"
 
 msgid "live:loading_match"
 msgstr "기보 불러오는 중…"
+
+msgid "vision:offcenter_at"
+msgstr " 돌이 바르게 놓이지 않았습니다"
+
+msgid "vision:offcenter_plain"
+msgstr "이 돌이 바르게 놓이지 않았습니다"
+
+msgid "vision:offcenter_hint"
+msgstr "돌을"
+
+msgid "vision:offcenter_hint_tail"
+msgstr " 교차점으로 옮기면 자동으로 인식됩니다"
+
+msgid "vision:play_here_anyway"
+msgstr "그대로 두기:"
+
+msgid "vision:offcenter_dismiss"
+msgstr "다시 놓기"
+
+msgid "review:start_analysis"
+msgstr "분석 시작"

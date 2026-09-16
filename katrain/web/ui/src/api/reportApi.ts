@@ -87,7 +87,9 @@ async function authFetch<T>(path: string, token: string | null | undefined, opti
   });
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Request failed ${response.status}: ${body}`);
+    // `status` / `body` 挂在错误上,给 `utils/requestFailure.ts` 分「连不上 / 找不到 / 积分不足」;
+    // message 保持原句 —— galaxy 屏上与既有单测都认这一句。
+    throw Object.assign(new Error(`Request failed ${response.status}: ${body}`), { status: response.status, body });
   }
   return response.json();
 }

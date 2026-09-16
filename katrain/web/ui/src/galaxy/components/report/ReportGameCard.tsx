@@ -18,6 +18,7 @@ import { translateResult } from '../../../utils/resultTranslation';
 import type { UserGameSummary } from '../../../api/userGamesApi';
 import type { ReportGameStatus } from '../../../features/report/reportModel';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
+import { formatRank } from '../../../utils/rank';
 
 export type { ReportGameStatus } from '../../../features/report/reportModel';
 
@@ -158,7 +159,7 @@ export default function ReportGameCard({
             </Typography>
             {game.black_rank && (
               <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', ml: 0.5, flexShrink: 0 }}>
-                {game.black_rank}
+                {formatRank(game.black_rank, t)}
               </Typography>
             )}
           </Box>
@@ -177,7 +178,7 @@ export default function ReportGameCard({
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
             {game.white_rank && (
               <Typography component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', mr: 0.5, flexShrink: 0 }}>
-                {game.white_rank}
+                {formatRank(game.white_rank, t)}
               </Typography>
             )}
             <Typography variant="body2" noWrap sx={{ fontWeight: 700 }}>

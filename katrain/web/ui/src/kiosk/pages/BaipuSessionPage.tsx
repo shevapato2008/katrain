@@ -16,6 +16,8 @@ import { KioskFold } from '../shell/KioskFold';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { driftLine } from '../utils/baipuDrift';
 import { interpolate } from '../utils/interpolate';
+import { useAuth } from '../../context/AuthContext';
+import { kioskActivityStorage } from '../storage/kioskActivityStorage';
 
 const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
 
@@ -118,6 +120,12 @@ const BaipuSessionPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user, isGuest, isLoading } = useAuth();
+  const identityKey = user?.uuid ?? null;
+  const store = useMemo(
+    () => kioskActivityStorage(isLoading || isGuest ? null : identityKey, isGuest),
+    [isLoading, isGuest, identityKey],
+  );
 
   const [phase, setPhase] = useState<Phase>('loading');
   // ⚠️ `null` = 没失败;`''` = 失败了但服务端没给话。**存的不是译文**(见 `driftLine` 那段)。
@@ -143,10 +151,15 @@ const BaipuSessionPage = () => {
   const mountedRef = useRef(true);
   const nowRef = useRef<HTMLSpanElement | null>(null);
 
-  const cached = useMemo(() => getCachedSgf(source), [source]);
+  // Resolve SGF: fresh navigation state first, then the offline cache (identity-scoped —
+  // empty while isLoading/guest, so this can never surface a prior real user's cached SGF;
+  // `store` in the deps re-runs this once identity resolves, since the useMemo above only
+  // captures its FIRST value otherwise).
+  const cached = useMemo(() => getCachedSgf(source, store), [source, store]);
   const sgf = useMemo(() => {
     const navSgf = (location.state as { sgf?: string } | null)?.sgf;
-    return navSgf ?? cached?.sgf ?? null;
+    if (navSgf) return navSgf;
+    return cached?.sgf ?? null;
   }, [location.state, cached]);
 
   useEffect(() => {
@@ -158,8 +171,10 @@ const BaipuSessionPage = () => {
         setSteps(resp.steps);
         setBoardSize(resp.board_size);
         setMeta(resp.meta);
-        const prog = getProgress(source);
-        if (prog && prog.k > 0 && prog.k < resp.steps.length) setResumePrompt(prog.k);
+        const prog = getProgress(source, store);
+        if (prog && prog.k > 0 && prog.k < resp.steps.length) {
+          setResumePrompt(prog.k); // ask continue vs restart
+        }
         setPhase('guiding');
       })
       .catch((err: Error) => {
@@ -168,7 +183,7 @@ const BaipuSessionPage = () => {
         setPhase('error');
       });
     return () => { cancelled = true; };
-  }, [sgf, source]);
+  }, [sgf, source, store]);
 
   const currentStep: BaipuStep | undefined = steps[k];
   const isPlaceable = !!currentStep && currentStep.kind !== 'pass' && currentStep.kind !== 'clear';
@@ -176,11 +191,11 @@ const BaipuSessionPage = () => {
   const advance = useCallback(() => {
     setK((prev) => {
       const next = prev + 1;
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length });
+      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length }, store);
       setPhase(next >= steps.length ? 'done' : 'guiding');
       return next;
     });
-  }, [source, steps.length]);
+  }, [source, steps.length, store]);
 
   const doCapture = useCallback(
     async (moveIndex: number) => {
@@ -272,7 +287,7 @@ const BaipuSessionPage = () => {
     setCaptureError(null);
     setK((prev) => {
       const next = Math.max(0, prev - 1);
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length });
+      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length }, store);
       return next;
     });
     setPhase('guiding');
@@ -551,7 +566,7 @@ const BaipuSessionPage = () => {
               reason: phase !== 'done'
                 ? interpolate(t('baipu:finish_reason', '还剩 {n} 手没摆'), { n: steps.length - k })
                 : undefined,
-              onClick: () => { clearProgress(source); navigate('/kiosk/baipu'); },
+              onClick: () => { clearProgress(source, store); navigate('/kiosk/baipu'); },
             },
           ]}
         />
@@ -577,7 +592,7 @@ const BaipuSessionPage = () => {
               <button
                 type="button" className="ghost" data-testid="baipu-resume-restart"
                 onClick={() => {
-                  clearProgress(source);
+                  clearProgress(source, store);
                   setOverwriteExisting(true);
                   setFrameCount(0); setLatestSavedFile(null); setCaptureError(null); setDrift(null);
                   initialCapturedRef.current = false;

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
+import { setKioskIdentity, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
 /**
  * 屏 11 · 训练营。**文案在 2026-08-22 按稿子整屏换过**(Task 12),所以这一份的断言
@@ -20,9 +21,16 @@ const mockLevels = [
   { level: '14k', categories: { capturing: 295, semeai: 124 }, total: 419 },
 ];
 
+// readActiveSession/readLastLevel are identity-scoped (box-SSO guest mode, R9-F1); these
+// tests exercise a resolved real user (`test-uuid`), so seed the NAMESPACED key, not the
+// legacy raw one — a real user's activity is namespaced by uuid, never global.
+const TEST_UUID = 'test-uuid';
+
 beforeEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: () => Promise.resolve(mockLevels),
@@ -74,7 +82,7 @@ describe('TsumegoPage · 屏 11 训练营', () => {
   });
 
   it('上次做的那一档决定分类的作用域，不是恒取最弱那档', async () => {
-    localStorage.setItem('kiosk_tsumego_last_level', '14k');
+    localStorage.setItem(`kiosk_tsumego_last_level:${TEST_UUID}`, '14k');
     renderPage();
     await waitFor(() => expect(screen.getByText('14 级 · 2 类')).toBeInTheDocument());
     // 14 级只有 capturing / semeai 两类 —— 15 级才有的「死活」不许出现在这一排。
@@ -103,8 +111,8 @@ describe('TsumegoPage · 屏 11 训练营', () => {
   });
 
   it('上次那一档和上次那一类各自高亮，互不冒充', async () => {
-    localStorage.setItem('kiosk_tsumego_last_level', '14k');
-    localStorage.setItem('kiosk_tsumego_last_category', 'semeai');
+    localStorage.setItem(`kiosk_tsumego_last_level:${TEST_UUID}`, '14k');
+    localStorage.setItem(`kiosk_tsumego_last_category:${TEST_UUID}`, 'semeai');
     renderPage();
     await waitFor(() => expect(screen.getByText('对杀')).toBeInTheDocument());
     const current = Array.from(document.querySelectorAll('.kiosk-card.is-current'));
@@ -114,7 +122,7 @@ describe('TsumegoPage · 屏 11 训练营', () => {
 
   it('分类卡进的是「这一档 + 这一类」', async () => {
     const user = userEvent.setup();
-    localStorage.setItem('kiosk_tsumego_last_level', '14k');
+    localStorage.setItem(`kiosk_tsumego_last_level:${TEST_UUID}`, '14k');
     renderPage();
     await waitFor(() => expect(screen.getByText('对杀')).toBeInTheDocument());
     await user.click(screen.getByText('对杀').closest('button')!);
@@ -158,7 +166,7 @@ describe('TsumegoPage · 屏 11 训练营', () => {
 
   it('有未完成的练习才出「接着上次」', async () => {
     localStorage.setItem(
-      'kiosk_active_practice',
+      `kiosk_active_practice:${TEST_UUID}`,
       JSON.stringify({ kind: 'practice', label: '15 级 · 吃子 · 第 1 题', route: '/kiosk/tsumego/problem/p12', ts: Date.now() })
     );
     renderPage();
@@ -172,5 +180,17 @@ describe('TsumegoPage · 屏 11 训练营', () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('死活')).toBeInTheDocument());
     expect(screen.queryByTestId('tsumego-resume-card')).toBeNull();
+  });
+
+  it('highlights the last-practiced level', async () => {
+    // kiosk_tsumego_last_level is identity-scoped (box-SSO guest mode, R9-F1) — seed the
+    // namespaced key, not the legacy raw one.
+    localStorage.setItem(`kiosk_tsumego_last_level:${TEST_UUID}`, '15k');
+    renderPage();
+    await waitFor(() => {
+      const card = screen.getByRole('button', { name: '15 级，936 题，进度未知' });
+      expect(card).toHaveClass('is-current');
+    });
+    expect(screen.getByRole('button', { name: '14 级，419 题，进度未知' })).not.toHaveClass('is-current');
   });
 });

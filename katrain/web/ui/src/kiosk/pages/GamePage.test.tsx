@@ -5,6 +5,7 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { API, type GameState } from '../../api';
 import GamePage, { deriveAiTurnState } from './GamePage';
+import { getCurrentKioskActivityStorage, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
 // --- Mocks -----------------------------------------------------------------
 
@@ -148,6 +149,7 @@ describe('GamePage', () => {
     sessionStorage.clear();
     localStorage.clear();
     mockLadderStatus.mockReset();
+    __resetKioskActivityStorageForTests();
   });
 
   it('renders authoritative ranked settlement feedback after end_result', async () => {
@@ -490,7 +492,10 @@ describe('GamePage', () => {
         fireEvent.click(screen.getByText('复盘本局'));
         expect(await screen.findByText('RESEARCH_PAGE')).toBeInTheDocument();
         expect(saveSGFSpy).toHaveBeenCalledWith('test-session');
-        expect(sessionStorage.getItem('kioskReviewSgf')).toBe('(;GM[1]FF[4]SZ[19])');
+        // Box-SSO guest mode (client-side zero-persistence, 4th layer): the handoff is
+        // routed through the identity-scoped singleton, not raw sessionStorage directly.
+        expect(getCurrentKioskActivityStorage().getItem('kioskReviewSgf')).toBe('(;GM[1]FF[4]SZ[19])');
+        expect(sessionStorage.getItem('kioskReviewSgf')).toBeNull();
       } finally {
         saveSGFSpy.mockRestore();
       }

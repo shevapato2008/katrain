@@ -208,6 +208,8 @@ describe('GamePage engine mode', () => {
     // bleed into later tests.
     mockGameState.current_node_id = 42;
     mockGameState.count_min_moves = undefined;
+    mockGameState.end_result = null;
+    mockGameState.platform_engine_color = undefined;
   });
 
   it('星阵人机局没有停一手和数子，认输仍走确认框', async () => {
@@ -623,6 +625,25 @@ describe('GamePage engine mode', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 0));
       expect(mockHintDismiss).not.toHaveBeenCalled();
+    });
+  });
+
+  // X9:星阵 AI 回了停一手或认输(编码没抓到,分不出是哪一种),后端以无胜负 `Void` 结束了这盘。
+  // 结果徽标那一格只会写「?」—— 不补这一句,用户会以为结果丢了。
+  describe('星阵 AI 结束对局(无胜负)', () => {
+    it('星阵局以 Void 结束:终局卡说清为什么没有胜负', () => {
+      mockGameState.end_result = 'Void';
+      mockGameState.platform_engine_color = 'W';
+      renderPage(true);
+      expect(screen.getByTestId('endgame-no-result')).toHaveTextContent('星阵 AI 停手或认输了');
+    });
+
+    it('普通终局不出这一行(正对照)', () => {
+      mockGameState.end_result = 'W+R';
+      mockGameState.platform_engine_color = 'W';
+      renderPage(true);
+      expect(screen.getByTestId('endgame-card')).toBeInTheDocument();
+      expect(screen.queryByTestId('endgame-no-result')).toBeNull();
     });
   });
 

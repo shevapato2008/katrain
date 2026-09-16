@@ -121,6 +121,17 @@ const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
           bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
       <EmojiEvents sx={{ color: 'primary.main' }} />
       <KioskResultBadge result={gameState.end_result!} rules={gameState.ruleset} />
+      {/* X9:星阵 AI 回了停一手或认输(编码没抓到,分不出是哪一种),后端以无胜负 `Void` 结束了这盘。
+          徽标那一格只会写「?」—— 这一句说清为什么没有胜负,而不是让人以为结果丢了。 */}
+      {gameState.end_result === 'Void' && gameState.platform_engine_color && (
+        <Typography
+          variant="caption"
+          data-testid="endgame-no-result"
+          sx={{ color: 'text.secondary', textAlign: 'center', maxWidth: 320 }}
+        >
+          {t('game:engine_ended_no_result', '星阵 AI 停手或认输了 · 本终端还分不出是哪一种，这盘不判胜负')}
+        </Typography>
+      )}
       {/* Score breakdown — komi + captures only (display only). Full territory-adjusted
           目/子 breakdown needs dead-stone data from the backend; deferred (Gate S). */}
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>

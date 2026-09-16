@@ -27,7 +27,7 @@ from katrain.core.sgf_parser import Move
 from katrain.web.platforms.gateway import PlatformCommandGateway, PlatformMoveRejectedError
 from katrain.web.platforms.golaxy.adapter import GolaxyEngineTerminal
 from katrain.web.platforms.manager import PlatformManager
-from katrain.web.platforms.models import PlatformGameContext, PlatformMove
+from katrain.web.platforms.models import PlatformGameContext, PlatformMove, PlatformPass, PlatformResign
 
 
 class MockNode:
@@ -91,6 +91,8 @@ class MockKatrain:
             self._session.moves.append(coords)
         elif command == "resign":
             self._session.resigned = True
+        elif command == "end_by_resignation":
+            self.game.end_result = f"{kwargs['winner']}+R"
 
 
 class MockSession:
@@ -123,6 +125,7 @@ class MockEngineAdapter:
 
     def __init__(self):
         self.submit_engine_move = AsyncMock()
+        self.submit_engine_pass = AsyncMock()
         self.resign_engine_game = AsyncMock()
         self.rebuild_engine_moves = MagicMock()  # called by PlatformManager.rebuild_engine_context
 
@@ -192,8 +195,8 @@ class TestEnginePlayMove:
         assert "engine_error" in reasons
 
     @pytest.mark.asyncio
-    async def test_engine_terminal_ends_game(self, setup):
-        """D7: AI pass/resign/special-coord -> GolaxyEngineTerminal -> the human's
+    async def test_unknown_engine_terminal_ends_game(self, setup):
+        """D7: an unknown special coord -> GolaxyEngineTerminal -> the human's
         move IS played locally FIRST (it's real — the adapter already committed it
         before raising), THEN the game_ended rejection is broadcast. Only the AI's
         (nonexistent) reply is naturally absent; there is no half-committed pair."""
@@ -208,21 +211,45 @@ class TestEnginePlayMove:
         assert exc_info.value.reason == "game_ended"
         reasons = [msg.get("reason") for _, msg in sm.broadcasts if msg["type"] == "platform_move_rejected"]
         assert "game_ended" in reasons
-        # X9: the LOCAL game ends too, without a result — an AI pass and an AI resign decode
-        # identically today, so any winner written here would be a guess. Without this the
-        # board sat on "AI to move" forever and every retry failed "not your turn".
+        # The LOCAL game ends without a guessed winner.
         commands = [command for command, _ in session.katrain_calls]
         assert commands[-1] == "end_without_result"
         assert commands.index("play") < commands.index("end_without_result")
 
     @pytest.mark.asyncio
-    async def test_pass_rejected(self, setup):
+    async def test_human_pass_then_ai_move(self, setup):
         gateway, pm, sm, adapter, ctx, session = setup
-        with pytest.raises(PlatformMoveRejectedError, match="pass_not_supported"):
-            await gateway.pass_move("s", user_id=1)
-        # No local pass recorded.
-        assert session.moves == []
-        assert ("play", {"coords": None}) not in session.katrain_calls
+        adapter.submit_engine_pass.return_value = PlatformMove(col=15, row=3, color="W", move_number=2, game_id="g")
+
+        result = await gateway.pass_move("s", user_id=1)
+
+        adapter.submit_engine_pass.assert_awaited_once_with("g")
+        assert session.moves == [None, (15, 3)]
+        assert result == {"status": "ok", "ai_move": {"col": 15, "row": 3, "move_number": 2}}
+
+    @pytest.mark.asyncio
+    async def test_ai_pass_is_applied_after_human_move(self, setup):
+        gateway, pm, sm, adapter, ctx, session = setup
+        adapter.submit_engine_move.return_value = PlatformPass(color="W", move_number=2, game_id="g")
+
+        result = await gateway.play_move("s", 3, 3, user_id=1)
+
+        assert session.moves == [(3, 3), None]
+        assert result == {"status": "ok", "ai_move": {"pass": True, "move_number": 2}}
+        assert ctx.last_confirmed_move == 2
+
+    @pytest.mark.asyncio
+    async def test_ai_resign_records_human_win(self, setup):
+        gateway, pm, sm, adapter, ctx, session = setup
+        adapter.submit_engine_move.return_value = PlatformResign(color="W", winner="B", move_number=1, game_id="g")
+
+        with pytest.raises(PlatformMoveRejectedError) as exc_info:
+            await gateway.play_move("s", 3, 3, user_id=1)
+
+        assert exc_info.value.reason == "game_ended"
+        assert session.moves == [(3, 3)]
+        assert session.katrain.game.end_result == "B+R"
+        assert [command for command, _ in session.katrain_calls][-1] == "end_by_resignation"
 
     @pytest.mark.asyncio
     async def test_local_play_failure_after_ai_move_clears_pending(self, setup):

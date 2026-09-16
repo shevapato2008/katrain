@@ -25,13 +25,13 @@ import PhysicalPlayStatusChip from '../components/physical/PhysicalPlayStatusChi
 import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEscalationDialog';
 import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog';
 import HintPanel from '../components/physical/HintPanel';
-import { API, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
+import { API, type HintResponse, type OwnershipPoint, type JudgePoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
 import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
 
-type EngineAnalysisKind = 'area' | 'options' | 'variation';
+type EngineAnalysisKind = 'area' | 'options' | 'judge' | 'variation';
 
 export interface AiTurnState {
   aiColor: 'B' | 'W' | null;
@@ -121,15 +121,14 @@ const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
           bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
       <EmojiEvents sx={{ color: 'primary.main' }} />
       <KioskResultBadge result={gameState.end_result!} rules={gameState.ruleset} />
-      {/* X9:星阵 AI 回了停一手或认输(编码没抓到,分不出是哪一种),后端以无胜负 `Void` 结束了这盘。
-          徽标那一格只会写「?」—— 这一句说清为什么没有胜负,而不是让人以为结果丢了。 */}
+      {/* 未识别的平台终局哨兵仍以无胜负 `Void` 收口；已知的停一手和认输会走各自语义。 */}
       {gameState.end_result === 'Void' && gameState.platform_engine_color && (
         <Typography
           variant="caption"
           data-testid="endgame-no-result"
           sx={{ color: 'text.secondary', textAlign: 'center', maxWidth: 320 }}
         >
-          {t('game:engine_ended_no_result', '星阵 AI 停手或认输了 · 本终端还分不出是哪一种，这盘不判胜负')}
+          {t('game:engine_ended_no_result', '星阵返回了无法识别的终局信号 · 这盘不判断输赢')}
         </Typography>
       )}
       {/* Score breakdown — komi + captures only (display only). Full territory-adjusted
@@ -500,7 +499,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   };
 
-  // 星阵隧道分析 (领地/支招/变化图) — engineMode only. Mutually exclusive: a new kind
+  // 星阵隧道分析 (领地/支招/变化图/数子) — engineMode only. Mutually exclusive: a new kind
   // replaces any prior overlay; clicking the already-active kind toggles it off.
   const handleEngineAnalysis = async (kind: EngineAnalysisKind) => {
     if (pendingEngineKind) return; // in-flight guard: ignore double-taps until the current call settles
@@ -526,6 +525,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         const overlay: EngineOverlay =
           kind === 'area' ? { kind: 'area', ownership: (res.data as { ownership: OwnershipPoint[] }).ownership }
           : kind === 'options' ? { kind: 'options', candidates: (res.data as { candidates: AnalysisCandidate[] }).candidates }
+          : kind === 'judge' ? { kind: 'judge', ownership: (res.data as { ownership: JudgePoint[] }).ownership }
           : { kind: 'variation', sequence: (res.data as { sequence: AnalysisPoint[] }).sequence };
         setEngineOverlay(overlay);
         setActiveEngineKind(kind);
@@ -543,6 +543,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const ENGINE_KIND_LABEL: Record<EngineAnalysisKind, string> = {
     area: t('Territory', '领地'),
     options: t('Suggest', '支招'),
+    judge: t('Score', '数子'),
     variation: t('Variation Line', '变化图'),
   };
 

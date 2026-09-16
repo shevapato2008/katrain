@@ -32,10 +32,10 @@ interface Props {
    * 只有三个分析键点了没用。合在一起就会为了关掉分析顺手把能用的也关掉。
    */
   analysisRequiresLogin?: boolean;
-  /** Golaxy 人机对弈: replace the local analysis toggles with the three star阵-tunnel buttons. */
+  /** Golaxy 人机对弈: replace the local analysis toggles with star阵 tunnel controls. */
   engineMode?: boolean;
-  activeEngineKind?: 'area' | 'options' | 'variation' | null;
-  onEngineAnalysis?: (kind: 'area' | 'options' | 'variation') => void;
+  activeEngineKind?: 'area' | 'options' | 'judge' | 'variation' | null;
+  onEngineAnalysis?: (kind: 'area' | 'options' | 'judge' | 'variation') => void;
   /** Remaining-uses badges for the three engine buttons; null/undefined → "—" (unknown). */
   engineItemCounts?: EngineItemCounts | null;
   /**
@@ -202,20 +202,7 @@ const GameControlPanel = ({
   const evalAllowed = freeVsAi;
   const showScore = evalAllowed && !analysisRequiresLogin && !!analysisToggles.score;
 
-  /**
-   * 悔棋 —— Fan 2026-08-25 亲裁:「**只有人机对弈的自由对弈允许悔棋**;升降级对弈、
-   * 对战大厅、跨平台对弈等都不允许,悔棋按钮可以撤销。」
-   *
-   * **两个名字引同一个判据,不是其中一个引另一个**:胜率图和悔棋今天恰好落在同一张表上,
-   * 但它们不是同一件事(一个是「能不能看」,一个是「能不能改」)。哪天有一种只让其一,
-   * 改的是这一行,不用先把两者拆开。
-   *
-   * 撤掉而不是灰着,依的是本屏那条判据:**永久不可用 → 撤掉;暂时不可用 → 灰着**。
-   * 这四种里悔棋是**开局就定死的没有**(`game_type` 一局之内不变),不是过一会儿会回来的状态,
-   * 所以留一颗永远灰的键只是噪声。上一版还把星阵「算招期间」也塞进同一个开关
-   * (`disableUndo={isRanked || !!platformPendingMove}`)—— 那是**暂时**的,四颗变三颗
-   * 会让「认输」在用户手指底下左右挪;现在星阵整局都没有这颗键,那条来回翻的路径不存在了。
-   */
+  /** 本地局只有人机自由对弈允许悔棋；星阵机器人页在 engineMode 分支中单独保留灰色平台按钮。 */
   const undoAllowed = freeVsAi;
 
   /**
@@ -307,10 +294,19 @@ const GameControlPanel = ({
   ];
 
   const actions = engineMode
-    ? [
-      // 星阵人机局的悔棋、停一手和数子都无法完成；原因在开关排右端说明。
-      { key: 'resign', icon: 'flag' as const, label: t('Resign', '认输'), onClick: () => onAction('resign'), danger: true, disabled: isGameOver },
-    ]
+    ? (isGameOver ? [] : [
+      {
+        key: 'undo', icon: 'arrow-counter-clockwise' as const, label: t('Undo', '悔棋'),
+        onClick: () => undefined, disabled: true,
+        reason: t('game:golaxy_engine_no_undo', '星阵机器人对局暂不支持悔棋'),
+      },
+      { key: 'pass', icon: 'hand-pointing' as const, label: t('game:pass', '停一手'), onClick: () => onAction('pass') },
+      {
+        key: 'judge', icon: 'squares-four' as const, label: t('Score', '数子'),
+        onClick: () => onEngineAnalysis?.('judge'), pressed: activeEngineKind === 'judge',
+      },
+      { key: 'resign', icon: 'flag' as const, label: t('Resign', '认输'), onClick: () => onAction('resign'), danger: true },
+    ])
     : [...analysisActions, ...playActions];
 
   // 角标三态:数字 = 还剩几次;`0` 红底**不灰掉**(去星阵 App 充了值马上又能用);
@@ -369,32 +365,11 @@ const GameControlPanel = ({
         </KioskFold>
       )}
 
-      {engineMode && (
-        // 星阵道具:**每按一次从账上扣一次**,所以既不与动作区并排、也不与显示开关并排。
-        // 角标 `0` 用红底**不灰掉**(去星阵 App 充了值马上又能用);`—` = 这一次没取到数。
-        <div className="items" role="group" aria-label={t('game:golaxy_items', '星阵道具 · 每按一次扣一次')}>
-          {items.map((it) => (
-            <button
-              key={it.kind}
-              type="button"
-              aria-pressed={activeEngineKind === it.kind}
-              onClick={() => onEngineAnalysis?.(it.kind)}
-            >
-              <span className={it.count === 0 ? 'cnt zero' : 'cnt'} data-testid="item-badge">
-                {it.count === null ? '—' : it.count}
-              </span>
-              <Icon name={it.icon} />
-              {it.label}
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* 纯显示开关。`role="switch"` 不是 `aria-pressed`:后者是「这个按钮此刻被按住」,
           而这两个是**状态** —— 开着就一直开着。长相跟 galaxy 那两个 `<Switch size="small">` 走
           (Fan 2026-08-22:「galaxy 界面里都是开关这种形式,kiosk 也改成一样的」),
           轨和珠是 `.gtoggles button` 的两个伪元素,不加新标签。
-          右端说明优先显示硬件故障，其次是星阵局不可用的动作。 */}
+          右端说明优先显示硬件故障，其次说明星阵数子的语义。 */}
       <div className="gtoggles gtoggles--switch" role="group" aria-label={t('game:display', '显示')}>
         <button type="button" role="switch" aria-checked={!!analysisToggles.coords} onClick={() => onToggleAnalysis('coords')}>
           {t('Coordinates', '坐标')}
@@ -404,7 +379,7 @@ const GameControlPanel = ({
         </button>
         {/* 右端说明按故障、星阵动作、游客限制、数子手数的顺序显示:
               ① `hardwareFault` —— 故障,最急,而且要用红。
-              ② 星阵人机 —— 停一手 / 数子整局都不可用。
+              ② 星阵人机 —— 数子是只读形势判断，不会结束对局。
               ③ 游客 —— 三个键**不登录就永远不会亮**;这一句在触屏上是它们唯一的解释
                  (`reason` 落在 `title`/`aria-description` 上,手指够不着)。
               ④ 数子 —— 只关一个键,而且**下满手数它自己就好了**。
@@ -414,7 +389,7 @@ const GameControlPanel = ({
         <i className="ghint" data-fault={hardwareFault ? 'true' : undefined}>
           {hardwareFault
             ?? (engineMode
-              ? (isGameOver ? '' : t('game:golaxy_no_pass_count', '暂不支持停一手、数子'))
+              ? (isGameOver ? '' : t('game:golaxy_judge_hint', '数子只查看当前形势，不结束对局'))
               : analysisRequiresLogin
                 ? t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')
                 : !isGameOver && !canCount
@@ -423,12 +398,40 @@ const GameControlPanel = ({
         </i>
       </div>
 
-      <KioskActions
-        actions={actions}
-        className={actions.length > 4 ? 'gacts' : undefined}
-        ariaLabel={t('game:actions', '对局操作')}
-        testId="game-actions"
-      />
+      {engineMode ? (
+        // 所有点击按钮连续摆放；坐标/手数滑动开关留在上面的独立组。
+        // 两行共用四列网格，因此三颗道具与四颗对局操作都是同一尺寸。
+        <div className="engine-button-cluster" data-testid="engine-button-cluster">
+          <div className="items" role="group" aria-label={t('game:golaxy_items', '星阵道具 · 每按一次扣一次')}>
+            {items.map((it) => (
+              <button
+                key={it.kind}
+                type="button"
+                aria-pressed={activeEngineKind === it.kind}
+                onClick={() => onEngineAnalysis?.(it.kind)}
+              >
+                <span className={it.count === 0 ? 'cnt zero' : 'cnt'} data-testid="item-badge">
+                  {it.count === null ? '—' : it.count}
+                </span>
+                <Icon name={it.icon} />
+                {it.label}
+              </button>
+            ))}
+          </div>
+          <KioskActions
+            actions={actions}
+            ariaLabel={t('game:actions', '对局操作')}
+            testId="game-actions"
+          />
+        </div>
+      ) : (
+        <KioskActions
+          actions={actions}
+          className={actions.length > 4 ? 'gacts' : undefined}
+          ariaLabel={t('game:actions', '对局操作')}
+          testId="game-actions"
+        />
+      )}
 
       {/* 着法导航只在**终局之后**出现:对局中它整排是灰的(`disabled={!isGameOver}`),
           而稿子对一排点不动的键的判词是「不是在这一屏塞一排点不动的键」。

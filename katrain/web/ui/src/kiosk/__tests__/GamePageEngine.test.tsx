@@ -212,11 +212,13 @@ describe('GamePage engine mode', () => {
     mockGameState.platform_engine_color = undefined;
   });
 
-  it('星阵人机局没有停一手和数子，认输仍走确认框', async () => {
+  it('星阵人机局保留灰色悔棋并显示三个可用动作；停一手走会话动作，认输仍走确认框', async () => {
     mockGameState.count_min_moves = 1;
     renderPage(true);
-    expect(screen.queryByText('停一手')).toBeNull();
-    expect(screen.queryByText('数子')).toBeNull();
+    expect(screen.getByRole('button', { name: '悔棋' })).toBeDisabled();
+    fireEvent.click(screen.getByText('停一手'));
+    await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('pass'));
+    expect(screen.getByText('数子')).toBeInTheDocument();
     fireEvent.click(screen.getByText('认输'));
     expect(screen.getByText('确认认输？')).toBeInTheDocument();
   });
@@ -262,13 +264,14 @@ describe('GamePage engine mode', () => {
     expect(screen.queryByText(/AI 连接出错/)).not.toBeInTheDocument();
   });
 
-  describe('星阵隧道分析 (领地/支招/变化图)', () => {
-    it('renders the three engine buttons and hides local AI支招/图表/形势 + ScoreGraph in engineMode', () => {
+  describe('星阵隧道分析 (领地/支招/变化图/数子)', () => {
+    it('renders the three metered engine buttons plus free 数子, and hides local AI支招/图表/形势 + ScoreGraph in engineMode', () => {
       renderPage(true);
 
       expect(screen.getByText('领地')).toBeInTheDocument();
       expect(screen.getByText('支招')).toBeInTheDocument();
       expect(screen.getByText('变化图')).toBeInTheDocument();
+      expect(screen.getByText('数子')).toBeInTheDocument();
 
       // No local KataGo analysis controls and no winrate chart — golaxy 人机对弈 has neither.
       /* 2026-08-24 修订。原来这里断言的是 `queryByText('建议')` —— 而本页的本地
@@ -284,6 +287,26 @@ describe('GamePage engine mode', () => {
       expect(screen.queryByText('形势')).not.toBeInTheDocument();
       expect(screen.queryByTestId('score-graph')).not.toBeInTheDocument();
       expect(screen.queryByTestId('score-graph-component')).not.toBeInTheDocument();
+    });
+
+    it('数子调用免费的 judge 隧道并把归属结果交给棋盘', async () => {
+      const ownership = [
+        { col: 3, row: 3, owner: 'B' },
+        { col: 15, row: 15, owner: 'W' },
+      ];
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'judge', data: { ownership, winner: 'B', delta: 2.5 },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('数子'));
+
+      await waitFor(() => {
+        expect(API.platformEngineAnalysis).toHaveBeenCalledWith('golaxy', 'test-session', 'judge', 'mock-token');
+        expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'judge');
+      });
+      const overlay = JSON.parse(screen.getByTestId('board').getAttribute('data-overlay')!);
+      expect(overlay).toEqual({ kind: 'judge', ownership });
     });
 
     it('leaves the local 领地/AI支招/图表 controls in place without engineMode', () => {
@@ -628,14 +651,13 @@ describe('GamePage engine mode', () => {
     });
   });
 
-  // X9:星阵 AI 回了停一手或认输(编码没抓到,分不出是哪一种),后端以无胜负 `Void` 结束了这盘。
-  // 结果徽标那一格只会写「?」—— 不补这一句,用户会以为结果丢了。
-  describe('星阵 AI 结束对局(无胜负)', () => {
+  // 已知的停一手与认输走各自语义；这里只保留未知平台哨兵的无胜负兜底。
+  describe('星阵未知终局信号(无胜负)', () => {
     it('星阵局以 Void 结束:终局卡说清为什么没有胜负', () => {
       mockGameState.end_result = 'Void';
       mockGameState.platform_engine_color = 'W';
       renderPage(true);
-      expect(screen.getByTestId('endgame-no-result')).toHaveTextContent('星阵 AI 停手或认输了');
+      expect(screen.getByTestId('endgame-no-result')).toHaveTextContent('星阵返回了无法识别的终局信号');
     });
 
     it('普通终局不出这一行(正对照)', () => {

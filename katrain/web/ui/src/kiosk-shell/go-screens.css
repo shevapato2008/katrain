@@ -385,8 +385,8 @@
 .mvrows .mv { color: var(--text); }
 .mvrows .mv.now { color: var(--accent); font-weight: 600; }
 
-/* 星阵道具键:**一个会扣次数的按钮和一个纯显示开关长成一样,是这一屏最容易犯的错**,
-   所以它们既不与动作区并排、也不与「坐标 / 手数」并排。
+/* 星阵道具键与对局动作都是点击按钮，连续摆在 `.engine-button-cluster` 中；
+   「坐标 / 手数」是滑动开关，留在独立的 `.gtoggles--switch` 组。
    角标三态照实现分:数字 = 还剩几次;`0` 用红底**不灰掉**(去星阵 App 充了值马上又能用,
    灰掉等于说「这个功能没有」);`—` = 这一次没取到数,和 0 不是一回事。 */
 .items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; flex: none; }
@@ -401,6 +401,14 @@
   display: grid; place-items: center; border-radius: 999px; font-size: 10.5px; font-weight: 600;
   font-family: var(--font-mono); background: #0C1211; color: var(--dim); }
 .items .cnt.zero { background: var(--bad); color: #fff; }
+
+/* 三颗道具 + 四颗对局操作共用四列尺寸。道具行第四格留空，让两种语义仍各占一行；
+   两行之间只留标准按钮缝，视觉上属于同一片点击区。 */
+.engine-button-cluster {
+  display: flex; flex-direction: column; gap: var(--action-cell-gap); flex: none; margin-top: auto;
+}
+.engine-button-cluster .items { grid-template-columns: repeat(4, 1fr); gap: var(--action-cell-gap); }
+.engine-button-cluster .kiosk-actions { margin-top: 0; }
 
 /* 平台条(稿子 `go-kiosk.tmpl.html:1856`)**故意没搬**,三个值一个都喂不了:
      · 「哪一家」是 `GamePage.tsx:185` 的写死常量 `'golaxy'`,而页控条标题已经写着「星阵围棋 · 人机」;

@@ -33,7 +33,7 @@ from katrain.web.platforms.golaxy.engine_client import (
     get_level,
     list_levels,
 )
-from katrain.web.platforms.models import OnlineUser, PlatformGameSession, PlatformMove
+from katrain.web.platforms.models import OnlineUser, PlatformGameSession, PlatformMove, PlatformPass, PlatformResign
 
 AI_COORD = 286  # arbitrary valid on-board coord used by the mocked engine
 
@@ -219,11 +219,48 @@ async def test_fatal_not_retried_no_commit():
 
 
 # --------------------------------------------------------------------------- #
-# 8: AI special coord -> defensive terminal                                   #
+# 8: AI pass / resign / unknown special                                       #
 # --------------------------------------------------------------------------- #
 
 
-async def test_ai_special_coord_terminates_game():
+async def test_ai_pass_is_committed_and_keeps_game_playing():
+    adapter = make_adapter()
+    game_id = await start_black(adapter)
+    ctx = adapter._engine_games[game_id]
+    ended, ended_cb = recorder()
+    adapter.on_game_ended(ended_cb)
+    adapter._rest.engine_genmove = AsyncMock(return_value=GenmoveResult(coord=-1, prob=0.0))
+
+    reply = await adapter.submit_engine_move(game_id, 3, 3)
+
+    assert isinstance(reply, PlatformPass)
+    assert reply.color == "W"
+    assert reply.move_number == 2
+    assert ctx.moves == [katrain_to_golaxy(3, 3), -1]
+    assert ctx.status == "playing"
+    assert ended == []
+
+
+async def test_ai_resign_is_conclusive_human_win():
+    adapter = make_adapter()
+    game_id = await start_black(adapter)
+    ctx = adapter._engine_games[game_id]
+    ended, ended_cb = recorder()
+    adapter.on_game_ended(ended_cb)
+    adapter._rest.engine_genmove = AsyncMock(return_value=GenmoveResult(coord=-3, prob=0.0))
+
+    reply = await adapter.submit_engine_move(game_id, 3, 3)
+
+    assert isinstance(reply, PlatformResign)
+    assert reply.color == "W"
+    assert reply.winner == "B"
+    assert reply.move_number == 1
+    assert ctx.moves == [katrain_to_golaxy(3, 3)]
+    assert ctx.status == "finished"
+    assert ended == [(game_id, "ai_resign", "B")]
+
+
+async def test_unknown_special_coord_terminates_game_without_winner():
     adapter = make_adapter()
     game_id = await start_black(adapter)
     ctx = adapter._engine_games[game_id]
@@ -239,11 +276,23 @@ async def test_ai_special_coord_terminates_game():
     assert ctx.status == "finished"
     assert len(ended) == 1
     assert ended[0][0] == game_id
-    assert ended[0][1] == "ai_special_coord"
-    # AI (human is Black) is White
-    assert ended[0][2] == "W"
-    # neither the human move nor a bogus AI move was committed
-    assert ctx.moves == []
+    assert ended[0][1] == "ai_unknown_special"
+    assert ended[0][2] == ""
+    # The human move is real; only the unknown AI value is omitted.
+    assert ctx.moves == [katrain_to_golaxy(3, 3)]
+
+
+async def test_human_pass_is_sent_to_engine_and_ai_move_is_committed():
+    adapter = make_adapter()
+    game_id = await start_black(adapter)
+    ctx = adapter._engine_games[game_id]
+    adapter._rest.engine_genmove = AsyncMock(return_value=GenmoveResult(coord=AI_COORD, prob=0.19))
+
+    reply = await adapter.submit_engine_pass(game_id)
+
+    assert isinstance(reply, PlatformMove)
+    assert ctx.moves == [-1, AI_COORD]
+    assert adapter._rest.engine_genmove.await_args.kwargs["moves"] == [-1]
 
 
 # --------------------------------------------------------------------------- #
@@ -298,6 +347,15 @@ async def test_rebuild_engine_moves_resets_context():
 
     adapter.rebuild_engine_moves(game_id, [(3, 3), (15, 3)])
     assert ctx.moves == [katrain_to_golaxy(3, 3), katrain_to_golaxy(15, 3)]
+
+
+async def test_rebuild_engine_moves_preserves_passes():
+    adapter = make_adapter()
+    game_id = await start_black(adapter)
+
+    adapter.rebuild_engine_moves(game_id, [(3, 3), None, (15, 3)])
+
+    assert adapter._engine_games[game_id].moves == [katrain_to_golaxy(3, 3), -1, katrain_to_golaxy(15, 3)]
 
 
 async def test_rebuild_engine_moves_unknown_game_raises():

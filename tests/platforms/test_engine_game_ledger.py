@@ -82,6 +82,19 @@ class TestMoveWhenTheEngineEndsTheGame:
         assert response.status_code == 409
         assert response.json()["detail"] == "tunnel down"
 
+    async def test_consecutive_pass_terminal_returns_the_ended_state(self):
+        session = _engine_session(end_result="终局")
+        gw = _gateway()
+        gw.pass_move.side_effect = PlatformMoveRejectedError("Engine game ended", reason="game_ended")
+        app = _app(session, gw)
+
+        async with _client(app) as ac:
+            response = await ac.post("/api/move", json={"session_id": session.session_id, "pass_move": True})
+
+        assert response.status_code == 200, response.text
+        gw.pass_move.assert_awaited_once()
+        assert response.json()["state"]["end_result"] == "终局"
+
 
 class TestAfterTheEngineGameEnded:
     async def test_a_move_still_goes_to_the_gateway_and_gets_the_ended_state(self):

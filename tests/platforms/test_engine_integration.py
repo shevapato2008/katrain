@@ -102,8 +102,8 @@ async def test_human_white_move_order_on_real_session():
 
 
 @pytest.mark.asyncio
-async def test_ai_special_coord_ends_the_local_game_without_result():
-    """X9: genmove 回一个盘外坐标(星阵的停一手 / 认输都解成 UnknownSpecial)。"""
+async def test_unknown_ai_special_coord_ends_the_local_game_without_result():
+    """未识别的盘外值保持防御性 Void 兜底。"""
     from katrain.web.platforms.gateway import PlatformMoveRejectedError
 
     sm, pm, gateway, adapter = _build_stack(genmove_return=GenmoveResult(coord=361, prob=0.0))
@@ -119,6 +119,57 @@ async def test_ai_special_coord_ends_the_local_game_without_result():
     assert _main_line(session) == [("B", (3, 3))]
     assert session.katrain.game.end_result == "Void"
     assert session.katrain.get_state()["end_result"] == "Void"
+    assert not pm.is_platform_game(session_id)
+
+
+@pytest.mark.asyncio
+async def test_ai_pass_is_recorded_and_game_continues():
+    sm, pm, gateway, adapter = _build_stack(genmove_return=GenmoveResult(coord=-1, prob=0.0))
+    pm._setup_callbacks(adapter)
+    session_id = await pm.start_engine_game("golaxy", EngineGameConfig(level=1100, human_color="B"), user_id=1)
+    session = sm.get_session(session_id)
+
+    result = await gateway.play_move(session_id, 3, 3, user_id=1)
+
+    assert result["ai_move"] == {"pass": True, "move_number": 2}
+    assert _main_line(session) == [("B", (3, 3)), ("W", None)]
+    assert session.katrain.game.end_result is None
+    assert pm.is_platform_game(session_id)
+
+
+@pytest.mark.asyncio
+async def test_human_and_ai_consecutive_passes_end_the_game():
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+    sm, pm, gateway, adapter = _build_stack(genmove_return=GenmoveResult(coord=-1, prob=0.0))
+    pm._setup_callbacks(adapter)
+    session_id = await pm.start_engine_game("golaxy", EngineGameConfig(level=1100, human_color="B"), user_id=1)
+    session = sm.get_session(session_id)
+
+    with pytest.raises(PlatformMoveRejectedError) as exc_info:
+        await gateway.pass_move(session_id, user_id=1)
+
+    assert exc_info.value.reason == "game_ended"
+    assert _main_line(session) == [("B", None), ("W", None)]
+    assert session.katrain.game.end_result
+    assert not pm.is_platform_game(session_id)
+
+
+@pytest.mark.asyncio
+async def test_ai_resignation_records_human_win():
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+    sm, pm, gateway, adapter = _build_stack(genmove_return=GenmoveResult(coord=-3, prob=0.0))
+    pm._setup_callbacks(adapter)
+    session_id = await pm.start_engine_game("golaxy", EngineGameConfig(level=1100, human_color="B"), user_id=1)
+    session = sm.get_session(session_id)
+
+    with pytest.raises(PlatformMoveRejectedError) as exc_info:
+        await gateway.play_move(session_id, 3, 3, user_id=1)
+
+    assert exc_info.value.reason == "game_ended"
+    assert _main_line(session) == [("B", (3, 3))]
+    assert session.katrain.game.end_result == "B+R"
     assert not pm.is_platform_game(session_id)
 
 

@@ -12,6 +12,7 @@ from katrain.web.platforms.models import (
     PlatformChallenge,
     PlatformCredentials,
     PlatformGameSession,
+    PlatformEngineReply,
     PlatformMove,
     GamePhase,
 )
@@ -126,7 +127,10 @@ class PlatformAdapter(ABC):
     async def start_engine_game(self, config) -> "EngineGameStart":
         raise NotImplementedError(f"{self.platform_name} does not support engine play")
 
-    async def submit_engine_move(self, game_id: str, col: int, row: int) -> PlatformMove:
+    async def submit_engine_move(self, game_id: str, col: int, row: int) -> PlatformEngineReply:
+        raise NotImplementedError(f"{self.platform_name} does not support engine play")
+
+    async def submit_engine_pass(self, game_id: str) -> PlatformEngineReply:
         raise NotImplementedError(f"{self.platform_name} does not support engine play")
 
     async def resign_engine_game(self, game_id: str) -> None:

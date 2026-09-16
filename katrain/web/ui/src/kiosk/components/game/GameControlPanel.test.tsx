@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import GameControlPanel from './GameControlPanel';
 import type { GameState } from '../../../api';
 
@@ -54,8 +54,8 @@ describe('GameControlPanel', () => {
   });
 
   // ── 悔棋按对弈方式判 ────────────────────────────────────────────────────────
-  // Fan 2026-08-25 亲裁:「**只有人机对弈的自由对弈允许悔棋**;人机对弈的升降级对弈、
-  // 人人对弈的对战大厅、跨平台对弈等都不允许,悔棋按钮可以撤销。」
+  // 只有本地人机自由对弈允许悔棋。星阵机器人页按平台原界面保留灰色按钮，
+  // 其余不支持悔棋的对局仍不显示。
   //
   // 五种对弈方式**逐个都要出现在这张表里** —— 少一行就等于那一种没被裁过。
   // 判据落在**屏上有没有这颗键**,不落在 `undoAllowed` 那个变量上:
@@ -93,7 +93,7 @@ describe('GameControlPanel', () => {
     ['人机 · 升降级对弈(调用方漏传 isRanked)', { game_type: 'ai_ladder_ranked' }, {}, false],
     ['人人 · 本地对局', { game_type: 'pvp_local' }, {}, false],
     ['人人 · 对战大厅', { game_type: 'pvp_online' }, {}, false],
-    ['跨平台 · 星阵人机', { game_type: 'free' }, { engineMode: true }, false],
+    ['跨平台 · 星阵人机（保留灰色平台按钮）', { game_type: 'free' }, { engineMode: true }, true],
   ] as const)('悔棋:%s → %s', (_name, over, props, expected) => {
     panel(over as Partial<GameState>, props as Record<string, unknown>);
     const undo = screen.queryByText('悔棋');
@@ -103,13 +103,21 @@ describe('GameControlPanel', () => {
     expect(screen.getByText('认输')).toBeInTheDocument();
   });
 
-  test('星阵人机局手数够了也只显示认输，并说明停一手与数子不可用', () => {
+  test('星阵人机局固定显示四颗动作键；悔棋禁用，数子接到免费形势判断', () => {
     const history = Array.from({ length: 120 }, (_, i) => ({ node_id: i, score: 0, winrate: 0.5 }));
-    const { container } = panel({ game_type: 'free', history }, { engineMode: true });
-    expect(screen.queryByText('停一手')).toBeNull();
-    expect(screen.queryByText('数子')).toBeNull();
+    const onAction = vi.fn();
+    const onEngineAnalysis = vi.fn();
+    const { container } = panel(
+      { game_type: 'free', history },
+      { engineMode: true, onAction, onEngineAnalysis },
+    );
+    expect(screen.getByRole('button', { name: '悔棋' })).toBeDisabled();
+    screen.getByRole('button', { name: '停一手' }).click();
+    screen.getByRole('button', { name: '数子' }).click();
     expect(screen.getByText('认输')).toBeInTheDocument();
-    expect(container.querySelector('.gtoggles .ghint')).toHaveTextContent('暂不支持停一手、数子');
+    expect(onAction).toHaveBeenCalledWith('pass');
+    expect(onEngineAnalysis).toHaveBeenCalledWith('judge');
+    expect(container.querySelector('.gtoggles .ghint')).toHaveTextContent('数子只查看当前形势，不结束对局');
   });
 
   // ── 棋谱折叠块(星阵屏)────────────────────────────────────────────────────

@@ -1464,6 +1464,10 @@ class WebKaTrain(KaTrainBase):
     def _do_resign(self):
         self.game.current_node.end_state = f"{self.game.current_node.player}+R"
 
+    def _do_end_by_resignation(self, winner):
+        """End with an explicit winner when a remote engine resigns."""
+        self.game.current_node.end_state = f"{winner}+R"
+
     def _do_timeout(self):
         """End game due to timeout - current player loses on time"""
         self.game.current_node.end_state = f"{self.game.current_node.player}+T"

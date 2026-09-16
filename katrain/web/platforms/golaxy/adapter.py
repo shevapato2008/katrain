@@ -16,7 +16,7 @@ import httpx
 
 from katrain.web.platforms.base import PlatformAdapter
 from katrain.web.platforms.golaxy import engine_client
-from katrain.web.platforms.golaxy.coords import Move, golaxy_to_katrain, katrain_to_golaxy
+from katrain.web.platforms.golaxy.coords import Move, Pass, Resign, UnknownSpecial, golaxy_to_katrain, katrain_to_golaxy
 from katrain.web.platforms.golaxy.engine_client import (
     AreaResult,
     AuthExpired,
@@ -34,8 +34,11 @@ from katrain.web.platforms.models import (
     OnlineUser,
     PlatformChallenge,
     PlatformCredentials,
+    PlatformEngineReply,
     PlatformGameSession,
     PlatformMove,
+    PlatformPass,
+    PlatformResign,
     TimeControl,
 )
 
@@ -105,7 +108,7 @@ class EngineGameStart:
     """Result of start_engine_game: the session plus the AI's opening move (if any)."""
 
     session: PlatformGameSession
-    first_ai_move: Optional[PlatformMove]  # populated iff human plays White (AI black opens)
+    first_ai_move: Optional[PlatformEngineReply]  # populated iff the AI is initially to move
 
 
 # --- Engine analysis (area/options/judge/variation) result types -----------
@@ -267,7 +270,7 @@ def _decode_judge(result: JudgeResult, board_size: int) -> JudgeAnalysis:
 
 
 class GolaxyEngineTerminal(Exception):
-    """The engine returned a non-move coord (pass/resign/unknown special).
+    """The engine returned an unknown non-move coordinate.
 
     Distinct from engine_client's AuthExpired/Retryable/Fatal: this is raised
     by the adapter after a *successful* genmove call whose coord cannot be
@@ -747,7 +750,7 @@ class GolaxyAdapter(PlatformAdapter):
             komi=config.komi,
         )
 
-        first_ai_move: Optional[PlatformMove] = None
+        first_ai_move: Optional[PlatformEngineReply] = None
         # After N black handicap stones the side-to-move is White; with no handicap it
         # is Black. The AI opens exactly when the side-to-move equals the AI's color.
         # This preserves the existing 分先 behavior: human W + handicap 0 -> AI(black)
@@ -759,8 +762,8 @@ class GolaxyAdapter(PlatformAdapter):
 
         return EngineGameStart(session=session, first_ai_move=first_ai_move)
 
-    async def submit_engine_move(self, game_id: str, col: int, row: int) -> PlatformMove:
-        """Submit the human's move and return the AI's reply as a PlatformMove.
+    async def submit_engine_move(self, game_id: str, col: int, row: int) -> PlatformEngineReply:
+        """Submit the human's move and return the AI's typed reply.
 
         The human move is snapshotted into `proposed` BEFORE the network call;
         `ctx.moves` is NOT mutated here — it is committed exactly once inside
@@ -775,7 +778,17 @@ class GolaxyAdapter(PlatformAdapter):
         proposed = list(ctx.moves) + [human_coord]  # immutable snapshot; DO NOT write ctx.moves yet
         return await self._genmove_committing(ctx, proposed)
 
-    async def _genmove_committing(self, ctx: EngineGameContext, proposed_moves: list[int]) -> PlatformMove:
+    async def submit_engine_pass(self, game_id: str) -> PlatformEngineReply:
+        """Submit a verified Golaxy pass sentinel, then return the AI's reply."""
+        ctx = self._engine_games.get(game_id)
+        if ctx is None:
+            raise KeyError(game_id)
+        if ctx.status != "playing":
+            raise RuntimeError(f"engine game {game_id} not playing (status={ctx.status})")
+        proposed = list(ctx.moves) + [-1]
+        return await self._genmove_committing(ctx, proposed)
+
+    async def _genmove_committing(self, ctx: EngineGameContext, proposed_moves: list[int]) -> PlatformEngineReply:
         """Call genmove (with retry discipline) and commit exactly once.
 
         `proposed_moves` is the immutable snapshot of the history including the
@@ -785,19 +798,34 @@ class GolaxyAdapter(PlatformAdapter):
         result = await self._genmove_with_retry(ctx, proposed_moves)  # GenmoveResult
         decoded = golaxy_to_katrain(result.coord, ctx.config.board_size)
         ai_color = "W" if ctx.config.human_color == "B" else "B"
-        if not isinstance(decoded, Move):
-            # AI pass/resign/unknown special coord — defensive terminal, do NOT commit.
+        if isinstance(decoded, Move):
+            ctx.moves = list(proposed_moves) + [result.coord]  # single atomic commit
+            return PlatformMove(
+                col=decoded.col,
+                row=decoded.row,
+                color=ai_color,
+                move_number=len(ctx.moves),
+                game_id=ctx.game_id,
+            )
+        if isinstance(decoded, Pass):
+            ctx.moves = list(proposed_moves) + [-1]
+            return PlatformPass(color=ai_color, move_number=len(ctx.moves), game_id=ctx.game_id)
+        if isinstance(decoded, Resign):
+            ctx.moves = list(proposed_moves)
             ctx.status = "finished"
-            await self._emit("game_ended", ctx.game_id, "ai_special_coord", ai_color)
-            raise GolaxyEngineTerminal(f"AI returned non-move coord {result.coord!r}")
-        ctx.moves = list(proposed_moves) + [result.coord]  # single atomic commit
-        return PlatformMove(
-            col=decoded.col,
-            row=decoded.row,
-            color=ai_color,
-            move_number=len(ctx.moves),
-            game_id=ctx.game_id,
-        )
+            winner = ctx.config.human_color
+            await self._emit("game_ended", ctx.game_id, "ai_resign", winner)
+            return PlatformResign(
+                color=ai_color,
+                winner=winner,
+                move_number=len(ctx.moves),
+                game_id=ctx.game_id,
+            )
+        assert isinstance(decoded, UnknownSpecial)
+        ctx.moves = list(proposed_moves)
+        ctx.status = "finished"
+        await self._emit("game_ended", ctx.game_id, "ai_unknown_special", "")
+        raise GolaxyEngineTerminal(f"AI returned unknown coord {decoded.raw!r}")
 
     async def _genmove_with_retry(self, ctx: EngineGameContext, proposed_moves: list[int]) -> GenmoveResult:
         """Call genmove with the retry discipline from §3.1.
@@ -939,7 +967,7 @@ class GolaxyAdapter(PlatformAdapter):
         if ctx is not None:
             ctx.status = "finished"
 
-    def rebuild_engine_moves(self, game_id: str, path_moves: list[tuple[int, int]]) -> None:
+    def rebuild_engine_moves(self, game_id: str, path_moves: list[Optional[tuple[int, int]]]) -> None:
         """Reset an engine context's move list to handicap-prefix + the given
         post-handicap path (B3/G4).
 
@@ -961,4 +989,7 @@ class GolaxyAdapter(PlatformAdapter):
         if ctx is None:
             raise KeyError(game_id)
         prefix = _handicap_stones(ctx.config.handicap, ctx.config.board_size)
-        ctx.moves = prefix + [katrain_to_golaxy(c, r, ctx.config.board_size) for (c, r) in path_moves]
+        encoded = [
+            -1 if move is None else katrain_to_golaxy(move[0], move[1], ctx.config.board_size) for move in path_moves
+        ]
+        ctx.moves = prefix + encoded

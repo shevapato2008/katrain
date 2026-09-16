@@ -1850,6 +1850,21 @@ def _ladder_remote_terminal(game) -> bool:
     return bool(getattr(getattr(game, "katrain", None), "ai_ladder_remote_ended", False))
 
 
+def _game_already_ended(game, node=None) -> bool:
+    """`node`(缺省为当前手)所在的局面线是否已经结束过。
+
+    生成一手可能要几秒到几分钟;这段时间里人按了认输,再把算出来的着法落下去会生出一个没有终局标记的
+    新节点,盘面回到对局中(N21)。web 对局(`WebGame`)认对局级的终局事实 `ended_at`:翻手看棋不会让它消失,
+    双停在补上分数之前也算结束;桌面版与测试替身没有它,退回读节点上的 `end_state`。
+    **只在提交段里、对局提交锁内调**(tests/test_play_ai_endgame.py 的竞态用例把停点设在这里)。
+    """
+    node = getattr(game, "current_node", None) if node is None else node
+    ended_at = getattr(game, "ended_at", None)
+    if callable(ended_at) and ended_at(node) is True:
+        return True
+    return bool(getattr(node, "end_state", None))
+
+
 @register_strategy(AI_LADDER)
 class LadderStrategy(AIStrategy):
     """Golaxy-parity ladder opponent. Fail-closed on every uncertainty: no valid rung ->
@@ -1948,17 +1963,35 @@ def generate_ai_move(game: Game, ai_mode: str, ai_settings: Dict) -> Optional[Tu
     Generate a move using the selected AI strategy.
 
     Returns:
-        Tuple of (Move, GameNode) if a move was played, or None if AI resigned.
+        Tuple of (Move, GameNode) if a move was played, or None if AI resigned — or if the position the move
+        was computed for is gone or has ended by the time it would be committed (see the commit section).
     """
     game.katrain.log(f"Generate AI move called with mode: {ai_mode}", OUTPUT_DEBUG)
+    # r1:开算时的那一手。签名不变(tests/web_ui/test_ladder_injection.py 的替身写死了 (game, mode, settings)),
+    # 所以在入口自己捕获;策略本来就替它算(`AIStrategy.cn`)。
+    cn = game.current_node
 
     # Check resignation conditions before generating a move
     resignation_settings = game.katrain.config("ai/resignation") or {}
     if ai_mode != AI_LADDER and should_ai_resign(game, resignation_settings):  # ladder never global-resigns
-        ai_player = game.current_node.next_player
+        ai_player = cn.next_player
         opponent = "W" if ai_player == "B" else "B"
         # end_state format: "{winner}+R" (e.g., "W+R" means White wins by resignation)
-        game.current_node.end_state = f"{opponent}+R"
+        result = f"{opponent}+R"
+        commit_end_state = getattr(game.katrain, "_commit_end_state", None)
+        if commit_end_state is None:
+            cn.end_state = result  # 桌面 GUI / 没有对局提交锁的调用方:照旧直写
+        else:
+            try:
+                commit_end_state(result, node=cn)
+            except Exception as e:
+                # core 不 import web:按鸭子类型认 `EndgameConflict`(带 `reason`)。**只吞冲突** ——
+                # 签名不符、属性缺失这类编程错误照抛,由 `_do_ai_move_and_broadcast` 记 ERROR;
+                # 吞掉的话认输没写上、AI 也不落子,屏上永远「AI 思考中」(评审 r1 m6)。
+                if getattr(e, "reason", None) is None:
+                    raise
+                game.katrain.log(f"AI ({ai_player}) resignation not recorded: {e.reason}", OUTPUT_DEBUG)
+                return None
         game.katrain.log(f"AI ({ai_player}) resigns due to low winrate", OUTPUT_INFO)
         return None
 
@@ -1971,14 +2004,20 @@ def generate_ai_move(game: Game, ai_mode: str, ai_settings: Dict) -> Optional[Tu
 
     # Play the move and return
     game.katrain.log(f"Playing move {move.gtp()} and creating game node", OUTPUT_DEBUG)
-    if ai_mode == AI_LADDER:
-        commit_lock = getattr(getattr(game, "katrain", None), "ai_ladder_commit_lock", None)
-        with commit_lock if commit_lock is not None else nullcontext():
-            if _ladder_remote_terminal(game):
-                raise LadderUnavailable("ranked game ended remotely before move commit")
-            played_node = game.play(move)
-    else:
+    # r1(C3):「复核 → 落子」在对局提交锁里一次做完,普通分支与升降级分支是同一段。生成在锁外 ——
+    # 认输 / 超时 / 数子 / 人的落子 / 挪游标最多等一次提交,永远不等生成。
+    commit_lock = getattr(getattr(game, "katrain", None), "ai_ladder_commit_lock", None)
+    with commit_lock if commit_lock is not None else nullcontext():
+        if ai_mode == AI_LADDER and _ladder_remote_terminal(game):
+            raise LadderUnavailable("ranked game ended remotely before move commit")
+        # 算的这段时间里局面换了(悔棋 / 导航,S2),或这一手所在的局面线被结束了(认输 / 超时 / 双停,N21):
+        # 这一手不属于盘上的局面,丢掉。
+        if game.current_node is not cn or _game_already_ended(game, cn):
+            return None
         played_node = game.play(move)
+        record_two_pass_end = getattr(game, "record_two_pass_end", None)
+        if record_two_pass_end is not None:
+            record_two_pass_end(played_node)  # AI 跟停 = 双停第二手:记终局事实(S3)
     game.katrain.log(f"AI thoughts: {ai_thoughts}", OUTPUT_DEBUG)
     played_node.ai_thoughts = ai_thoughts
 

@@ -60,7 +60,7 @@ const RecalibrationModal = ({ open, onClose }: Props) => {
       </DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary' }}>
-          {t('No LED needed — just align the outer frame', '无需 LED，对齐外框即可')}
+          {t('game:recalibrate_needs_empty_board', '重新标定会亮灯，而且要先把棋盘上的子全部拿走；棋盘没被挪过的话，点「仍要继续」')}
         </Typography>
         {error && (
           <Typography variant="caption" color="error" component="div" sx={{ textAlign: 'center', mt: 1 }}>

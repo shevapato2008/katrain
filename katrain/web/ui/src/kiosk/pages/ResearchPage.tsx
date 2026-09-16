@@ -131,7 +131,7 @@ const ResearchPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { token } = useAuth();
+  const { token, isAuthenticated } = useAuth();
 
   const board = useResearchBoard();
   // ⚠️ **token 必传。** 签名是 `token?: string`(选填)—— 漏传编译得过、单测也不红,
@@ -195,10 +195,14 @@ const ResearchPage = () => {
   const [provenance, setProvenance] = useState<Provenance | null>(null);
   const from = searchParams.get('from');
   const backTo = (from && BACK[from]) || BACK_FALLBACK;
-  const backPath = from === 'report' && searchParams.get('task')
-    ? `/kiosk/report/${searchParams.get('task')}`
-    : from === 'kifu' && searchParams.get('kifu_id')
-      ? `/kiosk/kifu/${searchParams.get('kifu_id')}`
+  // 只收数字 id —— 查询值原样拼进路由会被注入(`?task=..%2F..%2Fplay` 能把「返回」
+  // 带去任意路由),认不出这个形状就退回上面那张常量表,不让 URL 自己决定去哪。
+  const taskParam = searchParams.get('task');
+  const kifuIdParam = searchParams.get('kifu_id');
+  const backPath = from === 'report' && taskParam && /^\d+$/.test(taskParam)
+    ? `/kiosk/report/${taskParam}`
+    : from === 'kifu' && kifuIdParam && /^\d+$/.test(kifuIdParam)
+      ? `/kiosk/kifu/${kifuIdParam}`
       : backTo.path;
 
   // ── 分析:跟着局面走,不跟折叠块走 ─────────────────────────────────────────
@@ -437,22 +441,41 @@ const ResearchPage = () => {
   const userGameRef = useRef(false);
   useEffect(() => {
     const id = searchParams.get('user_game_id');
-    if (!id || userGameRef.current || !token) return;
+    // ⚠️ 判 `isAuthenticated`,不判 `token`:盒上严格 SSO 的 token 恒为 null(凭据在 HttpOnly
+    // cookie 里),判 `!token` 等于把每个已登录的人都当成未登录。屏 20「去研究」是全仓唯一
+    // 带 `user_game_id` 进来的入口,盒上打开的就是一块空盘(2026-09-14 调研 S1)。
+    if (!id || userGameRef.current || !isAuthenticated) return;
     userGameRef.current = true;
+    // 谱是空的、`loadFromSGF` 解析失败、或者请求本身就没成 —— 三条路都不留一块没有解释的
+    // 空盘,说的是同一句(取不到就说取不到,和 kifu_id 那条分支同一个说法)。
+    const failProvenance = () => setProvenance({
+      label: t('research:user_game_failed', '这一局读不到'),
+      backPath, backLabel: backTo.label,
+    });
     UserGamesAPI.get(token, id).then(async (detail) => {
-      if (!detail.sgf_content) return;
-      board.loadFromSGF(detail.sgf_content);
+      if (!detail.sgf_content) { failProvenance(); return; }
+      const r = board.loadFromSGF(detail.sgf_content);
+      if (!r.success) {
+        console.error('Failed to load user game for deep link:', r.error);
+        failProvenance();
+        return;
+      }
       const head = detail.title
         || `${detail.player_black ?? t('research:black', '黑方')} vs ${detail.player_white ?? t('research:white', '白方')}`;
       const stamp = detail.game_date ?? detail.created_at;
       const when = stamp ? Date.parse(stamp) : NaN;
       setProvenance({
         label: `${t('research:from_my_games', '我的对局')}：${head}${Number.isNaN(when) ? '' : ` · ${whenLabel(when, t)}`}`,
-        backPath: backTo.path, backLabel: backTo.label,
+        // `backPath` 不是 `backTo.path`:从屏 20 进来时带着 `task`,返回要回**这一份报告**而不是列表。
+        // 盒上以前 provenance 永远是 null、返回键碰巧走的就是 `backPath`;这里修通后不许把它退回列表。
+        backPath, backLabel: backTo.label,
       });
       if (searchParams.get('analyze') === '1') await startScan(detail.sgf_content);
-    }).catch((err) => console.error('Failed to load user game for deep link:', err));
-  }, [searchParams, token]); // eslint-disable-line react-hooks/exhaustive-deps
+    }).catch((err) => {
+      console.error('Failed to load user game for deep link:', err);
+      failProvenance();
+    });
+  }, [searchParams, token, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 对局刚结束的「复盘本局」:`GamePage` 用 sessionStorage 交接(那局刚在本机下完,没有 id)。
   // key **进来就删** —— 所以**刷新之后这一支不再成立**:盘是空的、出处也没有,

@@ -14,11 +14,11 @@
 | 8 | 终局后翻手 | 已登录自由对弈认输或双停结束，立刻上一手、最后一手 | 结果卡与打谱键始终在；屏 01 无继续入口；「全部对局」只有一局 | 待上板 |
 | 9 | 断线出口 | 对局中重启服务，见断线红条后点「退出对局 → 先离开，不认输 → 继续上一局」；另测仅断连接而不重启 | 重启后见打不开与返回出口；全程无认输、无卡死；仅断连接时回来仍是同一局 | 待上板 |
 
-## 视觉证据（待 Fan 确认）
+## 视觉证据（Fan 已确认，2026-09-16）
 
-屏 05 和屏 02 均有同尺寸 1024×600 的[四图存档](../kiosk-go-shell-align/visual/05-game/1024x600/05-game--side-by-side.png)与[屏 02 四图](../kiosk-go-shell-align/visual/02-setup-free/1024x600/02-setup-free--side-by-side.png)；各目录同时保存参考、实现和差异图。屏 05 的先前两次四图运行像素差为 0；屏 02 的四图已保存。现有差异包括棋盘材质与线条、末手标记、图表数据及开局说明文案；当前步骤只登记证据，不判视觉通过。
+屏 05 和屏 02 均有同尺寸 1024×600 的[四图存档](../kiosk-go-shell-align/visual/05-game/1024x600/05-game--side-by-side.png)与[屏 02 四图](../kiosk-go-shell-align/visual/02-setup-free/1024x600/02-setup-free--side-by-side.png)；各目录同时保存参考、实现和差异图。屏 05 的先前两次四图运行像素差为 0；屏 02 的四图已保存。现有差异包括棋盘材质与线条、末手标记、图表数据及开局说明文案。Fan 于 2026-09-16 确认这些视觉结果。
 
-本轮状态截图：[失效续局](visual/n17-game-unavailable-1024x600.png)、[读秒局](visual/a18-timed-game-1024x600.png)、[实地策略说明](visual/a3-strategy-hint-territory-1024x600.png)、[升降级右栏](visual/n14-a11-ranked-rail-1024x600.png)、[本地对局右栏](visual/n14-a11-pvp-local-rail-1024x600.png)、[重标定](visual/a21-recalibration-1024x600.png)。屏 10 沿用受影响的既有浏览器测试。真机截图与 Fan 的确认结果在上板后填入上表。
+本轮状态截图：[失效续局](visual/n17-game-unavailable-1024x600.png)、[读秒局](visual/a18-timed-game-1024x600.png)、[实地策略说明](visual/a3-strategy-hint-territory-1024x600.png)、[升降级右栏](visual/n14-a11-ranked-rail-1024x600.png)、[本地对局右栏](visual/n14-a11-pvp-local-rail-1024x600.png)、[重标定](visual/a21-recalibration-1024x600.png)。Fan 于 2026-09-16 一并确认；屏 10 沿用受影响的既有浏览器测试。真机结果仍在上板后填入上表。
 
 ## 本轮登记的后续项（非上板）
 

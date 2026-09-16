@@ -6211,7 +6211,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ### Task 12: 收尾验证与上板清单
 
-**执行记录（2026-09-16）**：Task 11 提交 `4c7ab8c7` 后无源码变化，复用该提交前已完成的同一轮最终回归，避免重复五分钟的全量测试。后端 3646 passed / 69 failed / 46 errors，失败名称相对基线无新增；前端 1820 passed / 5 skipped；类型检查、两套构建和 kiosk 2D 边界检查通过。构建产物上的三份 Playwright spec 30 passed（含屏 05 几何闸）；多人局/平台认输 1/0 行行为测试 4 passed。服务端终局状态只在 `_commit_end_state` 写，AI 落账只在 `_finish_ended_game` 调用。屏 05/02 四图及六张 1024×600 状态图已核，视觉状态仍为**待 Fan 确认**；上板条目与后续项见 `board-checklist.md`，真机结果待登记。
+**执行记录（2026-09-16）**：Task 11 提交 `4c7ab8c7` 后无源码变化，复用该提交前已完成的同一轮最终回归，避免重复五分钟的全量测试。后端 3646 passed / 69 failed / 46 errors，失败名称相对基线无新增；前端 1820 passed / 5 skipped；类型检查、两套构建和 kiosk 2D 边界检查通过。构建产物上的三份 Playwright spec 30 passed（含屏 05 几何闸）；多人局/平台认输 1/0 行行为测试 4 passed。服务端终局状态只在 `_commit_end_state` 写，AI 落账只在 `_finish_ended_game` 调用。屏 05/02 四图及六张 1024×600 状态图已核，Fan 于 2026-09-16 **确认视觉结果**；上板条目与后续项见 `board-checklist.md`，真机结果待登记。
 
 **Files:**
 - Create: `superpowers/tracks/kiosk-go-play-ai/board-checklist.md`(上板要验的项,给真机那一轮用)
@@ -6274,9 +6274,9 @@ cp /tmp/kgpa-katrain-config.json ~/.katrain/config.json 2>/dev/null || true
 ```
 Expected: 全 passed。
 
-- [x] **Step 3: 视觉确认记录（待 Fan 确认）**
+- [x] **Step 3: 视觉确认记录（Fan 已于 2026-09-16 确认）**
 
-产出以下截图与对比，统一标注「待 Fan 确认」；不自行判视觉通过，也不因尚未确认停止本轮已授权实施：
+以下截图与对比产出时统一标注「待 Fan 确认」；Fan 已于 2026-09-16 完成确认：
 `superpowers/tracks/kiosk-go-play-ai/visual/` 下 `n17-game-unavailable-1024x600.png`、`a18-timed-game-1024x600.png`、
 `a3-strategy-hint-territory-1024x600.png`、`n14-a11-ranked-rail-1024x600.png`、`n14-a11-pvp-local-rail-1024x600.png`;
 屏 05 / 屏 02 四图参考、实现、并排、叠加/差异与两次截图抖动比较；屏 10 仅按受影响的既有测试验证。
@@ -6310,7 +6310,7 @@ git ls-files superpowers/tracks/kiosk-go-play-ai/board-checklist.md; ls superpow
 
 ## 视觉证据
 
-屏 05/02 的参考、实现、并排、叠加/差异与相关状态截图：待 Fan 确认。记录实际路径与观察，不自行判通过。
+屏 05/02 的参考、实现、并排、叠加/差异与相关状态截图：Fan 已于 2026-09-16 确认。记录实际路径与观察。
 
 ## 本轮登记的后续项（非上板）
 

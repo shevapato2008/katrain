@@ -35,6 +35,14 @@ describe('useAiLadderStatus', () => {
     await waitFor(() => expect(result.current.status.view_state).toBe('ready'));
   });
 
+  it('503 from an offline box reaches the status screen as a network hint', async () => {
+    getStatus.mockRejectedValueOnce(new AiLadderApiError(503, 'Remote server unavailable'));
+    const { result } = renderHook(() => useAiLadderStatus(undefined, true));
+    await waitFor(() => expect(result.current.status.view_state).toBe('error'));
+    expect(result.current.status.message).toContain('连不上云端');
+    expect(result.current.status.message).not.toContain('本机不记');
+  });
+
   it('tells an expired login apart from a node that does not keep scores', async () => {
     getStatus.mockRejectedValueOnce(new AiLadderApiError(401, 'Not authenticated'));
     const { result } = renderHook(() => useAiLadderStatus(undefined, true));

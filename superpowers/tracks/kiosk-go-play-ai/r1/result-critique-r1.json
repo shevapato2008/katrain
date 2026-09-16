@@ -1,0 +1,82 @@
+{
+  "issues": [
+    {
+      "severity": "major",
+      "location": "design-r1.md:262-265(1.9「认输/不带绑定超时撞 already_ended 回 200 空操作」)对 design-r1.md:597-603(Task 5 第 4 条,单机收尾改成 `end is not None`);源码 server.py:1949、:2160",
+      "title": "「空操作」的认输/超时仍会进收尾函数:最多卡 15 秒,还可能再补一次分",
+      "detail": "`_terminal_of(session)` 读的是整局的终局事实,只要这局结束过就不是 None,跟本次请求有没有写进去(`wrote`)无关。所以撞上 already_ended 的认输/超时,照样执行 `await _finish_ended_game(..., end)`:\n① 另一路收尾正在 `_score_two_pass_end` 里等 `ensure_current_score`(上限 15 秒)时,这个请求排在 `end_game_lock` 后面一起等。\n② 先前那次补分如果没拿到分数(`end.node.end_state` 仍为空,design-r1.md:186 的预检放行),会再发起一次 `asyncio.to_thread(ensure_current_score)`,又是 15 秒,盒上引擎也多一份负载。\n\n会触发的现有路径:\n- galaxy `GamePage.tsx:243-251/295-299/339` 在 `!end_result` 时离页即认输(翻回前一手后 `end_result` 按游标变成 null);\n- kiosk EngineMoveErrorDialog 的「认输」;\n- 重复点击。\n\n这与 1.9 自己写的「空操作」契约矛盾,认输框的 await 可能挂 15 秒且没有任何反馈。",
+      "fix": "请求路径只收尾「本次请求造出来的终局」:\n1. 在 session.lock 里派发前记 `before = game.terminal`,派发后 `after = game.terminal`,只有 `before is None and after is not None` 才设 `end = after`。\n2. 认输/超时再加 `wrote` 为真的条件;`/api/move` 同理。\n3. 补一条根目录测试:双停后补分被阻塞时再发 `/api/resign`,要求 1 秒内回 200,且 `ensure_current_score` 调用次数仍为 1。"
+    },
+    {
+      "severity": "major",
+      "location": "design-r1.md:271-274(1.10 第 1 条)、:422(`_do_update_state` 加 `terminal is None`)、:427(`_game_already_ended`)、:439(`/api/move` guard);对照 design-r1.md:299(S4 以「需和 galaxy 一起验收」为由延后);源码 AppRouter.tsx:46、ZenModeApp.tsx:199-211/:249",
+      "title": "整局冻结连带停掉 galaxy/ZenMode「悔棋后接着下」,属越出 PRD 范围的产品决定",
+      "detail": "终局事实挂在整局上,而且三处一起用它:AI 触发闸、AI 提交复核、`_do_play(guard)`。结果是一局只要结束过一次:\n- 悔棋之后 AI 永远不再落子;\n- 人的落子一律 409。\n\n谁受影响:ZenModeApp 是非严格构建的 `/*` 路由,会话由 `/api/session` 创建,mode 为 \"play\",所以 guard 为真。它有悔棋(:211)和换座/AI 座位(:249)。「AI 认输或双停 → 悔棋 → 接着下」是 KaTrain 的经典用法,会整条失效。\n\n两处不一致:\n- PRD §3 的验收只覆盖 kiosk,N21 验收 4 只要求「生成期间被结束则不产生新节点」;\n- 设计以「改共享接口需和 galaxy 一起验收」为由延后 S4 的另一半,却在服务端直接改掉 galaxy 的行为,还自称「有意的行为变化」。\n\n这一条应由 Fan 拍板,不能由设计自己定。",
+      "fix": "二选一:\n(a) 落地前把「非研究会话终局后冻结(含 ZenMode)」作为待拍板项交给 Fan;\n(b) 把冻结收窄到节点级,不改先写者胜。\n\n(b) 的做法:\n1. 定义 `ended_at(cn)`:`terminal` 不为 None,且 `terminal.node` 是 cn 本身或 cn 的祖先。\n2. AI 触发闸、`_game_already_ended`、`_do_play(guard)` 都改用 `ended_at(current_node)`。\n3. `_commit_end_state` 仍按整局判先写者胜(不会落第二次账)。\n4. kiosk 仍靠前端 `terminal_result` 加 `handleBoardMove` 冻结。\n\n竞态点上 `terminal.node is cn`,C3/S2/S3 照样被挡住;悔棋回到终局手之前另开分支,恢复 galaxy 原行为。相应改 `test_once_the_game_has_ended_nothing_continues_it`:悔棋后带 guard 的落子服务端允许。"
+    },
+    {
+      "severity": "major",
+      "location": "design-r1.md:171(`_finish_ended_game` 多人局早退)、:383-400(真 `_commit_end_state` 只判 terminal)对 :453(FakeKaTrain 判 terminal 或 end_state)、:762-765(Task 12 闸与合并指引);prd.md §6.0 第 1 条;源码 platforms/manager.py:126-170;跨平台 plan :958-965、:1365-1395",
+      "title": "按 §6.0 合并跨平台落账走不通,而拟定的 grep 闸会在落账丢失时仍然报绿",
+      "detail": "§6.0 第 1 条要求把跨平台 N13 的三处落账(认输 / move / 视觉)收进 `_finish_ended_game`。按本设计做不到,原因有四:\n\n(a) 平台局由 `create_multiplayer_session` 创建,带 player id,`_finish_ended_game` 开头的多人局早退会直接跳过;签名里也没有 `data_overrides`。\n\n(b) `end` 是必填参数,只有经 `_commit_end_state` 或 `WebGame.play` 才会产生。跨平台 `_do_end_without_result` 直写 `end_state=\"Void\"`,场景是星阵 AI 回特殊坐标,不是双停。照设计的合并指引传 `fill_pending=True`,会因 `t is None` 抛 position_changed,打破对方「`/api/move` 回 200」的契约。\n\n(c) 真 `_commit_end_state` 不检查 `target.end_state`,替身却检查。直写的 Void 在真实现里会被随后的认输覆盖,而用替身的 web_ui 测试照样是绿的。这正是 S9 那类问题。\n\n(d) Task 12 只 grep `_record_ai_game(`。合并时把平台落账调用删掉,这条闸同样是绿的,星阵局就此静默地不再落账。",
+      "fix": "1. 设计里写明签名 `_finish_ended_game(session, app, current_user, end, *, data_overrides=None)`,早退条件改成「仅原生大厅多人局」(平台局放行)。\n2. 合并指引改为:`_do_end_without_result` 走 `_commit_end_state(\"Void\")`;只有已存在双停待补分的终局时才传 `fill_pending=True`。\n3. 真 `_commit_end_state` 在 `target.end_state` 已有值时同样抛 already_ended,与替身口径一致。\n4. Task 12 在 grep 之外加一条行为验收:平台局认输恰好落一行账。"
+    },
+    {
+      "severity": "major",
+      "location": "design-r1.md:440-445(`wrote` 只在非升降级、非平台分支定义);源码 server.py:1886-1893、:1923-1926;platforms/gateway.py:352-355",
+      "title": "`/api/resign` 平台分支没有定义 `wrote`,每次平台局认输都会 500",
+      "detail": "设计把 `server.py:1926` 多人局落账与广播的条件改成 `and wrote`,但 `wrote` 只在 `if not platform_game:` 的非升降级分支里赋值。\n\n平台局(OGS / 星阵)由 `create_multiplayer_session` 创建,`is_multiplayer` 为真,也会走到这一行,于是抛 `UnboundLocalError`,回 500。\n\n另有两点:\n- `gateway.resign` 在远端认输成功之后才调 `_local_resign` → `katrain(\"resign\")` → `_do_resign`,新写法可能在这里抛 `EndgameConflict`,而 `server.py:1892` 只接 `PlatformMoveRejectedError`。\n- 仓内没有任何测试对平台会话发 `/api/resign`。我 grep 过 tests/,只有 test_ai_ladder_api、test_game_termination_and_chat_identity、test_ai_game_autosave、test_guest_free_play 四个文件发这类请求,都不是平台局。所以这个 500 不会被任何测试抓到。",
+      "fix": "1. 在各分支之前先写 `wrote = True`。\n2. 平台分支给 `await gateway.resign(...)` 加 `except EndgameConflict: wrote = False`(远端已认输,本地已结束,按空操作处理)。\n3. 在 `tests/web_ui/test_play_ai_endgame_api.py` 补一条:平台网关替身加多人会话,认输回 200。"
+    },
+    {
+      "severity": "minor",
+      "location": "design-r1.md:612-614(Task 5 收尾用例改用真 WebKaTrain)、:197(`_score_two_pass_end` 末尾 `update_state()`);源码 interface.py:862-866、session.py:83",
+      "title": "改用真对象的收尾用例在正确实现下也会报 TypeError",
+      "detail": "链路:`_score_two_pass_end` 补完分 → `session.katrain.update_state()` → `_do_update_state` 发现游标在终局手且 `_game_end_reported` 为假 → `self.message_callback(\"game_report\", …)`(interface.py:865,没有判空)。\n\n裸的 `WebKaTrain` 的 `message_callback` 是 None,只有 `SessionManager.create_session` 才会装上。\n\n已实跑复现,脚本在 scratchpad/r1/adv/update_state_at_end.py:两人座位连停两手后调 `update_state()`,抛 `TypeError 'NoneType' object is not callable`。\n\n所以 `test_two_pass_end_is_scored_before_it_is_recorded` 和改成真对象的「同时收尾只落一次」用例,在实现正确时也是红的。实施者可能因此去改生产代码。",
+      "fix": "`_ended_session` 夹具里设 `w.message_callback = lambda *a, **k: None` 和 `w.update_state_callback = None`,或者经 `SessionManager.create_session` 建会话。在设计里写明:这是夹具要补的,不是生产 bug。"
+    },
+    {
+      "severity": "minor",
+      "location": "design-r1.md:430(AI 认输分支 `except Exception` 后记 DEBUG 日志、返回 None);源码 interface.py:1138-1140",
+      "title": "AI 认输写入吞掉所有异常,会把编程错误变成「AI 永远在思考」",
+      "detail": "`_do_ai_move` 把 `generate_ai_move` 返回 None 当作「AI 认输了,状态由调用方更新」,直接返回。\n\n`_commit_end_state` 如果因签名不符(替身缺 kwarg)、属性缺失等抛出 TypeError / AttributeError,会被 `except Exception` 吞掉,只留一条 DEBUG 日志。结果是认输没写上,AI 也不落子,屏上一直是「AI 思考中」,违反「状态必须诚实」。",
+      "fix": "只吞冲突,其余照抛:`except Exception as e: if getattr(e, 'reason', None) is None: raise`(core 不 import web 的约束仍然满足);或者对非冲突异常记 ERROR 日志后重新抛出。"
+    },
+    {
+      "severity": "minor",
+      "location": "design-r1.md:717(超时失败只处理 ApiError 409/403)、:715(`API.timeout(sessionId, undefined, …)`);源码 server.py:92-93",
+      "title": "超时请求遇到 503、401 或网络错时被静默吞掉,且计次已用掉",
+      "detail": "盒上连不上云端时,`_guard_ai_ladder_cloud_active` 会回 503「Ranked game status is temporarily unavailable」。401 和网络错误同样落不进 `.catch` 里 409/403 的分支。\n\n这些情况下该手的尝试次数已经记上,不会再发。结果:这一手永远不判超时,玩家卡停在 0,屏上没有任何说明。\n\n另外,直接传 `undefined` 当 token,绕开了 `useGameSession` 自带的 token,与原来 `handleAction('timeout')` 的鉴权口径不一致。",
+      "fix": "1. 非 409/403 的失败按退避重试,最多 3 次(如 2 秒 / 5 秒 / 10 秒)。\n2. 仍失败时屏上给一句实话,如「超时判定没有送达」。\n3. 传入与 `session.handleAction` 相同的 token 来源。"
+    },
+    {
+      "severity": "minor",
+      "location": "design-r1.md:173-176、:186(`_score_two_pass_end` 读当前局的 `analysis_allowed`,换局判定在补分之后)",
+      "title": "补分读的是「现在这局」的判别位,换局后可能去分析一局已结束的升降级棋",
+      "detail": "`_score_two_pass_end` 先读 `session.katrain.analysis_allowed` 并补分,`session.katrain.game is end.game` 放在补分之后才判。\n\n如果终局到收尾之间同一会话开了新局,判别位属于新局:\n- 升降级局结束后换成自由局 → 会对升降级那一手发起分析,违反 Global Constraints「升降级局不补分析」;\n- 自由局结束后换成升降级局 → 本该补的分被跳过。",
+      "fix": "补分之前先判 `session.katrain.game is end.game`,不是同一局就直接放弃;或者在写 `GameEnd` 时把 `analysis_allowed` 一并快照进去。"
+    },
+    {
+      "severity": "minor",
+      "location": "design-r1.md:75、:410(`WebGame.play` 对所有调用方记双停终局);源码 platforms/gateway.py:347-350、platforms/manager.py:315、server.py:383-393、kiosk/constants/platforms.ts:39",
+      "title": "平台人人局双停后被永久冻结,OGS 恢复对局后在 kiosk 上下不了",
+      "detail": "双停检测放在 `WebGame.play` 里,平台局不带 guard 的落子也会写终局事实:\n- 本方停一手:`gateway._local_pass`;\n- 对手落子:`manager._on_opponent_move`。\n\nOGS 适配器已经注册,kiosk 平台列表也把 ogs 排在最前(标为可用)。OGS 双停后进入点死子阶段,可以恢复对局:\n- 恢复后的落子照样能落进本地棋盘(不带 guard);\n- 但 `terminal_result` 一直留着,kiosk 的 `isGameOver` 恒为真,`handleBoardMove` 直接返回;\n- 结果是恢复后人在屏上下不了。\n\n改动前,新一手落下后游标上的 `end_result` 会自动变回空,不会卡住。",
+      "fix": "平台绑定的会话不记双停终局(由 PlatformManager 设一个标记),或者只在本地路径记:`_do_play(guard=True)` 与 AI 提交段。另一种做法:不带 guard 的落子越过待补分终局时,清掉这个待补分的终局。"
+    },
+    {
+      "severity": "minor",
+      "location": "design-r1.md:132(W11 理由)、:412(`update_timer` 进锁)、:462(竞态用例)",
+      "title": "W11/W9 进锁没有能变红的测试;竞态用例对「查完放锁再落子」只能偶发变红",
+      "detail": "设计自己的理由是:`update_timer` 并发会重复记时,在服务端核实超时后等于提前判负,是不可逆写入。但测试表里没有任何一条在不加锁的实现下会变红;挪游标进锁(W9)同样没有。\n\n另外,竞态用例 `test_a_terminal_write_racing_the_ai_commit_is_never_erased` 对「锁内复核、放锁后再 `game.play`」这种错实现,放行之后 writer 与 AI 谁先谁后不确定,只会偶发变红。",
+      "fix": "补一条确定性的根目录测试:把 `katrain.web.interface.time` 换成假对象,第一个调用者读到时间后在 Event 上阻塞;另一线程调 `update_timer`,断言它在 0.2 秒内读不到 `time.time()`(不加锁就会读到,测试变红)。竞态用例在停点放行前,再断言 AI 线程仍持有提交锁(如 `lock._is_owned()` 或用一次非阻塞 acquire 探测)。如果按比例原则不补测试,就在设计里注明这两处未经测试证实。"
+    },
+    {
+      "severity": "minor",
+      "location": "源码 server.py:1714(`_record_ai_game_locked` 升降级分支);design-r1.md:111-113、:153-181",
+      "title": "升降级落账仍按游标读结果,不在设计列举的读者清单里",
+      "detail": "升降级分支用 `actual_result = state.get(\"end_result\") or game.end_result` 覆盖了传进来的 `result`,读的是游标。\n\n设计声称「收尾按捕获的 GameEnd 落账,不看游标」,但它的穷举只 grep 了 `end_state *=` 的写入点,没有列出这个读者。\n\n今天升降级局禁止悔棋和导航,实际影响小。可一旦前面的节点级冻结方案或任何导航放开,这里就是漏口。",
+      "fix": "`actual_result` 优先取 `session.katrain.game.terminal.result`(类型是 GameEnd 时),取不到再退回原写法;并把这一处补进设计 1.5/1.6 的游标读者清单。"
+    }
+  ],
+  "summary": "锁图和长等待这两块我逐条核过,没有找到致命问题:\n- 锁序 activity.lock → session.lock → ai_lock → 提交锁(RLock)→ Game._lock / 引擎 queue.put,没有环。\n- 提交锁里调到的 `log` / `message_callback` 只会走到 SessionManager._lock 和不阻塞的 `run_coroutine_threadsafe`,不形成反向边。\n- 两个引擎的回调都不在 thread_lock 里(engine.py:558、:915)。\n- asyncio 锁只在协程里用;设计里的代码没有在持 threading 锁时 await 的地方。\n- 提交锁里最重的操作是 `_calculate_groups`,是毫秒到几十毫秒量级,事件循环不会被长时间卡住。\n\n复核身份的写法能分清「新开局 / 悔棋 / 导航 / 同一节点」:游标回到同一节点、或重下同一手(`SGFNode.play` 复用已有子节点)时视为同一局面,判断正确。\n\n真正的问题在收尾路径、合并与测试上,共 4 条 major、7 条 minor。\n- **空操作的认输/超时仍进收尾**:单机收尾以 `end is not None` 为条件,不看这次写没写进去,可能卡 15 秒并再补一次分。\n- **整局冻结越出范围**:连带停掉 galaxy/ZenMode「悔棋后接着下」。这应由 Fan 拍板;也可以改成节点级冻结,竞态照样挡住。\n- **与 §6.0 合并不可行**:平台局会被多人局早退跳过;Void 的合并指引写错;真 `_commit_end_state` 比替身宽松;Task 12 的 grep 闸在平台落账被删掉时仍然报绿。\n- **`/api/resign` 平台分支 `wrote` 未定义**:平台局认输会 500,且仓内没有测试覆盖。\n- **minor**:\n  - 真对象收尾用例在正确实现下也会报 TypeError(已实跑复现);\n  - AI 认输分支吞掉所有异常;\n  - 超时前端遇到 503/401 被静默吞掉;\n  - 补分读的是换局后的 `analysis_allowed`;\n  - OGS 双停后被永久冻结;\n  - W11/W9 进锁没有能变红的测试;\n  - 升降级落账仍按游标读结果(server.py:1714)。\n\n前端方面:盒上 token 恒为 null 的约束和 kiosk-2d 边界都没有被破坏。\n\n在 scratchpad/r1/adv/ 下跑了两个探针,都没用 pytest:\n- nested_testclient.py:在 to_thread 里再用 TestClient 发请求可行,Task 4 的测试写法成立;\n- update_state_at_end.py:复现了上面那条 TypeError。\n\n仓库工作树保持干净。"
+}

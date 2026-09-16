@@ -170,8 +170,13 @@ class RknnBackend:
                 tensor /= 255.0
             return tensor[np.newaxis, ...]
         else:
-            # Default RKNN layout: NHWC uint8 (normalization baked into model)
-            return resized[np.newaxis, ...].astype(np.uint8)
+            # Default RKNN layout: NHWC uint8 (normalization baked into model).
+            # `resized` already comes out of cv2 as contiguous uint8, so the old
+            # unconditional .astype(np.uint8) was copying 1.2MB per frame for nothing.
+            tensor = resized[np.newaxis, ...]
+            if tensor.dtype != np.uint8:
+                tensor = tensor.astype(np.uint8)
+            return np.ascontiguousarray(tensor)
 
     def _postprocess_split(
         self,

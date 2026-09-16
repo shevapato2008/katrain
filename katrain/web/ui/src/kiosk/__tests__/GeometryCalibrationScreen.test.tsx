@@ -33,6 +33,18 @@ vi.mock('../../api/geometryApi', async (importOriginal) => {
   return { ...actual, GeometryAPI: { ...actual.GeometryAPI, layout: vi.fn() } };
 });
 
+/**
+ * 叠加层在 jsdom 里什么都画不出来(ResizeObserver 是空桩、getContext 返 null),
+ * 所以这里只截下**屏幕交给它的那个模型函数** —— 坐标是纯计算,视口是造的输入,不是布局结论。
+ */
+const overlayBuilders = new Map<string, (v: { width: number; height: number }) => import('../components/vision/geometryOverlay').GeometryOverlayModel | null>();
+vi.mock('../components/vision/CameraGeometryOverlay', () => ({
+  default: ({ modelForViewport, label }: { modelForViewport: never; label: string }) => {
+    overlayBuilders.set(label, modelForViewport);
+    return null;
+  },
+}));
+
 const renderScreen = () => render(
   <ThemeProvider theme={kioskTheme}>
     <MemoryRouter>
@@ -294,5 +306,30 @@ describe('屏 26 棋盘标定', () => {
     renderScreen();
     fireEvent.click(within(screen.getByTestId('calib-pagebar')).getAllByRole('radio')[1]);
     expect(screen.getByText('标定进行中，俯视画面在完成后重新生成')).toBeInTheDocument();
+  });
+
+  // ── 俯视叠加层与 warped-stream 同一个 pad ─────────────────────────────────
+
+  /**
+   * 🔴 2026-09-14 盒上实测:warped-stream 是 950 + 2×53 = **1056** 的方图(网格在 [53, 1002]),
+   * `/layout` 报 `warped_margin_cells: 1`;屏 26 重写(869aced6)时调用点丢了第 4 个参数,
+   * 叠加层按 margin=0 铺满整张图,四角落在木边上、离真网格线最远一整格。
+   * **夹具必须 ≠ 默认值 0**,否则丢参数与传参数算出同一个数,这条闸是瞎的。
+   */
+  it('俯视叠加层按 layout.warped_margin_cells 内缩:A19 落在 (53,53)、T1 落在 (1002,1002)', async () => {
+    overlayBuilders.clear();
+    status = { ...status, phase: 'ready', session_calibrated: true, last_valid: true };
+    vi.mocked(GeometryAPI.layout).mockResolvedValue({
+      revision: 1, phase: 'ready', stale: false, frame: { width: 1920, height: 1080 },
+      out_size: 950, warped_margin_cells: 1, corners: [], points: [],
+    });
+    renderScreen();
+    const label = '俯视画面棋盘几何叠加层';
+    await waitFor(() => expect(overlayBuilders.get(label)?.({ width: 1056, height: 1056 })).toBeTruthy());
+    // 视口取 warped-stream 的真尺寸 ⇒ scale = 1,读数就是后端那张图上的像素
+    const model = overlayBuilders.get(label)!({ width: 1056, height: 1056 })!;
+    const at = (l: string) => { const c = model.corners.find((k) => k.label === l)!; return [c.x, c.y]; };
+    expect(at('A19')).toEqual([53, 53]);
+    expect(at('T1')).toEqual([1002, 1002]);
   });
 });

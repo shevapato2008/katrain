@@ -118,6 +118,7 @@ class LedService:
         self._serial = None
         self._connected = False
         self._last_reconnect = 0.0
+        self._last_errors: List[str] = []
         # Set once pyserial itself is missing — a permanent condition, so we stop
         # retrying (and stop logging) instead of hammering every reconnect_interval.
         self._serial_unavailable = False
@@ -182,6 +183,19 @@ class LedService:
 
     def is_connected(self) -> bool:
         return self._connected
+
+    @property
+    def last_errors(self) -> List[str]:
+        """Firmware/serial errors from the most recently completed batch only —
+        not an accumulated history. A batch with no errors overwrites this back to
+        [], EVEN IF it immediately follows a failing one (e.g. a plain CLEAR sent
+        right after a batch that hit `ERR maxon`) — so this is a snapshot of "right
+        now", not a log of everything that went wrong. For history, read the
+        journal: every batch with errors also goes through `log.warning(...)` in
+        _run_batch. The non-strict path's HTTP `ok: true` only means "enqueued";
+        this is where its real outcome — e.g. firmware `ERR maxon` when a request
+        exceeds MAX_ON, or the serial connection dropping mid-batch — surfaces."""
+        return list(self._last_errors)
 
     # -- public API -------------------------------------------------------- #
     def set_points(self, points: List[Dict], *, strict: bool = False) -> Dict:
@@ -278,6 +292,15 @@ class LedService:
                 errors.append(f"{cmd} -> {resp}")
             if cmd.startswith("SHOW") and ok:
                 shown_at = self._clock()
+        if errors:
+            # _run_batch runs for both strict and non-strict batches: the strict
+            # caller is still blocked on batch.event and gets these errors back
+            # through batch.result (set in _finish below), so for it this line is
+            # just an extra trace. The non-strict caller already got its ok:true
+            # back in _submit() and never sees batch.result at all — for IT, this
+            # log line (and last_errors, also updated in _finish) is the only
+            # remaining exit. MAX_ON / ERR range and friends all land here.
+            log.warning("LED batch reported %d firmware error(s): %s", len(errors), "; ".join(errors[:5]))
         self._finish(batch, ok=not errors, shown_at=shown_at, errors=errors)
 
     def _send_and_ack(self, cmd: str) -> tuple:
@@ -296,7 +319,17 @@ class LedService:
 
     def _finish(self, batch, *, ok: bool, shown_at, errors: List[str]) -> None:
         if batch is _SENTINEL or not isinstance(batch, _Batch):
+            # Not a real batch of commands (nothing was actually attempted), so
+            # there is no outcome to record — leave last_errors as-is.
             return
+        # ALL finish paths converge here — a clean completion (with or without
+        # firmware errors) from _run_batch, a real serial exception from _worker's
+        # except-Exception handler, and "not connected" from _worker directly — so
+        # this is the one place that can update last_errors for every one of them.
+        # (It used to be set only in _run_batch's own call site, which meant a
+        # serial exception left last_errors — and /led/status — stuck on
+        # whatever the previous batch reported.)
+        self._last_errors = list(errors)
         batch.result = {"ok": ok, "connected": self._connected, "shown_at": shown_at, "errors": errors}
         if batch.event is not None:
             batch.event.set()

@@ -6,8 +6,10 @@ mapping, the strict SHOW-ack path, queue-full dropping, and reconnect.
 """
 
 import importlib.util
+import logging
 import sys
 import threading
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -592,4 +594,105 @@ class TestQueueAndConnection:
             assert svc.is_connected() is False
             assert state["attempts"] == 1  # never retried
         finally:
+            svc.stop()
+
+
+class SequencedReplySerial(FakeSerial):
+    """Like FakeSerial, but each write consumes the next scripted reply before
+    falling back to the default ack — lets a test script a firmware ERR into the
+    middle of a batch (e.g. MAX_ON exceeded) without every command failing."""
+
+    def __init__(self, replies, ack: str = "OK"):
+        super().__init__(ack=ack)
+        self._replies = list(replies)
+
+    def write(self, data: bytes):
+        self.written.append(data.decode("ascii").strip())
+        reply = self._replies.pop(0) if self._replies else self.ack
+        self._buf.append((reply + "\n").encode("ascii"))
+
+
+class TestNonStrictErrorSurfacing:
+    def test_non_strict_batch_logs_firmware_errors_instead_of_swallowing_them(self, caplog):
+        """MAX_ON=200:第 201 颗起固件回 ERR maxon。非严格路径以前把它们存进
+        没人读的对象、一行日志都不打 —— HTTP 说 ok,盘上半块不亮。"""
+        # start() writes BRIGHT first (handshake), THEN set_points([one point])
+        # emits CLEAR, SETI, SHOW — script the SETI ack as the firmware error while
+        # BRIGHT/CLEAR/SHOW all still ack OK.
+        fake = SequencedReplySerial(replies=["OK", "OK", "ERR maxon", "OK"])
+        svc = LedService(
+            LedServiceConfig(enabled=True, serial_port="fake"), serial_factory=lambda: fake, clock=lambda: 0.0
+        )
+        svc.start()
+        try:
+            with caplog.at_level(logging.WARNING):
+                svc.set_points([{"row": 0, "col": 0, "color": "green"}], strict=False)
+
+                # Non-strict returns before the worker thread has run the batch;
+                # wait (bounded) for it to actually finish instead of a fixed sleep.
+                deadline = time.monotonic() + 2.0
+                while time.monotonic() < deadline and not svc.last_errors:
+                    time.sleep(0.005)
+
+            assert any("ERR maxon" in record.message for record in caplog.records)
+            assert len(svc.last_errors) == 1
+            assert "ERR maxon" in svc.last_errors[0]
+            assert svc.last_errors[0].startswith("SETI")  # the errored command, not just its ack
+        finally:
+            svc.stop()
+
+
+class ErrorThenRaiseSerial(FakeSerial):
+    """First batch's SETI acks a clean firmware ERR (an OK/ERR protocol response,
+    handled inside _run_batch); every write after that raises instead (an actual
+    serial exception, handled by _worker's except-Exception path). Lets a test
+    prove last_errors reflects the CURRENT batch across BOTH finish paths, not
+    just whichever one happened to populate it first."""
+
+    def __init__(self):
+        super().__init__(ack="OK")
+        self._first_batch_replies = ["OK", "OK", "ERR maxon", "OK"]  # BRIGHT, CLEAR, SETI, SHOW
+        self.raise_after_first_batch = False
+
+    def write(self, data: bytes):
+        if self.raise_after_first_batch:
+            raise OSError("device disconnected")
+        self.written.append(data.decode("ascii").strip())
+        reply = self._first_batch_replies.pop(0) if self._first_batch_replies else self.ack
+        self._buf.append((reply + "\n").encode("ascii"))
+
+
+class TestLastErrorsAggregatesAllFinishPaths:
+    def test_serial_exception_batch_overwrites_last_errors_from_a_prior_firmware_error(self):
+        """Regression (code review F2): last_errors used to be set only inside
+        _run_batch's own success/firmware-error path, so a batch that instead hit
+        the WORKER's except-Exception path (a real serial exception, e.g. the
+        board disconnecting) left /led/status reporting the earlier batch's stale
+        firmware error forever — exactly when the user most needs to know the
+        board just went dark. Proven by running an errored batch, THEN a raising
+        batch, and asserting last_errors moved to the second batch's content
+        (not just "is non-empty", which can't tell an update from a coincidence)."""
+        fake = ErrorThenRaiseSerial()
+        svc = LedService(
+            LedServiceConfig(enabled=True, serial_port="fake"), serial_factory=lambda: fake, clock=lambda: 0.0
+        )
+        svc.start()
+        try:
+            # Batch 1: a clean firmware error (SETI -> ERR maxon).
+            svc.set_points([{"row": 0, "col": 0, "color": "green"}], strict=False)
+            deadline = time.monotonic() + 2.0
+            while time.monotonic() < deadline and not svc.last_errors:
+                time.sleep(0.005)
+            assert svc.last_errors and "ERR maxon" in svc.last_errors[0]  # sanity: batch 1 landed
+
+            # Batch 2: a real serial exception, not a scripted ERR ack.
+            fake.raise_after_first_batch = True
+            svc.set_points([{"row": 1, "col": 1, "color": "green"}], strict=False)
+            deadline = time.monotonic() + 2.0
+            while time.monotonic() < deadline and "device disconnected" not in "".join(svc.last_errors):
+                time.sleep(0.005)
+
+            assert svc.last_errors == ["device disconnected"]  # batch 2's content, not batch 1's leftover
+        finally:
+            fake.raise_after_first_batch = False  # let stop()'s clear(strict=True) succeed cleanly
             svc.stop()

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Typography, TextField, InputAdornment, Card, CardActionArea, Fade, Button,
   CircularProgress, Pagination, Snackbar, Alert, Chip, Divider,
@@ -13,6 +13,8 @@ import { KifuAPI } from '../../api/kifuApi';
 import { cacheSgf, listRecent, getCachedSgf, type BaipuRecentEntry } from '../../api/baipuApi';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useAuth } from '../../context/AuthContext';
+import { kioskActivityStorage } from '../storage/kioskActivityStorage';
 
 const ROW_STAGGER = 25;
 const DEBOUNCE_MS = 350;
@@ -29,6 +31,19 @@ const BaipuListPage = () => {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Box-SSO guest mode (client-side zero-persistence, 4th layer): `recent` is read
+  // SYNCHRONOUSLY at first paint, before AuthContext's async /me probe may have resolved —
+  // so the store used by the lazy useState initializer below MUST be empty
+  // (identityKey=null) while isLoading, exactly like TsumegoProgressContext. `store` is
+  // memoized on the resolved identity signature so every read/write in this component (not
+  // just the first-paint one) stays consistently scoped to the SAME store.
+  const { user, isGuest, isLoading } = useAuth();
+  const identityKey = user?.uuid ?? null;
+  const store = useMemo(
+    () => kioskActivityStorage(isLoading || isGuest ? null : identityKey, isGuest),
+    [isLoading, isGuest, identityKey],
+  );
+
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
@@ -37,7 +52,19 @@ const BaipuListPage = () => {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [recent, setRecent] = useState<BaipuRecentEntry[]>(() => listRecent());
+  const [recent, setRecent] = useState<BaipuRecentEntry[]>(() =>
+    isLoading ? [] : listRecent(kioskActivityStorage(isGuest ? null : identityKey, isGuest)),
+  );
+
+  // Re-hydrate `recent` once identity resolves (or changes) — the useState initializer above
+  // only runs once, at mount, so a later resolution/transition needs an explicit refresh.
+  // Synchronizing with the external identity-scoped store here is exactly what this effect is
+  // for; there is no render-time equivalent since `store` itself is only known once resolved.
+  useEffect(() => {
+    if (isLoading) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRecent(listRecent(store));
+  }, [isLoading, store]);
 
   const [previewMoves, setPreviewMoves] = useState<string[]>([]);
   const [previewColors, setPreviewColors] = useState<('B' | 'W')[]>([]);
@@ -112,7 +139,7 @@ const BaipuListPage = () => {
   }, [selectedId]);
 
   const startSession = (id: string, name: string, sgf: string) => {
-    cacheSgf(id, name, sgf);
+    cacheSgf(id, name, sgf, store);
     navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, { state: { sgf, name } });
   };
 
@@ -140,10 +167,10 @@ const BaipuListPage = () => {
   };
 
   const handleResume = (entry: BaipuRecentEntry) => {
-    const cached = getCachedSgf(entry.id);
+    const cached = getCachedSgf(entry.id, store);
     if (!cached) {
       setActionError(t('Cached SGF no longer available', '缓存棋谱已失效'));
-      setRecent(listRecent());
+      setRecent(listRecent(store));
       return;
     }
     startSession(cached.id, cached.name, cached.sgf);

@@ -132,8 +132,10 @@ describe('GameControlPanel', () => {
     return out;
   };
 
-  test('棋谱只在星阵屏出现 —— 屏 05 那块地方归胜率图', () => {
-    panel({ history: hist([['Q16', 'B'], ['D4', 'W']]) });
+  // A11(kiosk-go-play-ai,2026-09-14)推翻了「棋谱只在星阵屏」:scope §27 那条概念债说的就是
+  // 「没有哪种对局原则上拿不到自己下过的手」。现在胜率块不在的局中段都是棋谱;只有胜率块开着时那块地方归胜率图。
+  test('胜率块开着时棋谱不出现 —— 屏 05 那块地方归胜率图', () => {
+    panel({ history: hist([['Q16', 'B'], ['D4', 'W']]) }, { analysisToggles: { score: true } });
     expect(screen.queryByTestId('game-moves-fold')).toBeNull();
   });
 

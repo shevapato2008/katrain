@@ -207,10 +207,14 @@ msgid "resign"
 msgstr "认输"
 
 msgid "teaching undo message"
-msgstr "撤销第 {move} 手棋因为损失超过 {points_lost:.1f} 目. 悬停在该手棋上方查看信息. 请再次尝试."
+msgstr ""
+"撤销第 {move} 手棋因为损失超过 {points_lost:.1f} 目. 悬停在该手棋上方查看信"
+"息. 请再次尝试."
 
 msgid "ai-ponder"
-msgstr "AI引擎状态指示, 从空闲（绿色）变为处理中（橙色）。 红色表明运行崩溃或无法开始。"
+msgstr ""
+"AI引擎状态指示, 从空闲（绿色）变为处理中（橙色）。 红色表明运行崩溃或无法开"
+"始。"
 
 msgid "undo-button-text"
 msgstr "悔棋"
@@ -282,7 +286,8 @@ msgid "stats:pointsgained"
 msgstr "得项目数"
 
 msgid "SGF start message"
-msgstr "标记为 'X' 的是 AI 推荐的选点， 标记为正方形的是损失在 0.5 目以内的选点。"
+msgstr ""
+"标记为 'X' 的是 AI 推荐的选点， 标记为正方形的是损失在 0.5 目以内的选点。"
 
 msgid "Info:score"
 msgstr "形势: {score}"
@@ -472,7 +477,9 @@ msgid "contribute:maxgames"
 msgstr "同时对局数"
 
 msgid "contribute:maxgames:hint"
-msgstr "最好等于你的最佳化numSearchThreads，中阶GPU约为8。可以稍微设的低一点，来缩短执行时间，因为未完成的对局将不会被上传。"
+msgstr ""
+"最好等于你的最佳化numSearchThreads，中阶GPU约为8。可以稍微设的低一点，来缩短"
+"执行时间，因为未完成的对局将不会被上传。"
 
 msgid "contribute:ownership"
 msgstr "启用所有权"
@@ -610,8 +617,8 @@ msgstr "用'{exe}'命令启动katago出错. 请检查路径和文件名"
 
 msgid "Kata exe not found in path"
 msgstr ""
-"用'{exe}'命令启动katago出错. 如果使用 MacOS, 参考帮助手册如何使用brew安装katago, "
-"并把它加入你的路径或'引擎/katago'设置"
+"用'{exe}'命令启动katago出错. 如果使用 MacOS, 参考帮助手册如何使用brew安装"
+"katago, 并把它加入你的路径或'引擎/katago'设置"
 
 msgid "Kata model not found"
 msgstr "KataGo 模型 {model} 不存在, 请检查一般设置."
@@ -621,13 +628,16 @@ msgstr "KataGo 设置文件 {config} 不存在, 请检查一般设置."
 
 msgid "Starting Kata failed"
 msgstr ""
-"用'{command}'命令启动katago出错 {error}. 请确认引擎设置里'katago'的值指向了 正确的KataGo运行文件."
+"用'{command}'命令启动katago出错 {error}. 请确认引擎设置里'katago'的值指向了 "
+"正确的KataGo运行文件."
 
 msgid "Engine died unexpectedly"
 msgstr "引擎意外终止且未发送输出: {error}"
 
 msgid "Engine missing DLL"
-msgstr "启动katago失败因缺失dll文件. 请检查运行要求, 或尝试让exe文件自行运行并检查细节. "
+msgstr ""
+"启动katago失败因缺失dll文件. 请检查运行要求, 或尝试让exe文件自行运行并检查细"
+"节. "
 
 msgid "engine recovery"
 msgstr "KataGo 设定指南"
@@ -641,7 +651,8 @@ msgstr ""
 "错误码：{code}."
 
 msgid "change engine suggestion"
-msgstr "首先，在 {link} 中，尝试下载且更换为不同版本的KataGo执行档是否能解决问题。"
+msgstr ""
+"首先，在 {link} 中，尝试下载且更换为不同版本的KataGo执行档是否能解决问题。"
 
 msgid "go to engine help page"
 msgstr "如果你还有任何困难，请参考疑难排解页面 {link}"
@@ -660,24 +671,27 @@ msgstr "推荐 (Recommended)"
 
 msgid "aihelp:default"
 msgstr ""
-"全功能的KataGo AI. 棋力由 'max visits' 和 '模型' 决定.在一般设置里 '引擎' 部分和引擎设置文件. 这里没有选项."
+"全功能的KataGo AI. 棋力由 'max visits' 和 '模型' 决定.在一般设置里 '引擎' 部"
+"分和引擎设置文件. 这里没有选项."
 
 msgid "ai:handicap"
 msgstr "Kata让子棋"
 
 msgid "aihelp:handicap"
 msgstr ""
-"KataGo 让子棋优化版. pda 设置 对应KataGo里黑棋视角的 playoutDoublingAdvantage. 当设置了 自动, "
-"KaTrain 会自动找到合适的值"
+"KataGo 让子棋优化版. pda 设置 对应KataGo里黑棋视角的 "
+"playoutDoublingAdvantage. 当设置了 自动, KaTrain 会自动找到合适的值"
 
 msgid "ai:simple"
 msgstr "简明风格"
 
 msgid "aihelp:simple"
 msgstr ""
-"简化局面的风格。所有损失最高'max_points_lost'目和至少'min_visits'计算深度的着法当中，偏向于损失较小，乙方空定型（偏向值settled_weight），对方空定型（偏向值settled_weight"
-" * opponent "
-"fac），避免脱先（5路以上，偏向值tenuki_penalty），避免碰（偏向值attachment_penalty）的手法。偏向值可以设为复数捣乱局面，宽根噪声（通用设置）可以棋力代价更加符合风格。"
+"简化局面的风格。所有损失最高'max_points_lost'目和至少'min_visits'计算深度的着"
+"法当中，偏向于损失较小，乙方空定型（偏向值settled_weight），对方空定型（偏向"
+"值settled_weight * opponent fac），避免脱先（5路以上，偏向值"
+"tenuki_penalty），避免碰（偏向值attachment_penalty）的手法。偏向值可以设为复"
+"数捣乱局面，宽根噪声（通用设置）可以棋力代价更加符合风格。"
 
 msgid "ai:jigo"
 msgstr "和棋"
@@ -702,74 +716,84 @@ msgstr "策略"
 
 msgid "aihelp:policy"
 msgstr ""
-"只走策略网络的最高推荐点，不进行任何计算。棋力主要受引擎设置里的 '模型' 影响。'opening_moves' 设置影响开局前多少手棋的多样性。"
+"只走策略网络的最高推荐点，不进行任何计算。棋力主要受引擎设置里的 '模型' 影"
+"响。'opening_moves' 设置影响开局前多少手棋的多样性。"
 
 msgid "ai:p:weighted"
 msgstr "策略权重"
 
 msgid "aihelp:p:weighted"
 msgstr ""
-"根据策略网络概率走棋，'weaken_fac' 影响走出弱招的概率。设为极低值时表现如同 '策略网络' AI。'pick_override' "
-"决定何时不带随机地选择最佳点，'lower_bound' 决定允许的策略网络最小概率。"
+"根据策略网络概率走棋，'weaken_fac' 影响走出弱招的概率。设为极低值时表现如同 "
+"'策略网络' AI。'pick_override' 决定何时不带随机地选择最佳点，'lower_bound' 决"
+"定允许的策略网络最小概率。"
 
 msgid "ai:p:pick"
 msgstr "盲人策略"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"随机选择 'pick_n + pick_frac * <number of legal moves>' 并采用最佳的一手. 当'pick_frac=1'"
-" 就是直觉AI. 如果直觉值大于 'pick_override'则采用最佳的一手以避免明显错误。"
+"随机选择 'pick_n + pick_frac * <number of legal moves>' 并采用最佳的一手. "
+"当'pick_frac=1' 就是直觉AI. 如果直觉值大于 'pick_override'则采用最佳的一手以"
+"避免明显错误。"
 
 msgid "ai:p:local"
 msgstr "局部风格"
 
 msgid "aihelp:p:local"
 msgstr ""
-"随机选择 'pick_n + pick_frac * <number of legal "
-"moves>'，权重向上一手棋靠拢并采用最佳的一手。如果直觉值大于 'pick_override'则采用最佳的一手以避免明显错误。"
+"随机选择 'pick_n + pick_frac * <number of legal moves>'，权重向上一手棋靠拢并"
+"采用最佳的一手。如果直觉值大于 'pick_override'则采用最佳的一手以避免明显错"
+"误。"
 
 msgid "ai:p:tenuki"
 msgstr "脱先风格"
 
 msgid "aihelp:tenuki"
 msgstr ""
-"随机选择 'pick_n + pick_frac * <number of legal moves>'，权重远离上一手棋并采用最佳的一手。如果直觉值大于"
-" 'pick_override'则采用最佳的一手以避免明显错误。'stddev' 越高，下得越远。"
+"随机选择 'pick_n + pick_frac * <number of legal moves>'，权重远离上一手棋并采"
+"用最佳的一手。如果直觉值大于 'pick_override'则采用最佳的一手以避免明显错"
+"误。'stddev' 越高，下得越远。"
 
 msgid "ai:p:influence"
 msgstr "外势模式"
 
 msgid "aihelp:p:influence"
 msgstr ""
-"在高于 'threshold' 的点中选出最优. 加大 'line_weight' 以增加对靠近边上的点的惩罚. 在 'endgame' "
-"部分结束后停止。"
+"在高于 'threshold' 的点中选出最优. 加大 'line_weight' 以增加对靠近边上的点的"
+"惩罚. 在 'endgame' 部分结束后停止。"
 
 msgid "ai:p:territory"
 msgstr "取地模式"
 
 msgid "aihelp:p:territory"
 msgstr ""
-"在低于 'threshold' 的点中选出最优. 加大 'line_weight' 以增加对靠近中心的点的惩罚. 在 'endgame' "
-"部分结束后停止。"
+"在低于 'threshold' 的点中选出最优. 加大 'line_weight' 以增加对靠近中心的点的"
+"惩罚. 在 'endgame' 部分结束后停止。"
 
 msgid "ai:p:rank"
 msgstr "参考段位"
 
 msgid "aihelp:p:rank"
-msgstr "从随机生成的选点集合里选出最佳. 更强的设置拥有更大的随机选点集合. 既然没有 0 级/段, 则3 段 = -2 级。"
+msgstr ""
+"从随机生成的选点集合里选出最佳. 更强的设置拥有更大的随机选点集合. 既然没有 0 "
+"级/段, 则3 段 = -2 级。"
 
 msgid "ai:human"
 msgstr "类人 AI (Human-like)"
 
 msgid "aihelp:human"
 msgstr ""
-"根据人类风格的 KataGo 模型选点。如果勾选了 'modern_style'，该模型将采用 2016 年后 AlphaZero 的布局风格。"
+"根据人类风格的 KataGo 模型选点。如果勾选了 'modern_style'，该模型将采用 2016 "
+"年后 AlphaZero 的布局风格。"
 
 msgid "ai:pro"
 msgstr "历史职业棋手 (Historical Pro)"
 
 msgid "aihelp:pro"
-msgstr "根据人类风格的 KataGo 模型选点。具体来说，根据指定年份及周边年份的历史对局记录，模仿职业棋手和强力院生的招法。"
+msgstr ""
+"根据人类风格的 KataGo 模型选点。具体来说，根据指定年份及周边年份的历史对局记"
+"录，模仿职业棋手和强力院生的招法。"
 
 msgid "estimated strength"
 msgstr "预计棋力"
@@ -859,13 +883,17 @@ msgid "menu:distributed"
 msgstr "分散式自我对弈训练"
 
 msgid "gui-locked"
-msgstr "在分散式自我对弈训练模式中，{action} 动作是不允许的。重新启动KaTrain来离开此模式。"
+msgstr ""
+"在分散式自我对弈训练模式中，{action} 动作是不允许的。重新启动KaTrain来离开此"
+"模式。"
 
 msgid "setup game status message"
 msgstr "由AI自我对弈产生对局：{move}/{until_move}手完成。"
 
 msgid "setup position explanation"
-msgstr "这会产生部分的对局让你接著下。例如：你可以使用它从各种不同优势的中盘或终局阶段开始，与更强的AI对弈。"
+msgstr ""
+"这会产生部分的对局让你接著下。例如：你可以使用它从各种不同优势的中盘或终局阶"
+"段开始，与更强的AI对弈。"
 
 msgid "setup position black score"
 msgstr "黑棋目标目数："
@@ -2724,7 +2752,8 @@ msgid "ladder:engine_stalled"
 msgstr "阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，请退出本局"
 
 msgid "ladder:unscored_engine"
-msgstr "这局的对手没能以标定强度落子，所以不算数——段位没有变动，也不占定级赛的局数。"
+msgstr ""
+"这局的对手没能以标定强度落子，所以不算数——段位没有变动，也不占定级赛的局数。"
 
 msgid "ladder:pending_settlement"
 msgstr "本盘成绩还没送到云端"
@@ -3009,7 +3038,8 @@ msgid "play:login_required_free"
 msgstr "开始对局需要登录，请先登录后再试。"
 
 msgid "play:guest_free_notice"
-msgstr "你正在以游客身份对弈：本局不会保存到棋谱库，也不计入段位。登录后可保存对局。"
+msgstr ""
+"你正在以游客身份对弈：本局不会保存到棋谱库，也不计入段位。登录后可保存对局。"
 
 msgid "play:go_free_play"
 msgstr "先去自由对弈"
@@ -3123,7 +3153,9 @@ msgid "live:human_pick_rate"
 msgstr "人类选择率"
 
 msgid "live:human_pick_rate_hint_ranked"
-msgstr "每 100 位 {rank} 棋手里大约有几位会下这一点。这是「多少人会下」，不是「该不该下」。"
+msgstr ""
+"每 100 位 {rank} 棋手里大约有几位会下这一点。这是「多少人会下」，不是「该不该"
+"下」。"
 
 msgid "live:human_pick_rate_hint"
 msgstr "这一列显示人类棋手会下这一点的比例，与 AI 的推荐顺位无关。"
@@ -3180,7 +3212,9 @@ msgid "grade:def_unrated"
 msgstr "上一手没分析或搜索量不足，判不了"
 
 msgid "grade:brilliance_entry"
-msgstr "入选要同时满足三条：走出引擎首选、该首选的 policy 先验 < 10%（连引擎直觉都没想到）、局面还没定。"
+msgstr ""
+"入选要同时满足三条：走出引擎首选、该首选的 policy 先验 < 10%（连引擎直觉都没"
+"想到）、局面还没定。"
 
 msgid "grade:match_timeline_legend"
 msgstr "满格实色 = 走中一选，半高浅色 = 进前三，底色 = 其他"
@@ -3352,3 +3386,24 @@ msgstr "不存谱"
 
 msgid "local:note3_j"
 msgstr "。"
+
+msgid "vision:offcenter_at"
+msgstr " 子没放正"
+
+msgid "vision:offcenter_plain"
+msgstr "这颗子没放正"
+
+msgid "vision:offcenter_hint"
+msgstr "请把它挪到"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "的交叉点上，会自动识别"
+
+msgid "vision:play_here_anyway"
+msgstr "就下在"
+
+msgid "vision:offcenter_dismiss"
+msgstr "我挪一下"
+
+msgid "review:start_analysis"
+msgstr "开始分析"

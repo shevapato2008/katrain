@@ -3446,3 +3446,24 @@ msgstr "{side}: ходи {from}–{to}, {n} поспіль збіглися з �
 
 msgid "live:loading_match"
 msgstr "Завантаження партії…"
+
+msgid "vision:offcenter_at"
+msgstr ": камінь стоїть не на перетині"
+
+msgid "vision:offcenter_plain"
+msgstr "Цей камінь стоїть не на перетині"
+
+msgid "vision:offcenter_hint"
+msgstr "Переставте камінь на"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "; його буде розпізнано автоматично"
+
+msgid "vision:play_here_anyway"
+msgstr "Усе одно зіграти на"
+
+msgid "vision:offcenter_dismiss"
+msgstr "Я поправлю"
+
+msgid "review:start_analysis"
+msgstr "Почати аналіз"

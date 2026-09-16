@@ -21,6 +21,57 @@ I18N_DIR = PROJECT_ROOT / "katrain" / "i18n" / "locales"
 # All Galaxy UI translation keys with translations for each language
 # Format: {msgid: {lang_code: msgstr}}
 GALAXY_TRANSLATIONS = {
+    # ── 智能棋盘：棋子摆偏与复盘快捷分析 ────────────────────────────────
+    "vision:offcenter_at": {
+        "en": ": stone is off-center", "cn": " 子没放正", "tw": " 子沒放正",
+        "jp": "の石がずれています", "ko": " 돌이 바르게 놓이지 않았습니다",
+        "de": ": Stein liegt nicht auf dem Schnittpunkt",
+        "es": ": la piedra no está centrada", "fr": " : la pierre est mal placée",
+        "ru": ": камень стоит не на пересечении", "tr": ": taş kesişime düzgün oturmamış",
+        "ua": ": камінь стоїть не на перетині",
+    },
+    "vision:offcenter_plain": {
+        "en": "This stone is off-center", "cn": "这颗子没放正", "tw": "這顆子沒放正",
+        "jp": "この石がずれています", "ko": "이 돌이 바르게 놓이지 않았습니다",
+        "de": "Dieser Stein liegt nicht auf dem Schnittpunkt",
+        "es": "Esta piedra no está centrada", "fr": "Cette pierre est mal placée",
+        "ru": "Этот камень стоит не на пересечении", "tr": "Bu taş kesişime düzgün oturmamış",
+        "ua": "Цей камінь стоїть не на перетині",
+    },
+    "vision:offcenter_hint": {
+        "en": "Move it to", "cn": "请把它挪到", "tw": "請把它移到",
+        "jp": "石を", "ko": "돌을", "de": "Verschiebe den Stein auf",
+        "es": "Mueve la piedra a", "fr": "Déplacez la pierre sur",
+        "ru": "Переставьте камень на", "tr": "Taşı", "ua": "Переставте камінь на",
+    },
+    "vision:offcenter_hint_tail": {
+        "en": "; it will be detected automatically",
+        "cn": "的交叉点上，会自动识别", "tw": "的交叉點上，系統會自動辨識",
+        "jp": "の交点に置き直してください。自動で認識されます",
+        "ko": " 교차점으로 옮기면 자동으로 인식됩니다",
+        "de": "; er wird automatisch erkannt", "es": "; se detectará automáticamente",
+        "fr": " ; elle sera détectée automatiquement", "ru": "; он распознается автоматически",
+        "tr": " kesişimine taşıyın; otomatik algılanacaktır",
+        "ua": "; його буде розпізнано автоматично",
+    },
+    "vision:play_here_anyway": {
+        "en": "Play at", "cn": "就下在", "tw": "仍下在", "jp": "この位置に打つ:",
+        "ko": "그대로 두기:", "de": "Trotzdem spielen auf", "es": "Jugar de todos modos en",
+        "fr": "Jouer quand même en", "ru": "Всё равно сыграть на",
+        "tr": "Yine de buraya oyna:", "ua": "Усе одно зіграти на",
+    },
+    "vision:offcenter_dismiss": {
+        "en": "I'll adjust it", "cn": "我挪一下", "tw": "我移一下", "jp": "置き直す",
+        "ko": "다시 놓기", "de": "Ich richte ihn aus", "es": "La ajustaré",
+        "fr": "Je vais la déplacer", "ru": "Я поправлю", "tr": "Düzelteceğim",
+        "ua": "Я поправлю",
+    },
+    "review:start_analysis": {
+        "en": "Start analysis", "cn": "开始分析", "tw": "開始分析", "jp": "解析を開始",
+        "ko": "분석 시작", "de": "Analyse starten", "es": "Iniciar análisis",
+        "fr": "Lancer l'analyse", "ru": "Начать анализ", "tr": "Analizi başlat",
+        "ua": "Почати аналіз",
+    },
     # ── 直播加载态 ────────────────────────────────────────────────────────
     # `LiveMatchPage.tsx` 早就在用这个键，但十一本目录里一条都没有 ⇒ 中文用户
     # 一直看的是代码里那句英文兜底。2026-09-01 直播列表页也要用它，一并补上。

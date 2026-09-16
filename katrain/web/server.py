@@ -1607,6 +1607,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if getattr(session, "_recorded", False) is True:
             return
         try:
+            from katrain.core.lang import rank_key
+
             sgf_content = session.katrain.get_sgf()
             state = session.katrain.get_state()
             players_info = session.katrain.players_info
@@ -1620,22 +1622,31 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     player_black = current_user.username
                 if players_info["W"].human and not player_white:
                     player_white = current_user.username
-            # Label AI side with calculated rank if name is still empty
+            # Name the AI side. The rank is NOT folded into the name — it rides its own
+            # field (see player_rank below), and the old `f"AI ({info.calculated_rank})"`
+            # printed the raw integer: 6 kyu is -5 on KaTrain's scale, so review cards
+            # read "AI (-5)".
             for bw, info in players_info.items():
                 if info.ai:
-                    name = info.name
-                    if not name and info.calculated_rank:
-                        name = f"AI ({info.calculated_rank})"
-                    elif not name:
-                        name = "AI"
+                    name = info.name or "AI"
                     if bw == "B":
                         player_black = player_black or name
                     else:
                         player_white = player_white or name
 
-            # Extract only serializable rank labels. Some session adapters omit SGF
-            # rank attributes entirely, and test doubles may synthesize attributes.
+            # Rank as a language-neutral "6k"/"3d" string; the UI localizes it to 级/段.
+            # `calculated_rank` is an INT, which the isinstance(str) filter below silently
+            # dropped — that is why white_rank was stored empty while the raw integer
+            # leaked out through the player name. SGF-imported ranks stay free text
+            # ("业5", "amateur 3 dan") and are passed through untouched.
+            # Some session adapters omit the SGF rank attribute entirely, and test doubles
+            # may synthesize attributes, so everything stays defensive.
             def player_rank(info):
+                numeric = getattr(info, "calculated_rank", None)
+                if isinstance(numeric, (int, float)) and not isinstance(numeric, bool):
+                    label = rank_key(numeric)
+                    if label:
+                        return label
                 for attribute in ("calculated_rank", "sgf_rank"):
                     value = getattr(info, attribute, None)
                     if isinstance(value, str) and value:

@@ -31,6 +31,9 @@ interface MismatchState {
 interface AmbiguousState {
   row: number;
   col: number;
+  color?: number | null;
+  /** 见 AmbiguousMoveCard:两帧都没有检测框支撑 = 子没放正,不是「看不清」。 */
+  unbacked?: boolean;
 }
 
 interface VisionSyncOverlayProps {
@@ -142,9 +145,18 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
     // Ignore = accept the current physical board as the baseline (adopt='physical'),
     // keeping the ignored stone in the detector baseline so it doesn't re-fire. (The
     // trust-digital recovery path would re-push the digital board and re-detect it.)
-    API.visionResetSync('physical').catch(() => undefined);
+    //
+    // EXCEPT when the stone is merely off-centre: there the button says "I'll move it",
+    // and freezing the crooked position into the baseline is the exact wrong thing —
+    // once the user nudges the stone onto the line it would read as a stone being
+    // REMOVED from where the baseline thinks it is. Just close the card; the detector
+    // is already watching, and the corrected stone confirms itself a few frames later
+    // (measured on the box: the 131st move resolved on its own 20s after the prompt).
+    if (!ambiguous?.unbacked) {
+      API.visionResetSync('physical').catch(() => undefined);
+    }
     setAmbiguous(null);
-  }, []);
+  }, [ambiguous]);
 
   // -- Process new events ---------------------------------------------------
   useEffect(() => {
@@ -189,15 +201,23 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
         setMismatch({ positions, missing });
       }
 
-      // --- Board restored to a synced state (auto-dismiss mismatch) ---
+      // --- Board restored to a synced state (auto-dismiss mismatch AND the card) ---
+      // `synced` means the physical and digital boards agree again, so whatever the
+      // ambiguous card was asking about has been settled — by the user straightening
+      // the stone, or by the detector confirming it on its own. Without this the card
+      // outlives the question: on the box the move-131 prompt stayed up after the move
+      // had already been accepted 20s earlier, which reads as "the system is stuck".
       if (eventType === 'synced') {
         setMismatch(null);
+        setAmbiguous(null);
       }
 
       // --- Ambiguous stone (confirmation card) ---
       if (eventType === 'ambiguous_stone') {
-        const { row, col } = event.data as { row: number; col: number };
-        setAmbiguous({ row, col });
+        const { row, col, color, unbacked } = event.data as {
+          row: number; col: number; color?: number; unbacked?: boolean;
+        };
+        setAmbiguous({ row, col, color, unbacked });
       }
 
       // --- Board lost tracking (show modal after 10s) ---
@@ -275,6 +295,8 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
           row={ambiguous.row}
           col={ambiguous.col}
           boardSize={boardSize}
+          color={ambiguous.color}
+          unbacked={ambiguous.unbacked}
           onConfirm={handleAmbiguousConfirm}
           onIgnore={handleAmbiguousIgnore}
         />

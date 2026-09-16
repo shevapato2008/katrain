@@ -3365,3 +3365,24 @@ msgstr "{side}: ходы {from}–{to}, {n} подряд совпали с лу�
 
 msgid "live:loading_match"
 msgstr "Загрузка партии…"
+
+msgid "vision:offcenter_at"
+msgstr ": камень стоит не на пересечении"
+
+msgid "vision:offcenter_plain"
+msgstr "Этот камень стоит не на пересечении"
+
+msgid "vision:offcenter_hint"
+msgstr "Переставьте камень на"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "; он распознается автоматически"
+
+msgid "vision:play_here_anyway"
+msgstr "Всё равно сыграть на"
+
+msgid "vision:offcenter_dismiss"
+msgstr "Я поправлю"
+
+msgid "review:start_analysis"
+msgstr "Начать анализ"

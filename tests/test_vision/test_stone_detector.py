@@ -123,3 +123,110 @@ class TestDedupDetections:
 
         assert len(results) == 1
         assert results[0].confidence == 0.8
+
+
+class TestDedupVectorisationIsEquivalent:
+    """dedup_detections' inner clash test is vectorised; the greedy scan is not.
+
+    The rewrite is an optimisation, so it is pinned by a differential test against the
+    original scalar implementation over randomised inputs — including the cases that
+    make the grouping rules load-bearing (LED vs stone, LED vs other LED, bbox-less
+    detections, and equal confidences, where the stable sort decides who wins).
+    """
+
+    @staticmethod
+    def _reference_dedup(detections):
+        """The pre-optimisation implementation, verbatim."""
+        import math
+
+        from katrain.vision.classes import STONE_CLASS_IDS
+
+        kept = []
+        for det in sorted(detections, key=lambda d: -d.confidence):
+            d_side = (det.bbox[2] - det.bbox[0] + det.bbox[3] - det.bbox[1]) / 2.0
+            is_dup = False
+            for other in kept:
+                if (det.class_id in STONE_CLASS_IDS) != (other.class_id in STONE_CLASS_IDS):
+                    continue
+                if det.class_id not in STONE_CLASS_IDS and det.class_id != other.class_id:
+                    continue
+                o_side = (other.bbox[2] - other.bbox[0] + other.bbox[3] - other.bbox[1]) / 2.0
+                min_side = min(d_side, o_side)
+                if min_side <= 0:
+                    continue
+                if math.hypot(det.x_center - other.x_center, det.y_center - other.y_center) < 0.5 * min_side:
+                    is_dup = True
+                    break
+            if not is_dup:
+                kept.append(det)
+        return kept
+
+    @staticmethod
+    def _random_detections(rng, n):
+        dets = []
+        for _ in range(n):
+            x = float(rng.integers(0, 400))
+            y = float(rng.integers(0, 400))
+            cls = int(rng.integers(0, 4))
+            # Coarse confidence grid so ties happen often — that exercises sort stability.
+            conf = float(rng.integers(1, 8)) / 10.0
+            if rng.random() < 0.12:
+                bbox = (0.0, 0.0, 0.0, 0.0)  # bbox-less: must never dedup
+            else:
+                side = float(rng.integers(10, 60))
+                bbox = (x - side / 2, y - side / 2, x + side / 2, y + side / 2)
+            dets.append(Detection(x_center=x, y_center=y, class_id=cls, confidence=conf, bbox=bbox))
+        return dets
+
+    @pytest.mark.parametrize("seed", range(40))
+    def test_matches_reference_on_random_inputs(self, seed):
+        from katrain.vision.stone_detector import dedup_detections
+
+        rng = np.random.default_rng(seed)
+        dets = self._random_detections(rng, int(rng.integers(0, 60)))
+
+        got = dedup_detections(dets)
+        want = self._reference_dedup(dets)
+
+        # Identity comparison: the same Detection objects, in the same order.
+        assert [id(d) for d in got] == [id(d) for d in want]
+
+    @pytest.mark.parametrize("n", [0, 1, 2])
+    def test_degenerate_sizes_match_reference(self, n):
+        from katrain.vision.stone_detector import dedup_detections
+
+        rng = np.random.default_rng(99)
+        dets = self._random_detections(rng, n)
+        assert [id(d) for d in dedup_detections(dets)] == [id(d) for d in self._reference_dedup(dets)]
+
+    def test_clustered_stones_match_reference(self):
+        """Random points are mostly far apart; this packs many detections into a few
+        spots so the dedup radius actually fires and chains of suppression form."""
+        from katrain.vision.stone_detector import dedup_detections
+
+        rng = np.random.default_rng(5)
+        dets = []
+        for cx, cy in [(100, 100), (108, 104), (300, 300), (305, 298), (302, 306)]:
+            for _ in range(8):
+                x = cx + float(rng.integers(-6, 7))
+                y = cy + float(rng.integers(-6, 7))
+                side = float(rng.integers(20, 50))
+                dets.append(
+                    Detection(
+                        x_center=x,
+                        y_center=y,
+                        class_id=int(rng.integers(0, 4)),
+                        confidence=float(rng.integers(1, 6)) / 10.0,
+                        bbox=(x - side / 2, y - side / 2, x + side / 2, y + side / 2),
+                    )
+                )
+        assert [id(d) for d in dedup_detections(dets)] == [id(d) for d in self._reference_dedup(dets)]
+
+    def test_input_list_is_not_mutated(self):
+        from katrain.vision.stone_detector import dedup_detections
+
+        rng = np.random.default_rng(3)
+        dets = self._random_detections(rng, 20)
+        snapshot = list(dets)
+        dedup_detections(dets)
+        assert dets == snapshot

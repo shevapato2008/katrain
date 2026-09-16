@@ -3193,3 +3193,24 @@ msgstr "{side} 第{from}–{to}手连续{n}手中一选"
 
 msgid "live:loading_match"
 msgstr "正在加载棋局…"
+
+msgid "vision:offcenter_at"
+msgstr " 子没放正"
+
+msgid "vision:offcenter_plain"
+msgstr "这颗子没放正"
+
+msgid "vision:offcenter_hint"
+msgstr "请把它挪到"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "的交叉点上，会自动识别"
+
+msgid "vision:play_here_anyway"
+msgstr "就下在"
+
+msgid "vision:offcenter_dismiss"
+msgstr "我挪一下"
+
+msgid "review:start_analysis"
+msgstr "开始分析"

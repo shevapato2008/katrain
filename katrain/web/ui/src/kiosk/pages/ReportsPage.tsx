@@ -573,6 +573,14 @@ export default function ReportsPage() {
                       onSelect={() => setSelectedGameId(game.id)}
                       onOpenReport={(taskId) => navigate(`/kiosk/report/${taskId}`)}
                       onResume={(taskId) => { void retryReport(taskId).catch(() => undefined); }}
+                      // 行尾的「开始分析」走标准档。**同时选中这一行** —— 否则报错只会落在
+                      // 下面「生成报告」区的 actionError 里,而那一段说的是「选中的那一局」,
+                      // 指的却是另一局。选中让出错的那一行和错误信息对得上。
+                      onStartAnalysis={() => {
+                        setSelectedGameId(game.id);
+                        setActionError(null);
+                        void createForGame(game, 'normal').catch(() => undefined);
+                      }}
                       onDelete={() => setDeleteTarget(game.id)}
                     />
                   ))}
@@ -699,7 +707,7 @@ export default function ReportsPage() {
  * 「跳转和干活分在两个手势上」(Fan 2026-07-28)。
  * 整行做不成一个 `<button>`:按钮里套按钮是非法 DOM。
  */
-function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport, onResume, onDelete }: {
+function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport, onResume, onStartAnalysis, onDelete }: {
   game: UserGameSummary;
   state: RowState;
   selected: boolean;
@@ -708,6 +716,7 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport,
   onSelect: () => void;
   onOpenReport: (taskId: number) => void;
   onResume: (taskId: number) => void;
+  onStartAnalysis: () => void;
   onDelete: () => void;
 }) {
   const mine = yourColor(game, username);
@@ -781,8 +790,19 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport,
             </button>
           </>
         )}
+        {/* 「未分析」曾经是**唯一一个有事可做却没有键**的状态 —— 其它每一档行尾都有动作
+            (已分析→查看报告、只算到一半→继续分析、失败→重试),只有这一档是个死标,
+            所以它看起来像坏了。能力其实一直都在:选中这一行之后,下面「生成报告」区的
+            两张卡就可用了 —— 缺的只是这一行自己不指过去。
+            走**标准**档而不是弹二选一:精读慢四倍,不该是每局都被问到的选项;
+            想精读的人仍旧走下面那两张卡,这里不删任何路。 */}
         {state.kind === 'unanalyzed' && (
-          <span className="kiosk-tag">{t('review:tag_unanalyzed', '未分析')}</span>
+          <>
+            <span className="kiosk-tag">{t('review:tag_unanalyzed', '未分析')}</span>
+            <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={onStartAnalysis}>
+              {t('review:start_analysis', '开始分析')}
+            </button>
+          </>
         )}
         {state.kind === 'unfinished' && (
           <span className="kiosk-tag">{t('review:tag_unfinished', '未终局')}</span>

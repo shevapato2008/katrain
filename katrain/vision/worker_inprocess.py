@@ -116,6 +116,12 @@ class InProcessAdapter:
         self._lit_points: set[tuple[int, int]] = set()
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
+        # Confidence-adaptive confirmation: a stone we can already see clearly does not
+        # need the full frame count. Defaults mirror VisionServiceConfig; keep them in
+        # step with it (the literal here is the fallback when a caller builds a worker
+        # config by hand, e.g. tests and the CLI path).
+        self._fast_confirm_frames = int(self._config.get("move_confirm_fast_frames", 3))
+        self._fast_confirm_confidence = float(self._config.get("move_confirm_fast_confidence", 0.70))
         self._prev_conf_map: dict = {}  # previous frame's cell confidences (flicker tolerance)
         self._conf_peak = PendingConfidencePeak()  # ambiguous gate uses the window peak, not one frame
         self._ambig_last_emit: dict = {}  # cell -> frame_count of last ambiguous prompt (cooldown)
@@ -369,7 +375,22 @@ class InProcessAdapter:
                         # a leftover on a captured point is a "remove this", not a placement.
                         # Passing it here makes that protection survive the SET_EXPECTED_BOARD
                         # baseline clobber (the resync re-injection window — review wzceinjdc).
-                        move_result = self._move_detector.detect_new_move(observed_board, ignore_cells=masked)
+                        # Confidence-adaptive confirmation. Waiting out the frame count IS
+                        # the recognition latency the user feels — nothing is computed
+                        # during it — and at ~2.3 fps the full 5 frames are 1.73s. A stone
+                        # the detector can already see clearly does not need that proof:
+                        # measured over a real 117-move game, 80% of moves peak at >=0.70,
+                        # and those confirm in 3 frames instead of 5. The peak is the
+                        # window maximum (a marginal stone's per-frame value oscillates),
+                        # and it is re-read every frame, so a candidate that decays back
+                        # below the line loses the fast path instead of keeping it.
+                        pending_peak = self._conf_peak.peak_for(self._move_detector.pending_move)
+                        fast = pending_peak is not None and pending_peak >= self._fast_confirm_confidence
+                        move_result = self._move_detector.detect_new_move(
+                            observed_board,
+                            ignore_cells=masked,
+                            required_frames=self._fast_confirm_frames if fast else None,
+                        )
                         if move_result is not None:
                             row, col, color = move_result
                             if not self._bound:
@@ -414,11 +435,24 @@ class InProcessAdapter:
                                                     "col": int(col),
                                                     "color": int(color),
                                                     "confidence": round(float(conf), 3),
+                                                    # Exactly 0.0 means NO detection box backed this
+                                                    # cell in either frame (see the comment above):
+                                                    # the stone sits between intersections and got
+                                                    # spill-assigned, or it rounded onto an occupied
+                                                    # point. A merely weak stone reads 0.30-0.41.
+                                                    # The two need different words on screen —
+                                                    # "confirm this move?" is useless advice when the
+                                                    # fix is to nudge the stone onto the line — so the
+                                                    # distinction the detector already knows is
+                                                    # published rather than left for the UI to guess.
+                                                    "unbacked": conf <= 0.0,
                                                 },
                                             }
                                         )
                                 else:
-                                    logger.info("move confirmed: (%d,%d) color=%d peak_conf=%.2f", row, col, color, conf)
+                                    logger.info(
+                                        "move confirmed: (%d,%d) color=%d peak_conf=%.2f", row, col, color, conf
+                                    )
                                     self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update

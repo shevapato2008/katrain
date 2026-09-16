@@ -3358,3 +3358,24 @@ msgstr "{side} 第 {from}–{to} 手、{n} 手連続で第一候補と一致"
 
 msgid "live:loading_match"
 msgstr "棋譜を読み込み中…"
+
+msgid "vision:offcenter_at"
+msgstr "の石がずれています"
+
+msgid "vision:offcenter_plain"
+msgstr "この石がずれています"
+
+msgid "vision:offcenter_hint"
+msgstr "石を"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "の交点に置き直してください。自動で認識されます"
+
+msgid "vision:play_here_anyway"
+msgstr "この位置に打つ:"
+
+msgid "vision:offcenter_dismiss"
+msgstr "置き直す"
+
+msgid "review:start_analysis"
+msgstr "解析を開始"

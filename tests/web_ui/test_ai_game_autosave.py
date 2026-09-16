@@ -52,7 +52,9 @@ def _make_mock_session(user_id, sgf="(;FF[4]SZ[19];B[pd];W[dp])", end_result="B+
     white_player.name = ""
     white_player.human = False
     white_player.ai = True
-    white_player.calculated_rank = "5d"
+    # KaTrain's internal scale: -5 means 6 kyu. The stored record must keep this
+    # language-neutral and separate from the player name.
+    white_player.calculated_rank = -5
 
     katrain.players_info = {"B": black_player, "W": white_player}
 
@@ -155,7 +157,8 @@ async def test_resign_ai_game_auto_saves(app):
         assert game["source"] == "play_ai"
         assert game["result"] == "B+R"
         assert game["player_black"] == username
-        assert game["player_white"] == "AI (5d)"
+        assert game["player_white"] == "AI"
+        assert game["white_rank"] == "6k"
         assert game["game_type"] == "free"
         assert game["category"] == "game"
         assert game["move_count"] == 2
@@ -226,6 +229,7 @@ async def test_ai_game_saves_with_ai_name_fallback(app):
         games_resp = await ac.get("/api/v1/user-games/", headers=headers)
         game = games_resp.json()["items"][0]
         assert game["player_white"] == "AI"
+        assert game["white_rank"] == ""
 
 
 @pytest.mark.asyncio

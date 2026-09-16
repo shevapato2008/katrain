@@ -3406,3 +3406,24 @@ msgstr "{side}: moves {from}-{to}, {n} in a row matched the top choice"
 
 msgid "live:loading_match"
 msgstr "Loading game…"
+
+msgid "vision:offcenter_at"
+msgstr ": stone is off-center"
+
+msgid "vision:offcenter_plain"
+msgstr "This stone is off-center"
+
+msgid "vision:offcenter_hint"
+msgstr "Move it to"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "; it will be detected automatically"
+
+msgid "vision:play_here_anyway"
+msgstr "Play at"
+
+msgid "vision:offcenter_dismiss"
+msgstr "I'll adjust it"
+
+msgid "review:start_analysis"
+msgstr "Start analysis"

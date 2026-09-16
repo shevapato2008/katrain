@@ -2,6 +2,7 @@ import type { ReportGameStatus } from '../../../features/report/reportModel';
 import type { UserGameSummary } from '../../../api/userGamesApi';
 import { isRankedGameType } from '../../../features/aiLadder/gameType';
 import { interpolate } from '../../utils/interpolate';
+import { withRank } from '../../../utils/rank';
 
 export type TFn = (key: string, fallback?: string) => string;
 
@@ -48,11 +49,16 @@ const seat = (game: UserGameSummary, color: 'B' | 'W') => ({
   rank: color === 'B' ? game.black_rank : game.white_rank,
 });
 
-function opponentLabel(game: UserGameSummary, mine: 'B' | 'W' | null): string | null {
+/**
+ * 「AI · 6级」。等级走 `withRank` 本地化 —— 库里存的是语言中性的 "6k"/"3d"
+ * (服务端的 i18n 语言是进程全局的,写库时格式化会把别人的语言记下来,而且事后
+ * 再也转不回去),所以显示这一步必须自己转成级/段。导入棋谱的自由文本等级原样透出。
+ */
+function opponentLabel(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn): string | null {
   if (!mine) return null;
   const other = seat(game, mine === 'B' ? 'W' : 'B');
   if (!other.name) return null;
-  return other.rank ? `${other.name} · ${other.rank}` : other.name;
+  return withRank(other.name, other.rank, t);
 }
 
 /** 行首那颗子的颜色。没有「你」的局用黑白各半 —— 拿黑或白顶替等于替它选了一方。 */
@@ -75,7 +81,7 @@ export function rowTitle(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn):
   }
   if (game.source === 'play_local') return t('review:row_local', '本地对局 · 两人');
   // 判不出「你」的时候没有「对手」可言,退回两个名字并排 —— 不挑一方当对手。
-  const opponent = opponentLabel(game, mine)
+  const opponent = opponentLabel(game, mine, t)
     || [game.player_black, game.player_white].filter(Boolean).join(' — ');
   if (isRankedGameType(game.game_type)) {
     return opponent

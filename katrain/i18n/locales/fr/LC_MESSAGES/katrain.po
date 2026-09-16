@@ -3425,3 +3425,24 @@ msgstr "{side} : coups {from}-{to}, {n} d'affilée au premier choix"
 
 msgid "live:loading_match"
 msgstr "Chargement de la partie…"
+
+msgid "vision:offcenter_at"
+msgstr " : la pierre est mal placée"
+
+msgid "vision:offcenter_plain"
+msgstr "Cette pierre est mal placée"
+
+msgid "vision:offcenter_hint"
+msgstr "Déplacez la pierre sur"
+
+msgid "vision:offcenter_hint_tail"
+msgstr " ; elle sera détectée automatiquement"
+
+msgid "vision:play_here_anyway"
+msgstr "Jouer quand même en"
+
+msgid "vision:offcenter_dismiss"
+msgstr "Je vais la déplacer"
+
+msgid "review:start_analysis"
+msgstr "Lancer l'analyse"

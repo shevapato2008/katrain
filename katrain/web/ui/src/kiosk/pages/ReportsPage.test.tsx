@@ -494,6 +494,19 @@ describe('屏 19 · 行的五种状态', () => {
     expect(within(rows()[0]).queryByRole('button', { name: '继续分析' })).toBeNull();
   });
 
+  it('未分析行可直接开始标准分析,并把动作的那局选中', async () => {
+    renderPage();
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    const second = rows()[1];
+
+    fireEvent.click(within(second).getByRole('button', { name: '开始分析' }));
+
+    await waitFor(() => expect(second).toHaveAttribute('data-selected', 'true'));
+    expect(mocks.createReport).toHaveBeenCalledWith({
+      userGameId: 'b', reportType: 'normal', totalMoves: 187,
+    });
+  });
+
   // **「算了一半」既不是成功也不是失败**,它必须自己一档。后端没有「暂停」这个状态:
   // 跑了一半断掉的任务落在 failed 上、`analyzed_moves` 还留着,重试会从断点续算。
   it('只算到一半:自己一档,行尾说的是「继续分析」而不是「重试」', async () => {

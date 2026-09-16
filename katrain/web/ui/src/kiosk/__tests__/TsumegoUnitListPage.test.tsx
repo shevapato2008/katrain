@@ -3,8 +3,12 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
-import { sequenceKey, UNIT_SIZE } from '../pages/tsumegoUnits';
+import { LAST_CATEGORY_KEY, sequenceKey, UNIT_SIZE } from '../pages/tsumegoUnits';
 import type { TsumegoProgressEntry } from '../../context/TsumegoProgressContext';
+import {
+  __resetKioskActivityStorageForTests,
+  setKioskIdentity,
+} from '../storage/kioskActivityStorage';
 
 /**
  * 屏 13 · 题目列表。**2026-08-22 按稿子整屏换过**,所以和上一版对不上是预期的:
@@ -21,6 +25,7 @@ const { mockNavigate, progressMap } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   progressMap: {} as Record<string, TsumegoProgressEntry>,
 }));
+const TEST_UUID = 'tsumego-unit-list-test-user';
 
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
@@ -60,6 +65,8 @@ beforeEach(() => {
   for (const k of Object.keys(progressMap)) delete progressMap[k];
   sessionStorage.clear();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   installFetch();
 });
 
@@ -280,6 +287,6 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
   it('深链进来也记下这一类 —— 训练营那一排的高亮靠它', async () => {
     seedSequence('15k', 'semeai');
     renderPage('15k', 'semeai', '1');
-    await waitFor(() => expect(localStorage.getItem('kiosk_tsumego_last_category')).toBe('semeai'));
+    await waitFor(() => expect(localStorage.getItem(`${LAST_CATEGORY_KEY}:${TEST_UUID}`)).toBe('semeai'));
   });
 });

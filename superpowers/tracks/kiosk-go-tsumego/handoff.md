@@ -3,7 +3,7 @@
 - 日期：2026-09-15
 - 交接方：Claude Code 会话（额度用尽）→ 接手方：Codex
 - 分支 / worktree：`feature/kiosk-go-tsumego` @ `/Users/fan/Repositories/katrain-kiosk-go-tsumego`
-- 当前 HEAD：`99c72334`，基于 develop `bad0c1fb`。**未 push、未合并**，合并由 Fan 决定。
+- 交接时实现 HEAD：`99c72334`，基于 develop `bad0c1fb`；交接说明提交为 `11681122`。**未 push、未合并**，合并由 Fan 决定。
 - 需求：同目录 `prd.md`。计划：同目录 `plan.md`（末尾 `## 修订记录` 记着两轮 Codex 对抗审查怎么改的）。
 
 ---
@@ -31,17 +31,19 @@
 
 ## 2. 还没做完的（按先后）
 
-### 2.1 等 Fan 视觉确认（硬关卡）
+### 2.1 Fan 视觉已确认（2026-09-16）
 
 确认单（私有 artifact）：https://claude.ai/code/artifact/0a5be6dd-2ed7-482a-a19a-c9eb2ca54575
 
 图在仓里：`superpowers/tracks/kiosk-go-shell-align/visual/{11-training,12-units,13-problems}/1024x600/`、`superpowers/tracks/kiosk-go-tsumego/visual/{13w-wrong,14w-puzzle-wrong,12s-units-scrolled}/1024x600/`。
 
-Fan 确认前本赛道**不算完成、不合并**。Fan 要改哪屏就改哪屏，改完只重取那一屏（见 §5 四图规则）。
+Fan 在 2026-09-16 回复「视觉确认，可以继续」，屏 11–13、错题页、错题做题页和屏 12 下半屏的视觉关卡已放行。
 
 ### 2.2 上板走查（RK3562，board 模式，token=null）
 
 **部署到板子是对外动作，先问 Fan。** 板上 2G 内存，一次只跑一家的测试。清单：
+
+2026-09-16 Fan 回复「板子在线，授权上板走查」。P04 的 `KATRAIN_BOX_SSO=1`，必须用 `npm run build:smartbox-kiosk-2d`，严格登录 manifest 已核实。板上已有棋谱赛道的 `repository.py` 改动，因此这次只临时替换训练营所需的 `tsumego.py`、`repository.py` 和 `static-kiosk-2d/`；原件备份在板上 `/mnt/data/weiqi/kiosk-tsumego-acceptance-20260916/`，候选已启动且健康。走查结束应恢复原件，并无缓存刷新 Chromium。已在真板上确认：实体偏好关着、几何 `required` 时直接进题，开关灰且解释原因，页控条可及名「去标定」；偏好开着重进题被标定台接管，随后已把偏好恢复为原值；屏 12 错题入口可点、错题页显示账号真实的 1 道错题；`GET /progress` 返回 200 + `X-Data-Authority: cloud`。尚未做实际落子、账号甲乙切换、断网恢复和下方 T10 实体全项。
 
 1. 重启 katrain 服务：实体开关**关着**时点进任意一题直接出题，开关灰、旁边写「物理棋盘需先确认棋盘标定…」、页控条有「去标定」；开关**开着**时进题被带去标定台，「沿用上次标定」后回到题。无摄像头的盒子行为不变。
 2. 断网进训练营写「连不上云端题库」；恢复网络点「重试」出题。

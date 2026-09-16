@@ -398,9 +398,8 @@ test('星阵人机屏:道具键在、胜率块不在,动作区照旧贴底且不
   expect(g.badges).toEqual(['—', '—', '—']);
   expect(g.hasEval, '星阵局里不该有胜率块 —— 那一屏没有图表键').toBe(false);
   // 悔棋不在里面 —— **跨平台对弈整局都没有这颗键**(Fan 2026-08-25 亲裁)。
-  // 上一版是四个键,第四个是「悔棋」,只在星阵算招期间撤掉 ⇒ 一局几十次四↔三来回翻,
-  // 而这一排是 `grid-auto-columns: 1fr`,翻一次「认输」就在用户手指底下挪一格。
-  expect(g.actionLabels, '星阵局的动作区不是三个键').toEqual(['停一手', '数子', '认输']);
+  // 停一手 / 数子在星阵局也整局不可用；一颗认输键的位置不会随局面变化。
+  expect(g.actionLabels, '星阵局的动作区只剩认输').toEqual(['认输']);
   expect(g.actionsBottom, '动作区没贴右栏底').toBe(g.railBottom);
   expect(g.railOverflow, '右栏溢出').toBeLessThanOrEqual(0);
   expect(g.docScrollHeight, '整屏溢出').toBeLessThanOrEqual(600);

@@ -308,15 +308,7 @@ const GameControlPanel = ({
 
   const actions = engineMode
     ? [
-      // 悔棋不在这里 —— 跨平台对弈**整局都没有**这颗键(见上面 `undoAllowed`)。
-      // 稿子 `:1851` 画的是 `<button disabled>悔棋</button>`,理由「灰在这儿比点了被拒好」;
-      // 那条理由只对「等一会儿就回来」成立,而这儿是永久没有。**实现反过来纠正稿子。**
-      { key: 'pass', icon: 'hand-pointing' as const, label: t('game:pass', '停一手'), onClick: () => onAction('pass'), disabled: isGameOver },
-      {
-        key: 'count', icon: 'squares-four' as const, label: t('Score', '数子'),
-        onClick: () => onAction('count'), disabled: !canCount,
-        reason: t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin)),
-      },
+      // 星阵人机局的悔棋、停一手和数子都无法完成；原因在开关排右端说明。
       { key: 'resign', icon: 'flag' as const, label: t('Resign', '认输'), onClick: () => onAction('resign'), danger: true, disabled: isGameOver },
     ]
     : [...analysisActions, ...playActions];
@@ -402,7 +394,7 @@ const GameControlPanel = ({
           而这两个是**状态** —— 开着就一直开着。长相跟 galaxy 那两个 `<Switch size="small">` 走
           (Fan 2026-08-22:「galaxy 界面里都是开关这种形式,kiosk 也改成一样的」),
           轨和珠是 `.gtoggles button` 的两个伪元素,不加新标签。
-          右端那句写「为什么数子是灰的」;数子能按了就空着,但这个格子**一直在**。 */}
+          右端说明优先显示硬件故障，其次是星阵局不可用的动作。 */}
       <div className="gtoggles gtoggles--switch" role="group" aria-label={t('game:display', '显示')}>
         <button type="button" role="switch" aria-checked={!!analysisToggles.coords} onClick={() => onToggleAnalysis('coords')}>
           {t('Coordinates', '坐标')}
@@ -410,21 +402,24 @@ const GameControlPanel = ({
         <button type="button" role="switch" aria-checked={!!analysisToggles.numbers} onClick={() => onToggleAnalysis('numbers')}>
           {t('Move Numbers', '手数')}
         </button>
-        {/* 三句话抢同一格,优先级是**按「这句话还会不会自己消失」排的**:
+        {/* 右端说明按故障、星阵动作、游客限制、数子手数的顺序显示:
               ① `hardwareFault` —— 故障,最急,而且要用红。
-              ② 游客 —— 三个键**不登录就永远不会亮**;这一句在触屏上是它们唯一的解释
+              ② 星阵人机 —— 停一手 / 数子整局都不可用。
+              ③ 游客 —— 三个键**不登录就永远不会亮**;这一句在触屏上是它们唯一的解释
                  (`reason` 落在 `title`/`aria-description` 上,手指够不着)。
-              ③ 数子 —— 只关一个键,而且**下满手数它自己就好了**。
+              ④ 数子 —— 只关一个键,而且**下满手数它自己就好了**。
             ⚠️ 代价说清楚:游客在前 100 手看不到「数子要下满 N 手」那句。可以接受 ——
             数子键到时候自己会亮,而三个分析键不会。反过来排的话,游客整局都不知道
             那三个键为什么是灰的。 */}
         <i className="ghint" data-fault={hardwareFault ? 'true' : undefined}>
           {hardwareFault
-            ?? (analysisRequiresLogin
-              ? t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')
-              : !isGameOver && !canCount
-                ? t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin))
-                : '')}
+            ?? (engineMode
+              ? (isGameOver ? '' : t('game:golaxy_no_pass_count', '暂不支持停一手、数子'))
+              : analysisRequiresLogin
+                ? t('play:analysis_requires_login_hint', '领地 / 支招 / 图表 登录后可用')
+                : !isGameOver && !canCount
+                  ? t('game:count_min', '数子要下满 {n} 手').replace('{n}', String(countMin))
+                  : '')}
         </i>
       </div>
 

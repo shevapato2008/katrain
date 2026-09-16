@@ -210,16 +210,11 @@ describe('GamePage engine mode', () => {
     mockGameState.count_min_moves = undefined;
   });
 
-  it('停一手/认输 stay enabled in engineMode (galaxy-reference: no blunt engineMode disable)', async () => {
+  it('星阵人机局没有停一手和数子，认输仍走确认框', async () => {
+    mockGameState.count_min_moves = 1;
     renderPage(true);
-
-    // 停一手 is available whenever the game is not over — including Golaxy 人机对弈 — and
-    // routes through session.handleAction. (The galaxy web reference gates it on isGameOver
-    // only; there is no engineMode disable.)
-    fireEvent.click(screen.getByText('停一手'));
-    expect(mockHandleAction).toHaveBeenCalledWith('pass');
-
-    // 认输 also stays enabled (opens the confirm dialog, intercepted before session.handleAction).
+    expect(screen.queryByText('停一手')).toBeNull();
+    expect(screen.queryByText('数子')).toBeNull();
     fireEvent.click(screen.getByText('认输'));
     expect(screen.getByText('确认认输？')).toBeInTheDocument();
   });

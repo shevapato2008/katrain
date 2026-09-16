@@ -26,7 +26,7 @@ const OUT = resolve(process.cwd(),
  *    和 0 不是一回事。它们既不与动作区并排、也不与「坐标 / 手数」并排 ——
  *    **一个会花钱的按钮和一个纯显示开关长成一样,是这一屏最容易犯的错。**
  *  ② **没有胜率图表**(`evalAllowed = !engineMode && …`)—— 本地局那颗「图表」开关整个不存在。
- *  ③ **动作区只有三颗键,没有悔棋** —— 稿子 `:1851` 画的是 `<button disabled>悔棋</button>`
+ *  ③ **动作区只有认输,没有悔棋/停一手/数子** —— 稿子 `:1851` 画的是 `<button disabled>悔棋</button>`
  *    (在、但灰),理由「那一手最长要等 ~180 秒,后端本来就 409,灰在这儿比点了被拒好」。
  *    **2026-08-25 Fan 亲裁之后这条反过来了**:见下面「实现反过来纠正稿子」那一段。
  *  ④ 顶上一条**平台条**(哪一家 / 连没连上 / 上一手多少秒)。
@@ -69,10 +69,9 @@ const OUT = resolve(process.cwd(),
  *
  *    落地:`GameControlPanel.tsx` 的 `undoAllowed`(与 `evalAllowed` 同引一个 `freeVsAi`);
  *    五种对弈方式逐个的断言在 `src/kiosk/components/game/GameControlPanel.test.tsx`
- *    (含五处变异记录);「三颗键还贴不贴右栏底」在 `tests/kiosk-screen-05-game.spec.ts` 用真浏览器量。
- *  · **数子:稿子画成可按,实现是灰的 —— 这次是稿子错。** `canCount = !isGameOver && moves >= countMin`,
- *    这一帧第 18 手而 `count_min_moves` 是 100 ⇒ 灰,且开关排右端已经写出「数子要下满 100 手」。
- *    稿子在第 18 手把数子画成能按,和它自己写的中国规则局对不上。归「稿子画错」那一类。
+ *    (含五处变异记录);「动作区还贴不贴右栏底」在 `tests/kiosk-screen-05-game.spec.ts` 用真浏览器量。
+ *  · **停一手 / 数子:稿子画成可按,实现整局不画。** 星阵 PASS 后端恒 409,
+ *    数子走联机握手而合成对手是 `-1`,无法完成；开关排右端说明原因。
  *  · **两张玩家卡:稿子那一帧自相矛盾。** `.turn`(青玉描边)给了写着「已落子」的访客卡,
  *    而正在算的是星皮猴 —— `go-screens.css` 那行注释白纸黑字「`.turn` 是**轮到谁**」。
  *    实现把手数计只挂在轮到的那张卡上也是对的:kiosk 不计时、`main_time_used` 不累加,
@@ -161,36 +160,16 @@ test('四图:星阵围棋 · 对局中 ←→ sample-go/shots/10-platform-game.p
     return route.fulfill({ json: {} });
   });
 
-  /**
-   * **上一版这里接管过 WS,现在不接了。**
-   *
-   * 那段 `routeWebSocket` 唯一的用处是喂一条 `platform_move_pending`,把 `platformPendingMove`
-   * 顶成真、让悔棋灰下去 —— 而 Fan 2026-08-25 裁掉悔棋之后,`GamePage` 连 `usePlatformEvents`
-   * 都删了,那条消息在这一屏上不再改变任何一个像素。**留着它等于让证据说一件已经不存在的事。**
-   * 局面本身走 `/api/state` 的 route stub(上面第 109 行),从来不靠 WS。
-   *
-   * ⚠️ **重跑之后这三张图逐像素没变** —— 因为上一版靠 WS 造出来的 pending 态,
-   * 屏上结果**恰好和现在一样是三颗键**(那时是「算招期间撤掉」,现在是「整局都没有」)。
-   * 实测:新旧实现图唯一的差是 (461,124)–(479,142) 那 18×18 一块,即「AI 思考中…」
-   * 那颗 spinner 的**转动相位**(93 个像素、最大差 131);边缘计数
-   * both 37779→36960 / refOnly 29234→30053 / implOnly 21570→22053 全部由它一处贡献。
-   * ⇒ 存档**没有重新提交**:那份 diff 里一点信息都没有,留着反而像在说「图变了」。
-   * **屏上一样不等于这次改动是空的** —— 变的是「为什么是三颗」,那件事只有代码和断言说得出来。
-   */
+  // 局面由上面的 `/api/state` stub 提供；旧 WS pending 桩只影响已撤掉的悔棋键。
 
   await page.goto('/kiosk/play/cross-platform/engine/game/fourup-10');
   // 等的是**三颗道具键真的画出来了** —— 它们是这一屏区别于屏 05 的那一块。
   await page.waitForSelector('.items button:nth-child(3)');
   /**
-   * 动作区就是三颗 —— **这一屏现在从第一帧起就是三颗**,不再有「四颗变三颗」那个过程。
-   *
-   * ⚠️ 所以这一句现在只是「这一排渲染出来了、且不多不少三颗」的守卫,
-   * **它不再证明任何时序**;别把它读成「等到了某个状态」。
-   * ⚠️ 也别退回去等 `button:disabled`:数子本来就是灰的(第 18 手 < `count_min_moves` 100),
-   * 那个选择器立刻命中、测试通过而**什么都没证明** —— 量错了对象。
+   * 动作区从第一帧起只显示一颗认输键；这里只验证它已经渲染。
    */
   await page.waitForFunction(() =>
-    document.querySelectorAll('[data-testid="game-actions"] button').length === 3);
+    document.querySelectorAll('[data-testid="game-actions"] button').length === 1);
   await page.waitForLoadState('networkidle');
 
   const r = await captureFourUp({
@@ -221,7 +200,8 @@ test('四图:星阵围棋 · 对局中 ←→ sample-go/shots/10-platform-game.p
       + 'Fan 2026-08-25 亲裁:「只有人机对弈的自由对弈允许悔棋，跨平台对弈等都不允许，按钮可以撤销。」'
       + '稿子那条理由「灰在这儿比点了被拒好」只对**过一会儿会回来**的状态成立，而这里是'
       + '**开局就定死的没有**。判据:**永久不可用→撤掉，暂时不可用→灰着** · '
-      + '**数子稿子画错**:第 18 手 < count_min_moves 100 ⇒ 该灰，右端也已写出原因 · '
+      + '**停一手 / 数子整局不画**:星阵 PASS 恒 409，数子联机握手无法完成，'
+      + '右端写「暂不支持停一手、数子」 · '
       + '**两张玩家卡稿子自相矛盾**:.turn 给了写着「已落子」的访客卡而正在算的是星皮猴 · '
       + '实体识别关着 ⇒ 页控条右端那个「重置识别」键不出现，**它在真盒子上是有的**',
   });

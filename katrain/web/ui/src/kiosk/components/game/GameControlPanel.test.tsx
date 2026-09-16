@@ -103,6 +103,15 @@ describe('GameControlPanel', () => {
     expect(screen.getByText('认输')).toBeInTheDocument();
   });
 
+  test('星阵人机局手数够了也只显示认输，并说明停一手与数子不可用', () => {
+    const history = Array.from({ length: 120 }, (_, i) => ({ node_id: i, score: 0, winrate: 0.5 }));
+    const { container } = panel({ game_type: 'free', history }, { engineMode: true });
+    expect(screen.queryByText('停一手')).toBeNull();
+    expect(screen.queryByText('数子')).toBeNull();
+    expect(screen.getByText('认输')).toBeInTheDocument();
+    expect(container.querySelector('.gtoggles .ghint')).toHaveTextContent('暂不支持停一手、数子');
+  });
+
   // ── 棋谱折叠块(星阵屏)────────────────────────────────────────────────────
   // 稿子 `:1833`。数据来自后端 2026-08-25 在主线循环里加的 `history[].move/player`。
   // 这里守的是**怎么叠行**(纯 DOM 结构,jsdom 有权作证);

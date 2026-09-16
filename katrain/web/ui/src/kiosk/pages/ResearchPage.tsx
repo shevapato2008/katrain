@@ -18,6 +18,7 @@ import { durationLabel } from '../utils/durationLabel';
 import { whenLabel } from '../utils/whenLabel';
 import { KifuAPI } from '../../api/kifuApi';
 import { UserGamesAPI } from '../../api/userGamesApi';
+import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage';
 
 /**
  * 屏 21 研究(L2 布局 A:盘 516 + 16 + 右栏 460)。
@@ -484,10 +485,11 @@ const ResearchPage = () => {
   useEffect(() => {
     if (reviewRef.current) return;
     if (searchParams.get('user_game_id') || searchParams.get('kifu_id')) return;
-    const sgf = sessionStorage.getItem('kioskReviewSgf');
+    const store = getCurrentKioskActivityStorage();
+    const sgf = store.getItem('kioskReviewSgf');
     if (!sgf) return;
     reviewRef.current = true;
-    sessionStorage.removeItem('kioskReviewSgf');
+    store.removeItem('kioskReviewSgf');
     board.loadFromSGF(sgf);
     // 这一条**只能**是 effect:出处的唯一来源是 sessionStorage 里那把随读随删的钥匙,
     // 渲染期读它就是在渲染期写外部状态。挂载时同步跑一次是对的。

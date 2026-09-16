@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session
 
-from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
 from katrain.core import move_grade
 from katrain.web.core import analysis_cost, billing, models_db, quota
 from katrain.web.core.config import settings
@@ -234,7 +234,7 @@ async def _dispatch_remote_only(call):
 async def create_report_task(
     task: ReportTaskCreate,
     request: Request,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
     db: Session = Depends(get_report_db),
 ):
     if task.report_type not in REPORT_VISITS:
@@ -406,7 +406,7 @@ async def get_report_summary(
 async def retry_report_task(
     task_id: int,
     request: Request,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
     db: Session = Depends(get_report_db),
 ):
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)

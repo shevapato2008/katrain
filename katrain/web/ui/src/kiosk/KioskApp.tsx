@@ -29,6 +29,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
@@ -71,6 +72,10 @@ import TutorialSectionPage from './pages/TutorialSectionPage';
 
 const KioskRoutes = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  // The shared zero-persistence guest account has literal username "guest";
+  // never surface that raw string in the header — show the localized label.
+  const headerUsername = user?.username === 'guest' ? t('Guest', '访客') : user?.username;
 
   return (
     <Routes>
@@ -98,7 +103,7 @@ const KioskRoutes = () => {
               **挡它的是服务端**(`guard_session_reader`:有主人的会话要求「是这局的参与者」),
               不是这一层。前端少一道门不等于后端少一道。
           `*` 兜底也必须在守卫外面:留在里面的话,游客输一个不存在的路径会连兜底都匹配不到。 */}
-      <Route element={<KioskLayout username={user?.username} />}>
+      <Route element={<KioskLayout username={headerUsername} />}>
         <Route index element={<Navigate to="play" replace />} />
 
         {/* --- 游客可达:自由对弈那条链 --- */}

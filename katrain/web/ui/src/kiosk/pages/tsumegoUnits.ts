@@ -8,6 +8,53 @@ import type { IconName } from '../shell/icons';
 /** Problems per unit (matches galaxy D5). */
 export const UNIT_SIZE = 20;
 
+interface ProblemSummary {
+  id: string;
+}
+
+interface ProblemPage {
+  items: ProblemSummary[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+/**
+ * Read one ordered practice sequence. Normal categories use their compact list
+ * endpoint. `all` uses the paged whole-level endpoint and joins every page in
+ * server order so it can follow the same 20-problem unit flow.
+ */
+export async function fetchTsumegoSequence(
+  level: string,
+  category: string,
+  signal: AbortSignal,
+): Promise<string[]> {
+  if (category !== 'all') {
+    const res = await fetch(`/api/v1/tsumego/levels/${level}/categories/${category}?limit=1000`, { signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json() as ProblemSummary[];
+    return Array.isArray(data) ? data.map((problem) => problem.id) : [];
+  }
+
+  const pageSize = 200;
+  const ids: string[] = [];
+  let page = 1;
+  let total = Number.POSITIVE_INFINITY;
+
+  while (ids.length < total) {
+    const res = await fetch(`/api/v1/tsumego/levels/${level}/problems?page=${page}&page_size=${pageSize}`, { signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json() as ProblemPage;
+    const items = Array.isArray(data.items) ? data.items : [];
+    total = Number.isFinite(data.total) ? Math.max(0, data.total) : ids.length + items.length;
+    ids.push(...items.map((problem) => problem.id));
+    if (items.length === 0 || items.length < pageSize) break;
+    page += 1;
+  }
+
+  return ids.slice(0, total);
+}
+
 /**
  * sessionStorage key for the ordered full-category problem-id sequence.
  * Value = JSON.stringify(string[]) — problem ids in display order.

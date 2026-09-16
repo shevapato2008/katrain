@@ -25,6 +25,10 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
   }),
 }));
 
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 7, username: '甲' }, isAuthenticated: true, token: null }),
+}));
+
 const mockCategories = [
   { category: 'tesuji', name: '手筋', count: 40 },
   { category: 'life-death', name: '死活', count: 25 },
@@ -47,6 +51,7 @@ const installFetch = () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   mockCategoryProgress.mockReturnValue({ completed: 0, total: 0 });
   installFetch();
 });
@@ -65,9 +70,11 @@ const renderPage = () =>
   );
 
 describe('TsumegoCategoriesPage', () => {
-  it('shows loading spinner initially', () => {
+  it('加载态也使用 kiosk 外壳，不退回旧 MUI 转圈页', () => {
     renderPage();
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.getByTestId('categories-loading')).toBeInTheDocument();
+    expect(document.querySelector('.kiosk-layout-b')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).toBeNull();
   });
 
   it('fetches the categories endpoint for the level', async () => {
@@ -83,22 +90,26 @@ describe('TsumegoCategoriesPage', () => {
   it('renders the level heading and total problem count', async () => {
     renderPage();
     await waitFor(() => {
-      // total = 40 + 25 = 65. MUI splits "{count} {label}" into sibling text nodes,
-      // so match on the element's combined textContent (appears in header + all-card).
-      expect(screen.getByText(/15K/)).toBeInTheDocument();
-      expect(screen.getAllByText((_, el) => el?.textContent === '65 题').length).toBeGreaterThan(0);
+      expect(screen.getByText('15 级 · 选择题型')).toBeInTheDocument();
+      expect(screen.getByText('65 题 · 2 类')).toBeInTheDocument();
     });
+    expect(screen.getByRole('button', { name: /难度/ })).toBeInTheDocument();
   });
 
-  it('renders a category card per category with its name and count', async () => {
+  it('题型按题库元数据的稳定顺序排列，并使用 kiosk 卡片', async () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText('手筋')).toBeInTheDocument();
       expect(screen.getByText('死活')).toBeInTheDocument();
     });
+    const titles = Array.from(document.querySelectorAll('.tsumego-category-grid .kiosk-card__t > b'))
+      .map((node) => node.textContent);
+    expect(titles).toEqual(['死活', '手筋']);
+    expect(document.querySelectorAll('.tsumego-category-grid .kiosk-card')).toHaveLength(2);
+    expect(document.querySelector('.MuiCard-root')).toBeNull();
   });
 
-  it('renders category icons as MUI SVG, not emoji tofu (T9)', async () => {
+  it('题型图标来自 kiosk Phosphor 素材，不用 emoji 或 MUI 图标', async () => {
     const { container } = renderPage();
     await waitFor(() => {
       expect(screen.getByText('手筋')).toBeInTheDocument();
@@ -116,19 +127,23 @@ describe('TsumegoCategoriesPage', () => {
     staleCategoryGlyphs.forEach((glyph) => {
       expect(container.textContent).not.toContain(glyph);
     });
+    expect(document.querySelectorAll('.tsumego-category-grid .kiosk-icon')).toHaveLength(2);
+    expect(document.querySelector('.MuiSvgIcon-root')).toBeNull();
   });
 
-  it('renders the "全部题目" all-problems shortcut card', async () => {
+  it('把全部题目收成「综合训练」，明确也按 20 题分单元', async () => {
     renderPage();
     await waitFor(() => {
-      expect(screen.getByText('全部题目')).toBeInTheDocument();
+      expect(screen.getByText('综合训练')).toBeInTheDocument();
     });
+    expect(screen.getByText('混合当前难度全部题型，也按每 20 题分成单元')).toBeInTheDocument();
+    expect(screen.queryByText('全部题目')).toBeNull();
   });
 
-  it('navigates to the all-problems list when the shortcut is clicked', async () => {
+  it('综合训练进入同一条单元路径', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByText('全部题目')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('全部题目'));
+    await waitFor(() => expect(screen.getByText('综合训练')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('综合训练'));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/all');
   });
 
@@ -153,11 +168,7 @@ describe('TsumegoCategoriesPage', () => {
       );
     });
     await waitFor(() => {
-      // "{completed}/{total} 题" is split across sibling text nodes — match on textContent.
-      // The matcher hits both the <p> and its text-wrapper, so just assert ≥1 match.
-      expect(
-        screen.getAllByText((_, el) => el?.textContent === '10/40 题').length
-      ).toBeGreaterThan(0);
+      expect(screen.getByText('10 / 40 题')).toBeInTheDocument();
     });
   });
 
@@ -169,7 +180,7 @@ describe('TsumegoCategoriesPage', () => {
     renderPage();
     await waitFor(() => {
       expect(screen.getByText(/HTTP 500/)).toBeInTheDocument();
-      expect(screen.getByText('返回')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '难度' })).toBeInTheDocument();
     });
   });
 

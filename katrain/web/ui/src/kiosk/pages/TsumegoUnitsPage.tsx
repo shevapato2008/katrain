@@ -3,16 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
-import { CATEGORY_META, UNIT_SIZE, isWrongEntry, levelChinese, loadErrorCopy, readAutoAdvance, writeLastCategory, writeSequence } from './tsumegoUnits';
+import { CATEGORY_META, UNIT_SIZE, fetchTsumegoSequence, isWrongEntry, levelChinese, loadErrorCopy, readAutoAdvance, writeLastCategory, writeSequence } from './tsumegoUnits';
 import { interpolate } from '../utils/interpolate';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
-
-interface ProblemSummary {
-  id: string;
-}
 
 /**
  * 屏 12 · 单元列表 `/kiosk/tsumego/:level/:category` —— **L2 布局 B**(无棋盘 ⇒ 页控条通栏 x16,
@@ -50,13 +46,8 @@ const TsumegoUnitsPage = () => {
   const loadUnits = useCallback((lvl: string, cat: string, signal: AbortSignal) => {
     setProblemIds(null);
     setError(null);
-    fetch(`/api/v1/tsumego/levels/${lvl}/categories/${cat}?limit=1000`, { signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data: ProblemSummary[]) => {
-        const ids = Array.isArray(data) ? data.map((p) => p.id) : [];
+    fetchTsumegoSequence(lvl, cat, signal)
+      .then((ids) => {
         setProblemIds(ids);
         // Phase 4 契约:把**按顺序**的整类题号存下来 —— 做题屏靠它算上/下一题,
         // 屏 13(题目列表)靠它连一次接口都不用取。
@@ -79,8 +70,11 @@ const TsumegoUnitsPage = () => {
     if (category) writeLastCategory(user?.id, category);
   }, [category, user?.id]);
 
+  const isAll = category === 'all';
   const meta = category ? CATEGORY_META[category] : undefined;
-  const categoryName = category ? t(`tsumego:${category}`, meta?.zh ?? category) : '';
+  const categoryName = isAll
+    ? t('Mixed training', '综合训练')
+    : category ? t(`tsumego:${category}`, meta?.zh ?? category) : '';
   const levelName = level ? levelChinese(level) : '';
   const backToLevel = () => navigate(`/kiosk/tsumego/${level}`);
 
@@ -89,7 +83,7 @@ const TsumegoUnitsPage = () => {
       testId="units-pagebar"
       title={`${levelName} · ${categoryName}`}
       sub={t('Judged on placement · a wrong move is taken straight back', '落子即判 · 走错当场退回')}
-      backLabel={t('Training', '训练营')}
+      backLabel={t('Categories', '题型')}
       onBack={backToLevel}
     />
   );
@@ -207,30 +201,30 @@ const TsumegoUnitsPage = () => {
           </div>
         </section>
 
-        <section className="kiosk-section">
-          <KioskSecLabel zh={t('Whole level', '整级一起做')} en={'Whole level'} />
-          <div className="kiosk-cards">
-            <KioskCard
-              title={`${levelName}${t('all', '全部')}`}
-              // 全部题目页按分类再按题号排、卡上贴着分类、做题屏上/下一题只在本分类里走 ⇒
-              // 不是「混在一起」(N8)。真混排待 Fan 拍板(prd.md §4 D2)。
-              sub={t('tsumego:wholeLevelSub', '按分类排好，不分单元')}
-              icon="squares-four"
-              onClick={() => navigate(`/kiosk/tsumego/${level}/all`)}
-            />
-            <KioskCard
-              title={t('Only the ones I got wrong', '只做错过的')}
-              sub={
-                wrongUnknown
-                  ? t('tsumego:progressUnread', '做题记录没读到')
-                  : interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongCount })
-              }
-              icon="arrow-clockwise"
-              disabled={wrongCount === 0 && !wrongUnknown}
-              onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/wrong`)}
-            />
-          </div>
-        </section>
+        {!isAll && (
+          <section className="kiosk-section">
+            <KioskSecLabel zh={t('Other practice', '其他练习')} en="Other practice" />
+            <div className="kiosk-cards">
+              <KioskCard
+                title={t('Mixed training', '综合训练')}
+                sub={t('Mix all categories at this level in 20-problem units', '混合当前难度全部题型，每 20 题一单元')}
+                icon="squares-four"
+                onClick={() => navigate(`/kiosk/tsumego/${level}/all`)}
+              />
+              <KioskCard
+                title={t('Only the ones I got wrong', '只做错过的')}
+                sub={
+                  wrongUnknown
+                    ? t('tsumego:progressUnread', '做题记录没读到')
+                    : interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongCount })
+                }
+                icon="arrow-clockwise"
+                disabled={wrongCount === 0 && !wrongUnknown}
+                onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/wrong`)}
+              />
+            </div>
+          </section>
+        )}
       </KioskScrollZone>
     </div>
   );

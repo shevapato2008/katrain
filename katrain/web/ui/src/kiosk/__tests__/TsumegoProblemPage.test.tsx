@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, act, within } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
@@ -638,6 +638,54 @@ describe('TsumegoProblemPage · 屏 14 做题屏', () => {
     // 不分人的旧钥匙一个都不写。
     expect(localStorage.getItem('kiosk_tsumego_last_level')).toBeNull();
     expect(localStorage.getItem('kiosk_active_practice')).toBeNull();
+  });
+
+  describe('综合训练模式 ?set=all', () => {
+    const renderAll = (problemId: string) =>
+      render(
+        <ThemeProvider theme={kioskTheme}>
+          <MemoryRouter initialEntries={[`/kiosk/tsumego/problem/${problemId}?set=all`]}>
+            <Routes>
+              <Route path="/kiosk/tsumego/problem/:problemId" element={<TsumegoProblemPage />} />
+            </Routes>
+          </MemoryRouter>
+        </ThemeProvider>
+      );
+
+    beforeEach(() => {
+      sessionStorage.setItem(sequenceKey('15k', 'all'), JSON.stringify(['q3', 'p1', 'q41']));
+    });
+
+    it('页控条显示综合训练，上下题沿整级题序并保留 ?set=all', () => {
+      renderAll('p1');
+      expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('第 2 题');
+      expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('15 级 · 综合训练');
+      fireEvent.click(screen.getByRole('button', { name: '上一题' }));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/q3?set=all');
+      fireEvent.click(screen.getByRole('button', { name: '下一题' }));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/q41?set=all');
+    });
+
+    it('题目标签仍显示真实题型；返回和接着上次保持综合训练上下文', () => {
+      renderAll('p1');
+      const tags = Array.from(document.querySelectorAll('.kiosk-tag')).map((node) => node.textContent);
+      expect(tags).toEqual(['手筋', '15 级']);
+      fireEvent.click(within(screen.getByTestId('puzzle-pagebar')).getByText('第 1 单元'));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/15k/all/1');
+      expect(localStorage.getItem('kiosk_tsumego_last_category:u7')).toBe('all');
+      expect(JSON.parse(localStorage.getItem('kiosk_tsumego_resume:u7')!)).toEqual({
+        label: '15 级 · 综合训练 · 第 2 题',
+        route: '/kiosk/tsumego/problem/p1?set=all',
+      });
+    });
+
+    it('整级题序不含当前题时退回真实题型，不冒充综合训练', async () => {
+      sessionStorage.setItem(sequenceKey('15k', 'all'), JSON.stringify(['x', 'y']));
+      renderAll('p1');
+      await waitFor(() => expect(screen.getByTestId('puzzle-pagebar')).toHaveTextContent('15 级 · 手筋'));
+      fireEvent.click(screen.getByRole('button', { name: '下一题' }));
+      expect(mockNavigate).toHaveBeenLastCalledWith('/kiosk/tsumego/problem/p2');
+    });
   });
 
   describe('错题模式 ?set=wrong(T1)', () => {

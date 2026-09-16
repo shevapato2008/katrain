@@ -81,11 +81,53 @@ const rings = () =>
   Array.from(document.querySelectorAll('.kiosk-card__tile.is-ring b')).map((n) => n.textContent);
 
 describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
-  it('页控条:标题是「这一档 · 这一类」,返回键回训练营', async () => {
+  it('页控条:标题是「这一档 · 这一类」,返回键回题型页', async () => {
     renderPage('15k', 'capturing');
     await waitFor(() => expect(screen.getByText('15 级 · 吃子')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('训练营'));
+    fireEvent.click(screen.getByText('题型'));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k');
+  });
+
+  it('综合训练从整级接口取题，也按每 20 题分单元，不再出现指向自己的整级入口', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ items: allIds, total: TOTAL, page: 1, page_size: 200 }),
+    }) as any;
+    renderPage('15k', 'all');
+
+    await waitFor(() => expect(screen.getByText('15 级 · 综合训练')).toBeInTheDocument());
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/v1/tsumego/levels/15k/problems?page=1&page_size=200',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(cardTitles()).toEqual(['第 1 单元', '第 2 单元', '第 3 单元']);
+    expect(screen.queryByText('整级一起做')).toBeNull();
+    expect(screen.queryByText('只做错过的')).toBeNull();
+    expect(JSON.parse(sessionStorage.getItem(sequenceKey('15k', 'all'))!)).toEqual(allIds.map((item) => item.id));
+    expect(localStorage.getItem('kiosk_tsumego_last_category:u7')).toBe('all');
+  });
+
+  it('综合训练会把整级接口的多页题序完整拼起来', async () => {
+    const ids = Array.from({ length: 205 }, (_, i) => ({ id: `all-${i}` }));
+    global.fetch = vi.fn().mockImplementation((url: string) => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({
+        items: url.includes('page=2') ? ids.slice(200) : ids.slice(0, 200),
+        total: ids.length,
+        page: url.includes('page=2') ? 2 : 1,
+        page_size: 200,
+      }),
+    })) as any;
+    renderPage('3d', 'all');
+
+    await waitFor(() => {
+      const stored = sessionStorage.getItem(sequenceKey('3d', 'all'));
+      expect(stored && JSON.parse(stored)).toHaveLength(205);
+    });
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/v1/tsumego/levels/3d/problems?page=2&page_size=200',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 
   it('整类题号只取一次(limit=1000),并按顺序写进 sessionStorage —— 做题屏的上/下一题靠它', async () => {
@@ -215,13 +257,11 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/capturing/wrong');
   });
 
-  it('「整级一起做」进的是这一档的全部题', async () => {
+  it('专项题型页可以切到同一难度的综合训练', async () => {
     renderPage('3d', 'capturing');
-    await waitFor(() => expect(screen.getByText('3 段全部')).toBeInTheDocument());
-    // 整级页是按分类排好的(N8),不许说「六类混在一起」。
-    expect(screen.getByText('按分类排好，不分单元')).toBeInTheDocument();
-    expect(screen.queryByText(/混在一起/)).toBeNull();
-    fireEvent.click(screen.getByText('3 段全部').closest('button')!);
+    await waitFor(() => expect(screen.getByText('综合训练')).toBeInTheDocument());
+    expect(screen.getByText('混合当前难度全部题型，每 20 题一单元')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('综合训练').closest('button')!);
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/3d/all');
   });
 

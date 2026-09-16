@@ -6,6 +6,7 @@ import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import {
   CATEGORY_META,
   UNIT_SIZE,
+  fetchTsumegoSequence,
   isWrongEntry,
   levelChinese,
   loadErrorCopy,
@@ -18,10 +19,6 @@ import { interpolate } from '../utils/interpolate';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
-
-interface ProblemSummary {
-  id: string;
-}
 
 /**
  * 屏 13 · 题目列表 `/kiosk/tsumego/:level/:category/:unit` —— **L2 布局 B**。
@@ -97,13 +94,8 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
       return;
     }
     setAllIds(null);
-    fetch(`/api/v1/tsumego/levels/${lvl}/categories/${cat}?limit=1000`, { signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data: ProblemSummary[]) => {
-        const ids = Array.isArray(data) ? data.map((p) => p.id) : [];
+    fetchTsumegoSequence(lvl, cat, signal)
+      .then((ids) => {
         setAllIds(ids);
         writeSequence(lvl, cat, ids);
       })
@@ -124,8 +116,11 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
     if (category) writeLastCategory(user?.id, category);
   }, [category, user?.id]);
 
+  const isAll = category === 'all';
   const meta = category ? CATEGORY_META[category] : undefined;
-  const categoryName = category ? t(`tsumego:${category}`, meta?.zh ?? category) : '';
+  const categoryName = isAll
+    ? t('Mixed training', '综合训练')
+    : category ? t(`tsumego:${category}`, meta?.zh ?? category) : '';
   const levelName = level ? levelChinese(level) : '';
   const backToUnits = () => navigate(`/kiosk/tsumego/${level}/${category}`);
 
@@ -252,7 +247,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
 
   const openProblem = (id: string) => {
     if (!isWrongSet) {
-      navigate(`/kiosk/tsumego/problem/${id}`);
+      navigate(`/kiosk/tsumego/problem/${id}${isAll ? '?set=all' : ''}`);
       return;
     }
     // 快照在**点下去那一刻**写:做题途中做对一道,它不会从上/下一题里消失(T1)。按账号存。
@@ -352,15 +347,14 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
           </div>
         </section>
 
-        <section className="kiosk-section">
+        {!isAll && <section className="kiosk-section">
           <KioskSecLabel zh={t('Other sets', '换一批')} en="Other sets" />
           <div className="kiosk-rows">
             <div className="kiosk-row">
-              <span className="kiosk-row__lead">{t('Whole level', '整级')}</span>
+              <span className="kiosk-row__lead">{t('Mixed', '综合')}</span>
               <div className="kiosk-row__t">
-                <b>{`${levelName}${t('all', '全部')}`}</b>
-                {/* 同屏 12 那张卡(N8):不是混排,不说「认出这是哪一类」。 */}
-                <em>{t('tsumego:wholeLevelRow', '这一级的全部题，按分类排好')}</em>
+                <b>{t('Mixed training', '综合训练')}</b>
+                <em>{t('Mix all categories at this level in 20-problem units', '混合当前难度全部题型，每 20 题一单元')}</em>
               </div>
               <div className="kiosk-row__end">
                 <button
@@ -401,7 +395,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
               </div>
             )}
           </div>
-        </section>
+        </section>}
       </KioskScrollZone>
     </div>
   );

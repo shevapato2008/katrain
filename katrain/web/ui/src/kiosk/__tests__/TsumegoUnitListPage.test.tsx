@@ -157,6 +157,30 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/q22');
   });
 
+  it('综合训练单元沿用同一题格，但做题路由保留 ?set=all 且不再显示换一批', async () => {
+    seedSequence('15k', 'all');
+    renderPage('15k', 'all', '2');
+    await waitFor(() => expect(cells()).toHaveLength(UNIT_SIZE));
+    expect(screen.getByText(/15 级 · 综合训练 · 第 2 单元/)).toBeInTheDocument();
+    fireEvent.click(cells()[2]);
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/q22?set=all');
+    expect(screen.queryByText('换一批')).toBeNull();
+  });
+
+  it('综合训练深链缺少顺序表时，从整级接口恢复题序', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ items: allIds.map((id) => ({ id })), total: TOTAL, page: 1, page_size: 200 }),
+    }) as any;
+    renderPage('15k', 'all', '1');
+    await waitFor(() => expect(cells()).toHaveLength(UNIT_SIZE));
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/v1/tsumego/levels/15k/problems?page=1&page_size=200',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(JSON.parse(sessionStorage.getItem(sequenceKey('15k', 'all'))!)).toEqual(allIds);
+  });
+
   /* ── 这一屏最容易讲错的一件事 ─────────────────────────────────────────
    * `attempts` 在 `useTsumegoProblem` 里**只在走错和重摆时 +1**,做对那一手不加。
    * 所以第一次就做对的题存下来是 `attempts: 0` —— 直接把它印成「0 次」既难看又不对,
@@ -242,13 +266,12 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
     expect(screen.getByTestId('stat-avg-time').textContent).toBe('1 分 35 秒');
   });
 
-  it('「整级一起做」进这一档的全部题', async () => {
+  it('专项单元可以切到这一档的综合训练', async () => {
     seedSequence('3d', 'capturing');
     renderPage('3d', 'capturing', '1');
     await waitFor(() => expect(cells()).toHaveLength(UNIT_SIZE));
-    expect(screen.getByText('这一级的全部题，按分类排好')).toBeInTheDocument();
-    expect(screen.queryByText(/混在一起|认出这是哪一类/)).toBeNull();
-    fireEvent.click(screen.getByText('3 段全部').closest('.kiosk-row')!.querySelector('button')!);
+    expect(screen.getByText('混合当前难度全部题型，每 20 题一单元')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('综合训练').closest('.kiosk-row')!.querySelector('button')!);
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/3d/all');
   });
 
@@ -377,7 +400,7 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
       renderWrong();
       await waitFor(() => expect(cells()).toHaveLength(2));
       expect(screen.queryByTestId('row-wrong')).toBeNull();
-      expect(screen.getByText('15 级全部')).toBeInTheDocument();
+      expect(screen.getByText('综合训练')).toBeInTheDocument();
     });
 
     it('这一类一道错题都没有时说清楚,并给回单元的路', async () => {

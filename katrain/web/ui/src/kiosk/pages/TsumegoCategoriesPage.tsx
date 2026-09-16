@@ -1,14 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, useTheme } from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import { GridView, Extension, AutoAwesome, TrackChanges, Assignment } from '@mui/icons-material';
-import type { SvgIconComponent } from '@mui/icons-material';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from '../../hooks/useTranslation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
-import ProgressDots from '../components/tsumego/ProgressDots';
-import { loadErrorCopy } from './tsumegoUnits';
+import { useTranslation } from '../../hooks/useTranslation';
+import { KioskCard } from '../shell/KioskCard';
 import { KioskPagebar } from '../shell/KioskPagebar';
+import { KioskScrollZone } from '../shell/KioskScrollZone';
+import { KioskSecLabel } from '../shell/KioskSecLabel';
+import {
+  CATEGORY_META,
+  categoryRank,
+  levelChinese,
+  loadErrorCopy,
+  readLastCategory,
+} from './tsumegoUnits';
 
 interface CategoryInfo {
   category: string;
@@ -20,33 +25,23 @@ interface ProblemSummary {
   id: string;
 }
 
-const CATEGORY_ICONS: Record<string, SvgIconComponent> = {
-  'life-death': Extension,
-  tesuji: AutoAwesome,
-  endgame: TrackChanges,
-};
-
 /**
- * Route: tsumego/:level — categories within a difficulty level.
+ * Route: tsumego/:level — category selection after choosing a difficulty.
  *
- * Category-level completed/total is BEST-EFFORT (R2): the total `count` is shown
- * immediately from the categories endpoint, then each category's full ID list is
- * fetched in parallel (?limit=1000, non-blocking) and the "completed" count is
- * filled in via categoryProgress() once it resolves. The single shared `progress`
- * map is the only progress source — no per-page GET /progress.
+ * The category counts arrive first. Per-category ID lists load in parallel so
+ * completion totals can appear without blocking the page.
  */
 const TsumegoCategoriesPage = () => {
   const { level } = useParams<{ level: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { categoryProgress } = useTsumegoProgress();
-  const theme = useTheme();
 
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
+  const [categoryIds, setCategoryIds] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Best-effort per-category ID lists (key = category slug). Filled lazily/non-blocking.
-  const [categoryIds, setCategoryIds] = useState<Record<string, string[]>>({});
 
   const loadCategories = useCallback((lvl: string, signal: AbortSignal) => {
     setLoading(true);
@@ -62,21 +57,20 @@ const TsumegoCategoriesPage = () => {
         setCategories(data);
         setLoading(false);
 
-        // Non-blocking: fetch each category's IDs in parallel for completed counts.
         data.forEach((cat) => {
           fetch(`/api/v1/tsumego/levels/${lvl}/categories/${cat.category}?limit=1000`, { signal })
             .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
             .then((problems: ProblemSummary[]) => {
               if (Array.isArray(problems)) {
-                setCategoryIds((prev) => ({ ...prev, [cat.category]: problems.map((p) => p.id) }));
+                setCategoryIds((prev) => ({ ...prev, [cat.category]: problems.map((problem) => problem.id) }));
               }
             })
             .catch(() => {
-              /* best-effort: leave completed count blank for this category */
+              // Completion is best-effort; the category itself stays available.
             });
         });
       })
-      .catch((err) => {
+      .catch((err: Error) => {
         if (err.name !== 'AbortError') {
           setError(err.message);
           setLoading(false);
@@ -91,124 +85,100 @@ const TsumegoCategoriesPage = () => {
     return () => controller.abort();
   }, [level, loadCategories]);
 
-  const totalCount = categories.reduce((sum, c) => sum + c.count, 0);
+  const orderedCategories = useMemo(
+    () => [...categories].sort((a, b) => categoryRank(a.category) - categoryRank(b.category)
+      || a.category.localeCompare(b.category)),
+    [categories],
+  );
+  const totalCount = categories.reduce((sum, category) => sum + category.count, 0);
+  const levelName = level ? levelChinese(level) : '';
+  const lastCategory = readLastCategory(user?.id);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const pagebar = (
+    <KioskPagebar
+      title={`${levelName} · ${t('Select category', '选择题型')}`}
+      sub={loading ? t('Loading…', '加载中…') : `${totalCount} 题 · ${categories.length} 类`}
+      backLabel={t('Difficulty', '难度')}
+      onBack={() => navigate('/kiosk/tsumego')}
+    />
+  );
 
-  if (error) {
+  if (loading || error || categories.length === 0) {
     return (
-      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 4 }}>
-        <Alert severity="error">{`${loadErrorCopy(t, error).title} · ${loadErrorCopy(t, error).body}`}</Alert>
-        {/* `loadCategories` 是这一屏自己的 fetch 函数,能干净地再调一次 —— 503 那句话说了
-            「点重试」就得有一个真按钮,不能只有返回。 */}
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            onClick={() => {
-              if (level) loadCategories(level, new AbortController().signal);
-            }}
-          >
-            {t('Retry', '重试')}
-          </Button>
-          <Button variant="outlined" onClick={() => navigate('/kiosk/tsumego')}>
-            {t('Back', '返回')}
-          </Button>
-        </Box>
-      </Box>
+      <div className="kiosk-layout-b">
+        {pagebar}
+        <KioskScrollZone>
+          {loading ? (
+            <div className="empty" data-testid="categories-loading">
+              <h4>{t('Loading categories…', '正在读取题型…')}</h4>
+            </div>
+          ) : error ? (
+            <div className="empty" data-testid="categories-error">
+              <h4>{loadErrorCopy(t, error).title}</h4>
+              <p>{loadErrorCopy(t, error).body}</p>
+              <div className="tsumego-empty-actions">
+                <button
+                  type="button"
+                  className="kiosk-btn kiosk-btn--pill pill"
+                  onClick={() => {
+                    if (level) loadCategories(level, new AbortController().signal);
+                  }}
+                >
+                  {t('Retry', '重试')}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="empty" data-testid="categories-empty">
+              <h4>{t('No categories at this level yet', '这一档下面还没有题型')}</h4>
+            </div>
+          )}
+        </KioskScrollZone>
+      </div>
     );
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <KioskPagebar
-        title={`${level?.toUpperCase()} ${t('tsumego:selectCategory', '选择题型')}`}
-        backLabel={t('Back', '返回')}
-        onBack={() => navigate('/kiosk/tsumego')}
-        /* 原来挂在 right 插槽的题数是**副标性质**(它描述这一屏,不是一个动作),
-           §11 的右端只留给视图切换 —— 所以并进 sub。 */
-        sub={`${totalCount} ${t('tsumego:problems', '题')}`}
-      />
+    <div className="kiosk-layout-b">
+      {pagebar}
+      <KioskScrollZone resetKey={level}>
+        <section className="kiosk-section">
+          <KioskSecLabel zh={t('Focused training', '专项训练')} en="Categories" value={t('Choose one category', '选择一个题型')} />
+          <div className="tsumego-category-grid">
+            {orderedCategories.map((category) => {
+              const meta = CATEGORY_META[category.category];
+              const ids = categoryIds[category.category];
+              const summary = ids ? categoryProgress(ids) : null;
+              const categoryName = t(`tsumego:${category.category}`, meta?.zh ?? category.name);
+              return (
+                <KioskCard
+                  key={category.category}
+                  title={categoryName}
+                  sub={summary ? `${summary.completed} / ${summary.total} 题` : `${category.count} 题`}
+                  icon={meta?.icon ?? 'puzzle-piece'}
+                  current={lastCategory === category.category}
+                  onClick={() => navigate(`/kiosk/tsumego/${level}/${category.category}`)}
+                />
+              );
+            })}
+          </div>
+        </section>
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2, pt: 1 }}>
-        <Grid container spacing={2}>
-          {/* "全部题目" shortcut → flat list at tsumego/{level}/all */}
-          <Grid size={{ xs: 6, sm: 4, md: 3 }}>
-            <Card
-              sx={{
-                bgcolor: alpha(theme.palette.primary.dark, 0.35),
-                border: '2px solid',
-                borderColor: 'primary.main',
-                borderRadius: '12px',
-                height: '100%',
-                '&:hover': { bgcolor: alpha(theme.palette.primary.dark, 0.5) },
-                transition: 'background-color 0.15s ease',
-              }}
-            >
-              <CardActionArea
-                onClick={() => navigate(`/kiosk/tsumego/${level}/all`)}
-                sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <GridView sx={{ color: 'primary.main' }} />
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    {t('tsumego:allProblems', '全部题目')}
-                  </Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  {totalCount} {t('tsumego:problems', '题')}
-                </Typography>
-              </CardActionArea>
-            </Card>
-          </Grid>
-
-          {categories.map((cat) => {
-            const ids = categoryIds[cat.category];
-            const summary = ids ? categoryProgress(ids) : null;
-            const CatIcon = CATEGORY_ICONS[cat.category] ?? Assignment;
-            return (
-              <Grid key={cat.category} size={{ xs: 6, sm: 4, md: 3 }}>
-                <Card
-                  sx={{
-                    bgcolor: 'background.paper',
-                    borderRadius: '12px',
-                    height: '100%',
-                    '&:hover': { bgcolor: 'var(--raise2)' },
-                    transition: 'background-color 0.15s ease',
-                  }}
-                >
-                  <CardActionArea
-                    onClick={() => navigate(`/kiosk/tsumego/${level}/${cat.category}`)}
-                    sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CatIcon sx={{ fontSize: 28, color: 'primary.main' }} />
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {t(`tsumego:${cat.category}`, cat.name)}
-                      </Typography>
-                    </Box>
-                    <Box
-                      sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', mt: 1.5 }}
-                    >
-                      <Typography variant="body2" color="text.secondary">
-                        {summary ? `${summary.completed}/${summary.total}` : `${cat.count}`}{' '}
-                        {t('tsumego:problems', '题')}
-                      </Typography>
-                      {summary && <ProgressDots completed={summary.completed} total={summary.total} />}
-                    </Box>
-                  </CardActionArea>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
-      </Box>
-    </Box>
+        <section className="kiosk-section tsumego-mixed-section">
+          <KioskSecLabel zh={t('Mixed categories', '混合题型')} en="Mixed" value={`${totalCount} 题`} />
+          <div className="tsumego-mixed-card">
+            <KioskCard
+              title={t('Mixed training', '综合训练')}
+              sub={t('Mix all categories at this level and group every 20 problems into a unit', '混合当前难度全部题型，也按每 20 题分成单元')}
+              icon="squares-four"
+              current={lastCategory === 'all'}
+              ariaLabel={`${t('Mixed training', '综合训练')}，${totalCount} 题，${t('20 problems per unit', '每 20 题一单元')}`}
+              onClick={() => navigate(`/kiosk/tsumego/${level}/all`)}
+            />
+          </div>
+        </section>
+      </KioskScrollZone>
+    </div>
   );
 };
 

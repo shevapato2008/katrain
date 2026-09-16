@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AccountSection from './AccountSection';
 
 const { authState, statusHook, retry, boxMode, leaveToLauncher } = vi.hoisted(() => ({
-  authState: { current: { token: undefined, user: { username: 'fan' }, logout: vi.fn() } as any },
+  authState: { current: { token: undefined, user: { username: 'fan' }, isGuest: false, logout: vi.fn() } as any },
   statusHook: vi.fn(),
   retry: vi.fn(),
   // 严格盒端与否是**输入**：仓里没有任何 CI 跑那一档，不造就永远不会被执行。
@@ -25,7 +25,7 @@ vi.mock('../../shell/boxUrls', async (importOriginal) => {
 beforeEach(() => {
   boxMode.strict = false;
   leaveToLauncher.mockClear();
-  authState.current = { token: undefined, user: { username: 'fan' }, logout: vi.fn() };
+  authState.current = { token: undefined, user: { username: 'fan' }, isGuest: false, logout: vi.fn() };
 });
 
 describe('AccountSection ladder summary', () => {
@@ -46,7 +46,7 @@ describe('AccountSection ladder summary', () => {
   });
 
   it('does not request or leave a loading ladder card for a guest', () => {
-    authState.current = { token: undefined, user: null, logout: vi.fn() };
+    authState.current = { token: undefined, user: null, isGuest: false, logout: vi.fn() };
     statusHook.mockReturnValue({ status: { view_state: 'loading' }, retry });
     render(<MemoryRouter><AccountSection /></MemoryRouter>);
     expect(statusHook).toHaveBeenCalledWith(undefined, false);
@@ -64,7 +64,7 @@ describe('AccountSection 严格盒端', () => {
   it('不再假装自己能退出登录，改成回主页切账号', () => {
     boxMode.strict = true;
     const logout = vi.fn();
-    authState.current = { token: undefined, user: { username: 'fan' }, logout };
+    authState.current = { token: undefined, user: { username: 'fan' }, isGuest: false, logout };
     statusHook.mockReturnValue({ status: { view_state: 'loading' }, retry });
     render(<MemoryRouter><AccountSection /></MemoryRouter>);
 
@@ -77,7 +77,7 @@ describe('AccountSection 严格盒端', () => {
 
   it('非盒端照旧：真退出 + 回登录页', async () => {
     const logout = vi.fn().mockResolvedValue(undefined);
-    authState.current = { token: 't', user: { username: 'fan' }, logout };
+    authState.current = { token: 't', user: { username: 'fan' }, isGuest: false, logout };
     statusHook.mockReturnValue({ status: { view_state: 'loading' }, retry });
     render(<MemoryRouter><AccountSection /></MemoryRouter>);
 
@@ -89,11 +89,23 @@ describe('AccountSection 严格盒端', () => {
 
   it('未登录时那颗「登录」在盒上也不能进死页', () => {
     boxMode.strict = true;
-    authState.current = { token: undefined, user: null, logout: vi.fn() };
+    authState.current = { token: undefined, user: null, isGuest: false, logout: vi.fn() };
     statusHook.mockReturnValue({ status: { view_state: 'loading' }, retry });
     render(<MemoryRouter><AccountSection /></MemoryRouter>);
 
     fireEvent.click(screen.getByRole('button', { name: '登录' }));
     expect(leaveToLauncher).toHaveBeenCalledWith('http://127.0.0.1:8080/launcher?authmode=login');
+  });
+
+  it('访客显示注册登录入口并回 launcher 退出访客态', () => {
+    boxMode.strict = true;
+    authState.current = { token: undefined, user: { username: 'guest' }, isGuest: true, logout: vi.fn() };
+    statusHook.mockReturnValue({ status: { view_state: 'loading' }, retry });
+    render(<MemoryRouter><AccountSection /></MemoryRouter>);
+
+    expect(statusHook).toHaveBeenCalledWith(undefined, false);
+    expect(screen.queryByTestId('settings-logout')).toBeNull();
+    fireEvent.click(screen.getByTestId('account-register-login'));
+    expect(leaveToLauncher).toHaveBeenCalledWith('http://127.0.0.1:8080/launcher?logout=1&authmode=register');
   });
 });

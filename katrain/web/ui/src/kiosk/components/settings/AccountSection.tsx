@@ -6,7 +6,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAiLadderStatus } from '../../../features/aiLadder/useAiLadderStatus';
 import AiLadderStatusCard from '../../../features/aiLadder/AiLadderStatusCard';
-import { LAUNCHER_LOGIN_URL, isStrictBoxKiosk, leaveToLauncher } from '../../shell/boxUrls';
+import { LAUNCHER_LOGIN_URL, LAUNCHER_REGISTER_URL, isStrictBoxKiosk, leaveToLauncher } from '../../shell/boxUrls';
 
 /**
  * 设置屏「账号与平台」那一组的前两行。
@@ -19,10 +19,10 @@ import { LAUNCHER_LOGIN_URL, isStrictBoxKiosk, leaveToLauncher } from '../../she
  * 但它只在点开之后才出现,不再占着这一组的正面。
  */
 export default function AccountSection() {
-  const { user, logout, token } = useAuth();
+  const { user, logout, token, isGuest } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { status, retry } = useAiLadderStatus(token ?? undefined, Boolean(user));
+  const { status, retry } = useAiLadderStatus(token ?? undefined, Boolean(user) && !isGuest);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   /**
@@ -61,9 +61,11 @@ export default function AccountSection() {
     <>
       <div className="kiosk-row">
         <span className="kiosk-row__t">
-          <b>{user?.username ?? t('Guest', '访客')}</b>
+          <b>{isGuest ? t('Guest', '访客') : (user?.username ?? t('Guest', '访客'))}</b>
           <em>
-            {user
+            {isGuest
+              ? t('Not signed in', '未登录')
+              : user
               ? `${t('Signed in', '已登录')} · ${isStrictBoxKiosk
                   ? t('settings:box_account_owned_by_home', '智星盒账户，全盒共用')
                   : t('StellaBox account', '智星盒账户')}`
@@ -71,7 +73,16 @@ export default function AccountSection() {
           </em>
         </span>
         <span className="kiosk-row__end">
-          {user ? (
+          {isGuest ? (
+            <button
+              type="button"
+              className="kiosk-btn kiosk-btn--secondary"
+              data-testid="account-register-login"
+              onClick={() => leaveToLauncher(LAUNCHER_REGISTER_URL)}
+            >
+              {t('Register / Sign in', '注册 / 登录')}
+            </button>
+          ) : user ? (
             <button
               type="button"
               className={isStrictBoxKiosk ? 'kiosk-btn kiosk-btn--pill' : 'kiosk-btn kiosk-btn--pill rvdanger'}
@@ -94,7 +105,7 @@ export default function AccountSection() {
         </span>
       </div>
 
-      {user && ready && (
+      {user && !isGuest && ready && (
         <div className="kiosk-row" data-testid="ai-ladder-account-summary">
           <span className="kiosk-row__t">
             <b>
@@ -121,7 +132,7 @@ export default function AccountSection() {
       )}
 
       {/* 读不到段位的时候**照实说**,不拿一行空白顶替 —— 那张卡自己会讲是加载中还是失败。 */}
-      {user && status.view_state !== 'ready' && (
+      {user && !isGuest && status.view_state !== 'ready' && (
         <div className="kiosk-row" data-testid="ai-ladder-account-fallback">
           <AiLadderStatusCard status={status} onRetry={retry} compact />
         </div>

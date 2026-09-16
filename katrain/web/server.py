@@ -827,7 +827,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         """这局归谁。空集 = 无人认领（未登录直接开的单机局，三个 id 全是 None）。"""
 
         return {
-            user_id for user_id in (session.user_id, session.player_b_id, session.player_w_id) if user_id is not None
+            user_id
+            for user_id in (
+                getattr(session, "owner_user_id", None),
+                getattr(session, "user_id", None),
+                getattr(session, "player_b_id", None),
+                getattr(session, "player_w_id", None),
+            )
+            if isinstance(user_id, int) and not isinstance(user_id, bool)
         }
 
     def guard_session_reader(session, current_user, action: str) -> None:
@@ -883,7 +890,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if current_user.id not in owner_ids:
             raise HTTPException(status_code=403, detail=f"{action} is restricted to a player in this game")
 
-    from katrain.web.core.box_sso import BoxSSOState
+    from katrain.web.core.box_sso import BoxSSOState, is_guest_user
 
     app.state.box_sso = BoxSSOState(settings.KATRAIN_BOX_SSO_BRIDGE_KEY_PATH)
     app.include_router(api_router, prefix="/api/v1")
@@ -927,10 +934,16 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     def create_session(current_user: User = Depends(get_current_user_optional), mode: str = "play"):
         try:
             katago_uuid = current_user.uuid if current_user else None
+            guest = is_guest_user(current_user)
             if current_user is None:
                 # Anonymous shells remain available for compatibility, but must not start
                 # analysis that could later be harvested through an authenticated session.
                 session = manager.create_session(skip_initial_analysis=True)
+            elif guest:
+                session = manager.create_session(katago_uuid=katago_uuid)
+                if mode == "research":
+                    session.mode = "research"
+                session.owner_user_id = current_user.id
             else:
                 with app.state.ranked_analysis_activity.lock:
                     guard_user_has_no_pending_ranked_game(app, current_user, "session analysis")
@@ -940,6 +953,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         session = manager.create_session(katago_uuid=katago_uuid, user_id=current_user.id)
                     app.state.ranked_analysis_activity.begin_background(current_user.id, session.session_id, "initial")
                     guard_user_has_no_pending_ranked_game(app, current_user, "session analysis")
+                session.owner_user_id = current_user.id
         except HTTPException:
             raise
         except Exception as exc:
@@ -952,8 +966,9 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         try:
             session = manager.get_session(session_id)
             guard_ai_ladder_ranked_session(session, "delete-session")
-            # Only allow owner to delete research sessions
-            if session.mode == "research" and current_user and session.user_id != current_user.id:
+            # Ownership set = the research/play owner AND both multiplayer participants (R4-F7).
+            owners = session_owner_ids(session)
+            if owners and (current_user is None or current_user.id not in owners):
                 raise HTTPException(status_code=403, detail="Not authorized")
             app.state.ranked_analysis_activity.end_session(session.session_id)
             manager.remove_session(session_id)
@@ -1650,6 +1665,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         and the resign/count/timeout paths can all race to record the same finished game.
         Ranked AI games keep `_recorded` false until both the authoritative game row and
         ladder settlement succeed, so a transient settlement failure remains retryable."""
+        if is_guest_user(current_user):
+            return
         if getattr(session, "_recorded", False) is True:
             return
         try:
@@ -1927,6 +1944,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/resign")
     async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
+        _require_multiplayer_participant(session, current_user)
         guard_session_terminator(session, current_user, "resign")
         ranked_ai = is_ai_ladder_ranked_session(session)
         if ranked_ai:
@@ -2011,13 +2029,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
             result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
             try:
-                app.state.game_repo.record_multiplayer_game(
-                    sgf_content=session.katrain.get_sgf(),
-                    result=result,
-                    game_type=getattr(session, "game_type", "free"),
-                    black_id=session.player_b_id,
-                    white_id=session.player_w_id,
-                )
+                if not _is_guest_participant(app, session):
+                    app.state.game_repo.record_multiplayer_game(
+                        sgf_content=session.katrain.get_sgf(),
+                        result=result,
+                        game_type=getattr(session, "game_type", "free"),
+                        black_id=session.player_b_id,
+                        white_id=session.player_w_id,
+                    )
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
 
@@ -2067,13 +2086,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if is_multiplayer:
             winner_id = session.player_b_id if winner_color == "B" else session.player_w_id
             try:
-                app.state.game_repo.record_multiplayer_game(
-                    sgf_content=session.katrain.get_sgf(),
-                    result=result,
-                    game_type=getattr(session, "game_type", "free"),
-                    black_id=session.player_b_id,
-                    white_id=session.player_w_id,
-                )
+                if not _is_guest_participant(app, session):
+                    app.state.game_repo.record_multiplayer_game(
+                        sgf_content=session.katrain.get_sgf(),
+                        result=result,
+                        game_type=getattr(session, "game_type", "free"),
+                        black_id=session.player_b_id,
+                        white_id=session.player_w_id,
+                    )
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record count game result: {e}")
 
@@ -2293,6 +2313,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         r1 C1:kiosk 带上期望的局 / 手 / 方,`_do_timeout` 在对局提交锁里核对轮次、用服务端时钟核实;核实不了一律拒绝(409),
         不判负。galaxy 的旧调用不带这三个字段,语义照旧(撞上已结束的局是 200 空操作)。"""
         session = _get_session_or_404(manager, request.session_id)
+        _require_multiplayer_participant(session, current_user)
         guard_session_terminator(session, current_user, "timeout")
         guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
         await _guard_ai_ladder_cloud_active(app, session, current_user)
@@ -2329,13 +2350,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
             result = f"{'W' if winner_id == session.player_w_id else 'B'}+T"
             try:
-                app.state.game_repo.record_multiplayer_game(
-                    sgf_content=session.katrain.get_sgf(),
-                    result=result,
-                    game_type=getattr(session, "game_type", "free"),
-                    black_id=session.player_b_id,
-                    white_id=session.player_w_id,
-                )
+                if not _is_guest_participant(app, session):
+                    app.state.game_repo.record_multiplayer_game(
+                        sgf_content=session.katrain.get_sgf(),
+                        result=result,
+                        game_type=getattr(session, "game_type", "free"),
+                        black_id=session.player_b_id,
+                        white_id=session.player_w_id,
+                    )
             except Exception as e:
                 logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
 
@@ -2375,13 +2397,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         result = f"{'W' if winner_id == session.player_w_id else 'B'}+F"  # F for Forfeit
 
         try:
-            app.state.game_repo.record_multiplayer_game(
-                sgf_content=session.katrain.get_sgf(),
-                result=result,
-                game_type=getattr(session, "game_type", "free"),
-                black_id=session.player_b_id,
-                white_id=session.player_w_id,
-            )
+            if not _is_guest_participant(app, session):
+                app.state.game_repo.record_multiplayer_game(
+                    sgf_content=session.katrain.get_sgf(),
+                    result=result,
+                    game_type=getattr(session, "game_type", "free"),
+                    black_id=session.player_b_id,
+                    white_id=session.player_w_id,
+                )
         except Exception as e:
             logging.getLogger("katrain_web").error(f"Failed to record game forfeit: {e}")
 
@@ -2667,7 +2690,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.websocket("/ws/lobby")
     async def lobby_websocket_endpoint(websocket: WebSocket):
         from katrain.web.api.v1.endpoints.auth import get_user_from_token
-        from katrain.web.core.box_sso import resolve_websocket_token, strict_box_sso_enabled
+        from katrain.web.core.box_sso import is_guest_user, resolve_websocket_token, strict_box_sso_enabled
 
         logger = logging.getLogger("katrain_web")
         token = resolve_websocket_token(websocket)
@@ -2683,6 +2706,12 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             logger.warning(f"Lobby WebSocket: Token validation failed: {e}")
             await websocket.accept()
             await websocket.close(code=1008, reason="Invalid token")
+            return
+
+        if is_guest_user(current_user):
+            logger.info("Lobby WebSocket: rejecting guest (read-only, no multiplayer)")
+            await websocket.accept()
+            await websocket.close(code=1008, reason="Guest not allowed in lobby")
             return
 
         await websocket.accept()
@@ -3198,6 +3227,48 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         return manager.get_session(session_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Session not found") from exc
+
+
+def _require_multiplayer_participant(session, current_user) -> None:
+    """403 an anon/guest/non-participant caller trying to end a live multiplayer game.
+
+    `resign` and `timeout` are optional-auth and (before this guard) mutated the
+    game before any participant check — an anon/guest caller who merely knows a
+    session id could end a live real game (R5-F2/R6-F1). Guest itself can never
+    hold a player_b_id/player_w_id (guest is rejected at the lobby WebSocket, so
+    it can never enter matchmaking), so `current_user is None or current_user.id
+    not in (...)` covers guest the same way it covers any other non-participant.
+    Non-multiplayer sessions (both player ids None) are unaffected — single-
+    player/local resign stays open. Mirrors the membership checks already on
+    count-request/respond and /api/multiplayer/leave.
+    """
+    is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
+    if is_multiplayer and (current_user is None or current_user.id not in (session.player_b_id, session.player_w_id)):
+        raise HTTPException(status_code=403, detail="Not a participant")
+
+
+def _is_guest_participant(app: FastAPI, session) -> bool:
+    """Belt-and-suspenders recording guard (R2-F1 Step 5): True if either seat of
+    a multiplayer session resolves to the reserved `guest` account.
+
+    Guest can never actually reach here in practice -- it is rejected at the
+    `/ws/lobby` WebSocket entry (Step 4), so it can never enter matchmaking and
+    be assigned a player_b_id/player_w_id in the first place. This is a second,
+    independent line of defense at the recording call-sites themselves, not the
+    primary cut.
+    """
+    from katrain.web.core.box_sso import GUEST_USERNAME
+
+    user_repo = getattr(app.state, "user_repo", None)
+    if user_repo is None:
+        return False
+    for player_id in (session.player_b_id, session.player_w_id):
+        if not player_id or player_id <= 0:
+            continue
+        user = user_repo.get_user_by_id(player_id)
+        if user and user.get("username") == GUEST_USERNAME:
+            return True
+    return False
 
 
 def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:

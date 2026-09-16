@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from katrain.web.api.v1.endpoints.auth import get_current_user_optional
+from katrain.web.core.box_sso import is_guest_user
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import User
 from katrain.web.core.storage import get_storage_backend, normalize_key
@@ -155,6 +156,8 @@ async def update_figure_board(
 ):
     """Update the board_payload for a figure. Computes viewport server-side.
     Uses optimistic locking via expected_updated_at to prevent silent overwrites."""
+    if is_guest_user(current_user):
+        raise HTTPException(status_code=403, detail="Guest is read-only")
     figure = db_queries.get_figure(db, figure_id)
     if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")
@@ -194,7 +197,10 @@ async def generate_audio_for_figure(
     figure_id: int,
     request: NarrationUpdateRequest,
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
+    if is_guest_user(current_user):
+        raise HTTPException(status_code=403, detail="Guest is read-only")
     figure = db_queries.get_figure(db, figure_id)
     if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")
@@ -211,6 +217,8 @@ async def update_figure_narration(
     current_user: User | None = Depends(get_current_user_optional),
 ):
     """Update the narration text and optional audio_asset for a figure."""
+    if is_guest_user(current_user):
+        raise HTTPException(status_code=403, detail="Guest is read-only")
     figure = db_queries.get_figure(db, figure_id)
     if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")
@@ -230,6 +238,8 @@ async def verify_figure(
     """Mark a figure as human-verified. The current board_payload becomes ground truth."""
     import json as _json
 
+    if is_guest_user(current_user):
+        raise HTTPException(status_code=403, detail="Guest is read-only")
     figure = db_queries.get_figure(db, figure_id)
     if figure is None:
         raise HTTPException(status_code=404, detail="Figure not found")

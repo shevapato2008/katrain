@@ -31,6 +31,7 @@ import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
+import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage';
 
 type EngineAnalysisKind = 'area' | 'options' | 'variation';
 
@@ -888,7 +889,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             if (!sessionId) return;
             try {
               const { sgf } = await API.saveSGF(sessionId);
-              sessionStorage.setItem('kioskReviewSgf', sgf);
+              getCurrentKioskActivityStorage().setItem('kioskReviewSgf', sgf);
               navigate('/kiosk/research?from=game');
             } catch (e) { console.error(e); setReviewError(true); }
           }}

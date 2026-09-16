@@ -88,8 +88,8 @@ function detectChineseUnit(s: string): 'zi' | 'moku' | null {
  */
 function pointsUnit(t: TFn, rules: string | null | undefined, originalUnit: 'zi' | 'moku' | null): string {
   const unit = originalUnit ?? rulesUnit(rules);
-  if (unit === 'zi') return t('result:points_zi', '');
-  if (unit === 'moku') return t('result:points_moku', '');
+  if (unit === 'zi') return t('result:points_zi', '子');
+  if (unit === 'moku') return t('result:points_moku', '目');
   return '';
 }
 

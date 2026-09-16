@@ -6211,6 +6211,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ### Task 12: 收尾验证与上板清单
 
+**执行记录（2026-09-16）**：Task 11 提交 `4c7ab8c7` 后无源码变化，复用该提交前已完成的同一轮最终回归，避免重复五分钟的全量测试。后端 3646 passed / 69 failed / 46 errors，失败名称相对基线无新增；前端 1820 passed / 5 skipped；类型检查、两套构建和 kiosk 2D 边界检查通过。构建产物上的三份 Playwright spec 30 passed（含屏 05 几何闸）；多人局/平台认输 1/0 行行为测试 4 passed。服务端终局状态只在 `_commit_end_state` 写，AI 落账只在 `_finish_ended_game` 调用。屏 05/02 四图及六张 1024×600 状态图已核，视觉状态仍为**待 Fan 确认**；上板条目与后续项见 `board-checklist.md`，真机结果待登记。
+
 **Files:**
 - Create: `superpowers/tracks/kiosk-go-play-ai/board-checklist.md`(上板要验的项,给真机那一轮用)
 - 无源码改动
@@ -6219,7 +6221,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Consumes: Task 1–11 的全部提交
 - Produces: 一份可以直接照着上板的清单;本轮完成判据的证据(基线 diff、两套构建、四图/承重结论、Fan 视觉确认记录)
 
-- [ ] **Step 1: 全量回归(基线 diff)**
+- [x] **Step 1: 全量回归(基线 diff)**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
@@ -6261,7 +6263,7 @@ grep 绿不代表落账没丢；本分支平台 / 大厅认输的写入 1/0 行�
 `_do_end_without_result` 改走 `_commit_end_state("Void")`；仅当前手已有双停待补分事实且尚无 end_state 时传 `fill_pending=True`。
 本分支不带 guard 的平台双停不会产生该事实。合并后还须单独跑 `tests/platforms/test_engine_game_ledger_e2e.py` 三条行为测试；与 web_ui 拆命令。
 
-- [ ] **Step 2: e2e(打构建产物)**
+- [x] **Step 2: e2e(打构建产物)**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai/katrain/web/ui
@@ -6272,14 +6274,14 @@ cp /tmp/kgpa-katrain-config.json ~/.katrain/config.json 2>/dev/null || true
 ```
 Expected: 全 passed。
 
-- [ ] **Step 3: 视觉确认记录**
+- [x] **Step 3: 视觉确认记录（待 Fan 确认）**
 
 产出以下截图与对比，统一标注「待 Fan 确认」；不自行判视觉通过，也不因尚未确认停止本轮已授权实施：
 `superpowers/tracks/kiosk-go-play-ai/visual/` 下 `n17-game-unavailable-1024x600.png`、`a18-timed-game-1024x600.png`、
 `a3-strategy-hint-territory-1024x600.png`、`n14-a11-ranked-rail-1024x600.png`、`n14-a11-pvp-local-rail-1024x600.png`;
 屏 05 / 屏 02 四图参考、实现、并排、叠加/差异与两次截图抖动比较；屏 10 仅按受影响的既有测试验证。
 
-- [ ] **Step 4: 写上板清单**
+- [x] **Step 4: 写上板清单**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai
@@ -6321,7 +6323,7 @@ git ls-files superpowers/tracks/kiosk-go-play-ai/board-checklist.md; ls superpow
 
 ```
 
-- [ ] **Step 5: 提交清单**
+- [x] **Step 5: 提交清单**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-play-ai

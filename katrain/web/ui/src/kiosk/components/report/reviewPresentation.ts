@@ -130,6 +130,9 @@ export function outcomeLine(game: UserGameSummary, mine: 'B' | 'W' | null, t: TF
     if (!isPlaySource(game.source)) return t('review:no_result_line', '谱里没写结果');
     return interpolate(t('review:unfinished_line', '下到第 {n} 手就退出了'), { n: game.move_count });
   }
+  // SGF 的 `Void` = 不判胜负。今天只由星阵人机局写进来(AI 停手或认输,本终端分不出是哪种,
+  // server.py `_record_platform_engine_game`)。规范里有定义的值,照它的意思念,不算猜。
+  if (/^void$/i.test(raw)) return t('review:no_result_line', '这盘没有判出胜负');
   const m = raw.match(/^([BW])\+(.+)$/i);
   if (!m) return raw;                       // 后端存了别的写法就原样念,不猜
   const winner = m[1].toUpperCase() as 'B' | 'W';

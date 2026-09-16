@@ -26,6 +26,10 @@ MAX_BACKOFF_SECONDS = 300  # 5 minutes cap
 #: progress), so one stuck item there must not stall the rest of the queue.
 ORDERED_OPERATIONS = frozenset({"settle_ai_ladder_ranked"})
 
+#: Cloud attributes these requests to the bearer. Unlike ordered operations,
+#: one held game must not block another user's queue items.
+OWNER_BOUND_OPERATIONS = frozenset({"create_user_game"})
+
 #: 4xx codes that mean "not now" rather than "not ever", so a revive should try them
 #: again. 404 and 405 earn their place the hard way: a board can be running ahead of the
 #: server it syncs to, and a route that does not exist yet is not a request the server
@@ -111,13 +115,29 @@ class SyncWorker:
                     if not self._may_send_for(item):
                         blocked_users.add(item.user_id)
                         continue
+                elif item.operation in OWNER_BOUND_OPERATIONS:
+                    bound = getattr(self._remote_client, "bound_user_id", None)
+                    if bound is not None and item.user_id is not None and str(bound) != str(item.user_id):
+                        logger.info(
+                            "Holding %s [%s]: queued for user %s, cloud session is user %s",
+                            item.operation,
+                            item.idempotency_key[:8],
+                            item.user_id,
+                            bound,
+                        )
+                        continue
 
                 item.status = "in_progress"
                 item.locked_at = datetime.utcnow()
                 db.commit()
 
                 try:
-                    await self._execute_item(item)
+                    outcome = await self._execute_item(item)
+                    if outcome == "owner_changed":
+                        item.status = "pending"
+                        item.locked_at = None
+                        db.commit()
+                        continue
                     item.status = "completed"
                     item.synced_at = datetime.utcnow()
                     db.commit()
@@ -151,6 +171,11 @@ class SyncWorker:
                 json=item.payload,
             )
             item.last_http_status = resp.status_code
+
+            if resp.status_code == 401 and item.operation in OWNER_BOUND_OPERATIONS and item.user_id is not None:
+                bound = self._remote_client.bound_user_id
+                if bound is None or str(bound) != str(item.user_id):
+                    return "owner_changed"
 
             if 200 <= resp.status_code < 300:
                 self._absorb_response(item, resp)

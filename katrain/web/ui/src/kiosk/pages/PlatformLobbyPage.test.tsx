@@ -99,12 +99,14 @@ describe('屏 08 跨平台 · 大厅', () => {
 
     const dlg = await screen.findByTestId('platform-challenge-confirm');
     expect(within(dlg).getByText('向 stone_walker 发起挑战？')).toBeInTheDocument();
+    expect(dlg).toHaveTextContent('不会回到这台盒子');
     expect(platformSendChallenge, '还没确认就发出去了').not.toHaveBeenCalled();
 
     await userEvent.click(within(dlg).getByRole('button', { name: '发出挑战' }));
     await waitFor(() => expect(platformSendChallenge).toHaveBeenCalledWith(
       'ogs', { user_id: '1', board_size: 19, rules: 'chinese', ranked: true }, 'tok',
     ));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('不会回到这台盒子'));
   });
 
   it('确认框里按取消:一条都不发', async () => {

@@ -167,4 +167,19 @@ describe('EngineMoveErrorDialog', () => {
     expect(screen.getByText('拿回棋子').closest('button')).not.toBeDisabled();
     expect(screen.getByText('认输').closest('button')).not.toBeDisabled();
   });
+
+  // M2(2026-07-11 登记):等待态原来一颗键都没有、点背景也关不掉,而解除条件是「识别盘面与数字盘面
+  // 整盘一致连续 N 帧」—— 反光、手影、识别不到盘面时会一直挂住,只能离开围棋应用。
+  it('等待拿回棋子时也有出口:认输走页面的确认流,弹层自己不关', async () => {
+    cancel.mockResolvedValueOnce({ ok: true, awaiting_removal: true });
+    const onResign = vi.fn();
+    render(<EngineMoveErrorDialog {...base} onResign={onResign} error={baseError} />);
+
+    fireEvent.click(screen.getByText('拿回棋子'));
+    expect(await screen.findByText('等待拿回棋子')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '认输' }));
+    expect(onResign).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('等待拿回棋子')).toBeInTheDocument();
+  });
 });

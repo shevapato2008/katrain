@@ -1006,27 +1006,41 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             # 它没有别的猎物了，删掉；归属判断只留一处，就是下面这条。
             guard_session_reader(session, current_user, "play move")
 
+        gateway = getattr(app.state, "platform_gateway", None)
+        from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
+
+        # A completed engine session keeps its engine marker so retries remain
+        # terminal, while its active platform context has already been removed.
+        ended_engine_session = bool(
+            gateway
+            and is_platform_engine_session(session)
+            and not gateway.is_platform_game(request.session_id)
+            and session.katrain.game.end_result
+        )
+
         # Skip turn validation for research sessions
         # Enforce Multiplayer Turns (only if this is a multiplayer session)
         if session.mode != "research" and (session.player_b_id is not None or session.player_w_id is not None):
             # This is a multiplayer game - require authentication and turn check
             if current_user is None:
                 raise HTTPException(status_code=401, detail="Authentication required for multiplayer games")
-            state = session.katrain.get_state()
-            next_player = state["player_to_move"]
-            allowed_user_id = session.player_b_id if next_player == "B" else session.player_w_id
-            if current_user.id != allowed_user_id:
-                raise HTTPException(status_code=403, detail="Not your turn")
+            if ended_engine_session:
+                guard_session_reader(session, current_user, "play move")
+            else:
+                state = session.katrain.get_state()
+                next_player = state["player_to_move"]
+                allowed_user_id = session.player_b_id if next_player == "B" else session.player_w_id
+                if current_user.id != allowed_user_id:
+                    raise HTTPException(status_code=403, detail="Not your turn")
 
         coords = None if request.pass_move else request.coords
         if coords is None and not request.pass_move:
             raise HTTPException(status_code=400, detail="coords required unless pass_move is true")
 
         # Route through platform gateway for cross-platform games
-        gateway = getattr(app.state, "platform_gateway", None)
-        if gateway and gateway.is_platform_game(request.session_id):
-            from katrain.web.platforms.gateway import PlatformMoveRejectedError
-
+        # The active context is removed at engine-game termination, but this
+        # session must still reach the gateway rather than fall through locally.
+        if gateway and (gateway.is_platform_game(request.session_id) or is_platform_engine_session(session)):
             try:
                 user_id = current_user.id if current_user else 0
                 with persistent_analysis_activity(current_user, session, "move", "move analysis"):
@@ -1038,7 +1052,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.last_state = state
                     return {"session_id": session.session_id, "state": state}
             except PlatformMoveRejectedError as e:
-                raise HTTPException(status_code=409, detail=str(e))
+                if e.reason != "game_ended":
+                    raise HTTPException(status_code=409, detail=str(e))
+                # The submitted game has already ended. Return its authoritative
+                # terminal state instead of presenting a retryable move failure.
+                state = session.katrain.get_state()
+                session.last_state = state
+                await _record_platform_engine_game(session, app, current_user)
+                return {"session_id": session.session_id, "state": state}
 
         analysis_context = (
             persistent_analysis_activity(current_user, session, "move", "move analysis")
@@ -1673,7 +1694,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             logging.getLogger("katrain_web").error(f"Could not queue ranked settlement for sync: {exc}")
             return False
 
-    async def _record_ai_game_locked(session, app, current_user, result):
+    async def _record_ai_game_locked(session, app, current_user, result, data_overrides=None):
         """Record a completed single-player/local game to user_games (remote-first via
         dispatcher, else local). source = play_local when both seats are human, else play_ai.
 
@@ -1765,6 +1786,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 "game_type": game_type,
                 "game_date": game_date,
             }
+
+            # Platform engine sessions use placeholder player metadata; their
+            # caller supplies the authoritative source and seat names.
+            if data_overrides and game_type != "ai_ladder_ranked":
+                data.update(data_overrides)
 
             if game_type == "ai_ladder_ranked":
                 from katrain.web.core.ai_ladder_catalog import (
@@ -1959,13 +1985,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     pass
             logging.getLogger("katrain_web").error(f"Failed to record game: {e}")
 
-    async def _record_ai_game(session, app, current_user, result):
+    async def _record_ai_game(session, app, current_user, result, data_overrides=None):
         record_lock = getattr(session, "record_game_lock", None)
         if not isinstance(record_lock, asyncio.Lock):
             record_lock = asyncio.Lock()
             session.record_game_lock = record_lock
         async with record_lock:
-            await _record_ai_game_locked(session, app, current_user, result)
+            await _record_ai_game_locked(session, app, current_user, result, data_overrides=data_overrides)
 
     globals()["_RECORD_FN"] = _record_ai_game
 
@@ -1994,17 +2020,24 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         # Route through platform gateway for cross-platform games
         gateway = getattr(app.state, "platform_gateway", None)
-        platform_game = bool(not ranked_ai and gateway and gateway.is_platform_game(request.session_id))
+        from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
+
+        platform_game = bool(
+            not ranked_ai
+            and gateway
+            and (gateway.is_platform_game(request.session_id) or is_platform_engine_session(session))
+        )
         if platform_game:
-            from katrain.web.platforms.gateway import PlatformMoveRejectedError
-
             before = _terminal_of(session)
-
             try:
                 user_id = current_user.id if current_user else 0
                 await gateway.resign(request.session_id, user_id)
             except PlatformMoveRejectedError as e:
-                raise HTTPException(status_code=409, detail=str(e))
+                if e.reason != "game_ended":
+                    raise HTTPException(status_code=409, detail=str(e))
+                state = session.katrain.get_state()
+                session.last_state = state
+                return {"session_id": session.session_id, "state": state}
             except EndgameConflict as e:
                 # 远端认输已经成功,网关落回本地(`_local_resign`)时撞上本地早已结束的局:按空操作处理。
                 if e.reason != "already_ended":
@@ -2063,17 +2096,20 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if is_multiplayer and current_user and wrote:
             winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
             result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
-            try:
-                if not _is_guest_participant(app, session):
-                    app.state.game_repo.record_multiplayer_game(
-                        sgf_content=session.katrain.get_sgf(),
-                        result=result,
-                        game_type=getattr(session, "game_type", "free"),
-                        black_id=session.player_b_id,
-                        white_id=session.player_w_id,
-                    )
-            except Exception as e:
-                logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
+            if is_platform_engine_session(session):
+                await _record_platform_engine_game(session, app, current_user)
+            else:
+                try:
+                    if not _is_guest_participant(app, session):
+                        app.state.game_repo.record_multiplayer_game(
+                            sgf_content=session.katrain.get_sgf(),
+                            result=result,
+                            game_type=getattr(session, "game_type", "free"),
+                            black_id=session.player_b_id,
+                            white_id=session.player_w_id,
+                        )
+                except Exception as e:
+                    logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
 
             # 广播**不在** try 里:它告诉对面「这局结束了」,而 try 守的是落账。
             # 两件事捆在一个 try 里时,落账一失败对面就永远收不到终局 —— 盒上
@@ -3428,6 +3464,46 @@ async def _vision_event_pump(app: FastAPI):
             await asyncio.sleep(1.0)
 
 
+def _session_owner(app: FastAPI, session):
+    """Resolve the session owner for terminal paths without an HTTP user."""
+    user_id = getattr(session, "user_id", None)
+    repo = getattr(app.state, "user_repo", None)
+    if user_id is None or repo is None:
+        return None
+    row = repo.get_user_by_id(user_id)
+    return User(**row) if row else None
+
+
+async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
+    """Record a completed platform engine game through the AI-game ledger."""
+    from katrain.web.platforms.gateway import is_platform_engine_session
+
+    if not is_platform_engine_session(session) or user is None:
+        return
+    result = session.katrain.game.end_result
+    if not result:
+        return
+    record = globals().get("_RECORD_FN")
+    if record is None:
+        return
+    players = session.katrain.players_info
+    names = {"B": players["B"].name or "", "W": players["W"].name or ""}
+    human_color = "W" if session.katrain.platform_engine_color == "B" else "B"
+    names[human_color] = user.username
+    await record(
+        session,
+        app,
+        user,
+        result,
+        data_overrides={"source": "play_ai", "player_black": names["B"], "player_white": names["W"]},
+    )
+
+
+async def _record_platform_engine_game_off_request(session, app: FastAPI) -> None:
+    """Record a terminal platform engine game for its session owner."""
+    await _record_platform_engine_game(session, app, _session_owner(app, session))
+
+
 def _apply_engine_recovery_outcome(
     app: FastAPI, manager, session_id: str, game_id: str, coords, reason: str, detail: str
 ) -> bool:
@@ -3474,7 +3550,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     move produces no game_update, so nothing else naturally slows the retry loop).
     """
     from katrain.vision.katrain_bridge import vision_move_to_katrain
-    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
 
     manager = app.state.session_manager
     tracker = getattr(app.state, "engine_recovery", None)
@@ -3535,13 +3611,15 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
     coords = (move.coords[0], move.coords[1])
     gateway = getattr(app.state, "platform_gateway", None)
-    if gateway and gateway.is_platform_game(session_id):
+    if gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session)):
         game_id = gateway.get_game_id(session_id) or ""
         try:
             await gateway.play_move(session_id, coords[0], coords[1], user_id=0)
         except PlatformMoveRejectedError as e:
             log.warning("Platform gateway rejected vision move: %s", e)
             rearm = _apply_engine_recovery_outcome(app, manager, session_id, game_id, coords, e.reason, str(e))
+            if e.reason == "game_ended":
+                await _record_platform_engine_game_off_request(session, app)
             if rearm:
                 _rearm_detection()
                 return 0.5

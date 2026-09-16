@@ -73,6 +73,8 @@ const expectAllDisconnected = () => {
   expect(ogs).toHaveTextContent('点击登录');
   expect(golaxy).toHaveTextContent('点击登录');
   expect(fox).toHaveTextContent('接口还没通');
+  expect(fox).toHaveTextContent('暂不能对弈');
+  expect(fox).not.toHaveTextContent('即将上线');
   expect(fox).toBeDisabled();
 };
 
@@ -325,5 +327,17 @@ describe('PlayPage', () => {
     renderPage();
     expect(platformStatusMock).not.toHaveBeenCalled();
     expectAllDisconnected();
+  });
+
+  it('盒端已登录且 token=null 时拉取状态并直达星阵人机开局', async () => {
+    useAuthMock.mockReturnValue({ user: { username: '友' }, isAuthenticated: true, token: null });
+    platformStatusMock.mockResolvedValue({ platforms: [platformRecord('golaxy', true)] });
+
+    renderPage();
+
+    const golaxy = await screen.findByRole('button', { name: /^星阵围棋，已连接/ });
+    expect(platformStatusMock).toHaveBeenCalledWith(null);
+    fireEvent.click(golaxy);
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/engine/golaxy');
   });
 });

@@ -1724,6 +1724,18 @@ class WebKaTrain(KaTrainBase):
             winner = "W" if color == "B" else "B"
             return self._commit_end_state(f"{winner}+T")
 
+    def _do_end_by_resignation(self, winner):
+        """End with an explicit winner when a remote engine resigns."""
+        return self._commit_end_state(f"{winner}+R")
+
+    def _do_end_without_result(self):
+        """End the current game without declaring a winner (SGF ``Void``).
+
+        Golaxy currently maps both an AI pass and an AI resignation to the same
+        special coordinate, so choosing a winner here would invent information.
+        """
+        return self._commit_end_state("Void")
+
     def _do_engine_recovery_popup(self, error_message, code):
         # Sync global i18n before logging translated strings
         current_lang = self.config("general/language") or self.config("general/lang") or "en"

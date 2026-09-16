@@ -118,8 +118,15 @@ describe('outcomeLine —— 这一局怎么结束的', () => {
     }
   });
 
+  // `Void` 是 SGF 规范里定义好的「不判胜负」,今天由星阵人机局写进来(AI 停手或认输,分不出是哪种)。
+  // 照它的意思念,不是猜;规范之外的写法仍原样念。
+  it('Void 念成「这盘没有判出胜负」', () => {
+    expect(outcomeLine(game({ result: 'Void' }), 'B', t)).toBe('这盘没有判出胜负');
+    expect(outcomeLine(game({ result: 'void' }), null, t)).toBe('这盘没有判出胜负');
+  });
+
   it('后端存了别的写法就原样念,不猜', () => {
-    expect(outcomeLine(game({ result: 'Void' }), 'B', t)).toBe('Void');
+    expect(outcomeLine(game({ result: 'Unknown' }), 'B', t)).toBe('Unknown');
   });
 });
 

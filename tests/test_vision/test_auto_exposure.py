@@ -128,24 +128,30 @@ class TestExposureController:
 
 
 class TestCameraRuntimeControls:
+    def test_hbv_camera_uses_native_v4l2_exposure_modes(self):
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CAMERA_AUTO_EXPOSURE_ON
+
+        assert CAMERA_AUTO_EXPOSURE_MANUAL == 1.0
+        assert CAMERA_AUTO_EXPOSURE_ON == 3.0
+
     def test_pending_controls_applied_and_verified(self):
         from unittest.mock import MagicMock, patch
 
-        from katrain.vision.camera import CameraManager
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
 
         cam = CameraManager(device_id=0)
         cap = MagicMock()
         cap.set.return_value = True
-        cap.get.return_value = 800.0
+        cap.get.side_effect = [1.0, 800.0]
         cam._cap = cap
-        cam.request_controls(exposure=800.0, auto_exposure=0.25)
+        cam.request_controls(exposure=800.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
         cam._apply_pending_controls()
         assert cam.controls_effective is True
 
     def test_readback_mismatch_marks_ineffective(self):
         from unittest.mock import MagicMock
 
-        from katrain.vision.camera import CameraManager
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
 
         cam = CameraManager(device_id=0)
         cap = MagicMock()
@@ -155,6 +161,34 @@ class TestCameraRuntimeControls:
         cam.request_controls(exposure=800.0)
         cam._apply_pending_controls()
         assert cam.controls_effective is False
+
+    def test_manual_auto_exposure_readback_is_verified(self):
+        from unittest.mock import MagicMock
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
+
+        cam = CameraManager(device_id=0)
+        cap = MagicMock()
+        cap.set.return_value = True
+        cap.get.return_value = 3.0  # driver stayed in auto mode
+        cam._cap = cap
+        cam.request_controls(auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+        assert cam.controls_effective is False
+
+    def test_native_v4l2_manual_readback_is_accepted(self):
+        from unittest.mock import MagicMock
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
+
+        cam = CameraManager(device_id=0)
+        cap = MagicMock()
+        cap.set.return_value = True
+        cap.get.return_value = 1.0  # native V4L2 exposure_auto=1 (manual)
+        cam._cap = cap
+        cam.request_controls(auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+        assert cam.controls_effective is True
 
     def test_no_pending_is_noop(self):
         from katrain.vision.camera import CameraManager

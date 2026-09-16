@@ -20,7 +20,14 @@ from katrain.web.platforms.golaxy.adapter import EngineGameConfig, EngineGameSta
 from katrain.web.platforms.golaxy.coords import katrain_to_golaxy
 from katrain.web.platforms.golaxy.engine_client import GenmoveResult
 from katrain.web.platforms.manager import PlatformManager
-from katrain.web.platforms.models import OnlineUser, PlatformGameSession, PlatformMove, TimeControl
+from katrain.web.platforms.models import (
+    OnlineUser,
+    PlatformGameSession,
+    PlatformMove,
+    PlatformPass,
+    PlatformResign,
+    TimeControl,
+)
 from katrain.web.session import SessionManager
 
 
@@ -155,6 +162,30 @@ class TestStartEngineGame:
         # Human=White=Me, bot is Black.
         assert sm.create_calls[0]["w_name"] == "Me"
         assert sm.create_calls[0]["b_name"] == "[golaxy] 星阵-7"
+
+    @pytest.mark.asyncio
+    async def test_ai_opening_pass_is_played_locally(self, setup):
+        pm, sm, adapter = setup
+        gs = make_session("W")
+        first = PlatformPass(color="B", move_number=1, game_id="g")
+        adapter.start_engine_game.return_value = EngineGameStart(session=gs, first_ai_move=first)
+
+        await pm.start_engine_game("golaxy", object(), user_id=7)
+
+        assert sm.session.moves == [None]
+        assert pm._active_games["g"].last_confirmed_move == 1
+
+    @pytest.mark.asyncio
+    async def test_ai_opening_resign_ends_context_with_human_win(self, setup):
+        pm, sm, adapter = setup
+        gs = make_session("W")
+        first = PlatformResign(color="B", winner="W", move_number=0, game_id="g")
+        adapter.start_engine_game.return_value = EngineGameStart(session=gs, first_ai_move=first)
+
+        session_id = await pm.start_engine_game("golaxy", object(), user_id=7)
+
+        assert ("end_by_resignation", {"coords": None, "winner": "W"}) in sm.session.katrain_calls
+        assert not pm.is_platform_game(session_id)
 
     @pytest.mark.asyncio
     async def test_human_black_marks_white_as_platform_engine(self, setup):

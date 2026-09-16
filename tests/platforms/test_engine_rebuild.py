@@ -207,34 +207,23 @@ async def test_branch_after_undo_rebuilds_from_new_branch_not_old_main_line():
 
 
 # --------------------------------------------------------------------------- #
-# Case 4: a pass on the path -> rebuild raises -> gateway rejects loudly.      #
+# Case 4: a pass on the path is preserved in the stateless tunnel history.     #
 # --------------------------------------------------------------------------- #
 
 
 @pytest.mark.asyncio
-async def test_pass_on_path_rejects_loudly_never_silently_dropped():
-    sm, pm, gateway, adapter = _build_stack(genmove_return=_genmove_for(15, 3))
+async def test_pass_on_path_is_rebuilt_as_the_verified_sentinel():
+    sm, pm, gateway, adapter = _build_stack(genmove_side_effect=[_genmove_for(15, 3), _genmove_for(14, 4)])
     config = EngineGameConfig(level=1100, human_color="B", handicap=0)
     session_id = await pm.start_engine_game("golaxy", config, user_id=1)
     session = sm.get_session(session_id)
 
-    await gateway.play_move(session_id, 3, 3, user_id=1)
-    assert _main_line(session) == [("B", (3, 3)), ("W", (15, 3))]
+    await gateway.pass_move(session_id, user_id=1)
+    assert _main_line(session) == [("B", None), ("W", (15, 3))]
 
-    # Manually corrupt the tree with a pass node -- something the real engine-play
-    # flow should never produce (pass_move rejects "pass_not_supported" for engine
-    # games), but the rebuild path must defend against it regardless.
-    session.katrain("play", coords=None)
-    assert session.katrain.game.current_node.is_pass
+    await gateway.play_move(session_id, 5, 5, user_id=1)
 
-    with pytest.raises(PlatformMoveRejectedError) as exc_info:
-        await gateway.play_move(session_id, 5, 5, user_id=1)
-
-    assert exc_info.value.reason == "engine_error"
-    # The tunnel was never called for this attempt -- rejected before set_pending.
-    assert adapter._rest.engine_genmove.await_count == 1  # only the first, earlier call
-    ctx = pm.get_game_context(session_id)
-    assert ctx.pending_action is None
+    assert _last_moves_kwarg(adapter) == [-1, katrain_to_golaxy(15, 3), katrain_to_golaxy(5, 5)]
 
 
 # --------------------------------------------------------------------------- #

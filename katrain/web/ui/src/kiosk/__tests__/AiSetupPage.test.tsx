@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import AiSetupPage from '../pages/AiSetupPage';
+import { readActiveSession, clearActiveSession } from '../utils/activeSession';
 
 /**
  * 屏 02 / 03 的**控件与开局载荷**那一半。（版式、赌注口径、挡局面板在
@@ -231,6 +232,40 @@ describe('AiSetupPage', () => {
         color: 'black',
       }));
     });
+  });
+
+  // P3 同形(屏 02):屏上写「这一局不贴目」,载荷就必须是 0。
+  it('free:让了子送出去的 komi 是 0', async () => {
+    const { API } = await import('../../api');
+    vi.mocked(API.gameSetup).mockClear();
+    renderPage('free');
+    const user = userEvent.setup();
+    await user.click(step('setup-handicap', '＋'));
+    await user.click(step('setup-handicap', '＋'));
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalledWith(
+      'new-session-123', 'free', expect.objectContaining({ handicap: 2, komi: 0 }),
+    ));
+  });
+
+  it('free:不让子时 komi 仍是贴目轨那一档', async () => {
+    const { API } = await import('../../api');
+    vi.mocked(API.gameSetup).mockClear();
+    renderPage('free');
+    await userEvent.setup().click(screen.getByRole('button', { name: /开始对局/i }));
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalledWith(
+      'new-session-123', 'free', expect.objectContaining({ handicap: 0, komi: 6.5 }),
+    ));
+  });
+
+  // §3.5:开局那一刻的 onBoard 随活动会话写下。这台 mock 的机器没标定摄像头 ⇒ false。
+  it('free:活动会话带上 onBoard(没标定摄像头 ⇒ false)', async () => {
+    clearActiveSession('game');
+    renderPage('free');
+    await userEvent.setup().click(screen.getByRole('button', { name: /开始对局/i }));
+    await waitFor(() => expect(readActiveSession('game')).toMatchObject({
+      route: '/kiosk/play/ai/game/new-session-123', onBoard: false,
+    }));
   });
 
   it('shows error alert when API call fails', async () => {

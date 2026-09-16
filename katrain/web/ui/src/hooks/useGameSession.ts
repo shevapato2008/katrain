@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API, type GameState, type PhysicalEngineErrorState } from '../api';
 import { websocketUrl, WS_POLICY_VIOLATION } from '../utils/websocketUrl';
+import { readAudioPref } from '../utils/audioPrefs';
 
 interface GameEndData {
     reason: 'resign' | 'forfeit' | 'timeout' | 'count' | 'normal';
@@ -53,10 +54,9 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const lastSoundRef = useRef<{name: string, time: number} | null>(null);
 
     const playSound = useCallback((sound: string) => {
-        // Box-SSO guest mode (client-side zero-persistence, 4th layer, R9-F1): 'kioskPlaySound'
-        // is deliberately LEFT GLOBAL — a room/environment audio preference, not per-account
-        // activity — see the justification comment at its write site in PvpLocalSetupPage.tsx.
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('kioskPlaySound') === '0') return;
+        // 提示音只留一把:设置屏「落子音效」、屏 04「落子提示音」、这里读的都是 audioPrefs 的 sfx
+        // (v2 §4.1)。galaxy 也走这个 hook —— 它从不写这把键,readAudioPref 缺键当开,行为不变。
+        if (!readAudioPref('sfx')) return;
         const now = Date.now();
         // Prevent duplicate rapid sounds
         if (lastSoundRef.current && lastSoundRef.current.name === sound && now - lastSoundRef.current.time < 300) {
@@ -176,7 +176,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         await API.navigate(sessionId, nodeId, token);
     }, [sessionId, token]);
 
-    const handleAction = useCallback(async (action: string) => {
+    const handleAction = useCallback(async (action: string, opts?: { color?: 'B' | 'W' }) => {
         if (!sessionId) return;
         try {
             let result: any;
@@ -193,7 +193,11 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             // already return the finished state; relying on the broadcast instead left
             // the acting client sitting in a game the server had already ended (and,
             // for 升降级对弈, never showing the settlement that follows it).
-            else if (action === 'resign') result = await API.resign(sessionId, token);
+            // 本地对局(pvp_local)的认输要说**是哪一方**认输(后端不带 color 回 400);
+            // 其它模式不许带(带了同样 400)⇒ 没给 color 时调用形状与原来逐字一致。
+            else if (action === 'resign') result = opts?.color
+                ? await API.resign(sessionId, token, opts.color)
+                : await API.resign(sessionId, token);
             else if (action === 'timeout') result = await API.timeout(sessionId, token);
             else if (action === 'rotate') await API.rotate(sessionId);
             else if (action === 'mistake-prev') result = await API.findMistake(sessionId, 'undo');

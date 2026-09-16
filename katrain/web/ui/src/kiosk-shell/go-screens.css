@@ -257,6 +257,20 @@
 .pcard .clock { margin-left: auto; text-align: right; flex: none; }
 .pcard .clock b { font-family: var(--font-mono); font-size: 19px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .pcard .clock span { display: block; font-size: 10.5px; color: var(--dim); }
+/* F5:读秒阶段大字用青玉色,到点整张卡红边红字 —— 两人面对面下时分不出谁在读秒/谁到点了。 */
+.pcard[data-clock="byoyomi"] .clock b { color: var(--accent); }
+.pcard[data-clock="expired"] { border-color: var(--bad); }
+.pcard[data-clock="expired"] .clock b, .pcard[data-clock="expired"] .clock span { color: var(--bad); }
+
+/* F4:右栏状态条(设计稿 05 附 B/C)—— 开关行之上、右栏里的一块常驻区块,不是浮层 Alert。
+ * 左边标题+副行,右边一颗药丸键(复盘本局 / 重试)。数子失败 / 超时判负态用 data-tone="bad"。 */
+.gstatus { display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid var(--hair); border-radius: var(--row-radius); background: var(--panel); flex: none; }
+.gstatus b { display: block; font-family: var(--font-serif); font-size: 13px; font-weight: 600; }
+.gstatus span { display: block; font-size: 10.5px; color: var(--dim); margin-top: 1px; }
+.gstatus[data-tone="bad"] { border-color: var(--bad); }
+.gstatus[data-tone="bad"] b { color: var(--bad); }
+.gstatus .kiosk-btn--pill { margin-left: auto; flex: none; }
 
 /* 纯显示开关那一排。**不带图标不是漏了** —— 开关本来就没有图标,安一个反而像「按下去有后果」。
  * 基态(药丸键)与稿子 `go-kiosk.tmpl.html:281-293` 逐字相同;直播屏和复盘屏也用它,

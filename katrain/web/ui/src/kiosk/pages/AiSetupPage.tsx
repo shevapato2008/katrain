@@ -147,7 +147,9 @@ const AiSetupPage = () => {
         ai_strategy: aiStrategy,
         rank,
         handicap,
-        komi,
+        // 屏上让了子就写「这一局不贴目」—— 载荷说同一件事(v2 §4.2 / P3)。ranked 走上面的
+        // startAiLadderGame 分支,根本不经过这里。
+        komi: handicap > 0 ? 0 : komi,
         time_enabled: isRanked || timeEnabled,
         main_time: mainTime,
         byo_length: byoyomiTime,
@@ -158,6 +160,8 @@ const AiSetupPage = () => {
         label: isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈'),
         route: `/kiosk/play/ai/game/${session_id}`,
         ts: Date.now(),
+        // 这一局下不下实体盘在开局这一刻定下(v2 §3.5),守卫与对局屏都读它。
+        onBoard: playInput.onBoard,
       });
       navigate(`/kiosk/play/ai/game/${session_id}`);
     } catch (e: any) {

@@ -661,6 +661,57 @@ class TestAwaitingRemoval:
         assert PhysicalPlayOrchestrator.PAUSE_REASON_AWAITING_REMOVAL not in orch._pause_reasons
 
 
+class TestRecoveryReleasedOnGameEnd:
+    @staticmethod
+    def _lit(**cfg):
+        orch, led, vision, _ = _orch(**cfg)
+        orch.on_game_state(state([["B", [3, 15], None, 1]]))
+        orch._tick_once()
+        assert led.calls[-1] == ("set_points", [{"row": 3, "col": 3, "color": "black"}])
+        return orch, led, vision
+
+    def test_run_loop_releases_engine_error_and_clears_lamps_when_the_game_ends(self):
+        orch, led, vision = self._lit(tick_interval_s=0.01)
+        orch.enter_engine_error((3, 15), "tok-1")
+        orch.on_game_state(state([["B", [3, 15], None, 1]], end_result="W+R"))
+
+        async def run():
+            task = asyncio.create_task(orch._run())
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + 1.0
+            while orch._pause_reasons and loop.time() < deadline:
+                await asyncio.sleep(0.01)
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+        asyncio.run(run())
+
+        assert orch._pause_reasons == set()
+        assert orch._suspended is False
+        assert vision.paused is False
+        assert led.calls[-1] == ("clear",)
+
+    def test_awaiting_removal_is_released_when_the_game_ends(self):
+        orch, led, vision = self._lit()
+        orch.enter_engine_error((3, 15), "tok-1")
+        orch.enter_awaiting_removal((3, 15))
+        orch.on_game_state(state([["B", [3, 15], None, 1]], end_result="W+R"))
+
+        assert orch._release_recovery_on_game_end() is True
+        assert orch._awaiting_removal_context is None
+        assert orch._pause_reasons == {PhysicalPlayOrchestrator.PAUSE_REASON_LAG}
+        assert orch._suspended is False
+        assert led.calls[-1] == ("clear",)
+
+    def test_nothing_is_released_while_the_game_is_still_running(self):
+        orch, led, _ = self._lit()
+        orch.enter_engine_error((3, 15), "tok-1")
+
+        assert orch._release_recovery_on_game_end() is False
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_ENGINE_ERROR in orch._pause_reasons
+        assert led.calls[-1] == ("set_points", [{"row": 3, "col": 3, "color": "black"}])
+
+
 def led_calls_for(orch):
     """Last non-empty set_points batch actually applied (helper for the tests above)."""
     return orch._last_points or []

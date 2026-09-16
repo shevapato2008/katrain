@@ -96,6 +96,16 @@ def _submitted_position_status(session, game, node) -> str:
     return "live"
 
 
+def is_platform_engine_session(session) -> bool:
+    """Return whether this session was created as a platform engine game.
+
+    ``platform_engine_color`` survives removal of the active platform context
+    and is cleared when a new game replaces this one. Only literal colours are
+    accepted so mock objects and similarly shaped human games do not match.
+    """
+    return getattr(getattr(session, "katrain", None), "platform_engine_color", None) in ("B", "W")
+
+
 class PlatformCommandGateway:
     """Intercepts game commands for platform-backed sessions.
 
@@ -139,9 +149,19 @@ class PlatformCommandGateway:
         ctx = self._pm.get_game_context(session_id)
         return bool(ctx and ctx.is_engine and ctx.is_pending)
 
+    def _is_ended_engine_game(self, session_id: str) -> bool:
+        """Detect an engine game whose terminal event removed its platform context."""
+        try:
+            session = self._sm.get_session(session_id)
+        except KeyError:
+            return False
+        return is_platform_engine_session(session)
+
     async def play_move(self, session_id: str, col: int, row: int, user_id: int) -> dict:
         ctx = self._pm.get_game_context(session_id)
         if ctx is None:
+            if self._is_ended_engine_game(session_id):
+                raise PlatformMoveRejectedError("This engine game has already ended", reason="game_ended")
             return self._local_play(session_id, col, row)
 
         if ctx.is_pending:
@@ -314,6 +334,8 @@ class PlatformCommandGateway:
     async def pass_move(self, session_id: str, user_id: int) -> dict:
         ctx = self._pm.get_game_context(session_id)
         if ctx is None:
+            if self._is_ended_engine_game(session_id):
+                raise PlatformMoveRejectedError("This engine game has already ended", reason="game_ended")
             return self._local_pass(session_id)
 
         if ctx.is_engine:
@@ -340,6 +362,8 @@ class PlatformCommandGateway:
     async def resign(self, session_id: str, user_id: int) -> dict:
         ctx = self._pm.get_game_context(session_id)
         if ctx is None:
+            if self._is_ended_engine_game(session_id):
+                raise PlatformMoveRejectedError("This engine game has already ended", reason="game_ended")
             return self._local_resign(session_id)
 
         if ctx.is_engine:

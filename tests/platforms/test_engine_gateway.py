@@ -386,3 +386,63 @@ class TestGuardQueries:
         pm = PlatformManager(sm)
         gateway = PlatformCommandGateway(pm, sm)
         assert gateway.get_game_id("no-such-session") is None
+
+
+class TestEngineSessionAfterItsContextIsGone:
+    """A finished engine session must not fall through to local commands."""
+
+    @staticmethod
+    def _ended(setup, engine_color="W"):
+        gateway, pm, sm, adapter, ctx, session = setup
+        pm._session_to_game.pop("s")
+        pm._active_games.pop("g")
+        session.katrain.platform_engine_color = engine_color
+        return gateway, adapter, session
+
+    @pytest.mark.asyncio
+    async def test_play_move_is_rejected_as_game_ended(self, setup):
+        gateway, adapter, session = self._ended(setup)
+
+        with pytest.raises(PlatformMoveRejectedError) as exc_info:
+            await gateway.play_move("s", 3, 3, user_id=1)
+
+        assert exc_info.value.reason == "game_ended"
+        assert session.katrain_calls == []
+        adapter.submit_engine_move.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_pass_is_rejected_as_game_ended(self, setup):
+        gateway, adapter, session = self._ended(setup)
+
+        with pytest.raises(PlatformMoveRejectedError) as exc_info:
+            await gateway.pass_move("s", user_id=1)
+
+        assert exc_info.value.reason == "game_ended"
+        assert session.katrain_calls == []
+
+    @pytest.mark.asyncio
+    async def test_resign_is_rejected_as_game_ended_and_leaves_the_result_alone(self, setup):
+        gateway, adapter, session = self._ended(setup)
+
+        with pytest.raises(PlatformMoveRejectedError) as exc_info:
+            await gateway.resign("s", user_id=1)
+
+        assert exc_info.value.reason == "game_ended"
+        assert session.resigned is False
+        adapter.resign_engine_game.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_a_session_that_never_was_an_engine_game_still_plays_locally(self, setup):
+        gateway, adapter, session = self._ended(setup, engine_color=None)
+
+        await gateway.play_move("s", 3, 3, user_id=1)
+
+        assert session.moves == [(3, 3)]
+
+
+@pytest.mark.parametrize("value, expected", [("B", True), ("W", True), (None, False), (MagicMock(), False)])
+def test_is_platform_engine_session_accepts_only_a_colour(value, expected):
+    from katrain.web.platforms.gateway import is_platform_engine_session
+
+    session = SimpleNamespace(katrain=SimpleNamespace(platform_engine_color=value))
+    assert is_platform_engine_session(session) is expected

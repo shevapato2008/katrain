@@ -302,3 +302,19 @@ class TestNoTrackerConfigured:
 
         assert delay == 0.5
         assert vision.expected_pushes
+
+
+class TestEngineGameWhoseContextIsGone:
+    def test_a_move_after_the_engine_game_ended_goes_to_the_gateway_not_the_local_tree(self):
+        session = FakeSession(player_to_move="B")
+        session.katrain.platform_engine_color = "W"
+        gateway = FakeGateway(is_platform=False, outcomes=[PlatformMoveRejectedError("over", reason="game_ended")])
+        vision = FakeVision()
+        app = _app(FakeSessionManager({"s1": session}), gateway=gateway, tracker=EngineRecoveryTracker())
+
+        delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(color=BLACK), log))
+
+        assert gateway.calls == [("s1", 3, 15)]
+        assert session.katrain.plays == []
+        assert vision.expected_pushes == []
+        assert delay == 0.0

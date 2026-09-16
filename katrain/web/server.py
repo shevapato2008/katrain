@@ -967,9 +967,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         # Route through platform gateway for cross-platform games
         gateway = getattr(app.state, "platform_gateway", None)
-        if gateway and gateway.is_platform_game(request.session_id):
-            from katrain.web.platforms.gateway import PlatformMoveRejectedError
+        from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
 
+        # The active context is removed at engine-game termination, but this
+        # session must still reach the gateway rather than fall through locally.
+        if gateway and (gateway.is_platform_game(request.session_id) or is_platform_engine_session(session)):
             try:
                 user_id = current_user.id if current_user else 0
                 with persistent_analysis_activity(current_user, session, "move", "move analysis"):
@@ -1888,15 +1890,23 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         # Route through platform gateway for cross-platform games
         gateway = getattr(app.state, "platform_gateway", None)
-        platform_game = bool(not ranked_ai and gateway and gateway.is_platform_game(request.session_id))
-        if platform_game:
-            from katrain.web.platforms.gateway import PlatformMoveRejectedError
+        from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
 
+        platform_game = bool(
+            not ranked_ai
+            and gateway
+            and (gateway.is_platform_game(request.session_id) or is_platform_engine_session(session))
+        )
+        if platform_game:
             try:
                 user_id = current_user.id if current_user else 0
                 await gateway.resign(request.session_id, user_id)
             except PlatformMoveRejectedError as e:
-                raise HTTPException(status_code=409, detail=str(e))
+                if e.reason != "game_ended":
+                    raise HTTPException(status_code=409, detail=str(e))
+                state = session.katrain.get_state()
+                session.last_state = state
+                return {"session_id": session.session_id, "state": state}
 
         # For multiplayer games, record the result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
@@ -3156,7 +3166,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     move produces no game_update, so nothing else naturally slows the retry loop).
     """
     from katrain.vision.katrain_bridge import vision_move_to_katrain
-    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
 
     manager = app.state.session_manager
     tracker = getattr(app.state, "engine_recovery", None)
@@ -3216,7 +3226,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
     coords = (move.coords[0], move.coords[1])
     gateway = getattr(app.state, "platform_gateway", None)
-    if gateway and gateway.is_platform_game(session_id):
+    if gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session)):
         game_id = gateway.get_game_id(session_id) or ""
         try:
             await gateway.play_move(session_id, coords[0], coords[1], user_id=0)

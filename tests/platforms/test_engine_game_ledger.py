@@ -79,3 +79,36 @@ class TestMoveWhenTheEngineEndsTheGame:
 
         assert response.status_code == 409
         assert response.json()["detail"] == "tunnel down"
+
+
+class TestAfterTheEngineGameEnded:
+    async def test_a_move_still_goes_to_the_gateway_and_gets_the_ended_state(self):
+        session = _engine_session(end_result="W+R")
+        gw = _gateway()
+        gw.is_platform_game.return_value = False
+        gw.play_move.side_effect = PlatformMoveRejectedError("This engine game has already ended", reason="game_ended")
+        app = _app(session, gw)
+
+        async with _client(app) as ac:
+            response = await ac.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3]})
+
+        assert response.status_code == 200, response.text
+        gw.play_move.assert_awaited_once()
+        assert [call.args[0] for call in session.katrain.call_args_list] == []
+
+    async def test_resigning_again_changes_nothing_and_records_nothing(self):
+        session = _engine_session(end_result="W+R")
+        gw = _gateway()
+        gw.is_platform_game.return_value = False
+        gw.resign.side_effect = PlatformMoveRejectedError("This engine game has already ended", reason="game_ended")
+        app = _app(session, gw)
+
+        async with _client(app) as ac:
+            response = await ac.post("/api/resign", json={"session_id": session.session_id})
+
+        assert response.status_code == 200, response.text
+        assert response.json()["state"]["end_result"] == "W+R"
+        gw.resign.assert_awaited_once()
+        assert [call.args[0] for call in session.katrain.call_args_list] == []
+        app.state.game_repo.record_multiplayer_game.assert_not_called()
+        assert app.state.session_manager._schedule_broadcast.call_args_list == []

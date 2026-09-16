@@ -192,3 +192,27 @@ async def test_new_game_during_the_tunnel_wait_is_not_touched_by_the_late_reply(
     assert session.katrain.game.end_result is None
     assert _main_line(session) == []
     assert exc_info.value.reason == "position_changed"
+
+
+@pytest.mark.asyncio
+async def test_an_ended_engine_game_cannot_be_played_on_or_resigned_again():
+    """Once its platform context is gone, an engine game remains terminal."""
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+    sm, pm, gateway, adapter = _build_stack(genmove_return=_genmove_for(15, 3))
+    pm._setup_callbacks(adapter)
+    session_id = await pm.start_engine_game("golaxy", EngineGameConfig(level=1100, human_color="B"), user_id=1)
+    session = sm.get_session(session_id)
+    await gateway.resign(session_id, user_id=1)
+    resigned = session.katrain.game.end_result
+    assert resigned and not pm.is_platform_game(session_id)
+
+    with pytest.raises(PlatformMoveRejectedError) as move_exc:
+        await gateway.play_move(session_id, 4, 4, user_id=1)
+    with pytest.raises(PlatformMoveRejectedError) as resign_exc:
+        await gateway.resign(session_id, user_id=1)
+
+    assert (move_exc.value.reason, resign_exc.value.reason) == ("game_ended", "game_ended")
+    assert _main_line(session) == []
+    assert session.katrain.game.end_result == resigned
+    adapter._rest.engine_genmove.assert_not_awaited()

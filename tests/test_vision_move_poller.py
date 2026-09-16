@@ -318,3 +318,35 @@ class TestEngineGameWhoseContextIsGone:
         assert session.katrain.plays == []
         assert vision.expected_pushes == []
         assert delay == 0.0
+
+
+class TestGameEndedIsRecordedOffRequest:
+    def test_game_ended_is_recorded_off_request(self, monkeypatch):
+        from unittest.mock import AsyncMock
+
+        import katrain.web.server as server
+
+        session = FakeSession()
+        gateway = FakeGateway(outcomes=[PlatformMoveRejectedError("over", reason="game_ended")])
+        app = _app(FakeSessionManager({"s1": session}), gateway=gateway, tracker=EngineRecoveryTracker())
+        recorder = AsyncMock()
+        monkeypatch.setattr(server, "_record_platform_engine_game_off_request", recorder)
+
+        delay = asyncio.run(_handle_confirmed_move(app, FakeVision(), "s1", _move(), log))
+
+        assert delay == 0.0
+        recorder.assert_awaited_once_with(session, app)
+
+    def test_other_rejections_record_nothing(self, monkeypatch):
+        from unittest.mock import AsyncMock
+
+        import katrain.web.server as server
+
+        gateway = FakeGateway(outcomes=[PlatformMoveRejectedError("boom", reason="engine_error")])
+        app = _app(FakeSessionManager({"s1": FakeSession()}), gateway=gateway, tracker=EngineRecoveryTracker())
+        recorder = AsyncMock()
+        monkeypatch.setattr(server, "_record_platform_engine_game_off_request", recorder)
+
+        asyncio.run(_handle_confirmed_move(app, FakeVision(), "s1", _move(), log))
+
+        recorder.assert_not_awaited()

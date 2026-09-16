@@ -989,6 +989,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 # terminal state instead of presenting a retryable move failure.
                 state = session.katrain.get_state()
                 session.last_state = state
+                await _record_platform_engine_game(session, app, current_user)
                 return {"session_id": session.session_id, "state": state}
 
         analysis_context = (
@@ -1604,7 +1605,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             logging.getLogger("katrain_web").error(f"Could not queue ranked settlement for sync: {exc}")
             return False
 
-    async def _record_ai_game_locked(session, app, current_user, result):
+    async def _record_ai_game_locked(session, app, current_user, result, data_overrides=None):
         """Record a completed single-player/local game to user_games (remote-first via
         dispatcher, else local). source = play_local when both seats are human, else play_ai.
 
@@ -1682,6 +1683,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 "game_type": game_type,
                 "game_date": game_date,
             }
+
+            # Platform engine sessions use placeholder player metadata; their
+            # caller supplies the authoritative source and seat names.
+            if data_overrides and game_type != "ai_ladder_ranked":
+                data.update(data_overrides)
 
             if game_type == "ai_ladder_ranked":
                 from katrain.web.core.ai_ladder_catalog import (
@@ -1869,13 +1875,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     pass
             logging.getLogger("katrain_web").error(f"Failed to record game: {e}")
 
-    async def _record_ai_game(session, app, current_user, result):
+    async def _record_ai_game(session, app, current_user, result, data_overrides=None):
         record_lock = getattr(session, "record_game_lock", None)
         if not isinstance(record_lock, asyncio.Lock):
             record_lock = asyncio.Lock()
             session.record_game_lock = record_lock
         async with record_lock:
-            await _record_ai_game_locked(session, app, current_user, result)
+            await _record_ai_game_locked(session, app, current_user, result, data_overrides=data_overrides)
 
     globals()["_RECORD_FN"] = _record_ai_game
 
@@ -1942,16 +1948,19 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if is_multiplayer and current_user:
             winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
             result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
-            try:
-                app.state.game_repo.record_multiplayer_game(
-                    sgf_content=session.katrain.get_sgf(),
-                    result=result,
-                    game_type=getattr(session, "game_type", "free"),
-                    black_id=session.player_b_id,
-                    white_id=session.player_w_id,
-                )
-            except Exception as e:
-                logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
+            if is_platform_engine_session(session):
+                await _record_platform_engine_game(session, app, current_user)
+            else:
+                try:
+                    app.state.game_repo.record_multiplayer_game(
+                        sgf_content=session.katrain.get_sgf(),
+                        result=result,
+                        game_type=getattr(session, "game_type", "free"),
+                        black_id=session.player_b_id,
+                        white_id=session.player_w_id,
+                    )
+                except Exception as e:
+                    logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
 
             # 广播**不在** try 里:它告诉对面「这局结束了」,而 try 守的是落账。
             # 两件事捆在一个 try 里时,落账一失败对面就永远收不到终局 —— 盒上
@@ -3120,6 +3129,46 @@ async def _vision_event_pump(app: FastAPI):
             await asyncio.sleep(1.0)
 
 
+def _session_owner(app: FastAPI, session):
+    """Resolve the session owner for terminal paths without an HTTP user."""
+    user_id = getattr(session, "user_id", None)
+    repo = getattr(app.state, "user_repo", None)
+    if user_id is None or repo is None:
+        return None
+    row = repo.get_user_by_id(user_id)
+    return User(**row) if row else None
+
+
+async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
+    """Record a completed platform engine game through the AI-game ledger."""
+    from katrain.web.platforms.gateway import is_platform_engine_session
+
+    if not is_platform_engine_session(session) or user is None:
+        return
+    result = session.katrain.game.end_result
+    if not result:
+        return
+    record = globals().get("_RECORD_FN")
+    if record is None:
+        return
+    players = session.katrain.players_info
+    names = {"B": players["B"].name or "", "W": players["W"].name or ""}
+    human_color = "W" if session.katrain.platform_engine_color == "B" else "B"
+    names[human_color] = user.username
+    await record(
+        session,
+        app,
+        user,
+        result,
+        data_overrides={"source": "play_ai", "player_black": names["B"], "player_white": names["W"]},
+    )
+
+
+async def _record_platform_engine_game_off_request(session, app: FastAPI) -> None:
+    """Record a terminal platform engine game for its session owner."""
+    await _record_platform_engine_game(session, app, _session_owner(app, session))
+
+
 def _apply_engine_recovery_outcome(
     app: FastAPI, manager, session_id: str, game_id: str, coords, reason: str, detail: str
 ) -> bool:
@@ -3233,6 +3282,8 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         except PlatformMoveRejectedError as e:
             log.warning("Platform gateway rejected vision move: %s", e)
             rearm = _apply_engine_recovery_outcome(app, manager, session_id, game_id, coords, e.reason, str(e))
+            if e.reason == "game_ended":
+                await _record_platform_engine_game_off_request(session, app)
             if rearm:
                 _rearm_detection()
                 return 0.5

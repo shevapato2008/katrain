@@ -40,7 +40,7 @@ const PLATFORM_ICON: Record<string, IconName> = {
 const PlayPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, token } = useAuth();
+  const { user, token, isAuthenticated } = useAuth();
   const resume = readActiveSession('game');
   const [platforms, setPlatforms] = useState<PlatformInfo[]>(defaultPlatforms);
 
@@ -48,7 +48,7 @@ const PlayPage = () => {
     let current = true;
     setPlatforms(defaultPlatforms());
 
-    if (token) {
+    if (isAuthenticated) {
       API.platformStatus(token).then((d) => {
         if (current) setPlatforms(mergePlatformStatus(d.platforms));
       }).catch(() => {
@@ -57,7 +57,7 @@ const PlayPage = () => {
     }
 
     return () => { current = false; };
-  }, [token]);
+  }, [isAuthenticated, token]);
 
   const hour = new Date().getHours();
   const [greetKey, greetZh] =
@@ -135,8 +135,7 @@ const PlayPage = () => {
         <div className="kiosk-cards">
           {platforms.map((p) => {
             const meta = PLATFORM_META[p.platform] ?? { label: p.platform, labelCn: p.platform, color: '#888' };
-            // 「即将上线」不是「锁定」:锁定意味着东西在、满足条件就给。接口没通的平台
-            // 不许摆成锁着的样子 —— `comingSoon` 是 PLATFORM_META 里就有的真标记,不是这里现编的。
+            // 接口未接通的平台保持不可点击，并与连接页使用同一状态文案。
             if (meta.comingSoon) {
               return (
                 <KioskCard
@@ -144,7 +143,7 @@ const PlayPage = () => {
                   title={t(meta.label, meta.labelCn)}
                   sub={t('Not wired up yet', '接口还没通')}
                   icon={PLATFORM_ICON[p.platform] ?? 'globe-hemisphere-west'}
-                  soon={t('Coming soon', '即将上线')}
+                  soon={t('platform:no_play_yet', '暂不能对弈')}
                 />
               );
             }

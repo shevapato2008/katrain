@@ -144,7 +144,7 @@ async def _human_black_move_waiting_on_the_tunnel(reply):
     session = sm.get_session(session_id)
     move_task = asyncio.create_task(gateway.play_move(session_id, 3, 3, user_id=1))
     await entered.wait()
-    return gateway, session_id, session, move_task, release
+    return gateway, pm, adapter, session_id, session, move_task, release
 
 
 @pytest.mark.asyncio
@@ -157,7 +157,9 @@ async def test_resign_during_the_tunnel_wait_stands_against_the_late_reply(reply
     """等待 AI 时认输后，迟到的落点、终局或超时都不能复活或改写该局。"""
     from katrain.web.platforms.gateway import PlatformMoveRejectedError
 
-    gateway, session_id, session, move_task, release = await _human_black_move_waiting_on_the_tunnel(reply)
+    gateway, _pm, _adapter, session_id, session, move_task, release = await _human_black_move_waiting_on_the_tunnel(
+        reply
+    )
 
     await gateway.resign(session_id, user_id=1)
     resigned = session.katrain.game.end_result
@@ -174,13 +176,16 @@ async def test_resign_during_the_tunnel_wait_stands_against_the_late_reply(reply
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "reply", [GenmoveResult(coord=361, prob=0.0), TUNNEL_TIMEOUT], ids=["ai_special_coord", "tunnel_timeout"]
+    "reply",
+    [_genmove_for(15, 3), GenmoveResult(coord=361, prob=0.0), TUNNEL_TIMEOUT],
+    ids=["ai_move", "ai_special_coord", "tunnel_timeout"],
 )
 async def test_new_game_during_the_tunnel_wait_is_not_touched_by_the_late_reply(reply):
-    """等待期间换局后，迟到的回复不能结束或改动新局。"""
+    """等待期间换局后，迟到回复不能改动新局，旧平台上下文也必须解绑。"""
     from katrain.web.platforms.gateway import PlatformMoveRejectedError
 
-    gateway, session_id, session, move_task, release = await _human_black_move_waiting_on_the_tunnel(reply)
+    gateway, pm, adapter, session_id, session, move_task, release = await _human_black_move_waiting_on_the_tunnel(reply)
+    old_game_id = gateway.get_game_id(session_id)
 
     with session.lock:
         session.katrain("new_game")
@@ -192,6 +197,14 @@ async def test_new_game_during_the_tunnel_wait_is_not_touched_by_the_late_reply(
     assert session.katrain.game.end_result is None
     assert _main_line(session) == []
     assert exc_info.value.reason == "position_changed"
+    assert not pm.is_platform_game(session_id)
+    assert old_game_id not in adapter._engine_games
+    assert session.katrain.platform_engine_color is None
+
+    tunnel_calls = adapter._rest.engine_genmove.await_count
+    await gateway.play_move(session_id, 4, 4, user_id=1)
+    assert _main_line(session) == [("B", (4, 4))]
+    assert adapter._rest.engine_genmove.await_count == tunnel_calls
 
 
 @pytest.mark.asyncio

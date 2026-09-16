@@ -56,17 +56,39 @@ def _the_one_row(app):
     return kwargs["data"]
 
 
+def _main_line(session):
+    node = session.katrain.game.current_node
+    line = []
+    while node is not None:
+        if node.move is not None:
+            line.append((node.move.player, node.move.coords))
+        node = node.parent
+    return list(reversed(line))
+
+
 async def test_ai_ending_the_game_over_http_writes_one_row():
     app, session, gateway = await _real_engine_game(AI_SPECIAL)
 
     async with _client(app) as ac:
         response = await ac.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3]})
+        repeated = await ac.post("/api/move", json={"session_id": session.session_id, "coords": [4, 4]})
+
+        app.dependency_overrides[get_current_user_optional] = lambda: User(id=8, username="路人")
+        intruder = await ac.post("/api/move", json={"session_id": session.session_id, "coords": [4, 4]})
 
     assert response.status_code == 200, response.text
+    assert repeated.status_code == 200, repeated.text
+    assert intruder.status_code == 403, intruder.text
     assert not gateway.is_engine_game(session.session_id)
     data = _the_one_row(app)
     assert (data["source"], data["result"]) == ("play_ai", "Void")
     assert data["player_black"] == "小明" and data["player_white"].startswith("[golaxy] ")
+    assert repeated.json()["state"]["end_result"] == "Void"
+    assert _main_line(session) == [("B", (3, 3))]
+    assert app.state.repository_dispatcher.user_games_create.await_count == 1
+
+    adapter = gateway._pm.get_adapter("golaxy")
+    assert adapter._rest.engine_genmove.await_count == 1
 
 
 async def test_resigning_over_http_writes_one_row_and_resigning_again_writes_none():

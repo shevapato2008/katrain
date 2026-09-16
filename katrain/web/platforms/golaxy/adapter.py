@@ -932,6 +932,13 @@ class GolaxyAdapter(PlatformAdapter):
         winner = "W" if ctx.config.human_color == "B" else "B"  # human resigns → AI wins
         await self._emit("game_ended", game_id, "resign", winner)
 
+    def discard_engine_game(self, game_id: str) -> None:
+        """Drop the stateless tunnel history after manager-side detachment."""
+
+        ctx = self._engine_games.pop(game_id, None)
+        if ctx is not None:
+            ctx.status = "finished"
+
     def rebuild_engine_moves(self, game_id: str, path_moves: list[tuple[int, int]]) -> None:
         """Reset an engine context's move list to handicap-prefix + the given
         post-handicap path (B3/G4).

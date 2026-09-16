@@ -89,8 +89,10 @@ def _submitted_position_status(session, game, node) -> str:
     objects captured before the tunnel request, keeping identity checks stable.
     """
     current = session.katrain.game
-    if current is not game or current.current_node is not node:
-        return "replaced"
+    if current is not game:
+        return "game_replaced"
+    if current.current_node is not node:
+        return "position_changed"
     if current.end_result:
         return "ended"
     return "live"
@@ -253,7 +255,9 @@ class PlatformCommandGateway:
                         )
             finally:
                 ctx.clear_pending()
-            if status == "replaced":
+            if status == "game_replaced":
+                await self._pm.end_platform_game(ctx.remote_game_id, "game_replaced")
+            if status in ("game_replaced", "position_changed"):
                 self._broadcast_rejected(session_id, "position_changed")
                 raise PlatformMoveRejectedError(
                     "Position changed while waiting for the engine reply", reason="position_changed"
@@ -268,7 +272,9 @@ class PlatformCommandGateway:
             if status == "ended":
                 self._broadcast_rejected(session_id, "game_ended")
                 raise PlatformMoveRejectedError("Game ended while waiting for the engine reply", reason="game_ended")
-            if status == "replaced":
+            if status == "game_replaced":
+                await self._pm.end_platform_game(ctx.remote_game_id, "game_replaced")
+            if status in ("game_replaced", "position_changed"):
                 self._broadcast_rejected(session_id, "position_changed")
                 raise PlatformMoveRejectedError(
                     "Position changed while waiting for the engine reply", reason="position_changed"
@@ -287,7 +293,7 @@ class PlatformCommandGateway:
                     raise PlatformMoveRejectedError(
                         "Game ended while waiting for the engine reply", reason="game_ended"
                     )
-                if status == "replaced":
+                if status in ("game_replaced", "position_changed"):
                     self._broadcast_rejected(session_id, "position_changed")
                     raise PlatformMoveRejectedError(
                         "Position changed while waiting for the engine reply", reason="position_changed"
@@ -323,6 +329,10 @@ class PlatformCommandGateway:
                 self._local_play(session_id, col, row)
                 human_move_number = ai_move.move_number - 1
                 self._local_play(session_id, ai_move.col, ai_move.row)
+        except PlatformMoveRejectedError:
+            if status == "game_replaced":
+                await self._pm.end_platform_game(ctx.remote_game_id, "game_replaced")
+            raise
         finally:
             ctx.clear_pending()
 

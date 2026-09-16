@@ -132,6 +132,11 @@ class PlatformAdapter(ABC):
     async def resign_engine_game(self, game_id: str) -> None:
         raise NotImplementedError(f"{self.platform_name} does not support engine play")
 
+    def discard_engine_game(self, game_id: str) -> None:
+        """Forget local adapter state for an engine game that is no longer routable."""
+
+        return None
+
     def get_engine_levels(self) -> list[dict]:
         raise NotImplementedError(f"{self.platform_name} does not support engine play")
 

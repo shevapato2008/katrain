@@ -949,26 +949,38 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             # 它没有别的猎物了，删掉；归属判断只留一处，就是下面这条。
             guard_session_reader(session, current_user, "play move")
 
+        gateway = getattr(app.state, "platform_gateway", None)
+        from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
+
+        # A completed engine session keeps its engine marker so retries remain
+        # terminal, while its active platform context has already been removed.
+        ended_engine_session = bool(
+            gateway
+            and is_platform_engine_session(session)
+            and not gateway.is_platform_game(request.session_id)
+            and session.katrain.game.end_result
+        )
+
         # Skip turn validation for research sessions
         # Enforce Multiplayer Turns (only if this is a multiplayer session)
         if session.mode != "research" and (session.player_b_id is not None or session.player_w_id is not None):
             # This is a multiplayer game - require authentication and turn check
             if current_user is None:
                 raise HTTPException(status_code=401, detail="Authentication required for multiplayer games")
-            state = session.katrain.get_state()
-            next_player = state["player_to_move"]
-            allowed_user_id = session.player_b_id if next_player == "B" else session.player_w_id
-            if current_user.id != allowed_user_id:
-                raise HTTPException(status_code=403, detail="Not your turn")
+            if ended_engine_session:
+                guard_session_reader(session, current_user, "play move")
+            else:
+                state = session.katrain.get_state()
+                next_player = state["player_to_move"]
+                allowed_user_id = session.player_b_id if next_player == "B" else session.player_w_id
+                if current_user.id != allowed_user_id:
+                    raise HTTPException(status_code=403, detail="Not your turn")
 
         coords = None if request.pass_move else request.coords
         if coords is None and not request.pass_move:
             raise HTTPException(status_code=400, detail="coords required unless pass_move is true")
 
         # Route through platform gateway for cross-platform games
-        gateway = getattr(app.state, "platform_gateway", None)
-        from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
-
         # The active context is removed at engine-game termination, but this
         # session must still reach the gateway rather than fall through locally.
         if gateway and (gateway.is_platform_game(request.session_id) or is_platform_engine_session(session)):

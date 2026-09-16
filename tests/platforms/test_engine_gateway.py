@@ -348,6 +348,7 @@ class TestAtomicPositionAssert:
         assert exc_info.value.reason == "position_changed"
         assert session.moves == []  # neither move landed — no half-commit, no mis-apply
         assert ctx.pending_action is None
+        assert pm.is_platform_game("s")  # same game, different node: keep the tunnel context
         reasons = [msg.get("reason") for _, msg in sm.broadcasts if msg["type"] == "platform_move_rejected"]
         assert "position_changed" in reasons
 

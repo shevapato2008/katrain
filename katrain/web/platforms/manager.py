@@ -284,7 +284,15 @@ class PlatformManager:
         """Clean up after a platform game ends."""
         ctx = self._active_games.pop(game_id, None)
         if ctx:
-            self._session_to_game.pop(ctx.session_id, None)
+            # A late reply from an old game must not remove a newer game that has
+            # already claimed the same local session.
+            if self._session_to_game.get(ctx.session_id) == game_id:
+                self._session_to_game.pop(ctx.session_id, None)
+            if ctx.is_engine:
+                adapter = self._adapters.get(ctx.platform)
+                discard = getattr(adapter, "discard_engine_game", None)
+                if discard is not None:
+                    discard(game_id)
             ctx.game_phase = GamePhase.FINISHED
             logger.info(f"Platform game ended: {game_id} result={result}")
 

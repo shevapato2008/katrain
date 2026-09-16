@@ -139,7 +139,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { token, user } = useAuth();
+  const { token, user, isAuthenticated } = useAuth();
   const session = useGameSession({ token: token ?? undefined });
   const [analysisToggles, setAnalysisToggles] = useState(() => ({
     ownership: false,
@@ -332,13 +332,13 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // (each call consumes a use; 7003 means it hit 0). Best-effort: a failed fetch
   // leaves the prior counts (or null → "—") and never blocks play.
   const refreshItemCounts = useCallback(async () => {
-    if (!engineMode || !token) return;
+    if (!engineMode || !isAuthenticated) return;
     try {
       setEngineItemCounts(await API.platformEngineItems(platform, token));
     } catch (e) {
       console.error(e);
     }
-  }, [engineMode, token]);
+  }, [engineMode, isAuthenticated, token]);
 
   useEffect(() => {
     void refreshItemCounts();
@@ -498,7 +498,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       setEngineOverlay(null);
       return;
     }
-    if (!sessionId || !token) return;
+    if (!sessionId || !isAuthenticated) return;
     // Capture the position identity at call time — if the board advances (a move
     // played) while this request is in flight, the response below is for a stale
     // position and must be discarded rather than resurrecting an old overlay.

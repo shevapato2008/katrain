@@ -65,9 +65,10 @@ vi.mock('../context/VisionContext', () => ({
   }),
 }));
 
-// Mock auth
+// Strict kiosk sessions are authenticated through a cookie while token stays null.
+const authMock = vi.hoisted(() => ({ token: 'mock-token' as string | null, isAuthenticated: true }));
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
+  useAuth: () => ({ token: authMock.token, isAuthenticated: authMock.isAuthenticated, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
 }));
 
 // Mock Board with a lightweight stub that exposes a button to trigger onMove(3, 3) —
@@ -186,6 +187,8 @@ const renderPage = (engineMode: boolean) => render(renderTree(engineMode));
 describe('GamePage engine mode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authMock.token = 'mock-token';
+    authMock.isAuthenticated = true;
     mockOnMove.mockReset();
     mockPhysicalEngineError = null;
     mockAwaitingRemovalReminder = null;
@@ -336,6 +339,22 @@ describe('GamePage engine mode', () => {
       await waitFor(() => {
         expect(API.platformEngineAnalysis).toHaveBeenCalledWith('golaxy', 'test-session', 'options', 'mock-token');
       });
+    });
+
+    it('盒端已登录且 token=null 时仍拉取道具余次', async () => {
+      authMock.token = null;
+      renderPage(true);
+      await waitFor(() => expect(API.platformEngineItems).toHaveBeenCalledWith('golaxy', null));
+    });
+
+    it('盒端已登录且 token=null 时仍可请求支招', async () => {
+      authMock.token = null;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false, reason: 'insufficient', kind: 'options',
+      });
+      renderPage(true);
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(API.platformEngineAnalysis).toHaveBeenCalledWith('golaxy', 'test-session', 'options', null));
     });
 
     it('ok:true sets activeEngineKind and passes the decoded overlay through to Board (options)', async () => {

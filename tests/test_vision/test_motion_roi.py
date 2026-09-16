@@ -71,6 +71,17 @@ def test_board_just_outside_left_edge_is_rejected_before_rounding():
     assert build_motion_roi_mask(FRAME_SHAPE, corners) is None
 
 
+def test_implausibly_huge_board_returns_none_without_kernel_allocation(monkeypatch):
+    corners = [(-1e8, 40), (1e8, 40), (1e8, 160), (-1e8, 160)]
+
+    def fail_kernel_allocation(*args, **kwargs):
+        raise AssertionError("must reject implausibly large dilation radius")
+
+    monkeypatch.setattr(motion_roi.cv2, "getStructuringElement", fail_kernel_allocation)
+
+    assert build_motion_roi_mask(FRAME_SHAPE, corners) is None
+
+
 def test_cache_reuses_mask_and_source_dimensions_are_part_of_key():
     cache = MotionRoiMaskCache()
     first = cache.get(FRAME_SHAPE, CURRENT_CORNERS)

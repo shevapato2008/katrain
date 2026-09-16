@@ -82,6 +82,12 @@ def test_implausibly_huge_board_returns_none_without_kernel_allocation(monkeypat
     assert build_motion_roi_mask(FRAME_SHAPE, corners) is None
 
 
+def test_tiny_source_dimensions_reject_scaled_overflow():
+    corners = [(0, 0), (1, 0), (1, 1), (0, 1)]
+
+    assert build_motion_roi_mask(FRAME_SHAPE, corners, source_size=(1e-20, 1e-20)) is None
+
+
 def test_cache_reuses_mask_and_source_dimensions_are_part_of_key():
     cache = MotionRoiMaskCache()
     first = cache.get(FRAME_SHAPE, CURRENT_CORNERS)

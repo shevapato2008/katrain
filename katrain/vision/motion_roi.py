@@ -51,9 +51,17 @@ def build_motion_roi_mask(
     dimensions = _normalise_source_size(source_size)
     if points is None or dimensions is None:
         return None
+    geometry = points.astype(np.float64, copy=True)
     if dimensions != (None, None):
         source_width, source_height = dimensions
-        points = points * np.array([width / source_width, height / source_height], dtype=np.float32)
+        geometry *= np.array([width / source_width, height / source_height], dtype=np.float64)
+
+    edge_lengths = np.linalg.norm(np.roll(geometry, -1, axis=0) - geometry, axis=1)
+    mean_edge_length = float(edge_lengths.mean())
+    if not np.isfinite(mean_edge_length) or mean_edge_length > 18 * max(height, width):
+        return None
+    radius = max(1, round(mean_edge_length / 18))
+    points = np.ascontiguousarray(geometry, dtype=np.float32)
 
     if cv2.contourArea(points.reshape(-1, 1, 2)) <= 0:
         return None
@@ -67,10 +75,6 @@ def build_motion_roi_mask(
     if not np.any(board):
         return None
 
-    edge_lengths = np.linalg.norm(np.roll(points, -1, axis=0) - points, axis=1)
-    radius = max(1, round(float(edge_lengths.mean()) / 18))
-    if radius > max(height, width):
-        return None
     kernel_size = 2 * radius + 1
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
     return cv2.dilate(board, kernel, iterations=1).astype(bool)

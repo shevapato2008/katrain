@@ -34,6 +34,7 @@ from katrain.vision.enhance import enhance_for_inference
 from katrain.vision.gating import mean_detection_confidence, move_event, should_detect_moves, should_feed_sync
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
+from katrain.vision.motion_roi import MotionRoiMaskCache
 from katrain.vision.move_detector import AmbiguousPromoter, MoveDetector, PendingConfidencePeak
 from katrain.vision.sync import SyncEventType, SyncState, SyncStateMachine
 from katrain.vision.temporal import FrameAverager
@@ -108,6 +109,10 @@ class _VisionWorkerLoop:
             warmup_seconds=config.get("camera_warmup_seconds", 2.0),
         )
         self._motion_filter = MotionFilter()
+        self._motion_mask_cache = MotionRoiMaskCache()
+        self._last_motion_log: float | None = None
+        self._last_motion_roi_ratio: float | None = None
+        self._last_motion_full_ratio: float | None = None
         self._state_extractor = BoardStateExtractor(board_config)
         # Static-scene rolling average (weak-light noise ~4.7x down at n=8); reset on
         # motion / transform change / session reset so scene changes never ghost.
@@ -156,6 +161,45 @@ class _VisionWorkerLoop:
         self._prev_observed_board: np.ndarray | None = None  # For temporal smoothing
         self._last_stable_board: np.ndarray | None = None
         self._frame_count = 0  # Throttle for per-gate debug logging
+
+    def _reset_motion_region(self) -> None:
+        """Discard motion history whenever the BoardFinder coordinate region changes."""
+        self._motion_mask_cache.invalidate()
+        self._motion_filter.reset()
+
+    def _motion_mask(self, frame: np.ndarray) -> np.ndarray | None:
+        """Return a raw-frame board mask only while an uncalibrated pose is locked."""
+        if not self._board_locked or self._board_finder is None:
+            return None
+        camera_config = getattr(self._board_finder, "camera_config", None)
+        if camera_config is not None and getattr(camera_config, "is_calibrated", False):
+            return None
+        corners = getattr(self._board_finder, "pre_corner_point", None)
+        if corners is None or len(corners) != 4:
+            return None
+        return self._motion_mask_cache.get(frame.shape, corners, (None, None))
+
+    def _motion_diagnostic(self) -> str:
+        """Format the latest region and full-frame motion ratios for periodic logs."""
+        full = "N/A" if self._last_motion_full_ratio is None else f"{self._last_motion_full_ratio:.3f}"
+        if self._last_motion_roi_ratio is None:
+            return f"full:N/A/full:{full}"
+        return f"roi:{self._last_motion_roi_ratio:.3f}/full:{full}"
+
+    def _motion_is_stable(self, frame: np.ndarray) -> bool:
+        """Apply hybrid motion gating and reset averaging while the scene changes."""
+        stable, roi_ratio, full_ratio = self._motion_filter.is_stable_with_regions(frame, self._motion_mask(frame))
+        self._last_motion_roi_ratio = roi_ratio
+        self._last_motion_full_ratio = full_ratio
+        if stable:
+            return True
+
+        self._averager.reset()
+        now = time.monotonic()
+        if self._last_motion_log is None or now - self._last_motion_log >= 5.0:
+            logger.info("motion rejected: %s", self._motion_diagnostic())
+            self._last_motion_log = now
+        return False
 
     def _init_inference(self) -> None:
         """Load inference backend and board finder (heavy imports)."""
@@ -222,18 +266,7 @@ class _VisionWorkerLoop:
                 if self._frame_count % 30 == 0:
                     logger.info("camera read_frame returned None (frame #%d)", self._frame_count)
             else:
-                stable_ok, motion_ratio = self._motion_filter.is_stable_with_ratio(frame)
-                if not stable_ok:
-                    # Motion: the scene is changing — restart the average so pre-move
-                    # frames never blend with the post-move board.
-                    self._averager.reset()
-                if not stable_ok and self._frame_count % 30 == 0:
-                    logger.info(
-                        "motion filter rejected frame #%d (changed_ratio=%.3f, threshold=%.3f)",
-                        self._frame_count,
-                        motion_ratio,
-                        self._motion_filter.change_ratio_threshold,
-                    )
+                stable_ok = self._motion_is_stable(frame)
 
             if stable_ok:
                 # Board detection + perspective transform
@@ -317,10 +350,11 @@ class _VisionWorkerLoop:
                     mean_confidence = mean_detection_confidence(detections)
                     if self._frame_count % 30 == 0:
                         logger.info(
-                            "detection ok: %d stones, mean_conf=%.2f, %s board=%.0fms + yolo=%.0fms",
+                            "detection ok: %d stones, mean_conf=%.2f, %s motion=%s board=%.0fms + yolo=%.0fms",
                             len(detections),
                             mean_confidence,
                             self._brightness_log(),
+                            self._motion_diagnostic(),
                             board_finder_ms,
                             yolo_ms,
                         )
@@ -457,6 +491,7 @@ class _VisionWorkerLoop:
                         self._board_locked = False
                         self._board_finder.is_first = True
                         self._consecutive_failures = 0
+                        self._reset_motion_region()
                         self._averager.reset()  # transform will change after re-detection
 
                     with self._overlay_lock:
@@ -585,6 +620,7 @@ class _VisionWorkerLoop:
             elif cmd.action == CommandType.UNBIND:
                 self._bound = False
                 self._sync = SyncStateMachine()  # Reset
+                self._reset_motion_region()
                 self._prev_observed_board = None  # drop voting state across sessions (parity
                 self._last_stable_board = None  # with worker_inprocess — review M2)
                 self._prev_conf_map = {}
@@ -593,6 +629,7 @@ class _VisionWorkerLoop:
                 self._promoter.reset()
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._board_locked = True
+                self._reset_motion_region()
                 logger.info("Board pose locked — reusing transform for subsequent frames")
                 self._sync.confirm_pose_lock()
                 self._averager.reset()  # warp switches to the frozen transform
@@ -618,6 +655,7 @@ class _VisionWorkerLoop:
             elif cmd.action == CommandType.RESET_SYNC:
                 self._board_locked = False
                 self._board_finder.is_first = True  # Reset corner baseline
+                self._reset_motion_region()
                 expected = cmd.data.get("expected") if cmd.data else None
                 if expected is not None:
                     # Trust-digital recovery (resync): sync compares against the digital

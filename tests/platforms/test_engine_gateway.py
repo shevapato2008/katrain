@@ -69,6 +69,7 @@ class MockGame:
         self.last_capture = []
         self.prisoners = []
         self.current_node = MockNode()
+        self.end_result = None  # 真 Game 的 property;gateway 的迟到回复闸(`_submitted_position_status`)读它
         self.rules = "japanese"  # read (before the length check) by the real suicide-rule branch
 
 
@@ -207,6 +208,12 @@ class TestEnginePlayMove:
         assert exc_info.value.reason == "game_ended"
         reasons = [msg.get("reason") for _, msg in sm.broadcasts if msg["type"] == "platform_move_rejected"]
         assert "game_ended" in reasons
+        # X9: the LOCAL game ends too, without a result — an AI pass and an AI resign decode
+        # identically today, so any winner written here would be a guess. Without this the
+        # board sat on "AI to move" forever and every retry failed "not your turn".
+        commands = [command for command, _ in session.katrain_calls]
+        assert commands[-1] == "end_without_result"
+        assert commands.index("play") < commands.index("end_without_result")
 
     @pytest.mark.asyncio
     async def test_pass_rejected(self, setup):

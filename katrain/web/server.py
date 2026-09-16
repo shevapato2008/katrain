@@ -981,7 +981,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.last_state = state
                     return {"session_id": session.session_id, "state": state}
             except PlatformMoveRejectedError as e:
-                raise HTTPException(status_code=409, detail=str(e))
+                if e.reason != "game_ended":
+                    raise HTTPException(status_code=409, detail=str(e))
+                # The submitted game has already ended. Return its authoritative
+                # terminal state instead of presenting a retryable move failure.
+                state = session.katrain.get_state()
+                session.last_state = state
+                return {"session_id": session.session_id, "state": state}
 
         analysis_context = (
             persistent_analysis_activity(current_user, session, "move", "move analysis")

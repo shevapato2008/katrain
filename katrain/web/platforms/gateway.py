@@ -82,6 +82,20 @@ def _check_move_legal(game, move) -> None:
     _check_moves_legal_sequence(game, [move])
 
 
+def _submitted_position_status(session, game, node) -> str:
+    """Return whether a tunnel reply still belongs to its submitted position.
+
+    The caller must hold ``session.lock``. ``game`` and ``node`` are the actual
+    objects captured before the tunnel request, keeping identity checks stable.
+    """
+    current = session.katrain.game
+    if current is not game or current.current_node is not node:
+        return "replaced"
+    if current.end_result:
+        return "ended"
+    return "live"
+
+
 class PlatformCommandGateway:
     """Intercepts game commands for platform-backed sessions.
 
@@ -169,10 +183,9 @@ class PlatformCommandGateway:
 
         # B1: pre-validate the human's move locally (occupied/ko/suicide) BEFORE
         # spending a ~180s tunnel call on a move that can never land. Also record
-        # the current node's identity as a position token: the atomic-apply step
-        # below re-checks this token so a tree mutation that races the tunnel wait
-        # (B2 — undo/redo/nav bypassing the pending guard) can never make the AI's
-        # reply land on the wrong node.
+        # the game and its current node as the submitted position. Both apply
+        # paths re-check them so a mutation, new game, or resign that races the
+        # tunnel wait cannot receive the late reply.
         with session.lock:
             game = session.katrain.game
             move = Move(coords=(col, row), player=session.katrain.next_player_info.player)
@@ -181,7 +194,7 @@ class PlatformCommandGateway:
             except IllegalMoveException as e:
                 self._broadcast_rejected(session_id, "illegal_move")
                 raise PlatformMoveRejectedError(str(e), reason="illegal_move")
-            position_token = id(game.current_node)
+            submitted_game, submitted_node = game, game.current_node
 
             # B3/G4: resync the adapter's stateless move history to the CURRENT
             # node's path BEFORE spending a ~180s tunnel call -- an undo/branch
@@ -205,35 +218,56 @@ class PlatformCommandGateway:
         except GolaxyEngineTerminal as e:
             # D7: the human's move is real and final (the adapter committed it on its
             # side before raising) — play it locally BEFORE the terminal/game_ended
-            # broadcast, so the local record doesn't miss the actual last move. Still
-            # position-gated: if the tree moved out from under us during the tunnel
-            # wait, discard rather than mis-apply it to the wrong node.
+            # broadcast, so the local record doesn't miss the actual last move. The
+            # AI terminal is ambiguous (pass or resign), so the local game ends Void.
             try:
                 with session.lock:
-                    if id(session.katrain.game.current_node) == position_token:
+                    status = _submitted_position_status(session, submitted_game, submitted_node)
+                    if status == "live":
                         self._local_play(session_id, col, row)
+                        session.katrain("end_without_result")
                     else:
                         logger.warning(
-                            f"Engine terminal for session {session_id}: position changed "
-                            "during tunnel wait, discarding human move instead of misapplying it"
+                            f"Engine terminal for session {session_id}: game {status} during tunnel wait, "
+                            "leaving the local game untouched"
                         )
             finally:
                 ctx.clear_pending()
+            if status == "replaced":
+                self._broadcast_rejected(session_id, "position_changed")
+                raise PlatformMoveRejectedError(
+                    "Position changed while waiting for the engine reply", reason="position_changed"
+                )
             self._broadcast_rejected(session_id, "game_ended")
             raise PlatformMoveRejectedError(str(e), reason="game_ended")
         except Exception as e:
             logger.error(f"Engine move failed: {e}")
             ctx.clear_pending()
+            with session.lock:
+                status = _submitted_position_status(session, submitted_game, submitted_node)
+            if status == "ended":
+                self._broadcast_rejected(session_id, "game_ended")
+                raise PlatformMoveRejectedError("Game ended while waiting for the engine reply", reason="game_ended")
+            if status == "replaced":
+                self._broadcast_rejected(session_id, "position_changed")
+                raise PlatformMoveRejectedError(
+                    "Position changed while waiting for the engine reply", reason="position_changed"
+                )
             self._broadcast_rejected(session_id, "engine_error")
             raise PlatformMoveRejectedError(str(e), reason="engine_error")
 
         # Success: atomic apply of [human, AI] under a single lock hold, gated on the
-        # position token recorded before the tunnel call. Assert failure is defensive
-        # (should be unreachable once the server.py pending guards are in) — discard
-        # BOTH moves rather than half-commit or mis-apply.
+        # submitted position. Discard both moves when the position was replaced, and
+        # preserve an existing result when the user resigned during the wait.
         try:
             with session.lock:
-                if id(session.katrain.game.current_node) != position_token:
+                status = _submitted_position_status(session, submitted_game, submitted_node)
+                if status == "ended":
+                    self._broadcast_rejected(session_id, "game_ended")
+                    raise PlatformMoveRejectedError(
+                        "Game ended while waiting for the engine reply", reason="game_ended"
+                    )
+                if status == "replaced":
                     self._broadcast_rejected(session_id, "position_changed")
                     raise PlatformMoveRejectedError(
                         "Position changed while waiting for the engine reply", reason="position_changed"

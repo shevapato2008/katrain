@@ -1468,6 +1468,14 @@ class WebKaTrain(KaTrainBase):
         """End game due to timeout - current player loses on time"""
         self.game.current_node.end_state = f"{self.game.current_node.player}+T"
 
+    def _do_end_without_result(self):
+        """End the current game without declaring a winner (SGF ``Void``).
+
+        Golaxy currently maps both an AI pass and an AI resignation to the same
+        special coordinate, so choosing a winner here would invent information.
+        """
+        self.game.current_node.end_state = "Void"
+
     def _do_engine_recovery_popup(self, error_message, code):
         # Sync global i18n before logging translated strings
         current_lang = self.config("general/language") or self.config("general/lang") or "en"

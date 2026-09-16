@@ -19,7 +19,7 @@ import pytest
 from katrain.web.platforms.gateway import PlatformCommandGateway
 from katrain.web.platforms.golaxy.adapter import EngineGameConfig, GolaxyAdapter
 from katrain.web.platforms.golaxy.coords import katrain_to_golaxy
-from katrain.web.platforms.golaxy.engine_client import GenmoveResult
+from katrain.web.platforms.golaxy.engine_client import GenmoveResult, Retryable
 from katrain.web.platforms.manager import PlatformManager
 from katrain.web.session import SessionManager
 
@@ -99,3 +99,96 @@ async def test_human_white_move_order_on_real_session():
     assert _main_line(session) == [("B", (3, 3)), ("W", (15, 15)), ("B", (16, 16))]
 
     assert adapter._rest.engine_genmove.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_ai_special_coord_ends_the_local_game_without_result():
+    """X9: genmove 回一个盘外坐标(星阵的停一手 / 认输都解成 UnknownSpecial)。"""
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+    sm, pm, gateway, adapter = _build_stack(genmove_return=GenmoveResult(coord=361, prob=0.0))
+    pm._setup_callbacks(adapter)
+    config = EngineGameConfig(level=1100, human_color="B")
+    session_id = await pm.start_engine_game("golaxy", config, user_id=1)
+    session = sm.get_session(session_id)
+
+    with pytest.raises(PlatformMoveRejectedError) as exc_info:
+        await gateway.play_move(session_id, 3, 3, user_id=1)
+
+    assert exc_info.value.reason == "game_ended"
+    assert _main_line(session) == [("B", (3, 3))]
+    assert session.katrain.game.end_result == "Void"
+    assert session.katrain.get_state()["end_result"] == "Void"
+    assert not pm.is_platform_game(session_id)
+
+
+TUNNEL_TIMEOUT = Retryable("Golaxy genmove network error: ReadTimeout")
+
+
+async def _human_black_move_waiting_on_the_tunnel(reply):
+    """开一盘人执黑的星阵人机局，让落子请求停在可控的 genmove 网络边界。"""
+    import asyncio
+
+    entered, release = asyncio.Event(), asyncio.Event()
+
+    async def genmove_waits_for_release(**_kwargs):
+        entered.set()
+        await release.wait()
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
+
+    sm, pm, gateway, adapter = _build_stack(genmove_side_effect=genmove_waits_for_release)
+    pm._setup_callbacks(adapter)
+    session_id = await pm.start_engine_game("golaxy", EngineGameConfig(level=1100, human_color="B"), user_id=1)
+    session = sm.get_session(session_id)
+    move_task = asyncio.create_task(gateway.play_move(session_id, 3, 3, user_id=1))
+    await entered.wait()
+    return gateway, session_id, session, move_task, release
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "reply",
+    [_genmove_for(15, 3), GenmoveResult(coord=361, prob=0.0), TUNNEL_TIMEOUT],
+    ids=["ai_move", "ai_special_coord", "tunnel_timeout"],
+)
+async def test_resign_during_the_tunnel_wait_stands_against_the_late_reply(reply):
+    """等待 AI 时认输后，迟到的落点、终局或超时都不能复活或改写该局。"""
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+    gateway, session_id, session, move_task, release = await _human_black_move_waiting_on_the_tunnel(reply)
+
+    await gateway.resign(session_id, user_id=1)
+    resigned = session.katrain.game.end_result
+    assert resigned and resigned.endswith("+R")
+
+    release.set()
+    with pytest.raises(PlatformMoveRejectedError) as exc_info:
+        await move_task
+
+    assert exc_info.value.reason == "game_ended"
+    assert session.katrain.game.end_result == resigned
+    assert _main_line(session) == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "reply", [GenmoveResult(coord=361, prob=0.0), TUNNEL_TIMEOUT], ids=["ai_special_coord", "tunnel_timeout"]
+)
+async def test_new_game_during_the_tunnel_wait_is_not_touched_by_the_late_reply(reply):
+    """等待期间换局后，迟到的回复不能结束或改动新局。"""
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+    gateway, session_id, session, move_task, release = await _human_black_move_waiting_on_the_tunnel(reply)
+
+    with session.lock:
+        session.katrain("new_game")
+
+    release.set()
+    with pytest.raises(PlatformMoveRejectedError) as exc_info:
+        await move_task
+
+    assert session.katrain.game.end_result is None
+    assert _main_line(session) == []
+    assert exc_info.value.reason == "position_changed"

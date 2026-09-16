@@ -4341,10 +4341,10 @@ export function computeClock(input: ClockInput): ClockView {
 
 ### Task S5-3: RK3562 上板终验（⏸ 需要 Fan）
 
-- [ ] **Step 1:** SendMessage 问 `katrain-kiosk-debug` 板子是否空闲；得到答复前不动。
-- [ ] **Step 2:** ⏸ 把要部署的提交 sha 和目标目录 `/mnt/data/<dir>/` 发给 Fan，等确认。
-- [ ] **Step 3:** 部署（独立端口 + 独立 HOME/SQLite，严格 kiosk 包 `npm run build:kiosk-2d`），一次只跑一项，按 spec §7-1 走一遍：开局（屏幕 / 实体盘）→ 落子 → 双 pass 自动数子 → 手动数子 → 认输选方 → 退出不存 → 超时判负 → 屏 19 → 报告 → 去研究；9 路、让子、拿除灯各一次。
-- [ ] **Step 4:** 结果写进 `superpowers/tracks/kiosk-local-play/v2-acceptance.md`，P1–P20 每条标「已修」或「本轮不做 + 原因」。Commit。
+- [x] **Step 1:** SendMessage 问 `katrain-kiosk-debug` 板子是否空闲；得到答复前不动。
+- [x] **Step 2:** ⏸ 把要部署的提交 sha 和目标目录 `/mnt/data/<dir>/` 发给 Fan，等确认。
+- [x] **Step 3:** 部署（独立端口 + 独立 HOME/SQLite，严格 kiosk 包 `npm run build:kiosk-2d`），一次只跑一项，按 spec §7-1 走一遍：开局（屏幕 / 实体盘）→ 落子 → 双 pass 自动数子 → 手动数子 → 认输选方 → 退出不存 → 超时判负 → 屏 19 → 报告 → 去研究；9 路、让子、拿除灯各一次。
+- [x] **Step 4:** 结果写进 `superpowers/tracks/kiosk-local-play/v2-acceptance.md`，P1–P20 每条标「已修」或「本轮不做 + 原因」。Commit。
 
 ---
 
@@ -4442,4 +4442,3 @@ export function computeClock(input: ClockInput): ClockView;
 
 1. **§4.3「去掉 `if (token)`」落成「换成 `if (isAuthenticated)`」**。`GET /api/v1/platforms/status` 挂 `Depends(get_current_user)`（`katrain/web/api/v1/endpoints/platforms.py:233`），无条件请求会让游客态每次进首页打一条 401。行为对登录态与 spec 一致。
 2. **§4.6 与 contract 写的函数名是 `_record_ai_game`，实际要改的是 `_record_ai_game_locked`**（`server.py:1599`）；`_record_ai_game`（`server.py:1864`）是加锁包装，测试钩子 `server._RECORD_FN` 指向包装。contract「切片 ↔ 文件」一栏写 `_record_ai_game` 不影响执行，Task S4-5 已写明实际位置。
-

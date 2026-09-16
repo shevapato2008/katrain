@@ -14,20 +14,19 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+# HBV UVC camera values observed through this board's V4L2/OpenCV backend.
+# These are native V4L2 menu values, not OpenCV's backend-dependent 0.25/0.75
+# aliases: on rk3562, writing 0.25 is rejected while 1.0 reliably selects
+# manual exposure and 3.0 lets hardware AE converge.
+CAMERA_AUTO_EXPOSURE_MANUAL = 1.0
+CAMERA_AUTO_EXPOSURE_ON = 3.0
+
 
 def _auto_exposure_readback_matches(target: float, readback: float) -> bool:
-    """Accept both OpenCV's scaled values and native V4L2 menu values."""
+    """Verify that the driver accepted the requested native V4L2 menu value."""
     if not np.isfinite(readback):
         return False
-    manual_values = (0.25, 1.0)
-    auto_values = (0.75, 3.0)
-    if any(abs(target - value) <= 0.01 for value in manual_values):
-        expected = manual_values
-    elif any(abs(target - value) <= 0.01 for value in auto_values):
-        expected = auto_values
-    else:
-        expected = (target,)
-    return any(abs(readback - value) <= 0.01 for value in expected)
+    return abs(target - readback) <= 0.01
 
 
 def _device_to_capture_arg(device_id: int | str) -> str | int:
@@ -178,10 +177,9 @@ class CameraManager:
             cap.set(cv2.CAP_PROP_AUTOFOCUS, 1)
 
             # Optionally lock exposure / white balance for capture (plan §3.1).
-            # CAP_PROP_AUTO_EXPOSURE=0.25 is the V4L2 "manual" sentinel; the exact
-            # value is backend/camera-specific and tuned on the box.
+            # The HBV camera exposes native V4L2 menu values through OpenCV on rk3562.
             if self._lock_exposure:
-                cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
+                cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_MANUAL)
                 if self._exposure is not None:
                     cap.set(cv2.CAP_PROP_EXPOSURE, self._exposure)
             # White balance: only DISABLE auto-WB when explicitly locking (plan §3.1). The SBC's

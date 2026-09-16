@@ -18,7 +18,7 @@ import numpy as np
 from katrain.vision.auto_exposure import ExposureController, meter_brightness
 from katrain.vision.board_finder import BoardFinder
 from katrain.vision.board_state import EMPTY, BoardStateExtractor
-from katrain.vision.camera import CameraManager
+from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
 from katrain.vision.enhance import enhance_for_inference
 from katrain.vision.gating import mean_detection_confidence, move_event, should_detect_moves, should_feed_sync
@@ -280,7 +280,7 @@ class InProcessAdapter:
             self._ae_advisory = True
             logger.info("AE: camera has no runtime controls — advisory mode only")
             return
-        request(exposure=new_exp, auto_exposure=0.25)
+        request(exposure=new_exp, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
         self._averager.reset()  # the brightness step must not blend into the average
         logger.info("AE: median=%.0f clip=%.1f%% -> exposure %.0f", stats.median, stats.clip_frac * 100, new_exp)
 

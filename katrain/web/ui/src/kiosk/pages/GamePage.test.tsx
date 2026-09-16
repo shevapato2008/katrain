@@ -49,13 +49,14 @@ vi.mock('../components/game/GameControlPanel', () => ({
   },
 }));
 
-const { writeActiveSession, clearActiveSession } = vi.hoisted(() => ({
+const { writeActiveSession, clearActiveSession, readActiveSession } = vi.hoisted(() => ({
   writeActiveSession: vi.fn(),
   clearActiveSession: vi.fn(),
+  readActiveSession: vi.fn(),
 }));
 // `readSessionPlayOnBoard`(泳道 B)从活动会话读开局那一刻定下的 onBoard;这里桩成「没有活动会话」,
 // 走回落到偏好的那一支 —— 即合并前本文件各用例依赖的行为。
-vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSession, readActiveSession: () => null }));
+vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSession, readActiveSession }));
 
 const { mockCalibrate } = vi.hoisted(() => ({ mockCalibrate: vi.fn().mockResolvedValue({}) }));
 vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: (...a: unknown[]) => mockCalibrate(...a) } }));
@@ -172,6 +173,7 @@ describe('GamePage', () => {
     mockCalibrate.mockClear().mockResolvedValue({});
     sessionStorage.clear();
     localStorage.clear();
+    readActiveSession.mockReturnValue(null);
     mockLadderStatus.mockReset();
   });
 
@@ -374,6 +376,23 @@ describe('GamePage', () => {
         expect.objectContaining({ kind: 'game', label: '张三 vs KataGo' })
       );
       expect(clearActiveSession).not.toHaveBeenCalled();
+    });
+
+    it('keeps the setup choice to play on screen when refreshing a 9-line game', () => {
+      readActiveSession.mockReturnValue({
+        kind: 'game', label: '两人', route: window.location.pathname, ts: 1, onBoard: false,
+      });
+      mockGameState = makeGameState({
+        game_type: 'pvp_local', board_size: [9, 9], end_result: null,
+        players_info: {
+          B: { ...basePlayer, player_type: 'player:human', name: '' },
+          W: { ...basePlayer, player_type: 'player:human', name: '' },
+        },
+      });
+
+      renderPage();
+
+      expect(writeActiveSession).toHaveBeenCalledWith(expect.objectContaining({ onBoard: false }));
     });
 
     it('clears the active session when the game has ended', () => {

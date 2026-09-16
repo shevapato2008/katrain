@@ -103,6 +103,38 @@ def test_timeout_judges_loss_when_clock_exhausted(client, monkeypatch):
     assert _recorded_results(client) == [state["end_result"]]
 
 
+def test_move_after_clock_exhausted_judges_loss_before_changing_turn(client, monkeypatch):
+    session = _start_pvp_local(client, monkeypatch, time_enabled=True, main_time=1, byo_length=30, byo_periods=1)
+    turn_player = session.katrain.next_player_info.player
+    session.katrain.main_time_used_by_player[turn_player] = 60
+    session.katrain.next_player_info.periods_used = 1
+
+    r = client.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3], "pass_move": False})
+
+    assert r.status_code == 200, r.text
+    state = r.json()["state"]
+    assert state["end_result"] == f"{'W' if turn_player == 'B' else 'B'}+T"
+    assert state["stones"] == []  # 超时后提交的那颗子没有落上去
+    assert _recorded_results(client) == [state["end_result"]]
+
+
+def test_move_cannot_resume_local_game_after_timeout_result(client, monkeypatch):
+    session = _start_pvp_local(client, monkeypatch, time_enabled=True, main_time=1, byo_length=30, byo_periods=1)
+    turn_player = session.katrain.next_player_info.player
+    session.katrain.main_time_used_by_player[turn_player] = 60
+    session.katrain.next_player_info.periods_used = 1
+    first = client.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3], "pass_move": False})
+    assert first.status_code == 200, first.text
+
+    second = client.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3], "pass_move": False})
+
+    assert second.status_code == 200, second.text
+    state = second.json()["state"]
+    assert state["end_result"] == f"{'W' if turn_player == 'B' else 'B'}+T"
+    assert state["stones"] == []
+    assert _recorded_results(client) == [state["end_result"]]
+
+
 def test_timeout_rejected_with_409_while_main_time_remains(client, monkeypatch):
     session = _start_pvp_local(client, monkeypatch, time_enabled=True, main_time=1, byo_length=30, byo_periods=1)
 

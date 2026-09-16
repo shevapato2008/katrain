@@ -992,7 +992,21 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         with analysis_context:
             with session.lock:
                 guard_ai_ladder_ranked_human_action(session, current_user, "play-move")
-                session.katrain("play", None if coords is None else tuple(coords))
+                katrain = session.katrain
+                if getattr(session, "game_type", None) == "pvp_local" and katrain.game.current_node.end_state:
+                    state = katrain.get_state()
+                    session.last_state = state
+                    return {"session_id": session.session_id, "state": state}
+                # A move arriving after the local player's deadline must not switch turns
+                # before /api/timeout can check that player's clock.
+                if getattr(session, "game_type", None) == "pvp_local" and not is_awaiting_count(katrain):
+                    katrain.update_timer()
+                    if is_time_exhausted(katrain):
+                        katrain("timeout")
+                    else:
+                        katrain("play", None if coords is None else tuple(coords))
+                else:
+                    katrain("play", None if coords is None else tuple(coords))
                 state = session.katrain.get_state()
                 session.last_state = state
         # Natural (two-pass) game end never hits resign/count/timeout — record here so

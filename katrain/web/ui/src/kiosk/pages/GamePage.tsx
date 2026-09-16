@@ -26,7 +26,7 @@ import PhysicalSyncEscalationDialog from '../components/physical/PhysicalSyncEsc
 import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog';
 import HintPanel from '../components/physical/HintPanel';
 import { API, ApiError, type HintResponse, type OwnershipPoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
-import { writeActiveSession, clearActiveSession } from '../utils/activeSession';
+import { readActiveSession, writeActiveSession, clearActiveSession } from '../utils/activeSession';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
@@ -239,11 +239,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     const gs = session.gameState;
     if (!gs || !sessionId) return;
     if (gs.end_result && !gs.awaiting_count) { clearActiveSession('game'); return; }
+    const route = window.location.pathname;
+    const previous = readActiveSession('game');
     writeActiveSession({
       kind: 'game',
       label: `${gs.players_info.B.name} vs ${gs.players_info.W.name}`,
-      route: window.location.pathname,
+      route,
       ts: Date.now(),
+      ...(previous?.route === route && typeof previous.onBoard === 'boolean' ? { onBoard: previous.onBoard } : {}),
     });
   }, [session.gameState?.current_node_id, session.gameState?.end_result, sessionId]);
 

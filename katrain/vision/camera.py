@@ -15,6 +15,21 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
+def _auto_exposure_readback_matches(target: float, readback: float) -> bool:
+    """Accept both OpenCV's scaled values and native V4L2 menu values."""
+    if not np.isfinite(readback):
+        return False
+    manual_values = (0.25, 1.0)
+    auto_values = (0.75, 3.0)
+    if any(abs(target - value) <= 0.01 for value in manual_values):
+        expected = manual_values
+    elif any(abs(target - value) <= 0.01 for value in auto_values):
+        expected = auto_values
+    else:
+        expected = (target,)
+    return any(abs(readback - value) <= 0.01 for value in expected)
+
+
 def _device_to_capture_arg(device_id: int | str) -> str | int:
     """Convert device ID to the argument for cv2.VideoCapture.
 
@@ -261,10 +276,17 @@ class CameraManager:
     def request_controls(self, exposure: float | None = None, auto_exposure: float | None = None) -> None:
         """Queue camera control changes; the reader thread applies them between reads."""
         with self._controls_lock:
+            changed = False
             if auto_exposure is not None:
                 self._pending_controls["auto_exposure"] = float(auto_exposure)
+                changed = True
             if exposure is not None:
                 self._pending_controls["exposure"] = float(exposure)
+                changed = True
+            if changed:
+                # Do not let a caller mistake the preceding control batch's result for
+                # this queued request. The reader thread replaces None with its readback.
+                self._controls_effective = None
 
     @property
     def controls_effective(self) -> bool | None:
@@ -289,7 +311,10 @@ class CameraManager:
         try:
             ok = True
             if "auto_exposure" in pending:
-                ok = bool(self._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, pending["auto_exposure"])) and ok
+                target = pending["auto_exposure"]
+                ok = bool(self._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, target)) and ok
+                readback = float(self._cap.get(cv2.CAP_PROP_AUTO_EXPOSURE))
+                ok = ok and _auto_exposure_readback_matches(target, readback)
             if "exposure" in pending:
                 target = pending["exposure"]
                 ok = bool(self._cap.set(cv2.CAP_PROP_EXPOSURE, target)) and ok

@@ -9,6 +9,7 @@ import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
 import type { IconName } from '../shell/icons';
+import { useEngineReadiness } from '../context/EngineReadinessContext';
 
 // 稿子给每个平台配的图标(`go-kiosk.tmpl.html:play`):星阵是引擎直连,画机器人;
 // 走大厅的画地球。图标不带语义色,状态由 `.dot` / `.soon` 表达。
@@ -41,6 +42,7 @@ const PlayPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, token, isAuthenticated } = useAuth();
+  const engineReadiness = useEngineReadiness();
   const resume = readActiveSession('game');
   const [platforms, setPlatforms] = useState<PlatformInfo[]>(defaultPlatforms);
 
@@ -68,6 +70,11 @@ const PlayPage = () => {
     hour < 13 ? ['Good noon', '中午好'] :
     hour < 18 ? ['Good afternoon', '下午好'] :
     ['Good evening', '晚上好'];
+
+  const engineReady = engineReadiness === 'ready';
+  const engineUnavailableSub = engineReadiness === 'warming'
+    ? 'AI 引擎准备中，稍后即可开始'
+    : 'AI 引擎暂未就绪，请稍后重试';
 
   return (
     <KioskScrollZone>
@@ -101,14 +108,20 @@ const PlayPage = () => {
         <div className="kiosk-cards">
           <KioskCard
             title={t('Free Game', '自由对弈')}
-            sub={t('Pick the strength yourself · form estimate available', '自己挑强度 · 可以看形势判断')}
+            sub={engineReady
+              ? t('Pick the strength yourself · form estimate available', '自己挑强度 · 可以看形势判断')
+              : engineUnavailableSub}
             icon="robot"
+            disabled={!engineReady}
             onClick={() => navigate('/kiosk/play/ai/setup/free')}
           />
           <KioskCard
             title={t('Ranked Game', '升降级对弈')}
-            sub={t('Tier picked from your strength · analysis sealed throughout', '按棋力自动配档 · 全程封分析')}
+            sub={engineReady
+              ? t('Tier picked from your strength · analysis sealed throughout', '按棋力自动配档 · 全程封分析')
+              : engineUnavailableSub}
             icon="trophy"
+            disabled={!engineReady}
             onClick={() => navigate('/kiosk/play/ai/setup/ranked')}
           />
         </div>

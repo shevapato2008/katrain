@@ -96,6 +96,10 @@ Enable FP16 only if every run and both query types succeed, no new OpenCL/KataGo
 
 Otherwise keep `openclUseFP16=false`. At the end of the experiment, verify the effective configuration and perform one successful cold start in the selected state. This experiment does not change model files or analysis settings.
 
+### Executed result (2026-09-17)
+
+The counterbalanced board run completed successfully for all six measured starts and both normal/HumanSL one-visit queries, with no fatal OpenCL or KataGo errors. Median full-ready time was 47.995 seconds for FP32 and 48.602 seconds for FP16 (FP16 was 0.607 seconds, or 1.26%, slower). Median combined peak RSS was 803,176 KiB for FP32 and 812,176 KiB for FP16 (FP16 was 9,000 KiB, or 1.12%, higher). FP16 therefore passed neither enablement gate. The effective configuration was restored and verified as `openclUseFP16=false`; the benchmark left all Go target services inactive.
+
 ## Homepage typography
 
 Add a separate local font face, `SmartBox Display LongCang`, containing exactly the unique characters needed by `围棋`, `国际象棋`, `中国象棋`, and `五子棋`. Do not expand or rename `SmartBox Brand LongCang`; its three-glyph brand contract remains unchanged.

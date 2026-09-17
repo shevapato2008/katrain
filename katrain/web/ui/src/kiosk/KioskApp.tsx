@@ -34,6 +34,7 @@ import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
 import { GeometryProvider } from './context/GeometryContext';
+import { EngineReadinessProvider } from './context/EngineReadinessProvider';
 import PhysicalBoardGuard from './components/vision/PhysicalBoardGuard';
 import PlayInputGuard from './components/vision/PlayInputGuard';
 import TsumegoInputGuard from './components/vision/TsumegoInputGuard';
@@ -203,7 +204,9 @@ const KioskApp = () => {
           <GeometryProvider>
             <TsumegoProgressProvider>
               <RotationWrapper>
-                <KioskRoutes />
+                <EngineReadinessProvider>
+                  <KioskRoutes />
+                </EngineReadinessProvider>
               </RotationWrapper>
             </TsumegoProgressProvider>
           </GeometryProvider>

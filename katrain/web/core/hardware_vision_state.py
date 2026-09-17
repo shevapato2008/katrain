@@ -20,8 +20,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
 
+import numpy as np
+
 from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, _auto_exposure_readback_matches
-from katrain.vision.geometry_lock import GeometryLock, load_geometry_lock, save_geometry_lock
+from katrain.vision.geometry_lock import NPZ_FIELDS, GeometryLock, load_geometry_lock, save_geometry_lock
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,24 @@ PAYLOAD_FILENAMES = (GEOMETRY_FILENAME, GEOMETRY_SIDECAR_FILENAME, PROFILE_FILEN
 
 _GENERATION_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
 _SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
+_GEOMETRY_ARRAY_SHAPES = {
+    "corners": (4, 2),
+    "points": (19, 19, 2),
+    "xs": (19,),
+    "ys": (19,),
+    "M": (3, 3),
+    "Minv": (3, 3),
+    "baseline": (19, 19, 3),
+}
+_GEOMETRY_SIDECAR_FIELDS = {
+    "confidence",
+    "nmatch",
+    "empty_black",
+    "empty_white",
+    "diag",
+    "source_width",
+    "source_height",
+}
 
 
 @dataclass(frozen=True)
@@ -48,12 +68,7 @@ class CameraProfile:
     schema_version: int = field(default=SCHEMA_VERSION, init=False)
 
     def __post_init__(self) -> None:
-        if self.camera_device is None or isinstance(self.camera_device, bool):
-            raise ValueError("camera_device must identify a camera")
-        camera_device = str(self.camera_device)
-        if not camera_device:
-            raise ValueError("camera_device must not be empty")
-        object.__setattr__(self, "camera_device", camera_device)
+        object.__setattr__(self, "camera_device", _normalize_camera_device(self.camera_device))
 
         for name, value in (("width", self.width), ("height", self.height)):
             if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
@@ -129,7 +144,7 @@ class HardwareVisionStateStore:
             return self._load_generation(
                 self.generations_dir / generation,
                 generation,
-                str(camera_device),
+                _normalize_camera_device(camera_device),
                 expected_width,
                 expected_height,
             )
@@ -223,13 +238,10 @@ class HardwareVisionStateStore:
             if _sha256(generation_dir / name) != expected_digest:
                 raise ValueError(f"sha256 mismatch for {name}")
 
-        # The geometry loader intentionally tolerates old/broken sidecars.  A
-        # generation sidecar is mandatory, so parse it explicitly before load.
-        _read_json_object(generation_dir / GEOMETRY_SIDECAR_FILENAME)
         profile = CameraProfile.from_json_dict(_read_json_object(generation_dir / PROFILE_FILENAME))
         if (profile.camera_device, profile.width, profile.height) != (camera_device, width, height):
             raise ValueError("camera profile does not match requested camera and resolution")
-        geometry = load_geometry_lock(generation_dir / GEOMETRY_FILENAME)
+        geometry = _load_valid_geometry(generation_dir, profile)
         return HardwareVisionState(generation=generation, geometry=geometry, profile=profile)
 
     def _replace_current(self, generation: str) -> None:
@@ -259,6 +271,15 @@ def _finite_number(name: str, value: Any) -> float:
     return result
 
 
+def _normalize_camera_device(value: Any) -> str:
+    if isinstance(value, bool) or not isinstance(value, (int, str)):
+        raise ValueError("camera_device must be an integer or string")
+    normalized = str(value).strip()
+    if not normalized:
+        raise ValueError("camera_device must not be empty")
+    return normalized
+
+
 def _validate_dimensions(width: Any, height: Any) -> tuple[int, int]:
     for name, value in (("width", width), ("height", height)):
         if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
@@ -277,6 +298,39 @@ def _read_json_object(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"{path.name} must contain a JSON object")
     return value
+
+
+def _load_valid_geometry(generation_dir: Path, profile: CameraProfile) -> GeometryLock:
+    geometry_path = generation_dir / GEOMETRY_FILENAME
+    with np.load(geometry_path, allow_pickle=False) as archive:
+        if set(archive.files) != set(NPZ_FIELDS):
+            raise ValueError("geometry npz must contain exactly the expected fields")
+        for name, expected_shape in _GEOMETRY_ARRAY_SHAPES.items():
+            array = archive[name]
+            if array.shape != expected_shape:
+                raise ValueError(f"geometry field {name} has invalid shape")
+            if array.dtype.kind not in "iuf" or not np.isfinite(array).all():
+                raise ValueError(f"geometry field {name} must contain finite numeric values")
+
+        out_size = archive["out_size"]
+        if out_size.shape != () or out_size.dtype.kind not in "iu" or int(out_size) <= 0:
+            raise ValueError("geometry field out_size must be a positive integer")
+
+    sidecar = _read_json_object(generation_dir / GEOMETRY_SIDECAR_FILENAME)
+    if set(sidecar) != _GEOMETRY_SIDECAR_FIELDS:
+        raise ValueError("geometry sidecar has unexpected fields")
+    _finite_number("geometry sidecar confidence", sidecar["confidence"])
+    for name in ("nmatch", "empty_black", "empty_white"):
+        value = sidecar[name]
+        if type(value) is not int or value < 0:
+            raise ValueError(f"geometry sidecar {name} must be a non-negative integer")
+    if not isinstance(sidecar["diag"], dict):
+        raise ValueError("geometry sidecar diag must be an object")
+    source_width, source_height = _validate_dimensions(sidecar["source_width"], sidecar["source_height"])
+    if (source_width, source_height) != (profile.width, profile.height):
+        raise ValueError("geometry source resolution does not match camera profile")
+
+    return load_geometry_lock(geometry_path)
 
 
 def _write_json_fsynced(path: Path, value: Mapping[str, Any]) -> None:

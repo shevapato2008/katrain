@@ -57,6 +57,56 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _replace_manifest_hash(generation_dir: Path, payload_name: str) -> None:
+    manifest_path = generation_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["sha256"][payload_name] = _sha256(generation_dir / payload_name)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def _make_geometry_invalid(geometry: GeometryLock, invalidity: str) -> None:
+    if invalidity == "nan":
+        geometry.baseline[0, 0, 0] = np.nan
+    elif invalidity == "wrong_shape":
+        geometry.points = np.zeros((18, 19, 2), dtype=np.float32)
+    elif invalidity == "negative_out_size":
+        geometry.out_size = -1
+    elif invalidity == "source_resolution_mismatch":
+        geometry.source_width = 1280
+    elif invalidity == "sidecar_type":
+        geometry.nmatch = "18"
+    else:  # pragma: no cover - protects the test helper itself
+        raise AssertionError(f"unknown invalidity: {invalidity}")
+
+
+def _corrupt_generation_semantics(generation_dir: Path, invalidity: str) -> None:
+    if invalidity in {"nan", "wrong_shape", "negative_out_size"}:
+        npz_path = generation_dir / "geometry_lock.npz"
+        with np.load(npz_path) as archive:
+            payload = {name: archive[name] for name in archive.files}
+        if invalidity == "nan":
+            payload["M"] = payload["M"].copy()
+            payload["M"][0, 0] = np.nan
+        elif invalidity == "wrong_shape":
+            payload["corners"] = np.zeros((3, 2), dtype=np.float32)
+        else:
+            payload["out_size"] = np.int64(-1)
+        np.savez(npz_path, **payload)
+        _replace_manifest_hash(generation_dir, "geometry_lock.npz")
+        return
+
+    sidecar_path = generation_dir / "geometry_lock.json"
+    sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
+    if invalidity == "source_resolution_mismatch":
+        sidecar["source_height"] = 720
+    elif invalidity == "sidecar_type":
+        sidecar["empty_black"] = "0"
+    else:  # pragma: no cover - protects the test helper itself
+        raise AssertionError(f"unknown invalidity: {invalidity}")
+    sidecar_path.write_text(json.dumps(sidecar), encoding="utf-8")
+    _replace_manifest_hash(generation_dir, "geometry_lock.json")
+
+
 def test_round_trip_loads_one_complete_generation(tmp_path):
     module = _state_module()
     store = module.HardwareVisionStateStore(tmp_path)
@@ -105,6 +155,18 @@ def test_integer_camera_device_is_normalized_to_string(tmp_path):
     assert loaded.profile.camera_device == "73"
 
 
+def test_string_camera_device_is_stripped_and_persisted(tmp_path):
+    module = _state_module()
+    store = module.HardwareVisionStateStore(tmp_path)
+    profile = _profile(module, camera_device="  /dev/video73 \t")
+
+    store.commit(_geometry(), profile, generation="generation-1")
+    loaded = store.load_current("/dev/video73", 640, 480)
+
+    assert loaded is not None
+    assert loaded.profile.camera_device == "/dev/video73"
+
+
 @pytest.mark.parametrize("current_contents", ["not json", '{"schema_version": 1, "generation": "../escape"}'])
 def test_corrupt_or_unsafe_current_pointer_is_rejected(tmp_path, current_contents):
     module = _state_module()
@@ -120,6 +182,41 @@ def test_payload_checksum_mismatch_is_rejected(tmp_path):
     committed = store.commit(_geometry(), _profile(module), generation="generation-1")
     profile_path = tmp_path / "generations" / committed.generation / "camera-profile.json"
     profile_path.write_text("{}", encoding="utf-8")
+
+    assert store.load_current("/dev/video73", 640, 480) is None
+
+
+@pytest.mark.parametrize(
+    "invalidity",
+    ["nan", "wrong_shape", "negative_out_size", "source_resolution_mismatch", "sidecar_type"],
+)
+def test_commit_rejects_invalid_geometry_without_changing_current(tmp_path, invalidity):
+    module = _state_module()
+    store = module.HardwareVisionStateStore(tmp_path)
+    store.commit(_geometry(), _profile(module, exposure=100.0), generation="generation-1")
+    invalid_geometry = _geometry()
+    _make_geometry_invalid(invalid_geometry, invalidity)
+
+    with pytest.raises(ValueError):
+        store.commit(invalid_geometry, _profile(module, exposure=200.0), generation="generation-2")
+
+    loaded = store.load_current("/dev/video73", 640, 480)
+    assert loaded is not None
+    assert loaded.generation == "generation-1"
+    assert loaded.profile.exposure == 100.0
+    assert not (tmp_path / "generations" / "generation-2").exists()
+
+
+@pytest.mark.parametrize(
+    "invalidity",
+    ["nan", "wrong_shape", "negative_out_size", "source_resolution_mismatch", "sidecar_type"],
+)
+def test_load_rejects_semantically_invalid_geometry_even_with_matching_hash(tmp_path, invalidity):
+    module = _state_module()
+    store = module.HardwareVisionStateStore(tmp_path)
+    committed = store.commit(_geometry(), _profile(module), generation="generation-1")
+    generation_dir = tmp_path / "generations" / committed.generation
+    _corrupt_generation_semantics(generation_dir, invalidity)
 
     assert store.load_current("/dev/video73", 640, 480) is None
 
@@ -177,6 +274,14 @@ def test_camera_profile_rejects_invalid_controls_and_resolution(overrides):
 
     with pytest.raises(ValueError):
         _profile(module, **overrides)
+
+
+@pytest.mark.parametrize("camera_device", [True, 73.0, [], {}, "", "   \t"])
+def test_camera_profile_rejects_invalid_device_types_and_blank_strings(camera_device):
+    module = _state_module()
+
+    with pytest.raises(ValueError):
+        _profile(module, camera_device=camera_device)
 
 
 def test_camera_profile_json_is_strict():

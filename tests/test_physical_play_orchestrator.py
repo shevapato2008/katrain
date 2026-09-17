@@ -54,6 +54,7 @@ class FakeVision:
     def __init__(self):
         self.detected = np.zeros((19, 19), dtype=int).tolist()
         self.expected_pushes = []
+        self.expected_node_ids = []
         self.paused = False
         self.lit = []
         self.calls = []  # ordered ("pause"|"resume") sequence — dup-call detector
@@ -62,8 +63,9 @@ class FakeVision:
     def get_detected_board(self):
         return self.detected
 
-    def set_expected_from_stones(self, stones, board_size=19):
+    def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
         self.expected_pushes.append(stones)
+        self.expected_node_ids.append(expected_node_id)
 
     def pause_detection(self):
         self.paused = True
@@ -88,8 +90,13 @@ class FakeManager:
         self.broadcasts.append((sid, payload))
 
 
-def state(stones, end_result=None):
-    return {"stones": stones, "board_size": [19, 19], "end_result": end_result}
+def state(stones, end_result=None, current_node_id=1001):
+    return {
+        "stones": stones,
+        "board_size": [19, 19],
+        "end_result": end_result,
+        "current_node_id": current_node_id,
+    }
 
 
 def _orch(clock=lambda: 0.0, **cfg):
@@ -134,8 +141,9 @@ class TestTick:
 
     def test_expected_pushed_to_vision_on_every_state(self):
         orch, _, vision, _ = _orch()
-        orch.on_game_state(state([["B", [3, 15], None, 1]]))
+        orch.on_game_state(state([["B", [3, 15], None, 1]], current_node_id=77))
         assert len(vision.expected_pushes) == 1  # AI 落子后立即 force_sync 基线
+        assert vision.expected_node_ids == [77]
 
 
 class TestReminder:

@@ -3568,7 +3568,9 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     def _rearm_detection() -> None:
         game_state = session.katrain.get_state()
         if game_state and "stones" in game_state:
-            vision.set_expected_from_stones(game_state["stones"])
+            vision.set_expected_from_stones(
+                game_state["stones"], expected_node_id=game_state.get("current_node_id")
+            )
 
     if is_ai_ladder_ranked_session(session):
         move_player = "B" if move_data.color == 1 else "W"

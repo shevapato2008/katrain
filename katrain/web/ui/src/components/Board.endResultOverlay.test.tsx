@@ -1,6 +1,6 @@
 import React from 'react';
-import { render } from '@testing-library/react';
-import { describe, expect, test, vi } from 'vitest';
+import { act, render, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import Board from './Board';
 import type { GameState } from '../api';
 
@@ -33,10 +33,12 @@ function mockContext() {
 
 const baseState = {
   stones: [], history: [], analysis: null, player_to_move: 'B',
-  board_size: [19, 19], end_result: 'W+T', awaiting_count: false,
+  board_size: [19, 19], current_node_id: 42, end_result: 'W+T', awaiting_count: false,
 } as unknown as GameState;
 
 describe('Board end-result overlay', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   test('draws the full-canvas overlay by default (galaxy/未指定态不变)', () => {
     const { ctx, fillRectCalls } = mockContext();
     HTMLCanvasElement.prototype.getContext = vi.fn(() => ctx) as never;
@@ -49,5 +51,42 @@ describe('Board end-result overlay', () => {
     HTMLCanvasElement.prototype.getContext = vi.fn(() => ctx) as never;
     render(<Board gameState={baseState} onMove={() => {}} analysisToggles={{}} suppressEndResultOverlay />);
     expect(fillRectCalls.some((c) => c.startsWith('rect:0,0,'))).toBe(false);
+  });
+
+  test('acknowledges the latest node when images finish loading after a state update', async () => {
+    const { ctx } = mockContext();
+    HTMLCanvasElement.prototype.getContext = vi.fn(() => ctx) as never;
+    const onPaintedNode = vi.fn();
+    const pendingImages: LoadedImage[] = [];
+    class LoadedImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      constructor() { pendingImages.push(this); }
+      set src(_value: string) {}
+    }
+    vi.stubGlobal('Image', LoadedImage);
+
+    const view = render(
+      <Board
+        gameState={{ ...baseState, current_node_id: 41 }}
+        onMove={() => {}}
+        analysisToggles={{}}
+        onPaintedNode={onPaintedNode}
+      />,
+    );
+    view.rerender(
+      <Board
+        gameState={{ ...baseState, current_node_id: 42 }}
+        onMove={() => {}}
+        analysisToggles={{}}
+        onPaintedNode={onPaintedNode}
+      />,
+    );
+
+    expect(onPaintedNode).not.toHaveBeenCalled();
+    await act(async () => pendingImages.forEach(image => image.onload?.()));
+    await waitFor(() => expect(onPaintedNode).toHaveBeenCalledWith(42));
+    expect(onPaintedNode).not.toHaveBeenCalledWith(41);
+    expect(ctx.drawImage.mock.invocationCallOrder[0]).toBeLessThan(onPaintedNode.mock.invocationCallOrder[0]);
   });
 });

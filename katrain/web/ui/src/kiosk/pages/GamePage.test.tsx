@@ -13,9 +13,13 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
 }));
 
-interface MockBoardProps { analysisToggles?: Record<string, boolean>; playerColor?: 'B' | 'W' | null }
+interface MockBoardProps {
+  analysisToggles?: Record<string, boolean>;
+  playerColor?: 'B' | 'W' | null;
+  onPaintedNode?: (nodeId: number) => void;
+}
 const { capturedBoardProps } = vi.hoisted(() => ({
-  capturedBoardProps: { current: null as { analysisToggles?: Record<string, boolean> } | null },
+  capturedBoardProps: { current: null as MockBoardProps | null },
 }));
 vi.mock('../../components/Board', () => ({
   default: (props: MockBoardProps) => { capturedBoardProps.current = props; return <div data-testid="board">Board</div>; },
@@ -87,30 +91,38 @@ const mockHandleAction = vi.fn();
 const mockOnMove = vi.fn().mockResolvedValue(undefined);
 const mockOnNavigate = vi.fn();
 const mockSetGameState = vi.fn();
+const { mockAcknowledgePaintedNode, capturedSessionOptions } = vi.hoisted(() => ({
+  mockAcknowledgePaintedNode: vi.fn(),
+  capturedSessionOptions: { current: null as { deferMoveSoundUntilPaint?: boolean } | null },
+}));
 
 let mockGameState: GameState;
 let mockPhysicalReminder: { kind: 'reminder' | 'escalation'; to_place: number[][]; to_remove: number[][] } | null = null;
 
 vi.mock('../../hooks/useGameSession', () => ({
-  useGameSession: () => ({
-    sessionId: 'test-session',
-    setSessionId: mockSetSessionId,
-    gameState: mockGameState,
-    setGameState: mockSetGameState,
-    error: null,
-    onMove: mockOnMove,
-    onNavigate: mockOnNavigate,
-    handleAction: mockHandleAction,
-    initNewSession: vi.fn(),
-    lastLog: null,
-    chatMessages: [],
-    sendChat: vi.fn(),
-    gameEndData: null,
-    physicalReminder: mockPhysicalReminder,
-    // 新覆盖的「非本地对局认输成功」路径会调用它(GamePage.tsx 里未包在 try 里);
-    // 缺了这一项此前从未被真调用过,加上后只是补全 mock、不改任何断言。
-    clearPhysicalEngineError: vi.fn(),
-  }),
+  useGameSession: (options: { deferMoveSoundUntilPaint?: boolean }) => {
+    capturedSessionOptions.current = options;
+    return {
+      sessionId: 'test-session',
+      setSessionId: mockSetSessionId,
+      gameState: mockGameState,
+      setGameState: mockSetGameState,
+      error: null,
+      onMove: mockOnMove,
+      onNavigate: mockOnNavigate,
+      handleAction: mockHandleAction,
+      initNewSession: vi.fn(),
+      lastLog: null,
+      chatMessages: [],
+      sendChat: vi.fn(),
+      gameEndData: null,
+      physicalReminder: mockPhysicalReminder,
+      // 新覆盖的「非本地对局认输成功」路径会调用它(GamePage.tsx 里未包在 try 里);
+      // 缺了这一项此前从未被真调用过,加上后只是补全 mock、不改任何断言。
+      clearPhysicalEngineError: vi.fn(),
+      acknowledgePaintedNode: mockAcknowledgePaintedNode,
+    };
+  },
 }));
 
 // --- Fixtures ----------------------------------------------------------------
@@ -180,6 +192,7 @@ describe('GamePage', () => {
     mockPhysicalReminder = null;
     testNavigate = null;
     capturedBoardProps.current = null;
+    capturedSessionOptions.current = null;
     capturedControlPanelProps.current = null;
     mockCalibrate.mockClear().mockResolvedValue({});
     sessionStorage.clear();
@@ -816,6 +829,15 @@ describe('GamePage', () => {
   // The 3D Go board was dropped to free ~321MB of Mali GPU memory contending with KataGo's
   // OpenCL on the RK3562. Guard against reintroduction: only the 2D Board ever renders.
   describe('3D board removed', () => {
+    it('uses the visible 2D canvas as the kiosk move-sound paint barrier', () => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null, current_node_id: 37 });
+      renderPage();
+
+      expect(capturedSessionOptions.current?.deferMoveSoundUntilPaint).toBe(true);
+      act(() => capturedBoardProps.current?.onPaintedNode?.(37));
+      expect(mockAcknowledgePaintedNode).toHaveBeenCalledWith(37);
+    });
+
     it('renders only the 2D Board and never a 3D board', () => {
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
       renderPage();

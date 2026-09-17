@@ -17,6 +17,7 @@ interface CountRequestData {
 
 interface UseGameSessionOptions {
     token?: string;  // Auth token for multiplayer games
+    deferMoveSoundUntilPaint?: boolean;  // Kiosk: wait for the visible canvas to acknowledge the node
     onGameEnd?: (data: GameEndData) => void;  // Callback when game ends
     onCountRequest?: (data: CountRequestData) => void;  // Callback for count request (HvH)
     onCountRejected?: () => void;  // Callback when count request is rejected
@@ -26,7 +27,7 @@ interface UseGameSessionOptions {
 type QueuedSound = { sound: string; afterNodeId: number };
 
 export const useGameSession = (options: UseGameSessionOptions = {}) => {
-    const { token, onGameEnd, onCountRequest, onCountRejected, onCountTimeout } = options;
+    const { token, deferMoveSoundUntilPaint = false, onGameEnd, onCountRequest, onCountRejected, onCountTimeout } = options;
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -56,6 +57,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const lastSoundRef = useRef<{name: string, time: number} | null>(null);
     const soundQueueRef = useRef<QueuedSound[]>([]);
     const committedNodeRef = useRef<number | null>(null);
+    const paintedNodeRef = useRef<number | null>(null);
     const committedGameRef = useRef<string | null>(null);
     const soundRafRef = useRef<number[]>([]);
 
@@ -80,6 +82,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
 
     const clearQueuedSounds = useCallback(() => {
         soundQueueRef.current = [];
+        paintedNodeRef.current = null;
         soundRafRef.current.forEach(id => cancelAnimationFrame(id));
         soundRafRef.current = [];
     }, []);
@@ -87,7 +90,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const flushQueuedSounds = useCallback((): void => {
         if (soundRafRef.current.length > 0) return;
         const matchingIndex = soundQueueRef.current.findIndex(
-            queued => queued.afterNodeId === committedNodeRef.current,
+            queued => queued.afterNodeId === committedNodeRef.current
+                && (!deferMoveSoundUntilPaint || queued.afterNodeId === paintedNodeRef.current),
         );
         if (matchingIndex < 0) return;
         if (matchingIndex > 0) {
@@ -96,22 +100,37 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         const next = soundQueueRef.current[0];
         if (!next) return;
 
+        const finishPlayback = () => {
+            if (soundQueueRef.current[0] === next) {
+                soundQueueRef.current.shift();
+                if (next.afterNodeId === committedNodeRef.current
+                    && (!deferMoveSoundUntilPaint || next.afterNodeId === paintedNodeRef.current)) {
+                    playSound(next.sound);
+                }
+            }
+            flushQueuedSounds();
+        };
+
         const firstRaf = requestAnimationFrame(() => {
             soundRafRef.current = soundRafRef.current.filter(id => id !== firstRaf);
+            if (deferMoveSoundUntilPaint) {
+                finishPlayback();
+                return;
+            }
             const secondRaf = requestAnimationFrame(() => {
                 soundRafRef.current = soundRafRef.current.filter(id => id !== secondRaf);
-                if (soundQueueRef.current[0] === next) {
-                    soundQueueRef.current.shift();
-                    if (next.afterNodeId === committedNodeRef.current) {
-                        playSound(next.sound);
-                    }
-                }
-                flushQueuedSounds();
+                finishPlayback();
             });
             soundRafRef.current.push(secondRaf);
         });
         soundRafRef.current.push(firstRaf);
-    }, [playSound]);
+    }, [deferMoveSoundUntilPaint, playSound]);
+
+    const acknowledgePaintedNode = useCallback((nodeId: number) => {
+        if (nodeId !== committedNodeRef.current) return;
+        paintedNodeRef.current = nodeId;
+        flushQueuedSounds();
+    }, [flushQueuedSounds]);
 
     useLayoutEffect(() => {
         const committedGame = gameState?.game_id ?? null;
@@ -119,7 +138,11 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             clearQueuedSounds();
         }
         committedGameRef.current = committedGame;
-        committedNodeRef.current = gameState?.current_node_id ?? null;
+        const committedNode = gameState?.current_node_id ?? null;
+        if (committedNodeRef.current !== committedNode) {
+            paintedNodeRef.current = null;
+        }
+        committedNodeRef.current = committedNode;
         flushQueuedSounds();
     }, [gameState?.game_id, gameState?.current_node_id, clearQueuedSounds, flushQueuedSounds]);
 
@@ -316,5 +339,6 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         sessionId, setSessionId, gameState, setGameState, error, connectionLost, clearError, onMove, onNavigate, handleAction,
         initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder,
         physicalEngineError, clearPhysicalEngineError, awaitingRemovalReminder, wsRef,
+        acknowledgePaintedNode,
     };
 };

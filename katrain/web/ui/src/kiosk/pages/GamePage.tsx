@@ -166,7 +166,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
   const { token, user, isAuthenticated } = useAuth();
-  const session = useGameSession({ token: token ?? undefined });
+  const session = useGameSession({ token: token ?? undefined, deferMoveSoundUntilPaint: true });
   const [analysisToggles, setAnalysisToggles] = useState(() => ({
     ownership: false,
     hints: false,
@@ -1027,6 +1027,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               engineOverlay={engineOverlay}
               externalRulers
               suppressEndResultOverlay={!!timeoutLoserColor}
+              onPaintedNode={session.acknowledgePaintedNode}
             />
           </div>
           <div className="kiosk-board__ruler kiosk-board__ruler--right">

@@ -70,8 +70,8 @@ const sendSound = (socket: MockWebSocket, sound: string, afterNodeId?: number) =
   });
 };
 
-const connect = async (sessionId = 'session-1') => {
-  const hook = renderHook(() => useGameSession({ token: 'token' }));
+const connect = async (sessionId = 'session-1', deferMoveSoundUntilPaint = false) => {
+  const hook = renderHook(() => useGameSession({ token: 'token', deferMoveSoundUntilPaint }));
   act(() => hook.result.current.setSessionId(sessionId));
   await waitFor(() => expect(sockets).toHaveLength(1));
   return { ...hook, socket: sockets[0] };
@@ -118,6 +118,60 @@ describe('useGameSession sound synchronization', () => {
     sendState(socket, 12);
     sendSound(socket, 'capturing', 12);
     expect(played).toEqual([]);
+
+    runNextRaf();
+    expect(played).toEqual([]);
+    runNextRaf();
+    expect(played).toEqual(['capturing.wav']);
+  });
+
+  it('in strict mode waits for a matching board paint after sound and state', async () => {
+    const hook = await connect('session-1', true);
+
+    sendSound(hook.socket, 'stone1', 12);
+    sendState(hook.socket, 12);
+    expect(requestAnimationFrameMock).not.toHaveBeenCalled();
+
+    act(() => hook.result.current.acknowledgePaintedNode(12));
+    expect(requestAnimationFrameMock).toHaveBeenCalledTimes(1);
+    expect(played).toEqual([]);
+    runNextRaf();
+    expect(played).toEqual(['stone1.wav']);
+  });
+
+  it('in strict mode accepts a matching board paint before the sound arrives', async () => {
+    const hook = await connect('session-1', true);
+
+    sendState(hook.socket, 12);
+    act(() => hook.result.current.acknowledgePaintedNode(12));
+    expect(requestAnimationFrameMock).not.toHaveBeenCalled();
+
+    sendSound(hook.socket, 'capturing', 12);
+    expect(requestAnimationFrameMock).toHaveBeenCalledTimes(1);
+    runNextRaf();
+    expect(played).toEqual(['capturing.wav']);
+  });
+
+  it('in strict mode ignores a mismatched board paint without replacing the matching paint', async () => {
+    const hook = await connect('session-1', true);
+
+    sendState(hook.socket, 12);
+    act(() => hook.result.current.acknowledgePaintedNode(12));
+    act(() => hook.result.current.acknowledgePaintedNode(11));
+    sendSound(hook.socket, 'stone1', 12);
+    runNextRaf();
+    expect(played).toEqual(['stone1.wav']);
+  });
+
+  it('in strict mode drops scheduled stale audio when a newer painted node arrives', async () => {
+    const hook = await connect('session-1', true);
+    sendState(hook.socket, 12);
+    act(() => hook.result.current.acknowledgePaintedNode(12));
+    sendSound(hook.socket, 'stone1', 12);
+
+    sendState(hook.socket, 13);
+    act(() => hook.result.current.acknowledgePaintedNode(13));
+    sendSound(hook.socket, 'capturing', 13);
 
     runNextRaf();
     expect(played).toEqual([]);
@@ -183,6 +237,20 @@ describe('useGameSession sound synchronization', () => {
   it('cancels scheduled playback when the session changes', async () => {
     const hook = await connect();
     sendState(hook.socket, 12);
+    sendSound(hook.socket, 'stone1', 12);
+    expect(rafCallbacks).toHaveLength(1);
+
+    act(() => hook.result.current.setSessionId('session-2'));
+
+    expect(cancelAnimationFrameMock).toHaveBeenCalled();
+    expect(rafCallbacks).toHaveLength(0);
+    expect(played).toEqual([]);
+  });
+
+  it('cancels strict-mode playback when the session changes', async () => {
+    const hook = await connect('session-1', true);
+    sendState(hook.socket, 12);
+    act(() => hook.result.current.acknowledgePaintedNode(12));
     sendSound(hook.socket, 'stone1', 12);
     expect(rafCallbacks).toHaveLength(1);
 

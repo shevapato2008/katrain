@@ -3647,3 +3647,9 @@ msgstr "{color} taş eğri; {from} noktasından {to} noktasına taşıyın"
 
 msgid "review:start_analysis"
 msgstr "Analizi başlat"
+
+msgid "vision:resync_screen_authority"
+msgstr "Algılamayı sıfırla · ekrandaki dijital tahta konumunu esas al"
+
+msgid "Re-sync"
+msgstr "Algılamayı sıfırla"

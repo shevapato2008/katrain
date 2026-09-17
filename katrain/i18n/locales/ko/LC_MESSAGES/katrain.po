@@ -3527,3 +3527,9 @@ msgstr "{color} 돌이 중심에서 벗어났습니다. {from}에서 {to}(으)�
 
 msgid "review:start_analysis"
 msgstr "분석 시작"
+
+msgid "vision:resync_screen_authority"
+msgstr "인식 재설정 · 화면의 디지털 바둑판 상태를 기준으로 사용"
+
+msgid "Re-sync"
+msgstr "인식 재설정"

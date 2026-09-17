@@ -3550,3 +3550,9 @@ msgstr "{color}子沒放正，請從 {from} 移到 {to}"
 
 msgid "review:start_analysis"
 msgstr "開始分析"
+
+msgid "vision:resync_screen_authority"
+msgstr "重設辨識 · 以螢幕上的數位棋盤局面為準"
+
+msgid "Re-sync"
+msgstr "重設辨識"

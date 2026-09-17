@@ -231,6 +231,30 @@ describe('GamePage', () => {
     expect(document.querySelector('img[src="/api/v1/vision/stream"]')).toBeNull();
   });
 
+  describe('重置识别页控动作', () => {
+    const aiGame = () => makeGameState({
+      players_info: {
+        B: { ...basePlayer, player_type: 'player:human', name: '张三' },
+        W: { ...basePlayer, player_type: 'player:ai', name: 'KataGo' },
+      },
+    });
+
+    it('实体盘模式显示可见标签，并说明以屏幕上的数字棋盘局面为准', () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame();
+      renderPage();
+      const action = screen.getByRole('button', { name: '重置识别 · 以屏幕上的数字棋盘局面为准' });
+      expect(action).toHaveTextContent('重置识别');
+    });
+
+    it('屏幕模式不显示重置识别动作', () => {
+      mockIsVisionEnabled = false;
+      mockGameState = aiGame();
+      renderPage();
+      expect(screen.queryByRole('button', { name: /重置识别/ })).toBeNull();
+    });
+  });
+
   describe('AI placement status in the right rail', () => {
     const aiGame = (overrides: Partial<GameState> = {}) => makeGameState({
       players_info: {

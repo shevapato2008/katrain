@@ -1046,11 +1046,12 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             title={gameTitle}
             sub={gameSetupLine}
             // §11 只允许一个页级图标按钮。重置识别在这一屏是**唯一**那个:
-            // 让屏幕重新以实体盘为准。上一版它只在 `syncStuck` 之后才出现 ——
+            // 以屏幕上的数字棋盘为权威重建识别基线。上一版它只在 `syncStuck` 之后才出现 ——
             // 也就是必须先卡住一次才能自救;实体模式下它现在一直在。
             action={physicalPlay ? {
               icon: 'arrows-clockwise',
-              label: t('Re-sync', '重置识别 · 让屏幕重新以实体盘为准'),
+              label: t('vision:resync_screen_authority', '重置识别 · 以屏幕上的数字棋盘局面为准'),
+              visibleLabel: t('Re-sync', '重置识别'),
               onClick: () => { void handleResetSync(); },
             } : undefined}
           />

@@ -3472,3 +3472,9 @@ msgstr "{color}: la piedra está descentrada; muévala de {from} a {to}"
 
 msgid "review:start_analysis"
 msgstr "Iniciar análisis"
+
+msgid "vision:resync_screen_authority"
+msgstr "Restablecer reconocimiento · usar la posición digital en pantalla"
+
+msgid "Re-sync"
+msgstr "Restablecer reconocimiento"

@@ -3639,3 +3639,9 @@ msgstr "Pierre {color} mal centrée : déplacez-la de {from} vers {to}"
 
 msgid "review:start_analysis"
 msgstr "Lancer l'analyse"
+
+msgid "vision:resync_screen_authority"
+msgstr "Réinitialiser la reconnaissance · utiliser la position numérique affichée"
+
+msgid "Re-sync"
+msgstr "Réinitialiser la reconnaissance"

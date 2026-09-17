@@ -3548,3 +3548,9 @@ msgstr "Камень ({color}) смещён: переместите его с {f
 
 msgid "review:start_analysis"
 msgstr "Начать анализ"
+
+msgid "vision:resync_screen_authority"
+msgstr "Сбросить распознавание · использовать позицию на экране"
+
+msgid "Re-sync"
+msgstr "Сбросить распознавание"

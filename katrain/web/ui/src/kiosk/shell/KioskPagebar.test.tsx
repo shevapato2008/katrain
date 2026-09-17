@@ -44,6 +44,27 @@ describe('KioskPagebar', () => {
     expect(back).toHaveAttribute('aria-busy', 'true');
   });
 
+  test('页级动作可选择显示文字，同时保留更完整的 accessible name', () => {
+    render(<KioskPagebar title="x" action={{
+      icon: 'arrows-clockwise',
+      label: '重置识别 · 以屏幕上的数字棋盘局面为准',
+      visibleLabel: '重置识别',
+      onClick: () => {},
+    }} />);
+    const action = screen.getByRole('button', { name: '重置识别 · 以屏幕上的数字棋盘局面为准' });
+    expect(action).toHaveTextContent('重置识别');
+    expect(action).toHaveClass('kiosk-pagebar__iconbtn--labeled');
+  });
+
+  test('未提供 visibleLabel 的旧动作仍是纯图标按钮', () => {
+    render(<KioskPagebar title="x" action={{
+      icon: 'arrows-clockwise', label: '重新点灯', onClick: () => {},
+    }} />);
+    const action = screen.getByRole('button', { name: '重新点灯' });
+    expect(action).toHaveTextContent('');
+    expect(action).not.toHaveClass('kiosk-pagebar__iconbtn--labeled');
+  });
+
   test('分段是单选组:左右方向键在段间走,不用 Tab 逐个过', () => {
     const onChange = vi.fn();
     render(<KioskPagebar title="x" segment={{ value: 'b', options: [['a', 'A'], ['b', 'B']], onChange }} />);

@@ -3629,3 +3629,9 @@ msgstr "Камінь ({color}) зміщено: пересуньте його з 
 
 msgid "review:start_analysis"
 msgstr "Почати аналіз"
+
+msgid "vision:resync_screen_authority"
+msgstr "Скинути розпізнавання · використовувати позицію на екрані"
+
+msgid "Re-sync"
+msgstr "Скинути розпізнавання"

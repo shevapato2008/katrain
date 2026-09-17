@@ -3602,3 +3602,9 @@ msgstr "{color}石がずれています。{from} から {to} へ動かしてく�
 
 msgid "review:start_analysis"
 msgstr "解析を開始"
+
+msgid "vision:resync_screen_authority"
+msgstr "認識をリセット・画面上のデジタル盤面を基準にする"
+
+msgid "Re-sync"
+msgstr "認識をリセット"

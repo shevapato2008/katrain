@@ -3642,3 +3642,9 @@ msgstr "{color}: Stein liegt schief. Von {from} nach {to} verschieben."
 
 msgid "review:start_analysis"
 msgstr "Analyse starten"
+
+msgid "vision:resync_screen_authority"
+msgstr "Erkennung zurücksetzen · Bildschirmstellung als maßgeblich verwenden"
+
+msgid "Re-sync"
+msgstr "Erkennung zurücksetzen"

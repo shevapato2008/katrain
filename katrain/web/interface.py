@@ -2,7 +2,7 @@ import logging
 import time
 import threading
 import copy
-from typing import Callable, Optional
+from typing import Callable, NamedTuple, Optional
 
 from katrain.web.kivy_compat import ensure_kivy
 
@@ -70,6 +70,12 @@ class NullEngine:
 
     def shutdown(self, finish=False):
         return None
+
+
+class _CommittedAIMove(NamedTuple):
+    game: Game
+    node: object
+    sound_name: Optional[str]
 
 
 class MockMoveTree:
@@ -192,6 +198,10 @@ class WebKaTrain(KaTrainBase):
         self.ai_lock = threading.Lock()
         self.ai_ladder_commit_lock = threading.RLock()
         self._ai_move_pending = False
+        self._broadcast_lock = threading.Lock()
+        self._last_broadcast_time = 0.0
+        self._pending_broadcast = False
+        self._pending_post_broadcast = []
 
         # Initialize base without invoking Kivy-specifics that might break headless if possible.
         # KaTrainBase __init__ is relatively safe, mostly config and logging.
@@ -890,8 +900,29 @@ class WebKaTrain(KaTrainBase):
                 self.game.analyze_all_nodes(analyze_fast=True)
             self.update_state()
 
+    @staticmethod
+    def _run_post_broadcast(callbacks, state):
+        for callback in callbacks:
+            try:
+                callback(state)
+            except Exception:
+                logger.exception("Error in post-broadcast callback")
+
+    def _broadcast_current_state(self, post_broadcast):
+        callback = self.update_state_callback
+        if callback is None:
+            return
+        state = self.get_state()
+        callback(state)
+        self._run_post_broadcast(post_broadcast, state)
+
     def update_state(self, **_kwargs):
-        """Called when the game state changes."""
+        """Called when the game state changes.
+
+        ``_post_broadcast`` is a private one-shot hook. It receives the exact state
+        delivered by the immediate or trailing broadcast, after the state callback.
+        """
+        post_broadcast = _kwargs.pop("_post_broadcast", None)
         now = time.time()
 
         # --- Diagnostic: log call frequency every 5s ---
@@ -910,24 +941,40 @@ class WebKaTrain(KaTrainBase):
         if not hasattr(self, "_last_broadcast_time"):
             self._last_broadcast_time = 0.0
             self._pending_broadcast = False
+            self._pending_post_broadcast = []
+            self._broadcast_lock = threading.Lock()
 
         if self.update_state_callback:
-            if now - self._last_broadcast_time < 0.25:
-                # Too soon – schedule a trailing broadcast so the final state is always sent
-                if not self._pending_broadcast:
-                    self._pending_broadcast = True
+            broadcast_now = None
+            schedule_delayed = False
+            with self._broadcast_lock:
+                if now - self._last_broadcast_time < 0.25:
+                    if post_broadcast is not None:
+                        self._pending_post_broadcast.append(post_broadcast)
+                    # Too soon – schedule a trailing broadcast so the final state is always sent
+                    if not self._pending_broadcast:
+                        self._pending_broadcast = True
+                        schedule_delayed = True
+                else:
+                    self._last_broadcast_time = now
+                    broadcast_now = [post_broadcast] if post_broadcast is not None else []
 
-                    def _delayed_broadcast():
-                        time.sleep(0.25)
+            if schedule_delayed:
+                def _delayed_broadcast():
+                    time.sleep(0.25)
+                    with self._broadcast_lock:
                         self._pending_broadcast = False
-                        if self.update_state_callback:
-                            self._last_broadcast_time = time.time()
-                            self.update_state_callback(self.get_state())
+                        callbacks = self._pending_post_broadcast
+                        self._pending_post_broadcast = []
+                        self._last_broadcast_time = time.time()
+                    try:
+                        self._broadcast_current_state(callbacks)
+                    except Exception:
+                        logger.exception("Error in delayed state broadcast")
 
-                    threading.Thread(target=_delayed_broadcast, daemon=True).start()
-            else:
-                self._last_broadcast_time = now
-                self.update_state_callback(self.get_state())
+                threading.Thread(target=_delayed_broadcast, daemon=True).start()
+            elif broadcast_now is not None:
+                self._broadcast_current_state(broadcast_now)
 
         # Handle logic that might change the state (like AI moving)
         self._do_update_state()
@@ -1183,21 +1230,37 @@ class WebKaTrain(KaTrainBase):
             self.players_info[bw].name = name
         self.update_player(bw, player_type=player_type, player_subtype=player_subtype)
 
-    def play_stone_sound(self):
-        if self.message_callback:
-            if self.game.last_capture:
-                self.message_callback("sound", {"sound": "capturing"})
-            elif not self.game.current_node.is_pass:
-                import random
+    @staticmethod
+    def _stone_sound_name(game, node):
+        if node.is_pass:
+            return None
+        if game.last_capture:
+            return "capturing"
 
-                self.message_callback("sound", {"sound": f"stone{random.randint(1, 5)}"})
+        import random
+
+        return f"stone{random.randint(1, 5)}"
+
+    def play_stone_sound(self, sound_name: str, *, after_node_id: int | None = None):
+        if self.message_callback:
+            payload = {"sound": sound_name}
+            if after_node_id is not None:
+                payload["after_node_id"] = after_node_id
+            self.message_callback("sound", payload)
 
     def _do_ai_move_and_broadcast(self, cn):
         """Background thread: generate AI move then broadcast state update."""
         game = self.game
         before = getattr(game, "terminal", None)
+        committed_node = None
+        sound_name = None
         try:
-            self._do_ai_move(cn)
+            committed = self._do_ai_move(cn)
+            if committed is not None:
+                with self.ai_ladder_commit_lock:
+                    if committed.game is game and self.game is game and game.current_node is committed.node:
+                        committed_node = committed.node
+                        sound_name = committed.sound_name
         except Exception as e:
             self.log(f"Error in AI move generation: {e}", OUTPUT_ERROR)
         finally:
@@ -1208,7 +1271,23 @@ class WebKaTrain(KaTrainBase):
             # Use update_state() instead of bare callback — this both broadcasts
             # AND re-runs _do_update_state(), which re-triggers AI if the game
             # tree changed (e.g., user undid + replayed while this thread ran).
-            self.update_state()
+            post_broadcast = None
+            if committed_node is not None and sound_name is not None:
+                expected_game_id = game.game_id
+                expected_node_id = id(committed_node)
+
+                def _play_committed_sound(state):
+                    if (
+                        state.get("game_id") == expected_game_id
+                        and state.get("current_node_id") == expected_node_id
+                    ):
+                        try:
+                            self.play_stone_sound(sound_name, after_node_id=expected_node_id)
+                        except Exception as e:
+                            logger.exception("Error in AI move sound: %s", e)
+
+                post_broadcast = _play_committed_sound
+            self.update_state(_post_broadcast=post_broadcast)
             # N22:这条线程跑完时这一局的终局事实与开始时不是同一个 —— 告诉会话去收尾(补分、落账、进结算)。
             # 用「不是同一个」而不是「开始时没有」:悔棋另开分支后的第二次终局也要叫(局面线语义,评审 r1 M2)。
             # 若终局是人在生成期间发请求写的,这里也会叫一次,与请求自己的收尾在 `end_game_lock` 下串行,
@@ -1264,7 +1343,12 @@ class WebKaTrain(KaTrainBase):
                         return
                     self.last_ladder_error = False
                     self._reset_ladder_stall_retry()
-                    self.play_stone_sound()
+                    _move, committed_node = result
+                    with self.ai_ladder_commit_lock:
+                        if game.current_node is not committed_node:
+                            return
+                        sound_name = self._stone_sound_name(game, committed_node)
+                        return _CommittedAIMove(game, committed_node, sound_name)
                 else:
                     self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
 
@@ -1327,6 +1411,8 @@ class WebKaTrain(KaTrainBase):
         from katrain.core.constants import STATUS_TEACHING
 
         played = False
+        node = None
+        sound_name = None
         status_message = error_message = None
         with self.ai_ladder_commit_lock:
             self.update_timer()
@@ -1357,6 +1443,7 @@ class WebKaTrain(KaTrainBase):
                 try:
                     node = self.game.play(Move(coords, player=self.next_player_info.player))
                     played = True
+                    sound_name = self._stone_sound_name(game, node)
                     if guard:
                         self.game.record_two_pass_end(node)
                 except IllegalMoveException as e:
@@ -1371,8 +1458,8 @@ class WebKaTrain(KaTrainBase):
             self.controls.set_status(status_message, STATUS_TEACHING)
         if error_message is not None:
             self.log(error_message, OUTPUT_ERROR)
-        if played:
-            self.play_stone_sound()
+        if played and sound_name is not None:
+            self.play_stone_sound(sound_name, after_node_id=id(node))
 
     def _do_undo(self, n_times=1):
         if n_times == "smart":

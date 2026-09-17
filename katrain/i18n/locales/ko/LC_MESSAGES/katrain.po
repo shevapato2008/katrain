@@ -3522,5 +3522,8 @@ msgstr "그대로 두기:"
 msgid "vision:offcenter_dismiss"
 msgstr "다시 놓기"
 
+msgid "vision:offcenter_move_from_to"
+msgstr "{color} 돌이 중심에서 벗어났습니다. {from}에서 {to}(으)로 옮겨 주세요"
+
 msgid "review:start_analysis"
 msgstr "분석 시작"

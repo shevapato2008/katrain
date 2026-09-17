@@ -96,17 +96,20 @@ class VisionService:
         self._worker.send_command(WorkerCommand(action=CommandType.CONFIRM_POSE_LOCK))
         return True
 
-    def set_expected_board(self, board: np.ndarray) -> None:
+    def set_expected_board(self, board: np.ndarray, *, expected_node_id: int | None = None) -> None:
         """Update expected board for sync comparison."""
         if self._worker:
-            self._worker.send_command(
-                WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data={"board": board.tolist()})
-            )
+            data = {"board": board.tolist()}
+            if expected_node_id is not None:
+                data["expected_node_id"] = expected_node_id
+            self._worker.send_command(WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data=data))
 
-    def set_expected_from_stones(self, stones: list[list], board_size: int = 19) -> None:
+    def set_expected_from_stones(
+        self, stones: list[list], board_size: int = 19, *, expected_node_id: int | None = None
+    ) -> None:
         """Convert GameState.stones to board matrix and set as expected."""
         board = game_state_stones_to_board(stones, board_size)
-        self.set_expected_board(board)
+        self.set_expected_board(board, expected_node_id=expected_node_id)
 
     def enter_setup_mode(self, target_board: np.ndarray) -> None:
         """Enter tsumego setup mode with target position."""

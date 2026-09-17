@@ -3597,5 +3597,8 @@ msgstr "この位置に打つ:"
 msgid "vision:offcenter_dismiss"
 msgstr "置き直す"
 
+msgid "vision:offcenter_move_from_to"
+msgstr "{color}石がずれています。{from} から {to} へ動かしてください"
+
 msgid "review:start_analysis"
 msgstr "解析を開始"

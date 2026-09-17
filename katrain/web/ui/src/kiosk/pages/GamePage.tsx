@@ -5,8 +5,7 @@ import { Box, Typography, Button, CircularProgress, Alert, Dialog, DialogTitle, 
 // by the endgame result card below.
 // 顶条那三颗常亮状态灯(Videocam / GpsFixed)和 Refresh、ExitToApp 一起撤了 ——
 // 标题与返回归页控条,状态显示归 L1 镜像栏,重置识别成了页控条上那个唯一的页级图标键。
-// `Lightbulb` 留着:它在这儿不是状态灯,是「AI 已落子,请把子摆到亮灯处」那条横幅的图标。
-import { EmojiEvents, Lightbulb } from '@mui/icons-material';
+import { EmojiEvents } from '@mui/icons-material';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGameSession } from '../../hooks/useGameSession';
 import { useAuth } from '../../context/AuthContext';
@@ -44,8 +43,14 @@ export interface AiTurnState {
   ladderStalled: boolean;
 }
 
+interface AiPlacementStatus {
+  scopeKey: string;
+  nodeId: number;
+  text: string;
+}
+
 // Single-color human-seat derivation, shared by humanColor (turn enforcement / board
-// gating) and the AI-move banner effect below (G2 fix). `platform_engine_color`
+// gating) and the AI-placement status effect below (G2 fix). `platform_engine_color`
 // (Task 1: WebKaTrain state field, "B"|"W"|null = the remote engine's color) is
 // authoritative for engine games (Golaxy 人机对弈 via the genmove tunnel) — BOTH
 // seats carry a bare "human" player_type literal there (session.py:80/82), so the
@@ -176,7 +181,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // ends, and only for a server-issued ladder game. The answer comes from the
   // server rather than from diffing two /api/ladder/me reads, because a game that
   // did not score has to be able to say so.
-  const [aiMoveBanner, setAiMoveBanner] = useState<string | null>(null);
+  const [aiPlacementStatus, setAiPlacementStatus] = useState<AiPlacementStatus | null>(null);
   const [cameraDisconnectToast, setCameraDisconnectToast] = useState(false);
   const [reminderOpen, setReminderOpen] = useState(false);
   // Lazy-init from session.physicalReminder (not a plain `useState(false)`): if the page is
@@ -267,6 +272,62 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   }
   const visionSync = useVisionSync(physicalPlay ? sessionId ?? null : null);
 
+  // Exact-board acknowledgements can race the game-state WebSocket in either order.
+  // Keep a small versioned cache and consume the vision stream by monotonic `seq`
+  // rather than array position (the hook trims its rolling window at 100 events).
+  const acknowledgedNodeIdsRef = useRef(new Set<number>());
+  const acknowledgedNodeOrderRef = useRef<number[]>([]);
+  const lastProcessedVisionSeqRef = useRef<number | null>(null);
+  const ignoredVisionEventsRef = useRef<typeof visionSync.syncEvents | null>(null);
+  const staleGameStateAfterSessionChangeRef = useRef<GameState | null>(null);
+  const visionBindingKey = physicalPlay ? sessionId ?? null : null;
+  const visionBindingKeyRef = useRef(visionBindingKey);
+  const visionConnectedRef = useRef(visionSync.connected);
+
+  useEffect(() => {
+    const bindingChanged = visionBindingKeyRef.current !== visionBindingKey;
+    const reconnected = visionConnectedRef.current === false && visionSync.connected === true;
+    if (bindingChanged || reconnected) {
+      acknowledgedNodeIdsRef.current.clear();
+      acknowledgedNodeOrderRef.current = [];
+      if (bindingChanged) {
+        const changedBetweenSessions = visionBindingKeyRef.current !== null && visionBindingKey !== null;
+        lastProcessedVisionSeqRef.current = null;
+        // useVisionSync clears its list after a binding change. Ignore this render's
+        // previous-binding array so an old acknowledgement cannot leak into the new session.
+        ignoredVisionEventsRef.current = visionSync.syncEvents;
+        staleGameStateAfterSessionChangeRef.current = changedBetweenSessions ? session.gameState : null;
+        setAiPlacementStatus(null);
+      }
+    }
+    visionBindingKeyRef.current = visionBindingKey;
+    visionConnectedRef.current = visionSync.connected;
+  }, [visionBindingKey, visionSync.connected, visionSync.syncEvents]);
+
+  useEffect(() => {
+    if (visionSync.syncEvents === ignoredVisionEventsRef.current) return;
+    ignoredVisionEventsRef.current = null;
+
+    const newEvents = visionSync.syncEvents
+      .filter((event) => typeof event.seq === 'number'
+        && (lastProcessedVisionSeqRef.current === null || event.seq > lastProcessedVisionSeqRef.current))
+      .sort((a, b) => a.seq - b.seq);
+    for (const event of newEvents) {
+      lastProcessedVisionSeqRef.current = event.seq;
+      const expectedNodeId = event.type === 'synced' ? event.data.expected_node_id : undefined;
+      if (typeof expectedNodeId !== 'number') continue;
+      if (!acknowledgedNodeIdsRef.current.has(expectedNodeId)) {
+        acknowledgedNodeIdsRef.current.add(expectedNodeId);
+        acknowledgedNodeOrderRef.current.push(expectedNodeId);
+        while (acknowledgedNodeOrderRef.current.length > 128) {
+          const expired = acknowledgedNodeOrderRef.current.shift();
+          if (expired !== undefined) acknowledgedNodeIdsRef.current.delete(expired);
+        }
+      }
+      setAiPlacementStatus((current) => current?.nodeId === expectedNodeId ? null : current);
+    }
+  }, [visionSync.syncEvents]);
+
   useEffect(() => {
     if (!session.physicalReminder) return;
     if (session.physicalReminder.kind === 'escalation') setEscalationOpen(true);
@@ -307,16 +368,40 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (loadFailed) clearActiveSession('game');
   }, [loadFailed]);
 
-  // Persistent amber banner when AI makes a move (vision mode: physical board player
-  // needs a coordinate hint to place the matching stone). Cleared on the human's own move.
+  // AI move placement instruction. Keep scope, causal node and text together so a
+  // late render from another game/session can never surface stale coordinates.
   useEffect(() => {
-    if (!physicalPlay || !session.gameState) return;
-    const gs = session.gameState;
-    const human = deriveHumanColor(gs);
-    if (gs.last_move && !endResultOf(gs) && human && gs.player_to_move === human) {
-      setAiMoveBanner(formatGtpCoord(gs.last_move[0], gs.last_move[1], gs.board_size[0]));
+    if (!physicalPlay || !session.gameState) {
+      setAiPlacementStatus(null);
+      return;
     }
-  }, [physicalPlay, session.gameState?.current_node_id]);
+    const gs = session.gameState;
+    if (gs === staleGameStateAfterSessionChangeRef.current) {
+      setAiPlacementStatus(null);
+      return;
+    }
+    staleGameStateAfterSessionChangeRef.current = null;
+    const human = deriveHumanColor(gs);
+    const ai = deriveAiTurnState(gs, null).aiColor;
+    if (!gs.last_move || endResultOf(gs) || !human || !ai || gs.player_to_move !== human) {
+      setAiPlacementStatus(null);
+      return;
+    }
+    const nodeId = gs.current_node_id;
+    if (acknowledgedNodeIdsRef.current.has(nodeId)) {
+      setAiPlacementStatus((current) => current?.nodeId === nodeId ? null : current);
+      return;
+    }
+    const scopeKey = `${sessionId ?? ''}|${gs.game_id}`;
+    const coord = formatGtpCoord(gs.last_move[0], gs.last_move[1], gs.board_size[0]);
+    const text = `${t('AI played', 'AI 已落子')} ${coord} · ${ai === 'B'
+      ? t('place the black stone at the matching point on the board', '请在实体棋盘对应交叉点摆放黑子')
+      : t('place the white stone at the matching point on the board', '请在实体棋盘对应交叉点摆放白子')}`;
+    setAiPlacementStatus((current) => current?.scopeKey === scopeKey && current.nodeId === nodeId && current.text === text
+      ? current
+      : { scopeKey, nodeId, text });
+  }, [physicalPlay, session.gameState?.current_node_id, session.gameState?.game_id,
+    session.gameState?.end_result, session.gameState?.terminal_result, sessionId, t]);
 
   // Camera disconnect fallback
   useEffect(() => {
@@ -588,13 +673,17 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     : t('Game in progress. Resign and exit?', '对局进行中，认输并退出？');
 
   // showThinking is the single-owner gate for the "AI 思考中" surface (state A, B1.4).
-  // aiColor also gates the persistent move banner above; physicalConfirming is folded
+  // aiColor also gates the physical placement status; physicalConfirming is folded
   // into showThinking already (see deriveAiTurnState) so PhysicalPlayStatusChip's 确认中
   // chip and the ai-thinking banner never stack.
   const { aiColor, showThinking, ladderStalled } = deriveAiTurnState(
     gameState,
     visionSync.latestEvent?.type ?? null,
   );
+  const placementScopeKey = `${sessionId ?? ''}|${gameState.game_id}`;
+  const physicalStatus = physicalPlay && aiColor !== null && aiPlacementStatus?.scopeKey === placementScopeKey
+    ? aiPlacementStatus.text
+    : null;
 
   // Board-loss precedence (state B + consolidation, B1.4): escalation is the ceiling —
   // PhysicalSyncEscalationDialog needs no suppression prop and always wins. Below it,
@@ -657,7 +746,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     if (isGameOver) return;
     try {
       await session.onMove(x, y);
-      setAiMoveBanner(null);
+      setAiPlacementStatus(null);
     } catch (e) {
       console.error(e);
       if (engineMode) setEngineErrorToast(true);
@@ -820,26 +909,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       <Box sx={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 90, minWidth: 300 }}>
         <AiLadderSettlementAlert feedback={settlementFeedback} />
       </Box>
-      {/* Persistent AI-move banner: physical board player needs a coordinate hint.
-          Single-owner gate: vision on + an AI seat exists + a banner label is pending. */}
-      {physicalPlay && aiColor !== null && aiMoveBanner && (
-        <Box
-          data-testid="ai-move-banner"
-          sx={{
-            position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 60,
-            px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.5,
-            bgcolor: 'var(--raise2)', borderTop: '2px solid', borderColor: 'warning.main',
-          }}
-        >
-          <Lightbulb sx={{ color: 'warning.main' }} />
-          <Typography sx={{ color: 'text.primary' }}>
-            {t('AI played', 'AI 已落子')} <b>{aiMoveBanner}</b> · {aiColor === 'B'
-              ? t('place the black stone at the matching point on the board', '请在实体棋盘对应交叉点摆放黑子')
-              : t('place the white stone at the matching point on the board', '请在实体棋盘对应交叉点摆放白子')}
-          </Typography>
-        </Box>
-      )}
-
       {/* 位置走 `.gthink`(go-screens.css)—— **居中在棋盘上,不是整页上**。
           这两块共用同一个槽(构造上互斥,见 deriveAiTurnState),所以位置也共用一个类:
           分开写过一次,结果是两处各写一遍 `left:'50%'`,改一处漏一处不会有人红。 */}
@@ -1005,6 +1074,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
             onEngineAnalysis={handleEngineAnalysis}
             engineItemCounts={engineItemCounts}
             hardwareFault={hardwareFault}
+            physicalStatus={physicalStatus}
             counting={autoCount.status === 'counting'}
             statusSlot={statusSlot}
           />
@@ -1152,6 +1222,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           sessionId={sessionId ?? null}
           boardSize={session.gameState?.board_size?.[0] ?? 19}
           playerToMove={session.gameState?.player_to_move ?? null}
+          currentNodeId={session.gameState?.current_node_id ?? null}
           suppressBoardLost={escalationOpen || recalOpen}
         />
       )}

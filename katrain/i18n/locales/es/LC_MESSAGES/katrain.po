@@ -3467,5 +3467,8 @@ msgstr "Jugar de todos modos en"
 msgid "vision:offcenter_dismiss"
 msgstr "La ajustaré"
 
+msgid "vision:offcenter_move_from_to"
+msgstr "{color}: la piedra está descentrada; muévala de {from} a {to}"
+
 msgid "review:start_analysis"
 msgstr "Iniciar análisis"

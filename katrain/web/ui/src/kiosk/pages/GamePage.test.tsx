@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { API, ApiError, type GameState } from '../../api';
@@ -30,6 +30,7 @@ interface MockControlPanelProps {
   onAction: (action: string) => void;
   onTimeExpired?: () => void;
   statusSlot?: React.ReactNode;
+  physicalStatus?: string | null;
 }
 const { capturedControlPanelProps } = vi.hoisted(() => ({
   capturedControlPanelProps: { current: null as MockControlPanelProps | null },
@@ -42,6 +43,7 @@ vi.mock('../components/game/GameControlPanel', () => ({
         {/* F4: 状态条现在由 GamePage 经 statusSlot 传入、GameControlPanel 渲染 —— mock 照实转发,
             否则「auto-count-status」相关断言对 GamePage 完全不渲染它这个回归免疫。 */}
         {props.statusSlot}
+        <i className="ghint">{props.physicalStatus}</i>
         <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
         <button onClick={() => props.onAction('count')}>MOCK_COUNT</button>
         <button onClick={() => props.onTimeExpired?.()}>MOCK_TIMEOUT</button>
@@ -75,7 +77,7 @@ vi.mock('../context/VisionContext', () => ({
 }));
 
 let mockLatestEvent: { type: string; data: Record<string, unknown> } | null = null;
-let mockSyncEvents: { type: string; data: Record<string, unknown> }[] = [];
+let mockSyncEvents: { seq: number; type: string; data: Record<string, unknown> }[] = [];
 vi.mock('../hooks/useVisionSync', () => ({
   useVisionSync: () => ({ syncEvents: mockSyncEvents, latestEvent: mockLatestEvent, setupProgress: null, isSetupComplete: false }),
 }));
@@ -147,9 +149,16 @@ const makeGameState = (overrides: Partial<GameState> & { players_info: GameState
 // Factored out (not just inlined in renderPage) so the dismiss→reopen cycle test below can
 // call `rerender(pageTree())` with the identical element tree after mutating a mock value —
 // same container, same component identity, only the mocked hook return values change.
+let testNavigate: ReturnType<typeof useNavigate> | null = null;
+const NavigationProbe = () => {
+  testNavigate = useNavigate();
+  return null;
+};
+
 const pageTree = () => (
   <ThemeProvider theme={kioskTheme}>
     <MemoryRouter initialEntries={['/kiosk/play/ai/game/test-session']}>
+      <NavigationProbe />
       <Routes>
         <Route path="/kiosk/play/ai/game/:sessionId" element={<GamePage />} />
         <Route path="/kiosk/play" element={<div>PLAY_PAGE</div>} />
@@ -169,6 +178,7 @@ describe('GamePage', () => {
     mockSyncEvents = [];
     mockPoseLocked = true;
     mockPhysicalReminder = null;
+    testNavigate = null;
     capturedBoardProps.current = null;
     capturedControlPanelProps.current = null;
     mockCalibrate.mockClear().mockResolvedValue({});
@@ -208,50 +218,116 @@ describe('GamePage', () => {
     expect(document.querySelector('img[src="/api/v1/vision/stream"]')).toBeNull();
   });
 
-  describe('AI game — persistent amber banner (both player_type literals)', () => {
-    it('shows ai-move-banner when the AI seat is the "player:ai" literal and it is the human turn after an AI move', () => {
-      mockIsVisionEnabled = true;
-      mockGameState = makeGameState({
-        players_info: {
-          B: { ...basePlayer, player_type: 'player:human', name: '张三' },
-          W: { ...basePlayer, player_type: 'player:ai', name: 'KataGo' },
-        },
-        player_to_move: 'B',
-        last_move: [3, 3],
-        end_result: null,
-      });
-      renderPage();
-      expect(screen.getByTestId('ai-move-banner')).toBeInTheDocument();
+  describe('AI placement status in the right rail', () => {
+    const aiGame = (overrides: Partial<GameState> = {}) => makeGameState({
+      players_info: {
+        B: { ...basePlayer, player_type: 'player:human', name: '张三' },
+        W: { ...basePlayer, player_type: 'player:ai', name: 'KataGo' },
+      },
+      player_to_move: 'B',
+      last_move: [3, 3],
+      end_result: null,
+      ...overrides,
     });
 
-    it('shows ai-move-banner when the AI seat uses the bare "ai" literal', () => {
+    it('moves the player:ai instruction into .ghint and removes the board-covering banner', async () => {
       mockIsVisionEnabled = true;
-      mockGameState = makeGameState({
+      mockGameState = aiGame();
+      renderPage();
+      expect(screen.queryByTestId('ai-move-banner')).toBeNull();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
+    });
+
+    it('also supports the bare "ai" literal', async () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({
         players_info: {
           B: { ...basePlayer, player_type: 'player:human', name: '张三' },
           W: { ...basePlayer, player_type: 'ai', name: 'KataGo' },
         },
-        player_to_move: 'B',
-        last_move: [3, 3],
-        end_result: null,
       });
       renderPage();
-      expect(screen.getByTestId('ai-move-banner')).toBeInTheDocument();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
     });
 
-    it('does not show the banner when vision is disabled, even with an AI seat and a pending last move', () => {
+    it('does not show the instruction for screen-only play', () => {
       mockIsVisionEnabled = false;
-      mockGameState = makeGameState({
-        players_info: {
-          B: { ...basePlayer, player_type: 'player:human', name: '张三' },
-          W: { ...basePlayer, player_type: 'player:ai', name: 'KataGo' },
-        },
-        player_to_move: 'B',
-        last_move: [3, 3],
-        end_result: null,
-      });
+      mockGameState = aiGame();
       renderPage();
-      expect(screen.queryByTestId('ai-move-banner')).toBeNull();
+      expect(document.querySelector('.ghint')).not.toHaveTextContent('D4');
+    });
+
+    it('matching versioned synced clears the instruction even when a later unrelated event is in the same batch', async () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({ current_node_id: 41 });
+      const priorWindow = Array.from({ length: 100 }, (_, seq) => ({ seq, type: 'board_diff', data: {} }));
+      mockSyncEvents = priorWindow;
+      const view = renderPage();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
+
+      mockSyncEvents = [
+        ...priorWindow.slice(2),
+        { seq: 100, type: 'synced', data: { expected_node_id: 41 } },
+        { seq: 101, type: 'board_diff', data: {} },
+      ];
+      view.rerender(pageTree());
+      await waitFor(() => expect(document.querySelector('.ghint')).not.toHaveTextContent('D4'));
+    });
+
+    it('an acknowledgement arriving before game_update prevents a stale instruction', async () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({ current_node_id: 40, player_to_move: 'W', last_move: [10, 10] });
+      mockSyncEvents = [{ seq: 200, type: 'synced', data: { expected_node_id: 41 } }];
+      const view = renderPage();
+      await act(async () => undefined);
+
+      // The game-state socket may learn the authoritative game_id after vision has
+      // already acknowledged the node. A game_id change must not discard that ack.
+      mockGameState = aiGame({ game_id: 'late-game-id', current_node_id: 41 });
+      view.rerender(pageTree());
+      await act(async () => undefined);
+      expect(document.querySelector('.ghint')).not.toHaveTextContent('D4');
+    });
+
+    it.each([
+      ['stale', { seq: 300, type: 'synced', data: { expected_node_id: 40 } }],
+      ['different node', { seq: 301, type: 'synced', data: { expected_node_id: 42 } }],
+      ['unversioned', { seq: 302, type: 'synced', data: {} }],
+    ])('%s synced does not clear the current instruction', async (_label, event) => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({ current_node_id: 41 });
+      const view = renderPage();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
+      mockSyncEvents = [event];
+      view.rerender(pageTree());
+      await act(async () => undefined);
+      expect(document.querySelector('.ghint')).toHaveTextContent('D4');
+    });
+
+    it('hides a stale instruction synchronously when game_id changes and clears on game end', async () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({ current_node_id: 41 });
+      const view = renderPage();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
+
+      mockGameState = aiGame({ game_id: 'new-game', current_node_id: 0, player_to_move: 'W', last_move: null });
+      view.rerender(pageTree());
+      expect(document.querySelector('.ghint')).not.toHaveTextContent('D4');
+
+      mockGameState = aiGame({ game_id: 'new-game', current_node_id: 1, end_result: 'B+R' });
+      view.rerender(pageTree());
+      await act(async () => undefined);
+      expect(document.querySelector('.ghint')).not.toHaveTextContent('D4');
+    });
+
+    it('clears on session change instead of relabeling the old game state for the new session', async () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({ current_node_id: 41 });
+      renderPage();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
+
+      act(() => testNavigate?.('/kiosk/play/ai/game/next-session'));
+      await waitFor(() => expect(document.querySelector('.ghint')).not.toHaveTextContent('D4'));
     });
   });
 
@@ -269,7 +345,7 @@ describe('GamePage', () => {
       });
       renderPage();
       // The coordinate-hint effect fires (B is 'player:human' and it's B's turn), so
-      // aiMoveBanner itself would be non-null — proving suppression is the render-time
+      // The placement status itself would be non-null — proving suppression is the render-time
       // `aiColor !== null` gate, not merely an absent banner label.
       expect(screen.queryByTestId('ai-move-banner')).toBeNull();
     });
@@ -498,7 +574,7 @@ describe('GamePage', () => {
       vi.useFakeTimers();
       try {
         mockIsVisionEnabled = true;
-        mockSyncEvents = [{ type: 'board_lost', data: {} }];
+        mockSyncEvents = [{ seq: 1, type: 'board_lost', data: {} }];
         mockPhysicalReminder = { kind: 'escalation', to_place: [[3, 3]], to_remove: [] };
         mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
         renderPage();

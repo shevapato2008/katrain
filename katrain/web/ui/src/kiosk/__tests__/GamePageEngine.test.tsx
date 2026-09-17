@@ -779,15 +779,18 @@ describe('GamePage engine mode', () => {
       });
     });
 
-    describe('AI-move banner (render)', () => {
-      it('engine game, human=W: banner shows the AI(B) move coordinate after AI plays', async () => {
+    describe('AI placement status in the right rail', () => {
+      const placementStatus = () => document.querySelector('.gtoggles .ghint');
+
+      it('engine game, human=W: status shows the AI(B) move coordinate after AI plays', async () => {
         visionMock.isVisionEnabled = true;
         mockGameState.platform_engine_color = 'B'; // engine is Black -> human is White
         mockGameState.player_to_move = 'W'; // human's turn, right after AI(B) moved
         mockGameState.last_move = [3, 3]; // -> "D4" (col=A+3='D', row=3+1=4; core row 0=bottom)
         renderPage(true);
 
-        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('D4'));
+        expect(screen.queryByTestId('ai-move-banner')).toBeNull();
       });
 
       it('non-regression: engine game, human=B still shows the AI(W) move coordinate', async () => {
@@ -797,7 +800,7 @@ describe('GamePage engine mode', () => {
         mockGameState.last_move = [3, 3];
         renderPage(true);
 
-        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('D4'));
       });
 
       it('non-regression: local HvAI (player:ai literal, no platform_engine_color) still shows the banner', async () => {
@@ -805,7 +808,7 @@ describe('GamePage engine mode', () => {
         // mockGameState default shape: B=player:human, W=player:ai, player_to_move='B', last_move=[3,3].
         renderPage(false);
 
-        expect(await screen.findByTestId('ai-move-banner')).toHaveTextContent('D4');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('D4'));
       });
 
       // Regression guard for the color-wording bug flagged in the task-3 report's
@@ -820,10 +823,9 @@ describe('GamePage engine mode', () => {
         mockGameState.last_move = [3, 3];
         renderPage(true);
 
-        const banner = await screen.findByTestId('ai-move-banner');
-        expect(banner).toHaveTextContent('D4');
-        expect(banner).toHaveTextContent('黑');
-        expect(banner).not.toHaveTextContent('白');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('D4'));
+        expect(placementStatus()).toHaveTextContent('黑');
+        expect(placementStatus()).not.toHaveTextContent('白');
       });
 
       it('non-regression: engine game, human=B (AI=W): banner still tells the player to place the WHITE stone', async () => {
@@ -833,10 +835,9 @@ describe('GamePage engine mode', () => {
         mockGameState.last_move = [3, 3];
         renderPage(true);
 
-        const banner = await screen.findByTestId('ai-move-banner');
-        expect(banner).toHaveTextContent('D4');
-        expect(banner).toHaveTextContent('白');
-        expect(banner).not.toHaveTextContent('黑');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('D4'));
+        expect(placementStatus()).toHaveTextContent('白');
+        expect(placementStatus()).not.toHaveTextContent('黑');
       });
 
       it('non-regression: local HvAI (player:ai literal on W, no platform_engine_color): banner says WHITE', async () => {
@@ -844,9 +845,8 @@ describe('GamePage engine mode', () => {
         // mockGameState default shape: B=player:human, W=player:ai -> AI is White.
         renderPage(false);
 
-        const banner = await screen.findByTestId('ai-move-banner');
-        expect(banner).toHaveTextContent('白');
-        expect(banner).not.toHaveTextContent('黑');
+        await waitFor(() => expect(placementStatus()).toHaveTextContent('白'));
+        expect(placementStatus()).not.toHaveTextContent('黑');
       });
     });
   });

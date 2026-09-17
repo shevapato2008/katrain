@@ -352,7 +352,7 @@ def test_a_vision_stone_after_the_game_ended_is_not_played():
         def __init__(self):
             self.expected_pushes = []
 
-        def set_expected_from_stones(self, stones, board_size=19):
+        def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
             self.expected_pushes.append(stones)
 
     vision = _Vision()

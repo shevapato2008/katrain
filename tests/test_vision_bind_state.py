@@ -15,6 +15,7 @@ class FakeVision:
     def __init__(self):
         self.bound = None
         self.expected_stones = None
+        self.expected_node_id = None
 
     def bind_session(self, sid):
         self.bound = sid
@@ -22,13 +23,14 @@ class FakeVision:
     def unbind_session(self):
         self.bound = None
 
-    def set_expected_from_stones(self, stones, board_size=19):
+    def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
         self.expected_stones = stones
+        self.expected_node_id = expected_node_id
 
 
 class FakeKatrain:
     def get_state(self):
-        return {"stones": [["B", [3, 15], None, 1]], "board_size": [19, 19]}
+        return {"stones": [["B", [3, 15], None, 1]], "board_size": [19, 19], "current_node_id": 4242}
 
 
 class FakeSession:
@@ -57,6 +59,7 @@ class TestVisionBind:
         assert r.status_code == 200
         assert fake.bound == "s1"
         assert fake.expected_stones == [["B", [3, 15], None, 1]]
+        assert fake.expected_node_id == 4242
 
 
 class FakeOrchestrator:

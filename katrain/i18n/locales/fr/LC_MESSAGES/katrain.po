@@ -3634,5 +3634,8 @@ msgstr "Jouer quand même en"
 msgid "vision:offcenter_dismiss"
 msgstr "Je vais la déplacer"
 
+msgid "vision:offcenter_move_from_to"
+msgstr "Pierre {color} mal centrée : déplacez-la de {from} vers {to}"
+
 msgid "review:start_analysis"
 msgstr "Lancer l'analyse"

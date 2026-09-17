@@ -383,6 +383,10 @@ class _VisionWorkerLoop:
                         # below the line loses the fast path instead of keeping it.
                         pending_peak = self._conf_peak.peak_for(self._move_detector.pending_move)
                         fast = pending_peak is not None and pending_peak >= self._fast_confirm_confidence
+                        candidate_sightings = self._move_detector.count
+                        selected_required_frames = (
+                            self._fast_confirm_frames if fast else self._move_detector.consistency_frames
+                        )
                         move_result = self._move_detector.detect_new_move(
                             self._last_stable_board,
                             ignore_cells=masked,
@@ -418,11 +422,14 @@ class _VisionWorkerLoop:
                                     ):
                                         self._ambig_last_emit[(row, col)] = self._frame_count
                                         logger.info(
-                                            "move at (%d,%d) confirmed but peak conf %.2f < %.2f — ambiguous prompt",
+                                            "move at (%d,%d) confirmed but peak conf %.2f < %.2f — ambiguous prompt; "
+                                            "required_frames=%d observed_frames=%d",
                                             row,
                                             col,
                                             conf,
                                             self._ambiguous_confidence,
+                                            selected_required_frames,
+                                            candidate_sightings + 1,
                                         )
                                         self._event_queue.put(
                                             {
@@ -448,7 +455,14 @@ class _VisionWorkerLoop:
                                         )
                                 else:
                                     logger.info(
-                                        "move confirmed: (%d,%d) color=%d peak_conf=%.2f", row, col, color, conf
+                                        "move confirmed: (%d,%d) color=%d peak_conf=%.2f "
+                                        "required_frames=%d observed_frames=%d",
+                                        row,
+                                        col,
+                                        color,
+                                        conf,
+                                        selected_required_frames,
+                                        candidate_sightings + 1,
                                     )
                                     self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
                                     # Advance the baseline HERE (the detector no longer does):
@@ -639,8 +653,11 @@ class _VisionWorkerLoop:
                 baseline_ok = self._move_detector.prev_board is not None and np.array_equal(
                     self._move_detector.prev_board, board
                 )
+                self._sync.set_expected_board(
+                    board,
+                    expected_node_id=cmd.data.get("expected_node_id"),
+                )
                 if not (unchanged and baseline_ok):
-                    self._sync.set_expected_board(board)
                     self._move_detector.force_sync(board)
                     self._expected_np = board
                 # else: analysis-stream repeat (game_updates arrive every ~0.25s while the

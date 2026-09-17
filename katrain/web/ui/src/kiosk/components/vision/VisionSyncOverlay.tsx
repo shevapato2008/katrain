@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Snackbar,
   Alert,
@@ -16,25 +16,15 @@ import AmbiguousMoveCard from '../physical/AmbiguousMoveCard';
 import { API } from '../../../api';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { VisionSyncEvent, SyncEventType } from '../../hooks/useVisionSync';
+import {
+  initialRecoveryState,
+  reduceRecoveryState,
+  type RecoveryState,
+} from './visionRecovery';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
-type Pos = [number, number, number]; // [row, col, color]
-
-interface MismatchState {
-  positions: Pos[];
-  missing: Pos[];
-}
-
-interface AmbiguousState {
-  row: number;
-  col: number;
-  color?: number | null;
-  /** 见 AmbiguousMoveCard:两帧都没有检测框支撑 = 子没放正,不是「看不清」。 */
-  unbacked?: boolean;
-}
 
 interface VisionSyncOverlayProps {
   syncEvents: VisionSyncEvent[];
@@ -42,6 +32,7 @@ interface VisionSyncOverlayProps {
   sessionId: string | null;
   boardSize: number;
   playerToMove: string | null;
+  currentNodeId: number | null;
   /** Board-loss precedence (Task B1.4, wired from GamePage.tsx): true while a
    * higher-priority board-loss surface (the escalation dialog or the recalibration
    * modal) is already up, so this generic "board detection abnormal" dialog never
@@ -81,64 +72,46 @@ const TOAST_MAP: Partial<Record<SyncEventType, ToastConfig>> = {
 // Component
 // ---------------------------------------------------------------------------
 
-const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, playerToMove, suppressBoardLost = false }: VisionSyncOverlayProps) => {
+const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, playerToMove, currentNodeId, suppressBoardLost = false }: VisionSyncOverlayProps) => {
   const { t } = useTranslation();
 
   // -- Toast state ----------------------------------------------------------
   const [toastOpen, setToastOpen] = useState(false);
   const [toastConfig, setToastConfig] = useState<ToastConfig | null>(null);
 
-  // -- Modal: capture_pending -----------------------------------------------
-  const [capturePositions, setCapturePositions] = useState<
-    Array<{ row: number; col: number; color: number }> | null
-  >(null);
-
-  // -- Dialog: illegal_change (board mismatch diff) --------------------------
-  const [mismatch, setMismatch] = useState<MismatchState | null>(null);
-
-  // -- Card: ambiguous_stone --------------------------------------------------
-  const [ambiguous, setAmbiguous] = useState<AmbiguousState | null>(null);
+  const [recovery, setRecovery] = useState<RecoveryState>(initialRecoveryState);
 
   // -- Modal: board_lost (>10s persistent) ----------------------------------
   const [boardLostOpen, setBoardLostOpen] = useState(false);
   const boardLostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const boardLostActiveRef = useRef(false);
 
-  // Track the latest event index so we only process new events.
-  const processedRef = useRef(0);
-
-  // Derive the latest unprocessed events.
-  const newEvents = useMemo(
-    () => syncEvents.slice(processedRef.current),
-    [syncEvents],
-  );
+  // `useVisionSync` trims history to 100 items, so an array index is not stable.
+  const lastProcessedSeqRef = useRef(-1);
+  const currentNodeIdRef = useRef(currentNodeId);
 
   // -- Close helpers --------------------------------------------------------
   const closeToast = useCallback(() => setToastOpen(false), []);
 
-  const handleCaptureDismiss = useCallback(() => {
-    setCapturePositions(null);
-  }, []);
-
   // -- Board mismatch dialog callbacks ---------------------------------------
   const handleAdoptObserved = useCallback((x: number, y: number) => {
     if (sessionId) API.playMove(sessionId, { x, y }).catch(() => undefined);
-    setMismatch(null);
+    setRecovery((state) => ({ ...state, blocking: null }));
   }, [sessionId]);
 
   const handleMismatchRestored = useCallback(() => {
     API.visionResetSync().catch(() => undefined);
-    setMismatch(null);
+    setRecovery((state) => ({ ...state, blocking: null }));
   }, []);
 
   const handleMismatchDismiss = useCallback(() => {
-    setMismatch(null);
+    setRecovery((state) => ({ ...state, blocking: null }));
   }, []);
 
   // -- Ambiguous move card callbacks -----------------------------------------
   const handleAmbiguousConfirm = useCallback((x: number, y: number) => {
     if (sessionId) API.playMove(sessionId, { x, y }).catch(() => undefined);
-    setAmbiguous(null);
+    setRecovery((state) => ({ ...state, blocking: null }));
   }, [sessionId]);
 
   const handleAmbiguousIgnore = useCallback(() => {
@@ -152,15 +125,28 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
     // REMOVED from where the baseline thinks it is. Just close the card; the detector
     // is already watching, and the corrected stone confirms itself a few frames later
     // (measured on the box: the 131st move resolved on its own 20s after the prompt).
-    if (!ambiguous?.unbacked) {
+    if (recovery.blocking?.kind === 'stone' && !recovery.blocking.unbacked) {
       API.visionResetSync('physical').catch(() => undefined);
     }
-    setAmbiguous(null);
-  }, [ambiguous]);
+    setRecovery((state) => ({ ...state, blocking: null }));
+  }, [recovery.blocking]);
+
+  useEffect(() => {
+    if (currentNodeIdRef.current === currentNodeId) return;
+    currentNodeIdRef.current = currentNodeId;
+    setRecovery((state) => reduceRecoveryState(state, { kind: 'node_advanced' }));
+  }, [currentNodeId]);
 
   // -- Process new events ---------------------------------------------------
   useEffect(() => {
+    const newEvents = syncEvents.filter((event) => event.seq > lastProcessedSeqRef.current);
     if (newEvents.length === 0) return;
+
+    const nowMs = Date.now();
+    setRecovery((state) => newEvents.reduce(
+      (next, event) => reduceRecoveryState(next, { kind: 'vision_event', event, nowMs }),
+      state,
+    ));
 
     for (const event of newEvents) {
       const eventType = event.type;
@@ -170,54 +156,6 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
         const config = TOAST_MAP[eventType]!;
         setToastConfig(config);
         setToastOpen(true);
-      }
-
-      // --- Silent events ---
-      if (eventType === 'move_confirmed') {
-        // No UI needed.
-      }
-
-      // --- Capture pending (blocking modal) ---
-      if (eventType === 'capture_pending') {
-        const positions = event.data.positions as Array<{
-          row: number;
-          col: number;
-          color: number;
-        }> | undefined;
-        if (positions && positions.length > 0) {
-          setCapturePositions(positions);
-        }
-      }
-
-      // --- Captures cleared (dismiss CaptureGuide) ---
-      if (eventType === 'captures_cleared') {
-        setCapturePositions(null);
-      }
-
-      // --- Illegal change (board mismatch diff dialog) ---
-      if (eventType === 'illegal_change') {
-        const positions = (event.data.positions as Pos[] | undefined) ?? [];
-        const missing = (event.data.missing as Pos[] | undefined) ?? [];
-        setMismatch({ positions, missing });
-      }
-
-      // --- Board restored to a synced state (auto-dismiss mismatch AND the card) ---
-      // `synced` means the physical and digital boards agree again, so whatever the
-      // ambiguous card was asking about has been settled — by the user straightening
-      // the stone, or by the detector confirming it on its own. Without this the card
-      // outlives the question: on the box the move-131 prompt stayed up after the move
-      // had already been accepted 20s earlier, which reads as "the system is stuck".
-      if (eventType === 'synced') {
-        setMismatch(null);
-        setAmbiguous(null);
-      }
-
-      // --- Ambiguous stone (confirmation card) ---
-      if (eventType === 'ambiguous_stone') {
-        const { row, col, color, unbacked } = event.data as {
-          row: number; col: number; color?: number; unbacked?: boolean;
-        };
-        setAmbiguous({ row, col, color, unbacked });
       }
 
       // --- Board lost tracking (show modal after 10s) ---
@@ -241,8 +179,20 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
       }
     }
 
-    processedRef.current = syncEvents.length;
-  }, [newEvents, syncEvents.length]);
+    lastProcessedSeqRef.current = Math.max(...newEvents.map((event) => event.seq));
+  }, [syncEvents]);
+
+  useEffect(() => {
+    if (!recovery.pending) return;
+    const delay = Math.max(0, recovery.pending.expiresAt - Date.now());
+    const timer = setTimeout(() => {
+      setRecovery((state) => reduceRecoveryState(state, {
+        kind: 'pending_deadline',
+        nowMs: Date.now(),
+      }));
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [recovery.pending]);
 
   // Cleanup timer on unmount.
   useEffect(() => {
@@ -273,30 +223,33 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
       </Snackbar>
 
       {/* ---- Capture guide (blocking) ---- */}
-      {capturePositions && (
-        <CaptureGuide positions={capturePositions} onDismiss={handleCaptureDismiss} />
+      {recovery.blocking?.kind === 'capture' && (
+        <CaptureGuide positions={recovery.blocking.positions} />
       )}
 
       {/* ---- Board mismatch dialog (blocking, diff + restore checklist) ---- */}
-      <BoardMismatchDialog
-        open={!!mismatch}
-        positions={mismatch?.positions ?? []}
-        missing={mismatch?.missing ?? []}
-        boardSize={boardSize}
-        playerToMove={playerToMove}
-        onAdoptObserved={handleAdoptObserved}
-        onRestored={handleMismatchRestored}
-        onDismiss={handleMismatchDismiss}
-      />
+      {recovery.blocking?.kind === 'mismatch' && (
+        <BoardMismatchDialog
+          open
+          positions={recovery.blocking.positions}
+          missing={recovery.blocking.missing}
+          boardSize={boardSize}
+          playerToMove={playerToMove}
+          onAdoptObserved={handleAdoptObserved}
+          onRestored={handleMismatchRestored}
+          onDismiss={handleMismatchDismiss}
+        />
+      )}
 
       {/* ---- Ambiguous move confirmation card ---- */}
-      {ambiguous && (
+      {recovery.blocking?.kind === 'stone' && (
         <AmbiguousMoveCard
-          row={ambiguous.row}
-          col={ambiguous.col}
+          row={recovery.blocking.row}
+          col={recovery.blocking.col}
           boardSize={boardSize}
-          color={ambiguous.color}
-          unbacked={ambiguous.unbacked}
+          color={recovery.blocking.color}
+          unbacked={recovery.blocking.unbacked}
+          from={recovery.blocking.from}
           onConfirm={handleAmbiguousConfirm}
           onIgnore={handleAmbiguousIgnore}
         />
@@ -305,31 +258,33 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
       {/* ---- Board lost dialog (blocking, after 10s) ----
           suppressBoardLost short-circuits visibility only — the 10s timer/state machine
           above keeps running so it reflects reality once the higher-priority surface clears. */}
-      <Dialog open={boardLostOpen && !suppressBoardLost} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ textAlign: 'center', color: 'error.main' }}>
-          棋盘检测异常
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ textAlign: 'center', py: 1 }}>
-            棋盘检测异常，请检查摄像头和棋盘位置
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-            {t('vision:board_lost_hint', '看一下摄像头有没有被挡住、棋盘有没有被挪动；挪动过的话要重新标定')}
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
-          <Button
-            variant="contained"
-            onClick={() => {
-              setBoardLostOpen(false);
-              boardLostActiveRef.current = false;
-              onDismiss?.();
-            }}
-          >
-            确定
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {boardLostOpen && !suppressBoardLost && recovery.blocking === null && (
+        <Dialog open maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ textAlign: 'center', color: 'error.main' }}>
+            棋盘检测异常
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" sx={{ textAlign: 'center', py: 1 }}>
+              棋盘检测异常，请检查摄像头和棋盘位置
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+              {t('vision:board_lost_hint', '看一下摄像头有没有被挡住、棋盘有没有被挪动；挪动过的话要重新标定')}
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
+            <Button
+              variant="contained"
+              onClick={() => {
+                setBoardLostOpen(false);
+                boardLostActiveRef.current = false;
+                onDismiss?.();
+              }}
+            >
+              确定
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </>
   );
 };

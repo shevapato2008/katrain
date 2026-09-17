@@ -698,6 +698,34 @@ class TestExpectedBoardAcknowledgement:
             SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101}),
         ]
 
+    def test_setup_completion_cancels_old_revision(self):
+        sm = self._synced_machine()
+        target = board_with({(3, 3): BLACK})
+        sm.set_expected_board(empty_board(), expected_node_id=101)
+
+        sm.enter_setup_mode(target)
+        setup_events = sm.update(target.copy())
+        assert SyncEventType.SETUP_COMPLETE in [event.type for event in setup_events]
+
+        assert sm.update(target.copy()) == []
+        sm.set_expected_board(target.copy(), expected_node_id=101)
+        assert sm.update(target.copy()) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})]
+
+    def test_new_exact_revision_supersedes_stale_capture_pending(self):
+        sm = self._synced_machine()
+        physical = board_with({(5, 5): WHITE})
+        sm.set_expected_board(physical)
+        sm.update(physical.copy())
+
+        sm.set_expected_board(empty_board(), expected_node_id=101)
+        assert sm.update(physical.copy()) == [
+            SyncEvent(SyncEventType.CAPTURE_PENDING, {"positions": [(5, 5, WHITE)]})
+        ]
+
+        sm.set_expected_board(physical.copy(), expected_node_id=102)
+        assert sm.update(physical.copy()) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 102})]
+        assert sm.state == SyncState.SYNCED
+
     def test_reset_cancels_unacknowledged_revision(self):
         sm = self._synced_machine()
         expected = empty_board()

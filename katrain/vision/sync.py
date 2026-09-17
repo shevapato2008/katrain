@@ -130,6 +130,12 @@ class SyncStateMachine:
         if not np.array_equal(board, self._expected_board):
             self._prev_expected_board = self._expected_board.copy()
             self._expected_board = board.copy()
+            if self._state == SyncState.CAPTURE_PENDING:
+                self._pending_captures = [
+                    (r, c, color) for r, c, color in self._pending_captures if int(board[r, c]) != color
+                ]
+                if not self._pending_captures:
+                    self._state = SyncState.SYNCED
 
         if expected_node_id != self._expected_node_id:
             self._expected_node_id = expected_node_id
@@ -297,6 +303,8 @@ class SyncStateMachine:
             self._target_board = None
             self._expected_board = observed_board.copy()
             self._prev_expected_board = None
+            self._expected_node_id = None
+            self._pending_expected_node_id = None
             self._state = SyncState.SYNCED
 
         return events

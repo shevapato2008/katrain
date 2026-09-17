@@ -3405,5 +3405,8 @@ msgstr "就下在"
 msgid "vision:offcenter_dismiss"
 msgstr "我挪一下"
 
+msgid "vision:offcenter_move_from_to"
+msgstr "{color}子没放正，请从 {from} 挪到 {to}"
+
 msgid "review:start_analysis"
 msgstr "开始分析"

@@ -1222,6 +1222,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           sessionId={sessionId ?? null}
           boardSize={session.gameState?.board_size?.[0] ?? 19}
           playerToMove={session.gameState?.player_to_move ?? null}
+          currentNodeId={session.gameState?.current_node_id ?? null}
           suppressBoardLost={escalationOpen || recalOpen}
         />
       )}

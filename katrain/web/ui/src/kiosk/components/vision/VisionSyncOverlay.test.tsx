@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { VisionSyncEvent } from '../../hooks/useVisionSync';
 import VisionSyncOverlay from './VisionSyncOverlay';
@@ -23,34 +23,166 @@ const props = {
   sessionId: 'session-1',
   boardSize: 19,
   playerToMove: 'B',
+  currentNodeId: 10,
 };
 
-describe('VisionSyncOverlay ambiguous stone recovery', () => {
-  beforeEach(() => vi.clearAllMocks());
+const dialogCount = () => screen.queryAllByRole('dialog').length;
 
-  it('tells the user to straighten an unbacked stone without adopting it into the baseline', async () => {
+describe('VisionSyncOverlay recovery presentation', () => {
+  beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.useRealTimers());
+
+  it('shows an off-centre prompt as the only dialog and does not adopt it when dismissed', async () => {
     render(
       <VisionSyncOverlay
         {...props}
-        syncEvents={[event(1, 'ambiguous_stone', { row: 3, col: 3, color: 1, unbacked: true })]}
+        syncEvents={[
+          event(1, 'illegal_change', { positions: [[1, 1, 1]], missing: [] }),
+          event(2, 'ambiguous_stone', { row: 3, col: 3, color: 1, unbacked: true }),
+        ]}
       />,
     );
 
-    expect(await screen.findByText('黑 子没放正')).toBeInTheDocument();
-    expect(screen.getByText(/请把它挪到 D16/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '我挪一下' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('黑 子没放正')).toBeInTheDocument();
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+    expect(dialogCount()).toBe(1);
 
+    fireEvent.click(screen.getByRole('button', { name: '我挪一下' }));
     expect(mocks.visionResetSync).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: '我挪一下' })).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('button', { name: '我挪一下' })).toBeNull());
   });
 
-  it('dismisses the stale ambiguous card when the board becomes synced', async () => {
-    const ambiguous = event(1, 'ambiguous_stone', { row: 3, col: 3, unbacked: true });
-    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[ambiguous]} />);
-    expect(await screen.findByRole('button', { name: '我挪一下' })).toBeInTheDocument();
+  it('keeps the low-confidence wording and adopts the physical baseline when ignored', async () => {
+    render(
+      <VisionSyncOverlay
+        {...props}
+        syncEvents={[event(1, 'ambiguous_stone', { row: 3, col: 3, color: 1, unbacked: false })]}
+      />,
+    );
 
-    rerender(<VisionSyncOverlay {...props} syncEvents={[ambiguous, event(2, 'synced')]} />);
+    expect(await screen.findByText(/检测到疑似落子/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '忽略' }));
+    expect(mocks.visionResetSync).toHaveBeenCalledWith('physical');
+  });
 
-    await waitFor(() => expect(screen.queryByRole('button', { name: '我挪一下' })).toBeNull());
+  it('suppresses the exact pending mismatch for four seconds, then allows a later occurrence', () => {
+    vi.useFakeTimers();
+    const pending = event(1, 'move_pending', { row: 3, col: 4, color: 1 });
+    const mismatch = event(2, 'illegal_change', { positions: [[3, 4, 1]], missing: [] });
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[pending, mismatch]} />);
+
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+    act(() => vi.advanceTimersByTime(4_000));
+    rerender(<VisionSyncOverlay {...props} syncEvents={[pending, mismatch, { ...mismatch, seq: 3 }]} />);
+
+    expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
+  });
+
+  it('clears pending suppression when the current node changes', () => {
+    const pending = event(1, 'move_pending', { row: 3, col: 4, color: 1 });
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[pending]} />);
+
+    rerender(<VisionSyncOverlay {...props} currentNodeId={11} syncEvents={[pending]} />);
+    rerender(
+      <VisionSyncOverlay
+        {...props}
+        currentNodeId={11}
+        syncEvents={[pending, event(2, 'illegal_change', { positions: [[3, 4, 1]], missing: [] })]}
+      />,
+    );
+
+    expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
+  });
+
+  it('turns an adjacent same-colour mismatch into a targeted relocation dialog', () => {
+    render(
+      <VisionSyncOverlay
+        {...props}
+        syncEvents={[event(1, 'illegal_change', { positions: [[18, 4, 2]], missing: [[18, 5, 2]] })]}
+      />,
+    );
+
+    expect(screen.getByText('白子没放正，请从 E1 挪到 F1')).toBeInTheDocument();
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+    expect(dialogCount()).toBe(1);
+    fireEvent.click(screen.getByRole('button', { name: '就下在 F1' }));
+    expect(mocks.playMove).toHaveBeenCalledWith('session-1', { x: 5, y: 0 });
+  });
+
+  it.each([
+    ['different colours', [[18, 4, 1]], [[18, 5, 2]]],
+    ['non-adjacent points', [[18, 4, 2]], [[18, 6, 2]]],
+    ['multiple stones', [[18, 4, 2], [17, 4, 2]], [[18, 5, 2]]],
+  ])('keeps %s as a generic mismatch', (_name, positions, missing) => {
+    render(<VisionSyncOverlay {...props} syncEvents={[event(1, 'illegal_change', { positions, missing })]} />);
+    expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
+    expect(dialogCount()).toBe(1);
+  });
+
+  it('keeps at most one blocking dialog as higher-priority events arrive', () => {
+    vi.useFakeTimers();
+    const lost = event(1, 'board_lost');
+    const mismatch = event(2, 'illegal_change', { positions: [[5, 5, 1]], missing: [] });
+    const ambiguous = event(3, 'ambiguous_stone', { row: 5, col: 5, color: 1 });
+    const capture = event(4, 'capture_pending', { positions: [[7, 7, 2]] });
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[lost]} />);
+    act(() => vi.advanceTimersByTime(10_000));
+
+    expect(screen.getByText('棋盘检测异常')).toBeInTheDocument();
+    expect(dialogCount()).toBe(1);
+    rerender(<VisionSyncOverlay {...props} syncEvents={[lost, mismatch]} />);
+    expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
+    expect(dialogCount()).toBe(1);
+    rerender(<VisionSyncOverlay {...props} syncEvents={[lost, mismatch, ambiguous]} />);
+    expect(screen.getByText(/检测到疑似落子/)).toBeInTheDocument();
+    expect(dialogCount()).toBe(1);
+    rerender(<VisionSyncOverlay {...props} syncEvents={[lost, mismatch, ambiguous, capture]} />);
+    expect(screen.getByText('请提走棋子')).toBeInTheDocument();
+    expect(dialogCount()).toBe(1);
+  });
+
+  it('processes newly appended events after the event history has been trimmed past 100', () => {
+    const history = Array.from({ length: 100 }, (_, index) => event(index + 1, 'move_confirmed'));
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={history} />);
+    const trimmed = [
+      ...history.slice(1),
+      event(101, 'illegal_change', { positions: [[2, 2, 1]], missing: [] }),
+    ];
+    rerender(<VisionSyncOverlay {...props} syncEvents={trimmed} />);
+
+    expect(screen.getByText('盘面与对局不一致')).toBeInTheDocument();
+  });
+
+  it('keeps capture ownership after 30 seconds with no manual skip until captures clear', () => {
+    vi.useFakeTimers();
+    const capture = event(1, 'capture_pending', { positions: [[7, 7, 2]] });
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[capture]} />);
+    act(() => vi.advanceTimersByTime(30_000));
+
+    expect(screen.getByText('请提走棋子')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '跳过' })).toBeNull();
+    rerender(<VisionSyncOverlay {...props} syncEvents={[capture, event(2, 'captures_cleared')]} />);
+    expect(screen.queryByText('请提走棋子')).toBeNull();
+  });
+
+  it('synced clears blocking recovery and a persistent board-loss dialog', () => {
+    vi.useFakeTimers();
+    const lost = event(1, 'board_lost');
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[lost]} />);
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(screen.getByText('棋盘检测异常')).toBeInTheDocument();
+
+    rerender(
+      <VisionSyncOverlay
+        {...props}
+        syncEvents={[lost, event(2, 'illegal_change', { positions: [[2, 2, 1]], missing: [] }), event(3, 'synced')]}
+      />,
+    );
+    act(() => vi.advanceTimersByTime(300));
+
+    expect(screen.queryByText('棋盘检测异常')).toBeNull();
+    expect(screen.queryByText('盘面与对局不一致')).toBeNull();
+    expect(dialogCount()).toBe(0);
   });
 });

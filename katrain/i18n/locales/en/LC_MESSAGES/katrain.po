@@ -3586,5 +3586,8 @@ msgstr "Play at"
 msgid "vision:offcenter_dismiss"
 msgstr "I'll adjust it"
 
+msgid "vision:offcenter_move_from_to"
+msgstr "{color}: The stone is off-center; move it from {from} to {to}"
+
 msgid "review:start_analysis"
 msgstr "Start analysis"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { API, type GameState, type PhysicalEngineErrorState } from '../api';
 import { websocketUrl, WS_POLICY_VIOLATION } from '../utils/websocketUrl';
 import { readAudioPref } from '../utils/audioPrefs';
@@ -22,6 +22,8 @@ interface UseGameSessionOptions {
     onCountRejected?: () => void;  // Callback when count request is rejected
     onCountTimeout?: () => void;  // Callback when count request times out
 }
+
+type QueuedSound = { sound: string; afterNodeId: number };
 
 export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const { token, onGameEnd, onCountRequest, onCountRejected, onCountTimeout } = options;
@@ -52,6 +54,10 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const wsRef = useRef<WebSocket | null>(null);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
     const lastSoundRef = useRef<{name: string, time: number} | null>(null);
+    const soundQueueRef = useRef<QueuedSound[]>([]);
+    const committedNodeRef = useRef<number | null>(null);
+    const committedGameRef = useRef<string | null>(null);
+    const soundRafRef = useRef<number[]>([]);
 
     const playSound = useCallback((sound: string) => {
         // 提示音只留一把:设置屏「落子音效」、屏 04「落子提示音」、这里读的都是 audioPrefs 的 sfx
@@ -71,6 +77,44 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         audio.currentTime = 0;
         audio.play().catch(e => console.warn("Failed to play sound", e));
     }, []);
+
+    const clearQueuedSounds = useCallback(() => {
+        soundQueueRef.current = [];
+        soundRafRef.current.forEach(id => cancelAnimationFrame(id));
+        soundRafRef.current = [];
+    }, []);
+
+    const flushQueuedSounds = useCallback((): void => {
+        if (soundRafRef.current.length > 0) return;
+        const next = soundQueueRef.current[0];
+        if (!next || next.afterNodeId !== committedNodeRef.current) return;
+
+        const firstRaf = requestAnimationFrame(() => {
+            soundRafRef.current = soundRafRef.current.filter(id => id !== firstRaf);
+            const secondRaf = requestAnimationFrame(() => {
+                soundRafRef.current = soundRafRef.current.filter(id => id !== secondRaf);
+                if (soundQueueRef.current[0] === next) {
+                    soundQueueRef.current.shift();
+                    playSound(next.sound);
+                }
+                flushQueuedSounds();
+            });
+            soundRafRef.current.push(secondRaf);
+        });
+        soundRafRef.current.push(firstRaf);
+    }, [playSound]);
+
+    useLayoutEffect(() => {
+        const committedGame = gameState?.game_id ?? null;
+        if (committedGameRef.current !== null && committedGameRef.current !== committedGame) {
+            clearQueuedSounds();
+        }
+        committedGameRef.current = committedGame;
+        committedNodeRef.current = gameState?.current_node_id ?? null;
+        flushQueuedSounds();
+    }, [gameState?.game_id, gameState?.current_node_id, clearQueuedSounds, flushQueuedSounds]);
+
+    useEffect(() => clearQueuedSounds, [clearQueuedSounds]);
 
     useEffect(() => {
         if (sessionId) {
@@ -94,7 +138,15 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             // Lightweight update for spectator count only (doesn't reset timers)
                             setGameState(prev => prev ? { ...prev, sockets_count: msg.count } : prev);
                         } else if (msg.type === 'sound') {
-                            playSound(msg.data.sound);
+                            if (typeof msg.data.after_node_id === 'number') {
+                                soundQueueRef.current.push({
+                                    sound: msg.data.sound,
+                                    afterNodeId: msg.data.after_node_id,
+                                });
+                                flushQueuedSounds();
+                            } else {
+                                playSound(msg.data.sound);
+                            }
                         } else if (msg.type === 'log') {
                             setLastLog(msg.data.message);
                         } else if (msg.type === 'chat') {
@@ -142,6 +194,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                        「点了没反应」。对局状态全靠这条推送，它断 = 页面在撒谎。 */
                     ws.onclose = (event) => {
                         if (wsRef.current !== ws) return;  // 已被新连接替换或组件卸载
+                        clearQueuedSounds();
                         if (event.code === WS_POLICY_VIOLATION) {
                             console.error("Game WebSocket rejected:", event.reason);
                             setConnectionLost('rejected');
@@ -159,12 +212,13 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             };
             connect();
             return () => {
+                clearQueuedSounds();
                 const ws = wsRef.current;
                 wsRef.current = null;  // 先清空，让上面的 onclose 认出这是我们自己关的
                 ws?.close();
             };
         }
-    }, [sessionId, token, playSound]);
+    }, [sessionId, token, playSound, clearQueuedSounds, flushQueuedSounds]);
 
     const onMove = useCallback(async (x: number, y: number) => {
         if (!sessionId) return;

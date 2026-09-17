@@ -81,13 +81,15 @@ Existing backend error handling remains the final guard for deep links and failu
 
 ## FP16 benchmark gate
 
-Compare the current `openclUseFP16=false` configuration with `true` on the RK3562 board using cold Go-target starts. The benchmark harness records the original effective value and restores it in a `finally`/trap path on interruption or failure; enabling FP16 after a passing result is a separate intentional configuration edit. Record, for each configuration:
+Compare the current `openclUseFP16=false` configuration with `true` on the RK3562 board using **service-cold, OS-cache-warm** Go-target starts, which represent normal kiosk mode switching. A measured start begins only after `smartbox-go.target` is stopped, its member processes and captured cgroups are gone, and the board temperature is at or below 65°C. Do not drop Linux page cache or KataGo's existing OpenCL tuning cache; those conditions remain identical for both configurations. The benchmark harness records the original effective value and restores it in a `finally`/trap path on interruption or failure; enabling FP16 after a passing result is a separate intentional configuration edit. Record, for each configuration:
 
 - time until `warming_normal`, `warming_human`, and `ready`;
 - successful completion of one normal-network analysis request and one HumanSL-profile request, with finite numeric output and a legal response;
 - peak combined RSS for the Go target and any OpenCL/KataGo errors.
 
-Use three starts per configuration to reduce one-run noise. Enable FP16 only if every run and both query types succeed, no new OpenCL/KataGo errors appear, and one of these numeric gates passes:
+Perform one unmeasured conditioning start for each configuration, then six measured starts in the counterbalanced order FP32, FP16, FP16, FP32, FP32, FP16. Wait for the same temperature prerequisite before every run and record the starting temperature; if paired starts differ by more than 5°C, discard and repeat the hotter run. This yields three measured starts per configuration without grouping cache or thermal drift on one side.
+
+Enable FP16 only if every run and both query types succeed, no new OpenCL/KataGo errors appear, and one of these numeric gates passes:
 
 - median ready time improves by at least 10% while median peak combined RSS is no more than 5% above baseline; or
 - median peak combined RSS improves by at least 10% while median ready time is no more than 5% slower than baseline.

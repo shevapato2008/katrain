@@ -38,12 +38,14 @@ Use a staged, low-risk improvement:
 
 The launcher distinguishes two readiness levels:
 
-- `ui_ready`: the KaTrain kiosk URL responds successfully.
+- `ui_ready`: the configured `LAUNCHER_GO_URL` (currently `http://127.0.0.1:8001/kiosk`) satisfies the launcher's existing `_probe` contract: after redirects, any HTTP response below 500 counts as reachable; connection errors and 5xx responses do not.
 - `engine_ready`: KataGo `/health` reports `phase=ready` and `ready=true`.
 
 `switch_to("go")` still performs the existing serialized stop, cgroup-release verification, and systemd target start. It returns success once `ui_ready` is true; it does not wait for `engine_ready`. The KataGo service keeps warming under systemd after the launcher lock is released.
 
 Launcher status preserves `ready` as full engine readiness for compatibility and adds `ui_ready` for early navigation and recovery from a concurrent-switch `409`. Other chess modes retain their existing full-readiness behavior.
+
+The updated launcher JavaScript uses `ui_ready` for Go. During a one-version rolling deployment, if `ui_ready` is absent it falls back to the older conservative `ready` field; it never treats a missing field as early readiness.
 
 If the KaTrain UI does not become reachable within the existing start timeout, switching fails normally and remains on the launcher. Engine warm-up failure after UI entry is handled in the Go UI rather than represented as a successful engine start.
 
@@ -53,10 +55,10 @@ Every successful mode switch uses one navigation helper:
 
 1. Set `data-stage="ready"`.
 2. Replace the subtitle with the localized ready text.
-3. Allow at least one paint and a short dwell of about 300 ms.
+3. Wait for two `requestAnimationFrame` callbacks so the ready state has reached a paint opportunity, then wait a 300 ms timer whose duration is exposed as a test seam.
 4. Navigate to the target URL.
 
-This makes the final dot and progress segment visibly complete without adding a meaningful delay. The same helper is used by the direct switch response and polling/recovery paths.
+The minimum timer dwell is therefore 300 ms after the second animation-frame callback. If the helper receives a missing or empty URL, it enters the existing visible error state instead of navigating. Once a valid URL is assigned to `window.location`, browser navigation owns the outcome. The same helper is used by the direct switch response and polling/recovery paths.
 
 ### Cursor behavior
 
@@ -66,9 +68,9 @@ The spinner remains; this design avoids relying on uncertain compositor hints to
 
 ## Go UI warm-up state
 
-The existing KaTrain `GET /api/v1/health` endpoint is the source of truth. It already reports the local engine as `reachable`, `error_503`, or `unreachable`, so no new backend endpoint is required.
+The existing KaTrain `GET /api/v1/health` endpoint is the Go UI's source of truth. It already reports the local engine as `reachable`, `error_503`, or `unreachable`, so no new backend endpoint is required. In the current deployment it requests the same KataGo `/health` URL used by the launcher: KataGo returns HTTP 503 during `warming_normal` and `warming_human`, and HTTP 200 only for `phase=ready` with `ready=true`. Consequently KaTrain's `engines.local == "reachable"` is the UI-facing equivalent of launcher `engine_ready`. This equivalence is covered by a focused contract test; if KataGo health semantics change, both consumers must change together.
 
-A small shared kiosk hook polls the endpoint every two seconds while the local engine is not reachable. The kiosk shell shows a compact status banner:
+A small shared kiosk hook starts its clock on the first health request after the kiosk mounts and polls every two seconds whenever the local engine is not reachable. `error_503`, `unreachable`, a request failure, or a malformed response are all non-ready. For the first 120 seconds they render as warming; at 120 seconds they render as unavailable. Polling continues every two seconds after that boundary, so a later `reachable` response still recovers automatically without a reload. The kiosk shell shows a compact status banner:
 
 - Warming: `AI 引擎准备中，可先使用棋谱、课程等功能`
 - Unavailable after the normal warm-up budget: `AI 引擎暂未就绪，可稍后重试`
@@ -79,13 +81,18 @@ Existing backend error handling remains the final guard for deep links and failu
 
 ## FP16 benchmark gate
 
-Compare the current `openclUseFP16=false` configuration with `true` on the RK3562 board using cold Go-target starts. Record, for each configuration:
+Compare the current `openclUseFP16=false` configuration with `true` on the RK3562 board using cold Go-target starts. The benchmark harness records the original effective value and restores it in a `finally`/trap path on interruption or failure; enabling FP16 after a passing result is a separate intentional configuration edit. Record, for each configuration:
 
 - time until `warming_normal`, `warming_human`, and `ready`;
-- successful completion of a representative analysis request;
-- peak service memory and any OpenCL/KataGo errors.
+- successful completion of one normal-network analysis request and one HumanSL-profile request, with finite numeric output and a legal response;
+- peak combined RSS for the Go target and any OpenCL/KataGo errors.
 
-Use three starts per configuration to reduce one-run noise. Enable FP16 only if every run succeeds and the median ready time improves by at least 10% or memory improves materially without a startup regression. Otherwise restore the current value. This experiment does not change model files or analysis settings.
+Use three starts per configuration to reduce one-run noise. Enable FP16 only if every run and both query types succeed, no new OpenCL/KataGo errors appear, and one of these numeric gates passes:
+
+- median ready time improves by at least 10% while median peak combined RSS is no more than 5% above baseline; or
+- median peak combined RSS improves by at least 10% while median ready time is no more than 5% slower than baseline.
+
+Otherwise keep `openclUseFP16=false`. At the end of the experiment, verify the effective configuration and perform one successful cold start in the selected state. This experiment does not change model files or analysis settings.
 
 ## Homepage typography
 
@@ -109,6 +116,8 @@ Keep the existing left brand panel and compact right-hand form. Use the user-app
 - minimum 44×44 px touch area;
 - click navigates to `/settings/wifi?return=login` or `return=register` according to the current form mode.
 
+The SSID occupies a single bounded line with `overflow: hidden`, `text-overflow: ellipsis`, and `white-space: nowrap`; it cannot wrap or increase the card height.
+
 Returning from WiFi settings restores the same login/register mode through the existing return contract. The submit-time offline modal remains as a race-condition fallback.
 
 Visible Chinese UI copy on the auth gate uses the project's self-hosted `SmartBox Kai` / LXGW WenKai assets. The Latin brand lockup keeps its existing face. Font loading uses `font-display: swap`; the split assets ensure the browser downloads only the ranges present on screen.
@@ -130,6 +139,7 @@ Testing is limited to the changed behavior and likely regressions:
 - launcher Python tests for separate Go `ui_ready` and `engine_ready` semantics, including `409` recovery;
 - launcher JavaScript tests showing that successful paths commit `ready`, dwell, and navigate, and that WiFi selection preserves auth mode;
 - focused KaTrain UI tests for warming banner and AI-card disable/enable behavior;
+- a contract test pinning KaTrain `engines.local == "reachable"` to KataGo's HTTP-200 ready response and treating HTTP 503 as non-ready;
 - font-build test verifying the display subset's exact cmap and leaving the brand subset unchanged;
 - one representative 1024×600 browser preview for the launcher/auth typography and one board transition check;
 - RK3562 timing and FP16 benchmark described above.
@@ -154,8 +164,9 @@ Acceptance criteria:
 
 ## Delivery order
 
-1. Implement the approved launcher/auth typography and transition behavior with fixtureable UI states.
+1. In `smartbox-software`, implement the approved launcher/auth typography and transition behavior with fixtureable UI states.
 2. Produce a real 1024×600 preview and obtain user confirmation, as required by the repository workflow.
-3. Implement the readiness contract and KaTrain warm-up state.
-4. Run focused automated checks and the board transition acceptance.
-5. Run the FP16 A/B benchmark and keep or revert the setting according to the gate above.
+3. In `smartbox-software`, add the backward-compatible launcher `ui_ready` field and early-Go return behavior.
+4. In KaTrain, consume its own health endpoint, show the warm-up banner, and gate the local-AI cards using the health equivalence defined above.
+5. Run focused checks in each repository and the board transition acceptance with both versions deployed together.
+6. Run the FP16 A/B benchmark and keep or revert the setting according to the gate above.

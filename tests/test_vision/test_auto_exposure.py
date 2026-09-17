@@ -446,6 +446,31 @@ class TestCameraRuntimeControls:
         assert cam.current_exposure == 700.0
         assert cam.controls_effective is True
 
+    def test_reopen_does_not_publish_snapshot_result_over_pending_request(self, monkeypatch):
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
+
+        first = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        reopened = self.FakeCapture(auto_exposure=3.0, exposure=50.0)
+        cam = CameraManager(device_id=0, warmup_seconds=0)
+        self.open_with_captures(monkeypatch, cam, [first, reopened])
+        assert cam.open() is True
+        cam.request_controls(exposure=600.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+        assert cam.controls_effective is True
+        cam.request_controls(exposure=700.0)
+        assert cam.controls_effective is None
+
+        assert cam.open() is True
+
+        assert cam.current_auto_exposure == CAMERA_AUTO_EXPOSURE_MANUAL
+        assert cam.current_exposure == 600.0
+        assert cam.controls_effective is None
+
+        cam._apply_pending_controls()
+        assert cam.current_exposure == 700.0
+        assert cam.controls_effective is True
+        cam.close()
+
     def test_native_manual_readback_tolerance_replays_canonical_mode_and_exposure(self, monkeypatch):
         import cv2
 

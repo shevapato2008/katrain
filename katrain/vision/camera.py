@@ -269,7 +269,11 @@ class CameraManager:
                 self._current_auto_exposure = current_auto_exposure
                 self._current_exposure = current_exposure
                 self._initial_exposure = current_exposure  # AE seed value
-                if replaying_runtime_controls and open_generation == self._controls_generation:
+                if (
+                    replaying_runtime_controls
+                    and open_generation == self._controls_generation
+                    and not self._pending_controls
+                ):
                     self._controls_effective = replay_ok
 
             # Drain frames to let auto-focus and auto-exposure settle

@@ -1183,21 +1183,36 @@ class WebKaTrain(KaTrainBase):
             self.players_info[bw].name = name
         self.update_player(bw, player_type=player_type, player_subtype=player_subtype)
 
-    def play_stone_sound(self):
-        if self.message_callback:
-            if self.game.last_capture:
-                self.message_callback("sound", {"sound": "capturing"})
-            elif not self.game.current_node.is_pass:
-                import random
+    @staticmethod
+    def _stone_sound_name(game, node):
+        if node.is_pass:
+            return None
+        if game.last_capture:
+            return "capturing"
 
-                self.message_callback("sound", {"sound": f"stone{random.randint(1, 5)}"})
+        import random
+
+        return f"stone{random.randint(1, 5)}"
+
+    def play_stone_sound(self, sound_name: str, *, after_node_id: int | None = None):
+        if self.message_callback:
+            payload = {"sound": sound_name}
+            if after_node_id is not None:
+                payload["after_node_id"] = after_node_id
+            self.message_callback("sound", payload)
 
     def _do_ai_move_and_broadcast(self, cn):
         """Background thread: generate AI move then broadcast state update."""
         game = self.game
+        before_node = game.current_node if game is not None else None
         before = getattr(game, "terminal", None)
+        committed_node = None
+        sound_name = None
         try:
             self._do_ai_move(cn)
+            if self.game is game and game.current_node is not before_node:
+                committed_node = game.current_node
+                sound_name = self._stone_sound_name(game, committed_node)
         except Exception as e:
             self.log(f"Error in AI move generation: {e}", OUTPUT_ERROR)
         finally:
@@ -1209,6 +1224,8 @@ class WebKaTrain(KaTrainBase):
             # AND re-runs _do_update_state(), which re-triggers AI if the game
             # tree changed (e.g., user undid + replayed while this thread ran).
             self.update_state()
+            if committed_node is not None and sound_name is not None:
+                self.play_stone_sound(sound_name, after_node_id=id(committed_node))
             # N22:这条线程跑完时这一局的终局事实与开始时不是同一个 —— 告诉会话去收尾(补分、落账、进结算)。
             # 用「不是同一个」而不是「开始时没有」:悔棋另开分支后的第二次终局也要叫(局面线语义,评审 r1 M2)。
             # 若终局是人在生成期间发请求写的,这里也会叫一次,与请求自己的收尾在 `end_game_lock` 下串行,
@@ -1264,7 +1281,6 @@ class WebKaTrain(KaTrainBase):
                         return
                     self.last_ladder_error = False
                     self._reset_ladder_stall_retry()
-                    self.play_stone_sound()
                 else:
                     self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
 
@@ -1327,6 +1343,8 @@ class WebKaTrain(KaTrainBase):
         from katrain.core.constants import STATUS_TEACHING
 
         played = False
+        node = None
+        sound_name = None
         status_message = error_message = None
         with self.ai_ladder_commit_lock:
             self.update_timer()
@@ -1357,6 +1375,7 @@ class WebKaTrain(KaTrainBase):
                 try:
                     node = self.game.play(Move(coords, player=self.next_player_info.player))
                     played = True
+                    sound_name = self._stone_sound_name(game, node)
                     if guard:
                         self.game.record_two_pass_end(node)
                 except IllegalMoveException as e:
@@ -1371,8 +1390,8 @@ class WebKaTrain(KaTrainBase):
             self.controls.set_status(status_message, STATUS_TEACHING)
         if error_message is not None:
             self.log(error_message, OUTPUT_ERROR)
-        if played:
-            self.play_stone_sound()
+        if played and sound_name is not None:
+            self.play_stone_sound(sound_name, after_node_id=id(node))
 
     def _do_undo(self, n_times=1):
         if n_times == "smart":

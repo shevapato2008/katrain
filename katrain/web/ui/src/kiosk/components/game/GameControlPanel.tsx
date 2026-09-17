@@ -54,6 +54,8 @@ interface Props {
    * 但撤了灯就等于撤了 LED 掉线在这一屏唯一的信号,所以留下**只在出事时说话**的这一句。
    */
   hardwareFault?: string | null;
+  /** 实体盘等待用户摆上 AI 落子时的坐标提示；不使用故障色。 */
+  physicalStatus?: string | null;
   /**
    * 本地对局、设了用时,**轮到的一方**的钟走到 0(主时间 0 且读秒次数用满)的那一刻调一次。
    * 边沿触发:钟停在 0 不会连调;服务端回 409 带来新状态、钟重新有了余量,再走到 0 才会再调。
@@ -257,7 +259,7 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }:
 const GameControlPanel = ({
   gameState, onAction, onNavigate, analysisToggles, onToggleAnalysis, onHint, hintEnabled = false,
   isGameOver = false, isRanked = false, analysisRequiresLogin = false, engineMode = false,
-  activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, onTimeExpired,
+  activeEngineKind = null, onEngineAnalysis, engineItemCounts = null, hardwareFault = null, physicalStatus = null, onTimeExpired,
   onTimeout, counting = false, statusSlot = null,
 }: Props) => {
   const { t, lang } = useTranslation();
@@ -536,17 +538,19 @@ const GameControlPanel = ({
         <button type="button" role="switch" aria-checked={!!analysisToggles.numbers} onClick={() => onToggleAnalysis('numbers')}>
           {t('Move Numbers', '手数')}
         </button>
-        {/* 右端说明按故障、星阵动作、游客限制、数子手数的顺序显示:
+        {/* 右端说明按故障、实体盘摆子、星阵动作、游客限制、数子手数的顺序显示:
               ① `hardwareFault` —— 故障,最急,而且要用红。
-              ② 星阵人机 —— 数子是只读形势判断，不会结束对局。
-              ③ 游客 —— 三个键**不登录就永远不会亮**;这一句在触屏上是它们唯一的解释
+              ② `physicalStatus` —— AI 落子后等待实体盘同步的坐标。
+              ③ 星阵人机 —— 数子是只读形势判断，不会结束对局。
+              ④ 游客 —— 三个键**不登录就永远不会亮**;这一句在触屏上是它们唯一的解释
                  (`reason` 落在 `title`/`aria-description` 上,手指够不着)。
-              ④ 数子 —— 只关一个键,而且**下满手数它自己就好了**。
+              ⑤ 数子 —— 只关一个键,而且**下满手数它自己就好了**。
             ⚠️ 代价说清楚:游客在前 100 手看不到「数子要下满 N 手」那句。可以接受 ——
             数子键到时候自己会亮,而三个分析键不会。反过来排的话,游客整局都不知道
             那三个键为什么是灰的。 */}
         <i className="ghint" data-fault={hardwareFault ? 'true' : undefined}>
           {hardwareFault
+            ?? physicalStatus
             ?? (engineMode
               ? (isGameOver ? '' : t('game:golaxy_judge_hint', '数子只查看当前形势，不结束对局'))
               : analysisRequiresLogin && analysisActions.length > 0

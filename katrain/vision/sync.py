@@ -94,6 +94,8 @@ class SyncStateMachine:
         # Board state
         self._expected_board: np.ndarray = np.zeros((board_size, board_size), dtype=int)
         self._prev_expected_board: np.ndarray | None = None
+        self._expected_node_id: int | None = None
+        self._pending_expected_node_id: int | None = None
         self._target_board: np.ndarray | None = None
 
         # Mismatch tracking
@@ -116,20 +118,24 @@ class SyncStateMachine:
 
     # -- public API ----------------------------------------------------------
 
-    def set_expected_board(self, board: np.ndarray) -> None:
+    def set_expected_board(self, board: np.ndarray, *, expected_node_id: int | None = None) -> None:
         """Set the expected board (from game engine).
 
-        Keeps the previous expected board so ``_compare_boards`` can tell "digital
-        stone the player hasn't placed yet" from "stone that must come off". This is
-        called on every ``game_update`` (digital authority) and coalesced to the
-        latest state under throttling; a stale ``prev`` only ever biases points
-        toward the safe "placement pending" bucket, never fabricates the
-        ``prev == observed`` match "removal needed" requires, so no
-        sequencing/hash mechanism is needed here.
+        Keeps the previous distinct expected board so ``_compare_boards`` can tell
+        "digital stone the player hasn't placed yet" from "stone that must come
+        off". Repeating the same matrix does not advance that baseline. A new node
+        revision is tracked independently and acknowledged once vision observes an
+        exact physical match.
         """
-        if self._expected_board is not None:
+        if not np.array_equal(board, self._expected_board):
             self._prev_expected_board = self._expected_board.copy()
-        self._expected_board = board.copy()
+            self._expected_board = board.copy()
+
+        if expected_node_id is None:
+            self._pending_expected_node_id = None
+        elif expected_node_id != self._expected_node_id:
+            self._expected_node_id = expected_node_id
+            self._pending_expected_node_id = expected_node_id
 
     def enter_setup_mode(self, target_board: np.ndarray) -> None:
         """Enter tsumego setup mode with a target position."""
@@ -182,9 +188,12 @@ class SyncStateMachine:
             # Fall through to remaining checks with the new frame.
 
         # 2. Degraded-mode hysteresis
+        was_degraded = self._state == SyncState.DEGRADED
         degraded_events = self._check_degraded(mean_confidence, now)
         events.extend(degraded_events)
         if self._state == SyncState.DEGRADED:
+            return events
+        if was_degraded:
             return events
 
         # 3. Setup mode
@@ -206,6 +215,8 @@ class SyncStateMachine:
         else:
             self._expected_board = np.zeros((self._board_size, self._board_size), dtype=int)
         self._prev_expected_board = None
+        self._expected_node_id = None
+        self._pending_expected_node_id = None
         self._target_board = None
         self._mismatch_board = None
         self._mismatch_count = 0
@@ -399,12 +410,26 @@ class SyncStateMachine:
 
             return events
 
-        # 4e. No differences — everything matches
+        # 4e. No anomalies — exact matches and placement-pending-only frames are
+        # both legacy-SYNCED, but only exact physical equality acknowledges a
+        # versioned expected-board command.
         self._mismatch_board = None
         self._mismatch_count = 0
-        if self._state != SyncState.SYNCED:
-            self._state = SyncState.SYNCED
+        was_synced = self._state == SyncState.SYNCED
+        self._state = SyncState.SYNCED
+        if not was_synced:
             events.append(SyncEvent(SyncEventType.SYNCED))
+
+        if diff_count == 0:
+            self._prev_expected_board = self._expected_board.copy()
+            if self._pending_expected_node_id is not None:
+                events.append(
+                    SyncEvent(
+                        SyncEventType.SYNCED,
+                        data={"expected_node_id": self._pending_expected_node_id},
+                    )
+                )
+                self._pending_expected_node_id = None
 
         return events
 

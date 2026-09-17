@@ -86,6 +86,41 @@ describe('GameControlPanel', () => {
       />
     );
 
+  test('physical placement status replaces login/count hints without fault styling', () => {
+    const { container } = panel(
+      { game_type: 'free', analysis_delivered: false, history: [] },
+      { analysisRequiresLogin: true, physicalStatus: 'AI 已落子 D4 · 请摆放白子' },
+    );
+    const hint = container.querySelector('.gtoggles .ghint');
+    expect(hint).toHaveTextContent('D4');
+    expect(hint).not.toHaveTextContent('登录后可用');
+    expect(hint).not.toHaveTextContent('数子要下满');
+    expect(hint).not.toHaveAttribute('data-fault');
+  });
+
+  test('hardware fault has priority over physical placement status and alone owns data-fault', () => {
+    const { container } = panel(
+      { game_type: 'free', history: [] },
+      { physicalStatus: 'AI 已落子 D4', hardwareFault: 'LED 未连接' },
+    );
+    const hint = container.querySelector('.gtoggles .ghint');
+    expect(hint).toHaveTextContent('LED 未连接');
+    expect(hint).not.toHaveTextContent('D4');
+    expect(hint).toHaveAttribute('data-fault', 'true');
+  });
+
+  test('login then count hints resume when physical placement status is absent', () => {
+    const login = panel(
+      { game_type: 'free', analysis_delivered: false, history: [] },
+      { analysisRequiresLogin: true },
+    );
+    expect(login.container.querySelector('.gtoggles .ghint')).toHaveTextContent('登录后可用');
+    login.unmount();
+
+    const count = panel({ game_type: 'free', history: [] });
+    expect(count.container.querySelector('.gtoggles .ghint')).toHaveTextContent('数子要下满 100 手');
+  });
+
   test.each([
     ['人机 · 自由对弈', { game_type: 'free' }, {}, true],
     ['人机 · 升降级对弈', { game_type: 'ai_ladder_ranked' }, { isRanked: true }, false],

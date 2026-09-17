@@ -3637,5 +3637,8 @@ msgstr "Trotzdem spielen auf"
 msgid "vision:offcenter_dismiss"
 msgstr "Ich richte ihn aus"
 
+msgid "vision:offcenter_move_from_to"
+msgstr "{color}: Stein liegt schief. Von {from} nach {to} verschieben."
+
 msgid "review:start_analysis"
 msgstr "Analyse starten"

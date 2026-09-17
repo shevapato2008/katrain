@@ -586,6 +586,176 @@ class TestDigitalAuthorityDiff:
         assert (5, 6, 2) in [tuple(p) for p in illegal[0].data["missing"]]
 
 
+class TestExpectedBoardAcknowledgement:
+    def _synced_machine(self, **kwargs):
+        sm = SyncStateMachine(board_size=19, **kwargs)
+        sm.bind()
+        sm.confirm_pose_lock()
+        return sm
+
+    def test_exact_board_acks_new_revision_while_already_synced(self):
+        sm = self._synced_machine()
+        expected = empty_board()
+
+        sm.set_expected_board(expected, expected_node_id=101)
+        events = sm.update(expected.copy())
+
+        assert events == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})]
+        assert sm.state == SyncState.SYNCED
+
+    def test_exact_board_acks_revision_only_once_across_repeated_frames(self):
+        sm = self._synced_machine()
+        expected = empty_board()
+        sm.set_expected_board(expected, expected_node_id=101)
+
+        first = sm.update(expected.copy())
+        second = sm.update(expected.copy())
+        third = sm.update(expected.copy())
+
+        assert first == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})]
+        assert second == []
+        assert third == []
+
+    def test_same_matrix_with_new_revision_rearms_one_ack(self):
+        sm = self._synced_machine()
+        expected = empty_board()
+        sm.set_expected_board(expected, expected_node_id=101)
+        sm.update(expected.copy())
+
+        sm.set_expected_board(expected.copy(), expected_node_id=102)
+        first = sm.update(expected.copy())
+        second = sm.update(expected.copy())
+
+        assert first == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 102})]
+        assert second == []
+
+    def test_none_cancels_revision_and_allows_same_id_to_rearm(self):
+        sm = self._synced_machine()
+        expected = empty_board()
+        sm.set_expected_board(expected, expected_node_id=101)
+
+        sm.set_expected_board(expected.copy(), expected_node_id=None)
+        assert sm.update(expected.copy()) == []
+
+        sm.set_expected_board(expected.copy(), expected_node_id=101)
+        assert sm.update(expected.copy()) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})]
+
+    def test_placement_pending_only_does_not_ack_revision(self):
+        sm = self._synced_machine()
+        empty = empty_board()
+        sm.set_expected_board(empty)
+        sm.update(empty.copy())
+
+        expected = board_with({(3, 3): BLACK})
+        sm.set_expected_board(expected, expected_node_id=101)
+        events = sm.update(empty.copy())
+
+        assert [e for e in events if e.data.get("expected_node_id") == 101] == []
+        assert sm.state == SyncState.SYNCED
+
+    def test_degraded_exit_defers_versioned_ack_until_next_usable_frame(self):
+        sm = self._synced_machine(degraded_enter_seconds=1.0, degraded_exit_seconds=1.0)
+        expected = empty_board()
+        sm.set_expected_board(expected)
+
+        sm.update(expected.copy(), mean_confidence=0.30, timestamp=1000.0)
+        sm.update(expected.copy(), mean_confidence=0.30, timestamp=1002.0)
+        assert sm.state == SyncState.DEGRADED
+
+        sm.set_expected_board(expected.copy(), expected_node_id=101)
+        sm.update(expected.copy(), mean_confidence=0.50, timestamp=1003.0)
+        recovery_events = sm.update(expected.copy(), mean_confidence=0.50, timestamp=1005.0)
+
+        assert recovery_events == [SyncEvent(SyncEventType.SYNCED)]
+        assert sm.update(expected.copy(), mean_confidence=0.50, timestamp=1006.0) == [
+            SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})
+        ]
+
+    def test_exact_recovery_emits_only_one_versioned_synced_event(self):
+        sm = self._synced_machine()
+        expected = empty_board()
+        sm.set_expected_board(expected, expected_node_id=101)
+
+        sm.update(board_with({(3, 3): BLACK}))
+        assert sm.state == SyncState.MISMATCH_WARNING
+
+        assert sm.update(expected.copy()) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})]
+
+    def test_capture_cleared_frame_carries_versioned_ack(self):
+        sm = self._synced_machine()
+        before_capture = board_with({(5, 5): WHITE})
+        after_capture = empty_board()
+        sm.set_expected_board(before_capture)
+        sm.update(before_capture.copy())
+
+        sm.set_expected_board(after_capture, expected_node_id=101)
+        assert sm.update(before_capture.copy()) == [
+            SyncEvent(SyncEventType.CAPTURE_PENDING, {"positions": [(5, 5, WHITE)]})
+        ]
+
+        assert sm.update(after_capture.copy()) == [
+            SyncEvent(SyncEventType.CAPTURES_CLEARED),
+            SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101}),
+        ]
+
+    def test_setup_completion_cancels_old_revision(self):
+        sm = self._synced_machine()
+        target = board_with({(3, 3): BLACK})
+        sm.set_expected_board(empty_board(), expected_node_id=101)
+
+        sm.enter_setup_mode(target)
+        setup_events = sm.update(target.copy())
+        assert SyncEventType.SETUP_COMPLETE in [event.type for event in setup_events]
+
+        assert sm.update(target.copy()) == []
+        sm.set_expected_board(target.copy(), expected_node_id=101)
+        assert sm.update(target.copy()) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})]
+
+    def test_new_exact_revision_supersedes_stale_capture_pending(self):
+        sm = self._synced_machine()
+        physical = board_with({(5, 5): WHITE})
+        sm.set_expected_board(physical)
+        sm.update(physical.copy())
+
+        sm.set_expected_board(empty_board(), expected_node_id=101)
+        assert sm.update(physical.copy()) == [
+            SyncEvent(SyncEventType.CAPTURE_PENDING, {"positions": [(5, 5, WHITE)]})
+        ]
+
+        sm.set_expected_board(physical.copy(), expected_node_id=102)
+        assert sm.update(physical.copy()) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 102})]
+        assert sm.state == SyncState.SYNCED
+
+    def test_reset_cancels_unacknowledged_revision(self):
+        sm = self._synced_machine()
+        expected = empty_board()
+        sm.set_expected_board(expected, expected_node_id=101)
+
+        sm.reset(expected.copy())
+        events = sm.update(expected.copy())
+
+        assert [e for e in events if e.data.get("expected_node_id") == 101] == []
+
+    def test_exact_new_stone_promotes_baseline_for_later_missing_anomaly(self):
+        sm = self._synced_machine()
+        empty = empty_board()
+        sm.set_expected_board(empty)
+        sm.update(empty.copy())
+
+        with_stone = board_with({(3, 3): BLACK})
+        sm.set_expected_board(with_stone, expected_node_id=101)
+        assert sm.update(with_stone.copy()) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})]
+
+        events = []
+        for _ in range(5):
+            events += sm.update(empty.copy())
+
+        assert SyncEventType.CAPTURE_PENDING not in [e.type for e in events]
+        illegal = [e for e in events if e.type == SyncEventType.ILLEGAL_CHANGE]
+        assert illegal
+        assert illegal[0].data["missing"] == [(3, 3, BLACK)]
+
+
 class TestEventPayloadsAreJsonSerializable:
     """Regression: sync events flow to the frontend via websocket.send_json (/ws/vision),
     which uses json.dumps — numpy.int64 positions from np.where would crash the socket and

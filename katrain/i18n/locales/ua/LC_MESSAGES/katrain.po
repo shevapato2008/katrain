@@ -3624,5 +3624,8 @@ msgstr "Усе одно зіграти на"
 msgid "vision:offcenter_dismiss"
 msgstr "Я поправлю"
 
+msgid "vision:offcenter_move_from_to"
+msgstr "Камінь ({color}) зміщено: пересуньте його з {from} на {to}"
+
 msgid "review:start_analysis"
 msgstr "Почати аналіз"

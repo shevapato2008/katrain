@@ -3605,7 +3605,9 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     def _rearm_detection() -> None:
         game_state = session.katrain.get_state()
         if game_state and "stones" in game_state:
-            vision.set_expected_from_stones(game_state["stones"])
+            vision.set_expected_from_stones(
+                game_state["stones"], expected_node_id=game_state.get("current_node_id")
+            )
 
     if is_ai_ladder_ranked_session(session):
         move_player = "B" if move_data.color == 1 else "W"
@@ -3744,10 +3746,6 @@ def build_frontend(force: bool = False):
     import subprocess
     import sys
 
-    if not shutil.which("npm"):
-        logging.getLogger("katrain_web").warning("npm not found, skipping frontend build. UI might be outdated.")
-        return
-
     # Board/kiosk terminals serve the lean kiosk-2d bundle (no three.js, board-proxy
     # API base); the full server serves the complete build. Build/check the matching
     # output so board mode never falls back to the full bundle (which calls
@@ -3761,6 +3759,10 @@ def build_frontend(force: bool = False):
             "Frontend already built at %s, skipping (use --force-build to rebuild).",
             static_index.parent,
         )
+        return
+
+    if not shutil.which("npm"):
+        logging.getLogger("katrain_web").warning("npm not found, skipping frontend build. UI might be outdated.")
         return
 
     print(f"Building frontend ({out_dirname})...", flush=True)

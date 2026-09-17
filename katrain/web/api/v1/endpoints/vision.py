@@ -211,7 +211,10 @@ async def bind_session(
     # Set expected board from current game state
     game_state = session.katrain.get_state()
     if game_state and "stones" in game_state:
-        vision.set_expected_from_stones(game_state["stones"])
+        vision.set_expected_from_stones(
+            game_state["stones"],
+            expected_node_id=game_state.get("current_node_id"),
+        )
 
     orchestrator = getattr(request.app.state, "physical_play", None)
     if orchestrator is not None:

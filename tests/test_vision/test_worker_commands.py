@@ -8,7 +8,43 @@ import numpy as np
 import pytest
 
 from katrain.vision.board_state import BLACK, EMPTY
+from katrain.vision.config_service import VisionServiceConfig
 from katrain.vision.ipc import CommandType, WorkerCommand
+from katrain.vision.service import VisionService
+
+
+def test_vision_service_expected_board_command_carries_node_id():
+    service = VisionService(VisionServiceConfig())
+    service._worker = MagicMock()
+    board = np.zeros((19, 19), dtype=int)
+
+    service.set_expected_from_stones([], expected_node_id=77)
+
+    command = service._worker.send_command.call_args.args[0]
+    assert command.action == CommandType.SET_EXPECTED_BOARD
+    assert command.data == {"board": board.tolist(), "expected_node_id": 77}
+
+
+def _assert_unchanged_expected_board_still_forwards_node_id(worker):
+    board = np.zeros((19, 19), dtype=int)
+    worker._sync = MagicMock()
+    worker._move_detector = MagicMock()
+    worker._move_detector.prev_board = board.copy()
+    worker._expected_np = board.copy()
+    worker._cmd_queue.put(
+        WorkerCommand(
+            action=CommandType.SET_EXPECTED_BOARD,
+            data={"board": board.tolist(), "expected_node_id": 77},
+        )
+    )
+
+    worker._drain_or_process()
+
+    worker._sync.set_expected_board.assert_called_once()
+    forwarded_board = worker._sync.set_expected_board.call_args.args[0]
+    assert np.array_equal(forwarded_board, board)
+    assert worker._sync.set_expected_board.call_args.kwargs == {"expected_node_id": 77}
+    worker._move_detector.force_sync.assert_not_called()
 
 
 def _drain_with(worker_obj):
@@ -35,6 +71,12 @@ class TestInProcessDispatcher:
         w._drain_or_process = w._drain_commands
         _drain_with(w)
 
+    def test_unchanged_board_still_forwards_expected_node_id(self):
+        w = _inprocess_worker()
+        w._drain_or_process = w._drain_commands
+
+        _assert_unchanged_expected_board_still_forwards_node_id(w)
+
 
 def _inprocess_worker(camera=None):
     from katrain.vision.worker_inprocess import InProcessAdapter
@@ -51,6 +93,84 @@ def _geometry(source_width=600, source_height=400):
         M=np.eye(3),
         out_size=1000,
     )
+
+
+class _OneFrameCamera:
+    is_connected = True
+
+    def __init__(self):
+        self.worker = None
+
+    def read_frame(self):
+        self.worker._running = False
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+
+
+def _configure_confirmation_probe(worker, *, peak, count):
+    board = np.zeros((19, 19), dtype=int)
+    board[3][3] = BLACK
+    extractor = MagicMock()
+    extractor.detections_to_board.return_value = board
+    extractor.cell_confidences.return_value = {} if peak is None else {(3, 3): peak}
+    worker._move_detector = MagicMock()
+    worker._move_detector.pending_move = (3, 3, BLACK)
+    worker._move_detector.count = count
+    worker._move_detector.consistency_frames = 5
+    worker._move_detector.detect_new_move.return_value = (3, 3, BLACK)
+    worker._conf_peak = MagicMock()
+    worker._conf_peak.peak_for.return_value = peak
+    worker._conf_peak.gate_confidence.return_value = 0.0 if peak is None else peak
+    worker._fast_confirm_frames = 3
+    worker._fast_confirm_confidence = 0.70
+    worker._ambiguous_confidence = 0.55
+    worker._prev_conf_map = {}
+    worker._ambig_last_emit = {}
+    worker._bound = True
+    worker._monitor = False
+    worker._paused = False
+    worker._move_armed = False
+    worker._lit_points = set()
+    worker._expected_np = None
+    worker._prev_observed_board = None
+    worker._last_stable_board = None
+    worker._event_queue = queue.Queue()
+    worker._promoter = MagicMock()
+    worker._sync = MagicMock()
+    worker._sync.state = SimpleNamespace(value="synced")
+    worker._sync.update.return_value = []
+    return extractor
+
+
+@pytest.mark.parametrize(
+    ("peak", "count", "expected_required", "expected_log"),
+    [
+        (0.80, 2, 3, "required_frames=3 observed_frames=3"),
+        (None, 4, None, "required_frames=5 observed_frames=5"),
+    ],
+)
+def test_inprocess_confirmation_diagnostic_reports_selected_path(
+    peak, count, expected_required, expected_log, caplog
+):
+    camera = _OneFrameCamera()
+    worker = _inprocess_worker(camera)
+    camera.worker = worker
+    extractor = _configure_confirmation_probe(worker, peak=peak, count=count)
+    worker._running = True
+    worker._config["capture_fps"] = 100000
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._warp_frame = MagicMock(return_value=(np.zeros((10, 10, 3), dtype=np.uint8), True))
+    worker._averager = MagicMock()
+    worker._averager.add.side_effect = lambda frame: frame
+    worker._detector = MagicMock()
+    worker._detector.detect.return_value = []
+    worker._active_extractor = MagicMock(return_value=extractor)
+    worker._maybe_send_preview = MagicMock()
+
+    with caplog.at_level("INFO"):
+        worker._loop()
+
+    assert worker._move_detector.detect_new_move.call_args.kwargs["required_frames"] == expected_required
+    assert any(expected_log in record.message for record in caplog.records)
 
 
 class TestInProcessMotionGating:
@@ -281,6 +401,16 @@ class TestSubprocessDispatcher:
         w._drain_or_process = w._process_commands
         _drain_with(w)
 
+    def test_unchanged_board_still_forwards_expected_node_id(self):
+        from katrain.vision.worker import _VisionWorkerLoop
+
+        w = _VisionWorkerLoop.__new__(_VisionWorkerLoop)
+        w._cmd_queue = queue.Queue()
+        w._running = True
+        w._drain_or_process = w._process_commands
+
+        _assert_unchanged_expected_board_still_forwards_node_id(w)
+
 
 def _subprocess_motion_worker():
     from katrain.vision.worker import _VisionWorkerLoop
@@ -297,6 +427,47 @@ def _subprocess_motion_worker():
     w._last_motion_roi_ratio = None
     w._last_motion_full_ratio = None
     return w
+
+
+@pytest.mark.parametrize(
+    ("peak", "count", "expected_required", "expected_log"),
+    [
+        (0.80, 2, 3, "required_frames=3 observed_frames=3"),
+        (None, 4, None, "required_frames=5 observed_frames=5"),
+    ],
+)
+def test_subprocess_confirmation_diagnostic_reports_selected_path(
+    peak, count, expected_required, expected_log, caplog
+):
+    worker = _subprocess_motion_worker()
+    camera = _OneFrameCamera()
+    camera.worker = worker
+    extractor = _configure_confirmation_probe(worker, peak=peak, count=count)
+    worker._running = True
+    worker._cmd_queue = queue.Queue()
+    worker._camera = camera
+    worker._frame_count = 0
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._board_finder.find_focus.return_value = (np.zeros((10, 10, 3), dtype=np.uint8), True)
+    worker._config = {"use_clahe": False, "enhance": "none"}
+    worker._enhance_mode = "none"
+    worker._add_threshold = 0.5
+    worker._ae = None
+    worker._averager.add.side_effect = lambda frame: frame
+    worker._detector = MagicMock()
+    worker._detector.detect.return_value = []
+    worker._overlay_lock = MagicMock()
+    worker._overlay = MagicMock()
+    worker._state_extractor = extractor
+    worker._last_detected_board = None
+    worker._consecutive_failures = 0
+    worker._maybe_publish_status = MagicMock()
+
+    with caplog.at_level("INFO"):
+        worker._processing_loop()
+
+    assert worker._move_detector.detect_new_move.call_args.kwargs["required_frames"] == expected_required
+    assert any(expected_log in record.message for record in caplog.records)
 
 
 class TestSubprocessMotionGating:

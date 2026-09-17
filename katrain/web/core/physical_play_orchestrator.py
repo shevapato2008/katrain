@@ -136,7 +136,11 @@ class PhysicalPlayOrchestrator:
             return
         self._latest_state = state
         try:
-            self._vision.set_expected_from_stones(state["stones"], state["board_size"][0])
+            self._vision.set_expected_from_stones(
+                state["stones"],
+                state["board_size"][0],
+                expected_node_id=state.get("current_node_id"),
+            )
         except Exception as e:  # never break the broadcast chain
             logger.debug("expected-board push failed: %s", e)
 

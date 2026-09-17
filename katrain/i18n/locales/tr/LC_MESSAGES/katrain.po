@@ -3642,5 +3642,8 @@ msgstr "Yine de buraya oyna:"
 msgid "vision:offcenter_dismiss"
 msgstr "Düzelteceğim"
 
+msgid "vision:offcenter_move_from_to"
+msgstr "{color} taş eğri; {from} noktasından {to} noktasına taşıyın"
+
 msgid "review:start_analysis"
 msgstr "Analizi başlat"

@@ -170,7 +170,7 @@ class FakeVisionForOrchestrator:
     def get_detected_board(self):
         return self.detected
 
-    def set_expected_from_stones(self, stones, board_size=19):
+    def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
         self.expected_pushes.append(stones)
 
     def pause_detection(self):

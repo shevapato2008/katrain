@@ -1314,7 +1314,7 @@ async def test_settled_ranked_game_rejects_public_and_vision_moves_without_chang
         ).status_code == 200
         sgf_before = session.katrain.get_sgf()
         snapshot = session.ai_ladder_snapshot
-        vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones: None)
+        vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones, **_kwargs: None)
         api_app.state.ranked_vision_binding = SimpleNamespace(
             session_id=session_id,
             user_id=snapshot.user_id,
@@ -1385,7 +1385,7 @@ async def test_ranked_vision_bind_requires_owner_and_freezes_identity(api_app, c
         vision.bound_session_id = session_id
 
     vision.bind_session = bind_session
-    vision.set_expected_from_stones = lambda stones: None
+    vision.set_expected_from_stones = lambda stones, **_kwargs: None
     api_app.state.vision = vision
     async with client as ac:
         started = await start_ranked(api_app, ac)
@@ -1482,7 +1482,7 @@ async def test_confirmed_ranked_vision_move_plays_exactly_once_on_human_turn(api
     api_app.state.ranked_vision_binding = SimpleNamespace(
         session_id=session_id, user_id=snapshot.user_id, user_color=snapshot.user_color, game_id=snapshot.game_id
     )
-    vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones: None)
+    vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones, **_kwargs: None)
 
     handler = __import__("katrain.web.server", fromlist=["_handle_confirmed_move"])._handle_confirmed_move
     first, duplicate = await asyncio.gather(
@@ -1512,7 +1512,9 @@ async def test_confirmed_ranked_vision_move_rejects_ai_turn_and_seat_tamper(api_
     else:
         session.katrain.players_info["W"].player_subtype = "ai:default"
     before = list(session.katrain._state["history"])
-    vision = SimpleNamespace(bound_session_id=session.session_id, set_expected_from_stones=lambda stones: None)
+    vision = SimpleNamespace(
+        bound_session_id=session.session_id, set_expected_from_stones=lambda stones, **_kwargs: None
+    )
 
     delay = await __import__("katrain.web.server", fromlist=["_handle_confirmed_move"])._handle_confirmed_move(
         api_app, vision, session.session_id, SimpleNamespace(col=3, row=3, color=1), logging.getLogger("vision")

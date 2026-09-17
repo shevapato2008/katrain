@@ -3,6 +3,12 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import GameControlPanel from './GameControlPanel';
 import type { GameState } from '../../../api';
 
+const soundMocks = vi.hoisted(() => ({ play: vi.fn() }));
+
+vi.mock('../../../hooks/useSound', () => ({
+  useSound: () => ({ play: soundMocks.play }),
+}));
+
 /** 对弈·AI/升降级赛道的右栏行为测试。只证 DOM 结构与文案;几何在 tests/kiosk-screen-05-play-ai.spec.ts。 */
 
 const seat = (type: string, name: string, over: Record<string, number> = {}) => ({
@@ -45,8 +51,73 @@ const clockOf = (color: 'B' | 'W') => {
 };
 
 describe('A18 · 玩家卡时钟', () => {
-  beforeEach(() => { vi.useFakeTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+    soundMocks.play.mockClear();
+  });
   afterEach(() => { vi.useRealTimers(); });
+
+  test('非本地对局读秒最后 5 秒每秒只响一次，下一读秒周期可再次从 5 响起', () => {
+    panel(base({
+      timer: {
+        ...timer({ main_time: 0, byo_length: 30, byo_periods: 3 }),
+        current_node_time_used: 25,
+        settings: { ...timer({ main_time: 0, byo_length: 30, byo_periods: 3 }).settings, sound: true },
+      },
+    }));
+
+    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep']]);
+    act(() => { vi.advanceTimersByTime(750); });
+    expect(soundMocks.play).toHaveBeenCalledTimes(1);
+
+    for (let remaining = 4; remaining >= 1; remaining -= 1) {
+      act(() => { vi.advanceTimersByTime(remaining === 4 ? 250 : 1_000); });
+      expect(soundMocks.play).toHaveBeenCalledTimes(6 - remaining);
+      expect(soundMocks.play).toHaveBeenLastCalledWith('countdownbeep');
+    }
+
+    act(() => { vi.advanceTimersByTime(26_000); });
+    expect(soundMocks.play).toHaveBeenCalledTimes(6);
+    expect(soundMocks.play).toHaveBeenLastCalledWith('countdownbeep');
+  });
+
+  test.each([
+    ['本局关闭声音', base({
+      timer: timer({ main_time: 0, byo_length: 5, byo_periods: 3 }),
+    })],
+    ['计时暂停', base({
+      timer: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }), paused: true,
+        settings: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }).settings, sound: true } },
+    })],
+    ['仍在主时间', base({
+      timer: { ...timer({ main_time: 1, byo_length: 5, byo_periods: 3 }),
+        settings: { ...timer({ main_time: 1, byo_length: 5, byo_periods: 3 }).settings, sound: true } },
+    })],
+    ['回看非叶子局面', base({
+      children: [['W', [3, 3]]],
+      timer: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }),
+        settings: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }).settings, sound: true } },
+    })],
+    ['本地双人 PlayerRow 路径', base({
+      game_type: 'pvp_local',
+      timer: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }),
+        settings: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }).settings, sound: true } },
+    })],
+  ])('%s不播放 kiosk SeatRow 读秒音', (_name, gameState) => {
+    panel(gameState);
+    act(() => { vi.advanceTimersByTime(1_000); });
+    expect(soundMocks.play).not.toHaveBeenCalled();
+  });
+
+  test('仅读秒中的当前席位播放，非当前席位不重复播放', () => {
+    panel(base({
+      timer: {
+        ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }),
+        settings: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }).settings, sound: true },
+      },
+    }));
+    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep']]);
+  });
 
   test('主时间阶段:两张卡都写剩余,只有轮到的一方在走', () => {
     panel(base({

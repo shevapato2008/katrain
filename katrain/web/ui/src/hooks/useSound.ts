@@ -9,7 +9,7 @@ import { useCallback, useEffect } from 'react';
 
 import { readAudioPref } from '../utils/audioPrefs';
 
-export type SoundName = 'stone' | 'capture' | 'correct' | 'incorrect' | 'solved';
+export type SoundName = 'stone' | 'capture' | 'correct' | 'incorrect' | 'solved' | 'countdownbeep';
 
 const SOUND_FILES: Record<SoundName, string> = {
   stone: '/assets/sounds/stone1.wav',
@@ -17,6 +17,7 @@ const SOUND_FILES: Record<SoundName, string> = {
   correct: '/assets/sounds/stone2.wav',
   incorrect: '/assets/sounds/boing.wav',
   solved: '/assets/sounds/victory1.mp3',
+  countdownbeep: '/assets/sounds/countdownbeep.wav',
 };
 
 // Preloaded audio cache (shared across hook instances)

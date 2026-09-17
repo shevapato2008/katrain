@@ -10,6 +10,7 @@ import type { EngineItemCounts, GameState, PlayerInfo } from '../../../api';
 import { useGoClock } from './goClock';
 import { isFreeVsAi } from './gameKinds';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useSound } from '../../../hooks/useSound';
 import { computeClock, type ClockView } from '../../../utils/gameClock';
 
 interface Props {
@@ -226,7 +227,28 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }:
   onTimeout?: (color: 'B' | 'W') => void;
 }) {
   const onExpired = useCallback(() => onTimeout?.(color), [onTimeout, color]);
+  const { play: playSound } = useSound();
+  const lastCountdownSecondRef = useRef<number | null>(null);
   const reading = useGoClock(gameState, color, onExpired);
+  const countdownSecond = reading?.byoLeft == null ? null : Math.ceil(reading.byoLeft);
+  const clockActive = turn && !gameState.end_result && !gameState.terminal_result
+    && (gameState.children?.length ?? 0) === 0;
+  useEffect(() => {
+    const shouldPlay = clockActive
+      && gameState.timer?.paused === false
+      && gameState.timer.settings.sound === true
+      && !reading?.expired
+      && countdownSecond !== null
+      && countdownSecond >= 1
+      && countdownSecond <= 5;
+    if (!shouldPlay) {
+      lastCountdownSecondRef.current = null;
+      return;
+    }
+    if (lastCountdownSecondRef.current === countdownSecond) return;
+    playSound('countdownbeep');
+    lastCountdownSecondRef.current = countdownSecond;
+  }, [clockActive, countdownSecond, gameState.timer?.paused, gameState.timer?.settings.sound, playSound, reading?.expired]);
   const clock = reading === null ? untimed
     : reading.expired ? { value: '0:00', label: t('game:time_up', '超时') }
     : reading.byoLeft === null ? { value: formatTime(reading.mainLeft), label: t('game:time_left', '剩余') }

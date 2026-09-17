@@ -305,3 +305,71 @@ async def test_board_lifespan_keeps_shared_camera_config_mismatch_fatal(server_m
 
     assert _CameraUnavailable.instances == []
     await _cancel_startup_tasks(app)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("has_generation", [True, False])
+async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
+    server_module, monkeypatch, tmp_path, has_generation
+):
+    server = server_module
+    _CameraUnavailable.instances.clear()
+    _install_board_startup_fakes(monkeypatch)
+    monkeypatch.setattr(server, "_init_platform_manager", lambda *args: None)
+    monkeypatch.setattr(server.settings, "DEVICE_ID", "device-1")
+    monkeypatch.setattr(server.settings, "REMOTE_API_URL", "https://remote.example")
+    monkeypatch.setattr(
+        server.settings,
+        "_vision_config",
+        SimpleNamespace(enabled=True, camera_device="/dev/video73", camera_width=1280, camera_height=720),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        server.settings,
+        "_capture_config",
+        SimpleNamespace(
+            enabled=True,
+            camera_device="/dev/video73",
+            width=1280,
+            height=720,
+            lock_exposure=True,
+            exposure=999.0,
+            lock_awb=False,
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(server.settings, "_led_config", SimpleNamespace(enabled=False), raising=False)
+    monkeypatch.setattr(server.settings, "_hardware_vision_dir", str(tmp_path), raising=False)
+
+    geometry = object()
+    state = (
+        SimpleNamespace(geometry=geometry, profile=SimpleNamespace(exposure=321.0)) if has_generation else None
+    )
+
+    class FakeHardwareVisionStore:
+        instances = []
+
+        def __init__(self, root):
+            self.root = root
+            self.load_calls = []
+            type(self).instances.append(self)
+
+        def load_current(self, camera_device, width, height):
+            self.load_calls.append((camera_device, width, height))
+            return state
+
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.hardware_vision_state",
+        SimpleNamespace(HardwareVisionStateStore=FakeHardwareVisionStore),
+    )
+
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
+    await server._lifespan_board(app, server.logging.getLogger("test.hardware-vision-startup"))
+
+    assert FakeHardwareVisionStore.instances[0].load_calls == [("/dev/video73", 1280, 720)]
+    config = _CameraUnavailable.instances[0].config
+    assert config.lock_exposure is has_generation
+    assert config.exposure == (321.0 if has_generation else None)
+
+    await _cancel_startup_tasks(app)

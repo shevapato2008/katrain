@@ -210,7 +210,7 @@ class CameraManager:
             auto_exposure = (
                 desired_auto_exposure
                 if desired_auto_exposure is not None
-                else CAMERA_AUTO_EXPOSURE_MANUAL if self._lock_exposure else None
+                else CAMERA_AUTO_EXPOSURE_MANUAL if self._lock_exposure else CAMERA_AUTO_EXPOSURE_ON
             )
             exposure = desired_exposure if desired_auto_exposure == CAMERA_AUTO_EXPOSURE_MANUAL else None
             if desired_auto_exposure is None and self._lock_exposure:

@@ -212,6 +212,23 @@ class TestCameraRuntimeControls:
         assert len(cap.get_calls) == get_count
         cam.close()
 
+    def test_open_explicitly_enables_hardware_ae_when_exposure_is_not_locked(self, monkeypatch):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_ON, CameraManager
+
+        # UVC controls survive process restarts on the board.  An uncalibrated
+        # machine must therefore actively leave a previous manual mode instead
+        # of trusting whatever state the camera happened to retain.
+        cap = self.FakeCapture(auto_exposure=1.0, exposure=432.0)
+        cam = CameraManager(device_id=0, warmup_seconds=0, lock_exposure=False)
+        self.open_with_captures(monkeypatch, cam, [cap])
+
+        assert cam.open() is True
+        assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_ON) in cap.control_writes
+        assert cam.current_auto_exposure == CAMERA_AUTO_EXPOSURE_ON
+        cam.close()
+
     def test_open_configuration_does_not_report_a_runtime_control_result(self, monkeypatch):
         from katrain.vision.camera import CameraManager
 

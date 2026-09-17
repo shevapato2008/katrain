@@ -570,6 +570,7 @@ async def _lifespan_board(app: FastAPI, log):
 
     vision_config = getattr(settings, "_vision_config", None)
     capture_config = getattr(settings, "_capture_config", None)
+    hardware_vision_dir = getattr(settings, "_hardware_vision_dir", None)
 
     # Initialise every optional camera-dependent surface before attempting to
     # acquire the device. A missing UVC device must leave the regular board
@@ -583,11 +584,13 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.capture = None
     app.state.geometry = None
     app.state.geometry_calibration = None
+    app.state.hardware_vision_store = None
     app.state.physical_play = None
     app.state.physical_play_config = None
 
     # One physical camera owner shared by capture, calibration, and recognition.
     camera_hub = None
+    hardware_vision_state = None
     if (vision_config and vision_config.enabled) or (capture_config and capture_config.enabled):
         from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
 
@@ -600,12 +603,34 @@ async def _lifespan_board(app: FastAPI, log):
                     f"vision={vision_camera}, capture={capture_camera}"
                 )
         if capture_config and capture_config.enabled:
+            camera_device = capture_config.camera_device
+            camera_width = capture_config.width
+            camera_height = capture_config.height
+        else:
+            camera_device = vision_config.camera_device
+            camera_width = vision_config.camera_width
+            camera_height = vision_config.camera_height
+
+        if hardware_vision_dir:
+            from katrain.web.core.hardware_vision_state import HardwareVisionStateStore
+
+            hardware_vision_store = HardwareVisionStateStore(Path(hardware_vision_dir).expanduser())
+            hardware_vision_state = hardware_vision_store.load_current(
+                camera_device,
+                camera_width,
+                camera_height,
+            )
+            app.state.hardware_vision_store = hardware_vision_store
+
+        persisted_lock_exposure = hardware_vision_state is not None
+        persisted_exposure = hardware_vision_state.profile.exposure if hardware_vision_state is not None else None
+        if capture_config and capture_config.enabled:
             hub_config = CameraHubConfig(
                 device_id=capture_config.camera_device,
                 width=capture_config.width,
                 height=capture_config.height,
-                lock_exposure=capture_config.lock_exposure,
-                exposure=capture_config.exposure,
+                lock_exposure=(persisted_lock_exposure if hardware_vision_dir else capture_config.lock_exposure),
+                exposure=(persisted_exposure if hardware_vision_dir else capture_config.exposure),
                 lock_awb=capture_config.lock_awb,
             )
         else:
@@ -613,7 +638,8 @@ async def _lifespan_board(app: FastAPI, log):
                 device_id=vision_config.camera_device,
                 width=vision_config.camera_width,
                 height=vision_config.camera_height,
-                lock_exposure=False,
+                lock_exposure=persisted_lock_exposure,
+                exposure=persisted_exposure,
                 lock_awb=False,
             )
         camera_hub = CameraHub(hub_config)
@@ -701,15 +727,9 @@ async def _lifespan_board(app: FastAPI, log):
             getattr(settings, "_baipu_fiducial_mode", None), os.getenv("KATRAIN_BAIPU_FIDUCIAL_MODE")
         )
         app.state.baipu_drift_threshold_cells = getattr(settings, "baipu_drift_threshold_cells", 0.15)
-        # Load an existing geometry lock if present (so capture/QA can run immediately).
-        try:
-            from katrain.vision.geometry_lock import load_geometry_lock
-
-            geo_path = Path("~/.katrain/geometry_lock.npz").expanduser()
-            app.state.geometry = load_geometry_lock(geo_path) if geo_path.exists() else None
-        except Exception as e:
-            log.warning("Failed to load geometry lock: %s", e)
-            app.state.geometry = None
+        # Geometry and exposure are one generation. Never combine an old geometry
+        # file with current camera controls, and never read the retired TF-card path.
+        app.state.geometry = hardware_vision_state.geometry if hardware_vision_state is not None else None
         log.info("Capture service started (camera=%s)", capture_config.camera_device)
     else:
         app.state.capture = None
@@ -720,6 +740,20 @@ async def _lifespan_board(app: FastAPI, log):
     # a full LED-anchor RE-calibration (start() guards that).
     if app.state.capture is not None:
         from katrain.web.core.geometry_calibration_service import GeometryCalibrationService
+
+        persist_state = None
+        if app.state.hardware_vision_store is not None:
+            from katrain.web.core.hardware_vision_state import CameraProfile
+
+            def persist_state(lock, auto_exposure, exposure):
+                profile = CameraProfile(
+                    camera_device=capture_config.camera_device,
+                    width=capture_config.width,
+                    height=capture_config.height,
+                    auto_exposure=auto_exposure,
+                    exposure=exposure,
+                )
+                app.state.hardware_vision_store.commit(lock, profile)
 
         def promote_geometry(lock):
             app.state.geometry = lock
@@ -752,7 +786,8 @@ async def _lifespan_board(app: FastAPI, log):
         app.state.geometry_calibration = GeometryCalibrationService(
             led=app.state.led,
             capture=app.state.capture,
-            save_path=Path("~/.katrain/geometry_lock.npz").expanduser(),
+            save_path=None if persist_state is not None else Path("~/.katrain/geometry_lock.npz").expanduser(),
+            persist_state=persist_state,
             initial_lock=app.state.geometry,
             on_success=promote_geometry,
             on_degraded=invalidate_geometry,
@@ -3871,6 +3906,11 @@ def run_web():
         help="Manual exposure value (camera-specific; tuned on the box).",
     )
     parser.add_argument(
+        "--hardware-vision-dir",
+        default=None,
+        help="eMMC directory containing atomic geometry and camera-control generations.",
+    )
+    parser.add_argument(
         "--baipu-fiducial-mode",
         default=None,
         choices=["auto", "every-move", "off"],
@@ -3879,6 +3919,7 @@ def run_web():
         "Also settable via $KATRAIN_BAIPU_FIDUCIAL_MODE.",
     )
     args, _unknown = parser.parse_known_args()
+    settings._hardware_vision_dir = args.hardware_vision_dir
     if args.baipu_fiducial_mode:
         settings._baipu_fiducial_mode = args.baipu_fiducial_mode
 

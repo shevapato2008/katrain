@@ -18,7 +18,7 @@ import tempfile
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 import numpy as np
 
@@ -158,6 +158,7 @@ class HardwareVisionStateStore:
         geometry: GeometryLock,
         profile: CameraProfile,
         generation: str | None = None,
+        before_publish: Callable[[], None] | None = None,
     ) -> HardwareVisionState:
         if not isinstance(geometry, GeometryLock):
             raise TypeError("geometry must be a GeometryLock")
@@ -204,6 +205,8 @@ class HardwareVisionStateStore:
             promoted = True
             _fsync_directory(self.generations_dir)
 
+            if before_publish is not None:
+                before_publish()
             self._replace_current(generation)
             return verified
         finally:
@@ -257,7 +260,12 @@ class HardwareVisionStateStore:
                 os.fsync(fh.fileno())
             os.replace(temp_path, self.current_path)
             temp_path = None
-            _fsync_directory(self.root)
+            try:
+                _fsync_directory(self.root)
+            except OSError as exc:
+                # The pointer is already published.  Reporting this as a failed
+                # commit would make callers roll runtime state back behind it.
+                logger.warning("Hardware vision pointer published but directory fsync failed at %s: %s", self.root, exc)
         finally:
             if temp_path is not None:
                 temp_path.unlink(missing_ok=True)

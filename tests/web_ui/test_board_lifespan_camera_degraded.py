@@ -131,19 +131,19 @@ def server_module(monkeypatch):
 
 
 async def _cancel_startup_tasks(app):
-    for name in ("cleanup_task", "led_failsafe_task"):
+    task_names = (
+        "cleanup_task",
+        "ai_ladder_heartbeat_task",
+        "led_failsafe_task",
+        "vision_pump_task",
+        "vision_poller_task",
+    )
+    for name in task_names:
         task = getattr(app.state, name, None)
         if task is not None:
             task.cancel()
     await asyncio.gather(
-        *(
-            task
-            for task in (
-                getattr(app.state, "cleanup_task", None),
-                getattr(app.state, "led_failsafe_task", None),
-            )
-            if task
-        ),
+        *(task for task in (getattr(app.state, name, None) for name in task_names) if task),
         return_exceptions=True,
     )
 
@@ -371,5 +371,209 @@ async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
     config = _CameraUnavailable.instances[0].config
     assert config.lock_exposure is has_generation
     assert config.exposure == (321.0 if has_generation else None)
+
+    await _cancel_startup_tasks(app)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("has_generation", [True, False])
+async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
+    server_module, monkeypatch, tmp_path, has_generation
+):
+    server = server_module
+    _install_board_startup_fakes(monkeypatch)
+    monkeypatch.setattr(server, "_init_platform_manager", lambda *args: None)
+    monkeypatch.setattr(server.settings, "DEVICE_ID", "device-1")
+    monkeypatch.setattr(server.settings, "REMOTE_API_URL", "https://remote.example")
+    monkeypatch.setattr(
+        server.settings,
+        "_vision_config",
+        SimpleNamespace(
+            enabled=True,
+            camera_device="/dev/video73",
+            camera_width=1280,
+            camera_height=720,
+            backend="fake",
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(server.settings, "_capture_config", SimpleNamespace(enabled=False), raising=False)
+    monkeypatch.setattr(server.settings, "_led_config", SimpleNamespace(enabled=False), raising=False)
+    monkeypatch.setattr(server.settings, "_hardware_vision_dir", str(tmp_path), raising=False)
+
+    async def idle_vision_task(_app):
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(server, "_vision_event_pump", idle_vision_task)
+    monkeypatch.setattr(server, "_vision_move_poller", idle_vision_task)
+
+    geometry = object()
+    state = (
+        SimpleNamespace(geometry=geometry, profile=SimpleNamespace(exposure=321.0)) if has_generation else None
+    )
+
+    class CameraHub:
+        def __init__(self, config):
+            self.config = config
+
+        def start(self):
+            pass
+
+    class VisionService:
+        instances = []
+
+        def __init__(self, config, frame_source):
+            self.config = config
+            self.frame_source = frame_source
+            self.geometry_calls = []
+            type(self).instances.append(self)
+
+        def start(self):
+            pass
+
+        def set_geometry(self, lock):
+            self.geometry_calls.append(lock)
+
+    class HardwareVisionStateStore:
+        def __init__(self, root):
+            self.root = root
+
+        def load_current(self, camera_device, width, height):
+            return state
+
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.camera_hub",
+        SimpleNamespace(CameraHub=CameraHub, CameraHubConfig=lambda **kwargs: SimpleNamespace(**kwargs)),
+    )
+    monkeypatch.setitem(sys.modules, "katrain.vision.service", SimpleNamespace(VisionService=VisionService))
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.hardware_vision_state",
+        SimpleNamespace(HardwareVisionStateStore=HardwareVisionStateStore),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.physical_play",
+        SimpleNamespace(PhysicalPlayConfig=lambda: SimpleNamespace(hint_engine="local")),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.physical_play_orchestrator",
+        SimpleNamespace(PhysicalPlayOrchestrator=lambda **kwargs: SimpleNamespace()),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.hint_gate",
+        SimpleNamespace(DefaultHintGate=lambda _engine: SimpleNamespace()),
+    )
+
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
+    await server._lifespan_board(app, server.logging.getLogger("test.vision-only-hardware-state"))
+
+    try:
+        assert app.state.geometry is (geometry if has_generation else None)
+        assert VisionService.instances[0].geometry_calls == ([geometry] if has_generation else [])
+    finally:
+        await _cancel_startup_tasks(app)
+
+
+@pytest.mark.asyncio
+async def test_capture_startup_forwards_publish_gate_to_hardware_store(server_module, monkeypatch, tmp_path):
+    server = server_module
+    _install_board_startup_fakes(monkeypatch)
+    monkeypatch.setattr(server, "_init_platform_manager", lambda *args: None)
+    monkeypatch.setattr(server.settings, "DEVICE_ID", "device-1")
+    monkeypatch.setattr(server.settings, "REMOTE_API_URL", "https://remote.example")
+    monkeypatch.setattr(server.settings, "_vision_config", SimpleNamespace(enabled=False), raising=False)
+    monkeypatch.setattr(
+        server.settings,
+        "_capture_config",
+        SimpleNamespace(
+            enabled=True,
+            camera_device="/dev/video73",
+            width=1280,
+            height=720,
+            lock_exposure=False,
+            exposure=None,
+            lock_awb=False,
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(server.settings, "_led_config", SimpleNamespace(enabled=False), raising=False)
+    monkeypatch.setattr(server.settings, "_hardware_vision_dir", str(tmp_path), raising=False)
+    monkeypatch.setattr(server.settings, "_baipu_fiducial_mode", "off", raising=False)
+
+    class CameraHub:
+        def __init__(self, config):
+            self.config = config
+
+        def start(self):
+            pass
+
+    class CaptureService:
+        def __init__(self, config, hub):
+            self.config = config
+            self.hub = hub
+
+        def start(self):
+            pass
+
+    class HardwareVisionStateStore:
+        instances = []
+
+        def __init__(self, root):
+            self.root = root
+            self.commit_calls = []
+            type(self).instances.append(self)
+
+        def load_current(self, camera_device, width, height):
+            return None
+
+        def commit(self, lock, profile, before_publish=None):
+            self.commit_calls.append((lock, profile, before_publish))
+
+    class CameraProfile:
+        def __init__(self, **kwargs):
+            self.values = kwargs
+
+    class GeometryCalibrationService:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.camera_hub",
+        SimpleNamespace(CameraHub=CameraHub, CameraHubConfig=lambda **kwargs: SimpleNamespace(**kwargs)),
+    )
+    monkeypatch.setitem(sys.modules, "katrain.web.core.capture_service", SimpleNamespace(CaptureService=CaptureService))
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.baipu_capture",
+        SimpleNamespace(resolve_fiducial_mode=lambda configured, env: configured),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.hardware_vision_state",
+        SimpleNamespace(HardwareVisionStateStore=HardwareVisionStateStore, CameraProfile=CameraProfile),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.geometry_calibration_service",
+        SimpleNamespace(GeometryCalibrationService=GeometryCalibrationService),
+    )
+
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
+    await server._lifespan_board(app, server.logging.getLogger("test.hardware-state-persist-hook"))
+
+    lock = object()
+    before_publish = lambda: None
+    app.state.geometry_calibration.kwargs["persist_state"](lock, 1.0, 222.0, before_publish)
+
+    committed_lock, profile, committed_hook = HardwareVisionStateStore.instances[0].commit_calls[0]
+    assert committed_lock is lock
+    assert profile.values["auto_exposure"] == 1.0
+    assert profile.values["exposure"] == 222.0
+    assert committed_hook is before_publish
 
     await _cancel_startup_tasks(app)

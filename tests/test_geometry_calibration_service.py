@@ -1,6 +1,7 @@
 import logging
 import re
 import threading
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -98,6 +99,10 @@ def test_success_persists_geometry_and_verified_manual_controls_together(tmp_pat
     lock = _synth()
     persisted = []
 
+    def persist_state(geometry, auto_exposure, exposure, before_publish):
+        before_publish()
+        persisted.append((geometry, auto_exposure, exposure))
+
     class ManualCapture(FakeCapture):
         current_auto_exposure = CAMERA_AUTO_EXPOSURE_OFF
         current_exposure = 321.0
@@ -106,9 +111,7 @@ def test_success_persists_geometry_and_verified_manual_controls_together(tmp_pat
         led=FakeLed(),
         capture=ManualCapture(),
         save_path=tmp_path / "unused.npz",
-        persist_state=lambda geometry, auto_exposure, exposure: persisted.append(
-            (geometry, auto_exposure, exposure)
-        ),
+        persist_state=persist_state,
         calibrator_factory=lambda **kwargs: ResultCalibrator(CalibrationResult(ok=True, lock=lock), **kwargs),
     )
 
@@ -795,24 +798,46 @@ def test_restore_rejects_success_readback_for_competing_control_request(
     service.stop()
 
 
-def test_cancel_during_persist_does_not_promote_and_restores_exposure(tmp_path):
+def test_cancel_before_store_pointer_swap_keeps_old_generation_and_restores_exposure(tmp_path):
+    from katrain.web.core.hardware_vision_state import CameraProfile, HardwareVisionStateStore
+
+    store = HardwareVisionStateStore(tmp_path / "hardware-vision")
     old_lock = _synth()
+    old_lock.source_width = 640
+    old_lock.source_height = 480
     new_lock = _synth()
+    new_lock.source_width = 640
+    new_lock.source_height = 480
+    store.commit(
+        old_lock,
+        CameraProfile(camera_device="/dev/video73", width=640, height=480, auto_exposure=1.0, exposure=100.0),
+        generation="old",
+    )
     entered = threading.Event()
     release = threading.Event()
-    persisted = []
     promoted = []
 
-    def blocking_persist(lock, auto_exposure, exposure):
-        persisted.append((lock, auto_exposure, exposure))
-        entered.set()
-        release.wait(timeout=2)
+    def persist_state(lock, auto_exposure, exposure, before_publish):
+        profile = CameraProfile(
+            camera_device="/dev/video73",
+            width=640,
+            height=480,
+            auto_exposure=auto_exposure,
+            exposure=exposure,
+        )
+
+        def blocking_before_publish():
+            entered.set()
+            release.wait(timeout=2)
+            before_publish()
+
+        store.commit(lock, profile, generation="new", before_publish=blocking_before_publish)
 
     capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=328.0)
     service = GeometryCalibrationService(
         led=FakeLed(),
         capture=capture,
-        persist_state=blocking_persist,
+        persist_state=persist_state,
         initial_lock=old_lock,
         on_success=promoted.append,
         calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=new_lock)),
@@ -824,16 +849,83 @@ def test_cancel_during_persist_does_not_promote_and_restores_exposure(tmp_path):
     release.set()
     assert service.wait(timeout=5) is True
 
-    assert persisted == [(new_lock, CAMERA_AUTO_EXPOSURE_OFF, 328.0)]
     assert service.status()["phase"] == "cancelled"
     assert service.current_lock is old_lock
     assert promoted == []
     assert capture.control_calls[-1] == (328.0, CAMERA_AUTO_EXPOSURE_OFF)
+    current = store.load_current("/dev/video73", 640, 480)
+    assert current is not None
+    assert current.generation == "old"
+    assert current.profile.exposure == 100.0
+    np.testing.assert_array_equal(current.geometry.baseline, old_lock.baseline)
+    assert (tmp_path / "hardware-vision" / "generations" / "new").is_dir()
     service.stop()
 
 
-def test_cancel_during_save_does_not_promote_and_restores_exposure(tmp_path, monkeypatch):
+def test_cancel_after_store_publish_boundary_does_not_abort_commit(tmp_path):
+    from katrain.web.core.hardware_vision_state import CameraProfile, HardwareVisionStateStore
+
+    store = HardwareVisionStateStore(tmp_path / "hardware-vision")
+    old_lock = _synth()
+    old_lock.source_width = 640
+    old_lock.source_height = 480
+    new_lock = _synth()
+    new_lock.source_width = 640
+    new_lock.source_height = 480
+    store.commit(
+        old_lock,
+        CameraProfile(camera_device="/dev/video73", width=640, height=480, auto_exposure=1.0, exposure=100.0),
+        generation="old",
+    )
+    boundary_started = threading.Event()
+    release = threading.Event()
+
+    def persist_state(lock, auto_exposure, exposure, before_publish):
+        profile = CameraProfile(
+            camera_device="/dev/video73",
+            width=640,
+            height=480,
+            auto_exposure=auto_exposure,
+            exposure=exposure,
+        )
+
+        def blocking_before_publish():
+            before_publish()
+            boundary_started.set()
+            release.wait(timeout=2)
+
+        store.commit(lock, profile, generation="new", before_publish=blocking_before_publish)
+
+    capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=331.0)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        persist_state=persist_state,
+        initial_lock=old_lock,
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=new_lock)),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert boundary_started.wait(timeout=1) is True
+    service.cancel()
+    assert service._cancel_event.is_set() is False
+    release.set()
+    assert service.wait(timeout=5) is True
+
+    assert service.status()["phase"] == "ready"
+    assert service.current_lock is new_lock
+    assert capture.current_exposure == 331.0
+    current = store.load_current("/dev/video73", 640, 480)
+    assert current is not None
+    assert current.generation == "new"
+    assert current.profile.exposure == 331.0
+    np.testing.assert_array_equal(current.geometry.baseline, new_lock.baseline)
+    service.stop()
+
+
+def test_cancel_during_legacy_staging_preserves_old_file_and_restores_exposure(tmp_path, monkeypatch):
     import katrain.web.core.geometry_calibration_service as calibration_module
+    from katrain.vision.geometry_lock import load_geometry_lock, save_geometry_lock
 
     old_lock = _synth()
     new_lock = _synth()
@@ -841,6 +933,7 @@ def test_cancel_during_save_does_not_promote_and_restores_exposure(tmp_path, mon
     release = threading.Event()
     promoted = []
     save_path = tmp_path / "geometry.npz"
+    save_geometry_lock(old_lock, save_path)
     real_save = calibration_module.save_geometry_lock
 
     def blocking_save(lock, path):
@@ -865,11 +958,13 @@ def test_cancel_during_save_does_not_promote_and_restores_exposure(tmp_path, mon
     release.set()
     assert service.wait(timeout=5) is True
 
-    assert save_path.exists()
     assert service.status()["phase"] == "cancelled"
     assert service.current_lock is old_lock
     assert promoted == []
     assert capture.control_calls[-1] == (329.0, CAMERA_AUTO_EXPOSURE_OFF)
+    persisted = load_geometry_lock(save_path)
+    np.testing.assert_array_equal(persisted.baseline, old_lock.baseline)
+    assert persisted.confidence == old_lock.confidence
     service.stop()
 
 
@@ -927,26 +1022,144 @@ def test_save_failure_restores_original_exposure(tmp_path, monkeypatch):
     service.stop()
 
 
-def test_on_success_failure_restores_exposure_and_keeps_saved_file(tmp_path):
-    def fail_promotion(_lock):
+def test_on_success_failure_after_durable_commit_stays_ready_and_keeps_new_exposure(tmp_path, caplog):
+    from katrain.web.core.hardware_vision_state import CameraProfile, HardwareVisionStateStore
+
+    store = HardwareVisionStateStore(tmp_path / "hardware-vision")
+    old_lock = _synth()
+    old_lock.source_width = 640
+    old_lock.source_height = 480
+    new_lock = _synth()
+    new_lock.source_width = 640
+    new_lock.source_height = 480
+    store.commit(
+        old_lock,
+        CameraProfile(camera_device="/dev/video73", width=640, height=480, auto_exposure=1.0, exposure=326.0),
+        generation="old",
+    )
+    observed = []
+
+    def persist_state(lock, auto_exposure, exposure, before_publish):
+        store.commit(
+            lock,
+            CameraProfile(
+                camera_device="/dev/video73",
+                width=640,
+                height=480,
+                auto_exposure=auto_exposure,
+                exposure=exposure,
+            ),
+            generation="new",
+            before_publish=before_publish,
+        )
+
+    def fail_promotion(lock):
+        observed.append((service.current_lock, service.status()["phase"], capture.current_exposure, lock))
         raise RuntimeError("promotion failed")
 
-    capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=326.0)
-    save_path = tmp_path / "geometry.npz"
+    capture = RestoringFakeCapture(
+        current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF,
+        current_exposure=326.0,
+        initial_level=254,
+    )
     service = GeometryCalibrationService(
         led=FakeLed(),
         capture=capture,
-        save_path=save_path,
+        persist_state=persist_state,
+        initial_lock=old_lock,
         on_success=fail_promotion,
-        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=_synth())),
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=new_lock)),
     )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
 
-    service.start(trigger="manual", empty_confirmed=True)
-    assert service.wait(timeout=5) is True
+    with caplog.at_level(logging.WARNING, logger="katrain.web.core.geometry_calibration_service"):
+        service.start(trigger="manual", empty_confirmed=True)
+        assert service.wait(timeout=5) is True
 
-    assert service.status()["error"] == "promotion failed"
-    assert save_path.exists()
-    assert capture.control_calls[-1] == (326.0, CAMERA_AUTO_EXPOSURE_OFF)
+    assert service.status()["phase"] == "ready"
+    assert service.status()["error"] is None
+    assert service.current_lock is new_lock
+    assert service._drift_monitor is not None
+    assert capture.current_auto_exposure == CAMERA_AUTO_EXPOSURE_OFF
+    assert capture.current_exposure == 140.0
+    assert observed == [(new_lock, "ready", 140.0, new_lock)]
+    assert any("on_success failed" in record.getMessage() for record in caplog.records)
+    current = store.load_current("/dev/video73", 640, 480)
+    assert current is not None
+    assert current.generation == "new"
+    assert current.profile.exposure == 140.0
+    np.testing.assert_array_equal(current.geometry.baseline, new_lock.baseline)
+    service.stop()
+
+
+def test_post_pointer_fsync_failure_keeps_store_service_and_exposure_committed(tmp_path, monkeypatch, caplog):
+    import katrain.web.core.hardware_vision_state as state_module
+
+    store = state_module.HardwareVisionStateStore(tmp_path / "hardware-vision")
+    old_lock = _synth()
+    old_lock.source_width = 640
+    old_lock.source_height = 480
+    new_lock = _synth()
+    new_lock.source_width = 640
+    new_lock.source_height = 480
+    store.commit(
+        old_lock,
+        state_module.CameraProfile(
+            camera_device="/dev/video73", width=640, height=480, auto_exposure=1.0, exposure=326.0
+        ),
+        generation="old",
+    )
+    real_fsync_directory = state_module._fsync_directory
+
+    def fail_root_fsync_after_pointer_swap(path):
+        if Path(path) == store.root and store.current_path.exists():
+            raise OSError("injected root directory fsync failure")
+        real_fsync_directory(path)
+
+    monkeypatch.setattr(state_module, "_fsync_directory", fail_root_fsync_after_pointer_swap)
+
+    def persist_state(lock, auto_exposure, exposure, before_publish):
+        store.commit(
+            lock,
+            state_module.CameraProfile(
+                camera_device="/dev/video73",
+                width=640,
+                height=480,
+                auto_exposure=auto_exposure,
+                exposure=exposure,
+            ),
+            generation="new",
+            before_publish=before_publish,
+        )
+
+    capture = RestoringFakeCapture(
+        current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF,
+        current_exposure=326.0,
+        initial_level=254,
+    )
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        persist_state=persist_state,
+        initial_lock=old_lock,
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=new_lock)),
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    with caplog.at_level(logging.WARNING, logger="katrain.web.core.hardware_vision_state"):
+        service.start(trigger="manual", empty_confirmed=True)
+        assert service.wait(timeout=5) is True
+
+    assert service.status()["phase"] == "ready"
+    assert service.current_lock is new_lock
+    assert capture.current_auto_exposure == CAMERA_AUTO_EXPOSURE_OFF
+    assert capture.current_exposure == 140.0
+    current = store.load_current("/dev/video73", 640, 480)
+    assert current is not None
+    assert current.generation == "new"
+    assert current.profile.exposure == 140.0
+    np.testing.assert_array_equal(current.geometry.baseline, new_lock.baseline)
+    assert any("pointer published" in record.getMessage() for record in caplog.records)
     service.stop()
 
 

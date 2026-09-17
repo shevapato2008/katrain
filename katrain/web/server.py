@@ -656,6 +656,10 @@ async def _lifespan_board(app: FastAPI, log):
             )
             camera_hub = None
     app.state.camera_hub = camera_hub
+    if camera_hub is not None and hardware_vision_state is not None:
+        # Geometry and controls come from the same validated generation. This is
+        # independent of CaptureService: vision-only deployments need the warp too.
+        app.state.geometry = hardware_vision_state.geometry
 
     # Vision service (optional — enabled when --vision-model is provided)
     if vision_config and vision_config.enabled and camera_hub is not None:
@@ -727,13 +731,9 @@ async def _lifespan_board(app: FastAPI, log):
             getattr(settings, "_baipu_fiducial_mode", None), os.getenv("KATRAIN_BAIPU_FIDUCIAL_MODE")
         )
         app.state.baipu_drift_threshold_cells = getattr(settings, "baipu_drift_threshold_cells", 0.15)
-        # Geometry and exposure are one generation. Never combine an old geometry
-        # file with current camera controls, and never read the retired TF-card path.
-        app.state.geometry = hardware_vision_state.geometry if hardware_vision_state is not None else None
         log.info("Capture service started (camera=%s)", capture_config.camera_device)
     else:
         app.state.capture = None
-        app.state.geometry = None
 
     # Calibration service needs only the camera: confirm-existing/promote and drift monitoring
     # run without an LED (no-LED geometry is a supported primary path). LED is required only for
@@ -745,7 +745,7 @@ async def _lifespan_board(app: FastAPI, log):
         if app.state.hardware_vision_store is not None:
             from katrain.web.core.hardware_vision_state import CameraProfile
 
-            def persist_state(lock, auto_exposure, exposure):
+            def persist_state(lock, auto_exposure, exposure, before_publish):
                 profile = CameraProfile(
                     camera_device=capture_config.camera_device,
                     width=capture_config.width,
@@ -753,9 +753,11 @@ async def _lifespan_board(app: FastAPI, log):
                     auto_exposure=auto_exposure,
                     exposure=exposure,
                 )
-                app.state.hardware_vision_store.commit(lock, profile)
+                app.state.hardware_vision_store.commit(lock, profile, before_publish=before_publish)
 
         def promote_geometry(lock):
+            # Runtime/UI geometry-only notification. GeometryCalibrationService invokes
+            # this only after durably publishing geometry and verified manual exposure.
             app.state.geometry = lock
             vision_service = getattr(app.state, "vision", None)
             if vision_service is not None and hasattr(vision_service, "set_geometry"):

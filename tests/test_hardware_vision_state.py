@@ -266,6 +266,36 @@ def test_failed_current_pointer_replace_preserves_previous_generation(tmp_path, 
     assert loaded.profile.exposure == 100.0
 
 
+def test_before_publish_runs_after_generation_promotion_but_before_current_pointer(tmp_path):
+    module = _state_module()
+    store = module.HardwareVisionStateStore(tmp_path)
+    store.commit(_geometry(), _profile(module, exposure=100.0), generation="generation-1")
+
+    class CancelPublish(RuntimeError):
+        pass
+
+    def before_publish():
+        assert (tmp_path / "generations" / "generation-2" / "manifest.json").exists()
+        current = store.load_current("/dev/video73", 640, 480)
+        assert current is not None
+        assert current.generation == "generation-1"
+        raise CancelPublish("cancelled before pointer swap")
+
+    with pytest.raises(CancelPublish, match="cancelled before pointer swap"):
+        store.commit(
+            _geometry(),
+            _profile(module, exposure=200.0),
+            generation="generation-2",
+            before_publish=before_publish,
+        )
+
+    loaded = store.load_current("/dev/video73", 640, 480)
+    assert loaded is not None
+    assert loaded.generation == "generation-1"
+    assert loaded.profile.exposure == 100.0
+    assert (tmp_path / "generations" / "generation-2").is_dir()
+
+
 def test_generation_contains_sidecar_and_manifest_hashes_all_payloads(tmp_path):
     module = _state_module()
     store = module.HardwareVisionStateStore(tmp_path)

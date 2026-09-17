@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -27,6 +29,10 @@ CAMERA_AUTO_EXPOSURE_OFF = CAMERA_AUTO_EXPOSURE_MANUAL
 
 class CalibrationBusy(RuntimeError):
     pass
+
+
+class CalibrationCancelled(RuntimeError):
+    """Cancellation accepted before the durable publication boundary."""
 
 
 class GeometryCalibrationService:
@@ -77,6 +83,8 @@ class GeometryCalibrationService:
         self.save_path = Path(save_path).expanduser() if save_path is not None else None
         self.persist_state = persist_state
         self.current_lock = initial_lock
+        # Geometry-only runtime/UI notification. Durable geometry + exposure publication
+        # belongs to persist_state and is already committed before this callback runs.
         self.on_success = on_success or (lambda _lock: None)
         # Called once when drift flips a ready lock to degraded — used to invalidate the
         # downstream vision worker so it stops recognizing on a stale (shifted) warp.
@@ -91,6 +99,7 @@ class GeometryCalibrationService:
         self.calibrator_factory = calibrator_factory
         self._lock = threading.Lock()
         self._cancel_event = threading.Event()
+        self._publish_started = False
         self._thread = None
         self._geometry_revision = 0
         self._detected_anchors = []
@@ -117,6 +126,7 @@ class GeometryCalibrationService:
             if self._thread is not None and self._thread.is_alive():
                 raise CalibrationBusy("geometry calibration already running")
             self._cancel_event = threading.Event()
+            self._publish_started = False
             self._drift_monitor = None
             self._detected_anchors = []
             self._status.update(
@@ -130,7 +140,9 @@ class GeometryCalibrationService:
             self._thread.start()
 
     def cancel(self) -> None:
-        self._cancel_event.set()
+        with self._lock:
+            if not self._publish_started:
+                self._cancel_event.set()
         if self.led is not None:
             try:
                 self.led.clear(strict=True)
@@ -418,6 +430,23 @@ class GeometryCalibrationService:
             self._status["phase"] = "cancelled"
         return True
 
+    def _before_publish(self) -> None:
+        """Linearize cancellation immediately before the durable pointer/file swap."""
+        with self._lock:
+            if self._cancel_event.is_set():
+                raise CalibrationCancelled("calibration cancelled before publication")
+            self._publish_started = True
+
+    def _persist_legacy(self, lock) -> None:
+        """Stage both legacy files before crossing the publication boundary."""
+        self.save_path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix=f".{self.save_path.name}.", dir=self.save_path.parent) as staging:
+            staged_path = Path(staging) / self.save_path.name
+            save_geometry_lock(lock, staged_path)
+            self._before_publish()
+            os.replace(staged_path, self.save_path)
+            os.replace(staged_path.with_suffix(".json"), self.save_path.with_suffix(".json"))
+
     def _run(self) -> None:
         exposure_snapshot = self._snapshot_exposure_controls()
         committed = False
@@ -464,7 +493,7 @@ class GeometryCalibrationService:
             if self._cancel_if_requested():
                 return
             if self.persist_state is None:
-                save_geometry_lock(result.lock, self.save_path)
+                self._persist_legacy(result.lock)
             else:
                 auto_exposure = getattr(self.capture, "current_auto_exposure", None)
                 exposure = getattr(self.capture, "current_exposure", None)
@@ -477,13 +506,11 @@ class GeometryCalibrationService:
                     raise RuntimeError("camera is not in verified manual exposure mode after calibration")
                 if not np.isfinite(exposure):
                     raise RuntimeError("camera exposure is not finite after calibration")
-                self.persist_state(result.lock, CAMERA_AUTO_EXPOSURE_MANUAL, exposure)
-            if self._cancel_if_requested():
-                return
-            self.current_lock = result.lock
-            self._drift_monitor = drift_monitor
-            self.on_success(result.lock)
+                self.persist_state(result.lock, CAMERA_AUTO_EXPOSURE_MANUAL, exposure, self._before_publish)
+            committed = True
             with self._lock:
+                self.current_lock = result.lock
+                self._drift_monitor = drift_monitor
                 self._geometry_revision += 1
                 self._status.update(
                     phase="ready",
@@ -493,11 +520,20 @@ class GeometryCalibrationService:
                     error=None,
                     metrics=metrics,
                 )
-            committed = True
-        except Exception as exc:
+            try:
+                self.on_success(result.lock)
+            except Exception as exc:
+                logger.warning("geometry calibration on_success failed after commit: %s", exc)
+        except CalibrationCancelled:
             with self._lock:
-                self._status["phase"] = "failed"
-                self._status["error"] = str(exc)
+                self._status["phase"] = "cancelled"
+        except Exception as exc:
+            if committed:
+                logger.warning("geometry calibration post-commit update failed: %s", exc)
+            else:
+                with self._lock:
+                    self._status["phase"] = "failed"
+                    self._status["error"] = str(exc)
         finally:
             if not committed:
                 try:

@@ -131,9 +131,7 @@ class SyncStateMachine:
             self._prev_expected_board = self._expected_board.copy()
             self._expected_board = board.copy()
 
-        if expected_node_id is None:
-            self._pending_expected_node_id = None
-        elif expected_node_id != self._expected_node_id:
+        if expected_node_id != self._expected_node_id:
             self._expected_node_id = expected_node_id
             self._pending_expected_node_id = expected_node_id
 
@@ -417,19 +415,21 @@ class SyncStateMachine:
         self._mismatch_count = 0
         was_synced = self._state == SyncState.SYNCED
         self._state = SyncState.SYNCED
-        if not was_synced:
-            events.append(SyncEvent(SyncEventType.SYNCED))
+        synced_event: SyncEvent | None = None
 
         if diff_count == 0:
             self._prev_expected_board = self._expected_board.copy()
             if self._pending_expected_node_id is not None:
-                events.append(
-                    SyncEvent(
-                        SyncEventType.SYNCED,
-                        data={"expected_node_id": self._pending_expected_node_id},
-                    )
+                synced_event = SyncEvent(
+                    SyncEventType.SYNCED,
+                    data={"expected_node_id": self._pending_expected_node_id},
                 )
                 self._pending_expected_node_id = None
+
+        if synced_event is None and not was_synced:
+            synced_event = SyncEvent(SyncEventType.SYNCED)
+        if synced_event is not None:
+            events.append(synced_event)
 
         return events
 

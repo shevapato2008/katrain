@@ -629,6 +629,17 @@ class TestExpectedBoardAcknowledgement:
         assert first == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 102})]
         assert second == []
 
+    def test_none_cancels_revision_and_allows_same_id_to_rearm(self):
+        sm = self._synced_machine()
+        expected = empty_board()
+        sm.set_expected_board(expected, expected_node_id=101)
+
+        sm.set_expected_board(expected.copy(), expected_node_id=None)
+        assert sm.update(expected.copy()) == []
+
+        sm.set_expected_board(expected.copy(), expected_node_id=101)
+        assert sm.update(expected.copy()) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})]
+
     def test_placement_pending_only_does_not_ack_revision(self):
         sm = self._synced_machine()
         empty = empty_board()
@@ -658,6 +669,33 @@ class TestExpectedBoardAcknowledgement:
         assert recovery_events == [SyncEvent(SyncEventType.SYNCED)]
         assert sm.update(expected.copy(), mean_confidence=0.50, timestamp=1006.0) == [
             SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})
+        ]
+
+    def test_exact_recovery_emits_only_one_versioned_synced_event(self):
+        sm = self._synced_machine()
+        expected = empty_board()
+        sm.set_expected_board(expected, expected_node_id=101)
+
+        sm.update(board_with({(3, 3): BLACK}))
+        assert sm.state == SyncState.MISMATCH_WARNING
+
+        assert sm.update(expected.copy()) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})]
+
+    def test_capture_cleared_frame_carries_versioned_ack(self):
+        sm = self._synced_machine()
+        before_capture = board_with({(5, 5): WHITE})
+        after_capture = empty_board()
+        sm.set_expected_board(before_capture)
+        sm.update(before_capture.copy())
+
+        sm.set_expected_board(after_capture, expected_node_id=101)
+        assert sm.update(before_capture.copy()) == [
+            SyncEvent(SyncEventType.CAPTURE_PENDING, {"positions": [(5, 5, WHITE)]})
+        ]
+
+        assert sm.update(after_capture.copy()) == [
+            SyncEvent(SyncEventType.CAPTURES_CLEARED),
+            SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101}),
         ]
 
     def test_reset_cancels_unacknowledged_revision(self):

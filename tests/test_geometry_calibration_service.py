@@ -968,6 +968,51 @@ def test_cancel_during_legacy_staging_preserves_old_file_and_restores_exposure(t
     service.stop()
 
 
+def test_legacy_staging_cleanup_failure_does_not_reverse_success(tmp_path, monkeypatch, caplog):
+    import katrain.web.core.geometry_calibration_service as calibration_module
+    from katrain.vision.geometry_lock import load_geometry_lock, save_geometry_lock
+
+    old_lock = _synth()
+    new_lock = _synth()
+    save_path = tmp_path / "geometry.npz"
+    save_geometry_lock(old_lock, save_path)
+    cleanup_attempts = []
+
+    def fail_cleanup(path, *args, **kwargs):
+        cleanup_attempts.append(Path(path))
+        raise OSError("injected staging cleanup failure")
+
+    monkeypatch.setattr(calibration_module.shutil, "rmtree", fail_cleanup)
+    capture = RestoringFakeCapture(
+        current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF,
+        current_exposure=334.0,
+        initial_level=254,
+    )
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=save_path,
+        initial_lock=old_lock,
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=new_lock)),
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    with caplog.at_level(logging.WARNING, logger="katrain.web.core.geometry_calibration_service"):
+        service.start(trigger="manual", empty_confirmed=True)
+        assert service.wait(timeout=5) is True
+
+    assert cleanup_attempts
+    assert service.status()["phase"] == "ready"
+    assert service.current_lock is new_lock
+    assert capture.current_auto_exposure == CAMERA_AUTO_EXPOSURE_OFF
+    assert capture.current_exposure == 140.0
+    persisted = load_geometry_lock(save_path)
+    np.testing.assert_array_equal(persisted.baseline, new_lock.baseline)
+    assert persisted.confidence == new_lock.confidence
+    assert any("staging cleanup failed" in record.getMessage() for record in caplog.records)
+    service.stop()
+
+
 @pytest.mark.parametrize("has_existing_files", [True, False])
 def test_legacy_sidecar_replace_failure_restores_files_and_runtime_state(
     tmp_path, monkeypatch, has_existing_files

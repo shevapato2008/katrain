@@ -445,8 +445,8 @@ class GeometryCalibrationService:
     def _persist_legacy(self, lock) -> None:
         """Stage both legacy files before crossing the publication boundary."""
         self.save_path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix=f".{self.save_path.name}.", dir=self.save_path.parent) as staging:
-            staging_path = Path(staging)
+        staging_path = Path(tempfile.mkdtemp(prefix=f".{self.save_path.name}.", dir=self.save_path.parent))
+        try:
             staged_path = staging_path / self.save_path.name
             staged_sidecar = staged_path.with_suffix(".json")
             final_sidecar = self.save_path.with_suffix(".json")
@@ -481,6 +481,13 @@ class GeometryCalibrationService:
                         "persisted geometry state is unknown"
                     ) from publish_exc
                 raise
+        finally:
+            try:
+                shutil.rmtree(staging_path)
+            except Exception as cleanup_exc:
+                # Publication/rollback has already reached its definitive outcome;
+                # staging cleanup must not make callers infer the opposite state.
+                logger.warning("legacy geometry staging cleanup failed at %s: %s", staging_path, cleanup_exc)
 
     def _run(self) -> None:
         exposure_snapshot = self._snapshot_exposure_controls()

@@ -509,8 +509,247 @@ class FakeAutoExposureCapture(FakeCapture):
             self.controls_effective = self.manual_lock_succeeds
 
 
+class RestoringFakeCapture(FakeCapture):
+    """CaptureService-shaped fake with asynchronous control readback."""
+
+    def __init__(
+        self,
+        *,
+        current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF,
+        current_exposure=320.0,
+        initial_level=150,
+        restore_succeeds=True,
+    ):
+        self.current_auto_exposure = current_auto_exposure
+        self.current_exposure = current_exposure
+        self.initial_exposure = current_exposure
+        self.initial_level = initial_level
+        self.restore_succeeds = restore_succeeds
+        self.controls_effective = True
+        self.control_calls = []
+        self.grab_calls = 0
+        self._pending_controls = None
+
+    def is_connected(self):
+        return True
+
+    def request_controls(self, exposure=None, auto_exposure=None):
+        self.control_calls.append((exposure, auto_exposure))
+        self._pending_controls = (exposure, auto_exposure)
+        self.controls_effective = None
+
+    def grab_fresh(self, after_ts=None, settle_ms=150.0):
+        self.grab_calls += 1
+        if self._pending_controls is not None:
+            exposure, auto_exposure = self._pending_controls
+            self._pending_controls = None
+            is_restore = exposure == self.initial_exposure and auto_exposure == CAMERA_AUTO_EXPOSURE_OFF
+            if is_restore and not self.restore_succeeds:
+                self.controls_effective = False
+            else:
+                if auto_exposure is not None:
+                    self.current_auto_exposure = auto_exposure
+                if exposure is not None:
+                    self.current_exposure = exposure
+                elif auto_exposure == CAMERA_AUTO_EXPOSURE_ON:
+                    self.current_exposure = 140.0
+                self.controls_effective = True
+        level = 150 if self.current_auto_exposure == CAMERA_AUTO_EXPOSURE_ON else self.initial_level
+        return np.full((64, 64, 3), level, np.uint8), self.grab_calls, float(self.grab_calls)
+
+
 def _stopped_calibrator_factory(events):
     return lambda **kwargs: RecordingCalibrator(CalibrationResult(ok=False, reason="stopped"), events, **kwargs)
+
+
+def _result_calibrator_factory(result):
+    return lambda **kwargs: ResultCalibrator(result, **kwargs)
+
+
+def test_failed_calibration_restores_original_manual_exposure(tmp_path):
+    capture = RestoringFakeCapture(current_auto_exposure=1.005, current_exposure=320.0)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=False, reason="anchor_not_found:0,0")),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert service.status()["error"] == "anchor_not_found:0,0"
+    assert capture.control_calls[-1] == (320.0, CAMERA_AUTO_EXPOSURE_OFF)
+    assert capture.current_auto_exposure == CAMERA_AUTO_EXPOSURE_OFF
+    assert capture.current_exposure == 320.0
+    service.stop()
+
+
+def test_cancelled_calibration_restores_original_exposure(tmp_path):
+    capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=321.0)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=False, reason="cancelled")),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert service.status()["phase"] == "cancelled"
+    assert capture.control_calls[-1] == (321.0, CAMERA_AUTO_EXPOSURE_OFF)
+    service.stop()
+
+
+def test_calibrator_exception_restores_original_exposure(tmp_path):
+    class ExplodingCalibrator:
+        def __init__(self, **_kwargs):
+            pass
+
+        def calibrate(self):
+            raise RuntimeError("calibrator exploded")
+
+    capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=322.0)
+    service = GeometryCalibrationService(
+        led=FakeLed(), capture=capture, save_path=tmp_path / "geometry.npz", calibrator_factory=ExplodingCalibrator
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert service.status()["error"] == "calibrator exploded"
+    assert capture.control_calls[-1] == (322.0, CAMERA_AUTO_EXPOSURE_OFF)
+    service.stop()
+
+
+def test_success_keeps_new_manual_exposure(tmp_path):
+    capture = RestoringFakeCapture(
+        current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=320.0, initial_level=254
+    )
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=_synth())),
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert service.status()["phase"] == "ready"
+    assert capture.control_calls == [
+        (None, CAMERA_AUTO_EXPOSURE_ON),
+        (None, CAMERA_AUTO_EXPOSURE_OFF),
+    ]
+    assert capture.current_auto_exposure == CAMERA_AUTO_EXPOSURE_OFF
+    assert capture.current_exposure == 140.0
+    service.stop()
+
+
+def test_failed_calibration_restores_original_hardware_auto_mode_only(tmp_path):
+    capture = RestoringFakeCapture(current_auto_exposure=3.005, current_exposure=323.0)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=False, reason="stopped")),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert capture.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_ON)
+    assert capture.current_auto_exposure == CAMERA_AUTO_EXPOSURE_ON
+    service.stop()
+
+
+@pytest.mark.parametrize(
+    ("auto_exposure", "exposure"),
+    [(2.0, 320.0), (float("nan"), 320.0), (CAMERA_AUTO_EXPOSURE_OFF, float("nan"))],
+)
+def test_invalid_or_unknown_exposure_snapshot_is_not_restored(tmp_path, auto_exposure, exposure):
+    capture = RestoringFakeCapture(current_auto_exposure=auto_exposure, current_exposure=exposure)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=False, reason="stopped")),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert capture.control_calls == [(None, CAMERA_AUTO_EXPOSURE_OFF)]
+    service.stop()
+
+
+def test_restore_readback_failure_preserves_calibration_failure(tmp_path, caplog):
+    capture = RestoringFakeCapture(
+        current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF,
+        current_exposure=324.0,
+        restore_succeeds=False,
+    )
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=False, reason="original failure")),
+    )
+
+    with caplog.at_level(logging.WARNING, logger="katrain.web.core.geometry_calibration_service"):
+        service.start(trigger="manual", empty_confirmed=True)
+        assert service.wait(timeout=5) is True
+
+    assert service.status()["phase"] == "failed"
+    assert service.status()["error"] == "original failure"
+    assert any("restore" in record.getMessage() for record in caplog.records)
+    service.stop()
+
+
+def test_save_failure_restores_original_exposure(tmp_path, monkeypatch):
+    def fail_save(_lock, _path):
+        raise OSError("disk full")
+
+    monkeypatch.setattr("katrain.web.core.geometry_calibration_service.save_geometry_lock", fail_save)
+    capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=325.0)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=_synth())),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert service.status()["error"] == "disk full"
+    assert capture.control_calls[-1] == (325.0, CAMERA_AUTO_EXPOSURE_OFF)
+    service.stop()
+
+
+def test_on_success_failure_restores_exposure_and_keeps_saved_file(tmp_path):
+    def fail_promotion(_lock):
+        raise RuntimeError("promotion failed")
+
+    capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=326.0)
+    save_path = tmp_path / "geometry.npz"
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=save_path,
+        on_success=fail_promotion,
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=_synth())),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert service.status()["error"] == "promotion failed"
+    assert save_path.exists()
+    assert capture.control_calls[-1] == (326.0, CAMERA_AUTO_EXPOSURE_OFF)
+    service.stop()
 
 
 def test_in_band_exposure_is_still_locked_to_manual_before_calibration():

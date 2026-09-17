@@ -9,7 +9,11 @@ from pathlib import Path
 
 import numpy as np
 
-from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CAMERA_AUTO_EXPOSURE_ON
+from katrain.vision.camera import (
+    CAMERA_AUTO_EXPOSURE_MANUAL,
+    CAMERA_AUTO_EXPOSURE_ON,
+    _auto_exposure_readback_matches,
+)
 from katrain.vision.geometry_lock import save_geometry_lock
 from katrain.vision.led_geometry_calibrator import LedGeometryCalibrator, check_frame_exposure
 
@@ -336,7 +340,47 @@ class GeometryCalibrationService:
     def _in_target_band(self, stats: dict) -> bool:
         return self.EXPOSURE_TARGET_LO <= stats["median"] <= self.EXPOSURE_TARGET_HI
 
+    @staticmethod
+    def _finite_control_readback(value) -> float | None:
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            return None
+        return value if np.isfinite(value) else None
+
+    def _snapshot_exposure_controls(self) -> tuple[float | None, float | None]:
+        return (
+            self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None)),
+            self._finite_control_readback(getattr(self.capture, "current_exposure", None)),
+        )
+
+    def _restore_exposure_controls(self, snapshot: tuple[float | None, float | None]) -> None:
+        request = getattr(self.capture, "request_controls", None)
+        if request is None:
+            return
+        auto_exposure, exposure = snapshot
+        if auto_exposure is not None and _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_MANUAL, auto_exposure):
+            if exposure is None:
+                return
+            request(auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL, exposure=exposure)
+        elif auto_exposure is not None and _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_ON, auto_exposure):
+            request(auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
+        else:
+            return
+
+        grab = getattr(self.capture, "grab_fresh", None)
+        for _attempt in range(self.EXPOSURE_CONTROL_VERIFY_MAX_FRAMES):
+            effective = getattr(self.capture, "controls_effective", None)
+            if effective is not None or grab is None:
+                break
+            grab(settle_ms=0.0)
+        effective = getattr(self.capture, "controls_effective", None)
+        if effective is not True:
+            logger.warning("geometry exposure restore readback failed: controls_effective=%r", effective)
+
     def _run(self) -> None:
+        exposure_snapshot = self._snapshot_exposure_controls()
+        committed = False
         try:
             # Free the CPU the vision worker hogs for the whole run; on_resume (finally)
             # re-arms it on the new lock (success) or the previous one (failure/cancel).
@@ -390,11 +434,17 @@ class GeometryCalibrationService:
                     error=None,
                     metrics=metrics,
                 )
+            committed = True
         except Exception as exc:
             with self._lock:
                 self._status["phase"] = "failed"
                 self._status["error"] = str(exc)
         finally:
+            if not committed:
+                try:
+                    self._restore_exposure_controls(exposure_snapshot)
+                except Exception as exc:
+                    logger.warning("geometry exposure restore failed: %s", exc)
             if self.led is not None:
                 try:
                     self.led.clear(strict=True)

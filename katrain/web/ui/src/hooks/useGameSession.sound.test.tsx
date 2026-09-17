@@ -157,6 +157,20 @@ describe('useGameSession sound synchronization', () => {
     expect(played).toEqual(['capturing.wav']);
   });
 
+  it('skips an unbroadcast node sound when a later queued sound matches the committed state', async () => {
+    const { socket } = await connect();
+    sendSound(socket, 'stone1', 12);
+
+    sendState(socket, 13);
+    sendSound(socket, 'capturing', 13);
+
+    expect(played).toEqual([]);
+    runNextRaf();
+    expect(played).toEqual([]);
+    runNextRaf();
+    expect(played).toEqual(['capturing.wav']);
+  });
+
   it('plays legacy sounds without after_node_id immediately', async () => {
     const { socket } = await connect();
 

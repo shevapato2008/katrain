@@ -86,8 +86,15 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
 
     const flushQueuedSounds = useCallback((): void => {
         if (soundRafRef.current.length > 0) return;
+        const matchingIndex = soundQueueRef.current.findIndex(
+            queued => queued.afterNodeId === committedNodeRef.current,
+        );
+        if (matchingIndex < 0) return;
+        if (matchingIndex > 0) {
+            soundQueueRef.current.splice(0, matchingIndex);
+        }
         const next = soundQueueRef.current[0];
-        if (!next || next.afterNodeId !== committedNodeRef.current) return;
+        if (!next) return;
 
         const firstRaf = requestAnimationFrame(() => {
             soundRafRef.current = soundRafRef.current.filter(id => id !== firstRaf);

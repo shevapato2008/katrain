@@ -302,8 +302,8 @@ def first_nondegenerate_quad(detected):
 class LedGeometryCalibrator:
     """Orchestrate strict LED flashes and fresh-frame geometry capture."""
 
-    # (通道, 颜色名) —— 亮度由 FLASH_LEVELS 决定,不再写死在 RGB 里。
-    COLOR_CHANNELS = ((1, "green"), (2, "red"), (0, "blue"))
+    # (通道, 颜色名) —— 几何标定的软件契约只允许绿色。
+    COLOR_CHANNELS = ((1, "green"),)
     # 先暗后亮:暗处 96 档 peak 94-198 已充裕且不削顶;只在 low_signal 时才拉满。
     FLASH_LEVELS = (96, 255)
 

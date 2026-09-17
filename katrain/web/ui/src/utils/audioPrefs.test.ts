@@ -17,19 +17,24 @@ import { useVoice } from '../kiosk/hooks/useVoice';
  */
 
 const played: string[] = [];
+const audioInstances: FakeAudio[] = [];
 
 class FakeAudio {
   src: string;
   volume = 1;
   preload = '';
-  constructor(src = '') { this.src = src; }
-  play() { played.push(this.src); return Promise.resolve(); }
-  pause() { /* no-op */ }
+  constructor(src = '') {
+    this.src = src;
+    audioInstances.push(this);
+  }
+  play = vi.fn(() => { played.push(this.src); return Promise.resolve(); });
+  pause = vi.fn();
   cloneNode() { return new FakeAudio(this.src); }
 }
 
 beforeEach(() => {
   played.length = 0;
+  audioInstances.length = 0;
   localStorage.clear();
   vi.stubGlobal('Audio', FakeAudio);
 });
@@ -121,5 +126,61 @@ describe('播放那一侧真的读它 —— 判据不落在键名上', () => {
 
     act(() => sound.result.current.play('stone'));
     expect(played).toHaveLength(1);   // 另一把没被连累
+  });
+
+  it('第二句先暂停第一句,再开始播放', () => {
+    const { result } = renderHook(() => useVoice());
+
+    act(() => result.current.speak('clear_board'));
+    const first = audioInstances[0];
+    act(() => result.current.speak('place_black'));
+    const second = audioInstances[1];
+
+    expect(first.pause).toHaveBeenCalledOnce();
+    expect(first.pause.mock.invocationCallOrder[0]).toBeLessThan(second.play.mock.invocationCallOrder[0]);
+    expect(played).toEqual([
+      '/assets/sounds/voice/clear_board.mp3',
+      '/assets/sounds/voice/place_black.mp3',
+    ]);
+  });
+
+  it('播放中关掉语音后再次 speak,会暂停旧语音但不创建或播放新语音', () => {
+    const { result } = renderHook(() => useVoice());
+
+    act(() => result.current.speak('clear_board'));
+    const first = audioInstances[0];
+    act(() => writeAudioPref('voice', false));
+    act(() => result.current.speak('place_black'));
+
+    expect(first.pause).toHaveBeenCalledOnce();
+    expect(audioInstances).toHaveLength(1);
+    expect(played).toEqual(['/assets/sounds/voice/clear_board.mp3']);
+  });
+
+  it('显式 stop 暂停并释放当前语音,之后 speak 不会再暂停旧语音', () => {
+    const { result } = renderHook(() => useVoice());
+
+    act(() => result.current.speak('clear_board'));
+    const first = audioInstances[0];
+    act(() => result.current.stop());
+    expect(first.pause).toHaveBeenCalledOnce();
+
+    act(() => result.current.speak('stone_offcenter'));
+    expect(first.pause).toHaveBeenCalledOnce();
+    expect(played).toEqual([
+      '/assets/sounds/voice/clear_board.mp3',
+      '/assets/sounds/voice/stone_offcenter.mp3',
+    ]);
+  });
+
+  it('卸载时暂停当前持有的第二句语音', () => {
+    const { result, unmount } = renderHook(() => useVoice());
+
+    act(() => result.current.speak('clear_board'));
+    act(() => result.current.speak('suspected_move'));
+    const second = audioInstances[1];
+    unmount();
+
+    expect(second.pause).toHaveBeenCalledOnce();
   });
 });

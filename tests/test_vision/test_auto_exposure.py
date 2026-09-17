@@ -128,6 +128,50 @@ class TestExposureController:
 
 
 class TestCameraRuntimeControls:
+    class FakeCapture:
+        def __init__(self, auto_exposure=3.0, exposure=100.0):
+            import cv2
+
+            self.opened = True
+            self.values = {
+                cv2.CAP_PROP_AUTO_EXPOSURE: auto_exposure,
+                cv2.CAP_PROP_EXPOSURE: exposure,
+                cv2.CAP_PROP_FRAME_WIDTH: 1280.0,
+                cv2.CAP_PROP_FRAME_HEIGHT: 720.0,
+                cv2.CAP_PROP_FOURCC: 0.0,
+            }
+            self.control_writes = []
+            self.failed_writes = set()
+            self.get_calls = []
+
+        def isOpened(self):
+            return self.opened
+
+        def release(self):
+            self.opened = False
+
+        def set(self, prop, value):
+            import cv2
+
+            if prop in (cv2.CAP_PROP_AUTO_EXPOSURE, cv2.CAP_PROP_EXPOSURE):
+                self.control_writes.append((prop, value))
+            if (prop, value) in self.failed_writes:
+                return False
+            self.values[prop] = value
+            return True
+
+        def get(self, prop):
+            self.get_calls.append(prop)
+            return self.values.get(prop, 0.0)
+
+    @staticmethod
+    def open_with_captures(monkeypatch, cam, captures):
+        from katrain.vision import camera as camera_module
+
+        queue = iter(captures)
+        monkeypatch.setattr(camera_module.cv2, "VideoCapture", lambda _arg: next(queue))
+        monkeypatch.setattr(cam, "_reader_loop", lambda: None)
+
     def test_hbv_camera_uses_native_v4l2_exposure_modes(self):
         from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CAMERA_AUTO_EXPOSURE_ON
 
@@ -147,6 +191,116 @@ class TestCameraRuntimeControls:
         cam.request_controls(exposure=800.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
         cam._apply_pending_controls()
         assert cam.controls_effective is True
+
+    def test_open_caches_native_control_readbacks(self, monkeypatch):
+        from katrain.vision.camera import CameraManager
+
+        cap = self.FakeCapture(auto_exposure=3.0, exposure=432.0)
+        cam = CameraManager(device_id=0, warmup_seconds=0)
+        self.open_with_captures(monkeypatch, cam, [cap])
+
+        assert cam.open() is True
+        assert cam.initial_exposure == 432.0
+        assert cam.current_auto_exposure == 3.0
+        assert cam.current_exposure == 432.0
+        get_count = len(cap.get_calls)
+        assert cam.current_auto_exposure == 3.0
+        assert cam.current_exposure == 432.0
+        assert len(cap.get_calls) == get_count
+        cam.close()
+
+    def test_open_configuration_does_not_report_a_runtime_control_result(self, monkeypatch):
+        from katrain.vision.camera import CameraManager
+
+        cap = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        cam = CameraManager(device_id=0, warmup_seconds=0, lock_exposure=True, exposure=200.0)
+        self.open_with_captures(monkeypatch, cam, [cap])
+
+        assert cam.open() is True
+        assert cam.controls_effective is None
+        cam.close()
+
+    def test_runtime_control_readbacks_are_cached(self):
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
+
+        cap = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        cam = CameraManager(device_id=0)
+        cam._cap = cap
+
+        cam.request_controls(exposure=800.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+
+        assert cam.current_auto_exposure == CAMERA_AUTO_EXPOSURE_MANUAL
+        assert cam.current_exposure == 800.0
+        get_count = len(cap.get_calls)
+        assert cam.current_auto_exposure == CAMERA_AUTO_EXPOSURE_MANUAL
+        assert cam.current_exposure == 800.0
+        assert len(cap.get_calls) == get_count
+
+    def test_successful_manual_controls_are_replayed_on_reopen(self, monkeypatch):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
+
+        first = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        reopened = self.FakeCapture(auto_exposure=3.0, exposure=50.0)
+        cam = CameraManager(device_id=0, warmup_seconds=0)
+        self.open_with_captures(monkeypatch, cam, [first, reopened])
+        assert cam.open() is True
+        cam.request_controls(exposure=800.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+
+        assert cam.open() is True
+
+        assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_MANUAL) in reopened.control_writes
+        assert (cv2.CAP_PROP_EXPOSURE, 800.0) in reopened.control_writes
+        assert cam.current_auto_exposure == CAMERA_AUTO_EXPOSURE_MANUAL
+        assert cam.current_exposure == 800.0
+        cam.close()
+
+    def test_successful_hardware_auto_mode_is_replayed_on_reopen(self, monkeypatch):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_ON, CameraManager
+
+        first = self.FakeCapture(auto_exposure=1.0, exposure=100.0)
+        reopened = self.FakeCapture(auto_exposure=1.0, exposure=50.0)
+        cam = CameraManager(device_id=0, warmup_seconds=0, lock_exposure=True)
+        self.open_with_captures(monkeypatch, cam, [first, reopened])
+        assert cam.open() is True
+        cam.request_controls(auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
+        cam._apply_pending_controls()
+
+        assert cam.open() is True
+
+        assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_ON) in reopened.control_writes
+        assert (cv2.CAP_PROP_AUTO_EXPOSURE, 1.0) not in reopened.control_writes
+        assert cam.current_auto_exposure == CAMERA_AUTO_EXPOSURE_ON
+        cam.close()
+
+    def test_failed_runtime_request_does_not_replace_replay_state(self, monkeypatch):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
+
+        first = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        reopened = self.FakeCapture(auto_exposure=3.0, exposure=50.0)
+        cam = CameraManager(device_id=0, warmup_seconds=0)
+        self.open_with_captures(monkeypatch, cam, [first, reopened])
+        assert cam.open() is True
+        cam.request_controls(exposure=600.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+        first.failed_writes.add((cv2.CAP_PROP_EXPOSURE, 800.0))
+        cam.request_controls(exposure=800.0)
+        cam._apply_pending_controls()
+        assert cam.controls_effective is False
+
+        assert cam.open() is True
+
+        assert (cv2.CAP_PROP_EXPOSURE, 600.0) in reopened.control_writes
+        assert (cv2.CAP_PROP_EXPOSURE, 800.0) not in reopened.control_writes
+        assert cam.current_exposure == 600.0
+        cam.close()
 
     def test_readback_mismatch_marks_ineffective(self):
         from unittest.mock import MagicMock

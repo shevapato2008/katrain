@@ -2,7 +2,7 @@ import logging
 import time
 import threading
 import copy
-from typing import Callable, Optional
+from typing import Callable, NamedTuple, Optional
 
 from katrain.web.kivy_compat import ensure_kivy
 
@@ -70,6 +70,12 @@ class NullEngine:
 
     def shutdown(self, finish=False):
         return None
+
+
+class _CommittedAIMove(NamedTuple):
+    game: Game
+    node: object
+    sound_name: Optional[str]
 
 
 class MockMoveTree:
@@ -1208,10 +1214,12 @@ class WebKaTrain(KaTrainBase):
         committed_node = None
         sound_name = None
         try:
-            result = self._do_ai_move(cn)
-            if result is not None:
-                _move, committed_node = result
-                sound_name = self._stone_sound_name(game, committed_node)
+            committed = self._do_ai_move(cn)
+            if committed is not None:
+                with self.ai_ladder_commit_lock:
+                    if committed.game is game and self.game is game and game.current_node is committed.node:
+                        committed_node = committed.node
+                        sound_name = committed.sound_name
         except Exception as e:
             self.log(f"Error in AI move generation: {e}", OUTPUT_ERROR)
         finally:
@@ -1283,7 +1291,12 @@ class WebKaTrain(KaTrainBase):
                         return
                     self.last_ladder_error = False
                     self._reset_ladder_stall_retry()
-                    return result
+                    _move, committed_node = result
+                    with self.ai_ladder_commit_lock:
+                        if game.current_node is not committed_node:
+                            return
+                        sound_name = self._stone_sound_name(game, committed_node)
+                        return _CommittedAIMove(game, committed_node, sound_name)
                 else:
                     self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
 

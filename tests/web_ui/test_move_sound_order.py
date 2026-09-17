@@ -147,20 +147,65 @@ def test_ai_capture_sound_uses_the_committed_capture_node(monkeypatch):
     assert sounds == [{"sound": "capturing", "after_node_id": id(node)}]
 
 
+def test_ai_capture_navigated_before_wrapper_snapshot_does_not_emit_stale_sound(monkeypatch):
+    wkt = _web_katrain()
+    wkt.game.play(Move((0, 1), player="B"))
+    wkt.game.play(Move((0, 0), player="W"))
+    _seat(wkt, ai_colors={"B"})
+    committed = _install_deterministic_ai(monkeypatch, coords=(1, 0))
+    broadcasts = []
+    sounds = []
+
+    monkeypatch.setattr(wkt, "_reset_ladder_stall_retry", lambda: wkt.game.undo(1))
+    wkt.update_state = lambda **_kwargs: broadcasts.append(id(wkt.game.current_node))
+    wkt.message_callback = lambda kind, payload: sounds.append(payload) if kind == "sound" else None
+
+    wkt._do_ai_move_and_broadcast(wkt.game.current_node)
+
+    node = committed["node"]
+    assert wkt.game.current_node is node.parent
+    assert broadcasts == [id(node.parent)]
+    assert sounds == []
+
+
+def test_ai_move_from_replaced_game_does_not_emit_after_new_game_state(monkeypatch):
+    wkt = _web_katrain()
+    replacement = _web_katrain()
+    old_game = wkt.game
+    _seat(wkt, ai_colors={"B"})
+    committed = _install_deterministic_ai(monkeypatch)
+    broadcasts = []
+    sounds = []
+
+    monkeypatch.setattr(wkt, "_reset_ladder_stall_retry", lambda: setattr(wkt, "game", replacement.game))
+    wkt.update_state = lambda **_kwargs: broadcasts.append(id(wkt.game.current_node))
+    wkt.message_callback = lambda kind, payload: sounds.append(payload) if kind == "sound" else None
+
+    wkt._do_ai_move_and_broadcast(old_game.current_node)
+
+    assert committed["node"] is old_game.current_node
+    assert wkt.game is replacement.game
+    assert broadcasts == [id(replacement.game.current_node)]
+    assert sounds == []
+
+
 def test_sound_callback_failure_does_not_skip_game_ended_callback(monkeypatch, caplog):
     wkt = _web_katrain()
     ended = []
+    _seat(wkt, ai_colors={"B"})
 
-    def commit_terminal_move(_expected_node):
-        node = wkt.game.play(Move((4, 4), player="B"))
-        wkt.game.terminal = GameEnd(wkt.game, node, "B+R")
+    def commit_terminal_move(game, _mode, _settings):
+        node = game.play(Move((4, 4), player="B"))
+        game.terminal = GameEnd(game, node, "B+R")
         return node.move, node
 
     def fail_on_sound(kind, _payload):
         if kind == "sound":
             raise RuntimeError("speaker unavailable")
 
-    monkeypatch.setattr(wkt, "_do_ai_move", commit_terminal_move)
+    import katrain.core.ai as ai_module
+
+    monkeypatch.setattr(ai_module, "generate_ai_move", commit_terminal_move)
     wkt.update_state = lambda **_kwargs: None
     wkt.message_callback = fail_on_sound
     wkt.game_ended_callback = ended.append

@@ -1556,3 +1556,31 @@ button.kiosk-row.figrow { flex: none; }
 .ladder-progress::-webkit-progress-value { border-radius: 4px; background: var(--accent); }
 
 .ladder-retry { margin-top: 10px; }
+
+/* Temporary KataGo startup feedback. KioskFrame renders this through `extras`, so it
+   stays attached to the fixed 1024×600 canvas while remaining distinct from the
+   topbar's permanent identity/device controls. The 360px bound occupies only the
+   otherwise-unused center lane between the two topbar clusters at the target canvas. */
+.kiosk-engine-warmup {
+  position: absolute;
+  z-index: 4;
+  top: 11px;
+  left: 50%;
+  width: 360px;
+  max-width: 360px;
+  min-height: 34px;
+  padding: 7px 12px;
+  transform: translateX(-50%);
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  background: var(--raise);
+  color: var(--warn);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.kiosk-engine-warmup.is-unavailable { color: var(--bad); }

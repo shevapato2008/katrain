@@ -172,6 +172,14 @@ export interface PlatformStatusResponse {
   platforms: PlatformInfo[];
 }
 
+export interface EngineHealthResponse {
+  status: string;
+  engines: {
+    local: string;
+    cloud: string;
+  };
+}
+
 // --- Engine analysis (area/options/judge/variation) ---
 // Shapes are `dataclasses.asdict` of the GolaxyAdapter.engine_analysis results
 // (katrain/web/platforms/golaxy/adapter.py: AreaAnalysis/OptionsAnalysis/
@@ -350,6 +358,11 @@ export async function apiPost(path: string, payload: any, token?: string | null)
 }
 
 export const API = {
+  engineHealth: async (): Promise<EngineHealthResponse> => {
+    const response = await fetch('/api/v1/health');
+    if (!response.ok) throw new Error(`Failed to get engine health (${response.status})`);
+    return response.json();
+  },
   createSession: (token?: string): Promise<SessionResponse> => apiPost("/api/session", {}, token),
   /* 本地对局「退出不保存」:删掉进程里这个会话,什么都不落账。
      研究页那两处(`useResearchSession.ts`、galaxy `ResearchPage.tsx`)是裸 fetch 且吞掉失败 ——

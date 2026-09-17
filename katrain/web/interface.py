@@ -1204,14 +1204,13 @@ class WebKaTrain(KaTrainBase):
     def _do_ai_move_and_broadcast(self, cn):
         """Background thread: generate AI move then broadcast state update."""
         game = self.game
-        before_node = game.current_node if game is not None else None
         before = getattr(game, "terminal", None)
         committed_node = None
         sound_name = None
         try:
-            self._do_ai_move(cn)
-            if self.game is game and game.current_node is not before_node:
-                committed_node = game.current_node
+            result = self._do_ai_move(cn)
+            if result is not None:
+                _move, committed_node = result
                 sound_name = self._stone_sound_name(game, committed_node)
         except Exception as e:
             self.log(f"Error in AI move generation: {e}", OUTPUT_ERROR)
@@ -1225,7 +1224,10 @@ class WebKaTrain(KaTrainBase):
             # tree changed (e.g., user undid + replayed while this thread ran).
             self.update_state()
             if committed_node is not None and sound_name is not None:
-                self.play_stone_sound(sound_name, after_node_id=id(committed_node))
+                try:
+                    self.play_stone_sound(sound_name, after_node_id=id(committed_node))
+                except Exception as e:
+                    logger.exception("Error in AI move sound: %s", e)
             # N22:这条线程跑完时这一局的终局事实与开始时不是同一个 —— 告诉会话去收尾(补分、落账、进结算)。
             # 用「不是同一个」而不是「开始时没有」:悔棋另开分支后的第二次终局也要叫(局面线语义,评审 r1 M2)。
             # 若终局是人在生成期间发请求写的,这里也会叫一次,与请求自己的收尾在 `end_game_lock` 下串行,
@@ -1281,6 +1283,7 @@ class WebKaTrain(KaTrainBase):
                         return
                     self.last_ladder_error = False
                     self._reset_ladder_stall_retry()
+                    return result
                 else:
                     self.log(f"AI Mode {mode} not found!", OUTPUT_ERROR)
 

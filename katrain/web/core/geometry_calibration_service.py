@@ -13,6 +13,7 @@ from katrain.vision.camera import (
     CAMERA_AUTO_EXPOSURE_MANUAL,
     CAMERA_AUTO_EXPOSURE_ON,
     _auto_exposure_readback_matches,
+    _exposure_readback_matches,
 )
 from katrain.vision.geometry_lock import save_geometry_lock
 from katrain.vision.led_geometry_calibrator import LedGeometryCalibrator, check_frame_exposure
@@ -60,7 +61,8 @@ class GeometryCalibrationService:
         *,
         led,
         capture,
-        save_path,
+        save_path=None,
+        persist_state=None,
         initial_lock=None,
         on_success=None,
         on_degraded=None,
@@ -70,7 +72,10 @@ class GeometryCalibrationService:
     ):
         self.led = led
         self.capture = capture
-        self.save_path = Path(save_path).expanduser()
+        if save_path is None and persist_state is None:
+            raise ValueError("save_path or persist_state is required")
+        self.save_path = Path(save_path).expanduser() if save_path is not None else None
+        self.persist_state = persist_state
         self.current_lock = initial_lock
         self.on_success = on_success or (lambda _lock: None)
         # Called once when drift flips a ready lock to degraded — used to invalidate the
@@ -362,9 +367,13 @@ class GeometryCalibrationService:
         if auto_exposure is not None and _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_MANUAL, auto_exposure):
             if exposure is None:
                 return
-            request(auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL, exposure=exposure)
+            target_auto_exposure = CAMERA_AUTO_EXPOSURE_MANUAL
+            target_exposure = exposure
+            request(auto_exposure=target_auto_exposure, exposure=target_exposure)
         elif auto_exposure is not None and _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_ON, auto_exposure):
-            request(auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
+            target_auto_exposure = CAMERA_AUTO_EXPOSURE_ON
+            target_exposure = None
+            request(auto_exposure=target_auto_exposure)
         else:
             return
 
@@ -375,8 +384,39 @@ class GeometryCalibrationService:
                 break
             grab(settle_ms=0.0)
         effective = getattr(self.capture, "controls_effective", None)
-        if effective is not True:
-            logger.warning("geometry exposure restore readback failed: controls_effective=%r", effective)
+        current_auto_exposure = self._finite_control_readback(
+            getattr(self.capture, "current_auto_exposure", None)
+        )
+        current_exposure = self._finite_control_readback(getattr(self.capture, "current_exposure", None))
+        restored = (
+            effective is True
+            and current_auto_exposure is not None
+            and _auto_exposure_readback_matches(target_auto_exposure, current_auto_exposure)
+            and (
+                target_exposure is None
+                or (
+                    current_exposure is not None
+                    and _exposure_readback_matches(target_exposure, current_exposure)
+                )
+            )
+        )
+        if not restored:
+            logger.warning(
+                "geometry exposure restore readback failed: controls_effective=%r "
+                "target_auto=%r current_auto=%r target_exposure=%r current_exposure=%r",
+                effective,
+                target_auto_exposure,
+                current_auto_exposure,
+                target_exposure,
+                current_exposure,
+            )
+
+    def _cancel_if_requested(self) -> bool:
+        if not self._cancel_event.is_set():
+            return False
+        with self._lock:
+            self._status["phase"] = "cancelled"
+        return True
 
     def _run(self) -> None:
         exposure_snapshot = self._snapshot_exposure_controls()
@@ -396,7 +436,7 @@ class GeometryCalibrationService:
                 anchor_observer=self._anchor_observed,
             )
             result = calibrator.calibrate()
-            if self._cancel_event.is_set() or result.reason == "cancelled":
+            if self._cancel_if_requested() or result.reason == "cancelled":
                 with self._lock:
                     self._status["phase"] = "cancelled"
                 return
@@ -414,16 +454,35 @@ class GeometryCalibrationService:
                     self._status["metrics"] = metrics
                 return
 
-            save_geometry_lock(result.lock, self.save_path)
-            self.current_lock = result.lock
-            self.on_success(result.lock)
-            self._init_drift_monitor(result.lock)
+            drift_monitor = self._prepare_drift_monitor(result.lock)
             fit = result.fit
             metrics = {
                 "inlier_count": getattr(fit, "inlier_count", None),
                 "rms_residual": getattr(fit, "rms_residual", None),
                 "max_residual": getattr(fit, "max_residual", None),
             }
+            if self._cancel_if_requested():
+                return
+            if self.persist_state is None:
+                save_geometry_lock(result.lock, self.save_path)
+            else:
+                auto_exposure = getattr(self.capture, "current_auto_exposure", None)
+                exposure = getattr(self.capture, "current_exposure", None)
+                try:
+                    auto_exposure = float(auto_exposure)
+                    exposure = float(exposure)
+                except (TypeError, ValueError) as exc:
+                    raise RuntimeError("camera controls unavailable after calibration") from exc
+                if not _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_MANUAL, auto_exposure):
+                    raise RuntimeError("camera is not in verified manual exposure mode after calibration")
+                if not np.isfinite(exposure):
+                    raise RuntimeError("camera exposure is not finite after calibration")
+                self.persist_state(result.lock, CAMERA_AUTO_EXPOSURE_MANUAL, exposure)
+            if self._cancel_if_requested():
+                return
+            self.current_lock = result.lock
+            self._drift_monitor = drift_monitor
+            self.on_success(result.lock)
             with self._lock:
                 self._geometry_revision += 1
                 self._status.update(
@@ -455,18 +514,21 @@ class GeometryCalibrationService:
             except Exception:
                 pass
 
-    def _init_drift_monitor(self, lock) -> None:
+    def _prepare_drift_monitor(self, lock):
         if not hasattr(self.capture, "grab_fresh"):
-            return
+            return None
         frame, _seq, _ts = self.capture.grab_fresh(settle_ms=0.0)
         if frame is None:
-            return
+            return None
         from katrain.vision.geometry_drift import GeometryDriftMonitor
 
         horizontal = np.linalg.norm(lock.points[:, 1:] - lock.points[:, :-1], axis=2)
         vertical = np.linalg.norm(lock.points[1:] - lock.points[:-1], axis=2)
         spacing = float(np.median(np.concatenate([horizontal.ravel(), vertical.ravel()])))
-        self._drift_monitor = GeometryDriftMonitor(frame, cell_spacing_px=spacing)
+        return GeometryDriftMonitor(frame, cell_spacing_px=spacing)
+
+    def _init_drift_monitor(self, lock) -> None:
+        self._drift_monitor = self._prepare_drift_monitor(lock)
 
     def _drift_loop(self) -> None:
         while not self._drift_stop.wait(1.0):

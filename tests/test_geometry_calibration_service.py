@@ -94,6 +94,60 @@ def test_success_atomically_promotes_new_lock(tmp_path):
     assert (tmp_path / "geometry.npz").exists()
 
 
+def test_success_persists_geometry_and_verified_manual_controls_together(tmp_path):
+    lock = _synth()
+    persisted = []
+
+    class ManualCapture(FakeCapture):
+        current_auto_exposure = CAMERA_AUTO_EXPOSURE_OFF
+        current_exposure = 321.0
+
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=ManualCapture(),
+        save_path=tmp_path / "unused.npz",
+        persist_state=lambda geometry, auto_exposure, exposure: persisted.append(
+            (geometry, auto_exposure, exposure)
+        ),
+        calibrator_factory=lambda **kwargs: ResultCalibrator(CalibrationResult(ok=True, lock=lock), **kwargs),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    service.wait(timeout=2)
+
+    assert service.status()["phase"] == "ready"
+    assert persisted == [(lock, CAMERA_AUTO_EXPOSURE_OFF, 321.0)]
+    assert not (tmp_path / "unused.npz").exists()
+
+
+@pytest.mark.parametrize(
+    ("auto_exposure", "exposure"),
+    [(CAMERA_AUTO_EXPOSURE_ON, 321.0), (CAMERA_AUTO_EXPOSURE_OFF, float("nan")), (None, 321.0)],
+)
+def test_success_refuses_to_persist_unverified_camera_controls(tmp_path, auto_exposure, exposure):
+    lock = _synth()
+    persisted = []
+
+    class InvalidCapture(FakeCapture):
+        current_auto_exposure = auto_exposure
+        current_exposure = exposure
+
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=InvalidCapture(),
+        save_path=tmp_path / "unused.npz",
+        persist_state=lambda *args: persisted.append(args),
+        calibrator_factory=lambda **kwargs: ResultCalibrator(CalibrationResult(ok=True, lock=lock), **kwargs),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    service.wait(timeout=2)
+
+    assert service.status()["phase"] == "failed"
+    assert persisted == []
+    assert service.current_lock is None
+
+
 def test_failure_preserves_last_valid_lock(tmp_path):
     old = _synth()
     service = GeometryCalibrationService(
@@ -705,6 +759,150 @@ def test_restore_readback_failure_preserves_calibration_failure(tmp_path, caplog
     assert service.status()["phase"] == "failed"
     assert service.status()["error"] == "original failure"
     assert any("restore" in record.getMessage() for record in caplog.records)
+    service.stop()
+
+
+@pytest.mark.parametrize(
+    ("competing_auto_exposure", "competing_exposure"),
+    [(CAMERA_AUTO_EXPOSURE_ON, 327.0), (CAMERA_AUTO_EXPOSURE_OFF, 999.0)],
+)
+def test_restore_rejects_success_readback_for_competing_control_request(
+    tmp_path, caplog, competing_auto_exposure, competing_exposure
+):
+    class CompetingControlCapture(RestoringFakeCapture):
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            result = super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+            if self.control_calls and self.control_calls[-1] == (327.0, CAMERA_AUTO_EXPOSURE_OFF):
+                self.current_auto_exposure = competing_auto_exposure
+                self.current_exposure = competing_exposure
+                self.controls_effective = True
+            return result
+
+    capture = CompetingControlCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=327.0)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=False, reason="original failure")),
+    )
+
+    with caplog.at_level(logging.WARNING, logger="katrain.web.core.geometry_calibration_service"):
+        service.start(trigger="manual", empty_confirmed=True)
+        assert service.wait(timeout=5) is True
+
+    assert service.status()["error"] == "original failure"
+    assert any("restore readback failed" in record.getMessage() for record in caplog.records)
+    service.stop()
+
+
+def test_cancel_during_persist_does_not_promote_and_restores_exposure(tmp_path):
+    old_lock = _synth()
+    new_lock = _synth()
+    entered = threading.Event()
+    release = threading.Event()
+    persisted = []
+    promoted = []
+
+    def blocking_persist(lock, auto_exposure, exposure):
+        persisted.append((lock, auto_exposure, exposure))
+        entered.set()
+        release.wait(timeout=2)
+
+    capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=328.0)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        persist_state=blocking_persist,
+        initial_lock=old_lock,
+        on_success=promoted.append,
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=new_lock)),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert entered.wait(timeout=1) is True
+    service.cancel()
+    release.set()
+    assert service.wait(timeout=5) is True
+
+    assert persisted == [(new_lock, CAMERA_AUTO_EXPOSURE_OFF, 328.0)]
+    assert service.status()["phase"] == "cancelled"
+    assert service.current_lock is old_lock
+    assert promoted == []
+    assert capture.control_calls[-1] == (328.0, CAMERA_AUTO_EXPOSURE_OFF)
+    service.stop()
+
+
+def test_cancel_during_save_does_not_promote_and_restores_exposure(tmp_path, monkeypatch):
+    import katrain.web.core.geometry_calibration_service as calibration_module
+
+    old_lock = _synth()
+    new_lock = _synth()
+    entered = threading.Event()
+    release = threading.Event()
+    promoted = []
+    save_path = tmp_path / "geometry.npz"
+    real_save = calibration_module.save_geometry_lock
+
+    def blocking_save(lock, path):
+        real_save(lock, path)
+        entered.set()
+        release.wait(timeout=2)
+
+    monkeypatch.setattr(calibration_module, "save_geometry_lock", blocking_save)
+    capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=329.0)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=save_path,
+        initial_lock=old_lock,
+        on_success=promoted.append,
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=new_lock)),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert entered.wait(timeout=1) is True
+    service.cancel()
+    release.set()
+    assert service.wait(timeout=5) is True
+
+    assert save_path.exists()
+    assert service.status()["phase"] == "cancelled"
+    assert service.current_lock is old_lock
+    assert promoted == []
+    assert capture.control_calls[-1] == (329.0, CAMERA_AUTO_EXPOSURE_OFF)
+    service.stop()
+
+
+def test_drift_setup_failure_happens_before_persist_and_promotion(tmp_path):
+    class DriftSetupFailureCapture(RestoringFakeCapture):
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            if self.grab_calls == 2 and self._pending_controls is None:
+                self.grab_calls += 1
+                raise RuntimeError("drift setup failed")
+            return super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+
+    old_lock = _synth()
+    persisted = []
+    promoted = []
+    capture = DriftSetupFailureCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=330.0)
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        persist_state=lambda *args: persisted.append(args),
+        initial_lock=old_lock,
+        on_success=promoted.append,
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=_synth())),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert service.status()["phase"] == "failed"
+    assert service.status()["error"] == "drift setup failed"
+    assert persisted == []
+    assert service.current_lock is old_lock
+    assert promoted == []
+    assert capture.control_calls[-1] == (330.0, CAMERA_AUTO_EXPOSURE_OFF)
     service.stop()
 
 

@@ -95,7 +95,9 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                 soundRafRef.current = soundRafRef.current.filter(id => id !== secondRaf);
                 if (soundQueueRef.current[0] === next) {
                     soundQueueRef.current.shift();
-                    playSound(next.sound);
+                    if (next.afterNodeId === committedNodeRef.current) {
+                        playSound(next.sound);
+                    }
                 }
                 flushQueuedSounds();
             });
@@ -118,15 +120,20 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
 
     useEffect(() => {
         if (sessionId) {
+            let disposed = false;
+            let ownedWs: WebSocket | null = null;
             const connect = async () => {
                 try {
                     const data = await API.getState(sessionId, token);
+                    if (disposed) return;
                     setGameState(data.state);
 
                     /* token 必须带上 —— 服务端 `/ws/{session_id}` 是要鉴权的，而这里
                        在此之前一个凭据都不发（`/ws/lobby` 一直是带的）。详见
                        utils/websocketUrl.ts 里记的那次回归。 */
+                    if (disposed) return;
                     const ws = new WebSocket(websocketUrl(`/ws/${sessionId}`, token));
+                    ownedWs = ws;
                     wsRef.current = ws;
                     ws.onopen = () => { if (wsRef.current === ws) setConnectionLost(null); };
                     
@@ -206,16 +213,19 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                         }
                     };
                 } catch (err) {
+                    if (disposed) return;
                     console.error("Failed to connect", err);
                     setError("Failed to connect to game");
                 }
             };
             connect();
             return () => {
+                disposed = true;
                 clearQueuedSounds();
-                const ws = wsRef.current;
-                wsRef.current = null;  // 先清空，让上面的 onclose 认出这是我们自己关的
-                ws?.close();
+                if (wsRef.current === ownedWs) {
+                    wsRef.current = null;  // 先清空，让上面的 onclose 认出这是我们自己关的
+                }
+                ownedWs?.close();
             };
         }
     }, [sessionId, token, playSound, clearQueuedSounds, flushQueuedSounds]);

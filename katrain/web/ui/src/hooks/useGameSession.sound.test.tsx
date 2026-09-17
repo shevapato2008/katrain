@@ -141,6 +141,22 @@ describe('useGameSession sound synchronization', () => {
     expect(played).toEqual(['stone1.wav', 'capturing.wav']);
   });
 
+  it('drops a stale sound if the committed node advances between the two paint frames', async () => {
+    const { socket } = await connect();
+    sendState(socket, 12);
+    sendSound(socket, 'stone1', 12);
+    runNextRaf();
+
+    sendState(socket, 13);
+    sendSound(socket, 'capturing', 13);
+    runNextRaf();
+
+    expect(played).toEqual([]);
+    runNextRaf();
+    runNextRaf();
+    expect(played).toEqual(['capturing.wav']);
+  });
+
   it('plays legacy sounds without after_node_id immediately', async () => {
     const { socket } = await connect();
 
@@ -200,6 +216,29 @@ describe('useGameSession sound synchronization', () => {
     expect(cancelAnimationFrameMock).toHaveBeenCalled();
     expect(rafCallbacks).toHaveLength(0);
     expect(played).toEqual([]);
+  });
+
+  it('ignores a previous session getState result that resolves after cleanup', async () => {
+    let resolveOld!: (value: { session_id: string; state: GameState }) => void;
+    vi.mocked(API.getState)
+      .mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve; }))
+      .mockResolvedValueOnce({ session_id: 'session-2', state: state(22, 'game-2') });
+    const hook = renderHook(() => useGameSession({ token: 'token' }));
+    act(() => hook.result.current.setSessionId('session-1'));
+    await waitFor(() => expect(API.getState).toHaveBeenCalledTimes(1));
+
+    act(() => hook.result.current.setSessionId('session-2'));
+    await waitFor(() => expect(sockets).toHaveLength(1));
+    expect(sockets[0].url).toContain('/ws/session-2');
+    expect(hook.result.current.gameState?.game_id).toBe('game-2');
+
+    await act(async () => {
+      resolveOld({ session_id: 'session-1', state: state(12, 'game-1') });
+      await Promise.resolve();
+    });
+
+    expect(sockets).toHaveLength(1);
+    expect(hook.result.current.gameState?.game_id).toBe('game-2');
   });
 
   it('honors the shared sound-effect preference for legacy sounds', async () => {

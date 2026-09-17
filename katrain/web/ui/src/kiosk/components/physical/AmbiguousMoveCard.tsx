@@ -23,7 +23,12 @@ interface Props {
 const AmbiguousMoveCard = ({ row, col, boardSize, color, unbacked, from, onConfirm, onIgnore }: Props) => {
   const { t } = useTranslation();
   const point = rcToGtpLabel(row, col, boardSize);
-  const who = color === 1 ? t('Black', '黑') : color === 2 ? t('White', '白') : '';
+  const stoneLabel = color === 1
+    ? t('Black Stone', '● 黑')
+    : color === 2
+      ? t('White Stone', '○ 白')
+      : '';
+  const who = stoneLabel.replace(/^[●○\s]+/, '').trim();
   const relocationText = from
     ? t('vision:offcenter_move_from_to', '{color}子没放正，请从 {from} 挪到 {to}')
       .replace('{color}', who)

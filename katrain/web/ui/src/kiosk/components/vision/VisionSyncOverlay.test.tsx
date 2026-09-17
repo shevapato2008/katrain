@@ -7,11 +7,12 @@ import VisionSyncOverlay from './VisionSyncOverlay';
 const mocks = vi.hoisted(() => ({
   playMove: vi.fn().mockResolvedValue(undefined),
   visionResetSync: vi.fn().mockResolvedValue(undefined),
+  translate: vi.fn((_key: string, fallback?: string) => fallback ?? ''),
 }));
 
 vi.mock('../../../api', () => ({ API: mocks }));
 vi.mock('../../../hooks/useTranslation', () => ({
-  useTranslation: () => ({ t: (_key: string, fallback?: string) => fallback ?? '' }),
+  useTranslation: () => ({ t: mocks.translate }),
 }));
 
 const event = (seq: number, type: VisionSyncEvent['type'], data: Record<string, unknown> = {}): VisionSyncEvent => ({
@@ -29,7 +30,10 @@ const props = {
 const dialogCount = () => screen.queryAllByRole('dialog').length;
 
 describe('VisionSyncOverlay recovery presentation', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.translate.mockImplementation((_key: string, fallback?: string) => fallback ?? '');
+  });
   afterEach(() => vi.useRealTimers());
 
   it('shows an off-centre prompt as the only dialog and does not adopt it when dismissed', async () => {
@@ -108,6 +112,23 @@ describe('VisionSyncOverlay recovery presentation', () => {
     expect(dialogCount()).toBe(1);
     fireEvent.click(screen.getByRole('button', { name: '就下在 F1' }));
     expect(mocks.playMove).toHaveBeenCalledWith('session-1', { x: 5, y: 0 });
+  });
+
+  it('uses the localized stone label rather than appending 子 to 白棋', () => {
+    mocks.translate.mockImplementation((key: string, fallback?: string) => {
+      if (key === 'White') return '白棋';
+      if (key === 'White Stone') return '○ 白';
+      return fallback ?? '';
+    });
+    render(
+      <VisionSyncOverlay
+        {...props}
+        syncEvents={[event(1, 'illegal_change', { positions: [[18, 4, 2]], missing: [[18, 5, 2]] })]}
+      />,
+    );
+
+    expect(screen.getByText('白子没放正，请从 E1 挪到 F1')).toBeInTheDocument();
+    expect(screen.queryByText(/白棋子没放正/)).toBeNull();
   });
 
   it.each([

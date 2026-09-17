@@ -40,7 +40,7 @@ const PLATFORM_ICON: Record<string, IconName> = {
 const PlayPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, token } = useAuth();
+  const { user, token, isAuthenticated } = useAuth();
   const resume = readActiveSession('game');
   const [platforms, setPlatforms] = useState<PlatformInfo[]>(defaultPlatforms);
 
@@ -48,7 +48,9 @@ const PlayPage = () => {
     let current = true;
     setPlatforms(defaultPlatforms());
 
-    if (token) {
+    // 闸挂在「登录了没有」,**不挂 token**(P16):严格盒端 SSO 里 token 恒为 null,凭据在 cookie 里。
+    // 游客仍不请求 —— `/api/v1/platforms/status` 要登录(`platforms.py` 的 `get_current_user`)。
+    if (isAuthenticated) {
       API.platformStatus(token).then((d) => {
         if (current) setPlatforms(mergePlatformStatus(d.platforms));
       }).catch(() => {
@@ -57,7 +59,7 @@ const PlayPage = () => {
     }
 
     return () => { current = false; };
-  }, [token]);
+  }, [isAuthenticated, token]);
 
   const hour = new Date().getHours();
   const [greetKey, greetZh] =
@@ -117,7 +119,11 @@ const PlayPage = () => {
         <div className="kiosk-cards">
           <KioskCard
             title={t('Local Game', '本地对局')}
-            sub={t('Two players on the same physical board', '两人在同一块实体盘上下')}
+            sub={
+              isAuthenticated
+                ? t('Two players on the same physical board', '两人在同一块实体盘上下')
+                : t('play:local_needs_login', '要先登录 · 下完自动存谱')
+            }
             icon="users"
             onClick={() => navigate('/kiosk/play/pvp/setup')}
           />
@@ -135,8 +141,7 @@ const PlayPage = () => {
         <div className="kiosk-cards">
           {platforms.map((p) => {
             const meta = PLATFORM_META[p.platform] ?? { label: p.platform, labelCn: p.platform, color: '#888' };
-            // 「即将上线」不是「锁定」:锁定意味着东西在、满足条件就给。接口没通的平台
-            // 不许摆成锁着的样子 —— `comingSoon` 是 PLATFORM_META 里就有的真标记,不是这里现编的。
+            // 接口未接通的平台保持不可点击，并与连接页使用同一状态文案。
             if (meta.comingSoon) {
               return (
                 <KioskCard
@@ -144,7 +149,7 @@ const PlayPage = () => {
                   title={t(meta.label, meta.labelCn)}
                   sub={t('Not wired up yet', '接口还没通')}
                   icon={PLATFORM_ICON[p.platform] ?? 'globe-hemisphere-west'}
-                  soon={t('Coming soon', '即将上线')}
+                  soon={t('platform:no_play_yet', '暂不能对弈')}
                 />
               );
             }

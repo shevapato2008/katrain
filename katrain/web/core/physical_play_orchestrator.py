@@ -296,6 +296,13 @@ class PhysicalPlayOrchestrator:
                 await asyncio.sleep(self.config.tick_interval_s)
                 if self._session_id is None:
                     continue
+                # A terminal state must release recovery pauses before the two
+                # early-return paths below; otherwise lamps and detection remain
+                # stuck until the user leaves the page.
+                try:
+                    self._release_recovery_on_game_end()
+                except Exception as e:  # defensive: LED problems must not kill the loop
+                    logger.warning("physical-play game-end release error: %s", e)
                 # Task 8: awaiting_removal is a member of _pause_reasons (so
                 # detection stays paused and _suspended is True, like engine_error/
                 # hint), but the tick loop must keep running a NARROW board-equality
@@ -410,6 +417,21 @@ class PhysicalPlayOrchestrator:
             self._session_id,
             {"type": "physical_engine_error_resolved"},
         )
+
+    def _release_recovery_on_game_end(self) -> bool:
+        """Release engine recovery pauses and clear lamps once the game ends."""
+        state = self._latest_state
+        if not state or not state.get("end_result"):
+            return False
+        if (
+            self.PAUSE_REASON_ENGINE_ERROR not in self._pause_reasons
+            and self.PAUSE_REASON_AWAITING_REMOVAL not in self._pause_reasons
+        ):
+            return False
+        self.clear_engine_error()
+        self.clear_awaiting_removal()
+        self._apply_points([])
+        return True
 
     @staticmethod
     def _guided_colors_from_state(state: Dict) -> Optional[set]:

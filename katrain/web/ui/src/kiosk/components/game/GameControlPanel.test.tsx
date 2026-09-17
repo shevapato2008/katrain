@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, test, expect } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
+import { describe, test, expect, vi } from 'vitest';
 import GameControlPanel from './GameControlPanel';
 import type { GameState } from '../../../api';
 
@@ -54,8 +54,8 @@ describe('GameControlPanel', () => {
   });
 
   // ── 悔棋按对弈方式判 ────────────────────────────────────────────────────────
-  // Fan 2026-08-25 亲裁:「**只有人机对弈的自由对弈允许悔棋**;人机对弈的升降级对弈、
-  // 人人对弈的对战大厅、跨平台对弈等都不允许,悔棋按钮可以撤销。」
+  // 只有本地人机自由对弈允许悔棋。星阵机器人页按平台原界面保留灰色按钮，
+  // 其余不支持悔棋的对局仍不显示。
   //
   // 五种对弈方式**逐个都要出现在这张表里** —— 少一行就等于那一种没被裁过。
   // 判据落在**屏上有没有这颗键**,不落在 `undoAllowed` 那个变量上:
@@ -93,7 +93,7 @@ describe('GameControlPanel', () => {
     ['人机 · 升降级对弈(调用方漏传 isRanked)', { game_type: 'ai_ladder_ranked' }, {}, false],
     ['人人 · 本地对局', { game_type: 'pvp_local' }, {}, false],
     ['人人 · 对战大厅', { game_type: 'pvp_online' }, {}, false],
-    ['跨平台 · 星阵人机', { game_type: 'free' }, { engineMode: true }, false],
+    ['跨平台 · 星阵人机（保留灰色平台按钮）', { game_type: 'free' }, { engineMode: true }, true],
   ] as const)('悔棋:%s → %s', (_name, over, props, expected) => {
     panel(over as Partial<GameState>, props as Record<string, unknown>);
     const undo = screen.queryByText('悔棋');
@@ -101,6 +101,23 @@ describe('GameControlPanel', () => {
     // 「认输」在五种里都在 —— 用它证这一排本身渲染了,
     // 否则整块没渲染时上面那句对「不该有」的四行会**全绿**。
     expect(screen.getByText('认输')).toBeInTheDocument();
+  });
+
+  test('星阵人机局固定显示四颗动作键；悔棋禁用，数子接到免费形势判断', () => {
+    const history = Array.from({ length: 120 }, (_, i) => ({ node_id: i, score: 0, winrate: 0.5 }));
+    const onAction = vi.fn();
+    const onEngineAnalysis = vi.fn();
+    const { container } = panel(
+      { game_type: 'free', history },
+      { engineMode: true, onAction, onEngineAnalysis },
+    );
+    expect(screen.getByRole('button', { name: '悔棋' })).toBeDisabled();
+    screen.getByRole('button', { name: '停一手' }).click();
+    screen.getByRole('button', { name: '数子' }).click();
+    expect(screen.getByText('认输')).toBeInTheDocument();
+    expect(onAction).toHaveBeenCalledWith('pass');
+    expect(onEngineAnalysis).toHaveBeenCalledWith('judge');
+    expect(container.querySelector('.gtoggles .ghint')).toHaveTextContent('数子只查看当前形势，不结束对局');
   });
 
   // ── 棋谱折叠块(星阵屏)────────────────────────────────────────────────────
@@ -177,5 +194,52 @@ describe('GameControlPanel', () => {
   test('不该有悔棋的局里,也不许留一颗灰着的悔棋', () => {
     panel({ game_type: 'pvp_online' });
     expect(screen.queryByRole('button', { name: /悔棋/ })).toBeNull();
+  });
+
+  // ── 本地对局右栏(v2 D1)────────────────────────────────────────────────
+  // 「领地」「AI 支招」**撤掉不是灰着**:这一局开局就定死不接引擎辅助,永久不可用 → 不渲染。
+  // 结构断言(在不在 DOM),不是布局断言;右栏高度与滚动在 kiosk-screen-05-game.spec.ts 里量。
+  const actionLabels = () =>
+    within(screen.getByTestId('game-actions')).getAllByRole('button').map((b) => b.textContent?.trim());
+
+  test('本地对局:右栏只有 数子 · 停一手 · 认输', () => {
+    panel({ game_type: 'pvp_local', history: hist([]) });
+    expect(actionLabels()).toEqual(['数子', '停一手', '认输']);
+    expect(screen.queryByText('领地')).toBeNull();
+    expect(screen.queryByText('AI支招')).toBeNull();
+    expect(screen.getByRole('switch', { name: '坐标' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: '手数' })).toBeInTheDocument();
+  });
+
+  test('自由对弈右栏不受影响:领地仍在', () => {
+    panel({ game_type: 'free' });
+    expect(screen.getByText('领地')).toBeInTheDocument();
+  });
+
+  test('「数子要下满 N 手」的 N 读服务端下发的 count_min_moves(9 路 22)', () => {
+    panel({ game_type: 'pvp_local', board_size: [9, 9], count_min_moves: 22, history: hist([['E5', 'B']]) });
+    expect(screen.getByText('数子要下满 22 手')).toBeInTheDocument();
+    expect(screen.getByText('数子').closest('button')).toBeDisabled();
+  });
+
+  test('本地对局登录态之外也不说「领地 / 支招 / 图表 登录后可用」—— 那三颗键这一局根本没有', () => {
+    panel({ game_type: 'pvp_local', count_min_moves: 22, history: hist([['E5', 'B']]) }, { analysisRequiresLogin: true });
+    expect(screen.queryByText('领地 / 支招 / 图表 登录后可用')).toBeNull();
+    expect(screen.getByText('数子要下满 22 手')).toBeInTheDocument();
+  });
+
+  test('双 pass 后后端在等数子(awaiting_count)⇒ 手数不够也亮,右端不再说门槛', () => {
+    panel({
+      // end_result 照后端真实形状写(F1):双 pass 后一定非空,判据是 awaiting_count 不是它。
+      game_type: 'pvp_local', count_min_moves: 100, awaiting_count: true, end_result: '终局',
+      history: hist([['Q16', 'B'], ['pass', 'W'], ['pass', 'B']]),
+      players_info: {
+        ...mockGameState.players_info,
+        B: { ...mockGameState.players_info.B, player_type: 'player:human' },
+        W: { ...mockGameState.players_info.W, player_type: 'player:human' },
+      },
+    });
+    expect(screen.getByText('数子').closest('button')).not.toBeDisabled();
+    expect(screen.queryByText(/数子要下满/)).toBeNull();
   });
 });

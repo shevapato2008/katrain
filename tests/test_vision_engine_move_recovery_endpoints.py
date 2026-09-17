@@ -278,3 +278,34 @@ class TestCancelAwaitingRemoval:
 
         assert r.status_code == 200
         assert r.json() == {"ok": True, "awaiting_removal": True}
+
+
+class TestRetryThatEndsTheGame:
+    @pytest.mark.asyncio
+    async def test_game_ended_closes_the_recovery_and_records_the_game(self, monkeypatch):
+        from types import SimpleNamespace
+        from unittest.mock import AsyncMock
+
+        import katrain.web.server as server
+
+        tracker = _tripped_tracker(coords=(3, 15), token="tok-1")
+        gateway = FakeGateway(
+            outcomes=[PlatformMoveRejectedError("AI returned non-move coord 361", reason="game_ended")]
+        )
+        app = _build_app(tracker=tracker, gateway=gateway)
+        session = SimpleNamespace(session_id="s1", user_id=7)
+        app.state.session_manager = SimpleNamespace(get_session=lambda session_id: {"s1": session}[session_id])
+        recorder = AsyncMock()
+        monkeypatch.setattr(server, "_record_platform_engine_game_off_request", recorder)
+
+        async with _client(app) as ac:
+            response = await ac.post(
+                "/api/v1/vision/engine-move/retry", json={"session_id": "s1", "recovery_token": "tok-1"}
+            )
+
+        assert response.status_code == 200
+        assert response.json() == {"ok": True, "game_ended": True}
+        assert tracker.active_episode is None
+        assert app.state.physical_play.entered_error == []
+        assert app.state.physical_play.cleared_error == 1
+        recorder.assert_awaited_once_with(session, app)

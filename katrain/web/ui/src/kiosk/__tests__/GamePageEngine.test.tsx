@@ -65,9 +65,10 @@ vi.mock('../context/VisionContext', () => ({
   }),
 }));
 
-// Mock auth
+// Strict kiosk sessions are authenticated through a cookie while token stays null.
+const authMock = vi.hoisted(() => ({ token: 'mock-token' as string | null, isAuthenticated: true }));
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
+  useAuth: () => ({ token: authMock.token, isAuthenticated: authMock.isAuthenticated, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
 }));
 
 // Mock Board with a lightweight stub that exposes a button to trigger onMove(3, 3) —
@@ -186,6 +187,8 @@ const renderPage = (engineMode: boolean) => render(renderTree(engineMode));
 describe('GamePage engine mode', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authMock.token = 'mock-token';
+    authMock.isAuthenticated = true;
     mockOnMove.mockReset();
     mockPhysicalEngineError = null;
     mockAwaitingRemovalReminder = null;
@@ -205,18 +208,17 @@ describe('GamePage engine mode', () => {
     // bleed into later tests.
     mockGameState.current_node_id = 42;
     mockGameState.count_min_moves = undefined;
+    mockGameState.end_result = null;
+    mockGameState.platform_engine_color = undefined;
   });
 
-  it('停一手/认输 stay enabled in engineMode (galaxy-reference: no blunt engineMode disable)', async () => {
+  it('星阵人机局保留灰色悔棋并显示三个可用动作；停一手走会话动作，认输仍走确认框', async () => {
+    mockGameState.count_min_moves = 1;
     renderPage(true);
-
-    // 停一手 is available whenever the game is not over — including Golaxy 人机对弈 — and
-    // routes through session.handleAction. (The galaxy web reference gates it on isGameOver
-    // only; there is no engineMode disable.)
+    expect(screen.getByRole('button', { name: '悔棋' })).toBeDisabled();
     fireEvent.click(screen.getByText('停一手'));
-    expect(mockHandleAction).toHaveBeenCalledWith('pass');
-
-    // 认输 also stays enabled (opens the confirm dialog, intercepted before session.handleAction).
+    await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('pass'));
+    expect(screen.getByText('数子')).toBeInTheDocument();
     fireEvent.click(screen.getByText('认输'));
     expect(screen.getByText('确认认输？')).toBeInTheDocument();
   });
@@ -262,13 +264,14 @@ describe('GamePage engine mode', () => {
     expect(screen.queryByText(/AI 连接出错/)).not.toBeInTheDocument();
   });
 
-  describe('星阵隧道分析 (领地/支招/变化图)', () => {
-    it('renders the three engine buttons and hides local AI支招/图表/形势 + ScoreGraph in engineMode', () => {
+  describe('星阵隧道分析 (领地/支招/变化图/数子)', () => {
+    it('renders the three metered engine buttons plus free 数子, and hides local AI支招/图表/形势 + ScoreGraph in engineMode', () => {
       renderPage(true);
 
       expect(screen.getByText('领地')).toBeInTheDocument();
       expect(screen.getByText('支招')).toBeInTheDocument();
       expect(screen.getByText('变化图')).toBeInTheDocument();
+      expect(screen.getByText('数子')).toBeInTheDocument();
 
       // No local KataGo analysis controls and no winrate chart — golaxy 人机对弈 has neither.
       /* 2026-08-24 修订。原来这里断言的是 `queryByText('建议')` —— 而本页的本地
@@ -284,6 +287,26 @@ describe('GamePage engine mode', () => {
       expect(screen.queryByText('形势')).not.toBeInTheDocument();
       expect(screen.queryByTestId('score-graph')).not.toBeInTheDocument();
       expect(screen.queryByTestId('score-graph-component')).not.toBeInTheDocument();
+    });
+
+    it('数子调用免费的 judge 隧道并把归属结果交给棋盘', async () => {
+      const ownership = [
+        { col: 3, row: 3, owner: 'B' },
+        { col: 15, row: 15, owner: 'W' },
+      ];
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true, kind: 'judge', data: { ownership, winner: 'B', delta: 2.5 },
+      });
+      renderPage(true);
+
+      fireEvent.click(screen.getByText('数子'));
+
+      await waitFor(() => {
+        expect(API.platformEngineAnalysis).toHaveBeenCalledWith('golaxy', 'test-session', 'judge', 'mock-token');
+        expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'judge');
+      });
+      const overlay = JSON.parse(screen.getByTestId('board').getAttribute('data-overlay')!);
+      expect(overlay).toEqual({ kind: 'judge', ownership });
     });
 
     it('leaves the local 领地/AI支招/图表 controls in place without engineMode', () => {
@@ -336,6 +359,22 @@ describe('GamePage engine mode', () => {
       await waitFor(() => {
         expect(API.platformEngineAnalysis).toHaveBeenCalledWith('golaxy', 'test-session', 'options', 'mock-token');
       });
+    });
+
+    it('盒端已登录且 token=null 时仍拉取道具余次', async () => {
+      authMock.token = null;
+      renderPage(true);
+      await waitFor(() => expect(API.platformEngineItems).toHaveBeenCalledWith('golaxy', null));
+    });
+
+    it('盒端已登录且 token=null 时仍可请求支招', async () => {
+      authMock.token = null;
+      (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: false, reason: 'insufficient', kind: 'options',
+      });
+      renderPage(true);
+      fireEvent.click(screen.getByText('支招'));
+      await waitFor(() => expect(API.platformEngineAnalysis).toHaveBeenCalledWith('golaxy', 'test-session', 'options', null));
     });
 
     it('ok:true sets activeEngineKind and passes the decoded overlay through to Board (options)', async () => {
@@ -609,6 +648,24 @@ describe('GamePage engine mode', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 0));
       expect(mockHintDismiss).not.toHaveBeenCalled();
+    });
+  });
+
+  // 已知的停一手与认输走各自语义；这里只保留未知平台哨兵的无胜负兜底。
+  describe('星阵未知终局信号(无胜负)', () => {
+    it('星阵局以 Void 结束:终局卡说清为什么没有胜负', () => {
+      mockGameState.end_result = 'Void';
+      mockGameState.platform_engine_color = 'W';
+      renderPage(true);
+      expect(screen.getByTestId('endgame-no-result')).toHaveTextContent('星阵返回了无法识别的终局信号');
+    });
+
+    it('普通终局不出这一行(正对照)', () => {
+      mockGameState.end_result = 'W+R';
+      mockGameState.platform_engine_color = 'W';
+      renderPage(true);
+      expect(screen.getByTestId('endgame-card')).toBeInTheDocument();
+      expect(screen.queryByTestId('endgame-no-result')).toBeNull();
     });
   });
 

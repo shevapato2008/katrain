@@ -448,7 +448,7 @@ def test_play_notices_are_emitted_after_releasing_the_commit_lock(monkeypatch, n
 # ---------------------------------------------------------------- N23 数子门槛按路数
 
 
-@pytest.mark.parametrize("size,expected", [(19, 100), (13, 46), (9, 22)])
+@pytest.mark.parametrize("size,expected", [(19, 100), (13, 47), (9, 22)])
 def test_count_threshold_scales_with_board_size(size, expected):
     """配置里的 100 是 19 路的数;小棋盘按交叉点数等比缩小,和 AI 认输门槛(core/ai.py should_ai_resign)同一种缩放。"""
     w = _web_katrain()

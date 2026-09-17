@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 
@@ -20,6 +20,7 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
 
 import ProgressDots from '../components/tsumego/ProgressDots';
 import SuccessOverlay from '../components/tsumego/SuccessOverlay';
+import BoardSetupGuide from '../components/vision/BoardSetupGuide';
 
 const FILLED = 'rgb(88, 181, 122)'; // #58b57a — the "filled dot" color
 
@@ -186,15 +187,17 @@ describe('PhysicalStatePanel', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it('phase "removing" -> D 答错拿除, DeleteSweep icon, 蓝 LED label, removal-item chip from state.extra', () => {
-    renderPanel('removing', { extra: [[9, 9, 1]] as [number, number, number][] });
+  it('phase "removing" -> D 答错拿除, DeleteSweep icon, 蓝 LED label, 拿除标签写棋盘坐标', () => {
+    // 识别网格是 [row(0=最上), col, color]。取一个行列不对称的点:行列颠倒会写成 D4,
+    // 忘了「行号 1 在最下」会写成 Q4,照抄下标就是原来那个「拿除 (3,15)」(N12)。
+    renderPanel('removing', { extra: [[3, 15, 1]] as [number, number, number][] });
     expect(screen.getByTestId('physical-state-panel')).toHaveAttribute('data-phase', 'removing');
     expect(screen.getByTestId('DeleteSweepIcon')).toBeInTheDocument();
     expect(screen.getByText('答错拿除')).toBeInTheDocument();
     expect(screen.getByText('蓝')).toBeInTheDocument();
     const chips = screen.getAllByTestId('removal-item');
     expect(chips).toHaveLength(1);
-    expect(chips[0]).toHaveTextContent('拿除 (9,9)');
+    expect(chips[0]).toHaveTextContent('拿除 Q16');
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -222,5 +225,28 @@ describe('PhysicalStatePanel', () => {
       unmount();
     }
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('BoardSetupGuide(实体做题 · 摆题中)', () => {
+  const renderGuide = (onSkip = vi.fn()) =>
+    render(
+      <ThemeProvider theme={kioskTheme}>
+        <BoardSetupGuide matched={3} total={7} missing={[]} extra={[[0, 0, 2]]} stage="white" onSkip={onSkip} />
+      </ThemeProvider>,
+    );
+
+  it('没有「开始答题」—— 状态机摆好就自动进答题,那颗键在它可见的整个期间都按不动(T8)', () => {
+    renderGuide();
+    expect(screen.queryByText('开始答题')).toBeNull();
+  });
+
+  it('进度与多余子照常说,「跳过设置」按得动', () => {
+    const onSkip = vi.fn();
+    renderGuide(onSkip);
+    expect(screen.getByText('请摆放白棋 · 已匹配 3/7 颗子')).toBeInTheDocument();
+    expect(screen.getByText(/盘上有 1 颗多余\/错色棋子/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '跳过设置' }));
+    expect(onSkip).toHaveBeenCalledTimes(1);
   });
 });

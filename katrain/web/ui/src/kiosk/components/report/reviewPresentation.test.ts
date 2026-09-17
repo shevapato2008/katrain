@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import type { UserGameSummary } from '../../../api/userGamesApi';
-import { failureLine, failureReason, outcomeLine, rowDisc, rowState, rowTitle, yourColor } from './reviewPresentation';
+import {
+  failureLine, failureReason, isPlaySource, outcomeLine, rowDisc, rowState, rowTitle, yourColor,
+} from './reviewPresentation';
 
 /**
  * 这些判断错了**屏上看不出来** —— 出来的还是一句通顺的中文,只是说的是另一局棋。
@@ -64,6 +66,19 @@ describe('rowTitle —— 这一行是什么局', () => {
   it('判不出「你」的人机局把两个名字并排,不挑一方当对手', () => {
     expect(rowTitle(game(), null, t)).toBe('vs 阿福 — KataGo');
   });
+
+  // P15:屏 04 承诺「名字留空就不编名字」⇒ 两个名字都空的本地局照稿子写「未记名」。
+  it('本地对局两个名字都空写「未记名」,有一个名字就是「两人」', () => {
+    expect(rowTitle(game({ source: 'play_local', player_black: '', player_white: '' }), null, t)).toBe('本地对局 · 未记名');
+    expect(rowTitle(game({ source: 'play_local', player_black: null, player_white: '  ' }), null, t)).toBe('本地对局 · 未记名');
+    expect(rowTitle(game({ source: 'play_local', player_black: '小明', player_white: '' }), null, t)).toBe('本地对局 · 两人');
+  });
+
+  it('研究存档有自己的标题,不落成「人机对弈」', () => {
+    expect(rowTitle(game({ source: 'research', title: '柯洁 vs 申真谞' }), null, t)).toBe('研究存档 · 柯洁 vs 申真谞');
+    expect(rowTitle(game({ source: 'research', title: null, player_black: null, player_white: null }), null, t))
+      .toBe('研究存档');
+  });
 });
 
 describe('outcomeLine —— 这一局怎么结束的', () => {
@@ -96,8 +111,22 @@ describe('outcomeLine —— 这一局怎么结束的', () => {
     expect(outcomeLine(game({ result: null, move_count: 22 }), 'B', t)).toBe('下到第 22 手就退出了');
   });
 
+  // P14:导入的谱没写 RE 不等于「中途退出」—— 那一句只属于对弈局。
+  it('导入的谱、棋谱库、研究存档没有结果时说「谱里没写结果」,不说「就退出了」', () => {
+    for (const source of ['import', 'kifu_library', 'research']) {
+      expect(outcomeLine(game({ source, result: null, move_count: 187 }), null, t)).toBe('谱里没写结果');
+    }
+  });
+
+  // `Void` 是 SGF 规范里定义好的「不判胜负」,今天由星阵人机局写进来(AI 停手或认输,分不出是哪种)。
+  // 照它的意思念,不是猜;规范之外的写法仍原样念。
+  it('Void 念成「这盘没有判出胜负」', () => {
+    expect(outcomeLine(game({ result: 'Void' }), 'B', t)).toBe('这盘没有判出胜负');
+    expect(outcomeLine(game({ result: 'void' }), null, t)).toBe('这盘没有判出胜负');
+  });
+
   it('后端存了别的写法就原样念,不猜', () => {
-    expect(outcomeLine(game({ result: 'Void' }), 'B', t)).toBe('Void');
+    expect(outcomeLine(game({ result: 'Unknown' }), 'B', t)).toBe('Unknown');
   });
 });
 
@@ -145,6 +174,24 @@ describe('rowState —— 分析到哪一步了', () => {
   it('没有任务时,下完的叫「未分析」、没下完的叫「未终局」', () => {
     expect(rowState(game(), {})).toEqual({ kind: 'unanalyzed' });
     expect(rowState(game({ result: null }), {})).toEqual({ kind: 'unfinished' });
+  });
+
+  // P14:「未终局」挡的是「半局报告 + 离线算完再回去接着下」,那只对对弈局成立。
+  it('「未终局」只给对弈局;没写结果的导入谱、棋谱库、研究存档算「未分析」', () => {
+    for (const source of ['play_ai', 'play_local', 'play_human']) {
+      expect(rowState(game({ source, result: null }), {})).toEqual({ kind: 'unfinished' });
+    }
+    for (const source of ['import', 'kifu_library', 'research']) {
+      expect(rowState(game({ source, result: null }), {})).toEqual({ kind: 'unanalyzed' });
+    }
+  });
+});
+
+describe('isPlaySource —— 这一局是不是下出来的', () => {
+  it('人机、本地两人、在线人人算;导入、棋谱库、研究存档和空值都不算', () => {
+    expect(['play_ai', 'play_local', 'play_human'].map((s) => isPlaySource(s))).toEqual([true, true, true]);
+    expect(['import', 'kifu_library', 'research', '', null, undefined].map((s) => isPlaySource(s)))
+      .toEqual([false, false, false, false, false, false]);
   });
 });
 

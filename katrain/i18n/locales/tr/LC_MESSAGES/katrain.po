@@ -188,8 +188,7 @@ msgstr "{visits} ziyaret kadar ek analiz gerçekleştiriyor"
 
 #. status message
 msgid "sweep analysis"
-msgstr ""
-"Hamle başına {visits} ziyaret olacak şekilde tüm tahtayı analiz ediyor"
+msgstr "Hamle başına {visits} ziyaret olacak şekilde tüm tahtayı analiz ediyor"
 
 #. status message
 msgid "alternative analysis"
@@ -219,8 +218,8 @@ msgstr "Terk Et"
 msgid "teaching undo message"
 msgstr ""
 "{points_lost:.1f} puan kaybettirdiğinden {move}. hamleyi geri alın. Lütfen "
-"tekrar deneyin. İpucu için karşı analizi görmek amacıyla fare imlecini hamle"
-" üzerine getirin veya puan kaybının beklendiği tahtabölgelerini görmek "
+"tekrar deneyin. İpucu için karşı analizi görmek amacıyla fare imlecini hamle "
+"üzerine getirin veya puan kaybının beklendiği tahtabölgelerini görmek "
 "amacıyla tahmini bölgeyi (t) kontrol edin."
 
 msgid "ai-ponder"
@@ -542,9 +541,9 @@ msgstr "Eş Zamanlı Oyun Sayısı"
 #. hint for max games
 msgid "contribute:maxgames:hint"
 msgstr ""
-"Orta seviye GPU’lar için yaklaşık 8 olan optimum numSearchThreads değerinize"
-" eşittir. Yarım kalmış oyunların yüklenmemesi nedeniyle daha kısa işlem için"
-" bu değeri biraz daha düşük ayarlayabilirsiniz."
+"Orta seviye GPU’lar için yaklaşık 8 olan optimum numSearchThreads değerinize "
+"eşittir. Yarım kalmış oyunların yüklenmemesi nedeniyle daha kısa işlem için "
+"bu değeri biraz daha düşük ayarlayabilirsiniz."
 
 msgid "contribute:ownership"
 msgstr "Bölge Sahipliği Etkinleştir"
@@ -691,8 +690,8 @@ msgstr ""
 
 msgid "Kata exe not found in path"
 msgstr ""
-"KataGo ikili dosyası {exe}' YOLDA bulunamadı, ortam değişkenlerinizi kontrol"
-" edin veya bunun yerine genel ayarlardaki tam yolu kullanın. MacOS "
+"KataGo ikili dosyası {exe}' YOLDA bulunamadı, ortam değişkenlerinizi kontrol "
+"edin veya bunun yerine genel ayarlardaki tam yolu kullanın. MacOS "
 "kullanıyorsanız, ilk önce katago’yu yüklemek için brew’in nasıl "
 "kullanıldığını görmek amacıyla kılavuza bakın"
 
@@ -787,8 +786,8 @@ msgstr ""
 "tenuki_penalty önem derecesine bağlı olarak) ve bitişik hamlelerden kaçınır "
 "(attachment_penalty önem derecesine bağlı olarak). Aynı zamanda oyunu "
 "güçleştirmek için ağırlıklar negatif olabilir ve genişletilmiş kök etkisi "
-"(genel ayarlardaki) seviyeden ödün verilerek bu stile daha çok odaklanılması"
-" için kullanılabilir."
+"(genel ayarlardaki) seviyeden ödün verilerek bu stile daha çok odaklanılması "
+"için kullanılabilir."
 
 msgid "ai:antimirror"
 msgstr "Anti-ayna"
@@ -810,8 +809,8 @@ msgstr "Puan Kaybı"
 msgid "aihelp:scoreloss"
 msgstr ""
 "Daha düşük olasılığa sahip daha yüksek puan kaybına neden olacak hamleler "
-"oynar. Daha yüksek ziyaret ayarlarıyla çok çeşitli/daha düşük seviyede hamle"
-" yapacaktır."
+"oynar. Daha yüksek ziyaret ayarlarıyla çok çeşitli/daha düşük seviyede hamle "
+"yapacaktır."
 
 msgid "ai:policy"
 msgstr "Politika"
@@ -871,8 +870,8 @@ msgid "aihelp:p:influence"
 msgstr ""
 "'Eşik değeri' hattının üstünde kalan hamleleri seçer ve en iyi hamleyi "
 "oynar. Tahta kenarına daha yakın hamleleri geri plana almak için "
-"'line_weight' değerini arttırın. Tahtada 'oyun sonu’ bölümü tamamlandığından"
-" stratejiyi durdurur."
+"'line_weight' değerini arttırın. Tahtada 'oyun sonu’ bölümü tamamlandığından "
+"stratejiyi durdurur."
 
 msgid "ai:p:territory"
 msgstr "Alçak Stil"
@@ -890,8 +889,8 @@ msgstr "Ayarlı Seviye"
 msgid "aihelp:p:rank"
 msgstr ""
 "Rastgele sınırlı sayıda geçerli hamle seçer ve en iyi hamleyi oynar. Daha "
-"yüksek seviye ayarları, daha geniş bir seçimden en iyi hamleyi seçer. 0 "
-"kyu/dan eşitliği mümkün olmadığından, 3 dan = -2 kyu’dur."
+"yüksek seviye ayarları, daha geniş bir seçimden en iyi hamleyi seçer. 0 kyu/"
+"dan eşitliği mümkün olmadığından, 3 dan = -2 kyu’dur."
 
 #. in AI settings
 msgid "estimated strength"
@@ -1096,8 +1095,7 @@ msgstr ""
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a human-like KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening "
-"style."
+"ticked, the model will play according to a post-2016 AlphaZero opening style."
 
 #. TODO
 msgid "engine:humanlike_model"
@@ -1440,8 +1438,7 @@ msgid "Library"
 msgstr "Kütüphane"
 
 msgid "dashboard:report_desc"
-msgstr ""
-"Hamle hamle analiz raporları oluşturun ve oyunlarınızı gözden geçirin."
+msgstr "Hamle hamle analiz raporları oluşturun ve oyunlarınızı gözden geçirin."
 
 msgid "game_room:leave_forfeit"
 msgstr "Ayrıl ve Pes Et"
@@ -3251,8 +3248,7 @@ msgid "auth:go_login"
 msgstr "Giriş yap"
 
 msgid "ladder:login_required"
-msgstr ""
-"Dereceli oyunlar seviyenizi etkiler, bu yüzden giriş yapmanız gerekir."
+msgstr "Dereceli oyunlar seviyenizi etkiler, bu yüzden giriş yapmanız gerekir."
 
 msgid "play:login_required_free"
 msgstr ""
@@ -3426,8 +3422,8 @@ msgstr "{n} derecelendirilmedi"
 
 msgid "grade:histogram_aria"
 msgstr ""
-"Yedi kademeli dağılım; siyah çubuklar Siyah, beyaz çubuklar Beyaz, her taraf"
-" kendi içinde normalleştirildi"
+"Yedi kademeli dağılım; siyah çubuklar Siyah, beyaz çubuklar Beyaz, her taraf "
+"kendi içinde normalleştirildi"
 
 msgid "grade:def_brilliant"
 msgstr "Motorun sezgisinin bile kaçırdığı en iyi hamlesi (ön olasılık < %10)"
@@ -3464,6 +3460,169 @@ msgstr "{side}: {from}-{to}. hamleler, üst üste {n} kez en iyi hamle"
 
 msgid "live:loading_match"
 msgstr "Oyun yükleniyor…"
+
+msgid "game:black_resigns"
+msgstr "Siyah pes ediyor"
+
+msgid "game:white_resigns"
+msgstr "Beyaz pes ediyor"
+
+msgid "game:who_resigns"
+msgstr "Kim pes ediyor?"
+
+msgid "game:black_short"
+msgstr "S"
+
+msgid "game:white_short"
+msgstr "B"
+
+msgid "game:black_side"
+msgstr "Siyah"
+
+msgid "game:white_side"
+msgstr "Beyaz"
+
+msgid "game:clock_timeout"
+msgstr "Süre doldu"
+
+msgid "game:clock_byo_left"
+msgstr "Byo-yomi · {n} kaldı"
+
+msgid "game:clock_byo_spec"
+msgstr "Byo-yomi {len}sn×{n}"
+
+msgid "game:move_n"
+msgstr "{n}. hamle"
+
+msgid "game:timeout_loss_suffix"
+msgstr " süre aşımı ile kaybetti"
+
+msgid "game:timeout_win_suffix"
+msgstr " süre aşımı ile kazandı"
+
+msgid "game:saved_to_history"
+msgstr "Oyun geçmişine kaydedildi"
+
+msgid "game:timeout_check_failed"
+msgstr "Süre aşımı doğrulanamadı"
+
+msgid "game:count_err_analysis_pending"
+msgstr "Bu hamle hâlâ analiz ediliyor, birazdan tekrar saymayı deneyin"
+
+msgid "game:count_err_below_min"
+msgstr "Henüz yeterli hamle yok, şu an sayım yapılamıyor"
+
+msgid "game:count_err_game_over"
+msgstr "Bu oyun zaten bitti"
+
+msgid "game:count_err_network"
+msgstr "Analiz servisine ulaşılamıyor"
+
+msgid "game:count_err_http"
+msgstr "Sayım başarısız oldu ({status}), lütfen tekrar deneyin"
+
+msgid "game:counting"
+msgstr "Sayılıyor…"
+
+msgid "game:retry"
+msgstr "Tekrar dene"
+
+msgid "game:exit_failed"
+msgstr "Çıkış başarısız oldu, lütfen tekrar deneyin"
+
+msgid "game:exit_unsaved_title"
+msgstr "Bu oyun henüz bitmedi — çıkarsanız kaydedilmez"
+
+msgid "game:keep_playing"
+msgstr "Oynamaya devam et"
+
+msgid "game:exit_unsaved"
+msgstr "Kaydetmeden çık"
+
+msgid "play:local_needs_login"
+msgstr "Önce giriş yapın · bitince otomatik kaydedilir"
+
+msgid "review:no_result_line"
+msgstr "Sonuç kaydedilmemiş"
+
+msgid "review:row_local"
+msgstr "Yerel oyun · İki oyuncu"
+
+msgid "review:row_local_unnamed"
+msgstr "Yerel oyun · İsimsiz"
+
+msgid "review:row_research"
+msgstr "Araştırma arşivi"
+
+msgid "game:count_failed"
+msgstr "Sayma tamamlanamadı"
+
+msgid "game:check_network_retry"
+msgstr "Bağlantıyı kontrol edip tekrar deneyin"
+
+msgid "game:both_passed"
+msgstr "Her iki oyuncu da pas geçti"
+
+msgid "game:exit_confirm_title"
+msgstr "Bu oyundan çıkılsın mı?"
+
+msgid "game:exit_unsaved_body"
+msgstr "Bu oyun henüz bitmedi — çıkarsanız kaydedilmeyecek."
+
+msgid "game:which_side_resigns"
+msgstr "Hangi taraf pes ediyor?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"Rakip terk galibiyeti olarak kaydedilir; bu oyun oyun geçmişine kaydedilecek."
+
+msgid "local:input_hint_v2"
+msgstr ""
+"Fiziksel tahta yalnızca 19×19 — 13×13 veya 9×9 seçilirse ekranda oynanır"
+
+msgid "local:komi_hint"
+msgstr "Taş verme oyunlarında komi 0'dır — taş verme seçilince bu grup kapanır"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"Saat oyuncu kartında geri sayar · byo-yomi biterse süre kaybı olur · süresiz "
+"modda yalnızca kayıt tutulur"
+
+msgid "local:clock_meta_count"
+msgstr "{n} kademe"
+
+msgid "local:sound_hint_v2"
+msgstr "Ayarlar · Ses bölümündeki taş sesiyle aynı anahtardır"
+
+msgid "local:note3_a"
+msgstr "Ekranda"
+
+msgid "local:note3_b"
+msgstr "ipucu ve pozisyon değerlendirmesi yoktur"
+
+msgid "local:note3_c"
+msgstr "; her iki oyuncu da pas geçtiğinde"
+
+msgid "local:note3_d"
+msgstr "otomatik sayım yapılır"
+
+msgid "local:note3_e"
+msgstr " ölü-diri durumu motor tarafından belirlenir."
+
+msgid "local:note3_f"
+msgstr "Bu oyun"
+
+msgid "local:note3_g"
+msgstr "yalnızca kaydedilir, seviyeniz değişmez"
+
+msgid "local:note3_h"
+msgstr "; oyundan yarıda çıkmak"
+
+msgid "local:note3_i"
+msgstr "kaydı saklamaz"
+
+msgid "local:note3_j"
+msgstr "."
 
 msgid "vision:offcenter_at"
 msgstr ": taş kesişime düzgün oturmamış"

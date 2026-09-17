@@ -73,6 +73,8 @@ const expectAllDisconnected = () => {
   expect(ogs).toHaveTextContent('点击登录');
   expect(golaxy).toHaveTextContent('点击登录');
   expect(fox).toHaveTextContent('接口还没通');
+  expect(fox).toHaveTextContent('暂不能对弈');
+  expect(fox).not.toHaveTextContent('即将上线');
   expect(fox).toBeDisabled();
 };
 
@@ -265,14 +267,38 @@ describe('PlayPage', () => {
     expect(platformButtons()[1]).toHaveTextContent('点击登录');   // [1] = 星阵,不是野狐
   });
 
+  it('本地对局卡片未登录时说要先登录', () => {
+    useAuthMock.mockReturnValue({ user: null, isAuthenticated: false, token: null });
+    renderPage();
+
+    const card = screen.getByText('本地对局').closest('button')!;
+    expect(card).toHaveTextContent('要先登录 · 下完自动存谱');
+    expect(card).not.toHaveTextContent('两人在同一块实体盘上下');
+  });
+
+  it('本地对局卡片已登录时仍说两人在同一块实体盘上下', () => {
+    useAuthMock.mockReturnValue({ user: { username: 'fan' }, isAuthenticated: true, token: null });
+    renderPage();
+
+    const card = screen.getByText('本地对局').closest('button')!;
+    expect(card).toHaveTextContent('两人在同一块实体盘上下');
+    expect(card).not.toHaveTextContent('要先登录');
+  });
+
   it('keeps disconnected defaults after logout when an older request resolves', async () => {
-    let auth = { user: { username: '友' }, isAuthenticated: true, token: 'A' as string | null };
+    let auth = {
+      user: { username: '友' } as { username: string } | null,
+      isAuthenticated: true,
+      token: 'A' as string | null,
+    };
     const requestA = deferred<{ platforms: PlatformInfo[] }>();
     useAuthMock.mockImplementation(() => auth);
     platformStatusMock.mockReturnValue(requestA.promise);
     const view = renderPage();
 
-    auth = { ...auth, token: null };
+    // 登出 = user 和 token 一起清掉(`AuthContext.logout` 就是这么做的)。
+    // 只清 token、人还登录着 —— 那是严格盒端 SSO 的**常态**,不是登出(见下一条)。
+    auth = { user: null, isAuthenticated: false, token: null };
     view.rerender(pageElement());
     expectAllDisconnected();
 
@@ -281,5 +307,37 @@ describe('PlayPage', () => {
       await requestA.promise;
     });
     expectAllDisconnected();
+  });
+
+  /**
+   * 回归钉子(P16):严格盒端 SSO 里 `token` 恒为 null,身份在 HttpOnly cookie 里。
+   * 原来的 `if (token)` 让盒上**已登录**的人永远只看到兜底状态 ——
+   * 而 `/api/v1/platforms/status` 认 cookie,请求发出去本来就会成功。
+   */
+  it('盒上 token 恒为 null 但已登录:照常请求平台状态,连上的平台照实显示', async () => {
+    useAuthMock.mockReturnValue({ user: { username: 'fan' }, isAuthenticated: true, token: null });
+    platformStatusMock.mockResolvedValue({ platforms: [platformRecord('golaxy', true)] });
+    renderPage();
+    await waitFor(() => expect(platformStatusMock).toHaveBeenCalledWith(null));
+    await waitFor(() => expect(platformButtons()[1]).toHaveTextContent('已连接'));   // [1] = 星阵
+  });
+
+  it('游客不请求平台状态 —— 那个端点要登录,发了也是 401', () => {
+    useAuthMock.mockReturnValue({ user: null, isAuthenticated: false, token: null });
+    renderPage();
+    expect(platformStatusMock).not.toHaveBeenCalled();
+    expectAllDisconnected();
+  });
+
+  it('盒端已登录且 token=null 时拉取状态并直达星阵人机开局', async () => {
+    useAuthMock.mockReturnValue({ user: { username: '友' }, isAuthenticated: true, token: null });
+    platformStatusMock.mockResolvedValue({ platforms: [platformRecord('golaxy', true)] });
+
+    renderPage();
+
+    const golaxy = await screen.findByRole('button', { name: /^星阵围棋，已连接/ });
+    expect(platformStatusMock).toHaveBeenCalledWith(null);
+    fireEvent.click(golaxy);
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/engine/golaxy');
   });
 });

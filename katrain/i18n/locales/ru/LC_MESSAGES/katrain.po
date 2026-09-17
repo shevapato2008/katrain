@@ -528,8 +528,8 @@ msgstr "Слабая политика"
 
 msgid "aihelp:p:weighted"
 msgstr ""
-"Делает ходы согласно вероятности политики сети, при этом 'weaken_fac' влияет"
-" на то, как часто более слабые ходы будут сыграны. Малые значения играют "
+"Делает ходы согласно вероятности политики сети, при этом 'weaken_fac' влияет "
+"на то, как часто более слабые ходы будут сыграны. Малые значения играют "
 "аналогично 'Политика сети' ИИ. 'pick_override' определяет когда лучший ход "
 "будет выбран без случайности, и 'lower_bound' определяет нижнюю границу "
 "допустимого значения."
@@ -550,8 +550,8 @@ msgstr "Локальный стиль"
 msgid "aihelp:p:local"
 msgstr ""
 "Выбирает 'pick_n + pick_frac * <количество допустимых ходов>' ходов в "
-"окрестностях последнего хода и играет лучший из них. Играет лучший ход, если"
-" значение политики сети выше 'pick_override' для избежания очевидных ошибок."
+"окрестностях последнего хода и играет лучший из них. Играет лучший ход, если "
+"значение политики сети выше 'pick_override' для избежания очевидных ошибок."
 
 msgid "ai:p:tenuki"
 msgstr "Стиль тэнуки"
@@ -691,8 +691,8 @@ msgstr ""
 "укрепляющие территорию оппонента (коэффициент settled_weight * "
 "opponent_fac), избегает тэнуки (более 5 пунктов, коэффициент "
 "tenuki_penalty), и избегает прилипаний (коэффициент attachment_penalty). "
-"Коэффициенты могут быть отрицательными, чтобы напротив сделать игру сложнее."
-" 'Уровень шума' (в 'Настройках системы') может быть использован для "
+"Коэффициенты могут быть отрицательными, чтобы напротив сделать игру сложнее. "
+"'Уровень шума' (в 'Настройках системы') может быть использован для "
 "увеличения вариативности игры за счёт небольшой потери силы. "
 
 msgid "ai:simple"
@@ -856,8 +856,7 @@ msgstr "Установить позицию"
 msgid "setup position explanation"
 msgstr ""
 "Генерирует частичную игру. Например, вы можете использовать это для игры "
-"против сильного AI начиная с перевесом в середине или ближе к окончанию "
-"игры."
+"против сильного AI начиная с перевесом в середине или ближе к окончанию игры."
 
 msgid "setup game status message"
 msgstr ""
@@ -996,8 +995,7 @@ msgstr ""
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a human-like KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening "
-"style."
+"ticked, the model will play according to a post-2016 AlphaZero opening style."
 
 #. TODO
 msgid "engine:humanlike_model"
@@ -1282,8 +1280,8 @@ msgstr "Многопользовательское лобби"
 
 msgid "dashboard:research_desc"
 msgstr ""
-"Анализируйте игры с помощью ИИ, исследуйте варианты и управляйте библиотекой"
-" SGF."
+"Анализируйте игры с помощью ИИ, исследуйте варианты и управляйте библиотекой "
+"SGF."
 
 msgid "lobby:quick_match_rated"
 msgstr "Быстрый матч (Рейтинговый)"
@@ -2498,8 +2496,7 @@ msgstr "Подтвердить удаление"
 
 msgid "report:delete_confirm_body"
 msgstr ""
-"Партия и все связанные данные анализа будут удалены безвозвратно. Вы "
-"уверены?"
+"Партия и все связанные данные анализа будут удалены безвозвратно. Вы уверены?"
 
 msgid "report:delete_success"
 msgstr "Партия удалена"
@@ -2822,8 +2819,8 @@ msgstr "Понятно"
 
 msgid "lobby:placement_required"
 msgstr ""
-"Сначала сыграйте 5 квалификационных партий в рейтинговом режиме, затем можно"
-" в рейтинговый поиск."
+"Сначала сыграйте 5 квалификационных партий в рейтинговом режиме, затем можно "
+"в рейтинговый поиск."
 
 msgid "My Color"
 msgstr "Мой цвет"
@@ -3174,8 +3171,8 @@ msgstr ""
 
 msgid "research:login_required"
 msgstr ""
-"Полный анализ использует облачный движок и требует входа в аккаунт. Разбор и"
-" просмотр — нет."
+"Полный анализ использует облачный движок и требует входа в аккаунт. Разбор и "
+"просмотр — нет."
 
 msgid "play:analysis_requires_login"
 msgstr "Доступно после входа"
@@ -3248,8 +3245,8 @@ msgstr "{n} без оценки"
 
 msgid "ladder:engine_unavailable_start"
 msgstr ""
-"Движок рейтинговых партий временно недоступен. Партия не начата, ваш ранг не"
-" изменён. Пожалуйста, попробуйте позже."
+"Движок рейтинговых партий временно недоступен. Партия не начата, ваш ранг не "
+"изменён. Пожалуйста, попробуйте позже."
 
 msgid "grade:match_rate"
 msgstr "Совпадение с ИИ"
@@ -3330,8 +3327,7 @@ msgstr ""
 "нормировано по каждой стороне"
 
 msgid "grade:def_brilliant"
-msgstr ""
-"Лучший ход движка, который не увидела даже его интуиция (prior < 10 %)"
+msgstr "Лучший ход движка, который не увидела даже его интуиция (prior < 10 %)"
 
 msgid "grade:def_best"
 msgstr "Сыграл лучший ход движка"
@@ -3352,8 +3348,7 @@ msgstr ""
 
 msgid "grade:match_timeline_legend"
 msgstr ""
-"Полная заливка — лучший ход, половина светлым — в тройке лучших, фон — "
-"прочее"
+"Полная заливка — лучший ход, половина светлым — в тройке лучших, фон — прочее"
 
 msgid "grade:match_timeline_aria"
 msgstr ""
@@ -3365,6 +3360,170 @@ msgstr "{side}: ходы {from}–{to}, {n} подряд совпали с лу�
 
 msgid "live:loading_match"
 msgstr "Загрузка партии…"
+
+msgid "game:black_resigns"
+msgstr "Чёрные сдаются"
+
+msgid "game:white_resigns"
+msgstr "Белые сдаются"
+
+msgid "game:who_resigns"
+msgstr "Кто сдаётся?"
+
+msgid "game:black_short"
+msgstr "Ч"
+
+msgid "game:white_short"
+msgstr "Б"
+
+msgid "game:black_side"
+msgstr "Чёрные"
+
+msgid "game:white_side"
+msgstr "Белые"
+
+msgid "game:clock_timeout"
+msgstr "Время истекло"
+
+msgid "game:clock_byo_left"
+msgstr "Бёми · осталось {n}"
+
+msgid "game:clock_byo_spec"
+msgstr "Бёми {len}с×{n}"
+
+msgid "game:move_n"
+msgstr "Ход {n}"
+
+msgid "game:timeout_loss_suffix"
+msgstr " проигрывают по времени"
+
+msgid "game:timeout_win_suffix"
+msgstr " побеждают по времени"
+
+msgid "game:saved_to_history"
+msgstr "Сохранено в истории партий"
+
+msgid "game:timeout_check_failed"
+msgstr "Не удалось подтвердить истечение времени"
+
+msgid "game:count_err_analysis_pending"
+msgstr "Ещё идёт анализ этого хода, попробуйте посчитать снова чуть позже"
+
+msgid "game:count_err_below_min"
+msgstr "Пока сделано слишком мало ходов, подсчёт недоступен"
+
+msgid "game:count_err_game_over"
+msgstr "Эта партия уже завершена"
+
+msgid "game:count_err_network"
+msgstr "Не удаётся подключиться к сервису анализа"
+
+msgid "game:count_err_http"
+msgstr "Не удалось подсчитать очки ({status}), попробуйте снова"
+
+msgid "game:counting"
+msgstr "Подсчёт очков…"
+
+msgid "game:retry"
+msgstr "Повторить"
+
+msgid "game:exit_failed"
+msgstr "Не удалось выйти, попробуйте снова"
+
+msgid "game:exit_unsaved_title"
+msgstr "Партия ещё не завершена — при выходе она не сохранится"
+
+msgid "game:keep_playing"
+msgstr "Продолжить игру"
+
+msgid "game:exit_unsaved"
+msgstr "Выйти без сохранения"
+
+msgid "play:local_needs_login"
+msgstr "Сначала войдите в систему · сохранится автоматически по окончании"
+
+msgid "review:no_result_line"
+msgstr "Результат не записан"
+
+msgid "review:row_local"
+msgstr "Локальная партия · Два игрока"
+
+msgid "review:row_local_unnamed"
+msgstr "Локальная партия · Без имён"
+
+msgid "review:row_research"
+msgstr "Архив исследования"
+
+msgid "game:count_failed"
+msgstr "Подсчёт не завершён"
+
+msgid "game:check_network_retry"
+msgstr "Проверьте сеть и повторите попытку"
+
+msgid "game:both_passed"
+msgstr "Оба игрока пропустили ход"
+
+msgid "game:exit_confirm_title"
+msgstr "Выйти из этой партии?"
+
+msgid "game:exit_unsaved_body"
+msgstr "Партия ещё не завершена — при выходе она не сохранится."
+
+msgid "game:which_side_resigns"
+msgstr "Какая сторона сдаётся?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"Соперник будет засчитан победителем по сдаче; партия сохранится в истории "
+"игр."
+
+msgid "local:input_hint_v2"
+msgstr ""
+"Физическая доска только 19×19 — выберите 13×13 или 9×9 для игры на экране"
+
+msgid "local:komi_hint"
+msgstr "В партиях с форой коми = 0 — эта группа сворачивается при выборе форы"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"Часы отсчитывают время на карточке игрока · истёкший бёй-ёми — поражение по "
+"времени · без лимита только запись партии"
+
+msgid "local:clock_meta_count"
+msgstr "{n} уровней"
+
+msgid "local:sound_hint_v2"
+msgstr "Тот же переключатель, что и звук хода в Настройках · Звук"
+
+msgid "local:note3_a"
+msgstr "На экране"
+
+msgid "local:note3_b"
+msgstr "нет подсказок и оценки позиции"
+
+msgid "local:note3_c"
+msgstr "; как только оба пропустят ход,"
+
+msgid "local:note3_d"
+msgstr "подсчёт выполняется автоматически"
+
+msgid "local:note3_e"
+msgstr " статус групп (жива/мертва) определяет движок."
+
+msgid "local:note3_f"
+msgstr "Эта партия"
+
+msgid "local:note3_g"
+msgstr "только фиксируется, ваш разряд не меняется"
+
+msgid "local:note3_h"
+msgstr "; выход посреди партии"
+
+msgid "local:note3_i"
+msgstr "не сохранит запись"
+
+msgid "local:note3_j"
+msgstr "."
 
 msgid "vision:offcenter_at"
 msgstr ": камень стоит не на пересечении"

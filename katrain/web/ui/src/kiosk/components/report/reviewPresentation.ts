@@ -8,6 +8,17 @@ import type { RequestFailureKind } from '../../../utils/requestFailure';
 export type TFn = (key: string, fallback?: string) => string;
 
 /**
+ * 这一局是不是**下出来的**(人机 / 本地两人 / 在线人人)。
+ *
+ * 只有对弈局才有「没下完」这回事:没有 `result` 就是中途退出了。
+ * 导入的 SGF、棋谱库、研究存档**本来就可能不带结果**(SGF 没写 `RE`)——
+ * 那是「谱里没写」,不是「没下完」,不能拿对弈局的口径去念、更不能因此不给报告(P14)。
+ */
+export function isPlaySource(source: string | null | undefined): boolean {
+  return source === 'play_ai' || source === 'play_local' || source === 'play_human';
+}
+
+/**
  * 「目 / 子」。**不复用 `resultTranslation` 里那个** —— 它缺省返回空字符串,而
  * `t(key, '')` 在翻译表没加载时会退回 **key 本身**,屏上就出现「负 6.5result:points_zi」
  * (2026-08-23 四图里真的出现过)。缺省值必须是能直接上屏的字。
@@ -80,7 +91,20 @@ export function rowTitle(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn):
     const name = game.title || game.event;
     return name ? `${t('review:row_import', '导入的棋谱')} · ${name}` : t('review:row_import', '导入的棋谱');
   }
-  if (game.source === 'play_local') return t('review:row_local', '本地对局 · 两人');
+  if (game.source === 'play_local') {
+    // 屏 04 承诺「名字留空就不编名字」(P12/P15)⇒ 两个名字都空时照稿子写「未记名」。
+    // 只看**有没有**名字,不把名字念出来:两人对局没有「对手」,念一个就是替它选了一方。
+    const named = [game.player_black, game.player_white].some((name) => Boolean(name?.trim()));
+    return named
+      ? t('review:row_local', '本地对局 · 两人')
+      : t('review:row_local_unnamed', '本地对局 · 未记名');
+  }
+  if (game.source === 'research') {
+    // galaxy 研究页存下来的局面(`galaxy/pages/ResearchPage.tsx` 存盘时 `source: 'research'`)。
+    // 以前落到最后那一支,被念成「人机对弈」。
+    const name = game.title || [game.player_black, game.player_white].filter(Boolean).join(' — ');
+    return name ? `${t('review:row_research', '研究存档')} · ${name}` : t('review:row_research', '研究存档');
+  }
   // 判不出「你」的时候没有「对手」可言,退回两个名字并排 —— 不挑一方当对手。
   const opponent = opponentLabel(game, mine, t)
     || [game.player_black, game.player_white].filter(Boolean).join(' — ');
@@ -98,13 +122,17 @@ export function rowTitle(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn):
 /**
  * 「你(黑)中盘负」/「黑中盘胜」/「下到第 22 手就退出了」。
  *
- * 没有 `result` 就是**没下完**,不是「和棋」也不是「不知道」—— 这一格照实说。
+ * **对弈局**没有 `result` 就是没下完;别的来源没有结果是谱里没写。
  */
 export function outcomeLine(game: UserGameSummary, mine: 'B' | 'W' | null, t: TFn): string {
   const raw = (game.result || '').trim();
   if (!raw) {
+    if (!isPlaySource(game.source)) return t('review:no_result_line', '谱里没写结果');
     return interpolate(t('review:unfinished_line', '下到第 {n} 手就退出了'), { n: game.move_count });
   }
+  // SGF 的 `Void` = 不判胜负。今天只由星阵人机局写进来(AI 停手或认输,本终端分不出是哪种,
+  // server.py `_record_platform_engine_game`)。规范里有定义的值,照它的意思念,不算猜。
+  if (/^void$/i.test(raw)) return t('review:no_result_line', '这盘没有判出胜负');
   const m = raw.match(/^([BW])\+(.+)$/i);
   if (!m) return raw;                       // 后端存了别的写法就原样念,不猜
   const winner = m[1].toUpperCase() as 'B' | 'W';
@@ -187,7 +215,10 @@ export function rowState(game: UserGameSummary, state: ReportGameStatus): RowSta
     }
     return { kind: 'failed', taskId: failed.id };
   }
-  return game.result ? { kind: 'unanalyzed' } : { kind: 'unfinished' };
+  // 「未终局」只给对弈局(P14)。它挡的是「半局的报告 + 离线算完再回去接着下」那条通道,
+  // 导入的谱、棋谱库、研究存档没有「回去接着下」这回事 —— 没写结果照样能分析。
+  if (game.result || !isPlaySource(game.source)) return { kind: 'unanalyzed' };
+  return { kind: 'unfinished' };
 }
 
 /**

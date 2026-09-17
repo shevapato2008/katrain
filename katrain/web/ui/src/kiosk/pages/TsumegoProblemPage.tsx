@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
@@ -14,24 +14,25 @@ import { usePhysicalTsumego, stonesToVisionBoard } from '../hooks/usePhysicalTsu
 import {
   CATEGORY_META,
   UNIT_SIZE,
-  sequenceKey,
+  fetchTsumegoSequence,
+  isCloudUnreachable,
+  loadErrorCopy,
+  readWrongSequence,
+  readSequence,
   readAutoAdvance,
   levelChinese,
   readPhysicalMode,
   writePhysicalMode,
   writeLastLevel,
   writeLastCategory,
+  writePracticeResume,
+  writeSequence,
 } from './tsumegoUnits';
 import { interpolate } from '../utils/interpolate';
-import { writeActiveSession } from '../utils/activeSession';
 import PhysicalStatePanel from '../components/tsumego/PhysicalStatePanel';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskActions, type KioskAction } from '../shell/KioskActions';
 import { GO_COLS, colsFor, rowsFor } from '../shell/goBoard';
-
-interface ProblemSummary {
-  id: string;
-}
 
 const formatTime = (seconds: number) => {
   const m = Math.floor(seconds / 60);
@@ -89,7 +90,15 @@ const TsumegoProblemPage = () => {
     setResyncKey((k) => k + 1);
   }, [reset]);
   // recognition_ready = 相机+模型+几何全就绪；物理盘固定 19 路（PRD Q1：非 19 路题隐藏物理模式）
-  const physicalAvailable = visionStatus.enabled && visionStatus.recognitionReady && boardSize === 19;
+  // ⚠️ 2026-09-14(T9):recognition_ready **不含「本次开机确认过」**。服务启动时持久化的标定锁
+  // 直接推进识别 worker ⇒ 盒子一重启它就是真,而几何是 required / session_calibrated=false。
+  // 做题路由不再无条件套 `PhysicalBoardGuard` 之后,这颗开关是唯一的关 ⇒ 放行条件照抄那道守卫。
+  // 没有 GeometryProvider(单测)时不管几何,和改之前一样;`disabled` = 没有摄像头服务,也放行。
+  const geoStatus = geometry?.status;
+  const geometryConfirmed = !geoStatus || geoStatus.phase === 'disabled'
+    || (geoStatus.phase === 'ready' && geoStatus.session_calibrated && geoStatus.capabilities.geometry_ready);
+  const physicalAvailable =
+    visionStatus.enabled && visionStatus.recognitionReady && geometryConfirmed && boardSize === 19;
   // problem 数据必须与当前路由匹配，防止题目切换途中用旧 stones 启动新题流程
   const physicalProblemReady = !!problem && problem.id === problemId;
   const physicalEnabled = physicalMode && physicalAvailable && physicalProblemReady;
@@ -99,8 +108,12 @@ const TsumegoProblemPage = () => {
   // restart: the saved geometry lock reloads but session_calibrated resets, so it needs a one-tap
   // re-confirm on the calibration page (not a full recalibration).
   const geoPhase = geometry?.status.phase;
+  // ⚠️ 2026-09-15(T9):**开关开着时也要说**。原来是 `physicalMode || physicalAvailable ? null` ——
+  // 那时做题路由恒套 `PhysicalBoardGuard`,几何一失效守卫整屏接管,开关开着时轮不到这里说话。
+  // 守卫改成挂载时决定之后:屏幕模式进来、页内打开、几何中途失效 ⇒ 实体流程停了
+  // (`physicalEnabled` 变假),开关却还亮着 —— 不说原因、不给「去标定」,人只会觉得盘坏了。
   const physicalHint: { text: string; calibrate?: boolean; severity: 'info' | 'warning' } | null =
-    physicalMode || physicalAvailable
+    physicalAvailable
       ? null
       : boardSize !== 19
         ? { text: t('tsumego:physNeed19', '物理棋盘仅支持 19 路题目'), severity: 'info' }
@@ -115,47 +128,73 @@ const TsumegoProblemPage = () => {
   // ---- Prev/Next sequence (4.1) ----
   // Sequence of problem ids for the whole category, sourced from sessionStorage (written by
   // the units pages). If missing (deep-link), fetch the full category list once and cache it.
-  const [sequence, setSequence] = useState<string[]>([]);
+  const [categorySequence, setCategorySequence] = useState<string[]>([]);
+  const [sequenceCategory, setSequenceCategory] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const wantWrongSet = searchParams.get('set') === 'wrong';
+  const wantAllSet = searchParams.get('set') === 'all';
 
   useEffect(() => {
     if (!problem) return;
-    const key = sequenceKey(problem.level, problem.category);
-    let seq: string[] = [];
-    try {
-      const raw = sessionStorage.getItem(key);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) seq = parsed.filter((x): x is string => typeof x === 'string');
-      }
-    } catch {
-      seq = [];
-    }
-
-    if (seq.length > 0) {
-      setSequence(seq);
-      return;
-    }
-
-    // Missing/empty — fetch the full category list once and cache it.
     const controller = new AbortController();
-    fetch(`/api/v1/tsumego/levels/${problem.level}/categories/${problem.category}?limit=1000`, {
-      signal: controller.signal,
-    })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
-      .then((data: ProblemSummary[]) => {
-        const ids = Array.isArray(data) ? data.map((p) => p.id) : [];
-        try {
-          sessionStorage.setItem(key, JSON.stringify(ids));
-        } catch {
-          /* best-effort */
-        }
-        setSequence(ids);
-      })
-      .catch(() => {
-        /* best-effort; prev/next stay disabled if we can't build the sequence */
-      });
-    return () => controller.abort();
-  }, [problem]);
+    let disposed = false;
+    const commit = (category: string, ids: string[]) => {
+      if (disposed) return;
+      setSequenceCategory(category);
+      setCategorySequence(ids);
+    };
+    const preferredCategory = wantAllSet ? 'all' : problem.category;
+    const fallbackToProblemCategory = () => {
+      const cached = readSequence(problem.level, problem.category);
+      if (cached && cached.length > 0) {
+        commit(problem.category, cached);
+        return;
+      }
+      fetchTsumegoSequence(problem.level, problem.category, controller.signal)
+        .then((ids) => {
+          writeSequence(problem.level, problem.category, ids);
+          commit(problem.category, ids);
+        })
+        .catch(() => {
+          /* best-effort; prev/next stay disabled if we can't build the sequence */
+        });
+    };
+
+    const cached = readSequence(problem.level, preferredCategory);
+    if (cached && cached.length > 0) {
+      if (preferredCategory === 'all' && !cached.includes(problem.id)) fallbackToProblemCategory();
+      else commit(preferredCategory, cached);
+    } else {
+      setCategorySequence([]);
+      setSequenceCategory(null);
+      fetchTsumegoSequence(problem.level, preferredCategory, controller.signal)
+        .then((ids) => {
+          writeSequence(problem.level, preferredCategory, ids);
+          if (preferredCategory === 'all' && !ids.includes(problem.id)) fallbackToProblemCategory();
+          else commit(preferredCategory, ids);
+        })
+        .catch(() => {
+          /* best-effort; prev/next stay disabled if we can't build the sequence */
+        });
+    }
+    return () => {
+      disposed = true;
+      controller.abort();
+    };
+  }, [problem, wantAllSet]);
+
+  // ---- 错题模式(T1)----
+  // `?set=wrong` 且错题快照里有这道题 ⇒ 上/下一题、做对自动下一题、实体模式做对后的翻页,
+  // 全部只在快照里走(快照由错题页在点格那一刻写,见 `TsumegoUnitListPage`)。
+  // 快照读不到 / 不含这道题(深链、换了标签页)⇒ 退回整类,**不假装还在错题里**。
+  // 快照由统一 activity store 按账号隔离:同一标签页换人,读不到别人点错题页时写的那份。
+  const wrongSequence = useMemo(
+    () => (wantWrongSet && problem ? readWrongSequence(problem.level, problem.category) : null),
+    [wantWrongSet, problem],
+  );
+  const inWrongSet = !!problemId && !!wrongSequence && wrongSequence.includes(problemId);
+  const inAllSet = wantAllSet && sequenceCategory === 'all' && !!problemId && categorySequence.includes(problemId);
+  const sequence = inWrongSet && wrongSequence ? wrongSequence : categorySequence;
 
   const currentIndex = useMemo(
     () => (problemId ? sequence.indexOf(problemId) : -1),
@@ -166,19 +205,29 @@ const TsumegoProblemPage = () => {
   const prevId = currentIndex > 0 ? sequence[currentIndex - 1] : null;
   const nextId = currentIndex >= 0 && currentIndex < sequence.length - 1 ? sequence[currentIndex + 1] : null;
 
-  // Populate the hub 继续练习 card + 上次 level highlight (B2.2/B2.4) whenever a problem loads.
+  // 训练营首页「接着上次」+ 两处高亮(B2.2/B2.4),每进一道题写一次 —— 按账号存(N10)。
+  // 错题模式下记带 `?set=wrong` 的路由:点「继续」回来还在错题里(T1)。
   useEffect(() => {
     if (!problem) return;
     writeLastLevel(problem.level);
-    writeLastCategory(problem.category);
-    writeActiveSession({
-      kind: 'practice',
-      label: `${levelChinese(problem.level)} · ${t(`tsumego:${problem.category}`, problem.category)} · 第 ${currentIndex + 1} 题`,
-      route: `/kiosk/tsumego/problem/${problem.id}`,
-      ts: Date.now(),
-    });
+    writeLastCategory(inAllSet ? 'all' : problem.category);
+    const journeyName = inAllSet
+      ? t('Mixed training', '综合训练')
+      : t(`tsumego:${problem.category}`, problem.category);
+    const head = `${levelChinese(problem.level)} · ${journeyName}`;
+    writePracticeResume(
+      inWrongSet
+        ? {
+            label: `${head} · ${interpolate(t('tsumego:wrongResume', '错题第 {n} 道'), { n: currentIndex + 1 })}`,
+            route: `/kiosk/tsumego/problem/${problem.id}?set=wrong`,
+          }
+        : {
+            label: `${head} · 第 ${currentIndex + 1} 题`,
+            route: `/kiosk/tsumego/problem/${problem.id}${inAllSet ? '?set=all' : ''}`,
+          },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot label written once per problem; `t` intentionally excluded
-  }, [problem, currentIndex]);
+  }, [problem, currentIndex, inWrongSet, inAllSet]);
 
   // "Last time" for this problem (4.3) — from the unified progress source.
   const lastDuration = problemId ? progress[problemId]?.lastDuration : undefined;
@@ -187,19 +236,21 @@ const TsumegoProblemPage = () => {
   const navigateToProblem = useCallback(
     (id: string) => {
       flushProgress(); // persist the leaving problem's attempt (4.1/4.2)
-      navigate(`/kiosk/tsumego/problem/${id}`);
+      const setQuery = inWrongSet ? '?set=wrong' : inAllSet ? '?set=all' : '';
+      navigate(`/kiosk/tsumego/problem/${id}${setQuery}`);
     },
-    [navigate, flushProgress],
+    [navigate, flushProgress, inWrongSet, inAllSet],
   );
 
   const goToUnits = useCallback(() => {
     flushProgress();
     if (problem) {
-      navigate(`/kiosk/tsumego/${problem.level}/${problem.category}`);
+      const category = inAllSet ? 'all' : problem.category;
+      navigate(`/kiosk/tsumego/${problem.level}/${category}${inWrongSet ? '/wrong' : ''}`);
     } else {
       navigate(-1);
     }
-  }, [navigate, problem, flushProgress]);
+  }, [navigate, problem, flushProgress, inWrongSet, inAllSet]);
 
   const handlePrev = useCallback(() => {
     if (prevId) navigateToProblem(prevId);
@@ -302,21 +353,32 @@ const TsumegoProblemPage = () => {
   // 这一屏能诚实说出口的只有 `hint` 那一句,加上这一屏自己的规则(落子即判)。
   // 稿子第三个标签「示意题面」也去掉:它标的是「这题是稿子上现摆的」,真题来自题库,挂着就是撒谎。
   const categoryName = problem ? t(`tsumego:${problem.category}`, CATEGORY_META[problem.category]?.zh ?? problem.category) : '';
+  const journeyName = inAllSet ? t('Mixed training', '综合训练') : categoryName;
   const levelName = problem ? levelChinese(problem.level) : '';
 
   // 这一题属于第几单元 —— 顺序表算得出来就算,算不出来(深链 + 取不到)就退回类目那一层。
-  const unitNumber = currentIndex >= 0 ? Math.floor(currentIndex / UNIT_SIZE) + 1 : null;
-  const unitIds = unitNumber === null
-    ? []
-    : sequence.slice((unitNumber - 1) * UNIT_SIZE, unitNumber * UNIT_SIZE);
+  // 错题模式下没有「第几单元」:单元块画的是这份错题快照,返回去错题页(T1)。
+  // ⚠️ 点阵**最多 20 个**(当前这道所在的那 20 个):右栏五块摆满 516、没有滚动,`.dots` 是
+  // 10 列网格 —— 快照 60 道就是 6 行,把动作区顶出画布。和整类模式一个单元同一个上限 ⇒ 右栏高度来源不变。
+  const unitNumber = !inWrongSet && currentIndex >= 0 ? Math.floor(currentIndex / UNIT_SIZE) + 1 : null;
+  const wrongPage = inWrongSet && currentIndex >= 0 ? Math.floor(currentIndex / UNIT_SIZE) : 0;
+  const unitIds = inWrongSet
+    ? sequence.slice(wrongPage * UNIT_SIZE, (wrongPage + 1) * UNIT_SIZE)
+    : unitNumber === null
+      ? []
+      : sequence.slice((unitNumber - 1) * UNIT_SIZE, unitNumber * UNIT_SIZE);
   const backTarget = problem
-    ? unitNumber === null
-      ? `/kiosk/tsumego/${problem.level}/${problem.category}`
-      : `/kiosk/tsumego/${problem.level}/${problem.category}/${unitNumber}`
+    ? inWrongSet
+      ? `/kiosk/tsumego/${problem.level}/${problem.category}/wrong`
+      : unitNumber === null
+        ? `/kiosk/tsumego/${problem.level}/${inAllSet ? 'all' : problem.category}`
+        : `/kiosk/tsumego/${problem.level}/${inAllSet ? 'all' : problem.category}/${unitNumber}`
     : null;
-  const backLabel = unitNumber === null
-    ? categoryName
-    : interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber });
+  const backLabel = inWrongSet
+    ? t('tsumego:wrongSet', '错题')
+    : unitNumber === null
+      ? categoryName
+      : interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber });
   const backToUnit = useCallback(() => {
     flushProgress();
     if (backTarget) navigate(backTarget);
@@ -348,9 +410,11 @@ const TsumegoProblemPage = () => {
       // 屏上会写「悔棋」。做题没有对手,悔的是自己上一手,稿子写的是「退一手」。
       label: t('tsumego:undoMove', '退一手'),
       onClick: undo,
-      // 实体模式下悔棋要**从盘上拿子**(LED 引导),屏幕上按一下会让机器和盘对不上。
+      // 实体模式下屏幕上按一下会让机器和盘对不上,所以灰着。**原因只许说做得到的事**:
+      // 状态机里没有「用户主动收回一手」这条流程,拿掉子机器毫无反应(T4);
+      // 「重摆」在实体模式下会重走清盘 → 摆题(`handleReset`),这句是真的。真流程待 Fan 拍板(prd.md §4 D1)。
       disabled: physicalEnabled,
-      reason: t('tsumego:undoPhysical', '实体棋盘上请直接把子拿掉，按灯光提示走'),
+      reason: t('tsumego:undoPhysicalReset', '实体棋盘上退不了一手；想重来，按「重摆」'),
     },
     { key: 'reset', icon: 'arrows-clockwise', label: t('Reset', '重摆'), onClick: handleReset },
     {
@@ -364,7 +428,12 @@ const TsumegoProblemPage = () => {
         : t('tsumego:isFirst', '这是第一题'),
     },
     isLast
-      ? { key: 'next', icon: 'squares-four', label: t('tsumego:backToUnit', '返回单元'), onClick: backToUnit }
+      ? {
+          key: 'next',
+          icon: 'squares-four',
+          label: inWrongSet ? t('tsumego:backToWrong', '返回错题') : t('tsumego:backToUnit', '返回单元'),
+          onClick: backToUnit,
+        }
       : {
           key: 'next',
           icon: 'skip-forward',
@@ -389,9 +458,12 @@ const TsumegoProblemPage = () => {
         {error ? (
           <div className="empty" data-testid="puzzle-error">
             {/* `tsumego:loadError` 在 PO 里是「死活题库加载失败，请稍后重试。」——
-                那是**一句话**,而这里要的是一个标题;原因写在下面那行。 */}
-            <h4>{t('tsumego:problemLoadError', '这道题读不到')}</h4>
-            <p>{error}</p>
+                那是**一句话**,而这里要的是一个标题;原因写在下面那行。
+                503 = 盒子连不上云端(N9),这时「这道题读不到」会被读成题坏了。 */}
+            {/* 这一屏没有重试键(`useTsumegoProblem` 不出 reload,不往那个共用 hook 上加)——
+                503 那句话传 `{ retry: false }`,换一句不叫人「点重试」的收尾。 */}
+            <h4>{isCloudUnreachable(error) ? loadErrorCopy(t, error, { retry: false }).title : t('tsumego:problemLoadError', '这道题读不到')}</h4>
+            <p>{loadErrorCopy(t, error, { retry: false }).body}</p>
           </div>
         ) : (
           <div className="empty" data-testid="puzzle-loading">
@@ -458,8 +530,12 @@ const TsumegoProblemPage = () => {
           testId="puzzle-pagebar"
           backLabel={backLabel}
           onBack={backToUnit}
-          title={interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: currentIndex >= 0 ? currentIndex + 1 : 1 })}
-          sub={`${levelName} · ${categoryName}`}
+          title={
+            inWrongSet
+              ? interpolate(t('tsumego:wrongProgress', '错题 第 {i} / {n} 道'), { i: currentIndex + 1, n: sequence.length })
+              : interpolate(t('tsumego:problem_no', '第 {n} 题'), { n: currentIndex >= 0 ? currentIndex + 1 : 1 })
+          }
+          sub={`${levelName} · ${journeyName}`}
           // §11 只允许一个页级图标键。这一屏它只在**标定失效**时出现 ——
           // 实体棋盘开不了的时候,得有一条走得通的路,而不只是一句解释。
           action={physicalHint?.calibrate ? {
@@ -519,8 +595,6 @@ const TsumegoProblemPage = () => {
                     missing={physical.missing}
                     extra={physical.extra}
                     stage={physical.stage}
-                    isComplete={false}
-                    onStartProblem={() => {}}
                     onSkip={() => setPhysical(false)}
                   />
                 )}
@@ -628,9 +702,11 @@ const TsumegoProblemPage = () => {
 
         <div className="panel" data-testid="puzzle-unit">
           <h3>
-            {unitNumber === null
-              ? t('tsumego:unitUnknown', '这一单元')
-              : `${interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber })} · ${interpolate(t('tsumego:unit_total', '{n} 题'), { n: unitIds.length })}`}
+            {inWrongSet
+              ? `${t('tsumego:wrongSet', '错题')} · ${interpolate(t('tsumego:wrong_total', '{n} 道'), { n: sequence.length })}`
+              : unitNumber === null
+                ? t('tsumego:unitUnknown', '这一单元')
+                : `${interpolate(t('tsumego:unit_n', '第 {n} 单元'), { n: unitNumber })} · ${interpolate(t('tsumego:unit_total', '{n} 题'), { n: unitIds.length })}`}
           </h3>
           {unitIds.length > 0 ? (
             <div className="dots" data-testid="puzzle-dots">

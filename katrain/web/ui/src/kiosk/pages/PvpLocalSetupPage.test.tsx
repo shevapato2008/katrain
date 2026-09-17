@@ -6,6 +6,7 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import PvpLocalSetupPage from './PvpLocalSetupPage';
 import { PLAY_ON_BOARD_KEY, readPlayOnBoard } from '../utils/playInput';
+import { readAudioPref, writeAudioPref } from '../../utils/audioPrefs';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -19,7 +20,7 @@ vi.mock('../../api', () => ({
   },
 }));
 const { writeActiveSession } = vi.hoisted(() => ({ writeActiveSession: vi.fn() }));
-vi.mock('../utils/activeSession', () => ({ writeActiveSession }));
+vi.mock('../utils/activeSession', () => ({ writeActiveSession, readActiveSession: () => null, clearActiveSession: vi.fn() }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: 'tok', user: { username: 'u' } }) }));
 
 // 「怎么落子」的**设备那一段**由它给(用户那一段在 `utils/playInput`)。
@@ -48,6 +49,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   // 偏好活在 localStorage 里,**跨用例会串**。清掉 = 回到默认(开)。
   localStorage.removeItem(PLAY_ON_BOARD_KEY);
+  localStorage.removeItem('kiosk_audio_sfx');
+  localStorage.removeItem('kioskPlaySound');
   vision.enabled = false;
 });
 
@@ -137,11 +140,12 @@ describe('PvpLocalSetupPage', () => {
     vision.enabled = true;
     renderPage();
     expect(seg().getByRole('button', { name: '实体盘' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('两人面对面下在这块盘上');
+    // F7:实体盘/屏幕两态统一成同一句提示(不再各说各的),见 local:input_hint_v2。
+    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('实体盘只有 19 路');
 
     await userEvent.click(seg().getByRole('button', { name: '屏幕' }));
     expect(readPlayOnBoard()).toBe(false);
-    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('两人轮流点屏幕落子');
+    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('实体盘只有 19 路');
   });
 
   // 盒子上那块盘是 19 路的 —— 选 9 路,实体盘这条路自己塌掉,偏好不动。
@@ -162,16 +166,64 @@ describe('PvpLocalSetupPage', () => {
     expect(screen.queryByTestId('setup-color')).not.toBeInTheDocument();
   });
 
-  // 屏上那两句话是**产品文案里最容易编的一类** —— 它们说的是别的屏上的事(对局屏封了什么、
-  // 段位在哪儿改)。两句都有出处:`interface.py:253/258`。改了就得先去核那两行。
-  it('底下那段说明指的是「升降级对弈」,不是在线大厅', () => {
+  // P3:屏上写「这一局不贴目」,载荷就必须是 0 —— 以前照发 6.5。
+  it('让了子:送出去的 komi 是 0;调回 0 子:送出去的是那一档', async () => {
+    renderPage();
+    await userEvent.click(step('setup-handicap', '＋'));
+    await userEvent.click(screen.getByRole('button', { name: /开始对局/ }));
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());
+    expect(lastSetup()[2]).toMatchObject({ handicap: 1, komi: 0 });
+  });
+
+  it('不让子:komi 仍是贴目轨上那一档(默认 6.5)', async () => {
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: /开始对局/ }));
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());
+    expect(lastSetup()[2]).toMatchObject({ handicap: 0, komi: 6.5 });
+  });
+
+  // §3.5:这一局下不下实体盘在开局那一刻算好,随活动会话写下 —— 守卫和对局屏读它。
+  it('活动会话带上开局那一刻的 onBoard:19 路标定过为 true,9 路为 false', async () => {
+    vision.enabled = true;
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: /开始对局/ }));
+    await waitFor(() => expect(writeActiveSession).toHaveBeenCalled());
+    expect(writeActiveSession.mock.calls[0][0]).toMatchObject({ route: '/kiosk/play/pvp/local/game/s1', onBoard: true });
+
+    writeActiveSession.mockClear();
+    await userEvent.click(within(screen.getByTestId('setup-size')).getByRole('button', { name: '9 路' }));
+    await userEvent.click(screen.getByRole('button', { name: /开始对局/ }));
+    await waitFor(() => expect(writeActiveSession).toHaveBeenCalled());
+    expect(writeActiveSession.mock.calls[0][0]).toMatchObject({ onBoard: false });
+  });
+
+  // P9:提示音只留一把 —— 屏 04 这颗和设置屏「落子音效」是同一把 audioPrefs sfx。
+  it('提示音开关读写全局 sfx,点下去立即生效,不再写 kioskPlaySound', async () => {
+    writeAudioPref('sfx', false);
+    renderPage();
+    const chips = within(screen.getByTestId('setup-sound'));
+    expect(chips.getByRole('button', { name: '关' })).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(chips.getByRole('button', { name: '开' }));
+    expect(readAudioPref('sfx')).toBe(true);
+    await userEvent.click(screen.getByRole('button', { name: /开始对局/ }));
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());
+    expect(localStorage.getItem('kioskPlaySound')).toBeNull();
+    expect(screen.getByTestId('setup-sound-group')).toHaveTextContent('和「设置 · 声音」里的落子音是同一个开关');
+  });
+
+  // P10/P11:说明要说实际发生的事 —— 没有死子交互,数子是 AI 估算;段位只在升降级对弈改。
+  // F7:文案表定稿版 —— 「由 AI 估算胜负」换成「死活按引擎判断」,并补上「中途退出不存谱」(D2),
+  // 不再提「在线大厅」(定级赛权威在「升降级对弈」,见文件头注释②)。
+  it('底下那段说明如实:自动数子后死活按引擎判断,只留档不动段位,中途退出不存谱', () => {
     renderPage();
     const note = screen.getByTestId('setup-note');
-    expect(note).toHaveTextContent('只留档,不动段位');
-    expect(note).toHaveTextContent('升降级对弈');
+    expect(note).toHaveTextContent('双方各停一手后自动数子');
+    expect(note).toHaveTextContent('死活按引擎判断');
+    expect(note).toHaveTextContent('只留档，不动段位');
+    expect(note).toHaveTextContent('中途退出');
+    expect(note).toHaveTextContent('不存谱');
+    expect(note).not.toHaveTextContent('自己确认');
     expect(note).not.toHaveTextContent('在线大厅');
-    // 「没有形势判断」是稿子的原话,而 `pvp_local` 不在 SCORING_GAME_TYPES 里 ⇒
-    // 对局屏那颗「领地」照样能按。屏上不许说这句。
-    expect(note).not.toHaveTextContent('形势判断');
+    expect(note).not.toHaveTextContent('由 AI 估算胜负');
   });
 });

@@ -144,6 +144,19 @@ describe('播放那一侧真的读它 —— 判据不落在键名上', () => {
     ]);
   });
 
+  it('播放中关掉语音后再次 speak,会暂停旧语音但不创建或播放新语音', () => {
+    const { result } = renderHook(() => useVoice());
+
+    act(() => result.current.speak('clear_board'));
+    const first = audioInstances[0];
+    act(() => writeAudioPref('voice', false));
+    act(() => result.current.speak('place_black'));
+
+    expect(first.pause).toHaveBeenCalledOnce();
+    expect(audioInstances).toHaveLength(1);
+    expect(played).toEqual(['/assets/sounds/voice/clear_board.mp3']);
+  });
+
   it('显式 stop 暂停并释放当前语音,之后 speak 不会再暂停旧语音', () => {
     const { result } = renderHook(() => useVoice());
 

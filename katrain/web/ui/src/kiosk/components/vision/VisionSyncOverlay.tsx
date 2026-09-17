@@ -16,6 +16,7 @@ import AmbiguousMoveCard from '../physical/AmbiguousMoveCard';
 import { API } from '../../../api';
 import { useTranslation } from '../../../hooks/useTranslation';
 import type { VisionSyncEvent, SyncEventType } from '../../hooks/useVisionSync';
+import { useVoice, type VoiceName } from '../../hooks/useVoice';
 import {
   initialRecoveryState,
   reduceRecoveryState,
@@ -74,12 +75,21 @@ const TOAST_MAP: Partial<Record<SyncEventType, ToastConfig>> = {
 
 const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, playerToMove, currentNodeId, suppressBoardLost = false }: VisionSyncOverlayProps) => {
   const { t } = useTranslation();
+  const { speak, stop } = useVoice();
 
   // -- Toast state ----------------------------------------------------------
   const [toastOpen, setToastOpen] = useState(false);
   const [toastConfig, setToastConfig] = useState<ToastConfig | null>(null);
 
   const [recovery, setRecovery] = useState<RecoveryState>(initialRecoveryState);
+  const spokenRecoveryRef = useRef<string | null>(null);
+  const stoneRecovery = recovery.blocking?.kind === 'stone' ? recovery.blocking : null;
+  const recoveryVoiceName: VoiceName | null = stoneRecovery
+    ? stoneRecovery.unbacked ? 'stone_offcenter' : 'suspected_move'
+    : null;
+  const recoveryVoiceIdentity = stoneRecovery && recoveryVoiceName
+    ? `${recoveryVoiceName}:${stoneRecovery.row}:${stoneRecovery.col}:${stoneRecovery.from?.[0] ?? '-'}:${stoneRecovery.from?.[1] ?? '-'}`
+    : null;
 
   // -- Modal: board_lost (>10s persistent) ----------------------------------
   const [boardLostOpen, setBoardLostOpen] = useState(false);
@@ -136,6 +146,18 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
     currentNodeIdRef.current = currentNodeId;
     setRecovery((state) => reduceRecoveryState(state, { kind: 'node_advanced' }));
   }, [currentNodeId]);
+
+  useEffect(() => {
+    if (recoveryVoiceIdentity === null || recoveryVoiceName === null) {
+      if (spokenRecoveryRef.current !== null) stop();
+      spokenRecoveryRef.current = null;
+      return;
+    }
+    if (spokenRecoveryRef.current === recoveryVoiceIdentity) return;
+
+    spokenRecoveryRef.current = recoveryVoiceIdentity;
+    speak(recoveryVoiceName);
+  }, [recoveryVoiceIdentity, recoveryVoiceName, speak, stop]);
 
   // -- Process new events ---------------------------------------------------
   useEffect(() => {

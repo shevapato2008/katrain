@@ -8,11 +8,16 @@ const mocks = vi.hoisted(() => ({
   playMove: vi.fn().mockResolvedValue(undefined),
   visionResetSync: vi.fn().mockResolvedValue(undefined),
   translate: vi.fn((_key: string, fallback?: string) => fallback ?? ''),
+  voiceSpeak: vi.fn(),
+  voiceStop: vi.fn(),
 }));
 
 vi.mock('../../../api', () => ({ API: mocks }));
 vi.mock('../../../hooks/useTranslation', () => ({
   useTranslation: () => ({ t: mocks.translate }),
+}));
+vi.mock('../../hooks/useVoice', () => ({
+  useVoice: () => ({ speak: mocks.voiceSpeak, stop: mocks.voiceStop }),
 }));
 
 const event = (seq: number, type: VisionSyncEvent['type'], data: Record<string, unknown> = {}): VisionSyncEvent => ({
@@ -68,6 +73,101 @@ describe('VisionSyncOverlay recovery presentation', () => {
     expect(await screen.findByText(/检测到疑似落子/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '忽略' }));
     expect(mocks.visionResetSync).toHaveBeenCalledWith('physical');
+  });
+
+  it('announces an off-centre stone once across unchanged and unrelated rerenders', async () => {
+    const stone = event(1, 'ambiguous_stone', { row: 3, col: 3, color: 1, unbacked: true });
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[stone]} />);
+
+    await waitFor(() => expect(mocks.voiceSpeak).toHaveBeenCalledWith('stone_offcenter'));
+    expect(mocks.voiceSpeak).toHaveBeenCalledTimes(1);
+
+    rerender(<VisionSyncOverlay {...props} syncEvents={[stone]} />);
+    expect(mocks.voiceSpeak).toHaveBeenCalledTimes(1);
+
+    rerender(<VisionSyncOverlay {...props} syncEvents={[stone, event(2, 'degraded')]} />);
+    expect(mocks.voiceSpeak).toHaveBeenCalledTimes(1);
+  });
+
+  it('announces a suspected move once', async () => {
+    render(
+      <VisionSyncOverlay
+        {...props}
+        syncEvents={[event(1, 'ambiguous_stone', { row: 3, col: 3, color: 1, unbacked: false })]}
+      />,
+    );
+
+    await waitFor(() => expect(mocks.voiceSpeak).toHaveBeenCalledWith('suspected_move'));
+    expect(mocks.voiceSpeak).toHaveBeenCalledTimes(1);
+  });
+
+  it('announces another stone target even when it uses the same voice line', async () => {
+    const first = event(1, 'ambiguous_stone', { row: 3, col: 3, color: 1, unbacked: false });
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[first]} />);
+    await waitFor(() => expect(mocks.voiceSpeak).toHaveBeenCalledTimes(1));
+
+    rerender(
+      <VisionSyncOverlay
+        {...props}
+        syncEvents={[first, event(2, 'ambiguous_stone', { row: 4, col: 5, color: 1, unbacked: false })]}
+      />,
+    );
+
+    await waitFor(() => expect(mocks.voiceSpeak).toHaveBeenCalledTimes(2));
+    expect(mocks.voiceSpeak).toHaveBeenNthCalledWith(2, 'suspected_move');
+  });
+
+  it('stops a cleared prompt and allows the same target to be announced again', async () => {
+    const stone = event(1, 'ambiguous_stone', { row: 3, col: 3, color: 1, unbacked: true });
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[stone]} />);
+    await waitFor(() => expect(mocks.voiceSpeak).toHaveBeenCalledTimes(1));
+
+    rerender(<VisionSyncOverlay {...props} syncEvents={[stone, event(2, 'synced')]} />);
+    await waitFor(() => expect(mocks.voiceStop).toHaveBeenCalledTimes(1));
+
+    rerender(
+      <VisionSyncOverlay
+        {...props}
+        syncEvents={[stone, event(2, 'synced'), { ...stone, seq: 3 }]}
+      />,
+    );
+    await waitFor(() => expect(mocks.voiceSpeak).toHaveBeenCalledTimes(2));
+    expect(mocks.voiceSpeak).toHaveBeenNthCalledWith(2, 'stone_offcenter');
+  });
+
+  it.each([
+    ['capture recovery', event(1, 'capture_pending', { positions: [[7, 7, 2]] })],
+    ['initial generic mismatch', event(1, 'illegal_change', { positions: [[5, 5, 1]], missing: [] })],
+    ['toast', event(1, 'degraded')],
+  ])('keeps %s silent', (_name, syncEvent) => {
+    render(<VisionSyncOverlay {...props} syncEvents={[syncEvent]} />);
+
+    expect(mocks.voiceSpeak).not.toHaveBeenCalled();
+  });
+
+  it('keeps persistent board loss silent', () => {
+    vi.useFakeTimers();
+    render(<VisionSyncOverlay {...props} syncEvents={[event(1, 'board_lost')]} />);
+    act(() => vi.advanceTimersByTime(10_000));
+
+    expect(screen.getByText('棋盘检测异常')).toBeInTheDocument();
+    expect(mocks.voiceSpeak).not.toHaveBeenCalled();
+  });
+
+  it('stops the stone prompt when capture recovery takes over', async () => {
+    const stone = event(1, 'ambiguous_stone', { row: 3, col: 3, color: 1, unbacked: true });
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[stone]} />);
+    await waitFor(() => expect(mocks.voiceSpeak).toHaveBeenCalledTimes(1));
+
+    rerender(
+      <VisionSyncOverlay
+        {...props}
+        syncEvents={[stone, event(2, 'capture_pending', { positions: [[7, 7, 2]] })]}
+      />,
+    );
+
+    await waitFor(() => expect(mocks.voiceStop).toHaveBeenCalledTimes(1));
+    expect(mocks.voiceSpeak).toHaveBeenCalledTimes(1);
   });
 
   it('suppresses the exact pending mismatch for four seconds, then allows a later occurrence', () => {

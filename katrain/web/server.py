@@ -612,7 +612,10 @@ async def _lifespan_board(app: FastAPI, log):
             camera_height = vision_config.camera_height
 
         if hardware_vision_dir:
-            from katrain.web.core.hardware_vision_state import HardwareVisionStateStore
+            from katrain.web.core.hardware_vision_state import (
+                CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK,
+                HardwareVisionStateStore,
+            )
 
             hardware_vision_store = HardwareVisionStateStore(Path(hardware_vision_dir).expanduser())
             hardware_vision_state = hardware_vision_store.load_current(
@@ -622,15 +625,17 @@ async def _lifespan_board(app: FastAPI, log):
             )
             app.state.hardware_vision_store = hardware_vision_store
 
-        persisted_lock_exposure = hardware_vision_state is not None
-        persisted_exposure = hardware_vision_state.profile.exposure if hardware_vision_state is not None else None
+        persisted_lock_exposure = bool(
+            hardware_vision_state is not None
+            and hardware_vision_state.profile.strategy == CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK
+        )
         if capture_config and capture_config.enabled:
             hub_config = CameraHubConfig(
                 device_id=capture_config.camera_device,
                 width=capture_config.width,
                 height=capture_config.height,
                 lock_exposure=(persisted_lock_exposure if hardware_vision_dir else capture_config.lock_exposure),
-                exposure=(persisted_exposure if hardware_vision_dir else capture_config.exposure),
+                exposure=(None if hardware_vision_dir else capture_config.exposure),
                 lock_awb=capture_config.lock_awb,
             )
         else:
@@ -639,7 +644,7 @@ async def _lifespan_board(app: FastAPI, log):
                 width=vision_config.camera_width,
                 height=vision_config.camera_height,
                 lock_exposure=persisted_lock_exposure,
-                exposure=persisted_exposure,
+                exposure=None,
                 lock_awb=False,
             )
         camera_hub = CameraHub(hub_config)
@@ -655,6 +660,19 @@ async def _lifespan_board(app: FastAPI, log):
                 "Camera unavailable; continuing without vision, capture, calibration, or physical play: %s", exc
             )
             camera_hub = None
+        if camera_hub is not None and hardware_vision_state is not None:
+            if camera_hub.controls_effective is not True:
+                # Never mount geometry whose exposure policy was not successfully
+                # established.  Leave the camera in native AE as the safe recovery
+                # mode; a new calibration will publish a fresh coherent generation.
+                from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_ON
+
+                log.warning(
+                    "Ignoring persisted geometry because camera control strategy %s was not verified",
+                    hardware_vision_state.profile.strategy,
+                )
+                camera_hub.request_controls(auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
+                hardware_vision_state = None
     app.state.camera_hub = camera_hub
     if camera_hub is not None and hardware_vision_state is not None:
         # Geometry and controls come from the same validated generation. This is
@@ -745,13 +763,12 @@ async def _lifespan_board(app: FastAPI, log):
         if app.state.hardware_vision_store is not None:
             from katrain.web.core.hardware_vision_state import CameraProfile
 
-            def persist_state(lock, auto_exposure, exposure, before_publish):
+            def persist_state(lock, strategy, before_publish):
                 profile = CameraProfile(
                     camera_device=capture_config.camera_device,
                     width=capture_config.width,
                     height=capture_config.height,
-                    auto_exposure=auto_exposure,
-                    exposure=exposure,
+                    strategy=strategy,
                 )
                 app.state.hardware_vision_store.commit(lock, profile, before_publish=before_publish)
 

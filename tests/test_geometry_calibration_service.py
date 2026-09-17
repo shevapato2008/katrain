@@ -95,17 +95,18 @@ def test_success_atomically_promotes_new_lock(tmp_path):
     assert (tmp_path / "geometry.npz").exists()
 
 
-def test_success_persists_geometry_and_verified_manual_controls_together(tmp_path):
+def test_success_persists_geometry_and_replay_safe_control_strategy_together(tmp_path):
     lock = _synth()
     persisted = []
 
-    def persist_state(geometry, auto_exposure, exposure, before_publish):
+    def persist_state(geometry, strategy, before_publish):
         before_publish()
-        persisted.append((geometry, auto_exposure, exposure))
+        persisted.append((geometry, strategy))
 
     class ManualCapture(FakeCapture):
         current_auto_exposure = CAMERA_AUTO_EXPOSURE_OFF
         current_exposure = 321.0
+        controls_effective = True
 
     service = GeometryCalibrationService(
         led=FakeLed(),
@@ -119,26 +120,55 @@ def test_success_persists_geometry_and_verified_manual_controls_together(tmp_pat
     service.wait(timeout=2)
 
     assert service.status()["phase"] == "ready"
-    assert persisted == [(lock, CAMERA_AUTO_EXPOSURE_OFF, 321.0)]
+    assert persisted == [(lock, "hardware_auto_then_lock")]
     assert not (tmp_path / "unused.npz").exists()
 
 
-@pytest.mark.parametrize(
-    ("auto_exposure", "exposure"),
-    [(CAMERA_AUTO_EXPOSURE_ON, 321.0), (CAMERA_AUTO_EXPOSURE_OFF, float("nan")), (None, 321.0)],
-)
-def test_success_refuses_to_persist_unverified_camera_controls(tmp_path, auto_exposure, exposure):
+@pytest.mark.parametrize("shadow_exposure", [321.0, 5000.0, float("nan"), None])
+def test_success_never_persists_unreliable_exposure_readback(tmp_path, shadow_exposure):
     lock = _synth()
     persisted = []
 
     class InvalidCapture(FakeCapture):
-        current_auto_exposure = auto_exposure
-        current_exposure = exposure
+        current_auto_exposure = CAMERA_AUTO_EXPOSURE_OFF
+        current_exposure = shadow_exposure
+        controls_effective = True
 
     service = GeometryCalibrationService(
         led=FakeLed(),
         capture=InvalidCapture(),
         save_path=tmp_path / "unused.npz",
+        persist_state=lambda *args: persisted.append(args),
+        calibrator_factory=lambda **kwargs: ResultCalibrator(CalibrationResult(ok=True, lock=lock), **kwargs),
+    )
+
+    service.start(trigger="manual", empty_confirmed=True)
+    service.wait(timeout=2)
+
+    assert service.status()["phase"] == "ready"
+    assert len(persisted) == 1
+    assert persisted[0][0] is lock
+    assert persisted[0][1] == "hardware_auto_then_lock"
+    assert len(persisted[0]) == 3  # lock, strategy, before_publish; no exposure readback
+
+
+@pytest.mark.parametrize(
+    ("auto_exposure", "controls_effective"),
+    [(CAMERA_AUTO_EXPOSURE_ON, True), (CAMERA_AUTO_EXPOSURE_OFF, False), (None, True)],
+)
+def test_success_refuses_to_persist_without_verified_manual_mode(tmp_path, auto_exposure, controls_effective):
+    lock = _synth()
+    persisted = []
+
+    class InvalidCapture(FakeCapture):
+        current_auto_exposure = auto_exposure
+        current_exposure = 5000.0
+
+    capture = InvalidCapture()
+    capture.controls_effective = controls_effective
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
         persist_state=lambda *args: persisted.append(args),
         calibrator_factory=lambda **kwargs: ResultCalibrator(CalibrationResult(ok=True, lock=lock), **kwargs),
     )
@@ -600,7 +630,7 @@ class RestoringFakeCapture(FakeCapture):
         if self._pending_controls is not None:
             exposure, auto_exposure = self._pending_controls
             self._pending_controls = None
-            is_restore = exposure == self.initial_exposure and auto_exposure == CAMERA_AUTO_EXPOSURE_OFF
+            is_restore = exposure is None and auto_exposure == CAMERA_AUTO_EXPOSURE_OFF
             if is_restore and not self.restore_succeeds:
                 self.controls_effective = False
             else:
@@ -623,7 +653,7 @@ def _result_calibrator_factory(result):
     return lambda **kwargs: ResultCalibrator(result, **kwargs)
 
 
-def test_failed_calibration_restores_original_manual_exposure(tmp_path):
+def test_failed_calibration_restores_manual_mode_without_replaying_exposure(tmp_path):
     capture = RestoringFakeCapture(current_auto_exposure=1.005, current_exposure=320.0)
     service = GeometryCalibrationService(
         led=FakeLed(),
@@ -636,13 +666,13 @@ def test_failed_calibration_restores_original_manual_exposure(tmp_path):
     assert service.wait(timeout=5) is True
 
     assert service.status()["error"] == "anchor_not_found:0,0"
-    assert capture.control_calls[-1] == (320.0, CAMERA_AUTO_EXPOSURE_OFF)
+    assert capture.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF)
     assert capture.current_auto_exposure == CAMERA_AUTO_EXPOSURE_OFF
     assert capture.current_exposure == 320.0
     service.stop()
 
 
-def test_cancelled_calibration_restores_original_exposure(tmp_path):
+def test_cancelled_calibration_restores_manual_mode_without_replaying_exposure(tmp_path):
     capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=321.0)
     service = GeometryCalibrationService(
         led=FakeLed(),
@@ -655,11 +685,11 @@ def test_cancelled_calibration_restores_original_exposure(tmp_path):
     assert service.wait(timeout=5) is True
 
     assert service.status()["phase"] == "cancelled"
-    assert capture.control_calls[-1] == (321.0, CAMERA_AUTO_EXPOSURE_OFF)
+    assert capture.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF)
     service.stop()
 
 
-def test_calibrator_exception_restores_original_exposure(tmp_path):
+def test_calibrator_exception_restores_manual_mode_without_replaying_exposure(tmp_path):
     class ExplodingCalibrator:
         def __init__(self, **_kwargs):
             pass
@@ -676,7 +706,7 @@ def test_calibrator_exception_restores_original_exposure(tmp_path):
     assert service.wait(timeout=5) is True
 
     assert service.status()["error"] == "calibrator exploded"
-    assert capture.control_calls[-1] == (322.0, CAMERA_AUTO_EXPOSURE_OFF)
+    assert capture.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF)
     service.stop()
 
 
@@ -738,15 +768,23 @@ def test_invalid_or_unknown_exposure_snapshot_is_not_restored(tmp_path, auto_exp
     service.start(trigger="manual", empty_confirmed=True)
     assert service.wait(timeout=5) is True
 
-    assert capture.control_calls == [(None, CAMERA_AUTO_EXPOSURE_OFF)]
+    expected_calls = [(None, CAMERA_AUTO_EXPOSURE_OFF)]
+    if auto_exposure == CAMERA_AUTO_EXPOSURE_OFF:
+        expected_calls.append((None, CAMERA_AUTO_EXPOSURE_OFF))
+    assert capture.control_calls == expected_calls
     service.stop()
 
 
 def test_restore_readback_failure_preserves_calibration_failure(tmp_path, caplog):
-    capture = RestoringFakeCapture(
+    class FailRollbackCapture(RestoringFakeCapture):
+        def grab_fresh(self, after_ts=None, settle_ms=150.0):
+            if len(self.control_calls) >= 2:
+                self.restore_succeeds = False
+            return super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
+
+    capture = FailRollbackCapture(
         current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF,
         current_exposure=324.0,
-        restore_succeeds=False,
     )
     service = GeometryCalibrationService(
         led=FakeLed(),
@@ -766,16 +804,16 @@ def test_restore_readback_failure_preserves_calibration_failure(tmp_path, caplog
 
 
 @pytest.mark.parametrize(
-    ("competing_auto_exposure", "competing_exposure"),
-    [(CAMERA_AUTO_EXPOSURE_ON, 327.0), (CAMERA_AUTO_EXPOSURE_OFF, 999.0)],
+    ("competing_auto_exposure", "competing_exposure", "expect_warning"),
+    [(CAMERA_AUTO_EXPOSURE_ON, 327.0, True), (CAMERA_AUTO_EXPOSURE_OFF, 999.0, False)],
 )
 def test_restore_rejects_success_readback_for_competing_control_request(
-    tmp_path, caplog, competing_auto_exposure, competing_exposure
+    tmp_path, caplog, competing_auto_exposure, competing_exposure, expect_warning
 ):
     class CompetingControlCapture(RestoringFakeCapture):
         def grab_fresh(self, after_ts=None, settle_ms=150.0):
             result = super().grab_fresh(after_ts=after_ts, settle_ms=settle_ms)
-            if self.control_calls and self.control_calls[-1] == (327.0, CAMERA_AUTO_EXPOSURE_OFF):
+            if self.control_calls and self.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF):
                 self.current_auto_exposure = competing_auto_exposure
                 self.current_exposure = competing_exposure
                 self.controls_effective = True
@@ -794,7 +832,7 @@ def test_restore_rejects_success_readback_for_competing_control_request(
         assert service.wait(timeout=5) is True
 
     assert service.status()["error"] == "original failure"
-    assert any("restore readback failed" in record.getMessage() for record in caplog.records)
+    assert any("restore readback failed" in record.getMessage() for record in caplog.records) is expect_warning
     service.stop()
 
 
@@ -810,20 +848,20 @@ def test_cancel_before_store_pointer_swap_keeps_old_generation_and_restores_expo
     new_lock.source_height = 480
     store.commit(
         old_lock,
-        CameraProfile(camera_device="/dev/video73", width=640, height=480, auto_exposure=1.0, exposure=100.0),
+        CameraProfile(camera_device="/dev/video73", width=640, height=480),
         generation="old",
     )
     entered = threading.Event()
     release = threading.Event()
     promoted = []
 
-    def persist_state(lock, auto_exposure, exposure, before_publish):
+    def persist_state(lock, strategy, before_publish):
+        assert strategy == "hardware_auto_then_lock"
         profile = CameraProfile(
             camera_device="/dev/video73",
             width=640,
             height=480,
-            auto_exposure=auto_exposure,
-            exposure=exposure,
+            strategy=strategy,
         )
 
         def blocking_before_publish():
@@ -852,11 +890,11 @@ def test_cancel_before_store_pointer_swap_keeps_old_generation_and_restores_expo
     assert service.status()["phase"] == "cancelled"
     assert service.current_lock is old_lock
     assert promoted == []
-    assert capture.control_calls[-1] == (328.0, CAMERA_AUTO_EXPOSURE_OFF)
+    assert capture.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF)
     current = store.load_current("/dev/video73", 640, 480)
     assert current is not None
     assert current.generation == "old"
-    assert current.profile.exposure == 100.0
+    assert current.profile.exposure is None
     np.testing.assert_array_equal(current.geometry.baseline, old_lock.baseline)
     assert (tmp_path / "hardware-vision" / "generations" / "new").is_dir()
     service.stop()
@@ -874,19 +912,19 @@ def test_cancel_after_store_publish_boundary_does_not_abort_commit(tmp_path):
     new_lock.source_height = 480
     store.commit(
         old_lock,
-        CameraProfile(camera_device="/dev/video73", width=640, height=480, auto_exposure=1.0, exposure=100.0),
+        CameraProfile(camera_device="/dev/video73", width=640, height=480),
         generation="old",
     )
     boundary_started = threading.Event()
     release = threading.Event()
 
-    def persist_state(lock, auto_exposure, exposure, before_publish):
+    def persist_state(lock, strategy, before_publish):
+        assert strategy == "hardware_auto_then_lock"
         profile = CameraProfile(
             camera_device="/dev/video73",
             width=640,
             height=480,
-            auto_exposure=auto_exposure,
-            exposure=exposure,
+            strategy=strategy,
         )
 
         def blocking_before_publish():
@@ -918,7 +956,7 @@ def test_cancel_after_store_publish_boundary_does_not_abort_commit(tmp_path):
     current = store.load_current("/dev/video73", 640, 480)
     assert current is not None
     assert current.generation == "new"
-    assert current.profile.exposure == 331.0
+    assert current.profile.exposure is None
     np.testing.assert_array_equal(current.geometry.baseline, new_lock.baseline)
     service.stop()
 
@@ -961,7 +999,7 @@ def test_cancel_during_legacy_staging_preserves_old_file_and_restores_exposure(t
     assert service.status()["phase"] == "cancelled"
     assert service.current_lock is old_lock
     assert promoted == []
-    assert capture.control_calls[-1] == (329.0, CAMERA_AUTO_EXPOSURE_OFF)
+    assert capture.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF)
     persisted = load_geometry_lock(save_path)
     np.testing.assert_array_equal(persisted.baseline, old_lock.baseline)
     assert persisted.confidence == old_lock.confidence
@@ -1014,9 +1052,7 @@ def test_legacy_staging_cleanup_failure_does_not_reverse_success(tmp_path, monke
 
 
 @pytest.mark.parametrize("has_existing_files", [True, False])
-def test_legacy_sidecar_replace_failure_restores_files_and_runtime_state(
-    tmp_path, monkeypatch, has_existing_files
-):
+def test_legacy_sidecar_replace_failure_restores_files_and_runtime_state(tmp_path, monkeypatch, has_existing_files):
     import katrain.web.core.geometry_calibration_service as calibration_module
     from katrain.vision.geometry_lock import load_geometry_lock, save_geometry_lock
 
@@ -1061,7 +1097,7 @@ def test_legacy_sidecar_replace_failure_restores_files_and_runtime_state(
     assert service.status()["error"] == "injected sidecar replace failure"
     assert service.current_lock is old_lock
     assert capture.current_auto_exposure == CAMERA_AUTO_EXPOSURE_OFF
-    assert capture.current_exposure == 332.0
+    assert capture.current_exposure == 140.0
     if has_existing_files:
         assert save_path.read_bytes() == old_npz
         assert sidecar_path.read_bytes() == old_sidecar
@@ -1156,11 +1192,11 @@ def test_drift_setup_failure_happens_before_persist_and_promotion(tmp_path):
     assert persisted == []
     assert service.current_lock is old_lock
     assert promoted == []
-    assert capture.control_calls[-1] == (330.0, CAMERA_AUTO_EXPOSURE_OFF)
+    assert capture.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF)
     service.stop()
 
 
-def test_save_failure_restores_original_exposure(tmp_path, monkeypatch):
+def test_save_failure_restores_manual_mode_without_replaying_exposure(tmp_path, monkeypatch):
     def fail_save(_lock, _path):
         raise OSError("disk full")
 
@@ -1177,7 +1213,7 @@ def test_save_failure_restores_original_exposure(tmp_path, monkeypatch):
     assert service.wait(timeout=5) is True
 
     assert service.status()["error"] == "disk full"
-    assert capture.control_calls[-1] == (325.0, CAMERA_AUTO_EXPOSURE_OFF)
+    assert capture.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF)
     service.stop()
 
 
@@ -1193,20 +1229,20 @@ def test_on_success_failure_after_durable_commit_stays_ready_and_keeps_new_expos
     new_lock.source_height = 480
     store.commit(
         old_lock,
-        CameraProfile(camera_device="/dev/video73", width=640, height=480, auto_exposure=1.0, exposure=326.0),
+        CameraProfile(camera_device="/dev/video73", width=640, height=480),
         generation="old",
     )
     observed = []
 
-    def persist_state(lock, auto_exposure, exposure, before_publish):
+    def persist_state(lock, strategy, before_publish):
+        assert strategy == "hardware_auto_then_lock"
         store.commit(
             lock,
             CameraProfile(
                 camera_device="/dev/video73",
                 width=640,
                 height=480,
-                auto_exposure=auto_exposure,
-                exposure=exposure,
+                strategy=strategy,
             ),
             generation="new",
             before_publish=before_publish,
@@ -1246,7 +1282,7 @@ def test_on_success_failure_after_durable_commit_stays_ready_and_keeps_new_expos
     current = store.load_current("/dev/video73", 640, 480)
     assert current is not None
     assert current.generation == "new"
-    assert current.profile.exposure == 140.0
+    assert current.profile.exposure is None
     np.testing.assert_array_equal(current.geometry.baseline, new_lock.baseline)
     service.stop()
 
@@ -1263,9 +1299,7 @@ def test_post_pointer_fsync_failure_keeps_store_service_and_exposure_committed(t
     new_lock.source_height = 480
     store.commit(
         old_lock,
-        state_module.CameraProfile(
-            camera_device="/dev/video73", width=640, height=480, auto_exposure=1.0, exposure=326.0
-        ),
+        state_module.CameraProfile(camera_device="/dev/video73", width=640, height=480),
         generation="old",
     )
     real_fsync_directory = state_module._fsync_directory
@@ -1277,15 +1311,15 @@ def test_post_pointer_fsync_failure_keeps_store_service_and_exposure_committed(t
 
     monkeypatch.setattr(state_module, "_fsync_directory", fail_root_fsync_after_pointer_swap)
 
-    def persist_state(lock, auto_exposure, exposure, before_publish):
+    def persist_state(lock, strategy, before_publish):
+        assert strategy == "hardware_auto_then_lock"
         store.commit(
             lock,
             state_module.CameraProfile(
                 camera_device="/dev/video73",
                 width=640,
                 height=480,
-                auto_exposure=auto_exposure,
-                exposure=exposure,
+                strategy=strategy,
             ),
             generation="new",
             before_publish=before_publish,
@@ -1316,7 +1350,7 @@ def test_post_pointer_fsync_failure_keeps_store_service_and_exposure_committed(t
     current = store.load_current("/dev/video73", 640, 480)
     assert current is not None
     assert current.generation == "new"
-    assert current.profile.exposure == 140.0
+    assert current.profile.exposure is None
     np.testing.assert_array_equal(current.geometry.baseline, new_lock.baseline)
     assert any("pointer published" in record.getMessage() for record in caplog.records)
     service.stop()
@@ -1419,9 +1453,9 @@ def test_exposure_is_actuated_before_calibration_when_there_is_no_geometry_lock(
     assert any(auto == CAMERA_AUTO_EXPOSURE_ON for _exp, auto in capture.control_calls)
     # spec §2.1 实测:exposure_auto_priority=0 把积分时间钳在帧周期内,exposure_absolute
     # 只调得下、调不上(166→10000 无效)。往「更亮」的方向只能靠硬件 AE。
-    assert all(exp is None for exp, _auto in capture.control_calls), (
-        f"不许用 exposure_absolute 调亮(实测无效),实际: {capture.control_calls}"
-    )
+    assert all(
+        exp is None for exp, _auto in capture.control_calls
+    ), f"不许用 exposure_absolute 调亮(实测无效),实际: {capture.control_calls}"
     service.stop()
 
 
@@ -1545,9 +1579,9 @@ def test_converge_logs_both_medians_across_the_manual_handover(caplog):
     # 后一个数必须来自**交接之后的一次真取帧**。光看日志里有两个数分不出「重新量了」
     # 和「把同一次的 stats 印了两遍」—— 后者永远相等,弹没弹回去照样看不出来。
     restore = max(i for i, e in enumerate(events) if e[0] == "controls" and e[1] == CAMERA_AUTO_EXPOSURE_OFF)
-    assert any(e[0] == "grab" for e in events[restore + 1:]), (
-        f"关回手动之后一帧都没再量 —— 两个数会是同一次测量: {events}"
-    )
+    assert any(
+        e[0] == "grab" for e in events[restore + 1 :]
+    ), f"关回手动之后一帧都没再量 —— 两个数会是同一次测量: {events}"
     service.stop()
 
 
@@ -1594,15 +1628,16 @@ def test_hardware_ae_is_handed_back_to_manual_even_when_convergence_raises():
 
     # ① AE 关回手动了 —— 不是停在 3.0 上跨到下一次标定。
     assert capture.control_calls, "一次都没作动"
-    assert capture.control_calls[-1] == (None, CAMERA_AUTO_EXPOSURE_OFF), (
-        f"硬件 AE 被留在开着的状态: {capture.control_calls}"
-    )
+    assert capture.control_calls[-1] == (
+        None,
+        CAMERA_AUTO_EXPOSURE_OFF,
+    ), f"硬件 AE 被留在开着的状态: {capture.control_calls}"
     # ② 异常照旧往上抛,没被 finally 吃掉 —— 它只能经由 _run 的 except 进到 status 里。
     status = service.status()
     assert status["phase"] == "failed"
-    assert status["error"] == "camera exploded mid-convergence", (
-        f"异常被吞了,一次相机故障被伪装成普通标定失败: {status['error']}"
-    )
+    assert (
+        status["error"] == "camera exploded mid-convergence"
+    ), f"异常被吞了,一次相机故障被伪装成普通标定失败: {status['error']}"
     assert "calibrate" not in events, "异常被吞掉之后还接着跑了标定"
 
     # ③ 守住上面那个「只炸一次」的前提本身。断言 ② 的**全部判别力都寄生在它身上**,

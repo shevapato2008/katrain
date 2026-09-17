@@ -343,7 +343,12 @@ async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
 
     geometry = object()
     state = (
-        SimpleNamespace(geometry=geometry, profile=SimpleNamespace(exposure=321.0)) if has_generation else None
+        SimpleNamespace(
+            geometry=geometry,
+            profile=SimpleNamespace(strategy="hardware_auto_then_lock", exposure=None),
+        )
+        if has_generation
+        else None
     )
 
     class FakeHardwareVisionStore:
@@ -361,24 +366,29 @@ async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
     monkeypatch.setitem(
         sys.modules,
         "katrain.web.core.hardware_vision_state",
-        SimpleNamespace(HardwareVisionStateStore=FakeHardwareVisionStore),
+        SimpleNamespace(
+            HardwareVisionStateStore=FakeHardwareVisionStore,
+            CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK="hardware_auto_then_lock",
+        ),
     )
-
     app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
     await server._lifespan_board(app, server.logging.getLogger("test.hardware-vision-startup"))
 
     assert FakeHardwareVisionStore.instances[0].load_calls == [("/dev/video73", 1280, 720)]
     config = _CameraUnavailable.instances[0].config
     assert config.lock_exposure is has_generation
-    assert config.exposure == (321.0 if has_generation else None)
+    assert config.exposure is None
 
     await _cancel_startup_tasks(app)
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("has_generation", [True, False])
+@pytest.mark.parametrize(
+    ("has_generation", "controls_effective"),
+    [(True, True), (True, False), (False, None)],
+)
 async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
-    server_module, monkeypatch, tmp_path, has_generation
+    server_module, monkeypatch, tmp_path, has_generation, controls_effective
 ):
     server = server_module
     _install_board_startup_fakes(monkeypatch)
@@ -409,15 +419,26 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
 
     geometry = object()
     state = (
-        SimpleNamespace(geometry=geometry, profile=SimpleNamespace(exposure=321.0)) if has_generation else None
+        SimpleNamespace(
+            geometry=geometry,
+            profile=SimpleNamespace(strategy="hardware_auto_then_lock", exposure=None),
+        )
+        if has_generation
+        else None
     )
 
     class CameraHub:
         def __init__(self, config):
             self.config = config
+            self.controls_effective = controls_effective
+            self.control_calls = []
+            type(self).instance = self
 
         def start(self):
             pass
+
+        def request_controls(self, **controls):
+            self.control_calls.append(controls)
 
     class VisionService:
         instances = []
@@ -450,8 +471,12 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
     monkeypatch.setitem(
         sys.modules,
         "katrain.web.core.hardware_vision_state",
-        SimpleNamespace(HardwareVisionStateStore=HardwareVisionStateStore),
+        SimpleNamespace(
+            HardwareVisionStateStore=HardwareVisionStateStore,
+            CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK="hardware_auto_then_lock",
+        ),
     )
+    monkeypatch.setitem(sys.modules, "katrain.vision.camera", SimpleNamespace(CAMERA_AUTO_EXPOSURE_ON=3.0))
     monkeypatch.setitem(
         sys.modules,
         "katrain.web.core.physical_play",
@@ -472,8 +497,13 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
     await server._lifespan_board(app, server.logging.getLogger("test.vision-only-hardware-state"))
 
     try:
-        assert app.state.geometry is (geometry if has_generation else None)
-        assert VisionService.instances[0].geometry_calls == ([geometry] if has_generation else [])
+        strategy_verified = has_generation and controls_effective is True
+        assert app.state.geometry is (geometry if strategy_verified else None)
+        assert VisionService.instances[0].geometry_calls == ([geometry] if strategy_verified else [])
+        if has_generation and not strategy_verified:
+            assert CameraHub.instance.control_calls == [{"auto_exposure": 3.0}]
+        else:
+            assert CameraHub.instance.control_calls == []
     finally:
         await _cancel_startup_tasks(app)
 
@@ -555,7 +585,11 @@ async def test_capture_startup_forwards_publish_gate_to_hardware_store(server_mo
     monkeypatch.setitem(
         sys.modules,
         "katrain.web.core.hardware_vision_state",
-        SimpleNamespace(HardwareVisionStateStore=HardwareVisionStateStore, CameraProfile=CameraProfile),
+        SimpleNamespace(
+            HardwareVisionStateStore=HardwareVisionStateStore,
+            CameraProfile=CameraProfile,
+            CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK="hardware_auto_then_lock",
+        ),
     )
     monkeypatch.setitem(
         sys.modules,
@@ -568,12 +602,12 @@ async def test_capture_startup_forwards_publish_gate_to_hardware_store(server_mo
 
     lock = object()
     before_publish = lambda: None
-    app.state.geometry_calibration.kwargs["persist_state"](lock, 1.0, 222.0, before_publish)
+    app.state.geometry_calibration.kwargs["persist_state"](lock, "hardware_auto_then_lock", before_publish)
 
     committed_lock, profile, committed_hook = HardwareVisionStateStore.instances[0].commit_calls[0]
     assert committed_lock is lock
-    assert profile.values["auto_exposure"] == 1.0
-    assert profile.values["exposure"] == 222.0
+    assert profile.values["strategy"] == "hardware_auto_then_lock"
+    assert "exposure" not in profile.values
     assert committed_hook is before_publish
 
     await _cancel_startup_tasks(app)

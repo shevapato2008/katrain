@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import math
 import os
 import re
 import shutil
@@ -22,12 +21,12 @@ from typing import Any, Callable, Mapping
 
 import numpy as np
 
-from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, _auto_exposure_readback_matches
 from katrain.vision.geometry_lock import NPZ_FIELDS, GeometryLock, load_geometry_lock, save_geometry_lock
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK = "hardware_auto_then_lock"
 GEOMETRY_FILENAME = "geometry_lock.npz"
 GEOMETRY_SIDECAR_FILENAME = "geometry_lock.json"
 PROFILE_FILENAME = "camera-profile.json"
@@ -59,13 +58,19 @@ _GEOMETRY_SIDECAR_FIELDS = {
 
 @dataclass(frozen=True)
 class CameraProfile:
-    """Camera identity, frame size, and verified native manual controls."""
+    """Camera identity, frame size, and a replay-safe exposure policy.
+
+    ``CAP_PROP_EXPOSURE`` readback on the RK3562 camera is a driver shadow
+    value, not a safe value to replay after power-up.  Schema v2 therefore
+    persists the verified auto-then-lock procedure and explicitly stores no
+    numeric exposure target.
+    """
 
     camera_device: str
     width: int
     height: int
-    auto_exposure: float
-    exposure: float
+    strategy: str = CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK
+    exposure: None = None
     schema_version: int = field(default=SCHEMA_VERSION, init=False)
 
     def __post_init__(self) -> None:
@@ -75,11 +80,10 @@ class CameraProfile:
             if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
                 raise ValueError(f"{name} must be a positive integer")
 
-        auto_exposure = _finite_number("auto_exposure", self.auto_exposure)
-        if not _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_MANUAL, auto_exposure):
-            raise ValueError("auto_exposure must be native manual mode 1.0")
-        object.__setattr__(self, "auto_exposure", CAMERA_AUTO_EXPOSURE_MANUAL)
-        object.__setattr__(self, "exposure", _finite_number("exposure", self.exposure))
+        if self.strategy != CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK:
+            raise ValueError(f"unsupported camera control strategy: {self.strategy!r}")
+        if self.exposure is not None:
+            raise ValueError("schema v2 camera profiles must not persist an exposure readback")
 
     def to_json_dict(self) -> dict[str, Any]:
         return {
@@ -87,7 +91,7 @@ class CameraProfile:
             "camera_device": self.camera_device,
             "width": self.width,
             "height": self.height,
-            "auto_exposure": self.auto_exposure,
+            "strategy": self.strategy,
             "exposure": self.exposure,
         }
 
@@ -98,7 +102,7 @@ class CameraProfile:
             "camera_device",
             "width",
             "height",
-            "auto_exposure",
+            "strategy",
             "exposure",
         }
         if not isinstance(value, dict) or set(value) != expected:
@@ -111,7 +115,7 @@ class CameraProfile:
             camera_device=value["camera_device"],
             width=value["width"],
             height=value["height"],
-            auto_exposure=value["auto_exposure"],
+            strategy=value["strategy"],
             exposure=value["exposure"],
         )
 
@@ -271,15 +275,6 @@ class HardwareVisionStateStore:
                 temp_path.unlink(missing_ok=True)
 
 
-def _finite_number(name: str, value: Any) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ValueError(f"{name} must be a finite number")
-    result = float(value)
-    if not math.isfinite(result):
-        raise ValueError(f"{name} must be a finite number")
-    return result
-
-
 def _normalize_camera_device(value: Any) -> str:
     if isinstance(value, bool) or not isinstance(value, (int, str)):
         raise ValueError("camera_device must be an integer or string")
@@ -330,7 +325,9 @@ def _load_valid_geometry(generation_dir: Path, profile: CameraProfile) -> Geomet
     sidecar = _read_json_object(generation_dir / GEOMETRY_SIDECAR_FILENAME)
     if set(sidecar) != _GEOMETRY_SIDECAR_FIELDS:
         raise ValueError("geometry sidecar has unexpected fields")
-    _finite_number("geometry sidecar confidence", sidecar["confidence"])
+    confidence = sidecar["confidence"]
+    if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not np.isfinite(confidence):
+        raise ValueError("geometry sidecar confidence must be a finite number")
     for name in ("nmatch", "empty_black", "empty_white"):
         value = sidecar[name]
         if type(value) is not int or value < 0:

@@ -12,6 +12,8 @@ import time
 import cv2
 import numpy as np
 
+from katrain.vision.auto_exposure import meter_brightness
+
 logger = logging.getLogger(__name__)
 
 # HBV UVC camera values observed through this board's V4L2/OpenCV backend.
@@ -20,6 +22,16 @@ logger = logging.getLogger(__name__)
 # manual exposure and 3.0 lets hardware AE converge.
 CAMERA_AUTO_EXPOSURE_MANUAL = 1.0
 CAMERA_AUTO_EXPOSURE_ON = 3.0
+
+# Use the same proven board-brightness band as software AE.  A short run of
+# consecutive in-band frames prevents locking on a transient while keeping the
+# successful startup path bounded to a few frames before/after the handoff.
+HARDWARE_AE_TARGET_LO = 120.0
+HARDWARE_AE_TARGET_HI = 170.0
+HARDWARE_AE_STABLE_FRAMES = 3
+HARDWARE_AE_CONVERGENCE_FRAMES = 90
+HARDWARE_AE_LOCK_SETTLE_FRAMES = 3
+HARDWARE_AE_LOCK_VERIFY_FRAMES = 6
 
 
 def _auto_exposure_readback_matches(target: float, readback: float) -> bool:
@@ -125,8 +137,9 @@ class CameraManager:
 
         ``lock_exposure``/``lock_awb`` disable auto exposure / white balance so a
         lit LED can't trigger global auto-darkening that crushes black stones into
-        the background (plan §3.1). ``exposure`` is the fixed manual value; it is
-        camera-specific (V4L2 has no portable scale) and is calibrated on the box.
+        the background (plan §3.1). A non-None ``exposure`` is a fixed manual value.
+        With ``exposure=None``, hardware AE first converges and its sensor state is
+        then frozen without replaying its unreliable exposure readback.
         """
         self._device_id = device_id
         self._capture_arg = _device_to_capture_arg(device_id)
@@ -204,9 +217,26 @@ class CameraManager:
             # Enable auto-focus if supported
             cap.set(cv2.CAP_PROP_AUTOFOCUS, 1)
 
+            # The SBC's HBV camera has no working manual WB — disabling auto-WB
+            # leaves a strong red cast. UVC state persists across processes, so
+            # explicitly restore auto-WB unless the caller asked to lock it.
+            if self._lock_awb:
+                cap.set(cv2.CAP_PROP_AUTO_WB, 0)
+            else:
+                cap.set(cv2.CAP_PROP_AUTO_WB, 1)
+
             # Optionally lock exposure / white balance for capture (plan §3.1).
-            # The HBV camera exposes native V4L2 menu values through OpenCV on rk3562.
+            # With no portable fixed exposure value, let hardware AE reach the
+            # proven brightness band and then freeze its native sensor state.  Do
+            # not read exposure_absolute back and replay it: this camera reports a
+            # value (for example 5000) that is not safe to write after a restart.
             replaying_runtime_controls = desired_auto_exposure is not None
+            auto_then_lock = bool(
+                self._lock_exposure
+                and self._exposure is None
+                and desired_exposure is None
+                and desired_auto_exposure in (None, CAMERA_AUTO_EXPOSURE_MANUAL)
+            )
             auto_exposure = (
                 desired_auto_exposure
                 if desired_auto_exposure is not None
@@ -215,9 +245,12 @@ class CameraManager:
             exposure = desired_exposure if desired_auto_exposure == CAMERA_AUTO_EXPOSURE_MANUAL else None
             if desired_auto_exposure is None and self._lock_exposure:
                 exposure = self._exposure
+            lock_verified: bool | None = None
             auto_write_ok = auto_exposure is None
             exposure_write_ok = exposure is None
-            if auto_exposure is not None:
+            if auto_then_lock:
+                lock_verified = self._converge_hardware_ae_then_lock(cap)
+            elif auto_exposure is not None:
                 try:
                     auto_write_ok = bool(cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, auto_exposure))
                 except cv2.error as exc:
@@ -229,16 +262,6 @@ class CameraManager:
                 except cv2.error as exc:
                     logger.warning("Camera %s exposure restore failed: %s", self._device_id, exc)
                     exposure_write_ok = False
-            # White balance: only DISABLE auto-WB when explicitly locking (plan §3.1). The SBC's
-            # HBV UVC camera has no working manual WB — disabling auto-WB leaves a ~3x red cast
-            # (manual white_balance_temperature=4600 does not neutralize). So the default is
-            # auto-WB ON. V4L2 control state PERSISTS across processes, so when NOT locking we must
-            # explicitly (re)enable auto-WB — otherwise a camera a prior run left at AUTO_WB=0
-            # stays red after restart. (macOS AVFoundation silently ignores this control.)
-            if self._lock_awb:
-                cap.set(cv2.CAP_PROP_AUTO_WB, 0)
-            else:
-                cap.set(cv2.CAP_PROP_AUTO_WB, 1)
             try:
                 current_auto_exposure = float(cap.get(cv2.CAP_PROP_AUTO_EXPOSURE))
             except (cv2.error, TypeError, ValueError):
@@ -269,7 +292,13 @@ class CameraManager:
                 self._current_auto_exposure = current_auto_exposure
                 self._current_exposure = current_exposure
                 self._initial_exposure = current_exposure  # AE seed value
-                if (
+                if auto_then_lock and open_generation == self._controls_generation and not self._pending_controls:
+                    self._controls_effective = lock_verified
+                    self._desired_auto_exposure = (
+                        CAMERA_AUTO_EXPOSURE_MANUAL if lock_verified else CAMERA_AUTO_EXPOSURE_ON
+                    )
+                    self._desired_exposure = None
+                elif (
                     replaying_runtime_controls
                     and open_generation == self._controls_generation
                     and not self._pending_controls
@@ -350,6 +379,58 @@ class CameraManager:
     # Runtime camera controls (software AE)
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _brightness_is_stable(cap: cv2.VideoCapture, max_frames: int) -> bool:
+        consecutive = 0
+        for _ in range(max_frames):
+            try:
+                ok, frame = cap.read()
+            except (cv2.error, TypeError, ValueError):
+                ok, frame = False, None
+            if not ok or frame is None:
+                consecutive = 0
+                continue
+            stats = meter_brightness(frame)
+            if HARDWARE_AE_TARGET_LO <= stats.median <= HARDWARE_AE_TARGET_HI and stats.clip_frac <= 0.02:
+                consecutive += 1
+                if consecutive >= HARDWARE_AE_STABLE_FRAMES:
+                    return True
+            else:
+                consecutive = 0
+        return False
+
+    def _set_auto_exposure_mode(self, cap: cv2.VideoCapture, target: float) -> bool:
+        try:
+            write_ok = bool(cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, target))
+            readback = float(cap.get(cv2.CAP_PROP_AUTO_EXPOSURE))
+        except (cv2.error, TypeError, ValueError) as exc:
+            logger.warning("Camera %s auto-exposure mode change failed: %s", self._device_id, exc)
+            return False
+        return write_ok and _auto_exposure_readback_matches(target, readback)
+
+    def _converge_hardware_ae_then_lock(self, cap: cv2.VideoCapture) -> bool:
+        """Converge with native hardware AE, then freeze it without replaying exposure."""
+        if not self._set_auto_exposure_mode(cap, CAMERA_AUTO_EXPOSURE_ON):
+            self._set_auto_exposure_mode(cap, CAMERA_AUTO_EXPOSURE_ON)
+            return False
+        if not self._brightness_is_stable(cap, HARDWARE_AE_CONVERGENCE_FRAMES):
+            logger.warning("Camera %s hardware AE did not reach the target brightness band", self._device_id)
+            self._set_auto_exposure_mode(cap, CAMERA_AUTO_EXPOSURE_ON)
+            return False
+        if not self._set_auto_exposure_mode(cap, CAMERA_AUTO_EXPOSURE_MANUAL):
+            self._set_auto_exposure_mode(cap, CAMERA_AUTO_EXPOSURE_ON)
+            return False
+        for _ in range(HARDWARE_AE_LOCK_SETTLE_FRAMES):
+            try:
+                cap.read()
+            except cv2.error:
+                pass
+        if not self._brightness_is_stable(cap, HARDWARE_AE_LOCK_VERIFY_FRAMES):
+            logger.warning("Camera %s brightness changed after locking hardware AE", self._device_id)
+            self._set_auto_exposure_mode(cap, CAMERA_AUTO_EXPOSURE_ON)
+            return False
+        return True
+
     def request_controls(self, exposure: float | None = None, auto_exposure: float | None = None) -> None:
         """Queue camera control changes; the reader thread applies them between reads."""
         requested = {}
@@ -408,7 +489,15 @@ class CameraManager:
             return
         auto_write_ok = "auto_exposure" not in pending
         exposure_write_ok = "exposure" not in pending
-        if "auto_exposure" in pending:
+        hardware_lock_request = bool(
+            self._lock_exposure
+            and self._exposure is None
+            and pending.get("auto_exposure") == CAMERA_AUTO_EXPOSURE_MANUAL
+            and "exposure" not in pending
+        )
+        if hardware_lock_request:
+            auto_write_ok = self._converge_hardware_ae_then_lock(self._cap)
+        elif "auto_exposure" in pending:
             target = pending["auto_exposure"]
             try:
                 auto_write_ok = bool(self._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, target))
@@ -445,16 +534,24 @@ class CameraManager:
                 and _exposure_readback_matches(pending["exposure"], exposure_readback)
             )
         )
-        manual_needs_exposure = pending.get("auto_exposure") == CAMERA_AUTO_EXPOSURE_MANUAL
-        batch_ok = auto_ok and exposure_ok and (not manual_needs_exposure or exposure_valid)
+        manual_without_exposure = (
+            pending.get("auto_exposure") == CAMERA_AUTO_EXPOSURE_MANUAL and "exposure" not in pending
+        )
+        legacy_manual_needs_readback = manual_without_exposure and not hardware_lock_request
+        batch_ok = auto_ok and exposure_ok and (not legacy_manual_needs_readback or exposure_valid)
         with self._controls_lock:
             self._current_auto_exposure = auto_readback if auto_valid else None
             self._current_exposure = exposure_readback if exposure_valid else None
             if batch_ok:
                 desired_auto_exposure = pending.get("auto_exposure", auto_readback)
                 self._desired_auto_exposure = _canonical_auto_exposure(desired_auto_exposure)
-                if "exposure" in pending or manual_needs_exposure:
-                    self._desired_exposure = exposure_readback
+                if "exposure" in pending:
+                    self._desired_exposure = pending["exposure"]
+                elif manual_without_exposure:
+                    self._desired_exposure = None
+            elif hardware_lock_request:
+                self._desired_auto_exposure = CAMERA_AUTO_EXPOSURE_ON
+                self._desired_exposure = None
             if batch_generation == self._controls_generation:
                 self._controls_effective = batch_ok
 

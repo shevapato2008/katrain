@@ -16,10 +16,10 @@ from katrain.vision.camera import (
     CAMERA_AUTO_EXPOSURE_MANUAL,
     CAMERA_AUTO_EXPOSURE_ON,
     _auto_exposure_readback_matches,
-    _exposure_readback_matches,
 )
 from katrain.vision.geometry_lock import save_geometry_lock
 from katrain.vision.led_geometry_calibrator import LedGeometryCalibrator, check_frame_exposure
+from katrain.web.core.hardware_vision_state import CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK
 
 logger = logging.getLogger(__name__)
 
@@ -279,7 +279,8 @@ class GeometryCalibrationService:
             return
         logger.info(
             "geometry exposure converge: start median=%.0f clip=%.3f -> hardware AE",
-            stats["median"], stats["clip_frac"],
+            stats["median"],
+            stats["clip_frac"],
         )
         request(auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
         deadline = time.monotonic() + self.EXPOSURE_CONVERGE_TIMEOUT_S
@@ -370,26 +371,21 @@ class GeometryCalibrationService:
             return None
         return value if np.isfinite(value) else None
 
-    def _snapshot_exposure_controls(self) -> tuple[float | None, float | None]:
-        return (
-            self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None)),
-            self._finite_control_readback(getattr(self.capture, "current_exposure", None)),
-        )
+    def _snapshot_exposure_controls(self) -> float | None:
+        # CAP_PROP_EXPOSURE is intentionally absent.  On the RK3562 UVC driver its
+        # readback can stay at a stale shadow value (for example 5000) after AE has
+        # converged; writing that value back on rollback makes the next frame black.
+        return self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None))
 
-    def _restore_exposure_controls(self, snapshot: tuple[float | None, float | None]) -> None:
+    def _restore_exposure_controls(self, auto_exposure: float | None) -> None:
         request = getattr(self.capture, "request_controls", None)
         if request is None:
             return
-        auto_exposure, exposure = snapshot
         if auto_exposure is not None and _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_MANUAL, auto_exposure):
-            if exposure is None:
-                return
             target_auto_exposure = CAMERA_AUTO_EXPOSURE_MANUAL
-            target_exposure = exposure
-            request(auto_exposure=target_auto_exposure, exposure=target_exposure)
+            request(auto_exposure=target_auto_exposure)
         elif auto_exposure is not None and _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_ON, auto_exposure):
             target_auto_exposure = CAMERA_AUTO_EXPOSURE_ON
-            target_exposure = None
             request(auto_exposure=target_auto_exposure)
         else:
             return
@@ -401,31 +397,19 @@ class GeometryCalibrationService:
                 break
             grab(settle_ms=0.0)
         effective = getattr(self.capture, "controls_effective", None)
-        current_auto_exposure = self._finite_control_readback(
-            getattr(self.capture, "current_auto_exposure", None)
-        )
-        current_exposure = self._finite_control_readback(getattr(self.capture, "current_exposure", None))
+        current_auto_exposure = self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None))
         restored = (
             effective is True
             and current_auto_exposure is not None
             and _auto_exposure_readback_matches(target_auto_exposure, current_auto_exposure)
-            and (
-                target_exposure is None
-                or (
-                    current_exposure is not None
-                    and _exposure_readback_matches(target_exposure, current_exposure)
-                )
-            )
         )
         if not restored:
             logger.warning(
                 "geometry exposure restore readback failed: controls_effective=%r "
-                "target_auto=%r current_auto=%r target_exposure=%r current_exposure=%r",
+                "target_auto=%r current_auto=%r",
                 effective,
                 target_auto_exposure,
                 current_auto_exposure,
-                target_exposure,
-                current_exposure,
             )
 
     def _cancel_if_requested(self) -> bool:
@@ -537,18 +521,20 @@ class GeometryCalibrationService:
             if self.persist_state is None:
                 self._persist_legacy(result.lock)
             else:
-                auto_exposure = getattr(self.capture, "current_auto_exposure", None)
-                exposure = getattr(self.capture, "current_exposure", None)
-                try:
-                    auto_exposure = float(auto_exposure)
-                    exposure = float(exposure)
-                except (TypeError, ValueError) as exc:
-                    raise RuntimeError("camera controls unavailable after calibration") from exc
-                if not _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_MANUAL, auto_exposure):
+                auto_exposure = self._finite_control_readback(getattr(self.capture, "current_auto_exposure", None))
+                if (
+                    getattr(self.capture, "controls_effective", None) is not True
+                    or auto_exposure is None
+                    or not _auto_exposure_readback_matches(CAMERA_AUTO_EXPOSURE_MANUAL, auto_exposure)
+                ):
                     raise RuntimeError("camera is not in verified manual exposure mode after calibration")
-                if not np.isfinite(exposure):
-                    raise RuntimeError("camera exposure is not finite after calibration")
-                self.persist_state(result.lock, CAMERA_AUTO_EXPOSURE_MANUAL, exposure, self._before_publish)
+                # Persist the replay-safe procedure, never the driver's unreliable
+                # CAP_PROP_EXPOSURE shadow readback.
+                self.persist_state(
+                    result.lock,
+                    CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK,
+                    self._before_publish,
+                )
             committed = True
             with self._lock:
                 self.current_lock = result.lock

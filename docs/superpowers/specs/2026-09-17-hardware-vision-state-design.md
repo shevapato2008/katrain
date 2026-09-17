@@ -9,7 +9,7 @@ Make camera exposure, board geometry, and the calibration LED policy determinist
 | Data | Owner | Location |
 | --- | --- | --- |
 | KaTrain code, calibration algorithm, LED sequence/color policy | software image | repository and `/opt/smartbox` |
-| Camera exposure chosen by a successful calibration | this physical device | active generation under eMMC `/var/lib/smartbox/hardware/vision/generations/` |
+| Camera exposure policy verified by a successful calibration | this physical device | active generation under eMMC `/var/lib/smartbox/hardware/vision/generations/` |
 | Camera-to-board geometry | this physical device | the same active eMMC generation |
 | SGF, accounts, preferences, user databases | user/TF card | `/mnt/data/...` |
 
@@ -17,13 +17,13 @@ Make camera exposure, board geometry, and the calibration LED policy determinist
 
 ## Runtime behavior
 
-At startup KaTrain loads a camera profile only when its schema, camera device, and resolution match. A valid profile starts the camera in native V4L2 manual mode with the saved exposure. With no valid profile, the camera remains in native hardware-AE mode so a newly provisioned machine can acquire a usable image; continuous software AE is disabled.
+At startup KaTrain loads a camera profile only when its schema, camera device, and resolution match. A valid schema-v2 profile replays the verified procedure: enable native hardware AE, wait for consecutive frames in the accepted brightness band, switch only the native mode to manual, then verify consecutive locked frames. It never writes an `exposure_absolute`/`CAP_PROP_EXPOSURE` readback. The RK3562 camera reports that control as an inactive shadow value while AE is enabled, so it is not a replay-safe parameter. Geometry is mounted only after the startup procedure succeeds. With no valid profile, the camera remains in native hardware-AE mode so a newly provisioned machine can acquire a usable image; continuous software AE is disabled.
 
-When geometry calibration starts, `GeometryCalibrationService` snapshots the active camera mode/exposure, drives native hardware AE until the measured frame enters the accepted band, switches to native manual mode, verifies the driver readback, and performs the LED lit/dark measurements at fixed exposure. Only after geometry calibration succeeds does it commit a new eMMC generation containing `geometry_lock.npz`, its existing `geometry_lock.json` diagnostics sidecar, `camera-profile.json`, and a checksum manifest.
+When geometry calibration starts, `GeometryCalibrationService` snapshots the active camera mode, drives native hardware AE until the measured frame enters the accepted band, switches to native manual mode, verifies the mode readback, and performs the LED lit/dark measurements at fixed exposure. Only after geometry calibration succeeds does it commit a new eMMC generation containing `geometry_lock.npz`, its existing `geometry_lock.json` diagnostics sidecar, a schema-v2 `camera-profile.json` describing the `hardware_auto_then_lock` policy, and a checksum manifest.
 
 The store writes and validates every file in a temporary generation directory, renames that directory into `generations/<generation-id>`, then atomically replaces a small `current.json` pointer. The old generation and pointer remain active until the final pointer replacement. A crash or injected failure at any earlier step therefore leaves the previous complete generation loadable; startup never assembles a state from files belonging to different generations.
 
-A failed or cancelled run restores the snapshotted runtime mode/exposure in `finally` and never replaces the last known-good files. `CameraManager` retains the configured persisted controls and reapplies them after camera reconnect/reopen.
+A failed or cancelled run restores the snapshotted runtime mode in `finally` and never replaces the last known-good files. It deliberately does not replay an exposure readback. `CameraManager` reapplies the persisted auto-then-lock policy after camera reconnect/reopen.
 
 Legacy TF geometry has no matching exposure profile and therefore must not be promoted as a complete active generation. A privileged provisioning helper validates the legacy `geometry_lock.npz` plus optional `geometry_lock.json`, copies them into eMMC `legacy-import/`, reloads the copied geometry, and only then removes the TF originals. A failed copy or validation removes only temporary/invalid destination files and preserves the legacy source. KaTrain does not load `legacy-import`; the first successful recalibration creates the first complete active generation. This keeps TF clean without silently pairing old geometry/baseline with a newly acquired exposure.
 
@@ -46,10 +46,10 @@ KaTrain unit tests assert the complete ordered list and green-only attempts. Sma
 
 ## Failure handling
 
-- Invalid or mismatched camera profiles are ignored with a warning and hardware AE is used until calibration succeeds.
+- Invalid, schema-v1, or mismatched camera profiles are ignored with a warning and hardware AE is used until calibration succeeds.
 - A new generation becomes visible only through an atomic `current.json` pointer switch; an injected failure before that switch leaves the previous generation loadable.
-- Calibration failure restores the pre-run camera controls, including after cancellation.
-- Camera reconnect reapplies the last configured persisted controls.
+- Calibration failure restores the pre-run camera mode without replaying an inactive exposure shadow value, including after cancellation.
+- Camera reconnect reruns hardware-AE convergence, manual lock, and locked-frame verification.
 - Legacy geometry is archived, not activated, and removed from TF only after the eMMC archive reloads successfully.
 - Missing eMMC directory or a wrong calibration policy is fatal in golden-image preflight.
 - Any device-specific vision state remaining after `image-prep` is fatal, preventing it from entering the cloned image.
@@ -58,4 +58,4 @@ KaTrain unit tests assert the complete ordered list and green-only attempts. Sma
 
 - KaTrain: focused tests for state migration/profile persistence, camera-control forwarding, successful-calibration atomic save, failed-calibration preservation, and exact green-only order.
 - Smartbox: provisioning contract tests for eMMC directory creation, systemd flags/sandbox, firstboot behavior, image-prep cleanup, and golden-preflight policy gate.
-- RK3562: observe hardware AE convergence, successful manual lock/profile save, service restart restoring the same exposure, green-only 13-point calibration, and unchanged state across a code deployment.
+- RK3562: observe hardware AE convergence, successful manual lock/profile save, two service restarts reproducing usable brightness without any numeric exposure write, green-only 13-point calibration, and unchanged state across a code deployment.

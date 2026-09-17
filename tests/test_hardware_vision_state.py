@@ -42,8 +42,8 @@ def _profile(module, **overrides):
         "camera_device": "/dev/video73",
         "width": 640,
         "height": 480,
-        "auto_exposure": 1.005,
-        "exposure": 432.0,
+        "strategy": "hardware_auto_then_lock",
+        "exposure": None,
     }
     values.update(overrides)
     return module.CameraProfile(**values)
@@ -124,8 +124,8 @@ def test_round_trip_loads_one_complete_generation(tmp_path):
     assert loaded is not None
     assert loaded.generation == committed.generation
     assert loaded.profile.camera_device == "/dev/video73"
-    assert loaded.profile.auto_exposure == 1.0
-    assert loaded.profile.exposure == 432.0
+    assert loaded.profile.strategy == "hardware_auto_then_lock"
+    assert loaded.profile.exposure is None
     assert loaded.geometry.confidence == pytest.approx(0.97)
     np.testing.assert_array_equal(loaded.geometry.corners, committed.geometry.corners)
 
@@ -207,17 +207,17 @@ def test_payload_checksum_mismatch_is_rejected(tmp_path):
 def test_commit_rejects_invalid_geometry_without_changing_current(tmp_path, invalidity):
     module = _state_module()
     store = module.HardwareVisionStateStore(tmp_path)
-    store.commit(_geometry(), _profile(module, exposure=100.0), generation="generation-1")
+    store.commit(_geometry(), _profile(module), generation="generation-1")
     invalid_geometry = _geometry()
     _make_geometry_invalid(invalid_geometry, invalidity)
 
     with pytest.raises(ValueError):
-        store.commit(invalid_geometry, _profile(module, exposure=200.0), generation="generation-2")
+        store.commit(invalid_geometry, _profile(module), generation="generation-2")
 
     loaded = store.load_current("/dev/video73", 640, 480)
     assert loaded is not None
     assert loaded.generation == "generation-1"
-    assert loaded.profile.exposure == 100.0
+    assert loaded.profile.exposure is None
     assert not (tmp_path / "generations" / "generation-2").exists()
 
 
@@ -246,7 +246,7 @@ def test_load_rejects_semantically_invalid_geometry_even_with_matching_hash(tmp_
 def test_failed_current_pointer_replace_preserves_previous_generation(tmp_path, monkeypatch):
     module = _state_module()
     store = module.HardwareVisionStateStore(tmp_path)
-    first_profile = _profile(module, exposure=100.0)
+    first_profile = _profile(module)
     store.commit(_geometry(), first_profile, generation="generation-1")
     real_replace = module.os.replace
 
@@ -258,18 +258,18 @@ def test_failed_current_pointer_replace_preserves_previous_generation(tmp_path, 
     monkeypatch.setattr(module.os, "replace", fail_pointer_replace)
 
     with pytest.raises(OSError, match="injected pointer"):
-        store.commit(_geometry(), _profile(module, exposure=200.0), generation="generation-2")
+        store.commit(_geometry(), _profile(module), generation="generation-2")
 
     loaded = store.load_current("/dev/video73", 640, 480)
     assert loaded is not None
     assert loaded.generation == "generation-1"
-    assert loaded.profile.exposure == 100.0
+    assert loaded.profile.exposure is None
 
 
 def test_before_publish_runs_after_generation_promotion_but_before_current_pointer(tmp_path):
     module = _state_module()
     store = module.HardwareVisionStateStore(tmp_path)
-    store.commit(_geometry(), _profile(module, exposure=100.0), generation="generation-1")
+    store.commit(_geometry(), _profile(module), generation="generation-1")
 
     class CancelPublish(RuntimeError):
         pass
@@ -284,7 +284,7 @@ def test_before_publish_runs_after_generation_promotion_but_before_current_point
     with pytest.raises(CancelPublish, match="cancelled before pointer swap"):
         store.commit(
             _geometry(),
-            _profile(module, exposure=200.0),
+            _profile(module),
             generation="generation-2",
             before_publish=before_publish,
         )
@@ -292,7 +292,7 @@ def test_before_publish_runs_after_generation_promotion_but_before_current_point
     loaded = store.load_current("/dev/video73", 640, 480)
     assert loaded is not None
     assert loaded.generation == "generation-1"
-    assert loaded.profile.exposure == 100.0
+    assert loaded.profile.exposure is None
     assert (tmp_path / "generations" / "generation-2").is_dir()
 
 
@@ -305,7 +305,7 @@ def test_generation_contains_sidecar_and_manifest_hashes_all_payloads(tmp_path):
 
     assert payload_names <= {path.name for path in generation_dir.iterdir()}
     manifest = json.loads((generation_dir / "manifest.json").read_text(encoding="utf-8"))
-    assert manifest["schema_version"] == 1
+    assert manifest["schema_version"] == 2
     assert manifest["generation"] == committed.generation
     assert set(manifest["sha256"]) == payload_names
     assert manifest["sha256"] == {name: _sha256(generation_dir / name) for name in payload_names}
@@ -314,9 +314,9 @@ def test_generation_contains_sidecar_and_manifest_hashes_all_payloads(tmp_path):
 @pytest.mark.parametrize(
     "overrides",
     [
-        {"auto_exposure": 3.0},
-        {"auto_exposure": float("nan")},
-        {"exposure": float("inf")},
+        {"strategy": "fixed_exposure"},
+        {"strategy": ""},
+        {"exposure": 432.0},
         {"width": 0},
         {"height": -1},
     ],
@@ -343,7 +343,20 @@ def test_camera_profile_json_is_strict():
     with pytest.raises(ValueError):
         module.CameraProfile.from_json_dict({**valid, "unknown": True})
     with pytest.raises(ValueError):
-        module.CameraProfile.from_json_dict({**valid, "schema_version": 2})
+        module.CameraProfile.from_json_dict({**valid, "schema_version": 1})
+
+
+def test_schema_v1_generation_is_rejected_instead_of_replaying_shadow_exposure(tmp_path):
+    module = _state_module()
+    store = module.HardwareVisionStateStore(tmp_path)
+    store.commit(_geometry(), _profile(module), generation="generation-1")
+
+    current_path = tmp_path / "current.json"
+    pointer = json.loads(current_path.read_text(encoding="utf-8"))
+    pointer["schema_version"] = 1
+    current_path.write_text(json.dumps(pointer), encoding="utf-8")
+
+    assert store.load_current("/dev/video73", 640, 480) is None
 
 
 @pytest.mark.parametrize("generation", ["", ".", "..", "../escape", "nested/name", "/absolute"])

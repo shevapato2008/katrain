@@ -354,50 +354,56 @@ class CameraManager:
             pending, self._pending_controls = self._pending_controls, {}
         if self._cap is None:
             return
-        try:
-            auto_write_ok = None
-            exposure_write_ok = None
-            if "auto_exposure" in pending:
-                target = pending["auto_exposure"]
+        auto_write_ok = "auto_exposure" not in pending
+        exposure_write_ok = "exposure" not in pending
+        if "auto_exposure" in pending:
+            target = pending["auto_exposure"]
+            try:
                 auto_write_ok = bool(self._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, target))
-            if "exposure" in pending:
-                target = pending["exposure"]
+            except cv2.error as exc:
+                logger.warning("Camera %s auto-exposure apply failed: %s", self._device_id, exc)
+                auto_write_ok = False
+        if "exposure" in pending:
+            target = pending["exposure"]
+            try:
                 exposure_write_ok = bool(self._cap.set(cv2.CAP_PROP_EXPOSURE, target))
+            except cv2.error as exc:
+                logger.warning("Camera %s exposure apply failed: %s", self._device_id, exc)
+                exposure_write_ok = False
+        try:
             auto_readback = float(self._cap.get(cv2.CAP_PROP_AUTO_EXPOSURE))
+        except (cv2.error, TypeError, ValueError) as exc:
+            logger.warning("Camera %s auto-exposure readback failed: %s", self._device_id, exc)
+            auto_readback = None
+        try:
             exposure_readback = float(self._cap.get(cv2.CAP_PROP_EXPOSURE))
-            auto_valid = np.isfinite(auto_readback)
-            exposure_valid = np.isfinite(exposure_readback)
-            auto_ok = "auto_exposure" not in pending or (
-                bool(auto_write_ok)
-                and auto_valid
-                and _auto_exposure_readback_matches(pending["auto_exposure"], auto_readback)
-            )
-            exposure_ok = "exposure" not in pending or (
-                bool(exposure_write_ok)
-                and exposure_valid
+        except (cv2.error, TypeError, ValueError) as exc:
+            logger.warning("Camera %s exposure readback failed: %s", self._device_id, exc)
+            exposure_readback = None
+        auto_valid = auto_readback is not None and bool(np.isfinite(auto_readback))
+        exposure_valid = exposure_readback is not None and bool(np.isfinite(exposure_readback))
+        auto_ok = auto_write_ok and auto_valid and (
+            "auto_exposure" not in pending
+            or _auto_exposure_readback_matches(pending["auto_exposure"], auto_readback)
+        )
+        exposure_ok = exposure_write_ok and (
+            "exposure" not in pending
+            or (
+                exposure_valid
                 and abs(exposure_readback - pending["exposure"])
                 <= max(1.0, 0.1 * abs(pending["exposure"]))
             )
-            with self._controls_lock:
-                self._current_auto_exposure = auto_readback if auto_valid else None
-                self._current_exposure = exposure_readback if exposure_valid else None
-                self._controls_effective = auto_ok and exposure_ok
-                if "auto_exposure" in pending and auto_ok:
-                    self._desired_auto_exposure = auto_readback
-                    if (
-                        pending["auto_exposure"] == CAMERA_AUTO_EXPOSURE_MANUAL
-                        and "exposure" not in pending
-                        and exposure_valid
-                    ):
-                        self._desired_exposure = exposure_readback
-                if "exposure" in pending and exposure_ok:
+        )
+        manual_needs_exposure = pending.get("auto_exposure") == CAMERA_AUTO_EXPOSURE_MANUAL
+        batch_ok = auto_ok and exposure_ok and (not manual_needs_exposure or exposure_valid)
+        with self._controls_lock:
+            self._current_auto_exposure = auto_readback if auto_valid else None
+            self._current_exposure = exposure_readback if exposure_valid else None
+            self._controls_effective = batch_ok
+            if batch_ok:
+                self._desired_auto_exposure = auto_readback
+                if "exposure" in pending or manual_needs_exposure:
                     self._desired_exposure = exposure_readback
-                    if "auto_exposure" not in pending and auto_valid:
-                        self._desired_auto_exposure = auto_readback
-        except cv2.error as exc:
-            logger.warning("Camera %s control apply failed: %s", self._device_id, exc)
-            with self._controls_lock:
-                self._controls_effective = False
 
     # ------------------------------------------------------------------
     # Fresh-frame grab (capture path)

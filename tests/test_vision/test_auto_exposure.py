@@ -302,6 +302,83 @@ class TestCameraRuntimeControls:
         assert cam.current_exposure == 600.0
         cam.close()
 
+    def test_auto_success_and_exposure_failure_preserve_the_replay_snapshot(self, monkeypatch):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CAMERA_AUTO_EXPOSURE_ON, CameraManager
+
+        first = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        reopened = self.FakeCapture(auto_exposure=3.0, exposure=50.0)
+        cam = CameraManager(device_id=0, warmup_seconds=0)
+        self.open_with_captures(monkeypatch, cam, [first, reopened])
+        assert cam.open() is True
+        cam.request_controls(exposure=600.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+        first.failed_writes.add((cv2.CAP_PROP_EXPOSURE, 800.0))
+
+        cam.request_controls(exposure=800.0, auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
+        cam._apply_pending_controls()
+
+        assert cam.controls_effective is False
+        assert cam.current_auto_exposure == CAMERA_AUTO_EXPOSURE_ON
+        assert cam.current_exposure == 600.0
+        assert cam.open() is True
+        assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_MANUAL) in reopened.control_writes
+        assert (cv2.CAP_PROP_EXPOSURE, 600.0) in reopened.control_writes
+        cam.close()
+
+    def test_auto_failure_and_exposure_success_preserve_the_replay_snapshot(self, monkeypatch):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CAMERA_AUTO_EXPOSURE_ON, CameraManager
+
+        first = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        reopened = self.FakeCapture(auto_exposure=3.0, exposure=50.0)
+        cam = CameraManager(device_id=0, warmup_seconds=0)
+        self.open_with_captures(monkeypatch, cam, [first, reopened])
+        assert cam.open() is True
+        cam.request_controls(exposure=600.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+        first.failed_writes.add((cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_ON))
+
+        cam.request_controls(exposure=800.0, auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
+        cam._apply_pending_controls()
+
+        assert cam.controls_effective is False
+        assert cam.current_auto_exposure == CAMERA_AUTO_EXPOSURE_MANUAL
+        assert cam.current_exposure == 800.0
+        assert cam.open() is True
+        assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_MANUAL) in reopened.control_writes
+        assert (cv2.CAP_PROP_EXPOSURE, 600.0) in reopened.control_writes
+        cam.close()
+
+    def test_manual_only_with_nonfinite_exposure_preserves_the_replay_snapshot(self, monkeypatch):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CAMERA_AUTO_EXPOSURE_ON, CameraManager
+
+        first = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        reopened = self.FakeCapture(auto_exposure=1.0, exposure=50.0)
+        cam = CameraManager(device_id=0, warmup_seconds=0)
+        self.open_with_captures(monkeypatch, cam, [first, reopened])
+        assert cam.open() is True
+        cam.request_controls(exposure=600.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+        cam.request_controls(auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
+        cam._apply_pending_controls()
+        first.values[cv2.CAP_PROP_EXPOSURE] = float("nan")
+
+        cam.request_controls(auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+
+        assert cam.controls_effective is False
+        assert cam.current_auto_exposure == CAMERA_AUTO_EXPOSURE_MANUAL
+        assert cam.current_exposure is None
+        assert cam.open() is True
+        assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_ON) in reopened.control_writes
+        assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_MANUAL) not in reopened.control_writes
+        cam.close()
+
     def test_readback_mismatch_marks_ineffective(self):
         from unittest.mock import MagicMock
 

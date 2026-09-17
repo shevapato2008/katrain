@@ -45,6 +45,7 @@ _GEOMETRY_ARRAY_SHAPES = {
     "Minv": (3, 3),
     "baseline": (19, 19, 3),
 }
+_OPENCV_TRANSFORM_DTYPES = {np.dtype(np.float32), np.dtype(np.float64)}
 _GEOMETRY_SIDECAR_FIELDS = {
     "confidence",
     "nmatch",
@@ -309,6 +310,8 @@ def _load_valid_geometry(generation_dir: Path, profile: CameraProfile) -> Geomet
             array = archive[name]
             if array.shape != expected_shape:
                 raise ValueError(f"geometry field {name} has invalid shape")
+            if name in {"M", "Minv"} and array.dtype not in _OPENCV_TRANSFORM_DTYPES:
+                raise ValueError(f"geometry field {name} must be float32 or float64")
             if array.dtype.kind not in "iuf" or not np.isfinite(array).all():
                 raise ValueError(f"geometry field {name} must contain finite numeric values")
 

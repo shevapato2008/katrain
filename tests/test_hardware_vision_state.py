@@ -71,6 +71,10 @@ def _make_geometry_invalid(geometry: GeometryLock, invalidity: str) -> None:
         geometry.points = np.zeros((18, 19, 2), dtype=np.float32)
     elif invalidity == "negative_out_size":
         geometry.out_size = -1
+    elif invalidity == "integer_M":
+        geometry.M = np.eye(3, dtype=np.int64)
+    elif invalidity == "integer_Minv":
+        geometry.Minv = np.eye(3, dtype=np.int64)
     elif invalidity == "source_resolution_mismatch":
         geometry.source_width = 1280
     elif invalidity == "sidecar_type":
@@ -80,7 +84,7 @@ def _make_geometry_invalid(geometry: GeometryLock, invalidity: str) -> None:
 
 
 def _corrupt_generation_semantics(generation_dir: Path, invalidity: str) -> None:
-    if invalidity in {"nan", "wrong_shape", "negative_out_size"}:
+    if invalidity in {"nan", "wrong_shape", "negative_out_size", "integer_M", "integer_Minv"}:
         npz_path = generation_dir / "geometry_lock.npz"
         with np.load(npz_path) as archive:
             payload = {name: archive[name] for name in archive.files}
@@ -89,8 +93,10 @@ def _corrupt_generation_semantics(generation_dir: Path, invalidity: str) -> None
             payload["M"][0, 0] = np.nan
         elif invalidity == "wrong_shape":
             payload["corners"] = np.zeros((3, 2), dtype=np.float32)
-        else:
+        elif invalidity == "negative_out_size":
             payload["out_size"] = np.int64(-1)
+        else:
+            payload[invalidity.removeprefix("integer_")] = np.eye(3, dtype=np.int64)
         np.savez(npz_path, **payload)
         _replace_manifest_hash(generation_dir, "geometry_lock.npz")
         return
@@ -188,7 +194,15 @@ def test_payload_checksum_mismatch_is_rejected(tmp_path):
 
 @pytest.mark.parametrize(
     "invalidity",
-    ["nan", "wrong_shape", "negative_out_size", "source_resolution_mismatch", "sidecar_type"],
+    [
+        "nan",
+        "wrong_shape",
+        "negative_out_size",
+        "integer_M",
+        "integer_Minv",
+        "source_resolution_mismatch",
+        "sidecar_type",
+    ],
 )
 def test_commit_rejects_invalid_geometry_without_changing_current(tmp_path, invalidity):
     module = _state_module()
@@ -209,7 +223,15 @@ def test_commit_rejects_invalid_geometry_without_changing_current(tmp_path, inva
 
 @pytest.mark.parametrize(
     "invalidity",
-    ["nan", "wrong_shape", "negative_out_size", "source_resolution_mismatch", "sidecar_type"],
+    [
+        "nan",
+        "wrong_shape",
+        "negative_out_size",
+        "integer_M",
+        "integer_Minv",
+        "source_resolution_mismatch",
+        "sidecar_type",
+    ],
 )
 def test_load_rejects_semantically_invalid_geometry_even_with_matching_hash(tmp_path, invalidity):
     module = _state_module()

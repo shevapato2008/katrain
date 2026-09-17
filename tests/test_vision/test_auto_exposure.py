@@ -143,6 +143,7 @@ class TestCameraRuntimeControls:
             self.control_writes = []
             self.failed_writes = set()
             self.get_calls = []
+            self.readback_overrides = {}
 
         def isOpened(self):
             return self.opened
@@ -162,6 +163,8 @@ class TestCameraRuntimeControls:
 
         def get(self, prop):
             self.get_calls.append(prop)
+            if prop in self.readback_overrides:
+                return self.readback_overrides[prop]
             return self.values.get(prop, 0.0)
 
     @staticmethod
@@ -377,6 +380,119 @@ class TestCameraRuntimeControls:
         assert cam.open() is True
         assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_ON) in reopened.control_writes
         assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_MANUAL) not in reopened.control_writes
+        cam.close()
+
+    def test_reopen_verifies_replay_writes_and_readbacks_without_losing_snapshot(self, monkeypatch):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
+
+        first = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        rejected = self.FakeCapture(auto_exposure=3.0, exposure=50.0)
+        rejected.failed_writes.add((cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_MANUAL))
+        mismatched = self.FakeCapture(auto_exposure=3.0, exposure=50.0)
+        mismatched.readback_overrides[cv2.CAP_PROP_AUTO_EXPOSURE] = 3.0
+        recovered = self.FakeCapture(auto_exposure=3.0, exposure=50.0)
+        unavailable = self.FakeCapture()
+        unavailable.opened = False
+        cam = CameraManager(device_id=0, warmup_seconds=0)
+        self.open_with_captures(monkeypatch, cam, [first, rejected, mismatched, recovered, unavailable])
+        assert cam.open() is True
+        cam.request_controls(exposure=600.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+        assert cam.controls_effective is True
+
+        assert cam.open() is True
+        assert cam.controls_effective is False
+        assert cam.open() is True
+        assert cam.controls_effective is False
+        assert cam.open() is True
+        assert cam.controls_effective is True
+        assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_MANUAL) in recovered.control_writes
+        assert (cv2.CAP_PROP_EXPOSURE, 600.0) in recovered.control_writes
+
+        assert cam.open() is False
+        assert cam.controls_effective is None
+
+    def test_older_batch_cannot_publish_effectiveness_over_a_newer_request(self):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
+
+        cap = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        cam = CameraManager(device_id=0)
+        cam._cap = cap
+        original_set = cap.set
+        enqueued_newer_request = False
+
+        def interleaved_set(prop, value):
+            nonlocal enqueued_newer_request
+            result = original_set(prop, value)
+            if prop == cv2.CAP_PROP_AUTO_EXPOSURE and not enqueued_newer_request:
+                enqueued_newer_request = True
+                cam.request_controls(exposure=700.0)
+            return result
+
+        cap.set = interleaved_set
+        cam.request_controls(exposure=600.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+
+        cam._apply_pending_controls()
+
+        assert cam.current_auto_exposure == CAMERA_AUTO_EXPOSURE_MANUAL
+        assert cam.current_exposure == 600.0
+        assert cam.controls_effective is None
+
+        cam._apply_pending_controls()
+        assert cam.current_exposure == 700.0
+        assert cam.controls_effective is True
+
+    def test_native_manual_readback_tolerance_replays_canonical_mode_and_exposure(self, monkeypatch):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
+
+        first = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        first.readback_overrides[cv2.CAP_PROP_AUTO_EXPOSURE] = 1.005
+        reopened = self.FakeCapture(auto_exposure=3.0, exposure=50.0)
+        reopened.readback_overrides[cv2.CAP_PROP_AUTO_EXPOSURE] = 1.005
+        cam = CameraManager(device_id=0, warmup_seconds=0)
+        self.open_with_captures(monkeypatch, cam, [first, reopened])
+        assert cam.open() is True
+        cam.request_controls(exposure=600.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+        assert cam.controls_effective is True
+
+        assert cam.open() is True
+
+        assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_MANUAL) in reopened.control_writes
+        assert (cv2.CAP_PROP_EXPOSURE, 600.0) in reopened.control_writes
+        assert cam.current_auto_exposure == 1.005
+        assert cam.controls_effective is True
+        cam.close()
+
+    @pytest.mark.parametrize("invalid_controls", [{"auto_exposure": float("inf")}, {"exposure": float("inf")}])
+    def test_nonfinite_target_is_rejected_without_touching_camera_or_snapshot(self, monkeypatch, invalid_controls):
+        import cv2
+
+        from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
+
+        first = self.FakeCapture(auto_exposure=3.0, exposure=100.0)
+        reopened = self.FakeCapture(auto_exposure=3.0, exposure=50.0)
+        cam = CameraManager(device_id=0, warmup_seconds=0)
+        self.open_with_captures(monkeypatch, cam, [first, reopened])
+        assert cam.open() is True
+        cam.request_controls(exposure=600.0, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
+        cam._apply_pending_controls()
+        writes_before_invalid_request = list(first.control_writes)
+
+        cam.request_controls(**invalid_controls)
+        cam._apply_pending_controls()
+
+        assert cam.controls_effective is False
+        assert first.control_writes == writes_before_invalid_request
+        assert cam.open() is True
+        assert (cv2.CAP_PROP_AUTO_EXPOSURE, CAMERA_AUTO_EXPOSURE_MANUAL) in reopened.control_writes
+        assert (cv2.CAP_PROP_EXPOSURE, 600.0) in reopened.control_writes
         cam.close()
 
     def test_readback_mismatch_marks_ineffective(self):

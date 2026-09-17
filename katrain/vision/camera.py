@@ -29,6 +29,21 @@ def _auto_exposure_readback_matches(target: float, readback: float) -> bool:
     return abs(target - readback) <= 0.01
 
 
+def _exposure_readback_matches(target: float, readback: float) -> bool:
+    """Verify an exposure readback using the camera's existing tolerance."""
+    if not np.isfinite(target) or not np.isfinite(readback):
+        return False
+    return abs(readback - target) <= max(1.0, 0.1 * abs(target))
+
+
+def _canonical_auto_exposure(value: float) -> float:
+    """Normalize tolerant native-mode readbacks to values safe for replay."""
+    for native_mode in (CAMERA_AUTO_EXPOSURE_MANUAL, CAMERA_AUTO_EXPOSURE_ON):
+        if _auto_exposure_readback_matches(native_mode, value):
+            return native_mode
+    return value
+
+
 def _device_to_capture_arg(device_id: int | str) -> str | int:
     """Convert device ID to the argument for cv2.VideoCapture.
 
@@ -134,6 +149,8 @@ class CameraManager:
         # Runtime camera controls (software AE): requests are queued here and applied
         # by the reader thread between reads — cv2.VideoCapture is not thread-safe.
         self._pending_controls: dict[str, float] = {}
+        self._pending_controls_generation = 0
+        self._controls_generation = 0
         self._controls_lock = threading.Lock()
         self._controls_effective: bool | None = None  # None = never attempted
         self._initial_exposure: float | None = None  # readback at open()
@@ -153,6 +170,11 @@ class CameraManager:
     def open(self) -> bool:
         """Open the camera device and start the background reader thread."""
         self.close()
+        with self._controls_lock:
+            self._controls_effective = None
+            open_generation = self._controls_generation
+            desired_auto_exposure = self._desired_auto_exposure
+            desired_exposure = self._desired_exposure
         cap = cv2.VideoCapture(self._capture_arg)
         if cap.isOpened():
             # Use MJPEG to reduce USB bandwidth (critical for USB cameras on SBC)
@@ -184,9 +206,7 @@ class CameraManager:
 
             # Optionally lock exposure / white balance for capture (plan §3.1).
             # The HBV camera exposes native V4L2 menu values through OpenCV on rk3562.
-            with self._controls_lock:
-                desired_auto_exposure = self._desired_auto_exposure
-                desired_exposure = self._desired_exposure
+            replaying_runtime_controls = desired_auto_exposure is not None
             auto_exposure = (
                 desired_auto_exposure
                 if desired_auto_exposure is not None
@@ -195,16 +215,20 @@ class CameraManager:
             exposure = desired_exposure if desired_auto_exposure == CAMERA_AUTO_EXPOSURE_MANUAL else None
             if desired_auto_exposure is None and self._lock_exposure:
                 exposure = self._exposure
+            auto_write_ok = auto_exposure is None
+            exposure_write_ok = exposure is None
             if auto_exposure is not None:
                 try:
-                    cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, auto_exposure)
+                    auto_write_ok = bool(cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, auto_exposure))
                 except cv2.error as exc:
                     logger.warning("Camera %s auto-exposure restore failed: %s", self._device_id, exc)
+                    auto_write_ok = False
             if exposure is not None:
                 try:
-                    cap.set(cv2.CAP_PROP_EXPOSURE, exposure)
+                    exposure_write_ok = bool(cap.set(cv2.CAP_PROP_EXPOSURE, exposure))
                 except cv2.error as exc:
                     logger.warning("Camera %s exposure restore failed: %s", self._device_id, exc)
+                    exposure_write_ok = False
             # White balance: only DISABLE auto-WB when explicitly locking (plan §3.1). The SBC's
             # HBV UVC camera has no working manual WB — disabling auto-WB leaves a ~3x red cast
             # (manual white_balance_temperature=4600 does not neutralize). So the default is
@@ -227,10 +251,26 @@ class CameraManager:
                 current_auto_exposure = None
             if current_exposure is not None and not np.isfinite(current_exposure):
                 current_exposure = None
+            replay_ok = False
+            if replaying_runtime_controls:
+                replay_ok = bool(
+                    auto_write_ok
+                    and current_auto_exposure is not None
+                    and _auto_exposure_readback_matches(auto_exposure, current_auto_exposure)
+                )
+                if exposure is not None:
+                    replay_ok = bool(
+                        replay_ok
+                        and exposure_write_ok
+                        and current_exposure is not None
+                        and _exposure_readback_matches(exposure, current_exposure)
+                    )
             with self._controls_lock:
                 self._current_auto_exposure = current_auto_exposure
                 self._current_exposure = current_exposure
                 self._initial_exposure = current_exposure  # AE seed value
+                if replaying_runtime_controls and open_generation == self._controls_generation:
+                    self._controls_effective = replay_ok
 
             # Drain frames to let auto-focus and auto-exposure settle
             if self._warmup_seconds > 0:
@@ -308,18 +348,24 @@ class CameraManager:
 
     def request_controls(self, exposure: float | None = None, auto_exposure: float | None = None) -> None:
         """Queue camera control changes; the reader thread applies them between reads."""
+        requested = {}
+        if auto_exposure is not None:
+            requested["auto_exposure"] = float(auto_exposure)
+        if exposure is not None:
+            requested["exposure"] = float(exposure)
+        if not requested:
+            return
         with self._controls_lock:
-            changed = False
-            if auto_exposure is not None:
-                self._pending_controls["auto_exposure"] = float(auto_exposure)
-                changed = True
-            if exposure is not None:
-                self._pending_controls["exposure"] = float(exposure)
-                changed = True
-            if changed:
-                # Do not let a caller mistake the preceding control batch's result for
-                # this queued request. The reader thread replaces None with its readback.
-                self._controls_effective = None
+            self._controls_generation += 1
+            self._pending_controls_generation = self._controls_generation
+            if not all(bool(np.isfinite(value)) for value in requested.values()):
+                self._pending_controls = {}
+                self._controls_effective = False
+                return
+            self._pending_controls.update(requested)
+            # Do not let a caller mistake the preceding control batch's result for
+            # this queued request. The reader thread replaces None with its readback.
+            self._controls_effective = None
 
     @property
     def controls_effective(self) -> bool | None:
@@ -327,7 +373,8 @@ class CameraManager:
 
         macOS AVFoundation silently rejects UVC exposure controls — the readback check
         catches that so software AE can fall back to advisory mode."""
-        return self._controls_effective
+        with self._controls_lock:
+            return self._controls_effective
 
     @property
     def initial_exposure(self) -> float | None:
@@ -352,6 +399,7 @@ class CameraManager:
             if not self._pending_controls:
                 return
             pending, self._pending_controls = self._pending_controls, {}
+            batch_generation = self._pending_controls_generation
         if self._cap is None:
             return
         auto_write_ok = "auto_exposure" not in pending
@@ -390,8 +438,7 @@ class CameraManager:
             "exposure" not in pending
             or (
                 exposure_valid
-                and abs(exposure_readback - pending["exposure"])
-                <= max(1.0, 0.1 * abs(pending["exposure"]))
+                and _exposure_readback_matches(pending["exposure"], exposure_readback)
             )
         )
         manual_needs_exposure = pending.get("auto_exposure") == CAMERA_AUTO_EXPOSURE_MANUAL
@@ -399,11 +446,13 @@ class CameraManager:
         with self._controls_lock:
             self._current_auto_exposure = auto_readback if auto_valid else None
             self._current_exposure = exposure_readback if exposure_valid else None
-            self._controls_effective = batch_ok
             if batch_ok:
-                self._desired_auto_exposure = auto_readback
+                desired_auto_exposure = pending.get("auto_exposure", auto_readback)
+                self._desired_auto_exposure = _canonical_auto_exposure(desired_auto_exposure)
                 if "exposure" in pending or manual_needs_exposure:
                     self._desired_exposure = exposure_readback
+            if batch_generation == self._controls_generation:
+                self._controls_effective = batch_ok
 
     # ------------------------------------------------------------------
     # Fresh-frame grab (capture path)

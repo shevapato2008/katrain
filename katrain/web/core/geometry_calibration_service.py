@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
 import tempfile
 import threading
 import time
@@ -33,6 +34,10 @@ class CalibrationBusy(RuntimeError):
 
 class CalibrationCancelled(RuntimeError):
     """Cancellation accepted before the durable publication boundary."""
+
+
+class LegacyPublishRollbackError(RuntimeError):
+    """Legacy geometry publication failed and its previous files could not be restored."""
 
 
 class GeometryCalibrationService:
@@ -441,11 +446,41 @@ class GeometryCalibrationService:
         """Stage both legacy files before crossing the publication boundary."""
         self.save_path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(prefix=f".{self.save_path.name}.", dir=self.save_path.parent) as staging:
-            staged_path = Path(staging) / self.save_path.name
+            staging_path = Path(staging)
+            staged_path = staging_path / self.save_path.name
+            staged_sidecar = staged_path.with_suffix(".json")
+            final_sidecar = self.save_path.with_suffix(".json")
+            backup_path = staging_path / "previous.npz"
+            backup_sidecar = staging_path / "previous.json"
             save_geometry_lock(lock, staged_path)
+            previous_files = (
+                (self.save_path, backup_path, self.save_path.exists()),
+                (final_sidecar, backup_sidecar, final_sidecar.exists()),
+            )
+            for final_path, backup, existed in previous_files:
+                if existed:
+                    shutil.copyfile(final_path, backup)
             self._before_publish()
-            os.replace(staged_path, self.save_path)
-            os.replace(staged_path.with_suffix(".json"), self.save_path.with_suffix(".json"))
+            try:
+                os.replace(staged_path, self.save_path)
+                os.replace(staged_sidecar, final_sidecar)
+            except Exception as publish_exc:
+                rollback_errors = []
+                for final_path, backup, existed in previous_files:
+                    try:
+                        if existed:
+                            os.replace(backup, final_path)
+                        else:
+                            final_path.unlink(missing_ok=True)
+                    except Exception as rollback_exc:
+                        rollback_errors.append(f"{final_path.name}: {rollback_exc}")
+                if rollback_errors:
+                    detail = "; ".join(rollback_errors)
+                    raise LegacyPublishRollbackError(
+                        f"legacy geometry publish failed ({publish_exc}); rollback failed ({detail}); "
+                        "persisted geometry state is unknown"
+                    ) from publish_exc
+                raise
 
     def _run(self) -> None:
         exposure_snapshot = self._snapshot_exposure_controls()
@@ -527,6 +562,21 @@ class GeometryCalibrationService:
         except CalibrationCancelled:
             with self._lock:
                 self._status["phase"] = "cancelled"
+        except LegacyPublishRollbackError as exc:
+            logger.error("legacy geometry rollback failed; invalidating runtime geometry: %s", exc)
+            with self._lock:
+                self.current_lock = None
+                self._drift_monitor = None
+                self._status.update(
+                    phase="failed",
+                    session_calibrated=False,
+                    last_valid=False,
+                    error=str(exc),
+                )
+            try:
+                self.on_degraded()
+            except Exception as invalidate_exc:
+                logger.error("runtime geometry invalidation failed after legacy rollback error: %s", invalidate_exc)
         except Exception as exc:
             if committed:
                 logger.warning("geometry calibration post-commit update failed: %s", exc)

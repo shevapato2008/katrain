@@ -968,6 +968,120 @@ def test_cancel_during_legacy_staging_preserves_old_file_and_restores_exposure(t
     service.stop()
 
 
+@pytest.mark.parametrize("has_existing_files", [True, False])
+def test_legacy_sidecar_replace_failure_restores_files_and_runtime_state(
+    tmp_path, monkeypatch, has_existing_files
+):
+    import katrain.web.core.geometry_calibration_service as calibration_module
+    from katrain.vision.geometry_lock import load_geometry_lock, save_geometry_lock
+
+    old_lock = _synth()
+    new_lock = _synth()
+    save_path = tmp_path / "geometry.npz"
+    sidecar_path = save_path.with_suffix(".json")
+    if has_existing_files:
+        save_geometry_lock(old_lock, save_path)
+        old_npz = save_path.read_bytes()
+        old_sidecar = sidecar_path.read_bytes()
+    real_replace = calibration_module.os.replace
+    sidecar_failed = False
+
+    def fail_first_final_sidecar_replace(source, destination):
+        nonlocal sidecar_failed
+        if Path(destination) == sidecar_path and not sidecar_failed:
+            sidecar_failed = True
+            raise OSError("injected sidecar replace failure")
+        return real_replace(source, destination)
+
+    monkeypatch.setattr(calibration_module.os, "replace", fail_first_final_sidecar_replace)
+    capture = RestoringFakeCapture(
+        current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF,
+        current_exposure=332.0,
+        initial_level=254,
+    )
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=save_path,
+        initial_lock=old_lock,
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=new_lock)),
+    )
+    service.EXPOSURE_CONVERGE_POLL_S = 0.0
+
+    service.start(trigger="manual", empty_confirmed=True)
+    assert service.wait(timeout=5) is True
+
+    assert sidecar_failed is True
+    assert service.status()["phase"] == "failed"
+    assert service.status()["error"] == "injected sidecar replace failure"
+    assert service.current_lock is old_lock
+    assert capture.current_auto_exposure == CAMERA_AUTO_EXPOSURE_OFF
+    assert capture.current_exposure == 332.0
+    if has_existing_files:
+        assert save_path.read_bytes() == old_npz
+        assert sidecar_path.read_bytes() == old_sidecar
+        persisted = load_geometry_lock(save_path)
+        np.testing.assert_array_equal(persisted.baseline, old_lock.baseline)
+        assert persisted.confidence == old_lock.confidence
+    else:
+        assert not save_path.exists()
+        assert not sidecar_path.exists()
+    service.stop()
+
+
+def test_legacy_publish_rollback_failure_invalidates_runtime_lock(tmp_path, monkeypatch, caplog):
+    import katrain.web.core.geometry_calibration_service as calibration_module
+    from katrain.vision.geometry_lock import save_geometry_lock
+
+    old_lock = _synth()
+    save_path = tmp_path / "geometry.npz"
+    sidecar_path = save_path.with_suffix(".json")
+    save_geometry_lock(old_lock, save_path)
+    real_replace = calibration_module.os.replace
+    npz_replace_count = 0
+    sidecar_failed = False
+
+    def fail_publish_and_npz_rollback(source, destination):
+        nonlocal npz_replace_count, sidecar_failed
+        destination = Path(destination)
+        if destination == save_path:
+            npz_replace_count += 1
+            if npz_replace_count == 2:
+                raise OSError("injected npz rollback failure")
+        if destination == sidecar_path and not sidecar_failed:
+            sidecar_failed = True
+            raise OSError("injected sidecar publish failure")
+        return real_replace(source, destination)
+
+    monkeypatch.setattr(calibration_module.os, "replace", fail_publish_and_npz_rollback)
+    capture = RestoringFakeCapture(current_auto_exposure=CAMERA_AUTO_EXPOSURE_OFF, current_exposure=333.0)
+    invalidated = []
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=save_path,
+        initial_lock=old_lock,
+        on_degraded=lambda: invalidated.append(True),
+        calibrator_factory=_result_calibrator_factory(CalibrationResult(ok=True, lock=_synth())),
+    )
+
+    with caplog.at_level(logging.ERROR, logger="katrain.web.core.geometry_calibration_service"):
+        service.start(trigger="manual", empty_confirmed=True)
+        assert service.wait(timeout=5) is True
+
+    status = service.status()
+    assert status["phase"] == "failed"
+    assert "injected sidecar publish failure" in status["error"]
+    assert "injected npz rollback failure" in status["error"]
+    assert status["last_valid"] is False
+    assert status["locked"] is False
+    assert service.current_lock is None
+    assert capture.current_exposure == 333.0
+    assert invalidated == [True]
+    assert any("rollback failed" in record.getMessage() for record in caplog.records)
+    service.stop()
+
+
 def test_drift_setup_failure_happens_before_persist_and_promotion(tmp_path):
     class DriftSetupFailureCapture(RestoringFakeCapture):
         def grab_fresh(self, after_ts=None, settle_ms=150.0):

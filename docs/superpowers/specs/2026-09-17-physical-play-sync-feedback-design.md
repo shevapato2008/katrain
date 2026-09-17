@@ -1,6 +1,6 @@
 # Physical Play Synchronization and Feedback Design
 
-**Date:** 2026-09-17  
+**Date:** 2026-09-17
 **Status:** Approved design, pending implementation plan
 
 ## Problem and evidence

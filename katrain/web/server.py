@@ -3709,10 +3709,6 @@ def build_frontend(force: bool = False):
     import subprocess
     import sys
 
-    if not shutil.which("npm"):
-        logging.getLogger("katrain_web").warning("npm not found, skipping frontend build. UI might be outdated.")
-        return
-
     # Board/kiosk terminals serve the lean kiosk-2d bundle (no three.js, board-proxy
     # API base); the full server serves the complete build. Build/check the matching
     # output so board mode never falls back to the full bundle (which calls
@@ -3726,6 +3722,10 @@ def build_frontend(force: bool = False):
             "Frontend already built at %s, skipping (use --force-build to rebuild).",
             static_index.parent,
         )
+        return
+
+    if not shutil.which("npm"):
+        logging.getLogger("katrain_web").warning("npm not found, skipping frontend build. UI might be outdated.")
         return
 
     print(f"Building frontend ({out_dirname})...", flush=True)

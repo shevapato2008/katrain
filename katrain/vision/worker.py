@@ -31,7 +31,13 @@ from katrain.vision.board_state import EMPTY, BoardStateExtractor
 from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
 from katrain.vision.config import BoardConfig, CameraConfig
 from katrain.vision.enhance import enhance_for_inference
-from katrain.vision.gating import mean_detection_confidence, move_event, should_detect_moves, should_feed_sync
+from katrain.vision.gating import (
+    mean_detection_confidence,
+    move_event,
+    should_detect_moves,
+    should_feed_sync,
+    should_feed_sync_frame,
+)
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
@@ -518,7 +524,9 @@ class _VisionWorkerLoop:
                         }
 
             # Sync state machine update
-            if should_feed_sync(self._bound, self._monitor, self._paused):
+            if should_feed_sync(self._bound, self._monitor, self._paused) and should_feed_sync_frame(
+                frame is not None, stable_ok
+            ):
                 events = self._sync.update(
                     observed_board=observed_board,
                     mean_confidence=mean_confidence,

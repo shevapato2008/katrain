@@ -36,6 +36,11 @@ def should_feed_sync(bound: bool, monitor: bool, paused: bool) -> bool:
     return (bound or monitor) and not paused
 
 
+def should_feed_sync_frame(frame_present: bool, motion_stable: bool) -> bool:
+    """Ignore hand-motion frames without hiding real camera/board loss."""
+    return not frame_present or motion_stable
+
+
 def should_detect_moves(bound: bool, monitor: bool, paused: bool, move_armed: bool, sync_state: str) -> bool:
     if paused:
         return False

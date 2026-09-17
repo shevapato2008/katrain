@@ -5,6 +5,7 @@ from katrain.vision.gating import (
     move_event,
     should_detect_moves,
     should_feed_sync,
+    should_feed_sync_frame,
 )
 from katrain.vision.ipc import ConfirmedMove
 
@@ -28,6 +29,20 @@ class TestShouldFeedSync:
 
     def test_neither_no_feed(self):
         assert not should_feed_sync(bound=False, monitor=False, paused=False)
+
+
+class TestShouldFeedSyncFrame:
+    @pytest.mark.parametrize(
+        ("frame_present", "motion_stable", "expected"),
+        [
+            (True, False, False),
+            (True, True, True),
+            (False, False, True),
+            (False, True, True),
+        ],
+    )
+    def test_only_motion_unstable_frames_are_skipped(self, frame_present, motion_stable, expected):
+        assert should_feed_sync_frame(frame_present, motion_stable) is expected
 
 
 class TestShouldDetectMoves:

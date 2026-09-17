@@ -21,7 +21,13 @@ from katrain.vision.board_state import EMPTY, BoardStateExtractor
 from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
 from katrain.vision.enhance import enhance_for_inference
-from katrain.vision.gating import mean_detection_confidence, move_event, should_detect_moves, should_feed_sync
+from katrain.vision.gating import (
+    mean_detection_confidence,
+    move_event,
+    should_detect_moves,
+    should_feed_sync,
+    should_feed_sync_frame,
+)
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
@@ -334,7 +340,11 @@ class InProcessAdapter:
             observed_board = None
             mean_confidence = 0.0
 
-            if frame is not None and self._motion_is_stable(frame):
+            motion_stable = False
+            if frame is not None:
+                motion_stable = self._motion_is_stable(frame)
+
+            if motion_stable:
                 warped, found = self._warp_frame(frame)
                 if found and warped is not None:
                     board_detected = True
@@ -538,7 +548,9 @@ class InProcessAdapter:
                 # Camera dropout has no motion-frame decision to reset the average for us.
                 self._averager.reset()
 
-            if should_feed_sync(self._bound, self._monitor, self._paused):
+            if should_feed_sync(self._bound, self._monitor, self._paused) and should_feed_sync_frame(
+                frame is not None, motion_stable
+            ):
                 events = self._sync.update(
                     observed_board=observed_board,
                     mean_confidence=mean_confidence,

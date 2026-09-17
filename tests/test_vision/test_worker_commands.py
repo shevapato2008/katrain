@@ -312,6 +312,9 @@ class TestInProcessMotionGating:
         w._active_extractor = MagicMock()
         w._move_detector.detect_new_move = MagicMock()
         w._averager = MagicMock()
+        w._bound = True
+        w._sync = MagicMock()
+        w._sync.state = SimpleNamespace(value="synced")
 
         w._loop()
 
@@ -320,6 +323,7 @@ class TestInProcessMotionGating:
         w._detector.detect.assert_not_called()
         w._active_extractor.assert_not_called()
         w._move_detector.detect_new_move.assert_not_called()
+        w._sync.update.assert_not_called()
 
     def test_camera_dropout_resets_averager_once_without_recognition_work(self):
         class DropoutCamera:
@@ -631,7 +635,7 @@ class TestSubprocessMotionGating:
         w._detector = MagicMock()
         w._state_extractor = MagicMock()
         w._move_detector = MagicMock()
-        w._bound = False
+        w._bound = True
         w._monitor = False
         w._paused = False
         w._sync = MagicMock()
@@ -643,6 +647,7 @@ class TestSubprocessMotionGating:
         w._detector.detect.assert_not_called()
         w._state_extractor.detections_to_board.assert_not_called()
         w._move_detector.detect_new_move.assert_not_called()
+        w._sync.update.assert_not_called()
 
     def test_periodic_stable_log_includes_motion_roi_and_full_ratios(self, caplog):
         w = _subprocess_motion_worker()

@@ -125,13 +125,12 @@ def test_move_cannot_resume_local_game_after_timeout_result(client, monkeypatch)
     session.katrain.next_player_info.periods_used = 1
     first = client.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3], "pass_move": False})
     assert first.status_code == 200, first.text
+    state = first.json()["state"]
 
     second = client.post("/api/move", json={"session_id": session.session_id, "coords": [3, 3], "pass_move": False})
 
-    assert second.status_code == 200, second.text
-    state = second.json()["state"]
-    assert state["end_result"] == f"{'W' if turn_player == 'B' else 'B'}+T"
-    assert state["stones"] == []
+    assert second.status_code == 409, second.text
+    assert second.json()["detail"] == "Game is already over"
     assert _recorded_results(client) == [state["end_result"]]
 
 

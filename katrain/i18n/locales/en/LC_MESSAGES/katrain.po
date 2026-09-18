@@ -3480,6 +3480,9 @@ msgstr "This game isn't finished — exiting won't save it"
 msgid "game:keep_playing"
 msgstr "Keep playing"
 
+msgid "game:stay_on_board"
+msgstr "Stay on board"
+
 msgid "game:exit_unsaved"
 msgstr "Exit without saving"
 

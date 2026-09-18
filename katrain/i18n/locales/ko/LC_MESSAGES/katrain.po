@@ -3418,6 +3418,9 @@ msgstr "이 대국은 아직 끝나지 않았습니다. 나가면 저장되지 �
 msgid "game:keep_playing"
 msgstr "계속 두기"
 
+msgid "game:stay_on_board"
+msgstr "바둑판에 머물기"
+
 msgid "game:exit_unsaved"
 msgstr "저장하지 않고 나가기"
 

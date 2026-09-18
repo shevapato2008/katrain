@@ -3358,6 +3358,9 @@ msgstr "Esta partida no ha terminado — si sales, no se guardará"
 msgid "game:keep_playing"
 msgstr "Seguir jugando"
 
+msgid "game:stay_on_board"
+msgstr "Quedarse en el tablero"
+
 msgid "game:exit_unsaved"
 msgstr "Salir sin guardar"
 

@@ -119,7 +119,7 @@ interface EndgameCardProps {
 }
 
 // State C (design.md §5.1): result card + score breakdown + territory coloring (forced via
-// GamePage's boardAnalysisToggles). 继续对弈 only hides this card via LOCAL `dismissed` state —
+// GamePage's boardAnalysisToggles). 留在棋盘 only hides this card via LOCAL `dismissed` state —
 // the game stays ended; useGameSession.handleAction has no 'resume' branch, so it is
 // deliberately never called here. 确认终局 calls the `onExit` prop (GamePage's handleExit).
 // `dismissed` is local rather than lifted to GamePage/reset via a useEffect, because GamePage
@@ -153,7 +153,7 @@ const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
         {t('Komi', '贴目')} {gameState.komi} · {t('Captures', '提子')} {t('game:black_short', '黑')} {gameState.prisoner_count.B} / {t('game:white_short', '白')} {gameState.prisoner_count.W}
       </Typography>
       <Box sx={{ display: 'flex', gap: 1.5 }}>
-        <Button variant="outlined" onClick={() => setDismissed(true)}>{t('Resume game', '继续对弈')}</Button>
+        <Button variant="outlined" onClick={() => setDismissed(true)}>{t('game:stay_on_board', '留在棋盘')}</Button>
         <Button variant="outlined" onClick={onReview}>{t('Review this game', '复盘本局')}</Button>
         <Button variant="contained" onClick={onExit} sx={{ bgcolor: 'primary.main' }}>{t('Confirm result', '确认终局')}</Button>
       </Box>
@@ -554,6 +554,11 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const timeoutResult = localGame && isGameOver && gameState.end_result?.endsWith('+T') ? gameState.end_result : null;
   const timeoutWinnerColor = (timeoutResult?.[0] as 'B' | 'W' | undefined) ?? null;
   const timeoutLoserColor = timeoutWinnerColor === 'B' ? 'W' : timeoutWinnerColor === 'W' ? 'B' : null;
+
+  // 终局是权威状态：若倒计时恰好落在「退出确认」已打开期间，不能留下看似还可继续下的旧弹窗。
+  useEffect(() => {
+    if (isGameOver) setShowExitConfirm(false);
+  }, [isGameOver]);
   // 页控条标题 = **这一局是哪种对弈**,不是「张三 vs KataGo」。
   // 名字在玩家卡里各占一行(还带段位、执色、提子),标题再写一遍是把 460 宽的一行
   // 花在已经能看见的东西上;而「自由对弈 / 升降级对弈」是这一屏唯一说不出别处的事
@@ -1084,7 +1089,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </div>
 
       {/* State C: 终局数子 — territory coloring is forced via boardAnalysisToggles above.
-          继续对弈 ONLY flips EndgameCard's own local `dismissed` state to hide the card — the
+          留在棋盘 ONLY flips EndgameCard's own local `dismissed` state to hide the card — the
           game stays ended (useGameSession's handleAction has no 'resume' branch; calling it
           would be a silent no-op). 确认终局 (handleExit) navigates out. `key={sessionId}`
           remounts EndgameCard fresh (dismissed=false) whenever a new session/game loads.

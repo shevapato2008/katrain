@@ -633,10 +633,10 @@ describe('GamePage', () => {
       expect(capturedBoardProps.current?.analysisToggles?.ownership).toBe(true);
     });
 
-    it('继续对弈 hides the endgame-card locally and does NOT call session.handleAction (game stays ended)', () => {
+    it('留在棋盘 hides the endgame-card locally and does NOT call session.handleAction (game stays ended)', () => {
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: 'B+4.5' });
       renderPage();
-      fireEvent.click(screen.getByText('继续对弈'));
+      fireEvent.click(screen.getByText('留在棋盘'));
       expect(screen.queryByTestId('endgame-card')).toBeNull();
       expect(mockHandleAction).not.toHaveBeenCalled();
     });
@@ -840,6 +840,21 @@ describe('GamePage', () => {
       expect(within(bar).getByRole('button', { name: '复盘本局' })).toBeInTheDocument();
       // 超时判负那一态由右栏状态条说完 —— 居中的终局卡不再重复一遍(见 GamePage.tsx 注释)。
       expect(screen.queryByTestId('endgame-card')).toBeNull();
+    });
+
+    it('超时终局到达时关闭此前打开的退出确认框', async () => {
+      mockGameState = local();
+      const { rerender } = renderPage();
+      fireEvent.click(screen.getByText('退出对局'));
+      expect(screen.getByText('继续下')).toBeInTheDocument();
+
+      mockGameState = local({ end_result: 'W+T' });
+      rerender(pageTree());
+
+      await waitFor(() => {
+        expect(screen.queryByText('继续下')).toBeNull();
+        expect(screen.queryByText('退出不保存')).toBeNull();
+      });
     });
 
     it('非 pvp_local 局不传 onTimeExpired', () => {

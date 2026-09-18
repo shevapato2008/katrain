@@ -3443,6 +3443,9 @@ msgstr "這局還沒下完，退出後不會保存"
 msgid "game:keep_playing"
 msgstr "繼續下"
 
+msgid "game:stay_on_board"
+msgstr "留在棋盤"
+
 msgid "game:exit_unsaved"
 msgstr "退出不保存"
 

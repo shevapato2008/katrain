@@ -3536,6 +3536,9 @@ msgstr "Bu oyun henüz bitmedi — çıkarsanız kaydedilmez"
 msgid "game:keep_playing"
 msgstr "Oynamaya devam et"
 
+msgid "game:stay_on_board"
+msgstr "Tahtada kal"
+
 msgid "game:exit_unsaved"
 msgstr "Kaydetmeden çık"
 

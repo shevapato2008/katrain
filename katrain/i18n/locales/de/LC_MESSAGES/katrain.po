@@ -3525,6 +3525,9 @@ msgstr ""
 msgid "game:keep_playing"
 msgstr "Weiterspielen"
 
+msgid "game:stay_on_board"
+msgstr "Auf dem Brett bleiben"
+
 msgid "game:exit_unsaved"
 msgstr "Ohne Speichern beenden"
 

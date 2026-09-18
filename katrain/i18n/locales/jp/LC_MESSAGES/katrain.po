@@ -3493,6 +3493,9 @@ msgstr "この対局はまだ終わっていません。退出すると保存さ
 msgid "game:keep_playing"
 msgstr "対局を続ける"
 
+msgid "game:stay_on_board"
+msgstr "盤面に留まる"
+
 msgid "game:exit_unsaved"
 msgstr "保存せずに退出"
 

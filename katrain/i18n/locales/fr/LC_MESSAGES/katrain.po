@@ -3522,6 +3522,9 @@ msgstr "Cette partie n'est pas terminée — quitter ne l'enregistrera pas"
 msgid "game:keep_playing"
 msgstr "Continuer la partie"
 
+msgid "game:stay_on_board"
+msgstr "Rester sur le plateau"
+
 msgid "game:exit_unsaved"
 msgstr "Quitter sans enregistrer"
 

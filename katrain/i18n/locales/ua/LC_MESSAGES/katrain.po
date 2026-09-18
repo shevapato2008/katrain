@@ -3518,6 +3518,9 @@ msgstr "Ця партія ще не завершена — вихід без з�
 msgid "game:keep_playing"
 msgstr "Продовжити гру"
 
+msgid "game:stay_on_board"
+msgstr "Залишитися біля дошки"
+
 msgid "game:exit_unsaved"
 msgstr "Вийти без збереження"
 

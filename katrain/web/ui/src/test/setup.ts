@@ -1,5 +1,21 @@
 import '@testing-library/jest-dom';
 
+// Node's experimental global localStorage can leave Vitest's jsdom window
+// without a storage instance. Keep the browser contract available to tests.
+if (!window.localStorage) {
+  const values = new Map<string, string>();
+  const storage: Storage = {
+    get length() { return values.size; },
+    clear: () => values.clear(),
+    getItem: (key) => values.get(key) ?? null,
+    key: (index) => Array.from(values.keys())[index] ?? null,
+    removeItem: (key) => values.delete(key),
+    setItem: (key, value) => values.set(key, String(value)),
+  };
+  Object.defineProperty(window, 'localStorage', { configurable: true, value: storage });
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: storage });
+}
+
 // Polyfill ResizeObserver for jsdom (used by LiveBoard, TsumegoBoard)
 global.ResizeObserver = class ResizeObserver {
   observe() {}

@@ -96,7 +96,7 @@ const { mockAcknowledgePaintedNode, capturedSessionOptions } = vi.hoisted(() => 
   capturedSessionOptions: { current: null as { deferMoveSoundUntilPaint?: boolean } | null },
 }));
 
-let mockGameState: GameState;
+let mockGameState: GameState | undefined;
 let mockPhysicalReminder: { kind: 'reminder' | 'escalation'; to_place: number[][]; to_remove: number[][] } | null = null;
 
 vi.mock('../../hooks/useGameSession', () => ({
@@ -200,6 +200,22 @@ describe('GamePage', () => {
     readActiveSession.mockReturnValue(null);
     mockLadderStatus.mockReset();
     __resetKioskActivityStorageForTests();
+  });
+
+  it('enters the game after its initial loading render without changing hook order', () => {
+    mockGameState = undefined;
+    const { rerender } = renderPage();
+    expect(screen.getByTestId('game-loading')).toBeInTheDocument();
+
+    mockGameState = makeGameState({
+      players_info: {
+        B: { ...basePlayer, player_type: 'player:human', name: '黑方' },
+        W: { ...basePlayer, player_type: 'player:ai', name: 'AI' },
+      },
+    });
+    rerender(pageTree());
+
+    expect(screen.getByTestId('board')).toBeInTheDocument();
   });
 
   it('renders authoritative ranked settlement feedback after end_result', async () => {

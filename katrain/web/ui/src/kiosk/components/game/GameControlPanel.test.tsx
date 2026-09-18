@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, test, expect, vi } from 'vitest';
 import GameControlPanel from './GameControlPanel';
 import type { GameState } from '../../../api';
@@ -51,6 +51,28 @@ describe('GameControlPanel', () => {
     expect(screen.queryByText('3D')).toBeNull();
     expect(screen.getByText('领地')).toBeInTheDocument();
     expect(screen.getByText('数子')).toBeInTheDocument();
+  });
+
+  test('胜率图只在终局后允许跳转棋谱位置', () => {
+    const history = [
+      { node_id: 10, score: 0, winrate: 0.5 },
+      { node_id: 11, score: 1, winrate: 0.55 },
+    ];
+    const onNavigate = vi.fn();
+    const active = panel({ game_type: 'free', history }, { analysisToggles: { score: true }, onNavigate });
+    const activeGraph = active.container.querySelector('svg[data-eval]')!;
+    Object.defineProperty(activeGraph, 'getBoundingClientRect', { value: () => ({ left: 0, width: 382 }) });
+    fireEvent.click(activeGraph, { clientX: 29 });
+    expect(onNavigate).not.toHaveBeenCalled();
+    active.unmount();
+
+    const terminal = panel({ game_type: 'free', history }, {
+      analysisToggles: { score: true }, onNavigate, isGameOver: true,
+    });
+    const terminalGraph = terminal.container.querySelector('svg[data-eval]')!;
+    Object.defineProperty(terminalGraph, 'getBoundingClientRect', { value: () => ({ left: 0, width: 382 }) });
+    fireEvent.click(terminalGraph, { clientX: 29 });
+    expect(onNavigate).toHaveBeenCalledWith(11);
   });
 
   // ── 悔棋按对弈方式判 ────────────────────────────────────────────────────────

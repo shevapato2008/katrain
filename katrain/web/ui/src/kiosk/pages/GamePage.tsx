@@ -200,11 +200,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   } | null>(null);
   const timeoutState = session.gameState;
   const timeoutScope = `${sessionId}|${timeoutState?.game_id}|${timeoutState?.current_node_id}|${timeoutState?.player_to_move}|${timeoutState?.end_result}|${timeoutState?.terminal_result}|${timeoutState?.children?.length}|${timeoutState?.last_ladder_error}|${timeoutState?.game_type}|${timeoutState ? deriveHumanColor(timeoutState) : ""}`;
+  const sessionIsGameOver = !!timeoutState && !!endResultOf(timeoutState) && !timeoutState.awaiting_count;
   useEffect(() => () => {
     const attempt = timeoutAttemptRef.current;
     if (attempt?.timer != null) window.clearTimeout(attempt.timer);
     timeoutAttemptRef.current = null;
   }, [timeoutScope]);
+
+  // 终局是权威状态：若倒计时恰好落在「退出确认」已打开期间，不能留下看似还可继续下的旧弹窗。
+  // This must stay above the loading return so the first game-state update never changes
+  // GamePage's Hook sequence (a production build otherwise leaves the kiosk black).
+  useEffect(() => {
+    if (sessionIsGameOver) setShowExitConfirm(false);
+  }, [sessionIsGameOver]);
 
   const [countError, setCountError] = useState<string | null>(null);
   // A12:数子可能要等几秒(当前手没有分数时服务端先补一次分析,上限 15 秒)。
@@ -555,10 +563,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const timeoutWinnerColor = (timeoutResult?.[0] as 'B' | 'W' | undefined) ?? null;
   const timeoutLoserColor = timeoutWinnerColor === 'B' ? 'W' : timeoutWinnerColor === 'W' ? 'B' : null;
 
-  // 终局是权威状态：若倒计时恰好落在「退出确认」已打开期间，不能留下看似还可继续下的旧弹窗。
-  useEffect(() => {
-    if (isGameOver) setShowExitConfirm(false);
-  }, [isGameOver]);
   // 页控条标题 = **这一局是哪种对弈**,不是「张三 vs KataGo」。
   // 名字在玩家卡里各占一行(还带段位、执色、提子),标题再写一遍是把 460 宽的一行
   // 花在已经能看见的东西上;而「自由对弈 / 升降级对弈」是这一屏唯一说不出别处的事

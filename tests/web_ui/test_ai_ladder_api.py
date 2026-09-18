@@ -803,7 +803,8 @@ async def test_ranked_session_rejects_canonical_mutation_and_analysis_endpoints(
                 resolved_path, headers=api_app.state._test_headers, json={"session_id": session_id, **payload}
             )
 
-    assert response.status_code == 403, (path, response.text)
+    expected_status = 409 if path == "/api/nav" else 403
+    assert response.status_code == expected_status, (path, response.text)
 
 
 @pytest.mark.asyncio
@@ -869,7 +870,7 @@ async def test_free_session_canonical_mutations_remain_available(api_app, client
             ),
         )
 
-    assert [response.status_code for response in responses] == [200, 200, 200, 200, 200]
+    assert [response.status_code for response in responses] == [200, 200, 409, 200, 200]
 
 
 @pytest.mark.asyncio
@@ -921,7 +922,8 @@ async def test_pending_ranked_user_cannot_analyze_a_second_free_session(api_app,
             json={"session_id": free.session_id, **payload},
         )
 
-    assert response.status_code == 403, (path, response.text)
+    expected_status = 409 if path == "/api/nav" else 403
+    assert response.status_code == expected_status, (path, response.text)
 
 
 @pytest.mark.asyncio
@@ -975,6 +977,18 @@ async def test_free_session_creation_registers_auto_analysis_before_ranked_start
     assert created.status_code == 200
     assert started.status_code == 409
     assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
+
+
+@pytest.mark.asyncio
+async def test_ended_free_session_analysis_does_not_block_ranked_start(api_app, client):
+    async with client as ac:
+        created = await ac.post("/api/session", headers=api_app.state._test_headers)
+        free = api_app.state.session_manager.get_session(created.json()["session_id"])
+        free.game_ended = True
+        started = await start_ranked(api_app, ac)
+
+    assert created.status_code == 200
+    assert started.status_code == 201
 
 
 @pytest.mark.asyncio
@@ -1084,9 +1098,14 @@ async def test_ranked_start_rejects_preexisting_background_analysis(api_app, cli
         )
         started = await start_ranked(api_app, ac)
 
-    assert analysis.status_code == 200
-    assert started.status_code == 409
-    assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
+    if analysis_path == "/api/nav":
+        assert analysis.status_code == 409
+        assert started.status_code == 201
+        assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is not None
+    else:
+        assert analysis.status_code == 200
+        assert started.status_code == 409
+        assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
 
 
 @pytest.mark.asyncio
@@ -1101,7 +1120,7 @@ async def test_pending_ranked_user_navigation_does_not_trigger_free_session_anal
             json={"session_id": free.session_id, "node_id": 0},
         )
 
-    assert response.status_code == 403
+    assert response.status_code == 409
     assert free.katrain.calls == calls_before
 
 

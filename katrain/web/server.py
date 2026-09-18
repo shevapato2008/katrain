@@ -1431,7 +1431,6 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav")
     def navigate(request: NavRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
-        guard_ai_ladder_ranked_session(session, "navigate")
         _guard_engine_move_pending(app, request.session_id)
         gateway = getattr(app.state, "platform_gateway", None)
         is_platform_game = gateway and gateway.is_platform_game(request.session_id)
@@ -1440,14 +1439,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         )
 
         with session.lock:
-            if is_native_multiplayer:
-                if not session.game_ended:
+            # A navigation request changes the authoritative current node. During any
+            # active game that would turn the next move into a branch, so this is not
+            # merely a kiosk-UI concern: every caller must wait for a terminal result.
+            # Research sessions deliberately remain navigable while open.
+            if session.mode == "play":
+                if not getattr(session, "game_ended", False):
                     current_state = session.katrain.get_state()
                     session.game_ended = bool(current_state.get("end_result"))
-                if not session.game_ended:
-                    raise HTTPException(status_code=409, detail="navigation disabled during active multiplayer game")
-                if current_user is None:
-                    raise HTTPException(status_code=401, detail="Authentication required for multiplayer navigation")
+                if not getattr(session, "game_ended", False):
+                    raise HTTPException(status_code=409, detail="navigation disabled during active game")
+            if is_native_multiplayer and current_user is None:
+                raise HTTPException(status_code=401, detail="Authentication required for multiplayer navigation")
 
         # Anonymous sessions are created without initial analysis and remain usable for
         # legacy/plain navigation. Authenticated navigation retains the ranked-analysis

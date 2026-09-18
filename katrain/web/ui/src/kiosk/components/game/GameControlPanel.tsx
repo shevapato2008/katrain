@@ -563,7 +563,7 @@ const GameControlPanel = ({
           title={t('game:eval_title', '胜率 · KataGo 原生通道')}
           value={goEvalSummary(gameState, t)}
         >
-          <GoEvalGraph gameState={gameState} onNavigate={onNavigate} />
+          <GoEvalGraph gameState={gameState} onNavigate={isGameOver ? onNavigate : undefined} />
         </KioskFold>
       )}
 

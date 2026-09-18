@@ -98,11 +98,6 @@ describe('A18 · 玩家卡时钟', () => {
       timer: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }),
         settings: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }).settings, sound: true } },
     })],
-    ['本地双人 PlayerRow 路径', base({
-      game_type: 'pvp_local',
-      timer: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }),
-        settings: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }).settings, sound: true } },
-    })],
   ])('%s不播放 kiosk SeatRow 读秒音', (_name, gameState) => {
     panel(gameState);
     act(() => { vi.advanceTimersByTime(1_000); });
@@ -116,6 +111,19 @@ describe('A18 · 玩家卡时钟', () => {
         settings: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }).settings, sound: true },
       },
     }));
+    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep']]);
+  });
+
+  test('本地双人 PlayerRow 路径也播放最后五秒读秒音', () => {
+    panel(base({
+      game_type: 'pvp_local',
+      timer: {
+        ...timer({ main_time: 0, byo_length: 30, byo_periods: 3 }),
+        current_node_time_used: 25,
+        settings: { ...timer({ main_time: 0, byo_length: 30, byo_periods: 3 }).settings, sound: true },
+      },
+    }));
+
     expect(soundMocks.play.mock.calls).toEqual([['countdownbeep']]);
   });
 

@@ -278,7 +278,11 @@ class WebKaTrain(KaTrainBase):
         self.show_coordinates = True
         self.zen_mode = False
         self.preview_pv = []
-        self.active_game_timer = self.config("timer")
+        self.active_game_timer = copy.deepcopy(self.config("timer"))
+        # Existing box configs predate the web countdown and have no `sound`
+        # key. Keep their historical audible default instead of exposing
+        # `undefined` to clients that correctly require an explicit boolean.
+        self.active_game_timer.setdefault("sound", True)
 
         # Initialize language from config
         from katrain.web.core.config import settings
@@ -801,6 +805,7 @@ class WebKaTrain(KaTrainBase):
                 self.engine.on_new_game()
 
             self.active_game_timer = copy.deepcopy(self.config("timer"))
+            self.active_game_timer.setdefault("sound", True)
 
             # Update global config for persistence of defaults
             if size:

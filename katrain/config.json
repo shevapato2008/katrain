@@ -55,7 +55,8 @@
         "main_time": 20,
         "byo_length": 30,
         "byo_periods": 5,
-        "minimal_use": 0
+        "minimal_use": 0,
+        "sound": true
     },
     "game": {
         "size": 19,

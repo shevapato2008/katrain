@@ -285,6 +285,8 @@ const GameControlPanel = ({
   onTimeout, counting = false, statusSlot = null,
 }: Props) => {
   const { t, lang } = useTranslation();
+  const { play: playSound } = useSound();
+  const lastLocalCountdownSecondRef = useRef<number | null>(null);
 
   // 数子闸照抄 galaxy(`RightSidebarPanel`):后端 `/api/count/request` 在 count_min_moves
   // 之前一律拒,所以键灰着 —— 而**灰而不说原因**是这份稿子在别处专门骂过的事,
@@ -358,9 +360,28 @@ const GameControlPanel = ({
     active: ticking && c === toMove,
     clientElapsed,
   });
+  const activeLocalClock = localClock(toMove);
+  const localCountdownSecond = activeLocalClock.phase === 'byoyomi'
+    ? Math.ceil(activeLocalClock.byoyomiLeft)
+    : null;
+  useEffect(() => {
+    const shouldPlay = localGame
+      && ticking
+      && timer?.settings.sound === true
+      && localCountdownSecond !== null
+      && localCountdownSecond >= 1
+      && localCountdownSecond <= 5;
+    if (!shouldPlay) {
+      lastLocalCountdownSecondRef.current = null;
+      return;
+    }
+    if (lastLocalCountdownSecondRef.current === localCountdownSecond) return;
+    playSound('countdownbeep');
+    lastLocalCountdownSecondRef.current = localCountdownSecond;
+  }, [localCountdownSecond, localGame, playSound, ticking, timer?.settings.sound]);
 
   // 到点那一刻调一次。回调走 ref:调用方每次渲染都给一个新函数,放进依赖会让「停在 0」连调。
-  const timeExpired = !isGameOver && !awaitingCount && localClock(toMove).phase === 'expired';
+  const timeExpired = !isGameOver && !awaitingCount && activeLocalClock.phase === 'expired';
   const onTimeExpiredRef = useRef(onTimeExpired);
   const onTimeoutRef = useRef(onTimeout);
   useEffect(() => { onTimeExpiredRef.current = onTimeExpired; });

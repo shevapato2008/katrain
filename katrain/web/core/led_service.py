@@ -78,7 +78,7 @@ class LedServiceConfig:
     enabled: bool = False
     serial_port: str = ""
     baud_rate: int = 115200
-    max_bright: int = 200
+    max_bright: int = 255
     handshake_timeout: float = 2.0
     lut_path: Optional[str] = None
 

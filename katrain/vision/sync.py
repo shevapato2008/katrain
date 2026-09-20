@@ -82,6 +82,7 @@ class SyncStateMachine:
         degraded_recovery: float = 0.45,
         degraded_enter_seconds: float = 10.0,
         degraded_exit_seconds: float = 5.0,
+        missing_hold_seconds: float = 7.0,
     ):
         self._board_size = board_size
         self._illegal_change_frames = illegal_change_frames
@@ -101,6 +102,15 @@ class SyncStateMachine:
         # Mismatch tracking
         self._mismatch_board: np.ndarray | None = None
         self._mismatch_count: int = 0
+
+        # A live stone vision cannot see is held back until it has been continuously
+        # invisible for BOTH missing_hold_seconds of real time AND illegal_change_frames
+        # of actually-observed frames. Wall-clock alone is not enough: gating.py's
+        # should_feed_sync_frame stops feeding frames while the scene moves, so a 3-second
+        # occlusion arrives here as two frames 3 seconds apart. The old gate was the frame
+        # counter alone, which at the board's 6-15 fps is 0.3-0.8s — an arm passing over.
+        self._missing_hold_seconds = missing_hold_seconds
+        self._missing_since: dict[tuple[int, int], list] = {}  # (row,col) -> [first_seen_ts, frames]
 
         # Machine state
         self._state: SyncState = SyncState.UNBOUND
@@ -206,7 +216,7 @@ class SyncStateMachine:
         else:
             # 4. Compare with expected board before declaring recovery: a visible
             # frame can still contain the same displacement that caused BOARD_LOST.
-            events.extend(self._compare_boards(observed_board))
+            events.extend(self._compare_boards(observed_board, now))
 
         if was_board_lost and self._state != SyncState.BOARD_LOST:
             events.insert(0, SyncEvent(SyncEventType.BOARD_REACQUIRED))
@@ -225,6 +235,7 @@ class SyncStateMachine:
         self._target_board = None
         self._mismatch_board = None
         self._mismatch_count = 0
+        self._missing_since = {}
         self._pending_captures = []
         self._degraded_timer_start = None
         self._degraded_recovery_start = None
@@ -310,7 +321,7 @@ class SyncStateMachine:
 
         return events
 
-    def _compare_boards(self, observed_board: np.ndarray) -> list[SyncEvent]:
+    def _compare_boards(self, observed_board: np.ndarray, now: float) -> list[SyncEvent]:
         """Compare observed board with expected board and emit sync events."""
         events: list[SyncEvent] = []
         diff_mask = observed_board != self._expected_board
@@ -352,6 +363,30 @@ class SyncStateMachine:
                 # Color changed — treat as unexpected
                 unexpected.append((r, c, observed_val))
 
+        # 4a-bis. Hold back a missing stone until it has been continuously invisible for
+        # both a real elapsed period and a minimum number of observed frames — see
+        # `_missing_hold_seconds`. `missing_anomaly` itself is left intact because the
+        # board-lost check below must still react immediately: a displaced board produces
+        # many missing points at once and is not something to wait out.
+        held_missing: list[tuple[int, int, int]] = []
+        ripe_missing: list[tuple[int, int, int]] = []
+        seen_missing: set[tuple[int, int]] = set()
+        for r, c, clr in missing_anomaly:
+            cell = (r, c)
+            seen_missing.add(cell)
+            entry = self._missing_since.get(cell)
+            if entry is None:
+                entry = [now, 0]
+                self._missing_since[cell] = entry
+            entry[1] += 1
+            if now - entry[0] >= self._missing_hold_seconds and entry[1] >= self._illegal_change_frames:
+                ripe_missing.append((r, c, clr))
+            else:
+                held_missing.append((r, c, clr))
+        for cell in list(self._missing_since):
+            if cell not in seen_missing:
+                del self._missing_since[cell]
+
         # 4b. Many unexplained changes → board displaced / lost. Captures and
         # digitally requested placements are known changes, even for large groups.
         if len(unexpected) + len(missing_anomaly) >= self._board_lost_threshold:
@@ -386,13 +421,13 @@ class SyncStateMachine:
                 self._pending_captures = still_pending
                 return events
 
-        # 4d. Anomaly tracking: unexpected extras AND missing live stones both count.
-        if unexpected or missing_anomaly:
+        # 4d. Anomaly tracking: unexpected extras AND ripe missing live stones both count.
+        if unexpected or ripe_missing:
             # Build a fingerprint of current anomalous positions for stability check.
             current_mismatch = np.zeros_like(self._expected_board)
             for r, c, clr in unexpected:
                 current_mismatch[r, c] = clr
-            for r, c, clr in missing_anomaly:
+            for r, c, clr in ripe_missing:
                 current_mismatch[r, c] = clr + 2  # distinct fingerprint values (3/4)
 
             if self._mismatch_board is not None and np.array_equal(current_mismatch, self._mismatch_board):
@@ -408,7 +443,7 @@ class SyncStateMachine:
                         SyncEventType.ILLEGAL_CHANGE,
                         data={
                             "positions": [(r, c, clr) for r, c, clr in unexpected],
-                            "missing": [(r, c, clr) for r, c, clr in missing_anomaly + placement_pending],
+                            "missing": [(r, c, clr) for r, c, clr in ripe_missing + placement_pending],
                         },
                     )
                 )
@@ -417,6 +452,14 @@ class SyncStateMachine:
             elif self._state != SyncState.MISMATCH_WARNING:
                 self._state = SyncState.MISMATCH_WARNING
 
+            return events
+
+        if held_missing:
+            # Still waiting out the hold. Not an anomaly yet, but definitely not a clean
+            # frame either: falling through to 4e would acknowledge the versioned expected
+            # board while a stone the game believes in is not visible.
+            self._mismatch_board = None
+            self._mismatch_count = 0
             return events
 
         # 4e. No anomalies — exact matches and placement-pending-only frames are

@@ -1622,3 +1622,7 @@ button.kiosk-row.figrow { flex: none; }
   outline: none; min-width: 0;
 }
 .su-nameinput::placeholder { color: var(--dim); font-weight: 400; }
+
+/* 升降级那段对手说明在这三屏里收一档行距:它是一段读数,不是正文。
+   (整段并进「盒子定好的」之后仍差 9px —— 真浏览器量出来的,不是估的。) */
+.kiosk-rail[data-su] .setexplain { padding: 9px 12px; line-height: 1.5; }

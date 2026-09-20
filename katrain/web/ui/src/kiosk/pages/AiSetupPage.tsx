@@ -424,10 +424,10 @@ const AiSetupPage = () => {
                   说的是「这条路本来就没得选」,和灰掉(「你现在不能改」)不是一回事。 */}
               <section className="setgrp" data-testid="setup-game-group">
                 <KioskSecLabel
-                  zh={t('setup:game_terms', '这局棋')}
-                  en="Game"
+                  zh={isRanked ? t('ladder:fixed_by_box', '盒子定好的') : t('setup:game_terms', '这局棋')}
+                  en={isRanked ? 'Fixed' : 'Game'}
                   value={isRanked
-                    ? t('ladder:terms_fixed', '升降级固定,不可改')
+                    ? t('ladder:terms_fixed', '都不可改')
                     : t('setup:locked_after_start', '开局后不可改')}
                 />
                 <div className="su-row">
@@ -490,6 +490,16 @@ const AiSetupPage = () => {
                   {komiText}
                 </SetupDerived>
 
+                {/* 升降级的「对手」并在这一段里,不另起一段:**盘面和对手是同一件事的两半** ——
+                    都是盒子定的,而且档位的强度就是按上面那个盘量出来的。
+                    (拆成两段会让右栏溢出 41px,真浏览器几何闸量到的。) */}
+                {/* 这里**不再重复「全程封分析」**:页控条副标已经写着
+                    「开局设置 · 计入段位 · 全程封分析」,同一件事说两遍。
+                    撤掉它是为了给右栏留余量 —— 留之前实测只剩 2.2px,
+                    一条文案换行就破(真浏览器量的)。撤掉后 24.5px。 */}
+                {isRanked && (
+                  <KioskAiLadderOpponent status={aiLadderStatus} onRetry={retryAiLadderStatus} />
+                )}
                 {!isRanked && <p className="su-hint">{gameHint}</p>}
               </section>
 
@@ -500,18 +510,6 @@ const AiSetupPage = () => {
                   `ai/{strategy}/kyu_rank`(`server.py:1253`)。一根只对五分之一选项
                   成立的档位轴,不该用一个平行的五选一去否定它。 */}
               {isRanked ? (
-                <>
-                  <section className="setgrp" data-testid="setup-opponent-group">
-                    <KioskSecLabel
-                      zh={t('ladder:opponent', '对手')}
-                      en="Opponent"
-                      value={t('ladder:opponent_fixed', '盒子配档,不可选')}
-                    />
-                    <KioskAiLadderOpponent status={aiLadderStatus} onRetry={retryAiLadderStatus} />
-                    <p className="su-hint">
-                      {t('ladder:sealed_hint', '提示、形势判断、变化图一律封掉 —— 硬规则,不是设置项')}
-                    </p>
-                  </section>
                   <section className="setgrp" data-testid="setup-stake-group">
                     <KioskSecLabel
                       zh={t('ladder:stake', '这一局赌多少')}
@@ -529,7 +527,6 @@ const AiSetupPage = () => {
                       )}
                     </p>
                   </section>
-                </>
               ) : (
                 <section className="setgrp" data-testid="setup-strength-group">
                   <KioskSecLabel
@@ -557,8 +554,11 @@ const AiSetupPage = () => {
                       n: rankOptions.length, lo: rankName(0), hi: rankName(rankOptions.length - 1),
                     })}
                   />
+                  {/* 一行。右栏余量只有 5.5px(内容 364.5 / 可视 370,真浏览器量的),
+                      这句要是折成两行就溢出 —— 改文案时请连着
+                      `tests/kiosk-setup-r2-geometry.spec.ts` 一起看。 */}
                   <p className="su-hint">
-                    {t('setup:strength_hint2', '拟人:按这一档的水平下棋,包括那个水平会犯的错 —— 档位说的是对手,不是你的段位')}
+                    {t('setup:strength_hint2', '拟人会犯这一档该犯的错;档位说的是对手,不是你的段位')}
                   </p>
                 </section>
               )}

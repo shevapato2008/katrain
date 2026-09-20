@@ -1865,10 +1865,11 @@ Expected: no new `FAILED` / `ERROR` lines relative to the pre-change baseline. *
 - [ ] **Both workers really are in parity**
 
 ```bash
-# Site 1 — the confirmation/routing block. This is the ONLY site the original
-# one-liner covered (worker.py 403-517, worker_inprocess.py 451-565).
-diff <(sed -n '/pending_peak = /,/self._prev_conf_map = conf_map/p' katrain/vision/worker.py) \
-     <(sed -n '/pending_peak = /,/self._prev_conf_map = conf_map/p' katrain/vision/worker_inprocess.py)
+# Site 1 — the confirmation/routing block, anchored at `pending_before` NOT at
+# `pending_peak`: the Finding-6 fast-path comment sits BETWEEN the two, so a range
+# starting at `pending_peak` silently excludes it (that was site 4, found by review).
+diff <(sed -n '/pending_before = self\._move_detector\.pending_move/,/self\._prev_conf_map = conf_map/p' katrain/vision/worker.py) \
+     <(sed -n '/pending_before = self\._move_detector\.pending_move/,/self\._prev_conf_map = conf_map/p' katrain/vision/worker_inprocess.py)
 
 # Site 2 — the stuck-stone promoter gate. Sits TWO LINES past the end of site 1's range.
 diff <(grep -A2 'if move_result is None and' katrain/vision/worker.py) \
@@ -1889,6 +1890,15 @@ vs `observed_board`, `self._state_extractor` vs `self._active_extractor()`, and 
 > `about_to_confirm` call sites were broken. A gate that cannot see what it guards is worse than no
 > gate, because its green gets quoted. Verified: the range is worker.py 403-517 /
 > worker_inprocess.py 451-565, while the promoter gate is at 520/568 and `_run_ae` at 650/289.
+>
+> **Corrected AGAIN, same day, by the fix-round re-review.** The first correction still missed a
+> site: there are FOUR, not three. Item F's Finding-6 comment sits immediately ABOVE
+> `pending_peak = `, so site 1's range excluded it too (`grep -c` in-range returned 0) while sites 2
+> and 3 are other methods entirely. The anchor is now `pending_before`, which is the first line of
+> the block. Twice in one day this gate was written to cover "the sites I was thinking about" rather
+> than "every line the round touched" — the second time by me, immediately after writing a commit
+> message warning about exactly that. The durable lesson is that the anchor must be derived from the
+> diff (`git diff --stat` then locate each hunk), never from memory of what was edited.
 
 - [ ] **Nothing in the frontend changed**
 

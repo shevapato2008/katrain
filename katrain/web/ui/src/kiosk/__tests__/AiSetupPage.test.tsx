@@ -243,8 +243,62 @@ describe('AiSetupPage', () => {
         board_size: 19,
         rules: 'chinese',
         color: 'black',
+        // 分先 ⇒ 中国规则的默认贴目;AI 策略已钉死拟人。
+        handicap: 0,
+        komi: 7.5,
+        ai_strategy: 'ai:human',
       }));
     });
+  });
+
+  /* 让子局送出去的 `komi` 必须是 0 —— 补偿由 KataGo 按规则自动加
+     (chinese = `WHB_N`,`KataGo/cpp/game/rules.cpp:292`)。
+     改版前这里是 6.5 照发,白方因此多收一份。 */
+  it('让子局送出去的 handicap/komi 是 (N, 0)', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await pick(user, 'setup-handicap', '4');
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
+    const { API } = await import('../../api');
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalledWith(
+      'new-session-123', 'free', expect.objectContaining({ handicap: 4, komi: 0 }),
+    ));
+  });
+
+  it('「让先」= 不让子也不贴目 —— 改版前这一档根本表达不出来', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await pick(user, 'setup-handicap', 'sen');
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
+    const { API } = await import('../../api');
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalledWith(
+      'new-session-123', 'free', expect.objectContaining({ handicap: 0, komi: 0 }),
+    ));
+  });
+
+  it('「倒贴」送出去的是负 komi(白贴)', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await pick(user, 'setup-handicap', 'rev');
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('白贴 3¾ 子 · 7.5 目');
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
+    const { API } = await import('../../api');
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalledWith(
+      'new-session-123', 'free', expect.objectContaining({ handicap: 0, komi: -7.5 }),
+    ));
+  });
+
+  it('「猜先」在发出去之前解成 black/white —— 后端不认识 guess', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await pick(user, 'setup-color', 'guess');
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
+    const { API } = await import('../../api');
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());
+    const sent = (API.gameSetup as any).mock.calls.at(-1)[2].color;
+    // `server.py:1230` 是 `human_bw = "B" if color === "black" else "W"` ——
+    // 任何不等于 "black" 的值都会把人静默坐到白,所以这里只能是这两个之一。
+    expect(['black', 'white']).toContain(sent);
   });
 
   it('shows error alert when API call fails', async () => {

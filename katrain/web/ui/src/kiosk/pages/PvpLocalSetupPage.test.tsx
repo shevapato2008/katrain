@@ -6,6 +6,7 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import PvpLocalSetupPage from './PvpLocalSetupPage';
 import { PLAY_ON_BOARD_KEY, readPlayOnBoard } from '../utils/playInput';
+import { openPick, pick } from '../__tests__/helpers/setupPick';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -86,75 +87,86 @@ describe('PvpLocalSetupPage', () => {
     renderPage();
     const board = screen.getByTestId('kiosk-setup-board');
     expect(board).toHaveAttribute('data-handicap', '0');
-    // 这一屏没有「我执」那一次选择 ⇒ `data-color` 整个不该出现。
-    expect(board).not.toHaveAttribute('data-color');
-
-    await userEvent.click(step('setup-handicap', '＋'));
-    await userEvent.click(step('setup-handicap', '＋'));
-    expect(board).toHaveAttribute('data-handicap', '2');
+    await pick(userEvent.setup(), 'setup-handicap', '3');
+    expect(board).toHaveAttribute('data-handicap', '3');
     expect([...board.querySelectorAll('[data-stone]')].map((g) => g.getAttribute('data-at')))
-      .toEqual(['Q16', 'D4']);
+      .toEqual(['Q16', 'D4', 'Q4']);
   });
 
-  // 让子局没有贴目这回事 —— **不是把控件灰掉**,是换成一段说明(同屏 02)。
-  it('让了子之后贴目那一组换成说明,而且送出去的还是那一档的值', async () => {
-    renderPage();
-    expect(screen.getByTestId('setup-komi')).toBeInTheDocument();
-    await userEvent.click(step('setup-handicap', '＋'));
-    expect(screen.queryByTestId('setup-komi')).not.toBeInTheDocument();
-    expect(screen.getByTestId('setup-komi-explain')).toHaveTextContent('已经让了 1 子');
-  });
+  /* **这一条是冲着一个真事故来的。**
 
-  // 七档在轨上按时长从短到长排,默认停在最右端(不限时)⇒ 往回按一格是 60 分。
-  // 按下去要改的是**送给后端的那四个字段**,不是只改一句读数。
-  it('用时那条轨改的是 time_enabled / main_time 那一组载荷', async () => {
-    renderPage();
-    expect(screen.getByText('不限时')).toBeInTheDocument();
-    await userEvent.click(step('setup-clock', '−'));
-    expect(screen.getByTestId('setup-clock').parentElement).toHaveTextContent('60分+3×30秒');
+     改版前这条测试叫「让了子之后贴目那一组换成说明,**而且送出去的还是那一档的值**」——
+     标题说要验载荷,而它的断言里**一个载荷字段都没有**。于是那个 bug 一直没人挡:
+     前端在 `handicap > 0` 时只把贴目那一组从屏上换掉,`komi` state 不动(缺省 6.5)
+     且照样发出去。中国规则让 3 子实际是「白 +3(KataGo 按 `WHB_N` 自动加)+ 6.5 目」,
+     正好是屏上那段说明警告的「两样一起用会补两遍」。
 
-    await userEvent.click(screen.getByRole('button', { name: /开始对局/ }));
+     所以现在断言**落在送出去的那两个字段上**,不落在屏上有没有那一组控件。 */
+  it('让子局送出去的 komi 是 0 —— 补偿是 KataGo 按规则自动加的', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await pick(user, 'setup-handicap', '3');
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('不贴目 · 黑先摆 3 子');
+
+    await user.click(screen.getByRole('button', { name: /开始对局/ }));
     await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());
-    const [, , settings] = lastSetup();
-    expect(settings).toMatchObject({ time_enabled: true, main_time: 60, byo_length: 30, byo_periods: 3 });
+    expect(lastSetup()[2]).toMatchObject({ handicap: 3, komi: 0 });
   });
 
-  // 「怎么落子」是**两段之和**:设备能不能 + 这一局想不想。2026-08-23 之前这里是
-  // 一格读数,理由写着「全仓没有任何地方能让用户切」—— 那句话是错的(做题屏早有这颗开关)。
-  const seg = () => within(screen.getByTestId('setup-input'));
-
-  it('没标定摄像头时「实体盘」灰掉,「屏幕」照样能按,而且说得出为什么', () => {
+  it('分先送出去的是规则的默认贴目,换规则就跟着换', async () => {
     renderPage();
-    expect(seg().getByRole('button', { name: '屏幕' })).toHaveAttribute('aria-pressed', 'true');
-    expect(seg().getByRole('button', { name: '实体盘' })).toBeDisabled();
-    expect(seg().getByRole('button', { name: '屏幕' })).toBeEnabled();
-    expect(screen.getByTestId('setup-input-group'))
-      .toHaveTextContent('这台机器没有标定过摄像头,只能下在屏幕上');
+    const user = userEvent.setup();
+    await pick(user, 'setup-rules', 'japanese');
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('黑贴 6.5 目');
+    await user.click(screen.getByRole('button', { name: /开始对局/ }));
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());
+    expect(lastSetup()[2]).toMatchObject({ rules: 'japanese', handicap: 0, komi: 6.5 });
   });
 
-  // 两人面对面、盘就在中间 ⇒ **默认走实体盘**(偏好默认开,也正是这次改动之前的行为)。
+  it('用时那条下拉改的是 time_enabled / main_time 那一组载荷', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    expect(screen.getByTestId('setup-clock-value')).toHaveTextContent('不限时');
+    await pick(user, 'setup-clock', '60');
+    expect(screen.getByTestId('setup-clock-value')).toHaveTextContent('60分+3×30秒');
+
+    await user.click(screen.getByRole('button', { name: /开始对局/ }));
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());
+    expect(lastSetup()[2]).toMatchObject({ time_enabled: true, main_time: 60, byo_length: 30, byo_periods: 3 });
+  });
+
+  // 「怎么落子」是**两段之和**:设备能不能 + 这一局想不想。
+  it('没标定摄像头时「实体盘」灰掉,说得出为什么,屏幕照样选得了', async () => {
+    renderPage();
+    expect(screen.getByTestId('setup-input-value')).toHaveTextContent('屏幕');
+    const pop = await openPick(userEvent.setup(), 'setup-input');
+    expect(pop.querySelector('[data-k="board"]')).toBeDisabled();
+    expect(pop.querySelector('[data-k="board"]')).toHaveTextContent('没标定过摄像头');
+    expect(pop.querySelector('[data-k="screen"]')).toBeEnabled();
+  });
+
   it('标定过的机器上默认走实体盘,选了屏幕就写进偏好', async () => {
     vision.enabled = true;
     renderPage();
-    expect(seg().getByRole('button', { name: '实体盘' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('两人面对面下在这块盘上');
-
-    await userEvent.click(seg().getByRole('button', { name: '屏幕' }));
+    expect(screen.getByTestId('setup-input-value')).toHaveTextContent('实体盘');
+    await pick(userEvent.setup(), 'setup-input', 'screen');
     expect(readPlayOnBoard()).toBe(false);
-    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('两人轮流点屏幕落子');
+    expect(screen.getByTestId('setup-input-value')).toHaveTextContent('屏幕');
   });
 
-  // 盒子上那块盘是 19 路的 —— 选 9 路,实体盘这条路自己塌掉,偏好不动。
   it('切到 9 路,实体盘这条路自己塌掉', async () => {
     vision.enabled = true;
     renderPage();
-    await userEvent.click(within(screen.getByTestId('setup-size')).getByRole('button', { name: '9 路' }));
-    expect(seg().getByRole('button', { name: '实体盘' })).toBeDisabled();
-    expect(seg().getByRole('button', { name: '屏幕' })).toHaveAttribute('aria-pressed', 'true');
-    expect(readPlayOnBoard()).toBe(true);   // 偏好没被改,调回 19 路它自己就回来
+    const user = userEvent.setup();
+    expect(screen.getByTestId('setup-input-value')).toHaveTextContent('实体盘');
+    await pick(user, 'setup-size', '9');
+    expect(screen.getByTestId('setup-input-value')).toHaveTextContent('屏幕');
+    // 9 路的让子上限是 4 子,而且没有倒贴 —— 星位就那么多。
+    const pop = await openPick(user, 'setup-handicap');
+    expect([...pop.querySelectorAll('[data-k]')].map((e) => e.getAttribute('data-k')))
+      .toEqual(['even', 'sen', '2', '3', '4', 'free']);
   });
 
-  // 这一屏没有引擎,所以稿子上属于人机那三组(棋力 / AI 策略 / 我执)一个都不该在。
   it('没有棋力、AI 策略和「我执」三组', () => {
     renderPage();
     expect(screen.queryByTestId('setup-strength')).not.toBeInTheDocument();

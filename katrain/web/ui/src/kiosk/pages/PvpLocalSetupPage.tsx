@@ -2,15 +2,20 @@ import { useMemo, useState } from 'react';
 import { Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useVision } from '../context/VisionContext';
-import { KioskOptSeg } from '../shell/KioskOptSeg';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
-import { KioskStepTrack } from '../shell/KioskStepTrack';
 import KioskSetupBoard from '../components/board/KioskSetupBoard';
-import OptionChips from '../components/common/OptionChips';
 import { interpolate } from '../utils/interpolate';
-import { RULES_HINT, TIME_PRESETS, TIME_TRACK_ORDER } from '../utils/setupOptions';
+import {
+  FREE_KOMI_MAX, FREE_KOMI_VALUES, HANDICAP_LABEL, RULES, RULE_LABEL,
+  TIME_PRESETS, TIME_TRACK_ORDER, handicapKeysFor, resolveGameTerms,
+  type HandicapKey,
+} from '../utils/setupOptions';
+import { SetupPopoverHost } from '../components/setup/SetupPopoverHost';
+import { SetupSelect } from '../components/setup/SetupSelect';
+import { SetupDerived } from '../components/setup/SetupDerived';
+import { komiReadout } from '../components/setup/komiReadout';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
 import { API } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -62,16 +67,17 @@ const PvpLocalSetupPage = () => {
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
-  const [rules, setRules] = useState<'chinese' | 'japanese' | 'korean' | 'aga'>('chinese');
+  const [rules, setRules] = useState<string>('chinese');
 
   // Player names — 留空就不写 SGF 的 PB/PW(`server.py:1093`),对局屏回落到「黑方 / 白方」
   // (`GameControlPanel.tsx:66`)。**不替用户编一个名字。**
   const [blackName, setBlackName] = useState('');
   const [whiteName, setWhiteName] = useState('');
 
-  // Handicap & komi
-  const [handicap, setHandicap] = useState(0);
-  const [komi, setKomi] = useState(6.5);
+  /* 让子与贴目是**一个**枚举 —— 见 `utils/setupOptions.ts`,和屏 02 同一份模型。
+     两人面对面下,终局怎么算是开局前必须谈好的事,所以这一屏的推导条尤其要说清。 */
+  const [handicapKey, setHandicapKey] = useState<HandicapKey>('even');
+  const [freeKomi, setFreeKomi] = useState(FREE_KOMI_MAX);
 
   // Time control
   const [timeEnabled, setTimeEnabled] = useState(false);
@@ -85,13 +91,15 @@ const PvpLocalSetupPage = () => {
   // room), not per-account activity or content, so it carries no identity-linkable residue.
   const [confirmSound, setConfirmSound] = useState(localStorage.getItem('kioskPlaySound') !== '0');
 
+  /** 下拉弹层的宿主 —— 见 `components/setup/SetupPopoverHost.tsx`。 */
+  const [railEl, setRailEl] = useState<HTMLDivElement | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const timePresets = TIME_PRESETS(t);
   const currentTimeKey = !timeEnabled ? 'untimed' : mainTime === 0 ? 'byoOnly' : String(mainTime);
   const timeTrack = [...TIME_TRACK_ORDER].map((key) => timePresets.find((p) => p.key === key)!);
-  const timeIndex = Math.max(0, timeTrack.findIndex((p) => p.key === currentTimeKey));
   const applyTimePreset = (key: string) => {
     const preset = timePresets.find((p) => p.key === key);
     if (!preset) return;
@@ -101,10 +109,6 @@ const PvpLocalSetupPage = () => {
     setByoyomiPeriods(preset.periods);
   };
 
-  // 贴目 15 档(0.5 – 7.5,半目一档)—— 和屏 02 同一条轨、同一份档,理由写在那一屏。
-  const KOMI_MIN = 0.5;
-  const KOMI_STEP = 0.5;
-  const komiIndex = Math.round((komi - KOMI_MIN) / KOMI_STEP);
 
   // 三段:设备能不能 / 这一局想不想 / 实际落在哪。`bumpInput` 只是为了让偏好写进
   // localStorage 之后这一屏重算一次 —— 偏好不在 React state 里,它跨屏活着。
@@ -119,6 +123,21 @@ const PvpLocalSetupPage = () => {
     setInputTick((n) => n + 1);
   };
 
+  const ruleLabels = RULE_LABEL(t);
+  const handicapLabels = HANDICAP_LABEL(t);
+  const terms = resolveGameTerms(rules, handicapKey, freeKomi);
+  const ruleDef = RULES.find((r) => r.key === rules) ?? RULES[0];
+  const pickKomi = handicapKey === 'free';
+  const freeKomiOptions = FREE_KOMI_VALUES.map((v) => ({
+    key: String(v),
+    label: interpolate(t('setup:komi_points', '{n} 目'), { n: v }),
+  }));
+  const seatHint = playInput.available
+    ? t('local:seat_hint_ready', '钟在玩家卡上倒数 · 读秒用完判超时负 · 不限时就只记谱')
+    : playInput.reason === 'notNineteen'
+      ? t('setup:seat_hint_not19', '这一局不是 19 路,只能下在屏幕上')
+      : t('setup:seat_hint_uncalibrated', '这台机器没标定过摄像头,只能下在屏幕上');
+
   const handleStart = async () => {
     setError('');
     setLoading(true);
@@ -127,9 +146,9 @@ const PvpLocalSetupPage = () => {
       const { session_id } = await API.createSession(token ?? undefined);
       await API.gameSetup(session_id, 'pvp_local', {
         board_size: boardSize,
-        rules,
-        handicap,
-        komi,
+        rules: ruleDef.wire,
+        handicap: terms.handicap,
+        komi: terms.komi,
         black_name: blackName,
         white_name: whiteName,
         time_enabled: timeEnabled,
@@ -157,9 +176,11 @@ const PvpLocalSetupPage = () => {
     <div className="kiosk-layout-a" data-testid="pvp-local-setup-page">
       {/* 左栏 = 按下「开始对局」后真会出现的那个局面(规范 `:512`)。
           `color` 不传:这一屏没有「我执」那一次选择,见 `KioskSetupBoard` 的 prop 注释。 */}
-      <KioskSetupBoard size={boardSize} handicap={handicap} />
+      <KioskSetupBoard size={boardSize} handicap={terms.handicap} />
 
-      <div className="kiosk-rail">
+      {/* `data-su`:紧排 + 给弹层当定位原点。见 `components/setup/SetupPopoverHost.tsx`。 */}
+      <div className="kiosk-rail" data-su="local" ref={setRailEl}>
+        <SetupPopoverHost.Provider value={railEl}>
         <KioskPagebar
           testId="kiosk-setup-pagebar"
           backLabel={t('Back to play', '返回对弈')}
@@ -169,198 +190,141 @@ const PvpLocalSetupPage = () => {
         />
 
         <KioskScrollZone className="setgrp-scroll">
-          {/* ── 怎么落子 ── 开局后不可改的那一组,自带强调框 */}
-          <section className="setgrp inputgrp" data-testid="setup-input-group">
+          {/* ── 这局棋 ── 和屏 02 同一副件、同一份模型(`utils/setupOptions.ts`)。
+              两个人面对面下,**终局怎么算是开局前必须谈好的事** —— 所以贴目在这一屏
+              尤其要说得出口,而不是藏在一条轨的读数里。 */}
+          <section className="setgrp" data-testid="setup-game-group">
             <KioskSecLabel
-              zh={t('setup:input', '怎么落子')}
-              en="Input"
-              value={t('setup:locked_after_start', '开局后不可改')}
+              zh={t('setup:game_terms', '这局棋')}
+              en="Game"
+              value={t('local:agree_first', '下之前先谈好')}
             />
-            <div className="igrow">
-              <span className="iglab">{t('setup:input_where', '落子')}</span>
-              <KioskOptSeg
-                ariaLabel={t('setup:input_where', '落子')}
-                testId="setup-input"
-                value={playInput.onBoard ? 'board' : 'screen'}
-                onChange={(v) => setPlayOnBoard(v === 'board')}
-                options={[
-                  // 「屏幕」**永远选得了** —— 条件掉了不能把两个人锁在一块用不了的盘上。
-                  { value: 'screen', label: t('setup:on_screen', '屏幕') },
-                  { value: 'board', label: t('setup:on_board', '实体盘'), disabled: !playInput.available },
-                ]}
-              />
-            </div>
-            <div className="igrow">
-              <span className="iglab">{t('setup:size', '路数')}</span>
-              <KioskOptSeg
-                ariaLabel={t('setup:size', '路数')}
+            <div className="su-row">
+              <SetupSelect
                 testId="setup-size"
-                value={boardSize}
-                onChange={setBoardSize}
-                options={[
-                  { value: 19, label: t('19x19', '19 路') },
-                  { value: 13, label: t('13x13', '13 路') },
-                  { value: 9, label: t('9x9', '9 路') },
-                ]}
+                label={t('setup:size', '路数')}
+                value={String(boardSize)}
+                options={[19, 13, 9].map((n) => ({
+                  key: String(n),
+                  label: interpolate(t('setup:size_n', '{n} 路'), { n }),
+                }))}
+                onChange={(k) => setBoardSize(Number(k))}
+              />
+              <SetupSelect
+                testId="setup-rules"
+                label={t('Rules', '规则')}
+                value={rules}
+                options={RULES.map((r) => ({ key: r.key, label: ruleLabels[r.key] }))}
+                onChange={setRules}
+              />
+              <SetupSelect
+                testId="setup-handicap"
+                label={t('Handicap', '让子')}
+                value={handicapKey}
+                columns={2}
+                options={handicapKeysFor(boardSize).map((k) => ({ key: k, label: handicapLabels[k] }))}
+                onChange={(k) => setHandicapKey(k as HandicapKey)}
               />
             </div>
-            {/* 灰掉的那一段必须有人说为什么 —— 这一行就是那个人。 */}
-            <p className="kiosk-opthint">
-              {playInput.reason === 'noCamera'
-                ? t('setup:board_no_camera', '这台机器没有标定过摄像头,只能下在屏幕上')
-                : playInput.reason === 'notNineteen'
-                  ? t('setup:board_needs_19', '盘上那块是 19 路 —— 9 路和 13 路只有屏幕上有')
-                  : playInput.onBoard
-                    ? t('local:input_hint_board', '两人面对面下在这块盘上,屏幕只记谱和读秒')
-                    : t('local:input_hint_screen', '两人轮流点屏幕落子 —— 盘就在旁边,也可以切回实体盘')}
-            </p>
+            <SetupDerived
+              testId="setup-komi"
+              label={t('Komi', '贴目')}
+              note={pickKomi
+                ? t('setup:komi_pick', '点此改贴目')
+                : t('setup:komi_derived', '随规则和让子定')}
+              options={pickKomi ? freeKomiOptions : undefined}
+              value={String(freeKomi)}
+              onChange={pickKomi ? (k) => setFreeKomi(Number(k)) : undefined}
+            >
+              {komiReadout(t, rules, handicapKey, freeKomi)}
+            </SetupDerived>
           </section>
 
-          {/* ── 对局双方 ── 稿子那两颗「点此输入」药丸,在真页面上必须**真能输入** */}
+          {/* ── 对局双方 ── 压成一行两格。它是两个同类输入,不是两条并列的内容。
+              留空就不写 SGF 的 PB/PW(`server.py:1093`),对局屏回落到「黑方 / 白方」。 */}
           <section className="setgrp" data-testid="setup-players-group">
             <KioskSecLabel
               zh={t('local:players', '对局双方')}
               en="Players"
               value={t('local:written_into_sgf', '会写进棋谱')}
             />
-            <div className="kiosk-rows">
-              <div className="kiosk-row">
-                <span className="disc b" />
-                <div className="kiosk-row__t">
-                  <b>{t('setup:black_side', '黑方')}</b>
-                  <em>{t('local:black_role', '先行 · 让子局里摆子的一方')}</em>
-                </div>
-                <div className="kiosk-row__end">
-                  <input
-                    className="nameinput"
-                    data-testid="black-name-input"
-                    aria-label={t('local:black_name', '黑方姓名')}
-                    placeholder={t('local:tap_to_type', '点此输入')}
-                    maxLength={16}
-                    value={blackName}
-                    onChange={(e) => setBlackName(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="kiosk-row">
-                <span className="disc w" />
-                <div className="kiosk-row__t">
-                  <b>{t('setup:white_side', '白方')}</b>
-                  {/* 稿子这一行写的是「贴目的一方」—— **反了**:贴目是黑方贴给白方的
-                      (`core/game.py:372` 黑棋分数减 komi),白方是**收**的那一方。 */}
-                  <em>{t('local:white_role', '后行 · 收下贴目的一方')}</em>
-                </div>
-                <div className="kiosk-row__end">
-                  <input
-                    className="nameinput"
-                    data-testid="white-name-input"
-                    aria-label={t('local:white_name', '白方姓名')}
-                    placeholder={t('local:tap_to_type', '点此输入')}
-                    maxLength={16}
-                    value={whiteName}
-                    onChange={(e) => setWhiteName(e.target.value)}
-                  />
-                </div>
-              </div>
+            <div className="su-row su-row--2">
+              <label className="su-cell su-cell--input">
+                <span className="su-cell__k">
+                  <span className="disc b" /> {t('setup:black_side', '黑方')} · {t('local:black_role_short', '先行')}
+                </span>
+                <input
+                  className="su-cell__v su-nameinput"
+                  data-testid="black-name-input"
+                  aria-label={t('local:black_name', '黑方姓名')}
+                  placeholder={t('local:tap_to_type', '点此输入')}
+                  maxLength={16}
+                  value={blackName}
+                  onChange={(e) => setBlackName(e.target.value)}
+                />
+              </label>
+              <label className="su-cell su-cell--input">
+                {/* 稿子这一行写的是「贴目的一方」—— **反了**:贴目是黑方贴给白方的
+                    (`core/game.py:372` 黑棋分数减 komi),白方是**收**的那一方。 */}
+                <span className="su-cell__k">
+                  <span className="disc w" /> {t('setup:white_side', '白方')} · {t('local:white_role_short', '后行')}
+                </span>
+                <input
+                  className="su-cell__v su-nameinput"
+                  data-testid="white-name-input"
+                  aria-label={t('local:white_name', '白方姓名')}
+                  placeholder={t('local:tap_to_type', '点此输入')}
+                  maxLength={16}
+                  value={whiteName}
+                  onChange={(e) => setWhiteName(e.target.value)}
+                />
+              </label>
             </div>
-            <p className="kiosk-opthint">
-              {t('local:names_hint', '留空就记成「黑方 / 白方」,不编名字')}
-            </p>
+            <p className="su-hint">{t('local:names_hint', '留空就记成「黑方 / 白方」,不编名字')}</p>
           </section>
 
-          <section className="setgrp">
-            <OptionChips
-              label={t('Rules', '规则')}
-              en="Rules"
-              testId="setup-rules"
-              secval={t('local:agree_first', '下之前先谈好')}
-              value={rules}
-              onChange={setRules}
-              options={[
-                { value: 'chinese' as const, label: t('Chinese', '中国') },
-                { value: 'japanese' as const, label: t('Japanese', '日本') },
-                { value: 'korean' as const, label: t('Korean', '韩国') },
-                { value: 'aga' as const, label: 'AGA' },
-              ]}
-              hint={RULES_HINT(t)[rules] ?? ''}
-            />
-          </section>
-
-          <section className="setgrp" data-testid="setup-handicap-group">
-            <KioskStepTrack
-              label={t('Handicap', '让子')}
-              en="Handicap"
-              testId="setup-handicap"
-              count={10}
-              index={handicap}
-              onChange={setHandicap}
-              decLabel={t('setup:handicap_down', '少让一子')}
-              incLabel={t('setup:handicap_up', '多让一子')}
-              value={handicap === 0
-                ? t('setup:no_handicap', '不让子')
-                : interpolate(t('setup:handicap_value', '让 {n} 子'), { n: handicap })}
-              meta={t('local:handicap_meta', '0 – 9 子 · 两人棋力差时用')}
-            />
-          </section>
-
-          <section className="setgrp" data-testid="setup-komi-group">
-            <KioskSecLabel
-              zh={t('Komi', '贴目')}
-              en="Komi"
-              value={handicap > 0 ? t('setup:not_applicable', '本局不适用') : undefined}
-            />
-            {handicap > 0 ? (
-              <p className="setexplain" data-testid="setup-komi-explain">
-                {interpolate(
-                  t('setup:komi_explain', '已经让了 {n} 子,这一局不贴目。让子和贴目是同一件事的两种做法——补的都是先行那一方的便宜,两样一起用会补两遍。'),
-                  { n: handicap },
-                )}
-                <br />
-                {t('setup:komi_explain_back', '把让子调回 0,这一组会变回可选的贴目档。')}
-              </p>
-            ) : (
-              <KioskStepTrack
-                testId="setup-komi"
-                count={15}
-                index={komiIndex}
-                onChange={(i) => setKomi(KOMI_MIN + i * KOMI_STEP)}
-                decLabel={t('setup:komi_down', '减少贴目')}
-                incLabel={t('setup:komi_up', '增加贴目')}
-                value={interpolate(t('setup:komi_value', '贴 {n} 目'), { n: komi })}
-                meta={t('setup:komi_meta', '0.5 – 7.5 · 中国规则常用 7.5')}
+          {/* ── 怎么坐 ── 这一屏没有「我执」:两个人面对面,谁执黑是他们自己坐好的。
+              空出来的那一格给落子提示音 —— 它是这一局的开关,和用时同级。 */}
+          <section className="setgrp" data-testid="setup-seat-group">
+            <KioskSecLabel zh={t('setup:seat', '怎么坐')} en="Seat" />
+            <div className="su-row">
+              <SetupSelect
+                testId="setup-input"
+                label={t('setup:input_where', '落子')}
+                value={playInput.onBoard ? 'board' : 'screen'}
+                options={[
+                  { key: 'screen', label: t('setup:on_screen', '屏幕') },
+                  {
+                    key: 'board',
+                    label: t('setup:on_board', '实体盘'),
+                    disabled: !playInput.available,
+                    reason: playInput.reason === 'notNineteen'
+                      ? t('setup:board_only_19', '盘上那块是 19 路')
+                      : t('setup:board_not_ready', '没标定过摄像头'),
+                  },
+                ]}
+                onChange={(k) => setPlayOnBoard(k === 'board')}
               />
-            )}
-          </section>
-
-          <section className="setgrp" data-testid="setup-clock-group">
-            <KioskStepTrack
-              label={t('Time Control', '用时')}
-              en="Clock"
-              testId="setup-clock"
-              count={timeTrack.length}
-              index={timeIndex}
-              onChange={(i) => applyTimePreset(timeTrack[i].key)}
-              decLabel={t('setup:clock_down', '减少用时')}
-              incLabel={t('setup:clock_up', '增加用时')}
-              value={timeTrack[timeIndex]?.label ?? '—'}
-              meta={interpolate(t('local:clock_meta', '{n} 档 · 两边同一套用时'), { n: timeTrack.length })}
-              hint={t('local:clock_hint', '走完一步换对方的钟;不限时就只记谱不读秒')}
-            />
-          </section>
-
-          <section className="setgrp" data-testid="setup-sound-group">
-            <OptionChips
-              label={t('local:move_sound', '落子提示音')}
-              en="Sound"
-              testId="setup-sound"
-              value={confirmSound ? 'on' : 'off'}
-              onChange={(v) => setConfirmSound(v === 'on')}
-              options={[
-                { value: 'on', label: t('local:sound_on', '开') },
-                { value: 'off', label: t('local:sound_off', '关') },
-              ]}
-              hint={t('local:sound_hint', '实体盘上落子后,屏幕出一声确认它已经认到了')}
-            />
+              <SetupSelect
+                testId="setup-clock"
+                label={t('Time Control', '用时')}
+                value={currentTimeKey}
+                columns={2}
+                options={timeTrack.map((p) => ({ key: p.key, label: p.label }))}
+                onChange={applyTimePreset}
+              />
+              <SetupSelect
+                testId="setup-sound"
+                label={t('local:move_sound_short', '落子音')}
+                value={confirmSound ? 'on' : 'off'}
+                options={[
+                  { key: 'on', label: t('On', '开') },
+                  { key: 'off', label: t('Off', '关') },
+                ]}
+                onChange={(k) => setConfirmSound(k === 'on')}
+              />
+            </div>
+            <p className="su-hint" data-testid="setup-seat-hint">{seatHint}</p>
           </section>
         </KioskScrollZone>
 
@@ -388,6 +352,7 @@ const PvpLocalSetupPage = () => {
         >
           {loading ? t('Creating...', '创建中...') : t('setup:start', '开始对局')}
         </button>
+        </SetupPopoverHost.Provider>
       </div>
     </div>
   );

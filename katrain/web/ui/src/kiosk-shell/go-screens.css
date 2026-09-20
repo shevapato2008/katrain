@@ -1613,3 +1613,12 @@ button.kiosk-row.figrow { flex: none; }
 .kiosk-rail[data-su] .setgrp + .setgrp { margin-top: 6px; }
 .kiosk-rail[data-su] .kiosk-seclabel { height: 18px; margin-bottom: 5px; }
 .kiosk-rail[data-su] .catmeta { margin-top: 5px; }
+
+/* 姓名那两格里的输入框:**长得就是那一格的值那一行**,不另画一个框中框。
+   7″ 触屏上一格里再套一个输入框,点击靶只剩中间那一条。 */
+.su-nameinput {
+  width: 100%; padding: 0; margin: 0; border: 0; background: transparent;
+  color: var(--text); font-family: var(--font-sans); font-size: 15px; font-weight: 500;
+  outline: none; min-width: 0;
+}
+.su-nameinput::placeholder { color: var(--dim); font-weight: 400; }

@@ -12,6 +12,7 @@ import numpy as np
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.websockets import WebSocketState
 from contextlib import asynccontextmanager, contextmanager, nullcontext
 
 from katrain.web.api.v1.api import api_router
@@ -3247,12 +3248,25 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                             "text": text,
                         },
                     )
-        except (WebSocketDisconnect, RuntimeError):
+        except WebSocketDisconnect:
+            pass  # 客户端走了,正常。finally: 照常跑。
+        except RuntimeError as exc:
             # A server-initiated close (_close_sockets, session.py) can land between
             # receive_json() calls: starlette flips application_state to DISCONNECTED,
             # and the next receive_json() raises RuntimeError rather than
             # WebSocketDisconnect. finally: below still runs either way.
-            pass
+            #
+            # 但 RuntimeError 不止这一个来源 —— `session.katrain.get_state()`、首帧
+            # `send_json`、聊天循环抛出的都会落到这里。这个 except 变宽之前它们会冒到
+            # uvicorn 被记成未处理的 ASGI 异常;要是这里一声不吭,整条分支上就多出唯一一处
+            # 「以前会报、现在静默」的地方。⇒ 预期内的那一种(我们自己把它关了,
+            # application_state 已是 DISCONNECTED)降到 debug,其余照常 warning 并带栈。
+            if websocket.application_state == WebSocketState.DISCONNECTED:
+                logging.getLogger("katrain_web").debug(
+                    "session websocket %s ended after a server-initiated close: %s", session_id, exc
+                )
+            else:
+                logging.getLogger("katrain_web").warning("session websocket %s failed", session_id, exc_info=True)
         finally:
             if strict_box:
                 app.state.box_sso.discard_socket(websocket)

@@ -558,17 +558,27 @@ test('设置:滚到「落子与提示」那一组时,导航高亮的正是它', 
 /**
  * 开局设置那几屏(L2 布局 A,右栏 460,形态 1 整栏滚)。
  *
- * **它们是这一轮才第一次能滚的。** 上一版右栏是 MUI 表单外面套一层 `overflow`
- * —— 屏 02 那一版是 `hidden`,装不下的后果是**裁掉**而不是滚。按稿子重画之后右栏是
- * 一叠 `.setgrp`,一定比 460 宽 × 约 400 高装得下的多,所以「能不能滚 / 拨不拨得动 /
- * 主行动键会不会被顶出去」三件事全是新成立的 —— 承重反查在这几屏上是**触发**的。
+ * ## 2026-09-21:前提换了,断言留下
+ *
+ * 这条闸原来的前提是「设置装不下」—— 那是 r1 的事实(屏 02 八组、屏 04 七组,
+ * 溢出好几百)。r2 把八组收成两行六格加一条推导之后,**三屏都装得下了**,
+ * 于是「溢出 > 100」「拨十二下滚轮 scrollTop > 0」这两条前提自己不成立了。
+ *
+ * **不 skip** —— skip 掉等于这两屏的骨架再也没人量。这条闸真正在守的是另外几件事,
+ * 它们和装不装得下**无关**,而且一条都没过期:
+ *   · 右栏恒 460(布局 A 的宽度账)
+ *   · 主行动键在滚动区**外面** ⇒ 贴着右栏底、不跟着滚
+ *   · 溢出(哪怕是将来长出来的)由滚动区吃掉,**不许顶破右栏**
+ *   · 最后一组进得了视野
+ *   · 页面不横向溢出
+ * 所以把「必须溢出」换成「不该有可滚量」,其余原样保留。
+ *
+ * 「撑破了还滚不滚得动」那一条搬去了 `kiosk-setup-r2-geometry.spec.ts`:
+ * 那边往滚动区里塞一块 `flex: 0 0 1200px` 再拨,这边没有可造的溢出了。
  *
  * **两屏各量一次,不是量一屏推另一屏。** 它们共用 `.setgrp` 那套类,但**骨架各自手写**
  * (两个不同的页面组件):屏 04 完全可能把主行动键写进滚动区里,而屏 02 的那条闸
  * 对此一无所知。同一条承重链上可以有不止一处断点 —— 判据能转,结论不能转。
- *
- * 造到会溢出:不用造 —— 屏 02 默认八组、屏 04 默认七组,下面第一条就是核这件事,
- * 溢出不到 100 就说明后面全是空的。
  *
  * 判据先写死再读数:
  *   · 该滚的是 `.kiosk-side__scroll`(**不是** `.kiosk-rail`,也不是页面)
@@ -587,7 +597,7 @@ const SETUP_SCREENS = [
 ];
 
 for (const screen of SETUP_SCREENS) {
-test(`开局设置(${screen.name}):设置装不下时右栏自己滚,而「开始对局」怎么滚都还在`, async ({ page }) => {
+test(`开局设置(${screen.name}):设置装得下、右栏不被顶破,而「开始对局」怎么都还在`, async ({ page }) => {
   await page.route('**/api/v1/vision/status', (route) => route.fulfill({
     json: {
       enabled: false, camera_connected: false, pose_locked: false, sync_state: 'idle',
@@ -601,14 +611,18 @@ test(`开局设置(${screen.name}):设置装不下时右栏自己滚,而「开�
     Math.round(document.querySelector('.kiosk-rail')!.getBoundingClientRect().width));
   expect(railW, '右栏不是 460 —— 布局 A 的宽度账先崩了,后面量的滚动都建在错的宽度上').toBe(460);
 
+  // r2 之后这两屏装得下 —— 这一条就是那个事实本身。
+  // (余量有多少归 `kiosk-setup-r2-geometry.spec.ts` 量,这里只管「不用滚」。)
   const overflow = await overflowOf(page);
-  expect(overflow, '没造出溢出 —— 那下面这几条断言都是空的').toBeGreaterThan(100);
+  expect(overflow, `${screen.name} 右栏又溢出了 ${overflow}px —— r2 的前提是它装得下`)
+    .toBeLessThanOrEqual(0);
 
   // 主行动键在滚动区外面:先记下它现在在哪。
   const ctaBefore = await page.evaluate(() =>
     Math.round(document.querySelector('.kiosk-primary-action')!.getBoundingClientRect().bottom));
 
-  // **用真滚轮**,不是 `scrollTop = n` —— 程序化能滚 ≠ 手指拨得动。
+  // 照样拨十二下真滚轮 —— 装得下的时候它**一格都不该动**,
+  // 而主行动键和最后一组的位置在拨过之后仍要成立。
   const zone = page.locator('.kiosk-side__scroll');
   const zb = (await zone.boundingBox())!;
   await page.mouse.move(zb.x + zb.width / 2, zb.y + zb.height / 2);
@@ -632,9 +646,8 @@ test(`开局设置(${screen.name}):设置装不下时右栏自己滚,而「开�
     };
   }, screen.last);
 
-  expect(m.scrollTop, '拨了十二下滚轮,一格都没动 —— 程序化能滚不算数').toBeGreaterThan(0);
-  expect(m.atEnd, '滚不到底').toBeLessThanOrEqual(1);
-  expect(m.lastBottom, `滚到底了,最后一组「${screen.lastName}」的下缘还在视野外 —— 那一组就是到不了的`)
+  expect(m.scrollTop, '装得下却滚动了 —— 说明有东西超出了可视区').toBe(0);
+  expect(m.lastBottom, `最后一组「${screen.lastName}」的下缘在视野外 —— 那一组就是到不了的`)
     .toBeLessThanOrEqual(m.zoneBottom);
   // 溢出必须由滚动区吃掉,**不能顶破右栏** —— 顶破了主行动键就被推出 516 之外。
   expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由滚动区吃掉').toBeLessThanOrEqual(0);

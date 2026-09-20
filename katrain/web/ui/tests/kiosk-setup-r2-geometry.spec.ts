@@ -49,12 +49,15 @@ async function bootKiosk(page: Page) {
       capabilities: { camera_ready: false, led_ready: false, geometry_ready: false, recognition_ready: false },
     },
   }));
-  await page.route('**/api/v1/ai-ladder/status*', (r) => r.fulfill({
+  await page.route('**/api/v1/ai-ladder/status', (r) => r.fulfill({
     json: {
       view_state: 'ready',
-      placement_state: { phase: 'done', completed_games: 5, total_games: 5 },
+      placement_state: {
+        phase: 'placed',
+        rung: { rung: 16, rank_name: '5级', certification_status: 'certified', availability: 'available', route: 'server' },
+      },
       current_opponent: { rung: 16, rank_name: '5级', certification_status: 'certified', availability: 'available', route: 'server' },
-      recent_ranked_results: [], net_score: 1, pending_settlement: false, blocking_game: null,
+      recent_ranked_results: ['win', 'win'], net_score: 2, pending_settlement: false, blocking_game: null,
     },
   }));
 }

@@ -10,6 +10,7 @@
  */
 
 import { interpolate } from './interpolate';
+import { sliderToInternal } from '../../utils/rankUtils';
 
 /**
  * 「AI 赛规则」送给引擎的规则串。**D1 待定** —— 见本轮裁定,定下来之前先用
@@ -218,3 +219,19 @@ export function komiInStones(komiPoints: number): string {
   if (!frac) return String(whole);
   return (whole ? String(whole) : '') + frac;
 }
+
+/**
+ * 棋力档的**中文读数**:「6 级」/「1 段」。
+ *
+ * 共享的 `internalToRank()` 给的是 `6k` / `1d` —— 那是国际通行的紧凑写法,
+ * 放在范围那一行(「共 29 档 · 20k – 9d」)正合适,但**主读数在中文界面里该念「级 / 段」**。
+ * 稿子上写的就是「第 15 档 · 6 级」。
+ *
+ * 数值映射不另写一份,直接走 `sliderToInternal` —— 那是这条轴唯一的映射出处。
+ */
+export const rankLabel = (t: Translate, slider: number): string => {
+  const n = sliderToInternal(slider);
+  return n <= 0
+    ? interpolate(t('setup:rank_kyu', '{n} 级'), { n: 1 - n })
+    : interpolate(t('setup:rank_dan', '{n} 段'), { n });
+};

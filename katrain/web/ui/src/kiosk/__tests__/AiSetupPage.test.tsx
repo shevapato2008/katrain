@@ -144,10 +144,19 @@ describe('AiSetupPage', () => {
     expect(screen.getByTestId('setup-strength')).toBeInTheDocument();
   });
 
-  it('棋力读数带上等级 —— 改版前那半截从来没接上过', () => {
+  it('棋力读数带上等级,而且念中文 —— 改版前那半截从来没接上过', () => {
     renderPage('free');
-    // 那句 msgid 的缺省值结尾就是「第 {n} 档 · 」,屏上是个吊着的点号。
-    expect(screen.getByTestId('setup-strength-value')).toHaveTextContent(/第 15 档 · \S/);
+    // 改版前那句 msgid 的缺省值结尾就是「第 {n} 档 · 」,屏上是个吊着的点号。
+    // 主读数念「6 级」不是 `6k`:`internalToRank` 那种紧凑写法留给右边的范围行。
+    expect(screen.getByTestId('setup-strength-value')).toHaveTextContent('第 15 档 · 6 级');
+  });
+
+  it('段位段也念中文:第 21 档是 1 段', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    const up = within(screen.getByTestId('setup-strength')).getByRole('button', { name: /提高/ });
+    for (let i = 0; i < 6; i += 1) await user.click(up);   // 14 -> 20
+    expect(screen.getByTestId('setup-strength-value')).toHaveTextContent('第 21 档 · 1 段');
   });
 
   it('hides AI strategy selector for ranked mode', () => {

@@ -8,7 +8,7 @@ import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { interpolate } from '../utils/interpolate';
 import {
   FREE_KOMI_MAX, FREE_KOMI_VALUES, HANDICAP_LABEL, RULES, RULE_LABEL,
-  TIME_PRESETS, TIME_TRACK_ORDER, handicapKeysFor, resolveGameTerms,
+  TIME_PRESETS, TIME_TRACK_ORDER, handicapKeysFor, rankLabel, resolveGameTerms,
   type HandicapKey,
 } from '../utils/setupOptions';
 import { SetupPopoverHost } from '../components/setup/SetupPopoverHost';
@@ -509,29 +509,13 @@ const AiSetupPage = () => {
                   KataGo/实地/厚势/策略就**连棋力档都不给选**,而后端还照写
                   `ai/{strategy}/kyu_rank`(`server.py:1253`)。一根只对五分之一选项
                   成立的档位轴,不该用一个平行的五选一去否定它。 */}
-              {isRanked ? (
-                  <section className="setgrp" data-testid="setup-stake-group">
-                    <KioskSecLabel
-                      zh={t('ladder:stake', '这一局赌多少')}
-                      en="Stake"
-                      value={t('ladder:frozen_at_start', '开局那一刻冻结')}
-                    />
-                    <div className="su-stake" data-testid="setup-stakes">
-                      <span>{stakeWin}</span>
-                      <span>{stakeLoss}</span>
-                    </div>
-                    <p className="su-hint">
-                      {interpolate(
-                        t('ladder:stake_rule', '净胜分到 +3 升一档、到 −3 退一档 · 当前 {n}'),
-                        { n: signed(netScore) },
-                      )}
-                    </p>
-                  </section>
-              ) : (
+              {!isRanked && (
                 <section className="setgrp" data-testid="setup-strength-group">
                   <KioskSecLabel
-                    zh={t('AI Strength', '棋力')}
-                    en="Strength"
+                    /* 组标题是**对手**不是「棋力」—— 这一组回答的是「跟谁下」,
+                       棋力只是它唯一的旋钮。稿子上写的也是「对手 Opponent」。 */
+                    zh={t('ladder:opponent', '对手')}
+                    en="Opponent"
                     value={t('setup:strength_humanlike', '拟人 · 开局后不可改')}
                   />
                   <SetupStepper
@@ -547,7 +531,8 @@ const AiSetupPage = () => {
                       <>
                         {interpolate(t('setup:strength_rung', '第 {n} 档'), { n: rank + 1 })}
                         {' · '}
-                        <i>{rankName(rank)}</i>
+                        {/* 主读数念中文「6 级」;右边范围那一行仍用紧凑的 `20k – 9d`。 */}
+                        <i>{rankLabel(t, rank)}</i>
                       </>
                     )}
                     meta={interpolate(t('setup:strength_meta', '共 {n} 档 · {lo} – {hi}'), {
@@ -615,6 +600,28 @@ const AiSetupPage = () => {
                 </div>
                 <p className="su-hint" data-testid="setup-seat-hint">{seatHint}</p>
               </section>
+
+              {/* 赌注排在「怎么坐」**后面**,和稿子一致:先是盒子定死的、再是你能选的,
+                  最后才是「按下去要赌什么」—— 它是这一屏最后看的那一眼。 */}
+              {isRanked && (
+                  <section className="setgrp" data-testid="setup-stake-group">
+                    <KioskSecLabel
+                      zh={t('ladder:stake', '这一局赌多少')}
+                      en="Stake"
+                      value={t('ladder:frozen_at_start', '开局那一刻冻结')}
+                    />
+                    <div className="su-stake" data-testid="setup-stakes">
+                      <span>{stakeWin}</span>
+                      <span>{stakeLoss}</span>
+                    </div>
+                    <p className="su-hint">
+                      {interpolate(
+                        t('ladder:stake_rule', '净胜分到 +3 升一档、到 −3 退一档 · 当前 {n}'),
+                        { n: signed(netScore) },
+                      )}
+                    </p>
+                  </section>
+              )}
             </KioskScrollZone>
 
             {/* 出错时那条横幅在**滚动区外面** —— 它说的是「刚才那次开局失败了」,

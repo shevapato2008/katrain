@@ -3791,9 +3791,19 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         # commit lock (guard=True/expected_player); this branch had no equivalent, and
         # the gateway only serialises (ctx.is_pending) and checks legality. Re-read the
         # live game. None (no game yet) falls through rather than refusing everything.
+        #
+        # Take ai_ladder_commit_lock (the same lock _do_play's guard=True/expected_player
+        # check takes, interface.py:1466), not session.lock — this is a live read of the
+        # same authority that check uses, serialised against every other committer of this
+        # game. What this buys: a live read immediately before the send below, correct as
+        # long as nothing introduces an `await` or a second committing thread between the
+        # two. What it does NOT buy: check-and-send is NOT atomic — `gateway.play_move` is
+        # `await`ed and therefore cannot be made while holding a threading lock, so a
+        # commit can still land in the gap between the read and the send. If someone adds
+        # an `await` here before the send, this guarantee breaks.
         live_turn = None
         try:
-            with session.lock:
+            with session.katrain.ai_ladder_commit_lock:
                 live_turn = session.katrain.next_player_to_move()
         except Exception:  # a turn read must never be able to break move submission
             live_turn = None

@@ -26,6 +26,7 @@ class FakeKatrain:
     def __init__(self, player_to_move="B"):
         self.plays = []
         self.live_player_to_move = player_to_move  # NEW: the *live* game's turn
+        self.ai_ladder_commit_lock = threading.RLock()  # NEW: real WebKaTrain has this (interface.py:199)
         self._state = {
             "stones": [],
             "board_size": [19, 19],

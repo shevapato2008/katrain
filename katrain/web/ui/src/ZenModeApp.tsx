@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, CssBaseline, ThemeProvider, Divider, Typography, Snackbar, Alert } from '@mui/material';
 import { API, apiPost, type GameState } from './api';
-import { websocketUrl, WS_POLICY_VIOLATION } from './utils/websocketUrl';
+import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from './utils/websocketUrl';
 import { i18n } from './i18n';
 import { useTranslation } from './hooks/useTranslation';
 import Board from './components/Board';
@@ -132,7 +132,10 @@ function ZenModeApp() {
 
         /* 断了要说出来 —— 静默的 1008 会让棋盘停在人类那一手而毫无提示。 */
         ws.onclose = (event) => {
-          if (event.code === WS_POLICY_VIOLATION) {
+          if (event.code === WS_POLICY_VIOLATION && event.reason === WS_SESSION_GONE_REASON) {
+            console.warn('Session is gone on the server');
+            setStatusMessage(SESSION_GONE_MESSAGE);
+          } else if (event.code === WS_POLICY_VIOLATION) {
             console.error("Session WebSocket rejected:", event.reason);
             setStatusMessage(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新`);
           } else if (!event.wasClean) {

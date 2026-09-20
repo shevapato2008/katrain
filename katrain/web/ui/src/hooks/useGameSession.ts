@@ -1,13 +1,18 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { API, type GameState, type PhysicalEngineErrorState } from '../api';
-import { websocketUrl, WS_POLICY_VIOLATION } from '../utils/websocketUrl';
+import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from '../utils/websocketUrl';
 import { readAudioPref } from '../utils/audioPrefs';
+import { requestFailureKind } from '../utils/requestFailure';
 
 interface GameEndData {
     reason: 'resign' | 'forfeit' | 'timeout' | 'count' | 'normal';
     winner_id?: number;
     result?: string;
     leaver_id?: number;
+}
+
+function isSessionGone(error: unknown): boolean {
+    return requestFailureKind(error) === 'not_found';
 }
 
 interface CountRequestData {
@@ -32,7 +37,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
     // 断线是持续状态，与一次性操作失败分开；保留 error 的既有文案供其它调用方使用。
-    const [connectionLost, setConnectionLost] = useState<'rejected' | 'dropped' | null>(null);
+    const [connectionLost, setConnectionLost] = useState<'rejected' | 'dropped' | 'gone' | null>(null);
     const [lastLog, setLastLog] = useState<string | null>(null);
     // wire 契约 `shapes.Chat`:身份两项由服务端填,字段叫 `from_name` **不叫 `sender`**。
     const [chatMessages, setChatMessages] = useState<{from_id: number, from_name: string, text: string}[]>([]);
@@ -231,7 +236,13 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                     ws.onclose = (event) => {
                         if (wsRef.current !== ws) return;  // 已被新连接替换或组件卸载
                         clearQueuedSounds();
-                        if (event.code === WS_POLICY_VIOLATION) {
+                        if (event.code === WS_POLICY_VIOLATION && event.reason === WS_SESSION_GONE_REASON) {
+                            // 服务端把这局回收了。这不是凭据问题 —— 走下面那条会告诉用户
+                            // 「请重新登录」,而重新登录救不了它。说错原因和印原始报错一样不算人话。
+                            console.warn('Game session is gone on the server');
+                            setConnectionLost('gone');
+                            setError(SESSION_GONE_MESSAGE);
+                        } else if (event.code === WS_POLICY_VIOLATION) {
                             console.error("Game WebSocket rejected:", event.reason);
                             setConnectionLost('rejected');
                             setError(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新，请重新登录后重试`);
@@ -295,6 +306,14 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             else if (action === 'rotate') await API.rotate(sessionId);
             else if (action === 'mistake-prev') result = await API.findMistake(sessionId, 'undo');
             else if (action === 'mistake-next') result = await API.findMistake(sessionId, 'redo');
+            // Task 2 的 200 空回执。只看 `result?.state` 会把它当成静默成功:框关掉、棋局
+            // 永远不终局、页面完全不知道这局已经死了。它**不带**任何结果 —— 会话没了不等于
+            // 远端认输了(真正的远端认输在 gateway.py:399-420,那条路这时根本没走到)。
+            if (result?.status === 'session_gone') {
+                setConnectionLost('gone');
+                setError(SESSION_GONE_MESSAGE);
+                return;
+            }
             // Apply state from the HTTP response immediately (a WebSocket broadcast may
             // also arrive, but this ensures the acting client updates without waiting)
             if (result?.state) {
@@ -302,6 +321,13 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             }
         } catch (e) {
             console.error(e);
+            if (isSessionGone(e)) {
+                // 同一个信号的第三条来路。**不能**把 e.message 放进 error:那正是
+                // `Request failed 404: {"detail":…}` 上屏的那条路。
+                setConnectionLost('gone');
+                setError(SESSION_GONE_MESSAGE);
+                throw e;
+            }
             const message = e instanceof Error ? e.message : 'Game action failed';
             setError(message);
             throw e;

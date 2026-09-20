@@ -22,7 +22,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { websocketUrl, WS_POLICY_VIOLATION } from './websocketUrl';
+import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON } from './websocketUrl';
 
 const SRC = join(__dirname, '..');
 
@@ -69,6 +69,12 @@ describe('websocketUrl', () => {
 
     it('1008 就是服务端拒绝凭据时用的那个 code', () => {
         expect(WS_POLICY_VIOLATION).toBe(1008);
+    });
+
+    // 两半协议分别用 TS 和 Python 写,没有别的东西检查它们还对得上。字面量照抄
+    // `katrain/web/session.py` 里 `ws.close(code=1008, reason=...)` 那一行——不是拿常量比常量。
+    it('WS_SESSION_GONE_REASON 与服务端 ws.close(1008, reason=...) 发的暗号一致', () => {
+        expect(WS_SESSION_GONE_REASON).toBe('session_gone');
     });
 });
 

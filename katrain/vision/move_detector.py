@@ -49,6 +49,14 @@ SUSPICION_THRESHOLD = 3  # at or above this, the cell is suspect
 SUSPICION_DECAY_FRAMES = 300  # every N frames every cell loses a point
 SUSPECT_CONFIDENCE_BONUS = 0.25  # extra the ambiguous gate demands from a suspect cell (workers only)
 
+# Simultaneous diffs at or above this count are scene disruption (a hand sweeping
+# across the board, the board being moved), not "a phantom next to a real stone".
+# Below it, every changed cell is simply its own candidate. The old rule was
+# `> 1` — which made the WHOLE BOARD the criterion for whether YOUR move counts,
+# and on RK3562 2026-09-20 one persistent edge phantom kept a real stone from ever
+# entering its game.
+DISRUPTION_THRESHOLD = 4
+
 
 class MoveDetector:
     """Detects new moves by comparing board states across frames.
@@ -59,7 +67,10 @@ class MoveDetector:
     ``consistency_frames``, leaving the stone permanently unconfirmable. A pending move
     therefore survives up to ``miss_grace`` consecutive absent frames with its count
     frozen; only a longer absence (stone actually removed / noise gone) abandons it.
-    Multi-stone changes still hard-reset — that is scene disruption, not flicker.
+    Changes at or above ``disruption_threshold`` cells in one frame still hard-reset —
+    that is scene disruption, not flicker. Below it every changed cell is its own
+    candidate with its own streak, so a phantom elsewhere on the board can no longer
+    starve a real move (RK3562 2026-09-20: it starved one for an entire game).
 
     THE CALLER OWNS THE BASELINE: ``detect_new_move`` does NOT advance ``prev_board``
     when it confirms — call ``force_sync()`` once the move has actually been accepted
@@ -71,15 +82,39 @@ class MoveDetector:
     callers gate re-emission (cooldowns) rather than losing the move forever.
     """
 
-    def __init__(self, consistency_frames: int = 3, miss_grace: int = 2):
+    def __init__(
+        self, consistency_frames: int = 3, miss_grace: int = 2, disruption_threshold: int = DISRUPTION_THRESHOLD
+    ):
         self.consistency_frames = consistency_frames
         self.miss_grace = miss_grace
+        self.disruption_threshold = disruption_threshold
         self.prev_board: np.ndarray | None = None
-        self.pending_move: tuple[int, int, int] | None = None
-        self.count = 0
-        self.misses = 0
+        # (row, col, color) -> {"count": int, "misses": int, "first_seen": int}
+        self._candidates: dict[tuple[int, int, int], dict[str, int]] = {}
         self._suspicion: dict[tuple[int, int], int] = {}
         self._frame_index = 0
+
+    def _leader(self) -> tuple[int, int, int] | None:
+        """Candidate closest to confirming: longest streak, oldest first-seen breaks ties."""
+        if not self._candidates:
+            return None
+        return min(
+            self._candidates,
+            key=lambda k: (-self._candidates[k]["count"], self._candidates[k]["first_seen"]),
+        )
+
+    @property
+    def pending_move(self) -> tuple[int, int, int] | None:
+        """The leading candidate. Read by both workers every frame (confidence-peak
+        tracking and the "confirming" chip). Read-only on purpose: there is now more
+        than one candidate, so any assignment site would be a bug."""
+        return self._leader()
+
+    @property
+    def count(self) -> int:
+        """Consecutive sightings of the leading candidate."""
+        leader = self._leader()
+        return 0 if leader is None else self._candidates[leader]["count"]
 
     def _penalize(self, cell: tuple[int, int], points: int) -> None:
         self._suspicion[cell] = self._suspicion.get(cell, 0) + points
@@ -158,50 +193,109 @@ class MoveDetector:
                 if self.prev_board[r][c] == EMPTY and board[r][c] != EMPTY:
                     diff_positions.append((r, c, int(board[r][c])))
 
-        if len(diff_positions) == 0:
-            if self.pending_move is not None:
-                self.misses += 1
-                if self.misses > self.miss_grace:
-                    self._penalize((self.pending_move[0], self.pending_move[1]), SUSPICION_ABANDON)
-                    self.count = 0
-                    self.pending_move = None
-                    self.misses = 0
+        if len(diff_positions) >= self.disruption_threshold:
+            # Scene disruption: abandon everything, and charge nobody — this is not
+            # any one cell's fault.
+            self._candidates.clear()
             return None
 
-        if len(diff_positions) > 1:
-            self.count = 0
-            self.pending_move = None
-            self.misses = 0
+        # `required_frames` is evidence about ONE stone: the caller measured the
+        # confidence peak of whichever cell was leading when it called (the workers read
+        # peak_for(pending_move) immediately before this call). Capture that cell BEFORE
+        # the candidate update, and let only it use the shortcut — otherwise a confident
+        # real stone hands its 3-frame fast path to a weak phantom sharing the frame, and
+        # the phantom auto-plays two frames early.
+        #
+        # Note (fix round 1): this restriction is kept as a cheap invariant, not as a
+        # tested branch. Before the suspect frame-count multiplier was removed, a suspect
+        # leader could need MORE sightings than the shortcut granted, so a non-leader
+        # candidate confirming on the leader's shortcut was an observable leak
+        # (test_the_fast_path_is_not_lent_to_another_candidate, dropped in fix round 1).
+        # Without the multiplier, `fast_cell` is captured once per call as whichever key
+        # already has the highest count (ties broken by first_seen) BEFORE this frame's
+        # counts are bumped, and `ready` is later sorted the same way — so a non-leader
+        # key can never reach a count that lets it overtake the leader within the same
+        # call, whether or not it were (wrongly) granted the shortcut. The restriction
+        # still guards against a future change to that ordering; it just has no scenario
+        # left in this file that can distinguish "restriction present" from "restriction
+        # removed".
+        #
+        # Controller amendment (2026-09-21): the paragraph above is only half the story.
+        # `ready` is built from `current` (this frame's diffs) but `fast_cell` is taken
+        # from ALL candidates, including ones absent this frame but still inside
+        # miss_grace. So a miss-graced leader that is absent THIS frame is not in
+        # `ready` at all, leaving a second candidate alone in it — eligible for a
+        # fast-path allowance that was measured on a different stone entirely. See
+        # test_fast_path_not_lent_to_a_miss_graced_leaders_neighbor, which reproduces
+        # this with the plain constants (no suspicion involved).
+        fast_cell = self._leader()
+
+        current = {(r, c, clr) for r, c, clr in diff_positions}
+
+        # Age out candidates that are not visible this frame. A marginal stone blinks,
+        # so a short absence only freezes the streak (miss_grace); a longer one
+        # abandons the candidate and charges that cell a point of suspicion.
+        for key in list(self._candidates):
+            if key in current:
+                continue
+            cand = self._candidates[key]
+            cand["misses"] += 1
+            if cand["misses"] > self.miss_grace:
+                self._penalize((key[0], key[1]), SUSPICION_ABANDON)
+                del self._candidates[key]
+
+        for key in current:
+            cand = self._candidates.get(key)
+            if cand is None:
+                self._candidates[key] = {"count": 1, "misses": 0, "first_seen": self._frame_index}
+            else:
+                cand["count"] += 1
+                cand["misses"] = 0
+
+        if not current:
             return None
 
-        move = diff_positions[0]
-        if move == self.pending_move:
-            self.count += 1
-            self.misses = 0
-        else:
-            if self.pending_move is not None:
-                self._penalize((self.pending_move[0], self.pending_move[1]), SUSPICION_ABANDON)
-            self.pending_move = move
-            self.count = 1
-            self.misses = 0
+        fast_needed = self.consistency_frames if required_frames is None else max(1, int(required_frames))
+        ready = []
+        for key in current:
+            # Fix round 1 (Task 3) removed the suspect frame-count multiplier: it gated
+            # detect_new_move's return, which sits upstream of BOTH auto-play and the
+            # ambiguous card, so a suspect cell that could not assemble enough sightings
+            # confirmed nowhere at all — silent loss, the worst F2 outcome, manufactured
+            # by the F1 fix. A suspect cell now confirms on the same count as an honest
+            # one; only the workers' post-confirmation ambiguous-routing gate (raised by
+            # SUSPECT_CONFIDENCE_BONUS) decides auto-play vs. card. Do not reintroduce an
+            # `is_suspect` check here.
+            needed = fast_needed if key == fast_cell else self.consistency_frames
+            if self._candidates[key]["count"] >= needed:
+                ready.append(key)
+        if not ready:
+            return None
 
-        needed = self.consistency_frames if required_frames is None else max(1, int(required_frames))
-        if self.count >= needed:
-            # Baseline deliberately NOT advanced (see class docstring): the caller
-            # force_syncs once the move is actually accepted downstream.
-            self.count = 0
-            self.pending_move = None
-            self.misses = 0
-            return move
+        ready.sort(key=lambda k: (-self._candidates[k]["count"], self._candidates[k]["first_seen"]))
+        move = ready[0]
+        if len(ready) > 1:
+            runner_up = ready[1]
+            lead, second = self._candidates[move], self._candidates[runner_up]
+            if lead["count"] == second["count"] and lead["first_seen"] == second["first_seen"]:
+                # Two stones that appeared on the same frame and advanced in lockstep is
+                # genuine ambiguity, not a phantom beside a real stone. Emit nothing.
+                return None
 
-        return None
+        # Baseline deliberately NOT advanced (see class docstring): the caller
+        # force_syncs once the move is actually accepted downstream.
+        del self._candidates[move]
+        return move
 
     def force_sync(self, board: np.ndarray) -> None:
-        """Force-update the reference board (for undo, endgame cleanup, manual reset)."""
+        """Force-update the reference board (for undo, endgame cleanup, manual reset).
+
+        Clears candidates but NOT reputation — force_sync runs on every expected-board
+        push, so clearing reputation here would mean it never accumulates. Use
+        reset_suspicion() for that.
+        """
         self.prev_board = board.copy()
-        self.count = 0
-        self.pending_move = None
-        self.misses = 0
+        self._candidates.clear()
 
 
 class PendingConfidencePeak:

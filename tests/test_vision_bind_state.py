@@ -29,8 +29,18 @@ class FakeVision:
 
 
 class FakeKatrain:
+    def __init__(self):
+        self.clock_started = False
+
     def get_state(self):
         return {"stones": [["B", [3, 15], None, 1]], "board_size": [19, 19], "current_node_id": 4242}
+
+    def start_clock(self):
+        # 实体盘绑定就是「棋盘可用」那一刻,钟从这里起步(KaTrainWeb.start_clock 同语义:幂等)。
+        if self.clock_started:
+            return False
+        self.clock_started = True
+        return True
 
 
 class FakeSession:

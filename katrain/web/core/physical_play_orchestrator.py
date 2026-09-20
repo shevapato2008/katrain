@@ -35,6 +35,13 @@ class PhysicalPlayOrchestrator:
     PAUSE_REASON_HINT = "hint"
     PAUSE_REASON_ENGINE_ERROR = "engine_error"  # Task 7 (B5/M1/M4)
     PAUSE_REASON_AWAITING_REMOVAL = "awaiting_removal"  # Task 8 (B4/M5/D8)
+    # A finished game must stop comparing the physical board against a frozen expected
+    # board. Measured on RK3562 2026-09-20: a game that ended 15.5 min into the session
+    # kept vision bound for another 26 min, producing 732 refused moves and 191 of the
+    # session's 244 mismatch dialogs — 78% of the whole storm, at a mean detection
+    # confidence HIGHER than during play. It is a pause, not an unbind, because undo is
+    # still allowed after a result and must bring the physical board back to life.
+    PAUSE_REASON_GAME_OVER = "game_over"
 
     def __init__(
         self,
@@ -135,6 +142,17 @@ class PhysicalPlayOrchestrator:
         if self._session_id is None:
             return
         self._latest_state = state
+        # `end_result` alone is NOT the end: after two passes the result is already
+        # written while `awaiting_count` is still true, and the board is still live for
+        # counting. Pausing on `end_result` would let one glare phantom kill vision
+        # mid-count. Both halves, and reversible — undo clears it on the next broadcast.
+        if state.get("end_result") and not state.get("awaiting_count"):
+            self._add_pause_reason(self.PAUSE_REASON_GAME_OVER)
+            # 一局已经结束就不再欠任何落子/提子 ⇒ lag 没有意义了。而且清它的是 `_tick_once`,
+            # 那一步被 `_suspended`(game_over 就会置真)挡住 ⇒ 不在这里清掉,lag 会永远留着。
+            self._remove_pause_reason(self.PAUSE_REASON_LAG)
+        else:
+            self._remove_pause_reason(self.PAUSE_REASON_GAME_OVER)
         try:
             self._vision.set_expected_from_stones(
                 state["stones"],

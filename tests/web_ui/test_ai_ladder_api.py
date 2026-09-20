@@ -101,6 +101,7 @@ class FakeKaTrain:
 
     def __init__(self, username: str):
         self.ai_ladder_commit_lock = threading.RLock()
+        self.clock_started = False
         self.calls = []
         self.config_updates = []
         self.game_type = "free"
@@ -138,6 +139,14 @@ class FakeKaTrain:
             "end_result": None,
             "player_to_move": "B",
         }
+
+    def start_clock(self):
+        # 与 WebKaTrain.start_clock 同语义:幂等,只有第一次返回 True。
+        # 实体盘绑定 = 「棋盘可用」那一刻,钟从这里起步。
+        if self.clock_started:
+            return False
+        self.clock_started = True
+        return True
 
     def __call__(self, action, *args, **kwargs):
         self.calls.append((action, kwargs))

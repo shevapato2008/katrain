@@ -3168,6 +3168,20 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if strict_box:
             app.state.box_sso.register_socket(websocket)
         session.sockets.add(websocket)
+        # 棋盘已经在屏上了 ⇒ 钟可以起步(Fan 2026-09-20:「我要看到电子棋盘再开始计时」)。
+        #
+        # ⚠️ 只对**没有视觉的部署**成立。盒子上 `physicalPlay = !screenFallback && isVisionEnabled`
+        # (GamePage.tsx:280)—— `isVisionEnabled` 是设备能力不是单局设置,所以板上每一局都是实体盘局,
+        # 而 WS 永远比视觉绑定先到。在那里用 WS 起步,正是把 RK3562 实测那 69 秒又记回人类头上
+        # (10:36:10 建局 / 10:37:19 才绑上,中间用户在标定屏、碰不到棋盘)。
+        # 板上由 `api/v1/endpoints/vision.py` 的 bind_session 起步;屏幕降级的局由「第一手落下」
+        # 在 `interface.update_timer` 里兜底。
+        vision_service = getattr(app.state, "vision", None)
+        if vision_service is None or not vision_service.enabled:
+            if session.katrain.start_clock():
+                logging.getLogger("katrain_web").info(
+                    "Clock started for session %s (game websocket connected)", session_id
+                )
         try:
             state = session.last_state or session.katrain.get_state()
             state["sockets_count"] = len(session.sockets)
@@ -3629,6 +3643,18 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
                 game_state["stones"], expected_node_id=game_state.get("current_node_id")
             )
 
+    # Re-arming after a TERMINAL refusal re-pushes the same frozen board, so the same
+    # leftover stone re-confirms and is refused again every consistency window, forever.
+    # Measured on RK3562 2026-09-20: 732 refusals over 26 minutes after one game ended.
+    # A non-terminal refusal (wrong turn, stale position) is transient and must still
+    # re-arm — the position really will change.
+    TERMINAL_REASONS = frozenset({"already_ended", "remote_ended"})
+
+    def _rearm_unless_terminal(exc: BaseException) -> None:
+        if isinstance(exc, EndgameConflict) and exc.reason in TERMINAL_REASONS:
+            return
+        _rearm_detection()
+
     if is_ai_ladder_ranked_session(session):
         move_player = "B" if move_data.color == 1 else "W"
         try:
@@ -3645,7 +3671,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
                 session.katrain("play", move.coords, guard=True, expected_player=move_player)
         except (HTTPException, ValueError, EndgameConflict) as exc:
             log.info("Ranked vision move rejected for session %s: %s", session_id, exc)
-            _rearm_detection()
+            _rearm_unless_terminal(exc)
             return 0.5
 
         log.info("Ranked vision move submitted: col=%d row=%d color=%d", move_data.col, move_data.row, move_data.color)
@@ -3708,7 +3734,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
                 session.katrain("play", move.coords, guard=True, expected_player=move_player)
         except EndgameConflict as exc:
             log.info("Vision move %s refused for session %s: %s", move_player, session_id, exc.reason)
-            _rearm_detection()
+            _rearm_unless_terminal(exc)
             return 0.5
 
     log.info(

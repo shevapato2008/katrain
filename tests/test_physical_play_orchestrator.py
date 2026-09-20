@@ -729,9 +729,11 @@ class TestRecoveryReleasedOnGameEnd:
 
         asyncio.run(run())
 
-        assert orch._pause_reasons == set()
-        assert orch._suspended is False
-        assert vision.paused is False
+        # 终局后**只剩** game_over:engine_error/awaiting_removal/lag 都已释放,
+        # 而 game_over 是有意留下的 —— 它就是「终局后停止比对」那道闸
+        # (PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER)。
+        assert orch._pause_reasons == {PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER}
+        assert vision.paused is True   # 比对已停,这正是目的
         assert led.calls[-1] == ("clear",)
 
     def test_awaiting_removal_is_released_when_the_game_ends(self):
@@ -742,8 +744,10 @@ class TestRecoveryReleasedOnGameEnd:
 
         assert orch._release_recovery_on_game_end() is True
         assert orch._awaiting_removal_context is None
-        assert orch._pause_reasons == {PhysicalPlayOrchestrator.PAUSE_REASON_LAG}
-        assert orch._suspended is False
+        # 原来这里剩的是 lag(终局后实体盘还「欠着」)。终局即停止比对之后,lag 在
+        # on_game_state 里一并释放 —— 一局结束就不欠任何落子了,而且清 lag 的 `_tick_once`
+        # 已被 game_over 的 _suspended 挡住,不在那里清就会永远留着。
+        assert orch._pause_reasons == {PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER}
         assert led.calls[-1] == ("clear",)
 
     def test_nothing_is_released_while_the_game_is_still_running(self):
@@ -758,3 +762,44 @@ class TestRecoveryReleasedOnGameEnd:
 def led_calls_for(orch):
     """Last non-empty set_points batch actually applied (helper for the tests above)."""
     return orch._last_points or []
+
+
+class TestGameOverStopsComparing:
+    """终局即停止比对(Fan 2026-09-20 裁定)。
+
+    RK3562 实测那一局终局后视觉仍绑着 26 分 07 秒:732 次落子被拒、全 session 244 次
+    「盘面与对局不一致」里有 191 次出在这一段,而那一段的平均检测置信度(0.784)比对局中
+    (0.738)**还高** —— 变量是绑定状态,不是光照。
+    """
+
+    def test_a_finished_game_pauses_comparison(self):
+        orch, _, vision, _ = _orch()
+        orch.on_game_state(state([["B", [3, 15], None, 1]]))
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER not in orch._pause_reasons
+
+        orch.on_game_state(state([["B", [3, 15], None, 1]], end_result="W+R"))
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER in orch._pause_reasons
+        assert vision.paused is True
+
+    def test_counting_is_not_a_finished_game(self):
+        """两次虚手之后 `end_result` 已经写上,而 `awaiting_count` 还是真、盘面仍然活着。
+
+        只看 `end_result` 就停,会让一颗阳光鬼子在数子没完时把视觉杀掉。
+        """
+        orch, _, vision, _ = _orch()
+        s = state([["B", [3, 15], None, 1]], end_result="W+R")
+        s["awaiting_count"] = True
+        orch.on_game_state(s)
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER not in orch._pause_reasons
+        assert vision.paused is False
+
+    def test_undo_after_a_result_brings_the_board_back(self):
+        """终局后仍允许悔棋(GamePage 只在升降级局里过滤 undo)。用 pause 而不是 unbind
+        的理由就在这里:unbind 是单向门,悔棋回到可下局面后实体盘会一直是死的。"""
+        orch, _, vision, _ = _orch()
+        orch.on_game_state(state([["B", [3, 15], None, 1]], end_result="W+R"))
+        assert vision.paused is True
+
+        orch.on_game_state(state([["B", [3, 15], None, 1]], end_result=None))
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER not in orch._pause_reasons
+        assert vision.paused is False

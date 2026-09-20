@@ -208,6 +208,12 @@ async def bind_session(
     request.app.state.ranked_vision_binding = ranked_binding
     _drain_stale_move_queue(request)
 
+    # 实体盘的局:在绑上之前一颗子也放不进去,所以这里才是「棋盘可用」那一刻,钟从这里起步。
+    # (Fan 2026-09-20:「我要看到电子棋盘再开始计时」。RK3562 实测建局→绑定隔了 69 秒,
+    #  那段时间用户还在标定屏,却已经被扣时。)`start_clock` 幂等,重连再绑不会重置。
+    if session.katrain.start_clock():
+        logger.info("Clock started for session %s (vision bound)", body.session_id)
+
     # Set expected board from current game state
     game_state = session.katrain.get_state()
     if game_state and "stones" in game_state:

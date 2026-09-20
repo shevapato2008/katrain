@@ -227,28 +227,36 @@ function SeatRow({ gameState, color, turn, state, untimed, lang, t, onTimeout }:
   onTimeout?: (color: 'B' | 'W') => void;
 }) {
   const onExpired = useCallback(() => onTimeout?.(color), [onTimeout, color]);
-  const { play: playSound } = useSound();
-  const lastCountdownSecondRef = useRef<number | null>(null);
+  const { play: playSound, stop: stopSound } = useSound();
+  const beepingRef = useRef(false);
   const reading = useGoClock(gameState, color, onExpired);
   const countdownSecond = reading?.byoLeft == null ? null : Math.ceil(reading.byoLeft);
   const clockActive = turn && !gameState.end_result && !gameState.terminal_result
     && (gameState.children?.length ?? 0) === 0;
+  // `countdownbeep.wav` 是**整个读秒窗口**的那一条 5 秒轨(5 声,在 0/1/2/3/4s),不是一声。
+  // 原来按「剩余整秒变一次就放一次」触发 ⇒ 窗口内放 5 遍、5 份重叠,峰值落在 T−1 秒,
+  // 一直响到 T+3 秒,而卡片在 T 就已经写「0:00 超时」—— 这就是「声音和倒计时不同步」。
+  // 改成窗口边沿触发一次 + 离开窗口 stop,与桌面版 `gui/controlspanel.py:242-247` 同语义。
   useEffect(() => {
-    const shouldPlay = clockActive
+    const inWindow = clockActive
       && gameState.timer?.paused === false
       && gameState.timer.settings.sound === true
       && !reading?.expired
       && countdownSecond !== null
       && countdownSecond >= 1
       && countdownSecond <= 5;
-    if (!shouldPlay) {
-      lastCountdownSecondRef.current = null;
+    if (!inWindow) {
+      // 窗口内落子/读秒进下一期/暂停 ⇒ 剩下的几声必须当场停,否则会盖到下一手上。
+      if (beepingRef.current) {
+        stopSound('countdownbeep');
+        beepingRef.current = false;
+      }
       return;
     }
-    if (lastCountdownSecondRef.current === countdownSecond) return;
+    if (beepingRef.current) return;
     playSound('countdownbeep');
-    lastCountdownSecondRef.current = countdownSecond;
-  }, [clockActive, countdownSecond, gameState.timer?.paused, gameState.timer?.settings.sound, playSound, reading?.expired]);
+    beepingRef.current = true;
+  }, [clockActive, countdownSecond, gameState.timer?.paused, gameState.timer?.settings.sound, playSound, stopSound, reading?.expired]);
   const clock = reading === null ? untimed
     : reading.expired ? { value: '0:00', label: t('game:time_up', '超时') }
     : reading.byoLeft === null ? { value: formatTime(reading.mainLeft), label: t('game:time_left', '剩余') }
@@ -285,8 +293,8 @@ const GameControlPanel = ({
   onTimeout, counting = false, statusSlot = null,
 }: Props) => {
   const { t, lang } = useTranslation();
-  const { play: playSound } = useSound();
-  const lastLocalCountdownSecondRef = useRef<number | null>(null);
+  const { play: playSound, stop: stopSound } = useSound();
+  const localBeepingRef = useRef(false);
 
   // 数子闸照抄 galaxy(`RightSidebarPanel`):后端 `/api/count/request` 在 count_min_moves
   // 之前一律拒,所以键灰着 —— 而**灰而不说原因**是这份稿子在别处专门骂过的事,
@@ -364,21 +372,25 @@ const GameControlPanel = ({
   const localCountdownSecond = activeLocalClock.phase === 'byoyomi'
     ? Math.ceil(activeLocalClock.byoyomiLeft)
     : null;
+  // 与 SeatRow 那处同一个缺陷、同一个修法:整轨只在进入读秒窗口时放一次,离开就停。
   useEffect(() => {
-    const shouldPlay = localGame
+    const inWindow = localGame
       && ticking
       && timer?.settings.sound === true
       && localCountdownSecond !== null
       && localCountdownSecond >= 1
       && localCountdownSecond <= 5;
-    if (!shouldPlay) {
-      lastLocalCountdownSecondRef.current = null;
+    if (!inWindow) {
+      if (localBeepingRef.current) {
+        stopSound('countdownbeep');
+        localBeepingRef.current = false;
+      }
       return;
     }
-    if (lastLocalCountdownSecondRef.current === localCountdownSecond) return;
+    if (localBeepingRef.current) return;
     playSound('countdownbeep');
-    lastLocalCountdownSecondRef.current = localCountdownSecond;
-  }, [localCountdownSecond, localGame, playSound, ticking, timer?.settings.sound]);
+    localBeepingRef.current = true;
+  }, [localCountdownSecond, localGame, playSound, stopSound, ticking, timer?.settings.sound]);
 
   // 到点那一刻调一次。回调走 ref:调用方每次渲染都给一个新函数,放进依赖会让「停在 0」连调。
   const timeExpired = !isGameOver && !awaitingCount && activeLocalClock.phase === 'expired';

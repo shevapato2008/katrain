@@ -10,7 +10,7 @@ import { getCurrentKioskActivityStorage, __resetKioskActivityStorageForTests } f
 // --- Mocks -----------------------------------------------------------------
 
 const { mockPlaySound } = vi.hoisted(() => ({ mockPlaySound: vi.fn() }));
-vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play: mockPlaySound }) }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play: mockPlaySound, stop: vi.fn() }) }));
 
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),

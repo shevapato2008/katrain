@@ -179,12 +179,19 @@ class VisionService:
             self._worker.send_command(WorkerCommand(action=CommandType.SET_GEOMETRY, data={"geometry": geometry}))
 
     def pause_detection(self) -> None:
-        """Suspend MoveDetector move confirmation only (hint display; PRD R4.3).
+        """Suspend the whole compare pipeline: move confirmation AND SyncStateMachine.
 
-        Narrowed scope after review: SyncStateMachine.update keeps running while paused —
-        capture_pending/illegal_change flows must stay live during a catch-up wait (guide
-        stone removal, report anomalies). During an LED hint, lit-and-expected-empty
-        intersections are protected from feeding sync via set_lit_points() masking instead.
+        ⚠️ This docstring used to claim SyncStateMachine.update keeps running while
+        paused. It does not, and has not: `should_feed_sync(bound, monitor, paused)`
+        (gating.py:34-35) returns False when paused, and both workers gate
+        `self._sync.update()` on it — so capture_pending / illegal_change / move
+        confirmation all stop together. Anyone reasoning from the old sentence would
+        pick the wrong mechanism (PAUSE_REASON_GAME_OVER relies on the real one).
+
+        Callers: LED hint display (PRD R4.3), and game-over (see
+        PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER). During an LED hint,
+        lit-and-expected-empty intersections are additionally protected from feeding
+        sync via set_lit_points() masking.
         """
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.PAUSE_DETECTION))

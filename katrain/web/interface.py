@@ -267,6 +267,12 @@ class WebKaTrain(KaTrainBase):
         # A18:这一局的时限是不是**开局设置**写的(`/api/game/setup`、升降级 `/start` 都经 update_config("timer/…"))。
         # 没写过的局(星阵人机、大厅房间)继承 config.json 默认时限且不暂停,前端不许把它当计时局。
         self.timer_configured = False
+        # Fan 2026-09-20:「我要看到电子棋盘再开始计时」。
+        # 一局被创建的时刻和它**可以下第一手**的时刻不是同一刻:RK3562 实测那一局
+        # 10:36:10 建局、10:37:19 视觉才绑上 —— 中间 69 秒全记在人类头上,而那段时间里
+        # 用户还在标定屏、碰都碰不到棋盘。`timer_paused` 不能拿来干这件事:它是用户可见的
+        # 「暂停」,会在状态里报出去、还有开关端点。所以另立一个只进不出的起步闩。
+        self.clock_started = False
         self.last_timer_update = time.time()
         self.main_time_used_by_player = {"B": 0, "W": 0}
         self.show_children = False
@@ -851,6 +857,7 @@ class WebKaTrain(KaTrainBase):
 
             # Reset timer state for new game
             self.timer_paused = self.config("timer/paused")
+            self.clock_started = False  # 新的一局重新等「棋盘可用」;见 __init__ 那段说明
             self.last_timer_update = time.time()
             self.main_time_used_by_player = {"B": 0, "W": 0}
 
@@ -1040,6 +1047,21 @@ class WebKaTrain(KaTrainBase):
             else:
                 self.engine.stop_pondering()
 
+    def start_clock(self) -> bool:
+        """「棋盘可用了,可以开始计时」。幂等:只有第一次返回 True。
+
+        调用者是**能看见棋盘就绪**的那一层,不是建局那一层:
+          - 屏幕落子的局:对局页的 WS 接上(棋盘已经画出来了);
+          - 实体盘的局:视觉绑定成功(在那之前一颗子也放不进去)。
+        哪个信号后到就由哪个真正启动 —— 本方法幂等,先到的那次是空操作。
+        """
+        with self.ai_ladder_commit_lock:
+            if self.clock_started:
+                return False
+            self.clock_started = True
+            self.last_timer_update = time.time()
+            return True
+
     def update_timer(self):
         # r1:整段进对局提交锁。`get_state` 会被广播线程、引擎回调线程、请求线程并发调用;两次结算读到同一个
         # `last_timer_update` 会把同一段 dt 记两遍 —— 超时由服务端时钟核实(Task 6)以后,这就是「提前判负」。
@@ -1049,6 +1071,16 @@ class WebKaTrain(KaTrainBase):
             dt = now - self.last_timer_update
             self.last_timer_update = now
 
+            # `last_timer_update` 上面已经推到 now,所以直接 return 就等于把这段 dt 丢掉 ——
+            # 与 timer_paused 同一个机制,起步时不会补记一大段。
+            if not self.clock_started:
+                # 兜底:盘上已经有一手了,钟无论如何必须在走。
+                # 需要它的是「用户在盒子上选了屏幕落子」那种局 —— 它永远不会有视觉绑定,
+                # 没这一条钟就永远不起步,于是整局不计时、超时也永远不判。
+                if self.game and self.game.current_node is not None and not self.game.current_node.is_root:
+                    self.clock_started = True
+                else:
+                    return
             if self.timer_paused or self.play_analyze_mode != MODE_PLAY or not self.game:
                 return
 

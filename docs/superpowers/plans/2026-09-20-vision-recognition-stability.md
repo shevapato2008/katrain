@@ -1865,11 +1865,30 @@ Expected: no new `FAILED` / `ERROR` lines relative to the pre-change baseline. *
 - [ ] **Both workers really are in parity**
 
 ```bash
+# Site 1 — the confirmation/routing block. This is the ONLY site the original
+# one-liner covered (worker.py 403-517, worker_inprocess.py 451-565).
 diff <(sed -n '/pending_peak = /,/self._prev_conf_map = conf_map/p' katrain/vision/worker.py) \
      <(sed -n '/pending_peak = /,/self._prev_conf_map = conf_map/p' katrain/vision/worker_inprocess.py)
+
+# Site 2 — the stuck-stone promoter gate. Sits TWO LINES past the end of site 1's range.
+diff <(grep -A2 'if move_result is None and' katrain/vision/worker.py) \
+     <(grep -A2 'if move_result is None and' katrain/vision/worker_inprocess.py)
+
+# Site 3 — _run_ae. A different method entirely; site 1's range never reaches it.
+diff <(sed -n '/def _run_ae/,/^    def /p' katrain/vision/worker.py) \
+     <(sed -n '/def _run_ae/,/^    def /p' katrain/vision/worker_inprocess.py)
 ```
 
-Expected: the only differences are the pre-existing ones (`self._last_stable_board` vs `observed_board` as the argument to `detect_new_move`). Any difference in the suspect-gate lines is a parity bug — fix it.
+Expected, at every site: the only differences are the pre-existing ones — `self._last_stable_board`
+vs `observed_board`, `self._state_extractor` vs `self._active_extractor()`, and one `(macOS)` word in
+`_run_ae`'s comment. Any difference in the suspect-gate, charge, or mute lines is a parity bug — fix it.
+
+> **Corrected 2026-09-21 — this step used to be site 1 alone, and that was a gate aimed at the wrong
+> operand.** Fix round 1 added call sites at all three places. Sites 2 and 3 fall outside the sed
+> range, so the original one-liner would have reported parity CLEAN while two of the four
+> `about_to_confirm` call sites were broken. A gate that cannot see what it guards is worse than no
+> gate, because its green gets quoted. Verified: the range is worker.py 403-517 /
+> worker_inprocess.py 451-565, while the promoter gate is at 520/568 and `_run_ae` at 650/289.
 
 - [ ] **Nothing in the frontend changed**
 

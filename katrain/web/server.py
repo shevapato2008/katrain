@@ -3395,6 +3395,9 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
     try:
         return manager.get_session(session_id)
     except KeyError as exc:
+        # Otherwise the only trace is the 404 the user sees: uvicorn runs with
+        # access_log=False, so a session miss is invisible in journalctl.
+        logging.getLogger("katrain_web").warning("session miss: %s", session_id)
         raise HTTPException(status_code=404, detail="Session not found") from exc
 
 

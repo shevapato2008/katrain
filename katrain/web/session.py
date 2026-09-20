@@ -186,7 +186,7 @@ class SessionManager:
         with self._lock:
             session = self._sessions.pop(session_id, None)
         if session:
-            session.katrain.shutdown()
+            self._shutdown_all([session])
 
     def broadcast_to_session(self, session_id: str, payload: Dict):
         try:
@@ -199,13 +199,23 @@ class SessionManager:
         """回收过期会话。**同步方法，不要直接在事件循环上调用** —— 见 `_cleanup_locked`。"""
         with self._lock:
             evicted = self._cleanup_locked()
-        # 关引擎在**锁外**做。理由见 `_cleanup_locked` 的注释。
+        for session in evicted:
+            logging.getLogger("katrain_web").info(
+                "session evicted after %.0fs idle: %s", time.time() - session.last_access, session.session_id
+            )
+        # 关引擎与关 socket 都在**锁外**做。理由见 `_cleanup_locked` 的注释。
         self._shutdown_all(evicted)
 
-    @staticmethod
-    def _shutdown_all(sessions: List[WebSession]):
-        """逐个关停，一个失败不影响其余 —— 关停路径上再抛异常只会漏掉后面那些。"""
+    def _shutdown_all(self, sessions: List[WebSession]):
+        """逐个关停，一个失败不影响其余 —— 关停路径上再抛异常只会漏掉后面那些。
+
+        Socket close lives HERE, not in cleanup_expired, because this method is the one
+        thing all three eviction paths share: cleanup_expired's periodic sweep, and
+        create_session's two capacity paths (session.py:73 and :87), which never go
+        through cleanup_expired at all.
+        """
         for session in sessions:
+            self._schedule_socket_close(session)
             try:
                 session.katrain.shutdown()
             except Exception:
@@ -317,6 +327,43 @@ class SessionManager:
             except Exception:
                 stale.append(ws)
         for ws in stale:
+            session.sockets.discard(ws)
+
+    def _schedule_socket_close(self, session: WebSession):
+        """Close a gone session's game sockets, on the loop, never under self._lock.
+
+        A session the server has forgotten whose socket is still open is worse than a
+        closed one: the browser cannot tell a dead game from a live one, so it keeps
+        offering actions that can only fail. Measured on RK3562 2026-09-20.
+
+        Same thread discipline as _schedule_broadcast — _cleanup_locked's docstring
+        records the production lock queue that came from slow work inside the lock.
+        """
+        if not session.sockets:
+            return
+        if not self._loop or not self._loop.is_running():
+            return
+        if threading.get_ident() == self._loop_thread_id:
+            self._loop.create_task(self._close_sockets(session))
+        else:
+            future = asyncio.run_coroutine_threadsafe(self._close_sockets(session), self._loop)
+            future.add_done_callback(
+                lambda f: f.exception()
+                and logging.getLogger("katrain_web").warning("closing sockets failed: %s", f.exception())
+            )
+
+    @staticmethod
+    async def _close_sockets(session: WebSession):
+        """1008 + "session_gone" is the wire contract the client keys its recovery on
+        (useGameSession.ts). Iterate a snapshot and discard as we go — the /ws handler
+        discards the same socket from its own cleanup, and Set.discard is idempotent.
+        One socket failing must not strand the rest of the room.
+        """
+        for ws in list(session.sockets):
+            try:
+                await ws.close(code=1008, reason="session_gone")
+            except Exception:
+                pass  # already disconnected — nothing left to tell it
             session.sockets.discard(ws)
 
 

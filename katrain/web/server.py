@@ -3716,7 +3716,18 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     observed_seq = 0
     try:
         observed_board, observed_seq = vision.get_board_observation()
-    except Exception:  # a status read must never be able to break move submission
+    except Exception:
+        # a status read must never be able to break move submission — fail-open is
+        # deliberate. But a guard that silently disables itself is indistinguishable
+        # from a healthy one from the outside, which is exactly the failure shape this
+        # whole plan exists to fix (93 events over 510s on 2026-09-20, no trace). Announce it.
+        log.warning(
+            "L0a presence re-check disabled: get_board_observation() raised — "
+            "submitting move col=%d row=%d WITHOUT the vanished-stone re-check",
+            move_data.col,
+            move_data.row,
+            exc_info=True,
+        )
         observed_board = None
     move_seq = int(getattr(move_data, "observation_seq", 0))
     # Both workers increment their counter to >=1 in the SAME loop iteration, BEFORE a
@@ -3805,7 +3816,20 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         try:
             with session.katrain.ai_ladder_commit_lock:
                 live_turn = session.katrain.next_player_to_move()
-        except Exception:  # a turn read must never be able to break move submission
+        except Exception:
+            # a turn read must never be able to break move submission — fail-open is
+            # deliberate. But a guard that silently disables itself is indistinguishable
+            # from a healthy one from the outside, which is exactly the failure shape
+            # this whole plan exists to fix. Announce it.
+            log.warning(
+                "L0b live-turn re-check disabled: next_player_to_move() raised — "
+                "submitting move %s col=%d row=%d to the platform gateway WITHOUT the "
+                "turn re-check",
+                move_player,
+                move_data.col,
+                move_data.row,
+                exc_info=True,
+            )
             live_turn = None
         if live_turn is not None and live_turn != move_player:
             log.info(

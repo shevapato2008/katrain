@@ -27,6 +27,7 @@ class FakeKatrain:
         self.plays = []
         self.live_player_to_move = player_to_move  # NEW: the *live* game's turn
         self.ai_ladder_commit_lock = threading.RLock()  # NEW: real WebKaTrain has this (interface.py:199)
+        self.raise_on_next_player_to_move = None  # NEW: simulate a raising collaborator
         self._state = {
             "stones": [],
             "board_size": [19, 19],
@@ -38,6 +39,8 @@ class FakeKatrain:
         return self._state
 
     def next_player_to_move(self):  # NEW
+        if self.raise_on_next_player_to_move is not None:
+            raise self.raise_on_next_player_to_move
         return self.live_player_to_move
 
     def __call__(self, command, coords=None, **kwargs):
@@ -72,12 +75,15 @@ class FakeVision:
         self.expected_node_ids = []
         self.detected_board = None  # NEW: None = "no usable observation"
         self.observation_seq = 0  # NEW: which observation `detected_board` came from
+        self.raise_on_get_board_observation = None  # NEW: simulate a raising collaborator
 
     def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
         self.expected_pushes.append(stones)
         self.expected_node_ids.append(expected_node_id)
 
     def get_board_observation(self):  # NEW
+        if self.raise_on_get_board_observation is not None:
+            raise self.raise_on_get_board_observation
         return self.detected_board, self.observation_seq
 
 
@@ -495,6 +501,28 @@ class TestSubmitTimePresenceRecheck:
         assert gateway.calls == [SUBMITTED]
         assert delay == 0.0
 
+    def test_observation_read_failure_submits_anyway_and_logs_the_disabled_guard(self, caplog):
+        """Fail-open (never let a status read block a real move) is deliberate and must
+        stay. But a guard that silently disables itself is indistinguishable from a
+        healthy one from the outside — exactly the failure shape this whole plan exists
+        to fix. The raise must come from the real collaborator (get_board_observation),
+        not from patching the logger, and the move must still go through."""
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.raise_on_get_board_observation = RuntimeError("camera worker crashed")
+
+        with caplog.at_level(logging.WARNING, logger="test_vision_move_poller"):
+            asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+
+        assert gateway.calls == [SUBMITTED]  # fail-open: still submitted, unchecked
+        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert len(warnings) == 1
+        assert "L0a" in warnings[0].getMessage()
+        assert "disabled" in warnings[0].getMessage()
+        assert warnings[0].exc_info is not None  # the RuntimeError is attached, not swallowed
+
 
 class TestPlatformTurnGuard:
     """L0b: the turn check at the top of _handle_confirmed_move reads
@@ -542,3 +570,25 @@ class TestPlatformTurnGuard:
         asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(col=3, row=3, color=BLACK), log))
 
         assert gateway.calls == [SUBMITTED]  # katrain coords: row 3 flips to 19-1-3=15
+
+    def test_live_turn_read_failure_submits_anyway_and_logs_the_disabled_guard(self, caplog):
+        """Same fail-open contract as L0a's read, same reason to log it: a guard that
+        silently disables itself is indistinguishable from a healthy one from the
+        outside. The raise must come from the real collaborator (next_player_to_move),
+        not from patching the logger, and the move must still go through."""
+        session = FakeSession(player_to_move="B")
+        session.katrain.raise_on_next_player_to_move = RuntimeError("game tree corrupted")
+        sm = FakeSessionManager({"s1": session})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+
+        with caplog.at_level(logging.WARNING, logger="test_vision_move_poller"):
+            asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(col=3, row=3, color=BLACK), log))
+
+        assert gateway.calls == [SUBMITTED]  # fail-open: still submitted, unchecked
+        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert len(warnings) == 1
+        assert "L0b" in warnings[0].getMessage()
+        assert "disabled" in warnings[0].getMessage()
+        assert warnings[0].exc_info is not None  # the RuntimeError is attached, not swallowed

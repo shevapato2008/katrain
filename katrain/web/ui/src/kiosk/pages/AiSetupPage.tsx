@@ -117,6 +117,20 @@ const AiSetupPage = () => {
 
   const rankOptions = Array.from({ length: 29 }, (_, v) => ({ value: v, label: internalToRank(sliderToInternal(v)) }));
 
+  /* 换规则时顺手收拾让子:AI 赛规则只给分先(见 `handicapKeysFor`),
+     不收拾的话 state 会停在一个这条规则下**不存在**的档上,
+     屏上读数和可选项对不上,而送出去的仍是那个旧档。 */
+  /* 换路数同理:13 路封到让 5 子、9 路封到让 4 子且没有倒贴。 */
+  const pickSize = (next: number) => {
+    setBoardSize(next);
+    if (!handicapKeysFor(next, rules).includes(handicapKey)) setHandicapKey('even');
+  };
+
+  const pickRules = (next: string) => {
+    setRules(next);
+    if (!handicapKeysFor(boardSize, next).includes(handicapKey)) setHandicapKey('even');
+  };
+
   const ruleLabels = RULE_LABEL(t);
   const handicapLabels = HANDICAP_LABEL(t);
 
@@ -451,21 +465,21 @@ const AiSetupPage = () => {
                           key: String(n),
                           label: interpolate(t('setup:size_n', '{n} 路'), { n }),
                         }))}
-                        onChange={(k) => setBoardSize(Number(k))}
+                        onChange={(k) => pickSize(Number(k))}
                       />
                       <SetupSelect
                         testId="setup-rules"
                         label={t('Rules', '规则')}
                         value={rules}
                         options={RULES.map((r) => ({ key: r.key, label: ruleLabels[r.key] }))}
-                        onChange={(k) => setRules(k)}
+                        onChange={pickRules}
                       />
                       <SetupSelect
                         testId="setup-handicap"
                         label={t('Handicap', '让子')}
                         value={handicapKey}
                         columns={2}
-                        options={handicapKeysFor(boardSize).map((k) => ({ key: k, label: handicapLabels[k] }))}
+                        options={handicapKeysFor(boardSize, rules).map((k) => ({ key: k, label: handicapLabels[k] }))}
                         onChange={(k) => setHandicapKey(k as HandicapKey)}
                       />
                     </>

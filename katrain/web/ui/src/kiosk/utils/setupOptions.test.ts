@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   RULES, HANDICAPS, MAX_HANDICAP, handicapKeysFor,
   resolveGameTerms, komiInStones, FREE_KOMI_VALUES,
+  RULE_LABEL, ruleKeyFromWire, ruleNameOf,
   type HandicapKey,
 } from './setupOptions';
 
@@ -105,5 +106,51 @@ describe('规则表', () => {
   });
   it('数子的规则写「子」,数目的写「目」', () => {
     expect(RULES.filter((r) => r.area).map((r) => r.key)).toEqual(['chinese', 'aga', 'button']);
+  });
+});
+
+describe('AI 赛规则只给分先', () => {
+  /* `aga-button` 是 `WHB_N_MINUS_ONE`(KataGo/cpp/game/rules.cpp:337)——
+     让 N 子白方得 N−1,而中国规则是 N。差这 1 目在中文用户这里没有直觉支撑。 */
+  it('button 规则下只剩分先一档', () => {
+    expect(handicapKeysFor(19, 'button')).toEqual(['even']);
+    expect(handicapKeysFor(9, 'button')).toEqual(['even']);
+  });
+  it('其余规则不受影响', () => {
+    expect(handicapKeysFor(19, 'chinese')).toContain('9');
+    expect(handicapKeysFor(19, 'japanese')).toContain('free');
+    // 不传规则时按中国规则算 —— 默认值不许悄悄收窄
+    expect(handicapKeysFor(19)).toEqual(handicapKeysFor(19, 'chinese'));
+  });
+});
+
+describe('写进 SGF 的值 → 表里的 key', () => {
+  /* 只有 button 这一条两边不同名(key `button` / wire `aga-button`)。
+     另三条恰好同名 —— 所以「直接拿 wire 查表」这个写法在加 button 之前看不出问题,
+     而载入旧棋谱正是从 wire 回填的(hooks/useResearchBoard.ts:222)。 */
+  it('button 的 wire 是 aga-button,查回 key', () => {
+    expect(RULES.find((r) => r.key === 'button')!.wire).toBe('aga-button');
+    expect(ruleKeyFromWire('aga-button')).toBe('button');
+    expect(ruleKeyFromWire('AGA-BUTTON')).toBe('button');
+  });
+  it('另三条同名,原样过', () => {
+    for (const k of ['chinese', 'japanese', 'aga']) expect(ruleKeyFromWire(k)).toBe(k);
+  });
+  it('每一条 wire 都查得回自己的 key —— 逐条通查,不逐个列举', () => {
+    for (const r of RULES) expect(ruleKeyFromWire(r.wire)).toBe(r.key);
+  });
+  it('查不到就原样回显,不冒充中国规则', () => {
+    // 研究页那条三元链原来就是这么错的:非 japanese/korean 一律说「中国规则」,
+    // 所以一局 RU[tromp-taylor] 会被说成中国规则。
+    expect(ruleKeyFromWire('tromp-taylor')).toBe('tromp-taylor');
+    const t = (_en: string, zh: string) => zh;
+    expect(ruleNameOf(t, 'tromp-taylor')).toBe('tromp-taylor');
+    expect(ruleNameOf(t, 'aga-button')).toBe('AI 赛规则');
+  });
+  it('韩国规则新建局不给选,但读得出名字', () => {
+    expect(RULES.map((r) => r.key)).not.toContain('korean');
+    const t = (_en: string, zh: string) => zh;
+    expect(ruleNameOf(t, 'korean')).toBe('韩国规则');
+    expect(RULE_LABEL(t).korean).toBe('韩国规则');
   });
 });

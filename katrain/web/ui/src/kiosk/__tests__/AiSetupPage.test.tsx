@@ -263,6 +263,24 @@ describe('AiSetupPage', () => {
   /* 让子局送出去的 `komi` 必须是 0 —— 补偿由 KataGo 按规则自动加
      (chinese = `WHB_N`,`KataGo/cpp/game/rules.cpp:292`)。
      改版前这里是 6.5 照发,白方因此多收一份。 */
+  it('选 AI 赛规则时让子那一格塌成只剩分先,并把已选的让子拉回来', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await pick(user, 'setup-handicap', '5');
+    expect(screen.getByTestId('setup-handicap-value')).toHaveTextContent('让 5 子');
+    await pick(user, 'setup-rules', 'button');
+    // 只剩一档 ⇒ 整格禁用,而且读数被拉回分先(不能停在一个这条规则下不存在的档上)
+    expect(screen.getByTestId('setup-handicap-value')).toHaveTextContent('分先');
+    expect(screen.getByTestId('setup-handicap')).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
+    const { API } = await import('../../api');
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalledWith(
+      'new-session-123', 'free',
+      // 送出去的是 wire 值 `aga-button`,不是表里的 key `button`
+      expect.objectContaining({ rules: 'aga-button', handicap: 0, komi: 7 }),
+    ));
+  });
+
   it('让子局送出去的 handicap/komi 是 (N, 0)', async () => {
     renderPage('free');
     const user = userEvent.setup();

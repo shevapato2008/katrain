@@ -55,6 +55,10 @@ export const TIME_TRACK_ORDER = ['byoOnly', '5', '10', '20', '30', '60', 'untime
 export const RULES_HINT = (t: Translate): Record<string, string> => ({
   chinese: t('Chinese rules count area: territory plus stones on the board', '中国规则数子:终局按占地算,活棋在自己空里落子不损目'),
   japanese: t('Japanese rules count territory: filling your own territory costs a point', '日本规则数目:只算围住的空,在自己空里落子要损一目'),
+  /* 韩国规则**不在新建局的选项里**了(KataGo 里它和 japanese 逐字相同),
+     但这张表留着它:它是 `Record<string,string>`,用法是 `[rules] ?? ''`,
+     留着成本为零 —— 而读取面板(载入旧棋谱)复用它时,未知 key 会静默变空串。 */
+  korean: t('Korean rules count territory, same as Japanese with different komi practice', '韩国规则数目:和日本规则同一种算法,贴目习惯不同'),
   aga: t('AGA rules count area but pass stones keep the count equal to territory scoring', 'AGA 规则数子,但停一手要交一子 —— 算出来和数目同分'),
   button: t('setup:rules_button_hint', 'AI 赛规则:数子 + 先停一手的一方多得半目 —— 把数子法那半目的奇偶差抹平'),
 });
@@ -101,12 +105,39 @@ export const RULES: RuleDef[] = [
   { key: 'button', wire: RULE_WIRE_BUTTON, area: true, evenKomi: 7.0 },
 ];
 
+/** 规则名。**比 `RULES` 多一条 `korean`** —— 新建局不给选,但旧棋谱读得到。 */
 export const RULE_LABEL = (t: Translate): Record<string, string> => ({
   chinese: t('Chinese rules', '中国规则'),
   japanese: t('Japanese rules', '日本规则'),
+  korean: t('research:rules_korean', '韩国规则'),
   aga: t('AGA rules', 'AGA 规则'),
   button: t('setup:rules_button', 'AI 赛规则'),
 });
+
+/**
+ * 写进 SGF 的那个值 → 这张表里的 key。
+ *
+ * **只有 `button` 这一条两边不同名**(key `button` / wire `aga-button`),
+ * 另三条恰好同名 —— 所以「直接拿 wire 查表」这个写法在加 button 之前一直看不出问题。
+ * 载入旧棋谱是从 wire 回填 state 的(`hooks/useResearchBoard.ts:222`
+ * `if (metadata.rules) setRules(metadata.rules)`),拿到的是 wire。
+ *
+ * 查不到就**原样回显** —— 屏上出现一个没见过的规则名,比显示成「中国规则」诚实得多。
+ * (研究页那条三元链今天就是这么错的:非 japanese/korean 一律说「中国规则」,
+ * 所以一局 `RU[aga]` 早就被显示成中国规则了。)
+ */
+export function ruleKeyFromWire(wire: string | null | undefined): string {
+  if (!wire) return 'chinese';
+  const lower = String(wire).trim().toLowerCase();
+  const hit = RULES.find((r) => r.wire.toLowerCase() === lower || r.key === lower);
+  return hit ? hit.key : lower;
+}
+
+/** 规则名,查不到就原样回显。载入旧棋谱的显示路径用它。 */
+export const ruleNameOf = (t: Translate, wire: string | null | undefined): string => {
+  const key = ruleKeyFromWire(wire);
+  return RULE_LABEL(t)[key] ?? key;
+};
 
 /** 让子档。**倒贴 / 分先 / 让先 三档的 handicap 都是 0,差别只在贴目** ——
  *  旧版把让子和贴目拆成两条轨,于是「让先」(不让子也不贴目)根本表达不出来。 */
@@ -140,7 +171,16 @@ export const HANDICAP_LABEL = (t: Translate): Record<string, string> => ({
  *  9 路另外不给「倒贴」—— 9 路上倒贴 7.5 目是一整块角。与星阵实测的上限一致。 */
 export const MAX_HANDICAP: Record<number, number> = { 19: 9, 13: 5, 9: 4 };
 
-export function handicapKeysFor(size: number): HandicapKey[] {
+/**
+ * 这一局能选哪些让子档。
+ *
+ * **AI 赛规则只给分先。** 不是照抄星阵:`aga-button` 的让子补偿是
+ * `WHB_N_MINUS_ONE`(`KataGo/cpp/game/rules.cpp:337`)—— 让 N 子白方得 **N−1**,
+ * 而中国规则是 N。差这 1 目在中文用户这里没有任何直觉支撑,
+ * 解释成本远大于它的价值。
+ */
+export function handicapKeysFor(size: number, ruleKey: string = 'chinese'): HandicapKey[] {
+  if (ruleKey === 'button') return ['even'];
   const max = MAX_HANDICAP[size] ?? 9;
   return HANDICAPS
     .filter((h) => h.stones <= max && !(h.key === 'rev' && size === 9))

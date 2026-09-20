@@ -81,9 +81,16 @@ class BoardStateExtractor:
         self.config = config or BoardConfig()
         # (row, col) -> consecutive frames this established cell has been read as the
         # other colour. Instance state, so it only applies to the occupancy-aware path
-        # and only to the extractor instance actually in use. The workers hold two
-        # instances (margin-aware for the geometry-lock warp, plain for the BoardFinder
-        # fallback) and pick one per frame by geometry, which does not change mid-game.
+        # and only to the extractor instance actually in use. worker.py holds a single
+        # instance, so this is moot there. worker_inprocess.py (the one that actually
+        # runs on the RK3562) holds two instances (margin-aware for the geometry-lock
+        # warp, plain for the BoardFinder fallback) and picks one per frame via
+        # _active_extractor(), keyed on self._geometry — which DOES change mid-game:
+        # GeometryCalibrationService's always-on drift monitor calls invalidate_geometry()
+        # on a detected board/camera bump, not just at startup. The consequence is
+        # bounded: on a switch, the other instance's streak/released state starts fresh,
+        # so colour protection restarts rather than getting stuck suppressed or stuck
+        # released.
         self._color_flip_streak: dict[tuple[int, int], int] = {}
         # Cells whose flip has been released and must KEEP being released until the
         # caller's stable board adopts the new colour — the workers need two consecutive

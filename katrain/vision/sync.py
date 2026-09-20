@@ -379,6 +379,24 @@ class SyncStateMachine:
                 entry = [now, 0]
                 self._missing_since[cell] = entry
             entry[1] += 1
+            # entry[1] >= self._illegal_change_frames (D5's second condition) is defence
+            # in depth: it is CURRENTLY structurally redundant with the pre-existing
+            # _mismatch_count stability debounce below (4d), because both are gated at
+            # the same self._illegal_change_frames threshold and both accumulate over the
+            # same event stream — frames where this cell is in missing_anomaly. By the
+            # time _mismatch_count could reach that threshold and fire, this cell has by
+            # construction already been observed that many times, so this clause cannot
+            # currently change WHETHER ILLEGAL_CHANGE eventually fires — only, in the rare
+            # case where wall-clock alone would have gone ripe earlier (a long occlusion
+            # gap followed by fast frames), WHEN the debounce starts counting, delaying the
+            # fire. Every test but one in this class cannot tell "this clause present" from
+            # "this clause deleted" — a green suite there is not evidence it is unnecessary,
+            # only that today's debounce already implies it for the ordinary case. See
+            # test_frame_count_condition_delays_ripening_after_a_long_gap in
+            # test_sync.py::TestMissingStoneHold for the one ordering that DOES distinguish
+            # them. Keep this clause — it makes D5's intent explicit in code and it is what
+            # protects the missing path if the debounce is ever loosened or removed
+            # independently.
             if now - entry[0] >= self._missing_hold_seconds and entry[1] >= self._illegal_change_frames:
                 ripe_missing.append((r, c, clr))
             else:

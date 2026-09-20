@@ -848,7 +848,10 @@ class TestMissingStoneHold:
             assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in events]
 
     def test_sustained_absence_does_report_missing(self):
-        expected = board_with({(3, 3): 1})
+        # Asymmetric cell (row != col): a row/col transposition anywhere in the path
+        # (sync.py does none itself, but this pins the payload shape regardless) would
+        # show up as a wrong [r, c] pair instead of silently matching on (3, 3).
+        expected = board_with({(2, 9): 1})
         sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
         self._established(sm, expected)
 
@@ -858,7 +861,7 @@ class TestMissingStoneHold:
             seen.extend(e for e in sm.update(observed_board=gone, timestamp=1.0 + i * 0.2))
         illegal = [e for e in seen if e.type == SyncEventType.ILLEGAL_CHANGE]
         assert illegal
-        assert [3, 3] in [[r, c] for r, c, _ in illegal[0].data["missing"]]
+        assert [2, 9] in [[r, c] for r, c, _ in illegal[0].data["missing"]]
 
     def test_elapsed_time_alone_is_not_enough(self):
         """Two frames 10 seconds apart is what a long occlusion looks like from the
@@ -909,3 +912,35 @@ class TestMissingStoneHold:
         for i in range(6):
             events = sm.update(observed_board=gone, timestamp=3.0 + i * 0.2)
             assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in events]
+
+    def test_frame_count_condition_delays_ripening_after_a_long_gap(self):
+        """Pins D5's frame-count half of the ripeness gate (`entry[1] >=
+        illegal_change_frames`), which every other test in this class cannot
+        distinguish from "deleted" — see the comment at that condition in sync.py.
+
+        The two halves normally go ripe together because real frames arrive fast
+        relative to missing_hold_seconds. They diverge only when a long gap (motion
+        occlusion — gating.py does not feed moving frames at all) is immediately
+        followed by several quick frames: wall-clock alone would already be satisfied
+        on the 2nd OBSERVED frame (elapsed since the 1st exceeds missing_hold_seconds),
+        while the frame-count half is not satisfied until the 5th. Deleting the
+        frame-count half would let the pre-existing stability debounce start
+        accumulating 3 frames earlier, firing ILLEGAL_CHANGE by the 6th observation
+        instead of needing (as here) 9. This test stops at 6 and asserts nothing has
+        fired — which only holds with the frame-count half in place."""
+        expected = board_with({(4, 12): 1})
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        self._established(sm, expected)
+
+        gone = empty_board()
+        sm.update(observed_board=gone, timestamp=1.0)  # 1st observation: entry[1] = 1
+        # 8s gap (an occlusion gating.py did not feed frames through): wall-clock alone
+        # is already past missing_hold_seconds (7.0) by the 2nd observation.
+        events = sm.update(observed_board=gone, timestamp=9.0)  # entry[1] = 2
+        assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in events]
+        # 4 more quick observations (entry[1] reaches 6): the debounce, if it had
+        # already started at observation 2 (the mutant), would fire by now.
+        seen = []
+        for i in range(4):
+            seen += sm.update(observed_board=gone, timestamp=9.0 + (i + 1) * 0.05)
+        assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in seen]

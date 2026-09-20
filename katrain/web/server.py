@@ -3241,7 +3241,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                             "text": text,
                         },
                     )
-        except WebSocketDisconnect:
+        except (WebSocketDisconnect, RuntimeError):
+            # A server-initiated close (_close_sockets, session.py) can land between
+            # receive_json() calls: starlette flips application_state to DISCONNECTED,
+            # and the next receive_json() raises RuntimeError rather than
+            # WebSocketDisconnect. finally: below still runs either way.
             pass
         finally:
             if strict_box:

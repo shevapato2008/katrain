@@ -330,41 +330,58 @@ class SessionManager:
             session.sockets.discard(ws)
 
     def _schedule_socket_close(self, session: WebSession):
-        """Close a gone session's game sockets, on the loop, never under self._lock.
+        """Close a gone session's game sockets, on the loop.
 
         A session the server has forgotten whose socket is still open is worse than a
         closed one: the browser cannot tell a dead game from a live one, so it keeps
         offering actions that can only fail. Measured on RK3562 2026-09-20.
 
-        Same thread discipline as _schedule_broadcast — _cleanup_locked's docstring
-        records the production lock queue that came from slow work inside the lock.
+        The call made HERE is non-blocking — create_task / run_coroutine_threadsafe
+        neither awaits nor blocks — but it is not always made outside self._lock: the
+        socket-close WORK runs on the loop in every case (that part follows
+        _schedule_broadcast's thread discipline), while the scheduling call itself is
+        made *under* self._lock on create_session's capacity-limit branch
+        (session.py:73). Don't add anything blocking to this method — a
+        `future.result()`, a metrics call, a synchronous log flush — or that branch
+        reproduces the production lock queue `_cleanup_locked`'s docstring records.
         """
         if not session.sockets:
             return
         if not self._loop or not self._loop.is_running():
             return
+
+        def _log_failure(fut):
+            if fut.cancelled():
+                return
+            exc = fut.exception()
+            if exc is not None:
+                logging.getLogger("katrain_web").warning("closing sockets failed: %s", exc)
+
         if threading.get_ident() == self._loop_thread_id:
-            self._loop.create_task(self._close_sockets(session))
+            self._loop.create_task(self._close_sockets(session)).add_done_callback(_log_failure)
         else:
-            future = asyncio.run_coroutine_threadsafe(self._close_sockets(session), self._loop)
-            future.add_done_callback(
-                lambda f: f.exception()
-                and logging.getLogger("katrain_web").warning("closing sockets failed: %s", f.exception())
-            )
+            asyncio.run_coroutine_threadsafe(self._close_sockets(session), self._loop).add_done_callback(_log_failure)
 
     @staticmethod
     async def _close_sockets(session: WebSession):
-        """1008 + "session_gone" is the wire contract the client keys its recovery on
-        (useGameSession.ts). Iterate a snapshot and discard as we go — the /ws handler
-        discards the same socket from its own cleanup, and Set.discard is idempotent.
-        One socket failing must not strand the rest of the room.
+        """1008 + "session_gone" is the close contract the web client's recovery is meant
+        to key on. Closed concurrently, each bounded by its own timeout, so one socket
+        that never acks the close handshake — e.g. a kiosk that lost its network, exactly
+        the scenario this exists for — cannot delay the rest of the room.
         """
-        for ws in list(session.sockets):
-            try:
-                await ws.close(code=1008, reason="session_gone")
-            except Exception:
-                pass  # already disconnected — nothing left to tell it
-            session.sockets.discard(ws)
+        await asyncio.gather(*(SessionManager._close_one_socket(session, ws) for ws in list(session.sockets)))
+
+    @staticmethod
+    async def _close_one_socket(session: WebSession, ws, timeout: float = 2.0):
+        """Iterate-a-snapshot-and-discard lives in the caller; this does one socket only,
+        so a hang here (wait_for timeout) or a failure (already disconnected) never
+        stops its siblings from being attempted or discarded."""
+        try:
+            await asyncio.wait_for(ws.close(code=1008, reason="session_gone"), timeout=timeout)
+        except Exception:
+            pass  # already disconnected, or never acked in time — nothing left to tell it
+        # /ws's own finally: discards the same socket from its cleanup; Set.discard is idempotent.
+        session.sockets.discard(ws)
 
 
 @dataclass

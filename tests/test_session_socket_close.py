@@ -162,3 +162,36 @@ def test_one_dead_socket_does_not_strand_the_others():
         assert _wait_closed(good) == (1008, "session_gone")
     finally:
         _stop(loop, thread)
+
+
+def test_one_hung_socket_does_not_delay_the_others():
+    """A socket that never acks the close handshake -- e.g. a kiosk that lost its
+    network, exactly the scenario this whole change exists for -- must not delay
+    closing the rest of the room. A sequential `await ws.close()` per socket would
+    block on this one for its full timeout before ever reaching the next; closing
+    concurrently (each bounded by its own timeout) does not."""
+
+    class HangingSocket(FakeSocket):
+        def __init__(self):
+            super().__init__()
+            self._never = asyncio.Event()  # deliberately never set
+
+        async def close(self, code=1000, reason=None):
+            await self._never.wait()
+
+    manager = SessionManager(enable_engine=False)
+    loop, thread = _loop_in_thread(manager)
+    try:
+        session = _insert(manager)
+        hung, good = HangingSocket(), FakeSocket()
+        session.sockets.add(hung)
+        session.sockets.add(good)
+
+        manager.remove_session("s1")
+
+        assert _wait_closed(good, timeout=1.0) == (1008, "session_gone")
+        # Still within the per-socket close timeout (2s) -- if the good socket had to
+        # wait its turn behind the hung one, it would not be closed yet either.
+        assert hung.closed_with is None
+    finally:
+        _stop(loop, thread)

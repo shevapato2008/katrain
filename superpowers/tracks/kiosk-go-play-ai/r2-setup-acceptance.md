@@ -240,16 +240,35 @@ agent 的补充判据(已核):`src/components/NewGameDialog.tsx` 全仓只有
 
 ## 6. 回归核验
 
+**2026-09-21 合入 develop(165 个提交)之后重跑,基线换成 develop 本身。**
+基线在 `git worktree add` 出来的独立树上跑 —— 不是把本树切过去,那会在别人正要查树时
+把代码换掉。
+
 | 套件 | 结果 |
 |---|---|
-| 前端单测 | 1149 passed / 11 failed —— **11 条与基线(66c6825d)名字集合完全一致**,零新增 |
-| Python | 3743 passed / 98 failed —— **98 条与基线名字集合完全一致**,零新增 |
-| Playwright(开局设置相关 11 个 spec) | 与基线同为 10 条红,且两条「开局设置」由红转绿;零新增 |
+| 前端单测 | **2193 passed / 0 failed**(合并前那 11 条红继承自旧基点 `66c6825d`,develop 上已修) |
+| `tsc -b --force` | ✓ 干净 |
+| Python | 4052 passed / 101 failed + 41 errors —— **142 条与 develop 基线名字集合完全一致**,新增 0、消失 0 |
+| Playwright · 开局设置几何闸 | 6/6 过,数字见 §3 |
+| Playwright · 屏 02/03/04 四图 | 3/3 过 |
+| Playwright · `kiosk-shell-scroll` | 25 条里 3 条红(全是**摆谱**),**develop 上同样红、同一个选择器超时**;两条「开局设置」绿 |
+| Playwright · 升降级阻挡/版式 A 四个 spec | 18 条里 2 条红,**develop 上同样红**(详见下面「两条容易误判的红」) |
 | `npm run build` | ✓ |
 | `npm run build:kiosk-2d` | ✓ `verify:kiosk-2d` 边界干净 |
-| `kiosk-shell/MANIFEST.sha256` | 209/209 OK(`go-screens.css` 不在清单内,它是围棋自己的) |
-| eslint(改动的文件) | 1 条 —— `catch (e: any)`,`119fc1f2` 引入,基线里就有 |
-| `tests/test_rules_wire.py` / `test_kiosk_game_terms.py` | 13 条,**两条闸都做过变异实测**(见 §2.2 / §5 D3) |
+| `kiosk-shell/MANIFEST.sha256` | 293/294 —— `tokens.css` 对不上,**是 develop 带进来的**(`3f3798c6` 改了它没更清单,清单最后一次更新在 `156e38c7`)。没动,记在 §7。 |
+| eslint(本轮碰过的文件) | **0 条**。全树 91 条都在没碰过的文件里(develop 侧升级了插件)。 |
+| 四条跨层闸 | `test_rules_wire.py`(含新增的 config 自洽那条)· `test_kiosk_game_terms.py` · `kioskNewGameBoundary.test.ts` · `test_kiosk_setup_i18n.py`,**每条都做过变异实测** |
+
+### 两条容易误判的红
+
+`kiosk-ai-ladder-layout-a-geometry` 停在
+`getByRole('button', { name: '○ 白' }).click()` —— 「○ 白」正是本轮换掉的那种分段控件,
+**看起来百分之百是本轮造成的**。专门去 develop 独立树上量了一遍:同样红、同一行。
+结论相反。
+
+判据留在这里:**「这条红看起来和我的改动有关」不是证据,把基线跑出来才是。**
+反过来同样成立 —— §6 那 142 条 Python 红全在我没碰过的文件里,
+但那也不能当作「与我无关」的依据,一样是靠名字集合比对得出的。
 
 > 基线跑法的坑:新 worktree 里 `uv sync` 缺 `--extra web`,不加的话 pytest 在
 > collection 就全挂,`FAILED` 列表**静默为空**,一比就成了「全是新增」。
@@ -260,14 +279,51 @@ agent 的补充判据(已核):`src/components/NewGameDialog.tsx` 全仓只有
 
 ## 7. 没做 / 留给 Fan
 
-1. **i18n**:新键一律 `t(key, '中文默认')`,屏上是对的中文,但 11 语种没翻。
-   这三屏改版前的键(如 `setup:strength_value`)本来也没有翻译条目,状况不比之前差。
-2. **屏 04 底部「终局死活两人自己确认」是过期文案** —— `PvpLocalSetupPage.tsx`
-   自己的 docstring 写着它不成立(数子是引擎估算死活)。改它的那一版
-   (kiosk-local-play v2,HEAD `8107b138`)**还没并进这条分支**,不在本次范围,
-   动它会和那条赛道撞车。
-3. **仓里提交的 `katrain/config.json` 是 `komi: 7.5` + `rules: "japanese"`,自相矛盾**
-   (日本规则的惯例和 KataGo 默认都是 6.5)。最后一次动它的提交是 `6796fb87`
-   (七档着手评价),不是会改贴目的改动 ⇒ 很可能是跑测试写回去的漂移。没动。
-4. **板上没走**:RK3562 实机没验过。
-5. **没 push、没合、没部署** —— Fan 说了留给他。
+> **2026-09-21 第二轮**:Fan 点了四件(i18n / 合 kiosk-local-play v2 / config.json 贴目 /
+> 板上实测)。前三件已办完,下面把**办完的**和**仍然没办的**分开写。
+
+### 7.A 已办掉的(原来这一节记的)
+
+1. ~~**i18n**~~ → **三屏已补齐**。96 个 key × 11 语种 = 1056 条,闸在
+   `tests/web_ui/test_kiosk_setup_i18n.py`,变异实测三条分支各一次。
+   **但见 7.B-1:kiosk 全树还欠 863 个。**
+2. ~~**屏 04「终局死活两人自己确认」是过期文案**~~ → **合并带进来了**。
+   `e92f15a1`(F7 五处文案)已在 develop 上,现在这条分支里是
+   「自动数子,死活按引擎判断」。那条「动它会和 kiosk-local-play 撞车」的顾虑
+   **前提已经不成立**:v2 的 `8107b138` 早就合进 develop 并 push 了,
+   是我那条记录过期了。
+3. ~~**`katrain/config.json` 自相矛盾**~~ → **已改回 `komi: 6.5`**(`b0acc6bc`)。
+   查史:6.5 从 2024 年一直到 2026-02,`f06440c4`(2026-07-08 的一次 merge)
+   把它变成 7.5 而没动 rules。
+   **这个 bug 不在开局设置三屏上** —— 那三屏的贴目全由前端 `resolveGameTerms` 算完
+   再送,日本规则恒 6.5,config 根本不参与。它伤的是**任何不显式送 komi/rules 的
+   建局**:实测会话初始局改前是 `KM=7.5 RU=japanese`,`get_state()` 报
+   `komi 7.5 / ruleset japanese`。更要紧的是这份包内 config 首次运行时会被**整份
+   复制**成 `~/.katrain/config.json` —— 盒子上那份就是它。
+   闸:`test_packaged_config_default_rules_and_komi_agree`,只认「这一对自洽」,
+   不钉死具体数值(想改成中国规则 7.5 是正当的,连着改两个值就行)。
+
+### 7.B 仍然没办的
+
+1. **kiosk 全树还有 863 个界面字符串没进 .po**。全树 1174 个 key,959 个在 `en.po`
+   里不存在;本轮补掉其中 96 个(三屏 + 共用件),**剩 863**。
+   用户后果说清楚:设置里那个语言下拉**是真的能切 11 种**
+   (`SettingsPage.tsx:325`),但 `i18n.t()` 查不到就回退到 `t(key, '中文默认')` 的
+   第二个参数 —— **那是中文**。所以今天切到韩文,三屏对了,其余二十几屏全是中文。
+   **这意味着本轮这 96 个key在产品上暂时看不出效果**,要等全树补完才成立。
+   这是一条独立赛道的量,不该塞进这条分支。
+2. **`setup:note_r2_a/b/c/d` + `note_h` 是拆成五段拼起来的一句话**,拼接顺序写死在
+   JSX 里而各语种语序不同。这五条的译法是在「顺序不能动」的约束下选的,生硬。
+   真要修得把它改成一条带标记的整句 —— 那会同时动到屏 04 的 `note3_a..j`(十段)。
+3. **`kiosk-shell/MANIFEST.sha256` 与 `tokens.css` 对不上**。develop 的 `3f3798c6`
+   改了 `tokens.css`(加了 `.kiosk-pagebar__iconbtn--labeled` 那一组)没更清单。
+   **develop 自己的树上同样 FAILED**,不是合并造成的。没动:那份清单是
+   kiosk-shell 规范的契约,改它该由那条赛道来,盲改一个哈希等于把闸关掉。
+4. **摆谱三条 `kiosk-shell-scroll` 红**(`waitForSelector('[data-testid="baipu-pcard"]')`
+   超时)。develop 上同样红、同一行;`BaipuSessionPage.tsx` 两边逐字节相同。
+   和缺口账本里那条 P0「摆谱死页」对得上,归那条赛道。
+5. **板上没走**:RK3562 实机没验过。Fan 说稍后接入再测。
+   板上要注意一件事:`.mo` 是 `.gitignore` 掉的,只有 `Dockerfile.web` 里那行
+   `python3 i18n.py` 会生成。**盒子若不是从容器起的,就没有任何语种的译文** ——
+   不只是这一轮补的,是全部。`lang.py` 会往 stderr 打一行说明,屏上静默退回 msgid。
+6. **没 push、没合、没部署** —— Fan 说等前面几件办完再议。

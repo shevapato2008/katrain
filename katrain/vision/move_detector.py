@@ -44,7 +44,20 @@ from katrain.vision.board_state import EMPTY
 # per 300 frames) for a cell that keeps producing candidates, so such a cell stays
 # suspect indefinitely — that is now fine, because the only cost of staying suspect is
 # a confirmation tap, never a lost move.
+#
+# Fix round 1 (review Finding 5) — when the abandon signal is charged, corrected. The
+# round-0 brief said this penalty moved into the aging loop "charged on exactly the same
+# event". It is the same event DELAYED. The pre-L1 code charged the pending cell the
+# instant a diff at a different cell displaced it; the aging loop charges it only after
+# miss_grace + 1 consecutive absent frames — 3 frames on the device (miss_grace=2), about
+# 1.3 s at the measured 2.3 fps. The direction is therefore a strictly WEAKER L2 than the
+# code it replaces, and that is accepted: the displacement charge existed only because a
+# single shared candidate slot let one cell destroy another, which is the starvation bug
+# L1 removes, and it fell on whichever cell LOST that slot — a real stone displaced by a
+# phantom flashing beside it got charged exactly as readily as the phantom did, which is
+# F2's shape, not F1's.
 SUSPICION_ABANDON = 1  # became a candidate, then vanished without confirming
+SUSPICION_CARDED = 1  # confirmed, but too weak for the caller to play without asking
 SUSPICION_THRESHOLD = 3  # at or above this, the cell is suspect
 SUSPICION_DECAY_FRAMES = 300  # every N frames every cell loses a point
 SUSPECT_CONFIDENCE_BONUS = 0.25  # extra the ambiguous gate demands from a suspect cell (workers only)
@@ -116,6 +129,28 @@ class MoveDetector:
         leader = self._leader()
         return 0 if leader is None else self._candidates[leader]["count"]
 
+    @property
+    def about_to_confirm(self) -> bool:
+        """True on the frame whose successor can confirm the leading candidate.
+
+        This replaces ``pending_move is not None`` at the two worker sites that used it
+        as a MUTE (the stuck-stone promoter, and software AE actuation). Since L1,
+        every changed cell is its own candidate, so ``pending_move is not None`` goes
+        true the moment ANY cell lights up anywhere on the board and — with two cells
+        lit at once — effectively never goes false again: over 200 modelled frames with
+        two persistently-lit sub-gate cells (the 2026-09-20 shape: phantom (18,13) plus
+        R18 (1,16) stuck 71 s) it was open 1/200 frames, against 199/200 before L1. A
+        permanent mute on the promoter removes the only route a sub-add real stone has
+        to the user, which is the measured F2 casualty this plan exists to fix.
+
+        The leader's COUNT is bounded where its existence is not: a candidate confirms
+        and is deleted at consistency_frames, so ``count`` cycles instead of latching.
+        Open-rate with this predicate, same 200-frame runs: no phantom 87% (unchanged),
+        one permanent phantom 80%, two persistent staggered 60%, two persistent in a D6
+        exact tie 100%, three persistent staggered 41% — never near zero.
+        """
+        return self.count == self.consistency_frames - 1
+
     def _penalize(self, cell: tuple[int, int], points: int) -> None:
         self._suspicion[cell] = self._suspicion.get(cell, 0) + points
 
@@ -132,6 +167,32 @@ class MoveDetector:
                 del self._suspicion[cell]
             else:
                 self._suspicion[cell] -= 1
+
+    def charge_carded_confirmation(self, row: int, col: int) -> None:
+        """Charge a cell whose confirmation the caller would not auto-play.
+
+        SUSPICION_ABANDON is charged only in the aging loop, so a cell that keeps
+        REACHING consistency_frames is charged nothing however often it lies — L2's
+        one signal is absent from exactly the profile that injects. Modelled on the
+        2026-09-20 device profile (5 confirm frames, miss_grace 2, ~2.3 fps, the
+        (18,13) phantom at 13 lit / 13 dark frames), adding this signal moved the cell
+        across SUSPICION_THRESHOLD at frame 16 instead of frame 68, and under heavy
+        board churn at frame 16 instead of frame 120.
+
+        D4 vetoed charging repeat confirmations; that veto still holds for the
+        AUTO-PLAYED ones and this method must never be called on that branch. Charging
+        the CARDED ones is free for a real stone by construction: is_suspect() has
+        exactly two consumers (the two workers' ambiguous routing gate), its only
+        effect is a constant SUSPECT_CONFIDENCE_BONUS on that gate, and that gate's
+        else-branch is the card. A cell charged here was ALREADY being carded, so the
+        charge cannot change where its stone goes — only whether a later, stronger
+        sighting at the same cell auto-plays or asks. Measured over 400-frame games:
+        with real peaks in the device's measured 0.55-0.80 band no cell is ever
+        charged at all; with every real peak forced below the 0.42 gate, two cells do
+        cross the threshold and the number of stones that reach the user is identical
+        with and without this signal.
+        """
+        self._penalize((row, col), SUSPICION_CARDED)
 
     def suspicion_of(self, row: int, col: int) -> int:
         """Accumulated evidence that this intersection produces candidates that are not moves."""
@@ -274,12 +335,34 @@ class MoveDetector:
 
         ready.sort(key=lambda k: (-self._candidates[k]["count"], self._candidates[k]["first_seen"]))
         move = ready[0]
-        if len(ready) > 1:
-            runner_up = ready[1]
-            lead, second = self._candidates[move], self._candidates[runner_up]
-            if lead["count"] == second["count"] and lead["first_seen"] == second["first_seen"]:
-                # Two stones that appeared on the same frame and advanced in lockstep is
-                # genuine ambiguity, not a phantom beside a real stone. Emit nothing.
+        # D6: two stones that appeared on the SAME frame and advanced in lockstep is
+        # genuine ambiguity, not a phantom beside a real stone. Emit nothing.
+        #
+        # Fix round 1 (review Finding 2) moved this off `ready`. The old form compared
+        # ready[0] against ready[1] only, and was bypassed outright whenever the fast
+        # path was active: only `fast_cell` clears `fast_needed`, so the tied cell never
+        # entered `ready`, `len(ready) == 1`, and the block did not run. Measured with
+        # consistency_frames=5, miss_grace=2, required_frames=3, two cells lit on the
+        # same frame in lockstep: [None, None, (18,13,W), (2,10,W)] — BOTH confirmed,
+        # one frame apart, the winner decided by set-iteration order inside _leader()'s
+        # min(). Finding 7: that form also had an unstated dependency, that `ready.sort`
+        # is a STABLE sort on the same key, so exactly-tied entries are adjacent and
+        # comparing the top two covered 3+ candidates; changing the sort would have
+        # broken D6 silently.
+        #
+        # What this loop depends on instead: `ready` is built from `current`, so `move`
+        # is in `current`; and the tie is searched over `current` — the cells actually
+        # advancing THIS frame — never over `self._candidates`. That is deliberate, not
+        # incidental. A miss-graced candidate is absent this frame and so is by
+        # definition not advancing in lockstep with anyone; blocking the leader on its
+        # account would silently lose a real move, which is F2 and strictly worse than
+        # the ambiguity this rule guards against.
+        lead = self._candidates[move]
+        for key in current:
+            if key == move:
+                continue
+            cand = self._candidates[key]
+            if cand["count"] == lead["count"] and cand["first_seen"] == lead["first_seen"]:
                 return None
 
         # Baseline deliberately NOT advanced (see class docstring): the caller

@@ -323,7 +323,19 @@ class TestPerCellCandidates:
 
     def test_exact_tie_confirms_nothing(self):
         """Two stones appearing on the SAME frame and advancing in lockstep is genuine
-        ambiguity, not a phantom beside a real stone — emit nothing (unchanged)."""
+        ambiguity, not a phantom beside a real stone — emit nothing.
+
+        Second half added in fix round 1 (review Finding 2): D6 used to be written over
+        `ready`, and on the FAST path only `fast_cell` ever reaches `ready`, so
+        `len(ready) == 1` and the rule never executed. Measured before the fix with
+        consistency_frames=5, miss_grace=2, required_frames=3: the same lockstep pair
+        produced [None, None, (18,13,W), (2,10,W)] — BOTH stones confirmed, one frame
+        apart, the winner decided by set-iteration order inside _leader()'s min().
+
+        Mutation proven in a disposable worktree: reverting the tie check to the old
+        `if len(ready) > 1:` / `ready[1]` form turns the second half red on frame 3
+        (`assert (3, 3, 1) is None`) while the first half stays green.
+        """
         d = MoveDetector(consistency_frames=3, miss_grace=2)
         empty = self._empty()
         d.detect_new_move(empty)
@@ -332,6 +344,121 @@ class TestPerCellCandidates:
         two[4][4] = WHITE
         for _ in range(5):
             assert d.detect_new_move(two) is None
+
+        # Fast path: the caller measured a >=0.70 peak on whichever cell was leading and
+        # passes required_frames=3. The tie is still a tie — emit nothing.
+        fast = MoveDetector(consistency_frames=5, miss_grace=2)
+        fast.force_sync(empty)
+        for _ in range(6):
+            assert fast.detect_new_move(two, required_frames=3) is None
+
+    def test_a_miss_graced_tied_candidate_does_not_block_the_leader(self):
+        """The D6 tie is searched over THIS frame's diffs, never over all candidates.
+
+        A candidate absent this frame is not advancing in lockstep with anyone, and
+        blocking the leader on its account would silently drop a real move — F2, which
+        this plan rates strictly worse than the phantom D6 guards against.
+
+        Reaching this state needs THREE cells, and that is not incidental: with only two
+        cells it is unreachable, because a candidate that reaches its own `needed` while
+        present either confirms (and is deleted) or is blocked by a tie it is still
+        advancing in lockstep with. Enumerating every presence pattern of two same-frame
+        cells up to 8 frames, for 8 (consistency_frames, miss_grace, required_frames)
+        combinations, produced ZERO cases where the two loop forms differ. A third cell
+        is what lets the tied one survive its own ready frame:
+
+            cf=2, mg=2, all three first seen on frame 1
+            f1 {real, phantom, other} -> all count 1                      -> None
+            f2 {phantom, other}       -> real miss 1; phantom=2, other=2  -> None (D6 tie)
+            f3 {other}                -> real miss 2 (graced), phantom miss 1;
+                                         other=3 confirms alone and is deleted
+            f4 {real}                 -> phantom miss 2 (graced), FROZEN at count 2 /
+                                         first_seen 1; real reaches count 2 /
+                                         first_seen 1 -> an exact tie NOT in `current`
+
+        Mutation proven in a disposable worktree: `for key in current:` ->
+        `for key in self._candidates:` turns frame 4 red (`assert None == (2, 10, 2)`)
+        — the real stone is silently lost while the phantom sits frozen.
+        """
+        d = MoveDetector(consistency_frames=2, miss_grace=2)
+        empty = self._empty()
+        d.force_sync(empty)
+
+        real = (2, 10, WHITE)
+        phantom = (18, 13, WHITE)
+        other = (5, 5, BLACK)
+
+        def board(*cells):
+            b = empty.copy()
+            for r, c, color in cells:
+                b[r][c] = color
+            return b
+
+        assert d.detect_new_move(board(real, phantom, other)) is None
+        assert d.detect_new_move(board(phantom, other)) is None
+        assert d.detect_new_move(board(other)) == other
+        assert d.detect_new_move(board(real)) == real
+
+    def test_two_lockstep_cells_deadlock_until_one_of_them_drops_out(self):
+        """KNOWN RESIDUAL, documented not fixed (decision-L1-net-gap §4, spec §5).
+
+        Two cells that light up on the same frame and never blink produce ZERO
+        confirmations while their counts grow without bound: every frame the leader ties
+        exactly with the other, so D6 emits nothing. It is pre-existing — 2545a061's
+        whole-board hard reset produced the same zero for the same input — and it
+        self-heals on the FIRST frame in which only one of the two is present, because
+        the tie is searched over that frame's diffs. Fixing it would mean an escape
+        hatch that injects one of two mutually-contradictory stones, which is a new
+        silent-injection path into the exact code this branch is hardening.
+
+        Mutation proven in a disposable worktree: deleting the D6 tie check entirely
+        turns this red on frame 3. Reverting the check to the old `ready[1]` form leaves
+        it GREEN, which is what shows the deadlock is not something fix round 1
+        introduced.
+        """
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        empty = self._empty()
+        d.force_sync(empty)
+        both = empty.copy()
+        both[2][10] = WHITE
+        both[18][13] = WHITE
+        only_real = empty.copy()
+        only_real[2][10] = WHITE
+
+        for _ in range(12):
+            assert d.detect_new_move(both) is None
+        assert d.count == 12  # counts grow unbounded; nothing is ever emitted
+
+        assert d.detect_new_move(only_real) == (2, 10, WHITE)
+
+    def test_the_leader_is_the_older_of_two_equal_streak_candidates(self):
+        """_leader() decides pending_move (the cell the workers measure the confidence
+        peak on, and the cell the "确认中" chip names) and fast_cell (who gets the
+        shortcut). D8 exists precisely because those two orderings must agree — and
+        until fix round 1 only the `ready.sort` half was pinned: negating first_seen
+        inside _leader() left all 52 tests green (review Finding 3).
+
+        Mutation proven in a disposable worktree: `first_seen` -> `-first_seen` inside
+        _leader() ONLY turns this red (`assert (18, 13, 2) == (2, 10, 2)`). Nothing here
+        confirms, so the `ready.sort` key is not involved.
+        """
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        empty = self._empty()
+        d.force_sync(empty)
+
+        real_only = empty.copy()
+        real_only[2][10] = WHITE  # first_seen = 1
+        phantom_only = empty.copy()
+        phantom_only[18][13] = WHITE  # first_seen = 2
+        both = real_only.copy()
+        both[18][13] = WHITE
+
+        d.detect_new_move(real_only)  # real=1
+        d.detect_new_move(phantom_only)  # real absent (miss 1, graced); phantom=1
+        d.detect_new_move(both)  # real=2, phantom=2 -> equal counts, different first_seen
+
+        assert d.count == 2
+        assert d.pending_move == (2, 10, WHITE)
 
     def test_the_older_candidate_wins_a_streak_tie(self):
         """Equal streaks, different first-seen frames -> the one that has been waiting
@@ -426,6 +553,77 @@ class TestPerCellCandidates:
         leftover[3][3] = BLACK
         for _ in range(8):
             assert d.detect_new_move(leftover, ignore_cells={(3, 3)}) is None
+
+
+class TestAboutToConfirm:
+    """The workers need a BOUNDED "a confirmation is imminent" predicate.
+
+    Before L1 they used `pending_move is not None`, which meant "a move is being
+    confirmed". Since L1 every changed cell is its own candidate, so that predicate goes
+    true the moment ANY cell lights up anywhere and, with two cells lit at once, never
+    goes false again — a permanent mute on the stuck-stone promoter (the only route a
+    sub-add-confidence real stone has to the user) and on software AE actuation."""
+
+    def _empty(self):
+        return np.zeros((19, 19), dtype=int)
+
+    def test_true_only_on_the_frame_before_the_confirming_one(self):
+        """Mutation proven in a disposable worktree: `== self.consistency_frames - 1` ->
+        `> 0` turns this red at count 1."""
+        d = MoveDetector(consistency_frames=5, miss_grace=2)
+        empty = self._empty()
+        d.force_sync(empty)
+        assert d.count == 0
+        assert d.about_to_confirm is False  # no candidates at all
+
+        stone = empty.copy()
+        stone[2][10] = WHITE
+        for expected_count in (1, 2, 3):
+            d.detect_new_move(stone)
+            assert d.count == expected_count
+            assert d.about_to_confirm is False
+
+        d.detect_new_move(stone)
+        assert d.count == 4  # consistency_frames - 1
+        assert d.about_to_confirm is True
+
+        assert d.detect_new_move(stone) == (2, 10, WHITE)
+        assert d.count == 0  # the candidate confirmed and was deleted
+        assert d.about_to_confirm is False
+
+    def test_two_persistently_lit_cells_do_not_mute_forever(self):
+        """THE load-bearing one. Modelled on 2026-09-20: the (18,13) phantom lit 405 s
+        cumulative next to R18 (1,16) stuck 71 s. The second assertion is what documents
+        why this property exists at all — without it the test would be satisfied by the
+        predicate it replaces.
+
+        This pair is also the D6 exact-tie deadlock (see
+        test_two_lockstep_cells_deadlock_until_one_of_them_drops_out), so their counts
+        climb past consistency_frames and never cycle: `about_to_confirm` is true on
+        exactly the one frame where count == 4, while `pending_move is not None` is true
+        on all 40.
+
+        Mutation proven in a disposable worktree: `return self.count ==
+        self.consistency_frames - 1` -> `return self.pending_move is not None` (the
+        predicate this replaces) turns this red — 0 open frames out of 40."""
+        d = MoveDetector(consistency_frames=5, miss_grace=2)
+        empty = self._empty()
+        d.force_sync(empty)
+        two_lit = empty.copy()
+        two_lit[18][13] = WHITE
+        two_lit[1][16] = WHITE
+
+        open_frames = 0
+        pending_none_frames = 0
+        for _ in range(40):
+            d.detect_new_move(two_lit)  # no force_sync: nothing downstream accepts these
+            if not d.about_to_confirm:
+                open_frames += 1
+            if d.pending_move is None:
+                pending_none_frames += 1
+
+        assert open_frames > 20  # more than half of 40
+        assert pending_none_frames <= 1  # the predicate this replaces is muted throughout
 
 
 class TestCallerOwnedBaseline:
@@ -714,3 +912,55 @@ class TestCellReputation:
             self._flash_once(d, empty, flashed, miss_grace=2)
         d.force_sync(empty)
         assert d.is_suspect(18, 13)
+
+    def test_three_carded_confirmations_make_a_cell_suspect(self):
+        """Fix round 1, decision 1. SUSPICION_ABANDON is charged only in the aging loop,
+        so a cell that keeps REACHING consistency_frames is charged nothing however often
+        it lies — L2's one signal is absent from exactly the profile that injects. The
+        second charged signal is "the caller would not auto-play this confirmation".
+        Modelled on the 2026-09-20 device profile it crosses SUSPICION_THRESHOLD at frame
+        16 instead of frame 68.
+
+        Mutation proven in a disposable worktree: `SUSPICION_CARDED = 1` -> `0` turns
+        this red on the first charge (`assert 0 == 1`)."""
+        d = MoveDetector(consistency_frames=5, miss_grace=2)
+        assert d.suspicion_of(18, 13) == 0
+
+        d.charge_carded_confirmation(18, 13)
+        assert d.suspicion_of(18, 13) == 1
+        assert not d.is_suspect(18, 13)
+
+        d.charge_carded_confirmation(18, 13)
+        assert d.suspicion_of(18, 13) == 2
+        assert not d.is_suspect(18, 13)  # NOT on the second
+
+        d.charge_carded_confirmation(18, 13)
+        assert d.suspicion_of(18, 13) == 3
+        assert d.is_suspect(18, 13)  # on the third
+
+    def test_a_suspect_cell_still_confirms_on_the_same_frame_count(self):
+        """The round-1 invariant, restated for the new signal: being suspect must never
+        touch detect_new_move's return value, because that return sits upstream of BOTH
+        auto-play and the confirmation card — a suspect cell that could not assemble the
+        count would confirm NOWHERE, which is silent permanent loss (F2). Being suspect
+        may only convert an auto-play into a tap, in the workers, after this returns.
+
+        Mutation proven in a disposable worktree: reintroducing a frame-count penalty in
+        detect_new_move's ready loop (`if self.is_suspect(key[0], key[1]): needed *= 2`)
+        turns this red — the suspect detector returns None where the honest one confirms.
+        """
+        suspect = MoveDetector(consistency_frames=3, miss_grace=2)
+        honest = MoveDetector(consistency_frames=3, miss_grace=2)
+        for _ in range(SUSPICION_THRESHOLD):
+            suspect.charge_carded_confirmation(18, 13)
+        assert suspect.is_suspect(18, 13)
+        assert not honest.is_suspect(18, 13)
+
+        empty, flashed = self._boards()
+        suspect.force_sync(empty)
+        honest.force_sync(empty)
+        suspect_results = [suspect.detect_new_move(flashed) for _ in range(3)]
+        honest_results = [honest.detect_new_move(flashed) for _ in range(3)]
+
+        assert suspect_results == honest_results
+        assert suspect_results == [None, None, (18, 13, WHITE)]

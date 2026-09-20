@@ -56,7 +56,8 @@ interface AiPlacementStatus {
 // gating) and the AI-placement status effect below (G2 fix). `platform_engine_color`
 // (Task 1: WebKaTrain state field, "B"|"W"|null = the remote engine's color) is
 // authoritative for engine games (Golaxy 人机对弈 via the genmove tunnel) — BOTH
-// seats carry a bare "human" player_type literal there (session.py:80/82), so the
+// seats carry a bare "human" player_type literal there (`create_multiplayer_session`'s
+// two update_player calls in session.py), so the
 // player_type-based checks below can't tell which seat is the AI. Absent/null in
 // every other game shape (local HvAI, PVP, multiplayer) — falls through unchanged.
 // eslint-disable-next-line react-refresh/only-export-components
@@ -87,7 +88,7 @@ const readScreenFallback = (key: string): boolean => {
 // Single-owner AI-turn arbitration (state A source for B1.4). Exported as a pure
 // function so it's unit-testable without rendering the page, and so B1.4 can reuse it.
 // Per-color AI detection — accept BOTH literals: 'player:ai' (kiosk HvAI, server.py:723/727)
-// AND bare 'ai' (multiplayer session.py:80/82 + tests), PLUS the engine's color per
+// AND bare 'ai' (multiplayer `create_multiplayer_session` + tests), PLUS the engine's color per
 // `platform_engine_color` (G2 fix — engine games carry bare "human" on both seats, so
 // the literal checks alone can't find the AI seat there). Do NOT infer AI from "the
 // non-human color". Pure helper co-located here (not split into a new file) for unit
@@ -816,8 +817,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 本地对局「退出不保存」。这是 pvp_local 唯一的出口，所以 DELETE 失败也照样离开 ——
   // 删不掉时服务端状态和「卡住不让走」时完全一样(会话都还挂在进程里)，攥着用户不放清理不出
   // 任何东西，只是把 R1 那个「服务端调用失败 = 出不去」的陷阱换个触发点重演一遍。best-effort
-  // 发出去就算数：server.py:1019-1031 只做 end_session + remove_session，session.py:185-188
-  // 弹出字典、停引擎；api.ts:366-368 这条请求本来就不持久化任何东西，所以退出弹层那句
+  // 发出去就算数：`delete_session`(server.py)只做 end_session + remove_session，
+  // `SessionManager.remove_session` 弹出字典、停引擎；`API.deleteSession` 这条请求本来就不持久化
+  // 任何东西，所以退出弹层那句
   // 「这局还没下完，退出后不会保存」依旧成立。孤儿会话不可见也会自愈：clearActiveSession('game')
   // 杀掉「继续上一局」指针，pvp_local 从不出现在 /api/v1/games/active/multiplayer 里，
   // cleanup_expired 在 SESSION_TIMEOUT(3600s) 后照常回收它。

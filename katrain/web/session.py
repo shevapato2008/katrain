@@ -235,8 +235,9 @@ class SessionManager:
 
         Socket close lives HERE, not in cleanup_expired, because this method is the one
         thing all three eviction paths share: cleanup_expired's periodic sweep, and
-        create_session's two capacity paths (session.py:73 and :87), which never go
-        through cleanup_expired at all.
+        create_session's two capacity branches — the in-lock refusal (still over the limit
+        after a sweep, raises "Session limit reached") and the post-eviction one that runs
+        after the lock is released — neither of which goes through cleanup_expired at all.
 
         `close` 是那两种含义里的哪一种(见 `SOCKET_CLOSE_SESSION_GONE`)。默认取**正常关闭**:
         三条回收路径都在本文件里、都显式传 `SOCKET_CLOSE_SESSION_GONE`,而将来从外面接进来的
@@ -383,8 +384,8 @@ class SessionManager:
         neither awaits nor blocks — but it is not always made outside self._lock: the
         socket-close WORK runs on the loop in every case (that part follows
         _schedule_broadcast's thread discipline), while the scheduling call itself is
-        made *under* self._lock on create_session's capacity-limit branch
-        (session.py:73). Don't add anything blocking to this method — a
+        made *under* self._lock on create_session's in-lock capacity refusal (the branch
+        that raises "Session limit reached"). Don't add anything blocking to this method — a
         `future.result()`, a metrics call, a synchronous log flush — or that branch
         reproduces the production lock queue `_cleanup_locked`'s docstring records.
         """

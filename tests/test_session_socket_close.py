@@ -4,9 +4,11 @@ Without this the browser keeps a live socket to a session that no longer exists,
 `connectionLost` never flips and the kiosk cannot tell a dead game from a live one.
 Measured on RK3562 2026-09-20 — see the spec's section 3.
 
-The capacity path is covered deliberately: create_session evicts and shuts down WITHOUT
-going through cleanup_expired (session.py:65-87), so a fix that only touches the
-periodic sweep misses it entirely.
+The capacity path is covered deliberately: `create_session` evicts and shuts down WITHOUT
+going through `cleanup_expired`, so a fix that only touches the periodic sweep misses it
+entirely. Both of its capacity branches are driven **through `create_session` itself** —
+passing `close=` from the test would only prove that `_shutdown_all` forwards its argument,
+and would leave the branches free to drop the kwarg and silently take the default.
 
 **而 `session_gone` 只属于「盒子把这一局忘了」那几条路。** 有意收尾(认输离开 / 登出判负 /
 删除会话 / 开局失败回滚)走正常关闭 —— 拿 `session_gone` 关一局刚刚正常结束的棋,赢的那一方
@@ -16,6 +18,8 @@ periodic sweep misses it entirely.
 import asyncio
 import threading
 import time
+
+import pytest
 
 from katrain.web.session import SOCKET_CLOSE_SESSION_CLOSED, SessionManager, WebSession
 
@@ -115,7 +119,8 @@ def test_a_forfeit_teardown_leaves_the_winner_with_a_result_not_a_gone_signal():
         code, reason = _wait_closed(winner)
         assert reason != "session_gone"
         assert (code, reason) == SOCKET_CLOSE_SESSION_CLOSED
-        # 结论先到、关闭后到 —— 同一条 socket,同一个 loop 队列,顺序是 FIFO。
+        # 顺序是这个测试自己摆的,所以这一条**不能**算「端点的先后被覆盖了」。它钉的是另一件事:
+        # 正常关闭不会把已经排进同一条 loop 队列的广播吞掉,赢家确实收到了结论。
         assert [msg["type"] for msg in winner.sent] == ["game_end"]
     finally:
         _stop(loop, thread)
@@ -140,24 +145,52 @@ def test_idle_expiry_closes_its_sockets_and_still_stops_the_engine():
 
 
 def test_capacity_eviction_closes_its_sockets():
-    """create_session evicts via _cleanup_locked + _shutdown_all and NEVER calls
-    cleanup_expired (session.py:65-87). A fix placed only in the periodic sweep misses
-    this path, leaving the socket open forever."""
+    """`create_session` 的**后一条**名额分支(腾出位子之后、在锁外关掉被挤走的那些)。
+
+    它不经过 `cleanup_expired`,所以只改周期清扫的修法漏掉这一条,socket 会永远开着。
+    这里调的是真的 `create_session` —— 从测试里传 `close=` 只能证明 `_shutdown_all` 会转发
+    参数,分支本身改成默认值也照样是绿的。"""
     manager = SessionManager(session_timeout=0, max_sessions=1, enable_engine=False)
     loop, thread = _loop_in_thread(manager)
+    fresh = None
     try:
         stale = _insert(manager, "stale")
         sock = FakeSocket()
         stale.sockets.add(sock)
         stale.last_access = time.time() - 10
 
-        # Drive the same two calls create_session makes, without building an engine.
-        with manager._lock:
-            evicted = manager._cleanup_locked()
-        manager._shutdown_all(evicted, close=(1008, "session_gone"))
+        fresh = manager.create_session()  # 名额满 ⇒ 先挤掉 stale,再建这一局
 
-        assert evicted and evicted[0].session_id == "stale"
+        assert "stale" not in manager._sessions
+        assert fresh.session_id in manager._sessions
         assert _wait_closed(sock) == (1008, "session_gone")
+        assert stale.katrain.shutdown_calls == 1
+    finally:
+        if fresh is not None:
+            manager.remove_session(fresh.session_id)
+        _stop(loop, thread)
+
+
+def test_capacity_refusal_closes_sockets_before_it_gives_up():
+    """`create_session` 的**前一条**名额分支:腾过位子之后仍然超额,于是关掉已经摘出来的那些
+    并拒绝建局。这一条在 `self._lock` **里面**调关闭(所以那个调用必须是非阻塞的),而且
+    它抛异常 —— 谁把这里的关闭漏掉,被挤走的人手里就留着一条通向不存在会话的活 socket。"""
+    manager = SessionManager(session_timeout=3600, max_sessions=1, enable_engine=False)
+    loop, thread = _loop_in_thread(manager)
+    try:
+        # 两局塞进字典(`_insert` 不走 create_session,所以不受名额限制),其中一局过期。
+        # 清掉过期那一局之后还剩 1 局、名额也是 1 ⇒ 仍然超额,走前一条分支。
+        stale = _insert(manager, "stale")
+        stale.last_access = time.time() - 7200
+        sock = FakeSocket()
+        stale.sockets.add(sock)
+        _insert(manager, "live")
+
+        with pytest.raises(RuntimeError, match="Session limit reached"):
+            manager.create_session()
+
+        assert _wait_closed(sock) == (1008, "session_gone")
+        assert stale.katrain.shutdown_calls == 1
     finally:
         _stop(loop, thread)
 

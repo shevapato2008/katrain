@@ -52,6 +52,9 @@ class MockWebSocket {
 }
 
 const minimalState = (): GameState => ({ game_id: 'g1', current_node_id: 1 }) as GameState;
+const finishedState = (): GameState => ({ game_id: 'g1', current_node_id: 9, end_result: 'B+R' }) as GameState;
+const nextGameState = (): GameState => ({ game_id: 'g2', current_node_id: 1 }) as GameState;
+const update = (state: GameState) => ({ data: JSON.stringify({ type: 'game_update', state }) } as MessageEvent);
 
 describe('the session-is-gone signal', () => {
   // The session can be discovered gone three different ways. A fix that handles one
@@ -156,13 +159,28 @@ describe('the session-is-gone signal', () => {
     act(() => result.current.setSessionId('session-1'));
     await waitFor(() => expect(sockets).toHaveLength(1));
 
-    act(() => sockets[0].onmessage?.({
-      data: JSON.stringify({ type: 'game_end', data: { reason: 'forfeit', winner_id: 7 } }),
-    } as MessageEvent));
+    act(() => sockets[0].onmessage?.(update(finishedState())));
     act(() => sockets[0].onclose?.({ code: 1008, reason: 'session_gone', wasClean: true }));
 
-    expect(result.current.gameEndData).toEqual({ reason: 'forfeit', winner_id: 7 });
+    expect(result.current.gameState?.end_result).toBe('B+R');
     expect(result.current.connectionLost).toBeNull();
     expect(result.current.error).toBeNull();
+  });
+
+  it('flags gone again once a NEW game is under way on the same hook', async () => {
+    // 上一条的反面,也是「有结果了」这个标志必须**能回到 false** 的理由:galaxy 的
+    // GameRoomPage 在同一个挂载的 hook 上换 sessionId,页内再来一局之后,新这一局真正
+    // 被回收了就必须照常报警。标志取自 state 的 end_result ⇒ 新局的 state 不带它,自己归零。
+    vi.mocked(API.getState).mockResolvedValue({ session_id: 'session-1', state: minimalState() });
+    vi.stubGlobal('WebSocket', MockWebSocket);
+    const { result } = renderHook(() => useGameSession({ token: 'token-1' }));
+    act(() => result.current.setSessionId('session-1'));
+    await waitFor(() => expect(sockets).toHaveLength(1));
+
+    act(() => sockets[0].onmessage?.(update(finishedState())));
+    act(() => sockets[0].onmessage?.(update(nextGameState())));
+    act(() => sockets[0].onclose?.({ code: 1008, reason: 'session_gone', wasClean: true }));
+
+    expect(result.current.connectionLost).toBe('gone');
   });
 });

@@ -515,7 +515,7 @@ const LobbyPage = () => {
               {/* 稿子写「不接受就一直挂着 —— 邀请没有期限」,两半都不成立:
                   后端没有 decline,这颗「拒绝」只关掉本地这个窗;
                   🔴 而「没有期限」**已经被我们自己 2026-08-25 那次提交证伪** ——
-                  `LobbyManager.INVITE_TTL_SECONDS = 120`(`session.py:369`)。
+                  `LobbyManager.INVITE_TTL_SECONDS = 120`(`session.py`)。
                   屏上那句话不会自己跟着改,所以这是**过期的不是注释,是屏上的句子**。 */}
               <span className="wdlg__tc">{t('lobby:invite_no_decline', '拒绝只关掉这个窗 —— 对面收不到回音;邀请 2 分钟后失效')}</span>
             </div>

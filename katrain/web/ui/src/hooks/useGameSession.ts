@@ -58,9 +58,12 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const [awaitingRemovalReminder, setAwaitingRemovalReminder] = useState<{ row: number; col: number } | null>(null);
 
     const wsRef = useRef<WebSocket | null>(null);
-    /* 「这一局已经有结果了」的同步镜像。`ws.onclose` 的闭包建于**建连那一刻**,读不到后来的
-       state;而服务端广播 `game_end` 与随后关掉 socket 之间只隔几毫秒,等 React 冲刷 effect
-       已经来不及 —— 所以 `game_end` 到达时就地置位,effect 只负责跟随(含开新局时归零)。 */
+    /* 「这一局已经有结果了」。要 ref 是因为 `ws.onclose` 的闭包建于**建连那一刻**,直接读
+       `gameState` 读到的是那一刻的值。来源只取 state 里的 `end_result` —— 它**会**随下一局
+       自己回到 false(新局的 state 不带 end_result),不需要谁记得去清。
+       不用 `gameEndData`:那个 state 没有任何清除者(`setGameEndData` 全仓只有 `game_end`
+       那一处调用),一旦为真就再也回不去。而 galaxy 的 GameRoomPage 会在**同一个挂载的
+       hook** 上换 sessionId,那种「页内再来一局」会让下一局真正的回收被这里吞掉。 */
     const gameEndedRef = useRef(false);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
     const lastSoundRef = useRef<{name: string, time: number} | null>(null);
@@ -157,8 +160,8 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     useEffect(() => clearQueuedSounds, [clearQueuedSounds]);
 
     useEffect(() => {
-        gameEndedRef.current = Boolean(gameEndData || gameState?.end_result);
-    }, [gameEndData, gameState?.end_result]);
+        gameEndedRef.current = Boolean(gameState?.end_result);
+    }, [gameState]);
 
     useEffect(() => {
         if (sessionId) {
@@ -202,7 +205,6 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             // 契约把 chat 定成**扁平帧**(不套 data),与三家共享侧逐字一致。
                             setChatMessages(prev => [...prev, { from_id: msg.from_id, from_name: msg.from_name, text: msg.text }]);
                         } else if (msg.type === 'game_end') {
-                            gameEndedRef.current = true;
                             setGameEndData(msg.data);
                             if (onGameEnd) {
                                 onGameEnd(msg.data);
@@ -250,7 +252,10 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                                 /* 这一局已经有结果了 —— 结果不能被「这一局没了」顶掉。服务端那边
                                    有意收尾走的是正常关闭(session.py 的 SOCKET_CLOSE_SESSION_CLOSED),
                                    所以正常情况下到不了这里;这一条兜的是「终局卡还在屏上时会话被闲置
-                                   回收」那一种 —— 那时候「这一局没了」是真的,但用户要看的是结果。 */
+                                   回收」那一种 —— 那时候「这一局没了」是真的,但用户要看的是结果。
+                                   离开判负(`/api/multiplayer/leave`)那一种**不**落进这个条件:它只广播
+                                   `game_end`、不写 state 的 `end_result`。不要紧 —— 那条路同一个处理函数
+                                   当场就把会话拆了,后面不会再有「闲置回收」找上这一局。 */
                                 console.warn('Session reclaimed after the game had already ended');
                                 return;
                             }

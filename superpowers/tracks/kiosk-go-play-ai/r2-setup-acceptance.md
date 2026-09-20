@@ -183,6 +183,20 @@ KataGo 的补偿判据也是 `blackTurnAdvantage <= 1 → 0`;「让先」是独�
 **变异实测**:把 `handicap >= 2` 改成 `if False`,`tests/web_ui/test_kiosk_game_terms.py`
 当场红;还原后 7 条全绿。
 
+**兜底的完整性有一条没人写着的前提**(agent 在认下 D3 时补的,已核):
+这道兜底只长在 kiosk 那三个 mode 上,而 `POST /api/new-game`(前端出口
+`src/api.ts` 的 `API.newGame`)**原样透传** handicap/komi 直达 `_do_new_game` ——
+绕开它。今天 kiosk 侧零调用者(唯一调用者是 galaxy 的 `AiSetupPage.tsx:271`),
+但这个前提哪儿都没写。哪天「再来一局」之类图省事用了它,让子局的 komi 兜底会在
+那条路上**静默失效,而且失效的样子和正常的一模一样**。
+⇒ 建 `src/kiosk/__tests__/kioskNewGameBoundary.test.ts` 把前提钉下来,
+后端那段注释也点名了这个出口。**两个方向都变异过**:真调用当场红并给出可执行指引;
+注释里提到 `API.newGame(` 不误报。
+
+(agent 还补了一条我没提的:`_do_new_game` 的非 kiosk 调用者**不止** `NewGameDialog`
+一条,还有 `/api/new-game` 和 `setupposition` —— 也就是说在那一层归零会同时打到三个入口,
+我原来的判断只是更保守地估了一条。)
+
 顺带按 agent 建议把 `color` 改成 fail-closed:不是 `black`/`white` 就 400。
 `human_bw = "B" if color == "black" else "W"` 对任何别的值都落到白 ——
 送 `"nigiri"` 进来不是 50% 坐白,是 **100% 坐白**。
@@ -228,7 +242,7 @@ agent 的补充判据(已核):`src/components/NewGameDialog.tsx` 全仓只有
 
 | 套件 | 结果 |
 |---|---|
-| 前端单测 | 1147 passed / 11 failed —— **11 条与基线(66c6825d)名字集合完全一致**,零新增 |
+| 前端单测 | 1149 passed / 11 failed —— **11 条与基线(66c6825d)名字集合完全一致**,零新增 |
 | Python | 3743 passed / 98 failed —— **98 条与基线名字集合完全一致**,零新增 |
 | Playwright(开局设置相关 11 个 spec) | 与基线同为 10 条红,且两条「开局设置」由红转绿;零新增 |
 | `npm run build` | ✓ |

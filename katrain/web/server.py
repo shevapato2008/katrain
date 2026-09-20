@@ -86,6 +86,15 @@ def _kiosk_game_terms(settings: dict, default_komi: float, default_rules: str) -
        kiosk 的「猜先」在前端就掷完了(`AiSetupPage.tsx` 的 `drawSeat`),
        这里挡的是将来任何一版客户端想当然地把 `"nigiri"` 直接发过来。
 
+    ⚠️ **这道兜底只长在 kiosk 那三个 mode 上**(`free` / `ranked` / `pvp_local`,
+    都走 `POST /api/game/setup`)。**绕过它的那条路是 `POST /api/new-game`** ——
+    那里 `request.handicap` / `request.komi` 原样透传给 `_do_new_game`(见上面
+    `mode == "newgame"` 那一支)。前端的出口是 `src/api.ts` 的 `API.newGame`,
+    今天 kiosk 侧**零调用者**(唯一调用者是 galaxy 的 `AiSetupPage.tsx:271`),
+    而「零调用者」这个前提由
+    `src/kiosk/__tests__/kioskNewGameBoundary.test.ts` 钉着 —— 哪天有人在 kiosk 里
+    用了它,那条闸会红并指回这里。
+
     ⚠️ **这两条只加在 kiosk 分支,不加进 `_do_new_game`。**
     `_do_new_game` 同时服务 galaxy 的 `NewGameDialog` —— 那边让子和贴目是两个
     自由数字框(`src/components/NewGameDialog.tsx:285` 和 `:305`),没有任何耦合,

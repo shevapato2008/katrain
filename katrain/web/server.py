@@ -2054,7 +2054,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/resign")
     async def resign(request: ResignRequest, current_user: User = Depends(get_current_user_optional)):
-        session = _get_session_or_404(manager, request.session_id)
+        try:
+            session = manager.get_session(request.session_id)
+        except KeyError:
+            return _session_gone_reply(request.session_id)
         _require_multiplayer_participant(session, current_user)
         guard_session_terminator(session, current_user, "resign")
         local_pvp = getattr(session, "game_type", "free") == "pvp_local"
@@ -2450,7 +2453,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         r1 C1:kiosk 带上期望的局 / 手 / 方,`_do_timeout` 在对局提交锁里核对轮次、用服务端时钟核实;核实不了一律拒绝(409),
         不判负。galaxy 的旧调用不带这三个字段,语义照旧(撞上已结束的局是 200 空操作)。"""
-        session = _get_session_or_404(manager, request.session_id)
+        try:
+            session = manager.get_session(request.session_id)
+        except KeyError:
+            return _session_gone_reply(request.session_id)
         _require_multiplayer_participant(session, current_user)
         guard_session_terminator(session, current_user, "timeout")
         guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
@@ -3403,6 +3409,25 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
         # access_log=False, so a session miss is invisible in journalctl.
         logging.getLogger("katrain_web").warning("session miss: %s", session_id)
         raise HTTPException(status_code=404, detail="Session not found") from exc
+
+
+SESSION_GONE_STATUS = "session_gone"
+
+
+def _session_gone_reply(session_id: str) -> dict:
+    """The honest reply for ending a game whose session this box has forgotten.
+
+    It says exactly one thing - this box no longer has this game - and deliberately
+    carries no `ended`, no `state` and no result. SessionManager eviction removes local
+    state and stops KataGo; it does NOT end a remote game (real remote resignation is
+    gateway.py:399-420, which this early return never reaches). Claiming a result would
+    make the client tell the user they resigned a game that may still be running.
+
+    Callers MUST return this before touching any ledger or broadcast. It is NOT a
+    substitute for the 403 that guard_session_terminator raises when the session EXISTS
+    and the caller is not a participant - merging those two would be an auth bypass.
+    """
+    return {"session_id": session_id, "status": SESSION_GONE_STATUS}
 
 
 def _require_multiplayer_participant(session, current_user) -> None:

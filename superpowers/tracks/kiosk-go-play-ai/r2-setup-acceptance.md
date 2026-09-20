@@ -228,13 +228,14 @@ agent 的补充判据(已核):`src/components/NewGameDialog.tsx` 全仓只有
 
 | 套件 | 结果 |
 |---|---|
-| 前端单测 | 1139 passed / 11 failed —— **11 条与基线(66c6825d)名字集合完全一致**,零新增 |
+| 前端单测 | 1147 passed / 11 failed —— **11 条与基线(66c6825d)名字集合完全一致**,零新增 |
 | Python | 3743 passed / 98 failed —— **98 条与基线名字集合完全一致**,零新增 |
 | Playwright(开局设置相关 11 个 spec) | 与基线同为 10 条红,且两条「开局设置」由红转绿;零新增 |
 | `npm run build` | ✓ |
 | `npm run build:kiosk-2d` | ✓ `verify:kiosk-2d` 边界干净 |
 | `kiosk-shell/MANIFEST.sha256` | 209/209 OK(`go-screens.css` 不在清单内,它是围棋自己的) |
 | eslint(改动的文件) | 1 条 —— `catch (e: any)`,`119fc1f2` 引入,基线里就有 |
+| `tests/test_rules_wire.py` / `test_kiosk_game_terms.py` | 13 条,**两条闸都做过变异实测**(见 §2.2 / §5 D3) |
 
 > 基线跑法的坑:新 worktree 里 `uv sync` 缺 `--extra web`,不加的话 pytest 在
 > collection 就全挂,`FAILED` 列表**静默为空**,一比就成了「全是新增」。

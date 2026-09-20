@@ -1874,10 +1874,16 @@ Expected: the only differences are the pre-existing ones (`self._last_stable_boa
 - [ ] **Nothing in the frontend changed**
 
 ```bash
-git diff --stat $(git merge-base HEAD develop)..HEAD -- katrain/web/ui/
+# NOT merge-base with develop: the exit-404 plan landed on this same branch
+# between develop and this plan's base, and all of its work is frontend.
+git diff --stat 10455ba5..HEAD -- katrain/web/ui/
 ```
 
-Expected: empty.
+Expected: empty. **Corrected 2026-09-21.** This step originally said
+`$(git merge-base HEAD develop)..HEAD`, which spans the exit-404 plan as well and reports 13 files
+/ 663 insertions — so it fails against a tree where this plan touched no frontend at all. `10455ba5`
+is this plan's base (the exit-404 plan's last commit). Verified: those 13 files come from 6 commits
+in `develop..10455ba5`, and the corrected range is empty.
 
 ## Device acceptance (the user runs this — do NOT ssh to the board)
 

@@ -225,7 +225,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const countingRef = useRef(false);
   const [counting, setCounting] = useState(false);
   const [resignError, setResignError] = useState<string | null>(null);
-  const [exitError, setExitError] = useState<string | null>(null);
   const [gameGoneAcknowledged, setGameGoneAcknowledged] = useState(false);
   const sessionGone = session.connectionLost === 'gone';
 
@@ -689,7 +688,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       if (detail?.code === 'time_not_expired' && detail.state) {
         session.setGameState(detail.state);
       } else {
-        setTimeoutError({ scope: timeoutScope, message: failureLine(t('game:timeout_failed', '判超时没成'), requestFailureKind(error), t) });
+        setTimeoutError({ scope: timeoutScope, message: failureLine(t('game:timeout_failed', '超时判定没有完成'), requestFailureKind(error), t) });
       }
     } finally {
       timeoutRequestRef.current = false;
@@ -796,14 +795,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   };
 
-  // 本地对局「退出不保存」。删除失败**不离开**:装作退出了,会话却还在进程里、活动会话也还指着它。
-  const handleExitWithoutSaving = async () => {
-    if (!sessionId) return;
-    try {
-      await API.deleteSession(sessionId);
-    } catch {
-      setExitError(t('game:exit_failed', '退出失败，请重试'));
-      return;
+  // 本地对局「退出不保存」。这是 pvp_local 唯一的出口，所以 DELETE 失败也照样离开 ——
+  // 删不掉时服务端状态和「卡住不让走」时完全一样(会话都还挂在进程里)，攥着用户不放清理不出
+  // 任何东西，只是把 R1 那个「服务端调用失败 = 出不去」的陷阱换个触发点重演一遍。best-effort
+  // 发出去就算数：server.py:1019-1031 只做 end_session + remove_session，session.py:185-188
+  // 弹出字典、停引擎；api.ts:366-368 这条请求本来就不持久化任何东西，所以退出弹层那句
+  // 「这局还没下完，退出后不会保存」依旧成立。孤儿会话不可见也会自愈：clearActiveSession('game')
+  // 杀掉「继续上一局」指针，pvp_local 从不出现在 /api/v1/games/active/multiplayer 里，
+  // cleanup_expired 在 SESSION_TIMEOUT(3600s) 后照常回收它。
+  const handleExitWithoutSaving = () => {
+    if (sessionId) {
+      API.deleteSession(sessionId).catch((error) => {
+        console.warn('[game] delete-on-exit failed (best-effort, leaving anyway):', error);
+      });
     }
     setShowExitConfirm(false);
     clearActiveSession('game');
@@ -1016,16 +1020,24 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Alert>
       </Snackbar>
 
-      {/* 断线持续显示；退出时可以保留这一局，回来重新取状态和建连。1008 保留原来的原因与登录提示。 */}
+      {/* 断线持续显示。三档都是固定文案，不接 session.error —— connectionLost 一旦置位就不会自动
+          清空，后续任何一次失败的 HTTP 动作都会把 ApiError 的原文写进 session.error，原来的
+          fallback 分支会把它原样印在这里(R2 的泄漏点，已经封死)。'rejected' 不复述服务端给的
+          1008 reason：如今只可能是 Invalid token / Session not found / Session unavailable
+          之一(server.py:3156/3162/3170)，7 寸屏上没有一条是用户能采取行动的。
+          'dropped' / 'gone' 都不点名对局屏当下具体哪个按钮能离开 —— 本地对局(pvp_local)的
+          退出弹层只有「继续下 / 退出不保存」，没有「先离开，不认输」那个键；而 'gone' 这一档自己的
+          说明弹层开着时，底下整块页面(含页控条的「退出对局」)都在遮罩之下点不到，指哪个具体按钮
+          都会指错。 */}
       <Snackbar
         open={!!session.connectionLost && !connectionNoticeDismissed}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert severity="error" onClose={() => setConnectionNoticeDismissed(true)}>
           {session.connectionLost === 'dropped'
-            ? t('game:connection_dropped', '实时连接断了，棋盘不会自动更新。点「退出对局」→「先离开，不认输」，再从「继续上一局」回来就会重新连上')
+            ? t('game:connection_dropped', '实时连接断了，棋盘不会自动更新，可以点「退出对局」离开这一局')
             : session.connectionLost === 'gone'
-              ? t('game:session_gone_notice', '这一局在服务器上已经没有了，点「退出对局」就能离开。')
+              ? t('game:session_gone_notice', '这一局在服务器上已经没有了，可以离开这一页。')
               : t('game:connection_rejected', '实时连接被拒绝，棋盘不会自动更新，请重新登录后重试')}
         </Alert>
       </Snackbar>
@@ -1211,7 +1223,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <DialogContent><Typography>{t('game:exit_unsaved_body', '这局还没下完，退出后不会保存。')}</Typography></DialogContent>
           <DialogActions sx={{ display: 'flex', gap: 1 }}>
             <Button variant="outlined" sx={{ flex: 1, whiteSpace: 'nowrap' }} onClick={() => setShowExitConfirm(false)}>{t('game:keep_playing', '继续下')}</Button>
-            <Button variant="outlined" color="error" sx={{ flex: 1, whiteSpace: 'nowrap' }} onClick={() => { void handleExitWithoutSaving(); }}>
+            <Button variant="outlined" color="error" sx={{ flex: 1, whiteSpace: 'nowrap' }} onClick={handleExitWithoutSaving}>
               {t('game:exit_unsaved', '退出不保存')}
             </Button>
           </DialogActions>
@@ -1363,9 +1375,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </Snackbar>
       <Snackbar open={!!resignError} autoHideDuration={5000} onClose={() => setResignError(null)}>
         <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>
-      </Snackbar>
-      <Snackbar open={!!exitError} autoHideDuration={5000} onClose={() => setExitError(null)}>
-        <Alert severity="error" onClose={() => setExitError(null)}>{exitError}</Alert>
       </Snackbar>
 
       {/* Re-sync (重置识别) failure toast */}

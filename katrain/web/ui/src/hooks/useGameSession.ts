@@ -243,6 +243,11 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             setConnectionLost('gone');
                             setError(SESSION_GONE_MESSAGE);
                         } else if (event.code === WS_POLICY_VIOLATION) {
+                            // Kiosk's GamePage shows a fixed sentence for 'rejected' (raw 1008
+                            // reasons aren't actionable on a 7" screen - see the comment above
+                            // that Snackbar branch) and `error` below is galaxy's channel, not
+                            // kiosk's. This console line is now the ONLY place the kiosk keeps
+                            // the actual reason - do not delete it in a future cleanup.
                             console.error("Game WebSocket rejected:", event.reason);
                             setConnectionLost('rejected');
                             setError(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新，请重新登录后重试`);

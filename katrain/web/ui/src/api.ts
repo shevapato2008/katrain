@@ -128,6 +128,18 @@ export interface SessionResponse {
   state: GameState;
 }
 
+/** 会话已经不在这台机器上了(闲置回收 / 重启 / 被删)。服务端 `_session_gone_reply`
+    (`katrain/web/server.py`)只有 `/api/resign` 和 `/api/timeout` 会回这个形状。
+    它**不带** `state`,也**不表示远端对局结束** —— 真正的远端认输在 gateway.py:399-420。*/
+export interface SessionGoneResponse {
+  session_id: string;
+  status: 'session_gone';
+}
+
+/** 这两个端点要么回常规回执,要么回「这局没了」。写成联合类型是为了让 `tsc -b` 在每个
+    读 `.state` 的调用点上强制先收窄 —— 正是漏掉的那三处缺的信号。 */
+export type EndGameResponse = SessionResponse | SessionGoneResponse;
+
 // --- Cross-platform play types ---
 
 export interface PlatformInfo {
@@ -437,11 +449,11 @@ export const API = {
     apiPost("/api/player/swap", { session_id: sessionId }),
   /* `color` 只给本地对局(pvp_local):后端对 pvp_local **必须**带、对其它模式**带了就 400**
      ⇒ 没给时 body 里绝不能出现这个键。 */
-  resign: (sessionId: string, token?: string, color?: 'B' | 'W'): Promise<SessionResponse> =>
+  resign: (sessionId: string, token?: string, color?: 'B' | 'W'): Promise<EndGameResponse> =>
     apiPost("/api/resign", color ? { session_id: sessionId, color } : { session_id: sessionId }, token),
   timeout: (sessionId: string, token?: string, expect?: {
     expected_game_id: string; expected_node_id: number; color: 'B' | 'W';
-  }): Promise<SessionResponse> =>
+  }): Promise<EndGameResponse> =>
     apiPost("/api/timeout", { session_id: sessionId, ...expect }, token),
   requestCount: (sessionId: string, token?: string): Promise<any> =>
     apiPost("/api/count/request", { session_id: sessionId }, token),

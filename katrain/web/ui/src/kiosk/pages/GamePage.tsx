@@ -650,7 +650,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       try {
         const res = await API.timeout(sessionId, token ?? undefined, expect);
         if (!current()) return;
-        if (res?.state) session.setGameState(res.state);
+        // Task 2's 200 空回执：这局在服务端已经没了。retryDelivery 重发救不回一个被
+        // 回收的会话 —— 落到这里必须直接报出去,不能再走下面的 setTimeoutError(null)
+        // (那条路以前只在真的送达成功时才走,现在会把「没了」悄悄当成「送达了」)。
+        // `'status' in res` alone is the complete discriminant: SessionResponse never
+        // has a `status` key, and `'session_gone'` is the only value SessionGoneResponse
+        // ever carries. Adding `&& res.status === 'session_gone'` here defeats TS's
+        // narrowing on the fall-through branch below (verified against tsc directly).
+        if ('status' in res) {
+          session.reportSessionGone();
+          return;
+        }
+        if (res.state) session.setGameState(res.state);
         setTimeoutError(null);
       } catch (e) {
         if (!current()) return;
@@ -679,7 +690,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     timeoutRequestRef.current = true;
     try {
       const res = await API.timeout(sessionId);
-      if (res?.state) session.setGameState(res.state);
+      // Same gone shape as the bound-timeout `send()` above: no `.state`, and retrying
+      // cannot bring an evicted session back. Report it and stop — do not clear
+      // timeoutError as if the timeout had been delivered.
+      if ('status' in res) {
+        session.reportSessionGone();
+        return;
+      }
+      if (res.state) session.setGameState(res.state);
       setTimeoutError(null);
     } catch (error) {
       const detail = error instanceof ApiError && error.status === 409

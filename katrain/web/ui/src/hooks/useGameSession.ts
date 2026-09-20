@@ -341,6 +341,16 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
 
     const clearError = useCallback(() => setError(null), []);
 
+    // 第四条通道。这局没了目前有三条发现路径(WS 1008/session_gone、handleAction 的 200
+    // session_gone 回执、handleAction 的 404 catch),GamePage 里还有两处绕过 handleAction
+    // 直接打 API.timeout 的调用点(自动超时判定),它们发现"没了"之后没有地方可以报。
+    // 这个回调就是那个地方 —— 与前三条写的是同一对 state,调用方不需要,也不应该,
+    // 自己另开一个"gone"标志。
+    const reportSessionGone = useCallback(() => {
+        setConnectionLost('gone');
+        setError(SESSION_GONE_MESSAGE);
+    }, []);
+
     const initNewSession = useCallback(async () => {
         const data = await API.createSession(token);
         setSessionId(data.session_id);
@@ -366,7 +376,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     // disable-while-pending wiring). This hook's own onmessage switch above only handles
     // the generic game-session message types and deliberately ignores platform_* ones.
     return {
-        sessionId, setSessionId, gameState, setGameState, error, connectionLost, clearError, onMove, onNavigate, handleAction,
+        sessionId, setSessionId, gameState, setGameState, error, connectionLost, clearError, reportSessionGone, onMove, onNavigate, handleAction,
         initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder,
         physicalEngineError, clearPhysicalEngineError, awaitingRemovalReminder, wsRef,
         acknowledgePaintedNode,

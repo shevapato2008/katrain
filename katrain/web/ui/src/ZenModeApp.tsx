@@ -224,7 +224,20 @@ function ZenModeApp() {
       else if (action === 'mistake-prev') data = await API.findMistake(sessionId, 'undo');
       else if (action === 'mistake-next') data = await API.findMistake(sessionId, 'redo');
       
-      if (data) setGameState(data.state);
+      if (data) {
+        // resign can answer Task 2's 200 空回执 (session_gone) instead of a real
+        // SessionResponse. It carries no `.state` and does NOT mean the remote game
+        // ended (real remote resignation is gateway.py:399-420) - writing it into
+        // gameState would put `undefined` on screen.
+        // `'status' in data` alone is the complete discriminant (see GamePage.tsx's
+        // send()/handleTimeExpired() for why `&& data.status === 'session_gone'`
+        // defeats narrowing on the fall-through `data.state` read below).
+        if ('status' in data) {
+          setStatusMessage(SESSION_GONE_MESSAGE);
+          return;
+        }
+        setGameState(data.state);
+      }
     } catch (error) {
       console.error("Action failed", error);
     }

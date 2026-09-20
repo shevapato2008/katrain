@@ -149,7 +149,12 @@ def _configure_confirmation_probe(worker, *, peak, count):
     ("peak", "count", "expected_required", "expected_log"),
     [
         (0.80, 2, 3, "required_frames=3 observed_frames=3"),
-        (None, 4, None, "required_frames=5 observed_frames=5"),
+        # The gate value (0.55) is named here on purpose, not just the frame counts: it
+        # pins _configure_confirmation_probe's `is_suspect.return_value = False` default.
+        # A bare MagicMock() is truthy, so if that line is ever dropped this case would
+        # silently start running the suspect branch (gate 0.55+0.25=0.80) instead — see
+        # test_..._suspect_cell_routes_to_ambiguous_card_not_autoplay's docstring.
+        (None, 4, None, "peak conf 0.00 < 0.55 — ambiguous prompt; required_frames=5 observed_frames=5"),
     ],
 )
 def test_inprocess_confirmation_diagnostic_reports_selected_path(peak, count, expected_required, expected_log, caplog):
@@ -486,7 +491,12 @@ def _subprocess_motion_worker():
     ("peak", "count", "expected_required", "expected_log"),
     [
         (0.80, 2, 3, "required_frames=3 observed_frames=3"),
-        (None, 4, None, "required_frames=5 observed_frames=5"),
+        # The gate value (0.55) is named here on purpose, not just the frame counts: it
+        # pins _configure_confirmation_probe's `is_suspect.return_value = False` default.
+        # A bare MagicMock() is truthy, so if that line is ever dropped this case would
+        # silently start running the suspect branch (gate 0.55+0.25=0.80) instead — see
+        # test_..._suspect_cell_routes_to_ambiguous_card_not_autoplay's docstring.
+        (None, 4, None, "peak conf 0.00 < 0.55 — ambiguous prompt; required_frames=5 observed_frames=5"),
     ],
 )
 def test_subprocess_confirmation_diagnostic_reports_selected_path(peak, count, expected_required, expected_log, caplog):

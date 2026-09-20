@@ -1,15 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, Box, Button } from '@mui/material';
 import { useParams, useNavigate } from 'react-router-dom';
-import OptionChips from '../components/common/OptionChips';
 import { useVision } from '../context/VisionContext';
-import { KioskOptSeg } from '../shell/KioskOptSeg';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
-import { KioskStepTrack } from '../shell/KioskStepTrack';
 import { interpolate } from '../utils/interpolate';
-import { RULES_HINT, TIME_PRESETS, TIME_TRACK_ORDER } from '../utils/setupOptions';
+import {
+  FREE_KOMI_MAX, FREE_KOMI_VALUES, HANDICAP_LABEL, RULES, RULE_LABEL,
+  TIME_PRESETS, TIME_TRACK_ORDER, handicapKeysFor, resolveGameTerms,
+  type HandicapKey,
+} from '../utils/setupOptions';
+import { SetupPopoverHost } from '../components/setup/SetupPopoverHost';
+import { SetupSelect } from '../components/setup/SetupSelect';
+import { SetupDerived, SetupFixed } from '../components/setup/SetupDerived';
+import { SetupStepper } from '../components/setup/SetupStepper';
+import { komiReadout } from '../components/setup/komiReadout';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
 import { API } from '../../api';
 import { internalToRank, sliderToInternal } from '../../utils/rankUtils';
@@ -30,23 +36,16 @@ import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 import KioskAiLadderBlockingPanel from '../components/aiLadder/KioskAiLadderBlockingPanel';
 import KioskSetupBoard from '../components/board/KioskSetupBoard';
 
-/**
- * `.kiosk-opthint` 写的是**当前选中项**的大白话(规范 §11 v1.21)。
- *
- * 五句说明已按 `core/ai.py` 的真实策略核对：KataGo 取搜索首选；实地与厚势
- * 在随机抽出的候选里分别偏向低位和高位；策略网络在开局阶段会改用加权选点。
- * `.kiosk-opthint` 定高(`--opthint-h`),切换说明不会推动下面的组。
- */
-const AI_STRATEGY_HINT = (t: (en: string, zh: string) => string): Record<string, string> => ({
-  'ai:human': t(
-    'Human-like: plays at the chosen strength, mistakes of that level included',
-    '拟人:按所选棋力下出该水平的棋,包括那个水平会犯的错',
-  ),
-  'ai:default': t('setup:strategy_hint_default', 'KataGo:每手都下引擎搜索后的第一选择,不放水'),
-  'ai:p:territory': t('setup:strategy_hint_territory', '实地:偏爱三线及以下的低位,在随机抽出的一批候选里按这个偏好挑,不是全力'),
-  'ai:p:influence': t('setup:strategy_hint_influence', '厚势:偏爱四线及以上的高位,在随机抽出的一批候选里按这个偏好挑,不是全力'),
-  'ai:policy': t('setup:strategy_hint_policy', '策略:不看搜索结果,直接下策略网络的第一直觉;开局阶段随机一些'),
-});
+/* **AI 策略那一组撤掉了(2026-09-21),对手钉死拟人。**
+
+   不是为了省一行:改版前 `showRankSlider = !isRanked && aiStrategy === 'ai:human'` ——
+   选了 KataGo / 实地 / 厚势 / 策略就**连棋力档都不给选**,而后端仍照写
+   `ai/{strategy}/kyu_rank`(`server.py:1253`)。一根只对五分之一选项成立的档位轴,
+   不该用一个平行的五选一去否定它。五条策略说明随之下屏。 */
+const AI_STRATEGY = 'ai:human';
+
+/** 我执三档。`guess`(猜先)在发出去之前解成 black/white —— 见 `drawSeat`。 */
+type SetupColor = 'black' | 'white' | 'guess';
 
 // Canonical kiosk setup skeleton: left preview console + right token-themed form. pvp/cross-platform setup pages restyle against this — tokens only, no flow change.
 const AiSetupPage = () => {
@@ -78,22 +77,24 @@ const AiSetupPage = () => {
 
   // Board & rules
   const [boardSize, setBoardSize] = useState(19);
-  const [rules, setRules] = useState<'chinese' | 'japanese' | 'korean' | 'aga'>('chinese');
-  const [color, setColor] = useState<'black' | 'white'>('black');
+  const [rules, setRules] = useState<string>('chinese');
+  const [color, setColor] = useState<SetupColor>('black');
 
-  // AI strategy & rank
-  const [aiStrategy, setAiStrategy] = useState('ai:human');
   const [rank, setRank] = useState(14); // 0=20k, 19=1d, 28=9d; default 14 = ~6k
 
-  // Handicap & komi
-  const [handicap, setHandicap] = useState(0);
-  const [komi, setKomi] = useState(6.5);
+  /* 让子与贴目是**一个**枚举,不是两条轨 —— 见 `utils/setupOptions.ts`。
+     `freeKomi` 只在「自定贴目」那一档用得上。 */
+  const [handicapKey, setHandicapKey] = useState<HandicapKey>('even');
+  const [freeKomi, setFreeKomi] = useState(FREE_KOMI_MAX);
 
   // Time control
   const [timeEnabled, setTimeEnabled] = useState(isRanked);
   const [mainTime, setMainTime] = useState(0);
   const [byoyomiTime, setByoyomiTime] = useState(30);
   const [byoyomiPeriods, setByoyomiPeriods] = useState(3);
+
+  /** 下拉弹层的宿主 —— 用 state 而不是 ref,因为挂上去那一刻要重渲染才轮得到弹层。 */
+  const [railEl, setRailEl] = useState<HTMLDivElement | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -102,8 +103,6 @@ const AiSetupPage = () => {
   const [lifecyclePending, setLifecyclePending] = useState(false);
   const [lifecycleError, setLifecycleError] = useState('');
   const [syncRetryPending, setSyncRetryPending] = useState(false);
-
-  const showRankSlider = !isRanked && aiStrategy === 'ai:human';
 
   const timePresets = TIME_PRESETS(t);
   const currentTimeKey = !isRanked && !timeEnabled ? 'untimed' : mainTime === 0 ? 'byoOnly' : String(mainTime);
@@ -118,14 +117,44 @@ const AiSetupPage = () => {
 
   const rankOptions = Array.from({ length: 29 }, (_, v) => ({ value: v, label: internalToRank(sliderToInternal(v)) }));
 
+  const ruleLabels = RULE_LABEL(t);
+  const handicapLabels = HANDICAP_LABEL(t);
+
+  /* **送给后端的 `handicap` / `komi` 只从这里出。** 升降级那一路不走它 ——
+     那一路的盘面条件由服务端写死,客户端发了会被 `extra="forbid"` 拒掉。 */
+  const terms = resolveGameTerms(rules, handicapKey, freeKomi);
+  const ruleDef = RULES.find((r) => r.key === rules) ?? RULES[0];
+  const komiText = isRanked
+    ? komiReadout(t, 'chinese', 'even', FREE_KOMI_MAX)
+    : komiReadout(t, rules, handicapKey, freeKomi);
+  const pickKomi = !isRanked && handicapKey === 'free';
+  const freeKomiOptions = useMemo(
+    () => FREE_KOMI_VALUES.map((v) => ({
+      key: String(v),
+      label: interpolate(t('setup:komi_points', '{n} 目'), { n: v }),
+    })),
+    [t],
+  );
+
+
+
+  /* 「猜先」怎么落到 black/white。**后端现在任何非 "black" 的值都落到白**
+     (`server.py:1230` 的 `human_bw = "B" if color === "black" else "W"`),
+     所以这一层必须在发出去之前把 `guess` 解掉,不能指望后端认得它。 */
+  const drawSeat = useCallback(
+    (): 'black' | 'white' => (Math.random() < 0.5 ? 'black' : 'white'),
+    [],
+  );
+
   const handleStart = async () => {
     setError('');
     setAuthPrompt('');
     setLoading(true);
+    const seatColor = color === 'guess' ? drawSeat() : color;
     try {
       if (isRanked) {
         const { session_id, game_id, status } = await startAiLadderGame({
-          color,
+          color: seatColor,
           time_enabled: true,
           main_time: mainTime,
           byo_length: byoyomiTime,
@@ -142,12 +171,12 @@ const AiSetupPage = () => {
       const { session_id } = await API.createSession(token ?? undefined);
       await API.gameSetup(session_id, isRanked ? 'ranked' : 'free', {
         board_size: boardSize,
-        rules,
-        color,
-        ai_strategy: aiStrategy,
+        rules: ruleDef.wire,
+        color: seatColor,
+        ai_strategy: AI_STRATEGY,
         rank,
-        handicap,
-        komi,
+        handicap: terms.handicap,
+        komi: terms.komi,
         time_enabled: isRanked || timeEnabled,
         main_time: mainTime,
         byo_length: byoyomiTime,
@@ -257,25 +286,12 @@ const AiSetupPage = () => {
     }
   };
 
-  // ── 档位轨那四组 ────────────────────────────────────────────────
-  // 规范 §11(v1.21)给 `.kiosk-optseg` 定的项数上限是 6,「超过就换下拉或滑条」。
-  // 棋力 29 / 贴目 15 / 让子 10 / 用时 7 都超了,所以这四组走 `KioskStepTrack`。
-  //
-  // 用时那几档在轨上的顺序由 `utils/setupOptions` 的 `TIME_TRACK_ORDER` 定(理由写在那儿)。
-  // 计分局把「不限时」整档摘掉 —— **不是灰掉**:那一档在这一局里根本不存在。
+  /* 用时那几档在下拉里的顺序由 `utils/setupOptions` 的 `TIME_TRACK_ORDER` 定(理由写在那儿)。
+     计分局把「不限时」整档摘掉 —— **不是灰掉**:那一档在这一局里根本不存在。 */
   const timeTrack = [...TIME_TRACK_ORDER]
     .filter((key) => !isRanked || key !== 'untimed')
     .map((key) => timePresets.find((p) => p.key === key)!)
     .filter(Boolean);
-  const timeIndex = Math.max(0, timeTrack.findIndex((p) => p.key === currentTimeKey));
-
-  // 贴目档就是原来那个下拉的 15 个值(0.5 – 7.5,半目一档)。**不收成稿子那句话里的三档** ——
-  // 稿子 02 屏的「(6.5 / 7.5 / 0)」写在一段说明里,不是控件规格;把 15 档收成 3 档
-  // 是删功能不是重画。屏 04 的贴目稿子画的正是一条档位轨,两屏因此同一种控件。
-  const KOMI_STEP = 0.5;
-  const KOMI_MIN = 0.5;
-  const komiCount = 15;
-  const komiIndex = Math.round((komi - KOMI_MIN) / KOMI_STEP);
 
   const rankName = (v: number) => internalToRank(sliderToInternal(v));
 
@@ -314,6 +330,19 @@ const AiSetupPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- inputTick 就是「偏好刚被改过」这个信号
     [isVisionEnabled, isRanked, boardSize, inputTick],
   );
+  /* 「这局棋」那一组底下那行:只在**有约束正在生效**时才出现,没有就整行不画
+     (`.su-hint:empty{display:none}`)。 */
+  const gameHint = playInput.reason === 'notNineteen' && playInput.wanted
+    ? t('setup:size_not19_hint', '盘上那块是 19 路 —— 这一局只能下在屏幕上,调回 19 路就还用实体盘')
+    : '';
+
+  /* 「怎么坐」那一组底下那行:说的是**这台机器现在的状态**,不是通用说明。 */
+  const seatHint = playInput.available
+    ? t('setup:seat_hint_ready', '实体盘和屏幕随时可切,开局后就定了')
+    : playInput.reason === 'notNineteen'
+      ? t('setup:seat_hint_not19', '这一局不是 19 路,只能下在屏幕上')
+      : t('setup:seat_hint_uncalibrated', '这台机器没标定过摄像头,只能下在屏幕上');
+
   const setPlayOnBoard = (next: boolean) => {
     writePlayOnBoard(next);
     setInputTick((n) => n + 1);
@@ -330,9 +359,19 @@ const AiSetupPage = () => {
     <div className="kiosk-layout-a" data-testid="ai-setup-page">
       {/* 左栏 = 按下「开始对局」后真会出现的那个局面(`:512`),不是摄像头镜像 ——
           镜像栏是 L1 的东西(`SmartBoardConsole`,296 宽),它留在 `/kiosk/play`。 */}
-      <KioskSetupBoard color={color} size={boardSize} handicap={isRanked ? 0 : handicap} />
+      {/* 左盘是右栏的读数:路数换它就换格子,让子换它就换星位上的子。
+          「猜先」这一态盘上先按执黑画 —— 真正落座要到按下开始那一刻。 */}
+      <KioskSetupBoard
+        color={color === 'white' ? 'white' : 'black'}
+        size={isRanked ? 19 : boardSize}
+        handicap={isRanked ? 0 : terms.handicap}
+      />
 
-      <div className="kiosk-rail">
+      {/* `data-su` 打开这三屏的紧排,并给下拉弹层当定位原点(`.kiosk-rail[data-su]{position:relative}`)。
+          弹层挂在这一层而不是里面那个滚动盒:滚动盒 `overflow-y:auto` 会把它裁掉,
+          而挂在这儿顺带保证它盖不到左边那块盘。 */}
+      <div className="kiosk-rail" data-su={isRanked ? 'ranked' : 'free'} ref={setRailEl}>
+        <SetupPopoverHost.Provider value={railEl}>
         <KioskPagebar
           testId="kiosk-setup-pagebar"
           backLabel={t('Back to play', '返回对弈')}
@@ -374,99 +413,116 @@ const AiSetupPage = () => {
         ) : (
           <>
             <KioskScrollZone className="setgrp-scroll" resetKey={isRanked ? 'ranked' : 'free'}>
-              {/* ── 怎么落子 ── 三屏里唯一自带强调框的一组:它是**开局后不可改**的那一组 */}
-              <section className="setgrp inputgrp" data-testid="setup-input-group">
+              {/* ── 这局棋 ────────────────────────────────────────────────────
+                  **三个输入 + 一条推导。** 贴目不在这三格里,因为它不是输入 ——
+                  它是 (规则 × 让子) 的结果,算在 `utils/setupOptions.ts` 的
+                  `resolveGameTerms()`,那是整条链上唯一算它的地方。
+
+                  升降级这三格是**读数不是控件**:盘面条件在服务端写死,而且客户端连发
+                  都不许发(`api/v1/endpoints/ai_ladder.py:105-108` 的 `LADDER_*`
+                  + `AiLadderStartRequest` 的 `extra="forbid"`)。虚线 + 无 chevron
+                  说的是「这条路本来就没得选」,和灰掉(「你现在不能改」)不是一回事。 */}
+              <section className="setgrp" data-testid="setup-game-group">
                 <KioskSecLabel
-                  zh={t('setup:input', '怎么落子')}
-                  en="Input"
-                  value={t('setup:locked_after_start', '开局后不可改')}
+                  zh={t('setup:game_terms', '这局棋')}
+                  en="Game"
+                  value={isRanked
+                    ? t('ladder:terms_fixed', '升降级固定,不可改')
+                    : t('setup:locked_after_start', '开局后不可改')}
                 />
-                <div className="igrow">
-                  <span className="iglab">{t('setup:input_where', '落子')}</span>
-                  <KioskOptSeg
-                    ariaLabel={t('setup:input_where', '落子')}
-                    testId="setup-input"
-                    value={playInput.onBoard ? 'board' : 'screen'}
-                    onChange={(v) => setPlayOnBoard(v === 'board')}
-                    options={[
-                      // 「屏幕」**永远选得了** —— 条件掉了不能把人锁在一块用不了的盘上。
-                      { value: 'screen', label: t('setup:on_screen', '屏幕') },
-                      { value: 'board', label: t('setup:on_board', '实体盘'), disabled: !playInput.available },
-                    ]}
-                  />
-                </div>
-                <div className="igrow">
-                  <span className="iglab">{t('setup:size', '路数')}</span>
+                <div className="su-row">
                   {isRanked ? (
-                    // 升降级那一档的条件是**服务端定的**,前端给个下拉只会是个改不动的旋钮。
-                    <span className="igfix" data-testid="setup-ranked-fixed">
-                      <b>{t('ladder:fixed_size', '19 路')}</b>
-                      {t('ladder:fixed_rest', '中国规则 · 贴 7.5 目 · 不让子')}
-                    </span>
+                    <>
+                      <SetupFixed label={t('setup:size', '路数')} value={t('setup:size_19', '19 路')} testId="setup-size" />
+                      <SetupFixed label={t('Rules', '规则')} value={ruleLabels.chinese} testId="setup-rules" />
+                      <SetupFixed label={t('Handicap', '让子')} value={handicapLabels.even} testId="setup-handicap" />
+                    </>
                   ) : (
-                    <KioskOptSeg
-                      ariaLabel={t('setup:size', '路数')}
-                      testId="setup-size"
-                      value={boardSize}
-                      onChange={setBoardSize}
-                      options={[
-                        { value: 19, label: t('19x19', '19 路') },
-                        { value: 13, label: t('13x13', '13 路') },
-                        { value: 9, label: t('9x9', '9 路') },
-                      ]}
-                    />
+                    <>
+                      <SetupSelect
+                        testId="setup-size"
+                        label={t('setup:size', '路数')}
+                        value={String(boardSize)}
+                        /* 三档**一律可选**。路数和落子的耦合走另一个方向:
+                           选了 9/13 路,「实体盘」自己塌掉(`playInputState` 的 `notNineteen`),
+                           偏好不动、调回 19 路它自己回来。反过来拿实体盘锁死路数的话,
+                           用户会**点不到 9 路** —— 那是把一条路堵死,不是表达约束。 */
+                        options={[19, 13, 9].map((n) => ({
+                          key: String(n),
+                          label: interpolate(t('setup:size_n', '{n} 路'), { n }),
+                        }))}
+                        onChange={(k) => setBoardSize(Number(k))}
+                      />
+                      <SetupSelect
+                        testId="setup-rules"
+                        label={t('Rules', '规则')}
+                        value={rules}
+                        options={RULES.map((r) => ({ key: r.key, label: ruleLabels[r.key] }))}
+                        onChange={(k) => setRules(k)}
+                      />
+                      <SetupSelect
+                        testId="setup-handicap"
+                        label={t('Handicap', '让子')}
+                        value={handicapKey}
+                        columns={2}
+                        options={handicapKeysFor(boardSize).map((k) => ({ key: k, label: handicapLabels[k] }))}
+                        onChange={(k) => setHandicapKey(k as HandicapKey)}
+                      />
+                    </>
                   )}
                 </div>
-                {/* 这一行有两个身份,**计分局只认后一个**:
-                    · 自由对弈:稿子 02 屏本来就画了一行说明 ⇒ 常驻。
-                    · 计分局:稿子 03 屏这一组**到路数那行就结束了**,没有说明行。
-                      常驻会把它下面的每一组都往下推一行 —— 那就是上一轮「给升降级编了一段
-                      `.setnote`」的同一个错(四图 refOnly 当场涨了 1900)。
-                    ⇒ 计分局只在**实体盘那段灰掉时**说话:灰而不说原因是另一条更硬的规矩,
-                      而稿子从没画过那一态。 */}
-                {(!isRanked || playInput.reason !== null) && (
-                  <p className="kiosk-opthint">
-                    {playInput.reason === 'noCamera'
-                      ? t('setup:board_no_camera', '这台机器没有标定过摄像头,只能下在屏幕上')
-                      : playInput.reason === 'notNineteen'
-                        ? t('setup:board_needs_19', '盘上那块是 19 路 —— 9 路和 13 路只有屏幕上有')
-                        : playInput.onBoard
-                          ? t('setup:input_hint_board', '这一局下在盘上,屏幕负责记谱、读秒和显示分析')
-                          : t('setup:input_hint_screen', '这一局点屏幕落子 —— 盘就在旁边,也可以切回实体盘')}
-                  </p>
-                )}
+
+                {/* 贴目条。**平时它不是控件** —— 无 chevron、点不动:它是上面三格的结果。
+                    唯一的例外是「自定贴目」那一档,那时贴目真的是个可选项,
+                    条子才长出边框和 chevron 变回控件。 */}
+                <SetupDerived
+                  testId="setup-komi"
+                  label={t('Komi', '贴目')}
+                  note={isRanked
+                    ? t('ladder:komi_note', '档位按这个盘量的')
+                    : handicapKey === 'free'
+                      ? t('setup:komi_pick', '点此改贴目')
+                      : t('setup:komi_derived', '随规则和让子定')}
+                  options={pickKomi ? freeKomiOptions : undefined}
+                  value={String(freeKomi)}
+                  onChange={pickKomi ? (k) => setFreeKomi(Number(k)) : undefined}
+                >
+                  {komiText}
+                </SetupDerived>
+
+                {!isRanked && <p className="su-hint">{gameHint}</p>}
               </section>
 
+              {/* ── 对手 ──────────────────────────────────────────────────────
+                  **AI 策略那一组撤掉了,钉死拟人。** 不是为了省一行:
+                  改版前 `showRankSlider = aiStrategy === 'ai:human'` —— 选了
+                  KataGo/实地/厚势/策略就**连棋力档都不给选**,而后端还照写
+                  `ai/{strategy}/kyu_rank`(`server.py:1253`)。一根只对五分之一选项
+                  成立的档位轴,不该用一个平行的五选一去否定它。 */}
               {isRanked ? (
                 <>
-                  {/* 对手。2026-08-26 换成外壳写法:六种状态(加载 / 出错重试 / 定级进度 /
-                      未认证档 / 不可挑战 / 待结算)全部搬过来了,词和判别位都还取自
-                      `features/aiLadder` 那一份(`copy.ts` / `startGate.ts`),
-                      两个视图说的是同一套话 —— `KioskAiLadderOpponent.parity.test.tsx` 逐状态钉住。
-                      **没有在共享件上原地改样式**:它同时是 galaxy 那屏的消费者。 */}
                   <section className="setgrp" data-testid="setup-opponent-group">
                     <KioskSecLabel
                       zh={t('ladder:opponent', '对手')}
                       en="Opponent"
-                      value={t('ladder:box_picks', '盒子配档,不可选')}
+                      value={t('ladder:opponent_fixed', '盒子配档,不可选')}
                     />
                     <KioskAiLadderOpponent status={aiLadderStatus} onRetry={retryAiLadderStatus} />
-                    <p className="kiosk-opthint">
+                    <p className="su-hint">
                       {t('ladder:sealed_hint', '提示、形势判断、变化图一律封掉 —— 硬规则,不是设置项')}
                     </p>
                   </section>
-
                   <section className="setgrp" data-testid="setup-stake-group">
                     <KioskSecLabel
                       zh={t('ladder:stake', '这一局赌多少')}
                       en="Stake"
                       value={t('ladder:frozen_at_start', '开局那一刻冻结')}
                     />
-                    <div className="ranked-state__stakes" data-testid="setup-stakes">
+                    <div className="su-stake" data-testid="setup-stakes">
                       <span>{stakeWin}</span>
                       <span>{stakeLoss}</span>
                     </div>
-                    <p className="kiosk-opthint">
+                    <p className="su-hint">
                       {interpolate(
                         t('ladder:stake_rule', '净胜分到 +3 升一档、到 −3 退一档 · 当前 {n}'),
                         { n: signed(netScore) },
@@ -475,158 +531,89 @@ const AiSetupPage = () => {
                   </section>
                 </>
               ) : (
-                <>
-                  {showRankSlider && (
-                    <section className="setgrp" data-testid="setup-strength-group">
-                      <KioskStepTrack
-                        label={t('AI Strength', '棋力')}
-                        en="Strength"
-                        secval={t('setup:locked_after_start', '开局后不可改')}
-                        testId="setup-strength"
-                        count={rankOptions.length}
-                        index={rank}
-                        onChange={setRank}
-                        decLabel={t('setup:strength_down', '降低一档')}
-                        incLabel={t('setup:strength_up', '提高一档')}
-                        value={interpolate(t('setup:strength_value', '第 {n} 档 · '), { n: rank + 1 })}
-                        meta={interpolate(t('setup:strength_meta', '共 {n} 档 · {lo} – {hi}'), {
-                          n: rankOptions.length, lo: rankName(0), hi: rankName(rankOptions.length - 1),
-                        })}
-                        hint={t('setup:strength_hint', '档位说的是对手的水平,不是你的段位 —— 自由对弈不涨段')}
-                      />
-                    </section>
-                  )}
-
-                  <section className="setgrp">
-                    <OptionChips
-                      label={t('AI Strategy', 'AI 策略')}
-                      en="Style"
-                      testId="setup-strategy"
-                      value={aiStrategy}
-                      onChange={setAiStrategy}
-                      options={[
-                        { value: 'ai:human', label: t('Human-like', '拟人') },
-                        { value: 'ai:default', label: 'KataGo' },
-                        { value: 'ai:p:territory', label: t('setup:style_territory', '实地') },
-                        { value: 'ai:p:influence', label: t('Influence', '厚势') },
-                        { value: 'ai:policy', label: t('Policy', '策略') },
-                      ]}
-                      hint={AI_STRATEGY_HINT(t)[aiStrategy] ?? ''}
-                    />
-                  </section>
-                </>
-              )}
-
-              {/* 我执。**两项,不是稿子上那三项。** 稿子第三项「随机」是搬象棋骨架带来的:
-                  象棋 ranked 写死开局随机执棋,而围棋这边 kiosk(这一屏)和 galaxy
-                  (`components/aiLadder/AiLadderRatedSetup.tsx`)**两处都只给黑白两项**。
-                  在四家里只有围棋多一条路,不是对齐是分叉。 */}
-              <section className="setgrp">
-                <OptionChips
-                  label={t('My Color', '我执')}
-                  en="Side"
-                  testId="setup-color"
-                  value={color}
-                  onChange={setColor}
-                  options={[
-                    // 铸的是新键,**不是套 `Black Stone`** —— PO 里那条是「● 黑」,
-                    // 那个圆点是接外壳之前拿字符当棋子用的;现在子由 `.disc.b` 画,
-                    // 再借那条 msgid,屏上会出现「● 执黑」两颗子。
-                    { value: 'black' as const, label: <><span className="disc b" />{t('setup:side_black', '执黑')}</> },
-                    { value: 'white' as const, label: <><span className="disc w" />{t('setup:side_white', '执白')}</> },
-                  ]}
-                  hint={isRanked
-                    ? t('ladder:side_hint', '贴目按所选规则自动定,让子在计分局里一律为 0')
-                    : t('setup:side_hint', '让子局里黑棋先摆子,所以执黑就是被让的那一方')}
-                />
-              </section>
-
-              {!isRanked && (
-                <>
-                  <section className="setgrp" data-testid="setup-handicap-group">
-                    <KioskStepTrack
-                      label={t('Handicap', '让子')}
-                      en="Handicap"
-                      testId="setup-handicap"
-                      count={10}
-                      index={handicap}
-                      onChange={setHandicap}
-                      decLabel={t('setup:handicap_down', '少让一子')}
-                      incLabel={t('setup:handicap_up', '多让一子')}
-                      value={handicap === 0
-                        ? t('setup:no_handicap', '不让子')
-                        : interpolate(t('setup:handicap_value', '让 {n} 子'), { n: handicap })}
-                      meta={t('setup:handicap_meta', '0 – 9 子 · 星位固定')}
-                    />
-                  </section>
-
-                  <section className="setgrp" data-testid="setup-komi-group">
-                    <KioskSecLabel
-                      zh={t('Komi', '贴目')}
-                      en="Komi"
-                      value={handicap > 0 ? t('setup:not_applicable', '本局不适用') : undefined}
-                    />
-                    {handicap > 0 ? (
-                      // **不是把控件灰掉。** 灰掉说的是「你现在不能改」,这里要说的是
-                      // 「这一局没有贴目这回事」—— 让子和贴目补的都是先行那一方的便宜。
-                      <p className="setexplain" data-testid="setup-komi-explain">
-                        {interpolate(
-                          t('setup:komi_explain', '已经让了 {n} 子,这一局不贴目。让子和贴目是同一件事的两种做法——补的都是先行那一方的便宜,两样一起用会补两遍。'),
-                          { n: handicap },
-                        )}
-                        <br />
-                        {t('setup:komi_explain_back', '把让子调回 0,这一组会变回可选的贴目档。')}
-                      </p>
-                    ) : (
-                      <KioskStepTrack
-                        testId="setup-komi"
-                        count={komiCount}
-                        index={komiIndex}
-                        onChange={(i) => setKomi(KOMI_MIN + i * KOMI_STEP)}
-                        decLabel={t('setup:komi_down', '减少贴目')}
-                        incLabel={t('setup:komi_up', '增加贴目')}
-                        value={interpolate(t('setup:komi_value', '贴 {n} 目'), { n: komi })}
-                        meta={t('setup:komi_meta', '0.5 – 7.5 · 中国规则常用 7.5')}
-                      />
+                <section className="setgrp" data-testid="setup-strength-group">
+                  <KioskSecLabel
+                    zh={t('AI Strength', '棋力')}
+                    en="Strength"
+                    value={t('setup:strength_humanlike', '拟人 · 开局后不可改')}
+                  />
+                  <SetupStepper
+                    testId="setup-strength"
+                    count={rankOptions.length}
+                    index={rank}
+                    onChange={setRank}
+                    decLabel={t('setup:strength_down', '降低一档')}
+                    incLabel={t('setup:strength_up', '提高一档')}
+                    /* 「第 N 档 · X 级」—— 等级那半截改版前**从来没接上过**:
+                       那句 msgid 的缺省值结尾就是「第 {n} 档 · 」,屏上是个吊着的点号。 */
+                    value={(
+                      <>
+                        {interpolate(t('setup:strength_rung', '第 {n} 档'), { n: rank + 1 })}
+                        {' · '}
+                        <i>{rankName(rank)}</i>
+                      </>
                     )}
-                  </section>
-
-                  <section className="setgrp">
-                    <OptionChips
-                      label={t('Rules', '规则')}
-                      en="Rules"
-                      testId="setup-rules"
-                      value={rules}
-                      onChange={setRules}
-                      options={[
-                        { value: 'chinese' as const, label: t('Chinese', '中国') },
-                        { value: 'japanese' as const, label: t('Japanese', '日本') },
-                        { value: 'korean' as const, label: t('Korean', '韩国') },
-                        { value: 'aga' as const, label: 'AGA' },
-                      ]}
-                      hint={RULES_HINT(t)[rules] ?? ''}
-                    />
-                  </section>
-                </>
+                    meta={interpolate(t('setup:strength_meta', '共 {n} 档 · {lo} – {hi}'), {
+                      n: rankOptions.length, lo: rankName(0), hi: rankName(rankOptions.length - 1),
+                    })}
+                  />
+                  <p className="su-hint">
+                    {t('setup:strength_hint2', '拟人:按这一档的水平下棋,包括那个水平会犯的错 —— 档位说的是对手,不是你的段位')}
+                  </p>
+                </section>
               )}
 
-              <section className="setgrp" data-testid="setup-clock-group">
-                <KioskStepTrack
-                  label={t('Time Control', '用时')}
-                  en="Clock"
-                  testId="setup-clock"
-                  count={timeTrack.length}
-                  index={timeIndex}
-                  onChange={(i) => applyTimePreset(timeTrack[i].key)}
-                  decLabel={t('setup:clock_down', '减少用时')}
-                  incLabel={t('setup:clock_up', '增加用时')}
-                  value={timeTrack[timeIndex]?.label ?? '—'}
-                  meta={interpolate(t('setup:clock_meta', '{n} 档 · {lo} → {hi}'), {
-                    n: timeTrack.length,
-                    lo: timeTrack[0]?.label ?? '—',
-                    hi: timeTrack[timeTrack.length - 1]?.label ?? '—',
-                  })}
-                />
+              {/* ── 怎么坐 ──────────────────────────────────────────────────── */}
+              <section className="setgrp" data-testid="setup-seat-group">
+                <KioskSecLabel zh={t('setup:seat', '怎么坐')} en="Seat" />
+                <div className="su-row">
+                  <SetupSelect
+                    testId="setup-input"
+                    label={t('setup:input_where', '落子')}
+                    value={playInput.onBoard ? 'board' : 'screen'}
+                    options={[
+                      // 「屏幕」**永远选得了** —— 条件掉了不能把人锁在一块用不了的盘上。
+                      { key: 'screen', label: t('setup:on_screen', '屏幕') },
+                      {
+                        key: 'board',
+                        label: t('setup:on_board', '实体盘'),
+                        disabled: !playInput.available,
+                        /* 两种灰因要分开说:没标定 vs 这一局不是 19 路。
+                           合成一句「用不了」,用户不知道该去标定还是该换路数。 */
+                        reason: playInput.reason === 'notNineteen'
+                          ? t('setup:board_only_19', '盘上那块是 19 路')
+                          : t('setup:board_not_ready', '没标定过摄像头'),
+                      },
+                    ]}
+                    onChange={(k) => setPlayOnBoard(k === 'board')}
+                  />
+                  <SetupSelect
+                    testId="setup-color"
+                    label={t('My Color', '我执')}
+                    value={color}
+                    options={[
+                      { key: 'black', label: <><span className="disc b" />{t('setup:side_black', '执黑')}</> },
+                      { key: 'white', label: <><span className="disc w" />{t('setup:side_white', '执白')}</> },
+                      {
+                        key: 'guess',
+                        label: <><span className="disc rnd" />{t('setup:side_guess', '猜先')}</>,
+                        // 让子局黑方先摆子 —— 让哪一方是这一局的前提,不能再抽签。
+                        disabled: terms.handicap > 0,
+                        reason: t('setup:guess_blocked', '让子局黑方先摆子'),
+                      },
+                    ]}
+                    onChange={(k) => setColor(k as SetupColor)}
+                  />
+                  <SetupSelect
+                    testId="setup-clock"
+                    label={t('Time Control', '用时')}
+                    value={currentTimeKey}
+                    columns={2}
+                    options={timeTrack.map((p) => ({ key: p.key, label: p.label }))}
+                    onChange={applyTimePreset}
+                  />
+                </div>
+                <p className="su-hint" data-testid="setup-seat-hint">{seatHint}</p>
               </section>
             </KioskScrollZone>
 
@@ -680,16 +667,14 @@ const AiSetupPage = () => {
                 该说的话已经在页控条副标(「计入段位 · 全程封分析」)和「对手」那组的提示行里
                 说过了,再摆一段就是同一句话说两遍。第一版给它编了一段,四图一比才看出来:
                 **稿子上没有的东西,写出来通顺也还是编的。** */}
+            {/* 一行,不是两行。「开局后不可改」已经写在「这局棋」那一组的组标右端了,
+                原来第一行是把同一句话再说一遍 —— 而右栏一行 ≈ 19px,这一屏正卡在那上头。 */}
             {!isRanked && (
               <p className="setnote" data-testid="setup-note">
-                {t('setup:note_a', '棋力、让子和执棋方')}
-                <b>{t('setup:note_b', '开局后不能改')}</b>
-                {t('setup:note_c', ',中途换等于换了一局棋。')}
-                <br />
-                {t('setup:note_d', '规则和用时')}
-                <b>{t('setup:note_e', '写进这一局的棋谱')}</b>
-                {t('setup:note_f', ';自由对弈')}
-                <b>{t('setup:note_g', '不计入段位')}</b>
+                {t('setup:note_r2_a', '这几项')}
+                <b>{t('setup:note_r2_b', '开局后都不能改')}</b>
+                {t('setup:note_r2_c', ',中途换等于换了一局棋;自由对弈')}
+                <b>{t('setup:note_r2_d', '不计入段位')}</b>
                 {t('setup:note_h', '。')}
               </p>
             )}
@@ -707,6 +692,7 @@ const AiSetupPage = () => {
             </button>
           </>
         )}
+        </SetupPopoverHost.Provider>
       </div>
     </div>
   );

@@ -1,4 +1,7 @@
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
+import { useSetupPopover } from './useSetupPopover';
+import { SetupPopover } from './SetupPopover';
+import type { SetupOption } from './SetupSelect';
 
 interface Props {
   label: string;
@@ -6,8 +9,10 @@ interface Props {
   children: ReactNode;
   /** 右端那句话:说清它为什么不是控件 */
   note: string;
-  /** 只有「自定贴目」那一档才点得动 */
-  onPick?: () => void;
+  /** 给了选项它才点得动 —— 只有「自定贴目」那一档会给。 */
+  options?: SetupOption[];
+  value?: string;
+  onChange?: (key: string) => void;
   testId?: string;
 }
 
@@ -21,15 +26,21 @@ interface Props {
  * 唯一的例外是「自定贴目」那一档:那时贴目**真的**是个可选项,于是它才长出边框和
  * chevron 变回控件。`disabled` 不许降透明度 —— 平时它不是「被禁用的按钮」,它就是一行字。
  */
-export function SetupDerived({ label, children, note, onPick, testId }: Props) {
-  const pick = !!onPick;
+export function SetupDerived({ label, children, note, options, value, onChange, testId }: Props) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const { host, open, setOpen, popRef, style } = useSetupPopover(ref);
+  const pick = !!options && !!onChange;
   return (
+    <>
     <button
       type="button"
+      ref={ref}
       className={`su-out${pick ? ' su-out--pick' : ''}`}
       disabled={!pick}
+      aria-haspopup={pick ? 'listbox' : undefined}
+      aria-expanded={pick && open ? true : undefined}
       data-testid={testId}
-      onClick={pick ? (e) => { e.stopPropagation(); onPick!(); } : undefined}
+      onClick={pick ? (e) => { e.stopPropagation(); setOpen(!open); } : undefined}
     >
       <span className="su-out__k">{label}</span>
       <b className="su-out__v" data-testid={testId ? `${testId}-value` : undefined}>{children}</b>
@@ -40,6 +51,19 @@ export function SetupDerived({ label, children, note, onPick, testId }: Props) {
         </svg>
       ) : null}
     </button>
+    {pick && open && host && (
+      <SetupPopover
+        host={host}
+        popRef={popRef}
+        style={style}
+        columns={3}
+        options={options!}
+        value={value ?? ''}
+        onPick={(k) => { onChange!(k); setOpen(false); }}
+        testId={testId ? `${testId}-pop` : undefined}
+      />
+    )}
+    </>
   );
 }
 

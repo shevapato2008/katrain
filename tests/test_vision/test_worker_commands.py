@@ -221,9 +221,17 @@ def test_inprocess_suspect_cell_routes_to_ambiguous_card_not_autoplay(
     if expect_confirmed:
         assert isinstance(event, ConfirmedMove)
         assert (event.row, event.col, event.color) == (3, 3, BLACK)
+        # D4's SURVIVING veto: the auto-played confirmations are never charged. That
+        # veto's harm ("score runs away, the cell can never get back in") was true of a
+        # penalty that gated detect_new_move's return; it is not true of a penalty that
+        # only raises the routing gate, whose else-branch is the card. But an auto-played
+        # confirmation is by definition one the caller was willing to play, so there is
+        # nothing to charge it for.
+        worker._move_detector.charge_carded_confirmation.assert_not_called()
     else:
         assert event["type"] == "ambiguous_stone"
         assert event["data"]["row"] == 3 and event["data"]["col"] == 3
+        worker._move_detector.charge_carded_confirmation.assert_called_once_with(3, 3)
 
 
 class TestInProcessMotionGating:
@@ -579,9 +587,17 @@ def test_subprocess_suspect_cell_routes_to_ambiguous_card_not_autoplay(
     if expect_confirmed:
         assert isinstance(event, ConfirmedMove)
         assert (event.row, event.col, event.color) == (3, 3, BLACK)
+        # D4's SURVIVING veto: the auto-played confirmations are never charged. That
+        # veto's harm ("score runs away, the cell can never get back in") was true of a
+        # penalty that gated detect_new_move's return; it is not true of a penalty that
+        # only raises the routing gate, whose else-branch is the card. But an auto-played
+        # confirmation is by definition one the caller was willing to play, so there is
+        # nothing to charge it for.
+        worker._move_detector.charge_carded_confirmation.assert_not_called()
     else:
         assert event["type"] == "ambiguous_stone"
         assert event["data"]["row"] == 3 and event["data"]["col"] == 3
+        worker._move_detector.charge_carded_confirmation.assert_called_once_with(3, 3)
 
 
 class TestSubprocessMotionGating:
@@ -878,3 +894,267 @@ class TestResyncReinjectionGuard:
         w._lit_points = set()
         w._drain_or_process = w._process_commands
         _post_resync_reinjection_guard(w)
+
+
+class _TwoFrameCamera:
+    """Two loop iterations, then stop — one AMBIG_REPROMPT_FRAMES window."""
+
+    is_connected = True
+
+    def __init__(self):
+        self.worker = None
+        self._reads = 0
+
+    def read_frame(self):
+        self._reads += 1
+        if self._reads >= 2:
+            self.worker._running = False
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+
+
+def _carded_charge_probe(worker):
+    """Suspect cell, peak 0.57 < 0.42 + 0.25 = 0.67 -> both frames route to the card."""
+    extractor = _configure_confirmation_probe(worker, peak=0.57, count=5)
+    worker._ambiguous_confidence = 0.42
+    worker._move_detector.is_suspect.return_value = True
+    return extractor
+
+
+def _assert_charged_twice_but_prompted_once(worker):
+    charges = worker._move_detector.charge_carded_confirmation.call_args_list
+    assert [c.args for c in charges] == [(3, 3), (3, 3)]
+    events = []
+    while True:
+        try:
+            events.append(worker._event_queue.get_nowait())
+        except queue.Empty:
+            break
+    prompts = [e for e in events if isinstance(e, dict) and e.get("type") == "ambiguous_stone"]
+    assert len(prompts) == 1  # the second event is suppressed by AMBIG_REPROMPT_FRAMES
+
+
+_CHARGE_TWICE_DOC = """Charge the CELL, not the prompt.
+
+    AMBIG_REPROMPT_FRAMES (40) suppresses the repeat ambiguous_stone EVENT, but every
+    suppressed re-confirmation is still evidence that this intersection keeps producing
+    moves nobody is willing to play — and on the 2026-09-20 device profile the (18,13)
+    phantom re-confirmed roughly every 5 frames while the prompt fired at most once per
+    40. Charging the event instead of the cell would throw ~7 of every 8 signals away.
+
+    Mutation proven in a disposable worktree: moving
+    `self._move_detector.charge_carded_confirmation(row, col)` inside the
+    AMBIG_REPROMPT_FRAMES suppression `if` turns this red (one charge, not two)."""
+
+
+def test_inprocess_every_carded_confirmation_charges_even_when_the_prompt_is_suppressed():
+    __doc__ = _CHARGE_TWICE_DOC
+    camera = _TwoFrameCamera()
+    worker = _inprocess_worker(camera)
+    camera.worker = worker
+    extractor = _carded_charge_probe(worker)
+    worker._running = True
+    worker._config["capture_fps"] = 100000
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._warp_frame = MagicMock(return_value=(np.zeros((10, 10, 3), dtype=np.uint8), True))
+    worker._averager = MagicMock()
+    worker._averager.add.side_effect = lambda frame: frame
+    worker._detector = MagicMock()
+    worker._detector.detect.return_value = []
+    worker._active_extractor = MagicMock(return_value=extractor)
+    worker._maybe_send_preview = MagicMock()
+
+    worker._loop()
+
+    _assert_charged_twice_but_prompted_once(worker)
+
+
+test_inprocess_every_carded_confirmation_charges_even_when_the_prompt_is_suppressed.__doc__ = _CHARGE_TWICE_DOC
+
+
+def test_subprocess_every_carded_confirmation_charges_even_when_the_prompt_is_suppressed():
+    worker = _subprocess_motion_worker()
+    camera = _TwoFrameCamera()
+    camera.worker = worker
+    extractor = _carded_charge_probe(worker)
+    worker._running = True
+    worker._cmd_queue = queue.Queue()
+    worker._camera = camera
+    worker._frame_count = 0
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._board_finder.find_focus.return_value = (np.zeros((10, 10, 3), dtype=np.uint8), True)
+    worker._config = {"use_clahe": False, "enhance": "none"}
+    worker._enhance_mode = "none"
+    worker._add_threshold = 0.5
+    worker._ae = None
+    worker._averager.add.side_effect = lambda frame: frame
+    worker._detector = MagicMock()
+    worker._detector.detect.return_value = []
+    worker._overlay_lock = MagicMock()
+    worker._overlay = MagicMock()
+    worker._state_extractor = extractor
+    worker._last_detected_board = None
+    worker._consecutive_failures = 0
+    worker._maybe_publish_status = MagicMock()
+
+    worker._processing_loop()
+
+    _assert_charged_twice_but_prompted_once(worker)
+
+
+test_subprocess_every_carded_confirmation_charges_even_when_the_prompt_is_suppressed.__doc__ = _CHARGE_TWICE_DOC
+
+
+_AE_DOC = """Software AE must be muted only on the frame that DECIDES a confirmation.
+
+    Since L1 every changed cell is its own candidate, so the old gate
+    (`pending_move is not None`) goes true the moment any cell lights up anywhere and
+    with two cells lit never goes false again — measured open 1/200 frames against
+    199/200 before L1. ExposureController never even EVALUATES while muted (`_last_eval`
+    is set inside update(), which the gate returns before), so exposure freezes outright,
+    and the 2026-09-20 session names sunlight as a factor while (18,13) was lit 405 s:
+    frozen exposure -> worse image -> more phantom candidate frames -> gate stays shut.
+
+    The mock's `about_to_confirm` is set EXPLICITLY on both branches: a bare MagicMock
+    attribute is truthy, which is the trap that made the round-1 is_suspect tests run
+    one branch twice.
+
+    Mutations proven in a disposable worktree, each killing a different half:
+      - `if self._move_detector.about_to_confirm:` -> `if self._move_detector.pending_move is not None:`
+        (the predicate this replaces) -> red on the FIRST half, "Expected 'update' to
+        have been called once. Called 0 times." — pending_move is a truthy MagicMock, so
+        AE never actuates at all. This is the regression the change exists to fix.
+      - the gate REMOVED (`if False:`) -> red on the SECOND half, "Expected 'update' to
+        not have been called. Called 1 times."
+    Negating the gate instead (`if not ... about_to_confirm:`) also turns it red, but on
+    the FIRST assertion, so it does not prove the second half bites — that is why the
+    removal mutation is the one recorded here."""
+
+
+def _assert_ae_actuates_off_the_deciding_frame(worker):
+    stats = SimpleNamespace(median=100.0, clip_frac=0.0)
+
+    worker._move_detector.count = 3  # consistency_frames - 2
+    worker._move_detector.about_to_confirm = False
+    worker._run_ae(stats)
+    worker._ae.update.assert_called_once()
+
+    worker._ae.reset_mock()
+    worker._ae_advisory = False  # the first call fell to advisory (stub camera has no controls)
+    worker._move_detector.count = 4  # consistency_frames - 1
+    worker._move_detector.about_to_confirm = True
+    worker._run_ae(stats)
+    worker._ae.update.assert_not_called()
+
+
+def _ae_probe(worker):
+    worker._ae_advisory = False
+    worker._camera = SimpleNamespace()
+    worker._ae = MagicMock()
+    worker._last_bstats = None
+    worker._move_detector = MagicMock()
+    worker._move_detector.consistency_frames = 5
+    return worker
+
+
+def test_inprocess_ae_is_muted_only_on_the_frame_that_decides_a_confirmation():
+    _assert_ae_actuates_off_the_deciding_frame(_ae_probe(_inprocess_worker()))
+
+
+test_inprocess_ae_is_muted_only_on_the_frame_that_decides_a_confirmation.__doc__ = _AE_DOC
+
+
+def test_subprocess_ae_is_muted_only_on_the_frame_that_decides_a_confirmation():
+    from katrain.vision.worker import _VisionWorkerLoop
+
+    _assert_ae_actuates_off_the_deciding_frame(_ae_probe(_VisionWorkerLoop.__new__(_VisionWorkerLoop)))
+
+
+test_subprocess_ae_is_muted_only_on_the_frame_that_decides_a_confirmation.__doc__ = _AE_DOC
+
+
+_PROMOTER_DOC = """The stuck-stone promoter is the ONLY route a sub-add-confidence real
+    stone has to the user, and since L1 the old gate (`pending_move is None`) measured
+    "no cell anywhere on the board has an unexpired candidate" — open 1/200 frames with
+    two persistently-lit cells, i.e. a permanent mute. That is manufactured F2, and the
+    measured 2026-09-20 casualty: the real (2,10) stone logged 0 `move confirmed` all
+    day. The promoter's own gate never protected anything per-cell anyway (it keeps only
+    cells the stable board reads EMPTY, which is disjoint from the candidate set by
+    construction) — it was only ever a "one prompt at a time" mute.
+
+    `about_to_confirm` is set EXPLICITLY on the mock in both cases: a bare MagicMock
+    attribute is truthy and would silently test one branch twice.
+
+    Mutations proven in a disposable worktree, each killing a different case:
+      - `not self._move_detector.about_to_confirm` -> `self._move_detector.pending_move is None`
+        (the predicate this replaces) -> red on the [False-True] case ONLY: pending_move
+        is the truthy (3, 3, BLACK), so the promoter never runs. This is the regression
+        the change exists to fix.
+      - the clause REMOVED (`if move_result is None:`) -> red on the [True-False] case
+        ONLY: the promoter runs on the deciding frame.
+    Negating the clause turns BOTH cases red, so it does not attribute either one; the
+    two one-sided mutations above are what show each case is load-bearing."""
+
+
+@pytest.mark.parametrize(("about_to_confirm", "expect_promotion"), [(False, True), (True, False)])
+def test_inprocess_promoter_runs_unless_a_confirmation_is_one_frame_away(about_to_confirm, expect_promotion):
+    camera = _OneFrameCamera()
+    worker = _inprocess_worker(camera)
+    camera.worker = worker
+    extractor = _configure_confirmation_probe(worker, peak=0.80, count=2)
+    worker._move_detector.detect_new_move.return_value = None
+    worker._move_detector.about_to_confirm = about_to_confirm
+    worker._promote_stuck_stone = MagicMock()
+    worker._running = True
+    worker._config["capture_fps"] = 100000
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._warp_frame = MagicMock(return_value=(np.zeros((10, 10, 3), dtype=np.uint8), True))
+    worker._averager = MagicMock()
+    worker._averager.add.side_effect = lambda frame: frame
+    worker._detector = MagicMock()
+    worker._detector.detect.return_value = []
+    worker._active_extractor = MagicMock(return_value=extractor)
+    worker._maybe_send_preview = MagicMock()
+
+    worker._loop()
+
+    assert worker._promote_stuck_stone.called is expect_promotion
+
+
+test_inprocess_promoter_runs_unless_a_confirmation_is_one_frame_away.__doc__ = _PROMOTER_DOC
+
+
+@pytest.mark.parametrize(("about_to_confirm", "expect_promotion"), [(False, True), (True, False)])
+def test_subprocess_promoter_runs_unless_a_confirmation_is_one_frame_away(about_to_confirm, expect_promotion):
+    worker = _subprocess_motion_worker()
+    camera = _OneFrameCamera()
+    camera.worker = worker
+    extractor = _configure_confirmation_probe(worker, peak=0.80, count=2)
+    worker._move_detector.detect_new_move.return_value = None
+    worker._move_detector.about_to_confirm = about_to_confirm
+    worker._promote_stuck_stone = MagicMock()
+    worker._running = True
+    worker._cmd_queue = queue.Queue()
+    worker._camera = camera
+    worker._frame_count = 0
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._board_finder.find_focus.return_value = (np.zeros((10, 10, 3), dtype=np.uint8), True)
+    worker._config = {"use_clahe": False, "enhance": "none"}
+    worker._enhance_mode = "none"
+    worker._add_threshold = 0.5
+    worker._ae = None
+    worker._averager.add.side_effect = lambda frame: frame
+    worker._detector = MagicMock()
+    worker._detector.detect.return_value = []
+    worker._overlay_lock = MagicMock()
+    worker._overlay = MagicMock()
+    worker._state_extractor = extractor
+    worker._last_detected_board = None
+    worker._consecutive_failures = 0
+    worker._maybe_publish_status = MagicMock()
+
+    worker._processing_loop()
+
+    assert worker._promote_stuck_stone.called is expect_promotion
+
+
+test_subprocess_promoter_runs_unless_a_confirmation_is_one_frame_away.__doc__ = _PROMOTER_DOC

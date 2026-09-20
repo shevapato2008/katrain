@@ -400,6 +400,13 @@ class _VisionWorkerLoop:
                         # window maximum (a marginal stone's per-frame value oscillates),
                         # and it is re-read every frame, so a candidate that decays back
                         # below the line loses the fast path instead of keeping it.
+                        # Review Finding 6: the fast-path bar (0.70) sits ABOVE the
+                        # suspect routing gate (device 0.42 + SUSPECT_CONFIDENCE_BONUS
+                        # 0.25 = 0.67), so any cell that earns the shortcut here also
+                        # clears the raised gate below — L2's routing gate can never
+                        # divert a fast-path confirmation to the card. Both constants are
+                        # frozen this round; if either moves, re-derive this relationship
+                        # rather than assuming it still holds.
                         pending_peak = self._conf_peak.peak_for(self._move_detector.pending_move)
                         fast = pending_peak is not None and pending_peak >= self._fast_confirm_confidence
                         candidate_sightings = self._move_detector.count
@@ -438,6 +445,12 @@ class _VisionWorkerLoop:
                                 if self._move_detector.is_suspect(row, col):
                                     ambiguous_gate = min(0.95, ambiguous_gate + SUSPECT_CONFIDENCE_BONUS)
                                 if conf < ambiguous_gate:
+                                    # Charge the CELL, not the prompt: AMBIG_REPROMPT_FRAMES
+                                    # suppresses the repeat *event*, but every suppressed
+                                    # re-confirmation is still evidence this intersection keeps
+                                    # producing moves nobody is willing to play. Never call this
+                                    # on the auto-play branch below — that is D4's veto.
+                                    self._move_detector.charge_carded_confirmation(row, col)
                                     # PRD §3.4 row 1: low-confidence "move" asks the user instead.
                                     # Baseline NOT advanced: an unanswered prompt re-fires after
                                     # the cooldown instead of silencing detection forever.
@@ -516,7 +529,7 @@ class _VisionWorkerLoop:
                                 )
                         self._prev_conf_map = conf_map
 
-                        if move_result is None and self._move_detector.pending_move is None:
+                        if move_result is None and not self._move_detector.about_to_confirm:
                             self._promote_stuck_stone(detections, w, h, self._last_stable_board, masked)
                 else:
                     # Board not found
@@ -634,8 +647,8 @@ class _VisionWorkerLoop:
             self._ae_advisory = True
             logger.info("AE: exposure controls ineffective on this platform — advisory mode only")
             return
-        if self._move_detector.pending_move is not None:
-            return  # never shift exposure mid move-confirmation
+        if self._move_detector.about_to_confirm:
+            return  # never shift exposure on the frame that decides a confirmation
         if self._ae.current_exposure is None:
             self._ae.seed(getattr(self._camera, "initial_exposure", None))
         new_exp = self._ae.update(stats, time.monotonic())

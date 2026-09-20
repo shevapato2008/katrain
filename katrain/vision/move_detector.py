@@ -21,11 +21,33 @@ from katrain.vision.board_state import EMPTY
 # added — the caller-owned-baseline contract makes an unactioned confirmation re-fire on
 # purpose, so penalising repeats would condemn a legitimate weak stone that is waiting on
 # the user's confirmation card.
+#
+# Fix round 1: a suspect cell's EXTRA BAR IS THE AMBIGUOUS ROUTING GATE ONLY (applied by
+# the workers via SUSPECT_CONFIDENCE_BONUS) — never the confirmation frame count. An
+# earlier version doubled required_frames here for a suspect cell; that was wrong,
+# because "abandonment is what a real stone never does" is false — the class docstring's
+# own miss_grace paragraph says a marginal-confidence stone blinks out for a frame or
+# two, so a weak real stone oscillating near the keep gate produces exactly the abandon
+# signature this module charges, which is the measured profile of that day's own F2
+# casualties (a real stone that never entered its game). Worse, the frame count gates
+# detect_new_move's return value, which sits upstream of BOTH auto-play and the
+# ambiguous card (the promoter only runs when no candidate is pending at all) — so a
+# suspect cell that could never assemble the doubled count confirmed nowhere, ever: the
+# silent, permanent loss the fix was meant to prevent, manufactured by the fix itself.
+# The routing gate alone is sufficient against the measured event: real confirmed moves
+# on this box peak at p25=0.72 (config_service.py), the (18,13) phantom auto-confirmed
+# at 0.50 and 0.57 (already its peak values), and 0.42 + 0.25 = 0.67 sits strictly
+# between the two — so the phantom is routed to the card deterministically, and the
+# large majority of real moves still clear the routing gate and auto-play; a real move
+# too weak to clear it still reaches the user via the card, never vanishes. Accrual
+# (~1 point per abandon cycle, every >= miss_grace + 2 frames) outruns decay (1 point
+# per 300 frames) for a cell that keeps producing candidates, so such a cell stays
+# suspect indefinitely — that is now fine, because the only cost of staying suspect is
+# a confirmation tap, never a lost move.
 SUSPICION_ABANDON = 1  # became a candidate, then vanished without confirming
 SUSPICION_THRESHOLD = 3  # at or above this, the cell is suspect
-SUSPICION_DECAY_FRAMES = 300  # every N frames every cell loses a point — nothing is condemned forever
-SUSPECT_REQUIRED_FRAMES_FACTOR = 2  # a suspect cell must persist this many times longer
-SUSPECT_CONFIDENCE_BONUS = 0.25  # ...and clear this much more ambiguous gate (applied by the workers)
+SUSPICION_DECAY_FRAMES = 300  # every N frames every cell loses a point
+SUSPECT_CONFIDENCE_BONUS = 0.25  # extra the ambiguous gate demands from a suspect cell (workers only)
 
 
 class MoveDetector:
@@ -164,8 +186,6 @@ class MoveDetector:
             self.misses = 0
 
         needed = self.consistency_frames if required_frames is None else max(1, int(required_frames))
-        if self.is_suspect(move[0], move[1]):
-            needed *= SUSPECT_REQUIRED_FRAMES_FACTOR
         if self.count >= needed:
             # Baseline deliberately NOT advanced (see class docstring): the caller
             # force_syncs once the move is actually accepted downstream.

@@ -4,7 +4,7 @@ from katrain.vision.move_detector import (
     AmbiguousPromoter,
     MoveDetector,
     PendingConfidencePeak,
-    SUSPECT_REQUIRED_FRAMES_FACTOR,
+    SUSPECT_CONFIDENCE_BONUS,
     SUSPICION_THRESHOLD,
 )
 from katrain.vision.board_state import BLACK, WHITE, EMPTY
@@ -462,7 +462,16 @@ class TestCellReputation:
             self._flash_once(d, empty, flashed, miss_grace=2)
         assert d.is_suspect(18, 13)
 
-    def test_suspect_cell_needs_more_frames_to_confirm(self):
+    def test_suspect_cell_still_confirms_at_the_normal_frame_count(self):
+        """Fix round 1: a suspect cell's extra bar is the workers' ambiguous routing
+        gate ONLY, never the confirmation frame count. An earlier version doubled
+        required_frames here; that gated detect_new_move's return value, which sits
+        upstream of BOTH auto-play and the ambiguous confirmation card (the stuck-stone
+        promoter only runs when no candidate is pending at all). A suspect cell that
+        could never assemble the doubled count therefore confirmed nowhere, ever —
+        silent, permanent loss, which is F2 (a real stone that never entered its game),
+        manufactured by the very fix meant to stop F1. Being suspect must never take the
+        card itself off the table — it only changes what happens after this returns."""
         d = MoveDetector(consistency_frames=3, miss_grace=2)
         empty, flashed = self._boards()
         d.detect_new_move(empty)
@@ -470,11 +479,26 @@ class TestCellReputation:
             self._flash_once(d, empty, flashed, miss_grace=2)
         assert d.is_suspect(18, 13)
 
-        # 3 frames used to be enough; a suspect cell now needs 3 * FACTOR.
-        needed = 3 * SUSPECT_REQUIRED_FRAMES_FACTOR
-        for _ in range(needed - 1):
-            assert d.detect_new_move(flashed) is None
+        # Same consistency_frames as an honest cell (see test_an_honest_cell_is_never_penalised).
+        assert d.detect_new_move(flashed) is None
+        assert d.detect_new_move(flashed) is None
         assert d.detect_new_move(flashed) == (18, 13, WHITE)
+
+    def test_suspect_confidence_bonus_covers_the_measured_phantom(self):
+        """L2's sole F1 mechanism, post fix-round-1, is this routing gate — the frame
+        count no longer discriminates suspect cells at all. Device flags measured on
+        RK3562 2026-09-20: --vision-ambiguous-confidence 0.42. Vision (18,13) auto-
+        confirmed at 0.50 (10:43:19) and 0.57 (peak, the O1 event) — both below the
+        raised gate, so once suspect it can only reach the user via the confirmation
+        card, never auto-play. Real confirmed moves on this box peak at p25=0.72
+        (config_service.py move_confirm_fast_confidence comment), comfortably above the
+        raised gate, so the large majority of real moves are unaffected even if flagged
+        suspect."""
+        raised_gate = min(0.95, 0.42 + SUSPECT_CONFIDENCE_BONUS)
+        assert raised_gate == pytest.approx(0.67)
+        assert raised_gate > 0.57  # the O1 auto-confirm peak
+        assert raised_gate > 0.50  # the 10:43:19 auto-confirm
+        assert raised_gate < 0.72  # real-move peak p25 — suspicion must not cost real play
 
     def test_an_honest_cell_is_never_penalised(self):
         """A real stone appears and confirms — it never appears-then-vanishes."""

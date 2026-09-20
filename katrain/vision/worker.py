@@ -448,13 +448,14 @@ class _VisionWorkerLoop:
                                         self._ambig_last_emit[(row, col)] = self._frame_count
                                         logger.info(
                                             "move at (%d,%d) confirmed but peak conf %.2f < %.2f — ambiguous prompt; "
-                                            "required_frames=%d observed_frames=%d",
+                                            "required_frames=%d observed_frames=%d suspicion=%d",
                                             row,
                                             col,
                                             conf,
                                             ambiguous_gate,
                                             selected_required_frames,
                                             candidate_sightings + 1,
+                                            self._move_detector.suspicion_of(row, col),
                                         )
                                         self._event_queue.put(
                                             {
@@ -481,13 +482,14 @@ class _VisionWorkerLoop:
                                 else:
                                     logger.info(
                                         "move confirmed: (%d,%d) color=%d peak_conf=%.2f "
-                                        "required_frames=%d observed_frames=%d",
+                                        "required_frames=%d observed_frames=%d suspicion=%d",
                                         row,
                                         col,
                                         color,
                                         conf,
                                         selected_required_frames,
                                         candidate_sightings + 1,
+                                        self._move_detector.suspicion_of(row, col),
                                     )
                                     self._event_queue.put(
                                         ConfirmedMove(

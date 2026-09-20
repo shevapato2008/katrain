@@ -9,7 +9,7 @@ import pytest
 
 from katrain.vision.board_state import BLACK, EMPTY
 from katrain.vision.config_service import VisionServiceConfig
-from katrain.vision.ipc import CommandType, WorkerCommand
+from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand
 from katrain.vision.service import VisionService
 
 
@@ -117,6 +117,10 @@ def _configure_confirmation_probe(worker, *, peak, count):
     worker._move_detector.count = count
     worker._move_detector.consistency_frames = 5
     worker._move_detector.detect_new_move.return_value = (3, 3, BLACK)
+    # A bare MagicMock() is truthy, so an unset is_suspect(...) silently ran every
+    # existing case through the SUSPECT branch (gate 0.55+0.25 here) instead of the
+    # plain gate it claimed to test — fix round 1, see test_worker_commands.py review.
+    worker._move_detector.is_suspect.return_value = False
     worker._conf_peak = MagicMock()
     worker._conf_peak.peak_for.return_value = peak
     worker._conf_peak.gate_confidence.return_value = 0.0 if peak is None else peak
@@ -148,9 +152,7 @@ def _configure_confirmation_probe(worker, *, peak, count):
         (None, 4, None, "required_frames=5 observed_frames=5"),
     ],
 )
-def test_inprocess_confirmation_diagnostic_reports_selected_path(
-    peak, count, expected_required, expected_log, caplog
-):
+def test_inprocess_confirmation_diagnostic_reports_selected_path(peak, count, expected_required, expected_log, caplog):
     camera = _OneFrameCamera()
     worker = _inprocess_worker(camera)
     camera.worker = worker
@@ -171,6 +173,52 @@ def test_inprocess_confirmation_diagnostic_reports_selected_path(
 
     assert worker._move_detector.detect_new_move.call_args.kwargs["required_frames"] == expected_required
     assert any(expected_log in record.message for record in caplog.records)
+
+
+@pytest.mark.parametrize(
+    ("is_suspect", "expected_log_fragment", "expect_confirmed"),
+    [
+        # 0.42 (device gate) + 0.25 (SUSPECT_CONFIDENCE_BONUS) = 0.67 > peak 0.57 -> routed to card.
+        (True, "peak conf 0.57 < 0.67", False),
+        # Not suspect: the device gate alone (0.42) is below peak 0.57 -> auto-plays.
+        (False, "move confirmed", True),
+    ],
+)
+def test_inprocess_suspect_cell_routes_to_ambiguous_card_not_autoplay(
+    is_suspect, expected_log_fragment, expect_confirmed, caplog
+):
+    """Fix round 1: is_suspect() must change ONLY the ambiguous routing gate, never the
+    confirmation frame count. Regression harness for the bug this replaces: with
+    is_suspect left as a bare MagicMock (truthy), both cases below would silently run
+    the SUSPECT branch regardless of the parametrized value."""
+    camera = _OneFrameCamera()
+    worker = _inprocess_worker(camera)
+    camera.worker = worker
+    extractor = _configure_confirmation_probe(worker, peak=0.57, count=5)
+    worker._ambiguous_confidence = 0.42
+    worker._move_detector.is_suspect.return_value = is_suspect
+    worker._running = True
+    worker._config["capture_fps"] = 100000
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._warp_frame = MagicMock(return_value=(np.zeros((10, 10, 3), dtype=np.uint8), True))
+    worker._averager = MagicMock()
+    worker._averager.add.side_effect = lambda frame: frame
+    worker._detector = MagicMock()
+    worker._detector.detect.return_value = []
+    worker._active_extractor = MagicMock(return_value=extractor)
+    worker._maybe_send_preview = MagicMock()
+
+    with caplog.at_level("INFO"):
+        worker._loop()
+
+    assert any(expected_log_fragment in record.message for record in caplog.records)
+    event = worker._event_queue.get_nowait()
+    if expect_confirmed:
+        assert isinstance(event, ConfirmedMove)
+        assert (event.row, event.col, event.color) == (3, 3, BLACK)
+    else:
+        assert event["type"] == "ambiguous_stone"
+        assert event["data"]["row"] == 3 and event["data"]["col"] == 3
 
 
 class TestInProcessMotionGating:
@@ -441,9 +489,7 @@ def _subprocess_motion_worker():
         (None, 4, None, "required_frames=5 observed_frames=5"),
     ],
 )
-def test_subprocess_confirmation_diagnostic_reports_selected_path(
-    peak, count, expected_required, expected_log, caplog
-):
+def test_subprocess_confirmation_diagnostic_reports_selected_path(peak, count, expected_required, expected_log, caplog):
     worker = _subprocess_motion_worker()
     camera = _OneFrameCamera()
     camera.worker = worker
@@ -473,6 +519,59 @@ def test_subprocess_confirmation_diagnostic_reports_selected_path(
 
     assert worker._move_detector.detect_new_move.call_args.kwargs["required_frames"] == expected_required
     assert any(expected_log in record.message for record in caplog.records)
+
+
+@pytest.mark.parametrize(
+    ("is_suspect", "expected_log_fragment", "expect_confirmed"),
+    [
+        # 0.42 (device gate) + 0.25 (SUSPECT_CONFIDENCE_BONUS) = 0.67 > peak 0.57 -> routed to card.
+        (True, "peak conf 0.57 < 0.67", False),
+        # Not suspect: the device gate alone (0.42) is below peak 0.57 -> auto-plays.
+        (False, "move confirmed", True),
+    ],
+)
+def test_subprocess_suspect_cell_routes_to_ambiguous_card_not_autoplay(
+    is_suspect, expected_log_fragment, expect_confirmed, caplog
+):
+    """Mirror of test_inprocess_suspect_cell_routes_to_ambiguous_card_not_autoplay for
+    the SBC subprocess path (worker.py) — worker parity, fix round 1."""
+    worker = _subprocess_motion_worker()
+    camera = _OneFrameCamera()
+    camera.worker = worker
+    extractor = _configure_confirmation_probe(worker, peak=0.57, count=5)
+    worker._ambiguous_confidence = 0.42
+    worker._move_detector.is_suspect.return_value = is_suspect
+    worker._running = True
+    worker._cmd_queue = queue.Queue()
+    worker._camera = camera
+    worker._frame_count = 0
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._board_finder.find_focus.return_value = (np.zeros((10, 10, 3), dtype=np.uint8), True)
+    worker._config = {"use_clahe": False, "enhance": "none"}
+    worker._enhance_mode = "none"
+    worker._add_threshold = 0.5
+    worker._ae = None
+    worker._averager.add.side_effect = lambda frame: frame
+    worker._detector = MagicMock()
+    worker._detector.detect.return_value = []
+    worker._overlay_lock = MagicMock()
+    worker._overlay = MagicMock()
+    worker._state_extractor = extractor
+    worker._last_detected_board = None
+    worker._consecutive_failures = 0
+    worker._maybe_publish_status = MagicMock()
+
+    with caplog.at_level("INFO"):
+        worker._processing_loop()
+
+    assert any(expected_log_fragment in record.message for record in caplog.records)
+    event = worker._event_queue.get_nowait()
+    if expect_confirmed:
+        assert isinstance(event, ConfirmedMove)
+        assert (event.row, event.col, event.color) == (3, 3, BLACK)
+    else:
+        assert event["type"] == "ambiguous_stone"
+        assert event["data"]["row"] == 3 and event["data"]["col"] == 3
 
 
 class TestSubprocessMotionGating:

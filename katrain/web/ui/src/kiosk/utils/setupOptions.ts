@@ -168,6 +168,24 @@ export interface GameTerms {
 /**
  * 三个输入 ⇒ 两个字段。**这是整条链上唯一算 komi 的地方。**
  *
+ * ## 和跨平台那条路的 `_komi_for_handicap` 为什么不一样(别去「统一」它们)
+ *
+ * `katrain/web/api/v1/endpoints/platforms.py:36` 有一份同名同义的推导,而它对让 N 子
+ * 给的是 **komi = N**,这里给的是 **komi = 0**。两边都对,因为**对面的引擎不是同一个**:
+ *
+ * · 那条路打的是**星阵**的引擎。星阵不另外加让子补偿,所以那 N 目必须由 komi 带过去。
+ * · 这条路打的是 **KataGo**。中国规则的 `whiteHandicapBonusRule = WHB_N`
+ *   (`KataGo/cpp/game/rules.cpp:292`)让它**自己**给白方加 N,komi 再写 N 就补两遍。
+ *
+ * **净补偿两边都是白方 +N**,差别只在那个 N 从哪儿来。
+ * 另两处也是同一种情形,不是分叉:
+ * · 「让先」那边编码成 `handicap = -1`,这边是 `handicap = 0, komi = 0` ——
+ *   因为这条路的 `handicap` 会直接写进 SGF 的 `HA[]`(`interface.py:806`),
+ *   `HA[-1]` 不是合法的谱。
+ * · 「猜先」那边在服务端掷(`_resolve_color`),这边在客户端掷(`drawSeat`)——
+ *   见 `AiSetupPage.tsx` 那段注:这条路的 `POST /api/game/setup` 不认 `nigiri`,
+ *   而执黑执白本来就是自由选择,客户端掷不带来任何优势。
+ *
  * · 分先  → 规则的默认贴目
  * · 让先  → 0(不让子也不贴目)
  * · 倒贴  → 负的默认贴目(白贴)

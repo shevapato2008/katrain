@@ -119,8 +119,10 @@
   },
   "ruleset": "chinese",
   "stones": [],
+  "terminal_result": null,
   "theme": "theme:red-green-colourblind",
   "timer": {
+    "configured": false,
     "current_node_time_used": 0,
     "main_time_used": 0,
     "next_player_periods_used": 0,

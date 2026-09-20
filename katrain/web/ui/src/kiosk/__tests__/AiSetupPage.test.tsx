@@ -116,7 +116,7 @@ describe('AiSetupPage', () => {
     renderPage();
     const pop = await openPick(userEvent.setup(), 'setup-color');
     expect([...pop.querySelectorAll('[data-k]')].map((e) => e.getAttribute('data-k')))
-      .toEqual(['black', 'white', 'guess']);
+      .toEqual(['black', 'white', 'nigiri']);
   });
 
   it('让子局关掉「猜先」,并说得出为什么', async () => {
@@ -124,7 +124,7 @@ describe('AiSetupPage', () => {
     const user = userEvent.setup();
     await pick(user, 'setup-handicap', '4');
     const pop = await openPick(user, 'setup-color');
-    const guess = pop.querySelector('[data-k="guess"]') as HTMLButtonElement;
+    const guess = pop.querySelector('[data-k="nigiri"]') as HTMLButtonElement;
     // 让子局黑方先摆子 —— 让哪一方是这一局的前提,不能再抽签。
     expect(guess).toBeDisabled();
     expect(guess).toHaveTextContent('让子局黑方先摆子');
@@ -291,7 +291,7 @@ describe('AiSetupPage', () => {
   it('「猜先」在发出去之前解成 black/white —— 后端不认识 guess', async () => {
     renderPage('free');
     const user = userEvent.setup();
-    await pick(user, 'setup-color', 'guess');
+    await pick(user, 'setup-color', 'nigiri');
     await user.click(screen.getByRole('button', { name: /开始对局/i }));
     const { API } = await import('../../api');
     await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());

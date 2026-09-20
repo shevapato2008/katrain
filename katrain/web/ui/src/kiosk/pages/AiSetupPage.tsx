@@ -45,7 +45,7 @@ import KioskSetupBoard from '../components/board/KioskSetupBoard';
 const AI_STRATEGY = 'ai:human';
 
 /** 我执三档。`guess`(猜先)在发出去之前解成 black/white —— 见 `drawSeat`。 */
-type SetupColor = 'black' | 'white' | 'guess';
+type SetupColor = 'black' | 'white' | 'nigiri';
 
 // Canonical kiosk setup skeleton: left preview console + right token-themed form. pvp/cross-platform setup pages restyle against this — tokens only, no flow change.
 const AiSetupPage = () => {
@@ -150,7 +150,7 @@ const AiSetupPage = () => {
     setError('');
     setAuthPrompt('');
     setLoading(true);
-    const seatColor = color === 'guess' ? drawSeat() : color;
+    const seatColor = color === 'nigiri' ? drawSeat() : color;
     try {
       if (isRanked) {
         const { session_id, game_id, status } = await startAiLadderGame({
@@ -595,11 +595,11 @@ const AiSetupPage = () => {
                       { key: 'black', label: <><span className="disc b" />{t('setup:side_black', '执黑')}</> },
                       { key: 'white', label: <><span className="disc w" />{t('setup:side_white', '执白')}</> },
                       {
-                        key: 'guess',
-                        label: <><span className="disc rnd" />{t('setup:side_guess', '猜先')}</>,
+                        key: 'nigiri',
+                        label: <><span className="disc rnd" />{t('setup:side_nigiri', '猜先')}</>,
                         // 让子局黑方先摆子 —— 让哪一方是这一局的前提,不能再抽签。
                         disabled: terms.handicap > 0,
-                        reason: t('setup:guess_blocked', '让子局黑方先摆子'),
+                        reason: t('setup:nigiri_blocked', '让子局黑方先摆子'),
                       },
                     ]}
                     onChange={(k) => setColor(k as SetupColor)}

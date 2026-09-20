@@ -130,4 +130,39 @@ describe('the session-is-gone signal', () => {
     // telling the user to try is a lie.
     expect(result.current.connectionLost).toBe('rejected');
   });
+
+  it('says nothing when the server closes normally after ending a game on purpose', async () => {
+    // 服务端有意收尾(离开判负 / 登出判负 / 删除会话)走 1000 正常关闭,见 session.py 的
+    // SOCKET_CLOSE_SESSION_CLOSED。那种关闭必须**穿过三个分支什么也不设** —— 一旦它被
+    // 当成 gone,赢的那一方会在「你赢了」之后几毫秒被顶成「这一局没了」。
+    vi.mocked(API.getState).mockResolvedValue({ session_id: 'session-1', state: minimalState() });
+    vi.stubGlobal('WebSocket', MockWebSocket);
+    const { result } = renderHook(() => useGameSession({ token: 'token-1' }));
+    act(() => result.current.setSessionId('session-1'));
+    await waitFor(() => expect(sockets).toHaveLength(1));
+
+    act(() => sockets[0].onclose?.({ code: 1000, reason: 'session_closed', wasClean: true }));
+
+    expect(result.current.connectionLost).toBeNull();
+    expect(result.current.error).toBeNull();
+  });
+
+  it('does not replace a finished game\'s result with "this game is gone"', async () => {
+    // 兜底那一条(服务端侧已经不会这么关了,但终局卡还在屏上时会话可能被**闲置回收**):
+    // 那时 session_gone 是真的,可用户要看的是结果,不是「这一局没了」。
+    vi.mocked(API.getState).mockResolvedValue({ session_id: 'session-1', state: minimalState() });
+    vi.stubGlobal('WebSocket', MockWebSocket);
+    const { result } = renderHook(() => useGameSession({ token: 'token-1' }));
+    act(() => result.current.setSessionId('session-1'));
+    await waitFor(() => expect(sockets).toHaveLength(1));
+
+    act(() => sockets[0].onmessage?.({
+      data: JSON.stringify({ type: 'game_end', data: { reason: 'forfeit', winner_id: 7 } }),
+    } as MessageEvent));
+    act(() => sockets[0].onclose?.({ code: 1008, reason: 'session_gone', wasClean: true }));
+
+    expect(result.current.gameEndData).toEqual({ reason: 'forfeit', winner_id: 7 });
+    expect(result.current.connectionLost).toBeNull();
+    expect(result.current.error).toBeNull();
+  });
 });

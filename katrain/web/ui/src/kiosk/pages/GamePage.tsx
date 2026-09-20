@@ -1285,7 +1285,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
               onClose={() => { setGameGoneAcknowledged(true); navigate('/kiosk/play'); }}>
         <DialogTitle sx={{ color: 'text.primary' }}>{t('game:unavailable_title', '这一局已经打不开了')}</DialogTitle>
         <DialogContent>
-          <Typography>{t('game:unavailable_reason', '可能是盒子重启过、这一局闲置太久被清理，或者它属于另一个账号。')}</Typography>
+          {/* 这里**不能**复用载入失败那一屏的 `game:unavailable_reason` —— 它第三条说
+              「或者它属于另一个账号」,而那种局根本产不出 `gone` 这个信号:别人的会话是
+              403 / `1008 "Session unavailable"`,落的是 `rejected`。只说能产出它的那两种。 */}
+          <Typography>{t('game:gone_reason', '可能是盒子重启过，或者这一局闲置太久被清理了。')}</Typography>
         </DialogContent>
         <DialogActions>
           <Button data-testid="game-gone-leave"

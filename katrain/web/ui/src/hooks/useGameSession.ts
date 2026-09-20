@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
-import { API, type GameState, type PhysicalEngineErrorState } from '../api';
+import { API, type EndGameResponse, type GameState, type PhysicalEngineErrorState } from '../api';
 import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from '../utils/websocketUrl';
 import { readAudioPref } from '../utils/audioPrefs';
 import { requestFailureKind } from '../utils/requestFailure';
@@ -58,6 +58,10 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const [awaitingRemovalReminder, setAwaitingRemovalReminder] = useState<{ row: number; col: number } | null>(null);
 
     const wsRef = useRef<WebSocket | null>(null);
+    /* 「这一局已经有结果了」的同步镜像。`ws.onclose` 的闭包建于**建连那一刻**,读不到后来的
+       state;而服务端广播 `game_end` 与随后关掉 socket 之间只隔几毫秒,等 React 冲刷 effect
+       已经来不及 —— 所以 `game_end` 到达时就地置位,effect 只负责跟随(含开新局时归零)。 */
+    const gameEndedRef = useRef(false);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
     const lastSoundRef = useRef<{name: string, time: number} | null>(null);
     const soundQueueRef = useRef<QueuedSound[]>([]);
@@ -153,6 +157,10 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     useEffect(() => clearQueuedSounds, [clearQueuedSounds]);
 
     useEffect(() => {
+        gameEndedRef.current = Boolean(gameEndData || gameState?.end_result);
+    }, [gameEndData, gameState?.end_result]);
+
+    useEffect(() => {
         if (sessionId) {
             let disposed = false;
             let ownedWs: WebSocket | null = null;
@@ -194,6 +202,7 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             // 契约把 chat 定成**扁平帧**(不套 data),与三家共享侧逐字一致。
                             setChatMessages(prev => [...prev, { from_id: msg.from_id, from_name: msg.from_name, text: msg.text }]);
                         } else if (msg.type === 'game_end') {
+                            gameEndedRef.current = true;
                             setGameEndData(msg.data);
                             if (onGameEnd) {
                                 onGameEnd(msg.data);
@@ -237,6 +246,14 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                         if (wsRef.current !== ws) return;  // 已被新连接替换或组件卸载
                         clearQueuedSounds();
                         if (event.code === WS_POLICY_VIOLATION && event.reason === WS_SESSION_GONE_REASON) {
+                            if (gameEndedRef.current) {
+                                /* 这一局已经有结果了 —— 结果不能被「这一局没了」顶掉。服务端那边
+                                   有意收尾走的是正常关闭(session.py 的 SOCKET_CLOSE_SESSION_CLOSED),
+                                   所以正常情况下到不了这里;这一条兜的是「终局卡还在屏上时会话被闲置
+                                   回收」那一种 —— 那时候「这一局没了」是真的,但用户要看的是结果。 */
+                                console.warn('Session reclaimed after the game had already ended');
+                                return;
+                            }
                             // 服务端把这局回收了。这不是凭据问题 —— 走下面那条会告诉用户
                             // 「请重新登录」,而重新登录救不了它。说错原因和印原始报错一样不算人话。
                             console.warn('Game session is gone on the server');
@@ -288,7 +305,10 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const handleAction = useCallback(async (action: string, opts?: { color?: 'B' | 'W' }) => {
         if (!sessionId) return;
         try {
-            let result: any;
+            // 这一族端点要么回常规回执,要么回「这局没了」。写成联合类型(而不是 any)是为了
+            // 让 `tsc -b` 在**这个 hook** 里也盯着收窄 —— 三条通道都汇到这里,页面那两个
+            // 调用点被盯着而这里不被盯着,等于闸建在了人少的那一侧。
+            let result: EndGameResponse | undefined;
             if (action === 'pass') await API.playMove(sessionId, null, token);
             else if (action === 'undo') result = await API.undo(sessionId, 'smart');
             else if (action === 'back') result = await API.undo(sessionId, 1);
@@ -314,7 +334,10 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             // Task 2 的 200 空回执。只看 `result?.state` 会把它当成静默成功:框关掉、棋局
             // 永远不终局、页面完全不知道这局已经死了。它**不带**任何结果 —— 会话没了不等于
             // 远端认输了(真正的远端认输在 gateway.py:399-420,那条路这时根本没走到)。
-            if (result?.status === 'session_gone') {
+            // `'status' in result` 是完整判别式:`SessionResponse` 没有 `status` 这个键。
+            // **不要**写成 `&& result.status === 'session_gone'` —— 那个复合形式会让 TS
+            // 在落空分支上收不窄,下面读 `result.state` 当场报错(GamePage 的 send() 记过)。
+            if (result && 'status' in result) {
                 setConnectionLost('gone');
                 setError(SESSION_GONE_MESSAGE);
                 return;

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Box, CssBaseline, ThemeProvider, Divider, Typography, Snackbar, Alert } from '@mui/material';
 import { API, apiPost, type GameState } from './api';
 import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from './utils/websocketUrl';
+import { requestFailureKind } from './utils/requestFailure';
 import { i18n } from './i18n';
 import { useTranslation } from './hooks/useTranslation';
 import Board from './components/Board';
@@ -240,6 +241,12 @@ function ZenModeApp() {
       }
     } catch (error) {
       console.error("Action failed", error);
+      // 同一个事实的**第二种**来路:会话没了,`/api/resign` 之外的端点回的是 404。
+      // 上面那条 200 回执已经说了人话,这里以前只有 console.error —— 于是同一件事,
+      // 从这条路来的用户什么也看不到,棋盘就那么停着。两条路说同一句。
+      if (requestFailureKind(error) === 'not_found') {
+        setStatusMessage(SESSION_GONE_MESSAGE);
+      }
     }
   };
 

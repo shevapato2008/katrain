@@ -5,8 +5,16 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import type { GameState } from '../../api';
 
-const { boardProps } = vi.hoisted(() => ({
+const { boardProps, sessionOverrides } = vi.hoisted(() => ({
   boardProps: [] as Array<Record<string, unknown>>,
+  sessionOverrides: {} as Record<string, unknown>,
+}));
+
+const { mockClearActiveSession } = vi.hoisted(() => ({ mockClearActiveSession: vi.fn() }));
+vi.mock('../utils/activeSession', () => ({
+  readActiveSession: vi.fn(() => null),
+  writeActiveSession: vi.fn(),
+  clearActiveSession: mockClearActiveSession,
 }));
 
 vi.mock('../context/OrientationContext', () => ({
@@ -99,6 +107,8 @@ vi.mock('../../hooks/useGameSession', () => ({
     gameState: mockGameState,
     setGameState: vi.fn(),
     error: null,
+    connectionLost: null,
+    clearPhysicalEngineError: vi.fn(),
     onMove: mockOnMove,
     onNavigate: mockOnNavigate,
     handleAction: mockHandleAction,
@@ -107,6 +117,7 @@ vi.mock('../../hooks/useGameSession', () => ({
     chatMessages: [],
     sendChat: vi.fn(),
     gameEndData: null,
+    ...sessionOverrides,
   }),
 }));
 
@@ -124,13 +135,15 @@ const renderPage = () =>
 
 // Import after mocks
 import GamePage from '../pages/GamePage';
+import { ApiError } from '../../api';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  boardProps.length = 0;
+  for (const k of Object.keys(sessionOverrides)) delete sessionOverrides[k];
+});
 
 describe('GamePage', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    boardProps.length = 0;
-  });
-
   it('renders Board component', () => {
     renderPage();
     expect(screen.getByTestId('board')).toBeInTheDocument();
@@ -222,5 +235,111 @@ describe('GamePage', () => {
       expect(screen.getByRole('button', { name: /领地/ })).not.toBeDisabled();
       expect(document.querySelector('.gtoggles .ghint')).not.toHaveTextContent('登录后可用');
     });
+  });
+});
+
+const stillLive = () => new ApiError(409, 'Request failed 409: {"detail": "not your turn"}');
+
+function openExitDialog() {
+  fireEvent.click(screen.getByRole('button', { name: '退出对局' }));
+}
+
+describe('leaving is unconditional (R1)', () => {
+  // "我们需要保证这边可以退出棋局就可以了". Leaving without resigning is a purely local
+  // act and is always legitimate - gating it on connectionLost trapped the user behind
+  // any failure that kept the socket healthy, e.g. Golaxy's 409 (server.py:2094).
+
+  it('offers leave-without-resigning even on a healthy connection', () => {
+    renderPage();
+    openExitDialog();
+    expect(screen.getByTestId('exit-leave-keep')).toBeInTheDocument();
+  });
+
+  it('leaves without calling the server at all', async () => {
+    renderPage();
+    openExitDialog();
+    fireEvent.click(screen.getByTestId('exit-leave-keep'));
+
+    expect(await screen.findByText('PLAY_PAGE')).toBeInTheDocument();
+    expect(mockHandleAction).not.toHaveBeenCalled();
+  });
+
+  it('still offers it after a 409 that leaves the game live', async () => {
+    mockHandleAction.mockRejectedValueOnce(stillLive());
+    renderPage();
+    openExitDialog();
+    fireEvent.click(screen.getByRole('button', { name: '退出' }));
+
+    await screen.findByText('认输没成');
+    expect(screen.getByTestId('exit-leave-keep')).toBeInTheDocument();
+  });
+
+  it('shows the way out and clears the resume pointer once the session is gone', async () => {
+    sessionOverrides.connectionLost = 'gone';
+    sessionOverrides.error = '这一局在服务器上已经没有了，可以离开这一页。';
+    renderPage();
+
+    expect(await screen.findByTestId('game-gone-leave')).toBeInTheDocument();
+    expect(mockClearActiveSession).toHaveBeenCalledWith('game');
+  });
+
+  it('that way out actually leaves', async () => {
+    sessionOverrides.connectionLost = 'gone';
+    renderPage();
+
+    fireEvent.click(await screen.findByTestId('game-gone-leave'));
+    expect(await screen.findByText('PLAY_PAGE')).toBeInTheDocument();
+  });
+
+  it('leave-without-resigning keeps the resume pointer', () => {
+    // The game may still be live on the remote side - 继续上一局 is how the user
+    // comes back to it. Only the gone signal may clear it.
+    renderPage();
+    openExitDialog();
+    fireEvent.click(screen.getByTestId('exit-leave-keep'));
+
+    expect(mockClearActiveSession).not.toHaveBeenCalled();
+  });
+});
+
+describe('no raw request errors on screen (R2)', () => {
+  // requestFailureKind maps 409 to 'other', and failureLine renders the prefix alone
+  // when the reason is unknown - so the expected text is exactly the prefix.
+
+  it('shows a classified sentence, not the ApiError message, when resign fails', async () => {
+    mockHandleAction.mockRejectedValueOnce(stillLive());
+    renderPage();
+
+    fireEvent.click(screen.getByText('认输'));
+    fireEvent.click(await screen.findByRole('button', { name: '认输' }));
+
+    expect(await screen.findByText('认输没成')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+    expect(screen.queryByText(/"detail"/)).toBeNull();
+  });
+
+  it('never renders an exception message when the failure has no status', async () => {
+    // fetch itself throws a bare Error offline; requestFailureKind returns 'other'
+    // because it never guesses. That path used to print "TypeError: Failed to fetch".
+    mockHandleAction.mockRejectedValueOnce(new Error('TypeError: Failed to fetch'));
+    renderPage();
+
+    fireEvent.click(screen.getByText('认输'));
+    fireEvent.click(await screen.findByRole('button', { name: '认输' }));
+
+    expect(await screen.findByText('认输没成')).toBeInTheDocument();
+    expect(screen.queryByText(/Failed to fetch/)).toBeNull();
+  });
+
+  it('does not leak a raw error through the connection snackbar', () => {
+    // THE regression the first draft missed: after a 1008 credential rejection,
+    // connectionLost stays 'rejected' and a later failed action overwrites
+    // session.error with the ApiError message, which the fallback rendered verbatim.
+    sessionOverrides.connectionLost = 'rejected';
+    sessionOverrides.error = 'Request failed 409: {"detail": "not your turn"}';
+    renderPage();
+
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+    expect(screen.queryByText(/"detail"/)).toBeNull();
   });
 });

@@ -26,6 +26,8 @@ import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog'
 import HintPanel from '../components/physical/HintPanel';
 import { API, ApiError, type HintResponse, type OwnershipPoint, type JudgePoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
 import { readActiveSession, writeActiveSession, clearActiveSession } from '../utils/activeSession';
+import { requestFailureKind } from '../../utils/requestFailure';
+import { failureLine } from '../components/report/reviewPresentation';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
@@ -224,6 +226,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const [counting, setCounting] = useState(false);
   const [resignError, setResignError] = useState<string | null>(null);
   const [exitError, setExitError] = useState<string | null>(null);
+  const [gameGoneAcknowledged, setGameGoneAcknowledged] = useState(false);
+  const sessionGone = session.connectionLost === 'gone';
+
+  // 一个信号,一处反应。三条通道(WS 关闭 / 404 / 200 session_gone)都汇进 `connectionLost`,
+  // 所以这里不用关心是哪条先发现的。清 resume 指针**只在这一支**做:这局在服务端确实没了,
+  // 不清的话「继续上一局」会转回这个死会话。
+  useEffect(() => {
+    if (!sessionGone) return;
+    setShowExitConfirm(false);
+    setShowResignConfirm(false);
+    clearActiveSession('game');
+  }, [sessionGone]);
+
   const [reviewError, setReviewError] = useState(false);
   // 重置识别的「在制中」走 ref 不走 state:页控条那个图标键没有忙碌态可显示,
   // 这个值不进渲染 —— 放进 state 就是一次没人看的重渲染。
@@ -674,7 +689,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       if (detail?.code === 'time_not_expired' && detail.state) {
         session.setGameState(detail.state);
       } else {
-        setTimeoutError({ scope: timeoutScope, message: t('game:timeout_failed', '超时判定没有完成') });
+        setTimeoutError({ scope: timeoutScope, message: failureLine(t('game:timeout_failed', '判超时没成'), requestFailureKind(error), t) });
       }
     } finally {
       timeoutRequestRef.current = false;
@@ -800,7 +815,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       await session.handleAction('resign', { color });
       setShowResignConfirm(false);
     } catch (error) {
-      setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+      setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
     }
   };
 
@@ -1009,7 +1024,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         <Alert severity="error" onClose={() => setConnectionNoticeDismissed(true)}>
           {session.connectionLost === 'dropped'
             ? t('game:connection_dropped', '实时连接断了，棋盘不会自动更新。点「退出对局」→「先离开，不认输」，再从「继续上一局」回来就会重新连上')
-            : session.error}
+            : session.connectionLost === 'gone'
+              ? t('game:session_gone_notice', '这一局在服务器上已经没有了，点「退出对局」就能离开。')
+              : t('game:connection_rejected', '实时连接被拒绝，棋盘不会自动更新，请重新登录后重试')}
         </Alert>
       </Snackbar>
 
@@ -1170,7 +1187,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
                   await session.handleAction('resign');
                   setShowResignConfirm(false);
                 } catch (error) {
-                  setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+                  setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
                   return;
                 }
                 // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
@@ -1204,21 +1221,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <DialogTitle>{exitResignTitle}</DialogTitle>
           <DialogActions>
             <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
-            {session.connectionLost && (
-              <Button data-testid="exit-leave-keep" onClick={() => {
-                setShowExitConfirm(false);
-                navigate('/kiosk/play');
-              }}>
-                {t('game:leave_keep_game', '先离开，不认输')}
-              </Button>
-            )}
+            <Button data-testid="exit-leave-keep" onClick={() => {
+              setShowExitConfirm(false);
+              navigate('/kiosk/play');
+            }}>
+              {t('game:leave_keep_game', '先离开，不认输')}
+            </Button>
             <Button
               color="error"
               onClick={async () => {
                 try {
                   await session.handleAction('resign');
                 } catch (error) {
-                  setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+                  setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
                   return;
                 }
                 // Same as the resign-confirm dialog above: this is another path that
@@ -1233,6 +1248,22 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           </DialogActions>
         </Dialog>
       )}
+
+      {/* 这局在服务端已经没了。说人话 + 给出口。说的是「本机没有这一局了」,不是「你认输了」:
+          回收会话不会结束远端对局(真正的远端认输在 gateway.py:399-420)。 */}
+      <Dialog open={sessionGone && !gameGoneAcknowledged}
+              onClose={() => { setGameGoneAcknowledged(true); navigate('/kiosk/play'); }}>
+        <DialogTitle sx={{ color: 'text.primary' }}>{t('game:unavailable_title', '这一局已经打不开了')}</DialogTitle>
+        <DialogContent>
+          <Typography>{t('game:unavailable_reason', '可能是盒子重启过、这一局闲置太久被清理，或者它属于另一个账号。')}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button data-testid="game-gone-leave"
+                  onClick={() => { setGameGoneAcknowledged(true); navigate('/kiosk/play'); }}>
+            {t('game:back_to_play', '回到对弈')}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* 星阵道具次数不足 (7003) — 本终端不代充，引导去星阵充值 */}
       <Dialog open={insufficientKind !== null} onClose={() => setInsufficientKind(null)}>

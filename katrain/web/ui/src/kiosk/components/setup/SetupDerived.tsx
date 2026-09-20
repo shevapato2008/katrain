@@ -28,7 +28,7 @@ interface Props {
  */
 export function SetupDerived({ label, children, note, options, value, onChange, testId }: Props) {
   const ref = useRef<HTMLButtonElement>(null);
-  const { host, open, setOpen, popRef, style } = useSetupPopover(ref);
+  const { host, open, setOpen, popRef } = useSetupPopover(ref);
   const pick = !!options && !!onChange;
   return (
     <>
@@ -55,7 +55,6 @@ export function SetupDerived({ label, children, note, options, value, onChange, 
       <SetupPopover
         host={host}
         popRef={popRef}
-        style={style}
         columns={3}
         options={options!}
         value={value ?? ''}

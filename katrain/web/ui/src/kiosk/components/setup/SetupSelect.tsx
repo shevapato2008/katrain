@@ -44,7 +44,7 @@ const CHEVRON = (
  */
 export function SetupSelect({ label, value, options, onChange, columns = 1, testId }: Props) {
   const cellRef = useRef<HTMLButtonElement>(null);
-  const { host, open, setOpen, popRef, style } = useSetupPopover(cellRef);
+  const { host, open, setOpen, popRef } = useSetupPopover(cellRef);
 
   const locked = options.length < 2;
   const current = options.find((o) => o.key === value);
@@ -71,8 +71,6 @@ export function SetupSelect({ label, value, options, onChange, columns = 1, test
         <SetupPopover
           host={host}
           popRef={popRef}
-          style={style}
-          minWidth={cellRef.current?.getBoundingClientRect().width}
           columns={columns}
           options={options}
           value={value}

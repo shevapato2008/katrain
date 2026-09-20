@@ -200,8 +200,8 @@ msgstr "Gain"
 #. SGF and move comment messages
 msgid "SGF start message"
 msgstr ""
-"Les coup préférés de KataGo sont marqué d'un X. En comparaison, ceux perdant "
-"moins de 0.5 point sont marqués d'un carré"
+"Les coup préférés de KataGo sont marqué d'un X. En comparaison, ceux perdant"
+" moins de 0.5 point sont marqués d'un carré"
 
 msgid "Info:score"
 msgstr "Score : {score}"
@@ -227,7 +227,8 @@ msgstr "Séquence attendue : {pv}"
 
 msgid "Info:policy rank"
 msgstr ""
-"Ce coup était classé n°{rank} d'un point de vue intuitif ({probability:.2%})."
+"Ce coup était classé n°{rank} d'un point de vue intuitif "
+"({probability:.2%})."
 
 msgid "Info:policy best"
 msgstr "La première intuition était {move} ({probability:.1%})."
@@ -495,11 +496,8 @@ msgstr ""
 
 msgid "Kata exe not found in path"
 msgstr ""
-"L'exécutable {exe} est introuvable dans votre PATH (cf. les Variables "
-"d'environnement dans vos Propriétés système). Veuillez vérifier ce dernier "
-"ou entrer dans les paramètres généraux le chemin absolu de l'exécutable. \n"
-"Sur MacOS, veuillez consulter le manuel pour savoir comment installer KataGo "
-"en utilisant BREW."
+"L'exécutable {exe} est introuvable dans votre PATH (cf. les Variables d'environnement dans vos Propriétés système). Veuillez vérifier ce dernier ou entrer dans les paramètres généraux le chemin absolu de l'exécutable. \n"
+"Sur MacOS, veuillez consulter le manuel pour savoir comment installer KataGo en utilisant BREW."
 
 msgid "Kata exe not found"
 msgstr ""
@@ -564,12 +562,9 @@ msgstr "Décontracté"
 
 msgid "aihelp:scoreloss"
 msgstr ""
-"Le moteur de jeu choisit des coups recommandés, mais pas forcément les "
-"meilleurs. \n"
-"Au niveau 0, il joue l'un d'eux au hasard et perd des points "
-"régulièrement. \n"
-"Au niveau 5, il évite presque toujours de jouer les coups perdant 1 point et "
-"plus, \n"
+"Le moteur de jeu choisit des coups recommandés, mais pas forcément les meilleurs. \n"
+"Au niveau 0, il joue l'un d'eux au hasard et perd des points régulièrement. \n"
+"Au niveau 5, il évite presque toujours de jouer les coups perdant 1 point et plus, \n"
 "à moins d'augmenter le champ des possibles et/ou le nombre de visites \n"
 "(cf. Paramètres généraux)"
 
@@ -599,10 +594,8 @@ msgstr "Myope"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"Jouera le coup le plus intuitif parmi un échantillon sélectionné au "
-"hasard. \n"
-"Échantillon = pick_n + (pick_frac multiplié par le nombre de coups "
-"légaux). \n"
+"Jouera le coup le plus intuitif parmi un échantillon sélectionné au hasard. \n"
+"Échantillon = pick_n + (pick_frac multiplié par le nombre de coups légaux). \n"
 "Pick_n ajoute un nombre de coups à l'échantillon considéré. \n"
 "Plus pick_frac (0~1) est haut, plus des coups intuitifs seront joués. \n"
 "Plus pick_override (0~1) est bas, plus la première intuition sera forcée."
@@ -613,10 +606,8 @@ msgstr "Local"
 msgid "aihelp:p:local"
 msgstr ""
 "Tendra à jouer près du dernier coup. \n"
-"Échantillon local = pick_n + (pick_frac multiplié par le nombre de coups "
-"légaux) \n"
-"Plus stddev (1~19) est bas, plus le coup joué sera forcément près du "
-"dernier. \n"
+"Échantillon local = pick_n + (pick_frac multiplié par le nombre de coups légaux) \n"
+"Plus stddev (1~19) est bas, plus le coup joué sera forcément près du dernier. \n"
 "(Se reporter au style précédent pour une explication des autres valeurs)"
 
 msgid "ai:p:tenuki"
@@ -625,10 +616,8 @@ msgstr "Tenuki"
 msgid "aihelp:p:tenuki"
 msgstr ""
 "Tendra à jouer loin du dernier coup. \n"
-"Échantillon éloigné = pick_n + (pick_frac multiplié par le nombre de coups "
-"légaux) \n"
-"Endgame indique à partir de quand jouer normalement, entre le début (0) et "
-"la fin (1). \n"
+"Échantillon éloigné = pick_n + (pick_frac multiplié par le nombre de coups légaux) \n"
+"Endgame indique à partir de quand jouer normalement, entre le début (0) et la fin (1). \n"
 "(Se reporter aux styles précédents pour une explication des autres valeurs)"
 
 msgid "ai:p:influence"
@@ -637,10 +626,8 @@ msgstr "Central"
 msgid "aihelp:p:influence"
 msgstr ""
 "Tendra à jouer haut, près du centre. \n"
-"Threshold indique la ligne au-dessus de laquelle le coup tendra à être "
-"joué. \n"
-"Plus line_weight (1~10) est haut, plus il sera difficile de jouer en-dessous "
-"de treshold \n"
+"Threshold indique la ligne au-dessus de laquelle le coup tendra à être joué. \n"
+"Plus line_weight (1~10) est haut, plus il sera difficile de jouer en-dessous de treshold \n"
 "(Se reporter aux styles précédents pour une explication des autres valeurs)"
 
 msgid "ai:p:territory"
@@ -649,10 +636,8 @@ msgstr "Territorial"
 msgid "aihelp:p:territory"
 msgstr ""
 "Tendra à jouer bas, près du bord. \n"
-"Threshold indique la ligne en-dessous de laquelle le coup tendra à être "
-"joué. \n"
-"Plus line_weight (1~10) est haut, plus il sera difficile de jouer au-dessus "
-"de treshold \n"
+"Threshold indique la ligne en-dessous de laquelle le coup tendra à être joué. \n"
+"Plus line_weight (1~10) est haut, plus il sera difficile de jouer au-dessus de treshold \n"
 "(Se reporter aux styles précédents pour une explication des autres valeurs)"
 
 msgid "ai:p:rank"
@@ -660,12 +645,9 @@ msgstr "Par niveau"
 
 msgid "aihelp:p:rank"
 msgstr ""
-"Jouera le coup le plus intuitif parmi un échantillon sélectionné au "
-"hasard. \n"
-"Plus kyu_rank (-3~18) est bas, plus l'échantillon sera large et le niveau de "
-"jeu élevé. \n"
-"Une valeur positive équivaudra à un niveau en kyu, 0 à 1er dan, -1 à 2e dan, "
-"etc. \n"
+"Jouera le coup le plus intuitif parmi un échantillon sélectionné au hasard. \n"
+"Plus kyu_rank (-3~18) est bas, plus l'échantillon sera large et le niveau de jeu élevé. \n"
+"Une valeur positive équivaudra à un niveau en kyu, 0 à 1er dan, -1 à 2e dan, etc. \n"
 "(Niveaux estimés sur OGS avec le réseau neuronal utilisé PAR DÉFAUT)"
 
 msgid "ai:handicap"
@@ -675,10 +657,8 @@ msgid "aihelp:handicap"
 msgstr ""
 "KataGo recherchera/évitera les complications \n"
 "en fonction de la différence de niveau supposée des joueurs. \n"
-"Tout à gauche, un PDA de -3 (W+3) supposera que Blanc est bien plus fort que "
-"Noir. \n"
-"Tout à droite, un PDA de 3 (B+3) supposera que Noir est bien plus fort que "
-"Blanc. \n"
+"Tout à gauche, un PDA de -3 (W+3) supposera que Blanc est bien plus fort que Noir. \n"
+"Tout à droite, un PDA de 3 (B+3) supposera que Noir est bien plus fort que Blanc. \n"
 "Cocher l'option 'automatic' adaptera la valeur PDA au handicap utilisé."
 
 msgid "Delete Node"
@@ -744,16 +724,11 @@ msgstr "Temps principal (min)"
 msgid "aihelp:simple"
 msgstr ""
 "Par défaut, le moteur de jeu cherche à simplifier la position. \n"
-"Il joue un coup parmi ceux considérés au moins 'min_visits' fois et perdant "
-"au plus 'max_points_lost'. \n"
-"'settled_weight' le pousse à consolider ses territoires, et ceux adverses "
-"une fois multiplié par 'opponent_fac'. \n"
-"'tenuki_penalty' le pousse à jouer localement ; 'attach_penalty' à éviter "
-"les coups de contact direct. \n"
-"Quand elles sont possibles, les valeurs négatives favorisent au contraire un "
-"style de jeu compliqué. \n"
-"Élargir le Champ des possibles (cf. Paramètres généraux) peaufine le style "
-"au détriment du niveau de jeu."
+"Il joue un coup parmi ceux considérés au moins 'min_visits' fois et perdant au plus 'max_points_lost'. \n"
+"'settled_weight' le pousse à consolider ses territoires, et ceux adverses une fois multiplié par 'opponent_fac'. \n"
+"'tenuki_penalty' le pousse à jouer localement ; 'attach_penalty' à éviter les coups de contact direct. \n"
+"Quand elles sont possibles, les valeurs négatives favorisent au contraire un style de jeu compliqué. \n"
+"Élargir le Champ des possibles (cf. Paramètres généraux) peaufine le style au détriment du niveau de jeu."
 
 msgid "ai:simple"
 msgstr "Modéré"
@@ -817,8 +792,8 @@ msgstr ""
 
 msgid "finish inserting before navigating"
 msgstr ""
-"Il est impossible de parcourir l'arbre de jeu tant que l'insertion des coups "
-"n'est pas close/validée (en appuyant sur 'i')."
+"Il est impossible de parcourir l'arbre de jeu tant que l'insertion des coups"
+" n'est pas close/validée (en appuyant sur 'i')."
 
 msgid "player names"
 msgstr "Nom des joueurs"
@@ -900,8 +875,8 @@ msgstr "Sauvegarder les parties"
 
 msgid "contribute:savesgf:hint"
 msgstr ""
-"Sauvegarder les fichiers SGF des parties complétées dans le dossier ./"
-"dist_sgf"
+"Sauvegarder les fichiers SGF des parties complétées dans le dossier "
+"./dist_sgf"
 
 msgid "contribute:viewer settings"
 msgstr "Visionneuse"
@@ -1055,7 +1030,8 @@ msgstr ""
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a human-like KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening style."
+"ticked, the model will play according to a post-2016 AlphaZero opening "
+"style."
 
 #. TODO
 msgid "engine:humanlike_model"
@@ -1360,8 +1336,8 @@ msgstr "Êtes-vous sûr de vouloir abandonner ?"
 
 msgid "dashboard:play_desc"
 msgstr ""
-"Affrontez des adversaires IA ou jouez contre des amis. Parties classées pour "
-"établir votre rang."
+"Affrontez des adversaires IA ou jouez contre des amis. Parties classées pour"
+" établir votre rang."
 
 msgid "game_end:timeout_loss"
 msgstr "Vous avez perdu au temps."
@@ -1416,7 +1392,8 @@ msgstr "Premier"
 
 msgid "play:vs_ai_free_desc"
 msgstr ""
-"Entraînez-vous avec analyse complète, annulation et paramètres personnalisés."
+"Entraînez-vous avec analyse complète, annulation et paramètres "
+"personnalisés."
 
 msgid "no_friends_desc"
 msgstr "Vous ne suivez personne pour l'instant."
@@ -2870,12 +2847,13 @@ msgstr "Cette partie n'a pas compté"
 
 msgid "ladder:unscored_inconclusive"
 msgstr ""
-"Cette partie n'a pas eu de vainqueur : elle ne compte pas et ne consomme pas "
-"de partie de placement."
+"Cette partie n'a pas eu de vainqueur : elle ne compte pas et ne consomme pas"
+" de partie de placement."
 
 msgid "ladder:unscored_already"
 msgstr ""
-"Cette partie a déjà été comptabilisée ; votre rang n'a pas changé de nouveau."
+"Cette partie a déjà été comptabilisée ; votre rang n'a pas changé de "
+"nouveau."
 
 msgid "ladder:unscored_in_progress"
 msgstr "Cette partie n'est pas encore terminée."
@@ -2960,8 +2938,8 @@ msgstr "Impossible de charger le statut classé"
 
 msgid "ladder:load_error_not_authoritative"
 msgstr ""
-"Cet appareil n'enregistre pas les résultats classés, impossible de commencer "
-"ici"
+"Cet appareil n'enregistre pas les résultats classés, impossible de commencer"
+" ici"
 
 msgid "ladder:load_error_unauthorized"
 msgstr "Votre session a expiré — reconnectez-vous"
@@ -3323,8 +3301,9 @@ msgstr "{n} non évalués"
 
 msgid "ladder:engine_unavailable_start"
 msgstr ""
-"Le moteur des parties classées est momentanément indisponible. Aucune partie "
-"n'a été lancée et votre rang n'est pas affecté. Veuillez réessayer plus tard."
+"Le moteur des parties classées est momentanément indisponible. Aucune partie"
+" n'a été lancée et votre rang n'est pas affecté. Veuillez réessayer plus "
+"tard."
 
 msgid "grade:match_rate"
 msgstr "Concordance IA"
@@ -3343,16 +3322,16 @@ msgstr "Aucun coup comparable dans cette phase"
 
 msgid "grade:match_footer"
 msgstr ""
-"Le dénominateur est le nombre de coups comparables à l'IA : Noir {b} / Blanc "
-"{w}"
+"Le dénominateur est le nombre de coups comparables à l'IA : Noir {b} / Blanc"
+" {w}"
 
 msgid "grade:match_undecidable"
 msgstr "{n} coups non comparables"
 
 msgid "grade:match_caveat"
 msgstr ""
-"La concordance dépend de la difficulté des positions : seule, elle ne prouve "
-"ni le niveau ni la triche."
+"La concordance dépend de la difficulté des positions : seule, elle ne prouve"
+" ni le niveau ni la triche."
 
 msgid "live:human_pick_rate_ranked"
 msgstr "Choix {rank}"
@@ -3407,8 +3386,8 @@ msgstr "{n} non notés"
 
 msgid "grade:histogram_aria"
 msgstr ""
-"Répartition sur sept niveaux ; barres noires pour Noir, blanches pour Blanc, "
-"normalisées par camp"
+"Répartition sur sept niveaux ; barres noires pour Noir, blanches pour Blanc,"
+" normalisées par camp"
 
 msgid "grade:def_brilliant"
 msgstr ""
@@ -3570,8 +3549,8 @@ msgstr ""
 
 msgid "local:input_hint_v2"
 msgstr ""
-"Le plateau physique n'est qu'en 19×19 — choisissez 13×13 ou 9×9 pour jouer à "
-"l'écran"
+"Le plateau physique n'est qu'en 19×19 — choisissez 13×13 ou 9×9 pour jouer à"
+" l'écran"
 
 msgid "local:komi_hint"
 msgstr ""
@@ -3644,7 +3623,319 @@ msgid "review:start_analysis"
 msgstr "Lancer l'analyse"
 
 msgid "vision:resync_screen_authority"
-msgstr "Réinitialiser la reconnaissance · utiliser la position numérique affichée"
+msgstr ""
+"Réinitialiser la reconnaissance · utiliser la position numérique affichée"
 
 msgid "Re-sync"
 msgstr "Réinitialiser la reconnaissance"
+
+msgid "Back to play"
+msgstr "Retour au jeu"
+
+msgid "setup:start"
+msgstr "Commencer la partie"
+
+msgid "ladder:start"
+msgstr "Commencer la partie classée"
+
+msgid "play:free_setup_sub"
+msgstr "Réglages · contre l'IA · non classée"
+
+msgid "ladder:setup_sub"
+msgstr "Réglages · classée · analyse désactivée"
+
+msgid "local:setup_sub"
+msgstr "Réglages · deux joueurs face à face"
+
+msgid "game:local_pvp"
+msgstr "Partie locale"
+
+msgid "setup:game_terms"
+msgstr "Cette partie"
+
+msgid "setup:size"
+msgstr "Goban"
+
+msgid "setup:size_n"
+msgstr "{n}x{n}"
+
+msgid "setup:size_19"
+msgstr "19x19"
+
+msgid "Chinese rules"
+msgstr "Règles chinoises"
+
+msgid "Japanese rules"
+msgstr "Règles japonaises"
+
+msgid "AGA rules"
+msgstr "Règles AGA"
+
+msgid "setup:rules_button"
+msgstr "Règles de tournoi IA"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr ""
+"Les règles chinoises comptent la surface : territoire plus pierres, remplir "
+"son territoire ne coûte rien"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr ""
+"Les règles japonaises ne comptent que le territoire : y jouer coûte un point"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr ""
+"Les règles AGA comptent la surface, mais chaque passe cède une pierre : le "
+"résultat rejoint le comptage par territoire"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr ""
+"Les règles coréennes comptent le territoire : même méthode qu'en japonais, "
+"avec un komi usuel différent"
+
+msgid "setup:rules_button_hint"
+msgstr ""
+"Règles de tournoi IA : comptage par surface plus un demi-point pour celui "
+"qui passe en premier, ce qui annule l'écart d'un demi-point. Parties à "
+"égalité uniquement."
+
+msgid "setup:ha_even"
+msgstr "À égalité"
+
+msgid "setup:ha_sente"
+msgstr "Noir d'abord, sans komi"
+
+msgid "setup:ha_reverse"
+msgstr "Komi inversé"
+
+msgid "setup:ha_free"
+msgstr "Komi personnalisé"
+
+msgid "setup:ha_stones"
+msgstr "{n} pierres"
+
+msgid "setup:komi_derived"
+msgstr "Défini par les règles et le handicap"
+
+msgid "setup:komi_pick"
+msgstr "Touchez pour changer le komi"
+
+msgid "setup:komi_none"
+msgstr "Sans komi"
+
+msgid "setup:komi_sente"
+msgstr "Noir joue en premier"
+
+msgid "setup:komi_handicap"
+msgstr "Noir pose d'abord {n} pierres"
+
+msgid "setup:komi_black_pays"
+msgstr "Noir verse"
+
+msgid "setup:komi_white_pays"
+msgstr "Blanc verse"
+
+msgid "setup:komi_points"
+msgstr "{n} points"
+
+msgid "setup:unit_points"
+msgstr "pts"
+
+msgid "setup:unit_stones"
+msgstr "pierres"
+
+msgid "setup:seat"
+msgstr "Placement"
+
+msgid "setup:side_black"
+msgstr "Noir"
+
+msgid "setup:side_white"
+msgstr "Blanc"
+
+msgid "setup:side_nigiri"
+msgstr "Nigiri"
+
+msgid "setup:nigiri_blocked"
+msgstr "Avec handicap, Noir pose les pierres"
+
+msgid "setup:black_side"
+msgstr "Noir"
+
+msgid "setup:white_side"
+msgstr "Blanc"
+
+msgid "setup:input_where"
+msgstr "Jouer sur"
+
+msgid "setup:on_screen"
+msgstr "Écran"
+
+msgid "setup:on_board"
+msgstr "Goban réel"
+
+msgid "setup:board_only_19"
+msgstr "Le goban réel est en 19x19"
+
+msgid "setup:board_not_ready"
+msgstr "Caméra non calibrée"
+
+msgid "setup:seat_hint_ready"
+msgstr ""
+"Basculez entre goban réel et écran à tout moment ; figé au début de la "
+"partie"
+
+msgid "setup:seat_hint_not19"
+msgstr "Cette partie n'est pas en 19x19 : elle ne peut se jouer qu'à l'écran"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr "Cette machine n'a pas de caméra calibrée : on joue à l'écran"
+
+msgid "setup:size_not19_hint"
+msgstr ""
+"Le goban réel est en 19x19 — cette partie se joue à l'écran ; revenez au "
+"19x19 pour le réutiliser"
+
+msgid "Untimed"
+msgstr "Sans limite"
+
+msgid "setup:time_byo_only"
+msgstr "Byoyomi seul 30s x3"
+
+msgid "5 min + 3x30s"
+msgstr "5 min + 3x30s"
+
+msgid "60 min + 3x30s"
+msgstr "60 min + 3x30s"
+
+msgid "local:move_sound_short"
+msgstr "Son des pierres"
+
+msgid "On"
+msgstr "Activé"
+
+msgid "Off"
+msgstr "Désactivé"
+
+msgid "setup:strength_rung"
+msgstr "Palier {n}"
+
+msgid "setup:rank_kyu"
+msgstr "{n} kyu"
+
+msgid "setup:rank_dan"
+msgstr "{n} dan"
+
+msgid "setup:strength_up"
+msgstr "Un palier plus fort"
+
+msgid "setup:strength_down"
+msgstr "Un palier plus faible"
+
+msgid "setup:strength_meta"
+msgstr "{n} paliers · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "Style humain · figé au début de la partie"
+
+msgid "setup:strength_hint2"
+msgstr ""
+"L'adversaire au style humain commet les erreurs de son palier ; le palier "
+"décrit l'adversaire, pas votre niveau"
+
+msgid "ladder:opponent"
+msgstr "Adversaire"
+
+msgid "ladder:fixed_by_box"
+msgstr "Défini par la machine"
+
+msgid "ladder:terms_fixed"
+msgstr "Rien de tout cela n'est modifiable"
+
+msgid "ladder:frozen_at_start"
+msgstr "Figé au moment où la partie commence"
+
+msgid "ladder:komi_note"
+msgstr "Le palier a été mesuré sur ce goban"
+
+msgid "ladder:stake"
+msgstr "Ce qui se joue dans cette partie"
+
+msgid "ladder:stake_win_promote"
+msgstr "Victoire · monter d'un palier"
+
+msgid "ladder:stake_loss_demote"
+msgstr "Défaite · descendre d'un palier"
+
+msgid "ladder:stake_win_score"
+msgstr "Victoire · solde {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "Défaite · solde {n}"
+
+msgid "ladder:stake_rule"
+msgstr "Solde +3 fait monter, −3 fait descendre · actuellement {n}"
+
+msgid "local:players"
+msgstr "Joueurs"
+
+msgid "local:written_into_sgf"
+msgstr "Inscrit dans le kifu"
+
+msgid "local:agree_first"
+msgstr "À convenir avant de jouer"
+
+msgid "local:black_role_short"
+msgstr "en premier"
+
+msgid "local:white_role_short"
+msgstr "en second"
+
+msgid "local:black_name"
+msgstr "Nom de Noir"
+
+msgid "local:white_name"
+msgstr "Nom de Blanc"
+
+msgid "local:tap_to_type"
+msgstr "Touchez pour saisir"
+
+msgid "local:names_hint"
+msgstr "Laissez vide : le kifu indiquera simplement Noir et Blanc"
+
+msgid "local:seat_hint_ready"
+msgstr ""
+"La pendule défile sur les cartes joueur · byoyomi épuisé = défaite au temps "
+"· sans limite, on enregistre seulement"
+
+msgid "setup:note_r2_a"
+msgstr "Ces réglages "
+
+msgid "setup:note_r2_b"
+msgstr "ne peuvent plus être modifiés une fois la partie lancée"
+
+msgid "setup:note_r2_c"
+msgstr ""
+" — les changer en cours, c'est une autre partie ; les parties libres sont "
+
+msgid "setup:note_r2_d"
+msgstr "sans effet sur votre niveau"
+
+msgid "setup:note_h"
+msgstr "."
+
+msgid "setup:locked_after_start"
+msgstr "Verrouillé au début de la partie"
+
+msgid "Session expired, please sign in again"
+msgstr "Session expirée, veuillez vous reconnecter"
+
+msgid "Could not end that game, please retry"
+msgstr "Impossible de terminer cette partie, réessayez"
+
+msgid "Retry failed, please try again later"
+msgstr "Nouvelle tentative échouée, réessayez plus tard"

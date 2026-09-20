@@ -109,13 +109,13 @@ msgstr "Pasar"
 msgid "teaching undo message"
 msgstr ""
 "Deshice jugada {move} ya que perdía {points_lost:.1f} puntos. Coloca el "
-"cursor sobre la jugada para ver la refutación esperada. Por favor intenta de "
-"nuevo."
+"cursor sobre la jugada para ver la refutación esperada. Por favor intenta de"
+" nuevo."
 
 msgid "ai-ponder"
 msgstr ""
-"Indica el estado del motor, yendo de verde (en espera) a naranja (procesando "
-"consultas). Se convierte en rojo cuando el motor se bloquea o no empieza"
+"Indica el estado del motor, yendo de verde (en espera) a naranja (procesando"
+" consultas). Se convierte en rojo cuando el motor se bloquea o no empieza"
 
 #. undo button on the right
 msgid "undo-button-text"
@@ -420,7 +420,8 @@ msgid "sgf written"
 msgstr "SGF con análisis escrito en {file_name}"
 
 msgid "wait-before-extra-analysis"
-msgstr "Esperar completar análisis inicial antes de solicitar un refinamiento."
+msgstr ""
+"Esperar completar análisis inicial antes de solicitar un refinamiento."
 
 msgid "Copied SGF to clipboard."
 msgstr "SGF copiado al portapapeles."
@@ -499,10 +500,10 @@ msgstr "Politica Ciega"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"Escoge 'pick_n + pick_frac * <#jugadas legales>' al azar y juega la mejor.El "
-"'pick_frac=1' juega como la politica intuitiva del IA. Juega la mejor jugada "
-"si la probabilidad del IA es por encima de 'pick_override'. Esto con el fin "
-"de prevenir errores obvios."
+"Escoge 'pick_n + pick_frac * <#jugadas legales>' al azar y juega la mejor.El"
+" 'pick_frac=1' juega como la politica intuitiva del IA. Juega la mejor "
+"jugada si la probabilidad del IA es por encima de 'pick_override'. Esto con "
+"el fin de prevenir errores obvios."
 
 msgid "ai:p:local"
 msgstr "Estilo Local"
@@ -511,16 +512,16 @@ msgid "aihelp:p:local"
 msgstr ""
 "Escoge 'pick_n + pick_frac * <#jugadas legales>' con un peso superior a "
 "jugadas alrededor de la última jugada y escoge la mejor. Juega la mejor "
-"jugada si el valor de la politica está por encima 'pick_override' con el fin "
-"de prevenir errores obvios."
+"jugada si el valor de la politica está por encima 'pick_override' con el fin"
+" de prevenir errores obvios."
 
 msgid "ai:p:tenuki"
 msgstr "Estilo Tenuki"
 
 msgid "aihelp:p:tenuki"
 msgstr ""
-"Escoge 'pick_n + pick_frac * <#jugadas legales>' con un peso en contra de la "
-"última jugada y escoge la mejor. Juega la mejor jugada si el valor de la "
+"Escoge 'pick_n + pick_frac * <#jugadas legales>' con un peso en contra de la"
+" última jugada y escoge la mejor. Juega la mejor jugada si el valor de la "
 "politica esta por encima 'pick_override' con el fin de prevenir errores "
 "obvios. Un 'stddev' más grande hace que juegue más lejos."
 
@@ -556,8 +557,8 @@ msgstr "Ecualizar análsis de jugadas candidatas a {visits} visitas"
 
 msgid "Kata exe not found in path"
 msgstr ""
-"El binario de KataGo '{exe}' no se encuentra en la 'PATH', revisar variables "
-"ambiente o usar la ruta completa en la conf general. Si estas en MacOS, ve "
+"El binario de KataGo '{exe}' no se encuentra en la 'PATH', revisar variables"
+" ambiente o usar la ruta completa en la conf general. Si estas en MacOS, ve "
 "el manual de como usar homebrew para instalar KataGo primero"
 
 msgid "ai:p:rank"
@@ -576,7 +577,8 @@ msgid "count down sound"
 msgstr "Sonido on"
 
 msgid "Kata config not found"
-msgstr "El archivo de conf de KataGo {config} no existe, revisar conf general."
+msgstr ""
+"El archivo de conf de KataGo {config} no existe, revisar conf general."
 
 msgid "extra analysis"
 msgstr "Realizar análisis adicional a {visits} visitas"
@@ -816,8 +818,8 @@ msgstr "White player's name"
 #. TODO - in self-play mode
 msgid "gui-locked"
 msgstr ""
-"Action {action} not allowed in distributed training mode. Restart KaTrain to "
-"exit this mode."
+"Action {action} not allowed in distributed training mode. Restart KaTrain to"
+" exit this mode."
 
 #. TODO - menu item
 msgid "menu:distributed"
@@ -850,8 +852,8 @@ msgstr "Password"
 #. TODO - hint for max games
 msgid "contribute:maxgames:hint"
 msgstr ""
-"Best equal to your optimal numSearchThreads, around 8 for mid-tier GPUs. Can "
-"set it slightly lower for shorter runs, as half-finished games are not "
+"Best equal to your optimal numSearchThreads, around 8 for mid-tier GPUs. Can"
+" set it slightly lower for shorter runs, as half-finished games are not "
 "uploaded."
 
 #. TODO - hint for ownership
@@ -2184,8 +2186,8 @@ msgstr "Seleccionar partida"
 
 msgid "report:select_game_hint"
 msgstr ""
-"Selecciona una partida del panel derecho o importa un nuevo SGF / partida de "
-"la biblioteca."
+"Selecciona una partida del panel derecho o importa un nuevo SGF / partida de"
+" la biblioteca."
 
 msgid "report:no_preview"
 msgstr "Aún no hay partida para previsualizar."
@@ -2849,7 +2851,8 @@ msgid "ladder:net_score_prefix"
 msgstr "Puntuación neta: "
 
 msgid "ladder:net_score_aria"
-msgstr "Puntuación neta; negativa hacia el descenso, positiva hacia el ascenso"
+msgstr ""
+"Puntuación neta; negativa hacia el descenso, positiva hacia el ascenso"
 
 msgid "ladder:demotion_threshold"
 msgstr "Descenso -3"
@@ -2949,7 +2952,8 @@ msgstr "Cancelar y salir"
 
 msgid "tsumego:loadError"
 msgstr ""
-"No se pudo cargar la biblioteca de tsumego. Inténtalo de nuevo en un momento."
+"No se pudo cargar la biblioteca de tsumego. Inténtalo de nuevo en un "
+"momento."
 
 msgid "tsumego:noData"
 msgstr "Aún no hay problemas de tsumego."
@@ -3058,8 +3062,8 @@ msgstr "Iniciar sesión"
 
 msgid "ladder:login_required"
 msgstr ""
-"Las partidas de clasificación cambian tu rango, por lo que requieren iniciar "
-"sesión."
+"Las partidas de clasificación cambian tu rango, por lo que requieren iniciar"
+" sesión."
 
 msgid "play:login_required_free"
 msgstr ""
@@ -3076,8 +3080,8 @@ msgstr "Jugar una partida libre"
 
 msgid "play:blocked_by_pending_ranked"
 msgstr ""
-"Tienes una partida de clasificación sin liquidar. Termínala antes de empezar "
-"otra."
+"Tienes una partida de clasificación sin liquidar. Termínala antes de empezar"
+" otra."
 
 msgid "research:login_required"
 msgstr ""
@@ -3155,9 +3159,9 @@ msgstr "{n} sin evaluar"
 
 msgid "ladder:engine_unavailable_start"
 msgstr ""
-"El motor de partidas clasificatorias no está disponible temporalmente. No se "
-"ha iniciado ninguna partida y tu rango no se ve afectado. Inténtalo de nuevo "
-"más tarde."
+"El motor de partidas clasificatorias no está disponible temporalmente. No se"
+" ha iniciado ninguna partida y tu rango no se ve afectado. Inténtalo de "
+"nuevo más tarde."
 
 msgid "grade:match_rate"
 msgstr "Coincidencia con la IA"
@@ -3267,8 +3271,8 @@ msgstr ""
 
 msgid "grade:match_timeline_legend"
 msgstr ""
-"Bloque completo = primera opción, medio bloque claro = entre las 3 primeras, "
-"fondo = otras"
+"Bloque completo = primera opción, medio bloque claro = entre las 3 primeras,"
+" fondo = otras"
 
 msgid "grade:match_timeline_aria"
 msgstr ""
@@ -3481,3 +3485,314 @@ msgstr "Restablecer reconocimiento · usar la posición digital en pantalla"
 
 msgid "Re-sync"
 msgstr "Restablecer reconocimiento"
+
+msgid "Back to play"
+msgstr "Volver a jugar"
+
+msgid "setup:start"
+msgstr "Empezar partida"
+
+msgid "ladder:start"
+msgstr "Empezar partida puntuable"
+
+msgid "play:free_setup_sub"
+msgstr "Configuración · contra IA · sin puntuación"
+
+msgid "ladder:setup_sub"
+msgstr "Configuración · puntuable · análisis desactivado"
+
+msgid "local:setup_sub"
+msgstr "Configuración · dos jugadores cara a cara"
+
+msgid "game:local_pvp"
+msgstr "Partida local"
+
+msgid "setup:game_terms"
+msgstr "Esta partida"
+
+msgid "setup:size"
+msgstr "Tablero"
+
+msgid "setup:size_n"
+msgstr "{n}x{n}"
+
+msgid "setup:size_19"
+msgstr "19x19"
+
+msgid "Chinese rules"
+msgstr "Reglas chinas"
+
+msgid "Japanese rules"
+msgstr "Reglas japonesas"
+
+msgid "AGA rules"
+msgstr "Reglas AGA"
+
+msgid "setup:rules_button"
+msgstr "Reglas de torneo de IA"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr ""
+"Las reglas chinas cuentan área: territorio más piedras, así que rellenar tu "
+"territorio no cuesta nada"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr ""
+"Las reglas japonesas solo cuentan territorio: rellenar el tuyo cuesta un "
+"punto"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr ""
+"Las reglas AGA cuentan área, pero cada paso entrega una piedra, así el "
+"resultado iguala al conteo por territorio"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr ""
+"Las reglas coreanas cuentan territorio: el mismo método que las japonesas "
+"con otro komi habitual"
+
+msgid "setup:rules_button_hint"
+msgstr ""
+"Reglas de torneo de IA: conteo por área más medio punto para quien pase "
+"primero, lo que elimina el desfase de medio punto. Solo partidas parejas."
+
+msgid "setup:ha_even"
+msgstr "Parejas"
+
+msgid "setup:ha_sente"
+msgstr "Negras primero, sin komi"
+
+msgid "setup:ha_reverse"
+msgstr "Komi inverso"
+
+msgid "setup:ha_free"
+msgstr "Komi personalizado"
+
+msgid "setup:ha_stones"
+msgstr "{n} piedras"
+
+msgid "setup:komi_derived"
+msgstr "Definido por reglas y hándicap"
+
+msgid "setup:komi_pick"
+msgstr "Toca para cambiar el komi"
+
+msgid "setup:komi_none"
+msgstr "Sin komi"
+
+msgid "setup:komi_sente"
+msgstr "Negras mueven primero"
+
+msgid "setup:komi_handicap"
+msgstr "Negras colocan {n} piedras primero"
+
+msgid "setup:komi_black_pays"
+msgstr "Negras pagan"
+
+msgid "setup:komi_white_pays"
+msgstr "Blancas pagan"
+
+msgid "setup:komi_points"
+msgstr "{n} puntos"
+
+msgid "setup:unit_points"
+msgstr "pts"
+
+msgid "setup:unit_stones"
+msgstr "piedras"
+
+msgid "setup:seat"
+msgstr "Colocación"
+
+msgid "setup:side_black"
+msgstr "Negras"
+
+msgid "setup:side_white"
+msgstr "Blancas"
+
+msgid "setup:side_nigiri"
+msgstr "Nigiri"
+
+msgid "setup:nigiri_blocked"
+msgstr "Con hándicap, negras colocan las piedras"
+
+msgid "setup:black_side"
+msgstr "Negras"
+
+msgid "setup:white_side"
+msgstr "Blancas"
+
+msgid "setup:input_where"
+msgstr "Jugar en"
+
+msgid "setup:on_screen"
+msgstr "Pantalla"
+
+msgid "setup:on_board"
+msgstr "Tablero físico"
+
+msgid "setup:board_only_19"
+msgstr "El tablero físico es de 19x19"
+
+msgid "setup:board_not_ready"
+msgstr "Cámara sin calibrar"
+
+msgid "setup:seat_hint_ready"
+msgstr ""
+"Cambia entre tablero físico y pantalla cuando quieras; se fija al empezar la"
+" partida"
+
+msgid "setup:seat_hint_not19"
+msgstr "Esta partida no es de 19x19, así que solo puede jugarse en pantalla"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr ""
+"Esta máquina no tiene la cámara calibrada, así que se juega en pantalla"
+
+msgid "setup:size_not19_hint"
+msgstr ""
+"El tablero físico es de 19x19: esta partida va en pantalla; vuelve a 19x19 "
+"para usarlo otra vez"
+
+msgid "Untimed"
+msgstr "Sin tiempo"
+
+msgid "setup:time_byo_only"
+msgstr "Solo byoyomi 30s x3"
+
+msgid "5 min + 3x30s"
+msgstr "5 min + 3x30s"
+
+msgid "60 min + 3x30s"
+msgstr "60 min + 3x30s"
+
+msgid "local:move_sound_short"
+msgstr "Sonido de piedra"
+
+msgid "On"
+msgstr "Act."
+
+msgid "Off"
+msgstr "Desact."
+
+msgid "setup:strength_rung"
+msgstr "Nivel {n}"
+
+msgid "setup:rank_kyu"
+msgstr "{n} kyu"
+
+msgid "setup:rank_dan"
+msgstr "{n} dan"
+
+msgid "setup:strength_up"
+msgstr "Un nivel más fuerte"
+
+msgid "setup:strength_down"
+msgstr "Un nivel más débil"
+
+msgid "setup:strength_meta"
+msgstr "{n} niveles · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "Estilo humano · fijo al empezar la partida"
+
+msgid "setup:strength_hint2"
+msgstr ""
+"El rival estilo humano comete los errores propios de su nivel; el nivel "
+"describe al rival, no tu rango"
+
+msgid "ladder:opponent"
+msgstr "Rival"
+
+msgid "ladder:fixed_by_box"
+msgstr "Definido por la máquina"
+
+msgid "ladder:terms_fixed"
+msgstr "Nada de esto se puede cambiar"
+
+msgid "ladder:frozen_at_start"
+msgstr "Se congela al empezar la partida"
+
+msgid "ladder:komi_note"
+msgstr "El nivel se midió en este tablero"
+
+msgid "ladder:stake"
+msgstr "Lo que se juega en esta partida"
+
+msgid "ladder:stake_win_promote"
+msgstr "Victoria · subes un nivel"
+
+msgid "ladder:stake_loss_demote"
+msgstr "Derrota · bajas un nivel"
+
+msgid "ladder:stake_win_score"
+msgstr "Victoria · saldo {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "Derrota · saldo {n}"
+
+msgid "ladder:stake_rule"
+msgstr "Saldo +3 asciende, −3 desciende · actual {n}"
+
+msgid "local:players"
+msgstr "Jugadores"
+
+msgid "local:written_into_sgf"
+msgstr "Se guarda en el registro"
+
+msgid "local:agree_first"
+msgstr "Acordadlo antes de jugar"
+
+msgid "local:black_role_short"
+msgstr "primero"
+
+msgid "local:white_role_short"
+msgstr "segundo"
+
+msgid "local:black_name"
+msgstr "Nombre de negras"
+
+msgid "local:white_name"
+msgstr "Nombre de blancas"
+
+msgid "local:tap_to_type"
+msgstr "Toca para escribir"
+
+msgid "local:names_hint"
+msgstr "Déjalo en blanco y el registro dirá solo Negras y Blancas"
+
+msgid "local:seat_hint_ready"
+msgstr ""
+"El reloj corre en las tarjetas de jugador · agotar el byoyomi pierde por "
+"tiempo · sin tiempo solo se registra"
+
+msgid "setup:note_r2_a"
+msgstr "Estos ajustes "
+
+msgid "setup:note_r2_b"
+msgstr "no se pueden cambiar tras empezar la partida"
+
+msgid "setup:note_r2_c"
+msgstr ": cambiarlos a mitad es otra partida; las partidas libres "
+
+msgid "setup:note_r2_d"
+msgstr "no cuentan para tu rango"
+
+msgid "setup:note_h"
+msgstr "."
+
+msgid "setup:locked_after_start"
+msgstr "Bloqueado al empezar la partida"
+
+msgid "Session expired, please sign in again"
+msgstr "La sesión ha caducado, inicia sesión de nuevo"
+
+msgid "Could not end that game, please retry"
+msgstr "No se ha podido terminar la partida, inténtalo de nuevo"
+
+msgid "Retry failed, please try again later"
+msgstr "El reintento ha fallado, inténtalo más tarde"

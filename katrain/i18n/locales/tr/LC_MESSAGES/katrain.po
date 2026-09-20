@@ -188,7 +188,8 @@ msgstr "{visits} ziyaret kadar ek analiz gerçekleştiriyor"
 
 #. status message
 msgid "sweep analysis"
-msgstr "Hamle başına {visits} ziyaret olacak şekilde tüm tahtayı analiz ediyor"
+msgstr ""
+"Hamle başına {visits} ziyaret olacak şekilde tüm tahtayı analiz ediyor"
 
 #. status message
 msgid "alternative analysis"
@@ -218,8 +219,8 @@ msgstr "Terk Et"
 msgid "teaching undo message"
 msgstr ""
 "{points_lost:.1f} puan kaybettirdiğinden {move}. hamleyi geri alın. Lütfen "
-"tekrar deneyin. İpucu için karşı analizi görmek amacıyla fare imlecini hamle "
-"üzerine getirin veya puan kaybının beklendiği tahtabölgelerini görmek "
+"tekrar deneyin. İpucu için karşı analizi görmek amacıyla fare imlecini hamle"
+" üzerine getirin veya puan kaybının beklendiği tahtabölgelerini görmek "
 "amacıyla tahmini bölgeyi (t) kontrol edin."
 
 msgid "ai-ponder"
@@ -541,9 +542,9 @@ msgstr "Eş Zamanlı Oyun Sayısı"
 #. hint for max games
 msgid "contribute:maxgames:hint"
 msgstr ""
-"Orta seviye GPU’lar için yaklaşık 8 olan optimum numSearchThreads değerinize "
-"eşittir. Yarım kalmış oyunların yüklenmemesi nedeniyle daha kısa işlem için "
-"bu değeri biraz daha düşük ayarlayabilirsiniz."
+"Orta seviye GPU’lar için yaklaşık 8 olan optimum numSearchThreads değerinize"
+" eşittir. Yarım kalmış oyunların yüklenmemesi nedeniyle daha kısa işlem için"
+" bu değeri biraz daha düşük ayarlayabilirsiniz."
 
 msgid "contribute:ownership"
 msgstr "Bölge Sahipliği Etkinleştir"
@@ -690,8 +691,8 @@ msgstr ""
 
 msgid "Kata exe not found in path"
 msgstr ""
-"KataGo ikili dosyası {exe}' YOLDA bulunamadı, ortam değişkenlerinizi kontrol "
-"edin veya bunun yerine genel ayarlardaki tam yolu kullanın. MacOS "
+"KataGo ikili dosyası {exe}' YOLDA bulunamadı, ortam değişkenlerinizi kontrol"
+" edin veya bunun yerine genel ayarlardaki tam yolu kullanın. MacOS "
 "kullanıyorsanız, ilk önce katago’yu yüklemek için brew’in nasıl "
 "kullanıldığını görmek amacıyla kılavuza bakın"
 
@@ -786,8 +787,8 @@ msgstr ""
 "tenuki_penalty önem derecesine bağlı olarak) ve bitişik hamlelerden kaçınır "
 "(attachment_penalty önem derecesine bağlı olarak). Aynı zamanda oyunu "
 "güçleştirmek için ağırlıklar negatif olabilir ve genişletilmiş kök etkisi "
-"(genel ayarlardaki) seviyeden ödün verilerek bu stile daha çok odaklanılması "
-"için kullanılabilir."
+"(genel ayarlardaki) seviyeden ödün verilerek bu stile daha çok odaklanılması"
+" için kullanılabilir."
 
 msgid "ai:antimirror"
 msgstr "Anti-ayna"
@@ -809,8 +810,8 @@ msgstr "Puan Kaybı"
 msgid "aihelp:scoreloss"
 msgstr ""
 "Daha düşük olasılığa sahip daha yüksek puan kaybına neden olacak hamleler "
-"oynar. Daha yüksek ziyaret ayarlarıyla çok çeşitli/daha düşük seviyede hamle "
-"yapacaktır."
+"oynar. Daha yüksek ziyaret ayarlarıyla çok çeşitli/daha düşük seviyede hamle"
+" yapacaktır."
 
 msgid "ai:policy"
 msgstr "Politika"
@@ -870,8 +871,8 @@ msgid "aihelp:p:influence"
 msgstr ""
 "'Eşik değeri' hattının üstünde kalan hamleleri seçer ve en iyi hamleyi "
 "oynar. Tahta kenarına daha yakın hamleleri geri plana almak için "
-"'line_weight' değerini arttırın. Tahtada 'oyun sonu’ bölümü tamamlandığından "
-"stratejiyi durdurur."
+"'line_weight' değerini arttırın. Tahtada 'oyun sonu’ bölümü tamamlandığından"
+" stratejiyi durdurur."
 
 msgid "ai:p:territory"
 msgstr "Alçak Stil"
@@ -889,8 +890,8 @@ msgstr "Ayarlı Seviye"
 msgid "aihelp:p:rank"
 msgstr ""
 "Rastgele sınırlı sayıda geçerli hamle seçer ve en iyi hamleyi oynar. Daha "
-"yüksek seviye ayarları, daha geniş bir seçimden en iyi hamleyi seçer. 0 kyu/"
-"dan eşitliği mümkün olmadığından, 3 dan = -2 kyu’dur."
+"yüksek seviye ayarları, daha geniş bir seçimden en iyi hamleyi seçer. 0 "
+"kyu/dan eşitliği mümkün olmadığından, 3 dan = -2 kyu’dur."
 
 #. in AI settings
 msgid "estimated strength"
@@ -1095,7 +1096,8 @@ msgstr ""
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a human-like KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening style."
+"ticked, the model will play according to a post-2016 AlphaZero opening "
+"style."
 
 #. TODO
 msgid "engine:humanlike_model"
@@ -1438,7 +1440,8 @@ msgid "Library"
 msgstr "Kütüphane"
 
 msgid "dashboard:report_desc"
-msgstr "Hamle hamle analiz raporları oluşturun ve oyunlarınızı gözden geçirin."
+msgstr ""
+"Hamle hamle analiz raporları oluşturun ve oyunlarınızı gözden geçirin."
 
 msgid "game_room:leave_forfeit"
 msgstr "Ayrıl ve Pes Et"
@@ -3248,7 +3251,8 @@ msgid "auth:go_login"
 msgstr "Giriş yap"
 
 msgid "ladder:login_required"
-msgstr "Dereceli oyunlar seviyenizi etkiler, bu yüzden giriş yapmanız gerekir."
+msgstr ""
+"Dereceli oyunlar seviyenizi etkiler, bu yüzden giriş yapmanız gerekir."
 
 msgid "play:login_required_free"
 msgstr ""
@@ -3422,8 +3426,8 @@ msgstr "{n} derecelendirilmedi"
 
 msgid "grade:histogram_aria"
 msgstr ""
-"Yedi kademeli dağılım; siyah çubuklar Siyah, beyaz çubuklar Beyaz, her taraf "
-"kendi içinde normalleştirildi"
+"Yedi kademeli dağılım; siyah çubuklar Siyah, beyaz çubuklar Beyaz, her taraf"
+" kendi içinde normalleştirildi"
 
 msgid "grade:def_brilliant"
 msgstr "Motorun sezgisinin bile kaçırdığı en iyi hamlesi (ön olasılık < %10)"
@@ -3577,19 +3581,21 @@ msgstr "Hangi taraf pes ediyor?"
 
 msgid "game:resign_local_body"
 msgstr ""
-"Rakip terk galibiyeti olarak kaydedilir; bu oyun oyun geçmişine kaydedilecek."
+"Rakip terk galibiyeti olarak kaydedilir; bu oyun oyun geçmişine "
+"kaydedilecek."
 
 msgid "local:input_hint_v2"
 msgstr ""
 "Fiziksel tahta yalnızca 19×19 — 13×13 veya 9×9 seçilirse ekranda oynanır"
 
 msgid "local:komi_hint"
-msgstr "Taş verme oyunlarında komi 0'dır — taş verme seçilince bu grup kapanır"
+msgstr ""
+"Taş verme oyunlarında komi 0'dır — taş verme seçilince bu grup kapanır"
 
 msgid "local:clock_hint_v2"
 msgstr ""
-"Saat oyuncu kartında geri sayar · byo-yomi biterse süre kaybı olur · süresiz "
-"modda yalnızca kayıt tutulur"
+"Saat oyuncu kartında geri sayar · byo-yomi biterse süre kaybı olur · süresiz"
+" modda yalnızca kayıt tutulur"
 
 msgid "local:clock_meta_count"
 msgstr "{n} kademe"
@@ -3656,3 +3662,313 @@ msgstr "Algılamayı sıfırla · ekrandaki dijital tahta konumunu esas al"
 
 msgid "Re-sync"
 msgstr "Algılamayı sıfırla"
+
+msgid "Back to play"
+msgstr "Oyuna dön"
+
+msgid "setup:start"
+msgstr "Oyunu başlat"
+
+msgid "ladder:start"
+msgstr "Dereceli oyunu başlat"
+
+msgid "play:free_setup_sub"
+msgstr "Oyun ayarları · yapay zekâya karşı · derecesiz"
+
+msgid "ladder:setup_sub"
+msgstr "Oyun ayarları · dereceli · analiz kapalı"
+
+msgid "local:setup_sub"
+msgstr "Oyun ayarları · yüz yüze iki oyuncu"
+
+msgid "game:local_pvp"
+msgstr "Yerel oyun"
+
+msgid "setup:game_terms"
+msgstr "Bu oyun"
+
+msgid "setup:size"
+msgstr "Tahta"
+
+msgid "setup:size_n"
+msgstr "{n}x{n}"
+
+msgid "setup:size_19"
+msgstr "19x19"
+
+msgid "Chinese rules"
+msgstr "Çin kuralları"
+
+msgid "Japanese rules"
+msgstr "Japon kuralları"
+
+msgid "AGA rules"
+msgstr "AGA kuralları"
+
+msgid "setup:rules_button"
+msgstr "Yapay zekâ turnuva kuralları"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr ""
+"Çin kuralları alan sayar: bölge artı taşlar, kendi bölgene oynamak bir şey "
+"kaybettirmez"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr ""
+"Japon kuralları yalnızca bölge sayar; kendi bölgene oynamak bir puan "
+"kaybettirir"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr ""
+"AGA kuralları alan sayar, ancak her pas bir taş verdirir; sonuç bölge "
+"sayımıyla aynı çıkar"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr ""
+"Kore kuralları bölge sayar: Japon kurallarıyla aynı yöntem, komi geleneği "
+"farklı"
+
+msgid "setup:rules_button_hint"
+msgstr ""
+"Yapay zekâ turnuva kuralları: alan sayımı artı ilk pas geçene yarım puan; "
+"bu, yarım puanlık farkı ortadan kaldırır. Yalnızca denk oyunlar."
+
+msgid "setup:ha_even"
+msgstr "Denk"
+
+msgid "setup:ha_sente"
+msgstr "Siyah önce, komisiz"
+
+msgid "setup:ha_reverse"
+msgstr "Ters komi"
+
+msgid "setup:ha_free"
+msgstr "Özel komi"
+
+msgid "setup:ha_stones"
+msgstr "{n} taş"
+
+msgid "setup:komi_derived"
+msgstr "Kurallar ve avans belirler"
+
+msgid "setup:komi_pick"
+msgstr "Komiyi değiştirmek için dokunun"
+
+msgid "setup:komi_none"
+msgstr "Komi yok"
+
+msgid "setup:komi_sente"
+msgstr "Siyah önce oynar"
+
+msgid "setup:komi_handicap"
+msgstr "Siyah önce {n} taş yerleştirir"
+
+msgid "setup:komi_black_pays"
+msgstr "Siyah öder"
+
+msgid "setup:komi_white_pays"
+msgstr "Beyaz öder"
+
+msgid "setup:komi_points"
+msgstr "{n} puan"
+
+msgid "setup:unit_points"
+msgstr "puan"
+
+msgid "setup:unit_stones"
+msgstr "taş"
+
+msgid "setup:seat"
+msgstr "Oturma"
+
+msgid "setup:side_black"
+msgstr "Siyah"
+
+msgid "setup:side_white"
+msgstr "Beyaz"
+
+msgid "setup:side_nigiri"
+msgstr "Nigiri"
+
+msgid "setup:nigiri_blocked"
+msgstr "Avanslı oyunda taşları siyah yerleştirir"
+
+msgid "setup:black_side"
+msgstr "Siyah"
+
+msgid "setup:white_side"
+msgstr "Beyaz"
+
+msgid "setup:input_where"
+msgstr "Oynanan yer"
+
+msgid "setup:on_screen"
+msgstr "Ekran"
+
+msgid "setup:on_board"
+msgstr "Gerçek tahta"
+
+msgid "setup:board_only_19"
+msgstr "Gerçek tahta 19x19"
+
+msgid "setup:board_not_ready"
+msgstr "Kamera kalibre edilmemiş"
+
+msgid "setup:seat_hint_ready"
+msgstr ""
+"Gerçek tahta ile ekran arasında istediğiniz zaman geçin; oyun başlayınca "
+"sabitlenir"
+
+msgid "setup:seat_hint_not19"
+msgstr "Bu oyun 19x19 değil, yalnızca ekranda oynanabilir"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr "Bu cihazda kalibre kamera yok, oyun ekranda oynanır"
+
+msgid "setup:size_not19_hint"
+msgstr ""
+"Gerçek tahta 19x19 — bu oyun ekranda ilerler; tekrar kullanmak için 19x19'a "
+"dönün"
+
+msgid "Untimed"
+msgstr "Süresiz"
+
+msgid "setup:time_byo_only"
+msgstr "Yalnızca byoyomi 30sn x3"
+
+msgid "5 min + 3x30s"
+msgstr "5 dk + 3x30sn"
+
+msgid "60 min + 3x30s"
+msgstr "60 dk + 3x30sn"
+
+msgid "local:move_sound_short"
+msgstr "Taş sesi"
+
+msgid "On"
+msgstr "Açık"
+
+msgid "Off"
+msgstr "Kapalı"
+
+msgid "setup:strength_rung"
+msgstr "{n}. kademe"
+
+msgid "setup:rank_kyu"
+msgstr "{n} kyu"
+
+msgid "setup:rank_dan"
+msgstr "{n} dan"
+
+msgid "setup:strength_up"
+msgstr "Bir kademe güçlü"
+
+msgid "setup:strength_down"
+msgstr "Bir kademe zayıf"
+
+msgid "setup:strength_meta"
+msgstr "{n} kademe · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "İnsan benzeri · oyun başlayınca sabit"
+
+msgid "setup:strength_hint2"
+msgstr ""
+"İnsan benzeri rakip kendi kademesine uygun hatalar yapar; kademe rakibi "
+"anlatır, sizin derecenizi değil"
+
+msgid "ladder:opponent"
+msgstr "Rakip"
+
+msgid "ladder:fixed_by_box"
+msgstr "Cihaz tarafından belirlenir"
+
+msgid "ladder:terms_fixed"
+msgstr "Bunların hiçbiri değiştirilemez"
+
+msgid "ladder:frozen_at_start"
+msgstr "Oyun başladığı anda dondurulur"
+
+msgid "ladder:komi_note"
+msgstr "Kademe bu tahtada ölçüldü"
+
+msgid "ladder:stake"
+msgstr "Bu oyunda ne var"
+
+msgid "ladder:stake_win_promote"
+msgstr "Galibiyet · bir kademe yukarı"
+
+msgid "ladder:stake_loss_demote"
+msgstr "Yenilgi · bir kademe aşağı"
+
+msgid "ladder:stake_win_score"
+msgstr "Galibiyet · puan {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "Yenilgi · puan {n}"
+
+msgid "ladder:stake_rule"
+msgstr "Puan +3 yükseltir, −3 düşürür · şu an {n}"
+
+msgid "local:players"
+msgstr "Oyuncular"
+
+msgid "local:written_into_sgf"
+msgstr "Kayda yazılır"
+
+msgid "local:agree_first"
+msgstr "Oynamadan önce anlaşın"
+
+msgid "local:black_role_short"
+msgstr "önce"
+
+msgid "local:white_role_short"
+msgstr "sonra"
+
+msgid "local:black_name"
+msgstr "Siyahın adı"
+
+msgid "local:white_name"
+msgstr "Beyazın adı"
+
+msgid "local:tap_to_type"
+msgstr "Yazmak için dokunun"
+
+msgid "local:names_hint"
+msgstr "Boş bırakın; kayıtta yalnızca Siyah ve Beyaz yazar"
+
+msgid "local:seat_hint_ready"
+msgstr ""
+"Saat oyuncu kartlarında işler · byoyomi biterse süreden yenilgi · süresizse "
+"yalnızca kayıt tutulur"
+
+msgid "setup:note_r2_a"
+msgstr "Bu ayarlar "
+
+msgid "setup:note_r2_b"
+msgstr "oyun başladıktan sonra değiştirilemez"
+
+msgid "setup:note_r2_c"
+msgstr " — oyun ortasında değişmesi başka bir oyun demektir; serbest oyunlar "
+
+msgid "setup:note_r2_d"
+msgstr "derecenize sayılmaz"
+
+msgid "setup:note_h"
+msgstr "."
+
+msgid "setup:locked_after_start"
+msgstr "Oyun başlayınca kilitlenir"
+
+msgid "Session expired, please sign in again"
+msgstr "Oturum sona erdi, lütfen tekrar giriş yapın"
+
+msgid "Could not end that game, please retry"
+msgstr "Oyun sonlandırılamadı, lütfen tekrar deneyin"
+
+msgid "Retry failed, please try again later"
+msgstr "Yeniden deneme başarısız, lütfen daha sonra deneyin"

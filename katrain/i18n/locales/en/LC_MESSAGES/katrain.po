@@ -474,8 +474,8 @@ msgstr "Resign"
 #. Shown when a move is undone in teaching mode.
 msgid "teaching undo message"
 msgstr ""
-"Undid move {move} as it lost {points_lost:.1f} points. Please try again. For "
-"a hint, hover over the move to see expected refutation, or check expected "
+"Undid move {move} as it lost {points_lost:.1f} points. Please try again. For"
+" a hint, hover over the move to see expected refutation, or check expected "
 "territory (t) to see the areas of the board where point loss is expected."
 
 msgid "ai-ponder"
@@ -788,8 +788,8 @@ msgstr "Simultaneous Games"
 #. hint for max games
 msgid "contribute:maxgames:hint"
 msgstr ""
-"Best equal to your optimal numSearchThreads, around 8 for mid-tier GPUs. Can "
-"set it slightly lower for shorter runs, as half-finished games are not "
+"Best equal to your optimal numSearchThreads, around 8 for mid-tier GPUs. Can"
+" set it slightly lower for shorter runs, as half-finished games are not "
 "uploaded."
 
 msgid "contribute:ownership"
@@ -939,8 +939,8 @@ msgstr "KataGo binary {exe} does not exist, please check general settings."
 msgid "Kata exe not found in path"
 msgstr ""
 "KataGo binary '{exe}' not found in your PATH, check your environment "
-"variables or use the full path in general settings instead. If on MacOS, see "
-"the manual on how to use brew to install katago first"
+"variables or use the full path in general settings instead. If on MacOS, see"
+" the manual on how to use brew to install katago first"
 
 msgid "Kata model not found"
 msgstr "KataGo model {model} does not exist, please check general settings."
@@ -1000,8 +1000,8 @@ msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
-"Full strength KataGo AI. Strength is affected by 'max visits' and 'model' in "
-"the general settings 'engine' section and engine configuration file. No "
+"Full strength KataGo AI. Strength is affected by 'max visits' and 'model' in"
+" the general settings 'engine' section and engine configuration file. No "
 "options are available here."
 
 #. ai which handles handicap games better
@@ -1057,8 +1057,8 @@ msgstr "Policy"
 
 msgid "aihelp:policy"
 msgstr ""
-"Plays the top move from the policy network, without any reading. Strength is "
-"mainly affected by 'model' in engine settings. The 'opening_moves' setting "
+"Plays the top move from the policy network, without any reading. Strength is"
+" mainly affected by 'model' in engine settings. The 'opening_moves' setting "
 "affects how many moves in the opening are more random."
 
 msgid "ai:p:weighted"
@@ -1067,8 +1067,8 @@ msgstr "Policy Weighted"
 msgid "aihelp:p:weighted"
 msgstr ""
 "Plays moves according to policy probability, with 'weaken_fac' influencing "
-"how much more likely weaker moves are played. With a very low value it plays "
-"like the 'Policy' AI. 'pick_override' determines when top move is chosen "
+"how much more likely weaker moves are played. With a very low value it plays"
+" like the 'Policy' AI. 'pick_override' determines when top move is chosen "
 "without randomness, and 'lower_bound' determines the lower bound policy "
 "value that is allowed."
 
@@ -1077,8 +1077,8 @@ msgstr "Blinded Policy"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"Picks 'pick_n + pick_frac * <number of legal moves>' at random and plays the "
-"best one. For 'pick_frac=1' plays like the 'Policy' AI. Plays top move if "
+"Picks 'pick_n + pick_frac * <number of legal moves>' at random and plays the"
+" best one. For 'pick_frac=1' plays like the 'Policy' AI. Plays top move if "
 "policy value is above 'pick_override' to avoid obvious mistakes."
 
 msgid "ai:p:local"
@@ -1133,7 +1133,8 @@ msgstr "Human-like"
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a human-like KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening style."
+"ticked, the model will play according to a post-2016 AlphaZero opening "
+"style."
 
 msgid "ai:pro"
 msgstr "Historical Pro"
@@ -3197,16 +3198,16 @@ msgstr ""
 
 msgid "play:guest_free_notice"
 msgstr ""
-"You are playing as a guest: this game will not be saved to your game records "
-"and does not affect your rank. Sign in to keep your games."
+"You are playing as a guest: this game will not be saved to your game records"
+" and does not affect your rank. Sign in to keep your games."
 
 msgid "play:go_free_play"
 msgstr "Play a free game instead"
 
 msgid "play:blocked_by_pending_ranked"
 msgstr ""
-"You have an unsettled rated game. Finish it in 升降级对弈 before starting a "
-"new one."
+"You have an unsettled rated game. Finish it in 升降级对弈 before starting a new "
+"one."
 
 msgid "research:login_required"
 msgstr ""
@@ -3321,8 +3322,8 @@ msgstr "Human picks"
 
 msgid "live:human_pick_rate_hint_ranked"
 msgstr ""
-"Roughly how many out of 100 {rank} players would play here. This is how many "
-"DO play it, not whether they SHOULD."
+"Roughly how many out of 100 {rank} players would play here. This is how many"
+" DO play it, not whether they SHOULD."
 
 msgid "live:human_pick_rate_hint"
 msgstr ""
@@ -3353,7 +3354,8 @@ msgid "grade:axis_points_lost"
 msgstr "Points lost (max {n})"
 
 msgid "grade:axis_aria"
-msgstr ", Black above the axis and White below, horizontal axis is move number"
+msgstr ""
+", Black above the axis and White below, horizontal axis is move number"
 
 msgid "grade:count_note"
 msgstr "{n} in this phase"
@@ -3363,8 +3365,8 @@ msgstr "{n} not rated"
 
 msgid "grade:histogram_aria"
 msgstr ""
-"Performance across seven grades; black bars are Black, white bars are White, "
-"each normalised to its own side"
+"Performance across seven grades; black bars are Black, white bars are White,"
+" each normalised to its own side"
 
 msgid "grade:def_brilliant"
 msgstr ""
@@ -3391,8 +3393,8 @@ msgstr ""
 
 msgid "grade:match_timeline_legend"
 msgstr ""
-"Full-height solid = top choice, half-height light = within top 3, background "
-"= other"
+"Full-height solid = top choice, half-height light = within top 3, background"
+" = other"
 
 msgid "grade:match_timeline_aria"
 msgstr ""
@@ -3525,7 +3527,8 @@ msgstr ""
 "saved to game history."
 
 msgid "local:input_hint_v2"
-msgstr "The physical board is 19×19 only — pick 13×13 or 9×9 to play on screen"
+msgstr ""
+"The physical board is 19×19 only — pick 13×13 or 9×9 to play on screen"
 
 msgid "local:komi_hint"
 msgstr "Handicap games use 0 komi — this group collapses once handicap is set"
@@ -3600,3 +3603,313 @@ msgstr "Reset recognition · use the on-screen digital board position"
 
 msgid "Re-sync"
 msgstr "Reset recognition"
+
+msgid "Back to play"
+msgstr "Back to play"
+
+msgid "setup:start"
+msgstr "Start game"
+
+msgid "ladder:start"
+msgstr "Start rated game"
+
+msgid "play:free_setup_sub"
+msgstr "Game setup · vs AI · unrated"
+
+msgid "ladder:setup_sub"
+msgstr "Game setup · rated · analysis off throughout"
+
+msgid "local:setup_sub"
+msgstr "Game setup · two players face to face"
+
+msgid "game:local_pvp"
+msgstr "Local game"
+
+msgid "setup:game_terms"
+msgstr "This game"
+
+msgid "setup:size"
+msgstr "Board"
+
+msgid "setup:size_n"
+msgstr "{n}x{n}"
+
+msgid "setup:size_19"
+msgstr "19x19"
+
+msgid "Chinese rules"
+msgstr "Chinese rules"
+
+msgid "Japanese rules"
+msgstr "Japanese rules"
+
+msgid "AGA rules"
+msgstr "AGA rules"
+
+msgid "setup:rules_button"
+msgstr "AI-match rules"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr ""
+"Chinese rules count area: your territory plus your stones on the board, so "
+"filling your own territory costs nothing"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr ""
+"Japanese rules count territory only, so filling your own territory costs a "
+"point"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr ""
+"AGA rules count area, but each pass hands over a stone, so the result "
+"matches territory scoring"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr ""
+"Korean rules count territory, the same method as Japanese with a different "
+"komi convention"
+
+msgid "setup:rules_button_hint"
+msgstr ""
+"AI-match rules: area scoring plus half a point to whoever passes first, "
+"which removes the odd/even gap of area counting. Even games only."
+
+msgid "setup:ha_even"
+msgstr "Even"
+
+msgid "setup:ha_sente"
+msgstr "Black first, no komi"
+
+msgid "setup:ha_reverse"
+msgstr "Reverse komi"
+
+msgid "setup:ha_free"
+msgstr "Custom komi"
+
+msgid "setup:ha_stones"
+msgstr "{n} stones"
+
+msgid "setup:komi_derived"
+msgstr "Set by rules and handicap"
+
+msgid "setup:komi_pick"
+msgstr "Tap to change komi"
+
+msgid "setup:komi_none"
+msgstr "No komi"
+
+msgid "setup:komi_sente"
+msgstr "Black moves first"
+
+msgid "setup:komi_handicap"
+msgstr "Black places {n} stones first"
+
+msgid "setup:komi_black_pays"
+msgstr "Black pays"
+
+msgid "setup:komi_white_pays"
+msgstr "White pays"
+
+msgid "setup:komi_points"
+msgstr "{n} points"
+
+msgid "setup:unit_points"
+msgstr "pts"
+
+msgid "setup:unit_stones"
+msgstr "stones"
+
+msgid "setup:seat"
+msgstr "Seating"
+
+msgid "setup:side_black"
+msgstr "Black"
+
+msgid "setup:side_white"
+msgstr "White"
+
+msgid "setup:side_nigiri"
+msgstr "Nigiri"
+
+msgid "setup:nigiri_blocked"
+msgstr "Black places the handicap stones"
+
+msgid "setup:black_side"
+msgstr "Black"
+
+msgid "setup:white_side"
+msgstr "White"
+
+msgid "setup:input_where"
+msgstr "Play on"
+
+msgid "setup:on_screen"
+msgstr "Screen"
+
+msgid "setup:on_board"
+msgstr "Real board"
+
+msgid "setup:board_only_19"
+msgstr "The real board is 19x19"
+
+msgid "setup:board_not_ready"
+msgstr "Camera not calibrated"
+
+msgid "setup:seat_hint_ready"
+msgstr ""
+"Switch between the real board and the screen any time; it is fixed once the "
+"game starts"
+
+msgid "setup:seat_hint_not19"
+msgstr "This game is not 19x19, so it can only be played on the screen"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr "This machine has no calibrated camera, so play happens on the screen"
+
+msgid "setup:size_not19_hint"
+msgstr ""
+"The real board is 19x19 — this game runs on the screen; switch back to 19x19"
+" to use it again"
+
+msgid "Untimed"
+msgstr "Untimed"
+
+msgid "setup:time_byo_only"
+msgstr "Byoyomi only 30s x3"
+
+msgid "5 min + 3x30s"
+msgstr "5 min + 3x30s"
+
+msgid "60 min + 3x30s"
+msgstr "60 min + 3x30s"
+
+msgid "local:move_sound_short"
+msgstr "Stone sound"
+
+msgid "On"
+msgstr "On"
+
+msgid "Off"
+msgstr "Off"
+
+msgid "setup:strength_rung"
+msgstr "Tier {n}"
+
+msgid "setup:rank_kyu"
+msgstr "{n} kyu"
+
+msgid "setup:rank_dan"
+msgstr "{n} dan"
+
+msgid "setup:strength_up"
+msgstr "One tier stronger"
+
+msgid "setup:strength_down"
+msgstr "One tier weaker"
+
+msgid "setup:strength_meta"
+msgstr "{n} tiers · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "Human-like · fixed once the game starts"
+
+msgid "setup:strength_hint2"
+msgstr ""
+"The human-like opponent makes the mistakes that belong to its tier; the tier"
+" describes the opponent, not your own rank"
+
+msgid "ladder:opponent"
+msgstr "Opponent"
+
+msgid "ladder:fixed_by_box"
+msgstr "Set by the machine"
+
+msgid "ladder:terms_fixed"
+msgstr "None of these can be changed"
+
+msgid "ladder:frozen_at_start"
+msgstr "Frozen the moment the game starts"
+
+msgid "ladder:komi_note"
+msgstr "The tier was measured on this board"
+
+msgid "ladder:stake"
+msgstr "What this game is worth"
+
+msgid "ladder:stake_win_promote"
+msgstr "Win · move up a tier"
+
+msgid "ladder:stake_loss_demote"
+msgstr "Loss · move down a tier"
+
+msgid "ladder:stake_win_score"
+msgstr "Win · net score {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "Loss · net score {n}"
+
+msgid "ladder:stake_rule"
+msgstr "Net score +3 promotes, −3 demotes · currently {n}"
+
+msgid "local:players"
+msgstr "Players"
+
+msgid "local:written_into_sgf"
+msgstr "Written into the record"
+
+msgid "local:agree_first"
+msgstr "Agree on these before you play"
+
+msgid "local:black_role_short"
+msgstr "first"
+
+msgid "local:white_role_short"
+msgstr "second"
+
+msgid "local:black_name"
+msgstr "Black player's name"
+
+msgid "local:white_name"
+msgstr "White player's name"
+
+msgid "local:tap_to_type"
+msgstr "Tap to type"
+
+msgid "local:names_hint"
+msgstr "Leave blank and the record just says Black and White"
+
+msgid "local:seat_hint_ready"
+msgstr ""
+"The clock counts down on the player cards · running out of byoyomi loses on "
+"time · untimed games are just recorded"
+
+msgid "setup:note_r2_a"
+msgstr "These settings "
+
+msgid "setup:note_r2_b"
+msgstr "cannot be changed after the game starts"
+
+msgid "setup:note_r2_c"
+msgstr " — changing them mid-game means a different game; free games are "
+
+msgid "setup:note_r2_d"
+msgstr "not counted towards your rank"
+
+msgid "setup:note_h"
+msgstr "."
+
+msgid "setup:locked_after_start"
+msgstr "Locked once the game starts"
+
+msgid "Session expired, please sign in again"
+msgstr "Session expired, please sign in again"
+
+msgid "Could not end that game, please retry"
+msgstr "Could not end that game, please retry"
+
+msgid "Retry failed, please try again later"
+msgstr "Retry failed, please try again later"

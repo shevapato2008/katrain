@@ -492,8 +492,8 @@ msgid "aihelp:p:weighted"
 msgstr ""
 "Wählt den Zug gemäß der Policy-Wahrscheinlichkeit, beeinflusst durch "
 "'weaken_fac' wie wahrscheinlich schlechtere Züge gespielt werden. Mit einem "
-"kleinen Wert spielt wie die AI 'Policy'. 'pick_override' legt fest, wann der "
-"beste Zug gewählt wird ohne Zufall und 'lower_bound' bestimmt die untere "
+"kleinen Wert spielt wie die AI 'Policy'. 'pick_override' legt fest, wann der"
+" beste Zug gewählt wird ohne Zufall und 'lower_bound' bestimmt die untere "
 "Grenze des erlaubten Policy-Wertes."
 
 msgid "ai:p:pick"
@@ -503,8 +503,8 @@ msgid "aihelp:p:pick"
 msgstr ""
 "Wählt 'pick_n + pick_frac * <number of legal moves>' gewichtete Züge "
 "zufällig und spielt den besten. Spielt wie die AI 'Policy', wenn "
-"'pick_frac=1'. Spielt besten Zug, wenn Policy-Wert höher als 'pick_override' "
-"ist, um offensichtliche Fehler zu vermeiden."
+"'pick_frac=1'. Spielt besten Zug, wenn Policy-Wert höher als 'pick_override'"
+" ist, um offensichtliche Fehler zu vermeiden."
 
 msgid "ai:p:local"
 msgstr "Lokaler Stil"
@@ -613,8 +613,8 @@ msgstr "Kata-Vorgabesteine"
 msgid "aihelp:handicap"
 msgstr ""
 "Optimiertes KataGo für höhere Vorgabe-Spiele. Die Einstellung 'pda' "
-"entspricht 'playoutDoublingAdvantage' in KataGo, aus Sicht von Schwarz. Wenn "
-"'automatic' eingestellt ist, wird KaTrain automatischeinen geeigneten Wert "
+"entspricht 'playoutDoublingAdvantage' in KataGo, aus Sicht von Schwarz. Wenn"
+" 'automatic' eingestellt ist, wird KaTrain automatischeinen geeigneten Wert "
 "finden."
 
 msgid "estimated strength"
@@ -657,16 +657,16 @@ msgstr "Alle verfügbaren Programme wurden bereits heruntergeladen"
 
 msgid "Engine missing DLL"
 msgstr ""
-"Konnte KataGo wegen fehlender DLL nicht starten. Überprüfe die Anforderungen "
-"in der KataGo-Dokumentation oder versuche, KataGo alleine zu starten, um "
+"Konnte KataGo wegen fehlender DLL nicht starten. Überprüfe die Anforderungen"
+" in der KataGo-Dokumentation oder versuche, KataGo alleine zu starten, um "
 "Einzelheiten zu erfahren."
 
 msgid "teaching undo message"
 msgstr ""
 "Zug {move} zurückgenommen, da er {points_lost:.1f} Punkte verliert. Bitte "
 "versuche es erneut. Bewege den Mauszeiger über den Zug, um die erwartete "
-"Widerlegung zu sehen, oder setze ein Häkchen bei “Erwartetes Gebiet” (t), um "
-"die Bereiche des Bretts zu sehen, wo Punktverlust zu erwarten ist."
+"Widerlegung zu sehen, oder setze ein Häkchen bei “Erwartetes Gebiet” (t), um"
+" die Bereiche des Bretts zu sehen, wo Punktverlust zu erwarten ist."
 
 #. resign the game
 msgid "resign"
@@ -777,8 +777,8 @@ msgstr "Einfügen beendet, {num_copied} Züge kopiert"
 #. mode
 msgid "finish inserting before navigating"
 msgstr ""
-"Navigation ist im Einfüge-Modus deaktiviert, beende erst Einfüge-Modus durch "
-"Drücken von 'i'"
+"Navigation ist im Einfüge-Modus deaktiviert, beende erst Einfüge-Modus durch"
+" Drücken von 'i'"
 
 #. In new game options
 msgid "player names"
@@ -906,8 +906,8 @@ msgstr "Position aufsetzen"
 msgid "setup position explanation"
 msgstr ""
 "Dies generiert ein Teil eines Spieles, von dem ihr anfangen könnt, zu "
-"spielen. Zum Beispiel könnt ihr es benutzen um im Vorteil gegen stärkere KIs "
-"in verschiedene Mittel- oder Endspielsituationen zu Spielen."
+"spielen. Zum Beispiel könnt ihr es benutzen um im Vorteil gegen stärkere KIs"
+" in verschiedene Mittel- oder Endspielsituationen zu Spielen."
 
 #. change komi etc in current game
 msgid "editgame"
@@ -1060,7 +1060,8 @@ msgstr ""
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a human-like KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening style."
+"ticked, the model will play according to a post-2016 AlphaZero opening "
+"style."
 
 #. TODO
 msgid "engine:humanlike_model"
@@ -2464,7 +2465,8 @@ msgid "report:choose_file"
 msgstr "Lokale Datei auswählen"
 
 msgid "report:choose_file_hint"
-msgstr "Wählen Sie eine lokale SGF-Datei oder fügen Sie SGF-Inhalt direkt ein."
+msgstr ""
+"Wählen Sie eine lokale SGF-Datei oder fügen Sie SGF-Inhalt direkt ein."
 
 msgid "report:board_size"
 msgstr "Brett"
@@ -2567,8 +2569,8 @@ msgstr "Löschen bestätigen"
 
 msgid "report:delete_confirm_body"
 msgstr ""
-"Die Partie und alle zugehörigen Analysedaten werden dauerhaft gelöscht. Sind "
-"Sie sicher?"
+"Die Partie und alle zugehörigen Analysedaten werden dauerhaft gelöscht. Sind"
+" Sie sicher?"
 
 msgid "report:delete_success"
 msgstr "Partie gelöscht"
@@ -2931,8 +2933,8 @@ msgstr "Erneut versuchen"
 
 msgid "ladder:engine_stalled"
 msgstr ""
-"Ladder-Engine nicht verfügbar — die KI kann nicht ziehen. Diese Partie zählt "
-"nicht; bitte verlasse sie."
+"Ladder-Engine nicht verfügbar — die KI kann nicht ziehen. Diese Partie zählt"
+" nicht; bitte verlasse sie."
 
 msgid "ladder:unscored_engine"
 msgstr ""
@@ -2960,8 +2962,8 @@ msgstr "Ranglistenstatus konnte nicht geladen werden"
 
 msgid "ladder:load_error_not_authoritative"
 msgstr ""
-"Dieses Gerät wertet keine Ranglistenpartien, daher kann hier nicht gestartet "
-"werden"
+"Dieses Gerät wertet keine Ranglistenpartien, daher kann hier nicht gestartet"
+" werden"
 
 msgid "ladder:load_error_unauthorized"
 msgstr "Sitzung abgelaufen — bitte erneut anmelden"
@@ -3009,8 +3011,8 @@ msgstr "Ergebnisse der letzten 5 KI-Ranglistenpartien"
 
 msgid "ladder:recent_display_note"
 msgstr ""
-"Die letzten 5 Partien dienen nur der Übersicht; entscheidend sind allein die "
-"Nettopunkte"
+"Die letzten 5 Partien dienen nur der Übersicht; entscheidend sind allein die"
+" Nettopunkte"
 
 msgid "ladder:recent_empty"
 msgstr "Noch keine KI-Ranglistenpartien"
@@ -3242,8 +3244,8 @@ msgstr ""
 
 msgid "play:guest_free_notice"
 msgstr ""
-"Du spielst als Gast: Diese Partie wird nicht gespeichert und zählt nicht für "
-"deinen Rang. Melde dich an, um Partien zu behalten."
+"Du spielst als Gast: Diese Partie wird nicht gespeichert und zählt nicht für"
+" deinen Rang. Melde dich an, um Partien zu behalten."
 
 msgid "play:go_free_play"
 msgstr "Stattdessen frei spielen"
@@ -3329,8 +3331,8 @@ msgstr "{n} nicht bewertet"
 msgid "ladder:engine_unavailable_start"
 msgstr ""
 "Die Ranglisten-Engine ist vorübergehend nicht verfügbar. Es wurde keine "
-"Partie gestartet, und dein Rang bleibt unverändert. Bitte versuche es später "
-"erneut."
+"Partie gestartet, und dein Rang bleibt unverändert. Bitte versuche es später"
+" erneut."
 
 msgid "grade:match_rate"
 msgstr "KI-Übereinstimmung"
@@ -3355,8 +3357,8 @@ msgstr "{n} Züge nicht vergleichbar"
 
 msgid "grade:match_caveat"
 msgstr ""
-"Die Übereinstimmung hängt von der Schwierigkeit der Stellungen ab - für sich "
-"genommen ist sie kein Beleg für Spielstärke oder Betrug."
+"Die Übereinstimmung hängt von der Schwierigkeit der Stellungen ab - für sich"
+" genommen ist sie kein Beleg für Spielstärke oder Betrug."
 
 msgid "live:human_pick_rate_ranked"
 msgstr "{rank}-Wahl"
@@ -3430,8 +3432,8 @@ msgstr "Nicht bewertbar: Vorzug ohne Analyse oder zu wenige Visits"
 
 msgid "grade:brilliance_entry"
 msgstr ""
-"Alle drei Bedingungen: Topzug der Engine gespielt, dessen Policy-Prior unter "
-"10 % (selbst die Intuition übersah ihn) und die Partie war noch offen."
+"Alle drei Bedingungen: Topzug der Engine gespielt, dessen Policy-Prior unter"
+" 10 % (selbst die Intuition übersah ihn) und die Partie war noch offen."
 
 msgid "grade:match_timeline_legend"
 msgstr ""
@@ -3583,8 +3585,8 @@ msgstr ""
 
 msgid "local:clock_hint_v2"
 msgstr ""
-"Die Uhr läuft auf der Spielerkarte herunter · aufgebrauchte Bedenkzeit führt "
-"zum Zeitverlust · ohne Zeitlimit wird nur mitgeschrieben"
+"Die Uhr läuft auf der Spielerkarte herunter · aufgebrauchte Bedenkzeit führt"
+" zum Zeitverlust · ohne Zeitlimit wird nur mitgeschrieben"
 
 msgid "local:clock_meta_count"
 msgstr "{n} Stufen"
@@ -3651,3 +3653,316 @@ msgstr "Erkennung zurücksetzen · Bildschirmstellung als maßgeblich verwenden"
 
 msgid "Re-sync"
 msgstr "Erkennung zurücksetzen"
+
+msgid "Back to play"
+msgstr "Zurück zum Spiel"
+
+msgid "setup:start"
+msgstr "Spiel starten"
+
+msgid "ladder:start"
+msgstr "Wertungspartie starten"
+
+msgid "play:free_setup_sub"
+msgstr "Spieleinstellungen · gegen KI · ohne Wertung"
+
+msgid "ladder:setup_sub"
+msgstr "Spieleinstellungen · gewertet · Analyse durchgehend aus"
+
+msgid "local:setup_sub"
+msgstr "Spieleinstellungen · zwei Spieler gegenüber"
+
+msgid "game:local_pvp"
+msgstr "Lokale Partie"
+
+msgid "setup:game_terms"
+msgstr "Diese Partie"
+
+msgid "setup:size"
+msgstr "Brett"
+
+msgid "setup:size_n"
+msgstr "{n}x{n}"
+
+msgid "setup:size_19"
+msgstr "19x19"
+
+msgid "Chinese rules"
+msgstr "Chinesische Regeln"
+
+msgid "Japanese rules"
+msgstr "Japanische Regeln"
+
+msgid "AGA rules"
+msgstr "AGA-Regeln"
+
+msgid "setup:rules_button"
+msgstr "KI-Turnierregeln"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr ""
+"Chinesische Regeln zählen Fläche: Gebiet plus eigene Steine — in eigenes "
+"Gebiet zu ziehen kostet nichts"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr ""
+"Japanische Regeln zählen nur Gebiet — ein Zug ins eigene Gebiet kostet einen"
+" Punkt"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr ""
+"AGA-Regeln zählen Fläche, aber jedes Passen gibt einen Stein ab — das "
+"Ergebnis entspricht der Gebietswertung"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr ""
+"Koreanische Regeln zählen Gebiet — dieselbe Methode wie Japanisch, nur mit "
+"anderer Komi-Konvention"
+
+msgid "setup:rules_button_hint"
+msgstr ""
+"KI-Turnierregeln: Flächenwertung plus ein halber Punkt für den, der zuerst "
+"passt — das gleicht den Halbpunkt-Versatz aus. Nur ebenbürtige Partien."
+
+msgid "setup:ha_even"
+msgstr "Ebenbürtig"
+
+msgid "setup:ha_sente"
+msgstr "Sente ohne Komi"
+
+msgid "setup:ha_reverse"
+msgstr "Umgekehrtes Komi"
+
+msgid "setup:ha_free"
+msgstr "Eigenes Komi"
+
+msgid "setup:ha_stones"
+msgstr "{n} Steine"
+
+msgid "setup:komi_derived"
+msgstr "Ergibt sich aus Regeln und Vorgabe"
+
+msgid "setup:komi_pick"
+msgstr "Tippen, um Komi zu ändern"
+
+msgid "setup:komi_none"
+msgstr "Kein Komi"
+
+msgid "setup:komi_sente"
+msgstr "Schwarz beginnt"
+
+msgid "setup:komi_handicap"
+msgstr "Schwarz legt zuerst {n} Steine"
+
+msgid "setup:komi_black_pays"
+msgstr "Schwarz zahlt"
+
+msgid "setup:komi_white_pays"
+msgstr "Weiß zahlt"
+
+msgid "setup:komi_points"
+msgstr "{n} Punkte"
+
+msgid "setup:unit_points"
+msgstr "Pkt."
+
+msgid "setup:unit_stones"
+msgstr "Steine"
+
+msgid "setup:seat"
+msgstr "Sitzordnung"
+
+msgid "setup:side_black"
+msgstr "Schwarz"
+
+msgid "setup:side_white"
+msgstr "Weiß"
+
+msgid "setup:side_nigiri"
+msgstr "Nigiri"
+
+msgid "setup:nigiri_blocked"
+msgstr "Bei Vorgabe legt Schwarz die Steine"
+
+msgid "setup:black_side"
+msgstr "Schwarz"
+
+msgid "setup:white_side"
+msgstr "Weiß"
+
+msgid "setup:input_where"
+msgstr "Spielen auf"
+
+msgid "setup:on_screen"
+msgstr "Bildschirm"
+
+msgid "setup:on_board"
+msgstr "Echtes Brett"
+
+msgid "setup:board_only_19"
+msgstr "Das echte Brett ist 19x19"
+
+msgid "setup:board_not_ready"
+msgstr "Kamera nicht kalibriert"
+
+msgid "setup:seat_hint_ready"
+msgstr ""
+"Jederzeit zwischen echtem Brett und Bildschirm wechseln — nach Spielbeginn "
+"festgelegt"
+
+msgid "setup:seat_hint_not19"
+msgstr ""
+"Diese Partie ist nicht 19x19 und kann nur am Bildschirm gespielt werden"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr ""
+"Dieses Gerät hat keine kalibrierte Kamera — gespielt wird am Bildschirm"
+
+msgid "setup:size_not19_hint"
+msgstr ""
+"Das echte Brett ist 19x19 — diese Partie läuft am Bildschirm; zurück auf "
+"19x19 stellen, um es wieder zu nutzen"
+
+msgid "Untimed"
+msgstr "Ohne Zeit"
+
+msgid "setup:time_byo_only"
+msgstr "Nur Byoyomi 30s x3"
+
+msgid "5 min + 3x30s"
+msgstr "5 Min + 3x30s"
+
+msgid "60 min + 3x30s"
+msgstr "60 Min + 3x30s"
+
+msgid "local:move_sound_short"
+msgstr "Steinton"
+
+msgid "On"
+msgstr "Ein"
+
+msgid "Off"
+msgstr "Aus"
+
+msgid "setup:strength_rung"
+msgstr "Stufe {n}"
+
+msgid "setup:rank_kyu"
+msgstr "{n} Kyu"
+
+msgid "setup:rank_dan"
+msgstr "{n} Dan"
+
+msgid "setup:strength_up"
+msgstr "Eine Stufe stärker"
+
+msgid "setup:strength_down"
+msgstr "Eine Stufe schwächer"
+
+msgid "setup:strength_meta"
+msgstr "{n} Stufen · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "Menschenähnlich · nach Spielbeginn fest"
+
+msgid "setup:strength_hint2"
+msgstr ""
+"Der menschenähnliche Gegner macht die Fehler seiner Stufe; die Stufe "
+"beschreibt den Gegner, nicht deinen Rang"
+
+msgid "ladder:opponent"
+msgstr "Gegner"
+
+msgid "ladder:fixed_by_box"
+msgstr "Vom Gerät festgelegt"
+
+msgid "ladder:terms_fixed"
+msgstr "Nichts davon ist änderbar"
+
+msgid "ladder:frozen_at_start"
+msgstr "Wird bei Spielbeginn eingefroren"
+
+msgid "ladder:komi_note"
+msgstr "Die Stufe wurde auf diesem Brett gemessen"
+
+msgid "ladder:stake"
+msgstr "Was in dieser Partie auf dem Spiel steht"
+
+msgid "ladder:stake_win_promote"
+msgstr "Sieg · eine Stufe hoch"
+
+msgid "ladder:stake_loss_demote"
+msgstr "Niederlage · eine Stufe runter"
+
+msgid "ladder:stake_win_score"
+msgstr "Sieg · Punktestand {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "Niederlage · Punktestand {n}"
+
+msgid "ladder:stake_rule"
+msgstr "Punktestand +3 befördert, −3 stuft zurück · aktuell {n}"
+
+msgid "local:players"
+msgstr "Spieler"
+
+msgid "local:written_into_sgf"
+msgstr "Wird ins Kifu geschrieben"
+
+msgid "local:agree_first"
+msgstr "Vor dem Spiel absprechen"
+
+msgid "local:black_role_short"
+msgstr "zuerst"
+
+msgid "local:white_role_short"
+msgstr "danach"
+
+msgid "local:black_name"
+msgstr "Name von Schwarz"
+
+msgid "local:white_name"
+msgstr "Name von Weiß"
+
+msgid "local:tap_to_type"
+msgstr "Zum Tippen antippen"
+
+msgid "local:names_hint"
+msgstr "Leer lassen — dann steht im Kifu nur Schwarz und Weiß"
+
+msgid "local:seat_hint_ready"
+msgstr ""
+"Die Uhr läuft auf den Spielerkarten · abgelaufenes Byoyomi verliert auf Zeit"
+" · ohne Zeit wird nur aufgezeichnet"
+
+msgid "setup:note_r2_a"
+msgstr "Diese Einstellungen "
+
+msgid "setup:note_r2_b"
+msgstr "lassen sich nach Spielbeginn nicht mehr ändern"
+
+msgid "setup:note_r2_c"
+msgstr ""
+" — mitten im Spiel geändert ist es eine andere Partie; freie Partien sind "
+
+msgid "setup:note_r2_d"
+msgstr "nicht für die Wertung zählen"
+
+msgid "setup:note_h"
+msgstr "."
+
+msgid "setup:locked_after_start"
+msgstr "Nach Spielbeginn gesperrt"
+
+msgid "Session expired, please sign in again"
+msgstr "Sitzung abgelaufen, bitte erneut anmelden"
+
+msgid "Could not end that game, please retry"
+msgstr "Die Partie konnte nicht beendet werden, bitte erneut versuchen"
+
+msgid "Retry failed, please try again later"
+msgstr "Wiederholung fehlgeschlagen, bitte später erneut versuchen"

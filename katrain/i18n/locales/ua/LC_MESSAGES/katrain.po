@@ -236,8 +236,8 @@ msgstr "Здатися"
 #. Shown when a move is undone in teaching mode.
 msgid "teaching undo message"
 msgstr ""
-"Хід {move} скасовано, оскільки він втратив {points_lost:.1f} очок. Спробуйте "
-"ще раз. Для підказки наведіть курсор на хід, щоб побачити очікуване "
+"Хід {move} скасовано, оскільки він втратив {points_lost:.1f} очок. Спробуйте"
+" ще раз. Для підказки наведіть курсор на хід, щоб побачити очікуване "
 "спростування, або перевірте очікувану територію (t), щоб побачити області "
 "дошки, де очікується втрата очок."
 
@@ -563,8 +563,8 @@ msgstr "Одночасні ігри"
 #. hint for max games
 msgid "contribute:maxgames:hint"
 msgstr ""
-"Найкраще встановити кількість, рівну оптимальній numSearchThreads, близько 8 "
-"для середнього класу GPU. Можна трохи зменшити для коротких запусків, "
+"Найкраще встановити кількість, рівну оптимальній numSearchThreads, близько 8"
+" для середнього класу GPU. Можна трохи зменшити для коротких запусків, "
 "оскільки неповні ігри не завантажуються."
 
 msgid "contribute:ownership"
@@ -691,7 +691,8 @@ msgid "sgf written"
 msgstr "SGF з аналізом збережено до {file_name}"
 
 msgid "wait-before-extra-analysis"
-msgstr "Дочекайтеся завершення початкового аналізу перед запитом на уточнення."
+msgstr ""
+"Дочекайтеся завершення початкового аналізу перед запитом на уточнення."
 
 msgid "Copied SGF to clipboard."
 msgstr "SGF скопійовано в буфер обміну."
@@ -803,7 +804,8 @@ msgstr ""
 "'tenuki_penalty') та уникають прикріплення (важливість "
 "'attachment_penalty'). Ваги можуть бути негативними, щоб ускладнити гру, а "
 "wideRootNoise (у загальних налаштуваннях) може бути використаний для для "
-"гри, більш відповідної до обраного стилю, але за рахунок зниження сили ходів."
+"гри, більш відповідної до обраного стилю, але за рахунок зниження сили "
+"ходів."
 
 msgid "ai:jigo"
 msgstr "Дзіго"
@@ -824,8 +826,8 @@ msgstr "Втрата очок"
 
 msgid "aihelp:scoreloss"
 msgstr ""
-"Робить ходи, що призводять до більшої втрати очок, але з меншою ймовірністю. "
-"При вищій кількості візитів, ймовірно, робитиме слабші та різноманітніші "
+"Робить ходи, що призводять до більшої втрати очок, але з меншою ймовірністю."
+" При вищій кількості візитів, ймовірно, робитиме слабші та різноманітніші "
 "ходи."
 
 msgid "ai:policy"
@@ -854,9 +856,9 @@ msgstr "Політика всліпу"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' і "
-"робить найкращий. Якщо 'pick_frac=1', грає як AI 'Політика'. Робить топовий "
-"хід, якщо значення політики вище за 'pick_override', щоб уникнути явних "
+"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' і"
+" робить найкращий. Якщо 'pick_frac=1', грає як AI 'Політика'. Робить топовий"
+" хід, якщо значення політики вище за 'pick_override', щоб уникнути явних "
 "помилок."
 
 msgid "ai:p:local"
@@ -864,8 +866,8 @@ msgstr "Локальний стиль"
 
 msgid "aihelp:p:local"
 msgstr ""
-"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' з "
-"ухилом у бік останнього ходу і виконує найкращий з них. Виконує найкращий "
+"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' з"
+" ухилом у бік останнього ходу і виконує найкращий з них. Виконує найкращий "
 "хід, якщо значення політики перевищує 'pick_override', щоб уникнути явних "
 "помилок."
 
@@ -874,8 +876,8 @@ msgstr "Стиль тенукі"
 
 msgid "aihelp:p:tenuki"
 msgstr ""
-"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' з "
-"відхиленням від останнього ходу і робить найкращий з них. Робить найкращий "
+"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' з"
+" відхиленням від останнього ходу і робить найкращий з них. Робить найкращий "
 "хід, якщо значення політики перевищує 'pick_override', щоб уникнути "
 "очевидних помилок. Вищий 'stddev' змушує грати ще далі."
 
@@ -1040,8 +1042,8 @@ msgstr "Генерація гри через самостійну гру AI: х�
 msgid "setup position explanation"
 msgstr ""
 "Генерує незавершену гру, яку ви можете продовжити грати. Наприклад, ви "
-"можете використовувати це для гри проти сильніших AI, починаючи з переваги в "
-"різноманітних середніх або кінцевих позиціях гри."
+"можете використовувати це для гри проти сильніших AI, починаючи з переваги в"
+" різноманітних середніх або кінцевих позиціях гри."
 
 #. Description for black target score
 msgid "setup position black score"
@@ -1070,15 +1072,16 @@ msgstr "Historical Pro"
 #. TODO
 msgid "aihelp:pro"
 msgstr ""
-"Picks moves according to a humanlike KataGo model. Specifically, Imitate pro "
-"and strong insei moves based on historical game records from the specified "
+"Picks moves according to a humanlike KataGo model. Specifically, Imitate pro"
+" and strong insei moves based on historical game records from the specified "
 "year and surrounding years."
 
 #. TODO
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a humanlike KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening style."
+"ticked, the model will play according to a post-2016 AlphaZero opening "
+"style."
 
 #. TODO
 msgid "engine:humanlike_model"
@@ -1361,7 +1364,8 @@ msgid "lobby:title"
 msgstr "Багатокористувацьке лобі"
 
 msgid "dashboard:research_desc"
-msgstr "Аналізуйте ігри з ШІ, досліджуйте варіанти та керуйте бібліотекою SGF."
+msgstr ""
+"Аналізуйте ігри з ШІ, досліджуйте варіанти та керуйте бібліотекою SGF."
 
 msgid "lobby:quick_match_rated"
 msgstr "Швидкий матч (Рейтинговий)"
@@ -2892,8 +2896,8 @@ msgstr "Ця партія ще не завершена."
 
 msgid "ladder:unscored_error"
 msgstr ""
-"Цю партію не вдалося записати в журнал рейтингу, ранг не змінився. Повідомте "
-"нам про неї."
+"Цю партію не вдалося записати в журнал рейтингу, ранг не змінився. Повідомте"
+" нам про неї."
 
 msgid "ladder:got_it"
 msgstr "Зрозуміло"
@@ -3251,8 +3255,8 @@ msgstr ""
 
 msgid "research:login_required"
 msgstr ""
-"Повний аналіз використовує хмарний рушій і потребує входу. Розбір і перегляд "
-"— ні."
+"Повний аналіз використовує хмарний рушій і потребує входу. Розбір і перегляд"
+" — ні."
 
 msgid "play:analysis_requires_login"
 msgstr "Доступно після входу"
@@ -3403,8 +3407,8 @@ msgstr "{n} без оцінки"
 
 msgid "grade:histogram_aria"
 msgstr ""
-"Розподіл за сімома рівнями: чорні стовпці — чорні, білі — білі, нормовано за "
-"кожною стороною"
+"Розподіл за сімома рівнями: чорні стовпці — чорні, білі — білі, нормовано за"
+" кожною стороною"
 
 msgid "grade:def_brilliant"
 msgstr ""
@@ -3638,3 +3642,312 @@ msgstr "Скинути розпізнавання · використовува�
 
 msgid "Re-sync"
 msgstr "Скинути розпізнавання"
+
+msgid "Back to play"
+msgstr "Назад до гри"
+
+msgid "setup:start"
+msgstr "Почати партію"
+
+msgid "ladder:start"
+msgstr "Почати рейтингову партію"
+
+msgid "play:free_setup_sub"
+msgstr "Налаштування партії · проти ШІ · без рейтингу"
+
+msgid "ladder:setup_sub"
+msgstr "Налаштування партії · рейтингова · аналіз вимкнено"
+
+msgid "local:setup_sub"
+msgstr "Налаштування партії · двоє гравців віч-на-віч"
+
+msgid "game:local_pvp"
+msgstr "Локальна партія"
+
+msgid "setup:game_terms"
+msgstr "Ця партія"
+
+msgid "setup:size"
+msgstr "Дошка"
+
+msgid "setup:size_n"
+msgstr "{n}x{n}"
+
+msgid "setup:size_19"
+msgstr "19x19"
+
+msgid "Chinese rules"
+msgstr "Китайські правила"
+
+msgid "Japanese rules"
+msgstr "Японські правила"
+
+msgid "AGA rules"
+msgstr "Правила AGA"
+
+msgid "setup:rules_button"
+msgstr "Правила ШІ-турніру"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr ""
+"Китайські правила рахують площу: територія плюс свої камені — ходи у своїй "
+"території нічого не коштують"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr ""
+"Японські правила рахують лише територію — хід у свою територію коштує очко"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr ""
+"Правила AGA рахують площу, але за кожен пас віддається камінь — результат "
+"збігається з територіальним рахунком"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr ""
+"Корейські правила рахують територію — той самий спосіб, що й японські, але з"
+" іншим комі"
+
+msgid "setup:rules_button_hint"
+msgstr ""
+"Правила ШІ-турніру: рахунок за площею плюс пів-очка тому, хто першим пасує —"
+" це прибирає різницю в пів-очка. Лише рівні партії."
+
+msgid "setup:ha_even"
+msgstr "На рівних"
+
+msgid "setup:ha_sente"
+msgstr "Чорні перші, без комі"
+
+msgid "setup:ha_reverse"
+msgstr "Зворотне комі"
+
+msgid "setup:ha_free"
+msgstr "Власне комі"
+
+msgid "setup:ha_stones"
+msgstr "{n} каменів"
+
+msgid "setup:komi_derived"
+msgstr "Визначається правилами та форою"
+
+msgid "setup:komi_pick"
+msgstr "Торкніться, щоб змінити комі"
+
+msgid "setup:komi_none"
+msgstr "Без комі"
+
+msgid "setup:komi_sente"
+msgstr "Чорні ходять першими"
+
+msgid "setup:komi_handicap"
+msgstr "Чорні спершу ставлять {n} каменів"
+
+msgid "setup:komi_black_pays"
+msgstr "Чорні віддають"
+
+msgid "setup:komi_white_pays"
+msgstr "Білі віддають"
+
+msgid "setup:komi_points"
+msgstr "{n} очок"
+
+msgid "setup:unit_points"
+msgstr "оч."
+
+msgid "setup:unit_stones"
+msgstr "каменів"
+
+msgid "setup:seat"
+msgstr "Розташування"
+
+msgid "setup:side_black"
+msgstr "Чорні"
+
+msgid "setup:side_white"
+msgstr "Білі"
+
+msgid "setup:side_nigiri"
+msgstr "Нігірі"
+
+msgid "setup:nigiri_blocked"
+msgstr "За фори камені ставлять чорні"
+
+msgid "setup:black_side"
+msgstr "Чорні"
+
+msgid "setup:white_side"
+msgstr "Білі"
+
+msgid "setup:input_where"
+msgstr "Грати на"
+
+msgid "setup:on_screen"
+msgstr "Екран"
+
+msgid "setup:on_board"
+msgstr "Справжня дошка"
+
+msgid "setup:board_only_19"
+msgstr "Справжня дошка — 19x19"
+
+msgid "setup:board_not_ready"
+msgstr "Камеру не відкалібровано"
+
+msgid "setup:seat_hint_ready"
+msgstr ""
+"Перемикайтеся між справжньою дошкою та екраном будь-коли — після початку "
+"партії вибір фіксується"
+
+msgid "setup:seat_hint_not19"
+msgstr "Ця партія не 19x19, тож грати можна лише на екрані"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr "На цьому пристрої камеру не відкалібровано — граємо на екрані"
+
+msgid "setup:size_not19_hint"
+msgstr ""
+"Справжня дошка — 19x19; ця партія йде на екрані. Поверніться до 19x19, щоб "
+"знову її використати"
+
+msgid "Untimed"
+msgstr "Без часу"
+
+msgid "setup:time_byo_only"
+msgstr "Лише бійомі 30с x3"
+
+msgid "5 min + 3x30s"
+msgstr "5 хв + 3x30с"
+
+msgid "60 min + 3x30s"
+msgstr "60 хв + 3x30с"
+
+msgid "local:move_sound_short"
+msgstr "Звук каменя"
+
+msgid "On"
+msgstr "Увімк."
+
+msgid "Off"
+msgstr "Вимк."
+
+msgid "setup:strength_rung"
+msgstr "Щабель {n}"
+
+msgid "setup:rank_kyu"
+msgstr "{n} кю"
+
+msgid "setup:rank_dan"
+msgstr "{n} дан"
+
+msgid "setup:strength_up"
+msgstr "На щабель сильніше"
+
+msgid "setup:strength_down"
+msgstr "На щабель слабше"
+
+msgid "setup:strength_meta"
+msgstr "{n} щаблів · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "Людиноподібний · фіксується після початку партії"
+
+msgid "setup:strength_hint2"
+msgstr ""
+"Людиноподібний суперник помиляється так, як належить його щаблю; щабель "
+"описує суперника, а не ваш ранг"
+
+msgid "ladder:opponent"
+msgstr "Суперник"
+
+msgid "ladder:fixed_by_box"
+msgstr "Задано пристроєм"
+
+msgid "ladder:terms_fixed"
+msgstr "Нічого з цього змінити не можна"
+
+msgid "ladder:frozen_at_start"
+msgstr "Фіксується в момент початку партії"
+
+msgid "ladder:komi_note"
+msgstr "Щабель виміряно на цій дошці"
+
+msgid "ladder:stake"
+msgstr "Що вирішує ця партія"
+
+msgid "ladder:stake_win_promote"
+msgstr "Перемога · на щабель вище"
+
+msgid "ladder:stake_loss_demote"
+msgstr "Поразка · на щабель нижче"
+
+msgid "ladder:stake_win_score"
+msgstr "Перемога · рахунок {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "Поразка · рахунок {n}"
+
+msgid "ladder:stake_rule"
+msgstr "Рахунок +3 підвищує, −3 знижує · зараз {n}"
+
+msgid "local:players"
+msgstr "Гравці"
+
+msgid "local:written_into_sgf"
+msgstr "Записується в кіфу"
+
+msgid "local:agree_first"
+msgstr "Домовтеся до початку гри"
+
+msgid "local:black_role_short"
+msgstr "першим"
+
+msgid "local:white_role_short"
+msgstr "другим"
+
+msgid "local:black_name"
+msgstr "Ім'я чорних"
+
+msgid "local:white_name"
+msgstr "Ім'я білих"
+
+msgid "local:tap_to_type"
+msgstr "Торкніться, щоб ввести"
+
+msgid "local:names_hint"
+msgstr "Залиште порожнім — у кіфу буде просто «Чорні» і «Білі»"
+
+msgid "local:seat_hint_ready"
+msgstr ""
+"Годинник іде на картках гравців · вичерпане бійомі — поразка за часом · без "
+"контролю просто ведеться запис"
+
+msgid "setup:note_r2_a"
+msgstr "Ці налаштування "
+
+msgid "setup:note_r2_b"
+msgstr "не можна змінити після початку партії"
+
+msgid "setup:note_r2_c"
+msgstr " — змінити їх посеред партії означає почати іншу; вільні партії "
+
+msgid "setup:note_r2_d"
+msgstr "не впливають на ваш ранг"
+
+msgid "setup:note_h"
+msgstr "."
+
+msgid "setup:locked_after_start"
+msgstr "Блокується після початку партії"
+
+msgid "Session expired, please sign in again"
+msgstr "Сесія завершилася, увійдіть знову"
+
+msgid "Could not end that game, please retry"
+msgstr "Не вдалося завершити партію, спробуйте ще раз"
+
+msgid "Retry failed, please try again later"
+msgstr "Повтор не вдався, спробуйте пізніше"

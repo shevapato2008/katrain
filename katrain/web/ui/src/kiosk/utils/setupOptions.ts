@@ -60,7 +60,7 @@ export const RULES_HINT = (t: Translate): Record<string, string> => ({
      留着成本为零 —— 而读取面板(载入旧棋谱)复用它时,未知 key 会静默变空串。 */
   korean: t('Korean rules count territory, same as Japanese with different komi practice', '韩国规则数目:和日本规则同一种算法,贴目习惯不同'),
   aga: t('AGA rules count area but pass stones keep the count equal to territory scoring', 'AGA 规则数子,但停一手要交一子 —— 算出来和数目同分'),
-  button: t('setup:rules_button_hint', 'AI 赛规则:数子 + 先停一手的一方多得半目 —— 把数子法那半目的奇偶差抹平'),
+  button: t('setup:rules_button_hint', 'AI 赛规则:数子 + 先停一手的一方多得半目 —— 把数子法那半目的奇偶差抹平;只下分先'),
 });
 
 /* ══════════════════════════════════════════════════════════════════════════

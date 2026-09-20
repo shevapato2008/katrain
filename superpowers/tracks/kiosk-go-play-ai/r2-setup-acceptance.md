@@ -121,20 +121,42 @@
 
 ---
 
-## 5. 我替 Fan 拍的五件事(agent 未交付)
+## 5. 五条决策
 
-Fan 授权派 agent 代决策。`setup-r2-decider` 起了 3 小时、两次直接索要,**一个字都没交**。
-以下由我拍板,**证据附在每条后面,请 Fan 复核**。
+Fan 授权派 agent 代决策。`setup-r2-decider` 的裁定**迟到但送到了**(它说前两次
+SendMessage 返回 `success` 却没送达,第三次才收到)。在那之前我已按自己的证据拍了五条;
+它的裁定到后逐条复核 —— **四条一致或被它补强,一条它的结论不成立**。
 
-### D1 · 「AI 赛规则」= KataGo 的 `aga-button` 预设
+下面每条写的是**最终落地的那一版**。
+
+### D1 · 「AI 赛规则」= KataGo 的 `aga-button` 预设,**只允许分先**
 
 判据:`KataGo/cpp/game/rules.cpp:332-341` —— AREA + 情况超级劫 + `hasButton` +
-`WHB_N_MINUS_ONE`,**预设 komi 就是 7.0**,和 `docs/Analysis_Engine.md:82`
-(面积+button 默认 7.0)、星阵 AI 赛规则贴 7 目三者一致。
+`WHB_N_MINUS_ONE`,预设 komi 7.0,和 `docs/Analysis_Engine.md:82`、星阵贴 7 目三者一致。
 
-选它不选 JSON dict:具名预设让 SGF 的 `RU[aga-button]` 干净、别的工具认得;
-dict 会在谱里留一坨 JSON。**代价**:让 N 子时白得 N−1 而不是中国规则的 N。
-**未跟星阵的一处**:星阵的 AI 赛规则只给分先,我们允许让子(KataGo 支持,没有技术理由禁)。
+**阻塞性前置(我已独立踩到并修了,见 `462e48b7`)**:`aga-button` 原来**不在**
+`RULESETS_ABBR` 里,而 `engine.py:135` 查不到就回退 `japanese`,那个值经 `:254`
+直接进引擎查询 ⇒ 不补那一行,这一档就是个静默按日本数目算分的假选项。
+
+不用 JSON dict —— agent 补了三条我没查到的硬约束:
+`models_db.py:355/:695`(`String(32)`)、`:720`(`String(64)`)对 **125 字符**的 JSON
+⇒ PG 上截断报错、SQLite 不报错(本机全绿、生产炸);SGF 往返遇 Python repr 会
+`JSONDecodeError` 而那个 `except` 是 `pass` ⇒ 又回 japanese;账本 `_normalize_rules`
+(`ai_ladder_ranked.py:1413`)只 `casefold()`,键序一变就对不上。
+
+**只允许分先(2026-09-21 改)**:`WHB_N_MINUS_ONE` 让 N 子白得 N−1 而中国规则是 N,
+这 1 目在中文用户这里没有直觉支撑。原来我允许让子,按 agent 判据改掉了。
+
+**`evenKomi: 7.0` 是我们自己的选择,不是引擎强制** —— katrain 每次显式发
+`"komi"`(`engine.py:258`)覆盖预设,写 7.5 也不会报错。(agent 的补正,已采纳进注释。)
+
+⚠️ **已知差异(非阻塞,待上板)**:button 规则下 KataGo 的第一次停一手**取走 button
+并把 `consecutiveEndingPasses` 清零**(`boardhistory.cpp:947-951`),也就是终局要
+三次停手;而 katrain 两处判据(`core/game.py:316`、`web/interface.py:118-126`)
+都写死两次、不看 `hasButton`。后果是那半目之后少了一轮「免费」停手;盘面既然双停,
+分数由 KataGo 在同一手上算出(button 已计入),**胜负不会算错**。
+改它要连实体棋盘的双停流程一起想(摄像头/LED 怎么表达第三次停手),那条链的运行时
+证据现在没有。两处都留了注释。
 
 ### D2 · 「猜先」在客户端掷
 
@@ -145,12 +167,25 @@ dict 会在谱里留一坨 JSON。**代价**:让 N 子时白得 N−1 而不是�
 掷在客户端**不产生完整性差异**:执黑执白本来就是自由选择,自己掷和自己选等价。
 已把用词对齐仓里既有的 `_resolve_color`(`platforms.py:50`)叫 `nigiri`。
 
-### D3 · 让子局 `komi=0` 只在前端保证,后端不兜底
+### D3 · 前端送 0 + **kiosk 分支**兜底(agent 裁的是 `_do_new_game`,结论不成立)
 
-判据:后端那条路(`_do_new_game`)同时服务 galaxy 的 `NewGameDialog` 和研究页,
-**那两处允许刻意的「让子 + 贴目」组合**;在后端硬改会改掉它们的行为。
-升降级那条路 `LADDER_HANDICAP = 0`,账本没有暴露面。
-契约由 `setupOptions.test.ts` 和两份页面测试的载荷断言守。
+agent 裁「后端兜底插进 `_do_new_game`」,理由是「兜底挡不住任何合法用法」——
+那句是拿 **kiosk 的枚举**推出来的。核了 galaxy:`NewGameDialog.tsx:285` 和 `:305`
+是两个**自由数字框**,让子和贴目没有任何耦合,而它走的正是 `_do_new_game`
+(`server.py:1212` mode=="newgame")。在那一层归零 = 把用户亲手输的 6.5 悄悄改掉,
+**方向和这次要修的毛病一模一样,只是反过来**。
+
+⇒ 兜底放在 kiosk 那几个 mode 自己的分支(`server.py` 的 `_kiosk_game_terms`),
+galaxy 一个字节都不动。条件 `>= 2` 不是 `> 0`(采纳 agent 判据:`HA[1]` 不摆子,
+KataGo 的补偿判据也是 `blackTurnAdvantage <= 1 → 0`;「让先」是独立一档,
+不该由这条规则管)。`_do_edit_game` 不加。
+
+**变异实测**:把 `handicap >= 2` 改成 `if False`,`tests/web_ui/test_kiosk_game_terms.py`
+当场红;还原后 7 条全绿。
+
+顺带按 agent 建议把 `color` 改成 fail-closed:不是 `black`/`white` 就 400。
+`human_bw = "B" if color == "black" else "W"` 对任何别的值都落到白 ——
+送 `"nigiri"` 进来不是 50% 坐白,是 **100% 坐白**。
 
 ### D4 · 「自定贴目」沿用 0.5 – 7.5、半目一档、15 档
 
@@ -158,13 +193,34 @@ dict 会在谱里留一坨 JSON。**代价**:让 N 子时白得 N−1 而不是�
 对旧能力是**严格超集** —— 0 目归「让先」、负贴目归「倒贴」,原来那条轨本来也够不着。
 不抄星阵的 ±100 目 101 档:那是研究用的量,不是 7″ 触屏上给人点的。
 
-### D5 · 韩国规则只从 kiosk 撤,galaxy 不动
+### D5 · 韩国规则只撤**新建局的选项**,读取能力全留;galaxy 不动
 
 判据:KataGo 里 `korean` 和 `japanese` 是同一个 if 分支、逐字相同
 (`cpp/game/rules.cpp:276`),只有 SGF 的 `RU` 标签不同。
 galaxy 那两处(`ResearchSetupPanel.tsx:149`、`NewGameDialog.tsx:99`)**没有动** ——
 它们是另一个构建产物,而且存量对局的显示路径(`utils/resultTranslation.ts:100`、
 `ReportMetaPanel.tsx:30`)仍然认 `korean`,旧棋谱照常显示。
+agent 的补充判据(已核):`src/components/NewGameDialog.tsx` 全仓只有
+`src/ZenModeApp.tsx:14` 一个 importer,不进 kiosk 包 ⇒ **是范围问题不是构建边界问题**;
+「7 寸屏上四个位置要塞下 AI 赛规则」这个理由在 galaxy 上不存在。
+
+**按 agent 建议把 `RULES_HINT` 的 korean 加回来了**(零成本;读取面板复用时未知 key
+会静默变空串),`RULE_LABEL` 也补了它 —— 新建局不给选,但旧棋谱读得出名字。
+
+### 5.6 · agent 挖出来、原议题里没有的两条(都已修)
+
+**① wire ≠ key 会让载入旧棋谱查表查空。** `RULE_LABEL` / `RULES_HINT` 的键是
+`button`,写进 SGF 的是 `aga-button`,而载入是从 wire 回填 state
+(`hooks/useResearchBoard.ts:222`)。另三条规则恰好同名,所以这个写法在加 button
+之前一直看不出问题。补了 `ruleKeyFromWire()` / `ruleNameOf()`,**查不到原样回显**。
+
+**② 研究页那条规则三元链本来就错。** `ResearchPage.tsx:537-539` 非 japanese/korean
+一律说「中国规则」—— 今天一局 `RU[aga]` 就已经显示错了,而那句话的全部意义就是
+「AI 是按什么规则算的」。改走查表。
+
+**③(我自己的副作用)桌面 Kivy 规则下拉**会从 `RULESETS_ABBR` 里把 `aga-button`
+一起列出来(`gui/popups.py:278`),而 `.po` 里每个规则名都有自己的 msgid、这一条没有
+⇒ 屏上是个裸的 `aga-button`。已在那里过滤掉,桌面 GUI 保持改动前的样子。
 
 ---
 

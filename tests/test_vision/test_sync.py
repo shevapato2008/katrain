@@ -886,18 +886,37 @@ class TestMissingStoneHold:
             seen.extend(sm.update(observed_board=extra, timestamp=float(i) * 0.2))
         assert [e for e in seen if e.type == SyncEventType.ILLEGAL_CHANGE]
 
-    def test_held_missing_does_not_acknowledge_the_expected_board(self):
-        """A frame whose only anomaly is a held missing stone is not a clean frame — it
-        must not emit the versioned SYNCED ack."""
-        expected = board_with({(3, 3): 1})
+    def test_held_missing_does_not_thrash_state_back_to_synced(self):
+        """The honest description of the held_missing early-return: NOT "it blocks the
+        versioned ack" (that ack was already unreachable — 4e's diff_count == 0 gate is
+        false by definition whenever a cell is missing, with or without this block; a
+        prior version of this test asserted that and was vacuous, passing unchanged even
+        with the held_missing block deleted). What the block actually guards is
+        SyncState itself: pre-Task-6, a held-missing frame fell through to 4e, which
+        unconditionally sets self._state = SYNCED and — if the state wasn't already
+        SYNCED — emits a bare (unversioned) SYNCED event, exactly what
+        /api/vision-status's polled sync_state shows the user. This reproduces the
+        review's sequence: reach MISMATCH_WARNING via an unrelated extra stone, then on
+        the very next frame that extra stone is gone but a DIFFERENT live stone is
+        (freshly, still-held) missing. The state must stay MISMATCH_WARNING and no bare
+        SYNCED event may be emitted."""
+        expected = board_with({(2, 9): 1})  # the stone that will later go missing
         sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
         self._established(sm, expected)
-        sm.set_expected_board(expected, expected_node_id=99)
 
+        # An unrelated extra stone at (7, 7) forces MISMATCH_WARNING on a single frame.
+        with_extra = board_with({(2, 9): 1, (7, 7): 1})
+        sm.update(observed_board=with_extra, timestamp=1.0)
+        assert sm.state == SyncState.MISMATCH_WARNING
+
+        # Next frame: the extra stone is gone, but (2, 9) — present a moment ago — is
+        # now missing for the first time (freshly held, nowhere near ripe).
         gone = empty_board()
-        events = sm.update(observed_board=gone, timestamp=2.0)
-        acks = [e for e in events if e.type == SyncEventType.SYNCED and e.data.get("expected_node_id")]
-        assert acks == []
+        events = sm.update(observed_board=gone, timestamp=1.2)
+
+        assert sm.state == SyncState.MISMATCH_WARNING  # must NOT snap back to SYNCED
+        bare_synced = [e for e in events if e.type == SyncEventType.SYNCED and not e.data]
+        assert bare_synced == []
 
     def test_reset_clears_the_missing_hold(self):
         expected = board_with({(3, 3): 1})

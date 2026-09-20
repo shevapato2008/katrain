@@ -473,9 +473,16 @@ class SyncStateMachine:
             return events
 
         if held_missing:
-            # Still waiting out the hold. Not an anomaly yet, but definitely not a clean
-            # frame either: falling through to 4e would acknowledge the versioned expected
-            # board while a stone the game believes in is not visible.
+            # Still waiting out the hold — not yet an anomaly, but not a clean frame
+            # either. The versioned ack itself can't fire here regardless (4e's
+            # diff_count == 0 gate is already false: a held-missing cell differs from
+            # expected by definition, via the raw diff computed at the top of this
+            # method — this block doesn't change that). What THIS block actually
+            # prevents is 4e unconditionally forcing self._state = SyncState.SYNCED and
+            # emitting a bare (unversioned) SYNCED event whenever the state wasn't
+            # already SYNCED — e.g. thrashing MISMATCH_WARNING back to SYNCED (telling
+            # the user "in sync" via /api/vision-status) the instant an unrelated
+            # anomaly clears on the same frame a stone is still being held missing.
             self._mismatch_board = None
             self._mismatch_count = 0
             return events

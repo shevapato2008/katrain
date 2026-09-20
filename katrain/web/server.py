@@ -3701,6 +3701,38 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
             return
         _rearm_detection()
 
+    # L0a: the stone must still be on the board when we commit. Measured on RK3562
+    # 2026-09-20: confirm -> submit is 0.45s median but was 3.02s for the O1 phantom,
+    # and that stone had already vanished from the observed board 1.46s before
+    # submission — nothing re-read the board in between.
+    #
+    # Cancelling needs a board reading from an observation STRICTLY NEWER than the one
+    # that confirmed this move. worker.py publishes status at 1 Hz, so the newest board
+    # we hold can predate the stone entirely; treating that as a disappearance would drop
+    # real moves. Everything that is not a newer-and-empty reading — no board, an
+    # observation no newer than the confirmation, an unreadable board — is "unknown", and
+    # unknown always submits.
+    observed_board = None
+    observed_seq = 0
+    try:
+        observed_board, observed_seq = vision.get_board_observation()
+    except Exception:  # a status read must never be able to break move submission
+        observed_board = None
+    if observed_board is not None and observed_seq > int(getattr(move_data, "observation_seq", 0)):
+        try:
+            still_present = int(observed_board[move_data.row][move_data.col]) != 0
+        except (IndexError, TypeError, ValueError):
+            still_present = True  # unreadable board == unknown == let it through
+        if not still_present:
+            log.info(
+                "Vision move dropped: observation %d shows no stone at (row=%d,col=%d)",
+                observed_seq,
+                move_data.row,
+                move_data.col,
+            )
+            _rearm_detection()
+            return 0.5
+
     if is_ai_ladder_ranked_session(session):
         move_player = "B" if move_data.color == 1 else "W"
         try:

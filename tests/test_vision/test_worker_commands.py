@@ -430,6 +430,7 @@ def _subprocess_motion_worker():
     w._last_motion_log = None
     w._last_motion_roi_ratio = None
     w._last_motion_full_ratio = None
+    w._observation_seq = 0
     return w
 
 

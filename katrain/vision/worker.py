@@ -167,6 +167,11 @@ class _VisionWorkerLoop:
         self._consecutive_failures = 0  # Track detection failures for auto-unlock
         self._prev_observed_board: np.ndarray | None = None  # For temporal smoothing
         self._last_stable_board: np.ndarray | None = None
+        # Counts board OBSERVATIONS (a frame that produced a stable board), not camera
+        # reads or loop iterations. Stamped onto both the published status and every
+        # ConfirmedMove so a consumer can tell whether a board reading is newer than the
+        # confirmation it is being used to judge.
+        self._observation_seq = 0
         self._frame_count = 0  # Throttle for per-gate debug logging
 
     def _reset_motion_region(self) -> None:
@@ -354,6 +359,7 @@ class _VisionWorkerLoop:
                         self._last_stable_board = observed_board
                     self._prev_observed_board = observed_board
                     self._last_detected_board = self._last_stable_board.tolist()
+                    self._observation_seq += 1
 
                     mean_confidence = mean_detection_confidence(detections)
                     if self._frame_count % 30 == 0:
@@ -472,7 +478,11 @@ class _VisionWorkerLoop:
                                         selected_required_frames,
                                         candidate_sightings + 1,
                                     )
-                                    self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
+                                    self._event_queue.put(
+                                        ConfirmedMove(
+                                            col=col, row=row, color=color, observation_seq=self._observation_seq
+                                        )
+                                    )
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
                                     # round-trip force_syncs the new expected board. If the
@@ -839,6 +849,7 @@ class _VisionWorkerLoop:
             geometry_ready=self._board_finder.last_transform_matrix is not None,
             model_ready=self._detector is not None,
             recognition_ready=bool(self._camera.is_connected and self._detector is not None),
+            observation_seq=self._observation_seq,
         )
 
         # Overwrite: drain old, put new

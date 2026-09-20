@@ -54,6 +54,11 @@ class WorkerStatus:
     model_ready: bool = False
     recognition_ready: bool = False
     last_motion_at: float | None = None  # monotonic; lets hint lamps yield when a hand enters
+    # Which board observation `detected_board` came from. Consumers compare it against a
+    # ConfirmedMove's own observation_seq to tell "a genuinely newer look at the board"
+    # from "the last thing this worker happened to publish" — worker.py publishes at 1 Hz,
+    # so the newest published board can easily predate a move confirmed since.
+    observation_seq: int = 0
 
 
 @dataclass
@@ -63,3 +68,4 @@ class ConfirmedMove:
     col: int
     row: int
     color: int  # BLACK=1, WHITE=2
+    observation_seq: int = 0  # the observation this confirmation was made on

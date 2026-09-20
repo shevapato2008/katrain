@@ -65,10 +65,15 @@ class FakeVision:
     def __init__(self):
         self.expected_pushes = []
         self.expected_node_ids = []
+        self.detected_board = None  # NEW: None = "no usable observation"
+        self.observation_seq = 0  # NEW: which observation `detected_board` came from
 
     def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
         self.expected_pushes.append(stones)
         self.expected_node_ids.append(expected_node_id)
+
+    def get_board_observation(self):  # NEW
+        return self.detected_board, self.observation_seq
 
 
 class FakeGateway:
@@ -366,3 +371,98 @@ class TestGameEndedIsRecordedOffRequest:
         asyncio.run(_handle_confirmed_move(app, FakeVision(), "s1", _move(), log))
 
         recorder.assert_not_awaited()
+
+
+def _board_with(cells):
+    """19x19 vision board (row-major, 0=empty/1=black/2=white) with `cells` set."""
+    board = [[0] * 19 for _ in range(19)]
+    for (row, col), color in cells.items():
+        board[row][col] = color
+    return board
+
+
+def _confirmed(col=3, row=3, color=BLACK, seq=0):
+    return ConfirmedMove(col=col, row=row, color=color, observation_seq=seq)
+
+
+# vision (row=3, col=3) -> katrain coords (col=3, 19-1-3=15). The gateway is called with
+# katrain coords, so every "it was submitted" assertion below uses 15, not 3.
+SUBMITTED = ("s1", 3, 15)
+
+
+class TestSubmitTimePresenceRecheck:
+    """L0a: confirm -> submit has a real gap (0.45s median, 3.02s measured worst case on
+    RK3562 2026-09-20). A stone that vanished during that gap must not be committed.
+
+    Two conditions must BOTH hold to cancel: the board reading is from an observation
+    strictly newer than the one that confirmed the move, and the cell is empty in it.
+    Anything else — no board, an observation no newer than the confirmation, an
+    unreadable board — is "unknown", and unknown always submits. Dropping a real move
+    is a worse failure than letting a rare phantom past the other three defences."""
+
+    def test_move_dropped_when_a_newer_observation_shows_the_cell_empty(self):
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = _board_with({})
+        vision.observation_seq = 12  # strictly newer than the confirmation below
+
+        delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+
+        assert delay == 0.5
+        assert gateway.calls == []  # never reached the tunnel
+        assert vision.expected_pushes  # re-armed so a real stone gets another chance
+
+    def test_stale_observation_never_cancels(self):
+        """THE regression this gate exists for: worker.py publishes status at 1 Hz, so
+        the newest published board can predate the stone entirely. An observation that
+        is not newer than the confirmation proves nothing."""
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = _board_with({})  # empty, but from BEFORE the stone landed
+        vision.observation_seq = 11
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+
+        assert gateway.calls == [SUBMITTED]
+
+    def test_move_submitted_when_the_stone_is_still_present(self):
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = _board_with({(3, 3): BLACK})
+        vision.observation_seq = 12
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+
+        assert gateway.calls == [SUBMITTED]
+
+    def test_move_submitted_when_there_is_no_observation(self):
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = None
+        vision.observation_seq = 99
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+
+        assert gateway.calls == [SUBMITTED]
+
+    def test_wrong_colour_at_the_cell_is_not_a_disappearance(self):
+        """Only EMPTY cancels. A stone of the other colour is a colour misread, which the
+        turn guard and the colour invariant handle — not a vanished stone."""
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = _board_with({(3, 3): WHITE})
+        vision.observation_seq = 12
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+
+        assert gateway.calls == [SUBMITTED]

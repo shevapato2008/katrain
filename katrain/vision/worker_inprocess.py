@@ -150,6 +150,11 @@ class InProcessAdapter:
         # consecutive frames agree; otherwise it holds the last stable value.
         self._prev_observed_board: np.ndarray | None = None
         self._last_stable_board: np.ndarray | None = None
+        # Counts board OBSERVATIONS (a frame that produced a stable board), not camera
+        # reads or loop iterations. Stamped onto both the published status and every
+        # ConfirmedMove so a consumer can tell whether a board reading is newer than the
+        # confirmation it is being used to judge.
+        self._observation_seq = 0
 
     def set_geometry(self, geometry) -> None:
         self._geometry = geometry
@@ -409,6 +414,7 @@ class InProcessAdapter:
                     self._prev_observed_board = observed_board
                     self._last_stable_board = stable_board
                     observed_board = stable_board
+                    self._observation_seq += 1
 
                     # Confident-empty reads score 1.0 (our helper), so the tsumego "clear board" step
                     # doesn't rot into DEGRADED (which would skip the setup check and wedge clearing).
@@ -520,7 +526,11 @@ class InProcessAdapter:
                                         selected_required_frames,
                                         candidate_sightings + 1,
                                     )
-                                    self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
+                                    self._event_queue.put(
+                                        ConfirmedMove(
+                                            col=col, row=row, color=color, observation_seq=self._observation_seq
+                                        )
+                                    )
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
                                     # round-trip force_syncs the new expected board. If the
@@ -579,6 +589,7 @@ class InProcessAdapter:
                 recognition_ready=bool(
                     self._camera.is_connected and (self._geometry is not None or not self._require_geometry)
                 ),
+                observation_seq=self._observation_seq,
             )
 
             elapsed = time.monotonic() - loop_start

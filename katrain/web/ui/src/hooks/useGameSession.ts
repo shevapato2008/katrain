@@ -113,10 +113,9 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
 
         const firstRaf = requestAnimationFrame(() => {
             soundRafRef.current = soundRafRef.current.filter(id => id !== firstRaf);
-            if (deferMoveSoundUntilPaint) {
-                finishPlayback();
-                return;
-            }
+            // Board acknowledges drawImage completion, not screen presentation.
+            // RAF runs before paint, so even that acknowledgement needs two frames:
+            // the first gives the browser a chance to present the new stone.
             const secondRaf = requestAnimationFrame(() => {
                 soundRafRef.current = soundRafRef.current.filter(id => id !== secondRaf);
                 finishPlayback();

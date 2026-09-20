@@ -182,14 +182,13 @@ class SyncStateMachine:
                 events.append(SyncEvent(SyncEventType.BOARD_LOST))
             return events
 
-        if self._state == SyncState.BOARD_LOST:
+        was_board_lost = self._state == SyncState.BOARD_LOST
+        if was_board_lost and self._target_board is not None:
             # A transient loss during setup (a hand occluding a corner while placing
             # stones) must NOT abandon setup: resume it so subsequently placed stones
             # keep reporting as SETUP_PROGRESS instead of dropping to compare mode and
             # being flagged as ILLEGAL_CHANGE.
-            self._state = SyncState.SETUP_IN_PROGRESS if self._target_board is not None else SyncState.SYNCED
-            events.append(SyncEvent(SyncEventType.BOARD_REACQUIRED))
-            # Fall through to remaining checks with the new frame.
+            self._state = SyncState.SETUP_IN_PROGRESS
 
         # 2. Degraded-mode hysteresis
         was_degraded = self._state == SyncState.DEGRADED
@@ -204,11 +203,13 @@ class SyncStateMachine:
         if self._state == SyncState.SETUP_IN_PROGRESS and self._target_board is not None:
             setup_events = self._check_setup(observed_board)
             events.extend(setup_events)
-            return events
+        else:
+            # 4. Compare with expected board before declaring recovery: a visible
+            # frame can still contain the same displacement that caused BOARD_LOST.
+            events.extend(self._compare_boards(observed_board))
 
-        # 4. Compare with expected board
-        compare_events = self._compare_boards(observed_board)
-        events.extend(compare_events)
+        if was_board_lost and self._state != SyncState.BOARD_LOST:
+            events.insert(0, SyncEvent(SyncEventType.BOARD_REACQUIRED))
 
         return events
 
@@ -317,15 +318,7 @@ class SyncStateMachine:
         diff_positions = list(zip(*np.where(diff_mask)))
         diff_count = len(diff_positions)
 
-        # 4a. Many simultaneous changes → board displaced / lost
-        if diff_count >= self._board_lost_threshold:
-            self._state = SyncState.BOARD_LOST
-            events.append(SyncEvent(SyncEventType.BOARD_LOST, data={"diff_count": diff_count}))
-            self._mismatch_board = None
-            self._mismatch_count = 0
-            return events
-
-        # 4b. Classify against the previous expected board (digital authority).
+        # 4a. Classify against the previous expected board (digital authority).
         #     Newly-expected stone the player hasn't placed yet is NOT an anomaly;
         #     a live stone that vanished physically IS one (review Codex B2) — it must
         #     ride the debounced mismatch flow, never the instantly-self-clearing
@@ -358,6 +351,16 @@ class SyncStateMachine:
             elif expected_val != EMPTY and observed_val != EMPTY and expected_val != observed_val:
                 # Color changed — treat as unexpected
                 unexpected.append((r, c, observed_val))
+
+        # 4b. Many unexplained changes → board displaced / lost. Captures and
+        # digitally requested placements are known changes, even for large groups.
+        if len(unexpected) + len(missing_anomaly) >= self._board_lost_threshold:
+            if self._state != SyncState.BOARD_LOST:
+                events.append(SyncEvent(SyncEventType.BOARD_LOST, data={"diff_count": diff_count}))
+            self._state = SyncState.BOARD_LOST
+            self._mismatch_board = None
+            self._mismatch_count = 0
+            return events
 
         # 4c. Capture-pending logic (sticky)
         if removal_needed and self._state != SyncState.CAPTURE_PENDING:

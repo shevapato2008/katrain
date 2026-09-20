@@ -272,6 +272,18 @@
 .gstatus[data-tone="bad"] b { color: var(--bad); }
 .gstatus .kiosk-btn--pill { margin-left: auto; flex: none; }
 
+@keyframes game-win-trophy {
+  0% { transform: scale(.7) rotate(-12deg); opacity: .3; }
+  30% { transform: scale(1.25) rotate(8deg); opacity: 1; }
+  55% { transform: scale(1) rotate(-5deg); }
+  80% { transform: scale(1.1) rotate(3deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+.game-win-trophy { animation: game-win-trophy 1.6s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .game-win-trophy { animation: none; }
+}
+
 /* 纯显示开关那一排。**不带图标不是漏了** —— 开关本来就没有图标,安一个反而像「按下去有后果」。
  * 基态(药丸键)与稿子 `go-kiosk.tmpl.html:281-293` 逐字相同;直播屏和复盘屏也用它,
  * 那两排里是「试下 / AI 推荐 / 跟到最新」这类**动作**,不是开关。 */

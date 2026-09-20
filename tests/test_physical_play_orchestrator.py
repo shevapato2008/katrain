@@ -59,6 +59,7 @@ class FakeVision:
         self.lit = []
         self.calls = []  # ordered ("pause"|"resume") sequence — dup-call detector
         self.reset_sync_calls = []  # Task 8: resync() call tracker
+        self.last_motion_at = None
 
     def get_detected_board(self):
         return self.detected
@@ -205,6 +206,38 @@ class TestLedReassert:
 
 
 class TestHint:
+    def test_board_motion_ends_hint_without_waiting_for_timeout(self):
+        orch, led, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, hint_timeout_s=30.0)
+
+        async def run():
+            vision.last_motion_at = time.monotonic() - 1  # pre-hint motion is irrelevant
+            orch.show_hint([(3, 3)])
+            await asyncio.sleep(0.03)
+            assert vision.paused is True
+            vision.last_motion_at = time.monotonic()  # the hand enters the board
+            await asyncio.sleep(0.03)
+            assert vision.paused is False
+            assert vision.lit == []
+            assert led.calls[-1] == ("clear",)
+            assert "hint" not in orch._pause_reasons
+
+        asyncio.run(run())
+
+    def test_replaced_hint_survives_cancelled_previous_blink(self):
+        orch, _, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, hint_timeout_s=30.0)
+
+        async def run():
+            orch.show_hint([(3, 3)])
+            await asyncio.sleep(0)
+            orch.show_hint([(15, 15)])
+            await asyncio.sleep(0)
+            assert vision.paused is True
+            assert vision.lit == [(15, 15)]
+            assert "hint" in orch._pause_reasons
+            orch.dismiss_hint()
+
+        asyncio.run(run())
+
     def test_show_hint_suspends_and_blinks_then_restores(self):
         # 真实时钟：blink 的 deadline 用注入 clock 判定，固定 0.0 的假钟永不超时
         orch, led, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, hint_timeout_s=0.05)
@@ -227,6 +260,8 @@ class TestHint:
             await asyncio.sleep(0.03)
             orch.dismiss_hint()
             assert vision.paused is False
+            assert vision.lit == []
+            assert led.calls[-1] == ("clear",)
 
         asyncio.run(run())
 

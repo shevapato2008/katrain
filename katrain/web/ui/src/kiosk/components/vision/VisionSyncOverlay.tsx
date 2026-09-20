@@ -95,6 +95,7 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
   const [boardLostOpen, setBoardLostOpen] = useState(false);
   const boardLostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const boardLostActiveRef = useRef(false);
+  const boardLostPersistentRef = useRef(false);
 
   // `useVisionSync` trims history to 100 items, so an array index is not stable.
   const lastProcessedSeqRef = useRef(-1);
@@ -174,7 +175,10 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
       const eventType = event.type;
 
       // --- Toast events (non-blocking) ---
-      if (eventType in TOAST_MAP) {
+      // Only acknowledge recovery from a loss long enough to need intervention.
+      // Ordinary short occlusions recover silently; duplicate events cannot start
+      // a new toast after the loss episode has ended.
+      if (eventType in TOAST_MAP && (eventType !== 'board_reacquired' || boardLostPersistentRef.current)) {
         const config = TOAST_MAP[eventType]!;
         setToastConfig(config);
         setToastOpen(true);
@@ -184,15 +188,23 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
       if (eventType === 'board_lost') {
         if (!boardLostActiveRef.current) {
           boardLostActiveRef.current = true;
+          boardLostPersistentRef.current = false;
           boardLostTimerRef.current = setTimeout(() => {
+            boardLostPersistentRef.current = true;
             setBoardLostOpen(true);
           }, BOARD_LOST_THRESHOLD_MS);
         }
       }
 
-      // Any event that is not board_lost cancels the timer.
-      if (eventType !== 'board_lost' && boardLostActiveRef.current) {
+      // Only a sync result from a readable board ends the loss episode. Move
+      // candidates and other independent worker messages do not prove recovery.
+      const boardReadable = eventType === 'board_reacquired' || eventType === 'synced'
+        || eventType === 'illegal_change' || eventType === 'capture_pending'
+        || eventType === 'captures_cleared' || eventType === 'setup_progress'
+        || eventType === 'setup_complete';
+      if (boardReadable && boardLostActiveRef.current) {
         boardLostActiveRef.current = false;
+        boardLostPersistentRef.current = false;
         if (boardLostTimerRef.current) {
           clearTimeout(boardLostTimerRef.current);
           boardLostTimerRef.current = null;
@@ -298,7 +310,6 @@ const VisionSyncOverlay = ({ syncEvents, onDismiss, sessionId, boardSize, player
               variant="contained"
               onClick={() => {
                 setBoardLostOpen(false);
-                boardLostActiveRef.current = false;
                 onDismiss?.();
               }}
             >

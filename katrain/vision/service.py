@@ -87,6 +87,12 @@ class VisionService:
             if status is not None:
                 self._latest_status = status
 
+    @property
+    def last_motion_at(self) -> float | None:
+        """Latest camera motion, also available while move detection is paused."""
+        self.refresh_status()
+        return self._latest_status.last_motion_at
+
     # -- commands ------------------------------------------------------------
 
     def confirm_pose_lock(self) -> bool:

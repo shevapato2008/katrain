@@ -9,6 +9,9 @@ import { getCurrentKioskActivityStorage, __resetKioskActivityStorageForTests } f
 
 // --- Mocks -----------------------------------------------------------------
 
+const { mockPlaySound } = vi.hoisted(() => ({ mockPlaySound: vi.fn() }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play: mockPlaySound }) }));
+
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
 }));
@@ -641,6 +644,17 @@ describe('GamePage', () => {
   });
 
   describe('State C — 终局数子 (B1.4)', () => {
+    it('celebrates a live counted human win once with sound and trophy animation', async () => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
+      const view = renderPage();
+      mockGameState = { ...mockGameState, end_result: 'B+4.5' };
+      view.rerender(pageTree());
+      await waitFor(() => expect(screen.getByTestId('result-trophy')).toHaveClass('game-win-trophy'));
+      expect(mockPlaySound).toHaveBeenCalledWith('solved');
+      view.rerender(pageTree());
+      expect(mockPlaySound).toHaveBeenCalledTimes(1);
+    });
+
     it('renders endgame-card + result-badge and forces Board analysisToggles.ownership=true', () => {
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: 'B+4.5' });
       renderPage();
@@ -884,8 +898,9 @@ describe('GamePage', () => {
   // The 3D Go board was dropped to free ~321MB of Mali GPU memory contending with KataGo's
   // OpenCL on the RK3562. Guard against reintroduction: only the 2D Board ever renders.
   describe('3D board removed', () => {
-    it('uses the visible 2D canvas as the kiosk move-sound paint barrier', () => {
-      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null, current_node_id: 37 });
+    it.each(['free', 'ranked', 'rated', 'ai_ladder_ranked', 'pvp_local', 'pvp_online'] as const)(
+      'uses the visible canvas as the %s move-sound paint barrier', (game_type) => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null, current_node_id: 37, game_type });
       renderPage();
 
       expect(capturedSessionOptions.current?.deferMoveSoundUntilPaint).toBe(true);

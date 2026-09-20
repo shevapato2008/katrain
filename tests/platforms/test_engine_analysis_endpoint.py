@@ -21,7 +21,7 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.api.v1.endpoints.auth import require_writable_user
 from katrain.web.platforms.golaxy.adapter import (
     AreaAnalysis,
     Candidate,
@@ -89,7 +89,7 @@ class FakeManager:
 def _build_app(manager):
     app = create_app(enable_engine=False)
     app.state.platform_manager = manager
-    app.dependency_overrides[get_current_user] = lambda: _User()
+    app.dependency_overrides[require_writable_user] = lambda: _User()
     return app
 
 
@@ -263,7 +263,7 @@ async def test_engine_analysis_real_manager_resolves_session_to_game():
     pm, adapter = _real_manager_with_engine_game(session_id="sess-real", game_id="golaxy-engine-1")
     app = create_app(enable_engine=False)
     app.state.platform_manager = pm
-    app.dependency_overrides[get_current_user] = lambda: _User()
+    app.dependency_overrides[require_writable_user] = lambda: _User()
     async with _client(app) as ac:
         r = await ac.post(
             "/api/v1/platforms/golaxy/engine/analysis",
@@ -282,7 +282,7 @@ async def test_engine_analysis_real_manager_unknown_session_404():
     pm, adapter = _real_manager_with_engine_game()
     app = create_app(enable_engine=False)
     app.state.platform_manager = pm
-    app.dependency_overrides[get_current_user] = lambda: _User()
+    app.dependency_overrides[require_writable_user] = lambda: _User()
     async with _client(app) as ac:
         r = await ac.post(
             "/api/v1/platforms/golaxy/engine/analysis",
@@ -299,7 +299,7 @@ async def test_engine_analysis_real_manager_non_engine_context_404():
     pm, adapter = _real_manager_with_engine_game(is_engine=False)
     app = create_app(enable_engine=False)
     app.state.platform_manager = pm
-    app.dependency_overrides[get_current_user] = lambda: _User()
+    app.dependency_overrides[require_writable_user] = lambda: _User()
     async with _client(app) as ac:
         r = await ac.post(
             "/api/v1/platforms/golaxy/engine/analysis",

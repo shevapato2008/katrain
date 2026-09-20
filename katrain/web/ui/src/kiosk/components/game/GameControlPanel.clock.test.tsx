@@ -81,11 +81,12 @@ describe('本地对局玩家卡上的钟', () => {
     expect(screen.queryByText('00:00')).toBeNull();
   });
 
-  test('自由对弈即使带了用时也不走新钟、不调 onTimeExpired(非 pvp_local 一字不改)', () => {
+  test('未配置时限的自由对弈忽略继承用时、不调 onTimeExpired', () => {
     const onTimeExpired = vi.fn();
     render(panel(state({ game_type: 'free', timer: timer(), B: { main_time_used: 600, periods_used: 3 } }), onTimeExpired));
     expect(screen.queryByText('超时')).toBeNull();
-    expect(screen.getByText('本局已下')).toBeInTheDocument();   // 旧分支:main_time_used>0 ⇒ 「10:00 本局已下」
+    expect(screen.queryByText('本局已下')).toBeNull();
+    expect(screen.getByText('不限时')).toBeInTheDocument();
     expect(onTimeExpired).not.toHaveBeenCalled();
   });
 });

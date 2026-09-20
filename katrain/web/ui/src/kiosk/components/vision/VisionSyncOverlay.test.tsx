@@ -154,6 +154,57 @@ describe('VisionSyncOverlay recovery presentation', () => {
     expect(mocks.voiceSpeak).not.toHaveBeenCalled();
   });
 
+  it('silently recovers brief board-loss episodes during ordinary play', () => {
+    vi.useFakeTimers();
+    const history: VisionSyncEvent[] = [];
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[]} />);
+
+    for (let index = 0; index < 3; index += 1) {
+      history.push(event(index * 2 + 1, 'board_lost'));
+      rerender(<VisionSyncOverlay {...props} syncEvents={[...history]} />);
+      act(() => vi.advanceTimersByTime(500));
+      history.push(event(index * 2 + 2, 'board_reacquired'));
+      rerender(<VisionSyncOverlay {...props} syncEvents={[...history]} />);
+      expect(screen.queryByText('棋盘已重新检测到')).toBeNull();
+      expect(screen.queryByText('棋盘检测异常')).toBeNull();
+    }
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(screen.queryByText('棋盘检测异常')).toBeNull();
+  });
+
+  it('confirms recovery once after persistent board loss', () => {
+    vi.useFakeTimers();
+    const lost = event(1, 'board_lost');
+    const recovered = event(2, 'board_reacquired');
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[lost]} />);
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(screen.getByText('棋盘检测异常')).toBeInTheDocument();
+
+    rerender(<VisionSyncOverlay {...props} syncEvents={[lost, recovered]} />);
+    expect(screen.getByText('棋盘已重新检测到')).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(5_000));
+    act(() => vi.advanceTimersByTime(500));
+    expect(screen.queryByText('棋盘已重新检测到')).toBeNull();
+    expect(screen.queryByText('棋盘检测异常')).toBeNull();
+
+    rerender(<VisionSyncOverlay {...props} syncEvents={[lost, recovered, event(3, 'board_reacquired')]} />);
+    expect(screen.queryByText('棋盘已重新检测到')).toBeNull();
+  });
+
+  it('keeps the loss episode active when an unrelated move candidate arrives', () => {
+    vi.useFakeTimers();
+    const lost = event(1, 'board_lost');
+    const pending = event(2, 'move_pending', { row: 3, col: 3, color: 1 });
+    const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[lost]} />);
+    act(() => vi.advanceTimersByTime(5_000));
+    rerender(<VisionSyncOverlay {...props} syncEvents={[lost, pending]} />);
+    act(() => vi.advanceTimersByTime(5_000));
+    expect(screen.getByText('棋盘检测异常')).toBeInTheDocument();
+
+    rerender(<VisionSyncOverlay {...props} syncEvents={[lost, pending, event(3, 'board_reacquired')]} />);
+    expect(screen.getByText('棋盘已重新检测到')).toBeInTheDocument();
+  });
+
   it('stops the stone prompt when capture recovery takes over', async () => {
     const stone = event(1, 'ambiguous_stone', { row: 3, col: 3, color: 1, unbacked: true });
     const { rerender } = render(<VisionSyncOverlay {...props} syncEvents={[stone]} />);

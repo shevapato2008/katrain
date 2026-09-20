@@ -152,7 +152,9 @@ vi.mock('../../hooks/useGameSession', () => ({
   useGameSession: () => ({
     sessionId: 'test-session',
     setSessionId: mockSetSessionId,
-    gameState: mockGameState,
+    // Real session updates replace the snapshot; mutating one shared object hides
+    // stale async closures in the analysis-response guard.
+    gameState: { ...mockGameState },
     setGameState: vi.fn(),
     error: null,
     onMove: mockOnMove,
@@ -455,7 +457,7 @@ describe('GamePage engine mode', () => {
       });
     });
 
-    it('clears the overlay + active kind when the board position changes (stale-overlay fix)', async () => {
+    it.each(['move', 'end'] as const)('clears the overlay and evaluation after a %s', async (change) => {
       (API.platformEngineAnalysis as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true, kind: 'area', data: { ownership: [{ col: 3, row: 3, value: 0.9 }], winrate: 0.6, delta: 1 },
       });
@@ -463,15 +465,34 @@ describe('GamePage engine mode', () => {
 
       fireEvent.click(screen.getByText('领地'));
       await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', 'area'));
+      expect(screen.getByTestId('engine-analysis-summary')).toHaveTextContent('60.0%');
 
       // Simulate the position advancing (a move played, human or AI) by mutating the
       // mocked session's current_node_id and re-rendering, the way React would after
       // useGameSession's underlying state updates.
-      mockGameState.current_node_id = 43;
+      if (change === 'move') mockGameState.current_node_id = 43;
+      else mockGameState.end_result = 'B+4.5';
       rerender(renderTree(true));
 
       await waitFor(() => expect(screen.getByTestId('board')).toHaveAttribute('data-active-kind', ''));
       expect(screen.getByTestId('board').getAttribute('data-overlay')).toBe('null');
+      expect(screen.queryByTestId('engine-analysis-summary')).toBeNull();
+    });
+
+    it.each([
+      [0.375, -2.2, '37.5%', '白', '2.2'],
+      [0.72, 4.5, '72.0%', '黑', '4.5'],
+    ])('shows territory winrate and leading side from the same analysis', async (winrate, delta, percent, side, margin) => {
+      vi.mocked(API.platformEngineAnalysis).mockResolvedValueOnce({
+        ok: true, kind: 'area', data: { ownership: [], winrate: Number(winrate), delta: Number(delta) },
+      });
+      renderPage(true);
+      fireEvent.click(screen.getByText('领地'));
+      const summary = await screen.findByTestId('engine-analysis-summary');
+      expect(summary).toHaveTextContent(`黑棋胜率 ${percent}`);
+      expect(summary).toHaveTextContent(`${side}领先 ${margin}`);
+      fireEvent.click(screen.getByText('领地'));
+      expect(screen.queryByTestId('engine-analysis-summary')).toBeNull();
     });
 
     it('does NOT clear the overlay on an unrelated re-render (same current_node_id)', async () => {

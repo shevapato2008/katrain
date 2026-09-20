@@ -530,12 +530,14 @@ class PhysicalPlayOrchestrator:
 
     def show_hint(self, points: List[Tuple[int, int]]) -> None:
         """Blink white lamps on the top-N points. Suspends reconciliation AND move
-        detection (R4.3) for the duration; auto-restores on timeout or dismiss."""
+        detection while lit; board motion dismisses the lamps so a hinted stone
+        can be recognized normally, without waiting for the timeout."""
         self.dismiss_hint()
+        logger.info("hint started: %d candidates, timeout=%.1fs", len(points), self.config.hint_timeout_s)
         self._add_pause_reason(self.PAUSE_REASON_HINT)
         if hasattr(self._vision, "set_lit_points"):
             self._vision.set_lit_points(list(points))
-        self._hint_task = asyncio.get_running_loop().create_task(self._blink(points))
+        self._hint_task = asyncio.get_running_loop().create_task(self._blink(points, self._clock()))
 
     def dismiss_hint(self) -> None:
         if self._hint_task is not None and not self._hint_task.done():
@@ -546,15 +548,26 @@ class PhysicalPlayOrchestrator:
     def _end_hint(self) -> None:
         if self.PAUSE_REASON_HINT not in self._pause_reasons:
             return
+        # Blank lamps and release their mask BEFORE resuming detection. The normal
+        # tick may still be suspended by an engine error, so it cannot own cleanup.
+        self._last_points = None
+        self._apply_points([])
         self._remove_pause_reason(self.PAUSE_REASON_HINT)  # stays paused if another reason remains
         self._last_points = None  # force the game lamp state to re-send next tick
 
-    async def _blink(self, points: List[Tuple[int, int]]) -> None:
+    async def _blink(self, points: List[Tuple[int, int]], started_at: float) -> None:
         half = self.config.hint_blink_period_s / 2
-        deadline = self._clock() + self.config.hint_timeout_s
+        deadline = started_at + self.config.hint_timeout_s
         on = True
         try:
             while self._clock() < deadline:
+                # Motion filtering runs even while MoveDetector is paused. A hand
+                # entering the board ends the light/mask before stone confirmation;
+                # old motion from before this hint cannot dismiss it.
+                last_motion_at = getattr(self._vision, "last_motion_at", None)
+                if last_motion_at is not None and last_motion_at > started_at:
+                    logger.info("hint dismissed on board motion")
+                    break
                 if self._led is not None:
                     if on:
                         self._led.set_rgb_points(
@@ -568,4 +581,7 @@ class PhysicalPlayOrchestrator:
         except asyncio.CancelledError:
             raise
         finally:
-            self._end_hint()
+            # A cancelled previous blink must not clear a replacement hint.
+            if self._hint_task is asyncio.current_task():
+                self._hint_task = None
+                self._end_hint()

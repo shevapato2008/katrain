@@ -125,7 +125,7 @@ describe('useGameSession sound synchronization', () => {
     expect(played).toEqual(['capturing.wav']);
   });
 
-  it('in strict mode waits for a matching board paint after sound and state', async () => {
+  it('in strict mode waits for a presentation frame after the matching canvas draw', async () => {
     const hook = await connect('session-1', true);
 
     sendSound(hook.socket, 'stone1', 12);
@@ -134,6 +134,10 @@ describe('useGameSession sound synchronization', () => {
 
     act(() => hook.result.current.acknowledgePaintedNode(12));
     expect(requestAnimationFrameMock).toHaveBeenCalledTimes(1);
+    expect(played).toEqual([]);
+    runNextRaf();
+    // RAF runs before paint: this first frame is only the browser's opportunity
+    // to present the canvas drawing acknowledged above.
     expect(played).toEqual([]);
     runNextRaf();
     expect(played).toEqual(['stone1.wav']);
@@ -149,6 +153,8 @@ describe('useGameSession sound synchronization', () => {
     sendSound(hook.socket, 'capturing', 12);
     expect(requestAnimationFrameMock).toHaveBeenCalledTimes(1);
     runNextRaf();
+    expect(played).toEqual([]);
+    runNextRaf();
     expect(played).toEqual(['capturing.wav']);
   });
 
@@ -159,6 +165,8 @@ describe('useGameSession sound synchronization', () => {
     act(() => hook.result.current.acknowledgePaintedNode(12));
     act(() => hook.result.current.acknowledgePaintedNode(11));
     sendSound(hook.socket, 'stone1', 12);
+    runNextRaf();
+    expect(played).toEqual([]);
     runNextRaf();
     expect(played).toEqual(['stone1.wav']);
   });
@@ -176,7 +184,25 @@ describe('useGameSession sound synchronization', () => {
     runNextRaf();
     expect(played).toEqual([]);
     runNextRaf();
+    expect(played).toEqual([]);
+    runNextRaf();
+    expect(played).toEqual([]);
+    runNextRaf();
     expect(played).toEqual(['capturing.wav']);
+  });
+
+  it('in strict mode drops audio when the node changes between draw and presentation', async () => {
+    const hook = await connect('session-1', true);
+    sendState(hook.socket, 12);
+    act(() => hook.result.current.acknowledgePaintedNode(12));
+    sendSound(hook.socket, 'stone1', 12);
+    runNextRaf();
+
+    sendState(hook.socket, 13);
+    expect(played).toEqual([]);
+    runNextRaf();
+    expect(played).toEqual([]);
+    expect(rafCallbacks).toHaveLength(0);
   });
 
   it('preserves FIFO order for node-associated sounds', async () => {

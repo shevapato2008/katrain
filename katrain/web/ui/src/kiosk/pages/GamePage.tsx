@@ -32,6 +32,7 @@ import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/a
 import { useAutoCount, autoCountEligible } from '../hooks/useAutoCount';
 import { countErrorMessage } from '../utils/countErrors';
 import { getCurrentKioskActivityStorage } from '../storage/kioskActivityStorage';
+import { useGameCelebration } from '../hooks/useGameCelebration';
 
 type EngineAnalysisKind = 'area' | 'options' | 'judge' | 'variation';
 
@@ -114,6 +115,7 @@ interface EndgameCardProps {
   t: (key: string, fallback?: string) => string;
   onExit: () => void;
   onReview: () => void;
+  celebrating: boolean;
   /** 升降级对弈 only: what this game did to the player's rank. null while it is
       still being fetched, and on every non-ladder game. */
 }
@@ -128,14 +130,15 @@ interface EndgameCardProps {
 // avoids a useEffect + setState, keeping this repo's react-hooks/set-state-in-effect gate clean).
 // DESCOPED: dead-stone dimming + red-X needs a backend dead_stones field + a kiosk-only
 // overlay (Gate S); not shipped in this cut, and shared Board.tsx is left untouched.
-const EndgameCard = ({ gameState, t, onExit, onReview }: EndgameCardProps) => {
+const EndgameCard = ({ gameState, t, onExit, onReview, celebrating }: EndgameCardProps) => {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
   return (
     <Box data-testid="endgame-card" sx={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 70,
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, px: 3, py: 2, borderRadius: 3,
           bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
-      <EmojiEvents sx={{ color: 'primary.main' }} />
+      <EmojiEvents data-testid="result-trophy" className={celebrating ? 'game-win-trophy' : undefined}
+        sx={{ color: 'primary.main', fontSize: 32 }} />
       <KioskResultBadge result={endResultOf(gameState)!} rules={gameState.ruleset} />
       {/* 未识别的平台终局哨兵仍以无胜负 `Void` 收口；已知的停一手和认输会走各自语义。 */}
       {endResultOf(gameState) === 'Void' && gameState.platform_engine_color && (
@@ -232,12 +235,16 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // another platform gets engine-play analysis tunnels.
   const platform = 'golaxy';
   const [engineOverlay, setEngineOverlay] = useState<EngineOverlay | null>(null);
+  const [engineEvaluation, setEngineEvaluation] = useState<{ winrate: number; delta: number } | null>(null);
   const [activeEngineKind, setActiveEngineKind] = useState<EngineAnalysisKind | null>(null);
   const [insufficientKind, setInsufficientKind] = useState<EngineAnalysisKind | null>(null);
   // In-flight guard: a touchscreen double-tap must not fire two paid 星阵 analysis
   // calls before the first resolves (double quota spend + last-response-wins races).
   // Does NOT gate insufficientKind — that dialog is user-dismissed, not auto-cleared.
-  const [pendingEngineKind, setPendingEngineKind] = useState<EngineAnalysisKind | null>(null);
+  const engineAnalysisPendingRef = useRef(false);
+  const enginePositionKey = `${sessionId}|${session.gameState?.game_id}|${session.gameState?.current_node_id}|${session.gameState?.end_result}|${session.gameState?.terminal_result}`;
+  const enginePositionRef = useRef(enginePositionKey);
+  enginePositionRef.current = enginePositionKey;
   // Remaining-uses badges (领地N/支招N/变化图N). null until the first fetch resolves → "—".
   const [engineItemCounts, setEngineItemCounts] = useState<EngineItemCounts | null>(null);
 
@@ -425,8 +432,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // that dialog is dismissed by the user, not by position changes. engineMode only.
   useEffect(() => {
     setEngineOverlay(null);
+    setEngineEvaluation(null);
     setActiveEngineKind(null);
-  }, [session.gameState?.current_node_id]);
+  }, [enginePositionKey]);
 
   // Task 11: the physical white hint LEDs (Task 10, PhysicalPlayOrchestrator.show_hint)
   // mirror the 支招 (options) overlay above. Whenever activeEngineKind moves AWAY from
@@ -520,6 +528,9 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const settlementFeedback = useAiLadderSettlement(
     sessionId, session.gameState?.game_type, session.gameState?.end_result, token ?? undefined,
     String(user?.id ?? user?.username ?? 'anonymous'),
+  );
+  const celebrating = useGameCelebration(
+    sessionId, session.gameState, session.gameState ? deriveHumanColor(session.gameState) : null,
   );
 
   if (!session.gameState) {
@@ -834,18 +845,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   // 星阵隧道分析 (领地/支招/变化图/数子) — engineMode only. Mutually exclusive: a new kind
   // replaces any prior overlay; clicking the already-active kind toggles it off.
   const handleEngineAnalysis = async (kind: EngineAnalysisKind) => {
-    if (pendingEngineKind) return; // in-flight guard: ignore double-taps until the current call settles
+    if (engineAnalysisPendingRef.current) return;
     if (activeEngineKind === kind) {
       setActiveEngineKind(null);
       setEngineOverlay(null);
+      setEngineEvaluation(null);
       return;
     }
     if (!sessionId || !isAuthenticated) return;
     // Capture the position identity at call time — if the board advances (a move
     // played) while this request is in flight, the response below is for a stale
     // position and must be discarded rather than resurrecting an old overlay.
-    const requestedNodeId = session.gameState?.current_node_id;
-    setPendingEngineKind(kind);
+    const requestedPosition = enginePositionKey;
+    engineAnalysisPendingRef.current = true;
     try {
       const res = await API.platformEngineAnalysis(platform, sessionId, kind, token);
       // A settled call changed the balance (ok → one consumed; insufficient → it's 0);
@@ -853,13 +865,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       // below so a discarded overlay still updates the count that was actually spent.
       void refreshItemCounts();
       if (res.ok) {
-        if (session.gameState?.current_node_id !== requestedNodeId) return; // stale position — discard
+        if (enginePositionRef.current !== requestedPosition) return;
         const overlay: EngineOverlay =
           kind === 'area' ? { kind: 'area', ownership: (res.data as { ownership: OwnershipPoint[] }).ownership }
           : kind === 'options' ? { kind: 'options', candidates: (res.data as { candidates: AnalysisCandidate[] }).candidates }
           : kind === 'judge' ? { kind: 'judge', ownership: (res.data as { ownership: JudgePoint[] }).ownership }
           : { kind: 'variation', sequence: (res.data as { sequence: AnalysisPoint[] }).sequence };
         setEngineOverlay(overlay);
+        setEngineEvaluation(kind === 'area' ? res.data as { winrate: number; delta: number } : null);
         setActiveEngineKind(kind);
       } else {
         setInsufficientKind(kind);
@@ -868,7 +881,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       console.error(e);
       setEngineErrorToast(true);
     } finally {
-      setPendingEngineKind(null);
+      engineAnalysisPendingRef.current = false;
     }
   };
 
@@ -910,6 +923,20 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           {timeoutLoserColor ? t('Review this game', '复盘本局') : t('game:retry', '重试')}
         </button>
       )}
+    </div>
+  ) : activeEngineKind === 'area' && engineEvaluation ? (
+    <div className="gstatus" data-testid="engine-analysis-summary" role="status">
+      <div>
+        <b>{t('game:golaxy_ai', '星阵围棋 · 人机')} · {t('Territory', '领地')}</b>
+        <span style={{ fontSize: 14, color: 'var(--text)' }}>
+          {t('live:black_winrate', '黑棋胜率')} {Number.isFinite(engineEvaluation.winrate) && engineEvaluation.winrate >= 0 && engineEvaluation.winrate <= 1
+            ? `${(engineEvaluation.winrate * 100).toFixed(1)}%` : '—'}
+          {' · '}
+          {Number.isFinite(engineEvaluation.delta)
+            ? `${engineEvaluation.delta < 0 ? t('game:white_short', '白') : t('game:black_short', '黑')}${t('live:lead_pts', '领先')} ${Math.abs(engineEvaluation.delta).toFixed(1)} ${t('game:points_unit', '目')}`
+            : `${t('research:col_score_diff', '目差')} —`}
+        </span>
+      </div>
     </div>
   ) : null;
 
@@ -1104,6 +1131,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           只有状态条、没有这张居中卡),两处同时出现会是两个「复盘本局」键叠在一起。 */}
       {isGameOver && !timeoutLoserColor && (
         <EndgameCard
+          celebrating={celebrating}
           key={sessionId}
           gameState={gameState}
           t={t}

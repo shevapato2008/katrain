@@ -117,6 +117,7 @@ class _VisionWorkerLoop:
         self._motion_filter = MotionFilter()
         self._motion_mask_cache = MotionRoiMaskCache()
         self._last_motion_log: float | None = None
+        self._last_motion_at: float | None = None
         self._last_motion_roi_ratio: float | None = None
         self._last_motion_full_ratio: float | None = None
         self._state_extractor = BoardStateExtractor(board_config)
@@ -202,6 +203,7 @@ class _VisionWorkerLoop:
 
         self._averager.reset()
         now = time.monotonic()
+        self._last_motion_at = now
         if self._last_motion_log is None or now - self._last_motion_log >= 5.0:
             logger.info("motion rejected: %s", self._motion_diagnostic())
             self._last_motion_log = now
@@ -832,6 +834,7 @@ class _VisionWorkerLoop:
             ),
             sync_state=self._sync.state.value,
             detected_board=self._last_detected_board,
+            last_motion_at=self._last_motion_at,
             camera_ready=bool(self._camera.is_connected),
             geometry_ready=self._board_finder.last_transform_matrix is not None,
             model_ready=self._detector is not None,

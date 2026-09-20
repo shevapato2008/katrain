@@ -76,6 +76,7 @@ class InProcessAdapter:
         self._motion_filter = MotionFilter()
         self._motion_mask_cache = MotionRoiMaskCache()
         self._last_motion_log: float | None = None
+        self._last_motion_at: float | None = None
         self._last_motion_roi_ratio: float | None = None
         self._last_motion_full_ratio: float | None = None
         self._board_finder = BoardFinder(camera_config=CameraConfig())
@@ -182,6 +183,7 @@ class InProcessAdapter:
 
         self._averager.reset()
         now = time.monotonic()
+        self._last_motion_at = now
         if self._last_motion_log is None or now - self._last_motion_log >= 5.0:
             logger.info("motion rejected: %s", self._motion_diagnostic())
             self._last_motion_log = now
@@ -570,6 +572,7 @@ class InProcessAdapter:
                 ),
                 sync_state=self._sync.state.value,
                 detected_board=observed_board.tolist() if observed_board is not None else None,
+                last_motion_at=self._last_motion_at,
                 camera_ready=bool(self._camera.is_connected),
                 geometry_ready=self._geometry is not None or not self._require_geometry,
                 model_ready=True,

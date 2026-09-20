@@ -397,8 +397,8 @@ const GameControlPanel = ({
     return () => window.clearInterval(id);
   }, [timeExpired, toMove]);
 
-  // 时钟栏(本地对局直接使用；其它对局不计时时作为 SeatRow 的回落)。`main_time_used`
-  // 只有在真配了时限时才累加，那时才有「本局已下」可写。没有时限时,这一栏唯一为真的量是
+  // 时钟栏(本地对局直接使用；其它对局不计时时作为 SeatRow 的回落)。没有时限时,
+  // 不显示继承默认配置后累计的 main_time_used。这一栏唯一为真的量是
   // **当前是第几手**,而那是**局面的量、不是某一方的量** ⇒ 只挂在轮到的那张卡上,
   // 另一张卡的时钟栏不渲染。两张都写「不限时」是把同一句话说两遍;
   // 写 `0:00 本局已下` 更糟 —— 那不是「用了 0 秒」,是「压根没在计」。
@@ -420,8 +420,6 @@ const GameControlPanel = ({
           .replace('{n}', String(timer?.settings.byo_periods ?? 0)),
       };
     }
-    const used = gameState.players_info[c].main_time_used;
-    if (used > 0) return { value: formatTime(used), label: t('game:spent_this_game', '本局已下') };
     if (c !== toMove || isGameOver) return null;
     return {
       value: t('game:move_n', '第 {n} 手').replace('{n}', String((gameState.current_node_index ?? 0) + 1)),

@@ -108,6 +108,21 @@ describe('GameControlPanel', () => {
       />
     );
 
+  test('an untimed platform game never presents inherited cumulative time as a clock', () => {
+    panel({
+      game_type: 'free',
+      players_info: {
+        B: { ...mockGameState.players_info.B, main_time_used: 123 },
+        W: { ...mockGameState.players_info.W, main_time_used: 98 },
+      },
+      timer: { configured: false, paused: false, current_node_time_used: 12, main_time_used: 123, next_player_periods_used: 0,
+        settings: { main_time: 20, byo_length: 30, byo_periods: 5, minimal_use: 0, sound: true } },
+    }, { engineMode: true });
+    expect(screen.queryByText('2:03')).toBeNull();
+    expect(screen.queryByText('1:38')).toBeNull();
+    expect(screen.getByText('不限时')).toBeInTheDocument();
+  });
+
   test('physical placement status replaces login/count hints without fault styling', () => {
     const { container } = panel(
       { game_type: 'free', analysis_delivered: false, history: [] },

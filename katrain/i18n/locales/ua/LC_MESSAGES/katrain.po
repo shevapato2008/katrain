@@ -236,8 +236,8 @@ msgstr "Здатися"
 #. Shown when a move is undone in teaching mode.
 msgid "teaching undo message"
 msgstr ""
-"Хід {move} скасовано, оскільки він втратив {points_lost:.1f} очок. Спробуйте"
-" ще раз. Для підказки наведіть курсор на хід, щоб побачити очікуване "
+"Хід {move} скасовано, оскільки він втратив {points_lost:.1f} очок. Спробуйте "
+"ще раз. Для підказки наведіть курсор на хід, щоб побачити очікуване "
 "спростування, або перевірте очікувану територію (t), щоб побачити області "
 "дошки, де очікується втрата очок."
 
@@ -563,8 +563,8 @@ msgstr "Одночасні ігри"
 #. hint for max games
 msgid "contribute:maxgames:hint"
 msgstr ""
-"Найкраще встановити кількість, рівну оптимальній numSearchThreads, близько 8"
-" для середнього класу GPU. Можна трохи зменшити для коротких запусків, "
+"Найкраще встановити кількість, рівну оптимальній numSearchThreads, близько 8 "
+"для середнього класу GPU. Можна трохи зменшити для коротких запусків, "
 "оскільки неповні ігри не завантажуються."
 
 msgid "contribute:ownership"
@@ -691,8 +691,7 @@ msgid "sgf written"
 msgstr "SGF з аналізом збережено до {file_name}"
 
 msgid "wait-before-extra-analysis"
-msgstr ""
-"Дочекайтеся завершення початкового аналізу перед запитом на уточнення."
+msgstr "Дочекайтеся завершення початкового аналізу перед запитом на уточнення."
 
 msgid "Copied SGF to clipboard."
 msgstr "SGF скопійовано в буфер обміну."
@@ -804,8 +803,7 @@ msgstr ""
 "'tenuki_penalty') та уникають прикріплення (важливість "
 "'attachment_penalty'). Ваги можуть бути негативними, щоб ускладнити гру, а "
 "wideRootNoise (у загальних налаштуваннях) може бути використаний для для "
-"гри, більш відповідної до обраного стилю, але за рахунок зниження сили "
-"ходів."
+"гри, більш відповідної до обраного стилю, але за рахунок зниження сили ходів."
 
 msgid "ai:jigo"
 msgstr "Дзіго"
@@ -826,8 +824,8 @@ msgstr "Втрата очок"
 
 msgid "aihelp:scoreloss"
 msgstr ""
-"Робить ходи, що призводять до більшої втрати очок, але з меншою ймовірністю."
-" При вищій кількості візитів, ймовірно, робитиме слабші та різноманітніші "
+"Робить ходи, що призводять до більшої втрати очок, але з меншою ймовірністю. "
+"При вищій кількості візитів, ймовірно, робитиме слабші та різноманітніші "
 "ходи."
 
 msgid "ai:policy"
@@ -856,9 +854,9 @@ msgstr "Політика всліпу"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' і"
-" робить найкращий. Якщо 'pick_frac=1', грає як AI 'Політика'. Робить топовий"
-" хід, якщо значення політики вище за 'pick_override', щоб уникнути явних "
+"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' і "
+"робить найкращий. Якщо 'pick_frac=1', грає як AI 'Політика'. Робить топовий "
+"хід, якщо значення політики вище за 'pick_override', щоб уникнути явних "
 "помилок."
 
 msgid "ai:p:local"
@@ -866,8 +864,8 @@ msgstr "Локальний стиль"
 
 msgid "aihelp:p:local"
 msgstr ""
-"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' з"
-" ухилом у бік останнього ходу і виконує найкращий з них. Виконує найкращий "
+"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' з "
+"ухилом у бік останнього ходу і виконує найкращий з них. Виконує найкращий "
 "хід, якщо значення політики перевищує 'pick_override', щоб уникнути явних "
 "помилок."
 
@@ -876,8 +874,8 @@ msgstr "Стиль тенукі"
 
 msgid "aihelp:p:tenuki"
 msgstr ""
-"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' з"
-" відхиленням від останнього ходу і робить найкращий з них. Робить найкращий "
+"Випадковим чином обирає 'pick_n + pick_frac * <кількість легальних ходів>' з "
+"відхиленням від останнього ходу і робить найкращий з них. Робить найкращий "
 "хід, якщо значення політики перевищує 'pick_override', щоб уникнути "
 "очевидних помилок. Вищий 'stddev' змушує грати ще далі."
 
@@ -1042,8 +1040,8 @@ msgstr "Генерація гри через самостійну гру AI: х�
 msgid "setup position explanation"
 msgstr ""
 "Генерує незавершену гру, яку ви можете продовжити грати. Наприклад, ви "
-"можете використовувати це для гри проти сильніших AI, починаючи з переваги в"
-" різноманітних середніх або кінцевих позиціях гри."
+"можете використовувати це для гри проти сильніших AI, починаючи з переваги в "
+"різноманітних середніх або кінцевих позиціях гри."
 
 #. Description for black target score
 msgid "setup position black score"
@@ -1072,16 +1070,15 @@ msgstr "Historical Pro"
 #. TODO
 msgid "aihelp:pro"
 msgstr ""
-"Picks moves according to a humanlike KataGo model. Specifically, Imitate pro"
-" and strong insei moves based on historical game records from the specified "
+"Picks moves according to a humanlike KataGo model. Specifically, Imitate pro "
+"and strong insei moves based on historical game records from the specified "
 "year and surrounding years."
 
 #. TODO
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a humanlike KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening "
-"style."
+"ticked, the model will play according to a post-2016 AlphaZero opening style."
 
 #. TODO
 msgid "engine:humanlike_model"
@@ -1364,8 +1361,7 @@ msgid "lobby:title"
 msgstr "Багатокористувацьке лобі"
 
 msgid "dashboard:research_desc"
-msgstr ""
-"Аналізуйте ігри з ШІ, досліджуйте варіанти та керуйте бібліотекою SGF."
+msgstr "Аналізуйте ігри з ШІ, досліджуйте варіанти та керуйте бібліотекою SGF."
 
 msgid "lobby:quick_match_rated"
 msgstr "Швидкий матч (Рейтинговий)"
@@ -2896,8 +2892,8 @@ msgstr "Ця партія ще не завершена."
 
 msgid "ladder:unscored_error"
 msgstr ""
-"Цю партію не вдалося записати в журнал рейтингу, ранг не змінився. Повідомте"
-" нам про неї."
+"Цю партію не вдалося записати в журнал рейтингу, ранг не змінився. Повідомте "
+"нам про неї."
 
 msgid "ladder:got_it"
 msgstr "Зрозуміло"
@@ -3255,8 +3251,8 @@ msgstr ""
 
 msgid "research:login_required"
 msgstr ""
-"Повний аналіз використовує хмарний рушій і потребує входу. Розбір і перегляд"
-" — ні."
+"Повний аналіз використовує хмарний рушій і потребує входу. Розбір і перегляд "
+"— ні."
 
 msgid "play:analysis_requires_login"
 msgstr "Доступно після входу"
@@ -3407,8 +3403,8 @@ msgstr "{n} без оцінки"
 
 msgid "grade:histogram_aria"
 msgstr ""
-"Розподіл за сімома рівнями: чорні стовпці — чорні, білі — білі, нормовано за"
-" кожною стороною"
+"Розподіл за сімома рівнями: чорні стовпці — чорні, білі — білі, нормовано за "
+"кожною стороною"
 
 msgid "grade:def_brilliant"
 msgstr ""
@@ -3446,3 +3442,199 @@ msgstr "{side}: ходи {from}–{to}, {n} поспіль збіглися з �
 
 msgid "live:loading_match"
 msgstr "Завантаження партії…"
+
+msgid "game:black_resigns"
+msgstr "Чорні здаються"
+
+msgid "game:white_resigns"
+msgstr "Білі здаються"
+
+msgid "game:who_resigns"
+msgstr "Хто здається?"
+
+msgid "game:black_short"
+msgstr "Ч"
+
+msgid "game:white_short"
+msgstr "Б"
+
+msgid "game:black_side"
+msgstr "Чорні"
+
+msgid "game:white_side"
+msgstr "Білі"
+
+msgid "game:clock_timeout"
+msgstr "Час вичерпано"
+
+msgid "game:clock_byo_left"
+msgstr "Бьомі · залишилось {n}"
+
+msgid "game:clock_byo_spec"
+msgstr "Бьомі {len}с×{n}"
+
+msgid "game:move_n"
+msgstr "Хід {n}"
+
+msgid "game:timeout_loss_suffix"
+msgstr " програють за часом"
+
+msgid "game:timeout_win_suffix"
+msgstr " перемагають за часом"
+
+msgid "game:saved_to_history"
+msgstr "Збережено в історії партій"
+
+msgid "game:timeout_check_failed"
+msgstr "Не вдалося підтвердити закінчення часу"
+
+msgid "game:count_err_analysis_pending"
+msgstr "Ще триває аналіз цього ходу, спробуйте порахувати трохи пізніше"
+
+msgid "game:count_err_below_min"
+msgstr "Ще недостатньо ходів, підрахунок поки недоступний"
+
+msgid "game:count_err_game_over"
+msgstr "Ця партія вже завершена"
+
+msgid "game:count_err_network"
+msgstr "Не вдається під'єднатися до сервісу аналізу"
+
+msgid "game:count_err_http"
+msgstr "Не вдалося підрахувати очки ({status}), спробуйте ще раз"
+
+msgid "game:counting"
+msgstr "Підрахунок…"
+
+msgid "game:retry"
+msgstr "Повторити"
+
+msgid "game:exit_failed"
+msgstr "Не вдалося вийти, спробуйте ще раз"
+
+msgid "game:exit_unsaved_title"
+msgstr "Ця партія ще не завершена — вихід без збереження"
+
+msgid "game:keep_playing"
+msgstr "Продовжити гру"
+
+msgid "game:stay_on_board"
+msgstr "Залишитися біля дошки"
+
+msgid "game:exit_unsaved"
+msgstr "Вийти без збереження"
+
+msgid "play:local_needs_login"
+msgstr "Спершу увійдіть · зберігається автоматично після завершення"
+
+msgid "review:no_result_line"
+msgstr "Результат не записано"
+
+msgid "review:row_local"
+msgstr "Локальна партія · Два гравці"
+
+msgid "review:row_local_unnamed"
+msgstr "Локальна партія · Без імен"
+
+msgid "review:row_research"
+msgstr "Архів дослідження"
+
+msgid "game:count_failed"
+msgstr "Підрахунок не завершено"
+
+msgid "game:check_network_retry"
+msgstr "Перевірте мережу і спробуйте ще раз"
+
+msgid "game:both_passed"
+msgstr "Обидва гравці пасували"
+
+msgid "game:exit_confirm_title"
+msgstr "Вийти з цієї партії?"
+
+msgid "game:exit_unsaved_body"
+msgstr "Ця партія ще не завершена — при виході вона не збережеться."
+
+msgid "game:which_side_resigns"
+msgstr "Яка сторона здається?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"Суперника буде зараховано переможцем за здачею; ця партія збережеться в "
+"історії ігор."
+
+msgid "local:input_hint_v2"
+msgstr "Фізична дошка лише 19×19 — оберіть 13×13 або 9×9, щоб грати на екрані"
+
+msgid "local:komi_hint"
+msgstr "У партіях з форою комі = 0 — ця група згортається при виборі фори"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"Годинник відлічує час на картці гравця · вичерпаний бьоймі — поразка за "
+"часом · без ліміту лише запис партії"
+
+msgid "local:clock_meta_count"
+msgstr "{n} рівнів"
+
+msgid "local:sound_hint_v2"
+msgstr "Той самий перемикач, що й звук ходу в Налаштуваннях · Звук"
+
+msgid "local:note3_a"
+msgstr "На екрані"
+
+msgid "local:note3_b"
+msgstr "немає підказок і оцінки позиції"
+
+msgid "local:note3_c"
+msgstr "; щойно обидва пасують,"
+
+msgid "local:note3_d"
+msgstr "підрахунок виконується автоматично"
+
+msgid "local:note3_e"
+msgstr " статус груп (жива/мертва) визначає рушій."
+
+msgid "local:note3_f"
+msgstr "Ця партія"
+
+msgid "local:note3_g"
+msgstr "лише фіксується, ваш розряд не змінюється"
+
+msgid "local:note3_h"
+msgstr "; вихід посеред партії"
+
+msgid "local:note3_i"
+msgstr "не збереже запис"
+
+msgid "local:note3_j"
+msgstr "."
+
+msgid "vision:offcenter_at"
+msgstr ": камінь стоїть не на перетині"
+
+msgid "vision:offcenter_plain"
+msgstr "Цей камінь стоїть не на перетині"
+
+msgid "vision:offcenter_hint"
+msgstr "Переставте камінь на"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "; його буде розпізнано автоматично"
+
+msgid "vision:play_here_anyway"
+msgstr "Усе одно зіграти на"
+
+msgid "vision:offcenter_dismiss"
+msgstr "Я поправлю"
+
+msgid "vision:offcenter_move_from_to"
+msgstr "Камінь ({color}) зміщено: пересуньте його з {from} на {to}"
+
+msgid "review:start_analysis"
+msgstr "Почати аналіз"
+
+msgid "vision:resync_screen_authority"
+msgstr "Скинути розпізнавання · використовувати позицію на екрані"
+
+msgid "Re-sync"
+msgstr "Скинути розпізнавання"

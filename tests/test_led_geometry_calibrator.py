@@ -173,7 +173,7 @@ def test_calibrator_builds_human_geometry_and_clears_led():
     assert led.clear_calls >= len(CALIBRATION_ANCHORS) + 1
 
 
-def test_calibrator_retries_red_when_green_signal_is_missing():
+def test_calibrator_retries_only_green_when_green_signal_is_missing():
     led = FakeLed()
     capture = FakeCapture(led, _synthetic_camera_points(), green_missing_for=(3, 15))
 
@@ -181,9 +181,9 @@ def test_calibrator_retries_red_when_green_signal_is_missing():
 
     assert result.ok is True
     attempts = [rgb for coord, rgb in led.attempts if coord == (3, 15)]
-    # green 在两档亮度上都拍不到信号(彻底缺失,不是可以靠拉满亮度救回的弱信号)
-    # 才换色到 red —— 换色本身就是本测试要钉住的行为。
-    assert attempts[:3] == [(0, 96, 0), (0, 255, 0), (96, 0, 0)]
+    # 这颗绿色完全缺失时仍只能试 96→255 两档绿色；单点缺失由标定容缺吸收。
+    assert attempts == [(0, 96, 0), (0, 255, 0)]
+    assert all(red == 0 and green > 0 and blue == 0 for _coord, (red, green, blue) in led.attempts)
 
 
 def test_build_lock_samples_each_baseline_frame_once(monkeypatch):
@@ -208,6 +208,21 @@ def test_build_lock_samples_each_baseline_frame_once(monkeypatch):
 
 
 def test_calibrator_reports_each_detected_anchor():
+    expected_anchors = (
+        (0, 0),
+        (0, 18),
+        (18, 18),
+        (18, 0),
+        (3, 3),
+        (3, 9),
+        (3, 15),
+        (9, 3),
+        (9, 9),
+        (9, 15),
+        (15, 3),
+        (15, 9),
+        (15, 15),
+    )
     led = FakeLed()
     capture = FakeCapture(led, _synthetic_camera_points())
     observed = []
@@ -219,7 +234,8 @@ def test_calibrator_reports_each_detected_anchor():
     ).calibrate()
 
     assert result.ok is True
-    assert [(row, col) for row, col, _point, _color in observed] == list(CALIBRATION_ANCHORS)
+    assert CALIBRATION_ANCHORS == expected_anchors
+    assert [(row, col) for row, col, _point, _color in observed] == list(expected_anchors)
     assert all(color == "green" for _row, _col, _point, color in observed)
     for row, col, point, _color in observed:
         assert point == pytest.approx(_synthetic_camera_points()[(row, col)], abs=1.0)

@@ -257,7 +257,7 @@ class TestColorsAndProtocol:
 
         svc.start()
         try:
-            assert "BRIGHT 200" in fake.written
+            assert "BRIGHT 255" in fake.written
         finally:
             svc.stop()
 
@@ -362,7 +362,7 @@ class TestConnectionHandshake:
         svc._open_serial()
 
         assert svc.is_connected() is True
-        assert fake.written == ["BRIGHT 200"]
+        assert fake.written == ["BRIGHT 255"]
         assert fake._buf == []
 
     def test_delayed_ready_precedes_bright_and_fresh_ok_connects(self):
@@ -377,7 +377,7 @@ class TestConnectionHandshake:
         svc._open_serial()
 
         assert fake.reset_calls == 1
-        assert fake.write_times == [("BRIGHT 200", 1000.25)]
+        assert fake.write_times == [("BRIGHT 255", 1000.25)]
         assert svc.is_connected() is True
 
     def test_ready_banner_does_not_replace_postwrite_ok(self):
@@ -391,7 +391,7 @@ class TestConnectionHandshake:
 
         svc._open_serial()
 
-        assert fake.write_times == [("BRIGHT 200", 1000.25)]
+        assert fake.write_times == [("BRIGHT 255", 1000.25)]
         assert svc.is_connected() is False
         assert fake.closed is True
 
@@ -409,7 +409,7 @@ class TestConnectionHandshake:
         assert fake.reset_calls == 1
         assert fake.prewrite_reads == 0
         assert clock.t == 1000.0
-        assert fake.written == ["BRIGHT 200"]
+        assert fake.written == ["BRIGHT 255"]
         assert svc.is_connected() is False
 
     def test_bright_err_closes_without_connecting(self):

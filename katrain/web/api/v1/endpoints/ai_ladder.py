@@ -1013,6 +1013,11 @@ async def start_ranked_game(
             analysis_session = manager.get_session(session_id)
         except KeyError:
             return False
+        # A completed free game can remain in the session cache after its result
+        # was saved. Its initial-analysis lease must not indefinitely prevent the
+        # same player from starting a ranked game.
+        if getattr(analysis_session, "game_ended", False):
+            return False
         if set(kinds) == {"continuous"}:
             return bool(getattr(analysis_session.katrain, "pondering", False))
         # One-shot and tree-wide analysis can outlive the initiating HTTP call and

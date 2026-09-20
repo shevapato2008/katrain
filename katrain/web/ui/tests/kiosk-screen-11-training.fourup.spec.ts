@@ -35,14 +35,13 @@ test('四图:训练营 ←→ sample-go/shots/11-training.png', async ({ page })
     // 「接着上次」和两处高亮全是真实数据驱动的:没做过题就**不该**出现。稿子上有,所以造。
     // ⚠️ 标签用的是 `TsumegoProblemPage` 真会写的那个格式(`… · 第 N 题`),
     // **不是稿子上那句「第 1 单元」** —— 后者这套代码永远写不出来,摆上去就是编。
-    localStorage.setItem('kiosk_active_practice', JSON.stringify({
-      kind: 'practice',
+    // ⚠️ 钥匙**带 user id**(N10,2026-09-14):「上次」三样按账号存,`auth/me` 回 id=1 ⇒ `:u1`。
+    localStorage.setItem('kiosk_tsumego_resume:u1', JSON.stringify({
       label: '15 级 · 吃子 · 第 1 题',
       route: '/kiosk/tsumego/problem/fourup-fixture',
-      ts: 1_766_000_000_000,
     }));
-    localStorage.setItem('kiosk_tsumego_last_level', '15k');
-    localStorage.setItem('kiosk_tsumego_last_category', 'capturing');
+    localStorage.setItem('kiosk_tsumego_last_level:u1', '15k');
+    localStorage.setItem('kiosk_tsumego_last_category:u1', 'capturing');
   });
   // 后端没起时 logo 会 502,取出来的图左上角是碎图标 —— 钉在仓里那份真字节上。
   await stubBackendStatics(page);
@@ -79,7 +78,8 @@ test('四图:训练营 ←→ sample-go/shots/11-training.png', async ({ page })
     referenceCaption:
       '参考:sample-go/shots/11-training.png · 2026-08-22 起稿子上不再有旁注小字(Fan 裁:那些字收进 HTML 注释)',
     implementationCaption:
-      '实现:/kiosk/tsumego @1024×600 · 时钟冻 16:40 · 题库六档是 fixture(题量由页面从接口算,不是图上写死)· 接着上次 / 两处高亮 / 硬件三格都是 fixture · 镜像盘压暗=还没接到识别结果 · 环恒「—」是真的:这一层算不出每档进度',
+      '实现:/kiosk/tsumego @1024×600 · 时钟冻 16:40 · 题库六档是 fixture(题量由页面从接口算,不是图上写死)· 接着上次 / 两处高亮 / 硬件三格都是 fixture · 镜像盘压暗=还没接到识别结果 · 环恒「—」是真的:这一层算不出每档进度'
+      + ' · 问候副标是「落子即判，走错当场退回」不是稿子的「题在实体盘上摆好」(N26③:实体开关默认关)',
   });
   console.log(`[fourup 11-training] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

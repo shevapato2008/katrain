@@ -34,8 +34,10 @@ import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
 import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
 import { GeometryProvider } from './context/GeometryContext';
+import { EngineReadinessProvider } from './context/EngineReadinessProvider';
 import PhysicalBoardGuard from './components/vision/PhysicalBoardGuard';
 import PlayInputGuard from './components/vision/PlayInputGuard';
+import TsumegoInputGuard from './components/vision/TsumegoInputGuard';
 import RotationWrapper from './components/layout/RotationWrapper';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
@@ -47,7 +49,6 @@ import GamePage from './pages/GamePage';
 import GrowthPage from './pages/GrowthPage';
 import TsumegoPage from './pages/TsumegoPage';
 import TsumegoCategoriesPage from './pages/TsumegoCategoriesPage';
-import TsumegoLevelPage from './pages/TsumegoLevelPage';
 import TsumegoUnitsPage from './pages/TsumegoUnitsPage';
 import TsumegoUnitListPage from './pages/TsumegoUnitListPage';
 import TsumegoProblemPage from './pages/TsumegoProblemPage';
@@ -134,10 +135,15 @@ const KioskRoutes = () => {
           <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />
-          <Route path="tsumego/problem/:problemId" element={<PhysicalBoardGuard sub="实体做题要先让摄像头看清盘面"><TsumegoProblemPage /></PhysicalBoardGuard>} />
+          {/* ⚠️ 2026-09-14(T9):不再裸套 `PhysicalBoardGuard`。做题的实体开关默认关,
+              屏幕做题的人不该被标定台挡住 —— 和对弈那四条换成 `PlayInputGuard` 是同一件事。
+              **不要退回裸的 `PhysicalBoardGuard`。** */}
+          <Route path="tsumego/problem/:problemId" element={<TsumegoInputGuard><TsumegoProblemPage /></TsumegoInputGuard>} />
           <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
-          <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
+          {/* 错题页(T1):屏 13 同一副骨架,题从「这一类里试过、还没做对的」来。
+              静态段 `wrong` 在 v6 最佳匹配里本来就赢过 `:unit`,放在前面是给人读的。 */}
+          <Route path="tsumego/:level/:category/wrong" element={<TsumegoUnitListPage set="wrong" />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
           {/* ⚠️ research / baipu / live 三条**下了 Dock 但路由照旧存在**(规范 §3:
               研究并进复盘、摆谱降为选中棋谱之后的落子方式、直播并进棋谱)。
@@ -198,7 +204,9 @@ const KioskApp = () => {
           <GeometryProvider>
             <TsumegoProgressProvider>
               <RotationWrapper>
-                <KioskRoutes />
+                <EngineReadinessProvider>
+                  <KioskRoutes />
+                </EngineReadinessProvider>
               </RotationWrapper>
             </TsumegoProgressProvider>
           </GeometryProvider>

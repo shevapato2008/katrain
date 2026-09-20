@@ -1,5 +1,7 @@
 # 本地对弈 (kiosk-local-play) Implementation Plan
 
+> ⚠️ **2026-09-14：本文件是 v1（2026-07-12）的记录，部分描述已过期**（例如 `GameHistoryPage` 已并入屏 19、「页面在 KioskAuthGuard 之内 ⇒ token 必有」在严格盒端 SSO 后不成立）。现行设计见 [`v2-design.md`](./v2-design.md)。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 让两个人面对面在同一台 kiosk 智能棋盘（或触屏兜底）上完成一整局围棋，终局自动存谱并同步远程，可在「对局历史」里回看并一键 AI 复盘。

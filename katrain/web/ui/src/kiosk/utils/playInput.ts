@@ -34,6 +34,8 @@
  * 做题屏的 `physicalAvailable` 里本来就有这一条(`boardSize === 19`),对弈同理。
  */
 
+import { readActiveSession } from './activeSession';
+
 /** localStorage 键。**和做题屏那把是两把** —— 默认值相反,理由见文件头。 */
 export const PLAY_ON_BOARD_KEY = 'kiosk_play_on_board';
 
@@ -88,4 +90,21 @@ export function playInputState(visionEnabled: boolean, boardSize: number): PlayI
       : null;
   const available = reason === null;
   return { available, wanted, onBoard: wanted && available, reason };
+}
+
+/**
+ * 「这一局到底落在哪儿」—— **开局那一刻定下的值**,不是此刻的偏好。
+ *
+ * 开局设置屏把 `onBoard` 随活动会话写下;对局路由外的守卫和对局屏都从这里读。
+ * 只在活动会话**就是当前这条路由**时才用它:比较的是完整路径(对局路由带 `:sessionId`,
+ * 前缀相同不代表是同一局)。别的情况(旧记录没有 onBoard / 活动会话是另一局 /
+ * 从房间、跨平台引擎进来的局)回落到偏好 —— 那正是今天的行为。
+ */
+export function readSessionPlayOnBoard(pathname: string): { onBoard: boolean; fromSession: boolean } {
+  const norm = (p: string) => (p.length > 1 && p.endsWith('/') ? p.slice(0, -1) : p);
+  const s = readActiveSession('game');
+  if (s && typeof s.onBoard === 'boolean' && norm(s.route) === norm(pathname)) {
+    return { onBoard: s.onBoard, fromSession: true };
+  }
+  return { onBoard: readPlayOnBoard(), fromSession: false };
 }

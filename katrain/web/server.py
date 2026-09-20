@@ -18,6 +18,7 @@ from katrain.web.api.v1.api import api_router
 from katrain.web.api.v1.endpoints.ai_ladder import mark_ai_ladder_remote_terminal
 from katrain.web.core.catalog_cache import add_catalog_cache_middleware
 from katrain.web.core.config import settings
+from katrain.web.core.game_end_rules import is_awaiting_count
 from katrain.web.core.ranked_session_guard import (
     guard_ai_ladder_ranked_owner,
     guard_ai_ladder_ranked_human_action,
@@ -612,6 +613,7 @@ async def _lifespan_board(app: FastAPI, log):
 
     vision_config = getattr(settings, "_vision_config", None)
     capture_config = getattr(settings, "_capture_config", None)
+    hardware_vision_dir = getattr(settings, "_hardware_vision_dir", None)
 
     # Initialise every optional camera-dependent surface before attempting to
     # acquire the device. A missing UVC device must leave the regular board
@@ -625,11 +627,13 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.capture = None
     app.state.geometry = None
     app.state.geometry_calibration = None
+    app.state.hardware_vision_store = None
     app.state.physical_play = None
     app.state.physical_play_config = None
 
     # One physical camera owner shared by capture, calibration, and recognition.
     camera_hub = None
+    hardware_vision_state = None
     if (vision_config and vision_config.enabled) or (capture_config and capture_config.enabled):
         from katrain.web.core.camera_hub import CameraHub, CameraHubConfig
 
@@ -642,12 +646,39 @@ async def _lifespan_board(app: FastAPI, log):
                     f"vision={vision_camera}, capture={capture_camera}"
                 )
         if capture_config and capture_config.enabled:
+            camera_device = capture_config.camera_device
+            camera_width = capture_config.width
+            camera_height = capture_config.height
+        else:
+            camera_device = vision_config.camera_device
+            camera_width = vision_config.camera_width
+            camera_height = vision_config.camera_height
+
+        if hardware_vision_dir:
+            from katrain.web.core.hardware_vision_state import (
+                CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK,
+                HardwareVisionStateStore,
+            )
+
+            hardware_vision_store = HardwareVisionStateStore(Path(hardware_vision_dir).expanduser())
+            hardware_vision_state = hardware_vision_store.load_current(
+                camera_device,
+                camera_width,
+                camera_height,
+            )
+            app.state.hardware_vision_store = hardware_vision_store
+
+        persisted_lock_exposure = bool(
+            hardware_vision_state is not None
+            and hardware_vision_state.profile.strategy == CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK
+        )
+        if capture_config and capture_config.enabled:
             hub_config = CameraHubConfig(
                 device_id=capture_config.camera_device,
                 width=capture_config.width,
                 height=capture_config.height,
-                lock_exposure=capture_config.lock_exposure,
-                exposure=capture_config.exposure,
+                lock_exposure=(persisted_lock_exposure if hardware_vision_dir else capture_config.lock_exposure),
+                exposure=(None if hardware_vision_dir else capture_config.exposure),
                 lock_awb=capture_config.lock_awb,
             )
         else:
@@ -655,7 +686,8 @@ async def _lifespan_board(app: FastAPI, log):
                 device_id=vision_config.camera_device,
                 width=vision_config.camera_width,
                 height=vision_config.camera_height,
-                lock_exposure=False,
+                lock_exposure=persisted_lock_exposure,
+                exposure=None,
                 lock_awb=False,
             )
         camera_hub = CameraHub(hub_config)
@@ -671,7 +703,24 @@ async def _lifespan_board(app: FastAPI, log):
                 "Camera unavailable; continuing without vision, capture, calibration, or physical play: %s", exc
             )
             camera_hub = None
+        if camera_hub is not None and hardware_vision_state is not None:
+            if camera_hub.controls_effective is not True:
+                # Never mount geometry whose exposure policy was not successfully
+                # established.  Leave the camera in native AE as the safe recovery
+                # mode; a new calibration will publish a fresh coherent generation.
+                from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_ON
+
+                log.warning(
+                    "Ignoring persisted geometry because camera control strategy %s was not verified",
+                    hardware_vision_state.profile.strategy,
+                )
+                camera_hub.request_controls(auto_exposure=CAMERA_AUTO_EXPOSURE_ON)
+                hardware_vision_state = None
     app.state.camera_hub = camera_hub
+    if camera_hub is not None and hardware_vision_state is not None:
+        # Geometry and controls come from the same validated generation. This is
+        # independent of CaptureService: vision-only deployments need the warp too.
+        app.state.geometry = hardware_vision_state.geometry
 
     # Vision service (optional — enabled when --vision-model is provided)
     if vision_config and vision_config.enabled and camera_hub is not None:
@@ -743,19 +792,9 @@ async def _lifespan_board(app: FastAPI, log):
             getattr(settings, "_baipu_fiducial_mode", None), os.getenv("KATRAIN_BAIPU_FIDUCIAL_MODE")
         )
         app.state.baipu_drift_threshold_cells = getattr(settings, "baipu_drift_threshold_cells", 0.15)
-        # Load an existing geometry lock if present (so capture/QA can run immediately).
-        try:
-            from katrain.vision.geometry_lock import load_geometry_lock
-
-            geo_path = Path("~/.katrain/geometry_lock.npz").expanduser()
-            app.state.geometry = load_geometry_lock(geo_path) if geo_path.exists() else None
-        except Exception as e:
-            log.warning("Failed to load geometry lock: %s", e)
-            app.state.geometry = None
         log.info("Capture service started (camera=%s)", capture_config.camera_device)
     else:
         app.state.capture = None
-        app.state.geometry = None
 
     # Calibration service needs only the camera: confirm-existing/promote and drift monitoring
     # run without an LED (no-LED geometry is a supported primary path). LED is required only for
@@ -763,7 +802,22 @@ async def _lifespan_board(app: FastAPI, log):
     if app.state.capture is not None:
         from katrain.web.core.geometry_calibration_service import GeometryCalibrationService
 
+        persist_state = None
+        if app.state.hardware_vision_store is not None:
+            from katrain.web.core.hardware_vision_state import CameraProfile
+
+            def persist_state(lock, strategy, before_publish):
+                profile = CameraProfile(
+                    camera_device=capture_config.camera_device,
+                    width=capture_config.width,
+                    height=capture_config.height,
+                    strategy=strategy,
+                )
+                app.state.hardware_vision_store.commit(lock, profile, before_publish=before_publish)
+
         def promote_geometry(lock):
+            # Runtime/UI geometry-only notification. GeometryCalibrationService invokes
+            # this only after durably publishing geometry and verified manual exposure.
             app.state.geometry = lock
             vision_service = getattr(app.state, "vision", None)
             if vision_service is not None and hasattr(vision_service, "set_geometry"):
@@ -794,7 +848,8 @@ async def _lifespan_board(app: FastAPI, log):
         app.state.geometry_calibration = GeometryCalibrationService(
             led=app.state.led,
             capture=app.state.capture,
-            save_path=Path("~/.katrain/geometry_lock.npz").expanduser(),
+            save_path=None if persist_state is not None else Path("~/.katrain/geometry_lock.npz").expanduser(),
+            persist_state=persist_state,
             initial_lock=app.state.geometry,
             on_success=promote_geometry,
             on_degraded=invalidate_geometry,
@@ -1048,27 +1103,41 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             # 它没有别的猎物了，删掉；归属判断只留一处，就是下面这条。
             guard_session_reader(session, current_user, "play move")
 
+        gateway = getattr(app.state, "platform_gateway", None)
+        from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
+
+        # A completed engine session keeps its engine marker so retries remain
+        # terminal, while its active platform context has already been removed.
+        ended_engine_session = bool(
+            gateway
+            and is_platform_engine_session(session)
+            and not gateway.is_platform_game(request.session_id)
+            and session.katrain.game.end_result
+        )
+
         # Skip turn validation for research sessions
         # Enforce Multiplayer Turns (only if this is a multiplayer session)
         if session.mode != "research" and (session.player_b_id is not None or session.player_w_id is not None):
             # This is a multiplayer game - require authentication and turn check
             if current_user is None:
                 raise HTTPException(status_code=401, detail="Authentication required for multiplayer games")
-            state = session.katrain.get_state()
-            next_player = state["player_to_move"]
-            allowed_user_id = session.player_b_id if next_player == "B" else session.player_w_id
-            if current_user.id != allowed_user_id:
-                raise HTTPException(status_code=403, detail="Not your turn")
+            if ended_engine_session:
+                guard_session_reader(session, current_user, "play move")
+            else:
+                state = session.katrain.get_state()
+                next_player = state["player_to_move"]
+                allowed_user_id = session.player_b_id if next_player == "B" else session.player_w_id
+                if current_user.id != allowed_user_id:
+                    raise HTTPException(status_code=403, detail="Not your turn")
 
         coords = None if request.pass_move else request.coords
         if coords is None and not request.pass_move:
             raise HTTPException(status_code=400, detail="coords required unless pass_move is true")
 
         # Route through platform gateway for cross-platform games
-        gateway = getattr(app.state, "platform_gateway", None)
-        if gateway and gateway.is_platform_game(request.session_id):
-            from katrain.web.platforms.gateway import PlatformMoveRejectedError
-
+        # The active context is removed at engine-game termination, but this
+        # session must still reach the gateway rather than fall through locally.
+        if gateway and (gateway.is_platform_game(request.session_id) or is_platform_engine_session(session)):
             try:
                 user_id = current_user.id if current_user else 0
                 with persistent_analysis_activity(current_user, session, "move", "move analysis"):
@@ -1080,7 +1149,14 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.last_state = state
                     return {"session_id": session.session_id, "state": state}
             except PlatformMoveRejectedError as e:
-                raise HTTPException(status_code=409, detail=str(e))
+                if e.reason != "game_ended":
+                    raise HTTPException(status_code=409, detail=str(e))
+                # The submitted game has already ended. Return its authoritative
+                # terminal state instead of presenting a retryable move failure.
+                state = session.katrain.get_state()
+                session.last_state = state
+                await _record_platform_engine_game(session, app, current_user)
+                return {"session_id": session.session_id, "state": state}
 
         analysis_context = (
             persistent_analysis_activity(current_user, session, "move", "move analysis")
@@ -1093,14 +1169,29 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 before = _terminal_of(session)
                 # r1:非研究会话带 guard —— 这一手所在的局面线已结束 / 轮到 AI 就拒(409),双停第二手记终局事实。
                 # 研究会话照旧打谱,不冻结。
-                session.katrain("play", None if coords is None else tuple(coords), guard=session.mode != "research")
+                katrain = session.katrain
+                if getattr(session, "game_type", None) == "pvp_local" and not is_awaiting_count(katrain):
+                    # The server owns the clock verdict. A move arriving after the deadline must
+                    # not switch turns before `/api/timeout` can identify the player who expired.
+                    cn = katrain.game.current_node
+                    if katrain.clock_exhausted():
+                        katrain(
+                            "timeout",
+                            expected_game_id=katrain.game.game_id,
+                            expected_node_id=id(cn),
+                            color=cn.next_player,
+                        )
+                    else:
+                        katrain("play", None if coords is None else tuple(coords), guard=session.mode != "research")
+                else:
+                    katrain("play", None if coords is None else tuple(coords), guard=session.mode != "research")
                 end = _new_terminal(session, before)
                 state = session.katrain.get_state()
                 session.last_state = state
         # 自然终局(双停)不经过认输 / 数子 / 超时,在这里收尾:先补分出胜负,再落账(N22)。只收尾**这一手造出来的**终局(r1 M1)。
         # AI 线程下出双停第二手时走的是 `manager.on_game_ended`,两条路是同一个函数、会话内串行。
         # 收尾必须在 `analysis_context` 之外:`persistent_analysis_activity` 在 `activity.lock` 里 yield,那把锁不许跨 await。
-        if end is not None:
+        if end is not None and not state.get("awaiting_count"):
             await _finish_ended_game(session, app, current_user, end)
             state = session.katrain.get_state()
             session.last_state = state
@@ -1389,7 +1480,6 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     @app.post("/api/nav")
     def navigate(request: NavRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
-        guard_ai_ladder_ranked_session(session, "navigate")
         _guard_engine_move_pending(app, request.session_id)
         gateway = getattr(app.state, "platform_gateway", None)
         is_platform_game = gateway and gateway.is_platform_game(request.session_id)
@@ -1398,14 +1488,18 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         )
 
         with session.lock:
-            if is_native_multiplayer:
-                if not session.game_ended:
+            # A navigation request changes the authoritative current node. During any
+            # active game that would turn the next move into a branch, so this is not
+            # merely a kiosk-UI concern: every caller must wait for a terminal result.
+            # Research sessions deliberately remain navigable while open.
+            if session.mode == "play":
+                if not getattr(session, "game_ended", False):
                     current_state = session.katrain.get_state()
                     session.game_ended = bool(current_state.get("end_result"))
-                if not session.game_ended:
-                    raise HTTPException(status_code=409, detail="navigation disabled during active multiplayer game")
-                if current_user is None:
-                    raise HTTPException(status_code=401, detail="Authentication required for multiplayer navigation")
+                if not getattr(session, "game_ended", False):
+                    raise HTTPException(status_code=409, detail="navigation disabled during active game")
+            if is_native_multiplayer and current_user is None:
+                raise HTTPException(status_code=401, detail="Authentication required for multiplayer navigation")
 
         # Anonymous sessions are created without initial analysis and remain usable for
         # legacy/plain navigation. Authenticated navigation retains the ranked-analysis
@@ -1706,7 +1800,7 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             logging.getLogger("katrain_web").error(f"Could not queue ranked settlement for sync: {exc}")
             return False
 
-    async def _record_ai_game_locked(session, app, current_user, result):
+    async def _record_ai_game_locked(session, app, current_user, result, data_overrides=None):
         """Record a completed single-player/local game to user_games (remote-first via
         dispatcher, else local). source = play_local when both seats are human, else play_ai.
 
@@ -1719,6 +1813,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if getattr(session, "_recorded", False) is True:
             return
         try:
+            from katrain.core.lang import rank_key
+
             sgf_content = session.katrain.get_sgf()
             state = session.katrain.get_state()
             players_info = session.katrain.players_info
@@ -1726,28 +1822,39 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             # Determine player names
             player_black = players_info["B"].name or ""
             player_white = players_info["W"].name or ""
-            # Fill in username for the human side if still empty
-            if current_user:
+            game_type = getattr(session, "game_type", "free")
+            # Local two-player names are optional. Filling the logged-in user into both human
+            # seats would turn an unnamed game into a misleading same-name game.
+            if current_user and game_type != "pvp_local":
                 if players_info["B"].human and not player_black:
                     player_black = current_user.username
                 if players_info["W"].human and not player_white:
                     player_white = current_user.username
-            # Label AI side with calculated rank if name is still empty
+            # Name the AI side. The rank is NOT folded into the name — it rides its own
+            # field (see player_rank below), and the old `f"AI ({info.calculated_rank})"`
+            # printed the raw integer: 6 kyu is -5 on KaTrain's scale, so review cards
+            # read "AI (-5)".
             for bw, info in players_info.items():
                 if info.ai:
-                    name = info.name
-                    if not name and info.calculated_rank:
-                        name = f"AI ({info.calculated_rank})"
-                    elif not name:
-                        name = "AI"
+                    name = info.name or "AI"
                     if bw == "B":
                         player_black = player_black or name
                     else:
                         player_white = player_white or name
 
-            # Extract only serializable rank labels. Some session adapters omit SGF
-            # rank attributes entirely, and test doubles may synthesize attributes.
+            # Rank as a language-neutral "6k"/"3d" string; the UI localizes it to 级/段.
+            # `calculated_rank` is an INT, which the isinstance(str) filter below silently
+            # dropped — that is why white_rank was stored empty while the raw integer
+            # leaked out through the player name. SGF-imported ranks stay free text
+            # ("业5", "amateur 3 dan") and are passed through untouched.
+            # Some session adapters omit the SGF rank attribute entirely, and test doubles
+            # may synthesize attributes, so everything stays defensive.
             def player_rank(info):
+                numeric = getattr(info, "calculated_rank", None)
+                if isinstance(numeric, (int, float)) and not isinstance(numeric, bool):
+                    label = rank_key(numeric)
+                    if label:
+                        return label
                 for attribute in ("calculated_rank", "sgf_rank"):
                     value = getattr(info, attribute, None)
                     if isinstance(value, str) and value:
@@ -1762,7 +1869,6 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             move_count = len(state.get("history", []))
             komi = state.get("komi", 7.5)
             rules = state.get("ruleset", "chinese")
-            game_type = getattr(session, "game_type", "free")
 
             from datetime import datetime
 
@@ -1786,6 +1892,11 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 "game_type": game_type,
                 "game_date": game_date,
             }
+
+            # Platform engine sessions use placeholder player metadata; their
+            # caller supplies the authoritative source and seat names.
+            if data_overrides and game_type != "ai_ladder_ranked":
+                data.update(data_overrides)
 
             if game_type == "ai_ladder_ranked":
                 from katrain.web.core.ai_ladder_catalog import (
@@ -1980,21 +2091,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     pass
             logging.getLogger("katrain_web").error(f"Failed to record game: {e}")
 
-    async def _record_ai_game(session, app, current_user, result):
+    async def _record_ai_game(session, app, current_user, result, data_overrides=None):
         record_lock = getattr(session, "record_game_lock", None)
         if not isinstance(record_lock, asyncio.Lock):
             record_lock = asyncio.Lock()
             session.record_game_lock = record_lock
         async with record_lock:
-            await _record_ai_game_locked(session, app, current_user, result)
+            await _record_ai_game_locked(session, app, current_user, result, data_overrides=data_overrides)
 
     globals()["_RECORD_FN"] = _record_ai_game
 
     @app.post("/api/resign")
-    async def resign(request: ToggleAnalysisRequest, current_user: User = Depends(get_current_user_optional)):
+    async def resign(request: ResignRequest, current_user: User = Depends(get_current_user_optional)):
         session = _get_session_or_404(manager, request.session_id)
         _require_multiplayer_participant(session, current_user)
         guard_session_terminator(session, current_user, "resign")
+        local_pvp = getattr(session, "game_type", "free") == "pvp_local"
+        if local_pvp and request.color is None:
+            raise HTTPException(status_code=400, detail="color is required to resign a local two-player game")
+        if not local_pvp and request.color is not None:
+            raise HTTPException(status_code=400, detail="color is only accepted for local two-player games")
         ranked_ai = is_ai_ladder_ranked_session(session)
         if ranked_ai:
             guard_ai_ladder_ranked_owner(session, current_user, "resign")
@@ -2010,17 +2126,24 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         # Route through platform gateway for cross-platform games
         gateway = getattr(app.state, "platform_gateway", None)
-        platform_game = bool(not ranked_ai and gateway and gateway.is_platform_game(request.session_id))
+        from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
+
+        platform_game = bool(
+            not ranked_ai
+            and gateway
+            and (gateway.is_platform_game(request.session_id) or is_platform_engine_session(session))
+        )
         if platform_game:
-            from katrain.web.platforms.gateway import PlatformMoveRejectedError
-
             before = _terminal_of(session)
-
             try:
                 user_id = current_user.id if current_user else 0
                 await gateway.resign(request.session_id, user_id)
             except PlatformMoveRejectedError as e:
-                raise HTTPException(status_code=409, detail=str(e))
+                if e.reason != "game_ended":
+                    raise HTTPException(status_code=409, detail=str(e))
+                state = session.katrain.get_state()
+                session.last_state = state
+                return {"session_id": session.session_id, "state": state}
             except EndgameConflict as e:
                 # 远端认输已经成功,网关落回本地(`_local_resign`)时撞上本地早已结束的局:按空操作处理。
                 if e.reason != "already_ended":
@@ -2057,6 +2180,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                                 loser = "B"
                             elif current_user.id == session.player_w_id:
                                 loser = "W"
+                        if local_pvp:
+                            loser = request.color
                         if loser is None:
                             session.katrain("resign")
                         else:
@@ -2077,17 +2202,20 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if is_multiplayer and current_user and wrote:
             winner_id = session.player_w_id if current_user.id == session.player_b_id else session.player_b_id
             result = f"{'W' if winner_id == session.player_w_id else 'B'}+R"
-            try:
-                if not _is_guest_participant(app, session):
-                    app.state.game_repo.record_multiplayer_game(
-                        sgf_content=session.katrain.get_sgf(),
-                        result=result,
-                        game_type=getattr(session, "game_type", "free"),
-                        black_id=session.player_b_id,
-                        white_id=session.player_w_id,
-                    )
-            except Exception as e:
-                logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
+            if is_platform_engine_session(session):
+                await _record_platform_engine_game(session, app, current_user)
+            else:
+                try:
+                    if not _is_guest_participant(app, session):
+                        app.state.game_repo.record_multiplayer_game(
+                            sgf_content=session.katrain.get_sgf(),
+                            result=result,
+                            game_type=getattr(session, "game_type", "free"),
+                            black_id=session.player_b_id,
+                            white_id=session.player_w_id,
+                        )
+                except Exception as e:
+                    logging.getLogger("katrain_web").error(f"Failed to record game result: {e}")
 
             # 广播**不在** try 里:它告诉对面「这局结束了」,而 try 守的是落账。
             # 两件事捆在一个 try 里时,落账一失败对面就永远收不到终局 —— 盒上
@@ -2115,7 +2243,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         """
         node = session.katrain.game.current_node if node is None else node
         terminal = _terminal_of(session)
-        if terminal is not None and terminal.node is node:
+        awaiting_count = node is session.katrain.game.current_node and is_awaiting_count(session.katrain)
+        if terminal is not None and terminal.node is node and not awaiting_count:
             # 非原子预检,只为说对原因:等分析的这几秒里这一局被认输 / 超时了,分数多半也没补上,
             # 不预检的话会先撞上下面的 400「分析没算出来」。真正的判别在 `_commit_end_state` 里。
             raise EndgameConflict("already_ended")
@@ -2123,11 +2252,15 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         if score is None:
             raise HTTPException(
-                status_code=400, detail="Analysis not available yet. Please wait for KataGo analysis to complete."
+                status_code=400,
+                detail={
+                    "code": "analysis_pending",
+                    "message": "Analysis not available yet. Please wait for KataGo analysis to complete.",
+                },
             )
 
         result, winner_color = _count_result(score)
-        session.katrain._commit_end_state(result, node=node)
+        session.katrain._commit_end_state(result, node=node, fill_pending=awaiting_count)
         session.game_ended = True
 
         # Record multiplayer game result
@@ -2235,21 +2368,26 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
     async def request_count(request: CountRequest, current_user: User = Depends(get_current_user_optional)):
         """Request to end game by counting. For HvAI, completes immediately. For HvH, sends request to opponent."""
         session = _get_session_or_404(manager, request.session_id)
+        guard_session_terminator(session, current_user, "request-count")
         guard_ai_ladder_ranked_human_action(session, current_user, "request-count")
         await _guard_ai_ladder_cloud_active(app, session, current_user)
 
-        # Verify move count >= configured minimum
         state = session.katrain.get_state()
-        # 与前端读取同一缩放门槛；旧状态没有该字段时保留配置回退。
-        count_min_moves = state.get("count_min_moves")
-        if count_min_moves is None:
-            count_min_moves = session.katrain.config("game/count_min_moves", 100)
-        if len(state.get("history", [])) < count_min_moves:
-            raise HTTPException(status_code=400, detail=f"Cannot count before {count_min_moves} moves")
-
-        # Check if game is already over
-        if state.get("end_result"):
-            raise HTTPException(status_code=400, detail="Game is already over")
+        # Two passes in board mode deliberately pause at an explicit counting state. It bypasses
+        # the manual-count move threshold and the placeholder end_result is not a final result.
+        if not state.get("awaiting_count"):
+            count_min_moves = state.get("count_min_moves")
+            if count_min_moves is None:
+                count_min_moves = session.katrain.config("game/count_min_moves", 100)
+            if len(state.get("history", [])) < count_min_moves:
+                raise HTTPException(
+                    status_code=400,
+                    detail={"code": "below_min_moves", "message": f"Cannot count before {count_min_moves} moves"},
+                )
+            if state.get("end_result"):
+                raise HTTPException(
+                    status_code=400, detail={"code": "game_over", "message": "Game is already over"}
+                )
 
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
 
@@ -2370,23 +2508,40 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         # For multiplayer games, record the result
         is_multiplayer = session.player_b_id is not None or session.player_w_id is not None
         bound = request.expected_node_id is not None
+        local_pvp = getattr(session, "game_type", None) == "pvp_local"
         wrote = True
         with session.lock:
             guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
             before = _terminal_of(session)
             try:
-                if bound:
+                katrain = session.katrain
+                if local_pvp and (is_awaiting_count(katrain) or katrain.game.current_node.end_state):
+                    wrote = False
+                elif bound:
                     session.katrain(
                         "timeout",
                         expected_game_id=request.expected_game_id,
                         expected_node_id=request.expected_node_id,
                         color=request.color,
                     )
+                elif local_pvp:
+                    # Backward-compatible local caller: bind the verdict to the current turn here,
+                    # then run the same authoritative clock check as the newer kiosk client.
+                    cn = katrain.game.current_node
+                    katrain(
+                        "timeout",
+                        expected_game_id=katrain.game.game_id,
+                        expected_node_id=id(cn),
+                        color=cn.next_player,
+                    )
                 else:
                     session.katrain("timeout")
             except EndgameConflict as e:
                 # 被拒前先刷新 last_state:随后的 GET /api/state 给出此刻的局面与计时基准,前端据此重同步。
-                session.last_state = session.katrain.get_state()
+                state = session.katrain.get_state()
+                session.last_state = state
+                if local_pvp and e.reason == "clock_not_expired":
+                    raise HTTPException(status_code=409, detail={"code": "time_not_expired", "state": state})
                 if bound or e.reason != "already_ended":
                     raise
                 wrote = False
@@ -3062,6 +3217,20 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
         if strict_box:
             app.state.box_sso.register_socket(websocket)
         session.sockets.add(websocket)
+        # 棋盘已经在屏上了 ⇒ 钟可以起步(Fan 2026-09-20:「我要看到电子棋盘再开始计时」)。
+        #
+        # ⚠️ 只对**没有视觉的部署**成立。盒子上 `physicalPlay = !screenFallback && isVisionEnabled`
+        # (GamePage.tsx:280)—— `isVisionEnabled` 是设备能力不是单局设置,所以板上每一局都是实体盘局,
+        # 而 WS 永远比视觉绑定先到。在那里用 WS 起步,正是把 RK3562 实测那 69 秒又记回人类头上
+        # (10:36:10 建局 / 10:37:19 才绑上,中间用户在标定屏、碰不到棋盘)。
+        # 板上由 `api/v1/endpoints/vision.py` 的 bind_session 起步;屏幕降级的局由「第一手落下」
+        # 在 `interface.update_timer` 里兜底。
+        vision_service = getattr(app.state, "vision", None)
+        if vision_service is None or not vision_service.enabled:
+            if session.katrain.start_clock():
+                logging.getLogger("katrain_web").info(
+                    "Clock started for session %s (game websocket connected)", session_id
+                )
         try:
             state = session.last_state or session.katrain.get_state()
             state["sockets_count"] = len(session.sockets)
@@ -3415,6 +3584,46 @@ async def _vision_event_pump(app: FastAPI):
             await asyncio.sleep(1.0)
 
 
+def _session_owner(app: FastAPI, session):
+    """Resolve the session owner for terminal paths without an HTTP user."""
+    user_id = getattr(session, "user_id", None)
+    repo = getattr(app.state, "user_repo", None)
+    if user_id is None or repo is None:
+        return None
+    row = repo.get_user_by_id(user_id)
+    return User(**row) if row else None
+
+
+async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
+    """Record a completed platform engine game through the AI-game ledger."""
+    from katrain.web.platforms.gateway import is_platform_engine_session
+
+    if not is_platform_engine_session(session) or user is None:
+        return
+    result = session.katrain.game.end_result
+    if not result:
+        return
+    record = globals().get("_RECORD_FN")
+    if record is None:
+        return
+    players = session.katrain.players_info
+    names = {"B": players["B"].name or "", "W": players["W"].name or ""}
+    human_color = "W" if session.katrain.platform_engine_color == "B" else "B"
+    names[human_color] = user.username
+    await record(
+        session,
+        app,
+        user,
+        result,
+        data_overrides={"source": "play_ai", "player_black": names["B"], "player_white": names["W"]},
+    )
+
+
+async def _record_platform_engine_game_off_request(session, app: FastAPI) -> None:
+    """Record a terminal platform engine game for its session owner."""
+    await _record_platform_engine_game(session, app, _session_owner(app, session))
+
+
 def _apply_engine_recovery_outcome(
     app: FastAPI, manager, session_id: str, game_id: str, coords, reason: str, detail: str
 ) -> bool:
@@ -3461,7 +3670,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     move produces no game_update, so nothing else naturally slows the retry loop).
     """
     from katrain.vision.katrain_bridge import vision_move_to_katrain
-    from katrain.web.platforms.gateway import PlatformMoveRejectedError
+    from katrain.web.platforms.gateway import PlatformMoveRejectedError, is_platform_engine_session
 
     manager = app.state.session_manager
     tracker = getattr(app.state, "engine_recovery", None)
@@ -3479,7 +3688,21 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     def _rearm_detection() -> None:
         game_state = session.katrain.get_state()
         if game_state and "stones" in game_state:
-            vision.set_expected_from_stones(game_state["stones"])
+            vision.set_expected_from_stones(
+                game_state["stones"], expected_node_id=game_state.get("current_node_id")
+            )
+
+    # Re-arming after a TERMINAL refusal re-pushes the same frozen board, so the same
+    # leftover stone re-confirms and is refused again every consistency window, forever.
+    # Measured on RK3562 2026-09-20: 732 refusals over 26 minutes after one game ended.
+    # A non-terminal refusal (wrong turn, stale position) is transient and must still
+    # re-arm — the position really will change.
+    TERMINAL_REASONS = frozenset({"already_ended", "remote_ended"})
+
+    def _rearm_unless_terminal(exc: BaseException) -> None:
+        if isinstance(exc, EndgameConflict) and exc.reason in TERMINAL_REASONS:
+            return
+        _rearm_detection()
 
     if is_ai_ladder_ranked_session(session):
         move_player = "B" if move_data.color == 1 else "W"
@@ -3497,7 +3720,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
                 session.katrain("play", move.coords, guard=True, expected_player=move_player)
         except (HTTPException, ValueError, EndgameConflict) as exc:
             log.info("Ranked vision move rejected for session %s: %s", session_id, exc)
-            _rearm_detection()
+            _rearm_unless_terminal(exc)
             return 0.5
 
         log.info("Ranked vision move submitted: col=%d row=%d color=%d", move_data.col, move_data.row, move_data.color)
@@ -3522,13 +3745,15 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     move = vision_move_to_katrain(move_data.col, move_data.row, move_data.color, board_size=19)
     coords = (move.coords[0], move.coords[1])
     gateway = getattr(app.state, "platform_gateway", None)
-    if gateway and gateway.is_platform_game(session_id):
+    if gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session)):
         game_id = gateway.get_game_id(session_id) or ""
         try:
             await gateway.play_move(session_id, coords[0], coords[1], user_id=0)
         except PlatformMoveRejectedError as e:
             log.warning("Platform gateway rejected vision move: %s", e)
             rearm = _apply_engine_recovery_outcome(app, manager, session_id, game_id, coords, e.reason, str(e))
+            if e.reason == "game_ended":
+                await _record_platform_engine_game_off_request(session, app)
             if rearm:
                 _rearm_detection()
                 return 0.5
@@ -3558,7 +3783,7 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
                 session.katrain("play", move.coords, guard=True, expected_player=move_player)
         except EndgameConflict as exc:
             log.info("Vision move %s refused for session %s: %s", move_player, session_id, exc.reason)
-            _rearm_detection()
+            _rearm_unless_terminal(exc)
             return 0.5
 
     log.info(
@@ -3616,10 +3841,6 @@ def build_frontend(force: bool = False):
     import subprocess
     import sys
 
-    if not shutil.which("npm"):
-        logging.getLogger("katrain_web").warning("npm not found, skipping frontend build. UI might be outdated.")
-        return
-
     # Board/kiosk terminals serve the lean kiosk-2d bundle (no three.js, board-proxy
     # API base); the full server serves the complete build. Build/check the matching
     # output so board mode never falls back to the full bundle (which calls
@@ -3633,6 +3854,10 @@ def build_frontend(force: bool = False):
             "Frontend already built at %s, skipping (use --force-build to rebuild).",
             static_index.parent,
         )
+        return
+
+    if not shutil.which("npm"):
+        logging.getLogger("katrain_web").warning("npm not found, skipping frontend build. UI might be outdated.")
         return
 
     print(f"Building frontend ({out_dirname})...", flush=True)
@@ -3780,6 +4005,11 @@ def run_web():
         help="Manual exposure value (camera-specific; tuned on the box).",
     )
     parser.add_argument(
+        "--hardware-vision-dir",
+        default=None,
+        help="eMMC directory containing atomic geometry and camera-control generations.",
+    )
+    parser.add_argument(
         "--baipu-fiducial-mode",
         default=None,
         choices=["auto", "every-move", "off"],
@@ -3788,6 +4018,7 @@ def run_web():
         "Also settable via $KATRAIN_BAIPU_FIDUCIAL_MODE.",
     )
     args, _unknown = parser.parse_known_args()
+    settings._hardware_vision_dir = args.hardware_vision_dir
     if args.baipu_fiducial_mode:
         settings._baipu_fiducial_mode = args.baipu_fiducial_mode
 

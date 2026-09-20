@@ -142,6 +142,7 @@ describe('GamePage 硬件故障', () => {
     expect(screen.getByText('LED 未连接 · 不再亮灯引导')).toBeInTheDocument();
     // 落在那一格,不是随便找个地方冒出来的
     expect(document.querySelector('.gtoggles .ghint')).toHaveTextContent('LED 未连接');
+    expect(document.querySelector('.gtoggles .ghint')).not.toHaveTextContent('D4');
   });
 
   // 同一格还兼着「数子还差几手」。**故障优先** —— 差几手是常态提示,LED 掉了是坏了。

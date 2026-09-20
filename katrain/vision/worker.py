@@ -28,12 +28,19 @@ import numpy as np
 
 from katrain.vision.auto_exposure import ExposureController, meter_brightness
 from katrain.vision.board_state import EMPTY, BoardStateExtractor
-from katrain.vision.camera import CameraManager
+from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
 from katrain.vision.config import BoardConfig, CameraConfig
 from katrain.vision.enhance import enhance_for_inference
-from katrain.vision.gating import mean_detection_confidence, move_event, should_detect_moves, should_feed_sync
+from katrain.vision.gating import (
+    mean_detection_confidence,
+    move_event,
+    should_detect_moves,
+    should_feed_sync,
+    should_feed_sync_frame,
+)
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
+from katrain.vision.motion_roi import MotionRoiMaskCache
 from katrain.vision.move_detector import AmbiguousPromoter, MoveDetector, PendingConfidencePeak
 from katrain.vision.sync import SyncEventType, SyncState, SyncStateMachine
 from katrain.vision.temporal import FrameAverager
@@ -108,6 +115,11 @@ class _VisionWorkerLoop:
             warmup_seconds=config.get("camera_warmup_seconds", 2.0),
         )
         self._motion_filter = MotionFilter()
+        self._motion_mask_cache = MotionRoiMaskCache()
+        self._last_motion_log: float | None = None
+        self._last_motion_at: float | None = None
+        self._last_motion_roi_ratio: float | None = None
+        self._last_motion_full_ratio: float | None = None
         self._state_extractor = BoardStateExtractor(board_config)
         # Static-scene rolling average (weak-light noise ~4.7x down at n=8); reset on
         # motion / transform change / session reset so scene changes never ghost.
@@ -135,6 +147,12 @@ class _VisionWorkerLoop:
         self._lit_points: set[tuple[int, int]] = set()
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
+        # Confidence-adaptive confirmation: a stone we can already see clearly does not
+        # need the full frame count. Defaults mirror VisionServiceConfig; keep them in
+        # step with it (the literal here is the fallback when a caller builds a worker
+        # config by hand, e.g. tests and the CLI path).
+        self._fast_confirm_frames = int(self._config.get("move_confirm_fast_frames", 3))
+        self._fast_confirm_confidence = float(self._config.get("move_confirm_fast_confidence", 0.70))
         self._prev_conf_map: dict = {}  # previous frame's cell confidences (flicker tolerance)
         self._conf_peak = PendingConfidencePeak()  # ambiguous gate uses the window peak, not one frame
         self._ambig_last_emit: dict = {}  # cell -> frame_count of last ambiguous prompt (cooldown)
@@ -150,6 +168,46 @@ class _VisionWorkerLoop:
         self._prev_observed_board: np.ndarray | None = None  # For temporal smoothing
         self._last_stable_board: np.ndarray | None = None
         self._frame_count = 0  # Throttle for per-gate debug logging
+
+    def _reset_motion_region(self) -> None:
+        """Discard motion history whenever the BoardFinder coordinate region changes."""
+        self._motion_mask_cache.invalidate()
+        self._motion_filter.reset()
+
+    def _motion_mask(self, frame: np.ndarray) -> np.ndarray | None:
+        """Return a raw-frame board mask only while an uncalibrated pose is locked."""
+        if not self._board_locked or self._board_finder is None:
+            return None
+        camera_config = getattr(self._board_finder, "camera_config", None)
+        if camera_config is not None and getattr(camera_config, "is_calibrated", False):
+            return None
+        corners = getattr(self._board_finder, "pre_corner_point", None)
+        if corners is None or len(corners) != 4:
+            return None
+        return self._motion_mask_cache.get(frame.shape, corners, (None, None))
+
+    def _motion_diagnostic(self) -> str:
+        """Format the latest region and full-frame motion ratios for periodic logs."""
+        full = "N/A" if self._last_motion_full_ratio is None else f"{self._last_motion_full_ratio:.3f}"
+        if self._last_motion_roi_ratio is None:
+            return f"full:N/A/full:{full}"
+        return f"roi:{self._last_motion_roi_ratio:.3f}/full:{full}"
+
+    def _motion_is_stable(self, frame: np.ndarray) -> bool:
+        """Apply hybrid motion gating and reset averaging while the scene changes."""
+        stable, roi_ratio, full_ratio = self._motion_filter.is_stable_with_regions(frame, self._motion_mask(frame))
+        self._last_motion_roi_ratio = roi_ratio
+        self._last_motion_full_ratio = full_ratio
+        if stable:
+            return True
+
+        self._averager.reset()
+        now = time.monotonic()
+        self._last_motion_at = now
+        if self._last_motion_log is None or now - self._last_motion_log >= 5.0:
+            logger.info("motion rejected: %s", self._motion_diagnostic())
+            self._last_motion_log = now
+        return False
 
     def _init_inference(self) -> None:
         """Load inference backend and board finder (heavy imports)."""
@@ -216,18 +274,7 @@ class _VisionWorkerLoop:
                 if self._frame_count % 30 == 0:
                     logger.info("camera read_frame returned None (frame #%d)", self._frame_count)
             else:
-                stable_ok, motion_ratio = self._motion_filter.is_stable_with_ratio(frame)
-                if not stable_ok:
-                    # Motion: the scene is changing — restart the average so pre-move
-                    # frames never blend with the post-move board.
-                    self._averager.reset()
-                if not stable_ok and self._frame_count % 30 == 0:
-                    logger.info(
-                        "motion filter rejected frame #%d (changed_ratio=%.3f, threshold=%.3f)",
-                        self._frame_count,
-                        motion_ratio,
-                        self._motion_filter.change_ratio_threshold,
-                    )
+                stable_ok = self._motion_is_stable(frame)
 
             if stable_ok:
                 # Board detection + perspective transform
@@ -311,10 +358,11 @@ class _VisionWorkerLoop:
                     mean_confidence = mean_detection_confidence(detections)
                     if self._frame_count % 30 == 0:
                         logger.info(
-                            "detection ok: %d stones, mean_conf=%.2f, %s board=%.0fms + yolo=%.0fms",
+                            "detection ok: %d stones, mean_conf=%.2f, %s motion=%s board=%.0fms + yolo=%.0fms",
                             len(detections),
                             mean_confidence,
                             self._brightness_log(),
+                            self._motion_diagnostic(),
                             board_finder_ms,
                             yolo_ms,
                         )
@@ -332,7 +380,26 @@ class _VisionWorkerLoop:
                         # a leftover on a captured point is a "remove this", not a placement.
                         # Passing it here makes that protection survive the SET_EXPECTED_BOARD
                         # baseline clobber (the resync re-injection window — review wzceinjdc).
-                        move_result = self._move_detector.detect_new_move(self._last_stable_board, ignore_cells=masked)
+                        # Confidence-adaptive confirmation. Waiting out the frame count IS
+                        # the recognition latency the user feels — nothing is computed
+                        # during it — and at ~2.3 fps the full 5 frames are 1.73s. A stone
+                        # the detector can already see clearly does not need that proof:
+                        # measured over a real 117-move game, 80% of moves peak at >=0.70,
+                        # and those confirm in 3 frames instead of 5. The peak is the
+                        # window maximum (a marginal stone's per-frame value oscillates),
+                        # and it is re-read every frame, so a candidate that decays back
+                        # below the line loses the fast path instead of keeping it.
+                        pending_peak = self._conf_peak.peak_for(self._move_detector.pending_move)
+                        fast = pending_peak is not None and pending_peak >= self._fast_confirm_confidence
+                        candidate_sightings = self._move_detector.count
+                        selected_required_frames = (
+                            self._fast_confirm_frames if fast else self._move_detector.consistency_frames
+                        )
+                        move_result = self._move_detector.detect_new_move(
+                            self._last_stable_board,
+                            ignore_cells=masked,
+                            required_frames=self._fast_confirm_frames if fast else None,
+                        )
                         if move_result is not None:
                             row, col, color = move_result
                             if not self._bound:
@@ -363,11 +430,14 @@ class _VisionWorkerLoop:
                                     ):
                                         self._ambig_last_emit[(row, col)] = self._frame_count
                                         logger.info(
-                                            "move at (%d,%d) confirmed but peak conf %.2f < %.2f — ambiguous prompt",
+                                            "move at (%d,%d) confirmed but peak conf %.2f < %.2f — ambiguous prompt; "
+                                            "required_frames=%d observed_frames=%d",
                                             row,
                                             col,
                                             conf,
                                             self._ambiguous_confidence,
+                                            selected_required_frames,
+                                            candidate_sightings + 1,
                                         )
                                         self._event_queue.put(
                                             {
@@ -377,11 +447,31 @@ class _VisionWorkerLoop:
                                                     "col": int(col),
                                                     "color": int(color),
                                                     "confidence": round(float(conf), 3),
+                                                    # Exactly 0.0 means NO detection box backed this
+                                                    # cell in either frame (see the comment above):
+                                                    # the stone sits between intersections and got
+                                                    # spill-assigned, or it rounded onto an occupied
+                                                    # point. A merely weak stone reads 0.30-0.41.
+                                                    # The two need different words on screen —
+                                                    # "confirm this move?" is useless advice when the
+                                                    # fix is to nudge the stone onto the line — so the
+                                                    # distinction the detector already knows is
+                                                    # published rather than left for the UI to guess.
+                                                    "unbacked": conf <= 0.0,
                                                 },
                                             }
                                         )
                                 else:
-                                    logger.info("move confirmed: (%d,%d) color=%d peak_conf=%.2f", row, col, color, conf)
+                                    logger.info(
+                                        "move confirmed: (%d,%d) color=%d peak_conf=%.2f "
+                                        "required_frames=%d observed_frames=%d",
+                                        row,
+                                        col,
+                                        color,
+                                        conf,
+                                        selected_required_frames,
+                                        candidate_sightings + 1,
+                                    )
                                     self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
@@ -423,6 +513,7 @@ class _VisionWorkerLoop:
                         self._board_locked = False
                         self._board_finder.is_first = True
                         self._consecutive_failures = 0
+                        self._reset_motion_region()
                         self._averager.reset()  # transform will change after re-detection
 
                     with self._overlay_lock:
@@ -435,7 +526,9 @@ class _VisionWorkerLoop:
                         }
 
             # Sync state machine update
-            if should_feed_sync(self._bound, self._monitor, self._paused):
+            if should_feed_sync(self._bound, self._monitor, self._paused) and should_feed_sync_frame(
+                frame is not None, stable_ok
+            ):
                 events = self._sync.update(
                     observed_board=observed_board,
                     mean_confidence=mean_confidence,
@@ -530,7 +623,7 @@ class _VisionWorkerLoop:
             self._ae_advisory = True
             logger.info("AE: camera has no runtime controls — advisory mode only")
             return
-        request(exposure=new_exp, auto_exposure=0.25)
+        request(exposure=new_exp, auto_exposure=CAMERA_AUTO_EXPOSURE_MANUAL)
         self._averager.reset()  # the brightness step must not blend into the average
         logger.info("AE: median=%.0f clip=%.1f%% -> exposure %.0f", stats.median, stats.clip_frac * 100, new_exp)
 
@@ -551,6 +644,7 @@ class _VisionWorkerLoop:
             elif cmd.action == CommandType.UNBIND:
                 self._bound = False
                 self._sync = SyncStateMachine()  # Reset
+                self._reset_motion_region()
                 self._prev_observed_board = None  # drop voting state across sessions (parity
                 self._last_stable_board = None  # with worker_inprocess — review M2)
                 self._prev_conf_map = {}
@@ -559,6 +653,7 @@ class _VisionWorkerLoop:
                 self._promoter.reset()
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._board_locked = True
+                self._reset_motion_region()
                 logger.info("Board pose locked — reusing transform for subsequent frames")
                 self._sync.confirm_pose_lock()
                 self._averager.reset()  # warp switches to the frozen transform
@@ -568,8 +663,11 @@ class _VisionWorkerLoop:
                 baseline_ok = self._move_detector.prev_board is not None and np.array_equal(
                     self._move_detector.prev_board, board
                 )
+                self._sync.set_expected_board(
+                    board,
+                    expected_node_id=cmd.data.get("expected_node_id"),
+                )
                 if not (unchanged and baseline_ok):
-                    self._sync.set_expected_board(board)
                     self._move_detector.force_sync(board)
                     self._expected_np = board
                 # else: analysis-stream repeat (game_updates arrive every ~0.25s while the
@@ -584,6 +682,7 @@ class _VisionWorkerLoop:
             elif cmd.action == CommandType.RESET_SYNC:
                 self._board_locked = False
                 self._board_finder.is_first = True  # Reset corner baseline
+                self._reset_motion_region()
                 expected = cmd.data.get("expected") if cmd.data else None
                 if expected is not None:
                     # Trust-digital recovery (resync): sync compares against the digital
@@ -735,6 +834,7 @@ class _VisionWorkerLoop:
             ),
             sync_state=self._sync.state.value,
             detected_board=self._last_detected_board,
+            last_motion_at=self._last_motion_at,
             camera_ready=bool(self._camera.is_connected),
             geometry_ready=self._board_finder.last_transform_matrix is not None,
             model_ready=self._detector is not None,

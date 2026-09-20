@@ -18,7 +18,6 @@ const move = (over: Partial<ReportTaskMove>): ReportTaskMove => ({
   actual_move: null, actual_player: null, delta_score: null, delta_winrate: null,
   ...over,
 });
-
 const cands = (list: { score_lead: number; prior: number }[]) =>
   list.map((c, i) => ({
     move: `M${i}`, visits: 100, winrate: 0.5, prior: c.prior, pv: [],
@@ -177,4 +176,3 @@ describe('winrateSeries —— 曲线的点', () => {
     expect(winrateSeries(partial).map((p) => p.moveNumber)).toEqual([0, 1, 3]);
   });
 });
-

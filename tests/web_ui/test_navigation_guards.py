@@ -105,8 +105,50 @@ async def test_active_native_multiplayer_navigation_is_blocked(authenticated):
         )
 
     assert response.status_code == 409
-    assert response.json()["detail"] == "navigation disabled during active multiplayer game"
+    assert response.json()["detail"] == "navigation disabled during active game"
     session.katrain.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("game_type", ["free", "ai_ladder_ranked", "pvp_local", "pvp_online", "platform_engine"])
+async def test_active_play_session_navigation_is_blocked_for_every_game_type(game_type):
+    app = create_app(enable_engine=False)
+    session = _make_session()
+    session.game_type = game_type
+    session.katrain.game_type = game_type
+    app.state.session_manager._sessions[session.session_id] = session
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/nav",
+            json={"session_id": session.session_id, "node_id": None},
+        )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "navigation disabled during active game"
+    session.katrain.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("game_type", ["free", "ai_ladder_ranked", "pvp_local", "pvp_online", "platform_engine"])
+async def test_terminal_play_session_navigation_is_available_for_every_game_type(game_type):
+    app = create_app(enable_engine=False)
+    session = _make_session()
+    session.user_id = 1
+    session.game_type = game_type
+    session.katrain.game_type = game_type
+    session.katrain.get_state.return_value = {"end_result": "B+R", "history": []}
+    app.state.session_manager._sessions[session.session_id] = session
+    app.dependency_overrides[get_current_user_optional] = lambda: User(id=1, username="owner")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.post(
+            "/api/nav",
+            json={"session_id": session.session_id, "node_id": None},
+        )
+
+    assert response.status_code == 200
+    session.katrain.assert_any_call("nav", None)
 
 
 @pytest.mark.asyncio
@@ -167,7 +209,7 @@ async def test_terminal_native_multiplayer_navigation_uses_latched_game_end():
 
 
 @pytest.mark.asyncio
-async def test_non_pending_platform_session_with_virtual_player_ids_can_navigate():
+async def test_active_platform_session_with_virtual_player_ids_cannot_navigate():
     app = create_app(enable_engine=False)
     session = _make_session()
     session.player_b_id = -1
@@ -183,16 +225,16 @@ async def test_non_pending_platform_session_with_virtual_player_ids_can_navigate
             json={"session_id": session.session_id, "node_id": None},
         )
 
-    assert response.status_code == 200
-    session.katrain.assert_any_call("nav", None)
+    assert response.status_code == 409
+    assert response.json()["detail"] == "navigation disabled during active game"
+    session.katrain.assert_not_called()
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("mode", ["play", "research"])
-async def test_plain_non_multiplayer_session_can_navigate(mode):
+async def test_research_session_can_navigate_while_its_analysis_position_is_open():
     app = create_app(enable_engine=False)
     session = _make_session()
-    session.mode = mode
+    session.mode = "research"
     app.state.session_manager._sessions[session.session_id] = session
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

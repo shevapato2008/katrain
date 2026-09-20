@@ -3,6 +3,12 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import GameControlPanel from './GameControlPanel';
 import type { GameState } from '../../../api';
 
+const soundMocks = vi.hoisted(() => ({ play: vi.fn(), stop: vi.fn() }));
+
+vi.mock('../../../hooks/useSound', () => ({
+  useSound: () => ({ play: soundMocks.play, stop: soundMocks.stop }),
+}));
+
 /** 对弈·AI/升降级赛道的右栏行为测试。只证 DOM 结构与文案;几何在 tests/kiosk-screen-05-play-ai.spec.ts。 */
 
 const seat = (type: string, name: string, over: Record<string, number> = {}) => ({
@@ -45,8 +51,93 @@ const clockOf = (color: 'B' | 'W') => {
 };
 
 describe('A18 · 玩家卡时钟', () => {
-  beforeEach(() => { vi.useFakeTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+    soundMocks.play.mockClear();
+    soundMocks.stop.mockClear();
+  });
   afterEach(() => { vi.useRealTimers(); });
+
+  /**
+   * ⚠️ 这条用例的**上一版断言的是缺陷本身**:它要求窗口内每秒响一次、一个窗口 5 次调用。
+   * 而 `katrain/sounds/countdownbeep.wav` 实测是 **5.000 秒的整轨,内含 5 声(在 0/1/2/3/4s)**
+   * —— 桌面版 `gui/controlspanel.py:242-247` 就是进窗口放一次、离开 `stop_sound`。
+   * 按秒重放 ⇒ 5 份重叠,峰值落在 T−1 秒、一直响到 T+3 秒,而卡片在 T 已写「0:00 超时」。
+   * useSound 在这里是 mock 的,**它永远看不见资产是 5 秒还是 0.4 秒** —— 对两种资产给出同样的绿,
+   * 所以这条用例守的只能是「一个窗口放几次」这个可判定的量。
+   */
+  test('非本地对局:整个读秒窗口只放一次整轨,离开窗口即停,下一周期重新触发', () => {
+    panel(base({
+      timer: {
+        ...timer({ main_time: 0, byo_length: 30, byo_periods: 3 }),
+        current_node_time_used: 25,
+        settings: { ...timer({ main_time: 0, byo_length: 30, byo_periods: 3 }).settings, sound: true },
+      },
+    }));
+
+    // 进入窗口(byoLeft = 30 - 25 = 5)即放一次整轨。
+    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep']]);
+
+    // 窗口内走完 5→1 秒,**不得再放**。
+    for (let i = 0; i < 5; i += 1) {
+      act(() => { vi.advanceTimersByTime(1_000); });
+      expect(soundMocks.play).toHaveBeenCalledTimes(1);
+    }
+
+    // 这一期用完 ⇒ 离开窗口,剩余的几声必须当场停掉。
+    expect(soundMocks.stop).toHaveBeenCalledWith('countdownbeep');
+
+    // 下一期重新走到剩 5 秒时再放一次(共 2 次)。
+    act(() => { vi.advanceTimersByTime(25_000); });
+    expect(soundMocks.play).toHaveBeenCalledTimes(2);
+    expect(soundMocks.play).toHaveBeenLastCalledWith('countdownbeep');
+  });
+
+  test.each([
+    ['本局关闭声音', base({
+      timer: timer({ main_time: 0, byo_length: 5, byo_periods: 3 }),
+    })],
+    ['计时暂停', base({
+      timer: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }), paused: true,
+        settings: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }).settings, sound: true } },
+    })],
+    ['仍在主时间', base({
+      timer: { ...timer({ main_time: 1, byo_length: 5, byo_periods: 3 }),
+        settings: { ...timer({ main_time: 1, byo_length: 5, byo_periods: 3 }).settings, sound: true } },
+    })],
+    ['回看非叶子局面', base({
+      children: [['W', [3, 3]]],
+      timer: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }),
+        settings: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }).settings, sound: true } },
+    })],
+  ])('%s不播放 kiosk SeatRow 读秒音', (_name, gameState) => {
+    panel(gameState);
+    act(() => { vi.advanceTimersByTime(1_000); });
+    expect(soundMocks.play).not.toHaveBeenCalled();
+  });
+
+  test('仅读秒中的当前席位播放，非当前席位不重复播放', () => {
+    panel(base({
+      timer: {
+        ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }),
+        settings: { ...timer({ main_time: 0, byo_length: 5, byo_periods: 3 }).settings, sound: true },
+      },
+    }));
+    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep']]);
+  });
+
+  test('本地双人 PlayerRow 路径也播放最后五秒读秒音', () => {
+    panel(base({
+      game_type: 'pvp_local',
+      timer: {
+        ...timer({ main_time: 0, byo_length: 30, byo_periods: 3 }),
+        current_node_time_used: 25,
+        settings: { ...timer({ main_time: 0, byo_length: 30, byo_periods: 3 }).settings, sound: true },
+      },
+    }));
+
+    expect(soundMocks.play.mock.calls).toEqual([['countdownbeep']]);
+  });
 
   test('主时间阶段:两张卡都写剩余,只有轮到的一方在走', () => {
     panel(base({

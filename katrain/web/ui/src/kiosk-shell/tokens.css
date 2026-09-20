@@ -653,11 +653,23 @@
   height: var(--pagebar-iconbtn);
   display: inline-grid;
   place-items: center;
+  padding: 0;
+  line-height: 0;
   border: 1px solid var(--hair);
   border-radius: var(--pagebar-iconbtn-radius);
   background: var(--raise);
   color: var(--text);
   cursor: pointer;
+}
+.kiosk-pagebar__iconbtn--labeled {
+  width: auto;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  line-height: 1;
 }
 .kiosk-pagebar__iconbtn svg { width: 18px; height: 18px; }
 

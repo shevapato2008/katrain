@@ -19,6 +19,7 @@
     "theme:normal",
     "theme:red-green-colourblind"
   ],
+  "awaiting_count": false,
   "board_size": [
     19,
     19

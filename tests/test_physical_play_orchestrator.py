@@ -54,16 +54,19 @@ class FakeVision:
     def __init__(self):
         self.detected = np.zeros((19, 19), dtype=int).tolist()
         self.expected_pushes = []
+        self.expected_node_ids = []
         self.paused = False
         self.lit = []
         self.calls = []  # ordered ("pause"|"resume") sequence — dup-call detector
         self.reset_sync_calls = []  # Task 8: resync() call tracker
+        self.last_motion_at = None
 
     def get_detected_board(self):
         return self.detected
 
-    def set_expected_from_stones(self, stones, board_size=19):
+    def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
         self.expected_pushes.append(stones)
+        self.expected_node_ids.append(expected_node_id)
 
     def pause_detection(self):
         self.paused = True
@@ -88,8 +91,13 @@ class FakeManager:
         self.broadcasts.append((sid, payload))
 
 
-def state(stones, end_result=None):
-    return {"stones": stones, "board_size": [19, 19], "end_result": end_result}
+def state(stones, end_result=None, current_node_id=1001):
+    return {
+        "stones": stones,
+        "board_size": [19, 19],
+        "end_result": end_result,
+        "current_node_id": current_node_id,
+    }
 
 
 def _orch(clock=lambda: 0.0, **cfg):
@@ -134,8 +142,9 @@ class TestTick:
 
     def test_expected_pushed_to_vision_on_every_state(self):
         orch, _, vision, _ = _orch()
-        orch.on_game_state(state([["B", [3, 15], None, 1]]))
+        orch.on_game_state(state([["B", [3, 15], None, 1]], current_node_id=77))
         assert len(vision.expected_pushes) == 1  # AI 落子后立即 force_sync 基线
+        assert vision.expected_node_ids == [77]
 
 
 class TestReminder:
@@ -197,6 +206,38 @@ class TestLedReassert:
 
 
 class TestHint:
+    def test_board_motion_ends_hint_without_waiting_for_timeout(self):
+        orch, led, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, hint_timeout_s=30.0)
+
+        async def run():
+            vision.last_motion_at = time.monotonic() - 1  # pre-hint motion is irrelevant
+            orch.show_hint([(3, 3)])
+            await asyncio.sleep(0.03)
+            assert vision.paused is True
+            vision.last_motion_at = time.monotonic()  # the hand enters the board
+            await asyncio.sleep(0.03)
+            assert vision.paused is False
+            assert vision.lit == []
+            assert led.calls[-1] == ("clear",)
+            assert "hint" not in orch._pause_reasons
+
+        asyncio.run(run())
+
+    def test_replaced_hint_survives_cancelled_previous_blink(self):
+        orch, _, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, hint_timeout_s=30.0)
+
+        async def run():
+            orch.show_hint([(3, 3)])
+            await asyncio.sleep(0)
+            orch.show_hint([(15, 15)])
+            await asyncio.sleep(0)
+            assert vision.paused is True
+            assert vision.lit == [(15, 15)]
+            assert "hint" in orch._pause_reasons
+            orch.dismiss_hint()
+
+        asyncio.run(run())
+
     def test_show_hint_suspends_and_blinks_then_restores(self):
         # 真实时钟：blink 的 deadline 用注入 clock 判定，固定 0.0 的假钟永不超时
         orch, led, vision, _ = _orch(clock=time.monotonic, hint_blink_period_s=0.02, hint_timeout_s=0.05)
@@ -219,6 +260,8 @@ class TestHint:
             await asyncio.sleep(0.03)
             orch.dismiss_hint()
             assert vision.paused is False
+            assert vision.lit == []
+            assert led.calls[-1] == ("clear",)
 
         asyncio.run(run())
 
@@ -661,6 +704,102 @@ class TestAwaitingRemoval:
         assert PhysicalPlayOrchestrator.PAUSE_REASON_AWAITING_REMOVAL not in orch._pause_reasons
 
 
+class TestRecoveryReleasedOnGameEnd:
+    @staticmethod
+    def _lit(**cfg):
+        orch, led, vision, _ = _orch(**cfg)
+        orch.on_game_state(state([["B", [3, 15], None, 1]]))
+        orch._tick_once()
+        assert led.calls[-1] == ("set_points", [{"row": 3, "col": 3, "color": "black"}])
+        return orch, led, vision
+
+    def test_run_loop_releases_engine_error_and_clears_lamps_when_the_game_ends(self):
+        orch, led, vision = self._lit(tick_interval_s=0.01)
+        orch.enter_engine_error((3, 15), "tok-1")
+        orch.on_game_state(state([["B", [3, 15], None, 1]], end_result="W+R"))
+
+        async def run():
+            task = asyncio.create_task(orch._run())
+            loop = asyncio.get_running_loop()
+            deadline = loop.time() + 1.0
+            while orch._pause_reasons and loop.time() < deadline:
+                await asyncio.sleep(0.01)
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+
+        asyncio.run(run())
+
+        # 终局后**只剩** game_over:engine_error/awaiting_removal/lag 都已释放,
+        # 而 game_over 是有意留下的 —— 它就是「终局后停止比对」那道闸
+        # (PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER)。
+        assert orch._pause_reasons == {PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER}
+        assert vision.paused is True   # 比对已停,这正是目的
+        assert led.calls[-1] == ("clear",)
+
+    def test_awaiting_removal_is_released_when_the_game_ends(self):
+        orch, led, vision = self._lit()
+        orch.enter_engine_error((3, 15), "tok-1")
+        orch.enter_awaiting_removal((3, 15))
+        orch.on_game_state(state([["B", [3, 15], None, 1]], end_result="W+R"))
+
+        assert orch._release_recovery_on_game_end() is True
+        assert orch._awaiting_removal_context is None
+        # 原来这里剩的是 lag(终局后实体盘还「欠着」)。终局即停止比对之后,lag 在
+        # on_game_state 里一并释放 —— 一局结束就不欠任何落子了,而且清 lag 的 `_tick_once`
+        # 已被 game_over 的 _suspended 挡住,不在那里清就会永远留着。
+        assert orch._pause_reasons == {PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER}
+        assert led.calls[-1] == ("clear",)
+
+    def test_nothing_is_released_while_the_game_is_still_running(self):
+        orch, led, _ = self._lit()
+        orch.enter_engine_error((3, 15), "tok-1")
+
+        assert orch._release_recovery_on_game_end() is False
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_ENGINE_ERROR in orch._pause_reasons
+        assert led.calls[-1] == ("set_points", [{"row": 3, "col": 3, "color": "black"}])
+
+
 def led_calls_for(orch):
     """Last non-empty set_points batch actually applied (helper for the tests above)."""
     return orch._last_points or []
+
+
+class TestGameOverStopsComparing:
+    """终局即停止比对(Fan 2026-09-20 裁定)。
+
+    RK3562 实测那一局终局后视觉仍绑着 26 分 07 秒:732 次落子被拒、全 session 244 次
+    「盘面与对局不一致」里有 191 次出在这一段,而那一段的平均检测置信度(0.784)比对局中
+    (0.738)**还高** —— 变量是绑定状态,不是光照。
+    """
+
+    def test_a_finished_game_pauses_comparison(self):
+        orch, _, vision, _ = _orch()
+        orch.on_game_state(state([["B", [3, 15], None, 1]]))
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER not in orch._pause_reasons
+
+        orch.on_game_state(state([["B", [3, 15], None, 1]], end_result="W+R"))
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER in orch._pause_reasons
+        assert vision.paused is True
+
+    def test_counting_is_not_a_finished_game(self):
+        """两次虚手之后 `end_result` 已经写上,而 `awaiting_count` 还是真、盘面仍然活着。
+
+        只看 `end_result` 就停,会让一颗阳光鬼子在数子没完时把视觉杀掉。
+        """
+        orch, _, vision, _ = _orch()
+        s = state([["B", [3, 15], None, 1]], end_result="W+R")
+        s["awaiting_count"] = True
+        orch.on_game_state(s)
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER not in orch._pause_reasons
+        assert vision.paused is False
+
+    def test_undo_after_a_result_brings_the_board_back(self):
+        """终局后仍允许悔棋(GamePage 只在升降级局里过滤 undo)。用 pause 而不是 unbind
+        的理由就在这里:unbind 是单向门,悔棋回到可下局面后实体盘会一直是死的。"""
+        orch, _, vision, _ = _orch()
+        orch.on_game_state(state([["B", [3, 15], None, 1]], end_result="W+R"))
+        assert vision.paused is True
+
+        orch.on_game_state(state([["B", [3, 15], None, 1]], end_result=None))
+        assert PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER not in orch._pause_reasons
+        assert vision.paused is False

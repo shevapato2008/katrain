@@ -1,42 +1,72 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
+import { MemoryRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
-import { API, type GameState } from '../../api';
+import { API, ApiError, type GameState } from '../../api';
 import GamePage, { deriveAiTurnState } from './GamePage';
 import { getCurrentKioskActivityStorage, __resetKioskActivityStorageForTests } from '../storage/kioskActivityStorage';
 
 // --- Mocks -----------------------------------------------------------------
 
+const { mockPlaySound } = vi.hoisted(() => ({ mockPlaySound: vi.fn() }));
+vi.mock('../../hooks/useSound', () => ({ useSound: () => ({ play: mockPlaySound, stop: vi.fn() }) }));
+
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'mock-token', isAuthenticated: true, user: { id: 1, username: 'test' }, login: vi.fn(), logout: vi.fn() }),
 }));
 
-interface MockBoardProps { analysisToggles?: Record<string, boolean>; playerColor?: 'B' | 'W' | null }
+interface MockBoardProps {
+  analysisToggles?: Record<string, boolean>;
+  playerColor?: 'B' | 'W' | null;
+  onPaintedNode?: (nodeId: number) => void;
+}
 const { capturedBoardProps } = vi.hoisted(() => ({
-  capturedBoardProps: { current: null as { analysisToggles?: Record<string, boolean> } | null },
+  capturedBoardProps: { current: null as MockBoardProps | null },
 }));
 vi.mock('../../components/Board', () => ({
   default: (props: MockBoardProps) => { capturedBoardProps.current = props; return <div data-testid="board">Board</div>; },
 }));
 
 // Exposes onAction so state-D (resign) tests can drive the real GamePage resign flow
-// without a full GameControlPanel render.
-interface MockControlPanelProps { onAction: (action: string) => void }
+// without a full GameControlPanel render. `onTimeExpired` is captured (S3-5: real edge-trigger
+// logic lives in GameControlPanel itself, already covered by GameControlPanel.clock.test.tsx —
+// here we only need to prove GamePage wires/omits the prop and reacts to it correctly) AND
+// exposed via a button so tests can fire it like GameControlPanel's real edge-trigger effect would.
+interface MockControlPanelProps {
+  onAction: (action: string) => void;
+  onTimeExpired?: () => void;
+  statusSlot?: React.ReactNode;
+  physicalStatus?: string | null;
+}
+const { capturedControlPanelProps } = vi.hoisted(() => ({
+  capturedControlPanelProps: { current: null as MockControlPanelProps | null },
+}));
 vi.mock('../components/game/GameControlPanel', () => ({
-  default: (props: MockControlPanelProps) => (
-    <div data-testid="game-control-panel">
-      <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
-    </div>
-  ),
+  default: (props: MockControlPanelProps) => {
+    capturedControlPanelProps.current = props;
+    return (
+      <div data-testid="game-control-panel">
+        {/* F4: 状态条现在由 GamePage 经 statusSlot 传入、GameControlPanel 渲染 —— mock 照实转发,
+            否则「auto-count-status」相关断言对 GamePage 完全不渲染它这个回归免疫。 */}
+        {props.statusSlot}
+        <i className="ghint">{props.physicalStatus}</i>
+        <button onClick={() => props.onAction('resign')}>MOCK_RESIGN</button>
+        <button onClick={() => props.onAction('count')}>MOCK_COUNT</button>
+        <button onClick={() => props.onTimeExpired?.()}>MOCK_TIMEOUT</button>
+      </div>
+    );
+  },
 }));
 
-const { writeActiveSession, clearActiveSession } = vi.hoisted(() => ({
+const { writeActiveSession, clearActiveSession, readActiveSession } = vi.hoisted(() => ({
   writeActiveSession: vi.fn(),
   clearActiveSession: vi.fn(),
+  readActiveSession: vi.fn(),
 }));
-vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSession }));
+// `readSessionPlayOnBoard`(泳道 B)从活动会话读开局那一刻定下的 onBoard;这里桩成「没有活动会话」,
+// 走回落到偏好的那一支 —— 即合并前本文件各用例依赖的行为。
+vi.mock('../utils/activeSession', () => ({ writeActiveSession, clearActiveSession, readActiveSession }));
 
 const { mockCalibrate } = vi.hoisted(() => ({ mockCalibrate: vi.fn().mockResolvedValue({}) }));
 vi.mock('../../api/geometryApi', () => ({ GeometryAPI: { calibrate: (...a: unknown[]) => mockCalibrate(...a) } }));
@@ -54,7 +84,7 @@ vi.mock('../context/VisionContext', () => ({
 }));
 
 let mockLatestEvent: { type: string; data: Record<string, unknown> } | null = null;
-let mockSyncEvents: { type: string; data: Record<string, unknown> }[] = [];
+let mockSyncEvents: { seq: number; type: string; data: Record<string, unknown> }[] = [];
 vi.mock('../hooks/useVisionSync', () => ({
   useVisionSync: () => ({ syncEvents: mockSyncEvents, latestEvent: mockLatestEvent, setupProgress: null, isSetupComplete: false }),
 }));
@@ -63,27 +93,39 @@ const mockSetSessionId = vi.fn();
 const mockHandleAction = vi.fn();
 const mockOnMove = vi.fn().mockResolvedValue(undefined);
 const mockOnNavigate = vi.fn();
+const mockSetGameState = vi.fn();
+const { mockAcknowledgePaintedNode, capturedSessionOptions } = vi.hoisted(() => ({
+  mockAcknowledgePaintedNode: vi.fn(),
+  capturedSessionOptions: { current: null as { deferMoveSoundUntilPaint?: boolean } | null },
+}));
 
-let mockGameState: GameState;
+let mockGameState: GameState | undefined;
 let mockPhysicalReminder: { kind: 'reminder' | 'escalation'; to_place: number[][]; to_remove: number[][] } | null = null;
 
 vi.mock('../../hooks/useGameSession', () => ({
-  useGameSession: () => ({
-    sessionId: 'test-session',
-    setSessionId: mockSetSessionId,
-    gameState: mockGameState,
-    setGameState: vi.fn(),
-    error: null,
-    onMove: mockOnMove,
-    onNavigate: mockOnNavigate,
-    handleAction: mockHandleAction,
-    initNewSession: vi.fn(),
-    lastLog: null,
-    chatMessages: [],
-    sendChat: vi.fn(),
-    gameEndData: null,
-    physicalReminder: mockPhysicalReminder,
-  }),
+  useGameSession: (options: { deferMoveSoundUntilPaint?: boolean }) => {
+    capturedSessionOptions.current = options;
+    return {
+      sessionId: 'test-session',
+      setSessionId: mockSetSessionId,
+      gameState: mockGameState,
+      setGameState: mockSetGameState,
+      error: null,
+      onMove: mockOnMove,
+      onNavigate: mockOnNavigate,
+      handleAction: mockHandleAction,
+      initNewSession: vi.fn(),
+      lastLog: null,
+      chatMessages: [],
+      sendChat: vi.fn(),
+      gameEndData: null,
+      physicalReminder: mockPhysicalReminder,
+      // 新覆盖的「非本地对局认输成功」路径会调用它(GamePage.tsx 里未包在 try 里);
+      // 缺了这一项此前从未被真调用过,加上后只是补全 mock、不改任何断言。
+      clearPhysicalEngineError: vi.fn(),
+      acknowledgePaintedNode: mockAcknowledgePaintedNode,
+    };
+  },
 }));
 
 // --- Fixtures ----------------------------------------------------------------
@@ -122,9 +164,16 @@ const makeGameState = (overrides: Partial<GameState> & { players_info: GameState
 // Factored out (not just inlined in renderPage) so the dismiss→reopen cycle test below can
 // call `rerender(pageTree())` with the identical element tree after mutating a mock value —
 // same container, same component identity, only the mocked hook return values change.
+let testNavigate: ReturnType<typeof useNavigate> | null = null;
+const NavigationProbe = () => {
+  testNavigate = useNavigate();
+  return null;
+};
+
 const pageTree = () => (
   <ThemeProvider theme={kioskTheme}>
     <MemoryRouter initialEntries={['/kiosk/play/ai/game/test-session']}>
+      <NavigationProbe />
       <Routes>
         <Route path="/kiosk/play/ai/game/:sessionId" element={<GamePage />} />
         <Route path="/kiosk/play" element={<div>PLAY_PAGE</div>} />
@@ -144,12 +193,32 @@ describe('GamePage', () => {
     mockSyncEvents = [];
     mockPoseLocked = true;
     mockPhysicalReminder = null;
+    testNavigate = null;
     capturedBoardProps.current = null;
+    capturedSessionOptions.current = null;
+    capturedControlPanelProps.current = null;
     mockCalibrate.mockClear().mockResolvedValue({});
     sessionStorage.clear();
     localStorage.clear();
+    readActiveSession.mockReturnValue(null);
     mockLadderStatus.mockReset();
     __resetKioskActivityStorageForTests();
+  });
+
+  it('enters the game after its initial loading render without changing hook order', () => {
+    mockGameState = undefined;
+    const { rerender } = renderPage();
+    expect(screen.getByTestId('game-loading')).toBeInTheDocument();
+
+    mockGameState = makeGameState({
+      players_info: {
+        B: { ...basePlayer, player_type: 'player:human', name: '黑方' },
+        W: { ...basePlayer, player_type: 'player:ai', name: 'AI' },
+      },
+    });
+    rerender(pageTree());
+
+    expect(screen.getByTestId('board')).toBeInTheDocument();
   });
 
   it('renders authoritative ranked settlement feedback after end_result', async () => {
@@ -181,50 +250,140 @@ describe('GamePage', () => {
     expect(document.querySelector('img[src="/api/v1/vision/stream"]')).toBeNull();
   });
 
-  describe('AI game — persistent amber banner (both player_type literals)', () => {
-    it('shows ai-move-banner when the AI seat is the "player:ai" literal and it is the human turn after an AI move', () => {
-      mockIsVisionEnabled = true;
-      mockGameState = makeGameState({
-        players_info: {
-          B: { ...basePlayer, player_type: 'player:human', name: '张三' },
-          W: { ...basePlayer, player_type: 'player:ai', name: 'KataGo' },
-        },
-        player_to_move: 'B',
-        last_move: [3, 3],
-        end_result: null,
-      });
-      renderPage();
-      expect(screen.getByTestId('ai-move-banner')).toBeInTheDocument();
+  describe('重置识别页控动作', () => {
+    const aiGame = () => makeGameState({
+      players_info: {
+        B: { ...basePlayer, player_type: 'player:human', name: '张三' },
+        W: { ...basePlayer, player_type: 'player:ai', name: 'KataGo' },
+      },
     });
 
-    it('shows ai-move-banner when the AI seat uses the bare "ai" literal', () => {
+    it('实体盘模式显示可见标签，并说明以屏幕上的数字棋盘局面为准', () => {
       mockIsVisionEnabled = true;
-      mockGameState = makeGameState({
+      mockGameState = aiGame();
+      renderPage();
+      const action = screen.getByRole('button', { name: '重置识别 · 以屏幕上的数字棋盘局面为准' });
+      expect(action).toHaveTextContent('重置识别');
+    });
+
+    it('屏幕模式不显示重置识别动作', () => {
+      mockIsVisionEnabled = false;
+      mockGameState = aiGame();
+      renderPage();
+      expect(screen.queryByRole('button', { name: /重置识别/ })).toBeNull();
+    });
+  });
+
+  describe('AI placement status in the right rail', () => {
+    const aiGame = (overrides: Partial<GameState> = {}) => makeGameState({
+      players_info: {
+        B: { ...basePlayer, player_type: 'player:human', name: '张三' },
+        W: { ...basePlayer, player_type: 'player:ai', name: 'KataGo' },
+      },
+      player_to_move: 'B',
+      last_move: [3, 3],
+      end_result: null,
+      ...overrides,
+    });
+
+    it('moves the player:ai instruction into .ghint and removes the board-covering banner', async () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame();
+      renderPage();
+      expect(screen.queryByTestId('ai-move-banner')).toBeNull();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
+    });
+
+    it('also supports the bare "ai" literal', async () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({
         players_info: {
           B: { ...basePlayer, player_type: 'player:human', name: '张三' },
           W: { ...basePlayer, player_type: 'ai', name: 'KataGo' },
         },
-        player_to_move: 'B',
-        last_move: [3, 3],
-        end_result: null,
       });
       renderPage();
-      expect(screen.getByTestId('ai-move-banner')).toBeInTheDocument();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
     });
 
-    it('does not show the banner when vision is disabled, even with an AI seat and a pending last move', () => {
+    it('does not show the instruction for screen-only play', () => {
       mockIsVisionEnabled = false;
-      mockGameState = makeGameState({
-        players_info: {
-          B: { ...basePlayer, player_type: 'player:human', name: '张三' },
-          W: { ...basePlayer, player_type: 'player:ai', name: 'KataGo' },
-        },
-        player_to_move: 'B',
-        last_move: [3, 3],
-        end_result: null,
-      });
+      mockGameState = aiGame();
       renderPage();
-      expect(screen.queryByTestId('ai-move-banner')).toBeNull();
+      expect(document.querySelector('.ghint')).not.toHaveTextContent('D4');
+    });
+
+    it('matching versioned synced clears the instruction even when a later unrelated event is in the same batch', async () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({ current_node_id: 41 });
+      const priorWindow = Array.from({ length: 100 }, (_, seq) => ({ seq, type: 'board_diff', data: {} }));
+      mockSyncEvents = priorWindow;
+      const view = renderPage();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
+
+      mockSyncEvents = [
+        ...priorWindow.slice(2),
+        { seq: 100, type: 'synced', data: { expected_node_id: 41 } },
+        { seq: 101, type: 'board_diff', data: {} },
+      ];
+      view.rerender(pageTree());
+      await waitFor(() => expect(document.querySelector('.ghint')).not.toHaveTextContent('D4'));
+    });
+
+    it('an acknowledgement arriving before game_update prevents a stale instruction', async () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({ current_node_id: 40, player_to_move: 'W', last_move: [10, 10] });
+      mockSyncEvents = [{ seq: 200, type: 'synced', data: { expected_node_id: 41 } }];
+      const view = renderPage();
+      await act(async () => undefined);
+
+      // The game-state socket may learn the authoritative game_id after vision has
+      // already acknowledged the node. A game_id change must not discard that ack.
+      mockGameState = aiGame({ game_id: 'late-game-id', current_node_id: 41 });
+      view.rerender(pageTree());
+      await act(async () => undefined);
+      expect(document.querySelector('.ghint')).not.toHaveTextContent('D4');
+    });
+
+    it.each([
+      ['stale', { seq: 300, type: 'synced', data: { expected_node_id: 40 } }],
+      ['different node', { seq: 301, type: 'synced', data: { expected_node_id: 42 } }],
+      ['unversioned', { seq: 302, type: 'synced', data: {} }],
+    ])('%s synced does not clear the current instruction', async (_label, event) => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({ current_node_id: 41 });
+      const view = renderPage();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
+      mockSyncEvents = [event];
+      view.rerender(pageTree());
+      await act(async () => undefined);
+      expect(document.querySelector('.ghint')).toHaveTextContent('D4');
+    });
+
+    it('hides a stale instruction synchronously when game_id changes and clears on game end', async () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({ current_node_id: 41 });
+      const view = renderPage();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
+
+      mockGameState = aiGame({ game_id: 'new-game', current_node_id: 0, player_to_move: 'W', last_move: null });
+      view.rerender(pageTree());
+      expect(document.querySelector('.ghint')).not.toHaveTextContent('D4');
+
+      mockGameState = aiGame({ game_id: 'new-game', current_node_id: 1, end_result: 'B+R' });
+      view.rerender(pageTree());
+      await act(async () => undefined);
+      expect(document.querySelector('.ghint')).not.toHaveTextContent('D4');
+    });
+
+    it('clears on session change instead of relabeling the old game state for the new session', async () => {
+      mockIsVisionEnabled = true;
+      mockGameState = aiGame({ current_node_id: 41 });
+      renderPage();
+      expect(await waitFor(() => document.querySelector('.ghint'))).toHaveTextContent('D4');
+
+      act(() => testNavigate?.('/kiosk/play/ai/game/next-session'));
+      await waitFor(() => expect(document.querySelector('.ghint')).not.toHaveTextContent('D4'));
     });
   });
 
@@ -242,7 +401,7 @@ describe('GamePage', () => {
       });
       renderPage();
       // The coordinate-hint effect fires (B is 'player:human' and it's B's turn), so
-      // aiMoveBanner itself would be non-null — proving suppression is the render-time
+      // The placement status itself would be non-null — proving suppression is the render-time
       // `aiColor !== null` gate, not merely an absent banner label.
       expect(screen.queryByTestId('ai-move-banner')).toBeNull();
     });
@@ -353,6 +512,23 @@ describe('GamePage', () => {
       expect(clearActiveSession).not.toHaveBeenCalled();
     });
 
+    it('keeps the setup choice to play on screen when refreshing a 9-line game', () => {
+      readActiveSession.mockReturnValue({
+        kind: 'game', label: '两人', route: window.location.pathname, ts: 1, onBoard: false,
+      });
+      mockGameState = makeGameState({
+        game_type: 'pvp_local', board_size: [9, 9], end_result: null,
+        players_info: {
+          B: { ...basePlayer, player_type: 'player:human', name: '' },
+          W: { ...basePlayer, player_type: 'player:human', name: '' },
+        },
+      });
+
+      renderPage();
+
+      expect(writeActiveSession).toHaveBeenCalledWith(expect.objectContaining({ onBoard: false }));
+    });
+
     it('clears the active session when the game has ended', () => {
       mockGameState = makeGameState({
         players_info: {
@@ -454,7 +630,7 @@ describe('GamePage', () => {
       vi.useFakeTimers();
       try {
         mockIsVisionEnabled = true;
-        mockSyncEvents = [{ type: 'board_lost', data: {} }];
+        mockSyncEvents = [{ seq: 1, type: 'board_lost', data: {} }];
         mockPhysicalReminder = { kind: 'escalation', to_place: [[3, 3]], to_remove: [] };
         mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
         renderPage();
@@ -468,6 +644,17 @@ describe('GamePage', () => {
   });
 
   describe('State C — 终局数子 (B1.4)', () => {
+    it('celebrates a live counted human win once with sound and trophy animation', async () => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
+      const view = renderPage();
+      mockGameState = { ...mockGameState, end_result: 'B+4.5' };
+      view.rerender(pageTree());
+      await waitFor(() => expect(screen.getByTestId('result-trophy')).toHaveClass('game-win-trophy'));
+      expect(mockPlaySound).toHaveBeenCalledWith('solved');
+      view.rerender(pageTree());
+      expect(mockPlaySound).toHaveBeenCalledTimes(1);
+    });
+
     it('renders endgame-card + result-badge and forces Board analysisToggles.ownership=true', () => {
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: 'B+4.5' });
       renderPage();
@@ -476,10 +663,10 @@ describe('GamePage', () => {
       expect(capturedBoardProps.current?.analysisToggles?.ownership).toBe(true);
     });
 
-    it('继续对弈 hides the endgame-card locally and does NOT call session.handleAction (game stays ended)', () => {
+    it('留在棋盘 hides the endgame-card locally and does NOT call session.handleAction (game stays ended)', () => {
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: 'B+4.5' });
       renderPage();
-      fireEvent.click(screen.getByText('继续对弈'));
+      fireEvent.click(screen.getByText('留在棋盘'));
       expect(screen.queryByTestId('endgame-card')).toBeNull();
       expect(mockHandleAction).not.toHaveBeenCalled();
     });
@@ -522,10 +709,205 @@ describe('GamePage', () => {
     });
   });
 
+  describe('本地对局 v2:两个出口 + 数子', () => {
+    const human = { ...basePlayer, name: '' };
+    const localPair: GameState['players_info'] = {
+      B: { ...human, player_type: 'player:human' }, W: { ...human, player_type: 'player:human' },
+    };
+    const local = (over: Partial<GameState> = {}) =>
+      makeGameState({ players_info: localPair, game_type: 'pvp_local', ...over });
+
+    it('认输先问谁认输,按「白方认输」⇒ handleAction 带 color=W', async () => {
+      mockGameState = local();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_RESIGN'));
+      expect(screen.getByText('哪一方认输？')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '黑方认输' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '白方认输' }));
+      await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('resign', { color: 'W' }));
+    });
+
+    it('认输框按「取消」⇒ 不发请求', () => {
+      mockGameState = local();
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_RESIGN'));
+      fireEvent.click(screen.getByRole('button', { name: '取消' }));
+      expect(mockHandleAction).not.toHaveBeenCalled();
+    });
+
+    it('未终局退出 ⇒ 删会话、清活动会话、回对弈首页,绝不认输', async () => {
+      mockGameState = local();
+      const del = vi.spyOn(API, 'deleteSession').mockResolvedValue(undefined);
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('退出对局'));
+        expect(screen.getByText('退出这局？')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: '退出不保存' }));
+        expect(await screen.findByText('PLAY_PAGE')).toBeInTheDocument();
+        expect(del).toHaveBeenCalledWith('test-session');
+        expect(clearActiveSession).toHaveBeenCalledWith('game');
+        expect(mockHandleAction).not.toHaveBeenCalled();
+      } finally { del.mockRestore(); }
+    });
+
+    it('删会话失败 ⇒ 不离开、说出来(不能装作已退出)', async () => {
+      mockGameState = local();
+      const del = vi.spyOn(API, 'deleteSession').mockRejectedValue(new ApiError(500, 'Request failed 500: boom'));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('退出对局'));
+        fireEvent.click(screen.getByRole('button', { name: '退出不保存' }));
+        expect(await screen.findByText('退出失败，请重试')).toBeInTheDocument();
+        expect(screen.queryByText('PLAY_PAGE')).toBeNull();
+        expect(clearActiveSession).not.toHaveBeenCalledWith('game');
+      } finally { del.mockRestore(); }
+    });
+
+    it('已终局 ⇒ 直接离开,不弹框、不删会话', async () => {
+      mockGameState = local({ end_result: 'W+R' });
+      const del = vi.spyOn(API, 'deleteSession').mockResolvedValue(undefined);
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('退出对局'));
+        expect(await screen.findByText('PLAY_PAGE')).toBeInTheDocument();
+        expect(del).not.toHaveBeenCalled();
+      } finally { del.mockRestore(); }
+    });
+
+    it('手动数子失败按原因码说真话,不再一律「手数不足或已结束」', async () => {
+      mockGameState = local();
+      const rc = vi.spyOn(API, 'requestCount')
+        .mockRejectedValue(new ApiError(400, 'x', { code: 'analysis_pending', message: 'x' }));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_COUNT'));
+        expect(await screen.findByText('还在算这一手的形势，稍等再数')).toBeInTheDocument();
+      } finally { rc.mockRestore(); }
+    });
+
+    it('awaiting_count ⇒ 自动数子,屏上说「正在数子…」', async () => {
+      // 后端真实行为(core/game.py):双 pass 后 end_result 一定非空(终局提示语或人工比分),
+      // 同时带 awaiting_count=true;数子判据是「有没有 awaiting_count」,不是「有没有 end_result」——
+      // fixture 照后端的形状写,否则这条测试对 F1 那个 bug 免疫(改之前也是绿的)。
+      mockGameState = local({ awaiting_count: true, end_result: '终局' });
+      const rc = vi.spyOn(API, 'requestCount').mockReturnValue(new Promise(() => {}));
+      try {
+        renderPage();
+        expect(await screen.findByText('正在数子…')).toBeInTheDocument();
+        expect(rc).toHaveBeenCalledWith('test-session');
+      } finally { rc.mockRestore(); }
+    });
+
+    it('本地对局后台分析照跑(数子读这份分数)—— 不许把 pvp_local 排除出 analyzeCurrent', () => {
+      mockGameState = local();
+      const an = vi.spyOn(API, 'analyzeCurrent').mockResolvedValue({} as never);
+      try {
+        renderPage();
+        expect(an).toHaveBeenCalledWith('test-session');
+      } finally { an.mockRestore(); }
+    });
+
+    it('非本地对局的认输框逐字不变:确认后 handleAction 只带 action', async () => {
+      mockGameState = makeGameState({ players_info: localPair, game_type: 'free' });
+      renderPage();
+      fireEvent.click(screen.getByText('MOCK_RESIGN'));
+      fireEvent.click(screen.getByRole('button', { name: '认输' }));
+      await waitFor(() => expect(mockHandleAction).toHaveBeenCalledWith('resign'));
+    });
+  });
+
+  describe('超时判负 (S3-5)', () => {
+    const human = { ...basePlayer, name: '' };
+    const localPair: GameState['players_info'] = {
+      B: { ...human, player_type: 'player:human' }, W: { ...human, player_type: 'player:human' },
+    };
+    const local = (over: Partial<GameState> = {}) =>
+      makeGameState({ players_info: localPair, game_type: 'pvp_local', ...over });
+
+    it('到点 ⇒ 调一次 API.timeout,成功用返回的 state', async () => {
+      mockGameState = local();
+      const newState = local({ current_node_id: 9 });
+      const to = vi.spyOn(API, 'timeout').mockResolvedValue({ session_id: 'test-session', state: newState });
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_TIMEOUT'));
+        await waitFor(() => expect(to).toHaveBeenCalledWith('test-session'));
+        await waitFor(() => expect(mockSetGameState).toHaveBeenCalledWith(newState));
+      } finally { to.mockRestore(); }
+    });
+
+    it('409 time_not_expired ⇒ 用附带的最新 state 重算,不弹错误', async () => {
+      mockGameState = local();
+      const newState = local({ current_node_id: 9 });
+      const to = vi.spyOn(API, 'timeout')
+        .mockRejectedValue(new ApiError(409, 'x', { code: 'time_not_expired', state: newState }));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_TIMEOUT'));
+        await waitFor(() => expect(mockSetGameState).toHaveBeenCalledWith(newState));
+        expect(screen.queryByText('超时判定没有完成')).toBeNull();
+      } finally { to.mockRestore(); }
+    });
+
+    it('非 409 错误 ⇒ 说「超时判定没有完成」,不崩', async () => {
+      mockGameState = local();
+      const to = vi.spyOn(API, 'timeout').mockRejectedValue(new Error('network down'));
+      try {
+        renderPage();
+        fireEvent.click(screen.getByText('MOCK_TIMEOUT'));
+        expect(await screen.findByText('超时判定没有完成')).toBeInTheDocument();
+      } finally { to.mockRestore(); }
+    });
+
+    it('终局且 end_result 以 +T 结尾 ⇒ 右栏状态条写明谁超时负、谁胜、第几手,并有复盘本局键', () => {
+      mockGameState = local({ end_result: 'W+T', current_node_index: 130 });
+      renderPage();
+      const bar = screen.getByTestId('auto-count-status');
+      expect(bar).toHaveTextContent('黑方超时负');
+      expect(bar).toHaveTextContent('白超时胜');
+      expect(bar).toHaveTextContent('第 131 手');
+      expect(bar).toHaveTextContent('已存进历史对局');
+      expect(within(bar).getByRole('button', { name: '复盘本局' })).toBeInTheDocument();
+      // 超时判负那一态由右栏状态条说完 —— 居中的终局卡不再重复一遍(见 GamePage.tsx 注释)。
+      expect(screen.queryByTestId('endgame-card')).toBeNull();
+    });
+
+    it('超时终局到达时关闭此前打开的退出确认框', async () => {
+      mockGameState = local();
+      const { rerender } = renderPage();
+      fireEvent.click(screen.getByText('退出对局'));
+      expect(screen.getByText('继续下')).toBeInTheDocument();
+
+      mockGameState = local({ end_result: 'W+T' });
+      rerender(pageTree());
+
+      await waitFor(() => {
+        expect(screen.queryByText('继续下')).toBeNull();
+        expect(screen.queryByText('退出不保存')).toBeNull();
+      });
+    });
+
+    it('非 pvp_local 局不传 onTimeExpired', () => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
+      renderPage();
+      expect(capturedControlPanelProps.current?.onTimeExpired).toBeUndefined();
+    });
+  });
+
   // --- 3D board removed from kiosk (2026-07-13) -------------------------------------
   // The 3D Go board was dropped to free ~321MB of Mali GPU memory contending with KataGo's
   // OpenCL on the RK3562. Guard against reintroduction: only the 2D Board ever renders.
   describe('3D board removed', () => {
+    it.each(['free', 'ranked', 'rated', 'ai_ladder_ranked', 'pvp_local', 'pvp_online'] as const)(
+      'uses the visible canvas as the %s move-sound paint barrier', (game_type) => {
+      mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null, current_node_id: 37, game_type });
+      renderPage();
+
+      expect(capturedSessionOptions.current?.deferMoveSoundUntilPaint).toBe(true);
+      act(() => capturedBoardProps.current?.onPaintedNode?.(37));
+      expect(mockAcknowledgePaintedNode).toHaveBeenCalledWith(37);
+    });
+
     it('renders only the 2D Board and never a 3D board', () => {
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null });
       renderPage();

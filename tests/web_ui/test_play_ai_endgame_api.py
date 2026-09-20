@@ -212,7 +212,10 @@ def test_count_refuses_with_the_threshold_the_session_reports(client):
     resp = client.post("/api/count/request", json={"session_id": session.session_id})
 
     assert resp.status_code == 400, resp.text
-    assert resp.json()["detail"] == "Cannot count before 22 moves"
+    assert resp.json()["detail"] == {
+        "code": "below_min_moves",
+        "message": "Cannot count before 22 moves",
+    }
 
 
 # ---------------------------------------------------------------- A12
@@ -240,7 +243,7 @@ def test_count_fills_the_missing_score_before_counting(client):
     counted = session.katrain.game.current_node
     # C2:补的、数的、写的都是 await 之前取的那一手;写入只经唯一写入口(在对局提交锁里复核)
     session.katrain.ensure_current_score.assert_called_once_with(node=counted)
-    session.katrain._commit_end_state.assert_called_once_with("B+2.5", node=counted)
+    session.katrain._commit_end_state.assert_called_once_with("B+2.5", node=counted, fill_pending=False)
 
 
 def test_a_count_refused_by_the_runtime_is_a_409(client):
@@ -266,7 +269,8 @@ def test_count_still_says_why_when_no_score_can_be_had(client):
     resp = client.post("/api/count/request", json={"session_id": session.session_id})
 
     assert resp.status_code == 400
-    assert resp.json()["detail"].startswith("Analysis not available")
+    assert resp.json()["detail"]["code"] == "analysis_pending"
+    assert resp.json()["detail"]["message"].startswith("Analysis not available")
 
 
 # ---------------------------------------------------------------- r1 C1 超时绑定(端点接线)

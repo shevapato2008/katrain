@@ -64,6 +64,24 @@ class PlatformMove:
 
 
 @dataclass
+class PlatformPass:
+    color: str  # player that passed: "B" or "W"
+    move_number: int
+    game_id: str = ""
+
+
+@dataclass
+class PlatformResign:
+    color: str  # resigning player: "B" or "W"
+    winner: str  # winning player: "B" or "W"
+    move_number: int  # last actual move number; resignation itself is not a move
+    game_id: str = ""
+
+
+PlatformEngineReply = PlatformMove | PlatformPass | PlatformResign
+
+
+@dataclass
 class PlatformChallenge:
     platform: str
     challenge_id: str

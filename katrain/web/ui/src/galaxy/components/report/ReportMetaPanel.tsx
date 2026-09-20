@@ -5,6 +5,7 @@ import { translateResult } from '../../../utils/resultTranslation';
 import type { MoveAnalysis } from '../../../types/live';
 import type { UserGameDetail } from '../../../api/userGamesApi';
 import type { ReportTaskSummary } from '../../../api/reportApi';
+import { formatRank } from '../../../utils/rank';
 
 interface ReportMetaPanelProps {
   game: UserGameDetail | null;
@@ -110,7 +111,7 @@ export default function ReportMetaPanel({
             </Typography>
             {game?.black_rank && (
               <Typography variant="caption" color="text.secondary">
-                {game.black_rank}
+                {formatRank(game.black_rank, t)}
               </Typography>
             )}
           </Box>
@@ -120,7 +121,7 @@ export default function ReportMetaPanel({
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
             {game?.white_rank && (
               <Typography variant="caption" color="text.secondary">
-                {game.white_rank}
+                {formatRank(game.white_rank, t)}
               </Typography>
             )}
             <Typography variant="body1" fontWeight={!blackAdvantage ? 'bold' : 'normal'}>

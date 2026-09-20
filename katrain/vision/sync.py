@@ -94,6 +94,8 @@ class SyncStateMachine:
         # Board state
         self._expected_board: np.ndarray = np.zeros((board_size, board_size), dtype=int)
         self._prev_expected_board: np.ndarray | None = None
+        self._expected_node_id: int | None = None
+        self._pending_expected_node_id: int | None = None
         self._target_board: np.ndarray | None = None
 
         # Mismatch tracking
@@ -116,20 +118,28 @@ class SyncStateMachine:
 
     # -- public API ----------------------------------------------------------
 
-    def set_expected_board(self, board: np.ndarray) -> None:
+    def set_expected_board(self, board: np.ndarray, *, expected_node_id: int | None = None) -> None:
         """Set the expected board (from game engine).
 
-        Keeps the previous expected board so ``_compare_boards`` can tell "digital
-        stone the player hasn't placed yet" from "stone that must come off". This is
-        called on every ``game_update`` (digital authority) and coalesced to the
-        latest state under throttling; a stale ``prev`` only ever biases points
-        toward the safe "placement pending" bucket, never fabricates the
-        ``prev == observed`` match "removal needed" requires, so no
-        sequencing/hash mechanism is needed here.
+        Keeps the previous distinct expected board so ``_compare_boards`` can tell
+        "digital stone the player hasn't placed yet" from "stone that must come
+        off". Repeating the same matrix does not advance that baseline. A new node
+        revision is tracked independently and acknowledged once vision observes an
+        exact physical match.
         """
-        if self._expected_board is not None:
+        if not np.array_equal(board, self._expected_board):
             self._prev_expected_board = self._expected_board.copy()
-        self._expected_board = board.copy()
+            self._expected_board = board.copy()
+            if self._state == SyncState.CAPTURE_PENDING:
+                self._pending_captures = [
+                    (r, c, color) for r, c, color in self._pending_captures if int(board[r, c]) != color
+                ]
+                if not self._pending_captures:
+                    self._state = SyncState.SYNCED
+
+        if expected_node_id != self._expected_node_id:
+            self._expected_node_id = expected_node_id
+            self._pending_expected_node_id = expected_node_id
 
     def enter_setup_mode(self, target_board: np.ndarray) -> None:
         """Enter tsumego setup mode with a target position."""
@@ -172,30 +182,34 @@ class SyncStateMachine:
                 events.append(SyncEvent(SyncEventType.BOARD_LOST))
             return events
 
-        if self._state == SyncState.BOARD_LOST:
+        was_board_lost = self._state == SyncState.BOARD_LOST
+        if was_board_lost and self._target_board is not None:
             # A transient loss during setup (a hand occluding a corner while placing
             # stones) must NOT abandon setup: resume it so subsequently placed stones
             # keep reporting as SETUP_PROGRESS instead of dropping to compare mode and
             # being flagged as ILLEGAL_CHANGE.
-            self._state = SyncState.SETUP_IN_PROGRESS if self._target_board is not None else SyncState.SYNCED
-            events.append(SyncEvent(SyncEventType.BOARD_REACQUIRED))
-            # Fall through to remaining checks with the new frame.
+            self._state = SyncState.SETUP_IN_PROGRESS
 
         # 2. Degraded-mode hysteresis
+        was_degraded = self._state == SyncState.DEGRADED
         degraded_events = self._check_degraded(mean_confidence, now)
         events.extend(degraded_events)
         if self._state == SyncState.DEGRADED:
+            return events
+        if was_degraded:
             return events
 
         # 3. Setup mode
         if self._state == SyncState.SETUP_IN_PROGRESS and self._target_board is not None:
             setup_events = self._check_setup(observed_board)
             events.extend(setup_events)
-            return events
+        else:
+            # 4. Compare with expected board before declaring recovery: a visible
+            # frame can still contain the same displacement that caused BOARD_LOST.
+            events.extend(self._compare_boards(observed_board))
 
-        # 4. Compare with expected board
-        compare_events = self._compare_boards(observed_board)
-        events.extend(compare_events)
+        if was_board_lost and self._state != SyncState.BOARD_LOST:
+            events.insert(0, SyncEvent(SyncEventType.BOARD_REACQUIRED))
 
         return events
 
@@ -206,6 +220,8 @@ class SyncStateMachine:
         else:
             self._expected_board = np.zeros((self._board_size, self._board_size), dtype=int)
         self._prev_expected_board = None
+        self._expected_node_id = None
+        self._pending_expected_node_id = None
         self._target_board = None
         self._mismatch_board = None
         self._mismatch_count = 0
@@ -288,6 +304,8 @@ class SyncStateMachine:
             self._target_board = None
             self._expected_board = observed_board.copy()
             self._prev_expected_board = None
+            self._expected_node_id = None
+            self._pending_expected_node_id = None
             self._state = SyncState.SYNCED
 
         return events
@@ -300,15 +318,7 @@ class SyncStateMachine:
         diff_positions = list(zip(*np.where(diff_mask)))
         diff_count = len(diff_positions)
 
-        # 4a. Many simultaneous changes → board displaced / lost
-        if diff_count >= self._board_lost_threshold:
-            self._state = SyncState.BOARD_LOST
-            events.append(SyncEvent(SyncEventType.BOARD_LOST, data={"diff_count": diff_count}))
-            self._mismatch_board = None
-            self._mismatch_count = 0
-            return events
-
-        # 4b. Classify against the previous expected board (digital authority).
+        # 4a. Classify against the previous expected board (digital authority).
         #     Newly-expected stone the player hasn't placed yet is NOT an anomaly;
         #     a live stone that vanished physically IS one (review Codex B2) — it must
         #     ride the debounced mismatch flow, never the instantly-self-clearing
@@ -341,6 +351,16 @@ class SyncStateMachine:
             elif expected_val != EMPTY and observed_val != EMPTY and expected_val != observed_val:
                 # Color changed — treat as unexpected
                 unexpected.append((r, c, observed_val))
+
+        # 4b. Many unexplained changes → board displaced / lost. Captures and
+        # digitally requested placements are known changes, even for large groups.
+        if len(unexpected) + len(missing_anomaly) >= self._board_lost_threshold:
+            if self._state != SyncState.BOARD_LOST:
+                events.append(SyncEvent(SyncEventType.BOARD_LOST, data={"diff_count": diff_count}))
+            self._state = SyncState.BOARD_LOST
+            self._mismatch_board = None
+            self._mismatch_count = 0
+            return events
 
         # 4c. Capture-pending logic (sticky)
         if removal_needed and self._state != SyncState.CAPTURE_PENDING:
@@ -399,12 +419,28 @@ class SyncStateMachine:
 
             return events
 
-        # 4e. No differences — everything matches
+        # 4e. No anomalies — exact matches and placement-pending-only frames are
+        # both legacy-SYNCED, but only exact physical equality acknowledges a
+        # versioned expected-board command.
         self._mismatch_board = None
         self._mismatch_count = 0
-        if self._state != SyncState.SYNCED:
-            self._state = SyncState.SYNCED
-            events.append(SyncEvent(SyncEventType.SYNCED))
+        was_synced = self._state == SyncState.SYNCED
+        self._state = SyncState.SYNCED
+        synced_event: SyncEvent | None = None
+
+        if diff_count == 0:
+            self._prev_expected_board = self._expected_board.copy()
+            if self._pending_expected_node_id is not None:
+                synced_event = SyncEvent(
+                    SyncEventType.SYNCED,
+                    data={"expected_node_id": self._pending_expected_node_id},
+                )
+                self._pending_expected_node_id = None
+
+        if synced_event is None and not was_synced:
+            synced_event = SyncEvent(SyncEventType.SYNCED)
+        if synced_event is not None:
+            events.append(synced_event)
 
         return events
 

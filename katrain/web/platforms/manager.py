@@ -14,19 +14,11 @@ from katrain.web.platforms.models import (
     PlatformGameContext,
     PlatformGameSession,
     PlatformMove,
+    PlatformPass,
+    PlatformResign,
 )
 
 logger = logging.getLogger("katrain_web")
-
-
-class EngineRebuildError(RuntimeError):
-    """rebuild_engine_context found something it refuses to encode silently.
-
-    Currently raised only for a pass node on the engine-play path (B3/G4):
-    Golaxy's stateless genmove tunnel has no verified pass encoding, so a pass
-    anywhere in the current-node's root path must fail loudly rather than be
-    silently dropped from the rebuilt move history.
-    """
 
 
 class PlatformManager:
@@ -199,20 +191,26 @@ class PlatformManager:
         self._active_games[gs.game_id] = ctx
         self._session_to_game[session.session_id] = gs.game_id
 
-        # Human plays White => AI (Black) has already opened; play its first move locally.
+        # If the AI was initially to move, mirror its typed reply locally.
         if start.first_ai_move is not None:
             m = start.first_ai_move
-            session.katrain("play", coords=(m.col, m.row))
             ctx.last_confirmed_move = m.move_number
-            self._session_manager.broadcast_to_session(
-                session.session_id,
-                {"type": "platform_move_confirmed", "col": m.col, "row": m.row, "move_number": m.move_number},
-            )
+            if isinstance(m, PlatformMove):
+                session.katrain("play", coords=(m.col, m.row))
+                self._session_manager.broadcast_to_session(
+                    session.session_id,
+                    {"type": "platform_move_confirmed", "col": m.col, "row": m.row, "move_number": m.move_number},
+                )
+            elif isinstance(m, PlatformPass):
+                session.katrain("play", coords=None)
+            elif isinstance(m, PlatformResign):
+                session.katrain("end_by_resignation", winner=m.winner)
+                await self.end_platform_game(gs.game_id, "ai_resign")
 
         logger.info(f"Engine game started: {platform} {gs.game_id} -> session {session.session_id}")
         return session.session_id
 
-    def rebuild_engine_context(self, session_id: str) -> list[tuple[int, int]]:
+    def rebuild_engine_context(self, session_id: str) -> list[Optional[tuple[int, int]]]:
         """Resync an engine-play adapter's stateless move history to the LOCAL
         game tree's CURRENT-NODE path (root -> current_node), NOT just the main
         line -- undo and branch navigation move `current_node` off whatever
@@ -228,13 +226,11 @@ class PlatformManager:
         `GolaxyAdapter.rebuild_engine_moves`), matching how
         `start_engine_game` seeded `ctx.moves` in the first place.
 
-        Raises EngineRebuildError if any node on the path is a pass -- engine
-        trees must never contain one; silently dropping it would desync the
-        tunnel history from the local tree with no signal. Raises KeyError if
-        session_id has no engine-play context.
+        Pass nodes are encoded using Golaxy's live-captured -1 sentinel. Raises
+        KeyError if session_id has no engine-play context.
 
-        Returns the extracted (col, row) path (handicap-prefix-EXCLUSIVE) for
-        callers/tests that want to inspect what was rebuilt.
+        Returns the extracted (col, row)/None path (handicap-prefix-EXCLUSIVE)
+        for callers/tests that want to inspect what was rebuilt.
         """
         ctx = self.get_game_context(session_id)
         if ctx is None or not ctx.is_engine:
@@ -242,14 +238,9 @@ class PlatformManager:
         session = self._session_manager.get_session(session_id)
         game = session.katrain.game
         nodes = game.current_node.nodes_from_root
-        path: list[tuple[int, int]] = []
+        path: list[Optional[tuple[int, int]]] = []
         for node in nodes:
             for mv in node.moves:
-                if mv.coords is None:
-                    raise EngineRebuildError(
-                        f"session {session_id}: pass move found on engine-play path; "
-                        "refusing to silently drop it from the rebuilt history"
-                    )
                 path.append(mv.coords)
         adapter = self._adapters.get(ctx.platform)
         if adapter is None:
@@ -284,7 +275,15 @@ class PlatformManager:
         """Clean up after a platform game ends."""
         ctx = self._active_games.pop(game_id, None)
         if ctx:
-            self._session_to_game.pop(ctx.session_id, None)
+            # A late reply from an old game must not remove a newer game that has
+            # already claimed the same local session.
+            if self._session_to_game.get(ctx.session_id) == game_id:
+                self._session_to_game.pop(ctx.session_id, None)
+            if ctx.is_engine:
+                adapter = self._adapters.get(ctx.platform)
+                discard = getattr(adapter, "discard_engine_game", None)
+                if discard is not None:
+                    discard(game_id)
             ctx.game_phase = GamePhase.FINISHED
             logger.info(f"Platform game ended: {game_id} result={result}")
 

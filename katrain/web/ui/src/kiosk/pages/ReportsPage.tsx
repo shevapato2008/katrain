@@ -20,7 +20,7 @@ import ReportLibraryImportDialog from '../components/report/ReportLibraryImportD
 import ReportLocalImportDialog, { type LocalImportPayload } from '../components/report/ReportLocalImportDialog';
 import { ReviewWinratePlot } from '../components/report/ReviewWinratePlot';
 import {
-  failureLine, failureReason, outcomeLine, rowDisc, rowState, rowTitle, yourColor, type RowState,
+  failureLine, failureReason, isPlaySource, outcomeLine, rowDisc, rowState, rowTitle, yourColor, type RowState,
 } from '../components/report/reviewPresentation';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { Icon } from '../shell/icons';
@@ -452,6 +452,8 @@ export default function ReportsPage() {
    * ⚠️ 判别位是「**这局结束了没有**」——**不是「算不算分」**。用 `isRated` 去管它,
    * 就又变成一个 prop 兼管两件事、逼调用方撒谎(计分局下完了照样该有报告,
    * 国象稿子明写两者进的是同一条复盘线)。
+   * 「未终局」只由 `rowState` 给**对弈局**(`isPlaySource`)—— 导入的谱、棋谱库、研究存档
+   * 没写结果不算没下完,没有「回去接着下」这回事,照样能分析(P14)。这里不另写一份判定。
    */
   const canAnalyzeSelected = Boolean(selectedSummary) && selectedState?.kind !== 'unfinished';
   /**
@@ -616,6 +618,14 @@ export default function ReportsPage() {
                       onSelect={() => setSelectedGameId(game.id)}
                       onOpenReport={(taskId) => navigate(`/kiosk/report/${taskId}`)}
                       onResume={(taskId) => { void retryReport(taskId).catch(() => undefined); }}
+                      // 行尾的「开始分析」走标准档。**同时选中这一行** —— 否则报错只会落在
+                      // 下面「生成报告」区的 actionError 里,而那一段说的是「选中的那一局」,
+                      // 指的却是另一局。选中让出错的那一行和错误信息对得上。
+                      onStartAnalysis={() => {
+                        setSelectedGameId(game.id);
+                        setActionError(null);
+                        void createForGame(game, 'normal').catch(() => undefined);
+                      }}
                       onDelete={() => setDeleteTarget(game.id)}
                     />
                   ))}
@@ -745,7 +755,7 @@ export default function ReportsPage() {
  * 「跳转和干活分在两个手势上」(Fan 2026-07-28)。
  * 整行做不成一个 `<button>`:按钮里套按钮是非法 DOM。
  */
-function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport, onResume, onDelete }: {
+function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport, onResume, onStartAnalysis, onDelete }: {
   game: UserGameSummary;
   state: RowState;
   selected: boolean;
@@ -754,14 +764,16 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport,
   onSelect: () => void;
   onOpenReport: (taskId: number) => void;
   onResume: (taskId: number) => void;
+  onStartAnalysis: () => void;
   onDelete: () => void;
 }) {
   const mine = yourColor(game, username);
   const ts = savedAt(game);
   // 没下完的那句话自己就带着手数(「下到第 22 手就退出了」),再挂一段「22 手」是同一个数说两遍。
+  // 只有对弈局会念那一句;导入的谱没写结果时念「谱里没写结果」,手数照常挂在后面。
   const sub = [
     outcomeLine(game, mine, t),
-    game.result ? `${game.move_count} ${t('report:moves_unit', '手')}` : null,
+    game.result || !isPlaySource(game.source) ? `${game.move_count} ${t('report:moves_unit', '手')}` : null,
     ts == null ? null : whenLabel(ts, t),
   ].filter(Boolean).join(' · ');
 
@@ -827,8 +839,19 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport,
             </button>
           </>
         )}
+        {/* 「未分析」曾经是**唯一一个有事可做却没有键**的状态 —— 其它每一档行尾都有动作
+            (已分析→查看报告、只算到一半→继续分析、失败→重试),只有这一档是个死标,
+            所以它看起来像坏了。能力其实一直都在:选中这一行之后,下面「生成报告」区的
+            两张卡就可用了 —— 缺的只是这一行自己不指过去。
+            走**标准**档而不是弹二选一:精读慢四倍,不该是每局都被问到的选项;
+            想精读的人仍旧走下面那两张卡,这里不删任何路。 */}
         {state.kind === 'unanalyzed' && (
-          <span className="kiosk-tag">{t('review:tag_unanalyzed', '未分析')}</span>
+          <>
+            <span className="kiosk-tag">{t('review:tag_unanalyzed', '未分析')}</span>
+            <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={onStartAnalysis}>
+              {t('review:start_analysis', '开始分析')}
+            </button>
+          </>
         )}
         {state.kind === 'unfinished' && (
           <span className="kiosk-tag">{t('review:tag_unfinished', '未终局')}</span>

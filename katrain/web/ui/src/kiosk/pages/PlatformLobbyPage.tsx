@@ -106,7 +106,13 @@ const PlatformLobbyPage = () => {
       await API.platformSendChallenge(platform, {
         user_id: user.user_id, board_size: 19, rules: 'chinese', ranked: true,
       }, token);
-      setToast({ text: t('platform:challenge_sent', '挑战已发出 —— 接下来在对面那边'), bad: false });
+      setToast({
+        text: interpolate(
+          t('platform:challenge_sent', '挑战已发出。对方接受后要去 {name} 上下，不会回到这台盒子。'),
+          { name: t(meta.label, meta.labelCn) },
+        ),
+        bad: false,
+      });
     } catch (e) {
       setToast({ text: e instanceof Error ? e.message : t('platform:challenge_failed', '挑战没发出去'), bad: true });
     } finally {
@@ -282,7 +288,7 @@ const PlatformLobbyPage = () => {
         )}
       </KioskScrollZone>
 
-      {/* 挑战前确认一次:发出去就在对方那边了,撤不回来。 */}
+      {/* 挑战前确认一次:发出后不可撤回,接受后须到平台对弈。 */}
       {challengeTarget && (
         <div className="cdlg" data-testid="platform-challenge-confirm">
           <div className="cdlg__box wdlg" role="dialog" aria-modal="true">
@@ -292,7 +298,10 @@ const PlatformLobbyPage = () => {
                 t('platform:challenge_ask_body', '{name} {rank} · 19 路 · 中国规则 · 计分局。'),
                 { name: t(meta.label, meta.labelCn), rank: challengeTarget.rank },
               )}
-              <b>{t('platform:challenge_ask_tail', '发出去就在对方那边了。')}</b>
+              <b>{interpolate(
+                t('platform:challenge_ask_tail', '发出去撤不回来；对方接受后要去 {name} 上下，不会回到这台盒子。'),
+                { name: t(meta.label, meta.labelCn) },
+              )}</b>
             </p>
             <div className="cdlg__acts">
               <button type="button" className="ghost" onClick={() => setChallengeTarget(null)}>

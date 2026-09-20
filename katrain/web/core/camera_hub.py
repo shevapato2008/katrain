@@ -97,3 +97,11 @@ class CameraHub:
     @property
     def initial_exposure(self) -> float | None:
         return getattr(self._camera, "initial_exposure", None) if self._camera is not None else None
+
+    @property
+    def current_auto_exposure(self) -> float | None:
+        return getattr(self._camera, "current_auto_exposure", None) if self._camera is not None else None
+
+    @property
+    def current_exposure(self) -> float | None:
+        return getattr(self._camera, "current_exposure", None) if self._camera is not None else None

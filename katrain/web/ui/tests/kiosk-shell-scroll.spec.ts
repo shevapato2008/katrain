@@ -151,10 +151,10 @@ const bootTraining = async (page: Page, levels: ReturnType<typeof LEVELS>, resum
   await page.addInitScript((withResume) => {
     localStorage.setItem('token', 'kiosk-shell-scroll');
     localStorage.setItem('katrain_language', 'cn');
-    localStorage.setItem('kiosk_tsumego_last_level', '15k');
+    localStorage.setItem('kiosk_tsumego_last_level:u1', '15k');
     if (withResume) {
-      localStorage.setItem('kiosk_active_practice', JSON.stringify({
-        kind: 'practice', label: '15 级 · 吃子 · 第 1 题', route: '/kiosk/tsumego/problem/x', ts: 1,
+      localStorage.setItem('kiosk_tsumego_resume:u1', JSON.stringify({
+        label: '15 级 · 吃子 · 第 1 题', route: '/kiosk/tsumego/problem/x',
       }));
     }
   }, resume);

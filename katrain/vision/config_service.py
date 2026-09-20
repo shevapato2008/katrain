@@ -78,6 +78,17 @@ class VisionServiceConfig:
     # MoveDetector default of 3 after a warp-margin object briefly crossing the add
     # threshold was injected as a phantom corner move.
     move_confirm_frames: int = 5
+    # Fast path: a pending move whose peak confidence has already reached
+    # `move_confirm_fast_confidence` confirms after this many frames instead of
+    # `move_confirm_frames`. Confirmation is the whole recognition latency — nothing is
+    # computed during the wait, the detector is just counting — so at ~2.3 fps the full
+    # 5 frames cost 1.73s between the stone landing and the board reacting.
+    move_confirm_fast_frames: int = 3
+    # Measured on the box from a real 117-move game (peak_conf per confirmed move):
+    # min 0.55, p25 0.72, median 0.75, p75 0.81, max 0.88. At 0.70, 80% of real moves
+    # take the fast path; the remaining 20% are the genuinely marginal ones that the
+    # extra frames exist for. Set above the observed max to disable the fast path.
+    move_confirm_fast_confidence: float = 0.70
     # Consecutive ABSENT frames a pending move survives with its count frozen (marginal
     # stones blink; zero tolerance made them permanently unconfirmable).
     move_miss_grace: int = 2
@@ -127,6 +138,8 @@ class VisionServiceConfig:
             "confidence_keep": self.effective_confidence_keep,
             "enhance": self.enhance,
             "move_confirm_frames": self.move_confirm_frames,
+            "move_confirm_fast_frames": self.move_confirm_fast_frames,
+            "move_confirm_fast_confidence": self.move_confirm_fast_confidence,
             "move_miss_grace": self.move_miss_grace,
             "ambiguous_confidence": self.ambiguous_confidence,
             "frame_average": self.frame_average,

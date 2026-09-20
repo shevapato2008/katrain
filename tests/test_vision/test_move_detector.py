@@ -89,12 +89,36 @@ class TestConfigurableConsistencyFrames:
             assert detector.detect_new_move(with_stone) is None
         assert detector.detect_new_move(with_stone) == (3, 3, BLACK)
 
+    def test_clear_stone_can_use_shorter_required_frames(self):
+        detector = MoveDetector(consistency_frames=5)
+        empty = np.zeros((19, 19), dtype=int)
+        detector.detect_new_move(empty)
+
+        with_stone = empty.copy()
+        with_stone[3][3] = BLACK
+        assert detector.detect_new_move(with_stone, required_frames=3) is None
+        assert detector.detect_new_move(with_stone, required_frames=3) is None
+        assert detector.detect_new_move(with_stone, required_frames=3) == (3, 3, BLACK)
+
+    def test_unknown_confidence_keeps_slow_confirmation_path(self):
+        detector = MoveDetector(consistency_frames=5)
+        empty = np.zeros((19, 19), dtype=int)
+        detector.detect_new_move(empty)
+
+        with_stone = empty.copy()
+        with_stone[3][3] = BLACK
+        for _ in range(4):
+            assert detector.detect_new_move(with_stone, required_frames=None) is None
+        assert detector.detect_new_move(with_stone, required_frames=None) == (3, 3, BLACK)
+
     def test_service_config_carries_move_confirm_frames(self):
         from katrain.vision.config_service import VisionServiceConfig
 
         cfg = VisionServiceConfig(move_confirm_frames=7)
         assert cfg.to_worker_config()["move_confirm_frames"] == 7
         assert VisionServiceConfig().to_worker_config()["move_confirm_frames"] == 5  # raised default
+        assert VisionServiceConfig().to_worker_config()["move_confirm_fast_frames"] == 3
+        assert VisionServiceConfig().to_worker_config()["move_confirm_fast_confidence"] == 0.70
 
 
 class TestAmbiguousPromoter:
@@ -348,6 +372,14 @@ class TestPendingConfidencePeak:
             p.observe(pending, {(15, 3): conf})
         # Confirm-frame instant conf is 0.36 but the window peaked at 0.47.
         assert p.gate_confidence(15, 3, 0.36) == pytest.approx(0.47)
+
+    def test_peak_for_only_returns_the_matching_pending_cell(self):
+        p = self._peak()
+        pending = (15, 3, BLACK)
+        p.observe(pending, {(15, 3): 0.47})
+        assert p.peak_for(pending) == pytest.approx(0.47)
+        assert p.peak_for((4, 4, WHITE)) is None
+        assert p.peak_for(None) is None
 
     def test_other_cell_gets_instant_conf_only(self):
         p = self._peak()

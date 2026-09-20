@@ -138,6 +138,8 @@ describe('AiSetupPage', () => {
         label: '自由对弈',
         route: '/kiosk/play/ai/game/s1',
         ts: expect.any(Number),
+        // 摄像头未标定(vision.enabled=false)⇒ 开局写下「这一局不下实体盘」
+        onBoard: false,
       });
       expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/game/s1');
     });

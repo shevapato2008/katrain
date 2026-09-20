@@ -31,7 +31,7 @@ const PAD = 4;   // 两端各留 4,端点的圆不被裁掉
  */
 export function GoEvalGraph({ gameState, onNavigate }: {
   gameState: GameState;
-  onNavigate: (nodeId: number) => void;
+  onNavigate?: (nodeId: number) => void;
 }) {
   const { t } = useTranslation();
   const history = gameState.history ?? [];
@@ -59,6 +59,7 @@ export function GoEvalGraph({ gameState, onNavigate }: {
   const curWr = cur?.winrate ?? null;
 
   const jump = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!onNavigate) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * W;
     const i = Math.round((x - PAD) / xStep);
@@ -77,7 +78,8 @@ export function GoEvalGraph({ gameState, onNavigate }: {
           viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="none"
           data-eval
-          onClick={jump}
+          onClick={onNavigate ? jump : undefined}
+          aria-disabled={onNavigate ? undefined : true}
           aria-label={t('game:eval_graph', '本局胜率与目差走势')}
         >
           <line className="grid" x1="0" y1={H / 4} x2={W} y2={H / 4} />

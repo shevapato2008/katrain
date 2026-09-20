@@ -109,13 +109,13 @@ msgstr "Pasar"
 msgid "teaching undo message"
 msgstr ""
 "Deshice jugada {move} ya que perdía {points_lost:.1f} puntos. Coloca el "
-"cursor sobre la jugada para ver la refutación esperada. Por favor intenta de"
-" nuevo."
+"cursor sobre la jugada para ver la refutación esperada. Por favor intenta de "
+"nuevo."
 
 msgid "ai-ponder"
 msgstr ""
-"Indica el estado del motor, yendo de verde (en espera) a naranja (procesando"
-" consultas). Se convierte en rojo cuando el motor se bloquea o no empieza"
+"Indica el estado del motor, yendo de verde (en espera) a naranja (procesando "
+"consultas). Se convierte en rojo cuando el motor se bloquea o no empieza"
 
 #. undo button on the right
 msgid "undo-button-text"
@@ -420,8 +420,7 @@ msgid "sgf written"
 msgstr "SGF con análisis escrito en {file_name}"
 
 msgid "wait-before-extra-analysis"
-msgstr ""
-"Esperar completar análisis inicial antes de solicitar un refinamiento."
+msgstr "Esperar completar análisis inicial antes de solicitar un refinamiento."
 
 msgid "Copied SGF to clipboard."
 msgstr "SGF copiado al portapapeles."
@@ -500,10 +499,10 @@ msgstr "Politica Ciega"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"Escoge 'pick_n + pick_frac * <#jugadas legales>' al azar y juega la mejor.El"
-" 'pick_frac=1' juega como la politica intuitiva del IA. Juega la mejor "
-"jugada si la probabilidad del IA es por encima de 'pick_override'. Esto con "
-"el fin de prevenir errores obvios."
+"Escoge 'pick_n + pick_frac * <#jugadas legales>' al azar y juega la mejor.El "
+"'pick_frac=1' juega como la politica intuitiva del IA. Juega la mejor jugada "
+"si la probabilidad del IA es por encima de 'pick_override'. Esto con el fin "
+"de prevenir errores obvios."
 
 msgid "ai:p:local"
 msgstr "Estilo Local"
@@ -512,16 +511,16 @@ msgid "aihelp:p:local"
 msgstr ""
 "Escoge 'pick_n + pick_frac * <#jugadas legales>' con un peso superior a "
 "jugadas alrededor de la última jugada y escoge la mejor. Juega la mejor "
-"jugada si el valor de la politica está por encima 'pick_override' con el fin"
-" de prevenir errores obvios."
+"jugada si el valor de la politica está por encima 'pick_override' con el fin "
+"de prevenir errores obvios."
 
 msgid "ai:p:tenuki"
 msgstr "Estilo Tenuki"
 
 msgid "aihelp:p:tenuki"
 msgstr ""
-"Escoge 'pick_n + pick_frac * <#jugadas legales>' con un peso en contra de la"
-" última jugada y escoge la mejor. Juega la mejor jugada si el valor de la "
+"Escoge 'pick_n + pick_frac * <#jugadas legales>' con un peso en contra de la "
+"última jugada y escoge la mejor. Juega la mejor jugada si el valor de la "
 "politica esta por encima 'pick_override' con el fin de prevenir errores "
 "obvios. Un 'stddev' más grande hace que juegue más lejos."
 
@@ -557,8 +556,8 @@ msgstr "Ecualizar análsis de jugadas candidatas a {visits} visitas"
 
 msgid "Kata exe not found in path"
 msgstr ""
-"El binario de KataGo '{exe}' no se encuentra en la 'PATH', revisar variables"
-" ambiente o usar la ruta completa en la conf general. Si estas en MacOS, ve "
+"El binario de KataGo '{exe}' no se encuentra en la 'PATH', revisar variables "
+"ambiente o usar la ruta completa en la conf general. Si estas en MacOS, ve "
 "el manual de como usar homebrew para instalar KataGo primero"
 
 msgid "ai:p:rank"
@@ -577,8 +576,7 @@ msgid "count down sound"
 msgstr "Sonido on"
 
 msgid "Kata config not found"
-msgstr ""
-"El archivo de conf de KataGo {config} no existe, revisar conf general."
+msgstr "El archivo de conf de KataGo {config} no existe, revisar conf general."
 
 msgid "extra analysis"
 msgstr "Realizar análisis adicional a {visits} visitas"
@@ -818,8 +816,8 @@ msgstr "White player's name"
 #. TODO - in self-play mode
 msgid "gui-locked"
 msgstr ""
-"Action {action} not allowed in distributed training mode. Restart KaTrain to"
-" exit this mode."
+"Action {action} not allowed in distributed training mode. Restart KaTrain to "
+"exit this mode."
 
 #. TODO - menu item
 msgid "menu:distributed"
@@ -852,8 +850,8 @@ msgstr "Password"
 #. TODO - hint for max games
 msgid "contribute:maxgames:hint"
 msgstr ""
-"Best equal to your optimal numSearchThreads, around 8 for mid-tier GPUs. Can"
-" set it slightly lower for shorter runs, as half-finished games are not "
+"Best equal to your optimal numSearchThreads, around 8 for mid-tier GPUs. Can "
+"set it slightly lower for shorter runs, as half-finished games are not "
 "uploaded."
 
 #. TODO - hint for ownership
@@ -2186,8 +2184,8 @@ msgstr "Seleccionar partida"
 
 msgid "report:select_game_hint"
 msgstr ""
-"Selecciona una partida del panel derecho o importa un nuevo SGF / partida de"
-" la biblioteca."
+"Selecciona una partida del panel derecho o importa un nuevo SGF / partida de "
+"la biblioteca."
 
 msgid "report:no_preview"
 msgstr "Aún no hay partida para previsualizar."
@@ -2851,8 +2849,7 @@ msgid "ladder:net_score_prefix"
 msgstr "Puntuación neta: "
 
 msgid "ladder:net_score_aria"
-msgstr ""
-"Puntuación neta; negativa hacia el descenso, positiva hacia el ascenso"
+msgstr "Puntuación neta; negativa hacia el descenso, positiva hacia el ascenso"
 
 msgid "ladder:demotion_threshold"
 msgstr "Descenso -3"
@@ -2952,8 +2949,7 @@ msgstr "Cancelar y salir"
 
 msgid "tsumego:loadError"
 msgstr ""
-"No se pudo cargar la biblioteca de tsumego. Inténtalo de nuevo en un "
-"momento."
+"No se pudo cargar la biblioteca de tsumego. Inténtalo de nuevo en un momento."
 
 msgid "tsumego:noData"
 msgstr "Aún no hay problemas de tsumego."
@@ -3062,8 +3058,8 @@ msgstr "Iniciar sesión"
 
 msgid "ladder:login_required"
 msgstr ""
-"Las partidas de clasificación cambian tu rango, por lo que requieren iniciar"
-" sesión."
+"Las partidas de clasificación cambian tu rango, por lo que requieren iniciar "
+"sesión."
 
 msgid "play:login_required_free"
 msgstr ""
@@ -3080,8 +3076,8 @@ msgstr "Jugar una partida libre"
 
 msgid "play:blocked_by_pending_ranked"
 msgstr ""
-"Tienes una partida de clasificación sin liquidar. Termínala antes de empezar"
-" otra."
+"Tienes una partida de clasificación sin liquidar. Termínala antes de empezar "
+"otra."
 
 msgid "research:login_required"
 msgstr ""
@@ -3159,9 +3155,9 @@ msgstr "{n} sin evaluar"
 
 msgid "ladder:engine_unavailable_start"
 msgstr ""
-"El motor de partidas clasificatorias no está disponible temporalmente. No se"
-" ha iniciado ninguna partida y tu rango no se ve afectado. Inténtalo de "
-"nuevo más tarde."
+"El motor de partidas clasificatorias no está disponible temporalmente. No se "
+"ha iniciado ninguna partida y tu rango no se ve afectado. Inténtalo de nuevo "
+"más tarde."
 
 msgid "grade:match_rate"
 msgstr "Coincidencia con la IA"
@@ -3271,8 +3267,8 @@ msgstr ""
 
 msgid "grade:match_timeline_legend"
 msgstr ""
-"Bloque completo = primera opción, medio bloque claro = entre las 3 primeras,"
-" fondo = otras"
+"Bloque completo = primera opción, medio bloque claro = entre las 3 primeras, "
+"fondo = otras"
 
 msgid "grade:match_timeline_aria"
 msgstr ""
@@ -3285,3 +3281,203 @@ msgstr ""
 
 msgid "live:loading_match"
 msgstr "Cargando la partida…"
+
+msgid "game:black_resigns"
+msgstr "Negro se rinde"
+
+msgid "game:white_resigns"
+msgstr "Blanco se rinde"
+
+msgid "game:who_resigns"
+msgstr "¿Quién se rinde?"
+
+msgid "game:black_short"
+msgstr "N"
+
+msgid "game:white_short"
+msgstr "B"
+
+msgid "game:black_side"
+msgstr "Negro"
+
+msgid "game:white_side"
+msgstr "Blanco"
+
+msgid "game:clock_timeout"
+msgstr "Tiempo agotado"
+
+msgid "game:clock_byo_left"
+msgstr "Byo-yomi · quedan {n}"
+
+msgid "game:clock_byo_spec"
+msgstr "Byo-yomi {len}s×{n}"
+
+msgid "game:move_n"
+msgstr "Jugada {n}"
+
+msgid "game:timeout_loss_suffix"
+msgstr " pierde por tiempo"
+
+msgid "game:timeout_win_suffix"
+msgstr " gana por tiempo"
+
+msgid "game:saved_to_history"
+msgstr "Guardado en el historial de partidas"
+
+msgid "game:timeout_check_failed"
+msgstr "No se pudo confirmar el tiempo agotado"
+
+msgid "game:count_err_analysis_pending"
+msgstr ""
+"Todavía se está analizando esta jugada, inténtalo de nuevo en un momento"
+
+msgid "game:count_err_below_min"
+msgstr "Aún no hay suficientes jugadas, no se puede contar todavía"
+
+msgid "game:count_err_game_over"
+msgstr "Esta partida ya ha terminado"
+
+msgid "game:count_err_network"
+msgstr "No se puede conectar con el servicio de análisis"
+
+msgid "game:count_err_http"
+msgstr "El conteo falló ({status}), inténtalo de nuevo"
+
+msgid "game:counting"
+msgstr "Contando…"
+
+msgid "game:retry"
+msgstr "Reintentar"
+
+msgid "game:exit_failed"
+msgstr "Error al salir, inténtalo de nuevo"
+
+msgid "game:exit_unsaved_title"
+msgstr "Esta partida no ha terminado — si sales, no se guardará"
+
+msgid "game:keep_playing"
+msgstr "Seguir jugando"
+
+msgid "game:stay_on_board"
+msgstr "Quedarse en el tablero"
+
+msgid "game:exit_unsaved"
+msgstr "Salir sin guardar"
+
+msgid "play:local_needs_login"
+msgstr "Inicia sesión primero · se guarda automáticamente al terminar"
+
+msgid "review:no_result_line"
+msgstr "Sin resultado registrado"
+
+msgid "review:row_local"
+msgstr "Partida local · Dos jugadores"
+
+msgid "review:row_local_unnamed"
+msgstr "Partida local · Sin nombre"
+
+msgid "review:row_research"
+msgstr "Archivo de investigación"
+
+msgid "game:count_failed"
+msgstr "El conteo no se completó"
+
+msgid "game:check_network_retry"
+msgstr "Comprueba la conexión y vuelve a intentarlo"
+
+msgid "game:both_passed"
+msgstr "Ambos jugadores pasaron"
+
+msgid "game:exit_confirm_title"
+msgstr "¿Salir de esta partida?"
+
+msgid "game:exit_unsaved_body"
+msgstr "Esta partida no ha terminado; si sales, no se guardará."
+
+msgid "game:which_side_resigns"
+msgstr "¿Qué lado se rinde?"
+
+msgid "game:resign_local_body"
+msgstr ""
+"El rival quedará registrado como ganador por rendición; esta partida se "
+"guardará en el historial."
+
+msgid "local:input_hint_v2"
+msgstr ""
+"El tablero físico solo es 19×19 — elige 13×13 o 9×9 para jugar en pantalla"
+
+msgid "local:komi_hint"
+msgstr ""
+"Las partidas con hándicap usan komi 0 — este grupo se oculta al fijar el "
+"hándicap"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"El reloj cuenta en la tarjeta del jugador · agotar el byoyomi pierde por "
+"tiempo · sin límite solo se registra la partida"
+
+msgid "local:clock_meta_count"
+msgstr "{n} niveles"
+
+msgid "local:sound_hint_v2"
+msgstr "Es el mismo interruptor que el sonido de jugada en Ajustes · Sonido"
+
+msgid "local:note3_a"
+msgstr "En pantalla"
+
+msgid "local:note3_b"
+msgstr "no hay pistas ni evaluación de la posición"
+
+msgid "local:note3_c"
+msgstr "; cuando ambos pasan,"
+
+msgid "local:note3_d"
+msgstr "se cuenta automáticamente"
+
+msgid "local:note3_e"
+msgstr " la vida y muerte la decide el motor."
+
+msgid "local:note3_f"
+msgstr "Esta partida"
+
+msgid "local:note3_g"
+msgstr "solo queda registrada, tu rango no cambia"
+
+msgid "local:note3_h"
+msgstr "; salir a mitad de partida"
+
+msgid "local:note3_i"
+msgstr "no guarda la partida"
+
+msgid "local:note3_j"
+msgstr "."
+
+msgid "vision:offcenter_at"
+msgstr ": la piedra no está centrada"
+
+msgid "vision:offcenter_plain"
+msgstr "Esta piedra no está centrada"
+
+msgid "vision:offcenter_hint"
+msgstr "Mueve la piedra a"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "; se detectará automáticamente"
+
+msgid "vision:play_here_anyway"
+msgstr "Jugar de todos modos en"
+
+msgid "vision:offcenter_dismiss"
+msgstr "La ajustaré"
+
+msgid "vision:offcenter_move_from_to"
+msgstr "{color}: la piedra está descentrada; muévala de {from} a {to}"
+
+msgid "review:start_analysis"
+msgstr "Iniciar análisis"
+
+msgid "vision:resync_screen_authority"
+msgstr "Restablecer reconocimiento · usar la posición digital en pantalla"
+
+msgid "Re-sync"
+msgstr "Restablecer reconocimiento"

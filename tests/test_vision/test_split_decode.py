@@ -209,3 +209,142 @@ class TestRknnBackendRoutesSplit:
         assert len(dets) == 1
         assert dets[0].class_id == 0
         assert dets[0].x_center == pytest.approx(28.0, abs=1.0)
+
+
+class TestMaskBeforeDflIsEquivalent:
+    """The decode thresholds BEFORE running DFL so it only decodes surviving anchors.
+
+    That reorder is an optimisation, not a behaviour change, so it is pinned by a
+    differential test against a reference that keeps the original order (decode every
+    anchor, then mask).  If the two ever disagree the optimisation has changed results.
+
+    NOT bit-identical, and deliberately not asserted as such: class ids and confidences
+    match exactly, but box coordinates differ by ~1e-5 relative because numpy's pairwise
+    summation blocks differently over an (A,4,16) array than over the masked (K,4,16)
+    subset.  The tolerance below is 1e-3 px — four orders of magnitude tighter than any
+    real regression (detection centres are rounded onto a ~55px grid downstream) and
+    still far above the observed float32 noise.
+    """
+
+    COORD_TOL = 1e-3  # px
+
+    @staticmethod
+    def _reference_decode(outputs, *, nc, reg_max, strides, confidence_threshold, iou_threshold, scale, x_off, y_off):
+        """The pre-optimisation order: DFL over ALL anchors, mask afterwards."""
+        import cv2
+
+        from katrain.vision.inference.split_decode import _identify, _make_anchors, _sigmoid, _softmax
+        from katrain.vision.stone_detector import Detection
+
+        grids, box_logits, cls_logits = _identify(outputs, nc, reg_max)
+        anchors, stride_vec = _make_anchors(grids, sorted(strides))
+        num_anchors = box_logits.shape[0]
+
+        reg = box_logits.reshape(num_anchors, 4, reg_max).astype(np.float32)
+        reg = _softmax(reg, axis=2)
+        dist = (reg * np.arange(reg_max, dtype=np.float32)).sum(axis=2)
+
+        s = stride_vec[:, 0]
+        x1 = (anchors[:, 0] - dist[:, 0]) * s
+        y1 = (anchors[:, 1] - dist[:, 1]) * s
+        x2 = (anchors[:, 0] + dist[:, 2]) * s
+        y2 = (anchors[:, 1] + dist[:, 3]) * s
+
+        scores = _sigmoid(cls_logits.astype(np.float32))
+        class_ids = scores.argmax(axis=1)
+        confidences = scores.max(axis=1)
+
+        mask = confidences >= confidence_threshold
+        x1, y1, x2, y2 = x1[mask], y1[mask], x2[mask], y2[mask]
+        class_ids, confidences = class_ids[mask], confidences[mask]
+        if len(class_ids) == 0:
+            return []
+
+        tl_boxes = np.stack([x1, y1, x2 - x1, y2 - y1], axis=1)
+        indices = cv2.dnn.NMSBoxes(
+            bboxes=tl_boxes.tolist(),
+            scores=confidences.tolist(),
+            score_threshold=confidence_threshold,
+            nms_threshold=iou_threshold,
+        )
+        if len(indices) == 0:
+            return []
+        out = []
+        for idx in np.asarray(indices).flatten():
+            ox1 = float((x1[idx] - x_off) / scale)
+            oy1 = float((y1[idx] - y_off) / scale)
+            ox2 = float((x2[idx] - x_off) / scale)
+            oy2 = float((y2[idx] - y_off) / scale)
+            out.append(
+                Detection(
+                    x_center=(ox1 + ox2) / 2.0,
+                    y_center=(oy1 + oy2) / 2.0,
+                    class_id=int(class_ids[idx]),
+                    confidence=float(confidences[idx]),
+                    bbox=(ox1, oy1, ox2, oy2),
+                )
+            )
+        return out
+
+    @pytest.mark.parametrize("seed", range(12))
+    def test_matches_reference_on_random_logits(self, seed):
+        rng = np.random.default_rng(seed)
+        # Random logits across all three levels; the class bias keeps the survivor count
+        # realistic (a handful out of ~340 anchors at imgsz 64) instead of "everything".
+        outs = []
+        for s in STRIDES:
+            g = IMGSZ // s
+            outs.append(rng.standard_normal((1, 4 * REG_MAX, g, g)).astype(np.float32) * 3.0)
+            outs.append((rng.standard_normal((1, NC, g, g)).astype(np.float32) * 3.0 - 2.0))
+
+        kwargs = dict(
+            nc=NC,
+            reg_max=REG_MAX,
+            strides=STRIDES,
+            confidence_threshold=0.35,
+            iou_threshold=0.5,
+            scale=0.6,
+            x_off=7,
+            y_off=3,
+        )
+        got = decode_split_heads(outs, **kwargs)
+        want = self._reference_decode(outs, **kwargs)
+
+        # Same detections, same order, same classes/confidences — exactly.
+        assert len(got) == len(want)
+        assert [d.class_id for d in got] == [d.class_id for d in want]
+        assert [d.confidence for d in got] == [d.confidence for d in want]
+        # Geometry to within float32 reduction noise (see class docstring).
+        for g, w in zip(got, want):
+            assert abs(g.x_center - w.x_center) < self.COORD_TOL
+            assert abs(g.y_center - w.y_center) < self.COORD_TOL
+            for got_edge, want_edge in zip(g.bbox, w.bbox):
+                assert abs(got_edge - want_edge) < self.COORD_TOL
+
+
+class TestAnchorCache:
+    def test_repeated_calls_return_the_same_arrays(self):
+        from katrain.vision.inference.split_decode import _make_anchors
+
+        a1, s1 = _make_anchors([(8, 8), (4, 4), (2, 2)], [8, 16, 32])
+        a2, s2 = _make_anchors([(8, 8), (4, 4), (2, 2)], [8, 16, 32])
+        assert a1 is a2 and s1 is s2
+
+    def test_cached_arrays_are_read_only(self):
+        """Callers index (which copies); writing through the shared view would corrupt
+        every later frame's decode."""
+        from katrain.vision.inference.split_decode import _make_anchors
+
+        anchors, stride_vec = _make_anchors([(4, 4)], [8])
+        with pytest.raises(ValueError):
+            anchors[0, 0] = 999.0
+        with pytest.raises(ValueError):
+            stride_vec[0, 0] = 999.0
+
+    def test_different_geometry_gets_its_own_entry(self):
+        from katrain.vision.inference.split_decode import _make_anchors
+
+        a_small, _ = _make_anchors([(4, 4)], [8])
+        a_big, _ = _make_anchors([(8, 8)], [8])
+        assert a_small.shape == (16, 2)
+        assert a_big.shape == (64, 2)

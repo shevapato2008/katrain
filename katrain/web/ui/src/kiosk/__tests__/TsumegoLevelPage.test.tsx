@@ -112,6 +112,14 @@ describe('TsumegoLevelPage', () => {
     });
   });
 
+  it('shows the cloud-unreachable copy on 503', async () => {
+    (global.fetch as any).mockResolvedValueOnce({ ok: false, status: 503, json: () => Promise.resolve({}) });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText(/连不上云端题库/)).toBeInTheDocument();
+    });
+  });
+
   it('shows empty state when no problems', async () => {
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,

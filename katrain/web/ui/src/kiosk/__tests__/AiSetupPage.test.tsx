@@ -6,6 +6,7 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import AiSetupPage from '../pages/AiSetupPage';
 import { openPick, pick } from './helpers/setupPick';
+import { readActiveSession, clearActiveSession } from '../utils/activeSession';
 
 /**
  * 屏 02 / 03 的**控件与开局载荷**那一半。（版式、赌注口径、挡局面板在
@@ -60,12 +61,6 @@ const renderPage = (mode = 'free') =>
       </MemoryRouter>
     </ThemeProvider>
   );
-
-/** 档位轨的 ＋ 键。轨本身不可点(29 个点摊在 330px 上手指点不准),只有两头的键能按。 */
-const step = (testId: string, dir: '＋' | '−') => {
-  const track = screen.getByTestId(testId);
-  return within(track).getByRole('button', { name: dir === '＋' ? /多|提高|增加/ : /少|降低|减少/ });
-};
 
 describe('AiSetupPage', () => {
   // 原来钉的是 `document.querySelector('canvas')` —— 那是 `LiveBoard` 的实现细节。
@@ -326,6 +321,23 @@ describe('AiSetupPage', () => {
     // `server.py:1230` 是 `human_bw = "B" if color === "black" else "W"` ——
     // 任何不等于 "black" 的值都会把人静默坐到白,所以这里只能是这两个之一。
     expect(['black', 'white']).toContain(sent);
+  });
+
+  /* develop 的 79eef93f 在这儿还有两条(`free:让了子送出去的 komi 是 0`、
+     `free:不让子时 komi 仍是贴目轨那一档`)—— 它们点的是已经撤掉的 ± 档位轨
+     (`step('setup-handicap','＋')`),而它们断言的那件事本轮由上面
+     `让子局送出去的 handicap/komi 是 (N, 0)` 和 `calls API.createSession and
+     gameSetup on start`(默认中国规则 ⇒ komi 7.5)接着守。下面这条不一样:
+     它管的是活动会话里的 `onBoard`,本轮没有别的测试替它,留。 */
+
+  // §3.5:开局那一刻的 onBoard 随活动会话写下。这台 mock 的机器没标定摄像头 ⇒ false。
+  it('free:活动会话带上 onBoard(没标定摄像头 ⇒ false)', async () => {
+    clearActiveSession('game');
+    renderPage('free');
+    await userEvent.setup().click(screen.getByRole('button', { name: /开始对局/i }));
+    await waitFor(() => expect(readActiveSession('game')).toMatchObject({
+      route: '/kiosk/play/ai/game/new-session-123', onBoard: false,
+    }));
   });
 
   it('shows error alert when API call fails', async () => {

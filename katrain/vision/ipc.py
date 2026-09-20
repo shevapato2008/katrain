@@ -53,6 +53,7 @@ class WorkerStatus:
     geometry_ready: bool = False
     model_ready: bool = False
     recognition_ready: bool = False
+    last_motion_at: float | None = None  # monotonic; lets hint lamps yield when a hand enters
 
 
 @dataclass

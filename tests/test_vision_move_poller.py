@@ -25,7 +25,12 @@ log = logging.getLogger("test_vision_move_poller")
 class FakeKatrain:
     def __init__(self, player_to_move="B"):
         self.plays = []
-        self._state = {"stones": [], "board_size": [19, 19], "player_to_move": player_to_move}
+        self._state = {
+            "stones": [],
+            "board_size": [19, 19],
+            "player_to_move": player_to_move,
+            "current_node_id": 5150,
+        }
 
     def get_state(self):
         return self._state
@@ -59,9 +64,11 @@ class FakeSessionManager:
 class FakeVision:
     def __init__(self):
         self.expected_pushes = []
+        self.expected_node_ids = []
 
-    def set_expected_from_stones(self, stones, board_size=19):
+    def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
         self.expected_pushes.append(stones)
+        self.expected_node_ids.append(expected_node_id)
 
 
 class FakeGateway:
@@ -117,6 +124,15 @@ def _move(col=3, row=3, color=BLACK):
 
 
 class TestOutOfTurnAndSessionMissing:
+    def test_rearm_forwards_current_node_id(self):
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="W")})
+        app = _app(sm, gateway=FakeGateway())
+        vision = FakeVision()
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(color=BLACK), log))
+
+        assert vision.expected_node_ids == [5150]
+
     def test_out_of_turn_move_ignored_rearms_with_throttle(self):
         sm = FakeSessionManager({"s1": FakeSession(player_to_move="W")})
         gateway = FakeGateway()
@@ -302,3 +318,51 @@ class TestNoTrackerConfigured:
 
         assert delay == 0.5
         assert vision.expected_pushes
+
+
+class TestEngineGameWhoseContextIsGone:
+    def test_a_move_after_the_engine_game_ended_goes_to_the_gateway_not_the_local_tree(self):
+        session = FakeSession(player_to_move="B")
+        session.katrain.platform_engine_color = "W"
+        gateway = FakeGateway(is_platform=False, outcomes=[PlatformMoveRejectedError("over", reason="game_ended")])
+        vision = FakeVision()
+        app = _app(FakeSessionManager({"s1": session}), gateway=gateway, tracker=EngineRecoveryTracker())
+
+        delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(color=BLACK), log))
+
+        assert gateway.calls == [("s1", 3, 15)]
+        assert session.katrain.plays == []
+        assert vision.expected_pushes == []
+        assert delay == 0.0
+
+
+class TestGameEndedIsRecordedOffRequest:
+    def test_game_ended_is_recorded_off_request(self, monkeypatch):
+        from unittest.mock import AsyncMock
+
+        import katrain.web.server as server
+
+        session = FakeSession()
+        gateway = FakeGateway(outcomes=[PlatformMoveRejectedError("over", reason="game_ended")])
+        app = _app(FakeSessionManager({"s1": session}), gateway=gateway, tracker=EngineRecoveryTracker())
+        recorder = AsyncMock()
+        monkeypatch.setattr(server, "_record_platform_engine_game_off_request", recorder)
+
+        delay = asyncio.run(_handle_confirmed_move(app, FakeVision(), "s1", _move(), log))
+
+        assert delay == 0.0
+        recorder.assert_awaited_once_with(session, app)
+
+    def test_other_rejections_record_nothing(self, monkeypatch):
+        from unittest.mock import AsyncMock
+
+        import katrain.web.server as server
+
+        gateway = FakeGateway(outcomes=[PlatformMoveRejectedError("boom", reason="engine_error")])
+        app = _app(FakeSessionManager({"s1": FakeSession()}), gateway=gateway, tracker=EngineRecoveryTracker())
+        recorder = AsyncMock()
+        monkeypatch.setattr(server, "_record_platform_engine_game_off_request", recorder)
+
+        asyncio.run(_handle_confirmed_move(app, FakeVision(), "s1", _move(), log))
+
+        recorder.assert_not_awaited()

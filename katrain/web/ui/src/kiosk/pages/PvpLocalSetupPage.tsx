@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useVision } from '../context/VisionContext';
@@ -17,6 +17,7 @@ import { SetupSelect } from '../components/setup/SetupSelect';
 import { SetupDerived } from '../components/setup/SetupDerived';
 import { komiReadout } from '../components/setup/komiReadout';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
+import { readAudioPref, subscribeAudioPref, writeAudioPref } from '../../utils/audioPrefs';
 import { API } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
@@ -32,13 +33,11 @@ import { writeActiveSession } from '../utils/activeSession';
  *
  * ## 稿子这一屏有两处不成立,都按仓里的事实写
  *
- * ① **`.setnote` 第一句**。稿子写「这一边不接引擎,**没有提示也没有形势判断**」——
- *    前半句对、后半句不对。`interface.py:253` 的 `SCORING_GAME_TYPES` 只有
- *    `rated / ranked / ai_ladder_ranked` 三种,`pvp_local` **不在里面** ⇒
- *    `analysis_allowed` 为真,对局屏上那颗「领地」键照样能按,而领地就是形势判断。
- *    真正关掉的是另外两样:`GameControlPanel.tsx:113` 的 `evalAllowed` 把
- *    `pvp_local` 排除在外 ⇒ **胜负走势图整块不渲染**;`GamePage.tsx:451` 的
- *    `hintVisible` 要求 `game_type === 'free'` ⇒ **AI 支招是灰的**。
+ * ① **`.setnote` 第一句**。稿子写「终局两人自己确认死活」—— 仓里没有死子交互,
+ *    数子是 KataGo 目差估计(`server.py` 的 `/api/count/request`)。v2 §2 D1 撤掉对局屏的
+ *    「领地」「AI 支招」,双 pass 后自动数子(§3.4)⇒ 说明改成「屏上不给提示和形势判断;
+ *    双方各停一手后自动数子,死活按引擎判断」,并补上「中途退出不存谱」(D2)。
+ *    **这句话要等 v2 S2 合入才成立。**(F7,2026-09-14:文案表定稿后再收一版,见 note3_*)
  *
  * ② **`.setnote` 第二句的后半**。稿子写「段位只有**在线大厅的定级队列**会改」——
  *    定级赛不在在线大厅,在「升降级对弈」:`LobbyPage.tsx:151` 那句挡人的话原文是
@@ -85,11 +84,9 @@ const PvpLocalSetupPage = () => {
   const [byoyomiTime, setByoyomiTime] = useState(30);
   const [byoyomiPeriods, setByoyomiPeriods] = useState(3);
 
-  // Move sound — client-side preference, persisted in localStorage (shared useGameSession.playSound reads it).
-  // Box-SSO guest mode (client-side zero-persistence, 4th layer, R9-F1): deliberately LEFT
-  // GLOBAL — a mute/audio preference tied to the physical kiosk's environment (e.g. a quiet
-  // room), not per-account activity or content, so it carries no identity-linkable residue.
-  const [confirmSound, setConfirmSound] = useState(localStorage.getItem('kioskPlaySound') !== '0');
+  // 提示音只留一把:读写全局 audioPrefs 的 sfx —— 和设置屏「落子音效」是同一把(v2 §4.1 / P9)。
+  // 订阅而不是自存一份 state:两份状态迟早走散,走散的样子正是「屏上写着关、喇叭还在响」。
+  const soundOn = useSyncExternalStore(subscribeAudioPref, () => readAudioPref('sfx'), () => true);
 
   /** 下拉弹层的宿主 —— 见 `components/setup/SetupPopoverHost.tsx`。 */
   const [railEl, setRailEl] = useState<HTMLDivElement | null>(null);
@@ -156,10 +153,12 @@ const PvpLocalSetupPage = () => {
     setError('');
     setLoading(true);
     try {
-      localStorage.setItem('kioskPlaySound', confirmSound ? '1' : '0');
       const { session_id } = await API.createSession(token ?? undefined);
       await API.gameSetup(session_id, 'pvp_local', {
         board_size: boardSize,
+        // 见屏 02 同一处的注释:develop 那版(aeae84e1)在这里写
+        // `komi: handicap > 0 ? 0 : komi`,判据等价但覆盖不了让先/倒贴两档。
+        // 现在三个字段同出 `resolveGameTerms`。
         rules: ruleDef.wire,
         handicap: terms.handicap,
         komi: terms.komi,
@@ -177,6 +176,8 @@ const PvpLocalSetupPage = () => {
         label: `${blackName || t('setup:black_side', '黑方')} vs ${whiteName || t('setup:white_side', '白方')}`,
         route: `/kiosk/play/pvp/local/game/${session_id}`,
         ts: Date.now(),
+        // 这一局下不下实体盘,开局这一刻定下(v2 §3.5):守卫和对局屏都读它,不再各自判断。
+        onBoard: playInput.onBoard,
       });
       navigate(`/kiosk/play/pvp/local/game/${session_id}`);
     } catch (e) {
@@ -330,12 +331,16 @@ const PvpLocalSetupPage = () => {
               <SetupSelect
                 testId="setup-sound"
                 label={t('local:move_sound_short', '落子音')}
-                value={confirmSound ? 'on' : 'off'}
+                /* develop 的 939165a4 把落子音从本页的 `confirmSound`
+                   (localStorage `kioskPlaySound`)换成了共享的 `audioPrefs` ——
+                   屏上这一格和「设置 · 声音」必须是同一把开关,不是两把。
+                   本轮改的是控件形态,那把开关照旧。 */
+                value={soundOn ? 'on' : 'off'}
                 options={[
                   { key: 'on', label: t('On', '开') },
                   { key: 'off', label: t('Off', '关') },
                 ]}
-                onChange={(k) => setConfirmSound(k === 'on')}
+                onChange={(k) => writeAudioPref('sfx', k === 'on')}
               />
             </div>
             <p className="su-hint" data-testid="setup-seat-hint">{seatHint}</p>
@@ -346,15 +351,17 @@ const PvpLocalSetupPage = () => {
         {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
 
         <p className="setnote" data-testid="setup-note">
-          {t('local:note_a', '这一边')}
-          <b>{t('local:note_b', '没有引擎对手')}</b>
-          {t('local:note_c', ':AI 支招关着、不画胜负走势,')}
-          <b>{t('local:note_d', '终局死活两人自己确认')}</b>
-          {t('local:note_e', '。')}
+          {t('local:note3_a', '屏上')}
+          <b>{t('local:note3_b', '不给提示和形势判断')}</b>
+          {t('local:note3_c', ';双方各停一手后')}
+          <b>{t('local:note3_d', '自动数子')}</b>
+          {t('local:note3_e', '，死活按引擎判断。')}
           <br />
-          {t('local:note_f', '这一局')}
-          <b>{t('local:note_g', '只留档,不动段位')}</b>
-          {t('local:note_h', '——段位只由「升降级对弈」那条阶梯决定。')}
+          {t('local:note3_f', '这一局')}
+          <b>{t('local:note3_g', '只留档，不动段位')}</b>
+          {t('local:note3_h', '；中途退出')}
+          <b>{t('local:note3_i', '不存谱')}</b>
+          {t('local:note3_j', '。')}
         </p>
 
         <button

@@ -130,7 +130,9 @@ msgid "pass-button-text"
 msgstr "パス"
 
 msgid "ai-ponder"
-msgstr "この印はエンジンの状態をシンプルに表します（緑＝空き、オレンジ＝処理中）。エンジンが止まったり起動できなかったりすると赤くなります。"
+msgstr ""
+"この印はエンジンの状態をシンプルに表します（緑＝空き、オレンジ＝処理中）。エ"
+"ンジンが止まったり起動できなかったりすると赤くなります。"
 
 #. undo button on the right
 msgid "undo-button-text"
@@ -465,8 +467,9 @@ msgstr "KataGoの実行ファイル {exe} がありません。一般設定を�
 
 msgid "Kata exe not found in path"
 msgstr ""
-"KataGoの実行ファイル '{exe}' "
-"がPATH内にありません。環境変数を確認するか、もしくは一般設定でフルパスを記入してください。MacOSの場合は、まずbrewを使ってkatagoをインストールする方法について、マニュアルを参照ください。"
+"KataGoの実行ファイル '{exe}' がPATH内にありません。環境変数を確認するか、もし"
+"くは一般設定でフルパスを記入してください。MacOSの場合は、まずbrewを使って"
+"katagoをインストールする方法について、マニュアルを参照ください。"
 
 msgid "Kata model not found"
 msgstr "KataGoのモデル {model} がありません。一般設定を確認してください。"
@@ -492,8 +495,8 @@ msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
-"手加減なしのKataGo AI. 強さは, 一般設定のエンジンの探索手数とモデル, およびエンジンの設定ファイルによります. "
-"オプション設定はありません."
+"手加減なしのKataGo AI. 強さは, 一般設定のエンジンの探索手数とモデル, およびエ"
+"ンジンの設定ファイルによります. オプション設定はありません."
 
 #. ai which handles handicap games better
 msgid "ai:handicap"
@@ -501,93 +504,103 @@ msgstr "Kata置碁"
 
 msgid "aihelp:handicap"
 msgstr ""
-"置き石が多い場合向けに最適化されたKataGo. "
-"'pda'設定は黒側から見たKataGoの'playoutDoublingAdvantage'に対応します. 'automatic'を設定しておけば, "
-"適切な値をKaTrainが自動的にみつけます."
+"置き石が多い場合向けに最適化されたKataGo. 'pda'設定は黒側から見たKataGo"
+"の'playoutDoublingAdvantage'に対応します. 'automatic'を設定しておけば, 適切な"
+"値をKaTrainが自動的にみつけます."
 
 msgid "ai:jigo"
 msgstr "持碁"
 
 msgid "aihelp:jigo"
-msgstr "指定された目差ちょうど（デフォルトは半目）だけ勝つことをめざします. それ以外は制限なし."
+msgstr ""
+"指定された目差ちょうど（デフォルトは半目）だけ勝つことをめざします. それ以外"
+"は制限なし."
 
 msgid "ai:scoreloss"
 msgstr "損も混ぜて"
 
 msgid "aihelp:scoreloss"
 msgstr ""
-"損する目数に応じた確率でランダムに手を選択します（損が大きいほど低確率）. 探索手数の設定値を大きくするほど多彩で弱い打ち方をするでしょう."
+"損する目数に応じた確率でランダムに手を選択します（損が大きいほど低確率）. 探"
+"索手数の設定値を大きくするほど多彩で弱い打ち方をするでしょう."
 
 msgid "ai:policy"
 msgstr "ポリシー"
 
 msgid "aihelp:policy"
 msgstr ""
-"一手も読まずに第一感での最有力手を打ちます. 強さは主にエンジン設定のモデルしだいです. "
-"'opening_moves'は序盤の何手目までをよりランダムにするかの設定です."
+"一手も読まずに第一感での最有力手を打ちます. 強さは主にエンジン設定のモデルし"
+"だいです. 'opening_moves'は序盤の何手目までをよりランダムにするかの設定です."
 
 msgid "ai:p:weighted"
 msgstr "第一感（比重）"
 
 msgid "aihelp:p:weighted"
 msgstr ""
-"第一感での確率にしたがって手を選びます. 'weaken_fac'は弱そうな手を選ぶ度合を調整します. これを非常に小さな値にすれば, "
-"本来の「第一感」と似たような打ち方になります. なお, "
-"最有力手の第一感での確率が'pick_override'より大きい場合はその手が無条件で選ばれます. 逆に, "
-"第一感での確率が'lower_bound'より小さい手は決して選ばれません."
+"第一感での確率にしたがって手を選びます. 'weaken_fac'は弱そうな手を選ぶ度合を"
+"調整します. これを非常に小さな値にすれば, 本来の「第一感」と似たような打ち方"
+"になります. なお, 最有力手の第一感での確率が'pick_override'より大きい場合はそ"
+"の手が無条件で選ばれます. 逆に, 第一感での確率が'lower_bound'より小さい手は決"
+"して選ばれません."
 
 msgid "ai:p:pick"
 msgstr "第一感（盲点）"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"'pick_n + pick_frac * <合法手の個数>'個の手をランダムに選んだ上で, その中での最善手を打ちます. "
-"'pick_frac=1'にすれば, 本来の「第一感」と同じような打ち方になります. なお, 明らかなミスを避けるために, "
-"最有力手の第一感での確率が'pick_override'より大きい場合は無条件でその手を打ちます."
+"'pick_n + pick_frac * <合法手の個数>'個の手をランダムに選んだ上で, その中での"
+"最善手を打ちます. 'pick_frac=1'にすれば, 本来の「第一感」と同じような打ち方に"
+"なります. なお, 明らかなミスを避けるために, 最有力手の第一感での確率"
+"が'pick_override'より大きい場合は無条件でその手を打ちます."
 
 msgid "ai:p:local"
 msgstr "おつきあい派"
 
 msgid "aihelp:p:local"
 msgstr ""
-"直前の着手に近い位置ほど重みをつけて'pick_n + pick_frac * <合法手の個数>'個の手をランダムに選び, その中での最善手を打ちます."
-" ただし, 明らかなミスを避けるために, 最有力手の第一感での確率が'pick_override'より大きい場合は無条件でその手を打ちます."
+"直前の着手に近い位置ほど重みをつけて'pick_n + pick_frac * <合法手の個数>'個の"
+"手をランダムに選び, その中での最善手を打ちます. ただし, 明らかなミスを避ける"
+"ために, 最有力手の第一感での確率が'pick_override'より大きい場合は無条件でその"
+"手を打ちます."
 
 msgid "ai:p:tenuki"
 msgstr "手抜き派"
 
 msgid "aihelp:p:tenuki"
 msgstr ""
-"直前の着手から遠い位置ほど重みをつけて'pick_n + pick_frac * <合法手の個数>'個の手をランダムに選び, "
-"その中での最善手を打ちます. ただし, 明らかなミスを避けるために, "
-"最有力手の第一感での確率が'pick_override'より大きい場合は無条件でその手を打ちます. "
-"'stddev'を大きくするほどより遠くの手を打ちます."
+"直前の着手から遠い位置ほど重みをつけて'pick_n + pick_frac * <合法手の個数>'個"
+"の手をランダムに選び, その中での最善手を打ちます. ただし, 明らかなミスを避け"
+"るために, 最有力手の第一感での確率が'pick_override'より大きい場合は無条件でそ"
+"の手を打ちます. 'stddev'を大きくするほどより遠くの手を打ちます."
 
 msgid "ai:p:influence"
 msgstr "勢力派"
 
 msgid "aihelp:p:influence"
 msgstr ""
-"'threshold'線より高い（天元寄りの）手に重みをつけて何個かの手を選び, その中での最善手を打ちます. "
-"'line_weight'を大きくするほど, 盤端に近い手をより避けるようになります. なお, "
-"盤全体のうち'endgame'の割合が埋まったあとにはこの重みづけは適用しません."
+"'threshold'線より高い（天元寄りの）手に重みをつけて何個かの手を選び, その中で"
+"の最善手を打ちます. 'line_weight'を大きくするほど, 盤端に近い手をより避けるよ"
+"うになります. なお, 盤全体のうち'endgame'の割合が埋まったあとにはこの重みづけ"
+"は適用しません."
 
 msgid "ai:p:territory"
 msgstr "実利派"
 
 msgid "aihelp:p:territory"
 msgstr ""
-"'threshold'線より低い（盤端寄りの）手に重みをつけて何個かの手を選び, その中での最善手を打ちます. "
-"'line_weight'を大きくするほど, 天元に近い手をより避けるようになります. なお, "
-"盤全体のうち'endgame'の割合が埋まったあとにはこの重みづけは適用しません."
+"'threshold'線より低い（盤端寄りの）手に重みをつけて何個かの手を選び, その中で"
+"の最善手を打ちます. 'line_weight'を大きくするほど, 天元に近い手をより避けるよ"
+"うになります. なお, 盤全体のうち'endgame'の割合が埋まったあとにはこの重みづけ"
+"は適用しません."
 
 msgid "ai:p:rank"
 msgstr "段級位相応"
 
 msgid "aihelp:p:rank"
 msgstr ""
-"すべての合法手の中からランダムに何個かの候補手を選んで, その中での最有力手を打ちます. "
-"強い設定にするほどより多くの候補手の中から最有力手を選ぶようになります. なお, 3段は-2 kyuに対応します（0級／段はないので数字がずれる）. "
+"すべての合法手の中からランダムに何個かの候補手を選んで, その中での最有力手を"
+"打ちます. 強い設定にするほどより多くの候補手の中から最有力手を選ぶようになり"
+"ます. なお, 3段は-2 kyuに対応します（0級／段はないので数字がずれる）. "
 
 #. in AI settings
 msgid "estimated strength"
@@ -626,7 +639,9 @@ msgid "theme"
 msgstr "カラーテーマ"
 
 msgid "engine:altcommand:hint"
-msgstr "エンジン起動コマンド全体 (plinkでリモートエンジンに接続, 等). 他のモデルオプションはすべて無視されます."
+msgstr ""
+"エンジン起動コマンド全体 (plinkでリモートエンジンに接続, 等). 他のモデルオプ"
+"ションはすべて無視されます."
 
 msgid "engine:altcommand"
 msgstr "エンジンコマンドの上書き"
@@ -649,8 +664,8 @@ msgstr "KataGo実行ファイルはすべてダウンロード済です"
 
 msgid "Engine missing DLL"
 msgstr ""
-"KataGoの起動に失敗しました. DLLがみつかりません. 必要なものをKataGoの説明書で確認するか, "
-"KataGo実行ファイル自体を直接実行して詳細を調べてください."
+"KataGoの起動に失敗しました. DLLがみつかりません. 必要なものをKataGoの説明書で"
+"確認するか, KataGo実行ファイル自体を直接実行して詳細を調べてください."
 
 #. resign the game
 msgid "resign"
@@ -663,7 +678,9 @@ msgstr "他の候補手を分析"
 #. message shown when move is undone
 msgid "teaching undo message"
 msgstr ""
-"待った。{move}は{points_lost:.1f}目損です。打ち直してください。ヒント：マウスカーソルをこの手にかざせばとがめる手順が表示されます。あるいは、地合推定をオンに（tキー）すれば盤上どのあたりで損をしたかが見られます。"
+"待った。{move}は{points_lost:.1f}目損です。打ち直してください。ヒント：マウス"
+"カーソルをこの手にかざせばとがめる手順が表示されます。あるいは、地合推定をオ"
+"ンに（tキー）すれば盤上どのあたりで損をしたかが見られます。"
 
 #. status message
 msgid "alternative analysis"
@@ -682,12 +699,14 @@ msgstr "持ち時間（分）"
 
 msgid "aihelp:simple"
 msgstr ""
-"盤面の単純化をめざして, 次の基準で手を選びます (括弧内は重視度): 損する目数が少ない, 自分の確定地が多い (settled_weight), "
-"相手も確定地が多い (settled_weight × opponent fac), 相手が打った手の近辺…縦横とも3間以内 "
-"(tenuki_penalty), 相手の石に接触しない (attachment_penalty). ただし, 損が大きすぎたり "
-"(max_points_lost目以上) 探索手数が少なすぎたり (min_visits手未満) する候補手は除きます. 重視度を負にすれば, "
-"逆に盤面の複雑化をめざします. また, 一般設定のwide root noiseを大きくすれば, 強さは犠牲になりますが, "
-"より前述の基準に忠実な打ち方をします."
+"盤面の単純化をめざして, 次の基準で手を選びます (括弧内は重視度): 損する目数が"
+"少ない, 自分の確定地が多い (settled_weight), 相手も確定地が多い "
+"(settled_weight × opponent fac), 相手が打った手の近辺…縦横とも3間以内 "
+"(tenuki_penalty), 相手の石に接触しない (attachment_penalty). ただし, 損が大き"
+"すぎたり (max_points_lost目以上) 探索手数が少なすぎたり (min_visits手未満) す"
+"る候補手は除きます. 重視度を負にすれば, 逆に盤面の複雑化をめざします. また, "
+"一般設定のwide root noiseを大きくすれば, 強さは犠牲になりますが, より前述の基"
+"準に忠実な打ち方をします."
 
 msgid "ai:simple"
 msgstr "簡明派"
@@ -766,7 +785,8 @@ msgstr "入力された手順を挿入した上で、後続の{num_copied}手を
 #. when a user tries to go to a different move/node while in insert
 #. mode
 msgid "finish inserting before navigating"
-msgstr "挿入モード中は他の手に移動できません。iを押して挿入モードを終了してください。"
+msgstr ""
+"挿入モード中は他の手に移動できません。iを押して挿入モードを終了してください。"
 
 #. in new game options
 msgid "player names"
@@ -779,7 +799,8 @@ msgstr "棋譜の途中に手を追加"
 #. Status message
 msgid "analysis:region:start"
 msgstr ""
-"マウスをドラッグして分析する領域を設定してください。領域を解除したいときは、このメッセージが表示されている状態で碁盤上のどこか一点だけを選んでください。"
+"マウスをドラッグして分析する領域を設定してください。領域を解除したいときは、"
+"このメッセージが表示されている状態で碁盤上のどこか一点だけを選んでください。"
 
 #. Restrict analysis to a specific region
 msgid "analysis:region"
@@ -803,7 +824,9 @@ msgstr "白番"
 
 #. in self-play mode
 msgid "gui-locked"
-msgstr "自己対局モードではこの動作 {action} はできません。分散訓練モードを抜けるにはKaTrainを再起動してください。"
+msgstr ""
+"自己対局モードではこの動作 {action} はできません。分散訓練モードを抜けるには"
+"KaTrainを再起動してください。"
 
 #. menu item
 msgid "menu:distributed"
@@ -832,7 +855,9 @@ msgstr "パスワード"
 #. hint for max games
 msgid "contribute:maxgames:hint"
 msgstr ""
-"あなたの環境での最適なnumSearchThreads（探索スレッド数、中級品のGPUなら8程度）に合わせるのが最良です。短時間だけ稼働する場合にはそれよりやや小さい値にするのもよいでしょう（未完了の対局はアップロードされないので）。"
+"あなたの環境での最適なnumSearchThreads（探索スレッド数、中級品のGPUなら8程"
+"度）に合わせるのが最良です。短時間だけ稼働する場合にはそれよりやや小さい値に"
+"するのもよいでしょう（未完了の対局はアップロードされないので）。"
 
 #. hint for ownership
 msgid "contribute:ownership:hint"
@@ -888,7 +913,9 @@ msgstr "局面を生成"
 #. Popup for generating position: top explanation
 msgid "setup position explanation"
 msgstr ""
-"設定に応じた途中局面を自動生成して、そこから打ち継ぎます。たとえば、形勢の良い中盤や終盤の色々な局面から、強いAIを相手に続きを打つといった使い方ができます。"
+"設定に応じた途中局面を自動生成して、そこから打ち継ぎます。たとえば、形勢の良"
+"い中盤や終盤の色々な局面から、強いAIを相手に続きを打つといった使い方ができま"
+"す。"
 
 #. change komi etc in current game
 msgid "editgame"
@@ -916,7 +943,9 @@ msgstr "それでもだめなら、{link}して最新のトラブルシューテ
 
 #. Link in tags should not be touched.
 msgid "change engine suggestion"
-msgstr "まずは、{link}から別バージョンのKataGoをダウンロードしてうまくいくか試してください。"
+msgstr ""
+"まずは、{link}から別バージョンのKataGoをダウンロードしてうまくいくか試してく"
+"ださい。"
 
 #. as in "click here" to go to this page,
 msgid "link_here"
@@ -1033,8 +1062,7 @@ msgstr ""
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a human-like KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening "
-"style."
+"ticked, the model will play according to a post-2016 AlphaZero opening style."
 
 #. TODO
 msgid "engine:humanlike_model"
@@ -1331,7 +1359,8 @@ msgid "resign_confirm_text"
 msgstr "本当に投了しますか？"
 
 msgid "dashboard:play_desc"
-msgstr "AIと対戦したり、友達と対戦したりできます。レート戦で段位を確立できます。"
+msgstr ""
+"AIと対戦したり、友達と対戦したりできます。レート戦で段位を確立できます。"
 
 msgid "game_end:timeout_loss"
 msgstr "時間切れで負け。"
@@ -2304,13 +2333,17 @@ msgid "report:my_reports"
 msgstr "検討"
 
 msgid "report:page_hint"
-msgstr "対局を選ぶと棋盤をプレビューできます。レポートの作成は対局カードから行います。"
+msgstr ""
+"対局を選ぶと棋盤をプレビューできます。レポートの作成は対局カードから行いま"
+"す。"
 
 msgid "report:select_game"
 msgstr "対局を選択"
 
 msgid "report:select_game_hint"
-msgstr "右パネルから対局を選択するか、新しいSGF/棋譜ライブラリの対局をインポートしてください。"
+msgstr ""
+"右パネルから対局を選択するか、新しいSGF/棋譜ライブラリの対局をインポートして"
+"ください。"
 
 msgid "report:no_preview"
 msgstr "プレビューできる対局がありません。"
@@ -2829,7 +2862,9 @@ msgid "ladder:unscored"
 msgstr "この局は昇降級に計上されません"
 
 msgid "ladder:unscored_inconclusive"
-msgstr "この局は勝敗がつかなかったため、昇降級に計上されず、認定戦の局数も消費しません。"
+msgstr ""
+"この局は勝敗がつかなかったため、昇降級に計上されず、認定戦の局数も消費しませ"
+"ん。"
 
 msgid "ladder:unscored_already"
 msgstr "この局は既に精算済みで、段位はそれ以上変わりません。"
@@ -2838,7 +2873,9 @@ msgid "ladder:unscored_in_progress"
 msgstr "この局はまだ終わっていません。"
 
 msgid "ladder:unscored_error"
-msgstr "この局を昇降級の記録に書き込めなかったため、段位は変わっていません。この対局をご報告ください。"
+msgstr ""
+"この局を昇降級の記録に書き込めなかったため、段位は変わっていません。この対局"
+"をご報告ください。"
 
 msgid "ladder:got_it"
 msgstr "了解"
@@ -2877,10 +2914,14 @@ msgid "retry"
 msgstr "再試行"
 
 msgid "ladder:engine_stalled"
-msgstr "ラダーエンジンが利用できず、AI が着手できません · この局は昇降級に加算されません。退出してください"
+msgstr ""
+"ラダーエンジンが利用できず、AI が着手できません · この局は昇降級に加算されま"
+"せん。退出してください"
 
 msgid "ladder:unscored_engine"
-msgstr "この局の相手は校正された強さで着手できなかったため無効です。段位は変わらず、定級戦の局数にも数えません。"
+msgstr ""
+"この局の相手は校正された強さで着手できなかったため無効です。段位は変わらず、"
+"定級戦の局数にも数えません。"
 
 msgid "ladder:pending_settlement"
 msgstr "この対局の成績はまだクラウドに届いていません"
@@ -2916,7 +2957,8 @@ msgid "ladder:retry"
 msgstr "再試行"
 
 msgid "ladder:provisional_seating"
-msgstr "この段階はまだ較正されていません。対局はできますが、昇降級には反映されません"
+msgstr ""
+"この段階はまだ較正されていません。対局はできますが、昇降級には反映されません"
 
 msgid "ladder:current_opponent_prefix"
 msgstr "現在の対戦相手："
@@ -3172,16 +3214,22 @@ msgid "play:login_required_free"
 msgstr "対局を始めるにはログインが必要です。ログインしてからお試しください。"
 
 msgid "play:guest_free_notice"
-msgstr "ゲストとして対局中です：この対局は棋譜に保存されず、段位にも反映されません。ログインすると保存できます。"
+msgstr ""
+"ゲストとして対局中です：この対局は棋譜に保存されず、段位にも反映されません。"
+"ログインすると保存できます。"
 
 msgid "play:go_free_play"
 msgstr "まずは自由対局へ"
 
 msgid "play:blocked_by_pending_ranked"
-msgstr "未清算の昇降級対局があります。先に「昇降級対局」で処理してから新しい対局を始めてください。"
+msgstr ""
+"未清算の昇降級対局があります。先に「昇降級対局」で処理してから新しい対局を始"
+"めてください。"
 
 msgid "research:login_required"
-msgstr "全局解析はクラウドエンジンを使うためログインが必要です。並べる・再生するだけならログイン不要です。"
+msgstr ""
+"全局解析はクラウドエンジンを使うためログインが必要です。並べる・再生するだけ"
+"ならログイン不要です。"
 
 msgid "play:analysis_requires_login"
 msgstr "ログイン後に利用できます"
@@ -3253,7 +3301,9 @@ msgid "grade:unrated_count"
 msgstr "{n} 手未評価"
 
 msgid "ladder:engine_unavailable_start"
-msgstr "昇降級エンジンが一時的に利用できません。対局は開始されておらず、段位にも影響しません。しばらくしてからお試しください。"
+msgstr ""
+"昇降級エンジンが一時的に利用できません。対局は開始されておらず、段位にも影響"
+"しません。しばらくしてからお試しください。"
 
 msgid "grade:match_rate"
 msgstr "AI一致率"
@@ -3277,7 +3327,8 @@ msgid "grade:match_undecidable"
 msgstr "{n} 手は比較できません"
 
 msgid "grade:match_caveat"
-msgstr "一致率は局面の難易度に左右されます。単独では棋力や不正の証拠にはなりません。"
+msgstr ""
+"一致率は局面の難易度に左右されます。単独では棋力や不正の証拠にはなりません。"
 
 msgid "live:human_pick_rate_ranked"
 msgstr "{rank}の選択率"
@@ -3286,7 +3337,9 @@ msgid "live:human_pick_rate"
 msgstr "人間の選択率"
 
 msgid "live:human_pick_rate_hint_ranked"
-msgstr "{rank} の棋士 100 人のうち何人がこの点に打つか。「何人が打つか」であって「打つべきか」ではありません。"
+msgstr ""
+"{rank} の棋士 100 人のうち何人がこの点に打つか。「何人が打つか」であって「打"
+"つべきか」ではありません。"
 
 msgid "live:human_pick_rate_hint"
 msgstr "人間の棋士がこの点に打つ割合です。AI の推奨順位とは別物です。"
@@ -3325,10 +3378,14 @@ msgid "grade:histogram_unrated"
 msgstr "{n} 手は未評価"
 
 msgid "grade:histogram_aria"
-msgstr "7 段階の着手評価の分布。黒い棒が黒番、白い棒が白番で、それぞれ自分の手数で正規化"
+msgstr ""
+"7 段階の着手評価の分布。黒い棒が黒番、白い棒が白番で、それぞれ自分の手数で正"
+"規化"
 
 msgid "grade:def_brilliant"
-msgstr "エンジンの第一候補で、しかもエンジンの直感が見落としていた手（事前確率 10% 未満）"
+msgstr ""
+"エンジンの第一候補で、しかもエンジンの直感が見落としていた手（事前確率 10% 未"
+"満）"
 
 msgid "grade:def_best"
 msgstr "エンジンの第一候補"
@@ -3344,17 +3401,213 @@ msgstr "前の手が未解析、または探索量が足りず判定できない
 
 msgid "grade:brilliance_entry"
 msgstr ""
-"次の 3 条件をすべて満たすこと：エンジンの第一候補を打った、その第一候補の事前確率が 10% "
-"未満（エンジンの直感も見落とした）、勝敗がまだ決まっていない。"
+"次の 3 条件をすべて満たすこと：エンジンの第一候補を打った、その第一候補の事前"
+"確率が 10% 未満（エンジンの直感も見落とした）、勝敗がまだ決まっていない。"
 
 msgid "grade:match_timeline_legend"
 msgstr "全高の塗り = 第一候補、半分の淡色 = 上位 3 候補、地色 = それ以外"
 
 msgid "grade:match_timeline_aria"
-msgstr "手数順に並べた AI 一致度の分布。黒白それぞれ 1 本の帯で、連続一致は塗りつぶしの塊として現れる"
+msgstr ""
+"手数順に並べた AI 一致度の分布。黒白それぞれ 1 本の帯で、連続一致は塗りつぶし"
+"の塊として現れる"
 
 msgid "grade:match_longest_run"
 msgstr "{side} 第 {from}–{to} 手、{n} 手連続で第一候補と一致"
 
 msgid "live:loading_match"
 msgstr "棋譜を読み込み中…"
+
+msgid "game:black_resigns"
+msgstr "黒番投了"
+
+msgid "game:white_resigns"
+msgstr "白番投了"
+
+msgid "game:who_resigns"
+msgstr "どちらが投了しますか？"
+
+msgid "game:black_short"
+msgstr "黒"
+
+msgid "game:white_short"
+msgstr "白"
+
+msgid "game:black_side"
+msgstr "黒番"
+
+msgid "game:white_side"
+msgstr "白番"
+
+msgid "game:clock_timeout"
+msgstr "時間切れ"
+
+msgid "game:clock_byo_left"
+msgstr "秒読み · 残り{n}回"
+
+msgid "game:clock_byo_spec"
+msgstr "秒読み{len}秒×{n}"
+
+msgid "game:move_n"
+msgstr "第{n}手"
+
+msgid "game:timeout_loss_suffix"
+msgstr "時間切れ負け"
+
+msgid "game:timeout_win_suffix"
+msgstr "時間切れ勝ち"
+
+msgid "game:saved_to_history"
+msgstr "対局履歴に保存しました"
+
+msgid "game:timeout_check_failed"
+msgstr "時間切れの判定が完了しませんでした"
+
+msgid "game:count_err_analysis_pending"
+msgstr "この手の形勢をまだ計算中です。少し待ってから数え直してください"
+
+msgid "game:count_err_below_min"
+msgstr "まだ手数が足りないため、いまは数えられません"
+
+msgid "game:count_err_game_over"
+msgstr "この対局はすでに終了しています"
+
+msgid "game:count_err_network"
+msgstr "解析サービスに接続できません"
+
+msgid "game:count_err_http"
+msgstr "数え上げに失敗しました（{status}）。もう一度お試しください"
+
+msgid "game:counting"
+msgstr "計算中…"
+
+msgid "game:retry"
+msgstr "再試行"
+
+msgid "game:exit_failed"
+msgstr "退出に失敗しました。もう一度お試しください"
+
+msgid "game:exit_unsaved_title"
+msgstr "この対局はまだ終わっていません。退出すると保存されません"
+
+msgid "game:keep_playing"
+msgstr "対局を続ける"
+
+msgid "game:stay_on_board"
+msgstr "盤面に留まる"
+
+msgid "game:exit_unsaved"
+msgstr "保存せずに退出"
+
+msgid "play:local_needs_login"
+msgstr "先にログインが必要 · 終局後は自動で保存されます"
+
+msgid "review:no_result_line"
+msgstr "棋譜に結果が記録されていません"
+
+msgid "review:row_local"
+msgstr "対面対局 · 二人"
+
+msgid "review:row_local_unnamed"
+msgstr "対面対局 · 名前なし"
+
+msgid "review:row_research"
+msgstr "研究アーカイブ"
+
+msgid "game:count_failed"
+msgstr "目算が完了しませんでした"
+
+msgid "game:check_network_retry"
+msgstr "ネットワークを確認して再試行してください"
+
+msgid "game:both_passed"
+msgstr "両者ともパスしました"
+
+msgid "game:exit_confirm_title"
+msgstr "この対局を終了しますか？"
+
+msgid "game:exit_unsaved_body"
+msgstr "この対局はまだ終わっていません。終了すると保存されません。"
+
+msgid "game:which_side_resigns"
+msgstr "どちらが投了しますか？"
+
+msgid "game:resign_local_body"
+msgstr "相手の中押し勝ちとして記録され、この対局は対局履歴に保存されます。"
+
+msgid "local:input_hint_v2"
+msgstr "実盤は19路のみ・13路や9路を選ぶと画面上で対局します"
+
+msgid "local:komi_hint"
+msgstr "置き碁はコミ0・置石を選ぶとこのグループは畳まれます"
+
+msgid "local:clock_hint_v2"
+msgstr ""
+"時計はプレイヤーカード上でカウントダウン・秒読みを使い切ると時間切れ負け・無"
+"制限なら記譜のみ"
+
+msgid "local:clock_meta_count"
+msgstr "{n} 段階"
+
+msgid "local:sound_hint_v2"
+msgstr "「設定・サウンド」内の着手音と同じスイッチです"
+
+msgid "local:note3_a"
+msgstr "画面上では"
+
+msgid "local:note3_b"
+msgstr "ヒントや形勢判断はありません"
+
+msgid "local:note3_c"
+msgstr "。両者がパスすると"
+
+msgid "local:note3_d"
+msgstr "自動的に目算します"
+
+msgid "local:note3_e"
+msgstr "、死活は思考エンジンが判定します。"
+
+msgid "local:note3_f"
+msgstr "この対局は"
+
+msgid "local:note3_g"
+msgstr "記録だけ残り、段位は変わりません"
+
+msgid "local:note3_h"
+msgstr "。途中で終了すると"
+
+msgid "local:note3_i"
+msgstr "記録は保存されません"
+
+msgid "local:note3_j"
+msgstr "。"
+
+msgid "vision:offcenter_at"
+msgstr "の石がずれています"
+
+msgid "vision:offcenter_plain"
+msgstr "この石がずれています"
+
+msgid "vision:offcenter_hint"
+msgstr "石を"
+
+msgid "vision:offcenter_hint_tail"
+msgstr "の交点に置き直してください。自動で認識されます"
+
+msgid "vision:play_here_anyway"
+msgstr "この位置に打つ:"
+
+msgid "vision:offcenter_dismiss"
+msgstr "置き直す"
+
+msgid "vision:offcenter_move_from_to"
+msgstr "{color}石がずれています。{from} から {to} へ動かしてください"
+
+msgid "review:start_analysis"
+msgstr "解析を開始"
+
+msgid "vision:resync_screen_authority"
+msgstr "認識をリセット・画面上のデジタル盤面を基準にする"
+
+msgid "Re-sync"
+msgstr "認識をリセット"

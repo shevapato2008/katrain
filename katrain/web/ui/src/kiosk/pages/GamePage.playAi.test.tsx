@@ -273,14 +273,16 @@ describe('N17 · 取状态失败时对局屏给出口', () => {
 });
 
 describe('N21 · 本地对局的认输框说出是哪一方', () => {
-  it('两个人面对面、轮到白:标题是「白方认输？」', () => {
+  it('两个人面对面时先问哪一方认输，不能拿轮次猜认输方', () => {
     sessionMock.gameState = makeState({
       game_type: 'pvp_local', player_to_move: 'W',
       players_info: { B: seat('player:human', '小明'), W: seat('player:human', '小红') },
     });
     renderPage();
     fireEvent.click(screen.getByText('MOCK_RESIGN'));
-    expect(screen.getByText('白方认输？')).toBeInTheDocument();
+    expect(screen.getByText('哪一方认输？')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '黑方认输' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '白方认输' })).toBeInTheDocument();
   });
 
   it('人机局仍是「确认认输？」—— 认输的一定是人,不用点名', () => {
@@ -553,15 +555,15 @@ describe('A18 · 时间耗尽判超时', () => {
 
 });
 
-describe('A9(与拍板无关的一半)· 不渲染胜率块的局不白算分析', () => {
-  it('本地对局:「图表」开关默认开着,也不请求按需分析', () => {
+describe('A9 · 对局分析按实际用途请求', () => {
+  it('本地对局不显示胜率块，但继续请求后台分析供数子使用', () => {
     const spy = vi.spyOn(API, 'analyzeCurrent').mockResolvedValue({});
     sessionMock.gameState = makeState({
       game_type: 'pvp_local',
       players_info: { B: seat('player:human', '小明'), W: seat('player:human', '小红') },
     });
     renderPage();
-    expect(spy).not.toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledWith('play-ai-s1');
   });
 
   it('人机自由对弈照旧请求(默认开还是关等 Fan 定,本轮不动)', () => {

@@ -2,16 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
-import { CATEGORY_META, UNIT_SIZE, levelChinese, readAutoAdvance, writeLastCategory, writeSequence } from './tsumegoUnits';
+import { CATEGORY_META, UNIT_SIZE, fetchTsumegoSequence, isWrongEntry, levelChinese, loadErrorCopy, readAutoAdvance, writeLastCategory, writeSequence } from './tsumegoUnits';
 import { interpolate } from '../utils/interpolate';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
-
-interface ProblemSummary {
-  id: string;
-}
 
 /**
  * 屏 12 · 单元列表 `/kiosk/tsumego/:level/:category` —— **L2 布局 B**(无棋盘 ⇒ 页控条通栏 x16,
@@ -28,18 +24,19 @@ interface ProblemSummary {
  * 是**算得出来的**。⇒ `0%` = 「真的一道没做」,不是「读不到」。
  * **屏 11 那边写「—」是因为那一层算不到这个数,两屏的差别不许抹平。**
  *
- * ── 「只做错过的」为什么是灰的 ────────────────────────────────────────
- * 「做错过的」这个集合**算得出来**(本地进度里 `attempts > 0 && !completed`),但**没有地方去**:
- * 后端没有按错题筛的接口,前端也没有一条能只播这批题的路由 —— 做题屏的上/下一题读的是
- * `sessionStorage` 里那条**整类**的顺序表(`sequenceKey`),塞一份筛过的进去会把正常的上下一题弄坏。
- * ⇒ 卡照画(§14:后端没有的块要标出来,不是藏起来),标成「还没接」,
- * **但副标里写真数**——「现在有 N 道」是这一层真的知道的事。
+ * ── 「只做错过的」(T1,2026-09-14 接通)──────────────────────────────────
+ * 「做错过的」= 试过、还没做对(`isWrongEntry`),整类口径。去处是错题页
+ * `/kiosk/tsumego/:level/:category/wrong` —— 屏 13 同一副骨架,只换题从哪儿来(稿子原注)。
+ * 做题屏的上/下一题认 `?set=wrong` 的快照,不动整类那条顺序表。
+ * 0 道时灰(`disabled`,不是 `soon`:功能接好了,只是这会儿没有可作用的对象)。
+ * 做题记录没读到(`serverLoadFailed`)而本机算出 0 道 ⇒ 那个 0 是**算不出来**,不是「一道没错」:
+ * 不写「0 道」、不灰,点进错题页那边有重试。
  */
 const TsumegoUnitsPage = () => {
   const { level, category } = useParams<{ level: string; category: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { unitProgress, progress } = useTsumegoProgress();
+  const { unitProgress, progress, serverLoadFailed } = useTsumegoProgress();
 
   const [problemIds, setProblemIds] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,13 +44,8 @@ const TsumegoUnitsPage = () => {
   const loadUnits = useCallback((lvl: string, cat: string, signal: AbortSignal) => {
     setProblemIds(null);
     setError(null);
-    fetch(`/api/v1/tsumego/levels/${lvl}/categories/${cat}?limit=1000`, { signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data: ProblemSummary[]) => {
-        const ids = Array.isArray(data) ? data.map((p) => p.id) : [];
+    fetchTsumegoSequence(lvl, cat, signal)
+      .then((ids) => {
         setProblemIds(ids);
         // Phase 4 契约:把**按顺序**的整类题号存下来 —— 做题屏靠它算上/下一题,
         // 屏 13(题目列表)靠它连一次接口都不用取。
@@ -71,13 +63,16 @@ const TsumegoUnitsPage = () => {
     return () => controller.abort();
   }, [level, category, loadUnits]);
 
-  // 进了这一类就记下来 —— 训练营那一排的 `is-current` 靠它。**指针不是进度。**
+  // 进了这一类就记下来 —— 训练营那一排的 `is-current` 靠它。**指针不是进度**,按账号存(N10)。
   useEffect(() => {
     if (category) writeLastCategory(category);
   }, [category]);
 
+  const isAll = category === 'all';
   const meta = category ? CATEGORY_META[category] : undefined;
-  const categoryName = category ? t(`tsumego:${category}`, meta?.zh ?? category) : '';
+  const categoryName = isAll
+    ? t('Mixed training', '综合训练')
+    : category ? t(`tsumego:${category}`, meta?.zh ?? category) : '';
   const levelName = level ? levelChinese(level) : '';
   const backToLevel = () => navigate(`/kiosk/tsumego/${level}`);
 
@@ -86,7 +81,7 @@ const TsumegoUnitsPage = () => {
       testId="units-pagebar"
       title={`${levelName} · ${categoryName}`}
       sub={t('Judged on placement · a wrong move is taken straight back', '落子即判 · 走错当场退回')}
-      backLabel={t('Training', '训练营')}
+      backLabel={t('Categories', '题型')}
       onBack={backToLevel}
     />
   );
@@ -98,8 +93,8 @@ const TsumegoUnitsPage = () => {
         <KioskScrollZone>
           {error ? (
             <div className="empty" data-testid="units-error">
-              <h4>{t('Problem set unavailable', '题库读不到')}</h4>
-              <p>{error}</p>
+              <h4>{loadErrorCopy(t, error).title}</h4>
+              <p>{loadErrorCopy(t, error).body}</p>
               <button
                 type="button"
                 className="kiosk-btn kiosk-btn--pill pill"
@@ -117,7 +112,6 @@ const TsumegoUnitsPage = () => {
           ) : (
             <div className="empty" data-testid="units-empty">
               <h4>{t('No problems in this category yet', '这一类下面还没有题')}</h4>
-              <p>{t('The problem set syncs down from the cloud.', '题库随云端同步下来，同步过来才有题可做。')}</p>
             </div>
           )}
         </KioskScrollZone>
@@ -139,8 +133,10 @@ const TsumegoUnitsPage = () => {
   const firstUnsolved = current.ids.findIndex((id) => !progress[id]?.completed);
   const resumeIndex = firstUnsolved < 0 ? 0 : firstUnsolved;
 
-  // 做错过的 = 试过、但还没做对。这个数算得出来,去处没有 —— 见文件头。
-  const wrongCount = problemIds.filter((id) => (progress[id]?.attempts ?? 0) > 0 && !progress[id]?.completed).length;
+  // 做错过的 = 试过、但还没做对。口径只在 `isWrongEntry` 写一次。
+  const wrongCount = problemIds.filter((id) => isWrongEntry(progress[id])).length;
+  // 0 道而做题记录没读到 ⇒ 这个 0 是编的(和 `GrowthPage` 的 `solved` 同一条)。见文件头。
+  const wrongUnknown = serverLoadFailed && wrongCount === 0;
 
   return (
     <div className="kiosk-layout-b">
@@ -203,24 +199,30 @@ const TsumegoUnitsPage = () => {
           </div>
         </section>
 
-        <section className="kiosk-section">
-          <KioskSecLabel zh={t('Whole level', '整级一起做')} en={'Whole level'} />
-          <div className="kiosk-cards">
-            <KioskCard
-              title={`${levelName}${t('all', '全部')}`}
-              sub={t('All categories mixed, no units', '六类混在一起，不分单元')}
-              icon="squares-four"
-              onClick={() => navigate(`/kiosk/tsumego/${level}/all`)}
-            />
-            <KioskCard
-              title={t('Only the ones I got wrong', '只做错过的')}
-              // 数是真的,去处还没有 —— 两件事都说出来,不含糊成一个灰按钮。
-              sub={interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongCount })}
-              icon="arrow-clockwise"
-              soon={t('Not wired up yet', '还没接')}
-            />
-          </div>
-        </section>
+        {!isAll && (
+          <section className="kiosk-section">
+            <KioskSecLabel zh={t('Other practice', '其他练习')} en="Other practice" />
+            <div className="kiosk-cards">
+              <KioskCard
+                title={t('Mixed training', '综合训练')}
+                sub={t('Mix all categories at this level in 20-problem units', '混合当前难度全部题型，每 20 题一单元')}
+                icon="squares-four"
+                onClick={() => navigate(`/kiosk/tsumego/${level}/all`)}
+              />
+              <KioskCard
+                title={t('Only the ones I got wrong', '只做错过的')}
+                sub={
+                  wrongUnknown
+                    ? t('tsumego:progressUnread', '做题记录没读到')
+                    : interpolate(t('tsumego:wrong_now', '现在有 {n} 道'), { n: wrongCount })
+                }
+                icon="arrow-clockwise"
+                disabled={wrongCount === 0 && !wrongUnknown}
+                onClick={() => navigate(`/kiosk/tsumego/${level}/${category}/wrong`)}
+              />
+            </div>
+          </section>
+        )}
       </KioskScrollZone>
     </div>
   );

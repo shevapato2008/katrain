@@ -189,6 +189,11 @@ const AiSetupPage = () => {
         color: seatColor,
         ai_strategy: AI_STRATEGY,
         rank,
+        // 两个字段都出自 `resolveGameTerms` —— **整条链上唯一算 komi 的地方**。
+        // develop 那版在这儿写的是 `komi: handicap > 0 ? 0 : komi`(79eef93f,同一个
+        // 双重补偿 bug),判据是等价的,但它挡不住「让先」和「倒贴」那两档:那两档
+        // handicap 都是 0,komi 却必须分别是 0 和 -evenKomi,三元式给不出来。
+        // 让子→贴目现在是一张表,不是散在调用点的条件式。
         handicap: terms.handicap,
         komi: terms.komi,
         time_enabled: isRanked || timeEnabled,
@@ -201,6 +206,8 @@ const AiSetupPage = () => {
         label: isRanked ? t('Ranked Game', '升降级对弈') : t('Free Game', '自由对弈'),
         route: `/kiosk/play/ai/game/${session_id}`,
         ts: Date.now(),
+        // 这一局下不下实体盘在开局这一刻定下(v2 §3.5),守卫与对局屏都读它。
+        onBoard: playInput.onBoard,
       });
       navigate(`/kiosk/play/ai/game/${session_id}`);
     } catch (e: any) {

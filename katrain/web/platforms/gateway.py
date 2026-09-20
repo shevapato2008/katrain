@@ -12,7 +12,7 @@ import time
 from typing import Optional
 
 from katrain.web.platforms.manager import PlatformManager
-from katrain.web.platforms.models import PlatformGameContext
+from katrain.web.platforms.models import PlatformGameContext, PlatformMove, PlatformPass, PlatformResign
 
 logger = logging.getLogger("katrain_web")
 
@@ -82,6 +82,32 @@ def _check_move_legal(game, move) -> None:
     _check_moves_legal_sequence(game, [move])
 
 
+def _submitted_position_status(session, game, node) -> str:
+    """Return whether a tunnel reply still belongs to its submitted position.
+
+    The caller must hold ``session.lock``. ``game`` and ``node`` are the actual
+    objects captured before the tunnel request, keeping identity checks stable.
+    """
+    current = session.katrain.game
+    if current is not game:
+        return "game_replaced"
+    if current.current_node is not node:
+        return "position_changed"
+    if current.end_result:
+        return "ended"
+    return "live"
+
+
+def is_platform_engine_session(session) -> bool:
+    """Return whether this session was created as a platform engine game.
+
+    ``platform_engine_color`` survives removal of the active platform context
+    and is cleared when a new game replaces this one. Only literal colours are
+    accepted so mock objects and similarly shaped human games do not match.
+    """
+    return getattr(getattr(session, "katrain", None), "platform_engine_color", None) in ("B", "W")
+
+
 class PlatformCommandGateway:
     """Intercepts game commands for platform-backed sessions.
 
@@ -125,9 +151,19 @@ class PlatformCommandGateway:
         ctx = self._pm.get_game_context(session_id)
         return bool(ctx and ctx.is_engine and ctx.is_pending)
 
+    def _is_ended_engine_game(self, session_id: str) -> bool:
+        """Detect an engine game whose terminal event removed its platform context."""
+        try:
+            session = self._sm.get_session(session_id)
+        except KeyError:
+            return False
+        return is_platform_engine_session(session)
+
     async def play_move(self, session_id: str, col: int, row: int, user_id: int) -> dict:
         ctx = self._pm.get_game_context(session_id)
         if ctx is None:
+            if self._is_ended_engine_game(session_id):
+                raise PlatformMoveRejectedError("This engine game has already ended", reason="game_ended")
             return self._local_play(session_id, col, row)
 
         if ctx.is_pending:
@@ -161,6 +197,12 @@ class PlatformCommandGateway:
             raise PlatformMoveRejectedError("Platform rejected the move")
 
     async def _play_engine_move(self, session_id: str, ctx, col: int, row: int) -> dict:
+        return await self._play_engine_turn(session_id, ctx, (col, row))
+
+    async def _play_engine_pass(self, session_id: str, ctx) -> dict:
+        return await self._play_engine_turn(session_id, ctx, None)
+
+    async def _play_engine_turn(self, session_id: str, ctx, human_coords: Optional[tuple[int, int]]) -> dict:
         from katrain.core.game import IllegalMoveException
         from katrain.core.sgf_parser import Move
         from katrain.web.platforms.golaxy.adapter import GolaxyEngineTerminal
@@ -169,26 +211,24 @@ class PlatformCommandGateway:
 
         # B1: pre-validate the human's move locally (occupied/ko/suicide) BEFORE
         # spending a ~180s tunnel call on a move that can never land. Also record
-        # the current node's identity as a position token: the atomic-apply step
-        # below re-checks this token so a tree mutation that races the tunnel wait
-        # (B2 — undo/redo/nav bypassing the pending guard) can never make the AI's
-        # reply land on the wrong node.
+        # the game and its current node as the submitted position. Both apply
+        # paths re-check them so a mutation, new game, or resign that races the
+        # tunnel wait cannot receive the late reply.
         with session.lock:
             game = session.katrain.game
-            move = Move(coords=(col, row), player=session.katrain.next_player_info.player)
+            move = Move(coords=human_coords, player=session.katrain.next_player_info.player)
             try:
                 _check_move_legal(game, move)
             except IllegalMoveException as e:
                 self._broadcast_rejected(session_id, "illegal_move")
                 raise PlatformMoveRejectedError(str(e), reason="illegal_move")
-            position_token = id(game.current_node)
+            submitted_game, submitted_node = game, game.current_node
 
             # B3/G4: resync the adapter's stateless move history to the CURRENT
             # node's path BEFORE spending a ~180s tunnel call -- an undo/branch
             # navigation since the last commit would otherwise send the AI a
-            # stale or outright wrong history. Failure (e.g. a pass found on the
-            # path) must reject loudly here, before any pending state is set, so
-            # there is no half-commit to unwind.
+            # stale or outright wrong history. Any encoding failure must reject
+            # here, before pending state is set, so there is no half-commit.
             try:
                 self._pm.rebuild_engine_context(session_id)
             except Exception as e:
@@ -196,97 +236,150 @@ class PlatformCommandGateway:
                 self._broadcast_rejected(session_id, "engine_error")
                 raise PlatformMoveRejectedError(str(e), reason="engine_error")
 
-        ctx.set_pending("move")
-        self._broadcast_pending(session_id, col, row)
+        ctx.set_pending("pass" if human_coords is None else "move")
+        if human_coords is not None:
+            self._broadcast_pending(session_id, human_coords[0], human_coords[1])
         adapter = self._pm.get_adapter(ctx.platform)
 
         try:
-            ai_move = await adapter.submit_engine_move(ctx.remote_game_id, col, row)
+            if human_coords is None:
+                ai_reply = await adapter.submit_engine_pass(ctx.remote_game_id)
+            else:
+                ai_reply = await adapter.submit_engine_move(ctx.remote_game_id, human_coords[0], human_coords[1])
         except GolaxyEngineTerminal as e:
             # D7: the human's move is real and final (the adapter committed it on its
             # side before raising) — play it locally BEFORE the terminal/game_ended
-            # broadcast, so the local record doesn't miss the actual last move. Still
-            # position-gated: if the tree moved out from under us during the tunnel
-            # wait, discard rather than mis-apply it to the wrong node.
+            # broadcast, so the local record doesn't miss the actual last move. The
+            # Known pass/resign values have typed replies; this branch is reserved
+            # for an unknown sentinel, so the local game ends Void.
             try:
                 with session.lock:
-                    if id(session.katrain.game.current_node) == position_token:
-                        self._local_play(session_id, col, row)
+                    status = _submitted_position_status(session, submitted_game, submitted_node)
+                    if status == "live":
+                        session.katrain("play", coords=human_coords)
+                        session.katrain("end_without_result")
                     else:
                         logger.warning(
-                            f"Engine terminal for session {session_id}: position changed "
-                            "during tunnel wait, discarding human move instead of misapplying it"
+                            f"Engine terminal for session {session_id}: game {status} during tunnel wait, "
+                            "leaving the local game untouched"
                         )
             finally:
                 ctx.clear_pending()
+            if status == "game_replaced":
+                await self._pm.end_platform_game(ctx.remote_game_id, "game_replaced")
+            elif status == "live":
+                await self._pm.end_platform_game(ctx.remote_game_id, "Void")
+            if status in ("game_replaced", "position_changed"):
+                self._broadcast_rejected(session_id, "position_changed")
+                raise PlatformMoveRejectedError(
+                    "Position changed while waiting for the engine reply", reason="position_changed"
+                )
             self._broadcast_rejected(session_id, "game_ended")
             raise PlatformMoveRejectedError(str(e), reason="game_ended")
         except Exception as e:
             logger.error(f"Engine move failed: {e}")
             ctx.clear_pending()
+            with session.lock:
+                status = _submitted_position_status(session, submitted_game, submitted_node)
+            if status == "ended":
+                self._broadcast_rejected(session_id, "game_ended")
+                raise PlatformMoveRejectedError("Game ended while waiting for the engine reply", reason="game_ended")
+            if status == "game_replaced":
+                await self._pm.end_platform_game(ctx.remote_game_id, "game_replaced")
+            if status in ("game_replaced", "position_changed"):
+                self._broadcast_rejected(session_id, "position_changed")
+                raise PlatformMoveRejectedError(
+                    "Position changed while waiting for the engine reply", reason="position_changed"
+                )
             self._broadcast_rejected(session_id, "engine_error")
             raise PlatformMoveRejectedError(str(e), reason="engine_error")
 
-        # Success: atomic apply of [human, AI] under a single lock hold, gated on the
-        # position token recorded before the tunnel call. Assert failure is defensive
-        # (should be unreachable once the server.py pending guards are in) — discard
-        # BOTH moves rather than half-commit or mis-apply.
+        # Success: atomically apply the human action and the typed AI reply under a
+        # single lock hold, gated on the submitted position.
+        terminal_result = None
         try:
             with session.lock:
-                if id(session.katrain.game.current_node) != position_token:
+                status = _submitted_position_status(session, submitted_game, submitted_node)
+                if status == "ended":
+                    self._broadcast_rejected(session_id, "game_ended")
+                    raise PlatformMoveRejectedError(
+                        "Game ended while waiting for the engine reply", reason="game_ended"
+                    )
+                if status in ("game_replaced", "position_changed"):
                     self._broadcast_rejected(session_id, "position_changed")
                     raise PlatformMoveRejectedError(
                         "Position changed while waiting for the engine reply", reason="position_changed"
                     )
 
-                # G6: re-validate the AI's OWN returned coordinate before committing
-                # anything. `submit_engine_move` already committed it into the
-                # stateless tunnel's ctx.moves unconditionally once genmove returned
-                # an on-board coord, so an illegal reply (e.g. an already-occupied
-                # point) can't be un-sent to the tunnel -- but it must not be allowed
-                # to land locally: `WebKaTrain._do_play` (interface.py) only logs
-                # IllegalMoveException instead of raising, so without this check the
-                # human's move would silently commit while the AI's reply vanished,
-                # desyncing the tunnel history from the local board with no signal
-                # to the recovery machinery. Check the AI's move against the
-                # position that results from the human move landing first (the
-                # order they're about to be applied in).
-                game = session.katrain.game
-                ai_move_obj = Move(coords=(ai_move.col, ai_move.row), player=ai_move.color)
-                try:
-                    _check_moves_legal_sequence(game, [move, ai_move_obj])
-                except IllegalMoveException as e:
-                    logger.error(
-                        f"Engine returned an illegal move ({ai_move.col},{ai_move.row}) for "
-                        f"session {session_id}: {e}"
-                    )
-                    self._broadcast_rejected(session_id, "engine_error")
-                    raise PlatformMoveRejectedError(
-                        f"Engine returned an illegal move at ({ai_move.col}, {ai_move.row})",
-                        reason="engine_error",
-                    )
+                if isinstance(ai_reply, PlatformMove):
+                    # Revalidate the returned point against the position after the
+                    # human action; WebKaTrain logs illegal plays instead of raising.
+                    ai_move_obj = Move(coords=(ai_reply.col, ai_reply.row), player=ai_reply.color)
+                    try:
+                        _check_moves_legal_sequence(session.katrain.game, [move, ai_move_obj])
+                    except IllegalMoveException as e:
+                        logger.error(
+                            f"Engine returned an illegal move ({ai_reply.col},{ai_reply.row}) for "
+                            f"session {session_id}: {e}"
+                        )
+                        self._broadcast_rejected(session_id, "engine_error")
+                        raise PlatformMoveRejectedError(
+                            f"Engine returned an illegal move at ({ai_reply.col}, {ai_reply.row})",
+                            reason="engine_error",
+                        )
 
-                self._local_play(session_id, col, row)
-                human_move_number = ai_move.move_number - 1
-                self._local_play(session_id, ai_move.col, ai_move.row)
+                session.katrain("play", coords=human_coords)
+                if isinstance(ai_reply, PlatformMove):
+                    human_move_number = ai_reply.move_number - 1
+                    session.katrain("play", coords=(ai_reply.col, ai_reply.row))
+                elif isinstance(ai_reply, PlatformPass):
+                    human_move_number = ai_reply.move_number - 1
+                    session.katrain("play", coords=None)
+                    terminal_result = session.katrain.game.end_result
+                elif isinstance(ai_reply, PlatformResign):
+                    human_move_number = ai_reply.move_number
+                    session.katrain("end_by_resignation", winner=ai_reply.winner)
+                    terminal_result = session.katrain.game.end_result
+                else:
+                    raise PlatformMoveRejectedError("Unknown engine reply", reason="engine_error")
+        except PlatformMoveRejectedError:
+            if status == "game_replaced":
+                await self._pm.end_platform_game(ctx.remote_game_id, "game_replaced")
+            raise
         finally:
             ctx.clear_pending()
 
-        self._broadcast_confirmed(session_id, col, row, human_move_number)
-        ctx.last_confirmed_move = ai_move.move_number
-        self._broadcast_confirmed(session_id, ai_move.col, ai_move.row, ai_move.move_number)
-        return {"status": "ok", "ai_move": {"col": ai_move.col, "row": ai_move.row, "move_number": ai_move.move_number}}
+        if human_coords is not None:
+            self._broadcast_confirmed(session_id, human_coords[0], human_coords[1], human_move_number)
+        ctx.last_confirmed_move = ai_reply.move_number
+
+        if isinstance(ai_reply, PlatformMove):
+            self._broadcast_confirmed(session_id, ai_reply.col, ai_reply.row, ai_reply.move_number)
+            return {
+                "status": "ok",
+                "ai_move": {"col": ai_reply.col, "row": ai_reply.row, "move_number": ai_reply.move_number},
+            }
+
+        if isinstance(ai_reply, PlatformPass) and not terminal_result:
+            return {"status": "ok", "ai_move": {"pass": True, "move_number": ai_reply.move_number}}
+
+        result = terminal_result or (f"{ai_reply.winner}+R" if isinstance(ai_reply, PlatformResign) else "game_end")
+        await self._pm.end_platform_game(ctx.remote_game_id, result)
+        self._broadcast_rejected(session_id, "game_ended")
+        raise PlatformMoveRejectedError("Engine game ended", reason="game_ended")
 
     async def pass_move(self, session_id: str, user_id: int) -> dict:
         ctx = self._pm.get_game_context(session_id)
         if ctx is None:
+            if self._is_ended_engine_game(session_id):
+                raise PlatformMoveRejectedError("This engine game has already ended", reason="game_ended")
             return self._local_pass(session_id)
 
-        if ctx.is_engine:
-            raise PlatformMoveRejectedError("pass_not_supported")
-
         if ctx.is_pending:
-            raise PlatformMoveRejectedError("Previous action still pending")
+            raise PlatformMoveRejectedError("Previous action still pending", reason="pending")
+
+        if ctx.is_engine:
+            return await self._play_engine_pass(session_id, ctx)
 
         ctx.set_pending("pass")
         adapter = self._pm.get_adapter(ctx.platform)
@@ -306,6 +399,8 @@ class PlatformCommandGateway:
     async def resign(self, session_id: str, user_id: int) -> dict:
         ctx = self._pm.get_game_context(session_id)
         if ctx is None:
+            if self._is_ended_engine_game(session_id):
+                raise PlatformMoveRejectedError("This engine game has already ended", reason="game_ended")
             return self._local_resign(session_id)
 
         if ctx.is_engine:

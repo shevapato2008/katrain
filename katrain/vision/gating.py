@@ -58,5 +58,10 @@ def should_detect_moves(bound: bool, monitor: bool, paused: bool, move_armed: bo
 
 def move_event(bound: bool, row: int, col: int, color: int):
     if bound:
+        # No observation_seq passed -> defaults to 0 -> "never stamped". The submit-time
+        # presence re-check in server.py's _handle_confirmed_move deliberately skips
+        # unstamped moves (seq 0 has no reference observation to compare against). This
+        # branch is unreachable in production today (both call sites only invoke this
+        # with bound=False), but if that ever changes, stamp a real observation_seq here.
         return ConfirmedMove(col=col, row=row, color=color)
     return {"type": "move_confirmed", "data": {"row": row, "col": col, "color": color}}

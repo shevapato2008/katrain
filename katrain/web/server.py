@@ -3718,7 +3718,18 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
         observed_board, observed_seq = vision.get_board_observation()
     except Exception:  # a status read must never be able to break move submission
         observed_board = None
-    if observed_board is not None and observed_seq > int(getattr(move_data, "observation_seq", 0)):
+    move_seq = int(getattr(move_data, "observation_seq", 0))
+    # Both workers increment their counter to >=1 in the SAME loop iteration, BEFORE a
+    # confirmation can be stamped (worker.py:362/483, worker_inprocess.py:417/531) — so a
+    # move that actually went through a worker's confirm path always carries seq >= 1.
+    # seq == 0 means "never stamped" (e.g. a caller that builds a ConfirmedMove directly,
+    # bypassing the worker). Without a stamp there is no reference point: comparing against
+    # 0 would make ANY observation "newer", degrading this into the naive "is the cell
+    # empty right now?" check D1b rejects — on the 1 Hz subprocess worker the newest
+    # *published* board can predate the confirmation, and that would drop a real move.
+    # Better to submit a move we cannot re-check than to drop a real stone.
+    move_is_stamped = move_seq > 0
+    if observed_board is not None and move_is_stamped and observed_seq > move_seq:
         try:
             still_present = int(observed_board[move_data.row][move_data.col]) != 0
         except (IndexError, TypeError, ValueError):

@@ -466,3 +466,21 @@ class TestSubmitTimePresenceRecheck:
         asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
 
         assert gateway.calls == [SUBMITTED]
+
+    def test_unstamped_move_always_submits_even_if_the_cell_reads_empty(self):
+        """seq 0 means "never stamped" (both workers bump their counter to >=1 in the same
+        loop iteration, strictly before a confirmation can be stamped — see worker.py:362/483
+        and worker_inprocess.py:417/531). Without a stamp there is no reference point, so
+        comparing observed_seq against 0 would make ANY observation count as "newer" and
+        collapse this into the naive "is the cell empty now?" check the design rejects."""
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = _board_with({})  # empty at the confirmed cell
+        vision.observation_seq = 1  # > 0, would look "newer" than an unstamped move's seq
+
+        delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=0), log))
+
+        assert gateway.calls == [SUBMITTED]
+        assert delay == 0.0

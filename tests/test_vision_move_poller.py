@@ -25,6 +25,7 @@ log = logging.getLogger("test_vision_move_poller")
 class FakeKatrain:
     def __init__(self, player_to_move="B"):
         self.plays = []
+        self.live_player_to_move = player_to_move  # NEW: the *live* game's turn
         self._state = {
             "stones": [],
             "board_size": [19, 19],
@@ -34,6 +35,9 @@ class FakeKatrain:
 
     def get_state(self):
         return self._state
+
+    def next_player_to_move(self):  # NEW
+        return self.live_player_to_move
 
     def __call__(self, command, coords=None, **kwargs):
         if command == "play":
@@ -430,16 +434,21 @@ class TestSubmitTimePresenceRecheck:
         assert gateway.calls == [SUBMITTED]
 
     def test_move_submitted_when_the_stone_is_still_present(self):
+        """Deliberately asymmetric cell (row=3, col=15, not the row==col default the other
+        tests in this class use): board[move_data.row][move_data.col] is populated, and
+        board[move_data.col][move_data.row] is left empty, so a row/col transposition
+        anywhere in the still_present indexing turns this red instead of staying green."""
         sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
         gateway = FakeGateway()
         app = _app(sm, gateway=gateway)
         vision = FakeVision()
-        vision.detected_board = _board_with({(3, 3): BLACK})
+        vision.detected_board = _board_with({(3, 15): BLACK})
         vision.observation_seq = 12
 
-        asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(col=15, row=3, seq=11), log))
 
-        assert gateway.calls == [SUBMITTED]
+        # vision (row=3, col=15) -> katrain coords (col=15, 19-1-3=15).
+        assert gateway.calls == [("s1", 15, 15)]
 
     def test_move_submitted_when_there_is_no_observation(self):
         sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
@@ -484,3 +493,51 @@ class TestSubmitTimePresenceRecheck:
 
         assert gateway.calls == [SUBMITTED]
         assert delay == 0.0
+
+
+class TestPlatformTurnGuard:
+    """L0b: the turn check at the top of _handle_confirmed_move reads
+    session.last_state, which the code's own comment calls a possibly-stale
+    broadcast frame. The local branch re-checks inside the commit lock via
+    guard=True/expected_player; the cross-platform branch had no equivalent, so a
+    move could reach the remote tunnel on a turn that had already passed."""
+
+    def test_stale_broadcast_does_not_let_a_late_move_reach_the_tunnel(self):
+        session = FakeSession(player_to_move="B")  # broadcast frame still says B
+        session.katrain.live_player_to_move = "W"  # but the live game has moved on
+        sm = FakeSessionManager({"s1": session})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+
+        delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(color=BLACK), log))
+
+        assert delay == 0.5
+        assert gateway.calls == []
+        assert vision.expected_pushes  # re-armed
+
+    def test_live_turn_agreeing_still_submits(self):
+        session = FakeSession(player_to_move="B")
+        session.katrain.live_player_to_move = "B"
+        sm = FakeSessionManager({"s1": session})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(col=3, row=3, color=BLACK), log))
+
+        assert gateway.calls == [SUBMITTED]  # katrain coords: row 3 flips to 19-1-3=15
+
+    def test_unavailable_live_turn_does_not_block(self):
+        """No game yet / accessor missing -> None -> fall back to the existing behaviour
+        rather than refusing every move."""
+        session = FakeSession(player_to_move="B")
+        session.katrain.live_player_to_move = None
+        sm = FakeSessionManager({"s1": session})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(col=3, row=3, color=BLACK), log))
+
+        assert gateway.calls == [SUBMITTED]  # katrain coords: row 3 flips to 19-1-3=15

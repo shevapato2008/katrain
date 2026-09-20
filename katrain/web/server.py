@@ -3786,6 +3786,25 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     coords = (move.coords[0], move.coords[1])
     gateway = getattr(app.state, "platform_gateway", None)
     if gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session)):
+        # L0b: the `expected_player` check above reads session.last_state — a broadcast
+        # frame that can be stale by now. The local branch re-adjudicates inside the
+        # commit lock (guard=True/expected_player); this branch had no equivalent, and
+        # the gateway only serialises (ctx.is_pending) and checks legality. Re-read the
+        # live game. None (no game yet) falls through rather than refusing everything.
+        live_turn = None
+        try:
+            with session.lock:
+                live_turn = session.katrain.next_player_to_move()
+        except Exception:  # a turn read must never be able to break move submission
+            live_turn = None
+        if live_turn is not None and live_turn != move_player:
+            log.info(
+                "Vision move %s out of turn at commit (live turn %s) — ignored",
+                move_player,
+                live_turn,
+            )
+            _rearm_detection()
+            return 0.5
         game_id = gateway.get_game_id(session_id) or ""
         try:
             await gateway.play_move(session_id, coords[0], coords[1], user_id=0)

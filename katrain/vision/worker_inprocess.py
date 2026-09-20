@@ -31,7 +31,12 @@ from katrain.vision.gating import (
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
-from katrain.vision.move_detector import AmbiguousPromoter, MoveDetector, PendingConfidencePeak
+from katrain.vision.move_detector import (
+    AmbiguousPromoter,
+    MoveDetector,
+    PendingConfidencePeak,
+    SUSPECT_CONFIDENCE_BONUS,
+)
 from katrain.vision.stone_detector import StoneDetector
 from katrain.vision.temporal import FrameAverager
 from katrain.vision.warp import adjust_M_for_resolution, warp_with_margin
@@ -474,7 +479,13 @@ class InProcessAdapter:
                                 # made card-vs-autoplay a coin flip).
                                 conf = conf_map.get((row, col), self._prev_conf_map.get((row, col), 0.0))
                                 conf = self._conf_peak.gate_confidence(row, col, conf)
-                                if conf < self._ambiguous_confidence:
+                                # A cell with a track record of lying must clear a
+                                # higher bar before it may auto-play; it can still
+                                # reach the user via the confirmation card.
+                                ambiguous_gate = self._ambiguous_confidence
+                                if self._move_detector.is_suspect(row, col):
+                                    ambiguous_gate = min(0.95, ambiguous_gate + SUSPECT_CONFIDENCE_BONUS)
+                                if conf < ambiguous_gate:
                                     # PRD §3.4 row 1: low-confidence "move" asks the user instead.
                                     # Baseline NOT advanced: an unanswered prompt re-fires after
                                     # the cooldown instead of silencing detection forever.
@@ -489,7 +500,7 @@ class InProcessAdapter:
                                             row,
                                             col,
                                             conf,
-                                            self._ambiguous_confidence,
+                                            ambiguous_gate,
                                             selected_required_frames,
                                             candidate_sightings + 1,
                                         )
@@ -623,6 +634,7 @@ class InProcessAdapter:
                 self._ambig_last_emit = {}
                 self._averager.reset()
                 self._promoter.reset()
+                self._move_detector.reset_suspicion()  # a new session starts every cell at zero
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._sync.confirm_pose_lock()
             elif cmd.action == CommandType.SET_EXPECTED_BOARD:

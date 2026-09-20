@@ -9,6 +9,24 @@ import numpy as np
 
 from katrain.vision.board_state import EMPTY
 
+# --- per-cell reputation -----------------------------------------------------
+# Measured on RK3562 2026-09-20: vision (18,13) produced 69 candidate flashes across
+# 3 processes (405 seconds lit) and was auto-confirmed twice at 0.50-0.57 confidence,
+# while the device's global add gate was 0.40 and its ambiguous gate 0.42. Raising
+# those globals would have blocked it — and would equally have blocked the genuinely
+# weak stones the low gates exist for (one real stone never entered its game all day).
+# So the extra bar is charged per intersection, to the ones that have actually lied.
+# Only ONE signal is charged: a candidate that appeared and then ran out of miss grace
+# without confirming. A "confirmed twice in a short window" signal was deliberately NOT
+# added — the caller-owned-baseline contract makes an unactioned confirmation re-fire on
+# purpose, so penalising repeats would condemn a legitimate weak stone that is waiting on
+# the user's confirmation card.
+SUSPICION_ABANDON = 1  # became a candidate, then vanished without confirming
+SUSPICION_THRESHOLD = 3  # at or above this, the cell is suspect
+SUSPICION_DECAY_FRAMES = 300  # every N frames every cell loses a point — nothing is condemned forever
+SUSPECT_REQUIRED_FRAMES_FACTOR = 2  # a suspect cell must persist this many times longer
+SUSPECT_CONFIDENCE_BONUS = 0.25  # ...and clear this much more ambiguous gate (applied by the workers)
+
 
 class MoveDetector:
     """Detects new moves by comparing board states across frames.
@@ -38,6 +56,41 @@ class MoveDetector:
         self.pending_move: tuple[int, int, int] | None = None
         self.count = 0
         self.misses = 0
+        self._suspicion: dict[tuple[int, int], int] = {}
+        self._frame_index = 0
+
+    def _penalize(self, cell: tuple[int, int], points: int) -> None:
+        self._suspicion[cell] = self._suspicion.get(cell, 0) + points
+
+    def _decay_suspicion(self) -> None:
+        """Every cell loses one point, every SUSPICION_DECAY_FRAMES frames.
+
+        Frames, not wall-clock: what is being decayed is "how many chances has this
+        cell had to lie", which is counted in observations. (Contrast the missing-stone
+        hold in SyncStateMachine, which measures real elapsed occlusion and therefore
+        must use wall-clock.)
+        """
+        for cell in list(self._suspicion):
+            if self._suspicion[cell] <= 1:
+                del self._suspicion[cell]
+            else:
+                self._suspicion[cell] -= 1
+
+    def suspicion_of(self, row: int, col: int) -> int:
+        """Accumulated evidence that this intersection produces candidates that are not moves."""
+        return self._suspicion.get((row, col), 0)
+
+    def is_suspect(self, row: int, col: int) -> bool:
+        return self.suspicion_of(row, col) >= SUSPICION_THRESHOLD
+
+    def reset_suspicion(self) -> None:
+        """Clear all reputation state — session UNBIND only.
+
+        Deliberately NOT called from force_sync: force_sync runs on every
+        expected-board push (several times a second while the engine streams), so
+        clearing there would mean the counter could never accumulate.
+        """
+        self._suspicion.clear()
 
     def detect_new_move(
         self, board: np.ndarray, ignore_cells: set | None = None, *, required_frames: int | None = None
@@ -66,6 +119,10 @@ class MoveDetector:
             (row, col, color) if a single new stone is confirmed, None otherwise.
             Only detects stones added to empty positions (captures are ignored).
         """
+        self._frame_index += 1
+        if self._frame_index % SUSPICION_DECAY_FRAMES == 0:
+            self._decay_suspicion()
+
         if self.prev_board is None:
             self.prev_board = board.copy()
             return None
@@ -83,6 +140,7 @@ class MoveDetector:
             if self.pending_move is not None:
                 self.misses += 1
                 if self.misses > self.miss_grace:
+                    self._penalize((self.pending_move[0], self.pending_move[1]), SUSPICION_ABANDON)
                     self.count = 0
                     self.pending_move = None
                     self.misses = 0
@@ -99,11 +157,15 @@ class MoveDetector:
             self.count += 1
             self.misses = 0
         else:
+            if self.pending_move is not None:
+                self._penalize((self.pending_move[0], self.pending_move[1]), SUSPICION_ABANDON)
             self.pending_move = move
             self.count = 1
             self.misses = 0
 
         needed = self.consistency_frames if required_frames is None else max(1, int(required_frames))
+        if self.is_suspect(move[0], move[1]):
+            needed *= SUSPECT_REQUIRED_FRAMES_FACTOR
         if self.count >= needed:
             # Baseline deliberately NOT advanced (see class docstring): the caller
             # force_syncs once the move is actually accepted downstream.

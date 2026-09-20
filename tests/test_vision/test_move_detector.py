@@ -1,6 +1,12 @@
 import numpy as np
 import pytest
-from katrain.vision.move_detector import MoveDetector
+from katrain.vision.move_detector import (
+    AmbiguousPromoter,
+    MoveDetector,
+    PendingConfidencePeak,
+    SUSPECT_REQUIRED_FRAMES_FACTOR,
+    SUSPICION_THRESHOLD,
+)
 from katrain.vision.board_state import BLACK, WHITE, EMPTY
 
 
@@ -418,3 +424,101 @@ class TestPendingConfidencePeak:
         pending = (15, 3, BLACK)
         p.observe(pending, {(15, 3): 0.40})
         assert p.gate_confidence(15, 3, 0.52) == pytest.approx(0.52)
+
+
+class TestCellReputation:
+    """L2: a cell that repeatedly produces candidates which never become real moves
+    must clear a higher bar. Measured on RK3562 2026-09-20: vision (18,13) flashed 69
+    times across 3 processes (405s lit) and was auto-confirmed twice at 0.50-0.57,
+    while the global add gate was 0.40. Raising the global gate would also have blocked
+    the weak real stones it exists for — so the penalty is per-cell."""
+
+    def _boards(self):
+        empty = np.zeros((19, 19), dtype=int)
+        flashed = empty.copy()
+        flashed[18][13] = WHITE
+        return empty, flashed
+
+    def _flash_once(self, d, empty, flashed, miss_grace):
+        """One appear-then-vanish cycle: seen once, then absent past the grace."""
+        d.detect_new_move(flashed)
+        for _ in range(miss_grace + 1):
+            d.detect_new_move(empty)
+
+    def test_abandoned_candidate_accrues_suspicion(self):
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        empty, flashed = self._boards()
+        d.detect_new_move(empty)
+        assert d.suspicion_of(18, 13) == 0
+
+        self._flash_once(d, empty, flashed, miss_grace=2)
+        assert d.suspicion_of(18, 13) == 1
+
+    def test_repeated_flashing_makes_the_cell_suspect(self):
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        empty, flashed = self._boards()
+        d.detect_new_move(empty)
+        for _ in range(SUSPICION_THRESHOLD):
+            self._flash_once(d, empty, flashed, miss_grace=2)
+        assert d.is_suspect(18, 13)
+
+    def test_suspect_cell_needs_more_frames_to_confirm(self):
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        empty, flashed = self._boards()
+        d.detect_new_move(empty)
+        for _ in range(SUSPICION_THRESHOLD):
+            self._flash_once(d, empty, flashed, miss_grace=2)
+        assert d.is_suspect(18, 13)
+
+        # 3 frames used to be enough; a suspect cell now needs 3 * FACTOR.
+        needed = 3 * SUSPECT_REQUIRED_FRAMES_FACTOR
+        for _ in range(needed - 1):
+            assert d.detect_new_move(flashed) is None
+        assert d.detect_new_move(flashed) == (18, 13, WHITE)
+
+    def test_an_honest_cell_is_never_penalised(self):
+        """A real stone appears and confirms — it never appears-then-vanishes."""
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        empty = np.zeros((19, 19), dtype=int)
+        stone = empty.copy()
+        stone[3][3] = BLACK
+        d.detect_new_move(empty)
+        d.detect_new_move(stone)
+        d.detect_new_move(stone)
+        assert d.detect_new_move(stone) == (3, 3, BLACK)
+        assert d.suspicion_of(3, 3) == 0
+        assert not d.is_suspect(3, 3)
+
+    def test_an_unactioned_confirmation_is_never_penalised_for_re_firing(self):
+        """The caller-owned-baseline contract makes an unactioned confirmation re-fire on
+        purpose (a weak real stone waiting on the user's confirmation card). Charging
+        those repeats would run the score away and block the stone permanently."""
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        empty, flashed = self._boards()
+        d.detect_new_move(empty)
+        for _ in range(6):  # two full confirmation windows, nothing actioned in between
+            d.detect_new_move(flashed)
+        assert d.suspicion_of(18, 13) == 0
+        assert not d.is_suspect(18, 13)
+
+    def test_reset_suspicion_clears_everything(self):
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        empty, flashed = self._boards()
+        d.detect_new_move(empty)
+        for _ in range(SUSPICION_THRESHOLD):
+            self._flash_once(d, empty, flashed, miss_grace=2)
+        assert d.is_suspect(18, 13)
+
+        d.reset_suspicion()
+        assert d.suspicion_of(18, 13) == 0
+
+    def test_force_sync_does_not_clear_suspicion(self):
+        """force_sync runs on every expected-board push (several times a second).
+        Clearing there would mean the counter never accumulates."""
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        empty, flashed = self._boards()
+        d.detect_new_move(empty)
+        for _ in range(SUSPICION_THRESHOLD):
+            self._flash_once(d, empty, flashed, miss_grace=2)
+        d.force_sync(empty)
+        assert d.is_suspect(18, 13)

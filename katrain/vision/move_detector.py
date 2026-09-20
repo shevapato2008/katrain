@@ -47,15 +47,26 @@ from katrain.vision.board_state import EMPTY
 #
 # Fix round 1 (review Finding 5) — when the abandon signal is charged, corrected. The
 # round-0 brief said this penalty moved into the aging loop "charged on exactly the same
-# event". It is the same event DELAYED. The pre-L1 code charged the pending cell the
-# instant a diff at a different cell displaced it; the aging loop charges it only after
-# miss_grace + 1 consecutive absent frames — 3 frames on the device (miss_grace=2), about
-# 1.3 s at the measured 2.3 fps. The direction is therefore a strictly WEAKER L2 than the
-# code it replaces, and that is accepted: the displacement charge existed only because a
-# single shared candidate slot let one cell destroy another, which is the starvation bug
-# L1 removes, and it fell on whichever cell LOST that slot — a real stone displaced by a
-# phantom flashing beside it got charged exactly as readily as the phantom did, which is
-# F2's shape, not F1's.
+# event". It is the same event DELAYED: the pre-L1 code charged the pending cell the
+# instant a diff at a DIFFERENT single cell displaced it, whereas the aging loop charges
+# it only after miss_grace + 1 consecutive absent frames — 3 frames on the device
+# (miss_grace=2), about 1.3 s at the measured 2.3 fps.
+#
+# That delay is NOT a uniform weakening, and fix round 2 corrects this comment for saying
+# so: it depends entirely on the regime. Measured at consistency_frames=5, miss_grace=2
+# over 120 frames, points accrued on the flagged cell, 2545a061 -> HEAD:
+#   * two cells alternating one per frame — the only shape the old displacement charge
+#     could fire in at all, since it required len(diff) == 1:  60 -> 0   WEAKER
+#   * one cell flickering alone, lit 1 frame / dark 3:         30 -> 30  IDENTICAL
+#   * that same flicker with a second cell also changing:       0 -> 30  STRONGER
+# The third line is L1's doing and it is the regime that matters: the old
+# `len(diff_positions) > 1` hard reset DELETED the candidate without charging it, so
+# pre-L1 L2 was not merely slower under board churn, it was completely inert — which is
+# exactly where a persistent phantom lives. The first line is accepted: the displacement
+# charge existed only because a single shared candidate slot let one cell destroy another
+# (the starvation bug L1 removes), and it fell on whichever cell LOST that slot — a real
+# stone displaced by a phantom flashing beside it was charged exactly as readily as the
+# phantom, which is F2's shape, not F1's.
 SUSPICION_ABANDON = 1  # became a candidate, then vanished without confirming
 SUSPICION_CARDED = 1  # confirmed, but too weak for the caller to play without asking
 SUSPICION_THRESHOLD = 3  # at or above this, the cell is suspect

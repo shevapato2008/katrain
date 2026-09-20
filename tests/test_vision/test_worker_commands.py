@@ -947,7 +947,6 @@ _CHARGE_TWICE_DOC = """Charge the CELL, not the prompt.
 
 
 def test_inprocess_every_carded_confirmation_charges_even_when_the_prompt_is_suppressed():
-    __doc__ = _CHARGE_TWICE_DOC
     camera = _TwoFrameCamera()
     worker = _inprocess_worker(camera)
     camera.worker = worker

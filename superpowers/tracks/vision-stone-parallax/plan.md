@@ -563,10 +563,12 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```python
 """Parallax correction inside BoardStateExtractor (prd P1-1 acceptance 2, 3; design §2.3)."""
 
+import math
+
 import numpy as np
 import pytest
 
-from katrain.vision.board_state import BoardStateExtractor
+from katrain.vision.board_state import EMPTY, STICKY_RADIUS, SUSTAIN_RADIUS, BoardStateExtractor
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig
 from katrain.vision.coordinates import apply_parallax
 from katrain.vision.parallax import ParallaxParams
@@ -664,6 +666,36 @@ class TestMarginDropSurvivesCorrection:
         assert BoardStateExtractor(CFG, parallax=ON)._grid_cell(_det(fx, fy), IMG, IMG) is None
 
 
+class TestOffBoardDetectionsBehaveAsUncorrected:
+    """codex adversarial review 2026-09-22 [high]: a margin object that the correction would pull within
+    reach of an edge stone must not keep that stone alive after the user removes it -- neither through
+    presence sustain (any class) nor through sticky assignment (same colour). Baseline drops the stone at
+    once; so must the corrected extractor, over many frames."""
+
+    RAW = (9.0, -0.8)  # just outside the far edge, beside an edge stone at (0, 9)
+
+    def _after_removal(self, parallax, cls, frames=20):
+        ex = BoardStateExtractor(CFG, parallax=parallax)
+        prev = np.zeros((19, 19), dtype=int)
+        prev[0][9] = 1  # a black edge stone; the user has just removed it, only the margin object remains
+        for _ in range(frames):
+            prev = ex.detections_to_board(
+                [_det(*self.RAW, cls=cls)], IMG, IMG, occupancy_aware=True, prev_board=prev, sticky_board=prev
+            )
+        return int(prev[0][9])
+
+    def test_precondition_the_correction_alone_would_reach_the_stone(self):
+        cfx, cfy = apply_parallax(*self.RAW, ON.nadir, ON.k)
+        corrected, raw = math.hypot(cfx - 9, cfy), math.hypot(self.RAW[0] - 9, self.RAW[1])
+        assert corrected <= SUSTAIN_RADIUS < raw
+        assert corrected <= STICKY_RADIUS < raw
+
+    @pytest.mark.parametrize("cls", [0, 2], ids=["black-stone-sticky", "led-class-sustain"])
+    def test_removed_edge_stone_is_not_kept_alive(self, cls):
+        for parallax in (None, ON):
+            assert self._after_removal(parallax, cls) == EMPTY, parallax
+
+
 class TestSingleApplication:
     def test_detection_points_are_corrected_exactly_once(self):
         fx_raw, fy_raw = detected_grid(3, 1)
@@ -748,16 +780,24 @@ from katrain.vision.parallax import ParallaxParams
 `_grid_cell` 之前新增两个方法,并替换 `_grid_cell` 的实现(docstring 追加最后一段):
 
 ```python
-    def _positions(self, det, img_w: int, img_h: int) -> tuple[float, float, float, float]:
-        """(fx_raw, fy_raw, fx, fy): the detection's continuous grid position before and after the
-        parallax correction. The ONLY caller of apply_parallax -- it is not idempotent, so every
-        consumer must take its (fx, fy) from here, corrected exactly once."""
+    def _positions(self, det, img_w: int, img_h: int) -> tuple[float, float, float, float, bool]:
+        """(fx_raw, fy_raw, fx, fy, on_board) for a detection. The ONLY caller of apply_parallax -- it is
+        not idempotent, so every consumer must take its (fx, fy) from here, corrected exactly once.
+
+        on_board is False when EITHER the raw or the corrected position rounds off the grid, and an
+        off-board detection keeps its RAW position as (fx, fy). The correction pulls points toward the
+        nadir; letting it move a warp-margin object would let that object reach cells it cannot reach
+        today -- not only as a new stone, but through sticky assignment and presence sustain, where it
+        kept a just-removed edge stone alive in review. Off-board detections therefore behave exactly
+        as they do without the correction."""
         x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
         fx_raw, fy_raw = continuous_grid_pos(x_mm, y_mm, self.config)
         if self.parallax is None:
-            return fx_raw, fy_raw, fx_raw, fy_raw
+            return fx_raw, fy_raw, fx_raw, fy_raw, self._on_board(fx_raw, fy_raw)
         fx, fy = apply_parallax(fx_raw, fy_raw, self.parallax.nadir, self.parallax.k)
-        return fx_raw, fy_raw, fx, fy
+        if self._on_board(fx_raw, fy_raw) and self._on_board(fx, fy):
+            return fx_raw, fy_raw, fx, fy, True
+        return fx_raw, fy_raw, fx_raw, fy_raw, False
 
     def _on_board(self, fx: float, fy: float) -> bool:
         gs = self.config.grid_size
@@ -772,13 +812,11 @@ from katrain.vision.parallax import ParallaxParams
         a phantom T19 move. Up to half a cell of overshoot still rounds onto the edge row,
         so sloppily placed border stones keep working.
 
-        With parallax on, a detection is off-board when EITHER its raw or its corrected position
-        rounds off-board: the correction pulls points toward the nadir, which would otherwise drag a
-        margin object in a ~0.2-cell band outside the far/side edges back onto the board."""
-        fx_raw, fy_raw, fx, fy = self._positions(det, img_w, img_h)
-        if self._on_board(fx_raw, fy_raw) and self._on_board(fx, fy):
-            return int(round(fy)), int(round(fx))
-        return None
+        With parallax on, off-board means EITHER the raw or the corrected position rounds off the
+        grid (see _positions): otherwise the correction would drag a margin object in a ~0.2-cell band
+        outside the far/side edges back onto the board."""
+        _, _, fx, fy, on_board = self._positions(det, img_w, img_h)
+        return (int(round(fy)), int(round(fx))) if on_board else None
 ```
 
 `detection_points` 替换,并在其后新增 `parallax_points`:
@@ -789,7 +827,7 @@ from katrain.vision.parallax import ParallaxParams
         corrected: [(fy, fx, class_id, confidence)]. Used by presence sustain and delta diagnostics."""
         pts = []
         for det in detections:
-            _, _, fx, fy = self._positions(det, img_w, img_h)
+            _, _, fx, fy, _ = self._positions(det, img_w, img_h)
             pts.append((fy, fx, det.class_id, det.confidence))
         return pts
 
@@ -798,7 +836,7 @@ from katrain.vision.parallax import ParallaxParams
         [(fy_raw, fx_raw, fy, fx, class_id, confidence)]."""
         pts = []
         for det in detections:
-            fx_raw, fy_raw, fx, fy = self._positions(det, img_w, img_h)
+            fx_raw, fy_raw, fx, fy, _ = self._positions(det, img_w, img_h)
             pts.append((fy_raw, fx_raw, fy, fx, det.class_id, det.confidence))
         return pts
 ```
@@ -809,30 +847,31 @@ from katrain.vision.parallax import ParallaxParams
         gs = board.shape[0]
         positions = [self._positions(det, img_w, img_h) for det in detections]
         # any class, for sustain -- same content as detection_points(), without recomputing it
-        all_points = [(fy, fx, det.class_id, det.confidence) for det, (_, _, fx, fy) in zip(detections, positions)]
+        all_points = [(fy, fx, det.class_id, det.confidence) for det, (_, _, fx, fy, _) in zip(detections, positions)]
         items = []
-        for det, (fx_raw, fy_raw, fx, fy) in zip(detections, positions):
+        for det, (_, _, fx, fy, on_board) in zip(detections, positions):
             if det.class_id not in STONE_CLASS_IDS:
                 continue
             residual = math.hypot(fx - round(fx), fy - round(fy))
-            items.append((residual, det, fx, fy, fx_raw, fy_raw))
+            items.append((residual, det, fx, fy, on_board))
         # Highest confidence claims its intersection first (matches the legacy "highest-confidence
         # wins" semantics); residual only breaks ties between equally confident detections. A
         # lower-confidence detection that then lands on an occupied point is either a sloppily
         # placed real stone (spill it to the nearest empty neighbour) or a duplicate/false positive
         # (drop it) — decided by SPILL_MIN_CONFIDENCE, so a weak FP can't spawn a phantom.
         items.sort(key=lambda t: (-t[1].confidence, t[0]))
-        for _, det, fx, fy, fx_raw, fy_raw in items:
+        for _, det, fx, fy, on_board in items:
             sticky = self._sticky_cell(sticky_board, board, fy, fx, det.class_id + 1)
             if sticky is not None:
                 cy, cx = sticky  # boundary-straddling stone stays on its established cell
             else:
-                if not (self._on_board(fx_raw, fy_raw) and self._on_board(fx, fy)):
+                if not on_board:
                     continue  # off-board detection (warp-margin object) — never clamp onto a border point
                 cy, cx = int(round(fy)), int(round(fx))
 ```
 
-(从 `# Lit-cell mask blocks ADDITIONS only` 往下全部保持原样;sustain 循环里的 `all_points` 现在就是上面这份。)
+(从 `# Lit-cell mask blocks ADDITIONS only` 往下全部保持原样;sustain 循环里的 `all_points` 现在就是上面这份。
+粘滞与存在维持用的 (fx, fy) 对盘外检测是原始坐标 —— 由 `_positions` 保证,这里不需要再判。)
 
 - [ ] **Step 4: 跑测试确认通过**
 
@@ -855,23 +894,38 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 - [ ] **Step 7: 三个变异检查(一次性 worktree,每个单独开一棵)**
 
-变异 A —— D7 只看修正后坐标(`_grid_cell` 与 occupancy 都改):
+变异 A —— 出界只看修正后坐标:
 
 ```bash
 MUT=$(mktemp -d)/wt && git worktree add --detach "$MUT" HEAD
 "$PY" - "$MUT/katrain/vision/board_state.py" <<'EOF'
 import pathlib, sys
 p = pathlib.Path(sys.argv[1]); s = p.read_text()
-old1 = "        if self._on_board(fx_raw, fy_raw) and self._on_board(fx, fy):\n"
-old2 = "                if not (self._on_board(fx_raw, fy_raw) and self._on_board(fx, fy)):\n"
-assert s.count(old1) == 1 and s.count(old2) == 1
-s = s.replace(old1, "        if self._on_board(fx, fy):\n").replace(old2, "                if not self._on_board(fx, fy):\n")
-p.write_text(s)
+old = "        if self._on_board(fx_raw, fy_raw) and self._on_board(fx, fy):\n"
+assert s.count(old) == 1
+p.write_text(s.replace(old, "        if self._on_board(fx, fy):\n"))
 EOF
 (cd "$MUT" && "$PY" -m pytest tests/test_vision/test_board_state_parallax.py -q -p no:cacheprovider -k Margin)
 git worktree remove --force "$MUT"
 ```
-Expected: `TestMarginDropSurvivesCorrection` 失败(band 点被拉回盘内)。
+Expected: `TestMarginDropSurvivesCorrection::test_band_point_is_still_dropped` 失败(band 点被拉回盘内)。
+
+变异 D —— 出界判定对,但盘外检测仍带修正后坐标进入粘滞 / 存在维持(codex 复现的那条):
+
+```bash
+MUT=$(mktemp -d)/wt && git worktree add --detach "$MUT" HEAD
+"$PY" - "$MUT/katrain/vision/board_state.py" <<'EOF'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+old = "        return fx_raw, fy_raw, fx_raw, fy_raw, False\n"
+assert s.count(old) == 1
+p.write_text(s.replace(old, "        return fx_raw, fy_raw, fx, fy, False\n"))
+EOF
+(cd "$MUT" && "$PY" -m pytest tests/test_vision/test_board_state_parallax.py -q -p no:cacheprovider -k "OffBoard or Margin")
+git worktree remove --force "$MUT"
+```
+Expected: `TestOffBoardDetectionsBehaveAsUncorrected::test_removed_edge_stone_is_not_kept_alive` 两个参数都失败;
+`TestMarginDropSurvivesCorrection` 仍通过(说明两条测试守的是两件不同的事)。
 
 变异 B —— 修正做两次:
 
@@ -1185,8 +1239,8 @@ def _calib(**overrides):
         nadir_fx=9.02,
         nadir_fy=19.58,
         k=0.98969,
-        m=1.01042,
-        h_implied_mm=3.47,
+        m=1 / 0.98969,
+        h_implied_mm=339.44 * (1 - 0.98969),  # must equal camera_height_mm * (1 - k)
         camera_height_mm=339.44,
         rms_cells=0.031,
         max_resid_cells=0.07,
@@ -1239,6 +1293,12 @@ def _write(tmp_path, data):
         (lambda d: d.update(k=1.2), "(0, 1)"),
         (lambda d: d.update(h_implied_mm=1.5), "h_implied_mm"),
         (lambda d: d.update(h_implied_mm=8.5), "h_implied_mm"),
+        # k damaged alone: the stale h_implied_mm must not vouch for it
+        (lambda d: d.update(k=0.5), "1/k"),
+        (lambda d: d.update(k=0.985, m=1 / 0.985), "does not match"),
+        # internally consistent, but the height itself is out of the window
+        (lambda d: d.update(k=1 - 9 / 339.44, m=1 / (1 - 9 / 339.44), h_implied_mm=339.44 * (9 / 339.44)), "outside"),
+        (lambda d: d.update(camera_height_mm=0.0), "camera_height_mm"),
         (lambda d: d.update(n_samples=-1), "n_samples"),
         (lambda d: d.update(stone_set=""), "stone_set"),
         (lambda d: d.update(geometry_generation=3), "geometry_generation"),
@@ -1270,7 +1330,7 @@ def test_save_refuses_an_invalid_calibration_and_keeps_the_old_file(tmp_path):
 def test_save_replaces_an_existing_file(tmp_path):
     path = parallax_path(tmp_path)
     save_parallax(path, _calib())
-    save_parallax(path, _calib(k=0.985, m=1 / 0.985, h_implied_mm=5.1))
+    save_parallax(path, _calib(k=0.985, m=1 / 0.985, h_implied_mm=339.44 * (1 - 0.985)))
     assert load_parallax(path)[0].k == 0.985
 ```
 
@@ -1369,9 +1429,20 @@ class ParallaxCalibration:
                 raise ValueError(f"{name} must be a non-negative integer, got {data[name]!r}")
         if not 0.0 < data["k"] < 1.0:
             raise ValueError(f"k={data['k']} is outside (0, 1): parallax always contracts toward the nadir")
+        # The height gate must constrain the k that is actually applied, not a free-standing field: a
+        # file whose k alone was damaged would otherwise pass on its stale h_implied_mm (codex review).
+        if data["camera_height_mm"] <= 0:
+            raise ValueError(f"camera_height_mm={data['camera_height_mm']} must be positive")
+        if abs(data["m"] * data["k"] - 1.0) > 1e-9:
+            raise ValueError(f"m={data['m']} is not 1/k (k={data['k']})")
+        h_from_k = data["camera_height_mm"] * (1.0 - data["k"])
+        if abs(h_from_k - data["h_implied_mm"]) > 1e-6:
+            raise ValueError(
+                f"h_implied_mm={data['h_implied_mm']} does not match camera_height_mm*(1-k)={h_from_k:.6f}"
+            )
         lo, hi = H_IMPLIED_WINDOW_MM
-        if not lo <= data["h_implied_mm"] <= hi:
-            raise ValueError(f"h_implied_mm={data['h_implied_mm']} is outside [{lo}, {hi}]")
+        if not lo <= h_from_k <= hi:
+            raise ValueError(f"h_implied_mm={h_from_k:.3f} (from k) is outside [{lo}, {hi}]")
         return cls(**{name: data[name] for name in expected})
 
 
@@ -1469,7 +1540,7 @@ def _calib():
         nadir_fy=19.58,
         k=0.98969,
         m=1 / 0.98969,
-        h_implied_mm=3.47,
+        h_implied_mm=339.44 * (1 - 0.98969),  # must equal camera_height_mm * (1 - k)
         camera_height_mm=339.44,
         rms_cells=0.031,
         max_resid_cells=0.07,
@@ -1694,14 +1765,14 @@ class TestBoardDeltaDiagnostics:
         (line,) = [r.getMessage() for r in caplog.records if r.getMessage().startswith("board delta:")]
         return line
 
-    def test_on_shows_shift_and_rescue_marker(self, caplog):
+    def test_on_shows_raw_to_corrected_shift_and_rescue_marker(self, caplog):
         line = self._log(True, caplog)
-        assert "'(1,9)B~B0.90@0.40 pl0.20*'" in line
+        assert "'(1,9)B~B0.90@0.40 pl0.20* (0.40,9.00)>(0.60,9.00)'" in line
         assert "'(5,5)W~none'" in line
 
     def test_off_shows_zero_shift_and_no_marker(self, caplog):
         line = self._log(False, caplog)
-        assert "'(1,9)B~B0.90@0.60 pl0.00'" in line
+        assert "'(1,9)B~B0.90@0.60 pl0.00 (0.40,9.00)>(0.40,9.00)'" in line
         assert "*" not in line
 ```
 
@@ -1717,10 +1788,12 @@ Expected: 2 failed(今天新增格不带 `~` 描述,也没有 `pl`)
         """One INFO line per stable-board change: which cells appeared/vanished and what the
         detector actually saw nearby — turns 'why did my stone drop?' into reading a log line.
 
-        Each cell carries its nearest detection as <class><conf>@<distance> pl<shift>, where shift is
-        how far the parallax correction moved it (cells; 0.00 when off) and a trailing * means the
-        correction changed which intersection it rounds to — "this move was rescued by parallax".
-        The leading (r,c)<colour> token is unchanged: vision-recognition-stability §7 greps it."""
+        Each cell carries its nearest detection as
+        <class><conf>@<distance> pl<shift>[*] (<fy_raw>,<fx_raw>)>(<fy>,<fx>): shift is how far the
+        parallax correction moved it (cells; 0.00 when off), a * means the correction changed which
+        intersection it rounds to — "this move was rescued by parallax" — and the coordinate pair is the
+        raw -> corrected continuous (row, col) position (prd P2). The leading (r,c)<colour> token is
+        unchanged: vision-recognition-stability §7 greps it."""
         pts = self._active_extractor().parallax_points(detections, img_w=w, img_h=h)
         names = {0: "B", 1: "W", 2: "R", 3: "G"}
 
@@ -1729,13 +1802,16 @@ Expected: 2 failed(今天新增格不带 `~` 描述,也没有 `pl`)
             for fy_raw, fx_raw, fy, fx, cls, conf in pts:
                 d = ((fy - r) ** 2 + (fx - c) ** 2) ** 0.5
                 if best is None or d < best[0]:
-                    shift = ((fy - fy_raw) ** 2 + (fx - fx_raw) ** 2) ** 0.5
-                    rescued = (int(round(fy_raw)), int(round(fx_raw))) != (int(round(fy)), int(round(fx)))
-                    best = (d, cls, conf, shift, rescued)
+                    best = (d, cls, conf, fy_raw, fx_raw, fy, fx)
             if best is None or best[0] > 1.0:
                 return "none"
-            d, cls, conf, shift, rescued = best
-            return f"{names.get(cls, '?')}{conf:.2f}@{d:.2f} pl{shift:.2f}{'*' if rescued else ''}"
+            d, cls, conf, fy_raw, fx_raw, fy, fx = best
+            shift = ((fy - fy_raw) ** 2 + (fx - fx_raw) ** 2) ** 0.5
+            rescued = (int(round(fy_raw)), int(round(fx_raw))) != (int(round(fy)), int(round(fx)))
+            return (
+                f"{names.get(cls, '?')}{conf:.2f}@{d:.2f} pl{shift:.2f}{'*' if rescued else ''} "
+                f"({fy_raw:.2f},{fx_raw:.2f})>({fy:.2f},{fx:.2f})"
+            )
 
         sym = {1: "B", 2: "W"}
         added = [
@@ -1783,6 +1859,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   - `Verdict(ok, reasons, fit, medians, n_black, n_white)`
   - `evaluate(frames, camera_height_mm, pattern=PATTERN_17) -> Verdict`;`frames` 是每帧的原始棋子检测 `[(fy_raw, fx_raw, class_id)]`
   - `decide_and_write(frames, *, out_path, stone_set, camera_height_mm, geometry_generation, fitted_at, dry_run) -> tuple[Verdict, ParallaxCalibration | None]`
+  - `camera_settings(profile) -> dict`(`lock_exposure` / `exposure` / `lock_awb`,照服务对这一代几何的采集方式)
   - CLI:`python -m katrain.vision.tools.calibrate_parallax --hardware-vision-dir D --model M --stone-set S [...]`
 
 **约束:** 第 3 条(nadir 只来自拟合);只读几何(`HardwareVisionStateStore.load_current`),不写 generations;
@@ -1901,6 +1978,54 @@ def test_led_classes_and_margin_objects_are_not_stones(tmp_path):
     frames = _append(_append(_frames(), (9.0, 9.0, 2)), (-0.8, 4.0, 0))
     verdict, _ = _run(tmp_path, frames, dry_run=True)
     assert verdict.ok, verdict.reasons
+
+
+def test_camera_settings_reproduce_the_service_capture():
+    from types import SimpleNamespace
+
+    from katrain.vision.tools.calibrate_parallax import camera_settings
+
+    locked = camera_settings(SimpleNamespace(strategy="hardware_auto_then_lock"))
+    assert locked == {"lock_exposure": True, "exposure": None, "lock_awb": False}
+    assert camera_settings(SimpleNamespace(strategy="something_else"))["lock_exposure"] is False
+
+
+def test_main_refuses_when_exposure_cannot_be_locked(tmp_path, monkeypatch):
+    """codex review 2026-09-22: never calibrate under an exposure the service would not run with."""
+    from types import SimpleNamespace
+
+    import katrain.vision.camera as camera_mod
+    import katrain.vision.stone_detector as detector_mod
+    import katrain.web.core.hardware_vision_state as hvs
+    from katrain.vision.tools import calibrate_parallax as tool
+
+    state = SimpleNamespace(
+        generation="gen-1",
+        geometry=object(),
+        profile=SimpleNamespace(strategy=hvs.CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK),
+    )
+    monkeypatch.setattr(hvs, "HardwareVisionStateStore", lambda root: SimpleNamespace(load_current=lambda *a: state))
+    monkeypatch.setattr(detector_mod, "StoneDetector", lambda *a, **k: object())
+
+    class FakeCamera:
+        controls_effective = False  # the lock did not take
+
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+            self.closed = False
+            FakeCamera.last = self
+
+        def open(self):
+            return True
+
+        def close(self):
+            self.closed = True
+
+    monkeypatch.setattr(camera_mod, "CameraManager", FakeCamera)
+    rc = tool.main(["--hardware-vision-dir", str(tmp_path), "--model", "m.rknn", "--stone-set", "ver9-22x7"])
+    assert rc == 2
+    assert FakeCamera.last.kwargs["lock_exposure"] is True and FakeCamera.last.closed
+    assert not parallax_path(tmp_path).exists()
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -2080,6 +2205,20 @@ def render_pattern(pattern=PATTERN_17) -> str:
     return "   " + " ".join(str(c % 10) for c in range(19)) + "\n" + "\n".join(rows)
 
 
+def camera_settings(profile) -> dict:
+    """CameraManager exposure / white-balance arguments that reproduce the service's capture for this
+    geometry generation (server.py: a persisted hardware_auto_then_lock profile -> lock_exposure with
+    exposure=None; AWB stays unlocked). Calibrating under different exposure would bake an
+    exposure-dependent detector bias into k and the nadir (codex review 2026-09-22)."""
+    from katrain.web.core.hardware_vision_state import CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK
+
+    return {
+        "lock_exposure": profile.strategy == CAMERA_STRATEGY_HARDWARE_AUTO_THEN_LOCK,
+        "exposure": None,
+        "lock_awb": False,
+    }
+
+
 def capture_frames(camera, lock, detector, extractor, enhance: str, n_frames: int, timeout_s: float = 120.0):
     """Warp + enhance + detect exactly like worker_inprocess, keeping RAW grid positions of stone detections."""
     from katrain.vision.config import DEFAULT_MARGIN_CELLS
@@ -2140,9 +2279,14 @@ def main(argv=None) -> int:
 
     detector = StoneDetector(args.model, backend=args.backend, confidence_threshold=args.conf)
     extractor = BoardStateExtractor(BoardConfig(margin_cells=DEFAULT_MARGIN_CELLS))  # no parallax: RAW positions
-    camera = CameraManager(device_id=args.camera, width=width, height=height)
+    settings = camera_settings(state.profile)
+    camera = CameraManager(device_id=args.camera, width=width, height=height, **settings)
     if not camera.open():
         print(f"cannot open camera {args.camera} (is the katrain service still running?)")
+        return 2
+    if settings["lock_exposure"] and camera.controls_effective is not True:
+        camera.close()
+        print("camera exposure could not be locked the way the service locks it: refusing to calibrate")
         return 2
     try:
         print(render_pattern())
@@ -2255,20 +2399,32 @@ Expected: `comm -13` 输出为空(没有新增失败);`git status --short` 只�
 
 ## 上板步骤(Fan 在场、RK3562 连上后)
 1. 部署(照 memory `reference_rk3562_katrain_deploy_recipe`):先备份;源码 rsync 根层不加 `--delete`;本分支无前端改动,不需要重建 kiosk 包。
-2. **修正前对照**(还没有标定文件):确认启动日志有 `vision parallax off: not calibrated`。
-   远端(棋盘行 15–19,即视觉行 0–4)按谱摆 20 手,记录:
-   `journalctl -u smartbox-katrain --since <开始时间> | grep -c 'peak conf 0.00 <'`(unbacked 计数)与逐手落点对错。
-3. **标定**:`sudo systemctl stop smartbox-katrain` → 跑工具(命令见工具 docstring)→ 看输出的 k / nadir / h_implied / rms / 最差点 → `sudo systemctl start smartbox-katrain`。
+2. **两套固定摆位**(修正前后完全相同,事先打印出来照摆;行号是棋盘坐标,19 路离镜头最远):
+   - **A 复现故障**:14–18 路 × C、G、K、O、S 五列 = 20 手,每颗子**中心压在交叉点往远离镜头方向 8 mm 处**
+     (用尺量;8 mm ≈ 0.36 格,超过修正前远端剩余容差约 6.5–7 mm、小于修正后的 11 mm)。
+     19 路不放:最外一排往外偏的容差本来就不恢复(prd §5 第 5 条)。
+   - **B 不回归**:同样 20 个交叉点,正常摆正。
+   黑白交替、按顺序一手一手落(自由对弈或摆谱),每手等识别确认后再下一手。
+3. **修正前对照**(还没有标定文件):确认启动日志有 `vision parallax off: not calibrated`。A、B 各跑一遍,记录:
+   逐手落点对错;`journalctl -u smartbox-katrain --since <开始时间> | grep -c 'peak conf 0.00 <'`(unbacked 计数)。
+4. **标定**:`sudo systemctl stop smartbox-katrain` → 跑工具(命令见工具 docstring)→ 看输出的 k / nadir / h_implied / rms / 最差点 → `sudo systemctl start smartbox-katrain`。
    标定失败按提示重摆,不要改阈值。
-4. 确认启动日志 `vision parallax on: ... current_generation=...`。
-5. **修正后对照**:同一光照、同一谱、同 20 手,记录同样两项;board delta 行里数 `*` 的条数。
+5. 确认启动日志 `vision parallax on: ... current_generation=...`。
+6. **修正后对照**:同一光照,A、B 各再跑一遍,记录同样两项;board delta 行里数 `*` 的条数。
+
+## 判定(事先定死,不看结果再调)
+- **基线必须复现故障**:修正前 A 至少 **5/20** 手落错或弹 unbacked 提示。达不到 ⇒ 这次对照**证据不足**,
+  不能标完成;回头检查摆位(是不是没往外偏够 8 mm)再做。
+- **修正后通过**:A **20/20** 落点正确,且 A 的 unbacked 计数 ≤ 修正前的一半(修正前为 0 时本条不适用,由上一条兜住)。
+- **不回归**:B 修正前、修正后都是 **20/20**。
+- 任何一条不满足:不标完成,把数据填表后交 Fan 判断。
 
 ## 对照数据(上板后填)
-| | 修正前 | 修正后 |
-|---|---|---|
-| unbacked 计数 | | |
-| 20 手落点全对 | | |
-| board delta 中 `*` 条数 | — | |
+| | 修正前 A | 修正后 A | 修正前 B | 修正后 B |
+|---|---|---|---|---|
+| 落点正确 / 20 | | | | |
+| unbacked 计数 | | | | |
+| board delta 中 `*` 条数 | — | | — | |
 
 ## 标定结果(上板后填,同时抄进 geometry.md 末尾)
 k / nadir / m / h_implied / rms / 最差点 / 棋子 / 几何代次 / 时间
@@ -2291,7 +2447,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 前置:Task 9 完成、已合入 develop 并推送、smartbox-software 子模块已更新;RK3562 已连上,Fan 在场。
 
-- [ ] 按 `handoff.md`「上板步骤」1–5 执行。
+- [ ] 按 `handoff.md`「上板步骤」1–6 执行;按「判定」一节决定能否标完成(门槛事先定死,不看结果再调)。
 - [ ] 把标定结果(k、nadir、rms、h_implied、哪副棋子、哪次标定、几何代次)写进 `geometry.md` 末尾新小节「现场标定」。
 - [ ] 填 `handoff.md` 对照表。
 - [ ] `prd.md`:每条需求标完成状态(P1-1 验收 5、P1-2 验收 4 的上板部分、P2 上板部分);§5 已排除的风险划掉

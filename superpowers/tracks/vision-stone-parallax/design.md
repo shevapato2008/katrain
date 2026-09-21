@@ -93,16 +93,20 @@ def apply_parallax(fx, fy, nadir, k):
 ### 2.3 `BoardStateExtractor`(`board_state.py`)
 
 - 构造:`__init__(self, config=None, parallax: ParallaxParams | None = None)`。
-- 新私有方法 `_positions(det, img_w, img_h) -> (fx_raw, fy_raw, fx, fy)`:唯一调用 `apply_parallax` 的地方。
+- 新私有方法 `_positions(det, img_w, img_h) -> (fx_raw, fy_raw, fx, fy, on_board)`:唯一调用 `apply_parallax` 的地方。
+  `on_board` = 原始与修正后都取整在盘内;**盘外的检测 (fx, fy) 一律返回原始坐标**(见下面的更正)。
 - `_grid_cell`:用修正后的 (fx, fy) 取整;**原始或修正任一取整出界就返回 None**(D7)。
 - `detection_points`:返回值形状不变 `[(fy, fx, class_id, confidence)]`,里面是修正后的坐标。
 - 新方法 `parallax_points(detections, img_w, img_h) -> [(fy_raw, fx_raw, fy, fx, class_id, confidence)]`:
   只给日志诊断用。
 - `_assign_occupancy_aware`:内部改用 `_positions`(它需要原始坐标来执行 D7);残差、粘滞、
   最近空点、存在维持都用修正后的坐标。
-  - 粘滞和存在维持的半径现在按修正后坐标量,远端最外一排的「够得着」范围往外多出至多约 0.2 格。
-    这两条都要求**那个格子上一帧 / 上一个稳定盘面已经有子**,不能在空交点上加子,
-    所以不构成 prd §1 第 5 条说的「把边距里的假目标推回盘内」。
+  - **更正(2026-09-22,codex 评审 [high])**:初稿写「粘滞和存在维持都要求那格已有子,不能在空点上加子,
+    所以不构成『推回盘内』」—— 这个判断漏了**移除**:用户拿走一颗边缘子后,一个原始坐标在 (9, −0.8)
+    的盘外误检,修正后离 (0, 9) 只有 0.59 格(存在维持半径 0.6、粘滞半径 0.65),会把这颗已经不在的子
+    一帧一帧地维持下去,移除流程永远等不到结束;基线下它离 0.8 格,当帧就消失。
+    改为:**盘外(原始或修正任一出界)的检测,在所有下游(DROP、粘滞、存在维持、诊断)里都用原始坐标**,
+    行为与没有修正时完全一样;修正只作用于两种坐标都在盘内的检测。由 `_positions` 一处保证。
 
 `parallax=None` 时 `_positions` 返回 `(fx, fy, fx, fy)`,D7 两个判据相同,全部输出逐位等于今天。
 
@@ -130,7 +134,9 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
 照 `live_demo_locked.py` 的写法,在板上跑,**先停 `smartbox-katrain`**:
 
 1. 读当前几何:`HardwareVisionStateStore(<dir>).load_current(camera, w, h)`,只读。记下 `generation`。
-2. 开摄像头(和服务一样的分辨率),每帧:`adjust_M_for_resolution` → `warp_with_margin` →
+2. 开摄像头:分辨率与**曝光策略都照服务**(几何代次里的 `profile.strategy` 是 `hardware_auto_then_lock`
+   就 `lock_exposure=True, exposure=None`,AWB 不锁);要求锁曝光却 `controls_effective` 不为 True 就拒绝标定
+   (codex 评审:在不同曝光下标定,会把与曝光相关的检测偏差固化进 k 与 nadir)。每帧:`adjust_M_for_resolution` → `warp_with_margin` →
    `enhance_for_inference`(与服务相同的 `--enhance`)→ `StoneDetector.detect`。
    不做 `FrameAverager`:下一步本来就对多帧取中位数。
 3. 打印 17 个标定点(D5)让操作员摆子,黑白交替。等画面静止后采 `--frames`(默认 30)帧。
@@ -152,7 +158,8 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
 - `worker_inprocess._log_board_delta`(:223)改用 `parallax_points`:每个变化格附近那条检测的描述
   从 `B0.85@0.12` 变成 `B0.85@0.12 pl0.18`,`pl` 是修正位移 \|Δ\|(格);原始坐标取整和修正后取整
   落在不同格子时再加一个 `*`,表示「被视差救回」。修正关着时 `pl0.00`、不会有 `*`。
-  今天只有「消失的格」带这段描述;**新增的格也带上**(`(1,9)B~B0.90@0.40 pl0.20*`)——
+  末尾再带原始 → 修正后的连续坐标 `(fy_raw,fx_raw)>(fy,fx)`(codex 评审:PRD P2 收窄的是频率,不是坐标)。
+  今天只有「消失的格」带这段描述;**新增的格也带上**(`(1,9)B~B0.90@0.40 pl0.20* (0.40,9.00)>(0.60,9.00)`)——
   「这一手是被视差救回来的」看的正是新增的那一格。`(r,c)颜色` 这个前缀保持原样:
   vision-recognition-stability 的 §7 验收按它 grep。
 - 服务启动那一行(§2.4)。
@@ -177,8 +184,10 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
 }
 ```
 
-`load_parallax` 的拒收条件:`schema != 1`、`board != "go-19x19"`、任一数值非有限、`k` 不在 (0, 1)、
-`h_implied_mm` 不在 [2, 8]、缺字段。拒收时修正关闭并给出原因,不抛到生命周期外。
+`load_parallax` 的拒收条件:`schema != 1`、`board != "go-19x19"`、缺字段或多字段、任一数值非有限、
+`k` 不在 (0, 1)、`camera_height_mm` ≤ 0、`m·k` 不等于 1、**`camera_height_mm·(1−k)` 与 `h_implied_mm` 不符、
+由 k 重算的高度不在 [2, 8]**。高度闸必须约束**真正被使用的 k**,不能只看文件里另写的一个字段 ——
+否则单独被改坏的 k 会凭一个过期的 `h_implied_mm` 过关(codex 评审)。拒收时修正关闭并给出原因,不抛到生命周期外。
 
 `rms` 存格而不存 mm:(fx, fy) 两个方向的物理格距不同(ver9 是 23.7 / 22.0),换成 mm 要多一个
 「哪个方向是长边」的假设。工具打印时附一个按平均格距 22.85 mm 换算的近似值,只供人读。
@@ -203,6 +212,7 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
 | 361 点:参考 `forward()` 造检测位置,过 `_grid_cell` 全部落回原交点 | P1-1 验收 2(健全性,基线上也全过) | 否,只作健全性检查 |
 | **第 1–5 排各往远离镜头方向多偏 0.35 格**:不修正时 63/95 落到相邻交点,修正后 0/95;另一条钉住第 0 排的代价(外偏 0.3 格修正前后都 DROP) | P1-1 验收 2(区分用) | 是 |
 | 边距带(远端 fy ∈ (−0.71, −0.5)、两侧 fx ∈ (−0.60, −0.5)):先断言这些点**修正后取整确实落在盘内**(前提),再断言 `_grid_cell` 返回 None、空盘上 occupancy 路径不落子 | P1-1 验收 3 | 是:如果 DROP 只看修正后坐标就会红 |
+| **盘外误检不维持已移除的边缘子**(codex 反例:原始 (9, −0.8)):先断言修正后坐标够得着、原始坐标够不着(前提),再多帧跑,黑子(粘滞)与 LED 类(存在维持)两种都必须当帧消失 | P1-1 验收 3 | 是:盘外检测若带修正后坐标进入粘滞 / 存在维持就会红 |
 | 单次修正:`detection_points` 的坐标等于 `apply_parallax` 恰好一次,不等于两次 | 设计 §1 | 是 |
 | `fit_parallax` 无噪:k、nadir 误差 < 1e-6,`rms_cells` < 1e-9 | P1-2 验收 1 | 新函数 |
 | `fit_parallax` 加 ±0.3 mm 噪声,9 点,固定种子 200 次:`h_implied` 相对误差 p95 < 20%,且全盘修正残差最大值 p95 < 1.0 mm | P1-2 验收 2(改写后) | 完全不修正时两项都是 100% / 5 mm,必红 |
@@ -211,7 +221,7 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
 | `load_parallax`:不存在 / 各种非法 / 正常 | D1 | 新代码 |
 | 接线:`to_worker_config` 带 `parallax`;`InProcessAdapter` 只给 locked extractor | D2、D3 | 新代码 |
 | 日志:修正开着时 board delta 行带 `pl` 与 `*`;关着时 `pl0.00`;`ambiguous_stone` 事件字段集合不变 | P2 | 字段集合那条沿用现有测试 |
-| **上板**:标定一次,记 k / nadir / rms / h_implied;远端(行 15–19)按谱摆 20 手,修正前后同条件各一次,对照 `unbacked` 计数与逐手落点 | P1-1 验收 5、P1-2 验收 4、P2 | 人工 |
+| **上板**:标定一次,记 k / nadir / rms / h_implied;两套固定摆位(A:14–18 路故意外偏 8 mm 复现故障;B:正常摆),修正前后各跑一遍;门槛事先定死(修正前 A ≥ 5/20 出错否则证据不足;修正后 A 20/20、unbacked ≤ 一半;B 前后 20/20),见 `handoff.md` | P1-1 验收 5、P1-2 验收 4、P2 | 人工 |
 
 测试一律用 worktree 自己的 venv(`uv sync --extra web --extra vision --extra board` 之后的
 `.venv/bin/python -m pytest`)。基线:`tests/test_vision` 651 passed(2026-09-22,develop `34e9c7b6`)。

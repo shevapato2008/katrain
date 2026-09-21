@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from 'react';
 import { useSetupPopover } from './useSetupPopover';
 import { SetupPopover } from './SetupPopover';
+import { Icon } from '../../shell/icons';
 
 export interface SetupOption {
   key: string;
@@ -21,11 +22,10 @@ interface Props {
   testId?: string;
 }
 
-const CHEVRON = (
-  <svg className="su-cell__c" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-    <path d="M2 4l3 3 3-3" />
-  </svg>
-);
+/* 图标只能从 `kiosk-shell/icons/` 出(规范 §10:四个前端同一份字节)——
+   第一版这里是手写的 `<path d="M2 4l3 3 3-3">`,被 `kiosk-shell-contract.spec.ts`
+   那条闸抓了。`caret-down` 目录里就有,直接用。 */
+const CHEVRON = <span className="su-cell__c"><Icon name="caret-down" /></span>;
 
 /**
  * 一格 = 一个下拉。

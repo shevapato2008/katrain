@@ -606,7 +606,10 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     : message.includes('Analysis not available') ? (isRanked
       ? t('game:count_ranked_unscored', '升降级对局现在数不了子（本局不做形势分析）')
       : t('game:count_no_score', '形势分析没算出来，暂时数不了子，请稍后再试'))
-    : t('game:count_failed', '数子没有成功，请稍后再试');
+    /* `game:count_failed` 在 cn PO 里是「数子没有完成」—— 那是下面状态条上那个**标签**
+       (`:905` 在用),不是这里要说的**带重试建议的报错**。复用的话翻译表赢,
+       屏上把「请稍后再试」吃掉。另铸一个键。 */
+    : t('game:count_failed_retry', '数子没有成功，请稍后再试');
 
 
   // Determine which color the human plays (for turn enforcement). deriveHumanColor now

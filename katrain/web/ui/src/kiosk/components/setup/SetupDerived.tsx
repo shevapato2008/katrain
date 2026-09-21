@@ -2,6 +2,7 @@ import { useRef, type ReactNode } from 'react';
 import { useSetupPopover } from './useSetupPopover';
 import { SetupPopover } from './SetupPopover';
 import type { SetupOption } from './SetupSelect';
+import { Icon } from '../../shell/icons';
 
 interface Props {
   label: string;
@@ -46,9 +47,7 @@ export function SetupDerived({ label, children, note, options, value, onChange, 
       <b className="su-out__v" data-testid={testId ? `${testId}-value` : undefined}>{children}</b>
       <span className="su-out__n">{note}</span>
       {pick ? (
-        <svg className="su-cell__c" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-          <path d="M2 4l3 3 3-3" />
-        </svg>
+        <span className="su-cell__c"><Icon name="caret-down" /></span>
       ) : null}
     </button>
     {pick && open && host && (

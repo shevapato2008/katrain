@@ -171,7 +171,7 @@ test('棋力那两颗 ± 键居中,而且彼此对齐', async ({ page }) => {
     const keys = [...document.querySelectorAll('[data-testid="setup-strength"] button.su-step')] as HTMLElement[];
     return keys.map((b) => {
       const br = b.getBoundingClientRect();
-      const g = (b.querySelector('svg') as SVGElement).getBoundingClientRect();
+      const g = (b.querySelector('.su-step__g') as HTMLElement).getBoundingClientRect();
       return {
         label: b.getAttribute('aria-label'),
         w: +br.width.toFixed(2),
@@ -181,8 +181,11 @@ test('棋力那两颗 ± 键居中,而且彼此对齐', async ({ page }) => {
     });
   });
   console.log('[±] ' + JSON.stringify(off));
-  /* 改版前这两颗是文本 `−`(U+2212)和 `＋`(U+FF0B):量出来 dx 分别是 +5.66 和 +10,
-     按钮被 `button{padding:.6em 1.2em}` 从 44 撑成 50。两层原因见 `SetupStepper.tsx`。 */
+  /* 改版前这两颗是 `−`(U+2212)配**全角** `＋`(U+FF0B):量出来 dx 分别是 +5.66 和 +10,
+     按钮被 `button{padding:.6em 1.2em}` 从 44 撑成 50。
+     **量的是字形盒不是 svg** —— 中间一版画过内联 SVG,后来换回配对的 `−`/`+`
+     两个字形(U+2212 的设计目标就是与 U+002B 等宽等重),因为内联 `<path>` 违反
+     「图标只能从 kiosk-shell/icons/ 出」那条契约闸。两层原因见 `SetupStepper.tsx`。 */
   for (const k of off) {
     expect(Math.abs(k.dx), `${k.label} 水平不居中(${k.dx}px)`).toBeLessThan(1.5);
     expect(Math.abs(k.dy), `${k.label} 垂直不居中(${k.dy}px)`).toBeLessThan(1.5);

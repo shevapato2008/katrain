@@ -22,17 +22,21 @@ interface Props {
      ② `src/index.css:41` 的 `button{padding:.6em 1.2em}`(Vite 模板自带)命中了这颗键——
         20px 字号下左右各 24px,挤进 44px 的 border-box,内容盒被压到 2px,
         字形整个溢出后居中,于是各被推出自己宽度的一半,按钮也被撑成 50px。
-   所以这里既画 SVG,也把 `padding:0` 写死在 `.su-step` 上。 */
-const MINUS = (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-    <path d="M4 9h10" />
-  </svg>
-);
-const PLUS = (
-  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-    <path d="M4 9h10M9 4v10" />
-  </svg>
-);
+   两层都要修,漏一层都不行 —— 但**不是靠画 SVG 修的**。
+
+   ① 那一层的真原因不是「文本不行」,是**配错了对**:`−` 是 U+2212 MINUS SIGN,
+      它在 Unicode 里的设计目标就是**与 U+002B `+` 等宽等重**;原来配的是
+      **全角** `＋`(U+FF0B),宽度和笔画都是另一套。换成 `−` / `+` 这对,
+      字形天生对齐,不需要任何几何修正。
+      (第一版这里画的是内联 `<svg><path d="…">`,被 `kiosk-shell-contract.spec.ts`
+      「图标只能从 kiosk-shell/icons/ 出」那条闸抓了 —— 而那个目录里没有 ±,
+      共享包里也没有,加它得动 smartbox 那个仓。既然配对的字形本来就够,就不加了。)
+   ② `padding:0` 照旧写死在 `.su-step` 上,这一层和字形是两回事。
+
+   字形包一层 `<span class="su-step__g">`:几何闸要量「字形盒相对按钮盒偏了多少」,
+   得有一个能 `getBoundingClientRect()` 的元素,裸文本节点量不了。 */
+const MINUS = <span className="su-step__g" aria-hidden="true">−</span>;
+const PLUS = <span className="su-step__g" aria-hidden="true">+</span>;
 
 /**
  * 档位轨。**两头的键是禁用,不是回绕** —— 从 0 再按 `−` 绕到最大档,

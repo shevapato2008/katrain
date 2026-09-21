@@ -592,3 +592,41 @@ class TestPlatformTurnGuard:
         assert "L0b" in warnings[0].getMessage()
         assert "disabled" in warnings[0].getMessage()
         assert warnings[0].exc_info is not None  # the RuntimeError is attached, not swallowed
+
+
+class TestLiveTurnAccessor:
+    """The real `WebKaTrain.next_player_to_move` — the collaborator every test above
+    fakes on `FakeKatrain`. Nothing exercised the implementation itself, so an inverted
+    reading would keep the whole class green while L0b refused every legitimate
+    cross-platform vision move for the rest of the game: F2 at full scale, produced by
+    the guard built to prevent F1."""
+
+    def _katrain(self, node):
+        from katrain.web.interface import WebKaTrain
+
+        # __init__ builds engines, config and a Kivy-free UI bridge; this method reads
+        # exactly two attributes, so construct the object without running any of that.
+        katrain = WebKaTrain.__new__(WebKaTrain)
+        katrain.game = None if node is None else SimpleNamespace(current_node=node)
+        return katrain
+
+    def test_reports_the_colour_the_live_game_expects_next(self):
+        """`next_player`, NOT `player`: `player` is the colour of the move ALREADY at this
+        node, which is the opposite of whose turn it is.
+
+        Mutation-proven: `node.next_player` -> `node.player` returns "B" here.
+        """
+        katrain = self._katrain(SimpleNamespace(next_player="W", player="B"))
+
+        assert katrain.next_player_to_move() == "W"
+
+    def test_no_game_yet_reads_as_unknown(self):
+        """None is the fail-open value L0b falls back on (test_unavailable_live_turn_does
+        _not_block) — a session with no game must never refuse moves."""
+        assert self._katrain(None).next_player_to_move() is None
+
+    def test_a_game_without_a_current_node_reads_as_unknown(self):
+        katrain = self._katrain(SimpleNamespace(next_player="W", player="B"))
+        katrain.game = SimpleNamespace(current_node=None)
+
+        assert katrain.next_player_to_move() is None

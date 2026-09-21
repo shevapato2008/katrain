@@ -42,3 +42,13 @@ if (typeof window.WebGLRenderingContext === 'undefined') {
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = function scrollIntoView() {};
 }
+
+// jsdom 的 `HTMLMediaElement.prototype.play()` 返回 undefined,真浏览器返回 Promise。
+// 产品代码一律写 `audio.play().catch(...)` ⇒ jsdom 里 `.catch` 当场抛 TypeError。
+// 赢棋庆祝(`kiosk/hooks/useGameCelebration.ts`)在 rAF 里播音,抛出来是**未捕获异常**,
+// 而且只在 rAF 赶在用例结束前触发时才出现:单独跑 `GamePageEngine.test.tsx` 三次 0 次,
+// 全量跑(负载高、用例变慢)才冒出 1 次 —— 时序决定,不是哪条改动引入的。
+// 这是**脚手架**:响没响、何时响归真浏览器,jsdom 对此无权作证。
+HTMLMediaElement.prototype.play = function play() {
+  return Promise.resolve();
+};

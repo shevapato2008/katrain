@@ -313,12 +313,14 @@ agent 的补充判据(已核):`src/components/NewGameDialog.tsx` 全仓只有
 > **2026-09-21 第三轮**:Fan 说「除了板上验收项,其他的缺陷继续修」。
 > 原来这一节六条,现在只剩两条(板上 + push),其余四条办完,记在 7.C。
 
-1. **板上没走**:RK3562 实机没验过。Fan 说稍后接入再测。
-   板上要注意一件事:`.mo` 是 `.gitignore` 掉的,只有 `Dockerfile.web` 里那行
-   `python3 i18n.py` 会生成。**盒子若不是从容器起的,就没有任何语种的译文** ——
-   不只这两轮补的,是全部。`lang.py` 会往 stderr 打一行说明,屏上静默退回 msgid。
-   **这条是本轮 i18n 能不能在板上生效的前置**,比译文本身更要紧。
-2. **没 push、没合、没部署** —— Fan 说等前面几件办完再议。
+1. ~~**板上没走**~~ → **2026-09-21 已上 RK3562,Fan 实机验过「看起来没有问题」**。
+   上一稿这里写「`.mo` 只有 `Dockerfile.web` 会生成,盒子不是从容器起的就没有任何译文」
+   —— **这句是错的**:`smartbox-software/provisioning/provision.sh` 的 katrain 段
+   用 polib 把 `.po` 编成 `.mo`(`provision.sh:654-668`)。真正要记的是它只在
+   **provision 时**跑一次、按 mtime 判新旧 ⇒ **事后 rsync 上去的新 `.po` 不会自动重编**,
+   部署时要在板上补编一次(这次部署做了,韩文译文实测下发)。
+2. ~~**没 push、没合、没部署**~~ → 已合 develop 并 push(`d210228a`)、已部署 RK3562,
+   smartbox-software 的 `vendor/katrain` 已跟到 `d210228a`(`4d98a40ce`)。
 
 ### 7.C 第三轮办掉的四件
 

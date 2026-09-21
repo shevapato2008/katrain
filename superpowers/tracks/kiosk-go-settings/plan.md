@@ -19,7 +19,7 @@
 
 > **开工前先读 `prd.md` §6.0**:四条新赛道的共享文件归属与合并顺序。与本 plan 冲突时以 §6.0 为准。
 
-- 在 worktree `/Users/fan/Repositories/katrain-kiosk-go-settings`(分支 `feature/kiosk-go-settings`,基线 develop `012e2a04`)里开发;**不 push、不合并 develop**。
+- 在 worktree `/Users/fan/Repositories/katrain-kiosk-go-settings`(分支 `feature/kiosk-go-settings`,基线 develop `7a152df1`)里开发;**不 push、不合并 develop**。
 - `cd katrain/web/ui && npm ci`。本轮**没有 Python 改动**。
 - **`GeometryContext.tsx` / `geometryApi.ts` 不许改**(归视觉赛道,§6.0 第 2 条);本赛道只消费 `loaded` / `phase` / `capabilities`。
 - **`features/aiLadder/*` 不许改**(galaxy 在用);ST4 另起 kiosk 视图。
@@ -59,17 +59,19 @@
 
 ---
 
-### Task 1: 建 worktree、装依赖、记录基线(含改前几何)
+### Task 1: 核对 worktree、装依赖、记录基线(含改前几何)
 
 **Files:** 不改仓内文件;基线写到 `$(git rev-parse --absolute-git-dir)/settings-baseline/`。
 
 **Interfaces:** Produces:`$BASE/before-failed.txt`、`$BASE/failed-names.cjs`、`$BASE/geometry-before.json`。
 
-- [ ] **Step 1: 建 worktree 与装依赖**
+- [ ] **Step 1: 核对 worktree 与装依赖**
 
 ```bash
 cd /Users/fan/Repositories/katrain
-git worktree add -b feature/kiosk-go-settings /Users/fan/Repositories/katrain-kiosk-go-settings 012e2a04
+# worktree 已于 2026-09-21 建好,本步只核对,不要再 add
+git -C /Users/fan/Repositories/katrain-kiosk-go-settings rev-parse --abbrev-ref HEAD            # 预期 feature/kiosk-go-settings
+git -C /Users/fan/Repositories/katrain-kiosk-go-settings merge-base --is-ancestor 7a152df1 HEAD && echo base-ok
 cd /Users/fan/Repositories/katrain-kiosk-go-settings/katrain/web/ui && npm ci
 ```
 
@@ -1150,7 +1152,7 @@ npx eslint src/hooks/useSessionBase.ts src/kiosk/pages/SettingsPage.tsx src/kios
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings
-git diff 012e2a04..HEAD -- katrain/web/ui/src | grep -o "t('[a-z]*:[a-z_0-9]*'" | sort -u
+git diff 7a152df1..HEAD -- katrain/web/ui/src | grep -o "t('[a-z]*:[a-z_0-9]*'" | sort -u
 ```
 
 交付说明写清:① 做了 ST1 余下一半、ST4、ST5、ST6、ST3-关于(Fan 2026-09-21 裁定);ST2 / ST3 剩下两组 / ST7 等 Fan;② 新增 key 清单;

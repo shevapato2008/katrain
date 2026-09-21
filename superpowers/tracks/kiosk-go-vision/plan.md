@@ -19,7 +19,7 @@
 
 > **开工前先读 `prd.md` §6.0**:四条新赛道的共享文件归属与合并顺序。本赛道排在合并顺序第一位(设置赛道要引用它的状态词)。
 
-- worktree `/Users/fan/Repositories/katrain-kiosk-go-vision`(分支 `feature/kiosk-go-vision`,基线 develop `012e2a04`);**不 push、不合并 develop**。
+- worktree `/Users/fan/Repositories/katrain-kiosk-go-vision`(分支 `feature/kiosk-go-vision`,基线 develop `7a152df1`);**不 push、不合并 develop**。
 - Python 环境 `uv sync --extra web`(光 `uv sync` 缺 fastapi ⇒ 基线会静默变空);前端 `cd katrain/web/ui && npm ci`。
 - **硬规矩:LED 绝不为几何自动点亮。** 本轮新增的两条重定位路径都走 `Scenario`(`RUNTIME_RECALIBRATION` / `MANUAL_FALLBACK` 里 `outer_corner` 排第一),**不许**把 `led` 传进 `CalibrationContext`,也不许新增任何「自动闪灯」分支。这条有一条结构闸测试守着(Task 4)。
 - **自动重定位默认关**:`AUTO_RELOCATE_ON_DRIFT = False` 写成源码里的字面量常量(不是 env —— 闸只看得见源码),注释里点名它等的是哪条上板闸。翻成 `True` 要和上板结果同一次提交。
@@ -41,7 +41,7 @@
 | `tests/test_geometry_calibration_service.py` | 追加 | V1 V2 V3 的八条(含两条反向闸与一条结构闸) |
 | `katrain/web/api/v1/endpoints/geometry.py` | 新增 `POST /relocate` | V1-b |
 | `tests/test_geometry_api.py` | 追加 | 端点两条 |
-| `katrain/web/server.py` | 改 `:805-815`(服务构造传 selector / 开关) | V1 |
+| `katrain/web/server.py` | 改 `:806-816`(服务构造传 selector / 开关) | V1 |
 | `katrain/web/ui/src/api/geometryApi.ts`(共享) | 新增 `relocate()` | V1-b |
 | `katrain/web/ui/src/kiosk/context/GeometryContext.tsx` | 新增 `relocate` 动作 | V1-b |
 | `katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx` | V1-b 按钮、V2 判别位与原因、V3 `canStart` 与说明、V4 措辞、V6 注释 | 前端主体 |
@@ -55,7 +55,7 @@ Task 2 与 Task 3 互相独立;Task 4 依赖 3;Task 5 依赖 4;Task 6 独立于 
 
 ---
 
-### Task 1: 建 worktree、装依赖、记录双基线
+### Task 1: 核对 worktree、装依赖、记录双基线
 
 **Files:** 不改仓内文件;基线写到 `$(git rev-parse --absolute-git-dir)/vision-baseline/`。
 
@@ -63,7 +63,9 @@ Task 2 与 Task 3 互相独立;Task 4 依赖 3;Task 5 依赖 4;Task 6 独立于 
 
 ```bash
 cd /Users/fan/Repositories/katrain
-git worktree add -b feature/kiosk-go-vision /Users/fan/Repositories/katrain-kiosk-go-vision 012e2a04
+# worktree 已于 2026-09-21 建好,本步只核对,不要再 add
+git -C /Users/fan/Repositories/katrain-kiosk-go-vision rev-parse --abbrev-ref HEAD            # 预期 feature/kiosk-go-vision
+git -C /Users/fan/Repositories/katrain-kiosk-go-vision merge-base --is-ancestor 7a152df1 HEAD && echo base-ok
 cd /Users/fan/Repositories/katrain-kiosk-go-vision
 uv sync --extra web
 cd katrain/web/ui && npm ci
@@ -375,7 +377,7 @@ EOF
 
 **Files:**
 - Modify: `katrain/web/core/geometry_calibration_service.py`
-- Modify: `katrain/web/server.py`(`:805-815` 构造处)
+- Modify: `katrain/web/server.py`(`:806-816` 构造处)
 - Test: `tests/test_geometry_calibration_service.py`(追加五条,含两条反向闸与一条结构闸)
 
 **Interfaces:**
@@ -628,7 +630,7 @@ AUTO_RELOCATE_ON_DRIFT = False
         return self.status()
 ```
 
-`server.py`(:805-815)构造处加一行注释与参数(保持默认即可,显式写出来是为了让读代码的人看见这个开关存在):
+`server.py`(:806-816)构造处加一行注释与参数(保持默认即可,显式写出来是为了让读代码的人看见这个开关存在):
 
 ```python
             # 漂移后自动用外框找回几何:**默认关**,等满盘精度上板闸(见 geometry_calibration_service

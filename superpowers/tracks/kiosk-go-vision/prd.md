@@ -1,9 +1,9 @@
 # 围棋 kiosk · 视觉 / 标定 / 实体盘 赛道 PRD(kiosk-go-vision)
 
 - 日期:2026-09-20
-- 分支 / worktree(**待创建**):`feature/kiosk-go-vision` @ `/Users/fan/Repositories/katrain-kiosk-go-vision`,基线 develop `012e2a04`
+- 分支 / worktree(**已创建 2026-09-21**):`feature/kiosk-go-vision` @ `/Users/fan/Repositories/katrain-kiosk-go-vision`,基线 develop `7a152df1`
 - 输入:2026-09-14「围棋 kiosk 缺口账本」视觉模块七条(V1–V6、N16)
-- **本文所有行号都在 develop `012e2a04` 上重核过(2026-09-20)**。账本成文于 `6f7dc629`,其后 develop 在视觉这一块前进很多(`geometry_calibration_service.py` +396 行、`led_geometry_calibrator.py` +314 行、`VisionSyncOverlay.tsx` 重写、新增 `visionRecovery.ts`)——**N16 已被修掉**(见 §2),其余六条逐行复核后仍然成立。
+- **本文所有行号都在 develop `012e2a04` 上重核过(2026-09-20)**。账本成文于 `6f7dc629`,其后 develop 在视觉这一块前进很多(`geometry_calibration_service.py` +396 行、`led_geometry_calibrator.py` +314 行、`VisionSyncOverlay.tsx` 重写、新增 `visionRecovery.ts`)——**N16 已被修掉**(见 §2),其余六条逐行复核后仍然成立。 **2026-09-21 基线移到 develop `7a152df1`**(其后 43 个提交是视觉识别稳定性与退出兜底):本文引用的文件里只有 `server.py` 行号漂移(+1),已按新基线改;这 43 个提交改的是识别链(`move_detector` / `sync` / `worker`),不碰本文的几何标定段落。
 
 ---
 
@@ -65,7 +65,7 @@
 
 - **现象**:对局 / 做题中把盘碰动 ⇒ 屏上换成标定台 ⇒ 「重新标定」要求空盘 ⇒ 这局在实体盘上接不下去。
 - **根因(已核实)**:
-  - `geometry_calibration_service.py:628-646` `_apply_drift`:判定漂移就 `phase = "degraded"` + `on_degraded()`(`server.py:783-790` 清掉运行时几何),**没有任何恢复尝试**。
+  - `geometry_calibration_service.py:628-646` `_apply_drift`:判定漂移就 `phase = "degraded"` + `on_degraded()`(`server.py:784-791` 清掉运行时几何),**没有任何恢复尝试**。
   - 标定服务固定用 `calibrator_factory=LedGeometryCalibrator`(`:82`),**不经 `CalibrationSelector`**;`build_default_selector()` 的唯一生产调用方是 `baipu_capture.py:248`,而那里算出的 `M` 只进采集 manifest。
   - `OuterCornerStrategy` 本来就是为这件事写的:`requires_led = False`、`works_on_crowded_board = True`,用的是**外框**(棋子永远挡不住外框)。
 - **期望**:两条路,合起来才闭环。
@@ -159,13 +159,13 @@
 
 ### 6.0 四条新赛道统一协调规则(2026-09-20 写定,四份 PRD 同文)
 
-**基线**:直播 / 成长 / 设置 / 视觉四条赛道都从 develop `012e2a04` 开出。上一轮五条赛道里 4 条已并入 develop,只剩 **`feature/kiosk-go-kifu`(`bd30cc39`)未合并**,它改 `KioskApp.tsx` 的路由段(:133-150)与 `KifuPage.tsx`(顶部 import、搜索卡、列表错误块)。
+**基线**:直播 / 成长 / 设置 / 视觉四条赛道都从 develop `7a152df1` 开出。上一轮五条赛道里 4 条已并入 develop,只剩 **`feature/kiosk-go-kifu`(`bd30cc39`)未合并**,它改 `KioskApp.tsx` 的路由段(:133-150)与 `KifuPage.tsx`(顶部 import、搜索卡、列表错误块)。
 
 **会撞的地方(按风险排序)**
 
 1. **`KifuPage.tsx` / `KioskApp.tsx` 与未合并的 kifu 分支**:直播赛道要在 `KifuPage.tsx` 的直播那一段(:378-417)加一行入口,设置赛道要删 `KioskApp.tsx` 的 `OrientationProvider` / `RotationWrapper`(:34、:41、:202-214)。两处与 kifu 的 hunk 都不相邻,属文本冲突。**规则:先合 kifu,再合这两家**;谁后合谁负责 rebase。
 2. **`GeometryContext` 的状态词(`phase` / `loaded` / `capabilities`)**:设置赛道 ST5 要在设置屏说「还没问到 / 没有摄像头」,视觉赛道 V2/V3 要改标定屏说「取消了还能沿用 / 这台盒子没有 LED」。**规则:`GeometryContext.tsx` 与 `geometryApi.ts` 归视觉赛道改,设置赛道只消费**;同一件事的措辞以视觉赛道为准,设置赛道照抄。
-3. **`server.py`**:成长赛道 G2 只在 `_record_ai_game_locked` 的 `data` 字典(:1829-1843)与 `_record_platform_engine_game` 的 `data_overrides`(:3569)各加一个键,**不碰终局收尾入口 `_finish_ended_game`**(上一轮定的唯一入口);视觉赛道只改挂 `GeometryCalibrationService` 的那一段(:760-825)。两处不相邻。
+3. **`server.py`**:成长赛道 G2 只在 `_record_ai_game_locked` 的 `data` 字典(:1830-1844)与 `_record_platform_engine_game` 的 `data_overrides`(:3615)各加一个键,**不碰终局收尾入口 `_finish_ended_game`**(上一轮定的唯一入口);视觉赛道只改挂 `GeometryCalibrationService` 的那一段(:761-826)。两处不相邻。
 4. **数据库迁移**:仓里**没有 alembic**(装着包但没有 env.py / 版本链)。加列只走 `katrain/web/core/migrations.py` 的 `add_missing_columns`(在模型上加一列可空列即可,它是幂等的 `ALTER TABLE ADD COLUMN`,SQLite / PG 双兼容)。本轮只有成长赛道 G2 加一列,其余三家零迁移。
 5. **i18n**:四家都只写 `t('ns:key','中文默认')`,**本轮不改任何 `.po`**(并行改 11 份必冲突)。合并完统一交 `katrain-i18n-expert`,各赛道交付时附新增 key 清单。
 6. **四图存档**:直播取屏 18 与新的直播列表屏、成长 22、设置 27、视觉 26,目录各不相同。重取前按 CLAUDE.md 跑**两次**比对排除抖动(canvas 屏抖动量级 ~4500 像素,DOM 屏 ~200)。
@@ -184,7 +184,7 @@
 | `katrain/web/core/geometry_calibration_service.py` | V1 自动重定位与 `relocate()`;V2 白名单加 `cancelled`;V3 无灯首标 | 无(独占) |
 | `katrain/vision/geometry_lock.py`(或新建 `relock.py`) | V1:按新单应重建 lock 的纯函数 | 摆谱链只读它,不改 |
 | `katrain/web/api/v1/endpoints/geometry.py` | 新增 `POST /geometry/relocate` | 无 |
-| `katrain/web/server.py`(:760-825) | V1:把 selector 与开关接进服务构造 | **成长赛道**改的是 `:1829-1843` / `:3569`,不相邻 |
+| `katrain/web/server.py`(:761-826) | V1:把 selector 与开关接进服务构造 | **成长赛道**改的是 `:1830-1844` / `:3569`,不相邻 |
 | `katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx` | V1-b 按钮、V2 判别位与原因、V3 `canStart` 与说明、V4 措辞 | 无 |
 | `katrain/web/ui/src/kiosk/context/GeometryContext.tsx`、`src/api/geometryApi.ts` | 新增 `relocate()` 动作 | **设置赛道**只消费,不改(§6.0 第 2 条) |
 | `katrain/web/ui/src/kiosk/components/game/RecalibrationModal.tsx` | **本轮不改**;但 V1-b 落地后它那句「重新标定(要清盘)」就不再是唯一出路 ⇒ 登记给**对弈赛道**(A21) | play-ai |

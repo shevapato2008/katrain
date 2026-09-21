@@ -16,7 +16,7 @@
 
 > **开工前先读 `prd.md` §6.0**:四条新赛道的共享文件归属与合并顺序(尤其:**先合 `feature/kiosk-go-kifu` 再动 `KifuPage.tsx`**)。与本 plan 冲突时以 §6.0 为准。
 
-- 在 worktree `/Users/fan/Repositories/katrain-kiosk-go-live`(分支 `feature/kiosk-go-live`,基线 develop `012e2a04`)里开发;**不 push、不合并 develop**,合并由 Fan 决定;不在别的 worktree 里 checkout(别人的基线实验会被冲掉)。
+- 在 worktree `/Users/fan/Repositories/katrain-kiosk-go-live`(分支 `feature/kiosk-go-live`,基线 develop `7a152df1`)里开发;**不 push、不合并 develop**,合并由 Fan 决定;不在别的 worktree 里 checkout(别人的基线实验会被冲掉)。
 - 新建 worktree 后依赖要重装:`cd katrain/web/ui && npm ci`。Python 侧本轮不需要(无 Python 改动)。
 - 触及共享领地(`src/hooks/live/`)⇒ `npm run build` 与 `npm run build:kiosk-2d`(含 `verify:kiosk-2d`)都必须绿;共享文件**不许** import `src/kiosk/**` / `src/galaxy/**` / `src/pages/**`。
 - 类型检查用 `npx tsc -b`(`npx tsc --noEmit` 检查 0 个文件,无效);`*.test.tsx` 不在 tsc 范围内。
@@ -52,7 +52,7 @@
 
 ---
 
-### Task 1: 建 worktree、装依赖、记录基线
+### Task 1: 核对 worktree、装依赖、记录基线
 
 **Files:**
 - 不改仓内文件。基线写到 git 目录下(不被跟踪):`$(git rev-parse --absolute-git-dir)/live-baseline/`
@@ -60,15 +60,17 @@
 **Interfaces:**
 - Produces:`$BASE/before-failed.txt`(失败用例名字集合)与 `$BASE/failed-names.cjs`(Task 8 复用)。
 
-- [ ] **Step 1: 建 worktree**
+- [ ] **Step 1: 核对 worktree**
 
 ```bash
 cd /Users/fan/Repositories/katrain
-git worktree add -b feature/kiosk-go-live /Users/fan/Repositories/katrain-kiosk-go-live 012e2a04
+# worktree 已于 2026-09-21 建好,本步只核对,不要再 add
+git -C /Users/fan/Repositories/katrain-kiosk-go-live rev-parse --abbrev-ref HEAD            # 预期 feature/kiosk-go-live
+git -C /Users/fan/Repositories/katrain-kiosk-go-live merge-base --is-ancestor 7a152df1 HEAD && echo base-ok
 cd /Users/fan/Repositories/katrain-kiosk-go-live && git rev-parse --abbrev-ref HEAD && git log --oneline -1
 ```
 
-预期:分支 `feature/kiosk-go-live`,HEAD 是 `012e2a04`。
+预期:分支 `feature/kiosk-go-live`,输出 `base-ok`(HEAD 是 develop `7a152df1` 之上的文档提交)。
 
 - [ ] **Step 2: 装依赖**
 
@@ -1079,7 +1081,7 @@ npx eslint src/hooks/live/useUpcomingMatches.ts src/kiosk/pages/LivePage.tsx src
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-live
-git diff 012e2a04..HEAD -- katrain/web/ui/src | grep -o "t('[a-z]*:[a-z_0-9]*'" | sort -u
+git diff 7a152df1..HEAD -- katrain/web/ui/src | grep -o "t('[a-z]*:[a-z_0-9]*'" | sort -u
 ```
 
 把输出抄进交付说明(合并后统一交 `katrain-i18n-expert` 补 11 种语言)。

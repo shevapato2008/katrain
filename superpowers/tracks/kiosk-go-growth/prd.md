@@ -1,9 +1,9 @@
 # 围棋 kiosk · 成长 赛道 PRD(kiosk-go-growth)
 
 - 日期:2026-09-20
-- 分支 / worktree(**待创建**):`feature/kiosk-go-growth` @ `/Users/fan/Repositories/katrain-kiosk-go-growth`,基线 develop `012e2a04`
+- 分支 / worktree(**已创建 2026-09-21**):`feature/kiosk-go-growth` @ `/Users/fan/Repositories/katrain-kiosk-go-growth`,基线 develop `7a152df1`
 - 输入:2026-09-14「围棋 kiosk 缺口账本」成长模块三条(G1 G2 G3)
-- **本文所有行号都在 develop `012e2a04` 上重核过(2026-09-20)**。账本成文于 `6f7dc629`,其后 develop 前进 234 个提交,`GrowthPage.tsx`、`endpoints/growth.py`、`models_db.py`、`ai_ladder_ranked.py` 的相关段落一行没动,三条结论全部仍然成立。
+- **本文所有行号都在 develop `012e2a04` 上重核过(2026-09-20)**。账本成文于 `6f7dc629`,其后 develop 前进 234 个提交,`GrowthPage.tsx`、`endpoints/growth.py`、`models_db.py`、`ai_ladder_ranked.py` 的相关段落一行没动,三条结论全部仍然成立。 **2026-09-21 基线移到 develop `7a152df1`**(其后 43 个提交是视觉识别稳定性与退出兜底):本文引用的文件里只有 `server.py` 行号漂移(+1 / +46),已按新基线改。
 
 ---
 
@@ -135,13 +135,13 @@
 
 ### 6.0 四条新赛道统一协调规则(2026-09-20 写定,四份 PRD 同文)
 
-**基线**:直播 / 成长 / 设置 / 视觉四条赛道都从 develop `012e2a04` 开出。上一轮五条赛道里 4 条已并入 develop,只剩 **`feature/kiosk-go-kifu`(`bd30cc39`)未合并**,它改 `KioskApp.tsx` 的路由段(:133-150)与 `KifuPage.tsx`(顶部 import、搜索卡、列表错误块)。
+**基线**:直播 / 成长 / 设置 / 视觉四条赛道都从 develop `7a152df1` 开出。上一轮五条赛道里 4 条已并入 develop,只剩 **`feature/kiosk-go-kifu`(`bd30cc39`)未合并**,它改 `KioskApp.tsx` 的路由段(:133-150)与 `KifuPage.tsx`(顶部 import、搜索卡、列表错误块)。
 
 **会撞的地方(按风险排序)**
 
 1. **`KifuPage.tsx` / `KioskApp.tsx` 与未合并的 kifu 分支**:直播赛道要在 `KifuPage.tsx` 的直播那一段(:378-417)加一行入口,设置赛道要删 `KioskApp.tsx` 的 `OrientationProvider` / `RotationWrapper`(:34、:41、:202-214)。两处与 kifu 的 hunk 都不相邻,属文本冲突。**规则:先合 kifu,再合这两家**;谁后合谁负责 rebase。
 2. **`GeometryContext` 的状态词(`phase` / `loaded` / `capabilities`)**:设置赛道 ST5 要在设置屏说「还没问到 / 没有摄像头」,视觉赛道 V2/V3 要改标定屏说「取消了还能沿用 / 这台盒子没有 LED」。**规则:`GeometryContext.tsx` 与 `geometryApi.ts` 归视觉赛道改,设置赛道只消费**;同一件事的措辞以视觉赛道为准,设置赛道照抄。
-3. **`server.py`**:成长赛道 G2 只在 `_record_ai_game_locked` 的 `data` 字典(:1829-1843)与 `_record_platform_engine_game` 的 `data_overrides`(:3569)各加一个键,**不碰终局收尾入口 `_finish_ended_game`**(上一轮定的唯一入口);视觉赛道只改挂 `GeometryCalibrationService` 的那一段(:760-825)。两处不相邻。
+3. **`server.py`**:成长赛道 G2 只在 `_record_ai_game_locked` 的 `data` 字典(:1830-1844)与 `_record_platform_engine_game` 的 `data_overrides`(:3615)各加一个键,**不碰终局收尾入口 `_finish_ended_game`**(上一轮定的唯一入口);视觉赛道只改挂 `GeometryCalibrationService` 的那一段(:761-826)。两处不相邻。
 4. **数据库迁移**:仓里**没有 alembic**(装着包但没有 env.py / 版本链)。加列只走 `katrain/web/core/migrations.py` 的 `add_missing_columns`(在模型上加一列可空列即可,它是幂等的 `ALTER TABLE ADD COLUMN`,SQLite / PG 双兼容)。本轮只有成长赛道 G2 加一列,其余三家零迁移。
 5. **i18n**:四家都只写 `t('ns:key','中文默认')`,**本轮不改任何 `.po`**(并行改 11 份必冲突)。合并完统一交 `katrain-i18n-expert`,各赛道交付时附新增 key 清单。
 6. **四图存档**:直播取屏 18 与新的直播列表屏、成长 22、设置 27、视觉 26,目录各不相同。重取前按 CLAUDE.md 跑**两次**比对排除抖动(canvas 屏抖动量级 ~4500 像素,DOM 屏 ~200)。
@@ -158,7 +158,7 @@
 | 文件 | 本赛道改什么 | 可能重叠 |
 |---|---|---|
 | `katrain/web/core/models_db.py` | `UserGame` 加一列 `user_color`(G2) | 无(其余三家零模型改动) |
-| `katrain/web/server.py` | `_record_ai_game_locked` 的 `data` 加一键(:1829-1843);`_record_platform_engine_game` 的 `data_overrides` 加一键(:3569) | **无**,但这是上一轮两条赛道打过架的文件 —— **不许碰 `_finish_ended_game`** |
+| `katrain/web/server.py` | `_record_ai_game_locked` 的 `data` 加一键(:1830-1844);`_record_platform_engine_game` 的 `data_overrides` 加一键(:3615) | **无**,但这是上一轮两条赛道打过架的文件 —— **不许碰 `_finish_ended_game`** |
 | `katrain/web/core/user_game_repo.py` | `create` / `create_ai_ladder_ranked` 透传 `user_color`;新增按执色数胜负的查询(G2) | 无 |
 | `katrain/web/core/ai_ladder_ranked.py` | `growth_summary` 不动;G3 若做则新增 `rung_trend`(**只读**) | 无 |
 | `katrain/web/api/v1/endpoints/growth.py` | `summary` 多三个字段;新增 `GET /growth/diagnosis`(G1) | 无 |

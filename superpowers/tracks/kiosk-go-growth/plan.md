@@ -18,7 +18,7 @@
 
 > **开工前先读 `prd.md` §6.0**:四条新赛道的共享文件归属与合并顺序。与本 plan 冲突时以 §6.0 为准。
 
-- 在 worktree `/Users/fan/Repositories/katrain-kiosk-go-growth`(分支 `feature/kiosk-go-growth`,基线 develop `012e2a04`)里开发;**不 push、不合并 develop**,合并与部署由 Fan 决定。
+- 在 worktree `/Users/fan/Repositories/katrain-kiosk-go-growth`(分支 `feature/kiosk-go-growth`,基线 develop `7a152df1`)里开发;**不 push、不合并 develop**,合并与部署由 Fan 决定。
 - 新 worktree 的 Python 环境:`uv sync --extra web`。**光 `uv sync` 会缺 fastapi**,而缺了它整批 web 测试会在收集阶段就错,基线静默变成空集合。
 - 跑测试:`CI=true uv run pytest tests/web_ui/test_growth_diagnosis.py -q`;全量基线用
   `CI=true uv run pytest tests --continue-on-collection-errors -q`,并用 `grep '^FAILED\|^ERROR'` 取名字集合(仓里有未声明依赖会让某些文件收集失败,这是既有噪声,靠基线 diff 排除)。
@@ -39,7 +39,7 @@
 |---|---|---|
 | `katrain/web/core/models_db.py` | 改 `UserGame`(:705-742) | 加 `user_color`(可空) |
 | `katrain/web/core/user_game_repo.py` | 改 `create`(:53-82)、`create_ai_ladder_ranked`(:85-140);新增 `decided_since` | 透传执色;按执色数胜负 |
-| `katrain/web/server.py` | 改 `_record_ai_game_locked` 的 `data`(:1829-1843);`_record_platform_engine_game`(:3564-3570) | 落账时写执色 |
+| `katrain/web/server.py` | 改 `_record_ai_game_locked` 的 `data`(:1830-1844);`_record_platform_engine_game`(:3610-3616) | 落账时写执色 |
 | `katrain/web/core/growth_diagnosis.py` | **新建** | 纯函数:逐手分桶成三段的 `graded` / `bad` |
 | `katrain/web/core/report_diagnosis_repo.py` | **新建** | 取「最近 N 份已完成报告」的逐手行(带执色) |
 | `katrain/web/api/v1/endpoints/growth.py` | 改 `growth_summary`;新增 `growth_diagnosis` | 三个新字段;诊断端点(三档 authority) |
@@ -60,17 +60,19 @@
 
 ---
 
-### Task 1: 建 worktree、装两套依赖、记录双基线
+### Task 1: 核对 worktree、装两套依赖、记录双基线
 
 **Files:** 不改仓内文件。基线写到 `$(git rev-parse --absolute-git-dir)/growth-baseline/`。
 
 **Interfaces:** Produces:`$BASE/before-py.txt`、`$BASE/before-failed.txt`、`$BASE/failed-names.cjs`。
 
-- [ ] **Step 1: 建 worktree 并装依赖**
+- [ ] **Step 1: 核对 worktree 并装依赖**
 
 ```bash
 cd /Users/fan/Repositories/katrain
-git worktree add -b feature/kiosk-go-growth /Users/fan/Repositories/katrain-kiosk-go-growth 012e2a04
+# worktree 已于 2026-09-21 建好,本步只核对,不要再 add
+git -C /Users/fan/Repositories/katrain-kiosk-go-growth rev-parse --abbrev-ref HEAD            # 预期 feature/kiosk-go-growth
+git -C /Users/fan/Repositories/katrain-kiosk-go-growth merge-base --is-ancestor 7a152df1 HEAD && echo base-ok
 cd /Users/fan/Repositories/katrain-kiosk-go-growth
 uv sync --extra web            # 光 uv sync 会缺 fastapi ⇒ 基线会静默变空
 cd katrain/web/ui && npm ci
@@ -254,7 +256,7 @@ CI=true uv run pytest tests/web_ui/test_user_game_color.py -q
                 "user_color": _user_seat(players_info, game_type),
 ```
 
-`_record_platform_engine_game`(:3564-3570)的 `data_overrides` 里加一键(它本来就算出了 `human_color`):
+`_record_platform_engine_game`(:3610-3616)的 `data_overrides` 里加一键(它本来就算出了 `human_color`):
 
 ```python
         data_overrides={
@@ -1703,7 +1705,7 @@ cd /Users/fan/Repositories/katrain-kiosk-go-growth && uv run black -l 120 --chec
 - [ ] **Step 3: 新增文案 key 清单 + 交付说明**
 
 ```bash
-git diff 012e2a04..HEAD -- katrain/web/ui/src | grep -o "t('[a-z]*:[a-z_0-9]*'" | sort -u
+git diff 7a152df1..HEAD -- katrain/web/ui/src | grep -o "t('[a-z]*:[a-z_0-9]*'" | sort -u
 ```
 
 交付说明里写清:① 做了 G1 G2 G3(G3 是 Fan 2026-09-21 裁定的「画档位」);② 新增 key 清单;③ 四图与承重结论(附 Fan 确认);

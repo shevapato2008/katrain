@@ -257,7 +257,12 @@ agent 的补充判据(已核):`src/components/NewGameDialog.tsx` 全仓只有
 | `npm run build:kiosk-2d` | ✓ `verify:kiosk-2d` 边界干净 |
 | `kiosk-shell/MANIFEST.sha256` | 293/294 —— `tokens.css` 对不上,**是 develop 带进来的**(`3f3798c6` 改了它没更清单,清单最后一次更新在 `156e38c7`)。没动,记在 §7。 |
 | eslint(本轮碰过的文件) | **0 条**。全树 91 条都在没碰过的文件里(develop 侧升级了插件)。 |
-| 四条跨层闸 | `test_rules_wire.py`(含新增的 config 自洽那条)· `test_kiosk_game_terms.py` · `kioskNewGameBoundary.test.ts` · `test_kiosk_setup_i18n.py`,**每条都做过变异实测** |
+| 六条跨层闸 | `test_rules_wire.py`(含 config 自洽那条)· `test_kiosk_game_terms.py` · `kioskNewGameBoundary.test.ts` · `test_kiosk_i18n.py`(全树)· `test_kiosk_shell_manifest.py` · `emphasized.test.tsx`,**每条都做过变异实测** |
+
+> **2026-09-21 第三轮之后复跑**:pytest 142 条与 develop 基线逐条同名,新增 0;
+> Playwright 全量 **82 → 49**(名字集合零新增,17 条真修好);
+> 前端单测 2198 passed;`tsc -b --force` 干净;两个构建绿;
+> `kiosk-shell/MANIFEST.sha256` **294/294 OK**(那条 `tokens.css` 的漂已补)。
 
 ### 两条容易误判的红
 
@@ -305,25 +310,48 @@ agent 的补充判据(已核):`src/components/NewGameDialog.tsx` 全仓只有
 
 ### 7.B 仍然没办的
 
-1. **kiosk 全树还有 863 个界面字符串没进 .po**。全树 1174 个 key,959 个在 `en.po`
-   里不存在;本轮补掉其中 96 个(三屏 + 共用件),**剩 863**。
-   用户后果说清楚:设置里那个语言下拉**是真的能切 11 种**
-   (`SettingsPage.tsx:325`),但 `i18n.t()` 查不到就回退到 `t(key, '中文默认')` 的
-   第二个参数 —— **那是中文**。所以今天切到韩文,三屏对了,其余二十几屏全是中文。
-   **这意味着本轮这 96 个key在产品上暂时看不出效果**,要等全树补完才成立。
-   这是一条独立赛道的量,不该塞进这条分支。
-2. **`setup:note_r2_a/b/c/d` + `note_h` 是拆成五段拼起来的一句话**,拼接顺序写死在
-   JSX 里而各语种语序不同。这五条的译法是在「顺序不能动」的约束下选的,生硬。
-   真要修得把它改成一条带标记的整句 —— 那会同时动到屏 04 的 `note3_a..j`(十段)。
-3. **`kiosk-shell/MANIFEST.sha256` 与 `tokens.css` 对不上**。develop 的 `3f3798c6`
-   改了 `tokens.css`(加了 `.kiosk-pagebar__iconbtn--labeled` 那一组)没更清单。
-   **develop 自己的树上同样 FAILED**,不是合并造成的。没动:那份清单是
-   kiosk-shell 规范的契约,改它该由那条赛道来,盲改一个哈希等于把闸关掉。
-4. **摆谱三条 `kiosk-shell-scroll` 红**(`waitForSelector('[data-testid="baipu-pcard"]')`
-   超时)。develop 上同样红、同一行;`BaipuSessionPage.tsx` 两边逐字节相同。
-   和缺口账本里那条 P0「摆谱死页」对得上,归那条赛道。
-5. **板上没走**:RK3562 实机没验过。Fan 说稍后接入再测。
+> **2026-09-21 第三轮**:Fan 说「除了板上验收项,其他的缺陷继续修」。
+> 原来这一节六条,现在只剩两条(板上 + push),其余四条办完,记在 7.C。
+
+1. **板上没走**:RK3562 实机没验过。Fan 说稍后接入再测。
    板上要注意一件事:`.mo` 是 `.gitignore` 掉的,只有 `Dockerfile.web` 里那行
    `python3 i18n.py` 会生成。**盒子若不是从容器起的,就没有任何语种的译文** ——
-   不只是这一轮补的,是全部。`lang.py` 会往 stderr 打一行说明,屏上静默退回 msgid。
-6. **没 push、没合、没部署** —— Fan 说等前面几件办完再议。
+   不只这两轮补的,是全部。`lang.py` 会往 stderr 打一行说明,屏上静默退回 msgid。
+   **这条是本轮 i18n 能不能在板上生效的前置**,比译文本身更要紧。
+2. **没 push、没合、没部署** —— Fan 说等前面几件办完再议。
+
+### 7.C 第三轮办掉的四件
+
+1. ~~**kiosk 全树还有 863 个界面字符串没进 .po**~~ → **全补完了**。
+   872 个(重新数过,比上一轮估的 863 多 9 个)+ 5 条既有欠账 = 877 × 11 = 9647 条。
+   闸 `tests/web_ui/test_kiosk_i18n.py` 随之从「三屏」放宽到 **`src/kiosk` 全树**,
+   变异实测用的是**非设置屏**的 key,证明扩得真。
+   顺带逮到全树唯一一处「一个 msgid 兼管两件事」(`grade:tabs`),另铸新键。
+2. ~~**拆成五段/十段的拼句**~~ → 改成**一句一个 key**,强调写成 `<b>` 标记,
+   由新的 `emphasized()` 渲染(不走 `dangerouslySetInnerHTML`:译文是运行时下发的,
+   那等于把整条译文变成注入面)。五条单测含「粗体放句首」和「`<script>` 当字面文本」。
+3. ~~**MANIFEST 与 tokens.css 对不上**~~ → **补上那一行,并把校验接进 pytest**。
+   查清了:`472436f5` 改 `tokens.css` 时**连着重算了清单**(对的做法),
+   下一次 `3f3798c6` 又改了却**没重算** —— 所以这不是误报,是补一个漏掉的动作。
+   真正的病根是**那份清单从来没人在跑**(只写在 README 和计划文档里),
+   新增 `tests/test_kiosk_shell_manifest.py`(295 条),三支变异各实测一次。
+4. ~~**摆谱三条红**~~ → **不是「摆谱死页」,是夹具过期**,而且是一整族 17 条。
+   `1d5f67a0`(盒子 SSO 第 4 层)把摆谱/死活/错题的存储改成按 `user.uuid` 分命名空间,
+   **没同步改 e2e 夹具**:种子写裸键 + `/me` 不给 uuid ⇒ 两头都断,页面渲染它
+   **正确的**空态,断言停在永远不出现的选择器上超时。
+   **我上一轮把它错认成缺口账本里那条 P0** —— 页面好好的。
+   新增 `tests/helpers/kioskIdentity.ts`,并顺带修掉三处与身份无关的过期锚/文案。
+   Playwright 全量 82(develop 基线)→ 49,名字集合零新增。
+
+### 7.D 第三轮顺带修掉、原来没记在账上的
+
+* **图标契约**:本轮开局设置件里两处手写内联 `<path d=>`,被 `kiosk-shell-contract`
+  抓了。下拉箭头换成共享的 `caret-down`;± 换回**配对的字形** `−`(U+2212)/ `+`(U+002B)
+  —— Fan 最初报的「+/-号不居中」根因**不是「文本不行」**,是原来配了**全角** `＋`(U+FF0B)。
+  真浏览器实测 dx=0 dy=0、宽 46,和画 SVG 那一版一模一样。
+* **「默认值不许和 PO 说两回事」那条闸的 baseline 本来是空的,冒出来三条**(develop
+  基线上同样红)。按该闸记着的 Fan 2026-08-26 裁定「PO 是正本」处理,
+  其中两条是「一个 msgid 兼管两件事」⇒ 铸新键(`review:void_result` /
+  `game:count_failed_retry`)。
+* **两份 baseline 名单各划掉一行**:`TsumegoCategoriesPage.tsx` 两条闸都干净了,
+  而那两份名单是**双向棘轮**,清干净却留在名单里一样要红。

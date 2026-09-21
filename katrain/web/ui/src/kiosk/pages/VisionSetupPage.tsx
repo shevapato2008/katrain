@@ -1,6 +1,6 @@
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationScreen';
+import { useSafeBack } from '../hooks/useSafeBack';
 
 /**
  * 屏 26 棋盘标定 `/kiosk/vision/setup`。入口是设置屏那颗「重新标定棋盘」。
@@ -10,12 +10,12 @@ import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationS
  * 两条路唯一的差别就是这四个字:guard 是从做题/摆谱里被拦下的,写「← 设置」是对来路撒谎。
  */
 const VisionSetupPage = () => {
-  const navigate = useNavigate();
+  const back = useSafeBack('/kiosk/settings');
   const { t } = useTranslation();
   return (
     <GeometryCalibrationScreen
       backLabel={t('vision:back_settings', '设置')}
-      onBack={() => navigate(-1)}
+      onBack={back}
       title={t('vision:calibrate_title', '棋盘标定')}
       sub={t('vision:calibrate_sub', '先把棋盘清空 · 四角 + 九星共 13 个定位点')}
     />

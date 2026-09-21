@@ -706,3 +706,44 @@ def test_exposure_gate_still_rejects_when_two_of_three_frames_are_blown():
     assert result.reason == "frame_overexposed"
     assert led.attempts == []
     assert result.exposure_stats["median"] == pytest.approx(253, abs=1)
+
+
+class TransientCapture(FakeCapture):
+    """棋盘外一闪而过的亮块,只出现在点亮 `transient_at` 之后的**第一帧**。
+
+    复刻 2026-09-21 RK3562 那次:(18,0) 三轮都被认到棋盘外 (638,1058)(当次锁反算
+    row 1.47 / col -3.63),人不在旁边时同一检测函数 12/12 全对 ⇒ 是暗/亮两帧之间
+    画面边缘有东西变了。亮块比 LED 光斑大一个量级,单帧检测必然选它。
+    """
+
+    TRANSIENT_XY = (60, 860)
+
+    def __init__(self, led, camera_points, transient_at):
+        super().__init__(led, camera_points)
+        self.transient_at = transient_at
+        self._state = None
+        self._frames_in_state = 0
+
+    def grab_fresh(self, after_ts=None, settle_ms=150.0):
+        frame, seq, ts = super().grab_fresh(after_ts, settle_ms)
+        state = (self.led.current, self.led.rgb)
+        if state != self._state:
+            self._state, self._frames_in_state = state, 0
+        self._frames_in_state += 1
+        if self.led.current == self.transient_at and self._frames_in_state == 1:
+            cv2.circle(frame, self.TRANSIENT_XY, 25, (230, 230, 230), -1)
+        return frame, seq, ts
+
+
+def test_a_one_frame_transient_off_board_does_not_become_the_corner():
+    """灯亮着的那段时间里连拍几帧,只认每一帧都亮的地方 —— 一闪而过的东西过不了。"""
+    led = FakeLed()
+    points = _synthetic_camera_points()
+    capture = TransientCapture(led, points, transient_at=(18, 0))
+
+    result = LedGeometryCalibrator(led=led, capture=capture).calibrate()
+
+    assert result.ok is True
+    seen = {(a["row"], a["col"]): a["camera"] for a in result.lock.diag["anchors"]}
+    true_x, true_y = points[(18, 0)]
+    assert abs(seen[(18, 0)][0] - true_x) < 2 and abs(seen[(18, 0)][1] - true_y) < 2

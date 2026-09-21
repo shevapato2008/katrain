@@ -142,7 +142,36 @@ class MoveDetector:
 
     @property
     def about_to_confirm(self) -> bool:
-        """True on the frame whose successor can confirm the leading candidate.
+        """True on the frame whose successor can confirm the leading candidate — on the
+        SLOW path only. It is false for the whole of a fast-path confirmation.
+
+        Say that plainly, because it is the majority regime and an earlier wording of
+        this docstring did not: the predicate is ``count == consistency_frames - 1``, but
+        the workers hand ``detect_new_move`` a smaller ``required_frames`` for a candidate
+        whose confidence peak clears the fast bar, and such a candidate is confirmed and
+        deleted at ``required_frames``. At the device constants (consistency_frames 5,
+        move_confirm_fast_frames 3) a fast candidate is seen at counts 1, 2, 3 and never
+        reaches 4, so this never fires for it — and the workers' own measurement is that
+        80% of real moves on a 117-move game take that path.
+
+        The consequence is that the software-AE mute this predicate implements is OFF for
+        those moves. That is accepted, not overlooked (final review F-4). MoveDetector
+        cannot see the per-call fast decision — it is the caller's, made from a confidence
+        reading this class never receives — so making the predicate exact would mean
+        threading the workers' per-frame fast flag back into the detector. What that would
+        buy is bounded on both sides:
+          * AE actuation is already rare. An exposure step needs the median out of band in
+            the SAME direction for 2 evaluations spaced 2.0s apart, and is followed by a
+            2.0s hold-off (auto_exposure.py defaults) — it cannot land on frame after
+            frame of a 3-frame window.
+          * If one does land there, the worst case is a lost sighting, and ``miss_grace``
+            (2 on the device) freezes the streak rather than dropping it, so the cost is
+            latency, not a lost move.
+          * It cannot turn a card into an auto-play: that routing gate compares the WINDOW
+            PEAK (PendingConfidencePeak), not the confirm-frame value, so a darker frame
+            at the end of a window cannot raise the number the gate reads.
+        The mute that mattered was the unbounded one this replaced (``pending_move is not
+        None``), which after L1 latched permanently and closed the promoter — see below.
 
         This replaces ``pending_move is not None`` at the two worker sites that used it
         as a MUTE (the stuck-stone promoter, and software AE actuation). Since L1,

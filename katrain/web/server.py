@@ -726,6 +726,14 @@ async def _lifespan_board(app: FastAPI, log):
     # Vision service (optional — enabled when --vision-model is provided)
     if vision_config and vision_config.enabled and camera_hub is not None:
         from katrain.vision.service import VisionService
+        from katrain.vision.parallax_store import attach_parallax
+
+        vision_config, parallax_level, parallax_message = attach_parallax(
+            vision_config,
+            hardware_vision_dir,
+            hardware_vision_state.generation if hardware_vision_state is not None else None,
+        )
+        log.log(parallax_level, parallax_message)
 
         vision = VisionService(vision_config, frame_source=camera_hub)
         vision.start()

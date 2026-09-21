@@ -31,6 +31,7 @@ from katrain.vision.gating import (
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
+from katrain.vision.parallax import ParallaxParams
 from katrain.vision.move_detector import (
     AmbiguousPromoter,
     MoveDetector,
@@ -112,13 +113,16 @@ class InProcessAdapter:
         self._state_extractor = BoardStateExtractor(board_config)
         # Geometry-lock warps add a 1-cell margin (matching baipu_autolabel training images), so the
         # mapping for that path needs the matching border. BoardFinder fallback keeps border 0.
+        # Stone parallax is calibrated in THIS warp's grid, so only this extractor may receive it.
+        parallax_cfg = config.get("parallax")
         self._state_extractor_locked = BoardStateExtractor(
             BoardConfig(
                 grid_size=board_config.grid_size,
                 board_width_mm=board_config.board_width_mm,
                 board_length_mm=board_config.board_length_mm,
                 margin_cells=DEFAULT_MARGIN_CELLS,
-            )
+            ),
+            parallax=ParallaxParams(**parallax_cfg) if parallax_cfg else None,
         )
         self._move_detector = MoveDetector(
             consistency_frames=config.get("move_confirm_frames", 3),

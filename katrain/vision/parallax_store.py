@@ -8,7 +8,9 @@ recorded for the startup log, never used as a switch.
 
 from __future__ import annotations
 
+import dataclasses
 import json
+import logging
 import math
 import os
 import tempfile
@@ -133,3 +135,29 @@ def save_parallax(path, calib: ParallaxCalibration) -> None:
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
         raise
+
+
+def attach_parallax(vision_config, hardware_vision_dir, current_generation: str | None):
+    """Server startup: (vision_config with .parallax set or cleared, log level, log message).
+
+    Returns a new config (dataclasses.replace) and never raises: a missing or broken calibration
+    only turns the correction off. A missing file is the normal pre-calibration state (INFO); a
+    present-but-invalid one is a fault worth noticing (WARNING)."""
+    if not hardware_vision_dir:
+        return (
+            dataclasses.replace(vision_config, parallax=None),
+            logging.INFO,
+            "vision parallax off: no --hardware-vision-dir",
+        )
+    path = parallax_path(hardware_vision_dir)
+    calib, reason = load_parallax(path)
+    if calib is None:
+        level = logging.INFO if not path.exists() else logging.WARNING
+        return dataclasses.replace(vision_config, parallax=None), level, f"vision parallax off: {reason}"
+    message = (
+        f"vision parallax on: board={calib.board} stone_set={calib.stone_set} k={calib.k:.6f} "
+        f"nadir=({calib.nadir_fx:.3f},{calib.nadir_fy:.3f}) h_implied={calib.h_implied_mm:.2f}mm "
+        f"rms={calib.rms_cells:.3f}cells n={calib.n_samples} fitted_at={calib.fitted_at} "
+        f"fit_generation={calib.geometry_generation} current_generation={current_generation}"
+    )
+    return dataclasses.replace(vision_config, parallax=calib.params.to_dict()), logging.INFO, message

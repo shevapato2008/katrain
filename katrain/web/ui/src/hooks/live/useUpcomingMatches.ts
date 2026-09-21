@@ -44,5 +44,5 @@ export function useUpcomingMatches({ limit = 20, pollIntervalMs = 30 * 60 * 1000
     return () => clearInterval(timer);
   }, [fetchUpcoming, pollIntervalMs]);
 
-  return { upcoming, loading, error };
+  return { upcoming, loading, error, refresh: fetchUpcoming };
 }

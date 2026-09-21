@@ -51,3 +51,21 @@ def grid_to_pixel(pos_x: int, pos_y: int, img_w: int, img_h: int, config: BoardC
     px = int(x_mm / config.total_width * img_w)
     py = int(y_mm / config.total_length * img_h)
     return px, py
+
+
+def apply_parallax(fx: float, fy: float, nadir: tuple[float, float] | None, k: float | None) -> tuple[float, float]:
+    """Undo stone-thickness parallax on a continuous grid position (vision-stone-parallax track).
+
+    A stone's detected centre sits above the board, so the camera sees it pushed outward from the
+    nadir (the lens centre dropped onto the board plane) by a homothety of factor 1/k; the contact
+    point is ``nadir + (detected - nadir) * k``. The factor survives the affine pixel -> mm -> grid
+    chain unchanged, so this runs directly on (fx, fy) with ``nadir`` in the same grid coordinates.
+
+    NOT idempotent (applying twice contracts by k**2): call it exactly once per detection.
+    Identity when uncalibrated (``nadir`` or ``k`` is None), and returns the inputs untouched when
+    ``k == 1.0`` -- ``nadir + (fx - nadir) * 1.0`` is not always ``fx`` in floating point, and
+    "parallax off" must be bit-identical to not calling this at all.
+    """
+    if nadir is None or k is None or k == 1.0:
+        return fx, fy
+    return nadir[0] + (fx - nadir[0]) * k, nadir[1] + (fy - nadir[1]) * k

@@ -918,6 +918,67 @@ class TestMissingStoneHold:
         bare_synced = [e for e in events if e.type == SyncEventType.SYNCED and not e.data]
         assert bare_synced == []
 
+    def test_a_stone_that_comes_back_restarts_its_hold(self):
+        """Pins the prune of `_missing_since` for cells not missing THIS frame.
+
+        Without it the hold entry is never discarded, so a cell that has ever been
+        briefly invisible keeps its ORIGINAL first-seen timestamp and its accumulated
+        frame count. Every later absence of that cell is then born already ripe — L4 is
+        silently defeated for exactly the flickering cell it exists for, and the second
+        blink of a stone an arm passes over is reported as a missing stone.
+
+        Mutation-proven: deleting the `for cell in list(self._missing_since): if cell not
+        in seen_missing: del ...` loop fires ILLEGAL_CHANGE inside the 10 frames below
+        (the stale entry is 19s old and reaches the frame count on the 4th), where the
+        shipped code is still 1.8s into a 7.0s hold.
+        """
+        expected = board_with({(2, 9): 1})
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        self._established(sm, expected)
+
+        gone = empty_board()
+        sm.update(observed_board=gone, timestamp=1.0)  # one blink: hold entry created
+        sm.update(observed_board=expected, timestamp=1.2)  # visible again -> entry must go
+
+        seen = []
+        for i in range(10):  # a second occlusion 19s later, only 1.8s long
+            seen += sm.update(observed_board=gone, timestamp=20.0 + i * 0.2)
+        assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in seen]
+
+    def test_board_reacquired_is_not_delayed_by_a_held_missing_stone(self):
+        """L4 must not make the board itself look lost for longer than it was.
+
+        A displaced board that comes back with one stone under a resting hand reaches
+        the held_missing branch on its first visible frame. That branch used to return
+        without touching SyncState, leaving BOARD_LOST set — and update()'s recovery test
+        is `was_board_lost and state != BOARD_LOST`, so BOARD_REACQUIRED was withheld for
+        up to missing_hold_seconds (measured: t+7.5s against t+2.5s before L4). For that
+        window /api/vision-status kept saying board_lost, and gating.should_detect_moves
+        excludes board_lost, so monitor-mode move detection stayed shut too.
+
+        Recovery is a BOARD-level fact and this frame proves it: corners were found, the
+        whole board compared, and 4b did not re-declare it lost. The cell-level hold is
+        a separate clock and must keep running — the second half of this test is what
+        says the fix did not simply disable L4.
+        """
+        expected = board_with({(3, 3): 1, (10, 10): 1})
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        self._established(sm, expected)
+        sm.update(observed_board=None, board_detected=False, timestamp=0.2)
+        assert sm.state == SyncState.BOARD_LOST
+
+        occluded = board_with({(3, 3): 1})  # (10,10) is under a hand
+        events = sm.update(observed_board=occluded, timestamp=0.5)
+
+        assert [e.type for e in events] == [SyncEventType.BOARD_REACQUIRED]
+        assert sm.state != SyncState.BOARD_LOST
+        # ...and the occluded cell is still only HELD: no missing report yet, because the
+        # 7s hold restarted with this frame.
+        seen = []
+        for i in range(10):  # 2 more seconds of the same occlusion
+            seen += sm.update(observed_board=occluded, timestamp=1.0 + i * 0.2)
+        assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in seen]
+
     def test_reset_clears_the_missing_hold(self):
         expected = board_with({(3, 3): 1})
         sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)

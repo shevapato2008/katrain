@@ -485,6 +485,20 @@ class SyncStateMachine:
             # anomaly clears on the same frame a stone is still being held missing.
             self._mismatch_board = None
             self._mismatch_count = 0
+            # ...but BOARD_LOST is not one of the states this block may preserve. Leaving
+            # it set makes update()'s recovery test (`was_board_lost and state !=
+            # BOARD_LOST`) false, so BOARD_REACQUIRED is withheld until the hold ripens:
+            # measured t+7.5s against pre-L4's t+2.5s with one stone occluded by a hand
+            # as the board comes back. Reaching this line already proves the board is
+            # back — every corner was found and the whole board compared, and 4b did not
+            # re-declare it lost — so continuing to tell the user "board lost" (and, in
+            # monitor mode, keeping should_detect_moves shut) is simply false for those
+            # ~5s. Only the board-level verdict is updated here; the occluded cell's own
+            # hold keeps running, and MISMATCH_WARNING — not SYNCED — is both the honest
+            # word for "a stone is still unaccounted for" and exactly what this frame
+            # reported before the hold existed.
+            if self._state == SyncState.BOARD_LOST:
+                self._state = SyncState.MISMATCH_WARNING
             return events
 
         # 4e. No anomalies — exact matches and placement-pending-only frames are

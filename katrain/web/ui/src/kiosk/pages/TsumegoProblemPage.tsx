@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { backToState, useBackTo } from '../hooks/useBackTo';
 import { useTsumegoProblem } from '../../hooks/useTsumegoProblem';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSound } from '../../hooks/useSound';
@@ -43,6 +44,9 @@ const formatTime = (seconds: number) => {
 const TsumegoProblemPage = () => {
   const { problemId } = useParams<{ problemId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  // 题还没读到(加载中 / 读失败)就算不出单元路径 ⇒ 回打开这一题的那一页,没写明就回做题首页。
+  const backWithoutProblem = useBackTo('/kiosk/tsumego');
   const { t } = useTranslation();
   const { play: playSound } = useSound();
   const { progress } = useTsumegoProgress();
@@ -248,9 +252,9 @@ const TsumegoProblemPage = () => {
       const category = inAllSet ? 'all' : problem.category;
       navigate(`/kiosk/tsumego/${problem.level}/${category}${inWrongSet ? '/wrong' : ''}`);
     } else {
-      navigate(-1);
+      backWithoutProblem();
     }
-  }, [navigate, problem, flushProgress, inWrongSet, inAllSet]);
+  }, [navigate, problem, flushProgress, inWrongSet, inAllSet, backWithoutProblem]);
 
   const handlePrev = useCallback(() => {
     if (prevId) navigateToProblem(prevId);
@@ -382,8 +386,8 @@ const TsumegoProblemPage = () => {
   const backToUnit = useCallback(() => {
     flushProgress();
     if (backTarget) navigate(backTarget);
-    else navigate(-1);
-  }, [navigate, backTarget, flushProgress]);
+    else backWithoutProblem();
+  }, [navigate, backTarget, flushProgress, backWithoutProblem]);
 
   const coordLabel = (x: number, y: number) => `${GO_COLS[x] ?? '?'}${y + 1}`;
 
@@ -453,7 +457,7 @@ const TsumegoProblemPage = () => {
           // 当标题用会把一句话塞进页控条。
           title={t('tsumego:loadingTitle', '做题')}
           backLabel={t('Back', '返回')}
-          onBack={() => navigate(-1)}
+          onBack={backWithoutProblem}
         />
         {error ? (
           <div className="empty" data-testid="puzzle-error">
@@ -541,7 +545,7 @@ const TsumegoProblemPage = () => {
           action={physicalHint?.calibrate ? {
             icon: 'camera',
             label: t('tsumego:goCalibrate', '去标定'),
-            onClick: () => navigate('/kiosk/vision/setup'),
+            onClick: () => navigate('/kiosk/vision/setup', { state: backToState(location) }),
           } : undefined}
         />
 

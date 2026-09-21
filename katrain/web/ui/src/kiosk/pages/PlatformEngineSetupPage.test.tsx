@@ -139,7 +139,7 @@ describe('屏 09 跨平台 · 人机开局', () => {
       'golaxy', { level: 110, human_color: 'nigiri', handicap: -1 }, 'tok',
     ));
     await waitFor(() => expect(mockNavigate)
-      .toHaveBeenCalledWith('/kiosk/play/cross-platform/engine/game/s1'));
+      .toHaveBeenCalledWith('/kiosk/play/cross-platform/engine/game/s1', { state: { backTo: '/kiosk/play/cross-platform/engine/golaxy' } }));
   });
 
   // 从 `__tests__/PlatformEngineSetupPage.test.tsx` 吸收过来的三条(那份已删)。

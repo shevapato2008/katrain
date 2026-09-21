@@ -141,7 +141,7 @@ describe('AiSetupPage', () => {
         // 摄像头未标定(vision.enabled=false)⇒ 开局写下「这一局不下实体盘」
         onBoard: false,
       });
-      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/game/s1');
+      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/game/s1', { state: { backTo: '/kiosk/play/ai/setup/free' } });
     });
   });
 
@@ -458,7 +458,7 @@ describe('AiSetupPage — 升降级挡局面板', () => {
     renderPage('ranked');
 
     await user.click(screen.getByRole('button', { name: '继续对局' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/game/occupied-session');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/game/occupied-session', { state: { backTo: '/kiosk/play/ai/setup/ranked' } });
   });
 
   it.each([

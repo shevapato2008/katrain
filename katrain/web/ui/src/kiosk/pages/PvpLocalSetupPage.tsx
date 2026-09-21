@@ -1,6 +1,7 @@
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { Alert } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { backToState } from '../hooks/useBackTo';
 import { useVision } from '../context/VisionContext';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
@@ -61,6 +62,7 @@ import { emphasized } from '../components/setup/emphasized';
  */
 const PvpLocalSetupPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { token } = useAuth();
   const { isVisionEnabled } = useVision();
@@ -180,7 +182,7 @@ const PvpLocalSetupPage = () => {
         // 这一局下不下实体盘,开局这一刻定下(v2 §3.5):守卫和对局屏都读它,不再各自判断。
         onBoard: playInput.onBoard,
       });
-      navigate(`/kiosk/play/pvp/local/game/${session_id}`);
+      navigate(`/kiosk/play/pvp/local/game/${session_id}`, { state: backToState(location) });
     } catch (e) {
       setError(e instanceof Error ? e.message : t('Failed to create game', '创建对局失败'));
     } finally {

@@ -62,7 +62,7 @@ describe('PvpLocalSetupPage', () => {
     expect(mode).toBe('pvp_local');
     expect(settings.black_name).toBe('小明');
     expect(settings.white_name).toBe('小红');
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/local/game/s1');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/local/game/s1', { state: { backTo: '/' } });
   });
 
   // **不替用户编名字。** 两个框留空时送出去的是空串,后端 `server.py:1093` 因此不写

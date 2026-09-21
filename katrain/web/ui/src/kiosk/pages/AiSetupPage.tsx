@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Box, Button } from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { backToState } from '../hooks/useBackTo';
 import { useVision } from '../context/VisionContext';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
@@ -52,6 +53,7 @@ type SetupColor = 'black' | 'white' | 'nigiri';
 const AiSetupPage = () => {
   const { mode } = useParams<{ mode: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { token, user, isAuthenticated, isLoading: authLoading } = useAuth();
   // 「落子」那一格读的是它 —— 设备能力,不是设置项。
@@ -180,7 +182,7 @@ const AiSetupPage = () => {
           kind: 'game', label: t('Ranked Game', '升降级对弈'),
           route: `/kiosk/play/ai/game/${session_id}`, ts: Date.now(),
         });
-        navigate(`/kiosk/play/ai/game/${session_id}`);
+        navigate(`/kiosk/play/ai/game/${session_id}`, { state: backToState(location) });
         return;
       }
       const { session_id } = await API.createSession(token ?? undefined);
@@ -210,7 +212,7 @@ const AiSetupPage = () => {
         // 这一局下不下实体盘在开局这一刻定下(v2 §3.5),守卫与对局屏都读它。
         onBoard: playInput.onBoard,
       });
-      navigate(`/kiosk/play/ai/game/${session_id}`);
+      navigate(`/kiosk/play/ai/game/${session_id}`, { state: backToState(location) });
     } catch (e: any) {
       /* 把服务端那句英文原样贴上去(`Request failed 401: {"detail":"Not authenticated"}`)
          既没说是什么事,也没给可按的东西。但**只有 401 才是「去登录」**:
@@ -246,7 +248,7 @@ const AiSetupPage = () => {
       kind: 'game', label: t('Ranked Game', '升降级对弈'),
       route: `/kiosk/play/ai/game/${sessionId}`, ts: Date.now(),
     });
-    navigate(`/kiosk/play/ai/game/${sessionId}`);
+    navigate(`/kiosk/play/ai/game/${sessionId}`, { state: backToState(location) });
   };
 
   const handleEndGame = async (gameId: string) => {

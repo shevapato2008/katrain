@@ -1,5 +1,28 @@
-import type { KeyboardEvent, ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useRef, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { Icon, type IconName } from './icons';
+
+/**
+ * 返回键的「这一下是冲着这一屏按的吗」。
+ *
+ * RK3562 上(2026-09-21)板子卡住 6–8 s,用户连点 3 下返回;点击排队,恢复后第一下退出这一屏,
+ * **后面几下落到下一屏同一位置的返回键上接着退**(返回键位置恒定,正是为了肌肉记忆)。
+ * 用户按的时候看到的是上一屏,那几下只该算一次。
+ *
+ * 判据是点击**按下那一刻**(`event.timeStamp`,Chromium 记的是触屏抬起的时间,不是轮到
+ * 主线程处理的时间)早于这颗键**被画出来**的时间 ⇒ 不算。挂载时先取提交时刻(layout effect,
+ * 排在任何后续输入之前),画完一帧后再推到画完的时刻。一次返回生效后同样重来一遍,
+ * 于是「退到弹窗 / 退到下一屏之前又按的」都不算。
+ */
+function useFreshTap(): { armed: (e: MouseEvent) => boolean; rearm: () => void } {
+  const shownAt = useRef(0);
+  const rearm = useCallback(() => {
+    shownAt.current = performance.now();
+    requestAnimationFrame(() => setTimeout(() => { shownAt.current = performance.now(); }, 0));
+  }, []);
+  useLayoutEffect(rearm, [rearm]);
+  const armed = useCallback((e: MouseEvent) => e.timeStamp >= shownAt.current, []);
+  return { armed, rearm };
+}
 
 export interface PagebarSegment {
   value: string;
@@ -61,6 +84,7 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
   };
   testId?: string;
 }) {
+  const backTap = useFreshTap();
   if (segment && segment.options.length > 3) {
     // 静默截断会让第 4 段人间蒸发,谁也不知道它去哪了 —— 要响。
     throw new Error('§11:页控条的分段控件最多 3 段,再多就该换别的控件');
@@ -83,7 +107,11 @@ export function KioskPagebar({ backLabel, onBack, backBusy = false, title, sub, 
           className="kiosk-pagebar__back"
           disabled={backBusy}
           aria-busy={backBusy || undefined}
-          onClick={onBack}
+          onClick={(e) => {
+            if (!backTap.armed(e)) return;
+            backTap.rearm();
+            onBack?.();
+          }}
         >
           <Icon name="arrow-left" />{backLabel}
         </button>

@@ -6539,3 +6539,20 @@ msgstr ""
 
 msgid "Close"
 msgstr "Cerrar"
+
+msgid "game:connection_rejected"
+msgstr ""
+"Se ha rechazado la conexión en directo, así que el tablero no se actualizará"
+" solo: inicia sesión de nuevo y vuelve a intentarlo"
+
+msgid "game:gone_reason"
+msgstr ""
+"Puede que la caja se haya reiniciado o que la partida se haya limpiado tras "
+"estar mucho tiempo inactiva."
+
+msgid "game:resign_failed"
+msgstr "No se ha podido abandonar"
+
+msgid "game:session_gone_notice"
+msgstr ""
+"Esta partida ya no existe en el servidor: puedes salir de esta página."

@@ -6712,3 +6712,21 @@ msgid ""
 msgstr ""
 "{item}-Kontingent reicht nicht — bitte in der Golaxy-App aufladen; dieses "
 "Terminal kann das nicht übernehmen."
+
+msgid "game:connection_rejected"
+msgstr ""
+"Die Live-Verbindung wurde abgelehnt, das Brett aktualisiert sich nicht von "
+"selbst — bitte neu anmelden und erneut versuchen"
+
+msgid "game:gone_reason"
+msgstr ""
+"Vielleicht wurde das Gerät neu gestartet, oder die Partie wurde nach langer "
+"Untätigkeit aufgeräumt."
+
+msgid "game:resign_failed"
+msgstr "Aufgeben ging nicht durch"
+
+msgid "game:session_gone_notice"
+msgstr ""
+"Diese Partie gibt es auf dem Server nicht mehr — du kannst die Seite "
+"verlassen."

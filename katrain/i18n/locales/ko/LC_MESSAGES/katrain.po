@@ -6393,3 +6393,15 @@ msgstr "지난번에는 제 "
 
 msgid "kifu:move_ordinal"
 msgstr "제 "
+
+msgid "game:connection_rejected"
+msgstr "실시간 연결이 거부되어 판이 자동으로 갱신되지 않습니다. 다시 로그인한 뒤 시도해 주세요"
+
+msgid "game:gone_reason"
+msgstr "기기가 재시작되었거나, 대국이 오래 방치되어 정리되었을 수 있습니다."
+
+msgid "game:resign_failed"
+msgstr "기권하지 못했습니다"
+
+msgid "game:session_gone_notice"
+msgstr "이 대국은 서버에 더 이상 없습니다. 이 페이지를 나가도 됩니다."

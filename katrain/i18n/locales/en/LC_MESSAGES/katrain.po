@@ -6645,3 +6645,19 @@ msgid ""
 msgstr ""
 "{item} quota is insufficient — please top up in the Golaxy app; this "
 "terminal cannot do it for you."
+
+msgid "game:connection_rejected"
+msgstr ""
+"The live connection was refused, so the board will not update by itself — "
+"please sign in again and retry"
+
+msgid "game:gone_reason"
+msgstr ""
+"The box may have restarted, or the game was cleaned up after sitting idle "
+"too long."
+
+msgid "game:resign_failed"
+msgstr "Resigning did not go through"
+
+msgid "game:session_gone_notice"
+msgstr "This game no longer exists on the server — you can leave this page."

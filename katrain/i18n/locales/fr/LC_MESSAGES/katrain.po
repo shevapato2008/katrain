@@ -6684,3 +6684,20 @@ msgid ""
 msgstr ""
 "Quota de {item} insuffisant — rechargez dans l'application Golaxy ; ce "
 "terminal ne peut pas le faire."
+
+msgid "game:connection_rejected"
+msgstr ""
+"La connexion en direct a été refusée : le goban ne se mettra pas à jour seul"
+" — reconnectez-vous puis réessayez"
+
+msgid "game:gone_reason"
+msgstr ""
+"Le boîtier a peut-être redémarré, ou la partie a été nettoyée après une "
+"longue inactivité."
+
+msgid "game:resign_failed"
+msgstr "L'abandon n'a pas abouti"
+
+msgid "game:session_gone_notice"
+msgstr ""
+"Cette partie n'existe plus sur le serveur — vous pouvez quitter cette page."

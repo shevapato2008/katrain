@@ -6457,3 +6457,15 @@ msgid ""
 "{item} quota is insufficient — please recharge in the Golaxy app; this "
 "terminal cannot recharge for you."
 msgstr "{item}の回数が足りません。Golaxy アプリでチャージしてください。この端末では代行できません。"
+
+msgid "game:connection_rejected"
+msgstr "リアルタイム接続が拒否されたため、盤面は自動更新されません。サインインし直してからお試しください"
+
+msgid "game:gone_reason"
+msgstr "端末が再起動したか、放置が長くて対局が整理された可能性があります。"
+
+msgid "game:resign_failed"
+msgstr "投了できませんでした"
+
+msgid "game:session_gone_notice"
+msgstr "この対局はサーバー上にもうありません。このページを離れて構いません。"

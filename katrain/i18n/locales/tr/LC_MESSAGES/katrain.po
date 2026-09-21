@@ -6678,3 +6678,19 @@ msgid ""
 msgstr ""
 "{item} kotası yetersiz — lütfen Golaxy uygulamasından yükleyin; bu terminal "
 "sizin yerinize yapamaz."
+
+msgid "game:connection_rejected"
+msgstr ""
+"Canlı bağlantı reddedildi, tahta kendiliğinden güncellenmeyecek — yeniden "
+"giriş yapıp tekrar deneyin"
+
+msgid "game:gone_reason"
+msgstr ""
+"Kutu yeniden başlatılmış ya da oyun uzun süre boş kaldığı için temizlenmiş "
+"olabilir."
+
+msgid "game:resign_failed"
+msgstr "Çekilme geçmedi"
+
+msgid "game:session_gone_notice"
+msgstr "Bu oyun artık sunucuda yok — bu sayfadan çıkabilirsiniz."

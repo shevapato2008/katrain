@@ -6432,3 +6432,15 @@ msgid ""
 "{item} quota is insufficient — please recharge in the Golaxy app; this "
 "terminal cannot recharge for you."
 msgstr "{item}次數不足 · 請在星陣 App 儲值 · 本終端不代儲"
+
+msgid "game:connection_rejected"
+msgstr "即時連線被拒絕，棋盤不會自動更新，請重新登入後重試"
+
+msgid "game:gone_reason"
+msgstr "可能是盒子重啟過，或者這一局閒置太久被清理了。"
+
+msgid "game:resign_failed"
+msgstr "認輸沒成"
+
+msgid "game:session_gone_notice"
+msgstr "這一局在伺服器上已經沒有了，可以離開這一頁。"

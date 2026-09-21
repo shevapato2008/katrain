@@ -5,6 +5,7 @@ from katrain.vision.move_detector import (
     MoveDetector,
     PendingConfidencePeak,
     SUSPECT_CONFIDENCE_BONUS,
+    SUSPICION_DECAY_FRAMES,
     SUSPICION_THRESHOLD,
 )
 from katrain.vision.board_state import BLACK, WHITE, EMPTY
@@ -255,7 +256,17 @@ class TestMoveDetectorMissGrace:
 
     def test_scene_disruption_still_hard_resets(self):
         """Four or more simultaneous diffs IS scene disruption (a hand sweeping across
-        the board, the board being moved) — everything is abandoned, as before."""
+        the board, the board being moved) — everything is abandoned, as before.
+
+        The disruption frame's OWN return value is asserted, not just the re-accumulation
+        tail: the tail is identical either way, so with `>=` weakened to `>` the whole
+        test stayed green while the 4-diff frame auto-confirmed (3,3) — a hand sweeping
+        four cells submitting a move. This is the last whole-board safety valve left after
+        L1 made every cell its own candidate; its boundary has to be visible from here.
+
+        Mutation-proven: `len(diff_positions) >= self.disruption_threshold` -> `>`
+        makes the `many` frame return (3, 3, BLACK).
+        """
         d = MoveDetector(consistency_frames=3, miss_grace=2, disruption_threshold=4)
         empty, with_stone = self._boards()
         many = with_stone.copy()
@@ -265,7 +276,7 @@ class TestMoveDetectorMissGrace:
         d.detect_new_move(empty)
         d.detect_new_move(with_stone)  # count=1
         d.detect_new_move(with_stone)  # count=2
-        d.detect_new_move(many)  # 4 diffs -> hard reset
+        assert d.detect_new_move(many) is None  # 4 diffs -> hard reset, confirms nothing
         assert d.detect_new_move(with_stone) is None  # count=1 again
         assert d.detect_new_move(with_stone) is None
         assert d.detect_new_move(with_stone) == (3, 3, BLACK)
@@ -964,3 +975,61 @@ class TestCellReputation:
 
         assert suspect_results == honest_results
         assert suspect_results == [None, None, (18, 13, WHITE)]
+
+    def _quiet_frames(self, d, board, n):
+        """`n` observations in which nothing changes — only the frame counter advances."""
+        for _ in range(n):
+            d.detect_new_move(board)
+
+    def test_suspicion_decays_one_point_per_window_until_the_cell_is_forgotten(self):
+        """Decay is the ONLY way a cell recovers inside a session: accrual has no upper
+        bound and reset_suspicion() runs on UNBIND alone, so without decay a cell charged
+        once during a noisy minute would demand SUSPECT_CONFIDENCE_BONUS extra confidence
+        for the rest of the game.
+
+        A small board keeps this cheap — decay counts OBSERVATIONS, not cells, so the
+        board's size is irrelevant to what is being pinned.
+
+        Mutation-proven: making `_decay_suspicion` iterate nothing (`for cell in []:`)
+        leaves the score at SUSPICION_THRESHOLD -> `assert 3 == 2` fails on the first
+        window.
+        """
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        quiet = np.zeros((3, 3), dtype=int)
+        d.force_sync(quiet)
+        for _ in range(SUSPICION_THRESHOLD):
+            d.charge_carded_confirmation(18, 13)
+        assert d.is_suspect(18, 13)
+
+        self._quiet_frames(d, quiet, SUSPICION_DECAY_FRAMES)
+        assert d.suspicion_of(18, 13) == SUSPICION_THRESHOLD - 1
+        assert not d.is_suspect(18, 13)  # one window is enough to stop demanding the bonus
+
+        self._quiet_frames(d, quiet, SUSPICION_DECAY_FRAMES)
+        assert d.suspicion_of(18, 13) == SUSPICION_THRESHOLD - 2
+
+        self._quiet_frames(d, quiet, SUSPICION_DECAY_FRAMES)
+        assert d.suspicion_of(18, 13) == 0  # fully forgotten
+
+    def test_suspicion_does_not_decay_before_the_window_closes(self):
+        """The other half of the schedule: SUSPICION_DECAY_FRAMES is what makes accrual
+        (~1 point per abandon cycle, every miss_grace + 2 frames) outrun decay for a cell
+        that keeps lying. A decay that fired every frame would cancel that arithmetic and
+        no cell could ever reach SUSPICION_THRESHOLD under a realistic flash rate.
+
+        Mutation-proven with a mutation the sibling test above does NOT catch (so this
+        one has its own kill line, not a shared one):
+        `self._frame_index % SUSPICION_DECAY_FRAMES == 0` -> `% (SUSPICION_DECAY_FRAMES
+        - 1) == 0` fires one frame early -> `assert 2 == 3` fails here, while the sibling
+        (which only checks the score after each full window) stays green.
+        """
+        d = MoveDetector(consistency_frames=3, miss_grace=2)
+        quiet = np.zeros((3, 3), dtype=int)
+        d.force_sync(quiet)
+        for _ in range(SUSPICION_THRESHOLD):
+            d.charge_carded_confirmation(18, 13)
+
+        self._quiet_frames(d, quiet, SUSPICION_DECAY_FRAMES - 1)
+
+        assert d.suspicion_of(18, 13) == SUSPICION_THRESHOLD
+        assert d.is_suspect(18, 13)

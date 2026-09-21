@@ -2,6 +2,7 @@
 
 import asyncio
 import importlib.util
+import logging
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -422,6 +423,7 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
         SimpleNamespace(
             geometry=geometry,
             profile=SimpleNamespace(strategy="hardware_auto_then_lock", exposure=None),
+            generation="gen-1",
         )
         if has_generation
         else None
@@ -468,6 +470,17 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
         SimpleNamespace(CameraHub=CameraHub, CameraHubConfig=lambda **kwargs: SimpleNamespace(**kwargs)),
     )
     monkeypatch.setitem(sys.modules, "katrain.vision.service", SimpleNamespace(VisionService=VisionService))
+
+    attach_parallax_calls = []
+    attached_config = SimpleNamespace(marker="attached-config", backend="fake")
+
+    def fake_attach_parallax(vision_config, hardware_vision_dir, current_generation):
+        attach_parallax_calls.append((vision_config, hardware_vision_dir, current_generation))
+        return attached_config, logging.INFO, "parallax off: not calibrated"
+
+    monkeypatch.setitem(
+        sys.modules, "katrain.vision.parallax_store", SimpleNamespace(attach_parallax=fake_attach_parallax)
+    )
     monkeypatch.setitem(
         sys.modules,
         "katrain.web.core.hardware_vision_state",
@@ -504,6 +517,14 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
             assert CameraHub.instance.control_calls == [{"auto_exposure": 3.0}]
         else:
             assert CameraHub.instance.control_calls == []
+        assert attach_parallax_calls == [
+            (
+                server.settings._vision_config,
+                str(tmp_path),
+                "gen-1" if strategy_verified else None,
+            )
+        ]
+        assert VisionService.instances[0].config is attached_config
     finally:
         await _cancel_startup_tasks(app)
 

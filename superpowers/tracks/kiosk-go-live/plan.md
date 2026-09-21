@@ -28,6 +28,24 @@
 - 视觉 / 布局改动走 CLAUDE.md 的四图与承重关卡;**新的直播列表屏是稿外屏,没有参考图 —— 不要伪造一张参考图凑四图**(见 PRD §7)。
 - 提交信息用中文,风格跟 `git log`(`fix(kiosk): …` / `feat(kiosk-live): …`),结尾加一行 `Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`。`git add` 逐个写文件名;新建文件 add 之后用 `git diff --cached --stat` 确认确实进了暂存区(`.gitignore` 会静默吞掉某些文件名)。
 
+## 执行时更正(2026-09-22,开工前对真实代码核过)
+
+计划成文于 develop `7a152df1`;开工时 develop 已到 `34e9c7b6`,其中两件直接撞本赛道。Fan 2026-09-22 裁定:
+**① 先把 develop 合进本分支**(本地合并 `43f327fc`,不 push);**② 本赛道新增 key 自己补 11 语种**。据此改四处:
+
+1. **基线**:Task 1 的失败名集合在合并之后取(2225 条,失败集合为空;`tsc -b` 0)。
+2. **观战屏返回去向不再用 `state.from === 'live'`**。`34e9c7b6` 已立约定:能从好几处进来的屏,由**打开它的那一页**
+   用 `backToState(location)` 把 `backTo` 写进导航 state,被打开的一页用 `useBackTo(fallback)`(`kiosk/hooks/useBackTo.ts`)。
+   观战屏(棋谱 + 直播列表两个入口)正是这种屏;另造 `from` 等于并行的第二套返回机制。
+   ⇒ Task 4 列表屏跳观战带 `state: backToState(location)`;Task 5 观战屏 `onBack = useBackTo('/kiosk/kifu')`,
+   返回键文案按 `readBackTo(location.state) === '/kiosk/live'` 取「直播」/「棋谱」。棋谱屏那四行**不写** `backTo`(缺省就回棋谱)。
+3. **i18n**:`e7bc651a` 把 `tests/web_ui/test_kiosk_i18n.py` 放宽到 `src/kiosk` 全树 —— 每个上屏 key 11 语种都要有非空、无 TODO 的 msgstr。
+   PRD §6.0 第 5 条「本轮不改 `.po`」写于这道闸之前,照旧执行合并后必红。⇒ 新增 **Task 7b**:用 `katrain-i18n-expert` 把本赛道新增 key 补进 11 份 `.po`。
+   为少造 key,行内词汇(直播中 / 已结束 / 未开始 / 对 / 第 / 手)**复用棋谱屏已有的 `kifu:*`**;
+   `live:no_upcoming` 在 PO 里已是「暂无赛事预告」,沿用它的默认串(闸四要求默认串与 cn msgstr 逐字一致)。
+4. **屏 15 要重取四图**:棋谱屏多了一行入口,那一屏有参考图(PRD §7 只写了屏 18 不触发,漏了屏 15)。
+   Task 6 追加:`npm run fourup` 只收屏 15 的四图(跑两次比对排除抖动),并在承重 spec 里量「棋谱屏滚到底入口行完整可见」。
+
 ---
 
 ## File Structure

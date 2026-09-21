@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { KIOSK_E2E_UUID, kioskMeJson } from './helpers/kioskIdentity';
 
 /**
  * 规范 §5.2 悬浮滚动区的**承重闸**。四条硬性,一条都不能靠 jsdom ——
@@ -37,9 +38,10 @@ const boot = async (page: Page, path: string, css?: string) => {
     if (document.head ?? document.documentElement) put();
     else document.addEventListener('readystatechange', put, { once: true });
   }, css ?? '');
-  await page.route('**/api/v1/auth/me', (route) => route.fulfill({
-    json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
-  }));
+  // **`/me` 必须带 uuid。** 少了它身份不解析,`kioskActivityStorage` 退回内存 Map,
+  // 用这个 boot 的用例里每一条 `baipu:*` / 活动会话种子都写进了一个页面读不到的地方。
+  // 见 helpers/kioskIdentity.ts。
+  await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: kioskMeJson() }));
   await page.goto(path);
   await page.waitForSelector('.kiosk-screen', { state: 'attached' });
   // 跨平台三张卡是 `/api/v1/platform/status` 回来之后才渲的 —— 不等它,量到的是没长齐的内容。
@@ -167,9 +169,12 @@ const bootTraining = async (page: Page, levels: ReturnType<typeof LEVELS>, resum
     return route.fulfill({ json: {} });
   });
   await page.goto('/kiosk/tsumego');
-  // 卡是接口回来之后才渲的 —— 等 `.kiosk-screen` 不够,量到的会是还没长齐的内容。
-  // 空态那一支一张卡都没有,所以两个落点都等:等不到才是真的没渲完。
-  await page.waitForSelector('.kiosk-cards .kiosk-card, .empty');
+  // 档位行是接口回来之后才渲的 —— 等 `.kiosk-screen` 不够,量到的会是还没长齐的内容。
+  // 空态那一支一行都没有,所以两个落点都等:等不到才是真的没渲完。
+  // ⚠️ 这一屏的行是 `.tsumego-level-row`(`TsumegoPage.tsx:132`),**不是 `.kiosk-card`**。
+  // 原来写的 `.kiosk-cards .kiosk-card, .empty` 之所以没红,是**右上角那张「实体棋盘」
+  // 卡里的 `.empty` 顶上了** —— 它和档位列表渲没渲完没有任何关系,等于这道等待是空的。
+  await page.waitForSelector('.tsumego-level-list .tsumego-level-row, [data-testid="tsumego-empty"]');
 };
 
 test('训练营:档数多到装不下时,右栏自己滚 —— data-at 走 top→mid→end,拇指 >=24,栏恒 680', async ({ page }) => {
@@ -395,15 +400,20 @@ const LIVE_ROWS = Array.from({ length: 4 }, (_, i) => ({
 }));
 
 test('棋谱:展开搜索之后右栏自己滚,最后一块(职业直播)滚得到', async ({ page }) => {
-  await page.addInitScript(() => {
+  // 六条「最近摆过」是这一屏**撑到溢出**的一半内容 —— 种在读不到的键上,
+  // 量到的就是装得下那一档的数,按承重关卡的规矩一概不算。
+  await page.addInitScript((uuid: string) => {
     const now = Date.now();
-    localStorage.setItem('baipu:recent', JSON.stringify(
+    localStorage.setItem(`baipu:recent:${uuid}`, JSON.stringify(
       Array.from({ length: 6 }, (_, i) => ({ id: `kifu_${i}`, name: `名局 ${i}`, savedAt: now - i * 3600e3 })),
     ));
     for (let i = 0; i < 6; i += 1) {
-      localStorage.setItem(`baipu:progress:kifu_${i}`, JSON.stringify({ k: 47, frames: 0, updatedAt: now, total: 241 }));
+      localStorage.setItem(
+        `baipu:progress:kifu_${i}:${uuid}`,
+        JSON.stringify({ k: 47, frames: 0, updatedAt: now, total: 241 }),
+      );
     }
-  });
+  }, KIOSK_E2E_UUID);
   await page.route('**/api/v1/kifu/albums*', (route) => route.fulfill({
     json: { items: KIFU_ROWS, total: 1234, page: 1, page_size: 6 },
   }));
@@ -1208,13 +1218,29 @@ const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang' } 
   // ⚠️ **不能用上面那个共享 `boot`**:它末尾等 `.kiosk-scrollzone`,而这一屏没有 ——
   // 它的右栏是两个 `KioskFold`(各自内滚),不是整栏滚的 `KioskScrollZone`。
   // 等一个永远不出现的选择器 = 30 秒超时,而且超时信息指向 helper、不指向真正的原因。
-  await page.addInitScript(() => {
+  /* ⚠️ 摆谱的谱**不在裸 `localStorage` 里**,在按身份分命名空间的那一份:
+     `kioskActivityStorage(identityKey, isGuest)`(盒子 SSO 访客隔离的第 4 层)——
+     真用户走 `localStorage`,每个键后缀 `:${user.uuid}`;**访客或身份未解析(uuid 为空)
+     走内存 Map,一个字节都不碰 localStorage**。
+
+     所以这里两件事缺一不可:① `/me` 必须给 `uuid`(缺了 `identityKey` 就是 null,
+     当访客处理),② 种子键要带同一个 uuid 后缀。
+
+     少任何一件,页面都会渲染它**正确的**空态「这台盒子上没有这份谱」,而
+     `waitForSelector('[data-testid="baipu-pcard"]')` 就停在那儿超时 30 秒 ——
+     报错指向选择器,看起来像「摆谱页挂了」,其实页面是对的、夹具过期了。
+     (2026-09-21:三条摆谱用例就是这么红了一段时间的,develop 上同样红。) */
+  // `addInitScript` 的函数体在**浏览器**里跑,拿不到这个文件里的常量 —— 必须当参数传进去。
+  await page.addInitScript((uuid: string) => {
     localStorage.setItem('token', 'kiosk-shell-scroll');
     localStorage.setItem('katrain_language', 'cn');
-    localStorage.setItem('baipu:sgf:g1', JSON.stringify({ id: 'g1', name: '三星杯半决赛', sgf: '(;SZ[19];B[pd])', savedAt: 1 }));
-  });
+    localStorage.setItem(
+      `baipu:sgf:g1:${uuid}`,
+      JSON.stringify({ id: 'g1', name: '三星杯半决赛', sgf: '(;SZ[19];B[pd])', savedAt: 1 }),
+    );
+  }, KIOSK_E2E_UUID);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
-    json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
+    json: kioskMeJson(),
   }));
   await page.goto('/kiosk/baipu/session/g1');
   await page.waitForSelector('[data-testid="baipu-pcard"]');

@@ -95,10 +95,10 @@ O1 走的正是这条路。
 | D1 | **L0 失败方向 = 只在「确证消失」时拦截**；`detected_board is None`（运动/未找到盘面/丢帧）一律放行 | 真子不会消失 ⇒ 对真子零误杀；O1 那次是确证为空。**2026-09-21 复审修正**：「零误杀」要收窄成**零丢手**。完全遮挡（手停在那颗子上方）下 `detected_board` 会在真子处合法读到 EMPTY —— `board_state.py` 的 presence sustain 只在该点附近**还有某类检测**时才保住它，全遮挡一个都没有。代价有界：L0 取消会走 `_rearm_detection()`，那颗子在后面的帧里重新确认，**丢的是时延不是这一手**。这是视觉管线的既有性质，不是 L0 引入的 |
 | D1b | **L0 的「确证」必须建立在比该次确认更新的一次观测上**（`observation_seq` 打在 `WorkerStatus` 与 `ConfirmedMove` 两边） | `worker.py:827` 的状态发布是 **1 Hz**：8fps 下一颗子可能在 t=0.25 落、t=0.75 确认，而最新已发布的盘面还是 t=0.00 那张空盘 ⇒ 只看「现在空不空」会丢真手，正是 D1 承诺不会发生的事。墙钟跨进程不可靠，用 worker 自持的观测计数器 |
 | D2 | **L3 落点选 Site B（观测锚定）**，不用 Site A（`_expected_np` 当分类先验） | `SET_EXPECTED_BOARD` 往返约 1.1 秒滞后；提子/悔棋窗口内拿过期权威压真实观测会制造新错 |
-| D3 | **L3 保留逃生口**：连续 `COLOR_FLIP_RELEASE_FRAMES` 帧反色则放行并恢复 `sync.py:362-364`（`expected != EMPTY and observed != EMPTY and expected != observed` 那条 elif；**2026-09-21 更正**：原文写 351-353，那三行**今天**是 `placement_pending` 分支。**但原文没写错**——`git show 10455ba5:katrain/vision/sync.py` 的 351-353 行逐字就是这条颜色 elif；是本分支往 `_compare_boards` 里插的 L4 的 4a-bis 段把它顶下去了。也就是说，**一份规格里的行号引用，会被这份规格所管辖的那条分支自己蛀掉**，这才是这里真正的教训，所以下面每条行号都补了判定式） 的「颜色放错了」提示 | 否则那条分支变死码，系统失去唯一一条告知摆错颜色的路 |
+| D3 | **L3 保留逃生口**：连续 `COLOR_FLIP_RELEASE_FRAMES` 帧反色则放行并恢复 `sync.py:362-364`（`expected != EMPTY and observed != EMPTY and expected != observed` 那条 elif；**2026-09-21 更正**：原文写 351-353，那三行**今天**是 `placement_pending` 分支。**但原文没写错**——`git show 10455ba5:katrain/vision/sync.py` 的 351-353 行逐字就是这条颜色 elif；是本分支往 `_compare_boards` 里插的 L4 的 4a-bis 段把它顶下去了。同一件事在这一条分支上**发生了两次**：(c-2) 情况 3 引的 `sync.py:507-508` 也被本轮 `c0df7a0e` 加的六行注释顶掉了（真身在 513-514）。也就是说，**一份规格里的行号引用，会被这份规格所管辖的那条分支自己蛀掉**，一次可以算巧合，两次就是这份文档的固有性质。所以本文件每条行号都补上了它指向的那个判定式——行号会漂，判定式不会） 的「颜色放错了」提示 | 否则那条分支变死码，系统失去唯一一条告知摆错颜色的路 |
 | D4 | **L2 只用一个信号：候选被放弃**（出现后耗尽 miss grace 仍未确认）。不做跨进程 IPC 回灌，**也不罚「同点短窗内重复确认」**。**2026-09-21 fix round 1 修正**：suspect 格的额外门槛**只加在 worker 的 ambiguous 路由闸上**（`SUSPECT_CONFIDENCE_BONUS`），**绝不加在 `detect_new_move` 的确认帧数上**——第一版曾把 suspect 格的所需帧数翻倍，判断依据「放弃是真子从不会做的事」是**假的**：`MoveDetector` 类注释自己就写着 `miss_grace` 存在的理由——弱置信度真子本来就会闪断一两帧；一颗在 keep 闸附近震荡的弱真子，只要震荡够久，产生的正是这一条唯一信号，这正是当天 F2 那批真子伤亡的实测特征。更严重的是，帧数门槛卡在 `detect_new_move` 的返回值上，而这个返回值同时是自动落子**和**确认卡的入口（stuck-stone promoter 只在**没有任何候选**pending 时才跑），于是一颗攒不满翻倍帧数的 suspect 格在任何路径上都 confirm 不了——制造出「静默永久丢手」，恰恰是这个 F1 修复本该防止、结果却亲手制造出的最坏结果。单独的路由闸已经够用：当天真子 peak_conf 实测 min=0.55、p25=0.72（117 手真局，`config_service.py`），而 (18,13) 两次自动确认分别在 0.50、0.57（且都已是 peak 值）；`0.42 + 0.25 = 0.67` 正好卡在两者中间——幻影必进卡，多数真子仍自动落子；即使一颗真子弱到 min=0.55 那一档、又恰好落在 suspect 格上，代价也只是多按一次确认，不会丢手。重复确认那条被**否决**：`MoveDetector` 类注释里的 caller-owned-baseline 契约**故意**让未被处理的确认每 `consistency_frames` 重发一次（弱真子靠它反复向用户要确认卡），罚重复会让一颗合法弱子每几帧加 3 分而衰减每 300 帧才减 1 分，分数跑飞、门槛抬高后**即使置信度回升也永久进不来**——这条论证同样适用于「不要罚放弃信号在确认帧数上」：跑飞的门槛，无论挂在哪个轴上，代价都是同一种「permanently 进不来」。**fix round 2 补充**：这个路由闸只挡 `self._bound` 分支（会提交/转发的对局路径）；monitor 模式（`if not self._bound:`）不查置信度也不查 `is_suspect`，L2 在那条路径上不提供任何防护，见 §5。<br><br>**2026-09-21 fix round 1 决策：窄幅推翻「重复确认」那条否决。**「同点短窗内重复确认」**对自动落子的确认继续否决**，对**被路由到确认卡的确认**解除：新增 `SUSPICION_CARDED = 1` 与 `MoveDetector.charge_carded_confirmation()`，两个 worker 在 `if conf < ambiguous_gate:` 分支的**第一句**（在 `AMBIG_REPROMPT_FRAMES` 抑制判断**之前**）调用它，**绝不**在自动落子的 `else` 分支调用。为什么这一窄口子不重蹈 D4 原本担心的「分数跑飞 ⇒ 即使置信度回升也永久进不来」——这是结构事实不是判断：（i）`is_suspect` 在整棵树里**只有两个非测试消费者**（`worker.py` 与 `worker_inprocess.py` 的 ambiguous 路由闸）；（ii）它在那里的唯一效果是 `ambiguous_gate = min(0.95, ambiguous_gate + SUSPECT_CONFIDENCE_BONUS)`，加成是**常数**，分数是 3 还是 3000 闸都是 0.67；（iii）那个闸的 `else` 分支就是确认卡，而卡无论如何都会发。所以「变成 suspect」**不可能丢手**，只能把一次自动落子换成一次点击；（iv）被这里罚到的格子**本来就已经在走确认卡**，这一分改不了这颗子的去向。`detect_new_move` 里已无任何 `is_suspect` 检查（fix round 1 移除并有注释禁止重新引入），本轮由 `test_a_suspect_cell_still_confirms_on_the_same_frame_count` 钉住。**D4 的「不做跨进程 IPC 回灌」这一条不约束本机制**：`worker.py` 自己就是那个子进程，它持有的 `MoveDetector` 活在同一个进程里，这是同一函数内相隔九行的一次直接方法调用——没有队列、没有 `WorkerCommand`、没有进程边界。那条否决约束的是复审提出的「从 poller 的拒绝/未采纳回灌」变体，而那个变体本身也被否了：幻影自动落子是**被采纳**的（过了轮次检查、到了星阵、成了这局的一部分），「未被采纳」对最要紧的那种情况根本不触发。实测（400 帧一局）：真子峰值落在当天实测的 0.55–0.80 带里时**没有任何格子被罚过一分**；把每颗真子的峰值都压到 0.42 闸以下，有两格越过阈值，而到达用户手里的子数**加不加这个信号完全一样**（且两边 `autoplayed = 0`）。幻影跨过 `SUSPICION_THRESHOLD` 的时间从第 68 帧提前到第 16 帧，重负载下从第 120 帧提前到第 16 帧 |
 | D8 | **L1 的 `required_frames` 只授予「调用方测的那一格」**（进入方法时的 leader），其余候选一律用 `consistency_frames` | worker 每帧按 `peak_for(pending_move)` 现算，那是关于**某一颗子**的证据。leader 为 suspect 而需要更多帧时，若快通道外溢，旁边一颗 0.50 的普通候选会提前确认并越过设备 0.42 的自动落子闸 |
-| D9 | **L3 的「放行」必须闩住，直到稳定盘面真的采纳新颜色** | 两个 worker 都对 extractor 输出做两帧投票（`np.where(observed == prev_observed, observed, last_stable)`），而传给 extractor 的 `prev_board` 就是那张稳定盘面。只放行一帧永远凑不满两帧一致 ⇒ 第 16 帧重新压制，颜色**永久卡死**，逃生口和 `sync.py:362-364`（`expected != EMPTY and observed != EMPTY and expected != observed` 那条 elif；**2026-09-21 更正**：原文写 351-353，那三行**今天**是 `placement_pending` 分支。**但原文没写错**——`git show 10455ba5:katrain/vision/sync.py` 的 351-353 行逐字就是这条颜色 elif；是本分支往 `_compare_boards` 里插的 L4 的 4a-bis 段把它顶下去了。也就是说，**一份规格里的行号引用，会被这份规格所管辖的那条分支自己蛀掉**，这才是这里真正的教训，所以下面每条行号都补了判定式） 一起变成不可达 |
+| D9 | **L3 的「放行」必须闩住，直到稳定盘面真的采纳新颜色** | 两个 worker 都对 extractor 输出做两帧投票（`np.where(observed == prev_observed, observed, last_stable)`），而传给 extractor 的 `prev_board` 就是那张稳定盘面。只放行一帧永远凑不满两帧一致 ⇒ 第 16 帧重新压制，颜色**永久卡死**，逃生口和 `sync.py:362-364`（`expected != EMPTY and observed != EMPTY and expected != observed` 那条 elif；**2026-09-21 更正**：原文写 351-353，那三行**今天**是 `placement_pending` 分支。**但原文没写错**——`git show 10455ba5:katrain/vision/sync.py` 的 351-353 行逐字就是这条颜色 elif；是本分支往 `_compare_boards` 里插的 L4 的 4a-bis 段把它顶下去了。同一件事在这一条分支上**发生了两次**：(c-2) 情况 3 引的 `sync.py:507-508` 也被本轮 `c0df7a0e` 加的六行注释顶掉了（真身在 513-514）。也就是说，**一份规格里的行号引用，会被这份规格所管辖的那条分支自己蛀掉**，一次可以算巧合，两次就是这份文档的固有性质。所以本文件每条行号都补上了它指向的那个判定式——行号会漂，判定式不会） 一起变成不可达 |
 | D5 | **L4 `missing` 同时要求墙钟时长 + 最小观测帧数** | `gating.py:39` 的 `should_feed_sync_frame` 在有运动时**不喂帧**，只用墙钟会把「手遮挡 3 秒」误判成「持续缺席 7 秒」 |
 | D6 | **L1 精确并列（count 与 first_seen 都相同）时不确认** | 保留现有 `test_ignores_multiple_simultaneous_new_stones` 的语义（同帧出现两颗子 = 真歧义），把改动面收到最小。<br><br>**2026-09-21 fix round 1 修正（复审 Finding 2）**：这条规则原先写在 `ready` 上，而**快通道下只有 `fast_cell` 进得了 `ready`**（`len(ready) == 1`），于是整条规则被绕过——实测 `consistency_frames=5, miss_grace=2, required_frames=3`，同帧亮起并同步推进的两颗子给出 `[None, None, (18,13,W), (2,10,W)]`：**两颗都确认了**，相隔一帧，赢家由 `_leader()` 的 `min()` 在集合迭代序里挑。现改为在**本帧正在推进的格子**（`current`）上找并列。两条已验证而非假设的性质：（i）慢通道上与原判据**等价**——16000 条随机三格出现序列零分歧（原判据只在「`ready.sort` 是同键稳定排序 ⇒ 精确并列项必然相邻」这个**未写出来的**前提下才对 3 个以上候选成立，见复审 Finding 7；新循环不再依赖排序）；（ii）**不会**因为一个 miss-grace 中的并列候选而挡住 leader——并列只在 `current` 里找，缺席本帧的候选按定义就不在「同步推进」，为它挡住 leader 等于静默丢一手真子（F2），比这条规则要防的幻影更糟。该性质由 `test_a_miss_graced_tied_candidate_does_not_block_the_leader` 钉住 |
 | D7 | **L2 先于 L1 落地** | L1 让真子能在幻影旁边确认，但也让持续幻影更容易自己数满；L2 + L0 是它的前置安全网 |
@@ -144,8 +144,8 @@ O1 走的正是这条路。
    个点的另一张卡**。触发条件要有**第三格**先立起一张卡（死锁的那两格自己不发 `ambiguous_stone`——它们
    压根没 confirm；但死锁期间 `about_to_confirm` 长期为假，`_promote_stuck_stone` 每帧都在跑，一颗亚
    add 的第三格足以立卡），或者有一张提子卡。
-   **对上面那段论证的修正只有一句：「`data["positions"]` 里逐格列出这两个点」说的是事件，不是用户看到
-   的东西。** 「不是静默的」只在**没有别的东西在抢这条警告通道**时才成立。
+   **对上面那段论证的修正只有一句：「`data["positions"]` 里逐格列出这两个点」（每格是
+   `(row, col, color)` 三元组，`sync.py:463-464`）说的是事件，不是用户看到的东西。** 「不是静默的」只在**没有别的东西在抢这条警告通道**时才成立。
 
 **总结一句：死锁只有在「两格连续亮够 `illegal_change_frames` 帧」且「盘上没有别的东西在搅动异常指纹」且
 「sync 没有停在 `CAPTURE_PENDING` / `BOARD_LOST` / `DEGRADED`」且「前端此刻没有别的卡立着」这四条同时
@@ -291,13 +291,17 @@ monitor 模式下照样会自动注入。这是视觉管线的既有行为，不
    - **短按**：手掌盖住一颗已落的子约 5 秒（< `missing_hold_seconds`，默认 7.0，`sync.py:85`）后抬手
      ⇒ 全程**不得**出现 `illegal_change`（hold 正在起作用）；
    - **久按**：同一颗子**按住约 12 秒**（见下面的账）⇒ **必须**出现一条 `illegal_change`，且它的
-     `data["missing"]` 里**点名这颗子的 `[row, col]`**（hold 按设计到期）。
+     `data["missing"]` 里**点名这颗子**（hold 按设计到期）。**注意元组是三元的，不是坐标对**——
+     `sync.py:463-464` 建的是 `[(r, c, clr) for r, c, clr in …]`，所以 `(4,12)` 那颗黑子在日志里长
+     这样：`data={'positions': [], 'missing': [(4, 12, 1)]}`（`[DIAG-VIS]` 打的是 Python repr；同一
+     条经 WS 出去是 JSON，变成 `{"positions": [], "missing": [[4, 12, 1]]}`）。**按 `[row, col]` 去
+     grep 一条都搜不到，一道正常工作的防线会被读成失败**——`positions` 与 `missing` 两个字段同此。
    第二半是这一条能被证伪的原因；只写第一半就又变成「什么都没发生也算过」，那正是原第 4 条的毛病。
 
    **12 秒不是 7 秒，这笔账要写出来，否则会误报 FAIL。** `missing_hold_seconds` 到期只是**开始**
    计 4d 的去抖：hold 熟了之后还要 `illegal_change_frames`（默认 5，`sync.py:79`）帧同一份稳定指纹，
    事件才发。按盒子实测的 2.3 fps，5 帧 = 2.17 秒，上界 7.0 + 2.17 = **9.17 秒**；本轮用真
-   `SyncStateMachine` 复刻这一幕量到的是 **9.13 秒**（遮挡的第 22 帧，`missing=[[4, 12]]`）。**按住
+   `SyncStateMachine` 复刻这一幕量到的是 **9.13 秒**（遮挡的第 22 帧，payload 原样是 `{'positions': [], 'missing': [(4, 12, 1)]}`）。**按住
    8 秒就抬手的人会拿到一个假的 FAIL。** 而且这 9.13 秒是从**「这颗子第一次被读成空」的那一帧**起算
    的，操作者的秒表比它更早——手往下落的那段运动帧按 `should_feed_sync_frame` 根本不喂给 sync，落稳
    之前还可能再差一帧（2.3 fps 下约 0.43 秒）。所以**按 12 秒操作，留余量**，别按理论值掐点。
@@ -305,7 +309,8 @@ monitor 模式下照样会自动注入。这是视觉管线的既有行为，不
    就报——两半都会因为 L4 被拿掉而变红，这一条不是摆设。
 
    **怎么观察**：`sync.py` 自己没有日志，但事件泵有——`server.py` 的 `_diag_log_vision_evt` 会打
-   `[DIAG-VIS] illegal_change data={'positions': …, 'missing': …}`（logger `katrain_web.vision`，
+   `[DIAG-VIS] illegal_change data={'positions': [...], 'missing': [(row, col, color), ...]}`
+   （两个字段都是**三元组**列表，见上；logger `katrain_web.vision`，
    INFO 级）。**用这条日志判定，不要用屏幕**：屏幕上看不看得见是另一回事，见下一段。
 
    **两条反向的读法，都不成立：**

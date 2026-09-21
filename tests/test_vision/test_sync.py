@@ -497,6 +497,8 @@ class TestSetupModeExtraStones:
         assert not [e for e in events if e.type == SyncEventType.SETUP_COMPLETE]
         events = m.update(empty_board())
         assert [e for e in events if e.type == SyncEventType.SETUP_COMPLETE]
+
+
 class TestDigitalAuthorityDiff:
     """After the orchestrator pushes expected on every game_update (digital authority)."""
 
@@ -547,14 +549,19 @@ class TestDigitalAuthorityDiff:
     def test_stolen_live_stone_is_anomaly_not_capture(self):
         # 评审 Codex Blocker 2 回归：盘上活子被误拿走（数字盘没提它）——绝不能走
         # CAPTURE_PENDING→秒清除把异常吞掉；必须进 mismatch 防抖流并列入 missing。
+        #
+        # Changed premise (D5/Task 6): a missing live stone is now ALSO held for
+        # missing_hold_seconds (default 7s) of elapsed wall-clock before the old
+        # illegal_change_frames stability debounce even starts counting — so this needs
+        # explicit timestamps spanning real time, not just 5 frames at the same instant.
         live = board_with({(3, 3): 1, (5, 5): 2})
         sm = self._synced_machine(live)
-        sm.update(observed_board=live)
+        sm.update(observed_board=live, timestamp=0.0)
         sm.set_expected_board(live)  # prev = live（无数字侧变化）
         gone = board_with({(3, 3): 1})  # (5,5) 白子被拿走
         all_events = []
-        for _ in range(5):  # illegal_change_frames 默认 5
-            all_events += sm.update(observed_board=gone)
+        for i in range(20):  # spans well past missing_hold_seconds (7s) at 1s/frame
+            all_events += sm.update(observed_board=gone, timestamp=1.0 + i * 1.0)
         types = [e.type for e in all_events]
         assert SyncEventType.CAPTURE_PENDING not in types
         illegal = [e for e in all_events if e.type == SyncEventType.ILLEGAL_CHANGE]
@@ -564,6 +571,9 @@ class TestDigitalAuthorityDiff:
     def test_setup_complete_resets_prev_so_vanished_stone_is_anomaly(self):
         # Regression: SETUP_COMPLETE must reset prev-expected, else an orphaned prev
         # can silently swallow a vanished live stone into placement_pending.
+        #
+        # Changed premise (D5/Task 6): see test_stolen_live_stone_is_anomaly_not_capture —
+        # the missing path now also needs missing_hold_seconds of elapsed wall-clock.
         sm = SyncStateMachine(board_size=19)
         sm.bind()
         sm.confirm_pose_lock()
@@ -573,12 +583,12 @@ class TestDigitalAuthorityDiff:
         # Enter and complete a tsumego at different locations.
         target = board_with({(5, 5): 1, (5, 6): 2})
         sm.enter_setup_mode(target)
-        sm.update(observed_board=target.copy())  # -> SETUP_COMPLETE, state SYNCED
+        sm.update(observed_board=target.copy(), timestamp=0.0)  # -> SETUP_COMPLETE, state SYNCED
         # A live stone now vanishes before any new set_expected_board push.
         gone = board_with({(5, 5): 1})  # (5,6) white removed
         all_events = []
-        for _ in range(5):  # illegal_change_frames default 5
-            all_events += sm.update(observed_board=gone)
+        for i in range(20):  # spans well past missing_hold_seconds (7s) at 1s/frame
+            all_events += sm.update(observed_board=gone, timestamp=1.0 + i * 1.0)
         # With prev reset (None), (5,6) -> missing_anomaly -> illegal_change. Without the fix,
         # stale prev[(5,6)]==EMPTY would (wrongly) make it placement_pending (silent).
         illegal = [e for e in all_events if e.type == SyncEventType.ILLEGAL_CHANGE]
@@ -718,9 +728,7 @@ class TestExpectedBoardAcknowledgement:
         sm.update(physical.copy())
 
         sm.set_expected_board(empty_board(), expected_node_id=101)
-        assert sm.update(physical.copy()) == [
-            SyncEvent(SyncEventType.CAPTURE_PENDING, {"positions": [(5, 5, WHITE)]})
-        ]
+        assert sm.update(physical.copy()) == [SyncEvent(SyncEventType.CAPTURE_PENDING, {"positions": [(5, 5, WHITE)]})]
 
         sm.set_expected_board(physical.copy(), expected_node_id=102)
         assert sm.update(physical.copy()) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 102})]
@@ -737,18 +745,24 @@ class TestExpectedBoardAcknowledgement:
         assert [e for e in events if e.data.get("expected_node_id") == 101] == []
 
     def test_exact_new_stone_promotes_baseline_for_later_missing_anomaly(self):
+        # Changed premise (D5/Task 6): the missing path now also needs
+        # missing_hold_seconds (default 7s) of elapsed wall-clock before the old
+        # illegal_change_frames stability debounce starts counting — see
+        # TestDigitalAuthorityDiff.test_stolen_live_stone_is_anomaly_not_capture.
         sm = self._synced_machine()
         empty = empty_board()
         sm.set_expected_board(empty)
-        sm.update(empty.copy())
+        sm.update(empty.copy(), timestamp=0.0)
 
         with_stone = board_with({(3, 3): BLACK})
         sm.set_expected_board(with_stone, expected_node_id=101)
-        assert sm.update(with_stone.copy()) == [SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})]
+        assert sm.update(with_stone.copy(), timestamp=0.0) == [
+            SyncEvent(SyncEventType.SYNCED, {"expected_node_id": 101})
+        ]
 
         events = []
-        for _ in range(5):
-            events += sm.update(empty.copy())
+        for i in range(20):  # spans well past missing_hold_seconds (7s) at 1s/frame
+            events += sm.update(empty.copy(), timestamp=1.0 + i * 1.0)
 
         assert SyncEventType.CAPTURE_PENDING not in [e.type for e in events]
         illegal = [e for e in events if e.type == SyncEventType.ILLEGAL_CHANGE]
@@ -804,3 +818,209 @@ class TestEventPayloadsAreJsonSerializable:
         for r, c in prog[0].data["missing"]:
             assert type(r) is int and type(c) is int
         json.dumps({"type": prog[0].type.value, "data": prog[0].data})  # must not raise
+
+
+class TestMissingStoneHold:
+    """L4: a live stone vision cannot see is not reported until it has been
+    continuously invisible for both a real elapsed period AND a minimum number of
+    frames we actually looked at. The old gate was illegal_change_frames (5), which at
+    the board's 6-15 fps is 0.3-0.8s — an arm passing over the board."""
+
+    def _synced(self, expected, **kwargs):
+        sm = SyncStateMachine(**kwargs)
+        sm.bind()
+        sm.confirm_pose_lock()
+        sm.set_expected_board(expected)
+        return sm
+
+    def _established(self, sm, expected):
+        """Drive one matching frame so the stone counts as live, not placement-pending."""
+        sm.update(observed_board=expected, timestamp=0.0)
+
+    def test_brief_occlusion_does_not_report_missing(self):
+        expected = board_with({(3, 3): 1})
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        self._established(sm, expected)
+
+        gone = empty_board()
+        for i in range(10):  # 10 frames over 2 seconds
+            events = sm.update(observed_board=gone, timestamp=1.0 + i * 0.2)
+            assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in events]
+
+    def test_sustained_absence_does_report_missing(self):
+        # Asymmetric cell (row != col): a row/col transposition anywhere in the path
+        # (sync.py does none itself, but this pins the payload shape regardless) would
+        # show up as a wrong [r, c] pair instead of silently matching on (3, 3).
+        expected = board_with({(2, 9): 1})
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        self._established(sm, expected)
+
+        gone = empty_board()
+        seen = []
+        for i in range(40):  # 40 frames over 8 seconds
+            seen.extend(e for e in sm.update(observed_board=gone, timestamp=1.0 + i * 0.2))
+        illegal = [e for e in seen if e.type == SyncEventType.ILLEGAL_CHANGE]
+        assert illegal
+        assert [2, 9] in [[r, c] for r, c, _ in illegal[0].data["missing"]]
+
+    def test_elapsed_time_alone_is_not_enough(self):
+        """Two frames 10 seconds apart is what a long occlusion looks like from the
+        sync machine's side, because moving frames are not fed at all."""
+        expected = board_with({(3, 3): 1})
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        self._established(sm, expected)
+
+        gone = empty_board()
+        sm.update(observed_board=gone, timestamp=1.0)
+        events = sm.update(observed_board=gone, timestamp=11.0)
+        assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in events]
+
+    def test_extra_stone_still_reports_fast(self):
+        """The extra-stone path is unchanged: an extra stone is immediately actionable."""
+        expected = empty_board()
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        extra = board_with({(3, 3): 1})
+
+        seen = []
+        for i in range(6):
+            seen.extend(sm.update(observed_board=extra, timestamp=float(i) * 0.2))
+        assert [e for e in seen if e.type == SyncEventType.ILLEGAL_CHANGE]
+
+    def test_held_missing_does_not_thrash_state_back_to_synced(self):
+        """The honest description of the held_missing early-return: NOT "it blocks the
+        versioned ack" (that ack was already unreachable — 4e's diff_count == 0 gate is
+        false by definition whenever a cell is missing, with or without this block; a
+        prior version of this test asserted that and was vacuous, passing unchanged even
+        with the held_missing block deleted). What the block actually guards is
+        SyncState itself: pre-Task-6, a held-missing frame fell through to 4e, which
+        unconditionally sets self._state = SYNCED and — if the state wasn't already
+        SYNCED — emits a bare (unversioned) SYNCED event, exactly what
+        /api/vision-status's polled sync_state shows the user. This reproduces the
+        review's sequence: reach MISMATCH_WARNING via an unrelated extra stone, then on
+        the very next frame that extra stone is gone but a DIFFERENT live stone is
+        (freshly, still-held) missing. The state must stay MISMATCH_WARNING and no bare
+        SYNCED event may be emitted."""
+        expected = board_with({(2, 9): 1})  # the stone that will later go missing
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        self._established(sm, expected)
+
+        # An unrelated extra stone at (7, 7) forces MISMATCH_WARNING on a single frame.
+        with_extra = board_with({(2, 9): 1, (7, 7): 1})
+        sm.update(observed_board=with_extra, timestamp=1.0)
+        assert sm.state == SyncState.MISMATCH_WARNING
+
+        # Next frame: the extra stone is gone, but (2, 9) — present a moment ago — is
+        # now missing for the first time (freshly held, nowhere near ripe).
+        gone = empty_board()
+        events = sm.update(observed_board=gone, timestamp=1.2)
+
+        assert sm.state == SyncState.MISMATCH_WARNING  # must NOT snap back to SYNCED
+        bare_synced = [e for e in events if e.type == SyncEventType.SYNCED and not e.data]
+        assert bare_synced == []
+
+    def test_a_stone_that_comes_back_restarts_its_hold(self):
+        """Pins the prune of `_missing_since` for cells not missing THIS frame.
+
+        Without it the hold entry is never discarded, so a cell that has ever been
+        briefly invisible keeps its ORIGINAL first-seen timestamp and its accumulated
+        frame count. Every later absence of that cell is then born already ripe — L4 is
+        silently defeated for exactly the flickering cell it exists for, and the second
+        blink of a stone an arm passes over is reported as a missing stone.
+
+        Mutation-proven: deleting the `for cell in list(self._missing_since): if cell not
+        in seen_missing: del ...` loop fires ILLEGAL_CHANGE inside the 10 frames below
+        (the stale entry is 19s old and reaches the frame count on the 4th), where the
+        shipped code is still 1.8s into a 7.0s hold.
+        """
+        expected = board_with({(2, 9): 1})
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        self._established(sm, expected)
+
+        gone = empty_board()
+        sm.update(observed_board=gone, timestamp=1.0)  # one blink: hold entry created
+        sm.update(observed_board=expected, timestamp=1.2)  # visible again -> entry must go
+
+        seen = []
+        for i in range(10):  # a second occlusion 19s later, only 1.8s long
+            seen += sm.update(observed_board=gone, timestamp=20.0 + i * 0.2)
+        assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in seen]
+
+    def test_board_reacquired_is_not_delayed_by_a_held_missing_stone(self):
+        """L4 must not make the board itself look lost for longer than it was.
+
+        A displaced board that comes back with one stone under a resting hand reaches
+        the held_missing branch on its first visible frame. That branch used to return
+        without touching SyncState, leaving BOARD_LOST set — and update()'s recovery test
+        is `was_board_lost and state != BOARD_LOST`, so BOARD_REACQUIRED was withheld for
+        up to missing_hold_seconds (measured: t+7.5s against t+2.5s before L4). For that
+        window /api/vision-status kept saying board_lost, and gating.should_detect_moves
+        excludes board_lost, so monitor-mode move detection stayed shut too.
+
+        Recovery is a BOARD-level fact and this frame proves it: corners were found, the
+        whole board compared, and 4b did not re-declare it lost. The cell-level hold is
+        a separate clock and must keep running — the second half of this test is what
+        says the fix did not simply disable L4.
+        """
+        expected = board_with({(3, 3): 1, (10, 10): 1})
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        self._established(sm, expected)
+        sm.update(observed_board=None, board_detected=False, timestamp=0.2)
+        assert sm.state == SyncState.BOARD_LOST
+
+        occluded = board_with({(3, 3): 1})  # (10,10) is under a hand
+        events = sm.update(observed_board=occluded, timestamp=0.5)
+
+        assert [e.type for e in events] == [SyncEventType.BOARD_REACQUIRED]
+        assert sm.state != SyncState.BOARD_LOST
+        # ...and the occluded cell is still only HELD: no missing report yet, because the
+        # 7s hold restarted with this frame.
+        seen = []
+        for i in range(10):  # 2 more seconds of the same occlusion
+            seen += sm.update(observed_board=occluded, timestamp=1.0 + i * 0.2)
+        assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in seen]
+
+    def test_reset_clears_the_missing_hold(self):
+        expected = board_with({(3, 3): 1})
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        self._established(sm, expected)
+        gone = empty_board()
+        for i in range(6):
+            sm.update(observed_board=gone, timestamp=1.0 + i * 0.2)
+
+        sm.reset(expected)
+        # The hold restarts from scratch: 6 more frames, still inside the window.
+        for i in range(6):
+            events = sm.update(observed_board=gone, timestamp=3.0 + i * 0.2)
+            assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in events]
+
+    def test_frame_count_condition_delays_ripening_after_a_long_gap(self):
+        """Pins D5's frame-count half of the ripeness gate (`entry[1] >=
+        illegal_change_frames`), which every other test in this class cannot
+        distinguish from "deleted" — see the comment at that condition in sync.py.
+
+        The two halves normally go ripe together because real frames arrive fast
+        relative to missing_hold_seconds. They diverge only when a long gap (motion
+        occlusion — gating.py does not feed moving frames at all) is immediately
+        followed by several quick frames: wall-clock alone would already be satisfied
+        on the 2nd OBSERVED frame (elapsed since the 1st exceeds missing_hold_seconds),
+        while the frame-count half is not satisfied until the 5th. Deleting the
+        frame-count half would let the pre-existing stability debounce start
+        accumulating 3 frames earlier, firing ILLEGAL_CHANGE by the 6th observation
+        instead of needing (as here) 9. This test stops at 6 and asserts nothing has
+        fired — which only holds with the frame-count half in place."""
+        expected = board_with({(4, 12): 1})
+        sm = self._synced(expected, missing_hold_seconds=7.0, illegal_change_frames=5)
+        self._established(sm, expected)
+
+        gone = empty_board()
+        sm.update(observed_board=gone, timestamp=1.0)  # 1st observation: entry[1] = 1
+        # 8s gap (an occlusion gating.py did not feed frames through): wall-clock alone
+        # is already past missing_hold_seconds (7.0) by the 2nd observation.
+        events = sm.update(observed_board=gone, timestamp=9.0)  # entry[1] = 2
+        assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in events]
+        # 4 more quick observations (entry[1] reaches 6): the debounce, if it had
+        # already started at observation 2 (the mutant), would fire by now.
+        seen = []
+        for i in range(4):
+            seen += sm.update(observed_board=gone, timestamp=9.0 + (i + 1) * 0.05)
+        assert SyncEventType.ILLEGAL_CHANGE not in [e.type for e in seen]

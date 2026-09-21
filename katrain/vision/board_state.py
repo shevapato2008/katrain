@@ -42,6 +42,18 @@ STICKY_RADIUS = 0.65
 # the cell at all — lets the stone leave the board via the normal voting flow.
 SUSTAIN_RADIUS = 0.6
 
+# Colour invariant: an established stone does not change colour. Measured on RK3562
+# 2026-09-20: 65 colour flips on already-placed points in a single game, one point
+# (vision (17,15)) flipping 41 times over 27 minutes, 8 of which reached the client
+# as "the board does not match the game". The digital board held one colour throughout.
+#
+# The release window matters as much as the invariant. sync.py's wrong-colour branch is
+# the ONLY way the system can tell the user "you placed the wrong colour there", and it
+# is live today. A disagreement that PERSISTS this many consecutive frames is therefore
+# let through, so that branch stays reachable — one frame of the other colour is noise,
+# several seconds of it is a real wrong-colour placement.
+COLOR_FLIP_RELEASE_FRAMES = 15
+
 
 def _nearest_empty_cell(board: np.ndarray, fy: float, fx: float, max_r: int = 1):
     """Empty cell nearest the continuous position (fy=row, fx=col), searching a
@@ -67,6 +79,23 @@ class BoardStateExtractor:
 
     def __init__(self, config: BoardConfig | None = None):
         self.config = config or BoardConfig()
+        # (row, col) -> consecutive frames this established cell has been read as the
+        # other colour. Instance state, so it only applies to the occupancy-aware path
+        # and only to the extractor instance actually in use. worker.py holds a single
+        # instance, so this is moot there. worker_inprocess.py (the one that actually
+        # runs on the RK3562) holds two instances (margin-aware for the geometry-lock
+        # warp, plain for the BoardFinder fallback) and picks one per frame via
+        # _active_extractor(), keyed on self._geometry — which DOES change mid-game:
+        # GeometryCalibrationService's always-on drift monitor calls invalidate_geometry()
+        # on a detected board/camera bump, not just at startup. The consequence is
+        # bounded: on a switch, the other instance's streak/released state starts fresh,
+        # so colour protection restarts rather than getting stuck suppressed or stuck
+        # released.
+        self._color_flip_streak: dict[tuple[int, int], int] = {}
+        # Cells whose flip has been released and must KEEP being released until the
+        # caller's stable board adopts the new colour — the workers need two consecutive
+        # agreeing frames to change it, so a one-frame release would never land.
+        self._color_flip_released: set[tuple[int, int]] = set()
 
     def _grid_cell(self, det, img_w: int, img_h: int) -> tuple[int, int] | None:
         """Nearest intersection (row, col) for a detection, or None when it is off-board.
@@ -215,11 +244,7 @@ class BoardStateExtractor:
             # cell keeps being recognized — dropping its detections blinded vision to
             # the very stone a "remove" lamp pointed at (lamp/recognition oscillation)
             # and force-cleared removal tracking while the stone was still on the board.
-            if (
-                masked_cells
-                and (cy, cx) in masked_cells
-                and (prev_board is None or int(prev_board[cy][cx]) == EMPTY)
-            ):
+            if masked_cells and (cy, cx) in masked_cells and (prev_board is None or int(prev_board[cy][cx]) == EMPTY):
                 continue
             if not self._passes_hysteresis(det, cy, cx, prev_board, add_threshold):
                 continue
@@ -249,6 +274,37 @@ class BoardStateExtractor:
                     for fy, fx, cls, _ in all_points
                 ):
                     board[r][c] = prev_board[r][c]
+
+        # Colour invariant (see COLOR_FLIP_RELEASE_FRAMES). Runs after presence sustain,
+        # so a cell that sustain just resurrected already carries prev's colour and is
+        # not re-examined here.
+        if prev_board is not None:
+            flipped = {
+                (int(r), int(c))
+                for r, c in zip(*np.where((prev_board != EMPTY) & (board != EMPTY) & (board != prev_board)))
+            }
+            for cell in list(self._color_flip_streak):
+                if cell not in flipped:
+                    del self._color_flip_streak[cell]  # agreed again — start over
+            for cell in list(self._color_flip_released):
+                if cell not in flipped:
+                    # No longer a disagreement: either the stable board adopted the new
+                    # colour (the release landed) or the stone left. Either way, done.
+                    self._color_flip_released.discard(cell)
+            for cell in flipped:
+                if cell in self._color_flip_released:
+                    continue  # latched open until the stable board adopts it
+                r, c = cell
+                streak = self._color_flip_streak.get(cell, 0) + 1
+                if streak >= COLOR_FLIP_RELEASE_FRAMES:
+                    del self._color_flip_streak[cell]
+                    self._color_flip_released.add(cell)  # a real wrong-colour placement
+                else:
+                    self._color_flip_streak[cell] = streak
+                    board[r][c] = int(prev_board[r][c])
+        else:
+            self._color_flip_streak.clear()
+            self._color_flip_released.clear()
         return board
 
     def cell_top(self, detections: list[Detection], img_w: int, img_h: int) -> dict:

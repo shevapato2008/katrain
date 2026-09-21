@@ -12,6 +12,22 @@ from katrain.web.core.ai_ladder_ranked import AI_LADDER_GAME_TYPE
 from katrain.web.interface import WebKaTrain
 from katrain.web.models import GameEnd
 
+#: 关掉一个会话的 socket 有**两种**含义,而客户端只能靠 close code + reason 分辨它们:
+#:
+#:   · 盒子把这一局**忘了**(闲置回收 / 名额挤掉)—— 浏览器手里那一局已经没有对应物了,
+#:     它必须停下来说「这一局没了」。
+#:   · 服务端**有意收尾**(认输离开 / 登出判负 / 删除会话 / 开局失败回滚)—— 该说的话
+#:     在关闭之前已经沿着同一条 socket 说过了(`game_end` 广播),关闭本身不带新消息。
+#:
+#: 两者混用一个暗号的代价是实测出来的:HvH 里一方「离开并认输」,服务端先广播
+#: `game_end{reason:'forfeit'}` 再 `remove_session`,赢的那一方在收到「你赢了」之后几毫秒
+#: 被同一条 socket 用 `session_gone` 关掉 —— galaxy 的 `GameRoomPage` 用整页错误顶掉了
+#: 胜利画面,kiosk 弹出的「可能是盒子重启过…」三条原因**全是假的**。
+#: ⇒ `session_gone` 只属于「忘了」那两条路(`cleanup_expired` 与 `create_session` 的两个
+#: 名额分支);一切经 `remove_session` 的收尾一律正常关闭。
+SOCKET_CLOSE_SESSION_GONE = (1008, "session_gone")
+SOCKET_CLOSE_SESSION_CLOSED = (1000, "session_closed")
+
 
 @dataclass
 class WebSession:
@@ -70,7 +86,7 @@ class SessionManager:
                 # 关引擎快不快不影响这个计数。
                 evicted = self._cleanup_locked()
                 if len(self._sessions) >= self.max_sessions:
-                    self._shutdown_all(evicted)
+                    self._shutdown_all(evicted, close=SOCKET_CLOSE_SESSION_GONE)
                     raise RuntimeError("Session limit reached")
             session_id = uuid.uuid4().hex
             # Use provided UUID for KataGo requests if available, otherwise session_id
@@ -84,7 +100,7 @@ class SessionManager:
             session = WebSession(session_id=session_id, katrain=katrain, user_id=user_id)
             self._sessions[session_id] = session
 
-        self._shutdown_all(evicted)
+        self._shutdown_all(evicted, close=SOCKET_CLOSE_SESSION_GONE)
 
         session.katrain.update_state_callback = lambda state, sid=session_id: self._on_state(sid, state)
         session.katrain.message_callback = lambda msg_type, data, sid=session_id: self._on_message(sid, msg_type, data)
@@ -183,10 +199,18 @@ class SessionManager:
         return list(targets.values())
 
     def remove_session(self, session_id: str):
+        """有意收尾一个会话。**不是**回收 —— socket 走正常关闭。
+
+        五个调用方全是「服务端有意结束某件事」:`DELETE /api/session/{id}`、
+        `/api/multiplayer/leave` 的离开判负、登出判负,以及升降级开局失败时的两处回滚。
+        它们要么在关闭之前已经把结论(`game_end`)沿同一条 socket 说过了,要么这局
+        压根还没交给任何客户端。用 `session_gone` 关会把「你赢了」顶成「这一局没了」,
+        见 `SOCKET_CLOSE_SESSION_GONE` 上面那段。
+        """
         with self._lock:
             session = self._sessions.pop(session_id, None)
         if session:
-            session.katrain.shutdown()
+            self._shutdown_all([session], close=SOCKET_CLOSE_SESSION_CLOSED)
 
     def broadcast_to_session(self, session_id: str, payload: Dict):
         try:
@@ -199,13 +223,40 @@ class SessionManager:
         """回收过期会话。**同步方法，不要直接在事件循环上调用** —— 见 `_cleanup_locked`。"""
         with self._lock:
             evicted = self._cleanup_locked()
-        # 关引擎在**锁外**做。理由见 `_cleanup_locked` 的注释。
-        self._shutdown_all(evicted)
+        for session in evicted:
+            logging.getLogger("katrain_web").info(
+                "session evicted after %.0fs idle: %s", time.time() - session.last_access, session.session_id
+            )
+        # 关引擎与关 socket 都在**锁外**做。理由见 `_cleanup_locked` 的注释。
+        self._shutdown_all(evicted, close=SOCKET_CLOSE_SESSION_GONE)
 
-    @staticmethod
-    def _shutdown_all(sessions: List[WebSession]):
-        """逐个关停，一个失败不影响其余 —— 关停路径上再抛异常只会漏掉后面那些。"""
+    def _shutdown_all(self, sessions: List[WebSession], close=SOCKET_CLOSE_SESSION_CLOSED):
+        """逐个关停，一个失败不影响其余 —— 关停路径上再抛异常只会漏掉后面那些。
+
+        Socket close lives HERE, not in cleanup_expired, because this method is the one
+        thing all three eviction paths share: cleanup_expired's periodic sweep, and
+        create_session's two capacity branches — the in-lock refusal (still over the limit
+        after a sweep, raises "Session limit reached") and the post-eviction one that runs
+        after the lock is released — neither of which goes through cleanup_expired at all.
+
+        `close` 是那两种含义里的哪一种(见 `SOCKET_CLOSE_SESSION_GONE`)。默认取**正常关闭**:
+        三条回收路径都在本文件里、都显式传 `SOCKET_CLOSE_SESSION_GONE`,而将来从外面接进来的
+        新调用方走的是 `remove_session`,默认给它「有意收尾」才是那一侧该有的语义。
+
+        两条语句**各自**兜异常,不共用一个 try:合在一起的话,排一个关闭任务失败会连带
+        跳过这一局的 `katrain.shutdown()` —— 2G 的 RK3562 上那意味着 KataGo 进程留着不走。
+        """
         for session in sessions:
+            try:
+                self._schedule_socket_close(session, close)
+            except Exception:
+                # `_schedule_socket_close` 在 `is_running()` 与真正排任务之间有个窗口:
+                # 事件循环这期间停了,`create_task` / `run_coroutine_threadsafe` 会抛
+                # RuntimeError。服务退出时这个窗口是真的(`server.py` 先取消 cleanup_task
+                # 再调 `cleanup_expired`)。它要是掀翻整个循环,后面每一局的引擎都关不掉了。
+                logging.getLogger("katrain_web").warning(
+                    "scheduling socket close for session %s failed", session.session_id, exc_info=True
+                )
             try:
                 session.katrain.shutdown()
             except Exception:
@@ -318,6 +369,68 @@ class SessionManager:
                 stale.append(ws)
         for ws in stale:
             session.sockets.discard(ws)
+
+    def _schedule_socket_close(self, session: WebSession, close):
+        """Close a session's game sockets, on the loop.
+
+        A session the server has forgotten whose socket is still open is worse than a
+        closed one: the browser cannot tell a dead game from a live one, so it keeps
+        offering actions that can only fail. Measured on RK3562 2026-09-20.
+
+        `close` 没有默认值,故意的:它说的是「忘了」还是「有意收尾」,而这两个的默认值不一样。
+        唯一有默认值的是 `_shutdown_all`,那里默认给「有意收尾」;三条回收路径显式传另一个。
+
+        The call made HERE is non-blocking — create_task / run_coroutine_threadsafe
+        neither awaits nor blocks — but it is not always made outside self._lock: the
+        socket-close WORK runs on the loop in every case (that part follows
+        _schedule_broadcast's thread discipline), while the scheduling call itself is
+        made *under* self._lock on create_session's in-lock capacity refusal (the branch
+        that raises "Session limit reached"). Don't add anything blocking to this method — a
+        `future.result()`, a metrics call, a synchronous log flush — or that branch
+        reproduces the production lock queue `_cleanup_locked`'s docstring records.
+        """
+        if not session.sockets:
+            return
+        if not self._loop or not self._loop.is_running():
+            return
+
+        def _log_failure(fut):
+            if fut.cancelled():
+                return
+            exc = fut.exception()
+            if exc is not None:
+                logging.getLogger("katrain_web").warning("closing sockets failed: %s", exc)
+
+        if threading.get_ident() == self._loop_thread_id:
+            self._loop.create_task(self._close_sockets(session, close)).add_done_callback(_log_failure)
+        else:
+            asyncio.run_coroutine_threadsafe(self._close_sockets(session, close), self._loop).add_done_callback(
+                _log_failure
+            )
+
+    @staticmethod
+    async def _close_sockets(session: WebSession, close):
+        """`close` is the (code, reason) pair from the two named above: 1008 +
+        "session_gone" is the contract the web client's recovery keys on, and it must be
+        sent ONLY when the box forgot this session. Closed concurrently, each bounded by
+        its own timeout, so one socket that never acks the close handshake — e.g. a kiosk
+        that lost its network, exactly the scenario this exists for — cannot delay the
+        rest of the room.
+        """
+        await asyncio.gather(*(SessionManager._close_one_socket(session, ws, close) for ws in list(session.sockets)))
+
+    @staticmethod
+    async def _close_one_socket(session: WebSession, ws, close, timeout: float = 2.0):
+        """Iterate-a-snapshot-and-discard lives in the caller; this does one socket only,
+        so a hang here (wait_for timeout) or a failure (already disconnected) never
+        stops its siblings from being attempted or discarded."""
+        code, reason = close
+        try:
+            await asyncio.wait_for(ws.close(code=code, reason=reason), timeout=timeout)
+        except Exception:
+            pass  # already disconnected, or never acked in time — nothing left to tell it
+        # /ws's own finally: discards the same socket from its cleanup; Set.discard is idempotent.
+        session.sockets.discard(ws)
 
 
 @dataclass

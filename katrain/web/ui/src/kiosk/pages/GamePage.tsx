@@ -26,6 +26,8 @@ import EngineMoveErrorDialog from '../components/physical/EngineMoveErrorDialog'
 import HintPanel from '../components/physical/HintPanel';
 import { API, ApiError, type HintResponse, type OwnershipPoint, type JudgePoint, type AnalysisCandidate, type AnalysisPoint, type EngineItemCounts, type GameState } from '../../api';
 import { readActiveSession, writeActiveSession, clearActiveSession } from '../utils/activeSession';
+import { requestFailureKind } from '../../utils/requestFailure';
+import { failureLine } from '../components/report/reviewPresentation';
 import { formatGtpCoord } from '../../utils/gtpCoord';
 import { isRankedGameType } from '../../features/aiLadder/gameType';
 import { AiLadderSettlementAlert, useAiLadderSettlement } from '../../features/aiLadder/settlement';
@@ -54,7 +56,8 @@ interface AiPlacementStatus {
 // gating) and the AI-placement status effect below (G2 fix). `platform_engine_color`
 // (Task 1: WebKaTrain state field, "B"|"W"|null = the remote engine's color) is
 // authoritative for engine games (Golaxy 人机对弈 via the genmove tunnel) — BOTH
-// seats carry a bare "human" player_type literal there (session.py:80/82), so the
+// seats carry a bare "human" player_type literal there (`create_multiplayer_session`'s
+// two update_player calls in session.py), so the
 // player_type-based checks below can't tell which seat is the AI. Absent/null in
 // every other game shape (local HvAI, PVP, multiplayer) — falls through unchanged.
 // eslint-disable-next-line react-refresh/only-export-components
@@ -85,7 +88,7 @@ const readScreenFallback = (key: string): boolean => {
 // Single-owner AI-turn arbitration (state A source for B1.4). Exported as a pure
 // function so it's unit-testable without rendering the page, and so B1.4 can reuse it.
 // Per-color AI detection — accept BOTH literals: 'player:ai' (kiosk HvAI, server.py:723/727)
-// AND bare 'ai' (multiplayer session.py:80/82 + tests), PLUS the engine's color per
+// AND bare 'ai' (multiplayer `create_multiplayer_session` + tests), PLUS the engine's color per
 // `platform_engine_color` (G2 fix — engine games carry bare "human" on both seats, so
 // the literal checks alone can't find the AI seat there). Do NOT infer AI from "the
 // non-human color". Pure helper co-located here (not split into a new file) for unit
@@ -223,7 +226,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
   const countingRef = useRef(false);
   const [counting, setCounting] = useState(false);
   const [resignError, setResignError] = useState<string | null>(null);
-  const [exitError, setExitError] = useState<string | null>(null);
+  const [gameGoneAcknowledged, setGameGoneAcknowledged] = useState(false);
+  const sessionGone = session.connectionLost === 'gone';
+
+  // 一个信号,一处反应。三条通道(WS 关闭 / 404 / 200 session_gone)都汇进 `connectionLost`,
+  // 所以这里不用关心是哪条先发现的。清 resume 指针**只在这一支**做:这局在服务端确实没了,
+  // 不清的话「继续上一局」会转回这个死会话。
+  useEffect(() => {
+    if (!sessionGone) return;
+    setShowExitConfirm(false);
+    setShowResignConfirm(false);
+    clearActiveSession('game');
+  }, [sessionGone]);
+
   const [reviewError, setReviewError] = useState(false);
   // 重置识别的「在制中」走 ref 不走 state:页控条那个图标键没有忙碌态可显示,
   // 这个值不进渲染 —— 放进 state 就是一次没人看的重渲染。
@@ -639,7 +654,18 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       try {
         const res = await API.timeout(sessionId, token ?? undefined, expect);
         if (!current()) return;
-        if (res?.state) session.setGameState(res.state);
+        // Task 2's 200 空回执：这局在服务端已经没了。retryDelivery 重发救不回一个被
+        // 回收的会话 —— 落到这里必须直接报出去,不能再走下面的 setTimeoutError(null)
+        // (那条路以前只在真的送达成功时才走,现在会把「没了」悄悄当成「送达了」)。
+        // `'status' in res` alone is the complete discriminant: SessionResponse never
+        // has a `status` key, and `'session_gone'` is the only value SessionGoneResponse
+        // ever carries. Adding `&& res.status === 'session_gone'` here defeats TS's
+        // narrowing on the fall-through branch below (verified against tsc directly).
+        if ('status' in res) {
+          session.reportSessionGone();
+          return;
+        }
+        if (res.state) session.setGameState(res.state);
         setTimeoutError(null);
       } catch (e) {
         if (!current()) return;
@@ -668,7 +694,14 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     timeoutRequestRef.current = true;
     try {
       const res = await API.timeout(sessionId);
-      if (res?.state) session.setGameState(res.state);
+      // Same gone shape as the bound-timeout `send()` above: no `.state`, and retrying
+      // cannot bring an evicted session back. Report it and stop — do not clear
+      // timeoutError as if the timeout had been delivered.
+      if ('status' in res) {
+        session.reportSessionGone();
+        return;
+      }
+      if (res.state) session.setGameState(res.state);
       setTimeoutError(null);
     } catch (error) {
       const detail = error instanceof ApiError && error.status === 409
@@ -677,7 +710,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       if (detail?.code === 'time_not_expired' && detail.state) {
         session.setGameState(detail.state);
       } else {
-        setTimeoutError({ scope: timeoutScope, message: t('game:timeout_failed', '超时判定没有完成') });
+        setTimeoutError({ scope: timeoutScope, message: failureLine(t('game:timeout_failed', '超时判定没有完成'), requestFailureKind(error), t) });
       }
     } finally {
       timeoutRequestRef.current = false;
@@ -784,14 +817,20 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
     }
   };
 
-  // 本地对局「退出不保存」。删除失败**不离开**:装作退出了,会话却还在进程里、活动会话也还指着它。
-  const handleExitWithoutSaving = async () => {
-    if (!sessionId) return;
-    try {
-      await API.deleteSession(sessionId);
-    } catch {
-      setExitError(t('game:exit_failed', '退出失败，请重试'));
-      return;
+  // 本地对局「退出不保存」。这是 pvp_local 唯一的出口，所以 DELETE 失败也照样离开 ——
+  // 删不掉时服务端状态和「卡住不让走」时完全一样(会话都还挂在进程里)，攥着用户不放清理不出
+  // 任何东西，只是把 R1 那个「服务端调用失败 = 出不去」的陷阱换个触发点重演一遍。best-effort
+  // 发出去就算数：`delete_session`(server.py)只做 end_session + remove_session，
+  // `SessionManager.remove_session` 弹出字典、停引擎；`API.deleteSession` 这条请求本来就不持久化
+  // 任何东西，所以退出弹层那句
+  // 「这局还没下完，退出后不会保存」依旧成立。孤儿会话不可见也会自愈：clearActiveSession('game')
+  // 杀掉「继续上一局」指针，pvp_local 从不出现在 /api/v1/games/active/multiplayer 里，
+  // cleanup_expired 在 SESSION_TIMEOUT(3600s) 后照常回收它。
+  const handleExitWithoutSaving = () => {
+    if (sessionId) {
+      API.deleteSession(sessionId).catch((error) => {
+        console.warn('[game] delete-on-exit failed (best-effort, leaving anyway):', error);
+      });
     }
     setShowExitConfirm(false);
     clearActiveSession('game');
@@ -803,7 +842,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       await session.handleAction('resign', { color });
       setShowResignConfirm(false);
     } catch (error) {
-      setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+      setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
     }
   };
 
@@ -1004,15 +1043,25 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
         </Alert>
       </Snackbar>
 
-      {/* 断线持续显示；退出时可以保留这一局，回来重新取状态和建连。1008 保留原来的原因与登录提示。 */}
+      {/* 断线持续显示。三档都是固定文案，不接 session.error —— connectionLost 一旦置位就不会自动
+          清空，后续任何一次失败的 HTTP 动作都会把 ApiError 的原文写进 session.error，原来的
+          fallback 分支会把它原样印在这里(R2 的泄漏点，已经封死)。'rejected' 不复述服务端给的
+          1008 reason：如今只可能是 Invalid token / Session not found / Session unavailable
+          之一(server.py:3156/3162/3170)，7 寸屏上没有一条是用户能采取行动的。
+          'dropped' / 'gone' 都不点名对局屏当下具体哪个按钮能离开 —— 本地对局(pvp_local)的
+          退出弹层只有「继续下 / 退出不保存」，没有「先离开，不认输」那个键；而 'gone' 这一档自己的
+          说明弹层开着时，底下整块页面(含页控条的「退出对局」)都在遮罩之下点不到，指哪个具体按钮
+          都会指错。 */}
       <Snackbar
         open={!!session.connectionLost && !connectionNoticeDismissed}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert severity="error" onClose={() => setConnectionNoticeDismissed(true)}>
           {session.connectionLost === 'dropped'
-            ? t('game:connection_dropped', '实时连接断了，棋盘不会自动更新。点「退出对局」→「先离开，不认输」，再从「继续上一局」回来就会重新连上')
-            : session.error}
+            ? t('game:connection_dropped', '实时连接断了，棋盘不会自动更新，可以点「退出对局」离开这一局')
+            : session.connectionLost === 'gone'
+              ? t('game:session_gone_notice', '这一局在服务器上已经没有了，可以离开这一页。')
+              : t('game:connection_rejected', '实时连接被拒绝，棋盘不会自动更新，请重新登录后重试')}
         </Alert>
       </Snackbar>
 
@@ -1173,7 +1222,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
                   await session.handleAction('resign');
                   setShowResignConfirm(false);
                 } catch (error) {
-                  setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+                  setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
                   return;
                 }
                 // Finding 2 (HIGH): a CONFIRMED resign always ends the game — whether or
@@ -1197,7 +1246,7 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <DialogContent><Typography>{t('game:exit_unsaved_body', '这局还没下完，退出后不会保存。')}</Typography></DialogContent>
           <DialogActions sx={{ display: 'flex', gap: 1 }}>
             <Button variant="outlined" sx={{ flex: 1, whiteSpace: 'nowrap' }} onClick={() => setShowExitConfirm(false)}>{t('game:keep_playing', '继续下')}</Button>
-            <Button variant="outlined" color="error" sx={{ flex: 1, whiteSpace: 'nowrap' }} onClick={() => { void handleExitWithoutSaving(); }}>
+            <Button variant="outlined" color="error" sx={{ flex: 1, whiteSpace: 'nowrap' }} onClick={handleExitWithoutSaving}>
               {t('game:exit_unsaved', '退出不保存')}
             </Button>
           </DialogActions>
@@ -1207,21 +1256,19 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           <DialogTitle>{exitResignTitle}</DialogTitle>
           <DialogActions>
             <Button onClick={() => setShowExitConfirm(false)}>{t('Cancel', '取消')}</Button>
-            {session.connectionLost && (
-              <Button data-testid="exit-leave-keep" onClick={() => {
-                setShowExitConfirm(false);
-                navigate('/kiosk/play');
-              }}>
-                {t('game:leave_keep_game', '先离开，不认输')}
-              </Button>
-            )}
+            <Button data-testid="exit-leave-keep" onClick={() => {
+              setShowExitConfirm(false);
+              navigate('/kiosk/play');
+            }}>
+              {t('game:leave_keep_game', '先离开，不认输')}
+            </Button>
             <Button
               color="error"
               onClick={async () => {
                 try {
                   await session.handleAction('resign');
                 } catch (error) {
-                  setResignError(error instanceof Error ? error.message : t('Resign failed, retry', '认输失败，请重试'));
+                  setResignError(failureLine(t('game:resign_failed', '认输没成'), requestFailureKind(error), t));
                   return;
                 }
                 // Same as the resign-confirm dialog above: this is another path that
@@ -1236,6 +1283,25 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
           </DialogActions>
         </Dialog>
       )}
+
+      {/* 这局在服务端已经没了。说人话 + 给出口。说的是「本机没有这一局了」,不是「你认输了」:
+          回收会话不会结束远端对局(真正的远端认输在 gateway.py:399-420)。 */}
+      <Dialog open={sessionGone && !gameGoneAcknowledged}
+              onClose={() => { setGameGoneAcknowledged(true); navigate('/kiosk/play'); }}>
+        <DialogTitle sx={{ color: 'text.primary' }}>{t('game:unavailable_title', '这一局已经打不开了')}</DialogTitle>
+        <DialogContent>
+          {/* 这里**不能**复用载入失败那一屏的 `game:unavailable_reason` —— 它第三条说
+              「或者它属于另一个账号」,而那种局根本产不出 `gone` 这个信号:别人的会话是
+              403 / `1008 "Session unavailable"`,落的是 `rejected`。只说能产出它的那两种。 */}
+          <Typography>{t('game:gone_reason', '可能是盒子重启过，或者这一局闲置太久被清理了。')}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button data-testid="game-gone-leave"
+                  onClick={() => { setGameGoneAcknowledged(true); navigate('/kiosk/play'); }}>
+            {t('game:back_to_play', '回到对弈')}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* 星阵道具次数不足 (7003) — 本终端不代充，引导去星阵充值 */}
       <Dialog open={insufficientKind !== null} onClose={() => setInsufficientKind(null)}>
@@ -1335,9 +1401,6 @@ const GamePage = ({ engineMode = false }: { engineMode?: boolean }) => {
       </Snackbar>
       <Snackbar open={!!resignError} autoHideDuration={5000} onClose={() => setResignError(null)}>
         <Alert severity="error" onClose={() => setResignError(null)}>{resignError}</Alert>
-      </Snackbar>
-      <Snackbar open={!!exitError} autoHideDuration={5000} onClose={() => setExitError(null)}>
-        <Alert severity="error" onClose={() => setExitError(null)}>{exitError}</Alert>
       </Snackbar>
 
       {/* Re-sync (重置识别) failure toast */}

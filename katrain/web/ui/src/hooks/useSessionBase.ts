@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API, type GameState } from '../api';
-import { websocketUrl, WS_POLICY_VIOLATION } from '../utils/websocketUrl';
+import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from '../utils/websocketUrl';
 
 export interface UseSessionBaseOptions {
     onStateUpdate?: (state: GameState) => void;
@@ -84,7 +84,10 @@ export function useSessionBase(options: UseSessionBaseOptions = {}): UseSessionB
                 /* 断了要说出来 —— 静默的 1008 正是这次三周无人察觉的原因。 */
                 ws.onclose = (event) => {
                     if (wsRef.current !== ws) return;  // 自己关的
-                    if (event.code === WS_POLICY_VIOLATION) {
+                    if (event.code === WS_POLICY_VIOLATION && event.reason === WS_SESSION_GONE_REASON) {
+                        console.warn('Session is gone on the server');
+                        setError(SESSION_GONE_MESSAGE);
+                    } else if (event.code === WS_POLICY_VIOLATION) {
                         console.error('Session WebSocket rejected:', event.reason);
                         setError(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新，请重新登录后重试`);
                     } else if (!event.wasClean) {

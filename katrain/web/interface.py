@@ -1435,6 +1435,18 @@ class WebKaTrain(KaTrainBase):
         deadline = getattr(self, "_ladder_retry_at", 0.0)
         return not deadline or time.time() < deadline
 
+    def next_player_to_move(self) -> str | None:
+        """The colour the LIVE game expects next ("B"/"W"), or None if there is no game yet.
+
+        Same authority `_do_play`'s `expected_player` guard uses
+        (`current_node.next_player`). Exposed so the cross-platform vision path can
+        re-check the turn against the live game instead of `session.last_state`, which
+        is a broadcast frame and can be stale by the time a confirmed move is committed.
+        """
+        game = self.game
+        node = game.current_node if game is not None else None
+        return node.next_player if node is not None else None
+
     def _do_play(self, coords, guard=False, expected_player=None):
         """落一手。
 

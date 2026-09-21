@@ -12,6 +12,7 @@ import numpy as np
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.websockets import WebSocketState
 from contextlib import asynccontextmanager, contextmanager, nullcontext
 
 from katrain.web.api.v1.api import api_router
@@ -2103,7 +2104,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
     @app.post("/api/resign")
     async def resign(request: ResignRequest, current_user: User = Depends(get_current_user_optional)):
-        session = _get_session_or_404(manager, request.session_id)
+        try:
+            session = manager.get_session(request.session_id)
+        except KeyError:
+            return _session_gone_reply(request.session_id)
         _require_multiplayer_participant(session, current_user)
         guard_session_terminator(session, current_user, "resign")
         local_pvp = getattr(session, "game_type", "free") == "pvp_local"
@@ -2499,7 +2503,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
 
         r1 C1:kiosk 带上期望的局 / 手 / 方,`_do_timeout` 在对局提交锁里核对轮次、用服务端时钟核实;核实不了一律拒绝(409),
         不判负。galaxy 的旧调用不带这三个字段,语义照旧(撞上已结束的局是 200 空操作)。"""
-        session = _get_session_or_404(manager, request.session_id)
+        try:
+            session = manager.get_session(request.session_id)
+        except KeyError:
+            return _session_gone_reply(request.session_id)
         _require_multiplayer_participant(session, current_user)
         guard_session_terminator(session, current_user, "timeout")
         guard_ai_ladder_ranked_human_action(session, current_user, "timeout")
@@ -3291,7 +3298,24 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                         },
                     )
         except WebSocketDisconnect:
-            pass
+            pass  # 客户端走了,正常。finally: 照常跑。
+        except RuntimeError as exc:
+            # A server-initiated close (_close_sockets, session.py) can land between
+            # receive_json() calls: starlette flips application_state to DISCONNECTED,
+            # and the next receive_json() raises RuntimeError rather than
+            # WebSocketDisconnect. finally: below still runs either way.
+            #
+            # 但 RuntimeError 不止这一个来源 —— `session.katrain.get_state()`、首帧
+            # `send_json`、聊天循环抛出的都会落到这里。这个 except 变宽之前它们会冒到
+            # uvicorn 被记成未处理的 ASGI 异常;要是这里一声不吭,整条分支上就多出唯一一处
+            # 「以前会报、现在静默」的地方。⇒ 预期内的那一种(我们自己把它关了,
+            # application_state 已是 DISCONNECTED)降到 debug,其余照常 warning 并带栈。
+            if websocket.application_state == WebSocketState.DISCONNECTED:
+                logging.getLogger("katrain_web").debug(
+                    "session websocket %s ended after a server-initiated close: %s", session_id, exc
+                )
+            else:
+                logging.getLogger("katrain_web").warning("session websocket %s failed", session_id, exc_info=True)
         finally:
             if strict_box:
                 app.state.box_sso.discard_socket(websocket)
@@ -3444,7 +3468,29 @@ def _get_session_or_404(manager: SessionManager, session_id: str):
     try:
         return manager.get_session(session_id)
     except KeyError as exc:
+        # Otherwise the only trace is the 404 the user sees: uvicorn runs with
+        # access_log=False, so a session miss is invisible in journalctl.
+        logging.getLogger("katrain_web").warning("session miss: %s", session_id)
         raise HTTPException(status_code=404, detail="Session not found") from exc
+
+
+SESSION_GONE_STATUS = "session_gone"
+
+
+def _session_gone_reply(session_id: str) -> dict:
+    """The honest reply for ending a game whose session this box has forgotten.
+
+    It says exactly one thing - this box no longer has this game - and deliberately
+    carries no `ended`, no `state` and no result. SessionManager eviction removes local
+    state and stops KataGo; it does NOT end a remote game (real remote resignation is
+    gateway.py:399-420, which this early return never reaches). Claiming a result would
+    make the client tell the user they resigned a game that may still be running.
+
+    Callers MUST return this before touching any ledger or broadcast. It is NOT a
+    substitute for the 403 that guard_session_terminator raises when the session EXISTS
+    and the caller is not a participant - merging those two would be an auth bypass.
+    """
+    return {"session_id": session_id, "status": SESSION_GONE_STATUS}
 
 
 def _require_multiplayer_participant(session, current_user) -> None:
@@ -3704,6 +3750,60 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
             return
         _rearm_detection()
 
+    # L0a: the stone must still be on the board when we commit. Measured on RK3562
+    # 2026-09-20: confirm -> submit is 0.45s median but was 3.02s for the O1 phantom,
+    # and that stone had already vanished from the observed board 1.46s before
+    # submission — nothing re-read the board in between.
+    #
+    # Cancelling needs a board reading from an observation STRICTLY NEWER than the one
+    # that confirmed this move. worker.py publishes status at 1 Hz, so the newest board
+    # we hold can predate the stone entirely; treating that as a disappearance would drop
+    # real moves. Everything that is not a newer-and-empty reading — no board, an
+    # observation no newer than the confirmation, an unreadable board — is "unknown", and
+    # unknown always submits.
+    observed_board = None
+    observed_seq = 0
+    try:
+        observed_board, observed_seq = vision.get_board_observation()
+    except Exception:
+        # a status read must never be able to break move submission — fail-open is
+        # deliberate. But a guard that silently disables itself is indistinguishable
+        # from a healthy one from the outside, which is exactly the failure shape this
+        # whole plan exists to fix (93 events over 510s on 2026-09-20, no trace). Announce it.
+        log.warning(
+            "L0a presence re-check disabled: get_board_observation() raised — "
+            "submitting move col=%d row=%d WITHOUT the vanished-stone re-check",
+            move_data.col,
+            move_data.row,
+            exc_info=True,
+        )
+        observed_board = None
+    move_seq = int(getattr(move_data, "observation_seq", 0))
+    # Both workers increment their counter to >=1 in the SAME loop iteration, BEFORE a
+    # confirmation can be stamped (worker.py:362/483, worker_inprocess.py:417/531) — so a
+    # move that actually went through a worker's confirm path always carries seq >= 1.
+    # seq == 0 means "never stamped" (e.g. a caller that builds a ConfirmedMove directly,
+    # bypassing the worker). Without a stamp there is no reference point: comparing against
+    # 0 would make ANY observation "newer", degrading this into the naive "is the cell
+    # empty right now?" check D1b rejects — on the 1 Hz subprocess worker the newest
+    # *published* board can predate the confirmation, and that would drop a real move.
+    # Better to submit a move we cannot re-check than to drop a real stone.
+    move_is_stamped = move_seq > 0
+    if observed_board is not None and move_is_stamped and observed_seq > move_seq:
+        try:
+            still_present = int(observed_board[move_data.row][move_data.col]) != 0
+        except (IndexError, TypeError, ValueError):
+            still_present = True  # unreadable board == unknown == let it through
+        if not still_present:
+            log.info(
+                "Vision move dropped: observation %d shows no stone at (row=%d,col=%d)",
+                observed_seq,
+                move_data.row,
+                move_data.col,
+            )
+            _rearm_detection()
+            return 0.5
+
     if is_ai_ladder_ranked_session(session):
         move_player = "B" if move_data.color == 1 else "W"
         try:
@@ -3746,6 +3846,48 @@ async def _handle_confirmed_move(app: FastAPI, vision, session_id: str, move_dat
     coords = (move.coords[0], move.coords[1])
     gateway = getattr(app.state, "platform_gateway", None)
     if gateway and (gateway.is_platform_game(session_id) or is_platform_engine_session(session)):
+        # L0b: the `expected_player` check above reads session.last_state — a broadcast
+        # frame that can be stale by now. The local branch re-adjudicates inside the
+        # commit lock (guard=True/expected_player); this branch had no equivalent, and
+        # the gateway only serialises (ctx.is_pending) and checks legality. Re-read the
+        # live game. None (no game yet) falls through rather than refusing everything.
+        #
+        # Take ai_ladder_commit_lock (the same lock _do_play's guard=True/expected_player
+        # check takes, interface.py:1466), not session.lock — this is a live read of the
+        # same authority that check uses, serialised against every other committer of this
+        # game. What this buys: a live read immediately before the send below, correct as
+        # long as nothing introduces an `await` or a second committing thread between the
+        # two. What it does NOT buy: check-and-send is NOT atomic — `gateway.play_move` is
+        # `await`ed and therefore cannot be made while holding a threading lock, so a
+        # commit can still land in the gap between the read and the send. If someone adds
+        # an `await` here before the send, this guarantee breaks.
+        live_turn = None
+        try:
+            with session.katrain.ai_ladder_commit_lock:
+                live_turn = session.katrain.next_player_to_move()
+        except Exception:
+            # a turn read must never be able to break move submission — fail-open is
+            # deliberate. But a guard that silently disables itself is indistinguishable
+            # from a healthy one from the outside, which is exactly the failure shape
+            # this whole plan exists to fix. Announce it.
+            log.warning(
+                "L0b live-turn re-check disabled: next_player_to_move() raised — "
+                "submitting move %s col=%d row=%d to the platform gateway WITHOUT the "
+                "turn re-check",
+                move_player,
+                move_data.col,
+                move_data.row,
+                exc_info=True,
+            )
+            live_turn = None
+        if live_turn is not None and live_turn != move_player:
+            log.info(
+                "Vision move %s out of turn at commit (live turn %s) — ignored",
+                move_player,
+                live_turn,
+            )
+            _rearm_detection()
+            return 0.5
         game_id = gateway.get_game_id(session_id) or ""
         try:
             await gateway.play_move(session_id, coords[0], coords[1], user_id=0)

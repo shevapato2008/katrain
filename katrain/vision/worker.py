@@ -41,7 +41,12 @@ from katrain.vision.gating import (
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
-from katrain.vision.move_detector import AmbiguousPromoter, MoveDetector, PendingConfidencePeak
+from katrain.vision.move_detector import (
+    AmbiguousPromoter,
+    MoveDetector,
+    PendingConfidencePeak,
+    SUSPECT_CONFIDENCE_BONUS,
+)
 from katrain.vision.sync import SyncEventType, SyncState, SyncStateMachine
 from katrain.vision.temporal import FrameAverager
 
@@ -167,6 +172,11 @@ class _VisionWorkerLoop:
         self._consecutive_failures = 0  # Track detection failures for auto-unlock
         self._prev_observed_board: np.ndarray | None = None  # For temporal smoothing
         self._last_stable_board: np.ndarray | None = None
+        # Counts board OBSERVATIONS (a frame that produced a stable board), not camera
+        # reads or loop iterations. Stamped onto both the published status and every
+        # ConfirmedMove so a consumer can tell whether a board reading is newer than the
+        # confirmation it is being used to judge.
+        self._observation_seq = 0
         self._frame_count = 0  # Throttle for per-gate debug logging
 
     def _reset_motion_region(self) -> None:
@@ -354,6 +364,7 @@ class _VisionWorkerLoop:
                         self._last_stable_board = observed_board
                     self._prev_observed_board = observed_board
                     self._last_detected_board = self._last_stable_board.tolist()
+                    self._observation_seq += 1
 
                     mean_confidence = mean_detection_confidence(detections)
                     if self._frame_count % 30 == 0:
@@ -389,6 +400,13 @@ class _VisionWorkerLoop:
                         # window maximum (a marginal stone's per-frame value oscillates),
                         # and it is re-read every frame, so a candidate that decays back
                         # below the line loses the fast path instead of keeping it.
+                        # Review Finding 6: the fast-path bar (0.70) sits ABOVE the
+                        # suspect routing gate (device 0.42 + SUSPECT_CONFIDENCE_BONUS
+                        # 0.25 = 0.67), so any cell that earns the shortcut here also
+                        # clears the raised gate below — L2's routing gate can never
+                        # divert a fast-path confirmation to the card. Both constants are
+                        # frozen this round; if either moves, re-derive this relationship
+                        # rather than assuming it still holds.
                         pending_peak = self._conf_peak.peak_for(self._move_detector.pending_move)
                         fast = pending_peak is not None and pending_peak >= self._fast_confirm_confidence
                         candidate_sightings = self._move_detector.count
@@ -420,7 +438,19 @@ class _VisionWorkerLoop:
                                 # made card-vs-autoplay a coin flip).
                                 conf = conf_map.get((row, col), self._prev_conf_map.get((row, col), 0.0))
                                 conf = self._conf_peak.gate_confidence(row, col, conf)
-                                if conf < self._ambiguous_confidence:
+                                # A cell with a track record of lying must clear a
+                                # higher bar before it may auto-play; it can still
+                                # reach the user via the confirmation card.
+                                ambiguous_gate = self._ambiguous_confidence
+                                if self._move_detector.is_suspect(row, col):
+                                    ambiguous_gate = min(0.95, ambiguous_gate + SUSPECT_CONFIDENCE_BONUS)
+                                if conf < ambiguous_gate:
+                                    # Charge the CELL, not the prompt: AMBIG_REPROMPT_FRAMES
+                                    # suppresses the repeat *event*, but every suppressed
+                                    # re-confirmation is still evidence this intersection keeps
+                                    # producing moves nobody is willing to play. Never call this
+                                    # on the auto-play branch below — that is D4's veto.
+                                    self._move_detector.charge_carded_confirmation(row, col)
                                     # PRD §3.4 row 1: low-confidence "move" asks the user instead.
                                     # Baseline NOT advanced: an unanswered prompt re-fires after
                                     # the cooldown instead of silencing detection forever.
@@ -431,13 +461,14 @@ class _VisionWorkerLoop:
                                         self._ambig_last_emit[(row, col)] = self._frame_count
                                         logger.info(
                                             "move at (%d,%d) confirmed but peak conf %.2f < %.2f — ambiguous prompt; "
-                                            "required_frames=%d observed_frames=%d",
+                                            "required_frames=%d observed_frames=%d suspicion=%d",
                                             row,
                                             col,
                                             conf,
-                                            self._ambiguous_confidence,
+                                            ambiguous_gate,
                                             selected_required_frames,
                                             candidate_sightings + 1,
+                                            self._move_detector.suspicion_of(row, col),
                                         )
                                         self._event_queue.put(
                                             {
@@ -464,15 +495,20 @@ class _VisionWorkerLoop:
                                 else:
                                     logger.info(
                                         "move confirmed: (%d,%d) color=%d peak_conf=%.2f "
-                                        "required_frames=%d observed_frames=%d",
+                                        "required_frames=%d observed_frames=%d suspicion=%d",
                                         row,
                                         col,
                                         color,
                                         conf,
                                         selected_required_frames,
                                         candidate_sightings + 1,
+                                        self._move_detector.suspicion_of(row, col),
                                     )
-                                    self._event_queue.put(ConfirmedMove(col=col, row=row, color=color))
+                                    self._event_queue.put(
+                                        ConfirmedMove(
+                                            col=col, row=row, color=color, observation_seq=self._observation_seq
+                                        )
+                                    )
                                     # Advance the baseline HERE (the detector no longer does):
                                     # prevents duplicate emissions until the game-update
                                     # round-trip force_syncs the new expected board. If the
@@ -493,7 +529,7 @@ class _VisionWorkerLoop:
                                 )
                         self._prev_conf_map = conf_map
 
-                        if move_result is None and self._move_detector.pending_move is None:
+                        if move_result is None and not self._move_detector.about_to_confirm:
                             self._promote_stuck_stone(detections, w, h, self._last_stable_board, masked)
                 else:
                     # Board not found
@@ -611,8 +647,8 @@ class _VisionWorkerLoop:
             self._ae_advisory = True
             logger.info("AE: exposure controls ineffective on this platform — advisory mode only")
             return
-        if self._move_detector.pending_move is not None:
-            return  # never shift exposure mid move-confirmation
+        if self._move_detector.about_to_confirm:
+            return  # never shift exposure on the frame that decides a confirmation
         if self._ae.current_exposure is None:
             self._ae.seed(getattr(self._camera, "initial_exposure", None))
         new_exp = self._ae.update(stats, time.monotonic())
@@ -651,6 +687,7 @@ class _VisionWorkerLoop:
                 self._ambig_last_emit = {}
                 self._averager.reset()
                 self._promoter.reset()
+                self._move_detector.reset_suspicion()  # a new session starts every cell at zero
             elif cmd.action == CommandType.CONFIRM_POSE_LOCK:
                 self._board_locked = True
                 self._reset_motion_region()
@@ -839,6 +876,7 @@ class _VisionWorkerLoop:
             geometry_ready=self._board_finder.last_transform_matrix is not None,
             model_ready=self._detector is not None,
             recognition_ready=bool(self._camera.is_connected and self._detector is not None),
+            observation_seq=self._observation_seq,
         )
 
         # Overwrite: drain old, put new

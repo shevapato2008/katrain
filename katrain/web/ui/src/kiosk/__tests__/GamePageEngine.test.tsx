@@ -691,7 +691,8 @@ describe('GamePage engine mode', () => {
   });
 
   // G2: engine games (Golaxy 人机对弈 via the genmove tunnel) put a bare "human"
-  // player_type literal on BOTH seats (session.py:80/82) — neither literal check in
+  // player_type literal on BOTH seats (`create_multiplayer_session`'s two update_player
+  // calls, session.py) — neither literal check in
   // the old humanColor/isAI derivation ('player:human' / 'player:ai' / 'ai') can tell
   // which seat is the AI. `platform_engine_color` (Task 1: WebKaTrain state field,
   // "B"|"W"|null = the ENGINE's color) is the authoritative signal for engine games;

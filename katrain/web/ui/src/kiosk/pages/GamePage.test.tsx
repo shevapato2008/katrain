@@ -698,13 +698,17 @@ describe('GamePage', () => {
       expect(confirmBtn.className).toMatch(/error/i);
     });
 
-    it('keeps the dialog open and reports a failed authoritative resign', async () => {
+    // R2: the dialog staying open is still the contract, but the screen must never print the
+    // raw exception text — it gets the classified copy instead (a bare Error has no `status`,
+    // so requestFailureKind returns 'other' and failureLine renders the prefix alone).
+    it('keeps the dialog open and reports a failed authoritative resign, without leaking the exception text', async () => {
       mockHandleAction.mockRejectedValueOnce(new Error('认输请求失败'));
       mockGameState = makeGameState({ players_info: aiVsHuman, end_result: null, game_type: 'ai_ladder_ranked' });
       renderPage();
       fireEvent.click(screen.getByText('MOCK_RESIGN'));
       fireEvent.click(screen.getByRole('button', { name: '认输' }));
-      expect(await screen.findByText('认输请求失败')).toBeInTheDocument();
+      expect(await screen.findByText('认输没成')).toBeInTheDocument();
+      expect(screen.queryByText('认输请求失败')).toBeNull();
       expect(screen.getByRole('button', { name: '认输' })).toBeInTheDocument();
     });
   });
@@ -750,16 +754,21 @@ describe('GamePage', () => {
       } finally { del.mockRestore(); }
     });
 
-    it('删会话失败 ⇒ 不离开、说出来(不能装作已退出)', async () => {
+    // R1 ruling: 退出不保存 is pvp_local's ONLY exit, so a failed DELETE must not trap the
+    // user either - stranding them cleans up nothing (the session is equally un-deleted
+    // either way). The delete is still attempted best-effort; the user just isn't blocked
+    // on it succeeding.
+    it('删会话失败也照样离开(唯一出口不能被服务端调用挡住)', async () => {
       mockGameState = local();
       const del = vi.spyOn(API, 'deleteSession').mockRejectedValue(new ApiError(500, 'Request failed 500: boom'));
       try {
         renderPage();
         fireEvent.click(screen.getByText('退出对局'));
         fireEvent.click(screen.getByRole('button', { name: '退出不保存' }));
-        expect(await screen.findByText('退出失败，请重试')).toBeInTheDocument();
-        expect(screen.queryByText('PLAY_PAGE')).toBeNull();
-        expect(clearActiveSession).not.toHaveBeenCalledWith('game');
+        expect(await screen.findByText('PLAY_PAGE')).toBeInTheDocument();
+        expect(del).toHaveBeenCalledWith('test-session');
+        expect(clearActiveSession).toHaveBeenCalledWith('game');
+        expect(screen.queryByText('退出失败，请重试')).toBeNull();
       } finally { del.mockRestore(); }
     });
 

@@ -210,8 +210,24 @@ class VisionService:
     # -- data retrieval ------------------------------------------------------
 
     def get_detected_board(self) -> list[list[int]] | None:
-        """Return the latest detected board state (19x19 grid)."""
+        """Return the latest detected board state (19x19 grid).
+
+        Pulls fresh status first. The cached `_latest_status` is only refreshed by
+        whoever last touched another status property, so it can be arbitrarily old.
+        """
+        self.refresh_status()
         return self._latest_status.detected_board
+
+    def get_board_observation(self) -> tuple[list[list[int]] | None, int]:
+        """The latest board reading together with the observation it came from.
+
+        The sequence number is what makes a presence check sound: `worker.py` publishes
+        status at 1 Hz, so "the newest board we have" can easily predate a move confirmed
+        since. Callers must require a sequence strictly greater than the one stamped on
+        the ConfirmedMove before treating an empty cell as a disappearance.
+        """
+        self.refresh_status()
+        return self._latest_status.detected_board, int(self._latest_status.observation_seq)
 
     def get_preview_jpeg(self) -> bytes | None:
         """Get latest JPEG preview frame from worker."""

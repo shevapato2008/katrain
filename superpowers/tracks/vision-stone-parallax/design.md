@@ -11,7 +11,7 @@
 
 | # | 决定 | 理由(一句) |
 |---|---|---|
-| D1 | 标定结果存成**独立文件** `<hardware-vision-dir>/parallax/go-19x19.json`,每块棋盘一个文件 | 视差的寿命(支架 / 棋盘 / 棋子不变就一直有效)和几何的寿命(棋盘一碰就换代)不同,不能绑在同一代里 |
+| D1 | 标定结果存成**独立文件** `<hardware-vision-dir>/parallax/go-19x19.json`,每块棋盘一个文件 | 视差的寿命(支架 / 棋盘 / 棋子不变就一直有效)和几何的寿命(棋盘一碰就换代)不同,不能绑在同一代里。前提是标定那一刻 warp 与印刷网格对得上 —— 由 §2.5 的网格核对保证(codex 第 2 轮) |
 | D2 | 送进识别代码走**构造参数** `BoardStateExtractor(config, parallax=None)`,不进 `BoardConfig` | 只有 geometry-lock 那个 extractor 该收到它;`BoardConfig` 两个 extractor 和训练工具都在用 |
 | D3 | 只在 **geometry-lock 路径**(`worker_inprocess.py` 的 `_state_extractor_locked`)上装修正;BoardFinder 路径与 `worker.py` 保持恒等 | nadir 是在 geometry-lock 的网格坐标里标定的;BoardFinder 的 warp 以棋盘外缘为基准,坐标系不同 |
 | D4 | 标定工具是**板上命令行工具**,跑之前停服务 | 摄像头被 katrain 进程占着;每台盒子装机时做一次,不值得做界面 |
@@ -88,7 +88,8 @@ def apply_parallax(fx, fy, nadir, k):
 **不对 nadir 本身做合理性检查,也不写 nadir 的数值断言(无噪用例除外)。** nadir = b/(1−m),
 1−m ≈ 0.0103,b 的误差被放大约 100 倍:0.3 mm 噪声下 nadir 误差 p95 = 29 mm。
 但修正输出 P = k·D + (1−k)·C 里 C 的系数是 1−k,两者相消,修正残差 p95 只有 0.38 mm。
-所以检查一律量修正输出与 `h_implied`,不量 nadir。
+所以检查一律量修正输出与 `h_implied`,不量 nadir。标定时 warp 与棋盘的错位也不靠 nadir 合理性检查去抓
+(拟合把它整个吸收,nadir 看起来完全正常),而是靠 §2.5 的印刷网格核对。
 
 ### 2.3 `BoardStateExtractor`(`board_state.py`)
 
@@ -126,7 +127,10 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
 
 - `worker.py`(子进程 / BoardFinder)与 `_state_extractor`(BoardFinder 兜底)**不接**。
 - 视差不跟几何代次绑定(D1)。几何换代后参数依然有效:nadir 以网格线为锚,棋盘被碰 10 mm,
-  修正结果变化不到 0.01 格。标定时的几何代次只记录、只打日志,**不做开关**。
+  修正结果变化不到 0.01 格(×(1−k))。标定时的几何代次只记录、只打日志,**不做开关**。
+- 反过来的情形不是 ×(1−k) 而是 ×1(codex 第 2 轮 [high]):**标定那一刻** warp 与棋盘对不上(平移 t),
+  拟合 D = mP + b 把 t 整个吸收进 nadir,残差为零、h 照样合理;几何一重锁,它就变成永久的
+  k·(t_运行 − t_标定) ≈ t 误差。上一条只因为 §2.5 在标定前后核对了 warp 与印刷线才成立。
 - 运行中不热加载。重标视差后重启服务(标定工具本来就要求先停服务)。
 
 ### 2.5 标定工具 `katrain/vision/tools/calibrate_parallax.py`
@@ -139,19 +143,29 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
    (codex 评审:在不同曝光下标定,会把与曝光相关的检测偏差固化进 k 与 nadir)。每帧:`adjust_M_for_resolution` → `warp_with_margin` →
    `enhance_for_inference`(与服务相同的 `--enhance`)→ `StoneDetector.detect`。
    不做 `FrameAverager`:下一步本来就对多帧取中位数。
-3. 打印 17 个标定点(D5)让操作员摆子,黑白交替。等画面静止后采 `--frames`(默认 30)帧。
-4. 每帧用 `BoardStateExtractor(BoardConfig(margin_cells=DEFAULT_MARGIN_CELLS)).parallax_points(...)`
+3. **空盘网格核对(摆子前)**:采 5 帧空盘,只做 warp(不增强),逐像素取中位数,量印刷网格线相对保存的几何
+   偏了多少(`grid_offset`:black-hat 取细暗线,行 / 列投影,梳状搜索 ±0.5 格定整体,逐线亚像素峰,取中位数;
+   期望位置用 warp 自己的几何 `pad + i·(out_size−1)/18`)。偏 > 0.10 格(与 `GeometryDriftMonitor` 判「棋盘动了」
+   同一个阈值)或 19 条线里一致的少于 15 条 → 当场拒绝,提示先重锁几何。线印在 h=0、跟棋盘一起动,
+   所以这个偏移就是拟合会吸收掉的那个平移。不留绕过开关。
+4. 打印 17 个标定点(D5)让操作员摆子,黑白交替。等画面静止后采 `--frames`(默认 30)帧。
+   采完让操作员收掉全部子(不挪棋盘),再做一次同样的网格核对(抓摆子过程中碰动棋盘)。两次偏移都打印。
+5. 每帧用 `BoardStateExtractor(BoardConfig(margin_cells=DEFAULT_MARGIN_CELLS)).parallax_points(...)`
    取**原始**坐标,和线上完全同一套换算。按「原始坐标取整」配对到标定点。
-5. 逐项检查,**任一不过就报「标定失败」和原因,不写文件**:
+6. 逐项检查,**任一不过就报「标定失败」和原因,不写文件**:
+   - 摆子前、收子后两次网格核对都通过(没量就不算通过)
    - 每个标定点在 ≥ 80% 的帧里恰好有一个棋子检测(只看黑白两类,LED 类不算),否则点名漏摆
    - 标定点以外的交点,在 ≥ 20% 的帧里出现棋子检测 → 失败(多摆或持续误检);只出现一两帧的瞬时误检不算
    - `fit_parallax` 不抛错
    - `h_implied` ∈ [2, 8] mm(prd P1-2 验收 4)
    - 单点残差 ≤ 0.30 格(约 6.9 mm),否则点名那颗子摆歪了。阈值取 0.30 而不是更紧:摆子误差
      1.5 mm(约 0.066 格)时,17 点里至少一点超过 0.15 格的概率约 70%,超过 0.30 格约 0.05%
-6. 通过:写 `parallax/go-19x19.json`(§3),打印 k、nadir、rms、h_implied、最差点。
+7. 通过:写 `parallax/go-19x19.json`(§3),打印 k、nadir、rms、h_implied、最差点。
    `--dry-run` 只打印不写。
-7. 采帧(第 2–4 步)与判定写文件(第 5–6 步)拆成两个函数,判定那一半可以用合成检测单测,不需要摄像头。
+8. 采帧(第 2–5 步)与判定写文件(第 6–7 步)拆成两个函数,判定那一半可以用合成检测与合成空盘图单测,不需要摄像头。
+
+混叠:接近整格的偏移会读成 ≈0(0.95 格读成 −0.05),这种情况 17 点配对必然失败(每个点都换了格)。
+`BoardConfig` 的 mm 映射比 warp 网格小 0.99853 倍,拟合一并吸收,对修正无害,但 `h_implied` 读数因此低约 0.5 mm。
 
 ### 2.6 诊断(P2)
 
@@ -201,6 +215,7 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
 | 几何漂移重标定换代 | 参数照用;启动日志里两个代次不同,属正常 |
 | 有人动了摄像头杆 | **系统发现不了**,参数过期。操作规程:动杆、换棋盘、换棋子后都要重标 |
 | 标定时摆子多了 / 少了 / 歪了 / h 超窗口 | 工具报失败并点名原因,不写文件,旧文件原样保留 |
+| 停服务后、标定过程中棋盘被碰,或几何本来就过期(> 0.10 格) | 空盘网格核对拒绝,不写文件;先重锁几何再标 |
 | 未启用 geometry lock(BoardFinder 兜底) | 那条路径本来就不装修正 |
 
 ## 5. 测试(每条对上 prd.md §3 的验收)
@@ -218,10 +233,12 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
 | `fit_parallax` 加 ±0.3 mm 噪声,9 点,固定种子 200 次:`h_implied` 相对误差 p95 < 20%,且全盘修正残差最大值 p95 < 1.0 mm | P1-2 验收 2(改写后) | 完全不修正时两项都是 100% / 5 mm,必红 |
 | 少于 3 点、共线、m≈1 → `ValueError` | P1-2 验收 3 | 新函数 |
 | 工具判定一半(合成检测):漏摆、多摆、同点两个检测、h 超窗口、单点残差过大 → 失败且**不写文件、旧文件不变**;通过 → 文件字段齐全;`--dry-run` 不写 | P1-2 验收 4 | 新代码 |
+| **网格核对**(合成空盘图):对齐读 0、19/19 线;0.25 格读准并拒绝;门限两侧 (−0.12, 0.07) 拒 / (0.06, 0.05) 过;±0.45 读准;逐线 0.06 格印刷误差能过、叠加 0.25 格偏移仍拒;无网格的木纹图一律「找不到」 | codex 第 2 轮 | 新代码 |
+| **codex 反例**:所有检测 fy 统一 +0.25 格 —— 先断言 `evaluate` 单独**通过**(残差 < 1e-9、h ≈ 3.5,前提:拟合看不见),再断言带着量出的网格偏移时拒绝、旧文件不变;开始对齐 / 结束偏移也拒绝;整格偏移由配对拒绝;没量网格就拒绝 | codex 第 2 轮 | 是:`decide_and_write` 忽略网格偏移就会红(变异在一次性 worktree 里做) |
 | `load_parallax`:不存在 / 各种非法 / 正常 | D1 | 新代码 |
 | 接线:`to_worker_config` 带 `parallax`;`InProcessAdapter` 只给 locked extractor | D2、D3 | 新代码 |
 | 日志:修正开着时 board delta 行带 `pl` 与 `*`;关着时 `pl0.00`;`ambiguous_stone` 事件字段集合不变 | P2 | 字段集合那条沿用现有测试 |
-| **上板**:标定一次,记 k / nadir / rms / h_implied;两套固定摆位(A:14–18 路故意外偏 8 mm 复现故障;B:正常摆),修正前后各跑一遍;门槛事先定死(修正前 A ≥ 5/20 出错否则证据不足;修正后 A 20/20、unbacked ≤ 一半;B 前后 20/20),见 `handoff.md` | P1-1 验收 5、P1-2 验收 4、P2 | 人工 |
+| **上板**:标定一次,记 k / nadir / rms / h_implied;两套固定摆位(15–18 路 × C/G/K/O/S 共 20 手、顺序颜色写死;A 故意外偏 8 mm 复现故障,B 正常摆;每手 15 秒、四类记录、不悔棋),修正前后各跑一遍;门槛事先定死(修正前 A ≥ 5/20 出错否则证据不足;修正后 A 20/20、unbacked ≤ 一半;B 前后 20/20),见 `handoff.md` | P1-1 验收 5、P1-2 验收 4、P2 | 人工 |
 
 测试一律用 worktree 自己的 venv(`uv sync --extra web --extra vision --extra board` 之后的
 `.venv/bin/python -m pytest`)。基线:`tests/test_vision` 651 passed(2026-09-22,develop `34e9c7b6`)。
@@ -233,10 +250,11 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
 - 不碰 YOLO 权重、推理后端、warp / board_finder / geometry_lock / 四角检测、`physical_to_grid`。
 - 不做 kiosk 标定界面、不做运行中热加载、不做多棋盘多记录、不做每种棋子一个 k。
 - 不改 `worker.py`(子进程 / BoardFinder 路径)。
-- 不对 nadir 做合理性检查。
+- 不对 nadir 做合理性检查(标定时的错位由 §2.5 网格核对抓)。
 
 ## 7. 已知代价
 
 1. **最外一圈往盘外方向偏的棋子,容差不恢复**,仍是今天的约 6.5 mm(D7 的直接代价)。盘内各排恢复。
 2. 摄像头杆被动过而没重标,系统发现不了(§4)。
 3. 棋盘对位(prd §5 第 1 条)做完之后要重标一次。
+4. 标定时 ≤ 0.10 格的 warp 错位网格核对看不见,会变成同样大小的永久修正误差 —— 与服务自己判「棋盘动了」的容差相同。

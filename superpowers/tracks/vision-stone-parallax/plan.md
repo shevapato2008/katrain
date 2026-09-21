@@ -1858,13 +1858,24 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
     `DEFAULT_CAMERA_HEIGHT_MM = 339.44`
   - `Verdict(ok, reasons, fit, medians, n_black, n_white)`
   - `evaluate(frames, camera_height_mm, pattern=PATTERN_17) -> Verdict`;`frames` 是每帧的原始棋子检测 `[(fy_raw, fx_raw, class_id)]`
-  - `decide_and_write(frames, *, out_path, stone_set, camera_height_mm, geometry_generation, fitted_at, dry_run) -> tuple[Verdict, ParallaxCalibration | None]`
+  - `MAX_GRID_SHIFT_CELLS = 0.10`、`MIN_GRID_LINES = 15`、`EMPTY_FRAMES = 5`
+  - `GridOffset(dx_cells, dy_cells, lines_x, lines_y)`(frozen,`.shift_cells`)、
+    `grid_offset(warped_bgr, out_size, margin_cells=DEFAULT_MARGIN_CELLS) -> GridOffset`、
+    `grid_check_reasons(off, when) -> list[str]`
+  - `decide_and_write(frames, *, grid_offsets, out_path, stone_set, camera_height_mm, geometry_generation, fitted_at, dry_run) -> tuple[Verdict, ParallaxCalibration | None]`;
+    `grid_offsets` 是 `{"start": GridOffset, "end": GridOffset}`,必填,空则拒绝
   - `camera_settings(profile) -> dict`(`lock_exposure` / `exposure` / `lock_awb`,照服务对这一代几何的采集方式)
   - CLI:`python -m katrain.vision.tools.calibrate_parallax --hardware-vision-dir D --model M --stone-set S [...]`
 
 **约束:** 第 3 条(nadir 只来自拟合);只读几何(`HardwareVisionStateStore.load_current`),不写 generations;
-`h_implied` 超窗口 / 漏摆 / 多摆 / 单点残差过大都**不写文件、旧文件原样保留**;摄像头、检测器、
-`HardwareVisionStateStore` 一律在 `main()` 里延迟 import(判定那一半要能在没有摄像头的环境里单测)。
+`h_implied` 超窗口 / 漏摆 / 多摆 / 单点残差过大 / **印刷网格与保存的几何对不上**都**不写文件、旧文件原样保留**;
+摄像头、检测器、`HardwareVisionStateStore` 一律在 `main()` 里延迟 import(判定那一半要能在没有摄像头的环境里单测)。
+
+**为什么要查网格(codex 第 2 轮 [high],Opus 裁决 2026-09-22):** 拟合是 D = mP + b,warp 的平移 t 被 b 整个
+吸收进 nadir,残差为零、h 照样落在窗口里 —— 拟合自己**看不见**一张过期的 warp。运行时几何一旦重新锁好,这个 t
+就变成永久的 k·t ≈ t 的误差。能看见它的只有「印刷线在不在 warp 期望的地方」:线印在 h=0,跟棋盘一起动。所以在
+空盘上、摆子**之前**和收子**之后**各量一次;任何一次偏 > 0.10 格(与 `GeometryDriftMonitor` 判「棋盘动了」同一个
+阈值)就拒绝。不留绕过开关。偏移接近整格时会混叠成 ≈0(0.95 读成 −0.05),那种情况 17 点配对会失败,测试 8 钉住。
 
 - [ ] **Step 1: 写失败测试**
 
@@ -1876,9 +1887,25 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 import numpy as np
 import pytest
 
+from katrain.vision.config import DEFAULT_MARGIN_CELLS
 from katrain.vision.parallax_store import load_parallax, parallax_path
-from katrain.vision.tools.calibrate_parallax import PATTERN_17, decide_and_write, evaluate
+from katrain.vision.tools.calibrate_parallax import (
+    MAX_GRID_SHIFT_CELLS,
+    PATTERN_17,
+    GridOffset,
+    decide_and_write,
+    evaluate,
+    grid_check_reasons,
+    grid_offset,
+)
+from katrain.vision.warp import margin_px_for
 from tests.test_vision.parallax_synth import H_MM, H_STONE_MM, K_TRUE, detected_grid
+
+ALIGNED = GridOffset(0.0, 0.0, 19, 19)
+OUT = 950  # geometry-lock warp size; with the 1-cell margin the warped canvas is 1056
+PAD = margin_px_for(OUT, DEFAULT_MARGIN_CELLS)
+CANVAS = OUT + 2 * PAD
+PITCH = (OUT - 1) / 18
 
 
 def _frames(k=K_TRUE, n=30, jitter=0.02, shift=None, seed=1):
@@ -1896,9 +1923,54 @@ def _frames(k=K_TRUE, n=30, jitter=0.02, shift=None, seed=1):
     return frames
 
 
-def _run(tmp_path, frames, dry_run=False):
+def _coverage(pos, centre, half_width=1.0):
+    """Share of each pixel [p-0.5, p+0.5] covered by the band [centre-half_width, centre+half_width]."""
+    return np.clip(np.minimum(pos + 0.5, centre + half_width) - np.maximum(pos - 0.5, centre - half_width), 0, 1)
+
+
+def _board_image(dx=0.0, dy=0.0, jitter=0.0, lines=True, seed=0):
+    """A warped EMPTY board: wood, a lighting gradient, sensor noise and (optionally) the printed grid, drawn
+    (dx, dy) cells away from where the saved geometry expects it; ``jitter`` = per-line print/warp error in cells."""
+    rng = np.random.default_rng(seed)
+    pos = np.arange(CANVAS, dtype=np.float64)
+    ink = np.zeros((CANVAS, CANVAS))
+    if lines:
+        xl = PAD + (np.arange(19) + dx + rng.normal(0, jitter, 19)) * PITCH
+        yl = PAD + (np.arange(19) + dy + rng.normal(0, jitter, 19)) * PITCH
+        span_x = _coverage(pos, (xl[0] + xl[-1]) / 2, (xl[-1] - xl[0]) / 2 + 1)
+        span_y = _coverage(pos, (yl[0] + yl[-1]) / 2, (yl[-1] - yl[0]) / 2 + 1)
+        for x in xl:
+            ink = np.maximum(ink, np.outer(span_y, _coverage(pos, x)))
+        for y in yl:
+            ink = np.maximum(ink, np.outer(_coverage(pos, y), span_x))
+        yy, xx = np.mgrid[0:CANVAS, 0:CANVAS]
+        for r in (3, 9, 15):
+            for c in (3, 9, 15):
+                ink[(xx - xl[c]) ** 2 + (yy - yl[r]) ** 2 <= 16] = 1.0  # star points
+    wood = np.array([95.0, 165.0, 215.0])  # BGR
+    light = 0.75 + 0.35 * pos[None, :] / CANVAS + 0.1 * pos[:, None] / CANVAS
+    img = wood[None, None, :] * light[:, :, None] * (1 - 0.7 * ink[:, :, None])
+    img += rng.normal(0, 6, img.shape)
+    return np.clip(img, 0, 255).astype(np.uint8)
+
+
+def _grain_image(seed):
+    """No grid at all: wood with 40 random dark grain streaks, the lighting gradient and noise."""
+    rng = np.random.default_rng(seed)
+    img = _board_image(lines=False, seed=seed).astype(np.float64)
+    for _ in range(40):
+        at = int(rng.uniform(1, CANVAS - 1))
+        if rng.random() < 0.5:
+            img[:, at - 1 : at + 1] *= rng.uniform(0.6, 0.9)
+        else:
+            img[at - 1 : at + 1, :] *= rng.uniform(0.6, 0.9)
+    return np.clip(img, 0, 255).astype(np.uint8)
+
+
+def _run(tmp_path, frames, dry_run=False, grid_offsets=None):
     return decide_and_write(
         frames,
+        grid_offsets={"start": ALIGNED, "end": ALIGNED} if grid_offsets is None else grid_offsets,
         out_path=parallax_path(tmp_path),
         stone_set="ver9-22x7",
         camera_height_mm=H_MM,
@@ -1923,7 +1995,12 @@ def test_clean_capture_passes_and_writes_the_file(tmp_path):
     assert (verdict.n_black, verdict.n_white) == (9, 8)
     loaded, reason = load_parallax(parallax_path(tmp_path))
     assert reason == "ok" and loaded == calib
-    assert (loaded.stone_set, loaded.geometry_generation, loaded.frames, loaded.n_samples) == ("ver9-22x7", "gen-1", 30, 17)
+    assert (loaded.stone_set, loaded.geometry_generation, loaded.frames, loaded.n_samples) == (
+        "ver9-22x7",
+        "gen-1",
+        30,
+        17,
+    )
 
 
 def test_dry_run_writes_nothing(tmp_path):
@@ -2026,6 +2103,79 @@ def test_main_refuses_when_exposure_cannot_be_locked(tmp_path, monkeypatch):
     assert rc == 2
     assert FakeCamera.last.kwargs["lock_exposure"] is True and FakeCamera.last.closed
     assert not parallax_path(tmp_path).exists()
+
+
+# --- printed-grid check (codex round 2 [high]; Opus ruling 2026-09-22) ---
+
+
+def test_aligned_grid_reads_zero_and_passes():
+    off = grid_offset(_board_image(), OUT)
+    assert abs(off.dx_cells) <= 0.02 and abs(off.dy_cells) <= 0.02
+    assert (off.lines_x, off.lines_y) == (19, 19)
+    assert grid_check_reasons(off, "start") == []
+
+
+def test_a_quarter_cell_stale_geometry_is_measured_and_refused():
+    off = grid_offset(_board_image(dy=0.25), OUT)
+    assert off.dy_cells == pytest.approx(0.25, abs=0.02)
+    reasons = grid_check_reasons(off, "start")
+    assert reasons and "re-lock" in reasons[0]
+
+
+@pytest.mark.parametrize("dx, dy, refused", [(-0.12, 0.07, True), (0.06, 0.05, False)])
+def test_the_grid_threshold_is_pinned_from_both_sides(dx, dy, refused):
+    off = grid_offset(_board_image(dx=dx, dy=dy), OUT)
+    assert (off.shift_cells > MAX_GRID_SHIFT_CELLS) == refused
+    assert bool(grid_check_reasons(off, "end")) == refused
+
+
+@pytest.mark.parametrize("axis", ["dx", "dy"])
+@pytest.mark.parametrize("shift", [0.45, -0.45])
+def test_large_sub_cell_shifts_are_recovered_and_refused(axis, shift):
+    off = grid_offset(_board_image(**{axis: shift}), OUT)
+    assert getattr(off, f"{axis}_cells") == pytest.approx(shift, abs=0.03)
+    assert grid_check_reasons(off, "start")
+
+
+def test_per_line_print_error_is_tolerated_but_a_shift_is_not():
+    assert grid_check_reasons(grid_offset(_board_image(jitter=0.06, seed=3), OUT), "start") == []
+    assert grid_check_reasons(grid_offset(_board_image(dy=0.25, jitter=0.06, seed=3), OUT), "start")
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_a_frame_without_a_grid_is_refused_as_not_found(seed):
+    reasons = grid_check_reasons(grid_offset(_grain_image(seed), OUT), "start")
+    assert reasons and "not found" in reasons[0]
+
+
+def test_stale_geometry_is_refused_although_the_fit_itself_is_perfect(tmp_path):
+    """codex round 2 [high]: a warp translation is absorbed into the nadir with zero residual and a plausible h, so
+    only the printed-grid check can refuse it. Red if decide_and_write ignores grid_offsets."""
+    frames = [[(fy + 0.25, fx, cls) for fy, fx, cls in dets] for dets in _frames(jitter=0.0)]
+    alone = evaluate(frames, H_MM)
+    assert alone.ok and alone.fit.max_resid_cells < 1e-9  # the fit cannot see it
+    assert alone.fit.h_implied_mm == pytest.approx(H_STONE_MM, abs=0.3)
+    stale = grid_offset(_board_image(dy=0.25), OUT)
+    path = parallax_path(tmp_path)
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b"previous calibration")
+    for offsets in ({"start": stale, "end": stale}, {"start": ALIGNED, "end": stale}):  # stale before / bumped during
+        verdict, calib = _run(tmp_path, frames, grid_offsets=offsets)
+        assert not verdict.ok and calib is None
+        assert "re-lock" in " | ".join(verdict.reasons)
+        assert path.read_bytes() == b"previous calibration"
+
+
+def test_a_whole_cell_shift_that_the_grid_check_aliases_to_zero_is_refused_by_pairing(tmp_path):
+    frames = [[(fy, fx + 1.0, cls) for fy, fx, cls in dets] for dets in _frames()]
+    verdict, calib = _run(tmp_path, frames)
+    assert not verdict.ok and calib is None
+
+
+def test_no_grid_measurement_means_no_calibration(tmp_path):
+    verdict, calib = _run(tmp_path, _frames(), grid_offsets={})
+    assert not verdict.ok and calib is None
+    assert "no geometry check" in " | ".join(verdict.reasons)
 ```
 
 - [ ] **Step 2: 跑测试确认失败**
@@ -2049,26 +2199,32 @@ Run ON THE BOARD with the katrain service stopped (it owns the camera):
         --camera 0 --resolution 1920x1080 --enhance clahe --conf 0.30 --stone-set ver9-22x7
     sudo systemctl start smartbox-katrain
 
-Place one stone on each of the 17 printed points (alternate black and white), press Enter, keep hands
-out of view. The tool warps each frame exactly like the service, reads the RAW (uncorrected) grid
-positions, takes the per-point median over --frames frames, fits k and the nadir, and writes
-<hardware-vision-dir>/parallax/go-19x19.json ONLY if every check passes. Recalibrate after moving the
-camera arm, changing the board or the stones, or aligning the board (prd §5).
+Start with the board EMPTY and exactly where it was when the geometry was locked (do not touch it after
+stopping the service). The tool first checks that the printed grid lines sit where the saved geometry
+expects them; then place one stone on each of the 17 printed points (alternate black and white), press
+Enter, keep hands out of view; then remove all stones for the closing grid check. The tool warps each
+frame exactly like the service, reads the RAW (uncorrected) grid positions, takes the per-point median over
+--frames frames, fits k and the nadir, and writes <hardware-vision-dir>/parallax/go-19x19.json ONLY if every
+check passes, both grid checks included. Recalibrate after moving the camera arm, changing the board or the
+stones, or aligning the board (prd §5).
 """
 
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 import time
 from collections import Counter, defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 from katrain.vision.classes import NAME_TO_ID, STONE_CLASS_IDS
+from katrain.vision.config import DEFAULT_MARGIN_CELLS
 from katrain.vision.parallax import FitResult, fit_parallax
 from katrain.vision.parallax_store import (
     BOARD_GO_19,
@@ -2077,6 +2233,7 @@ from katrain.vision.parallax_store import (
     parallax_path,
     save_parallax,
 )
+from katrain.vision.warp import adjust_M_for_resolution, margin_px_for, warp_with_margin
 
 # (row, col) in the geometry-lock grid: 9 star points, 4 corners, 4 edge midpoints. 17 rather than 9:
 # with ~1.5 mm of placement error, 9 points get falsely refused by the 2-8 mm window 2.5% of the time,
@@ -2094,7 +2251,80 @@ MAX_RESID_CELLS = 0.30
 # Lens height above the board for the ver9 mount (geometry.md §3: lens_mm z 348.942 - board z 9.5).
 # Only used for the h_implied diagnostic and its 2-8 mm gate; the correction itself never uses it.
 DEFAULT_CAMERA_HEIGHT_MM = 339.44
+# Printed-grid check (codex round 2 [high]). The fit absorbs a warp translation t into the nadir with zero
+# residual, and once the runtime geometry is re-locked t becomes a permanent error of k*t ~ t. The printed lines
+# (h = 0) move with the board, so their offset from where the warp expects them IS that t. 0.10 cell is the
+# GeometryDriftMonitor threshold: a warp the service would call "board moved" is never calibrated on.
+MAX_GRID_SHIFT_CELLS = 0.10
+MIN_GRID_LINES = 15  # of 19 per axis must agree with the median offset, or the grid was not seen
+EMPTY_FRAMES = 5  # empty-board frames per grid check (per-pixel median)
+_LINE_TOL_CELLS = 0.15
 _BLACK = NAME_TO_ID["black"]
+
+
+@dataclass(frozen=True)
+class GridOffset:
+    dx_cells: float  # printed grid minus where the saved geometry puts it, in cells
+    dy_cells: float
+    lines_x: int  # lines within _LINE_TOL_CELLS of the median offset, of 19
+    lines_y: int
+
+    @property
+    def shift_cells(self) -> float:
+        return math.hypot(self.dx_cells, self.dy_cells)
+
+
+def _axis_offset(profile, expected, pitch):
+    """Offset (cells) of the 19 line peaks in ``profile`` from ``expected``, and how many lines agree with it.
+    A comb search over [-0.5, 0.5) cell finds the grid as a whole; each line is then refined to a sub-pixel peak."""
+    xs = np.arange(len(profile), dtype=np.float64)
+    deltas = np.arange(-50, 50) / 100.0
+    scores = [np.interp(expected + d * pitch, xs, profile).sum() for d in deltas]
+    d0 = float(deltas[int(np.argmax(scores))])
+    half = int(0.4 * pitch)
+    offsets = []
+    for e in expected:
+        c = int(round(e + d0 * pitch))
+        lo, hi = max(c - half, 1), min(c + half, len(profile) - 2)
+        i = lo + int(np.argmax(profile[lo : hi + 1]))
+        a, b, cc = profile[i - 1], profile[i], profile[i + 1]
+        den = a - 2 * b + cc
+        sub = 0.5 * (a - cc) / den if den < 0 else 0.0
+        offsets.append((i + sub - e) / pitch)
+    offsets = np.array(offsets)
+    t = float(np.median(offsets))
+    return t, int(np.sum(np.abs(offsets - t) <= _LINE_TOL_CELLS))
+
+
+def grid_offset(warped_bgr, out_size: int, margin_cells: float = DEFAULT_MARGIN_CELLS) -> GridOffset:
+    """Where the printed grid lines of an EMPTY warped board sit relative to where the geometry lock puts them
+    (line i at pad + i*(out_size-1)/18, the warp's own geometry, not BoardConfig's mm mapping)."""
+    pad = margin_px_for(out_size, margin_cells)
+    pitch = (out_size - 1) / 18
+    expected = pad + np.arange(19) * pitch
+    grey = cv2.cvtColor(warped_bgr, cv2.COLOR_BGR2GRAY) if warped_bgr.ndim == 3 else warped_bgr
+    grey = cv2.GaussianBlur(grey, (3, 3), 0)
+    # black-hat keeps thin dark marks (lines, star points) and drops lighting gradients and large blobs
+    lines = cv2.morphologyEx(grey, cv2.MORPH_BLACKHAT, cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15)))
+    lines = lines.astype(np.float64)
+    inside = slice(pad, pad + out_size)
+    dx, nx = _axis_offset(lines[inside, :].mean(axis=0), expected, pitch)
+    dy, ny = _axis_offset(lines[:, inside].mean(axis=1), expected, pitch)
+    return GridOffset(dx, dy, nx, ny)
+
+
+def grid_check_reasons(off: GridOffset, when: str) -> list[str]:
+    if min(off.lines_x, off.lines_y) < MIN_GRID_LINES:
+        return [
+            f"{when}: printed grid lines not found (x {off.lines_x}/19, y {off.lines_y}/19): is the board empty and lit?"
+        ]
+    if off.shift_cells > MAX_GRID_SHIFT_CELLS:
+        return [
+            f"{when}: the saved geometry is {off.shift_cells:.2f} cells off the printed grid "
+            f"(dx {off.dx_cells:+.2f}, dy {off.dy_cells:+.2f}): the board moved since the geometry was locked. "
+            "Start the service, re-lock the geometry on the empty board, stop it, and calibrate again."
+        ]
+    return []
 
 
 @dataclass
@@ -2139,7 +2369,9 @@ def evaluate(frames, camera_height_mm: float, pattern=PATTERN_17) -> Verdict:
             )
     for cell, n in sorted(extra.items()):
         if n >= MAX_EXTRA * total:
-            reasons.append(f"unexpected stone at {cell} in {n}/{total} frames (only the calibration points may hold stones)")
+            reasons.append(
+                f"unexpected stone at {cell} in {n}/{total} frames (only the calibration points may hold stones)"
+            )
     if reasons:
         return Verdict(False, reasons)
     medians = {
@@ -2155,9 +2387,7 @@ def evaluate(frames, camera_height_mm: float, pattern=PATTERN_17) -> Verdict:
         return Verdict(False, [f"fit failed: {exc}"], None, medians, n_black, n_white)
     lo, hi = H_IMPLIED_WINDOW_MM
     if not lo <= fit.h_implied_mm <= hi:
-        reasons.append(
-            f"h_implied {fit.h_implied_mm:.2f} mm is outside [{lo}, {hi}]: the warp or the pairing is wrong"
-        )
+        reasons.append(f"h_implied {fit.h_implied_mm:.2f} mm is outside [{lo}, {hi}]: the warp or the pairing is wrong")
     if fit.max_resid_cells > MAX_RESID_CELLS:
         reasons.append(
             f"point {pattern[fit.worst_index]} is {fit.max_resid_cells:.2f} cells off the fit "
@@ -2167,10 +2397,24 @@ def evaluate(frames, camera_height_mm: float, pattern=PATTERN_17) -> Verdict:
 
 
 def decide_and_write(
-    frames, *, out_path, stone_set: str, camera_height_mm: float, geometry_generation, fitted_at: str, dry_run: bool
+    frames,
+    *,
+    grid_offsets: dict,
+    out_path,
+    stone_set: str,
+    camera_height_mm: float,
+    geometry_generation,
+    fitted_at: str,
+    dry_run: bool,
 ):
-    """evaluate(); on success build the calibration and (unless dry_run) save it. Nothing is written on failure."""
+    """Grid checks + evaluate(); on success build the calibration and (unless dry_run) save it. Nothing is written
+    on failure. ``grid_offsets``: {"start": GridOffset, "end": GridOffset} measured on the empty board."""
+    grid_reasons = [] if grid_offsets else ["no geometry check: the printed grid was not measured on the empty board"]
+    for when, off in grid_offsets.items():
+        grid_reasons += grid_check_reasons(off, when)
     verdict = evaluate(frames, camera_height_mm)
+    if grid_reasons:
+        verdict = replace(verdict, ok=False, reasons=grid_reasons + verdict.reasons)
     if not verdict.ok:
         return verdict, None
     fit = verdict.fit
@@ -2219,33 +2463,52 @@ def camera_settings(profile) -> dict:
     }
 
 
-def capture_frames(camera, lock, detector, extractor, enhance: str, n_frames: int, timeout_s: float = 120.0):
-    """Warp + enhance + detect exactly like worker_inprocess, keeping RAW grid positions of stone detections."""
-    from katrain.vision.config import DEFAULT_MARGIN_CELLS
-    from katrain.vision.enhance import enhance_for_inference
-    from katrain.vision.warp import adjust_M_for_resolution, warp_with_margin
+def _warp(frame, lock):
+    """The service's warp (worker_inprocess): lock homography, resolution-adjusted, 1-cell margin."""
+    M = adjust_M_for_resolution(lock.M, (lock.source_width, lock.source_height), (frame.shape[1], frame.shape[0]))
+    return warp_with_margin(frame, M, int(lock.out_size), margin_cells=DEFAULT_MARGIN_CELLS)
 
-    src_wh = (lock.source_width, lock.source_height)
+
+def _read_frames(camera, n_frames: int, timeout_s: float):
     deadline = time.monotonic() + timeout_s
-    frames = []
-    while len(frames) < n_frames:
+    while n_frames > 0:
         if time.monotonic() > deadline:
-            raise RuntimeError(f"camera delivered only {len(frames)}/{n_frames} frames in {timeout_s:.0f}s")
+            raise RuntimeError(f"camera stopped delivering frames ({n_frames} still wanted after {timeout_s:.0f}s)")
         frame = camera.read_frame()
         if frame is None:
             time.sleep(0.02)
             continue
-        M = adjust_M_for_resolution(lock.M, src_wh, (frame.shape[1], frame.shape[0]))
-        warped = warp_with_margin(frame, M, int(lock.out_size), margin_cells=DEFAULT_MARGIN_CELLS)
-        warped = enhance_for_inference(warped, enhance)
+        n_frames -= 1
+        yield frame
+
+
+def empty_board_offset(camera, lock, n_frames: int = EMPTY_FRAMES, timeout_s: float = 30.0) -> GridOffset:
+    """Printed-grid check on the empty board: per-pixel median of ``n_frames`` warped frames (no enhancement)."""
+    warped = [_warp(frame, lock) for frame in _read_frames(camera, n_frames, timeout_s)]
+    return grid_offset(np.median(np.stack(warped), axis=0).astype(np.uint8), int(lock.out_size))
+
+
+def capture_frames(camera, lock, detector, extractor, enhance: str, n_frames: int, timeout_s: float = 120.0):
+    """Warp + enhance + detect exactly like worker_inprocess, keeping RAW grid positions of stone detections."""
+    from katrain.vision.enhance import enhance_for_inference
+
+    frames = []
+    for frame in _read_frames(camera, n_frames, timeout_s):
+        warped = enhance_for_inference(_warp(frame, lock), enhance)
         h, w = warped.shape[:2]
         pts = extractor.parallax_points(detector.detect(warped), img_w=w, img_h=h)
         frames.append([(fy_raw, fx_raw, cls) for fy_raw, fx_raw, _fy, _fx, cls, _conf in pts])
     return frames
 
 
+def _fmt(off: GridOffset) -> str:
+    return f"dx {off.dx_cells:+.3f} dy {off.dy_cells:+.3f} cells (|{off.shift_cells:.3f}|), lines {off.lines_x}/{off.lines_y}"
+
+
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description="Calibrate the stone-parallax correction (run on the board, service stopped)")
+    ap = argparse.ArgumentParser(
+        description="Calibrate the stone-parallax correction (run on the board, service stopped)"
+    )
     ap.add_argument("--hardware-vision-dir", required=True)
     ap.add_argument("--model", required=True)
     ap.add_argument("--backend", default="rknn", choices=["ultralytics", "onnx", "rknn"])
@@ -2261,7 +2524,7 @@ def main(argv=None) -> int:
 
     from katrain.vision.board_state import BoardStateExtractor
     from katrain.vision.camera import CameraManager
-    from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig
+    from katrain.vision.config import BoardConfig
     from katrain.vision.stone_detector import StoneDetector
     from katrain.web.core.hardware_vision_state import HardwareVisionStateStore
 
@@ -2289,15 +2552,28 @@ def main(argv=None) -> int:
         print("camera exposure could not be locked the way the service locks it: refusing to calibrate")
         return 2
     try:
+        input("The board must be EMPTY and untouched since the geometry was locked. Press Enter. ")
+        start = empty_board_offset(camera, state.geometry)
+        print(f"printed grid vs saved geometry, start: {_fmt(start)}")
+        reasons = grid_check_reasons(start, "start")
+        if reasons:
+            print("CALIBRATION REFUSED, nothing written:")
+            for reason in reasons:
+                print(f"  - {reason}")
+            return 1
         print(render_pattern())
         input(f"Place one stone on each X ({len(PATTERN_17)} points, alternate black/white), then press Enter. ")
         frames = capture_frames(camera, state.geometry, detector, extractor, args.enhance, args.frames)
+        input("Remove ALL stones without moving the board, then press Enter. ")
+        end = empty_board_offset(camera, state.geometry)
+        print(f"printed grid vs saved geometry, end:   {_fmt(end)}")
     finally:
         camera.close()
 
     out_path = parallax_path(args.hardware_vision_dir)
     verdict, calib = decide_and_write(
         frames,
+        grid_offsets={"start": start, "end": end},
         out_path=out_path,
         stone_set=args.stone_set,
         camera_height_mm=args.camera_height_mm,
@@ -2312,7 +2588,8 @@ def main(argv=None) -> int:
         return 1
     fit = verdict.fit
     print(f"k={fit.k:.6f} m={fit.m:.6f} nadir=({fit.nadir_fx:.3f}, {fit.nadir_fy:.3f})")
-    print(f"h_implied={fit.h_implied_mm:.2f} mm (3.5 = detector reports the mid-plane, 7.0 = the top face)")
+    # BoardConfig's mm mapping scales the warp grid by 0.99853, which reads h ~0.5 mm low (harmless to the fix)
+    print(f"h_implied={fit.h_implied_mm:.2f} mm (~3.0 = detector reports the mid-plane, ~6.5 = the top face)")
     print(
         f"rms={fit.rms_cells:.3f} cells (~{fit.rms_cells * 22.85:.1f} mm), worst {PATTERN_17[fit.worst_index]} "
         f"{fit.max_resid_cells:.3f} cells; stones {verdict.n_black} black / {verdict.n_white} white"
@@ -2335,7 +2612,14 @@ Expected: 全部 passed
 Run: `"$PY" -m katrain.vision.tools.calibrate_parallax --help`
 Expected: 打印用法,退出码 0
 
-- [ ] **Step 6: 提交**
+- [ ] **Step 6: 变异检查(只在一次性 worktree 里做,见 Global Constraints)**
+
+在 `git worktree add` 出来的临时目录里,把 `decide_and_write` 里的 `for when, off in grid_offsets.items(): ...`
+两行删掉,跑 `test_stale_geometry_is_refused_although_the_fit_itself_is_perfect` → 必须变红;再把
+`grid_check_reasons` 的 `> MAX_GRID_SHIFT_CELLS` 改成 `> 0.5` → `test_a_quarter_cell_stale_geometry_is_measured_and_refused`
+和门限两侧那条必须变红。记录结果写进提交说明,删掉临时 worktree。
+
+- [ ] **Step 7: 提交**
 
 ```bash
 git add -- katrain/vision/tools/calibrate_parallax.py tests/test_vision/test_calibrate_parallax.py
@@ -2344,8 +2628,10 @@ git commit -m "feat(vision): on-board parallax calibration tool that refuses to 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
 
-**验收:** prd P1-2 实现 1–3、验收 4(h 超窗口不写入,另加漏摆 / 多摆 / 摆歪 / 无帧);design D4、D5、§2.5。
+**验收:** prd P1-2 实现 1–3、验收 4(h 超窗口不写入,另加漏摆 / 多摆 / 摆歪 / 无帧 / 几何过期);design D4、D5、§2.5。
 注:h≈12 mm 这种大偏差在配对这一步就会失败(远端的子落到相邻交点),所以 h 窗口本身用 h=1 mm 的用例来测。
+注:`BoardConfig` 的 mm 映射把第 i 线放在 0.0038 + 0.99853·i(不是 warp 的 i),这对修正无害(拟合自洽),
+但会让 `h_implied` 读成 ≈3.0 mm 而不是 3.5 —— 明天读数时知道这件事。网格检查用的是 warp 自己的几何,不受影响。
 
 ---
 
@@ -2399,35 +2685,62 @@ Expected: `comm -13` 输出为空(没有新增失败);`git status --short` 只�
 
 ## 上板步骤(Fan 在场、RK3562 连上后)
 1. 部署(照 memory `reference_rk3562_katrain_deploy_recipe`):先备份;源码 rsync 根层不加 `--delete`;本分支无前端改动,不需要重建 kiosk 包。
-2. **两套固定摆位**(修正前后完全相同,事先打印出来照摆;行号是棋盘坐标,19 路离镜头最远):
-   - **A 复现故障**:14–18 路 × C、G、K、O、S 五列 = 20 手,每颗子**中心压在交叉点往远离镜头方向 8 mm 处**
-     (用尺量;8 mm ≈ 0.36 格,超过修正前远端剩余容差约 6.5–7 mm、小于修正后的 11 mm)。
-     19 路不放:最外一排往外偏的容差本来就不恢复(prd §5 第 5 条)。
-   - **B 不回归**:同样 20 个交叉点,正常摆正。
-   黑白交替、按顺序一手一手落(自由对弈或摆谱),每手等识别确认后再下一手。
-3. **修正前对照**(还没有标定文件):确认启动日志有 `vision parallax off: not calibrated`。A、B 各跑一遍,记录:
-   逐手落点对错;`journalctl -u smartbox-katrain --since <开始时间> | grep -c 'peak conf 0.00 <'`(unbacked 计数)。
-4. **标定**:`sudo systemctl stop smartbox-katrain` → 跑工具(命令见工具 docstring)→ 看输出的 k / nadir / h_implied / rms / 最差点 → `sudo systemctl start smartbox-katrain`。
-   标定失败按提示重摆,不要改阈值。
+2. **两套固定摆位,恰好 20 手,顺序与颜色写死**(修正前后完全相同;棋盘坐标,19 路离镜头最远;
+   15–18 路 × C、G、K、O、S 五列):
+
+   | 手 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 |
+   |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+   | 点 | C18 | G18 | K18 | O18 | S18 | C17 | G17 | K17 | O17 | S17 | C16 | G16 | K16 | O16 | S16 | C15 | G15 | K15 | O15 | S15 |
+   | 色 | 黑 | 白 | 黑 | 白 | 黑 | 白 | 黑 | 白 | 黑 | 白 | 黑 | 白 | 黑 | 白 | 黑 | 白 | 黑 | 白 | 黑 | 白 |
+
+   - **A 复现故障**:每颗子**中心压在该交叉点往远离镜头方向 8 mm 处**(用尺量;8 mm ≈ 0.36 格,超过修正前远端
+     剩余容差约 6.5–7 mm、小于修正后的 11 mm)。19 路不放:最外一排往外偏的容差本来就不恢复(prd §5 第 5 条)。
+   - **B 不回归**:同样 20 手,正常摆正。
+   - 每一轮在 kiosk 人人对弈(实体棋盘)新开一局 19 路;轮与轮之间清空棋盘。
+   - **每手最多观察 15 秒**,按下面四类之一记一次,然后直接下下一手(**不悔棋**:错点只会往远离镜头方向错到 19 路,
+     19 路不在清单里,不会和后面的手撞上):
+     - **正确**:board delta 出现这一手的交叉点,kiosk 上子落在该点;
+     - **错点**:落到了别的交叉点;
+     - **卡片**:弹出确认卡片 —— 记一次,按「确认」让它落下;若卡片上的点不对,同时记一次错点;
+     - **未确认**:15 秒内既没落下也没弹卡片 —— 记一次,子留在盘上。
+   - 每一轮开始前、结束后各记一次时间,作为这一轮的日志窗口 `--since/--until`。
+3. **修正前对照**(还没有标定文件):确认启动日志有 `vision parallax off: not calibrated`。A、B 各跑一遍,每轮记录:
+   四类计数;`journalctl -u smartbox-katrain --since <开始> --until <结束> | grep -c 'peak conf 0.00 <'`(unbacked 计数)。
+4. **标定**(工具在空盘上先后两次核对印刷网格与保存的几何,任一次偏 > 0.10 格就拒绝、什么都不写 ——
+   拟合本身看不见过期的几何,见 design §2.5):
+   - 停服务前:棋盘清空、kiosk 显示几何已就绪。自上次锁定以来碰过棋盘(**包括清空修正前那几轮**),先在 kiosk 上
+     空盘重新锁定一次几何。然后**不碰棋盘**,`sudo systemctl stop smartbox-katrain`。
+   - 跑工具(命令见工具 docstring):空盘回车 → 按图摆 17 子回车 → 收掉全部子(不挪棋盘)回车。
+   - 抄下两次打印的网格偏移(start / end)与 k / nadir / h_implied / rms / 最差点 → `sudo systemctl start smartbox-katrain`。
+   - 失败按提示处理(重摆 / 重新锁定几何),**不要改阈值,没有绕过开关**。刚锁好的几何仍稳定偏 > 0.10 格(LED 与
+     印刷线本身对不齐)⇒ 记下数字,这是一条要交给 Fan 判断的发现,不放宽闸。
+   - `h_implied` 读数比真值低约 0.5 mm(`BoardConfig` 的 mm 映射比 warp 小 0.99853 倍,对修正无害):
+     ≈3.0 mm 对应「检测器报的是子的中面」,≈6.5 mm 对应顶面。
 5. 确认启动日志 `vision parallax on: ... current_generation=...`。
 6. **修正后对照**:同一光照,A、B 各再跑一遍,记录同样两项;board delta 行里数 `*` 的条数。
 
 ## 判定(事先定死,不看结果再调)
-- **基线必须复现故障**:修正前 A 至少 **5/20** 手落错或弹 unbacked 提示。达不到 ⇒ 这次对照**证据不足**,
+- 一轮的「出错」= 错点 + 卡片 + 未确认 三类之和(同一手记了卡片又记错点,只算一次)。
+- **基线必须复现故障**:修正前 A 至少 **5/20** 手出错。达不到 ⇒ 这次对照**证据不足**,
   不能标完成;回头检查摆位(是不是没往外偏够 8 mm)再做。
-- **修正后通过**:A **20/20** 落点正确,且 A 的 unbacked 计数 ≤ 修正前的一半(修正前为 0 时本条不适用,由上一条兜住)。
-- **不回归**:B 修正前、修正后都是 **20/20**。
+- **修正后通过**:A **20/20 正确**(0 错点、0 未确认),且 A 的 unbacked 计数 ≤ 修正前的一半
+  (修正前为 0 时本条不适用,由上一条兜住)。
+- **不回归**:B 修正前、修正后都是 **20/20 正确**。
 - 任何一条不满足:不标完成,把数据填表后交 Fan 判断。
 
 ## 对照数据(上板后填)
 | | 修正前 A | 修正后 A | 修正前 B | 修正后 B |
 |---|---|---|---|---|
-| 落点正确 / 20 | | | | |
-| unbacked 计数 | | | | |
+| 日志窗口(起–止) | | | | |
+| 正确 / 20 | | | | |
+| 错点 | | | | |
+| 卡片 | | | | |
+| 未确认 | | | | |
+| unbacked 计数(journal) | | | | |
 | board delta 中 `*` 条数 | — | | — | |
 
 ## 标定结果(上板后填,同时抄进 geometry.md 末尾)
-k / nadir / m / h_implied / rms / 最差点 / 棋子 / 几何代次 / 时间
+k / nadir / m / h_implied / rms / 最差点 / 网格偏移 start、end / 棋子 / 几何代次 / 时间
 ```
 
 - [ ] **Step 5: 更新 README 并提交**
@@ -2451,7 +2764,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - [ ] 把标定结果(k、nadir、rms、h_implied、哪副棋子、哪次标定、几何代次)写进 `geometry.md` 末尾新小节「现场标定」。
 - [ ] 填 `handoff.md` 对照表。
 - [ ] `prd.md`:每条需求标完成状态(P1-1 验收 5、P1-2 验收 4 的上板部分、P2 上板部分);§5 已排除的风险划掉
-      (例如 §5 第 4 条:若 `h_implied` 落在 3.5 附近就划掉)。
+      (例如 §5 第 4 条:若 `h_implied` 读数落在 ≈3.0 附近就划掉 —— 工具读数比真值低约 0.5 mm,见 Task 8 注)。
 
 **验收:** prd P1-1 验收 5、P1-2 验收 4(上板)、P2(上板)。
 
@@ -2489,4 +2802,5 @@ Fan 2026-09-22 指示的顺序:
 | P1-2 验收 3(共线 / 少于 3 点报错) | Task 4 四条 `raise` 测试 |
 | P1-2 验收 4(h 2–8 之外失败,不静默写入;上板记报告) | Task 5 `save_parallax` 先校验;Task 8 失败不写文件;Task 10 上板记录 |
 | P2 期望 / 验收(2026-09-22 收窄) | Task 3 `parallax_points`、Task 7 日志与测试 |
+| prd §5 第 7 条(标定时几何过期;codex 第 2 轮 [high]) | Task 8 网格核对测试 + codex 反例 + Step 6 变异;Task 9 handoff 第 4 步 |
 | design D1–D8 | D1 Task 5;D2/D3 Task 6;D4/D5 Task 8;D6 Task 3+7;D7 Task 3;D8 全局(不做多记录) |

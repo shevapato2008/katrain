@@ -112,6 +112,9 @@ type Placement =
   | { placed: true }
   | { placed: false; remaining: number | null };
 
+/** 房间对局前被标定台拦下时,返回回到大厅(见 `hooks/useBackTo`)。这一页只在大厅路由上。 */
+const BACK_TO_LOBBY = { backTo: '/kiosk/play/pvp/lobby' };
+
 const LobbyPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -199,7 +202,7 @@ const LobbyPage = () => {
       const data = JSON.parse(event.data) as Record<string, string | number>;
       if (data.type === 'match_found') {
         setIsMatching(false);
-        navigate(`/kiosk/play/pvp/room/${String(data.session_id)}`);
+        navigate(`/kiosk/play/pvp/room/${String(data.session_id)}`, { state: BACK_TO_LOBBY });
       } else if (data.type === 'lobby_update') {
         void fetchLists();
       } else if (data.type === 'invitation') {
@@ -348,7 +351,7 @@ const LobbyPage = () => {
             <Cell
               key={g.session_id}
               {...(mine
-                ? { type: 'button' as const, onClick: () => navigate(`/kiosk/play/pvp/room/${g.session_id}`) }
+                ? { type: 'button' as const, onClick: () => navigate(`/kiosk/play/pvp/room/${g.session_id}`, { state: BACK_TO_LOBBY }) }
                 : {})}
               className={mine ? 'gcard is-mine' : 'gcard is-static'}
               data-testid="lobby-game"

@@ -52,6 +52,7 @@ PREVIEW_FPS = 3
 JPEG_QUALITY = 75
 # An unanswered low-confidence move prompt re-fires (MoveDetector no longer advances its
 # baseline at confirm time), so re-emission of the ambiguous_stone event is rate-limited.
+IDLE_POLL_S = 0.25  # 没人要画面时多久看一次指令队列
 AMBIG_REPROMPT_FRAMES = 40  # ~4s at ~10fps
 
 
@@ -343,9 +344,23 @@ class InProcessAdapter:
 
         target_interval = 1.0 / self._config.get("capture_fps", 8)
 
+        was_idle = False  # 只在真的空闲过一轮之后才需要清累积;启动时它本来就是空的
         while self._running:
             loop_start = time.monotonic()
             self._drain_commands()
+
+            if not self.needs_frames():
+                # 启动器、菜单、屏幕对弈:不读帧、不做图像处理,只照常上报状态(左栏「摄像头已连接」
+                # 与守卫的 recognition_ready 都读它)。RK3562 实测这条循环空转时占 katrain 的 35%。
+                self._publish_status(None)
+                was_idle = True
+                time.sleep(IDLE_POLL_S)
+                continue
+            if was_idle:
+                was_idle = False
+                # 空闲之前攒下的观测不能和现在的画面混在一起投票。
+                self._averager.reset()
+                self._motion_filter.reset()
 
             frame = self._camera.read_frame()
             board_detected = False
@@ -601,22 +616,7 @@ class InProcessAdapter:
                 for evt in events:
                     self._event_queue.put({"type": evt.type.value, "data": evt.data})
 
-            self._status = WorkerStatus(
-                camera_status="connected" if self._camera.is_connected else "disconnected",
-                pose_lock_status=(
-                    "locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked"
-                ),
-                sync_state=self._sync.state.value,
-                detected_board=observed_board.tolist() if observed_board is not None else None,
-                last_motion_at=self._last_motion_at,
-                camera_ready=bool(self._camera.is_connected),
-                geometry_ready=self._geometry is not None or not self._require_geometry,
-                model_ready=True,
-                recognition_ready=bool(
-                    self._camera.is_connected and (self._geometry is not None or not self._require_geometry)
-                ),
-                observation_seq=self._observation_seq,
-            )
+            self._publish_status(observed_board)
 
             elapsed = time.monotonic() - loop_start
             sleep_time = target_interval - elapsed
@@ -625,6 +625,33 @@ class InProcessAdapter:
 
         if self._owns_camera:
             self._camera.close()
+
+    def needs_frames(self) -> bool:
+        """有人要看棋盘才处理画面:实体对局绑定、做题/摆谱监视、摆棋准备、有人开着识别预览。"""
+        return bool(
+            self._bound
+            or self._monitor
+            or self._viewer_active
+            or self._sync.state == SyncState.SETUP_IN_PROGRESS
+        )
+
+    def _publish_status(self, observed_board) -> None:
+        self._status = WorkerStatus(
+            camera_status="connected" if self._camera.is_connected else "disconnected",
+            pose_lock_status=(
+                "locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked"
+            ),
+            sync_state=self._sync.state.value,
+            detected_board=observed_board.tolist() if observed_board is not None else None,
+            last_motion_at=self._last_motion_at,
+            camera_ready=bool(self._camera.is_connected),
+            geometry_ready=self._geometry is not None or not self._require_geometry,
+            model_ready=True,
+            recognition_ready=bool(
+                self._camera.is_connected and (self._geometry is not None or not self._require_geometry)
+            ),
+            observation_seq=self._observation_seq,
+        )
 
     def _drain_commands(self) -> None:
         while True:

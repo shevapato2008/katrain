@@ -60,7 +60,7 @@
     },
     "game": {
         "size": 19,
-        "komi": 7.5,
+        "komi": 6.5,
         "handicap": 0,
         "rules": "japanese",
         "clear_cache": false,

@@ -52,7 +52,7 @@ const AmbiguousMoveCard = ({ row, col, boardSize, color, unbacked, from, onConfi
           <Typography variant="body2" color="text.secondary">
             {/* 说清楚**该做什么**,而不只是报告出了什么事。位置要给 —— 满盘时
                 「有颗子没放正」等于让用户自己去找。 */}
-            {t('vision:offcenter_hint', '请把它挪到')} {point} {t('vision:offcenter_hint_tail', '的交叉点上,会自动识别')}
+            {t('vision:offcenter_hint', '请把它挪到')} {point} {t('vision:offcenter_hint_tail', '的交叉点上，会自动识别')}
           </Typography>
         )}
       </DialogContent>

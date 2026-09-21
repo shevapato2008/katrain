@@ -200,8 +200,8 @@ msgstr "Gain"
 #. SGF and move comment messages
 msgid "SGF start message"
 msgstr ""
-"Les coup préférés de KataGo sont marqué d'un X. En comparaison, ceux perdant "
-"moins de 0.5 point sont marqués d'un carré"
+"Les coup préférés de KataGo sont marqué d'un X. En comparaison, ceux perdant"
+" moins de 0.5 point sont marqués d'un carré"
 
 msgid "Info:score"
 msgstr "Score : {score}"
@@ -227,7 +227,8 @@ msgstr "Séquence attendue : {pv}"
 
 msgid "Info:policy rank"
 msgstr ""
-"Ce coup était classé n°{rank} d'un point de vue intuitif ({probability:.2%})."
+"Ce coup était classé n°{rank} d'un point de vue intuitif "
+"({probability:.2%})."
 
 msgid "Info:policy best"
 msgstr "La première intuition était {move} ({probability:.1%})."
@@ -495,11 +496,8 @@ msgstr ""
 
 msgid "Kata exe not found in path"
 msgstr ""
-"L'exécutable {exe} est introuvable dans votre PATH (cf. les Variables "
-"d'environnement dans vos Propriétés système). Veuillez vérifier ce dernier "
-"ou entrer dans les paramètres généraux le chemin absolu de l'exécutable. \n"
-"Sur MacOS, veuillez consulter le manuel pour savoir comment installer KataGo "
-"en utilisant BREW."
+"L'exécutable {exe} est introuvable dans votre PATH (cf. les Variables d'environnement dans vos Propriétés système). Veuillez vérifier ce dernier ou entrer dans les paramètres généraux le chemin absolu de l'exécutable. \n"
+"Sur MacOS, veuillez consulter le manuel pour savoir comment installer KataGo en utilisant BREW."
 
 msgid "Kata exe not found"
 msgstr ""
@@ -564,12 +562,9 @@ msgstr "Décontracté"
 
 msgid "aihelp:scoreloss"
 msgstr ""
-"Le moteur de jeu choisit des coups recommandés, mais pas forcément les "
-"meilleurs. \n"
-"Au niveau 0, il joue l'un d'eux au hasard et perd des points "
-"régulièrement. \n"
-"Au niveau 5, il évite presque toujours de jouer les coups perdant 1 point et "
-"plus, \n"
+"Le moteur de jeu choisit des coups recommandés, mais pas forcément les meilleurs. \n"
+"Au niveau 0, il joue l'un d'eux au hasard et perd des points régulièrement. \n"
+"Au niveau 5, il évite presque toujours de jouer les coups perdant 1 point et plus, \n"
 "à moins d'augmenter le champ des possibles et/ou le nombre de visites \n"
 "(cf. Paramètres généraux)"
 
@@ -599,10 +594,8 @@ msgstr "Myope"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"Jouera le coup le plus intuitif parmi un échantillon sélectionné au "
-"hasard. \n"
-"Échantillon = pick_n + (pick_frac multiplié par le nombre de coups "
-"légaux). \n"
+"Jouera le coup le plus intuitif parmi un échantillon sélectionné au hasard. \n"
+"Échantillon = pick_n + (pick_frac multiplié par le nombre de coups légaux). \n"
 "Pick_n ajoute un nombre de coups à l'échantillon considéré. \n"
 "Plus pick_frac (0~1) est haut, plus des coups intuitifs seront joués. \n"
 "Plus pick_override (0~1) est bas, plus la première intuition sera forcée."
@@ -613,10 +606,8 @@ msgstr "Local"
 msgid "aihelp:p:local"
 msgstr ""
 "Tendra à jouer près du dernier coup. \n"
-"Échantillon local = pick_n + (pick_frac multiplié par le nombre de coups "
-"légaux) \n"
-"Plus stddev (1~19) est bas, plus le coup joué sera forcément près du "
-"dernier. \n"
+"Échantillon local = pick_n + (pick_frac multiplié par le nombre de coups légaux) \n"
+"Plus stddev (1~19) est bas, plus le coup joué sera forcément près du dernier. \n"
 "(Se reporter au style précédent pour une explication des autres valeurs)"
 
 msgid "ai:p:tenuki"
@@ -625,10 +616,8 @@ msgstr "Tenuki"
 msgid "aihelp:p:tenuki"
 msgstr ""
 "Tendra à jouer loin du dernier coup. \n"
-"Échantillon éloigné = pick_n + (pick_frac multiplié par le nombre de coups "
-"légaux) \n"
-"Endgame indique à partir de quand jouer normalement, entre le début (0) et "
-"la fin (1). \n"
+"Échantillon éloigné = pick_n + (pick_frac multiplié par le nombre de coups légaux) \n"
+"Endgame indique à partir de quand jouer normalement, entre le début (0) et la fin (1). \n"
 "(Se reporter aux styles précédents pour une explication des autres valeurs)"
 
 msgid "ai:p:influence"
@@ -637,10 +626,8 @@ msgstr "Central"
 msgid "aihelp:p:influence"
 msgstr ""
 "Tendra à jouer haut, près du centre. \n"
-"Threshold indique la ligne au-dessus de laquelle le coup tendra à être "
-"joué. \n"
-"Plus line_weight (1~10) est haut, plus il sera difficile de jouer en-dessous "
-"de treshold \n"
+"Threshold indique la ligne au-dessus de laquelle le coup tendra à être joué. \n"
+"Plus line_weight (1~10) est haut, plus il sera difficile de jouer en-dessous de treshold \n"
 "(Se reporter aux styles précédents pour une explication des autres valeurs)"
 
 msgid "ai:p:territory"
@@ -649,10 +636,8 @@ msgstr "Territorial"
 msgid "aihelp:p:territory"
 msgstr ""
 "Tendra à jouer bas, près du bord. \n"
-"Threshold indique la ligne en-dessous de laquelle le coup tendra à être "
-"joué. \n"
-"Plus line_weight (1~10) est haut, plus il sera difficile de jouer au-dessus "
-"de treshold \n"
+"Threshold indique la ligne en-dessous de laquelle le coup tendra à être joué. \n"
+"Plus line_weight (1~10) est haut, plus il sera difficile de jouer au-dessus de treshold \n"
 "(Se reporter aux styles précédents pour une explication des autres valeurs)"
 
 msgid "ai:p:rank"
@@ -660,12 +645,9 @@ msgstr "Par niveau"
 
 msgid "aihelp:p:rank"
 msgstr ""
-"Jouera le coup le plus intuitif parmi un échantillon sélectionné au "
-"hasard. \n"
-"Plus kyu_rank (-3~18) est bas, plus l'échantillon sera large et le niveau de "
-"jeu élevé. \n"
-"Une valeur positive équivaudra à un niveau en kyu, 0 à 1er dan, -1 à 2e dan, "
-"etc. \n"
+"Jouera le coup le plus intuitif parmi un échantillon sélectionné au hasard. \n"
+"Plus kyu_rank (-3~18) est bas, plus l'échantillon sera large et le niveau de jeu élevé. \n"
+"Une valeur positive équivaudra à un niveau en kyu, 0 à 1er dan, -1 à 2e dan, etc. \n"
 "(Niveaux estimés sur OGS avec le réseau neuronal utilisé PAR DÉFAUT)"
 
 msgid "ai:handicap"
@@ -675,10 +657,8 @@ msgid "aihelp:handicap"
 msgstr ""
 "KataGo recherchera/évitera les complications \n"
 "en fonction de la différence de niveau supposée des joueurs. \n"
-"Tout à gauche, un PDA de -3 (W+3) supposera que Blanc est bien plus fort que "
-"Noir. \n"
-"Tout à droite, un PDA de 3 (B+3) supposera que Noir est bien plus fort que "
-"Blanc. \n"
+"Tout à gauche, un PDA de -3 (W+3) supposera que Blanc est bien plus fort que Noir. \n"
+"Tout à droite, un PDA de 3 (B+3) supposera que Noir est bien plus fort que Blanc. \n"
 "Cocher l'option 'automatic' adaptera la valeur PDA au handicap utilisé."
 
 msgid "Delete Node"
@@ -744,16 +724,11 @@ msgstr "Temps principal (min)"
 msgid "aihelp:simple"
 msgstr ""
 "Par défaut, le moteur de jeu cherche à simplifier la position. \n"
-"Il joue un coup parmi ceux considérés au moins 'min_visits' fois et perdant "
-"au plus 'max_points_lost'. \n"
-"'settled_weight' le pousse à consolider ses territoires, et ceux adverses "
-"une fois multiplié par 'opponent_fac'. \n"
-"'tenuki_penalty' le pousse à jouer localement ; 'attach_penalty' à éviter "
-"les coups de contact direct. \n"
-"Quand elles sont possibles, les valeurs négatives favorisent au contraire un "
-"style de jeu compliqué. \n"
-"Élargir le Champ des possibles (cf. Paramètres généraux) peaufine le style "
-"au détriment du niveau de jeu."
+"Il joue un coup parmi ceux considérés au moins 'min_visits' fois et perdant au plus 'max_points_lost'. \n"
+"'settled_weight' le pousse à consolider ses territoires, et ceux adverses une fois multiplié par 'opponent_fac'. \n"
+"'tenuki_penalty' le pousse à jouer localement ; 'attach_penalty' à éviter les coups de contact direct. \n"
+"Quand elles sont possibles, les valeurs négatives favorisent au contraire un style de jeu compliqué. \n"
+"Élargir le Champ des possibles (cf. Paramètres généraux) peaufine le style au détriment du niveau de jeu."
 
 msgid "ai:simple"
 msgstr "Modéré"
@@ -817,8 +792,8 @@ msgstr ""
 
 msgid "finish inserting before navigating"
 msgstr ""
-"Il est impossible de parcourir l'arbre de jeu tant que l'insertion des coups "
-"n'est pas close/validée (en appuyant sur 'i')."
+"Il est impossible de parcourir l'arbre de jeu tant que l'insertion des coups"
+" n'est pas close/validée (en appuyant sur 'i')."
 
 msgid "player names"
 msgstr "Nom des joueurs"
@@ -900,8 +875,8 @@ msgstr "Sauvegarder les parties"
 
 msgid "contribute:savesgf:hint"
 msgstr ""
-"Sauvegarder les fichiers SGF des parties complétées dans le dossier ./"
-"dist_sgf"
+"Sauvegarder les fichiers SGF des parties complétées dans le dossier "
+"./dist_sgf"
 
 msgid "contribute:viewer settings"
 msgstr "Visionneuse"
@@ -1055,7 +1030,8 @@ msgstr ""
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a human-like KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening style."
+"ticked, the model will play according to a post-2016 AlphaZero opening "
+"style."
 
 #. TODO
 msgid "engine:humanlike_model"
@@ -1081,9 +1057,8 @@ msgstr "Game End Sound"
 msgid "Pass"
 msgstr "Pass"
 
-#. TODO
 msgid "Close"
-msgstr "Close"
+msgstr "Fermer"
 
 #. TODO
 msgid "Best"
@@ -1360,8 +1335,8 @@ msgstr "Êtes-vous sûr de vouloir abandonner ?"
 
 msgid "dashboard:play_desc"
 msgstr ""
-"Affrontez des adversaires IA ou jouez contre des amis. Parties classées pour "
-"établir votre rang."
+"Affrontez des adversaires IA ou jouez contre des amis. Parties classées pour"
+" établir votre rang."
 
 msgid "game_end:timeout_loss"
 msgstr "Vous avez perdu au temps."
@@ -1416,7 +1391,8 @@ msgstr "Premier"
 
 msgid "play:vs_ai_free_desc"
 msgstr ""
-"Entraînez-vous avec analyse complète, annulation et paramètres personnalisés."
+"Entraînez-vous avec analyse complète, annulation et paramètres "
+"personnalisés."
 
 msgid "no_friends_desc"
 msgstr "Vous ne suivez personne pour l'instant."
@@ -2302,10 +2278,10 @@ msgid "result:draw"
 msgstr "Nulle"
 
 msgid "result:points_zi"
-msgstr ""
+msgstr "pierres"
 
 msgid "result:points_moku"
-msgstr ""
+msgstr "pts"
 
 msgid "COUNT"
 msgstr "Compter"
@@ -2870,12 +2846,13 @@ msgstr "Cette partie n'a pas compté"
 
 msgid "ladder:unscored_inconclusive"
 msgstr ""
-"Cette partie n'a pas eu de vainqueur : elle ne compte pas et ne consomme pas "
-"de partie de placement."
+"Cette partie n'a pas eu de vainqueur : elle ne compte pas et ne consomme pas"
+" de partie de placement."
 
 msgid "ladder:unscored_already"
 msgstr ""
-"Cette partie a déjà été comptabilisée ; votre rang n'a pas changé de nouveau."
+"Cette partie a déjà été comptabilisée ; votre rang n'a pas changé de "
+"nouveau."
 
 msgid "ladder:unscored_in_progress"
 msgstr "Cette partie n'est pas encore terminée."
@@ -2960,8 +2937,8 @@ msgstr "Impossible de charger le statut classé"
 
 msgid "ladder:load_error_not_authoritative"
 msgstr ""
-"Cet appareil n'enregistre pas les résultats classés, impossible de commencer "
-"ici"
+"Cet appareil n'enregistre pas les résultats classés, impossible de commencer"
+" ici"
 
 msgid "ladder:load_error_unauthorized"
 msgstr "Votre session a expiré — reconnectez-vous"
@@ -3323,8 +3300,9 @@ msgstr "{n} non évalués"
 
 msgid "ladder:engine_unavailable_start"
 msgstr ""
-"Le moteur des parties classées est momentanément indisponible. Aucune partie "
-"n'a été lancée et votre rang n'est pas affecté. Veuillez réessayer plus tard."
+"Le moteur des parties classées est momentanément indisponible. Aucune partie"
+" n'a été lancée et votre rang n'est pas affecté. Veuillez réessayer plus "
+"tard."
 
 msgid "grade:match_rate"
 msgstr "Concordance IA"
@@ -3343,16 +3321,16 @@ msgstr "Aucun coup comparable dans cette phase"
 
 msgid "grade:match_footer"
 msgstr ""
-"Le dénominateur est le nombre de coups comparables à l'IA : Noir {b} / Blanc "
-"{w}"
+"Le dénominateur est le nombre de coups comparables à l'IA : Noir {b} / Blanc"
+" {w}"
 
 msgid "grade:match_undecidable"
 msgstr "{n} coups non comparables"
 
 msgid "grade:match_caveat"
 msgstr ""
-"La concordance dépend de la difficulté des positions : seule, elle ne prouve "
-"ni le niveau ni la triche."
+"La concordance dépend de la difficulté des positions : seule, elle ne prouve"
+" ni le niveau ni la triche."
 
 msgid "live:human_pick_rate_ranked"
 msgstr "Choix {rank}"
@@ -3407,8 +3385,8 @@ msgstr "{n} non notés"
 
 msgid "grade:histogram_aria"
 msgstr ""
-"Répartition sur sept niveaux ; barres noires pour Noir, blanches pour Blanc, "
-"normalisées par camp"
+"Répartition sur sept niveaux ; barres noires pour Noir, blanches pour Blanc,"
+" normalisées par camp"
 
 msgid "grade:def_brilliant"
 msgstr ""
@@ -3570,8 +3548,8 @@ msgstr ""
 
 msgid "local:input_hint_v2"
 msgstr ""
-"Le plateau physique n'est qu'en 19×19 — choisissez 13×13 ou 9×9 pour jouer à "
-"l'écran"
+"Le plateau physique n'est qu'en 19×19 — choisissez 13×13 ou 9×9 pour jouer à"
+" l'écran"
 
 msgid "local:komi_hint"
 msgstr ""
@@ -3644,7 +3622,3082 @@ msgid "review:start_analysis"
 msgstr "Lancer l'analyse"
 
 msgid "vision:resync_screen_authority"
-msgstr "Réinitialiser la reconnaissance · utiliser la position numérique affichée"
+msgstr ""
+"Réinitialiser la reconnaissance · utiliser la position numérique affichée"
 
 msgid "Re-sync"
 msgstr "Réinitialiser la reconnaissance"
+
+msgid "Back to play"
+msgstr "Retour au jeu"
+
+msgid "setup:start"
+msgstr "Commencer la partie"
+
+msgid "ladder:start"
+msgstr "Commencer la partie classée"
+
+msgid "play:free_setup_sub"
+msgstr "Réglages · contre l'IA · non classée"
+
+msgid "ladder:setup_sub"
+msgstr "Réglages · classée · analyse désactivée"
+
+msgid "local:setup_sub"
+msgstr "Réglages · deux joueurs face à face"
+
+msgid "game:local_pvp"
+msgstr "Partie locale"
+
+msgid "setup:game_terms"
+msgstr "Cette partie"
+
+msgid "setup:size"
+msgstr "Goban"
+
+msgid "setup:size_n"
+msgstr "{n}x{n}"
+
+msgid "setup:size_19"
+msgstr "19x19"
+
+msgid "Chinese rules"
+msgstr "Règles chinoises"
+
+msgid "Japanese rules"
+msgstr "Règles japonaises"
+
+msgid "AGA rules"
+msgstr "Règles AGA"
+
+msgid "setup:rules_button"
+msgstr "Règles de tournoi IA"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr ""
+"Les règles chinoises comptent la surface : territoire plus pierres, remplir "
+"son territoire ne coûte rien"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr ""
+"Les règles japonaises ne comptent que le territoire : y jouer coûte un point"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr ""
+"Les règles AGA comptent la surface, mais chaque passe cède une pierre : le "
+"résultat rejoint le comptage par territoire"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr ""
+"Les règles coréennes comptent le territoire : même méthode qu'en japonais, "
+"avec un komi usuel différent"
+
+msgid "setup:rules_button_hint"
+msgstr ""
+"Règles de tournoi IA : comptage par surface plus un demi-point pour celui "
+"qui passe en premier, ce qui annule l'écart d'un demi-point. Parties à "
+"égalité uniquement."
+
+msgid "setup:ha_even"
+msgstr "À égalité"
+
+msgid "setup:ha_sente"
+msgstr "Noir d'abord, sans komi"
+
+msgid "setup:ha_reverse"
+msgstr "Komi inversé"
+
+msgid "setup:ha_free"
+msgstr "Komi personnalisé"
+
+msgid "setup:ha_stones"
+msgstr "{n} pierres"
+
+msgid "setup:komi_derived"
+msgstr "Défini par les règles et le handicap"
+
+msgid "setup:komi_pick"
+msgstr "Touchez pour changer le komi"
+
+msgid "setup:komi_none"
+msgstr "Sans komi"
+
+msgid "setup:komi_sente"
+msgstr "Noir joue en premier"
+
+msgid "setup:komi_handicap"
+msgstr "Noir pose d'abord {n} pierres"
+
+msgid "setup:komi_black_pays"
+msgstr "Noir verse"
+
+msgid "setup:komi_white_pays"
+msgstr "Blanc verse"
+
+msgid "setup:komi_points"
+msgstr "{n} points"
+
+msgid "setup:unit_points"
+msgstr "pts"
+
+msgid "setup:unit_stones"
+msgstr "pierres"
+
+msgid "setup:seat"
+msgstr "Placement"
+
+msgid "setup:side_black"
+msgstr "Noir"
+
+msgid "setup:side_white"
+msgstr "Blanc"
+
+msgid "setup:side_nigiri"
+msgstr "Nigiri"
+
+msgid "setup:nigiri_blocked"
+msgstr "Avec handicap, Noir pose les pierres"
+
+msgid "setup:black_side"
+msgstr "Noir"
+
+msgid "setup:white_side"
+msgstr "Blanc"
+
+msgid "setup:input_where"
+msgstr "Jouer sur"
+
+msgid "setup:on_screen"
+msgstr "Écran"
+
+msgid "setup:on_board"
+msgstr "Goban réel"
+
+msgid "setup:board_only_19"
+msgstr "Le goban réel est en 19x19"
+
+msgid "setup:board_not_ready"
+msgstr "Caméra non calibrée"
+
+msgid "setup:seat_hint_ready"
+msgstr ""
+"Basculez entre goban réel et écran à tout moment ; figé au début de la "
+"partie"
+
+msgid "setup:seat_hint_not19"
+msgstr "Cette partie n'est pas en 19x19 : elle ne peut se jouer qu'à l'écran"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr "Cette machine n'a pas de caméra calibrée : on joue à l'écran"
+
+msgid "setup:size_not19_hint"
+msgstr ""
+"Le goban réel est en 19x19 — cette partie se joue à l'écran ; revenez au "
+"19x19 pour le réutiliser"
+
+msgid "Untimed"
+msgstr "Sans limite"
+
+msgid "setup:time_byo_only"
+msgstr "Byoyomi seul 30s x3"
+
+msgid "5 min + 3x30s"
+msgstr "5 min + 3x30s"
+
+msgid "60 min + 3x30s"
+msgstr "60 min + 3x30s"
+
+msgid "local:move_sound_short"
+msgstr "Son des pierres"
+
+msgid "On"
+msgstr "Activé"
+
+msgid "Off"
+msgstr "Désactivé"
+
+msgid "setup:strength_rung"
+msgstr "Palier {n}"
+
+msgid "setup:rank_kyu"
+msgstr "{n} kyu"
+
+msgid "setup:rank_dan"
+msgstr "{n} dan"
+
+msgid "setup:strength_up"
+msgstr "Un palier plus fort"
+
+msgid "setup:strength_down"
+msgstr "Un palier plus faible"
+
+msgid "setup:strength_meta"
+msgstr "{n} paliers · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "Style humain · figé au début de la partie"
+
+msgid "setup:strength_hint2"
+msgstr ""
+"L'adversaire au style humain commet les erreurs de son palier ; le palier "
+"décrit l'adversaire, pas votre niveau"
+
+msgid "ladder:opponent"
+msgstr "Adversaire"
+
+msgid "ladder:fixed_by_box"
+msgstr "Défini par la machine"
+
+msgid "ladder:terms_fixed"
+msgstr "Rien de tout cela n'est modifiable"
+
+msgid "ladder:frozen_at_start"
+msgstr "Figé au moment où la partie commence"
+
+msgid "ladder:komi_note"
+msgstr "Le palier a été mesuré sur ce goban"
+
+msgid "ladder:stake"
+msgstr "Ce qui se joue dans cette partie"
+
+msgid "ladder:stake_win_promote"
+msgstr "Victoire · monter d'un palier"
+
+msgid "ladder:stake_loss_demote"
+msgstr "Défaite · descendre d'un palier"
+
+msgid "ladder:stake_win_score"
+msgstr "Victoire · solde {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "Défaite · solde {n}"
+
+msgid "ladder:stake_rule"
+msgstr "Solde +3 fait monter, −3 fait descendre · actuellement {n}"
+
+msgid "local:players"
+msgstr "Joueurs"
+
+msgid "local:written_into_sgf"
+msgstr "Inscrit dans le kifu"
+
+msgid "local:agree_first"
+msgstr "À convenir avant de jouer"
+
+msgid "local:black_role_short"
+msgstr "en premier"
+
+msgid "local:white_role_short"
+msgstr "en second"
+
+msgid "local:black_name"
+msgstr "Nom de Noir"
+
+msgid "local:white_name"
+msgstr "Nom de Blanc"
+
+msgid "local:tap_to_type"
+msgstr "Touchez pour saisir"
+
+msgid "local:names_hint"
+msgstr "Laissez vide : le kifu indiquera simplement Noir et Blanc"
+
+msgid "local:seat_hint_ready"
+msgstr ""
+"La pendule défile sur les cartes joueur · byoyomi épuisé = défaite au temps "
+"· sans limite, on enregistre seulement"
+
+msgid "setup:note_r2_a"
+msgstr "Ces réglages "
+
+msgid "setup:note_r2_b"
+msgstr "ne peuvent plus être modifiés une fois la partie lancée"
+
+msgid "setup:note_r2_c"
+msgstr ""
+" — les changer en cours, c'est une autre partie ; les parties libres sont "
+
+msgid "setup:note_r2_d"
+msgstr "sans effet sur votre niveau"
+
+msgid "setup:note_h"
+msgstr "."
+
+msgid "setup:locked_after_start"
+msgstr "Verrouillé au début de la partie"
+
+msgid "Session expired, please sign in again"
+msgstr "Session expirée, veuillez vous reconnecter"
+
+msgid "Could not end that game, please retry"
+msgstr "Impossible de terminer cette partie, réessayez"
+
+msgid "Retry failed, please try again later"
+msgstr "Nouvelle tentative échouée, réessayez plus tard"
+
+msgid "ladder:board_preview"
+msgstr "Aperçu de la position de départ : goban vide"
+
+msgid "play:title"
+msgstr "Jouer"
+
+msgid "login:box_gate_title"
+msgstr "Connectez-vous depuis l'accueil StellaBox"
+
+msgid "login:box_gate_cta"
+msgstr "Aller à l'accueil StellaBox"
+
+msgid "vision:back_settings"
+msgstr "Réglages"
+
+msgid "vision:board_lost_hint"
+msgstr ""
+"Vérifiez si la caméra est masquée ou si le goban a bougé ; s'il a bougé, "
+"recalibrez"
+
+msgid "vision:calibrate_title"
+msgstr "Calibrage du goban"
+
+msgid "vision:calibrate_sub"
+msgstr "Videz d'abord le goban · 13 points : 4 coins + 9 hoshi"
+
+msgid "vision:cancel_calibration"
+msgstr "Annuler le calibrage"
+
+msgid "vision:reuse_calibration"
+msgstr "Réutiliser le dernier calibrage"
+
+msgid "vision:camera_down"
+msgstr "Caméra non connectée · passage à l'écran tactile"
+
+msgid "vision:led_down"
+msgstr "LED non connectée · plus de guidage lumineux"
+
+msgid "vision:pose_lost"
+msgstr "Calibrage perdu · recalibrez"
+
+msgid "grade:tabs"
+msgstr "Évaluation des coups"
+
+msgid "grade:fold_title"
+msgstr "Évaluation des coups · 7 paliers"
+
+msgid "grade:match_other"
+msgstr "Autres"
+
+msgid "grade:axis_points_lost_short"
+msgstr "Perte · pts"
+
+msgid "grade:pick_hint"
+msgstr "Touchez un coup du graphique pour le détail"
+
+msgid "grade:summary"
+msgstr "Brillants {a} · Mauvais {b}"
+
+msgid "grade:sel_bad"
+msgstr "Coup {n} {m} · {s} · {g} · perte de {x} pts"
+
+msgid "grade:sel_brilliant"
+msgstr ""
+"Coup {n} {m} · {s} · brio {k} — c'est le premier choix du moteur, auquel il "
+"n'accordait que {p}% a priori (plus c'est bas, plus c'est brillant)"
+
+msgid "grade:truncated_plot"
+msgstr "Au plus {k} par camp sont tracés ; {n} autres ne sont pas affichés"
+
+msgid "setup:this_game"
+msgstr "Cette partie sera"
+
+msgid "setup:board_preview_handicap"
+msgstr "Aperçu de la position de départ : {n} pierres de handicap"
+
+msgid "setup:chinese_rules"
+msgstr "Règles chinoises"
+
+msgid "setup:even"
+msgstr "À égalité"
+
+msgid "setup:handicap"
+msgstr "Handicap"
+
+msgid "setup:handicap_n"
+msgstr "{n} pierres"
+
+msgid "setup:handicap_less"
+msgstr "Une pierre de moins"
+
+msgid "setup:handicap_more"
+msgstr "Une pierre de plus"
+
+msgid "setup:input"
+msgstr "Comment jouer les coups"
+
+msgid "setup:my_side"
+msgstr "Ma couleur"
+
+msgid "setup:take_black"
+msgstr "Prendre Noir"
+
+msgid "setup:take_white"
+msgstr "Prendre Blanc"
+
+msgid "setup:no_camera_hint"
+msgstr ""
+"Cette machine n'a pas encore de caméra calibrée : le goban réel est "
+"indisponible"
+
+msgid "report:clear_variation"
+msgstr "Effacer la variante"
+
+msgid "report:file_read_failed"
+msgstr "Impossible de lire le fichier, réessayez."
+
+msgid "report:import_options"
+msgstr "Méthode d'import"
+
+msgid "report:invalid_sgf"
+msgstr "Impossible d'analyser le SGF, vérifiez le contenu."
+
+msgid "report:library_load_failed"
+msgstr "Impossible de charger les kifus, réessayez."
+
+msgid "report:loading_detail"
+msgstr "Chargement de l'analyse"
+
+msgid "report:not_found"
+msgstr "Analyse introuvable."
+
+msgid "report:preview_failed"
+msgstr "Impossible de charger l'aperçu du kifu"
+
+msgid "report:reload"
+msgstr "Recharger"
+
+msgid "report:retry_load"
+msgstr "Réessayer le chargement"
+
+msgid "report:retrying"
+msgstr "Nouvelle tentative…"
+
+msgid "report:search_library"
+msgstr "Rechercher dans la bibliothèque de kifus"
+
+msgid "report:sgf_content"
+msgstr "Contenu SGF"
+
+msgid "report:title_optional"
+msgstr "Titre (facultatif)"
+
+msgid "report:unknown_type"
+msgstr "Type inconnu"
+
+msgid "report:variation_preview"
+msgstr "Aperçu de la variante · touchez le goban pour fermer"
+
+msgid "live:title"
+msgstr "En direct"
+
+msgid "live:ai"
+msgstr "Suggestions de l'IA"
+
+msgid "live:ai_note_a"
+msgstr "Les suggestions de l'IA sont "
+
+msgid "live:ai_note_b"
+msgstr "calculées à l'instant par le KataGo de ce boîtier"
+
+msgid "live:ai_note_c"
+msgstr " — elles n'ont rien à voir avec ce que voient les joueurs."
+
+msgid "live:as_black"
+msgstr "Noir"
+
+msgid "live:as_white"
+msgstr "Blanc"
+
+msgid "live:back_kifu"
+msgstr "Kifus"
+
+msgid "live:black_wr"
+msgstr "Noir {v}%"
+
+msgid "live:ended"
+msgstr "Terminée"
+
+msgid "live:follow"
+msgstr "Suivre le dernier coup"
+
+msgid "live:load_failed"
+msgstr "Impossible de charger cette partie"
+
+msgid "live:loading"
+msgstr "Chargement de cette partie"
+
+msgid "live:move_n"
+msgstr "Coup {n}"
+
+msgid "live:moves_title"
+msgstr "Coups · s'allonge avec la diffusion"
+
+msgid "live:no_moves"
+msgstr "Cette partie n'a pas encore de coups"
+
+msgid "live:no_ownership"
+msgstr "La position de ce coup n'est pas encore calculée"
+
+msgid "live:pagebar_sub"
+msgstr "Source : {src} · coup {n}"
+
+msgid "live:played"
+msgstr "Coup joué"
+
+msgid "live:show"
+msgstr "Afficher"
+
+msgid "live:thinking"
+msgstr "Réflexion"
+
+msgid "live:toggle_numbers"
+msgstr "Numéros de coups"
+
+msgid "live:toggle_territory"
+msgstr "Territoire"
+
+msgid "settings:nav_account"
+msgstr "Compte et plateformes"
+
+msgid "settings:nav_board"
+msgstr "Goban réel"
+
+msgid "settings:nav_language"
+msgstr "Langue"
+
+msgid "settings:nav_move"
+msgstr "Coups et indices"
+
+msgid "settings:nav_sound"
+msgstr "Son"
+
+msgid "settings:ui_language"
+msgstr "Langue de l'interface"
+
+msgid "settings:language_sub"
+msgstr "Ce réglage rejoindra plus tard les réglages système"
+
+msgid "settings:auto_advance_sub"
+msgstr "S'applique au camp d'entraînement · activé d'origine"
+
+msgid "settings:board_secval"
+msgstr "Caméra · calibrage · LED"
+
+msgid "settings:box_account_owned_by_home"
+msgstr "Compte StellaBox, partagé par tout le boîtier"
+
+msgid "settings:box_account_sub"
+msgstr ""
+"Utilisable sans connexion : les résultats restent sur ce boîtier ; se "
+"connecter sert uniquement à les emporter ailleurs"
+
+msgid "settings:guest_sub"
+msgstr "Un profil local sur ce boîtier"
+
+msgid "settings:switch_account_at_home"
+msgstr "Changer de compte depuis l'accueil"
+
+msgid "settings:sign_in"
+msgstr "Se connecter"
+
+msgid "settings:platforms"
+msgstr "Comptes des plateformes"
+
+msgid "settings:platforms_sub"
+msgstr ""
+"Chaque plateforme demande des champs différents : connectez-les depuis le "
+"jeu multiplateforme"
+
+msgid "settings:go_connect"
+msgstr "Connecter"
+
+msgid "settings:calibrated"
+msgstr "Calibré depuis l'allumage"
+
+msgid "settings:not_calibrated"
+msgstr "Pas encore calibré"
+
+msgid "settings:start_calib"
+msgstr "Lancer le calibrage"
+
+msgid "settings:ready"
+msgstr "Prêt"
+
+msgid "settings:not_ready"
+msgstr "Non connecté"
+
+msgid "settings:on"
+msgstr "Activé"
+
+msgid "settings:off"
+msgstr "Désactivé"
+
+msgid "research:actions"
+msgstr "Actions d'étude"
+
+msgid "research:move_title"
+msgstr "Étude · coup {n}"
+
+msgid "research:ai_after_move"
+msgstr "Suggestions de l'IA · après le coup {n}"
+
+msgid "research:analysis_failed"
+msgstr "Ce coup n'a pas pu être analysé"
+
+msgid "research:analyzed_moves"
+msgstr "Coups analysés"
+
+msgid "research:analyzing_move"
+msgstr "Analyse de ce coup"
+
+msgid "research:cancel_scan"
+msgstr "Annuler l'analyse"
+
+msgid "research:clear_confirm_title"
+msgstr "Vider tout le goban ?"
+
+msgid "research:clear_confirm_msg"
+msgstr "Les {n} coups du goban seront effacés, sans retour possible."
+
+msgid "research:eta_label"
+msgstr "Temps restant estimé"
+
+msgid "research:from_kifu"
+msgstr "Bibliothèque de kifus"
+
+msgid "research:from_last_game"
+msgstr "La partie que je viens de terminer"
+
+msgid "research:from_my_games"
+msgstr "Mes parties"
+
+msgid "research:full_scan"
+msgstr "Analyse de toute la partie"
+
+msgid "research:no_candidates"
+msgstr "L'IA n'a proposé aucun coup candidat"
+
+msgid "research:only_19_supported"
+msgstr "Seul le 19x19 est pris en charge ; chargé en 19x19"
+
+msgid "research:progress_lost"
+msgstr ""
+"La progression de l'analyse n'a pas pu être lue cinq fois de suite — la "
+"connexion est peut-être perdue"
+
+msgid "research:rescan"
+msgstr "Analyser à nouveau"
+
+msgid "research:retry_analysis"
+msgstr "Réessayer l'analyse"
+
+msgid "research:scan_broke"
+msgstr "L'analyse de toute la partie n'est pas allée au bout"
+
+msgid "research:scan_cost"
+msgstr "{n} coups au total · 500 visites par coup"
+
+msgid "research:scan_failed"
+msgstr "Impossible de lancer l'analyse, réessayez"
+
+msgid "research:scan_freeze"
+msgstr ""
+"Le goban est verrouillé jusqu'à la fin ; vous pouvez annuler à tout moment"
+
+msgid "research:scan_go"
+msgstr "Lancer l'analyse"
+
+msgid "research:session_failed"
+msgstr "Impossible de créer la session d'étude, réessayez"
+
+msgid "research:user_game_failed"
+msgstr "Cette partie n'a pas pu être lue"
+
+msgid "growth:rank_title"
+msgstr "Niveau sur ce boîtier"
+
+msgid "growth:rank_unknown"
+msgstr "—"
+
+msgid "growth:rank_unplaced"
+msgstr "Non classé"
+
+msgid "growth:no_data"
+msgstr "—"
+
+msgid "growth:cell_placement"
+msgstr "Parties de classement"
+
+msgid "growth:metric_placement"
+msgstr "Parties de classement"
+
+msgid "growth:placement_done"
+msgstr "Terminé"
+
+msgid "growth:cell_solved"
+msgstr "Problèmes résolus"
+
+msgid "growth:metric_net"
+msgstr "Solde"
+
+msgid "growth:stat_ranked"
+msgstr "Parties classées · total"
+
+msgid "growth:stat_recent"
+msgstr "Parties des 30 derniers jours"
+
+msgid "growth:stat_solved"
+msgstr "Problèmes résolus au total"
+
+msgid "growth:stat_winrate"
+msgstr "Taux de victoire classé · 30 derniers jours"
+
+msgid "growth:summary_failed"
+msgstr ""
+"Ces chiffres n'ont pas pu être récupérés — cela ne veut pas dire que vous "
+"n'avez rien joué. Réessayez plus tard."
+
+msgid "growth:rules_title"
+msgstr "Comment fonctionnent les montées"
+
+msgid "growth:rule_up"
+msgstr "Un solde de +3 victoires fait monter d'un palier"
+
+msgid "growth:rule_down"
+msgstr "Un solde de 3 défaites fait descendre d'un palier"
+
+msgid "growth:rule_bounds"
+msgstr "Plancher à 20 kyu · plafond « Au-delà de l'humain »"
+
+msgid "growth:rung_title"
+msgstr "Par force de l'adversaire"
+
+msgid "growth:rung_w"
+msgstr "{n} victoires"
+
+msgid "growth:rung_l"
+msgstr "{n} défaites"
+
+msgid "growth:rung_empty_h"
+msgstr "Pas encore de résultats"
+
+msgid "growth:rung_empty_p"
+msgstr ""
+"Le curseur des réglages choisit la force de l'adversaire, pas votre niveau. "
+"Seuls les paliers réellement joués sont listés, sans lignes 0–0."
+
+msgid "growth:diag_title"
+msgstr "Diagnostic de niveau"
+
+msgid "growth:diag_wip"
+msgstr "Backend prêt · interface non branchée"
+
+msgid "growth:diag_empty_h"
+msgstr "0 partie dans l'échantillon"
+
+msgid "growth:diag_empty_p"
+msgstr ""
+"Le diagnostic se calcule sur les parties déjà analysées : les rapports "
+"existent côté serveur, l'interface ne les lit pas encore (voir l'écran "
+"d'analyse). En dessous de 30 parties la conclusion fluctue, la taille de "
+"l'échantillon sera donc affichée."
+
+msgid "growth:local_note_a"
+msgstr "Ces chiffres sont "
+
+msgid "growth:local_note_b"
+msgstr "l'enregistrement de cette machine"
+
+msgid "growth:local_note_c"
+msgstr ""
+". Le registre est dans le cloud ; la copie de ce boîtier peut manquer "
+"quelques parties."
+
+msgid "game:black"
+msgstr "Noir"
+
+msgid "game:white"
+msgstr "Blanc"
+
+msgid "game:plays_black"
+msgstr "joue Noir"
+
+msgid "game:plays_white"
+msgstr "joue Blanc"
+
+msgid "game:actions"
+msgstr "Actions de la partie"
+
+msgid "game:action_failed"
+msgstr "L'opération a échoué, réessayez"
+
+msgid "game:back_to_play"
+msgstr "Retour au jeu"
+
+msgid "game:board_lines"
+msgstr "{n}x{n}"
+
+msgid "game:handicap_n"
+msgstr "{n} pierres de handicap"
+
+msgid "game:no_handicap"
+msgstr "Sans handicap"
+
+msgid "game:points_unit"
+msgstr "pts"
+
+msgid "game:captures"
+msgstr "Prisonniers"
+
+msgid "game:display"
+msgstr "Affichage"
+
+msgid "game:thinking"
+msgstr "Réflexion"
+
+msgid "game:played"
+msgstr "Coup joué"
+
+msgid "game:your_turn"
+msgstr "À vous"
+
+msgid "game:ended"
+msgstr "Partie terminée"
+
+msgid "game:time_left"
+msgstr "Restant"
+
+msgid "game:time_up"
+msgstr "Temps écoulé"
+
+msgid "game:untimed"
+msgstr "Sans limite"
+
+msgid "game:byo_left"
+msgstr "Byoyomi · {n} restants"
+
+msgid "game:first_move"
+msgstr "Premier coup"
+
+msgid "game:prev_move"
+msgstr "Coup précédent"
+
+msgid "game:next_move"
+msgstr "Coup suivant"
+
+msgid "game:last_move"
+msgstr "Dernier coup"
+
+msgid "game:moves_title"
+msgstr "Coups · coordonnées des intersections"
+
+msgid "game:no_moves"
+msgstr "Cette partie n'a pas encore de coups"
+
+msgid "game:online_pvp"
+msgstr "Partie en ligne"
+
+msgid "game:exit_game"
+msgstr "Quitter la partie"
+
+msgid "game:leave_keep_game"
+msgstr "Partir sans abandonner"
+
+msgid "game:resign_confirm_side"
+msgstr "{side} abandonne ?"
+
+msgid "game:exit_resign_confirm_side"
+msgstr "La partie est en cours — {side} abandonne et quitte ?"
+
+msgid "game:count_game_over"
+msgstr "Cette partie est déjà terminée"
+
+msgid "game:count_min"
+msgstr "Le comptage demande au moins {n} coups"
+
+msgid "game:count_too_early"
+msgstr "Pas encore assez de coups pour compter"
+
+msgid "game:count_not_your_turn"
+msgstr "Vous ne pouvez compter que pendant votre tour"
+
+msgid "game:count_position_changed"
+msgstr "La position a changé pendant le comptage, recommencez"
+
+msgid "game:count_no_score"
+msgstr ""
+"L'analyse de la position n'est pas terminée, le comptage est impossible pour"
+" l'instant ; réessayez plus tard"
+
+msgid "game:count_ranked_unscored"
+msgstr ""
+"Les parties classées ne peuvent pas être comptées pour l'instant (pas "
+"d'analyse dans cette partie)"
+
+msgid "game:eval_title"
+msgstr "Taux de victoire · canal natif KataGo"
+
+msgid "game:eval_graph"
+msgstr "Évolution du taux de victoire et de l'écart de points"
+
+msgid "game:eval_black_100"
+msgstr "Noir 100"
+
+msgid "game:eval_white_100"
+msgstr "Blanc 100"
+
+msgid "game:eval_black_lead"
+msgstr "Noir +{n}"
+
+msgid "game:eval_white_lead"
+msgstr "Blanc +{n}"
+
+msgid "game:golaxy_ai"
+msgstr "Golaxy · contre l'IA"
+
+msgid "game:golaxy_items"
+msgstr "Objets Golaxy · chaque appui en consomme un"
+
+msgid "game:golaxy_judge_hint"
+msgstr ""
+"Le comptage montre seulement la position actuelle ; il ne termine pas la "
+"partie"
+
+msgid "game:golaxy_engine_no_undo"
+msgstr ""
+"Les parties contre le robot Golaxy ne permettent pas encore de reprendre un "
+"coup"
+
+msgid "game:engine_ended_no_result"
+msgstr ""
+"Golaxy a renvoyé un signal de fin non reconnu · cette partie reste sans "
+"verdict"
+
+msgid "game:connection_dropped"
+msgstr ""
+"La connexion en direct est perdue : le goban ne se mettra plus à jour tout "
+"seul. Touchez « Quitter la partie » → « Partir sans abandonner », puis "
+"revenez par « Reprendre la dernière partie »"
+
+msgid "game:recalibrate_needs_empty_board"
+msgstr ""
+"Le recalibrage allume les LED et exige de retirer toutes les pierres. Si le "
+"goban n'a pas bougé, touchez « Continuer quand même »"
+
+msgid "game:timeout_failed"
+msgstr "La décision de dépassement de temps n'a pas abouti"
+
+msgid "game:timeout_not_delivered"
+msgstr ""
+"La décision de dépassement n'a pas été transmise — vérifiez la connexion et "
+"revenez dans la partie"
+
+msgid "game:unavailable_title"
+msgstr "Cette partie ne peut plus être ouverte"
+
+msgid "game:unavailable_reason"
+msgstr ""
+"Le boîtier a peut-être redémarré, la partie a pu être nettoyée après une "
+"longue inactivité, ou elle appartient à un autre compte."
+
+msgid "lobby:hall_title"
+msgstr "Salon en ligne"
+
+msgid "lobby:hall_sub"
+msgstr "Jouez contre d'autres boîtiers · ou venez regarder"
+
+msgid "lobby:loading"
+msgstr "Chargement…"
+
+msgid "lobby:load_failed"
+msgstr "Salon inaccessible — le réseau ou le service est indisponible"
+
+msgid "lobby:players"
+msgstr "Joueurs en ligne"
+
+msgid "lobby:online_count"
+msgstr "{n} en ligne"
+
+msgid "lobby:games_count"
+msgstr "{n} parties"
+
+msgid "lobby:no_players_now"
+msgstr "Pour l'instant, vous êtes seul en ligne"
+
+msgid "lobby:no_games_now"
+msgstr "Personne ne joue en ce moment"
+
+msgid "lobby:idle"
+msgstr "Libre"
+
+msgid "lobby:in_game"
+msgstr "En partie"
+
+msgid "lobby:this_is_you"
+msgstr "C'est vous"
+
+msgid "lobby:vs"
+msgstr "contre"
+
+msgid "lobby:plays_black"
+msgstr "joue Noir"
+
+msgid "lobby:plays_white"
+msgstr "joue Blanc"
+
+msgid "lobby:move_no"
+msgstr "Coup {n}"
+
+msgid "lobby:note_a"
+msgstr "Vous pouvez inviter les personnes "
+
+msgid "lobby:note_b"
+msgstr ""
+" ; celles qui jouent ne peuvent pas l'être. À gauche, les parties en cours —"
+" touchez la vôtre pour y revenir."
+
+msgid "lobby:match_mode"
+msgstr "Quel type d'appariement"
+
+msgid "lobby:mode_free"
+msgstr "Partie libre"
+
+msgid "lobby:mode_rated"
+msgstr "Partie classée"
+
+msgid "lobby:ladder_name"
+msgstr "Parties classées"
+
+msgid "lobby:rated_why_a"
+msgstr "Les parties classées exigent d'abord 5 parties de classement dans "
+
+msgid "lobby:rated_why_b"
+msgstr " — il vous en reste {n}."
+
+msgid "lobby:rated_why_b_unknown"
+msgstr " en terminant 5 parties de classement."
+
+msgid "lobby:start_match"
+msgstr "Lancer la recherche"
+
+msgid "lobby:cancel_match"
+msgstr "Annuler la recherche"
+
+msgid "lobby:matching_title"
+msgstr "Recherche d'un adversaire"
+
+msgid "lobby:matching_lead_a"
+msgstr "Le serveur vous a mis dans la file de "
+
+msgid "lobby:matching_lead_b"
+msgstr ""
+" — dès qu'il trouve, la partie démarre aussitôt, sans confirmation "
+"supplémentaire."
+
+msgid "lobby:matching_tc_free"
+msgstr "Démarre dès l'appariement · non classée"
+
+msgid "lobby:matching_tc_rated"
+msgstr "Démarre dès l'appariement · classée"
+
+msgid "lobby:waited_a"
+msgstr "Attente "
+
+msgid "lobby:waited_b"
+msgstr " s"
+
+msgid "lobby:invite_title"
+msgstr "{name} vous invite à une partie"
+
+msgid "lobby:invite_kind"
+msgstr "Partie libre · non classée"
+
+msgid "lobby:invite_lead_a"
+msgstr "Accepter lance la partie immédiatement"
+
+msgid "lobby:invite_lead_b"
+msgstr " ; l'inviteur joue Noir."
+
+msgid "lobby:invite_no_decline"
+msgstr ""
+"Refuser ferme seulement cette fenêtre — l'autre n'est pas prévenu ; "
+"l'invitation expire après 2 minutes"
+
+msgid "lobby:invite_expired"
+msgstr "Cette invitation a expiré ou a déjà servi — demandez-lui de réinviter"
+
+msgid "lobby:accept_and_play"
+msgstr "Accepter et commencer"
+
+msgid "lobby:need_login"
+msgstr "Connexion requise"
+
+msgid "lobby:gate_title"
+msgstr "Connectez-vous pour entrer dans le salon en ligne"
+
+msgid "lobby:gate_why"
+msgstr ""
+"Le salon transmet votre nom et votre statut en ligne aux gens des autres "
+"boîtiers : il fonctionne par compte. Un invité n'a pas de compte, donc pas "
+"d'identité à montrer."
+
+msgid "lobby:gate_fact_k"
+msgstr "Une fois connecté"
+
+msgid "lobby:gate_fact_v"
+msgstr "les autres vous voient dans la liste et peuvent vous inviter"
+
+msgid "lobby:gate_fact_note"
+msgstr ""
+"La liste ne montre que les personnes connectées à l'instant : vous y êtes "
+"tant que vous restez, et vous disparaissez en partant"
+
+msgid "lobby:gate_rule_a"
+msgstr "La connexion ne concerne que ce point."
+
+msgid "lobby:gate_rule_b"
+msgstr ""
+"Les parties contre l'IA, les parties locales, le camp d'entraînement, les "
+"analyses et les kifus fonctionnent en invité."
+
+msgid "lobby:go_login"
+msgstr "Aller à la connexion"
+
+msgid "baipu:title"
+msgstr "Rejouer sur le goban"
+
+msgid "baipu:back_kifu"
+msgstr "Kifus"
+
+msgid "baipu:actions"
+msgstr "Actions de rejeu"
+
+msgid "baipu:black"
+msgstr "Noir"
+
+msgid "baipu:white"
+msgstr "Blanc"
+
+msgid "baipu:black_s"
+msgstr "N"
+
+msgid "baipu:white_s"
+msgstr "B"
+
+msgid "baipu:stones_unit"
+msgstr "pierres"
+
+msgid "baipu:which_move"
+msgstr "Numéro du coup"
+
+msgid "baipu:board_label"
+msgstr "Goban de rejeu : le cercle indique où poser la prochaine pierre"
+
+msgid "baipu:loading"
+msgstr "Chargement de ce kifu"
+
+msgid "baipu:load_failed"
+msgstr "Impossible de lire ce kifu"
+
+msgid "baipu:no_sgf"
+msgstr "Ce boîtier n'a pas ce kifu"
+
+msgid "baipu:no_moves"
+msgstr "Ce kifu ne contient aucun coup"
+
+msgid "baipu:pagebar_sub"
+msgstr "Coup {i} sur {n} · {f} images capturées"
+
+msgid "baipu:place_at"
+msgstr "À poser ensuite · {c}"
+
+msgid "baipu:place_none"
+msgstr "Aucune pierre à poser à cette étape"
+
+msgid "baipu:pass"
+msgstr "Passe"
+
+msgid "baipu:led_on"
+msgstr ""
+"La lumière est allumée — posez la pierre {color} sur l'intersection éclairée"
+
+msgid "baipu:led_down"
+msgstr ""
+"La lumière est éteinte — appuyez en haut à droite pour la rallumer, ou "
+"trouvez {c} par la coordonnée"
+
+msgid "baipu:relight"
+msgstr "Rallumer"
+
+msgid "baipu:legend_black"
+msgstr "Lumière rouge = poser une pierre noire"
+
+msgid "baipu:legend_white"
+msgstr "Lumière verte = poser une pierre blanche"
+
+msgid "baipu:legend_remove"
+msgstr "Lumière bleue = retirer celle-ci"
+
+msgid "baipu:cam_title"
+msgstr "Caméra · une image par coup"
+
+msgid "baipu:capture_off"
+msgstr "Aucune capture n'est branchée sur cette machine"
+
+msgid "baipu:capturing"
+msgstr "Photo en cours, ne mettez pas les mains"
+
+msgid "baipu:capturing_hint"
+msgstr ""
+"Une main devant l'objectif et le coup n'est pas capturé : il faudra "
+"recommencer."
+
+msgid "baipu:hands_off"
+msgstr "Ne laissez pas les mains sur le goban"
+
+msgid "baipu:confirm"
+msgstr "Confirmer la pierre"
+
+msgid "baipu:confirm_done_reason"
+msgstr "Ce kifu est déjà rejoué jusqu'au bout"
+
+msgid "baipu:failed_title"
+msgstr "Ce coup n'a pas été capturé"
+
+msgid "baipu:failed_hint"
+msgstr ""
+"Laissez la pierre en place — appuyez à nouveau sur « Confirmer la pierre »"
+
+msgid "baipu:failed_hint_geometry"
+msgstr ""
+"Le goban ne correspond plus — recalibrez dans les réglages ; réappuyer ne "
+"changera rien"
+
+msgid "baipu:frames_n"
+msgstr "{n} images capturées"
+
+msgid "baipu:no_frame_yet"
+msgstr "Aucune image enregistrée pour l'instant"
+
+msgid "baipu:latest_saved"
+msgstr "Dernier enregistrement {f}"
+
+msgid "baipu:removed_n"
+msgstr "{n} pierres prises à ce coup"
+
+msgid "baipu:removal_title"
+msgstr "Retirez les {n} pierres prises"
+
+msgid "baipu:removal_hint"
+msgstr ""
+"Celles éclairées en bleu — les pierres prises se retirent à la main ; "
+"appuyez ensuite sur « Retirées »"
+
+msgid "baipu:removed_done"
+msgstr "{n} pierres retirées"
+
+msgid "baipu:moves_title"
+msgstr "Déjà rejoués"
+
+msgid "baipu:moves_value"
+msgstr "{k} sur {n}"
+
+msgid "baipu:undo"
+msgstr "Reprendre le dernier coup"
+
+msgid "baipu:undo_ask"
+msgstr "Reprendre le dernier coup ?"
+
+msgid "baipu:undo_body"
+msgstr ""
+"Retirez d'abord la pierre que vous venez de poser (et remettez les pierres "
+"prises), puis appuyez sur « Repris »."
+
+msgid "baipu:undo_done"
+msgstr "Repris"
+
+msgid "baipu:undo_reason"
+msgstr "La première pierre n'est pas encore posée"
+
+msgid "baipu:finish"
+msgstr "Terminer"
+
+msgid "baipu:finish_reason"
+msgstr "Il reste {n} coups à rejouer"
+
+msgid "baipu:done_title"
+msgstr "Ce kifu est entièrement rejoué"
+
+msgid "baipu:done_hint"
+msgstr "{n} coups au total · {f} images capturées"
+
+msgid "baipu:restart"
+msgstr "Recommencer"
+
+msgid "baipu:resume"
+msgstr "Continuer le rejeu"
+
+msgid "baipu:resume_ask"
+msgstr "Reprendre là où vous en étiez ?"
+
+msgid "baipu:resume_body"
+msgstr ""
+"La dernière fois, vous étiez au coup {n}. Recommencer écrasera les images "
+"déjà capturées."
+
+msgid "baipu:exit"
+msgstr "Quitter"
+
+msgid "baipu:exit_ask"
+msgstr "Quitter le rejeu ?"
+
+msgid "baipu:exit_body"
+msgstr "Votre progression est enregistrée — vous pourrez reprendre."
+
+msgid "baipu:drift_corrected"
+msgstr "Le goban a bougé ; corrigé automatiquement"
+
+msgid "baipu:drift_frozen"
+msgstr "La géométrie n'a pas été corrigée"
+
+msgid "baipu:drift_stale"
+msgstr ""
+"Cette image n'a pas pu être recorrigée ; l'ancienne géométrie a été "
+"réutilisée"
+
+msgid "baipu:drift_word_corrected"
+msgstr "Corrigée"
+
+msgid "baipu:drift_word_frozen"
+msgstr "Non corrigée"
+
+msgid "baipu:drift_word_stale"
+msgstr "Ancienne réutilisée"
+
+msgid "tsumego:loadingTitle"
+msgstr "Problèmes"
+
+msgid "tsumego:actions"
+msgstr "Actions du problème"
+
+msgid "tsumego:allProblems"
+msgstr "Tous les problèmes"
+
+msgid "tsumego:autoAdvance"
+msgstr "Passer au problème suivant après une bonne réponse"
+
+msgid "tsumego:backToUnit"
+msgstr "Retour à l'unité"
+
+msgid "tsumego:backToWrong"
+msgstr "Retour aux erreurs"
+
+msgid "tsumego:bankEmpty"
+msgstr "La banque ne contient pas encore de problèmes"
+
+msgid "tsumego:category_unit"
+msgstr "types"
+
+msgid "tsumego:chooseByLevel"
+msgstr "Choisir par niveau"
+
+msgid "tsumego:cloudUnreachable"
+msgstr "Banque de problèmes dans le cloud inaccessible"
+
+msgid "tsumego:cloudUnreachableBody"
+msgstr ""
+"La banque de problèmes est dans le cloud ; rien n'est stocké sur le boîtier."
+" Réessayez quand le réseau ou le cloud reviendra."
+
+msgid "tsumego:cloudUnreachableBodyNoRetry"
+msgstr ""
+"La banque de problèmes est dans le cloud ; rien n'est stocké sur le boîtier."
+" Revenez en arrière puis rentrez quand le réseau ou le cloud sera revenu."
+
+msgid "tsumego:kyuRanks"
+msgstr "Kyu"
+
+msgid "tsumego:danRanks"
+msgstr "Dan"
+
+msgid "tsumego:rankBoundary"
+msgstr "Frontière entre kyu et dan"
+
+msgid "tsumego:dao"
+msgstr "problèmes"
+
+msgid "tsumego:levelsUnit"
+msgstr "paliers"
+
+msgid "tsumego:goCalibrate"
+msgstr "Aller au calibrage"
+
+msgid "tsumego:greetSub"
+msgstr "Jugé à chaque coup — un mauvais coup est repris aussitôt"
+
+msgid "tsumego:isFirst"
+msgstr "C'est le premier problème"
+
+msgid "tsumego:lastTimeShort"
+msgstr "La dernière fois"
+
+msgid "tsumego:loadingProblem"
+msgstr "Chargement du problème…"
+
+msgid "tsumego:problemLoadError"
+msgstr "Ce problème n'a pas pu être chargé"
+
+msgid "tsumego:modes"
+msgstr "Mode"
+
+msgid "tsumego:next"
+msgstr "Problème suivant"
+
+msgid "tsumego:prev"
+msgstr "Problème précédent"
+
+msgid "tsumego:noMoveYet"
+msgstr "Pas encore de coup"
+
+msgid "tsumego:noSequence"
+msgstr ""
+"Les numéros de ce type n'ont pas pu être lus : précédent/suivant sont "
+"indisponibles"
+
+msgid "tsumego:noWrong"
+msgstr "Aucun problème raté dans ce type pour l'instant"
+
+msgid "tsumego:physicalBoard"
+msgstr "Goban réel"
+
+msgid "tsumego:physClear"
+msgstr "Videz le goban"
+
+msgid "tsumego:physClearLeft"
+msgstr " ({n} restantes)"
+
+msgid "tsumego:physConnecting"
+msgstr "Connexion de la caméra et du modèle de reconnaissance, patientez…"
+
+msgid "tsumego:physGeoConfirm"
+msgstr ""
+"Le goban réel exige d'abord la confirmation du calibrage (à refaire après "
+"chaque redémarrage du service)"
+
+msgid "tsumego:physGeoDrift"
+msgstr "Le calibrage du goban n'est plus valable, recalibrez"
+
+msgid "tsumego:physNeed19"
+msgstr "Le goban réel ne prend en charge que les problèmes 19x19"
+
+msgid "tsumego:physNoCamera"
+msgstr "Aucune caméra détectée / le service de vision est désactivé"
+
+msgid "tsumego:physNoLed"
+msgstr "La LED n'est pas connectée, suivez les indications à l'écran."
+
+msgid "tsumego:physRemove"
+msgstr "Mauvaise réponse : reprenez {n} pierres (lumière bleue)"
+
+msgid "tsumego:physRestore"
+msgstr " et remettez les {n} pierres prises (lumière rouge / verte)"
+
+msgid "tsumego:physReply"
+msgstr ""
+"Posez les pierres selon les lumières du goban (réponse / prises) pour que "
+"goban et écran concordent."
+
+msgid "tsumego:physVerify"
+msgstr ""
+"Vérification de la concordance entre le goban et le problème — ajustez les "
+"pierres selon les lumières."
+
+msgid "tsumego:placeAnswerBlack"
+msgstr ""
+"Posez une pierre noire au point de la solution ; le goban la reconnaîtra "
+"automatiquement"
+
+msgid "tsumego:placeAnswerWhite"
+msgstr ""
+"Posez une pierre blanche au point de la solution ; le goban la reconnaîtra "
+"automatiquement"
+
+msgid "tsumego:preparingBoard"
+msgstr "Préparation"
+
+msgid "tsumego:progressUnread"
+msgstr "L'historique des résolutions n'a pas pu être lu"
+
+msgid "tsumego:progressUnreadBody"
+msgstr ""
+"Sans l'historique, impossible de dire quels problèmes de ce type vous avez "
+"ratés. Réessayez quand le réseau reviendra."
+
+msgid "tsumego:removeAt"
+msgstr "Retirer {coord}"
+
+msgid "tsumego:setupDone"
+msgstr "Goban prêt · à vous"
+
+msgid "tsumego:setupExtra"
+msgstr ""
+"Il y a {n} pierres en trop ou de la mauvaise couleur — retirez-les d'abord "
+"(marquées ✕ à l'écran, blanc clignotant sur le goban)"
+
+msgid "tsumego:setupMatched"
+msgstr "{matched}/{total} pierres concordent"
+
+msgid "tsumego:setupSkip"
+msgstr "Passer la mise en place"
+
+msgid "tsumego:setupStageBlack"
+msgstr "Posez les pierres noires"
+
+msgid "tsumego:setupStageWhite"
+msgstr "Posez les pierres blanches"
+
+msgid "tsumego:solvedInCategory"
+msgstr "Résolus dans ce type"
+
+msgid "tsumego:solvedShort"
+msgstr "Correct"
+
+msgid "tsumego:specializedPractice"
+msgstr "Entraînement ciblé"
+
+msgid "tsumego:these_n_problems"
+msgstr "ces {n} problèmes"
+
+msgid "tsumego:thisProblem"
+msgstr "ce problème"
+
+msgid "tsumego:tries_n"
+msgstr "{n} essais"
+
+msgid "tsumego:tryModeShort"
+msgstr "Essayer"
+
+msgid "tsumego:undoMove"
+msgstr "Reprendre un coup"
+
+msgid "tsumego:undoPhysicalReset"
+msgstr ""
+"On ne peut pas reprendre un coup sur le goban réel ; pour recommencer, "
+"appuyez sur « Remettre en place »"
+
+msgid "tsumego:unitUnknown"
+msgstr "cette unité"
+
+msgid "tsumego:unit_n"
+msgstr "Unité {n}"
+
+msgid "tsumego:unit_range"
+msgstr ""
+"Ce type compte {total} problèmes au total, donc seulement {units} unités."
+
+msgid "tsumego:unit_size"
+msgstr "{n} problèmes par unité"
+
+msgid "tsumego:unit_total"
+msgstr "{n} problèmes"
+
+msgid "tsumego:wrongProgress"
+msgstr "Erreurs · {i} sur {n}"
+
+msgid "tsumego:wrongResume"
+msgstr "Erreurs, problème {n}"
+
+msgid "tsumego:wrongSet"
+msgstr "Erreurs"
+
+msgid "tsumego:wrongShort"
+msgstr "Faux"
+
+msgid "tsumego:wrongState"
+msgstr "Déjà raté"
+
+msgid "tsumego:wrongStatLabel"
+msgstr "Raté et pas encore réussi"
+
+msgid "tsumego:wrong_now"
+msgstr "Actuellement {n}"
+
+msgid "tsumego:wrong_total"
+msgstr "{n} problèmes"
+
+msgid "tsumego:yourLevel"
+msgstr "Votre niveau"
+
+msgid "tsumego:yourMoves"
+msgstr "Vos coups"
+
+msgid "tsumego:problem_no"
+msgstr "Problème {n}"
+
+msgid "kifu:title"
+msgstr "Kifus"
+
+msgid "kifu:back_kifu"
+msgstr "Kifus"
+
+msgid "kifu:greet_a"
+msgstr "Les parties "
+
+msgid "kifu:greet_b"
+msgstr "des autres"
+
+msgid "kifu:greet_sub"
+msgstr "Parties célèbres, diffusions pro et rejeu sur le goban réel"
+
+msgid "kifu:famous_records"
+msgstr "Parties célèbres"
+
+msgid "kifu:search_records"
+msgstr "Rechercher des kifus"
+
+msgid "kifu:search_sub"
+msgstr "Un champ de recherche, correspondance approximative"
+
+msgid "kifu:search_placeholder_cn"
+msgstr "Recherchez par joueur, tournoi ou année"
+
+msgid "kifu:searching"
+msgstr "Recherche"
+
+msgid "kifu:no_results_cn"
+msgstr "Aucun kifu correspondant"
+
+msgid "kifu:no_results_hint"
+msgstr "Essayez un autre joueur, tournoi ou année."
+
+msgid "kifu:list_failed"
+msgstr "La bibliothèque de kifus n'a pas pu être lue"
+
+msgid "kifu:pro_live"
+msgstr "Diffusions pro"
+
+msgid "kifu:live_now"
+msgstr "En direct"
+
+msgid "kifu:not_started"
+msgstr "Pas commencée"
+
+msgid "kifu:ended"
+msgstr "Terminée"
+
+msgid "kifu:place_on_board"
+msgstr "Rejouer sur le goban réel"
+
+msgid "kifu:place_sub"
+msgstr "Les lumières indiquent coup par coup"
+
+msgid "kifu:import_sgf"
+msgstr "Importer un SGF"
+
+msgid "kifu:import_sub"
+msgstr "Un fichier local — fonctionne hors ligne"
+
+msgid "kifu:bad_sgf"
+msgstr "Ce n'est pas un fichier SGF valide"
+
+msgid "kifu:read_failed"
+msgstr "Impossible de lire le fichier"
+
+msgid "kifu:recent"
+msgstr "Rejoués récemment"
+
+msgid "kifu:on_this_box"
+msgstr "Stockés sur ce boîtier"
+
+msgid "kifu:no_recent"
+msgstr "Rien n'a encore été rejoué sur ce boîtier"
+
+msgid "kifu:no_recent_hint"
+msgstr ""
+"Choisissez-en un ci-dessus ou importez un SGF — le kifu choisi est stocké "
+"entier sur le boîtier, vous pourrez le finir hors ligne."
+
+msgid "kifu:cache_gone"
+msgstr "La copie locale de ce kifu a disparu — sélectionnez-le à nouveau"
+
+msgid "kifu:cannot_start"
+msgstr "Celui-ci ne peut pas être rejoué"
+
+msgid "kifu:done_tag"
+msgstr "Entièrement rejoué"
+
+msgid "kifu:placed_all"
+msgstr "Terminé"
+
+msgid "kifu:placed_at"
+msgstr "Jusqu'au coup "
+
+msgid "kifu:resume_at"
+msgstr "La dernière fois, jusqu'au coup "
+
+msgid "kifu:resume"
+msgstr "Continuer"
+
+msgid "kifu:resume_baipu"
+msgstr "Continuer le rejeu"
+
+msgid "kifu:resume_hint"
+msgstr "Les lumières indiqueront où poser la prochaine pierre"
+
+msgid "kifu:keep_placing"
+msgstr "Continuer à poser"
+
+msgid "kifu:detail_actions"
+msgstr "Ce que vous pouvez faire de cette partie"
+
+msgid "kifu:replay"
+msgstr "Relecture coup par coup"
+
+msgid "kifu:to_research"
+msgstr "Ouvrir dans l'étude"
+
+msgid "kifu:board_label"
+msgstr "Goban de relecture"
+
+msgid "kifu:board_lines"
+msgstr "lignes"
+
+msgid "kifu:handicap_pre"
+msgstr "Handicap "
+
+msgid "kifu:handicap_unit"
+msgstr " pierres"
+
+msgid "kifu:komi_black"
+msgstr "Noir verse"
+
+msgid "kifu:komi_unit"
+msgstr " pts"
+
+msgid "kifu:games_unit"
+msgstr "parties"
+
+msgid "kifu:move_ordinal"
+msgstr "Coup "
+
+msgid "kifu:total_prefix"
+msgstr "sur "
+
+msgid "kifu:versus"
+msgstr "contre"
+
+msgid "kifu:source_prefix"
+msgstr "Source : "
+
+msgid "kifu:untitled_game"
+msgstr "Une partie sans titre"
+
+msgid "kifu:whole_game"
+msgstr "Partie entière"
+
+msgid "kifu:moves_title"
+msgstr "Coups · coordonnées des intersections"
+
+msgid "kifu:no_moves"
+msgstr "Ce kifu ne contient aucun coup"
+
+msgid "kifu:need_sgf"
+msgstr "Le kifu de cette partie n'a pas encore été récupéré"
+
+msgid "kifu:load_failed"
+msgstr "Cette partie n'a pas pu être lue"
+
+msgid "kifu:loading_this_game"
+msgstr "Chargement de cette partie"
+
+msgid "kifu:loading_hint"
+msgstr "Le kifu et le journal coup par coup viennent du serveur."
+
+msgid "kifu:retry"
+msgstr "Réessayer"
+
+msgid "kifu:pass"
+msgstr "Passe"
+
+msgid "kifu:to_start"
+msgstr "Revenir au début"
+
+msgid "kifu:to_end"
+msgstr "Aller à la fin"
+
+msgid "kifu:prev_move"
+msgstr "Coup précédent"
+
+msgid "kifu:next_move"
+msgstr "Coup suivant"
+
+msgid "kifu:prev_page"
+msgstr "Page précédente"
+
+msgid "kifu:next_page"
+msgstr "Page suivante"
+
+msgid "kifu:collapsed"
+msgstr "Replié"
+
+msgid "kifu:expanded"
+msgstr "Déplié"
+
+msgid "kifu:today"
+msgstr "aujourd'hui"
+
+msgid "kifu:yesterday"
+msgstr "hier"
+
+msgid "kifu:day_before"
+msgstr "avant-hier"
+
+msgid "review:back_review"
+msgstr "Analyse"
+
+msgid "review:you"
+msgstr "Vous"
+
+msgid "review:black"
+msgstr "Noir"
+
+msgid "review:white"
+msgstr "Blanc"
+
+msgid "review:win"
+msgstr "victoire"
+
+msgid "review:lose"
+msgstr "défaite"
+
+msgid "review:by_resign"
+msgstr "par abandon"
+
+msgid "review:by_time"
+msgstr "au temps"
+
+msgid "review:by_forfeit"
+msgstr "par forfait"
+
+msgid "review:void_result"
+msgstr "Cette partie est restée sans verdict"
+
+msgid "review:unfinished_line"
+msgstr "Quittée après le coup {n}"
+
+msgid "review:sec_games"
+msgstr "Parties passées"
+
+msgid "review:all_games"
+msgstr "{n} parties au total"
+
+msgid "review:local_games"
+msgstr "{n} sur ce boîtier"
+
+msgid "review:facing_games"
+msgstr "{n} en face à face"
+
+msgid "review:matched_games"
+msgstr "{n} trouvées"
+
+msgid "review:filter_label"
+msgstr "Filtrer les parties par source"
+
+msgid "review:filter_all"
+msgstr "Toutes"
+
+msgid "review:filter_local"
+msgstr "Face à face"
+
+msgid "review:search_toggle"
+msgstr "Filtrer et rechercher les parties passées"
+
+msgid "review:list_loading"
+msgstr "Chargement de vos parties"
+
+msgid "review:list_failed"
+msgstr "La liste des parties n'a pas pu être lue"
+
+msgid "review:no_games"
+msgstr "Aucune partie jouée pour l'instant"
+
+msgid "review:no_games_hint"
+msgstr ""
+"Une partie terminée est enregistrée ici automatiquement ; vous pouvez aussi "
+"importer un SGF ci-dessous."
+
+msgid "review:no_local_games"
+msgstr "Pas encore de partie en face à face"
+
+msgid "review:no_local_games_hint"
+msgstr ""
+"Les parties où deux personnes jouent sur le même boîtier, dans « Jouer · "
+"Deux joueurs », sont enregistrées ici."
+
+msgid "review:no_match"
+msgstr "Aucune partie correspondante"
+
+msgid "review:no_match_hint"
+msgstr "Essayez un autre nom de joueur ou de tournoi."
+
+msgid "review:row_ai"
+msgstr "Contre l'IA"
+
+msgid "review:row_human"
+msgstr "Humain contre humain"
+
+msgid "review:row_ranked"
+msgstr "Partie classée"
+
+msgid "review:row_import"
+msgstr "Kifu importé"
+
+msgid "review:row_library"
+msgstr "Bibliothèque de kifus"
+
+msgid "review:row_vs"
+msgstr "contre"
+
+msgid "review:rail_title"
+msgstr "Cette partie"
+
+msgid "review:rail_none"
+msgstr "Aucune partie sélectionnée"
+
+msgid "review:rail_board"
+msgstr "Position finale de la partie choisie"
+
+msgid "review:board_failed"
+msgstr "Le kifu de cette partie n'a pas pu être lu"
+
+msgid "review:sec_winrate"
+msgstr "Taux de victoire dans cette partie"
+
+msgid "review:black_winrate"
+msgstr "Taux de victoire de Noir"
+
+msgid "review:black_lead"
+msgstr "Noir devant"
+
+msgid "review:perspective"
+msgstr "Point de vue de {color}"
+
+msgid "review:plot_label"
+msgstr "Taux de victoire coup par coup — Noir en haut, Blanc en bas"
+
+msgid "review:plot_pick_label"
+msgstr "Taux de victoire coup par coup — touchez pour y aller"
+
+msgid "review:plot_loading"
+msgstr "Chargement du rapport de cette partie"
+
+msgid "review:plot_pick"
+msgstr "Choisissez une partie ci-dessous"
+
+msgid "review:plot_thin"
+msgstr "Coups que le rapport n'a pas encore calculés"
+
+msgid "review:plot_unanalyzed"
+msgstr ""
+"Cette partie n'est pas encore analysée — choisissez un palier sous « Générer"
+" le rapport »"
+
+msgid "review:sec_report"
+msgstr "Générer le rapport"
+
+msgid "review:two_tiers"
+msgstr "Deux paliers : 500 / 2000 visites"
+
+msgid "review:tier_standard"
+msgstr "Standard"
+
+msgid "review:tier_standard_sub"
+msgstr "500 visites par coup"
+
+msgid "review:tier_deep"
+msgstr "Approfondi"
+
+msgid "review:tier_deep_sub"
+msgstr "2000 visites par coup · quatre fois plus lent"
+
+msgid "review:visits_each"
+msgstr "{n} visites par coup"
+
+msgid "review:analyzed_progress"
+msgstr "{a} coups sur {b} analysés"
+
+msgid "review:resume_analysis"
+msgstr "Poursuivre l'analyse"
+
+msgid "review:recompute"
+msgstr "Recalculer"
+
+msgid "review:recompute_failed"
+msgstr "Le recalcul n'a pas abouti"
+
+msgid "review:refresh_failed"
+msgstr "L'actualisation a échoué"
+
+msgid "review:no_task"
+msgstr "Cette partie n'a pas encore de tâche de rapport"
+
+msgid "review:tasks_failed"
+msgstr "Un problème est survenu avec les tâches de rapport"
+
+msgid "review:tag_analyzed"
+msgstr "Analysée"
+
+msgid "review:tag_unanalyzed"
+msgstr "Non analysée"
+
+msgid "review:cell_unanalyzed"
+msgstr "Non analysée"
+
+msgid "review:tag_partial"
+msgstr "Seulement {a}/{b} calculés"
+
+msgid "review:tag_running"
+msgstr "Analyse {a}/{b}"
+
+msgid "review:tag_failed"
+msgstr "Analyse échouée"
+
+msgid "review:tag_unfinished"
+msgstr "Non terminée"
+
+msgid "review:failure_bad_sgf"
+msgstr "Ce kifu n'a pas pu être lu"
+
+msgid "review:failure_no_credits"
+msgstr "Crédits insuffisants"
+
+msgid "review:failure_not_found"
+msgstr "Ce n'est plus là"
+
+msgid "review:failure_offline"
+msgstr "Le cloud est momentanément indisponible"
+
+msgid "review:moves_failed"
+msgstr "Le rapport n'a pas pu être lu"
+
+msgid "review:detail_failed"
+msgstr "Ce rapport n'a pas pu être lu"
+
+msgid "review:open_report"
+msgstr "Ouvrir le rapport"
+
+msgid "review:delete_game"
+msgstr "Supprimer"
+
+msgid "review:to_research"
+msgstr "Ouvrir dans l'étude"
+
+msgid "review:toggles"
+msgstr "Affichage"
+
+msgid "review:accuracy"
+msgstr "Précision"
+
+msgid "review:brilliants"
+msgstr "Coups brillants"
+
+msgid "review:mistakes"
+msgstr "Erreurs"
+
+msgid "review:took"
+msgstr "a pris {d}"
+
+msgid "review:import_card"
+msgstr "Importer un kifu à analyser"
+
+msgid "review:import_card_sub"
+msgstr "Un SGF local ou la bibliothèque de kifus"
+
+msgid "platform:platforms"
+msgstr "Plateformes"
+
+msgid "platform:back_to_platforms"
+msgstr "Multiplateforme"
+
+msgid "platform:connect_sub"
+msgstr "Connectez un serveur de go externe et jouez sur ce goban réel"
+
+msgid "platform:connected"
+msgstr "Connecté"
+
+msgid "platform:disconnected"
+msgstr "Non connecté"
+
+msgid "platform:what_you_get"
+msgstr "Une fois connecté"
+
+msgid "platform:get_board"
+msgstr "Jouer sur ce goban réel"
+
+msgid "platform:get_board_sub"
+msgstr "Poser une pierre, c'est jouer — l'adversaire voit le même coup"
+
+msgid "platform:get_kifu"
+msgstr "Le kifu est enregistré automatiquement"
+
+msgid "platform:get_kifu_sub"
+msgstr "Il rejoint la bibliothèque de kifus et peut être envoyé en analyse"
+
+msgid "platform:get_rank"
+msgstr "Votre niveau sur ce boîtier n'est pas affecté"
+
+msgid "platform:get_rank_sub"
+msgstr "Les résultats là-bas ne comptent que sur cette plateforme"
+
+msgid "platform:icon_board"
+msgstr "Goban"
+
+msgid "platform:icon_kifu"
+msgstr "Kifu"
+
+msgid "platform:icon_rank"
+msgstr "Niveau"
+
+msgid "platform:sign_in_to"
+msgstr "Connexion · {name}"
+
+msgid "platform:logging_in"
+msgstr "Connexion…"
+
+msgid "platform:login_failed"
+msgstr "Échec de la connexion"
+
+msgid "platform:logout"
+msgstr "Se déconnecter"
+
+msgid "platform:logout_ask"
+msgstr "Déconnecter {name} ?"
+
+msgid "platform:logout_body"
+msgstr ""
+"Ce boîtier ne sera plus connecté à ce compte. Il faudra vous reconnecter la "
+"prochaine fois."
+
+msgid "platform:pw_fields"
+msgstr "Nom d'utilisateur + mot de passe"
+
+msgid "platform:pw_note"
+msgstr "Envoyé uniquement à cette plateforme, jamais stocké sur le boîtier"
+
+msgid "platform:user_note"
+msgstr "Le nom de compte là-bas, pas celui du boîtier"
+
+msgid "platform:sms_fields"
+msgstr "Numéro de téléphone + code"
+
+msgid "platform:phone_note"
+msgstr ""
+"Sert uniquement à obtenir un identifiant de connexion auprès de la "
+"plateforme"
+
+msgid "platform:sms_get"
+msgstr "Obtenir le code"
+
+msgid "platform:sms_again"
+msgstr "Renvoyer dans {n} s"
+
+msgid "platform:sms_failed"
+msgstr "Le code n'a pas pu être envoyé"
+
+msgid "platform:need_phone"
+msgstr "Saisissez d'abord le numéro de téléphone"
+
+msgid "platform:code_note"
+msgstr "Six chiffres · valable 60 secondes"
+
+msgid "platform:lobby_title"
+msgstr "{name} · salon"
+
+msgid "platform:lobby_sub"
+msgstr "Défiez quelqu'un ou laissez la plateforme trouver un adversaire"
+
+msgid "platform:enter_lobby"
+msgstr "Entrer dans le salon"
+
+msgid "platform:enter_engine"
+msgstr "Jouer contre l'IA"
+
+msgid "platform:no_play_yet"
+msgstr "Le jeu n'est pas encore disponible"
+
+msgid "platform:cap_live"
+msgstr "Jeu en temps réel"
+
+msgid "platform:cap_engine"
+msgstr "Contre l'IA"
+
+msgid "platform:cap_automatch"
+msgstr "Appariement automatique"
+
+msgid "platform:cap_rooms"
+msgstr "Salles"
+
+msgid "platform:find_by_name"
+msgstr "Chercher par nom d'utilisateur"
+
+msgid "platform:find_hint"
+msgstr ""
+"Tapez puis Entrée ; aucun résultat signifie que la personne n'y est pas"
+
+msgid "platform:results"
+msgstr "Joueurs trouvés"
+
+msgid "platform:no_such_player"
+msgstr "Cette personne n'existe pas là-bas"
+
+msgid "platform:search_first"
+msgstr ""
+"Tapez un nom d'utilisateur puis Entrée, ou laissez la plateforme en trouver "
+"un"
+
+msgid "platform:users_failed"
+msgstr "La liste des joueurs n'a pas pu être récupérée"
+
+msgid "platform:idle"
+msgstr "Libre"
+
+msgid "platform:in_game"
+msgstr "En partie"
+
+msgid "platform:challenge"
+msgstr "Défier"
+
+msgid "platform:challenge_terms"
+msgstr "Envoyer un défi"
+
+msgid "platform:challenge_ask"
+msgstr "Défier {name} ?"
+
+msgid "platform:challenge_ask_body"
+msgstr "{name} {rank} · 19x19 · règles chinoises · classée."
+
+msgid "platform:challenge_ask_tail"
+msgstr ""
+"Une fois envoyé, impossible de revenir ; s'il accepte, vous jouerez sur "
+"{name}, pas sur ce boîtier."
+
+msgid "platform:challenge_send"
+msgstr "Envoyer le défi"
+
+msgid "platform:challenge_sent"
+msgstr ""
+"Défi envoyé. S'il accepte, vous jouerez sur {name}, pas sur ce boîtier."
+
+msgid "platform:challenge_failed"
+msgstr "Le défi n'a pas pu être envoyé"
+
+msgid "platform:automatch"
+msgstr "Appariement automatique"
+
+msgid "platform:automatch_body"
+msgstr "Laisser {name} en trouver un"
+
+msgid "platform:automatch_hint"
+msgstr ""
+"La file est du côté de {name}. En cas d'appariement, la partie ne revient "
+"pas ici — vous continuez sur {name}."
+
+msgid "platform:automatch_start"
+msgstr "Lancer la recherche"
+
+msgid "platform:automatch_cancel"
+msgstr "Annuler la recherche"
+
+msgid "platform:automatch_failed"
+msgstr "La recherche n'a pas démarré"
+
+msgid "platform:seeking"
+msgstr "Recherche d'un adversaire"
+
+msgid "platform:engine_title"
+msgstr "{name} · contre l'IA"
+
+msgid "platform:engine_sub"
+msgstr "Réglages · sans effet sur le niveau du boîtier"
+
+msgid "platform:opponent"
+msgstr "Adversaire"
+
+msgid "platform:rung_n"
+msgstr "Palier {i} sur {n}"
+
+msgid "platform:stronger"
+msgstr "Un adversaire plus fort"
+
+msgid "platform:weaker"
+msgstr "Un adversaire plus faible"
+
+msgid "platform:levels_from"
+msgstr "{n} paliers fournis par {name}"
+
+msgid "platform:levels_failed"
+msgstr "Les paliers de force n'ont pas pu être récupérés"
+
+msgid "platform:display_elo"
+msgstr "Elo affiché {v}"
+
+msgid "platform:ref_rank"
+msgstr "équivaut à {r}"
+
+msgid "platform:rank_is_theirs"
+msgstr "Le niveau appartient à {name}"
+
+msgid "platform:terms_fixed"
+msgstr "Les conditions sont figées"
+
+msgid "platform:terms_body"
+msgstr "Règles chinoises · classée"
+
+msgid "platform:terms_hint"
+msgstr "Ces trois-là ne se choisissent pas ici — c'est ce qui est envoyé"
+
+msgid "platform:only_19"
+msgstr "{name} ne propose que le 19x19 · règles chinoises"
+
+msgid "platform:fixed"
+msgstr "Figé"
+
+msgid "platform:untimed"
+msgstr "Sans limite"
+
+msgid "platform:nigiri"
+msgstr "Nigiri"
+
+msgid "platform:black_first"
+msgstr "Noir d'abord, sans komi"
+
+msgid "platform:handicap_range"
+msgstr "{n} paliers · à égalité / Noir d'abord / 2 – 9 pierres"
+
+msgid "platform:komi_0"
+msgstr "Sans komi"
+
+msgid "platform:komi_75"
+msgstr "Noir verse 7,5 points"
+
+msgid "platform:komi_n"
+msgstr "Noir verse {n} pierres"
+
+msgid "platform:summary_note"
+msgstr ""
+"Le komi découle du handicap, ce n'est pas une option séparée. Les résultats "
+"ne comptent que chez {name}."
+
+msgid "tutorial:title_cn"
+msgstr "Cours"
+
+msgid "tutorial:categories_cn"
+msgstr "Catégories"
+
+msgid "tutorial:greet_sub"
+msgstr ""
+"Le backend a cinq couches ; le contenu n'est pas généré sur ce boîtier"
+
+msgid "tutorial:loading_cn"
+msgstr "Synchronisation des cours avec le cloud"
+
+msgid "tutorial:loadFailed"
+msgstr "Échec du chargement, réessayez plus tard"
+
+msgid "tutorial:empty"
+msgstr "Pas encore de cours"
+
+msgid "tutorial:empty_hint"
+msgstr ""
+"La bibliothèque de cours du cloud n'a pas encore de livres ; les deux liens "
+"ci-dessous ont déjà du contenu."
+
+msgid "tutorial:instead_cn"
+msgstr "Ce que vous pouvez travailler maintenant"
+
+msgid "tutorial:go_training"
+msgstr "Aller au camp d'entraînement"
+
+msgid "tutorial:go_training_sub"
+msgstr "Six types de problèmes · disponibles tout de suite"
+
+msgid "tutorial:go_baipu"
+msgstr "Aller au rejeu"
+
+msgid "tutorial:go_baipu_sub"
+msgstr "Rejouez une partie célèbre coup par coup"
+
+msgid "tutorial:count_line"
+msgstr "{n} catégories · {b} livres au total"
+
+msgid "tutorial:books_n"
+msgstr "{n} livres"
+
+msgid "tutorial:books_synced"
+msgstr "{n} livres · le contenu suit le cloud"
+
+msgid "tutorial:synced"
+msgstr "Suit le cloud"
+
+msgid "tutorial:pick_book"
+msgstr "Choisir un livre"
+
+msgid "tutorial:books_loading"
+msgstr "Chargement des livres de cette catégorie"
+
+msgid "tutorial:books_failed"
+msgstr "Les livres de cette catégorie n'ont pas pu être lus"
+
+msgid "tutorial:books_empty"
+msgstr "Cette catégorie ne contient aucun livre"
+
+msgid "tutorial:books_empty_hint"
+msgstr ""
+"Le cloud n'a pas encore synchronisé cette catégorie ; d'autres en ont peut-"
+"être déjà."
+
+msgid "tutorial:anatomy_cn"
+msgstr "À quoi ressemble une leçon"
+
+msgid "tutorial:chapters_n"
+msgstr "{n} chapitres"
+
+msgid "tutorial:sections_n"
+msgstr "{n} sections"
+
+msgid "tutorial:figures_n"
+msgstr "{n} diagrammes"
+
+msgid "tutorial:moves_n"
+msgstr "{n} coups"
+
+msgid "tutorial:seconds_n"
+msgstr "{n} s"
+
+msgid "tutorial:has_video"
+msgstr "Avec vidéo"
+
+msgid "tutorial:back_toc"
+msgstr "Sommaire"
+
+msgid "tutorial:toc_of"
+msgstr "{title} · sommaire"
+
+msgid "tutorial:toc_count"
+msgstr "{c} chapitres · {s} sections"
+
+msgid "tutorial:toc_loading"
+msgstr "Chargement du sommaire de ce livre"
+
+msgid "tutorial:toc_failed"
+msgstr "Le sommaire de ce livre n'a pas pu être lu"
+
+msgid "tutorial:toc_empty"
+msgstr "Ce livre n'a pas encore de chapitres"
+
+msgid "tutorial:toc_empty_hint"
+msgstr ""
+"La liste des livres est synchronisée, pas le contenu ; ce n'est pas un "
+"problème de votre boîtier."
+
+msgid "tutorial:no_sections"
+msgstr "Ce chapitre n'a pas encore de sections"
+
+msgid "tutorial:section_n"
+msgstr "Section {n}"
+
+msgid "tutorial:section_loading"
+msgstr "Chargement de cette section"
+
+msgid "tutorial:section_failed"
+msgstr "Cette section n'a pas pu être lue"
+
+msgid "tutorial:figures_in_section"
+msgstr "Diagrammes de cette section"
+
+msgid "tutorial:no_figures"
+msgstr "Cette section n'a pas encore de diagrammes"
+
+msgid "tutorial:no_figures_hint"
+msgstr ""
+"Le sommaire liste cette section, mais le contenu n'est pas synchronisé ; ce "
+"n'est pas un problème de votre boîtier."
+
+msgid "tutorial:figure_ordinal"
+msgstr "Diagramme {i} sur {n}"
+
+msgid "tutorial:figure_actions"
+msgstr "Tourner les diagrammes et explications"
+
+msgid "tutorial:prev_figure"
+msgstr "Diagramme précédent"
+
+msgid "tutorial:next_figure"
+msgstr "Diagramme suivant"
+
+msgid "tutorial:back_to_diagram"
+msgstr "Retour au diagramme"
+
+msgid "tutorial:board_label"
+msgstr "{label} : le diagramme de cette section"
+
+msgid "tutorial:board_view"
+msgstr "Quelle portion afficher"
+
+msgid "tutorial:fullBoard"
+msgstr "Goban entier"
+
+msgid "tutorial:partial"
+msgstr "Partie locale"
+
+msgid "tutorial:moves"
+msgstr "Coups"
+
+msgid "tutorial:step_back"
+msgstr "Un coup en arrière"
+
+msgid "tutorial:step_fwd"
+msgstr "Un coup en avant"
+
+msgid "tutorial:step_n"
+msgstr "Aller au coup {n}"
+
+msgid "tutorial:step_total"
+msgstr "Ce diagramme compte {n} coups"
+
+msgid "tutorial:step_zero"
+msgstr "Seulement les pierres de départ"
+
+msgid "tutorial:tag_video"
+msgstr "Explication vidéo"
+
+msgid "tutorial:tag_audio"
+msgstr "Explication audio"
+
+msgid "tutorial:tag_text"
+msgstr "Explication écrite"
+
+msgid "tutorial:tag_none"
+msgstr "Pas d'explication"
+
+msgid "tutorial:teach_none"
+msgstr "Pas d'explication"
+
+msgid "tutorial:teach_none_reason"
+msgstr ""
+"Aucune explication n'a été enregistrée pour ce diagramme ; elle arrivera "
+"avec la synchronisation du cloud"
+
+msgid "tutorial:text_only"
+msgstr "Explication écrite seulement"
+
+msgid "tutorial:text_only_reason"
+msgstr "Ce diagramme n'a qu'une explication écrite, affichée ci-dessus"
+
+msgid "tutorial:no_explain"
+msgstr ""
+"Le livre ne donne pas de texte pour ce diagramme, et aucune explication n'a "
+"été enregistrée."
+
+msgid "tutorial:watch_video"
+msgstr "Voir l'explication vidéo"
+
+msgid "tutorial:play_audio"
+msgstr "Écouter l'explication audio"
+
+msgid "tutorial:stop_audio"
+msgstr "Arrêter"
+
+msgid "19x19"
+msgstr "19x19"
+
+msgid "19×19 only"
+msgstr "19×19 seulement"
+
+msgid "20 problems per unit"
+msgstr "20 problèmes par unité"
+
+msgid "Korean rules"
+msgstr "Règles coréennes"
+
+msgid ""
+"AI connection error — please retry your move, or exit to abandon the game."
+msgstr ""
+"Erreur de connexion à l'IA — rejouez votre coup ou quittez pour abandonner "
+"la partie."
+
+msgid "AI is thinking…"
+msgstr "L'IA réfléchit…"
+
+msgid "AI suggestions (white lamps)"
+msgstr "Conseils de l'IA (lampes blanches)"
+
+msgid "Accept as my move"
+msgstr "Adopter comme mon coup"
+
+msgid "All games"
+msgstr "Toutes les parties"
+
+msgid "Auto-advance after solving · current"
+msgstr "Avancer après réussite · actuel"
+
+msgid "Average time"
+msgstr "Temps moyen"
+
+msgid "Average tries"
+msgstr "Essais moyens"
+
+msgid "Board may have moved"
+msgstr "Le goban a peut-être bougé"
+
+msgid "Board may have moved — recognition paused"
+msgstr "Le goban a peut-être bougé — reconnaissance en pause"
+
+msgid "Board mismatch"
+msgstr "Le goban ne correspond pas à la partie"
+
+msgid "Board restored"
+msgstr "Goban rétabli comme indiqué"
+
+msgid "Cached SGF no longer available"
+msgstr "Le SGF en cache n'est plus disponible"
+
+msgid "Calibration"
+msgstr "Calibrage"
+
+msgid "Camera"
+msgstr "Caméra"
+
+msgid "Camera disconnected, switched to touch mode"
+msgstr "Caméra déconnectée, passage au mode tactile"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Categories"
+msgstr "Types de problèmes"
+
+msgid "Challenge others · rated queue available"
+msgstr "Défier d'autres joueurs · file classée disponible"
+
+msgid "Chart"
+msgstr "Graphique"
+
+msgid "Choose a way to start playing"
+msgstr "Choisissez une façon de commencer à jouer"
+
+msgid "Choose one category"
+msgstr "Choisissez un type de problème"
+
+msgid "Confirm"
+msgstr "Confirmer le coup"
+
+msgid "Confirm resign?"
+msgstr "Confirmer l'abandon ?"
+
+msgid "Confirm result"
+msgstr "Confirmer le résultat"
+
+msgid "Confirming…"
+msgstr "Confirmation…"
+
+msgid "Connected · goes to the lobby"
+msgstr "Connecté · mène au salon"
+
+msgid "Connected · plays the engine"
+msgstr "Connecté · joue contre le moteur"
+
+msgid "Continue"
+msgstr "Continuer"
+
+msgid "Continue anyway"
+msgstr "Continuer quand même"
+
+msgid "Continue on screen"
+msgstr "Continuer à l'écran"
+
+msgid "Continue practicing"
+msgstr "Continuer l'entraînement"
+
+msgid "Cross-Platform"
+msgstr "Jeu multiplateforme"
+
+msgid "Cross-Platform Play"
+msgstr "Jeu multiplateforme"
+
+msgid "Difficulty"
+msgstr "Difficulté"
+
+msgid "Ended"
+msgstr "Terminée"
+
+msgid "Enter Live"
+msgstr "Entrer en direct"
+
+msgid "Every game played, with its review report"
+msgstr "Chaque partie jouée, avec son rapport d'analyse"
+
+msgid "Exit"
+msgstr "Quitter"
+
+msgid "Failed to read file"
+msgstr "Impossible de lire le fichier"
+
+msgid "Failed to start game"
+msgstr "Impossible de démarrer la partie"
+
+msgid "Focused training"
+msgstr "Entraînement ciblé"
+
+msgid "Game in progress. Resign and exit?"
+msgstr "Partie en cours. Abandonner et quitter ?"
+
+msgid "Geometry locked"
+msgstr "Géométrie verrouillée"
+
+msgid "Guest"
+msgstr "Invité"
+
+msgid "Hide Hint"
+msgstr "Masquer l'indice"
+
+msgid "Hint"
+msgstr "Indice"
+
+msgid "Hints"
+msgstr "Conseils de l'IA"
+
+msgid "Hint failed"
+msgstr "L'indice a échoué, réessayez plus tard"
+
+msgid "Hint is not enabled"
+msgstr "Les indices ne sont pas activés"
+
+msgid "History"
+msgstr "Historique"
+
+msgid "Ignore"
+msgstr "Ignorer"
+
+msgid "Import SGF"
+msgstr "Importer un kifu"
+
+msgid "Insufficient balance"
+msgstr "Solde insuffisant"
+
+msgid "Judged on placement"
+msgstr "Jugé dès la pose"
+
+msgid "Judged on placement · a wrong move is taken straight back"
+msgstr "Jugé dès la pose · un mauvais coup est repris aussitôt"
+
+msgid "Keep waiting"
+msgstr "Continuer d'attendre"
+
+msgid "Load more"
+msgstr "Charger plus"
+
+msgid "Loading"
+msgstr "Chargement..."
+
+msgid "Loading…"
+msgstr "Chargement…"
+
+msgid "Loading categories…"
+msgstr "Chargement des types de problèmes…"
+
+msgid "Loading problem set…"
+msgstr "Chargement de la banque de problèmes…"
+
+msgid "Logging in..."
+msgstr "Connexion..."
+
+msgid "Login failed"
+msgstr "Échec de la connexion"
+
+msgid ""
+"Mix all categories at this level and group every 20 problems into a unit"
+msgstr "Mélange tous les types de ce niveau et regroupe les problèmes par 20"
+
+msgid "Mix all categories at this level in 20-problem units"
+msgstr "Tous les types de ce niveau mélangés, 20 problèmes par unité"
+
+msgid "Mixed"
+msgstr "Mixte"
+
+msgid "Mixed categories"
+msgstr "Types mélangés"
+
+msgid "Mixed training"
+msgstr "Entraînement mixte"
+
+msgid "Next up"
+msgstr "Au suivant"
+
+msgid "No 19×19 records found"
+msgstr "Aucun kifu 19×19 trouvé"
+
+msgid "No categories at this level yet"
+msgstr "Ce palier n'a pas encore de types de problèmes"
+
+msgid "No live matches"
+msgstr "Aucune partie en direct"
+
+msgid "No problems for this level"
+msgstr "Aucun problème pour ce niveau"
+
+msgid "No problems in this category yet"
+msgstr "Ce type n'a pas encore de problèmes"
+
+msgid "No such unit"
+msgstr "Cette unité n'existe pas"
+
+msgid "Not a valid SGF file"
+msgstr "Ce n'est pas un fichier SGF valide"
+
+msgid "Not attempted"
+msgstr "Pas encore tenté"
+
+msgid "Not available in ranked games"
+msgstr "Indisponible en partie classée"
+
+msgid "Not calibrated"
+msgstr "Non calibré"
+
+msgid "Not signed in"
+msgstr "Non connecté"
+
+msgid "Not wired up yet"
+msgstr "Pas encore branché"
+
+msgid "Now Live"
+msgstr "En direct"
+
+msgid "Online Lobby"
+msgstr "Salon en ligne"
+
+msgid "Only the ones I got wrong"
+msgstr "Seulement mes erreurs"
+
+msgid "Other practice"
+msgstr "Autres exercices"
+
+msgid "Other sets"
+msgstr "Un autre lot"
+
+msgid "Password"
+msgstr "Mot de passe"
+
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+msgid "Physical board out of sync"
+msgstr "Le goban réel ne suit plus la partie depuis un moment"
+
+msgid "Pick the strength yourself · form estimate available"
+msgstr "Choisissez la force vous-même · estimation de position disponible"
+
+msgid "Place / remove the lit stones, then confirm — or continue on screen."
+msgstr ""
+"Posez (rouge/vert) ou retirez (bleu) les pierres éclairées puis confirmez — "
+"ou continuez à l'écran."
+
+msgid "Place these stones"
+msgstr "Posez ces pierres (rouge / vert)"
+
+msgid "Remove these stones"
+msgstr "Retirez ces pierres (bleu)"
+
+msgid "Play vs AI"
+msgstr "Jouer contre l'IA"
+
+msgid "Play vs Human"
+msgstr "Jouer contre une personne"
+
+msgid "Please place the AI stone at the lit point first"
+msgstr "Posez d'abord la pierre de l'IA sur le point éclairé"
+
+msgid "Possible move detected at"
+msgstr "Coup possible détecté en"
+
+msgid "Problem set unavailable"
+msgstr "La banque de problèmes est indisponible"
+
+msgid "Problems per unit · current"
+msgstr "Problèmes par unité · actuel"
+
+msgid "Re-align board"
+msgstr "Réaligner le goban"
+
+msgid "Re-align failed — try again"
+msgstr "Le réalignement a échoué — réessayez"
+
+msgid "Re-sync failed, please retry"
+msgstr "La resynchronisation de la reconnaissance a échoué, réessayez"
+
+msgid "Recalibrate"
+msgstr "Recalibrer"
+
+msgid "Recalibrate board"
+msgstr "Recalibrer le goban"
+
+msgid "Recent"
+msgstr "Récent"
+
+msgid "Redo the ones you got wrong in this category"
+msgstr "Refaire les erreurs de ce type"
+
+msgid "Register / Sign in"
+msgstr "S'inscrire / se connecter"
+
+msgid "Reset"
+msgstr "Remettre en place"
+
+msgid "Resign failed, retry"
+msgstr "L'abandon a échoué, réessayez"
+
+msgid "Resume"
+msgstr "Reprendre"
+
+msgid "Resume last game"
+msgstr "Reprendre la dernière partie"
+
+msgid "Score"
+msgstr "Compter"
+
+msgid "Search players, events..."
+msgstr "Rechercher joueurs, tournois..."
+
+msgid "Select a match"
+msgstr "Sélectionnez une partie"
+
+msgid "Select category"
+msgstr "Sélectionnez un type"
+
+msgid "Select or import a game to begin"
+msgstr "Sélectionnez ou importez une partie pour commencer"
+
+msgid "Sign out"
+msgstr "Se déconnecter"
+
+msgid "Signed in"
+msgstr "Connecté"
+
+msgid "Solved"
+msgstr "Résolu"
+
+msgid "Solved in this unit"
+msgstr "Résolus dans cette unité"
+
+msgid "Start"
+msgstr "Commencer"
+
+msgid "Start placing"
+msgstr "Commencer le rejeu"
+
+msgid "Stone Placement"
+msgstr "Rejouer sur le goban"
+
+msgid "StellaBox account"
+msgstr "Compte StellaBox"
+
+msgid "Tap to connect"
+msgstr "Touchez pour vous connecter"
+
+msgid "Tier picked from your strength · analysis sealed throughout"
+msgstr "Palier choisi selon votre force · analyse désactivée"
+
+msgid "Time"
+msgstr "Temps"
+
+msgid "To place"
+msgstr "À poser"
+
+msgid "To remove"
+msgstr "À retirer"
+
+msgid "Today we practice {what}"
+msgstr "Aujourd'hui, travaillons {what}"
+
+msgid "what"
+msgstr "quelque chose"
+
+msgid "Top Matches"
+msgstr "Parties en vedette"
+
+msgid "Try"
+msgstr "Essayer"
+
+msgid "Try a different search, or import an SGF file."
+msgstr "Essayez une autre recherche, ou importez un fichier SGF."
+
+msgid "Two players on the same physical board"
+msgstr "Deux joueurs sur le même goban réel"
+
+msgid "Units"
+msgstr "Unités"
+
+msgid "Upcoming"
+msgstr "À venir"
+
+msgid "Wrong"
+msgstr "Erreurs"
+
+msgid "You are here"
+msgstr "Vous êtes ici"
+
+msgid "game:count_failed_retry"
+msgstr "Le comptage n'a pas abouti, réessayez plus tard"
+
+msgid "min"
+msgstr "min"
+
+msgid "sec"
+msgstr "s"
+
+msgid "problems count"
+msgstr "problèmes"
+
+msgid "score"
+msgstr "écart de points"
+
+msgid "winrate"
+msgstr "taux de victoire"
+
+msgid "{item} exhausted"
+msgstr "{item} épuisé"
+
+msgid ""
+"{item} quota is insufficient — please recharge in the Golaxy app; this "
+"terminal cannot recharge for you."
+msgstr ""
+"Quota de {item} insuffisant — rechargez dans l'application Golaxy ; ce "
+"terminal ne peut pas le faire."
+
+msgid "game:connection_rejected"
+msgstr ""
+"La connexion en direct a été refusée : le goban ne se mettra pas à jour seul"
+" — reconnectez-vous puis réessayez"
+
+msgid "game:gone_reason"
+msgstr ""
+"Le boîtier a peut-être redémarré, ou la partie a été nettoyée après une "
+"longue inactivité."
+
+msgid "game:resign_failed"
+msgstr "L'abandon n'a pas abouti"
+
+msgid "game:session_gone_notice"
+msgstr ""
+"Cette partie n'existe plus sur le serveur — vous pouvez quitter cette page."

@@ -153,7 +153,7 @@ const KioskRoutes = () => {
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<KifuDetailPage />} />
           <Route path="baipu" element={<BaipuListPage />} />
-          <Route path="baipu/session/:source" element={<PhysicalBoardGuard sub="摆谱要先让摄像头看清盘面"><BaipuSessionPage /></PhysicalBoardGuard>} />
+          <Route path="baipu/session/:source" element={<PhysicalBoardGuard sub="摆谱要先让摄像头看清盘面" fallback="/kiosk/baipu"><BaipuSessionPage /></PhysicalBoardGuard>} />
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="report" element={<ReportsPage />} />

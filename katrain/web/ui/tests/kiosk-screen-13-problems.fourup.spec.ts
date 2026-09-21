@@ -1,6 +1,7 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
 import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
+import { kioskMeJson } from './helpers/kioskIdentity';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -43,7 +44,7 @@ test('四图:题目列表 ←→ sample-go/shots/13-problems.png', async ({ page
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/api/v1/auth/me') {
-      return route.fulfill({ json: { id: 1, username: '访客', rank: '5段', credits: 0 } });
+      return route.fulfill({ json: kioskMeJson({ username: '访客' }) });
     }
     if (path.startsWith('/api/v1/tsumego/levels/') && path.includes('/categories/')) {
       return route.fulfill({ json: IDS });

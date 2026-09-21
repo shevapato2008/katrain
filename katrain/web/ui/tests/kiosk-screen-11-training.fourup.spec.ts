@@ -1,6 +1,7 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
 import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
+import { kioskMeJson } from './helpers/kioskIdentity';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -48,7 +49,7 @@ test('四图:训练营 ←→ sample-go/shots/11-training.png', async ({ page })
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/api/v1/auth/me') {
-      return route.fulfill({ json: { id: 1, username: '访客', rank: '5段', credits: 0 } });
+      return route.fulfill({ json: kioskMeJson({ username: '访客' }) });
     }
     if (path === '/api/v1/tsumego/levels') {
       return route.fulfill({ json: LEVELS });
@@ -67,7 +68,12 @@ test('四图:训练营 ←→ sample-go/shots/11-training.png', async ({ page })
   });
   await page.goto('/kiosk/tsumego');
   // 等到卡真的渲出来 —— 六张分类卡是接口回来之后才有的,`.kiosk-screen` 在场不代表数据到了。
-  await page.waitForSelector('.kiosk-cards .kiosk-card:nth-child(6)');
+  /* ⚠️ 训练营这一屏的档位行**不是 `.kiosk-card`** —— 它是 `.tsumego-level-row`
+     (`TsumegoPage.tsx:132`),列表容器是 `.tsumego-level-list`。
+     旧写法 `.kiosk-cards .kiosk-card:nth-child(6)` 在这一屏上永远等不到:
+     那两个类今天只活在对弈首页 / 单元列表 / 复盘 / 课程书目里。
+     等的是**六档全渲完**,不是「渲出了点什么」—— 少一档取到的就是没长齐的图。 */
+  await page.waitForFunction(() => document.querySelectorAll('.tsumego-level-list .tsumego-level-row').length === 6);
   await page.waitForLoadState('networkidle');
 
   const r = await captureFourUp({

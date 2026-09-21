@@ -98,11 +98,22 @@ class BaseEngine:  # some common elements between analysis and contribute engine
     PONDER_KEY = "_kt_continuous"
     supports_per_query_model = False
 
+    #: 别名 -> KataGo 认得的规则名。
+    #:
+    #: ⚠️ **查不到的会静默回退到 japanese**(见 `get_rules` 最后一行)—— 而「回退」在这里
+    #: 不是降级,是换了一种记分法:面积计分的局会按数目法算,胜负直接不一样,而且屏上
+    #: 看不出任何异常。所以**前端能送出来的每一个规则值都必须在这张表里**,
+    #: `tests/test_rules_wire.py` 逐个核它。
+    #:
+    #: `button` = KataGo 的 `aga-button` 预设(AREA + 情况超级劫 + hasButton + WHB N-1,
+    #: 默认贴目 7.0)。「AI 赛规则」就是它:先停一手的一方多得半目,把数子法那半目的
+    #: 奇偶差抹平(`KataGo/docs/rules.html`)。KataGo **不支持数目法配 button**。
     RULESETS_ABBR = [
         ("jp", "japanese"),
         ("cn", "chinese"),
         ("ko", "korean"),
         ("aga", "aga"),
+        ("button", "aga-button"),
         ("tt", "tromp-taylor"),
         ("nz", "new zealand"),
         ("stone_scoring", "stone_scoring"),

@@ -80,9 +80,12 @@ class GeometryCalibrationService:
         on_suspend=None,
         on_resume=None,
         calibrator_factory=LedGeometryCalibrator,
+        drift_needed=None,
     ):
         self.led = led
         self.capture = capture
+        # 有人用摄像头时才做漂移检测(每次 ~0.5 s CPU)。None = 一直检测(旧行为)。
+        self._drift_needed = drift_needed
         if save_path is None and persist_state is None:
             raise ValueError("save_path or persist_state is required")
         self.save_path = Path(save_path).expanduser() if save_path is not None else None
@@ -613,6 +616,10 @@ class GeometryCalibrationService:
         while not self._drift_stop.wait(1.0):
             monitor = self._drift_monitor
             if monitor is None or not hasattr(self.capture, "grab_fresh"):
+                continue
+            # RK3562 实测:没在下实体棋时这里每秒 ~0.5 s CPU(katrain 的 31%)。恢复后下一秒就检测,
+            # 空闲期间被碰歪的盘在开局一秒内照样能发现。
+            if self._drift_needed is not None and not self._drift_needed():
                 continue
             with self._lock:
                 if self._status["phase"] != "ready":

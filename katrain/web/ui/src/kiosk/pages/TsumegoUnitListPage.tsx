@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { backToState } from '../hooks/useBackTo';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import {
@@ -73,6 +74,7 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
 }) => {
   const { level, category, unit } = useParams<{ level: string; category: string; unit: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { progress, serverLoadFailed, refresh } = useTsumegoProgress();
   const isWrongSet = set === 'wrong';
@@ -245,12 +247,12 @@ const TsumegoUnitListPage = ({ set = 'unit' }: {
 
   const openProblem = (id: string) => {
     if (!isWrongSet) {
-      navigate(`/kiosk/tsumego/problem/${id}${isAll ? '?set=all' : ''}`);
+      navigate(`/kiosk/tsumego/problem/${id}${isAll ? '?set=all' : ''}`, { state: backToState(location) });
       return;
     }
     // 快照在**点下去那一刻**写:做题途中做对一道,它不会从上/下一题里消失(T1)。按账号存。
     if (level && category) writeWrongSequence(level, category, wrongIds);
-    navigate(`/kiosk/tsumego/problem/${id}?set=wrong`);
+    navigate(`/kiosk/tsumego/problem/${id}?set=wrong`, { state: backToState(location) });
   };
 
   return (

@@ -856,6 +856,7 @@ async def _lifespan_board(app: FastAPI, log):
             on_degraded=invalidate_geometry,
             on_suspend=suspend_vision,
             on_resume=resume_vision,
+            drift_needed=lambda: _vision_needs_frames(app),
         )
     else:
         app.state.geometry_calibration = None
@@ -3556,6 +3557,16 @@ def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:
     gateway = getattr(app.state, "platform_gateway", None)
     if gateway and gateway.is_engine_move_pending(session_id):
         raise HTTPException(status_code=409, detail="engine move pending")
+
+
+def _vision_needs_frames(app: FastAPI) -> bool:
+    """漂移检测跟着识别线程一起停:没在下实体棋 / 监视 / 摆棋准备 / 看预览时不检测(RK3562 实测每秒 ~0.5 s CPU)。
+
+    没有视觉服务 ⇒ 保持旧行为一直检测。摆谱直接从摄像头取帧、不经识别线程,所以摆谱期间也不检测 ——
+    摆谱的 LED 引导按固定灯号点灯、不依赖摄像头几何,受影响的只有采集训练照片时的标注。
+    """
+    vision = getattr(app.state, "vision", None)
+    return True if vision is None else vision.needs_frames()
 
 
 async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):

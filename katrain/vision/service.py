@@ -169,6 +169,11 @@ class VisionService:
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.SET_MOVE_ARMED, data={"armed": armed}))
 
+    def needs_frames(self) -> bool:
+        """此刻有没有人要看棋盘(实体对局 / 监视 / 摆棋准备 / 识别预览)。子进程模式读不到 ⇒ 保守答「要」。"""
+        needs = getattr(self._worker, "needs_frames", None)
+        return bool(needs()) if callable(needs) else self._worker is not None
+
     def set_viewer_active(self, active: bool) -> None:
         """Tell worker whether MJPEG viewers are connected."""
         if self._worker:

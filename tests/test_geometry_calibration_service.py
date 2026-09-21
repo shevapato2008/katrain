@@ -1,7 +1,9 @@
 import logging
 import re
 import threading
+import time
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -1655,3 +1657,32 @@ def test_hardware_ae_is_handed_back_to_manual_even_when_convergence_raises():
             f"那一帧时再炸一次,新异常照样进 status,断言 ② 就会因为一个错误的理由变绿:{exc}"
         ) from exc
     service.stop()
+
+
+def test_drift_loop_idles_while_nobody_needs_the_camera(tmp_path):
+    # RK3562 实测:没在下实体棋时漂移检测仍每秒一次、每次 ~0.5 s CPU(katrain 的 31%)。
+    # 只在有人用摄像头时才检测;恢复后一个周期内就会重新检测,碰歪照样能被发现。
+    needed = [False]
+    capture = FreshFakeCapture()
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=capture,
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_synth(),
+        drift_needed=lambda: needed[0],
+    )
+    monitor = MagicMock()
+    monitor.update.return_value = FakeDrift(degraded=False)
+    service._drift_monitor = monitor
+    service._status["phase"] = "ready"
+    calls_before = capture.grab_calls
+    try:
+        time.sleep(1.3)
+        assert capture.grab_calls == calls_before
+        needed[0] = True
+        deadline = time.monotonic() + 2.5
+        while capture.grab_calls == calls_before and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert capture.grab_calls > calls_before
+    finally:
+        service.stop()

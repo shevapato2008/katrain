@@ -147,7 +147,12 @@ def _inprocess_worker(camera=None):
     from katrain.vision.worker_inprocess import InProcessAdapter
 
     with patch("katrain.vision.worker_inprocess.StoneDetector"):
-        return InProcessAdapter({"board_size": 19}, camera=camera)
+        adapter = InProcessAdapter({"board_size": 19}, camera=camera)
+    # 这些用例测「处理一帧时做什么」,前提是有人要画面。没人要时整条循环不读帧(见
+    # test_vision_idle.py)——而这里好几条靠 read_frame 里置 `_running = False` 才退出循环,
+    # 门关着就永远等不到那次调用,挂死而不是变红。所以显式把门打开。
+    adapter.needs_frames = lambda: True
+    return adapter
 
 
 def _geometry(source_width=600, source_height=400):

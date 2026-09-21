@@ -491,9 +491,15 @@ class SyncStateMachine:
             # measured t+7.5s against pre-L4's t+2.5s with one stone occluded by a hand
             # as the board comes back. Reaching this line already proves the board is
             # back — every corner was found and the whole board compared, and 4b did not
-            # re-declare it lost — so continuing to tell the user "board lost" (and, in
-            # monitor mode, keeping should_detect_moves shut) is simply false for those
-            # ~5s. Only the board-level verdict is updated here; the occluded cell's own
+            # re-declare it lost — so continuing to tell the user "board lost" is simply
+            # false for those ~5s. Scope, stated narrowly because the obvious reading is
+            # wrong: `should_detect_moves` short-circuits on `if bound: return True`
+            # (gating.py:47-48), so a BOUND cross-platform game keeps detecting moves
+            # throughout and loses nothing but an honest status. The sync_state whitelist
+            # below that line applies only when `bound` is False, so actual detection
+            # blocking is confined to MONITOR mode (physical tsumego). Both are worth
+            # fixing; only the second is a functional outage.
+            # Only the board-level verdict is updated here; the occluded cell's own
             # hold keeps running, and MISMATCH_WARNING — not SYNCED — is both the honest
             # word for "a stone is still unaccounted for" and exactly what this frame
             # reported before the hold existed.

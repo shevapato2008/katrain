@@ -116,12 +116,13 @@ O1 走的正是这条路。
 
 拿它和**item C 之前**同一份快通道输入比：D8 让只有 `fast_cell` 进得了 `ready`，所以旧 D6 不执行，其中一格按 `min()` 的集合迭代序被选中（幻影和真子精确并列时**可能是幻影**）并在快帧数上确认；快通道的定义就是峰值 ≥ 0.70，高于 suspect 闸 0.67（复审 Finding 6），所以它**自动落子**、提交到星阵——**不可撤回**。这是决定性的那一半，没有任何补救。随后自动落子分支 `force_sync(observed_board)`，基线里含**两颗**子，另一格不再是 diff、候选也被清掉，从此静默——**直到**下一次 `SET_EXPECTED_BOARD` 把基线推回数字盘（`worker.py:707-709`），那之后它重新变成 diff 并可重新累积。所以那一格是「静默延迟至少一个对局更新往返（D2 实测约 1.1 秒）」，**不是**永久丢手——这一点比初稿的说法弱，是读代码核出来的。即便如此，item C 之前那条路仍然是「一次不可撤回的、由哈希序挑出来的提交 + 一段静默」，item C 之后是「两格都不确认 + 一条点名两格的警告」。
 
-**fix round 2 重写：要分两个轴看，不是一个轴。** 这里原先只列了三种情况，它们只变化了「这两格自己的
-出现形态」这一个轴，把另外两个变量按最有利的取值默认固定住了，而且没有说出来：**(i) 这两格是不是异常指纹的唯一
+**fix round 2 重写：要分三个轴看，不是一个轴。** 这里原先只列了三种情况，它们只变化了「这两格自己的
+出现形态」这一个轴，把另外三个变量按最有利的取值默认固定住了，而且没有说出来：**(i) 这两格是不是异常指纹的唯一
 贡献者**——`current_mismatch`（`sync.py:445-449`）是**整盘对象**，4d 用 `np.array_equal` 跟上一帧比，盘上任何
 **另一格**进出异常集合都会把 `_mismatch_count` 打回 1；**(ii) `_compare_boards` 到底走不走得到 4d**——
 `DEGRADED`（`sync.py:207-208`）、`BOARD_LOST` / 4b（`sync.py:410-416`）、`CAPTURE_PENDING` / 4c
-（`sync.py:419-440`，**粘滞**）三条分支都会先返回。下面每一条都是跑出来的，不是推出来的
+（`sync.py:419-440`，**粘滞**）三条分支都会先返回；**(iii) 事件发出来之后，前端让不让它上屏**——见轴 C。
+轴 A / B 每一条都是跑出来的，不是推出来的
 （`consistency_frames=5, miss_grace=2`，默认 `illegal_change_frames=5`，数字盘为空，两格在 `(2,10)`/`(18,13)`）。
 
 **轴 A —— 这两格自己的出现形态：**
@@ -133,11 +134,25 @@ O1 走的正是这条路。
 4. **指纹被别处搅动（N4）：两格持续亮着，却一次都不被点名。** 盘上**另有一格**以短于 `illegal_change_frames` 的节奏进出异常集合就够了。实测 120 帧，第三格为「亮 1 暗 1 / 亮 1 暗 2 / 亮 2 暗 2 / 亮 1 暗 4 / 亮 2 暗 3 / 亮 4 暗 1」时，`ILLEGAL_CHANGE` 全是 **0**（对照：没有第三格时 24 次）；从「亮 5 暗 1」起恢复报（20 次）。边界很利：**第三格的亮段与暗段都不到 `illegal_change_frames` 时压制成立**。第三格**不会**解开 D6 死锁——它 `first_seen` 不同，两格仍与彼此精确并列、仍占着 `ready[0]`。这一条直接推翻情况 1 的机制叙述：两格的确一直亮着，指纹却不稳定，**因为指纹是整盘对象**。不是全静默——`sync.py:471-472` 那条不发事件的 `elif` 会把状态置成 `mismatch_warning`，`/api/vision-status` 上看得到「不同步」——但**没有任何事件点名这两格**，而「`data["positions"]` 里逐格列出」正是上面那段论证倚重的那一半。准确的说法是**有笼统警告、从不点名**，是介于情况 1 和情况 3 之间的第三档。
 5. **4d 根本到不了（N5）：`CAPTURE_PENDING` 是粘滞的。** 只要数字提子还没被物理拿走，4c 就一直在 4d 之前返回（`sync.py:439-440`）。实测两格死锁且持续亮着、`(9,9)` 有一颗未拿走的提子，60 帧：**0 次确认、0 次 `ILLEGAL_CHANGE`、全程 `capture_pending`**。那段时间里两颗子对对局而言不存在，而用户只被告知「请拿走被提的子」。`BOARD_LOST`（`sync.py:416`）与 `DEGRADED`（`sync.py:207-208`）同样在 4d 之前返回，且 4b 还会把 `_mismatch_board` / `_mismatch_count` 清零，之后 debounce 从头再来。提子是正常行棋，这个窗口有多长取决于用户多久才动手。
 
+**轴 C —— 事件发出来了，用户看不看得见（fix round 2 补，只读前端核出来的，不改前端）：**
+7. **警告通道被别的卡占着（前端整条丢弃）。** 上面几条讲的都是 `ILLEGAL_CHANGE` **事件**发不发得出来。
+   发出来之后还有一段：`katrain/web/ui/src/kiosk/components/vision/visionRecovery.ts:140` 是
+   `if (state.blocking?.kind === 'capture' || state.blocking?.kind === 'stone') return state;`——
+   **已经有卡立着的时候，这条 `illegal_change` 被整条丢掉**，而**唯一**会把两格名字放进界面状态的是
+   落到底的 `:157` `return { ...state, blocking: { kind: 'mismatch', positions, missing } }`。
+   `ambiguous_stone` 设的正是 `kind: 'stone'`（`:119`）。所以：事件点名了两格，用户屏幕上却是**另一
+   个点的另一张卡**。触发条件要有**第三格**先立起一张卡（死锁的那两格自己不发 `ambiguous_stone`——它们
+   压根没 confirm；但死锁期间 `about_to_confirm` 长期为假，`_promote_stuck_stone` 每帧都在跑，一颗亚
+   add 的第三格足以立卡），或者有一张提子卡。
+   **对上面那段论证的修正只有一句：「`data["positions"]` 里逐格列出这两个点」说的是事件，不是用户看到
+   的东西。** 「不是静默的」只在**没有别的东西在抢这条警告通道**时才成立。
+
 **总结一句：死锁只有在「两格连续亮够 `illegal_change_frames` 帧」且「盘上没有别的东西在搅动异常指纹」且
-「sync 没有停在 `CAPTURE_PENDING` / `BOARD_LOST` / `DEGRADED`」这三条同时成立时，才会被点名告诉用户。
-其余情形要么是一条笼统的、不点名的警告，要么是沉默。** 这不改变裁定——另一半仍然是「按哈希序挑一颗不可撤回地
-提交给活人对手」，本轮也不需要任何代码改动——但它改变 §7 该怎么读：**「日志里没有 `ILLEGAL_CHANGE`」不是
-「没有发生死锁」的证据。**
+「sync 没有停在 `CAPTURE_PENDING` / `BOARD_LOST` / `DEGRADED`」且「前端此刻没有别的卡立着」这四条同时
+成立时，才会被点名告诉用户。** 其余情形要么是一条笼统的、不点名的警告，要么事件发了但屏幕上是别的东西，
+要么是沉默。这不改变裁定——另一半仍然是「按哈希序挑一颗不可撤回地提交给活人对手」，本轮也不需要任何代码
+改动（前端本轮不可动，这一条是只读核出来的）——但它改变 §7 该怎么读：**「日志里没有 `ILLEGAL_CHANGE`」
+不是「没有发生死锁」的证据，而「屏幕上没弹点名两格的提示」连「事件没发出」都推不出来。**
 
 ---
 
@@ -203,8 +218,14 @@ monitor 模式下照样会自动注入。这是视觉管线的既有行为，不
    也不需要别的锚点。**先看这一条。** 它不通过就没有必要往下看。
 
 2. **（原第 2 条）`(18,13)` 不得被提交。** 两条判据缺一不可：日志里**没有** `move confirmed: (18,13)`
-   （也没有 `Vision move submitted` 且 col=13 row=18），**并且**星阵侧全程收不到 coord 13。
+   （也没有任何一条提交行带 col=13 row=18），**并且**星阵侧全程收不到 coord 13。
    **fix round 2 改写坐标与判据本身，round 1 那版是错的**：
+   - **提交行有两条，别只 grep 一条。** `_handle_confirmed_move` 里是
+     `server.py:3777` 的 `Ranked vision move submitted:`（**小写 v**，升降级分支，打完就
+     `return 0.0`，根本走不到下面那条）和 `server.py:3883` 的 `Vision move submitted:`。
+     盒子上常态就是升降级会话，所以**大小写敏感地 grep `Vision move submitted` 恰好漏掉最
+     常见的那条**。判据写成大小写不敏感的 `grep -i 'vision move submitted'`，或者同时列两个
+     字面量。
    - **坐标推导**（可复核，不要照抄数字）：`katrain/vision/katrain_bridge.py:29`
      `vision_move_to_katrain` 把 vision `(row, col)` 转成 `katrain_row = 18 - row`
      （GTP 约定，row 0 在底）；`katrain/web/platforms/gateway.py` 的
@@ -223,29 +244,53 @@ monitor 模式下照样会自动注入。这是视觉管线的既有行为，不
      正好说明 L2 的计数在动。所以这一条要这样读：**期望看到 ambiguous 那一行、同时看不到
      `move confirmed: (18,13)` 那一行**。**两行都没有 ⇒ 这一局那颗幻影压根没出现 ⇒ 这一条是
      UNTESTED，不是 PASSED**：要么再跑一局，要么如实记「本局未证到 L2 的路由闸」。
-   - **两条判据缺一不可**：`Vision move submitted` 只在 worker 的 `ConfirmedMove`
-     经 `_vision_move_poller` → `server.py:3612 _handle_confirmed_move` 这条路走通
-     时才打出。但 suspect 格现在只改路由、不改帧数，所以 `(18,13)` 大概率会被路由
+   - **两条判据缺一不可**：那两条提交行（上面第一点列的 `Ranked vision move submitted:`
+     与 `Vision move submitted:`）都只在 worker 的 `ConfirmedMove` 经
+     `_vision_move_poller` → `_handle_confirmed_move` 这条路走通时才打出。但 suspect
+     格现在只改路由、不改帧数，所以 `(18,13)` 大概率会被路由
      到确认卡（`ambiguous_stone` 事件），**若用户手滑在卡片上点了「确认」**，前端
      `VisionSyncOverlay.tsx` 的 `handleAmbiguousConfirm` 直接调
      `API.playMove(sessionId, {x, y})`（`x, y` 由 `BoardMismatchDialog.tsx` 的
      `rcToXy(row, col, boardSize) = {x: col, y: boardSize-1-row}` 算出，同一套
-     `18-row` 翻转），**完全绕开** `_handle_confirmed_move`，不会打 `Vision move
-     submitted`。§1 的 F2 条目自己就记录过这个形状（R18 那次「日志无 `Vision move
-     submitted`，仅星阵侧收到 coord 339」）。所以只看日志键会漏判——**coord 13 这
-     道后备判据，正是用来兜住这次意外点击的**
+     `18-row` 翻转），**完全绕开** `_handle_confirmed_move`，两条提交行**一条都不会打**。
+     §1 的 F2 条目自己就记录过这个形状（R18 那次「日志无 `Vision move submitted`，仅星阵
+     侧收到 coord 339」）。所以只看日志键会漏判——**coord 13 这道后备判据，正是用来兜住
+     这次意外点击的**
    - 该点反复触发 `ambiguous_stone` 事件、弹出确认卡、日志里 `suspicion` 非零，是
      这次修复的**预期新行为，不是回归**；只有它绕过确认卡（无论走自动落子分支，
      还是走用户误触确认卡）、真正提交进棋谱或发给星阵（`col=13 row=18` 落子，或
      星阵侧出现 coord 13），才是验收失败
+   - **fix round 2：上面那条佐证从「预期」升级为「必需」。** 没有它，这一条的结果记
+     **NOT EXERCISED**，不记 PASS。两种可查的痕迹任一即可：worker 那条
+     `ambiguous prompt; … suspicion=N`，或事件泵的 `[DIAG-VIS] ambiguous_stone data={…}`
+     （`server.py` 的 `_diag_log_vision_evt`，logger `katrain_web.vision`，INFO 级，除
+     `setup_progress` / `vision_status` 外每条 dict 事件都带完整 payload）
 
-3. **（原第 4 条）手臂划过棋盘不产生 `illegal_change`。** 这一条是**主动激发**的，所以它的缺席**是有
-   意义的**——条件由人自己制造（把手臂伸过棋盘），不靠碰运气。做的时候记下做了几次；**一次都没做 ⇒
-   UNTESTED，不是 PASSED**。**但反过来不成立，这一句要连着 §4b(c-2) 的总结句读**：看不到
-   `illegal_change` **不能**推出「盘面没问题」。那条总结句说的是，死锁只有在「两格连续亮够
-   `illegal_change_frames` 帧」且「盘上没有别的东西在搅动异常指纹」且「sync 没有停在
-   `CAPTURE_PENDING` / `BOARD_LOST` / `DEGRADED`」三条同时成立时才会被点名。**「日志里没有
-   `ILLEGAL_CHANGE`」不是「没有发生死锁」的证据。**
+3. **（替换原第 4 条）手掌按住一颗子：短按不报、久按必报。** 原第 4 条是「手臂划过棋盘不产生
+   `illegal_change`」，**fix round 2 整条换掉，因为它激发的是另一个子系统**。`gating.py:39-41`
+   的 `should_feed_sync_frame = not frame_present or motion_stable`：手臂划过时帧是**在**的而运动
+   **不**稳定 ⇒ `False` ⇒ `SyncStateMachine.update()` 那一帧**根本不会被调用**。所以那条断言在
+   `10455ba5` 上是绿的，把 L4 整块删掉也还是绿的——它认证的是既有的运动闸，不是 L4。
+
+   L4 的对象是**相反**的手势：一只手**停**在一颗已落子上不动。这时 `motion_stable` 为真，帧照喂，
+   缺子的判定真的会走到 4a-bis 的 hold。两半都要做，**缺一半就不算做过**：
+   - **短按**：手掌盖住一颗已落的子约 5 秒（< `missing_hold_seconds`，默认 7.0，`sync.py:85`）后抬手
+     ⇒ 全程**不得**出现 `illegal_change`（hold 正在起作用）；
+   - **久按**：同一颗子按住**超过** 7 秒 ⇒ **必须**出现一条 `illegal_change`，且它的
+     `data["missing"]` 里**点名这颗子的 `[row, col]`**（hold 按设计到期）。
+   第二半是这一条能被证伪的原因；只写第一半就又变成「什么都没发生也算过」，那正是原第 4 条的毛病。
+
+   **怎么观察**：`sync.py` 自己没有日志，但事件泵有——`server.py` 的 `_diag_log_vision_evt` 会打
+   `[DIAG-VIS] illegal_change data={'positions': …, 'missing': …}`（logger `katrain_web.vision`，
+   INFO 级）。**用这条日志判定，不要用屏幕**：屏幕上看不看得见是另一回事，见下一段。
+
+   **两条反向的读法，都不成立：**
+   - 看不到 `illegal_change` **不能**推出「盘面没问题」——连着 §4b(c-2) 的总结句读：死锁只有在
+     「两格连续亮够 `illegal_change_frames` 帧」且「盘上没有别的东西在搅动异常指纹」且「sync 没有
+     停在 `CAPTURE_PENDING` / `BOARD_LOST` / `DEGRADED`」且「前端此刻没有别的卡立着」四条同时成立
+     时才会被点名。
+   - **屏幕上没弹出点名两格的提示，也不能推出事件没发出**——见 §4b(c-2) 的情况 7：前端在已有确认卡
+     时会把整条 `illegal_change` 丢掉。日志和屏幕在这一条上不是同一个证据。
 
 4. **（原第 1 条）L17 那类边缘真子能自己进入对局**，不靠用户按「采纳为我的落子」。**这一条有前提**：
    这一局里必须真的出现过**弱置信度的边缘真子**。一局下来每一手都清清楚楚的话，这一条是**空的**——

@@ -105,6 +105,59 @@ class TestAttachParallax:
         assert original.parallax is None and cfg is not original
 
 
+class TestFullChain:
+    """Tool -> file -> attach_parallax -> InProcessAdapter's geometry-lock extractor -> corrected cell.
+    Nothing else in the suite exercises the whole path end to end (final review finding 4)."""
+
+    def test_calibrated_file_corrects_detections_through_the_locked_extractor(self, tmp_path):
+        from unittest.mock import patch
+
+        from katrain.vision.stone_detector import Detection
+        from katrain.vision.tools.calibrate_parallax import GridOffset, decide_and_write
+        from katrain.vision.worker_inprocess import InProcessAdapter
+        from tests.test_vision.board_state_corpus import IMG, grid_to_px
+        from tests.test_vision.parallax_synth import H_MM, detected_grid
+        from tests.test_vision.test_calibrate_parallax import _frames
+
+        aligned = GridOffset(0.0, 0.0, 19, 19)
+        out_path = parallax_path(tmp_path)
+        verdict, calib = decide_and_write(
+            _frames(jitter=0.01),
+            grid_offsets={"start": aligned, "end": aligned},
+            out_path=out_path,
+            stone_set="ver9-22x7",
+            camera_height_mm=H_MM,
+            geometry_generation="gen-1",
+            fitted_at="2026-09-22T10:00:00+08:00",
+            dry_run=False,
+        )
+        assert verdict.ok, verdict.reasons
+
+        cfg, level, msg = attach_parallax(VisionServiceConfig(), tmp_path, "gen-1")
+        assert cfg.parallax is not None and level == logging.INFO and "parallax on" in msg
+
+        # The camera sits beyond row 18 (parallax_synth NADIR_GRID ~= (9.0, 19.6)): a consistent fx/fy
+        # swap in the fit would still land a low residual on the near-symmetric 17-point pattern, so the
+        # orientation of the fitted nadir itself must be checked, not only the residual.
+        assert calib.nadir_fy > 18
+        assert abs(calib.nadir_fx - 9) < 1
+
+        with patch("katrain.vision.worker_inprocess.StoneDetector"):
+            adapter = InProcessAdapter(cfg.to_worker_config(), camera=None)
+        extractor = adapter._state_extractor_locked
+        assert extractor.parallax is not None
+
+        wrong = []
+        for r in range(1, 6):  # rows the on-board 8mm-outward pattern (handoff.md step 2A) targets
+            for c in range(19):
+                fx, fy = detected_grid(c, r, outward_cells=0.35)
+                x, y = grid_to_px(extractor.config, fx, fy, img=IMG)
+                det = Detection(x_center=x, y_center=y, class_id=0, confidence=0.9)
+                if extractor._grid_cell(det, IMG, IMG) != (r, c):
+                    wrong.append((r, c))
+        assert wrong == []
+
+
 class TestBoardDeltaDiagnostics:
     """P2 (narrowed 2026-09-22): each board change shows the nearby detection's parallax shift and a *
     when the correction moved it to a different intersection; 0.00 and no * when off."""

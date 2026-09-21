@@ -9,8 +9,24 @@ import pytest
 
 from katrain.vision.board_state import BLACK, EMPTY
 from katrain.vision.config_service import VisionServiceConfig
-from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand
+from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.service import VisionService
+
+# Seed for `_observation_seq` in every harness that drives a confirmation. It is NON-ZERO
+# and distinctive on purpose. `WorkerStatus.observation_seq` and `ConfirmedMove.observation_seq`
+# both default to 0 and the counter starts at 0, so with a zero seed the value under test,
+# the field default and the counter are all the same number — any assertion that happens to
+# compare two of them reads `0 == 0` and is green against a worker that never stamps, never
+# publishes and never increments.
+#
+# Measured, not assumed (see the mutation lines in the tests below): of the four one-line
+# breaks this file now pins, three are caught either way, because the assertions compare
+# against a LITERAL expected value (SEEDED_OBSERVATION_SEQ + 1) rather than against the live
+# counter. The one that needs the non-zero seed is a CONSTANT stamp: with
+# `observation_seq=1` hard-coded on the emitted ConfirmedMove the whole suite stays green at
+# seed 0 (682 passed) and turns red at seed 7. Both halves of that — the literal expectation
+# and the distinctive seed — are load-bearing; neither alone covers the four.
+SEEDED_OBSERVATION_SEQ = 7
 
 
 def test_vision_service_expected_board_command_carries_node_id():
@@ -23,6 +39,31 @@ def test_vision_service_expected_board_command_carries_node_id():
     command = service._worker.send_command.call_args.args[0]
     assert command.action == CommandType.SET_EXPECTED_BOARD
     assert command.data == {"board": board.tolist(), "expected_node_id": 77}
+
+
+def test_board_observation_reads_the_worker_rather_than_the_cached_status():
+    """The third module L0a spans: the service must PULL before it answers.
+
+    `_latest_status` is only refreshed by whoever last touched some other status
+    property, so it can be arbitrarily old — the C2 stale-cache bug. Answering L0a's
+    "is the stone still there?" from that cache re-decides the question on the reading
+    that confirmed the move, which can never be strictly newer than the move's own
+    stamp: the guard goes permanently inert with nothing else changing.
+
+    Mutation-proven: dropping `self.refresh_status()` from `get_board_observation`
+    returns the stale (3, empty) pair -> `assert seq == 9` fails.
+    """
+    service = VisionService(VisionServiceConfig())
+    service._worker = MagicMock()
+    service._latest_status = WorkerStatus(detected_board=np.zeros((19, 19), dtype=int).tolist(), observation_seq=3)
+    fresh = np.zeros((19, 19), dtype=int)
+    fresh[3][3] = BLACK
+    service._worker.get_status.return_value = WorkerStatus(detected_board=fresh.tolist(), observation_seq=9)
+
+    board, seq = service.get_board_observation()
+
+    assert seq == 9
+    assert board[3][3] == BLACK
 
 
 def _assert_unchanged_expected_board_still_forwards_node_id(worker):
@@ -45,6 +86,24 @@ def _assert_unchanged_expected_board_still_forwards_node_id(worker):
     assert np.array_equal(forwarded_board, board)
     assert worker._sync.set_expected_board.call_args.kwargs == {"expected_node_id": 77}
     worker._move_detector.force_sync.assert_not_called()
+
+
+def _assert_unbind_clears_cell_reputation(worker_obj):
+    """UNBIND must clear per-cell suspicion — asserted for BOTH dispatchers, in parity.
+
+    `reset_suspicion()` itself is pinned in test_move_detector.py; this is its ONLY
+    production call site, and until now nothing said so. Deleting the line left the
+    whole suite green. A session that inherits the previous game's reputation makes
+    cells charged by a board that has since been re-laid demand SUSPECT_CONFIDENCE_BONUS
+    extra confidence — bounded (a confirmation tap, never a lost move), but it is the
+    one lever that lets a cell start over, and the counter only ever goes up otherwise.
+    """
+    worker_obj._move_detector = MagicMock()
+    worker_obj._cmd_queue.put(WorkerCommand(action=CommandType.UNBIND))
+
+    worker_obj._drain_or_process()
+
+    worker_obj._move_detector.reset_suspicion.assert_called_once_with()
 
 
 def _drain_with(worker_obj):
@@ -76,6 +135,12 @@ class TestInProcessDispatcher:
         w._drain_or_process = w._drain_commands
 
         _assert_unchanged_expected_board_still_forwards_node_id(w)
+
+    def test_unbind_clears_cell_reputation(self):
+        w = _inprocess_worker()
+        w._drain_or_process = w._drain_commands
+
+        _assert_unbind_clears_cell_reputation(w)
 
 
 def _inprocess_worker(camera=None):
@@ -142,7 +207,31 @@ def _configure_confirmation_probe(worker, *, peak, count):
     worker._sync = MagicMock()
     worker._sync.state = SimpleNamespace(value="synced")
     worker._sync.update.return_value = []
+    worker._observation_seq = SEEDED_OBSERVATION_SEQ
     return extractor
+
+
+def _assert_confirmation_carries_the_published_observation(emitted, published):
+    """L0a's PRODUCER contract, asserted in one place so the two workers cannot drift.
+
+    L0a (server.py `_handle_confirmed_move`) cancels an irreversible submission only when
+    it holds a board reading from an observation STRICTLY NEWER than the one that confirmed
+    the move. The server half of that comparison is well covered; this is the half that
+    produces its two operands, and it spans three separate lines per worker — the counter
+    bump, the stamp on the emitted ConfirmedMove, and the counter published on WorkerStatus.
+    Dropping any one of them leaves the check structurally intact but permanently inert:
+    an unstamped move (seq 0) is skipped by design, and a status frozen at 0 is never
+    "newer" than anything.
+
+    Two assertions, because one alone is blind to half the ways this can break:
+      * the emitted stamp must be the SEEDED value + 1 — an equality against the published
+        value alone still passes when the counter never increments (both read the seed);
+      * the status published on the SAME frame must name that same observation — the
+        emitted stamp alone still passes when WorkerStatus publishes a constant.
+    """
+    assert isinstance(emitted, ConfirmedMove)
+    assert emitted.observation_seq == SEEDED_OBSERVATION_SEQ + 1
+    assert published.observation_seq == emitted.observation_seq
 
 
 @pytest.mark.parametrize(
@@ -232,6 +321,42 @@ def test_inprocess_suspect_cell_routes_to_ambiguous_card_not_autoplay(
         assert event["type"] == "ambiguous_stone"
         assert event["data"]["row"] == 3 and event["data"]["col"] == 3
         worker._move_detector.charge_carded_confirmation.assert_called_once_with(3, 3)
+
+
+def test_inprocess_confirmed_move_is_stamped_with_the_observation_it_publishes():
+    """L0a producer half, in-process worker. See
+    `_assert_confirmation_carries_the_published_observation` for what is being pinned.
+
+    Mutation-proven (each reverted immediately):
+      * drop `observation_seq=self._observation_seq` from the emitted ConfirmedMove
+        -> `assert emitted.observation_seq == 8` (got 0)
+      * drop `self._observation_seq += 1`
+        -> `assert emitted.observation_seq == 8` (got 7)
+      * publish `observation_seq=0` on WorkerStatus
+        -> `assert published.observation_seq == emitted.observation_seq` (0 != 8)
+      * hard-code `observation_seq=1` on the emitted ConfirmedMove
+        -> `assert emitted.observation_seq == 8` (got 1). This is the one that needs
+        SEEDED_OBSERVATION_SEQ to be non-zero: at seed 0 the same mutation leaves the
+        whole suite green.
+    """
+    camera = _OneFrameCamera()
+    worker = _inprocess_worker(camera)
+    camera.worker = worker
+    extractor = _configure_confirmation_probe(worker, peak=0.80, count=2)
+    worker._running = True
+    worker._config["capture_fps"] = 100000
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._warp_frame = MagicMock(return_value=(np.zeros((10, 10, 3), dtype=np.uint8), True))
+    worker._averager = MagicMock()
+    worker._averager.add.side_effect = lambda frame: frame
+    worker._detector = MagicMock()
+    worker._detector.detect.return_value = []
+    worker._active_extractor = MagicMock(return_value=extractor)
+    worker._maybe_send_preview = MagicMock()
+
+    worker._loop()
+
+    _assert_confirmation_carries_the_published_observation(worker._event_queue.get_nowait(), worker._status)
 
 
 class TestInProcessMotionGating:
@@ -476,6 +601,19 @@ class TestSubprocessDispatcher:
 
         _assert_unchanged_expected_board_still_forwards_node_id(w)
 
+    def test_unbind_clears_cell_reputation(self):
+        from katrain.vision.worker import _VisionWorkerLoop
+
+        w = _VisionWorkerLoop.__new__(_VisionWorkerLoop)
+        w._cmd_queue = queue.Queue()
+        w._running = True
+        w._drain_or_process = w._process_commands
+        w._reset_motion_region = MagicMock()
+        w._averager = MagicMock()
+        w._promoter = MagicMock()
+
+        _assert_unbind_clears_cell_reputation(w)
+
 
 def _subprocess_motion_worker():
     from katrain.vision.worker import _VisionWorkerLoop
@@ -491,7 +629,7 @@ def _subprocess_motion_worker():
     w._last_motion_log = None
     w._last_motion_roi_ratio = None
     w._last_motion_full_ratio = None
-    w._observation_seq = 0
+    w._observation_seq = SEEDED_OBSERVATION_SEQ
     return w
 
 
@@ -598,6 +736,55 @@ def test_subprocess_suspect_cell_routes_to_ambiguous_card_not_autoplay(
         assert event["type"] == "ambiguous_stone"
         assert event["data"]["row"] == 3 and event["data"]["col"] == 3
         worker._move_detector.charge_carded_confirmation.assert_called_once_with(3, 3)
+
+
+def test_subprocess_confirmed_move_is_stamped_with_the_observation_it_publishes():
+    """L0a producer half, subprocess (SBC) worker — parity mirror of the in-process test.
+
+    `_maybe_publish_status` is deliberately NOT mocked here (every other test in this file
+    stubs it out): the published WorkerStatus is one of the two operands under test, and
+    this worker is the one whose 1 Hz publish rate is the reason the sequence number
+    exists at all.
+
+    Mutation-proven (each reverted immediately):
+      * drop `observation_seq=self._observation_seq` from the emitted ConfirmedMove
+        -> `assert emitted.observation_seq == 8` (got 0)
+      * drop `self._observation_seq += 1`
+        -> `assert emitted.observation_seq == 8` (got 7)
+      * publish `observation_seq=0` on WorkerStatus
+        -> `assert published.observation_seq == emitted.observation_seq` (0 != 8)
+    """
+    worker = _subprocess_motion_worker()
+    camera = _OneFrameCamera()
+    camera.worker = worker
+    extractor = _configure_confirmation_probe(worker, peak=0.80, count=2)
+    worker._running = True
+    worker._cmd_queue = queue.Queue()
+    worker._camera = camera
+    worker._frame_count = 0
+    worker._motion_is_stable = MagicMock(return_value=True)
+    worker._board_finder.find_focus.return_value = (np.zeros((10, 10, 3), dtype=np.uint8), True)
+    worker._config = {"use_clahe": False, "enhance": "none"}
+    worker._enhance_mode = "none"
+    worker._add_threshold = 0.5
+    worker._ae = None
+    worker._averager.add.side_effect = lambda frame: frame
+    worker._detector = MagicMock()
+    worker._detector.detect.return_value = []
+    worker._overlay_lock = MagicMock()
+    worker._overlay = MagicMock()
+    worker._state_extractor = extractor
+    worker._last_detected_board = None
+    worker._consecutive_failures = 0
+    worker._status_queue = queue.Queue()
+    worker._last_status_time = 0.0
+    worker._last_motion_at = None
+
+    worker._processing_loop()
+
+    _assert_confirmation_carries_the_published_observation(
+        worker._event_queue.get_nowait(), worker._status_queue.get_nowait()
+    )
 
 
 class TestSubprocessMotionGating:

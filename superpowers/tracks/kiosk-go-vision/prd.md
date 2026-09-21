@@ -184,11 +184,12 @@
 | `katrain/web/core/geometry_calibration_service.py` | V1 自动重定位与 `relocate()`;V2 白名单加 `cancelled`;V3 无灯首标 | 无(独占) |
 | `katrain/vision/geometry_lock.py`(或新建 `relock.py`) | V1:按新单应重建 lock 的纯函数 | 摆谱链只读它,不改 |
 | `katrain/web/api/v1/endpoints/geometry.py` | 新增 `POST /geometry/relocate` | 无 |
-| `katrain/web/server.py`(:761-826) | V1:把 selector 与开关接进服务构造 | **成长赛道**改的是 `:1830-1844` / `:3569`,不相邻 |
+| `katrain/web/server.py`(:761-826) | V1:把 selector 与开关接进服务构造 | **成长赛道**改的是 `:1830-1844` / `:3615`,不相邻 |
 | `katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx` | V1-b 按钮、V2 判别位与原因、V3 `canStart` 与说明、V4 措辞 | 无 |
 | `katrain/web/ui/src/kiosk/context/GeometryContext.tsx`、`src/api/geometryApi.ts` | 新增 `relocate()` 动作 | **设置赛道**只消费,不改(§6.0 第 2 条) |
 | `katrain/web/ui/src/kiosk/components/game/RecalibrationModal.tsx` | **本轮不改**;但 V1-b 落地后它那句「重新标定(要清盘)」就不再是唯一出路 ⇒ 登记给**对弈赛道**(A21) | play-ai |
 | `katrain/web/ui/src/kiosk/components/physical/PoseLostBanner.tsx` + 测试 | 删(Z3) | 无(零消费者) |
+| `katrain/vision/tools/outer_corner_accuracy.py` | 加真帧模式 `--live`(上板清单第 1 项要用) | 无 |
 | `katrain/i18n/locales/*/katrain.po` | **不改** | 全部 |
 
 ## 7. 验证方式
@@ -207,7 +208,8 @@
 
 ### 上板清单(要点,细则见 `board-checklist.md`)
 
-1. **满盘外框精度**:摆到 ~60 子,跑 `python -m katrain.vision.tools.outer_corner_accuracy`,判据 **< 0.12 格**。
+1. **满盘外框精度**:空盘先跑一次 LED 13 点标定当真值,之后盘和相机都不动;空盘、约 60 子各跑一次 `python -m katrain.vision.tools.outer_corner_accuracy --live http://127.0.0.1:8081`(真值取 `/api/v1/geometry/layout` 的 LED 角点,帧取 `/api/v1/geometry/stream`),判据每次都 **< 0.12 格**。
+   **2026-09-21 更正**:原稿写的是不带参数跑这个工具 —— 它只渲染**合成**棋盘、从不读相机,在板上跑和在 Mac 上跑结果一样,量不到真盘。真帧模式由 plan Task 8b 补上;不带 `--live` 的结果只是下界,不能当这道闸。
 2. **碰盘恢复**:对局中推动棋盘 ~1 格,`AUTO_RELOCATE_ON_DRIFT=True` 下屏上不该进标定台,继续落子识别不串位。
 3. **人工出口**:`degraded` 态按「对齐外框」,盘上有子也能恢复到 `ready`。
 4. **无灯首标**:拔掉 LED 串口,空盘跑一次 `empty_board_autocal`,能到 `ready` 且识别正常。

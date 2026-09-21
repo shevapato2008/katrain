@@ -48,9 +48,11 @@
 | `katrain/web/ui/src/kiosk/__tests__/GeometryCalibrationScreen.test.tsx` | 追加 | 四态 × 有无 LED |
 | `katrain/web/ui/src/kiosk/components/physical/PoseLostBanner.tsx` + `__tests__/PoseLostBanner.test.tsx` | **删** | Z3 |
 | `katrain/web/ui/tests/kiosk-screen-26-calib.spec.ts` | 追加两条 | 承重(最满 / 最空) |
+| `katrain/vision/tools/outer_corner_accuracy.py` | 追加 `grab_mjpeg_frames` / `measure_real` / `--live` | 上板闸的量具(Task 8b) |
+| `tests/test_vision/test_outer_corner_accuracy.py` | 追加三条 | 真帧模式 |
 | `superpowers/tracks/kiosk-go-vision/board-checklist.md` | **新建** | V5 上板清单 |
 
-任务顺序:Task 1 基线 → Task 2 V2 → Task 3 relock 纯函数 → Task 4 服务端 V1 → Task 5 端点与前端 V1-b → Task 6 V3 → Task 7 V4 + Z3 → Task 8 四图与承重 → Task 9 上板清单 → Task 10 收尾。
+任务顺序:Task 1 基线 → Task 2 V2 → Task 3 relock 纯函数 → Task 4 服务端 V1 → Task 5 端点与前端 V1-b → Task 6 V3 → Task 7 V4 + Z3 → Task 8 四图与承重 → Task 8b 精度工具真帧模式 → Task 9 上板清单 → Task 10 收尾。
 Task 2 与 Task 3 互相独立;Task 4 依赖 3;Task 5 依赖 4;Task 6 独立于 4/5(但都动同一个文件,按序做)。
 
 ---
@@ -1110,6 +1112,202 @@ npm run fourup
 
 ---
 
+### Task 8b: 精度工具加真帧模式(上板闸的量具)
+
+**为什么有这个 Task**:`AUTO_RELOCATE_ON_DRIFT` 翻成 `True` 的前置是「满盘下外框法误差 < 0.12 格」。
+但 `outer_corner_accuracy.py` 今天**只渲染合成棋盘**(`render_board`)、从不读相机 —— 在 RK3562 上跑和在 Mac 上跑,
+输出一模一样。文件头自己也写了「Synthetic numbers are a LOWER BOUND … the real-hardware run is the blocking gate」,
+而那个真机量法一直没写出来。本 Task 补上:**真值 = 空盘时 LED 13 点标定的角点,量的是外框法在真帧上找到的角点离它多远**。
+两个输入都从正在跑的服务取,不用停服务、不用找 lock 文件在哪(盒上 lock 走 `hardware_vision_store`,不是 `~/.katrain/geometry_lock.npz`):
+
+- 真值:`GET /api/v1/geometry/layout` 的 `corners`(就是 `lock.corners`,相机像素,左上/右上/右下/左下)与 `frame` 尺寸;
+- 帧:`GET /api/v1/geometry/stream`(原始相机帧的 MJPEG,格式见 `endpoints/geometry.py` 的 `_mjpeg_part`)。
+
+**Files:**
+- Modify: `katrain/vision/tools/outer_corner_accuracy.py`
+- Test: `tests/test_vision/test_outer_corner_accuracy.py`(追加)
+
+- [ ] **Step 1: 写失败测试**
+
+```python
+# 追加到 tests/test_vision/test_outer_corner_accuracy.py
+import io
+
+from katrain.vision.tools.outer_corner_accuracy import grab_mjpeg_frames, measure_real
+
+
+def _blank_frames(n):
+    return [np.zeros((720, 1280, 3), np.uint8) for _ in range(n)]
+
+
+def test_measure_real_scores_every_frame_against_the_reference_quad():
+    dets = iter([QUAD.copy(), QUAD + np.array([20, 0]), None])
+    res = measure_real(_blank_frames(3), QUAD, detect_fn=lambda f: next(dets))
+    assert res[0] < 1e-6
+    assert res[1] > 0.12
+    assert res[2] is None
+    # 一帧超差整组就不过 —— 闸不许靠平均把坏帧抹掉
+    assert gate(res, max_error_cells=0.12) is False
+
+
+def test_measure_real_passes_when_every_detection_is_close():
+    res = measure_real(_blank_frames(2), QUAD, detect_fn=lambda f: QUAD + np.array([1, 0]))
+    assert gate(res, max_error_cells=0.12) is True
+
+
+def test_grab_mjpeg_frames_reads_the_kiosk_stream_format(monkeypatch):
+    # 用服务端真正写流的那个函数造字节 —— 流格式一改,这条就红
+    from katrain.web.api.v1.endpoints.geometry import _mjpeg_part
+
+    ok, jpg = cv2.imencode(".jpg", np.full((48, 64, 3), 128, np.uint8))
+    assert ok
+    body = b"".join(_mjpeg_part(jpg.tobytes()) for _ in range(3))
+
+    class _Resp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            self.close()
+
+    monkeypatch.setattr("urllib.request.urlopen", lambda url, timeout=None: _Resp(body))
+    frames = grab_mjpeg_frames("http://box/api/v1/geometry/stream", 2)
+    assert len(frames) == 2
+    assert frames[0].shape == (48, 64, 3)
+```
+
+同时在文件顶部的 import 里补 `import cv2`(现有测试没用到它)。
+
+- [ ] **Step 2: 跑,确认因 ImportError 失败**
+
+```bash
+cd /Users/fan/Repositories/katrain-kiosk-go-vision
+uv run pytest tests/test_vision/test_outer_corner_accuracy.py -q
+```
+
+预期:collection error,`cannot import name 'grab_mjpeg_frames'`。
+
+- [ ] **Step 3: 实现**
+
+在 `gate()` 之后、`if __name__ == "__main__":` 之前加:
+
+```python
+def measure_real(frames, true_quad, detect_fn: Optional[Callable] = None):
+    """Per-frame corner error (cells) of the outer-quad detector against a REAL reference quad.
+
+    ``true_quad`` is the LED 13-point lock's grid corners, calibrated on an EMPTY board just
+    before the stones went down, with board and camera untouched since — the golden reference.
+    Returns {frame_index: error_cells_or_None}; None = detector found no board in that frame.
+    """
+    detect = detect_fn or detect_board_raw
+    out = {}
+    for i, frame in enumerate(frames):
+        det = detect(frame)
+        out[i] = None if det is None else corner_error_cells(det, true_quad)
+    return out
+
+
+def grab_mjpeg_frames(url: str, n: int, timeout: float = 10.0):
+    """Pull ``n`` frames off the kiosk's multipart MJPEG stream (``/api/v1/geometry/stream``).
+
+    Splits on JPEG SOI/EOI markers. ``timeout`` bounds every socket read, so a stream that stops
+    yielding raises instead of hanging the on-board run.
+    """
+    import urllib.request
+
+    frames, buf = [], b""
+    with urllib.request.urlopen(url, timeout=timeout) as resp:
+        while len(frames) < n:
+            chunk = resp.read(65536)
+            if not chunk:
+                break
+            buf += chunk
+            while len(frames) < n:
+                start = buf.find(b"\xff\xd8")
+                end = buf.find(b"\xff\xd9", start + 2) if start >= 0 else -1
+                if start < 0 or end < 0:
+                    break
+                img = cv2.imdecode(np.frombuffer(buf[start : end + 2], np.uint8), cv2.IMREAD_COLOR)
+                buf = buf[end + 2 :]
+                if img is not None:
+                    frames.append(img)
+    return frames
+```
+
+把 `__main__` 段整段换成(不带参数时行为与今天逐字相同):
+
+```python
+if __name__ == "__main__":
+    # synthetic (LOWER BOUND only):  python -m katrain.vision.tools.outer_corner_accuracy
+    # real-board GATE:               python -m katrain.vision.tools.outer_corner_accuracy --live http://127.0.0.1:8081
+    import argparse
+    import json
+    import urllib.request
+
+    ap = argparse.ArgumentParser(description="Outer-corner accuracy: synthetic lower bound, or --live real-board gate.")
+    ap.add_argument("--live", metavar="BASE_URL", help="running kiosk, e.g. http://127.0.0.1:8081")
+    ap.add_argument("--frames", type=int, default=10)
+    args = ap.parse_args()
+
+    if not args.live:
+        res = measure()
+        for (fill, deg), err in sorted(res.items()):
+            print(f"fill={fill:>4.0%}  rot={deg:>3.0f}deg  err={'DETECT_FAIL' if err is None else f'{err:.3f} cells'}")
+        print(f"GATE(<0.12 cells) = {gate(res)}")
+        raise SystemExit(0)
+
+    base = args.live.rstrip("/")
+    with urllib.request.urlopen(base + "/api/v1/geometry/layout", timeout=10) as r:
+        layout = json.load(r)
+    if layout["stale"]:
+        raise SystemExit(f"geometry phase={layout['phase']}: finish an LED calibration on an EMPTY board first")
+    true_quad = np.array([[c["x"], c["y"]] for c in layout["corners"]], np.float64)
+    want = (layout["frame"]["height"], layout["frame"]["width"])
+    frames = grab_mjpeg_frames(base + "/api/v1/geometry/stream", args.frames)
+    if len(frames) < args.frames:
+        raise SystemExit(f"stream gave {len(frames)}/{args.frames} frames")
+    if any(f.shape[:2] != want for f in frames):
+        raise SystemExit(f"frame size {frames[0].shape[:2]} != layout frame {want}: corners are in another resolution")
+    res = measure_real(frames, true_quad)
+    for i, err in sorted(res.items()):
+        print(f"frame={i:>2}  err={'DETECT_FAIL' if err is None else f'{err:.3f} cells'}")
+    found = [e for e in res.values() if e is not None]
+    print(f"detected {len(found)}/{len(res)}  max={max(found):.3f} cells" if found else "detected 0")
+    print(f"GATE(<0.12 cells) = {gate(res)}")
+```
+
+- [ ] **Step 4: 跑测试 + 合成模式没被改坏**
+
+```bash
+cd /Users/fan/Repositories/katrain-kiosk-go-vision
+uv run pytest tests/test_vision/test_outer_corner_accuracy.py -q
+uv run python -m katrain.vision.tools.outer_corner_accuracy | tail -1
+uv run python -m katrain.vision.tools.outer_corner_accuracy --help | head -3
+uv run black -l 120 katrain/vision/tools/outer_corner_accuracy.py tests/test_vision/test_outer_corner_accuracy.py
+```
+
+预期:新旧用例全过;合成模式最后一行仍是 `GATE(<0.12 cells) = ...`;`--help` 列出 `--live`。
+`--live` 本身没有单测(几行胶水),它的测试就是上板清单第 1 项;若 Mac 上接着摄像头跑着 board 模式,可以顺手对本机服务地址跑一次看输出格式。
+
+- [ ] **Step 5: 提交**
+
+```bash
+git add katrain/vision/tools/outer_corner_accuracy.py tests/test_vision/test_outer_corner_accuracy.py
+git commit -m "$(cat <<'EOF'
+feat(vision): 外框精度工具加真帧模式 --live
+
+原工具只渲染合成棋盘、从不读相机,在板上跑与在 Mac 上跑结果相同,
+当不了「满盘外框误差 < 0.12 格」那道上板闸。--live 以空盘 LED 13 点
+标定的角点为真值(/geometry/layout),从 /geometry/stream 取真帧量误差;
+不带参数时行为不变(合成下界)。
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
+
+---
+
 ### Task 9: 产出上板清单 `board-checklist.md`
 
 **Files:** Create `superpowers/tracks/kiosk-go-vision/board-checklist.md`
@@ -1132,10 +1330,17 @@ rg -n "上板|真机" superpowers/tracks/sbc-baipu-led-guide/plan.md | sed -n '1
 ```markdown
 ## 1. 满盘外框精度(V1 自动重定位的闸)
 
-- **前置**:RK3562 + 摄像头 + 实体盘,摆到约 60 子;**这台机器上只跑这一家服务**(2G 内存)。
-- **操作**:`uv run python -m katrain.vision.tools.outer_corner_accuracy`(参数见该文件头)。
-- **判据**:误差 **< 0.12 格**(`outer_corner_accuracy.py:5`)。
-- **记录**:结果写回本文件这一节 + 在 PR 里贴一行数字。**过了才允许把
+- **前置**:RK3562 + 摄像头 + 实体盘;**这台机器上只跑这一家服务**(2G 内存)。
+  先在**空盘**上跑一次 LED 13 点标定并成功 —— 这次的角点就是真值;**之后盘和相机都不许再动**。
+- **操作**(量具是 Task 8b 的真帧模式):
+  1. 空盘先跑一次(对照):`uv run python -m katrain.vision.tools.outer_corner_accuracy --live http://127.0.0.1:8081`
+  2. 轻手摆到约 60 子(别碰盘),再跑一次;有余力摆到约 150 子跑第三次。
+  **不带 `--live` 跑出来的是合成图**,只是下界,不能当这道闸。
+- **判据**:每一次都 `GATE(<0.12 cells) = True`(`outer_corner_accuracy.py` 的 `gate`)。
+  空盘那次就已 ≥ 0.12 ⇒ 外框法与 LED 法本身有系统偏差,同样算不过。
+  摆子时碰了盘 ⇒ 这组作废,回空盘重标重测。`detected k/n` 照实记:找不到盘时自动重定位会退回 `degraded`,
+  不串位但帮不上忙 —— 这个数决定开关打开后值不值,不决定安不安全。
+- **记录**:每次的 `detected` 与 `max` 写回本文件这一节 + 在 PR 里贴一行。**过了才允许把
   `AUTO_RELOCATE_ON_DRIFT` 翻成 `True`,并且要和结果同一次提交。**
 ```
 

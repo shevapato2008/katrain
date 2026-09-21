@@ -93,3 +93,45 @@ class TestAttachParallax:
         save_parallax(parallax_path(tmp_path), _calib())
         cfg, _, _ = attach_parallax(original, tmp_path, None)
         assert original.parallax is None and cfg is not original
+
+
+class TestBoardDeltaDiagnostics:
+    """P2 (narrowed 2026-09-22): each board change shows the nearby detection's parallax shift and a *
+    when the correction moved it to a different intersection; 0.00 and no * when off."""
+
+    def _log(self, parallax, caplog):
+        import numpy as np
+
+        from katrain.vision.board_state import BoardStateExtractor
+        from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig
+        from katrain.vision.stone_detector import Detection
+        from katrain.vision.worker_inprocess import InProcessAdapter
+        from tests.test_vision.board_state_corpus import IMG, grid_to_px
+        from tests.test_vision.parallax_synth import K_TRUE, NADIR_GRID
+
+        cfg = BoardConfig(margin_cells=DEFAULT_MARGIN_CELLS)
+        a = InProcessAdapter.__new__(InProcessAdapter)
+        a._geometry = object()  # geometry-lock path -> _active_extractor() is the locked one
+        a._state_extractor = BoardStateExtractor(BoardConfig())
+        a._state_extractor_locked = BoardStateExtractor(
+            cfg, parallax=ParallaxParams(*NADIR_GRID, K_TRUE) if parallax else None
+        )
+        before = np.zeros((19, 19), dtype=int)
+        before[5][5] = 2
+        after = np.zeros((19, 19), dtype=int)
+        after[1][9] = 1
+        x, y = grid_to_px(cfg, 9.0, 0.40)  # raw rounds to row 0; corrected (0.598) rounds to row 1
+        with caplog.at_level(logging.INFO, logger="katrain.vision.worker_inprocess"):
+            a._log_board_delta(before, after, [Detection(x_center=x, y_center=y, class_id=0, confidence=0.9)], IMG, IMG)
+        (line,) = [r.getMessage() for r in caplog.records if r.getMessage().startswith("board delta:")]
+        return line
+
+    def test_on_shows_raw_to_corrected_shift_and_rescue_marker(self, caplog):
+        line = self._log(True, caplog)
+        assert "'(1,9)B~B0.90@0.40 pl0.20* (0.40,9.00)>(0.60,9.00)'" in line
+        assert "'(5,5)W~none'" in line
+
+    def test_off_shows_zero_shift_and_no_marker(self, caplog):
+        line = self._log(False, caplog)
+        assert "'(1,9)B~B0.90@0.60 pl0.00 (0.40,9.00)>(0.40,9.00)'" in line
+        assert "*" not in line

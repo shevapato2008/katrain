@@ -226,23 +226,37 @@ class InProcessAdapter:
 
     def _log_board_delta(self, before, after, detections, w: int, h: int) -> None:
         """One INFO line per stable-board change: which cells appeared/vanished and what the
-        detector actually saw nearby — turns 'why did my stone drop?' into reading a log line."""
-        pts = self._active_extractor().detection_points(detections, img_w=w, img_h=h)
+        detector actually saw nearby — turns 'why did my stone drop?' into reading a log line.
+
+        Each cell carries its nearest detection as
+        <class><conf>@<distance> pl<shift>[*] (<fy_raw>,<fx_raw>)>(<fy>,<fx>): shift is how far the
+        parallax correction moved it (cells; 0.00 when off), a * means the correction changed which
+        intersection it rounds to — "this move was rescued by parallax" — and the coordinate pair is the
+        raw -> corrected continuous (row, col) position (prd P2). The leading (r,c)<colour> token is
+        unchanged: vision-recognition-stability §7 greps it."""
+        pts = self._active_extractor().parallax_points(detections, img_w=w, img_h=h)
         names = {0: "B", 1: "W", 2: "R", 3: "G"}
 
         def near(r, c):
             best = None
-            for fy, fx, cls, conf in pts:
+            for fy_raw, fx_raw, fy, fx, cls, conf in pts:
                 d = ((fy - r) ** 2 + (fx - c) ** 2) ** 0.5
                 if best is None or d < best[0]:
-                    best = (d, cls, conf)
+                    best = (d, cls, conf, fy_raw, fx_raw, fy, fx)
             if best is None or best[0] > 1.0:
                 return "none"
-            return f"{names.get(best[1], '?')}{best[2]:.2f}@{best[0]:.2f}"
+            d, cls, conf, fy_raw, fx_raw, fy, fx = best
+            shift = ((fy - fy_raw) ** 2 + (fx - fx_raw) ** 2) ** 0.5
+            rescued = (int(round(fy_raw)), int(round(fx_raw))) != (int(round(fy)), int(round(fx)))
+            return (
+                f"{names.get(cls, '?')}{conf:.2f}@{d:.2f} pl{shift:.2f}{'*' if rescued else ''} "
+                f"({fy_raw:.2f},{fx_raw:.2f})>({fy:.2f},{fx:.2f})"
+            )
 
         sym = {1: "B", 2: "W"}
         added = [
-            f"({r},{c}){sym.get(int(after[r][c]), '?')}" for r, c in zip(*np.where((before != after) & (after != 0)))
+            f"({r},{c}){sym.get(int(after[r][c]), '?')}~{near(int(r), int(c))}"
+            for r, c in zip(*np.where((before != after) & (after != 0)))
         ]
         removed = [
             f"({r},{c}){sym.get(int(before[r][c]), '?')}~{near(int(r), int(c))}"

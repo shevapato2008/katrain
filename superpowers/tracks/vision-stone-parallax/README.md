@@ -11,7 +11,10 @@ k 在仿射变换下不变,所以可以直接做在连续网格坐标上。**
 | 文件 | 内容 |
 |---|---|
 | `prd.md` | 本轮需求。背景、不要动的、三条需求条目(含根因行号与验收)、非目标、风险 |
+| `design.md` | 实现设计。修正落在哪一层、标定文件格式与读写时机、诊断日志格式、失败即拒绝的标定工具设计 |
 | `geometry.md` | 推导、实测输入、h 为什么取厚度一半、两个精确模型的校核、现场标定、边界 |
+| `plan.md` | 按任务拆分的实现计划(Task 1–9),每个任务的文件、约束、验收条目 |
+| `handoff.md` | 上板交接。部署步骤、固定摆位复现故障的流程、标定步骤、事先定死的判定阈值、待填的对照数据表 |
 | `parallax_correct.py` | 参考实现。`correct` / `forward` / `to_point` / `apply_parallax` / `fit_from_samples`;自带 361 点往返自检 |
 | `verify_quadric.py` | 校核脚本。切锥 ∩ 平面(模型 A)、像平面椭圆中心反投(模型 B) |
 | `offsets-361.csv` | 361 点偏移表,`python3 parallax_correct.py --csv` 生成 |
@@ -43,8 +46,8 @@ K = 0.989689   nadir = (0.0, -70.545)   H = 339.4424   h = 3.5
 
 ## 接进流水线的位置
 
-`katrain/vision/board_state.py:108-109` 与 `:131-132`,在 `continuous_grid_pos` 之后、
-取整之前。`coordinates.py` 的 `physical_to_grid` 本身不动 ——
+`katrain/vision/board_state.py` 的 `BoardStateExtractor._positions`,在 `continuous_grid_pos` 之后、
+取整之前;是 `apply_parallax` 唯一的调用点。`coordinates.py` 的 `physical_to_grid` 本身不动 ——
 `tests/test_vision/test_warp_consistency.py:46-47` 还把它当纯几何断言用。
 
 ## 硬件侧的真源

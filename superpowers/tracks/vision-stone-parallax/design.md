@@ -48,24 +48,39 @@
 
 ```python
 def apply_parallax(fx, fy, nadir, k):
-    if nadir is None or k is None:
+    if nadir is None or k is None or k == 1.0:
         return fx, fy
     return nadir[0] + (fx - nadir[0]) * k, nadir[1] + (fy - nadir[1]) * k
 ```
 
 纯函数、无状态。`physical_to_grid` / `continuous_grid_pos` 一字不动。
 
-### 2.2 新模块 `katrain/vision/parallax.py`
+`k == 1.0` 也直接返回原值:浮点里 `nadir + (fx − nadir) * 1.0` 不一定等于 `fx`
+(`9.0 + (0.1 − 9.0)` = `0.09999999999999964`),不短路的话「k=1 时逐位相同」(P1-1 验收 1)做不到。
 
-只放三样东西,全部纯 numpy / 标准库,不依赖摄像头与 web:
+### 2.2 新模块:`katrain/vision/parallax.py`(数学)与 `parallax_store.py`(文件)
 
-- `ParallaxParams(nadir_fx, nadir_fy, k)`:frozen dataclass,extractor 只需要这三个数。
-- `ParallaxCalibration`:文件里的完整记录(见 §3),带 `.params`。`load_parallax(path) -> (ParallaxCalibration | None, reason)`、
-  `save_parallax(path, calib)`(先写临时文件再 `os.replace`)。
+拆两个文件:一个纯数学、一个管磁盘,并行开发时互不改同一个文件。都不依赖摄像头。
+
+`parallax.py`(纯 numpy):
+
+- `ParallaxParams(nadir_fx, nadir_fy, k)`:frozen dataclass,extractor 只需要这三个数;`.nadir`、`.to_dict()`。
 - `fit_parallax(points, detected, camera_height_mm) -> FitResult`:`parallax_correct.fit_from_samples`
   的移植,但**在流水线自己的网格坐标里拟合**:P = 交点 (col, row),D = 原始 (fx, fy)。
-  返回 `k, nadir, m, rms_cells, max_resid_cells, worst_point, h_implied_mm, n`。
-  - 少于 3 点、所有点共线(设计矩阵秩 < 3)、`|1−m|` 小到解不出 nadir,都抛 `ValueError`,不返回病态解。
+  `FitResult` 带 `k, nadir_fx, nadir_fy, m, rms_cells, max_resid_cells, worst_index, h_implied_mm, n` 与 `.params`。
+  - 少于 3 点、样本共线、`|1−m|` 小到解不出 nadir,都抛 `ValueError`,不返回病态解。
+  - 共线:这个 3 参数模型对共线样本**数学上并不退化**(原型实测共线一排也能解出精确的 k),
+    只有全部重合才解不出。仍按 PRD P1-2 验收 3 拒收,理由是「标定要两个方向都有跨度」。
+    判据用去均值后样本矩阵的秩 < 2(共线与重合都会命中)。
+
+`parallax_store.py`(标准库):
+
+- `ParallaxCalibration`:文件里的完整记录(见 §3),带 `.params`、`to_json_dict()`、`from_json_dict()`(校验)。
+- `parallax_path(dir)`、`load_parallax(path) -> (ParallaxCalibration | None, reason)`(从不抛)、
+  `save_parallax(path, calib)`(先校验,再写临时文件并 `os.replace`)。
+- `H_IMPLIED_WINDOW_MM = (2.0, 8.0)`:工具与加载共用。
+- `attach_parallax(vision_config, hardware_vision_dir, current_generation) -> (新 config, 日志级别, 日志文本)`:
+  server 启动时调用的纯函数,单测覆盖;server 里只剩四行。
   - `camera_height_mm`(H)**只用来算 `h_implied`**,修正本身不用它。工具默认值 339.44,
     出处 `geometry.md` §3(ver9 `lens_mm` z 348.942 − 盘面 z 9.5)。这不违反「不写死 CAD 值」:
     写死的禁令针对 nadir,H 在这里只是诊断口径。
@@ -95,7 +110,7 @@ def apply_parallax(fx, fy, nadir, k):
 
 ```
 server.py 生命周期(:726 构造 VisionService 前,hardware_vision_dir 在 :617)
-  load_parallax(<hardware_vision_dir>/parallax/go-19x19.json)
+  attach_parallax(vision_config, hardware_vision_dir, 当前几何代次) → load_parallax(<dir>/parallax/go-19x19.json)
   → 成功:vision_config.parallax = {"nadir_fx":…, "nadir_fy":…, "k":…}
     打 INFO:parallax on + 棋盘 / 棋子 / k / nadir / h_implied / rms / n / fitted_at /
             标定时的几何代次 / 当前几何代次
@@ -137,6 +152,9 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
 - `worker_inprocess._log_board_delta`(:223)改用 `parallax_points`:每个变化格附近那条检测的描述
   从 `B0.85@0.12` 变成 `B0.85@0.12 pl0.18`,`pl` 是修正位移 \|Δ\|(格);原始坐标取整和修正后取整
   落在不同格子时再加一个 `*`,表示「被视差救回」。修正关着时 `pl0.00`、不会有 `*`。
+  今天只有「消失的格」带这段描述;**新增的格也带上**(`(1,9)B~B0.90@0.40 pl0.20*`)——
+  「这一手是被视差救回来的」看的正是新增的那一格。`(r,c)颜色` 这个前缀保持原样:
+  vision-recognition-stability 的 §7 验收按它 grep。
 - 服务启动那一行(§2.4)。
 - **不动**:`ambiguous_stone` 事件结构、`worker.py`(它永远不修正)。
 - 修正前后 `unbacked=True` 的对照,直接数现有日志里的 ambiguous 提示行
@@ -183,7 +201,7 @@ InProcessAdapter.__init__:ParallaxParams(**config["parallax"]) 只交给 _state_
 | `apply_parallax`:nadir / k 为 None、k=1 是恒等;nadir 是不动点;与参考公式逐点相等 | P1-1 验收 1、4 | 新函数,基线上不存在 |
 | **关着时逐位相同**:在基线提交上用 `BoardStateExtractor` 跑一套固定随机检测(含边距目标、同点碰撞、粘滞、存在维持、LED 掩码、颜色翻转),把 `_grid_cell` / `detection_points` / `detections_to_board`(两种模式)/ `cell_top` / `cell_confidences` 的输出存成金样;新代码在 `parallax=None` 与 `k=1` 两种情况下都必须逐位等于金样 | P1-1 验收 1 | 金样取自基线,改坏了关着时的行为就会变红 |
 | 361 点:参考 `forward()` 造检测位置,过 `_grid_cell` 全部落回原交点 | P1-1 验收 2(健全性,基线上也全过) | 否,只作健全性检查 |
-| **远端 5 排各往远离镜头方向多偏 0.3 格**:不修正时至少一颗落错(实测 9/95),修正后 0 颗 | P1-1 验收 2(区分用) | 是 |
+| **第 1–5 排各往远离镜头方向多偏 0.35 格**:不修正时 63/95 落到相邻交点,修正后 0/95;另一条钉住第 0 排的代价(外偏 0.3 格修正前后都 DROP) | P1-1 验收 2(区分用) | 是 |
 | 边距带(远端 fy ∈ (−0.71, −0.5)、两侧 fx ∈ (−0.60, −0.5)):先断言这些点**修正后取整确实落在盘内**(前提),再断言 `_grid_cell` 返回 None、空盘上 occupancy 路径不落子 | P1-1 验收 3 | 是:如果 DROP 只看修正后坐标就会红 |
 | 单次修正:`detection_points` 的坐标等于 `apply_parallax` 恰好一次,不等于两次 | 设计 §1 | 是 |
 | `fit_parallax` 无噪:k、nadir 误差 < 1e-6,`rms_cells` < 1e-9 | P1-2 验收 1 | 新函数 |

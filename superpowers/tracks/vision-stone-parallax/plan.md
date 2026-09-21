@@ -2704,8 +2704,9 @@ Expected: `comm -13` 输出为空(没有新增失败);`git status --short` 只�
      - **卡片**:弹出确认卡片 —— 记一次,按「确认」让它落下;若卡片上的点不对,同时记一次错点;
      - **未确认**:15 秒内既没落下也没弹卡片 —— 记一次,子留在盘上。
    - 每一轮开始前、结束后各记一次时间,作为这一轮的日志窗口 `--since/--until`。
-3. **修正前对照**(还没有标定文件):确认启动日志有 `vision parallax off: not calibrated`。A、B 各跑一遍,每轮记录:
-   四类计数;`journalctl -u smartbox-katrain --since <开始> --until <结束> | grep -c 'peak conf 0.00 <'`(unbacked 计数)。
+3. **修正前对照**(还没有标定文件):**先在 kiosk 上空盘重新锁定一次几何**(修正前修正后两组对照都要从新鲜的锁开始,
+   过期的锁会把修正前的出错数撑高、显得修正效果更大)。确认启动日志有 `vision parallax off: not calibrated`。
+   A、B 各跑一遍,每轮记录:四类计数;`journalctl -u smartbox-katrain --since <开始> --until <结束> | grep -c 'peak conf 0.00 <'`(unbacked 计数)。
 4. **标定**(工具在空盘上先后两次核对印刷网格与保存的几何,任一次偏 > 0.10 格就拒绝、什么都不写 ——
    拟合本身看不见过期的几何,见 design §2.5):
    - 停服务前:棋盘清空、kiosk 显示几何已就绪。自上次锁定以来碰过棋盘(**包括清空修正前那几轮**),先在 kiosk 上

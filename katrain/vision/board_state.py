@@ -151,8 +151,9 @@ class BoardStateExtractor:
         return prev_board is not None and int(prev_board[cy][cx]) == det.class_id + 1
 
     def detection_points(self, detections: list[Detection], img_w: int, img_h: int) -> list:
-        """Continuous grid positions of ALL detections (any class, off-board included), parallax-
-        corrected: [(fy, fx, class_id, confidence)]. Used by presence sustain and delta diagnostics."""
+        """Continuous grid positions of ALL detections (any class, off-board included): [(fy, fx, class_id,
+        confidence)], corrected when on-board by both the raw and the corrected position; raw otherwise.
+        Used by presence sustain and delta diagnostics."""
         pts = []
         for det in detections:
             _, _, fx, fy, _ = self._positions(det, img_w, img_h)

@@ -98,6 +98,14 @@ def test_unparseable_json_is_refused(tmp_path):
     assert calib is None and reason.startswith("invalid calibration file")
 
 
+def test_a_json_error_that_is_not_ValueError_still_never_raises(tmp_path):
+    """A deeply nested JSON array makes json.loads raise RecursionError (not caught by the narrower
+    (OSError, ValueError, TypeError)); load_parallax must still return (None, reason), never raise."""
+    calib, reason = load_parallax(_write(tmp_path, "[" * 100000))
+    assert calib is None
+    assert reason.startswith("invalid calibration file")
+
+
 def test_save_refuses_an_invalid_calibration_and_keeps_the_old_file(tmp_path):
     path = parallax_path(tmp_path)
     save_parallax(path, _calib())

@@ -74,6 +74,16 @@ class TestAttachParallax:
         cfg, level, msg = attach_parallax(VisionServiceConfig(), tmp_path, "gen-now")
         assert cfg.parallax is None and level == logging.WARNING and "invalid calibration file" in msg
 
+    def test_a_non_value_error_from_a_broken_file_is_still_off_at_warning(self, tmp_path):
+        """Deeply nested JSON raises RecursionError out of json.loads; attach_parallax must not let that
+        abort server startup -- the config comes back unchanged and the fault is logged at WARNING."""
+        path = parallax_path(tmp_path)
+        path.parent.mkdir(parents=True)
+        path.write_text("[" * 100000)
+        original = VisionServiceConfig()
+        cfg, level, msg = attach_parallax(original, tmp_path, "gen-now")
+        assert cfg == original and level == logging.WARNING and "invalid calibration file" in msg
+
     def test_valid_file_turns_it_on_and_logs_provenance(self, tmp_path):
         save_parallax(parallax_path(tmp_path), _calib())
         cfg, level, msg = attach_parallax(VisionServiceConfig(), tmp_path, "gen-now")

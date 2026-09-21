@@ -110,12 +110,12 @@ def load_parallax(path, board: str = BOARD_GO_19) -> tuple[ParallaxCalibration |
     """(calibration, "ok") or (None, reason). Never raises for a bad file: a broken calibration
     turns the correction off, it must not take recognition down."""
     p = Path(path)
-    if not p.exists():
-        return None, f"not calibrated ({p} does not exist)"
     try:
+        if not p.exists():
+            return None, f"not calibrated ({p} does not exist)"
         return ParallaxCalibration.from_json_dict(json.loads(p.read_text(encoding="utf-8")), board=board), "ok"
-    except (OSError, ValueError, TypeError) as exc:  # json.JSONDecodeError is a ValueError
-        return None, f"invalid calibration file {p}: {exc}"
+    except Exception as exc:  # never raise: a broken file must turn the correction off, not abort startup
+        return None, f"invalid calibration file {p}: {exc!r}"
 
 
 def save_parallax(path, calib: ParallaxCalibration) -> None:

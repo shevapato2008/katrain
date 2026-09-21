@@ -24,6 +24,15 @@ export interface GrowthSummary {
   /** 只列**打过的**档,高档在前。没打过的档不会出现 —— 不摆一排 0 胜 0 负。 */
   by_opponent_rung: GrowthOpponentRung[];
   /**
+   * 「算得出胜负的局」——记下了这个用户执黑还是执白、且 `result` 判得出赢家的那些。
+   * 与 `games_in_window` **口径不同**:那个数的是下了多少局。
+   * **可选**:云端可能还没部署到这一版,那时胜率退回升降级口径(见 `winrateCell`)。
+   * 所以 `isGrowthSummary` 不查它们 —— 查了就等于把老云端的正常响应判成坏 payload。
+   */
+  decided_games_in_window?: number;
+  wins_in_window?: number;
+  losses_in_window?: number;
+  /**
    * 这几个数是谁数出来的。口径见 `api/userGamesApi.ts` 的 `DataAuthority` ——
    * **一个概念只许有一套词**,复盘列表那句「本机 N 局 / 共 N 局」用的是同一格。
    *
@@ -86,4 +95,27 @@ export const getGrowthSummary = async (token?: string, signal?: AbortSignal): Pr
 export const rankedWinrate = (s: GrowthSummary): number | null => {
   const decided = s.ranked_wins_in_window + s.ranked_losses_in_window;
   return decided === 0 ? null : s.ranked_wins_in_window / decided;
+};
+
+/**
+ * 屏上胜率那一格该显示什么。**标签跟着数走** —— 显示一个口径、算另一个,是这一屏最容易犯的错。
+ *
+ * · 云端给了新字段 ⇒ `scope: 'all'`,分母是所有算得出执色的局。
+ * · 没给(老云端)⇒ 退回升降级口径,`scope: 'ranked'`,屏上的标签也退回「升降级胜率」。
+ * · 分母是 0 ⇒ `value: null`,屏上写 `—`。**不返回 0%**:「一局没下」和「全输了」是两句话。
+ *
+ * `unknownGames` 是「下了但没算进胜率」的局数(新字段存在时才有意义),屏上那句
+ * 「有 N 局没算进胜率」就是它。老口径下这个差额的意思是「不是升降级局」,不是「没记执色」,
+ * 所以那时恒为 0 —— 不把一句在老口径下不成立的话说出来。
+ */
+export const winrateCell = (s: GrowthSummary): {
+  value: number | null; scope: 'all' | 'ranked'; unknownGames: number;
+} => {
+  if (typeof s.decided_games_in_window === 'number') {
+    const decided = s.decided_games_in_window;
+    const unknownGames = Math.max(0, s.games_in_window - decided);
+    if (decided === 0) return { value: null, scope: 'all', unknownGames };
+    return { value: (s.wins_in_window ?? 0) / decided, scope: 'all', unknownGames };
+  }
+  return { value: rankedWinrate(s), scope: 'ranked', unknownGames: 0 };
 };

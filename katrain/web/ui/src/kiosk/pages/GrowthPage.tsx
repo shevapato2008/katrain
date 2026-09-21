@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
-import { getGrowthSummary, rankedWinrate, type GrowthSummary } from '../api/growthApi';
+import { getGrowthSummary, winrateCell, type GrowthSummary } from '../api/growthApi';
 
 /**
  * 屏 22 · 成长(L1 两栏)。
@@ -32,12 +32,15 @@ import { getGrowthSummary, rankedWinrate, type GrowthSummary } from '../api/grow
  * 留下的只有「能力诊断」那一块:它要拿**已经跑过报告**的对局算,那是另一条链(复盘屏),
  * 稿子的诚实空态原样照搬。
  *
- * ## 胜率为什么只算升降级局
+ * ## 胜率算哪些局
  *
- * `user_games.result` 存的是**哪一方赢**(`"B+R"`),表里**没有任何一列记这个用户坐的是哪一方**
- * (测试里对着 `__table__.columns` 断言过)。拿玩家名去猜就是在编。
- * `ai_ladder_game_ledger` 有 `user_color`,`result` 本身就是从这个用户视角写的 ——
- * 所以这一格的标签必须写明「升降级」,不能写成光秃秃的「胜率」。
+ * 2026-09 之前 `user_games` **没有一列记这个用户坐哪一方**,所以只有升降级局
+ * (`ai_ladder_game_ledger` 有 `user_color`)算得出胜负,标签只能写「升降级胜率」。
+ * 现在 `user_games.user_color` 补上了,人机局与平台引擎局也算得出;面对面、导入的谱、
+ * 以及这一列上线之前的非升降级局仍然没有这个事实 —— 它们**不进分母**,差额由屏上
+ * 那句「有 N 局没算进胜率」说出来。拿玩家名去猜执色就是在编,所以不猜。
+ *
+ * 云端还没部署到这一版时响应里没有新字段 ⇒ 数和标签**一起**退回升降级口径(`winrateCell`)。
  */
 
 /** 稿子那三条升降规矩。①② 与 `formatNetScoreValueText`(±3)一致;③ 是**改过的**:稿子写「上封 12 段」。 */
@@ -126,16 +129,18 @@ const GrowthPage = () => {
   // 数没取到就是没取到。**四格一个都不许写 0** —— 「没下过」和「没读到」在屏上是两句话。
   const dash = t('growth:no_data', '—');
   const num = (v: number | undefined) => (v === undefined ? dash : String(v));
-  const wr = summary ? rankedWinrate(summary) : null;
+  const cell = summary ? winrateCell(summary) : null;
 
   const stats: { v: string; k: string; good?: boolean }[] = [
     { v: num(summary?.games_in_window), k: t('growth:stat_recent', '近 30 天对局') },
     {
-      v: wr === null ? dash : pct(wr),
+      v: cell?.value == null ? dash : pct(cell.value),
       // 口径必须写在标签里(共享外壳 §5 的原话:「一个光秃秃的 58% 谁也不知道是哪来的」)。
-      // 「升降级」三个字是**承重的**:只有那一种对局的胜负是从这个用户视角记下来的。
-      k: t('growth:stat_winrate', '升降级胜率 · 近 30 天'),
-      good: wr !== null && wr >= 0.5,
+      // 老云端只给得出升降级那一半 ⇒ 标签跟着退。显示一个口径、算另一个是这屏最容易犯的错。
+      k: cell?.scope === 'all'
+        ? t('growth:stat_winrate_all', '胜率 · 近 30 天')
+        : t('growth:stat_winrate', '升降级胜率 · 近 30 天'),
+      good: cell?.value != null && cell.value >= 0.5,
     },
     { v: solved === null ? dash : String(solved), k: t('growth:stat_solved', '累计已解题') },
     { v: num(summary?.ranked_total), k: t('growth:stat_ranked', '升降级局 · 累计') },
@@ -206,6 +211,15 @@ const GrowthPage = () => {
             {t('growth:local_note_a', '这几个数是')}
             <b>{t('growth:local_note_b', '本机记录')}</b>
             {t('growth:local_note_c', '。账在云端,盒子上这一份可能少几局。')}
+          </p>
+        )}
+        {/* 胜率的分母比「近 30 天对局」小的时候,差额要说出来 —— 否则 10 局里只算了 2 局的
+            50% 和 10 局全算的 50% 在屏上长得一模一样。 */}
+        {cell && cell.scope === 'all' && cell.unknownGames > 0 && (
+          <p className="setnote" data-testid="growth-unknown-seat">
+            {t('growth:unknown_seat_a', '有 ')}
+            <b>{cell.unknownGames}</b>
+            {t('growth:unknown_seat_b', ' 局没算进胜率：面对面、导入的谱，以及没记下你执黑还是执白的局。')}
           </p>
         )}
 

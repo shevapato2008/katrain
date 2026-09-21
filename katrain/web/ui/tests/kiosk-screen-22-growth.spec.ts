@@ -125,8 +125,19 @@ test('L1 外框:左栏 296 · 右栏 680 · 中间区 434(有 Dock 的一级页)
 });
 
 test('打过的档一多:滚的是那张表自己,右栏不被顶破,两格照旧贴底', async ({ page }) => {
-  await open(page, summary({ by_opponent_rung: MANY_RUNGS }));
+  // **右栏造到最满**:20 档战绩 + 数据条下面那两句 setnote 同时出现(「本机记录」+
+  // 「有 N 局没算进胜率」)。两句各占一行,吃的是 `.gdiag` 的高度 —— 在受限高度里
+  // 加节点,要在它们都在的那一态量,不是在没有它们的那一态量。
+  await open(page, summary({
+    by_opponent_rung: MANY_RUNGS,
+    authority: 'local_cache',
+    decided_games_in_window: 30,
+    wins_in_window: 17,
+    losses_in_window: 13,
+  }));
   await page.waitForSelector('[data-testid="growth-by-rung"] .grung');
+  await expect(page.getByTestId('growth-local-note'), '最满那一态没造出来 —— 少了「本机记录」那句').toBeVisible();
+  await expect(page.getByTestId('growth-unknown-seat'), '最满那一态没造出来 —— 少了「没算进胜率」那句').toBeVisible();
 
   const g = await page.evaluate(() => {
     const rungs = document.querySelector('.grungs') as HTMLElement;

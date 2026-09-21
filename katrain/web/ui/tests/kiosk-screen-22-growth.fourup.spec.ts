@@ -40,10 +40,12 @@ const OUT = resolve(process.cwd(),
  *
  *  · **能力诊断**那一块照搬稿子的诚实空态:它要拿**已经跑过报告**的对局算,那是另一条链
  *    (复盘屏),这一轮不接。标签用 `.wip.have`(蓝 = 后端已有 · 界面未接),不是琥珀。
- *  · **胜率那一格的标签是「升降级胜率」,不是稿子的「胜率 · 同期」。**
- *    `user_games.result` 存的是**哪一方赢**(`"B+R"`),表里**没有一列记这个用户坐哪一方**
- *    (测试对着 `__table__.columns` 断言过)。只有升降级账本的 `result` 是从用户视角写的。
+ *  · **胜率那一格的标签是「胜率 · 近 30 天」,不是稿子的「胜率 · 同期」**,底下多一句
+ *    「有 N 局没算进胜率」。2026-09 起 `user_games.user_color` 记下了用户坐哪一方,
+ *    人机局也算得出胜负;面对面、导入的谱、以及这一列上线之前的非升降级局没有这个事实,
+ *    **不进分母** —— 分母比「近 30 天对局」小的时候差额必须说出来。
  *    **口径写进标签**是共享外壳 §5 的硬要求(原话:「一个光秃秃的 58% 谁也不知道是哪来的」)。
+ *    (云端没部署这一版时标签退回「升降级胜率」,那一态由 `kiosk-screen-22-growth.spec.ts` 的默认夹具覆盖。)
  *  · 取图机器上没有摄像头 ⇒ 与实体盘有关的东西一律不出现(这一屏本来也没有)。
  */
 
@@ -68,6 +70,10 @@ const SUMMARY = {
   ranked_total: 31,
   ranked_wins_in_window: 9,
   ranked_losses_in_window: 5,
+  // 42 局里 30 局算得出执色 ⇒ 胜率 17/30,差的 12 局由那句 setnote 说出来。
+  decided_games_in_window: 30,
+  wins_in_window: 17,
+  losses_in_window: 13,
   by_opponent_rung: [
     { rung: 21, rank_name: '准1段', wins: 1, losses: 4 },
     { rung: 20, rank_name: '1级', wins: 3, losses: 3 },
@@ -101,6 +107,9 @@ const stub = async (page: Page) => {
         sync_state: 'unbound', recognition_ready: false, led_connected: null, bound_session_id: null } });
     }
     if (path === '/api/v1/geometry/status') return route.fulfill({ status: 404, json: { detail: 'disabled' } });
+    // 引擎已就绪 —— 顶栏那条「AI 引擎准备中」(2026-09-17 加的预热提示)只在开机头一两分钟出现,
+    // 不是这一屏的常态。不 stub 它的话兜底的 `{}` 会被读成「还在预热」,四图里凭空多一条横幅。
+    if (path === '/api/v1/health') return route.fulfill({ json: { engines: { local: 'reachable' } } });
     return route.fulfill({ json: {} });
   });
 };
@@ -132,9 +141,9 @@ test('四图:成长 ←→ sample-go/shots/22-growth.png', async ({ page }) => {
       + '④ 「按对手强度」不用等:ai_ladder_game_ledger 每行带 opponent_rung,而 CHECK 约束'
       + '强制 counted 的行必须有档位 ⇒ **已计入的局一局不漏**,打过哪档列哪档 · '
       + '⇒ **中段那一大块红是预期的:稿子那儿是一段道歉,实现那儿是真数字** · '
-      + '**胜率那格标签是「升降级胜率」不是「胜率」**:user_games.result 说的是哪一方赢,'
-      + '表里没有一列记这个用户坐哪一方,只有升降级账本的 result 是从用户视角写的——'
-      + '口径必须写进标签 · **能力诊断**照搬稿子的诚实空态(要拿跑过报告的对局算,那是复盘那条链)',
+      + '**胜率那格是「胜率 · 近 30 天」**:user_games 记下了执色,人机局也算得出胜负;'
+      + '42 局里 30 局算得出 ⇒ 57%,差的 12 局由底下那句「没算进胜率」说出来 · '
+      + '**能力诊断**照搬稿子的诚实空态(要拿跑过报告的对局算,那是复盘那条链)',
   });
   console.log(`[fourup 22-growth] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

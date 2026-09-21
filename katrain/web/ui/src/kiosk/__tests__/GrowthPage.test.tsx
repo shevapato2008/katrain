@@ -147,6 +147,40 @@ describe('屏 22 成长', () => {
     expect(screen.getByTestId('growth-stats')).toHaveTextContent('升降级胜率 · 近 30 天');
   });
 
+  // 2026-09 起 `user_games` 记下了「用户坐哪一方」⇒ 云端给得出全部算得出执色的局。
+  it('有算得出胜负的局时,那一格是百分比、标签是「胜率 · 近 30 天」', async () => {
+    mocks.summary = SUMMARY({ games_in_window: 10, decided_games_in_window: 8, wins_in_window: 6, losses_in_window: 2 });
+    render(<GrowthPage />);
+    await waitFor(() => expect(statValues()[0]).toBe('10'));
+    expect(statValues()[1]).toBe('75%');
+    expect(screen.getByTestId('growth-stats')).toHaveTextContent('胜率 · 近 30 天');
+    expect(screen.getByTestId('growth-stats')).not.toHaveTextContent('升降级胜率');
+  });
+
+  it('一局都算不出执色时写 —,并说清有几局没算进去', async () => {
+    mocks.summary = SUMMARY({ games_in_window: 5, decided_games_in_window: 0, wins_in_window: 0, losses_in_window: 0 });
+    render(<GrowthPage />);
+    await waitFor(() => expect(statValues()[0]).toBe('5'));
+    expect(statValues()[1]).toBe('—');
+    expect(screen.getByTestId('growth-unknown-seat')).toHaveTextContent('5');
+  });
+
+  it('每一局都算得出执色时不说那句话 —— 没话说就不占地方', async () => {
+    mocks.summary = SUMMARY({ games_in_window: 3, decided_games_in_window: 3, wins_in_window: 2, losses_in_window: 1 });
+    render(<GrowthPage />);
+    await waitFor(() => expect(statValues()[0]).toBe('3'));
+    expect(screen.queryByTestId('growth-unknown-seat')).toBeNull();
+  });
+
+  // 云端还没部署这一版时,老响应里没有那三个键:数退回升降级口径,**标签也跟着退**,
+  // 也不说「没算进去」那句 —— 老口径下那个差额不是「没记执色」,是「不是升降级局」。
+  it('老云端没给新字段时,标签退回「升降级胜率」,也不说没算进去那句', async () => {
+    render(<GrowthPage />);
+    await waitFor(() => expect(statValues()[0]).toBe('12'));
+    expect(screen.getByTestId('growth-stats')).toHaveTextContent('升降级胜率 · 近 30 天');
+    expect(screen.queryByTestId('growth-unknown-seat')).toBeNull();
+  });
+
   it('一局升降级都没下时胜率是「—」,不是 0%', async () => {
     mocks.summary = SUMMARY({ ranked_wins_in_window: 0, ranked_losses_in_window: 0 });
     render(<GrowthPage />);

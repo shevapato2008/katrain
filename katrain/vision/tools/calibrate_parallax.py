@@ -315,6 +315,35 @@ def _fmt(off: GridOffset) -> str:
     return f"dx {off.dx_cells:+.3f} dy {off.dy_cells:+.3f} cells (|{off.shift_cells:.3f}|), lines {off.lines_x}/{off.lines_y}"
 
 
+def _report_and_write(verdict: Verdict, calib, out_path, dry_run: bool) -> int:
+    """Print the verdict (fit numbers BEFORE any write, so a write failure never hides them), then write
+    the calibration unless ``dry_run``. A ``save_parallax`` failure (e.g. an empty --stone-set, or a
+    permission error) is reported plainly, no traceback."""
+    if not verdict.ok:
+        print("CALIBRATION FAILED, nothing written:")
+        for reason in verdict.reasons:
+            print(f"  - {reason}")
+        return 1
+    fit = verdict.fit
+    print(f"k={fit.k:.6f} m={fit.m:.6f} nadir=({fit.nadir_fx:.3f}, {fit.nadir_fy:.3f})")
+    # BoardConfig's mm mapping scales the warp grid by 0.99853, which reads h ~0.5 mm low (harmless to the fix)
+    print(f"h_implied={fit.h_implied_mm:.2f} mm (~3.0 = detector reports the mid-plane, ~6.5 = the top face)")
+    print(
+        f"rms={fit.rms_cells:.3f} cells (~{fit.rms_cells * 22.85:.1f} mm), worst {PATTERN_17[fit.worst_index]} "
+        f"{fit.max_resid_cells:.3f} cells; stones {verdict.n_black} black / {verdict.n_white} white"
+    )
+    if dry_run:
+        print(f"dry run: not written to {out_path}")
+        return 0
+    try:
+        save_parallax(out_path, calib)
+    except Exception as exc:
+        print(f"not written: {exc}")
+        return 1
+    print(f"wrote {out_path}")
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         description="Calibrate the stone-parallax correction (run on the board, service stopped)"
@@ -389,23 +418,9 @@ def main(argv=None) -> int:
         camera_height_mm=args.camera_height_mm,
         geometry_generation=state.generation,
         fitted_at=datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
-        dry_run=args.dry_run,
+        dry_run=True,  # evaluate + build the calibration first, print the fit, write for real below
     )
-    if not verdict.ok:
-        print("CALIBRATION FAILED, nothing written:")
-        for reason in verdict.reasons:
-            print(f"  - {reason}")
-        return 1
-    fit = verdict.fit
-    print(f"k={fit.k:.6f} m={fit.m:.6f} nadir=({fit.nadir_fx:.3f}, {fit.nadir_fy:.3f})")
-    # BoardConfig's mm mapping scales the warp grid by 0.99853, which reads h ~0.5 mm low (harmless to the fix)
-    print(f"h_implied={fit.h_implied_mm:.2f} mm (~3.0 = detector reports the mid-plane, ~6.5 = the top face)")
-    print(
-        f"rms={fit.rms_cells:.3f} cells (~{fit.rms_cells * 22.85:.1f} mm), worst {PATTERN_17[fit.worst_index]} "
-        f"{fit.max_resid_cells:.3f} cells; stones {verdict.n_black} black / {verdict.n_white} white"
-    )
-    print(f"dry run: not written to {out_path}" if args.dry_run else f"wrote {out_path}")
-    return 0
+    return _report_and_write(verdict, calib, out_path, args.dry_run)
 
 
 if __name__ == "__main__":

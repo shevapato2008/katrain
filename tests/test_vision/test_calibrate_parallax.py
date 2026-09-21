@@ -124,6 +124,38 @@ def test_dry_run_writes_nothing(tmp_path):
     assert verdict.ok and not parallax_path(tmp_path).exists()
 
 
+def test_report_prints_the_fit_before_a_failing_write(tmp_path, capsys, monkeypatch):
+    """If save_parallax raises (bad --stone-set, permission error, ...) the fit numbers the operator needs
+    to copy down must already be on screen, and the failure must be a plain message, not a traceback."""
+    from katrain.vision.tools import calibrate_parallax as tool
+
+    verdict, calib = _run(tmp_path, _frames(), dry_run=True)
+    assert verdict.ok
+
+    def _boom(path, calib):
+        raise ValueError("stone_set must be a non-empty string")
+
+    monkeypatch.setattr(tool, "save_parallax", _boom)
+    rc = tool._report_and_write(verdict, calib, parallax_path(tmp_path), dry_run=False)
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "k=" in out and "h_implied=" in out and "rms=" in out
+    assert "not written: stone_set must be a non-empty string" in out
+    assert not parallax_path(tmp_path).exists()
+
+
+def test_report_writes_on_success_after_printing_the_fit(tmp_path, capsys):
+    from katrain.vision.tools import calibrate_parallax as tool
+
+    verdict, calib = _run(tmp_path, _frames(), dry_run=True)
+    assert verdict.ok
+    out_path = parallax_path(tmp_path)
+    rc = tool._report_and_write(verdict, calib, out_path, dry_run=False)
+    out = capsys.readouterr().out
+    assert rc == 0 and "k=" in out and f"wrote {out_path}" in out
+    assert load_parallax(out_path)[1] == "ok"
+
+
 def _drop(frames, cell, first_n=None):
     for i, dets in enumerate(frames):
         if first_n is None or i < first_n:

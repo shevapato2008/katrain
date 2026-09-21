@@ -1,5 +1,7 @@
 """Calibration tool, judgment half (prd P1-2 acceptance 4): nothing is written unless every check passes."""
 
+import time
+
 import numpy as np
 import pytest
 
@@ -9,6 +11,7 @@ from katrain.vision.tools.calibrate_parallax import (
     MAX_GRID_SHIFT_CELLS,
     PATTERN_17,
     GridOffset,
+    _read_frames,
     decide_and_write,
     evaluate,
     grid_check_reasons,
@@ -203,6 +206,61 @@ def test_led_classes_and_margin_objects_are_not_stones(tmp_path):
     frames = _append(_append(_frames(), (9.0, 9.0, 2)), (-0.8, 4.0, 0))
     verdict, _ = _run(tmp_path, frames, dry_run=True)
     assert verdict.ok, verdict.reasons
+
+
+class _ScriptedCamera:
+    """A grab_fresh-only fake: each call returns the next (frame, ts) pair from a fixed script (the last
+    entry repeats once exhausted), ignoring after_ts/settle_ms/timeout -- _read_frames does its own
+    freshness filtering on the returned ts, which is exactly what these tests exercise."""
+
+    def __init__(self, script):
+        self._script = list(script)
+        self.calls = 0
+
+    def grab_fresh(self, after_ts=None, settle_ms=150.0, timeout=2.0):
+        self.calls += 1
+        frame, ts = self._script[min(self.calls - 1, len(self._script) - 1)]
+        return frame, self.calls, ts
+
+
+def test_read_frames_never_yields_a_frame_from_before_the_settle_point():
+    """Reviewer-measured failure mode: CameraManager.read_frame() returns the latest frame immediately, which
+    while _read_frames is blocked on the operator's Enter can be up to ~1s stale. grab_fresh's own timestamp
+    must gate every yielded frame to strictly after the settle point."""
+    base = time.monotonic()
+    stale, fresh1, fresh2 = object(), object(), object()
+    camera = _ScriptedCamera(
+        [
+            (stale, base - 1.0),  # queued before Enter was pressed: must never be yielded
+            (stale, base - 0.5),  # still stale
+            (fresh1, base + 1.0),
+            (fresh2, base + 2.0),
+        ]
+    )
+    got = list(_read_frames(camera, n_frames=2, timeout_s=5.0, settle_s=0.6))
+    assert got == [fresh1, fresh2]
+
+
+def test_read_frames_yields_n_distinct_strictly_increasing_captures():
+    base = time.monotonic()
+    a, b, c = object(), object(), object()
+    camera = _ScriptedCamera(
+        [
+            (a, base + 1.0),
+            (a, base + 1.0),  # same capture re-read (duplicate ts): must be skipped, not counted twice
+            (b, base + 2.0),
+            (c, base + 2.0),  # duplicate again
+            (c, base + 3.0),
+        ]
+    )
+    got = list(_read_frames(camera, n_frames=3, timeout_s=5.0, settle_s=0.1))
+    assert got == [a, b, c]
+
+
+def test_read_frames_raises_when_the_camera_never_produces_a_fresh_frame():
+    camera = _ScriptedCamera([(object(), time.monotonic() - 10.0)])  # always stale, forever
+    with pytest.raises(RuntimeError, match="camera stopped delivering frames"):
+        list(_read_frames(camera, n_frames=1, timeout_s=0.02, settle_s=0.0))
 
 
 def test_camera_settings_reproduce_the_service_capture():

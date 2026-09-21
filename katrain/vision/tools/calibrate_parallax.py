@@ -279,27 +279,36 @@ def _warp(frame, lock):
     return warp_with_margin(frame, M, int(lock.out_size), margin_cells=DEFAULT_MARGIN_CELLS)
 
 
-def _read_frames(camera, n_frames: int, timeout_s: float):
+def _read_frames(camera, n_frames: int, timeout_s: float, settle_s: float = 0.5):
+    """``n_frames`` distinct frames captured after this call (plus ``settle_s``), never a frame the camera
+    already had queued. ``CameraManager.read_frame()`` returns whatever is latest immediately, which while
+    this generator is blocked on an operator's ``input()`` is a frame from up to ~1s before Enter (the idle
+    reader decodes at 1 fps after CAMERA_IDLE_AFTER_S) and can carry the operator's hand into frame; gate on
+    the reader thread's own timestamps via ``grab_fresh`` instead."""
     deadline = time.monotonic() + timeout_s
+    after = time.monotonic() + settle_s
     while n_frames > 0:
         if time.monotonic() > deadline:
             raise RuntimeError(f"camera stopped delivering frames ({n_frames} still wanted after {timeout_s:.0f}s)")
-        frame = camera.read_frame()
-        if frame is None:
-            time.sleep(0.02)
+        frame, _seq, ts = camera.grab_fresh(after_ts=after, settle_ms=0.0, timeout=1.0)
+        if frame is None or ts <= after:  # grab_fresh returns the latest (possibly stale) frame on timeout
             continue
+        after = ts
         n_frames -= 1
         yield frame
 
 
 def empty_board_offset(camera, lock, n_frames: int = EMPTY_FRAMES, timeout_s: float = 30.0) -> GridOffset:
-    """Printed-grid check on the empty board: per-pixel median of ``n_frames`` warped frames (no enhancement)."""
+    """Printed-grid check on the empty board: per-pixel median of ``n_frames`` distinct, freshly-captured
+    warped frames (no enhancement)."""
     warped = [_warp(frame, lock) for frame in _read_frames(camera, n_frames, timeout_s)]
     return grid_offset(np.median(np.stack(warped), axis=0).astype(np.uint8), int(lock.out_size))
 
 
 def capture_frames(camera, lock, detector, extractor, enhance: str, n_frames: int, timeout_s: float = 120.0):
-    """Warp + enhance + detect exactly like worker_inprocess, keeping RAW grid positions of stone detections."""
+    """Warp + enhance + detect exactly like worker_inprocess, keeping RAW grid positions of stone detections.
+    Frames are distinct and captured after the call (see ``_read_frames``), not a stale frame that predates
+    Enter or one still catching an operator's hand."""
     from katrain.vision.enhance import enhance_for_inference
 
     frames = []

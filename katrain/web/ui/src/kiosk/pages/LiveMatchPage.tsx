@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 
 import { useLiveMatch } from '../../hooks/live/useLiveMatch';
 import LiveBoard, { type AiMoveMarker } from '../../components/live/LiveBoard';
@@ -8,6 +8,7 @@ import { useSound } from '../../hooks/useSound';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import { KioskFold } from '../shell/KioskFold';
 import { KioskPagebar } from '../shell/KioskPagebar';
+import { readBackTo, useBackTo } from '../hooks/useBackTo';
 import { interpolate } from '../utils/interpolate';
 import { liveSourceLabel } from '../../utils/liveSources';
 
@@ -56,9 +57,13 @@ import { liveSourceLabel } from '../../utils/liveSources';
  * (顺带更正上一版那句注释:Dock **不归 immersive 管** —— `KioskLayout` 是
  * `level === 1 ? <KioskDock/> : undefined`,而这一屏 `dockLevelOf` 返回 2,本来就没有 Dock。)
  * **返回不加二次确认**:这一屏没有动作区、返回在左上角离那排开关最远,而且观众没有可损失的
- * 状态(退出再进 `useLiveMatch` 重拉)。返回去**棋谱**不是 `/kiosk/live` ——
- * 后者是个孤儿路由,全仓唯一入口是棋谱屏那几行(`KifuPage.tsx:397`),
- * 把人扔到一块没来过、没 Dock、自己也没返回键的屏上是上一版的 bug。
+ * 状态(退出再进 `useLiveMatch` 重拉)。
+ *
+ * ## 返回去哪儿
+ *
+ * 两个入口:棋谱屏那四行,和直播列表屏(2026-09-22 棋谱屏补了列表的入口,它不再是孤儿路由)。
+ * **按来路回**:列表屏跳进来时用 `backToState` 写了 `backTo`,回列表;其余缺省回棋谱。
+ * 不猜「上一页」、不走浏览器历史 —— 见 `useBackTo.ts`。
  *
  * ## 钟不画
  *
@@ -70,9 +75,13 @@ import { liveSourceLabel } from '../../utils/liveSources';
  */
 const LiveMatchPage = () => {
   const { matchId } = useParams<{ matchId: string }>();
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const { play: playSound } = useSound();
+  // 返回按来路:直播列表屏跳进来时写了 `backTo`,其余缺省回棋谱(见文件头「返回去哪儿」)。
+  const goBack = useBackTo('/kiosk/kifu');
+  const backLabel = readBackTo(useLocation().state) === '/kiosk/live'
+    ? t('kifu:pro_live', '职业直播')
+    : t('live:back_kifu', '棋谱');
 
   const [showAiMarkers, setShowAiMarkers] = useState(true);
   const [showMoveNumbers, setShowMoveNumbers] = useState(false);
@@ -145,8 +154,8 @@ const LiveMatchPage = () => {
       <div className="kiosk-layout-b" data-testid="live-match-page">
         <KioskPagebar
           testId="live-pagebar"
-          backLabel={t('live:back_kifu', '棋谱')}
-          onBack={() => navigate('/kiosk/kifu')}
+          backLabel={backLabel}
+          onBack={goBack}
           title={t('live:title', '直播')}
         />
         {loading ? (
@@ -248,8 +257,8 @@ const LiveMatchPage = () => {
       <div className="kiosk-rail">
         <KioskPagebar
           testId="live-pagebar"
-          backLabel={t('live:back_kifu', '棋谱')}
-          onBack={() => navigate('/kiosk/kifu')}
+          backLabel={backLabel}
+          onBack={goBack}
           // 标题是**赛事**不是两个人名 —— 选手已经在下面两张卡里了,一个值不摆两处。
           title={[match.tournament, match.round_name].filter(Boolean).join(' · ')}
           sub={interpolate(

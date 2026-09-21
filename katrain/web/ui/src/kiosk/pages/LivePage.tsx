@@ -5,6 +5,7 @@ import { useLiveMatches } from '../../hooks/live/useLiveMatches';
 import { useUpcomingMatches } from '../../hooks/live/useUpcomingMatches';
 import { useTranslation } from '../../hooks/useTranslation';
 import { liveSourceLabel } from '../../utils/liveSources';
+import { translateResult } from '../../utils/resultTranslation';
 import { backToState } from '../hooks/useBackTo';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
@@ -148,7 +149,7 @@ const LivePage = () => {
                         {`${m.player_black} ${t('kifu:versus', '对')} ${m.player_white}`}
                         {' · '}
                         {liveSourceLabel(m.source)}
-                        {m.status !== 'live' && m.result ? ` · ${m.result}` : ''}
+                        {m.status !== 'live' && m.result ? ` · ${translateResult(m.result, t, m.rules)}` : ''}
                         {m.status !== 'live' ? ` · ${whenLabel(new Date(m.date).getTime(), t)}` : ''}
                       </em>
                     </span>

@@ -11,6 +11,7 @@ import { translateResult } from '../../utils/resultTranslation';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
+import { Icon } from '../shell/icons';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { whenLabel } from '../utils/whenLabel';
 import { liveSourceLabel } from '../../utils/liveSources';
@@ -414,6 +415,21 @@ const KifuPage = () => {
                 </span>
               </button>
             ))}
+            {/* 「更多」的去处。后端一次给 8 条、库里可能有几十条,而这一组按稿子只摆 4 行;
+                完整列表和赛程在 `/kiosk/live`。这一行补上之前,那条路由在盒上等于不存在。
+                **是这一组的末行,不是第 5 张卡**:没有行首、没有状态标,行尾一个箭头。 */}
+            <button
+              type="button"
+              className="kiosk-row livemore"
+              data-testid="kifu-live-more"
+              onClick={() => navigate('/kiosk/live')}
+            >
+              <span className="kiosk-row__t">
+                <b>{t('kifu:live_more', '全部直播 · 赛程')}</b>
+                <em>{t('kifu:live_more_sub', '完整的比赛列表，以及接下来几天的对局安排')}</em>
+              </span>
+              <span className="kiosk-row__end"><Icon name="caret-right" /></span>
+            </button>
           </div>
         </section>
       )}

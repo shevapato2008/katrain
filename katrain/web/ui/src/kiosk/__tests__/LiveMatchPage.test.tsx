@@ -69,10 +69,10 @@ function setMatch(over: Partial<ReturnType<typeof useLiveMatch>> = {}) {
   });
 }
 
-const renderPage = (matchId = 'match-1') =>
+const renderPage = (matchId = 'match-1', state?: unknown) =>
   render(
     <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter initialEntries={[`/kiosk/live/${matchId}`]}>
+      <MemoryRouter initialEntries={[{ pathname: `/kiosk/live/${matchId}`, state }]}>
         <Routes>
           <Route path="/kiosk/live/:matchId" element={<LiveMatchPage />} />
           <Route path="/kiosk/live" element={<div>LIVE_LIST</div>} />
@@ -175,11 +175,10 @@ describe('LiveMatchPage (kiosk)', () => {
   });
 
   /**
-   * 返回去的是**棋谱**不是 `/kiosk/live`。后者是个孤儿路由 —— 全仓唯一入口是
-   * 棋谱屏那几行(`KifuPage.tsx:397`),它自己既不在 Dock 上、也没有返回键。
-   * 上一版把人从这儿扔到那块屏上,是个走得进出不来的死角。
+   * 这一屏有两个入口:棋谱屏那四行,和直播列表屏。**按来路回**:列表屏跳进来时用
+   * `backToState` 写了 `backTo`,其余(棋谱屏那四行、继续看)缺省回棋谱 —— 与改之前一致。
    */
-  it('返回去棋谱,不是那块没有入口的 /kiosk/live', () => {
+  it('不带来路(从棋谱屏进来):返回回棋谱', () => {
     setMatch();
     renderPage();
     // 「棋谱」在这一屏出现两次:页控条那颗返回键,和着法折叠块的标题「棋谱 · 跟着直播长」。
@@ -187,5 +186,20 @@ describe('LiveMatchPage (kiosk)', () => {
     const pagebar = screen.getByTestId('live-pagebar');
     fireEvent.click(within(pagebar).getByRole('button', { name: /棋谱/ }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
+  });
+
+  it('从直播列表进来的:返回键写「职业直播」,回列表', () => {
+    setMatch();
+    renderPage('match-1', { backTo: '/kiosk/live' });
+    const pagebar = screen.getByTestId('live-pagebar');
+    fireEvent.click(within(pagebar).getByRole('button', { name: /职业直播/ }));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/live');
+  });
+
+  it('读不到这一局时,返回同样按来路', () => {
+    setMatch({ match: null, loading: false, error: new Error('Match not found') });
+    renderPage('match-1', { backTo: '/kiosk/live' });
+    fireEvent.click(within(screen.getByTestId('live-pagebar')).getByRole('button', { name: /职业直播/ }));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/live');
   });
 });

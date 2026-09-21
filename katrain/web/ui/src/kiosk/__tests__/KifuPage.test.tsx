@@ -293,6 +293,18 @@ describe('屏 15 棋谱 · 职业直播', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/live/m1');
   });
 
+  // 这一组按稿子只摆 4 行;第 5 场以后与赛程在 /kiosk/live。入口是这一组的**末行**,不是第 5 张卡。
+  it('8 场只画 4 行,末尾一行「全部直播 · 赛程」进 /kiosk/live', () => {
+    useLiveMatchesMock.mockReturnValue(liveResult({
+      matches: [...Array(8)].map((_, i) => match(`m${i}`)),
+    }));
+    renderPage();
+    const group = screen.getByTestId('kifu-live');
+    expect(within(group).getAllByText('第 29 届三星杯 · 八强')).toHaveLength(4);
+    fireEvent.click(within(group).getByTestId('kifu-live-more'));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/live');
+  });
+
   // 稿子的口径:断网时**整块不渲染**,不摆一排「加载中」骗人在等。
   // 同一批数据在不报错时是渲染的(上面那条),所以这条不是「一直没有」也能过。
   it('拉不到直播时整块不渲染', () => {

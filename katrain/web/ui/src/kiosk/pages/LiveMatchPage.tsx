@@ -69,6 +69,10 @@ import { liveSourceLabel } from '../../utils/liveSources';
  *
  * 链路上从头到尾没有这个字段:三个源客户端返回的字典里没有时间(`cron/clients/*.py`)、
  * `LiveMatchDB` 没有钟列、`types/live.ts` 也没有。⇒ `.clock` 整格不渲染。
+ * (2026-09-22 探针复核:星阵、弈客在已观测的响应里都没有剩余时间;**IGS 协议里有**
+ * —— `moves` 表头每方带剩余秒数 —— 但抓取代码 `pandanet.py` 的 `_MOVE_RE` 把那一行丢了。
+ * 三家的直播态都没验到(探针时无职业对局)。要画钟之前先看
+ * `superpowers/tracks/kiosk-go-live/findings-clock.md`,**给不出的源一律不画钟**。)
  * **`current_winrate` 也不许上屏**:`pandanet.py:125` 无条件写死 `0.5`、
  * `xingzhen.py:191` 取不到时退回 `0.5` —— 「真的 50%」和「没有这个数」在数据里是同一个值。
  * 屏上那个胜率只认盒内 KataGo 算出来的 `analysis[n].winrate`。

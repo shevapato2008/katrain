@@ -35,6 +35,7 @@ import { aiLadderBlockingGame, canStartAiLadderGame } from '../../features/aiLad
 import { saveAiLadderBefore } from '../../features/aiLadder/settlement';
 import KioskAiLadderBlockingPanel from '../components/aiLadder/KioskAiLadderBlockingPanel';
 import KioskSetupBoard from '../components/board/KioskSetupBoard';
+import { emphasized } from '../components/setup/emphasized';
 
 /* **AI 策略那一组撤掉了(2026-09-21),对手钉死拟人。**
 
@@ -699,11 +700,12 @@ const AiSetupPage = () => {
                 原来第一行是把同一句话再说一遍 —— 而右栏一行 ≈ 19px,这一屏正卡在那上头。 */}
             {!isRanked && (
               <p className="setnote" data-testid="setup-note">
-                {t('setup:note_r2_a', '这几项')}
-                <b>{t('setup:note_r2_b', '开局后都不能改')}</b>
-                {t('setup:note_r2_c', ',中途换等于换了一局棋;自由对弈')}
-                <b>{t('setup:note_r2_d', '不计入段位')}</b>
-                {t('setup:note_h', '。')}
+                {/* 一句话一个 key,强调用 `<b>` 标记 —— 原来是五个 key 由 JSX 拼起来,
+                    拼接顺序写死在代码里,译者没法按自己语种的语序调整。见 `emphasized()`。 */}
+                {emphasized(t(
+                  'setup:note_r2',
+                  '这几项<b>开局后都不能改</b>,中途换等于换了一局棋;自由对弈<b>不计入段位</b>。',
+                ))}
               </p>
             )}
 

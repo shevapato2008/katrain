@@ -22,6 +22,7 @@ import { API } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import { writeActiveSession } from '../utils/activeSession';
+import { emphasized } from '../components/setup/emphasized';
 
 /**
  * 屏 04 本地对局 · 开局设置(`sample-go/shots/04-setup-local.png`,L2 布局 A)。
@@ -351,17 +352,16 @@ const PvpLocalSetupPage = () => {
         {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
 
         <p className="setnote" data-testid="setup-note">
-          {t('local:note3_a', '屏上')}
-          <b>{t('local:note3_b', '不给提示和形势判断')}</b>
-          {t('local:note3_c', ';双方各停一手后')}
-          <b>{t('local:note3_d', '自动数子')}</b>
-          {t('local:note3_e', '，死活按引擎判断。')}
+          {/* 两句话两个 key(原来是十个片段)。强调用 `<b>` 标记,位置由译者定。 */}
+          {emphasized(t(
+            'local:note3_line1',
+            '屏上<b>不给提示和形势判断</b>;双方各停一手后<b>自动数子</b>，死活按引擎判断。',
+          ))}
           <br />
-          {t('local:note3_f', '这一局')}
-          <b>{t('local:note3_g', '只留档，不动段位')}</b>
-          {t('local:note3_h', '；中途退出')}
-          <b>{t('local:note3_i', '不存谱')}</b>
-          {t('local:note3_j', '。')}
+          {emphasized(t(
+            'local:note3_line2',
+            '这一局<b>只留档，不动段位</b>；中途退出<b>不存谱</b>。',
+          ))}
         </p>
 
         <button

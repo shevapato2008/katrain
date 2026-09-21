@@ -1625,7 +1625,17 @@ button.kiosk-row.figrow { flex: none; }
 }
 .su-cell__k { font-size: 11px; line-height: 1; color: var(--dim); letter-spacing: .06em; }
 .su-cell__v { font-size: 15px; line-height: 1.1; color: var(--text); font-weight: 500; white-space: nowrap; }
-.su-cell__c { position: absolute; right: 10px; top: 50%; width: 10px; height: 10px; margin-top: -5px; color: var(--dim); }
+/* 收起/展开的那个小箭头。图标是 kiosk-shell 的 `caret-down`(Phosphor v2,
+   viewBox 0 0 256 256),由 `<Icon>` 内联成 svg 再包一层 `.kiosk-icon` ——
+   所以尺寸要落在**里面那个 svg** 上,只给外层写 width/height 的话 svg 按自己的
+   固有尺寸铺开,会盖住半格。 */
+.su-cell__c { position: absolute; right: 10px; top: 50%; width: 12px; height: 12px; margin-top: -6px; color: var(--dim); line-height: 0; }
+.su-cell__c .kiosk-icon, .su-cell__c svg { display: block; width: 12px; height: 12px; }
+
+/* ± 那两颗键里的字形盒。`line-height: 1` + `display:block` 让它的 border box
+   就是字形自己的行盒 —— 几何闸量的是这个盒相对按钮盒的偏移。
+   字号写死 20px:跟着继承走的话中文字体回退会把两颗键量出不同的高。 */
+.su-step__g { display: block; font-size: 20px; line-height: 1; font-family: var(--font-sans); }
 .su-cell[aria-expanded="true"] { border-color: var(--accent); background: var(--panel); }
 .su-cell[aria-expanded="true"] .su-cell__c { color: var(--accent); transform: rotate(180deg); }
 .su-cell:disabled { cursor: default; opacity: .45; }

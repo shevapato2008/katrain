@@ -99,7 +99,13 @@ def run(extractor, frames):
     for dets, masked, add_threshold in frames:
         cells = [extractor._grid_cell(d, IMG, IMG) for d in dets]
         legacy = extractor.detections_to_board(
-            dets, IMG, IMG, occupancy_aware=False, masked_cells=masked, prev_board=prev_stable, add_threshold=add_threshold
+            dets,
+            IMG,
+            IMG,
+            occupancy_aware=False,
+            masked_cells=masked,
+            prev_board=prev_stable,
+            add_threshold=add_threshold,
         )
         occ = extractor.detections_to_board(
             dets,

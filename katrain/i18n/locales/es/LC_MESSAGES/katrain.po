@@ -2144,10 +2144,10 @@ msgid "result:draw"
 msgstr "Tablas"
 
 msgid "result:points_zi"
-msgstr ""
+msgstr "piedras"
 
 msgid "result:points_moku"
-msgstr ""
+msgstr "pts"
 
 msgid "COUNT"
 msgstr "Contar"
@@ -3796,3 +3796,2746 @@ msgstr "No se ha podido terminar la partida, inténtalo de nuevo"
 
 msgid "Retry failed, please try again later"
 msgstr "El reintento ha fallado, inténtalo más tarde"
+
+msgid "ladder:board_preview"
+msgstr "Vista previa de la posición inicial: tablero vacío"
+
+msgid "play:title"
+msgstr "Jugar"
+
+msgid "login:box_gate_title"
+msgstr "Inicia sesión en la pantalla de inicio de StellaBox"
+
+msgid "login:box_gate_cta"
+msgstr "Ir al inicio de StellaBox"
+
+msgid "vision:back_settings"
+msgstr "Ajustes"
+
+msgid "vision:board_lost_hint"
+msgstr ""
+"Comprueba si la cámara está tapada o si se ha movido el tablero; si se "
+"movió, vuelve a calibrar"
+
+msgid "vision:calibrate_title"
+msgstr "Calibración del tablero"
+
+msgid "vision:calibrate_sub"
+msgstr "Vacía primero el tablero · 13 puntos: 4 esquinas + 9 hoshi"
+
+msgid "vision:cancel_calibration"
+msgstr "Cancelar calibración"
+
+msgid "vision:reuse_calibration"
+msgstr "Reutilizar la última calibración"
+
+msgid "vision:camera_down"
+msgstr "Cámara no conectada · se ha pasado a la pantalla táctil"
+
+msgid "vision:led_down"
+msgstr "LED no conectado · sin guía luminosa"
+
+msgid "vision:pose_lost"
+msgstr "Calibración perdida · vuelve a calibrar"
+
+msgid "grade:tabs"
+msgstr "Valoración de jugadas"
+
+msgid "grade:fold_title"
+msgstr "Valoración de jugadas · 7 niveles"
+
+msgid "grade:match_other"
+msgstr "Otros"
+
+msgid "grade:axis_points_lost_short"
+msgstr "Pérdida · pts"
+
+msgid "grade:pick_hint"
+msgstr "Toca cualquier jugada del gráfico para ver el detalle"
+
+msgid "grade:summary"
+msgstr "Brillantes {a} · Malas {b}"
+
+msgid "grade:sel_bad"
+msgstr "Jugada {n} {m} · {s} · {g} · pierde {x} pts"
+
+msgid "grade:sel_brilliant"
+msgstr ""
+"Jugada {n} {m} · {s} · brillantez {k} — es la primera opción del motor, al "
+"que solo le dio un {p}% previo (cuanto más bajo, más brillante)"
+
+msgid "grade:truncated_plot"
+msgstr "Se dibujan como máximo {k} por bando; quedan {n} sin mostrar"
+
+msgid "setup:this_game"
+msgstr "Esta partida será"
+
+msgid "setup:board_preview_handicap"
+msgstr "Vista previa de la posición inicial: {n} piedras de hándicap"
+
+msgid "setup:chinese_rules"
+msgstr "Reglas chinas"
+
+msgid "setup:even"
+msgstr "Parejas"
+
+msgid "setup:handicap"
+msgstr "Hándicap"
+
+msgid "setup:handicap_n"
+msgstr "{n} piedras"
+
+msgid "setup:handicap_less"
+msgstr "Una piedra menos"
+
+msgid "setup:handicap_more"
+msgstr "Una piedra más"
+
+msgid "setup:input"
+msgstr "Cómo se juega"
+
+msgid "setup:my_side"
+msgstr "Mi color"
+
+msgid "setup:take_black"
+msgstr "Jugar con negras"
+
+msgid "setup:take_white"
+msgstr "Jugar con blancas"
+
+msgid "setup:no_camera_hint"
+msgstr ""
+"Esta máquina aún no tiene la cámara calibrada, así que el tablero físico no "
+"está disponible"
+
+msgid "report:clear_variation"
+msgstr "Borrar variante"
+
+msgid "report:file_read_failed"
+msgstr "No se ha podido leer el archivo, inténtalo de nuevo."
+
+msgid "report:import_options"
+msgstr "Método de importación"
+
+msgid "report:invalid_sgf"
+msgstr "No se ha podido analizar el SGF, revisa el contenido."
+
+msgid "report:library_load_failed"
+msgstr "No se han podido cargar los registros, inténtalo de nuevo."
+
+msgid "report:loading_detail"
+msgstr "Cargando el análisis"
+
+msgid "report:not_found"
+msgstr "Análisis no encontrado."
+
+msgid "report:preview_failed"
+msgstr "No se ha podido cargar la vista previa"
+
+msgid "report:reload"
+msgstr "Recargar"
+
+msgid "report:retry_load"
+msgstr "Reintentar la carga"
+
+msgid "report:retrying"
+msgstr "Reintentando…"
+
+msgid "report:search_library"
+msgstr "Buscar en la biblioteca de partidas"
+
+msgid "report:sgf_content"
+msgstr "Contenido SGF"
+
+msgid "report:title_optional"
+msgstr "Título (opcional)"
+
+msgid "report:unknown_type"
+msgstr "Tipo desconocido"
+
+msgid "report:variation_preview"
+msgstr "Vista previa de la variante · toca el tablero para cerrar"
+
+msgid "live:title"
+msgstr "En directo"
+
+msgid "live:ai"
+msgstr "Sugerencias de la IA"
+
+msgid "live:ai_note_a"
+msgstr "Las sugerencias de la IA son "
+
+msgid "live:ai_note_b"
+msgstr "calculadas ahora mismo por el KataGo de esta caja"
+
+msgid "live:ai_note_c"
+msgstr ", no tienen nada que ver con lo que ven los jugadores."
+
+msgid "live:as_black"
+msgstr "Negras"
+
+msgid "live:as_white"
+msgstr "Blancas"
+
+msgid "live:back_kifu"
+msgstr "Partidas"
+
+msgid "live:black_wr"
+msgstr "Negras {v}%"
+
+msgid "live:ended"
+msgstr "Terminada"
+
+msgid "live:follow"
+msgstr "Seguir la última jugada"
+
+msgid "live:load_failed"
+msgstr "No se ha podido cargar esta partida"
+
+msgid "live:loading"
+msgstr "Cargando esta partida"
+
+msgid "live:move_n"
+msgstr "Jugada {n}"
+
+msgid "live:moves_title"
+msgstr "Jugadas · crece con la retransmisión"
+
+msgid "live:no_moves"
+msgstr "Esta partida aún no tiene jugadas"
+
+msgid "live:no_ownership"
+msgstr "Aún no se ha calculado la posición de esta jugada"
+
+msgid "live:pagebar_sub"
+msgstr "Fuente: {src} · jugada {n}"
+
+msgid "live:played"
+msgstr "Jugada hecha"
+
+msgid "live:show"
+msgstr "Mostrar"
+
+msgid "live:thinking"
+msgstr "Pensando"
+
+msgid "live:toggle_numbers"
+msgstr "Números de jugada"
+
+msgid "live:toggle_territory"
+msgstr "Territorio"
+
+msgid "settings:nav_account"
+msgstr "Cuenta y plataformas"
+
+msgid "settings:nav_board"
+msgstr "Tablero físico"
+
+msgid "settings:nav_language"
+msgstr "Idioma"
+
+msgid "settings:nav_move"
+msgstr "Jugadas y pistas"
+
+msgid "settings:nav_sound"
+msgstr "Sonido"
+
+msgid "settings:ui_language"
+msgstr "Idioma de la interfaz"
+
+msgid "settings:language_sub"
+msgstr "Este ajuste se trasladará más adelante a los ajustes del sistema"
+
+msgid "settings:auto_advance_sub"
+msgstr "Se aplica en el campo de entrenamiento · activado de fábrica"
+
+msgid "settings:board_secval"
+msgstr "Cámara · calibración · LED"
+
+msgid "settings:box_account_owned_by_home"
+msgstr "Cuenta StellaBox, compartida por toda la caja"
+
+msgid "settings:box_account_sub"
+msgstr ""
+"Puedes jugar sin iniciar sesión: los resultados quedan en esta caja; iniciar"
+" sesión solo sirve para llevártelos a otra máquina"
+
+msgid "settings:guest_sub"
+msgstr "Un perfil local en esta caja"
+
+msgid "settings:switch_account_at_home"
+msgstr "Cambia de cuenta en la pantalla de inicio"
+
+msgid "settings:sign_in"
+msgstr "Iniciar sesión"
+
+msgid "settings:platforms"
+msgstr "Cuentas de otras plataformas"
+
+msgid "settings:platforms_sub"
+msgstr ""
+"Cada plataforma pide campos distintos: conéctalas en el juego "
+"multiplataforma"
+
+msgid "settings:go_connect"
+msgstr "Conectar"
+
+msgid "settings:calibrated"
+msgstr "Calibrado desde el encendido"
+
+msgid "settings:not_calibrated"
+msgstr "Aún sin calibrar"
+
+msgid "settings:start_calib"
+msgstr "Empezar la calibración"
+
+msgid "settings:ready"
+msgstr "Listo"
+
+msgid "settings:not_ready"
+msgstr "No conectado"
+
+msgid "settings:on"
+msgstr "Act."
+
+msgid "settings:off"
+msgstr "Desact."
+
+msgid "research:actions"
+msgstr "Acciones de estudio"
+
+msgid "research:move_title"
+msgstr "Estudio · jugada {n}"
+
+msgid "research:ai_after_move"
+msgstr "Sugerencias de la IA · tras la jugada {n}"
+
+msgid "research:analysis_failed"
+msgstr "No se ha podido analizar esta jugada"
+
+msgid "research:analyzed_moves"
+msgstr "Jugadas analizadas"
+
+msgid "research:analyzing_move"
+msgstr "Analizando esta jugada"
+
+msgid "research:cancel_scan"
+msgstr "Cancelar el análisis"
+
+msgid "research:clear_confirm_title"
+msgstr "¿Vaciar todo el tablero?"
+
+msgid "research:clear_confirm_msg"
+msgstr "Se borrarán las {n} jugadas del tablero y no se puede deshacer."
+
+msgid "research:eta_label"
+msgstr "Tiempo restante estimado"
+
+msgid "research:from_kifu"
+msgstr "Biblioteca de partidas"
+
+msgid "research:from_last_game"
+msgstr "La partida que acabo de terminar"
+
+msgid "research:from_my_games"
+msgstr "Mis partidas"
+
+msgid "research:full_scan"
+msgstr "Análisis de toda la partida"
+
+msgid "research:no_candidates"
+msgstr "La IA no ha dado jugadas candidatas"
+
+msgid "research:only_19_supported"
+msgstr "Solo se admite 19x19; se ha cargado como 19x19"
+
+msgid "research:progress_lost"
+msgstr ""
+"No se ha podido leer el progreso del análisis cinco veces seguidas; puede "
+"que se haya perdido la conexión"
+
+msgid "research:rescan"
+msgstr "Analizar de nuevo"
+
+msgid "research:retry_analysis"
+msgstr "Reintentar el análisis"
+
+msgid "research:scan_broke"
+msgstr "El análisis de toda la partida no ha terminado"
+
+msgid "research:scan_cost"
+msgstr "{n} jugadas en total · 500 visitas por jugada"
+
+msgid "research:scan_failed"
+msgstr "No se ha podido iniciar el análisis, inténtalo de nuevo"
+
+msgid "research:scan_freeze"
+msgstr ""
+"El tablero queda bloqueado hasta que termine; puedes cancelar cuando quieras"
+
+msgid "research:scan_go"
+msgstr "Empezar a analizar"
+
+msgid "research:session_failed"
+msgstr "No se ha podido crear la sesión de estudio, inténtalo de nuevo"
+
+msgid "research:user_game_failed"
+msgstr "No se ha podido leer esta partida"
+
+msgid "growth:rank_title"
+msgstr "Rango en esta caja"
+
+msgid "growth:rank_unknown"
+msgstr "—"
+
+msgid "growth:rank_unplaced"
+msgstr "Sin clasificar"
+
+msgid "growth:no_data"
+msgstr "—"
+
+msgid "growth:cell_placement"
+msgstr "Partidas de clasificación"
+
+msgid "growth:metric_placement"
+msgstr "Partidas de clasificación"
+
+msgid "growth:placement_done"
+msgstr "Completadas"
+
+msgid "growth:cell_solved"
+msgstr "Problemas resueltos"
+
+msgid "growth:metric_net"
+msgstr "Saldo"
+
+msgid "growth:stat_ranked"
+msgstr "Partidas puntuables · total"
+
+msgid "growth:stat_recent"
+msgstr "Partidas de los últimos 30 días"
+
+msgid "growth:stat_solved"
+msgstr "Problemas resueltos en total"
+
+msgid "growth:stat_winrate"
+msgstr "Porcentaje de victorias puntuables · últimos 30 días"
+
+msgid "growth:summary_failed"
+msgstr ""
+"No se han podido obtener estos números; no significa que no hayas jugado "
+"nada. Vuelve a mirar más tarde."
+
+msgid "growth:rules_title"
+msgstr "Cómo funcionan los ascensos"
+
+msgid "growth:rule_up"
+msgstr "Un saldo de +3 victorias te sube un nivel"
+
+msgid "growth:rule_down"
+msgstr "Un saldo de 3 derrotas te baja un nivel"
+
+msgid "growth:rule_bounds"
+msgstr "Suelo en 20 kyu · techo en «Más allá de lo humano»"
+
+msgid "growth:rung_title"
+msgstr "Por fuerza del rival"
+
+msgid "growth:rung_w"
+msgstr "{n} victorias"
+
+msgid "growth:rung_l"
+msgstr "{n} derrotas"
+
+msgid "growth:rung_empty_h"
+msgstr "Aún no hay resultados"
+
+msgid "growth:rung_empty_p"
+msgstr ""
+"El control deslizante de la configuración elige la fuerza del rival, no tu "
+"rango. Solo se listan los niveles que has jugado de verdad, sin filas de "
+"0–0."
+
+msgid "growth:diag_title"
+msgstr "Diagnóstico de nivel"
+
+msgid "growth:diag_wip"
+msgstr "Backend listo · interfaz sin conectar"
+
+msgid "growth:diag_empty_h"
+msgstr "0 partidas en la muestra"
+
+msgid "growth:diag_empty_p"
+msgstr ""
+"El diagnóstico se calcula con partidas que ya tienen informe: los informes "
+"están en el backend, la interfaz aún no los lee (ver la pantalla de "
+"análisis). Por debajo de 30 partidas la conclusión baila, así que se "
+"indicará el tamaño de la muestra."
+
+msgid "growth:local_note_a"
+msgstr "Estos números son "
+
+msgid "growth:local_note_b"
+msgstr "el registro de esta máquina"
+
+msgid "growth:local_note_c"
+msgstr ""
+". El registro está en la nube; la copia de esta caja puede quedarse corta en"
+" algunas partidas."
+
+msgid "game:black"
+msgstr "Negras"
+
+msgid "game:white"
+msgstr "Blancas"
+
+msgid "game:plays_black"
+msgstr "juega con negras"
+
+msgid "game:plays_white"
+msgstr "juega con blancas"
+
+msgid "game:actions"
+msgstr "Acciones de la partida"
+
+msgid "game:action_failed"
+msgstr "No se ha completado, inténtalo de nuevo"
+
+msgid "game:back_to_play"
+msgstr "Volver a jugar"
+
+msgid "game:board_lines"
+msgstr "{n}x{n}"
+
+msgid "game:handicap_n"
+msgstr "{n} piedras de hándicap"
+
+msgid "game:no_handicap"
+msgstr "Sin hándicap"
+
+msgid "game:points_unit"
+msgstr "pts"
+
+msgid "game:captures"
+msgstr "Capturas"
+
+msgid "game:display"
+msgstr "Visualización"
+
+msgid "game:thinking"
+msgstr "Pensando"
+
+msgid "game:played"
+msgstr "Jugada hecha"
+
+msgid "game:your_turn"
+msgstr "Te toca"
+
+msgid "game:ended"
+msgstr "Partida terminada"
+
+msgid "game:time_left"
+msgstr "Restante"
+
+msgid "game:time_up"
+msgstr "Tiempo agotado"
+
+msgid "game:untimed"
+msgstr "Sin tiempo"
+
+msgid "game:byo_left"
+msgstr "Byoyomi · quedan {n}"
+
+msgid "game:first_move"
+msgstr "Primera jugada"
+
+msgid "game:prev_move"
+msgstr "Jugada anterior"
+
+msgid "game:next_move"
+msgstr "Jugada siguiente"
+
+msgid "game:last_move"
+msgstr "Última jugada"
+
+msgid "game:moves_title"
+msgstr "Jugadas · coordenadas de intersección"
+
+msgid "game:no_moves"
+msgstr "Esta partida aún no tiene jugadas"
+
+msgid "game:online_pvp"
+msgstr "Partida en línea"
+
+msgid "game:exit_game"
+msgstr "Salir de la partida"
+
+msgid "game:leave_keep_game"
+msgstr "Salir sin abandonar"
+
+msgid "game:resign_confirm_side"
+msgstr "¿{side} abandona?"
+
+msgid "game:exit_resign_confirm_side"
+msgstr "La partida está en curso: ¿{side} abandona y sale?"
+
+msgid "game:count_game_over"
+msgstr "Esta partida ya ha terminado"
+
+msgid "game:count_min"
+msgstr "Contar requiere al menos {n} jugadas"
+
+msgid "game:count_too_early"
+msgstr "Aún no hay jugadas suficientes para contar"
+
+msgid "game:count_not_your_turn"
+msgstr "Solo puedes contar cuando es tu turno"
+
+msgid "game:count_position_changed"
+msgstr "La posición ha cambiado mientras contábamos, vuelve a contar"
+
+msgid "game:count_no_score"
+msgstr ""
+"El análisis de la posición no ha terminado, así que aún no se puede contar; "
+"inténtalo más tarde"
+
+msgid "game:count_ranked_unscored"
+msgstr ""
+"Las partidas puntuables no se pueden contar ahora (en esta partida no hay "
+"análisis de la posición)"
+
+msgid "game:eval_title"
+msgstr "Probabilidad de victoria · canal nativo de KataGo"
+
+msgid "game:eval_graph"
+msgstr ""
+"Evolución de la probabilidad y la diferencia de puntos en esta partida"
+
+msgid "game:eval_black_100"
+msgstr "Negras 100"
+
+msgid "game:eval_white_100"
+msgstr "Blancas 100"
+
+msgid "game:eval_black_lead"
+msgstr "Negras +{n}"
+
+msgid "game:eval_white_lead"
+msgstr "Blancas +{n}"
+
+msgid "game:golaxy_ai"
+msgstr "Golaxy · contra la IA"
+
+msgid "game:golaxy_items"
+msgstr "Objetos de Golaxy · cada pulsación gasta uno"
+
+msgid "game:golaxy_judge_hint"
+msgstr "Contar solo muestra la posición actual; no termina la partida"
+
+msgid "game:golaxy_engine_no_undo"
+msgstr "Las partidas con el robot de Golaxy aún no permiten deshacer jugadas"
+
+msgid "game:engine_ended_no_result"
+msgstr ""
+"Golaxy ha devuelto una señal de fin desconocida · esta partida queda sin "
+"resolver"
+
+msgid "game:connection_dropped"
+msgstr ""
+"Se ha perdido la conexión en directo, así que el tablero no se actualizará "
+"solo. Pulsa «Salir de la partida» → «Salir sin abandonar» y vuelve por "
+"«Continuar la última partida»"
+
+msgid "game:recalibrate_needs_empty_board"
+msgstr ""
+"Recalibrar enciende los LED y requiere quitar todas las piedras del tablero."
+" Si el tablero no se ha movido, pulsa «Continuar igualmente»"
+
+msgid "game:timeout_failed"
+msgstr "El fallo por tiempo no se ha completado"
+
+msgid "game:timeout_not_delivered"
+msgstr ""
+"El fallo por tiempo no se ha entregado: revisa la conexión y vuelve a entrar"
+" en esta partida"
+
+msgid "game:unavailable_title"
+msgstr "Esta partida ya no se puede abrir"
+
+msgid "game:unavailable_reason"
+msgstr ""
+"Puede que la caja se haya reiniciado, que la partida se haya limpiado tras "
+"estar mucho tiempo inactiva, o que pertenezca a otra cuenta."
+
+msgid "lobby:hall_title"
+msgstr "Sala en línea"
+
+msgid "lobby:hall_sub"
+msgstr "Juega con gente de otras cajas · o entra a mirar"
+
+msgid "lobby:loading"
+msgstr "Cargando…"
+
+msgid "lobby:load_failed"
+msgstr "No se ha podido acceder a la sala: la red o el servicio no responden"
+
+msgid "lobby:players"
+msgstr "Jugadores conectados"
+
+msgid "lobby:online_count"
+msgstr "{n} en línea"
+
+msgid "lobby:games_count"
+msgstr "{n} partidas"
+
+msgid "lobby:no_players_now"
+msgstr "Ahora mismo solo estás tú en línea"
+
+msgid "lobby:no_games_now"
+msgstr "Ahora mismo nadie está jugando"
+
+msgid "lobby:idle"
+msgstr "Libre"
+
+msgid "lobby:in_game"
+msgstr "En partida"
+
+msgid "lobby:this_is_you"
+msgstr "Este eres tú"
+
+msgid "lobby:vs"
+msgstr "contra"
+
+msgid "lobby:plays_black"
+msgstr "juega con negras"
+
+msgid "lobby:plays_white"
+msgstr "juega con blancas"
+
+msgid "lobby:move_no"
+msgstr "Jugada {n}"
+
+msgid "lobby:note_a"
+msgstr "Puedes invitar a quien esté "
+
+msgid "lobby:note_b"
+msgstr ""
+"; quien está jugando no puede ser invitado. A la izquierda están las "
+"partidas en curso: toca la tuya para volver a ella."
+
+msgid "lobby:match_mode"
+msgstr "Qué tipo emparejar"
+
+msgid "lobby:mode_free"
+msgstr "Partida libre"
+
+msgid "lobby:mode_rated"
+msgstr "Partida clasificatoria"
+
+msgid "lobby:ladder_name"
+msgstr "Partidas puntuables"
+
+msgid "lobby:rated_why_a"
+msgstr ""
+"Las partidas clasificatorias requieren terminar 5 partidas de colocación en "
+
+msgid "lobby:rated_why_b"
+msgstr " — todavía te faltan {n}."
+
+msgid "lobby:rated_why_b_unknown"
+msgstr " terminando 5 partidas de colocación."
+
+msgid "lobby:start_match"
+msgstr "Empezar a emparejar"
+
+msgid "lobby:cancel_match"
+msgstr "Cancelar el emparejamiento"
+
+msgid "lobby:matching_title"
+msgstr "Buscando rival"
+
+msgid "lobby:matching_lead_a"
+msgstr "El servidor te ha puesto en la cola de "
+
+msgid "lobby:matching_lead_b"
+msgstr ""
+": cuando te empareje, la partida empieza directamente, sin otra "
+"confirmación."
+
+msgid "lobby:matching_tc_free"
+msgstr "Empieza al emparejar · sin puntuación"
+
+msgid "lobby:matching_tc_rated"
+msgstr "Empieza al emparejar · puntuable"
+
+msgid "lobby:waited_a"
+msgstr "Esperando "
+
+msgid "lobby:waited_b"
+msgstr " s"
+
+msgid "lobby:invite_title"
+msgstr "{name} te invita a una partida"
+
+msgid "lobby:invite_kind"
+msgstr "Partida libre · sin puntuación"
+
+msgid "lobby:invite_lead_a"
+msgstr "Al aceptar, la partida empieza de inmediato"
+
+msgid "lobby:invite_lead_b"
+msgstr "; quien invita juega con negras."
+
+msgid "lobby:invite_no_decline"
+msgstr ""
+"Rechazar solo cierra esta ventana: la otra parte no recibe respuesta; la "
+"invitación caduca a los 2 minutos"
+
+msgid "lobby:invite_expired"
+msgstr "Esta invitación ha caducado o ya se usó: pide que te inviten de nuevo"
+
+msgid "lobby:accept_and_play"
+msgstr "Aceptar y empezar"
+
+msgid "lobby:need_login"
+msgstr "Hace falta iniciar sesión"
+
+msgid "lobby:gate_title"
+msgstr "Inicia sesión para entrar en la sala en línea"
+
+msgid "lobby:gate_why"
+msgstr ""
+"La sala envía tu nombre y tu estado en línea a la gente de otras cajas, así "
+"que funciona por cuenta. Un invitado no tiene cuenta ni, por tanto, "
+"identidad que mostrar."
+
+msgid "lobby:gate_fact_k"
+msgstr "Una vez dentro"
+
+msgid "lobby:gate_fact_v"
+msgstr "los demás te ven en la lista y pueden invitarte"
+
+msgid "lobby:gate_fact_note"
+msgstr ""
+"La lista solo muestra a quien está conectado ahora: apareces mientras estás "
+"y desapareces al salir"
+
+msgid "lobby:gate_rule_a"
+msgstr "Iniciar sesión solo afecta a esto."
+
+msgid "lobby:gate_rule_b"
+msgstr ""
+"Las partidas contra la IA, las locales, el campo de entrenamiento, los "
+"análisis y las partidas guardadas funcionan como invitado."
+
+msgid "lobby:go_login"
+msgstr "Ir a iniciar sesión"
+
+msgid "baipu:title"
+msgstr "Reproducir en el tablero"
+
+msgid "baipu:back_kifu"
+msgstr "Partidas"
+
+msgid "baipu:actions"
+msgstr "Acciones de reproducción"
+
+msgid "baipu:black"
+msgstr "Negras"
+
+msgid "baipu:white"
+msgstr "Blancas"
+
+msgid "baipu:black_s"
+msgstr "N"
+
+msgid "baipu:white_s"
+msgstr "B"
+
+msgid "baipu:stones_unit"
+msgstr "piedras"
+
+msgid "baipu:which_move"
+msgstr "Número de jugada"
+
+msgid "baipu:board_label"
+msgstr ""
+"Tablero de reproducción: el círculo marca dónde va la siguiente piedra"
+
+msgid "baipu:loading"
+msgstr "Cargando esta partida"
+
+msgid "baipu:load_failed"
+msgstr "No se ha podido leer esta partida"
+
+msgid "baipu:no_sgf"
+msgstr "Esta caja no tiene esa partida"
+
+msgid "baipu:no_moves"
+msgstr "Esta partida no tiene jugadas"
+
+msgid "baipu:pagebar_sub"
+msgstr "Jugada {i} de {n} · {f} fotogramas capturados"
+
+msgid "baipu:place_at"
+msgstr "Siguiente a colocar · {c}"
+
+msgid "baipu:place_none"
+msgstr "En este paso no hay que colocar piedra"
+
+msgid "baipu:pass"
+msgstr "Paso"
+
+msgid "baipu:led_on"
+msgstr ""
+"La luz está encendida: pon la piedra {color} en la intersección iluminada"
+
+msgid "baipu:led_down"
+msgstr ""
+"La luz está apagada: pulsa arriba a la derecha para encenderla o busca {c} "
+"por coordenada"
+
+msgid "baipu:relight"
+msgstr "Volver a encender"
+
+msgid "baipu:legend_black"
+msgstr "Luz roja = poner piedra negra"
+
+msgid "baipu:legend_white"
+msgstr "Luz verde = poner piedra blanca"
+
+msgid "baipu:legend_remove"
+msgstr "Luz azul = retirar esta"
+
+msgid "baipu:cam_title"
+msgstr "Cámara · un fotograma por jugada"
+
+msgid "baipu:capture_off"
+msgstr "Esta máquina no tiene captura conectada"
+
+msgid "baipu:capturing"
+msgstr "Haciendo la foto, aparta las manos"
+
+msgid "baipu:capturing_hint"
+msgstr "Si la mano tapa, esta jugada no se captura y hay que repetirla."
+
+msgid "baipu:hands_off"
+msgstr "No pongas las manos sobre el tablero"
+
+msgid "baipu:confirm"
+msgstr "Confirmar la piedra"
+
+msgid "baipu:confirm_done_reason"
+msgstr "Esta partida ya se ha reproducido entera"
+
+msgid "baipu:failed_title"
+msgstr "No se ha capturado esta jugada"
+
+msgid "baipu:failed_hint"
+msgstr "Deja la piedra donde está y pulsa otra vez «Confirmar la piedra»"
+
+msgid "baipu:failed_hint_geometry"
+msgstr ""
+"El tablero ya no cuadra: recalibra en los ajustes, volver a pulsar no sirve"
+
+msgid "baipu:frames_n"
+msgstr "{n} fotogramas capturados"
+
+msgid "baipu:no_frame_yet"
+msgstr "Aún no se ha guardado ningún fotograma"
+
+msgid "baipu:latest_saved"
+msgstr "Último guardado {f}"
+
+msgid "baipu:removed_n"
+msgstr "{n} piedras capturadas en esta jugada"
+
+msgid "baipu:removal_title"
+msgstr "Retira las {n} piedras capturadas"
+
+msgid "baipu:removal_hint"
+msgstr ""
+"Las que brillan en azul: las piedras capturadas se retiran a mano; luego "
+"pulsa «Retiradas»"
+
+msgid "baipu:removed_done"
+msgstr "{n} piedras retiradas"
+
+msgid "baipu:moves_title"
+msgstr "Ya reproducidas"
+
+msgid "baipu:moves_value"
+msgstr "{k} de {n}"
+
+msgid "baipu:undo"
+msgstr "Deshacer la última jugada"
+
+msgid "baipu:undo_ask"
+msgstr "¿Deshacer la última jugada?"
+
+msgid "baipu:undo_body"
+msgstr ""
+"Quita primero del tablero la piedra que acabas de poner (y devuelve las "
+"capturadas), luego pulsa «Deshecho»."
+
+msgid "baipu:undo_done"
+msgstr "Deshecho"
+
+msgid "baipu:undo_reason"
+msgstr "Aún no se ha colocado la primera piedra"
+
+msgid "baipu:finish"
+msgstr "Terminar"
+
+msgid "baipu:finish_reason"
+msgstr "Quedan {n} jugadas por reproducir"
+
+msgid "baipu:done_title"
+msgstr "Esta partida se ha reproducido entera"
+
+msgid "baipu:done_hint"
+msgstr "{n} jugadas en total · {f} fotogramas capturados"
+
+msgid "baipu:restart"
+msgstr "Empezar de nuevo"
+
+msgid "baipu:resume"
+msgstr "Continuar reproduciendo"
+
+msgid "baipu:resume_ask"
+msgstr "¿Continuar desde la última vez?"
+
+msgid "baipu:resume_body"
+msgstr ""
+"La última vez llegaste a la jugada {n}. Empezar de nuevo sobrescribirá los "
+"fotogramas ya capturados."
+
+msgid "baipu:exit"
+msgstr "Salir"
+
+msgid "baipu:exit_ask"
+msgstr "¿Salir de la reproducción?"
+
+msgid "baipu:exit_body"
+msgstr "El progreso está guardado: podrás continuar al volver."
+
+msgid "baipu:drift_corrected"
+msgstr "El tablero se ha movido; corregido automáticamente"
+
+msgid "baipu:drift_frozen"
+msgstr "La geometría no se ha corregido"
+
+msgid "baipu:drift_stale"
+msgstr ""
+"Este fotograma no se ha podido volver a corregir, así que se ha reutilizado "
+"la geometría anterior"
+
+msgid "baipu:drift_word_corrected"
+msgstr "Corregida"
+
+msgid "baipu:drift_word_frozen"
+msgstr "Sin corregir"
+
+msgid "baipu:drift_word_stale"
+msgstr "Se reutiliza la anterior"
+
+msgid "tsumego:loadingTitle"
+msgstr "Problemas"
+
+msgid "tsumego:actions"
+msgstr "Acciones del problema"
+
+msgid "tsumego:allProblems"
+msgstr "Todos los problemas"
+
+msgid "tsumego:autoAdvance"
+msgstr "Pasar al siguiente problema al acertar"
+
+msgid "tsumego:backToUnit"
+msgstr "Volver a la unidad"
+
+msgid "tsumego:backToWrong"
+msgstr "Volver a los fallados"
+
+msgid "tsumego:bankEmpty"
+msgstr "Aún no hay problemas en el banco"
+
+msgid "tsumego:category_unit"
+msgstr "tipos"
+
+msgid "tsumego:chooseByLevel"
+msgstr "Elegir por nivel"
+
+msgid "tsumego:cloudUnreachable"
+msgstr "No se puede acceder al banco de problemas en la nube"
+
+msgid "tsumego:cloudUnreachableBody"
+msgstr ""
+"El banco de problemas está en la nube; en la caja no se guarda nada. Pulsa "
+"reintentar cuando vuelva la red o la nube."
+
+msgid "tsumego:cloudUnreachableBodyNoRetry"
+msgstr ""
+"El banco de problemas está en la nube; en la caja no se guarda nada. Vuelve "
+"atrás y entra de nuevo cuando regrese la red o la nube."
+
+msgid "tsumego:kyuRanks"
+msgstr "Kyu"
+
+msgid "tsumego:danRanks"
+msgstr "Dan"
+
+msgid "tsumego:rankBoundary"
+msgstr "Frontera entre kyu y dan"
+
+msgid "tsumego:dao"
+msgstr "problemas"
+
+msgid "tsumego:levelsUnit"
+msgstr "niveles"
+
+msgid "tsumego:goCalibrate"
+msgstr "Ir a calibrar"
+
+msgid "tsumego:greetSub"
+msgstr "Se juzga al jugar: una jugada errónea se deshace al momento"
+
+msgid "tsumego:isFirst"
+msgstr "Este es el primer problema"
+
+msgid "tsumego:lastTimeShort"
+msgstr "La última vez"
+
+msgid "tsumego:loadingProblem"
+msgstr "Cargando este problema…"
+
+msgid "tsumego:problemLoadError"
+msgstr "No se ha podido cargar este problema"
+
+msgid "tsumego:modes"
+msgstr "Modo"
+
+msgid "tsumego:next"
+msgstr "Problema siguiente"
+
+msgid "tsumego:prev"
+msgstr "Problema anterior"
+
+msgid "tsumego:noMoveYet"
+msgstr "Aún sin jugada"
+
+msgid "tsumego:noSequence"
+msgstr ""
+"No se han podido leer los números de este tipo, así que anterior/siguiente "
+"no están disponibles"
+
+msgid "tsumego:noWrong"
+msgstr "Ahora mismo no hay problemas fallados de este tipo"
+
+msgid "tsumego:physicalBoard"
+msgstr "Tablero físico"
+
+msgid "tsumego:physClear"
+msgstr "Vacía el tablero"
+
+msgid "tsumego:physClearLeft"
+msgstr " (quedan {n})"
+
+msgid "tsumego:physConnecting"
+msgstr "Conectando la cámara y el modelo de reconocimiento, espera…"
+
+msgid "tsumego:physGeoConfirm"
+msgstr ""
+"El tablero físico necesita confirmar antes la calibración (otra vez tras "
+"reiniciar el servicio)"
+
+msgid "tsumego:physGeoDrift"
+msgstr "La calibración del tablero ya no vale, vuelve a calibrar"
+
+msgid "tsumego:physNeed19"
+msgstr "El tablero físico solo admite problemas de 19x19"
+
+msgid "tsumego:physNoCamera"
+msgstr "No se detecta cámara / el servicio de visión está desactivado"
+
+msgid "tsumego:physNoLed"
+msgstr "El LED no está conectado, sigue las indicaciones de la pantalla."
+
+msgid "tsumego:physRemove"
+msgstr "Respuesta incorrecta: retira {n} piedras (luz azul)"
+
+msgid "tsumego:physRestore"
+msgstr " y devuelve las {n} capturadas (luz roja / verde)"
+
+msgid "tsumego:physReply"
+msgstr ""
+"Coloca las piedras según las luces del tablero (respuesta / capturas) para "
+"que tablero y pantalla coincidan."
+
+msgid "tsumego:physVerify"
+msgstr ""
+"Comprobando si el tablero coincide con el problema: ajusta las piedras según"
+" las luces."
+
+msgid "tsumego:placeAnswerBlack"
+msgstr ""
+"Pon una piedra negra en el punto de la solución; el tablero la reconocerá "
+"solo"
+
+msgid "tsumego:placeAnswerWhite"
+msgstr ""
+"Pon una piedra blanca en el punto de la solución; el tablero la reconocerá "
+"solo"
+
+msgid "tsumego:preparingBoard"
+msgstr "Preparando"
+
+msgid "tsumego:progressUnread"
+msgstr "No se ha podido leer el registro de resoluciones"
+
+msgid "tsumego:progressUnreadBody"
+msgstr ""
+"Sin el registro no podemos decir qué problemas de este tipo has fallado. "
+"Pulsa reintentar cuando vuelva la red."
+
+msgid "tsumego:removeAt"
+msgstr "Quitar {coord}"
+
+msgid "tsumego:setupDone"
+msgstr "Tablero listo · te toca"
+
+msgid "tsumego:setupExtra"
+msgstr ""
+"Hay {n} piedras de más o de color equivocado en el tablero: quítalas primero"
+" (marcadas con ✕ en pantalla, luz blanca parpadeante en el tablero)"
+
+msgid "tsumego:setupMatched"
+msgstr "{matched}/{total} piedras coinciden"
+
+msgid "tsumego:setupSkip"
+msgstr "Saltar la preparación"
+
+msgid "tsumego:setupStageBlack"
+msgstr "Coloca las piedras negras"
+
+msgid "tsumego:setupStageWhite"
+msgstr "Coloca las piedras blancas"
+
+msgid "tsumego:solvedInCategory"
+msgstr "Acertados en este tipo"
+
+msgid "tsumego:solvedShort"
+msgstr "Correcto"
+
+msgid "tsumego:specializedPractice"
+msgstr "Práctica específica"
+
+msgid "tsumego:these_n_problems"
+msgstr "estos {n} problemas"
+
+msgid "tsumego:thisProblem"
+msgstr "este problema"
+
+msgid "tsumego:tries_n"
+msgstr "{n} intentos"
+
+msgid "tsumego:tryModeShort"
+msgstr "Probar"
+
+msgid "tsumego:undoMove"
+msgstr "Deshacer una jugada"
+
+msgid "tsumego:undoPhysicalReset"
+msgstr ""
+"En el tablero físico no se puede deshacer una jugada; para empezar de nuevo "
+"pulsa «Volver a colocar»"
+
+msgid "tsumego:unitUnknown"
+msgstr "esta unidad"
+
+msgid "tsumego:unit_n"
+msgstr "Unidad {n}"
+
+msgid "tsumego:unit_range"
+msgstr ""
+"Este tipo tiene {total} problemas en total, así que solo {units} unidades."
+
+msgid "tsumego:unit_size"
+msgstr "{n} problemas por unidad"
+
+msgid "tsumego:unit_total"
+msgstr "{n} problemas"
+
+msgid "tsumego:wrongProgress"
+msgstr "Fallados · {i} de {n}"
+
+msgid "tsumego:wrongResume"
+msgstr "Fallados, problema {n}"
+
+msgid "tsumego:wrongSet"
+msgstr "Fallados"
+
+msgid "tsumego:wrongShort"
+msgstr "Incorrecto"
+
+msgid "tsumego:wrongState"
+msgstr "Fallado alguna vez"
+
+msgid "tsumego:wrongStatLabel"
+msgstr "Fallado y aún sin acertar"
+
+msgid "tsumego:wrong_now"
+msgstr "Ahora hay {n}"
+
+msgid "tsumego:wrong_total"
+msgstr "{n} problemas"
+
+msgid "tsumego:yourLevel"
+msgstr "Tu nivel"
+
+msgid "tsumego:yourMoves"
+msgstr "Tus jugadas"
+
+msgid "tsumego:problem_no"
+msgstr "Problema {n}"
+
+msgid "kifu:title"
+msgstr "Partidas"
+
+msgid "kifu:back_kifu"
+msgstr "Partidas"
+
+msgid "kifu:greet_a"
+msgstr "Las partidas "
+
+msgid "kifu:greet_b"
+msgstr "de otros"
+
+msgid "kifu:greet_sub"
+msgstr ""
+"Partidas famosas, retransmisiones profesionales y reproducción en el tablero"
+" físico"
+
+msgid "kifu:famous_records"
+msgstr "Partidas famosas"
+
+msgid "kifu:search_records"
+msgstr "Buscar partidas"
+
+msgid "kifu:search_sub"
+msgstr "Una caja de búsqueda, coincidencia aproximada"
+
+msgid "kifu:search_placeholder_cn"
+msgstr "Busca por jugador, torneo o año"
+
+msgid "kifu:searching"
+msgstr "Buscando"
+
+msgid "kifu:no_results_cn"
+msgstr "No hay partidas coincidentes"
+
+msgid "kifu:no_results_hint"
+msgstr "Prueba con otro jugador, torneo o año."
+
+msgid "kifu:list_failed"
+msgstr "No se ha podido leer la biblioteca de partidas"
+
+msgid "kifu:pro_live"
+msgstr "Retransmisiones profesionales"
+
+msgid "kifu:live_now"
+msgstr "En directo"
+
+msgid "kifu:not_started"
+msgstr "Sin empezar"
+
+msgid "kifu:ended"
+msgstr "Terminada"
+
+msgid "kifu:place_on_board"
+msgstr "Reproducir en el tablero físico"
+
+msgid "kifu:place_sub"
+msgstr "Las luces señalan jugada a jugada"
+
+msgid "kifu:import_sgf"
+msgstr "Importar SGF"
+
+msgid "kifu:import_sub"
+msgstr "Un archivo local: también funciona sin conexión"
+
+msgid "kifu:bad_sgf"
+msgstr "No es un archivo SGF válido"
+
+msgid "kifu:read_failed"
+msgstr "No se ha podido leer el archivo"
+
+msgid "kifu:recent"
+msgstr "Reproducidas recientemente"
+
+msgid "kifu:on_this_box"
+msgstr "Guardadas en esta caja"
+
+msgid "kifu:no_recent"
+msgstr "En esta caja aún no se ha reproducido nada"
+
+msgid "kifu:no_recent_hint"
+msgstr ""
+"Elige una arriba o importa un SGF: la partida elegida se guarda entera en la"
+" caja, así que puedes terminarla sin conexión."
+
+msgid "kifu:cache_gone"
+msgstr "La copia local de esta partida ya no está: vuelve a elegirla"
+
+msgid "kifu:cannot_start"
+msgstr "Esta no se puede reproducir"
+
+msgid "kifu:done_tag"
+msgstr "Reproducida entera"
+
+msgid "kifu:placed_all"
+msgstr "Completa"
+
+msgid "kifu:placed_at"
+msgstr "Hasta la jugada "
+
+msgid "kifu:resume_at"
+msgstr "La última vez, hasta la jugada "
+
+msgid "kifu:resume"
+msgstr "Continuar"
+
+msgid "kifu:resume_baipu"
+msgstr "Seguir reproduciendo"
+
+msgid "kifu:resume_hint"
+msgstr "Las luces señalarán dónde va la siguiente piedra"
+
+msgid "kifu:keep_placing"
+msgstr "Seguir colocando"
+
+msgid "kifu:detail_actions"
+msgstr "Qué puedes hacer con esta partida"
+
+msgid "kifu:replay"
+msgstr "Reproducción jugada a jugada"
+
+msgid "kifu:to_research"
+msgstr "Abrir en estudio"
+
+msgid "kifu:board_label"
+msgstr "Tablero de reproducción"
+
+msgid "kifu:board_lines"
+msgstr "líneas"
+
+msgid "kifu:handicap_pre"
+msgstr "Hándicap "
+
+msgid "kifu:handicap_unit"
+msgstr " piedras"
+
+msgid "kifu:komi_black"
+msgstr "Negras pagan"
+
+msgid "kifu:komi_unit"
+msgstr " pts"
+
+msgid "kifu:games_unit"
+msgstr "partidas"
+
+msgid "kifu:move_ordinal"
+msgstr "Jugada "
+
+msgid "kifu:total_prefix"
+msgstr "de "
+
+msgid "kifu:versus"
+msgstr "contra"
+
+msgid "kifu:source_prefix"
+msgstr "Fuente: "
+
+msgid "kifu:untitled_game"
+msgstr "Una partida sin título"
+
+msgid "kifu:whole_game"
+msgstr "Partida completa"
+
+msgid "kifu:moves_title"
+msgstr "Jugadas · coordenadas de intersección"
+
+msgid "kifu:no_moves"
+msgstr "Esta partida no tiene jugadas"
+
+msgid "kifu:need_sgf"
+msgstr "Aún no se ha obtenido el registro de esta partida"
+
+msgid "kifu:load_failed"
+msgstr "No se ha podido leer esta partida"
+
+msgid "kifu:loading_this_game"
+msgstr "Cargando esta partida"
+
+msgid "kifu:loading_hint"
+msgstr ""
+"Tanto el registro como el detalle jugada a jugada vienen del servidor."
+
+msgid "kifu:retry"
+msgstr "Reintentar"
+
+msgid "kifu:pass"
+msgstr "Paso"
+
+msgid "kifu:to_start"
+msgstr "Volver al inicio"
+
+msgid "kifu:to_end"
+msgstr "Ir al final"
+
+msgid "kifu:prev_move"
+msgstr "Jugada anterior"
+
+msgid "kifu:next_move"
+msgstr "Jugada siguiente"
+
+msgid "kifu:prev_page"
+msgstr "Página anterior"
+
+msgid "kifu:next_page"
+msgstr "Página siguiente"
+
+msgid "kifu:collapsed"
+msgstr "Contraído"
+
+msgid "kifu:expanded"
+msgstr "Desplegado"
+
+msgid "kifu:today"
+msgstr "hoy"
+
+msgid "kifu:yesterday"
+msgstr "ayer"
+
+msgid "kifu:day_before"
+msgstr "anteayer"
+
+msgid "review:back_review"
+msgstr "Análisis"
+
+msgid "review:you"
+msgstr "Tú"
+
+msgid "review:black"
+msgstr "Negras"
+
+msgid "review:white"
+msgstr "Blancas"
+
+msgid "review:win"
+msgstr "victoria"
+
+msgid "review:lose"
+msgstr "derrota"
+
+msgid "review:by_resign"
+msgstr "por abandono"
+
+msgid "review:by_time"
+msgstr "por tiempo"
+
+msgid "review:by_forfeit"
+msgstr "por incomparecencia"
+
+msgid "review:void_result"
+msgstr "Esta partida quedó sin resolver"
+
+msgid "review:unfinished_line"
+msgstr "Se abandonó tras la jugada {n}"
+
+msgid "review:sec_games"
+msgstr "Partidas anteriores"
+
+msgid "review:all_games"
+msgstr "{n} partidas en total"
+
+msgid "review:local_games"
+msgstr "{n} en esta caja"
+
+msgid "review:facing_games"
+msgstr "{n} cara a cara"
+
+msgid "review:matched_games"
+msgstr "{n} encontradas"
+
+msgid "review:filter_label"
+msgstr "Filtrar partidas por origen"
+
+msgid "review:filter_all"
+msgstr "Todas"
+
+msgid "review:filter_local"
+msgstr "Cara a cara"
+
+msgid "review:search_toggle"
+msgstr "Filtrar y buscar partidas anteriores"
+
+msgid "review:list_loading"
+msgstr "Cargando tus partidas"
+
+msgid "review:list_failed"
+msgstr "No se ha podido leer la lista de partidas"
+
+msgid "review:no_games"
+msgstr "Aún no has jugado partidas"
+
+msgid "review:no_games_hint"
+msgstr ""
+"Al terminar una partida se registra aquí automáticamente; también puedes "
+"importar un SGF abajo."
+
+msgid "review:no_local_games"
+msgstr "Aún no hay partidas cara a cara"
+
+msgid "review:no_local_games_hint"
+msgstr ""
+"Las partidas en las que dos personas juegan en la misma caja, en «Jugar · "
+"Dos jugadores», se registran aquí."
+
+msgid "review:no_match"
+msgstr "No hay partidas coincidentes"
+
+msgid "review:no_match_hint"
+msgstr "Prueba con otro nombre de jugador o torneo."
+
+msgid "review:row_ai"
+msgstr "Contra la IA"
+
+msgid "review:row_human"
+msgstr "Humano contra humano"
+
+msgid "review:row_ranked"
+msgstr "Partida puntuable"
+
+msgid "review:row_import"
+msgstr "Partida importada"
+
+msgid "review:row_library"
+msgstr "Biblioteca de partidas"
+
+msgid "review:row_vs"
+msgstr "contra"
+
+msgid "review:rail_title"
+msgstr "Esta partida"
+
+msgid "review:rail_none"
+msgstr "Aún no hay partida seleccionada"
+
+msgid "review:rail_board"
+msgstr "Posición final de la partida seleccionada"
+
+msgid "review:board_failed"
+msgstr "No se ha podido leer el registro de esta partida"
+
+msgid "review:sec_winrate"
+msgstr "Probabilidad de victoria en esta partida"
+
+msgid "review:black_winrate"
+msgstr "Probabilidad de negras"
+
+msgid "review:black_lead"
+msgstr "Negras por delante"
+
+msgid "review:perspective"
+msgstr "Punto de vista de {color}"
+
+msgid "review:plot_label"
+msgstr "Probabilidad jugada a jugada: arriba negras, abajo blancas"
+
+msgid "review:plot_pick_label"
+msgstr "Probabilidad jugada a jugada: toca para saltar a esa jugada"
+
+msgid "review:plot_loading"
+msgstr "Cargando el informe de esta partida"
+
+msgid "review:plot_pick"
+msgstr "Elige una partida abajo"
+
+msgid "review:plot_thin"
+msgstr "Jugadas que el informe aún no ha calculado"
+
+msgid "review:plot_unanalyzed"
+msgstr ""
+"Esta partida aún no se ha analizado: elige un nivel en «Generar informe» "
+"abajo"
+
+msgid "review:sec_report"
+msgstr "Generar informe"
+
+msgid "review:two_tiers"
+msgstr "Dos niveles: 500 / 2000 visitas"
+
+msgid "review:tier_standard"
+msgstr "Estándar"
+
+msgid "review:tier_standard_sub"
+msgstr "500 visitas por jugada"
+
+msgid "review:tier_deep"
+msgstr "Profundo"
+
+msgid "review:tier_deep_sub"
+msgstr "2000 visitas por jugada · cuatro veces más lento"
+
+msgid "review:visits_each"
+msgstr "{n} visitas por jugada"
+
+msgid "review:analyzed_progress"
+msgstr "{a} de {b} jugadas analizadas"
+
+msgid "review:resume_analysis"
+msgstr "Continuar el análisis"
+
+msgid "review:recompute"
+msgstr "Recalcular"
+
+msgid "review:recompute_failed"
+msgstr "El recálculo no se ha completado"
+
+msgid "review:refresh_failed"
+msgstr "No se ha podido actualizar"
+
+msgid "review:no_task"
+msgstr "Esta partida aún no tiene tarea de informe"
+
+msgid "review:tasks_failed"
+msgstr "Algo ha fallado en las tareas de informe"
+
+msgid "review:tag_analyzed"
+msgstr "Analizada"
+
+msgid "review:tag_unanalyzed"
+msgstr "Sin analizar"
+
+msgid "review:cell_unanalyzed"
+msgstr "Sin analizar"
+
+msgid "review:tag_partial"
+msgstr "Solo {a}/{b} calculadas"
+
+msgid "review:tag_running"
+msgstr "Analizando {a}/{b}"
+
+msgid "review:tag_failed"
+msgstr "Análisis fallido"
+
+msgid "review:tag_unfinished"
+msgstr "Sin terminar"
+
+msgid "review:failure_bad_sgf"
+msgstr "No se ha podido leer este registro"
+
+msgid "review:failure_no_credits"
+msgstr "Créditos insuficientes"
+
+msgid "review:failure_not_found"
+msgstr "Ya no está"
+
+msgid "review:failure_offline"
+msgstr "La nube no está disponible temporalmente"
+
+msgid "review:moves_failed"
+msgstr "No se ha podido leer el informe"
+
+msgid "review:detail_failed"
+msgstr "No se ha podido leer este informe"
+
+msgid "review:open_report"
+msgstr "Ver el informe"
+
+msgid "review:delete_game"
+msgstr "Eliminar"
+
+msgid "review:to_research"
+msgstr "Abrir en estudio"
+
+msgid "review:toggles"
+msgstr "Visualización"
+
+msgid "review:accuracy"
+msgstr "Precisión"
+
+msgid "review:brilliants"
+msgstr "Jugadas brillantes"
+
+msgid "review:mistakes"
+msgstr "Errores"
+
+msgid "review:took"
+msgstr "ha tardado {d}"
+
+msgid "review:import_card"
+msgstr "Importar una partida para analizar"
+
+msgid "review:import_card_sub"
+msgstr "Un SGF local o la biblioteca de partidas"
+
+msgid "platform:platforms"
+msgstr "Plataformas"
+
+msgid "platform:back_to_platforms"
+msgstr "Multiplataforma"
+
+msgid "platform:connect_sub"
+msgstr "Conecta un servidor de Go externo y juega en este tablero físico"
+
+msgid "platform:connected"
+msgstr "Conectado"
+
+msgid "platform:disconnected"
+msgstr "No conectado"
+
+msgid "platform:what_you_get"
+msgstr "Una vez conectado"
+
+msgid "platform:get_board"
+msgstr "Jugar en este tablero físico"
+
+msgid "platform:get_board_sub"
+msgstr "Colocar una piedra es tu jugada: el rival ve la misma"
+
+msgid "platform:get_kifu"
+msgstr "La partida se guarda automáticamente"
+
+msgid "platform:get_kifu_sub"
+msgstr "Va a la biblioteca de partidas y puede enviarse al análisis"
+
+msgid "platform:get_rank"
+msgstr "Tu rango en esta caja no cambia"
+
+msgid "platform:get_rank_sub"
+msgstr "Los resultados de allí solo cuentan en esa plataforma"
+
+msgid "platform:icon_board"
+msgstr "Tablero"
+
+msgid "platform:icon_kifu"
+msgstr "Registro"
+
+msgid "platform:icon_rank"
+msgstr "Rango"
+
+msgid "platform:sign_in_to"
+msgstr "Iniciar sesión · {name}"
+
+msgid "platform:logging_in"
+msgstr "Iniciando sesión…"
+
+msgid "platform:login_failed"
+msgstr "Error al iniciar sesión"
+
+msgid "platform:logout"
+msgstr "Cerrar sesión"
+
+msgid "platform:logout_ask"
+msgstr "¿Desconectar {name}?"
+
+msgid "platform:logout_body"
+msgstr ""
+"Esta caja dejará de estar en esa cuenta. Tendrás que iniciar sesión otra vez"
+" la próxima vez."
+
+msgid "platform:pw_fields"
+msgstr "Usuario + contraseña"
+
+msgid "platform:pw_note"
+msgstr "Solo se envía a esa plataforma; nunca se guarda en la caja"
+
+msgid "platform:user_note"
+msgstr "El nombre de cuenta de allí, no el de la caja"
+
+msgid "platform:sms_fields"
+msgstr "Número de teléfono + código"
+
+msgid "platform:phone_note"
+msgstr "Solo sirve para obtener una credencial de acceso de la plataforma"
+
+msgid "platform:sms_get"
+msgstr "Obtener el código"
+
+msgid "platform:sms_again"
+msgstr "Reenviar en {n} s"
+
+msgid "platform:sms_failed"
+msgstr "No se ha podido enviar el código"
+
+msgid "platform:need_phone"
+msgstr "Introduce primero el número de teléfono"
+
+msgid "platform:code_note"
+msgstr "Seis dígitos · válido 60 segundos"
+
+msgid "platform:lobby_title"
+msgstr "{name} · sala"
+
+msgid "platform:lobby_sub"
+msgstr "Reta a alguien o deja que la plataforma te busque rival"
+
+msgid "platform:enter_lobby"
+msgstr "Entrar en la sala"
+
+msgid "platform:enter_engine"
+msgstr "Jugar contra la IA"
+
+msgid "platform:no_play_yet"
+msgstr "Aún no se puede jugar"
+
+msgid "platform:cap_live"
+msgstr "Juego en directo"
+
+msgid "platform:cap_engine"
+msgstr "Contra la IA"
+
+msgid "platform:cap_automatch"
+msgstr "Emparejamiento automático"
+
+msgid "platform:cap_rooms"
+msgstr "Salas"
+
+msgid "platform:find_by_name"
+msgstr "Buscar por nombre de usuario"
+
+msgid "platform:find_hint"
+msgstr "Escribe y pulsa Enter; si no aparece, esa persona no está allí"
+
+msgid "platform:results"
+msgstr "Jugadores encontrados"
+
+msgid "platform:no_such_player"
+msgstr "Allí no existe esa persona"
+
+msgid "platform:search_first"
+msgstr ""
+"Escribe un usuario y pulsa Enter, o deja que la plataforma te busque uno"
+
+msgid "platform:users_failed"
+msgstr "No se ha podido obtener la lista de jugadores de la plataforma"
+
+msgid "platform:idle"
+msgstr "Libre"
+
+msgid "platform:in_game"
+msgstr "En partida"
+
+msgid "platform:challenge"
+msgstr "Retar"
+
+msgid "platform:challenge_terms"
+msgstr "Enviar un reto"
+
+msgid "platform:challenge_ask"
+msgstr "¿Retar a {name}?"
+
+msgid "platform:challenge_ask_body"
+msgstr "{name} {rank} · 19x19 · reglas chinas · puntuable."
+
+msgid "platform:challenge_ask_tail"
+msgstr ""
+"Una vez enviado no se puede retirar; si acepta, jugaréis en {name}, no en "
+"esta caja."
+
+msgid "platform:challenge_send"
+msgstr "Enviar el reto"
+
+msgid "platform:challenge_sent"
+msgstr "Reto enviado. Si acepta, jugaréis en {name}, no en esta caja."
+
+msgid "platform:challenge_failed"
+msgstr "No se ha podido enviar el reto"
+
+msgid "platform:automatch"
+msgstr "Emparejamiento automático"
+
+msgid "platform:automatch_body"
+msgstr "Deja que {name} te busque uno"
+
+msgid "platform:automatch_hint"
+msgstr ""
+"La cola está en {name}. Al emparejar, la partida no vuelve a esta caja: "
+"sigues en {name}."
+
+msgid "platform:automatch_start"
+msgstr "Empezar a emparejar"
+
+msgid "platform:automatch_cancel"
+msgstr "Cancelar el emparejamiento"
+
+msgid "platform:automatch_failed"
+msgstr "El emparejamiento no ha arrancado"
+
+msgid "platform:seeking"
+msgstr "Buscando rival"
+
+msgid "platform:engine_title"
+msgstr "{name} · contra la IA"
+
+msgid "platform:engine_sub"
+msgstr "Configuración · no cuenta para el rango de la caja"
+
+msgid "platform:opponent"
+msgstr "Rival"
+
+msgid "platform:rung_n"
+msgstr "Nivel {i} de {n}"
+
+msgid "platform:stronger"
+msgstr "Un rival más fuerte"
+
+msgid "platform:weaker"
+msgstr "Un rival más débil"
+
+msgid "platform:levels_from"
+msgstr "{n} niveles servidos por {name}"
+
+msgid "platform:levels_failed"
+msgstr "No se han podido obtener los niveles de fuerza de la plataforma"
+
+msgid "platform:display_elo"
+msgstr "Elo mostrado {v}"
+
+msgid "platform:ref_rank"
+msgstr "equivale a {r}"
+
+msgid "platform:rank_is_theirs"
+msgstr "El rango es de {name}"
+
+msgid "platform:terms_fixed"
+msgstr "Las condiciones son fijas"
+
+msgid "platform:terms_body"
+msgstr "Reglas chinas · puntuable"
+
+msgid "platform:terms_hint"
+msgstr "Estos tres no se eligen aquí: es lo que se envía"
+
+msgid "platform:only_19"
+msgstr "{name} solo ofrece 19x19 · reglas chinas"
+
+msgid "platform:fixed"
+msgstr "Fijo"
+
+msgid "platform:untimed"
+msgstr "Sin tiempo"
+
+msgid "platform:nigiri"
+msgstr "Nigiri"
+
+msgid "platform:black_first"
+msgstr "Negras primero, sin komi"
+
+msgid "platform:handicap_range"
+msgstr "{n} pasos · parejas / negras primero / 2 – 9 piedras"
+
+msgid "platform:komi_0"
+msgstr "Sin komi"
+
+msgid "platform:komi_75"
+msgstr "Negras pagan 7,5 puntos"
+
+msgid "platform:komi_n"
+msgstr "Negras pagan {n} piedras"
+
+msgid "platform:summary_note"
+msgstr ""
+"El komi va con el hándicap, no es otra opción. Los resultados solo cuentan "
+"en {name}."
+
+msgid "tutorial:title_cn"
+msgstr "Cursos"
+
+msgid "tutorial:categories_cn"
+msgstr "Categorías"
+
+msgid "tutorial:greet_sub"
+msgstr "El backend tiene cinco capas; el contenido no se genera en esta caja"
+
+msgid "tutorial:loading_cn"
+msgstr "Sincronizando los cursos con la nube"
+
+msgid "tutorial:loadFailed"
+msgstr "Error de carga, inténtalo más tarde"
+
+msgid "tutorial:empty"
+msgstr "Aún no hay cursos"
+
+msgid "tutorial:empty_hint"
+msgstr ""
+"La biblioteca de cursos en la nube aún no tiene libros; los dos enlaces de "
+"abajo ya tienen contenido."
+
+msgid "tutorial:instead_cn"
+msgstr "Lo que puedes practicar ahora"
+
+msgid "tutorial:go_training"
+msgstr "Ir al campo de entrenamiento"
+
+msgid "tutorial:go_training_sub"
+msgstr "Seis tipos de problemas · disponibles ya"
+
+msgid "tutorial:go_baipu"
+msgstr "Ir a reproducir partidas"
+
+msgid "tutorial:go_baipu_sub"
+msgstr "Reproduce una partida famosa jugada a jugada"
+
+msgid "tutorial:count_line"
+msgstr "{n} categorías · {b} libros en total"
+
+msgid "tutorial:books_n"
+msgstr "{n} libros"
+
+msgid "tutorial:books_synced"
+msgstr "{n} libros · el contenido sigue a la nube"
+
+msgid "tutorial:synced"
+msgstr "Sigue a la nube"
+
+msgid "tutorial:pick_book"
+msgstr "Elige un libro"
+
+msgid "tutorial:books_loading"
+msgstr "Cargando los libros de esta categoría"
+
+msgid "tutorial:books_failed"
+msgstr "No se han podido leer los libros de esta categoría"
+
+msgid "tutorial:books_empty"
+msgstr "En esta categoría no hay ni un libro"
+
+msgid "tutorial:books_empty_hint"
+msgstr ""
+"La nube aún no ha sincronizado esta categoría; otras quizá ya tengan "
+"contenido."
+
+msgid "tutorial:anatomy_cn"
+msgstr "Cómo es una lección"
+
+msgid "tutorial:chapters_n"
+msgstr "{n} capítulos"
+
+msgid "tutorial:sections_n"
+msgstr "{n} secciones"
+
+msgid "tutorial:figures_n"
+msgstr "{n} diagramas"
+
+msgid "tutorial:moves_n"
+msgstr "{n} jugadas"
+
+msgid "tutorial:seconds_n"
+msgstr "{n} s"
+
+msgid "tutorial:has_video"
+msgstr "Con vídeo"
+
+msgid "tutorial:back_toc"
+msgstr "Índice"
+
+msgid "tutorial:toc_of"
+msgstr "{title} · índice"
+
+msgid "tutorial:toc_count"
+msgstr "{c} capítulos · {s} secciones"
+
+msgid "tutorial:toc_loading"
+msgstr "Cargando el índice de este libro"
+
+msgid "tutorial:toc_failed"
+msgstr "No se ha podido leer el índice de este libro"
+
+msgid "tutorial:toc_empty"
+msgstr "Este libro aún no tiene capítulos"
+
+msgid "tutorial:toc_empty_hint"
+msgstr ""
+"La lista de libros se ha sincronizado, el cuerpo no; no es un problema de tu"
+" caja."
+
+msgid "tutorial:no_sections"
+msgstr "Este capítulo aún no tiene secciones"
+
+msgid "tutorial:section_n"
+msgstr "Sección {n}"
+
+msgid "tutorial:section_loading"
+msgstr "Cargando esta sección"
+
+msgid "tutorial:section_failed"
+msgstr "No se ha podido leer esta sección"
+
+msgid "tutorial:figures_in_section"
+msgstr "Diagramas de esta sección"
+
+msgid "tutorial:no_figures"
+msgstr "Esta sección aún no tiene diagramas"
+
+msgid "tutorial:no_figures_hint"
+msgstr ""
+"El índice incluye esta sección, pero el cuerpo no se ha sincronizado; no es "
+"un problema de tu caja."
+
+msgid "tutorial:figure_ordinal"
+msgstr "Diagrama {i} de {n}"
+
+msgid "tutorial:figure_actions"
+msgstr "Pasar diagramas y explicaciones"
+
+msgid "tutorial:prev_figure"
+msgstr "Diagrama anterior"
+
+msgid "tutorial:next_figure"
+msgstr "Diagrama siguiente"
+
+msgid "tutorial:back_to_diagram"
+msgstr "Volver al diagrama"
+
+msgid "tutorial:board_label"
+msgstr "{label}: el diagrama de esta sección"
+
+msgid "tutorial:board_view"
+msgstr "Cuánto mostrar"
+
+msgid "tutorial:fullBoard"
+msgstr "Tablero completo"
+
+msgid "tutorial:partial"
+msgstr "Parcial"
+
+msgid "tutorial:moves"
+msgstr "Jugadas"
+
+msgid "tutorial:step_back"
+msgstr "Una jugada atrás"
+
+msgid "tutorial:step_fwd"
+msgstr "Una jugada adelante"
+
+msgid "tutorial:step_n"
+msgstr "Ir a la jugada {n}"
+
+msgid "tutorial:step_total"
+msgstr "Este diagrama tiene {n} jugadas"
+
+msgid "tutorial:step_zero"
+msgstr "Solo las piedras iniciales"
+
+msgid "tutorial:tag_video"
+msgstr "Explicación en vídeo"
+
+msgid "tutorial:tag_audio"
+msgstr "Explicación en audio"
+
+msgid "tutorial:tag_text"
+msgstr "Explicación en texto"
+
+msgid "tutorial:tag_none"
+msgstr "Sin explicación"
+
+msgid "tutorial:teach_none"
+msgstr "Sin explicación"
+
+msgid "tutorial:teach_none_reason"
+msgstr ""
+"No se ha grabado explicación para este diagrama; aparecerá cuando la nube la"
+" sincronice"
+
+msgid "tutorial:text_only"
+msgstr "Solo explicación en texto"
+
+msgid "tutorial:text_only_reason"
+msgstr "Este diagrama solo tiene explicación escrita, y está arriba"
+
+msgid "tutorial:no_explain"
+msgstr ""
+"El libro no trae texto para este diagrama ni se ha grabado explicación."
+
+msgid "tutorial:watch_video"
+msgstr "Ver la explicación en vídeo"
+
+msgid "tutorial:play_audio"
+msgstr "Reproducir la explicación en audio"
+
+msgid "tutorial:stop_audio"
+msgstr "Detener"
+
+msgid "19x19"
+msgstr "19x19"
+
+msgid "19×19 only"
+msgstr "Solo 19×19"
+
+msgid "20 problems per unit"
+msgstr "20 problemas por unidad"
+
+msgid "Korean rules"
+msgstr "Reglas coreanas"
+
+msgid ""
+"AI connection error — please retry your move, or exit to abandon the game."
+msgstr ""
+"Error de conexión con la IA: reintenta la jugada o sal para abandonar la "
+"partida."
+
+msgid "AI is thinking…"
+msgstr "La IA está pensando…"
+
+msgid "AI suggestions (white lamps)"
+msgstr "Sugerencias de la IA (luces blancas)"
+
+msgid "Accept as my move"
+msgstr "Aceptar como mi jugada"
+
+msgid "All games"
+msgstr "Todas las partidas"
+
+msgid "Auto-advance after solving · current"
+msgstr "Avanzar al acertar · actual"
+
+msgid "Average time"
+msgstr "Tiempo medio"
+
+msgid "Average tries"
+msgstr "Intentos medios"
+
+msgid "Board may have moved"
+msgstr "Puede que el tablero se haya movido"
+
+msgid "Board may have moved — recognition paused"
+msgstr "Puede que el tablero se haya movido: reconocimiento en pausa"
+
+msgid "Board mismatch"
+msgstr "El tablero no coincide con la partida"
+
+msgid "Board restored"
+msgstr "Tablero restaurado según las indicaciones"
+
+msgid "Cached SGF no longer available"
+msgstr "El SGF en caché ya no está disponible"
+
+msgid "Calibration"
+msgstr "Calibración"
+
+msgid "Camera"
+msgstr "Cámara"
+
+msgid "Camera disconnected, switched to touch mode"
+msgstr "Cámara desconectada, se ha pasado al modo táctil"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Categories"
+msgstr "Tipos de problema"
+
+msgid "Challenge others · rated queue available"
+msgstr "Retar a otros · cola puntuable disponible"
+
+msgid "Chart"
+msgstr "Gráfico"
+
+msgid "Choose a way to start playing"
+msgstr "Elige una forma de empezar a jugar"
+
+msgid "Choose one category"
+msgstr "Elige un tipo de problema"
+
+msgid "Confirm"
+msgstr "Confirmar la jugada"
+
+msgid "Confirm resign?"
+msgstr "¿Confirmas el abandono?"
+
+msgid "Confirm result"
+msgstr "Confirmar el resultado"
+
+msgid "Confirming…"
+msgstr "Confirmando…"
+
+msgid "Connected · goes to the lobby"
+msgstr "Conectado · va a la sala"
+
+msgid "Connected · plays the engine"
+msgstr "Conectado · juega contra el motor"
+
+msgid "Continue"
+msgstr "Continuar"
+
+msgid "Continue anyway"
+msgstr "Continuar igualmente"
+
+msgid "Continue on screen"
+msgstr "Seguir jugando en pantalla"
+
+msgid "Continue practicing"
+msgstr "Seguir practicando"
+
+msgid "Cross-Platform"
+msgstr "Juego multiplataforma"
+
+msgid "Cross-Platform Play"
+msgstr "Juego multiplataforma"
+
+msgid "Difficulty"
+msgstr "Dificultad"
+
+msgid "Ended"
+msgstr "Terminada"
+
+msgid "Enter Live"
+msgstr "Entrar en el directo"
+
+msgid "Every game played, with its review report"
+msgstr "Cada partida jugada, con su informe de análisis"
+
+msgid "Exit"
+msgstr "Salir"
+
+msgid "Failed to read file"
+msgstr "No se ha podido leer el archivo"
+
+msgid "Failed to start game"
+msgstr "No se ha podido crear la partida"
+
+msgid "Focused training"
+msgstr "Entrenamiento específico"
+
+msgid "Game in progress. Resign and exit?"
+msgstr "Partida en curso. ¿Abandonar y salir?"
+
+msgid "Geometry locked"
+msgstr "Geometría bloqueada"
+
+msgid "Guest"
+msgstr "Invitado"
+
+msgid "Hide Hint"
+msgstr "Ocultar la pista"
+
+msgid "Hint"
+msgstr "Pista"
+
+msgid "Hints"
+msgstr "Sugerencias de la IA"
+
+msgid "Hint failed"
+msgstr "La sugerencia ha fallado, inténtalo más tarde"
+
+msgid "Hint is not enabled"
+msgstr "Las sugerencias no están activadas"
+
+msgid "History"
+msgstr "Historial"
+
+msgid "Ignore"
+msgstr "Ignorar"
+
+msgid "Import SGF"
+msgstr "Importar una partida"
+
+msgid "Insufficient balance"
+msgstr "Saldo insuficiente"
+
+msgid "Judged on placement"
+msgstr "Se juzga al colocar"
+
+msgid "Judged on placement · a wrong move is taken straight back"
+msgstr "Se juzga al colocar · una jugada errónea se deshace al momento"
+
+msgid "Keep waiting"
+msgstr "Seguir esperando"
+
+msgid "Load more"
+msgstr "Cargar más"
+
+msgid "Loading"
+msgstr "Cargando..."
+
+msgid "Loading…"
+msgstr "Cargando…"
+
+msgid "Loading categories…"
+msgstr "Cargando tipos de problema…"
+
+msgid "Loading problem set…"
+msgstr "Cargando el banco de problemas…"
+
+msgid "Logging in..."
+msgstr "Iniciando sesión..."
+
+msgid "Login failed"
+msgstr "Error al iniciar sesión"
+
+msgid ""
+"Mix all categories at this level and group every 20 problems into a unit"
+msgstr ""
+"Mezcla todos los tipos de este nivel y agrupa cada 20 problemas en una "
+"unidad"
+
+msgid "Mix all categories at this level in 20-problem units"
+msgstr "Todos los tipos de este nivel mezclados, 20 problemas por unidad"
+
+msgid "Mixed"
+msgstr "Mixto"
+
+msgid "Mixed categories"
+msgstr "Tipos mezclados"
+
+msgid "Mixed training"
+msgstr "Entrenamiento mixto"
+
+msgid "Next up"
+msgstr "Siguiente"
+
+msgid "No 19×19 records found"
+msgstr "No se han encontrado partidas de 19×19"
+
+msgid "No categories at this level yet"
+msgstr "Este nivel aún no tiene tipos de problema"
+
+msgid "No live matches"
+msgstr "No hay partidas en directo"
+
+msgid "No problems for this level"
+msgstr "No hay problemas para este nivel"
+
+msgid "No problems in this category yet"
+msgstr "Este tipo aún no tiene problemas"
+
+msgid "No such unit"
+msgstr "No existe esa unidad"
+
+msgid "Not a valid SGF file"
+msgstr "No es un archivo SGF válido"
+
+msgid "Not attempted"
+msgstr "Sin intentar"
+
+msgid "Not available in ranked games"
+msgstr "No disponible en partidas puntuables"
+
+msgid "Not calibrated"
+msgstr "Sin calibrar"
+
+msgid "Not signed in"
+msgstr "Sin iniciar sesión"
+
+msgid "Not wired up yet"
+msgstr "Aún sin conectar"
+
+msgid "Now Live"
+msgstr "En directo"
+
+msgid "Online Lobby"
+msgstr "Sala en línea"
+
+msgid "Only the ones I got wrong"
+msgstr "Solo los fallados"
+
+msgid "Other practice"
+msgstr "Otras prácticas"
+
+msgid "Other sets"
+msgstr "Otro conjunto"
+
+msgid "Password"
+msgstr "Contraseña"
+
+msgid "Username"
+msgstr "Usuario"
+
+msgid "Physical board out of sync"
+msgstr "El tablero físico lleva tiempo sin seguir la partida"
+
+msgid "Pick the strength yourself · form estimate available"
+msgstr "Elige tú la fuerza · con estimación de la posición"
+
+msgid "Place / remove the lit stones, then confirm — or continue on screen."
+msgstr ""
+"Coloca (rojo/verde) o retira (azul) las piedras iluminadas y confirma, o "
+"sigue en pantalla."
+
+msgid "Place these stones"
+msgstr "Coloca estas piedras (rojo / verde)"
+
+msgid "Remove these stones"
+msgstr "Retira estas piedras (azul)"
+
+msgid "Play vs AI"
+msgstr "Jugar contra la IA"
+
+msgid "Play vs Human"
+msgstr "Jugar contra una persona"
+
+msgid "Please place the AI stone at the lit point first"
+msgstr "Coloca primero la piedra de la IA en el punto iluminado"
+
+msgid "Possible move detected at"
+msgstr "Posible jugada detectada en"
+
+msgid "Problem set unavailable"
+msgstr "El banco de problemas no está disponible"
+
+msgid "Problems per unit · current"
+msgstr "Problemas por unidad · actual"
+
+msgid "Re-align board"
+msgstr "Volver a alinear el tablero"
+
+msgid "Re-align failed — try again"
+msgstr "No se ha podido alinear: inténtalo de nuevo"
+
+msgid "Re-sync failed, please retry"
+msgstr "No se ha podido resincronizar el reconocimiento, inténtalo de nuevo"
+
+msgid "Recalibrate"
+msgstr "Recalibrar"
+
+msgid "Recalibrate board"
+msgstr "Recalibrar el tablero"
+
+msgid "Recent"
+msgstr "Reciente"
+
+msgid "Redo the ones you got wrong in this category"
+msgstr "Rehacer los fallados de este tipo"
+
+msgid "Register / Sign in"
+msgstr "Registrarse / iniciar sesión"
+
+msgid "Reset"
+msgstr "Volver a colocar"
+
+msgid "Resign failed, retry"
+msgstr "No se ha podido abandonar, inténtalo de nuevo"
+
+msgid "Resume"
+msgstr "Reanudar"
+
+msgid "Resume last game"
+msgstr "Continuar la última partida"
+
+msgid "Score"
+msgstr "Contar"
+
+msgid "Search players, events..."
+msgstr "Buscar jugadores, torneos..."
+
+msgid "Select a match"
+msgstr "Selecciona una partida"
+
+msgid "Select category"
+msgstr "Selecciona un tipo"
+
+msgid "Select or import a game to begin"
+msgstr "Selecciona o importa una partida para empezar"
+
+msgid "Sign out"
+msgstr "Cerrar sesión"
+
+msgid "Signed in"
+msgstr "Sesión iniciada"
+
+msgid "Solved"
+msgstr "Correcto"
+
+msgid "Solved in this unit"
+msgstr "Acertados en esta unidad"
+
+msgid "Start"
+msgstr "Empezar"
+
+msgid "Start placing"
+msgstr "Empezar a reproducir"
+
+msgid "Stone Placement"
+msgstr "Reproducir en el tablero"
+
+msgid "StellaBox account"
+msgstr "Cuenta StellaBox"
+
+msgid "Tap to connect"
+msgstr "Toca para iniciar sesión"
+
+msgid "Tier picked from your strength · analysis sealed throughout"
+msgstr "Nivel asignado según tu fuerza · análisis desactivado"
+
+msgid "Time"
+msgstr "Tiempo"
+
+msgid "To place"
+msgstr "Por colocar"
+
+msgid "To remove"
+msgstr "Por retirar"
+
+msgid "Today we practice {what}"
+msgstr "Hoy practicamos {what}"
+
+msgid "what"
+msgstr "algo"
+
+msgid "Top Matches"
+msgstr "Partidas destacadas"
+
+msgid "Try"
+msgstr "Probar"
+
+msgid "Try a different search, or import an SGF file."
+msgstr "Prueba otra búsqueda o importa un archivo SGF."
+
+msgid "Two players on the same physical board"
+msgstr "Dos jugadores en el mismo tablero físico"
+
+msgid "Units"
+msgstr "Unidades"
+
+msgid "Upcoming"
+msgstr "Próximamente"
+
+msgid "Wrong"
+msgstr "Fallados"
+
+msgid "You are here"
+msgstr "Estás aquí"
+
+msgid "game:count_failed_retry"
+msgstr "El conteo no se ha completado, inténtalo más tarde"
+
+msgid "min"
+msgstr "min"
+
+msgid "sec"
+msgstr "s"
+
+msgid "problems count"
+msgstr "problemas"
+
+msgid "score"
+msgstr "diferencia de puntos"
+
+msgid "winrate"
+msgstr "probabilidad de victoria"
+
+msgid "{item} exhausted"
+msgstr "{item} agotado"
+
+msgid ""
+"{item} quota is insufficient — please recharge in the Golaxy app; this "
+"terminal cannot recharge for you."
+msgstr ""
+"No hay suficiente {item}: recarga en la app de Golaxy; este terminal no "
+"puede hacerlo por ti."
+
+msgid "Close"
+msgstr "Cerrar"

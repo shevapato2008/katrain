@@ -1,15 +1,15 @@
-"""开局设置三屏(自由 / 升降级 / 本地)的每一个界面字符串,11 个语种都要有真译文。
+"""**整个 kiosk** 的每一个界面字符串,11 个语种都要有真译文。
 
-## 这条闸为什么只圈这三屏
+## 这条闸在守什么
 
-`t(key, '中文默认')` 这个写法在 kiosk 里是**普遍**的:整个 `src/kiosk` 有 1174 个 key,
-其中 959 个在 `en.po` 里根本不存在 —— 也就是说,用户在设置里把语言切成韩文,
-屏上绝大多数字仍然是中文(`i18n.t()` 查不到就回退到第二个参数,而第二个参数是中文)。
+`t(key, '中文默认')` 查不到就回退到第二个参数 —— 而第二个参数**是中文**。
+所以一个没进 `.po` 的 key,在韩文界面上**不会报错、不会显示 msgid**,
+它会安静地显示中文。屏上每个字都在,只是语言不对 ——
+读代码看不出来,跑单测也看不出来(jsdom 里翻译表没加载,`t()` 恒返回默认值)。
 
-那 959 个不是这一轮造的,也不是这一轮能还的。**闸圈在这一轮真的补完的那一块上**:
-三屏 + 它们共用的那套件。圈大了它今天就报 800 多条,报一次就会长出白名单,
-从此谁也不看它 —— 那样还不如没有。剩下的欠账记在
-`superpowers/tracks/kiosk-go-play-ai/r2-setup-acceptance.md` §7。
+2026-09-21 第一次量:`src/kiosk` 1174 个 key,其中 **959 个**在 `en.po` 里根本不存在。
+先补掉开局设置三屏的 96 个,闸只圈那三屏;同日把剩下的 872 个也补完,
+闸随之放宽到**全树**。
 
 ## 判据为什么是「非空 **且** 没有 TODO」
 
@@ -27,13 +27,16 @@ import pytest
 REPO = Path(__file__).resolve().parents[2]
 UI = REPO / "katrain" / "web" / "ui" / "src" / "kiosk"
 
-# 本轮重画的三屏 + 它们共用的那套件。**只有这些**,见上面的 docstring。
-SOURCES = [
-    UI / "utils" / "setupOptions.ts",
-    UI / "pages" / "AiSetupPage.tsx",
-    UI / "pages" / "PvpLocalSetupPage.tsx",
-    *sorted((UI / "components" / "setup").glob("*.ts*")),
-]
+def _sources() -> list[Path]:
+    """`src/kiosk` 下的全部源码,**排除测试**。
+
+    测试文件里也有 `t('x','中文')` 形状的字面量(断言用的期望值),
+    它们不上屏,不该要求进 `.po`。
+    """
+    return sorted(
+        p for p in UI.rglob("*")
+        if p.suffix in (".ts", ".tsx") and "__tests__" not in p.parts and ".test." not in p.name
+    )
 
 LANGS = ["en", "cn", "tw", "jp", "ko", "de", "es", "fr", "ru", "tr", "ua"]
 
@@ -52,9 +55,17 @@ def _strip_comments(src: str) -> str:
 
 
 def _keys() -> list[str]:
+    """上屏的 key。
+
+    **判据和 `kiosk-shell-contract.spec.ts` 闸四同一条**:默认值是中文的一定算;
+    默认值不是中文时,只有 key 本身像 msgid(大写开头,或带命名空间冒号)才算 ——
+    这样排除掉 `foo('a','b')` 这种碰巧同形的普通两参调用。
+    """
     out: set[str] = set()
-    for path in SOURCES:
-        out |= {k for k, _ in _CALL.findall(_strip_comments(path.read_text(encoding="utf-8")))}
+    for path in _sources():
+        for key, default in _CALL.findall(_strip_comments(path.read_text(encoding="utf-8"))):
+            if re.search(r"[\u4e00-\u9fff]", default) or key[:1].isupper() or ":" in key:
+                out.add(key)
     return sorted(out)
 
 
@@ -64,17 +75,17 @@ def test_the_gate_can_read_its_operands():
     三屏加上共用件,`t()` 调用是**几十条**级别。读出个位数一定是正则和源码对不上
     (例如有人把 `t('x', 'y')` 换成了别的写法),那时候这条闸会假绿。
     """
-    for path in SOURCES:
-        assert path.exists(), f"{path} 不在了 —— 文件挪了地方,这条闸要跟着改,不是删掉"
+    assert UI.is_dir(), f"{UI} 不在了 —— 目录挪了地方,这条闸要跟着改,不是删掉"
+    assert len(_sources()) >= 100, f"只扫到 {len(_sources())} 个源码文件,路径对不上了"
     keys = _keys()
-    assert len(keys) >= 100, f"只读出 {len(keys)} 个 key,正则和源码对不上了"
-    # 三屏各自的命名空间都要出现,少一个说明漏掉了整整一屏
-    for ns in ("setup:", "ladder:", "local:"):
+    assert len(keys) >= 900, f"只读出 {len(keys)} 个 key,正则和源码对不上了"
+    # 每一屏都要有代表,少一族说明漏掉了整块
+    for ns in ("setup:", "ladder:", "local:", "game:", "tsumego:", "kifu:", "review:", "platform:"):
         assert any(k.startswith(ns) for k in keys), f"一个 {ns} 的 key 都没读到"
 
 
 @pytest.mark.parametrize("lang", LANGS)
-def test_every_setup_string_is_really_translated(lang):
+def test_every_kiosk_string_is_really_translated(lang):
     catalog = {e.msgid: e for e in polib.pofile(str(REPO / "katrain" / "i18n" / "locales" / lang / "LC_MESSAGES" / "katrain.po"))}
     missing, untranslated = [], []
     for key in _keys():
@@ -84,7 +95,7 @@ def test_every_setup_string_is_really_translated(lang):
         elif "TODO" in (entry.comment or ""):
             untranslated.append(key)
     assert not missing, (
-        f"{lang}.po 里没有这些开局设置的 key:{missing}\n"
+        f"{lang}.po 里没有这些 kiosk 的 key(共 {len(missing)} 个,先列 20 个):{missing[:20]}\n"
         f"屏上会回退到 `t()` 的第二个参数 —— 那是**中文**,所以 {lang} 用户看到的是中文。\n"
         f"补法:把它们加进 `scripts/batch_translate_galaxy.py` 的 GALAXY_TRANSLATIONS,"
         f"跑一遍那个脚本,再跑 `python i18n.py`。"

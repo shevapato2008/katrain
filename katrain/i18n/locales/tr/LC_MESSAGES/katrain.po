@@ -1123,9 +1123,8 @@ msgstr "Game End Sound"
 msgid "Pass"
 msgstr "Pass"
 
-#. TODO
 msgid "Close"
-msgstr "Close"
+msgstr "Kapat"
 
 #. TODO
 msgid "Best"
@@ -2342,10 +2341,10 @@ msgid "result:draw"
 msgstr "Berabere"
 
 msgid "result:points_zi"
-msgstr ""
+msgstr "taş"
 
 msgid "result:points_moku"
-msgstr ""
+msgstr "puan"
 
 msgid "COUNT"
 msgstr "Say"
@@ -3972,3 +3971,2710 @@ msgstr "Oyun sonlandırılamadı, lütfen tekrar deneyin"
 
 msgid "Retry failed, please try again later"
 msgstr "Yeniden deneme başarısız, lütfen daha sonra deneyin"
+
+msgid "ladder:board_preview"
+msgstr "Başlangıç konumu önizlemesi: boş tahta"
+
+msgid "play:title"
+msgstr "Oyna"
+
+msgid "login:box_gate_title"
+msgstr "Lütfen StellaBox ana ekranından giriş yapın"
+
+msgid "login:box_gate_cta"
+msgstr "StellaBox ana ekranına git"
+
+msgid "vision:back_settings"
+msgstr "Ayarlar"
+
+msgid "vision:board_lost_hint"
+msgstr ""
+"Kameranın kapalı olup olmadığını ve tahtanın oynayıp oynamadığını kontrol "
+"edin; oynadıysa yeniden kalibre edin"
+
+msgid "vision:calibrate_title"
+msgstr "Tahta kalibrasyonu"
+
+msgid "vision:calibrate_sub"
+msgstr "Önce tahtayı boşaltın · 13 nokta: 4 köşe + 9 yıldız"
+
+msgid "vision:cancel_calibration"
+msgstr "Kalibrasyonu iptal et"
+
+msgid "vision:reuse_calibration"
+msgstr "Son kalibrasyonu kullan"
+
+msgid "vision:camera_down"
+msgstr "Kamera bağlı değil · dokunmatiğe geçildi"
+
+msgid "vision:led_down"
+msgstr "LED bağlı değil · ışıklı yönlendirme yok"
+
+msgid "vision:pose_lost"
+msgstr "Kalibrasyon kayboldu · yeniden kalibre edin"
+
+msgid "grade:tabs"
+msgstr "Hamle değerlendirmesi"
+
+msgid "grade:fold_title"
+msgstr "Hamle değerlendirmesi · 7 kademe"
+
+msgid "grade:match_other"
+msgstr "Diğer"
+
+msgid "grade:axis_points_lost_short"
+msgstr "Kayıp · puan"
+
+msgid "grade:pick_hint"
+msgstr "Grafikteki bir hamleye dokunarak ayrıntıyı görün"
+
+msgid "grade:summary"
+msgstr "Parlak {a} · Kötü {b}"
+
+msgid "grade:sel_bad"
+msgstr "Hamle {n} {m} · {s} · {g} · {x} puan kayıp"
+
+msgid "grade:sel_brilliant"
+msgstr ""
+"Hamle {n} {m} · {s} · parlaklık {k} — motorun kendi ilk tercihi, ama ona "
+"yalnızca %{p} öncül verdi (ne kadar düşükse o kadar parlak)"
+
+msgid "grade:truncated_plot"
+msgstr "Her taraf için en çok {k} tanesi çizilir; {n} tanesi gösterilmez"
+
+msgid "setup:this_game"
+msgstr "Bu oyun şöyle olacak"
+
+msgid "setup:board_preview_handicap"
+msgstr "Başlangıç konumu önizlemesi: {n} avans taşı"
+
+msgid "setup:chinese_rules"
+msgstr "Çin kuralları"
+
+msgid "setup:even"
+msgstr "Denk"
+
+msgid "setup:handicap"
+msgstr "Avans"
+
+msgid "setup:handicap_n"
+msgstr "{n} taş"
+
+msgid "setup:handicap_less"
+msgstr "Bir taş az"
+
+msgid "setup:handicap_more"
+msgstr "Bir taş fazla"
+
+msgid "setup:input"
+msgstr "Hamleler nasıl oynanır"
+
+msgid "setup:my_side"
+msgstr "Benim rengim"
+
+msgid "setup:take_black"
+msgstr "Siyahı al"
+
+msgid "setup:take_white"
+msgstr "Beyazı al"
+
+msgid "setup:no_camera_hint"
+msgstr "Bu cihazda kalibre kamera yok, gerçek tahta şu an kullanılamaz"
+
+msgid "report:clear_variation"
+msgstr "Varyantı temizle"
+
+msgid "report:file_read_failed"
+msgstr "Dosya okunamadı, lütfen tekrar deneyin."
+
+msgid "report:import_options"
+msgstr "İçe aktarma yöntemi"
+
+msgid "report:invalid_sgf"
+msgstr "SGF ayrıştırılamadı, içeriği kontrol edin."
+
+msgid "report:library_load_failed"
+msgstr "Kayıtlar yüklenemedi, lütfen tekrar deneyin."
+
+msgid "report:loading_detail"
+msgstr "İnceleme yükleniyor"
+
+msgid "report:not_found"
+msgstr "İnceleme bulunamadı."
+
+msgid "report:preview_failed"
+msgstr "Kayıt önizlemesi yüklenemedi"
+
+msgid "report:reload"
+msgstr "Yeniden yükle"
+
+msgid "report:retry_load"
+msgstr "Yüklemeyi yeniden dene"
+
+msgid "report:retrying"
+msgstr "Yeniden deneniyor…"
+
+msgid "report:search_library"
+msgstr "Kayıt kitaplığında ara"
+
+msgid "report:sgf_content"
+msgstr "SGF içeriği"
+
+msgid "report:title_optional"
+msgstr "Başlık (isteğe bağlı)"
+
+msgid "report:unknown_type"
+msgstr "Tür bilinmiyor"
+
+msgid "report:variation_preview"
+msgstr "Varyant önizlemesi · kapatmak için tahtaya dokunun"
+
+msgid "live:title"
+msgstr "Canlı"
+
+msgid "live:ai"
+msgstr "Yapay zekâ önerileri"
+
+msgid "live:ai_note_a"
+msgstr "Yapay zekâ önerileri "
+
+msgid "live:ai_note_b"
+msgstr "bu kutunun içindeki KataGo tarafından şimdi hesaplandı"
+
+msgid "live:ai_note_c"
+msgstr " — oyuncuların gördükleriyle ilgisi yoktur."
+
+msgid "live:as_black"
+msgstr "Siyah"
+
+msgid "live:as_white"
+msgstr "Beyaz"
+
+msgid "live:back_kifu"
+msgstr "Kayıtlar"
+
+msgid "live:black_wr"
+msgstr "Siyah %{v}"
+
+msgid "live:ended"
+msgstr "Bitti"
+
+msgid "live:follow"
+msgstr "Son hamleyi takip et"
+
+msgid "live:load_failed"
+msgstr "Bu oyun yüklenemedi"
+
+msgid "live:loading"
+msgstr "Bu oyun yükleniyor"
+
+msgid "live:move_n"
+msgstr "Hamle {n}"
+
+msgid "live:moves_title"
+msgstr "Hamleler · yayınla birlikte uzar"
+
+msgid "live:no_moves"
+msgstr "Bu oyunda henüz hamle yok"
+
+msgid "live:no_ownership"
+msgstr "Bu hamlenin konumu henüz hesaplanmadı"
+
+msgid "live:pagebar_sub"
+msgstr "Kaynak: {src} · hamle {n}"
+
+msgid "live:played"
+msgstr "Oynandı"
+
+msgid "live:show"
+msgstr "Göster"
+
+msgid "live:thinking"
+msgstr "Düşünüyor"
+
+msgid "live:toggle_numbers"
+msgstr "Hamle numaraları"
+
+msgid "live:toggle_territory"
+msgstr "Bölge"
+
+msgid "settings:nav_account"
+msgstr "Hesap ve platformlar"
+
+msgid "settings:nav_board"
+msgstr "Gerçek tahta"
+
+msgid "settings:nav_language"
+msgstr "Dil"
+
+msgid "settings:nav_move"
+msgstr "Hamleler ve ipuçları"
+
+msgid "settings:nav_sound"
+msgstr "Ses"
+
+msgid "settings:ui_language"
+msgstr "Arayüz dili"
+
+msgid "settings:language_sub"
+msgstr "Bu ayar ileride sistem ayarlarına taşınacak"
+
+msgid "settings:auto_advance_sub"
+msgstr "Antrenman kampında geçerli · fabrikada açık"
+
+msgid "settings:board_secval"
+msgstr "Kamera · kalibrasyon · LED"
+
+msgid "settings:box_account_owned_by_home"
+msgstr "StellaBox hesabı, tüm kutuda ortak"
+
+msgid "settings:box_account_sub"
+msgstr ""
+"Giriş yapmadan da kullanılır, sonuçlar bu kutuda kalır; giriş yalnızca başka"
+" makineye taşımak içindir"
+
+msgid "settings:guest_sub"
+msgstr "Bu kutudaki yerel profil"
+
+msgid "settings:switch_account_at_home"
+msgstr "Hesabı ana ekrandan değiştirin"
+
+msgid "settings:sign_in"
+msgstr "Giriş yap"
+
+msgid "settings:platforms"
+msgstr "Platform hesapları"
+
+msgid "settings:platforms_sub"
+msgstr "Her platform farklı alanlar ister — platformlar arası oyunda bağlayın"
+
+msgid "settings:go_connect"
+msgstr "Bağlan"
+
+msgid "settings:calibrated"
+msgstr "Bu açılışta kalibre edildi"
+
+msgid "settings:not_calibrated"
+msgstr "Henüz kalibre edilmedi"
+
+msgid "settings:start_calib"
+msgstr "Kalibrasyonu başlat"
+
+msgid "settings:ready"
+msgstr "Hazır"
+
+msgid "settings:not_ready"
+msgstr "Bağlı değil"
+
+msgid "settings:on"
+msgstr "Açık"
+
+msgid "settings:off"
+msgstr "Kapalı"
+
+msgid "research:actions"
+msgstr "Araştırma işlemleri"
+
+msgid "research:move_title"
+msgstr "Araştırma · hamle {n}"
+
+msgid "research:ai_after_move"
+msgstr "Yapay zekâ önerileri · {n}. hamleden sonra"
+
+msgid "research:analysis_failed"
+msgstr "Bu hamle analiz edilemedi"
+
+msgid "research:analyzed_moves"
+msgstr "Analiz edilen hamle"
+
+msgid "research:analyzing_move"
+msgstr "Bu hamle analiz ediliyor"
+
+msgid "research:cancel_scan"
+msgstr "Analizi iptal et"
+
+msgid "research:clear_confirm_title"
+msgstr "Tüm tahta temizlensin mi?"
+
+msgid "research:clear_confirm_msg"
+msgstr "Tahtadaki {n} hamlenin tamamı silinir ve bu geri alınamaz."
+
+msgid "research:eta_label"
+msgstr "Tahmini kalan"
+
+msgid "research:from_kifu"
+msgstr "Kayıt kitaplığı"
+
+msgid "research:from_last_game"
+msgstr "Az önce bitirdiğim oyun"
+
+msgid "research:from_my_games"
+msgstr "Oyunlarım"
+
+msgid "research:full_scan"
+msgstr "Tüm oyunun analizi"
+
+msgid "research:no_candidates"
+msgstr "Yapay zekâ aday hamle vermedi"
+
+msgid "research:only_19_supported"
+msgstr "Yalnızca 19x19 destekleniyor; 19x19 olarak yüklendi"
+
+msgid "research:progress_lost"
+msgstr ""
+"Analiz ilerlemesi art arda beş kez okunamadı — bağlantı kopmuş olabilir"
+
+msgid "research:rescan"
+msgstr "Yeniden analiz et"
+
+msgid "research:retry_analysis"
+msgstr "Analizi yeniden dene"
+
+msgid "research:scan_broke"
+msgstr "Tüm oyun analizi tamamlanmadı"
+
+msgid "research:scan_cost"
+msgstr "Toplam {n} hamle · hamle başına 500 ziyaret"
+
+msgid "research:scan_failed"
+msgstr "Analiz başlatılamadı, lütfen tekrar deneyin"
+
+msgid "research:scan_freeze"
+msgstr "Bitene kadar tahta kilitli; istediğiniz an iptal edebilirsiniz"
+
+msgid "research:scan_go"
+msgstr "Analize başla"
+
+msgid "research:session_failed"
+msgstr "Araştırma oturumu oluşturulamadı, lütfen tekrar deneyin"
+
+msgid "research:user_game_failed"
+msgstr "Bu oyun okunamadı"
+
+msgid "growth:rank_title"
+msgstr "Bu kutudaki derece"
+
+msgid "growth:rank_unknown"
+msgstr "—"
+
+msgid "growth:rank_unplaced"
+msgstr "Derecesiz"
+
+msgid "growth:no_data"
+msgstr "—"
+
+msgid "growth:cell_placement"
+msgstr "Yerleştirme oyunları"
+
+msgid "growth:metric_placement"
+msgstr "Yerleştirme oyunları"
+
+msgid "growth:placement_done"
+msgstr "Tamamlandı"
+
+msgid "growth:cell_solved"
+msgstr "Çözülen problemler"
+
+msgid "growth:metric_net"
+msgstr "Net puan"
+
+msgid "growth:stat_ranked"
+msgstr "Dereceli oyunlar · toplam"
+
+msgid "growth:stat_recent"
+msgstr "Son 30 gündeki oyunlar"
+
+msgid "growth:stat_solved"
+msgstr "Toplam çözülen problem"
+
+msgid "growth:stat_winrate"
+msgstr "Dereceli kazanma oranı · son 30 gün"
+
+msgid "growth:summary_failed"
+msgstr ""
+"Bu sayılar alınamadı — hiç oynamadığınız anlamına gelmez. Daha sonra tekrar "
+"bakın."
+
+msgid "growth:rules_title"
+msgstr "Yükselme ve düşme kuralı"
+
+msgid "growth:rule_up"
+msgstr "Net +3 galibiyet bir kademe yükseltir"
+
+msgid "growth:rule_down"
+msgstr "Net 3 yenilgi bir kademe düşürür"
+
+msgid "growth:rule_bounds"
+msgstr "Alt sınır 20 kyu · üst sınır «İnsan ötesi»"
+
+msgid "growth:rung_title"
+msgstr "Rakip gücüne göre"
+
+msgid "growth:rung_w"
+msgstr "{n} galibiyet"
+
+msgid "growth:rung_l"
+msgstr "{n} yenilgi"
+
+msgid "growth:rung_empty_h"
+msgstr "Henüz sonuç yok"
+
+msgid "growth:rung_empty_p"
+msgstr ""
+"Oyun ayarlarındaki kaydırıcı rakibin gücünü seçer, sizin derecenizi değil. "
+"Yalnızca gerçekten oynadığınız kademeler listelenir; 0–0 satırları yoktur."
+
+msgid "growth:diag_title"
+msgstr "Yetenek teşhisi"
+
+msgid "growth:diag_wip"
+msgstr "Arka uç hazır · arayüz bağlı değil"
+
+msgid "growth:diag_empty_h"
+msgstr "Örneklemde 0 oyun"
+
+msgid "growth:diag_empty_p"
+msgstr ""
+"Teşhis, raporu çıkmış oyunlardan hesaplanır — raporlar arka uçta var, arayüz"
+" henüz okumuyor (inceleme ekranına bakın). 30 oyunun altında sonuç oynar, bu"
+" yüzden örneklem büyüklüğü de yazılır."
+
+msgid "growth:local_note_a"
+msgstr "Bu sayılar "
+
+msgid "growth:local_note_b"
+msgstr "bu makinenin kendi kaydı"
+
+msgid "growth:local_note_c"
+msgstr ". Defter bulutta; bu kutudaki kopya birkaç oyun eksik olabilir."
+
+msgid "game:black"
+msgstr "Siyah"
+
+msgid "game:white"
+msgstr "Beyaz"
+
+msgid "game:plays_black"
+msgstr "siyah oynar"
+
+msgid "game:plays_white"
+msgstr "beyaz oynar"
+
+msgid "game:actions"
+msgstr "Oyun işlemleri"
+
+msgid "game:action_failed"
+msgstr "Bu işlem geçmedi, lütfen tekrar deneyin"
+
+msgid "game:back_to_play"
+msgstr "Oyuna dön"
+
+msgid "game:board_lines"
+msgstr "{n}x{n}"
+
+msgid "game:handicap_n"
+msgstr "{n} avans taşı"
+
+msgid "game:no_handicap"
+msgstr "Avanssız"
+
+msgid "game:points_unit"
+msgstr "puan"
+
+msgid "game:captures"
+msgstr "Esirler"
+
+msgid "game:display"
+msgstr "Görünüm"
+
+msgid "game:thinking"
+msgstr "Düşünüyor"
+
+msgid "game:played"
+msgstr "Oynandı"
+
+msgid "game:your_turn"
+msgstr "Sıra sizde"
+
+msgid "game:ended"
+msgstr "Oyun bitti"
+
+msgid "game:time_left"
+msgstr "Kalan"
+
+msgid "game:time_up"
+msgstr "Süre doldu"
+
+msgid "game:untimed"
+msgstr "Süresiz"
+
+msgid "game:byo_left"
+msgstr "Byoyomi · {n} kaldı"
+
+msgid "game:first_move"
+msgstr "İlk hamle"
+
+msgid "game:prev_move"
+msgstr "Önceki hamle"
+
+msgid "game:next_move"
+msgstr "Sonraki hamle"
+
+msgid "game:last_move"
+msgstr "Son hamle"
+
+msgid "game:moves_title"
+msgstr "Hamleler · kesişim koordinatları"
+
+msgid "game:no_moves"
+msgstr "Bu oyunda henüz hamle yok"
+
+msgid "game:online_pvp"
+msgstr "Çevrimiçi oyun"
+
+msgid "game:exit_game"
+msgstr "Oyundan çık"
+
+msgid "game:leave_keep_game"
+msgstr "Terk etmeden çık"
+
+msgid "game:resign_confirm_side"
+msgstr "{side} çekilsin mi?"
+
+msgid "game:exit_resign_confirm_side"
+msgstr "Oyun sürüyor — {side} çekilip çıksın mı?"
+
+msgid "game:count_game_over"
+msgstr "Bu oyun zaten bitti"
+
+msgid "game:count_min"
+msgstr "Sayım için en az {n} hamle gerekir"
+
+msgid "game:count_too_early"
+msgstr "Saymak için henüz yeterli hamle yok"
+
+msgid "game:count_not_your_turn"
+msgstr "Yalnızca kendi sıranızda sayabilirsiniz"
+
+msgid "game:count_position_changed"
+msgstr "Sayım sırasında konum değişti, lütfen yeniden sayın"
+
+msgid "game:count_no_score"
+msgstr "Konum analizi bitmedi, şimdilik sayılamaz — lütfen daha sonra deneyin"
+
+msgid "game:count_ranked_unscored"
+msgstr "Dereceli oyunlar şu an sayılamaz (bu oyunda konum analizi yok)"
+
+msgid "game:eval_title"
+msgstr "Kazanma oranı · KataGo yerel kanalı"
+
+msgid "game:eval_graph"
+msgstr "Bu oyunda kazanma oranı ve puan farkının seyri"
+
+msgid "game:eval_black_100"
+msgstr "Siyah 100"
+
+msgid "game:eval_white_100"
+msgstr "Beyaz 100"
+
+msgid "game:eval_black_lead"
+msgstr "Siyah +{n}"
+
+msgid "game:eval_white_lead"
+msgstr "Beyaz +{n}"
+
+msgid "game:golaxy_ai"
+msgstr "Golaxy · yapay zekâya karşı"
+
+msgid "game:golaxy_items"
+msgstr "Golaxy öğeleri · her basış birini harcar"
+
+msgid "game:golaxy_judge_hint"
+msgstr "Sayım yalnızca mevcut konumu gösterir; oyunu bitirmez"
+
+msgid "game:golaxy_engine_no_undo"
+msgstr "Golaxy robot oyunlarında hamle geri alma henüz desteklenmiyor"
+
+msgid "game:engine_ended_no_result"
+msgstr ""
+"Golaxy tanınmayan bir bitiş sinyali döndürdü · bu oyun kararsız bırakılır"
+
+msgid "game:connection_dropped"
+msgstr ""
+"Canlı bağlantı koptu, tahta kendiliğinden güncellenmeyecek. «Oyundan çık» → "
+"«Terk etmeden çık» deyip «Son oyuna devam et» ile geri dönün"
+
+msgid "game:recalibrate_needs_empty_board"
+msgstr ""
+"Yeniden kalibrasyon LED'leri yakar ve tahtadaki tüm taşların kaldırılmasını "
+"gerektirir. Tahta oynamadıysa «Yine de devam et»e dokunun"
+
+msgid "game:timeout_failed"
+msgstr "Süre aşımı kararı tamamlanmadı"
+
+msgid "game:timeout_not_delivered"
+msgstr ""
+"Süre aşımı kararı iletilemedi — bağlantıyı kontrol edip bu oyuna yeniden "
+"girin"
+
+msgid "game:unavailable_title"
+msgstr "Bu oyun artık açılamıyor"
+
+msgid "game:unavailable_reason"
+msgstr ""
+"Kutu yeniden başlatılmış, oyun uzun süre boş kaldığı için temizlenmiş ya da "
+"başka bir hesaba ait olabilir."
+
+msgid "lobby:hall_title"
+msgstr "Çevrimiçi lobi"
+
+msgid "lobby:hall_sub"
+msgstr "Diğer kutulardaki kişilerle oynayın · ya da izlemeye girin"
+
+msgid "lobby:loading"
+msgstr "Yükleniyor…"
+
+msgid "lobby:load_failed"
+msgstr "Lobiye ulaşılamadı — ağ ya da servis çalışmıyor"
+
+msgid "lobby:players"
+msgstr "Çevrimiçi oyuncular"
+
+msgid "lobby:online_count"
+msgstr "{n} çevrimiçi"
+
+msgid "lobby:games_count"
+msgstr "{n} oyun"
+
+msgid "lobby:no_players_now"
+msgstr "Şu an yalnızca siz çevrimiçisiniz"
+
+msgid "lobby:no_games_now"
+msgstr "Şu an kimse oynamıyor"
+
+msgid "lobby:idle"
+msgstr "Boşta"
+
+msgid "lobby:in_game"
+msgstr "Oyunda"
+
+msgid "lobby:this_is_you"
+msgstr "Bu sizsiniz"
+
+msgid "lobby:vs"
+msgstr "karşı"
+
+msgid "lobby:plays_black"
+msgstr "siyah oynar"
+
+msgid "lobby:plays_white"
+msgstr "beyaz oynar"
+
+msgid "lobby:move_no"
+msgstr "Hamle {n}"
+
+msgid "lobby:note_a"
+msgstr "Davet edebileceğiniz kişiler "
+
+msgid "lobby:note_b"
+msgstr ""
+"; oyunda olanlar davet edilemez. Solda süren oyunlar var — kendinizinkine "
+"dokunup geri dönebilirsiniz."
+
+msgid "lobby:match_mode"
+msgstr "Hangi türde eşleşme"
+
+msgid "lobby:mode_free"
+msgstr "Serbest oyun"
+
+msgid "lobby:mode_rated"
+msgstr "Dereceli maç"
+
+msgid "lobby:ladder_name"
+msgstr "Dereceli oyun"
+
+msgid "lobby:rated_why_a"
+msgstr "Dereceli maç için önce "
+
+msgid "lobby:rated_why_b"
+msgstr " 5 yerleştirme oyunu bitirmelisiniz — {n} tane kaldı."
+
+msgid "lobby:rated_why_b_unknown"
+msgstr " 5 yerleştirme oyunu bitirerek."
+
+msgid "lobby:start_match"
+msgstr "Eşleşmeyi başlat"
+
+msgid "lobby:cancel_match"
+msgstr "Eşleşmeyi iptal et"
+
+msgid "lobby:matching_title"
+msgstr "Rakip aranıyor"
+
+msgid "lobby:matching_lead_a"
+msgstr "Sunucu sizi "
+
+msgid "lobby:matching_lead_b"
+msgstr ""
+" kuyruğuna aldı — eşleşince oyun doğrudan başlar, ikinci bir onay yoktur."
+
+msgid "lobby:matching_tc_free"
+msgstr "Eşleşince başlar · derecesiz"
+
+msgid "lobby:matching_tc_rated"
+msgstr "Eşleşince başlar · dereceli"
+
+msgid "lobby:waited_a"
+msgstr "Bekleme "
+
+msgid "lobby:waited_b"
+msgstr " sn"
+
+msgid "lobby:invite_title"
+msgstr "{name} sizi bir oyuna davet ediyor"
+
+msgid "lobby:invite_kind"
+msgstr "Serbest oyun · derecesiz"
+
+msgid "lobby:invite_lead_a"
+msgstr "Kabul etmek oyunu hemen başlatır"
+
+msgid "lobby:invite_lead_b"
+msgstr "; davet eden siyah oynar."
+
+msgid "lobby:invite_no_decline"
+msgstr ""
+"Reddetmek yalnızca bu pencereyi kapatır — karşı taraf bir şey duymaz; davet "
+"2 dakika sonra geçersiz olur"
+
+msgid "lobby:invite_expired"
+msgstr ""
+"Bu davet süresi dolmuş ya da kullanılmış — tekrar davet etmelerini isteyin"
+
+msgid "lobby:accept_and_play"
+msgstr "Kabul et ve başla"
+
+msgid "lobby:need_login"
+msgstr "Giriş gerekli"
+
+msgid "lobby:gate_title"
+msgstr "Çevrimiçi lobiye girmek için giriş yapın"
+
+msgid "lobby:gate_why"
+msgstr ""
+"Lobi adınızı ve çevrimiçi durumunuzu diğer kutulardaki kişilere gönderir, bu"
+" yüzden hesap üzerinden çalışır. Misafirin hesabı yoktur, gösterilecek bir "
+"kimliği de olmaz."
+
+msgid "lobby:gate_fact_k"
+msgstr "Giriş yapınca"
+
+msgid "lobby:gate_fact_v"
+msgstr "diğerleri sizi listede görür ve davet edebilir"
+
+msgid "lobby:gate_fact_note"
+msgstr ""
+"Liste yalnızca şu an bağlı olanları gösterir: buradayken listedesiniz, "
+"çıkınca kaybolursunuz"
+
+msgid "lobby:gate_rule_a"
+msgstr "Giriş yalnızca bunu ilgilendirir."
+
+msgid "lobby:gate_rule_b"
+msgstr ""
+"Yapay zekâya karşı oyunlar, yerel oyunlar, antrenman kampı, incelemeler ve "
+"kayıtlar misafir olarak da çalışır."
+
+msgid "lobby:go_login"
+msgstr "Girişe git"
+
+msgid "baipu:title"
+msgstr "Tahtaya dizme"
+
+msgid "baipu:back_kifu"
+msgstr "Kayıtlar"
+
+msgid "baipu:actions"
+msgstr "Dizme işlemleri"
+
+msgid "baipu:black"
+msgstr "Siyah"
+
+msgid "baipu:white"
+msgstr "Beyaz"
+
+msgid "baipu:black_s"
+msgstr "S"
+
+msgid "baipu:white_s"
+msgstr "B"
+
+msgid "baipu:stones_unit"
+msgstr "taş"
+
+msgid "baipu:which_move"
+msgstr "Hamle numarası"
+
+msgid "baipu:board_label"
+msgstr "Dizme tahtası: daire, sıradaki taşın yerini gösterir"
+
+msgid "baipu:loading"
+msgstr "Bu kayıt yükleniyor"
+
+msgid "baipu:load_failed"
+msgstr "Bu kayıt okunamadı"
+
+msgid "baipu:no_sgf"
+msgstr "Bu kutuda o kayıt yok"
+
+msgid "baipu:no_moves"
+msgstr "Bu kayıtta hamle yok"
+
+msgid "baipu:pagebar_sub"
+msgstr "{n} hamlenin {i}. hamlesi · {f} kare alındı"
+
+msgid "baipu:place_at"
+msgstr "Sırada · {c}"
+
+msgid "baipu:place_none"
+msgstr "Bu adımda taş konmaz"
+
+msgid "baipu:pass"
+msgstr "Pas"
+
+msgid "baipu:led_on"
+msgstr "Işık yandı — {color} taşı yanan kesişime koyun"
+
+msgid "baipu:led_down"
+msgstr ""
+"Işık yanmıyor — sağ üstten yeniden yakın ya da {c} koordinatını kendiniz "
+"bulun"
+
+msgid "baipu:relight"
+msgstr "Yeniden yak"
+
+msgid "baipu:legend_black"
+msgstr "Kırmızı ışık = siyah taş koy"
+
+msgid "baipu:legend_white"
+msgstr "Yeşil ışık = beyaz taş koy"
+
+msgid "baipu:legend_remove"
+msgstr "Mavi ışık = bunu kaldır"
+
+msgid "baipu:cam_title"
+msgstr "Kamera · her hamlede bir kare"
+
+msgid "baipu:capture_off"
+msgstr "Bu makinede yakalama bağlı değil"
+
+msgid "baipu:capturing"
+msgstr "Fotoğraf çekiliyor, ellerinizi uzak tutun"
+
+msgid "baipu:capturing_hint"
+msgstr ""
+"Elin görüntüye girmesi bu hamlenin alınamaması demektir, yeniden yapılır."
+
+msgid "baipu:hands_off"
+msgstr "Ellerinizi tahtadan çekin"
+
+msgid "baipu:confirm"
+msgstr "Taşı onayla"
+
+msgid "baipu:confirm_done_reason"
+msgstr "Bu kayıt zaten sonuna kadar dizildi"
+
+msgid "baipu:failed_title"
+msgstr "Bu hamle alınamadı"
+
+msgid "baipu:failed_hint"
+msgstr "Taşı yerinde bırakın — «Taşı onayla»ya tekrar basın"
+
+msgid "baipu:failed_hint_geometry"
+msgstr ""
+"Tahta konumu artık uymuyor — ayarlardan yeniden kalibre edin; tekrar basmak "
+"işe yaramaz"
+
+msgid "baipu:frames_n"
+msgstr "{n} kare alındı"
+
+msgid "baipu:no_frame_yet"
+msgstr "Henüz kare kaydedilmedi"
+
+msgid "baipu:latest_saved"
+msgstr "Son kayıt {f}"
+
+msgid "baipu:removed_n"
+msgstr "Bu hamlede {n} taş esir alındı"
+
+msgid "baipu:removal_title"
+msgstr "Esir alınan {n} taşı kaldırın"
+
+msgid "baipu:removal_hint"
+msgstr ""
+"Mavi yananlar — esir taşları elle kaldırın, bitince «Kaldırıldı»ya basın"
+
+msgid "baipu:removed_done"
+msgstr "{n} taş kaldırıldı"
+
+msgid "baipu:moves_title"
+msgstr "Dizilmiş olanlar"
+
+msgid "baipu:moves_value"
+msgstr "{n} içinden {k}"
+
+msgid "baipu:undo"
+msgstr "Son hamleyi geri al"
+
+msgid "baipu:undo_ask"
+msgstr "Son hamle geri alınsın mı?"
+
+msgid "baipu:undo_body"
+msgstr ""
+"Önce az önce koyduğunuz taşı tahtadan alın (esir taşları geri koyun), sonra "
+"«Geri alındı»ya basın."
+
+msgid "baipu:undo_done"
+msgstr "Geri alındı"
+
+msgid "baipu:undo_reason"
+msgstr "İlk taş henüz konmadı"
+
+msgid "baipu:finish"
+msgstr "Bitir"
+
+msgid "baipu:finish_reason"
+msgstr "Dizilecek {n} hamle kaldı"
+
+msgid "baipu:done_title"
+msgstr "Bu kayıt tamamen dizildi"
+
+msgid "baipu:done_hint"
+msgstr "Toplam {n} hamle · {f} kare alındı"
+
+msgid "baipu:restart"
+msgstr "Baştan diz"
+
+msgid "baipu:resume"
+msgstr "Dizmeye devam et"
+
+msgid "baipu:resume_ask"
+msgstr "Geçen seferden devam edilsin mi?"
+
+msgid "baipu:resume_body"
+msgstr ""
+"Geçen sefer {n}. hamleye gelmiştiniz. Baştan başlamak alınmış kareleri "
+"üzerine yazar."
+
+msgid "baipu:exit"
+msgstr "Çık"
+
+msgid "baipu:exit_ask"
+msgstr "Dizmeden çıkılsın mı?"
+
+msgid "baipu:exit_body"
+msgstr "İlerlemeniz kaydedildi — döndüğünüzde devam edebilirsiniz."
+
+msgid "baipu:drift_corrected"
+msgstr "Tahta oynadı; otomatik düzeltildi"
+
+msgid "baipu:drift_frozen"
+msgstr "Geometri düzeltilmedi"
+
+msgid "baipu:drift_stale"
+msgstr "Bu kare yeniden düzeltilemedi, önceki geometri kullanıldı"
+
+msgid "baipu:drift_word_corrected"
+msgstr "Düzeltildi"
+
+msgid "baipu:drift_word_frozen"
+msgstr "Düzeltilmedi"
+
+msgid "baipu:drift_word_stale"
+msgstr "Öncekine devam"
+
+msgid "tsumego:loadingTitle"
+msgstr "Problemler"
+
+msgid "tsumego:actions"
+msgstr "Problem işlemleri"
+
+msgid "tsumego:allProblems"
+msgstr "Tüm problemler"
+
+msgid "tsumego:autoAdvance"
+msgstr "Doğru cevaptan sonra sonraki probleme geç"
+
+msgid "tsumego:backToUnit"
+msgstr "Üniteye dön"
+
+msgid "tsumego:backToWrong"
+msgstr "Yanlışlara dön"
+
+msgid "tsumego:bankEmpty"
+msgstr "Problem bankasında henüz problem yok"
+
+msgid "tsumego:category_unit"
+msgstr "tür"
+
+msgid "tsumego:chooseByLevel"
+msgstr "Güce göre seç"
+
+msgid "tsumego:cloudUnreachable"
+msgstr "Bulut problem bankasına ulaşılamıyor"
+
+msgid "tsumego:cloudUnreachableBody"
+msgstr ""
+"Problem bankası bulutta; kutuda hiçbir şey saklanmaz. Ağ ya da bulut geri "
+"gelince yeniden deneyin."
+
+msgid "tsumego:cloudUnreachableBodyNoRetry"
+msgstr ""
+"Problem bankası bulutta; kutuda hiçbir şey saklanmaz. Ağ ya da bulut gelince"
+" geri dönüp yeniden girin."
+
+msgid "tsumego:kyuRanks"
+msgstr "Kyu"
+
+msgid "tsumego:danRanks"
+msgstr "Dan"
+
+msgid "tsumego:rankBoundary"
+msgstr "Kyu ile dan sınırı"
+
+msgid "tsumego:dao"
+msgstr "problem"
+
+msgid "tsumego:levelsUnit"
+msgstr "kademe"
+
+msgid "tsumego:goCalibrate"
+msgstr "Kalibrasyona git"
+
+msgid "tsumego:greetSub"
+msgstr "Oynar oynamaz değerlendirilir — yanlış hamle anında geri alınır"
+
+msgid "tsumego:isFirst"
+msgstr "Bu ilk problem"
+
+msgid "tsumego:lastTimeShort"
+msgstr "Geçen sefer"
+
+msgid "tsumego:loadingProblem"
+msgstr "Bu problem yükleniyor…"
+
+msgid "tsumego:problemLoadError"
+msgstr "Bu problem yüklenemedi"
+
+msgid "tsumego:modes"
+msgstr "Mod"
+
+msgid "tsumego:next"
+msgstr "Sonraki problem"
+
+msgid "tsumego:prev"
+msgstr "Önceki problem"
+
+msgid "tsumego:noMoveYet"
+msgstr "Henüz hamle yok"
+
+msgid "tsumego:noSequence"
+msgstr ""
+"Bu türün problem numaraları okunamadı, önceki/sonraki şimdilik kullanılamaz"
+
+msgid "tsumego:noWrong"
+msgstr "Şu an bu türde yanlış yapılmış problem yok"
+
+msgid "tsumego:physicalBoard"
+msgstr "Gerçek tahta"
+
+msgid "tsumego:physClear"
+msgstr "Lütfen tahtayı boşaltın"
+
+msgid "tsumego:physClearLeft"
+msgstr " ({n} kaldı)"
+
+msgid "tsumego:physConnecting"
+msgstr "Kamera ve tanıma modeli bağlanıyor, lütfen bekleyin…"
+
+msgid "tsumego:physGeoConfirm"
+msgstr ""
+"Gerçek tahta için önce kalibrasyonun onaylanması gerekir (servis yeniden "
+"başlayınca bir kez daha)"
+
+msgid "tsumego:physGeoDrift"
+msgstr "Tahta kalibrasyonu artık geçerli değil, yeniden kalibre edin"
+
+msgid "tsumego:physNeed19"
+msgstr "Gerçek tahta yalnızca 19x19 problemleri destekler"
+
+msgid "tsumego:physNoCamera"
+msgstr "Kamera algılanmadı / görüntü servisi kapalı"
+
+msgid "tsumego:physNoLed"
+msgstr "LED bağlı değil, ekrandaki yönergeleri izleyin."
+
+msgid "tsumego:physRemove"
+msgstr "Yanlış cevap: {n} taşı geri alın (mavi ışık)"
+
+msgid "tsumego:physRestore"
+msgstr " ve esir alınan {n} taşı geri koyun (kırmızı / yeşil ışık)"
+
+msgid "tsumego:physReply"
+msgstr ""
+"Taşları tahtanın ışıklarına göre yerleştirin (cevap / esirler) ki tahta ile "
+"ekran uyuşsun."
+
+msgid "tsumego:physVerify"
+msgstr ""
+"Tahtanın problemle uyuşup uyuşmadığı kontrol ediliyor — taşları ışıklara "
+"göre düzeltin."
+
+msgid "tsumego:placeAnswerBlack"
+msgstr "Çözüm noktasına bir siyah taş koyun; tahta otomatik tanır"
+
+msgid "tsumego:placeAnswerWhite"
+msgstr "Çözüm noktasına bir beyaz taş koyun; tahta otomatik tanır"
+
+msgid "tsumego:preparingBoard"
+msgstr "Hazırlanıyor"
+
+msgid "tsumego:progressUnread"
+msgstr "Çözüm kaydı okunamadı"
+
+msgid "tsumego:progressUnreadBody"
+msgstr ""
+"Çözüm kaydı olmadan bu türde neleri yanlış yaptığınız söylenemez. Ağ gelince"
+" yeniden deneyin."
+
+msgid "tsumego:removeAt"
+msgstr "{coord} kaldır"
+
+msgid "tsumego:setupDone"
+msgstr "Tahta hazır · sıra sizde"
+
+msgid "tsumego:setupExtra"
+msgstr ""
+"Tahtada {n} fazla veya yanlış renkte taş var — önce kaldırın (ekranda ✕, "
+"gerçek tahtada beyaz yanıp söner)"
+
+msgid "tsumego:setupMatched"
+msgstr "{matched}/{total} taş eşleşti"
+
+msgid "tsumego:setupSkip"
+msgstr "Kurulumu atla"
+
+msgid "tsumego:setupStageBlack"
+msgstr "Siyah taşları yerleştirin"
+
+msgid "tsumego:setupStageWhite"
+msgstr "Beyaz taşları yerleştirin"
+
+msgid "tsumego:solvedInCategory"
+msgstr "Bu türde çözüldü"
+
+msgid "tsumego:solvedShort"
+msgstr "Doğru"
+
+msgid "tsumego:specializedPractice"
+msgstr "Odaklı çalışma"
+
+msgid "tsumego:these_n_problems"
+msgstr "bu {n} problem"
+
+msgid "tsumego:thisProblem"
+msgstr "bu problem"
+
+msgid "tsumego:tries_n"
+msgstr "{n} deneme"
+
+msgid "tsumego:tryModeShort"
+msgstr "Dene"
+
+msgid "tsumego:undoMove"
+msgstr "Bir hamle geri"
+
+msgid "tsumego:undoPhysicalReset"
+msgstr ""
+"Gerçek tahtada hamle geri alınamaz; baştan başlamak için «Yeniden diz»e "
+"basın"
+
+msgid "tsumego:unitUnknown"
+msgstr "bu ünite"
+
+msgid "tsumego:unit_n"
+msgstr "{n}. ünite"
+
+msgid "tsumego:unit_range"
+msgstr "Bu türde toplam {total} problem var, yani yalnızca {units} ünite."
+
+msgid "tsumego:unit_size"
+msgstr "Ünite başına {n} problem"
+
+msgid "tsumego:unit_total"
+msgstr "{n} problem"
+
+msgid "tsumego:wrongProgress"
+msgstr "Yanlışlar · {n} içinden {i}"
+
+msgid "tsumego:wrongResume"
+msgstr "Yanlışlar, {n}. problem"
+
+msgid "tsumego:wrongSet"
+msgstr "Yanlışlar"
+
+msgid "tsumego:wrongShort"
+msgstr "Yanlış"
+
+msgid "tsumego:wrongState"
+msgstr "Yanlış yapılmış"
+
+msgid "tsumego:wrongStatLabel"
+msgstr "Yanlış yapılmış, henüz doğrulanmamış"
+
+msgid "tsumego:wrong_now"
+msgstr "Şu an {n} tane"
+
+msgid "tsumego:wrong_total"
+msgstr "{n} problem"
+
+msgid "tsumego:yourLevel"
+msgstr "Seviyeniz"
+
+msgid "tsumego:yourMoves"
+msgstr "Hamleleriniz"
+
+msgid "tsumego:problem_no"
+msgstr "{n}. problem"
+
+msgid "kifu:title"
+msgstr "Kayıtlar"
+
+msgid "kifu:back_kifu"
+msgstr "Kayıtlar"
+
+msgid "kifu:greet_a"
+msgstr "Başkalarının "
+
+msgid "kifu:greet_b"
+msgstr "oyunları"
+
+msgid "kifu:greet_sub"
+msgstr "Ünlü oyunlar, profesyonel yayınlar ve kayıtları gerçek tahtaya dizme"
+
+msgid "kifu:famous_records"
+msgstr "Ünlü oyunlar"
+
+msgid "kifu:search_records"
+msgstr "Kayıt ara"
+
+msgid "kifu:search_sub"
+msgstr "Tek arama kutusu, bulanık eşleşme"
+
+msgid "kifu:search_placeholder_cn"
+msgstr "Oyuncu, turnuva ya da yıla göre arayın"
+
+msgid "kifu:searching"
+msgstr "Aranıyor"
+
+msgid "kifu:no_results_cn"
+msgstr "Eşleşen kayıt yok"
+
+msgid "kifu:no_results_hint"
+msgstr "Başka bir oyuncu, turnuva ya da yıl deneyin."
+
+msgid "kifu:list_failed"
+msgstr "Kayıt kitaplığı okunamadı"
+
+msgid "kifu:pro_live"
+msgstr "Profesyonel yayınlar"
+
+msgid "kifu:live_now"
+msgstr "Şu an canlı"
+
+msgid "kifu:not_started"
+msgstr "Başlamadı"
+
+msgid "kifu:ended"
+msgstr "Bitti"
+
+msgid "kifu:place_on_board"
+msgstr "Gerçek tahtaya diz"
+
+msgid "kifu:place_sub"
+msgstr "Işıklar hamle hamle yeri gösterir"
+
+msgid "kifu:import_sgf"
+msgstr "SGF içe aktar"
+
+msgid "kifu:import_sub"
+msgstr "Yerel dosya — çevrimdışı da çalışır"
+
+msgid "kifu:bad_sgf"
+msgstr "Geçerli bir SGF dosyası değil"
+
+msgid "kifu:read_failed"
+msgstr "Dosya okunamadı"
+
+msgid "kifu:recent"
+msgstr "Son dizilenler"
+
+msgid "kifu:on_this_box"
+msgstr "Bu kutuda saklanıyor"
+
+msgid "kifu:no_recent"
+msgstr "Bu kutuda henüz hiçbir kayıt dizilmedi"
+
+msgid "kifu:no_recent_hint"
+msgstr ""
+"Yukarıdan birini seçin ya da bir SGF içe aktarın — seçtiğiniz kayıt "
+"bütünüyle kutuda saklanır, çevrimdışı da bitirebilirsiniz."
+
+msgid "kifu:cache_gone"
+msgstr "Bu kaydın yerel kopyası kayboldu — yeniden seçin"
+
+msgid "kifu:cannot_start"
+msgstr "Bu dizilemez"
+
+msgid "kifu:done_tag"
+msgstr "Tamamen dizildi"
+
+msgid "kifu:placed_all"
+msgstr "Bitti"
+
+msgid "kifu:placed_at"
+msgstr "Şu hamleye kadar: "
+
+msgid "kifu:resume_at"
+msgstr "Geçen sefer şu hamleye kadar: "
+
+msgid "kifu:resume"
+msgstr "Devam et"
+
+msgid "kifu:resume_baipu"
+msgstr "Dizmeye devam"
+
+msgid "kifu:resume_hint"
+msgstr "Işıklar sıradaki taşın yerini gösterir"
+
+msgid "kifu:keep_placing"
+msgstr "Dizmeye devam et"
+
+msgid "kifu:detail_actions"
+msgstr "Bu oyunla neler yapabilirsiniz"
+
+msgid "kifu:replay"
+msgstr "Hamle hamle oynatma"
+
+msgid "kifu:to_research"
+msgstr "Araştırmada aç"
+
+msgid "kifu:board_label"
+msgstr "Kayıt oynatma tahtası"
+
+msgid "kifu:board_lines"
+msgstr "çizgi"
+
+msgid "kifu:handicap_pre"
+msgstr "Avans "
+
+msgid "kifu:handicap_unit"
+msgstr " taş"
+
+msgid "kifu:komi_black"
+msgstr "Siyah öder"
+
+msgid "kifu:komi_unit"
+msgstr " puan"
+
+msgid "kifu:games_unit"
+msgstr "oyun"
+
+msgid "kifu:move_ordinal"
+msgstr "Hamle "
+
+msgid "kifu:total_prefix"
+msgstr "toplam "
+
+msgid "kifu:versus"
+msgstr "karşı"
+
+msgid "kifu:source_prefix"
+msgstr "Kaynak: "
+
+msgid "kifu:untitled_game"
+msgstr "Başlıksız bir oyun"
+
+msgid "kifu:whole_game"
+msgstr "Tüm oyun"
+
+msgid "kifu:moves_title"
+msgstr "Hamleler · kesişim koordinatları"
+
+msgid "kifu:no_moves"
+msgstr "Bu kayıtta hamle yok"
+
+msgid "kifu:need_sgf"
+msgstr "Bu oyunun kaydı henüz alınmadı"
+
+msgid "kifu:load_failed"
+msgstr "Bu oyun okunamadı"
+
+msgid "kifu:loading_this_game"
+msgstr "Bu oyun yükleniyor"
+
+msgid "kifu:loading_hint"
+msgstr "Hem kayıt hem hamle hamle günlük sunucudan gelir."
+
+msgid "kifu:retry"
+msgstr "Yeniden dene"
+
+msgid "kifu:pass"
+msgstr "Pas"
+
+msgid "kifu:to_start"
+msgstr "Başa dön"
+
+msgid "kifu:to_end"
+msgstr "Sona atla"
+
+msgid "kifu:prev_move"
+msgstr "Önceki hamle"
+
+msgid "kifu:next_move"
+msgstr "Sonraki hamle"
+
+msgid "kifu:prev_page"
+msgstr "Önceki sayfa"
+
+msgid "kifu:next_page"
+msgstr "Sonraki sayfa"
+
+msgid "kifu:collapsed"
+msgstr "Kapalı"
+
+msgid "kifu:expanded"
+msgstr "Açık"
+
+msgid "kifu:today"
+msgstr "bugün"
+
+msgid "kifu:yesterday"
+msgstr "dün"
+
+msgid "kifu:day_before"
+msgstr "evvelsi gün"
+
+msgid "review:back_review"
+msgstr "İnceleme"
+
+msgid "review:you"
+msgstr "Siz"
+
+msgid "review:black"
+msgstr "Siyah"
+
+msgid "review:white"
+msgstr "Beyaz"
+
+msgid "review:win"
+msgstr "galibiyet"
+
+msgid "review:lose"
+msgstr "yenilgi"
+
+msgid "review:by_resign"
+msgstr "çekilmeyle"
+
+msgid "review:by_time"
+msgstr "süreden"
+
+msgid "review:by_forfeit"
+msgstr "hükmen"
+
+msgid "review:void_result"
+msgstr "Bu oyun kararsız kaldı"
+
+msgid "review:unfinished_line"
+msgstr "{n}. hamleden sonra çıkıldı"
+
+msgid "review:sec_games"
+msgstr "Geçmiş oyunlar"
+
+msgid "review:all_games"
+msgstr "Toplam {n} oyun"
+
+msgid "review:local_games"
+msgstr "Bu kutuda {n}"
+
+msgid "review:facing_games"
+msgstr "{n} yüz yüze"
+
+msgid "review:matched_games"
+msgstr "{n} bulundu"
+
+msgid "review:filter_label"
+msgstr "Oyunları kaynağa göre filtrele"
+
+msgid "review:filter_all"
+msgstr "Tümü"
+
+msgid "review:filter_local"
+msgstr "Yüz yüze"
+
+msgid "review:search_toggle"
+msgstr "Geçmiş oyunları filtrele ve ara"
+
+msgid "review:list_loading"
+msgstr "Oyunlarınız yükleniyor"
+
+msgid "review:list_failed"
+msgstr "Oyun listesi okunamadı"
+
+msgid "review:no_games"
+msgstr "Henüz oynanmış oyun yok"
+
+msgid "review:no_games_hint"
+msgstr ""
+"Biten bir oyun buraya otomatik kaydedilir; aşağıdan SGF de içe "
+"aktarabilirsiniz."
+
+msgid "review:no_local_games"
+msgstr "Henüz yüz yüze oyun yok"
+
+msgid "review:no_local_games_hint"
+msgstr ""
+"«Oyna · İki oyuncu» altında iki kişinin aynı kutuda oynadığı oyunlar buraya "
+"kaydedilir."
+
+msgid "review:no_match"
+msgstr "Eşleşen oyun yok"
+
+msgid "review:no_match_hint"
+msgstr "Başka bir oyuncu ya da turnuva adı deneyin."
+
+msgid "review:row_ai"
+msgstr "Yapay zekâya karşı"
+
+msgid "review:row_human"
+msgstr "İnsana karşı insan"
+
+msgid "review:row_ranked"
+msgstr "Dereceli oyun"
+
+msgid "review:row_import"
+msgstr "İçe aktarılan kayıt"
+
+msgid "review:row_library"
+msgstr "Kayıt kitaplığı"
+
+msgid "review:row_vs"
+msgstr "karşı"
+
+msgid "review:rail_title"
+msgstr "Bu oyun"
+
+msgid "review:rail_none"
+msgstr "Henüz oyun seçilmedi"
+
+msgid "review:rail_board"
+msgstr "Seçilen oyunun son konumu"
+
+msgid "review:board_failed"
+msgstr "Bu oyunun kaydı okunamadı"
+
+msgid "review:sec_winrate"
+msgstr "Bu oyundaki kazanma oranı"
+
+msgid "review:black_winrate"
+msgstr "Siyahın kazanma oranı"
+
+msgid "review:black_lead"
+msgstr "Siyah önde"
+
+msgid "review:perspective"
+msgstr "{color} bakışıyla"
+
+msgid "review:plot_label"
+msgstr "Hamle hamle kazanma oranı — üstte siyah, altta beyaz"
+
+msgid "review:plot_pick_label"
+msgstr "Hamle hamle kazanma oranı — o hamleye atlamak için dokunun"
+
+msgid "review:plot_loading"
+msgstr "Bu oyunun raporu yükleniyor"
+
+msgid "review:plot_pick"
+msgstr "Aşağıdan bir oyun seçin"
+
+msgid "review:plot_thin"
+msgstr "Raporun henüz hesaplamadığı hamleler"
+
+msgid "review:plot_unanalyzed"
+msgstr ""
+"Bu oyun henüz analiz edilmedi — aşağıdaki «Rapor oluştur» bölümünden bir "
+"kademe seçin"
+
+msgid "review:sec_report"
+msgstr "Rapor oluştur"
+
+msgid "review:two_tiers"
+msgstr "İki kademe: 500 / 2000 ziyaret"
+
+msgid "review:tier_standard"
+msgstr "Standart"
+
+msgid "review:tier_standard_sub"
+msgstr "Hamle başına 500 ziyaret"
+
+msgid "review:tier_deep"
+msgstr "Derin"
+
+msgid "review:tier_deep_sub"
+msgstr "Hamle başına 2000 ziyaret · dört kat yavaş"
+
+msgid "review:visits_each"
+msgstr "Hamle başına {n} ziyaret"
+
+msgid "review:analyzed_progress"
+msgstr "{b} hamlenin {a} tanesi analiz edildi"
+
+msgid "review:resume_analysis"
+msgstr "Analize devam"
+
+msgid "review:recompute"
+msgstr "Yeniden hesapla"
+
+msgid "review:recompute_failed"
+msgstr "Yeniden hesaplama geçmedi"
+
+msgid "review:refresh_failed"
+msgstr "Yenileme geçmedi"
+
+msgid "review:no_task"
+msgstr "Bu oyun için henüz rapor görevi yok"
+
+msgid "review:tasks_failed"
+msgstr "Rapor görevlerinde bir sorun oluştu"
+
+msgid "review:tag_analyzed"
+msgstr "Analiz edildi"
+
+msgid "review:tag_unanalyzed"
+msgstr "Analiz edilmedi"
+
+msgid "review:cell_unanalyzed"
+msgstr "Analiz edilmedi"
+
+msgid "review:tag_partial"
+msgstr "Yalnızca {a}/{b} hesaplandı"
+
+msgid "review:tag_running"
+msgstr "Analiz ediliyor {a}/{b}"
+
+msgid "review:tag_failed"
+msgstr "Analiz başarısız"
+
+msgid "review:tag_unfinished"
+msgstr "Bitmemiş"
+
+msgid "review:failure_bad_sgf"
+msgstr "Bu kayıt okunamadı"
+
+msgid "review:failure_no_credits"
+msgstr "Yeterli kredi yok"
+
+msgid "review:failure_not_found"
+msgstr "Artık yok"
+
+msgid "review:failure_offline"
+msgstr "Bulut geçici olarak kullanılamıyor"
+
+msgid "review:moves_failed"
+msgstr "Rapor okunamadı"
+
+msgid "review:detail_failed"
+msgstr "Bu rapor okunamadı"
+
+msgid "review:open_report"
+msgstr "Raporu aç"
+
+msgid "review:delete_game"
+msgstr "Sil"
+
+msgid "review:to_research"
+msgstr "Araştırmada aç"
+
+msgid "review:toggles"
+msgstr "Görünüm"
+
+msgid "review:accuracy"
+msgstr "İsabet"
+
+msgid "review:brilliants"
+msgstr "Parlak hamleler"
+
+msgid "review:mistakes"
+msgstr "Hatalar"
+
+msgid "review:took"
+msgstr "{d} sürdü"
+
+msgid "review:import_card"
+msgstr "İncelemek için kayıt içe aktar"
+
+msgid "review:import_card_sub"
+msgstr "Yerel bir SGF ya da kayıt kitaplığı"
+
+msgid "platform:platforms"
+msgstr "Platformlar"
+
+msgid "platform:back_to_platforms"
+msgstr "Platformlar arası"
+
+msgid "platform:connect_sub"
+msgstr "Dış bir Go sunucusuna bağlanın ve bu gerçek tahtada oynayın"
+
+msgid "platform:connected"
+msgstr "Bağlı"
+
+msgid "platform:disconnected"
+msgstr "Bağlı değil"
+
+msgid "platform:what_you_get"
+msgstr "Bağlandıktan sonra"
+
+msgid "platform:get_board"
+msgstr "Bu gerçek tahtada oynayın"
+
+msgid "platform:get_board_sub"
+msgstr "Taş koymak hamlenizdir — karşı taraf aynı hamleyi görür"
+
+msgid "platform:get_kifu"
+msgstr "Kayıt otomatik saklanır"
+
+msgid "platform:get_kifu_sub"
+msgstr "Kayıt kitaplığına girer ve incelemeye gönderilebilir"
+
+msgid "platform:get_rank"
+msgstr "Bu kutudaki dereceniz etkilenmez"
+
+msgid "platform:get_rank_sub"
+msgstr "Oradaki sonuçlar yalnızca o platformun defterine işler"
+
+msgid "platform:icon_board"
+msgstr "Tahta"
+
+msgid "platform:icon_kifu"
+msgstr "Kayıt"
+
+msgid "platform:icon_rank"
+msgstr "Derece"
+
+msgid "platform:sign_in_to"
+msgstr "Giriş · {name}"
+
+msgid "platform:logging_in"
+msgstr "Giriş yapılıyor…"
+
+msgid "platform:login_failed"
+msgstr "Giriş başarısız"
+
+msgid "platform:logout"
+msgstr "Çıkış yap"
+
+msgid "platform:logout_ask"
+msgstr "{name} bağlantısı kesilsin mi?"
+
+msgid "platform:logout_body"
+msgstr ""
+"Bu kutu artık o hesapta olmayacak. Bir dahaki sefere yeniden giriş yapmanız "
+"gerekir."
+
+msgid "platform:pw_fields"
+msgstr "Kullanıcı adı + parola"
+
+msgid "platform:pw_note"
+msgstr "Yalnızca o platforma gönderilir, kutuda saklanmaz"
+
+msgid "platform:user_note"
+msgstr "Oradaki hesap adı, kutunun hesabı değil"
+
+msgid "platform:sms_fields"
+msgstr "Telefon numarası + kod"
+
+msgid "platform:phone_note"
+msgstr "Yalnızca platformdan bir giriş kimliği almak için kullanılır"
+
+msgid "platform:sms_get"
+msgstr "Kodu al"
+
+msgid "platform:sms_again"
+msgstr "{n} sn sonra tekrar gönder"
+
+msgid "platform:sms_failed"
+msgstr "Kod gönderilemedi"
+
+msgid "platform:need_phone"
+msgstr "Önce telefon numarasını girin"
+
+msgid "platform:code_note"
+msgstr "Altı hane · 60 saniye geçerli"
+
+msgid "platform:lobby_title"
+msgstr "{name} · lobi"
+
+msgid "platform:lobby_sub"
+msgstr "Birine meydan okuyun ya da platform size rakip bulsun"
+
+msgid "platform:enter_lobby"
+msgstr "Lobiye gir"
+
+msgid "platform:enter_engine"
+msgstr "Yapay zekâya karşı oyna"
+
+msgid "platform:no_play_yet"
+msgstr "Henüz oynanamıyor"
+
+msgid "platform:cap_live"
+msgstr "Canlı oyun"
+
+msgid "platform:cap_engine"
+msgstr "Yapay zekâya karşı"
+
+msgid "platform:cap_automatch"
+msgstr "Otomatik eşleşme"
+
+msgid "platform:cap_rooms"
+msgstr "Odalar"
+
+msgid "platform:find_by_name"
+msgstr "Kullanıcı adıyla bul"
+
+msgid "platform:find_hint"
+msgstr "Yazıp Enter'a basın; sonuç yoksa orada öyle biri yok"
+
+msgid "platform:results"
+msgstr "Bulunan oyuncular"
+
+msgid "platform:no_such_player"
+msgstr "Orada öyle biri yok"
+
+msgid "platform:search_first"
+msgstr ""
+"Bir kullanıcı adı yazıp Enter'a basın ya da platform size birini bulsun"
+
+msgid "platform:users_failed"
+msgstr "Oyuncu listesi platformdan alınamadı"
+
+msgid "platform:idle"
+msgstr "Boşta"
+
+msgid "platform:in_game"
+msgstr "Oyunda"
+
+msgid "platform:challenge"
+msgstr "Meydan oku"
+
+msgid "platform:challenge_terms"
+msgstr "Meydan okuma gönder"
+
+msgid "platform:challenge_ask"
+msgstr "{name} kişisine meydan okunsun mu?"
+
+msgid "platform:challenge_ask_body"
+msgstr "{name} {rank} · 19x19 · Çin kuralları · dereceli."
+
+msgid "platform:challenge_ask_tail"
+msgstr ""
+"Gönderildikten sonra geri alınamaz; kabul ederse {name} üzerinde oynarsınız,"
+" bu kutuda değil."
+
+msgid "platform:challenge_send"
+msgstr "Meydan okumayı gönder"
+
+msgid "platform:challenge_sent"
+msgstr ""
+"Meydan okuma gönderildi. Kabul ederse {name} üzerinde oynarsınız, bu kutuda "
+"değil."
+
+msgid "platform:challenge_failed"
+msgstr "Meydan okuma gönderilemedi"
+
+msgid "platform:automatch"
+msgstr "Otomatik eşleşme"
+
+msgid "platform:automatch_body"
+msgstr "{name} birini bulsun"
+
+msgid "platform:automatch_hint"
+msgstr ""
+"Kuyruk {name} tarafında. Eşleşince oyun bu kutuya dönmez — {name} üzerinde "
+"devam edersiniz."
+
+msgid "platform:automatch_start"
+msgstr "Eşleşmeyi başlat"
+
+msgid "platform:automatch_cancel"
+msgstr "Eşleşmeyi iptal et"
+
+msgid "platform:automatch_failed"
+msgstr "Eşleşme başlamadı"
+
+msgid "platform:seeking"
+msgstr "Rakip aranıyor"
+
+msgid "platform:engine_title"
+msgstr "{name} · yapay zekâya karşı"
+
+msgid "platform:engine_sub"
+msgstr "Oyun ayarları · kutudaki dereceye sayılmaz"
+
+msgid "platform:opponent"
+msgstr "Rakip"
+
+msgid "platform:rung_n"
+msgstr "{n} kademeden {i}."
+
+msgid "platform:stronger"
+msgstr "Bir kademe güçlü rakip"
+
+msgid "platform:weaker"
+msgstr "Bir kademe zayıf rakip"
+
+msgid "platform:levels_from"
+msgstr "{name} tarafından {n} kademe"
+
+msgid "platform:levels_failed"
+msgstr "Güç kademeleri platformdan alınamadı"
+
+msgid "platform:display_elo"
+msgstr "Gösterilen Elo {v}"
+
+msgid "platform:ref_rank"
+msgstr "yaklaşık {r}"
+
+msgid "platform:rank_is_theirs"
+msgstr "Derece {name} tarafına aittir"
+
+msgid "platform:terms_fixed"
+msgstr "Koşullar sabittir"
+
+msgid "platform:terms_body"
+msgstr "Çin kuralları · dereceli"
+
+msgid "platform:terms_hint"
+msgstr "Bu üçü burada seçilmez — gönderilen budur"
+
+msgid "platform:only_19"
+msgstr "{name} yalnızca 19x19 sunar · Çin kuralları"
+
+msgid "platform:fixed"
+msgstr "Sabit"
+
+msgid "platform:untimed"
+msgstr "Süresiz"
+
+msgid "platform:nigiri"
+msgstr "Nigiri"
+
+msgid "platform:black_first"
+msgstr "Siyah önce, komisiz"
+
+msgid "platform:handicap_range"
+msgstr "{n} kademe · denk / siyah önce / 2 – 9 taş"
+
+msgid "platform:komi_0"
+msgstr "Komi yok"
+
+msgid "platform:komi_75"
+msgstr "Siyah 7,5 puan öder"
+
+msgid "platform:komi_n"
+msgstr "Siyah {n} taş öder"
+
+msgid "platform:summary_note"
+msgstr ""
+"Komi avansa bağlıdır, ayrı bir seçenek değildir. Sonuçlar yalnızca {name} "
+"defterine işler."
+
+msgid "tutorial:title_cn"
+msgstr "Dersler"
+
+msgid "tutorial:categories_cn"
+msgstr "Kategoriler"
+
+msgid "tutorial:greet_sub"
+msgstr "Arka uç beş katmanlıdır; içerik bu kutuda üretilmez"
+
+msgid "tutorial:loading_cn"
+msgstr "Dersler bulutla eşitleniyor"
+
+msgid "tutorial:loadFailed"
+msgstr "Yükleme başarısız, lütfen daha sonra deneyin"
+
+msgid "tutorial:empty"
+msgstr "Henüz ders yok"
+
+msgid "tutorial:empty_hint"
+msgstr ""
+"Bulut ders kitaplığında henüz kitap yok; aşağıdaki iki yerde şimdiden içerik"
+" var."
+
+msgid "tutorial:instead_cn"
+msgstr "Şimdi çalışabilecekleriniz"
+
+msgid "tutorial:go_training"
+msgstr "Antrenman kampına git"
+
+msgid "tutorial:go_training_sub"
+msgstr "Altı problem türü · hemen şimdi"
+
+msgid "tutorial:go_baipu"
+msgstr "Dizmeye git"
+
+msgid "tutorial:go_baipu_sub"
+msgstr "Ünlü bir oyunu hamle hamle dizin"
+
+msgid "tutorial:count_line"
+msgstr "{n} kategori · toplam {b} kitap"
+
+msgid "tutorial:books_n"
+msgstr "{n} kitap"
+
+msgid "tutorial:books_synced"
+msgstr "{n} kitap · içerik bulutla eşitlenir"
+
+msgid "tutorial:synced"
+msgstr "Bulutla eşitlenir"
+
+msgid "tutorial:pick_book"
+msgstr "Bir kitap seç"
+
+msgid "tutorial:books_loading"
+msgstr "Bu kategorideki kitaplar yükleniyor"
+
+msgid "tutorial:books_failed"
+msgstr "Bu kategorideki kitaplar okunamadı"
+
+msgid "tutorial:books_empty"
+msgstr "Bu kategoride tek bir kitap yok"
+
+msgid "tutorial:books_empty_hint"
+msgstr ""
+"Bulut bu kategoriyi henüz eşitlemedi; diğer kategorilerde içerik olabilir."
+
+msgid "tutorial:anatomy_cn"
+msgstr "Bir ders nasıl görünür"
+
+msgid "tutorial:chapters_n"
+msgstr "{n} bölüm"
+
+msgid "tutorial:sections_n"
+msgstr "{n} kesim"
+
+msgid "tutorial:figures_n"
+msgstr "{n} diyagram"
+
+msgid "tutorial:moves_n"
+msgstr "{n} hamle"
+
+msgid "tutorial:seconds_n"
+msgstr "{n} sn"
+
+msgid "tutorial:has_video"
+msgstr "Videolu"
+
+msgid "tutorial:back_toc"
+msgstr "İçindekiler"
+
+msgid "tutorial:toc_of"
+msgstr "{title} · içindekiler"
+
+msgid "tutorial:toc_count"
+msgstr "{c} bölüm · {s} kesim"
+
+msgid "tutorial:toc_loading"
+msgstr "Bu kitabın içindekiler kısmı yükleniyor"
+
+msgid "tutorial:toc_failed"
+msgstr "Bu kitabın içindekiler kısmı okunamadı"
+
+msgid "tutorial:toc_empty"
+msgstr "Bu kitapta henüz bölüm yok"
+
+msgid "tutorial:toc_empty_hint"
+msgstr ""
+"Kitap listesi eşitlendi, metin henüz değil; bu sizin kutunuzun sorunu değil."
+
+msgid "tutorial:no_sections"
+msgstr "Bu bölümde henüz kesim yok"
+
+msgid "tutorial:section_n"
+msgstr "{n}. kesim"
+
+msgid "tutorial:section_loading"
+msgstr "Bu kesim yükleniyor"
+
+msgid "tutorial:section_failed"
+msgstr "Bu kesim okunamadı"
+
+msgid "tutorial:figures_in_section"
+msgstr "Bu kesimdeki diyagramlar"
+
+msgid "tutorial:no_figures"
+msgstr "Bu kesimde henüz diyagram yok"
+
+msgid "tutorial:no_figures_hint"
+msgstr ""
+"İçindekiler bu kesimi gösteriyor ama metin eşitlenmedi; bu sizin kutunuzun "
+"sorunu değil."
+
+msgid "tutorial:figure_ordinal"
+msgstr "{n} diyagramdan {i}."
+
+msgid "tutorial:figure_actions"
+msgstr "Diyagram çevirme ve açıklama"
+
+msgid "tutorial:prev_figure"
+msgstr "Önceki diyagram"
+
+msgid "tutorial:next_figure"
+msgstr "Sonraki diyagram"
+
+msgid "tutorial:back_to_diagram"
+msgstr "Diyagrama dön"
+
+msgid "tutorial:board_label"
+msgstr "{label}: bu kesimin diyagramı"
+
+msgid "tutorial:board_view"
+msgstr "Ne kadarı görünsün"
+
+msgid "tutorial:fullBoard"
+msgstr "Tüm tahta"
+
+msgid "tutorial:partial"
+msgstr "Kısmi"
+
+msgid "tutorial:moves"
+msgstr "Hamleler"
+
+msgid "tutorial:step_back"
+msgstr "Bir hamle geri"
+
+msgid "tutorial:step_fwd"
+msgstr "Bir hamle ileri"
+
+msgid "tutorial:step_n"
+msgstr "{n}. hamleye git"
+
+msgid "tutorial:step_total"
+msgstr "Bu diyagramda {n} hamle var"
+
+msgid "tutorial:step_zero"
+msgstr "Yalnızca başlangıç taşları"
+
+msgid "tutorial:tag_video"
+msgstr "Video anlatım"
+
+msgid "tutorial:tag_audio"
+msgstr "Sesli anlatım"
+
+msgid "tutorial:tag_text"
+msgstr "Yazılı anlatım"
+
+msgid "tutorial:tag_none"
+msgstr "Anlatım yok"
+
+msgid "tutorial:teach_none"
+msgstr "Anlatım yok"
+
+msgid "tutorial:teach_none_reason"
+msgstr ""
+"Bu diyagram için henüz anlatım kaydedilmedi; bulut eşitleyince görünür"
+
+msgid "tutorial:text_only"
+msgstr "Yalnızca yazılı anlatım"
+
+msgid "tutorial:text_only_reason"
+msgstr "Bu diyagramın yalnızca yazılı anlatımı var, yukarıda yazıyor"
+
+msgid "tutorial:no_explain"
+msgstr "Kitapta bu diyagram için metin yok ve anlatım da kaydedilmemiş."
+
+msgid "tutorial:watch_video"
+msgstr "Video anlatımı izle"
+
+msgid "tutorial:play_audio"
+msgstr "Sesli anlatımı oynat"
+
+msgid "tutorial:stop_audio"
+msgstr "Durdur"
+
+msgid "19x19"
+msgstr "19x19"
+
+msgid "19×19 only"
+msgstr "Yalnızca 19×19"
+
+msgid "20 problems per unit"
+msgstr "Ünite başına 20 problem"
+
+msgid "Korean rules"
+msgstr "Kore kuralları"
+
+msgid ""
+"AI connection error — please retry your move, or exit to abandon the game."
+msgstr ""
+"Yapay zekâ bağlantı hatası — hamlenizi yeniden deneyin ya da çıkıp oyunu "
+"bırakın."
+
+msgid "AI is thinking…"
+msgstr "Yapay zekâ düşünüyor…"
+
+msgid "AI suggestions (white lamps)"
+msgstr "Yapay zekâ önerileri (beyaz ışıklar)"
+
+msgid "Accept as my move"
+msgstr "Kendi hamlem olarak kabul et"
+
+msgid "All games"
+msgstr "Tüm oyunlar"
+
+msgid "Auto-advance after solving · current"
+msgstr "Çözünce otomatik ilerle · şu an"
+
+msgid "Average time"
+msgstr "Ortalama süre"
+
+msgid "Average tries"
+msgstr "Ortalama deneme"
+
+msgid "Board may have moved"
+msgstr "Tahta oynamış olabilir"
+
+msgid "Board may have moved — recognition paused"
+msgstr "Tahta oynamış olabilir — tanıma duraklatıldı"
+
+msgid "Board mismatch"
+msgstr "Tahta ile oyun uyuşmuyor"
+
+msgid "Board restored"
+msgstr "Tahta yönergeye göre eski hâline getirildi"
+
+msgid "Cached SGF no longer available"
+msgstr "Önbellekteki SGF artık yok"
+
+msgid "Calibration"
+msgstr "Kalibrasyon"
+
+msgid "Camera"
+msgstr "Kamera"
+
+msgid "Camera disconnected, switched to touch mode"
+msgstr "Kamera koptu, dokunmatik moda geçildi"
+
+msgid "Cancel"
+msgstr "İptal"
+
+msgid "Categories"
+msgstr "Problem türleri"
+
+msgid "Challenge others · rated queue available"
+msgstr "Başkalarına meydan oku · dereceli kuyruk var"
+
+msgid "Chart"
+msgstr "Grafik"
+
+msgid "Choose a way to start playing"
+msgstr "Oynamaya başlamak için bir yol seçin"
+
+msgid "Choose one category"
+msgstr "Bir problem türü seçin"
+
+msgid "Confirm"
+msgstr "Hamleyi onayla"
+
+msgid "Confirm resign?"
+msgstr "Çekilmeyi onaylıyor musunuz?"
+
+msgid "Confirm result"
+msgstr "Sonucu onayla"
+
+msgid "Confirming…"
+msgstr "Onaylanıyor…"
+
+msgid "Connected · goes to the lobby"
+msgstr "Bağlı · lobiye gider"
+
+msgid "Connected · plays the engine"
+msgstr "Bağlı · motora karşı oynar"
+
+msgid "Continue"
+msgstr "Devam et"
+
+msgid "Continue anyway"
+msgstr "Yine de devam et"
+
+msgid "Continue on screen"
+msgstr "Ekrandan devam et"
+
+msgid "Continue practicing"
+msgstr "Çalışmaya devam et"
+
+msgid "Cross-Platform"
+msgstr "Platformlar arası oyun"
+
+msgid "Cross-Platform Play"
+msgstr "Platformlar arası oyun"
+
+msgid "Difficulty"
+msgstr "Zorluk"
+
+msgid "Ended"
+msgstr "Bitti"
+
+msgid "Enter Live"
+msgstr "Canlıya gir"
+
+msgid "Every game played, with its review report"
+msgstr "Oynanan her oyun ve inceleme raporu"
+
+msgid "Exit"
+msgstr "Çık"
+
+msgid "Failed to read file"
+msgstr "Dosya okunamadı"
+
+msgid "Failed to start game"
+msgstr "Oyun başlatılamadı"
+
+msgid "Focused training"
+msgstr "Odaklı antrenman"
+
+msgid "Game in progress. Resign and exit?"
+msgstr "Oyun sürüyor. Çekilip çıkılsın mı?"
+
+msgid "Geometry locked"
+msgstr "Geometri kilitli"
+
+msgid "Guest"
+msgstr "Misafir"
+
+msgid "Hide Hint"
+msgstr "İpucunu gizle"
+
+msgid "Hint"
+msgstr "İpucu"
+
+msgid "Hints"
+msgstr "Yapay zekâ ipuçları"
+
+msgid "Hint failed"
+msgstr "İpucu başarısız, lütfen daha sonra deneyin"
+
+msgid "Hint is not enabled"
+msgstr "İpuçları açık değil"
+
+msgid "History"
+msgstr "Geçmiş"
+
+msgid "Ignore"
+msgstr "Yoksay"
+
+msgid "Import SGF"
+msgstr "Kayıt içe aktar"
+
+msgid "Insufficient balance"
+msgstr "Bakiye yetersiz"
+
+msgid "Judged on placement"
+msgstr "Taş konunca değerlendirilir"
+
+msgid "Judged on placement · a wrong move is taken straight back"
+msgstr "Taş konunca değerlendirilir · yanlış hamle anında geri alınır"
+
+msgid "Keep waiting"
+msgstr "Beklemeye devam"
+
+msgid "Load more"
+msgstr "Daha fazla yükle"
+
+msgid "Loading"
+msgstr "Yükleniyor..."
+
+msgid "Loading…"
+msgstr "Yükleniyor…"
+
+msgid "Loading categories…"
+msgstr "Problem türleri yükleniyor…"
+
+msgid "Loading problem set…"
+msgstr "Problem bankası yükleniyor…"
+
+msgid "Logging in..."
+msgstr "Giriş yapılıyor..."
+
+msgid "Login failed"
+msgstr "Giriş başarısız"
+
+msgid ""
+"Mix all categories at this level and group every 20 problems into a unit"
+msgstr ""
+"Bu seviyedeki tüm türleri karıştırır ve her 20 problemi bir üniteye toplar"
+
+msgid "Mix all categories at this level in 20-problem units"
+msgstr "Bu seviyedeki tüm türler karışık, ünite başına 20 problem"
+
+msgid "Mixed"
+msgstr "Karışık"
+
+msgid "Mixed categories"
+msgstr "Karışık türler"
+
+msgid "Mixed training"
+msgstr "Karışık antrenman"
+
+msgid "Next up"
+msgstr "Sırada"
+
+msgid "No 19×19 records found"
+msgstr "19×19 kaydı bulunamadı"
+
+msgid "No categories at this level yet"
+msgstr "Bu kademede henüz problem türü yok"
+
+msgid "No live matches"
+msgstr "Canlı oyun yok"
+
+msgid "No problems for this level"
+msgstr "Bu seviye için problem yok"
+
+msgid "No problems in this category yet"
+msgstr "Bu türde henüz problem yok"
+
+msgid "No such unit"
+msgstr "Böyle bir ünite yok"
+
+msgid "Not a valid SGF file"
+msgstr "Geçerli bir SGF dosyası değil"
+
+msgid "Not attempted"
+msgstr "Denenmedi"
+
+msgid "Not available in ranked games"
+msgstr "Dereceli oyunlarda kullanılamaz"
+
+msgid "Not calibrated"
+msgstr "Kalibre edilmedi"
+
+msgid "Not signed in"
+msgstr "Giriş yapılmadı"
+
+msgid "Not wired up yet"
+msgstr "Henüz bağlanmadı"
+
+msgid "Now Live"
+msgstr "Şu an canlı"
+
+msgid "Online Lobby"
+msgstr "Çevrimiçi lobi"
+
+msgid "Only the ones I got wrong"
+msgstr "Yalnızca yanlışlar"
+
+msgid "Other practice"
+msgstr "Diğer çalışmalar"
+
+msgid "Other sets"
+msgstr "Başka bir küme"
+
+msgid "Password"
+msgstr "Parola"
+
+msgid "Username"
+msgstr "Kullanıcı adı"
+
+msgid "Physical board out of sync"
+msgstr "Gerçek tahta bir süredir oyunla uyuşmuyor"
+
+msgid "Pick the strength yourself · form estimate available"
+msgstr "Gücü kendiniz seçin · konum tahmini var"
+
+msgid "Place / remove the lit stones, then confirm — or continue on screen."
+msgstr ""
+"Yanan taşları koyun (kırmızı/yeşil) ya da kaldırın (mavi), sonra onaylayın —"
+" ya da ekrandan devam edin."
+
+msgid "Place these stones"
+msgstr "Bu taşları koyun (kırmızı / yeşil)"
+
+msgid "Remove these stones"
+msgstr "Bu taşları kaldırın (mavi)"
+
+msgid "Play vs AI"
+msgstr "Yapay zekâya karşı oyna"
+
+msgid "Play vs Human"
+msgstr "İnsanla oyna"
+
+msgid "Please place the AI stone at the lit point first"
+msgstr "Önce yapay zekânın taşını yanan noktaya koyun"
+
+msgid "Possible move detected at"
+msgstr "Olası hamle algılandı:"
+
+msgid "Problem set unavailable"
+msgstr "Problem bankası kullanılamıyor"
+
+msgid "Problems per unit · current"
+msgstr "Ünite başına problem · şu an"
+
+msgid "Re-align board"
+msgstr "Tahtayı yeniden hizala"
+
+msgid "Re-align failed — try again"
+msgstr "Yeniden hizalama başarısız — tekrar deneyin"
+
+msgid "Re-sync failed, please retry"
+msgstr "Tanıma yeniden eşitlenemedi, lütfen tekrar deneyin"
+
+msgid "Recalibrate"
+msgstr "Yeniden kalibre et"
+
+msgid "Recalibrate board"
+msgstr "Tahtayı yeniden kalibre et"
+
+msgid "Recent"
+msgstr "Son"
+
+msgid "Redo the ones you got wrong in this category"
+msgstr "Bu türde yanlış yaptıklarınızı tekrar yapın"
+
+msgid "Register / Sign in"
+msgstr "Kayıt ol / giriş yap"
+
+msgid "Reset"
+msgstr "Yeniden diz"
+
+msgid "Resign failed, retry"
+msgstr "Çekilme başarısız, lütfen tekrar deneyin"
+
+msgid "Resume"
+msgstr "Sürdür"
+
+msgid "Resume last game"
+msgstr "Son oyuna devam et"
+
+msgid "Score"
+msgstr "Say"
+
+msgid "Search players, events..."
+msgstr "Oyuncu, turnuva ara..."
+
+msgid "Select a match"
+msgstr "Bir oyun seçin"
+
+msgid "Select category"
+msgstr "Tür seçin"
+
+msgid "Select or import a game to begin"
+msgstr "Başlamak için bir oyun seçin ya da içe aktarın"
+
+msgid "Sign out"
+msgstr "Çıkış yap"
+
+msgid "Signed in"
+msgstr "Giriş yapıldı"
+
+msgid "Solved"
+msgstr "Doğru"
+
+msgid "Solved in this unit"
+msgstr "Bu ünitede çözüldü"
+
+msgid "Start"
+msgstr "Başla"
+
+msgid "Start placing"
+msgstr "Dizmeye başla"
+
+msgid "Stone Placement"
+msgstr "Tahtaya dizme"
+
+msgid "StellaBox account"
+msgstr "StellaBox hesabı"
+
+msgid "Tap to connect"
+msgstr "Giriş için dokunun"
+
+msgid "Tier picked from your strength · analysis sealed throughout"
+msgstr "Kademe gücünüze göre · analiz kapalı"
+
+msgid "Time"
+msgstr "Süre"
+
+msgid "To place"
+msgstr "Konacak"
+
+msgid "To remove"
+msgstr "Kaldırılacak"
+
+msgid "Today we practice {what}"
+msgstr "Bugün {what} çalışalım"
+
+msgid "what"
+msgstr "bir şeyler"
+
+msgid "Top Matches"
+msgstr "Öne çıkan oyunlar"
+
+msgid "Try"
+msgstr "Dene"
+
+msgid "Try a different search, or import an SGF file."
+msgstr "Farklı bir arama deneyin ya da bir SGF dosyası içe aktarın."
+
+msgid "Two players on the same physical board"
+msgstr "Aynı gerçek tahtada iki oyuncu"
+
+msgid "Units"
+msgstr "Üniteler"
+
+msgid "Upcoming"
+msgstr "Yakında"
+
+msgid "Wrong"
+msgstr "Yanlışlar"
+
+msgid "You are here"
+msgstr "Buradasınız"
+
+msgid "game:count_failed_retry"
+msgstr "Sayım geçmedi, lütfen daha sonra deneyin"
+
+msgid "min"
+msgstr "dk"
+
+msgid "sec"
+msgstr "sn"
+
+msgid "problems count"
+msgstr "problem"
+
+msgid "score"
+msgstr "puan farkı"
+
+msgid "winrate"
+msgstr "kazanma oranı"
+
+msgid "{item} exhausted"
+msgstr "{item} tükendi"
+
+msgid ""
+"{item} quota is insufficient — please recharge in the Golaxy app; this "
+"terminal cannot recharge for you."
+msgstr ""
+"{item} kotası yetersiz — lütfen Golaxy uygulamasından yükleyin; bu terminal "
+"sizin yerinize yapamaz."

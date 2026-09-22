@@ -48,8 +48,8 @@ import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
  * **设备名不画**:`settings.DEVICE_ID` 在没配 `KATRAIN_DEVICE_ID` 时是每次启动自铸的 uuid4
  * (`core/config.py`),不是出厂身份;出厂那份在 launcher 手里(`/etc/smartbox/device.json`),
  * 本仓读不到。显示一个自铸 id 就是编,所以等 launcher 给,不自己造。
- * 稿子这一组的三行是「引擎 / 识盘 / 资源」,还带一列 lead;这里只画裁定的三行,
- * 行型和同屏其余各组一致(没有 lead 列)。
+ * 行型照稿子这一组:行首一列 lead 写类别,正文写是什么,行尾写状态。稿子的三行是
+ * 「引擎 / 识盘 / 资源」,这里只画裁定的三行(版本 / 本机 / 云端)。
  *
  * ## 语言这一组是规范 §12 的一处**已知偏差**
  *
@@ -395,19 +395,21 @@ const SettingsPage = () => {
           <div className="kiosk-rows">
             {health?.version && (
               <div className="kiosk-row" data-testid="about-version">
-                <span className="kiosk-row__t"><b>{t('settings:version', '版本')}</b></span>
-                <span className="kiosk-row__end"><span className="kiosk-tag">{health.version}</span></span>
+                <span className="kiosk-row__lead">{t('settings:about_version', '版本')}</span>
+                <span className="kiosk-row__t"><b>{health.version}</b></span>
               </div>
             )}
+            {/* 两个引擎都是 KataGo(`LOCAL_KATAGO_URL` / `CLOUD_KATAGO_URL`),区别只在跑在哪儿。 */}
             {([
-              ['local', t('settings:engine_local', '本机引擎'), health?.engines?.local],
-              ['cloud', t('settings:engine_cloud', '云端引擎'), health?.engines?.cloud],
-            ] as const).map(([key, label, state]) => {
+              ['local', t('settings:about_local', '本机'), health?.engines?.local],
+              ['cloud', t('settings:about_cloud', '云端'), health?.engines?.cloud],
+            ] as const).map(([key, where, state]) => {
               const line = state ? engineStatusLine(state, t) : null;
               return (
                 <div className="kiosk-row" key={key} data-testid={`about-engine-${key}`}>
+                  <span className="kiosk-row__lead">{where}</span>
                   <span className="kiosk-row__t">
-                    <b>{label}</b>
+                    <b>KataGo</b>
                     {line?.sub && <em>{line.sub}</em>}
                   </span>
                   <span className="kiosk-row__end">

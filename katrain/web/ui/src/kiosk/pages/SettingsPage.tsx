@@ -90,7 +90,7 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { language, setLanguage, languages } = useSettings();
-  const { status } = useGeometry();
+  const { status, loaded } = useGeometry();
   const [autoAdvance, setAutoAdvance] = useState(() => readAutoAdvance());
   const [active, setActive] = useState<GroupKey>(GROUPS[0].key);
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
@@ -158,9 +158,16 @@ const SettingsPage = () => {
     writeAutoAdvance(next);
   };
 
-  const calibratedAt = status.session_calibrated
-    ? t('settings:calibrated', '这次开机已标定')
-    : t('settings:not_calibrated', '还没标定');
+  // 「还没问到」「问到了没连上」「这台盒子压根没有摄像头」是三件事,屏上是三句话。
+  // `GeometryContext` 为前两件留了 `loaded`;第三件是 `/status` 404 ⇒ `phase='disabled'`。
+  const noCamera = loaded && status.phase === 'disabled';
+  const calibratedAt = !loaded
+    ? '—'
+    : noCamera
+      ? t('settings:calib_no_camera', '这台盒子没有配摄像头')
+      : status.session_calibrated
+        ? t('settings:calibrated', '这次开机已标定')
+        : t('settings:not_calibrated', '还没标定');
 
   return (
     <div className="kiosk-layout-l1" data-testid="settings-page">
@@ -228,31 +235,42 @@ const SettingsPage = () => {
             <div className="kiosk-row">
               <span className="kiosk-row__t">
                 <b>{t('Recalibrate board', '重新标定棋盘')}</b>
-                <em>{calibratedAt}</em>
+                <em data-testid={noCamera ? 'settings-no-camera' : undefined}>{calibratedAt}</em>
               </span>
               <span className="kiosk-row__end">
+                {/* 没有摄像头时入口**不可点**,原因写在左边那行小字里 —— 不把人送进标定屏,
+                    再让那屏的空态把他弹回来(多一跳,而且那一跳没有解释)。 */}
                 <button
                   type="button"
                   className="kiosk-btn kiosk-btn--secondary"
-                  onClick={() => navigate('/kiosk/vision/setup')}
+                  disabled={noCamera}
+                  onClick={() => { if (!noCamera) navigate('/kiosk/vision/setup'); }}
                 >
                   {t('settings:start_calib', '开始标定')}
                 </button>
               </span>
             </div>
             {/* 三件器件的读数。**「读不到」和「没连上」是两回事** ——
-                `capabilities` 里没有那一项时不点灯,不拿一颗灰灯冒充「未连接」。 */}
+                没问到之前(`loaded=false`)`DEFAULT_STATUS` 三个 capability 全是 false,照画就会在
+                开机那一瞬说「未连接」。所以没读到 / 没有摄像头时一律「—」且不给灯色。
+                措辞照抄标定屏那三格(`GeometryCalibrationScreen` 的 `cells`),同一件事只有一套写法;
+                LED 那一格照视觉赛道 V4:它只说串口通没通,不代表每颗灯都亮。 */}
             {([
-              ['camera', t('Camera', '摄像头'), status.capabilities.camera_ready],
-              ['calib', t('Calibration', '几何标定'), status.capabilities.geometry_ready],
-              ['led', 'LED', status.capabilities.led_ready],
-            ] as const).map(([key, label, ok]) => (
+              ['camera', t('Camera', '摄像头'), status.capabilities.camera_ready,
+                t('settings:camera_connected', '已连接'), t('settings:not_ready', '未连接')],
+              ['calib', t('Calibration', '几何标定'), status.capabilities.geometry_ready,
+                t('settings:geometry_calibrated', '已标定'), t('settings:geometry_uncalibrated', '未标定')],
+              ['led', 'LED', status.capabilities.led_ready,
+                t('settings:led_serial_connected', '串口已连接'), t('settings:not_ready', '未连接')],
+            ] as const).map(([key, label, ok, yes, no]) => (
               <div className="kiosk-row" key={key} data-testid={`settings-cap-${key}`}>
                 <span className="kiosk-row__t"><b>{label}</b></span>
                 <span className="kiosk-row__end">
-                  <span className={ok ? 'kiosk-tag kiosk-tag--win' : 'kiosk-tag'}>
-                    {ok ? t('settings:ready', '就绪') : t('settings:not_ready', '未连接')}
-                  </span>
+                  {!loaded || noCamera ? (
+                    <span className="kiosk-tag">—</span>
+                  ) : (
+                    <span className={ok ? 'kiosk-tag kiosk-tag--win' : 'kiosk-tag'}>{ok ? yes : no}</span>
+                  )}
                 </span>
               </div>
             ))}

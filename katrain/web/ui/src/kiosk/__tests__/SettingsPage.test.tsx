@@ -41,15 +41,29 @@ vi.mock('../../context/AuthContext', () => ({
   }),
 }));
 
-vi.mock('../context/GeometryContext', () => ({
-  useGeometry: () => ({
+// 几何状态是**输入**:`loaded` 与 `phase` 两位决定那一组说哪句话,每条用例自己造。
+const geometry = vi.hoisted(() => ({
+  current: {
+    loaded: true,
     status: {
       phase: 'required',
       session_calibrated: false,
       last_valid: false,
       capabilities: { camera_ready: false, led_ready: false, geometry_ready: false },
     },
-  }),
+  } as { loaded: boolean; status: Record<string, unknown> },
+}));
+const baseGeometryStatus = () => ({
+  phase: 'required',
+  session_calibrated: false,
+  last_valid: false,
+  capabilities: { camera_ready: false, led_ready: false, geometry_ready: false },
+});
+const mockGeometry = ({ loaded, status = {} }: { loaded: boolean; status?: Record<string, unknown> }) => {
+  geometry.current = { loaded, status: { ...baseGeometryStatus(), ...status } };
+};
+vi.mock('../context/GeometryContext', () => ({
+  useGeometry: () => geometry.current,
 }));
 
 const renderPage = () =>
@@ -72,7 +86,10 @@ const renderPage = () =>
  * 判据在 `tests/kiosk-shell-geometry.spec.ts` 和 `kiosk-shell-scroll.spec.ts`(真浏览器量)。
  */
 describe('屏 27 设置 · 分组与导航', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGeometry({ loaded: true });
+  });
 
   // **导航项数 = 分组数,且词一一对应** —— 两套词等于两套心智模型。
   it('导航五项,和右边五组的标题一个字不差', () => {
@@ -120,7 +137,10 @@ describe('屏 27 设置 · 分组与导航', () => {
 });
 
 describe('屏 27 设置 · 每一组的内容都是真的', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGeometry({ loaded: true });
+  });
 
   // 上一版那四张平台卡是 `pointer-events:none` 的死装饰,而且列的是
   // 99围棋/野狐/腾讯/新浪 —— **和真正能连的三家对不上**。
@@ -134,11 +154,67 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
   });
 
   it('实体棋盘那一组给的是真读数和一条去标定的路', () => {
+    mockGeometry({ loaded: true });
     renderPage();
     expect(screen.getByText('还没标定')).toBeInTheDocument();
+    // 措辞照抄标定屏那三格(同一件事只有一套写法);LED 那一格照视觉赛道 V4:
+    // 它只说**串口**通没通,不代表每颗灯都亮。
+    expect(screen.getByTestId('settings-cap-camera')).toHaveTextContent('未连接');
+    expect(screen.getByTestId('settings-cap-calib')).toHaveTextContent('未标定');
+    expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('未连接');
+    fireEvent.click(screen.getByRole('button', { name: '开始标定' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/vision/setup');
+  });
+
+  it('三件器件都在时,三格照标定屏的说法', () => {
+    mockGeometry({
+      loaded: true,
+      status: { phase: 'ready', session_calibrated: true, capabilities: { camera_ready: true, led_ready: true, geometry_ready: true } },
+    });
+    renderPage();
+    expect(screen.getByTestId('settings-cap-camera')).toHaveTextContent('已连接');
+    expect(screen.getByTestId('settings-cap-calib')).toHaveTextContent('已标定');
+    expect(screen.getByTestId('settings-cap-led')).toHaveTextContent('串口已连接');
+    expect(screen.queryByText(/就绪/)).toBeNull();
+  });
+
+  // `DEFAULT_STATUS` 三个 capability 全是 false —— 还没问到就照画,会在开机那一瞬说「未连接」。
+  it('还没问到状态时三格写「—」,不冒充「未连接」,也不给灯色', () => {
+    mockGeometry({ loaded: false });
+    renderPage();
     for (const key of ['camera', 'calib', 'led']) {
-      expect(screen.getByTestId(`settings-cap-${key}`).textContent).toContain('未连接');
+      const cell = screen.getByTestId(`settings-cap-${key}`);
+      expect(cell).toHaveTextContent('—');
+      expect(cell.querySelector('.kiosk-tag--win')).toBeNull();
     }
+    expect(screen.queryByText('未连接')).toBeNull();
+    expect(screen.queryByText('还没标定')).toBeNull();
+  });
+
+  // 404 ⇒ `phase='disabled'`:这台盒子没起采集服务。把人送进标定屏再让那屏的空态弹回来,
+  // 是多一跳而且那一跳没有解释。
+  it('这台盒子没有摄像头时,标定入口不可点并写明原因,三格是「—」', () => {
+    mockGeometry({ loaded: true, status: { phase: 'disabled' } });
+    renderPage();
+    const btn = screen.getByRole('button', { name: '开始标定' });
+    expect(btn).toBeDisabled();
+    expect(screen.getByTestId('settings-no-camera')).toHaveTextContent('这台盒子没有配摄像头');
+    fireEvent.click(btn);
+    expect(mockNavigate).not.toHaveBeenCalled();
+    for (const key of ['camera', 'calib', 'led']) {
+      expect(screen.getByTestId(`settings-cap-${key}`)).toHaveTextContent('—');
+    }
+    expect(screen.queryByText('未连接')).toBeNull();
+  });
+
+  // 今天的行为不许退化。
+  it('这次开机已标定时照旧说出来,入口照旧能进标定屏', () => {
+    mockGeometry({
+      loaded: true,
+      status: { phase: 'ready', session_calibrated: true, capabilities: { camera_ready: true, led_ready: true, geometry_ready: true } },
+    });
+    renderPage();
+    expect(screen.getByText('这次开机已标定')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '开始标定' }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/vision/setup');
   });

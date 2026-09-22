@@ -313,6 +313,11 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def get_growth_diagnosis(self, days: int, reports: int) -> Dict:
+        resp = await self._request("GET", "/api/v1/growth/diagnosis", params={"days": days, "reports": reports})
+        resp.raise_for_status()
+        return resp.json()
+
     # ── Reports (remote-only in board mode) ──
 
     async def list_reports(self) -> List[Dict]:

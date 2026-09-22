@@ -327,28 +327,43 @@ class RepositoryDispatcher:
         「盒子没联网」和「云端少了这个端点」在运维那儿是两件完全不同的事,
         而它们在用户屏上长得一模一样(都是「本机记录」)。
         """
+        return await self._cloud_first(
+            "growth summary", "/growth/summary", lambda: self._remote_client.get_growth_summary(days)
+        )
+
+    async def growth_diagnosis_remote(self, days: int, reports: int) -> tuple[dict | None, str]:
+        """能力诊断,口径同 `growth_summary_remote`。盒子上报告在云端、本机库里没有逐手数据,
+        所以退回本机时的「0 份报告」说的是「没连上云端」—— 屏上据 `local_cache` 这样说。"""
+        return await self._cloud_first(
+            "growth diagnosis",
+            "/growth/diagnosis",
+            lambda: self._remote_client.get_growth_diagnosis(days, reports),
+        )
+
+    async def _cloud_first(self, label: str, path: str, call) -> tuple[dict | None, str]:
+        """成长屏那几块的「先问云端」:`(payload, "cloud")` 或 `(None, 原因)`,**不抛**。"""
         if self._remote_client is None:
             return None, "no_remote_client"
         if not self.is_online:
             return None, "offline"
         try:
-            payload = await self._remote_client.get_growth_summary(days)
+            payload = await call()
         except httpx.TransportError as exc:
-            logger.warning("growth summary: cloud unreachable, using local cache (%s)", exc)
+            logger.warning("%s: cloud unreachable, using local cache (%s)", label, exc)
             return None, "remote_unreachable"
         except httpx.HTTPStatusError as exc:
             status = exc.response.status_code
             if status == 404:
                 # 云端是**旧版本**,没有这个端点 —— 部署歪了,不是坏了。
-                logger.warning("growth summary: cloud has no /growth/summary (404) — deploy skew?")
+                logger.warning("%s: cloud has no %s (404) — deploy skew?", label, path)
                 return None, "remote_missing_endpoint"
             if status >= 500:
-                logger.warning("growth summary: cloud failed with %s, using local cache", status)
+                logger.warning("%s: cloud failed with %s, using local cache", label, status)
                 return None, "remote_error"
-            logger.warning("growth summary: cloud refused with %s (credentials?), using local cache", status)
+            logger.warning("%s: cloud refused with %s (credentials?), using local cache", label, status)
             return None, "remote_refused"
         if not isinstance(payload, dict):
-            logger.warning("growth summary: cloud answered 200 with a non-object body")
+            logger.warning("%s: cloud answered 200 with a non-object body", label)
             return None, "remote_bad_payload"
         return payload, "cloud"
 

@@ -40,6 +40,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.core import growth_diagnosis as diagnosis_buckets
 from katrain.web.models import User
 
 logger = logging.getLogger("katrain.web.growth")
@@ -126,5 +127,75 @@ async def growth_summary(
         "losses_in_window": decided["losses"],
         "by_opponent_rung": ladder["by_opponent_rung"],
         # 盒子上这一份是缓存,权威在云端 ⇒ 数可能偏小。据实交代,界面去说「本机记录」。
+        "authority": "local_cache" if dispatcher is not None else "this_node",
+    }
+
+
+# ── 能力诊断(G1)────────────────────────────────────────────────────────────
+
+#: 云端那份诊断必须长这样才敢原样转出去(理由同 `_REQUIRED_KEYS`)。
+_DIAGNOSIS_REQUIRED_KEYS = ("reports", "skipped_without_color", "graded_moves", "phases")
+
+DEFAULT_DIAGNOSIS_DAYS = 90
+DEFAULT_DIAGNOSIS_REPORTS = 20
+MAX_DIAGNOSIS_REPORTS = 50
+
+
+def _looks_like_diagnosis(payload: Any) -> bool:
+    if not isinstance(payload, dict) or any(key not in payload for key in _DIAGNOSIS_REQUIRED_KEYS):
+        return False
+    return isinstance(payload["phases"], list) and all(
+        isinstance(payload[key], int) for key in _DIAGNOSIS_REQUIRED_KEYS[:-1]
+    )
+
+
+@router.get("/diagnosis")
+async def growth_diagnosis(
+    request: Request,
+    days: int = DEFAULT_DIAGNOSIS_DAYS,
+    reports: int = DEFAULT_DIAGNOSIS_REPORTS,
+    current_user: User = Depends(get_current_user),
+):
+    """能力诊断:最近几份已完成报告里,本用户执的那一方按布局 / 中盘 / 官子数问题手。
+
+    **样本量一起回。** 三个比率脱离样本量就是骗人 —— 20 手算出来的「官子最弱」
+    和 2000 手算出来的是两回事,屏上必须写得出「来自几份报告的几手」。
+
+    盒子上报告在云端、本机库里没有逐手数据 ⇒ 先问云端;退回本机时如实标 `local_cache`,
+    屏上据此说「读不到云端的报告」而不是「还没有报告」。
+    """
+    if not 1 <= days <= MAX_WINDOW_DAYS:
+        raise HTTPException(status_code=422, detail=f"days must be 1..{MAX_WINDOW_DAYS}")
+    if not 1 <= reports <= MAX_DIAGNOSIS_REPORTS:
+        raise HTTPException(status_code=422, detail=f"reports must be 1..{MAX_DIAGNOSIS_REPORTS}")
+
+    repo = getattr(request.app.state, "report_diagnosis_repo", None)
+    if repo is None:
+        raise HTTPException(status_code=503, detail="growth diagnosis unavailable on this node")
+
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        remote, reason = await dispatcher.growth_diagnosis_remote(days, reports)
+        if remote is not None and _looks_like_diagnosis(remote):
+            return {**remote, "authority": "cloud"}
+        if remote is not None:
+            logger.warning("growth diagnosis: cloud answered 200 with an unrecognised shape, using local cache")
+            reason = "remote_bad_payload"
+        logger.info("growth diagnosis: serving local cache (%s)", reason)
+
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    picked = repo.recent_graded_moves(current_user.id, since=since, max_reports=reports)
+    counts = diagnosis_buckets.bucket(picked["moves"])
+    return {
+        "window_days": days,
+        "reports": picked["reports"],
+        "skipped_without_color": picked["skipped_without_color"],
+        "graded_moves": counts["graded"],
+        # 只列**有评过级的手**的那几段 —— 没有数的段不摆一个 0/0,和「按对手强度」同一条口径。
+        "phases": [
+            {"phase": phase, "graded": v["graded"], "bad": v["bad"]}
+            for phase, v in counts["phases"].items()
+            if v["graded"] > 0
+        ],
         "authority": "local_cache" if dispatcher is not None else "this_node",
     }

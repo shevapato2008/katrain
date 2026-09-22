@@ -321,6 +321,10 @@ async def _lifespan_server(app: FastAPI, log):
     app.state.game_repo = game_repo
     app.state.user_game_repo = user_game_repo
     app.state.user_game_analysis_repo = user_game_analysis_repo
+    # 成长屏「能力诊断」:跨报告汇总你执的那一方的逐手评级。
+    from katrain.web.core.report_diagnosis_repo import ReportDiagnosisRepository
+
+    app.state.report_diagnosis_repo = ReportDiagnosisRepository(session_factory)
     app.state.ai_ladder_repo = ai_ladder_repo
     app.state.ai_ladder_authoritative = True
     app.state.report_session_factory = session_factory
@@ -470,6 +474,11 @@ async def _lifespan_board(app: FastAPI, log):
     local_tsumego_progress_repo = LocalTsumegoProgressRepository(session_factory)
     app.state.user_game_repo = local_user_game_repo
     app.state.user_game_analysis_repo = local_user_game_analysis_repo
+    # 盒子上报告在云端,这一份只在连不上云端时兜底(本机库里通常没有逐手数据 ⇒ 0 份,
+    # 端点据此标 local_cache,屏上说「读不到云端的报告」)。
+    from katrain.web.core.report_diagnosis_repo import ReportDiagnosisRepository
+
+    app.state.report_diagnosis_repo = ReportDiagnosisRepository(session_factory)
     app.state.ai_ladder_repo = AiLadderRankedRepository(session_factory)
     # The board keeps an optimistic local profile so a completed game remains durable
     # through an outage. The cloud reservation/finalizer is canonical across devices;

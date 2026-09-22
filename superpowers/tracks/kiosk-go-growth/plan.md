@@ -14,6 +14,41 @@
 
 **Spec:** `superpowers/tracks/kiosk-go-growth/prd.md`
 
+## 执行中的更正(2026-09-22,核对真实代码后)
+
+> 下面各 Task 正文保留原样作为当时的设想;**与本节冲突时以本节为准**。
+
+**流程**:按垂直切片执行 —— 三个切片的前端先做完、四图经 Fan 确认(2026-09-22「过」,连同契约),
+再按 G2 → G1 → G3 做后端。
+
+**G2(Task 2/3)**
+1. `_user_seat` 放在 `server.py` **模块顶层**(`_record_platform_engine_game` 旁边):计划写的「与
+   `_record_ai_game_locked` 同一层」是 `create_app` 里的嵌套函数,测试 import 不到;也避开视觉赛道
+   正在改的 `create_app` 前那一段(:761-826)。
+2. **计划漏了盒子 → 云端那一跳**:盒上的局是 POST 云端 `/api/v1/user-games/` 写进去的,
+   `UserGameCreate` 没有 `user_color` 时 pydantic 静默丢掉。已加 `Optional[Literal["B","W"]]`,
+   本机落库那一支也透传。
+3. **云端建升降级对局行**(`AiLadderRankedRepository._create_or_validate_user_game`)也要写执色,
+   取自预约记录 `row.user_color`;不进 `expected` 比对(老行是 NULL)。盒子的结算载荷按白名单
+   `GAME_RECORD_FIELDS` 转发(`AiLadderGameRecordPayload` 是 `extra="forbid"`),`user_color`
+   不在白名单里 —— 这正是它不会把结算同步打成 422 的原因,**别把它加进白名单**。
+4. `decided_since` 的执色 = `COALESCE(user_games.user_color, ai_ladder_game_ledger.user_color)`:
+   这一列诞生之前的升降级局在账本里早就记着执色,读它不是追认;不读的话部署当天只下升降级的人
+   胜率会从有数变成「—」最长 30 天。其余历史行仍不回填。
+5. 计划说 `rankedWinrate` 有 galaxy 在用 —— 实际只有 `GrowthPage` 一个调用者。
+6. `tests/platforms/test_growth_summary.py` 原先断言 `UserGame` **没有** `user_color` —— 前提变了,那句删掉。
+7. `black` 只对基线上本来就 black 干净的文件整文件跑;`models_db.py` / `server.py` /
+   `test_growth_authority.py` 在基线上不干净,整文件跑会带出几十行无关改动(其中一处在视觉赛道的区域),
+   这三份只手写自己的那几行。
+8. **部署顺序:先云端再盒子。** 老云端会静默丢掉新盒子传来的 `user_color`,那些局永远算不进胜率。
+
+**G3(Task 8)**
+9. 类名是 `AiLadderRankedRepository`,不是 `AiLadderRepository`;计划里的账本种子过不了
+   `ck_ai_ladder_ledger_decision`(counted 的行要 config_snapshot / certified / available / route),
+   照 `tests/platforms/test_growth_summary.py::_ledger` 造。
+10. 前端纯函数改名 `trendGeometry.ts`:`rungTrend.ts` 与 `RungTrend.tsx` 在 macOS 大小写不敏感的
+    文件系统上互相顶替。横轴是近 30 天窗口本身(不是首末两点拉满),窗口外的点丢掉。
+
 ## Global Constraints
 
 > **开工前先读 `prd.md` §6.0**:四条新赛道的共享文件归属与合并顺序。与本 plan 冲突时以 §6.0 为准。

@@ -4,10 +4,12 @@
 「累计已解题」「升降级局累计」。前三个里有两个要跨整张表数,而 RK3562 是 2G 内存 ——
 为渲染四个数字把整个对局库拉到浏览器里再 filter,和被否掉的「每手轮询 SGF」是同一类错。
 
-**为什么胜率只算升降级局**:`user_games.result` 存的是**哪一方赢**(`"B+R"`),
-而这张表**没有任何一列记这个用户坐的是哪一方** —— 拿玩家名去猜(`player_black == username`?)
-就是在编。`ai_ladder_game_ledger` 有 `user_color`,它的 `result` 本身就是从这个用户视角写的
-win/loss,所以只有升降级局的胜率算得出来。**屏上那一格的标签必须写明这个口径。**
+**胜率算哪些局(2026-09 改)**:`user_games.result` 存的是**哪一方赢**(`"B+R"`)。此前表里
+没有一列记这个用户坐哪一方,胜率只能从升降级账本算(`ranked_*` 三个字段,**保留不删** ——
+老盒子、盒上缓存还在读)。现在 `user_games.user_color` 补上了 ⇒ 多回三个字段
+`decided_games_in_window` / `wins_in_window` / `losses_in_window`:知道执色、且判得出胜负的局。
+与 `games_in_window` **口径不同**(下了多少局 vs 算得出胜负的局),屏上那句「有 N 局没算进胜率」
+就是两者的差。拿玩家名去猜执色就是在编,所以算不出的不算。
 
 ⚠️ **`authority` 这一格不是装饰。** 盒子(board mode)上权威在云端,本机库只是一份缓存;
 数出来的数可能**偏小**。「一个数」在屏上天然读作「全部」,所以这里据实交代是哪一种,
@@ -44,6 +46,10 @@ logger = logging.getLogger("katrain.web.growth")
 
 router = APIRouter()
 
+#: ⚠️ 只列**必需**键。之后新增的键(`decided_games_in_window` 那三个、`rung_trend`)一律**不进**
+#: 这份清单:它判的是「云端那份敢不敢原样转出去」,把新键加进来等于**老云端一律被判成坏 payload**,
+#: 云端还没部署新版本的那几天里,盒子会全部退回本机缓存。新键在前端是可选的。
+#:
 #: 云端那份必须长这样才敢原样转出去。**答 200 不等于答对了** —— 旧版本的云端、
 #: 半截 payload、答 200 却给了一页 HTML 的网关,少一格前端就会在渲染时抛,
 #: 而那一屏上面没有 error boundary。缺格就退回本机缓存(并如实标 `local_cache`),
@@ -66,6 +72,7 @@ def _looks_like_summary(payload: Any) -> bool:
     if not isinstance(payload["by_opponent_rung"], list):
         return False
     return all(isinstance(payload[key], int) for key in _REQUIRED_KEYS[:-1])
+
 
 #: 屏上那句「近 30 天」。改这个数就要改屏上的标签 —— 所以它是入参,默认写在这里一处。
 DEFAULT_WINDOW_DAYS = 30
@@ -105,6 +112,7 @@ async def growth_summary(
         logger.info("growth summary: serving local cache (%s)", reason)
 
     ladder = ladder_repo.growth_summary(current_user.id, since=since)
+    decided = game_repo.decided_since(current_user.id, since=since)
 
     return {
         "window_days": days,
@@ -112,6 +120,10 @@ async def growth_summary(
         "ranked_total": ladder["ranked_total"],
         "ranked_wins_in_window": ladder["ranked_wins_in_window"],
         "ranked_losses_in_window": ladder["ranked_losses_in_window"],
+        # 算得出胜负的局(知道执色、判得出赢家)。与 `games_in_window` 口径不同。
+        "decided_games_in_window": decided["decided"],
+        "wins_in_window": decided["wins"],
+        "losses_in_window": decided["losses"],
         "by_opponent_rung": ladder["by_opponent_rung"],
         # 盒子上这一份是缓存,权威在云端 ⇒ 数可能偏小。据实交代,界面去说「本机记录」。
         "authority": "local_cache" if dispatcher is not None else "this_node",

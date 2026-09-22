@@ -1843,6 +1843,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 "category": "game",
                 "game_type": game_type,
                 "game_date": game_date,
+                # 这个用户坐哪一方:算得出就写,算不出就 None(见 models_db.UserGame.user_color)。
+                "user_color": _user_seat(players_info, game_type),
             }
 
             # Platform engine sessions use placeholder player metadata; their
@@ -3591,6 +3593,19 @@ def _session_owner(app: FastAPI, session):
     return User(**row) if row else None
 
 
+def _user_seat(players_info, game_type):
+    """这一局里「这个用户」坐哪一方('B' / 'W'),写进 `user_games.user_color`。
+
+    **两边都是人(面对面)或都不是人 ⇒ None。** 面对面那一局没有「你」这一方,硬挑一方出来记,
+    成长屏的胜率就开始编;平台引擎局两个座位都不标 human,它的执色由
+    `_record_platform_engine_game` 显式给。
+    """
+    if game_type == "pvp_local":
+        return None
+    seats = [bw for bw, info in players_info.items() if getattr(info, "human", False)]
+    return seats[0] if len(seats) == 1 else None
+
+
 async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
     """Record a completed platform engine game through the AI-game ledger."""
     from katrain.web.platforms.gateway import is_platform_engine_session
@@ -3612,7 +3627,13 @@ async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
         app,
         user,
         result,
-        data_overrides={"source": "play_ai", "player_black": names["B"], "player_white": names["W"]},
+        data_overrides={
+            "source": "play_ai",
+            "player_black": names["B"],
+            "player_white": names["W"],
+            # 人坐的是引擎的另一边。两个座位都不标 human,这里是唯一知道这件事的地方。
+            "user_color": human_color,
+        },
     )
 
 

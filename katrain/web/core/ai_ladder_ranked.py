@@ -1441,6 +1441,10 @@ class AiLadderRankedRepository:
                 sgf_hash=hashlib.sha256(record["sgf_content"].encode("utf-8")).hexdigest(),
                 source="play_ai",
                 game_type=AI_LADDER_GAME_TYPE,
+                # 执色取自预约记录(权威),不取盒子传来的 record —— 结算载荷按白名单
+                # `GAME_RECORD_FIELDS` 转发,本来就不带它。不进上面的 `expected`:
+                # 这一列诞生之前建的行是 NULL,重放时会被误判成「对不上」。
+                user_color=row.user_color,
                 origin_device_id=row.origin_device_id,
                 result=record["result"],
                 board_size=record["board_size"],

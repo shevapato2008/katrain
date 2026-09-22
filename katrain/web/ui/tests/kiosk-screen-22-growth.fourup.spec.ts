@@ -38,8 +38,12 @@ const OUT = resolve(process.cwd(),
  *
  * ## 预期差异(都是登记项)
  *
- *  · **能力诊断**那一块照搬稿子的诚实空态:它要拿**已经跑过报告**的对局算,那是另一条链
- *    (复盘屏),这一轮不接。标签用 `.wip.have`(蓝 = 后端已有 · 界面未接),不是琥珀。
+ *  · **能力诊断**是真数据了(2026-09):最近几份已完成报告里**你执的那一方**的手,按
+ *    布局 / 中盘 / 官子三段数问题手,构造照国象样稿 14 屏的「段名 + 细条」,底部一句样本量。
+ *    稿子那儿是「样本 0 局」空态 + 蓝标「后端已有 · 界面未接」—— 两样都去掉了。
+ *  · **左栏多了「近 30 天走势」**(档位折线 + 最高点绿标,Fan 2026-09-21 裁定画档位),
+ *    稿子这一屏没画;来源是共享规范 §5 与国象样稿 14 屏的 `.spark`。为了装下它,
+ *    「升降的规矩」三行从 44 压到 30(不可点,不受触控下限约束)。
  *  · **胜率那一格的标签是「胜率 · 近 30 天」,不是稿子的「胜率 · 同期」**,底下多一句
  *    「有 N 局没算进胜率」。2026-09 起 `user_games.user_color` 记下了用户坐哪一方,
  *    人机局也算得出胜负;面对面、导入的谱、以及这一列上线之前的非升降级局没有这个事实,
@@ -74,11 +78,30 @@ const SUMMARY = {
   decided_games_in_window: 30,
   wins_in_window: 17,
   losses_in_window: 13,
+  // 定级之后的档位,一天一个点;中间没下的日子不补点。日期落在冻结时钟(2026-08-20)前 30 天里。
+  rung_trend: [
+    ['07-24', 16], ['07-27', 16], ['07-28', 17], ['08-02', 17], ['08-05', 18],
+    ['08-09', 17], ['08-11', 18], ['08-14', 19], ['08-17', 18], ['08-19', 18],
+  ].map(([d, rung]) => ({ date: `2026-${d}`, rung, rank_name: `${21 - (rung as number)}级` })),
   by_opponent_rung: [
     { rung: 21, rank_name: '准1段', wins: 1, losses: 4 },
     { rung: 20, rank_name: '1级', wins: 3, losses: 3 },
     { rung: 19, rank_name: '2级', wins: 6, losses: 2 },
     { rung: 18, rank_name: '3级', wins: 8, losses: 4 },
+  ],
+  authority: 'this_node',
+};
+
+/** 六份报告、420 手;中盘那段明显高 ⇒ 标「最弱」。样本够,不出「结论会抖」那句。 */
+const DIAGNOSIS = {
+  window_days: 90,
+  reports: 6,
+  skipped_without_color: 0,
+  graded_moves: 420,
+  phases: [
+    { phase: 'opening', graded: 150, bad: 15 },
+    { phase: 'midgame', graded: 200, bad: 60 },
+    { phase: 'endgame', graded: 70, bad: 7 },
   ],
   authority: 'this_node',
 };
@@ -101,6 +124,7 @@ const stub = async (page: Page) => {
     }
     if (path === '/api/v1/ai-ladder/status') return route.fulfill({ json: LADDER });
     if (path === '/api/v1/growth/summary') return route.fulfill({ json: SUMMARY });
+    if (path === '/api/v1/growth/diagnosis') return route.fulfill({ json: DIAGNOSIS });
     if (path === '/api/v1/tsumego/progress') return route.fulfill({ json: PROGRESS });
     if (path === '/api/v1/vision/status') {
       return route.fulfill({ json: { enabled: false, camera_connected: false, pose_locked: false,
@@ -120,6 +144,8 @@ test('四图:成长 ←→ sample-go/shots/22-growth.png', async ({ page }) => {
   await page.goto('/kiosk/growth');
   // 等的是**打过的档真的画出来了** —— 它是这一屏区别于稿子的那一块。
   await page.waitForSelector('[data-testid="growth-by-rung"] .grung');
+  await page.waitForSelector('[data-testid="diag-row"]');
+  await page.waitForSelector('[data-testid="growth-trend"]');
   await page.waitForLoadState('networkidle');
 
   const r = await captureFourUp({
@@ -143,7 +169,10 @@ test('四图:成长 ←→ sample-go/shots/22-growth.png', async ({ page }) => {
       + '⇒ **中段那一大块红是预期的:稿子那儿是一段道歉,实现那儿是真数字** · '
       + '**胜率那格是「胜率 · 近 30 天」**:user_games 记下了执色,人机局也算得出胜负;'
       + '42 局里 30 局算得出 ⇒ 57%,差的 12 局由底下那句「没算进胜率」说出来 · '
-      + '**能力诊断**照搬稿子的诚实空态(要拿跑过报告的对局算,那是复盘那条链)',
+      + '**能力诊断是真数据**:最近 6 份报告里你下的 420 手,按布局/中盘/官子数问题手(小亏·失误·恶手),'
+      + '中盘 60/200 明显高 ⇒ 标「最弱」;稿子的「样本 0 局」和蓝标都去掉了 · '
+      + '**左栏多了近 30 天档位走势**(Fan 09-21 裁定画档位),最高点走 --good 绿标;'
+      + '为装下它「升降的规矩」三行从 44 压到 30',
   });
   console.log(`[fourup 22-growth] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

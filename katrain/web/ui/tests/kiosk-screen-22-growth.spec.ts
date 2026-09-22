@@ -66,7 +66,39 @@ const summary = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-const stub = async (page: Page, growth: Record<string, unknown>) => {
+/**
+ * 诊断块**最满**的那一态:三段都有、最弱那段带标记、样本量那句带「另有 N 份没算进来」、
+ * 底下还多一句「样本还少」—— 这一块能长出来的每一行都在。
+ */
+const FULL_DIAGNOSIS = {
+  window_days: 90,
+  reports: 2,
+  skipped_without_color: 3,
+  graded_moves: 120,
+  phases: [
+    { phase: 'opening', graded: 40, bad: 4 },
+    { phase: 'midgame', graded: 50, bad: 19 },
+    { phase: 'endgame', graded: 30, bad: 5 },
+  ],
+  authority: 'local_cache',
+};
+
+/** 诊断块**最空**的那一态:一份报告都没有。 */
+const EMPTY_DIAGNOSIS = {
+  window_days: 90, reports: 0, skipped_without_color: 0, graded_moves: 0, phases: [], authority: 'this_node',
+};
+
+/**
+ * 30 天、天天有一个点的档位走势 —— 左栏能长出来的最长那一版。
+ * 日期**从今天往前数**:这份 spec 不冻时钟,而窗口外的点会被丢掉(不画)。
+ */
+const FULL_TREND = Array.from({ length: 30 }, (_, i) => ({
+  date: new Date(Date.now() - (29 - i) * 86_400_000).toISOString().slice(0, 10),
+  rung: 16 + (i % 4),
+  rank_name: `${5 - (i % 4)}级`,
+}));
+
+const stub = async (page: Page, growth: Record<string, unknown>, diagnosis: Record<string, unknown> = EMPTY_DIAGNOSIS) => {
   await page.addInitScript(() => {
     localStorage.setItem('token', 'screen-22');
     localStorage.setItem('katrain_language', 'cn');
@@ -78,6 +110,7 @@ const stub = async (page: Page, growth: Record<string, unknown>) => {
     }
     if (path === '/api/v1/ai-ladder/status') return route.fulfill({ json: LADDER_PLACED });
     if (path === '/api/v1/growth/summary') return route.fulfill({ json: growth });
+    if (path === '/api/v1/growth/diagnosis') return route.fulfill({ json: diagnosis });
     if (path === '/api/v1/tsumego/progress') {
       return route.fulfill({ json: { p1: { problemId: 'p1', completed: true, attempts: 1 } } });
     }
@@ -91,8 +124,8 @@ const stub = async (page: Page, growth: Record<string, unknown>) => {
   });
 };
 
-const open = async (page: Page, growth = summary()) => {
-  await stub(page, growth);
+const open = async (page: Page, growth = summary(), diagnosis?: Record<string, unknown>) => {
+  await stub(page, growth, diagnosis);
   await page.goto('/kiosk/growth');
   await page.waitForSelector('[data-testid="growth-page"]');
   await page.waitForSelector('[data-testid="growth-stats"] .kiosk-stat');
@@ -128,16 +161,20 @@ test('打过的档一多:滚的是那张表自己,右栏不被顶破,两格照�
   // **右栏造到最满**:20 档战绩 + 数据条下面那两句 setnote 同时出现(「本机记录」+
   // 「有 N 局没算进胜率」)。两句各占一行,吃的是 `.gdiag` 的高度 —— 在受限高度里
   // 加节点,要在它们都在的那一态量,不是在没有它们的那一态量。
+  // 左栏同时造到最满:30 天走势块在「升降的规矩」上面,左栏是固定高度的一栏。
   await open(page, summary({
     by_opponent_rung: MANY_RUNGS,
     authority: 'local_cache',
     decided_games_in_window: 30,
     wins_in_window: 17,
     losses_in_window: 13,
-  }));
+    rung_trend: FULL_TREND,
+  }), FULL_DIAGNOSIS);
   await page.waitForSelector('[data-testid="growth-by-rung"] .grung');
   await expect(page.getByTestId('growth-local-note'), '最满那一态没造出来 —— 少了「本机记录」那句').toBeVisible();
   await expect(page.getByTestId('growth-unknown-seat'), '最满那一态没造出来 —— 少了「没算进胜率」那句').toBeVisible();
+  await expect(page.getByTestId('diag-thin'), '最满那一态没造出来 —— 诊断少了「样本还少」那句').toBeVisible();
+  await expect(page.getByTestId('growth-trend'), '最满那一态没造出来 —— 左栏没画走势').toBeVisible();
 
   const g = await page.evaluate(() => {
     const rungs = document.querySelector('.grungs') as HTMLElement;
@@ -162,6 +199,24 @@ test('打过的档一多:滚的是那张表自己,右栏不被顶破,两格照�
         return parseFloat(cs.paddingBottom) + parseFloat(cs.borderBottomWidth);
       })(),
       docScrollHeight: document.documentElement.scrollHeight,
+      // 诊断块:它自己不许被内容撑破(最满那一态下最后一句「样本还少」要完整落在框里)
+      diagPanelOverflow: (() => {
+        const el = document.querySelector('[data-testid="growth-diagnosis"]') as HTMLElement;
+        return el.scrollHeight - el.clientHeight;
+      })(),
+      diagLastInside: (() => {
+        const panel = document.querySelector('[data-testid="growth-diagnosis"]')!.getBoundingClientRect();
+        const last = document.querySelector('[data-testid="diag-thin"]')!.getBoundingClientRect();
+        return last.bottom <= panel.bottom + 0.5;
+      })(),
+      // 左栏:走势块加进来之后,整栏不许溢出,「升降的规矩」最后一行要完整落在两格上面
+      rankOverflow: (() => {
+        const el = document.querySelector('[data-testid="growth-rank"]') as HTMLElement;
+        return el.scrollHeight - el.clientHeight;
+      })(),
+      rulesBottom: document.querySelector('.grules')!.getBoundingClientRect().bottom,
+      cellsTop: cells.top,
+      trendH: Math.round(document.querySelector('[data-testid="growth-trend"]')!.getBoundingClientRect().height),
     };
   });
   console.log('[22-growth/overflow]', JSON.stringify(g));
@@ -176,6 +231,12 @@ test('打过的档一多:滚的是那张表自己,右栏不被顶破,两格照�
   // ④ 左栏两格贴底 —— 靠 `.gsec .kiosk-status { margin-top: auto }`。
   expect(g.cellsGap, '左栏那两格没贴底').toBeCloseTo(g.panelBottomInset, 1);
   expect(g.docScrollHeight, '整屏溢出').toBeLessThanOrEqual(600);
+  // ⑥ 诊断块最满时不被撑破,最后一句完整在框里
+  expect(g.diagPanelOverflow, '诊断块被内容撑破了').toBeLessThanOrEqual(0);
+  expect(g.diagLastInside, '「样本还少」那句被诊断块裁掉了').toBe(true);
+  // ⑦ 左栏加了走势之后不溢出,规矩最后一行在两格之上
+  expect(g.rankOverflow, '左栏被走势块撑破了').toBeLessThanOrEqual(0);
+  expect(g.rulesBottom, '「升降的规矩」被挤到两格下面去了').toBeLessThanOrEqual(g.cellsTop);
 
   // ⑤ 程序化能滚
   const wrote = await page.evaluate(() => {
@@ -204,10 +265,16 @@ test('打过的档一多:滚的是那张表自己,右栏不被顶破,两格照�
 test('一档都没打过:空态说话,两块诊断照旧吃掉右栏剩下的高度', async ({ page }) => {
   await open(page);
 
+  // 诊断块也取最空那一态(一份报告都没有 ⇒ 只有一句话 + 一颗「去复盘」)。
+  await expect(page.getByTestId('diag-empty')).toBeVisible();
+
   const g = await page.evaluate(() => {
     const diag = document.querySelector('.gdiag')!.getBoundingClientRect();
     const layout = document.querySelector('[data-testid="growth-page"]')!.getBoundingClientRect();
+    const [a, b] = Array.from(document.querySelectorAll('.gdiag > .panel'))
+      .map((el) => Math.round(el.getBoundingClientRect().height));
     return {
+      diagPanels: [a, b],
       text: document.querySelector('[data-testid="growth-by-rung"]')!.textContent ?? '',
       diagH: Math.round(diag.height),
       diagBottom: Math.round(diag.bottom),
@@ -222,5 +289,7 @@ test('一档都没打过:空态说话,两块诊断照旧吃掉右栏剩下的高
   // 塌成内容高的话是一百出头,和 300+ 差一个量级。
   expect(g.diagH, '两块诊断塌了 —— flex:1 没生效').toBeGreaterThan(300);
   expect(g.diagBottom, '两块诊断没贴到中间区底').toBe(g.layoutBottom);
+  // 内容最少的诊断块照样吃满那一行 —— 塌成内容高时两块会一高一矮。
+  expect(Math.abs(g.diagPanels[0] - g.diagPanels[1]), '诊断块塌成了内容高').toBeLessThanOrEqual(1);
   expect(g.docScrollHeight, '整屏溢出').toBeLessThanOrEqual(600);
 });

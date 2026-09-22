@@ -4,7 +4,16 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
-import { getGrowthSummary, winrateCell, type GrowthSummary } from '../api/growthApi';
+import {
+  getGrowthDiagnosis,
+  getGrowthSummary,
+  trendPoints,
+  winrateCell,
+  type GrowthDiagnosis,
+  type GrowthSummary,
+} from '../api/growthApi';
+import DiagnosisPanel from '../components/growth/DiagnosisPanel';
+import RungTrend from '../components/growth/RungTrend';
 
 /**
  * 屏 22 · 成长(L1 两栏)。
@@ -29,8 +38,9 @@ import { getGrowthSummary, winrateCell, type GrowthSummary } from '../api/growth
  *    `opponent_rank_name`,而且 `ck_ai_ladder_ledger_decision` 强制 counted 的行必须有档位 ——
  *    也就是**已计入的局一局都不会漏**。稿子写「还没有战绩」是因为它以为没这张账本。
  *
- * 留下的只有「能力诊断」那一块:它要拿**已经跑过报告**的对局算,那是另一条链(复盘屏),
- * 稿子的诚实空态原样照搬。
+ * 「能力诊断」2026-09 接上了(见 `components/growth/DiagnosisPanel.tsx`):最近几份已完成报告里
+ * **你执的那一方**的手,按布局 / 中盘 / 官子三段数问题手,样本量写在旁边。在此之前那块是写死的
+ * 「样本 0 局」,还挂着一个标反了的「后端已有 · 界面未接」蓝标 —— 跨局汇总那时前后端都没有。
  *
  * ## 胜率算哪些局
  *
@@ -71,6 +81,17 @@ const GrowthPage = () => {
       // 失败就是失败:**不退回 0**。「一局没下」和「没读到」在屏上必须是两句话
       //(`summaryFailed` 那条 setnote)。abort 不算失败 —— 那是我们自己取消的。
       .catch(() => { if (!ac.signal.aborted) { setSummary(null); setSummaryFailed(true); } });
+    return () => ac.abort();
+  }, [token]);
+
+  // 诊断是另一条请求、另一份失败 —— 它读不到不该连累上面那四个数,反之亦然。
+  const [diag, setDiag] = useState<GrowthDiagnosis | null>(null);
+  const [diagFailed, setDiagFailed] = useState(false);
+  useEffect(() => {
+    const ac = new AbortController();
+    getGrowthDiagnosis(token ?? undefined, ac.signal)
+      .then((d) => { setDiag(d); setDiagFailed(false); })
+      .catch(() => { if (!ac.signal.aborted) { setDiag(null); setDiagFailed(true); } });
     return () => ac.abort();
   }, [token]);
 
@@ -167,6 +188,16 @@ const GrowthPage = () => {
           </div>
         )}
 
+        {/* 近 30 天档位走势(共享规范 §5 的左栏顺序:大数 → 进度 → 走势 → 两格)。
+            老云端不回 `rung_trend` 时整块不出现 —— 不画,不是画一条空轴。 */}
+        {summary && trendPoints(summary) && (
+          <RungTrend
+            points={trendPoints(summary)!}
+            days={summary.window_days}
+            placed={placement?.phase === 'placed'}
+          />
+        )}
+
         <h3 className="gsec__h">{t('growth:rules_title', '升降的规矩')}</h3>
         <div className="grules">
           {LADDER_RULES(t).map((rule, i) => (
@@ -224,16 +255,7 @@ const GrowthPage = () => {
         )}
 
         <div className="gdiag">
-          <div className="panel gsec">
-            <h3>
-              {t('growth:diag_title', '能力诊断')}
-              <span className="wip have">{t('growth:diag_wip', '后端已有 · 界面未接')}</span>
-            </h3>
-            <div className="empty">
-              <h4>{t('growth:diag_empty_h', '样本 0 局')}</h4>
-              <p>{t('growth:diag_empty_p', '诊断要拿已经跑过报告的对局算——报告在后端有,界面还没读(见复盘屏)。够 30 局之前结论会抖,到时候也得把样本量写在旁边。')}</p>
-            </div>
-          </div>
+          <DiagnosisPanel diag={diag} failed={diagFailed} />
 
           <div className="panel gsec" data-testid="growth-by-rung">
             <h3>{t('growth:rung_title', '按对手强度')}</h3>

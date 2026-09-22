@@ -92,6 +92,10 @@ class InProcessAdapter:
         # were empty in the last stable board (see BoardStateExtractor._passes_hysteresis).
         self._add_threshold = config.get("confidence_threshold", 0.5)
         self._keep_threshold = config.get("confidence_keep") or max(0.25, self._add_threshold - 0.15)
+        # Sustain tier (VisionServiceConfig.confidence_sustain): the detector runs at this lower
+        # threshold, but sub-keep detections only ever reach board assignment, where they can keep
+        # an existing stone alive and never add one. Absent -> keep (the pre-2026-09-22 behaviour).
+        self._sustain_threshold = min(config.get("confidence_sustain") or self._keep_threshold, self._keep_threshold)
         self._enhance_mode = config.get("enhance", "clahe")
         # Static-scene rolling average (weak-light noise ~4.7x down at n=8); reset on
         # motion / geometry change / session reset so scene changes never ghost.
@@ -108,7 +112,7 @@ class InProcessAdapter:
         self._detector = StoneDetector(
             config.get("model_path", ""),
             backend=config.get("backend", "ultralytics"),
-            confidence_threshold=self._keep_threshold,
+            confidence_threshold=self._sustain_threshold,
         )
         self._state_extractor = BoardStateExtractor(board_config)
         # Geometry-lock warps add a 1-cell margin (matching baipu_autolabel training images), so the
@@ -403,8 +407,12 @@ class InProcessAdapter:
                     warped = enhance_for_inference(warped, self._enhance_mode)
                     _enh_ms = (time.monotonic() - _t_enh) * 1000
                     _t_inf = time.monotonic()
-                    detections = self._detector.detect(warped)
+                    all_detections = self._detector.detect(warped)
                     _infer_ms = (time.monotonic() - _t_inf) * 1000
+                    # Sustain-tier detections (below keep) go to board assignment, the board-delta
+                    # diagnostic and the preview only; every other consumer sees exactly what it
+                    # saw before the tier existed.
+                    detections = [d for d in all_detections if d.confidence >= self._keep_threshold]
                     self._frame_count += 1
                     if self._frame_count % 30 == 0:
                         _mc = (sum(d.confidence for d in detections) / len(detections)) if detections else 0.0
@@ -426,7 +434,7 @@ class InProcessAdapter:
                         exp = self._expected_np
                         masked = {p for p in self._lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
                     observed_board = self._active_extractor().detections_to_board(
-                        detections,
+                        all_detections,
                         img_w=w,
                         img_h=h,
                         occupancy_aware=True,
@@ -448,7 +456,7 @@ class InProcessAdapter:
                     if self._last_stable_board is not None and not np.array_equal(
                         stable_board, self._last_stable_board
                     ):
-                        self._log_board_delta(self._last_stable_board, stable_board, detections, w, h)
+                        self._log_board_delta(self._last_stable_board, stable_board, all_detections, w, h)
                     self._prev_observed_board = observed_board
                     self._last_stable_board = stable_board
                     observed_board = stable_board
@@ -613,7 +621,7 @@ class InProcessAdapter:
                         if move_result is None and not self._move_detector.about_to_confirm:
                             self._promote_stuck_stone(detections, w, h, observed_board, masked)
 
-                    self._maybe_send_preview(warped, detections)
+                    self._maybe_send_preview(warped, all_detections)
 
             elif frame is None:
                 # Camera dropout has no motion-frame decision to reset the average for us.

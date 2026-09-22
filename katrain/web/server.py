@@ -4092,6 +4092,13 @@ def run_web():
         "confidence (default: max(0.25, confidence - 0.15)). Fights weak-light flicker.",
     )
     parser.add_argument(
+        "--vision-confidence-sustain",
+        type=float,
+        default=None,
+        help="Sustain tier below 'keep': detections down to this confidence can only keep an existing "
+        "stone alive, never add one or reach any other consumer (default: min(0.20, keep)).",
+    )
+    parser.add_argument(
         "--vision-enhance",
         choices=["clahe", "off"],
         default=None,
@@ -4202,6 +4209,8 @@ def run_web():
             vision_kwargs["confidence_threshold"] = args.vision_confidence
         if args.vision_confidence_keep is not None:
             vision_kwargs["confidence_keep"] = args.vision_confidence_keep
+        if args.vision_confidence_sustain is not None:
+            vision_kwargs["confidence_sustain"] = args.vision_confidence_sustain
         if args.vision_enhance is not None:
             vision_kwargs["enhance"] = args.vision_enhance
         if args.vision_move_frames is not None:

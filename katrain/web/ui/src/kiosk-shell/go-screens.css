@@ -953,6 +953,21 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
   height: var(--btn-secondary-h); padding: 0 10px; font-size: 13px; max-width: 180px;
 }
 
+/* AI 段位详情:**就地展开**在同一列行里,不做弹层(`KioskAiLadderRows` 头注)。
+   往里缩一格、左边一条细线 —— 看得出这几行是上面那一行「段位」的下一层,不是新的一组。
+   行本身仍是共享的 `.kiosk-row`(52 高、flex:none),这里一条都不覆盖它的几何。 */
+.ladder-detail { display: flex; flex-direction: column; gap: var(--row-gap); padding-left: 20px; position: relative; }
+.ladder-detail::before { content: ''; position: absolute; left: 9px; top: 4px; bottom: 4px; width: 1px; background: var(--hair); }
+.ladder-detail .kiosk-row__t b[data-sev="warn"] { color: var(--warn); }
+.ladder-meter { gap: 8px; }
+.ladder-meter em { font-style: normal; font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.ladder-meter__pips { display: inline-flex; align-items: center; gap: 5px; }
+.ladder-meter__pips i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--hair); }
+.ladder-meter__pips i[data-zero] { width: 2px; border-radius: 1px; border: 0; background: var(--dim); height: 14px; }
+.ladder-meter__pips i[data-on="up"] { background: var(--good); border-color: var(--good); }
+.ladder-meter__pips i[data-on="down"] { background: var(--bad); border-color: var(--bad); }
+.ladder-recent { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+
 /* ── 屏 02 / 03 / 04 开局设置三屏 ────────────────────────────────────
    三屏同一副骨架(L2 布局 A),右栏是一叠 `.setgrp`。样式照 `sample-go` 稿子自己的
    `<style>` 抄,只抄**共享包里没有的那几个**:`.kiosk-optseg` / `.kiosk-seclabel` /

@@ -325,6 +325,10 @@ async def _lifespan_server(app: FastAPI, log):
     from katrain.web.core.report_diagnosis_repo import ReportDiagnosisRepository
 
     app.state.report_diagnosis_repo = ReportDiagnosisRepository(session_factory)
+    # 成长屏「近一年练棋日历」:逐日数对局与首次解题(盒上只在连不上云端时兜底)。
+    from katrain.web.core.growth_activity import GrowthActivityRepository
+
+    app.state.growth_activity_repo = GrowthActivityRepository(session_factory)
     app.state.ai_ladder_repo = ai_ladder_repo
     app.state.ai_ladder_authoritative = True
     app.state.report_session_factory = session_factory
@@ -479,6 +483,10 @@ async def _lifespan_board(app: FastAPI, log):
     from katrain.web.core.report_diagnosis_repo import ReportDiagnosisRepository
 
     app.state.report_diagnosis_repo = ReportDiagnosisRepository(session_factory)
+    # 成长屏「近一年练棋日历」:逐日数对局与首次解题(盒上只在连不上云端时兜底)。
+    from katrain.web.core.growth_activity import GrowthActivityRepository
+
+    app.state.growth_activity_repo = GrowthActivityRepository(session_factory)
     app.state.ai_ladder_repo = AiLadderRankedRepository(session_factory)
     # The board keeps an optimistic local profile so a completed game remains durable
     # through an outage. The cloud reservation/finalizer is canonical across devices;

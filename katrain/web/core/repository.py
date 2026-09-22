@@ -340,6 +340,14 @@ class RepositoryDispatcher:
             lambda: self._remote_client.get_growth_diagnosis(days, reports),
         )
 
+    async def growth_activity_remote(self, days: int, tz_offset: int) -> tuple[dict | None, str]:
+        """练棋日历,口径同 `growth_summary_remote`。`tz_offset` 原样带给云端 —— 按盒子这边的「今天」切天。"""
+        return await self._cloud_first(
+            "growth activity",
+            "/growth/activity",
+            lambda: self._remote_client.get_growth_activity(days, tz_offset),
+        )
+
     async def _cloud_first(self, label: str, path: str, call) -> tuple[dict | None, str]:
         """成长屏那几块的「先问云端」:`(payload, "cloud")` 或 `(None, 原因)`,**不抛**。"""
         if self._remote_client is None:

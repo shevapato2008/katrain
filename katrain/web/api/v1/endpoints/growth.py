@@ -202,3 +202,61 @@ async def growth_diagnosis(
         ],
         "authority": "local_cache" if dispatcher is not None else "this_node",
     }
+
+
+# ── 近一年练棋日历(G4)──────────────────────────────────────────────────────
+
+DEFAULT_ACTIVITY_DAYS = 365
+#: 东几区的分钟数(北京 = 480)。世界上的时区落在 UTC−12 … UTC+14。
+MIN_TZ_OFFSET, MAX_TZ_OFFSET = -12 * 60, 14 * 60
+
+
+def _looks_like_activity(payload: Any) -> bool:
+    if not isinstance(payload, dict) or not isinstance(payload.get("window_days"), int):
+        return False
+    days = payload.get("days")
+    return isinstance(days, list) and all(
+        isinstance(d, dict)
+        and isinstance(d.get("date"), str)
+        and isinstance(d.get("games"), int)
+        and isinstance(d.get("solved"), int)
+        for d in days
+    )
+
+
+@router.get("/activity")
+async def growth_activity(
+    request: Request,
+    days: int = DEFAULT_ACTIVITY_DAYS,
+    tz_offset: int = 0,
+    current_user: User = Depends(get_current_user),
+):
+    """近一年练棋日历:每天下完几局、首次解出几道题,**只列有活动的日子**。
+
+    按客户端时区切天(`tz_offset`)—— 按 UTC 切,北京早上 8 点前下的棋会落到前一天。
+    盒子上先问云端(跨设备完整);退回本机时如实标 `local_cache`,屏上写「本机记录」。
+    """
+    if not 1 <= days <= MAX_WINDOW_DAYS:
+        raise HTTPException(status_code=422, detail=f"days must be 1..{MAX_WINDOW_DAYS}")
+    if not MIN_TZ_OFFSET <= tz_offset <= MAX_TZ_OFFSET:
+        raise HTTPException(status_code=422, detail=f"tz_offset must be {MIN_TZ_OFFSET}..{MAX_TZ_OFFSET}")
+
+    repo = getattr(request.app.state, "growth_activity_repo", None)
+    if repo is None:
+        raise HTTPException(status_code=503, detail="growth activity unavailable on this node")
+
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        remote, reason = await dispatcher.growth_activity_remote(days, tz_offset)
+        if remote is not None and _looks_like_activity(remote):
+            return {**remote, "authority": "cloud"}
+        if remote is not None:
+            logger.warning("growth activity: cloud answered 200 with an unrecognised shape, using local cache")
+            reason = "remote_bad_payload"
+        logger.info("growth activity: serving local cache (%s)", reason)
+
+    return {
+        "window_days": days,
+        "days": repo.daily(current_user.id, days=days, tz_offset=tz_offset),
+        "authority": "local_cache" if dispatcher is not None else "this_node",
+    }

@@ -7,6 +7,7 @@ in-thread — no subprocess overhead, easy to debug.
 from __future__ import annotations
 
 import logging
+import math
 import os
 import queue
 import threading
@@ -18,7 +19,7 @@ import numpy as np
 
 from katrain.vision.auto_exposure import ExposureController, meter_brightness
 from katrain.vision.board_finder import BoardFinder
-from katrain.vision.board_state import EMPTY, BoardStateExtractor
+from katrain.vision.board_state import EMPTY, SUSTAIN_RADIUS, BoardStateExtractor
 from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
 from katrain.vision.enhance import enhance_for_inference
@@ -268,6 +269,24 @@ class InProcessAdapter:
             return None, False
         return self._board_finder.find_focus(frame, min_threshold=20, use_clahe=self._config.get("use_clahe", False))
 
+    def _game_stone_sustain(self, weak: list, w: int, h: int) -> list:
+        """The sustain-tier (below keep) detections allowed into board assignment: only those sitting within
+        SUSTAIN_RADIUS of a stone the GAME has already played (the expected board). Owner rule 2026-09-22:
+        the 0.20 tier exists so a played stone never reads as empty or as the other colour. The camera's
+        own last stable board is not "played": a shadow read as a stone once (E1 on the RK3562) must not
+        get the tier. No bound game -> no tier (tsumego / baipu monitor keep the pre-tier behaviour)."""
+        exp = self._expected_np
+        if not weak or exp is None or not self._bound:
+            return []
+        gs = exp.shape[0]
+        points = self._active_extractor().detection_points(weak, img_w=w, img_h=h)
+        kept = []
+        for det, (fy, fx, _cls, _conf) in zip(weak, points):
+            r, c = int(round(fy)), int(round(fx))
+            if 0 <= r < gs and 0 <= c < gs and int(exp[r][c]) != EMPTY and math.hypot(fy - r, fx - c) <= SUSTAIN_RADIUS:
+                kept.append(det)
+        return kept
+
     def _active_extractor(self) -> BoardStateExtractor:
         """Margin-aware extractor for the geometry-lock warp; plain (border 0) for BoardFinder."""
         return self._state_extractor_locked if self._geometry is not None else self._state_extractor
@@ -467,9 +486,9 @@ class InProcessAdapter:
                     _t_inf = time.monotonic()
                     all_detections = self._detector.detect(warped)
                     _infer_ms = (time.monotonic() - _t_inf) * 1000
-                    # Sustain-tier detections (below keep) go to board assignment, the board-delta
-                    # diagnostic and the preview only; every other consumer sees exactly what it
-                    # saw before the tier existed.
+                    # Sustain-tier detections (below keep) reach board assignment only on stones the game
+                    # has played (_game_stone_sustain), plus the board-delta diagnostic and the preview;
+                    # every other consumer sees exactly what it saw before the tier existed.
                     detections = [d for d in all_detections if d.confidence >= self._keep_threshold]
                     if tr:
                         tr.mark("detect")
@@ -500,8 +519,9 @@ class InProcessAdapter:
                     if self._lit_points:
                         exp = self._expected_np
                         masked = {p for p in self._lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
+                    weak = [d for d in all_detections if d.confidence < self._keep_threshold]
                     observed_board = self._active_extractor().detections_to_board(
-                        all_detections,
+                        detections + self._game_stone_sustain(weak, w, h),
                         img_w=w,
                         img_h=h,
                         occupancy_aware=True,

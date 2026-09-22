@@ -83,11 +83,19 @@ class _ScriptedCamera:
         return np.zeros((10, 10, 3), dtype=np.uint8)
 
 
-def _run(config, script):
-    """Drive the real loop over ``script`` (one detection list per frame); return (stable board, means)."""
+def _run(config, script, game=None):
+    """Drive the real loop over ``script`` (one detection list per frame); return (stable board, means).
+
+    ``game`` ({(row, col): colour}) binds a game whose expected board holds those stones -- the only
+    stones the sustain tier may keep."""
     camera = _ScriptedCamera(len(script))
     worker = _adapter(config, camera=camera)
     camera.worker = worker
+    if game is not None:
+        worker._bound = True
+        worker._expected_np = np.zeros((19, 19), dtype=int)
+        for (r, c), colour in game.items():
+            worker._expected_np[r][c] = colour
     worker._running = True
     worker._config["capture_fps"] = 100000
     worker._motion_is_stable = MagicMock(return_value=True)
@@ -115,29 +123,51 @@ PLACED = [[_det(3, 3, 1, 0.50)]] * 3  # a white stone lands and is confirmed on 
 WEAK = [[_det(3, 3, 1, 0.25)]] * 6  # ...then the detector only sees it at 0.25
 
 
-def test_a_placed_stone_survives_detections_between_sustain_and_keep():
-    board, _ = _run(SUSTAIN, PLACED + WEAK)
+GAME = {(3, 3): WHITE}  # the game has played that stone
+
+
+def test_a_played_stone_survives_detections_between_sustain_and_keep():
+    board, _ = _run(SUSTAIN, PLACED + WEAK, game=GAME)
     assert int(board[3][3]) == WHITE
 
 
 def test_without_the_sustain_tier_the_same_stone_is_lost():
     """Control: the same input at the old keep-only threshold drops the stone (the device symptom)."""
-    board, _ = _run({"confidence_threshold": 0.40, "confidence_keep": 0.30}, PLACED + WEAK)
+    board, _ = _run({"confidence_threshold": 0.40, "confidence_keep": 0.30}, PLACED + WEAK, game=GAME)
+    assert int(board[3][3]) == 0
+
+
+def test_a_stone_the_game_never_played_does_not_get_the_tier():
+    """The E1 phantom (RK3562, 2026-09-22): a shadow read as a stone reached the camera's stable board, and
+    the tier kept it alive because "already on the board" was the camera's own board, not the game's."""
+    board, _ = _run(SUSTAIN, PLACED + WEAK, game={})
+    assert int(board[3][3]) == 0
+
+
+def test_without_a_bound_game_there_is_no_tier():
+    board, _ = _run(SUSTAIN, PLACED + WEAK)
     assert int(board[3][3]) == 0
 
 
 def test_a_sustain_tier_detection_never_adds_a_stone_on_an_empty_point():
-    board, _ = _run(SUSTAIN, PLACED + [[_det(3, 3, 1, 0.50), _det(9, 9, 0, 0.25)]] * 6)
+    board, _ = _run(SUSTAIN, PLACED + [[_det(3, 3, 1, 0.50), _det(9, 9, 0, 0.25)]] * 6, game=GAME)
     assert int(board[9][9]) == 0 and int(board[3][3]) == WHITE
 
 
+def test_a_sustain_tier_detection_never_adds_a_played_stone_the_camera_has_not_seen_yet():
+    """The expected board already holds the AI's move before the user places it: a weak detection there
+    must still not put it on the board."""
+    board, _ = _run(SUSTAIN, PLACED + [[_det(3, 3, 1, 0.50), _det(9, 9, 0, 0.25)]] * 6, game={**GAME, (9, 9): BLACK})
+    assert int(board[9][9]) == 0
+
+
 def test_a_sustain_tier_detection_of_the_other_colour_does_not_recolour_a_stone():
-    board, _ = _run(SUSTAIN, PLACED + [[_det(3, 3, 0, 0.25)]] * 20)
+    board, _ = _run(SUSTAIN, PLACED + [[_det(3, 3, 0, 0.25)]] * 20, game=GAME)
     assert int(board[3][3]) == WHITE
 
 
 def test_confidence_statistics_never_see_the_sustain_tier():
     """mean_confidence drives DEGRADED mode; sub-keep boxes must not drag it down."""
-    _, means = _run(SUSTAIN, PLACED + WEAK)
+    _, means = _run(SUSTAIN, PLACED + WEAK, game=GAME)
     assert means and all(c >= 0.30 for frame in means for c in frame)
     assert means[-1] == []  # the 0.25 frames contribute nothing

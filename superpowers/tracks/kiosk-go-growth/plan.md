@@ -1633,7 +1633,7 @@ EOF
 `GrowthPage` 接入与四态单测、`go-screens.css` 屏 22 那一段、承重两态(在线 / 离线最满)、四图(参考图 pin `1a454cfc…`)。
 fixture 只在 `tests/` 下(`FULL_ACTIVITY` / `EMPTY_ACTIVITY` / fourup 的 `ACTIVITY`),生产代码里没有。
 
-- [ ] **Step 1: 写仓储的失败测试**
+- [x] **Step 1: 写仓储的失败测试**
 
 `tests/web_ui/test_growth_activity.py`:
 
@@ -1741,7 +1741,7 @@ def test_window_edges_in_the_clients_timezone_and_only_active_days(factory):
     ]
 ```
 
-- [ ] **Step 2: 跑,确认失败**
+- [x] **Step 2: 跑,确认失败**
 
 ```bash
 CI=true uv run pytest tests/web_ui/test_growth_activity.py -q
@@ -1749,7 +1749,7 @@ CI=true uv run pytest tests/web_ui/test_growth_activity.py -q
 
 预期:收集阶段 `ModuleNotFoundError: katrain.web.core.growth_activity`。
 
-- [ ] **Step 3: 仓储**
+- [x] **Step 3: 仓储**
 
 `katrain/web/core/growth_activity.py`:
 
@@ -1828,7 +1828,7 @@ class GrowthActivityRepository:
         return [{"date": d.isoformat(), "games": g, "solved": s} for d, (g, s) in sorted(buckets.items())]
 ```
 
-- [ ] **Step 4: 跑,确认仓储四条通过**
+- [x] **Step 4: 跑,确认仓储四条通过**
 
 ```bash
 CI=true uv run pytest tests/web_ui/test_growth_activity.py -q
@@ -1837,7 +1837,7 @@ CI=true uv run pytest tests/web_ui/test_growth_activity.py -q
 预期:`4 passed`。**变异自查一次**:把 `.astimezone(timezone.utc)` 那一段删掉再跑,
 `test_window_edges_…` 必须变红(证明那条测试真的守着那一行),然后改回。
 
-- [ ] **Step 5: 写端点的失败测试(追加到同一文件)**
+- [x] **Step 5: 写端点的失败测试(追加到同一文件)**
 
 ```python
 # ── 端点 ──
@@ -1928,7 +1928,7 @@ def test_box_offline_does_not_ask_and_bad_cloud_shape_falls_back(factory, caplog
     assert "unrecognised shape" in caplog.text
 ```
 
-- [ ] **Step 6: 跑,确认端点五条失败**
+- [x] **Step 6: 跑,确认端点五条失败**
 
 ```bash
 CI=true uv run pytest tests/web_ui/test_growth_activity.py -q
@@ -1936,7 +1936,7 @@ CI=true uv run pytest tests/web_ui/test_growth_activity.py -q
 
 预期:仓储 4 passed,端点 5 failed(404 —— 路由还不存在)。
 
-- [ ] **Step 7: 远端客户端 + dispatcher + 端点 + 挂仓储**
+- [x] **Step 7: 远端客户端 + dispatcher + 端点 + 挂仓储**
 
 `remote_client.py`,在 `get_growth_diagnosis` 之后(**手写,不整文件跑 black** —— 它在基线上就不干净):
 
@@ -2029,7 +2029,7 @@ async def growth_activity(
     app.state.growth_activity_repo = GrowthActivityRepository(session_factory)
 ```
 
-- [ ] **Step 8: 跑,确认通过;格式化只动基线干净的文件**
+- [x] **Step 8: 跑,确认通过;格式化只动基线干净的文件**
 
 ```bash
 CI=true uv run pytest tests/web_ui/test_growth_activity.py tests/web_ui/test_growth_authority.py tests/web_ui/test_growth_diagnosis.py tests/web_ui/test_growth_trend.py -q
@@ -2040,7 +2040,7 @@ git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtur
 
 预期:全部通过;`git diff --stat` 只列本 Task 的六个文件。
 
-- [ ] **Step 9: 提交**
+- [x] **Step 9: 提交**
 
 ```bash
 git add katrain/web/core/growth_activity.py tests/web_ui/test_growth_activity.py katrain/web/api/v1/endpoints/growth.py katrain/web/core/repository.py katrain/web/core/remote_client.py katrain/web/server.py
@@ -2056,7 +2056,7 @@ EOF
 )"
 ```
 
-- [ ] **Step 10: 集成 —— 真服务端 + 真浏览器**
+- [x] **Step 10: 集成 —— 真服务端 + 真浏览器**
 
 沿用 G1–G3 的集成脚手架(scratchpad `int/serve.py`:`create_app(enable_engine=False)` 起在 :8123,独立 SQLite;
 **不走 `python -m katrain`**,它退出时会改写 `~/.katrain/config.json`)。先 `npm run build`(服务端发的是构建产物)。
@@ -2072,7 +2072,19 @@ EOF
    跨日界那局所在格子的 `data-date`,**与第 3 步的数对上**(天数 = `days` 条数;档位按 0/1–2/3–5/6–9/10+ 由今天的合计推出)。截一张图存档。
 5. 停服务;`diff` 快照与 `~/.katrain/config.json`,必须一致;`git status` 干净。
 
-- [ ] **Step 11: Fixture 删除条件核对**
+> **验收记录(2026-09-22,`78a94bab`)**
+> - 单测:仓储 4 + 端点 5 全过;变异 —— 删掉 `since` 换 UTC 那一段,`test_window_edges_…` 变红,改回变绿。
+>   成长四个测试文件合计 45 passed。
+> - 集成(真服务端 :8123 + 独立 SQLite + Chromium 1024×600,`timezoneId=Asia/Shanghai`):
+>   造数前写死的期望 —— 09-10 解 10 题(档 4)、09-16 一局(UTC 09-15 20:00,跨日界,档 1)、
+>   09-19 三局(另有一局 `import` 不算,档 2)、今天经真接口建一局 + 解 2 题(档 3 合计,档 2),共 4 天。
+>   接口(`tz_offset=480`)逐条相符;`tz_offset=0` 时跨日界那局回到 09-15。
+>   浏览器自己发出 `tz_offset=480`;屏上「4 天」、今天那格 `data-level=2`、亮着的格子恰是那四天且档位相符、
+>   带日期的格子 365 个。`~/.katrain/config.json` 前后一致,`git status` 干净。
+> - 顺带看见(**不在本 Task 改**):同一屏「近 30 天对局」是 6,日历同期对局合计 5 ——
+>   G2 那一格的 `count_since` 连导入的谱也数,日历按 PRD 只数自己下的。已记入交付说明待 Fan 定。
+
+- [x] **Step 11: Fixture 删除条件核对**
 
 ```bash
 git grep -n "FULL_ACTIVITY\|EMPTY_ACTIVITY\|mulberry32" -- katrain/web/ui/src

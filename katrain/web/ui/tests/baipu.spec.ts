@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { scopedKey, kioskMeJson } from './helpers/kioskIdentity';
 
 /**
  * 摆谱(屏 17)那台状态机的 e2e:`guiding → 确认 → (采集 → 待移除 → 已移除) → done`,外加撤回。
@@ -29,15 +30,16 @@ const STEPS = {
 
 async function setupSession(page: Page) {
   // Authenticate (isAuthenticated = !!user) and seed the offline SGF cache.
-  await page.addInitScript(() => {
+  // 种子键必须带身份后缀,`/me` 必须给同一个 uuid —— 见 helpers/kioskIdentity.ts。
+  await page.addInitScript((sgfKey: string) => {
     localStorage.setItem('token', 'test-token');
     localStorage.setItem(
-      'baipu:sgf:test1',
+      sgfKey,
       JSON.stringify({ id: 'test1', name: 'Lee vs AlphaGo', sgf: '(;SZ[19];B[pd])', savedAt: 1 }),
     );
-  });
+  }, scopedKey('baipu:sgf:test1'));
   await page.route('**/api/v1/auth/me', (route) =>
-    route.fulfill({ json: { id: 1, username: 'tester', email: 't@example.com' } }),
+    route.fulfill({ json: kioskMeJson({ email: 't@example.com' }) }),
   );
   await page.route('**/api/v1/baipu/load', (route) => route.fulfill({ json: STEPS }));
   // LED is advisory in the UI; ack everything.
@@ -217,9 +219,9 @@ test.describe('baipu session', () => {
 
   test('restart uses same directory overwrite mode and waits for operator choice before initial capture', async ({ page }) => {
     await setupSession(page);
-    await page.addInitScript(() => {
-      localStorage.setItem('baipu:progress:test1', JSON.stringify({ k: 2, frames: 3, updatedAt: 2 }));
-    });
+    await page.addInitScript((progKey: string) => {
+      localStorage.setItem(progKey, JSON.stringify({ k: 2, frames: 3, updatedAt: 2 }));
+    }, scopedKey('baipu:progress:test1'));
     const bodies: Record<string, unknown>[] = [];
     await page.route('**/api/v1/baipu/capture', async (route) => {
       bodies.push(route.request().postDataJSON() as Record<string, unknown>);

@@ -1596,3 +1596,151 @@ button.kiosk-row.figrow { flex: none; }
 }
 
 .kiosk-engine-warmup.is-unavailable { color: var(--bad); }
+/* ══════════════════════════════════════════════════════════════════════════
+   开局设置 r2(2026-09-21)—— 屏 02 / 03 / 04 共用
+   ══════════════════════════════════════════════════════════════════════════
+
+   要解决的是同一个毛病:**八组设置被画成八件等重的东西**,右栏 1200px 内容挤在
+   352px 的可视高里,7″ 屏上要滑三屏半。真相是它们分两类 ——
+     · 「这局棋是什么」:路数 · 规则 · 让子。三个输入,**贴目是结果不是第四个输入**。
+     · 「你怎么坐」:落子 · 我执 · 用时。
+   所以画成两行三格 + 一条推导。
+
+   ⚠️ 这一组里每一个可点的件都**显式写了 `padding`**,一个都不许省。
+   `src/index.css:41` 有一条 `button{padding:.6em 1.2em}`(Vite 模板自带),
+   它按属性生效、不按特异性败给类选择器 —— 没写 padding 的类它照样命中。
+   `.catstep` 就是这么被撑成 50px、字形被挤出内容盒的(量出来的,见 SetupStepper.tsx)。
+   ────────────────────────────────────────────────────────────────────────── */
+
+.kiosk-rail[data-su] { position: relative; }
+
+.su-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.su-row--2 { grid-template-columns: repeat(2, 1fr); }
+
+.su-cell {
+  position: relative; display: flex; flex-direction: column; justify-content: center; gap: 3px;
+  height: 50px; padding: 0 26px 0 11px; margin: 0; text-align: left; cursor: pointer;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--raise);
+  font-family: var(--font-sans); overflow: hidden;
+}
+.su-cell__k { font-size: 11px; line-height: 1; color: var(--dim); letter-spacing: .06em; }
+.su-cell__v { font-size: 15px; line-height: 1.1; color: var(--text); font-weight: 500; white-space: nowrap; }
+/* 收起/展开的那个小箭头。图标是 kiosk-shell 的 `caret-down`(Phosphor v2,
+   viewBox 0 0 256 256),由 `<Icon>` 内联成 svg 再包一层 `.kiosk-icon` ——
+   所以尺寸要落在**里面那个 svg** 上,只给外层写 width/height 的话 svg 按自己的
+   固有尺寸铺开,会盖住半格。 */
+.su-cell__c { position: absolute; right: 10px; top: 50%; width: 12px; height: 12px; margin-top: -6px; color: var(--dim); line-height: 0; }
+.su-cell__c .kiosk-icon, .su-cell__c svg { display: block; width: 12px; height: 12px; }
+
+/* ± 那两颗键里的字形盒。`line-height: 1` + `display:block` 让它的 border box
+   就是字形自己的行盒 —— 几何闸量的是这个盒相对按钮盒的偏移。
+   字号写死 20px:跟着继承走的话中文字体回退会把两颗键量出不同的高。 */
+.su-step__g { display: block; font-size: 20px; line-height: 1; font-family: var(--font-sans); }
+.su-cell[aria-expanded="true"] { border-color: var(--accent); background: var(--panel); }
+.su-cell[aria-expanded="true"] .su-cell__c { color: var(--accent); transform: rotate(180deg); }
+.su-cell:disabled { cursor: default; opacity: .45; }
+
+/* 锁死的一格:**不是灰掉的控件,是一个读数**。虚线 + 无 chevron。
+   灰掉 = 「你现在不能改」(换个前提就回来);虚线 = 「这条路本来就没得选」。 */
+.su-cell--fixed { background: var(--panel); border-style: dashed; cursor: default; padding-right: 11px; }
+.su-cell--fixed .su-cell__v { color: var(--text); }
+
+/* 姓名那两格是**输入框**,不是下拉:没有 chevron,占位文字走 `--dim`。 */
+.su-cell--input { padding-right: 11px; }
+.su-cell--input .su-cell__v { color: var(--dim); font-weight: 400; }
+
+/* 推导条 —— 上面三格加起来等于什么。楷体 + 强调色只给那个数。 */
+.su-out {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  height: 36px; padding: 0 13px; margin: 6px 0 0; text-align: left;
+  border-radius: 11px; background: var(--panel); border: 1px solid var(--hair);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+  font-family: var(--font-sans); position: relative;
+}
+/* 平时它不是「被禁用的按钮」,它就是一行字 —— `:disabled` 不许降透明度。 */
+.su-out:disabled { cursor: default; opacity: 1; }
+.su-out__k { flex: none; font-size: 11px; color: var(--dim); letter-spacing: .06em; }
+.su-out__v {
+  font-family: var(--font-serif); font-size: 15px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.su-out__v i { font-style: normal; color: var(--accent); }
+.su-out__n { flex: none; margin-left: auto; font-size: 11px; color: var(--dim); }
+/* 只有「自定贴目」那一档才变回控件 */
+.su-out--pick { border-color: var(--accent); cursor: pointer; padding-right: 28px; }
+.su-out--pick .su-out__n { color: var(--accent); }
+.su-out .su-cell__c { right: 11px; }
+
+/* 弹层。让子 11 档排两列、贴目 15 档排三列 —— 一列比整条右栏还高。
+   列内按列排(`grid-auto-flow: column`):按行排会把「倒贴/分先/让先」和让子档拆开。 */
+.su-pop {
+  position: absolute; z-index: 40; padding: 6px; margin: 0;
+  border: 1px solid var(--accent); border-radius: 12px; background: var(--panel);
+  box-shadow: 0 18px 44px rgba(0,0,0,.6);
+}
+.su-pop--2 {
+  display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: column;
+  grid-template-rows: repeat(6, auto); gap: 4px; min-width: 240px;
+}
+.su-pop--3 {
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-flow: column;
+  grid-template-rows: repeat(5, auto); gap: 4px; min-width: 300px;
+}
+.su-pop__i {
+  display: flex; align-items: center; gap: 8px; width: 100%; height: 44px;
+  padding: 0 11px; margin: 0;
+  border: 0; border-radius: 8px; background: transparent; color: var(--text);
+  font-family: var(--font-sans); font-size: 14px; text-align: left; cursor: pointer;
+}
+.su-pop__i:hover { background: var(--raise); }
+.su-pop__i[aria-selected="true"] {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent); font-weight: 600;
+}
+.su-pop__i:disabled { opacity: .3; cursor: default; background: transparent; }
+.su-pop__i em { margin-left: auto; font-style: normal; font-size: 11px; color: var(--warn); }
+
+/* 棋力轨的 ±:SVG,不是字形。理由写在 `components/setup/SetupStepper.tsx`。 */
+.su-step {
+  width: 46px; height: 44px; flex: none; display: grid; place-items: center;
+  padding: 0; margin: 0;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--raise);
+  color: var(--accent); cursor: pointer;
+}
+.su-step:disabled { opacity: .38; cursor: default; }
+
+.su-hint { margin: 5px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--dim); }
+.su-hint b { color: var(--text); font-weight: 600; }
+.su-hint:empty { display: none; }
+
+/* 升降级的赌注:两端对齐的一行,不做成卡片 —— 它是一句话,不是一块内容。 */
+.su-stake { display: flex; gap: 8px; }
+.su-stake span {
+  flex: 1; height: 36px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--hair); border-radius: 10px; background: var(--raise);
+  font-size: 12.5px; color: var(--dim);
+}
+.su-stake b { font-family: var(--font-serif); font-size: 14px; color: var(--text); font-weight: 600; }
+.su-stake span:first-child b { color: var(--good); }
+.su-stake span:last-child b { color: var(--bad); }
+
+/* 紧排:这三屏的目标是**右栏不滚**,行距按真浏览器量出来的数收,不按通用节奏走。
+   `.kiosk-side__scroll` 自己是 flex 列、带 `--l1-section-gap`,它叠在
+   `.setgrp + .setgrp` 的 margin 上 —— 段间距实际是 8+20=28px,不是 20。
+   (量出来的:逐段相加比 scrollHeight 少 16.4px,差额就在这儿。) */
+.kiosk-rail[data-su] .setgrp + .setgrp { margin-top: 6px; }
+.kiosk-rail[data-su] .kiosk-seclabel { height: 18px; margin-bottom: 5px; }
+.kiosk-rail[data-su] .catmeta { margin-top: 5px; }
+
+/* 姓名那两格里的输入框:**长得就是那一格的值那一行**,不另画一个框中框。
+   7″ 触屏上一格里再套一个输入框,点击靶只剩中间那一条。 */
+.su-nameinput {
+  width: 100%; padding: 0; margin: 0; border: 0; background: transparent;
+  color: var(--text); font-family: var(--font-sans); font-size: 15px; font-weight: 500;
+  outline: none; min-width: 0;
+}
+.su-nameinput::placeholder { color: var(--dim); font-weight: 400; }
+
+/* 升降级那段对手说明在这三屏里收一档行距:它是一段读数,不是正文。
+   (整段并进「盒子定好的」之后仍差 9px —— 真浏览器量出来的,不是估的。) */
+.kiosk-rail[data-su] .setexplain { padding: 9px 12px; line-height: 1.5; }

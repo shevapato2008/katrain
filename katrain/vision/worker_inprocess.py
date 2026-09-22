@@ -31,6 +31,7 @@ from katrain.vision.gating import (
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
+from katrain.vision.parallax import ParallaxParams
 from katrain.vision.move_detector import (
     AmbiguousPromoter,
     MoveDetector,
@@ -52,6 +53,7 @@ PREVIEW_FPS = 3
 JPEG_QUALITY = 75
 # An unanswered low-confidence move prompt re-fires (MoveDetector no longer advances its
 # baseline at confirm time), so re-emission of the ambiguous_stone event is rate-limited.
+IDLE_POLL_S = 0.25  # 没人要画面时多久看一次指令队列
 AMBIG_REPROMPT_FRAMES = 40  # ~4s at ~10fps
 
 
@@ -111,13 +113,16 @@ class InProcessAdapter:
         self._state_extractor = BoardStateExtractor(board_config)
         # Geometry-lock warps add a 1-cell margin (matching baipu_autolabel training images), so the
         # mapping for that path needs the matching border. BoardFinder fallback keeps border 0.
+        # Stone parallax is calibrated in THIS warp's grid, so only this extractor may receive it.
+        parallax_cfg = config.get("parallax")
         self._state_extractor_locked = BoardStateExtractor(
             BoardConfig(
                 grid_size=board_config.grid_size,
                 board_width_mm=board_config.board_width_mm,
                 board_length_mm=board_config.board_length_mm,
                 margin_cells=DEFAULT_MARGIN_CELLS,
-            )
+            ),
+            parallax=ParallaxParams(**parallax_cfg) if parallax_cfg else None,
         )
         self._move_detector = MoveDetector(
             consistency_frames=config.get("move_confirm_frames", 3),
@@ -221,23 +226,37 @@ class InProcessAdapter:
 
     def _log_board_delta(self, before, after, detections, w: int, h: int) -> None:
         """One INFO line per stable-board change: which cells appeared/vanished and what the
-        detector actually saw nearby — turns 'why did my stone drop?' into reading a log line."""
-        pts = self._active_extractor().detection_points(detections, img_w=w, img_h=h)
+        detector actually saw nearby — turns 'why did my stone drop?' into reading a log line.
+
+        Each cell carries its nearest detection as
+        <class><conf>@<distance> pl<shift>[*] (<fy_raw>,<fx_raw>)>(<fy>,<fx>): shift is how far the
+        parallax correction moved it (cells; 0.00 when off), a * means the correction changed which
+        intersection it rounds to — "this move was rescued by parallax" — and the coordinate pair is the
+        raw -> corrected continuous (row, col) position (prd P2). The leading (r,c)<colour> token is
+        unchanged: vision-recognition-stability §7 greps it."""
+        pts = self._active_extractor().parallax_points(detections, img_w=w, img_h=h)
         names = {0: "B", 1: "W", 2: "R", 3: "G"}
 
         def near(r, c):
             best = None
-            for fy, fx, cls, conf in pts:
+            for fy_raw, fx_raw, fy, fx, cls, conf in pts:
                 d = ((fy - r) ** 2 + (fx - c) ** 2) ** 0.5
                 if best is None or d < best[0]:
-                    best = (d, cls, conf)
+                    best = (d, cls, conf, fy_raw, fx_raw, fy, fx)
             if best is None or best[0] > 1.0:
                 return "none"
-            return f"{names.get(best[1], '?')}{best[2]:.2f}@{best[0]:.2f}"
+            d, cls, conf, fy_raw, fx_raw, fy, fx = best
+            shift = ((fy - fy_raw) ** 2 + (fx - fx_raw) ** 2) ** 0.5
+            rescued = (int(round(fy_raw)), int(round(fx_raw))) != (int(round(fy)), int(round(fx)))
+            return (
+                f"{names.get(cls, '?')}{conf:.2f}@{d:.2f} pl{shift:.2f}{'*' if rescued else ''} "
+                f"({fy_raw:.2f},{fx_raw:.2f})>({fy:.2f},{fx:.2f})"
+            )
 
         sym = {1: "B", 2: "W"}
         added = [
-            f"({r},{c}){sym.get(int(after[r][c]), '?')}" for r, c in zip(*np.where((before != after) & (after != 0)))
+            f"({r},{c}){sym.get(int(after[r][c]), '?')}~{near(int(r), int(c))}"
+            for r, c in zip(*np.where((before != after) & (after != 0)))
         ]
         removed = [
             f"({r},{c}){sym.get(int(before[r][c]), '?')}~{near(int(r), int(c))}"
@@ -343,9 +362,23 @@ class InProcessAdapter:
 
         target_interval = 1.0 / self._config.get("capture_fps", 8)
 
+        was_idle = False  # 只在真的空闲过一轮之后才需要清累积;启动时它本来就是空的
         while self._running:
             loop_start = time.monotonic()
             self._drain_commands()
+
+            if not self.needs_frames():
+                # 启动器、菜单、屏幕对弈:不读帧、不做图像处理,只照常上报状态(左栏「摄像头已连接」
+                # 与守卫的 recognition_ready 都读它)。RK3562 实测这条循环空转时占 katrain 的 35%。
+                self._publish_status(None)
+                was_idle = True
+                time.sleep(IDLE_POLL_S)
+                continue
+            if was_idle:
+                was_idle = False
+                # 空闲之前攒下的观测不能和现在的画面混在一起投票。
+                self._averager.reset()
+                self._motion_filter.reset()
 
             frame = self._camera.read_frame()
             board_detected = False
@@ -601,22 +634,7 @@ class InProcessAdapter:
                 for evt in events:
                     self._event_queue.put({"type": evt.type.value, "data": evt.data})
 
-            self._status = WorkerStatus(
-                camera_status="connected" if self._camera.is_connected else "disconnected",
-                pose_lock_status=(
-                    "locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked"
-                ),
-                sync_state=self._sync.state.value,
-                detected_board=observed_board.tolist() if observed_board is not None else None,
-                last_motion_at=self._last_motion_at,
-                camera_ready=bool(self._camera.is_connected),
-                geometry_ready=self._geometry is not None or not self._require_geometry,
-                model_ready=True,
-                recognition_ready=bool(
-                    self._camera.is_connected and (self._geometry is not None or not self._require_geometry)
-                ),
-                observation_seq=self._observation_seq,
-            )
+            self._publish_status(observed_board)
 
             elapsed = time.monotonic() - loop_start
             sleep_time = target_interval - elapsed
@@ -625,6 +643,33 @@ class InProcessAdapter:
 
         if self._owns_camera:
             self._camera.close()
+
+    def needs_frames(self) -> bool:
+        """有人要看棋盘才处理画面:实体对局绑定、做题/摆谱监视、摆棋准备、有人开着识别预览。"""
+        return bool(
+            self._bound
+            or self._monitor
+            or self._viewer_active
+            or self._sync.state == SyncState.SETUP_IN_PROGRESS
+        )
+
+    def _publish_status(self, observed_board) -> None:
+        self._status = WorkerStatus(
+            camera_status="connected" if self._camera.is_connected else "disconnected",
+            pose_lock_status=(
+                "locked" if self._sync.state not in (SyncState.UNBOUND, SyncState.CALIBRATING) else "unlocked"
+            ),
+            sync_state=self._sync.state.value,
+            detected_board=observed_board.tolist() if observed_board is not None else None,
+            last_motion_at=self._last_motion_at,
+            camera_ready=bool(self._camera.is_connected),
+            geometry_ready=self._geometry is not None or not self._require_geometry,
+            model_ready=True,
+            recognition_ready=bool(
+                self._camera.is_connected and (self._geometry is not None or not self._require_geometry)
+            ),
+            observation_seq=self._observation_seq,
+        )
 
     def _drain_commands(self) -> None:
         while True:

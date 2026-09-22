@@ -106,7 +106,6 @@ const VIEWPORT_UNIT_BASELINE = [
   'src/kiosk/components/report/ReportLocalImportDialog.test.tsx',
   'src/kiosk/components/report/ReportLocalImportDialog.tsx', // (C) 对话框
   'src/kiosk/components/tsumego/SuccessOverlay.tsx', // (C) 做题屏上的浮层
-  'src/kiosk/pages/TsumegoCategoriesPage.tsx', // (B) 训练营分类,未排
   'src/kiosk/pages/TsumegoLevelPage.tsx',
 ];
 
@@ -192,7 +191,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/pages/BaipuListPage.tsx', // (A) 摆谱屏
   'src/kiosk/pages/GamePage.tsx', // (C) 屏 05 已重画;剩的是对话框里的图标
   'src/kiosk/pages/LivePage.tsx', // (A) 直播屏
-  'src/kiosk/pages/TsumegoCategoriesPage.tsx',
 ];
 
 test('图标不许新增手写内联路径或 MUI 图标 —— 只能从 kiosk-shell/icons/ 出', () => {

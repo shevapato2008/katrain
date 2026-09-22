@@ -132,7 +132,10 @@ export function outcomeLine(game: UserGameSummary, mine: 'B' | 'W' | null, t: TF
   }
   // SGF 的 `Void` = 不判胜负。今天只由星阵人机局写进来(AI 停手或认输,本终端分不出是哪种,
   // server.py `_record_platform_engine_game`)。规范里有定义的值,照它的意思念,不算猜。
-  if (/^void$/i.test(raw)) return t('review:no_result_line', '这盘没有判出胜负');
+  /* **另铸一个键,不复用 `review:no_result_line`。** 那个 msgid 在 cn PO 里说的是
+     「谱里没写结果」—— 和这里要说的「判了,判的是不分胜负」是两件事。
+     `t()` 是翻译表赢,复用的话屏上会把 `Void` 念成「谱里没写结果」。 */
+  if (/^void$/i.test(raw)) return t('review:void_result', '这盘没有判出胜负');
   const m = raw.match(/^([BW])\+(.+)$/i);
   if (!m) return raw;                       // 后端存了别的写法就原样念,不猜
   const winner = m[1].toUpperCase() as 'B' | 'W';

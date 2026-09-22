@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert } from '@mui/material';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { backToState } from '../hooks/useBackTo';
 import { API, type EngineLevel } from '../../api';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
@@ -67,6 +68,7 @@ const HANDICAP_TRACK = [0, -1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 const PlatformEngineSetupPage = () => {
   const { platform = 'golaxy' } = useParams<{ platform: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   // token 只当**凭据**用（严格盒端恒为 null，身份在 HttpOnly sb_go_token cookie 里）；
   // 「认没认证」一律判 isAuthenticated —— 判 token 会让盒上每个已登录用户都进不来。
@@ -137,7 +139,7 @@ const PlatformEngineSetupPage = () => {
       const { session_id } = await API.platformEngineStart(
         platform, { level, human_color: humanColor, handicap }, token,
       );
-      navigate(`/kiosk/play/cross-platform/engine/game/${session_id}`);
+      navigate(`/kiosk/play/cross-platform/engine/game/${session_id}`, { state: backToState(location) });
     } catch (e) {
       setStartError(e instanceof Error ? e.message : t('Failed to start game', '创建对局失败'));
     } finally {

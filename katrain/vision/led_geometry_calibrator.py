@@ -40,6 +40,13 @@ MIN_LOCATED_ANCHORS = 9
 #     贴着噪声底(只高 1.03-1.20 倍)。**这一半不动**:再往上抬会把"ROI 被投毒之后
 #     靠全画幅捞回来"的锚点一起毙掉,而没有实测数据支持某个具体的更高值。
 PEAK_MIN_ROI = 15.0
+
+# 每颗锚点点亮后先等 settle_ms 拍一帧,再每隔 HOLD_STEP_MS 补拍 HOLD_EXTRA_FRAMES 帧(灯一共亮约 1 s),
+# 逐像素取最小再与暗帧做差:**只有每一帧都亮的地方才算 LED**。2026-09-21 RK3562:角点三轮被棋盘外
+# 一闪而过的变化抢走(当次锁反算 row 1.47 / col -3.63;人不在旁边时 12/12 全对),单帧检测挡不住;
+# Fan 定的做法是「一个点多亮一会儿」,不是「同一点闪两次」。
+HOLD_EXTRA_FRAMES = 3
+HOLD_STEP_MS = 300.0
 PEAK_MIN_FULL = 20.0
 
 # 「本轮 ROI 预筛整个没生效」的报警线。某个**角**被眩光抢到别处时(正是本分支要修的
@@ -437,8 +444,9 @@ class LedGeometryCalibrator:
                         "geometry anchor (%d,%d) %s@%d: reason=show_failed", row, col, color_name, level,
                     )
                     break
-                lit, _seq, _ts = self.capture.grab_fresh(
+                lit, _seq, lit_ts = self.capture.grab_fresh(
                     after_ts=shown.get("shown_at"), settle_ms=self.settle_ms)
+                lit = self._hold_min(lit, lit_ts)
                 if dark is None or lit is None:
                     attempts.append({"row": row, "col": col, "color": color_name,
                                      "level": level, "reason": "no_frame"})
@@ -485,6 +493,18 @@ class LedGeometryCalibrator:
                 self.anchor_observer(row, col, point, color_name)
                 return result.centroid
         return None
+
+    def _hold_min(self, lit, lit_ts):
+        """灯亮着的时候再连拍 HOLD_EXTRA_FRAMES 帧,逐像素取最小 —— 只有每一帧都亮的地方留下来。"""
+        if lit is None:
+            return None
+        frames, ts = [lit], lit_ts
+        for _ in range(HOLD_EXTRA_FRAMES):
+            frame, _seq, ts = self.capture.grab_fresh(after_ts=ts, settle_ms=HOLD_STEP_MS)
+            if frame is None:
+                break
+            frames.append(frame)
+        return np.minimum.reduce(frames)
 
     def _build_lock(self, fit, frames, detected, attempts):
         M = np.asarray(fit.M, np.float64)

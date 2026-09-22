@@ -26,6 +26,10 @@ CAMERA_AUTO_EXPOSURE_ON = 3.0
 # Use the same proven board-brightness band as software AE.  A short run of
 # consecutive in-band frames prevents locking on a transient while keeping the
 # successful startup path bounded to a few frames before/after the handoff.
+# 没人要画面超过这么久,读线程就只出队不解码,每 CAMERA_IDLE_DECODE_INTERVAL_S 解一帧(保证有人来取时
+# 拿到的不超过 1 s 前的画面)。RK3562 实测:停在启动器时 1080p 持续解码占 katrain CPU 的 33%。
+CAMERA_IDLE_AFTER_S = 3.0
+CAMERA_IDLE_DECODE_INTERVAL_S = 1.0
 HARDWARE_AE_TARGET_LO = 120.0
 HARDWARE_AE_TARGET_HI = 170.0
 HARDWARE_AE_STABLE_FRAMES = 3
@@ -158,6 +162,9 @@ class CameraManager:
         self._latest_frame: np.ndarray | None = None
         self._frame_seq = 0  # increments per frame read (under _frame_lock)
         self._frame_ts = 0.0  # time.monotonic() when the frame was read
+        # 最近一次有人要画面(read_frame / grab_fresh)的时刻;超过 CAMERA_IDLE_AFTER_S 没人要就降到每秒解码一帧。
+        self._last_demand = time.monotonic()
+        self._last_idle_decode = 0.0
         self._frame_lock = threading.Lock()
         # Runtime camera controls (software AE): requests are queued here and applied
         # by the reader thread between reads — cv2.VideoCapture is not thread-safe.
@@ -344,6 +351,7 @@ class CameraManager:
         Always returns the freshest available frame, never a stale buffered
         one.  Returns None if the camera is disconnected.
         """
+        self._last_demand = time.monotonic()
         if not self._connected:
             return self._try_reconnect()
 
@@ -358,6 +366,25 @@ class CameraManager:
         """Continuously read frames in background, keeping only the latest."""
         while not self._stop_event.is_set():
             self._apply_pending_controls()
+            now = time.monotonic()
+            idle = now - self._last_demand > CAMERA_IDLE_AFTER_S
+            grab = getattr(self._cap, "grab", None)
+            if idle and grab is not None and now - self._last_idle_decode < CAMERA_IDLE_DECODE_INTERVAL_S:
+                # 没人要画面:只出队不解码。缓冲照常清空 —— grab_fresh 的时间戳闸靠「读出即盖章」,
+                # 不能让缓冲里攒下旧帧、恢复时被盖上新时间。RK3562 上 1080p 解码占 katrain 的 33%。
+                try:
+                    ok = grab()
+                except cv2.error as exc:
+                    logger.warning("Camera %s grab error: %s", self._device_id, exc)
+                    self._mark_disconnected()
+                    return
+                if not ok:
+                    logger.warning("Camera %s grab failed", self._device_id)
+                    self._mark_disconnected()
+                    return
+                continue
+            if idle:
+                self._last_idle_decode = now
             try:
                 ret, frame = self._cap.read()  # type: ignore[union-attr]
             except cv2.error as exc:
@@ -570,6 +597,7 @@ class CameraManager:
         lit and settled — regardless of any OpenCV buffer depth (plan §3.1). On
         timeout it returns the latest frame available (or ``(None, seq, ts)``).
         """
+        self._last_demand = time.monotonic()
         if after_ts is None:
             after_ts = time.monotonic()
         target = after_ts + settle_ms / 1000.0

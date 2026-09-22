@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
+import { kioskMeJson } from './helpers/kioskIdentity';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -37,14 +38,18 @@ const boot = async (page: Page, snapshot: string[] | null) => {
     localStorage.setItem('katrain_language', 'cn');
     localStorage.setItem('kiosk_tsumego_physical', 'false');
     localStorage.setItem('tsumego_progress:u1', JSON.stringify(progress));
-    // 错题快照按账号存(Task 7),下面 auth/me 回 id=1 ⇒ `:u1`。钥匙写错的话做题屏会静默退回整类,四图照样出图。
-    if (snap) sessionStorage.setItem('kiosk_problems_15k_capturing_wrong:u1', JSON.stringify(snap));
+    /* 错题快照按账号存(Task 7),下面 auth/me 回 uuid=u1 ⇒ 真键是 `..._wrong:u1`。
+       ⚠️ **它在 localStorage,不在 sessionStorage** —— `readWrongSequence` 走的是
+       `getCurrentKioskActivityStorage()`(真用户 ⇒ 带后缀的 localStorage),而**不带
+       `_wrong` 的整类顺序表**才是 sessionStorage(`readSequence` 直接读它)。
+       同一个文件里两条顺序表分属两种存储,写错一条做题屏会**静默退回整类**、四图照样出图。 */
+    if (snap) localStorage.setItem('kiosk_problems_15k_capturing_wrong:u1', JSON.stringify(snap));
   }, { progress: PROGRESS, snap: snapshot });
   await stubBackendStatics(page);
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/api/v1/auth/me') {
-      return route.fulfill({ json: { id: 1, username: '访客', rank: '5段', credits: 0 } });
+      return route.fulfill({ json: kioskMeJson({ username: '访客' }) });
     }
     if (path.startsWith('/api/v1/tsumego/problems/')) return route.fulfill({ json: PROBLEM });
     if (path.startsWith('/api/v1/tsumego/levels/') && path.includes('/categories/')) {
@@ -115,7 +120,7 @@ test('滚到底:屏 12 下半屏(整级一起做 + 只做错过的)真的在视�
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/api/v1/auth/me') {
-      return route.fulfill({ json: { id: 1, username: '访客', rank: '5段', credits: 0 } });
+      return route.fulfill({ json: kioskMeJson({ username: '访客' }) });
     }
     if (path.startsWith('/api/v1/tsumego/levels/') && path.includes('/categories/')) {
       return route.fulfill({ json: UNITS_IDS });
@@ -135,7 +140,11 @@ test('滚到底:屏 12 下半屏(整级一起做 + 只做错过的)真的在视�
 
   // 两句都要真的在 1024×600 视口里 —— 不是在 DOM 里、被滚动区裁掉。future 的裁切要在这里当场红,
   // 不能再靠人肉逐张打开四图才发现(round 1 finding 的成因)。
-  const wholeLevelSub = page.getByText('按分类排好，不分单元');
+  /* ⚠️ 这一句跟着源码走,别照抄旧稿:develop 的 `4f80ec9e` 把「整级一起做 · 按分类排好，
+     不分单元」换成了「综合训练 · 混合当前难度全部题型，每 20 题一单元」
+     (`TsumegoUnitsPage.tsx:206-209`)。测试等一句源码里已经没有的话,报的是
+     「element(s) not found」—— 看起来像被裁掉了,其实是文案改了。 */
+  const wholeLevelSub = page.getByText('混合当前难度全部题型，每 20 题一单元');
   const wrongCard = page.getByText('只做错过的', { exact: true });
   await expect(wholeLevelSub).toBeInViewport();
   await expect(wrongCard).toBeInViewport();

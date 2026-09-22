@@ -68,6 +68,49 @@ def _terminal_of(session):
     return terminal if isinstance(terminal, GameEnd) else None
 
 
+def _kiosk_game_terms(settings: dict, default_komi: float, default_rules: str) -> tuple[int, float, str]:
+    """kiosk 三屏送来的盘面条件,**在 kiosk 这条端点上 fail-closed**。
+
+    两条,都只管 kiosk 自己那几个 mode(`free` / `ranked` / `pvp_local`):
+
+    ① **让子局的 komi 归零。** 白方的补偿由 KataGo 按规则自动加
+       (chinese = `WHB_N`,`KataGo/cpp/game/rules.cpp:292`;补偿是引擎从盘面初始
+       黑子数自己算的,不看 `HA` —— `boardhistory.cpp:379-401` + `:442-455`),
+       komi 再写一遍就补两遍。kiosk 前端已经保证送 0(`utils/setupOptions.ts`
+       的 `resolveGameTerms`),这里是第二道 —— 判胜负的数落进棋谱,错了看不出来。
+
+       **判据是 `>= 2` 不是 `> 0`**:`HA[1]` 不摆子,KataGo 的补偿判据也是
+       `blackTurnAdvantage <= 1 → 0`(`boardhistory.cpp:397-399`);而「让先」
+       在 kiosk 的枚举里是独立一档(handicap=0 / komi=0),不该由这条规则管。
+
+    ② **`color` 只认 black / white。** `human_bw = "B" if color == "black" else "W"`
+       对任何别的值都落到白 —— 送个 `"guess"` 进来不是 50% 坐白,是 100% 坐白。
+       kiosk 的「猜先」在前端就掷完了(`AiSetupPage.tsx` 的 `drawSeat`),
+       这里挡的是将来任何一版客户端想当然地把 `"nigiri"` 直接发过来。
+
+    ⚠️ **这道兜底只长在 kiosk 那三个 mode 上**(`free` / `ranked` / `pvp_local`,
+    都走 `POST /api/game/setup`)。**绕过它的那条路是 `POST /api/new-game`** ——
+    那里 `request.handicap` / `request.komi` 原样透传给 `_do_new_game`(见上面
+    `mode == "newgame"` 那一支)。前端的出口是 `src/api.ts` 的 `API.newGame`,
+    今天 kiosk 侧**零调用者**(唯一调用者是 galaxy 的 `AiSetupPage.tsx:271`),
+    而「零调用者」这个前提由
+    `src/kiosk/__tests__/kioskNewGameBoundary.test.ts` 钉着 —— 哪天有人在 kiosk 里
+    用了它,那条闸会红并指回这里。
+
+    ⚠️ **这两条只加在 kiosk 分支,不加进 `_do_new_game`。**
+    `_do_new_game` 同时服务 galaxy 的 `NewGameDialog` —— 那边让子和贴目是两个
+    自由数字框(`src/components/NewGameDialog.tsx:285` 和 `:305`),没有任何耦合,
+    用户输进去的 6.5 就是他要的 6.5。在那一层归零 = 把用户亲手输的数悄悄改掉,
+    方向和这里要修的毛病一模一样,只是反过来。
+    """
+    handicap = int(settings.get("handicap", 0) or 0)
+    komi = float(settings.get("komi", default_komi))
+    if handicap >= 2 and komi != 0:
+        komi = 0.0
+    rules = settings.get("rules", default_rules)
+    return handicap, komi, rules
+
+
 def _count_result(score):
     """目差 → 终局结果(正数黑领先)。数子与双停补分(Task 5)共用同一种格式。返回 `(result, winner_color)`。"""
     if score >= 0:
@@ -683,6 +726,14 @@ async def _lifespan_board(app: FastAPI, log):
     # Vision service (optional — enabled when --vision-model is provided)
     if vision_config and vision_config.enabled and camera_hub is not None:
         from katrain.vision.service import VisionService
+        from katrain.vision.parallax_store import attach_parallax
+
+        vision_config, parallax_level, parallax_message = attach_parallax(
+            vision_config,
+            hardware_vision_dir,
+            hardware_vision_state.generation if hardware_vision_state is not None else None,
+        )
+        log.log(parallax_level, parallax_message)
 
         vision = VisionService(vision_config, frame_source=camera_hub)
         vision.start()
@@ -813,6 +864,7 @@ async def _lifespan_board(app: FastAPI, log):
             on_degraded=invalidate_geometry,
             on_suspend=suspend_vision,
             on_resume=resume_vision,
+            drift_needed=lambda: _vision_needs_frames(app),
         )
     else:
         app.state.geometry_calibration = None
@@ -1320,6 +1372,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             elif mode in ("free", "ranked"):
                 # Kiosk human-vs-AI game setup
                 color = settings.get("color", "black")
+                # fail-closed:下一行对**任何**不等于 "black" 的值都落到白。
+                # 不挡的话送个 "nigiri" 进来是 100% 坐白,而屏上说的是「猜先」。
+                if color not in ("black", "white"):
+                    raise HTTPException(status_code=400, detail=f"unsupported color: {color!r}")
                 human_bw = "B" if color == "black" else "W"
                 ai_bw = "W" if color == "black" else "B"
                 ai_strategy = settings.get("ai_strategy", "ai:default")
@@ -1355,12 +1411,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.katrain.update_config("timer/byo_length", 0)
                     session.katrain.update_config("timer/paused", True)
 
+                handicap, komi, rules = _kiosk_game_terms(settings, 6.5, "japanese")
                 session.katrain(
                     "new_game",
                     size=settings.get("board_size", 19),
-                    handicap=settings.get("handicap", 0),
-                    komi=settings.get("komi", 6.5),
-                    rules=settings.get("rules", "japanese"),
+                    handicap=handicap,
+                    komi=komi,
+                    rules=rules,
                     game_type=mode,  # R3/R5: rated/ranked games forbid analysis (anti-cheat)
                 )
 
@@ -1398,12 +1455,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.katrain.update_config("timer/byo_length", 0)
                     session.katrain.update_config("timer/paused", True)
 
+                handicap, komi, rules = _kiosk_game_terms(settings, 7.5, "chinese")
                 session.katrain(
                     "new_game",
                     size=settings.get("board_size", 19),
-                    handicap=settings.get("handicap", 0),
-                    komi=settings.get("komi", 7.5),
-                    rules=settings.get("rules", "chinese"),
+                    handicap=handicap,
+                    komi=komi,
+                    rules=rules,
                     game_type="pvp_local",
                 )
                 if black_name:
@@ -3507,6 +3565,16 @@ def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:
     gateway = getattr(app.state, "platform_gateway", None)
     if gateway and gateway.is_engine_move_pending(session_id):
         raise HTTPException(status_code=409, detail="engine move pending")
+
+
+def _vision_needs_frames(app: FastAPI) -> bool:
+    """漂移检测跟着识别线程一起停:没在下实体棋 / 监视 / 摆棋准备 / 看预览时不检测(RK3562 实测每秒 ~0.5 s CPU)。
+
+    没有视觉服务 ⇒ 保持旧行为一直检测。摆谱直接从摄像头取帧、不经识别线程,所以摆谱期间也不检测 ——
+    摆谱的 LED 引导按固定灯号点灯、不依赖摄像头几何,受影响的只有采集训练照片时的标注。
+    """
+    vision = getattr(app.state, "vision", None)
+    return True if vision is None else vision.needs_frames()
 
 
 async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):

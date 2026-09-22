@@ -107,8 +107,8 @@ msgstr "착수 넘김"
 
 msgid "ai-ponder"
 msgstr ""
-"엔진 상태를 나타냅니다. 초록색은 대기중, 주황색은 분석 결과를 기다리는 중입니"
-"다. 엔진이 충돌하거나 시작하지 못했을 때는 빨간색이 됩니다."
+"엔진 상태를 나타냅니다. 초록색은 대기중, 주황색은 분석 결과를 기다리는 중입니다. 엔진이 충돌하거나 시작하지 못했을 때는 빨간색이 "
+"됩니다."
 
 #. undo button on the right
 msgid "undo-button-text"
@@ -181,9 +181,7 @@ msgstr "집 이득"
 
 #. SGF and move comment messages
 msgid "SGF start message"
-msgstr ""
-"'X'표시된 수들은 KataGo가 생각하는 최선의 수이며, 네모 표시된 수들은 0.5집보"
-"다 적게 손해본 수들입니다."
+msgstr "'X'표시된 수들은 KataGo가 생각하는 최선의 수이며, 네모 표시된 수들은 0.5집보다 적게 손해본 수들입니다."
 
 msgid "Info:score"
 msgstr "예상 집 차이: {score}"
@@ -421,9 +419,7 @@ msgid "sgf written"
 msgstr "SGF와 분석 결과를 {file_name}에 기록했습니다."
 
 msgid "wait-before-extra-analysis"
-msgstr ""
-"추가적인 분석을 요청하기 전에, 먼저 일차적인 분석이 끝날 때까지 기다려 주십시"
-"오."
+msgstr "추가적인 분석을 요청하기 전에, 먼저 일차적인 분석이 끝날 때까지 기다려 주십시오."
 
 msgid "Copied SGF to clipboard."
 msgstr "SGF를 클립보드에 복사했습니다."
@@ -437,28 +433,23 @@ msgid "Failed to load SGF"
 msgstr "SGF 파일을 불러올 수 없습니다: {error}"
 
 msgid "Kata exe not found"
-msgstr ""
-"KataGo 실행 파일 {exe}이 존재하지 않습니다. 일반 설정을 확인해 주십시오."
+msgstr "KataGo 실행 파일 {exe}이 존재하지 않습니다. 일반 설정을 확인해 주십시오."
 
 msgid "Kata config not found"
-msgstr ""
-"KataGo 설정 파일 {config}이 존재하지 않습니다. 일반 설정을 확인해 주십시오."
+msgstr "KataGo 설정 파일 {config}이 존재하지 않습니다. 일반 설정을 확인해 주십시오."
 
 msgid "Kata model not found"
-msgstr ""
-"KataGo 가중치 {model}이 존재하지 않습니다. 일반 설정을 확인해 주십시오."
+msgstr "KataGo 가중치 {model}이 존재하지 않습니다. 일반 설정을 확인해 주십시오."
 
 msgid "Kata exe not found in path"
 msgstr ""
-"KataGo 실행 파일 '{exe}'이 PATH에 없습니다. 환경 변수를 확인해 보시거나, 혹"
-"은 일반 설정에서 실행 파일의 절대경로를 지정해 주십시오.  MacOS를 사용하고 계"
-"시다면, 어떻게 brew를 이용해 KataGo를 설치하는지 설명서에서 확인하세요."
+"KataGo 실행 파일 '{exe}'이 PATH에 없습니다. 환경 변수를 확인해 보시거나, 혹은 일반 설정에서 실행 파일의 절대경로를 "
+"지정해 주십시오.  MacOS를 사용하고 계시다면, 어떻게 brew를 이용해 KataGo를 설치하는지 설명서에서 확인하세요."
 
 msgid "Starting Kata failed"
 msgstr ""
-"'{command}'로 KataGo를 시작하던 중 {error} 오류가 발생했습니다. 설정의 "
-"'engine' 아래에 있는 'katago' 값이 올바른 KataGo 실행 파일 경로가 맞는지 확인"
-"해 주십시오."
+"'{command}'로 KataGo를 시작하던 중 {error} 오류가 발생했습니다. 설정의 'engine' 아래에 있는 'katago'"
+" 값이 올바른 KataGo 실행 파일 경로가 맞는지 확인해 주십시오."
 
 msgid "Engine died unexpectedly"
 msgstr "엔진이 출력을 보내지 않고 예상치 않게 종료되었습니다: {error}."
@@ -475,8 +466,8 @@ msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
-"최대 기력의 KataGo입니다. 기력은 일반 설정-엔진의 'max visits'와 'model' 및 "
-"엔진 설정 파일에 영향을 받습니다. 별도의 설정은 없습니다."
+"최대 기력의 KataGo입니다. 기력은 일반 설정-엔진의 'max visits'와 'model' 및 엔진 설정 파일에 영향을 받습니다. "
+"별도의 설정은 없습니다."
 
 msgid "ai:jigo"
 msgstr "빅"
@@ -488,81 +479,71 @@ msgid "ai:scoreloss"
 msgstr "집 손해"
 
 msgid "aihelp:scoreloss"
-msgstr ""
-"집 손해를 많이 보는 수일수록 낮은 확률로 둡니다. 많은 visit을 줄수록 더 다양"
-"하거나 약하게 둘 수도 있습니다."
+msgstr "집 손해를 많이 보는 수일수록 낮은 확률로 둡니다. 많은 visit을 줄수록 더 다양하거나 약하게 둘 수도 있습니다."
 
 msgid "ai:policy"
 msgstr "정책"
 
 msgid "aihelp:policy"
 msgstr ""
-"수읽기를 하지 않고 정책망에서 가장 높은 확률의 수를 둡니다. 엔진 설정의 "
-"'model'이 기력에 영향을 줍니다. 'opening_moves' 설정에 따라 초반에 무작위적으"
-"로 두는 수가 늘어납니다."
+"수읽기를 하지 않고 정책망에서 가장 높은 확률의 수를 둡니다. 엔진 설정의 'model'이 기력에 영향을 줍니다. "
+"'opening_moves' 설정에 따라 초반에 무작위적으로 두는 수가 늘어납니다."
 
 msgid "ai:p:weighted"
 msgstr "정책망 확률에 따라"
 
 msgid "aihelp:p:weighted"
 msgstr ""
-"정책망 확률에 따라 착수합니다. 'weaken_fac'은 약한 수를 둘 확률을 증가시키"
-"며, 낮은 값일수록 '정책망' 인공지능과 비슷하게 둡니다. 'pick_override'는 언"
-"제 무작위성 없이 가장 확률이 높은 수를 둘지, 'lower_bound'는 정책 확률의 하한"
-"값을 결정합니다."
+"정책망 확률에 따라 착수합니다. 'weaken_fac'은 약한 수를 둘 확률을 증가시키며, 낮은 값일수록 '정책망' 인공지능과 비슷하게 "
+"둡니다. 'pick_override'는 언제 무작위성 없이 가장 확률이 높은 수를 둘지, 'lower_bound'는 정책 확률의 하한값을"
+" 결정합니다."
 
 msgid "ai:p:pick"
 msgstr "구멍난 정책망"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"'pick_n + pick_frac * <착수 허용점>'개의 수를 무작위로 뽑아 그 중 최선의 수"
-"를 둡니다. 'pick_frac=1'일 때는 '정책망' 인공지능과 같이 둡니다. 지나치게 명"
-"백한 실수를 방지하기 위해 정책값이 가장 높은 수의 정책값이 'pick_override'보"
-"다 높을 때는 그 수를 둡니다."
+"'pick_n + pick_frac * <착수 허용점>'개의 수를 무작위로 뽑아 그 중 최선의 수를 둡니다. 'pick_frac=1'일 "
+"때는 '정책망' 인공지능과 같이 둡니다. 지나치게 명백한 실수를 방지하기 위해 정책값이 가장 높은 수의 정책값이 "
+"'pick_override'보다 높을 때는 그 수를 둡니다."
 
 msgid "ai:p:local"
 msgstr "손따라 두기"
 
 msgid "aihelp:p:local"
 msgstr ""
-"마지막으로 둔 수 근처의 'pick_n + pick_frac * <착수 허용점>'개의 수를 뽑아 "
-"그 중 최선의 수를 둡니다. 지나치게 명백한 실수를 방지하기 위해 정책값이 가장 "
-"높은 수의 정책값이 'pick_override'보다 높을 때는 그 수를 둡니다."
+"마지막으로 둔 수 근처의 'pick_n + pick_frac * <착수 허용점>'개의 수를 뽑아 그 중 최선의 수를 둡니다. 지나치게 "
+"명백한 실수를 방지하기 위해 정책값이 가장 높은 수의 정책값이 'pick_override'보다 높을 때는 그 수를 둡니다."
 
 msgid "ai:p:tenuki"
 msgstr "손빼며 두기"
 
 msgid "aihelp:p:tenuki"
 msgstr ""
-"마지막으로 둔 수에서 먼 'pick_n + pick_frac * <착수 허용점>'개의 수를 뽑아 "
-"그 중 최선의 수를 둡니다. 지나치게 명백한 실수를 방지하기 위해 정책값이 가장 "
-"높은 수의 정책값이 'pick_override'보다 높을 때는 그 수를 둡니다. 'stddev' 값"
-"이 크면 더 멀리 두게 됩니다."
+"마지막으로 둔 수에서 먼 'pick_n + pick_frac * <착수 허용점>'개의 수를 뽑아 그 중 최선의 수를 둡니다. 지나치게 "
+"명백한 실수를 방지하기 위해 정책값이 가장 높은 수의 정책값이 'pick_override'보다 높을 때는 그 수를 둡니다. "
+"'stddev' 값이 크면 더 멀리 두게 됩니다."
 
 msgid "ai:p:influence"
 msgstr "세력지향"
 
 msgid "aihelp:p:influence"
 msgstr ""
-"'threshold'선 위의 수를 더 많이 뽑은 후 그 중 최선의 수를 둡니다. "
-"'line_weight'을 증가시키면 판 가장자리에 있는 수를 더욱 꺼리게 됩니다. 판이 "
-"'endgame' 비율만큼 차면 평범하게 둡니다."
+"'threshold'선 위의 수를 더 많이 뽑은 후 그 중 최선의 수를 둡니다. 'line_weight'을 증가시키면 판 가장자리에 있는"
+" 수를 더욱 꺼리게 됩니다. 판이 'endgame' 비율만큼 차면 평범하게 둡니다."
 
 msgid "ai:p:territory"
 msgstr "실리지향"
 
 msgid "aihelp:p:territory"
 msgstr ""
-"'threshold'선 밑의 수를 더 많이 뽑은 후 그 중 최선의 수를 둡니다. "
-"'line_weight'을 증가시키면 바둑판 중앙에 있는 수를 더욱 꺼리게 됩니다. 판이 "
-"'endgame' 비율만큼 차면 평범하게 둡니다."
+"'threshold'선 밑의 수를 더 많이 뽑은 후 그 중 최선의 수를 둡니다. 'line_weight'을 증가시키면 바둑판 중앙에 있는"
+" 수를 더욱 꺼리게 됩니다. 판이 'endgame' 비율만큼 차면 평범하게 둡니다."
 
 msgid "aihelp:p:rank"
 msgstr ""
-"제한적인 착수 가능 목록에서 무작위로 다음 착수를 선택한 후 그 중 최선의 수를 "
-"둡니다. 더 강한 설정은 최선의 수를 더 큰 목록에서 뽑습니다. 0급이나 0단은 없"
-"으므로, 3단은 -2급입니다."
+"제한적인 착수 가능 목록에서 무작위로 다음 착수를 선택한 후 그 중 최선의 수를 둡니다. 더 강한 설정은 최선의 수를 더 큰 목록에서 "
+"뽑습니다. 0급이나 0단은 없으므로, 3단은 -2급입니다."
 
 msgid "ai:p:rank"
 msgstr "기력 지정"
@@ -607,9 +588,9 @@ msgstr "접바둑 KataGo"
 
 msgid "aihelp:handicap"
 msgstr ""
-"치석이 많은 접바둑에 더 적합한 KataGo입니다. 'pda' 설정은 흑 시점에서 KataGo"
-"의 'playoutDoublingAdvantage'에 해당합니다. 'automatic'으로 설정하면, KaTrain"
-"이 알맞는 값을 자동으로 설정할 것입니다."
+"치석이 많은 접바둑에 더 적합한 KataGo입니다. 'pda' 설정은 흑 시점에서 KataGo의 "
+"'playoutDoublingAdvantage'에 해당합니다. 'automatic'으로 설정하면, KaTrain이 알맞는 값을 자동으로 "
+"설정할 것입니다."
 
 msgid "estimated strength"
 msgstr "추정 기력"
@@ -649,8 +630,7 @@ msgstr "이미 사용할 수 있는 모든 실행 파일을 내려받았습니�
 
 msgid "Engine missing DLL"
 msgstr ""
-"없는 DLL 파일이 있어 KataGo가 실행되지 않습니다. 요구사항을 점검하시거나, 실"
-"행 파일을 따로 실행해 세부사항을 알아보십시오."
+"없는 DLL 파일이 있어 KataGo가 실행되지 않습니다. 요구사항을 점검하시거나, 실행 파일을 따로 실행해 세부사항을 알아보십시오."
 
 msgid "resign"
 msgstr "기권"
@@ -663,9 +643,8 @@ msgstr "다른 수를 찾는 중입니다"
 
 msgid "teaching undo message"
 msgstr ""
-"{points_lost:.1f}집 손해이므로 {move}을/를 물렀습니다. 다시 두어 주세요. 힌트"
-"를 보려면, 커서를 올려 상대의 대응책을 보거나, 어디서 집 손해를 보는지 집 모"
-"양을 통해 (t) 알아보십시오. "
+"{points_lost:.1f}집 손해이므로 {move}을/를 물렀습니다. 다시 두어 주세요. 힌트를 보려면, 커서를 올려 상대의 "
+"대응책을 보거나, 어디서 집 손해를 보는지 집 모양을 통해 (t) 알아보십시오. "
 
 msgid "minimal time use"
 msgstr "이보다 빨리 착수한 수 무시"
@@ -678,11 +657,10 @@ msgstr "제한 시간(분)"
 
 msgid "aihelp:simple"
 msgstr ""
-"국면을 단순화하는 수를 둡니다. 최대 'max_point_lost'집 손해를 보고 최소 "
-"'min_visits'번 탐색한 수 중에, 집 손해가 적고, 자신의 집을 굳히며"
-"(settled_weight에 따라 조절), 상대의 집도 굳히고(settled_weight * opponent "
-"fac에 따라 조절), 붙임수를 피하는(attachment_penalty에 따라 조절) 수를 둡니"
-"다. 가중치가 음수일 때는 반대로 국면을 복잡하게 만듭니다."
+"국면을 단순화하는 수를 둡니다. 최대 'max_point_lost'집 손해를 보고 최소 'min_visits'번 탐색한 수 중에, 집 "
+"손해가 적고, 자신의 집을 굳히며(settled_weight에 따라 조절), 상대의 집도 굳히고(settled_weight * "
+"opponent fac에 따라 조절), 붙임수를 피하는(attachment_penalty에 따라 조절) 수를 둡니다. 가중치가 음수일 "
+"때는 반대로 국면을 복잡하게 만듭니다."
 
 msgid "ai:simple"
 msgstr "간명한 기풍"
@@ -793,9 +771,7 @@ msgid "white player name hint"
 msgstr "백 대국자"
 
 msgid "gui-locked"
-msgstr ""
-"{action} 행동은 분산 자가대국 학습 모드에서 허용되지 않습니다. 이 모드를 벗어"
-"나려면 KaTrain을 재시작하십시오."
+msgstr "{action} 행동은 분산 자가대국 학습 모드에서 허용되지 않습니다. 이 모드를 벗어나려면 KaTrain을 재시작하십시오."
 
 msgid "menu:distributed"
 msgstr "분산 자가대국 학습"
@@ -820,9 +796,8 @@ msgstr "비밀번호"
 
 msgid "contribute:maxgames:hint"
 msgstr ""
-"최적의 numSearchThreads 값과 같게 두는 것이 좋습니다(중급 GPU는 8 정도). 완료"
-"되지 않은 판은 업로드되지 않으므로, 오래 실행하지 않는다면 조금 낮추어도 무방"
-"합니다."
+"최적의 numSearchThreads 값과 같게 두는 것이 좋습니다(중급 GPU는 8 정도). 완료되지 않은 판은 업로드되지 않으므로, "
+"오래 실행하지 않는다면 조금 낮추어도 무방합니다."
 
 msgid "contribute:ownership:hint"
 msgstr "자가대국이 약간 느려지지만, 집 모양을 표시할 수 있습니다."
@@ -865,8 +840,8 @@ msgstr "판 깔아두기"
 
 msgid "setup position explanation"
 msgstr ""
-"이어 둘 수 있는 미완료 대국을 생성합니다. 예를 들어, 강한 AI를 상대로 둘 때 "
-"중반전이나 끝내기에서 앞서 있는 상태로 대국을 시작할 수 있습니다."
+"이어 둘 수 있는 미완료 대국을 생성합니다. 예를 들어, 강한 AI를 상대로 둘 때 중반전이나 끝내기에서 앞서 있는 상태로 대국을 시작할"
+" 수 있습니다."
 
 msgid "editgame"
 msgstr "대국 정보 편집"
@@ -889,13 +864,10 @@ msgstr ""
 "오류 코드:: [color=#CC2222]{code}[/color]."
 
 msgid "go to engine help page"
-msgstr ""
-"아직 문제를 겪고 있으시다면, {link}에서 최신 문제 해결법을 찾아보십시오."
+msgstr "아직 문제를 겪고 있으시다면, {link}에서 최신 문제 해결법을 찾아보십시오."
 
 msgid "change engine suggestion"
-msgstr ""
-"우선, KataGo 버전들을 내려받아 보시고, {link}에서 다른 실행 파일로 바꾸면 괜"
-"찮아지는지 확인해 보십시오."
+msgstr "우선, KataGo 버전들을 내려받아 보시고, {link}에서 다른 실행 파일로 바꾸면 괜찮아지는지 확인해 보십시오."
 
 msgid "link_here"
 msgstr "여기"
@@ -958,8 +930,7 @@ msgid "from move"
 msgstr "번째 수부터"
 
 msgid "move range analysis"
-msgstr ""
-"{start_move} 번째 수부터 {end_move} 번째 수까지 {visits} visit을 하며 재분석"
+msgstr "{start_move} 번째 수부터 {end_move} 번째 수까지 {visits} visit을 하며 재분석"
 
 msgid "to move"
 msgstr "번째 수까지"
@@ -989,7 +960,8 @@ msgstr ""
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a human-like KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening style."
+"ticked, the model will play according to a post-2016 AlphaZero opening "
+"style."
 
 #. TODO
 msgid "engine:humanlike_model"
@@ -1015,9 +987,8 @@ msgstr "Game End Sound"
 msgid "Pass"
 msgstr "Pass"
 
-#. TODO
 msgid "Close"
-msgstr "Close"
+msgstr "닫기"
 
 #. TODO
 msgid "Best"
@@ -1286,8 +1257,7 @@ msgid "resign_confirm_text"
 msgstr "정말 기권하시겠습니까?"
 
 msgid "dashboard:play_desc"
-msgstr ""
-"AI 상대와 대결하거나 친구와 대국하세요. 레이팅 게임으로 등급을 확립하세요."
+msgstr "AI 상대와 대결하거나 친구와 대국하세요. 레이팅 게임으로 등급을 확립하세요."
 
 msgid "game_end:timeout_loss"
 msgstr "시간 초과로 패배했습니다."
@@ -2227,7 +2197,7 @@ msgid "result:draw"
 msgstr "빅"
 
 msgid "result:points_zi"
-msgstr "집"
+msgstr "점"
 
 msgid "result:points_moku"
 msgstr "집"
@@ -2260,16 +2230,13 @@ msgid "report:my_reports"
 msgstr "복기"
 
 msgid "report:page_hint"
-msgstr ""
-"대국을 선택하면 기보를 미리 볼 수 있습니다. 보고서 생성은 대국 카드에서 합니"
-"다."
+msgstr "대국을 선택하면 기보를 미리 볼 수 있습니다. 보고서 생성은 대국 카드에서 합니다."
 
 msgid "report:select_game"
 msgstr "대국 선택"
 
 msgid "report:select_game_hint"
-msgstr ""
-"오른쪽 패널에서 대국을 선택하거나 새 SGF / 기보 라이브러리 대국을 가져오세요."
+msgstr "오른쪽 패널에서 대국을 선택하거나 새 SGF / 기보 라이브러리 대국을 가져오세요."
 
 msgid "report:no_preview"
 msgstr "미리보기할 대국이 없습니다."
@@ -2485,8 +2452,7 @@ msgid "report:delete_confirm_title"
 msgstr "삭제 확인"
 
 msgid "report:delete_confirm_body"
-msgstr ""
-"대국 및 모든 관련 분석 데이터가 영구적으로 삭제됩니다. 계속하시겠습니까?"
+msgstr "대국 및 모든 관련 분석 데이터가 영구적으로 삭제됩니다. 계속하시겠습니까?"
 
 msgid "report:delete_success"
 msgstr "대국이 삭제되었습니다"
@@ -2789,9 +2755,7 @@ msgid "ladder:unscored"
 msgstr "이 대국은 승강에 반영되지 않았습니다"
 
 msgid "ladder:unscored_inconclusive"
-msgstr ""
-"이 대국은 승패가 나지 않아 승강에 반영되지 않고 배치 대국 수도 소모하지 않습"
-"니다."
+msgstr "이 대국은 승패가 나지 않아 승강에 반영되지 않고 배치 대국 수도 소모하지 않습니다."
 
 msgid "ladder:unscored_already"
 msgstr "이 대국은 이미 정산되어 단급이 더 바뀌지 않았습니다."
@@ -2800,9 +2764,7 @@ msgid "ladder:unscored_in_progress"
 msgstr "이 대국은 아직 끝나지 않았습니다."
 
 msgid "ladder:unscored_error"
-msgstr ""
-"이 대국을 승강 기록에 기록하지 못해 단급이 바뀌지 않았습니다. 이 대국을 알려"
-"주세요."
+msgstr "이 대국을 승강 기록에 기록하지 못해 단급이 바뀌지 않았습니다. 이 대국을 알려주세요."
 
 msgid "ladder:got_it"
 msgstr "확인"
@@ -2841,14 +2803,10 @@ msgid "retry"
 msgstr "다시 시도"
 
 msgid "ladder:engine_stalled"
-msgstr ""
-"래더 엔진을 사용할 수 없어 AI가 착수할 수 없습니다 · 이 대국은 승강에 반영되"
-"지 않습니다. 나가 주세요"
+msgstr "래더 엔진을 사용할 수 없어 AI가 착수할 수 없습니다 · 이 대국은 승강에 반영되지 않습니다. 나가 주세요"
 
 msgid "ladder:unscored_engine"
-msgstr ""
-"이 대국의 상대가 보정된 기력으로 착수하지 못해 무효입니다. 단급은 그대로이며 "
-"배치 대국 수에도 들어가지 않습니다."
+msgstr "이 대국의 상대가 보정된 기력으로 착수하지 못해 무효입니다. 단급은 그대로이며 배치 대국 수에도 들어가지 않습니다."
 
 msgid "ladder:pending_settlement"
 msgstr "이번 대국 결과가 아직 서버에 전달되지 않았습니다"
@@ -2884,9 +2842,7 @@ msgid "ladder:retry"
 msgstr "다시 시도"
 
 msgid "ladder:provisional_seating"
-msgstr ""
-"이 단계는 아직 보정되지 않았습니다. 둘 수는 있지만 이번 대국은 반영되지 않습"
-"니다"
+msgstr "이 단계는 아직 보정되지 않았습니다. 둘 수는 있지만 이번 대국은 반영되지 않습니다"
 
 msgid "ladder:current_opponent_prefix"
 msgstr "현재 상대: "
@@ -3142,21 +3098,16 @@ msgid "play:login_required_free"
 msgstr "대국을 시작하려면 로그인이 필요합니다. 로그인 후 다시 시도해 주세요."
 
 msgid "play:guest_free_notice"
-msgstr ""
-"손님으로 대국 중입니다: 이 대국은 기보에 저장되지 않고 단급에도 반영되지 않습"
-"니다. 로그인하면 저장됩니다."
+msgstr "손님으로 대국 중입니다: 이 대국은 기보에 저장되지 않고 단급에도 반영되지 않습니다. 로그인하면 저장됩니다."
 
 msgid "play:go_free_play"
 msgstr "먼저 자유 대국 하기"
 
 msgid "play:blocked_by_pending_ranked"
-msgstr ""
-"정산되지 않은 승단·강등 대국이 있습니다. 먼저 처리한 뒤 새 대국을 시작하세요."
+msgstr "정산되지 않은 승단·강등 대국이 있습니다. 먼저 처리한 뒤 새 대국을 시작하세요."
 
 msgid "research:login_required"
-msgstr ""
-"전체 분석은 클라우드 엔진을 사용하므로 로그인이 필요합니다. 두어 보기와 기보 "
-"재생은 로그인 없이 가능합니다."
+msgstr "전체 분석은 클라우드 엔진을 사용하므로 로그인이 필요합니다. 두어 보기와 기보 재생은 로그인 없이 가능합니다."
 
 msgid "play:analysis_requires_login"
 msgstr "로그인 후 사용 가능"
@@ -3229,8 +3180,7 @@ msgstr "{n}수 미평가"
 
 msgid "ladder:engine_unavailable_start"
 msgstr ""
-"승강 엔진을 일시적으로 사용할 수 없습니다. 대국은 시작되지 않았으며 단급에도 "
-"영향이 없습니다. 잠시 후 다시 시도해 주세요."
+"승강 엔진을 일시적으로 사용할 수 없습니다. 대국은 시작되지 않았으며 단급에도 영향이 없습니다. 잠시 후 다시 시도해 주세요."
 
 msgid "grade:match_rate"
 msgstr "AI 일치율"
@@ -3254,9 +3204,7 @@ msgid "grade:match_undecidable"
 msgstr "{n} 수는 비교할 수 없습니다"
 
 msgid "grade:match_caveat"
-msgstr ""
-"일치율은 국면의 난이도에 좌우됩니다. 그것만으로 기력이나 부정행위의 증거가 되"
-"지 않습니다."
+msgstr "일치율은 국면의 난이도에 좌우됩니다. 그것만으로 기력이나 부정행위의 증거가 되지 않습니다."
 
 msgid "live:human_pick_rate_ranked"
 msgstr "{rank} 선택률"
@@ -3265,9 +3213,7 @@ msgid "live:human_pick_rate"
 msgstr "사람 선택률"
 
 msgid "live:human_pick_rate_hint_ranked"
-msgstr ""
-"{rank} 기사 100명 중 몇 명이 이 곳에 두는지. 「몇 명이 두는가」이지 「두어야 "
-"하는가」가 아닙니다."
+msgstr "{rank} 기사 100명 중 몇 명이 이 곳에 두는지. 「몇 명이 두는가」이지 「두어야 하는가」가 아닙니다."
 
 msgid "live:human_pick_rate_hint"
 msgstr "사람 기사가 이 곳에 두는 비율입니다. AI 추천 순위와는 별개입니다."
@@ -3306,8 +3252,7 @@ msgid "grade:histogram_unrated"
 msgstr "{n}수 미평가"
 
 msgid "grade:histogram_aria"
-msgstr ""
-"7단계 착수 평가 분포. 검은 막대는 흑, 흰 막대는 백이며 각자 기준으로 정규화"
+msgstr "7단계 착수 평가 분포. 검은 막대는 흑, 흰 막대는 백이며 각자 기준으로 정규화"
 
 msgid "grade:def_brilliant"
 msgstr "엔진의 1순위이면서 엔진의 직관도 놓친 수 (사전확률 10% 미만)"
@@ -3326,16 +3271,14 @@ msgstr "이전 수가 분석되지 않았거나 탐색량이 부족해 판정 �
 
 msgid "grade:brilliance_entry"
 msgstr ""
-"세 가지를 모두 만족해야 함: 엔진의 1순위를 두었고, 그 1순위의 사전확률이 10% "
-"미만이며(엔진의 직관도 놓침), 승부가 아직 결정되지 않았을 것."
+"세 가지를 모두 만족해야 함: 엔진의 1순위를 두었고, 그 1순위의 사전확률이 10% 미만이며(엔진의 직관도 놓침), 승부가 아직 "
+"결정되지 않았을 것."
 
 msgid "grade:match_timeline_legend"
 msgstr "가득 채운 색 = 1순위, 절반 높이 연한 색 = 상위 3순위, 바탕색 = 그 외"
 
 msgid "grade:match_timeline_aria"
-msgstr ""
-"수순에 따라 배열한 AI 일치도 분포. 흑백 각각 한 줄이며 연속 일치는 채워진 블"
-"록으로 나타남"
+msgstr "수순에 따라 배열한 AI 일치도 분포. 흑백 각각 한 줄이며 연속 일치는 채워진 블록으로 나타남"
 
 msgid "grade:match_longest_run"
 msgstr "{side} {from}–{to}수, {n}수 연속 1순위 일치"
@@ -3467,9 +3410,7 @@ msgid "local:komi_hint"
 msgstr "접바둑은 덤 0 · 접바둑을 선택하면 이 항목은 접힙니다"
 
 msgid "local:clock_hint_v2"
-msgstr ""
-"시계는 플레이어 카드에서 카운트다운 · 초읽기를 다 쓰면 시간패 · 무제한이면 기"
-"보만 기록"
+msgstr "시계는 플레이어 카드에서 카운트다운 · 초읽기를 다 쓰면 시간패 · 무제한이면 기보만 기록"
 
 msgid "local:clock_meta_count"
 msgstr "{n} 단계"
@@ -3536,3 +3477,2931 @@ msgstr "인식 재설정 · 화면의 디지털 바둑판 상태를 기준으로
 
 msgid "Re-sync"
 msgstr "인식 재설정"
+
+msgid "Back to play"
+msgstr "대국으로 돌아가기"
+
+msgid "setup:start"
+msgstr "대국 시작"
+
+msgid "ladder:start"
+msgstr "승단 대국 시작"
+
+msgid "play:free_setup_sub"
+msgstr "대국 설정 · AI 대국 · 승단 미반영"
+
+msgid "ladder:setup_sub"
+msgstr "대국 설정 · 승단 반영 · 분석 전면 차단"
+
+msgid "local:setup_sub"
+msgstr "대국 설정 · 마주 앉아 두기"
+
+msgid "game:local_pvp"
+msgstr "로컬 대국"
+
+msgid "setup:game_terms"
+msgstr "이 대국"
+
+msgid "setup:size"
+msgstr "판 크기"
+
+msgid "setup:size_n"
+msgstr "{n}줄"
+
+msgid "setup:size_19"
+msgstr "19줄"
+
+msgid "Chinese rules"
+msgstr "중국 룰"
+
+msgid "Japanese rules"
+msgstr "일본 룰"
+
+msgid "AGA rules"
+msgstr "AGA 룰"
+
+msgid "setup:rules_button"
+msgstr "AI 대회 룰"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr "중국 룰은 집과 돌을 함께 셉니다. 자기 집에 두어도 손해가 없습니다"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr "일본 룰은 집만 셉니다. 자기 집에 두면 한 집 손해입니다"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr "AGA 룰은 집과 돌을 세지만 패스할 때 돌을 건네므로 결과는 집 계산과 같습니다"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr "한국 룰은 집을 셉니다. 일본 룰과 계산은 같고 덤 관행만 다릅니다"
+
+msgid "setup:rules_button_hint"
+msgstr "AI 대회 룰: 집과 돌을 세고 먼저 패스한 쪽이 반집을 얻습니다. 계가의 홀짝 차이를 없애며, 호선만 둡니다"
+
+msgid "setup:ha_even"
+msgstr "호선"
+
+msgid "setup:ha_sente"
+msgstr "정선"
+
+msgid "setup:ha_reverse"
+msgstr "역덤"
+
+msgid "setup:ha_free"
+msgstr "덤 직접 지정"
+
+msgid "setup:ha_stones"
+msgstr "{n}점"
+
+msgid "setup:komi_derived"
+msgstr "룰과 접바둑에 따라 정해집니다"
+
+msgid "setup:komi_pick"
+msgstr "눌러서 덤 변경"
+
+msgid "setup:komi_none"
+msgstr "덤 없음"
+
+msgid "setup:komi_sente"
+msgstr "흑 선착"
+
+msgid "setup:komi_handicap"
+msgstr "흑이 먼저 {n}점을 놓습니다"
+
+msgid "setup:komi_black_pays"
+msgstr "흑이 덤 지급"
+
+msgid "setup:komi_white_pays"
+msgstr "백이 덤 지급"
+
+msgid "setup:komi_points"
+msgstr "{n}집"
+
+msgid "setup:unit_points"
+msgstr "집"
+
+msgid "setup:unit_stones"
+msgstr "점"
+
+msgid "setup:seat"
+msgstr "자리"
+
+msgid "setup:side_black"
+msgstr "흑"
+
+msgid "setup:side_white"
+msgstr "백"
+
+msgid "setup:side_nigiri"
+msgstr "돌 가리기"
+
+msgid "setup:nigiri_blocked"
+msgstr "접바둑에서는 흑이 먼저 돌을 놓습니다"
+
+msgid "setup:black_side"
+msgstr "흑"
+
+msgid "setup:white_side"
+msgstr "백"
+
+msgid "setup:input_where"
+msgstr "두는 곳"
+
+msgid "setup:on_screen"
+msgstr "화면"
+
+msgid "setup:on_board"
+msgstr "실물 바둑판"
+
+msgid "setup:board_only_19"
+msgstr "실물 바둑판은 19줄입니다"
+
+msgid "setup:board_not_ready"
+msgstr "카메라가 보정되지 않았습니다"
+
+msgid "setup:seat_hint_ready"
+msgstr "실물 바둑판과 화면은 언제든 바꿀 수 있고, 대국이 시작되면 고정됩니다"
+
+msgid "setup:seat_hint_not19"
+msgstr "이 대국은 19줄이 아니라 화면에서만 둘 수 있습니다"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr "이 기기는 카메라가 보정되지 않아 화면에서 둡니다"
+
+msgid "setup:size_not19_hint"
+msgstr "실물 바둑판은 19줄입니다. 이 대국은 화면에서 진행되며, 19줄로 되돌리면 다시 바둑판을 씁니다"
+
+msgid "Untimed"
+msgstr "시간 제한 없음"
+
+msgid "setup:time_byo_only"
+msgstr "초읽기만 30초×3"
+
+msgid "5 min + 3x30s"
+msgstr "5분+30초×3"
+
+msgid "60 min + 3x30s"
+msgstr "60분+30초×3"
+
+msgid "local:move_sound_short"
+msgstr "착수음"
+
+msgid "On"
+msgstr "켬"
+
+msgid "Off"
+msgstr "끔"
+
+msgid "setup:strength_rung"
+msgstr "{n}단계"
+
+msgid "setup:rank_kyu"
+msgstr "{n}급"
+
+msgid "setup:rank_dan"
+msgstr "{n}단"
+
+msgid "setup:strength_up"
+msgstr "한 단계 위로"
+
+msgid "setup:strength_down"
+msgstr "한 단계 아래로"
+
+msgid "setup:strength_meta"
+msgstr "총 {n}단계 · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "사람처럼 · 대국 시작 후 변경 불가"
+
+msgid "setup:strength_hint2"
+msgstr "사람처럼 두는 AI는 그 단계에 맞는 실수를 합니다. 단계는 상대의 강함이지 당신의 기력이 아닙니다"
+
+msgid "ladder:opponent"
+msgstr "상대"
+
+msgid "ladder:fixed_by_box"
+msgstr "기기에서 정해집니다"
+
+msgid "ladder:terms_fixed"
+msgstr "모두 변경할 수 없습니다"
+
+msgid "ladder:frozen_at_start"
+msgstr "대국이 시작되는 순간 고정됩니다"
+
+msgid "ladder:komi_note"
+msgstr "이 판에서 측정한 단계입니다"
+
+msgid "ladder:stake"
+msgstr "이 대국에 걸린 것"
+
+msgid "ladder:stake_win_promote"
+msgstr "승 · 한 단계 승급"
+
+msgid "ladder:stake_loss_demote"
+msgstr "패 · 한 단계 강등"
+
+msgid "ladder:stake_win_score"
+msgstr "승 · 누적 {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "패 · 누적 {n}"
+
+msgid "ladder:stake_rule"
+msgstr "누적 +3이면 승급, −3이면 강등 · 현재 {n}"
+
+msgid "local:players"
+msgstr "대국자"
+
+msgid "local:written_into_sgf"
+msgstr "기보에 기록됩니다"
+
+msgid "local:agree_first"
+msgstr "두기 전에 미리 정하세요"
+
+msgid "local:black_role_short"
+msgstr "선착"
+
+msgid "local:white_role_short"
+msgstr "후착"
+
+msgid "local:black_name"
+msgstr "흑 이름"
+
+msgid "local:white_name"
+msgstr "백 이름"
+
+msgid "local:tap_to_type"
+msgstr "눌러서 입력"
+
+msgid "local:names_hint"
+msgstr "비워 두면 기보에 '흑' '백'으로만 기록됩니다"
+
+msgid "local:seat_hint_ready"
+msgstr "시계는 대국자 카드에서 줄어듭니다 · 초읽기를 다 쓰면 시간패 · 무제한이면 기보만 남습니다"
+
+msgid "setup:note_r2_a"
+msgstr "이 항목들은"
+
+msgid "setup:note_r2_b"
+msgstr "대국이 시작되면 바꿀 수 없습니다"
+
+msgid "setup:note_r2_c"
+msgstr ". 도중에 바꾸면 다른 대국이 됩니다. 자유 대국은 "
+
+msgid "setup:note_r2_d"
+msgstr "승단에 반영되지 않습니다"
+
+msgid "setup:note_h"
+msgstr "."
+
+msgid "setup:locked_after_start"
+msgstr "대국 시작 후 변경 불가"
+
+msgid "Session expired, please sign in again"
+msgstr "로그인이 만료되었습니다. 다시 로그인해 주세요"
+
+msgid "Could not end that game, please retry"
+msgstr "대국을 끝내지 못했습니다. 다시 시도해 주세요"
+
+msgid "Retry failed, please try again later"
+msgstr "재시도에 실패했습니다. 잠시 후 다시 시도해 주세요"
+
+msgid "ladder:board_preview"
+msgstr "시작 국면 미리보기: 빈 판"
+
+msgid "play:title"
+msgstr "대국"
+
+msgid "login:box_gate_title"
+msgstr "StellaBox 홈 화면에서 로그인해 주세요"
+
+msgid "login:box_gate_cta"
+msgstr "StellaBox 홈으로"
+
+msgid "vision:back_settings"
+msgstr "설정"
+
+msgid "vision:board_lost_hint"
+msgstr "카메라가 가려졌는지, 바둑판이 움직였는지 확인하세요. 움직였다면 다시 보정해야 합니다"
+
+msgid "vision:calibrate_title"
+msgstr "바둑판 보정"
+
+msgid "vision:calibrate_sub"
+msgstr "먼저 판을 비우세요 · 네 귀 + 화점 9개, 모두 13개 지점"
+
+msgid "vision:cancel_calibration"
+msgstr "보정 취소"
+
+msgid "vision:reuse_calibration"
+msgstr "지난 보정 그대로 사용"
+
+msgid "vision:camera_down"
+msgstr "카메라 미연결 · 터치 조작으로 전환"
+
+msgid "vision:led_down"
+msgstr "LED 미연결 · 불빛 안내 없음"
+
+msgid "vision:pose_lost"
+msgstr "보정이 사라졌습니다 · 다시 보정하세요"
+
+msgid "grade:tabs"
+msgstr "착수 평가"
+
+msgid "grade:fold_title"
+msgstr "착수 평가 · 7단계"
+
+msgid "grade:match_other"
+msgstr "기타"
+
+msgid "grade:axis_points_lost_short"
+msgstr "손해 · 집"
+
+msgid "grade:pick_hint"
+msgstr "그래프의 아무 수나 누르면 자세히 보입니다"
+
+msgid "grade:summary"
+msgstr "묘수 {a} · 악수 {b}"
+
+msgid "grade:sel_bad"
+msgstr "{n}수 {m} · {s} · {g} · {x}집 손해"
+
+msgid "grade:sel_brilliant"
+msgstr "{n}수 {m} · {s} · 묘수도 {k} — 엔진의 첫 후보인데도 사전 확률은 {p}%뿐입니다(낮을수록 묘수)"
+
+msgid "grade:truncated_plot"
+msgstr "한쪽당 최대 {k}개만 표시하며, {n}개는 표시하지 않았습니다"
+
+msgid "setup:this_game"
+msgstr "이 대국은"
+
+msgid "setup:board_preview_handicap"
+msgstr "시작 국면 미리보기: {n}점 접바둑"
+
+msgid "setup:chinese_rules"
+msgstr "중국 룰"
+
+msgid "setup:even"
+msgstr "호선"
+
+msgid "setup:handicap"
+msgstr "접바둑"
+
+msgid "setup:handicap_n"
+msgstr "{n}점"
+
+msgid "setup:handicap_less"
+msgstr "한 점 줄이기"
+
+msgid "setup:handicap_more"
+msgstr "한 점 늘리기"
+
+msgid "setup:input"
+msgstr "착수 방법"
+
+msgid "setup:my_side"
+msgstr "내 돌"
+
+msgid "setup:take_black"
+msgstr "흑을 잡기"
+
+msgid "setup:take_white"
+msgstr "백을 잡기"
+
+msgid "setup:no_camera_hint"
+msgstr "이 기기는 카메라가 보정되지 않아 실물 바둑판을 쓸 수 없습니다"
+
+msgid "report:clear_variation"
+msgstr "변화도 지우기"
+
+msgid "report:file_read_failed"
+msgstr "파일을 읽지 못했습니다. 다시 시도해 주세요."
+
+msgid "report:import_options"
+msgstr "가져오기 방법"
+
+msgid "report:invalid_sgf"
+msgstr "SGF를 해석할 수 없습니다. 내용을 확인해 주세요."
+
+msgid "report:library_load_failed"
+msgstr "기보를 불러오지 못했습니다. 다시 시도해 주세요."
+
+msgid "report:loading_detail"
+msgstr "복기를 불러오는 중"
+
+msgid "report:not_found"
+msgstr "복기를 찾지 못했습니다."
+
+msgid "report:preview_failed"
+msgstr "기보 미리보기를 불러오지 못했습니다"
+
+msgid "report:reload"
+msgstr "다시 불러오기"
+
+msgid "report:retry_load"
+msgstr "불러오기 재시도"
+
+msgid "report:retrying"
+msgstr "다시 시도 중…"
+
+msgid "report:search_library"
+msgstr "기보 라이브러리 검색"
+
+msgid "report:sgf_content"
+msgstr "SGF 내용"
+
+msgid "report:title_optional"
+msgstr "제목(선택)"
+
+msgid "report:unknown_type"
+msgstr "종류 미상"
+
+msgid "report:variation_preview"
+msgstr "변화도 미리보기 · 판을 누르면 닫힘"
+
+msgid "live:title"
+msgstr "라이브"
+
+msgid "live:ai"
+msgstr "AI 추천"
+
+msgid "live:ai_note_a"
+msgstr "'AI 추천'은 "
+
+msgid "live:ai_note_b"
+msgstr "이 기기 안의 KataGo가 지금 계산한 것입니다"
+
+msgid "live:ai_note_c"
+msgstr ". 대국자가 보는 것과는 무관합니다."
+
+msgid "live:as_black"
+msgstr "흑"
+
+msgid "live:as_white"
+msgstr "백"
+
+msgid "live:back_kifu"
+msgstr "기보"
+
+msgid "live:black_wr"
+msgstr "흑 {v}%"
+
+msgid "live:ended"
+msgstr "종료됨"
+
+msgid "live:follow"
+msgstr "최신 수 따라가기"
+
+msgid "live:load_failed"
+msgstr "이 대국을 불러오지 못했습니다"
+
+msgid "live:loading"
+msgstr "이 대국을 불러오는 중"
+
+msgid "live:move_n"
+msgstr "{n}수"
+
+msgid "live:moves_title"
+msgstr "기보 · 중계에 맞춰 늘어납니다"
+
+msgid "live:no_moves"
+msgstr "이 대국에는 아직 수가 없습니다"
+
+msgid "live:no_ownership"
+msgstr "이 수의 형세는 아직 계산되지 않았습니다"
+
+msgid "live:pagebar_sub"
+msgstr "출처: {src} · {n}수"
+
+msgid "live:played"
+msgstr "착수 완료"
+
+msgid "live:show"
+msgstr "표시"
+
+msgid "live:thinking"
+msgstr "생각 중"
+
+msgid "live:toggle_numbers"
+msgstr "수순"
+
+msgid "live:toggle_territory"
+msgstr "형세"
+
+msgid "settings:nav_account"
+msgstr "계정과 플랫폼"
+
+msgid "settings:nav_board"
+msgstr "실물 바둑판"
+
+msgid "settings:nav_language"
+msgstr "언어"
+
+msgid "settings:nav_move"
+msgstr "착수와 힌트"
+
+msgid "settings:nav_sound"
+msgstr "소리"
+
+msgid "settings:ui_language"
+msgstr "화면 언어"
+
+msgid "settings:language_sub"
+msgstr "이 항목은 나중에 시스템 설정으로 옮겨집니다"
+
+msgid "settings:auto_advance_sub"
+msgstr "훈련장에서 적용 · 기본값은 켜짐"
+
+msgid "settings:board_secval"
+msgstr "카메라 · 보정 · LED"
+
+msgid "settings:box_account_owned_by_home"
+msgstr "StellaBox 계정, 기기 전체 공용"
+
+msgid "settings:box_account_sub"
+msgstr "로그인하지 않아도 쓸 수 있고 성적은 이 기기에 남습니다. 로그인은 다른 기기로 옮길 때만 필요합니다"
+
+msgid "settings:guest_sub"
+msgstr "이 기기의 로컬 프로필"
+
+msgid "settings:switch_account_at_home"
+msgstr "홈 화면에서 계정 전환"
+
+msgid "settings:sign_in"
+msgstr "로그인"
+
+msgid "settings:platforms"
+msgstr "외부 플랫폼 계정"
+
+msgid "settings:platforms_sub"
+msgstr "플랫폼마다 입력 항목이 달라, 외부 플랫폼 대국 화면에서 연결합니다"
+
+msgid "settings:go_connect"
+msgstr "연결하러 가기"
+
+msgid "settings:calibrated"
+msgstr "이번 부팅에서 보정됨"
+
+msgid "settings:not_calibrated"
+msgstr "아직 보정 안 됨"
+
+msgid "settings:start_calib"
+msgstr "보정 시작"
+
+msgid "settings:ready"
+msgstr "준비됨"
+
+msgid "settings:not_ready"
+msgstr "미연결"
+
+msgid "settings:on"
+msgstr "켬"
+
+msgid "settings:off"
+msgstr "끔"
+
+msgid "research:actions"
+msgstr "연구 동작"
+
+msgid "research:move_title"
+msgstr "연구 · {n}수"
+
+msgid "research:ai_after_move"
+msgstr "AI 추천 · {n}수 이후"
+
+msgid "research:analysis_failed"
+msgstr "이 수는 분석되지 않습니다"
+
+msgid "research:analyzed_moves"
+msgstr "분석한 수"
+
+msgid "research:analyzing_move"
+msgstr "이 수를 계산 중"
+
+msgid "research:cancel_scan"
+msgstr "분석 취소"
+
+msgid "research:clear_confirm_title"
+msgstr "판 전체를 비울까요?"
+
+msgid "research:clear_confirm_msg"
+msgstr "판 위의 {n}수를 모두 지웁니다. 이 동작은 되돌릴 수 없습니다."
+
+msgid "research:eta_label"
+msgstr "남은 예상 시간"
+
+msgid "research:from_kifu"
+msgstr "기보 라이브러리"
+
+msgid "research:from_last_game"
+msgstr "방금 끝낸 대국"
+
+msgid "research:from_my_games"
+msgstr "내 대국"
+
+msgid "research:full_scan"
+msgstr "전체 분석"
+
+msgid "research:no_candidates"
+msgstr "AI가 후보 수를 내놓지 않았습니다"
+
+msgid "research:only_19_supported"
+msgstr "19줄만 지원하므로 19줄로 불러왔습니다"
+
+msgid "research:progress_lost"
+msgstr "분석 진행 상황을 5번 연속 읽지 못했습니다. 연결이 끊겼을 수 있습니다"
+
+msgid "research:rescan"
+msgstr "다시 분석"
+
+msgid "research:retry_analysis"
+msgstr "분석 재시도"
+
+msgid "research:scan_broke"
+msgstr "전체 분석이 끝까지 진행되지 않았습니다"
+
+msgid "research:scan_cost"
+msgstr "모두 {n}수 · 한 수당 500회 탐색"
+
+msgid "research:scan_failed"
+msgstr "분석을 시작하지 못했습니다. 다시 시도해 주세요"
+
+msgid "research:scan_freeze"
+msgstr "끝날 때까지 판을 바꿀 수 없으며, 언제든 취소할 수 있습니다"
+
+msgid "research:scan_go"
+msgstr "계산 시작"
+
+msgid "research:session_failed"
+msgstr "연구 세션을 만들지 못했습니다. 다시 시도해 주세요"
+
+msgid "research:user_game_failed"
+msgstr "이 대국을 읽지 못했습니다"
+
+msgid "growth:rank_title"
+msgstr "이 기기의 기력"
+
+msgid "growth:rank_unknown"
+msgstr "—"
+
+msgid "growth:rank_unplaced"
+msgstr "미배치"
+
+msgid "growth:no_data"
+msgstr "—"
+
+msgid "growth:cell_placement"
+msgstr "배치 대국"
+
+msgid "growth:metric_placement"
+msgstr "배치 대국"
+
+msgid "growth:placement_done"
+msgstr "완료"
+
+msgid "growth:cell_solved"
+msgstr "푼 문제"
+
+msgid "growth:metric_net"
+msgstr "누적 점수"
+
+msgid "growth:stat_ranked"
+msgstr "승단 대국 · 누적"
+
+msgid "growth:stat_recent"
+msgstr "최근 30일 대국"
+
+msgid "growth:stat_solved"
+msgstr "누적으로 푼 문제"
+
+msgid "growth:stat_winrate"
+msgstr "승단 대국 승률 · 최근 30일"
+
+msgid "growth:summary_failed"
+msgstr "이 수치를 가져오지 못했습니다. '한 판도 두지 않았다'는 뜻이 아닙니다. 나중에 다시 확인하세요."
+
+msgid "growth:rules_title"
+msgstr "승강 규칙"
+
+msgid "growth:rule_up"
+msgstr "누적 +3이면 한 단계 승급"
+
+msgid "growth:rule_down"
+msgstr "누적 −3이면 한 단계 강등"
+
+msgid "growth:rule_bounds"
+msgstr "하한 20급 · 상한 '인간 초월'"
+
+msgid "growth:rung_title"
+msgstr "상대 강함별"
+
+msgid "growth:rung_w"
+msgstr "{n}승"
+
+msgid "growth:rung_l"
+msgstr "{n}패"
+
+msgid "growth:rung_empty_h"
+msgstr "아직 전적이 없습니다"
+
+msgid "growth:rung_empty_p"
+msgstr ""
+"대국 설정의 슬라이더는 상대의 강함을 고르는 것이지 당신의 기력이 아닙니다. 실제로 둔 단계만 나열하며 0승 0패 줄은 만들지 않습니다."
+
+msgid "growth:diag_title"
+msgstr "기력 진단"
+
+msgid "growth:diag_wip"
+msgstr "백엔드는 준비됨 · 화면은 미연결"
+
+msgid "growth:diag_empty_h"
+msgstr "표본 0국"
+
+msgid "growth:diag_empty_p"
+msgstr ""
+"진단은 이미 리포트가 생성된 대국으로 계산합니다. 리포트는 백엔드에 있지만 화면이 아직 읽지 않습니다(복기 화면 참고). 30국이 되기 "
+"전에는 결론이 흔들리므로 표본 수도 함께 적습니다."
+
+msgid "growth:local_note_a"
+msgstr "이 수치는 "
+
+msgid "growth:local_note_b"
+msgstr "이 기기의 기록입니다"
+
+msgid "growth:local_note_c"
+msgstr ". 원장은 클라우드에 있고, 이 기기의 사본은 몇 국 적을 수 있습니다."
+
+msgid "game:black"
+msgstr "흑"
+
+msgid "game:white"
+msgstr "백"
+
+msgid "game:plays_black"
+msgstr "흑"
+
+msgid "game:plays_white"
+msgstr "백"
+
+msgid "game:actions"
+msgstr "대국 동작"
+
+msgid "game:action_failed"
+msgstr "이 동작이 실패했습니다. 다시 시도해 주세요"
+
+msgid "game:back_to_play"
+msgstr "대국으로 돌아가기"
+
+msgid "game:board_lines"
+msgstr "{n}줄"
+
+msgid "game:handicap_n"
+msgstr "{n}점 접바둑"
+
+msgid "game:no_handicap"
+msgstr "맞바둑"
+
+msgid "game:points_unit"
+msgstr "집"
+
+msgid "game:captures"
+msgstr "따낸 돌"
+
+msgid "game:display"
+msgstr "표시"
+
+msgid "game:thinking"
+msgstr "생각 중"
+
+msgid "game:played"
+msgstr "착수 완료"
+
+msgid "game:your_turn"
+msgstr "당신 차례"
+
+msgid "game:ended"
+msgstr "대국 종료"
+
+msgid "game:time_left"
+msgstr "남음"
+
+msgid "game:time_up"
+msgstr "시간 초과"
+
+msgid "game:untimed"
+msgstr "시간 제한 없음"
+
+msgid "game:byo_left"
+msgstr "초읽기 · {n}회 남음"
+
+msgid "game:first_move"
+msgstr "첫 수"
+
+msgid "game:prev_move"
+msgstr "이전 수"
+
+msgid "game:next_move"
+msgstr "다음 수"
+
+msgid "game:last_move"
+msgstr "마지막 수"
+
+msgid "game:moves_title"
+msgstr "기보 · 교차점 좌표"
+
+msgid "game:no_moves"
+msgstr "이 대국에는 아직 수가 없습니다"
+
+msgid "game:online_pvp"
+msgstr "온라인 대국"
+
+msgid "game:exit_game"
+msgstr "대국 나가기"
+
+msgid "game:leave_keep_game"
+msgstr "기권하지 않고 나가기"
+
+msgid "game:resign_confirm_side"
+msgstr "{side} 기권할까요?"
+
+msgid "game:exit_resign_confirm_side"
+msgstr "대국 진행 중입니다. {side} 기권하고 나갈까요?"
+
+msgid "game:count_game_over"
+msgstr "이 대국은 이미 끝났습니다"
+
+msgid "game:count_min"
+msgstr "계가하려면 적어도 {n}수는 두어야 합니다"
+
+msgid "game:count_too_early"
+msgstr "수가 아직 부족해 계가할 수 없습니다"
+
+msgid "game:count_not_your_turn"
+msgstr "자기 차례일 때만 계가할 수 있습니다"
+
+msgid "game:count_position_changed"
+msgstr "계가하는 동안 국면이 바뀌었습니다. 다시 계가해 주세요"
+
+msgid "game:count_no_score"
+msgstr "형세 분석이 끝나지 않아 아직 계가할 수 없습니다. 잠시 후 다시 시도해 주세요"
+
+msgid "game:count_ranked_unscored"
+msgstr "승단 대국은 지금 계가할 수 없습니다(이 대국은 형세 분석을 하지 않습니다)"
+
+msgid "game:eval_title"
+msgstr "승률 · KataGo 네이티브 채널"
+
+msgid "game:eval_graph"
+msgstr "이 대국의 승률과 집 차이 추이"
+
+msgid "game:eval_black_100"
+msgstr "흑 100"
+
+msgid "game:eval_white_100"
+msgstr "백 100"
+
+msgid "game:eval_black_lead"
+msgstr "흑+{n}"
+
+msgid "game:eval_white_lead"
+msgstr "백+{n}"
+
+msgid "game:golaxy_ai"
+msgstr "Golaxy · AI 대국"
+
+msgid "game:golaxy_items"
+msgstr "Golaxy 아이템 · 누를 때마다 하나씩 소모"
+
+msgid "game:golaxy_judge_hint"
+msgstr "계가는 현재 형세만 보여 줄 뿐 대국을 끝내지 않습니다"
+
+msgid "game:golaxy_engine_no_undo"
+msgstr "Golaxy 로봇 대국은 아직 무르기를 지원하지 않습니다"
+
+msgid "game:engine_ended_no_result"
+msgstr "Golaxy가 알 수 없는 종국 신호를 보냈습니다 · 이 대국은 승패를 가리지 않습니다"
+
+msgid "game:connection_dropped"
+msgstr ""
+"실시간 연결이 끊겨 판이 자동으로 갱신되지 않습니다. '대국 나가기' → '기권하지 않고 나가기'를 누른 뒤 '지난 대국 이어하기'로 "
+"돌아오면 다시 연결됩니다"
+
+msgid "game:recalibrate_needs_empty_board"
+msgstr "재보정은 LED가 켜지며 판 위의 돌을 모두 치워야 합니다. 바둑판이 움직이지 않았다면 '그대로 계속'을 누르세요"
+
+msgid "game:timeout_failed"
+msgstr "시간패 판정이 끝나지 않았습니다"
+
+msgid "game:timeout_not_delivered"
+msgstr "시간패 판정이 전달되지 않았습니다. 연결을 확인한 뒤 이 대국에 다시 들어오세요"
+
+msgid "game:unavailable_title"
+msgstr "이 대국은 더 이상 열 수 없습니다"
+
+msgid "game:unavailable_reason"
+msgstr "기기가 재시작되었거나, 오래 방치되어 정리되었거나, 다른 계정의 대국일 수 있습니다."
+
+msgid "lobby:hall_title"
+msgstr "온라인 로비"
+
+msgid "lobby:hall_sub"
+msgstr "다른 기기의 사람과 대국 · 관전도 가능"
+
+msgid "lobby:loading"
+msgstr "불러오는 중…"
+
+msgid "lobby:load_failed"
+msgstr "로비에 연결할 수 없습니다 — 네트워크나 서비스가 끊겼습니다"
+
+msgid "lobby:players"
+msgstr "접속 중인 기사"
+
+msgid "lobby:online_count"
+msgstr "접속 {n}명"
+
+msgid "lobby:games_count"
+msgstr "{n}국"
+
+msgid "lobby:no_players_now"
+msgstr "지금은 당신만 접속해 있습니다"
+
+msgid "lobby:no_games_now"
+msgstr "지금 두고 있는 사람이 없습니다"
+
+msgid "lobby:idle"
+msgstr "대기 중"
+
+msgid "lobby:in_game"
+msgstr "대국 중"
+
+msgid "lobby:this_is_you"
+msgstr "이게 당신입니다"
+
+msgid "lobby:vs"
+msgstr "대"
+
+msgid "lobby:plays_black"
+msgstr "흑"
+
+msgid "lobby:plays_white"
+msgstr "백"
+
+msgid "lobby:move_no"
+msgstr "{n}수"
+
+msgid "lobby:note_a"
+msgstr " 상태인 사람은 초대할 수 있고, "
+
+msgid "lobby:note_b"
+msgstr "대국 중인 사람은 초대할 수 없습니다. 왼쪽은 진행 중인 대국이며, 자기 대국은 눌러 돌아갈 수 있습니다."
+
+msgid "lobby:match_mode"
+msgstr "어떤 방식으로 매칭할까요"
+
+msgid "lobby:mode_free"
+msgstr "자유 대국"
+
+msgid "lobby:mode_rated"
+msgstr "랭크 대국"
+
+msgid "lobby:ladder_name"
+msgstr "승단 대국"
+
+msgid "lobby:rated_why_a"
+msgstr "랭크 대국을 하려면 먼저 "
+
+msgid "lobby:rated_why_b"
+msgstr "에서 배치 대국 5국을 마쳐야 합니다. {n}국 남았습니다."
+
+msgid "lobby:rated_why_b_unknown"
+msgstr "에서 배치 대국 5국을 마치세요."
+
+msgid "lobby:start_match"
+msgstr "매칭 시작"
+
+msgid "lobby:cancel_match"
+msgstr "매칭 취소"
+
+msgid "lobby:matching_title"
+msgstr "상대를 찾는 중"
+
+msgid "lobby:matching_lead_a"
+msgstr "서버가 당신을 "
+
+msgid "lobby:matching_lead_b"
+msgstr " 대기열에 넣었습니다. 매칭되면 곧바로 대국이 시작되며 다시 확인하지 않습니다."
+
+msgid "lobby:matching_tc_free"
+msgstr "매칭되면 바로 시작 · 승단 미반영"
+
+msgid "lobby:matching_tc_rated"
+msgstr "매칭되면 바로 시작 · 승단 반영"
+
+msgid "lobby:waited_a"
+msgstr "대기 "
+
+msgid "lobby:waited_b"
+msgstr "초"
+
+msgid "lobby:invite_title"
+msgstr "{name}님이 대국을 청했습니다"
+
+msgid "lobby:invite_kind"
+msgstr "자유 대국 · 승단 미반영"
+
+msgid "lobby:invite_lead_a"
+msgstr "수락하면 곧바로 대국이 시작됩니다"
+
+msgid "lobby:invite_lead_b"
+msgstr ". 초대한 쪽이 흑입니다."
+
+msgid "lobby:invite_no_decline"
+msgstr "거절해도 이 창만 닫힐 뿐 상대에게는 아무것도 전해지지 않습니다. 초대는 2분 뒤 만료됩니다"
+
+msgid "lobby:invite_expired"
+msgstr "이 초대는 만료되었거나 이미 사용되었습니다. 다시 초대해 달라고 하세요"
+
+msgid "lobby:accept_and_play"
+msgstr "수락하고 시작"
+
+msgid "lobby:need_login"
+msgstr "로그인 필요"
+
+msgid "lobby:gate_title"
+msgstr "로그인하면 온라인 로비에 들어갑니다"
+
+msgid "lobby:gate_why"
+msgstr ""
+"로비는 당신의 이름과 접속 상태를 다른 기기의 사람에게 보내므로 계정 단위로 동작합니다. 게스트는 계정이 없어 남에게 보여 줄 신원도 "
+"없습니다."
+
+msgid "lobby:gate_fact_k"
+msgstr "로그인 후"
+
+msgid "lobby:gate_fact_v"
+msgstr "다른 사람이 목록에서 당신을 보고 초대할 수 있습니다"
+
+msgid "lobby:gate_fact_note"
+msgstr "목록에는 지금 접속 중인 사람만 나옵니다. 있으면 보이고 나가면 사라집니다"
+
+msgid "lobby:gate_rule_a"
+msgstr "로그인은 이 한 가지에만 관여합니다."
+
+msgid "lobby:gate_rule_b"
+msgstr "AI 대국, 로컬 대국, 훈련장, 복기, 기보는 게스트로도 쓸 수 있습니다."
+
+msgid "lobby:go_login"
+msgstr "로그인하러 가기"
+
+msgid "baipu:title"
+msgstr "기보 놓기"
+
+msgid "baipu:back_kifu"
+msgstr "기보"
+
+msgid "baipu:actions"
+msgstr "기보 놓기 동작"
+
+msgid "baipu:black"
+msgstr "흑"
+
+msgid "baipu:white"
+msgstr "백"
+
+msgid "baipu:black_s"
+msgstr "흑"
+
+msgid "baipu:white_s"
+msgstr "백"
+
+msgid "baipu:stones_unit"
+msgstr "점"
+
+msgid "baipu:which_move"
+msgstr "몇 수째"
+
+msgid "baipu:board_label"
+msgstr "기보 놓기 판: 동그라미가 다음에 놓을 자리입니다"
+
+msgid "baipu:loading"
+msgstr "이 기보를 불러오는 중"
+
+msgid "baipu:load_failed"
+msgstr "이 기보를 읽지 못했습니다"
+
+msgid "baipu:no_sgf"
+msgstr "이 기기에는 그 기보가 없습니다"
+
+msgid "baipu:no_moves"
+msgstr "이 기보에는 수가 없습니다"
+
+msgid "baipu:pagebar_sub"
+msgstr "{i} / {n}수 · {f}프레임 수집"
+
+msgid "baipu:place_at"
+msgstr "다음 놓을 자리 · {c}"
+
+msgid "baipu:place_none"
+msgstr "이 수에서는 돌을 놓지 않습니다"
+
+msgid "baipu:pass"
+msgstr "패스"
+
+msgid "baipu:led_on"
+msgstr "불이 켜졌습니다 — {color} 돌을 켜진 교차점에 놓으세요"
+
+msgid "baipu:led_down"
+msgstr "불이 꺼져 있습니다 — 오른쪽 위를 눌러 다시 켜거나, 좌표 {c}를 보고 직접 찾으세요"
+
+msgid "baipu:relight"
+msgstr "다시 켜기"
+
+msgid "baipu:legend_black"
+msgstr "빨간 불 = 흑돌 놓기"
+
+msgid "baipu:legend_white"
+msgstr "초록 불 = 백돌 놓기"
+
+msgid "baipu:legend_remove"
+msgstr "파란 불 = 들어내기"
+
+msgid "baipu:cam_title"
+msgstr "카메라 · 이 수에서 한 프레임 촬영"
+
+msgid "baipu:capture_off"
+msgstr "이 기기에는 촬영 장치가 연결되어 있지 않습니다"
+
+msgid "baipu:capturing"
+msgstr "촬영 중입니다. 손을 대지 마세요"
+
+msgid "baipu:capturing_hint"
+msgstr "손이 가리면 이 수는 촬영되지 않아 다시 해야 합니다."
+
+msgid "baipu:hands_off"
+msgstr "판 위에 손을 두지 마세요"
+
+msgid "baipu:confirm"
+msgstr "착수 확인"
+
+msgid "baipu:confirm_done_reason"
+msgstr "이 기보는 이미 끝까지 놓았습니다"
+
+msgid "baipu:failed_title"
+msgstr "이 수는 촬영되지 않았습니다"
+
+msgid "baipu:failed_hint"
+msgstr "돌은 그대로 두고 — '착수 확인'을 다시 누르세요"
+
+msgid "baipu:failed_hint_geometry"
+msgstr "바둑판 위치가 맞지 않습니다 — 설정에서 다시 보정하세요. 다시 눌러도 소용없습니다"
+
+msgid "baipu:frames_n"
+msgstr "{n}프레임 수집"
+
+msgid "baipu:no_frame_yet"
+msgstr "아직 저장한 프레임이 없습니다"
+
+msgid "baipu:latest_saved"
+msgstr "마지막 저장 {f}"
+
+msgid "baipu:removed_n"
+msgstr "이 수에서 {n}점 따냄"
+
+msgid "baipu:removal_title"
+msgstr "따낸 {n}점을 들어내세요"
+
+msgid "baipu:removal_hint"
+msgstr "파랗게 켜진 돌입니다 — 따낸 돌은 직접 들어내고, 끝나면 '들어냄'을 누르세요"
+
+msgid "baipu:removed_done"
+msgstr "{n}점 들어냄"
+
+msgid "baipu:moves_title"
+msgstr "이미 놓은 수"
+
+msgid "baipu:moves_value"
+msgstr "{k}수 / 총 {n}"
+
+msgid "baipu:undo"
+msgstr "직전 수 되돌리기"
+
+msgid "baipu:undo_ask"
+msgstr "직전 수를 되돌릴까요?"
+
+msgid "baipu:undo_body"
+msgstr "방금 놓은 돌을 판에서 들어내고(따낸 돌도 되돌린 뒤) '되돌림'을 누르세요."
+
+msgid "baipu:undo_done"
+msgstr "되돌림"
+
+msgid "baipu:undo_reason"
+msgstr "아직 첫 돌을 놓지 않았습니다"
+
+msgid "baipu:finish"
+msgstr "완료"
+
+msgid "baipu:finish_reason"
+msgstr "{n}수가 남았습니다"
+
+msgid "baipu:done_title"
+msgstr "이 기보를 끝까지 놓았습니다"
+
+msgid "baipu:done_hint"
+msgstr "모두 {n}수 · {f}프레임 수집"
+
+msgid "baipu:restart"
+msgstr "처음부터 놓기"
+
+msgid "baipu:resume"
+msgstr "이어서 놓기"
+
+msgid "baipu:resume_ask"
+msgstr "지난번에 이어서 놓을까요?"
+
+msgid "baipu:resume_body"
+msgstr "지난번에는 {n}수까지 놓았습니다. 다시 시작하면 이미 찍은 프레임을 덮어씁니다."
+
+msgid "baipu:exit"
+msgstr "나가기"
+
+msgid "baipu:exit_ask"
+msgstr "기보 놓기를 그만둘까요?"
+
+msgid "baipu:exit_body"
+msgstr "진행 상황은 저장되어 있어 돌아오면 이어서 놓을 수 있습니다."
+
+msgid "baipu:drift_corrected"
+msgstr "바둑판이 움직여 자동으로 보정했습니다"
+
+msgid "baipu:drift_frozen"
+msgstr "기하 보정이 되지 않았습니다"
+
+msgid "baipu:drift_stale"
+msgstr "이 프레임은 다시 보정하지 못해 지난 기하를 그대로 썼습니다"
+
+msgid "baipu:drift_word_corrected"
+msgstr "보정됨"
+
+msgid "baipu:drift_word_frozen"
+msgstr "미보정"
+
+msgid "baipu:drift_word_stale"
+msgstr "지난 값 사용"
+
+msgid "tsumego:loadingTitle"
+msgstr "문제 풀이"
+
+msgid "tsumego:actions"
+msgstr "문제 동작"
+
+msgid "tsumego:allProblems"
+msgstr "전체 문제"
+
+msgid "tsumego:autoAdvance"
+msgstr "정답이면 자동으로 다음 문제로"
+
+msgid "tsumego:backToUnit"
+msgstr "단원으로 돌아가기"
+
+msgid "tsumego:backToWrong"
+msgstr "틀린 문제로 돌아가기"
+
+msgid "tsumego:bankEmpty"
+msgstr "문제 은행에 아직 문제가 없습니다"
+
+msgid "tsumego:category_unit"
+msgstr "종류"
+
+msgid "tsumego:chooseByLevel"
+msgstr "기력으로 고르기"
+
+msgid "tsumego:cloudUnreachable"
+msgstr "클라우드 문제 은행에 연결할 수 없습니다"
+
+msgid "tsumego:cloudUnreachableBody"
+msgstr "문제 은행은 클라우드에 있고 기기에는 저장되지 않습니다. 네트워크나 클라우드가 복구되면 다시 시도하세요."
+
+msgid "tsumego:cloudUnreachableBodyNoRetry"
+msgstr "문제 은행은 클라우드에 있고 기기에는 저장되지 않습니다. 네트워크나 클라우드가 복구되면 돌아갔다가 다시 들어오세요."
+
+msgid "tsumego:kyuRanks"
+msgstr "급위"
+
+msgid "tsumego:danRanks"
+msgstr "단위"
+
+msgid "tsumego:rankBoundary"
+msgstr "급위와 단위의 경계"
+
+msgid "tsumego:dao"
+msgstr "문제"
+
+msgid "tsumego:levelsUnit"
+msgstr "단계"
+
+msgid "tsumego:goCalibrate"
+msgstr "보정하러 가기"
+
+msgid "tsumego:greetSub"
+msgstr "두는 즉시 판정, 틀리면 그 자리에서 되돌립니다"
+
+msgid "tsumego:isFirst"
+msgstr "이것이 첫 문제입니다"
+
+msgid "tsumego:lastTimeShort"
+msgstr "지난번"
+
+msgid "tsumego:loadingProblem"
+msgstr "이 문제를 불러오는 중…"
+
+msgid "tsumego:problemLoadError"
+msgstr "이 문제를 불러오지 못했습니다"
+
+msgid "tsumego:modes"
+msgstr "모드"
+
+msgid "tsumego:next"
+msgstr "다음 문제"
+
+msgid "tsumego:prev"
+msgstr "이전 문제"
+
+msgid "tsumego:noMoveYet"
+msgstr "아직 두지 않았습니다"
+
+msgid "tsumego:noSequence"
+msgstr "이 종류의 문제 번호를 읽지 못해 이전/다음 문제를 쓸 수 없습니다"
+
+msgid "tsumego:noWrong"
+msgstr "이 종류에서 지금 틀린 문제가 없습니다"
+
+msgid "tsumego:physicalBoard"
+msgstr "실물 바둑판"
+
+msgid "tsumego:physClear"
+msgstr "바둑판을 비워 주세요"
+
+msgid "tsumego:physClearLeft"
+msgstr "({n}개 남음)"
+
+msgid "tsumego:physConnecting"
+msgstr "카메라와 인식 모델을 연결하는 중입니다. 잠시 기다려 주세요…"
+
+msgid "tsumego:physGeoConfirm"
+msgstr "실물 바둑판은 먼저 보정을 확인해야 합니다(서비스 재시작 후 한 번 더)"
+
+msgid "tsumego:physGeoDrift"
+msgstr "바둑판 보정이 무효가 되었습니다. 다시 보정하세요"
+
+msgid "tsumego:physNeed19"
+msgstr "실물 바둑판은 19줄 문제만 지원합니다"
+
+msgid "tsumego:physNoCamera"
+msgstr "카메라가 감지되지 않음 / 비전 서비스 비활성"
+
+msgid "tsumego:physNoLed"
+msgstr "LED가 연결되지 않았습니다. 화면 안내를 따르세요."
+
+msgid "tsumego:physRemove"
+msgstr "오답입니다: 돌 {n}개를 되가져오세요(파란 불)"
+
+msgid "tsumego:physRestore"
+msgstr ", 그리고 따낸 {n}개를 되돌려 놓으세요(빨강 / 초록 불)"
+
+msgid "tsumego:physReply"
+msgstr "판의 불빛에 따라 돌을 놓으세요(응수 / 따냄). 판과 화면을 맞춥니다."
+
+msgid "tsumego:physVerify"
+msgstr "판과 문제도가 맞는지 확인 중입니다. 불빛에 따라 돌을 조정하세요."
+
+msgid "tsumego:placeAnswerBlack"
+msgstr "정해 자리에 흑돌 하나를 놓으면 판이 자동으로 인식합니다"
+
+msgid "tsumego:placeAnswerWhite"
+msgstr "정해 자리에 백돌 하나를 놓으면 판이 자동으로 인식합니다"
+
+msgid "tsumego:preparingBoard"
+msgstr "준비 중"
+
+msgid "tsumego:progressUnread"
+msgstr "풀이 기록을 읽지 못했습니다"
+
+msgid "tsumego:progressUnreadBody"
+msgstr "풀이 기록을 읽지 못하면 이 종류에서 무엇을 틀렸는지 알 수 없습니다. 네트워크가 복구되면 다시 시도하세요."
+
+msgid "tsumego:removeAt"
+msgstr "{coord} 들어내기"
+
+msgid "tsumego:setupDone"
+msgstr "배치 완료 · 당신 차례"
+
+msgid "tsumego:setupExtra"
+msgstr "판에 여분/색이 틀린 돌이 {n}개 있습니다. 먼저 치워 주세요(화면에는 빨간 ✕, 실물 판에서는 흰 불 깜박임)"
+
+msgid "tsumego:setupMatched"
+msgstr "{matched}/{total}개 일치"
+
+msgid "tsumego:setupSkip"
+msgstr "배치 건너뛰기"
+
+msgid "tsumego:setupStageBlack"
+msgstr "흑돌을 놓아 주세요"
+
+msgid "tsumego:setupStageWhite"
+msgstr "백돌을 놓아 주세요"
+
+msgid "tsumego:solvedInCategory"
+msgstr "이 종류에서 맞힘"
+
+msgid "tsumego:solvedShort"
+msgstr "정답"
+
+msgid "tsumego:specializedPractice"
+msgstr "분야별 훈련"
+
+msgid "tsumego:these_n_problems"
+msgstr "이 {n}문제"
+
+msgid "tsumego:thisProblem"
+msgstr "이 문제"
+
+msgid "tsumego:tries_n"
+msgstr "{n}회"
+
+msgid "tsumego:tryModeShort"
+msgstr "시험 두기"
+
+msgid "tsumego:undoMove"
+msgstr "한 수 무르기"
+
+msgid "tsumego:undoPhysicalReset"
+msgstr "실물 바둑판에서는 한 수 무를 수 없습니다. 다시 하려면 '다시 배치'를 누르세요"
+
+msgid "tsumego:unitUnknown"
+msgstr "이 단원"
+
+msgid "tsumego:unit_n"
+msgstr "{n}단원"
+
+msgid "tsumego:unit_range"
+msgstr "이 종류는 모두 {total}문제라 단원은 {units}개뿐입니다."
+
+msgid "tsumego:unit_size"
+msgstr "{n}문제가 한 단원"
+
+msgid "tsumego:unit_total"
+msgstr "{n}문제"
+
+msgid "tsumego:wrongProgress"
+msgstr "틀린 문제 {i} / {n}"
+
+msgid "tsumego:wrongResume"
+msgstr "틀린 문제 {n}번째"
+
+msgid "tsumego:wrongSet"
+msgstr "틀린 문제"
+
+msgid "tsumego:wrongShort"
+msgstr "틀렸습니다"
+
+msgid "tsumego:wrongState"
+msgstr "틀린 적 있음"
+
+msgid "tsumego:wrongStatLabel"
+msgstr "틀린 뒤 아직 맞히지 못함"
+
+msgid "tsumego:wrong_now"
+msgstr "지금 {n}문제"
+
+msgid "tsumego:wrong_total"
+msgstr "{n}문제"
+
+msgid "tsumego:yourLevel"
+msgstr "당신의 기력"
+
+msgid "tsumego:yourMoves"
+msgstr "당신의 수"
+
+msgid "tsumego:problem_no"
+msgstr "{n}번 문제"
+
+msgid "kifu:title"
+msgstr "기보"
+
+msgid "kifu:back_kifu"
+msgstr "기보"
+
+msgid "kifu:greet_a"
+msgstr "다른 사람의 "
+
+msgid "kifu:greet_b"
+msgstr "바둑"
+
+msgid "kifu:greet_sub"
+msgstr "명국, 프로 중계, 그리고 기보를 실물 판에 놓기"
+
+msgid "kifu:famous_records"
+msgstr "명국 기보"
+
+msgid "kifu:search_records"
+msgstr "기보 검색"
+
+msgid "kifu:search_sub"
+msgstr "검색창 하나, 유사 검색"
+
+msgid "kifu:search_placeholder_cn"
+msgstr "기사, 기전, 연도로 검색할 수 있습니다"
+
+msgid "kifu:searching"
+msgstr "찾는 중"
+
+msgid "kifu:no_results_cn"
+msgstr "일치하는 기보가 없습니다"
+
+msgid "kifu:no_results_hint"
+msgstr "기사 이름, 기전 이름 또는 연도를 바꿔 보세요."
+
+msgid "kifu:list_failed"
+msgstr "기보 라이브러리를 읽지 못했습니다"
+
+msgid "kifu:pro_live"
+msgstr "프로 중계"
+
+msgid "kifu:live_now"
+msgstr "중계 중"
+
+msgid "kifu:not_started"
+msgstr "시작 전"
+
+msgid "kifu:ended"
+msgstr "종료됨"
+
+msgid "kifu:place_on_board"
+msgstr "실물 판에 놓기"
+
+msgid "kifu:place_sub"
+msgstr "불빛이 한 수씩 놓을 자리를 가리킵니다"
+
+msgid "kifu:import_sgf"
+msgstr "SGF 가져오기"
+
+msgid "kifu:import_sub"
+msgstr "로컬 파일, 오프라인에서도 놓을 수 있습니다"
+
+msgid "kifu:bad_sgf"
+msgstr "유효한 SGF 파일이 아닙니다"
+
+msgid "kifu:read_failed"
+msgstr "파일을 읽지 못했습니다"
+
+msgid "kifu:recent"
+msgstr "최근에 놓은 기보"
+
+msgid "kifu:on_this_box"
+msgstr "이 기기에 저장됨"
+
+msgid "kifu:no_recent"
+msgstr "이 기기에서는 아직 기보를 놓은 적이 없습니다"
+
+msgid "kifu:no_recent_hint"
+msgstr "위에서 하나 고르거나 SGF를 가져오세요. 고른 기보는 통째로 기기에 저장되어 오프라인에서도 끝까지 놓을 수 있습니다."
+
+msgid "kifu:cache_gone"
+msgstr "이 기보의 로컬 캐시가 사라졌습니다. 다시 선택해 주세요"
+
+msgid "kifu:cannot_start"
+msgstr "이것은 놓을 수 없습니다"
+
+msgid "kifu:done_tag"
+msgstr "끝까지 놓음"
+
+msgid "kifu:placed_all"
+msgstr "다 놓음"
+
+msgid "kifu:placed_at"
+msgstr ""
+
+msgid "kifu:resume_at"
+msgstr "지난번에는 "
+
+msgid "kifu:resume"
+msgstr "계속"
+
+msgid "kifu:resume_baipu"
+msgstr "기보 놓기 계속"
+
+msgid "kifu:resume_hint"
+msgstr "불빛이 다음 수의 자리를 가리킵니다"
+
+msgid "kifu:keep_placing"
+msgstr "이어서 놓기"
+
+msgid "kifu:detail_actions"
+msgstr "이 대국으로 할 수 있는 것"
+
+msgid "kifu:replay"
+msgstr "한 수씩 재생"
+
+msgid "kifu:to_research"
+msgstr "연구로 열기"
+
+msgid "kifu:board_label"
+msgstr "기보 재생 판"
+
+msgid "kifu:board_lines"
+msgstr "줄"
+
+msgid "kifu:handicap_pre"
+msgstr "접 "
+
+msgid "kifu:handicap_unit"
+msgstr "점"
+
+msgid "kifu:komi_black"
+msgstr "흑 덤"
+
+msgid "kifu:komi_unit"
+msgstr "집"
+
+msgid "kifu:games_unit"
+msgstr "국"
+
+msgid "kifu:move_ordinal"
+msgstr ""
+
+msgid "kifu:total_prefix"
+msgstr "총 "
+
+msgid "kifu:versus"
+msgstr "대"
+
+msgid "kifu:source_prefix"
+msgstr "출처: "
+
+msgid "kifu:untitled_game"
+msgstr "제목 없는 대국"
+
+msgid "kifu:whole_game"
+msgstr "전보"
+
+msgid "kifu:moves_title"
+msgstr "기보 · 교차점 좌표"
+
+msgid "kifu:no_moves"
+msgstr "이 기보에는 수가 없습니다"
+
+msgid "kifu:need_sgf"
+msgstr "이 대국의 기보를 아직 받지 못했습니다"
+
+msgid "kifu:load_failed"
+msgstr "이 대국을 읽지 못했습니다"
+
+msgid "kifu:loading_this_game"
+msgstr "이 대국을 불러오는 중"
+
+msgid "kifu:loading_hint"
+msgstr "기보와 수순 기록 모두 서버에서 가져옵니다."
+
+msgid "kifu:retry"
+msgstr "다시 시도"
+
+msgid "kifu:pass"
+msgstr "패스"
+
+msgid "kifu:to_start"
+msgstr "처음으로"
+
+msgid "kifu:to_end"
+msgstr "끝으로"
+
+msgid "kifu:prev_move"
+msgstr "이전 수"
+
+msgid "kifu:next_move"
+msgstr "다음 수"
+
+msgid "kifu:prev_page"
+msgstr "이전 페이지"
+
+msgid "kifu:next_page"
+msgstr "다음 페이지"
+
+msgid "kifu:collapsed"
+msgstr "접힘"
+
+msgid "kifu:expanded"
+msgstr "펼쳐짐"
+
+msgid "kifu:today"
+msgstr "오늘"
+
+msgid "kifu:yesterday"
+msgstr "어제"
+
+msgid "kifu:day_before"
+msgstr "그제"
+
+msgid "review:back_review"
+msgstr "복기"
+
+msgid "review:you"
+msgstr "당신"
+
+msgid "review:black"
+msgstr "흑"
+
+msgid "review:white"
+msgstr "백"
+
+msgid "review:win"
+msgstr "승"
+
+msgid "review:lose"
+msgstr "패"
+
+msgid "review:by_resign"
+msgstr "불계"
+
+msgid "review:by_time"
+msgstr "시간패"
+
+msgid "review:by_forfeit"
+msgstr "기권"
+
+msgid "review:void_result"
+msgstr "이 대국은 승패가 가려지지 않았습니다"
+
+msgid "review:unfinished_line"
+msgstr "{n}수까지 두고 나갔습니다"
+
+msgid "review:sec_games"
+msgstr "지난 대국"
+
+msgid "review:all_games"
+msgstr "모두 {n}국"
+
+msgid "review:local_games"
+msgstr "이 기기 {n}국"
+
+msgid "review:facing_games"
+msgstr "마주 앉아 {n}국"
+
+msgid "review:matched_games"
+msgstr "{n}국 찾음"
+
+msgid "review:filter_label"
+msgstr "출처로 대국 거르기"
+
+msgid "review:filter_all"
+msgstr "전체"
+
+msgid "review:filter_local"
+msgstr "마주 앉기"
+
+msgid "review:search_toggle"
+msgstr "지난 대국 거르기와 검색"
+
+msgid "review:list_loading"
+msgstr "당신의 대국을 불러오는 중"
+
+msgid "review:list_failed"
+msgstr "대국 목록을 읽지 못했습니다"
+
+msgid "review:no_games"
+msgstr "아직 둔 대국이 없습니다"
+
+msgid "review:no_games_hint"
+msgstr "대국을 마치면 자동으로 여기에 기록됩니다. 아래에서 SGF를 가져올 수도 있습니다."
+
+msgid "review:no_local_games"
+msgstr "마주 앉아 둔 대국이 아직 없습니다"
+
+msgid "review:no_local_games_hint"
+msgstr "'대국 · 사람 대 사람'에서 두 사람이 같은 기기로 둔 대국이 여기에 기록됩니다."
+
+msgid "review:no_match"
+msgstr "일치하는 대국이 없습니다"
+
+msgid "review:no_match_hint"
+msgstr "기사 이름이나 기전 이름을 바꿔 보세요."
+
+msgid "review:row_ai"
+msgstr "AI 대국"
+
+msgid "review:row_human"
+msgstr "사람 대 사람"
+
+msgid "review:row_ranked"
+msgstr "승단 대국"
+
+msgid "review:row_import"
+msgstr "가져온 기보"
+
+msgid "review:row_library"
+msgstr "기보 라이브러리"
+
+msgid "review:row_vs"
+msgstr "대"
+
+msgid "review:rail_title"
+msgstr "선택한 대국"
+
+msgid "review:rail_none"
+msgstr "아직 선택한 대국이 없습니다"
+
+msgid "review:rail_board"
+msgstr "선택한 대국의 종국 판"
+
+msgid "review:board_failed"
+msgstr "이 대국의 기보를 읽지 못했습니다"
+
+msgid "review:sec_winrate"
+msgstr "이 대국의 승률"
+
+msgid "review:black_winrate"
+msgstr "흑 승률"
+
+msgid "review:black_lead"
+msgstr "흑 우세"
+
+msgid "review:perspective"
+msgstr "{color} 시점"
+
+msgid "review:plot_label"
+msgstr "수마다의 승률 — 위는 흑 우세, 아래는 백 우세"
+
+msgid "review:plot_pick_label"
+msgstr "수마다의 승률 — 누르면 그 수로 이동"
+
+msgid "review:plot_loading"
+msgstr "이 대국의 리포트를 불러오는 중"
+
+msgid "review:plot_pick"
+msgstr "아래에서 대국을 고르세요"
+
+msgid "review:plot_thin"
+msgstr "리포트가 아직 계산하지 않은 수"
+
+msgid "review:plot_unanalyzed"
+msgstr "이 대국은 아직 분석하지 않았습니다 — 아래 '리포트 생성'에서 단계를 고르세요"
+
+msgid "review:sec_report"
+msgstr "리포트 생성"
+
+msgid "review:two_tiers"
+msgstr "두 단계: 500 / 2000회 탐색"
+
+msgid "review:tier_standard"
+msgstr "표준"
+
+msgid "review:tier_standard_sub"
+msgstr "한 수당 500회 탐색"
+
+msgid "review:tier_deep"
+msgstr "정독"
+
+msgid "review:tier_deep_sub"
+msgstr "한 수당 2000회 탐색 · 4배 느림"
+
+msgid "review:visits_each"
+msgstr "한 수당 {n}회 탐색"
+
+msgid "review:analyzed_progress"
+msgstr "{b}수 중 {a}수 분석"
+
+msgid "review:resume_analysis"
+msgstr "분석 계속"
+
+msgid "review:recompute"
+msgstr "다시 계산"
+
+msgid "review:recompute_failed"
+msgstr "다시 계산하지 못했습니다"
+
+msgid "review:refresh_failed"
+msgstr "새로 고치지 못했습니다"
+
+msgid "review:no_task"
+msgstr "이 대국에는 아직 리포트 작업이 없습니다"
+
+msgid "review:tasks_failed"
+msgstr "리포트 작업에 오류가 났습니다"
+
+msgid "review:tag_analyzed"
+msgstr "분석됨"
+
+msgid "review:tag_unanalyzed"
+msgstr "미분석"
+
+msgid "review:cell_unanalyzed"
+msgstr "미분석"
+
+msgid "review:tag_partial"
+msgstr "{a}/{b}까지만 계산"
+
+msgid "review:tag_running"
+msgstr "분석 중 {a}/{b}"
+
+msgid "review:tag_failed"
+msgstr "분석 실패"
+
+msgid "review:tag_unfinished"
+msgstr "미종국"
+
+msgid "review:failure_bad_sgf"
+msgstr "이 기보를 읽지 못했습니다"
+
+msgid "review:failure_no_credits"
+msgstr "크레딧이 부족합니다"
+
+msgid "review:failure_not_found"
+msgstr "이미 사라졌습니다"
+
+msgid "review:failure_offline"
+msgstr "클라우드를 일시적으로 쓸 수 없습니다"
+
+msgid "review:moves_failed"
+msgstr "리포트를 읽지 못했습니다"
+
+msgid "review:detail_failed"
+msgstr "이 리포트를 읽지 못했습니다"
+
+msgid "review:open_report"
+msgstr "리포트 보기"
+
+msgid "review:delete_game"
+msgstr "삭제"
+
+msgid "review:to_research"
+msgstr "연구로 열기"
+
+msgid "review:toggles"
+msgstr "표시"
+
+msgid "review:accuracy"
+msgstr "정확도"
+
+msgid "review:brilliants"
+msgstr "묘수"
+
+msgid "review:mistakes"
+msgstr "실수"
+
+msgid "review:took"
+msgstr "{d} 걸렸습니다"
+
+msgid "review:import_card"
+msgstr "기보를 가져와 복기"
+
+msgid "review:import_card_sub"
+msgstr "로컬 SGF 또는 기보 라이브러리"
+
+msgid "platform:platforms"
+msgstr "플랫폼"
+
+msgid "platform:back_to_platforms"
+msgstr "외부 플랫폼"
+
+msgid "platform:connect_sub"
+msgstr "외부 바둑 사이트에 연결해 이 실물 판으로 둡니다"
+
+msgid "platform:connected"
+msgstr "연결됨"
+
+msgid "platform:disconnected"
+msgstr "미연결"
+
+msgid "platform:what_you_get"
+msgstr "연결하면"
+
+msgid "platform:get_board"
+msgstr "이 실물 판으로 둘 수 있습니다"
+
+msgid "platform:get_board_sub"
+msgstr "돌을 놓으면 그것이 착수이고, 상대도 같은 수를 봅니다"
+
+msgid "platform:get_kifu"
+msgstr "대국이 끝나면 기보 자동 저장"
+
+msgid "platform:get_kifu_sub"
+msgstr "기보 라이브러리에 들어가고 복기로도 보낼 수 있습니다"
+
+msgid "platform:get_rank"
+msgstr "기기 내 기력에는 영향이 없습니다"
+
+msgid "platform:get_rank_sub"
+msgstr "그쪽의 승패는 그쪽 기록에만 반영됩니다"
+
+msgid "platform:icon_board"
+msgstr "판"
+
+msgid "platform:icon_kifu"
+msgstr "기보"
+
+msgid "platform:icon_rank"
+msgstr "기력"
+
+msgid "platform:sign_in_to"
+msgstr "로그인 · {name}"
+
+msgid "platform:logging_in"
+msgstr "로그인 중…"
+
+msgid "platform:login_failed"
+msgstr "로그인 실패"
+
+msgid "platform:logout"
+msgstr "로그아웃"
+
+msgid "platform:logout_ask"
+msgstr "{name} 연결을 끊을까요?"
+
+msgid "platform:logout_body"
+msgstr "이 기기는 더 이상 그 계정이 아닙니다. 다음에 들어가려면 다시 로그인해야 합니다."
+
+msgid "platform:pw_fields"
+msgstr "사용자 이름 + 비밀번호"
+
+msgid "platform:pw_note"
+msgstr "해당 플랫폼에만 전송되며 기기에는 저장되지 않습니다"
+
+msgid "platform:user_note"
+msgstr "그쪽 계정 이름이며, 기기 계정이 아닙니다"
+
+msgid "platform:sms_fields"
+msgstr "휴대전화 번호 + 인증번호"
+
+msgid "platform:phone_note"
+msgstr "플랫폼에서 로그인 자격을 받는 데만 사용합니다"
+
+msgid "platform:sms_get"
+msgstr "인증번호 받기"
+
+msgid "platform:sms_again"
+msgstr "{n}초 후 재발송 가능"
+
+msgid "platform:sms_failed"
+msgstr "인증번호를 보내지 못했습니다"
+
+msgid "platform:need_phone"
+msgstr "먼저 휴대전화 번호를 입력하세요"
+
+msgid "platform:code_note"
+msgstr "여섯 자리 숫자 · 60초간 유효"
+
+msgid "platform:lobby_title"
+msgstr "{name} · 로비"
+
+msgid "platform:lobby_sub"
+msgstr "누군가에게 도전하거나, 플랫폼이 상대를 찾게 합니다"
+
+msgid "platform:enter_lobby"
+msgstr "로비 입장"
+
+msgid "platform:enter_engine"
+msgstr "AI와 대국"
+
+msgid "platform:no_play_yet"
+msgstr "아직 대국할 수 없습니다"
+
+msgid "platform:cap_live"
+msgstr "실시간 대국"
+
+msgid "platform:cap_engine"
+msgstr "AI 대국"
+
+msgid "platform:cap_automatch"
+msgstr "자동 매칭"
+
+msgid "platform:cap_rooms"
+msgstr "방"
+
+msgid "platform:find_by_name"
+msgstr "사용자 이름으로 찾기"
+
+msgid "platform:find_hint"
+msgstr "입력하고 Enter를 누르세요. 결과가 없으면 그쪽에 그 사람이 없는 것입니다"
+
+msgid "platform:results"
+msgstr "찾은 기사"
+
+msgid "platform:no_such_player"
+msgstr "그쪽에는 그런 사람이 없습니다"
+
+msgid "platform:search_first"
+msgstr "사용자 이름을 입력하고 Enter를 누르거나, 플랫폼이 상대를 찾게 하세요"
+
+msgid "platform:users_failed"
+msgstr "플랫폼에서 목록을 가져오지 못했습니다"
+
+msgid "platform:idle"
+msgstr "대기 중"
+
+msgid "platform:in_game"
+msgstr "대국 중"
+
+msgid "platform:challenge"
+msgstr "도전"
+
+msgid "platform:challenge_terms"
+msgstr "도전 보내기"
+
+msgid "platform:challenge_ask"
+msgstr "{name}에게 도전할까요?"
+
+msgid "platform:challenge_ask_body"
+msgstr "{name} {rank} · 19줄 · 중국 룰 · 승단 반영."
+
+msgid "platform:challenge_ask_tail"
+msgstr "보내면 되돌릴 수 없습니다. 상대가 수락하면 {name}에서 두게 되며 이 기기로 돌아오지 않습니다."
+
+msgid "platform:challenge_send"
+msgstr "도전 보내기"
+
+msgid "platform:challenge_sent"
+msgstr "도전을 보냈습니다. 상대가 수락하면 {name}에서 두게 되며 이 기기로 돌아오지 않습니다."
+
+msgid "platform:challenge_failed"
+msgstr "도전을 보내지 못했습니다"
+
+msgid "platform:automatch"
+msgstr "자동 매칭"
+
+msgid "platform:automatch_body"
+msgstr "{name}이(가) 상대를 찾게 하기"
+
+msgid "platform:automatch_hint"
+msgstr "대기열은 {name} 쪽에 있습니다. 매칭되어도 이 기기로 돌아오지 않고 {name}에서 이어 둡니다."
+
+msgid "platform:automatch_start"
+msgstr "매칭 시작"
+
+msgid "platform:automatch_cancel"
+msgstr "매칭 취소"
+
+msgid "platform:automatch_failed"
+msgstr "매칭이 시작되지 않았습니다"
+
+msgid "platform:seeking"
+msgstr "상대를 찾는 중"
+
+msgid "platform:engine_title"
+msgstr "{name} · AI 대국"
+
+msgid "platform:engine_sub"
+msgstr "대국 설정 · 기기 내 기력에 반영되지 않음"
+
+msgid "platform:opponent"
+msgstr "상대"
+
+msgid "platform:rung_n"
+msgstr "{n}단계 중 {i}단계"
+
+msgid "platform:stronger"
+msgstr "한 단계 강한 상대로"
+
+msgid "platform:weaker"
+msgstr "한 단계 약한 상대로"
+
+msgid "platform:levels_from"
+msgstr "{name}이(가) {n}단계 제공"
+
+msgid "platform:levels_failed"
+msgstr "플랫폼에서 기력 단계를 가져오지 못했습니다"
+
+msgid "platform:display_elo"
+msgstr "표시 Elo {v}"
+
+msgid "platform:ref_rank"
+msgstr "{r} 수준"
+
+msgid "platform:rank_is_theirs"
+msgstr "기력은 {name} 쪽 것입니다"
+
+msgid "platform:terms_fixed"
+msgstr "조건은 고정입니다"
+
+msgid "platform:terms_body"
+msgstr "중국 룰 · 승단 반영"
+
+msgid "platform:terms_hint"
+msgstr "이 세 가지는 화면에서 고를 수 없으며, 이 조건 그대로 전송됩니다"
+
+msgid "platform:only_19"
+msgstr "{name}은(는) 19줄만 · 중국 룰"
+
+msgid "platform:fixed"
+msgstr "고정"
+
+msgid "platform:untimed"
+msgstr "시간 제한 없음"
+
+msgid "platform:nigiri"
+msgstr "돌 가리기"
+
+msgid "platform:black_first"
+msgstr "정선"
+
+msgid "platform:handicap_range"
+msgstr "{n}단계 · 호선 / 정선 / 2 – 9점"
+
+msgid "platform:komi_0"
+msgstr "덤 없음"
+
+msgid "platform:komi_75"
+msgstr "흑 덤 7.5집"
+
+msgid "platform:komi_n"
+msgstr "흑 덤 {n}점"
+
+msgid "platform:summary_note"
+msgstr "덤은 접바둑에 따라 정해지며 별도 선택지가 아닙니다. 승패는 {name} 기록에만 반영됩니다."
+
+msgid "tutorial:title_cn"
+msgstr "강좌"
+
+msgid "tutorial:categories_cn"
+msgstr "분류"
+
+msgid "tutorial:greet_sub"
+msgstr "백엔드는 5층 구조이며 내용은 이 기기에서 만들지 않습니다"
+
+msgid "tutorial:loading_cn"
+msgstr "클라우드와 강좌를 맞추는 중"
+
+msgid "tutorial:loadFailed"
+msgstr "불러오기에 실패했습니다. 잠시 후 다시 시도해 주세요"
+
+msgid "tutorial:empty"
+msgstr "아직 강좌가 없습니다"
+
+msgid "tutorial:empty_hint"
+msgstr "클라우드 강좌 라이브러리에는 아직 책이 없습니다. 아래 두 곳에는 지금도 내용이 있습니다."
+
+msgid "tutorial:instead_cn"
+msgstr "지금 연습할 수 있는 것"
+
+msgid "tutorial:go_training"
+msgstr "훈련장으로"
+
+msgid "tutorial:go_training_sub"
+msgstr "여섯 가지 문제 · 지금 바로 풀 수 있습니다"
+
+msgid "tutorial:go_baipu"
+msgstr "기보 놓기로"
+
+msgid "tutorial:go_baipu_sub"
+msgstr "명국을 한 수씩 따라 놓기"
+
+msgid "tutorial:count_line"
+msgstr "{n}개 분류 · 모두 {b}권"
+
+msgid "tutorial:books_n"
+msgstr "{n}권"
+
+msgid "tutorial:books_synced"
+msgstr "{n}권 · 내용은 클라우드와 동기화"
+
+msgid "tutorial:synced"
+msgstr "클라우드와 동기화"
+
+msgid "tutorial:pick_book"
+msgstr "책 고르기"
+
+msgid "tutorial:books_loading"
+msgstr "이 분류의 책 목록을 불러오는 중"
+
+msgid "tutorial:books_failed"
+msgstr "이 분류의 책 목록을 읽지 못했습니다"
+
+msgid "tutorial:books_empty"
+msgstr "이 분류에는 책이 한 권도 없습니다"
+
+msgid "tutorial:books_empty_hint"
+msgstr "클라우드가 아직 이 분류를 동기화하지 않았습니다. 다른 분류에는 이미 있을 수 있습니다."
+
+msgid "tutorial:anatomy_cn"
+msgstr "한 과는 이런 모습입니다"
+
+msgid "tutorial:chapters_n"
+msgstr "{n}장"
+
+msgid "tutorial:sections_n"
+msgstr "{n}절"
+
+msgid "tutorial:figures_n"
+msgstr "{n}도"
+
+msgid "tutorial:moves_n"
+msgstr "{n}수"
+
+msgid "tutorial:seconds_n"
+msgstr "{n}초"
+
+msgid "tutorial:has_video"
+msgstr "영상 있음"
+
+msgid "tutorial:back_toc"
+msgstr "목차"
+
+msgid "tutorial:toc_of"
+msgstr "{title} · 목차"
+
+msgid "tutorial:toc_count"
+msgstr "{c}장 · {s}절"
+
+msgid "tutorial:toc_loading"
+msgstr "이 책의 목차를 불러오는 중"
+
+msgid "tutorial:toc_failed"
+msgstr "이 책의 목차를 읽지 못했습니다"
+
+msgid "tutorial:toc_empty"
+msgstr "이 책에는 아직 장이 없습니다"
+
+msgid "tutorial:toc_empty_hint"
+msgstr "책 목록은 동기화되었지만 본문은 아직입니다. 이 기기의 문제가 아닙니다."
+
+msgid "tutorial:no_sections"
+msgstr "이 장에는 아직 절이 없습니다"
+
+msgid "tutorial:section_n"
+msgstr "{n}절"
+
+msgid "tutorial:section_loading"
+msgstr "이 절을 불러오는 중"
+
+msgid "tutorial:section_failed"
+msgstr "이 절을 읽지 못했습니다"
+
+msgid "tutorial:figures_in_section"
+msgstr "이 절의 그림"
+
+msgid "tutorial:no_figures"
+msgstr "이 절에는 아직 그림이 없습니다"
+
+msgid "tutorial:no_figures_hint"
+msgstr "목차에는 이 절이 있지만 본문은 아직 동기화되지 않았습니다. 이 기기의 문제가 아닙니다."
+
+msgid "tutorial:figure_ordinal"
+msgstr "{n}도 중 {i}도"
+
+msgid "tutorial:figure_actions"
+msgstr "그림 넘기기와 해설"
+
+msgid "tutorial:prev_figure"
+msgstr "이전 그림"
+
+msgid "tutorial:next_figure"
+msgstr "다음 그림"
+
+msgid "tutorial:back_to_diagram"
+msgstr "그림으로 돌아가기"
+
+msgid "tutorial:board_label"
+msgstr "{label}: 이 절의 변화도"
+
+msgid "tutorial:board_view"
+msgstr "보이는 범위"
+
+msgid "tutorial:fullBoard"
+msgstr "전체 판"
+
+msgid "tutorial:partial"
+msgstr "부분"
+
+msgid "tutorial:moves"
+msgstr "수순"
+
+msgid "tutorial:step_back"
+msgstr "한 수 뒤로"
+
+msgid "tutorial:step_fwd"
+msgstr "한 수 앞으로"
+
+msgid "tutorial:step_n"
+msgstr "{n}수까지 진행"
+
+msgid "tutorial:step_total"
+msgstr "이 그림은 모두 {n}수입니다"
+
+msgid "tutorial:step_zero"
+msgstr "배치만"
+
+msgid "tutorial:tag_video"
+msgstr "영상 해설"
+
+msgid "tutorial:tag_audio"
+msgstr "음성 해설"
+
+msgid "tutorial:tag_text"
+msgstr "글 해설"
+
+msgid "tutorial:tag_none"
+msgstr "해설 없음"
+
+msgid "tutorial:teach_none"
+msgstr "해설 없음"
+
+msgid "tutorial:teach_none_reason"
+msgstr "이 그림의 해설은 아직 녹음되지 않았습니다. 클라우드가 동기화되면 생깁니다"
+
+msgid "tutorial:text_only"
+msgstr "글 해설만 있음"
+
+msgid "tutorial:text_only_reason"
+msgstr "이 그림은 글 해설만 있으며 위에 적혀 있습니다"
+
+msgid "tutorial:no_explain"
+msgstr "이 그림에는 책의 설명도 없고 해설도 녹음되지 않았습니다."
+
+msgid "tutorial:watch_video"
+msgstr "영상 해설 보기"
+
+msgid "tutorial:play_audio"
+msgstr "음성 해설 재생"
+
+msgid "tutorial:stop_audio"
+msgstr "멈춤"
+
+msgid "19x19"
+msgstr "19줄"
+
+msgid "19×19 only"
+msgstr "19줄만"
+
+msgid "20 problems per unit"
+msgstr "20문제가 한 단원"
+
+msgid "Korean rules"
+msgstr "한국 룰"
+
+msgid ""
+"AI connection error — please retry your move, or exit to abandon the game."
+msgstr "AI 연결 오류입니다. 다시 두거나, 나가서 대국을 포기하세요."
+
+msgid "AI is thinking…"
+msgstr "AI가 생각 중…"
+
+msgid "AI suggestions (white lamps)"
+msgstr "AI 조언(흰 불 깜박임)"
+
+msgid "Accept as my move"
+msgstr "내 착수로 받아들이기"
+
+msgid "All games"
+msgstr "전체 대국"
+
+msgid "Auto-advance after solving · current"
+msgstr "정답 후 자동으로 다음 · 현재"
+
+msgid "Average time"
+msgstr "평균 소요 시간"
+
+msgid "Average tries"
+msgstr "평균 시도 횟수"
+
+msgid "Board may have moved"
+msgstr "바둑판이 움직였을 수 있습니다"
+
+msgid "Board may have moved — recognition paused"
+msgstr "바둑판이 움직였을 수 있어 인식을 멈췄습니다"
+
+msgid "Board mismatch"
+msgstr "판과 대국이 일치하지 않습니다"
+
+msgid "Board restored"
+msgstr "안내대로 복구했습니다"
+
+msgid "Cached SGF no longer available"
+msgstr "캐시된 기보가 더 이상 없습니다"
+
+msgid "Calibration"
+msgstr "기하 보정"
+
+msgid "Camera"
+msgstr "카메라"
+
+msgid "Camera disconnected, switched to touch mode"
+msgstr "카메라가 끊겨 터치 모드로 전환했습니다"
+
+msgid "Cancel"
+msgstr "취소"
+
+msgid "Categories"
+msgstr "문제 유형"
+
+msgid "Challenge others · rated queue available"
+msgstr "도전하기 · 배치 대기열 있음"
+
+msgid "Chart"
+msgstr "그래프"
+
+msgid "Choose a way to start playing"
+msgstr "대국을 시작할 방법을 고르세요"
+
+msgid "Choose one category"
+msgstr "문제 유형을 하나 고르세요"
+
+msgid "Confirm"
+msgstr "착수 확인"
+
+msgid "Confirm resign?"
+msgstr "기권할까요?"
+
+msgid "Confirm result"
+msgstr "종국 확인"
+
+msgid "Confirming…"
+msgstr "확인 중…"
+
+msgid "Connected · goes to the lobby"
+msgstr "연결됨 · 로비로"
+
+msgid "Connected · plays the engine"
+msgstr "연결됨 · AI와 대국"
+
+msgid "Continue"
+msgstr "계속"
+
+msgid "Continue anyway"
+msgstr "그대로 계속"
+
+msgid "Continue on screen"
+msgstr "화면으로 두기"
+
+msgid "Continue practicing"
+msgstr "지난번에 이어서"
+
+msgid "Cross-Platform"
+msgstr "외부 플랫폼 대국"
+
+msgid "Cross-Platform Play"
+msgstr "외부 플랫폼 대국"
+
+msgid "Difficulty"
+msgstr "난이도"
+
+msgid "Ended"
+msgstr "종료됨"
+
+msgid "Enter Live"
+msgstr "라이브 입장"
+
+msgid "Every game played, with its review report"
+msgstr "둔 모든 대국과 그 복기 리포트"
+
+msgid "Exit"
+msgstr "나가기"
+
+msgid "Failed to read file"
+msgstr "파일을 읽지 못했습니다"
+
+msgid "Failed to start game"
+msgstr "대국을 시작하지 못했습니다"
+
+msgid "Focused training"
+msgstr "분야별 훈련"
+
+msgid "Game in progress. Resign and exit?"
+msgstr "대국 진행 중입니다. 기권하고 나갈까요?"
+
+msgid "Geometry locked"
+msgstr "기하 고정됨"
+
+msgid "Guest"
+msgstr "게스트"
+
+msgid "Hide Hint"
+msgstr "힌트 접기"
+
+msgid "Hint"
+msgstr "힌트"
+
+msgid "Hints"
+msgstr "AI 조언"
+
+msgid "Hint failed"
+msgstr "조언에 실패했습니다. 잠시 후 다시 시도해 주세요"
+
+msgid "Hint is not enabled"
+msgstr "조언 기능이 열려 있지 않습니다"
+
+msgid "History"
+msgstr "기록"
+
+msgid "Ignore"
+msgstr "무시"
+
+msgid "Import SGF"
+msgstr "기보 가져오기"
+
+msgid "Insufficient balance"
+msgstr "잔액이 부족합니다"
+
+msgid "Judged on placement"
+msgstr "두는 즉시 판정"
+
+msgid "Judged on placement · a wrong move is taken straight back"
+msgstr "두는 즉시 판정 · 틀리면 그 자리에서 되돌립니다"
+
+msgid "Keep waiting"
+msgstr "계속 기다리기"
+
+msgid "Load more"
+msgstr "더 불러오기"
+
+msgid "Loading"
+msgstr "불러오는 중..."
+
+msgid "Loading…"
+msgstr "불러오는 중…"
+
+msgid "Loading categories…"
+msgstr "문제 유형을 불러오는 중…"
+
+msgid "Loading problem set…"
+msgstr "문제 은행을 불러오는 중…"
+
+msgid "Logging in..."
+msgstr "로그인 중..."
+
+msgid "Login failed"
+msgstr "로그인 실패"
+
+msgid ""
+"Mix all categories at this level and group every 20 problems into a unit"
+msgstr "이 난이도의 모든 유형을 섞어 20문제씩 한 단원으로 묶습니다"
+
+msgid "Mix all categories at this level in 20-problem units"
+msgstr "이 난이도의 모든 유형을 섞어 20문제가 한 단원"
+
+msgid "Mixed"
+msgstr "종합"
+
+msgid "Mixed categories"
+msgstr "유형 혼합"
+
+msgid "Mixed training"
+msgstr "종합 훈련"
+
+msgid "Next up"
+msgstr "다음 문제"
+
+msgid "No 19×19 records found"
+msgstr "19줄 기보를 찾지 못했습니다"
+
+msgid "No categories at this level yet"
+msgstr "이 단계에는 아직 문제 유형이 없습니다"
+
+msgid "No live matches"
+msgstr "중계가 없습니다"
+
+msgid "No problems for this level"
+msgstr "이 난이도에는 문제가 없습니다"
+
+msgid "No problems in this category yet"
+msgstr "이 유형에는 아직 문제가 없습니다"
+
+msgid "No such unit"
+msgstr "그런 단원이 없습니다"
+
+msgid "Not a valid SGF file"
+msgstr "유효한 SGF 파일이 아닙니다"
+
+msgid "Not attempted"
+msgstr "아직 풀지 않음"
+
+msgid "Not available in ranked games"
+msgstr "승단 대국에서는 쓸 수 없습니다"
+
+msgid "Not calibrated"
+msgstr "보정 필요"
+
+msgid "Not signed in"
+msgstr "로그인 안 됨"
+
+msgid "Not wired up yet"
+msgstr "아직 연결되지 않았습니다"
+
+msgid "Now Live"
+msgstr "중계 중"
+
+msgid "Online Lobby"
+msgstr "온라인 로비"
+
+msgid "Only the ones I got wrong"
+msgstr "틀린 문제만"
+
+msgid "Other practice"
+msgstr "다른 연습"
+
+msgid "Other sets"
+msgstr "다른 묶음"
+
+msgid "Password"
+msgstr "비밀번호"
+
+msgid "Username"
+msgstr "사용자 이름"
+
+msgid "Physical board out of sync"
+msgstr "실물 바둑판이 오랫동안 대국을 따라오지 못하고 있습니다"
+
+msgid "Pick the strength yourself · form estimate available"
+msgstr "강함을 직접 고르기 · 형세 판단을 볼 수 있습니다"
+
+msgid "Place / remove the lit stones, then confirm — or continue on screen."
+msgstr "불빛 안내대로 돌을 놓거나(빨강/초록) 들어낸 뒤(파랑) 확인하세요. 화면으로 계속할 수도 있습니다."
+
+msgid "Place these stones"
+msgstr "여기에 놓으세요(빨강/초록 불)"
+
+msgid "Remove these stones"
+msgstr "여기를 들어내세요(파란 불)"
+
+msgid "Play vs AI"
+msgstr "AI와 대국"
+
+msgid "Play vs Human"
+msgstr "사람과 대국"
+
+msgid "Please place the AI stone at the lit point first"
+msgstr "먼저 AI의 돌을 켜진 자리에 놓으세요"
+
+msgid "Possible move detected at"
+msgstr "착수로 보이는 것을 감지:"
+
+msgid "Problem set unavailable"
+msgstr "문제 은행을 읽지 못했습니다"
+
+msgid "Problems per unit · current"
+msgstr "단원당 문제 수 · 현재"
+
+msgid "Re-align board"
+msgstr "위치 다시 맞추기"
+
+msgid "Re-align failed — try again"
+msgstr "위치 맞추기에 실패했습니다. 다시 시도해 주세요"
+
+msgid "Re-sync failed, please retry"
+msgstr "인식 재설정에 실패했습니다. 다시 시도해 주세요"
+
+msgid "Recalibrate"
+msgstr "다시 보정"
+
+msgid "Recalibrate board"
+msgstr "바둑판 다시 보정"
+
+msgid "Recent"
+msgstr "최근"
+
+msgid "Redo the ones you got wrong in this category"
+msgstr "이 유형에서 틀린 문제를 다시 풀기"
+
+msgid "Register / Sign in"
+msgstr "가입 / 로그인"
+
+msgid "Reset"
+msgstr "다시 배치"
+
+msgid "Resign failed, retry"
+msgstr "기권하지 못했습니다. 다시 시도해 주세요"
+
+msgid "Resume"
+msgstr "재개"
+
+msgid "Resume last game"
+msgstr "지난 대국 이어하기"
+
+msgid "Score"
+msgstr "계가"
+
+msgid "Search players, events..."
+msgstr "기사, 기전 검색..."
+
+msgid "Select a match"
+msgstr "대국을 선택하세요"
+
+msgid "Select category"
+msgstr "문제 유형 선택"
+
+msgid "Select or import a game to begin"
+msgstr "기보를 고르거나 가져와 시작하세요"
+
+msgid "Sign out"
+msgstr "로그아웃"
+
+msgid "Signed in"
+msgstr "로그인됨"
+
+msgid "Solved"
+msgstr "맞혔습니다"
+
+msgid "Solved in this unit"
+msgstr "이 단원에서 맞힘"
+
+msgid "Start"
+msgstr "시작"
+
+msgid "Start placing"
+msgstr "기보 놓기 시작"
+
+msgid "Stone Placement"
+msgstr "기보 놓기"
+
+msgid "StellaBox account"
+msgstr "StellaBox 계정"
+
+msgid "Tap to connect"
+msgstr "눌러서 로그인"
+
+msgid "Tier picked from your strength · analysis sealed throughout"
+msgstr "기력에 맞춰 단계 자동 배정 · 분석 전면 차단"
+
+msgid "Time"
+msgstr "소요 시간"
+
+msgid "To place"
+msgstr "놓을 것"
+
+msgid "To remove"
+msgstr "들어낼 것"
+
+msgid "Today we practice {what}"
+msgstr "오늘은 {what} 연습"
+
+msgid "what"
+msgstr "무언가"
+
+msgid "Top Matches"
+msgstr "인기 대국"
+
+msgid "Try"
+msgstr "시험 두기"
+
+msgid "Try a different search, or import an SGF file."
+msgstr "다른 검색어를 쓰거나 SGF 파일을 가져오세요."
+
+msgid "Two players on the same physical board"
+msgstr "두 사람이 같은 실물 바둑판에서 둡니다"
+
+msgid "Units"
+msgstr "단원"
+
+msgid "Upcoming"
+msgstr "곧 시작"
+
+msgid "Wrong"
+msgstr "틀린 문제"
+
+msgid "You are here"
+msgstr "여기입니다"
+
+msgid "game:count_failed_retry"
+msgstr "계가하지 못했습니다. 잠시 후 다시 시도해 주세요"
+
+msgid "min"
+msgstr "분"
+
+msgid "sec"
+msgstr "초"
+
+msgid "problems count"
+msgstr "문제"
+
+msgid "score"
+msgstr "집 차이"
+
+msgid "winrate"
+msgstr "승률"
+
+msgid "{item} exhausted"
+msgstr "{item}을(를) 다 썼습니다"
+
+msgid ""
+"{item} quota is insufficient — please recharge in the Golaxy app; this "
+"terminal cannot recharge for you."
+msgstr "{item} 횟수가 부족합니다. Golaxy 앱에서 충전하세요. 이 단말은 대신 충전하지 못합니다."
+
+msgid "kifu:placed_at"
+msgstr "지난번에는 제 "
+
+msgid "kifu:move_ordinal"
+msgstr "제 "
+
+msgid "game:connection_rejected"
+msgstr "실시간 연결이 거부되어 판이 자동으로 갱신되지 않습니다. 다시 로그인한 뒤 시도해 주세요"
+
+msgid "game:gone_reason"
+msgstr "기기가 재시작되었거나, 대국이 오래 방치되어 정리되었을 수 있습니다."
+
+msgid "game:resign_failed"
+msgstr "기권하지 못했습니다"
+
+msgid "game:session_gone_notice"
+msgstr "이 대국은 서버에 더 이상 없습니다. 이 페이지를 나가도 됩니다."

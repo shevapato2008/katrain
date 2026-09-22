@@ -6,10 +6,9 @@ import { kioskTheme } from '../theme';
 import SettingsPage from '../pages/SettingsPage';
 import { readAudioPref } from '../../utils/audioPrefs';
 
-// B6: SettingsPage pulls in useSettings/useAuth/useGeometry (via AccountSection +
-// PhysicalBoardStatus). Mock each context module directly — same idiom as
-// src/kiosk/__tests__/KioskAuth.test.tsx (AuthContext) and
-// src/kiosk/__tests__/PhysicalBoardStatus.test.tsx (GeometryContext) — rather
+// B6: SettingsPage pulls in useSettings/useAuth/useGeometry (the last directly, the
+// auth one via AccountSection). Mock each context module directly — same idiom as
+// src/kiosk/__tests__/KioskAuth.test.tsx (AuthContext) — rather
 // than mounting the real providers, which would require faking network calls
 // (SettingsProvider's i18n.loadTranslations, GeometryProvider's status poll).
 const mockNavigate = vi.fn();

@@ -5,10 +5,6 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import LoginPage from '../pages/LoginPage';
 
-vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
-}));
-
 const authState = vi.hoisted(() => ({
   current: { isAuthenticated: false, isLoading: false } as { isAuthenticated: boolean; isLoading: boolean },
 }));

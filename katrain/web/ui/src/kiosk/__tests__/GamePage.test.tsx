@@ -23,10 +23,6 @@ vi.mock('../utils/activeSession', () => ({
   clearActiveSession: mockClearActiveSession,
 }));
 
-vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
-}));
-
 // Mock vision context (GamePage reads visionStatus + isVisionEnabled directly).
 // Disabled vision keeps all vision branches (overlay, toasts, useVisionSync) inert.
 vi.mock('../context/VisionContext', () => ({

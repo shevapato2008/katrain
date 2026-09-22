@@ -7,6 +7,7 @@ in-thread — no subprocess overhead, easy to debug.
 from __future__ import annotations
 
 import logging
+import os
 import queue
 import threading
 import time
@@ -55,6 +56,32 @@ JPEG_QUALITY = 75
 # baseline at confirm time), so re-emission of the ambiguous_stone event is rate-limited.
 IDLE_POLL_S = 0.25  # 没人要画面时多久看一次指令队列
 AMBIG_REPROMPT_FRAMES = 40  # ~4s at ~10fps
+# Per-frame latency trace: `touch` this file on the box to get one "vtrace" INFO line per processed frame
+# (stage timings + what the frame decided), `rm` it to stop. Checked every frame, no restart needed.
+TRACE_FLAG = "/tmp/katrain-vision-trace"
+
+
+class _FrameTrace:
+    """Stage timer for one loop iteration; only built while TRACE_FLAG exists."""
+
+    def __init__(self, start: float):
+        self.start = self.last = start
+        self.parts: list[str] = []
+        self.notes: list[str] = []
+
+    def mark(self, stage: str) -> None:
+        now = time.monotonic()
+        self.parts.append(f"{stage}={(now - self.last) * 1000:.0f}")
+        self.last = now
+
+    def note(self, text: str) -> None:
+        self.notes.append(text)
+
+    def emit(self) -> None:
+        total = (time.monotonic() - self.start) * 1000
+        logger.info(
+            "vtrace wall=%.3f total=%.0f %s | %s", time.time(), total, " ".join(self.parts), " ".join(self.notes)
+        )
 
 
 class InProcessAdapter:
@@ -400,18 +427,26 @@ class InProcessAdapter:
                 # 空闲之前攒下的观测不能和现在的画面混在一起投票。
                 self._averager.reset()
                 self._motion_filter.reset()
+            tr = _FrameTrace(loop_start) if os.path.exists(TRACE_FLAG) else None
 
             frame = self._camera.read_frame()
             board_detected = False
             observed_board = None
             mean_confidence = 0.0
+            if tr:
+                tr.mark("read")
 
             motion_stable = False
             if frame is not None:
                 motion_stable = self._motion_is_stable(frame)
+            if tr:
+                tr.mark("motion")
+                tr.note(f"still={int(motion_stable)} {self._motion_diagnostic()}")
 
             if motion_stable:
                 warped, found = self._warp_frame(frame)
+                if tr:
+                    tr.mark("warp")
                 if found and warped is not None:
                     board_detected = True
                     h, w = warped.shape[:2]
@@ -419,10 +454,16 @@ class InProcessAdapter:
                         # Meter the raw warped frame (pre-average, pre-CLAHE) — the reading
                         # must reflect the actual sensor exposure, not our processing.
                         self._run_ae(meter_brightness(warped))
+                    if tr:
+                        tr.mark("ae")
                     _t_enh = time.monotonic()
                     warped = self._averager.add(warped)
+                    if tr:
+                        tr.mark("avg")
                     warped = enhance_for_inference(warped, self._enhance_mode)
                     _enh_ms = (time.monotonic() - _t_enh) * 1000
+                    if tr:
+                        tr.mark("clahe")
                     _t_inf = time.monotonic()
                     all_detections = self._detector.detect(warped)
                     _infer_ms = (time.monotonic() - _t_inf) * 1000
@@ -430,6 +471,15 @@ class InProcessAdapter:
                     # diagnostic and the preview only; every other consumer sees exactly what it
                     # saw before the tier existed.
                     detections = [d for d in all_detections if d.confidence >= self._keep_threshold]
+                    if tr:
+                        tr.mark("detect")
+                        pre, npu, post = getattr(
+                            getattr(self._detector, "backend_impl", None), "last_timing_ms", (0.0, 0.0, 0.0)
+                        )
+                        tr.note(
+                            f"det[pre={pre:.0f} npu={npu:.0f} post={post:.0f}] boxes={len(all_detections)} "
+                            f"keep={len(detections)} avgN={len(getattr(self._averager, '_frames', ()))}"
+                        )
                     self._frame_count += 1
                     if self._frame_count % 30 == 0:
                         _mc = (sum(d.confidence for d in detections) / len(detections)) if detections else 0.0
@@ -478,6 +528,8 @@ class InProcessAdapter:
                     self._last_stable_board = stable_board
                     observed_board = stable_board
                     self._observation_seq += 1
+                    if tr:
+                        tr.mark("assign")
 
                     # Confident-empty reads score 1.0 (our helper), so the tsumego "clear board" step
                     # doesn't rot into DEGRADED (which would skip the setup check and wedge clearing).
@@ -524,6 +576,12 @@ class InProcessAdapter:
                             ignore_cells=masked,
                             required_frames=self._fast_confirm_frames if fast else None,
                         )
+                        if tr:
+                            peak = "-" if pending_peak is None else f"{pending_peak:.2f}"
+                            tr.note(
+                                f"pend={self._move_detector.pending_move} seen={candidate_sightings + 1}/"
+                                f"{selected_required_frames} peak={peak} confirmed={move_result}"
+                            )
                         if move_result is not None:
                             row, col, color = move_result
                             if not self._bound:
@@ -638,7 +696,11 @@ class InProcessAdapter:
                         if move_result is None and not self._move_detector.about_to_confirm:
                             self._promote_stuck_stone(detections, w, h, observed_board, masked)
 
+                    if tr:
+                        tr.mark("move")
                     self._maybe_send_preview(warped, all_detections)
+                    if tr:
+                        tr.mark("preview")
 
             elif frame is None:
                 # Camera dropout has no motion-frame decision to reset the average for us.
@@ -660,6 +722,9 @@ class InProcessAdapter:
                     self._event_queue.put({"type": evt.type.value, "data": evt.data})
 
             self._publish_status(observed_board)
+            if tr:
+                tr.mark("sync")
+                tr.emit()
 
             elapsed = time.monotonic() - loop_start
             sleep_time = target_interval - elapsed
@@ -672,10 +737,7 @@ class InProcessAdapter:
     def needs_frames(self) -> bool:
         """有人要看棋盘才处理画面:实体对局绑定、做题/摆谱监视、摆棋准备、有人开着识别预览。"""
         return bool(
-            self._bound
-            or self._monitor
-            or self._viewer_active
-            or self._sync.state == SyncState.SETUP_IN_PROGRESS
+            self._bound or self._monitor or self._viewer_active or self._sync.state == SyncState.SETUP_IN_PROGRESS
         )
 
     def _publish_status(self, observed_board) -> None:

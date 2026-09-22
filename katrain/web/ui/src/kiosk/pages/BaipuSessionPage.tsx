@@ -15,6 +15,7 @@ import { KioskActions } from '../shell/KioskActions';
 import { KioskFold } from '../shell/KioskFold';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { driftLine } from '../utils/baipuDrift';
+import { playShutter } from '../utils/baipuShutter';
 import { interpolate } from '../utils/interpolate';
 import { useAuth } from '../../context/AuthContext';
 import { kioskActivityStorage } from '../storage/kioskActivityStorage';
@@ -25,27 +26,6 @@ const savedFilename = (path?: string): string | null => {
   if (!path) return null;
   return path.split(/[\\/]/).filter(Boolean).at(-1) ?? null;
 };
-
-// Short shutter "click" via WebAudio (no asset). Plays AFTER the frame is written
-// (the "you may place the next stone" go-signal). Best-effort; ignored if blocked.
-function playShutter() {
-  try {
-    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new Ctx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.005);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.09);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.1);
-    osc.onended = () => ctx.close();
-  } catch {
-    // no audio available — silent
-  }
-}
 
 type Phase = 'loading' | 'guiding' | 'await_removal' | 'done' | 'error';
 

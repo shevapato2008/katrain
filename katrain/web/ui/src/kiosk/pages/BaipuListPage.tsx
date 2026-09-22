@@ -4,9 +4,9 @@ import {
   CircularProgress, Pagination, Snackbar, Alert, Chip, Divider,
 } from '@mui/material';
 import {
-  Search as SearchIcon, GridOn as GridOnIcon, UploadFile as UploadIcon, History as HistoryIcon,
+  Search as SearchIcon, GridOn as GridOnIcon, History as HistoryIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import LiveBoard from '../../components/live/LiveBoard';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import { KifuAPI } from '../../api/kifuApi';
@@ -15,6 +15,8 @@ import type { KifuAlbumSummary } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAuth } from '../../context/AuthContext';
 import { kioskActivityStorage } from '../storage/kioskActivityStorage';
+import { KioskPagebar } from '../shell/KioskPagebar';
+import { backToState, readBackTo, useBackTo } from '../hooks/useBackTo';
 
 const ROW_STAGGER = 25;
 const DEBOUNCE_MS = 350;
@@ -28,7 +30,14 @@ const PAGE_SIZE = 20;
  */
 const BaipuListPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
+  // 这一屏原先没有页控条 —— 不在 Dock 上、没有主页键,进得来出不去(2026-09-23)。返回去**打开它的
+  // 那一页**(棋谱「摆到实体盘」/ 课程「去摆谱」),键名跟着去处;没写明就回棋谱。
+  const back = useBackTo('/kiosk/kifu');
+  const backLabel = readBackTo(location.state)?.startsWith('/kiosk/tutorial')
+    ? t('tutorial:title_cn', '课程')
+    : t('baipu:back_kifu', '棋谱');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Box-SSO guest mode (client-side zero-persistence, 4th layer): `recent` is read
@@ -140,7 +149,8 @@ const BaipuListPage = () => {
 
   const startSession = (id: string, name: string, sgf: string) => {
     cacheSgf(id, name, sgf, store);
-    navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, { state: { sgf, name } });
+    // 写上 backTo:会话屏的返回键回这里(键名「摆谱」),而不是一律回棋谱
+    navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, { state: { ...backToState(location), sgf, name } });
   };
 
   const handleStartSelected = () => {
@@ -184,23 +194,19 @@ const BaipuListPage = () => {
       {/* List panel */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ px: 3, pt: 3, pb: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-              {t('Stone Placement', '摆谱')}
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 400, opacity: 0.6 }}>
-              {t('19×19 only', '仅 19 路')}
-            </Typography>
-            <Box sx={{ flex: 1 }} />
-            <Button
-              size="small"
-              startIcon={<UploadIcon sx={{ fontSize: 18 }} />}
-              onClick={() => fileInputRef.current?.click()}
-              data-testid="baipu-import"
-              sx={{ textTransform: 'none', color: 'text.secondary' }}
-            >
-              {t('Import SGF', '导入棋谱')}
-            </Button>
+          <Box sx={{ mb: 2 }}>
+            <KioskPagebar
+              backLabel={backLabel}
+              onBack={back}
+              title={t('Stone Placement', '摆谱')}
+              sub={t('19×19 only', '仅 19 路')}
+              action={{
+                icon: 'upload-simple',
+                label: t('Import SGF', '导入棋谱'),
+                visibleLabel: t('Import SGF', '导入棋谱'),
+                onClick: () => fileInputRef.current?.click(),
+              }}
+            />
             <input ref={fileInputRef} type="file" accept=".sgf" hidden onChange={handleImportFile} />
           </Box>
 

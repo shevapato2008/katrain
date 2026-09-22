@@ -211,7 +211,8 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
     expect(cacheSgfMock).toHaveBeenCalledWith('kifu_7', '第 29 届三星杯 · 半决赛', ALBUM.sgf_content);
     expect(mockNavigate).toHaveBeenCalledWith(
       '/kiosk/baipu/session/kifu_7',
-      expect.objectContaining({ state: expect.objectContaining({ sgf: ALBUM.sgf_content }) }),
+      // backTo:摆谱会话的返回键回这一局的详情页(2026-09-23),不是一律回摆谱列表
+      expect.objectContaining({ state: expect.objectContaining({ sgf: ALBUM.sgf_content, backTo: '/kiosk/kifu/7' }) }),
     );
   });
 

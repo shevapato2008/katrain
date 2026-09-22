@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { backToState } from '../hooks/useBackTo';
 
 import { TutorialReadAPI } from '../../api/tutorialApi';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -47,6 +48,7 @@ import { interpolate } from '../utils/interpolate';
  */
 const TutorialCategoriesPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
 
   const [categories, setCategories] = useState<TutorialCategory[] | null>(null);
@@ -189,7 +191,8 @@ const TutorialCategoriesPage = () => {
               title={t('tutorial:go_baipu', '去摆谱')}
               sub={t('tutorial:go_baipu_sub', '跟着名局摆一遍')}
               icon="grid-nine"
-              onClick={() => navigate('/kiosk/baipu')}
+              // 带上来处:摆谱列表的返回键回课程,键名「课程」
+              onClick={() => navigate('/kiosk/baipu', { state: backToState(location) })}
             />
           </div>
         </section>

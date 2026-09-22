@@ -159,7 +159,7 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
     renderPage('15k', 'capturing', '2');
     await waitFor(() => expect(cells()).toHaveLength(UNIT_SIZE));
     fireEvent.click(cells()[2]);              // 第 2 单元第 3 格 = 全类第 23 题 = q22
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/q22');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/q22', { state: { backTo: '/kiosk/tsumego/15k/capturing/2' } });
   });
 
   it('综合训练单元沿用同一题格，但做题路由保留 ?set=all 且不再显示换一批', async () => {
@@ -168,7 +168,7 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
     await waitFor(() => expect(cells()).toHaveLength(UNIT_SIZE));
     expect(screen.getByText(/15 级 · 综合训练 · 第 2 单元/)).toBeInTheDocument();
     fireEvent.click(cells()[2]);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/q22?set=all');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/q22?set=all', { state: { backTo: '/kiosk/tsumego/15k/all/2' } });
     expect(screen.queryByText('换一批')).toBeNull();
   });
 
@@ -397,7 +397,7 @@ describe('TsumegoUnitListPage · 屏 13 题目列表', () => {
       fireEvent.click(cells()[1]);
       expect(JSON.parse(localStorage.getItem(`kiosk_problems_15k_capturing_wrong:${TEST_UUID}`)!)).toEqual(['q3', 'q41']);
       expect(localStorage.getItem('kiosk_problems_15k_capturing_wrong')).toBeNull();
-      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/q41?set=wrong');
+      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/problem/q41?set=wrong', { state: { backTo: '/kiosk/tsumego/15k/capturing/wrong' } });
     });
 
     it('换一批只剩「整级」—— 错题那一行指向自己,不画', async () => {

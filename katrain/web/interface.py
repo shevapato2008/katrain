@@ -1779,6 +1779,10 @@ class WebKaTrain(KaTrainBase):
                     raise EndgameConflict("position_changed")
             target.end_state = result
             game.game_result = result  # 只写不读(grep 核过),与数子 / 升降级认输原写法一致
+            # 棋谱根节点的 RE 也在这里写:get_sgf() 直接导出根节点,不经 update_root_properties。
+            # 云端结算逐字核对「结算单 result == 棋谱 RE」,从前认输 / 超时的棋谱没有 RE,
+            # 升降级成绩被 422 拒收、永不重试(RK3562 2026-09-20~22 三局)。
+            game.root.set_property("RE", result)
             game.terminal = GameEnd(game, target, result)
             return game.terminal
 

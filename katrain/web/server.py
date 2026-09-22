@@ -68,6 +68,49 @@ def _terminal_of(session):
     return terminal if isinstance(terminal, GameEnd) else None
 
 
+def _kiosk_game_terms(settings: dict, default_komi: float, default_rules: str) -> tuple[int, float, str]:
+    """kiosk 三屏送来的盘面条件,**在 kiosk 这条端点上 fail-closed**。
+
+    两条,都只管 kiosk 自己那几个 mode(`free` / `ranked` / `pvp_local`):
+
+    ① **让子局的 komi 归零。** 白方的补偿由 KataGo 按规则自动加
+       (chinese = `WHB_N`,`KataGo/cpp/game/rules.cpp:292`;补偿是引擎从盘面初始
+       黑子数自己算的,不看 `HA` —— `boardhistory.cpp:379-401` + `:442-455`),
+       komi 再写一遍就补两遍。kiosk 前端已经保证送 0(`utils/setupOptions.ts`
+       的 `resolveGameTerms`),这里是第二道 —— 判胜负的数落进棋谱,错了看不出来。
+
+       **判据是 `>= 2` 不是 `> 0`**:`HA[1]` 不摆子,KataGo 的补偿判据也是
+       `blackTurnAdvantage <= 1 → 0`(`boardhistory.cpp:397-399`);而「让先」
+       在 kiosk 的枚举里是独立一档(handicap=0 / komi=0),不该由这条规则管。
+
+    ② **`color` 只认 black / white。** `human_bw = "B" if color == "black" else "W"`
+       对任何别的值都落到白 —— 送个 `"guess"` 进来不是 50% 坐白,是 100% 坐白。
+       kiosk 的「猜先」在前端就掷完了(`AiSetupPage.tsx` 的 `drawSeat`),
+       这里挡的是将来任何一版客户端想当然地把 `"nigiri"` 直接发过来。
+
+    ⚠️ **这道兜底只长在 kiosk 那三个 mode 上**(`free` / `ranked` / `pvp_local`,
+    都走 `POST /api/game/setup`)。**绕过它的那条路是 `POST /api/new-game`** ——
+    那里 `request.handicap` / `request.komi` 原样透传给 `_do_new_game`(见上面
+    `mode == "newgame"` 那一支)。前端的出口是 `src/api.ts` 的 `API.newGame`,
+    今天 kiosk 侧**零调用者**(唯一调用者是 galaxy 的 `AiSetupPage.tsx:271`),
+    而「零调用者」这个前提由
+    `src/kiosk/__tests__/kioskNewGameBoundary.test.ts` 钉着 —— 哪天有人在 kiosk 里
+    用了它,那条闸会红并指回这里。
+
+    ⚠️ **这两条只加在 kiosk 分支,不加进 `_do_new_game`。**
+    `_do_new_game` 同时服务 galaxy 的 `NewGameDialog` —— 那边让子和贴目是两个
+    自由数字框(`src/components/NewGameDialog.tsx:285` 和 `:305`),没有任何耦合,
+    用户输进去的 6.5 就是他要的 6.5。在那一层归零 = 把用户亲手输的数悄悄改掉,
+    方向和这里要修的毛病一模一样,只是反过来。
+    """
+    handicap = int(settings.get("handicap", 0) or 0)
+    komi = float(settings.get("komi", default_komi))
+    if handicap >= 2 and komi != 0:
+        komi = 0.0
+    rules = settings.get("rules", default_rules)
+    return handicap, komi, rules
+
+
 def _count_result(score):
     """目差 → 终局结果(正数黑领先)。数子与双停补分(Task 5)共用同一种格式。返回 `(result, winner_color)`。"""
     if score >= 0:
@@ -700,6 +743,14 @@ async def _lifespan_board(app: FastAPI, log):
     # Vision service (optional — enabled when --vision-model is provided)
     if vision_config and vision_config.enabled and camera_hub is not None:
         from katrain.vision.service import VisionService
+        from katrain.vision.parallax_store import attach_parallax
+
+        vision_config, parallax_level, parallax_message = attach_parallax(
+            vision_config,
+            hardware_vision_dir,
+            hardware_vision_state.generation if hardware_vision_state is not None else None,
+        )
+        log.log(parallax_level, parallax_message)
 
         vision = VisionService(vision_config, frame_source=camera_hub)
         vision.start()
@@ -830,6 +881,7 @@ async def _lifespan_board(app: FastAPI, log):
             on_degraded=invalidate_geometry,
             on_suspend=suspend_vision,
             on_resume=resume_vision,
+            drift_needed=lambda: _vision_needs_frames(app),
         )
     else:
         app.state.geometry_calibration = None
@@ -1337,6 +1389,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             elif mode in ("free", "ranked"):
                 # Kiosk human-vs-AI game setup
                 color = settings.get("color", "black")
+                # fail-closed:下一行对**任何**不等于 "black" 的值都落到白。
+                # 不挡的话送个 "nigiri" 进来是 100% 坐白,而屏上说的是「猜先」。
+                if color not in ("black", "white"):
+                    raise HTTPException(status_code=400, detail=f"unsupported color: {color!r}")
                 human_bw = "B" if color == "black" else "W"
                 ai_bw = "W" if color == "black" else "B"
                 ai_strategy = settings.get("ai_strategy", "ai:default")
@@ -1372,12 +1428,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.katrain.update_config("timer/byo_length", 0)
                     session.katrain.update_config("timer/paused", True)
 
+                handicap, komi, rules = _kiosk_game_terms(settings, 6.5, "japanese")
                 session.katrain(
                     "new_game",
                     size=settings.get("board_size", 19),
-                    handicap=settings.get("handicap", 0),
-                    komi=settings.get("komi", 6.5),
-                    rules=settings.get("rules", "japanese"),
+                    handicap=handicap,
+                    komi=komi,
+                    rules=rules,
                     game_type=mode,  # R3/R5: rated/ranked games forbid analysis (anti-cheat)
                 )
 
@@ -1415,12 +1472,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.katrain.update_config("timer/byo_length", 0)
                     session.katrain.update_config("timer/paused", True)
 
+                handicap, komi, rules = _kiosk_game_terms(settings, 7.5, "chinese")
                 session.katrain(
                     "new_game",
                     size=settings.get("board_size", 19),
-                    handicap=settings.get("handicap", 0),
-                    komi=settings.get("komi", 7.5),
-                    rules=settings.get("rules", "chinese"),
+                    handicap=handicap,
+                    komi=komi,
+                    rules=rules,
                     game_type="pvp_local",
                 )
                 if black_name:
@@ -3528,6 +3586,16 @@ def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:
         raise HTTPException(status_code=409, detail="engine move pending")
 
 
+def _vision_needs_frames(app: FastAPI) -> bool:
+    """漂移检测跟着识别线程一起停:没在下实体棋 / 监视 / 摆棋准备 / 看预览时不检测(RK3562 实测每秒 ~0.5 s CPU)。
+
+    没有视觉服务 ⇒ 保持旧行为一直检测。摆谱直接从摄像头取帧、不经识别线程,所以摆谱期间也不检测 ——
+    摆谱的 LED 引导按固定灯号点灯、不依赖摄像头几何,受影响的只有采集训练照片时的标注。
+    """
+    vision = getattr(app.state, "vision", None)
+    return True if vision is None else vision.needs_frames()
+
+
 async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):
     """Blackout the LED board after >5 min of inactivity (plan §2.1 Gemini 新#2).
 
@@ -3574,6 +3642,54 @@ def _diag_log_vision_evt(log, evt: dict, n_clients: int) -> None:
         log.info("[DIAG-VIS] %s data=%s -> %d clients", t, data, n_clients)
 
 
+# Ambient LED brightness loop (2026-09-22). A guidance lamp's glow, measured by the vision worker on a
+# bare lit point before the player places the stone (led_glow), steers the guidance brightness: at night
+# full brightness shines through a white stone and it is not recognised until the lamp goes out (RK3562).
+# Target in detect_led_centroid score units. Calibration anchors (green@96) scored a median 35k at 17:35,
+# when white stones on lit lamps were still recognised, and 70k at 19:38, when they were not;
+# provisional, to be tuned from the "LED glow" log lines.
+LED_GLOW_TARGET = 60000.0
+LED_GLOW_DEADBAND = (0.8, 1.25)  # target / score inside this band: leave the brightness alone
+LED_GLOW_STEP = (0.5, 2.0)  # one reading moves the brightness by at most these factors
+# A bare lamp's glow never covers more than ~2000 px of the raw 1080p frame (full brightness, dark room);
+# readings of 3000-21000 px with a low peak were a hand or the whole scene changing, not the lamp.
+LED_GLOW_MAX_AREA = 2500
+
+
+def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
+    led = getattr(app.state, "led", None)
+    if led is None or not hasattr(led, "set_guidance_scale"):
+        return
+    before = led.guidance_scale
+    score = float(data.get("score") or 0.0)
+    after = before
+    if data.get("ok") and score > 0 and int(data.get("area") or 0) <= LED_GLOW_MAX_AREA:
+        ratio = LED_GLOW_TARGET / score
+        if not LED_GLOW_DEADBAND[0] <= ratio <= LED_GLOW_DEADBAND[1]:
+            from katrain.web.core.led_service import MIN_GUIDANCE_SCALE
+
+            # The glow grows faster than the brightness (the lit patch widens as well; ~brightness^2 on the
+            # RK3562), so step by the square root of the ratio: stepping by the ratio itself overshot every
+            # time. One reading per lamp, taken as it comes on: re-measuring the same lamp at each new
+            # brightness swung it bright/dim/bright, and later readings caught the stone already on it.
+            step = min(LED_GLOW_STEP[1], max(LED_GLOW_STEP[0], ratio**0.5))
+            after = min(1.0, max(MIN_GUIDANCE_SCALE, before * step))
+    log.info(
+        "LED glow at (%s,%s): ok=%s score=%.0f peak=%s area=%s -> guidance brightness %.2f -> %.2f (target %.0f)",
+        data.get("row"),
+        data.get("col"),
+        data.get("ok"),
+        score,
+        data.get("peak"),
+        data.get("area"),
+        before,
+        after,
+        LED_GLOW_TARGET,
+    )
+    if abs(after - before) >= 0.02:
+        led.set_guidance_scale(after)  # the waiting lamp shows the new brightness at once
+
+
 async def _vision_event_pump(app: FastAPI):
     """Sole consumer of the vision worker event queue — see vision_pump docstring."""
     from katrain.web.core.vision_pump import route_vision_event
@@ -3584,6 +3700,9 @@ async def _vision_event_pump(app: FastAPI):
             vision = getattr(app.state, "vision", None)
             if vision:
                 for evt in vision.poll_events():
+                    if isinstance(evt, dict) and evt.get("type") == "led_glow":
+                        _adjust_led_brightness(app, evt.get("data") or {}, log)
+                        continue
                     if isinstance(evt, dict):
                         _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
                     route_vision_event(
@@ -4062,6 +4181,20 @@ def run_web():
         "confidence (default: max(0.25, confidence - 0.15)). Fights weak-light flicker.",
     )
     parser.add_argument(
+        "--vision-parallax",
+        choices=["auto", "off"],
+        default="auto",
+        help="Stone-parallax correction: 'auto' derives it from the geometry lock (a calibrate_parallax "
+        "file under --hardware-vision-dir wins when present); 'off' disables it.",
+    )
+    parser.add_argument(
+        "--vision-confidence-sustain",
+        type=float,
+        default=None,
+        help="Sustain tier below 'keep': detections down to this confidence can only keep an existing "
+        "stone alive, never add one or reach any other consumer (default: min(0.20, keep)).",
+    )
+    parser.add_argument(
         "--vision-enhance",
         choices=["clahe", "off"],
         default=None,
@@ -4172,6 +4305,9 @@ def run_web():
             vision_kwargs["confidence_threshold"] = args.vision_confidence
         if args.vision_confidence_keep is not None:
             vision_kwargs["confidence_keep"] = args.vision_confidence_keep
+        if args.vision_confidence_sustain is not None:
+            vision_kwargs["confidence_sustain"] = args.vision_confidence_sustain
+        vision_kwargs["parallax_enabled"] = args.vision_parallax == "auto"
         if args.vision_enhance is not None:
             vision_kwargs["enhance"] = args.vision_enhance
         if args.vision_move_frames is not None:

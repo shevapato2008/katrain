@@ -36,10 +36,6 @@ vi.mock('../pages/tsumegoUnits', async (importOriginal) => {
   return { ...actual, readPhysicalMode: () => mockReadPhysicalMode() };
 });
 
-vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
-}));
-
 // 视觉默认关掉(BoardSetupGuide / API.visionSetupMode 那条分支保持不动)。
 // ⚠️ **可切换**:实体模式真正的开关是 `physicalEnabled = 用户开关 && 视觉就绪 && 19 路`,
 // 光把 `readPhysicalMode` 打开**进不了**那条分支。上一版测试断言「开关一开就挂出状态板」,

@@ -207,14 +207,10 @@ msgid "resign"
 msgstr "认输"
 
 msgid "teaching undo message"
-msgstr ""
-"撤销第 {move} 手棋因为损失超过 {points_lost:.1f} 目. 悬停在该手棋上方查看信"
-"息. 请再次尝试."
+msgstr "撤销第 {move} 手棋因为损失超过 {points_lost:.1f} 目. 悬停在该手棋上方查看信息. 请再次尝试."
 
 msgid "ai-ponder"
-msgstr ""
-"AI引擎状态指示, 从空闲（绿色）变为处理中（橙色）。 红色表明运行崩溃或无法开"
-"始。"
+msgstr "AI引擎状态指示, 从空闲（绿色）变为处理中（橙色）。 红色表明运行崩溃或无法开始。"
 
 msgid "undo-button-text"
 msgstr "悔棋"
@@ -286,8 +282,7 @@ msgid "stats:pointsgained"
 msgstr "得项目数"
 
 msgid "SGF start message"
-msgstr ""
-"标记为 'X' 的是 AI 推荐的选点， 标记为正方形的是损失在 0.5 目以内的选点。"
+msgstr "标记为 'X' 的是 AI 推荐的选点， 标记为正方形的是损失在 0.5 目以内的选点。"
 
 msgid "Info:score"
 msgstr "形势: {score}"
@@ -477,9 +472,7 @@ msgid "contribute:maxgames"
 msgstr "同时对局数"
 
 msgid "contribute:maxgames:hint"
-msgstr ""
-"最好等于你的最佳化numSearchThreads，中阶GPU约为8。可以稍微设的低一点，来缩短"
-"执行时间，因为未完成的对局将不会被上传。"
+msgstr "最好等于你的最佳化numSearchThreads，中阶GPU约为8。可以稍微设的低一点，来缩短执行时间，因为未完成的对局将不会被上传。"
 
 msgid "contribute:ownership"
 msgstr "启用所有权"
@@ -617,8 +610,8 @@ msgstr "用'{exe}'命令启动katago出错. 请检查路径和文件名"
 
 msgid "Kata exe not found in path"
 msgstr ""
-"用'{exe}'命令启动katago出错. 如果使用 MacOS, 参考帮助手册如何使用brew安装"
-"katago, 并把它加入你的路径或'引擎/katago'设置"
+"用'{exe}'命令启动katago出错. 如果使用 MacOS, 参考帮助手册如何使用brew安装katago, "
+"并把它加入你的路径或'引擎/katago'设置"
 
 msgid "Kata model not found"
 msgstr "KataGo 模型 {model} 不存在, 请检查一般设置."
@@ -628,16 +621,13 @@ msgstr "KataGo 设置文件 {config} 不存在, 请检查一般设置."
 
 msgid "Starting Kata failed"
 msgstr ""
-"用'{command}'命令启动katago出错 {error}. 请确认引擎设置里'katago'的值指向了 "
-"正确的KataGo运行文件."
+"用'{command}'命令启动katago出错 {error}. 请确认引擎设置里'katago'的值指向了 正确的KataGo运行文件."
 
 msgid "Engine died unexpectedly"
 msgstr "引擎意外终止且未发送输出: {error}"
 
 msgid "Engine missing DLL"
-msgstr ""
-"启动katago失败因缺失dll文件. 请检查运行要求, 或尝试让exe文件自行运行并检查细"
-"节. "
+msgstr "启动katago失败因缺失dll文件. 请检查运行要求, 或尝试让exe文件自行运行并检查细节. "
 
 msgid "engine recovery"
 msgstr "KataGo 设定指南"
@@ -651,8 +641,7 @@ msgstr ""
 "错误码：{code}."
 
 msgid "change engine suggestion"
-msgstr ""
-"首先，在 {link} 中，尝试下载且更换为不同版本的KataGo执行档是否能解决问题。"
+msgstr "首先，在 {link} 中，尝试下载且更换为不同版本的KataGo执行档是否能解决问题。"
 
 msgid "go to engine help page"
 msgstr "如果你还有任何困难，请参考疑难排解页面 {link}"
@@ -671,27 +660,24 @@ msgstr "推荐 (Recommended)"
 
 msgid "aihelp:default"
 msgstr ""
-"全功能的KataGo AI. 棋力由 'max visits' 和 '模型' 决定.在一般设置里 '引擎' 部"
-"分和引擎设置文件. 这里没有选项."
+"全功能的KataGo AI. 棋力由 'max visits' 和 '模型' 决定.在一般设置里 '引擎' 部分和引擎设置文件. 这里没有选项."
 
 msgid "ai:handicap"
 msgstr "Kata让子棋"
 
 msgid "aihelp:handicap"
 msgstr ""
-"KataGo 让子棋优化版. pda 设置 对应KataGo里黑棋视角的 "
-"playoutDoublingAdvantage. 当设置了 自动, KaTrain 会自动找到合适的值"
+"KataGo 让子棋优化版. pda 设置 对应KataGo里黑棋视角的 playoutDoublingAdvantage. 当设置了 自动, "
+"KaTrain 会自动找到合适的值"
 
 msgid "ai:simple"
 msgstr "简明风格"
 
 msgid "aihelp:simple"
 msgstr ""
-"简化局面的风格。所有损失最高'max_points_lost'目和至少'min_visits'计算深度的着"
-"法当中，偏向于损失较小，乙方空定型（偏向值settled_weight），对方空定型（偏向"
-"值settled_weight * opponent fac），避免脱先（5路以上，偏向值"
-"tenuki_penalty），避免碰（偏向值attachment_penalty）的手法。偏向值可以设为复"
-"数捣乱局面，宽根噪声（通用设置）可以棋力代价更加符合风格。"
+"简化局面的风格。所有损失最高'max_points_lost'目和至少'min_visits'计算深度的着法当中，偏向于损失较小，乙方空定型（偏向值settled_weight），对方空定型（偏向值settled_weight"
+" * opponent "
+"fac），避免脱先（5路以上，偏向值tenuki_penalty），避免碰（偏向值attachment_penalty）的手法。偏向值可以设为复数捣乱局面，宽根噪声（通用设置）可以棋力代价更加符合风格。"
 
 msgid "ai:jigo"
 msgstr "和棋"
@@ -716,84 +702,74 @@ msgstr "策略"
 
 msgid "aihelp:policy"
 msgstr ""
-"只走策略网络的最高推荐点，不进行任何计算。棋力主要受引擎设置里的 '模型' 影"
-"响。'opening_moves' 设置影响开局前多少手棋的多样性。"
+"只走策略网络的最高推荐点，不进行任何计算。棋力主要受引擎设置里的 '模型' 影响。'opening_moves' 设置影响开局前多少手棋的多样性。"
 
 msgid "ai:p:weighted"
 msgstr "策略权重"
 
 msgid "aihelp:p:weighted"
 msgstr ""
-"根据策略网络概率走棋，'weaken_fac' 影响走出弱招的概率。设为极低值时表现如同 "
-"'策略网络' AI。'pick_override' 决定何时不带随机地选择最佳点，'lower_bound' 决"
-"定允许的策略网络最小概率。"
+"根据策略网络概率走棋，'weaken_fac' 影响走出弱招的概率。设为极低值时表现如同 '策略网络' AI。'pick_override' "
+"决定何时不带随机地选择最佳点，'lower_bound' 决定允许的策略网络最小概率。"
 
 msgid "ai:p:pick"
 msgstr "盲人策略"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"随机选择 'pick_n + pick_frac * <number of legal moves>' 并采用最佳的一手. "
-"当'pick_frac=1' 就是直觉AI. 如果直觉值大于 'pick_override'则采用最佳的一手以"
-"避免明显错误。"
+"随机选择 'pick_n + pick_frac * <number of legal moves>' 并采用最佳的一手. 当'pick_frac=1'"
+" 就是直觉AI. 如果直觉值大于 'pick_override'则采用最佳的一手以避免明显错误。"
 
 msgid "ai:p:local"
 msgstr "局部风格"
 
 msgid "aihelp:p:local"
 msgstr ""
-"随机选择 'pick_n + pick_frac * <number of legal moves>'，权重向上一手棋靠拢并"
-"采用最佳的一手。如果直觉值大于 'pick_override'则采用最佳的一手以避免明显错"
-"误。"
+"随机选择 'pick_n + pick_frac * <number of legal "
+"moves>'，权重向上一手棋靠拢并采用最佳的一手。如果直觉值大于 'pick_override'则采用最佳的一手以避免明显错误。"
 
 msgid "ai:p:tenuki"
 msgstr "脱先风格"
 
 msgid "aihelp:tenuki"
 msgstr ""
-"随机选择 'pick_n + pick_frac * <number of legal moves>'，权重远离上一手棋并采"
-"用最佳的一手。如果直觉值大于 'pick_override'则采用最佳的一手以避免明显错"
-"误。'stddev' 越高，下得越远。"
+"随机选择 'pick_n + pick_frac * <number of legal moves>'，权重远离上一手棋并采用最佳的一手。如果直觉值大于"
+" 'pick_override'则采用最佳的一手以避免明显错误。'stddev' 越高，下得越远。"
 
 msgid "ai:p:influence"
 msgstr "外势模式"
 
 msgid "aihelp:p:influence"
 msgstr ""
-"在高于 'threshold' 的点中选出最优. 加大 'line_weight' 以增加对靠近边上的点的"
-"惩罚. 在 'endgame' 部分结束后停止。"
+"在高于 'threshold' 的点中选出最优. 加大 'line_weight' 以增加对靠近边上的点的惩罚. 在 'endgame' "
+"部分结束后停止。"
 
 msgid "ai:p:territory"
 msgstr "取地模式"
 
 msgid "aihelp:p:territory"
 msgstr ""
-"在低于 'threshold' 的点中选出最优. 加大 'line_weight' 以增加对靠近中心的点的"
-"惩罚. 在 'endgame' 部分结束后停止。"
+"在低于 'threshold' 的点中选出最优. 加大 'line_weight' 以增加对靠近中心的点的惩罚. 在 'endgame' "
+"部分结束后停止。"
 
 msgid "ai:p:rank"
 msgstr "参考段位"
 
 msgid "aihelp:p:rank"
-msgstr ""
-"从随机生成的选点集合里选出最佳. 更强的设置拥有更大的随机选点集合. 既然没有 0 "
-"级/段, 则3 段 = -2 级。"
+msgstr "从随机生成的选点集合里选出最佳. 更强的设置拥有更大的随机选点集合. 既然没有 0 级/段, 则3 段 = -2 级。"
 
 msgid "ai:human"
 msgstr "类人 AI (Human-like)"
 
 msgid "aihelp:human"
 msgstr ""
-"根据人类风格的 KataGo 模型选点。如果勾选了 'modern_style'，该模型将采用 2016 "
-"年后 AlphaZero 的布局风格。"
+"根据人类风格的 KataGo 模型选点。如果勾选了 'modern_style'，该模型将采用 2016 年后 AlphaZero 的布局风格。"
 
 msgid "ai:pro"
 msgstr "历史职业棋手 (Historical Pro)"
 
 msgid "aihelp:pro"
-msgstr ""
-"根据人类风格的 KataGo 模型选点。具体来说，根据指定年份及周边年份的历史对局记"
-"录，模仿职业棋手和强力院生的招法。"
+msgstr "根据人类风格的 KataGo 模型选点。具体来说，根据指定年份及周边年份的历史对局记录，模仿职业棋手和强力院生的招法。"
 
 msgid "estimated strength"
 msgstr "预计棋力"
@@ -883,17 +859,13 @@ msgid "menu:distributed"
 msgstr "分散式自我对弈训练"
 
 msgid "gui-locked"
-msgstr ""
-"在分散式自我对弈训练模式中，{action} 动作是不允许的。重新启动KaTrain来离开此"
-"模式。"
+msgstr "在分散式自我对弈训练模式中，{action} 动作是不允许的。重新启动KaTrain来离开此模式。"
 
 msgid "setup game status message"
 msgstr "由AI自我对弈产生对局：{move}/{until_move}手完成。"
 
 msgid "setup position explanation"
-msgstr ""
-"这会产生部分的对局让你接著下。例如：你可以使用它从各种不同优势的中盘或终局阶"
-"段开始，与更强的AI对弈。"
+msgstr "这会产生部分的对局让你接著下。例如：你可以使用它从各种不同优势的中盘或终局阶段开始，与更强的AI对弈。"
 
 msgid "setup position black score"
 msgstr "黑棋目标目数："
@@ -2752,8 +2724,7 @@ msgid "ladder:engine_stalled"
 msgstr "阶梯引擎不可用，AI 无法落子 · 本局不计入升降级，请退出本局"
 
 msgid "ladder:unscored_engine"
-msgstr ""
-"这局的对手没能以标定强度落子，所以不算数——段位没有变动，也不占定级赛的局数。"
+msgstr "这局的对手没能以标定强度落子，所以不算数——段位没有变动，也不占定级赛的局数。"
 
 msgid "ladder:pending_settlement"
 msgstr "本盘成绩还没送到云端"
@@ -3038,8 +3009,7 @@ msgid "play:login_required_free"
 msgstr "开始对局需要登录，请先登录后再试。"
 
 msgid "play:guest_free_notice"
-msgstr ""
-"你正在以游客身份对弈：本局不会保存到棋谱库，也不计入段位。登录后可保存对局。"
+msgstr "你正在以游客身份对弈：本局不会保存到棋谱库，也不计入段位。登录后可保存对局。"
 
 msgid "play:go_free_play"
 msgstr "先去自由对弈"
@@ -3153,9 +3123,7 @@ msgid "live:human_pick_rate"
 msgstr "人类选择率"
 
 msgid "live:human_pick_rate_hint_ranked"
-msgstr ""
-"每 100 位 {rank} 棋手里大约有几位会下这一点。这是「多少人会下」，不是「该不该"
-"下」。"
+msgstr "每 100 位 {rank} 棋手里大约有几位会下这一点。这是「多少人会下」，不是「该不该下」。"
 
 msgid "live:human_pick_rate_hint"
 msgstr "这一列显示人类棋手会下这一点的比例，与 AI 的推荐顺位无关。"
@@ -3212,9 +3180,7 @@ msgid "grade:def_unrated"
 msgstr "上一手没分析或搜索量不足，判不了"
 
 msgid "grade:brilliance_entry"
-msgstr ""
-"入选要同时满足三条：走出引擎首选、该首选的 policy 先验 < 10%（连引擎直觉都没"
-"想到）、局面还没定。"
+msgstr "入选要同时满足三条：走出引擎首选、该首选的 policy 先验 < 10%（连引擎直觉都没想到）、局面还没定。"
 
 msgid "grade:match_timeline_legend"
 msgstr "满格实色 = 走中一选，半高浅色 = 进前三，底色 = 其他"
@@ -3419,3 +3385,2963 @@ msgstr "重置识别 · 以屏幕上的数字棋盘局面为准"
 
 msgid "Re-sync"
 msgstr "重置识别"
+
+msgid "Back to play"
+msgstr "返回对弈"
+
+msgid "setup:start"
+msgstr "开始对局"
+
+msgid "ladder:start"
+msgstr "开始计分局"
+
+msgid "play:free_setup_sub"
+msgstr "开局设置 · 人机 · 不计入段位"
+
+msgid "ladder:setup_sub"
+msgstr "开局设置 · 计入段位 · 全程封分析"
+
+msgid "local:setup_sub"
+msgstr "开局设置 · 两人面对面"
+
+msgid "game:local_pvp"
+msgstr "本地对局"
+
+msgid "setup:game_terms"
+msgstr "这局棋"
+
+msgid "setup:size"
+msgstr "路数"
+
+msgid "setup:size_n"
+msgstr "{n} 路"
+
+msgid "setup:size_19"
+msgstr "19 路"
+
+msgid "Chinese rules"
+msgstr "中国规则"
+
+msgid "Japanese rules"
+msgstr "日本规则"
+
+msgid "AGA rules"
+msgstr "AGA 规则"
+
+msgid "setup:rules_button"
+msgstr "AI 赛规则"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr "中国规则数子:终局按占地算,活棋在自己空里落子不损目"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr "日本规则数目:只算围住的空,在自己空里落子要损一目"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr "AGA 规则数子,但停一手要交一子 —— 算出来和数目同分"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr "韩国规则数目:和日本规则同一种算法,贴目习惯不同"
+
+msgid "setup:rules_button_hint"
+msgstr "AI 赛规则:数子 + 先停一手的一方多得半目 —— 把数子法那半目的奇偶差抹平;只下分先"
+
+msgid "setup:ha_even"
+msgstr "分先"
+
+msgid "setup:ha_sente"
+msgstr "让先"
+
+msgid "setup:ha_reverse"
+msgstr "倒贴"
+
+msgid "setup:ha_free"
+msgstr "自定贴目"
+
+msgid "setup:ha_stones"
+msgstr "让 {n} 子"
+
+msgid "setup:komi_derived"
+msgstr "随规则和让子定"
+
+msgid "setup:komi_pick"
+msgstr "点此改贴目"
+
+msgid "setup:komi_none"
+msgstr "不贴目"
+
+msgid "setup:komi_sente"
+msgstr "黑先行"
+
+msgid "setup:komi_handicap"
+msgstr "黑先摆 {n} 子"
+
+msgid "setup:komi_black_pays"
+msgstr "黑贴"
+
+msgid "setup:komi_white_pays"
+msgstr "白贴"
+
+msgid "setup:komi_points"
+msgstr "{n} 目"
+
+msgid "setup:unit_points"
+msgstr "目"
+
+msgid "setup:unit_stones"
+msgstr "子"
+
+msgid "setup:seat"
+msgstr "怎么坐"
+
+msgid "setup:side_black"
+msgstr "执黑"
+
+msgid "setup:side_white"
+msgstr "执白"
+
+msgid "setup:side_nigiri"
+msgstr "猜先"
+
+msgid "setup:nigiri_blocked"
+msgstr "让子局黑方先摆子"
+
+msgid "setup:black_side"
+msgstr "黑方"
+
+msgid "setup:white_side"
+msgstr "白方"
+
+msgid "setup:input_where"
+msgstr "落子"
+
+msgid "setup:on_screen"
+msgstr "屏幕"
+
+msgid "setup:on_board"
+msgstr "实体盘"
+
+msgid "setup:board_only_19"
+msgstr "盘上那块是 19 路"
+
+msgid "setup:board_not_ready"
+msgstr "没标定过摄像头"
+
+msgid "setup:seat_hint_ready"
+msgstr "实体盘和屏幕随时可切,开局后就定了"
+
+msgid "setup:seat_hint_not19"
+msgstr "这一局不是 19 路,只能下在屏幕上"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr "这台机器没标定过摄像头,只能下在屏幕上"
+
+msgid "setup:size_not19_hint"
+msgstr "盘上那块是 19 路 —— 这一局只能下在屏幕上,调回 19 路就还用实体盘"
+
+msgid "Untimed"
+msgstr "不限时"
+
+msgid "setup:time_byo_only"
+msgstr "仅读秒 30秒×3"
+
+msgid "5 min + 3x30s"
+msgstr "5分+3×30秒"
+
+msgid "60 min + 3x30s"
+msgstr "60分+3×30秒"
+
+msgid "local:move_sound_short"
+msgstr "落子音"
+
+msgid "On"
+msgstr "开"
+
+msgid "Off"
+msgstr "关"
+
+msgid "setup:strength_rung"
+msgstr "第 {n} 档"
+
+msgid "setup:rank_kyu"
+msgstr "{n} 级"
+
+msgid "setup:rank_dan"
+msgstr "{n} 段"
+
+msgid "setup:strength_up"
+msgstr "提高一档"
+
+msgid "setup:strength_down"
+msgstr "降低一档"
+
+msgid "setup:strength_meta"
+msgstr "共 {n} 档 · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "拟人 · 开局后不可改"
+
+msgid "setup:strength_hint2"
+msgstr "拟人会犯这一档该犯的错;档位说的是对手,不是你的段位"
+
+msgid "ladder:opponent"
+msgstr "对手"
+
+msgid "ladder:fixed_by_box"
+msgstr "盒子定好的"
+
+msgid "ladder:terms_fixed"
+msgstr "都不可改"
+
+msgid "ladder:frozen_at_start"
+msgstr "开局那一刻冻结"
+
+msgid "ladder:komi_note"
+msgstr "档位按这个盘量的"
+
+msgid "ladder:stake"
+msgstr "这一局赌多少"
+
+msgid "ladder:stake_win_promote"
+msgstr "胜 · 升一档"
+
+msgid "ladder:stake_loss_demote"
+msgstr "负 · 退一档"
+
+msgid "ladder:stake_win_score"
+msgstr "胜 · 净胜分 {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "负 · 净胜分 {n}"
+
+msgid "ladder:stake_rule"
+msgstr "净胜分到 +3 升一档、到 −3 退一档 · 当前 {n}"
+
+msgid "local:players"
+msgstr "对局双方"
+
+msgid "local:written_into_sgf"
+msgstr "会写进棋谱"
+
+msgid "local:agree_first"
+msgstr "下之前先谈好"
+
+msgid "local:black_role_short"
+msgstr "先行"
+
+msgid "local:white_role_short"
+msgstr "后行"
+
+msgid "local:black_name"
+msgstr "黑方姓名"
+
+msgid "local:white_name"
+msgstr "白方姓名"
+
+msgid "local:tap_to_type"
+msgstr "点此输入"
+
+msgid "local:names_hint"
+msgstr "留空就记成「黑方 / 白方」,不编名字"
+
+msgid "local:seat_hint_ready"
+msgstr "钟在玩家卡上倒数 · 读秒用完判超时负 · 不限时就只记谱"
+
+msgid "setup:note_r2_a"
+msgstr "这几项"
+
+msgid "setup:note_r2_b"
+msgstr "开局后都不能改"
+
+msgid "setup:note_r2_c"
+msgstr ",中途换等于换了一局棋;自由对弈"
+
+msgid "setup:note_r2_d"
+msgstr "不计入段位"
+
+msgid "setup:note_h"
+msgstr "。"
+
+msgid "setup:locked_after_start"
+msgstr "开局后不可改"
+
+msgid "Session expired, please sign in again"
+msgstr "登录已失效，请重新登录后再试"
+
+msgid "Could not end that game, please retry"
+msgstr "结束对局失败，请重试"
+
+msgid "Retry failed, please try again later"
+msgstr "重试失败，请稍后再试"
+
+msgid "ladder:board_preview"
+msgstr "开局局面预览:空盘"
+
+msgid "play:title"
+msgstr "对弈"
+
+msgid "login:box_gate_title"
+msgstr "请在智星盒主页登录"
+
+msgid "login:box_gate_cta"
+msgstr "前往智星盒主页"
+
+msgid "vision:back_settings"
+msgstr "设置"
+
+msgid "vision:board_lost_hint"
+msgstr "看一下摄像头有没有被挡住、棋盘有没有被挪动；挪动过的话要重新标定"
+
+msgid "vision:calibrate_title"
+msgstr "棋盘标定"
+
+msgid "vision:calibrate_sub"
+msgstr "先把棋盘清空 · 四角 + 九星共 13 个定位点"
+
+msgid "vision:cancel_calibration"
+msgstr "取消标定"
+
+msgid "vision:reuse_calibration"
+msgstr "沿用上次标定"
+
+msgid "vision:camera_down"
+msgstr "摄像头未连接 · 已转触屏"
+
+msgid "vision:led_down"
+msgstr "LED 未连接 · 不再亮灯引导"
+
+msgid "vision:pose_lost"
+msgstr "标定丢失 · 请重新标定"
+
+msgid "grade:tabs"
+msgstr "着手评价"
+
+msgid "grade:fold_title"
+msgstr "着手评价 · 七档"
+
+msgid "grade:match_other"
+msgstr "其他"
+
+msgid "grade:axis_points_lost_short"
+msgstr "目损 · 目"
+
+msgid "grade:pick_hint"
+msgstr "点图上任一手看详情"
+
+msgid "grade:summary"
+msgstr "妙 {a} · 坏 {b}"
+
+msgid "grade:sel_bad"
+msgstr "第 {n} 手 {m} · {s} · {g} · 目损 {x} 目"
+
+msgid "grade:sel_brilliant"
+msgstr "第 {n} 手 {m} · {s} · 妙度 {k} —— 走的就是引擎首选，而引擎自己只给了 {p}% 先验（越低越妙）"
+
+msgid "grade:truncated_plot"
+msgstr "图上每方最多画 {k} 条，另有 {n} 处未画出"
+
+msgid "setup:this_game"
+msgstr "这一局会是"
+
+msgid "setup:board_preview_handicap"
+msgstr "开局局面预览:让 {n} 子"
+
+msgid "setup:chinese_rules"
+msgstr "中国规则"
+
+msgid "setup:even"
+msgstr "分先"
+
+msgid "setup:handicap"
+msgstr "让子"
+
+msgid "setup:handicap_n"
+msgstr "让 {n} 子"
+
+msgid "setup:handicap_less"
+msgstr "少让一子"
+
+msgid "setup:handicap_more"
+msgstr "多让一子"
+
+msgid "setup:input"
+msgstr "怎么落子"
+
+msgid "setup:my_side"
+msgstr "我执"
+
+msgid "setup:take_black"
+msgstr "执黑"
+
+msgid "setup:take_white"
+msgstr "执白"
+
+msgid "setup:no_camera_hint"
+msgstr "这台盒子还没标定摄像头，实体盘这条路现在走不了"
+
+msgid "report:clear_variation"
+msgstr "清除变化"
+
+msgid "report:file_read_failed"
+msgstr "读取文件失败，请重试。"
+
+msgid "report:import_options"
+msgstr "导入方式"
+
+msgid "report:invalid_sgf"
+msgstr "无法解析 SGF，请检查内容。"
+
+msgid "report:library_load_failed"
+msgstr "棋谱加载失败，请重试。"
+
+msgid "report:loading_detail"
+msgstr "正在加载复盘"
+
+msgid "report:not_found"
+msgstr "未找到复盘。"
+
+msgid "report:preview_failed"
+msgstr "棋谱预览加载失败"
+
+msgid "report:reload"
+msgstr "重新加载"
+
+msgid "report:retry_load"
+msgstr "重试加载"
+
+msgid "report:retrying"
+msgstr "正在重试…"
+
+msgid "report:search_library"
+msgstr "搜索棋谱库"
+
+msgid "report:sgf_content"
+msgstr "SGF 内容"
+
+msgid "report:title_optional"
+msgstr "标题（可选）"
+
+msgid "report:unknown_type"
+msgstr "类型未知"
+
+msgid "report:variation_preview"
+msgstr "变化预览 · 点击棋盘关闭"
+
+msgid "live:title"
+msgstr "直播"
+
+msgid "live:ai"
+msgstr "AI 推荐"
+
+msgid "live:ai_note_a"
+msgstr "「AI 推荐」是"
+
+msgid "live:ai_note_b"
+msgstr "盒内 KataGo 现算的"
+
+msgid "live:ai_note_c"
+msgstr "，和棋手看到的没有关系。"
+
+msgid "live:as_black"
+msgstr "执黑"
+
+msgid "live:as_white"
+msgstr "执白"
+
+msgid "live:back_kifu"
+msgstr "棋谱"
+
+msgid "live:black_wr"
+msgstr "黑 {v}%"
+
+msgid "live:ended"
+msgstr "已结束"
+
+msgid "live:follow"
+msgstr "跟到最新"
+
+msgid "live:load_failed"
+msgstr "没读到这一局"
+
+msgid "live:loading"
+msgstr "正在读这一局"
+
+msgid "live:move_n"
+msgstr "第 {n} 手"
+
+msgid "live:moves_title"
+msgstr "棋谱 · 跟着直播长"
+
+msgid "live:no_moves"
+msgstr "这一局还没有着法"
+
+msgid "live:no_ownership"
+msgstr "这一手还没算出形势"
+
+msgid "live:pagebar_sub"
+msgstr "来源：{src} · 第 {n} 手"
+
+msgid "live:played"
+msgstr "已落子"
+
+msgid "live:show"
+msgstr "显示"
+
+msgid "live:thinking"
+msgstr "思考中"
+
+msgid "live:toggle_numbers"
+msgstr "手数"
+
+msgid "live:toggle_territory"
+msgstr "形势"
+
+msgid "settings:nav_account"
+msgstr "账号与平台"
+
+msgid "settings:nav_board"
+msgstr "实体棋盘"
+
+msgid "settings:nav_language"
+msgstr "语言"
+
+msgid "settings:nav_move"
+msgstr "落子与提示"
+
+msgid "settings:nav_sound"
+msgstr "声音"
+
+msgid "settings:ui_language"
+msgstr "界面语言"
+
+msgid "settings:language_sub"
+msgstr "这一项将来会搬到设置中心"
+
+msgid "settings:auto_advance_sub"
+msgstr "训练营里生效 · 出厂就是开的"
+
+msgid "settings:board_secval"
+msgstr "摄像头 · 标定 · LED"
+
+msgid "settings:box_account_owned_by_home"
+msgstr "智星盒账户，全盒共用"
+
+msgid "settings:box_account_sub"
+msgstr "不登录也能用，成绩存在这台盒子上；登录只是为了换机器时能带走"
+
+msgid "settings:guest_sub"
+msgstr "这台盒子上的本地档案"
+
+msgid "settings:switch_account_at_home"
+msgstr "在主页切账号"
+
+msgid "settings:sign_in"
+msgstr "登录"
+
+msgid "settings:platforms"
+msgstr "跨平台账号"
+
+msgid "settings:platforms_sub"
+msgstr "各家登录字段不同，在跨平台对弈里连"
+
+msgid "settings:go_connect"
+msgstr "去连接"
+
+msgid "settings:calibrated"
+msgstr "这次开机已标定"
+
+msgid "settings:not_calibrated"
+msgstr "还没标定"
+
+msgid "settings:start_calib"
+msgstr "开始标定"
+
+msgid "settings:ready"
+msgstr "就绪"
+
+msgid "settings:not_ready"
+msgstr "未连接"
+
+msgid "settings:on"
+msgstr "开"
+
+msgid "settings:off"
+msgstr "关"
+
+msgid "research:actions"
+msgstr "研究操作"
+
+msgid "research:move_title"
+msgstr "研究 · 第 {n} 手"
+
+msgid "research:ai_after_move"
+msgstr "AI 推荐 · 第 {n} 手之后"
+
+msgid "research:analysis_failed"
+msgstr "这一手算不出来"
+
+msgid "research:analyzed_moves"
+msgstr "已分析手数"
+
+msgid "research:analyzing_move"
+msgstr "正在算这一手"
+
+msgid "research:cancel_scan"
+msgstr "取消分析"
+
+msgid "research:clear_confirm_title"
+msgstr "清空整盘？"
+
+msgid "research:clear_confirm_msg"
+msgstr "盘上 {n} 手会全部擦掉，这一步撤不回来。"
+
+msgid "research:eta_label"
+msgstr "预计剩余"
+
+msgid "research:from_kifu"
+msgstr "棋谱库"
+
+msgid "research:from_last_game"
+msgstr "刚下完的这一局"
+
+msgid "research:from_my_games"
+msgstr "我的对局"
+
+msgid "research:full_scan"
+msgstr "全局分析"
+
+msgid "research:no_candidates"
+msgstr "AI 没有给出候选着法"
+
+msgid "research:only_19_supported"
+msgstr "仅支持 19 路，已按 19 路加载"
+
+msgid "research:progress_lost"
+msgstr "连续 5 次读不到分析进度，连接可能已经断了"
+
+msgid "research:rescan"
+msgstr "重新分析"
+
+msgid "research:retry_analysis"
+msgstr "重试分析"
+
+msgid "research:scan_broke"
+msgstr "全局分析没跑完"
+
+msgid "research:scan_cost"
+msgstr "一共 {n} 手 · 每手算 500 次"
+
+msgid "research:scan_failed"
+msgstr "启动分析失败，请重试"
+
+msgid "research:scan_freeze"
+msgstr "算完之前不能改盘面，可以随时取消"
+
+msgid "research:scan_go"
+msgstr "开始算"
+
+msgid "research:session_failed"
+msgstr "无法创建研究会话，请重试"
+
+msgid "research:user_game_failed"
+msgstr "这一局读不到"
+
+msgid "growth:rank_title"
+msgstr "盒内段位"
+
+msgid "growth:rank_unknown"
+msgstr "—"
+
+msgid "growth:rank_unplaced"
+msgstr "未定级"
+
+msgid "growth:no_data"
+msgstr "—"
+
+msgid "growth:cell_placement"
+msgstr "定级局"
+
+msgid "growth:metric_placement"
+msgstr "定级局"
+
+msgid "growth:placement_done"
+msgstr "已完成"
+
+msgid "growth:cell_solved"
+msgstr "已解题"
+
+msgid "growth:metric_net"
+msgstr "净胜分"
+
+msgid "growth:stat_ranked"
+msgstr "升降级局 · 累计"
+
+msgid "growth:stat_recent"
+msgstr "近 30 天对局"
+
+msgid "growth:stat_solved"
+msgstr "累计已解题"
+
+msgid "growth:stat_winrate"
+msgstr "升降级胜率 · 近 30 天"
+
+msgid "growth:summary_failed"
+msgstr "这几个数没取到 —— 不是「一局没下」。稍后再看一次。"
+
+msgid "growth:rules_title"
+msgstr "升降的规矩"
+
+msgid "growth:rule_up"
+msgstr "净胜 3 盘升一档"
+
+msgid "growth:rule_down"
+msgstr "净负 3 盘降一档"
+
+msgid "growth:rule_bounds"
+msgstr "下封 20 级 · 上封 超越人类"
+
+msgid "growth:rung_title"
+msgstr "按对手强度"
+
+msgid "growth:rung_w"
+msgstr "{n} 胜"
+
+msgid "growth:rung_l"
+msgstr "{n} 负"
+
+msgid "growth:rung_empty_h"
+msgstr "还没有战绩"
+
+msgid "growth:rung_empty_p"
+msgstr "开局设置里那根滑条调的是对手有多强,不是你的段位。打过哪一档就列哪一档——没打过的不列,不摆一排 0 胜 0 负。"
+
+msgid "growth:diag_title"
+msgstr "能力诊断"
+
+msgid "growth:diag_wip"
+msgstr "后端已有 · 界面未接"
+
+msgid "growth:diag_empty_h"
+msgstr "样本 0 局"
+
+msgid "growth:diag_empty_p"
+msgstr "诊断要拿已经跑过报告的对局算——报告在后端有,界面还没读(见复盘屏)。够 30 局之前结论会抖,到时候也得把样本量写在旁边。"
+
+msgid "growth:local_note_a"
+msgstr "这几个数是"
+
+msgid "growth:local_note_b"
+msgstr "本机记录"
+
+msgid "growth:local_note_c"
+msgstr "。账在云端,盒子上这一份可能少几局。"
+
+msgid "game:black"
+msgstr "黑"
+
+msgid "game:white"
+msgstr "白"
+
+msgid "game:plays_black"
+msgstr "执黑"
+
+msgid "game:plays_white"
+msgstr "执白"
+
+msgid "game:actions"
+msgstr "对局操作"
+
+msgid "game:action_failed"
+msgstr "这一步没有成功，请再试一次"
+
+msgid "game:back_to_play"
+msgstr "回到对弈"
+
+msgid "game:board_lines"
+msgstr "{n} 路"
+
+msgid "game:handicap_n"
+msgstr "让 {n} 子"
+
+msgid "game:no_handicap"
+msgstr "不让子"
+
+msgid "game:points_unit"
+msgstr "目"
+
+msgid "game:captures"
+msgstr "提子"
+
+msgid "game:display"
+msgstr "显示"
+
+msgid "game:thinking"
+msgstr "思考中"
+
+msgid "game:played"
+msgstr "已落子"
+
+msgid "game:your_turn"
+msgstr "轮到你"
+
+msgid "game:ended"
+msgstr "本局结束"
+
+msgid "game:time_left"
+msgstr "剩余"
+
+msgid "game:time_up"
+msgstr "超时"
+
+msgid "game:untimed"
+msgstr "不限时"
+
+msgid "game:byo_left"
+msgstr "读秒 · 剩 {n} 次"
+
+msgid "game:first_move"
+msgstr "第一手"
+
+msgid "game:prev_move"
+msgstr "上一手"
+
+msgid "game:next_move"
+msgstr "下一手"
+
+msgid "game:last_move"
+msgstr "最后一手"
+
+msgid "game:moves_title"
+msgstr "棋谱 · 交叉点坐标"
+
+msgid "game:no_moves"
+msgstr "这一局还没有着法"
+
+msgid "game:online_pvp"
+msgstr "在线对局"
+
+msgid "game:exit_game"
+msgstr "退出对局"
+
+msgid "game:leave_keep_game"
+msgstr "先离开，不认输"
+
+msgid "game:resign_confirm_side"
+msgstr "{side}认输？"
+
+msgid "game:exit_resign_confirm_side"
+msgstr "对局进行中，{side}认输并退出？"
+
+msgid "game:count_game_over"
+msgstr "这一局已经结束了"
+
+msgid "game:count_min"
+msgstr "数子要下满 {n} 手"
+
+msgid "game:count_too_early"
+msgstr "手数还不够，暂时不能数子"
+
+msgid "game:count_not_your_turn"
+msgstr "轮到你落子时才能数子"
+
+msgid "game:count_position_changed"
+msgstr "数子这几秒里局面变了，请重新数子"
+
+msgid "game:count_no_score"
+msgstr "形势分析没算出来，暂时数不了子，请稍后再试"
+
+msgid "game:count_ranked_unscored"
+msgstr "升降级对局现在数不了子（本局不做形势分析）"
+
+msgid "game:eval_title"
+msgstr "胜率 · KataGo 原生通道"
+
+msgid "game:eval_graph"
+msgstr "本局胜率与目差走势"
+
+msgid "game:eval_black_100"
+msgstr "黑 100"
+
+msgid "game:eval_white_100"
+msgstr "白 100"
+
+msgid "game:eval_black_lead"
+msgstr "黑+{n}"
+
+msgid "game:eval_white_lead"
+msgstr "白+{n}"
+
+msgid "game:golaxy_ai"
+msgstr "星阵围棋 · 人机"
+
+msgid "game:golaxy_items"
+msgstr "星阵道具 · 每按一次扣一次"
+
+msgid "game:golaxy_judge_hint"
+msgstr "数子只查看当前形势，不结束对局"
+
+msgid "game:golaxy_engine_no_undo"
+msgstr "星阵机器人对局暂不支持悔棋"
+
+msgid "game:engine_ended_no_result"
+msgstr "星阵返回了无法识别的终局信号 · 这盘不判断输赢"
+
+msgid "game:connection_dropped"
+msgstr "实时连接断了，棋盘不会自动更新。点「退出对局」→「先离开，不认输」，再从「继续上一局」回来就会重新连上"
+
+msgid "game:recalibrate_needs_empty_board"
+msgstr "重新标定会亮灯，而且要先把棋盘上的子全部拿走；棋盘没被挪过的话，点「仍要继续」"
+
+msgid "game:timeout_failed"
+msgstr "超时判定没有完成"
+
+msgid "game:timeout_not_delivered"
+msgstr "超时判定没有送达，请检查连接后重新进入这一局"
+
+msgid "game:unavailable_title"
+msgstr "这一局已经打不开了"
+
+msgid "game:unavailable_reason"
+msgstr "可能是盒子重启过、这一局闲置太久被清理，或者它属于另一个账号。"
+
+msgid "lobby:hall_title"
+msgstr "在线大厅"
+
+msgid "lobby:hall_sub"
+msgstr "和别的盒子上的人下 · 也可以进去看"
+
+msgid "lobby:loading"
+msgstr "正在读…"
+
+msgid "lobby:load_failed"
+msgstr "读不到大厅 —— 网络或服务没通"
+
+msgid "lobby:players"
+msgstr "在线棋手"
+
+msgid "lobby:online_count"
+msgstr "在线 {n} 人"
+
+msgid "lobby:games_count"
+msgstr "{n} 局"
+
+msgid "lobby:no_players_now"
+msgstr "这会儿只有你在线"
+
+msgid "lobby:no_games_now"
+msgstr "现在没有人在下"
+
+msgid "lobby:idle"
+msgstr "空闲"
+
+msgid "lobby:in_game"
+msgstr "对局中"
+
+msgid "lobby:this_is_you"
+msgstr "这是你"
+
+msgid "lobby:vs"
+msgstr "对"
+
+msgid "lobby:plays_black"
+msgstr "执黑"
+
+msgid "lobby:plays_white"
+msgstr "执白"
+
+msgid "lobby:move_no"
+msgstr "第 {n} 手"
+
+msgid "lobby:note_a"
+msgstr "的人可以邀请,"
+
+msgid "lobby:note_b"
+msgstr "的不行。左边是进行中的对局,自己那局可以点回去。"
+
+msgid "lobby:match_mode"
+msgstr "匹配哪一种"
+
+msgid "lobby:mode_free"
+msgstr "自由对局"
+
+msgid "lobby:mode_rated"
+msgstr "排位赛"
+
+msgid "lobby:ladder_name"
+msgstr "升降级对弈"
+
+msgid "lobby:rated_why_a"
+msgstr "排位赛要先在"
+
+msgid "lobby:rated_why_b"
+msgstr "打完 5 局定级赛 —— 你还差 {n} 局。"
+
+msgid "lobby:rated_why_b_unknown"
+msgstr "打完 5 局定级赛。"
+
+msgid "lobby:start_match"
+msgstr "开始匹配"
+
+msgid "lobby:cancel_match"
+msgstr "取消匹配"
+
+msgid "lobby:matching_title"
+msgstr "正在找对手"
+
+msgid "lobby:matching_lead_a"
+msgstr "服务端把你放进了"
+
+msgid "lobby:matching_lead_b"
+msgstr "的队列,配上就直接开局,不用再确认一次。"
+
+msgid "lobby:matching_tc_free"
+msgstr "配上就开局 · 不计段位"
+
+msgid "lobby:matching_tc_rated"
+msgstr "配上就开局 · 计段位"
+
+msgid "lobby:waited_a"
+msgstr "已等 "
+
+msgid "lobby:waited_b"
+msgstr " 秒"
+
+msgid "lobby:invite_title"
+msgstr "{name}邀你下一局"
+
+msgid "lobby:invite_kind"
+msgstr "自由对局 · 不计段位"
+
+msgid "lobby:invite_lead_a"
+msgstr "接受就直接开局"
+
+msgid "lobby:invite_lead_b"
+msgstr ",邀请方执黑。"
+
+msgid "lobby:invite_no_decline"
+msgstr "拒绝只关掉这个窗 —— 对面收不到回音;邀请 2 分钟后失效"
+
+msgid "lobby:invite_expired"
+msgstr "这封邀请已经过期或被用过了 —— 请对方再邀一次"
+
+msgid "lobby:accept_and_play"
+msgstr "接受并开局"
+
+msgid "lobby:need_login"
+msgstr "需要登录"
+
+msgid "lobby:gate_title"
+msgstr "登录后进在线大厅"
+
+msgid "lobby:gate_why"
+msgstr "大厅要把你的名字和在线状态发给别的盒子上的人,所以它按账号走。访客没有账号,也就没有可以给别人看的身份。"
+
+msgid "lobby:gate_fact_k"
+msgstr "登录之后"
+
+msgid "lobby:gate_fact_v"
+msgstr "别人能在名单里看到你、邀请你"
+
+msgid "lobby:gate_fact_note"
+msgstr "名单只列此刻连着的人:你在就有你,退出就没了"
+
+msgid "lobby:gate_rule_a"
+msgstr "登录只管这一条线。"
+
+msgid "lobby:gate_rule_b"
+msgstr "人机对弈、本地对局、训练营、复盘、棋谱,访客照样能用。"
+
+msgid "lobby:go_login"
+msgstr "前往登录"
+
+msgid "baipu:title"
+msgstr "摆谱"
+
+msgid "baipu:back_kifu"
+msgstr "棋谱"
+
+msgid "baipu:actions"
+msgstr "摆谱操作"
+
+msgid "baipu:black"
+msgstr "黑方"
+
+msgid "baipu:white"
+msgstr "白方"
+
+msgid "baipu:black_s"
+msgstr "黑"
+
+msgid "baipu:white_s"
+msgstr "白"
+
+msgid "baipu:stones_unit"
+msgstr "子"
+
+msgid "baipu:which_move"
+msgstr "第几手"
+
+msgid "baipu:board_label"
+msgstr "摆谱盘面：圈是下一手该落的点"
+
+msgid "baipu:loading"
+msgstr "正在读这份谱"
+
+msgid "baipu:load_failed"
+msgstr "没读出这份谱"
+
+msgid "baipu:no_sgf"
+msgstr "这台盒子上没有这份谱"
+
+msgid "baipu:no_moves"
+msgstr "这份谱里没有着法"
+
+msgid "baipu:pagebar_sub"
+msgstr "第 {i} / {n} 手 · 已采集 {f} 帧"
+
+msgid "baipu:place_at"
+msgstr "当前待摆 · {c}"
+
+msgid "baipu:place_none"
+msgstr "这一步不用摆子"
+
+msgid "baipu:pass"
+msgstr "虚手"
+
+msgid "baipu:led_on"
+msgstr "灯已点亮 —— 把{color}子放在亮着的那个交叉点"
+
+msgid "baipu:led_down"
+msgstr "灯没亮 —— 按右上角重新点灯，或照坐标 {c} 自己找"
+
+msgid "baipu:relight"
+msgstr "重新点灯"
+
+msgid "baipu:legend_black"
+msgstr "红灯 = 放黑子"
+
+msgid "baipu:legend_white"
+msgstr "绿灯 = 放白子"
+
+msgid "baipu:legend_remove"
+msgstr "蓝灯 = 该拿走"
+
+msgid "baipu:cam_title"
+msgstr "摄像头 · 这一手要采一帧"
+
+msgid "baipu:capture_off"
+msgstr "这台机器没接采集"
+
+msgid "baipu:capturing"
+msgstr "正在拍照，请勿伸手"
+
+msgid "baipu:capturing_hint"
+msgstr "手挡住了这一手就采不到，得重来。"
+
+msgid "baipu:hands_off"
+msgstr "手不要在盘上"
+
+msgid "baipu:confirm"
+msgstr "确认落子"
+
+msgid "baipu:confirm_done_reason"
+msgstr "这份谱已经摆完了"
+
+msgid "baipu:failed_title"
+msgstr "这一手没采上"
+
+msgid "baipu:failed_hint"
+msgstr "子先别动 —— 再按一次「确认落子」"
+
+msgid "baipu:failed_hint_geometry"
+msgstr "棋盘位置对不上了 —— 去设置里重新标定，再按一次没用"
+
+msgid "baipu:frames_n"
+msgstr "已采集 {n} 帧"
+
+msgid "baipu:no_frame_yet"
+msgstr "还没存过帧"
+
+msgid "baipu:latest_saved"
+msgstr "最近保存 {f}"
+
+msgid "baipu:removed_n"
+msgstr "本手提子 {n} 子"
+
+msgid "baipu:removal_title"
+msgstr "请拿走被提的 {n} 子"
+
+msgid "baipu:removal_hint"
+msgstr "亮蓝灯的那几颗 —— 提子要人自己拿，拿完再按「已移除」"
+
+msgid "baipu:removed_done"
+msgstr "已移除 {n} 子"
+
+msgid "baipu:moves_title"
+msgstr "已经摆过的"
+
+msgid "baipu:moves_value"
+msgstr "{k} 手 / 共 {n}"
+
+msgid "baipu:undo"
+msgstr "撤回上一手"
+
+msgid "baipu:undo_ask"
+msgstr "撤回上一手？"
+
+msgid "baipu:undo_body"
+msgstr "先把刚摆的那颗子从盘上拿下来（被提的子也放回去），再按「已撤回」。"
+
+msgid "baipu:undo_done"
+msgstr "已撤回"
+
+msgid "baipu:undo_reason"
+msgstr "还没摆下第一颗"
+
+msgid "baipu:finish"
+msgstr "完成"
+
+msgid "baipu:finish_reason"
+msgstr "还剩 {n} 手没摆"
+
+msgid "baipu:done_title"
+msgstr "这份谱摆完了"
+
+msgid "baipu:done_hint"
+msgstr "一共 {n} 手 · 采到 {f} 帧"
+
+msgid "baipu:restart"
+msgstr "从头摆"
+
+msgid "baipu:resume"
+msgstr "接着摆"
+
+msgid "baipu:resume_ask"
+msgstr "接着上次摆？"
+
+msgid "baipu:resume_body"
+msgstr "上次摆到第 {n} 手。重新开始会覆盖已经采过的帧。"
+
+msgid "baipu:exit"
+msgstr "退出"
+
+msgid "baipu:exit_ask"
+msgstr "退出摆谱？"
+
+msgid "baipu:exit_body"
+msgstr "进度已经存下了，回来还能接着摆。"
+
+msgid "baipu:drift_corrected"
+msgstr "棋盘动过，已自动校正"
+
+msgid "baipu:drift_frozen"
+msgstr "几何没有校正过"
+
+msgid "baipu:drift_stale"
+msgstr "这一帧没能重新校正，沿用了上次的几何"
+
+msgid "baipu:drift_word_corrected"
+msgstr "已校正"
+
+msgid "baipu:drift_word_frozen"
+msgstr "未校正"
+
+msgid "baipu:drift_word_stale"
+msgstr "沿用上次"
+
+msgid "tsumego:loadingTitle"
+msgstr "做题"
+
+msgid "tsumego:actions"
+msgstr "做题操作"
+
+msgid "tsumego:allProblems"
+msgstr "全部题目"
+
+msgid "tsumego:autoAdvance"
+msgstr "做对后自动进入下一题"
+
+msgid "tsumego:backToUnit"
+msgstr "返回单元"
+
+msgid "tsumego:backToWrong"
+msgstr "返回错题"
+
+msgid "tsumego:bankEmpty"
+msgstr "题库里还没有题"
+
+msgid "tsumego:category_unit"
+msgstr "类"
+
+msgid "tsumego:chooseByLevel"
+msgstr "按棋力选择"
+
+msgid "tsumego:cloudUnreachable"
+msgstr "连不上云端题库"
+
+msgid "tsumego:cloudUnreachableBody"
+msgstr "题库在云端，盒子上不存题。等网络或云端恢复后再点重试。"
+
+msgid "tsumego:cloudUnreachableBodyNoRetry"
+msgstr "题库在云端，盒子上不存题。等网络或云端恢复后，返回再进来。"
+
+msgid "tsumego:kyuRanks"
+msgstr "级位"
+
+msgid "tsumego:danRanks"
+msgstr "段位"
+
+msgid "tsumego:rankBoundary"
+msgstr "级位与段位分界"
+
+msgid "tsumego:dao"
+msgstr "道"
+
+msgid "tsumego:levelsUnit"
+msgstr "档"
+
+msgid "tsumego:goCalibrate"
+msgstr "去标定"
+
+msgid "tsumego:greetSub"
+msgstr "落子即判，走错当场退回"
+
+msgid "tsumego:isFirst"
+msgstr "这是第一题"
+
+msgid "tsumego:lastTimeShort"
+msgstr "上次"
+
+msgid "tsumego:loadingProblem"
+msgstr "正在读这道题…"
+
+msgid "tsumego:problemLoadError"
+msgstr "这道题读不到"
+
+msgid "tsumego:modes"
+msgstr "模式"
+
+msgid "tsumego:next"
+msgstr "下一题"
+
+msgid "tsumego:prev"
+msgstr "上一题"
+
+msgid "tsumego:noMoveYet"
+msgstr "还没落子"
+
+msgid "tsumego:noSequence"
+msgstr "读不到这一类的题号，上/下一题暂时用不了"
+
+msgid "tsumego:noWrong"
+msgstr "这一类现在没有做错过的题"
+
+msgid "tsumego:physicalBoard"
+msgstr "实体棋盘"
+
+msgid "tsumego:physClear"
+msgstr "请清空棋盘"
+
+msgid "tsumego:physClearLeft"
+msgstr "（还剩 {n} 颗）"
+
+msgid "tsumego:physConnecting"
+msgstr "正在连接摄像头与识别模型，请稍候…"
+
+msgid "tsumego:physGeoConfirm"
+msgstr "物理棋盘需先确认棋盘标定（服务重启后需重新确认一次）"
+
+msgid "tsumego:physGeoDrift"
+msgstr "棋盘标定已失效，请重新标定棋盘"
+
+msgid "tsumego:physNeed19"
+msgstr "物理棋盘仅支持 19 路题目"
+
+msgid "tsumego:physNoCamera"
+msgstr "未检测到摄像头 / 视觉服务未启用"
+
+msgid "tsumego:physNoLed"
+msgstr "LED 没连上，请按屏幕提示操作。"
+
+msgid "tsumego:physRemove"
+msgstr "答错了：请取回 {n} 颗棋子（蓝灯）"
+
+msgid "tsumego:physRestore"
+msgstr "，并放回被提的 {n} 颗（红 / 绿灯）"
+
+msgid "tsumego:physReply"
+msgstr "请按棋盘灯光摆放棋子（应手 / 提子），让棋盘和屏幕一致。"
+
+msgid "tsumego:physVerify"
+msgstr "正在核对棋盘和题面是否一致，请按灯光调整棋子。"
+
+msgid "tsumego:placeAnswerBlack"
+msgstr "请在正解点落一手黑棋，棋盘会自动识别"
+
+msgid "tsumego:placeAnswerWhite"
+msgstr "请在正解点落一手白棋，棋盘会自动识别"
+
+msgid "tsumego:preparingBoard"
+msgstr "准备中"
+
+msgid "tsumego:progressUnread"
+msgstr "做题记录没读到"
+
+msgid "tsumego:progressUnreadBody"
+msgstr "读不到做题记录，就说不出这一类错过哪几道。等网络恢复后再点重试。"
+
+msgid "tsumego:removeAt"
+msgstr "拿除 {coord}"
+
+msgid "tsumego:setupDone"
+msgstr "摆盘完成 · 轮到你了"
+
+msgid "tsumego:setupExtra"
+msgstr "盘上有 {n} 颗多余/错色棋子，请先取走（屏上红叉 ✕ 标注，实体棋盘白灯闪烁）"
+
+msgid "tsumego:setupMatched"
+msgstr "已匹配 {matched}/{total} 颗子"
+
+msgid "tsumego:setupSkip"
+msgstr "跳过设置"
+
+msgid "tsumego:setupStageBlack"
+msgstr "请摆放黑棋"
+
+msgid "tsumego:setupStageWhite"
+msgstr "请摆放白棋"
+
+msgid "tsumego:solvedInCategory"
+msgstr "这一类已做对"
+
+msgid "tsumego:solvedShort"
+msgstr "对了"
+
+msgid "tsumego:specializedPractice"
+msgstr "专项训练"
+
+msgid "tsumego:these_n_problems"
+msgstr "这 {n} 道题"
+
+msgid "tsumego:thisProblem"
+msgstr "这一题"
+
+msgid "tsumego:tries_n"
+msgstr "{n} 次"
+
+msgid "tsumego:tryModeShort"
+msgstr "试下"
+
+msgid "tsumego:undoMove"
+msgstr "退一手"
+
+msgid "tsumego:undoPhysicalReset"
+msgstr "实体棋盘上退不了一手；想重来，按「重摆」"
+
+msgid "tsumego:unitUnknown"
+msgstr "这一单元"
+
+msgid "tsumego:unit_n"
+msgstr "第 {n} 单元"
+
+msgid "tsumego:unit_range"
+msgstr "这一类一共 {total} 道题，只有 {units} 个单元。"
+
+msgid "tsumego:unit_size"
+msgstr "每 {n} 题一单元"
+
+msgid "tsumego:unit_total"
+msgstr "{n} 题"
+
+msgid "tsumego:wrongProgress"
+msgstr "错题 第 {i} / {n} 道"
+
+msgid "tsumego:wrongResume"
+msgstr "错题第 {n} 道"
+
+msgid "tsumego:wrongSet"
+msgstr "错题"
+
+msgid "tsumego:wrongShort"
+msgstr "走错了"
+
+msgid "tsumego:wrongState"
+msgstr "做错过"
+
+msgid "tsumego:wrongStatLabel"
+msgstr "做错过、还没做对"
+
+msgid "tsumego:wrong_now"
+msgstr "现在有 {n} 道"
+
+msgid "tsumego:wrong_total"
+msgstr "{n} 道"
+
+msgid "tsumego:yourLevel"
+msgstr "你的水平"
+
+msgid "tsumego:yourMoves"
+msgstr "你的走法"
+
+msgid "tsumego:problem_no"
+msgstr "第 {n} 题"
+
+msgid "kifu:title"
+msgstr "棋谱"
+
+msgid "kifu:back_kifu"
+msgstr "棋谱"
+
+msgid "kifu:greet_a"
+msgstr "看别人的"
+
+msgid "kifu:greet_b"
+msgstr "棋"
+
+msgid "kifu:greet_sub"
+msgstr "名局、职业直播，以及把谱摆到实体盘上"
+
+msgid "kifu:famous_records"
+msgstr "名局棋谱"
+
+msgid "kifu:search_records"
+msgstr "搜棋谱"
+
+msgid "kifu:search_sub"
+msgstr "一个搜索框，模糊匹配"
+
+msgid "kifu:search_placeholder_cn"
+msgstr "棋手、赛事、年份都能搜"
+
+msgid "kifu:searching"
+msgstr "正在找"
+
+msgid "kifu:no_results_cn"
+msgstr "没有对得上的谱"
+
+msgid "kifu:no_results_hint"
+msgstr "换棋手名、赛事名或者年份再试。"
+
+msgid "kifu:list_failed"
+msgstr "棋谱库读不到"
+
+msgid "kifu:pro_live"
+msgstr "职业直播"
+
+msgid "kifu:live_now"
+msgstr "直播中"
+
+msgid "kifu:not_started"
+msgstr "未开始"
+
+msgid "kifu:ended"
+msgstr "已结束"
+
+msgid "kifu:place_on_board"
+msgstr "摆到实体盘"
+
+msgid "kifu:place_sub"
+msgstr "灯一手一手指着摆"
+
+msgid "kifu:import_sgf"
+msgstr "导入 SGF"
+
+msgid "kifu:import_sub"
+msgstr "本地文件，离线也能摆"
+
+msgid "kifu:bad_sgf"
+msgstr "不是有效的 SGF 文件"
+
+msgid "kifu:read_failed"
+msgstr "读取文件失败"
+
+msgid "kifu:recent"
+msgstr "最近摆过"
+
+msgid "kifu:on_this_box"
+msgstr "存在这台盒子上"
+
+msgid "kifu:no_recent"
+msgstr "这台盒子上还没摆过谱"
+
+msgid "kifu:no_recent_hint"
+msgstr "从上面挑一份,或者导入一个 SGF —— 选过的谱整份存在本地,断网也摆得完。"
+
+msgid "kifu:cache_gone"
+msgstr "这份谱的本地缓存没了,得重新选一次"
+
+msgid "kifu:cannot_start"
+msgstr "这一份摆不了"
+
+msgid "kifu:done_tag"
+msgstr "已摆完"
+
+msgid "kifu:placed_all"
+msgstr "摆完"
+
+msgid "kifu:placed_at"
+msgstr "摆到第"
+
+msgid "kifu:resume_at"
+msgstr "上次摆到第"
+
+msgid "kifu:resume"
+msgstr "继续"
+
+msgid "kifu:resume_baipu"
+msgstr "继续摆谱"
+
+msgid "kifu:resume_hint"
+msgstr "灯会指下一手落在哪"
+
+msgid "kifu:keep_placing"
+msgstr "接着摆"
+
+msgid "kifu:detail_actions"
+msgstr "这一局能做什么"
+
+msgid "kifu:replay"
+msgstr "逐手回放"
+
+msgid "kifu:to_research"
+msgstr "去研究"
+
+msgid "kifu:board_label"
+msgstr "棋谱回放盘面"
+
+msgid "kifu:board_lines"
+msgstr "路"
+
+msgid "kifu:handicap_pre"
+msgstr "让"
+
+msgid "kifu:handicap_unit"
+msgstr "子"
+
+msgid "kifu:komi_black"
+msgstr "黑贴"
+
+msgid "kifu:komi_unit"
+msgstr "目"
+
+msgid "kifu:games_unit"
+msgstr "局"
+
+msgid "kifu:move_ordinal"
+msgstr "第"
+
+msgid "kifu:total_prefix"
+msgstr "共"
+
+msgid "kifu:versus"
+msgstr "对"
+
+msgid "kifu:source_prefix"
+msgstr "来源："
+
+msgid "kifu:untitled_game"
+msgstr "无题名的一局"
+
+msgid "kifu:whole_game"
+msgstr "全谱"
+
+msgid "kifu:moves_title"
+msgstr "棋谱 · 交叉点坐标"
+
+msgid "kifu:no_moves"
+msgstr "这份谱里没有着法"
+
+msgid "kifu:need_sgf"
+msgstr "这一局还没读到谱"
+
+msgid "kifu:load_failed"
+msgstr "这一局读不到"
+
+msgid "kifu:loading_this_game"
+msgstr "正在读这一局"
+
+msgid "kifu:loading_hint"
+msgstr "棋谱和逐手记录都要从服务器取。"
+
+msgid "kifu:retry"
+msgstr "重试"
+
+msgid "kifu:pass"
+msgstr "虚手"
+
+msgid "kifu:to_start"
+msgstr "回到开局"
+
+msgid "kifu:to_end"
+msgstr "跳到最后"
+
+msgid "kifu:prev_move"
+msgstr "上一手"
+
+msgid "kifu:next_move"
+msgstr "下一手"
+
+msgid "kifu:prev_page"
+msgstr "上一页"
+
+msgid "kifu:next_page"
+msgstr "下一页"
+
+msgid "kifu:collapsed"
+msgstr "收起"
+
+msgid "kifu:expanded"
+msgstr "已展开"
+
+msgid "kifu:today"
+msgstr "今天"
+
+msgid "kifu:yesterday"
+msgstr "昨天"
+
+msgid "kifu:day_before"
+msgstr "前天"
+
+msgid "review:back_review"
+msgstr "复盘"
+
+msgid "review:you"
+msgstr "你"
+
+msgid "review:black"
+msgstr "黑"
+
+msgid "review:white"
+msgstr "白"
+
+msgid "review:win"
+msgstr "胜"
+
+msgid "review:lose"
+msgstr "负"
+
+msgid "review:by_resign"
+msgstr "中盘"
+
+msgid "review:by_time"
+msgstr "超时"
+
+msgid "review:by_forfeit"
+msgstr "弃权"
+
+msgid "review:void_result"
+msgstr "这盘没有判出胜负"
+
+msgid "review:unfinished_line"
+msgstr "下到第 {n} 手就退出了"
+
+msgid "review:sec_games"
+msgstr "历史对局"
+
+msgid "review:all_games"
+msgstr "共 {n} 局"
+
+msgid "review:local_games"
+msgstr "本机 {n} 局"
+
+msgid "review:facing_games"
+msgstr "面对面 {n} 局"
+
+msgid "review:matched_games"
+msgstr "搜到 {n} 局"
+
+msgid "review:filter_label"
+msgstr "按来源筛对局"
+
+msgid "review:filter_all"
+msgstr "全部"
+
+msgid "review:filter_local"
+msgstr "面对面"
+
+msgid "review:search_toggle"
+msgstr "筛选和搜索历史对局"
+
+msgid "review:list_loading"
+msgstr "正在读你的对局"
+
+msgid "review:list_failed"
+msgstr "对局列表读不到"
+
+msgid "review:no_games"
+msgstr "还没有下过的棋"
+
+msgid "review:no_games_hint"
+msgstr "下完一局会自动记在这里；也可以从下面导入一份 SGF。"
+
+msgid "review:no_local_games"
+msgstr "还没有面对面下过"
+
+msgid "review:no_local_games_hint"
+msgstr "「对弈 · 人人对弈」里两个人在同一台盒子上下的局会记在这里。"
+
+msgid "review:no_match"
+msgstr "没有对得上的对局"
+
+msgid "review:no_match_hint"
+msgstr "换棋手名或赛事名再试。"
+
+msgid "review:row_ai"
+msgstr "人机对弈"
+
+msgid "review:row_human"
+msgstr "人人对局"
+
+msgid "review:row_ranked"
+msgstr "升降级对弈"
+
+msgid "review:row_import"
+msgstr "导入的棋谱"
+
+msgid "review:row_library"
+msgstr "棋谱库"
+
+msgid "review:row_vs"
+msgstr "vs"
+
+msgid "review:rail_title"
+msgstr "选中这一局"
+
+msgid "review:rail_none"
+msgstr "还没有选中的对局"
+
+msgid "review:rail_board"
+msgstr "选中那一局的终局盘"
+
+msgid "review:board_failed"
+msgstr "这一局的谱读不出来"
+
+msgid "review:sec_winrate"
+msgstr "这一局的胜率"
+
+msgid "review:black_winrate"
+msgstr "黑胜率"
+
+msgid "review:black_lead"
+msgstr "黑领先"
+
+msgid "review:perspective"
+msgstr "{color}方视角"
+
+msgid "review:plot_label"
+msgstr "逐手胜率，上方黑优、下方白优"
+
+msgid "review:plot_pick_label"
+msgstr "逐手胜率，点一下跳到那一手"
+
+msgid "review:plot_loading"
+msgstr "正在读这一局的报告"
+
+msgid "review:plot_pick"
+msgstr "从下面挑一局"
+
+msgid "review:plot_thin"
+msgstr "报告里还没有算出来的手"
+
+msgid "review:plot_unanalyzed"
+msgstr "这一局还没分析 —— 在下面「生成报告」里挑一档"
+
+msgid "review:sec_report"
+msgstr "生成报告"
+
+msgid "review:two_tiers"
+msgstr "两档：500 / 2000 次计算"
+
+msgid "review:tier_standard"
+msgstr "标准"
+
+msgid "review:tier_standard_sub"
+msgstr "每手算 500 次"
+
+msgid "review:tier_deep"
+msgstr "精读"
+
+msgid "review:tier_deep_sub"
+msgstr "每手算 2000 次 · 慢四倍"
+
+msgid "review:visits_each"
+msgstr "每手算 {n} 次"
+
+msgid "review:analyzed_progress"
+msgstr "已分析 {a} / {b} 手"
+
+msgid "review:resume_analysis"
+msgstr "继续分析"
+
+msgid "review:recompute"
+msgstr "重算"
+
+msgid "review:recompute_failed"
+msgstr "重算没成"
+
+msgid "review:refresh_failed"
+msgstr "没刷新成功"
+
+msgid "review:no_task"
+msgstr "这一局还没有报告任务"
+
+msgid "review:tasks_failed"
+msgstr "报告任务出错了"
+
+msgid "review:tag_analyzed"
+msgstr "已分析"
+
+msgid "review:tag_unanalyzed"
+msgstr "未分析"
+
+msgid "review:cell_unanalyzed"
+msgstr "未分析"
+
+msgid "review:tag_partial"
+msgstr "只算到 {a}/{b}"
+
+msgid "review:tag_running"
+msgstr "正在分析 {a}/{b}"
+
+msgid "review:tag_failed"
+msgstr "分析失败"
+
+msgid "review:tag_unfinished"
+msgstr "未终局"
+
+msgid "review:failure_bad_sgf"
+msgstr "这份谱读不出来"
+
+msgid "review:failure_no_credits"
+msgstr "积分不足"
+
+msgid "review:failure_not_found"
+msgstr "已经不在了"
+
+msgid "review:failure_offline"
+msgstr "云端暂时不可用"
+
+msgid "review:moves_failed"
+msgstr "报告读不出来"
+
+msgid "review:detail_failed"
+msgstr "这份报告没读出来"
+
+msgid "review:open_report"
+msgstr "查看报告"
+
+msgid "review:delete_game"
+msgstr "删除"
+
+msgid "review:to_research"
+msgstr "去研究"
+
+msgid "review:toggles"
+msgstr "显示"
+
+msgid "review:accuracy"
+msgstr "准确率"
+
+msgid "review:brilliants"
+msgstr "妙手"
+
+msgid "review:mistakes"
+msgstr "失误"
+
+msgid "review:took"
+msgstr "用了 {d}"
+
+msgid "review:import_card"
+msgstr "导入棋谱复盘"
+
+msgid "review:import_card_sub"
+msgstr "本地 SGF 或棋谱库"
+
+msgid "platform:platforms"
+msgstr "平台"
+
+msgid "platform:back_to_platforms"
+msgstr "跨平台"
+
+msgid "platform:connect_sub"
+msgstr "连上外面的围棋平台，用这块实体盘下"
+
+msgid "platform:connected"
+msgstr "已连接"
+
+msgid "platform:disconnected"
+msgstr "未连接"
+
+msgid "platform:what_you_get"
+msgstr "连上之后"
+
+msgid "platform:get_board"
+msgstr "用这块实体盘下"
+
+msgid "platform:get_board_sub"
+msgstr "摆子就是落子，对面看到的是同一手"
+
+msgid "platform:get_kifu"
+msgstr "下完自动存谱"
+
+msgid "platform:get_kifu_sub"
+msgstr "进棋谱库，也能送去复盘"
+
+msgid "platform:get_rank"
+msgstr "盒内段位不受影响"
+
+msgid "platform:get_rank_sub"
+msgstr "那边的胜负只进那边的账"
+
+msgid "platform:icon_board"
+msgstr "盘"
+
+msgid "platform:icon_kifu"
+msgstr "谱"
+
+msgid "platform:icon_rank"
+msgstr "分"
+
+msgid "platform:sign_in_to"
+msgstr "登录 · {name}"
+
+msgid "platform:logging_in"
+msgstr "正在登录…"
+
+msgid "platform:login_failed"
+msgstr "登录失败"
+
+msgid "platform:logout"
+msgstr "登出"
+
+msgid "platform:logout_ask"
+msgstr "断开 {name}？"
+
+msgid "platform:logout_body"
+msgstr "这台盒子上就不再是这个号了。再进去要重新登录一次。"
+
+msgid "platform:pw_fields"
+msgstr "用户名 + 密码"
+
+msgid "platform:pw_note"
+msgstr "只发给那个平台，不存在盒子上"
+
+msgid "platform:user_note"
+msgstr "那边的账号名，不是盒子的账号"
+
+msgid "platform:sms_fields"
+msgstr "手机号 + 验证码"
+
+msgid "platform:phone_note"
+msgstr "只用来向平台换一个登录凭证"
+
+msgid "platform:sms_get"
+msgstr "获取验证码"
+
+msgid "platform:sms_again"
+msgstr "{n} 秒后可重发"
+
+msgid "platform:sms_failed"
+msgstr "验证码没发出去"
+
+msgid "platform:need_phone"
+msgstr "请先输入手机号"
+
+msgid "platform:code_note"
+msgstr "六位数字 · 60 秒内有效"
+
+msgid "platform:lobby_title"
+msgstr "{name} · 大厅"
+
+msgid "platform:lobby_sub"
+msgstr "找人挑战，或让平台配一个"
+
+msgid "platform:enter_lobby"
+msgstr "进入大厅"
+
+msgid "platform:enter_engine"
+msgstr "人机对弈"
+
+msgid "platform:no_play_yet"
+msgstr "暂不能对弈"
+
+msgid "platform:cap_live"
+msgstr "实时对弈"
+
+msgid "platform:cap_engine"
+msgstr "人机对弈"
+
+msgid "platform:cap_automatch"
+msgstr "自动匹配"
+
+msgid "platform:cap_rooms"
+msgstr "房间"
+
+msgid "platform:find_by_name"
+msgstr "按用户名找人"
+
+msgid "platform:find_hint"
+msgstr "输入之后回车，找不到就是那边没这个人"
+
+msgid "platform:results"
+msgstr "搜到的棋手"
+
+msgid "platform:no_such_player"
+msgstr "那边没有这个人"
+
+msgid "platform:search_first"
+msgstr "输入用户名回车找人，或让平台配一个"
+
+msgid "platform:users_failed"
+msgstr "没能从平台取回名单"
+
+msgid "platform:idle"
+msgstr "空闲"
+
+msgid "platform:in_game"
+msgstr "对局中"
+
+msgid "platform:challenge"
+msgstr "挑战"
+
+msgid "platform:challenge_terms"
+msgstr "发起挑战"
+
+msgid "platform:challenge_ask"
+msgstr "向 {name} 发起挑战？"
+
+msgid "platform:challenge_ask_body"
+msgstr "{name} {rank} · 19 路 · 中国规则 · 计分局。"
+
+msgid "platform:challenge_ask_tail"
+msgstr "发出去撤不回来；对方接受后要去 {name} 上下，不会回到这台盒子。"
+
+msgid "platform:challenge_send"
+msgstr "发出挑战"
+
+msgid "platform:challenge_sent"
+msgstr "挑战已发出。对方接受后要去 {name} 上下，不会回到这台盒子。"
+
+msgid "platform:challenge_failed"
+msgstr "挑战没发出去"
+
+msgid "platform:automatch"
+msgstr "自动匹配"
+
+msgid "platform:automatch_body"
+msgstr "让 {name} 配一个"
+
+msgid "platform:automatch_hint"
+msgstr "队排在 {name} 那边。配上之后不会自动回到这台盒子，要去 {name} 上接着下。"
+
+msgid "platform:automatch_start"
+msgstr "开始匹配"
+
+msgid "platform:automatch_cancel"
+msgstr "取消匹配"
+
+msgid "platform:automatch_failed"
+msgstr "匹配没开起来"
+
+msgid "platform:seeking"
+msgstr "寻找对手中"
+
+msgid "platform:engine_title"
+msgstr "{name} · 人机"
+
+msgid "platform:engine_sub"
+msgstr "开局设置 · 不计入盒内段位"
+
+msgid "platform:opponent"
+msgstr "对手"
+
+msgid "platform:rung_n"
+msgstr "第 {i} / {n} 档"
+
+msgid "platform:stronger"
+msgstr "换强一档的对手"
+
+msgid "platform:weaker"
+msgstr "换弱一档的对手"
+
+msgid "platform:levels_from"
+msgstr "{name}下发 {n} 档"
+
+msgid "platform:levels_failed"
+msgstr "没能从平台取回棋力档"
+
+msgid "platform:display_elo"
+msgstr "展示 Elo {v}"
+
+msgid "platform:ref_rank"
+msgstr "对标{r}"
+
+msgid "platform:rank_is_theirs"
+msgstr "段位是 {name} 那边的"
+
+msgid "platform:terms_fixed"
+msgstr "条件是写死的"
+
+msgid "platform:terms_body"
+msgstr "中国规则 · 计分局"
+
+msgid "platform:terms_hint"
+msgstr "这三条界面上不选，发出去就是这个条件"
+
+msgid "platform:only_19"
+msgstr "{name}只开 19 路 · 中国规则"
+
+msgid "platform:fixed"
+msgstr "固定"
+
+msgid "platform:untimed"
+msgstr "不计时"
+
+msgid "platform:nigiri"
+msgstr "猜先"
+
+msgid "platform:black_first"
+msgstr "让先"
+
+msgid "platform:handicap_range"
+msgstr "{n} 挡 · 分先 / 让先 / 让 2 – 让 9 子"
+
+msgid "platform:komi_0"
+msgstr "不贴目"
+
+msgid "platform:komi_75"
+msgstr "黑贴 7.5 目"
+
+msgid "platform:komi_n"
+msgstr "黑贴 {n} 子"
+
+msgid "platform:summary_note"
+msgstr "贴目跟着让子算，不是另一个可选项；胜负只进{name}那边的账。"
+
+msgid "tutorial:title_cn"
+msgstr "课程"
+
+msgid "tutorial:categories_cn"
+msgstr "分类"
+
+msgid "tutorial:greet_sub"
+msgstr "后端是五层结构，内容不在这台盒子上生成"
+
+msgid "tutorial:loading_cn"
+msgstr "正在跟云端对课"
+
+msgid "tutorial:loadFailed"
+msgstr "加载失败，请稍后重试"
+
+msgid "tutorial:empty"
+msgstr "暂无教程"
+
+msgid "tutorial:empty_hint"
+msgstr "云端的课程库里还没有书；下面两处现在就有内容。"
+
+msgid "tutorial:instead_cn"
+msgstr "现在能练的"
+
+msgid "tutorial:go_training"
+msgstr "去训练营"
+
+msgid "tutorial:go_training_sub"
+msgstr "六类题 · 现在就能做"
+
+msgid "tutorial:go_baipu"
+msgstr "去摆谱"
+
+msgid "tutorial:go_baipu_sub"
+msgstr "跟着名局摆一遍"
+
+msgid "tutorial:count_line"
+msgstr "{n} 类 · 共 {b} 本"
+
+msgid "tutorial:books_n"
+msgstr "{n} 本"
+
+msgid "tutorial:books_synced"
+msgstr "{n} 本 · 内容随云端同步"
+
+msgid "tutorial:synced"
+msgstr "随云端同步"
+
+msgid "tutorial:pick_book"
+msgstr "选一本"
+
+msgid "tutorial:books_loading"
+msgstr "正在读这一类的书目"
+
+msgid "tutorial:books_failed"
+msgstr "没读到这一类的书目"
+
+msgid "tutorial:books_empty"
+msgstr "这一类下面一本书都没有"
+
+msgid "tutorial:books_empty_hint"
+msgstr "云端还没有把这一类同步下来；别的分类可能已经有了。"
+
+msgid "tutorial:anatomy_cn"
+msgstr "一课长什么样"
+
+msgid "tutorial:chapters_n"
+msgstr "{n} 章"
+
+msgid "tutorial:sections_n"
+msgstr "{n} 节"
+
+msgid "tutorial:figures_n"
+msgstr "{n} 图"
+
+msgid "tutorial:moves_n"
+msgstr "{n} 手"
+
+msgid "tutorial:seconds_n"
+msgstr "{n} 秒"
+
+msgid "tutorial:has_video"
+msgstr "有视频"
+
+msgid "tutorial:back_toc"
+msgstr "目录"
+
+msgid "tutorial:toc_of"
+msgstr "{title} · 目录"
+
+msgid "tutorial:toc_count"
+msgstr "{c} 章 · {s} 节"
+
+msgid "tutorial:toc_loading"
+msgstr "正在读这本书的目录"
+
+msgid "tutorial:toc_failed"
+msgstr "没读到这本书的目录"
+
+msgid "tutorial:toc_empty"
+msgstr "这本书还没有章节"
+
+msgid "tutorial:toc_empty_hint"
+msgstr "书目同步下来了，正文还没有；这不是你这台盒子的问题。"
+
+msgid "tutorial:no_sections"
+msgstr "这一章还没有节"
+
+msgid "tutorial:section_n"
+msgstr "第 {n} 节"
+
+msgid "tutorial:section_loading"
+msgstr "正在读这一节"
+
+msgid "tutorial:section_failed"
+msgstr "没读到这一节"
+
+msgid "tutorial:figures_in_section"
+msgstr "这一节的图"
+
+msgid "tutorial:no_figures"
+msgstr "这一节还没有棋图"
+
+msgid "tutorial:no_figures_hint"
+msgstr "目录里有这一节，正文还没同步下来；这不是你这台盒子的问题。"
+
+msgid "tutorial:figure_ordinal"
+msgstr "第 {i} / {n} 图"
+
+msgid "tutorial:figure_actions"
+msgstr "翻图与讲解"
+
+msgid "tutorial:prev_figure"
+msgstr "上一图"
+
+msgid "tutorial:next_figure"
+msgstr "下一图"
+
+msgid "tutorial:back_to_diagram"
+msgstr "回到棋图"
+
+msgid "tutorial:board_label"
+msgstr "{label}：这一节的变化图"
+
+msgid "tutorial:board_view"
+msgstr "看多大"
+
+msgid "tutorial:fullBoard"
+msgstr "全盘"
+
+msgid "tutorial:partial"
+msgstr "局部"
+
+msgid "tutorial:moves"
+msgstr "手数"
+
+msgid "tutorial:step_back"
+msgstr "退一手"
+
+msgid "tutorial:step_fwd"
+msgstr "进一手"
+
+msgid "tutorial:step_n"
+msgstr "走到第 {n} 手"
+
+msgid "tutorial:step_total"
+msgstr "这张图共 {n} 手"
+
+msgid "tutorial:step_zero"
+msgstr "只摆底子"
+
+msgid "tutorial:tag_video"
+msgstr "视频讲解"
+
+msgid "tutorial:tag_audio"
+msgstr "语音讲解"
+
+msgid "tutorial:tag_text"
+msgstr "文字讲解"
+
+msgid "tutorial:tag_none"
+msgstr "暂无讲解"
+
+msgid "tutorial:teach_none"
+msgstr "暂无讲解"
+
+msgid "tutorial:teach_none_reason"
+msgstr "这张图还没有录讲解，云端同步下来才会有"
+
+msgid "tutorial:text_only"
+msgstr "只有文字讲解"
+
+msgid "tutorial:text_only_reason"
+msgstr "这张图只有文字讲解，已经写在上面了"
+
+msgid "tutorial:no_explain"
+msgstr "这张图书上没有配文字，也还没有录讲解。"
+
+msgid "tutorial:watch_video"
+msgstr "看视频讲解"
+
+msgid "tutorial:play_audio"
+msgstr "播放语音讲解"
+
+msgid "tutorial:stop_audio"
+msgstr "停下"
+
+msgid "19x19"
+msgstr "19 路"
+
+msgid "19×19 only"
+msgstr "仅 19 路"
+
+msgid "20 problems per unit"
+msgstr "每 20 题一单元"
+
+msgid "Korean rules"
+msgstr "韩国规则"
+
+msgid ""
+"AI connection error — please retry your move, or exit to abandon the game."
+msgstr "AI 连接出错，请重试落子，或退出以放弃对局。"
+
+msgid "AI is thinking…"
+msgstr "AI 思考中…"
+
+msgid "AI suggestions (white lamps)"
+msgstr "AI 支招（白灯闪烁处）"
+
+msgid "Accept as my move"
+msgstr "采纳为我的落子"
+
+msgid "All games"
+msgstr "全部对局"
+
+msgid "Auto-advance after solving · current"
+msgstr "做对后自动下一题 · 当前"
+
+msgid "Average time"
+msgstr "平均用时"
+
+msgid "Average tries"
+msgstr "平均尝试次数"
+
+msgid "Board may have moved"
+msgstr "棋盘可能被移动"
+
+msgid "Board may have moved — recognition paused"
+msgstr "棋盘可能被移动，识别已暂停"
+
+msgid "Board mismatch"
+msgstr "盘面与对局不一致"
+
+msgid "Board restored"
+msgstr "已按指示恢复"
+
+msgid "Cached SGF no longer available"
+msgstr "缓存棋谱已失效"
+
+msgid "Calibration"
+msgstr "几何标定"
+
+msgid "Camera"
+msgstr "摄像头"
+
+msgid "Camera disconnected, switched to touch mode"
+msgstr "摄像头断开，已切换为触屏模式"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Categories"
+msgstr "题型"
+
+msgid "Challenge others · rated queue available"
+msgstr "约战 · 有定级队列"
+
+msgid "Chart"
+msgstr "图表"
+
+msgid "Choose a way to start playing"
+msgstr "选择一种方式开始对弈"
+
+msgid "Choose one category"
+msgstr "选择一个题型"
+
+msgid "Confirm"
+msgstr "确认落子"
+
+msgid "Confirm resign?"
+msgstr "确认认输？"
+
+msgid "Confirm result"
+msgstr "确认终局"
+
+msgid "Confirming…"
+msgstr "确认中…"
+
+msgid "Connected · goes to the lobby"
+msgstr "已连接 · 走大厅"
+
+msgid "Connected · plays the engine"
+msgstr "已连接 · 人机对弈"
+
+msgid "Continue"
+msgstr "继续"
+
+msgid "Continue anyway"
+msgstr "仍要继续"
+
+msgid "Continue on screen"
+msgstr "改用屏幕落子"
+
+msgid "Continue practicing"
+msgstr "接着上次"
+
+msgid "Cross-Platform"
+msgstr "跨平台对弈"
+
+msgid "Cross-Platform Play"
+msgstr "跨平台对弈"
+
+msgid "Difficulty"
+msgstr "难度"
+
+msgid "Ended"
+msgstr "已结束"
+
+msgid "Enter Live"
+msgstr "进入直播"
+
+msgid "Every game played, with its review report"
+msgstr "下过的每一局,连同它的复盘报告"
+
+msgid "Exit"
+msgstr "退出"
+
+msgid "Failed to read file"
+msgstr "读取文件失败"
+
+msgid "Failed to start game"
+msgstr "创建对局失败"
+
+msgid "Focused training"
+msgstr "专项训练"
+
+msgid "Game in progress. Resign and exit?"
+msgstr "对局进行中，认输并退出？"
+
+msgid "Geometry locked"
+msgstr "几何已锁定"
+
+msgid "Guest"
+msgstr "访客"
+
+msgid "Hide Hint"
+msgstr "收提示"
+
+msgid "Hint"
+msgstr "提示"
+
+msgid "Hints"
+msgstr "AI支招"
+
+msgid "Hint failed"
+msgstr "支招失败，请稍后再试"
+
+msgid "Hint is not enabled"
+msgstr "支招功能未开放"
+
+msgid "History"
+msgstr "历史"
+
+msgid "Ignore"
+msgstr "忽略"
+
+msgid "Import SGF"
+msgstr "导入棋谱"
+
+msgid "Insufficient balance"
+msgstr "余额不足"
+
+msgid "Judged on placement"
+msgstr "落子即判"
+
+msgid "Judged on placement · a wrong move is taken straight back"
+msgstr "落子即判 · 走错当场退回"
+
+msgid "Keep waiting"
+msgstr "继续等待"
+
+msgid "Load more"
+msgstr "加载更多"
+
+msgid "Loading"
+msgstr "加载中..."
+
+msgid "Loading…"
+msgstr "加载中…"
+
+msgid "Loading categories…"
+msgstr "正在读取题型…"
+
+msgid "Loading problem set…"
+msgstr "正在读题库…"
+
+msgid "Logging in..."
+msgstr "登录中..."
+
+msgid "Login failed"
+msgstr "登录失败"
+
+msgid ""
+"Mix all categories at this level and group every 20 problems into a unit"
+msgstr "混合当前难度全部题型，也按每 20 题分成单元"
+
+msgid "Mix all categories at this level in 20-problem units"
+msgstr "混合当前难度全部题型，每 20 题一单元"
+
+msgid "Mixed"
+msgstr "综合"
+
+msgid "Mixed categories"
+msgstr "混合题型"
+
+msgid "Mixed training"
+msgstr "综合训练"
+
+msgid "Next up"
+msgstr "下一道"
+
+msgid "No 19×19 records found"
+msgstr "未找到 19 路棋谱"
+
+msgid "No categories at this level yet"
+msgstr "这一档下面还没有题型"
+
+msgid "No live matches"
+msgstr "暂无直播"
+
+msgid "No problems for this level"
+msgstr "该难度暂无题目"
+
+msgid "No problems in this category yet"
+msgstr "这一类下面还没有题"
+
+msgid "No such unit"
+msgstr "没有这一单元"
+
+msgid "Not a valid SGF file"
+msgstr "不是有效的 SGF 文件"
+
+msgid "Not attempted"
+msgstr "还没做过"
+
+msgid "Not available in ranked games"
+msgstr "升降级对局不可用"
+
+msgid "Not calibrated"
+msgstr "待校准"
+
+msgid "Not signed in"
+msgstr "未登录"
+
+msgid "Not wired up yet"
+msgstr "接口还没通"
+
+msgid "Now Live"
+msgstr "直播中"
+
+msgid "Online Lobby"
+msgstr "在线大厅"
+
+msgid "Only the ones I got wrong"
+msgstr "只做错过的"
+
+msgid "Other practice"
+msgstr "其他练习"
+
+msgid "Other sets"
+msgstr "换一批"
+
+msgid "Password"
+msgstr "密码"
+
+msgid "Username"
+msgstr "用户名"
+
+msgid "Physical board out of sync"
+msgstr "物理棋盘长时间未跟上对局"
+
+msgid "Pick the strength yourself · form estimate available"
+msgstr "自己挑强度 · 可以看形势判断"
+
+msgid "Place / remove the lit stones, then confirm — or continue on screen."
+msgstr "请按亮灯指示摆放（红/绿灯）或拿除（蓝灯）棋子后确认；也可改用屏幕继续对局。"
+
+msgid "Place these stones"
+msgstr "请摆上（红/绿灯处）"
+
+msgid "Remove these stones"
+msgstr "请拿走（蓝灯处）"
+
+msgid "Play vs AI"
+msgstr "人机对弈"
+
+msgid "Play vs Human"
+msgstr "人人对弈"
+
+msgid "Please place the AI stone at the lit point first"
+msgstr "请先将 AI 棋子摆到棋盘亮灯处"
+
+msgid "Possible move detected at"
+msgstr "检测到疑似落子于"
+
+msgid "Problem set unavailable"
+msgstr "题库读不到"
+
+msgid "Problems per unit · current"
+msgstr "每单元题数 · 当前"
+
+msgid "Re-align board"
+msgstr "重新定位"
+
+msgid "Re-align failed — try again"
+msgstr "重新定位失败，请重试"
+
+msgid "Re-sync failed, please retry"
+msgstr "重置识别失败，请重试"
+
+msgid "Recalibrate"
+msgstr "重新标定"
+
+msgid "Recalibrate board"
+msgstr "重新标定棋盘"
+
+msgid "Recent"
+msgstr "最近"
+
+msgid "Redo the ones you got wrong in this category"
+msgstr "把这一类做错的重来一遍"
+
+msgid "Register / Sign in"
+msgstr "注册 / 登录"
+
+msgid "Reset"
+msgstr "重摆"
+
+msgid "Resign failed, retry"
+msgstr "认输失败，请重试"
+
+msgid "Resume"
+msgstr "恢复"
+
+msgid "Resume last game"
+msgstr "继续上一局"
+
+msgid "Score"
+msgstr "数子"
+
+msgid "Search players, events..."
+msgstr "搜索棋手、赛事..."
+
+msgid "Select a match"
+msgstr "请选择对局"
+
+msgid "Select category"
+msgstr "选择题型"
+
+msgid "Select or import a game to begin"
+msgstr "选择或导入一局棋谱以开始"
+
+msgid "Sign out"
+msgstr "退出登录"
+
+msgid "Signed in"
+msgstr "已登录"
+
+msgid "Solved"
+msgstr "做对了"
+
+msgid "Solved in this unit"
+msgstr "本单元已做对"
+
+msgid "Start"
+msgstr "开始"
+
+msgid "Start placing"
+msgstr "开始摆谱"
+
+msgid "Stone Placement"
+msgstr "摆谱"
+
+msgid "StellaBox account"
+msgstr "智星盒账户"
+
+msgid "Tap to connect"
+msgstr "点击登录"
+
+msgid "Tier picked from your strength · analysis sealed throughout"
+msgstr "按棋力自动配档 · 全程封分析"
+
+msgid "Time"
+msgstr "用时"
+
+msgid "To place"
+msgstr "待摆放"
+
+msgid "To remove"
+msgstr "待拿除"
+
+msgid "Today we practice {what}"
+msgstr "今天练点{what}"
+
+msgid "what"
+msgstr "什么"
+
+msgid "Top Matches"
+msgstr "热门对局"
+
+msgid "Try"
+msgstr "试下"
+
+msgid "Try a different search, or import an SGF file."
+msgstr "换个关键词，或导入一个 SGF 文件。"
+
+msgid "Two players on the same physical board"
+msgstr "两人在同一块实体盘上下"
+
+msgid "Units"
+msgstr "单元"
+
+msgid "Upcoming"
+msgstr "即将开始"
+
+msgid "Wrong"
+msgstr "错题"
+
+msgid "You are here"
+msgstr "在这儿"
+
+msgid "game:count_failed_retry"
+msgstr "数子没有成功，请稍后再试"
+
+msgid "min"
+msgstr "分"
+
+msgid "sec"
+msgstr "秒"
+
+msgid "problems count"
+msgstr "道题目"
+
+msgid "score"
+msgstr "目差"
+
+msgid "winrate"
+msgstr "胜率"
+
+msgid "{item} exhausted"
+msgstr "{item}道具已用尽"
+
+msgid ""
+"{item} quota is insufficient — please recharge in the Golaxy app; this "
+"terminal cannot recharge for you."
+msgstr "{item}次数不足 · 请在星阵 App 充值 · 本终端不代充"
+
+msgid "game:connection_rejected"
+msgstr "实时连接被拒绝，棋盘不会自动更新，请重新登录后重试"
+
+msgid "game:gone_reason"
+msgstr "可能是盒子重启过，或者这一局闲置太久被清理了。"
+
+msgid "game:resign_failed"
+msgstr "认输没成"
+
+msgid "game:session_gone_notice"
+msgstr "这一局在服务器上已经没有了，可以离开这一页。"
+
+msgid "settings:nav_about"
+msgstr "关于"
+
+msgid "settings:about_version"
+msgstr "版本"
+
+msgid "settings:about_local"
+msgstr "本机"
+
+msgid "settings:about_cloud"
+msgstr "云端"
+
+msgid "settings:engine_ok"
+msgstr "可用"
+
+msgid "settings:engine_down"
+msgstr "连不上"
+
+msgid "settings:engine_unset"
+msgstr "没配置"
+
+msgid "settings:engine_code"
+msgstr "引擎回了 {code}"
+
+msgid "settings:camera_connected"
+msgstr "已连接"
+
+msgid "settings:geometry_calibrated"
+msgstr "已标定"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "未标定"
+
+msgid "settings:led_serial_connected"
+msgstr "串口已连接"
+
+msgid "settings:calib_no_camera"
+msgstr "这台盒子没有配摄像头"
+
+msgid "settings:ladder_detail_open"
+msgstr "查看AI段位详情"
+
+msgid "settings:ladder_detail_close"
+msgstr "收起"

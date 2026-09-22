@@ -36,10 +36,6 @@ vi.mock('../../api', async (importOriginal) => {
   };
 });
 
-vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
-}));
-
 // Mock vision context (GamePage reads visionStatus + isVisionEnabled directly).
 // Mutable via `visionMock` so the G2 banner tests below can flip isVisionEnabled on
 // for a single test without disturbing the rest of the suite (which needs it inert).

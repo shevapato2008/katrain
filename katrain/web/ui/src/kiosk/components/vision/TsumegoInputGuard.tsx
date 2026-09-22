@@ -24,7 +24,7 @@ import { readPhysicalMode } from '../../pages/tsumegoUnits';
 const TsumegoInputGuard = ({ children }: { children: ReactNode }) => {
   const [onBoard] = useState(readPhysicalMode);
   return onBoard
-    ? <PhysicalBoardGuard sub="实体做题要先让摄像头看清盘面">{children}</PhysicalBoardGuard>
+    ? <PhysicalBoardGuard sub="实体做题要先让摄像头看清盘面" fallback="/kiosk/tsumego">{children}</PhysicalBoardGuard>
     : <>{children}</>;
 };
 

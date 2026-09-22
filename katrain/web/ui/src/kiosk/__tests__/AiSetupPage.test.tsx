@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import AiSetupPage from '../pages/AiSetupPage';
+import { openPick, pick } from './helpers/setupPick';
 import { readActiveSession, clearActiveSession } from '../utils/activeSession';
 
 /**
@@ -61,12 +62,6 @@ const renderPage = (mode = 'free') =>
     </ThemeProvider>
   );
 
-/** 档位轨的 ＋ 键。轨本身不可点(29 个点摊在 330px 上手指点不准),只有两头的键能按。 */
-const step = (testId: string, dir: '＋' | '−') => {
-  const track = screen.getByTestId(testId);
-  return within(track).getByRole('button', { name: dir === '＋' ? /多|提高|增加/ : /少|降低|减少/ });
-};
-
 describe('AiSetupPage', () => {
   // 原来钉的是 `document.querySelector('canvas')` —— 那是 `LiveBoard` 的实现细节。
   // 改布局 A 之后左栏换成了自己画的 SVG 盘(`KioskSetupBoard`,规范 `:512`),canvas 没了。
@@ -87,40 +82,47 @@ describe('AiSetupPage', () => {
     expect(stones()).toEqual([]);
 
     const user = userEvent.setup();
-    await user.click(step('setup-handicap', '＋'));
-    await user.click(step('setup-handicap', '＋'));
+    await pick(user, 'setup-handicap', '2');
     expect(board).toHaveAttribute('data-handicap', '2');
     // **点名是哪两个点**,不是数个数:数个数的话摆错位置照样绿。
-    // Q16 / D4 照后端 `core/sgf_parser.py:374 place_handicap_stones` 那一份算出来,
-    // 也正是稿子 02 屏那一帧盘上的两颗。
+    // Q16 / D4 照后端 `core/sgf_parser.py:374 place_handicap_stones` 那一份算出来。
     expect(stones()).toEqual(['Q16', 'D4']);
     expect(board.querySelectorAll('[data-stone="w"]')).toHaveLength(0);
   });
 
-  it('renders board size options', () => {
+  it('路数三档', async () => {
     renderPage();
-    const size = screen.getByTestId('setup-size');
-    expect(size).toHaveTextContent('19 路');
-    expect(size).toHaveTextContent('13 路');
-    expect(size).toHaveTextContent('9 路');
+    const pop = await openPick(userEvent.setup(), 'setup-size');
+    expect([...pop.querySelectorAll('[data-k]')].map((e) => e.getAttribute('data-k')))
+      .toEqual(['19', '13', '9']);
   });
 
-  it('renders ruleset selector', () => {
+  it('规则四项:韩国撤掉,AI 赛顶上', async () => {
     renderPage();
-    const rules = screen.getByTestId('setup-rules');
-    for (const label of ['中国', '日本', '韩国', 'AGA']) expect(rules).toHaveTextContent(label);
-    // 四段并排 ⇒ 四个选项**同时可见**,不再藏在下拉后面(规范 §11 项数上限 6)。
-    expect(within(rules).getAllByRole('button')).toHaveLength(4);
-    expect(within(rules).getByRole('button', { name: '中国' })).toHaveAttribute('aria-pressed', 'true');
+    const pop = await openPick(userEvent.setup(), 'setup-rules');
+    // 韩国规则在 KataGo 里和日本规则是同一个 if 分支、逐字相同(cpp/game/rules.cpp:276),
+    // 留着等于四选一里有一项是纯装饰。
+    expect([...pop.querySelectorAll('[data-k]')].map((e) => e.getAttribute('data-k')))
+      .toEqual(['chinese', 'japanese', 'aga', 'button']);
+    expect(pop.querySelector('[data-k="chinese"]')).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('renders color selection', () => {
+  it('我执三项:黑 / 白 / 猜先', async () => {
     renderPage();
-    const color = screen.getByTestId('setup-color');
-    expect(color).toHaveTextContent('执黑');
-    expect(color).toHaveTextContent('执白');
-    // 稿子第三项「随机」是搬象棋骨架带来的,围棋 kiosk 和 galaxy 两处都只给黑白。
-    expect(within(color).getAllByRole('button')).toHaveLength(2);
+    const pop = await openPick(userEvent.setup(), 'setup-color');
+    expect([...pop.querySelectorAll('[data-k]')].map((e) => e.getAttribute('data-k')))
+      .toEqual(['black', 'white', 'nigiri']);
+  });
+
+  it('让子局关掉「猜先」,并说得出为什么', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await pick(user, 'setup-handicap', '4');
+    const pop = await openPick(user, 'setup-color');
+    const guess = pop.querySelector('[data-k="nigiri"]') as HTMLButtonElement;
+    // 让子局黑方先摆子 —— 让哪一方是这一局的前提,不能再抽签。
+    expect(guess).toBeDisabled();
+    expect(guess).toHaveTextContent('让子局黑方先摆子');
   });
 
   it('renders start button', () => {
@@ -128,26 +130,28 @@ describe('AiSetupPage', () => {
     expect(screen.getByRole('button', { name: /开始对局/i })).toBeInTheDocument();
   });
 
-  it('shows AI strategy selector for free mode', () => {
+  it('AI 策略那一组已经撤掉 —— 对手钉死拟人', () => {
     renderPage('free');
-    const strategy = screen.getByTestId('setup-strategy');
-    for (const label of ['拟人', 'KataGo', '实地', '厚势', '策略']) {
-      expect(strategy).toHaveTextContent(label);
-    }
-    expect(within(strategy).getByRole('button', { name: '拟人' })).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('shows AI strength selector in free mode when human strategy selected', () => {
-    renderPage('free');
-    // 默认策略是 ai:human,棋力那条轨因此在。
+    // 撤它不是为了省一行:改版前选了 KataGo/实地/厚势/策略就连棋力档都不给选,
+    // 而后端仍照写 `ai/{strategy}/kyu_rank`。一根只对五分之一选项成立的档位轴,
+    // 不该用一个平行的五选一去否定它。
+    expect(screen.queryByTestId('setup-strategy')).not.toBeInTheDocument();
     expect(screen.getByTestId('setup-strength')).toBeInTheDocument();
   });
 
-  it('hides AI strength selector in free mode for non-human strategy', async () => {
+  it('棋力读数带上等级,而且念中文 —— 改版前那半截从来没接上过', () => {
+    renderPage('free');
+    // 改版前那句 msgid 的缺省值结尾就是「第 {n} 档 · 」,屏上是个吊着的点号。
+    // 主读数念「6 级」不是 `6k`:`internalToRank` 那种紧凑写法留给右边的范围行。
+    expect(screen.getByTestId('setup-strength-value')).toHaveTextContent('第 15 档 · 6 级');
+  });
+
+  it('段位段也念中文:第 21 档是 1 段', async () => {
     renderPage('free');
     const user = userEvent.setup();
-    await user.click(within(screen.getByTestId('setup-strategy')).getByRole('button', { name: 'KataGo' }));
-    expect(screen.queryByTestId('setup-strength')).not.toBeInTheDocument();
+    const up = within(screen.getByTestId('setup-strength')).getByRole('button', { name: /提高/ });
+    for (let i = 0; i < 6; i += 1) await user.click(up);   // 14 -> 20
+    expect(screen.getByTestId('setup-strength-value')).toHaveTextContent('第 21 档 · 1 段');
   });
 
   it('hides AI strategy selector for ranked mode', () => {
@@ -161,26 +165,46 @@ describe('AiSetupPage', () => {
     expect(screen.queryByTestId('setup-strength')).not.toBeInTheDocument();
   });
 
-  it('renders handicap selector defaulting to none', () => {
+  it('让子默认分先;十一档从倒贴排到让 9 子', async () => {
     renderPage();
-    expect(screen.getByTestId('setup-handicap')).toBeInTheDocument();
-    expect(screen.getByText('不让子')).toBeInTheDocument();
+    expect(screen.getByTestId('setup-handicap-value')).toHaveTextContent('分先');
+    const pop = await openPick(userEvent.setup(), 'setup-handicap');
+    expect([...pop.querySelectorAll('[data-k]')].map((e) => e.getAttribute('data-k')))
+      .toEqual(['rev', 'even', 'sen', '2', '3', '4', '5', '6', '7', '8', '9', 'free']);
   });
 
-  it('shows komi selector in free mode with no handicap', () => {
+  it('贴目是推导出来的读数,平时点不动', () => {
     renderPage('free');
-    expect(screen.getByTestId('setup-komi')).toBeInTheDocument();
-    expect(screen.queryByTestId('setup-komi-explain')).not.toBeInTheDocument();
+    const komi = screen.getByTestId('setup-komi');
+    expect(komi).toBeDisabled();
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('黑贴 3¾ 子 · 7.5 目');
   });
 
-  it('hides komi selector when handicap is set', async () => {
+  it('换规则,贴目跟着换 —— 而且单位跟着规则走', async () => {
     renderPage('free');
     const user = userEvent.setup();
-    await user.click(step('setup-handicap', '＋'));
-    await user.click(step('setup-handicap', '＋'));
-    expect(screen.queryByTestId('setup-komi')).not.toBeInTheDocument();
-    // **不是把控件灰掉** —— 换成一段说明:这一局根本没有贴目这回事。
-    expect(screen.getByTestId('setup-komi-explain')).toHaveTextContent('已经让了 2 子');
+    await pick(user, 'setup-rules', 'japanese');
+    // 数目的规则只写目,不写子
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('黑贴 6.5 目');
+    await pick(user, 'setup-rules', 'button');
+    // 面积 + button 的 KataGo 默认是 7.0(docs/Analysis_Engine.md:82)
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('黑贴 3½ 子 · 7 目');
+  });
+
+  it('让子局不贴目 —— 补偿是 KataGo 按规则自动加的', async () => {
+    renderPage('free');
+    await pick(userEvent.setup(), 'setup-handicap', '2');
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('不贴目 · 黑先摆 2 子');
+  });
+
+  it('「自定贴目」那一档,贴目条才变回控件', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    expect(screen.getByTestId('setup-komi')).toBeDisabled();
+    await pick(user, 'setup-handicap', 'free');
+    expect(screen.getByTestId('setup-komi')).toBeEnabled();
+    await pick(user, 'setup-komi', '3.5');
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('黑贴 1¾ 子 · 3.5 目');
   });
 
   it('shows time control selector', () => {
@@ -190,33 +214,26 @@ describe('AiSetupPage', () => {
 
   it('time selector defaults to untimed in free mode', () => {
     renderPage('free');
-    expect(screen.getByText('不限时')).toBeInTheDocument();
+    expect(screen.getByTestId('setup-clock-value')).toHaveTextContent('不限时');
   });
 
-  // 轨上按时长从短到长排:仅读秒 → 5 → 10 → 20 → 30 → 60 → 不限时。
-  // 自由对弈默认停在最右端(不限时),所以往回按一格是 60 分。
   it('offers timed presets that map onto the existing main-time/byoyomi state', async () => {
     renderPage('free');
-    const user = userEvent.setup();
-    await user.click(step('setup-clock', '−'));
-    expect(screen.getByTestId('setup-clock').parentElement).toHaveTextContent('60分+3×30秒');
-    await user.click(step('setup-clock', '−'));
-    expect(screen.getByTestId('setup-clock').parentElement).toHaveTextContent('30分+3×30秒');
+    await pick(userEvent.setup(), 'setup-clock', '60');
+    expect(screen.getByTestId('setup-clock-value')).toHaveTextContent('60分+3×30秒');
   });
 
-  it('time selector excludes the untimed preset for ranked mode (time is forced on)', () => {
+  it('time selector excludes the untimed preset for ranked mode (time is forced on)', async () => {
     renderPage('ranked');
-    // 计分局那条轨只有 6 档 —— 「不限时」整个不在轨上,不是灰掉。
-    expect(screen.getByTestId('setup-clock').parentElement).toHaveTextContent('6 档');
-    expect(screen.queryByText('不限时')).not.toBeInTheDocument();
+    // 计分局只有 6 档 —— 「不限时」整个不在清单上,不是灰掉。
+    const pop = await openPick(userEvent.setup(), 'setup-clock');
+    expect(pop.querySelectorAll('[data-k]')).toHaveLength(6);
+    expect(pop.querySelector('[data-k="untimed"]')).toBeNull();
   });
 
   it('ranked mode defaults to a byoyomi-only preset (30s x3), same as prior slider defaults', () => {
     renderPage('ranked');
-    // 读数那一行(`.catmeta b`)才是「现在停在哪一档」;同样的字也出现在右边的范围里
-    // (「6 档 · 仅读秒 30秒×3 → 60分+3×30秒」),所以要挑左半,不能 getByText。
-    const meta = screen.getByTestId('setup-clock').parentElement!.querySelector('.catmeta b');
-    expect(meta).toHaveTextContent(/仅读秒.*30秒.*3/);
+    expect(screen.getByTestId('setup-clock-value')).toHaveTextContent(/仅读秒.*30秒.*3/);
   });
 
   it('calls API.createSession and gameSetup on start', async () => {
@@ -230,33 +247,88 @@ describe('AiSetupPage', () => {
         board_size: 19,
         rules: 'chinese',
         color: 'black',
+        // 分先 ⇒ 中国规则的默认贴目;AI 策略已钉死拟人。
+        handicap: 0,
+        komi: 7.5,
+        ai_strategy: 'ai:human',
       }));
     });
   });
 
-  // P3 同形(屏 02):屏上写「这一局不贴目」,载荷就必须是 0。
-  it('free:让了子送出去的 komi 是 0', async () => {
-    const { API } = await import('../../api');
-    vi.mocked(API.gameSetup).mockClear();
+  /* 让子局送出去的 `komi` 必须是 0 —— 补偿由 KataGo 按规则自动加
+     (chinese = `WHB_N`,`KataGo/cpp/game/rules.cpp:292`)。
+     改版前这里是 6.5 照发,白方因此多收一份。 */
+  it('选 AI 赛规则时让子那一格塌成只剩分先,并把已选的让子拉回来', async () => {
     renderPage('free');
     const user = userEvent.setup();
-    await user.click(step('setup-handicap', '＋'));
-    await user.click(step('setup-handicap', '＋'));
+    await pick(user, 'setup-handicap', '5');
+    expect(screen.getByTestId('setup-handicap-value')).toHaveTextContent('让 5 子');
+    await pick(user, 'setup-rules', 'button');
+    // 只剩一档 ⇒ 整格禁用,而且读数被拉回分先(不能停在一个这条规则下不存在的档上)
+    expect(screen.getByTestId('setup-handicap-value')).toHaveTextContent('分先');
+    expect(screen.getByTestId('setup-handicap')).toBeDisabled();
     await user.click(screen.getByRole('button', { name: /开始对局/i }));
+    const { API } = await import('../../api');
     await waitFor(() => expect(API.gameSetup).toHaveBeenCalledWith(
-      'new-session-123', 'free', expect.objectContaining({ handicap: 2, komi: 0 }),
+      'new-session-123', 'free',
+      // 送出去的是 wire 值 `aga-button`,不是表里的 key `button`
+      expect.objectContaining({ rules: 'aga-button', handicap: 0, komi: 7 }),
     ));
   });
 
-  it('free:不让子时 komi 仍是贴目轨那一档', async () => {
-    const { API } = await import('../../api');
-    vi.mocked(API.gameSetup).mockClear();
+  it('让子局送出去的 handicap/komi 是 (N, 0)', async () => {
     renderPage('free');
-    await userEvent.setup().click(screen.getByRole('button', { name: /开始对局/i }));
+    const user = userEvent.setup();
+    await pick(user, 'setup-handicap', '4');
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
+    const { API } = await import('../../api');
     await waitFor(() => expect(API.gameSetup).toHaveBeenCalledWith(
-      'new-session-123', 'free', expect.objectContaining({ handicap: 0, komi: 6.5 }),
+      'new-session-123', 'free', expect.objectContaining({ handicap: 4, komi: 0 }),
     ));
   });
+
+  it('「让先」= 不让子也不贴目 —— 改版前这一档根本表达不出来', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await pick(user, 'setup-handicap', 'sen');
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
+    const { API } = await import('../../api');
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalledWith(
+      'new-session-123', 'free', expect.objectContaining({ handicap: 0, komi: 0 }),
+    ));
+  });
+
+  it('「倒贴」送出去的是负 komi(白贴)', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await pick(user, 'setup-handicap', 'rev');
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('白贴 3¾ 子 · 7.5 目');
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
+    const { API } = await import('../../api');
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalledWith(
+      'new-session-123', 'free', expect.objectContaining({ handicap: 0, komi: -7.5 }),
+    ));
+  });
+
+  it('「猜先」在发出去之前解成 black/white —— 后端不认识 guess', async () => {
+    renderPage('free');
+    const user = userEvent.setup();
+    await pick(user, 'setup-color', 'nigiri');
+    await user.click(screen.getByRole('button', { name: /开始对局/i }));
+    const { API } = await import('../../api');
+    await waitFor(() => expect(API.gameSetup).toHaveBeenCalled());
+    const sent = (API.gameSetup as any).mock.calls.at(-1)[2].color;
+    // `server.py:1230` 是 `human_bw = "B" if color === "black" else "W"` ——
+    // 任何不等于 "black" 的值都会把人静默坐到白,所以这里只能是这两个之一。
+    expect(['black', 'white']).toContain(sent);
+  });
+
+  /* develop 的 79eef93f 在这儿还有两条(`free:让了子送出去的 komi 是 0`、
+     `free:不让子时 komi 仍是贴目轨那一档`)—— 它们点的是已经撤掉的 ± 档位轨
+     (`step('setup-handicap','＋')`),而它们断言的那件事本轮由上面
+     `让子局送出去的 handicap/komi 是 (N, 0)` 和 `calls API.createSession and
+     gameSetup on start`(默认中国规则 ⇒ komi 7.5)接着守。下面这条不一样:
+     它管的是活动会话里的 `onBoard`,本轮没有别的测试替它,留。 */
 
   // §3.5:开局那一刻的 onBoard 随活动会话写下。这台 mock 的机器没标定摄像头 ⇒ false。
   it('free:活动会话带上 onBoard(没标定摄像头 ⇒ false)', async () => {

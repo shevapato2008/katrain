@@ -240,6 +240,20 @@ class TestGeometryEndpoint:
         assert pad > 0
         assert decoded.shape[:2] == (64 + 2 * pad, 64 + 2 * pad)
 
+    def test_encode_warped_frame_scale_halves_the_preview(self):
+        # 标定屏只显示 ~514 px 宽:按屏上尺寸编码,浏览器不再在主线程上解码 1056 方图(RK3562 实测)。
+        from katrain.vision.config import DEFAULT_MARGIN_CELLS
+        from katrain.vision.warp import margin_px_for
+
+        frame = np.zeros((72, 128, 3), np.uint8)
+        lock = _ok_lock(out_size=64, M=np.eye(3))
+        full = 64 + 2 * margin_px_for(64, DEFAULT_MARGIN_CELLS)
+
+        jpeg = geometry._encode_warped_frame(frame, lock, scale=2)
+        decoded = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
+
+        assert decoded.shape[:2] == (full // 2, full // 2)
+
     def test_warped_stream_returns_409_without_geometry(self):
         _, c = _client(capture=FakeCapture([np.zeros((10, 20, 3), np.uint8)]))
 

@@ -15,6 +15,36 @@
 
 **Spec:** `superpowers/tracks/kiosk-go-settings/prd.md`
 
+## 开工核验(2026-09-22,按真实代码更正;细节在各提交信息里)
+
+- **基线与 i18n 改了**:开工时 develop 已比 `7a152df1` 多 29 个提交,其中 `e7bc651a` 把 kiosk i18n
+  闸(`tests/web_ui/test_kiosk_i18n.py`)放宽到全树 ⇒ 下面 Global Constraints 的「不合并 develop /
+  不改 `.po`」照旧执行,合并后必红。**Fan 2026-09-22 裁定照直播赛道办**:develop 已本地合入
+  (`24dcc7a7`,不 push),本赛道新增的 key 自补 11 语种。
+- Task 1:几何探针不用「基线存在 test-results/ 里、测试比 JSON」那种写法(那份 JSON 不进仓,别人一跑就红),
+  改成关系式判据 + `GEOMETRY_DUMP` 写读数、改前改后 `diff`;并补量**登录页**(它在 `KioskLayout` 外面,
+  `height:100%` 直接取视口盒子 —— 塌陷类,计划原稿漏了)和 1280×800(缩放 ≠ 1 时居中才依赖包含块)。
+- Task 2:`playShutter` 从页面文件直接 `export` 会撞 `react-refresh/only-export-components` ⇒ 挪到
+  `kiosk/utils/baipuShutter.ts`。
+- Task 3:三格措辞照抄标定屏(摄像头 已连接、几何标定 已标定/未标定,原来是「就绪」),LED 照视觉 PRD V4
+  写「串口已连接」;没摄像头的原因写进那一行小字,不另加 setnote。
+- Task 4:`AI_LADDER_COPY` 里**没有** `placementTitle` / `netScoreTitle` / `netScoreHint` ⇒ 用真实的
+  `formatPlacementProgress` / `formatNetScore` / 阈值两句;摘要行也收进组件(parity 要比到它 ——
+  改前它自己写了「认证中」「本地对弈」),文件名因此是 `KioskAiLadderRows.tsx`;parity 测试放
+  `kiosk/__tests__/`(它要 import MUI 渲染共享卡,而验收要求 `components/settings/` 下零 `@mui`)。
+- Task 5:把 `100vw/100vh` 内联进 `KioskApp.tsx` 会让壳契约闸一变红(它只豁免旋转包裹那一个文件)⇒
+  盒子单独成 `components/layout/KioskViewport.tsx`,豁免跟着挪;另有 7 份测试还桩着 `OrientationContext`,一并删。
+- Task 6:不新建 `kiosk/api/healthApi.ts` —— 共享 `api.ts` 已有 `API.engineHealth()`,只给响应类型加可选
+  `version`;行型照稿子「关于」那一组的 lead 列(版本 / 本机 / 云端);验收 5「尾部留白 ref 挂对」是布局事实,
+  改由真浏览器闸守(`kiosk-settings-expand.spec.ts` 与 `kiosk-shell-scroll.spec.ts` 那条)。**后端那一行
+  按切片流程等 Fan 看过四图再做。**Fan 2026-09-22 确认四图(连同「净胜分出现两次保留」「段位行改用共享词」两条推荐)后才做;
+  后端测试没新建 `test_health_version.py`,加在 `/api/v1/health` 已有的 `tests/web_ui/test_backend_scaffolding.py` 里。
+- Task 7:四图多拍两对(展开态、「关于」);「关于」的参考图从同一版稿子滚到底补拍(`visual/reference/`)。
+- 环境:`playwright.visual.config.ts` 是 `reuseExistingServer:true` 固定 5173 —— 别的 worktree 起着 dev server
+  时会量到别人的代码 ⇒ 本地用一份不提交的配置换 5391 + `--strictPort`。`test-results/.last-run.json` 是
+  被跟踪的文件,每跑一次 Playwright 都会改它,跑完要还原。壳契约闸四在合入的 develop 上本来就红一条
+  (`GamePage.tsx game:connection_dropped`),基线 worktree 上同样红,与本赛道无关。
+
 ## Global Constraints
 
 > **开工前先读 `prd.md` §6.0**:四条新赛道的共享文件归属与合并顺序。与本 plan 冲突时以 §6.0 为准。
@@ -65,7 +95,7 @@
 
 **Interfaces:** Produces:`$BASE/before-failed.txt`、`$BASE/failed-names.cjs`、`$BASE/geometry-before.json`。
 
-- [ ] **Step 1: 核对 worktree 与装依赖**
+- [x] **Step 1: 核对 worktree 与装依赖**
 
 ```bash
 cd /Users/fan/Repositories/katrain
@@ -75,7 +105,7 @@ git -C /Users/fan/Repositories/katrain-kiosk-go-settings merge-base --is-ancesto
 cd /Users/fan/Repositories/katrain-kiosk-go-settings/katrain/web/ui && npm ci
 ```
 
-- [ ] **Step 2: 单测基线**
+- [x] **Step 2: 单测基线**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings/katrain/web/ui
@@ -95,7 +125,7 @@ node "$BASE/failed-names.cjs" "$BASE/before.json" > "$BASE/before-failed.txt"
 npx tsc -b; echo "tsc_exit=$?"
 ```
 
-- [ ] **Step 3: 写 ST6 的几何探针(**先写,先量改前**)**
+- [x] **Step 3: 写 ST6 的几何探针(**先写,先量改前**)**
 
 ```ts
 // katrain/web/ui/tests/kiosk-viewport-geometry.spec.ts
@@ -165,7 +195,7 @@ cp test-results/kiosk-viewport-geometry.json "$BASE/geometry-before.json"
 - Consumes:`readAudioPref('sfx')`(`src/utils/audioPrefs.ts`)。
 - Produces:无新导出。
 
-- [ ] **Step 1: 写失败的单测**
+- [x] **Step 1: 写失败的单测**
 
 ```tsx
 // katrain/web/ui/src/hooks/useSessionBase.sound.test.tsx
@@ -267,14 +297,14 @@ describe('摆谱快门声', () => {
 });
 ```
 
-- [ ] **Step 2: 跑,确认它失败**
+- [x] **Step 2: 跑,确认它失败**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings/katrain/web/ui
 npx vitest run src/hooks/useSessionBase.sound.test.tsx src/kiosk/__tests__/BaipuShutterSound.test.tsx
 ```
 
-- [ ] **Step 3: 两处实现**
+- [x] **Step 3: 两处实现**
 
 `useSessionBase.ts` 顶部加 import,`playSound` 首行加判断:
 
@@ -303,7 +333,7 @@ export function playShutter() {
   try {
 ```
 
-- [ ] **Step 4: 跑,确认通过**
+- [x] **Step 4: 跑,确认通过**
 
 ```bash
 npx vitest run src/hooks/useSessionBase.sound.test.tsx src/kiosk/__tests__/BaipuShutterSound.test.tsx
@@ -311,7 +341,7 @@ rg -n "playSound = useCallback" -A 3 src/hooks/   # 两处都应能看到 readAu
 npx tsc -b
 ```
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings
@@ -339,7 +369,7 @@ EOF
 **Interfaces:**
 - Consumes:`useGeometry()` 的 `{ status, loaded }`(`GeometryContext.tsx:20`,**本赛道不改它**)。
 
-- [ ] **Step 1: 写失败的单测(追加)**
+- [x] **Step 1: 写失败的单测(追加)**
 
 ```tsx
   it('还没问到状态时三格写「—」,不冒充「未连接」', () => {
@@ -373,13 +403,13 @@ EOF
 
 > 第三条里的按钮名按实现为准:今天那颗键的文案是 `settings:start_calib`「开始标定」。**先跑一次看报错里的可及名字再定**,别照记忆写。
 
-- [ ] **Step 2: 跑,确认它失败**
+- [x] **Step 2: 跑,确认它失败**
 
 ```bash
 npx vitest run src/kiosk/__tests__/SettingsPage.test.tsx
 ```
 
-- [ ] **Step 3: 实现**
+- [x] **Step 3: 实现**
 
 `SettingsPage.tsx:93` 改成:
 
@@ -457,13 +487,13 @@ npx vitest run src/kiosk/__tests__/SettingsPage.test.tsx
 
 同时把 `:243-244` 那条注释补一句:它当初写的是口径,今天才真的做到。
 
-- [ ] **Step 4: 跑,确认通过**
+- [x] **Step 4: 跑,确认通过**
 
 ```bash
 npx vitest run src/kiosk/__tests__/SettingsPage.test.tsx && npx tsc -b
 ```
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add katrain/web/ui/src/kiosk/pages/SettingsPage.tsx katrain/web/ui/src/kiosk/__tests__/SettingsPage.test.tsx
@@ -491,7 +521,7 @@ EOF
 - Consumes:`AiLadderStatus`(`features/aiLadder/types.ts`)、`AI_LADDER_COPY`(`features/aiLadder/copy.ts`)、`startGate.ts` 的纯函数、`useAiLadderStatus`。
 - Produces:`<KioskAiLadderDetail status={...} onRetry={...} />` —— 一块 `.kiosk-rows` 内容,**自己不带标题、不带展开控制**(展开状态归 `AccountSection`)。
 
-- [ ] **Step 1: 写失败的单测**
+- [x] **Step 1: 写失败的单测**
 
 ```tsx
 // KioskAiLadderDetail.parity.test.tsx —— 照 KioskAiLadderOpponent.parity.test.tsx 的做法
@@ -536,13 +566,13 @@ describe('KioskAiLadderDetail 与共享卡说同一套话', () => {
   });
 ```
 
-- [ ] **Step 2: 跑,确认它失败**
+- [x] **Step 2: 跑,确认它失败**
 
 ```bash
 npx vitest run src/kiosk/components/settings/
 ```
 
-- [ ] **Step 3: 写 `KioskAiLadderDetail.tsx`**
+- [x] **Step 3: 写 `KioskAiLadderDetail.tsx`**
 
 ```tsx
 import { AI_LADDER_COPY } from '../../../features/aiLadder/copy';
@@ -636,7 +666,7 @@ export default KioskAiLadderDetail;
 > `grep -n "^\s*get \|^\s*[a-zA-Z]*:" katrain/web/ui/src/features/aiLadder/copy.ts` 抄一遍真实键名,
 > 缺哪一句就用 `AiLadderStatusCard.tsx` 里对应位置用的那一句,**不要新造文案**(新造=两个视图开始说不同的话)。
 
-- [ ] **Step 4: 改 `AccountSection.tsx`**
+- [x] **Step 4: 改 `AccountSection.tsx`**
 
 - 删第 2 行的 MUI import 与第 141-144 行的 `<Dialog>`;
 - `:127-129` 那颗按钮改成 `t()` 文案并切换展开:
@@ -666,7 +696,7 @@ export default KioskAiLadderDetail;
 
 并把该组件的 `data-testid` 传递/命名调整到测试里断言的 `ai-ladder-account-fallback`(或把测试改成断言 `ladder-detail`,**二选一,别两处各叫各的**)。
 
-- [ ] **Step 5: 跑,确认通过**
+- [x] **Step 5: 跑,确认通过**
 
 ```bash
 npx vitest run src/kiosk/components/settings/ && npx tsc -b
@@ -676,7 +706,7 @@ rg "AI段位详情|查看AI段位" src | rg -v "t\('"; echo "exit=$?"
 
 预期:单测全绿;两条 `rg` 都零命中(`exit=1`)。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add katrain/web/ui/src/kiosk/components/settings/
@@ -703,7 +733,7 @@ EOF
 **Interfaces:**
 - Produces:`.kiosk-viewport` 这一个类名(样式内联在 `KioskApp.tsx`,不新开 CSS 文件)。
 
-- [ ] **Step 1: 先确认基线在手**
+- [x] **Step 1: 先确认基线在手**
 
 ```bash
 ls -l "$(git -C /Users/fan/Repositories/katrain-kiosk-go-settings rev-parse --absolute-git-dir)/settings-baseline/geometry-before.json"
@@ -711,7 +741,7 @@ ls -l "$(git -C /Users/fan/Repositories/katrain-kiosk-go-settings rev-parse --ab
 
 没有就回 Task 1 Step 3 先量。**改完再量就没有对照了。**
 
-- [ ] **Step 2: 换盒子**
+- [x] **Step 2: 换盒子**
 
 `KioskApp.tsx`:删 `:34`、`:41` 两行 import;`:202-214` 换成
 
@@ -739,7 +769,7 @@ ls -l "$(git -C /Users/fan/Repositories/katrain-kiosk-go-settings rev-parse --ab
       </VisionProvider>
 ```
 
-- [ ] **Step 3: 删文件**
+- [x] **Step 3: 删文件**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings
@@ -755,7 +785,7 @@ rg "OrientationProvider|RotationWrapper|useOrientation|PhysicalBoardStatus|rotat
 
 预期:`exit=1`(零命中)。若 `KioskApp.test.tsx` 断言过 `rotation-wrapper` 这个 testid,把那条断言改成 `.kiosk-viewport`(**不要直接删** —— 那条断言守的是「视口盒子在」,它仍然该被守着)。
 
-- [ ] **Step 4: 承重实测(真浏览器,与基线比)**
+- [x] **Step 4: 承重实测(真浏览器,与基线比)**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings/katrain/web/ui
@@ -767,13 +797,13 @@ npx playwright test --config=playwright.visual.config.ts tests/kiosk-viewport-ge
 预期:通过(三屏几何与改前**逐字段相等**,且都不溢出)。
 **不通过就是这只盒子还有别的作用** —— 回 Step 2 把差的那条样式补上,不要去改断言。
 
-- [ ] **Step 5: 单测与类型**
+- [x] **Step 5: 单测与类型**
 
 ```bash
 npx vitest run src/kiosk && npx tsc -b
 ```
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings
@@ -809,7 +839,7 @@ EOF
   - `getHealth(signal?): Promise<KioskHealth>`,`KioskHealth = { status: string; version?: string; engines: { local: string; cloud: string } }`;
   - 纯函数 `engineLine(state: string, t): { text: string; sub?: string; ok: boolean }`。
 
-- [ ] **Step 1: 写失败的后端测试**
+- [x] **Step 1: 写失败的后端测试**
 
 ```python
 # tests/web_ui/test_health_version.py
@@ -827,14 +857,14 @@ def test_health_reports_the_package_version(client):      # 沿用 tests/web_ui 
     assert body["version"] == VERSION
 ```
 
-- [ ] **Step 2: 跑,确认失败**
+- [x] **Step 2: 跑,确认失败**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings
 CI=true uv run pytest tests/web_ui/test_health_version.py -q
 ```
 
-- [ ] **Step 3: 后端一行**
+- [x] **Step 3: 后端一行**
 
 `katrain/web/api/v1/endpoints/health.py`:顶部 `from katrain.core.constants import VERSION`,结尾
 
@@ -843,7 +873,7 @@ CI=true uv run pytest tests/web_ui/test_health_version.py -q
     result = {"status": "ok", "version": VERSION, "engines": engines}
 ```
 
-- [ ] **Step 4: 写失败的前端单测**
+- [x] **Step 4: 写失败的前端单测**
 
 ```ts
 // katrain/web/ui/src/kiosk/api/healthApi.test.ts
@@ -912,7 +942,7 @@ describe('engineLine', () => {
   });
 ```
 
-- [ ] **Step 5: 前端实现**
+- [x] **Step 5: 前端实现**
 
 ```ts
 // katrain/web/ui/src/kiosk/api/healthApi.ts
@@ -1027,7 +1057,7 @@ type GroupKey = 'account' | 'board' | 'move' | 'sound' | 'language' | 'about';
         </section>
 ```
 
-- [ ] **Step 6: 跑,确认通过**
+- [x] **Step 6: 跑,确认通过**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings
@@ -1039,7 +1069,7 @@ rg -n "DEVICE_ID|device_id" src/kiosk/pages/SettingsPage.tsx; echo "exit=$?"
 
 预期:单测全绿;最后一条 `rg` 零命中(`exit=1`)。
 
-- [ ] **Step 7: 提交**
+- [x] **Step 7: 提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings
@@ -1062,7 +1092,7 @@ EOF
 
 ### Task 7: 四图对比(屏 27)、承重(展开态)与 PO 闸
 
-- [ ] **Step 1: 展开态承重实测**
+- [x] **Step 1: 展开态承重实测**
 
 ```ts
 // 追加到 tests/kiosk-screen-27-settings.fourup.spec.ts 旁边的功能 spec(没有就新建 tests/kiosk-settings-expand.spec.ts)
@@ -1090,7 +1120,7 @@ test('未登录 / 无段位(最空)时,账号那一组不塌', async ({ page }) 
 
 > 屏 27 这一轮有两处结构变化:ST4 的展开态、ST3-关于 新增的一组(导航六项、右栏多一段)。四图要一起看。
 
-- [ ] **Step 2: 四图重取(屏 27),跑两次排抖动**
+- [x] **Step 2: 四图重取(屏 27),跑两次排抖动**
 
 ```bash
 npm run fourup && cp -r ../../../superpowers/tracks/kiosk-go-shell-align/visual/27* /tmp/fourup-run1
@@ -1100,18 +1130,18 @@ npm run fourup
 
 只提交真的变了的那几张;其余 `git checkout HEAD -- <屏目录>` 还原。
 
-- [ ] **Step 3: 人眼看四图并交 Fan 确认**
+- [x] **Step 3: 人眼看四图并交 Fan 确认**
 
 四张一起看(参考 / 实现 / 并排 / 差异),逐项比构图、间距、层级、字体色彩、文案、状态语义。
 **这一关要 Fan 明确确认**(CLAUDE.md 硬性关卡),没确认之前不要报完成。
 
-- [ ] **Step 4: PO 闸**
+- [x] **Step 4: PO 闸**
 
 ```bash
 npx playwright test --config=playwright.visual.config.ts tests/kiosk-shell-contract.spec.ts
 ```
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 ```bash
 git add katrain/web/ui/tests/ superpowers/tracks/kiosk-go-shell-align/visual/
@@ -1129,7 +1159,7 @@ EOF
 
 ### Task 8: 收尾验证与交付说明
 
-- [ ] **Step 1: 基线 diff(**比名字不比条数** —— ST6 删了四个测试文件)**
+- [x] **Step 1: 基线 diff(**比名字不比条数** —— ST6 删了四个测试文件)**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings/katrain/web/ui
@@ -1141,14 +1171,14 @@ comm -13 "$BASE/before-failed.txt" "$BASE/after-failed.txt"
 
 预期:空。
 
-- [ ] **Step 2: 类型、两套构建、边界**
+- [x] **Step 2: 类型、两套构建、边界**
 
 ```bash
 npx tsc -b && npm run build && npm run build:kiosk-2d; echo "exit=$?"
 npx eslint src/hooks/useSessionBase.ts src/kiosk/pages/SettingsPage.tsx src/kiosk/components/settings src/kiosk/KioskApp.tsx
 ```
 
-- [ ] **Step 3: 新增 key 清单与交付说明**
+- [x] **Step 3: 新增 key 清单与交付说明**
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-settings

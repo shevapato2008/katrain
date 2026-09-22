@@ -474,8 +474,8 @@ msgstr "Resign"
 #. Shown when a move is undone in teaching mode.
 msgid "teaching undo message"
 msgstr ""
-"Undid move {move} as it lost {points_lost:.1f} points. Please try again. For "
-"a hint, hover over the move to see expected refutation, or check expected "
+"Undid move {move} as it lost {points_lost:.1f} points. Please try again. For"
+" a hint, hover over the move to see expected refutation, or check expected "
 "territory (t) to see the areas of the board where point loss is expected."
 
 msgid "ai-ponder"
@@ -788,8 +788,8 @@ msgstr "Simultaneous Games"
 #. hint for max games
 msgid "contribute:maxgames:hint"
 msgstr ""
-"Best equal to your optimal numSearchThreads, around 8 for mid-tier GPUs. Can "
-"set it slightly lower for shorter runs, as half-finished games are not "
+"Best equal to your optimal numSearchThreads, around 8 for mid-tier GPUs. Can"
+" set it slightly lower for shorter runs, as half-finished games are not "
 "uploaded."
 
 msgid "contribute:ownership"
@@ -939,8 +939,8 @@ msgstr "KataGo binary {exe} does not exist, please check general settings."
 msgid "Kata exe not found in path"
 msgstr ""
 "KataGo binary '{exe}' not found in your PATH, check your environment "
-"variables or use the full path in general settings instead. If on MacOS, see "
-"the manual on how to use brew to install katago first"
+"variables or use the full path in general settings instead. If on MacOS, see"
+" the manual on how to use brew to install katago first"
 
 msgid "Kata model not found"
 msgstr "KataGo model {model} does not exist, please check general settings."
@@ -1000,8 +1000,8 @@ msgstr "Recommended"
 
 msgid "aihelp:default"
 msgstr ""
-"Full strength KataGo AI. Strength is affected by 'max visits' and 'model' in "
-"the general settings 'engine' section and engine configuration file. No "
+"Full strength KataGo AI. Strength is affected by 'max visits' and 'model' in"
+" the general settings 'engine' section and engine configuration file. No "
 "options are available here."
 
 #. ai which handles handicap games better
@@ -1057,8 +1057,8 @@ msgstr "Policy"
 
 msgid "aihelp:policy"
 msgstr ""
-"Plays the top move from the policy network, without any reading. Strength is "
-"mainly affected by 'model' in engine settings. The 'opening_moves' setting "
+"Plays the top move from the policy network, without any reading. Strength is"
+" mainly affected by 'model' in engine settings. The 'opening_moves' setting "
 "affects how many moves in the opening are more random."
 
 msgid "ai:p:weighted"
@@ -1067,8 +1067,8 @@ msgstr "Policy Weighted"
 msgid "aihelp:p:weighted"
 msgstr ""
 "Plays moves according to policy probability, with 'weaken_fac' influencing "
-"how much more likely weaker moves are played. With a very low value it plays "
-"like the 'Policy' AI. 'pick_override' determines when top move is chosen "
+"how much more likely weaker moves are played. With a very low value it plays"
+" like the 'Policy' AI. 'pick_override' determines when top move is chosen "
 "without randomness, and 'lower_bound' determines the lower bound policy "
 "value that is allowed."
 
@@ -1077,8 +1077,8 @@ msgstr "Blinded Policy"
 
 msgid "aihelp:p:pick"
 msgstr ""
-"Picks 'pick_n + pick_frac * <number of legal moves>' at random and plays the "
-"best one. For 'pick_frac=1' plays like the 'Policy' AI. Plays top move if "
+"Picks 'pick_n + pick_frac * <number of legal moves>' at random and plays the"
+" best one. For 'pick_frac=1' plays like the 'Policy' AI. Plays top move if "
 "policy value is above 'pick_override' to avoid obvious mistakes."
 
 msgid "ai:p:local"
@@ -1133,7 +1133,8 @@ msgstr "Human-like"
 msgid "aihelp:human"
 msgstr ""
 "Picks moves according to a human-like KataGo model. If 'modern_style' is "
-"ticked, the model will play according to a post-2016 AlphaZero opening style."
+"ticked, the model will play according to a post-2016 AlphaZero opening "
+"style."
 
 msgid "ai:pro"
 msgstr "Historical Pro"
@@ -2277,10 +2278,10 @@ msgid "result:draw"
 msgstr "Draw"
 
 msgid "result:points_zi"
-msgstr ""
+msgstr "stones"
 
 msgid "result:points_moku"
-msgstr ""
+msgstr "pts"
 
 msgid "COUNT"
 msgstr "Count"
@@ -3197,16 +3198,16 @@ msgstr ""
 
 msgid "play:guest_free_notice"
 msgstr ""
-"You are playing as a guest: this game will not be saved to your game records "
-"and does not affect your rank. Sign in to keep your games."
+"You are playing as a guest: this game will not be saved to your game records"
+" and does not affect your rank. Sign in to keep your games."
 
 msgid "play:go_free_play"
 msgstr "Play a free game instead"
 
 msgid "play:blocked_by_pending_ranked"
 msgstr ""
-"You have an unsettled rated game. Finish it in 升降级对弈 before starting a "
-"new one."
+"You have an unsettled rated game. Finish it in 升降级对弈 before starting a new "
+"one."
 
 msgid "research:login_required"
 msgstr ""
@@ -3321,8 +3322,8 @@ msgstr "Human picks"
 
 msgid "live:human_pick_rate_hint_ranked"
 msgstr ""
-"Roughly how many out of 100 {rank} players would play here. This is how many "
-"DO play it, not whether they SHOULD."
+"Roughly how many out of 100 {rank} players would play here. This is how many"
+" DO play it, not whether they SHOULD."
 
 msgid "live:human_pick_rate_hint"
 msgstr ""
@@ -3353,7 +3354,8 @@ msgid "grade:axis_points_lost"
 msgstr "Points lost (max {n})"
 
 msgid "grade:axis_aria"
-msgstr ", Black above the axis and White below, horizontal axis is move number"
+msgstr ""
+", Black above the axis and White below, horizontal axis is move number"
 
 msgid "grade:count_note"
 msgstr "{n} in this phase"
@@ -3363,8 +3365,8 @@ msgstr "{n} not rated"
 
 msgid "grade:histogram_aria"
 msgstr ""
-"Performance across seven grades; black bars are Black, white bars are White, "
-"each normalised to its own side"
+"Performance across seven grades; black bars are Black, white bars are White,"
+" each normalised to its own side"
 
 msgid "grade:def_brilliant"
 msgstr ""
@@ -3391,8 +3393,8 @@ msgstr ""
 
 msgid "grade:match_timeline_legend"
 msgstr ""
-"Full-height solid = top choice, half-height light = within top 3, background "
-"= other"
+"Full-height solid = top choice, half-height light = within top 3, background"
+" = other"
 
 msgid "grade:match_timeline_aria"
 msgstr ""
@@ -3525,7 +3527,8 @@ msgstr ""
 "saved to game history."
 
 msgid "local:input_hint_v2"
-msgstr "The physical board is 19×19 only — pick 13×13 or 9×9 to play on screen"
+msgstr ""
+"The physical board is 19×19 only — pick 13×13 or 9×9 to play on screen"
 
 msgid "local:komi_hint"
 msgstr "Handicap games use 0 komi — this group collapses once handicap is set"
@@ -3600,3 +3603,3106 @@ msgstr "Reset recognition · use the on-screen digital board position"
 
 msgid "Re-sync"
 msgstr "Reset recognition"
+
+msgid "Back to play"
+msgstr "Back to play"
+
+msgid "setup:start"
+msgstr "Start game"
+
+msgid "ladder:start"
+msgstr "Start rated game"
+
+msgid "play:free_setup_sub"
+msgstr "Game setup · vs AI · unrated"
+
+msgid "ladder:setup_sub"
+msgstr "Game setup · rated · analysis off throughout"
+
+msgid "local:setup_sub"
+msgstr "Game setup · two players face to face"
+
+msgid "game:local_pvp"
+msgstr "Local game"
+
+msgid "setup:game_terms"
+msgstr "This game"
+
+msgid "setup:size"
+msgstr "Board"
+
+msgid "setup:size_n"
+msgstr "{n}x{n}"
+
+msgid "setup:size_19"
+msgstr "19x19"
+
+msgid "Chinese rules"
+msgstr "Chinese rules"
+
+msgid "Japanese rules"
+msgstr "Japanese rules"
+
+msgid "AGA rules"
+msgstr "AGA rules"
+
+msgid "setup:rules_button"
+msgstr "AI-match rules"
+
+msgid "Chinese rules count area: territory plus stones on the board"
+msgstr ""
+"Chinese rules count area: your territory plus your stones on the board, so "
+"filling your own territory costs nothing"
+
+msgid ""
+"Japanese rules count territory: filling your own territory costs a point"
+msgstr ""
+"Japanese rules count territory only, so filling your own territory costs a "
+"point"
+
+msgid ""
+"AGA rules count area but pass stones keep the count equal to territory "
+"scoring"
+msgstr ""
+"AGA rules count area, but each pass hands over a stone, so the result "
+"matches territory scoring"
+
+msgid ""
+"Korean rules count territory, same as Japanese with different komi practice"
+msgstr ""
+"Korean rules count territory, the same method as Japanese with a different "
+"komi convention"
+
+msgid "setup:rules_button_hint"
+msgstr ""
+"AI-match rules: area scoring plus half a point to whoever passes first, "
+"which removes the odd/even gap of area counting. Even games only."
+
+msgid "setup:ha_even"
+msgstr "Even"
+
+msgid "setup:ha_sente"
+msgstr "Black first, no komi"
+
+msgid "setup:ha_reverse"
+msgstr "Reverse komi"
+
+msgid "setup:ha_free"
+msgstr "Custom komi"
+
+msgid "setup:ha_stones"
+msgstr "{n} stones"
+
+msgid "setup:komi_derived"
+msgstr "Set by rules and handicap"
+
+msgid "setup:komi_pick"
+msgstr "Tap to change komi"
+
+msgid "setup:komi_none"
+msgstr "No komi"
+
+msgid "setup:komi_sente"
+msgstr "Black moves first"
+
+msgid "setup:komi_handicap"
+msgstr "Black places {n} stones first"
+
+msgid "setup:komi_black_pays"
+msgstr "Black pays"
+
+msgid "setup:komi_white_pays"
+msgstr "White pays"
+
+msgid "setup:komi_points"
+msgstr "{n} points"
+
+msgid "setup:unit_points"
+msgstr "pts"
+
+msgid "setup:unit_stones"
+msgstr "stones"
+
+msgid "setup:seat"
+msgstr "Seating"
+
+msgid "setup:side_black"
+msgstr "Black"
+
+msgid "setup:side_white"
+msgstr "White"
+
+msgid "setup:side_nigiri"
+msgstr "Nigiri"
+
+msgid "setup:nigiri_blocked"
+msgstr "Black places the handicap stones"
+
+msgid "setup:black_side"
+msgstr "Black"
+
+msgid "setup:white_side"
+msgstr "White"
+
+msgid "setup:input_where"
+msgstr "Play on"
+
+msgid "setup:on_screen"
+msgstr "Screen"
+
+msgid "setup:on_board"
+msgstr "Real board"
+
+msgid "setup:board_only_19"
+msgstr "The real board is 19x19"
+
+msgid "setup:board_not_ready"
+msgstr "Camera not calibrated"
+
+msgid "setup:seat_hint_ready"
+msgstr ""
+"Switch between the real board and the screen any time; it is fixed once the "
+"game starts"
+
+msgid "setup:seat_hint_not19"
+msgstr "This game is not 19x19, so it can only be played on the screen"
+
+msgid "setup:seat_hint_uncalibrated"
+msgstr "This machine has no calibrated camera, so play happens on the screen"
+
+msgid "setup:size_not19_hint"
+msgstr ""
+"The real board is 19x19 — this game runs on the screen; switch back to 19x19"
+" to use it again"
+
+msgid "Untimed"
+msgstr "Untimed"
+
+msgid "setup:time_byo_only"
+msgstr "Byoyomi only 30s x3"
+
+msgid "5 min + 3x30s"
+msgstr "5 min + 3x30s"
+
+msgid "60 min + 3x30s"
+msgstr "60 min + 3x30s"
+
+msgid "local:move_sound_short"
+msgstr "Stone sound"
+
+msgid "On"
+msgstr "On"
+
+msgid "Off"
+msgstr "Off"
+
+msgid "setup:strength_rung"
+msgstr "Tier {n}"
+
+msgid "setup:rank_kyu"
+msgstr "{n} kyu"
+
+msgid "setup:rank_dan"
+msgstr "{n} dan"
+
+msgid "setup:strength_up"
+msgstr "One tier stronger"
+
+msgid "setup:strength_down"
+msgstr "One tier weaker"
+
+msgid "setup:strength_meta"
+msgstr "{n} tiers · {lo} – {hi}"
+
+msgid "setup:strength_humanlike"
+msgstr "Human-like · fixed once the game starts"
+
+msgid "setup:strength_hint2"
+msgstr ""
+"The human-like opponent makes the mistakes that belong to its tier; the tier"
+" describes the opponent, not your own rank"
+
+msgid "ladder:opponent"
+msgstr "Opponent"
+
+msgid "ladder:fixed_by_box"
+msgstr "Set by the machine"
+
+msgid "ladder:terms_fixed"
+msgstr "None of these can be changed"
+
+msgid "ladder:frozen_at_start"
+msgstr "Frozen the moment the game starts"
+
+msgid "ladder:komi_note"
+msgstr "The tier was measured on this board"
+
+msgid "ladder:stake"
+msgstr "What this game is worth"
+
+msgid "ladder:stake_win_promote"
+msgstr "Win · move up a tier"
+
+msgid "ladder:stake_loss_demote"
+msgstr "Loss · move down a tier"
+
+msgid "ladder:stake_win_score"
+msgstr "Win · net score {n}"
+
+msgid "ladder:stake_loss_score"
+msgstr "Loss · net score {n}"
+
+msgid "ladder:stake_rule"
+msgstr "Net score +3 promotes, −3 demotes · currently {n}"
+
+msgid "local:players"
+msgstr "Players"
+
+msgid "local:written_into_sgf"
+msgstr "Written into the record"
+
+msgid "local:agree_first"
+msgstr "Agree on these before you play"
+
+msgid "local:black_role_short"
+msgstr "first"
+
+msgid "local:white_role_short"
+msgstr "second"
+
+msgid "local:black_name"
+msgstr "Black player's name"
+
+msgid "local:white_name"
+msgstr "White player's name"
+
+msgid "local:tap_to_type"
+msgstr "Tap to type"
+
+msgid "local:names_hint"
+msgstr "Leave blank and the record just says Black and White"
+
+msgid "local:seat_hint_ready"
+msgstr ""
+"The clock counts down on the player cards · running out of byoyomi loses on "
+"time · untimed games are just recorded"
+
+msgid "setup:note_r2_a"
+msgstr "These settings "
+
+msgid "setup:note_r2_b"
+msgstr "cannot be changed after the game starts"
+
+msgid "setup:note_r2_c"
+msgstr " — changing them mid-game means a different game; free games are "
+
+msgid "setup:note_r2_d"
+msgstr "not counted towards your rank"
+
+msgid "setup:note_h"
+msgstr "."
+
+msgid "setup:locked_after_start"
+msgstr "Locked once the game starts"
+
+msgid "Session expired, please sign in again"
+msgstr "Session expired, please sign in again"
+
+msgid "Could not end that game, please retry"
+msgstr "Could not end that game, please retry"
+
+msgid "Retry failed, please try again later"
+msgstr "Retry failed, please try again later"
+
+msgid "ladder:board_preview"
+msgstr "Opening position preview: empty board"
+
+msgid "play:title"
+msgstr "Play"
+
+msgid "login:box_gate_title"
+msgstr "Please sign in on the StellaBox home screen"
+
+msgid "login:box_gate_cta"
+msgstr "Go to the StellaBox home screen"
+
+msgid "vision:back_settings"
+msgstr "Settings"
+
+msgid "vision:board_lost_hint"
+msgstr ""
+"Check whether the camera is blocked or the board has been moved; if it "
+"moved, calibrate again"
+
+msgid "vision:calibrate_title"
+msgstr "Board calibration"
+
+msgid "vision:calibrate_sub"
+msgstr "Clear the board first · 13 points: 4 corners + 9 star points"
+
+msgid "vision:cancel_calibration"
+msgstr "Cancel calibration"
+
+msgid "vision:reuse_calibration"
+msgstr "Reuse the last calibration"
+
+msgid "vision:camera_down"
+msgstr "Camera not connected · switched to touchscreen"
+
+msgid "vision:led_down"
+msgstr "LED not connected · no light guidance"
+
+msgid "vision:pose_lost"
+msgstr "Calibration lost · please calibrate again"
+
+msgid "grade:tabs"
+msgstr "Move grading"
+
+msgid "grade:fold_title"
+msgstr "Move grading · 7 tiers"
+
+msgid "grade:match_other"
+msgstr "Other"
+
+msgid "grade:axis_points_lost_short"
+msgstr "Points lost · pts"
+
+msgid "grade:pick_hint"
+msgstr "Tap any move on the chart for details"
+
+msgid "grade:summary"
+msgstr "Brilliant {a} · Bad {b}"
+
+msgid "grade:sel_bad"
+msgstr "Move {n} {m} · {s} · {g} · lost {x} pts"
+
+msgid "grade:sel_brilliant"
+msgstr ""
+"Move {n} {m} · {s} · brilliance {k} — it is the engine's own first choice, "
+"yet the engine gave it only {p}% prior (the lower, the more brilliant)"
+
+msgid "grade:truncated_plot"
+msgstr "At most {k} per side are drawn; {n} more are not shown"
+
+msgid "setup:this_game"
+msgstr "This game will be"
+
+msgid "setup:board_preview_handicap"
+msgstr "Opening position preview: {n} handicap stones"
+
+msgid "setup:chinese_rules"
+msgstr "Chinese rules"
+
+msgid "setup:even"
+msgstr "Even"
+
+msgid "setup:handicap"
+msgstr "Handicap"
+
+msgid "setup:handicap_n"
+msgstr "{n} stones"
+
+msgid "setup:handicap_less"
+msgstr "One stone fewer"
+
+msgid "setup:handicap_more"
+msgstr "One stone more"
+
+msgid "setup:input"
+msgstr "How to play moves"
+
+msgid "setup:my_side"
+msgstr "My colour"
+
+msgid "setup:take_black"
+msgstr "Take Black"
+
+msgid "setup:take_white"
+msgstr "Take White"
+
+msgid "setup:no_camera_hint"
+msgstr ""
+"This machine has no calibrated camera yet, so the real board is not "
+"available"
+
+msgid "report:clear_variation"
+msgstr "Clear variation"
+
+msgid "report:file_read_failed"
+msgstr "Could not read the file, please try again."
+
+msgid "report:import_options"
+msgstr "Import method"
+
+msgid "report:invalid_sgf"
+msgstr "Could not parse the SGF, please check the content."
+
+msgid "report:library_load_failed"
+msgstr "Could not load the records, please try again."
+
+msgid "report:loading_detail"
+msgstr "Loading the review"
+
+msgid "report:not_found"
+msgstr "Review not found."
+
+msgid "report:preview_failed"
+msgstr "Could not load the record preview"
+
+msgid "report:reload"
+msgstr "Reload"
+
+msgid "report:retry_load"
+msgstr "Retry loading"
+
+msgid "report:retrying"
+msgstr "Retrying…"
+
+msgid "report:search_library"
+msgstr "Search the record library"
+
+msgid "report:sgf_content"
+msgstr "SGF content"
+
+msgid "report:title_optional"
+msgstr "Title (optional)"
+
+msgid "report:unknown_type"
+msgstr "Unknown type"
+
+msgid "report:variation_preview"
+msgstr "Variation preview · tap the board to close"
+
+msgid "live:title"
+msgstr "Live"
+
+msgid "live:ai"
+msgstr "AI suggestions"
+
+msgid "live:ai_note_a"
+msgstr "The AI suggestions are "
+
+msgid "live:ai_note_b"
+msgstr "computed right now by the KataGo inside this box"
+
+msgid "live:ai_note_c"
+msgstr " — they have nothing to do with what the players see."
+
+msgid "live:as_black"
+msgstr "Black"
+
+msgid "live:as_white"
+msgstr "White"
+
+msgid "live:back_kifu"
+msgstr "Records"
+
+msgid "live:black_wr"
+msgstr "Black {v}%"
+
+msgid "live:ended"
+msgstr "Finished"
+
+msgid "live:follow"
+msgstr "Follow the latest"
+
+msgid "live:load_failed"
+msgstr "Could not load this game"
+
+msgid "live:loading"
+msgstr "Loading this game"
+
+msgid "live:move_n"
+msgstr "Move {n}"
+
+msgid "live:moves_title"
+msgstr "Moves · grows with the broadcast"
+
+msgid "live:no_moves"
+msgstr "No moves in this game yet"
+
+msgid "live:no_ownership"
+msgstr "The position for this move has not been computed yet"
+
+msgid "live:pagebar_sub"
+msgstr "Source: {src} · move {n}"
+
+msgid "live:played"
+msgstr "Played"
+
+msgid "live:show"
+msgstr "Show"
+
+msgid "live:thinking"
+msgstr "Thinking"
+
+msgid "live:toggle_numbers"
+msgstr "Move numbers"
+
+msgid "live:toggle_territory"
+msgstr "Territory"
+
+msgid "settings:nav_account"
+msgstr "Account & platforms"
+
+msgid "settings:nav_board"
+msgstr "Physical board"
+
+msgid "settings:nav_language"
+msgstr "Language"
+
+msgid "settings:nav_move"
+msgstr "Moves & hints"
+
+msgid "settings:nav_sound"
+msgstr "Sound"
+
+msgid "settings:ui_language"
+msgstr "Interface language"
+
+msgid "settings:language_sub"
+msgstr "This setting will move to the system settings later"
+
+msgid "settings:auto_advance_sub"
+msgstr "Applies in the training camp · on by default"
+
+msgid "settings:board_secval"
+msgstr "Camera · calibration · LED"
+
+msgid "settings:box_account_owned_by_home"
+msgstr "StellaBox account, shared by the whole box"
+
+msgid "settings:box_account_sub"
+msgstr ""
+"You can play without signing in — results stay on this box; signing in only "
+"lets you take them to another machine"
+
+msgid "settings:guest_sub"
+msgstr "A local profile on this box"
+
+msgid "settings:switch_account_at_home"
+msgstr "Switch account on the home screen"
+
+msgid "settings:sign_in"
+msgstr "Sign in"
+
+msgid "settings:platforms"
+msgstr "Cross-platform accounts"
+
+msgid "settings:platforms_sub"
+msgstr ""
+"Each platform asks for different fields — connect them in cross-platform "
+"play"
+
+msgid "settings:go_connect"
+msgstr "Connect"
+
+msgid "settings:calibrated"
+msgstr "Calibrated since power-on"
+
+msgid "settings:not_calibrated"
+msgstr "Not calibrated yet"
+
+msgid "settings:start_calib"
+msgstr "Start calibration"
+
+msgid "settings:ready"
+msgstr "Ready"
+
+msgid "settings:not_ready"
+msgstr "Not connected"
+
+msgid "settings:on"
+msgstr "On"
+
+msgid "settings:off"
+msgstr "Off"
+
+msgid "research:actions"
+msgstr "Research actions"
+
+msgid "research:move_title"
+msgstr "Research · move {n}"
+
+msgid "research:ai_after_move"
+msgstr "AI suggestions · after move {n}"
+
+msgid "research:analysis_failed"
+msgstr "This move could not be analysed"
+
+msgid "research:analyzed_moves"
+msgstr "Moves analysed"
+
+msgid "research:analyzing_move"
+msgstr "Analysing this move"
+
+msgid "research:cancel_scan"
+msgstr "Cancel analysis"
+
+msgid "research:clear_confirm_title"
+msgstr "Clear the whole board?"
+
+msgid "research:clear_confirm_msg"
+msgstr "All {n} moves on the board will be erased, and this cannot be undone."
+
+msgid "research:eta_label"
+msgstr "Estimated remaining"
+
+msgid "research:from_kifu"
+msgstr "Record library"
+
+msgid "research:from_last_game"
+msgstr "The game I just finished"
+
+msgid "research:from_my_games"
+msgstr "My games"
+
+msgid "research:full_scan"
+msgstr "Whole-game analysis"
+
+msgid "research:no_candidates"
+msgstr "The AI offered no candidate moves"
+
+msgid "research:only_19_supported"
+msgstr "Only 19x19 is supported; loaded as 19x19"
+
+msgid "research:progress_lost"
+msgstr ""
+"The analysis progress could not be read five times in a row — the connection"
+" may be gone"
+
+msgid "research:rescan"
+msgstr "Analyse again"
+
+msgid "research:retry_analysis"
+msgstr "Retry analysis"
+
+msgid "research:scan_broke"
+msgstr "The whole-game analysis did not finish"
+
+msgid "research:scan_cost"
+msgstr "{n} moves in all · 500 visits per move"
+
+msgid "research:scan_failed"
+msgstr "Could not start the analysis, please try again"
+
+msgid "research:scan_freeze"
+msgstr "The board is locked until it finishes; you can cancel at any time"
+
+msgid "research:scan_go"
+msgstr "Start analysing"
+
+msgid "research:session_failed"
+msgstr "Could not create a research session, please try again"
+
+msgid "research:user_game_failed"
+msgstr "This game could not be read"
+
+msgid "growth:rank_title"
+msgstr "Rank on this box"
+
+msgid "growth:rank_unknown"
+msgstr "—"
+
+msgid "growth:rank_unplaced"
+msgstr "Unranked"
+
+msgid "growth:no_data"
+msgstr "—"
+
+msgid "growth:cell_placement"
+msgstr "Placement games"
+
+msgid "growth:metric_placement"
+msgstr "Placement games"
+
+msgid "growth:placement_done"
+msgstr "Done"
+
+msgid "growth:cell_solved"
+msgstr "Problems solved"
+
+msgid "growth:metric_net"
+msgstr "Net score"
+
+msgid "growth:stat_ranked"
+msgstr "Rated games · total"
+
+msgid "growth:stat_recent"
+msgstr "Games in the last 30 days"
+
+msgid "growth:stat_solved"
+msgstr "Problems solved in total"
+
+msgid "growth:stat_winrate"
+msgstr "Rated win rate · last 30 days"
+
+msgid "growth:summary_failed"
+msgstr ""
+"These numbers could not be fetched — it does not mean you have played "
+"nothing. Check again later."
+
+msgid "growth:rules_title"
+msgstr "How promotion works"
+
+msgid "growth:rule_up"
+msgstr "Net +3 wins moves you up one tier"
+
+msgid "growth:rule_down"
+msgstr "Net 3 losses moves you down one tier"
+
+msgid "growth:rule_bounds"
+msgstr "Floor at 20 kyu · ceiling at Beyond human"
+
+msgid "growth:rung_title"
+msgstr "By opponent strength"
+
+msgid "growth:rung_w"
+msgstr "{n} wins"
+
+msgid "growth:rung_l"
+msgstr "{n} losses"
+
+msgid "growth:rung_empty_h"
+msgstr "No results yet"
+
+msgid "growth:rung_empty_p"
+msgstr ""
+"The slider in the game setup picks how strong the opponent is, not your own "
+"rank. Only tiers you have actually played are listed — no rows of 0–0."
+
+msgid "growth:diag_title"
+msgstr "Ability diagnosis"
+
+msgid "growth:diag_wip"
+msgstr "Backend ready · interface not wired up"
+
+msgid "growth:diag_empty_h"
+msgstr "0 games in the sample"
+
+msgid "growth:diag_empty_p"
+msgstr ""
+"The diagnosis is computed from games that already have a report — the "
+"reports exist on the backend, the interface has not read them yet (see the "
+"review screen). Below 30 games the conclusion wobbles, so the sample size "
+"will be printed next to it."
+
+msgid "growth:local_note_a"
+msgstr "These numbers are "
+
+msgid "growth:local_note_b"
+msgstr "this machine's own record"
+
+msgid "growth:local_note_c"
+msgstr ""
+". The ledger lives in the cloud; this box's copy may be a few games short."
+
+msgid "game:black"
+msgstr "Black"
+
+msgid "game:white"
+msgstr "White"
+
+msgid "game:plays_black"
+msgstr "plays Black"
+
+msgid "game:plays_white"
+msgstr "plays White"
+
+msgid "game:actions"
+msgstr "Game actions"
+
+msgid "game:action_failed"
+msgstr "That did not go through, please try again"
+
+msgid "game:back_to_play"
+msgstr "Back to play"
+
+msgid "game:board_lines"
+msgstr "{n}x{n}"
+
+msgid "game:handicap_n"
+msgstr "{n} handicap stones"
+
+msgid "game:no_handicap"
+msgstr "No handicap"
+
+msgid "game:points_unit"
+msgstr "pts"
+
+msgid "game:captures"
+msgstr "Captures"
+
+msgid "game:display"
+msgstr "Display"
+
+msgid "game:thinking"
+msgstr "Thinking"
+
+msgid "game:played"
+msgstr "Played"
+
+msgid "game:your_turn"
+msgstr "Your turn"
+
+msgid "game:ended"
+msgstr "Game over"
+
+msgid "game:time_left"
+msgstr "Left"
+
+msgid "game:time_up"
+msgstr "Time out"
+
+msgid "game:untimed"
+msgstr "Untimed"
+
+msgid "game:byo_left"
+msgstr "Byoyomi · {n} left"
+
+msgid "game:first_move"
+msgstr "First move"
+
+msgid "game:prev_move"
+msgstr "Previous move"
+
+msgid "game:next_move"
+msgstr "Next move"
+
+msgid "game:last_move"
+msgstr "Last move"
+
+msgid "game:moves_title"
+msgstr "Moves · intersection coordinates"
+
+msgid "game:no_moves"
+msgstr "No moves in this game yet"
+
+msgid "game:online_pvp"
+msgstr "Online game"
+
+msgid "game:exit_game"
+msgstr "Leave the game"
+
+msgid "game:leave_keep_game"
+msgstr "Leave without resigning"
+
+msgid "game:resign_confirm_side"
+msgstr "{side} resigns?"
+
+msgid "game:exit_resign_confirm_side"
+msgstr "The game is in progress — {side} resigns and leaves?"
+
+msgid "game:count_game_over"
+msgstr "This game is already finished"
+
+msgid "game:count_min"
+msgstr "Counting needs at least {n} moves"
+
+msgid "game:count_too_early"
+msgstr "Not enough moves yet to count"
+
+msgid "game:count_not_your_turn"
+msgstr "You can only count on your own turn"
+
+msgid "game:count_position_changed"
+msgstr "The position changed while counting, please count again"
+
+msgid "game:count_no_score"
+msgstr ""
+"The position analysis did not finish, so counting is not possible yet — "
+"please try again later"
+
+msgid "game:count_ranked_unscored"
+msgstr ""
+"Rated games cannot be counted right now (no position analysis in this game)"
+
+msgid "game:eval_title"
+msgstr "Win rate · KataGo native channel"
+
+msgid "game:eval_graph"
+msgstr "Win-rate and score trend for this game"
+
+msgid "game:eval_black_100"
+msgstr "Black 100"
+
+msgid "game:eval_white_100"
+msgstr "White 100"
+
+msgid "game:eval_black_lead"
+msgstr "Black +{n}"
+
+msgid "game:eval_white_lead"
+msgstr "White +{n}"
+
+msgid "game:golaxy_ai"
+msgstr "Golaxy · vs AI"
+
+msgid "game:golaxy_items"
+msgstr "Golaxy items · each press costs one"
+
+msgid "game:golaxy_judge_hint"
+msgstr "Counting only shows the current position; it does not end the game"
+
+msgid "game:golaxy_engine_no_undo"
+msgstr "Golaxy robot games do not support taking moves back yet"
+
+msgid "game:engine_ended_no_result"
+msgstr ""
+"Golaxy returned an end-of-game signal we do not recognise · this game is "
+"left undecided"
+
+msgid "game:connection_dropped"
+msgstr ""
+"The live connection dropped, so the board will not update by itself. Tap "
+"“Leave the game” → “Leave without resigning”, then come back through "
+"“Continue last game” to reconnect"
+
+msgid "game:recalibrate_needs_empty_board"
+msgstr ""
+"Recalibration lights the LEDs and needs every stone taken off the board "
+"first. If the board has not been moved, tap “Continue anyway”"
+
+msgid "game:timeout_failed"
+msgstr "The timeout ruling did not complete"
+
+msgid "game:timeout_not_delivered"
+msgstr ""
+"The timeout ruling was not delivered — check the connection and re-enter "
+"this game"
+
+msgid "game:unavailable_title"
+msgstr "This game can no longer be opened"
+
+msgid "game:unavailable_reason"
+msgstr ""
+"The box may have restarted, the game may have been cleaned up after sitting "
+"idle, or it may belong to another account."
+
+msgid "lobby:hall_title"
+msgstr "Online lobby"
+
+msgid "lobby:hall_sub"
+msgstr "Play people on other boxes · or drop in to watch"
+
+msgid "lobby:loading"
+msgstr "Loading…"
+
+msgid "lobby:load_failed"
+msgstr "Could not reach the lobby — the network or the service is down"
+
+msgid "lobby:players"
+msgstr "Players online"
+
+msgid "lobby:online_count"
+msgstr "{n} online"
+
+msgid "lobby:games_count"
+msgstr "{n} games"
+
+msgid "lobby:no_players_now"
+msgstr "You are the only one online right now"
+
+msgid "lobby:no_games_now"
+msgstr "Nobody is playing right now"
+
+msgid "lobby:idle"
+msgstr "Free"
+
+msgid "lobby:in_game"
+msgstr "In a game"
+
+msgid "lobby:this_is_you"
+msgstr "This is you"
+
+msgid "lobby:vs"
+msgstr "vs"
+
+msgid "lobby:plays_black"
+msgstr "plays Black"
+
+msgid "lobby:plays_white"
+msgstr "plays White"
+
+msgid "lobby:move_no"
+msgstr "Move {n}"
+
+msgid "lobby:note_a"
+msgstr "You can invite people who are "
+
+msgid "lobby:note_b"
+msgstr ""
+"; those in a game cannot be invited. On the left are the games in progress —"
+" tap your own to go back into it."
+
+msgid "lobby:match_mode"
+msgstr "Which kind to match"
+
+msgid "lobby:mode_free"
+msgstr "Casual game"
+
+msgid "lobby:mode_rated"
+msgstr "Ranked match"
+
+msgid "lobby:ladder_name"
+msgstr "Ranked play"
+
+msgid "lobby:rated_why_a"
+msgstr "Ranked matches need you to finish 5 placement games in "
+
+msgid "lobby:rated_why_b"
+msgstr " — you still need {n}."
+
+msgid "lobby:rated_why_b_unknown"
+msgstr " by finishing 5 placement games."
+
+msgid "lobby:start_match"
+msgstr "Start matchmaking"
+
+msgid "lobby:cancel_match"
+msgstr "Cancel matchmaking"
+
+msgid "lobby:matching_title"
+msgstr "Looking for an opponent"
+
+msgid "lobby:matching_lead_a"
+msgstr "The server put you in the queue for "
+
+msgid "lobby:matching_lead_b"
+msgstr ""
+" — when it matches you, the game starts straight away, with no second "
+"confirmation."
+
+msgid "lobby:matching_tc_free"
+msgstr "Starts on match · unrated"
+
+msgid "lobby:matching_tc_rated"
+msgstr "Starts on match · rated"
+
+msgid "lobby:waited_a"
+msgstr "Waiting "
+
+msgid "lobby:waited_b"
+msgstr " s"
+
+msgid "lobby:invite_title"
+msgstr "{name} invites you to a game"
+
+msgid "lobby:invite_kind"
+msgstr "Casual game · unrated"
+
+msgid "lobby:invite_lead_a"
+msgstr "Accepting starts the game right away"
+
+msgid "lobby:invite_lead_b"
+msgstr "; the inviter plays Black."
+
+msgid "lobby:invite_no_decline"
+msgstr ""
+"Declining just closes this window — the other side hears nothing back; the "
+"invitation expires after 2 minutes"
+
+msgid "lobby:invite_expired"
+msgstr ""
+"This invitation has expired or was already used — ask them to invite you "
+"again"
+
+msgid "lobby:accept_and_play"
+msgstr "Accept and start"
+
+msgid "lobby:need_login"
+msgstr "Sign-in required"
+
+msgid "lobby:gate_title"
+msgstr "Sign in to enter the online lobby"
+
+msgid "lobby:gate_why"
+msgstr ""
+"The lobby sends your name and online status to people on other boxes, so it "
+"works by account. A guest has no account, and therefore no identity to show "
+"anyone."
+
+msgid "lobby:gate_fact_k"
+msgstr "Once signed in"
+
+msgid "lobby:gate_fact_v"
+msgstr "others can see you in the list and invite you"
+
+msgid "lobby:gate_fact_note"
+msgstr ""
+"The list only shows who is connected right now: you are on it while you are "
+"here, and gone when you leave"
+
+msgid "lobby:gate_rule_a"
+msgstr "Signing in only governs this one thing."
+
+msgid "lobby:gate_rule_b"
+msgstr ""
+"Games against the AI, local games, the training camp, reviews and records "
+"all work as a guest."
+
+msgid "lobby:go_login"
+msgstr "Go to sign-in"
+
+msgid "baipu:title"
+msgstr "Replay onto the board"
+
+msgid "baipu:back_kifu"
+msgstr "Records"
+
+msgid "baipu:actions"
+msgstr "Replay actions"
+
+msgid "baipu:black"
+msgstr "Black"
+
+msgid "baipu:white"
+msgstr "White"
+
+msgid "baipu:black_s"
+msgstr "B"
+
+msgid "baipu:white_s"
+msgstr "W"
+
+msgid "baipu:stones_unit"
+msgstr "stones"
+
+msgid "baipu:which_move"
+msgstr "Move number"
+
+msgid "baipu:board_label"
+msgstr "Replay board: the circle marks where the next stone goes"
+
+msgid "baipu:loading"
+msgstr "Loading this record"
+
+msgid "baipu:load_failed"
+msgstr "Could not read this record"
+
+msgid "baipu:no_sgf"
+msgstr "This box does not have that record"
+
+msgid "baipu:no_moves"
+msgstr "There are no moves in this record"
+
+msgid "baipu:pagebar_sub"
+msgstr "Move {i} of {n} · {f} frames captured"
+
+msgid "baipu:place_at"
+msgstr "Next to place · {c}"
+
+msgid "baipu:place_none"
+msgstr "No stone to place for this step"
+
+msgid "baipu:pass"
+msgstr "Pass"
+
+msgid "baipu:led_on"
+msgstr "The light is on — put the {color} stone on the lit intersection"
+
+msgid "baipu:led_down"
+msgstr ""
+"The light is off — tap the top-right to light it again, or find {c} yourself"
+" by coordinate"
+
+msgid "baipu:relight"
+msgstr "Light it again"
+
+msgid "baipu:legend_black"
+msgstr "Red light = place a black stone"
+
+msgid "baipu:legend_white"
+msgstr "Green light = place a white stone"
+
+msgid "baipu:legend_remove"
+msgstr "Blue light = take this one off"
+
+msgid "baipu:cam_title"
+msgstr "Camera · one frame per move"
+
+msgid "baipu:capture_off"
+msgstr "This machine has no capture attached"
+
+msgid "baipu:capturing"
+msgstr "Taking the photo, keep your hands away"
+
+msgid "baipu:capturing_hint"
+msgstr ""
+"A hand in the way means this move is not captured and has to be done again."
+
+msgid "baipu:hands_off"
+msgstr "Keep hands off the board"
+
+msgid "baipu:confirm"
+msgstr "Confirm the stone"
+
+msgid "baipu:confirm_done_reason"
+msgstr "This record has already been replayed to the end"
+
+msgid "baipu:failed_title"
+msgstr "This move was not captured"
+
+msgid "baipu:failed_hint"
+msgstr "Leave the stone where it is — press “Confirm the stone” again"
+
+msgid "baipu:failed_hint_geometry"
+msgstr ""
+"The board position no longer lines up — recalibrate in the settings; "
+"pressing again will not help"
+
+msgid "baipu:frames_n"
+msgstr "{n} frames captured"
+
+msgid "baipu:no_frame_yet"
+msgstr "No frame saved yet"
+
+msgid "baipu:latest_saved"
+msgstr "Last saved {f}"
+
+msgid "baipu:removed_n"
+msgstr "{n} stones captured on this move"
+
+msgid "baipu:removal_title"
+msgstr "Please take off the {n} captured stones"
+
+msgid "baipu:removal_hint"
+msgstr ""
+"The ones lit blue — captured stones must be taken off by hand; press "
+"“Removed” when done"
+
+msgid "baipu:removed_done"
+msgstr "{n} stones removed"
+
+msgid "baipu:moves_title"
+msgstr "Already replayed"
+
+msgid "baipu:moves_value"
+msgstr "{k} of {n}"
+
+msgid "baipu:undo"
+msgstr "Take back the last move"
+
+msgid "baipu:undo_ask"
+msgstr "Take back the last move?"
+
+msgid "baipu:undo_body"
+msgstr ""
+"Take the stone you just placed off the board first (and put any captured "
+"stones back), then press “Taken back”."
+
+msgid "baipu:undo_done"
+msgstr "Taken back"
+
+msgid "baipu:undo_reason"
+msgstr "The first stone has not been placed yet"
+
+msgid "baipu:finish"
+msgstr "Finish"
+
+msgid "baipu:finish_reason"
+msgstr "{n} moves still to replay"
+
+msgid "baipu:done_title"
+msgstr "This record is fully replayed"
+
+msgid "baipu:done_hint"
+msgstr "{n} moves in all · {f} frames captured"
+
+msgid "baipu:restart"
+msgstr "Start over"
+
+msgid "baipu:resume"
+msgstr "Continue replaying"
+
+msgid "baipu:resume_ask"
+msgstr "Continue from last time?"
+
+msgid "baipu:resume_body"
+msgstr ""
+"Last time you reached move {n}. Starting over will overwrite the frames "
+"already captured."
+
+msgid "baipu:exit"
+msgstr "Leave"
+
+msgid "baipu:exit_ask"
+msgstr "Leave the replay?"
+
+msgid "baipu:exit_body"
+msgstr "Your progress is saved — you can pick it up again when you come back."
+
+msgid "baipu:drift_corrected"
+msgstr "The board moved; corrected automatically"
+
+msgid "baipu:drift_frozen"
+msgstr "The geometry has not been corrected"
+
+msgid "baipu:drift_stale"
+msgstr ""
+"This frame could not be re-corrected, so the previous geometry was reused"
+
+msgid "baipu:drift_word_corrected"
+msgstr "Corrected"
+
+msgid "baipu:drift_word_frozen"
+msgstr "Not corrected"
+
+msgid "baipu:drift_word_stale"
+msgstr "Previous reused"
+
+msgid "tsumego:loadingTitle"
+msgstr "Problems"
+
+msgid "tsumego:actions"
+msgstr "Problem actions"
+
+msgid "tsumego:allProblems"
+msgstr "All problems"
+
+msgid "tsumego:autoAdvance"
+msgstr "Go to the next problem after a correct answer"
+
+msgid "tsumego:backToUnit"
+msgstr "Back to the unit"
+
+msgid "tsumego:backToWrong"
+msgstr "Back to the wrong ones"
+
+msgid "tsumego:bankEmpty"
+msgstr "There are no problems in the bank yet"
+
+msgid "tsumego:category_unit"
+msgstr "types"
+
+msgid "tsumego:chooseByLevel"
+msgstr "Choose by strength"
+
+msgid "tsumego:cloudUnreachable"
+msgstr "Cannot reach the cloud problem bank"
+
+msgid "tsumego:cloudUnreachableBody"
+msgstr ""
+"The problem bank lives in the cloud; nothing is stored on the box. Tap retry"
+" once the network or the cloud is back."
+
+msgid "tsumego:cloudUnreachableBodyNoRetry"
+msgstr ""
+"The problem bank lives in the cloud; nothing is stored on the box. Go back "
+"and come in again once the network or the cloud is back."
+
+msgid "tsumego:kyuRanks"
+msgstr "Kyu"
+
+msgid "tsumego:danRanks"
+msgstr "Dan"
+
+msgid "tsumego:rankBoundary"
+msgstr "Boundary between kyu and dan"
+
+msgid "tsumego:dao"
+msgstr "problems"
+
+msgid "tsumego:levelsUnit"
+msgstr "levels"
+
+msgid "tsumego:goCalibrate"
+msgstr "Go to calibration"
+
+msgid "tsumego:greetSub"
+msgstr "Judged as you play — a wrong move is taken back on the spot"
+
+msgid "tsumego:isFirst"
+msgstr "This is the first problem"
+
+msgid "tsumego:lastTimeShort"
+msgstr "Last time"
+
+msgid "tsumego:loadingProblem"
+msgstr "Loading this problem…"
+
+msgid "tsumego:problemLoadError"
+msgstr "This problem could not be loaded"
+
+msgid "tsumego:modes"
+msgstr "Mode"
+
+msgid "tsumego:next"
+msgstr "Next problem"
+
+msgid "tsumego:prev"
+msgstr "Previous problem"
+
+msgid "tsumego:noMoveYet"
+msgstr "No move yet"
+
+msgid "tsumego:noSequence"
+msgstr ""
+"The problem numbers for this type could not be read, so previous/next are "
+"unavailable for now"
+
+msgid "tsumego:noWrong"
+msgstr "No problems wrong in this type right now"
+
+msgid "tsumego:physicalBoard"
+msgstr "Physical board"
+
+msgid "tsumego:physClear"
+msgstr "Please clear the board"
+
+msgid "tsumego:physClearLeft"
+msgstr " ({n} left)"
+
+msgid "tsumego:physConnecting"
+msgstr "Connecting the camera and the recognition model, please wait…"
+
+msgid "tsumego:physGeoConfirm"
+msgstr ""
+"The physical board needs the calibration confirmed first (once again after "
+"each service restart)"
+
+msgid "tsumego:physGeoDrift"
+msgstr "The board calibration is no longer valid, please calibrate again"
+
+msgid "tsumego:physNeed19"
+msgstr "The physical board only supports 19x19 problems"
+
+msgid "tsumego:physNoCamera"
+msgstr "No camera detected / the vision service is off"
+
+msgid "tsumego:physNoLed"
+msgstr "The LED is not connected, please follow the on-screen instructions."
+
+msgid "tsumego:physRemove"
+msgstr "Wrong answer: please take back {n} stones (blue light)"
+
+msgid "tsumego:physRestore"
+msgstr ", and put back the {n} captured ones (red / green light)"
+
+msgid "tsumego:physReply"
+msgstr ""
+"Please place the stones as the board lights show (reply / captures) so the "
+"board and the screen match."
+
+msgid "tsumego:physVerify"
+msgstr ""
+"Checking that the board matches the problem — adjust the stones as the "
+"lights show."
+
+msgid "tsumego:placeAnswerBlack"
+msgstr ""
+"Play one black stone at the solution point; the board will recognise it "
+"automatically"
+
+msgid "tsumego:placeAnswerWhite"
+msgstr ""
+"Play one white stone at the solution point; the board will recognise it "
+"automatically"
+
+msgid "tsumego:preparingBoard"
+msgstr "Preparing"
+
+msgid "tsumego:progressUnread"
+msgstr "The solving record could not be read"
+
+msgid "tsumego:progressUnreadBody"
+msgstr ""
+"Without the solving record we cannot say which problems of this type you got"
+" wrong. Tap retry once the network is back."
+
+msgid "tsumego:removeAt"
+msgstr "Take off {coord}"
+
+msgid "tsumego:setupDone"
+msgstr "Board set · your turn"
+
+msgid "tsumego:setupExtra"
+msgstr ""
+"There are {n} extra or wrong-coloured stones on the board — take them off "
+"first (marked ✕ on screen, white flashing on the real board)"
+
+msgid "tsumego:setupMatched"
+msgstr "{matched}/{total} stones matched"
+
+msgid "tsumego:setupSkip"
+msgstr "Skip the setup"
+
+msgid "tsumego:setupStageBlack"
+msgstr "Please place the black stones"
+
+msgid "tsumego:setupStageWhite"
+msgstr "Please place the white stones"
+
+msgid "tsumego:solvedInCategory"
+msgstr "Solved in this type"
+
+msgid "tsumego:solvedShort"
+msgstr "Correct"
+
+msgid "tsumego:specializedPractice"
+msgstr "Targeted practice"
+
+msgid "tsumego:these_n_problems"
+msgstr "these {n} problems"
+
+msgid "tsumego:thisProblem"
+msgstr "this problem"
+
+msgid "tsumego:tries_n"
+msgstr "{n} tries"
+
+msgid "tsumego:tryModeShort"
+msgstr "Try it"
+
+msgid "tsumego:undoMove"
+msgstr "Take back a move"
+
+msgid "tsumego:undoPhysicalReset"
+msgstr ""
+"You cannot take a move back on the physical board; to start over, press “Set"
+" up again”"
+
+msgid "tsumego:unitUnknown"
+msgstr "this unit"
+
+msgid "tsumego:unit_n"
+msgstr "Unit {n}"
+
+msgid "tsumego:unit_range"
+msgstr "This type has {total} problems in all, so only {units} units."
+
+msgid "tsumego:unit_size"
+msgstr "{n} problems per unit"
+
+msgid "tsumego:unit_total"
+msgstr "{n} problems"
+
+msgid "tsumego:wrongProgress"
+msgstr "Wrong ones · {i} of {n}"
+
+msgid "tsumego:wrongResume"
+msgstr "Wrong ones, problem {n}"
+
+msgid "tsumego:wrongSet"
+msgstr "Wrong ones"
+
+msgid "tsumego:wrongShort"
+msgstr "Wrong"
+
+msgid "tsumego:wrongState"
+msgstr "Got it wrong"
+
+msgid "tsumego:wrongStatLabel"
+msgstr "Got wrong, not yet right"
+
+msgid "tsumego:wrong_now"
+msgstr "{n} right now"
+
+msgid "tsumego:wrong_total"
+msgstr "{n} problems"
+
+msgid "tsumego:yourLevel"
+msgstr "Your level"
+
+msgid "tsumego:yourMoves"
+msgstr "Your moves"
+
+msgid "tsumego:problem_no"
+msgstr "Problem {n}"
+
+msgid "kifu:title"
+msgstr "Records"
+
+msgid "kifu:back_kifu"
+msgstr "Records"
+
+msgid "kifu:greet_a"
+msgstr "Other people's "
+
+msgid "kifu:greet_b"
+msgstr "games"
+
+msgid "kifu:greet_sub"
+msgstr ""
+"Famous games, pro broadcasts, and replaying records onto the real board"
+
+msgid "kifu:famous_records"
+msgstr "Famous games"
+
+msgid "kifu:search_records"
+msgstr "Search records"
+
+msgid "kifu:search_sub"
+msgstr "One search box, fuzzy matching"
+
+msgid "kifu:search_placeholder_cn"
+msgstr "Search by player, event or year"
+
+msgid "kifu:searching"
+msgstr "Searching"
+
+msgid "kifu:no_results_cn"
+msgstr "No matching records"
+
+msgid "kifu:no_results_hint"
+msgstr "Try another player name, event or year."
+
+msgid "kifu:list_failed"
+msgstr "The record library could not be read"
+
+msgid "kifu:pro_live"
+msgstr "Pro broadcasts"
+
+msgid "kifu:live_now"
+msgstr "Live now"
+
+msgid "kifu:not_started"
+msgstr "Not started"
+
+msgid "kifu:ended"
+msgstr "Finished"
+
+msgid "kifu:place_on_board"
+msgstr "Replay on the real board"
+
+msgid "kifu:place_sub"
+msgstr "The lights point out each move, one at a time"
+
+msgid "kifu:import_sgf"
+msgstr "Import SGF"
+
+msgid "kifu:import_sub"
+msgstr "A local file — works offline too"
+
+msgid "kifu:bad_sgf"
+msgstr "Not a valid SGF file"
+
+msgid "kifu:read_failed"
+msgstr "Could not read the file"
+
+msgid "kifu:recent"
+msgstr "Recently replayed"
+
+msgid "kifu:on_this_box"
+msgstr "Stored on this box"
+
+msgid "kifu:no_recent"
+msgstr "Nothing has been replayed on this box yet"
+
+msgid "kifu:no_recent_hint"
+msgstr ""
+"Pick one above, or import an SGF — a record you choose is stored whole on "
+"the box, so you can finish it offline."
+
+msgid "kifu:cache_gone"
+msgstr "The local copy of this record is gone — pick it again"
+
+msgid "kifu:cannot_start"
+msgstr "This one cannot be replayed"
+
+msgid "kifu:done_tag"
+msgstr "Fully replayed"
+
+msgid "kifu:placed_all"
+msgstr "Done"
+
+msgid "kifu:placed_at"
+msgstr "Reached move "
+
+msgid "kifu:resume_at"
+msgstr "Last time reached move "
+
+msgid "kifu:resume"
+msgstr "Continue"
+
+msgid "kifu:resume_baipu"
+msgstr "Continue replaying"
+
+msgid "kifu:resume_hint"
+msgstr "The lights will point out where the next stone goes"
+
+msgid "kifu:keep_placing"
+msgstr "Keep replaying"
+
+msgid "kifu:detail_actions"
+msgstr "What you can do with this game"
+
+msgid "kifu:replay"
+msgstr "Move-by-move replay"
+
+msgid "kifu:to_research"
+msgstr "Open in research"
+
+msgid "kifu:board_label"
+msgstr "Record replay board"
+
+msgid "kifu:board_lines"
+msgstr "lines"
+
+msgid "kifu:handicap_pre"
+msgstr "Handicap "
+
+msgid "kifu:handicap_unit"
+msgstr " stones"
+
+msgid "kifu:komi_black"
+msgstr "Black pays"
+
+msgid "kifu:komi_unit"
+msgstr " pts"
+
+msgid "kifu:games_unit"
+msgstr "games"
+
+msgid "kifu:move_ordinal"
+msgstr "Move "
+
+msgid "kifu:total_prefix"
+msgstr "of "
+
+msgid "kifu:versus"
+msgstr "vs"
+
+msgid "kifu:source_prefix"
+msgstr "Source: "
+
+msgid "kifu:untitled_game"
+msgstr "An untitled game"
+
+msgid "kifu:whole_game"
+msgstr "Whole game"
+
+msgid "kifu:moves_title"
+msgstr "Moves · intersection coordinates"
+
+msgid "kifu:no_moves"
+msgstr "There are no moves in this record"
+
+msgid "kifu:need_sgf"
+msgstr "The record for this game has not been fetched yet"
+
+msgid "kifu:load_failed"
+msgstr "This game could not be read"
+
+msgid "kifu:loading_this_game"
+msgstr "Loading this game"
+
+msgid "kifu:loading_hint"
+msgstr "Both the record and the move-by-move log come from the server."
+
+msgid "kifu:retry"
+msgstr "Retry"
+
+msgid "kifu:pass"
+msgstr "Pass"
+
+msgid "kifu:to_start"
+msgstr "Back to the start"
+
+msgid "kifu:to_end"
+msgstr "Jump to the end"
+
+msgid "kifu:prev_move"
+msgstr "Previous move"
+
+msgid "kifu:next_move"
+msgstr "Next move"
+
+msgid "kifu:prev_page"
+msgstr "Previous page"
+
+msgid "kifu:next_page"
+msgstr "Next page"
+
+msgid "kifu:collapsed"
+msgstr "Collapsed"
+
+msgid "kifu:expanded"
+msgstr "Expanded"
+
+msgid "kifu:today"
+msgstr "today"
+
+msgid "kifu:yesterday"
+msgstr "yesterday"
+
+msgid "kifu:day_before"
+msgstr "the day before"
+
+msgid "review:back_review"
+msgstr "Review"
+
+msgid "review:you"
+msgstr "You"
+
+msgid "review:black"
+msgstr "Black"
+
+msgid "review:white"
+msgstr "White"
+
+msgid "review:win"
+msgstr "win"
+
+msgid "review:lose"
+msgstr "loss"
+
+msgid "review:by_resign"
+msgstr "by resignation"
+
+msgid "review:by_time"
+msgstr "on time"
+
+msgid "review:by_forfeit"
+msgstr "by forfeit"
+
+msgid "review:void_result"
+msgstr "This game was left undecided"
+
+msgid "review:unfinished_line"
+msgstr "Left after move {n}"
+
+msgid "review:sec_games"
+msgstr "Past games"
+
+msgid "review:all_games"
+msgstr "{n} games in all"
+
+msgid "review:local_games"
+msgstr "{n} on this box"
+
+msgid "review:facing_games"
+msgstr "{n} face to face"
+
+msgid "review:matched_games"
+msgstr "{n} found"
+
+msgid "review:filter_label"
+msgstr "Filter games by source"
+
+msgid "review:filter_all"
+msgstr "All"
+
+msgid "review:filter_local"
+msgstr "Face to face"
+
+msgid "review:search_toggle"
+msgstr "Filter and search past games"
+
+msgid "review:list_loading"
+msgstr "Loading your games"
+
+msgid "review:list_failed"
+msgstr "The game list could not be read"
+
+msgid "review:no_games"
+msgstr "No games played yet"
+
+msgid "review:no_games_hint"
+msgstr ""
+"A finished game is recorded here automatically; you can also import an SGF "
+"below."
+
+msgid "review:no_local_games"
+msgstr "No face-to-face games yet"
+
+msgid "review:no_local_games_hint"
+msgstr ""
+"Games where two people play on the same box, under “Play · Two players”, are"
+" recorded here."
+
+msgid "review:no_match"
+msgstr "No matching games"
+
+msgid "review:no_match_hint"
+msgstr "Try another player or event name."
+
+msgid "review:row_ai"
+msgstr "vs AI"
+
+msgid "review:row_human"
+msgstr "Human vs human"
+
+msgid "review:row_ranked"
+msgstr "Ranked play"
+
+msgid "review:row_import"
+msgstr "Imported record"
+
+msgid "review:row_library"
+msgstr "Record library"
+
+msgid "review:row_vs"
+msgstr "vs"
+
+msgid "review:rail_title"
+msgstr "This game"
+
+msgid "review:rail_none"
+msgstr "No game selected yet"
+
+msgid "review:rail_board"
+msgstr "Final position of the selected game"
+
+msgid "review:board_failed"
+msgstr "The record for this game could not be read"
+
+msgid "review:sec_winrate"
+msgstr "Win rate in this game"
+
+msgid "review:black_winrate"
+msgstr "Black's win rate"
+
+msgid "review:black_lead"
+msgstr "Black ahead"
+
+msgid "review:perspective"
+msgstr "{color}'s point of view"
+
+msgid "review:plot_label"
+msgstr "Win rate per move — Black above, White below"
+
+msgid "review:plot_pick_label"
+msgstr "Win rate per move — tap to jump to that move"
+
+msgid "review:plot_loading"
+msgstr "Loading the report for this game"
+
+msgid "review:plot_pick"
+msgstr "Pick a game below"
+
+msgid "review:plot_thin"
+msgstr "Moves the report has not computed yet"
+
+msgid "review:plot_unanalyzed"
+msgstr ""
+"This game has not been analysed yet — pick a tier under “Generate report” "
+"below"
+
+msgid "review:sec_report"
+msgstr "Generate report"
+
+msgid "review:two_tiers"
+msgstr "Two tiers: 500 / 2000 visits"
+
+msgid "review:tier_standard"
+msgstr "Standard"
+
+msgid "review:tier_standard_sub"
+msgstr "500 visits per move"
+
+msgid "review:tier_deep"
+msgstr "Deep"
+
+msgid "review:tier_deep_sub"
+msgstr "2000 visits per move · four times slower"
+
+msgid "review:visits_each"
+msgstr "{n} visits per move"
+
+msgid "review:analyzed_progress"
+msgstr "{a} of {b} moves analysed"
+
+msgid "review:resume_analysis"
+msgstr "Continue analysing"
+
+msgid "review:recompute"
+msgstr "Recompute"
+
+msgid "review:recompute_failed"
+msgstr "The recompute did not go through"
+
+msgid "review:refresh_failed"
+msgstr "The refresh did not go through"
+
+msgid "review:no_task"
+msgstr "There is no report task for this game yet"
+
+msgid "review:tasks_failed"
+msgstr "Something went wrong with the report tasks"
+
+msgid "review:tag_analyzed"
+msgstr "Analysed"
+
+msgid "review:tag_unanalyzed"
+msgstr "Not analysed"
+
+msgid "review:cell_unanalyzed"
+msgstr "Not analysed"
+
+msgid "review:tag_partial"
+msgstr "Only {a}/{b} computed"
+
+msgid "review:tag_running"
+msgstr "Analysing {a}/{b}"
+
+msgid "review:tag_failed"
+msgstr "Analysis failed"
+
+msgid "review:tag_unfinished"
+msgstr "Unfinished"
+
+msgid "review:failure_bad_sgf"
+msgstr "This record could not be read"
+
+msgid "review:failure_no_credits"
+msgstr "Not enough credits"
+
+msgid "review:failure_not_found"
+msgstr "It is no longer there"
+
+msgid "review:failure_offline"
+msgstr "The cloud is temporarily unavailable"
+
+msgid "review:moves_failed"
+msgstr "The report could not be read"
+
+msgid "review:detail_failed"
+msgstr "This report could not be read"
+
+msgid "review:open_report"
+msgstr "Open the report"
+
+msgid "review:delete_game"
+msgstr "Delete"
+
+msgid "review:to_research"
+msgstr "Open in research"
+
+msgid "review:toggles"
+msgstr "Display"
+
+msgid "review:accuracy"
+msgstr "Accuracy"
+
+msgid "review:brilliants"
+msgstr "Brilliant moves"
+
+msgid "review:mistakes"
+msgstr "Mistakes"
+
+msgid "review:took"
+msgstr "took {d}"
+
+msgid "review:import_card"
+msgstr "Import a record to review"
+
+msgid "review:import_card_sub"
+msgstr "A local SGF or the record library"
+
+msgid "platform:platforms"
+msgstr "Platforms"
+
+msgid "platform:back_to_platforms"
+msgstr "Cross-platform"
+
+msgid "platform:connect_sub"
+msgstr "Connect an outside Go server and play on this real board"
+
+msgid "platform:connected"
+msgstr "Connected"
+
+msgid "platform:disconnected"
+msgstr "Not connected"
+
+msgid "platform:what_you_get"
+msgstr "Once connected"
+
+msgid "platform:get_board"
+msgstr "Play on this real board"
+
+msgid "platform:get_board_sub"
+msgstr "Placing a stone is your move — the other side sees the same one"
+
+msgid "platform:get_kifu"
+msgstr "The record is saved automatically"
+
+msgid "platform:get_kifu_sub"
+msgstr "It goes to the record library and can be sent to review"
+
+msgid "platform:get_rank"
+msgstr "Your rank on this box is untouched"
+
+msgid "platform:get_rank_sub"
+msgstr "Results there go only to that platform's ledger"
+
+msgid "platform:icon_board"
+msgstr "Board"
+
+msgid "platform:icon_kifu"
+msgstr "Record"
+
+msgid "platform:icon_rank"
+msgstr "Rank"
+
+msgid "platform:sign_in_to"
+msgstr "Sign in · {name}"
+
+msgid "platform:logging_in"
+msgstr "Signing in…"
+
+msgid "platform:login_failed"
+msgstr "Sign-in failed"
+
+msgid "platform:logout"
+msgstr "Sign out"
+
+msgid "platform:logout_ask"
+msgstr "Disconnect {name}?"
+
+msgid "platform:logout_body"
+msgstr ""
+"This box will no longer be signed in as that account. You will have to sign "
+"in again next time."
+
+msgid "platform:pw_fields"
+msgstr "Username + password"
+
+msgid "platform:pw_note"
+msgstr "Sent only to that platform, never stored on the box"
+
+msgid "platform:user_note"
+msgstr "The account name over there, not the box's account"
+
+msgid "platform:sms_fields"
+msgstr "Phone number + code"
+
+msgid "platform:phone_note"
+msgstr "Used only to obtain a sign-in credential from the platform"
+
+msgid "platform:sms_get"
+msgstr "Get the code"
+
+msgid "platform:sms_again"
+msgstr "Resend in {n} s"
+
+msgid "platform:sms_failed"
+msgstr "The code could not be sent"
+
+msgid "platform:need_phone"
+msgstr "Please enter the phone number first"
+
+msgid "platform:code_note"
+msgstr "Six digits · valid for 60 seconds"
+
+msgid "platform:lobby_title"
+msgstr "{name} · lobby"
+
+msgid "platform:lobby_sub"
+msgstr "Challenge someone, or let the platform find you an opponent"
+
+msgid "platform:enter_lobby"
+msgstr "Enter the lobby"
+
+msgid "platform:enter_engine"
+msgstr "Play the AI"
+
+msgid "platform:no_play_yet"
+msgstr "Play is not available yet"
+
+msgid "platform:cap_live"
+msgstr "Live play"
+
+msgid "platform:cap_engine"
+msgstr "vs AI"
+
+msgid "platform:cap_automatch"
+msgstr "Automatch"
+
+msgid "platform:cap_rooms"
+msgstr "Rooms"
+
+msgid "platform:find_by_name"
+msgstr "Find someone by username"
+
+msgid "platform:find_hint"
+msgstr "Type and press Enter; no result means that person is not there"
+
+msgid "platform:results"
+msgstr "Players found"
+
+msgid "platform:no_such_player"
+msgstr "There is no such person over there"
+
+msgid "platform:search_first"
+msgstr "Type a username and press Enter, or let the platform find you one"
+
+msgid "platform:users_failed"
+msgstr "The player list could not be fetched from the platform"
+
+msgid "platform:idle"
+msgstr "Free"
+
+msgid "platform:in_game"
+msgstr "In a game"
+
+msgid "platform:challenge"
+msgstr "Challenge"
+
+msgid "platform:challenge_terms"
+msgstr "Send a challenge"
+
+msgid "platform:challenge_ask"
+msgstr "Challenge {name}?"
+
+msgid "platform:challenge_ask_body"
+msgstr "{name} {rank} · 19x19 · Chinese rules · rated."
+
+msgid "platform:challenge_ask_tail"
+msgstr ""
+"Once sent it cannot be taken back; if they accept, you play on {name}, not "
+"back here on this box."
+
+msgid "platform:challenge_send"
+msgstr "Send the challenge"
+
+msgid "platform:challenge_sent"
+msgstr ""
+"Challenge sent. If they accept, you play on {name}, not back here on this "
+"box."
+
+msgid "platform:challenge_failed"
+msgstr "The challenge could not be sent"
+
+msgid "platform:automatch"
+msgstr "Automatch"
+
+msgid "platform:automatch_body"
+msgstr "Let {name} find one"
+
+msgid "platform:automatch_hint"
+msgstr ""
+"The queue is on {name}'s side. When it matches, the game does not come back "
+"to this box — you continue on {name}."
+
+msgid "platform:automatch_start"
+msgstr "Start matchmaking"
+
+msgid "platform:automatch_cancel"
+msgstr "Cancel matchmaking"
+
+msgid "platform:automatch_failed"
+msgstr "Matchmaking did not start"
+
+msgid "platform:seeking"
+msgstr "Looking for an opponent"
+
+msgid "platform:engine_title"
+msgstr "{name} · vs AI"
+
+msgid "platform:engine_sub"
+msgstr "Game setup · does not count towards the box rank"
+
+msgid "platform:opponent"
+msgstr "Opponent"
+
+msgid "platform:rung_n"
+msgstr "Tier {i} of {n}"
+
+msgid "platform:stronger"
+msgstr "A stronger opponent"
+
+msgid "platform:weaker"
+msgstr "A weaker opponent"
+
+msgid "platform:levels_from"
+msgstr "{n} levels served by {name}"
+
+msgid "platform:levels_failed"
+msgstr "The strength levels could not be fetched from the platform"
+
+msgid "platform:display_elo"
+msgstr "Displayed Elo {v}"
+
+msgid "platform:ref_rank"
+msgstr "about {r}"
+
+msgid "platform:rank_is_theirs"
+msgstr "The rank belongs to {name}"
+
+msgid "platform:terms_fixed"
+msgstr "The terms are fixed"
+
+msgid "platform:terms_body"
+msgstr "Chinese rules · rated"
+
+msgid "platform:terms_hint"
+msgstr "These three are not selectable here — this is what gets sent"
+
+msgid "platform:only_19"
+msgstr "{name} offers 19x19 only · Chinese rules"
+
+msgid "platform:fixed"
+msgstr "Fixed"
+
+msgid "platform:untimed"
+msgstr "Untimed"
+
+msgid "platform:nigiri"
+msgstr "Nigiri"
+
+msgid "platform:black_first"
+msgstr "Black first, no komi"
+
+msgid "platform:handicap_range"
+msgstr "{n} steps · even / black first / 2 – 9 stones"
+
+msgid "platform:komi_0"
+msgstr "No komi"
+
+msgid "platform:komi_75"
+msgstr "Black pays 7.5 points"
+
+msgid "platform:komi_n"
+msgstr "Black pays {n} stones"
+
+msgid "platform:summary_note"
+msgstr ""
+"Komi follows the handicap; it is not a separate choice. Results count only "
+"in {name}'s ledger."
+
+msgid "tutorial:title_cn"
+msgstr "Courses"
+
+msgid "tutorial:categories_cn"
+msgstr "Categories"
+
+msgid "tutorial:greet_sub"
+msgstr "The backend has five layers; the content is not generated on this box"
+
+msgid "tutorial:loading_cn"
+msgstr "Syncing the courses with the cloud"
+
+msgid "tutorial:loadFailed"
+msgstr "Loading failed, please try again later"
+
+msgid "tutorial:empty"
+msgstr "No courses yet"
+
+msgid "tutorial:empty_hint"
+msgstr ""
+"The cloud course library has no books yet; the two links below already have "
+"content."
+
+msgid "tutorial:instead_cn"
+msgstr "What you can practise now"
+
+msgid "tutorial:go_training"
+msgstr "Go to the training camp"
+
+msgid "tutorial:go_training_sub"
+msgstr "Six types of problems · available right now"
+
+msgid "tutorial:go_baipu"
+msgstr "Go to the replay screen"
+
+msgid "tutorial:go_baipu_sub"
+msgstr "Replay a famous game move by move"
+
+msgid "tutorial:count_line"
+msgstr "{n} categories · {b} books in all"
+
+msgid "tutorial:books_n"
+msgstr "{n} books"
+
+msgid "tutorial:books_synced"
+msgstr "{n} books · content follows the cloud"
+
+msgid "tutorial:synced"
+msgstr "Follows the cloud"
+
+msgid "tutorial:pick_book"
+msgstr "Pick a book"
+
+msgid "tutorial:books_loading"
+msgstr "Loading the books in this category"
+
+msgid "tutorial:books_failed"
+msgstr "The books in this category could not be read"
+
+msgid "tutorial:books_empty"
+msgstr "There is not a single book in this category"
+
+msgid "tutorial:books_empty_hint"
+msgstr ""
+"The cloud has not synced this category yet; other categories may already "
+"have something."
+
+msgid "tutorial:anatomy_cn"
+msgstr "What a lesson looks like"
+
+msgid "tutorial:chapters_n"
+msgstr "{n} chapters"
+
+msgid "tutorial:sections_n"
+msgstr "{n} sections"
+
+msgid "tutorial:figures_n"
+msgstr "{n} diagrams"
+
+msgid "tutorial:moves_n"
+msgstr "{n} moves"
+
+msgid "tutorial:seconds_n"
+msgstr "{n} s"
+
+msgid "tutorial:has_video"
+msgstr "Has video"
+
+msgid "tutorial:back_toc"
+msgstr "Contents"
+
+msgid "tutorial:toc_of"
+msgstr "{title} · contents"
+
+msgid "tutorial:toc_count"
+msgstr "{c} chapters · {s} sections"
+
+msgid "tutorial:toc_loading"
+msgstr "Loading the contents of this book"
+
+msgid "tutorial:toc_failed"
+msgstr "The contents of this book could not be read"
+
+msgid "tutorial:toc_empty"
+msgstr "This book has no chapters yet"
+
+msgid "tutorial:toc_empty_hint"
+msgstr ""
+"The book list has synced, the body has not; this is not a problem with your "
+"box."
+
+msgid "tutorial:no_sections"
+msgstr "This chapter has no sections yet"
+
+msgid "tutorial:section_n"
+msgstr "Section {n}"
+
+msgid "tutorial:section_loading"
+msgstr "Loading this section"
+
+msgid "tutorial:section_failed"
+msgstr "This section could not be read"
+
+msgid "tutorial:figures_in_section"
+msgstr "Diagrams in this section"
+
+msgid "tutorial:no_figures"
+msgstr "This section has no diagrams yet"
+
+msgid "tutorial:no_figures_hint"
+msgstr ""
+"The contents list this section, but the body has not synced; this is not a "
+"problem with your box."
+
+msgid "tutorial:figure_ordinal"
+msgstr "Diagram {i} of {n}"
+
+msgid "tutorial:figure_actions"
+msgstr "Turn pages and explanations"
+
+msgid "tutorial:prev_figure"
+msgstr "Previous diagram"
+
+msgid "tutorial:next_figure"
+msgstr "Next diagram"
+
+msgid "tutorial:back_to_diagram"
+msgstr "Back to the diagram"
+
+msgid "tutorial:board_label"
+msgstr "{label}: the diagram for this section"
+
+msgid "tutorial:board_view"
+msgstr "How much to show"
+
+msgid "tutorial:fullBoard"
+msgstr "Whole board"
+
+msgid "tutorial:partial"
+msgstr "Local area"
+
+msgid "tutorial:moves"
+msgstr "Moves"
+
+msgid "tutorial:step_back"
+msgstr "One move back"
+
+msgid "tutorial:step_fwd"
+msgstr "One move forward"
+
+msgid "tutorial:step_n"
+msgstr "Go to move {n}"
+
+msgid "tutorial:step_total"
+msgstr "This diagram has {n} moves"
+
+msgid "tutorial:step_zero"
+msgstr "Starting stones only"
+
+msgid "tutorial:tag_video"
+msgstr "Video explanation"
+
+msgid "tutorial:tag_audio"
+msgstr "Audio explanation"
+
+msgid "tutorial:tag_text"
+msgstr "Text explanation"
+
+msgid "tutorial:tag_none"
+msgstr "No explanation yet"
+
+msgid "tutorial:teach_none"
+msgstr "No explanation yet"
+
+msgid "tutorial:teach_none_reason"
+msgstr ""
+"No explanation has been recorded for this diagram; it will appear once the "
+"cloud syncs it"
+
+msgid "tutorial:text_only"
+msgstr "Text explanation only"
+
+msgid "tutorial:text_only_reason"
+msgstr "This diagram has only a written explanation, and it is printed above"
+
+msgid "tutorial:no_explain"
+msgstr ""
+"The book has no text for this diagram, and no explanation has been recorded "
+"either."
+
+msgid "tutorial:watch_video"
+msgstr "Watch the video explanation"
+
+msgid "tutorial:play_audio"
+msgstr "Play the audio explanation"
+
+msgid "tutorial:stop_audio"
+msgstr "Stop"
+
+msgid "19x19"
+msgstr "19x19"
+
+msgid "19×19 only"
+msgstr "19×19 only"
+
+msgid "20 problems per unit"
+msgstr "20 problems per unit"
+
+msgid "Korean rules"
+msgstr "Korean rules"
+
+msgid ""
+"AI connection error — please retry your move, or exit to abandon the game."
+msgstr ""
+"AI connection error — please retry your move, or exit to abandon the game."
+
+msgid "AI is thinking…"
+msgstr "AI is thinking…"
+
+msgid "AI suggestions (white lamps)"
+msgstr "AI suggestions (white lamps)"
+
+msgid "Accept as my move"
+msgstr "Accept as my move"
+
+msgid "All games"
+msgstr "All games"
+
+msgid "Auto-advance after solving · current"
+msgstr "Auto-advance after solving · current"
+
+msgid "Average time"
+msgstr "Average time"
+
+msgid "Average tries"
+msgstr "Average tries"
+
+msgid "Board may have moved"
+msgstr "Board may have moved"
+
+msgid "Board may have moved — recognition paused"
+msgstr "Board may have moved — recognition paused"
+
+msgid "Board mismatch"
+msgstr "Board mismatch"
+
+msgid "Board restored"
+msgstr "Board restored"
+
+msgid "Cached SGF no longer available"
+msgstr "Cached SGF no longer available"
+
+msgid "Calibration"
+msgstr "Calibration"
+
+msgid "Camera"
+msgstr "Camera"
+
+msgid "Camera disconnected, switched to touch mode"
+msgstr "Camera disconnected, switched to touch mode"
+
+msgid "Cancel"
+msgstr "Cancel"
+
+msgid "Categories"
+msgstr "Categories"
+
+msgid "Challenge others · rated queue available"
+msgstr "Challenge others · rated queue available"
+
+msgid "Chart"
+msgstr "Chart"
+
+msgid "Choose a way to start playing"
+msgstr "Choose a way to start playing"
+
+msgid "Choose one category"
+msgstr "Choose one category"
+
+msgid "Confirm"
+msgstr "Confirm"
+
+msgid "Confirm resign?"
+msgstr "Confirm resign?"
+
+msgid "Confirm result"
+msgstr "Confirm result"
+
+msgid "Confirming…"
+msgstr "Confirming…"
+
+msgid "Connected · goes to the lobby"
+msgstr "Connected · goes to the lobby"
+
+msgid "Connected · plays the engine"
+msgstr "Connected · plays the engine"
+
+msgid "Continue"
+msgstr "Continue"
+
+msgid "Continue anyway"
+msgstr "Continue anyway"
+
+msgid "Continue on screen"
+msgstr "Continue on screen"
+
+msgid "Continue practicing"
+msgstr "Continue practising"
+
+msgid "Cross-Platform"
+msgstr "Cross-platform play"
+
+msgid "Cross-Platform Play"
+msgstr "Cross-platform play"
+
+msgid "Difficulty"
+msgstr "Difficulty"
+
+msgid "Ended"
+msgstr "Ended"
+
+msgid "Enter Live"
+msgstr "Enter Live"
+
+msgid "Every game played, with its review report"
+msgstr "Every game played, with its review report"
+
+msgid "Exit"
+msgstr "Exit"
+
+msgid "Failed to read file"
+msgstr "Failed to read file"
+
+msgid "Failed to start game"
+msgstr "Failed to start game"
+
+msgid "Focused training"
+msgstr "Focused training"
+
+msgid "Game in progress. Resign and exit?"
+msgstr "Game in progress. Resign and exit?"
+
+msgid "Geometry locked"
+msgstr "Geometry locked"
+
+msgid "Guest"
+msgstr "Guest"
+
+msgid "Hide Hint"
+msgstr "Hide hint"
+
+msgid "Hint"
+msgstr "Hint"
+
+msgid "Hints"
+msgstr "AI hints"
+
+msgid "Hint failed"
+msgstr "The hint failed, please try again later"
+
+msgid "Hint is not enabled"
+msgstr "Hints are not enabled"
+
+msgid "History"
+msgstr "History"
+
+msgid "Ignore"
+msgstr "Ignore"
+
+msgid "Import SGF"
+msgstr "Import a record"
+
+msgid "Insufficient balance"
+msgstr "Insufficient balance"
+
+msgid "Judged on placement"
+msgstr "Judged on placement"
+
+msgid "Judged on placement · a wrong move is taken straight back"
+msgstr "Judged on placement · a wrong move is taken straight back"
+
+msgid "Keep waiting"
+msgstr "Keep waiting"
+
+msgid "Load more"
+msgstr "Load more"
+
+msgid "Loading"
+msgstr "Loading..."
+
+msgid "Loading…"
+msgstr "Loading…"
+
+msgid "Loading categories…"
+msgstr "Loading categories…"
+
+msgid "Loading problem set…"
+msgstr "Loading the problem set…"
+
+msgid "Logging in..."
+msgstr "Signing in..."
+
+msgid "Login failed"
+msgstr "Sign-in failed"
+
+msgid ""
+"Mix all categories at this level and group every 20 problems into a unit"
+msgstr ""
+"Mix all categories at this level and group every 20 problems into a unit"
+
+msgid "Mix all categories at this level in 20-problem units"
+msgstr "Mix all categories at this level in 20-problem units"
+
+msgid "Mixed"
+msgstr "Mixed"
+
+msgid "Mixed categories"
+msgstr "Mixed categories"
+
+msgid "Mixed training"
+msgstr "Mixed training"
+
+msgid "Next up"
+msgstr "Next up"
+
+msgid "No 19×19 records found"
+msgstr "No 19×19 records found"
+
+msgid "No categories at this level yet"
+msgstr "No categories at this level yet"
+
+msgid "No live matches"
+msgstr "No live matches"
+
+msgid "No problems for this level"
+msgstr "No problems for this level"
+
+msgid "No problems in this category yet"
+msgstr "No problems in this category yet"
+
+msgid "No such unit"
+msgstr "No such unit"
+
+msgid "Not a valid SGF file"
+msgstr "Not a valid SGF file"
+
+msgid "Not attempted"
+msgstr "Not attempted"
+
+msgid "Not available in ranked games"
+msgstr "Not available in ranked games"
+
+msgid "Not calibrated"
+msgstr "Not calibrated"
+
+msgid "Not signed in"
+msgstr "Not signed in"
+
+msgid "Not wired up yet"
+msgstr "Not wired up yet"
+
+msgid "Now Live"
+msgstr "Now live"
+
+msgid "Online Lobby"
+msgstr "Online lobby"
+
+msgid "Only the ones I got wrong"
+msgstr "Only the ones I got wrong"
+
+msgid "Other practice"
+msgstr "Other practice"
+
+msgid "Other sets"
+msgstr "Another set"
+
+msgid "Password"
+msgstr "Password"
+
+msgid "Username"
+msgstr "Username"
+
+msgid "Physical board out of sync"
+msgstr "The physical board has been out of sync with the game for a while"
+
+msgid "Pick the strength yourself · form estimate available"
+msgstr "Pick the strength yourself · position estimate available"
+
+msgid "Place / remove the lit stones, then confirm — or continue on screen."
+msgstr ""
+"Place (red / green) or remove (blue) the lit stones, then confirm — or "
+"continue on screen."
+
+msgid "Place these stones"
+msgstr "Place these stones (red / green)"
+
+msgid "Remove these stones"
+msgstr "Remove these stones (blue)"
+
+msgid "Play vs AI"
+msgstr "Play the AI"
+
+msgid "Play vs Human"
+msgstr "Play a person"
+
+msgid "Please place the AI stone at the lit point first"
+msgstr "Please place the AI's stone on the lit point first"
+
+msgid "Possible move detected at"
+msgstr "Possible move detected at"
+
+msgid "Problem set unavailable"
+msgstr "The problem set is unavailable"
+
+msgid "Problems per unit · current"
+msgstr "Problems per unit · current"
+
+msgid "Re-align board"
+msgstr "Re-align the board"
+
+msgid "Re-align failed — try again"
+msgstr "Re-aligning failed — try again"
+
+msgid "Re-sync failed, please retry"
+msgstr "Re-syncing recognition failed, please retry"
+
+msgid "Recalibrate"
+msgstr "Recalibrate"
+
+msgid "Recalibrate board"
+msgstr "Recalibrate the board"
+
+msgid "Recent"
+msgstr "Recent"
+
+msgid "Redo the ones you got wrong in this category"
+msgstr "Redo the ones you got wrong in this category"
+
+msgid "Register / Sign in"
+msgstr "Register / sign in"
+
+msgid "Reset"
+msgstr "Set up again"
+
+msgid "Resign failed, retry"
+msgstr "Resigning failed, please retry"
+
+msgid "Resume"
+msgstr "Resume"
+
+msgid "Resume last game"
+msgstr "Continue the last game"
+
+msgid "Score"
+msgstr "Count"
+
+msgid "Search players, events..."
+msgstr "Search players, events..."
+
+msgid "Select a match"
+msgstr "Select a game"
+
+msgid "Select category"
+msgstr "Select a category"
+
+msgid "Select or import a game to begin"
+msgstr "Select or import a game to begin"
+
+msgid "Sign out"
+msgstr "Sign out"
+
+msgid "Signed in"
+msgstr "Signed in"
+
+msgid "Solved"
+msgstr "Correct"
+
+msgid "Solved in this unit"
+msgstr "Solved in this unit"
+
+msgid "Start"
+msgstr "Start"
+
+msgid "Start placing"
+msgstr "Start replaying"
+
+msgid "Stone Placement"
+msgstr "Replay onto the board"
+
+msgid "StellaBox account"
+msgstr "StellaBox account"
+
+msgid "Tap to connect"
+msgstr "Tap to sign in"
+
+msgid "Tier picked from your strength · analysis sealed throughout"
+msgstr "Tier picked from your strength · analysis sealed throughout"
+
+msgid "Time"
+msgstr "Time"
+
+msgid "To place"
+msgstr "To place"
+
+msgid "To remove"
+msgstr "To remove"
+
+msgid "Today we practice {what}"
+msgstr "Today we practise {what}"
+
+msgid "what"
+msgstr "something"
+
+msgid "Top Matches"
+msgstr "Top games"
+
+msgid "Try"
+msgstr "Try it"
+
+msgid "Try a different search, or import an SGF file."
+msgstr "Try a different search, or import an SGF file."
+
+msgid "Two players on the same physical board"
+msgstr "Two players on the same physical board"
+
+msgid "Units"
+msgstr "Units"
+
+msgid "Upcoming"
+msgstr "Upcoming"
+
+msgid "Wrong"
+msgstr "Wrong ones"
+
+msgid "You are here"
+msgstr "You are here"
+
+msgid "game:count_failed_retry"
+msgstr "Counting did not go through, please try again later"
+
+msgid "min"
+msgstr "min"
+
+msgid "sec"
+msgstr "sec"
+
+msgid "problems count"
+msgstr "problems"
+
+msgid "score"
+msgstr "score"
+
+msgid "winrate"
+msgstr "win rate"
+
+msgid "{item} exhausted"
+msgstr "{item} used up"
+
+msgid ""
+"{item} quota is insufficient — please recharge in the Golaxy app; this "
+"terminal cannot recharge for you."
+msgstr ""
+"{item} quota is insufficient — please top up in the Golaxy app; this "
+"terminal cannot do it for you."
+
+msgid "game:connection_rejected"
+msgstr ""
+"The live connection was refused, so the board will not update by itself — "
+"please sign in again and retry"
+
+msgid "game:gone_reason"
+msgstr ""
+"The box may have restarted, or the game was cleaned up after sitting idle "
+"too long."
+
+msgid "game:resign_failed"
+msgstr "Resigning did not go through"
+
+msgid "game:session_gone_notice"
+msgstr "This game no longer exists on the server — you can leave this page."
+
+msgid "settings:nav_about"
+msgstr "About"
+
+msgid "settings:about_version"
+msgstr "Version"
+
+msgid "settings:about_local"
+msgstr "This device"
+
+msgid "settings:about_cloud"
+msgstr "Cloud"
+
+msgid "settings:engine_ok"
+msgstr "Available"
+
+msgid "settings:engine_down"
+msgstr "Unreachable"
+
+msgid "settings:engine_unset"
+msgstr "Not set up"
+
+msgid "settings:engine_code"
+msgstr "Engine returned {code}"
+
+msgid "settings:camera_connected"
+msgstr "Connected"
+
+msgid "settings:geometry_calibrated"
+msgstr "Calibrated"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Not calibrated"
+
+msgid "settings:led_serial_connected"
+msgstr "Serial connected"
+
+msgid "settings:calib_no_camera"
+msgstr "This machine has no camera"
+
+msgid "settings:ladder_detail_open"
+msgstr "View AI rank details"
+
+msgid "settings:ladder_detail_close"
+msgstr "Hide"

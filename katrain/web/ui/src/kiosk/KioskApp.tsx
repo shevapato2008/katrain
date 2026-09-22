@@ -31,14 +31,13 @@ import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
-import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
 import { GeometryProvider } from './context/GeometryContext';
 import { EngineReadinessProvider } from './context/EngineReadinessProvider';
 import PhysicalBoardGuard from './components/vision/PhysicalBoardGuard';
 import PlayInputGuard from './components/vision/PlayInputGuard';
 import TsumegoInputGuard from './components/vision/TsumegoInputGuard';
-import RotationWrapper from './components/layout/RotationWrapper';
+import KioskViewport from './components/layout/KioskViewport';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
 import LoginPage from './pages/LoginPage';
@@ -153,7 +152,7 @@ const KioskRoutes = () => {
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<KifuDetailPage />} />
           <Route path="baipu" element={<BaipuListPage />} />
-          <Route path="baipu/session/:source" element={<PhysicalBoardGuard sub="摆谱要先让摄像头看清盘面"><BaipuSessionPage /></PhysicalBoardGuard>} />
+          <Route path="baipu/session/:source" element={<PhysicalBoardGuard sub="摆谱要先让摄像头看清盘面" fallback="/kiosk/baipu"><BaipuSessionPage /></PhysicalBoardGuard>} />
           <Route path="live" element={<LivePage />} />
           <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="report" element={<ReportsPage />} />
@@ -199,19 +198,18 @@ const KioskApp = () => {
   return (
     <ThemeProvider theme={kioskTheme}>
       <CssBaseline />
-      <OrientationProvider>
-        <VisionProvider>
-          <GeometryProvider>
-            <TsumegoProgressProvider>
-              <RotationWrapper>
-                <EngineReadinessProvider>
-                  <KioskRoutes />
-                </EngineReadinessProvider>
-              </RotationWrapper>
-            </TsumegoProgressProvider>
-          </GeometryProvider>
-        </VisionProvider>
-      </OrientationProvider>
+      <VisionProvider>
+        <GeometryProvider>
+          <TsumegoProgressProvider>
+            {/* 承重的视口盒子(画布的包含块、登录页的高度来源)—— 见 KioskViewport 头注。 */}
+            <KioskViewport>
+              <EngineReadinessProvider>
+                <KioskRoutes />
+              </EngineReadinessProvider>
+            </KioskViewport>
+          </TsumegoProgressProvider>
+        </GeometryProvider>
+      </VisionProvider>
     </ThemeProvider>
   );
 };

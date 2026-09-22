@@ -9,6 +9,11 @@ from dataclasses import dataclass
 # (e.g. "145" -> 120.0-170.0, matching the historical default).
 AE_SCALAR_HALF_WIDTH = 25.0
 
+# Sustain tier for stones already on the board (owner decision 2026-09-22; see
+# VisionServiceConfig.confidence_sustain). Far-side white stones in a dense cluster were measured
+# dropping below the 0.30 keep threshold for up to 45 s in a static scene on the RK3562.
+DEFAULT_CONFIDENCE_SUSTAIN = 0.20
+
 # Single source of truth for the accepted-forms wording, shared by every malformed-input
 # ValueError raised below.
 _AE_TARGET_ACCEPTED_FORMS = "expected 'LO-HI' or a single midpoint value (e.g. '120-170' or '145')"
@@ -71,6 +76,11 @@ class VisionServiceConfig:
     # stable board keeps it at this lower confidence; empty cells need the full
     # confidence_threshold to gain a stone. None derives max(0.25, threshold - 0.15).
     confidence_keep: float | None = None
+    # Presence "sustain" tier (2026-09-22): a stone already on the stable board is kept alive by
+    # detections down to this confidence. Only board assignment ever sees these sub-keep detections
+    # (where they cannot add a stone); new stones, confirmation cards and the confidence statistics
+    # still see only detections >= confidence_keep. None -> min(DEFAULT_CONFIDENCE_SUSTAIN, keep).
+    confidence_sustain: float | None = None
     # Pre-inference enhancement of the warped frame: "clahe" (validated weak-light win) | "off"
     enhance: str = "clahe"
     # Consecutive stable-board frames a single new stone must persist before MoveDetector
@@ -118,12 +128,25 @@ class VisionServiceConfig:
     intrinsics_file: str | None = None  # persistent camera calibration .npz
     process_mode: str = "worker"  # "worker" (subprocess) | "inprocess" (dev)
     capture_fps: int = 15
+    # Stone-parallax correction {"nadir_fx", "nadir_fy", "k"} for the geometry-lock extractor, or None.
+    # Never set by hand: server.py fills it at startup from <hardware-vision-dir>/parallax/
+    # go-19x19.json, written by the optional katrain.vision.tools.calibrate_parallax. Wins over the
+    # lock-derived correction below.
+    parallax: dict | None = None
+    # Without a calibration file, derive the ver9 mount's parallax from every geometry lock the worker
+    # receives (parallax.mount_parallax_for_lock; owner decision 2026-09-22). False = no correction at all.
+    parallax_enabled: bool = True
 
     @property
     def effective_confidence_keep(self) -> float:
         if self.confidence_keep is not None:
             return self.confidence_keep
         return max(0.25, self.confidence_threshold - 0.15)
+
+    @property
+    def effective_confidence_sustain(self) -> float:
+        value = DEFAULT_CONFIDENCE_SUSTAIN if self.confidence_sustain is None else self.confidence_sustain
+        return min(value, self.effective_confidence_keep)
 
     def to_worker_config(self) -> dict:
         """Convert to dict for passing to worker process."""
@@ -136,6 +159,7 @@ class VisionServiceConfig:
             "camera_height": self.camera_height,
             "confidence_threshold": self.confidence_threshold,
             "confidence_keep": self.effective_confidence_keep,
+            "confidence_sustain": self.effective_confidence_sustain,
             "enhance": self.enhance,
             "move_confirm_frames": self.move_confirm_frames,
             "move_confirm_fast_frames": self.move_confirm_fast_frames,
@@ -149,4 +173,6 @@ class VisionServiceConfig:
             "ae_target_hi": ae_hi,
             "use_clahe": self.use_clahe,
             "capture_fps": self.capture_fps,
+            "parallax": self.parallax,
+            "parallax_auto": self.parallax_enabled,
         }

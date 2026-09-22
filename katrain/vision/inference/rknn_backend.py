@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -82,7 +84,16 @@ class RknnBackend:
         if ret != 0:
             raise RuntimeError(f"Failed to load RKNN model: {model} (error code: {ret})")
 
+        # init_runtime() 让 NPU 驱动把**调用线程**的 nice 改成 -19(内核里改,不走 setpriority),
+        # 之后这个线程建的线程全部继承。katrain 在主线程上 load ⇒ 视觉循环与推流都以 -19 跑,
+        # 标定收尾时把 Chromium 饿住 6–8 s,触屏点击排队(RK3562 实测)。推理不再改它,所以只在这里还原。
+        nice_before = os.getpriority(os.PRIO_PROCESS, 0)
         ret = rknn.init_runtime()
+        if os.getpriority(os.PRIO_PROCESS, 0) != nice_before:
+            try:
+                os.setpriority(os.PRIO_PROCESS, 0, nice_before)
+            except OSError as exc:
+                logger.warning("RKNN init changed thread nice; restoring to %d failed: %s", nice_before, exc)
         if ret != 0:
             rknn.release()
             raise RuntimeError(f"Failed to init RKNN runtime (error code: {ret})")
@@ -109,10 +120,13 @@ class RknnBackend:
         orig_h, orig_w = image.shape[:2]
 
         # --- pre-process ---
+        t0 = time.monotonic()
         tensor = self._preprocess(image)
 
         # --- inference ---
+        t1 = time.monotonic()
         outputs = self._rknn.inference(inputs=[tensor])
+        t2 = time.monotonic()
         if outputs is None:
             logger.warning("RKNN inference returned None")
             return []
@@ -120,8 +134,12 @@ class RknnBackend:
         # --- post-process ---
         if is_split_meta(self._meta):
             # Split-head model: 6 raw conv tensors decoded on the host.
-            return self._postprocess_split(outputs, confidence_threshold, iou_threshold)
-        return self._postprocess(outputs[0], orig_w, orig_h, confidence_threshold, iou_threshold)
+            result = self._postprocess_split(outputs, confidence_threshold, iou_threshold)
+        else:
+            result = self._postprocess(outputs[0], orig_w, orig_h, confidence_threshold, iou_threshold)
+        # (pre, npu, post) ms of the last call, for the worker's per-frame trace (TRACE_FLAG).
+        self.last_timing_ms = ((t1 - t0) * 1000, (t2 - t1) * 1000, (time.monotonic() - t2) * 1000)
+        return result
 
     def unload(self) -> None:
         """Release the RKNN runtime."""

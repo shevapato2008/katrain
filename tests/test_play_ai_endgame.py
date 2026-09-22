@@ -304,6 +304,21 @@ def test_moves_without_the_guard_neither_record_nor_freeze_a_two_pass_end():
     assert w.game.current_node.move.coords == (3, 3)
 
 
+@pytest.mark.parametrize("result", ["W+T", "B+R", "W+3.5"])
+def test_the_committed_result_is_the_sgf_root_re(result):
+    """The cloud refuses a ranked settlement whose game_record SGF RE is not exactly its result
+    (ai_ladder_ranked `_validated_game_record`, since c43e5702 2026-08-09). get_sgf() never carried RE for a
+    resigned or timed-out game, so every such ranked game on the RK3562 was refused with
+    422 "game_record SGF result does not match" and never reached the cloud (board sync_queue ids 9-11)."""
+    from katrain.core.sgf_parser import SGF
+
+    w = _web_katrain()
+    _seat(w, human_colors={"B", "W"})
+    w._do_play((3, 3), guard=True)
+    w._commit_end_state(result)
+    assert SGF.parse_sgf(w.get_sgf()).get_property("RE") == result
+
+
 def test_a_ranked_game_ended_on_another_device_takes_nothing_locally():
     """S11:远端终局标记与本地写入同一把锁;标记之后本地既不写结果,也不接受带 guard 的落子。"""
     w = _web_katrain()
@@ -385,9 +400,9 @@ def test_a_non_terminal_refusal_still_rearms_detection():
 
     w = _web_katrain()
     _seat(w, human_colors={"B", "W"})
-    w._do_play((3, 3), guard=True)          # 落完黑,真实局面轮到白
+    w._do_play((3, 3), guard=True)  # 落完黑,真实局面轮到白
     stale = w.get_state()
-    stale["player_to_move"] = "B"           # 过期的广播帧还说轮到黑
+    stale["player_to_move"] = "B"  # 过期的广播帧还说轮到黑
     session = SimpleNamespace(katrain=w, last_state=stale, lock=threading.Lock())
 
     class _Manager:
@@ -403,7 +418,7 @@ def test_a_non_terminal_refusal_still_rearms_detection():
 
     vision = _Vision()
     app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
-    black_stone = ConfirmedMove(col=15, row=15, color=1)   # 过得了 R1.3(帧上说轮到黑),锁里才发现是白
+    black_stone = ConfirmedMove(col=15, row=15, color=1)  # 过得了 R1.3(帧上说轮到黑),锁里才发现是白
 
     delay = asyncio.run(_handle_confirmed_move(app, vision, "s", black_stone, logging.getLogger("play-ai-test")))
 

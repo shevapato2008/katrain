@@ -122,7 +122,7 @@ describe('屏 15 棋谱 · 问候与三张卡', () => {
   it('「摆到实体盘」进 /kiosk/baipu —— Task 4 把摆谱下了 Dock,入口就是这张卡', () => {
     renderPage();
     fireEvent.click(screen.getByText('摆到实体盘').closest('button')!);
-    // 带上来处(2026-09-23):摆谱列表原先没有返回键,现在它回写明的这一页
+    // 带上来处(2026-09-22):摆谱列表原先没有返回键,现在它回写明的这一页
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/baipu', { state: { backTo: '/kiosk/kifu' } });
   });
 

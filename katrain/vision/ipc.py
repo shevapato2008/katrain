@@ -29,6 +29,7 @@ class CommandType(Enum):
     PAUSE_DETECTION = "pause_detection"
     RESUME_DETECTION = "resume_detection"
     SET_LIT_POINTS = "set_lit_points"
+    REMEASURE_LED_GLOW = "remeasure_led_glow"
     SHUTDOWN = "shutdown"
 
 

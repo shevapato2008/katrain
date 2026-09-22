@@ -83,6 +83,9 @@ class LedCentroidResult:
     area: int = 0
     margin: float = 0.0
     reason: str | None = None
+    # Integrated brightness of the dominant blob (sum of its lit-minus-dark delta). The runtime LED
+    # brightness loop (worker_inprocess.measure_led_glow) steers guidance brightness on it.
+    score: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -187,13 +190,15 @@ def detect_led_centroid(
     second_score = blobs[1][0] if len(blobs) > 1 else 0.0
     margin = score / max(second_score, 1.0)
     if len(blobs) > 1 and margin < 1.3:
-        return LedCentroidResult(ok=False, peak=peak, area=area, margin=margin, reason="ambiguous_blobs")
+        return LedCentroidResult(
+            ok=False, peak=peak, area=area, margin=margin, reason="ambiguous_blobs", score=score
+        )
 
     ys, xs = np.where(labels == label)
     weights = np.maximum(delta[ys, xs], 0.0)
     total = float(weights.sum())
     centroid = (float(np.dot(xs, weights) / total), float(np.dot(ys, weights) / total))
-    return LedCentroidResult(ok=True, centroid=centroid, peak=peak, area=area, margin=margin)
+    return LedCentroidResult(ok=True, centroid=centroid, peak=peak, area=area, margin=margin, score=score)
 
 
 def fit_geometry_from_anchors(

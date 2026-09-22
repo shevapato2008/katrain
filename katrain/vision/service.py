@@ -212,6 +212,11 @@ class VisionService:
                 WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": [[r, c] for r, c in points]})
             )
 
+    def remeasure_led_glow(self) -> None:
+        """The guidance brightness just changed: measure the still-empty lit points again (led_glow)."""
+        if self._worker:
+            self._worker.send_command(WorkerCommand(action=CommandType.REMEASURE_LED_GLOW))
+
     # -- data retrieval ------------------------------------------------------
 
     def get_detected_board(self) -> list[list[int]] | None:

@@ -31,6 +31,7 @@ from katrain.vision.gating import (
     should_feed_sync_frame,
 )
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
+from katrain.vision.led_geometry_calibrator import ROI_CELLS, ROI_RADIUS_MIN_PX, detect_led_centroid
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
 from katrain.vision.parallax import ParallaxParams, mount_parallax_for_lock
@@ -60,6 +61,32 @@ AMBIG_REPROMPT_FRAMES = 40  # ~4s at ~10fps
 # Per-frame latency trace: `touch` this file on the box to get one "vtrace" INFO line per processed frame
 # (stage timings + what the frame decided), `rm` it to stop. Checked every frame, no restart needed.
 TRACE_FLAG = "/tmp/katrain-vision-trace"
+
+
+# Frames to skip after a lamp changes before measuring its glow: the LED board shows it asynchronously.
+GLOW_SETTLE_FRAMES = 2
+
+
+def measure_led_glow(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col: int):
+    """Glow of the lamp at (row, col): the geometry calibrator's own lit-minus-dark blob measure
+    (detect_led_centroid, same ROI rule), so `score` is in the units the calibration logs. Measured on the
+    raw camera frame around the intersection (cropped, for speed); the strongest colour channel wins."""
+    pts = np.asarray(geometry.points, dtype=float)
+    sw, sh = getattr(geometry, "source_width", None), getattr(geometry, "source_height", None)
+    sx = frame.shape[1] / sw if sw else 1.0
+    sy = frame.shape[0] / sh if sh else 1.0
+    here = pts[row][col]
+    near = pts[row][col + 1] if col < pts.shape[1] - 1 else pts[row][col - 1]
+    cx, cy = here[0] * sx, here[1] * sy
+    cell = float(np.hypot((near[0] - here[0]) * sx, (near[1] - here[1]) * sy))
+    radius = max(ROI_RADIUS_MIN_PX, ROI_CELLS * cell)
+    x0, y0 = max(0, int(cx - radius) - 4), max(0, int(cy - radius) - 4)
+    x1, y1 = min(frame.shape[1], int(cx + radius) + 5), min(frame.shape[0], int(cy + radius) + 5)
+    roi = (cx - x0, cy - y0, radius)
+    results = [
+        detect_led_centroid(ref[y0:y1, x0:x1], frame[y0:y1, x0:x1], channel=channel, roi=roi) for channel in range(3)
+    ]
+    return max(results, key=lambda result: result.score)
 
 
 class _FrameTrace:
@@ -170,6 +197,13 @@ class InProcessAdapter:
 
         self._paused = False
         self._lit_points: set[tuple[int, int]] = set()
+        # Guidance-lamp glow (ambient LED brightness loop, 2026-09-22): the raw frame from just before a lamp
+        # came on is the dark reference; newly lit cells are measured once the lamp shows (led_glow event).
+        self._last_raw: np.ndarray | None = None
+        self._glow_ref: np.ndarray | None = None
+        self._glow_cells: set[tuple[int, int]] = set()
+        self._glow_pending: set[tuple[int, int]] = set()
+        self._glow_wait = 0
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
         # Confidence-adaptive confirmation: a stone we can already see clearly does not
@@ -286,6 +320,32 @@ class InProcessAdapter:
             if 0 <= r < gs and 0 <= c < gs and int(exp[r][c]) != EMPTY and math.hypot(fy - r, fx - c) <= SUSTAIN_RADIUS:
                 kept.append(det)
         return kept
+
+    def _measure_pending_glow(self, frame: np.ndarray) -> None:
+        """Measure each newly lit lamp that is still a bare lamp (no stone on the camera's board there) and
+        report it as a led_glow event. The AI's move is already on the expected board while its lamp waits
+        for the player, so only the camera's own board decides "bare"."""
+        cells, self._glow_pending = self._glow_pending, set()
+        ref, geometry, stable = self._glow_ref, self._geometry, self._last_stable_board
+        if ref is None or geometry is None or getattr(geometry, "points", None) is None or ref.shape != frame.shape:
+            return
+        for row, col in sorted(cells):
+            if stable is not None and int(stable[row][col]) != EMPTY:
+                continue
+            result = measure_led_glow(ref, frame, geometry, row, col)
+            self._event_queue.put(
+                {
+                    "type": "led_glow",
+                    "data": {
+                        "row": int(row),
+                        "col": int(col),
+                        "ok": bool(result.ok),
+                        "score": round(float(result.score), 1),
+                        "peak": round(float(result.peak), 1),
+                        "area": int(result.area),
+                    },
+                }
+            )
 
     def _active_extractor(self) -> BoardStateExtractor:
         """Margin-aware extractor for the geometry-lock warp; plain (border 0) for BoardFinder."""
@@ -458,6 +518,11 @@ class InProcessAdapter:
             motion_stable = False
             if frame is not None:
                 motion_stable = self._motion_is_stable(frame)
+            if self._glow_pending and frame is not None and motion_stable:
+                if self._glow_wait > 0:
+                    self._glow_wait -= 1
+                else:
+                    self._measure_pending_glow(frame)
             if tr:
                 tr.mark("motion")
                 tr.note(f"still={int(motion_stable)} {self._motion_diagnostic()}")
@@ -742,6 +807,8 @@ class InProcessAdapter:
                     self._event_queue.put({"type": evt.type.value, "data": evt.data})
 
             self._publish_status(observed_board)
+            if frame is not None:
+                self._last_raw = frame
             if tr:
                 tr.mark("sync")
                 tr.emit()
@@ -875,7 +942,19 @@ class InProcessAdapter:
             elif cmd.action == CommandType.RESUME_DETECTION:
                 self._paused = False
             elif cmd.action == CommandType.SET_LIT_POINTS:
-                self._lit_points = {tuple(p) for p in cmd.data.get("points", [])}
+                lit = {tuple(p) for p in cmd.data.get("points", [])}
+                if lit - self._lit_points:
+                    # A lamp just came on: the last frame read before this command is its dark reference.
+                    self._glow_ref = self._last_raw
+                    self._glow_cells = lit - self._lit_points
+                    self._glow_pending = set(self._glow_cells)
+                    self._glow_wait = GLOW_SETTLE_FRAMES
+                elif not lit:
+                    self._glow_ref, self._glow_cells, self._glow_pending = None, set(), set()
+                self._lit_points = lit
+            elif cmd.action == CommandType.REMEASURE_LED_GLOW:
+                self._glow_pending = self._glow_cells & self._lit_points
+                self._glow_wait = GLOW_SETTLE_FRAMES
 
     def _maybe_send_preview(self, warped: np.ndarray, detections: list | None = None) -> None:
         if not self._viewer_active:

@@ -3623,6 +3623,50 @@ def _diag_log_vision_evt(log, evt: dict, n_clients: int) -> None:
         log.info("[DIAG-VIS] %s data=%s -> %d clients", t, data, n_clients)
 
 
+# Ambient LED brightness loop (2026-09-22). A guidance lamp's glow, measured by the vision worker on a
+# bare lit point before the player places the stone (led_glow), steers the guidance brightness: at night
+# full brightness shines through a white stone and it is not recognised until the lamp goes out (RK3562).
+# Target in detect_led_centroid score units. Calibration anchors (green@96) scored a median 35k at 17:35,
+# when white stones on lit lamps were still recognised, and 70k at 19:38, when they were not;
+# provisional, to be tuned from the "LED glow" log lines.
+LED_GLOW_TARGET = 60000.0
+LED_GLOW_DEADBAND = (0.8, 1.25)  # target / score inside this band: leave the brightness alone
+
+
+def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
+    led = getattr(app.state, "led", None)
+    if led is None or not hasattr(led, "set_guidance_scale"):
+        return
+    before = led.guidance_scale
+    score = float(data.get("score") or 0.0)
+    after = before
+    if data.get("ok") and score > 0:
+        ratio = LED_GLOW_TARGET / score
+        if not LED_GLOW_DEADBAND[0] <= ratio <= LED_GLOW_DEADBAND[1]:
+            from katrain.web.core.led_service import MIN_GUIDANCE_SCALE
+
+            # the score is roughly proportional to the brightness; clamp here too, or a pinned lamp
+            # (full brightness in daylight) would re-measure forever
+            after = min(1.0, max(MIN_GUIDANCE_SCALE, before * min(2.5, max(0.4, ratio))))
+    log.info(
+        "LED glow at (%s,%s): ok=%s score=%.0f peak=%s area=%s -> guidance brightness %.2f -> %.2f (target %.0f)",
+        data.get("row"),
+        data.get("col"),
+        data.get("ok"),
+        score,
+        data.get("peak"),
+        data.get("area"),
+        before,
+        after,
+        LED_GLOW_TARGET,
+    )
+    if abs(after - before) >= 0.02:
+        led.set_guidance_scale(after)
+        vision = getattr(app.state, "vision", None)
+        if vision is not None and hasattr(vision, "remeasure_led_glow"):
+            vision.remeasure_led_glow()  # converge while the player still has not placed the stone
+
+
 async def _vision_event_pump(app: FastAPI):
     """Sole consumer of the vision worker event queue — see vision_pump docstring."""
     from katrain.web.core.vision_pump import route_vision_event
@@ -3633,6 +3677,9 @@ async def _vision_event_pump(app: FastAPI):
             vision = getattr(app.state, "vision", None)
             if vision:
                 for evt in vision.poll_events():
+                    if isinstance(evt, dict) and evt.get("type") == "led_glow":
+                        _adjust_led_brightness(app, evt.get("data") or {}, log)
+                        continue
                     if isinstance(evt, dict):
                         _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
                     route_vision_event(

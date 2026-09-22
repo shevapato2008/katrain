@@ -3632,6 +3632,9 @@ def _diag_log_vision_evt(log, evt: dict, n_clients: int) -> None:
 LED_GLOW_TARGET = 60000.0
 LED_GLOW_DEADBAND = (0.8, 1.25)  # target / score inside this band: leave the brightness alone
 LED_GLOW_STEP = (0.5, 2.0)  # one reading moves the brightness by at most these factors
+# A bare lamp's glow never covers more than ~2000 px of the raw 1080p frame (full brightness, dark room);
+# readings of 3000-21000 px with a low peak were a hand or the whole scene changing, not the lamp.
+LED_GLOW_MAX_AREA = 2500
 
 
 def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
@@ -3641,7 +3644,7 @@ def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
     before = led.guidance_scale
     score = float(data.get("score") or 0.0)
     after = before
-    if data.get("ok") and score > 0:
+    if data.get("ok") and score > 0 and int(data.get("area") or 0) <= LED_GLOW_MAX_AREA:
         ratio = LED_GLOW_TARGET / score
         if not LED_GLOW_DEADBAND[0] <= ratio <= LED_GLOW_DEADBAND[1]:
             from katrain.web.core.led_service import MIN_GUIDANCE_SCALE

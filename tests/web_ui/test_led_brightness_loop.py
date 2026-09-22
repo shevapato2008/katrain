@@ -20,10 +20,11 @@ class _Led:
         self.guidance_scale = scale
 
 
-def _run(scale, score, ok=True):
+def _run(scale, score, ok=True, area=450):
     led = _Led(scale)
     app = SimpleNamespace(state=SimpleNamespace(led=led))
-    _adjust_led_brightness(app, {"row": 15, "col": 15, "ok": ok, "score": score}, logging.getLogger("t"))
+    reading = {"row": 15, "col": 15, "ok": ok, "score": score, "area": area}
+    _adjust_led_brightness(app, reading, logging.getLogger("t"))
     return led
 
 
@@ -61,3 +62,9 @@ def test_a_glow_that_grows_with_the_square_of_the_brightness_settles_instead_of_
 def test_an_unusable_reading_changes_nothing():
     for ok, score in ((False, 5 * LED_GLOW_TARGET), (True, 0.0)):
         assert _run(1.0, score, ok=ok).set_calls == []
+
+
+def test_a_glow_larger_than_any_lamp_is_not_the_lamp():
+    # 2026-09-22 night, (7,18): score 645k over 21108 px, peak 55 -- the whole scene changed
+    assert _run(0.5, 10 * LED_GLOW_TARGET, area=21108).set_calls == []
+    assert _run(0.5, 10 * LED_GLOW_TARGET, area=1975).set_calls == [pytest.approx(0.25)]  # a full-brightness lamp

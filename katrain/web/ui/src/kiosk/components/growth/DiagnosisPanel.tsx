@@ -115,12 +115,21 @@ const DiagnosisPanel = ({ diag, failed }: { diag: GrowthDiagnosis | null; failed
             </div>
           ))}
         </div>
+        {/* 样本量、「另有 N 份没算进来」、「样本还少」并成**一段** —— 日历加进右栏之后,诊断块只剩
+            两百来像素高,三句分开摆会把最后一句挤出框(真浏览器实测溢出 94px)。 */}
         <p className="setnote gdnote" data-testid="diag-sample">
           {t('growth:diag_sample_a', '只看跑过报告的对局：最近 ')}
           <b>{diag.reports}</b>
           {t('growth:diag_sample_b', ' 份里你下的 ')}
           <b>{diag.graded_moves}</b>
           {t('growth:diag_sample_c', ' 手。')}
+          {diag.skipped_without_color > 0 && (
+            <>
+              {t('growth:diag_skipped_a', '另有 ')}
+              <b>{diag.skipped_without_color}</b>
+              {t('growth:diag_skipped_b', ' 份没记执色。')}
+            </>
+          )}
           {diag.authority === 'local_cache' && (
             <>
               {t('growth:diag_local_a', '这是')}
@@ -128,22 +137,10 @@ const DiagnosisPanel = ({ diag, failed }: { diag: GrowthDiagnosis | null; failed
               {t('growth:diag_local_b', '，可能少几份。')}
             </>
           )}
-          {diag.skipped_without_color > 0 && (
-            <>
-              {t('growth:diag_skipped_a', '另有 ')}
-              <b>{diag.skipped_without_color}</b>
-              {t('growth:diag_skipped_b', ' 份没记下你执哪一方，没算进来。')}
-            </>
+          {thin && (
+            <b data-testid="diag-thin">{t('growth:diag_thin', '样本还少，结论会抖。')}</b>
           )}
         </p>
-        {thin && (
-          <p className="setnote gdnote" data-testid="diag-thin">
-            <b>{t('growth:diag_thin_a', '样本还少')}</b>
-            {t('growth:diag_thin_b', '（不到 {r} 份报告或 {m} 手），结论会抖，仅供参考。')
-              .replace('{r}', String(DIAGNOSIS_THIN_REPORTS))
-              .replace('{m}', String(DIAGNOSIS_THIN_MOVES))}
-          </p>
-        )}
       </>
     );
   }

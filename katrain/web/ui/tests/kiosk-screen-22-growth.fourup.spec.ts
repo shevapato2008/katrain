@@ -78,10 +78,11 @@ const SUMMARY = {
   decided_games_in_window: 30,
   wins_in_window: 17,
   losses_in_window: 13,
-  // 定级之后的档位,一天一个点;中间没下的日子不补点。日期落在冻结时钟(2026-08-20)前 30 天里。
+  // 定级之后的档位,一天一个点;中间没下的日子不补点。日期落在冻结时钟(2026-09-22)前 30 天里,
+  // 与稿子屏 22 那条示例走势同一组偏移(27/24/23/18/15/11/9/6/3/1 天前)。
   rung_trend: [
-    ['07-24', 16], ['07-27', 16], ['07-28', 17], ['08-02', 17], ['08-05', 18],
-    ['08-09', 17], ['08-11', 18], ['08-14', 19], ['08-17', 18], ['08-19', 18],
+    ['08-26', 16], ['08-29', 16], ['08-30', 17], ['09-04', 17], ['09-07', 18],
+    ['09-11', 17], ['09-13', 18], ['09-16', 19], ['09-19', 18], ['09-21', 18],
   ].map(([d, rung]) => ({ date: `2026-${d}`, rung, rank_name: `${21 - (rung as number)}级` })),
   by_opponent_rung: [
     { rung: 21, rank_name: '准1段', wins: 1, losses: 4 },
@@ -106,6 +107,40 @@ const DIAGNOSIS = {
   authority: 'this_node',
 };
 
+/**
+ * 近一年练棋日历。**与稿子屏 22 那张示例同一个生成器、同一个种子**(smartbox `go-kiosk.tmpl.html`
+ * 末尾那段脚本逐行搬过来)⇒ 两边的格子逐格相同,差异图上剩下的只有结构差异。
+ * 稿子的「今天」是 2026-09-22,所以这一屏的时钟也冻在那一天(见 `freezeClock` 那一行)。
+ */
+const ACTIVITY = (() => {
+  const DAY = 86400000;
+  const today = Date.UTC(2026, 8, 22);
+  const first = today - 364 * DAY;
+  const dow = (t: number) => (new Date(t).getUTCDay() + 6) % 7;
+  let seed = 20260922;
+  const rand = () => {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const days: { date: string; games: number; solved: number }[] = [];
+  for (let t = first - dow(first) * DAY; t <= today; t += DAY) {
+    if (t < first) continue;
+    const d = new Date(t);
+    const progress = (t - first) / (today - first);
+    let p = 0.28 + 0.5 * progress + (dow(t) >= 5 ? 0.12 : 0);
+    const m = d.getUTCMonth() + 1, dd = d.getUTCDate();
+    if ((m === 2 && dd >= 14 && dd <= 22) || (m === 5 && dd >= 3 && dd <= 13)) p = 0.06;
+    const n = rand() < p ? 1 + Math.floor(Math.pow(rand(), 1.7) * (4 + 10 * progress)) : 0;
+    if (n > 0) {
+      const games = Math.ceil(n / 3);
+      days.push({ date: d.toISOString().slice(0, 10), games, solved: n - games });
+    }
+  }
+  return { window_days: 365, days, authority: 'this_node' };
+})();
+
 /** 37 道做过的题,其中 29 道解出来了 —— 「累计已解题」那一格的来源。 */
 const PROGRESS = Object.fromEntries(
   Array.from({ length: 37 }, (_, i) => [`p${i}`, { problemId: `p${i}`, completed: i < 29, attempts: 1 }]),
@@ -125,6 +160,7 @@ const stub = async (page: Page) => {
     if (path === '/api/v1/ai-ladder/status') return route.fulfill({ json: LADDER });
     if (path === '/api/v1/growth/summary') return route.fulfill({ json: SUMMARY });
     if (path === '/api/v1/growth/diagnosis') return route.fulfill({ json: DIAGNOSIS });
+    if (path === '/api/v1/growth/activity') return route.fulfill({ json: ACTIVITY });
     if (path === '/api/v1/tsumego/progress') return route.fulfill({ json: PROGRESS });
     if (path === '/api/v1/vision/status') {
       return route.fulfill({ json: { enabled: false, camera_connected: false, pose_locked: false,
@@ -139,13 +175,15 @@ const stub = async (page: Page) => {
 };
 
 test('四图:成长 ←→ sample-go/shots/22-growth.png', async ({ page }) => {
-  await freezeClock(page);
+  // 冻在稿子的「今天」:日历的右端和走势的横轴都从这一天往回数。
+  await freezeClock(page, '2026-09-22T16:40:00');
   await stub(page);
   await page.goto('/kiosk/growth');
   // 等的是**打过的档真的画出来了** —— 它是这一屏区别于稿子的那一块。
   await page.waitForSelector('[data-testid="growth-by-rung"] .grung');
   await page.waitForSelector('[data-testid="diag-row"]');
   await page.waitForSelector('[data-testid="growth-trend"]');
+  await page.waitForSelector('[data-testid="growth-cal-days"]');
   await page.waitForLoadState('networkidle');
 
   const r = await captureFourUp({
@@ -154,8 +192,8 @@ test('四图:成长 ←→ sample-go/shots/22-growth.png', async ({ page }) => {
     outDir: OUT,
     slug: '22-growth',
     referenceCaption:
-      '参考:sample-go/shots/22-growth.png · L1 两栏 · 左栏段位 + 升降规矩,'
-      + '右栏数据条 + 一大段「接线断在一个词上」+ 两块诊断空态',
+      '参考:sample-go/shots/22-growth.png(2026-09-22 照实现重画 + 近一年练棋日历)· L1 两栏 · '
+      + '左栏段位 / 净胜分 / 走势 / 规矩 / 两格,右栏数据条 + 胜率口径 + 日历 + 诊断 | 按对手强度',
     implementationCaption:
       '实现:/kiosk/growth @1024×600 · 时钟冻 16:40 · '
       + '**稿子这一屏有四处已经不成立,全部没照搬** —— ① 那条只认 game_type=="rated" 的计数'
@@ -172,7 +210,9 @@ test('四图:成长 ←→ sample-go/shots/22-growth.png', async ({ page }) => {
       + '**能力诊断是真数据**:最近 6 份报告里你下的 420 手,按布局/中盘/官子数问题手(小亏·失误·恶手),'
       + '中盘 60/200 明显高 ⇒ 标「最弱」;稿子的「样本 0 局」和蓝标都去掉了 · '
       + '**左栏多了近 30 天档位走势**(Fan 09-21 裁定画档位),最高点走 --good 绿标;'
-      + '为装下它「升降的规矩」三行从 44 压到 30',
+      + '为装下它「升降的规矩」三行从 44 压到 30 · '
+      + '**近一年练棋日历**(Fan 09-22):每格 = 当天下完的对局 + 新解出的题,固定五档;'
+      + '格子数据与稿子同一个种子,逐格相同',
   });
   console.log(`[fourup 22-growth] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

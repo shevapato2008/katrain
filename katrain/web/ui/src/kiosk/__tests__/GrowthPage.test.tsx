@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { GrowthDiagnosis, GrowthSummary } from '../api/growthApi';
+import type { GrowthActivity, GrowthDiagnosis, GrowthSummary } from '../api/growthApi';
 import type { AiLadderStatus } from '../../features/aiLadder/types';
 
 /**
@@ -25,6 +25,8 @@ const { mocks } = vi.hoisted(() => ({
     summaryError: null as Error | null,
     diagnosis: null as GrowthDiagnosis | null,
     diagnosisError: null as Error | null,
+    activity: null as GrowthActivity | null,
+    activityError: null as Error | null,
     progress: {} as Record<string, { completed: boolean }>,
     progressFailed: false,
   },
@@ -44,6 +46,8 @@ vi.mock('../api/growthApi', async (importOriginal) => ({
   getGrowthSummary: () => (mocks.summaryError ? Promise.reject(mocks.summaryError) : Promise.resolve(mocks.summary)),
   getGrowthDiagnosis: () => (mocks.diagnosisError
     ? Promise.reject(mocks.diagnosisError) : Promise.resolve(mocks.diagnosis)),
+  getGrowthActivity: () => (mocks.activityError
+    ? Promise.reject(mocks.activityError) : Promise.resolve(mocks.activity)),
 }));
 
 import GrowthPage from '../pages/GrowthPage';
@@ -103,6 +107,8 @@ beforeEach(() => {
   mocks.summaryError = null;
   mocks.diagnosis = DIAGNOSIS();
   mocks.diagnosisError = null;
+  mocks.activity = { window_days: 365, days: [], authority: 'this_node' };
+  mocks.activityError = null;
   mocks.progress = {};
   mocks.progressFailed = false;
 });
@@ -410,5 +416,37 @@ describe('屏 22 成长', () => {
     renderGrowth();
     expect(await screen.findByTestId('growth-trend-empty')).toBeInTheDocument();
     expect(screen.queryByTestId('growth-trend')).toBeNull();
+  });
+
+  // ── 近一年练棋日历(G4,Fan 2026-09-22)──────────────────────────────────
+  // 每格 = 当天下完的对局 + 当天新解出的题;固定五档 0 / 1–2 / 3–5 / 6–9 / 10+。
+  const today = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  it('日历写出近一年练过几天,今天那格按次数上色', async () => {
+    mocks.activity = { window_days: 365, authority: 'this_node', days: [
+      { date: today(), games: 2, solved: 5 },
+      { date: '2001-01-01', games: 9, solved: 9 }, // 窗口外:不算
+    ] };
+    renderGrowth();
+    expect(await screen.findByTestId('growth-cal-days')).toHaveTextContent('1');
+    const cell = document.querySelector(`[data-date="${today()}"]`)!;
+    expect(cell.getAttribute('data-level')).toBe('3'); // 7 次 → 6–9 那一档
+  });
+
+  it('日历没读到时照实说,不画一张全空的格子冒充「一天没练」', async () => {
+    mocks.activityError = new Error('boom');
+    renderGrowth();
+    expect(await screen.findByTestId('growth-cal-error')).toBeInTheDocument();
+    expect(screen.queryByTestId('growth-cal-days')).toBeNull();
+    expect(document.querySelector('[data-date]')).toBeNull();
+  });
+
+  it('盒上退回本机缓存时说明这是本机记录', async () => {
+    mocks.activity = { window_days: 365, authority: 'local_cache', days: [{ date: today(), games: 1, solved: 0 }] };
+    renderGrowth();
+    expect(await screen.findByTestId('growth-cal')).toHaveTextContent('本机记录');
   });
 });

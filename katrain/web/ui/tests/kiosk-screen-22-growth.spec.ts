@@ -80,8 +80,29 @@ const FULL_DIAGNOSIS = {
     { phase: 'midgame', graded: 50, bad: 19 },
     { phase: 'endgame', graded: 30, bad: 5 },
   ],
-  authority: 'local_cache',
+  authority: 'cloud',
 };
+
+/**
+ * 诊断块在**盒子离线**时的样子:报告只在云端,本机库里没有逐手数据 ⇒ 退回本机时一定是 0 份,
+ * 屏上是「这会儿读不到云端的报告」那个短空态。**所以「本机记录」那句和满载的诊断不会同时出现**
+ * —— 这一条决定了右栏真实可达的最满态只有下面 `FULLEST` 那两种。
+ */
+const OFFLINE_DIAGNOSIS = {
+  window_days: 90, reports: 0, skipped_without_color: 0, graded_moves: 0, phases: [], authority: 'local_cache',
+};
+
+/** 日历**最满**的那一态:近一年天天都练、而且天天 10 次以上(最深那一档)。日期从今天往前数。 */
+const FULL_ACTIVITY = {
+  window_days: 365,
+  authority: 'local_cache',
+  days: Array.from({ length: 365 }, (_, i) => {
+    const d = new Date(Date.now() - i * 86_400_000);
+    const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return { date, games: 4, solved: 8 };
+  }),
+};
+const EMPTY_ACTIVITY = { window_days: 365, days: [], authority: 'this_node' };
 
 /** 诊断块**最空**的那一态:一份报告都没有。 */
 const EMPTY_DIAGNOSIS = {
@@ -98,7 +119,12 @@ const FULL_TREND = Array.from({ length: 30 }, (_, i) => ({
   rank_name: `${5 - (i % 4)}级`,
 }));
 
-const stub = async (page: Page, growth: Record<string, unknown>, diagnosis: Record<string, unknown> = EMPTY_DIAGNOSIS) => {
+const stub = async (
+  page: Page,
+  growth: Record<string, unknown>,
+  diagnosis: Record<string, unknown> = EMPTY_DIAGNOSIS,
+  activity: Record<string, unknown> = EMPTY_ACTIVITY,
+) => {
   await page.addInitScript(() => {
     localStorage.setItem('token', 'screen-22');
     localStorage.setItem('katrain_language', 'cn');
@@ -111,6 +137,7 @@ const stub = async (page: Page, growth: Record<string, unknown>, diagnosis: Reco
     if (path === '/api/v1/ai-ladder/status') return route.fulfill({ json: LADDER_PLACED });
     if (path === '/api/v1/growth/summary') return route.fulfill({ json: growth });
     if (path === '/api/v1/growth/diagnosis') return route.fulfill({ json: diagnosis });
+    if (path === '/api/v1/growth/activity') return route.fulfill({ json: activity });
     if (path === '/api/v1/tsumego/progress') {
       return route.fulfill({ json: { p1: { problemId: 'p1', completed: true, attempts: 1 } } });
     }
@@ -124,8 +151,13 @@ const stub = async (page: Page, growth: Record<string, unknown>, diagnosis: Reco
   });
 };
 
-const open = async (page: Page, growth = summary(), diagnosis?: Record<string, unknown>) => {
-  await stub(page, growth, diagnosis);
+const open = async (
+  page: Page,
+  growth = summary(),
+  diagnosis?: Record<string, unknown>,
+  activity?: Record<string, unknown>,
+) => {
+  await stub(page, growth, diagnosis, activity);
   await page.goto('/kiosk/growth');
   await page.waitForSelector('[data-testid="growth-page"]');
   await page.waitForSelector('[data-testid="growth-stats"] .kiosk-stat');
@@ -157,24 +189,48 @@ test('L1 外框:左栏 296 · 右栏 680 · 中间区 434(有 Dock 的一级页)
   expect(g.docScrollHeight, '整屏溢出').toBeLessThanOrEqual(600);
 });
 
-test('打过的档一多:滚的是那张表自己,右栏不被顶破,两格照旧贴底', async ({ page }) => {
-  // **右栏造到最满**:20 档战绩 + 数据条下面那两句 setnote 同时出现(「本机记录」+
-  // 「有 N 局没算进胜率」)。两句各占一行,吃的是 `.gdiag` 的高度 —— 在受限高度里
-  // 加节点,要在它们都在的那一态量,不是在没有它们的那一态量。
-  // 左栏同时造到最满:30 天走势块在「升降的规矩」上面,左栏是固定高度的一栏。
+/**
+ * 右栏**真实可达**的两种最满态(在受限高度里加节点,要在它们都在的那一态量):
+ *  · 在线:胜率那句提示 + 一年天天练的日历 + 满载的诊断(三段 + 「另有 N 份」+「样本还少」)。
+ *  · 离线:两句提示(「本机记录」+ 胜率)+ 本机那份日历 + 诊断的离线空态(见 `OFFLINE_DIAGNOSIS`)。
+ * 左栏两态都造到最满:30 天走势块在「升降的规矩」上面,左栏是固定高度的一栏。
+ *
+ * 2026-09-22 日历加进右栏后,第一次量「最满」(当时把「本机记录」和满载诊断造在了一起)实测
+ * 右栏溢出 94px、诊断块最后一句被裁 ⇒ 诊断行距 12→8、样本量三句并成一段、日历本机态只写四个字。
+ */
+const FULLEST = [
+  {
+    name: '在线',
+    authority: 'cloud',
+    diagnosis: FULL_DIAGNOSIS,
+    activity: { ...FULL_ACTIVITY, authority: 'cloud' },
+    mustShow: ['growth-unknown-seat', 'diag-thin'],
+  },
+  {
+    name: '离线',
+    authority: 'local_cache',
+    diagnosis: OFFLINE_DIAGNOSIS,
+    activity: FULL_ACTIVITY,
+    mustShow: ['growth-local-note', 'growth-unknown-seat', 'diag-offline'],
+  },
+];
+
+for (const c of FULLEST) test(`打过的档一多(${c.name}最满):滚的是那张表自己,右栏不被顶破,两格照旧贴底`, async ({ page }) => {
   await open(page, summary({
     by_opponent_rung: MANY_RUNGS,
-    authority: 'local_cache',
+    authority: c.authority,
     decided_games_in_window: 30,
     wins_in_window: 17,
     losses_in_window: 13,
     rung_trend: FULL_TREND,
-  }), FULL_DIAGNOSIS);
+  }), c.diagnosis, c.activity);
   await page.waitForSelector('[data-testid="growth-by-rung"] .grung');
-  await expect(page.getByTestId('growth-local-note'), '最满那一态没造出来 —— 少了「本机记录」那句').toBeVisible();
-  await expect(page.getByTestId('growth-unknown-seat'), '最满那一态没造出来 —— 少了「没算进胜率」那句').toBeVisible();
-  await expect(page.getByTestId('diag-thin'), '最满那一态没造出来 —— 诊断少了「样本还少」那句').toBeVisible();
+  for (const id of c.mustShow) {
+    await expect(page.getByTestId(id), `${c.name}最满那一态没造出来 —— 少了 ${id}`).toBeVisible();
+  }
   await expect(page.getByTestId('growth-trend'), '最满那一态没造出来 —— 左栏没画走势').toBeVisible();
+  await expect(page.getByTestId('growth-cal-days'), '最满那一态没造出来 —— 日历不是一年天天都练')
+    .toHaveText('365');
 
   const g = await page.evaluate(() => {
     const rungs = document.querySelector('.grungs') as HTMLElement;
@@ -199,15 +255,16 @@ test('打过的档一多:滚的是那张表自己,右栏不被顶破,两格照�
         return parseFloat(cs.paddingBottom) + parseFloat(cs.borderBottomWidth);
       })(),
       docScrollHeight: document.documentElement.scrollHeight,
-      // 诊断块:它自己不许被内容撑破(最满那一态下最后一句「样本还少」要完整落在框里)
+      // 诊断块:它自己不许被内容撑破,最后一个孩子(在线态是那段样本量、离线态是空态卡)完整落在框里
       diagPanelOverflow: (() => {
         const el = document.querySelector('[data-testid="growth-diagnosis"]') as HTMLElement;
         return el.scrollHeight - el.clientHeight;
       })(),
       diagLastInside: (() => {
-        const panel = document.querySelector('[data-testid="growth-diagnosis"]')!.getBoundingClientRect();
-        const last = document.querySelector('[data-testid="diag-thin"]')!.getBoundingClientRect();
-        return last.bottom <= panel.bottom + 0.5;
+        const el = document.querySelector('[data-testid="growth-diagnosis"]') as HTMLElement;
+        const panel = el.getBoundingClientRect();
+        const last = el.lastElementChild!.getBoundingClientRect();
+        return last.bottom <= panel.bottom - parseFloat(getComputedStyle(el).paddingBottom) + 0.5;
       })(),
       // 左栏:走势块加进来之后,整栏不许溢出,「升降的规矩」最后一行要完整落在两格上面
       rankOverflow: (() => {
@@ -217,6 +274,18 @@ test('打过的档一多:滚的是那张表自己,右栏不被顶破,两格照�
       rulesBottom: document.querySelector('.grules')!.getBoundingClientRect().bottom,
       cellsTop: cells.top,
       trendH: Math.round(document.querySelector('[data-testid="growth-trend"]')!.getBoundingClientRect().height),
+      // 日历:整块不被挤扁(它是 flex:none 的 .panel),格子区完整落在日历块的内容框里
+      cal: (() => {
+        const box = document.querySelector('[data-testid="growth-cal"]') as HTMLElement;
+        const grid = box.querySelector('.gcal__grid')!.getBoundingClientRect();
+        const b = box.getBoundingClientRect();
+        return {
+          h: Math.round(b.height),
+          overflow: box.scrollHeight - box.clientHeight,
+          gridInside: grid.left >= b.left && grid.right <= b.right && grid.top >= b.top && grid.bottom <= b.bottom,
+          cols: box.querySelectorAll('.gcal__grid > i').length / 7,
+        };
+      })(),
     };
   });
   console.log('[22-growth/overflow]', JSON.stringify(g));
@@ -233,7 +302,10 @@ test('打过的档一多:滚的是那张表自己,右栏不被顶破,两格照�
   expect(g.docScrollHeight, '整屏溢出').toBeLessThanOrEqual(600);
   // ⑥ 诊断块最满时不被撑破,最后一句完整在框里
   expect(g.diagPanelOverflow, '诊断块被内容撑破了').toBeLessThanOrEqual(0);
-  expect(g.diagLastInside, '「样本还少」那句被诊断块裁掉了').toBe(true);
+  expect(g.diagLastInside, '诊断块最后那一句被裁掉了').toBe(true);
+  // ⑧ 日历:53 列不被右栏裁掉、块本身不溢出
+  expect(g.cal.overflow, '日历块被内容撑破了').toBeLessThanOrEqual(0);
+  expect(g.cal.gridInside, '日历的格子区被裁掉了一截').toBe(true);
   // ⑦ 左栏加了走势之后不溢出,规矩最后一行在两格之上
   expect(g.rankOverflow, '左栏被走势块撑破了').toBeLessThanOrEqual(0);
   expect(g.rulesBottom, '「升降的规矩」被挤到两格下面去了').toBeLessThanOrEqual(g.cellsTop);
@@ -259,8 +331,10 @@ test('打过的档一多:滚的是那张表自己,右栏不被顶破,两格照�
 
 /**
  * 最空的那一态。**这一次先算过自由空间再写断言**(上一屏的教训:右栏只剩 2px 时,
- * 任何断言都分不出东西来)。这一屏右栏是 434 高、只有数据条 72 + 缝 12 是固定的 ⇒
- * `.gdiag` 拿得到 **350** 左右,和「塌成内容高」差着一个量级,分得开。
+ * 任何断言都分不出东西来)。右栏 434 高,数据条 72 + 缝 12 + 日历约 109 + 缝 12 是固定的 ⇒
+ * `.gdiag` 拿得到 **230** 左右,塌成内容高(一句话 + 一颗按钮)是一百出头,分得开。
+ * 2026-09-22 日历加进来之前这里写死「> 300」—— 那是没有日历时的数,**闸跟着布局过期了**;
+ * 改成关系式:诊断吃掉「日历底到中间区底」的全部高度。
  */
 test('一档都没打过:空态说话,两块诊断照旧吃掉右栏剩下的高度', async ({ page }) => {
   await open(page);
@@ -273,8 +347,11 @@ test('一档都没打过:空态说话,两块诊断照旧吃掉右栏剩下的高
     const layout = document.querySelector('[data-testid="growth-page"]')!.getBoundingClientRect();
     const [a, b] = Array.from(document.querySelectorAll('.gdiag > .panel'))
       .map((el) => Math.round(el.getBoundingClientRect().height));
+    const cal = document.querySelector('[data-testid="growth-cal"]')!.getBoundingClientRect();
     return {
       diagPanels: [a, b],
+      calBottom: cal.bottom,
+      gap: parseFloat(getComputedStyle(document.querySelector('.gcol') as HTMLElement).rowGap),
       text: document.querySelector('[data-testid="growth-by-rung"]')!.textContent ?? '',
       diagH: Math.round(diag.height),
       diagBottom: Math.round(diag.bottom),
@@ -285,9 +362,8 @@ test('一档都没打过:空态说话,两块诊断照旧吃掉右栏剩下的高
   console.log('[22-growth/empty]', JSON.stringify(g));
 
   expect(g.text, '一档没打过时那块是白的 —— 空态得自己说话').toContain('还没有战绩');
-  // 关系式:`.gdiag` 要吃掉右栏在数据条之下的**全部**剩余高度。
-  // 塌成内容高的话是一百出头,和 300+ 差一个量级。
-  expect(g.diagH, '两块诊断塌了 —— flex:1 没生效').toBeGreaterThan(300);
+  // 关系式:`.gdiag` 要吃掉右栏在日历之下的**全部**剩余高度。
+  expect(g.diagH, '两块诊断塌了 —— flex:1 没生效').toBeCloseTo(g.layoutBottom - g.calBottom - g.gap, 0);
   expect(g.diagBottom, '两块诊断没贴到中间区底').toBe(g.layoutBottom);
   // 内容最少的诊断块照样吃满那一行 —— 塌成内容高时两块会一高一矮。
   expect(Math.abs(g.diagPanels[0] - g.diagPanels[1]), '诊断块塌成了内容高').toBeLessThanOrEqual(1);

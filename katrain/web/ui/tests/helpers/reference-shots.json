@@ -96,8 +96,8 @@
     "shotFrom": "main"
   },
   "22-growth.png": {
-    "sha256": "f2171d9dc24d4813d7cb30f7f8acf5d9c814b222485c477c99b5a88aebc95dd2",
-    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+    "sha256": "1a454cfc53f5ff501fb56545719f27d25e6fee1bb7e2d477df9ab9b38fb1d7a2",
+    "shotFrom": "feat/kiosk-go-growth-calendar-2026-09-22"
   },
   "23-courses.png": {
     "sha256": "ca29f727a615cbb2c7be5495830872113a70032ffa2417a06ddd25b5c22c82d9",

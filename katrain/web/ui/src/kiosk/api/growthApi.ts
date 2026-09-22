@@ -234,3 +234,56 @@ export const trendPoints = (s: GrowthSummary): GrowthTrendPoint[] | null => {
     && typeof (p as GrowthTrendPoint).rung === 'number');
   return ok ? (raw as GrowthTrendPoint[]) : null;
 };
+
+// ── 近一年练棋日历(G4)──────────────────────────────────────────────────────
+// 后端 `GET /api/v1/growth/activity?days=365&tz_offset=…`:近 N 天每天下完的对局数和新解出的题数,
+// **只回有活动的那几天**(一年 365 格大多是空的,空格由前端补)。
+
+export interface GrowthActivityDay {
+  /** `YYYY-MM-DD`,按请求里 `tz_offset` 那个时区切的天。 */
+  date: string;
+  games: number;
+  solved: number;
+}
+
+export interface GrowthActivity {
+  window_days: number;
+  days: GrowthActivityDay[];
+  authority: DataAuthority;
+}
+
+export const isGrowthActivity = (value: unknown): value is GrowthActivity => {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Partial<GrowthActivity>;
+  return typeof v.window_days === 'number'
+    && Array.isArray(v.days)
+    && v.days.every((d) => d && typeof d.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.date)
+      && typeof d.games === 'number' && typeof d.solved === 'number')
+    && AUTHORITIES.includes(v.authority as DataAuthority);
+};
+
+/**
+ * 客户端的「今天」(本地时区)。日历的右端是它,后端按同一个时区切天 ——
+ * 按 UTC 切的话,北京早上 8 点前下的棋会落到前一天,今天那格明明下过却是空的。
+ */
+export const localDate = (now = new Date()): string =>
+  `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+export const ACTIVITY_WINDOW_DAYS = 365;
+
+export const getGrowthActivity = async (token?: string, signal?: AbortSignal): Promise<GrowthActivity> => {
+  // `tz_offset` 是「东几区」的分钟数:北京 = 480。`getTimezoneOffset` 的符号相反(北京 = -480)。
+  const tzOffset = -new Date().getTimezoneOffset();
+  const response = await fetch(
+    `/api/v1/growth/activity?days=${ACTIVITY_WINDOW_DAYS}&tz_offset=${tzOffset}`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : {}, signal },
+  );
+  if (!response.ok) {
+    throw new GrowthApiError(response.status, `growth activity failed: ${response.status}`);
+  }
+  const body: unknown = await response.json();
+  if (!isGrowthActivity(body)) {
+    throw new GrowthApiError(response.status, 'growth activity payload not recognised');
+  }
+  return body;
+};

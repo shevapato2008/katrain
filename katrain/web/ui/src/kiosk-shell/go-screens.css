@@ -427,7 +427,8 @@
    这一屏借自己左栏的 `.gmetric/.gbar`(字号、等宽数字、4px 细条都同一套)。
    细条走 `--warn`:它画的是**问题手**的比例,满格是坏事,不能和左栏那条强调色进度条同色。
    样本量那句贴底(`margin-top:auto`),和样稿一样 —— 数在上、口径在下。 */
-.gdlines { display: flex; flex-direction: column; gap: 12px; }
+/* 行距 12→8:日历加进右栏后诊断块只剩约 200px(承重实测)。 */
+.gdlines { display: flex; flex-direction: column; gap: 8px; }
 .gdlines > .gmetric { margin-top: 0; }
 .gbar.is-bad > span { background: var(--warn); }
 .gdweak { font-style: normal; font-family: var(--font-sans); font-size: 10.5px; font-weight: 600;
@@ -435,7 +436,6 @@
   border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); }
 .gdlines + .gdnote { margin-top: auto; }
 .gdnote { margin-bottom: 0; }
-.gdnote + .gdnote { margin-top: 4px; }
 /* `.gdiag .empty` 是 flex 列,子项默认拉满 —— 「去复盘」那颗胶囊不能被拉成整行宽。 */
 .gdiag .empty .pill { align-self: flex-start; }
 
@@ -460,6 +460,37 @@
   color: var(--good); white-space: nowrap; transform: translateY(-50%);
   padding: 0 3px; border-radius: 3px; background: var(--panel); }
 .gtrend-note { margin: 2px 0 0; }
+
+/* 右栏「近一年练棋日历」(Fan 2026-09-22;稿子 smartbox go-kiosk.tmpl.html 屏 22)。
+   左边一栏摘要 84px,右边 53 周 × 7 行的格子,8px 格 2px 缝 ⇒ 格子区 528×68,整块约 109 高。
+   ⚠️ 写成 `.panel.gcal`:`.panel` 那条(本文件更靠后)同特异度会把这里的内边距盖掉。 */
+.panel.gcal { display: flex; gap: 12px; padding: 12px 14px; }
+.gcal__sum { width: 84px; flex: none; display: flex; flex-direction: column; }
+.gcal__k { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; color: var(--dim); }
+.gcal__v { margin-top: 6px; font-family: var(--font-serif); font-weight: 600; font-size: 26px; line-height: 1;
+  color: var(--accent); font-variant-numeric: tabular-nums; }
+.gcal__v small { font-size: 13px; margin-left: 2px; color: var(--text); }
+.gcal__sub { margin-top: 5px; font-size: 10.5px; color: var(--dim); line-height: 1.35; }
+.gcal__err { margin-top: 8px; }
+.gcal__legend { margin-top: auto; display: flex; align-items: center; gap: 2px; font-size: 10px; color: var(--dim); }
+.gcal__legend > span { margin: 0 3px; }
+.gcal__legend > span:first-child { margin-left: 0; }
+.gcal__plot { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.gcal__months { position: relative; height: 11px; margin-left: 18px; font-size: 10px; line-height: 11px; color: var(--dim); }
+.gcal__months > span { position: absolute; top: 0; white-space: nowrap; }
+.gcal__body { display: flex; gap: 6px; }
+.gcal__days { width: 12px; flex: none; display: grid; grid-template-rows: repeat(7, 8px); row-gap: 2px;
+  font-size: 9px; line-height: 8px; color: var(--dim); text-align: right; }
+.gcal__grid { display: grid; grid-template-rows: repeat(7, 8px); grid-auto-flow: column; grid-auto-columns: 8px; gap: 2px; }
+/* 五档(Fan 定的固定阈值 0 / 1–2 / 3–5 / 6–9 / 10+):空格是描边色混进面板,其余四档是强调色按比例混进面板。
+   颜色全从 token 推 —— 换棋种强调色时整张日历跟着换。 */
+.gcal__c { width: 8px; height: 8px; border-radius: 2px; background: color-mix(in srgb, var(--hair) 55%, var(--panel)); }
+.gcal__c.l1 { background: color-mix(in srgb, var(--accent) 30%, var(--panel)); }
+.gcal__c.l2 { background: color-mix(in srgb, var(--accent) 52%, var(--panel)); }
+.gcal__c.l3 { background: color-mix(in srgb, var(--accent) 76%, var(--panel)); }
+.gcal__c.l4 { background: var(--accent); }
+.gcal__c.is-today { box-shadow: 0 0 0 1px var(--text); }
+.gcal__c.is-void { visibility: hidden; }
 
 /* 动作区排成两行 —— 只有自由对弈那一屏有七个键(三个分析 + 四个动作)。
    只换排布,格子高 / 图标 / 字号 / 圆角继续走共享 `.kiosk-actions button`:

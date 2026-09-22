@@ -5,13 +5,16 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
 import { useAiLadderStatus } from '../../features/aiLadder/useAiLadderStatus';
 import {
+  getGrowthActivity,
   getGrowthDiagnosis,
   getGrowthSummary,
   trendPoints,
   winrateCell,
+  type GrowthActivity,
   type GrowthDiagnosis,
   type GrowthSummary,
 } from '../api/growthApi';
+import ActivityCalendar from '../components/growth/ActivityCalendar';
 import DiagnosisPanel from '../components/growth/DiagnosisPanel';
 import RungTrend from '../components/growth/RungTrend';
 
@@ -92,6 +95,17 @@ const GrowthPage = () => {
     getGrowthDiagnosis(token ?? undefined, ac.signal)
       .then((d) => { setDiag(d); setDiagFailed(false); })
       .catch(() => { if (!ac.signal.aborted) { setDiag(null); setDiagFailed(true); } });
+    return () => ac.abort();
+  }, [token]);
+
+  // 近一年练棋日历:又一条独立的请求、独立的失败(同上)。
+  const [activity, setActivity] = useState<GrowthActivity | null>(null);
+  const [activityFailed, setActivityFailed] = useState(false);
+  useEffect(() => {
+    const ac = new AbortController();
+    getGrowthActivity(token ?? undefined, ac.signal)
+      .then((a) => { setActivity(a); setActivityFailed(false); })
+      .catch(() => { if (!ac.signal.aborted) { setActivity(null); setActivityFailed(true); } });
     return () => ac.abort();
   }, [token]);
 
@@ -253,6 +267,9 @@ const GrowthPage = () => {
             {t('growth:unknown_seat_b', ' 局没算进胜率：面对面、导入的谱，以及没记下你执黑还是执白的局。')}
           </p>
         )}
+
+        {/* 近一年练棋日历(Fan 2026-09-22):数据条之下、诊断之上,占整栏宽 —— 左栏放不下一年 53 列。 */}
+        <ActivityCalendar activity={activity} failed={activityFailed} />
 
         <div className="gdiag">
           <DiagnosisPanel diag={diag} failed={diagFailed} />

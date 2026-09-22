@@ -17,7 +17,7 @@ import tempfile
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
-from katrain.vision.parallax import ParallaxParams
+from katrain.vision.parallax import MOUNT_K, ParallaxParams
 
 SCHEMA = 1
 BOARD_GO_19 = "go-19x19"
@@ -140,20 +140,21 @@ def save_parallax(path, calib: ParallaxCalibration) -> None:
 def attach_parallax(vision_config, hardware_vision_dir, current_generation: str | None):
     """Server startup: (vision_config with .parallax set or cleared, log level, log message).
 
-    Returns a new config (dataclasses.replace) and never raises: a missing or broken calibration
-    only turns the correction off. A missing file is the normal pre-calibration state (INFO); a
-    present-but-invalid one is a fault worth noticing (WARNING)."""
+    Returns a new config (dataclasses.replace) and never raises. A valid calibration file wins; without
+    one the worker derives the correction from each geometry lock (parallax_enabled, 2026-09-22). A
+    missing file is the normal state (INFO); a present-but-invalid one is a fault worth noticing
+    (WARNING) and falls back to the lock-derived correction like a missing one."""
+    fallback = dataclasses.replace(vision_config, parallax=None)
+    if not vision_config.parallax_enabled:
+        return fallback, logging.INFO, "vision parallax off: --vision-parallax off"
+    auto = f"vision parallax auto: derived from each geometry lock (ver9 mount, k={MOUNT_K:.6f})"
     if not hardware_vision_dir:
-        return (
-            dataclasses.replace(vision_config, parallax=None),
-            logging.INFO,
-            "vision parallax off: no --hardware-vision-dir",
-        )
+        return fallback, logging.INFO, f"{auto}; no --hardware-vision-dir for a calibration file"
     path = parallax_path(hardware_vision_dir)
     calib, reason = load_parallax(path)
     if calib is None:
         level = logging.INFO if not path.exists() else logging.WARNING
-        return dataclasses.replace(vision_config, parallax=None), level, f"vision parallax off: {reason}"
+        return fallback, level, f"{auto}; calibration file: {reason}"
     message = (
         f"vision parallax on: board={calib.board} stone_set={calib.stone_set} k={calib.k:.6f} "
         f"nadir=({calib.nadir_fx:.3f},{calib.nadir_fy:.3f}) h_implied={calib.h_implied_mm:.2f}mm "

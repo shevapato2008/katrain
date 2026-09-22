@@ -31,7 +31,7 @@ from katrain.vision.gating import (
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
-from katrain.vision.parallax import ParallaxParams
+from katrain.vision.parallax import ParallaxParams, mount_parallax_for_lock
 from katrain.vision.move_detector import (
     AmbiguousPromoter,
     MoveDetector,
@@ -128,6 +128,8 @@ class InProcessAdapter:
             ),
             parallax=ParallaxParams(**parallax_cfg) if parallax_cfg else None,
         )
+        # No calibration file: set_geometry derives the mount's parallax from each lock it receives.
+        self._parallax_auto = bool(config.get("parallax_auto")) and not parallax_cfg
         self._move_detector = MoveDetector(
             consistency_frames=config.get("move_confirm_frames", 3),
             miss_grace=config.get("move_miss_grace", 2),
@@ -174,6 +176,21 @@ class InProcessAdapter:
         self._geometry = geometry
         self._motion_mask_cache.invalidate()
         self._motion_filter.reset()
+        if self._parallax_auto:
+            params = None
+            if geometry is not None:
+                try:
+                    params = mount_parallax_for_lock(geometry)
+                except Exception:  # a lock it cannot read turns the correction off, never recognition
+                    logger.warning("vision parallax off: cannot derive it from this geometry lock", exc_info=True)
+            self._state_extractor_locked.parallax = params
+            if params is not None:
+                logger.info(
+                    "vision parallax auto: nadir=(%.3f,%.3f) k=%.6f from the geometry lock",
+                    params.nadir_fx,
+                    params.nadir_fy,
+                    params.k,
+                )
 
     def _motion_mask(self, frame: np.ndarray) -> np.ndarray | None:
         """Return the cached board-region mask for the active geometry lock."""

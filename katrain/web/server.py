@@ -4092,6 +4092,13 @@ def run_web():
         "confidence (default: max(0.25, confidence - 0.15)). Fights weak-light flicker.",
     )
     parser.add_argument(
+        "--vision-parallax",
+        choices=["auto", "off"],
+        default="auto",
+        help="Stone-parallax correction: 'auto' derives it from the geometry lock (a calibrate_parallax "
+        "file under --hardware-vision-dir wins when present); 'off' disables it.",
+    )
+    parser.add_argument(
         "--vision-confidence-sustain",
         type=float,
         default=None,
@@ -4211,6 +4218,7 @@ def run_web():
             vision_kwargs["confidence_keep"] = args.vision_confidence_keep
         if args.vision_confidence_sustain is not None:
             vision_kwargs["confidence_sustain"] = args.vision_confidence_sustain
+        vision_kwargs["parallax_enabled"] = args.vision_parallax == "auto"
         if args.vision_enhance is not None:
             vision_kwargs["enhance"] = args.vision_enhance
         if args.vision_move_frames is not None:

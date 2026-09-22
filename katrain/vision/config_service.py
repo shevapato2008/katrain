@@ -128,10 +128,14 @@ class VisionServiceConfig:
     intrinsics_file: str | None = None  # persistent camera calibration .npz
     process_mode: str = "worker"  # "worker" (subprocess) | "inprocess" (dev)
     capture_fps: int = 15
-    # Stone-parallax correction {"nadir_fx", "nadir_fy", "k"} for the geometry-lock extractor, or None
-    # (off). Never set by hand: server.py fills it at startup from <hardware-vision-dir>/parallax/
-    # go-19x19.json, written by katrain.vision.tools.calibrate_parallax.
+    # Stone-parallax correction {"nadir_fx", "nadir_fy", "k"} for the geometry-lock extractor, or None.
+    # Never set by hand: server.py fills it at startup from <hardware-vision-dir>/parallax/
+    # go-19x19.json, written by the optional katrain.vision.tools.calibrate_parallax. Wins over the
+    # lock-derived correction below.
     parallax: dict | None = None
+    # Without a calibration file, derive the ver9 mount's parallax from every geometry lock the worker
+    # receives (parallax.mount_parallax_for_lock; owner decision 2026-09-22). False = no correction at all.
+    parallax_enabled: bool = True
 
     @property
     def effective_confidence_keep(self) -> float:
@@ -170,4 +174,5 @@ class VisionServiceConfig:
             "use_clahe": self.use_clahe,
             "capture_fps": self.capture_fps,
             "parallax": self.parallax,
+            "parallax_auto": self.parallax_enabled,
         }

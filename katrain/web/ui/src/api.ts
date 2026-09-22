@@ -186,6 +186,8 @@ export interface PlatformStatusResponse {
 
 export interface EngineHealthResponse {
   status: string;
+  /** 产品版本(`katrain/core/constants.py` 的 `VERSION`)。老服务端不回它 ⇒ 可选;拿不到就不画,不写「未知」。 */
+  version?: string;
   engines: {
     local: string;
     cloud: string;

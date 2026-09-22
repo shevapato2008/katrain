@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
@@ -66,6 +66,14 @@ vi.mock('../context/GeometryContext', () => ({
   useGeometry: () => geometry.current,
 }));
 
+// 「关于」那一组的唯一数据来源是 `/api/v1/health`(`API.engineHealth`)—— 响应是**输入**,每条用例自己造。
+const health = vi.hoisted(() => ({ engineHealth: vi.fn() }));
+vi.mock('../../api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../api')>();
+  return { ...actual, API: { ...actual.API, engineHealth: health.engineHealth } };
+});
+const mockHealth = (body: unknown) => health.engineHealth.mockResolvedValue(body);
+
 const renderPage = () =>
   render(
     <ThemeProvider theme={kioskTheme}>
@@ -89,14 +97,15 @@ describe('屏 27 设置 · 分组与导航', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGeometry({ loaded: true });
+    mockHealth({ status: 'ok', engines: { local: 'reachable', cloud: 'unconfigured' } });
   });
 
   // **导航项数 = 分组数,且词一一对应** —— 两套词等于两套心智模型。
-  it('导航五项,和右边五组的标题一个字不差', () => {
+  it('导航六项,和右边六组的标题一个字不差', () => {
     renderPage();
     const nav = screen.getByTestId('settings-nav');
     const labels = [...nav.querySelectorAll('button')].map((b) => b.textContent);
-    expect(labels).toEqual(['账号与平台', '实体棋盘', '落子与提示', '声音', '语言']);
+    expect(labels).toEqual(['账号与平台', '实体棋盘', '落子与提示', '声音', '语言', '关于']);
 
     const groups = [...document.querySelectorAll('[data-group]')].map(
       (g) => g.querySelector('.kiosk-seclabel h2')?.textContent,
@@ -108,7 +117,8 @@ describe('屏 27 设置 · 分组与导航', () => {
   // 挂「未接后端」是用错标 —— 那五组大部分不是「后端没有」,是「这个设置项还没做」。
   it('没有内容的那几组一个都不摆,也不挂「未接后端」', () => {
     renderPage();
-    for (const absent of ['棋盘外观', '对局默认值', '关于']) {
+    // 「关于」2026-09-21 起有内容了(Fan 裁定:版本 + 两个引擎状态),不在这张单子上。
+    for (const absent of ['棋盘外观', '对局默认值']) {
       expect(screen.queryByText(absent)).toBeNull();
     }
     // 「声音」这一组 2026-08-26 补上了 —— 它**有内容**:落子音效和实体盘引导语一直在响,
@@ -140,6 +150,7 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGeometry({ loaded: true });
+    mockHealth({ status: 'ok', engines: { local: 'reachable', cloud: 'unconfigured' } });
   });
 
   // 上一版那四张平台卡是 `pointer-events:none` 的死装饰,而且列的是
@@ -281,6 +292,53 @@ describe('屏 27 设置 · 每一组的内容都是真的', () => {
   it('语言这一组照实说它将来会搬走', () => {
     renderPage();
     expect(screen.getByText('这一项将来会搬到设置中心')).toBeInTheDocument();
+  });
+
+  it('「关于」:版本和两个引擎的状态都照 /api/v1/health 说', async () => {
+    mockHealth({ status: 'ok', version: '1.17.1', engines: { local: 'reachable', cloud: 'unconfigured' } });
+    renderPage();
+    expect(await screen.findByTestId('about-version')).toHaveTextContent('1.17.1');
+    expect(screen.getByTestId('about-engine-local')).toHaveTextContent('可用');
+    expect(screen.getByTestId('about-engine-cloud')).toHaveTextContent('没配置');
+  });
+
+  it('引擎回了错误码:说「连不上」,码写在那一行的小字里', async () => {
+    mockHealth({ status: 'ok', version: '1.17.1', engines: { local: 'unreachable', cloud: 'error_502' } });
+    renderPage();
+    const cloud = await screen.findByTestId('about-engine-cloud');
+    await waitFor(() => expect(cloud).toHaveTextContent('连不上'));
+    expect(cloud).toHaveTextContent('502');
+    expect(screen.getByTestId('about-engine-local')).toHaveTextContent('连不上');
+  });
+
+  // 老服务端(还没部署这一版)不回 version。「未知」看起来像一个值,而我们其实是没问到。
+  it('响应里没有 version 时,版本那一行不画,也不写「未知」', async () => {
+    mockHealth({ status: 'ok', engines: { local: 'reachable', cloud: 'reachable' } });
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('about-engine-local')).toHaveTextContent('可用'));
+    expect(screen.queryByTestId('about-version')).toBeNull();
+    expect(screen.queryByText(/未知/)).toBeNull();
+  });
+
+  it('还没问到 / 问不到:两个引擎写「—」,不给灯色,不冒充「连不上」', async () => {
+    health.engineHealth.mockRejectedValue(new Error('Failed to get engine health (502)'));
+    renderPage();
+    await waitFor(() => expect(health.engineHealth).toHaveBeenCalled());
+    for (const key of ['local', 'cloud']) {
+      const row = screen.getByTestId(`about-engine-${key}`);
+      expect(row).toHaveTextContent('—');
+      expect(row.querySelector('.kiosk-tag--win')).toBeNull();
+    }
+    expect(screen.queryByText('连不上')).toBeNull();
+    expect(screen.queryByTestId('about-version')).toBeNull();
+  });
+
+  // `settings.DEVICE_ID` 在没配 KATRAIN_DEVICE_ID 时是每次启动自铸的 uuid4 —— 不是出厂身份,显示它就是编。
+  it('不画设备名', async () => {
+    mockHealth({ status: 'ok', version: '1.17.1', engines: { local: 'reachable', cloud: 'reachable' }, device_id: 'x' });
+    const { container } = renderPage();
+    await screen.findByTestId('about-version');
+    expect(container.textContent).not.toMatch(/设备名|device/i);
   });
 
   it('账号那一块还在 —— 退出登录一个功能不少', () => {

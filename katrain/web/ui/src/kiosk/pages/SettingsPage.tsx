@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { API, type EngineHealthResponse } from '../../api';
 import { useSettings } from '../../context/SettingsContext';
 import { useGeometry } from '../context/GeometryContext';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -10,6 +11,7 @@ import { Icon, type IconName } from '../shell/icons';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { readAudioPref, subscribeAudioPref, writeAudioPref, type AudioKind } from '../../utils/audioPrefs';
+import { engineStatusLine } from '../utils/engineStatusLine';
 import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
 
 /**
@@ -19,12 +21,13 @@ import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
  *
  * ## 只做有内容的组(计划 D10 方案 a)
  *
- * 稿子摆了七组,而这台盒子上**五组没有内容**。三条路里选的是「只做有内容的」:
+ * 稿子摆了七组,而这台盒子上**两组没有内容**(棋盘外观、对局默认值;声音 2026-08-26、
+ * 关于 2026-09-21 先后有了内容)。三条路里选的是「只做有内容的」:
  *   · 七组全摆、空的挂琥珀「未接后端」—— **是用错标**:那五组大部分不是「后端没有」,
  *     而是「这个设置项还没做」。两回事,两种颜色。
  *   · 七组全摆、空的做成真功能 —— 那是五个新 feature,远超一条表现层赛道。
  * ⇒ **导航项数 = 分组数,且词一一对应**。导航里写「实体棋盘」,右边那组的标题就是「实体棋盘」——
- * 两套词等于两套心智模型。差异图上因此少三组,这是**裁定不是遗漏**。
+ * 两套词等于两套心智模型。差异图上因此少两组,这是**裁定不是遗漏**。
  *
  * ## 导航只跳不换页,高亮跟着真正在看的那一组走
  *
@@ -36,8 +39,17 @@ import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
  * ## 账号那两行也是 `.kiosk-row`
  *
  * 上一版 `AccountSection` 是一张 MUI 卡 + 一条满宽的红色退出按钮,夹在两组行中间
- * **像是从别的应用里剪进来的**。2026-08-23 重排成两行:一行账号,一行 AI 段位。
- * 段位详情那张卡(`AiLadderStatusCard`)还没重画 —— 它只在点开对话框之后才出现。
+ * **像是从别的应用里剪进来的**。2026-08-23 重排成两行:一行账号,一行 AI 段位;
+ * 2026-09 段位详情也换成了就地展开的外壳行(`KioskAiLadderRows`),不再弹 MUI 对话框。
+ *
+ * ## 「关于」只画三行,一行都不编(Fan 2026-09-21)
+ *
+ * 版本 + 本机引擎 + 云端引擎,全部来自 `/api/v1/health`;拿不到版本就不画那一行,不写「未知」。
+ * **设备名不画**:`settings.DEVICE_ID` 在没配 `KATRAIN_DEVICE_ID` 时是每次启动自铸的 uuid4
+ * (`core/config.py`),不是出厂身份;出厂那份在 launcher 手里(`/etc/smartbox/device.json`),
+ * 本仓读不到。显示一个自铸 id 就是编,所以等 launcher 给,不自己造。
+ * 稿子这一组的三行是「引擎 / 识盘 / 资源」,还带一列 lead;这里只画裁定的三行,
+ * 行型和同屏其余各组一致(没有 lead 列)。
  *
  * ## 语言这一组是规范 §12 的一处**已知偏差**
  *
@@ -51,7 +63,7 @@ import { readAutoAdvance, writeAutoAdvance } from './tsumegoUnits';
  * 上一版那条页控条(带返回 + `location.state.from`)是它还是 L2 时留下的。
  */
 
-type GroupKey = 'account' | 'board' | 'move' | 'sound' | 'language';
+type GroupKey = 'account' | 'board' | 'move' | 'sound' | 'language' | 'about';
 
 const GROUPS: readonly { key: GroupKey; zh: string; en: string; icon: IconName }[] = [
   { key: 'account', zh: '账号与平台', en: 'Account', icon: 'user-circle' },
@@ -63,6 +75,7 @@ const GROUPS: readonly { key: GroupKey; zh: string; en: string; icon: IconName }
   // 「导航里写什么,右边那组的标题就是什么」)。
   { key: 'sound', zh: '声音', en: 'Sound', icon: 'speaker-high' },
   { key: 'language', zh: '语言', en: 'Language', icon: 'globe-hemisphere-west' },
+  { key: 'about', zh: '关于', en: 'About', icon: 'info' },
 ];
 
 /**
@@ -95,6 +108,16 @@ const SettingsPage = () => {
   const [active, setActive] = useState<GroupKey>(GROUPS[0].key);
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
   const [tail, setTail] = useState(0);
+  // `null` = 还没问到或问不到。两种都画「—」—— 不拿「连不上」冒充「没问到」。
+  const [health, setHealth] = useState<EngineHealthResponse | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    API.engineHealth()
+      .then((body) => { if (alive) setHealth(body); })
+      .catch(() => { /* 问不到就留在「—」,不写假值 */ });
+    return () => { alive = false; };
+  }, []);
 
   // 滚动容器归 `KioskScrollZone` 拿着 —— 从第一组往上找一次就够,不去动那个共享件。
   const anchorRef = useCallback((el: HTMLElement | null) => {
@@ -103,7 +126,7 @@ const SettingsPage = () => {
 
   /**
    * 尾部留白。**不是排版留白,是让高亮说得出真话的前提**:
-   * 最后一组只有 78 高,而视口是 434 —— 滚到底它的上缘离视口顶还差 300 多,
+   * 最后一组只有一两百高,而视口是 434 —— 滚到底它的上缘离视口顶还差两三百,
    * 「滚过视口顶的那一组就是正在看的」这条规则**永远轮不到它**。
    * 于是点导航第 3 项之后,scroll 事件会把高亮弹回第 2 项 —— 那才是「谎报你在哪儿」。
    * 补一段 `视口高 − 最后一组高` 的空,每一组就都能滚到顶上。
@@ -339,7 +362,7 @@ const SettingsPage = () => {
           </div>
         </section>
 
-        <section className="kiosk-section" data-group="language" ref={lastGroupRef}>
+        <section className="kiosk-section" data-group="language">
           <KioskSecLabel zh={t('settings:nav_language', '语言')} en="Language" />
           <div className="kiosk-rows">
             <div className="kiosk-row">
@@ -364,6 +387,35 @@ const SettingsPage = () => {
                 </select>
               </span>
             </div>
+          </div>
+        </section>
+        {/* ⚠️ 尾部留白量的是**最后一组** —— 它挂在这一组上;以后再加组,`lastGroupRef` 要跟着挪。 */}
+        <section className="kiosk-section" data-group="about" ref={lastGroupRef}>
+          <KioskSecLabel zh={t('settings:nav_about', '关于')} en="About" />
+          <div className="kiosk-rows">
+            {health?.version && (
+              <div className="kiosk-row" data-testid="about-version">
+                <span className="kiosk-row__t"><b>{t('settings:version', '版本')}</b></span>
+                <span className="kiosk-row__end"><span className="kiosk-tag">{health.version}</span></span>
+              </div>
+            )}
+            {([
+              ['local', t('settings:engine_local', '本机引擎'), health?.engines?.local],
+              ['cloud', t('settings:engine_cloud', '云端引擎'), health?.engines?.cloud],
+            ] as const).map(([key, label, state]) => {
+              const line = state ? engineStatusLine(state, t) : null;
+              return (
+                <div className="kiosk-row" key={key} data-testid={`about-engine-${key}`}>
+                  <span className="kiosk-row__t">
+                    <b>{label}</b>
+                    {line?.sub && <em>{line.sub}</em>}
+                  </span>
+                  <span className="kiosk-row__end">
+                    <span className={line?.ok ? 'kiosk-tag kiosk-tag--win' : 'kiosk-tag'}>{line ? line.text : '—'}</span>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </section>
         {tail > 0 && <div aria-hidden="true" data-testid="settings-tail" style={{ height: tail, flex: 'none' }} />}

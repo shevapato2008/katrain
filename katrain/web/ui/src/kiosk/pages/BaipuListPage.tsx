@@ -32,7 +32,7 @@ const BaipuListPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  // 这一屏原先没有页控条 —— 不在 Dock 上、没有主页键,进得来出不去(2026-09-23)。返回去**打开它的
+  // 这一屏原先没有页控条 —— 不在 Dock 上、没有主页键,进得来出不去(2026-09-22)。返回去**打开它的
   // 那一页**(棋谱「摆到实体盘」/ 课程「去摆谱」),键名跟着去处;没写明就回棋谱。
   const back = useBackTo('/kiosk/kifu');
   const backLabel = readBackTo(location.state)?.startsWith('/kiosk/tutorial')

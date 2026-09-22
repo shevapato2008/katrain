@@ -120,7 +120,7 @@ const BaipuSessionPage = () => {
   const { source = '' } = useParams();
   const location = useLocation();
   const { t } = useTranslation();
-  // 返回 / 退出 / 完成都去**打开这一屏的那一页**(2026-09-23):摆谱列表进来回列表(键名「摆谱」),
+  // 返回 / 退出 / 完成都去**打开这一屏的那一页**(2026-09-22):摆谱列表进来回列表(键名「摆谱」),
   // 棋谱屏导入、棋谱详情「摆这一局」进来回那一页(键名「棋谱」)。原先一律 `/kiosk/baipu`,
   // 键名却写「棋谱」。没写明来处(直接输 URL)回摆谱列表。
   const back = useBackTo('/kiosk/baipu');

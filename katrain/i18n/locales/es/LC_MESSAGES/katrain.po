@@ -5112,9 +5112,7 @@ msgid "kifu:greet_b"
 msgstr "de otros"
 
 msgid "kifu:greet_sub"
-msgstr ""
-"Partidas famosas, retransmisiones profesionales y reproducción en el tablero"
-" físico"
+msgstr "Partidas famosas y reproducción en el tablero físico"
 
 msgid "kifu:famous_records"
 msgstr "Partidas famosas"

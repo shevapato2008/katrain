@@ -5223,8 +5223,7 @@ msgid "kifu:greet_b"
 msgstr "games"
 
 msgid "kifu:greet_sub"
-msgstr ""
-"Famous games, pro broadcasts, and replaying records onto the real board"
+msgstr "Famous games and replaying records onto the real board"
 
 msgid "kifu:famous_records"
 msgstr "Famous games"

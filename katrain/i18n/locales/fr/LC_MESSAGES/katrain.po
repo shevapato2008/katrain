@@ -5258,7 +5258,7 @@ msgid "kifu:greet_b"
 msgstr "des autres"
 
 msgid "kifu:greet_sub"
-msgstr "Parties célèbres, diffusions pro et rejeu sur le goban réel"
+msgstr "Parties célèbres et rejeu sur le goban réel"
 
 msgid "kifu:famous_records"
 msgstr "Parties célèbres"

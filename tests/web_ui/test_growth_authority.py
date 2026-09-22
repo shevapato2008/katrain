@@ -65,6 +65,9 @@ class _FakeLadderRepo:
     def growth_summary(self, user_id, since):  # noqa: ARG002
         return dict(LOCAL_LADDER)
 
+    def rung_trend(self, user_id, since):  # noqa: ARG002
+        return [{"date": "2026-09-20", "rung": 18, "rank_name": "3级"}]
+
 
 class _FakeConnectivity:
     def __init__(self, online: bool):
@@ -219,6 +222,7 @@ def test_days_原样带给云端():
 def test_本机那一支回出算得出胜负的三个数():
     body = _client().get("/api/v1/growth/summary").json()
     assert (body["decided_games_in_window"], body["wins_in_window"], body["losses_in_window"]) == (4, 3, 1)
+    assert body["rung_trend"] == [{"date": "2026-09-20", "rung": 18, "rank_name": "3级"}]
     # 两个口径不同:下了 5 局,算得出胜负的 4 局。
     assert body["games_in_window"] == 5
 

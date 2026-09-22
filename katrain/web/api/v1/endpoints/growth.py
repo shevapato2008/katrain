@@ -126,6 +126,9 @@ async def growth_summary(
         "wins_in_window": decided["wins"],
         "losses_in_window": decided["losses"],
         "by_opponent_rung": ladder["by_opponent_rung"],
+        # 近 N 天档位走势(一天一个点,定级那 5 局不算)。**可选**键:老云端不回它时前端
+        # 不画走势块(不画,不是画一条空轴);同样不进 `_REQUIRED_KEYS`。
+        "rung_trend": ladder_repo.rung_trend(current_user.id, since=since),
         # 盒子上这一份是缓存,权威在云端 ⇒ 数可能偏小。据实交代,界面去说「本机记录」。
         "authority": "local_cache" if dispatcher is not None else "this_node",
     }

@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping, Optional
 
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.exc import IntegrityError
 
 from katrain.core.sgf_parser import ParseError, SGF
@@ -653,6 +653,58 @@ class AiLadderRankedRepository:
                 # 从高档到低档 —— 屏上「按对手强度」那一列就是这个顺序。
                 "by_opponent_rung": [rungs[k] for k in sorted(rungs, reverse=True)],
             }
+        finally:
+            session.close()
+
+    def rung_trend(self, user_id: int, *, since) -> list[dict]:
+        """近 N 天的档位走势,**一天一个点**(取当天最后一局),没有对局的那天不出现。
+
+        为什么可以拿 `opponent_rung` 当「本人当时的档位」:`expected_opponent_rung` 的
+        docstring 写着「定级之后玩家面对的就是自己那一档」。这条前提由
+        `tests/web_ui/test_growth_trend.py::test_the_premise_behind_the_data_source` 钉着。
+
+        **定级期那 5 局排除**:那时的 `opponent_rung` 是二分搜索的中点,不是实力。账本里
+        没有一列写着「这局是不是定级局」,唯一摘得出来的办法就是按时间取前 PLACEMENT_GAMES 局 ——
+        所以先查出第 5 局的 `(settled_at, id)`,再切在它之后。**比较都留在 SQL 里**:
+        SQLite 取回来的 datetime 不带时区,在 Python 里和带时区的 `since` 比会直接抛。
+
+        「哪一天」按 **UTC** 切(前端拿 UTC 的今天当横轴右端,两边才是同一根轴)。
+        东八区凌晨那几局会落到前一天 —— 走势看的是 30 天的形状,这点偏移不影响判读;
+        要改就得先定「哪个时区算一天」,那是产品口径不是实现细节。
+        """
+        session = self.session_factory()
+        try:
+            L = models_db.AiLadderGameLedger
+            counted = (L.user_id == user_id, L.counted.is_(True), L.result.in_(("win", "loss")))
+            fifth = (
+                session.query(L.settled_at, L.id)
+                .filter(*counted)
+                .order_by(L.settled_at.asc(), L.id.asc())
+                .offset(PLACEMENT_GAMES - 1)
+                .limit(1)
+                .first()
+            )
+            if fifth is None:
+                return []  # 还在定级期(作数的局不足 5)⇒ 没有可画的实力
+            placed_at, placed_id = fifth
+            rows = (
+                session.query(L.settled_at, L.opponent_rung, L.opponent_rank_name)
+                .filter(
+                    *counted,
+                    L.opponent_rung.isnot(None),
+                    or_(L.settled_at > placed_at, and_(L.settled_at == placed_at, L.id > placed_id)),
+                    L.settled_at >= since,
+                )
+                .order_by(L.settled_at.asc(), L.id.asc())
+                .all()
+            )
+            by_day: dict = {}
+            for settled_at, rung, rank_name in rows:
+                moment = settled_at if settled_at.tzinfo is None else settled_at.astimezone(timezone.utc)
+                day = moment.date().isoformat()
+                # 查询已按时间升序 ⇒ 同一天后写覆盖前写 = 当天最后一局。
+                by_day[day] = {"date": day, "rung": int(rung), "rank_name": rank_name}
+            return [by_day[day] for day in sorted(by_day)]
         finally:
             session.close()
 

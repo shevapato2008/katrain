@@ -111,6 +111,48 @@
   5. 前端单测:老云端(响应里没有 `rung_trend`)⇒ 左栏不出现走势块,其余照常。
 - **依赖 / 卡点**:无(与 G2 同一份部署)。左栏加了一块 ⇒ 屏 22 四图重取并交 Fan 确认。
 
+### G4 · 近一年练棋日历(GitHub 式日活矩阵)—— P2(**Fan 2026-09-22 新增并裁定**)
+
+- **来由**:G1–G3 四图确认之后,Fan 要求成长屏加一块「类似 GitHub profile 的日活矩阵」,先改设计稿再实现。
+- **设计**:smartbox 分支 `feat/kiosk-go-growth-calendar-2026-09-22`(`9d359bac9`,本地未 push)重画屏 22,
+  线上稿 https://claude.ai/artifact/VFt6Fz6gt3sNLBbQgotwWG(v25);参考图已重出,pin 在
+  `tests/helpers/reference-shots.json`(`22-growth.png`,sha256 `1a454cfc…`)。位置:右栏数据条之下、诊断之上;
+  左边一栏摘要(近一年练过几天 + 图例),右边 53 周 × 7 行(周一起),顶上标月份。
+- **裁定(Fan 2026-09-22,「按你的推荐来」+「重出参考图」)**:
+  - **一格 = 当天下完的对局 + 当天新解出的题**。两项分开回、前端相加上色(以后要分开画不用改契约)。
+  - **固定阈值** 0 / 1–2 / 3–5 / 6–9 / 10+ 五档(不按个人最大值归一 —— 那样同一天的颜色会随别的日子变)。
+  - 四图与下面的契约于同日「两项都过了」。
+- **口径**:
+  - 「下完的对局」只认**自己下的**三种来源 `play_ai` / `play_local` / `play_human`(同前端
+    `reviewPresentation.ts` 的 `isPlaySource`),**白名单**:导入的谱、棋谱库、研究局都不是你下的,
+    以后再加一种来源也不会悄悄混进来。
+  - 「新解出的题」= `user_tsumego_progress.first_completed_at`(且 `completed`)。做过没解出的不算,重做不重复算。
+  - **按客户端时区切天**(`tz_offset`,东几区的分钟数,北京 = 480)。按 UTC 切,北京早上 8 点前下的棋
+    会落到前一天,「今天」那格明明下过却是空的。
+  - ⚠️ 已知偏差,不修:盒子**离线**时解的题,同步到云端那一刻才在云端盖 `first_completed_at` ⇒
+    云端那份可能把它算到同步那天。盒子通常在线,不为此改同步协议。
+- **契约**:`GET /api/v1/growth/activity?days=365&tz_offset=480` →
+  `{"window_days": 365, "days": [{"date": "YYYY-MM-DD", "games": n, "solved": m}, …], "authority": …}`。
+  - `days` **只列有活动的日子**,按日期升序;窗口 = 客户端时区的今天往前数 `days` 天(含今天)。
+  - `days` 1..365、`tz_offset` −720..840,越界 422;这台机器没挂仓储 503。
+  - `authority` 三档与四种退回原因**同 `growth/summary`**(盒上先问云端;退回本机标 `local_cache`,
+    屏上写「本机记录」)。
+- **屏上四种状态**(已实现):还在读(不画格子、天数写「—」—— 一张全空的格子读起来就是「一天没练」)·
+  读失败(「日历没读到，稍后再看一次。」)· 真的一天没练(照画全空格子、天数 0)· 本机缓存(「本机记录」)。
+  格子 8px **不可点**(触控下限 44px),摘要里的天数就是它的文字等价物。
+- **验收**:
+  1. 后端单测:UTC 9-21 23:00 的局,`tz_offset=480` 落在 9-22、`tz_offset=0` 落在 9-21。
+  2. 后端单测:六种来源各一局 ⇒ 只算三种。
+  3. 后端单测:解出 / 没解出 / 别人的各一道 ⇒ 只算一道,且与同日的对局并成**一条**。
+  4. 后端单测:窗口首日(客户端时区)凌晨那局在内、前一天那局不在;只列有活动的日子、升序。
+  5. 端点单测:参数越界 422;盒上在线取云端并改口 `cloud`、`days` 与 `tz_offset` 原样带给云端;
+     云端 404 退回本机并记「no /growth/activity」;离线不问云端;云端 200 但长得不对 ⇒ 退回本机。
+  6. 前端(已完成,`0739d220`):`calendarGrid` 纯函数单测、`GrowthPage` 四态单测、承重两态
+     (在线 / 离线最满,右栏不溢出;最空态诊断块不塌)、四图(Fan 2026-09-22 确认)。
+  7. 集成:真服务端 + 真浏览器 1024×600,屏上「近一年 N 天」与今天那格的档位与接口回的数一致。
+- **依赖 / 卡点**:无(与 G2 同一份部署)。部署顺序同 §7:先云端再盒子 —— 老云端对 `/growth/activity`
+  答 404,盒子退回本机并如实说「本机记录」;网页版打老服务端则显示「日历没读到」,不崩。
+
 ---
 
 ## 4. 待 Fan 拍板
@@ -129,6 +171,7 @@
 | 大厅 / 房间局的 `user_color` 与落账 | 归人人对弈 | 盒上 `game_repo` 恒为 None,那一族落账问题(P9)整体挂在跨盒路线决策上。 |
 | 报告判级按段位缩放(R2) | 归 move-grading(已裁定留下) | `docs/move-grading/design.md:290-300` 自收的范围,要先定段位数据源。 |
 | 「能力诊断」做成可下钻(点一段看是哪几局) | 未立项 | 本轮先把一句真话说出来;下钻要新的接口与一屏。 |
+| 日历格子可点(看当天下了哪几局、解了哪几题) | 未立项 | 格子 8px,低于触控下限;要做得换一种交互并加明细接口。 |
 | galaxy 成长页 | 归 galaxy | 本轮只动 kiosk 屏 22 与后端;`growth/summary` 的新字段对 galaxy 是可选的。 |
 
 ## 6. 与其它赛道的协调与共享文件
@@ -161,8 +204,12 @@
 | `katrain/web/server.py` | `_record_ai_game_locked` 的 `data` 加一键(:1830-1844);`_record_platform_engine_game` 的 `data_overrides` 加一键(:3615) | **无**,但这是上一轮两条赛道打过架的文件 —— **不许碰 `_finish_ended_game`** |
 | `katrain/web/core/user_game_repo.py` | `create` / `create_ai_ladder_ranked` 透传 `user_color`;新增按执色数胜负的查询(G2) | 无 |
 | `katrain/web/core/ai_ladder_ranked.py` | `growth_summary` 不动;G3 若做则新增 `rung_trend`(**只读**) | 无 |
-| `katrain/web/api/v1/endpoints/growth.py` | `summary` 多三个字段;新增 `GET /growth/diagnosis`(G1) | 无 |
-| `katrain/web/core/repository.py`、`remote_client.py` | 新增 `growth_diagnosis_remote` / `get_growth_diagnosis`,照抄 `growth_summary_remote` 的四种退回原因 | 无 |
+| `katrain/web/api/v1/endpoints/growth.py` | `summary` 多三个字段;新增 `GET /growth/diagnosis`(G1)、`GET /growth/activity`(G4) | 无 |
+| `katrain/web/core/repository.py`、`remote_client.py` | 新增 `growth_diagnosis_remote` / `get_growth_diagnosis`(G1)、`growth_activity_remote` / `get_growth_activity`(G4),共用 `_cloud_first` 的四种退回原因 | 无 |
+| `katrain/web/core/growth_activity.py`(新建) | G4 日历的数据源:按客户端时区逐日数对局与首次解题 | 无 |
+| `katrain/web/server.py`(补) | 两个 lifespan 各挂 `report_diagnosis_repo`(G1)与 `growth_activity_repo`(G4),挨着 `user_game_repo` | 无 |
+| `katrain/web/ui/src/kiosk/components/growth/*` | 新建 `DiagnosisPanel` / `RungTrend` / `ActivityCalendar` 及其纯函数 | 无 |
+| `katrain/web/ui/src/kiosk-shell/go-screens.css` | 屏 22 那一段:诊断、走势、日历的样式 | 27 屏共用这一份;本赛道只改屏 22 那一段,新类名都带 `g` 前缀并过同名类闸 |
 | `katrain/web/ui/src/kiosk/api/growthApi.ts` | 新增 `GrowthDiagnosis` 类型与运行时校验;`GrowthSummary` 加三个**可选**字段 | 无 |
 | `katrain/web/ui/src/kiosk/pages/GrowthPage.tsx`(+`__tests__/GrowthPage.test.tsx`) | G1 诊断块、G2 胜率那一格与 setnote | 无 |
 | `katrain/i18n/locales/*/katrain.po` | **不改**(见 §6.0 第 5 条) | 全部 |

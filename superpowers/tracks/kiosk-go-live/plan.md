@@ -28,6 +28,22 @@
 - 视觉 / 布局改动走 CLAUDE.md 的四图与承重关卡;**新的直播列表屏是稿外屏,没有参考图 —— 不要伪造一张参考图凑四图**(见 PRD §7)。
 - 提交信息用中文,风格跟 `git log`(`fix(kiosk): …` / `feat(kiosk-live): …`),结尾加一行 `Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`。`git add` 逐个写文件名;新建文件 add 之后用 `git diff --cached --stat` 确认确实进了暂存区(`.gitignore` 会静默吞掉某些文件名)。
 
+## ⚠️ 2026-09-22 Fan 改判:kiosk 删掉整个直播模块 —— 本计划 Task 2–6 作废
+
+Task 2–7 已按方案 B 做完并提交(`a2c8edb2`…`5150f756`)之后,Fan 看过简报改判:
+**kiosk 端直接删掉直播模块,不融入棋谱库;galaxy 保留。** 见 PRD 顶部。替代任务:
+
+- **D1** 删 kiosk 直播:`KioskApp.tsx` 两条路由(旧地址落到 `*` 兜底 → 对弈,不另留重定向)、`LivePage.tsx`、
+  `LiveMatchPage.tsx` 及其测试;本轮新建的 `hooks/live/useUpcomingMatches.ts`、`kiosk/utils/scheduleLabel.ts`(无消费者了);
+  `KifuPage.tsx` 的「职业直播」一组与入口行、`.livemore` 样式。
+- **D2** 闸与存档跟着改:`kiosk-shell-geometry.spec.ts` 两份名单去掉直播;`kiosk-shell-scroll.spec.ts` 屏 15 那条
+  「最后一块滚得到」改量「最近摆过」,屏 18 两条删掉;删 `kiosk-screen-18-live.fourup.spec.ts`、它的参考图指纹与
+  `visual/18-live/` 存档;删本轮的 `kiosk-live-list.spec.ts` 与 `visual/live-list/`。
+- **D3** 屏 15 问候副标去掉「职业直播」,`kifu:greet_sub` 11 语种同步;屏 15 四图重拍。
+- **D4** 收尾:同 Task 8(基线 diff、`tsc -b`、两套构建、i18n 闸、契约闸)。
+
+下面的「执行时更正」和 Task 1–8 保留为记录。
+
 ## 执行时更正(2026-09-22,开工前对真实代码核过)
 
 计划成文于 develop `7a152df1`;开工时 develop 已到 `34e9c7b6`,其中两件直接撞本赛道。Fan 2026-09-22 裁定:

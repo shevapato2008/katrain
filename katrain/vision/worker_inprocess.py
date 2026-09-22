@@ -7,6 +7,8 @@ in-thread — no subprocess overhead, easy to debug.
 from __future__ import annotations
 
 import logging
+import math
+import os
 import queue
 import threading
 import time
@@ -17,7 +19,7 @@ import numpy as np
 
 from katrain.vision.auto_exposure import ExposureController, meter_brightness
 from katrain.vision.board_finder import BoardFinder
-from katrain.vision.board_state import EMPTY, BoardStateExtractor
+from katrain.vision.board_state import EMPTY, SUSTAIN_RADIUS, BoardStateExtractor
 from katrain.vision.camera import CAMERA_AUTO_EXPOSURE_MANUAL, CameraManager
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig, CameraConfig
 from katrain.vision.enhance import enhance_for_inference
@@ -29,9 +31,10 @@ from katrain.vision.gating import (
     should_feed_sync_frame,
 )
 from katrain.vision.ipc import CommandType, ConfirmedMove, WorkerCommand, WorkerStatus
+from katrain.vision.led_geometry_calibrator import ROI_CELLS, ROI_RADIUS_MIN_PX, detect_led_centroid
 from katrain.vision.motion_filter import MotionFilter
 from katrain.vision.motion_roi import MotionRoiMaskCache
-from katrain.vision.parallax import ParallaxParams
+from katrain.vision.parallax import ParallaxParams, mount_parallax_for_lock
 from katrain.vision.move_detector import (
     AmbiguousPromoter,
     MoveDetector,
@@ -55,6 +58,58 @@ JPEG_QUALITY = 75
 # baseline at confirm time), so re-emission of the ambiguous_stone event is rate-limited.
 IDLE_POLL_S = 0.25  # 没人要画面时多久看一次指令队列
 AMBIG_REPROMPT_FRAMES = 40  # ~4s at ~10fps
+# Per-frame latency trace: `touch` this file on the box to get one "vtrace" INFO line per processed frame
+# (stage timings + what the frame decided), `rm` it to stop. Checked every frame, no restart needed.
+TRACE_FLAG = "/tmp/katrain-vision-trace"
+
+
+# Frames to skip after a lamp changes before measuring its glow: the LED board shows it asynchronously.
+GLOW_SETTLE_FRAMES = 2
+
+
+def measure_led_glow(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col: int):
+    """Glow of the lamp at (row, col): the geometry calibrator's own lit-minus-dark blob measure
+    (detect_led_centroid, same ROI rule), so `score` is in the units the calibration logs. Measured on the
+    raw camera frame around the intersection (cropped, for speed); the strongest colour channel wins."""
+    pts = np.asarray(geometry.points, dtype=float)
+    sw, sh = getattr(geometry, "source_width", None), getattr(geometry, "source_height", None)
+    sx = frame.shape[1] / sw if sw else 1.0
+    sy = frame.shape[0] / sh if sh else 1.0
+    here = pts[row][col]
+    near = pts[row][col + 1] if col < pts.shape[1] - 1 else pts[row][col - 1]
+    cx, cy = here[0] * sx, here[1] * sy
+    cell = float(np.hypot((near[0] - here[0]) * sx, (near[1] - here[1]) * sy))
+    radius = max(ROI_RADIUS_MIN_PX, ROI_CELLS * cell)
+    x0, y0 = max(0, int(cx - radius) - 4), max(0, int(cy - radius) - 4)
+    x1, y1 = min(frame.shape[1], int(cx + radius) + 5), min(frame.shape[0], int(cy + radius) + 5)
+    roi = (cx - x0, cy - y0, radius)
+    results = [
+        detect_led_centroid(ref[y0:y1, x0:x1], frame[y0:y1, x0:x1], channel=channel, roi=roi) for channel in range(3)
+    ]
+    return max(results, key=lambda result: result.score)
+
+
+class _FrameTrace:
+    """Stage timer for one loop iteration; only built while TRACE_FLAG exists."""
+
+    def __init__(self, start: float):
+        self.start = self.last = start
+        self.parts: list[str] = []
+        self.notes: list[str] = []
+
+    def mark(self, stage: str) -> None:
+        now = time.monotonic()
+        self.parts.append(f"{stage}={(now - self.last) * 1000:.0f}")
+        self.last = now
+
+    def note(self, text: str) -> None:
+        self.notes.append(text)
+
+    def emit(self) -> None:
+        total = (time.monotonic() - self.start) * 1000
+        logger.info(
+            "vtrace wall=%.3f total=%.0f %s | %s", time.time(), total, " ".join(self.parts), " ".join(self.notes)
+        )
 
 
 class InProcessAdapter:
@@ -92,6 +147,10 @@ class InProcessAdapter:
         # were empty in the last stable board (see BoardStateExtractor._passes_hysteresis).
         self._add_threshold = config.get("confidence_threshold", 0.5)
         self._keep_threshold = config.get("confidence_keep") or max(0.25, self._add_threshold - 0.15)
+        # Sustain tier (VisionServiceConfig.confidence_sustain): the detector runs at this lower
+        # threshold, but sub-keep detections only ever reach board assignment, where they can keep
+        # an existing stone alive and never add one. Absent -> keep (the pre-2026-09-22 behaviour).
+        self._sustain_threshold = min(config.get("confidence_sustain") or self._keep_threshold, self._keep_threshold)
         self._enhance_mode = config.get("enhance", "clahe")
         # Static-scene rolling average (weak-light noise ~4.7x down at n=8); reset on
         # motion / geometry change / session reset so scene changes never ghost.
@@ -108,7 +167,7 @@ class InProcessAdapter:
         self._detector = StoneDetector(
             config.get("model_path", ""),
             backend=config.get("backend", "ultralytics"),
-            confidence_threshold=self._keep_threshold,
+            confidence_threshold=self._sustain_threshold,
         )
         self._state_extractor = BoardStateExtractor(board_config)
         # Geometry-lock warps add a 1-cell margin (matching baipu_autolabel training images), so the
@@ -124,6 +183,8 @@ class InProcessAdapter:
             ),
             parallax=ParallaxParams(**parallax_cfg) if parallax_cfg else None,
         )
+        # No calibration file: set_geometry derives the mount's parallax from each lock it receives.
+        self._parallax_auto = bool(config.get("parallax_auto")) and not parallax_cfg
         self._move_detector = MoveDetector(
             consistency_frames=config.get("move_confirm_frames", 3),
             miss_grace=config.get("move_miss_grace", 2),
@@ -136,6 +197,12 @@ class InProcessAdapter:
 
         self._paused = False
         self._lit_points: set[tuple[int, int]] = set()
+        # Guidance-lamp glow (ambient LED brightness loop, 2026-09-22): the raw frame from just before a lamp
+        # came on is the dark reference; newly lit cells are measured once the lamp shows (led_glow event).
+        self._last_raw: np.ndarray | None = None
+        self._glow_ref: np.ndarray | None = None
+        self._glow_pending: set[tuple[int, int]] = set()
+        self._glow_wait = 0
         self._expected_np: np.ndarray | None = None
         self._ambiguous_confidence = self._config.get("ambiguous_confidence", 0.55)
         # Confidence-adaptive confirmation: a stone we can already see clearly does not
@@ -170,6 +237,21 @@ class InProcessAdapter:
         self._geometry = geometry
         self._motion_mask_cache.invalidate()
         self._motion_filter.reset()
+        if self._parallax_auto:
+            params = None
+            if geometry is not None:
+                try:
+                    params = mount_parallax_for_lock(geometry)
+                except Exception:  # a lock it cannot read turns the correction off, never recognition
+                    logger.warning("vision parallax off: cannot derive it from this geometry lock", exc_info=True)
+            self._state_extractor_locked.parallax = params
+            if params is not None:
+                logger.info(
+                    "vision parallax auto: nadir=(%.3f,%.3f) k=%.6f from the geometry lock",
+                    params.nadir_fx,
+                    params.nadir_fy,
+                    params.k,
+                )
 
     def _motion_mask(self, frame: np.ndarray) -> np.ndarray | None:
         """Return the cached board-region mask for the active geometry lock."""
@@ -219,6 +301,50 @@ class InProcessAdapter:
         if self._require_geometry:
             return None, False
         return self._board_finder.find_focus(frame, min_threshold=20, use_clahe=self._config.get("use_clahe", False))
+
+    def _game_stone_sustain(self, weak: list, w: int, h: int) -> list:
+        """The sustain-tier (below keep) detections allowed into board assignment: only those sitting within
+        SUSTAIN_RADIUS of a stone the GAME has already played (the expected board). Owner rule 2026-09-22:
+        the 0.20 tier exists so a played stone never reads as empty or as the other colour. The camera's
+        own last stable board is not "played": a shadow read as a stone once (E1 on the RK3562) must not
+        get the tier. No bound game -> no tier (tsumego / baipu monitor keep the pre-tier behaviour)."""
+        exp = self._expected_np
+        if not weak or exp is None or not self._bound:
+            return []
+        gs = exp.shape[0]
+        points = self._active_extractor().detection_points(weak, img_w=w, img_h=h)
+        kept = []
+        for det, (fy, fx, _cls, _conf) in zip(weak, points):
+            r, c = int(round(fy)), int(round(fx))
+            if 0 <= r < gs and 0 <= c < gs and int(exp[r][c]) != EMPTY and math.hypot(fy - r, fx - c) <= SUSTAIN_RADIUS:
+                kept.append(det)
+        return kept
+
+    def _measure_pending_glow(self, frame: np.ndarray) -> None:
+        """Measure each newly lit lamp that is still a bare lamp (no stone on the camera's board there) and
+        report it as a led_glow event. The AI's move is already on the expected board while its lamp waits
+        for the player, so only the camera's own board decides "bare"."""
+        cells, self._glow_pending = self._glow_pending, set()
+        ref, geometry, stable = self._glow_ref, self._geometry, self._last_stable_board
+        if ref is None or geometry is None or getattr(geometry, "points", None) is None or ref.shape != frame.shape:
+            return
+        for row, col in sorted(cells):
+            if stable is not None and int(stable[row][col]) != EMPTY:
+                continue
+            result = measure_led_glow(ref, frame, geometry, row, col)
+            self._event_queue.put(
+                {
+                    "type": "led_glow",
+                    "data": {
+                        "row": int(row),
+                        "col": int(col),
+                        "ok": bool(result.ok),
+                        "score": round(float(result.score), 1),
+                        "peak": round(float(result.peak), 1),
+                        "area": int(result.area),
+                    },
+                }
+            )
 
     def _active_extractor(self) -> BoardStateExtractor:
         """Margin-aware extractor for the geometry-lock warp; plain (border 0) for BoardFinder."""
@@ -379,18 +505,31 @@ class InProcessAdapter:
                 # 空闲之前攒下的观测不能和现在的画面混在一起投票。
                 self._averager.reset()
                 self._motion_filter.reset()
+            tr = _FrameTrace(loop_start) if os.path.exists(TRACE_FLAG) else None
 
             frame = self._camera.read_frame()
             board_detected = False
             observed_board = None
             mean_confidence = 0.0
+            if tr:
+                tr.mark("read")
 
             motion_stable = False
             if frame is not None:
                 motion_stable = self._motion_is_stable(frame)
+            if self._glow_pending and frame is not None and motion_stable:
+                if self._glow_wait > 0:
+                    self._glow_wait -= 1
+                else:
+                    self._measure_pending_glow(frame)
+            if tr:
+                tr.mark("motion")
+                tr.note(f"still={int(motion_stable)} {self._motion_diagnostic()}")
 
             if motion_stable:
                 warped, found = self._warp_frame(frame)
+                if tr:
+                    tr.mark("warp")
                 if found and warped is not None:
                     board_detected = True
                     h, w = warped.shape[:2]
@@ -398,13 +537,32 @@ class InProcessAdapter:
                         # Meter the raw warped frame (pre-average, pre-CLAHE) — the reading
                         # must reflect the actual sensor exposure, not our processing.
                         self._run_ae(meter_brightness(warped))
+                    if tr:
+                        tr.mark("ae")
                     _t_enh = time.monotonic()
                     warped = self._averager.add(warped)
+                    if tr:
+                        tr.mark("avg")
                     warped = enhance_for_inference(warped, self._enhance_mode)
                     _enh_ms = (time.monotonic() - _t_enh) * 1000
+                    if tr:
+                        tr.mark("clahe")
                     _t_inf = time.monotonic()
-                    detections = self._detector.detect(warped)
+                    all_detections = self._detector.detect(warped)
                     _infer_ms = (time.monotonic() - _t_inf) * 1000
+                    # Sustain-tier detections (below keep) reach board assignment only on stones the game
+                    # has played (_game_stone_sustain), plus the board-delta diagnostic and the preview;
+                    # every other consumer sees exactly what it saw before the tier existed.
+                    detections = [d for d in all_detections if d.confidence >= self._keep_threshold]
+                    if tr:
+                        tr.mark("detect")
+                        pre, npu, post = getattr(
+                            getattr(self._detector, "backend_impl", None), "last_timing_ms", (0.0, 0.0, 0.0)
+                        )
+                        tr.note(
+                            f"det[pre={pre:.0f} npu={npu:.0f} post={post:.0f}] boxes={len(all_detections)} "
+                            f"keep={len(detections)} avgN={len(getattr(self._averager, '_frames', ()))}"
+                        )
                     self._frame_count += 1
                     if self._frame_count % 30 == 0:
                         _mc = (sum(d.confidence for d in detections) / len(detections)) if detections else 0.0
@@ -425,8 +583,9 @@ class InProcessAdapter:
                     if self._lit_points:
                         exp = self._expected_np
                         masked = {p for p in self._lit_points if exp is None or int(exp[p[0]][p[1]]) == 0}
+                    weak = [d for d in all_detections if d.confidence < self._keep_threshold]
                     observed_board = self._active_extractor().detections_to_board(
-                        detections,
+                        detections + self._game_stone_sustain(weak, w, h),
                         img_w=w,
                         img_h=h,
                         occupancy_aware=True,
@@ -448,11 +607,13 @@ class InProcessAdapter:
                     if self._last_stable_board is not None and not np.array_equal(
                         stable_board, self._last_stable_board
                     ):
-                        self._log_board_delta(self._last_stable_board, stable_board, detections, w, h)
+                        self._log_board_delta(self._last_stable_board, stable_board, all_detections, w, h)
                     self._prev_observed_board = observed_board
                     self._last_stable_board = stable_board
                     observed_board = stable_board
                     self._observation_seq += 1
+                    if tr:
+                        tr.mark("assign")
 
                     # Confident-empty reads score 1.0 (our helper), so the tsumego "clear board" step
                     # doesn't rot into DEGRADED (which would skip the setup check and wedge clearing).
@@ -499,6 +660,12 @@ class InProcessAdapter:
                             ignore_cells=masked,
                             required_frames=self._fast_confirm_frames if fast else None,
                         )
+                        if tr:
+                            peak = "-" if pending_peak is None else f"{pending_peak:.2f}"
+                            tr.note(
+                                f"pend={self._move_detector.pending_move} seen={candidate_sightings + 1}/"
+                                f"{selected_required_frames} peak={peak} confirmed={move_result}"
+                            )
                         if move_result is not None:
                             row, col, color = move_result
                             if not self._bound:
@@ -613,7 +780,11 @@ class InProcessAdapter:
                         if move_result is None and not self._move_detector.about_to_confirm:
                             self._promote_stuck_stone(detections, w, h, observed_board, masked)
 
-                    self._maybe_send_preview(warped, detections)
+                    if tr:
+                        tr.mark("move")
+                    self._maybe_send_preview(warped, all_detections)
+                    if tr:
+                        tr.mark("preview")
 
             elif frame is None:
                 # Camera dropout has no motion-frame decision to reset the average for us.
@@ -635,6 +806,11 @@ class InProcessAdapter:
                     self._event_queue.put({"type": evt.type.value, "data": evt.data})
 
             self._publish_status(observed_board)
+            if frame is not None:
+                self._last_raw = frame
+            if tr:
+                tr.mark("sync")
+                tr.emit()
 
             elapsed = time.monotonic() - loop_start
             sleep_time = target_interval - elapsed
@@ -647,10 +823,7 @@ class InProcessAdapter:
     def needs_frames(self) -> bool:
         """有人要看棋盘才处理画面:实体对局绑定、做题/摆谱监视、摆棋准备、有人开着识别预览。"""
         return bool(
-            self._bound
-            or self._monitor
-            or self._viewer_active
-            or self._sync.state == SyncState.SETUP_IN_PROGRESS
+            self._bound or self._monitor or self._viewer_active or self._sync.state == SyncState.SETUP_IN_PROGRESS
         )
 
     def _publish_status(self, observed_board) -> None:
@@ -768,7 +941,15 @@ class InProcessAdapter:
             elif cmd.action == CommandType.RESUME_DETECTION:
                 self._paused = False
             elif cmd.action == CommandType.SET_LIT_POINTS:
-                self._lit_points = {tuple(p) for p in cmd.data.get("points", [])}
+                lit = {tuple(p) for p in cmd.data.get("points", [])}
+                if lit - self._lit_points:
+                    # A lamp just came on: the last frame read before this command is its dark reference.
+                    self._glow_ref = self._last_raw
+                    self._glow_pending = lit - self._lit_points
+                    self._glow_wait = GLOW_SETTLE_FRAMES
+                elif not lit:
+                    self._glow_ref, self._glow_pending = None, set()
+                self._lit_points = lit
 
     def _maybe_send_preview(self, warped: np.ndarray, detections: list | None = None) -> None:
         if not self._viewer_active:

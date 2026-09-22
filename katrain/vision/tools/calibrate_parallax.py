@@ -1,5 +1,8 @@
 """Stone-parallax calibration for the geometry-locked board (vision-stone-parallax track).
 
+OPTIONAL since 2026-09-22: without the file this writes, the service derives the correction from each
+geometry lock and the ver9 mount CAD (parallax.mount_parallax_for_lock). A valid file still wins.
+
 Run ON THE BOARD with the katrain service stopped (it owns the camera):
 
     sudo systemctl stop smartbox-katrain

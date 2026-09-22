@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 
 import { useTranslation } from '../../hooks/useTranslation';
 import { type BaipuCaptureErrorReason,
@@ -14,6 +14,7 @@ import { colsFor, rowsFor } from '../shell/goBoard';
 import { KioskActions } from '../shell/KioskActions';
 import { KioskFold } from '../shell/KioskFold';
 import { KioskPagebar } from '../shell/KioskPagebar';
+import { readBackTo, useBackTo } from '../hooks/useBackTo';
 import { driftLine } from '../utils/baipuDrift';
 import { playShutter } from '../utils/baipuShutter';
 import { interpolate } from '../utils/interpolate';
@@ -98,8 +99,14 @@ type Mood = 'guiding' | 'removal' | 'failed' | 'done';
 const BaipuSessionPage = () => {
   const { source = '' } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
   const { t } = useTranslation();
+  // 返回 / 退出 / 完成都去**打开这一屏的那一页**(2026-09-22):摆谱列表进来回列表(键名「摆谱」),
+  // 棋谱屏导入、棋谱详情「摆这一局」进来回那一页(键名「棋谱」)。原先一律 `/kiosk/baipu`,
+  // 键名却写「棋谱」。没写明来处(直接输 URL)回摆谱列表。
+  const back = useBackTo('/kiosk/baipu');
+  const backLabel = (readBackTo(location.state) ?? '/kiosk/baipu').startsWith('/kiosk/baipu')
+    ? t('baipu:title', '摆谱')
+    : t('baipu:back_kifu', '棋谱');
   const { user, isGuest, isLoading } = useAuth();
   const identityKey = user?.uuid ?? null;
   const store = useMemo(
@@ -325,8 +332,8 @@ const BaipuSessionPage = () => {
       <div className="kiosk-layout-b" data-testid="baipu-session-page">
         <KioskPagebar
           testId="baipu-pagebar"
-          backLabel={t('baipu:back_kifu', '棋谱')}
-          onBack={() => navigate('/kiosk/baipu')}
+          backLabel={backLabel}
+          onBack={back}
           title={t('baipu:title', '摆谱')}
         />
         <div className="empty" data-testid="baipu-load-error">
@@ -341,8 +348,8 @@ const BaipuSessionPage = () => {
       <div className="kiosk-layout-b" data-testid="baipu-session-page">
         <KioskPagebar
           testId="baipu-pagebar"
-          backLabel={t('baipu:back_kifu', '棋谱')}
-          onBack={() => navigate('/kiosk/baipu')}
+          backLabel={backLabel}
+          onBack={back}
           title={title}
         />
         <div className="empty" data-testid="baipu-loading"><h4>{t('baipu:loading', '正在读这份谱')}</h4></div>
@@ -391,7 +398,7 @@ const BaipuSessionPage = () => {
       <div className="kiosk-rail">
         <KioskPagebar
           testId="baipu-pagebar"
-          backLabel={t('baipu:back_kifu', '棋谱')}
+          backLabel={backLabel}
           onBack={() => setExitOpen(true)}
           title={title}
           sub={interpolate(
@@ -546,7 +553,7 @@ const BaipuSessionPage = () => {
               reason: phase !== 'done'
                 ? interpolate(t('baipu:finish_reason', '还剩 {n} 手没摆'), { n: steps.length - k })
                 : undefined,
-              onClick: () => { clearProgress(source, store); navigate('/kiosk/baipu'); },
+              onClick: () => { clearProgress(source, store); back(); },
             },
           ]}
         />
@@ -614,7 +621,7 @@ const BaipuSessionPage = () => {
               <button type="button" className="ghost" onClick={() => setExitOpen(false)}>{t('cancel', '取消')}</button>
               <button
                 type="button" className="main" data-testid="baipu-exit-confirm-action"
-                onClick={() => navigate('/kiosk/baipu')}
+                onClick={back}
               >{t('baipu:exit', '退出')}</button>
             </div>
           </div>

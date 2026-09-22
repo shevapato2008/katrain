@@ -3623,6 +3623,54 @@ def _diag_log_vision_evt(log, evt: dict, n_clients: int) -> None:
         log.info("[DIAG-VIS] %s data=%s -> %d clients", t, data, n_clients)
 
 
+# Ambient LED brightness loop (2026-09-22). A guidance lamp's glow, measured by the vision worker on a
+# bare lit point before the player places the stone (led_glow), steers the guidance brightness: at night
+# full brightness shines through a white stone and it is not recognised until the lamp goes out (RK3562).
+# Target in detect_led_centroid score units. Calibration anchors (green@96) scored a median 35k at 17:35,
+# when white stones on lit lamps were still recognised, and 70k at 19:38, when they were not;
+# provisional, to be tuned from the "LED glow" log lines.
+LED_GLOW_TARGET = 60000.0
+LED_GLOW_DEADBAND = (0.8, 1.25)  # target / score inside this band: leave the brightness alone
+LED_GLOW_STEP = (0.5, 2.0)  # one reading moves the brightness by at most these factors
+# A bare lamp's glow never covers more than ~2000 px of the raw 1080p frame (full brightness, dark room);
+# readings of 3000-21000 px with a low peak were a hand or the whole scene changing, not the lamp.
+LED_GLOW_MAX_AREA = 2500
+
+
+def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
+    led = getattr(app.state, "led", None)
+    if led is None or not hasattr(led, "set_guidance_scale"):
+        return
+    before = led.guidance_scale
+    score = float(data.get("score") or 0.0)
+    after = before
+    if data.get("ok") and score > 0 and int(data.get("area") or 0) <= LED_GLOW_MAX_AREA:
+        ratio = LED_GLOW_TARGET / score
+        if not LED_GLOW_DEADBAND[0] <= ratio <= LED_GLOW_DEADBAND[1]:
+            from katrain.web.core.led_service import MIN_GUIDANCE_SCALE
+
+            # The glow grows faster than the brightness (the lit patch widens as well; ~brightness^2 on the
+            # RK3562), so step by the square root of the ratio: stepping by the ratio itself overshot every
+            # time. One reading per lamp, taken as it comes on: re-measuring the same lamp at each new
+            # brightness swung it bright/dim/bright, and later readings caught the stone already on it.
+            step = min(LED_GLOW_STEP[1], max(LED_GLOW_STEP[0], ratio**0.5))
+            after = min(1.0, max(MIN_GUIDANCE_SCALE, before * step))
+    log.info(
+        "LED glow at (%s,%s): ok=%s score=%.0f peak=%s area=%s -> guidance brightness %.2f -> %.2f (target %.0f)",
+        data.get("row"),
+        data.get("col"),
+        data.get("ok"),
+        score,
+        data.get("peak"),
+        data.get("area"),
+        before,
+        after,
+        LED_GLOW_TARGET,
+    )
+    if abs(after - before) >= 0.02:
+        led.set_guidance_scale(after)  # the waiting lamp shows the new brightness at once
+
+
 async def _vision_event_pump(app: FastAPI):
     """Sole consumer of the vision worker event queue — see vision_pump docstring."""
     from katrain.web.core.vision_pump import route_vision_event
@@ -3633,6 +3681,9 @@ async def _vision_event_pump(app: FastAPI):
             vision = getattr(app.state, "vision", None)
             if vision:
                 for evt in vision.poll_events():
+                    if isinstance(evt, dict) and evt.get("type") == "led_glow":
+                        _adjust_led_brightness(app, evt.get("data") or {}, log)
+                        continue
                     if isinstance(evt, dict):
                         _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
                     route_vision_event(
@@ -4092,6 +4143,20 @@ def run_web():
         "confidence (default: max(0.25, confidence - 0.15)). Fights weak-light flicker.",
     )
     parser.add_argument(
+        "--vision-parallax",
+        choices=["auto", "off"],
+        default="auto",
+        help="Stone-parallax correction: 'auto' derives it from the geometry lock (a calibrate_parallax "
+        "file under --hardware-vision-dir wins when present); 'off' disables it.",
+    )
+    parser.add_argument(
+        "--vision-confidence-sustain",
+        type=float,
+        default=None,
+        help="Sustain tier below 'keep': detections down to this confidence can only keep an existing "
+        "stone alive, never add one or reach any other consumer (default: min(0.20, keep)).",
+    )
+    parser.add_argument(
         "--vision-enhance",
         choices=["clahe", "off"],
         default=None,
@@ -4202,6 +4267,9 @@ def run_web():
             vision_kwargs["confidence_threshold"] = args.vision_confidence
         if args.vision_confidence_keep is not None:
             vision_kwargs["confidence_keep"] = args.vision_confidence_keep
+        if args.vision_confidence_sustain is not None:
+            vision_kwargs["confidence_sustain"] = args.vision_confidence_sustain
+        vision_kwargs["parallax_enabled"] = args.vision_parallax == "auto"
         if args.vision_enhance is not None:
             vision_kwargs["enhance"] = args.vision_enhance
         if args.vision_move_frames is not None:

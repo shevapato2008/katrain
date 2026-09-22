@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { backToState } from '../hooks/useBackTo';
 import { useTranslation } from '../../hooks/useTranslation';
 import { KifuAPI } from '../../api/kifuApi';
 import { BaipuAPI, cacheSgf, canonToGtp, type BaipuStep } from '../../api/baipuApi';
@@ -81,6 +82,7 @@ const rulesLabel = (rules: string | null, t: (k: string, d: string) => string): 
 const KifuDetailPage = () => {
   const { kifuId } = useParams<{ kifuId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
 
   const [album, setAlbum] = useState<KifuAlbumDetail | null>(null);
@@ -154,9 +156,10 @@ const KifuDetailPage = () => {
       || `${album.player_black} vs ${album.player_white}`;
     cacheSgf(id, name, album.sgf_content);
     navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, {
-      state: { sgf: album.sgf_content, name },
+      // 带上来处:摆谱会话的返回键回这一局的详情页,不是摆谱列表
+      state: { ...backToState(location), sgf: album.sgf_content, name },
     });
-  }, [album, navigate]);
+  }, [album, navigate, location]);
 
   const cols = colsFor(boardSize);
   const rows = rowsFor(boardSize);

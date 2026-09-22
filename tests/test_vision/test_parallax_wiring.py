@@ -1,8 +1,12 @@
 import logging
+from types import SimpleNamespace
 from unittest.mock import patch
 
+import numpy as np
+import pytest
+
 from katrain.vision.config_service import VisionServiceConfig
-from katrain.vision.parallax import ParallaxParams
+from katrain.vision.parallax import MOUNT_K, MOUNT_NADIR_OUTSIDE_CELLS, ParallaxParams, mount_parallax_for_lock
 from katrain.vision.parallax_store import (
     BOARD_GO_19,
     ParallaxCalibration,
@@ -36,8 +40,9 @@ def _calib():
 
 
 class TestVisionServiceConfig:
-    def test_parallax_defaults_off_and_reaches_the_worker_config(self):
+    def test_parallax_defaults_to_lock_derived_and_reaches_the_worker_config(self):
         assert VisionServiceConfig().to_worker_config()["parallax"] is None
+        assert VisionServiceConfig().to_worker_config()["parallax_auto"] is True
         assert VisionServiceConfig(parallax=PARAMS).to_worker_config()["parallax"] == PARAMS
 
 
@@ -55,24 +60,97 @@ class TestInProcessAdapter:
 
     def test_no_parallax_key_means_off(self):
         a = self._adapter({})
+        a.set_geometry(_lock("col18"))
         assert a._state_extractor_locked.parallax is None and a._state_extractor.parallax is None
+
+    def test_auto_derives_it_from_each_geometry_lock(self):
+        a = self._adapter({"parallax_auto": True})
+        assert a._state_extractor_locked.parallax is None  # no lock yet
+        a.set_geometry(_lock("col18"))
+        assert a._state_extractor_locked.parallax == ParallaxParams(18 + MOUNT_NADIR_OUTSIDE_CELLS, 9.0, MOUNT_K)
+        a.set_geometry(_lock("row0"))  # a re-lock with another corner order moves the nadir with it
+        assert a._state_extractor_locked.parallax == ParallaxParams(9.0, -MOUNT_NADIR_OUTSIDE_CELLS, MOUNT_K)
+        assert a._state_extractor.parallax is None  # BoardFinder warp: different grid basis
+        a.set_geometry(None)
+        assert a._state_extractor_locked.parallax is None
+
+    def test_a_calibration_file_wins_over_auto(self):
+        a = self._adapter({"parallax": PARAMS, "parallax_auto": True})
+        a.set_geometry(_lock("col18"))
+        assert a._state_extractor_locked.parallax == ParallaxParams(**PARAMS)
+
+    def test_an_unreadable_lock_turns_it_off_without_raising(self):
+        a = self._adapter({"parallax_auto": True})
+        a.set_geometry(_lock("col18"))
+        a.set_geometry(object())
+        assert a._state_extractor_locked.parallax is None
+
+
+def _lock(near: str):
+    """A geometry lock seen by a camera centred beyond the ``near`` edge ("col0", "col18", "row0", "row18"):
+    the camera image is a symmetric trapezoid, near edge 800 px wide, far edge 400 px (the RK3562 locks
+    measure 152 vs 96 px per two cells)."""
+    import cv2
+
+    W = 949.0
+    corners = [(0.0, 0.0), (W, 0.0), (W, W), (0.0, W)]  # warped (x = col, y = row)
+
+    def depth_and_across(x, y):  # (distance from the far edge, position along the edges), in warped px
+        return {"col18": (x, y), "col0": (W - x, y), "row18": (y, x), "row0": (W - y, x)}[near]
+
+    image = []
+    for x, y in corners:
+        u, v = depth_and_across(x, y)
+        half = 200.0 + 200.0 * u / W  # half-width of the trapezoid at this depth
+        image.append((500.0 - half + 2 * half * v / W, 300.0 + 600.0 * u / W))
+    M = cv2.getPerspectiveTransform(np.float32(image), np.float32(corners))
+    grid = np.linspace(0.0, W, 19)
+    return SimpleNamespace(M=M, xs=grid, ys=grid)
+
+
+class TestMountParallaxForLock:
+    @pytest.mark.parametrize(
+        "near, nadir",
+        [
+            ("col18", (18 + MOUNT_NADIR_OUTSIDE_CELLS, 9.0)),  # the RK3562's own orientation
+            ("col0", (-MOUNT_NADIR_OUTSIDE_CELLS, 9.0)),
+            ("row18", (9.0, 18 + MOUNT_NADIR_OUTSIDE_CELLS)),
+            ("row0", (9.0, -MOUNT_NADIR_OUTSIDE_CELLS)),
+        ],
+    )
+    def test_the_nadir_is_beyond_the_edge_drawn_largest(self, near, nadir):
+        params = mount_parallax_for_lock(_lock(near))
+        assert (params.nadir_fx, params.nadir_fy) == pytest.approx(nadir)
+
+    def test_k_is_the_ver9_mount_with_the_stone_mid_plane(self):
+        assert MOUNT_K == pytest.approx((339.4424 - 3.5) / 339.4424)
+        assert mount_parallax_for_lock(_lock("col18")).k == MOUNT_K
 
 
 class TestAttachParallax:
-    def test_without_hardware_vision_dir_it_is_off(self):
+    def test_without_hardware_vision_dir_it_is_derived_from_the_lock(self):
         cfg, level, msg = attach_parallax(VisionServiceConfig(parallax=PARAMS), None, None)
-        assert cfg.parallax is None and level == logging.INFO and "parallax off" in msg
+        assert cfg.parallax is None and cfg.to_worker_config()["parallax_auto"] is True
+        assert level == logging.INFO and "parallax auto" in msg
 
-    def test_uncalibrated_dir_is_off_at_info(self, tmp_path):
+    def test_uncalibrated_dir_is_derived_from_the_lock_at_info(self, tmp_path):
         cfg, level, msg = attach_parallax(VisionServiceConfig(), tmp_path, "gen-now")
-        assert cfg.parallax is None and level == logging.INFO and "not calibrated" in msg
+        assert cfg.parallax is None and level == logging.INFO
+        assert "parallax auto" in msg and "not calibrated" in msg
 
-    def test_broken_file_is_off_at_warning(self, tmp_path):
+    def test_off_means_off_even_with_a_valid_file(self, tmp_path):
+        save_parallax(parallax_path(tmp_path), _calib())
+        cfg, level, msg = attach_parallax(VisionServiceConfig(parallax_enabled=False), tmp_path, "gen-now")
+        assert cfg.parallax is None and cfg.to_worker_config()["parallax_auto"] is False
+        assert level == logging.INFO and "parallax off" in msg
+
+    def test_broken_file_falls_back_to_the_lock_at_warning(self, tmp_path):
         path = parallax_path(tmp_path)
         path.parent.mkdir(parents=True)
         path.write_text("{broken")
         cfg, level, msg = attach_parallax(VisionServiceConfig(), tmp_path, "gen-now")
-        assert cfg.parallax is None and level == logging.WARNING and "invalid calibration file" in msg
+        assert cfg.parallax is None and level == logging.WARNING
+        assert "parallax auto" in msg and "invalid calibration file" in msg
 
     def test_a_non_value_error_from_a_broken_file_is_still_off_at_warning(self, tmp_path):
         """Deeply nested JSON raises RecursionError out of json.loads; attach_parallax must not let that

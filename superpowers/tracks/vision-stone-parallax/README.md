@@ -47,7 +47,11 @@ K = 0.989689   nadir = (0.0, -70.545)   H = 339.4424   h = 3.5
 ## 接进流水线的位置
 
 `katrain/vision/board_state.py` 的 `BoardStateExtractor._positions`,在 `continuous_grid_pos` 之后、
-取整之前;是 `apply_parallax` 唯一的调用点。`coordinates.py` 的 `physical_to_grid` 本身不动 ——
+取整之前;是 `apply_parallax` 唯一的调用点。
+
+2026-09-22 起参数不再靠摆子标定:worker 在 `set_geometry` 里用 `parallax.mount_parallax_for_lock()`
+从每个几何锁推出(k 取 ver9 CAD,nadir 在成像最长那条边中点外 1.6116 格),标定文件有效时仍以文件为准。
+上板实测与同日其它改动见 `docs/2026-09-22-kiosk-device-session.md`。`coordinates.py` 的 `physical_to_grid` 本身不动 ——
 `tests/test_vision/test_warp_consistency.py:46-47` 还把它当纯几何断言用。
 
 ## 硬件侧的真源

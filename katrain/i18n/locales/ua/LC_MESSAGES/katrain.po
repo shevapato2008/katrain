@@ -6672,3 +6672,48 @@ msgstr "Здатися не вдалося"
 
 msgid "game:session_gone_notice"
 msgstr "Цієї партії на сервері більше немає — можна залишити сторінку."
+
+msgid "settings:nav_about"
+msgstr "Про програму"
+
+msgid "settings:about_version"
+msgstr "Версія"
+
+msgid "settings:about_local"
+msgstr "Цей пристрій"
+
+msgid "settings:about_cloud"
+msgstr "Хмара"
+
+msgid "settings:engine_ok"
+msgstr "Доступний"
+
+msgid "settings:engine_down"
+msgstr "Немає зв'язку"
+
+msgid "settings:engine_unset"
+msgstr "Не налаштовано"
+
+msgid "settings:engine_code"
+msgstr "Рушій повернув {code}"
+
+msgid "settings:camera_connected"
+msgstr "Під'єднано"
+
+msgid "settings:geometry_calibrated"
+msgstr "Відкалібровано"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Не відкалібровано"
+
+msgid "settings:led_serial_connected"
+msgstr "Порт під'єднано"
+
+msgid "settings:calib_no_camera"
+msgstr "На цьому пристрої немає камери"
+
+msgid "settings:ladder_detail_open"
+msgstr "Докладніше про розряд ШІ"
+
+msgid "settings:ladder_detail_close"
+msgstr "Згорнути"

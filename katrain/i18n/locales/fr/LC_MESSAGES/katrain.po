@@ -6701,3 +6701,48 @@ msgstr "L'abandon n'a pas abouti"
 msgid "game:session_gone_notice"
 msgstr ""
 "Cette partie n'existe plus sur le serveur — vous pouvez quitter cette page."
+
+msgid "settings:nav_about"
+msgstr "À propos"
+
+msgid "settings:about_version"
+msgstr "Version"
+
+msgid "settings:about_local"
+msgstr "Cet appareil"
+
+msgid "settings:about_cloud"
+msgstr "Cloud"
+
+msgid "settings:engine_ok"
+msgstr "Disponible"
+
+msgid "settings:engine_down"
+msgstr "Injoignable"
+
+msgid "settings:engine_unset"
+msgstr "Non configuré"
+
+msgid "settings:engine_code"
+msgstr "Le moteur a renvoyé {code}"
+
+msgid "settings:camera_connected"
+msgstr "Connecté"
+
+msgid "settings:geometry_calibrated"
+msgstr "Calibré"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Non calibré"
+
+msgid "settings:led_serial_connected"
+msgstr "Port série connecté"
+
+msgid "settings:calib_no_camera"
+msgstr "Cet appareil n'a pas de caméra"
+
+msgid "settings:ladder_detail_open"
+msgstr "Voir le détail du rang IA"
+
+msgid "settings:ladder_detail_close"
+msgstr "Masquer"

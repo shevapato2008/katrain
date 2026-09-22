@@ -6730,3 +6730,48 @@ msgid "game:session_gone_notice"
 msgstr ""
 "Diese Partie gibt es auf dem Server nicht mehr — du kannst die Seite "
 "verlassen."
+
+msgid "settings:nav_about"
+msgstr "Info"
+
+msgid "settings:about_version"
+msgstr "Version"
+
+msgid "settings:about_local"
+msgstr "Dieses Gerät"
+
+msgid "settings:about_cloud"
+msgstr "Cloud"
+
+msgid "settings:engine_ok"
+msgstr "Verfügbar"
+
+msgid "settings:engine_down"
+msgstr "Nicht erreichbar"
+
+msgid "settings:engine_unset"
+msgstr "Nicht eingerichtet"
+
+msgid "settings:engine_code"
+msgstr "Engine meldete {code}"
+
+msgid "settings:camera_connected"
+msgstr "Verbunden"
+
+msgid "settings:geometry_calibrated"
+msgstr "Kalibriert"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Nicht kalibriert"
+
+msgid "settings:led_serial_connected"
+msgstr "Seriell verbunden"
+
+msgid "settings:calib_no_camera"
+msgstr "Dieses Gerät hat keine Kamera"
+
+msgid "settings:ladder_detail_open"
+msgstr "KI-Rang im Detail"
+
+msgid "settings:ladder_detail_close"
+msgstr "Einklappen"

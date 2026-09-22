@@ -6597,3 +6597,48 @@ msgstr "Сдаться не удалось"
 
 msgid "game:session_gone_notice"
 msgstr "Этой партии на сервере больше нет — можно покинуть страницу."
+
+msgid "settings:nav_about"
+msgstr "О программе"
+
+msgid "settings:about_version"
+msgstr "Версия"
+
+msgid "settings:about_local"
+msgstr "Это устройство"
+
+msgid "settings:about_cloud"
+msgstr "Облако"
+
+msgid "settings:engine_ok"
+msgstr "Доступен"
+
+msgid "settings:engine_down"
+msgstr "Нет связи"
+
+msgid "settings:engine_unset"
+msgstr "Не настроен"
+
+msgid "settings:engine_code"
+msgstr "Движок вернул {code}"
+
+msgid "settings:camera_connected"
+msgstr "Подключено"
+
+msgid "settings:geometry_calibrated"
+msgstr "Откалибровано"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Не откалибровано"
+
+msgid "settings:led_serial_connected"
+msgstr "Порт подключён"
+
+msgid "settings:calib_no_camera"
+msgstr "На этом устройстве нет камеры"
+
+msgid "settings:ladder_detail_open"
+msgstr "Подробнее о разряде ИИ"
+
+msgid "settings:ladder_detail_close"
+msgstr "Свернуть"

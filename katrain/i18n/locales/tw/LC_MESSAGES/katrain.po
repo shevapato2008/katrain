@@ -6444,3 +6444,48 @@ msgstr "認輸沒成"
 
 msgid "game:session_gone_notice"
 msgstr "這一局在伺服器上已經沒有了，可以離開這一頁。"
+
+msgid "settings:nav_about"
+msgstr "關於"
+
+msgid "settings:about_version"
+msgstr "版本"
+
+msgid "settings:about_local"
+msgstr "本機"
+
+msgid "settings:about_cloud"
+msgstr "雲端"
+
+msgid "settings:engine_ok"
+msgstr "可用"
+
+msgid "settings:engine_down"
+msgstr "連不上"
+
+msgid "settings:engine_unset"
+msgstr "沒設定"
+
+msgid "settings:engine_code"
+msgstr "引擎回了 {code}"
+
+msgid "settings:camera_connected"
+msgstr "已連接"
+
+msgid "settings:geometry_calibrated"
+msgstr "已標定"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "未標定"
+
+msgid "settings:led_serial_connected"
+msgstr "序列埠已連接"
+
+msgid "settings:calib_no_camera"
+msgstr "這台盒子沒有配攝影機"
+
+msgid "settings:ladder_detail_open"
+msgstr "查看AI段位詳情"
+
+msgid "settings:ladder_detail_close"
+msgstr "收起"

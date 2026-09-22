@@ -6300,3 +6300,48 @@ msgstr "认输没成"
 
 msgid "game:session_gone_notice"
 msgstr "这一局在服务器上已经没有了，可以离开这一页。"
+
+msgid "settings:nav_about"
+msgstr "关于"
+
+msgid "settings:about_version"
+msgstr "版本"
+
+msgid "settings:about_local"
+msgstr "本机"
+
+msgid "settings:about_cloud"
+msgstr "云端"
+
+msgid "settings:engine_ok"
+msgstr "可用"
+
+msgid "settings:engine_down"
+msgstr "连不上"
+
+msgid "settings:engine_unset"
+msgstr "没配置"
+
+msgid "settings:engine_code"
+msgstr "引擎回了 {code}"
+
+msgid "settings:camera_connected"
+msgstr "已连接"
+
+msgid "settings:geometry_calibrated"
+msgstr "已标定"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "未标定"
+
+msgid "settings:led_serial_connected"
+msgstr "串口已连接"
+
+msgid "settings:calib_no_camera"
+msgstr "这台盒子没有配摄像头"
+
+msgid "settings:ladder_detail_open"
+msgstr "查看AI段位详情"
+
+msgid "settings:ladder_detail_close"
+msgstr "收起"

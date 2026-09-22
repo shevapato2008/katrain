@@ -6694,3 +6694,48 @@ msgstr "Çekilme geçmedi"
 
 msgid "game:session_gone_notice"
 msgstr "Bu oyun artık sunucuda yok — bu sayfadan çıkabilirsiniz."
+
+msgid "settings:nav_about"
+msgstr "Hakkında"
+
+msgid "settings:about_version"
+msgstr "Sürüm"
+
+msgid "settings:about_local"
+msgstr "Bu cihaz"
+
+msgid "settings:about_cloud"
+msgstr "Bulut"
+
+msgid "settings:engine_ok"
+msgstr "Kullanılabilir"
+
+msgid "settings:engine_down"
+msgstr "Ulaşılamıyor"
+
+msgid "settings:engine_unset"
+msgstr "Ayarlanmadı"
+
+msgid "settings:engine_code"
+msgstr "Motor {code} döndürdü"
+
+msgid "settings:camera_connected"
+msgstr "Bağlı"
+
+msgid "settings:geometry_calibrated"
+msgstr "Kalibre edildi"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Kalibre edilmedi"
+
+msgid "settings:led_serial_connected"
+msgstr "Seri port bağlı"
+
+msgid "settings:calib_no_camera"
+msgstr "Bu cihazda kamera yok"
+
+msgid "settings:ladder_detail_open"
+msgstr "Yapay zeka seviyesi ayrıntıları"
+
+msgid "settings:ladder_detail_close"
+msgstr "Gizle"

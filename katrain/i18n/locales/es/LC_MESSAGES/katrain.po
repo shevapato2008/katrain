@@ -6556,3 +6556,48 @@ msgstr "No se ha podido abandonar"
 msgid "game:session_gone_notice"
 msgstr ""
 "Esta partida ya no existe en el servidor: puedes salir de esta página."
+
+msgid "settings:nav_about"
+msgstr "Acerca de"
+
+msgid "settings:about_version"
+msgstr "Versión"
+
+msgid "settings:about_local"
+msgstr "Este equipo"
+
+msgid "settings:about_cloud"
+msgstr "Nube"
+
+msgid "settings:engine_ok"
+msgstr "Disponible"
+
+msgid "settings:engine_down"
+msgstr "Sin conexión"
+
+msgid "settings:engine_unset"
+msgstr "Sin configurar"
+
+msgid "settings:engine_code"
+msgstr "El motor devolvió {code}"
+
+msgid "settings:camera_connected"
+msgstr "Conectado"
+
+msgid "settings:geometry_calibrated"
+msgstr "Calibrado"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Sin calibrar"
+
+msgid "settings:led_serial_connected"
+msgstr "Puerto serie conectado"
+
+msgid "settings:calib_no_camera"
+msgstr "Esta máquina no tiene cámara"
+
+msgid "settings:ladder_detail_open"
+msgstr "Ver detalles del rango de IA"
+
+msgid "settings:ladder_detail_close"
+msgstr "Ocultar"

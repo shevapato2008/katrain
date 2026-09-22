@@ -6405,3 +6405,48 @@ msgstr "기권하지 못했습니다"
 
 msgid "game:session_gone_notice"
 msgstr "이 대국은 서버에 더 이상 없습니다. 이 페이지를 나가도 됩니다."
+
+msgid "settings:nav_about"
+msgstr "정보"
+
+msgid "settings:about_version"
+msgstr "버전"
+
+msgid "settings:about_local"
+msgstr "이 기기"
+
+msgid "settings:about_cloud"
+msgstr "클라우드"
+
+msgid "settings:engine_ok"
+msgstr "사용 가능"
+
+msgid "settings:engine_down"
+msgstr "연결 안 됨"
+
+msgid "settings:engine_unset"
+msgstr "설정 안 됨"
+
+msgid "settings:engine_code"
+msgstr "엔진 응답: {code}"
+
+msgid "settings:camera_connected"
+msgstr "연결됨"
+
+msgid "settings:geometry_calibrated"
+msgstr "보정됨"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "보정 안 됨"
+
+msgid "settings:led_serial_connected"
+msgstr "시리얼 연결됨"
+
+msgid "settings:calib_no_camera"
+msgstr "이 기기에는 카메라가 없습니다"
+
+msgid "settings:ladder_detail_open"
+msgstr "AI 급단 자세히 보기"
+
+msgid "settings:ladder_detail_close"
+msgstr "접기"

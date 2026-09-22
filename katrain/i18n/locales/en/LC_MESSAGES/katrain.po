@@ -6661,3 +6661,48 @@ msgstr "Resigning did not go through"
 
 msgid "game:session_gone_notice"
 msgstr "This game no longer exists on the server — you can leave this page."
+
+msgid "settings:nav_about"
+msgstr "About"
+
+msgid "settings:about_version"
+msgstr "Version"
+
+msgid "settings:about_local"
+msgstr "This device"
+
+msgid "settings:about_cloud"
+msgstr "Cloud"
+
+msgid "settings:engine_ok"
+msgstr "Available"
+
+msgid "settings:engine_down"
+msgstr "Unreachable"
+
+msgid "settings:engine_unset"
+msgstr "Not set up"
+
+msgid "settings:engine_code"
+msgstr "Engine returned {code}"
+
+msgid "settings:camera_connected"
+msgstr "Connected"
+
+msgid "settings:geometry_calibrated"
+msgstr "Calibrated"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Not calibrated"
+
+msgid "settings:led_serial_connected"
+msgstr "Serial connected"
+
+msgid "settings:calib_no_camera"
+msgstr "This machine has no camera"
+
+msgid "settings:ladder_detail_open"
+msgstr "View AI rank details"
+
+msgid "settings:ladder_detail_close"
+msgstr "Hide"

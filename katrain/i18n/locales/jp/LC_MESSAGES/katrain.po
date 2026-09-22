@@ -6469,3 +6469,48 @@ msgstr "投了できませんでした"
 
 msgid "game:session_gone_notice"
 msgstr "この対局はサーバー上にもうありません。このページを離れて構いません。"
+
+msgid "settings:nav_about"
+msgstr "情報"
+
+msgid "settings:about_version"
+msgstr "バージョン"
+
+msgid "settings:about_local"
+msgstr "この端末"
+
+msgid "settings:about_cloud"
+msgstr "クラウド"
+
+msgid "settings:engine_ok"
+msgstr "利用可能"
+
+msgid "settings:engine_down"
+msgstr "接続できません"
+
+msgid "settings:engine_unset"
+msgstr "未設定"
+
+msgid "settings:engine_code"
+msgstr "エンジンの応答: {code}"
+
+msgid "settings:camera_connected"
+msgstr "接続済み"
+
+msgid "settings:geometry_calibrated"
+msgstr "校正済み"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "未校正"
+
+msgid "settings:led_serial_connected"
+msgstr "シリアル接続済み"
+
+msgid "settings:calib_no_camera"
+msgstr "この端末にはカメラがありません"
+
+msgid "settings:ladder_detail_open"
+msgstr "AI段位の詳細を見る"
+
+msgid "settings:ladder_detail_close"
+msgstr "閉じる"

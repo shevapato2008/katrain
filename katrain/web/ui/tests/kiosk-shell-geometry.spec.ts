@@ -212,7 +212,6 @@ const TOPBAR_ROUTES: readonly [string, string][] = [
   ['/kiosk/tsumego/15k/capturing/1',  'L2 · 屏 14 做题 —— 就是漏掉顶栏的那一屏'],
   ['/kiosk/report/41',                'L2 · 屏 20 报告'],
   ['/kiosk/baipu/session/s1',         'L2 · 屏 17 摆谱'],
-  ['/kiosk/live/m1',                  'L2 · 屏 18 直播'],
 ];
 
 for (const [route, label] of TOPBAR_ROUTES) {
@@ -1274,23 +1273,23 @@ test('§11 复盘报告:两块折叠各自展开时,右栏都是 516、翻手键
   expect(dist.navBottom, '分布视图:翻手键没贴右栏底').toBe(dist.railBottom);
 });
 
-// ── D2 稿外五屏:只接壳,不推导版式 ──────────────────────────────────────
+// ── D2 稿外四屏:只接壳,不推导版式 ──────────────────────────────────────
 
 /**
- * 摆谱 / 直播 / 研究 / 跨平台 / 标定 —— 稿子没画这五屏。**没有参照物就没有四图闸**,
+ * 摆谱 / 研究 / 跨平台 / 标定 —— 稿子没画这四屏。**没有参照物就没有四图闸**,
  * 所以它们的验收只有这一条:**共享外壳这一层是对的,切模块的时候不跳**。
  *
- * 三条判据合起来就是「切模块不跳」在这五屏上的全部要求:
+ * 三条判据合起来就是「切模块不跳」在这四屏上的全部要求:
  *   ① 顶栏 1024×56 贴在 (0,0) —— 规范 §5 防跳铁律 1
  *   ② 内容区左缘 x16、通栏 992 —— 外边距 16 是规范开头明写「全部用 px」的那几个之一
- *   ③ 这五屏都不是 Dock 项 ⇒ `dockLevelOf` 判 2 ⇒ 没有 Dock ⇒ 内容区下缘贴画布底 600
+ *   ③ 这四屏都不是 Dock 项 ⇒ `dockLevelOf` 判 2 ⇒ 没有 Dock ⇒ 内容区下缘贴画布底 600
  *
  * ⚠️ ③ **不是 bug**:Task 4 把摆谱和直播下了 Dock(规范 §3 只许一个棋种专属项),
  * 它们因此不再是 L1。内容区从 434 变成 516 是那条裁定的后果,别去「纠正」。
+ * (直播 2026-09-22 起在 kiosk 上整个删掉了 —— Fan 裁定只在 galaxy 保留 —— 所以名单里没有它。)
  */
 const D2_SCREENS: readonly [string, string][] = [
   ['/kiosk/baipu', '摆谱'],
-  ['/kiosk/live', '直播'],
   ['/kiosk/research', '研究'],
   ['/kiosk/play/cross-platform', '跨平台'],
   ['/kiosk/vision/setup', '标定'],
@@ -1300,9 +1299,6 @@ for (const [path, name] of D2_SCREENS) {
   test(`D2 ${name}(${path}):顶栏 1024×56@(0,0)、内容区 x16 宽 992、无 Dock 时下缘贴 600`, async ({ page }) => {
     await page.route('**/api/v1/kifu/albums*', (route) => route.fulfill({
       json: { items: [], total: 0, page: 1, page_size: 12 },
-    }));
-    await page.route('**/live/matches*', (route) => route.fulfill({
-      json: { matches: [], live_count: 0, total: 0 },
     }));
     await boot(page, path);
 
@@ -1319,7 +1315,7 @@ for (const [path, name] of D2_SCREENS) {
     // 差的正好是 `--content-pad-y` 的 14。两套数不矛盾,别混着读。
     expect(content.y, '内容区上缘没接顶栏下沿').toBe(topbar.h);
 
-    // 这五屏都不在 Dock 词典里 ⇒ L2 ⇒ 没有 Dock ⇒ 内容区一路到画布下缘。
+    // 这四屏都不在 Dock 词典里 ⇒ L2 ⇒ 没有 Dock ⇒ 内容区一路到画布下缘。
     const dock = await page.evaluate(() => document.querySelectorAll('.kiosk-dock').length);
     expect(dock, `${name} 出了 Dock —— 它不在 Dock 词典里`).toBe(0);
     expect(content.bottom, '没有 Dock,内容区下缘就该贴画布底 600').toBe(600);

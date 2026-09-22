@@ -57,8 +57,6 @@ import KifuPage from './pages/KifuPage';
 import KifuDetailPage from './pages/KifuDetailPage';
 import BaipuListPage from './pages/BaipuListPage';
 import BaipuSessionPage from './pages/BaipuSessionPage';
-import LivePage from './pages/LivePage';
-import LiveMatchPage from './pages/LiveMatchPage';
 import LobbyPage from './pages/LobbyPage';
 import SettingsPage from './pages/SettingsPage';
 import ReportsPage from './pages/ReportsPage';
@@ -145,17 +143,17 @@ const KioskRoutes = () => {
               静态段 `wrong` 在 v6 最佳匹配里本来就赢过 `:unit`,放在前面是给人读的。 */}
           <Route path="tsumego/:level/:category/wrong" element={<TsumegoUnitListPage set="wrong" />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
-          {/* ⚠️ research / baipu / live 三条**下了 Dock 但路由照旧存在**(规范 §3:
-              研究并进复盘、摆谱降为选中棋谱之后的落子方式、直播并进棋谱)。
-              入口在 Task 15(棋谱屏出 摆谱/直播)和 Task 16(复盘屏出 研究)里补。
-              **在那之前这三屏只能靠直接输 URL 到达** —— 可接受的中间态,不是终态。 */}
+          {/* ⚠️ research / baipu 两条**下了 Dock 但路由照旧存在**(规范 §3:
+              研究并进复盘、摆谱降为选中棋谱之后的落子方式)。
+              入口在 Task 15(棋谱屏出 摆谱)和 Task 16(复盘屏出 研究)里补。
+              **在那之前这两屏只能靠直接输 URL 到达** —— 可接受的中间态,不是终态。
+              直播**不在 kiosk 上**:Fan 2026-09-22 裁定 kiosk 端删掉整个直播模块,只在 galaxy 保留。
+              旧地址 `/kiosk/live*` 落到下面的 `*` 兜底(→ 对弈),不另留重定向。 */}
           <Route path="research" element={<ResearchPage />} />
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<KifuDetailPage />} />
           <Route path="baipu" element={<BaipuListPage />} />
           <Route path="baipu/session/:source" element={<PhysicalBoardGuard sub="摆谱要先让摄像头看清盘面" fallback="/kiosk/baipu"><BaipuSessionPage /></PhysicalBoardGuard>} />
-          <Route path="live" element={<LivePage />} />
-          <Route path="live/:matchId" element={<LiveMatchPage />} />
           <Route path="report" element={<ReportsPage />} />
           <Route path="report/:taskId" element={<ReportDetailPage />} />
           {/* 成长(屏 22)。**Dock 第五项**,一级页 ⇒ 路径必须与 `DOCK_TABS` 里那条**全等**

@@ -642,10 +642,6 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
   border-radius: 50%; background: var(--bad); margin-right: 5px; vertical-align: 1px;
   box-shadow: 0 0 6px color-mix(in srgb, var(--bad) 70%, transparent); }
 
-/* 屏 15 直播那一组的末行「全部直播 · 赛程」:是去处不是第 5 场,所以没有行首和状态标,
-   行尾一个箭头 —— 尺寸与颜色照 `.secrow` 那条(图标默认 24 且跟正文同色,太抢)。 */
-.livemore .kiosk-row__end svg { width: 14px; height: 14px; color: var(--dim); }
-
 /* ── 屏 19 复盘:胜率曲线 ──────────────────────────────────────────────
    共享包里那份 `.kiosk-eval`(tokens.css:746)是**对局中**那条走势:两条轴、刻度带
    靠一条右描边和画布贴着。复盘这条是稿子自己的一套 —— 画布带描边圆角、刻度带和画布之间

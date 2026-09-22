@@ -15,6 +15,35 @@
 
 **Spec:** `superpowers/tracks/kiosk-go-settings/prd.md`
 
+## 开工核验(2026-09-22,按真实代码更正;细节在各提交信息里)
+
+- **基线与 i18n 改了**:开工时 develop 已比 `7a152df1` 多 29 个提交,其中 `e7bc651a` 把 kiosk i18n
+  闸(`tests/web_ui/test_kiosk_i18n.py`)放宽到全树 ⇒ 下面 Global Constraints 的「不合并 develop /
+  不改 `.po`」照旧执行,合并后必红。**Fan 2026-09-22 裁定照直播赛道办**:develop 已本地合入
+  (`24dcc7a7`,不 push),本赛道新增的 key 自补 11 语种。
+- Task 1:几何探针不用「基线存在 test-results/ 里、测试比 JSON」那种写法(那份 JSON 不进仓,别人一跑就红),
+  改成关系式判据 + `GEOMETRY_DUMP` 写读数、改前改后 `diff`;并补量**登录页**(它在 `KioskLayout` 外面,
+  `height:100%` 直接取视口盒子 —— 塌陷类,计划原稿漏了)和 1280×800(缩放 ≠ 1 时居中才依赖包含块)。
+- Task 2:`playShutter` 从页面文件直接 `export` 会撞 `react-refresh/only-export-components` ⇒ 挪到
+  `kiosk/utils/baipuShutter.ts`。
+- Task 3:三格措辞照抄标定屏(摄像头 已连接、几何标定 已标定/未标定,原来是「就绪」),LED 照视觉 PRD V4
+  写「串口已连接」;没摄像头的原因写进那一行小字,不另加 setnote。
+- Task 4:`AI_LADDER_COPY` 里**没有** `placementTitle` / `netScoreTitle` / `netScoreHint` ⇒ 用真实的
+  `formatPlacementProgress` / `formatNetScore` / 阈值两句;摘要行也收进组件(parity 要比到它 ——
+  改前它自己写了「认证中」「本地对弈」),文件名因此是 `KioskAiLadderRows.tsx`;parity 测试放
+  `kiosk/__tests__/`(它要 import MUI 渲染共享卡,而验收要求 `components/settings/` 下零 `@mui`)。
+- Task 5:把 `100vw/100vh` 内联进 `KioskApp.tsx` 会让壳契约闸一变红(它只豁免旋转包裹那一个文件)⇒
+  盒子单独成 `components/layout/KioskViewport.tsx`,豁免跟着挪;另有 7 份测试还桩着 `OrientationContext`,一并删。
+- Task 6:不新建 `kiosk/api/healthApi.ts` —— 共享 `api.ts` 已有 `API.engineHealth()`,只给响应类型加可选
+  `version`;行型照稿子「关于」那一组的 lead 列(版本 / 本机 / 云端);验收 5「尾部留白 ref 挂对」是布局事实,
+  改由真浏览器闸守(`kiosk-settings-expand.spec.ts` 与 `kiosk-shell-scroll.spec.ts` 那条)。**后端那一行
+  按切片流程等 Fan 看过四图再做。**
+- Task 7:四图多拍两对(展开态、「关于」);「关于」的参考图从同一版稿子滚到底补拍(`visual/reference/`)。
+- 环境:`playwright.visual.config.ts` 是 `reuseExistingServer:true` 固定 5173 —— 别的 worktree 起着 dev server
+  时会量到别人的代码 ⇒ 本地用一份不提交的配置换 5391 + `--strictPort`。`test-results/.last-run.json` 是
+  被跟踪的文件,每跑一次 Playwright 都会改它,跑完要还原。壳契约闸四在合入的 develop 上本来就红一条
+  (`GamePage.tsx game:connection_dropped`),基线 worktree 上同样红,与本赛道无关。
+
 ## Global Constraints
 
 > **开工前先读 `prd.md` §6.0**:四条新赛道的共享文件归属与合并顺序。与本 plan 冲突时以 §6.0 为准。

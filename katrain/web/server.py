@@ -3631,6 +3631,7 @@ def _diag_log_vision_evt(log, evt: dict, n_clients: int) -> None:
 # provisional, to be tuned from the "LED glow" log lines.
 LED_GLOW_TARGET = 60000.0
 LED_GLOW_DEADBAND = (0.8, 1.25)  # target / score inside this band: leave the brightness alone
+LED_GLOW_STEP = (0.5, 2.0)  # one reading moves the brightness by at most these factors
 
 
 def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
@@ -3645,9 +3646,12 @@ def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
         if not LED_GLOW_DEADBAND[0] <= ratio <= LED_GLOW_DEADBAND[1]:
             from katrain.web.core.led_service import MIN_GUIDANCE_SCALE
 
-            # the score is roughly proportional to the brightness; clamp here too, or a pinned lamp
-            # (full brightness in daylight) would re-measure forever
-            after = min(1.0, max(MIN_GUIDANCE_SCALE, before * min(2.5, max(0.4, ratio))))
+            # The glow grows faster than the brightness (the lit patch widens as well; ~brightness^2 on the
+            # RK3562), so step by the square root of the ratio: stepping by the ratio itself overshot every
+            # time. One reading per lamp, taken as it comes on: re-measuring the same lamp at each new
+            # brightness swung it bright/dim/bright, and later readings caught the stone already on it.
+            step = min(LED_GLOW_STEP[1], max(LED_GLOW_STEP[0], ratio**0.5))
+            after = min(1.0, max(MIN_GUIDANCE_SCALE, before * step))
     log.info(
         "LED glow at (%s,%s): ok=%s score=%.0f peak=%s area=%s -> guidance brightness %.2f -> %.2f (target %.0f)",
         data.get("row"),
@@ -3661,10 +3665,7 @@ def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
         LED_GLOW_TARGET,
     )
     if abs(after - before) >= 0.02:
-        led.set_guidance_scale(after)
-        vision = getattr(app.state, "vision", None)
-        if vision is not None and hasattr(vision, "remeasure_led_glow"):
-            vision.remeasure_led_glow()  # converge while the player still has not placed the stone
+        led.set_guidance_scale(after)  # the waiting lamp shows the new brightness at once
 
 
 async def _vision_event_pump(app: FastAPI):

@@ -1,5 +1,5 @@
-"""Server side of the ambient LED brightness loop (2026-09-22): a led_glow reading steers the guidance
-brightness toward LED_GLOW_TARGET and asks vision to measure the same lamp again at the new brightness."""
+"""Server side of the ambient LED brightness loop (2026-09-22): one led_glow reading per lamp steers the guidance
+brightness toward LED_GLOW_TARGET by the square root of the ratio (the glow grows ~brightness^2)."""
 
 import logging
 from types import SimpleNamespace
@@ -20,49 +20,44 @@ class _Led:
         self.guidance_scale = scale
 
 
-class _Vision:
-    def __init__(self):
-        self.remeasured = 0
-
-    def remeasure_led_glow(self):
-        self.remeasured += 1
-
-
 def _run(scale, score, ok=True):
-    led, vision = _Led(scale), _Vision()
-    app = SimpleNamespace(state=SimpleNamespace(led=led, vision=vision))
+    led = _Led(scale)
+    app = SimpleNamespace(state=SimpleNamespace(led=led))
     _adjust_led_brightness(app, {"row": 15, "col": 15, "ok": ok, "score": score}, logging.getLogger("t"))
-    return led, vision
+    return led
 
 
-def test_a_glow_twice_the_target_halves_the_brightness_and_measures_again():
-    led, vision = _run(1.0, 2 * LED_GLOW_TARGET)
-    assert led.guidance_scale == pytest.approx(0.5)
-    assert vision.remeasured == 1
+def test_a_glow_four_times_the_target_halves_the_brightness():
+    led = _run(1.0, 4 * LED_GLOW_TARGET)
+    assert led.set_calls == [pytest.approx(0.5)]
 
 
 def test_a_glow_near_the_target_changes_nothing():
-    led, vision = _run(0.5, LED_GLOW_TARGET * 1.1)
-    assert led.set_calls == [] and vision.remeasured == 0
+    assert _run(0.5, LED_GLOW_TARGET * 1.1).set_calls == []
 
 
 def test_a_dim_glow_brightens_but_a_lamp_already_at_full_brightness_stops_there():
-    led, vision = _run(0.3, LED_GLOW_TARGET / 2)
-    assert led.guidance_scale == pytest.approx(0.6) and vision.remeasured == 1
-    led, vision = _run(1.0, LED_GLOW_TARGET / 4)  # daylight: cannot go brighter, must not re-measure forever
-    assert led.set_calls == [] and vision.remeasured == 0
+    assert _run(0.3, LED_GLOW_TARGET / 4).guidance_scale == pytest.approx(0.6)
+    assert _run(1.0, LED_GLOW_TARGET / 4).set_calls == []  # daylight: cannot go brighter
 
 
 def test_one_reading_moves_the_brightness_at_most_by_the_step_limits():
-    led, _ = _run(1.0, 100 * LED_GLOW_TARGET)
-    assert led.guidance_scale == pytest.approx(0.4)
-    led, _ = _run(0.1, LED_GLOW_TARGET / 100)
-    assert led.guidance_scale == pytest.approx(0.25)
-    led, _ = _run(MIN_GUIDANCE_SCALE, 100 * LED_GLOW_TARGET)
-    assert led.set_calls == []  # already at the floor
+    assert _run(1.0, 100 * LED_GLOW_TARGET).guidance_scale == pytest.approx(0.5)
+    assert _run(0.1, LED_GLOW_TARGET / 100).guidance_scale == pytest.approx(0.2)
+    assert _run(MIN_GUIDANCE_SCALE, 100 * LED_GLOW_TARGET).set_calls == []  # already at the floor
+
+
+def test_a_glow_that_grows_with_the_square_of_the_brightness_settles_instead_of_swinging():
+    # 2026-09-22 night, (17,4): stepping by the ratio itself went 0.21 -> 0.16 -> 0.39 -> 0.16 -> 0.08
+    scale, seen = 1.0, []
+    for _ in range(6):  # one lamp per move
+        led = _run(scale, 4 * LED_GLOW_TARGET * scale**2)  # the glow at full brightness: 4x the target
+        scale = led.guidance_scale
+        seen.append(scale)
+    assert seen[-1] == seen[-2] and 0.8 <= 4 * seen[-1] ** 2 <= 1.25
+    assert all(b <= a for a, b in zip(seen, seen[1:]))  # never overshoots back up
 
 
 def test_an_unusable_reading_changes_nothing():
-    for reading in ({"ok": False, "score": 5 * LED_GLOW_TARGET}, {"ok": True, "score": 0.0}):
-        led, vision = _run(1.0, reading["score"], ok=reading["ok"])
-        assert led.set_calls == [] and vision.remeasured == 0
+    for ok, score in ((False, 5 * LED_GLOW_TARGET), (True, 0.0)):
+        assert _run(1.0, score, ok=ok).set_calls == []

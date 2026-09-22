@@ -91,17 +91,14 @@ def test_a_lamp_with_a_stone_already_on_it_is_not_measured():
     assert _glow_events(adapter) == []
 
 
-def test_a_brightness_change_remeasures_the_same_lamp_against_the_same_dark_reference():
+def test_a_lamp_is_measured_once_until_a_new_lamp_comes_on():
     adapter = _adapter()
     adapter._last_raw = DARK
     adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": [[5, 7]]}))
     adapter._drain_commands()
     adapter._measure_pending_glow(_lamp(5, 7, 120))
     _glow_events(adapter)
-    adapter._last_raw = _lamp(5, 7, 120)  # later frames all show the lamp: they must not become the reference
-    adapter._cmd_queue.put(WorkerCommand(action=CommandType.REMEASURE_LED_GLOW))
+    # the brightness change re-sends the same lit set: later readings caught the stone already on the lamp
+    adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_LIT_POINTS, data={"points": [[5, 7]]}))
     adapter._drain_commands()
-    assert adapter._glow_ref is DARK and adapter._glow_pending == {(5, 7)}
-    adapter._measure_pending_glow(_lamp(5, 7, 60))
-    [event] = _glow_events(adapter)
-    assert event["ok"] and event["score"] > 0
+    assert adapter._glow_pending == set()

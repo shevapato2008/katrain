@@ -201,7 +201,6 @@ class InProcessAdapter:
         # came on is the dark reference; newly lit cells are measured once the lamp shows (led_glow event).
         self._last_raw: np.ndarray | None = None
         self._glow_ref: np.ndarray | None = None
-        self._glow_cells: set[tuple[int, int]] = set()
         self._glow_pending: set[tuple[int, int]] = set()
         self._glow_wait = 0
         self._expected_np: np.ndarray | None = None
@@ -946,15 +945,11 @@ class InProcessAdapter:
                 if lit - self._lit_points:
                     # A lamp just came on: the last frame read before this command is its dark reference.
                     self._glow_ref = self._last_raw
-                    self._glow_cells = lit - self._lit_points
-                    self._glow_pending = set(self._glow_cells)
+                    self._glow_pending = lit - self._lit_points
                     self._glow_wait = GLOW_SETTLE_FRAMES
                 elif not lit:
-                    self._glow_ref, self._glow_cells, self._glow_pending = None, set(), set()
+                    self._glow_ref, self._glow_pending = None, set()
                 self._lit_points = lit
-            elif cmd.action == CommandType.REMEASURE_LED_GLOW:
-                self._glow_pending = self._glow_cells & self._lit_points
-                self._glow_wait = GLOW_SETTLE_FRAMES
 
     def _maybe_send_preview(self, warped: np.ndarray, detections: list | None = None) -> None:
         if not self._viewer_active:

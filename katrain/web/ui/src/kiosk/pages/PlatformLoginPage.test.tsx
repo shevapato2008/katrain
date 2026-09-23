@@ -12,15 +12,21 @@ import { KioskRoutes } from '../KioskApp';
  * `task-5-report.md`),软键盘避让归 `kiosk-geometry-platform.spec.ts` 那条真浏览器闸。
  *
  * 断言:
- *   ① 星阵两个标签(验证码/密码),默认密码;OGS 没有标签栏(单一登录方式)。
+ *   ① 星阵三个标签(扫码/验证码/密码),默认扫码(Task 6);OGS 没有标签栏(单一登录方式)。
  *   ② 字段跟着平台/标签换,提交发对了字段名(`password` vs `sms_code`)。
  *   ③ 登录失败时把平台给的话原样显示,不换成自己编的(`platformErrorMessage`)。
  *   ④ 左栏那几条 fact 按平台换(`PlatformLoginAside`,由 `LOGIN_FACTS` 推导)。
  *   ⑤ **登录成功后的目标路由在当前这一版里真的存在**(`KioskRoutes`,真 Router,
  *      不是 mock 掉 navigate 断言字符串)。
- */
+ *
+ * 扫码本身的状态机(轮询/终态/「取不到 scan_id」)在 `GolaxyScanPanel.test.tsx` 里测,
+ * 这里只用**永远拒绝**的 `platformScanStart` 把星阵默认落到扫码的「不可用」态 ——
+ * 图省事之外,这也是这份文件里所有需要密码/验证码字段的用例都要先切一次「密码」
+ * 标签的原因:默认标签换了,不是它们的断言坏了。 */
 
-const { platformLogin, platformSmsRequest, platformEngineLevels, platformStatus } = vi.hoisted(() => ({
+const {
+  platformLogin, platformSmsRequest, platformEngineLevels, platformStatus, platformScanStart,
+} = vi.hoisted(() => ({
   platformLogin: vi.fn(),
   platformSmsRequest: vi.fn(),
   platformEngineLevels: vi.fn(),
@@ -28,8 +34,13 @@ const { platformLogin, platformSmsRequest, platformEngineLevels, platformStatus 
   // 只有在那条测试里目标路由**没**匹配上才会渲染到它,而它挂载时会调这个;
   // 不 mock 的话失败信息会是一条无关的 TypeError,盖住真正的断言失败。
   platformStatus: vi.fn(),
+  // 这份文件不测扫码状态机(见头注),让它始终失败,`GolaxyScanPanel` 落到「取不到
+  // scan_id」的静态态,不起轮询 —— 不然每条用例都要额外清一个 `setInterval`。
+  platformScanStart: vi.fn(),
 }));
-vi.mock('../../api', () => ({ API: { platformLogin, platformSmsRequest, platformEngineLevels, platformStatus } }));
+vi.mock('../../api', () => ({
+  API: { platformLogin, platformSmsRequest, platformEngineLevels, platformStatus, platformScanStart },
+}));
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ token: 'tok', user: { id: 1, username: 'u' }, isAuthenticated: true, isLoading: false }),
 }));
@@ -45,6 +56,7 @@ beforeEach(() => {
   platformSmsRequest.mockResolvedValue({});
   platformEngineLevels.mockResolvedValue({ levels: [] });
   platformStatus.mockResolvedValue({ platforms: [] });
+  platformScanStart.mockRejectedValue(new Error('scan not under test here'));
 });
 
 /** 真 `<Route>`,不 mock `useNavigate` —— 用一个探针路由把导航结果读出来,
@@ -65,14 +77,28 @@ const renderLogin = (platform: string) => render(
   </ThemeProvider>,
 );
 
+/** 星阵默认落在扫码标签(Task 6)——这份文件测密码/验证码字段的用例都要先点一下「密码」。 */
+const toPasswordTab = async () => {
+  const tabs = await screen.findByTestId('login-mode-tabs');
+  await userEvent.click(within(tabs).getByRole('button', { name: '密码' }));
+  return tabs;
+};
+
 describe('登录独立成页', () => {
-  it('星阵默认密码标签,两个标签都在(R-19:这一轮只出验证码/密码,不出扫码)', async () => {
+  it('星阵默认扫码标签,三个标签都在(Task 6)', async () => {
     renderLogin('golaxy');
     const tabs = await screen.findByTestId('login-mode-tabs');
     expect(within(tabs).getByRole('button', { name: '验证码' })).toBeInTheDocument();
-    const pwTab = within(tabs).getByRole('button', { name: '密码' });
-    expect(pwTab).toHaveAttribute('aria-pressed', 'true');
-    // 默认就是密码字段(type=password),不是验证码字段。
+    expect(within(tabs).getByRole('button', { name: '密码' })).toBeInTheDocument();
+    const scanTab = within(tabs).getByRole('button', { name: '扫码' });
+    expect(scanTab).toHaveAttribute('aria-pressed', 'true');
+    // 默认渲染的是扫码面板,不是账号/密码表单。
+    expect(screen.queryByTestId('login-field-user')).not.toBeInTheDocument();
+  });
+
+  it('切到密码标签:字段出现,类型是 password', async () => {
+    renderLogin('golaxy');
+    await toPasswordTab();
     expect(screen.getByTestId('login-field-password')).toHaveAttribute('type', 'password');
   });
 
@@ -94,7 +120,7 @@ describe('登录独立成页', () => {
 
   it('星阵密码模式提交发 password,不是 sms_code', async () => {
     renderLogin('golaxy');
-    await screen.findByTestId('login-field-user');
+    await toPasswordTab();
     await userEvent.type(screen.getByTestId('login-field-user'), '13800000000');
     await userEvent.type(screen.getByTestId('login-field-password'), 'secret123');
     await userEvent.click(screen.getByTestId('login-submit'));
@@ -127,7 +153,7 @@ describe('登录独立成页', () => {
   it('登录失败:把平台给的话原样显示,不换成自己编的', async () => {
     platformLogin.mockRejectedValue({ status: 409, detail: '这台盒子上现在连着别人的星阵账号' });
     renderLogin('golaxy');
-    await screen.findByTestId('login-field-user');
+    await toPasswordTab();
     await userEvent.type(screen.getByTestId('login-field-user'), '13800000000');
     await userEvent.type(screen.getByTestId('login-field-password'), 'secret123');
     await userEvent.click(screen.getByTestId('login-submit'));
@@ -145,16 +171,20 @@ describe('登录独立成页', () => {
 
   it('页控条副标跟着标签换', async () => {
     renderLogin('golaxy');
-    await screen.findByTestId('login-field-user');
+    const tabs = await screen.findByTestId('login-mode-tabs');
+    // 默认扫码,副标是设计源那句原话。
+    expect(screen.getByText('未连接 · 用手机上的星阵 APP 扫一扫')).toBeInTheDocument();
+
+    await userEvent.click(within(tabs).getByRole('button', { name: '密码' }));
     expect(screen.getByText(/用星阵围棋的账号密码登录|账号密码登录/)).toBeInTheDocument();
-    const tabs = screen.getByTestId('login-mode-tabs');
+
     await userEvent.click(within(tabs).getByRole('button', { name: '验证码' }));
     expect(screen.getByText('未连接 · 用手机验证码登录')).toBeInTheDocument();
   });
 
   it('返回键回连接页', async () => {
     renderLogin('golaxy');
-    await screen.findByTestId('login-field-user');
+    await screen.findByTestId('login-mode-tabs');
     await userEvent.click(screen.getByRole('button', { name: /返回对弈|Back/ }));
     expect(screen.getByTestId('__loc')).toHaveTextContent('/kiosk/play/cross-platform');
   });
@@ -177,7 +207,7 @@ describe('登录独立成页', () => {
         </MemoryRouter>
       </ThemeProvider>,
     );
-    await screen.findByTestId('login-field-user');
+    await toPasswordTab();
     await userEvent.type(screen.getByTestId('login-field-user'), '13800000000');
     await userEvent.type(screen.getByTestId('login-field-password'), 'secret123');
     await userEvent.click(screen.getByTestId('login-submit'));

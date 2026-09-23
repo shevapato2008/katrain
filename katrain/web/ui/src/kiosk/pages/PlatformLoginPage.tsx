@@ -11,6 +11,7 @@ import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskOptSeg } from '../shell/KioskOptSeg';
 import { PLATFORM_META } from '../constants/platforms';
 import { PlatformLoginAside } from '../components/platform/PlatformLoginAside';
+import { GolaxyScanPanel } from '../components/platform/GolaxyScanPanel';
 
 /**
  * 登录独立成页(屏 07b/08,`sample-go/shots/07b-platform-login-pw.png` /
@@ -20,12 +21,15 @@ import { PlatformLoginAside } from '../components/platform/PlatformLoginAside';
  *
  * ## 标签集合从一张表推导(R-19)
  *
- * 这一轮只出**验证码 / 密码**两个标签,默认**密码**;扫码留给 Task 6(后端正在并行写)。
- * 画一个点了没反应的标签 = 状态不诚实,所以这一轮干脆不画。`LOGIN_MODE_TABS` 是那张表 ——
- * Task 6 只需往表里加一项、把默认值换成扫码,不改这里的渲染逻辑。
+ * Task 6:星阵扫码登录接进来了(后端 `scan/start`/`scan/state`/`scan/confirm` 三个端点
+ * 已合进本分支)。`LOGIN_MODE_TABS` 头部加了**扫码**一项,`PLATFORM_LOGIN_MODES.golaxy`
+ * 变成 `['scan','sms','password']`,默认从密码换成**扫码**(设计稿 07a `aria-pressed="true"`
+ * 的就是它)。画一个点了没反应的标签 = 状态不诚实,所以每一项都要有真实现才进这张表。
  * `PLATFORM_LOGIN_MODES` 是「这一家支持哪几种」:野狐到不了这一屏(`comingSoon`,
  * `PlatformConnectPage`/`PlayPage` 已经把它挡在外面),所以这张表只列 golaxy/ogs。
  * OGS 只有一种 ⇒ 标签栏整条不渲染(一个选项的分段控件是假的选择,同一条判例)。
+ * `mode === 'scan'` 时,`.xpcol` 里账号/密码那两个 `.igrow` 整段换成 `GolaxyScanPanel`
+ * (二维码 + 轮询),不是往同一段表单里加字段 —— 扫码不需要账号/密码输入。
  *
  * ## 星阵不论哪个标签,账号字段都是手机号
  *
@@ -39,19 +43,20 @@ import { PlatformLoginAside } from '../components/platform/PlatformLoginAside';
  * (星阵是手机号,OGS 是用户名)。
  */
 
-type LoginMode = 'sms' | 'password';
+type LoginMode = 'scan' | 'sms' | 'password';
 
 interface LoginModeTab { mode: LoginMode; labelKey: string; labelZh: string; }
 
-/** 这一轮的标签集合。顺序即渲染顺序;默认取 `password`(见组件里 `useState` 初值)。 */
+/** 标签集合。顺序即渲染顺序;扫码排第一,是星阵的默认(见组件里 `useState` 初值)。 */
 const LOGIN_MODE_TABS: LoginModeTab[] = [
+  { mode: 'scan', labelKey: 'platform:login_tab_scan', labelZh: '扫码' },
   { mode: 'sms', labelKey: 'platform:login_tab_sms', labelZh: '验证码' },
   { mode: 'password', labelKey: 'platform:login_tab_password', labelZh: '密码' },
 ];
 
 /** 这一家支持哪几种登录方式。只列今天真能登录的两家(见头注)。 */
 const PLATFORM_LOGIN_MODES: Record<string, readonly LoginMode[]> = {
-  golaxy: ['sms', 'password'],
+  golaxy: ['scan', 'sms', 'password'],
   ogs: ['password'],
 };
 
@@ -69,7 +74,9 @@ const PlatformLoginPage = () => {
 
   const modes = PLATFORM_LOGIN_MODES[platform] ?? ['password'];
   const tabs = LOGIN_MODE_TABS.filter((tab) => modes.includes(tab.mode));
-  const [mode, setMode] = useState<LoginMode>(modes.includes('password') ? 'password' : modes[0]);
+  const [mode, setMode] = useState<LoginMode>(
+    modes.includes('scan') ? 'scan' : modes.includes('password') ? 'password' : modes[0],
+  );
 
   const [account, setAccount] = useState('');
   const [secret, setSecret] = useState('');
@@ -87,10 +94,17 @@ const PlatformLoginPage = () => {
   const meta = PLATFORM_META[platform];
   const name = meta ? t(meta.label, meta.labelCn) : platform;
   const isSms = mode === 'sms';
+  const isScan = mode === 'scan';
 
-  const sub = isSms
-    ? t('platform:login_sub_sms', '未连接 · 用手机验证码登录')
-    : interpolate(t('platform:login_sub_password', '未连接 · 用{name}的账号密码登录'), { name });
+  const sub = isScan
+    ? t('platform:login_sub_scan', '未连接 · 用手机上的星阵 APP 扫一扫')
+    : isSms
+      ? t('platform:login_sub_sms', '未连接 · 用手机验证码登录')
+      : interpolate(t('platform:login_sub_password', '未连接 · 用{name}的账号密码登录'), { name });
+
+  const goToConnectedDest = () => navigate(engineCapable(platform)
+    ? `/kiosk/play/cross-platform/engine/${platform}`
+    : `/kiosk/play/cross-platform/lobby?platform=${platform}`);
 
   const switchMode = (next: LoginMode) => {
     setMode(next);
@@ -123,9 +137,7 @@ const PlatformLoginPage = () => {
         isSms ? { username: account, sms_code: secret } : { username: account, password: secret },
         token,
       );
-      navigate(engineCapable(platform)
-        ? `/kiosk/play/cross-platform/engine/${platform}`
-        : `/kiosk/play/cross-platform/lobby?platform=${platform}`);
+      goToConnectedDest();
     } catch (e) {
       setError(platformErrorMessage(e, t('platform:login_failed', '登录失败')));
     } finally {
@@ -159,80 +171,86 @@ const PlatformLoginPage = () => {
               </span>
             )}
 
-            <div className="igrow">
-              <span className="iglab">
-                {platform === 'golaxy' ? t('platform:login_field_phone', '手机号') : t('Username', '用户名')}
-              </span>
-              <input
-                className="xpfield"
-                data-testid="login-field-user"
-                type={platform === 'golaxy' ? 'tel' : 'text'}
-                aria-label={platform === 'golaxy' ? t('platform:login_field_phone', '手机号') : t('Username', '用户名')}
-                placeholder={t('local:tap_to_type', '点此输入')}
-                value={account}
-                onChange={(e) => setAccount(e.target.value)}
-              />
-            </div>
-
-            <div className="igrow">
-              <span className="iglab">
-                {isSms ? t('platform:login_field_code', '验证码') : t('Password', '密码')}
-              </span>
-              {isSms ? (
-                <>
+            {isScan ? (
+              <GolaxyScanPanel platform={platform} onDone={goToConnectedDest} />
+            ) : (
+              <>
+                <div className="igrow">
+                  <span className="iglab">
+                    {platform === 'golaxy' ? t('platform:login_field_phone', '手机号') : t('Username', '用户名')}
+                  </span>
                   <input
                     className="xpfield"
-                    data-testid="login-field-password"
-                    type="text"
-                    aria-label={t('platform:login_field_code', '验证码')}
+                    data-testid="login-field-user"
+                    type={platform === 'golaxy' ? 'tel' : 'text'}
+                    aria-label={platform === 'golaxy' ? t('platform:login_field_phone', '手机号') : t('Username', '用户名')}
                     placeholder={t('local:tap_to_type', '点此输入')}
-                    value={secret}
-                    onChange={(e) => setSecret(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
+                    value={account}
+                    onChange={(e) => setAccount(e.target.value)}
                   />
+                </div>
+
+                <div className="igrow">
+                  <span className="iglab">
+                    {isSms ? t('platform:login_field_code', '验证码') : t('Password', '密码')}
+                  </span>
+                  {isSms ? (
+                    <>
+                      <input
+                        className="xpfield"
+                        data-testid="login-field-password"
+                        type="text"
+                        aria-label={t('platform:login_field_code', '验证码')}
+                        placeholder={t('local:tap_to_type', '点此输入')}
+                        value={secret}
+                        onChange={(e) => setSecret(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
+                      />
+                      <button
+                        type="button"
+                        className="kiosk-btn kiosk-btn--pill"
+                        data-testid="login-sms-request"
+                        disabled={smsBusy || smsLeft > 0}
+                        onClick={() => { void sendSms(); }}
+                      >
+                        {smsLeft > 0
+                          ? interpolate(t('platform:sms_again', '{n} 秒后可重发'), { n: smsLeft })
+                          : t('platform:sms_get', '获取验证码')}
+                      </button>
+                    </>
+                  ) : (
+                    <input
+                      className="xpfield"
+                      data-testid="login-field-password"
+                      type="password"
+                      aria-label={t('Password', '密码')}
+                      placeholder={t('local:tap_to_type', '点此输入')}
+                      value={secret}
+                      onChange={(e) => setSecret(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
+                    />
+                  )}
+                </div>
+
+                {/* 登录出错要有落点 —— 没有落点的错误等于没报错。平台给的话原样显示,不换成自己编的。 */}
+                {error && <p className="loginerr" data-testid="login-error">{error}</p>}
+
+                <div className="igrow">
+                  <span className="iglab" />
                   <button
                     type="button"
-                    className="kiosk-btn kiosk-btn--pill"
-                    data-testid="login-sms-request"
-                    disabled={smsBusy || smsLeft > 0}
-                    onClick={() => { void sendSms(); }}
+                    className="kiosk-btn kiosk-btn--primary xpgo"
+                    data-testid="login-submit"
+                    disabled={busy}
+                    onClick={() => { void submit(); }}
                   >
-                    {smsLeft > 0
-                      ? interpolate(t('platform:sms_again', '{n} 秒后可重发'), { n: smsLeft })
-                      : t('platform:sms_get', '获取验证码')}
+                    {busy
+                      ? t('platform:logging_in', '正在登录…')
+                      : interpolate(t('platform:login_title', '登录{name}'), { name })}
                   </button>
-                </>
-              ) : (
-                <input
-                  className="xpfield"
-                  data-testid="login-field-password"
-                  type="password"
-                  aria-label={t('Password', '密码')}
-                  placeholder={t('local:tap_to_type', '点此输入')}
-                  value={secret}
-                  onChange={(e) => setSecret(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
-                />
-              )}
-            </div>
-
-            {/* 登录出错要有落点 —— 没有落点的错误等于没报错。平台给的话原样显示,不换成自己编的。 */}
-            {error && <p className="loginerr" data-testid="login-error">{error}</p>}
-
-            <div className="igrow">
-              <span className="iglab" />
-              <button
-                type="button"
-                className="kiosk-btn kiosk-btn--primary xpgo"
-                data-testid="login-submit"
-                disabled={busy}
-                onClick={() => { void submit(); }}
-              >
-                {busy
-                  ? t('platform:logging_in', '正在登录…')
-                  : interpolate(t('platform:login_title', '登录{name}'), { name })}
-              </button>
-            </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>

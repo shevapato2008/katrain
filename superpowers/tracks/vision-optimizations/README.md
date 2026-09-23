@@ -22,7 +22,9 @@ node bin/archify.mjs deliver architecture <本目录>/recognition-pipeline.archi
 | 2 | 按几何锁透视校正成俯视图 | `_warp_frame` | 950 + 两边各 53 = 1056² |
 | 3 | 取一份**平均前**的灰度图，留给参照帧比对 | `reference_frame.to_gray` | — |
 | 4 | 8 帧平均 + CLAHE，只喂给模型 | `temporal.FrameAverager`、`enhance.py` | n=8，clipLimit 3.0 |
-| 5 | YOLO（RKNN）检测 | `stone_detector.py` | 黑 / 白 / 红灯 / 绿灯 |
+| 5 | YOLO（RKNN）检测 + NMS | `inference/rknn_backend.py` | 黑 / 白 / 红灯 / 绿灯；同框 IoU ≥ 0.5 留一个 |
+| 5a | 去重复框：同一颗子被框两次（一紧一松） | `stone_detector.dedup_detections` | 中心距 < 较小框边长的一半，留高分 |
+| 5b | 去影子（**规划中**）：侧光下「子 + 影子」被再框一次 | `board_state.py`（规划中） | 与邻框互压 ≥ 0.27、且自己落在两个交叉点之间才去掉 |
 | 6 | 视差修正后落到交叉点：占用感知分配、粘滞、三档滞回、颜色保持、亮灯格不新增 | `board_state.py`、`parallax.py` | k≈0.990；0.40 / 0.30 / 0.20；变色 15 帧 |
 | 7 | 两帧投票：连续两帧一致才改 | `worker_inprocess.py` | — |
 | 8 | 参照帧比对（**影子模式**，只记日志） | `_reference_check` | ZNCC ≥ 0.90；否决 90 / 10 帧 |

@@ -4498,11 +4498,11 @@
         <div class="pulse-dot"></div>
         <h1>实体棋盘落子识别流程</h1>
       </div>
-      <p class="subtitle">RK3562 · 从摄像头一帧到棋谱落一手，再把新棋谱送回识别端 · 截至 2026-09-23</p>
+      <p class="subtitle">RK3562 · 从摄像头一帧到棋谱落一手，再把新棋谱送回识别端 · 截至 2026-09-23 · 「去影子」为规划中</p>
     </div>
 
-    <script id="archify-guided-views-data" type="application/json">[{"id":"pixels","label":"画面 → 检测","focus":["capture","warp","enhance","yolo"],"note":"只处理静止的画面；透视校正后，8 帧平均和 CLAHE 只给模型用。"},{"id":"board","label":"检测 → 盘面","focus":["yolo","assign","hyst","vote"],"note":"视差修正后落到交叉点，三档滞回决定一颗子能不能进来、能不能留下。"},{"id":"reference","label":"参照帧比对（09-23）","focus":["warp","refstore","refcheck","game"],"note":"棋谱推进时拍参照、长考时每分钟逐格续期；比对只影响下游，不改识别历史。当前是影子模式。"},{"id":"confirm","label":"盘面 → 落子","focus":["refcheck","movedet","sync","server","game"],"note":"连续几帧一致才算落子；提交前再核一次子还在、轮到谁。"},{"id":"lamps","label":"指引灯","focus":["game","led"],"note":"AI 落子处亮灯；worker 量光斑，服务端据此调亮度。"}]</script>
-    <script id="archify-source-evidence-data" type="application/json">{"schemaVersion":1,"verified":true,"repository":{"url":"https://github.com/shevapato2008/katrain","revision":"c70cf9254f2cdcde50b46ff785ba608b1798dfe5","shortRevision":"c70cf92"},"referenceCount":18,"nodes":{"capture":[{"path":"katrain/vision/worker_inprocess.py","line":315,"label":"_motion_is_stable","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L315"}],"warp":[{"path":"katrain/vision/worker_inprocess.py","line":331,"label":"_warp_frame","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L331"}],"enhance":[{"path":"katrain/vision/worker_inprocess.py","line":741,"label":"averager / enhance","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L741"}],"yolo":[{"path":"katrain/vision/worker_inprocess.py","line":749,"label":"detector.detect","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L749"}],"assign":[{"path":"katrain/vision/board_state.py","line":119,"label":"apply_parallax","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/board_state.py#L119"},{"path":"katrain/vision/parallax.py","line":109,"label":"mount_parallax_for_lock","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/parallax.py#L109"}],"hyst":[{"path":"katrain/vision/board_state.py","line":144,"label":"_passes_hysteresis","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/board_state.py#L144"},{"path":"katrain/vision/worker_inprocess.py","line":347,"label":"_game_stone_sustain","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L347"}],"vote":[{"path":"katrain/vision/worker_inprocess.py","line":800,"href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L800"}],"refcheck":[{"path":"katrain/vision/worker_inprocess.py","line":376,"label":"_reference_check","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L376"}],"refstore":[{"path":"katrain/vision/reference_frame.py","line":147,"label":"ReferenceFrame","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/reference_frame.py#L147"},{"path":"katrain/vision/worker_inprocess.py","line":502,"label":"_refresh_reference","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L502"}],"movedet":[{"path":"katrain/vision/move_detector.py","line":253,"label":"detect_new_move","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/move_detector.py#L253"}],"sync":[{"path":"katrain/vision/sync.py","line":164,"label":"SyncStateMachine.update","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/sync.py#L164"}],"server":[{"path":"katrain/web/server.py","line":3815,"label":"_handle_confirmed_move","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/web/server.py#L3815"}],"game":[{"path":"katrain/web/core/physical_play_orchestrator.py","line":138,"label":"on_game_state","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/web/core/physical_play_orchestrator.py#L138"}],"led":[{"path":"katrain/web/core/physical_play.py","line":130,"label":"LedPlanner.tick","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/web/core/physical_play.py#L130"},{"path":"katrain/web/server.py","line":3659,"label":"_adjust_led_brightness","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/web/server.py#L3659"}]}}</script>
+    <script id="archify-guided-views-data" type="application/json">[{"id":"pixels","label":"画面 → 检测","focus":["capture","warp","enhance","yolo"],"note":"只处理静止的画面；透视校正后，8 帧平均和 CLAHE 只给模型用；模型输出先过 NMS。"},{"id":"board","label":"检测 → 盘面","focus":["yolo","dedup","shadow","hyst","assign","vote"],"note":"先去重复框（同一颗子被框两次），再去影子框（规划中：与邻框互压 ≥ 0.27、自己又落在两个交叉点之间）；之后分置信档、落到盘面。"},{"id":"reference","label":"参照帧比对（09-23）","focus":["warp","refstore","refcheck","game"],"note":"棋谱推进时拍参照、长考时每分钟逐格续期；比对只影响下游，不改识别历史。当前是影子模式。"},{"id":"confirm","label":"盘面 → 落子","focus":["refcheck","movedet","ambiguous","sync","server","game"],"note":"连续几帧一致才算落子；空点上卡住的弱检测弹确认卡；提交前再核一次子还在、轮到谁。"},{"id":"lamps","label":"指引灯","focus":["game","led"],"note":"AI 落子处亮灯；worker 量光斑，服务端据此调亮度。"}]</script>
+    <script id="archify-source-evidence-data" type="application/json">{"schemaVersion":1,"verified":true,"repository":{"url":"https://github.com/shevapato2008/katrain","revision":"c70cf9254f2cdcde50b46ff785ba608b1798dfe5","shortRevision":"c70cf92"},"referenceCount":23,"nodes":{"capture":[{"path":"katrain/vision/worker_inprocess.py","line":315,"label":"_motion_is_stable","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L315"}],"warp":[{"path":"katrain/vision/worker_inprocess.py","line":331,"label":"_warp_frame","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L331"}],"enhance":[{"path":"katrain/vision/worker_inprocess.py","line":741,"label":"averager / enhance","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L741"}],"yolo":[{"path":"katrain/vision/worker_inprocess.py","line":749,"label":"detector.detect","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L749"},{"path":"katrain/vision/inference/rknn_backend.py","line":274,"label":"NMSBoxes","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/inference/rknn_backend.py#L274"}],"dedup":[{"path":"katrain/vision/stone_detector.py","line":32,"label":"dedup_detections","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/stone_detector.py#L32"}],"hyst":[{"path":"katrain/vision/worker_inprocess.py","line":754,"label":"keep / sustain","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L754"},{"path":"katrain/vision/worker_inprocess.py","line":347,"label":"_game_stone_sustain","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L347"}],"assign":[{"path":"katrain/vision/board_state.py","line":119,"label":"apply_parallax","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/board_state.py#L119"},{"path":"katrain/vision/board_state.py","line":144,"label":"_passes_hysteresis","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/board_state.py#L144"},{"path":"katrain/vision/parallax.py","line":109,"label":"mount_parallax_for_lock","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/parallax.py#L109"}],"vote":[{"path":"katrain/vision/worker_inprocess.py","line":800,"href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L800"}],"refcheck":[{"path":"katrain/vision/worker_inprocess.py","line":376,"label":"_reference_check","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L376"}],"refstore":[{"path":"katrain/vision/reference_frame.py","line":147,"label":"ReferenceFrame","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/reference_frame.py#L147"},{"path":"katrain/vision/worker_inprocess.py","line":502,"label":"_refresh_reference","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L502"}],"ambiguous":[{"path":"katrain/vision/worker_inprocess.py","line":588,"label":"_promote_stuck_stone","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/worker_inprocess.py#L588"},{"path":"katrain/vision/move_detector.py","line":476,"label":"AmbiguousPromoter","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/move_detector.py#L476"}],"movedet":[{"path":"katrain/vision/move_detector.py","line":253,"label":"detect_new_move","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/move_detector.py#L253"}],"sync":[{"path":"katrain/vision/sync.py","line":164,"label":"SyncStateMachine.update","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/vision/sync.py#L164"}],"server":[{"path":"katrain/web/server.py","line":3815,"label":"_handle_confirmed_move","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/web/server.py#L3815"}],"game":[{"path":"katrain/web/core/physical_play_orchestrator.py","line":138,"label":"on_game_state","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/web/core/physical_play_orchestrator.py#L138"}],"led":[{"path":"katrain/web/core/physical_play.py","line":130,"label":"LedPlanner.tick","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/web/core/physical_play.py#L130"},{"path":"katrain/web/server.py","line":3659,"label":"_adjust_led_brightness","href":"https://github.com/shevapato2008/katrain/blob/c70cf9254f2cdcde50b46ff785ba608b1798dfe5/katrain/web/server.py#L3659"}]}}</script>
     <div class="guided-views no-print" id="guided-views" hidden aria-label="Guided diagram views">
       <button id="guided-view-prev" type="button" aria-label="Previous guided view" title="Previous guided view ([)">&#8592;</button>
       <div class="guided-view-copy">
@@ -4544,9 +4544,9 @@
 
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read">
-      <svg viewBox="0 0 1440 940" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="blueprint" data-quality-profile="showcase">
+      <svg viewBox="0 0 1720 940" role="img" aria-labelledby="archify-diagram-title archify-diagram-description" data-preset="blueprint" data-quality-profile="showcase">
         <title id="archify-diagram-title">实体棋盘落子识别流程</title>
-        <desc id="archify-diagram-description">RK3562 · 从摄像头一帧到棋谱落一手，再把新棋谱送回识别端 · 截至 2026-09-23</desc>
+        <desc id="archify-diagram-description">RK3562 · 从摄像头一帧到棋谱落一手，再把新棋谱送回识别端 · 截至 2026-09-23 · 「去影子」为规划中</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -4570,40 +4570,43 @@
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Boundaries (behind everything) -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" x="30" y="90" width="1340" height="546" rx="12" class="c-region" stroke-width="1"/>
-        <text x="38" y="108" class="t-cloud" font-size="9" font-weight="600">视觉 worker · 每帧</text>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" x="10" y="90" width="1670" height="546" rx="12" class="c-region" stroke-width="1"/>
+        <text x="18" y="108" class="t-cloud" font-size="9" font-weight="600">视觉 worker · 每帧</text>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="1" x="0" y="730" width="830" height="126" rx="12" class="c-region" stroke-width="1"/>
-        <text x="8" y="748" class="t-cloud" font-size="9" font-weight="600">katrain web 服务</text>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="1" x="10" y="730" width="830" height="126" rx="12" class="c-region" stroke-width="1"/>
+        <text x="18" y="748" class="t-cloud" font-size="9" font-weight="600">katrain web 服务</text>
 
         <!-- Connection paths (before components for correct z-order) -->
-        <path data-edge-from="capture" data-edge-to="warp" data-edge-key="0" data-composition-points="250,158;330,158" d="M 250 158 L 330 158" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="capture" data-edge-to="warp" data-edge-key="0" data-composition-points="230,158;330,158" d="M 230 158 L 330 158" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="warp" data-edge-to="enhance" data-edge-key="1" data-composition-points="520,158;600,158" d="M 520 158 L 600 158" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="enhance" data-edge-to="yolo" data-edge-key="2" data-composition-points="790,158;870,158" d="M 790 158 L 870 158" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="yolo" data-edge-to="assign" data-edge-key="3" data-composition-points="1060,158;1140,158" d="M 1060 158 L 1140 158" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="assign" data-edge-to="hyst" data-edge-key="4" data-composition-points="1240,196;1240,330" d="M 1240 196 L 1240 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="hyst" data-edge-to="vote" data-edge-key="5" data-composition-points="1140,368;1060,368" d="M 1140 368 L 1060 368" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="vote" data-edge-to="refcheck" data-edge-key="6" data-composition-points="870,368;846,368;846,384;824,384;824,361;800,361" d="M 870 368 L 854 368 Q 846 368 846 376 L 846 376 Q 846 384 838 384 L 832 384 Q 824 384 824 376 L 824 369 Q 824 361 816 361 L 800 361" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="refcheck" data-edge-to="movedet" data-edge-key="7" data-composition-points="695,406;695,540" d="M 695 406 L 695 540" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="refcheck" data-edge-to="sync" data-edge-key="8" data-composition-points="800,375;835,375;835,578;870,578" d="M 800 375 L 827 375 Q 835 375 835 383 L 835 570 Q 835 578 843 578 L 870 578" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="movedet" data-edge-to="server" data-edge-key="9" data-composition-points="695,616;695,760" d="M 695 616 L 695 760" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="server" data-edge-to="game" data-edge-key="10" data-composition-points="590,798;530,798" d="M 590 798 L 530 798" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
-        <path data-edge-from="warp" data-edge-to="refstore" data-edge-label="平均前灰度" data-edge-key="11" data-composition-points="425,196;425,330" d="M 425 196 L 425 330" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="refstore" data-edge-to="refcheck" data-edge-key="12" data-composition-points="530,368;590,368" d="M 530 368 L 590 368" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="game" data-edge-to="refstore" data-edge-label="期望盘面" data-edge-key="13" data-composition-points="425,760;425,406" d="M 425 760 L 425 406" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="game" data-edge-to="led" data-edge-label="AI 落子" data-edge-key="14" data-composition-points="320,798;230,798" d="M 320 798 L 230 798" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="enhance" data-edge-to="yolo" data-edge-key="2" data-composition-points="790,158;880,158" d="M 790 158 L 880 158" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="yolo" data-edge-to="dedup" data-edge-key="3" data-composition-points="1070,158;1160,158" d="M 1070 158 L 1160 158" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="dedup" data-edge-to="shadow" data-edge-key="4" data-composition-points="1360,158;1440,158" d="M 1360 158 L 1440 158" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="shadow" data-edge-to="hyst" data-edge-key="5" data-composition-points="1545,196;1545,330" d="M 1545 196 L 1545 330" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="hyst" data-edge-to="assign" data-edge-key="6" data-composition-points="1440,368;1360,368" d="M 1440 368 L 1360 368" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="assign" data-edge-to="vote" data-edge-key="7" data-composition-points="1160,368;1070,368" d="M 1160 368 L 1070 368" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="vote" data-edge-to="refcheck" data-edge-key="8" data-composition-points="880,368;856,368;856,384;834,384;834,361;810,361" d="M 880 368 L 864 368 Q 856 368 856 376 L 856 376 Q 856 384 848 384 L 842 384 Q 834 384 834 376 L 834 369 Q 834 361 826 361 L 810 361" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="refcheck" data-edge-to="movedet" data-edge-key="9" data-composition-points="705,406;705,540" d="M 705 406 L 705 540" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="refcheck" data-edge-to="sync" data-edge-key="10" data-composition-points="810,375;845,375;845,578;880,578" d="M 810 375 L 837 375 Q 845 375 845 383 L 845 570 Q 845 578 853 578 L 880 578" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="movedet" data-edge-to="server" data-edge-key="11" data-composition-points="705,616;705,760" d="M 705 616 L 705 760" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="server" data-edge-to="game" data-edge-key="12" data-composition-points="600,798;530,798" d="M 600 798 L 530 798" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="hyst" data-edge-to="ambiguous" data-edge-key="13" data-composition-points="1545,406;1545,540" d="M 1545 406 L 1545 540" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="warp" data-edge-to="refstore" data-edge-label="平均前灰度" data-edge-key="14" data-composition-points="425,196;425,330" d="M 425 196 L 425 330" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="refstore" data-edge-to="refcheck" data-edge-key="15" data-composition-points="530,368;600,368" d="M 530 368 L 600 368" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="game" data-edge-to="refstore" data-edge-label="期望盘面" data-edge-key="16" data-composition-points="425,760;425,406" d="M 425 760 L 425 406" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        <path data-edge-from="game" data-edge-to="led" data-edge-label="AI 落子" data-edge-key="17" data-composition-points="320,798;240,798" d="M 320 798 L 240 798" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
 
         <!-- Components -->
         <g id="node-capture" data-node-id="capture" data-node-label="取帧 · 静止闸" tabindex="0" role="button" aria-label="Focus 取帧 · 静止闸, 1080p · 有手在动就丢弃, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="external" data-node-sublabel="1080p · 有手在动就丢弃" data-node-context="视觉 worker · 每帧">
           <title>取帧 · 静止闸 · 1080p · 有手在动就丢弃 · 视觉 worker · 每帧</title>
-          <rect x="60" y="120" width="190" height="76" rx="6" class="c-mask"/>
-          <rect x="60" y="120" width="190" height="76" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(66 126) scale(0.6875)">
+          <rect x="40" y="120" width="190" height="76" rx="6" class="c-mask"/>
+          <rect x="40" y="120" width="190" height="76" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(46 126) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-detail-anchor x="155" y="156" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">取帧 · 静止闸</text>
-        <text data-detail="context" x="155" y="172" class="t-muted" font-size="9" text-anchor="middle">1080p · 有手在动就丢弃</text>
+          <text data-detail-anchor x="135" y="156" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">取帧 · 静止闸</text>
+        <text data-detail="context" x="135" y="172" class="t-muted" font-size="9" text-anchor="middle">1080p · 有手在动就丢弃</text>
         </g>
 
         <g id="node-warp" data-node-id="warp" data-node-label="透视校正" tabindex="0" role="button" aria-label="Focus 透视校正, 几何锁 → 1056² 俯视图, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="backend" data-node-sublabel="几何锁 → 1056² 俯视图" data-node-context="视觉 worker · 每帧">
@@ -4628,64 +4631,88 @@
         <text data-detail="context" x="695" y="172" class="t-muted" font-size="9" text-anchor="middle">只喂给模型</text>
         </g>
 
-        <g id="node-yolo" data-node-id="yolo" data-node-label="YOLO · RKNN" tabindex="0" role="button" aria-label="Focus YOLO · RKNN, 黑 · 白 · 红灯 · 绿灯, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="backend" data-node-sublabel="黑 · 白 · 红灯 · 绿灯" data-node-context="视觉 worker · 每帧">
-          <title>YOLO · RKNN · 黑 · 白 · 红灯 · 绿灯 · 视觉 worker · 每帧</title>
-          <rect x="870" y="120" width="190" height="76" rx="6" class="c-mask"/>
-          <rect x="870" y="120" width="190" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(876 126) scale(0.6875)">
+        <g id="node-yolo" data-node-id="yolo" data-node-label="YOLO · RKNN · NMS" tabindex="0" role="button" aria-label="Focus YOLO · RKNN · NMS, 黑白灯 · 同框 IoU ≥ 0.5 留一个, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="backend" data-node-sublabel="黑白灯 · 同框 IoU ≥ 0.5 留一个" data-node-context="视觉 worker · 每帧">
+          <title>YOLO · RKNN · NMS · 黑白灯 · 同框 IoU ≥ 0.5 留一个 · 视觉 worker · 每帧</title>
+          <rect x="880" y="120" width="190" height="76" rx="6" class="c-mask"/>
+          <rect x="880" y="120" width="190" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(886 126) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-detail-anchor x="965" y="156" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">YOLO · RKNN</text>
-        <text data-detail="context" x="965" y="172" class="t-muted" font-size="9" text-anchor="middle">黑 · 白 · 红灯 · 绿灯</text>
+          <text data-detail-anchor x="975" y="156" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">YOLO · RKNN · NMS</text>
+        <text data-detail="context" x="975" y="172" class="t-muted" font-size="9" text-anchor="middle">黑白灯 · 同框 IoU ≥ 0.5 留一个</text>
         </g>
 
-        <g id="node-assign" data-node-id="assign" data-node-label="落点分配" tabindex="0" role="button" aria-label="Focus 落点分配, 视差修正 k≈0.990 · 占用感知, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="backend" data-node-sublabel="视差修正 k≈0.990 · 占用感知" data-node-tag="09-21/22" data-node-context="视觉 worker · 每帧">
-          <title>落点分配 · 视差修正 k≈0.990 · 占用感知 · 视觉 worker · 每帧 · 09-21/22</title>
-          <rect x="1140" y="120" width="200" height="76" rx="6" class="c-mask"/>
-          <rect x="1140" y="120" width="200" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1146 126) scale(0.6875)">
+        <g id="node-dedup" data-node-id="dedup" data-node-label="去重复框" tabindex="0" role="button" aria-label="Focus 去重复框, 中心距 &lt; 半个边长 · 留高分, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="backend" data-node-sublabel="中心距 &lt; 半个边长 · 留高分" data-node-context="视觉 worker · 每帧">
+          <title>去重复框 · 中心距 &lt; 半个边长 · 留高分 · 视觉 worker · 每帧</title>
+          <rect x="1160" y="120" width="200" height="76" rx="6" class="c-mask"/>
+          <rect x="1160" y="120" width="200" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1166 126) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-detail-anchor x="1240" y="156" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">落点分配</text>
-        <text data-detail="context" x="1240" y="172" class="t-muted" font-size="9" text-anchor="middle">视差修正 k≈0.990 · 占用感知</text>
-        <text data-detail="fine" x="1240" y="188" class="t-backend" font-size="7" text-anchor="middle">09-21/22</text>
+          <text data-detail-anchor x="1260" y="156" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">去重复框</text>
+        <text data-detail="context" x="1260" y="172" class="t-muted" font-size="9" text-anchor="middle">中心距 &lt; 半个边长 · 留高分</text>
         </g>
 
-        <g id="node-hyst" data-node-id="hyst" data-node-label="三档滞回" tabindex="0" role="button" aria-label="Focus 三档滞回, 新增 0.40 · 保持 0.30 · 维持 0.20, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="security" data-node-sublabel="新增 0.40 · 保持 0.30 · 维持 0.20" data-node-tag="09-22" data-node-context="视觉 worker · 每帧">
-          <title>三档滞回 · 新增 0.40 · 保持 0.30 · 维持 0.20 · 视觉 worker · 每帧 · 09-22</title>
-          <rect x="1140" y="330" width="200" height="76" rx="6" class="c-mask"/>
-          <rect x="1140" y="330" width="200" height="76" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(1146 336) scale(0.6875)">
+        <g id="node-shadow" data-node-id="shadow" data-node-label="去影子" tabindex="0" role="button" aria-label="Focus 去影子, 互压 ≥ 0.27 且落在两点之间, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="security" data-node-sublabel="互压 ≥ 0.27 且落在两点之间" data-node-tag="规划中" data-node-context="视觉 worker · 每帧">
+          <title>去影子 · 互压 ≥ 0.27 且落在两点之间 · 视觉 worker · 每帧 · 规划中</title>
+          <rect x="1440" y="120" width="210" height="76" rx="6" class="c-mask"/>
+          <rect x="1440" y="120" width="210" height="76" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(1446 126) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-detail-anchor x="1240" y="366" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">三档滞回</text>
-        <text data-detail="context" x="1240" y="382" class="t-muted" font-size="9" text-anchor="middle">新增 0.40 · 保持 0.30 · 维持 0.20</text>
-        <text data-detail="fine" x="1240" y="398" class="t-security" font-size="7" text-anchor="middle">09-22</text>
+          <text data-detail-anchor x="1545" y="156" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">去影子</text>
+        <text data-detail="context" x="1545" y="172" class="t-muted" font-size="9" text-anchor="middle">互压 ≥ 0.27 且落在两点之间</text>
+        <text data-detail="fine" x="1545" y="188" class="t-security" font-size="7" text-anchor="middle">规划中</text>
+        </g>
+
+        <g id="node-hyst" data-node-id="hyst" data-node-label="分置信档" tabindex="0" role="button" aria-label="Focus 分置信档, 保持 ≥ 0.30 · 维持 0.20 只留棋谱里的子, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="security" data-node-sublabel="保持 ≥ 0.30 · 维持 0.20 只留棋谱里的子" data-node-tag="09-22" data-node-context="视觉 worker · 每帧">
+          <title>分置信档 · 保持 ≥ 0.30 · 维持 0.20 只留棋谱里的子 · 视觉 worker · 每帧 · 09-22</title>
+          <rect x="1440" y="330" width="210" height="76" rx="6" class="c-mask"/>
+          <rect x="1440" y="330" width="210" height="76" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(1446 336) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-detail-anchor x="1545" y="366" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">分置信档</text>
+        <text data-detail="context" x="1545" y="382" class="t-muted" font-size="9" text-anchor="middle">保持 ≥ 0.30 · 维持 0.20 只留棋谱里的子</text>
+        <text data-detail="fine" x="1545" y="398" class="t-security" font-size="7" text-anchor="middle">09-22</text>
+        </g>
+
+        <g id="node-assign" data-node-id="assign" data-node-label="落到盘面" tabindex="0" role="button" aria-label="Focus 落到盘面, 视差修正 · 占用感知 · 新增需 0.40, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="backend" data-node-sublabel="视差修正 · 占用感知 · 新增需 0.40" data-node-tag="09-21/22" data-node-context="视觉 worker · 每帧">
+          <title>落到盘面 · 视差修正 · 占用感知 · 新增需 0.40 · 视觉 worker · 每帧 · 09-21/22</title>
+          <rect x="1160" y="330" width="200" height="76" rx="6" class="c-mask"/>
+          <rect x="1160" y="330" width="200" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1166 336) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-detail-anchor x="1260" y="366" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">落到盘面</text>
+        <text data-detail="context" x="1260" y="382" class="t-muted" font-size="9" text-anchor="middle">视差修正 · 占用感知 · 新增需 0.40</text>
+        <text data-detail="fine" x="1260" y="398" class="t-backend" font-size="7" text-anchor="middle">09-21/22</text>
         </g>
 
         <g id="node-vote" data-node-id="vote" data-node-label="两帧投票" tabindex="0" role="button" aria-label="Focus 两帧投票, 连续两帧一致才改, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="backend" data-node-sublabel="连续两帧一致才改" data-node-context="视觉 worker · 每帧">
           <title>两帧投票 · 连续两帧一致才改 · 视觉 worker · 每帧</title>
-          <rect x="870" y="330" width="190" height="76" rx="6" class="c-mask"/>
-          <rect x="870" y="330" width="190" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(876 336) scale(0.6875)">
+          <rect x="880" y="330" width="190" height="76" rx="6" class="c-mask"/>
+          <rect x="880" y="330" width="190" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(886 336) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-detail-anchor x="965" y="366" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">两帧投票</text>
-        <text data-detail="context" x="965" y="382" class="t-muted" font-size="9" text-anchor="middle">连续两帧一致才改</text>
+          <text data-detail-anchor x="975" y="366" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">两帧投票</text>
+        <text data-detail="context" x="975" y="382" class="t-muted" font-size="9" text-anchor="middle">连续两帧一致才改</text>
         </g>
 
         <g id="node-refcheck" data-node-id="refcheck" data-node-label="参照帧比对" tabindex="0" role="button" aria-label="Focus 参照帧比对, 逐格 ZNCC ≥ 0.90 · 有限次否决, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="security" data-node-sublabel="逐格 ZNCC ≥ 0.90 · 有限次否决" data-node-tag="09-23 · 影子" data-node-context="视觉 worker · 每帧">
           <title>参照帧比对 · 逐格 ZNCC ≥ 0.90 · 有限次否决 · 视觉 worker · 每帧 · 09-23 · 影子</title>
-          <rect x="590" y="330" width="210" height="76" rx="6" class="c-mask"/>
-          <rect x="590" y="330" width="210" height="76" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(596 336) scale(0.6875)">
+          <rect x="600" y="330" width="210" height="76" rx="6" class="c-mask"/>
+          <rect x="600" y="330" width="210" height="76" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(606 336) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-detail-anchor x="695" y="366" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">参照帧比对</text>
-        <text data-detail="context" x="695" y="382" class="t-muted" font-size="9" text-anchor="middle">逐格 ZNCC ≥ 0.90 · 有限次否决</text>
-        <text data-detail="fine" x="695" y="398" class="t-security" font-size="7" text-anchor="middle">09-23 · 影子</text>
+          <text data-detail-anchor x="705" y="366" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">参照帧比对</text>
+        <text data-detail="context" x="705" y="382" class="t-muted" font-size="9" text-anchor="middle">逐格 ZNCC ≥ 0.90 · 有限次否决</text>
+        <text data-detail="fine" x="705" y="398" class="t-security" font-size="7" text-anchor="middle">09-23 · 影子</text>
         </g>
 
         <g id="node-refstore" data-node-id="refstore" data-node-label="参照帧" tabindex="0" role="button" aria-label="Focus 参照帧, 推进时拍 · 每分钟逐格续期, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="database" data-node-sublabel="推进时拍 · 每分钟逐格续期" data-node-tag="09-23" data-node-context="视觉 worker · 每帧">
@@ -4701,38 +4728,50 @@
         <text data-detail="fine" x="425" y="398" class="t-database" font-size="7" text-anchor="middle">09-23</text>
         </g>
 
+        <g id="node-ambiguous" data-node-id="ambiguous" data-node-label="疑似落子判定" tabindex="0" role="button" aria-label="Focus 疑似落子判定, 空点弱检测连续 12 帧 → 确认卡, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="security" data-node-sublabel="空点弱检测连续 12 帧 → 确认卡" data-node-context="视觉 worker · 每帧">
+          <title>疑似落子判定 · 空点弱检测连续 12 帧 → 确认卡 · 视觉 worker · 每帧</title>
+          <rect x="1440" y="540" width="210" height="76" rx="6" class="c-mask"/>
+          <rect x="1440" y="540" width="210" height="76" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(1446 546) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-detail-anchor x="1545" y="576" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">疑似落子判定</text>
+        <text data-detail="context" x="1545" y="592" class="t-muted" font-size="9" text-anchor="middle">空点弱检测连续 12 帧 → 确认卡</text>
+        </g>
+
         <g id="node-movedet" data-node-id="movedet" data-node-label="落子确认" tabindex="0" role="button" aria-label="Focus 落子确认, 峰值 ≥ 0.70 走 3 帧，否则 5 帧, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="backend" data-node-sublabel="峰值 ≥ 0.70 走 3 帧，否则 5 帧" data-node-context="视觉 worker · 每帧">
           <title>落子确认 · 峰值 ≥ 0.70 走 3 帧，否则 5 帧 · 视觉 worker · 每帧</title>
-          <rect x="590" y="540" width="210" height="76" rx="6" class="c-mask"/>
-          <rect x="590" y="540" width="210" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(596 546) scale(0.6875)">
+          <rect x="600" y="540" width="210" height="76" rx="6" class="c-mask"/>
+          <rect x="600" y="540" width="210" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(606 546) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-detail-anchor x="695" y="576" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">落子确认</text>
-        <text data-detail="context" x="695" y="592" class="t-muted" font-size="9" text-anchor="middle">峰值 ≥ 0.70 走 3 帧，否则 5 帧</text>
+          <text data-detail-anchor x="705" y="576" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">落子确认</text>
+        <text data-detail="context" x="705" y="592" class="t-muted" font-size="9" text-anchor="middle">峰值 ≥ 0.70 走 3 帧，否则 5 帧</text>
         </g>
 
         <g id="node-sync" data-node-id="sync" data-node-label="盘面同步" tabindex="0" role="button" aria-label="Focus 盘面同步, 缺子先等 7 s · 提示多子缺子, 视觉 worker · 每帧" aria-pressed="false" data-node-kind="backend" data-node-sublabel="缺子先等 7 s · 提示多子缺子" data-node-context="视觉 worker · 每帧">
           <title>盘面同步 · 缺子先等 7 s · 提示多子缺子 · 视觉 worker · 每帧</title>
-          <rect x="870" y="540" width="210" height="76" rx="6" class="c-mask"/>
-          <rect x="870" y="540" width="210" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(876 546) scale(0.6875)">
+          <rect x="880" y="540" width="210" height="76" rx="6" class="c-mask"/>
+          <rect x="880" y="540" width="210" height="76" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(886 546) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-detail-anchor x="975" y="576" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">盘面同步</text>
-        <text data-detail="context" x="975" y="592" class="t-muted" font-size="9" text-anchor="middle">缺子先等 7 s · 提示多子缺子</text>
+          <text data-detail-anchor x="985" y="576" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">盘面同步</text>
+        <text data-detail="context" x="985" y="592" class="t-muted" font-size="9" text-anchor="middle">缺子先等 7 s · 提示多子缺子</text>
         </g>
 
         <g id="node-server" data-node-id="server" data-node-label="提交前复核" tabindex="0" role="button" aria-label="Focus 提交前复核, 子还在 (L0a) · 轮到谁 (L0b), katrain web 服务" aria-pressed="false" data-node-kind="security" data-node-sublabel="子还在 (L0a) · 轮到谁 (L0b)" data-node-context="katrain web 服务">
           <title>提交前复核 · 子还在 (L0a) · 轮到谁 (L0b) · katrain web 服务</title>
-          <rect x="590" y="760" width="210" height="76" rx="6" class="c-mask"/>
-          <rect x="590" y="760" width="210" height="76" rx="6" class="c-security" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(596 766) scale(0.6875)">
+          <rect x="600" y="760" width="210" height="76" rx="6" class="c-mask"/>
+          <rect x="600" y="760" width="210" height="76" rx="6" class="c-security" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(606 766) scale(0.6875)">
             <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
-          <text data-detail-anchor x="695" y="796" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">提交前复核</text>
-        <text data-detail="context" x="695" y="812" class="t-muted" font-size="9" text-anchor="middle">子还在 (L0a) · 轮到谁 (L0b)</text>
+          <text data-detail-anchor x="705" y="796" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">提交前复核</text>
+        <text data-detail="context" x="705" y="812" class="t-muted" font-size="9" text-anchor="middle">子还在 (L0a) · 轮到谁 (L0b)</text>
         </g>
 
         <g id="node-game" data-node-id="game" data-node-label="棋谱" tabindex="0" role="button" aria-label="Focus 棋谱, 落子 · 下发新的期望盘面, katrain web 服务" aria-pressed="false" data-node-kind="database" data-node-sublabel="落子 · 下发新的期望盘面" data-node-context="katrain web 服务">
@@ -4749,15 +4788,15 @@
 
         <g id="node-led" data-node-id="led" data-node-label="指引灯" tabindex="0" role="button" aria-label="Focus 指引灯, AI 落子亮灯 · 按光斑调亮度, katrain web 服务" aria-pressed="false" data-node-kind="external" data-node-sublabel="AI 落子亮灯 · 按光斑调亮度" data-node-tag="09-22" data-node-context="katrain web 服务">
           <title>指引灯 · AI 落子亮灯 · 按光斑调亮度 · katrain web 服务 · 09-22</title>
-          <rect x="30" y="760" width="200" height="76" rx="6" class="c-mask"/>
-          <rect x="30" y="760" width="200" height="76" rx="6" class="c-external" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(36 766) scale(0.6875)">
+          <rect x="40" y="760" width="200" height="76" rx="6" class="c-mask"/>
+          <rect x="40" y="760" width="200" height="76" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(46 766) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-detail-anchor x="130" y="796" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">指引灯</text>
-        <text data-detail="context" x="130" y="812" class="t-muted" font-size="9" text-anchor="middle">AI 落子亮灯 · 按光斑调亮度</text>
-        <text data-detail="fine" x="130" y="828" class="t-external" font-size="7" text-anchor="middle">09-22</text>
+          <text data-detail-anchor x="140" y="796" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">指引灯</text>
+        <text data-detail="context" x="140" y="812" class="t-muted" font-size="9" text-anchor="middle">AI 落子亮灯 · 按光斑调亮度</text>
+        <text data-detail="fine" x="140" y="828" class="t-external" font-size="7" text-anchor="middle">09-22</text>
         </g>
 
         <!-- Connection labels -->
@@ -4772,18 +4811,21 @@
 
 
 
-        <g data-detail="context" data-edge-from="warp" data-edge-to="refstore" data-edge-label="平均前灰度" data-edge-key="11">
-          <rect x="396" y="240" width="58" height="14" rx="3" class="c-mask"/>
-          <text x="425" y="250" class="t-messagebus" font-size="8" text-anchor="middle">平均前灰度</text>
+
+
+
+        <g data-detail="context" data-edge-from="warp" data-edge-to="refstore" data-edge-label="平均前灰度" data-edge-key="14">
+          <rect x="396" y="253" width="58" height="14" rx="3" class="c-mask"/>
+          <text x="425" y="263" class="t-messagebus" font-size="8" text-anchor="middle">平均前灰度</text>
         </g>
 
-        <g data-detail="context" data-edge-from="game" data-edge-to="refstore" data-edge-label="期望盘面" data-edge-key="13">
+        <g data-detail="context" data-edge-from="game" data-edge-to="refstore" data-edge-label="期望盘面" data-edge-key="16">
           <rect x="400.8" y="740" width="48.4" height="14" rx="3" class="c-mask"/>
           <text x="425" y="750" class="t-messagebus" font-size="8" text-anchor="middle">期望盘面</text>
         </g>
-        <g data-detail="context" data-edge-from="game" data-edge-to="led" data-edge-label="AI 落子" data-edge-key="14">
-          <rect x="253.2" y="778" width="43.6" height="14" rx="3" class="c-mask"/>
-          <text x="275" y="788" class="t-muted" font-size="8" text-anchor="middle">AI 落子</text>
+        <g data-detail="context" data-edge-from="game" data-edge-to="led" data-edge-label="AI 落子" data-edge-key="17">
+          <rect x="258.2" y="778" width="43.6" height="14" rx="3" class="c-mask"/>
+          <text x="280" y="788" class="t-muted" font-size="8" text-anchor="middle">AI 落子</text>
         </g>
 
         <!-- Legend -->
@@ -5022,6 +5064,7 @@
           <li>&bull; 逐格和参照帧比结构，结构没变就不信检测器的改口</li>
           <li>&bull; 否决有上限：缺子 90 帧、多子或变色 10 帧</li>
           <li>&bull; 长考时每分钟逐格续期，没解释的变化不吸收</li>
+          <li>&bull; 侧光影子框：去重复框之后单独判定，落在两点之间才去掉（规划中）</li>
         </ul>
       </div>
 

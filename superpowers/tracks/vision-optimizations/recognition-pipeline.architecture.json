@@ -3,13 +3,13 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "实体棋盘落子识别流程",
-    "subtitle": "RK3562 · 从摄像头一帧到棋谱落一手，再把新棋谱送回识别端 · 截至 2026-09-23",
+    "subtitle": "RK3562 · 从摄像头一帧到棋谱落一手，再把新棋谱送回识别端 · 截至 2026-09-23 · 「去影子」为规划中",
     "output": "recognition-pipeline.html",
     "visual_preset": "blueprint",
     "animation": "none",
     "quality_profile": "showcase",
     "viewBox": [
-      1440,
+      1720,
       940
     ],
     "views": [
@@ -22,18 +22,20 @@
           "enhance",
           "yolo"
         ],
-        "note": "只处理静止的画面；透视校正后，8 帧平均和 CLAHE 只给模型用。"
+        "note": "只处理静止的画面；透视校正后，8 帧平均和 CLAHE 只给模型用；模型输出先过 NMS。"
       },
       {
         "id": "board",
         "label": "检测 → 盘面",
         "focus": [
           "yolo",
-          "assign",
+          "dedup",
+          "shadow",
           "hyst",
+          "assign",
           "vote"
         ],
-        "note": "视差修正后落到交叉点，三档滞回决定一颗子能不能进来、能不能留下。"
+        "note": "先去重复框（同一颗子被框两次），再去影子框（规划中：与邻框互压 ≥ 0.27、自己又落在两个交叉点之间）；之后分置信档、落到盘面。"
       },
       {
         "id": "reference",
@@ -52,11 +54,12 @@
         "focus": [
           "refcheck",
           "movedet",
+          "ambiguous",
           "sync",
           "server",
           "game"
         ],
-        "note": "连续几帧一致才算落子；提交前再核一次子还在、轮到谁。"
+        "note": "连续几帧一致才算落子；空点上卡住的弱检测弹确认卡；提交前再核一次子还在、轮到谁。"
       },
       {
         "id": "lamps",
@@ -80,7 +83,7 @@
       "label": "取帧 · 静止闸",
       "sublabel": "1080p · 有手在动就丢弃",
       "pos": [
-        60,
+        40,
         120
       ],
       "size": [
@@ -140,10 +143,10 @@
     {
       "id": "yolo",
       "type": "backend",
-      "label": "YOLO · RKNN",
-      "sublabel": "黑 · 白 · 红灯 · 绿灯",
+      "label": "YOLO · RKNN · NMS",
+      "sublabel": "黑白灯 · 同框 IoU ≥ 0.5 留一个",
       "pos": [
-        870,
+        880,
         120
       ],
       "size": [
@@ -155,18 +158,86 @@
           "path": "katrain/vision/worker_inprocess.py",
           "line": 749,
           "label": "detector.detect"
+        },
+        {
+          "path": "katrain/vision/inference/rknn_backend.py",
+          "line": 274,
+          "label": "NMSBoxes"
+        }
+      ]
+    },
+    {
+      "id": "dedup",
+      "type": "backend",
+      "label": "去重复框",
+      "sublabel": "中心距 < 半个边长 · 留高分",
+      "pos": [
+        1160,
+        120
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/stone_detector.py",
+          "line": 32,
+          "label": "dedup_detections"
+        }
+      ]
+    },
+    {
+      "id": "shadow",
+      "type": "security",
+      "label": "去影子",
+      "sublabel": "互压 ≥ 0.27 且落在两点之间",
+      "tag": "规划中",
+      "pos": [
+        1440,
+        120
+      ],
+      "size": [
+        210,
+        76
+      ]
+    },
+    {
+      "id": "hyst",
+      "type": "security",
+      "label": "分置信档",
+      "sublabel": "保持 ≥ 0.30 · 维持 0.20 只留棋谱里的子",
+      "tag": "09-22",
+      "pos": [
+        1440,
+        330
+      ],
+      "size": [
+        210,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 754,
+          "label": "keep / sustain"
+        },
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 347,
+          "label": "_game_stone_sustain"
         }
       ]
     },
     {
       "id": "assign",
       "type": "backend",
-      "label": "落点分配",
-      "sublabel": "视差修正 k≈0.990 · 占用感知",
+      "label": "落到盘面",
+      "sublabel": "视差修正 · 占用感知 · 新增需 0.40",
       "tag": "09-21/22",
       "pos": [
-        1140,
-        120
+        1160,
+        330
       ],
       "size": [
         200,
@@ -179,36 +250,14 @@
           "label": "apply_parallax"
         },
         {
-          "path": "katrain/vision/parallax.py",
-          "line": 109,
-          "label": "mount_parallax_for_lock"
-        }
-      ]
-    },
-    {
-      "id": "hyst",
-      "type": "security",
-      "label": "三档滞回",
-      "sublabel": "新增 0.40 · 保持 0.30 · 维持 0.20",
-      "tag": "09-22",
-      "pos": [
-        1140,
-        330
-      ],
-      "size": [
-        200,
-        76
-      ],
-      "sources": [
-        {
           "path": "katrain/vision/board_state.py",
           "line": 144,
           "label": "_passes_hysteresis"
         },
         {
-          "path": "katrain/vision/worker_inprocess.py",
-          "line": 347,
-          "label": "_game_stone_sustain"
+          "path": "katrain/vision/parallax.py",
+          "line": 109,
+          "label": "mount_parallax_for_lock"
         }
       ]
     },
@@ -218,7 +267,7 @@
       "label": "两帧投票",
       "sublabel": "连续两帧一致才改",
       "pos": [
-        870,
+        880,
         330
       ],
       "size": [
@@ -239,7 +288,7 @@
       "sublabel": "逐格 ZNCC ≥ 0.90 · 有限次否决",
       "tag": "09-23 · 影子",
       "pos": [
-        590,
+        600,
         330
       ],
       "size": [
@@ -282,12 +331,38 @@
       ]
     },
     {
+      "id": "ambiguous",
+      "type": "security",
+      "label": "疑似落子判定",
+      "sublabel": "空点弱检测连续 12 帧 → 确认卡",
+      "pos": [
+        1440,
+        540
+      ],
+      "size": [
+        210,
+        76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 588,
+          "label": "_promote_stuck_stone"
+        },
+        {
+          "path": "katrain/vision/move_detector.py",
+          "line": 476,
+          "label": "AmbiguousPromoter"
+        }
+      ]
+    },
+    {
       "id": "movedet",
       "type": "backend",
       "label": "落子确认",
       "sublabel": "峰值 ≥ 0.70 走 3 帧，否则 5 帧",
       "pos": [
-        590,
+        600,
         540
       ],
       "size": [
@@ -308,7 +383,7 @@
       "label": "盘面同步",
       "sublabel": "缺子先等 7 s · 提示多子缺子",
       "pos": [
-        870,
+        880,
         540
       ],
       "size": [
@@ -329,7 +404,7 @@
       "label": "提交前复核",
       "sublabel": "子还在 (L0a) · 轮到谁 (L0b)",
       "pos": [
-        590,
+        600,
         760
       ],
       "size": [
@@ -372,7 +447,7 @@
       "sublabel": "AI 落子亮灯 · 按光斑调亮度",
       "tag": "09-22",
       "pos": [
-        30,
+        40,
         760
       ],
       "size": [
@@ -402,11 +477,14 @@
         "warp",
         "enhance",
         "yolo",
-        "assign",
+        "dedup",
+        "shadow",
         "hyst",
+        "assign",
         "vote",
         "refcheck",
         "refstore",
+        "ambiguous",
         "movedet",
         "sync"
       ]
@@ -439,16 +517,26 @@
     },
     {
       "from": "yolo",
-      "to": "assign",
+      "to": "dedup",
       "variant": "emphasis"
     },
     {
-      "from": "assign",
+      "from": "dedup",
+      "to": "shadow",
+      "variant": "emphasis"
+    },
+    {
+      "from": "shadow",
       "to": "hyst",
       "variant": "emphasis"
     },
     {
       "from": "hyst",
+      "to": "assign",
+      "variant": "emphasis"
+    },
+    {
+      "from": "assign",
       "to": "vote",
       "variant": "emphasis"
     },
@@ -477,13 +565,17 @@
       "variant": "emphasis"
     },
     {
+      "from": "hyst",
+      "to": "ambiguous"
+    },
+    {
       "from": "warp",
       "to": "refstore",
       "label": "平均前灰度",
       "variant": "dashed",
       "labelAt": [
         425,
-        250
+        263
       ]
     },
     {
@@ -528,7 +620,8 @@
       "items": [
         "逐格和参照帧比结构，结构没变就不信检测器的改口",
         "否决有上限：缺子 90 帧、多子或变色 10 帧",
-        "长考时每分钟逐格续期，没解释的变化不吸收"
+        "长考时每分钟逐格续期，没解释的变化不吸收",
+        "侧光影子框：去重复框之后单独判定，落在两点之间才去掉（规划中）"
       ]
     },
     {

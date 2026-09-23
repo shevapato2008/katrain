@@ -7047,5 +7047,8 @@ msgstr "QR code de connexion Golaxy"
 msgid "platform:scan_refresh"
 msgstr "Nouveau code"
 
+msgid "platform:scan_tap_to_refresh"
+msgstr "touchez ici pour un nouveau code"
+
 msgid "platform:scan_confirm_failed"
 msgstr "Échec de la confirmation de connexion"

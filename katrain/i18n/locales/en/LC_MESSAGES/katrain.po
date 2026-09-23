@@ -6998,5 +6998,8 @@ msgstr "Golaxy sign-in QR code"
 msgid "platform:scan_refresh"
 msgstr "New code"
 
+msgid "platform:scan_tap_to_refresh"
+msgstr "tap for a new code"
+
 msgid "platform:scan_confirm_failed"
 msgstr "Couldn't confirm sign-in"

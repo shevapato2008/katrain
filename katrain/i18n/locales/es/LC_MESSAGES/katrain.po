@@ -6893,5 +6893,8 @@ msgstr "Código QR de acceso a Golaxy"
 msgid "platform:scan_refresh"
 msgstr "Nuevo código"
 
+msgid "platform:scan_tap_to_refresh"
+msgstr "toca aquí para un código nuevo"
+
 msgid "platform:scan_confirm_failed"
 msgstr "No se pudo confirmar el inicio de sesión"

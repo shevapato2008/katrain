@@ -6777,5 +6777,8 @@ msgstr "星陣ログインQRコード"
 msgid "platform:scan_refresh"
 msgstr "コードを更新"
 
+msgid "platform:scan_tap_to_refresh"
+msgstr "タップして新しいコードを取得"
+
 msgid "platform:scan_confirm_failed"
 msgstr "ログイン確認に失敗しました"

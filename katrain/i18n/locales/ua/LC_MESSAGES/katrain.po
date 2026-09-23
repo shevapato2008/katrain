@@ -7012,5 +7012,8 @@ msgstr "QR-код входу Golaxy"
 msgid "platform:scan_refresh"
 msgstr "Новий код"
 
+msgid "platform:scan_tap_to_refresh"
+msgstr "натисніть, щоб отримати новий код"
+
 msgid "platform:scan_confirm_failed"
 msgstr "Не вдалося підтвердити вхід"

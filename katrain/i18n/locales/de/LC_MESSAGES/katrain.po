@@ -7076,5 +7076,8 @@ msgstr "Golaxy-Anmelde-QR-Code"
 msgid "platform:scan_refresh"
 msgstr "Neuer Code"
 
+msgid "platform:scan_tap_to_refresh"
+msgstr "hier tippen für einen neuen Code"
+
 msgid "platform:scan_confirm_failed"
 msgstr "Anmeldung konnte nicht bestätigt werden"

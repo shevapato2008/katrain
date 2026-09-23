@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { Icon } from '../../shell/icons';
 import { useAuth } from '../../../context/AuthContext';
 import { API } from '../../../api';
 import { platformErrorMessage } from '../../utils/platformErrorMessage';
@@ -146,19 +147,45 @@ export function GolaxyScanPanel({ platform, onDone }: GolaxyScanPanelProps) {
   }
 
   const status = STATUS_TEXT[scanState];
+  // 码已经作废、扫也扫不动的两种态。**取消和失效在这里是同一件事** ——
+  // 对着屏幕的人要做的动作完全一样(换一张),区别只在旁边那行字说的原因。
+  const isDeadCode = scanState === 'expired' || scanState === 'cancelled';
+
+  const qrInner = qrSvg && (
+    <span
+      className="qrimg"
+      data-testid="scan-qr"
+      aria-label={t('platform:scan_qr_alt', '星阵登录二维码')}
+      dangerouslySetInnerHTML={{ __html: qrSvg }}
+    />
+  );
 
   return (
     <div className="xpqr">
-      <div className="qrbox">
-        {qrSvg && (
-          <span
-            className="qrimg"
-            data-testid="scan-qr"
-            aria-label={t('platform:scan_qr_alt', '星阵登录二维码')}
-            dangerouslySetInnerHTML={{ __html: qrSvg }}
-          />
-        )}
-      </div>
+      {/* 码作废时整块变成按钮:码压暗 + 中间一个刷新图标,点码就换一张。
+          这是星阵自己网页上的手势(过期码中间压一个刷新符号,点它重出码),用户已经会了。
+          右边那颗「换一张」照旧留着 —— 它在**任何**状态下都能用(还没扫就想换一张也合理),
+          而这个压在码上的只在码已经没用的时候出现,两者不是重复的。
+          **必须是真 `<button>`**:188 见方远超触摸下限,但可及名得自己给 ——
+          里面那张 svg 是 `aria-label` 描述的二维码,读屏的人光听「二维码」不知道点了会怎样。 */}
+      {isDeadCode ? (
+        <button
+          type="button"
+          className="qrbox qrbox--dead"
+          data-testid="scan-qr-refresh"
+          // 可及名把**当前状态**念进去,不写死「已失效」—— 取消那一支的原因不一样,
+          // 读屏的人听到的必须和屏上那行字是同一件事。
+          aria-label={`${t(status.key, status.zh)}，${t('platform:scan_tap_to_refresh', '点此换一张')}`}
+          onClick={() => { void start(); }}
+        >
+          {qrInner}
+          <span className="qrbox__refresh" aria-hidden="true">
+            <Icon name="arrow-clockwise" />
+          </span>
+        </button>
+      ) : (
+        <div className="qrbox">{qrInner}</div>
+      )}
       <div className="xpqr__side">
         <h4>{t('platform:scan_title', '打开星阵 APP 扫一扫')}</h4>
         <p>{t('platform:scan_body', '扫完在手机上点确认，密码不经过这台盒子。')}</p>

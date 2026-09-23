@@ -6607,5 +6607,8 @@ msgstr "星阵登录二维码"
 msgid "platform:scan_refresh"
 msgstr "换一张"
 
+msgid "platform:scan_tap_to_refresh"
+msgstr "点此换一张"
+
 msgid "platform:scan_confirm_failed"
 msgstr "确认登录失败"

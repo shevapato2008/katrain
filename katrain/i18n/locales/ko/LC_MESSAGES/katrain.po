@@ -6718,5 +6718,8 @@ msgstr "골락시 로그인 QR 코드"
 msgid "platform:scan_refresh"
 msgstr "새 코드"
 
+msgid "platform:scan_tap_to_refresh"
+msgstr "여기를 눌러 새 코드 받기"
+
 msgid "platform:scan_confirm_failed"
 msgstr "로그인 확인에 실패했습니다"

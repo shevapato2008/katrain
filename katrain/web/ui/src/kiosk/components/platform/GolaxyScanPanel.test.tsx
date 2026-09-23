@@ -86,6 +86,49 @@ describe('GolaxyScanPanel', () => {
     expect(platformScanState.mock.calls.length).toBe(callsAtConfirm);
   });
 
+  it.each([
+    ['expired', '二维码已失效'],
+    ['cancelled', '手机上取消了登录'],
+  ])('%s:码变成按钮,压暗+中间刷新图标,点码就重新取一张', async (state, statusText) => {
+    // 这两态在真实运行里要等到星阵那边把码作废才出现(实测约 182 秒),
+    // 不显式造状态就没有任何东西证明这条交互是对的。
+    platformScanStart
+      .mockResolvedValueOnce({ scan_id: 'sid-a', payload: 'golaxy_url&&&uuid-a', expires_at: 0 })
+      .mockResolvedValueOnce({ scan_id: 'sid-b', payload: 'golaxy_url&&&uuid-b', expires_at: 0 });
+    platformScanState.mockResolvedValue({ state });
+
+    render(<GolaxyScanPanel platform="golaxy" onDone={() => {}} />);
+    await flush();
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+
+    const qrButton = screen.getByTestId('scan-qr-refresh');
+    expect(qrButton.tagName).toBe('BUTTON');
+    // 可及名把**当前状态**念进去 —— 取消那一支的原因和失效不一样,
+    // 读屏的人听到的必须和屏上那行字是同一件事。
+    expect(qrButton).toHaveAccessibleName(`${statusText}，点此换一张`);
+    // 码还画着(压暗是 CSS 的事,不是把它删掉)—— 删掉的话屏上剩一个空白方块。
+    expect(screen.getByTestId('scan-qr')).toBeInTheDocument();
+
+    expect(platformScanStart).toHaveBeenCalledTimes(1);
+    await act(async () => { qrButton.click(); });
+    await flush();
+    expect(platformScanStart).toHaveBeenCalledTimes(2);
+  });
+
+  it('还没作废时二维码不是按钮 —— 点它不该有任何反应', async () => {
+    // 「点码即换」只在码已经没用的时候出现。等待扫描时把它也做成按钮,
+    // 手指扶一下屏幕就把正在等确认的码换掉了。
+    platformScanStart.mockResolvedValue({ scan_id: 'sid-c', payload: 'golaxy_url&&&uuid-c', expires_at: 0 });
+    platformScanState.mockResolvedValue({ state: 'waiting' });
+
+    render(<GolaxyScanPanel platform="golaxy" onDone={() => {}} />);
+    await flush();
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+
+    expect(screen.getByTestId('scan-qr')).toBeInTheDocument();
+    expect(screen.queryByTestId('scan-qr-refresh')).toBeNull();
+  });
+
   it('expired:停轮询,画「换一张」,不进 confirm', async () => {
     platformScanStart.mockResolvedValue({ scan_id: 'sid-2', payload: 'golaxy_url&&&uuid-y', expires_at: 0 });
     platformScanState.mockResolvedValue({ state: 'expired' });

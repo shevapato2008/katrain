@@ -2078,3 +2078,21 @@ button.kiosk-row.figrow { flex: none; }
   border-radius: 50%;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 28%, transparent);
 }
+
+/* ── 二维码作废:压暗 + 中间刷新图标,点码即换(Fan 2026-09-24 拍板) ──────
+   星阵自己网页上就是这个手势(过期码中间压一个刷新符号,点它重出码),用户已经会了。
+   压暗的是**码本身**不是整块:白底留着 —— 那个白底是功能不是装饰(反色码很多扫码器
+   不认),压暗白底会让「这块是二维码」这件事也一起变模糊。
+   `--dead` 而不是 `--expired`:失效和取消在这一屏上要做的动作完全一样,
+   区别只在旁边那行字说的原因。 */
+[data-testid="platform-login-page"] .qrbox--dead { position: relative; cursor: pointer; }
+[data-testid="platform-login-page"] .qrbox--dead .qrimg { opacity: .28; }
+[data-testid="platform-login-page"] .qrbox__refresh {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none;
+}
+[data-testid="platform-login-page"] .qrbox__refresh .kiosk-icon {
+  width: 56px; height: 56px; display: grid; place-items: center; border-radius: 50%;
+  /* 深色圆衬在浅色码上 —— 图标直接压在码的黑白方块上会糊成一团,认不出是个刷新符号。 */
+  background: var(--ink); color: var(--text);
+}
+[data-testid="platform-login-page"] .qrbox__refresh svg { width: 30px; height: 30px; fill: currentColor; }

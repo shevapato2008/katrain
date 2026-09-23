@@ -35,6 +35,12 @@ QR_PREFIX = "golaxy_url&&&"
 
 # 会话在服务端存活多久(秒)。扫码登录整条链按秒计,不需要更长;盒子重启即丢
 # (内存表,不持久化——一次没扫完的登录不值得跨重启保留)。
+#
+# ⚠️ **这个数比星阵自己的码活得长(实测 ~182 秒,见下面 `_STATE_BY_ERROR_CODE` 前的
+# 记录),它不是「屏上说实话」的机制。** 正常情况下过期由 `poll` 读 `code=6016` 当场
+# 报出来,这条 TTL 只在**星阵连不上**时兜底 —— 那种情况下屏上会有一段时间仍写着
+# 「等待扫描」(最长 300-182≈118 秒)。要消掉那一段得让前端把「连续 poll 失败」
+# 显示出来,不是把这个数字往下调;调小只会在星阵哪天把码的寿命放长时误杀有效的码。
 DEFAULT_SCAN_TTL_SECONDS = 300.0
 
 # F5 (task-6a review): 同一用户同时允许多少条「还没过期」的扫码会话。没有这条上限,
@@ -53,12 +59,36 @@ class ScanState(str, Enum):
     UNKNOWN = "unknown"  # 星阵加了新码,我们没见过
 
 
-_STATES = {
+# ⚠️ **状态分两个字段来,不是一个。** 2026-09-23 对 `api.19x19.com` 实测,响应逐字:
+#
+#     取码        {"code":"0","msg":"","data":"8c285fe3-b420-4946-8e78-1a3279a360d3"}
+#     还没扫      {"code":"0","msg":"","data":"0"}
+#     码已失效    {"code":"6016","msg":"invalid UUID","data":""}
+#
+# 也就是说 **6016 只会出现在 `code` 里,永远不会出现在 `data` 里**。计划表把两档
+# 写进了同一列(「data 取值 0/1/2/6016/6019」),照着建的 `_STATES = {6016: EXPIRED}`
+# 因此是一条**永远命不中**的映射:请求会先撞上 `_get` 那句通用的 `code != "0" ⇒ 抛`,
+# 于是「二维码过期」在链路上表现成 502「连不上星阵」,前端 poll 的 catch 静默吞掉、
+# 下一秒接着问,屏上那颗绿点一直写着「等待扫描」—— 正是本模块 docstring 里点名要挡的
+# R-32 形状(坏了和好着在用户那里长得一模一样),只是当时防在了错的那个字段上。
+# 教训与本仓判例「闸量错了对象」同族:判据写对了,操作数取错了。
+#
+# 星阵的码实测寿命 **约 182 秒**(同一次探测:167s 仍 `data:"0"`,182s 已翻 6016),
+# 比我们自己的 `DEFAULT_SCAN_TTL_SECONDS` 短 —— 服务端 TTL 因此只是兜底,不是
+# 「屏上说实话」的主路径;主路径必须是下面这张按 `code` 查的表。
+_STATE_BY_DATA = {
     0: ScanState.WAITING,
     1: ScanState.SCANNED,
     2: ScanState.CONFIRMED,
-    6016: ScanState.EXPIRED,
-    6019: ScanState.CANCELLED,
+}
+
+# 业务错误码 → 状态。**只有 6016 是实测到的**(上面那三行响应)。
+# 6019(手机上取消)一个人验不了 —— 得真拿手机扫一次再点取消,留到上板那天走一遍;
+# 这里按同族推断也放进本表,**万一它实际走的是 `data` 字段**,会落到 `UNKNOWN`:
+# 继续轮询、不谎报成「已取消」,方向是安全的那一侧,并由 TTL 兜底收口。
+_STATE_BY_ERROR_CODE = {
+    "6016": ScanState.EXPIRED,  # 实测
+    "6019": ScanState.CANCELLED,  # 推断,待上板实扫验证
 }
 
 # States Golaxy will never walk back from. `UNKNOWN` is deliberately NOT here —
@@ -99,7 +129,12 @@ class GolaxyScanLogin:
     def __init__(self, client: Optional[httpx.AsyncClient] = None) -> None:
         self._client = client
 
-    async def _get(self, path: str, **params) -> dict:
+    async def _fetch(self, path: str, **params) -> dict:
+        """发请求、拿 JSON,**不判 `code`** —— 判 `code` 的是 `_get`。
+
+        分成两层是因为 `poll` 必须自己看 `code`:对它来说 `code=6016` 不是失败,
+        是「二维码失效」这个正常状态(见上面 `_STATE_BY_ERROR_CODE` 的实测记录)。
+        """
         # ⚠️ **注入进来的 client 不归我们关。** `async with` 一个共享的 AsyncClient
         # 会在第一次调用后把它关掉,后面每一次都 RuntimeError —— 而单测里每个用例
         # 各注一个新的,恰好看不出来。只有自己 new 的那个才由自己关(R-31)。
@@ -112,6 +147,10 @@ class GolaxyScanLogin:
         finally:
             if owned:
                 await c.aclose()
+        return body
+
+    async def _get(self, path: str, **params) -> dict:
+        body = await self._fetch(path, **params)
         # 200 不等于成功:星阵用字符串 code 报错,存在性不是可用性。
         if str(body.get("code")) != "0":
             raise RuntimeError(body.get("msg") or f"星阵返回 code={body.get('code')}")
@@ -123,8 +162,27 @@ class GolaxyScanLogin:
         return ScanStart(uuid=uuid, payload=f"{QR_PREFIX}{uuid}")
 
     async def poll(self, uuid: str) -> ScanState:
-        body = await self._get("/api/auth/scan/state", uuid=uuid)
-        return _STATES.get(int(body["data"]), ScanState.UNKNOWN)
+        """③ 查一次状态。**先看 `code` 再看 `data`** —— 两个字段各管一半状态空间,
+        见上面 `_STATE_BY_DATA` / `_STATE_BY_ERROR_CODE` 前的实测记录。
+
+        这里刻意不复用 `_get`:`_get` 会把任何非 "0" 的 `code` 一律当失败抛掉,
+        而对 `poll` 来说 `6016` 恰恰是要显示给用户看的那个正常终态。
+        """
+        body = await self._fetch("/api/auth/scan/state", uuid=uuid)
+        code = str(body.get("code"))
+        if code != "0":
+            state = _STATE_BY_ERROR_CODE.get(code)
+            if state is not None:
+                return state
+            # 真·失败(服务忙、限流、没见过的错误码):照旧抛,由端点转 502。
+            raise RuntimeError(body.get("msg") or f"星阵返回 code={code}")
+        try:
+            raw = int(body["data"])
+        except (KeyError, TypeError, ValueError):
+            # `code=0` 却给不出能当整数读的 `data` —— 星阵改了形状。不猜,报未知:
+            # 猜成 WAITING 就又变回「对着一张死码等下去」了(R-32)。
+            return ScanState.UNKNOWN
+        return _STATE_BY_DATA.get(raw, ScanState.UNKNOWN)
 
     async def username(self, uuid: str) -> str:
         """星阵账号的**昵称**——不是登录 principal,不能拿它去拼 `0086-{昵称}`

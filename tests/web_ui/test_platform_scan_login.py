@@ -123,15 +123,62 @@ class TestGolaxyScanLoginPoll:
             (0, ScanState.WAITING),
             (1, ScanState.SCANNED),
             (2, ScanState.CONFIRMED),
-            (6016, ScanState.EXPIRED),
-            (6019, ScanState.CANCELLED),
         ],
     )
-    async def test_poll_maps_every_documented_state(self, raw, expected):
+    async def test_poll_maps_the_in_band_states_carried_by_data(self, raw, expected):
+        """`code="0"` 时状态在 `data` 里 —— 只有未扫/已扫/已确认这三档走这条路。
+
+        失效/取消**不在这张表里**,它们走 `code` 字段,见下面那两条。
+        """
         client = make_client(
             json_handler("/api/auth/scan/state", {"code": "0", "data": raw}, expect_params={"uuid": "abc-123"})
         )
         assert await GolaxyScanLogin(client=client).poll("abc-123") == expected
+
+    async def test_expired_arrives_in_the_code_field_not_in_data(self):
+        """**这条钉的是实测到的报文形状,不是计划表里写的那个。**
+
+        2026-09-23 对 `api.19x19.com` 打真接口,失效的 uuid 逐字返回:
+
+            {"code":"6016","msg":"invalid UUID","data":""}
+
+        6016 在 `code` 里、`data` 是空串。计划表把它写成了 `data` 的一个取值,
+        照着实现出来的 `poll` 会先撞上通用的「`code != "0"` ⇒ 抛」,于是
+        「二维码过期」一路变成 502 → 前端静默重试 → 屏上一直写「等待扫描」,
+        用户对着一张死码干等(R-32 要挡的正是这个形状)。
+
+        变异判据:把 `poll` 里查 `_STATE_BY_ERROR_CODE` 那一段删掉 ⇒ 本条必红
+        (会抛 RuntimeError 而不是返回 EXPIRED)。
+        """
+        client = make_client(
+            json_handler(
+                "/api/auth/scan/state",
+                {"code": "6016", "msg": "invalid UUID", "data": ""},
+                expect_params={"uuid": "abc-123"},
+            )
+        )
+        assert await GolaxyScanLogin(client=client).poll("abc-123") == ScanState.EXPIRED
+
+    async def test_cancelled_code_maps_to_cancelled(self):
+        """6019 走同一条 `code` 路。
+
+        ⚠️ **这一档是按同族推断的,没有实测报文** —— 要验它得真拿手机扫一次再点取消,
+        留到 RK3562 走板那天。万一它实际走的是 `data` 字段,`poll` 会落到 `UNKNOWN`
+        (继续轮询、不谎报),方向是安全的那一侧。
+        """
+        client = make_client(json_handler("/api/auth/scan/state", {"code": "6019", "msg": "cancelled", "data": ""}))
+        assert await GolaxyScanLogin(client=client).poll("abc-123") == ScanState.CANCELLED
+
+    async def test_unrecognized_error_code_still_raises(self):
+        """没见过的错误码(服务忙、限流)仍然是失败,不能被当成某个安静的终态吞掉。"""
+        client = make_client(json_handler("/api/auth/scan/state", {"code": "5001", "msg": "服务忙", "data": ""}))
+        with pytest.raises(RuntimeError):
+            await GolaxyScanLogin(client=client).poll("abc-123")
+
+    async def test_zero_code_with_unreadable_data_is_unknown_not_waiting(self):
+        """`code=0` 但 `data` 读不成整数(星阵改了形状)⇒ 报未知,不猜成「还在等」。"""
+        client = make_client(json_handler("/api/auth/scan/state", {"code": "0", "data": ""}))
+        assert await GolaxyScanLogin(client=client).poll("abc-123") == ScanState.UNKNOWN
 
     async def test_unknown_state_is_not_silently_treated_as_waiting(self):
         """星阵加了一个新状态码时,我们必须能看出来 (R-32).

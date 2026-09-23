@@ -6345,3 +6345,132 @@ msgstr "查看AI段位详情"
 
 msgid "settings:ladder_detail_close"
 msgstr "收起"
+
+msgid "growth:cal_aria"
+msgstr "近一年练棋日历"
+
+msgid "growth:cal_title"
+msgstr "近一年"
+
+msgid "growth:cal_days_unit"
+msgstr "天"
+
+msgid "growth:cal_sub"
+msgstr "下过棋或解过题"
+
+msgid "growth:cal_local"
+msgstr "本机记录"
+
+msgid "growth:cal_failed"
+msgstr "日历没读到，稍后再看一次。"
+
+msgid "growth:cal_less"
+msgstr "少"
+
+msgid "growth:cal_more"
+msgstr "多"
+
+msgid "growth:cal_month"
+msgstr "{m}月"
+
+msgid "growth:cal_mon"
+msgstr "一"
+
+msgid "growth:cal_wed"
+msgstr "三"
+
+msgid "growth:cal_fri"
+msgstr "五"
+
+msgid "growth:trend_title"
+msgstr "近 30 天走势"
+
+msgid "growth:trend_aria"
+msgstr "近 30 天档位走势，最高 {r}"
+
+msgid "growth:trend_peak"
+msgstr "最高 {r}"
+
+msgid "growth:trend_thin"
+msgstr "近 30 天定级后的升降级对局不到两天，还连不成线。"
+
+msgid "growth:trend_unplaced"
+msgstr "定级完成后开始画：定级那几局的对手是在试你的水平，不是你的档位。"
+
+msgid "growth:diag_bad_count"
+msgstr "问题手 {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "最弱"
+
+msgid "growth:diag_loading"
+msgstr "正在读…"
+
+msgid "growth:diag_failed"
+msgstr "诊断没读到"
+
+msgid "growth:diag_failed_p"
+msgstr "不是「还没有报告」。稍后再看一次。"
+
+msgid "growth:diag_go_report"
+msgstr "去复盘"
+
+msgid "growth:diag_no_report"
+msgstr "还没有复盘报告"
+
+msgid "growth:diag_no_report_p"
+msgstr "诊断拿跑过报告的对局算：下完一局，在复盘里生成一份报告，这里就有数了。"
+
+msgid "growth:diag_no_seat"
+msgstr "这几份报告还算不进来"
+
+msgid "growth:diag_no_seat_a"
+msgstr "你有 "
+
+msgid "growth:diag_no_seat_b"
+msgstr " 份报告，但那几局下的时候还没记下你执黑还是执白，分不出哪些手是你下的。再下一局、跑一份报告，这里就有数了。"
+
+msgid "growth:diag_offline"
+msgstr "这会儿读不到云端的报告"
+
+msgid "growth:diag_offline_p"
+msgstr "报告存在云端，盒子上这一份里没有。联网后再看一次。"
+
+msgid "growth:diag_ungraded"
+msgstr "报告里还没有评过级的手"
+
+msgid "growth:diag_ungraded_p"
+msgstr "搜索量不够的手不评级。报告跑完整之后，这里就有数了。"
+
+msgid "growth:diag_local_a"
+msgstr "这是"
+
+msgid "growth:diag_local_b"
+msgstr "，可能少几份。"
+
+msgid "growth:diag_sample_a"
+msgstr "只看跑过报告的对局：最近 "
+
+msgid "growth:diag_sample_b"
+msgstr " 份里你下的 "
+
+msgid "growth:diag_sample_c"
+msgstr " 手。"
+
+msgid "growth:diag_skipped_a"
+msgstr "另有 "
+
+msgid "growth:diag_skipped_b"
+msgstr " 份没记执色。"
+
+msgid "growth:diag_thin"
+msgstr "样本还少，结论会抖。"
+
+msgid "growth:stat_winrate_all"
+msgstr "胜率 · 近 30 天"
+
+msgid "growth:unknown_seat_a"
+msgstr "有 "
+
+msgid "growth:unknown_seat_b"
+msgstr " 局没算进胜率：面对面、导入的谱，以及没记下你执黑还是执白的局。"

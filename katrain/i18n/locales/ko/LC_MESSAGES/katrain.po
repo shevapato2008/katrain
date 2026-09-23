@@ -6450,3 +6450,134 @@ msgstr "AI 급단 자세히 보기"
 
 msgid "settings:ladder_detail_close"
 msgstr "접기"
+
+msgid "growth:cal_aria"
+msgstr "최근 1년 연습 달력"
+
+msgid "growth:cal_title"
+msgstr "최근 1년"
+
+msgid "growth:cal_days_unit"
+msgstr "일"
+
+msgid "growth:cal_sub"
+msgstr "대국·문제 풀이"
+
+msgid "growth:cal_local"
+msgstr "이 기기 기록"
+
+msgid "growth:cal_failed"
+msgstr "달력을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요."
+
+msgid "growth:cal_less"
+msgstr "−"
+
+msgid "growth:cal_more"
+msgstr "+"
+
+msgid "growth:cal_month"
+msgstr "{m}월"
+
+msgid "growth:cal_mon"
+msgstr "월"
+
+msgid "growth:cal_wed"
+msgstr "수"
+
+msgid "growth:cal_fri"
+msgstr "금"
+
+msgid "growth:trend_title"
+msgstr "최근 30일 추이"
+
+msgid "growth:trend_aria"
+msgstr "최근 30일 단계 추이, 최고 {r}"
+
+msgid "growth:trend_peak"
+msgstr "최고 {r}"
+
+msgid "growth:trend_thin"
+msgstr "최근 30일 동안 배치 후 승단 대국이 이틀에 못 미쳐 아직 선을 그릴 수 없습니다."
+
+msgid "growth:trend_unplaced"
+msgstr "배치가 끝난 뒤부터 그립니다. 배치 대국의 상대는 실력을 가늠할 뿐, 당신의 단계가 아닙니다."
+
+msgid "growth:diag_bad_count"
+msgstr "의문수 {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "가장 약함"
+
+msgid "growth:diag_loading"
+msgstr "불러오는 중…"
+
+msgid "growth:diag_failed"
+msgstr "진단을 불러오지 못했습니다"
+
+msgid "growth:diag_failed_p"
+msgstr "'아직 리포트가 없다'는 뜻이 아닙니다. 잠시 후 다시 확인해 주세요."
+
+msgid "growth:diag_go_report"
+msgstr "복기로"
+
+msgid "growth:diag_no_report"
+msgstr "아직 복기 리포트가 없습니다"
+
+msgid "growth:diag_no_report_p"
+msgstr "진단은 리포트가 있는 대국으로 계산합니다. 한 판 두고 복기에서 리포트를 만들면 여기에 수치가 나옵니다."
+
+msgid "growth:diag_no_seat"
+msgstr "이 리포트들은 아직 셀 수 없습니다"
+
+msgid "growth:diag_no_seat_a"
+msgstr "리포트 "
+
+msgid "growth:diag_no_seat_b"
+msgstr ""
+"건이 있지만 그 대국들은 흑백이 기록되지 않아 어느 수가 내 수인지 가릴 수 없습니다. 한 판 더 두고 리포트를 만들면 여기에 수치가 "
+"나옵니다."
+
+msgid "growth:diag_offline"
+msgstr "지금은 클라우드 리포트를 불러올 수 없습니다"
+
+msgid "growth:diag_offline_p"
+msgstr "리포트는 클라우드에 있고 이 기기의 사본에는 없습니다. 인터넷에 연결된 뒤 다시 확인해 주세요."
+
+msgid "growth:diag_ungraded"
+msgstr "리포트에 아직 등급이 매겨진 수가 없습니다"
+
+msgid "growth:diag_ungraded_p"
+msgstr "탐색량이 부족한 수는 등급을 매기지 않습니다. 리포트가 끝까지 돌면 여기에 수치가 나옵니다."
+
+msgid "growth:diag_local_a"
+msgstr " 이것은 "
+
+msgid "growth:diag_local_b"
+msgstr ". 몇 건 빠졌을 수 있습니다."
+
+msgid "growth:diag_sample_a"
+msgstr "리포트가 있는 대국만 셉니다: 최근 "
+
+msgid "growth:diag_sample_b"
+msgstr "건의 리포트에서 내가 둔 "
+
+msgid "growth:diag_sample_c"
+msgstr "수."
+
+msgid "growth:diag_skipped_a"
+msgstr " 그 밖에 "
+
+msgid "growth:diag_skipped_b"
+msgstr "건은 흑백 기록이 없습니다."
+
+msgid "growth:diag_thin"
+msgstr " 표본이 적어 결론이 흔들립니다."
+
+msgid "growth:stat_winrate_all"
+msgstr "승률 · 최근 30일"
+
+msgid "growth:unknown_seat_a"
+msgstr "승률에 넣지 않은 대국 "
+
+msgid "growth:unknown_seat_b"
+msgstr "국: 대면 대국, 가져온 기보, 흑백이 기록되지 않은 대국입니다."

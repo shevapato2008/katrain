@@ -6775,3 +6775,150 @@ msgstr "KI-Rang im Detail"
 
 msgid "settings:ladder_detail_close"
 msgstr "Einklappen"
+
+msgid "growth:cal_aria"
+msgstr "Übungskalender der letzten 12 Monate"
+
+msgid "growth:cal_title"
+msgstr "12 Monate"
+
+msgid "growth:cal_days_unit"
+msgstr "Tage"
+
+msgid "growth:cal_sub"
+msgstr "Gespielt/gelöst"
+
+msgid "growth:cal_local"
+msgstr "Dieses Gerät"
+
+msgid "growth:cal_failed"
+msgstr "Kalender nicht geladen. Später noch einmal nachsehen."
+
+msgid "growth:cal_less"
+msgstr "−"
+
+msgid "growth:cal_more"
+msgstr "+"
+
+msgid "growth:cal_month"
+msgstr "{m}"
+
+msgid "growth:cal_mon"
+msgstr "M"
+
+msgid "growth:cal_wed"
+msgstr "M"
+
+msgid "growth:cal_fri"
+msgstr "F"
+
+msgid "growth:trend_title"
+msgstr "Verlauf · letzte 30 Tage"
+
+msgid "growth:trend_aria"
+msgstr "Stufenverlauf der letzten 30 Tage, Höchstwert {r}"
+
+msgid "growth:trend_peak"
+msgstr "Max. {r}"
+
+msgid "growth:trend_thin"
+msgstr ""
+"In den letzten 30 Tagen gab es an weniger als zwei Tagen Wertungspartien "
+"nach der Einstufung — für eine Linie reicht das nicht."
+
+msgid "growth:trend_unplaced"
+msgstr ""
+"Die Linie beginnt nach der Einstufung: In Einstufungspartien testen die "
+"Gegner deine Stärke, sie sind nicht deine Stufe."
+
+msgid "growth:diag_bad_count"
+msgstr "Fehler {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "Schwächste"
+
+msgid "growth:diag_loading"
+msgstr "Wird geladen…"
+
+msgid "growth:diag_failed"
+msgstr "Analyse nicht geladen"
+
+msgid "growth:diag_failed_p"
+msgstr ""
+"Das heißt nicht, dass du noch keine Berichte hast. Später noch einmal "
+"nachsehen."
+
+msgid "growth:diag_go_report"
+msgstr "Zur Analyse"
+
+msgid "growth:diag_no_report"
+msgstr "Noch keine Analyseberichte"
+
+msgid "growth:diag_no_report_p"
+msgstr ""
+"Die Analyse rechnet mit Partien, die einen Bericht haben: Spiele eine Partie"
+" zu Ende, erstelle dafür in der Analyse einen Bericht, dann stehen hier "
+"Zahlen."
+
+msgid "growth:diag_no_seat"
+msgstr "Diese Berichte zählen noch nicht mit"
+
+msgid "growth:diag_no_seat_a"
+msgstr "Berichte: "
+
+msgid "growth:diag_no_seat_b"
+msgstr ""
+" — aber diese Partien wurden gespielt, bevor deine Farbe erfasst wurde, "
+"deshalb lassen sich deine Züge nicht trennen. Spiele noch eine Partie, "
+"erstelle einen Bericht, dann stehen hier Zahlen."
+
+msgid "growth:diag_offline"
+msgstr "Die Berichte in der Cloud sind gerade nicht erreichbar"
+
+msgid "growth:diag_offline_p"
+msgstr ""
+"Die Berichte liegen in der Cloud, die Kopie auf diesem Gerät hat sie nicht. "
+"Sieh noch einmal nach, sobald du online bist."
+
+msgid "growth:diag_ungraded"
+msgstr "In den Berichten gibt es noch keine bewerteten Züge"
+
+msgid "growth:diag_ungraded_p"
+msgstr ""
+"Züge mit zu wenig Suche werden nicht bewertet. Sobald die Berichte "
+"durchlaufen, stehen hier Zahlen."
+
+msgid "growth:diag_local_a"
+msgstr " Das ist "
+
+msgid "growth:diag_local_b"
+msgstr ", es können ein paar Berichte fehlen."
+
+msgid "growth:diag_sample_a"
+msgstr "Nur Partien mit Bericht zählen. Berichte: "
+
+msgid "growth:diag_sample_b"
+msgstr ", deine Züge: "
+
+msgid "growth:diag_sample_c"
+msgstr "."
+
+msgid "growth:diag_skipped_a"
+msgstr " Berichte ohne erfasste Farbe: "
+
+msgid "growth:diag_skipped_b"
+msgstr "."
+
+msgid "growth:diag_thin"
+msgstr " Kleine Stichprobe — das Ergebnis kann schwanken."
+
+msgid "growth:stat_winrate_all"
+msgstr "Siegquote · letzte 30 Tage"
+
+msgid "growth:unknown_seat_a"
+msgstr "Nicht in der Siegquote gezählt: "
+
+msgid "growth:unknown_seat_b"
+msgstr ""
+" — Partien von Angesicht zu Angesicht, importierte Partien und Partien ohne "
+"erfasste Farbe."

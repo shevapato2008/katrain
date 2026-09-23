@@ -6514,3 +6514,132 @@ msgstr "AI段位の詳細を見る"
 
 msgid "settings:ladder_detail_close"
 msgstr "閉じる"
+
+msgid "growth:cal_aria"
+msgstr "直近1年の練習カレンダー"
+
+msgid "growth:cal_title"
+msgstr "直近1年"
+
+msgid "growth:cal_days_unit"
+msgstr "日"
+
+msgid "growth:cal_sub"
+msgstr "対局か詰碁"
+
+msgid "growth:cal_local"
+msgstr "この端末の記録"
+
+msgid "growth:cal_failed"
+msgstr "カレンダーを読み込めませんでした。後でもう一度ご確認ください。"
+
+msgid "growth:cal_less"
+msgstr "少"
+
+msgid "growth:cal_more"
+msgstr "多"
+
+msgid "growth:cal_month"
+msgstr "{m}月"
+
+msgid "growth:cal_mon"
+msgstr "月"
+
+msgid "growth:cal_wed"
+msgstr "水"
+
+msgid "growth:cal_fri"
+msgstr "金"
+
+msgid "growth:trend_title"
+msgstr "直近 30 日の推移"
+
+msgid "growth:trend_aria"
+msgstr "直近 30 日の段階の推移、最高 {r}"
+
+msgid "growth:trend_peak"
+msgstr "最高 {r}"
+
+msgid "growth:trend_thin"
+msgstr "直近 30 日で認定後の段級位戦が 2 日分に届かず、まだ線になりません。"
+
+msgid "growth:trend_unplaced"
+msgstr "認定が終わってから描き始めます。認定局の相手はあなたの実力を試しているだけで、あなたの段階ではありません。"
+
+msgid "growth:diag_bad_count"
+msgstr "疑問手 {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "最弱"
+
+msgid "growth:diag_loading"
+msgstr "読み込み中…"
+
+msgid "growth:diag_failed"
+msgstr "診断を読み込めませんでした"
+
+msgid "growth:diag_failed_p"
+msgstr "「レポートがまだない」という意味ではありません。後でもう一度ご確認ください。"
+
+msgid "growth:diag_go_report"
+msgstr "検討へ"
+
+msgid "growth:diag_no_report"
+msgstr "検討レポートがまだありません"
+
+msgid "growth:diag_no_report_p"
+msgstr "診断はレポートのある対局から計算します。一局打ち終えて検討でレポートを作れば、ここに数が出ます。"
+
+msgid "growth:diag_no_seat"
+msgstr "これらのレポートはまだ数えられません"
+
+msgid "growth:diag_no_seat_a"
+msgstr "レポートは "
+
+msgid "growth:diag_no_seat_b"
+msgstr " 件ありますが、その対局では黒白が記録されておらず、どの手があなたの手か分かりません。もう一局打ってレポートを作れば、ここに数が出ます。"
+
+msgid "growth:diag_offline"
+msgstr "いまクラウドのレポートを読み込めません"
+
+msgid "growth:diag_offline_p"
+msgstr "レポートはクラウドにあり、この端末の控えにはありません。ネットにつながったらもう一度ご確認ください。"
+
+msgid "growth:diag_ungraded"
+msgstr "レポートにまだ評価済みの手がありません"
+
+msgid "growth:diag_ungraded_p"
+msgstr "探索量が足りない手は評価しません。レポートが最後まで走れば、ここに数が出ます。"
+
+msgid "growth:diag_local_a"
+msgstr "これは"
+
+msgid "growth:diag_local_b"
+msgstr "。数件少ないことがあります。"
+
+msgid "growth:diag_sample_a"
+msgstr "レポートのある対局だけを数えます：直近 "
+
+msgid "growth:diag_sample_b"
+msgstr " 件のレポートで、あなたが打った "
+
+msgid "growth:diag_sample_c"
+msgstr " 手。"
+
+msgid "growth:diag_skipped_a"
+msgstr "ほかに "
+
+msgid "growth:diag_skipped_b"
+msgstr " 件は黒白の記録がありません。"
+
+msgid "growth:diag_thin"
+msgstr "サンプルが少なく、結論はぶれます。"
+
+msgid "growth:stat_winrate_all"
+msgstr "勝率 · 直近 30 日"
+
+msgid "growth:unknown_seat_a"
+msgstr "勝率に入れていない対局が "
+
+msgid "growth:unknown_seat_b"
+msgstr " 局あります：対面の対局、読み込んだ棋譜、黒白が記録されていない対局です。"

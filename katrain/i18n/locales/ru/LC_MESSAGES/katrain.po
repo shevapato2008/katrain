@@ -6642,3 +6642,145 @@ msgstr "Подробнее о разряде ИИ"
 
 msgid "settings:ladder_detail_close"
 msgstr "Свернуть"
+
+msgid "growth:cal_aria"
+msgstr "Календарь занятий за год"
+
+msgid "growth:cal_title"
+msgstr "За год"
+
+msgid "growth:cal_days_unit"
+msgstr "дн."
+
+msgid "growth:cal_sub"
+msgstr "Игра или задача"
+
+msgid "growth:cal_local"
+msgstr "Локально"
+
+msgid "growth:cal_failed"
+msgstr "Календарь не загрузился. Загляните позже."
+
+msgid "growth:cal_less"
+msgstr "−"
+
+msgid "growth:cal_more"
+msgstr "+"
+
+msgid "growth:cal_month"
+msgstr "{m}"
+
+msgid "growth:cal_mon"
+msgstr "Пн"
+
+msgid "growth:cal_wed"
+msgstr "Ср"
+
+msgid "growth:cal_fri"
+msgstr "Пт"
+
+msgid "growth:trend_title"
+msgstr "Динамика за 30 дней"
+
+msgid "growth:trend_aria"
+msgstr "Динамика ступени за 30 дней, пик {r}"
+
+msgid "growth:trend_peak"
+msgstr "Пик {r}"
+
+msgid "growth:trend_thin"
+msgstr ""
+"За 30 дней рейтинговые партии после квалификации были меньше чем в два дня —"
+" на линию не хватает."
+
+msgid "growth:trend_unplaced"
+msgstr ""
+"Линия начинается после квалификации: в квалификационных партиях соперники "
+"проверяют вашу силу, это не ваша ступень."
+
+msgid "growth:diag_bad_count"
+msgstr "Ошибки {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "Слабее всего"
+
+msgid "growth:diag_loading"
+msgstr "Загрузка…"
+
+msgid "growth:diag_failed"
+msgstr "Диагностика не загрузилась"
+
+msgid "growth:diag_failed_p"
+msgstr "Это не значит, что отчётов ещё нет. Загляните позже."
+
+msgid "growth:diag_go_report"
+msgstr "К разбору"
+
+msgid "growth:diag_no_report"
+msgstr "Отчётов разбора пока нет"
+
+msgid "growth:diag_no_report_p"
+msgstr ""
+"Диагностика считается по партиям с отчётом: доиграйте партию, создайте отчёт"
+" в разборе — и здесь появятся числа."
+
+msgid "growth:diag_no_seat"
+msgstr "Эти отчёты пока не учесть"
+
+msgid "growth:diag_no_seat_a"
+msgstr "Отчётов: "
+
+msgid "growth:diag_no_seat_b"
+msgstr ""
+" — но те партии сыграны до того, как записывался ваш цвет, и ваши ходы не "
+"отделить. Сыграйте ещё партию, создайте отчёт — и здесь появятся числа."
+
+msgid "growth:diag_offline"
+msgstr "Сейчас отчёты в облаке недоступны"
+
+msgid "growth:diag_offline_p"
+msgstr ""
+"Отчёты хранятся в облаке, в копии на этой коробке их нет. Загляните снова, "
+"когда будет сеть."
+
+msgid "growth:diag_ungraded"
+msgstr "В отчётах пока нет оценённых ходов"
+
+msgid "growth:diag_ungraded_p"
+msgstr ""
+"Ходы с недостаточным поиском не оцениваются. Когда отчёты досчитаются, здесь"
+" появятся числа."
+
+msgid "growth:diag_local_a"
+msgstr " Это "
+
+msgid "growth:diag_local_b"
+msgstr ", нескольких отчётов может не хватать."
+
+msgid "growth:diag_sample_a"
+msgstr "Считаются только партии с отчётом. Отчётов: "
+
+msgid "growth:diag_sample_b"
+msgstr ", ваших ходов: "
+
+msgid "growth:diag_sample_c"
+msgstr "."
+
+msgid "growth:diag_skipped_a"
+msgstr " Отчётов без записанного цвета: "
+
+msgid "growth:diag_skipped_b"
+msgstr "."
+
+msgid "growth:diag_thin"
+msgstr " Выборка мала — вывод может колебаться."
+
+msgid "growth:stat_winrate_all"
+msgstr "Процент побед · за 30 дней"
+
+msgid "growth:unknown_seat_a"
+msgstr "Партий не учтено в проценте побед: "
+
+msgid "growth:unknown_seat_b"
+msgstr ""
+" — очные партии, импортированные записи и партии без записанного цвета."

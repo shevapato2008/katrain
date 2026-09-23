@@ -6739,3 +6739,147 @@ msgstr "Yapay zeka seviyesi ayrıntıları"
 
 msgid "settings:ladder_detail_close"
 msgstr "Gizle"
+
+msgid "growth:cal_aria"
+msgstr "Son 12 ayın çalışma takvimi"
+
+msgid "growth:cal_title"
+msgstr "Son 12 ay"
+
+msgid "growth:cal_days_unit"
+msgstr "gün"
+
+msgid "growth:cal_sub"
+msgstr "Oyun/problem"
+
+msgid "growth:cal_local"
+msgstr "Bu cihaz"
+
+msgid "growth:cal_failed"
+msgstr "Takvim yüklenemedi. Daha sonra tekrar bakın."
+
+msgid "growth:cal_less"
+msgstr "−"
+
+msgid "growth:cal_more"
+msgstr "+"
+
+msgid "growth:cal_month"
+msgstr "{m}"
+
+msgid "growth:cal_mon"
+msgstr "P"
+
+msgid "growth:cal_wed"
+msgstr "Ç"
+
+msgid "growth:cal_fri"
+msgstr "C"
+
+msgid "growth:trend_title"
+msgstr "Son 30 günün seyri"
+
+msgid "growth:trend_aria"
+msgstr "Son 30 günün kademe seyri, zirve {r}"
+
+msgid "growth:trend_peak"
+msgstr "Zirve {r}"
+
+msgid "growth:trend_thin"
+msgstr ""
+"Son 30 günde yerleştirme sonrası dereceli oyun iki günden az — çizgi için "
+"yetmiyor."
+
+msgid "growth:trend_unplaced"
+msgstr ""
+"Çizgi yerleştirmeden sonra başlar: yerleştirme oyunlarında rakipler gücünüzü"
+" ölçer, sizin kademeniz değildir."
+
+msgid "growth:diag_bad_count"
+msgstr "Hatalar {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "En zayıf"
+
+msgid "growth:diag_loading"
+msgstr "Yükleniyor…"
+
+msgid "growth:diag_failed"
+msgstr "Teşhis yüklenemedi"
+
+msgid "growth:diag_failed_p"
+msgstr ""
+"Bu, henüz raporunuz olmadığı anlamına gelmez. Daha sonra tekrar bakın."
+
+msgid "growth:diag_go_report"
+msgstr "İncelemeye git"
+
+msgid "growth:diag_no_report"
+msgstr "Henüz inceleme raporu yok"
+
+msgid "growth:diag_no_report_p"
+msgstr ""
+"Teşhis, raporu olan oyunlardan hesaplanır: bir oyunu bitirin, İnceleme'de "
+"raporunu oluşturun, sayılar burada çıkar."
+
+msgid "growth:diag_no_seat"
+msgstr "Bu raporlar henüz sayılamıyor"
+
+msgid "growth:diag_no_seat_a"
+msgstr "Rapor: "
+
+msgid "growth:diag_no_seat_b"
+msgstr ""
+" — ama o oyunlar renginiz kaydedilmeden önce oynandı, hamleleriniz ayırt "
+"edilemiyor. Bir oyun daha oynayın, rapor oluşturun, sayılar burada çıkar."
+
+msgid "growth:diag_offline"
+msgstr "Şu anda buluttaki raporlara ulaşılamıyor"
+
+msgid "growth:diag_offline_p"
+msgstr ""
+"Raporlar bulutta duruyor, bu kutudaki kopyada yok. Çevrimiçi olunca tekrar "
+"bakın."
+
+msgid "growth:diag_ungraded"
+msgstr "Raporlarda henüz derecelendirilmiş hamle yok"
+
+msgid "growth:diag_ungraded_p"
+msgstr ""
+"Yeterince aranmamış hamleler derecelendirilmez. Raporlar tamamlanınca "
+"sayılar burada çıkar."
+
+msgid "growth:diag_local_a"
+msgstr " Bu, "
+
+msgid "growth:diag_local_b"
+msgstr "; birkaç rapor eksik olabilir."
+
+msgid "growth:diag_sample_a"
+msgstr "Yalnızca raporu olan oyunlar sayılır. Rapor: "
+
+msgid "growth:diag_sample_b"
+msgstr ", hamleniz: "
+
+msgid "growth:diag_sample_c"
+msgstr "."
+
+msgid "growth:diag_skipped_a"
+msgstr " Rengi kaydedilmemiş rapor: "
+
+msgid "growth:diag_skipped_b"
+msgstr "."
+
+msgid "growth:diag_thin"
+msgstr " Örneklem küçük — sonuç oynayabilir."
+
+msgid "growth:stat_winrate_all"
+msgstr "Kazanma oranı · son 30 gün"
+
+msgid "growth:unknown_seat_a"
+msgstr "Kazanma oranına sayılmayan oyun: "
+
+msgid "growth:unknown_seat_b"
+msgstr ""
+" — yüz yüze oyunlar, içe aktarılan kayıtlar ve renginizin kaydedilmediği "
+"oyunlar."

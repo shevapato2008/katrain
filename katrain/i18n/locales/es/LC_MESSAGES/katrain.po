@@ -6601,3 +6601,147 @@ msgstr "Ver detalles del rango de IA"
 
 msgid "settings:ladder_detail_close"
 msgstr "Ocultar"
+
+msgid "growth:cal_aria"
+msgstr "Calendario de práctica del último año"
+
+msgid "growth:cal_title"
+msgstr "Último año"
+
+msgid "growth:cal_days_unit"
+msgstr "días"
+
+msgid "growth:cal_sub"
+msgstr "Jugado/resuelto"
+
+msgid "growth:cal_local"
+msgstr "Este equipo"
+
+msgid "growth:cal_failed"
+msgstr "No se pudo cargar el calendario. Vuelve a mirar más tarde."
+
+msgid "growth:cal_less"
+msgstr "−"
+
+msgid "growth:cal_more"
+msgstr "+"
+
+msgid "growth:cal_month"
+msgstr "{m}"
+
+msgid "growth:cal_mon"
+msgstr "L"
+
+msgid "growth:cal_wed"
+msgstr "X"
+
+msgid "growth:cal_fri"
+msgstr "V"
+
+msgid "growth:trend_title"
+msgstr "Evolución · últimos 30 días"
+
+msgid "growth:trend_aria"
+msgstr "Evolución del nivel en los últimos 30 días, máximo {r}"
+
+msgid "growth:trend_peak"
+msgstr "Máx. {r}"
+
+msgid "growth:trend_thin"
+msgstr ""
+"En los últimos 30 días hay partidas puntuables tras la clasificación en "
+"menos de dos días: no basta para trazar una línea."
+
+msgid "growth:trend_unplaced"
+msgstr ""
+"La línea empieza tras la clasificación: en esas partidas los rivales ponen a"
+" prueba tu fuerza, no son tu nivel."
+
+msgid "growth:diag_bad_count"
+msgstr "Errores {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "Más débil"
+
+msgid "growth:diag_loading"
+msgstr "Cargando…"
+
+msgid "growth:diag_failed"
+msgstr "No se pudo cargar el diagnóstico"
+
+msgid "growth:diag_failed_p"
+msgstr "No significa que aún no tengas informes. Vuelve a mirar más tarde."
+
+msgid "growth:diag_go_report"
+msgstr "Ir a Revisión"
+
+msgid "growth:diag_no_report"
+msgstr "Aún no hay informes de revisión"
+
+msgid "growth:diag_no_report_p"
+msgstr ""
+"El diagnóstico se calcula con partidas que tienen informe: termina una "
+"partida, crea su informe en Revisión y aquí aparecerán los números."
+
+msgid "growth:diag_no_seat"
+msgstr "Estos informes todavía no se pueden contar"
+
+msgid "growth:diag_no_seat_a"
+msgstr "Informes: "
+
+msgid "growth:diag_no_seat_b"
+msgstr ""
+" — pero esas partidas se jugaron antes de que se registrara tu color, así "
+"que no se pueden separar tus jugadas. Juega otra partida, crea su informe y "
+"aquí aparecerán los números."
+
+msgid "growth:diag_offline"
+msgstr "Ahora mismo no se puede acceder a los informes en la nube"
+
+msgid "growth:diag_offline_p"
+msgstr ""
+"Los informes están en la nube y la copia de esta caja no los tiene. Vuelve a"
+" mirar cuando estés en línea."
+
+msgid "growth:diag_ungraded"
+msgstr "Todavía no hay jugadas calificadas en los informes"
+
+msgid "growth:diag_ungraded_p"
+msgstr ""
+"Las jugadas con poca búsqueda no se califican. Cuando los informes terminen,"
+" aquí aparecerán los números."
+
+msgid "growth:diag_local_a"
+msgstr " Es "
+
+msgid "growth:diag_local_b"
+msgstr "; pueden faltar algunos informes."
+
+msgid "growth:diag_sample_a"
+msgstr "Solo cuentan las partidas con informe. Informes: "
+
+msgid "growth:diag_sample_b"
+msgstr ", tus jugadas: "
+
+msgid "growth:diag_sample_c"
+msgstr "."
+
+msgid "growth:diag_skipped_a"
+msgstr " Informes sin color registrado: "
+
+msgid "growth:diag_skipped_b"
+msgstr "."
+
+msgid "growth:diag_thin"
+msgstr " Muestra pequeña: el resultado puede variar."
+
+msgid "growth:stat_winrate_all"
+msgstr "Porcentaje de victorias · últimos 30 días"
+
+msgid "growth:unknown_seat_a"
+msgstr "Partidas fuera del porcentaje: "
+
+msgid "growth:unknown_seat_b"
+msgstr ""
+" — partidas cara a cara, partidas importadas y partidas sin tu color "
+"registrado."

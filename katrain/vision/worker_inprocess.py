@@ -748,6 +748,9 @@ class InProcessAdapter:
                     _t_inf = time.monotonic()
                     all_detections = self._detector.detect(warped)
                     _infer_ms = (time.monotonic() - _t_inf) * 1000
+                    # A stone's shadow boxed a second time (side light) is dropped before the keep/sustain split,
+                    # so no consumer -- board assignment, the sustain tier, the ambiguous-move promoter -- sees it.
+                    all_detections = self._active_extractor().drop_shadow_boxes(all_detections, w, h)
                     # Sustain-tier detections (below keep) reach board assignment only on stones the game
                     # has played (_game_stone_sustain), plus the board-delta diagnostic and the preview;
                     # every other consumer sees exactly what it saw before the tier existed.

@@ -612,7 +612,7 @@ def test_the_reference_is_dropped_by_every_discontinuity():
         WorkerCommand(action=CommandType.UNBIND),
         WorkerCommand(action=CommandType.BIND),
         WorkerCommand(action=CommandType.RESET_SYNC),
-        WorkerCommand(action=CommandType.ENTER_SETUP_MODE),
+        WorkerCommand(action=CommandType.ENTER_SETUP_MODE, data={"target_board": _empty_board().tolist()}),
         WorkerCommand(action=CommandType.SET_PAUSED, data={"paused": True}),
     ):
         adapter = _with_reference("on", _board_frame(), _empty_board())
@@ -678,12 +678,16 @@ class _ScriptedDetector:
 class _ScriptedCamera:
     is_connected = True
 
-    def __init__(self, frames):
+    def __init__(self, frames, drop_reference_at=None):
         self.frames = frames
+        self.drop_reference_at = drop_reference_at
         self.worker = None
 
     def read_frame(self):
         self.frames -= 1
+        if self.frames == self.drop_reference_at:
+            # a pause / resync / re-lock landing mid-placement, which is what opens the window
+            self.worker._invalidate_reference("test")
         if self.frames <= 0:
             self.worker._running = False
         return np.zeros((10, 10, 3), dtype=np.uint8)
@@ -694,10 +698,10 @@ def _det(row, col, cls, conf=0.9):
     return Detection(x_center=x, y_center=y, class_id=cls, confidence=conf, bbox=(x - 20, y - 20, x + 20, y + 20))
 
 
-def _run_loop(mode, warped_frames, detection_script, game, averager=None):
+def _run_loop(mode, warped_frames, detection_script, game, averager=None, drop_reference_at=None):
     """Drive the real loop. `warped_frames` is one BGR frame per processed frame (the last repeats),
     `detection_script` one detection list per frame, `game` the expected board."""
-    camera = _ScriptedCamera(len(detection_script))
+    camera = _ScriptedCamera(len(detection_script), drop_reference_at)
     with mock_patch("katrain.vision.worker_inprocess.StoneDetector", _ScriptedDetector):
         worker = InProcessAdapter(
             {"board_size": 19, "enhance": "off", "auto_exposure": "off", "reference_check": mode}, camera=camera
@@ -757,16 +761,18 @@ def test_the_check_runs_on_the_pre_average_frame():
 
 
 def test_the_first_frame_of_a_real_stone_is_never_captured_as_a_reference():
-    """The two-frame vote holds the old value on the frame a stone first appears; capturing there
-    would photograph the stone and label the cell empty (the poisoning sequence)."""
+    """The poisoning sequence: something drops the reference (pause, resync, re-lock) just as a stone
+    is going down. On the first frame that shows it, the two-frame vote still says empty and
+    MoveDetector has no pending move yet, so a capture there would photograph the stone and label its
+    cell empty -- and then erase that stone for as long as the reference lives."""
     game = _empty_board()
     script = [[]] * 2 + [[_det(9, 9, 1)]] * 4
     frames = [_board_frame(), _board_frame(), _board_frame([(9, 9, WHITE)])]
-    worker = _run_loop("on", frames, script, game)
+    worker = _run_loop("on", frames, script, game, drop_reference_at=3)
     assert worker._reference is None or int(worker._reference.board[9][9]) == EMPTY
-    if worker._reference is not None:
+    if worker._reference is not None:  # a later frame may legitimately re-take it
         _, sim = worker._reference.unchanged(to_gray(_board_frame([(9, 9, WHITE)])), REFERENCE_ZNCC)
-        assert sim[9][9] < REFERENCE_ZNCC  # the reference does not contain the stone
+        assert sim[9][9] < REFERENCE_ZNCC, "the reference contains the stone it calls empty"
 ```
 
 - [ ] **Step 2: 运行，确认失败**

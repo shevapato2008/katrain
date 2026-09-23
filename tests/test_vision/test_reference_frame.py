@@ -141,3 +141,349 @@ def test_a_frame_of_the_wrong_size_is_refused():
     reference = ReferenceFrame(_sampler(), to_gray(_board_frame()), _empty_board())
     with pytest.raises(ValueError):
         reference.similarity(np.zeros((640, 640), np.uint8))
+
+
+from types import SimpleNamespace
+from unittest.mock import patch as mock_patch
+
+from katrain.vision.board_state import EMPTY
+from katrain.vision.ipc import CommandType, WorkerCommand
+from katrain.vision.worker_inprocess import (
+    REFERENCE_HOLD_KEEP,
+    REFERENCE_HOLD_SUPPRESS,
+    REFERENCE_ZNCC,
+    InProcessAdapter,
+)
+
+
+def _adapter(mode="on"):
+    with mock_patch("katrain.vision.worker_inprocess.StoneDetector"):
+        adapter = InProcessAdapter({"board_size": 19, "reference_check": mode}, camera=None)
+    adapter._geometry = SimpleNamespace(points=None)
+    adapter._bound = True
+    return adapter
+
+
+def _with_reference(mode, ref_frame, ref_board):
+    adapter = _adapter(mode)
+    adapter._ref_sampler = _sampler()
+    adapter._reference = ReferenceFrame(adapter._ref_sampler, to_gray(ref_frame), ref_board)
+    return adapter
+
+
+def test_the_threshold_the_worker_uses_is_the_one_the_unit_tests_assert():
+    assert REFERENCE_ZNCC == ZNCC
+
+
+def test_a_stone_the_game_knows_survives_a_detector_that_lost_it():
+    truth = _empty_board()
+    truth[4][4] = BLACK
+    frame = _board_frame([(4, 4, BLACK)])
+    adapter = _with_reference("on", frame, truth)
+    detector_says = truth.copy()
+    detector_says[4][4] = EMPTY  # glare ate the stone
+    effective = adapter._reference_check(detector_says, to_gray(frame))
+    assert effective[4][4] == BLACK
+    assert detector_says[4][4] == EMPTY  # the caller's array is never mutated
+
+
+def test_an_invented_stone_is_suppressed_but_only_for_a_few_frames():
+    frame = _board_frame()
+    adapter = _with_reference("on", frame, _empty_board())
+    detector_says = _empty_board()
+    detector_says[12][3] = WHITE
+    for _ in range(REFERENCE_HOLD_SUPPRESS):
+        assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == EMPTY
+    # the detector keeps insisting: the reference loses, and drops itself so a real stone can land
+    assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == WHITE
+    assert adapter._reference is None
+
+
+def test_a_missing_stone_is_held_far_longer_than_an_invented_one():
+    assert REFERENCE_HOLD_KEEP > 5 * REFERENCE_HOLD_SUPPRESS
+    truth = _empty_board()
+    truth[4][4] = BLACK
+    frame = _board_frame([(4, 4, BLACK)])
+    adapter = _with_reference("on", frame, truth)
+    detector_says = truth.copy()
+    detector_says[4][4] = EMPTY
+    for _ in range(REFERENCE_HOLD_SUPPRESS + 5):
+        assert adapter._reference_check(detector_says, to_gray(frame))[4][4] == BLACK
+    assert adapter._reference is not None
+
+
+def test_a_colour_disagreement_gets_the_short_hold_not_the_long_one():
+    """board_state.py:316 releases a wrong colour after 15 raw frames by design; the reference must
+    not re-block that for half a minute."""
+    truth = _empty_board()
+    truth[4][4] = BLACK
+    frame = _board_frame([(4, 4, BLACK)])
+    adapter = _with_reference("on", frame, truth)
+    detector_says = truth.copy()
+    detector_says[4][4] = WHITE
+    for _ in range(REFERENCE_HOLD_SUPPRESS):
+        assert adapter._reference_check(detector_says, to_gray(frame))[4][4] == BLACK
+    assert adapter._reference_check(detector_says, to_gray(frame))[4][4] == WHITE
+
+
+def test_the_hold_budget_is_cumulative_so_a_flapping_detector_cannot_reset_it():
+    """A detector that sees the stone only every other frame would never exhaust a *consecutive*
+    counter, and the suppression would be permanent."""
+    frame = _board_frame()
+    adapter = _with_reference("on", frame, _empty_board())
+    invented, agreeing = _empty_board(), _empty_board()
+    invented[12][3] = WHITE
+    for _ in range(REFERENCE_HOLD_SUPPRESS):
+        adapter._reference_check(invented, to_gray(frame))
+        adapter._reference_check(agreeing, to_gray(frame))  # a frame where the detector agrees again
+    assert adapter._reference_check(invented, to_gray(frame))[12][3] == WHITE
+
+
+def test_a_real_change_is_left_alone_so_the_move_still_lands():
+    adapter = _with_reference("on", _board_frame(), _empty_board())
+    detector_says = _empty_board()
+    detector_says[9][9] = WHITE
+    out = adapter._reference_check(detector_says, to_gray(_board_frame([(9, 9, WHITE)])))
+    assert out[9][9] == WHITE and adapter._ref_hold[9][9] == 0
+
+
+def test_shadow_mode_reports_but_returns_the_board_untouched(caplog):
+    frame = _board_frame()
+    adapter = _with_reference("shadow", frame, _empty_board())
+    detector_says = _empty_board()
+    detector_says[12][3] = WHITE
+    with caplog.at_level("INFO"):
+        out = adapter._reference_check(detector_says, to_gray(frame))
+    assert out is detector_says  # identical object: nothing downstream can diverge
+    assert "would keep" in caplog.text and "(12,3)" in caplog.text
+
+
+def test_a_lit_lamp_cell_is_left_to_the_detector():
+    frame = _board_frame()
+    adapter = _with_reference("on", frame, _empty_board())
+    adapter._lit_points = {(12, 3)}
+    detector_says = _empty_board()
+    detector_says[12][3] = WHITE
+    assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == WHITE
+
+
+def test_the_reference_is_taken_only_when_nothing_can_be_hiding_in_it():
+    adapter = _adapter("on")
+    frame = _board_frame([(4, 4, BLACK)])
+    gray = to_gray(frame)
+    board = _empty_board()
+    board[4][4] = BLACK
+    adapter._expected_np = board
+
+    adapter._maybe_capture_reference(_empty_board(), _empty_board(), gray, motion_stable=True)  # camera disagrees
+    assert adapter._reference is None
+    adapter._maybe_capture_reference(board, board, gray, motion_stable=False)  # something is moving
+    assert adapter._reference is None
+    adapter._lit_points = {(3, 3)}
+    adapter._maybe_capture_reference(board, board, gray, motion_stable=True)  # a lamp is lit
+    assert adapter._reference is None
+    adapter._lit_points = set()
+    adapter._paused = True
+    adapter._maybe_capture_reference(board, board, gray, motion_stable=True)  # recognition is paused
+    assert adapter._reference is None
+    adapter._paused = False
+    real_detector, adapter._move_detector = adapter._move_detector, SimpleNamespace(pending_move=(4, 4, BLACK))
+    adapter._maybe_capture_reference(board, board, gray, motion_stable=True)  # a move is being confirmed
+    assert adapter._reference is None
+    adapter._move_detector = real_detector
+    adapter._ref_hold[7][7] = 1
+    adapter._maybe_capture_reference(board, board, gray, motion_stable=True)  # a cell is under veto
+    assert adapter._reference is None
+    adapter._ref_hold[:] = 0
+    stale = board.copy()
+    stale[4][4] = EMPTY  # this frame's own observation has not caught up with the vote
+    adapter._maybe_capture_reference(board, stale, gray, motion_stable=True)
+    assert adapter._reference is None
+
+    adapter._maybe_capture_reference(board, board, gray, motion_stable=True)
+    assert adapter._reference is not None and adapter._reference.board[4][4] == BLACK
+
+
+def test_the_same_expected_board_is_never_re_captured():
+    """v1 re-took the reference every 2 s while the board was unchanged, which fixated a poisoned one."""
+    adapter = _adapter("on")
+    board = _empty_board()
+    adapter._expected_np = board
+    adapter._maybe_capture_reference(board, board, to_gray(_board_frame()), motion_stable=True)
+    first = adapter._reference
+    adapter._maybe_capture_reference(board, board, to_gray(_board_frame(seed=1)), motion_stable=True)
+    assert adapter._reference is first
+
+    board = board.copy()
+    board[4][4] = BLACK
+    adapter._expected_np = board
+    adapter._maybe_capture_reference(board, board, to_gray(_board_frame([(4, 4, BLACK)])), motion_stable=True)
+    assert adapter._reference is not first and adapter._reference.board[4][4] == BLACK
+
+
+def test_the_reference_is_dropped_by_every_discontinuity():
+    for command in (
+        WorkerCommand(action=CommandType.UNBIND),
+        WorkerCommand(action=CommandType.BIND),
+        WorkerCommand(action=CommandType.RESET_SYNC),
+        WorkerCommand(action=CommandType.ENTER_SETUP_MODE, data={"target_board": _empty_board().tolist()}),
+        WorkerCommand(action=CommandType.SET_PAUSED, data={"paused": True}),
+    ):
+        adapter = _with_reference("on", _board_frame(), _empty_board())
+        adapter._cmd_queue.put(command)
+        adapter._drain_commands()
+        assert adapter._reference is None, command.action
+
+    adapter = _with_reference("on", _board_frame(), _empty_board())
+    adapter.set_geometry(None)
+    assert adapter._reference is None and adapter._ref_sampler is None
+
+
+def test_a_move_keeps_the_reference_but_an_undo_or_a_jump_drops_it():
+    ref_board = _empty_board()
+    ref_board[4][4] = BLACK
+    one_more = ref_board.copy()
+    one_more[5][5] = WHITE
+    undone = _empty_board()
+    jumped = ref_board.copy()
+    jumped[5][5] = WHITE
+    jumped[6][6] = BLACK
+
+    # the orchestrator re-sends the same board off game state, which must not count as a jump
+    for board, kept in ((ref_board, True), (one_more, True), (undone, False), (jumped, False)):
+        adapter = _with_reference("on", _board_frame([(4, 4, BLACK)]), ref_board)
+        adapter._cmd_queue.put(WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data={"board": board.tolist()}))
+        adapter._drain_commands()
+        assert (adapter._reference is not None) is kept
+
+
+def test_off_mode_never_takes_a_reference():
+    adapter = _adapter("off")
+    board = _empty_board()
+    adapter._expected_np = board
+    adapter._maybe_capture_reference(board, board, to_gray(_board_frame()), motion_stable=True)
+    assert adapter._reference is None
+
+
+# ---- through the real loop -------------------------------------------------------------------
+# Helper-level tests cannot prove where the loop puts the two boards. These drive `_loop()` the way
+# tests/test_vision/test_sustain_threshold.py does, with a scripted camera, scripted detections and
+# scripted warped frames.
+
+from unittest.mock import MagicMock  # noqa: E402
+
+from katrain.vision.board_state import BoardStateExtractor  # noqa: E402
+from katrain.vision.stone_detector import Detection  # noqa: E402
+from tests.test_vision.board_state_corpus import grid_to_px  # noqa: E402
+
+
+class _ScriptedDetector:
+    instance = None
+
+    def __init__(self, model_path, backend="ultralytics", confidence_threshold=0.5, **kwargs):
+        self.confidence_threshold = confidence_threshold
+        self.script = []
+        _ScriptedDetector.instance = self
+
+    def detect(self, image):
+        return list(self.script.pop(0)) if self.script else []
+
+
+class _ScriptedCamera:
+    is_connected = True
+
+    def __init__(self, frames, drop_reference_at=None):
+        self.frames = frames
+        self.drop_reference_at = drop_reference_at
+        self.worker = None
+
+    def read_frame(self):
+        self.frames -= 1
+        if self.frames == self.drop_reference_at:
+            # a pause / resync / re-lock landing mid-placement, which is what opens the window
+            self.worker._invalidate_reference("test")
+        if self.frames <= 0:
+            self.worker._running = False
+        return np.zeros((10, 10, 3), dtype=np.uint8)
+
+
+def _det(row, col, cls, conf=0.9):
+    x, y = grid_to_px(CONFIG, float(col), float(row))
+    return Detection(x_center=x, y_center=y, class_id=cls, confidence=conf, bbox=(x - 20, y - 20, x + 20, y + 20))
+
+
+def _run_loop(mode, warped_frames, detection_script, game, averager=None, drop_reference_at=None):
+    """Drive the real loop. `warped_frames` is one BGR frame per processed frame (the last repeats),
+    `detection_script` one detection list per frame, `game` the expected board."""
+    camera = _ScriptedCamera(len(detection_script), drop_reference_at)
+    with mock_patch("katrain.vision.worker_inprocess.StoneDetector", _ScriptedDetector):
+        worker = InProcessAdapter(
+            {"board_size": 19, "enhance": "off", "auto_exposure": "off", "reference_check": mode}, camera=camera
+        )
+    camera.worker = worker
+    worker.needs_frames = lambda: True
+    worker._bound = True
+    worker._geometry = SimpleNamespace(points=None)
+    worker._expected_np = game
+    worker._running = True
+    worker._config["capture_fps"] = 100000
+    worker._motion_is_stable = MagicMock(return_value=True)
+    frames = list(warped_frames)
+    worker._warp_frame = lambda frame: (frames.pop(0) if len(frames) > 1 else frames[0], True)
+    worker._averager = MagicMock()
+    worker._averager.add.side_effect = averager or (lambda frame: frame)
+    extractor = BoardStateExtractor(CONFIG)
+    worker._active_extractor = lambda: extractor
+    worker._maybe_send_preview = MagicMock()
+    worker._ref_sampler = _sampler()
+    _ScriptedDetector.instance.script = [list(frame) for frame in detection_script]
+    worker._loop()
+    return worker
+
+
+def _invented_stone_script(n=6):
+    """The board is empty and the game agrees; from frame 3 the detector invents a white stone."""
+    empty_frame = _board_frame()
+    game = _empty_board()
+    script = [[]] * 2 + [[_det(12, 3, 1)]] * n
+    return [empty_frame], script, game
+
+
+def test_on_mode_hides_the_invented_stone_downstream_but_keeps_recognition_history_raw():
+    frames, script, game = _invented_stone_script()
+    worker = _run_loop("on", frames, script, game)
+    assert worker._reference is not None  # the first two frames agreed with the game: reference taken
+    assert int(worker._last_stable_board[12][3]) == WHITE  # history stays raw, so the detector is visible
+    assert int(worker.get_status().detected_board[12][3]) == EMPTY  # downstream got the corrected board
+
+
+def test_shadow_mode_is_behaviour_identical_to_off():
+    frames, script, game = _invented_stone_script()
+    shadow = _run_loop("shadow", frames, script, game)
+    off = _run_loop("off", frames, script, game)
+    assert np.array_equal(shadow._last_stable_board, off._last_stable_board)
+    assert np.array_equal(shadow.get_status().detected_board, off.get_status().detected_board)
+    assert shadow.get_status().sync_state == off.get_status().sync_state
+
+
+def test_the_check_runs_on_the_pre_average_frame():
+    """If the comparison ever moved behind the frame averager, this fails: the averager here returns a
+    flat frame, which has no structure to correlate, so nothing could be vetoed."""
+    frames, script, game = _invented_stone_script()
+    flat = _run_loop("on", frames, script, game, averager=lambda frame: np.full_like(frame, 128))
+    assert int(flat.get_status().detected_board[12][3]) == EMPTY
+
+
+def test_the_first_frame_of_a_real_stone_is_never_captured_as_a_reference():
+    """The poisoning sequence: something drops the reference (pause, resync, re-lock) just as a stone
+    is going down. On the first frame that shows it, the two-frame vote still says empty and
+    MoveDetector has no pending move yet, so a capture there would photograph the stone and label its
+    cell empty -- and then erase that stone for as long as the reference lives."""
+    game = _empty_board()
+    script = [[]] * 2 + [[_det(9, 9, 1)]] * 4
+    frames = [_board_frame(), _board_frame(), _board_frame([(9, 9, WHITE)])]
+    worker = _run_loop("on", frames, script, game, drop_reference_at=3)
+    assert worker._reference is None or int(worker._reference.board[9][9]) == EMPTY
+    if worker._reference is not None:  # a later frame may legitimately re-take it
+        _, sim = worker._reference.unchanged(to_gray(_board_frame([(9, 9, WHITE)])), REFERENCE_ZNCC)
+        assert sim[9][9] < REFERENCE_ZNCC, "the reference contains the stone it calls empty"

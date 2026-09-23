@@ -3,7 +3,7 @@
   "diagram_type": "architecture",
   "meta": {
     "title": "实体棋盘落子识别流程",
-    "subtitle": "RK3562 · 从摄像头一帧到棋谱落一手，再把新棋谱送回识别端 · 截至 2026-09-23 · 「去影子」为规划中",
+    "subtitle": "RK3562 · 从摄像头一帧到棋谱落一手，再把新棋谱送回识别端 · 截至 2026-09-23",
     "output": "recognition-pipeline.html",
     "visual_preset": "blueprint",
     "animation": "none",
@@ -35,7 +35,7 @@
           "assign",
           "vote"
         ],
-        "note": "先去重复框（同一颗子被框两次），再去影子框（规划中：与邻框互压 ≥ 0.27、自己又落在两个交叉点之间）；之后分置信档、落到盘面。"
+        "note": "先去重复框（同一颗子被框两次），再去影子框（离交叉点 ≥ 0.35 格、且被一个离点更近、分数不低于它的框压住 ≥ 0.27）；之后分置信档、落到盘面。"
       },
       {
         "id": "reference",
@@ -73,7 +73,7 @@
     ],
     "repository": {
       "url": "https://github.com/shevapato2008/katrain",
-      "revision": "c70cf9254f2cdcde50b46ff785ba608b1798dfe5"
+      "revision": "472667f888e3d472d529b0f83c5de0c195ff46c3"
     }
   },
   "components": [
@@ -93,7 +93,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 315,
+          "line": 316,
           "label": "_motion_is_stable"
         }
       ]
@@ -114,7 +114,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 331,
+          "line": 332,
           "label": "_warp_frame"
         }
       ]
@@ -135,7 +135,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 741,
+          "line": 742,
           "label": "averager / enhance"
         }
       ]
@@ -156,7 +156,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 749,
+          "line": 750,
           "label": "detector.detect"
         },
         {
@@ -191,8 +191,8 @@
       "id": "shadow",
       "type": "security",
       "label": "去影子",
-      "sublabel": "互压 ≥ 0.27 且落在两点之间",
-      "tag": "规划中",
+      "sublabel": "离交叉点 ≥ 0.35 · 与更近的框互压 ≥ 0.27",
+      "tag": "09-23",
       "pos": [
         1440,
         120
@@ -200,6 +200,18 @@
       "size": [
         210,
         76
+      ],
+      "sources": [
+        {
+          "path": "katrain/vision/board_state.py",
+          "line": 203,
+          "label": "drop_shadow_boxes"
+        },
+        {
+          "path": "katrain/vision/worker_inprocess.py",
+          "line": 755,
+          "label": "去重复框之后调用"
+        }
       ]
     },
     {
@@ -219,12 +231,12 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 754,
+          "line": 761,
           "label": "keep / sustain"
         },
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 347,
+          "line": 348,
           "label": "_game_stone_sustain"
         }
       ]
@@ -246,12 +258,12 @@
       "sources": [
         {
           "path": "katrain/vision/board_state.py",
-          "line": 119,
+          "line": 150,
           "label": "apply_parallax"
         },
         {
           "path": "katrain/vision/board_state.py",
-          "line": 144,
+          "line": 175,
           "label": "_passes_hysteresis"
         },
         {
@@ -277,7 +289,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 800
+          "line": 810
         }
       ]
     },
@@ -298,7 +310,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 376,
+          "line": 377,
           "label": "_reference_check"
         }
       ]
@@ -325,7 +337,7 @@
         },
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 502,
+          "line": 503,
           "label": "_refresh_reference"
         }
       ]
@@ -346,7 +358,7 @@
       "sources": [
         {
           "path": "katrain/vision/worker_inprocess.py",
-          "line": 588,
+          "line": 589,
           "label": "_promote_stuck_stone"
         },
         {
@@ -621,7 +633,7 @@
         "逐格和参照帧比结构，结构没变就不信检测器的改口",
         "否决有上限：缺子 90 帧、多子或变色 10 帧",
         "长考时每分钟逐格续期，没解释的变化不吸收",
-        "侧光影子框：去重复框之后单独判定，落在两点之间才去掉（规划中）"
+        "侧光影子框：去重复框之后单独判定，离交叉点 ≥ 0.35 格、被更近的框压住才去掉（09-23）"
       ]
     },
     {

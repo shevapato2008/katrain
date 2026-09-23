@@ -134,11 +134,17 @@ const PlatformLoginPage = () => {
   const isSms = mode === 'sms';
   const isScan = mode === 'scan';
 
+  // 每一家、每一种模式各自一句原话,不套「用{name}的账号密码登录」这种模板 ——
+  // 稿子里三屏各说各的:07b(星阵密码)是「用星阵的账号密码登录」,08(OGS)是
+  // 「用 online-go.com 的账号」(域名,句式也不一样,不是「账号密码登录」)。
+  // 模板省下的那点重复,代价是没法表达「这一家该说哪句话」(Task 8b 第二轮)。
   const sub = isScan
     ? t('platform:login_sub_scan', '未连接 · 用手机上的星阵 APP 扫一扫')
     : isSms
       ? t('platform:login_sub_sms', '未连接 · 用手机验证码登录')
-      : interpolate(t('platform:login_sub_password', '未连接 · 用{name}的账号密码登录'), { name });
+      : platform === 'ogs'
+        ? t('platform:login_sub_ogs', '未连接 · 用 online-go.com 的账号')
+        : t('platform:login_sub_golaxy_password', '未连接 · 用星阵的账号密码登录');
 
   const goToConnectedDest = () => navigate(engineCapable(platform)
     ? `/kiosk/play/cross-platform/engine/${platform}`

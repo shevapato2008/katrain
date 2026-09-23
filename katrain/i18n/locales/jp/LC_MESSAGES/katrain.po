@@ -6720,6 +6720,12 @@ msgstr "未接続 · SMS認証コードでログイン"
 msgid "platform:login_sub_password"
 msgstr "未接続 · {name}のアカウントとパスワードでログイン"
 
+msgid "platform:login_sub_golaxy_password"
+msgstr "未接続 · Golaxyのアカウントとパスワードでログイン"
+
+msgid "platform:login_sub_ogs"
+msgstr "未接続 · online-go.comのアカウントを使用"
+
 msgid "platform:login_title"
 msgstr "{name}にログイン"
 

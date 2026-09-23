@@ -6940,6 +6940,12 @@ msgstr "Not connected · sign in with an SMS code"
 msgid "platform:login_sub_password"
 msgstr "Not connected · sign in with {name}'s account and password"
 
+msgid "platform:login_sub_golaxy_password"
+msgstr "Not connected · sign in with your Golaxy account and password"
+
+msgid "platform:login_sub_ogs"
+msgstr "Not connected · use your online-go.com account"
+
 msgid "platform:login_title"
 msgstr "Sign in to {name}"
 

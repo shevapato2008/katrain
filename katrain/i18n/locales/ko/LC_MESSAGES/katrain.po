@@ -6661,6 +6661,12 @@ msgstr "연결 안 됨 · 문자 인증번호로 로그인"
 msgid "platform:login_sub_password"
 msgstr "연결 안 됨 · {name} 계정과 비밀번호로 로그인"
 
+msgid "platform:login_sub_golaxy_password"
+msgstr "연결 안 됨 · Golaxy 계정과 비밀번호로 로그인"
+
+msgid "platform:login_sub_ogs"
+msgstr "연결 안 됨 · online-go.com 계정 사용"
+
 msgid "platform:login_title"
 msgstr "{name} 로그인"
 

@@ -6836,6 +6836,12 @@ msgstr "Sin conexión · inicia sesión con un código SMS"
 msgid "platform:login_sub_password"
 msgstr "Sin conexión · inicia sesión con la cuenta y contraseña de {name}"
 
+msgid "platform:login_sub_golaxy_password"
+msgstr "Sin conexión · inicia sesión con tu cuenta y contraseña de Golaxy"
+
+msgid "platform:login_sub_ogs"
+msgstr "Sin conexión · usa tu cuenta de online-go.com"
+
 msgid "platform:login_title"
 msgstr "Iniciar sesión en {name}"
 

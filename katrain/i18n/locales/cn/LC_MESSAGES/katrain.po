@@ -6547,6 +6547,12 @@ msgstr "未连接 · 用手机验证码登录"
 msgid "platform:login_sub_password"
 msgstr "未连接 · 用{name}的账号密码登录"
 
+msgid "platform:login_sub_golaxy_password"
+msgstr "未连接 · 用星阵的账号密码登录"
+
+msgid "platform:login_sub_ogs"
+msgstr "未连接 · 用 online-go.com 的账号"
+
 msgid "platform:login_title"
 msgstr "登录{name}"
 

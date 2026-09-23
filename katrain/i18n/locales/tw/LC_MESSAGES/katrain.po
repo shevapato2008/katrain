@@ -6694,6 +6694,12 @@ msgstr "未連接 · 用手機驗證碼登入"
 msgid "platform:login_sub_password"
 msgstr "未連接 · 用{name}的帳號密碼登入"
 
+msgid "platform:login_sub_golaxy_password"
+msgstr "未連接 · 用星陣的帳號密碼登入"
+
+msgid "platform:login_sub_ogs"
+msgstr "未連接 · 用 online-go.com 的帳號"
+
 msgid "platform:login_title"
 msgstr "登入{name}"
 

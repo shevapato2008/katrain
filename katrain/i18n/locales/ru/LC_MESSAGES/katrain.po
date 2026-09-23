@@ -6876,6 +6876,12 @@ msgstr "Не подключено · вход по коду из SMS"
 msgid "platform:login_sub_password"
 msgstr "Не подключено · вход по аккаунту и паролю {name}"
 
+msgid "platform:login_sub_golaxy_password"
+msgstr "Не подключено · вход по аккаунту и паролю Golaxy"
+
+msgid "platform:login_sub_ogs"
+msgstr "Не подключено · используйте аккаунт online-go.com"
+
 msgid "platform:login_title"
 msgstr "Вход в {name}"
 

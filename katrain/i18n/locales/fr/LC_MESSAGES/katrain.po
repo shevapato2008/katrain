@@ -6988,6 +6988,12 @@ msgstr "Non connecté · connexion par code SMS"
 msgid "platform:login_sub_password"
 msgstr "Non connecté · connexion avec le compte et le mot de passe de {name}"
 
+msgid "platform:login_sub_golaxy_password"
+msgstr "Non connecté · connexion avec le compte et le mot de passe Golaxy"
+
+msgid "platform:login_sub_ogs"
+msgstr "Non connecté · utilisez votre compte online-go.com"
+
 msgid "platform:login_title"
 msgstr "Connexion à {name}"
 

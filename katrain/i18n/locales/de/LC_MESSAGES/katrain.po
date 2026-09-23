@@ -7017,6 +7017,12 @@ msgstr "Nicht verbunden · Anmeldung per SMS-Code"
 msgid "platform:login_sub_password"
 msgstr "Nicht verbunden · Anmeldung mit {name}-Konto und Passwort"
 
+msgid "platform:login_sub_golaxy_password"
+msgstr "Nicht verbunden · Anmeldung mit Golaxy-Konto und Passwort"
+
+msgid "platform:login_sub_ogs"
+msgstr "Nicht verbunden · mit dem online-go.com-Konto"
+
 msgid "platform:login_title"
 msgstr "Bei {name} anmelden"
 

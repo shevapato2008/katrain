@@ -6953,6 +6953,12 @@ msgstr "Не під'єднано · увійдіть за кодом із SMS"
 msgid "platform:login_sub_password"
 msgstr "Не під'єднано · увійдіть за акаунтом і паролем {name}"
 
+msgid "platform:login_sub_golaxy_password"
+msgstr "Не під'єднано · увійдіть за акаунтом і паролем Golaxy"
+
+msgid "platform:login_sub_ogs"
+msgstr "Не під'єднано · використовуйте акаунт online-go.com"
+
 msgid "platform:login_title"
 msgstr "Вхід у {name}"
 

@@ -6977,6 +6977,12 @@ msgstr "Bağlı değil · SMS koduyla giriş yapın"
 msgid "platform:login_sub_password"
 msgstr "Bağlı değil · {name} hesabı ve parolasıyla giriş yapın"
 
+msgid "platform:login_sub_golaxy_password"
+msgstr "Bağlı değil · Golaxy hesabı ve parolasıyla giriş yapın"
+
+msgid "platform:login_sub_ogs"
+msgstr "Bağlı değil · online-go.com hesabınızı kullanın"
+
 msgid "platform:login_title"
 msgstr "{name} girişi"
 

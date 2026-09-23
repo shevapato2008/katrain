@@ -716,15 +716,13 @@
   font-family: var(--font-serif); font-weight: 600; font-size: 15px;
 }
 .kiosk-optseg button[aria-pressed="true"] { background: var(--panel); color: var(--accent); }
-/* `src/index.css`(Vite 脚手架遗留)有一条 `button:focus, button:focus-visible { outline:
-   4px auto -webkit-focus-ring-color }`,加载顺序在 `theme.css`/`global.css` 之后,把浏览器
-   默认的亮蓝色圈盖回来 —— 这套深绿毡设计系统里全是外来色(Task 8b 视觉关卡第④条实测:
-   点过标签后那圈蓝描边)。**要压 `:focus` 不能只压 `:focus-visible`**:Chromium 对
-   `<button>` 的启发式是鼠标/触屏点击只落 `:focus` 不落 `:focus-visible`,只写
-   `:focus-visible` 会在真机触屏下完全不生效(specificity 再高也没用 —— 压根没匹配上
-   那条产生描边的规则)。这里用本设计系统自己的 `--accent` 换掉它,内嵌(负 offset)
-   避免在紧挨着的相邻按钮上溢出。 */
-.kiosk-optseg button:focus { outline: 2px solid var(--accent); outline-offset: -2px;
+/* `src/index.css`(Vite 脚手架遗留)原来有一条 `button:focus, button:focus-visible {
+   outline: 4px auto -webkit-focus-ring-color }`,把浏览器默认的亮蓝色圈盖回来
+   (Task 8b 视觉关卡第④条实测)。**根因已经在 `src/index.css` 改掉**(那条规则的
+   `:focus` 那一半删了,只留 `:focus-visible`——鼠标/触屏点击落的是裸 `:focus`,
+   不该有描边;键盘 Tab 落 `:focus-visible`,要有)。这条覆盖因此也跟着全树剩下的
+   十几条 `:focus-visible` 覆盖统一,不用再单独压 `:focus`。 */
+.kiosk-optseg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
   border-radius: var(--optseg-item-radius); }
 /* 分段格里塞不下副标题,但说明不能整个丢掉 —— 挪到组下面一行,写**当前选中项** */
 .kiosk-opthint {

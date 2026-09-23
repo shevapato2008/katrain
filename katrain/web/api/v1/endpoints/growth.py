@@ -102,7 +102,7 @@ async def growth_summary(
 
     # 盒子先问云端 —— 拿得到就是跨设备完整的那一份。
     if dispatcher is not None:
-        remote, reason = await dispatcher.growth_summary_remote(days)
+        remote, reason = await dispatcher.growth_summary_remote(days, current_user.id)
         if remote is not None and _looks_like_summary(remote):
             # 云端自己标的是 `this_node`(它就是权威)。在**盒子**的回答里
             # 那句话不成立 —— 覆写成 `cloud`,否则屏上会以为这是本机数出来的。
@@ -178,7 +178,7 @@ async def growth_diagnosis(
 
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        remote, reason = await dispatcher.growth_diagnosis_remote(days, reports)
+        remote, reason = await dispatcher.growth_diagnosis_remote(days, reports, current_user.id)
         if remote is not None and _looks_like_diagnosis(remote):
             return {**remote, "authority": "cloud"}
         if remote is not None:
@@ -247,7 +247,7 @@ async def growth_activity(
 
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        remote, reason = await dispatcher.growth_activity_remote(days, tz_offset)
+        remote, reason = await dispatcher.growth_activity_remote(days, tz_offset, current_user.id)
         if remote is not None and _looks_like_activity(remote):
             return {**remote, "authority": "cloud"}
         if remote is not None:

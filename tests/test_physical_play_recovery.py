@@ -105,7 +105,7 @@ class FakeVision:
     def get_detected_board(self):
         return self.detected
 
-    def set_expected_from_stones(self, stones, board_size=19):
+    def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
         self.expected_pushes.append(stones)
 
     def reset_sync(self, expected=None):

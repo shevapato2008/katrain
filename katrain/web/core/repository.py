@@ -24,6 +24,10 @@ class RemoteServiceUnavailableError(RuntimeError):
     """A board-mode remote-only operation can be retried when online."""
 
 
+# 盒上题库读取在云端不可用时的说明。前端只认 503 这个状态码,这句只进日志与响应 detail。
+TSUMEGO_UNAVAILABLE = "Remote tsumego service unavailable"
+
+
 # ── Protocol Definitions ──
 
 
@@ -95,15 +99,13 @@ class RemoteTsumegoRepository:
             raw = await self._client.get_problems(level, cat, offset=0, limit=count)
             return [{"id": p["id"], "category": p.get("category", cat), "hint": p.get("hint", "")} for p in raw]
 
-        results = await asyncio.gather(
-            *(fetch_category(cat, cnt) for cat, cnt in categories.items()),
-            return_exceptions=True,
-        )
+        # 任一分类取失败就整体失败(N9)。吞掉它会返回一份缺块的列表,而 `total` 仍是全量 ——
+        # 「全部题目」页照样画、照样翻页,缺的那一类没人看得出来。
+        results = await asyncio.gather(*(fetch_category(cat, cnt) for cat, cnt in categories.items()))
 
         all_problems: List[Dict] = []
         for result in results:
-            if isinstance(result, list):
-                all_problems.extend(result)
+            all_problems.extend(result)
 
         # Step 3: paginate
         start = (page - 1) * page_size
@@ -186,43 +188,28 @@ class RepositoryDispatcher:
     def is_online(self) -> bool:
         return self._connectivity.is_online
 
-    # ── Tsumego (online-only, offline = unavailable) ──
+    # ── Tsumego (online-only) ──
+    #
+    # 盒上题库是**在线直读**的:盒子上不存题,也没有任何同步。所以连不上云端时**不许**回空列表 ——
+    # 前端会把空列表说成「这台盒子上还没有题」、把 None → 404 说成「这道题不存在」(N9)。
+    # 走 `_remote_only`:离线 / 传输失败 / 云端 5xx ⇒ RemoteServiceUnavailableError(端点翻成 503);
+    # 云端 4xx 原样抛(端点转回同一个状态码)。
 
     async def tsumego_get_levels(self):
-        if not self.is_online:
-            return []
-        try:
-            return await self.remote_tsumego.get_levels()
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("tsumego_get_levels remote failed: %s", e)
-            return []
+        return await self._remote_only(lambda: self.remote_tsumego.get_levels(), TSUMEGO_UNAVAILABLE)
 
     async def tsumego_get_all_problems(self, level, page=1, page_size=50):
-        if not self.is_online:
-            return {"items": [], "total": 0, "page": page, "page_size": page_size}
-        try:
-            return await self.remote_tsumego.get_all_problems(level, page, page_size)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("tsumego_get_all_problems remote failed: %s", e)
-            return {"items": [], "total": 0, "page": page, "page_size": page_size}
+        return await self._remote_only(
+            lambda: self.remote_tsumego.get_all_problems(level, page, page_size), TSUMEGO_UNAVAILABLE
+        )
 
     async def tsumego_get_problems(self, level, category, offset=0, limit=20):
-        if not self.is_online:
-            return []
-        try:
-            return await self.remote_tsumego.get_problems(level, category, offset, limit)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("tsumego_get_problems remote failed: %s", e)
-            return []
+        return await self._remote_only(
+            lambda: self.remote_tsumego.get_problems(level, category, offset, limit), TSUMEGO_UNAVAILABLE
+        )
 
     async def tsumego_get_problem(self, problem_id):
-        if not self.is_online:
-            return None
-        try:
-            return await self.remote_tsumego.get_problem(problem_id)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("tsumego_get_problem remote failed: %s", e)
-            return None
+        return await self._remote_only(lambda: self.remote_tsumego.get_problem(problem_id), TSUMEGO_UNAVAILABLE)
 
     # ── Tsumego progress (online→remote, offline→local+sync) ──
 
@@ -271,12 +258,18 @@ class RepositoryDispatcher:
     # ── User Games (online→remote, offline→local+sync) ──
 
     async def user_games_create(self, user_id: int, data: Dict) -> Dict:
-        if self.is_online:
+        # The cloud attributes this POST to its bearer. If the shared box is
+        # currently signed in as somebody else, keep the owner's game local and
+        # queue it until their cloud session is active.
+        bound = getattr(self._remote_client, "bound_user_id", None)
+        if self.is_online and (bound is None or str(bound) == str(user_id)):
             try:
                 return await self.remote_user_games.create_game(data)
             except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
                 logger.warning("user_games_create remote failed, falling back to local: %s", e)
-        # Offline or remote failed — write locally
+        elif self.is_online:
+            logger.info("user_games_create: cloud session is user %s, keeping user %s's game local", bound, user_id)
+        # Offline, remote failed, or another user's cloud session is active.
         result = self._local_user_game_repo.create(
             user_id=user_id,
             sgf_content=data.get("sgf_content", ""),
@@ -334,28 +327,51 @@ class RepositoryDispatcher:
         「盒子没联网」和「云端少了这个端点」在运维那儿是两件完全不同的事,
         而它们在用户屏上长得一模一样(都是「本机记录」)。
         """
+        return await self._cloud_first(
+            "growth summary", "/growth/summary", lambda: self._remote_client.get_growth_summary(days)
+        )
+
+    async def growth_diagnosis_remote(self, days: int, reports: int) -> tuple[dict | None, str]:
+        """能力诊断,口径同 `growth_summary_remote`。盒子上报告在云端、本机库里没有逐手数据,
+        所以退回本机时的「0 份报告」说的是「没连上云端」—— 屏上据 `local_cache` 这样说。"""
+        return await self._cloud_first(
+            "growth diagnosis",
+            "/growth/diagnosis",
+            lambda: self._remote_client.get_growth_diagnosis(days, reports),
+        )
+
+    async def growth_activity_remote(self, days: int, tz_offset: int) -> tuple[dict | None, str]:
+        """练棋日历,口径同 `growth_summary_remote`。`tz_offset` 原样带给云端 —— 按盒子这边的「今天」切天。"""
+        return await self._cloud_first(
+            "growth activity",
+            "/growth/activity",
+            lambda: self._remote_client.get_growth_activity(days, tz_offset),
+        )
+
+    async def _cloud_first(self, label: str, path: str, call) -> tuple[dict | None, str]:
+        """成长屏那几块的「先问云端」:`(payload, "cloud")` 或 `(None, 原因)`,**不抛**。"""
         if self._remote_client is None:
             return None, "no_remote_client"
         if not self.is_online:
             return None, "offline"
         try:
-            payload = await self._remote_client.get_growth_summary(days)
+            payload = await call()
         except httpx.TransportError as exc:
-            logger.warning("growth summary: cloud unreachable, using local cache (%s)", exc)
+            logger.warning("%s: cloud unreachable, using local cache (%s)", label, exc)
             return None, "remote_unreachable"
         except httpx.HTTPStatusError as exc:
             status = exc.response.status_code
             if status == 404:
                 # 云端是**旧版本**,没有这个端点 —— 部署歪了,不是坏了。
-                logger.warning("growth summary: cloud has no /growth/summary (404) — deploy skew?")
+                logger.warning("%s: cloud has no %s (404) — deploy skew?", label, path)
                 return None, "remote_missing_endpoint"
             if status >= 500:
-                logger.warning("growth summary: cloud failed with %s, using local cache", status)
+                logger.warning("%s: cloud failed with %s, using local cache", label, status)
                 return None, "remote_error"
-            logger.warning("growth summary: cloud refused with %s (credentials?), using local cache", status)
+            logger.warning("%s: cloud refused with %s (credentials?), using local cache", label, status)
             return None, "remote_refused"
         if not isinstance(payload, dict):
-            logger.warning("growth summary: cloud answered 200 with a non-object body")
+            logger.warning("%s: cloud answered 200 with a non-object body", label)
             return None, "remote_bad_payload"
         return payload, "cloud"
 

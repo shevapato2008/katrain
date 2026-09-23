@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { backToState } from '../hooks/useBackTo';
 import { useTranslation } from '../../hooks/useTranslation';
 import { KifuAPI } from '../../api/kifuApi';
 import {
@@ -75,6 +76,7 @@ const isDone = (p: BaipuProgress | null): boolean =>
  */
 const KifuPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -133,8 +135,8 @@ const KifuPage = () => {
 
   const startSession = useCallback((id: string, name: string, sgf: string) => {
     cacheSgf(id, name, sgf);
-    navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, { state: { sgf, name } });
-  }, [navigate]);
+    navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, { state: { ...backToState(location), sgf, name } });
+  }, [navigate, location]);
 
   const resume = useCallback((entry: RecentItem) => {
     const cached = getCachedSgf(entry.id);
@@ -226,7 +228,8 @@ const KifuPage = () => {
             title={t('kifu:place_on_board', '摆到实体盘')}
             sub={t('kifu:place_sub', '灯一手一手指着摆')}
             icon="grid-nine"
-            onClick={() => navigate('/kiosk/baipu')}
+            // 带上来处:摆谱列表的返回键回这里,键名「棋谱」
+            onClick={() => navigate('/kiosk/baipu', { state: backToState(location) })}
           />
           <KioskCard
             title={t('kifu:import_sgf', '导入 SGF')}

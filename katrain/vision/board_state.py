@@ -16,7 +16,8 @@ import numpy as np
 
 from katrain.vision.classes import STONE_CLASS_IDS
 from katrain.vision.config import BoardConfig
-from katrain.vision.coordinates import continuous_grid_pos, pixel_to_physical
+from katrain.vision.coordinates import apply_parallax, continuous_grid_pos, pixel_to_physical
+from katrain.vision.parallax import ParallaxParams
 from katrain.vision.stone_detector import Detection
 
 EMPTY = 0
@@ -42,6 +43,18 @@ STICKY_RADIUS = 0.65
 # the cell at all — lets the stone leave the board via the normal voting flow.
 SUSTAIN_RADIUS = 0.6
 
+# Colour invariant: an established stone does not change colour. Measured on RK3562
+# 2026-09-20: 65 colour flips on already-placed points in a single game, one point
+# (vision (17,15)) flipping 41 times over 27 minutes, 8 of which reached the client
+# as "the board does not match the game". The digital board held one colour throughout.
+#
+# The release window matters as much as the invariant. sync.py's wrong-colour branch is
+# the ONLY way the system can tell the user "you placed the wrong colour there", and it
+# is live today. A disagreement that PERSISTS this many consecutive frames is therefore
+# let through, so that branch stays reachable — one frame of the other colour is noise,
+# several seconds of it is a real wrong-colour placement.
+COLOR_FLIP_RELEASE_FRAMES = 15
+
 
 def _nearest_empty_cell(board: np.ndarray, fy: float, fx: float, max_r: int = 1):
     """Empty cell nearest the continuous position (fy=row, fx=col), searching a
@@ -65,8 +78,52 @@ def _nearest_empty_cell(board: np.ndarray, fy: float, fx: float, max_r: int = 1)
 class BoardStateExtractor:
     """Converts a list of stone detections into a board state matrix."""
 
-    def __init__(self, config: BoardConfig | None = None):
+    def __init__(self, config: BoardConfig | None = None, parallax: ParallaxParams | None = None):
         self.config = config or BoardConfig()
+        # Stone-parallax correction (vision-stone-parallax track). Only the geometry-lock extractor
+        # ever gets one: the nadir is calibrated in that warp's grid, and the BoardFinder warp uses a
+        # different basis. None = off, bit-identical to the pre-parallax behaviour.
+        self.parallax = parallax
+        # (row, col) -> consecutive frames this established cell has been read as the
+        # other colour. Instance state, so it only applies to the occupancy-aware path
+        # and only to the extractor instance actually in use. worker.py holds a single
+        # instance, so this is moot there. worker_inprocess.py (the one that actually
+        # runs on the RK3562) holds two instances (margin-aware for the geometry-lock
+        # warp, plain for the BoardFinder fallback) and picks one per frame via
+        # _active_extractor(), keyed on self._geometry — which DOES change mid-game:
+        # GeometryCalibrationService's always-on drift monitor calls invalidate_geometry()
+        # on a detected board/camera bump, not just at startup. The consequence is
+        # bounded: on a switch, the other instance's streak/released state starts fresh,
+        # so colour protection restarts rather than getting stuck suppressed or stuck
+        # released.
+        self._color_flip_streak: dict[tuple[int, int], int] = {}
+        # Cells whose flip has been released and must KEEP being released until the
+        # caller's stable board adopts the new colour — the workers need two consecutive
+        # agreeing frames to change it, so a one-frame release would never land.
+        self._color_flip_released: set[tuple[int, int]] = set()
+
+    def _positions(self, det, img_w: int, img_h: int) -> tuple[float, float, float, float, bool]:
+        """(fx_raw, fy_raw, fx, fy, on_board) for a detection. The ONLY caller of apply_parallax -- it is
+        not idempotent, so every consumer must take its (fx, fy) from here, corrected exactly once.
+
+        on_board is False when EITHER the raw or the corrected position rounds off the grid, and an
+        off-board detection keeps its RAW position as (fx, fy). The correction pulls points toward the
+        nadir; letting it move a warp-margin object would let that object reach cells it cannot reach
+        today -- not only as a new stone, but through sticky assignment and presence sustain, where it
+        kept a just-removed edge stone alive in review. Off-board detections therefore behave exactly
+        as they do without the correction."""
+        x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
+        fx_raw, fy_raw = continuous_grid_pos(x_mm, y_mm, self.config)
+        if self.parallax is None:
+            return fx_raw, fy_raw, fx_raw, fy_raw, self._on_board(fx_raw, fy_raw)
+        fx, fy = apply_parallax(fx_raw, fy_raw, self.parallax.nadir, self.parallax.k)
+        if self._on_board(fx_raw, fy_raw) and self._on_board(fx, fy):
+            return fx_raw, fy_raw, fx, fy, True
+        return fx_raw, fy_raw, fx_raw, fy_raw, False
+
+    def _on_board(self, fx: float, fy: float) -> bool:
+        gs = self.config.grid_size
+        return 0 <= int(round(fy)) < gs and 0 <= int(round(fx)) < gs
 
     def _grid_cell(self, det, img_w: int, img_h: int) -> tuple[int, int] | None:
         """Nearest intersection (row, col) for a detection, or None when it is off-board.
@@ -75,14 +132,13 @@ class BoardStateExtractor:
         margin (cable, marker, glare) must be DROPPED, not clamped to the nearest border
         intersection — clamping once turned a red object beside the top-right corner into
         a phantom T19 move. Up to half a cell of overshoot still rounds onto the edge row,
-        so sloppily placed border stones keep working."""
-        x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
-        fx, fy = continuous_grid_pos(x_mm, y_mm, self.config)
-        cy, cx = int(round(fy)), int(round(fx))
-        gs = self.config.grid_size
-        if 0 <= cy < gs and 0 <= cx < gs:
-            return cy, cx
-        return None
+        so sloppily placed border stones keep working.
+
+        With parallax on, off-board means EITHER the raw or the corrected position rounds off the
+        grid (see _positions): otherwise the correction would drag a margin object in a ~0.2-cell band
+        outside the far/side edges back onto the board."""
+        _, _, fx, fy, on_board = self._positions(det, img_w, img_h)
+        return (int(round(fy)), int(round(fx))) if on_board else None
 
     @staticmethod
     def _passes_hysteresis(det, cy: int, cx: int, prev_board, add_threshold) -> bool:
@@ -95,13 +151,22 @@ class BoardStateExtractor:
         return prev_board is not None and int(prev_board[cy][cx]) == det.class_id + 1
 
     def detection_points(self, detections: list[Detection], img_w: int, img_h: int) -> list:
-        """Continuous grid positions of ALL detections (any class, off-board included):
-        [(fy, fx, class_id, confidence)]. Used by presence sustain and delta diagnostics."""
+        """Continuous grid positions of ALL detections (any class, off-board included): [(fy, fx, class_id,
+        confidence)], corrected when on-board by both the raw and the corrected position; raw otherwise.
+        Used by presence sustain and delta diagnostics."""
         pts = []
         for det in detections:
-            x_mm, y_mm = pixel_to_physical(det.x_center, det.y_center, img_w, img_h, self.config)
-            fx, fy = continuous_grid_pos(x_mm, y_mm, self.config)
+            _, _, fx, fy, _ = self._positions(det, img_w, img_h)
             pts.append((fy, fx, det.class_id, det.confidence))
+        return pts
+
+    def parallax_points(self, detections: list[Detection], img_w: int, img_h: int) -> list:
+        """detection_points with the raw position kept alongside, for diagnostics only:
+        [(fy_raw, fx_raw, fy, fx, class_id, confidence)]."""
+        pts = []
+        for det in detections:
+            fx_raw, fy_raw, fx, fy, _ = self._positions(det, img_w, img_h)
+            pts.append((fy_raw, fx_raw, fy, fx, det.class_id, det.confidence))
         return pts
 
     def detections_to_board(
@@ -189,37 +254,35 @@ class BoardStateExtractor:
         sticky_board: np.ndarray | None = None,
     ) -> np.ndarray:
         gs = board.shape[0]
-        all_points = self.detection_points(detections, img_w, img_h)  # any class, for sustain
+        positions = [self._positions(det, img_w, img_h) for det in detections]
+        # any class, for sustain -- same content as detection_points(), without recomputing it
+        all_points = [(fy, fx, det.class_id, det.confidence) for det, (_, _, fx, fy, _) in zip(detections, positions)]
         items = []
-        for det, (fy, fx, _, _) in zip(detections, all_points):
+        for det, (_, _, fx, fy, on_board) in zip(detections, positions):
             if det.class_id not in STONE_CLASS_IDS:
                 continue
             residual = math.hypot(fx - round(fx), fy - round(fy))
-            items.append((residual, det, fx, fy))
+            items.append((residual, det, fx, fy, on_board))
         # Highest confidence claims its intersection first (matches the legacy "highest-confidence
         # wins" semantics); residual only breaks ties between equally confident detections. A
         # lower-confidence detection that then lands on an occupied point is either a sloppily
         # placed real stone (spill it to the nearest empty neighbour) or a duplicate/false positive
         # (drop it) — decided by SPILL_MIN_CONFIDENCE, so a weak FP can't spawn a phantom.
         items.sort(key=lambda t: (-t[1].confidence, t[0]))
-        for _, det, fx, fy in items:
+        for _, det, fx, fy, on_board in items:
             sticky = self._sticky_cell(sticky_board, board, fy, fx, det.class_id + 1)
             if sticky is not None:
                 cy, cx = sticky  # boundary-straddling stone stays on its established cell
             else:
-                cy, cx = int(round(fy)), int(round(fx))
-                if not (0 <= cy < gs and 0 <= cx < gs):
+                if not on_board:
                     continue  # off-board detection (warp-margin object) — never clamp onto a border point
+                cy, cx = int(round(fy)), int(round(fx))
             # Lit-cell mask blocks ADDITIONS only: lamp glare on an EMPTY point must not
             # become a phantom stone (R7.1), but a stone already established at a lit
             # cell keeps being recognized — dropping its detections blinded vision to
             # the very stone a "remove" lamp pointed at (lamp/recognition oscillation)
             # and force-cleared removal tracking while the stone was still on the board.
-            if (
-                masked_cells
-                and (cy, cx) in masked_cells
-                and (prev_board is None or int(prev_board[cy][cx]) == EMPTY)
-            ):
+            if masked_cells and (cy, cx) in masked_cells and (prev_board is None or int(prev_board[cy][cx]) == EMPTY):
                 continue
             if not self._passes_hysteresis(det, cy, cx, prev_board, add_threshold):
                 continue
@@ -249,6 +312,37 @@ class BoardStateExtractor:
                     for fy, fx, cls, _ in all_points
                 ):
                     board[r][c] = prev_board[r][c]
+
+        # Colour invariant (see COLOR_FLIP_RELEASE_FRAMES). Runs after presence sustain,
+        # so a cell that sustain just resurrected already carries prev's colour and is
+        # not re-examined here.
+        if prev_board is not None:
+            flipped = {
+                (int(r), int(c))
+                for r, c in zip(*np.where((prev_board != EMPTY) & (board != EMPTY) & (board != prev_board)))
+            }
+            for cell in list(self._color_flip_streak):
+                if cell not in flipped:
+                    del self._color_flip_streak[cell]  # agreed again — start over
+            for cell in list(self._color_flip_released):
+                if cell not in flipped:
+                    # No longer a disagreement: either the stable board adopted the new
+                    # colour (the release landed) or the stone left. Either way, done.
+                    self._color_flip_released.discard(cell)
+            for cell in flipped:
+                if cell in self._color_flip_released:
+                    continue  # latched open until the stable board adopts it
+                r, c = cell
+                streak = self._color_flip_streak.get(cell, 0) + 1
+                if streak >= COLOR_FLIP_RELEASE_FRAMES:
+                    del self._color_flip_streak[cell]
+                    self._color_flip_released.add(cell)  # a real wrong-colour placement
+                else:
+                    self._color_flip_streak[cell] = streak
+                    board[r][c] = int(prev_board[r][c])
+        else:
+            self._color_flip_streak.clear()
+            self._color_flip_released.clear()
         return board
 
     def cell_top(self, detections: list[Detection], img_w: int, img_h: int) -> dict:

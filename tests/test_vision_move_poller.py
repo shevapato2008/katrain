@@ -25,10 +25,23 @@ log = logging.getLogger("test_vision_move_poller")
 class FakeKatrain:
     def __init__(self, player_to_move="B"):
         self.plays = []
-        self._state = {"stones": [], "board_size": [19, 19], "player_to_move": player_to_move}
+        self.live_player_to_move = player_to_move  # NEW: the *live* game's turn
+        self.ai_ladder_commit_lock = threading.RLock()  # NEW: real WebKaTrain has this (interface.py:199)
+        self.raise_on_next_player_to_move = None  # NEW: simulate a raising collaborator
+        self._state = {
+            "stones": [],
+            "board_size": [19, 19],
+            "player_to_move": player_to_move,
+            "current_node_id": 5150,
+        }
 
     def get_state(self):
         return self._state
+
+    def next_player_to_move(self):  # NEW
+        if self.raise_on_next_player_to_move is not None:
+            raise self.raise_on_next_player_to_move
+        return self.live_player_to_move
 
     def __call__(self, command, coords=None, **kwargs):
         if command == "play":
@@ -59,9 +72,19 @@ class FakeSessionManager:
 class FakeVision:
     def __init__(self):
         self.expected_pushes = []
+        self.expected_node_ids = []
+        self.detected_board = None  # NEW: None = "no usable observation"
+        self.observation_seq = 0  # NEW: which observation `detected_board` came from
+        self.raise_on_get_board_observation = None  # NEW: simulate a raising collaborator
 
-    def set_expected_from_stones(self, stones, board_size=19):
+    def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
         self.expected_pushes.append(stones)
+        self.expected_node_ids.append(expected_node_id)
+
+    def get_board_observation(self):  # NEW
+        if self.raise_on_get_board_observation is not None:
+            raise self.raise_on_get_board_observation
+        return self.detected_board, self.observation_seq
 
 
 class FakeGateway:
@@ -117,6 +140,15 @@ def _move(col=3, row=3, color=BLACK):
 
 
 class TestOutOfTurnAndSessionMissing:
+    def test_rearm_forwards_current_node_id(self):
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="W")})
+        app = _app(sm, gateway=FakeGateway())
+        vision = FakeVision()
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(color=BLACK), log))
+
+        assert vision.expected_node_ids == [5150]
+
     def test_out_of_turn_move_ignored_rearms_with_throttle(self):
         sm = FakeSessionManager({"s1": FakeSession(player_to_move="W")})
         gateway = FakeGateway()
@@ -302,3 +334,299 @@ class TestNoTrackerConfigured:
 
         assert delay == 0.5
         assert vision.expected_pushes
+
+
+class TestEngineGameWhoseContextIsGone:
+    def test_a_move_after_the_engine_game_ended_goes_to_the_gateway_not_the_local_tree(self):
+        session = FakeSession(player_to_move="B")
+        session.katrain.platform_engine_color = "W"
+        gateway = FakeGateway(is_platform=False, outcomes=[PlatformMoveRejectedError("over", reason="game_ended")])
+        vision = FakeVision()
+        app = _app(FakeSessionManager({"s1": session}), gateway=gateway, tracker=EngineRecoveryTracker())
+
+        delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(color=BLACK), log))
+
+        assert gateway.calls == [("s1", 3, 15)]
+        assert session.katrain.plays == []
+        assert vision.expected_pushes == []
+        assert delay == 0.0
+
+
+class TestGameEndedIsRecordedOffRequest:
+    def test_game_ended_is_recorded_off_request(self, monkeypatch):
+        from unittest.mock import AsyncMock
+
+        import katrain.web.server as server
+
+        session = FakeSession()
+        gateway = FakeGateway(outcomes=[PlatformMoveRejectedError("over", reason="game_ended")])
+        app = _app(FakeSessionManager({"s1": session}), gateway=gateway, tracker=EngineRecoveryTracker())
+        recorder = AsyncMock()
+        monkeypatch.setattr(server, "_record_platform_engine_game_off_request", recorder)
+
+        delay = asyncio.run(_handle_confirmed_move(app, FakeVision(), "s1", _move(), log))
+
+        assert delay == 0.0
+        recorder.assert_awaited_once_with(session, app)
+
+    def test_other_rejections_record_nothing(self, monkeypatch):
+        from unittest.mock import AsyncMock
+
+        import katrain.web.server as server
+
+        gateway = FakeGateway(outcomes=[PlatformMoveRejectedError("boom", reason="engine_error")])
+        app = _app(FakeSessionManager({"s1": FakeSession()}), gateway=gateway, tracker=EngineRecoveryTracker())
+        recorder = AsyncMock()
+        monkeypatch.setattr(server, "_record_platform_engine_game_off_request", recorder)
+
+        asyncio.run(_handle_confirmed_move(app, FakeVision(), "s1", _move(), log))
+
+        recorder.assert_not_awaited()
+
+
+def _board_with(cells):
+    """19x19 vision board (row-major, 0=empty/1=black/2=white) with `cells` set."""
+    board = [[0] * 19 for _ in range(19)]
+    for (row, col), color in cells.items():
+        board[row][col] = color
+    return board
+
+
+def _confirmed(col=3, row=3, color=BLACK, seq=0):
+    return ConfirmedMove(col=col, row=row, color=color, observation_seq=seq)
+
+
+# vision (row=3, col=3) -> katrain coords (col=3, 19-1-3=15). The gateway is called with
+# katrain coords, so every "it was submitted" assertion below uses 15, not 3.
+SUBMITTED = ("s1", 3, 15)
+
+
+class TestSubmitTimePresenceRecheck:
+    """L0a: confirm -> submit has a real gap (0.45s median, 3.02s measured worst case on
+    RK3562 2026-09-20). A stone that vanished during that gap must not be committed.
+
+    Two conditions must BOTH hold to cancel: the board reading is from an observation
+    strictly newer than the one that confirmed the move, and the cell is empty in it.
+    Anything else — no board, an observation no newer than the confirmation, an
+    unreadable board — is "unknown", and unknown always submits. Dropping a real move
+    is a worse failure than letting a rare phantom past the other three defences."""
+
+    def test_move_dropped_when_a_newer_observation_shows_the_cell_empty(self):
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = _board_with({})
+        vision.observation_seq = 12  # strictly newer than the confirmation below
+
+        delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+
+        assert delay == 0.5
+        assert gateway.calls == []  # never reached the tunnel
+        assert vision.expected_pushes  # re-armed so a real stone gets another chance
+
+    def test_stale_observation_never_cancels(self):
+        """THE regression this gate exists for: worker.py publishes status at 1 Hz, so
+        the newest published board can predate the stone entirely. An observation that
+        is not newer than the confirmation proves nothing."""
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = _board_with({})  # empty, but from BEFORE the stone landed
+        vision.observation_seq = 11
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+
+        assert gateway.calls == [SUBMITTED]
+
+    def test_move_submitted_when_the_stone_is_still_present(self):
+        """Deliberately asymmetric cell (row=3, col=15, not the row==col default the other
+        tests in this class use): board[move_data.row][move_data.col] is populated, and
+        board[move_data.col][move_data.row] is left empty, so a row/col transposition
+        anywhere in the still_present indexing turns this red instead of staying green."""
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = _board_with({(3, 15): BLACK})
+        vision.observation_seq = 12
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(col=15, row=3, seq=11), log))
+
+        # vision (row=3, col=15) -> katrain coords (col=15, 19-1-3=15).
+        assert gateway.calls == [("s1", 15, 15)]
+
+    def test_move_submitted_when_there_is_no_observation(self):
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = None
+        vision.observation_seq = 99
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+
+        assert gateway.calls == [SUBMITTED]
+
+    def test_wrong_colour_at_the_cell_is_not_a_disappearance(self):
+        """Only EMPTY cancels. A stone of the other colour is a colour misread, which the
+        turn guard and the colour invariant handle — not a vanished stone."""
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = _board_with({(3, 3): WHITE})
+        vision.observation_seq = 12
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+
+        assert gateway.calls == [SUBMITTED]
+
+    def test_unstamped_move_always_submits_even_if_the_cell_reads_empty(self):
+        """seq 0 means "never stamped" (both workers bump their counter to >=1 in the same
+        loop iteration, strictly before a confirmation can be stamped — see worker.py:362/483
+        and worker_inprocess.py:417/531). Without a stamp there is no reference point, so
+        comparing observed_seq against 0 would make ANY observation count as "newer" and
+        collapse this into the naive "is the cell empty now?" check the design rejects."""
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.detected_board = _board_with({})  # empty at the confirmed cell
+        vision.observation_seq = 1  # > 0, would look "newer" than an unstamped move's seq
+
+        delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=0), log))
+
+        assert gateway.calls == [SUBMITTED]
+        assert delay == 0.0
+
+    def test_observation_read_failure_submits_anyway_and_logs_the_disabled_guard(self, caplog):
+        """Fail-open (never let a status read block a real move) is deliberate and must
+        stay. But a guard that silently disables itself is indistinguishable from a
+        healthy one from the outside — exactly the failure shape this whole plan exists
+        to fix. The raise must come from the real collaborator (get_board_observation),
+        not from patching the logger, and the move must still go through."""
+        sm = FakeSessionManager({"s1": FakeSession(player_to_move="B")})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+        vision.raise_on_get_board_observation = RuntimeError("camera worker crashed")
+
+        with caplog.at_level(logging.WARNING, logger="test_vision_move_poller"):
+            asyncio.run(_handle_confirmed_move(app, vision, "s1", _confirmed(seq=11), log))
+
+        assert gateway.calls == [SUBMITTED]  # fail-open: still submitted, unchecked
+        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert len(warnings) == 1
+        assert "L0a" in warnings[0].getMessage()
+        assert "disabled" in warnings[0].getMessage()
+        assert warnings[0].exc_info is not None  # the RuntimeError is attached, not swallowed
+
+
+class TestPlatformTurnGuard:
+    """L0b: the turn check at the top of _handle_confirmed_move reads
+    session.last_state, which the code's own comment calls a possibly-stale
+    broadcast frame. The local branch re-checks inside the commit lock via
+    guard=True/expected_player; the cross-platform branch had no equivalent, so a
+    move could reach the remote tunnel on a turn that had already passed."""
+
+    def test_stale_broadcast_does_not_let_a_late_move_reach_the_tunnel(self):
+        session = FakeSession(player_to_move="B")  # broadcast frame still says B
+        session.katrain.live_player_to_move = "W"  # but the live game has moved on
+        sm = FakeSessionManager({"s1": session})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+
+        delay = asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(color=BLACK), log))
+
+        assert delay == 0.5
+        assert gateway.calls == []
+        assert vision.expected_pushes  # re-armed
+
+    def test_live_turn_agreeing_still_submits(self):
+        session = FakeSession(player_to_move="B")
+        session.katrain.live_player_to_move = "B"
+        sm = FakeSessionManager({"s1": session})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(col=3, row=3, color=BLACK), log))
+
+        assert gateway.calls == [SUBMITTED]  # katrain coords: row 3 flips to 19-1-3=15
+
+    def test_unavailable_live_turn_does_not_block(self):
+        """No game yet / accessor missing -> None -> fall back to the existing behaviour
+        rather than refusing every move."""
+        session = FakeSession(player_to_move="B")
+        session.katrain.live_player_to_move = None
+        sm = FakeSessionManager({"s1": session})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+
+        asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(col=3, row=3, color=BLACK), log))
+
+        assert gateway.calls == [SUBMITTED]  # katrain coords: row 3 flips to 19-1-3=15
+
+    def test_live_turn_read_failure_submits_anyway_and_logs_the_disabled_guard(self, caplog):
+        """Same fail-open contract as L0a's read, same reason to log it: a guard that
+        silently disables itself is indistinguishable from a healthy one from the
+        outside. The raise must come from the real collaborator (next_player_to_move),
+        not from patching the logger, and the move must still go through."""
+        session = FakeSession(player_to_move="B")
+        session.katrain.raise_on_next_player_to_move = RuntimeError("game tree corrupted")
+        sm = FakeSessionManager({"s1": session})
+        gateway = FakeGateway()
+        app = _app(sm, gateway=gateway)
+        vision = FakeVision()
+
+        with caplog.at_level(logging.WARNING, logger="test_vision_move_poller"):
+            asyncio.run(_handle_confirmed_move(app, vision, "s1", _move(col=3, row=3, color=BLACK), log))
+
+        assert gateway.calls == [SUBMITTED]  # fail-open: still submitted, unchecked
+        warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert len(warnings) == 1
+        assert "L0b" in warnings[0].getMessage()
+        assert "disabled" in warnings[0].getMessage()
+        assert warnings[0].exc_info is not None  # the RuntimeError is attached, not swallowed
+
+
+class TestLiveTurnAccessor:
+    """The real `WebKaTrain.next_player_to_move` — the collaborator every test above
+    fakes on `FakeKatrain`. Nothing exercised the implementation itself, so an inverted
+    reading would keep the whole class green while L0b refused every legitimate
+    cross-platform vision move for the rest of the game: F2 at full scale, produced by
+    the guard built to prevent F1."""
+
+    def _katrain(self, node):
+        from katrain.web.interface import WebKaTrain
+
+        # __init__ builds engines, config and a Kivy-free UI bridge; this method reads
+        # exactly two attributes, so construct the object without running any of that.
+        katrain = WebKaTrain.__new__(WebKaTrain)
+        katrain.game = None if node is None else SimpleNamespace(current_node=node)
+        return katrain
+
+    def test_reports_the_colour_the_live_game_expects_next(self):
+        """`next_player`, NOT `player`: `player` is the colour of the move ALREADY at this
+        node, which is the opposite of whose turn it is.
+
+        Mutation-proven: `node.next_player` -> `node.player` returns "B" here.
+        """
+        katrain = self._katrain(SimpleNamespace(next_player="W", player="B"))
+
+        assert katrain.next_player_to_move() == "W"
+
+    def test_no_game_yet_reads_as_unknown(self):
+        """None is the fail-open value L0b falls back on (test_unavailable_live_turn_does
+        _not_block) — a session with no game must never refuse moves."""
+        assert self._katrain(None).next_player_to_move() is None
+
+    def test_a_game_without_a_current_node_reads_as_unknown(self):
+        katrain = self._katrain(SimpleNamespace(next_player="W", player="B"))
+        katrain.game = SimpleNamespace(current_node=None)
+
+        assert katrain.next_player_to_move() is None

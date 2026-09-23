@@ -40,6 +40,24 @@ describe('ReportsAPI', () => {
     });
   });
 
+  /**
+   * 回归钉子（2026-09-13 板上实测）：严格盒端 SSO 里 JS 永远拿不到 token，
+   * 身份在 HttpOnly `sb_go_token` cookie 里。**「没有 token」不等于「没登录」**——
+   * 这里必须照常发请求、只是不打 Authorization 头，让同源 cookie 去认证。
+   * 变异验证：把 authFetch 里的 `...(token ? {...} : {})` 改回无条件打头，
+   * 这条会因为 headers 里多出 `Authorization: Bearer null` 而红。
+   */
+  it('still sends the request with no Authorization header when the token is null', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okJson([task])));
+
+    await expect(ReportsAPI.list(null)).resolves.toEqual([task]);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith('/api/v1/reports/', {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  });
+
   it('gets the queue summary from the existing endpoint', async () => {
     const summary = { pending: 1, running: 2, completed: 3, failed: 4 };
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okJson(summary)));
@@ -116,6 +134,23 @@ describe('ReportsAPI', () => {
 
     await expect(ReportsAPI.create('token', { user_game_id: 'game-1' }))
       .rejects.toThrow('Request failed 409: report already exists');
+  });
+
+  // N24:屏上要分「连不上 / 找不到 / 积分不足」,所以错误对象得带着状态码与原始 body;
+  // message 保持原句 —— galaxy 屏上与上一条单测都认它。
+  it('非 2xx 时拒绝的错误带 status 与原始 body,message 不变', async () => {
+    const body = '{"detail":"Remote report service unavailable"}';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      text: vi.fn().mockResolvedValue(body),
+    }));
+
+    await expect(ReportsAPI.get(null, 7)).rejects.toMatchObject({
+      message: `Request failed 503: ${body}`,
+      status: 503,
+      body,
+    });
   });
 });
 

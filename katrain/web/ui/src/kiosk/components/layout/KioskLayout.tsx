@@ -5,6 +5,8 @@ import { KioskTopbar } from '../../shell/KioskTopbar';
 import { KioskDock } from '../../shell/KioskDock';
 import { dockLevelOf } from '../../shell/dockRoutes';
 import { GoConsoleRail } from './GoConsoleRail';
+import { leaveToLauncher } from '../../shell/boxUrls';
+import EngineWarmupBanner from './EngineWarmupBanner';
 
 /**
  * 哪些 L1 屏出左边的镜像栏。规范 §5 的判据是**「这个模块的活动会不会发生在实体盘上」**——
@@ -51,12 +53,15 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
           identity={{ username }}
           // 主页键只在一级页出现(规范 §6「一级页面可在固定系统动作区显示主页入口」)。
           // 二/三级页要退的是**这一屏**,那是页控条上的返回,不是回智星盒主页。
-          onHome={level === 1 ? () => window.location.assign('http://127.0.0.1:8080/launcher') : undefined}
+          onHome={level === 1 ? () => leaveToLauncher() : undefined}
         />
       )}
       dock={level === 1 ? (
         <KioskDock pathname={location.pathname} onTab={(p) => navigate(p)} />
       ) : undefined}
+      // Temporary engine startup feedback belongs to the fixed canvas overlay layer,
+      // not to the permanent device-status cluster inside KioskTopbar.
+      extras={<EngineWarmupBanner />}
     >
       {/* ⚠️ `.kiosk-layout-l1` 是 `grid-template-columns: 296px 680px`(tokens.css:430),
           **右栏由页面自己提供根节点** —— `<Outlet/>` 渲染出来的那一层就是第二列。

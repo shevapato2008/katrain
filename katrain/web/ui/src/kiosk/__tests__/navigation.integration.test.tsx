@@ -49,7 +49,9 @@ describe('Kiosk navigation integration', () => {
 
     it('unauthenticated user is redirected to login for any route', () => {
       renderApp('/kiosk/tsumego');
-      expect(screen.getByRole('button', { name: /登录/i })).toBeInTheDocument();
+      // 判据是「落在登录页」，不是「有一颗登录按钮」—— 严格盒端构建里
+      // 那一屏根本不画表单(登录归 launcher)，拿控件当判据会把正确行为判成回归。
+      expect(screen.getByTestId('kiosk-login-page')).toBeInTheDocument();
     });
   });
 
@@ -87,7 +89,7 @@ describe('Kiosk navigation integration', () => {
       // Task 12 把这一屏按稿子整屏换了(`shots/11-training.png`):原来那条
       // 「选择难度级别 · 练习死活以提高计算力」的标题栏没有了,问候行取而代之。
       await waitFor(() => {
-        expect(screen.getByText('题在实体盘上摆好，落子即判')).toBeInTheDocument();
+        expect(screen.getByText('落子即判，走错当场退回')).toBeInTheDocument();
       });
     });
 

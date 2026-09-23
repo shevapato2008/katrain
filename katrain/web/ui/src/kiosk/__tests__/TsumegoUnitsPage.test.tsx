@@ -5,6 +5,9 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import { sequenceKey, UNIT_SIZE } from '../pages/tsumegoUnits';
 import type { TsumegoProgressEntry } from '../../context/TsumegoProgressContext';
+import { __resetKioskActivityStorageForTests, setKioskIdentity } from '../storage/kioskActivityStorage';
+
+const TEST_UUID = 'tsumego-units-test-user';
 
 /**
  * 屏 12 · 单元列表。**文案在 2026-08-22 按稿子整屏换过**(Task 13),所以和上一版对不上是预期的:
@@ -15,10 +18,11 @@ import type { TsumegoProgressEntry } from '../../context/TsumegoProgressContext'
  * 点哪张进哪一单元、`unitProgress` 按片调用。
  */
 
-const { mockNavigate, mockUnitProgress, progressMap } = vi.hoisted(() => ({
+const { mockNavigate, mockUnitProgress, progressMap, progressFlags } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockUnitProgress: vi.fn(() => ({ completed: 0, total: 0 })),
   progressMap: {} as Record<string, TsumegoProgressEntry>,
+  progressFlags: { failed: false },
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -33,8 +37,14 @@ vi.mock('../../context/TsumegoProgressContext', () => ({
     isCompleted: (id: string) => !!progressMap[id]?.completed,
     unitProgress: mockUnitProgress,
     categoryProgress: () => ({ completed: 0, total: 0 }),
+    serverLoadFailed: progressFlags.failed,
     refresh: vi.fn(),
   }),
+}));
+
+// 训练营的「上次」三样按账号存(N10)。盒上 token 恒为 null、身份在 user 上 —— 这里照盒上的样子造。
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 7, username: '甲', rank: '5段', credits: 0 }, isAuthenticated: true, token: null }),
 }));
 
 // 45 道题 → ceil(45/20) = 3 个单元(20 / 20 / 5)。
@@ -49,8 +59,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockUnitProgress.mockReturnValue({ completed: 0, total: 0 });
   for (const k of Object.keys(progressMap)) delete progressMap[k];
+  progressFlags.failed = false;
   sessionStorage.clear();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   installFetch();
 });
 
@@ -73,11 +86,53 @@ const rings = () =>
   Array.from(document.querySelectorAll('.kiosk-card__tile.is-ring b')).map((n) => n.textContent);
 
 describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
-  it('页控条:标题是「这一档 · 这一类」,返回键回训练营', async () => {
+  it('页控条:标题是「这一档 · 这一类」,返回键回题型页', async () => {
     renderPage('15k', 'capturing');
     await waitFor(() => expect(screen.getByText('15 级 · 吃子')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('训练营'));
+    fireEvent.click(screen.getByText('题型'));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k');
+  });
+
+  it('综合训练从整级接口取题，也按每 20 题分单元，不再出现指向自己的整级入口', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ items: allIds, total: TOTAL, page: 1, page_size: 200 }),
+    }) as any;
+    renderPage('15k', 'all');
+
+    await waitFor(() => expect(screen.getByText('15 级 · 综合训练')).toBeInTheDocument());
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/v1/tsumego/levels/15k/problems?page=1&page_size=200',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(cardTitles()).toEqual(['第 1 单元', '第 2 单元', '第 3 单元']);
+    expect(screen.queryByText('整级一起做')).toBeNull();
+    expect(screen.queryByText('只做错过的')).toBeNull();
+    expect(JSON.parse(sessionStorage.getItem(sequenceKey('15k', 'all'))!)).toEqual(allIds.map((item) => item.id));
+    expect(localStorage.getItem(`kiosk_tsumego_last_category:${TEST_UUID}`)).toBe('all');
+  });
+
+  it('综合训练会把整级接口的多页题序完整拼起来', async () => {
+    const ids = Array.from({ length: 205 }, (_, i) => ({ id: `all-${i}` }));
+    global.fetch = vi.fn().mockImplementation((url: string) => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({
+        items: url.includes('page=2') ? ids.slice(200) : ids.slice(0, 200),
+        total: ids.length,
+        page: url.includes('page=2') ? 2 : 1,
+        page_size: 200,
+      }),
+    })) as any;
+    renderPage('3d', 'all');
+
+    await waitFor(() => {
+      const stored = sessionStorage.getItem(sequenceKey('3d', 'all'));
+      expect(stored && JSON.parse(stored)).toHaveLength(205);
+    });
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/v1/tsumego/levels/3d/problems?page=2&page_size=200',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 
   it('整类题号只取一次(limit=1000),并按顺序写进 sessionStorage —— 做题屏的上/下一题靠它', async () => {
@@ -157,7 +212,7 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
       total: ids.length,
     }));
     for (let i = 0; i < 3; i += 1) progressMap[`q${i}`] = { completed: true, attempts: 1 };
-    localStorage.setItem('kiosk_tsumego_autoadvance', 'false');
+    localStorage.setItem(`kiosk_tsumego_autoadvance:${TEST_UUID}`, 'false');
     renderPage();
     await waitFor(() => expect(screen.getByText('第 1-20 题')).toBeInTheDocument());
     const stats = Array.from(document.querySelectorAll('.kiosk-stat')).map((s) => [
@@ -171,7 +226,7 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
     ]);
   });
 
-  it('「只做错过的」按不动,但道数是真的 —— 算得出来、没地方去,两件事都说出来', async () => {
+  it('「只做错过的」有错题时按得动,进这一类的错题页;道数是真的(T1)', async () => {
     progressMap['q0'] = { completed: false, attempts: 2 };
     progressMap['q5'] = { completed: false, attempts: 1 };
     progressMap['q7'] = { completed: true, attempts: 3 };   // 做对了,不算错题
@@ -180,20 +235,44 @@ describe('TsumegoUnitsPage · 屏 12 单元列表', () => {
     await waitFor(() => expect(screen.getByText('只做错过的')).toBeInTheDocument());
     const card = screen.getByText('只做错过的').closest('button') as HTMLButtonElement;
     expect(within(card).getByText('现在有 2 道')).toBeInTheDocument();
-    expect(within(card).getByText('还没接')).toBeInTheDocument();
+    expect(within(card).queryByText('还没接')).toBeNull();
+    expect(card.disabled).toBe(false);
+    fireEvent.click(card);
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/capturing/wrong');
+  });
+
+  it('一道错题都没有时「只做错过的」灰着 —— 没有可作用的对象,副标照写「现在有 0 道」', async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByText('只做错过的')).toBeInTheDocument());
+    const card = screen.getByText('只做错过的').closest('button') as HTMLButtonElement;
+    expect(within(card).getByText('现在有 0 道')).toBeInTheDocument();
     expect(card.disabled).toBe(true);
   });
 
-  it('「整级一起做」进的是这一档的全部题', async () => {
+  it('做题记录没读到时「只做错过的」不说「现在有 0 道」,也不灰 —— 点进错题页才有重试', async () => {
+    // 服务端那次读失败了,本机也没有这个人的缓存 ⇒ 0 是算不出来的数,不是「一道都没错」。
+    progressFlags.failed = true;
+    renderPage();
+    await waitFor(() => expect(screen.getByText('只做错过的')).toBeInTheDocument());
+    const card = screen.getByText('只做错过的').closest('button') as HTMLButtonElement;
+    expect(within(card).getByText('做题记录没读到')).toBeInTheDocument();
+    expect(within(card).queryByText(/现在有 0 道/)).toBeNull();
+    expect(card.disabled).toBe(false);
+    fireEvent.click(card);
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/15k/capturing/wrong');
+  });
+
+  it('专项题型页可以切到同一难度的综合训练', async () => {
     renderPage('3d', 'capturing');
-    await waitFor(() => expect(screen.getByText('3 段全部')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('3 段全部').closest('button')!);
+    await waitFor(() => expect(screen.getByText('综合训练')).toBeInTheDocument());
+    expect(screen.getByText('混合当前难度全部题型，每 20 题一单元')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('综合训练').closest('button')!);
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego/3d/all');
   });
 
   it('进了这一类就记下来 —— 训练营那一排的高亮靠它', async () => {
     renderPage('15k', 'semeai');
-    await waitFor(() => expect(localStorage.getItem('kiosk_tsumego_last_category')).toBe('semeai'));
+    await waitFor(() => expect(localStorage.getItem(`kiosk_tsumego_last_category:${TEST_UUID}`)).toBe('semeai'));
   });
 
   it('加载中说的是加载中,不是「这一类没有题」', () => {

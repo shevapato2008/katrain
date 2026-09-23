@@ -6,6 +6,10 @@ import { kioskTheme } from '../theme';
 import KifuPage from '../pages/KifuPage';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import type { MatchSummary } from '../../types/live';
+import {
+  __resetKioskActivityStorageForTests,
+  setKioskIdentity,
+} from '../storage/kioskActivityStorage';
 
 /**
  * 屏 15 · 棋谱 `/kiosk/kifu`。
@@ -24,6 +28,7 @@ import type { MatchSummary } from '../../types/live';
  */
 
 const mockNavigate = vi.fn();
+const TEST_UUID = 'kifu-page-test-user';
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
@@ -68,24 +73,24 @@ const liveResult = (over: Partial<ReturnType<typeof useLiveMatchesMock>> = {}) =
 const renderPage = () =>
   render(
     <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/kiosk/kifu']}>
         <KifuPage />
       </MemoryRouter>
     </ThemeProvider>,
   );
 
-/** 往 localStorage 里造一条「最近摆过」。**造的是真的存储键**,不是 mock 的模块。 */
+/** 往当前用户的 localStorage 命名空间里造一条「最近摆过」。 */
 const seedRecent = (
   entries: { id: string; name: string; savedAt: number }[],
   progress: Record<string, { k: number; frames: number; updatedAt: number; total?: number }> = {},
   sgfFor: string[] = [],
 ) => {
-  localStorage.setItem('baipu:recent', JSON.stringify(entries));
+  localStorage.setItem(`baipu:recent:${TEST_UUID}`, JSON.stringify(entries));
   for (const [id, p] of Object.entries(progress)) {
-    localStorage.setItem(`baipu:progress:${id}`, JSON.stringify(p));
+    localStorage.setItem(`baipu:progress:${id}:${TEST_UUID}`, JSON.stringify(p));
   }
   for (const id of sgfFor) {
-    localStorage.setItem(`baipu:sgf:${id}`, JSON.stringify({
+    localStorage.setItem(`baipu:sgf:${id}:${TEST_UUID}`, JSON.stringify({
       id, name: id, sgf: '(;FF[4]GM[1]SZ[19];B[pd])', savedAt: 1,
     }));
   }
@@ -94,6 +99,8 @@ const seedRecent = (
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   getAlbums.mockResolvedValue({ items: [album(1), album(2)], total: 2, page: 1, page_size: 6 });
   useLiveMatchesMock.mockReturnValue(liveResult());
 });
@@ -115,7 +122,8 @@ describe('屏 15 棋谱 · 问候与三张卡', () => {
   it('「摆到实体盘」进 /kiosk/baipu —— Task 4 把摆谱下了 Dock,入口就是这张卡', () => {
     renderPage();
     fireEvent.click(screen.getByText('摆到实体盘').closest('button')!);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/baipu');
+    // 带上来处(2026-09-22):摆谱列表原先没有返回键,现在它回写明的这一页
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/baipu', { state: { backTo: '/kiosk/kifu' } });
   });
 
   it('「导入 SGF」按下去开的是本地文件选择框', () => {

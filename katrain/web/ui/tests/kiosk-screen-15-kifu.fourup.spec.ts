@@ -1,6 +1,7 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
 import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
+import { scopedKey, kioskMeJson } from './helpers/kioskIdentity';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });   // 合成要读刚写出的 PNG,而 config 是 fullyParallel
@@ -50,26 +51,31 @@ const MATCHES = [
 
 test('四图:棋谱 ←→ sample-go/shots/15-kifu.png', async ({ page }) => {
   await freezeClock(page);
-  await page.addInitScript(() => {
+  // 种子键带身份后缀 + `/me` 给同一个 uuid,缺一不可 —— 见 helpers/kioskIdentity.ts。
+  // (少了它这一屏的「最近摆过」三行根本不出现,而这张四图的全部意义就是那三行。)
+  await page.addInitScript((k: { recent: string; p1: string; p2: string; p3: string }) => {
     localStorage.setItem('token', 'fourup');
     localStorage.setItem('katrain_language', 'cn');
     // 冻住的「现在」是 2026-08-20 16:40。三条最近摆过分别落在 今天 15:40 / 昨天 / 前天。
     const at = (iso: string) => new Date(iso).getTime();
-    localStorage.setItem('baipu:recent', JSON.stringify([
+    localStorage.setItem(k.recent, JSON.stringify([
       { id: 'kifu_1', name: '第 29 届三星杯 · 半决赛', savedAt: at('2026-08-20T15:40:00') },
       { id: 'kifu_2', name: '名人战 · 第七局', savedAt: at('2026-08-19T20:10:00') },
       { id: 'local_3', name: '本地导入 · game-0731', savedAt: at('2026-08-18T09:30:00') },
     ]));
-    const prog = (k: number, total: number) => JSON.stringify({ k, frames: 0, updatedAt: 0, total });
-    localStorage.setItem('baipu:progress:kifu_1', prog(47, 241));
-    localStorage.setItem('baipu:progress:kifu_2', prog(198, 198));
-    localStorage.setItem('baipu:progress:local_3', prog(12, 175));
+    const prog = (n: number, total: number) => JSON.stringify({ k: n, frames: 0, updatedAt: 0, total });
+    localStorage.setItem(k.p1, prog(47, 241));
+    localStorage.setItem(k.p2, prog(198, 198));
+    localStorage.setItem(k.p3, prog(12, 175));
+  }, {
+    recent: scopedKey('baipu:recent'),
+    p1: scopedKey('baipu:progress:kifu_1'),
+    p2: scopedKey('baipu:progress:kifu_2'),
+    p3: scopedKey('baipu:progress:local_3'),
   });
   // 后端没起时 logo 会 502,取出来的图左上角是碎图标 —— 钉在仓里那份真字节上。
   await stubBackendStatics(page);
-  await page.route('**/api/v1/auth/me', (route) => route.fulfill({
-    json: { id: 1, username: '访客', rank: '5段', credits: 0 },
-  }));
+  await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: kioskMeJson({ username: '访客' }) }));
   await page.route('**/api/v1/kifu/albums*', (route) => route.fulfill({
     json: { items: ALBUMS, total: 1234, page: 1, page_size: 6 },
   }));

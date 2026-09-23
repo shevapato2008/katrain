@@ -54,3 +54,41 @@ def test_camera_hub_grab_burst_uses_shared_frame_source():
 
     assert len(frames) == 3
     assert all(frame.shape == (4, 6, 3) for frame in frames)
+
+
+class ControlCamera(FakeCamera):
+    def __init__(self):
+        super().__init__()
+        self.control_calls = []
+        self.controls_effective = True
+        self.initial_exposure = 166.0
+        self.current_auto_exposure = 1.0
+        self.current_exposure = 120.0
+
+    def request_controls(self, exposure=None, auto_exposure=None):
+        self.control_calls.append((exposure, auto_exposure))
+
+
+def test_camera_hub_forwards_runtime_controls_to_the_camera():
+    camera = ControlCamera()
+    hub = CameraHub(CameraHubConfig(device_id=0), camera=camera)
+    hub.start()
+
+    hub.request_controls(exposure=120.0, auto_exposure=0.25)
+
+    assert camera.control_calls == [(120.0, 0.25)]
+    assert hub.controls_effective is True
+    assert hub.initial_exposure == 166.0
+    assert hub.current_auto_exposure == 1.0
+    assert hub.current_exposure == 120.0
+
+
+def test_camera_hub_controls_are_inert_before_start():
+    hub = CameraHub(CameraHubConfig(device_id=0), camera=None)
+
+    hub.request_controls(exposure=120.0)
+
+    assert hub.controls_effective is None
+    assert hub.initial_exposure is None
+    assert hub.current_auto_exposure is None
+    assert hub.current_exposure is None

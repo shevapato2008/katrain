@@ -1,12 +1,18 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { API, type GameState, type PhysicalEngineErrorState } from '../api';
-import { websocketUrl, WS_POLICY_VIOLATION } from '../utils/websocketUrl';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
+import { API, type EndGameResponse, type GameState, type PhysicalEngineErrorState } from '../api';
+import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from '../utils/websocketUrl';
+import { readAudioPref } from '../utils/audioPrefs';
+import { requestFailureKind } from '../utils/requestFailure';
 
 interface GameEndData {
     reason: 'resign' | 'forfeit' | 'timeout' | 'count' | 'normal';
     winner_id?: number;
     result?: string;
     leaver_id?: number;
+}
+
+function isSessionGone(error: unknown): boolean {
+    return requestFailureKind(error) === 'not_found';
 }
 
 interface CountRequestData {
@@ -16,17 +22,22 @@ interface CountRequestData {
 
 interface UseGameSessionOptions {
     token?: string;  // Auth token for multiplayer games
+    deferMoveSoundUntilPaint?: boolean;  // Kiosk: wait for the visible canvas to acknowledge the node
     onGameEnd?: (data: GameEndData) => void;  // Callback when game ends
     onCountRequest?: (data: CountRequestData) => void;  // Callback for count request (HvH)
     onCountRejected?: () => void;  // Callback when count request is rejected
     onCountTimeout?: () => void;  // Callback when count request times out
 }
 
+type QueuedSound = { sound: string; afterNodeId: number };
+
 export const useGameSession = (options: UseGameSessionOptions = {}) => {
-    const { token, onGameEnd, onCountRequest, onCountRejected, onCountTimeout } = options;
+    const { token, deferMoveSoundUntilPaint = false, onGameEnd, onCountRequest, onCountRejected, onCountTimeout } = options;
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [error, setError] = useState<string | null>(null);
+    // 断线是持续状态，与一次性操作失败分开；保留 error 的既有文案供其它调用方使用。
+    const [connectionLost, setConnectionLost] = useState<'rejected' | 'dropped' | 'gone' | null>(null);
     const [lastLog, setLastLog] = useState<string | null>(null);
     // wire 契约 `shapes.Chat`:身份两项由服务端填,字段叫 `from_name` **不叫 `sender`**。
     const [chatMessages, setChatMessages] = useState<{from_id: number, from_name: string, text: string}[]>([]);
@@ -47,11 +58,25 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     const [awaitingRemovalReminder, setAwaitingRemovalReminder] = useState<{ row: number; col: number } | null>(null);
 
     const wsRef = useRef<WebSocket | null>(null);
+    /* 「这一局已经有结果了」。要 ref 是因为 `ws.onclose` 的闭包建于**建连那一刻**,直接读
+       `gameState` 读到的是那一刻的值。来源只取 state 里的 `end_result` —— 它**会**随下一局
+       自己回到 false(新局的 state 不带 end_result),不需要谁记得去清。
+       不用 `gameEndData`:那个 state 没有任何清除者(`setGameEndData` 全仓只有 `game_end`
+       那一处调用),一旦为真就再也回不去。而 galaxy 的 GameRoomPage 会在**同一个挂载的
+       hook** 上换 sessionId,那种「页内再来一局」会让下一局真正的回收被这里吞掉。 */
+    const gameEndedRef = useRef(false);
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
     const lastSoundRef = useRef<{name: string, time: number} | null>(null);
+    const soundQueueRef = useRef<QueuedSound[]>([]);
+    const committedNodeRef = useRef<number | null>(null);
+    const paintedNodeRef = useRef<number | null>(null);
+    const committedGameRef = useRef<string | null>(null);
+    const soundRafRef = useRef<number[]>([]);
 
     const playSound = useCallback((sound: string) => {
-        if (typeof localStorage !== 'undefined' && localStorage.getItem('kioskPlaySound') === '0') return;
+        // 提示音只留一把:设置屏「落子音效」、屏 04「落子提示音」、这里读的都是 audioPrefs 的 sfx
+        // (v2 §4.1)。galaxy 也走这个 hook —— 它从不写这把键,readAudioPref 缺键当开,行为不变。
+        if (!readAudioPref('sfx')) return;
         const now = Date.now();
         // Prevent duplicate rapid sounds
         if (lastSoundRef.current && lastSoundRef.current.name === sound && now - lastSoundRef.current.time < 300) {
@@ -67,18 +92,95 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         audio.play().catch(e => console.warn("Failed to play sound", e));
     }, []);
 
+    const clearQueuedSounds = useCallback(() => {
+        soundQueueRef.current = [];
+        paintedNodeRef.current = null;
+        soundRafRef.current.forEach(id => cancelAnimationFrame(id));
+        soundRafRef.current = [];
+    }, []);
+
+    const flushQueuedSounds = useCallback((): void => {
+        if (soundRafRef.current.length > 0) return;
+        const matchingIndex = soundQueueRef.current.findIndex(
+            queued => queued.afterNodeId === committedNodeRef.current
+                && (!deferMoveSoundUntilPaint || queued.afterNodeId === paintedNodeRef.current),
+        );
+        if (matchingIndex < 0) return;
+        if (matchingIndex > 0) {
+            soundQueueRef.current.splice(0, matchingIndex);
+        }
+        const next = soundQueueRef.current[0];
+        if (!next) return;
+
+        const finishPlayback = () => {
+            if (soundQueueRef.current[0] === next) {
+                soundQueueRef.current.shift();
+                if (next.afterNodeId === committedNodeRef.current
+                    && (!deferMoveSoundUntilPaint || next.afterNodeId === paintedNodeRef.current)) {
+                    playSound(next.sound);
+                }
+            }
+            flushQueuedSounds();
+        };
+
+        const firstRaf = requestAnimationFrame(() => {
+            soundRafRef.current = soundRafRef.current.filter(id => id !== firstRaf);
+            // Board acknowledges drawImage completion, not screen presentation.
+            // RAF runs before paint, so even that acknowledgement needs two frames:
+            // the first gives the browser a chance to present the new stone.
+            const secondRaf = requestAnimationFrame(() => {
+                soundRafRef.current = soundRafRef.current.filter(id => id !== secondRaf);
+                finishPlayback();
+            });
+            soundRafRef.current.push(secondRaf);
+        });
+        soundRafRef.current.push(firstRaf);
+    }, [deferMoveSoundUntilPaint, playSound]);
+
+    const acknowledgePaintedNode = useCallback((nodeId: number) => {
+        if (nodeId !== committedNodeRef.current) return;
+        paintedNodeRef.current = nodeId;
+        flushQueuedSounds();
+    }, [flushQueuedSounds]);
+
+    useLayoutEffect(() => {
+        const committedGame = gameState?.game_id ?? null;
+        if (committedGameRef.current !== null && committedGameRef.current !== committedGame) {
+            clearQueuedSounds();
+        }
+        committedGameRef.current = committedGame;
+        const committedNode = gameState?.current_node_id ?? null;
+        if (committedNodeRef.current !== committedNode) {
+            paintedNodeRef.current = null;
+        }
+        committedNodeRef.current = committedNode;
+        flushQueuedSounds();
+    }, [gameState?.game_id, gameState?.current_node_id, clearQueuedSounds, flushQueuedSounds]);
+
+    useEffect(() => clearQueuedSounds, [clearQueuedSounds]);
+
+    useEffect(() => {
+        gameEndedRef.current = Boolean(gameState?.end_result);
+    }, [gameState]);
+
     useEffect(() => {
         if (sessionId) {
+            let disposed = false;
+            let ownedWs: WebSocket | null = null;
             const connect = async () => {
                 try {
                     const data = await API.getState(sessionId, token);
+                    if (disposed) return;
                     setGameState(data.state);
 
                     /* token 必须带上 —— 服务端 `/ws/{session_id}` 是要鉴权的，而这里
                        在此之前一个凭据都不发（`/ws/lobby` 一直是带的）。详见
                        utils/websocketUrl.ts 里记的那次回归。 */
+                    if (disposed) return;
                     const ws = new WebSocket(websocketUrl(`/ws/${sessionId}`, token));
+                    ownedWs = ws;
                     wsRef.current = ws;
+                    ws.onopen = () => { if (wsRef.current === ws) setConnectionLost(null); };
                     
                     ws.onmessage = (event) => {
                         const msg = JSON.parse(event.data);
@@ -88,7 +190,15 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                             // Lightweight update for spectator count only (doesn't reset timers)
                             setGameState(prev => prev ? { ...prev, sockets_count: msg.count } : prev);
                         } else if (msg.type === 'sound') {
-                            playSound(msg.data.sound);
+                            if (typeof msg.data.after_node_id === 'number') {
+                                soundQueueRef.current.push({
+                                    sound: msg.data.sound,
+                                    afterNodeId: msg.data.after_node_id,
+                                });
+                                flushQueuedSounds();
+                            } else {
+                                playSound(msg.data.sound);
+                            }
                         } else if (msg.type === 'log') {
                             setLastLog(msg.data.message);
                         } else if (msg.type === 'chat') {
@@ -136,27 +246,56 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
                        「点了没反应」。对局状态全靠这条推送，它断 = 页面在撒谎。 */
                     ws.onclose = (event) => {
                         if (wsRef.current !== ws) return;  // 已被新连接替换或组件卸载
-                        if (event.code === WS_POLICY_VIOLATION) {
+                        clearQueuedSounds();
+                        if (event.code === WS_POLICY_VIOLATION && event.reason === WS_SESSION_GONE_REASON) {
+                            if (gameEndedRef.current) {
+                                /* 这一局已经有结果了 —— 结果不能被「这一局没了」顶掉。服务端那边
+                                   有意收尾走的是正常关闭(session.py 的 SOCKET_CLOSE_SESSION_CLOSED),
+                                   所以正常情况下到不了这里;这一条兜的是「终局卡还在屏上时会话被闲置
+                                   回收」那一种 —— 那时候「这一局没了」是真的,但用户要看的是结果。
+                                   离开判负(`/api/multiplayer/leave`)那一种**不**落进这个条件:它只广播
+                                   `game_end`、不写 state 的 `end_result`。不要紧 —— 那条路同一个处理函数
+                                   当场就把会话拆了,后面不会再有「闲置回收」找上这一局。 */
+                                console.warn('Session reclaimed after the game had already ended');
+                                return;
+                            }
+                            // 服务端把这局回收了。这不是凭据问题 —— 走下面那条会告诉用户
+                            // 「请重新登录」,而重新登录救不了它。说错原因和印原始报错一样不算人话。
+                            console.warn('Game session is gone on the server');
+                            setConnectionLost('gone');
+                            setError(SESSION_GONE_MESSAGE);
+                        } else if (event.code === WS_POLICY_VIOLATION) {
+                            // Kiosk's GamePage shows a fixed sentence for 'rejected' (raw 1008
+                            // reasons aren't actionable on a 7" screen - see the comment above
+                            // that Snackbar branch) and `error` below is galaxy's channel, not
+                            // kiosk's. This console line is now the ONLY place the kiosk keeps
+                            // the actual reason - do not delete it in a future cleanup.
                             console.error("Game WebSocket rejected:", event.reason);
+                            setConnectionLost('rejected');
                             setError(`实时连接被拒绝（${event.reason || '凭据无效'}），棋盘不会自动更新，请重新登录后重试`);
                         } else if (!event.wasClean) {
                             console.warn("Game WebSocket closed:", event.code, event.reason);
+                            setConnectionLost('dropped');
                             setError("实时连接已断开，棋盘不会自动更新，请刷新页面");
                         }
                     };
                 } catch (err) {
+                    if (disposed) return;
                     console.error("Failed to connect", err);
                     setError("Failed to connect to game");
                 }
             };
             connect();
             return () => {
-                const ws = wsRef.current;
-                wsRef.current = null;  // 先清空，让上面的 onclose 认出这是我们自己关的
-                ws?.close();
+                disposed = true;
+                clearQueuedSounds();
+                if (wsRef.current === ownedWs) {
+                    wsRef.current = null;  // 先清空，让上面的 onclose 认出这是我们自己关的
+                }
+                ownedWs?.close();
             };
         }
-    }, [sessionId, token, playSound]);
+    }, [sessionId, token, playSound, clearQueuedSounds, flushQueuedSounds]);
 
     const onMove = useCallback(async (x: number, y: number) => {
         if (!sessionId) return;
@@ -168,10 +307,13 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
         await API.navigate(sessionId, nodeId, token);
     }, [sessionId, token]);
 
-    const handleAction = useCallback(async (action: string) => {
+    const handleAction = useCallback(async (action: string, opts?: { color?: 'B' | 'W' }) => {
         if (!sessionId) return;
         try {
-            let result: any;
+            // 这一族端点要么回常规回执,要么回「这局没了」。写成联合类型(而不是 any)是为了
+            // 让 `tsc -b` 在**这个 hook** 里也盯着收窄 —— 三条通道都汇到这里,页面那两个
+            // 调用点被盯着而这里不被盯着,等于闸建在了人少的那一侧。
+            let result: EndGameResponse | undefined;
             if (action === 'pass') await API.playMove(sessionId, null, token);
             else if (action === 'undo') result = await API.undo(sessionId, 'smart');
             else if (action === 'back') result = await API.undo(sessionId, 1);
@@ -185,11 +327,26 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             // already return the finished state; relying on the broadcast instead left
             // the acting client sitting in a game the server had already ended (and,
             // for 升降级对弈, never showing the settlement that follows it).
-            else if (action === 'resign') result = await API.resign(sessionId, token);
+            // 本地对局(pvp_local)的认输要说**是哪一方**认输(后端不带 color 回 400);
+            // 其它模式不许带(带了同样 400)⇒ 没给 color 时调用形状与原来逐字一致。
+            else if (action === 'resign') result = opts?.color
+                ? await API.resign(sessionId, token, opts.color)
+                : await API.resign(sessionId, token);
             else if (action === 'timeout') result = await API.timeout(sessionId, token);
             else if (action === 'rotate') await API.rotate(sessionId);
             else if (action === 'mistake-prev') result = await API.findMistake(sessionId, 'undo');
             else if (action === 'mistake-next') result = await API.findMistake(sessionId, 'redo');
+            // Task 2 的 200 空回执。只看 `result?.state` 会把它当成静默成功:框关掉、棋局
+            // 永远不终局、页面完全不知道这局已经死了。它**不带**任何结果 —— 会话没了不等于
+            // 远端认输了(真正的远端认输在 gateway.py:399-420,那条路这时根本没走到)。
+            // `'status' in result` 是完整判别式:`SessionResponse` 没有 `status` 这个键。
+            // **不要**写成 `&& result.status === 'session_gone'` —— 那个复合形式会让 TS
+            // 在落空分支上收不窄,下面读 `result.state` 当场报错(GamePage 的 send() 记过)。
+            if (result && 'status' in result) {
+                setConnectionLost('gone');
+                setError(SESSION_GONE_MESSAGE);
+                return;
+            }
             // Apply state from the HTTP response immediately (a WebSocket broadcast may
             // also arrive, but this ensures the acting client updates without waiting)
             if (result?.state) {
@@ -197,11 +354,30 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
             }
         } catch (e) {
             console.error(e);
+            if (isSessionGone(e)) {
+                // 同一个信号的第三条来路。**不能**把 e.message 放进 error:那正是
+                // `Request failed 404: {"detail":…}` 上屏的那条路。
+                setConnectionLost('gone');
+                setError(SESSION_GONE_MESSAGE);
+                throw e;
+            }
             const message = e instanceof Error ? e.message : 'Game action failed';
             setError(message);
             throw e;
         }
     }, [sessionId, token]);
+
+    const clearError = useCallback(() => setError(null), []);
+
+    // 第四条通道。这局没了目前有三条发现路径(WS 1008/session_gone、handleAction 的 200
+    // session_gone 回执、handleAction 的 404 catch),GamePage 里还有两处绕过 handleAction
+    // 直接打 API.timeout 的调用点(自动超时判定),它们发现"没了"之后没有地方可以报。
+    // 这个回调就是那个地方 —— 与前三条写的是同一对 state,调用方不需要,也不应该,
+    // 自己另开一个"gone"标志。
+    const reportSessionGone = useCallback(() => {
+        setConnectionLost('gone');
+        setError(SESSION_GONE_MESSAGE);
+    }, []);
 
     const initNewSession = useCallback(async () => {
         const data = await API.createSession(token);
@@ -228,8 +404,9 @@ export const useGameSession = (options: UseGameSessionOptions = {}) => {
     // disable-while-pending wiring). This hook's own onmessage switch above only handles
     // the generic game-session message types and deliberately ignores platform_* ones.
     return {
-        sessionId, setSessionId, gameState, setGameState, error, onMove, onNavigate, handleAction,
+        sessionId, setSessionId, gameState, setGameState, error, connectionLost, clearError, reportSessionGone, onMove, onNavigate, handleAction,
         initNewSession, lastLog, chatMessages, sendChat, gameEndData, physicalReminder,
         physicalEngineError, clearPhysicalEngineError, awaitingRemovalReminder, wsRef,
+        acknowledgePaintedNode,
     };
 };

@@ -170,7 +170,7 @@ class FakeVisionForOrchestrator:
     def get_detected_board(self):
         return self.detected
 
-    def set_expected_from_stones(self, stones, board_size=19):
+    def set_expected_from_stones(self, stones, board_size=19, *, expected_node_id=None):
         self.expected_pushes.append(stones)
 
     def pause_detection(self):
@@ -687,4 +687,61 @@ class TestCase6BoundarySampling:
             poller.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await poller
+            await stack.orch.shutdown()
+
+
+# --- Case 7: waiting-for-removal resign with a leftover physical stone -------
+
+
+class TestCase7ResignWhileWaitingForRemoval:
+    @pytest.mark.asyncio
+    async def test_leftover_stone_after_a_waiting_state_resign_does_not_reopen_the_game(self):
+        async def tunnel_down(**kwargs):
+            raise RuntimeError("tunnel down")
+
+        stack = _build_stack(
+            genmove_side_effect=tunnel_down,
+            engine_recovery_config=EngineRecoveryConfig(engine_move_max_attempts=2),
+        )
+        stack.pm._setup_callbacks(stack.adapter)
+        config = EngineGameConfig(level=1100, human_color="B", handicap=0)
+        session_id = await stack.pm.start_engine_game("golaxy", config, user_id=1)
+        session = stack.sm.get_session(session_id)
+        stack.orch.on_bind(session_id, session)
+        stack.vision.bind_session(session_id)
+        worker = stack.vision._worker
+        stone = _vision_move(3, 3, "B")
+        recovery = {
+            PhysicalPlayOrchestrator.PAUSE_REASON_ENGINE_ERROR,
+            PhysicalPlayOrchestrator.PAUSE_REASON_AWAITING_REMOVAL,
+        }
+        try:
+            for _ in range(2):
+                await _handle_confirmed_move(stack.app, stack.vision, session_id, stone, log)
+            episode = stack.tracker.consume(stack.tracker.active_episode.recovery_token)
+            stack.orch.enter_awaiting_removal(episode.coords)
+
+            await stack.gateway.resign(session_id, 1)
+            result = session.katrain.game.end_result
+            assert result
+            assert not stack.gateway.is_platform_game(session_id)
+            stack.orch.on_game_state(session.katrain.get_state())
+            await _wait_until(lambda: not (recovery & stack.orch._pause_reasons))
+            pause_commands = [
+                command
+                for command in worker.commands
+                if command in (CommandType.PAUSE_DETECTION, CommandType.RESUME_DETECTION)
+            ]
+            # 原来这里期望 RESUME —— 恢复态释放完就把检测放回去。终局即停止比对之后不再如此:
+            # engine_error / awaiting_removal 确实释放了(上面的 _wait_until 守着),但
+            # game_over 接着把检测按住,所以最后一条命令是 PAUSE。这正是目的 ——
+            # 认输之后实体盘上再放多少子都不该被拿来和一局已经结束的棋比对。
+            assert pause_commands[-1] == CommandType.PAUSE_DETECTION
+
+            delay = await _handle_confirmed_move(stack.app, stack.vision, session_id, stone, log)
+
+            assert _main_line(session) == []
+            assert session.katrain.game.end_result == result
+            assert delay == 0.0
+        finally:
             await stack.orch.shutdown()

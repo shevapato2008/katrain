@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AiLadderApiError, getAiLadderStatus } from './api';
 import { AI_LADDER_COPY } from './copy';
+import { aiLadderStatusUnavailableMessage } from './startErrors';
 import {
   isAiLadderReadyStatus,
   type AiLadderSettlementSync,
@@ -15,7 +16,7 @@ import {
  */
 export const aiLadderStatusErrorMessage = (error: unknown): string => {
   if (error instanceof AiLadderApiError) {
-    if (error.status === 503) return AI_LADDER_COPY.loadErrorNotAuthoritative;
+    if (error.status === 503) return aiLadderStatusUnavailableMessage(error.message);
     if (error.status === 401 || error.status === 403) return AI_LADDER_COPY.loadErrorUnauthorized;
   }
   return AI_LADDER_COPY.loadError;

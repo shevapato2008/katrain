@@ -61,6 +61,15 @@ COLOR_RGB: Dict[str, tuple] = {
 }
 
 
+# Lower bound of the guidance brightness scale: the lamps must stay visible to the player.
+MIN_GUIDANCE_SCALE = 0.08
+
+
+def _scaled(value: int, scale: float) -> int:
+    """A colour channel at `scale`; a lit channel never rounds down to fully off."""
+    return 0 if value <= 0 else max(1, int(round(value * scale)))
+
+
 def validate_lut(fn: Callable[[int, int], int]) -> bool:
     """A LUT is valid iff it maps all 361 points bijectively onto [0,360]."""
     seen = set()
@@ -78,7 +87,7 @@ class LedServiceConfig:
     enabled: bool = False
     serial_port: str = ""
     baud_rate: int = 115200
-    max_bright: int = 200
+    max_bright: int = 255
     handshake_timeout: float = 2.0
     lut_path: Optional[str] = None
 
@@ -118,9 +127,16 @@ class LedService:
         self._serial = None
         self._connected = False
         self._last_reconnect = 0.0
+        self._last_errors: List[str] = []
         # Set once pyserial itself is missing — a permanent condition, so we stop
         # retrying (and stop logging) instead of hammering every reconnect_interval.
         self._serial_unavailable = False
+        # Guidance brightness (MIN_GUIDANCE_SCALE..1): multiplies every set_points colour. Steered by the
+        # ambient-light loop (server `_adjust_led_brightness`, fed by the vision worker's led_glow
+        # readings) — at night full brightness shines through a white stone and it is no longer
+        # recognised. Calibration (set_rgb_points) is never scaled.
+        self._guidance_scale = 1.0
+        self._last_guidance: Optional[List[Dict]] = None
 
     # -- LUT --------------------------------------------------------------- #
     def _load_lut(self, lut_path: Optional[str]) -> Callable[[int, int], int]:
@@ -183,6 +199,19 @@ class LedService:
     def is_connected(self) -> bool:
         return self._connected
 
+    @property
+    def last_errors(self) -> List[str]:
+        """Firmware/serial errors from the most recently completed batch only —
+        not an accumulated history. A batch with no errors overwrites this back to
+        [], EVEN IF it immediately follows a failing one (e.g. a plain CLEAR sent
+        right after a batch that hit `ERR maxon`) — so this is a snapshot of "right
+        now", not a log of everything that went wrong. For history, read the
+        journal: every batch with errors also goes through `log.warning(...)` in
+        _run_batch. The non-strict path's HTTP `ok: true` only means "enqueued";
+        this is where its real outcome — e.g. firmware `ERR maxon` when a request
+        exceeds MAX_ON, or the serial connection dropping mid-batch — surfaces."""
+        return list(self._last_errors)
+
     # -- public API -------------------------------------------------------- #
     def set_points(self, points: List[Dict], *, strict: bool = False) -> Dict:
         """Light a set of points. Each point: {row, col, color}.
@@ -190,16 +219,28 @@ class LedService:
         Returns {ok, connected, shown_at, errors}. For strict=False this reflects
         only enqueue success; for strict=True it reflects the actual SHOW ack.
         """
+        self._last_guidance = list(points)
+        scale = self._guidance_scale
         commands = ["CLEAR"]
         for p in points:
             row, col, color = p.get("row"), p.get("col"), p.get("color", "black")
             if row is None or col is None or not (0 <= row <= 18 and 0 <= col <= 18):
                 continue
             idx = self._lut(row, col)
-            r, g, b = COLOR_RGB.get(str(color), COLOR_RGB["black"])
+            r, g, b = (_scaled(v, scale) for v in COLOR_RGB.get(str(color), COLOR_RGB["black"]))
             commands.append(f"SETI {idx} {r} {g} {b}")
         commands.append("SHOW")
         return self._submit(commands, strict=strict)
+
+    @property
+    def guidance_scale(self) -> float:
+        return self._guidance_scale
+
+    def set_guidance_scale(self, scale: float) -> None:
+        """Set the guidance brightness and re-show whatever guidance is lit right now at it."""
+        self._guidance_scale = min(1.0, max(MIN_GUIDANCE_SCALE, float(scale)))
+        if self._last_guidance:
+            self.set_points(self._last_guidance, strict=False)
 
     def set_rgb_points(self, points: List[Dict], *, strict: bool = False) -> Dict:
         """Light points with explicit RGB values for calibration and diagnostics."""
@@ -217,6 +258,7 @@ class LedService:
         return self._submit(commands, strict=strict)
 
     def clear(self, *, strict: bool = False) -> Dict:
+        self._last_guidance = None
         return self._submit(["CLEAR", "SHOW"], strict=strict)
 
     # -- queue plumbing ---------------------------------------------------- #
@@ -278,6 +320,15 @@ class LedService:
                 errors.append(f"{cmd} -> {resp}")
             if cmd.startswith("SHOW") and ok:
                 shown_at = self._clock()
+        if errors:
+            # _run_batch runs for both strict and non-strict batches: the strict
+            # caller is still blocked on batch.event and gets these errors back
+            # through batch.result (set in _finish below), so for it this line is
+            # just an extra trace. The non-strict caller already got its ok:true
+            # back in _submit() and never sees batch.result at all — for IT, this
+            # log line (and last_errors, also updated in _finish) is the only
+            # remaining exit. MAX_ON / ERR range and friends all land here.
+            log.warning("LED batch reported %d firmware error(s): %s", len(errors), "; ".join(errors[:5]))
         self._finish(batch, ok=not errors, shown_at=shown_at, errors=errors)
 
     def _send_and_ack(self, cmd: str) -> tuple:
@@ -296,7 +347,17 @@ class LedService:
 
     def _finish(self, batch, *, ok: bool, shown_at, errors: List[str]) -> None:
         if batch is _SENTINEL or not isinstance(batch, _Batch):
+            # Not a real batch of commands (nothing was actually attempted), so
+            # there is no outcome to record — leave last_errors as-is.
             return
+        # ALL finish paths converge here — a clean completion (with or without
+        # firmware errors) from _run_batch, a real serial exception from _worker's
+        # except-Exception handler, and "not connected" from _worker directly — so
+        # this is the one place that can update last_errors for every one of them.
+        # (It used to be set only in _run_batch's own call site, which meant a
+        # serial exception left last_errors — and /led/status — stuck on
+        # whatever the previous batch reported.)
+        self._last_errors = list(errors)
         batch.result = {"ok": ok, "connected": self._connected, "shown_at": shown_at, "errors": errors}
         if batch.event is not None:
             batch.event.set()

@@ -4,25 +4,27 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
+import { __resetKioskActivityStorageForTests, setKioskIdentity } from '../storage/kioskActivityStorage';
 
-/**
- * 屏 11 · 训练营。**文案在 2026-08-22 按稿子整屏换过**(Task 12),所以这一份的断言
- * 和上一版对不上是预期的 —— 上一版断的是 `死活题 / 选择难度级别 / 15K / 手筋: 139`,
- * 那是 MUI 卡片时代的标题栏 + 分类计数条,稿子上没有这两样。
- *
- * 分类 key 用的是**题库真的会返回的那六个**(`life-death` / `capturing` / …)。
- * 上一版 fixture 里写的是中文键(`{ '手筋': 139 }`)—— 后端 `TsumegoProblem.category`
- * 存的是英文 slug,那份 fixture 描述的是一个不存在的后端。
- */
+const TEST_UUID = 'tsumego-page-test-user';
+
+// 训练营的「上次」三样按账号存(N10)。盒上 token 恒为 null、身份在 user 上 —— 这里照盒上的样子造。
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 7, username: '甲', rank: '5段', credits: 0 }, isAuthenticated: true, token: null }),
+}));
 
 const mockLevels = [
   { level: '15k', categories: { capturing: 630, 'life-death': 167, tesuji: 139 }, total: 936 },
   { level: '14k', categories: { capturing: 295, semeai: 124 }, total: 419 },
+  { level: '1k', categories: { 'life-death': 80, tesuji: 55 }, total: 135 },
+  { level: '1d', categories: { 'life-death': 60, tesuji: 45 }, total: 105 },
 ];
 
 beforeEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: () => Promise.resolve(mockLevels),
@@ -46,83 +48,55 @@ const renderPage = () =>
 /** 落点探针:断言**落在哪条路由上**,不是「落在别处了」—— 后者对「进错了一屏」免疫。 */
 const Landed = () => <div data-testid="landed">{useLocation().pathname}</div>;
 
-/** 一张卡的可读身份 = 标题 + 副标(`KioskCard` 把它们放在 `.kiosk-card__t` 里)。 */
-const cardTitles = () =>
-  Array.from(document.querySelectorAll('.kiosk-card__t > b')).map(n => n.textContent);
+const levelRows = () => Array.from(document.querySelectorAll<HTMLButtonElement>('.tsumego-level-row'));
 
 describe('TsumegoPage · 屏 11 训练营', () => {
-  it('问候行和副标照稿子', async () => {
+  it('问候行照稿子;副标说的是在哪儿做题都成立的那句,不说「题在实体盘上摆好」', async () => {
     renderPage();
     await waitFor(() => {
       expect(document.querySelector('.kiosk-greet b')?.textContent).toBe('今天练点什么');
     });
-    expect(screen.getByText('题在实体盘上摆好，落子即判')).toBeInTheDocument();
+    // 实体做题开关默认关、无摄像头的盒子根本没有实体盘 —— 稿子那句只在一种情况下成立(N26③)。
+    expect(screen.getByText('落子即判，走错当场退回')).toBeInTheDocument();
+    expect(screen.queryByText(/实体盘上摆好/)).toBeNull();
   });
 
-  it('按分类:题库返回哪几类就画哪几类，顺序照稿子那六张', async () => {
+  it('首页只让人先选难度，不再把某一档的题型提前放在难度前面', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByText('死活')).toBeInTheDocument());
-    // fixture 给的是 capturing / life-death / tesuji,后端返回顺序是乱的;
-    // 屏上必须是稿子那六张的相对次序 —— 死活 → 手筋 → 吃子。
-    expect(cardTitles().slice(0, 3)).toEqual(['死活', '手筋', '吃子']);
-    expect(screen.getByText('怎么把子吃下来')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('按棋力选择')).toBeInTheDocument());
+    expect(levelRows().map((row) => row.querySelector('b')?.textContent)).toEqual(['15 级', '14 级', '1 级', '1 段']);
+    expect(screen.queryByText('死活')).toBeNull();
+    expect(screen.queryByText('按分类')).toBeNull();
   });
 
-  it('分类那一排写明它属于哪一档 —— 不让人对着卡猜作用域', async () => {
-    renderPage();
-    await waitFor(() => expect(screen.getByText('15 级 · 3 类')).toBeInTheDocument());
-  });
-
-  it('上次做的那一档决定分类的作用域，不是恒取最弱那档', async () => {
-    localStorage.setItem('kiosk_tsumego_last_level', '14k');
-    renderPage();
-    await waitFor(() => expect(screen.getByText('14 级 · 2 类')).toBeInTheDocument());
-    // 14 级只有 capturing / semeai 两类 —— 15 级才有的「死活」不许出现在这一排。
-    // 次序照稿子那六张(死活 / 手筋 / 对杀 / 吃子 / 官子 / 布局),对杀在吃子前面。
-    expect(cardTitles().slice(0, 2)).toEqual(['对杀', '吃子']);
-  });
-
-  it('按级别:每档一张环卡，环里写「—」不写 0%', async () => {
+  it('每档一行显示题量和真实分类分布，不编这一档的完成百分比', async () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('15 级')).toBeInTheDocument());
-    const rings = Array.from(document.querySelectorAll('.kiosk-card__tile.is-ring'));
-    expect(rings).toHaveLength(2);
-    // 「—」= 这一层算不出;`0%` 是一个事实断言,而我们并不知道(G8)。
-    expect(rings.map(r => r.querySelector('b')?.textContent)).toEqual(['—', '—']);
-    // 进度圈只在有值时画;两张都只该有底圈一个 circle。
-    expect(rings.every(r => r.querySelectorAll('circle').length === 1)).toBe(true);
     expect(screen.getByText('936 题')).toBeInTheDocument();
     expect(screen.getByText('419 题')).toBeInTheDocument();
-    expect(screen.getByText('15 级 → 14 级')).toBeInTheDocument();
+    expect(levelRows()[0].querySelectorAll('.tsumego-level-row__mix i')).toHaveLength(3);
+    expect(document.querySelector('.kiosk-card__tile.is-ring')).toBeNull();
   });
 
-  it('读屏拿到的级别卡也带着「进度未知」，不只是一个题量', async () => {
+  it('级位和段位之间有一条明确分界', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByText('15 级')).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: '15 级，936 题，进度未知' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('1K → 1D')).toBeInTheDocument());
+    const seam = document.querySelector('.tsumego-level-seam')!;
+    expect(seam.previousElementSibling).toHaveTextContent('1 级');
+    expect(seam.nextElementSibling).toHaveTextContent('1 段');
   });
 
-  it('上次那一档和上次那一类各自高亮，互不冒充', async () => {
-    localStorage.setItem('kiosk_tsumego_last_level', '14k');
-    localStorage.setItem('kiosk_tsumego_last_category', 'semeai');
+  it('上次练习的难度标成「你的水平」，题型指针不在这一层出现', async () => {
+    localStorage.setItem(`kiosk_tsumego_last_level:${TEST_UUID}`, '14k');
+    localStorage.setItem(`kiosk_tsumego_last_category:${TEST_UUID}`, 'semeai');
     renderPage();
-    await waitFor(() => expect(screen.getByText('对杀')).toBeInTheDocument());
-    const current = Array.from(document.querySelectorAll('.kiosk-card.is-current'));
-    expect(current.map(c => c.querySelector('.kiosk-card__t > b')?.textContent))
-      .toEqual(['对杀', '14 级']);
+    await waitFor(() => expect(screen.getByText('你的水平')).toBeInTheDocument());
+    const current = document.querySelector('.tsumego-level-row.is-current');
+    expect(current).toHaveTextContent('14 级');
+    expect(screen.queryByText('对杀')).toBeNull();
   });
 
-  it('分类卡进的是「这一档 + 这一类」', async () => {
-    const user = userEvent.setup();
-    localStorage.setItem('kiosk_tsumego_last_level', '14k');
-    renderPage();
-    await waitFor(() => expect(screen.getByText('对杀')).toBeInTheDocument());
-    await user.click(screen.getByText('对杀').closest('button')!);
-    // 级别取的是作用域那一档(14k),不是恒定的第一档 —— 写死 15k 的实现也能让上一版断言通过。
-    expect(screen.getByTestId('landed')).toHaveTextContent('/kiosk/tsumego/14k/semeai');
-  });
-
-  it('级别卡进的是这一档的分类页', async () => {
+  it('点一级先进入该级的题型页', async () => {
     const user = userEvent.setup();
     renderPage();
     await waitFor(() => expect(screen.getByText('14 级')).toBeInTheDocument());
@@ -134,7 +108,7 @@ describe('TsumegoPage · 屏 11 训练营', () => {
     renderPage();
     expect(screen.getByTestId('tsumego-loading')).toBeInTheDocument();
     expect(screen.queryByTestId('tsumego-empty')).toBeNull();
-    expect(document.querySelector('.kiosk-card')).toBeNull();
+    expect(levelRows()).toHaveLength(0);
   });
 
   it('读不到时写出原因，并且给得起一次重试', async () => {
@@ -143,23 +117,35 @@ describe('TsumegoPage · 屏 11 训练营', () => {
     renderPage();
     await waitFor(() => expect(screen.getByTestId('tsumego-error')).toBeInTheDocument());
     expect(within(screen.getByTestId('tsumego-error')).getByText(/HTTP 500/)).toBeInTheDocument();
-    // 重试真的再打一次接口,而且第二次成功就该看见卡 —— 否则「重试」只是个装饰。
+    // 重试真的再打一次接口,而且第二次成功就该看见难度行 —— 否则「重试」只是个装饰。
     await user.click(screen.getByRole('button', { name: '重试' }));
-    await waitFor(() => expect(screen.getByText('死活')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('15 级')).toBeInTheDocument());
     expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
-  it('题库是空的时候说的是「还没同步」,不是「读不到」', async () => {
+  it('题库真是空的时候说「还没有题」,不说「随云端同步下来」—— 盒上题库是在线直读的,没有同步', async () => {
     (global.fetch as any).mockResolvedValue({ ok: true, json: () => Promise.resolve([]) });
     renderPage();
     await waitFor(() => expect(screen.getByTestId('tsumego-empty')).toBeInTheDocument());
+    expect(screen.getByText('题库里还没有题')).toBeInTheDocument();
+    expect(screen.queryByText(/随云端同步/)).toBeNull();
     expect(screen.queryByTestId('tsumego-error')).toBeNull();
+  });
+
+  it('连不上云端(503)时说「连不上云端题库」,不说「没有题」,重试键还在', async () => {
+    (global.fetch as any).mockResolvedValueOnce({ ok: false, status: 503, json: () => Promise.resolve({}) });
+    renderPage();
+    const box = await screen.findByTestId('tsumego-error');
+    expect(within(box).getByText('连不上云端题库')).toBeInTheDocument();
+    expect(within(box).getByText('题库在云端，盒子上不存题。等网络或云端恢复后再点重试。')).toBeInTheDocument();
+    expect(within(box).getByRole('button', { name: '重试' })).toBeInTheDocument();
+    expect(screen.queryByTestId('tsumego-empty')).toBeNull();
   });
 
   it('有未完成的练习才出「接着上次」', async () => {
     localStorage.setItem(
-      'kiosk_active_practice',
-      JSON.stringify({ kind: 'practice', label: '15 级 · 吃子 · 第 1 题', route: '/kiosk/tsumego/problem/p12', ts: Date.now() })
+      `kiosk_tsumego_resume:${TEST_UUID}`,
+      JSON.stringify({ label: '15 级 · 吃子 · 第 1 题', route: '/kiosk/tsumego/problem/p12' })
     );
     renderPage();
     await waitFor(() => {
@@ -170,7 +156,22 @@ describe('TsumegoPage · 屏 11 训练营', () => {
 
   it('没有未完成的练习时整块不渲染，不留占位', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByText('死活')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('15 级')).toBeInTheDocument());
     expect(screen.queryByTestId('tsumego-resume-card')).toBeNull();
+  });
+
+  it('别人的「上次」不串过来:另一个账号存下的三样,这个账号一样都看不见', async () => {
+    localStorage.setItem('kiosk_tsumego_last_level:another-user', '14k');
+    localStorage.setItem(
+      'kiosk_tsumego_resume:another-user',
+      JSON.stringify({ label: '14 级 · 对杀 · 第 3 题', route: '/kiosk/tsumego/problem/x' })
+    );
+    // 2026-09-14 之前那几把不分人的旧钥匙:没有主人,不迁移、不再读。
+    localStorage.setItem('kiosk_tsumego_last_level', '14k');
+    localStorage.setItem('kiosk_active_practice', JSON.stringify({ kind: 'practice', label: '旧的', route: '/x', ts: 1 }));
+    renderPage();
+    await waitFor(() => expect(screen.getByText('15 级')).toBeInTheDocument());
+    expect(screen.queryByTestId('tsumego-resume-card')).toBeNull();
+    expect(document.querySelectorAll('.tsumego-level-row.is-current')).toHaveLength(0);
   });
 });

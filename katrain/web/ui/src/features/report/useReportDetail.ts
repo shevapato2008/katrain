@@ -9,6 +9,7 @@ import {
 import { UserGamesAPI, type UserGameDetail } from '../../api/userGamesApi';
 import type { MoveAnalysis } from '../../types/live';
 import { nextReportCursor, toMoveAnalysisMap } from './reportModel';
+import { cacheBackedReadFailureKind, requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 
 const POLL_INTERVAL_MS = 2000;
 const INVALID_TASK_ID_ERROR = 'Invalid report task ID';
@@ -22,6 +23,11 @@ export interface UseReportDetailResult {
   setCurrentMove: (move: number) => void;
   loading: boolean;
   error: string | null;
+  /**
+   * 这条错属于哪一类(`utils/requestFailure.ts`)。**屏上说什么由调用方按它定** ——
+   * `error` 是原文,盒上断网时是 `Request failed 503: {"detail":…}`,不能直接上屏。
+   */
+  errorKind: RequestFailureKind | null;
   refresh: () => Promise<void>;
 }
 
@@ -34,8 +40,19 @@ function parseTaskId(taskId: string | number | null | undefined): number | null 
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Failed to load report';
+interface Failure {
+  message: string;
+  kind: RequestFailureKind;
+}
+
+/** 非法 task id 在屏上就是「没有这份报告」。 */
+const INVALID_TASK_FAILURE: Failure = { message: INVALID_TASK_ID_ERROR, kind: 'not_found' };
+
+function failureOf(error: unknown, classify: (error: unknown) => RequestFailureKind = requestFailureKind): Failure {
+  return {
+    message: error instanceof Error ? error.message : 'Failed to load report',
+    kind: classify(error),
+  };
 }
 
 function nextAvailableCursor(
@@ -65,6 +82,13 @@ function nextAvailableCursor(
 export function useReportDetail(
   token: string | null | undefined,
   taskId: string | number | null | undefined,
+  /**
+   * 认证就绪与否 —— **由调用方按 `isAuthenticated` 传，不能从 `token` 推**。
+   * 严格盒端 SSO 里 `token` 恒为 `null` 而人是登录的(凭据在 HttpOnly cookie 里)，
+   * 原来这里的 `!token` 闸会让**屏 20 报告详情主加载在盒上一次都不跑**。
+   * `token` 只剩身份键这一个用途。
+   */
+  enabled: boolean,
 ): UseReportDetailResult {
   const parsedTaskId = useMemo(() => parseTaskId(taskId), [taskId]);
   const currentTokenRef = useRef(token);
@@ -81,21 +105,21 @@ export function useReportDetail(
     currentMoveRef.current = move;
     setCurrentMoveState(move);
   }, []);
-  const [loading, setLoading] = useState(Boolean(token && parsedTaskId));
-  const [error, setError] = useState<string | null>(
-    token && parsedTaskId === null ? INVALID_TASK_ID_ERROR : null,
+  const [loading, setLoading] = useState(Boolean(enabled && parsedTaskId));
+  const [failure, setFailure] = useState<Failure | null>(
+    enabled && parsedTaskId === null ? INVALID_TASK_FAILURE : null,
   );
   const frontierRef = useRef(0);
   const lifecycleGenerationRef = useRef(0);
   const activeRefreshRef = useRef<{
-    token: string;
+    token: string | null | undefined;
     taskId: number;
     lifecycleGeneration: number;
     promise: Promise<void>;
   } | null>(null);
 
   const isCurrentLifecycle = useCallback(
-    (lifecycleGeneration: number, requestToken: string, requestTaskId: number) => (
+    (lifecycleGeneration: number, requestToken: string | null | undefined, requestTaskId: number) => (
       lifecycleGenerationRef.current === lifecycleGeneration
       && currentTokenRef.current === requestToken
       && currentTaskIdRef.current === requestTaskId
@@ -104,18 +128,24 @@ export function useReportDetail(
   );
 
   const refresh = useCallback(async () => {
-    if (!token || parsedTaskId === null) return;
+    if (!enabled || parsedTaskId === null) return;
     if (currentTokenRef.current !== token || currentTaskIdRef.current !== parsedTaskId) return;
 
     const lifecycleGeneration = lifecycleGenerationRef.current;
     const activeRefresh = activeRefreshRef.current;
     if (
-      activeRefresh?.token === token
+      // 不能写 `activeRefresh?.token === token` —— token 可为 undefined 时，
+      // activeRefresh 为 null 那一支会**判真**，下一行当场 TypeError。
+      activeRefresh !== null
+      && activeRefresh.token === token
       && activeRefresh.taskId === parsedTaskId
       && activeRefresh.lifecycleGeneration === lifecycleGeneration
     ) return activeRefresh.promise;
 
     const request = (async () => {
+      // 对局那一路(GET /user-games/{id})盒上云端失败会退本机缓存,缓存没有也回 404 ——
+      // 那条 404 证明不了「没有」,分类时要降级(见 `cacheBackedReadFailureKind`)。
+      let gameReadFailed = false;
       try {
         const nextTask = await ReportsAPI.get(token, parsedTaskId);
         if (!isCurrentLifecycle(lifecycleGeneration, token, parsedTaskId)) return;
@@ -126,7 +156,10 @@ export function useReportDetail(
         ]);
         if (!isCurrentLifecycle(lifecycleGeneration, token, parsedTaskId)) return;
         if (movesResult.status === 'rejected') throw movesResult.reason;
-        if (gameResult.status === 'rejected') throw gameResult.reason;
+        if (gameResult.status === 'rejected') {
+          gameReadFailed = true;
+          throw gameResult.reason;
+        }
         const nextMoves = movesResult.value;
         const nextGame = gameResult.value;
 
@@ -143,10 +176,10 @@ export function useReportDetail(
         setMoves(nextMoves);
         setGame(nextGame);
         setCurrentMove(nextCursor);
-        setError(null);
+        setFailure(null);
       } catch (refreshError) {
         if (!isCurrentLifecycle(lifecycleGeneration, token, parsedTaskId)) return;
-        setError(errorMessage(refreshError));
+        setFailure(failureOf(refreshError, gameReadFailed ? cacheBackedReadFailureKind : requestFailureKind));
       } finally {
         if (isCurrentLifecycle(lifecycleGeneration, token, parsedTaskId)) setLoading(false);
       }
@@ -164,7 +197,7 @@ export function useReportDetail(
     activeEntry.promise = trackedRequest;
     activeRefreshRef.current = activeEntry;
     return trackedRequest;
-  }, [isCurrentLifecycle, parsedTaskId, setCurrentMove, token]);
+  }, [enabled, isCurrentLifecycle, parsedTaskId, setCurrentMove, token]);
 
   useEffect(() => {
     const lifecycleGeneration = lifecycleGenerationRef;
@@ -174,17 +207,17 @@ export function useReportDetail(
     setMoves([]);
     setCurrentMove(0);
     frontierRef.current = 0;
-    setLoading(Boolean(token && parsedTaskId));
-    setError(token && parsedTaskId === null ? INVALID_TASK_ID_ERROR : null);
-    if (token && parsedTaskId !== null) void refresh();
+    setLoading(Boolean(enabled && parsedTaskId));
+    setFailure(enabled && parsedTaskId === null ? INVALID_TASK_FAILURE : null);
+    if (enabled && parsedTaskId !== null) void refresh();
 
     return () => {
       ++lifecycleGeneration.current;
     };
-  }, [parsedTaskId, refresh, setCurrentMove, token]);
+  }, [enabled, parsedTaskId, refresh, setCurrentMove, token]);
 
   useEffect(() => {
-    if (!token || parsedTaskId === null || !task || !isActiveReportStatus(task.status)) return;
+    if (!enabled || parsedTaskId === null || !task || !isActiveReportStatus(task.status)) return;
     let cancelled = false;
     let timer: number | undefined;
 
@@ -201,7 +234,7 @@ export function useReportDetail(
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [parsedTaskId, refresh, task, token]);
+  }, [enabled, parsedTaskId, refresh, task, token]);
 
   const analysisByMove = useMemo(
     () => toMoveAnalysisMap(moves, task?.user_game_id ?? ''),
@@ -216,7 +249,8 @@ export function useReportDetail(
     currentMove,
     setCurrentMove,
     loading,
-    error,
+    error: failure?.message ?? null,
+    errorKind: failure?.kind ?? null,
     refresh,
   };
 }

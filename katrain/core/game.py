@@ -313,6 +313,18 @@ class BaseGame:
     def end_result(self):
         if self.current_node.end_state:
             return self.current_node.end_state
+        # ⚠️ **button 规则下这条判据早一手。** KataGo 的 `hasButton`
+        # (`cpp/game/boardhistory.cpp:947-951`)在**全局第一次停一手**时把 button 交出去
+        # (±0.5)并把 `consecutiveEndingPasses` **清零** —— 也就是说「连续两次停一手」
+        # 要从第二次停手起算,一共三次。这里(和 `web/interface.py` 的 `record_two_pass_end`)
+        # 都只看「本手 pass 且父手 pass」,不看规则带不带 button。
+        #
+        # 影响范围:只有 kiosk 的「AI 赛规则」(`RU[aga-button]`)会走到,而且那一档
+        # **只允许分先**。后果是那半目之后少了一轮「免费」停手的机会;盘面既然双停,
+        # 分数由 KataGo 在同一手上算出(button 已经计进去了),胜负不会算错。
+        # 2026-09-21 记为非阻塞项:改它要连实体棋盘的双停流程一起想(摄像头/LED 怎么
+        # 表达第三次停手),那条链的运行时证据现在没有。见
+        # `superpowers/tracks/kiosk-go-play-ai/r2-setup-acceptance.md`。
         if self.current_node.parent and self.current_node.is_pass and self.current_node.parent.is_pass:
             return self.manual_score or i18n._("board-game-end")
 

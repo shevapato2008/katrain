@@ -83,3 +83,37 @@ def test_pvp_local_sgf_contains_player_names(client):
     sgf = r.json()["sgf"]
     assert "PB[小明]" in sgf
     assert "PW[小红]" in sgf
+
+
+def test_timed_game_defaults_countdown_sound_on_for_legacy_config(client, monkeypatch):
+    """旧设备 timer 配置没有 sound 键时，开限时局仍应向前端下发开启状态。"""
+    sid = _new_session(client)
+    session = client.app.state.session_manager.get_session(sid)
+    monkeypatch.setattr(session.katrain, "save_config", lambda *args, **kwargs: None)
+    session.katrain._config["timer"] = {
+        "main_time": 0,
+        "byo_length": 30,
+        "byo_periods": 3,
+        "minimal_use": 0,
+    }
+
+    r = client.post(
+        "/api/game/setup",
+        json={
+            "session_id": sid,
+            "mode": "pvp_local",
+            "settings": {
+                "board_size": 19,
+                "rules": "chinese",
+                "handicap": 0,
+                "komi": 7.5,
+                "time_enabled": True,
+                "main_time": 0,
+                "byo_length": 30,
+                "byo_periods": 3,
+            },
+        },
+    )
+
+    assert r.status_code == 200, r.text
+    assert r.json()["state"]["timer"]["settings"]["sound"] is True

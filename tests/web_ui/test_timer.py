@@ -19,6 +19,10 @@ def test_timer_logic_parity():
 
     katrain._do_new_game(size=19)
     katrain.timer_paused = False
+    # 这两条用例测的是**计时算术**,前提是「这一局已经开始走钟」。真实的一局由
+    # 「棋盘可用」那一刻启动(实体盘=视觉绑定 / 无视觉部署=对局 WS 接上 / 屏幕降级=第一手),
+    # 见 WebKaTrain.start_clock;起步闩本身由 test_clock_does_not_run_before_the_board_is_usable 守。
+    katrain.start_clock()
     katrain.play_analyze_mode = MODE_PLAY
     # Ensure next player is human
     katrain.next_player_info.player_type = "player:human"
@@ -75,6 +79,7 @@ def test_timer_reset_on_move():
     katrain._config["timer"] = {"main_time": 0, "byo_length": 30, "byo_periods": 5}
     katrain._do_new_game()
     katrain.timer_paused = False
+    katrain.start_clock()
     katrain.play_analyze_mode = MODE_PLAY
     katrain.next_player_info.player_type = "player:human"
 
@@ -98,7 +103,67 @@ def test_timer_reset_on_move():
     assert time.time() - katrain.last_timer_update < 0.5
 
 
+def test_clock_does_not_run_before_the_board_is_usable():
+    """建局那一刻 ≠ 能下第一手那一刻。
+
+    RK3562 2026-09-20 实测:10:36:10 建局、10:37:19 视觉才绑上,中间 69 秒用户还在标定屏、
+    碰不到棋盘,却已经被扣时(10:40 屏上实测 白方 4:37 剩余 vs 人类 0:36)。
+    Fan 的裁定:「我要看到电子棋盘再开始计时」。
+    """
+    katrain = WebKaTrain(force_package_config=True, enable_engine=False)
+    katrain.engine = MockEngine()
+    katrain._do_new_game(size=19)
+    # ⚠️ **不要写 `_config["timer"]`**。`force_package_config=True` 的实例最终会把配置存回
+    # `~/.katrain/config.json`(用户真实配置),于是**下一次**跑测试时,早于本文件执行的
+    # `tests/platforms/test_engine_manager.py::test_dump_engine_game_state_fixture`
+    # 会把上一次留下的值读进签入的 fixture 里 —— 实测本文件原有两条就是这么把
+    # `main_time` 在 0/1 之间来回推的。`active_game_timer` 是 `_do_new_game` 拷出来的
+    # **每实例副本**(interface.py:813 `copy.deepcopy`),改它谁也影响不到。
+    katrain.active_game_timer = {"main_time": 1, "byo_length": 30, "byo_periods": 5, "minimal_use": 0, "sound": True}
+    katrain.timer_paused = False
+    katrain.play_analyze_mode = MODE_PLAY
+    katrain.next_player_info.player_type = "player:human"
+    current_player = katrain.next_player_info.player
+
+    # 起步之前:哪怕过了 69 秒,一秒都不记。
+    assert katrain.clock_started is False
+    katrain.last_timer_update = time.time() - 69
+    katrain.update_timer()
+    assert katrain.main_time_used_by_player[current_player] == 0
+    assert katrain.game.current_node.time_used == 0
+
+    # 起步是幂等的:第一次返回 True,之后都是 False(重连再绑不会把钟重置)。
+    assert katrain.start_clock() is True
+    assert katrain.start_clock() is False
+
+    # 起步之后照常累计。
+    katrain.last_timer_update = time.time() - 10
+    katrain.update_timer()
+    assert katrain.main_time_used_by_player[current_player] == pytest.approx(10, abs=0.1)
+
+
+def test_clock_starts_on_the_first_move_when_nothing_else_started_it():
+    """屏幕降级的局永远不会有视觉绑定 —— 没有这条兜底,钟永远不起步、超时永远不判。"""
+    katrain = WebKaTrain(force_package_config=True, enable_engine=False)
+    katrain.engine = MockEngine()
+    katrain._do_new_game(size=19)
+    katrain.active_game_timer = {"main_time": 1, "byo_length": 30, "byo_periods": 5, "minimal_use": 0, "sound": True}
+    katrain.timer_paused = False
+    katrain.play_analyze_mode = MODE_PLAY
+    katrain.next_player_info.player_type = "player:human"
+    assert katrain.clock_started is False
+
+    katrain.game.play = lambda move, ignore_ko=False, analyze=False: super(type(katrain.game), katrain.game).play(
+        move, ignore_ko=ignore_ko, analyze=False
+    )
+    katrain._do_play((3, 3))
+    katrain.update_timer()
+    assert katrain.clock_started is True
+
+
 if __name__ == "__main__":
     test_timer_logic_parity()
     test_timer_reset_on_move()
+    test_clock_does_not_run_before_the_board_is_usable()
+    test_clock_starts_on_the_first_move_when_nothing_else_started_it()
     print("Tests passed!")

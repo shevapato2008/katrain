@@ -45,6 +45,8 @@ export interface GameState {
   is_root: boolean;
   is_pass: boolean;
   end_result: string | null;
+  /** 对局级终局事实；游标退回后仍保留。旧服务端可不带。 */
+  terminal_result?: string | null;
   children: [string, [number, number] | null][];
   ghost_stones: [string, [number, number] | null][];
   players_info: { B: PlayerInfo; W: PlayerInfo };
@@ -65,6 +67,9 @@ export interface GameState {
     main_time_used: number;
     current_node_time_used: number;
     next_player_periods_used: number;
+    /** 这一局的时限是开局设置写的(服务端 `timer_configured`)。星阵 / 大厅局没有,别把它们当计时局。 */
+    configured?: boolean;
+
     settings: {
       main_time: number;
       byo_length: number;
@@ -75,6 +80,11 @@ export interface GameState {
   };
   language: string;
   count_min_moves?: number;
+  /**
+   * 盒上模式、双方各停一手、这一局还没有结果 ⇒ 后端等前端来数子(v2-design §3.4)。
+   * 为真时 `/api/count/request` 跳过手数门槛。老服务端不带这个字段 ⇒ undefined ⇒ 不自动数。
+   */
+  awaiting_count?: boolean;
   engine?: "local" | "cloud";
   trainer_settings?: {
     eval_thresholds: number[];
@@ -118,6 +128,18 @@ export interface SessionResponse {
   state: GameState;
 }
 
+/** 会话已经不在这台机器上了(闲置回收 / 重启 / 被删)。服务端 `_session_gone_reply`
+    (`katrain/web/server.py`)只有 `/api/resign` 和 `/api/timeout` 会回这个形状。
+    它**不带** `state`,也**不表示远端对局结束** —— 真正的远端认输在 gateway.py:399-420。*/
+export interface SessionGoneResponse {
+  session_id: string;
+  status: 'session_gone';
+}
+
+/** 这两个端点要么回常规回执,要么回「这局没了」。写成联合类型是为了让 `tsc -b` 在每个
+    读 `.state` 的调用点上强制先收窄 —— 正是漏掉的那三处缺的信号。 */
+export type EndGameResponse = SessionResponse | SessionGoneResponse;
+
 // --- Cross-platform play types ---
 
 export interface PlatformInfo {
@@ -160,6 +182,16 @@ export interface LadderRung {
 
 export interface PlatformStatusResponse {
   platforms: PlatformInfo[];
+}
+
+export interface EngineHealthResponse {
+  status: string;
+  /** 产品版本(`katrain/core/constants.py` 的 `VERSION`)。老服务端不回它 ⇒ 可选;拿不到就不画,不写「未知」。 */
+  version?: string;
+  engines: {
+    local: string;
+    cloud: string;
+  };
 }
 
 // --- Engine analysis (area/options/judge/variation) ---
@@ -267,10 +299,17 @@ export interface HintResponse { moves: HintMove[]; engine: string; timeout_s: nu
 // (e.g. KifuPage.test.tsx's "Request failed 500") keep working.
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  /**
+   * 服务端 JSON body 里的 `detail`(FastAPI `HTTPException` 那一格),**原样**挂上:
+   * 对象(`{ code, message }`,数子那三种 400)、字符串(绝大多数老端点),
+   * body 不是 JSON 或没有这一格时是 `undefined`。按原因码出文案的一方读它,不要去 parse `message`。
+   */
+  detail?: unknown;
+  constructor(status: number, message: string, detail?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -294,7 +333,12 @@ const isStrictBoxKiosk = __KIOSK_2D_ONLY__ && import.meta.env.VITE_BOX_SSO_STRIC
  * 顺序上兜底是安全的：非严格档 cookie 优先于 header，所以盒端/本机行为不变；
  * 只有本来就没有 cookie 的远端会用上这个头。
  */
-export function authHeaders(token?: string): Record<string, string> {
+/**
+ * 凭据允许为 `null`/`undefined` —— 那**不代表没登录**。严格盒端 SSO 里 JS 永远拿不到
+ * token（身份在 HttpOnly `sb_go_token` cookie 里），所以这里第一行就直接返回 `{}`，
+ * 由同源 cookie 去认证。**「该不该发请求」要判 `isAuthenticated`，不是判有没有 token。**
+ */
+export function authHeaders(token?: string | null): Record<string, string> {
   if (isStrictBoxKiosk) return {};
   let resolved = token;
   if (!resolved) {
@@ -307,7 +351,7 @@ export function authHeaders(token?: string): Record<string, string> {
   return resolved ? { Authorization: `Bearer ${resolved}` } : {};
 }
 
-export async function apiPost(path: string, payload: any, token?: string) {
+export async function apiPost(path: string, payload: any, token?: string | null) {
   const headers: Record<string, string> = { "Content-Type": "application/json", ...authHeaders(token) };
   const response = await fetch(path, {
     method: "POST",
@@ -316,13 +360,37 @@ export async function apiPost(path: string, payload: any, token?: string) {
   });
   if (!response.ok) {
     const body = await response.text();
-    throw new ApiError(response.status, `Request failed ${response.status}: ${body}`);
+    let detail: unknown;
+    try {
+      detail = (JSON.parse(body) as { detail?: unknown }).detail;
+    } catch {
+      detail = undefined; // 不是 JSON(网关 502 页)或 JSON 是 null —— 没有 detail 可读
+    }
+    throw new ApiError(response.status, `Request failed ${response.status}: ${body}`, detail);
   }
   return response.json();
 }
 
 export const API = {
+  engineHealth: async (): Promise<EngineHealthResponse> => {
+    const response = await fetch('/api/v1/health');
+    if (!response.ok) throw new Error(`Failed to get engine health (${response.status})`);
+    return response.json();
+  },
   createSession: (token?: string): Promise<SessionResponse> => apiPost("/api/session", {}, token),
+  /* 本地对局「退出不保存」:删掉进程里这个会话,什么都不落账。
+     研究页那两处(`useResearchSession.ts`、galaxy `ResearchPage.tsx`)是裸 fetch 且吞掉失败 ——
+     那边是「离开时顺手收拾」;这里失败了**不能装作已退出**,所以抛。 */
+  deleteSession: async (sessionId: string): Promise<void> => {
+    const response = await fetch(`/api/session/${encodeURIComponent(sessionId)}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new ApiError(response.status, `Request failed ${response.status}: ${body}`);
+    }
+  },
   // GET /api/state requires an authenticated user (server.py: Depends(get_current_user)).
   // It used to send no Authorization header, which only worked because the server also
   // accepts the `sb_token` cookie -- and that cookie is issued ONLY on the 127.0.0.1
@@ -381,10 +449,14 @@ export const API = {
     apiPost("/api/player", { session_id: sessionId, bw, player_type: playerType, player_subtype: playerSubtype, name }),
   swapPlayers: (sessionId: string): Promise<SessionResponse> =>
     apiPost("/api/player/swap", { session_id: sessionId }),
-  resign: (sessionId: string, token?: string): Promise<SessionResponse> =>
-    apiPost("/api/resign", { session_id: sessionId }, token),
-  timeout: (sessionId: string, token?: string): Promise<SessionResponse> =>
-    apiPost("/api/timeout", { session_id: sessionId }, token),
+  /* `color` 只给本地对局(pvp_local):后端对 pvp_local **必须**带、对其它模式**带了就 400**
+     ⇒ 没给时 body 里绝不能出现这个键。 */
+  resign: (sessionId: string, token?: string, color?: 'B' | 'W'): Promise<EndGameResponse> =>
+    apiPost("/api/resign", color ? { session_id: sessionId, color } : { session_id: sessionId }, token),
+  timeout: (sessionId: string, token?: string, expect?: {
+    expected_game_id: string; expected_node_id: number; color: 'B' | 'W';
+  }): Promise<EndGameResponse> =>
+    apiPost("/api/timeout", { session_id: sessionId, ...expect }, token),
   requestCount: (sessionId: string, token?: string): Promise<any> =>
     apiPost("/api/count/request", { session_id: sessionId }, token),
   respondCount: (sessionId: string, accept: boolean, token?: string): Promise<any> =>
@@ -569,13 +641,13 @@ export const API = {
   platformLogin: (
     platform: string,
     credentials: { username: string; password?: string; sms_code?: string },
-    token: string,
+    token: string | null | undefined,
   ) => apiPost(`/api/v1/platforms/${platform}/login`, credentials, token),
-  platformSmsRequest: (platform: string, phone: string, token: string) =>
+  platformSmsRequest: (platform: string, phone: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/sms/request`, { phone }, token),
-  platformEngineLevels: async (platform: string, token: string): Promise<{ levels: EngineLevel[] }> => {
+  platformEngineLevels: async (platform: string, token: string | null | undefined): Promise<{ levels: EngineLevel[] }> => {
     const response = await fetch(`/api/v1/platforms/${platform}/engine/levels`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get engine levels");
     return response.json();
@@ -583,68 +655,68 @@ export const API = {
   platformEngineStart: (
     platform: string,
     body: { level: number; human_color: "B" | "W" | "nigiri"; handicap: number },
-    token: string,
+    token: string | null | undefined,
   ): Promise<{ session_id: string; human_color?: "B" | "W" }> =>
     apiPost(`/api/v1/platforms/${platform}/engine/start`, body, token),
   platformEngineAnalysis: (
     platform: string,
     sessionId: string,
     kind: "area" | "options" | "judge" | "variation",
-    token: string,
+    token: string | null | undefined,
   ): Promise<EngineAnalysisResponse> =>
     apiPost(`/api/v1/platforms/${platform}/engine/analysis`, { session_id: sessionId, kind }, token),
-  platformEngineItems: async (platform: string, token: string): Promise<EngineItemCounts> => {
+  platformEngineItems: async (platform: string, token: string | null | undefined): Promise<EngineItemCounts> => {
     const response = await fetch(`/api/v1/platforms/${platform}/engine/items`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get engine item counts");
     return response.json();
   },
-  platformLogout: async (platform: string, token: string) => {
+  platformLogout: async (platform: string, token: string | null | undefined) => {
     const response = await fetch(`/api/v1/platforms/${platform}/logout`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error(`Logout failed: ${response.status}`);
     return response.json();
   },
-  platformStatus: async (token: string): Promise<PlatformStatusResponse> => {
+  platformStatus: async (token: string | null | undefined): Promise<PlatformStatusResponse> => {
     const response = await fetch("/api/v1/platforms/status", {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get platform status");
     return response.json();
   },
-  platformUsers: async (platform: string, token: string, query?: string): Promise<{ users: PlatformUser[] }> => {
+  platformUsers: async (platform: string, token: string | null | undefined, query?: string): Promise<{ users: PlatformUser[] }> => {
     const params = query ? `?q=${encodeURIComponent(query)}` : '';
     const response = await fetch(`/api/v1/platforms/${platform}/users${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get users");
     return response.json();
   },
-  platformRooms: async (platform: string, token: string) => {
+  platformRooms: async (platform: string, token: string | null | undefined) => {
     const response = await fetch(`/api/v1/platforms/${platform}/rooms`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get rooms");
     return response.json();
   },
-  platformChallenges: async (platform: string, token: string) => {
+  platformChallenges: async (platform: string, token: string | null | undefined) => {
     const response = await fetch(`/api/v1/platforms/${platform}/challenges`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to get challenges");
     return response.json();
   },
-  platformSendChallenge: (platform: string, data: object, token: string) =>
+  platformSendChallenge: (platform: string, data: object, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/challenge`, data, token),
-  platformAcceptChallenge: (platform: string, challengeId: string, token: string) =>
+  platformAcceptChallenge: (platform: string, challengeId: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/challenge/accept`, { challenge_id: challengeId }, token),
-  platformDeclineChallenge: (platform: string, challengeId: string, token: string) =>
+  platformDeclineChallenge: (platform: string, challengeId: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/challenge/decline`, { challenge_id: challengeId }, token),
-  platformStartAutomatch: (platform: string, prefs: object, token: string) =>
+  platformStartAutomatch: (platform: string, prefs: object, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/automatch/start`, prefs, token),
-  platformCancelAutomatch: (platform: string, token: string) =>
+  platformCancelAutomatch: (platform: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/automatch/cancel`, {}, token),
 };

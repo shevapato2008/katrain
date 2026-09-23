@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Grid, Card, CardActionArea, CircularProgress, Alert, Button, Chip, useTheme } from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { backToState } from '../hooks/useBackTo';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useTsumegoProgress } from '../../context/TsumegoProgressContext';
+import { loadErrorCopy } from './tsumegoUnits';
 import { KioskPagebar } from '../shell/KioskPagebar';
 
 interface ProblemItem {
@@ -22,6 +24,7 @@ const PAGE_SIZE = 50;
 const TsumegoLevelPage = () => {
   const { level } = useParams<{ level: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { progress } = useTsumegoProgress();
   const theme = useTheme();
@@ -74,7 +77,7 @@ const TsumegoLevelPage = () => {
   if (error) {
     return (
       <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 4 }}>
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="error">{`${loadErrorCopy(t, error).title} · ${loadErrorCopy(t, error).body}`}</Alert>
         <Button variant="outlined" onClick={() => { setError(null); fetchPage(1); }}>
           {t('Retry', '重试')}
         </Button>
@@ -117,7 +120,7 @@ const TsumegoLevelPage = () => {
             <Grid key={problem.id} size={{ xs: 6, sm: 4, md: 3 }}>
               <Card sx={{ bgcolor: 'background.paper', border: `2px solid ${borderFor(problem.id)}`, borderRadius: '12px', height: '100%', '&:hover': { bgcolor: 'var(--raise2)' } }}>
                 <CardActionArea
-                  onClick={() => navigate(`/kiosk/tsumego/problem/${problem.id}`)}
+                  onClick={() => navigate(`/kiosk/tsumego/problem/${problem.id}`, { state: backToState(location) })}
                   sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
                 >
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>#{idx + 1}</Typography>

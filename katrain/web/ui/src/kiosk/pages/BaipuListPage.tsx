@@ -1,18 +1,22 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box, Typography, TextField, InputAdornment, Card, CardActionArea, Fade, Button,
   CircularProgress, Pagination, Snackbar, Alert, Chip, Divider,
 } from '@mui/material';
 import {
-  Search as SearchIcon, GridOn as GridOnIcon, UploadFile as UploadIcon, History as HistoryIcon,
+  Search as SearchIcon, GridOn as GridOnIcon, History as HistoryIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import LiveBoard from '../../components/live/LiveBoard';
 import { sgfToMoves } from '../../utils/sgfSerializer';
 import { KifuAPI } from '../../api/kifuApi';
 import { cacheSgf, listRecent, getCachedSgf, type BaipuRecentEntry } from '../../api/baipuApi';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useAuth } from '../../context/AuthContext';
+import { kioskActivityStorage } from '../storage/kioskActivityStorage';
+import { KioskPagebar } from '../shell/KioskPagebar';
+import { backToState, readBackTo, useBackTo } from '../hooks/useBackTo';
 
 const ROW_STAGGER = 25;
 const DEBOUNCE_MS = 350;
@@ -26,8 +30,28 @@ const PAGE_SIZE = 20;
  */
 const BaipuListPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
+  // 这一屏原先没有页控条 —— 不在 Dock 上、没有主页键,进得来出不去(2026-09-22)。返回去**打开它的
+  // 那一页**(棋谱「摆到实体盘」/ 课程「去摆谱」),键名跟着去处;没写明就回棋谱。
+  const back = useBackTo('/kiosk/kifu');
+  const backLabel = readBackTo(location.state)?.startsWith('/kiosk/tutorial')
+    ? t('tutorial:title_cn', '课程')
+    : t('baipu:back_kifu', '棋谱');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Box-SSO guest mode (client-side zero-persistence, 4th layer): `recent` is read
+  // SYNCHRONOUSLY at first paint, before AuthContext's async /me probe may have resolved —
+  // so the store used by the lazy useState initializer below MUST be empty
+  // (identityKey=null) while isLoading, exactly like TsumegoProgressContext. `store` is
+  // memoized on the resolved identity signature so every read/write in this component (not
+  // just the first-paint one) stays consistently scoped to the SAME store.
+  const { user, isGuest, isLoading } = useAuth();
+  const identityKey = user?.uuid ?? null;
+  const store = useMemo(
+    () => kioskActivityStorage(isLoading || isGuest ? null : identityKey, isGuest),
+    [isLoading, isGuest, identityKey],
+  );
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchInput, setSearchInput] = useState('');
@@ -37,7 +61,19 @@ const BaipuListPage = () => {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [recent, setRecent] = useState<BaipuRecentEntry[]>(() => listRecent());
+  const [recent, setRecent] = useState<BaipuRecentEntry[]>(() =>
+    isLoading ? [] : listRecent(kioskActivityStorage(isGuest ? null : identityKey, isGuest)),
+  );
+
+  // Re-hydrate `recent` once identity resolves (or changes) — the useState initializer above
+  // only runs once, at mount, so a later resolution/transition needs an explicit refresh.
+  // Synchronizing with the external identity-scoped store here is exactly what this effect is
+  // for; there is no render-time equivalent since `store` itself is only known once resolved.
+  useEffect(() => {
+    if (isLoading) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRecent(listRecent(store));
+  }, [isLoading, store]);
 
   const [previewMoves, setPreviewMoves] = useState<string[]>([]);
   const [previewColors, setPreviewColors] = useState<('B' | 'W')[]>([]);
@@ -112,8 +148,9 @@ const BaipuListPage = () => {
   }, [selectedId]);
 
   const startSession = (id: string, name: string, sgf: string) => {
-    cacheSgf(id, name, sgf);
-    navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, { state: { sgf, name } });
+    cacheSgf(id, name, sgf, store);
+    // 写上 backTo:会话屏的返回键回这里(键名「摆谱」),而不是一律回棋谱
+    navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, { state: { ...backToState(location), sgf, name } });
   };
 
   const handleStartSelected = () => {
@@ -140,10 +177,10 @@ const BaipuListPage = () => {
   };
 
   const handleResume = (entry: BaipuRecentEntry) => {
-    const cached = getCachedSgf(entry.id);
+    const cached = getCachedSgf(entry.id, store);
     if (!cached) {
       setActionError(t('Cached SGF no longer available', '缓存棋谱已失效'));
-      setRecent(listRecent());
+      setRecent(listRecent(store));
       return;
     }
     startSession(cached.id, cached.name, cached.sgf);
@@ -157,23 +194,19 @@ const BaipuListPage = () => {
       {/* List panel */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ px: 3, pt: 3, pb: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-              {t('Stone Placement', '摆谱')}
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 400, opacity: 0.6 }}>
-              {t('19×19 only', '仅 19 路')}
-            </Typography>
-            <Box sx={{ flex: 1 }} />
-            <Button
-              size="small"
-              startIcon={<UploadIcon sx={{ fontSize: 18 }} />}
-              onClick={() => fileInputRef.current?.click()}
-              data-testid="baipu-import"
-              sx={{ textTransform: 'none', color: 'text.secondary' }}
-            >
-              {t('Import SGF', '导入棋谱')}
-            </Button>
+          <Box sx={{ mb: 2 }}>
+            <KioskPagebar
+              backLabel={backLabel}
+              onBack={back}
+              title={t('Stone Placement', '摆谱')}
+              sub={t('19×19 only', '仅 19 路')}
+              action={{
+                icon: 'upload-simple',
+                label: t('Import SGF', '导入棋谱'),
+                visibleLabel: t('Import SGF', '导入棋谱'),
+                onClick: () => fileInputRef.current?.click(),
+              }}
+            />
             <input ref={fileInputRef} type="file" accept=".sgf" hidden onChange={handleImportFile} />
           </Box>
 

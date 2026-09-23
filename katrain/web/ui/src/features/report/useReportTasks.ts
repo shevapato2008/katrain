@@ -15,6 +15,7 @@ import {
   type OptimisticReportTask,
   type ReportStatesByGame,
 } from './reportModel';
+import { requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -31,17 +32,38 @@ export interface UseReportTasksResult {
   reportStatesByGame: ReportStatesByGame;
   loading: boolean;
   error: string | null;
+  /**
+   * 这条错属于哪一类(`utils/requestFailure.ts`)。**屏上说什么由调用方按它定** ——
+   * `error` 是原文(列表 / 创建 / 重试任一处失败),盒上断网时是 `Request failed 503: {…}`。
+   */
+  errorKind: RequestFailureKind | null;
   clearError: () => void;
   refresh: () => Promise<void>;
   createReport: (params: CreateReportParams) => Promise<ReportTaskSummary>;
   retryReport: (taskId: number) => Promise<ReportTaskSummary>;
 }
 
-function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
+interface Failure {
+  message: string;
+  kind: RequestFailureKind;
 }
 
-export function useReportTasks(token: string | null | undefined): UseReportTasksResult {
+function failureOf(error: unknown, fallback: string): Failure {
+  return { message: error instanceof Error ? error.message : fallback, kind: requestFailureKind(error) };
+}
+
+export function useReportTasks(
+  token: string | null | undefined,
+  /**
+   * 认证就绪与否 —— **必须由调用方按 `isAuthenticated` 传进来，不能从 `token` 推**。
+   * 严格盒端 SSO(`VITE_BOX_SSO_STRICT`)里 `token` 恒为 `null` 而人是登录的
+   * (凭据在 HttpOnly cookie 里，JS 看不见)，所以拿 `!token` 当「未登录」用，
+   * 会让盒子上所有报告请求一个都发不出去 —— 2026-09-13 板上实测：复盘列表恒显示
+   * 「本机 0 局」，而同一时刻接口自己回 200、云端有 21 局。
+   * `token` 在本文件里只剩一个用途：**身份键**(换人/换登录要作废在途请求)。
+   */
+  enabled: boolean,
+): UseReportTasksResult {
   const { t } = useTranslation();
   const translationRef = useRef(t);
   translationRef.current = t;
@@ -51,13 +73,13 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
   const [serverTasks, setServerTasks] = useState<ReportTaskSummary[]>([]);
   const [optimisticTasks, setOptimisticTasks] = useState<OptimisticReportTask[]>([]);
   const [queueSummary, setQueueSummary] = useState<ReportQueueSummary | null>(null);
-  const [loading, setLoading] = useState(Boolean(token));
-  const [error, setError] = useState<string | null>(null);
-  const clearError = useCallback(() => setError(null), []);
+  const [loading, setLoading] = useState(enabled);
+  const [failure, setFailure] = useState<Failure | null>(null);
+  const clearError = useCallback(() => setFailure(null), []);
   const lifecycleGenerationRef = useRef(0);
   const nextOptimisticIdRef = useRef(0);
   const activeRefreshRef = useRef<{
-    token: string;
+    token: string | null | undefined;
     lifecycleGeneration: number;
     promise: Promise<void>;
   } | null>(null);
@@ -69,11 +91,13 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
   const reportStatesByGame = useMemo(() => buildReportStatesByGame(tasks), [tasks]);
 
   const refresh = useCallback(async () => {
-    if (!token || currentTokenRef.current !== token) return;
+    if (!enabled || currentTokenRef.current !== token) return;
     const lifecycleGeneration = lifecycleGenerationRef.current;
     const activeRefresh = activeRefreshRef.current;
     if (
-      activeRefresh?.token === token
+      // 同上：token 可为 undefined，`?.` 那种写法在 activeRefresh 为 null 时会判真。
+      activeRefresh !== null
+      && activeRefresh.token === token
       && activeRefresh.lifecycleGeneration === lifecycleGeneration
     ) return activeRefresh.promise;
 
@@ -90,13 +114,13 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
 
         setServerTasks(nextTasks);
         setQueueSummary(nextSummary);
-        setError(null);
+        setFailure(null);
       } catch (refreshError) {
         if (
           lifecycleGeneration !== lifecycleGenerationRef.current
           || currentTokenRef.current !== token
         ) return;
-        setError(errorMessage(
+        setFailure(failureOf(
           refreshError,
           translationRef.current('report:load_tasks_failed', 'Failed to load report tasks'),
         ));
@@ -114,14 +138,16 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
     activeEntry.promise = trackedRequest;
     activeRefreshRef.current = activeEntry;
     return trackedRequest;
-  }, [token]);
+  }, [enabled, token]);
 
   const refreshAfterActiveSnapshot = useCallback(async () => {
-    if (!token || currentTokenRef.current !== token) return;
+    if (!enabled || currentTokenRef.current !== token) return;
     const lifecycleGeneration = lifecycleGenerationRef.current;
     const activeRefresh = activeRefreshRef.current;
     if (
-      activeRefresh?.token === token
+      // 同上：token 可为 undefined，`?.` 那种写法在 activeRefresh 为 null 时会判真。
+      activeRefresh !== null
+      && activeRefresh.token === token
       && activeRefresh.lifecycleGeneration === lifecycleGeneration
     ) await activeRefresh.promise;
     if (
@@ -129,7 +155,7 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
       || currentTokenRef.current !== token
     ) return;
     await refresh();
-  }, [refresh, token]);
+  }, [enabled, refresh, token]);
 
   useEffect(() => {
     const lifecycleGeneration = lifecycleGenerationRef;
@@ -137,18 +163,18 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
     setServerTasks([]);
     setOptimisticTasks([]);
     setQueueSummary(null);
-    setError(null);
-    setLoading(Boolean(token));
-    if (token) void refresh();
+    setFailure(null);
+    setLoading(enabled);
+    if (enabled) void refresh();
 
     return () => {
       ++lifecycleGeneration.current;
     };
-  }, [refresh, token]);
+  }, [enabled, refresh, token]);
 
   const hasActiveTasks = useMemo(() => tasks.some(isActiveReportTask), [tasks]);
   useEffect(() => {
-    if (!token || !hasActiveTasks) return;
+    if (!enabled || !hasActiveTasks) return;
     let cancelled = false;
     let timer: number | undefined;
     const schedule = () => {
@@ -163,7 +189,7 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
       cancelled = true;
       if (timer !== undefined) window.clearTimeout(timer);
     };
-  }, [hasActiveTasks, refresh, token]);
+  }, [enabled, hasActiveTasks, refresh, token]);
 
   const createReport = useCallback(async ({
     userGameId,
@@ -171,7 +197,7 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
     totalMoves,
     force,
   }: CreateReportParams) => {
-    if (!token || currentTokenRef.current !== token) throw new Error('Report task token changed');
+    if (!enabled || currentTokenRef.current !== token) throw new Error('Report task token changed');
 
     const lifecycleGeneration = lifecycleGenerationRef.current;
     const optimisticId = --nextOptimisticIdRef.current;
@@ -184,7 +210,7 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
       baselineServerTaskIds,
     );
     setOptimisticTasks((current) => [optimisticTask, ...current]);
-    setError(null);
+    setFailure(null);
 
     try {
       const created = await ReportsAPI.create(token, {
@@ -198,7 +224,9 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
       ) return created;
       const activeRefresh = activeRefreshRef.current;
       if (
-        activeRefresh?.token === token
+        // token 可为 undefined，`?.` 写法在 activeRefresh 为 null 时会判真。
+        activeRefresh !== null
+        && activeRefresh.token === token
         && activeRefresh.lifecycleGeneration === lifecycleGeneration
       ) await activeRefresh.promise;
       if (
@@ -215,23 +243,23 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
             baseline_server_task_ids: [...(task.baseline_server_task_ids ?? []), created.id],
           };
         }));
-      setError(null);
+      setFailure(null);
       return created;
     } catch (createError) {
       if (lifecycleGeneration !== lifecycleGenerationRef.current) throw createError;
       setOptimisticTasks((current) => current.filter((task) => task.id !== optimisticId));
-      setError(errorMessage(
+      setFailure(failureOf(
         createError,
         translationRef.current('report:create_task_failed', 'Failed to create report task'),
       ));
       throw createError;
     }
-  }, [serverTasks, token]);
+  }, [enabled, serverTasks, token]);
 
   const retryReport = useCallback(async (taskId: number) => {
-    if (!token || currentTokenRef.current !== token) throw new Error('Report task token changed');
+    if (!enabled || currentTokenRef.current !== token) throw new Error('Report task token changed');
     const lifecycleGeneration = lifecycleGenerationRef.current;
-    setError(null);
+    setFailure(null);
     try {
       const retried = await ReportsAPI.retry(token, taskId);
       if (lifecycleGeneration !== lifecycleGenerationRef.current) return retried;
@@ -239,20 +267,21 @@ export function useReportTasks(token: string | null | undefined): UseReportTasks
       return retried;
     } catch (retryError) {
       if (lifecycleGeneration !== lifecycleGenerationRef.current) throw retryError;
-      setError(errorMessage(
+      setFailure(failureOf(
         retryError,
         translationRef.current('report:retry_failed', 'Failed to retry report'),
       ));
       throw retryError;
     }
-  }, [refreshAfterActiveSnapshot, token]);
+  }, [enabled, refreshAfterActiveSnapshot, token]);
 
   return {
     tasks,
     queueSummary,
     reportStatesByGame,
     loading,
-    error,
+    error: failure?.message ?? null,
+    errorKind: failure?.kind ?? null,
     clearError,
     refresh,
     createReport,

@@ -112,10 +112,15 @@ type Placement =
   | { placed: true }
   | { placed: false; remaining: number | null };
 
+/** 房间对局前被标定台拦下时,返回回到大厅(见 `hooks/useBackTo`)。这一页只在大厅路由上。 */
+const BACK_TO_LOBBY = { backTo: '/kiosk/play/pvp/lobby' };
+
 const LobbyPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { user, token } = useAuth();
+  // token 只当**凭据**用（严格盒端恒为 null，身份在 HttpOnly sb_go_token cookie 里）；
+  // 「认没认证」一律判 isAuthenticated —— 判 token 会把盒上每个登录用户都当成访客。
+  const { user, token, isAuthenticated } = useAuth();
 
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [activeGames, setActiveGames] = useState<ActiveGame[]>([]);
@@ -140,7 +145,7 @@ const LobbyPage = () => {
   );
 
   const fetchLists = useCallback(async () => {
-    if (!authHeaders) return;
+    if (!isAuthenticated) return;
     try {
       const [usersRes, gamesRes] = await Promise.all([
         fetch('/api/v1/users/online', { headers: authHeaders }),
@@ -160,11 +165,12 @@ const LobbyPage = () => {
     } finally {
       setLoaded(true);
     }
-  }, [authHeaders]);
+  }, [authHeaders, isAuthenticated]);
 
   useEffect(() => {
-    if (!token) return;
-    getAiLadderStatus(token)
+    if (!isAuthenticated) return;
+    // 闸一撤，TS 不再把 string | null 窄化成 string —— 这里必须显式转。
+    getAiLadderStatus(token ?? undefined)
       .then((s) => {
         const p = s?.placement_state;
         if (p?.phase === 'placed') setPlacement({ placed: true });
@@ -174,7 +180,7 @@ const LobbyPage = () => {
       })
       // 读不到就是读不到:退回「没定级」挡住排位(和服务端同一个结论),但**不报一个编出来的局数**。
       .catch(() => setPlacement({ placed: false, remaining: null }));
-  }, [token]);
+  }, [isAuthenticated, token]);
 
   // 没定级时排位那一段选不了 —— 万一它当时是选中的,得掉回自由,
   // 否则「开始匹配」会带着一个屏上已经灰掉的模式发出去。
@@ -183,7 +189,7 @@ const LobbyPage = () => {
   }, [placement.placed, mode]);
 
   useEffect(() => {
-    if (!token) return undefined;
+    if (!isAuthenticated) return undefined;
     void fetchLists();
     const refresh = setInterval(() => { void fetchLists(); }, 10000);
 
@@ -196,7 +202,7 @@ const LobbyPage = () => {
       const data = JSON.parse(event.data) as Record<string, string | number>;
       if (data.type === 'match_found') {
         setIsMatching(false);
-        navigate(`/kiosk/play/pvp/room/${String(data.session_id)}`);
+        navigate(`/kiosk/play/pvp/room/${String(data.session_id)}`, { state: BACK_TO_LOBBY });
       } else if (data.type === 'lobby_update') {
         void fetchLists();
       } else if (data.type === 'invitation') {
@@ -220,7 +226,7 @@ const LobbyPage = () => {
       clearInterval(refresh);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [token, fetchLists, navigate]);
+  }, [isAuthenticated, token, fetchLists, navigate]);
 
   /** 正在下棋的人 = 左栏那份对局里出现过的名字。接口只给名字,所以只能按名字比。 */
   const playingNames = useMemo(
@@ -254,7 +260,7 @@ const LobbyPage = () => {
 
   // ── 06b 未登录 ──────────────────────────────────────────────────────────
   // 所有 hook 都在上面跑完了,这里才早退 —— 见文件头「hooks 顺序」那一节。
-  if (!token) {
+  if (!isAuthenticated) {
     return (
       <div className="kiosk-layout-a lobby-layout" data-testid="lobby-guest">
         <KioskPagebar
@@ -345,7 +351,7 @@ const LobbyPage = () => {
             <Cell
               key={g.session_id}
               {...(mine
-                ? { type: 'button' as const, onClick: () => navigate(`/kiosk/play/pvp/room/${g.session_id}`) }
+                ? { type: 'button' as const, onClick: () => navigate(`/kiosk/play/pvp/room/${g.session_id}`, { state: BACK_TO_LOBBY }) }
                 : {})}
               className={mine ? 'gcard is-mine' : 'gcard is-static'}
               data-testid="lobby-game"
@@ -512,7 +518,7 @@ const LobbyPage = () => {
               {/* 稿子写「不接受就一直挂着 —— 邀请没有期限」,两半都不成立:
                   后端没有 decline,这颗「拒绝」只关掉本地这个窗;
                   🔴 而「没有期限」**已经被我们自己 2026-08-25 那次提交证伪** ——
-                  `LobbyManager.INVITE_TTL_SECONDS = 120`(`session.py:369`)。
+                  `LobbyManager.INVITE_TTL_SECONDS = 120`(`session.py`)。
                   屏上那句话不会自己跟着改,所以这是**过期的不是注释,是屏上的句子**。 */}
               <span className="wdlg__tc">{t('lobby:invite_no_decline', '拒绝只关掉这个窗 —— 对面收不到回音;邀请 2 分钟后失效')}</span>
             </div>

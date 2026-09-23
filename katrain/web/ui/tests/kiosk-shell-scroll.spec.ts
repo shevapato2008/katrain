@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { KIOSK_E2E_UUID, kioskMeJson } from './helpers/kioskIdentity';
 
 /**
  * 规范 §5.2 悬浮滚动区的**承重闸**。四条硬性,一条都不能靠 jsdom ——
@@ -37,9 +38,10 @@ const boot = async (page: Page, path: string, css?: string) => {
     if (document.head ?? document.documentElement) put();
     else document.addEventListener('readystatechange', put, { once: true });
   }, css ?? '');
-  await page.route('**/api/v1/auth/me', (route) => route.fulfill({
-    json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
-  }));
+  // **`/me` 必须带 uuid。** 少了它身份不解析,`kioskActivityStorage` 退回内存 Map,
+  // 用这个 boot 的用例里每一条 `baipu:*` / 活动会话种子都写进了一个页面读不到的地方。
+  // 见 helpers/kioskIdentity.ts。
+  await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: kioskMeJson() }));
   await page.goto(path);
   await page.waitForSelector('.kiosk-screen', { state: 'attached' });
   // 跨平台三张卡是 `/api/v1/platform/status` 回来之后才渲的 —— 不等它,量到的是没长齐的内容。
@@ -151,10 +153,10 @@ const bootTraining = async (page: Page, levels: ReturnType<typeof LEVELS>, resum
   await page.addInitScript((withResume) => {
     localStorage.setItem('token', 'kiosk-shell-scroll');
     localStorage.setItem('katrain_language', 'cn');
-    localStorage.setItem('kiosk_tsumego_last_level', '15k');
+    localStorage.setItem('kiosk_tsumego_last_level:u1', '15k');
     if (withResume) {
-      localStorage.setItem('kiosk_active_practice', JSON.stringify({
-        kind: 'practice', label: '15 级 · 吃子 · 第 1 题', route: '/kiosk/tsumego/problem/x', ts: 1,
+      localStorage.setItem('kiosk_tsumego_resume:u1', JSON.stringify({
+        label: '15 级 · 吃子 · 第 1 题', route: '/kiosk/tsumego/problem/x',
       }));
     }
   }, resume);
@@ -167,9 +169,12 @@ const bootTraining = async (page: Page, levels: ReturnType<typeof LEVELS>, resum
     return route.fulfill({ json: {} });
   });
   await page.goto('/kiosk/tsumego');
-  // 卡是接口回来之后才渲的 —— 等 `.kiosk-screen` 不够,量到的会是还没长齐的内容。
-  // 空态那一支一张卡都没有,所以两个落点都等:等不到才是真的没渲完。
-  await page.waitForSelector('.kiosk-cards .kiosk-card, .empty');
+  // 档位行是接口回来之后才渲的 —— 等 `.kiosk-screen` 不够,量到的会是还没长齐的内容。
+  // 空态那一支一行都没有,所以两个落点都等:等不到才是真的没渲完。
+  // ⚠️ 这一屏的行是 `.tsumego-level-row`(`TsumegoPage.tsx:132`),**不是 `.kiosk-card`**。
+  // 原来写的 `.kiosk-cards .kiosk-card, .empty` 之所以没红,是**右上角那张「实体棋盘」
+  // 卡里的 `.empty` 顶上了** —— 它和档位列表渲没渲完没有任何关系,等于这道等待是空的。
+  await page.waitForSelector('.tsumego-level-list .tsumego-level-row, [data-testid="tsumego-empty"]');
 };
 
 test('训练营:档数多到装不下时,右栏自己滚 —— data-at 走 top→mid→end,拇指 >=24,栏恒 680', async ({ page }) => {
@@ -395,15 +400,20 @@ const LIVE_ROWS = Array.from({ length: 4 }, (_, i) => ({
 }));
 
 test('棋谱:展开搜索之后右栏自己滚,最后一块(职业直播)滚得到', async ({ page }) => {
-  await page.addInitScript(() => {
+  // 六条「最近摆过」是这一屏**撑到溢出**的一半内容 —— 种在读不到的键上,
+  // 量到的就是装得下那一档的数,按承重关卡的规矩一概不算。
+  await page.addInitScript((uuid: string) => {
     const now = Date.now();
-    localStorage.setItem('baipu:recent', JSON.stringify(
+    localStorage.setItem(`baipu:recent:${uuid}`, JSON.stringify(
       Array.from({ length: 6 }, (_, i) => ({ id: `kifu_${i}`, name: `名局 ${i}`, savedAt: now - i * 3600e3 })),
     ));
     for (let i = 0; i < 6; i += 1) {
-      localStorage.setItem(`baipu:progress:kifu_${i}`, JSON.stringify({ k: 47, frames: 0, updatedAt: now, total: 241 }));
+      localStorage.setItem(
+        `baipu:progress:kifu_${i}:${uuid}`,
+        JSON.stringify({ k: 47, frames: 0, updatedAt: now, total: 241 }),
+      );
     }
-  });
+  }, KIOSK_E2E_UUID);
   await page.route('**/api/v1/kifu/albums*', (route) => route.fulfill({
     json: { items: KIFU_ROWS, total: 1234, page: 1, page_size: 6 },
   }));
@@ -552,23 +562,33 @@ test('设置:滚到「落子与提示」那一组时,导航高亮的正是它', 
   await expect.poll(async () => page.evaluate(() => {
     const items = [...document.querySelectorAll('[data-testid="settings-nav"] button')];
     return items.filter((b) => b.getAttribute('aria-current') === 'true').map((b) => b.textContent);
-  }), { message: '滚到底了,最后一组没能滚到视口顶 —— 尾部留白不够' }).toEqual(['语言']);
+  }), { message: '滚到底了,最后一组没能滚到视口顶 —— 尾部留白不够' }).toEqual(['关于']);
 });
 
 /**
  * 开局设置那几屏(L2 布局 A,右栏 460,形态 1 整栏滚)。
  *
- * **它们是这一轮才第一次能滚的。** 上一版右栏是 MUI 表单外面套一层 `overflow`
- * —— 屏 02 那一版是 `hidden`,装不下的后果是**裁掉**而不是滚。按稿子重画之后右栏是
- * 一叠 `.setgrp`,一定比 460 宽 × 约 400 高装得下的多,所以「能不能滚 / 拨不拨得动 /
- * 主行动键会不会被顶出去」三件事全是新成立的 —— 承重反查在这几屏上是**触发**的。
+ * ## 2026-09-21:前提换了,断言留下
+ *
+ * 这条闸原来的前提是「设置装不下」—— 那是 r1 的事实(屏 02 八组、屏 04 七组,
+ * 溢出好几百)。r2 把八组收成两行六格加一条推导之后,**三屏都装得下了**,
+ * 于是「溢出 > 100」「拨十二下滚轮 scrollTop > 0」这两条前提自己不成立了。
+ *
+ * **不 skip** —— skip 掉等于这两屏的骨架再也没人量。这条闸真正在守的是另外几件事,
+ * 它们和装不装得下**无关**,而且一条都没过期:
+ *   · 右栏恒 460(布局 A 的宽度账)
+ *   · 主行动键在滚动区**外面** ⇒ 贴着右栏底、不跟着滚
+ *   · 溢出(哪怕是将来长出来的)由滚动区吃掉,**不许顶破右栏**
+ *   · 最后一组进得了视野
+ *   · 页面不横向溢出
+ * 所以把「必须溢出」换成「不该有可滚量」,其余原样保留。
+ *
+ * 「撑破了还滚不滚得动」那一条搬去了 `kiosk-setup-r2-geometry.spec.ts`:
+ * 那边往滚动区里塞一块 `flex: 0 0 1200px` 再拨,这边没有可造的溢出了。
  *
  * **两屏各量一次,不是量一屏推另一屏。** 它们共用 `.setgrp` 那套类,但**骨架各自手写**
  * (两个不同的页面组件):屏 04 完全可能把主行动键写进滚动区里,而屏 02 的那条闸
  * 对此一无所知。同一条承重链上可以有不止一处断点 —— 判据能转,结论不能转。
- *
- * 造到会溢出:不用造 —— 屏 02 默认八组、屏 04 默认七组,下面第一条就是核这件事,
- * 溢出不到 100 就说明后面全是空的。
  *
  * 判据先写死再读数:
  *   · 该滚的是 `.kiosk-side__scroll`(**不是** `.kiosk-rail`,也不是页面)
@@ -587,7 +607,7 @@ const SETUP_SCREENS = [
 ];
 
 for (const screen of SETUP_SCREENS) {
-test(`开局设置(${screen.name}):设置装不下时右栏自己滚,而「开始对局」怎么滚都还在`, async ({ page }) => {
+test(`开局设置(${screen.name}):设置装得下、右栏不被顶破,而「开始对局」怎么都还在`, async ({ page }) => {
   await page.route('**/api/v1/vision/status', (route) => route.fulfill({
     json: {
       enabled: false, camera_connected: false, pose_locked: false, sync_state: 'idle',
@@ -601,14 +621,18 @@ test(`开局设置(${screen.name}):设置装不下时右栏自己滚,而「开�
     Math.round(document.querySelector('.kiosk-rail')!.getBoundingClientRect().width));
   expect(railW, '右栏不是 460 —— 布局 A 的宽度账先崩了,后面量的滚动都建在错的宽度上').toBe(460);
 
+  // r2 之后这两屏装得下 —— 这一条就是那个事实本身。
+  // (余量有多少归 `kiosk-setup-r2-geometry.spec.ts` 量,这里只管「不用滚」。)
   const overflow = await overflowOf(page);
-  expect(overflow, '没造出溢出 —— 那下面这几条断言都是空的').toBeGreaterThan(100);
+  expect(overflow, `${screen.name} 右栏又溢出了 ${overflow}px —— r2 的前提是它装得下`)
+    .toBeLessThanOrEqual(0);
 
   // 主行动键在滚动区外面:先记下它现在在哪。
   const ctaBefore = await page.evaluate(() =>
     Math.round(document.querySelector('.kiosk-primary-action')!.getBoundingClientRect().bottom));
 
-  // **用真滚轮**,不是 `scrollTop = n` —— 程序化能滚 ≠ 手指拨得动。
+  // 照样拨十二下真滚轮 —— 装得下的时候它**一格都不该动**,
+  // 而主行动键和最后一组的位置在拨过之后仍要成立。
   const zone = page.locator('.kiosk-side__scroll');
   const zb = (await zone.boundingBox())!;
   await page.mouse.move(zb.x + zb.width / 2, zb.y + zb.height / 2);
@@ -632,9 +656,8 @@ test(`开局设置(${screen.name}):设置装不下时右栏自己滚,而「开�
     };
   }, screen.last);
 
-  expect(m.scrollTop, '拨了十二下滚轮,一格都没动 —— 程序化能滚不算数').toBeGreaterThan(0);
-  expect(m.atEnd, '滚不到底').toBeLessThanOrEqual(1);
-  expect(m.lastBottom, `滚到底了,最后一组「${screen.lastName}」的下缘还在视野外 —— 那一组就是到不了的`)
+  expect(m.scrollTop, '装得下却滚动了 —— 说明有东西超出了可视区').toBe(0);
+  expect(m.lastBottom, `最后一组「${screen.lastName}」的下缘在视野外 —— 那一组就是到不了的`)
     .toBeLessThanOrEqual(m.zoneBottom);
   // 溢出必须由滚动区吃掉,**不能顶破右栏** —— 顶破了主行动键就被推出 516 之外。
   expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由滚动区吃掉').toBeLessThanOrEqual(0);
@@ -1195,13 +1218,29 @@ const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang' } 
   // ⚠️ **不能用上面那个共享 `boot`**:它末尾等 `.kiosk-scrollzone`,而这一屏没有 ——
   // 它的右栏是两个 `KioskFold`(各自内滚),不是整栏滚的 `KioskScrollZone`。
   // 等一个永远不出现的选择器 = 30 秒超时,而且超时信息指向 helper、不指向真正的原因。
-  await page.addInitScript(() => {
+  /* ⚠️ 摆谱的谱**不在裸 `localStorage` 里**,在按身份分命名空间的那一份:
+     `kioskActivityStorage(identityKey, isGuest)`(盒子 SSO 访客隔离的第 4 层)——
+     真用户走 `localStorage`,每个键后缀 `:${user.uuid}`;**访客或身份未解析(uuid 为空)
+     走内存 Map,一个字节都不碰 localStorage**。
+
+     所以这里两件事缺一不可:① `/me` 必须给 `uuid`(缺了 `identityKey` 就是 null,
+     当访客处理),② 种子键要带同一个 uuid 后缀。
+
+     少任何一件,页面都会渲染它**正确的**空态「这台盒子上没有这份谱」,而
+     `waitForSelector('[data-testid="baipu-pcard"]')` 就停在那儿超时 30 秒 ——
+     报错指向选择器,看起来像「摆谱页挂了」,其实页面是对的、夹具过期了。
+     (2026-09-21:三条摆谱用例就是这么红了一段时间的,develop 上同样红。) */
+  // `addInitScript` 的函数体在**浏览器**里跑,拿不到这个文件里的常量 —— 必须当参数传进去。
+  await page.addInitScript((uuid: string) => {
     localStorage.setItem('token', 'kiosk-shell-scroll');
     localStorage.setItem('katrain_language', 'cn');
-    localStorage.setItem('baipu:sgf:g1', JSON.stringify({ id: 'g1', name: '三星杯半决赛', sgf: '(;SZ[19];B[pd])', savedAt: 1 }));
-  });
+    localStorage.setItem(
+      `baipu:sgf:g1:${uuid}`,
+      JSON.stringify({ id: 'g1', name: '三星杯半决赛', sgf: '(;SZ[19];B[pd])', savedAt: 1 }),
+    );
+  }, KIOSK_E2E_UUID);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
-    json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
+    json: kioskMeJson(),
   }));
   await page.goto('/kiosk/baipu/session/g1');
   await page.waitForSelector('[data-testid="baipu-pcard"]');

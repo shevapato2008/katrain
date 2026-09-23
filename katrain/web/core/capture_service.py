@@ -82,6 +82,26 @@ class CaptureService:
     def read_frame(self):
         return self._hub.read_frame()
 
+    # -- runtime camera controls (hardware/software AE) -------------------- #
+    def request_controls(self, exposure: float | None = None, auto_exposure: float | None = None) -> None:
+        self._hub.request_controls(exposure=exposure, auto_exposure=auto_exposure)
+
+    @property
+    def controls_effective(self) -> bool | None:
+        return getattr(self._hub, "controls_effective", None)
+
+    @property
+    def initial_exposure(self) -> float | None:
+        return getattr(self._hub, "initial_exposure", None)
+
+    @property
+    def current_auto_exposure(self) -> float | None:
+        return getattr(self._hub, "current_auto_exposure", None)
+
+    @property
+    def current_exposure(self) -> float | None:
+        return getattr(self._hub, "current_exposure", None)
+
     def grab_burst(self, n: int = 8, interval: float = 0.1):
         """Grab ``n`` frames (for empty-board geometry locking)."""
         if hasattr(self._hub, "grab_burst"):

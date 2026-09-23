@@ -54,7 +54,9 @@ import { interpolate } from '../utils/interpolate';
 
 const PlatformLobbyPage = () => {
   const { t } = useTranslation();
-  const { token } = useAuth();
+  // token 只当**凭据**用（严格盒端恒为 null，身份在 HttpOnly sb_go_token cookie 里）；
+  // 「认没认证」一律判 isAuthenticated —— 判 token 会让盒上每个已登录用户都进不来。
+  const { token, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const platform = searchParams.get('platform') || 'ogs';
@@ -71,17 +73,17 @@ const PlatformLobbyPage = () => {
   const [toast, setToast] = useState<{ text: string; bad: boolean } | null>(null);
 
   useEffect(() => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     API.platformStatus(token)
       .then((d) => setSupportsAutomatch(
         d.platforms.some((p) => p.platform === platform && p.connected && p.supports_automatch),
       ))
       // 读不到能力就当**没有** —— 摆一颗按不动或按了报错的键,比不摆更糟。
       .catch(() => setSupportsAutomatch(false));
-  }, [token, platform]);
+  }, [isAuthenticated, token, platform]);
 
   const fetchUsers = useCallback(async (q: string) => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     setLoaded(false);
     try {
       const data = await API.platformUsers(platform, token, q || undefined);
@@ -93,18 +95,24 @@ const PlatformLobbyPage = () => {
     } finally {
       setLoaded(true);
     }
-  }, [token, platform]);
+  }, [isAuthenticated, token, platform]);
 
   useEffect(() => { void fetchUsers(query); }, [fetchUsers, query]);
 
   const sendChallenge = async (user: PlatformUser) => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     try {
       // 这三项实现里写死,屏上那一行读数说的就是它们 —— 两处必须同源地对得上。
       await API.platformSendChallenge(platform, {
         user_id: user.user_id, board_size: 19, rules: 'chinese', ranked: true,
       }, token);
-      setToast({ text: t('platform:challenge_sent', '挑战已发出 —— 接下来在对面那边'), bad: false });
+      setToast({
+        text: interpolate(
+          t('platform:challenge_sent', '挑战已发出。对方接受后要去 {name} 上下，不会回到这台盒子。'),
+          { name: t(meta.label, meta.labelCn) },
+        ),
+        bad: false,
+      });
     } catch (e) {
       setToast({ text: e instanceof Error ? e.message : t('platform:challenge_failed', '挑战没发出去'), bad: true });
     } finally {
@@ -113,7 +121,7 @@ const PlatformLobbyPage = () => {
   };
 
   const toggleAutomatch = async () => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     try {
       if (automatch) {
         await API.platformCancelAutomatch(platform, token);
@@ -280,7 +288,7 @@ const PlatformLobbyPage = () => {
         )}
       </KioskScrollZone>
 
-      {/* 挑战前确认一次:发出去就在对方那边了,撤不回来。 */}
+      {/* 挑战前确认一次:发出后不可撤回,接受后须到平台对弈。 */}
       {challengeTarget && (
         <div className="cdlg" data-testid="platform-challenge-confirm">
           <div className="cdlg__box wdlg" role="dialog" aria-modal="true">
@@ -290,7 +298,10 @@ const PlatformLobbyPage = () => {
                 t('platform:challenge_ask_body', '{name} {rank} · 19 路 · 中国规则 · 计分局。'),
                 { name: t(meta.label, meta.labelCn), rank: challengeTarget.rank },
               )}
-              <b>{t('platform:challenge_ask_tail', '发出去就在对方那边了。')}</b>
+              <b>{interpolate(
+                t('platform:challenge_ask_tail', '发出去撤不回来；对方接受后要去 {name} 上下，不会回到这台盒子。'),
+                { name: t(meta.label, meta.labelCn) },
+              )}</b>
             </p>
             <div className="cdlg__acts">
               <button type="button" className="ghost" onClick={() => setChallengeTarget(null)}>

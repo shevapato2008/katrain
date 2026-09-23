@@ -26,6 +26,7 @@ class FakeLed:
     def __init__(self, connected=True):
         self._connected = connected
         self.calls = []
+        self.last_errors = []
 
     def set_points(self, points, *, strict=False):
         self.calls.append(("set_points", points, strict))
@@ -66,7 +67,7 @@ class TestLedEndpoints:
         fake = FakeLed()
         c = _client(fake)
         assert c.post("/led/clear").status_code == 200
-        assert c.get("/led/status").json() == {"connected": True}
+        assert c.get("/led/status").json() == {"connected": True, "last_errors": []}
 
     def test_404_when_not_enabled(self):
         c = _client(None)

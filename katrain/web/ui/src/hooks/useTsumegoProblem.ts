@@ -280,7 +280,9 @@ export function useTsumegoProblem(problemId: string): UseTsumegoProblemReturn {
 
     fetch(`/api/v1/tsumego/problems/${problemId}`)
       .then(res => {
-        if (!res.ok) throw new Error('Problem not found');
+        // 只有 404 才是「题不存在」。盒上连不上云端是 503(N9)—— 一律说成 not found 等于
+        // 把「没网」讲成「没这道题」。其它状态码照各页 fetch 的惯例抛 `HTTP <status>`。
+        if (!res.ok) throw new Error(res.status === 404 ? 'Problem not found' : `HTTP ${res.status}`);
         return res.json();
       })
       .then((data: ProblemDetail) => {

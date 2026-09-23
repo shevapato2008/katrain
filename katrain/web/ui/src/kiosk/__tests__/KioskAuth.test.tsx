@@ -5,16 +5,16 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import LoginPage from '../pages/LoginPage';
 
-vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
+const authState = vi.hoisted(() => ({
+  current: { isAuthenticated: false, isLoading: false } as { isAuthenticated: boolean; isLoading: boolean },
 }));
-
 const mockLogin = vi.fn();
 const mockLogout = vi.fn();
 
 vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({
-    isAuthenticated: false,
+    isAuthenticated: authState.current.isAuthenticated,
+    isLoading: authState.current.isLoading,
     user: null,
     login: mockLogin,
     logout: mockLogout,
@@ -34,12 +34,13 @@ const renderLoginPage = (route = '/kiosk/login') =>
     </ThemeProvider>
   );
 
-describe('LoginPage (shared auth)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockLogin.mockResolvedValue(undefined);
-  });
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockLogin.mockResolvedValue(undefined);
+  authState.current = { isAuthenticated: false, isLoading: false };
+});
 
+describe('LoginPage (shared auth)', () => {
   it('renders username and password inputs', () => {
     renderLoginPage();
     expect(screen.getByLabelText(/用户名/i)).toBeInTheDocument();
@@ -84,5 +85,20 @@ describe('LoginPage (shared auth)', () => {
     await waitFor(() => {
       expect(screen.getByText('登录失败')).toBeInTheDocument();
     });
+  });
+});
+
+describe('LoginPage 已登录时不该停在登录页', () => {
+  it('探针跑完且已登录 → 直接回对弈页(两种构建都要)', async () => {
+    authState.current = { isAuthenticated: true, isLoading: false };
+    renderLoginPage();
+    expect(screen.getByText('PLAY_PAGE')).toBeInTheDocument();
+  });
+
+  it('探针还没跑完时不跳 —— 否则会在冷启动那一帧把人甩走', () => {
+    authState.current = { isAuthenticated: false, isLoading: true };
+    renderLoginPage();
+    expect(screen.getByTestId('kiosk-login-page')).toBeInTheDocument();
+    expect(screen.queryByText('PLAY_PAGE')).toBeNull();
   });
 });

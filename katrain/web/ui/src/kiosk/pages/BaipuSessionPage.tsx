@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 
 import { useTranslation } from '../../hooks/useTranslation';
 import { type BaipuCaptureErrorReason,
@@ -14,8 +14,12 @@ import { colsFor, rowsFor } from '../shell/goBoard';
 import { KioskActions } from '../shell/KioskActions';
 import { KioskFold } from '../shell/KioskFold';
 import { KioskPagebar } from '../shell/KioskPagebar';
+import { readBackTo, useBackTo } from '../hooks/useBackTo';
 import { driftLine } from '../utils/baipuDrift';
+import { playShutter } from '../utils/baipuShutter';
 import { interpolate } from '../utils/interpolate';
+import { useAuth } from '../../context/AuthContext';
+import { kioskActivityStorage } from '../storage/kioskActivityStorage';
 
 const stoneToLedColor = (c: 'B' | 'W'): LedColor => (c === 'B' ? 'black' : 'white');
 
@@ -23,27 +27,6 @@ const savedFilename = (path?: string): string | null => {
   if (!path) return null;
   return path.split(/[\\/]/).filter(Boolean).at(-1) ?? null;
 };
-
-// Short shutter "click" via WebAudio (no asset). Plays AFTER the frame is written
-// (the "you may place the next stone" go-signal). Best-effort; ignored if blocked.
-function playShutter() {
-  try {
-    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new Ctx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.005);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.09);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.1);
-    osc.onended = () => ctx.close();
-  } catch {
-    // no audio available — silent
-  }
-}
 
 type Phase = 'loading' | 'guiding' | 'await_removal' | 'done' | 'error';
 
@@ -116,8 +99,20 @@ type Mood = 'guiding' | 'removal' | 'failed' | 'done';
 const BaipuSessionPage = () => {
   const { source = '' } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
   const { t } = useTranslation();
+  // 返回 / 退出 / 完成都去**打开这一屏的那一页**(2026-09-22):摆谱列表进来回列表(键名「摆谱」),
+  // 棋谱屏导入、棋谱详情「摆这一局」进来回那一页(键名「棋谱」)。原先一律 `/kiosk/baipu`,
+  // 键名却写「棋谱」。没写明来处(直接输 URL)回摆谱列表。
+  const back = useBackTo('/kiosk/baipu');
+  const backLabel = (readBackTo(location.state) ?? '/kiosk/baipu').startsWith('/kiosk/baipu')
+    ? t('baipu:title', '摆谱')
+    : t('baipu:back_kifu', '棋谱');
+  const { user, isGuest, isLoading } = useAuth();
+  const identityKey = user?.uuid ?? null;
+  const store = useMemo(
+    () => kioskActivityStorage(isLoading || isGuest ? null : identityKey, isGuest),
+    [isLoading, isGuest, identityKey],
+  );
 
   const [phase, setPhase] = useState<Phase>('loading');
   // ⚠️ `null` = 没失败;`''` = 失败了但服务端没给话。**存的不是译文**(见 `driftLine` 那段)。
@@ -143,10 +138,15 @@ const BaipuSessionPage = () => {
   const mountedRef = useRef(true);
   const nowRef = useRef<HTMLSpanElement | null>(null);
 
-  const cached = useMemo(() => getCachedSgf(source), [source]);
+  // Resolve SGF: fresh navigation state first, then the offline cache (identity-scoped —
+  // empty while isLoading/guest, so this can never surface a prior real user's cached SGF;
+  // `store` in the deps re-runs this once identity resolves, since the useMemo above only
+  // captures its FIRST value otherwise).
+  const cached = useMemo(() => getCachedSgf(source, store), [source, store]);
   const sgf = useMemo(() => {
     const navSgf = (location.state as { sgf?: string } | null)?.sgf;
-    return navSgf ?? cached?.sgf ?? null;
+    if (navSgf) return navSgf;
+    return cached?.sgf ?? null;
   }, [location.state, cached]);
 
   useEffect(() => {
@@ -158,8 +158,10 @@ const BaipuSessionPage = () => {
         setSteps(resp.steps);
         setBoardSize(resp.board_size);
         setMeta(resp.meta);
-        const prog = getProgress(source);
-        if (prog && prog.k > 0 && prog.k < resp.steps.length) setResumePrompt(prog.k);
+        const prog = getProgress(source, store);
+        if (prog && prog.k > 0 && prog.k < resp.steps.length) {
+          setResumePrompt(prog.k); // ask continue vs restart
+        }
         setPhase('guiding');
       })
       .catch((err: Error) => {
@@ -168,7 +170,7 @@ const BaipuSessionPage = () => {
         setPhase('error');
       });
     return () => { cancelled = true; };
-  }, [sgf, source]);
+  }, [sgf, source, store]);
 
   const currentStep: BaipuStep | undefined = steps[k];
   const isPlaceable = !!currentStep && currentStep.kind !== 'pass' && currentStep.kind !== 'clear';
@@ -176,11 +178,11 @@ const BaipuSessionPage = () => {
   const advance = useCallback(() => {
     setK((prev) => {
       const next = prev + 1;
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length });
+      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length }, store);
       setPhase(next >= steps.length ? 'done' : 'guiding');
       return next;
     });
-  }, [source, steps.length]);
+  }, [source, steps.length, store]);
 
   const doCapture = useCallback(
     async (moveIndex: number) => {
@@ -272,7 +274,7 @@ const BaipuSessionPage = () => {
     setCaptureError(null);
     setK((prev) => {
       const next = Math.max(0, prev - 1);
-      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length });
+      saveProgress(source, { k: next, frames: 0, updatedAt: Date.now(), total: steps.length }, store);
       return next;
     });
     setPhase('guiding');
@@ -330,8 +332,8 @@ const BaipuSessionPage = () => {
       <div className="kiosk-layout-b" data-testid="baipu-session-page">
         <KioskPagebar
           testId="baipu-pagebar"
-          backLabel={t('baipu:back_kifu', '棋谱')}
-          onBack={() => navigate('/kiosk/baipu')}
+          backLabel={backLabel}
+          onBack={back}
           title={t('baipu:title', '摆谱')}
         />
         <div className="empty" data-testid="baipu-load-error">
@@ -346,8 +348,8 @@ const BaipuSessionPage = () => {
       <div className="kiosk-layout-b" data-testid="baipu-session-page">
         <KioskPagebar
           testId="baipu-pagebar"
-          backLabel={t('baipu:back_kifu', '棋谱')}
-          onBack={() => navigate('/kiosk/baipu')}
+          backLabel={backLabel}
+          onBack={back}
           title={title}
         />
         <div className="empty" data-testid="baipu-loading"><h4>{t('baipu:loading', '正在读这份谱')}</h4></div>
@@ -396,7 +398,7 @@ const BaipuSessionPage = () => {
       <div className="kiosk-rail">
         <KioskPagebar
           testId="baipu-pagebar"
-          backLabel={t('baipu:back_kifu', '棋谱')}
+          backLabel={backLabel}
           onBack={() => setExitOpen(true)}
           title={title}
           sub={interpolate(
@@ -551,7 +553,7 @@ const BaipuSessionPage = () => {
               reason: phase !== 'done'
                 ? interpolate(t('baipu:finish_reason', '还剩 {n} 手没摆'), { n: steps.length - k })
                 : undefined,
-              onClick: () => { clearProgress(source); navigate('/kiosk/baipu'); },
+              onClick: () => { clearProgress(source, store); back(); },
             },
           ]}
         />
@@ -577,7 +579,7 @@ const BaipuSessionPage = () => {
               <button
                 type="button" className="ghost" data-testid="baipu-resume-restart"
                 onClick={() => {
-                  clearProgress(source);
+                  clearProgress(source, store);
                   setOverwriteExisting(true);
                   setFrameCount(0); setLatestSavedFile(null); setCaptureError(null); setDrift(null);
                   initialCapturedRef.current = false;
@@ -619,7 +621,7 @@ const BaipuSessionPage = () => {
               <button type="button" className="ghost" onClick={() => setExitOpen(false)}>{t('cancel', '取消')}</button>
               <button
                 type="button" className="main" data-testid="baipu-exit-confirm-action"
-                onClick={() => navigate('/kiosk/baipu')}
+                onClick={back}
               >{t('baipu:exit', '退出')}</button>
             </div>
           </div>

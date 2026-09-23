@@ -6841,3 +6841,48 @@ msgstr "Iniciar sesión en {name}"
 
 msgid "platform:login_tabs"
 msgstr "Método de acceso"
+
+msgid "platform:login_tab_scan"
+msgstr "Escanear"
+
+msgid "platform:login_sub_scan"
+msgstr "No conectado · escanea con la app de Golaxy en tu teléfono"
+
+msgid "platform:scan_state_waiting"
+msgstr "Esperando escaneo"
+
+msgid "platform:scan_state_scanned"
+msgstr "Escaneado, confirma en tu teléfono"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Confirmado, iniciando sesión…"
+
+msgid "platform:scan_state_expired"
+msgstr "El código QR ha caducado"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Cancelado en tu teléfono"
+
+msgid "platform:scan_unavailable_title"
+msgstr "No se puede conectar con Golaxy"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Comprueba la red"
+
+msgid "platform:scan_retry"
+msgstr "Reintentar"
+
+msgid "platform:scan_title"
+msgstr "Abre la app de Golaxy y escanea"
+
+msgid "platform:scan_body"
+msgstr "Confirma en tu teléfono después de escanear; la contraseña nunca pasa por esta caja."
+
+msgid "platform:scan_qr_alt"
+msgstr "Código QR de acceso a Golaxy"
+
+msgid "platform:scan_refresh"
+msgstr "Nuevo código"
+
+msgid "platform:scan_confirm_failed"
+msgstr "No se pudo confirmar el inicio de sesión"

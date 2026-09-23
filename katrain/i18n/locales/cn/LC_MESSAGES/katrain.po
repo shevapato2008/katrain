@@ -6555,3 +6555,48 @@ msgstr "登录方式"
 
 msgid "platform:fact_whose_golaxy"
 msgstr "星阵自己的账号，不是智星盒的。没有就在手机上的星阵 APP 注册——盒上注册不了。"
+
+msgid "platform:login_tab_scan"
+msgstr "扫码"
+
+msgid "platform:login_sub_scan"
+msgstr "未连接 · 用手机上的星阵 APP 扫一扫"
+
+msgid "platform:scan_state_waiting"
+msgstr "等待扫描"
+
+msgid "platform:scan_state_scanned"
+msgstr "已扫描，请在手机上确认"
+
+msgid "platform:scan_state_confirmed"
+msgstr "已确认，正在登录…"
+
+msgid "platform:scan_state_expired"
+msgstr "二维码已失效"
+
+msgid "platform:scan_state_cancelled"
+msgstr "手机上取消了登录"
+
+msgid "platform:scan_unavailable_title"
+msgstr "连不上星阵"
+
+msgid "platform:scan_unavailable_body"
+msgstr "检查网络"
+
+msgid "platform:scan_retry"
+msgstr "重试"
+
+msgid "platform:scan_title"
+msgstr "打开星阵 APP 扫一扫"
+
+msgid "platform:scan_body"
+msgstr "扫完在手机上点确认，密码不经过这台盒子。"
+
+msgid "platform:scan_qr_alt"
+msgstr "星阵登录二维码"
+
+msgid "platform:scan_refresh"
+msgstr "换一张"
+
+msgid "platform:scan_confirm_failed"
+msgstr "确认登录失败"

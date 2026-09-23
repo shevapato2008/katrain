@@ -7022,3 +7022,50 @@ msgstr "Bei {name} anmelden"
 
 msgid "platform:login_tabs"
 msgstr "Anmeldemethode"
+
+msgid "platform:login_tab_scan"
+msgstr "Scannen"
+
+msgid "platform:login_sub_scan"
+msgstr "Nicht verbunden · mit der Golaxy-App auf dem Handy scannen"
+
+msgid "platform:scan_state_waiting"
+msgstr "Warten auf Scan"
+
+msgid "platform:scan_state_scanned"
+msgstr "Gescannt — auf dem Handy bestätigen"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Bestätigt, wird angemeldet…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR-Code abgelaufen"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Auf dem Handy abgebrochen"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Golaxy nicht erreichbar"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Netzwerk prüfen"
+
+msgid "platform:scan_retry"
+msgstr "Erneut versuchen"
+
+msgid "platform:scan_title"
+msgstr "Golaxy-App öffnen und scannen"
+
+msgid "platform:scan_body"
+msgstr ""
+"Nach dem Scannen auf dem Handy bestätigen — das Passwort läuft nie über "
+"diese Box."
+
+msgid "platform:scan_qr_alt"
+msgstr "Golaxy-Anmelde-QR-Code"
+
+msgid "platform:scan_refresh"
+msgstr "Neuer Code"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Anmeldung konnte nicht bestätigt werden"

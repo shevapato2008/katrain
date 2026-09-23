@@ -6982,3 +6982,49 @@ msgstr "{name} girişi"
 
 msgid "platform:login_tabs"
 msgstr "Giriş yöntemi"
+
+msgid "platform:login_tab_scan"
+msgstr "Tara"
+
+msgid "platform:login_sub_scan"
+msgstr "Bağlı değil · telefonunuzdaki Golaxy uygulamasıyla tarayın"
+
+msgid "platform:scan_state_waiting"
+msgstr "Tarama bekleniyor"
+
+msgid "platform:scan_state_scanned"
+msgstr "Tarandı, telefonunuzdan onaylayın"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Onaylandı, giriş yapılıyor…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR kodun süresi doldu"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Telefonda iptal edildi"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Golaxy'ye ulaşılamıyor"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Ağı kontrol edin"
+
+msgid "platform:scan_retry"
+msgstr "Yeniden dene"
+
+msgid "platform:scan_title"
+msgstr "Golaxy uygulamasını açıp tarayın"
+
+msgid "platform:scan_body"
+msgstr ""
+"Taradıktan sonra telefonunuzdan onaylayın — şifreniz bu kutudan asla geçmez."
+
+msgid "platform:scan_qr_alt"
+msgstr "Golaxy giriş QR kodu"
+
+msgid "platform:scan_refresh"
+msgstr "Yeni kod"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Giriş onaylanamadı"

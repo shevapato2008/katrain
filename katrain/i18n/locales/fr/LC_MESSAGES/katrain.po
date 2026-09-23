@@ -6993,3 +6993,50 @@ msgstr "Connexion à {name}"
 
 msgid "platform:login_tabs"
 msgstr "Méthode de connexion"
+
+msgid "platform:login_tab_scan"
+msgstr "Scanner"
+
+msgid "platform:login_sub_scan"
+msgstr "Non connecté · scannez avec l'appli Golaxy sur votre téléphone"
+
+msgid "platform:scan_state_waiting"
+msgstr "En attente du scan"
+
+msgid "platform:scan_state_scanned"
+msgstr "Scanné, confirmez sur votre téléphone"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Confirmé, connexion en cours…"
+
+msgid "platform:scan_state_expired"
+msgstr "Le QR code a expiré"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Annulé sur votre téléphone"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Impossible de joindre Golaxy"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Vérifiez le réseau"
+
+msgid "platform:scan_retry"
+msgstr "Réessayer"
+
+msgid "platform:scan_title"
+msgstr "Ouvrez l'appli Golaxy et scannez"
+
+msgid "platform:scan_body"
+msgstr ""
+"Confirmez sur votre téléphone après le scan — le mot de passe ne passe "
+"jamais par ce boîtier."
+
+msgid "platform:scan_qr_alt"
+msgstr "QR code de connexion Golaxy"
+
+msgid "platform:scan_refresh"
+msgstr "Nouveau code"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Échec de la confirmation de connexion"

@@ -6945,3 +6945,49 @@ msgstr "Sign in to {name}"
 
 msgid "platform:login_tabs"
 msgstr "Sign-in method"
+
+msgid "platform:login_tab_scan"
+msgstr "Scan"
+
+msgid "platform:login_sub_scan"
+msgstr "Not connected · scan with the Golaxy app on your phone"
+
+msgid "platform:scan_state_waiting"
+msgstr "Waiting for scan"
+
+msgid "platform:scan_state_scanned"
+msgstr "Scanned — confirm on your phone"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Confirmed, signing in…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR code expired"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Cancelled on your phone"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Can't reach Golaxy"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Check the network"
+
+msgid "platform:scan_retry"
+msgstr "Retry"
+
+msgid "platform:scan_title"
+msgstr "Open the Golaxy app and scan"
+
+msgid "platform:scan_body"
+msgstr ""
+"Confirm on your phone after scanning — your password never touches this box."
+
+msgid "platform:scan_qr_alt"
+msgstr "Golaxy sign-in QR code"
+
+msgid "platform:scan_refresh"
+msgstr "New code"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Couldn't confirm sign-in"

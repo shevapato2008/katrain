@@ -6666,3 +6666,48 @@ msgstr "{name} 로그인"
 
 msgid "platform:login_tabs"
 msgstr "로그인 방식"
+
+msgid "platform:login_tab_scan"
+msgstr "QR 로그인"
+
+msgid "platform:login_sub_scan"
+msgstr "미연결 · 휴대폰의 골락시 앱으로 스캔하세요"
+
+msgid "platform:scan_state_waiting"
+msgstr "스캔 대기 중"
+
+msgid "platform:scan_state_scanned"
+msgstr "스캔됨, 휴대폰에서 확인해 주세요"
+
+msgid "platform:scan_state_confirmed"
+msgstr "확인됨, 로그인 중…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR 코드가 만료되었습니다"
+
+msgid "platform:scan_state_cancelled"
+msgstr "휴대폰에서 취소되었습니다"
+
+msgid "platform:scan_unavailable_title"
+msgstr "골락시에 연결할 수 없습니다"
+
+msgid "platform:scan_unavailable_body"
+msgstr "네트워크를 확인하세요"
+
+msgid "platform:scan_retry"
+msgstr "다시 시도"
+
+msgid "platform:scan_title"
+msgstr "골락시 앱을 열고 스캔하세요"
+
+msgid "platform:scan_body"
+msgstr "스캔 후 휴대폰에서 확인하세요. 비밀번호는 이 기기를 거치지 않습니다."
+
+msgid "platform:scan_qr_alt"
+msgstr "골락시 로그인 QR 코드"
+
+msgid "platform:scan_refresh"
+msgstr "새 코드"
+
+msgid "platform:scan_confirm_failed"
+msgstr "로그인 확인에 실패했습니다"

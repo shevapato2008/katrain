@@ -6881,3 +6881,50 @@ msgstr "Вход в {name}"
 
 msgid "platform:login_tabs"
 msgstr "Способ входа"
+
+msgid "platform:login_tab_scan"
+msgstr "Сканировать"
+
+msgid "platform:login_sub_scan"
+msgstr "Не подключено · отсканируйте в приложении Golaxy на телефоне"
+
+msgid "platform:scan_state_waiting"
+msgstr "Ожидание сканирования"
+
+msgid "platform:scan_state_scanned"
+msgstr "Отсканировано, подтвердите на телефоне"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Подтверждено, выполняется вход…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR-код истёк"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Отменено на телефоне"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Не удаётся подключиться к Golaxy"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Проверьте сеть"
+
+msgid "platform:scan_retry"
+msgstr "Повторить"
+
+msgid "platform:scan_title"
+msgstr "Откройте приложение Golaxy и отсканируйте"
+
+msgid "platform:scan_body"
+msgstr ""
+"После сканирования подтвердите на телефоне — пароль никогда не проходит "
+"через эту приставку."
+
+msgid "platform:scan_qr_alt"
+msgstr "QR-код входа в Golaxy"
+
+msgid "platform:scan_refresh"
+msgstr "Новый код"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Не удалось подтвердить вход"

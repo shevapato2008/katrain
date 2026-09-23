@@ -6725,3 +6725,48 @@ msgstr "{name}にログイン"
 
 msgid "platform:login_tabs"
 msgstr "ログイン方法"
+
+msgid "platform:login_tab_scan"
+msgstr "スキャン"
+
+msgid "platform:login_sub_scan"
+msgstr "未接続 · スマホの星陣アプリでスキャン"
+
+msgid "platform:scan_state_waiting"
+msgstr "スキャン待ち"
+
+msgid "platform:scan_state_scanned"
+msgstr "スキャン済み、スマホで確認してください"
+
+msgid "platform:scan_state_confirmed"
+msgstr "確認済み、ログイン中…"
+
+msgid "platform:scan_state_expired"
+msgstr "QRコードの有効期限が切れました"
+
+msgid "platform:scan_state_cancelled"
+msgstr "スマホ側でキャンセルされました"
+
+msgid "platform:scan_unavailable_title"
+msgstr "星陣に接続できません"
+
+msgid "platform:scan_unavailable_body"
+msgstr "ネットワークを確認してください"
+
+msgid "platform:scan_retry"
+msgstr "再試行"
+
+msgid "platform:scan_title"
+msgstr "星陣アプリを開いてスキャン"
+
+msgid "platform:scan_body"
+msgstr "スキャン後、スマホ側で確認してください。パスワードはこの端末を経由しません。"
+
+msgid "platform:scan_qr_alt"
+msgstr "星陣ログインQRコード"
+
+msgid "platform:scan_refresh"
+msgstr "コードを更新"
+
+msgid "platform:scan_confirm_failed"
+msgstr "ログイン確認に失敗しました"

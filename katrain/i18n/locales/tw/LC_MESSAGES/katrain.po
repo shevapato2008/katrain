@@ -6699,3 +6699,48 @@ msgstr "登入{name}"
 
 msgid "platform:login_tabs"
 msgstr "登入方式"
+
+msgid "platform:login_tab_scan"
+msgstr "掃碼"
+
+msgid "platform:login_sub_scan"
+msgstr "未連接 · 用手機上的星陣 APP 掃一掃"
+
+msgid "platform:scan_state_waiting"
+msgstr "等待掃描"
+
+msgid "platform:scan_state_scanned"
+msgstr "已掃描，請在手機上確認"
+
+msgid "platform:scan_state_confirmed"
+msgstr "已確認，正在登入…"
+
+msgid "platform:scan_state_expired"
+msgstr "二維碼已失效"
+
+msgid "platform:scan_state_cancelled"
+msgstr "手機上取消了登入"
+
+msgid "platform:scan_unavailable_title"
+msgstr "連不上星陣"
+
+msgid "platform:scan_unavailable_body"
+msgstr "檢查網路"
+
+msgid "platform:scan_retry"
+msgstr "重試"
+
+msgid "platform:scan_title"
+msgstr "打開星陣 APP 掃一掃"
+
+msgid "platform:scan_body"
+msgstr "掃完在手機上點確認，密碼不經過這台盒子。"
+
+msgid "platform:scan_qr_alt"
+msgstr "星陣登入二維碼"
+
+msgid "platform:scan_refresh"
+msgstr "換一張"
+
+msgid "platform:scan_confirm_failed"
+msgstr "確認登入失敗"

@@ -1,5 +1,6 @@
 import httpx
 from fastapi import APIRouter, Request
+from katrain.core.constants import VERSION
 from katrain.web.core.config import settings
 
 router = APIRouter()
@@ -29,5 +30,6 @@ async def health(request: Request):
         except Exception:
             engines["cloud"] = "unreachable"
 
-    result = {"status": "ok", "engines": engines}
+    # 盒子设置屏「关于」的版本号只能从这里拿(前端 package.json 是 0.0.0)。
+    result = {"status": "ok", "version": VERSION, "engines": engines}
     return result

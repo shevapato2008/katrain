@@ -6701,3 +6701,195 @@ msgstr "L'abandon n'a pas abouti"
 msgid "game:session_gone_notice"
 msgstr ""
 "Cette partie n'existe plus sur le serveur — vous pouvez quitter cette page."
+
+msgid "settings:nav_about"
+msgstr "À propos"
+
+msgid "settings:about_version"
+msgstr "Version"
+
+msgid "settings:about_local"
+msgstr "Cet appareil"
+
+msgid "settings:about_cloud"
+msgstr "Cloud"
+
+msgid "settings:engine_ok"
+msgstr "Disponible"
+
+msgid "settings:engine_down"
+msgstr "Injoignable"
+
+msgid "settings:engine_unset"
+msgstr "Non configuré"
+
+msgid "settings:engine_code"
+msgstr "Le moteur a renvoyé {code}"
+
+msgid "settings:camera_connected"
+msgstr "Connecté"
+
+msgid "settings:geometry_calibrated"
+msgstr "Calibré"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Non calibré"
+
+msgid "settings:led_serial_connected"
+msgstr "Port série connecté"
+
+msgid "settings:calib_no_camera"
+msgstr "Cet appareil n'a pas de caméra"
+
+msgid "settings:ladder_detail_open"
+msgstr "Voir le détail du rang IA"
+
+msgid "settings:ladder_detail_close"
+msgstr "Masquer"
+
+msgid "growth:cal_aria"
+msgstr "Calendrier d'entraînement sur un an"
+
+msgid "growth:cal_title"
+msgstr "Sur un an"
+
+msgid "growth:cal_days_unit"
+msgstr "jours"
+
+msgid "growth:cal_sub"
+msgstr "Partie/problème"
+
+msgid "growth:cal_local"
+msgstr "Cet appareil"
+
+msgid "growth:cal_failed"
+msgstr "Calendrier non chargé. Revenez plus tard."
+
+msgid "growth:cal_less"
+msgstr "−"
+
+msgid "growth:cal_more"
+msgstr "+"
+
+msgid "growth:cal_month"
+msgstr "{m}"
+
+msgid "growth:cal_mon"
+msgstr "L"
+
+msgid "growth:cal_wed"
+msgstr "M"
+
+msgid "growth:cal_fri"
+msgstr "V"
+
+msgid "growth:trend_title"
+msgstr "Évolution sur 30 jours"
+
+msgid "growth:trend_aria"
+msgstr "Évolution du palier sur 30 jours, sommet {r}"
+
+msgid "growth:trend_peak"
+msgstr "Max {r}"
+
+msgid "growth:trend_thin"
+msgstr ""
+"Moins de deux jours avec des parties classées depuis le classement sur 30 "
+"jours — pas assez pour tracer une courbe."
+
+msgid "growth:trend_unplaced"
+msgstr ""
+"La courbe commence après le classement : dans ces parties, les adversaires "
+"testent votre force, ils ne sont pas votre palier."
+
+msgid "growth:diag_bad_count"
+msgstr "Erreurs {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "Plus faible"
+
+msgid "growth:diag_loading"
+msgstr "Chargement…"
+
+msgid "growth:diag_failed"
+msgstr "Diagnostic non chargé"
+
+msgid "growth:diag_failed_p"
+msgstr ""
+"Cela ne veut pas dire que vous n'avez pas encore de rapports. Revenez plus "
+"tard."
+
+msgid "growth:diag_go_report"
+msgstr "Aller à Révision"
+
+msgid "growth:diag_no_report"
+msgstr "Pas encore de rapports de révision"
+
+msgid "growth:diag_no_report_p"
+msgstr ""
+"Le diagnostic se calcule à partir des parties ayant un rapport : terminez "
+"une partie, créez son rapport dans Révision, et les chiffres apparaîtront "
+"ici."
+
+msgid "growth:diag_no_seat"
+msgstr "Ces rapports ne peuvent pas encore être comptés"
+
+msgid "growth:diag_no_seat_a"
+msgstr "Rapports : "
+
+msgid "growth:diag_no_seat_b"
+msgstr ""
+" — mais ces parties ont été jouées avant l'enregistrement de votre couleur, "
+"vos coups ne peuvent donc pas être distingués. Jouez une autre partie, créez"
+" un rapport, et les chiffres apparaîtront ici."
+
+msgid "growth:diag_offline"
+msgstr "Les rapports dans le cloud sont inaccessibles pour le moment"
+
+msgid "growth:diag_offline_p"
+msgstr ""
+"Les rapports sont dans le cloud et la copie de ce boîtier ne les a pas. "
+"Revenez une fois en ligne."
+
+msgid "growth:diag_ungraded"
+msgstr "Aucun coup évalué dans les rapports pour l'instant"
+
+msgid "growth:diag_ungraded_p"
+msgstr ""
+"Les coups trop peu explorés ne sont pas évalués. Une fois les rapports "
+"terminés, les chiffres apparaîtront ici."
+
+msgid "growth:diag_local_a"
+msgstr " C'est "
+
+msgid "growth:diag_local_b"
+msgstr " : il peut manquer quelques rapports."
+
+msgid "growth:diag_sample_a"
+msgstr "Seules les parties avec rapport comptent. Rapports : "
+
+msgid "growth:diag_sample_b"
+msgstr ", vos coups : "
+
+msgid "growth:diag_sample_c"
+msgstr "."
+
+msgid "growth:diag_skipped_a"
+msgstr " Rapports sans couleur enregistrée : "
+
+msgid "growth:diag_skipped_b"
+msgstr "."
+
+msgid "growth:diag_thin"
+msgstr " Petit échantillon — le résultat peut varier."
+
+msgid "growth:stat_winrate_all"
+msgstr "Taux de victoire · 30 derniers jours"
+
+msgid "growth:unknown_seat_a"
+msgstr "Parties hors du taux de victoire : "
+
+msgid "growth:unknown_seat_b"
+msgstr ""
+" — parties en face à face, parties importées et parties dont la couleur n'a "
+"pas été enregistrée."

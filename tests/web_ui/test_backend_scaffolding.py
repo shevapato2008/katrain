@@ -69,3 +69,14 @@ def test_versioned_health_maps_local_katago_http_status(client, monkeypatch, kat
 
     assert response.status_code == 200
     assert response.json()["engines"]["local"] == expected_local
+
+
+def test_versioned_health_reports_the_product_version(client):
+    """The kiosk settings screen's 关于 group reads the version from here.
+
+    Compared against the constant rather than a literal: the front end has no other source
+    (its package.json says 0.0.0), so a stale hard-coded string here would show on every box.
+    """
+    from katrain.core.constants import VERSION
+
+    assert client.get("/api/v1/health").json()["version"] == VERSION

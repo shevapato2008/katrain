@@ -364,6 +364,14 @@ async def _lifespan_server(app: FastAPI, log):
     app.state.game_repo = game_repo
     app.state.user_game_repo = user_game_repo
     app.state.user_game_analysis_repo = user_game_analysis_repo
+    # 成长屏「能力诊断」:跨报告汇总你执的那一方的逐手评级。
+    from katrain.web.core.report_diagnosis_repo import ReportDiagnosisRepository
+
+    app.state.report_diagnosis_repo = ReportDiagnosisRepository(session_factory)
+    # 成长屏「近一年练棋日历」:逐日数对局与首次解题(盒上只在连不上云端时兜底)。
+    from katrain.web.core.growth_activity import GrowthActivityRepository
+
+    app.state.growth_activity_repo = GrowthActivityRepository(session_factory)
     app.state.ai_ladder_repo = ai_ladder_repo
     app.state.ai_ladder_authoritative = True
     app.state.report_session_factory = session_factory
@@ -513,6 +521,15 @@ async def _lifespan_board(app: FastAPI, log):
     local_tsumego_progress_repo = LocalTsumegoProgressRepository(session_factory)
     app.state.user_game_repo = local_user_game_repo
     app.state.user_game_analysis_repo = local_user_game_analysis_repo
+    # 盒子上报告在云端,这一份只在连不上云端时兜底(本机库里通常没有逐手数据 ⇒ 0 份,
+    # 端点据此标 local_cache,屏上说「读不到云端的报告」)。
+    from katrain.web.core.report_diagnosis_repo import ReportDiagnosisRepository
+
+    app.state.report_diagnosis_repo = ReportDiagnosisRepository(session_factory)
+    # 成长屏「近一年练棋日历」:逐日数对局与首次解题(盒上只在连不上云端时兜底)。
+    from katrain.web.core.growth_activity import GrowthActivityRepository
+
+    app.state.growth_activity_repo = GrowthActivityRepository(session_factory)
     app.state.ai_ladder_repo = AiLadderRankedRepository(session_factory)
     # The board keeps an optimistic local profile so a completed game remains durable
     # through an outage. The cloud reservation/finalizer is canonical across devices;
@@ -1901,6 +1918,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 "category": "game",
                 "game_type": game_type,
                 "game_date": game_date,
+                # 这个用户坐哪一方:算得出就写,算不出就 None(见 models_db.UserGame.user_color)。
+                "user_color": _user_seat(players_info, game_type),
             }
 
             # Platform engine sessions use placeholder player metadata; their
@@ -3710,6 +3729,19 @@ def _session_owner(app: FastAPI, session):
     return User(**row) if row else None
 
 
+def _user_seat(players_info, game_type):
+    """这一局里「这个用户」坐哪一方('B' / 'W'),写进 `user_games.user_color`。
+
+    **两边都是人(面对面)或都不是人 ⇒ None。** 面对面那一局没有「你」这一方,硬挑一方出来记,
+    成长屏的胜率就开始编;平台引擎局两个座位都不标 human,它的执色由
+    `_record_platform_engine_game` 显式给。
+    """
+    if game_type == "pvp_local":
+        return None
+    seats = [bw for bw, info in players_info.items() if getattr(info, "human", False)]
+    return seats[0] if len(seats) == 1 else None
+
+
 async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
     """Record a completed platform engine game through the AI-game ledger."""
     from katrain.web.platforms.gateway import is_platform_engine_session
@@ -3731,7 +3763,13 @@ async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
         app,
         user,
         result,
-        data_overrides={"source": "play_ai", "player_black": names["B"], "player_white": names["W"]},
+        data_overrides={
+            "source": "play_ai",
+            "player_black": names["B"],
+            "player_white": names["W"],
+            # 人坐的是引擎的另一边。两个座位都不标 human,这里是唯一知道这件事的地方。
+            "user_color": human_color,
+        },
     )
 
 

@@ -6672,3 +6672,189 @@ msgstr "Здатися не вдалося"
 
 msgid "game:session_gone_notice"
 msgstr "Цієї партії на сервері більше немає — можна залишити сторінку."
+
+msgid "settings:nav_about"
+msgstr "Про програму"
+
+msgid "settings:about_version"
+msgstr "Версія"
+
+msgid "settings:about_local"
+msgstr "Цей пристрій"
+
+msgid "settings:about_cloud"
+msgstr "Хмара"
+
+msgid "settings:engine_ok"
+msgstr "Доступний"
+
+msgid "settings:engine_down"
+msgstr "Немає зв'язку"
+
+msgid "settings:engine_unset"
+msgstr "Не налаштовано"
+
+msgid "settings:engine_code"
+msgstr "Рушій повернув {code}"
+
+msgid "settings:camera_connected"
+msgstr "Під'єднано"
+
+msgid "settings:geometry_calibrated"
+msgstr "Відкалібровано"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Не відкалібровано"
+
+msgid "settings:led_serial_connected"
+msgstr "Порт під'єднано"
+
+msgid "settings:calib_no_camera"
+msgstr "На цьому пристрої немає камери"
+
+msgid "settings:ladder_detail_open"
+msgstr "Докладніше про розряд ШІ"
+
+msgid "settings:ladder_detail_close"
+msgstr "Згорнути"
+
+msgid "growth:cal_aria"
+msgstr "Календар занять за рік"
+
+msgid "growth:cal_title"
+msgstr "За рік"
+
+msgid "growth:cal_days_unit"
+msgstr "дн."
+
+msgid "growth:cal_sub"
+msgstr "Гра або задача"
+
+msgid "growth:cal_local"
+msgstr "Локально"
+
+msgid "growth:cal_failed"
+msgstr "Календар не завантажився. Загляньте пізніше."
+
+msgid "growth:cal_less"
+msgstr "−"
+
+msgid "growth:cal_more"
+msgstr "+"
+
+msgid "growth:cal_month"
+msgstr "{m}"
+
+msgid "growth:cal_mon"
+msgstr "Пн"
+
+msgid "growth:cal_wed"
+msgstr "Ср"
+
+msgid "growth:cal_fri"
+msgstr "Пт"
+
+msgid "growth:trend_title"
+msgstr "Динаміка за 30 днів"
+
+msgid "growth:trend_aria"
+msgstr "Динаміка щабля за 30 днів, пік {r}"
+
+msgid "growth:trend_peak"
+msgstr "Пік {r}"
+
+msgid "growth:trend_thin"
+msgstr ""
+"За 30 днів рейтингові партії після кваліфікації були менш ніж у два дні — на"
+" лінію не вистачає."
+
+msgid "growth:trend_unplaced"
+msgstr ""
+"Лінія починається після кваліфікації: у кваліфікаційних партіях суперники "
+"перевіряють вашу силу, це не ваш щабель."
+
+msgid "growth:diag_bad_count"
+msgstr "Помилки {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "Найслабше"
+
+msgid "growth:diag_loading"
+msgstr "Завантаження…"
+
+msgid "growth:diag_failed"
+msgstr "Діагностика не завантажилася"
+
+msgid "growth:diag_failed_p"
+msgstr "Це не означає, що звітів ще немає. Загляньте пізніше."
+
+msgid "growth:diag_go_report"
+msgstr "До розбору"
+
+msgid "growth:diag_no_report"
+msgstr "Звітів розбору поки немає"
+
+msgid "growth:diag_no_report_p"
+msgstr ""
+"Діагностика рахується за партіями зі звітом: дограйте партію, створіть звіт "
+"у розборі — і тут з'являться числа."
+
+msgid "growth:diag_no_seat"
+msgstr "Ці звіти поки не врахувати"
+
+msgid "growth:diag_no_seat_a"
+msgstr "Звітів: "
+
+msgid "growth:diag_no_seat_b"
+msgstr ""
+" — але ті партії зіграно до того, як записувався ваш колір, і ваші ходи не "
+"відокремити. Зіграйте ще партію, створіть звіт — і тут з'являться числа."
+
+msgid "growth:diag_offline"
+msgstr "Зараз звіти у хмарі недоступні"
+
+msgid "growth:diag_offline_p"
+msgstr ""
+"Звіти зберігаються у хмарі, у копії на цій коробці їх немає. Загляньте "
+"знову, коли буде мережа."
+
+msgid "growth:diag_ungraded"
+msgstr "У звітах поки немає оцінених ходів"
+
+msgid "growth:diag_ungraded_p"
+msgstr ""
+"Ходи з недостатнім пошуком не оцінюються. Коли звіти дорахуються, тут "
+"з'являться числа."
+
+msgid "growth:diag_local_a"
+msgstr " Це "
+
+msgid "growth:diag_local_b"
+msgstr ", кількох звітів може бракувати."
+
+msgid "growth:diag_sample_a"
+msgstr "Рахуються лише партії зі звітом. Звітів: "
+
+msgid "growth:diag_sample_b"
+msgstr ", ваших ходів: "
+
+msgid "growth:diag_sample_c"
+msgstr "."
+
+msgid "growth:diag_skipped_a"
+msgstr " Звітів без записаного кольору: "
+
+msgid "growth:diag_skipped_b"
+msgstr "."
+
+msgid "growth:diag_thin"
+msgstr " Вибірка мала — висновок може коливатися."
+
+msgid "growth:stat_winrate_all"
+msgstr "Відсоток перемог · за 30 днів"
+
+msgid "growth:unknown_seat_a"
+msgstr "Партій не враховано у відсотку перемог: "
+
+msgid "growth:unknown_seat_b"
+msgstr " — очні партії, імпортовані записи та партії без записаного кольору."

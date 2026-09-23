@@ -31,14 +31,13 @@ import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
-import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
 import { GeometryProvider } from './context/GeometryContext';
 import { EngineReadinessProvider } from './context/EngineReadinessProvider';
 import PhysicalBoardGuard from './components/vision/PhysicalBoardGuard';
 import PlayInputGuard from './components/vision/PlayInputGuard';
 import TsumegoInputGuard from './components/vision/TsumegoInputGuard';
-import RotationWrapper from './components/layout/RotationWrapper';
+import KioskViewport from './components/layout/KioskViewport';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
 import LoginPage from './pages/LoginPage';
@@ -199,19 +198,18 @@ const KioskApp = () => {
   return (
     <ThemeProvider theme={kioskTheme}>
       <CssBaseline />
-      <OrientationProvider>
-        <VisionProvider>
-          <GeometryProvider>
-            <TsumegoProgressProvider>
-              <RotationWrapper>
-                <EngineReadinessProvider>
-                  <KioskRoutes />
-                </EngineReadinessProvider>
-              </RotationWrapper>
-            </TsumegoProgressProvider>
-          </GeometryProvider>
-        </VisionProvider>
-      </OrientationProvider>
+      <VisionProvider>
+        <GeometryProvider>
+          <TsumegoProgressProvider>
+            {/* 承重的视口盒子(画布的包含块、登录页的高度来源)—— 见 KioskViewport 头注。 */}
+            <KioskViewport>
+              <EngineReadinessProvider>
+                <KioskRoutes />
+              </EngineReadinessProvider>
+            </KioskViewport>
+          </TsumegoProgressProvider>
+        </GeometryProvider>
+      </VisionProvider>
     </ThemeProvider>
   );
 };

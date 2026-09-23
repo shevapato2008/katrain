@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API, type GameState } from '../api';
+import { readAudioPref } from '../utils/audioPrefs';
 import { websocketUrl, WS_POLICY_VIOLATION, WS_SESSION_GONE_REASON, SESSION_GONE_MESSAGE } from '../utils/websocketUrl';
 
 export interface UseSessionBaseOptions {
@@ -47,6 +48,10 @@ export function useSessionBase(options: UseSessionBaseOptions = {}): UseSessionB
     const audioCache = useRef<Record<string, HTMLAudioElement>>({});
 
     const playSound = useCallback((sound: string) => {
+        // 提示音只留一把:设置屏「落子音效」、屏 04「落子提示音」、useGameSession、这里,读的都是
+        // audioPrefs 的 sfx —— 研究屏走的是这个 hook,不是 useGameSession。galaxy 也走这个 hook:
+        // 它从不写这把键,readAudioPref 缺键当开,行为不变。
+        if (!readAudioPref('sfx')) return;
         if (!audioCache.current[sound]) {
             audioCache.current[sound] = new Audio(`/assets/sounds/${sound}.wav`);
         }

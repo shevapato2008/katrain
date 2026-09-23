@@ -4,10 +4,12 @@
 「累计已解题」「升降级局累计」。前三个里有两个要跨整张表数,而 RK3562 是 2G 内存 ——
 为渲染四个数字把整个对局库拉到浏览器里再 filter,和被否掉的「每手轮询 SGF」是同一类错。
 
-**为什么胜率只算升降级局**:`user_games.result` 存的是**哪一方赢**(`"B+R"`),
-而这张表**没有任何一列记这个用户坐的是哪一方** —— 拿玩家名去猜(`player_black == username`?)
-就是在编。`ai_ladder_game_ledger` 有 `user_color`,它的 `result` 本身就是从这个用户视角写的
-win/loss,所以只有升降级局的胜率算得出来。**屏上那一格的标签必须写明这个口径。**
+**胜率算哪些局(2026-09 改)**:`user_games.result` 存的是**哪一方赢**(`"B+R"`)。此前表里
+没有一列记这个用户坐哪一方,胜率只能从升降级账本算(`ranked_*` 三个字段,**保留不删** ——
+老盒子、盒上缓存还在读)。现在 `user_games.user_color` 补上了 ⇒ 多回三个字段
+`decided_games_in_window` / `wins_in_window` / `losses_in_window`:知道执色、且判得出胜负的局。
+与 `games_in_window` **口径不同**(下了多少局 vs 算得出胜负的局),屏上那句「有 N 局没算进胜率」
+就是两者的差。拿玩家名去猜执色就是在编,所以算不出的不算。
 
 ⚠️ **`authority` 这一格不是装饰。** 盒子(board mode)上权威在云端,本机库只是一份缓存;
 数出来的数可能**偏小**。「一个数」在屏上天然读作「全部」,所以这里据实交代是哪一种,
@@ -38,12 +40,17 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.core import growth_diagnosis as diagnosis_buckets
 from katrain.web.models import User
 
 logger = logging.getLogger("katrain.web.growth")
 
 router = APIRouter()
 
+#: ⚠️ 只列**必需**键。之后新增的键(`decided_games_in_window` 那三个、`rung_trend`)一律**不进**
+#: 这份清单:它判的是「云端那份敢不敢原样转出去」,把新键加进来等于**老云端一律被判成坏 payload**,
+#: 云端还没部署新版本的那几天里,盒子会全部退回本机缓存。新键在前端是可选的。
+#:
 #: 云端那份必须长这样才敢原样转出去。**答 200 不等于答对了** —— 旧版本的云端、
 #: 半截 payload、答 200 却给了一页 HTML 的网关,少一格前端就会在渲染时抛,
 #: 而那一屏上面没有 error boundary。缺格就退回本机缓存(并如实标 `local_cache`),
@@ -66,6 +73,7 @@ def _looks_like_summary(payload: Any) -> bool:
     if not isinstance(payload["by_opponent_rung"], list):
         return False
     return all(isinstance(payload[key], int) for key in _REQUIRED_KEYS[:-1])
+
 
 #: 屏上那句「近 30 天」。改这个数就要改屏上的标签 —— 所以它是入参,默认写在这里一处。
 DEFAULT_WINDOW_DAYS = 30
@@ -105,6 +113,7 @@ async def growth_summary(
         logger.info("growth summary: serving local cache (%s)", reason)
 
     ladder = ladder_repo.growth_summary(current_user.id, since=since)
+    decided = game_repo.decided_since(current_user.id, since=since)
 
     return {
         "window_days": days,
@@ -112,7 +121,142 @@ async def growth_summary(
         "ranked_total": ladder["ranked_total"],
         "ranked_wins_in_window": ladder["ranked_wins_in_window"],
         "ranked_losses_in_window": ladder["ranked_losses_in_window"],
+        # 算得出胜负的局(知道执色、判得出赢家)。与 `games_in_window` 口径不同。
+        "decided_games_in_window": decided["decided"],
+        "wins_in_window": decided["wins"],
+        "losses_in_window": decided["losses"],
         "by_opponent_rung": ladder["by_opponent_rung"],
+        # 近 N 天档位走势(一天一个点,定级那 5 局不算)。**可选**键:老云端不回它时前端
+        # 不画走势块(不画,不是画一条空轴);同样不进 `_REQUIRED_KEYS`。
+        "rung_trend": ladder_repo.rung_trend(current_user.id, since=since),
         # 盒子上这一份是缓存,权威在云端 ⇒ 数可能偏小。据实交代,界面去说「本机记录」。
+        "authority": "local_cache" if dispatcher is not None else "this_node",
+    }
+
+
+# ── 能力诊断(G1)────────────────────────────────────────────────────────────
+
+#: 云端那份诊断必须长这样才敢原样转出去(理由同 `_REQUIRED_KEYS`)。
+_DIAGNOSIS_REQUIRED_KEYS = ("reports", "skipped_without_color", "graded_moves", "phases")
+
+DEFAULT_DIAGNOSIS_DAYS = 90
+DEFAULT_DIAGNOSIS_REPORTS = 20
+MAX_DIAGNOSIS_REPORTS = 50
+
+
+def _looks_like_diagnosis(payload: Any) -> bool:
+    if not isinstance(payload, dict) or any(key not in payload for key in _DIAGNOSIS_REQUIRED_KEYS):
+        return False
+    return isinstance(payload["phases"], list) and all(
+        isinstance(payload[key], int) for key in _DIAGNOSIS_REQUIRED_KEYS[:-1]
+    )
+
+
+@router.get("/diagnosis")
+async def growth_diagnosis(
+    request: Request,
+    days: int = DEFAULT_DIAGNOSIS_DAYS,
+    reports: int = DEFAULT_DIAGNOSIS_REPORTS,
+    current_user: User = Depends(get_current_user),
+):
+    """能力诊断:最近几份已完成报告里,本用户执的那一方按布局 / 中盘 / 官子数问题手。
+
+    **样本量一起回。** 三个比率脱离样本量就是骗人 —— 20 手算出来的「官子最弱」
+    和 2000 手算出来的是两回事,屏上必须写得出「来自几份报告的几手」。
+
+    盒子上报告在云端、本机库里没有逐手数据 ⇒ 先问云端;退回本机时如实标 `local_cache`,
+    屏上据此说「读不到云端的报告」而不是「还没有报告」。
+    """
+    if not 1 <= days <= MAX_WINDOW_DAYS:
+        raise HTTPException(status_code=422, detail=f"days must be 1..{MAX_WINDOW_DAYS}")
+    if not 1 <= reports <= MAX_DIAGNOSIS_REPORTS:
+        raise HTTPException(status_code=422, detail=f"reports must be 1..{MAX_DIAGNOSIS_REPORTS}")
+
+    repo = getattr(request.app.state, "report_diagnosis_repo", None)
+    if repo is None:
+        raise HTTPException(status_code=503, detail="growth diagnosis unavailable on this node")
+
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        remote, reason = await dispatcher.growth_diagnosis_remote(days, reports)
+        if remote is not None and _looks_like_diagnosis(remote):
+            return {**remote, "authority": "cloud"}
+        if remote is not None:
+            logger.warning("growth diagnosis: cloud answered 200 with an unrecognised shape, using local cache")
+            reason = "remote_bad_payload"
+        logger.info("growth diagnosis: serving local cache (%s)", reason)
+
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    picked = repo.recent_graded_moves(current_user.id, since=since, max_reports=reports)
+    counts = diagnosis_buckets.bucket(picked["moves"])
+    return {
+        "window_days": days,
+        "reports": picked["reports"],
+        "skipped_without_color": picked["skipped_without_color"],
+        "graded_moves": counts["graded"],
+        # 只列**有评过级的手**的那几段 —— 没有数的段不摆一个 0/0,和「按对手强度」同一条口径。
+        "phases": [
+            {"phase": phase, "graded": v["graded"], "bad": v["bad"]}
+            for phase, v in counts["phases"].items()
+            if v["graded"] > 0
+        ],
+        "authority": "local_cache" if dispatcher is not None else "this_node",
+    }
+
+
+# ── 近一年练棋日历(G4)──────────────────────────────────────────────────────
+
+DEFAULT_ACTIVITY_DAYS = 365
+#: 东几区的分钟数(北京 = 480)。世界上的时区落在 UTC−12 … UTC+14。
+MIN_TZ_OFFSET, MAX_TZ_OFFSET = -12 * 60, 14 * 60
+
+
+def _looks_like_activity(payload: Any) -> bool:
+    if not isinstance(payload, dict) or not isinstance(payload.get("window_days"), int):
+        return False
+    days = payload.get("days")
+    return isinstance(days, list) and all(
+        isinstance(d, dict)
+        and isinstance(d.get("date"), str)
+        and isinstance(d.get("games"), int)
+        and isinstance(d.get("solved"), int)
+        for d in days
+    )
+
+
+@router.get("/activity")
+async def growth_activity(
+    request: Request,
+    days: int = DEFAULT_ACTIVITY_DAYS,
+    tz_offset: int = 0,
+    current_user: User = Depends(get_current_user),
+):
+    """近一年练棋日历:每天下完几局、首次解出几道题,**只列有活动的日子**。
+
+    按客户端时区切天(`tz_offset`)—— 按 UTC 切,北京早上 8 点前下的棋会落到前一天。
+    盒子上先问云端(跨设备完整);退回本机时如实标 `local_cache`,屏上写「本机记录」。
+    """
+    if not 1 <= days <= MAX_WINDOW_DAYS:
+        raise HTTPException(status_code=422, detail=f"days must be 1..{MAX_WINDOW_DAYS}")
+    if not MIN_TZ_OFFSET <= tz_offset <= MAX_TZ_OFFSET:
+        raise HTTPException(status_code=422, detail=f"tz_offset must be {MIN_TZ_OFFSET}..{MAX_TZ_OFFSET}")
+
+    repo = getattr(request.app.state, "growth_activity_repo", None)
+    if repo is None:
+        raise HTTPException(status_code=503, detail="growth activity unavailable on this node")
+
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        remote, reason = await dispatcher.growth_activity_remote(days, tz_offset)
+        if remote is not None and _looks_like_activity(remote):
+            return {**remote, "authority": "cloud"}
+        if remote is not None:
+            logger.warning("growth activity: cloud answered 200 with an unrecognised shape, using local cache")
+            reason = "remote_bad_payload"
+        logger.info("growth activity: serving local cache (%s)", reason)
+
+    return {
+        "window_days": days,
+        "days": repo.daily(current_user.id, days=days, tz_offset=tz_offset),
         "authority": "local_cache" if dispatcher is not None else "this_node",
     }

@@ -562,7 +562,7 @@ test('设置:滚到「落子与提示」那一组时,导航高亮的正是它', 
   await expect.poll(async () => page.evaluate(() => {
     const items = [...document.querySelectorAll('[data-testid="settings-nav"] button')];
     return items.filter((b) => b.getAttribute('aria-current') === 'true').map((b) => b.textContent);
-  }), { message: '滚到底了,最后一组没能滚到视口顶 —— 尾部留白不够' }).toEqual(['语言']);
+  }), { message: '滚到底了,最后一组没能滚到视口顶 —— 尾部留白不够' }).toEqual(['关于']);
 });
 
 /**

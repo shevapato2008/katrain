@@ -6661,3 +6661,192 @@ msgstr "Resigning did not go through"
 
 msgid "game:session_gone_notice"
 msgstr "This game no longer exists on the server — you can leave this page."
+
+msgid "settings:nav_about"
+msgstr "About"
+
+msgid "settings:about_version"
+msgstr "Version"
+
+msgid "settings:about_local"
+msgstr "This device"
+
+msgid "settings:about_cloud"
+msgstr "Cloud"
+
+msgid "settings:engine_ok"
+msgstr "Available"
+
+msgid "settings:engine_down"
+msgstr "Unreachable"
+
+msgid "settings:engine_unset"
+msgstr "Not set up"
+
+msgid "settings:engine_code"
+msgstr "Engine returned {code}"
+
+msgid "settings:camera_connected"
+msgstr "Connected"
+
+msgid "settings:geometry_calibrated"
+msgstr "Calibrated"
+
+msgid "settings:geometry_uncalibrated"
+msgstr "Not calibrated"
+
+msgid "settings:led_serial_connected"
+msgstr "Serial connected"
+
+msgid "settings:calib_no_camera"
+msgstr "This machine has no camera"
+
+msgid "settings:ladder_detail_open"
+msgstr "View AI rank details"
+
+msgid "settings:ladder_detail_close"
+msgstr "Hide"
+
+msgid "growth:cal_aria"
+msgstr "Practice calendar for the past year"
+
+msgid "growth:cal_title"
+msgstr "Past year"
+
+msgid "growth:cal_days_unit"
+msgstr "days"
+
+msgid "growth:cal_sub"
+msgstr "Played or solved"
+
+msgid "growth:cal_local"
+msgstr "This device"
+
+msgid "growth:cal_failed"
+msgstr "Couldn't load the calendar. Check again later."
+
+msgid "growth:cal_less"
+msgstr "−"
+
+msgid "growth:cal_more"
+msgstr "+"
+
+msgid "growth:cal_month"
+msgstr "{m}"
+
+msgid "growth:cal_mon"
+msgstr "M"
+
+msgid "growth:cal_wed"
+msgstr "W"
+
+msgid "growth:cal_fri"
+msgstr "F"
+
+msgid "growth:trend_title"
+msgstr "30-day trend"
+
+msgid "growth:trend_aria"
+msgstr "Tier trend over the last 30 days, peak {r}"
+
+msgid "growth:trend_peak"
+msgstr "Peak {r}"
+
+msgid "growth:trend_thin"
+msgstr ""
+"Fewer than two days with rated games since placement in the last 30 days — "
+"not enough to draw a line."
+
+msgid "growth:trend_unplaced"
+msgstr ""
+"The line starts after placement: in placement games the opponents are "
+"testing your strength, they are not your tier."
+
+msgid "growth:diag_bad_count"
+msgstr "Mistakes {m} / {n}"
+
+msgid "growth:diag_weakest"
+msgstr "Weakest"
+
+msgid "growth:diag_loading"
+msgstr "Loading…"
+
+msgid "growth:diag_failed"
+msgstr "Couldn't load the diagnosis"
+
+msgid "growth:diag_failed_p"
+msgstr "It does not mean you have no reports. Check again later."
+
+msgid "growth:diag_go_report"
+msgstr "Go to Review"
+
+msgid "growth:diag_no_report"
+msgstr "No review reports yet"
+
+msgid "growth:diag_no_report_p"
+msgstr ""
+"The diagnosis is computed from games that have a report: finish a game, "
+"create a report for it in Review, and the numbers show up here."
+
+msgid "growth:diag_no_seat"
+msgstr "These reports can't be counted yet"
+
+msgid "growth:diag_no_seat_a"
+msgstr "Reports so far: "
+
+msgid "growth:diag_no_seat_b"
+msgstr ""
+" — but those games were played before your color was recorded, so your moves"
+" can't be told apart. Play another game, create a report, and the numbers "
+"show up here."
+
+msgid "growth:diag_offline"
+msgstr "Can't reach the cloud reports right now"
+
+msgid "growth:diag_offline_p"
+msgstr ""
+"Reports live in the cloud, and this box's copy doesn't have them. Check "
+"again once you're online."
+
+msgid "growth:diag_ungraded"
+msgstr "No graded moves in the reports yet"
+
+msgid "growth:diag_ungraded_p"
+msgstr ""
+"Moves that were searched too lightly are not graded. Once the reports run "
+"through, the numbers show up here."
+
+msgid "growth:diag_local_a"
+msgstr " This comes from "
+
+msgid "growth:diag_local_b"
+msgstr ", so a few reports may be missing."
+
+msgid "growth:diag_sample_a"
+msgstr "Only games with a report count. Reports: "
+
+msgid "growth:diag_sample_b"
+msgstr ", your moves: "
+
+msgid "growth:diag_sample_c"
+msgstr "."
+
+msgid "growth:diag_skipped_a"
+msgstr " Reports without your color: "
+
+msgid "growth:diag_skipped_b"
+msgstr "."
+
+msgid "growth:diag_thin"
+msgstr " Small sample — the result may swing."
+
+msgid "growth:stat_winrate_all"
+msgstr "Win rate · last 30 days"
+
+msgid "growth:unknown_seat_a"
+msgstr "Games not counted in the win rate: "
+
+msgid "growth:unknown_seat_b"
+msgstr ""
+" — face-to-face games, imported records, and games where your color wasn't "
+"recorded."

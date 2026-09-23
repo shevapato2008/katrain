@@ -5072,7 +5072,7 @@ msgid "kifu:greet_b"
 msgstr "碁"
 
 msgid "kifu:greet_sub"
-msgstr "名局、プロの中継、そして棋譜を実物の盤に並べること"
+msgstr "名局、そして棋譜を実物の盤に並べること"
 
 msgid "kifu:famous_records"
 msgstr "名局の棋譜"

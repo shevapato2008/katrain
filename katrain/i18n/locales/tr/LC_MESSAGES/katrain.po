@@ -5260,7 +5260,7 @@ msgid "kifu:greet_b"
 msgstr "oyunları"
 
 msgid "kifu:greet_sub"
-msgstr "Ünlü oyunlar, profesyonel yayınlar ve kayıtları gerçek tahtaya dizme"
+msgstr "Ünlü oyunlar ve kayıtları gerçek tahtaya dizme"
 
 msgid "kifu:famous_records"
 msgstr "Ünlü oyunlar"

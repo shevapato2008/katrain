@@ -5,7 +5,6 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import KifuPage from '../pages/KifuPage';
 import type { KifuAlbumSummary } from '../../types/kifu';
-import type { MatchSummary } from '../../types/live';
 import { ApiError } from '../../api';
 import {
   __resetKioskActivityStorageForTests,
@@ -24,8 +23,6 @@ import {
  *    组标题右端那个「共 N 局」),不是屏上有没有搜索框 —— 把整页拉回来先不渲染,后者一样绿。
  *  · 「已摆完」那三条(有 total / 没 total / k < total)是**同一条口径的三个方向**:
  *    旧进度里没有 `total`,读到 `undefined` 的正确反应是不下结论。
- *  · 直播那块断网时整块不渲染 —— 断言的是 `queryByTestId` 为空,并且**同一批数据在
- *    不报错时是渲染的**,否则「一直不渲染」也能骗过这条。
  */
 
 const mockNavigate = vi.fn();
@@ -38,9 +35,6 @@ vi.mock('react-router-dom', async () => {
 const { getAlbums } = vi.hoisted(() => ({ getAlbums: vi.fn() }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbums } }));
 
-const { useLiveMatchesMock } = vi.hoisted(() => ({ useLiveMatchesMock: vi.fn() }));
-vi.mock('../../hooks/live/useLiveMatches', () => ({ useLiveMatches: useLiveMatchesMock }));
-
 const album = (id: number, over: Partial<KifuAlbumSummary> = {}): KifuAlbumSummary => ({
   id,
   player_black: '柯洁', player_white: '申真谞',
@@ -48,26 +42,6 @@ const album = (id: number, over: Partial<KifuAlbumSummary> = {}): KifuAlbumSumma
   event: '第 29 届三星杯', result: 'B+R', move_count: 241,
   date_played: '2026-06-30', board_size: 19, handicap: 0,
   komi: 7.5, rules: 'chinese', round_name: '半决赛',
-  ...over,
-});
-
-const match = (id: string, over: Partial<MatchSummary> = {}): MatchSummary => ({
-  id,
-  source: 'xingzhen',
-  tournament: '第 29 届三星杯',
-  round_name: '八强',
-  date: '2026-08-22T06:00:00Z',
-  player_black: '柯洁', player_white: '申真谞',
-  black_rank: '九段', white_rank: '九段',
-  status: 'live', result: null, move_count: 118,
-  current_winrate: 0.5, current_score: 0, last_updated: '',
-  board_size: 19, komi: 7.5, rules: 'chinese',
-  ...over,
-});
-
-const liveResult = (over: Partial<ReturnType<typeof useLiveMatchesMock>> = {}) => ({
-  matches: [] as MatchSummary[], liveCount: 0, total: 0,
-  loading: false, error: null, refresh: vi.fn(),
   ...over,
 });
 
@@ -103,15 +77,15 @@ beforeEach(() => {
   __resetKioskActivityStorageForTests();
   setKioskIdentity(TEST_UUID, false);
   getAlbums.mockResolvedValue({ items: [album(1), album(2)], total: 2, page: 1, page_size: 6 });
-  useLiveMatchesMock.mockReturnValue(liveResult());
 });
 
 describe('屏 15 棋谱 · 问候与三张卡', () => {
-  it('问候行照稿子写「看别人的棋」', () => {
+  // 副标去掉了稿子里的「职业直播」:Fan 2026-09-22 裁定 kiosk 端不做直播,屏上不许许诺没有的东西。
+  it('问候行照稿子写「看别人的棋」,副标不提直播', () => {
     renderPage();
     expect(screen.getByText('看别人的')).toBeInTheDocument();
     expect(screen.getByText('棋')).toBeInTheDocument();
-    expect(screen.getByText('名局、职业直播，以及把谱摆到实体盘上')).toBeInTheDocument();
+    expect(screen.getByText('名局，以及把谱摆到实体盘上')).toBeInTheDocument();
   });
 
   it('三张卡在,顺序是 搜棋谱 / 摆到实体盘 / 导入 SGF', () => {
@@ -286,35 +260,5 @@ describe('屏 15 棋谱 · 继续摆谱与最近摆过', () => {
     renderPage();
     expect(screen.getByTestId('kifu-recent-empty')).toBeInTheDocument();
     expect(screen.queryByTestId('kifu-recent-rows')).not.toBeInTheDocument();
-  });
-});
-
-describe('屏 15 棋谱 · 职业直播', () => {
-  it('有直播就铺出来,来源按这一批真的来自哪几家算', () => {
-    useLiveMatchesMock.mockReturnValue(liveResult({
-      matches: [match('m1'), match('m2', { source: 'yike', status: 'scheduled' as MatchSummary['status'] })],
-    }));
-    renderPage();
-    expect(screen.getByTestId('kifu-live')).toBeInTheDocument();
-    expect(screen.getByText('来源：星阵 · 弈客')).toBeInTheDocument();
-    expect(screen.getAllByText('直播中').length).toBeGreaterThan(0);
-    expect(screen.getByText('未开始')).toBeInTheDocument();
-  });
-
-  it('点一场进 /kiosk/live/:id —— Task 4 把直播下了 Dock,入口就是这儿', () => {
-    useLiveMatchesMock.mockReturnValue(liveResult({ matches: [match('m1')] }));
-    renderPage();
-    fireEvent.click(screen.getByText('第 29 届三星杯 · 八强').closest('button')!);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/live/m1');
-  });
-
-  // 稿子的口径:断网时**整块不渲染**,不摆一排「加载中」骗人在等。
-  // 同一批数据在不报错时是渲染的(上面那条),所以这条不是「一直没有」也能过。
-  it('拉不到直播时整块不渲染', () => {
-    useLiveMatchesMock.mockReturnValue(liveResult({
-      matches: [match('m1')], error: new Error('offline'),
-    }));
-    renderPage();
-    expect(screen.queryByTestId('kifu-live')).not.toBeInTheDocument();
   });
 });

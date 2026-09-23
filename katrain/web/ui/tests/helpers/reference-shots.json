@@ -79,10 +79,6 @@
     "sha256": "5eb5674f03ce106b73977e599a417468dc7242df8ed1fc46c69d60cefbb4de73",
     "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
   },
-  "18-live.png": {
-    "sha256": "923eb8c65277f31422a40077ebcdbcb9e1fc2a2d61939dd52b1f4918ce7b2b38",
-    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
-  },
   "19-review.png": {
     "sha256": "ca981b4849ae8230944ba72126d412a28f376ae6fd15ca6357207e30f73567e5",
     "shotFrom": "main"

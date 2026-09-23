@@ -173,6 +173,8 @@ test('固定画布上不许新增 vw / vh / cqw / cqh', () => {
 //      它们全是「源码写 A、屏上出 B」的实例(`Undo` 在 cn PO 里是「悔棋」,而摆谱要说的是
 //      「撤回上一手」:摆谱没有悔棋这回事,那是对局的词)。重画时换成了 `baipu:*` 自己的 key。
 //      2026-09-14 `/kiosk/baipu` 改成重定向到棋谱屏:`BaipuListPage.tsx` 整个文件删了(K1)。
+//      2026-09-22 Fan 裁定 kiosk 端删掉整个直播模块(只在 galaxy 保留):`LivePage.tsx` 连同文件一起没了,摘掉。
+//      **(A) 那一类里直播从此清空。**
 //
 //  (C) **对话框与浮层** —— 它们不在 1024×600 的版式里(盖在上面),规范 §10 管的是屏上的
 //      图标风格。**允许留着**,但重画所在的屏时顺手换掉最省事。
@@ -190,7 +192,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/components/vision/GeometryVideoPanel.tsx', // (A) 标定屏
   'src/kiosk/components/vision/VisionSyncOverlay.tsx', // (A) 标定/识别
   'src/kiosk/pages/GamePage.tsx', // (C) 屏 05 已重画;剩的是对话框里的图标
-  'src/kiosk/pages/LivePage.tsx', // (A) 直播屏
 ];
 
 test('图标不许新增手写内联路径或 MUI 图标 —— 只能从 kiosk-shell/icons/ 出', () => {

@@ -4903,7 +4903,7 @@ msgid "kifu:greet_b"
 msgstr "棋"
 
 msgid "kifu:greet_sub"
-msgstr "名局、职业直播，以及把谱摆到实体盘上"
+msgstr "名局，以及把谱摆到实体盘上"
 
 msgid "kifu:famous_records"
 msgstr "名局棋谱"

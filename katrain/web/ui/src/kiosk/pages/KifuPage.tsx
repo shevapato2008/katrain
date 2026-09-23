@@ -8,24 +8,17 @@ import {
   cacheSgf, getCachedSgf, getProgress, listRecent,
   type BaipuProgress, type BaipuRecentEntry,
 } from '../../api/baipuApi';
-import { useLiveMatches } from '../../hooks/live/useLiveMatches';
 import { translateResult } from '../../utils/resultTranslation';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { whenLabel } from '../utils/whenLabel';
-import { liveSourceLabel } from '../../utils/liveSources';
 
 const DEBOUNCE_MS = 350;
 /** 一页 6 条:这是**滚栏里的一段**,不是整屏的列表。20 条会把下面两组挤到看不见。 */
 const PAGE_SIZE = 6;
 
-/**
- * 直播源的中文名。`components/live/MatchCard.tsx` 和 `MatchInfo.tsx` 里已经各有一份
- * 同样的表(两份并行,早于本轮),这是第三处 —— **没有合并是有意的**:那两份带着颜色,
- * 是 galaxy 那套卡片的样子;这里只要名字。合并要动 galaxy 的两屏,已登记为债。
- */
 interface RecentItem extends BaipuRecentEntry {
   progress: BaipuProgress | null;
 }
@@ -41,11 +34,17 @@ const isDone = (p: BaipuProgress | null): boolean =>
  * 屏 15 · 棋谱 `/kiosk/kifu` —— L1 布局 A(镜像栏 296 + 16 + 右栏 680)。
  *
  * 规范 §3 只许围棋加**一个**棋种专属 Dock 项,这一项就是它:原来的
- * 「棋谱 / 摆谱 / 直播」三项收在这儿。**摆谱和直播的入口就在这一屏** ——
- * Task 4 把那两项下了 Dock,在本屏接上之前它们只能靠输 URL 到达,那笔账在这里销。
+ * 「棋谱 / 摆谱 / 直播」三项收在这儿。**摆谱的入口就在这一屏** ——
+ * Task 4 把它下了 Dock,在本屏接上之前它只能靠输 URL 到达,那笔账在这里销。
  *
  * 结构对着稿子 `data-screen="kifu"`:
- * 问候 → 继续摆谱 → 名局棋谱 → 最近摆过 → 职业直播。
+ * 问候 → 继续摆谱 → 名局棋谱 → 最近摆过。
+ *
+ * ## 稿子里的第五块「职业直播」不做(Fan 2026-09-22)
+ *
+ * 稿子把直播并进了这一屏;Fan 改判 **kiosk 端整个直播模块删掉,不融入棋谱库,只在 galaxy 保留**。
+ * 于是这一屏没有直播那一组,问候副标里的「职业直播」也一起去掉 —— 屏上不许许诺没有的东西。
+ * 四图里参考图那一句与这一组的差异是**预期**的。
  *
  * ## 三处和稿子不一样的地方
  *
@@ -61,20 +60,13 @@ const isDone = (p: BaipuProgress | null): boolean =>
  *
  * ③ **组标题右端那个值换成了真数据。** 稿子写的是「按棋手 / 赛事 / 日期搜」——
  *    那是一句解释;规范说 `.secval` 的位置放的是数据(G5),所以写「共 N 局」。
- *    直播那组同理:稿子写死「来源:星阵 · 弈客」,实现里按**这一批真的来自哪几家**算。
- *
+ * *
  * ## `kifu:famous_records` 是另起的 key
  *
  * `kifu:records` 在 cn PO 里是**「条记录」**(galaxy 拿它当「1234 条记录」的量词用)。
  * 复用它,这一组的标题会变成「条记录」——**PO 赢默认值**,闸四(`kiosk-shell-contract`)
  * 抓的就是这个。
- *
- * ## 直播那一块断网时整块不渲染
- *
- * 稿子的原话:「断网时这一块**整块不渲染**,不摆一排『加载中』骗人在等」。照办。
- * ⚠️ 代价要说清楚:**「没有直播」和「拉不到」在屏上长得一样**。这是稿子选的口径
- * (7″ 屏上一块常驻的报错块比它值钱的地方少),已登记。
- */
+ * */
 const KifuPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -95,8 +87,6 @@ const KifuPage = () => {
   /** 列表失败是不是「连不上云端」(503)。棋谱库只在云端,这一种要说「要联网」,别的照原样报。 */
   const [listOffline, setListOffline] = useState(false);
   const [reload, setReload] = useState(0);
-
-  const { matches, error: liveError } = useLiveMatches({ limit: 8 });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -177,15 +167,11 @@ const KifuPage = () => {
   const resumable = recent.find((e) => (e.progress?.k ?? 0) > 0 && !isDone(e.progress)) ?? null;
   const totalPages = total == null ? 1 : Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const liveSources = [...new Set(matches.map((m) => m.source))]
-    .map((s) => liveSourceLabel(s))
-    .join(' · ');
-
   return (
     <KioskScrollZone>
       <div className="kiosk-greet">
         <b>{t('kifu:greet_a', '看别人的')}<i>{t('kifu:greet_b', '棋')}</i></b>
-        <span>{t('kifu:greet_sub', '名局、职业直播，以及把谱摆到实体盘上')}</span>
+        <span>{t('kifu:greet_sub', '名局，以及把谱摆到实体盘上')}</span>
       </div>
 
       {resumable && (
@@ -386,50 +372,6 @@ const KifuPage = () => {
           </div>
         )}
       </section>
-
-      {/* 断网 / 还没取到 ⇒ 整块不渲染。见文件头那段。 */}
-      {!liveError && matches.length > 0 && (
-        <section className="kiosk-section" data-testid="kifu-live">
-          <KioskSecLabel
-            zh={t('kifu:pro_live', '职业直播')}
-            en="Live"
-            value={liveSources ? `${t('kifu:source_prefix', '来源：')}${liveSources}` : undefined}
-          />
-          <div className="kiosk-rows">
-            {matches.slice(0, 4).map((m) => (
-              <button
-                type="button"
-                className="kiosk-row"
-                key={m.id}
-                onClick={() => navigate(`/kiosk/live/${m.id}`)}
-              >
-                <span className="kiosk-row__lead">
-                  {m.status === 'live' ? t('kifu:live_now', '直播中') : whenLabel(new Date(m.date).getTime(), t)}
-                </span>
-                <span className="kiosk-row__t">
-                  <b>{[m.tournament, m.round_name].filter(Boolean).join(' · ')}</b>
-                  <em>
-                    {liveSourceLabel(m.source)}
-                    {' · '}
-                    {m.status === 'live'
-                      ? `${t('kifu:move_ordinal', '第')} ${m.move_count} ${t('kifu:moves_unit', '手')}`
-                      : `${m.player_black} ${t('kifu:versus', '对')} ${m.player_white}`}
-                  </em>
-                </span>
-                <span className="kiosk-row__end">
-                  {m.status === 'live' ? (
-                    <span className="kiosk-tag kiosk-tag--live">{t('kifu:live_now', '直播中')}</span>
-                  ) : m.status === 'finished' ? (
-                    <span className="kiosk-tag">{t('kifu:ended', '已结束')}</span>
-                  ) : (
-                    <span className="kiosk-tag">{t('kifu:not_started', '未开始')}</span>
-                  )}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
     </KioskScrollZone>
   );
 };

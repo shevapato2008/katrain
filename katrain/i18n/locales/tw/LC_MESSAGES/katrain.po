@@ -6627,3 +6627,9 @@ msgstr "有 "
 
 msgid "growth:unknown_seat_b"
 msgstr " 局沒算進勝率：面對面、匯入的譜，以及沒記下你執黑還是執白的局。"
+
+msgid "setup:handicap_side"
+msgstr "讓子 · 我執"
+
+msgid "platform:engine_fixed_hint"
+msgstr "{name}人機固定 19 路 · 中國規則，螢幕和實體盤走同一條隧道"

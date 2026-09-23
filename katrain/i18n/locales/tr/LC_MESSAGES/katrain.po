@@ -6892,3 +6892,11 @@ msgid "growth:unknown_seat_b"
 msgstr ""
 " — yüz yüze oyunlar, içe aktarılan kayıtlar ve renginizin kaydedilmediği "
 "oyunlar."
+
+msgid "setup:handicap_side"
+msgstr "Avans · Benim rengim"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} insan-yapay zeka 19x19'a sabit · Çin kuralları; ekran ve gerçek tahta"
+" aynı kanalı kullanır"

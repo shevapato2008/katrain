@@ -6483,3 +6483,9 @@ msgstr "有 "
 
 msgid "growth:unknown_seat_b"
 msgstr " 局没算进胜率：面对面、导入的谱，以及没记下你执黑还是执白的局。"
+
+msgid "setup:handicap_side"
+msgstr "让子 · 我执"
+
+msgid "platform:engine_fixed_hint"
+msgstr "{name}人机固定 19 路 · 中国规则，屏幕和实体盘走同一条隧道"

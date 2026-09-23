@@ -6754,3 +6754,11 @@ msgid "growth:unknown_seat_b"
 msgstr ""
 " — partidas cara a cara, partidas importadas y partidas sin tu color "
 "registrado."
+
+msgid "setup:handicap_side"
+msgstr "Hándicap · Mi color"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} humano contra IA está fijado en 19x19 · reglas chinas; la pantalla y "
+"el tablero físico comparten el mismo canal"

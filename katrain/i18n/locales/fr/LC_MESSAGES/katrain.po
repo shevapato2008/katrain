@@ -6902,3 +6902,11 @@ msgid "growth:unknown_seat_b"
 msgstr ""
 " — parties en face à face, parties importées et parties dont la couleur n'a "
 "pas été enregistrée."
+
+msgid "setup:handicap_side"
+msgstr "Handicap · Ma couleur"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} humain contre IA est fixé au 19x19 · règles chinoises ; l'écran et le"
+" goban réel partagent le même canal"

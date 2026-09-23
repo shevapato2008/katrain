@@ -6590,3 +6590,9 @@ msgstr "승률에 넣지 않은 대국 "
 
 msgid "growth:unknown_seat_b"
 msgstr "국: 대면 대국, 가져온 기보, 흑백이 기록되지 않은 대국입니다."
+
+msgid "setup:handicap_side"
+msgstr "접바둑 · 내 돌"
+
+msgid "platform:engine_fixed_hint"
+msgstr "{name} 인간 대 AI는 19줄 고정 · 중국 룰, 화면과 실물 바둑판은 같은 경로를 씁니다"

@@ -6859,3 +6859,11 @@ msgid "growth:unknown_seat_b"
 msgstr ""
 " — face-to-face games, imported records, and games where your color wasn't "
 "recorded."
+
+msgid "setup:handicap_side"
+msgstr "Handicap · Colour"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} human-vs-AI is fixed at 19x19 · Chinese rules; the screen and the "
+"real board share the same tunnel"

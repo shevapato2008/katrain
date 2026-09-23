@@ -86,23 +86,28 @@
 ## 3. 人工出口(V1 对齐外框 · 手动恢复路径)
 
 - **前置**:第 1 项已过闸。让盘面进入 `degraded` / `cancelled` / `failed` 三态之一(标定屏状态格
-  `degraded` 显示「已失效」,`katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx:347`)
+  `degraded` 显示「已失效」,`katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx:350`)
   ——可用挪盘触发 `degraded`,或用 `RecalibrationModal`
   (`katrain/web/ui/src/kiosk/components/game/RecalibrationModal.tsx`,「重新标定」按钮文案在 `:76`)
   走清盘的 LED 路径退回 `failed`/`cancelled`。盘上留几颗子,不清空。
-- **操作**:按「对齐外框」按钮 —— 已实现,`data-testid="calib-relocate"`
-  (`GeometryCalibrationScreen.tsx:552`),只在 `phase ∈ {degraded, cancelled, failed}` 且
-  `status.last_valid` 为真时渲染(条件在 `:548`),按下后调用前端 `relocate()`(`handleRelocate`,
-  `:227-243`),打到 `POST /api/v1/geometry/relocate`(`katrain/web/api/v1/endpoints/geometry.py:150-151`),
-  服务端由 `GeometryCalibrationService.relocate()` 处理(`katrain/web/core/geometry_calibration_service.py:769-783`,
+- **操作**:按「对齐外框」按钮前,先确认摄像头画面是实时画面而非静止画面 —— 相机卡住时这颗键会
+  直接以 `camera_stalled` 失败,不会拿旧帧去对齐(见下)。按钮已实现,`data-testid="calib-relocate"`
+  (`GeometryCalibrationScreen.tsx:555`),只在 `phase ∈ {degraded, cancelled, failed}` 且
+  `status.last_valid` 为真时渲染(条件在 `:551`),按下后调用前端 `relocate()`(`handleRelocate`,
+  `:230-246`),打到 `POST /api/v1/geometry/relocate`(`katrain/web/api/v1/endpoints/geometry.py:150-151`),
+  服务端由 `GeometryCalibrationService.relocate()` 处理(`katrain/web/core/geometry_calibration_service.py:779-793`,
   走 `Scenario.MANUAL_FALLBACK`,`allowed_phases=_RELOCATABLE_PHASES = {"degraded","cancelled","failed"}`,
   `:42`)。不亮灯、不要求空盘。
 - **判据**:盘上有子也能恢复到 `ready`;nadir 日志同第 2 项判据①(同一条边)。
   **失败路径要一并验**:画面里找不到外框 / 挪得太远时,请求走 400,前端把 `relocateError` 写进状态
-  (`:233-239`),渲染成诊断卡 `data-testid="geometry-diagnostic-card"`
-  (`GeometryCalibrationScreen.tsx:464-465`,`kind="relocate"`,标题「没对上」,内容按错误类型分
+  (`:236-242`),渲染成诊断卡 `data-testid="geometry-diagnostic-card"`
+  (`GeometryCalibrationScreen.tsx:467-468`,`kind="relocate"`,标题「没对上」,内容按错误类型分
   「画面里找不到棋盘外框,挪开挡住边框的东西再试一次」或「再试一次;一直不行就清空棋盘重新标定」,
-  错误分支在 `:233-239`、诊断卡构造逻辑在 `:381-383`)——确认这张卡出现、且不是一片空白。
+  错误分支在 `:236-242`、诊断卡构造逻辑在 `:384-386`)——确认这张卡出现、且不是一片空白。
+  **相机卡住的情形**:服务端 `relocate()` 前置检查相机就绪,三次 `grab_fresh` 拿不到 ≥2 个不同
+  `seq` 的新帧(超时退回同一帧旧图)就直接拒绝、报 `camera_stalled`,不会拿挪动前的旧画面「对齐」
+  出一把旧位置的锁再谎报 ready(`geometry_calibration_service.py:681-684` 的就绪前置检查、
+  `:707-723` 的去重与 `camera_stalled` 判定)。
 - **记录**:恢复前/后的 phase、nadir 坐标、(若触发了失败路径)诊断卡文案,写回本节。
 
 ## 4. 无灯首标 —— ⛔ V3 本轮不做,留位
@@ -113,17 +118,17 @@
 ## 5. 取消后沿用(V2 的验收)
 
 - **前置**:标定跑到一半。
-- **操作**:按「取消标定」(`katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx:541`
+- **操作**:按「取消标定」(`katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx:544`
   `t('vision:cancel_calibration', '取消标定')`),再按「沿用上次标定」
-  (`:571` `t('vision:reuse_calibration', '沿用上次标定')`,按钮可按受 `canReuse` 控制,`:568`)。
+  (`:574` `t('vision:reuse_calibration', '沿用上次标定')`,按钮可按受 `canReuse` 控制,`:571`)。
 - **判据**:`cancelled` 态下「沿用上次标定」可按(白名单放开见 `_REUSABLE_PHASES = {"required", "failed",
   "cancelled"}`,`katrain/web/core/geometry_calibration_service.py:231`,由 `confirm_existing()`
   在 `:233-241` 校验;**`degraded` 不在表里** —— 那一态的出路是第 3 项的「对齐外框」,不是沿用。
-  前端 `canReuse` 判别见 `GeometryCalibrationScreen.tsx:367-368`),按下后恢复识别,继续下棋不受影响。
+  前端 `canReuse` 判别见 `GeometryCalibrationScreen.tsx:370-371`),按下后恢复识别,继续下棋不受影响。
   **这只对「直接取消」成立**——若中途先碰过盘(降级)、又重新标定一次再取消/失败,phase 虽然落回
   这可沿用的三态,锁还是挪动前那把:`lock_moved` 仍是 `True`,「沿用上次标定」仍按不动
   (`confirm_existing()` 的拒绝在 `geometry_calibration_service.py:244-246`,前端 `canReuse` 同一条件在
-  `GeometryCalibrationScreen.tsx:368`);这种情形的出口是第 3 项的「对齐外框」,或清盘重新标定。
+  `GeometryCalibrationScreen.tsx:371`);这种情形的出口是第 3 项的「对齐外框」,或清盘重新标定。
 - **记录**:取消前的 phase、按下「沿用上次标定」后是否恢复识别,写回本节。
 
 ## 6. LED 目视 bring-up(可选)

@@ -291,3 +291,62 @@ test('39 档面板:完整落在右栏内、与棋盘无交集、轨的四角都�
   console.log('[geom sheet scrollTop after swipe]', after);
   expect(after, '手指拨不动').toBeGreaterThan(0);
 });
+
+/**
+ * ── 登录独立成页(屏 07b/08)软键盘避让 —— Task 5 §2 ──────────────────────
+ *
+ * `.xplogin` 是 `overflow: hidden` + 垂直居中,`PlatformConnectPage` 那段
+ * 「给滚动区垫一段等于键盘高度的下内衬」的避让逻辑照搬过来会**跑了、不报错、没效果**:
+ * 垫 padding 换不来任何可滚的余量。真正能滚的容器是 `.xplogin__main`
+ * (`go-screens.css` 已经把它从 `justify-content: center` 改成 `overflow-y: auto`,
+ * 居中改用 `.xpcol { margin: auto }`)。这条闸量的正是「聚焦最下面那个字段时,
+ * 它没有被软键盘盖住,提交键仍够得到」。
+ */
+async function bootLogin(page: Page, platform: 'golaxy' | 'ogs', lang = 'cn') {
+  await freezeClock(page);
+  await page.addInitScript((l) => {
+    localStorage.setItem('token', 'geom');
+    localStorage.setItem('katrain_language', l);
+  }, lang);
+  await stubBackendStatics(page, lang);
+  await page.route('**/api/v1/auth/me', (r) => r.fulfill({ json: { id: 1, username: '访客', rank: '20k', credits: 0 } }));
+  await page.goto(`/kiosk/play/cross-platform/login/${platform}`);
+  await page.waitForSelector('[data-testid="login-submit"]');
+  await page.waitForLoadState('networkidle');
+}
+
+/** 真挂一个固定高度的 `.skbd`,而不是把 viewport 改矮 —— 键盘是 overlay,不改变 viewport 高度。 */
+async function mountFakeKeyboard(page: Page, height = 260) {
+  await page.evaluate((h) => {
+    const kb = document.createElement('div');
+    kb.className = 'skbd';
+    Object.assign(kb.style, { position: 'fixed', left: '0', right: '0', bottom: '0', height: `${h}px`, zIndex: '999' });
+    document.body.appendChild(kb);
+  }, height);
+}
+
+/**
+ * ⚠️ 这条断言只在**装了 hook 且 padding 计算是真的**这一种状态下才该绿。
+ * 报告里的「先不装 hook 跑一遍」和「hook 恒 0 跑一遍」两段红,是靠临时改动
+ * `PlatformLoginPage.tsx`(去掉 `useKeyboardInset(...)` 调用)和
+ * `useKeyboardInset.ts`(把 `paddingBottom` 算式改成恒 `'0px'`)重跑这同一条测试
+ * 得到的 —— 不是这个文件里的第三个变体,那样反而会把「今天到底装没装 hook」这件事
+ * 埋进测试参数里,自己骗自己。
+ */
+test('登录页:聚焦最下面那个字段时,它没有被软键盘盖住,提交键仍够得到', async ({ page }) => {
+  await bootLogin(page, 'golaxy');
+  await mountFakeKeyboard(page, 260);
+  const field = page.locator('[data-testid="login-field-password"]');
+  await field.click();
+  await page.waitForTimeout(150);
+
+  const geom = await page.evaluate(() => {
+    const kb = document.querySelector('.skbd')!.getBoundingClientRect();
+    const f = document.querySelector('[data-testid="login-field-password"]')!.getBoundingClientRect();
+    const go = document.querySelector('.xpgo')!.getBoundingClientRect();
+    return { fieldClear: f.bottom <= kb.top, goClear: go.bottom <= kb.top, f: f.bottom, kb: kb.top, go: go.bottom };
+  });
+  console.log('[geom login keyboard]', JSON.stringify(geom));
+  expect(geom.fieldClear, '字段被键盘盖住').toBe(true);
+  expect(geom.goClear, '提交键被键盘盖住').toBe(true);
+});

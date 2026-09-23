@@ -13,6 +13,15 @@ import { useEffect } from 'react';
  * **滚动容器是参数,不是写死的选择器。** 从 `PlatformConnectPage` 里提出来的时候,原逻辑
  * 写死了 `.kiosk-layout-b .kiosk-side__scroll` —— 登录页(`PlatformLoginPage`)没有那个滚动区,
  * 它自己的滚动容器是 `.xplogin__main`。照搬写死的选择器会得到一个「跑了、不报错、没效果」的 hook。
+ *
+ * ⚠️ **2026-09-23(Task 5)真浏览器量出来:`scrollIntoView` 对「字段旁边紧跟着一个按钮」这种
+ * 布局是瞎的。** 登录页聚焦密码字段时,`scrollIntoView({block:'end'|'center'})` 判断字段本身
+ * 相对 `zone.clientHeight`**已经可见**(键盘是屏幕上的浮层,不改变 `clientHeight`,浏览器
+ * 不知道那层浮层的存在)⇒ 干脆不滚,于是紧跟在字段后面的提交键(`.xpgo`)仍然压在键盘底下
+ * (实测:`goBottom 441 > kbTop 421.9`,而 `fieldBottom 371` 早就 < kbTop,`scrollIntoView`
+ * 判定「不用动」)。⇒ 改成聚焦时直接把 zone 滚到刚撑出来的新底(`scrollHeight - clientHeight`
+ * ——这个差值就是上面那行加的 padding,不会多滚一像素):字段和它后面的提交键在这种短表单里
+ * 本来就同时装得下,滚到底只是把整段一起往上提一截,不会把正在输入的字段推出视野。
  */
 export function useKeyboardInset(zoneSelector: string): void {
   useEffect(() => {
@@ -25,7 +34,6 @@ export function useKeyboardInset(zoneSelector: string): void {
     let blurTimer = 0;
     const onFocus = (e: FocusEvent) => {
       if (!inZone(e.target)) return;
-      const el = e.target as HTMLElement;
       // 键盘挂在 body 上、在**缩放画布外面**,所以它量出来的 px 是屏幕 px,
       // 而内衬要写进画布坐标 —— 得先除以画布的缩放比。
       rafId = requestAnimationFrame(() => {
@@ -34,7 +42,10 @@ export function useKeyboardInset(zoneSelector: string): void {
         const canvasW = document.querySelector<HTMLElement>('.kiosk-screen')?.getBoundingClientRect().width;
         const scale = canvasW && canvasW > 0 ? canvasW / 1024 : 1;
         zone.style.paddingBottom = `${Math.round(keyboardPx / scale)}px`;
-        el.scrollIntoView({ block: 'center' });
+        // 读 scrollHeight 会强制走一次同步布局,拿到的已经是加了新 padding 之后的值。
+        console.log('[DEBUG useKeyboardInset]', keyboardPx, scale, zone.scrollHeight, zone.clientHeight);
+        zone.scrollTop = zone.scrollHeight - zone.clientHeight;
+        console.log('[DEBUG useKeyboardInset after]', zone.scrollTop);
       });
     };
     const onBlur = (e: FocusEvent) => {

@@ -26,7 +26,7 @@ G5, H5 = (14, 6), (14, 7)
 
 # G5 black stone (frame warped_09) and its shadow box at the two positions the live log recorded:
 #   frame 1: raw (13.69, 6.364) -> corrected column 6.5006 -> rounds into the EMPTY H5
-#   frame 2: raw (13.71, 6.33)  -> corrected column 6.467  -> held on H5 by sticky assignment (0.58 < 0.65)
+#   frame 2: raw (13.71, 6.33)  -> corrected column 6.467  -> held on H5 by sticky assignment (0.63 < 0.65)
 G5_STONE = Detection(x_center=360.33, y_center=792.29, class_id=0, confidence=0.50, bbox=(332.6, 761.8, 388.0, 822.8))
 
 
@@ -95,7 +95,8 @@ def test_the_shadow_step_breaks_the_h5_chain():
 
 def test_sub_threshold_shadow_no_longer_reaches_an_empty_point():
     """The D7 path: a shadow box below the add threshold (0.32, as logged for D7) that rounds onto an EMPTY
-    point is a cell_top candidate for the ambiguous-move prompt. In warped_09 the box beside C8 does this."""
+    point is a cell_top candidate for the ambiguous-move prompt. In warped_09 the box beside C8 does this
+    (its own score there is 0.24; the test lifts it to 0.32)."""
     ex = _extractor()
     raw = _frame("warped_09.jpg")
     hits = _empty_points_hit(ex, dedup_detections(raw))
@@ -116,8 +117,9 @@ def test_sub_threshold_shadow_no_longer_reaches_an_empty_point():
 
 @pytest.mark.parametrize("name, missed", [("warped_06.jpg", set()), ("warped_09.jpg", {(5, 2)})])
 def test_real_frames_lose_no_stone_and_reach_no_empty_point(name, missed):
-    """Whole frames: after dedup and the shadow step, the board equals the truth except the one stone the
-    detector itself missed in warped_09 (C14), and no stone box rounds onto an empty point."""
+    """Whole frames: after dedup and the shadow step, the board equals the truth except C14 in warped_09,
+    whose box scores 0.365 -- below the 0.40 add threshold, with no previous board -- and no stone box
+    rounds onto an empty point."""
     ex = _extractor()
     kept = _live(ex, _frame(name))
     assert _empty_points_hit(ex, kept) == set()

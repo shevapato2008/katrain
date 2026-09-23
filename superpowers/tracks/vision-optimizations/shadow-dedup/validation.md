@@ -146,3 +146,35 @@ VERDICT: PASS  (valid: images == expected and recall >= 0.95; pass: no label los
 `VERDICT: PASS`
 
 结果与计划里记录的原型实测值一致（`recall(old) 0.9997`、`p50 0.18 p90 0.28 p99 0.35 p99.9 0.38 max 0.46`、`dropped 0`、代价 0、颜色 0、`VERDICT: PASS`）：209 张标注图的去重后原始框里，没有一个框够远离交叉点、又和另一个框重叠到会被 `drop_shadow_boxes` 判成影子——这一步在这个标注集上零删除，因此对真子框零代价。
+
+### 闸能变红：阈值变异读数
+
+在临时 worktree `/tmp/shadow-gate-mut`（`git worktree add /tmp/shadow-gate-mut HEAD`，HEAD `708154c7`）里把
+`katrain/vision/board_state.py` 的 `SHADOW_MIN_OFFSET` 依次改成 0.25 和 0.30，跑同一条 Step 3 命令
+（`$SCR=/tmp/shadow-labelled.kezv`，未被本次操作修改）：
+
+`SHADOW_MIN_OFFSET = 0.25`：
+
+```
+images 209 (expected 209)  labelled stones 21178  recall(old) 0.9997
+parallax off  SHADOW_MIN_OFFSET 0.25
+label-matched boxes, cells from their point: p50 0.18 p90 0.28 p99 0.35 p99.9 0.38 max 0.46  (at or above the threshold: 4488)
+boxes the shadow step dropped: 1, of which label-matched before: 1 [('kifu_24171_frame_116.jpg', 'r16c6')]
+labels the shadow step costs: 1 [('kifu_24171_frame_116.jpg', 1, ['r16c6'])]
+labels that lose their correct-colour box: 1 [('kifu_24171_frame_116.jpg', 1, ['r16c6'])]
+VERDICT: FAIL  (valid: images == expected and recall >= 0.95; pass: no label lost or recoloured by the shadow step)
+```
+
+`SHADOW_MIN_OFFSET = 0.30`：
+
+```
+images 209 (expected 209)  labelled stones 21178  recall(old) 0.9997
+parallax off  SHADOW_MIN_OFFSET 0.3
+label-matched boxes, cells from their point: p50 0.18 p90 0.28 p99 0.35 p99.9 0.38 max 0.46  (at or above the threshold: 1109)
+boxes the shadow step dropped: 0, of which label-matched before: 0 []
+labels the shadow step costs: 0 []
+labels that lose their correct-colour box: 0 []
+VERDICT: PASS  (valid: images == expected and recall >= 0.95; pass: no label lost or recoloured by the shadow step)
+```
+
+这说明 209 张图上「删 0 个、PASS」不是闸看不见：阈值放到 0.25 时它当场抓到 r16c6 这颗真子。

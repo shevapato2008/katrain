@@ -70,7 +70,8 @@ def test_a_box_that_outscores_its_partner_is_never_dropped():
 
 def test_two_touching_real_stones_are_both_kept():
     """kifu_24171 frame 098 (labelled set), deployed model's own boxes: two white stones pushed together.
-    Their boxes overlap by 0.38 -- as much as a shadow -- but both sit on a point. The first version of this
+    Their boxes overlap by 0.38 -- as much as a shadow. The left box sits 0.05 off its point and the right
+    0.28, both under SHADOW_MIN_OFFSET; the right one also outscores the left. The first version of this
     fix merged one of them away (gate FAIL, 45 frames)."""
     left = Detection(
         315.4741413116455,

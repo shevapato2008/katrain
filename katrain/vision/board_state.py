@@ -61,9 +61,10 @@ COLOR_FLIP_RELEASE_FRAMES = 15
 # (H5: 16 prompts in one game). drop_shadow_boxes removes a stone box that overlaps a box sitting closer to an
 # intersection (by >= SHADOW_OVERLAP_MIN of the smaller box, similar size) AND sits between intersections
 # itself. Overlap alone cannot tell a shadow from a touching neighbour: two real white stones pushed together
-# overlapped by 0.38 in kifu_24171 -- but each sat on its own point (0.04-0.08 cells off). Measured, without
-# parallax correction: real boxes on 209 labelled images sit <= 0.38 cells from their point at p99.9, and
-# dropping a real stone starts between 0.25 and 0.30; every shadow box in the daylight game sat >= 0.45.
+# overlapped by 0.38 in kifu_24171 -- one sat 0.02-0.14 cells off its point, the other (r16c6) 0.25-0.30 off.
+# That second box is where dropping a real stone starts (threshold 0.25 drops it, 0.30 does not), so the margin
+# below SHADOW_MIN_OFFSET is about 0.05. Measured without parallax correction: real boxes on 209 labelled
+# images sit <= 0.38 cells from their point at p99.9; every shadow box in the daylight game sat >= 0.45.
 # See superpowers/tracks/vision-optimizations/shadow-dedup/design.md.
 SHADOW_OVERLAP_MIN = 0.27
 SHADOW_MAX_SIDE_RATIO = 2.0

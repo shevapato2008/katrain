@@ -1849,8 +1849,14 @@ button.kiosk-row.figrow { flex: none; }
 .aiplate .rung { margin-left: auto; font-size: 13px; color: var(--dim); white-space: nowrap; }
 
 /* 屏 09 名牌点开的 39 档全表 —— 只盖右栏,不盖盘。`position:relative` 只在这一屏的
-   `.kiosk-rail` 上开:那个类本身(tokens.css:616)不带 position,若在别处也加上会改
-   `scrollSync.ts:38` 读的 `offsetTop` 基准,把别的 L2/L3 屏的滚动条 thumb 挪位。 */
+   `.kiosk-rail` 上开:那个类本身(tokens.css:616)不带 position。
+   ⚠️ 2026-09-23 更正:这条规则**不是**为了防止挪动别屏的滚动条 thumb ——
+   `.kiosk-side`(tokens.css:510)自己早就是 `position: relative`,是比 `.kiosk-rail`
+   更近的定位祖先,`scrollSync.ts:38` 读的 `offsetTop` 基准由它决定,`.kiosk-rail` 加不加
+   `position` 对任何「形态 1」(`.kiosk-side` 自滚,本仓绝大多数屏)的 thumb 位置都没有影响 ——
+   变异实测过(把这条改成裸 `.kiosk-rail{position:relative}`,跑屏 02/03/04 四图,
+   三屏拇指位置无变化)。留在这里的正当理由只是:**这条规则只服务这一屏**,
+   收窄作用域本来就是默认做法,不需要更特殊的理由。 */
 [data-testid="platform-engine-setup-page"] .kiosk-rail { position: relative; }
 
 .aisheet {

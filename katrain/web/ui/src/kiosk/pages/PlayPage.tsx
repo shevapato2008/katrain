@@ -8,16 +8,16 @@ import { PLATFORM_META, defaultPlatforms, mergePlatformStatus } from '../constan
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskCard } from '../shell/KioskCard';
-import type { IconName } from '../shell/icons';
+import { PLATFORM_MARKS } from '../constants/platformMarks';
 import { useEngineReadiness } from '../context/EngineReadinessContext';
 
-// 稿子给每个平台配的图标(`go-kiosk.tmpl.html:play`):星阵是引擎直连,画机器人;
-// 走大厅的画地球。图标不带语义色,状态由 `.dot` / `.soon` 表达。
-const PLATFORM_ICON: Record<string, IconName> = {
-  ogs: 'globe-hemisphere-west',
-  fox: 'globe-hemisphere-west',
-  golaxy: 'robot',
-};
+// 三家平台现在各戴自己的品牌标记(`constants/platformMarks.ts`),不再用我们的图标。
+//
+// 原先这里有一张 `PLATFORM_ICON` 表,把星阵配成 `robot`(「引擎直连画机器人,走大厅画地球」)、
+// 另两家配成地球 —— 而稿子屏 01 上三家画的都是地球,这张表已经和稿子对不上了。
+// 每家戴自己的标记之后它整个失去意义,所以撤掉,只留下面那条回落:
+// **查不到标记的平台用地球**(`/platforms` 多下发一家是正常事件,不能因此打白首页)。
+const FALLBACK_ICON = 'globe-hemisphere-west' as const;
 
 // 目录顺序和「少下发就补一条全 false」都上提到 `constants/platforms.ts` —— 屏 07 共读同一份。
 
@@ -161,16 +161,19 @@ const PlayPage = () => {
                   key={p.platform}
                   title={t(meta.label, meta.labelCn)}
                   sub={t('Not wired up yet', '接口还没通')}
-                  icon={PLATFORM_ICON[p.platform] ?? 'globe-hemisphere-west'}
+                  icon={FALLBACK_ICON}
+                  mark={PLATFORM_MARKS[p.platform]}
                   soon={t('platform:no_play_yet', '暂不能对弈')}
                 />
               );
             }
+            // 2026-09-23(Task 5):「未连接」这一支改跳独立的登录页 —— 已连接那两支
+            // 原样不动(Task 10 再改,那时 `/kiosk/play/cross-platform/golaxy` 才存在)。
             const target = p.connected
               ? (p.supports_engine_play
                   ? `/kiosk/play/cross-platform/engine/${p.platform}`
                   : `/kiosk/play/cross-platform/lobby?platform=${p.platform}`)
-              : '/kiosk/play/cross-platform';
+              : `/kiosk/play/cross-platform/login/${p.platform}`;
             // 副标说的是**下一步会发生什么**,而且每一句都从真状态推出来:
             // 连上了就说走哪条路,没连上就说这个平台要拿什么登录(登录字段在 PLATFORM_META 里)。
             const sub = p.connected
@@ -185,7 +188,8 @@ const PlayPage = () => {
                 key={p.platform}
                 title={t(meta.label, meta.labelCn)}
                 sub={sub}
-                icon={PLATFORM_ICON[p.platform] ?? 'globe-hemisphere-west'}
+                icon={FALLBACK_ICON}
+                mark={PLATFORM_MARKS[p.platform]}
                 dot={p.connected}
                 onClick={() => navigate(target)}
               />

@@ -6666,3 +6666,120 @@ msgstr "棋盘挪动过，上次的标定对不上了 —— 用「对齐外框�
 
 msgid "vision:led_serial_note"
 msgstr "LED 那一格只说串口通了，不代表每颗灯都亮；引导时发现某处不亮，多半是灯带那一段坏了。"
+
+msgid "platform:fact_whose"
+msgstr "用谁的账号"
+
+msgid "platform:fact_three_ways"
+msgstr "三种都能用"
+
+msgid "platform:fact_three_ways_body"
+msgstr "扫码一个字都不用打；验证码等一条短信；密码最快，但要在触屏上敲。"
+
+msgid "platform:fact_stored"
+msgstr "盒上留下什么"
+
+msgid "platform:fact_stored_golaxy"
+msgstr "只留星阵发的登录令牌，不留密码。想断开随时去设置里。"
+
+msgid "platform:fact_only_one"
+msgstr "盒上只做这一种"
+
+msgid "platform:fact_only_one_body"
+msgstr "OGS 网页上还能用 Google、Apple 等账号；那条要跳浏览器，留给出海版。"
+
+msgid "platform:fact_third_party"
+msgstr "用第三方注册的"
+
+msgid "platform:fact_third_party_body"
+msgstr "那种账号没有 OGS 密码，得先去 OGS 网页上设一个。"
+
+msgid "platform:fact_whose_ogs"
+msgstr "online-go.com 的账号。注册要在浏览器里做，盒上做不了。"
+
+msgid "platform:fact_stored_ogs"
+msgstr "只留登录后的会话，不留密码。想断开随时去设置里。"
+
+msgid "platform:login_tab_sms"
+msgstr "验证码"
+
+msgid "platform:login_tab_password"
+msgstr "密码"
+
+msgid "platform:login_field_phone"
+msgstr "手机号"
+
+msgid "platform:login_field_code"
+msgstr "验证码"
+
+msgid "platform:login_sub_sms"
+msgstr "未连接 · 用手机验证码登录"
+
+msgid "platform:login_sub_password"
+msgstr "未连接 · 用{name}的账号密码登录"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "未连接 · 用星阵的账号密码登录"
+
+msgid "platform:login_sub_ogs"
+msgstr "未连接 · 用 online-go.com 的账号"
+
+msgid "platform:login_title"
+msgstr "登录{name}"
+
+msgid "platform:login_rank_from_account"
+msgstr "段位也从这个账号来"
+
+msgid "platform:login_tabs"
+msgstr "登录方式"
+
+msgid "platform:fact_whose_golaxy"
+msgstr "星阵自己的账号，不是智星盒的。没有就在手机上的星阵 APP 注册——盒上注册不了。"
+
+msgid "platform:login_tab_scan"
+msgstr "扫码"
+
+msgid "platform:login_sub_scan"
+msgstr "未连接 · 用手机上的星阵 APP 扫一扫"
+
+msgid "platform:scan_state_waiting"
+msgstr "等待扫描"
+
+msgid "platform:scan_state_scanned"
+msgstr "已扫描，请在手机上确认"
+
+msgid "platform:scan_state_confirmed"
+msgstr "已确认，正在登录…"
+
+msgid "platform:scan_state_expired"
+msgstr "二维码已失效"
+
+msgid "platform:scan_state_cancelled"
+msgstr "手机上取消了登录"
+
+msgid "platform:scan_unavailable_title"
+msgstr "连不上星阵"
+
+msgid "platform:scan_unavailable_body"
+msgstr "检查网络"
+
+msgid "platform:scan_retry"
+msgstr "重试"
+
+msgid "platform:scan_title"
+msgstr "打开星阵 APP 扫一扫"
+
+msgid "platform:scan_body"
+msgstr "扫完在手机上点确认，密码不经过这台盒子。"
+
+msgid "platform:scan_qr_alt"
+msgstr "星阵登录二维码"
+
+msgid "platform:scan_refresh"
+msgstr "换一张"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "点此换一张"
+
+msgid "platform:scan_confirm_failed"
+msgstr "确认登录失败"

@@ -1,6 +1,6 @@
 {
   "01-play.png": {
-    "sha256": "ee2430a675390baac3ebc2e39561078b4fa067ba91bc3882cd32b4f8b99467d6",
+    "sha256": "830f4f4c7fef05a5317271dcdfa55f81e3b7ab897e0ca3035ce7ff31d7c9a66c",
     "shotFrom": "feat/kiosk-go-cross-platform-design-2026-09-22"
   },
   "02-setup-free.png": {
@@ -40,11 +40,11 @@
     "shotFrom": "feat/kiosk-go-cross-platform-design-2026-09-22"
   },
   "07a-platform-login.png": {
-    "sha256": "a47193901724fa9225a2ed2be15e63400c139b0524c06b358c4018a3adbf55fc",
+    "sha256": "1537d4b636944a83fddb2f8dc56bba0f9d2e2dd2ab38b6ec55be74057babbb19",
     "shotFrom": "feat/kiosk-go-cross-platform-design-2026-09-22"
   },
   "07b-platform-login-pw.png": {
-    "sha256": "b1f34e4f94819e499b75f0b2ab5a02a727eb5103667a6d870ccbba19b3e05757",
+    "sha256": "fa140fd1a4fada95a0446dba8c47b389acdaa562392662eb1fbd392a7f4f3495",
     "shotFrom": "feat/kiosk-go-cross-platform-design-2026-09-22"
   },
   "07c-platform-match.png": {
@@ -64,7 +64,7 @@
     "shotFrom": "feat/kiosk-go-cross-platform-design-2026-09-22"
   },
   "08-platform-login-ogs.png": {
-    "sha256": "6177b9cf5e9ea23b2be624ab28e1c69c11327b11572b8fd279c26e9c6271f379",
+    "sha256": "d38c0cabe44847f1a97730888bdda289fcee058a819c708127590af178600daa",
     "shotFrom": "feat/kiosk-go-cross-platform-design-2026-09-22"
   },
   "08a-platform-lobby.png": {

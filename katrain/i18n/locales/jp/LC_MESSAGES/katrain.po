@@ -6837,3 +6837,121 @@ msgstr ""
 msgid "vision:led_serial_note"
 msgstr ""
 "「LED」の項目はシリアル接続ができているという意味で、すべてのランプが点灯するとは限りません。案内中にどこかが点灯しない場合、その区間のテープが故障している可能性が高いです。"
+
+msgid "platform:fact_whose"
+msgstr "どのアカウント"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"星陣（Golaxy）自身のアカウントで、盒のアカウントではありません。持っていなければスマホの星陣アプリで登録してください——盒では登録できません。"
+
+msgid "platform:fact_three_ways"
+msgstr "3通りの方法"
+
+msgid "platform:fact_three_ways_body"
+msgstr "スキャンなら一文字も入力不要。認証コードはSMSを待つだけ。パスワードが一番速いですが、タッチスクリーンで入力する必要があります。"
+
+msgid "platform:fact_stored"
+msgstr "盒に残るもの"
+
+msgid "platform:fact_stored_golaxy"
+msgstr "残るのは星陣が発行したログイントークンのみで、パスワードは残りません。切断したい時はいつでも設定から。"
+
+msgid "platform:fact_only_one"
+msgstr "盒ではこの方法のみ"
+
+msgid "platform:fact_only_one_body"
+msgstr "OGSのウェブサイトではGoogleやAppleなどのアカウントも使えますが、その経路はブラウザが必要なので海外版に持ち越します。"
+
+msgid "platform:fact_third_party"
+msgstr "第三者経由で登録した場合"
+
+msgid "platform:fact_third_party_body"
+msgstr "その種類のアカウントにはOGSパスワードがありません。まずOGSのウェブサイトで設定してください。"
+
+msgid "platform:fact_whose_ogs"
+msgstr "online-go.com のアカウントです。登録はブラウザで行う必要があり、盒ではできません。"
+
+msgid "platform:fact_stored_ogs"
+msgstr "残るのはログイン後のセッションのみで、パスワードは残りません。切断したい時はいつでも設定から。"
+
+msgid "platform:login_tab_sms"
+msgstr "認証コード"
+
+msgid "platform:login_tab_password"
+msgstr "パスワード"
+
+msgid "platform:login_field_phone"
+msgstr "電話番号"
+
+msgid "platform:login_field_code"
+msgstr "認証コード"
+
+msgid "platform:login_sub_sms"
+msgstr "未接続 · SMS認証コードでログイン"
+
+msgid "platform:login_sub_password"
+msgstr "未接続 · {name}のアカウントとパスワードでログイン"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "未接続 · Golaxyのアカウントとパスワードでログイン"
+
+msgid "platform:login_sub_ogs"
+msgstr "未接続 · online-go.comのアカウントを使用"
+
+msgid "platform:login_title"
+msgstr "{name}にログイン"
+
+msgid "platform:login_rank_from_account"
+msgstr "段位もこのアカウントから取得されます"
+
+msgid "platform:login_tabs"
+msgstr "ログイン方法"
+
+msgid "platform:login_tab_scan"
+msgstr "スキャン"
+
+msgid "platform:login_sub_scan"
+msgstr "未接続 · スマホの星陣アプリでスキャン"
+
+msgid "platform:scan_state_waiting"
+msgstr "スキャン待ち"
+
+msgid "platform:scan_state_scanned"
+msgstr "スキャン済み、スマホで確認してください"
+
+msgid "platform:scan_state_confirmed"
+msgstr "確認済み、ログイン中…"
+
+msgid "platform:scan_state_expired"
+msgstr "QRコードの有効期限が切れました"
+
+msgid "platform:scan_state_cancelled"
+msgstr "スマホ側でキャンセルされました"
+
+msgid "platform:scan_unavailable_title"
+msgstr "星陣に接続できません"
+
+msgid "platform:scan_unavailable_body"
+msgstr "ネットワークを確認してください"
+
+msgid "platform:scan_retry"
+msgstr "再試行"
+
+msgid "platform:scan_title"
+msgstr "星陣アプリを開いてスキャン"
+
+msgid "platform:scan_body"
+msgstr "スキャン後、スマホ側で確認してください。パスワードはこの端末を経由しません。"
+
+msgid "platform:scan_qr_alt"
+msgstr "星陣ログインQRコード"
+
+msgid "platform:scan_refresh"
+msgstr "コードを更新"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "タップして新しいコードを取得"
+
+msgid "platform:scan_confirm_failed"
+msgstr "ログイン確認に失敗しました"

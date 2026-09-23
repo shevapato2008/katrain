@@ -4015,10 +4015,10 @@ msgid "setup:my_side"
 msgstr "My colour"
 
 msgid "setup:take_black"
-msgstr "Black"
+msgstr "Take Black"
 
 msgid "setup:take_white"
-msgstr "White"
+msgstr "Take White"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -7078,3 +7078,134 @@ msgstr ""
 "The “LED” status only means the serial port is connected — not that every "
 "lamp lights up; if a spot doesn't light during guidance, that section of the"
 " strip is probably broken."
+
+msgid "platform:fact_whose"
+msgstr "Whose account"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Golaxy's own account, not the box's. No account yet? Register in the Golaxy "
+"app on your phone — you can't sign up on the box."
+
+msgid "platform:fact_three_ways"
+msgstr "Three ways in"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Scan — no typing at all. SMS code — wait for a text. Password — fastest, but"
+" you type it on the touchscreen."
+
+msgid "platform:fact_stored"
+msgstr "What stays on the box"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Only the login token Golaxy issues stays here — no password. Disconnect any "
+"time in Settings."
+
+msgid "platform:fact_only_one"
+msgstr "Only this way on the box"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"OGS's website also supports Google, Apple, and other accounts — that route "
+"needs a browser, so it's saved for the overseas edition."
+
+msgid "platform:fact_third_party"
+msgstr "Signed up via a third party?"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"Those accounts have no OGS password — set one on the OGS website first."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Your account on online-go.com. Sign-up has to happen in a browser — it can't"
+" be done on the box."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Only the session after signing in stays here — no password. Disconnect any "
+"time in Settings."
+
+msgid "platform:login_tab_sms"
+msgstr "SMS code"
+
+msgid "platform:login_tab_password"
+msgstr "Password"
+
+msgid "platform:login_field_phone"
+msgstr "Phone number"
+
+msgid "platform:login_field_code"
+msgstr "SMS code"
+
+msgid "platform:login_sub_sms"
+msgstr "Not connected · sign in with an SMS code"
+
+msgid "platform:login_sub_password"
+msgstr "Not connected · sign in with {name}'s account and password"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "Not connected · sign in with your Golaxy account and password"
+
+msgid "platform:login_sub_ogs"
+msgstr "Not connected · use your online-go.com account"
+
+msgid "platform:login_title"
+msgstr "Sign in to {name}"
+
+msgid "platform:login_rank_from_account"
+msgstr "Your rank also comes from this account"
+
+msgid "platform:login_tabs"
+msgstr "Sign-in method"
+
+msgid "platform:login_tab_scan"
+msgstr "Scan"
+
+msgid "platform:login_sub_scan"
+msgstr "Not connected · scan with the Golaxy app on your phone"
+
+msgid "platform:scan_state_waiting"
+msgstr "Waiting for scan"
+
+msgid "platform:scan_state_scanned"
+msgstr "Scanned — confirm on your phone"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Confirmed, signing in…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR code expired"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Cancelled on your phone"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Can't reach Golaxy"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Check the network"
+
+msgid "platform:scan_retry"
+msgstr "Retry"
+
+msgid "platform:scan_title"
+msgstr "Open the Golaxy app and scan"
+
+msgid "platform:scan_body"
+msgstr ""
+"Confirm on your phone after scanning — your password never touches this box."
+
+msgid "platform:scan_qr_alt"
+msgstr "Golaxy sign-in QR code"
+
+msgid "platform:scan_refresh"
+msgstr "New code"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "tap for a new code"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Couldn't confirm sign-in"

@@ -4067,10 +4067,10 @@ msgid "setup:my_side"
 msgstr "Meine Farbe"
 
 msgid "setup:take_black"
-msgstr "Schwarz"
+msgstr "Schwarz nehmen"
 
 msgid "setup:take_white"
-msgstr "Weiß"
+msgstr "Weiß nehmen"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -7155,3 +7155,139 @@ msgstr ""
 "Der Status „LED“ zeigt nur, dass die serielle Verbindung steht — nicht, dass"
 " jede Lampe leuchtet; leuchtet während der Führung eine Stelle nicht, ist "
 "meist dieser Abschnitt des LED-Streifens defekt."
+
+msgid "platform:fact_whose"
+msgstr "Wessen Konto"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Das eigene Konto von Golaxy, nicht das der Box. Noch kein Konto? "
+"Registrieren Sie sich in der Golaxy-App auf Ihrem Handy — auf der Box geht "
+"das nicht."
+
+msgid "platform:fact_three_ways"
+msgstr "Drei Wege"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Scannen — keine einzige Eingabe nötig. SMS-Code — auf eine Textnachricht "
+"warten. Passwort — am schnellsten, muss aber auf dem Touchscreen eingetippt "
+"werden."
+
+msgid "platform:fact_stored"
+msgstr "Was auf der Box bleibt"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Hier bleibt nur das von Golaxy ausgestellte Login-Token — kein Passwort. "
+"Trennen Sie die Verbindung jederzeit in den Einstellungen."
+
+msgid "platform:fact_only_one"
+msgstr "Auf der Box nur so"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"Auf der OGS-Website funktionieren auch Google-, Apple- und andere Konten — "
+"dieser Weg braucht einen Browser und bleibt der internationalen Version "
+"vorbehalten."
+
+msgid "platform:fact_third_party"
+msgstr "Über Drittanbieter registriert"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"Solche Konten haben kein OGS-Passwort — legen Sie zuerst eines auf der OGS-"
+"Website fest."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Ihr Konto auf online-go.com. Die Registrierung muss im Browser erfolgen — "
+"auf der Box geht das nicht."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Hier bleibt nur die Sitzung nach der Anmeldung — kein Passwort. Trennen Sie "
+"die Verbindung jederzeit in den Einstellungen."
+
+msgid "platform:login_tab_sms"
+msgstr "SMS-Code"
+
+msgid "platform:login_tab_password"
+msgstr "Passwort"
+
+msgid "platform:login_field_phone"
+msgstr "Telefonnummer"
+
+msgid "platform:login_field_code"
+msgstr "SMS-Code"
+
+msgid "platform:login_sub_sms"
+msgstr "Nicht verbunden · Anmeldung per SMS-Code"
+
+msgid "platform:login_sub_password"
+msgstr "Nicht verbunden · Anmeldung mit {name}-Konto und Passwort"
+
+msgid "platform:login_sub_golaxy_password"
+msgstr "Nicht verbunden · Anmeldung mit Golaxy-Konto und Passwort"
+
+msgid "platform:login_sub_ogs"
+msgstr "Nicht verbunden · mit dem online-go.com-Konto"
+
+msgid "platform:login_title"
+msgstr "Bei {name} anmelden"
+
+msgid "platform:login_rank_from_account"
+msgstr "Ihr Rang stammt ebenfalls aus diesem Konto"
+
+msgid "platform:login_tabs"
+msgstr "Anmeldemethode"
+
+msgid "platform:login_tab_scan"
+msgstr "Scannen"
+
+msgid "platform:login_sub_scan"
+msgstr "Nicht verbunden · mit der Golaxy-App auf dem Handy scannen"
+
+msgid "platform:scan_state_waiting"
+msgstr "Warten auf Scan"
+
+msgid "platform:scan_state_scanned"
+msgstr "Gescannt — auf dem Handy bestätigen"
+
+msgid "platform:scan_state_confirmed"
+msgstr "Bestätigt, wird angemeldet…"
+
+msgid "platform:scan_state_expired"
+msgstr "QR-Code abgelaufen"
+
+msgid "platform:scan_state_cancelled"
+msgstr "Auf dem Handy abgebrochen"
+
+msgid "platform:scan_unavailable_title"
+msgstr "Golaxy nicht erreichbar"
+
+msgid "platform:scan_unavailable_body"
+msgstr "Netzwerk prüfen"
+
+msgid "platform:scan_retry"
+msgstr "Erneut versuchen"
+
+msgid "platform:scan_title"
+msgstr "Golaxy-App öffnen und scannen"
+
+msgid "platform:scan_body"
+msgstr ""
+"Nach dem Scannen auf dem Handy bestätigen — das Passwort läuft nie über "
+"diese Box."
+
+msgid "platform:scan_qr_alt"
+msgstr "Golaxy-Anmelde-QR-Code"
+
+msgid "platform:scan_refresh"
+msgstr "Neuer Code"
+
+msgid "platform:scan_tap_to_refresh"
+msgstr "hier tippen für einen neuen Code"
+
+msgid "platform:scan_confirm_failed"
+msgstr "Anmeldung konnte nicht bestätigt werden"

@@ -3827,7 +3827,7 @@ msgid "vision:cancel_calibration"
 msgstr "Cancelar calibración"
 
 msgid "vision:reuse_calibration"
-msgstr "Reutilizar la última calibración"
+msgstr "Usar la anterior"
 
 msgid "vision:camera_down"
 msgstr "Cámara no conectada · se ha pasado a la pantalla táctil"

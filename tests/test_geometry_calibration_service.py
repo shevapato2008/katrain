@@ -1950,6 +1950,42 @@ def test_a_camera_that_drops_while_rearming_drift_is_a_clean_failure():
     service.stop()
 
 
+class _StalledCamera(FreshFakeCapture):
+    """卡住的相机:grab_fresh 超时后退回同一帧旧图(同一个 seq),而不是 None —— camera.py 的真实行为。"""
+
+    def grab_fresh(self, settle_ms=0.0):
+        self.grab_calls += 1
+        return np.zeros((32, 32, 3), np.uint8), 7, 1.0
+
+
+def test_manual_relocate_refuses_when_the_camera_is_not_ready():
+    """掉线时 grab_fresh 退回的是挪动之前的旧图:拿它对齐会把旧位置当成新位置,还报 ready。"""
+    selector = _FakeSelector(M=_outer_M(IMG_QUAD + BUMP))
+    service, calls = _relocating_service(selector=selector, phase="degraded", capture=FreshFakeCapture(connected=False))
+    with pytest.raises(ValueError, match="camera is not ready"):
+        service.relocate(trigger="manual")
+    assert service.status()["phase"] == "degraded"
+    assert selector.calls == [] and calls.success == []
+    service.stop()
+
+
+def test_relocation_does_not_count_one_stale_frame_three_times():
+    """同一个 seq 只算一帧:否则外框法的帧间抖动读成 0,置信度虚高到 1.0。"""
+    seen = []
+
+    class _CountingSelector(_FakeSelector):
+        def calibrate(self, scenario, ctx):
+            seen.append(len(ctx.frames))
+            return super().calibrate(scenario, ctx)
+
+    service, _calls = _relocating_service(
+        selector=_CountingSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded", capture=_StalledCamera()
+    )
+    service.relocate(trigger="manual")
+    assert seen == [1]
+    service.stop()
+
+
 def test_a_stale_drift_result_does_not_undo_a_fresh_relocation():
     """漂移线程拿着它那一轮开头缓存的旧 monitor;这期间手动对齐已换了新锁 ⇒ 旧结论作废,不许把新锁降级。"""
     service, calls = _relocating_service(

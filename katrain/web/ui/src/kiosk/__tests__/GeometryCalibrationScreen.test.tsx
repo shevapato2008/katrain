@@ -294,6 +294,20 @@ describe('屏 26 棋盘标定', () => {
     await waitFor(() => expect(screen.queryByText('沿用失败')).toBeNull());
   });
 
+  /** 反方向(第 2 轮):对齐失败的卡排在诊断链最前,之后按「重新开始标定」失败时新错误不许被它盖住。 */
+  it('对齐外框失败之后再按重新开始标定并失败,屏上说的是这一次的错', async () => {
+    status = { ...status, phase: 'cancelled', last_valid: true };
+    relocate.mockRejectedValue(new Error('geometry relocate failed 400: no_board_detected'));
+    renderScreen();
+    fireEvent.click(screen.getByTestId('calib-relocate'));
+    expect(await screen.findByText(/找不到棋盘外框/)).toBeInTheDocument();
+
+    startCalibration.mockRejectedValue(new Error('启动被拒'));
+    fireEvent.click(within(acts()).getByRole('button', { name: '重新开始标定' }));
+    expect(await screen.findByText('启动被拒')).toBeInTheDocument();
+    expect(screen.queryByText(/找不到棋盘外框/)).toBeNull();
+  });
+
   /**
    * 🔴 运行中稿子那两颗键**一颗都不成立**:「沿用上次标定」服务端会 `ValueError`,
    * 「重新开始标定」会撞 409。而一次标定是分钟级的 —— 没有退出路径 = 卡死。

@@ -1777,7 +1777,10 @@ test('§11 标定屏:失败时多一张诊断卡,中段自己滚,按钮一颗都
     { message: '中段自己滚不动 —— 诊断卡下面那几步就看不到了' }).toBeGreaterThan(0);
 });
 
-/* ── Task 8 —— §11 最满态承重,中德(+ 试测俄/乌)各量一次 ──────────────────────
+/* ── Task 8 —— §11 最满态承重,11 个语种各量一次 ──────────────────────
+ *
+ * 起初只量 cn/de/ru/ua:把译文收短只修了量到的那三家,es 的「沿用上次标定」同样被裁却没人看见
+ * (第 2 轮评审在真浏览器里量出来的)。三颗等宽键的余量取决于装哪种语言的字 ⇒ 11 种全量,约 25 秒。
  *
  * `boot()`/`bootCalib()` 只把 `katrain_language` 写进 localStorage —— i18n 真正的译文表
  * 是 `SettingsProvider` 挂载时打一条 `GET /api/translations?lang=` 拉回来的(`src/i18n.ts`
@@ -1798,7 +1801,7 @@ const poFor = (lang: string) => {
   return CALIB_LANG_PO[lang];
 };
 
-for (const lang of ['cn', 'de', 'ru', 'ua'] as const) {
+for (const lang of ['cn', 'de', 'ru', 'ua', 'en', 'es', 'fr', 'tr', 'jp', 'ko', 'tw'] as const) {
   test(`§11 标定屏(${lang}):degraded + 对齐外框失败 + 三颗键,键不溢出、不被顶出去,中段自己滚`, async ({ page }) => {
     // 必须在 `bootCalib` 之前注册:它内部的 `boot()` 头一件事就是 `page.goto`,
     // 那一刻 `SettingsProvider` 挂载就会把 `/api/translations` 打出去。

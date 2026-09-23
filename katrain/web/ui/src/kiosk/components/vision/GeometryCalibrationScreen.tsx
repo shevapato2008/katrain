@@ -193,6 +193,8 @@ export function GeometryCalibrationScreen({
   const start = async () => {
     setStarting(true);
     setActionError(null);
+    // 上一次「对齐外框」的失败卡排在诊断链最前:不清掉,这一次按键若失败(phase 不变),新错误会被旧卡盖住。
+    setRelocateError(null);
     try {
       // `trigger` 区分「第一次自动标定」和「操作员按下重来」。两者走的是**同一条** LED 流程
       // (后端 `service.start` → `LedGeometryCalibrator.calibrate`),差别只在这条记录上 ——
@@ -215,6 +217,7 @@ export function GeometryCalibrationScreen({
   const reuseExisting = async () => {
     setStarting(true);
     setActionError(null);
+    setRelocateError(null);
     try {
       await confirmExisting();
     } catch (error) {

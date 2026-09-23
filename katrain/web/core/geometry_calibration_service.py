@@ -678,6 +678,10 @@ class GeometryCalibrationService:
                 raise ValueError("relocate is only available after drift, cancel or failure")
             if self.current_lock is None:
                 raise ValueError("no existing geometry to relocate")
+            if not self._is_ready(self.capture):
+                # grab_fresh 在相机掉线/卡住时会超时退回**最后一帧旧图**(camera.py:611),而不是 None ——
+                # 不挡在这里,就会拿挪动之前的画面「对齐」出一把旧位置的锁,还报 ready。
+                raise ValueError("camera is not ready")
             self._relocating = True
             lock = self.current_lock
         reason = None
@@ -700,11 +704,13 @@ class GeometryCalibrationService:
         grab = getattr(self.capture, "grab_fresh", None)
         if grab is None:
             return None, "no_capture"
-        frames = []
+        frames, seqs = [], set()
         try:
             for _ in range(3):
-                frame, _seq, _ts = grab(settle_ms=0.0)  # grab_fresh 自己会把空闲的相机叫醒(develop 275625ec)
-                if frame is not None:
+                frame, seq, _ts = grab(settle_ms=0.0)  # grab_fresh 自己会把空闲的相机叫醒(develop 275625ec)
+                # 同一个 seq = 超时退回的同一帧旧图。重复的帧会让外框法的「帧间稳定度」读成 0 抖动、置信度 1.0。
+                if frame is not None and seq not in seqs:
+                    seqs.add(seq)
                     frames.append(frame)
         except Exception as exc:  # 相机掉线:干净的失败,不是 500
             logger.warning("relocation could not read frames: %s", exc)

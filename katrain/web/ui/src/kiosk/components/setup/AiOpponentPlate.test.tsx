@@ -31,4 +31,12 @@ describe('AiOpponentPlate', () => {
     await userEvent.click(screen.getByTestId('plate'));
     expect(onOpen).toHaveBeenCalledOnce();
   });
+
+  it('档位读数后面画出可点开的 caret,不是纯读数', () => {
+    const { container } = render(<AiOpponentPlate
+      name="星皮猴" levelName="2 段" displayElo={1500}
+      index={0} total={39} onOpen={() => {}} testId="plate"
+    />);
+    expect(container.querySelector('.rung svg')).not.toBeNull();
+  });
 });

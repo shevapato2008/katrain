@@ -1,5 +1,6 @@
 import { useTranslation } from '../../../hooks/useTranslation';
 import { interpolate } from '../../utils/interpolate';
+import { Icon } from '../../shell/icons';
 
 /**
  * 屏 09 的签名件 —— 一张 56 高的「当前对手名牌」。
@@ -53,7 +54,7 @@ const AiOpponentPlate = ({
           {refRank ? <> · {interpolate(t('platform:ref_rank', '对标{r}'), { r: refRank })}</> : null}
         </p>
       </div>
-      <b className="rung">{rung}</b>
+      <b className="rung">{rung}<Icon name="caret-down" /></b>
     </button>
   );
 };

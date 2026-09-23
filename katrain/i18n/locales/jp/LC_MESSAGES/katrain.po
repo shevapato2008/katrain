@@ -6642,4 +6642,4 @@ msgid "growth:unknown_seat_a"
 msgstr "勝率に入れていない対局が "
 
 msgid "growth:unknown_seat_b"
-msgstr " 局あります：対面の対局、読み込んだ棋譜、黒白が記録されていない対局です。"
+msgstr " 局あります：対面の対局と、黒白が記録されていない対局です。"

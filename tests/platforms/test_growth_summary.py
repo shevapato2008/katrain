@@ -183,3 +183,25 @@ def test_count_since_counts_only_this_users_games_in_the_window(db):
         s.close()
 
     assert UserGameRepository(db).count_since(mine, since=SINCE) == 1
+
+
+def test_count_since_counts_only_games_this_user_actually_played(db):
+    """「近 30 天对局」那一格只数自己下的局(Fan 2026-09-23 裁定:成长屏只讲这个账户自己练的)。
+
+    导入的谱、棋谱库里的谱、研究存档都存在你名下,但**不是你下的** —— 从前它们也被数进去,
+    于是同一屏上「近 30 天对局」比日历的全年总数还大(线上实测 40 vs 39)。
+    """
+    mine = _user(db, "player")
+    s = db()
+    try:
+        s.add_all(
+            [
+                models_db.UserGame(id=f"g-{src}", user_id=mine, source=src, created_at=IN_WINDOW)
+                for src in ("play_ai", "play_local", "play_human", "import", "kifu_library", "research")
+            ]
+        )
+        s.commit()
+    finally:
+        s.close()
+
+    assert UserGameRepository(db).count_since(mine, since=SINCE) == 3

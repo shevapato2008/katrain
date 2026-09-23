@@ -6880,6 +6880,4 @@ msgid "growth:unknown_seat_a"
 msgstr "Kazanma oranına sayılmayan oyun: "
 
 msgid "growth:unknown_seat_b"
-msgstr ""
-" — yüz yüze oyunlar, içe aktarılan kayıtlar ve renginizin kaydedilmediği "
-"oyunlar."
+msgstr " — yüz yüze oyunlar ve renginizin kaydedilmediği oyunlar."

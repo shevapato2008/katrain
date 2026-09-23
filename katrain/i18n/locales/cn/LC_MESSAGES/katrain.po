@@ -6473,4 +6473,4 @@ msgid "growth:unknown_seat_a"
 msgstr "有 "
 
 msgid "growth:unknown_seat_b"
-msgstr " 局没算进胜率：面对面、导入的谱，以及没记下你执黑还是执白的局。"
+msgstr " 局没算进胜率：面对面的局，以及没记下你执黑还是执白的局。"

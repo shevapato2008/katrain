@@ -6742,6 +6742,4 @@ msgid "growth:unknown_seat_a"
 msgstr "Partidas fuera del porcentaje: "
 
 msgid "growth:unknown_seat_b"
-msgstr ""
-" — partidas cara a cara, partidas importadas y partidas sin tu color "
-"registrado."
+msgstr " — partidas cara a cara y partidas sin tu color registrado."

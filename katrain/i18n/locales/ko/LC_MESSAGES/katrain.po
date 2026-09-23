@@ -6580,4 +6580,4 @@ msgid "growth:unknown_seat_a"
 msgstr "승률에 넣지 않은 대국 "
 
 msgid "growth:unknown_seat_b"
-msgstr "국: 대면 대국, 가져온 기보, 흑백이 기록되지 않은 대국입니다."
+msgstr "국: 대면 대국과 흑백이 기록되지 않은 대국입니다."

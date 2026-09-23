@@ -49,9 +49,12 @@ import RungTrend from '../components/growth/RungTrend';
  *
  * 2026-09 之前 `user_games` **没有一列记这个用户坐哪一方**,所以只有升降级局
  * (`ai_ladder_game_ledger` 有 `user_color`)算得出胜负,标签只能写「升降级胜率」。
- * 现在 `user_games.user_color` 补上了,人机局与平台引擎局也算得出;面对面、导入的谱、
+ * 现在 `user_games.user_color` 补上了,人机局与平台引擎局也算得出;面对面的局、
  * 以及这一列上线之前的非升降级局仍然没有这个事实 —— 它们**不进分母**,差额由屏上
  * 那句「有 N 局没算进胜率」说出来。拿玩家名去猜执色就是在编,所以不猜。
+ *
+ * **分子分母的分母是「自己下的局」**(2026-09-23):`count_since` 只数 `PLAYED_SOURCES`,
+ * 导入的谱与棋谱库的谱不再进这一格,所以那句话里也不再提它们。
  *
  * 云端还没部署到这一版时响应里没有新字段 ⇒ 数和标签**一起**退回升降级口径(`winrateCell`)。
  */
@@ -71,8 +74,13 @@ const NET_STEP = 3;
 
 const GrowthPage = () => {
   const { t } = useTranslation();
-  const { token } = useAuth();
-  const ladder = useAiLadderStatus(token ?? undefined);
+  const { token, user } = useAuth();
+  // **判别位是「谁」,不是「有没有 token」。** 严格盒端 token 恒为 null(身份走 cookie),
+  // 拿 token 当依赖等于这三块数据一辈子只在挂载时取一次 —— 换人不重取,屏上留着上一个人的数。
+  // 今天盒上换身份必然走 launcher 整页跳转所以看不出来,但这一屏的规矩是「只显示当前账户自己的数」,
+  // 这条规矩不该建在「一定会整页刷新」这个外部前提上。`uuid` 跨盒端 SSO / 跨平台身份都稳定。
+  const identity = user?.uuid ?? null;
+  const ladder = useAiLadderStatus(token ?? undefined, true, identity);
   const { progress, serverLoadFailed } = useTsumegoProgress();
   const [summary, setSummary] = useState<GrowthSummary | null>(null);
   const [summaryFailed, setSummaryFailed] = useState(false);
@@ -85,7 +93,7 @@ const GrowthPage = () => {
       //(`summaryFailed` 那条 setnote)。abort 不算失败 —— 那是我们自己取消的。
       .catch(() => { if (!ac.signal.aborted) { setSummary(null); setSummaryFailed(true); } });
     return () => ac.abort();
-  }, [token]);
+  }, [token, identity]);
 
   // 诊断是另一条请求、另一份失败 —— 它读不到不该连累上面那四个数,反之亦然。
   const [diag, setDiag] = useState<GrowthDiagnosis | null>(null);
@@ -96,7 +104,7 @@ const GrowthPage = () => {
       .then((d) => { setDiag(d); setDiagFailed(false); })
       .catch(() => { if (!ac.signal.aborted) { setDiag(null); setDiagFailed(true); } });
     return () => ac.abort();
-  }, [token]);
+  }, [token, identity]);
 
   // 近一年练棋日历:又一条独立的请求、独立的失败(同上)。
   const [activity, setActivity] = useState<GrowthActivity | null>(null);
@@ -107,7 +115,7 @@ const GrowthPage = () => {
       .then((a) => { setActivity(a); setActivityFailed(false); })
       .catch(() => { if (!ac.signal.aborted) { setActivity(null); setActivityFailed(true); } });
     return () => ac.abort();
-  }, [token]);
+  }, [token, identity]);
 
   const solvedCount = Object.values(progress).filter((p) => p?.completed).length;
   /**
@@ -264,7 +272,7 @@ const GrowthPage = () => {
           <p className="setnote" data-testid="growth-unknown-seat">
             {t('growth:unknown_seat_a', '有 ')}
             <b>{cell.unknownGames}</b>
-            {t('growth:unknown_seat_b', ' 局没算进胜率：面对面、导入的谱，以及没记下你执黑还是执白的局。')}
+            {t('growth:unknown_seat_b', ' 局没算进胜率：面对面的局，以及没记下你执黑还是执白的局。')}
           </p>
         )}
 

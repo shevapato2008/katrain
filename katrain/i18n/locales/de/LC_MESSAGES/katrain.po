@@ -6920,5 +6920,4 @@ msgstr "Nicht in der Siegquote gezählt: "
 
 msgid "growth:unknown_seat_b"
 msgstr ""
-" — Partien von Angesicht zu Angesicht, importierte Partien und Partien ohne "
-"erfasste Farbe."
+" — Partien von Angesicht zu Angesicht und Partien ohne erfasste Farbe."

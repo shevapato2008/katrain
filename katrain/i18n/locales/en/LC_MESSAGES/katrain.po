@@ -6847,6 +6847,4 @@ msgid "growth:unknown_seat_a"
 msgstr "Games not counted in the win rate: "
 
 msgid "growth:unknown_seat_b"
-msgstr ""
-" — face-to-face games, imported records, and games where your color wasn't "
-"recorded."
+msgstr " — face-to-face games and games where your color wasn't recorded."

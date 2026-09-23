@@ -6617,4 +6617,4 @@ msgid "growth:unknown_seat_a"
 msgstr "有 "
 
 msgid "growth:unknown_seat_b"
-msgstr " 局沒算進勝率：面對面、匯入的譜，以及沒記下你執黑還是執白的局。"
+msgstr " 局沒算進勝率：面對面的局，以及沒記下你執黑還是執白的局。"

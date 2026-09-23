@@ -42,6 +42,46 @@ from katrain.web.server import create_app
 # asyncio_mode=auto (pyproject.toml) — async test functions need no marker.
 
 
+def _refuse_real_network(request: httpx.Request) -> httpx.Response:
+    raise AssertionError(
+        f"test tried to make a REAL network call to {request.url} — "
+        "pass transport=httpx.MockTransport(...) explicitly, or inject client=/monkeypatch "
+        "GolaxyScanLogin's methods, to opt back into a controlled response."
+    )
+
+
+@pytest.fixture(autouse=True)
+def _forbid_real_golaxy_network(monkeypatch):
+    """Structural network guard (team-lead ruling ③, task-6b round 2).
+
+    A per-test opt-in helper (like the `_forbid_golaxy_network` static method
+    on `TestScanPlatformValidationF4`) only protects the tests that remember
+    to call it — and "remember to" is exactly what failed TWICE in two
+    rounds on this same module (once during the task-6a review, once again
+    during THIS round's own F4 mutation testing, before this fixture
+    existed: a mutation left `poll` unmocked and it made a real GET to
+    api.19x19.com). The fix has to make the DEFAULT state safe, not rely on
+    every test author noticing they need protecting.
+
+    Patches `httpx.AsyncClient` for the duration of each test in this module
+    so that any instance created WITHOUT an explicit `transport=` kwarg gets
+    one that raises instead of touching the network. Every test that
+    legitimately needs real request/response shaping already passes
+    `transport=httpx.MockTransport(...)` explicitly (`make_client()` below,
+    `httpx.ASGITransport` for the concurrency probes) — `setdefault` leaves
+    those completely alone. Tests that monkeypatch `GolaxyScanLogin.start`/
+    `poll`/`username` directly never reach `httpx.AsyncClient` construction
+    at all, also unaffected.
+    """
+    real_async_client_init = httpx.AsyncClient.__init__
+
+    def _guarded_init(self, *args, **kwargs):
+        kwargs.setdefault("transport", httpx.MockTransport(_refuse_real_network))
+        real_async_client_init(self, *args, **kwargs)
+
+    monkeypatch.setattr(httpx.AsyncClient, "__init__", _guarded_init)
+
+
 def make_client(handler) -> httpx.AsyncClient:
     return httpx.AsyncClient(transport=httpx.MockTransport(handler))
 
@@ -140,19 +180,81 @@ class TestScanSessionTTLSemanticsF5:
         assert len(store._sessions) == 1
 
 
-class TestScanSessionCapF5:
-    """F5: an unbounded `scan/start` grows the store forever, each call also
-    costing one real Golaxy request (review's P4 probe: 201 calls -> 201
-    rows, 200 of them already expired). `MAX_SESSIONS_PER_USER` bounds the
-    per-user live-session count; `check_capacity` lets the endpoint reject
-    BEFORE paying for the Golaxy call."""
+class TestScanSessionSupersedeF5:
+    """F5 revised (team-lead ruling ①, this round): a hard per-user cap with
+    NO supersede would trap a user who just keeps clicking "换一张" behind a
+    429 with nothing on screen they could do about it — same dead-end shape
+    as the D2 finding. `_supersede_unconsumed` is the PRIMARY defense: a new
+    `create()` for the SAME user retires their own not-yet-consumed session
+    first, so under normal use at most one unconsumed session per user ever
+    exists. `MAX_SESSIONS_PER_USER` remains only as a backstop for abnormal
+    accumulation (tested separately below)."""
 
-    def test_check_capacity_raises_once_the_cap_is_reached(self):
+    def test_new_scan_start_supersedes_the_same_users_unconsumed_session(self):
+        store = ScanSessionStore(ttl_seconds=300.0, max_per_user=5)
+        old = store.create(golaxy_uuid="u-old", initiating_user_id=1)
+        new = store.create(golaxy_uuid="u-new", initiating_user_id=1)
+
+        assert store.get(old.scan_id) is None, "clicking 换一张 must retire the old QR code"
+        assert store.get(new.scan_id) is new
+
+    def test_new_scan_start_does_not_supersede_an_already_consumed_session(self):
+        """A successful (consumed) login must survive a later scan_start —
+        its cached result may still be legitimately replayed by a
+        network-retried confirm within the TTL window."""
+        store = ScanSessionStore(ttl_seconds=300.0, max_per_user=5)
+        old = store.create(golaxy_uuid="u-old", initiating_user_id=1)
+        old.consumed = True
+        old.result = {"connected": True, "display_name": "阿范"}
+
+        store.create(golaxy_uuid="u-new", initiating_user_id=1)
+
+        assert store.get(old.scan_id) is old
+
+    def test_supersede_does_not_touch_another_users_session(self):
+        store = ScanSessionStore(ttl_seconds=300.0, max_per_user=5)
+        other = store.create(golaxy_uuid="u-other", initiating_user_id=2)
+        store.create(golaxy_uuid="u-mine", initiating_user_id=1)
+
+        assert store.get(other.scan_id) is other
+
+    def test_scan_start_endpoint_invalidates_the_previous_scan_id(self, monkeypatch):
+        """Same property as above, but through the real HTTP boundary: the
+        first `scan_id` a caller gets must stop being usable once they start
+        a second scan (mirrors clicking "换一张" on the kiosk screen)."""
+        import katrain.web.platforms.golaxy.scan_login as scan_login_mod
+
+        n = {"v": 0}
+
+        async def fake_start(self):
+            n["v"] += 1
+            return ScanStart(uuid=f"g-{n['v']}", payload=f"golaxy_url&&&g-{n['v']}")
+
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "start", fake_start)
+
+        app = _build_app(FakeManager())
+        client = _client_with_user(app, _CurrentUser(1))
+
+        first_scan_id = client.post("/api/v1/platforms/golaxy/scan/start").json()["scan_id"]
+        client.post("/api/v1/platforms/golaxy/scan/start")  # "换一张"
+
+        r = client.get(f"/api/v1/platforms/golaxy/scan/state?scan_id={first_scan_id}")
+        assert r.status_code == 404
+
+
+class TestScanSessionCapF5:
+    """F5: the `MAX_SESSIONS_PER_USER` backstop, for the cases the supersede
+    logic above deliberately does NOT cover — an accumulation of several
+    already-CONSUMED (i.e. successful) sessions for the same user, which
+    `_supersede_unconsumed` leaves alone on purpose."""
+
+    def test_check_capacity_raises_once_consumed_sessions_reach_the_cap(self):
         from katrain.web.platforms.golaxy.scan_login import ScanRateLimited
 
         store = ScanSessionStore(ttl_seconds=300.0, max_per_user=3)
-        for _ in range(3):
-            store.create(golaxy_uuid="u", initiating_user_id=1)
+        for i in range(3):
+            s = store.create(golaxy_uuid=f"u{i}", initiating_user_id=1)
+            s.consumed = True  # simulate several completed logins in a row
 
         with pytest.raises(ScanRateLimited):
             store.check_capacity(1)
@@ -163,8 +265,9 @@ class TestScanSessionCapF5:
         from katrain.web.platforms.golaxy.scan_login import ScanRateLimited
 
         store = ScanSessionStore(ttl_seconds=300.0, max_per_user=2)
-        store.create(golaxy_uuid="u1", initiating_user_id=1)
-        store.create(golaxy_uuid="u2", initiating_user_id=1)
+        for i in range(2):
+            s = store.create(golaxy_uuid=f"u{i}", initiating_user_id=1)
+            s.consumed = True
         with pytest.raises(ScanRateLimited):
             store.create(golaxy_uuid="u3", initiating_user_id=1)
         assert len(store._sessions) == 2
@@ -172,12 +275,18 @@ class TestScanSessionCapF5:
     def test_expired_sessions_do_not_count_against_the_cap(self):
         store = ScanSessionStore(ttl_seconds=300.0, max_per_user=2)
         s1 = store.create(golaxy_uuid="u1", initiating_user_id=1)
+        s1.consumed = True
         s1.expires_at = time.time() - 86400
-        store.create(golaxy_uuid="u2", initiating_user_id=1)
+        s2 = store.create(golaxy_uuid="u2", initiating_user_id=1)
+        s2.consumed = True
         # s1 is expired -> only 1 LIVE session for user 1 -> room for one more.
         store.create(golaxy_uuid="u3", initiating_user_id=1)
 
     def test_scan_start_endpoint_returns_429_once_rate_limited(self, monkeypatch):
+        """The only realistic way to reach this now is several successful
+        (consumed) logins already sitting in the store — pre-seeded here
+        rather than driven through repeated `scan/start` calls, since those
+        would just supersede each other (see `TestScanSessionSupersedeF5`)."""
         import katrain.web.platforms.golaxy.scan_login as scan_login_mod
 
         call_count = {"n": 0}
@@ -189,15 +298,17 @@ class TestScanSessionCapF5:
         monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "start", fake_start)
 
         app = _build_app(FakeManager())
-        app.state.golaxy_scan_sessions = ScanSessionStore(max_per_user=2)
+        store = ScanSessionStore(max_per_user=2)
+        for i in range(2):
+            s = store.create(golaxy_uuid=f"prior-{i}", initiating_user_id=1)
+            s.consumed = True
+        app.state.golaxy_scan_sessions = store
         client = _client_with_user(app, _CurrentUser(1))
 
-        assert client.post("/api/v1/platforms/golaxy/scan/start").status_code == 200
-        assert client.post("/api/v1/platforms/golaxy/scan/start").status_code == 200
         r = client.post("/api/v1/platforms/golaxy/scan/start")
         assert r.status_code == 429
-        # The rejected attempt must not have cost a Golaxy call.
-        assert call_count["n"] == 2
+        # Rejected by check_capacity BEFORE ever calling Golaxy.
+        assert call_count["n"] == 0
 
 
 # --------------------------------------------------------------------------- #
@@ -511,27 +622,13 @@ class TestScanPlatformValidationF4:
     `ValueError` -> unhandled 500; against a REGISTERED-but-wrong platform
     (e.g. "ogs"), it would make a real network call with empty credentials.
     Fixed by recording `platform` on `ScanSession` and checking it before
-    ANY manager call, plus a `ValueError` backstop as defense in depth."""
+    ANY manager call, plus a `ValueError` backstop as defense in depth.
 
-    @staticmethod
-    def _forbid_golaxy_network(monkeypatch):
-        """Every test in this class exists to prove a REJECTION happens
-        before any downstream call — so if the rejection is ever mutated
-        away, the code must not be allowed to fall through to a real network
-        call to Golaxy either. Explosive stand-ins double as a second,
-        independent signal on top of the status-code assertion, and (the
-        actual point) guarantee these tests can never egress for real."""
-        import katrain.web.platforms.golaxy.scan_login as scan_login_mod
+    Relies on the module's autouse `_forbid_real_golaxy_network` fixture for
+    network safety under mutation — no per-test opt-in needed (that used to
+    be a `staticmethod` helper here; superseded, see team-lead ruling ③)."""
 
-        async def explode(self, *a, **kw):
-            raise AssertionError("must not call Golaxy — the platform check should have rejected first")
-
-        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "start", explode)
-        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "poll", explode)
-        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "username", explode)
-
-    def test_state_for_a_mismatched_platform_is_404_not_leaked(self, monkeypatch):
-        self._forbid_golaxy_network(monkeypatch)
+    def test_state_for_a_mismatched_platform_is_404_not_leaked(self):
         app = _build_app(FakeManager())
         _seeded_store(app, initiating_user_id=1)  # creates a "golaxy" session
         scan_id = next(iter(app.state.golaxy_scan_sessions._sessions))
@@ -540,9 +637,8 @@ class TestScanPlatformValidationF4:
         r = client.get(f"/api/v1/platforms/ogs/scan/state?scan_id={scan_id}")
         assert r.status_code == 404
 
-    def test_confirm_for_an_unregistered_platform_is_400_not_500(self, monkeypatch):
+    def test_confirm_for_an_unregistered_platform_is_400_not_500(self):
         """Mirrors the review's P3 probe."""
-        self._forbid_golaxy_network(monkeypatch)
         manager = RaisingManager()
         app = _build_app(manager)
         _seeded_store(app, initiating_user_id=1, state=ScanState.CONFIRMED)
@@ -553,12 +649,11 @@ class TestScanPlatformValidationF4:
         assert r.status_code == 404  # session.platform mismatch catches it first
         assert manager.connect_calls == []
 
-    def test_confirm_for_a_registered_but_different_platform_never_calls_it(self, monkeypatch):
+    def test_confirm_for_a_registered_but_different_platform_never_calls_it(self):
         """The scarier half of F4: "ogs" IS a registered platform, so without
         the `session.platform` check this would reach a REAL
         `connect_platform("ogs", ...)` with empty credentials, not just a
         ValueError."""
-        self._forbid_golaxy_network(monkeypatch)
         manager = FakeManager()
         app = _build_app(manager)
         _seeded_store(app, initiating_user_id=1, state=ScanState.CONFIRMED)  # golaxy session

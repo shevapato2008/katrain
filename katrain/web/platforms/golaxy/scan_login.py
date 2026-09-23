@@ -192,16 +192,47 @@ class ScanSessionStore:
         already has `MAX_SESSIONS_PER_USER` live ones — WITHOUT creating
         anything. Callers should call this BEFORE making the (real, costs a
         Golaxy request) `scan/code` call, so a rate-limited caller never pays
-        for an outbound request that's going to be discarded anyway; `create`
-        re-checks the same condition as a defense-in-depth backstop against
-        a race between this check and the eventual `create()` call."""
+        for an outbound request that's going to be discarded anyway.
+
+        This is a BACKSTOP, not the primary defense — see `_supersede_unconsumed`
+        on `create()` below (team-lead ruling ①, this round). Under normal use
+        (repeatedly hitting "换一张") a caller should never actually reach this
+        cap: each new `create()` retires the same user's previous unconsumed
+        session first, so at most one unconsumed session per user ever
+        accumulates. This only fires for genuinely abnormal cases — e.g. a
+        user who has completed several successful (consumed) logins in quick
+        succession, since consumed sessions are deliberately NOT superseded
+        (their cached result may still be legitimately replayed by a
+        network-retried confirm)."""
         self._sweep_expired()
         live_for_user = sum(1 for s in self._sessions.values() if s.initiating_user_id == initiating_user_id)
         if live_for_user >= self._max_per_user:
             raise ScanRateLimited(initiating_user_id)
 
+    def _supersede_unconsumed(self, user_id: int) -> None:
+        """F5 (team-lead ruling ①): a new scan_start from the SAME user makes
+        any of their own not-yet-consumed sessions obsolete immediately — the
+        old QR code is orphaned the moment a new one is drawn, and nothing on
+        the kiosk screen lets the user act on a stale one anyway.
+
+        This is the PRIMARY defense against the session table growing under
+        normal use, deliberately NOT the `MAX_SESSIONS_PER_USER` cap: a hard
+        cap with no supersede would eventually trap a user who just keeps
+        clicking "换一张" behind a 429 with nothing on screen they could do
+        about it — the same dead-end shape as the D2 finding (a message
+        telling someone to disconnect when the disconnect button only
+        renders once connected). Consumed sessions are left alone so a
+        network-retried confirm can still replay its cached result."""
+        stale_ids = [sid for sid, s in self._sessions.items() if s.initiating_user_id == user_id and not s.consumed]
+        for sid in stale_ids:
+            del self._sessions[sid]
+
     def create(self, *, golaxy_uuid: str, initiating_user_id: int, platform: str = "golaxy") -> ScanSession:
-        self.check_capacity(initiating_user_id)
+        self._sweep_expired()
+        self._supersede_unconsumed(initiating_user_id)
+        live_for_user = sum(1 for s in self._sessions.values() if s.initiating_user_id == initiating_user_id)
+        if live_for_user >= self._max_per_user:
+            raise ScanRateLimited(initiating_user_id)
         scan_id = _uuid.uuid4().hex
         session = ScanSession(
             scan_id=scan_id,

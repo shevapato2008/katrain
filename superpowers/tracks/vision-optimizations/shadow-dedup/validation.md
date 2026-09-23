@@ -94,3 +94,55 @@ The `r16c5`/`r16c6` cluster (items 2 and 3, identical counts and identical image
 3. 一个区分量的读数（样本很少，仅供判断方向）：只被新条款并掉的框，离最近交叉点的距离（格）——
    09-23 白天那局 12 帧（视差校正后）共 36 个影子框，最小 0.45、中位 0.55；
    kifu_24171 被误并的真白子框（3 帧，未做视差校正）是 0.04–0.08。
+
+## 第二版：去影子一步（2026-09-23）
+
+### 数据来源
+
+同第一版：`$SCR/dets_labelled.json`（`$SCR=/tmp/shadow-labelled.kezv`）是板上用 `go4_s.rknn` 对 209 张标注图导出的去重前原始框；`$SCR/labels` 是配套的 YOLO 标注。
+
+### 「旧」与「新」
+
+- 旧：`dedup_detections`（`katrain/vision/stone_detector.py`）单独一步，不带影子处理。
+- 新：`dedup_detections` 之后再加 `BoardStateExtractor.drop_shadow_boxes`（`katrain/vision/board_state.py`）。
+- 两者都取自工作树 PYTHONPATH 上的代码，HEAD `51faae2a`（`feat(vision): drop a stone's shadow box after dedup, in the board state`）。
+
+### Step 2 自检（09-23 白天那局 12 帧，`truth_board.json` 已知答案，视差校正开）
+
+Run 1（`--expect-images 12 --parallax 19.612,9.0,0.989689`）：
+
+```
+images 12 (expected 12)  labelled stones 1296  recall(old) 1.0000
+parallax on 19.612,9.0,0.989689  SHADOW_MIN_OFFSET 0.35
+label-matched boxes, cells from their point: p50 0.12 p90 0.23 p99 0.34 p99.9 0.35 max 0.36  (at or above the threshold: 2)
+boxes the shadow step dropped: 36, of which label-matched before: 0 []
+labels the shadow step costs: 0 []
+labels that lose their correct-colour box: 0 []
+VERDICT: PASS  (valid: images == expected and recall >= 0.95; pass: no label lost or recoloured by the shadow step)
+```
+
+Run 2（刻意错误的 `--expect-images 13`，只取末行）：
+
+```
+VERDICT: INVALID  (valid: images == expected and recall >= 0.95; pass: no label lost or recoloured by the shadow step)
+```
+
+两次读数都与计划里记录的原型实测值一致（`images 12 ... recall(old) 1.0000`、`p50 0.12 p90 0.23 p99 0.34 p99.9 0.35 max 0.36`、`dropped 36 / label-matched before 0`、代价 0、颜色 0、`VERDICT: PASS`；第二次 `VERDICT: INVALID`）。进入 Step 3。
+
+### Step 3：209 张标注集完整跑
+
+命令：`PYTHONPATH=. PYTHONDONTWRITEBYTECODE=1 uv run python superpowers/tracks/vision-optimizations/shadow-dedup/measure_shadow_step.py $SCR/dets_labelled.json $SCR/labels --expect-images 209`
+
+```
+images 209 (expected 209)  labelled stones 21178  recall(old) 0.9997
+parallax off  SHADOW_MIN_OFFSET 0.35
+label-matched boxes, cells from their point: p50 0.18 p90 0.28 p99 0.35 p99.9 0.38 max 0.46  (at or above the threshold: 200)
+boxes the shadow step dropped: 0, of which label-matched before: 0 []
+labels the shadow step costs: 0 []
+labels that lose their correct-colour box: 0 []
+VERDICT: PASS  (valid: images == expected and recall >= 0.95; pass: no label lost or recoloured by the shadow step)
+```
+
+`VERDICT: PASS`
+
+结果与计划里记录的原型实测值一致（`recall(old) 0.9997`、`p50 0.18 p90 0.28 p99 0.35 p99.9 0.38 max 0.46`、`dropped 0`、代价 0、颜色 0、`VERDICT: PASS`）：209 张标注图的去重后原始框里，没有一个框够远离交叉点、又和另一个框重叠到会被 `drop_shadow_boxes` 判成影子——这一步在这个标注集上零删除，因此对真子框零代价。

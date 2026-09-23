@@ -1969,8 +1969,9 @@ def test_manual_relocate_refuses_when_the_camera_is_not_ready():
     service.stop()
 
 
-def test_relocation_does_not_count_one_stale_frame_three_times():
-    """同一个 seq 只算一帧:否则外框法的帧间抖动读成 0,置信度虚高到 1.0。"""
+def test_relocation_refuses_a_stalled_camera_instead_of_aligning_to_its_stale_frame():
+    """连着但卡住的相机:三次 grab_fresh 都是同一个 seq。去重之后只剩那一帧旧图(可能早于碰动)——
+    拿它对齐会把旧位置报成 ready。健康的相机三次必是三帧新图 ⇒ 少于两帧就拒绝,选择器都不许调。"""
     seen = []
 
     class _CountingSelector(_FakeSelector):
@@ -1978,11 +1979,15 @@ def test_relocation_does_not_count_one_stale_frame_three_times():
             seen.append(len(ctx.frames))
             return super().calibrate(scenario, ctx)
 
-    service, _calls = _relocating_service(
+    service, calls = _relocating_service(
         selector=_CountingSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded", capture=_StalledCamera()
     )
-    service.relocate(trigger="manual")
-    assert seen == [1]
+    with pytest.raises(ValueError, match="camera_stalled"):
+        service.relocate(trigger="manual")
+    assert seen == []
+    assert calls.success == []
+    assert service.status()["phase"] == "degraded"
+    assert service.status()["relocate_error"] == "camera_stalled"
     service.stop()
 
 

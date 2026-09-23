@@ -717,6 +717,10 @@ class GeometryCalibrationService:
             return None, "no_frame"
         if not frames:
             return None, "no_frame"
+        if len(frames) < 2:
+            # 三次 grab_fresh 只拿到一个 seq = 相机卡住(连着但不出新帧),那一帧是超时退回的旧图,
+            # 可能早于碰动。拿它对齐会把旧位置当新位置报 ready —— 健康的相机三次必是三帧新图。
+            return None, "camera_stalled"
         height, width = frames[0].shape[:2]
         ctx = CalibrationContext(
             frames=frames, board=None, geometry=lock, led=None, capture=self.capture, out_size=int(lock.out_size)

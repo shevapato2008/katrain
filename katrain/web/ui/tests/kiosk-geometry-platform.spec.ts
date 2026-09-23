@@ -28,14 +28,16 @@ const LEVELS = {
   })),
 };
 
-/** 完整 boot —— 不许留「同 fourup spec」这种占位:占位会让下一个人自己编一套,两处量的不是同一个页面。 */
-async function boot(page: Page, opts: { camera: boolean }) {
+/** 完整 boot —— 不许留「同 fourup spec」这种占位:占位会让下一个人自己编一套,两处量的不是同一个页面。
+ * `lang` 默认 `cn`(既有测试不用改调用点);内容类断言要传别的语种量。 */
+async function boot(page: Page, opts: { camera: boolean; lang?: string }) {
+  const lang = opts.lang ?? 'cn';
   await freezeClock(page);
-  await page.addInitScript(() => {
+  await page.addInitScript((l) => {
     localStorage.setItem('token', 'geom');
-    localStorage.setItem('katrain_language', 'cn');
-  });
-  await stubBackendStatics(page);
+    localStorage.setItem('katrain_language', l);
+  }, lang);
+  await stubBackendStatics(page, lang);
   await page.route('**/api/v1/auth/me', (r) => r.fulfill({ json: { id: 1, username: '访客', rank: '20k', credits: 0 } }));
   await page.route('**/api/v1/platforms/status', (r) => r.fulfill({
     json: { platforms: [{ platform: 'golaxy', connected: true, saved_username: 'fan',
@@ -52,34 +54,49 @@ async function boot(page: Page, opts: { camera: boolean }) {
   await page.waitForLoadState('networkidle');
 }
 
-test('屏 09 最坏内容量下,整条链上没有任何一层在滚', async ({ page }) => {
-  // 摄像头不可用 ⇒ 多一行提示,这是内容最多的那一态。
-  await boot(page, { camera: false });
+/**
+ * **2026-09-23 修复轮 3:按语种参数化。** 之前只在 `cn` 下量过 ——
+ * `.kiosk-opthint` 是定高的(`tokens.css:720-722`,`height`/`line-height` 同一个
+ * token),译文一折行,第二行被静默裁掉,屏上看不出来。`de`/`fr`/`ru` 的
+ * `platform:engine_fixed_hint`/`setup:no_camera_hint` 字符数是中文的 3–5 倍
+ * (量过,见 `task-3-report.md`「德文下的版面」一节)。至少覆盖 `cn`(基线)和
+ * `de`(最长的那个语种)× 两态摄像头,四组。
+ *
+ * ⚠️ **德文那几组预期会红 —— 不要为了让它们变绿去改产品代码或放松断言。**
+ * 这是一个语种维度的版面缺口,是产品决定(换两行高的提示行 / 缩短译文 / 别的),
+ * 不是这条闸的作者能现场定的;闸的任务是把数字如实量出来,交给人裁。
+ */
+for (const lang of ['cn', 'de'] as const) {
+  for (const camera of [true, false] as const) {
+    test(`屏 09 最坏内容量下,整条链上没有任何一层在滚(lang=${lang} camera=${camera})`, async ({ page }) => {
+      await boot(page, { camera, lang });
 
-  const m = await page.evaluate(() => {
-    const scroll = document.querySelector('.kiosk-side__scroll') as HTMLElement;
-    // 从滚动容器一路往上数到 .kiosk-screen —— 同一条链上可以有不止一处断点,
-    // 只量最里面那一层,外面某一层在滚照样绿。
-    const chain: { sel: string; sh: number; ch: number }[] = [];
-    let el: HTMLElement | null = scroll;
-    while (el && !el.classList.contains('kiosk-screen')) {
-      chain.push({
-        sel: el.className || el.tagName,
-        sh: el.scrollHeight, ch: el.clientHeight,
+      const m = await page.evaluate(() => {
+        const scroll = document.querySelector('.kiosk-side__scroll') as HTMLElement;
+        // 从滚动容器一路往上数到 .kiosk-screen —— 同一条链上可以有不止一处断点,
+        // 只量最里面那一层,外面某一层在滚照样绿。
+        const chain: { sel: string; sh: number; ch: number }[] = [];
+        let el: HTMLElement | null = scroll;
+        while (el && !el.classList.contains('kiosk-screen')) {
+          chain.push({
+            sel: el.className || el.tagName,
+            sh: el.scrollHeight, ch: el.clientHeight,
+          });
+          el = el.parentElement;
+        }
+        const rail = document.querySelector('.kiosk-rail') as HTMLElement;
+        return { chain, railH: rail.clientHeight, viewportH: scroll.clientHeight };
       });
-      el = el.parentElement;
-    }
-    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
-    return { chain, railH: rail.clientHeight, viewportH: scroll.clientHeight };
-  });
-  console.log('[geom 09 chain]', JSON.stringify(m, null, 1));
+      console.log(`[geom 09 chain lang=${lang} camera=${camera}]`, JSON.stringify(m, null, 1));
 
-  expect(m.railH).toBe(516);          // tokens.css:69 --content-h-l2
-  expect(m.viewportH).toBe(400);      // 516 − 44 页控条 − 12 − 12 − 48 主按钮
-  for (const n of m.chain) {
-    expect(n.sh, `${n.sel} 在滚`).toBeLessThanOrEqual(n.ch);
+      expect(m.railH).toBe(516);          // tokens.css:69 --content-h-l2
+      expect(m.viewportH).toBe(400);      // 516 − 44 页控条 − 12 − 12 − 48 主按钮
+      for (const n of m.chain) {
+        expect(n.sh, `${n.sel} 在滚(lang=${lang} camera=${camera})`).toBeLessThanOrEqual(n.ch);
+      }
+    });
   }
-});
+}
 
 /**
  * 滚动条拇指没被 `.kiosk-rail { position: relative }` 挪走。
@@ -110,40 +127,52 @@ test('屏 09 滚动条:不溢出态应撤条(当前实现下这一态达不到,�
   expect(m.barDisplay).toBe('none');
 });
 
-/** 「溢出贴顶」这一支——拇指顶边应贴着滚动区顶边,不受 `.kiosk-rail` 的 `position:relative` 影响。 */
-test('屏 09 滚动条:溢出态下拇指顶边贴着滚动区顶边', async ({ page }) => {
-  await boot(page, { camera: false });
-  const m = await page.evaluate(() => {
-    const scroll = document.querySelector('.kiosk-side__scroll') as HTMLElement;
-    const bar = document.querySelector('.kiosk-scrollbar') as HTMLElement;
-    const scrollBox = scroll.getBoundingClientRect();
-    const barBox = bar.getBoundingClientRect();
-    return {
-      overflow: scroll.scrollHeight - scroll.clientHeight,
-      barDisplay: getComputedStyle(bar).display,
-      scrollTop: scrollBox.top,
-      barTop: barBox.top,
-      offsetParentClass: scroll.offsetParent ? (scroll.offsetParent as HTMLElement).className : null,
-    };
-  });
-  console.log('[geom 09 scrollbar overflowing]', JSON.stringify(m));
-  expect(m.overflow, '这一态没有溢出 ⇒ 下面这条测的不是「溢出贴顶」那一支').toBeGreaterThan(0);
-  expect(m.barDisplay).not.toBe('none');
-  expect(Math.abs(m.barTop - m.scrollTop), '拇指顶边偏离滚动区顶边').toBeLessThan(1);
-});
+/**
+ * 「溢出贴顶」这一支 —— **2026-09-23 修复轮 3 退役,不留代码,只留这段记录。**
+ *
+ * 退役理由三件事:
+ *
+ * ① **对象已经不存在。** 修复轮 1/2 把这一屏的留白按设计源收紧之后(`.inputgrp`
+ *    padding、`.setgrp` 段间距、`.aiplate`/`.twocol` 逐字对齐设计稿),摄像头不可用态
+ *    (39 档 + 最长档名 + 多一行提示 —— 这一屏能造出的最坏内容量)下
+ *    `.kiosk-side__scroll` 的 `scrollHeight === clientHeight === 400`。这一屏**没有任何
+ *    一种真实数据组合会溢出**了,「溢出态」这个前提本身不再成立,退役这条测的不是
+ *    「功能坏了」,是「它要守的那个状态屏上到不了」。
+ *
+ * ② **它当初要守的风险已被证伪。** 这条测试存在的理由写在上面 `:98` 那条测试之前的
+ *    注释里:`.kiosk-rail { position: relative }`(仅这一屏的作用域覆盖,`go-screens.css`)
+ *    可能把滚动条拇指的定位祖先从 `.kiosk-side` 换成 `.kiosk-rail`,从而挪动拇指位置。
+ *    Task 4 报告(`task-4-report.md` §3 变异②)实测推翻了这个前提:`.kiosk-side`
+ *    (`tokens.css:510`)自己早就是 `position: relative`,是比 `.kiosk-rail` 更近的
+ *    定位祖先,`scrollSync.ts:38` 读的 `scroll.offsetTop` 由它决定 ——
+ *    `.kiosk-rail` 那条作用域覆盖对这一屏的拇指位置**不是决定性的**。理由没了,
+ *    对象也没了,两条都站不住,没有理由再留着造数据去凑。
+ *
+ * ③ **如果以后要守「拇指贴顶」这个行为,该守在一个真会滚的屏上。** 屏 02(自由对弈
+ *    · 开局设置)是这一屏的姊妹屏,右栏内容量比这一屏大,是真溢出的 —— 新的拇指贴顶
+ *    测试应该长在那一屏的几何闸里,不是在这一屏人为造一个产品到不了的状态。
+ *
+ * **不允许的做法**:为了让这条断言变绿而放宽 `LEVELS`/档名去制造溢出 —— 那是在测
+ * 一个产品实际达不到的状态,比没有这条闸更坏(闸会一直绿,却守着一件不会发生的事)。
+ */
 
 /** `.kiosk-opthint` 定高(`tokens.css:720-722` height/line-height 同一个 token),文案换行会被静默裁掉。 */
-test('屏 09 提示行不被裁切 —— 摄像头可用/不可用两种文案都要测(更长的那句才是真边界)', async ({ page }) => {
-  for (const camera of [true, false]) {
-    await boot(page, { camera });
-    const hint = await page.evaluate(() => {
-      const el = document.querySelector('[data-testid="setup-input-hint"]') as HTMLElement;
-      return { scrollWidth: el.scrollWidth, clientWidth: el.clientWidth, text: el.textContent };
-    });
-    console.log(`[geom 09 hint camera=${camera}]`, JSON.stringify(hint));
-    expect(hint.scrollWidth, `提示行被裁切:「${hint.text}」`).toBeLessThanOrEqual(hint.clientWidth);
-  }
-});
+/** 按语种参数化,理由和上面那组链测试同一段注释。cn/de × 摄像头可用/不可用,四组。
+ * ⚠️ 德文那两组预期会红 —— 报数,不修。 */
+for (const lang of ['cn', 'de'] as const) {
+  test(`屏 09 提示行不被裁切(lang=${lang})—— 摄像头可用/不可用两种文案都要测(更长的那句才是真边界)`, async ({ page }) => {
+    for (const camera of [true, false]) {
+      await boot(page, { camera, lang });
+      const hint = await page.evaluate(() => {
+        const el = document.querySelector('[data-testid="setup-input-hint"]') as HTMLElement;
+        return { scrollWidth: el.scrollWidth, clientWidth: el.clientWidth, text: el.textContent };
+      });
+      console.log(`[geom 09 hint lang=${lang} camera=${camera}]`, JSON.stringify(hint));
+      expect(hint.scrollWidth, `提示行被裁切(lang=${lang} camera=${camera}):「${hint.text}」`)
+        .toBeLessThanOrEqual(hint.clientWidth);
+    }
+  });
+}
 
 test('39 档面板:完整落在右栏内、与棋盘无交集、轨的四角都被盖住、手指拨得动', async ({ page }) => {
   await boot(page, { camera: true });

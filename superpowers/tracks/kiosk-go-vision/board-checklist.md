@@ -19,25 +19,13 @@
   组件本身删掉了(PRD §3 Z3;组件当前仍在 `katrain/web/ui/src/kiosk/components/physical/PoseLostBanner.tsx`,
   只有自己的测试消费,验证过零生产消费者)。下面第 3 项「人工出口」按 `RecalibrationModal` 重写。
 - **「`SET_GEOMETRY` 子进程缺失」**(原 `acceptance-checklist.md` 「实机验收前必读的已知限制」段)——
-  账本给出的删除理由是「盒上走 `InProcessAdapter`,不成立」。**本次复核有出入,记在这里以免被当成
-  已解决**:
-  - `katrain/web/server.py:4329` `process_mode="worker" if settings.KATRAIN_MODE == "board" else "inprocess"`
-    —— 盒上(`KATRAIN_MODE=="board"`)选的其实是 `"worker"`,即子进程 `VisionWorkerProcess`
-    (`katrain/vision/worker.py`),**不是** `InProcessAdapter`(`katrain/vision/worker_inprocess.py`,
-    那是非 board 模式走的路)。
-  - `katrain/vision/worker.py:666-763` 的 `_process_commands` 逐条核过,确认**没有**
-    `CommandType.SET_GEOMETRY` 分支(对照 `katrain/vision/worker_inprocess.py:1161-1162` 有)。
-  - `GeometryCalibrationService` 的 `on_success` 回调 `promote_geometry`
-    (`katrain/web/server.py:855-861`,注册在 `:891`)在**每次标定成功后**(不只是服务启动时)
-    都调用 `vision_service.set_geometry(lock)` → `VisionService.set_geometry`
-    (`katrain/vision/service.py:182-184`)把 `SET_GEOMETRY` 命令发进 worker 的命令队列——盒上这条
-    队列的消费端(`worker.py`)读不懂这个命令,新几何在这条路径上不会落到正在跑的子进程里。
-  - 连带确认:本清单第 2 项判据①要看的 `vision parallax auto: nadir=(…)` 日志,整段视差自动推导
-    逻辑(`mount_parallax_for_lock`)**只写在** `worker_inprocess.py:277-298` 里,`worker.py`
-    完全没有——即使 `SET_GEOMETRY` 被接住,盒上子进程也不会打这行日志。
-  - 这不是本任务范围内的代码修复,**本次不重新把它列为清单条目**;但如果第 2 项判据①在真机上
-    始终不出现,先查这里,不要当成识别本身出问题。`worker.py` / `worker_inprocess.py` 两套并行
-    实现互相漏功能,是这条代码库里已经见过的坑。
+  过期,不成立:盒上走的是 `InProcessAdapter`,不是子进程 `VisionWorkerProcess`(`worker.py`)。
+  `katrain/web/server.py:744-757` 里 `VisionService(vision_config, frame_source=camera_hub)`
+  总是带着 `frame_source`;`katrain/vision/service.py:42-45` 的判断
+  `if self._config.process_mode == "inprocess" or self._frame_source is not None:` 只要
+  `frame_source` 非空就选中 `InProcessAdapter`,`server.py:4329` 的 `process_mode="worker"` 在盒上
+  从未真正生效。`InProcessAdapter`(`worker_inprocess.py`)本身有 `SET_GEOMETRY` 分支
+  (`:1161-1162`),这条旧发现不适用。
 
 ---
 
@@ -72,12 +60,11 @@
   为假,已在 `katrain/vision/calibration_strategy.py:29,32-33` 存在,重定位绝不亮灯)。对局中。
 - **操作**:推动棋盘约 1 格(别拿子),观察屏幕与日志。
 - **判据**(2026-09-23 补,三条都用 develop 已经在打的日志,不另造量具):
-  1. `journalctl` 里 `vision parallax auto: nadir=(…)`(打点位置见上面「已删除的过期项」第二条的
-     连带确认,若始终不出现先查那里)在重定位前后是**同一条边**(这台盒子 col 18 那条,
-     nadir ≈ (19.61, 9.0));屏上不该进标定台。
+  1. `journalctl` 里 `vision parallax auto: nadir=(…)`(打点在 `katrain/vision/worker_inprocess.py:293`)
+     在重定位前后是**同一条边**(这台盒子 col 18 那条,nadir ≈ (19.61, 9.0));屏上不该进标定台。
   2. 从推盘到新锁生效这段窗口里,**棋谱里没有进任何一手幻影落子**(PRD §2.1 R3,
      「不挂起识别」的代价在这里量)。
-  3. 重定位后 ≥ 30 手,`board delta:` 行(`katrain/vision/worker.py:607`)里 `@<距离>` 的中位数
+  3. 重定位后 ≥ 30 手,`board delta:` 行(`katrain/vision/worker_inprocess.py:587`)里 `@<距离>` 的中位数
      照实记下,与 LED 锁下的数(09-22 那局 0.150 格,`superpowers/tracks/vision-optimizations/README.md:48`)
      并排写 —— **只记录、不当开关判据**,30 手中位数自己就有噪声。
 - **记录**:①的边名/坐标、②有没有幻影落子、③中位数,三项都写回本节。

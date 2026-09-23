@@ -976,6 +976,11 @@ EOF
 
 **承重触发判断（反查）：** 把这次改动撤回去，右栏内容的高度来源会不会变？**会**——删了两段、加了一个 `position:absolute` 的覆盖层、给 `.kiosk-rail` 加了 `position:relative`。⇒ **触发，必须量。**
 
+> ⚠️ **按哪种语言量：「一屏放得下」隐含着「用哪种语言」这个前提，而它从来没被写下来。**
+> 实测（2026-09-23）同一句提示 `cn` 35 字符、**`de` 119 字符**、`fr` 111、`ru` 113 —— 三倍差。
+> 凡是承诺「不滚 / 一行 / 装得下」的屏，**至少量 `cn` 和 `de` 两种**（德文通常最长）。
+> 只量中文，等于给另外十个语种发一张没验过的通行证 —— 而那十个语种的译文是已经做完并入库的，不是假想。
+
 **要量的清单**（先写死关系式，再读数；具体像素只记录不作判据）：
 
 | 量什么 | 关系式期望 |
@@ -987,7 +992,7 @@ EOF
 | 覆盖层不盖盘 | 面板 border box 完整落在 `.kiosk-rail` 的裁切框内，与 `.kiosk-board` 无交集 |
 | 面板自己能滚 | 39 档时面板 body `scrollHeight > clientHeight`；派发一次**真实触摸**拖动，`scrollTop` 变化不为 0 |
 | **滚动条拇指没被 `position:relative` 挪走** | 不溢出时 `bar.style.display === 'none'`（`syncScrollbar` 早返回那一支）；溢出时拇指顶边与滚动区顶边之差 < 1px。**理由见 Task 2 那段警告**：`scrollSync.ts:38` 读 `scroll.offsetTop`，而 `offsetTop` 随 `offsetParent` 变 |
-| **提示行没被静默裁掉** | `.kiosk-opthint` 是**定高**（`tokens.css:720-722`，`height` 与 `line-height` 同值）⇒ 折行的第二行会被吃掉，屏上看不出来。断言 `el.scrollWidth <= el.clientWidth`。**两种内容都要量**：摄像头可用那句和不可用那句，长的那句才是边界 |
+| **提示行装得下** | ⚠️ **量纵轴，不是横轴。** 我最初写的是 `scrollWidth <= clientWidth` —— 那条**恒真**：`.kiosk-opthint` 是 `white-space: normal`，它不横向溢出，它**折行**。正确判据是 `el.scrollHeight <= el.clientHeight`。实测（2026-09-23）：中文 16/16 通过，德文 `clientHeight=16` / `scrollHeight=32`，而 `overflow: visible` ⇒ 第二行**不是被裁掉，是画到盒子外面**压在下面留白上，撞没撞到下一段全看剩多少余量 —— 那是巧合不是保证。**四种组合都要量**：{摄像头可用, 不可用} × {cn, de} |
 
 - [ ] **Step 1: 写几何闸**
 

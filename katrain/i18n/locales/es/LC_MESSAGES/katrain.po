@@ -3898,10 +3898,10 @@ msgid "setup:my_side"
 msgstr "Mi color"
 
 msgid "setup:take_black"
-msgstr "Jugar con negras"
+msgstr "Negras"
 
 msgid "setup:take_white"
-msgstr "Jugar con blancas"
+msgstr "Blancas"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -5805,6 +5805,15 @@ msgstr "Elo mostrado {v}"
 msgid "platform:ref_rank"
 msgstr "equivale a {r}"
 
+msgid "platform:level_sheet"
+msgstr "Todos los niveles de fuerza"
+
+msgid "platform:close"
+msgstr "Cerrar"
+
+msgid "platform:plate_aria"
+msgstr "Oponente actual {name} {level}, {rung}; toca para ver todos"
+
 msgid "platform:rank_is_theirs"
 msgstr "El rango es de {name}"
 
@@ -6740,9 +6749,15 @@ msgid "growth:unknown_seat_a"
 msgstr "Partidas fuera del porcentaje: "
 
 msgid "growth:unknown_seat_b"
+msgstr " — partidas cara a cara y partidas sin tu color registrado."
+
+msgid "setup:handicap_side"
+msgstr "Hándicap · Mi color"
+
+msgid "platform:engine_fixed_hint"
 msgstr ""
-" — partidas cara a cara, partidas importadas y partidas sin tu color "
-"registrado."
+"{name} humano contra IA está fijado en 19x19 · reglas chinas; la pantalla y "
+"el tablero físico comparten el mismo canal"
 
 msgid "baipu:calib_running_sub"
 msgstr ""
@@ -6927,3 +6942,9 @@ msgstr ""
 
 msgid "kifu:wrong_size_reason"
 msgstr "Es una partida de {n}×{n}: el tablero físico solo admite 19×19"
+
+msgid "engine:warmup_warming"
+msgstr "El motor de IA se está preparando — mientras tanto puedes usar la biblioteca de partidas, los cursos y otras funciones"
+
+msgid "engine:warmup_unavailable"
+msgstr "El motor de IA aún no está listo — inténtalo de nuevo más tarde"

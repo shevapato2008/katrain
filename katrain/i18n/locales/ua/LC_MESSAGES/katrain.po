@@ -4052,10 +4052,10 @@ msgid "setup:my_side"
 msgstr "Мій колір"
 
 msgid "setup:take_black"
-msgstr "Грати чорними"
+msgstr "Чорні"
 
 msgid "setup:take_white"
-msgstr "Грати білими"
+msgstr "Білі"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -5934,6 +5934,16 @@ msgstr "Показаний Elo {v}"
 msgid "platform:ref_rank"
 msgstr "приблизно {r}"
 
+msgid "platform:level_sheet"
+msgstr "Усі рівні сили"
+
+msgid "platform:close"
+msgstr "Закрити"
+
+msgid "platform:plate_aria"
+msgstr ""
+"Поточний суперник {name} {level}, {rung}; торкніться, щоб побачити всіх"
+
 msgid "platform:rank_is_theirs"
 msgstr "Ранг належить {name}"
 
@@ -6857,7 +6867,7 @@ msgid "growth:unknown_seat_a"
 msgstr "Партій не враховано у відсотку перемог: "
 
 msgid "growth:unknown_seat_b"
-msgstr " — очні партії, імпортовані записи та партії без записаного кольору."
+msgstr " — очні партії та партії без записаного кольору."
 
 msgid "baipu:calib_running_sub"
 msgstr ""
@@ -7036,3 +7046,19 @@ msgstr ""
 
 msgid "kifu:wrong_size_reason"
 msgstr "Це кіфу {n}×{n} — на справжній дошці можна розкласти лише 19×19"
+
+msgid "setup:handicap_side"
+msgstr "Фора · Мій колір"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} людина проти ШІ фіксовано на 19x19 · китайські правила; екран і "
+"справжня дошка використовують один канал"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Двигун ШІ готується — поки що можна користуватися бібліотекою партій, "
+"курсами та іншими функціями"
+
+msgid "engine:warmup_unavailable"
+msgstr "Двигун ШІ ще не готовий — спробуйте пізніше"

@@ -30,6 +30,14 @@ class BoxSSOState:
     def __init__(self, bridge_key_path: str):
         self.bridge_key_path = Path(bridge_key_path)
         self.active_generation: int | None = None
+        # Which local user_id this box generation was activated for -- set by
+        # bootstrap/guest-bootstrap, read (and cleared) by the endpoint layer
+        # on box_sso_clear so it can release that user's platform connections
+        # (see PlatformManager.release_user). None if never set (e.g. a box
+        # running an older client, or a generation activated before this was
+        # added) -- the caller must treat that as "nothing to release", not
+        # guess a user.
+        self.active_user_id: int | None = None
         self._sockets: set[Any] = set()
 
     def authorize_bridge(self, client_host: str | None, presented_key: str | None) -> bool:
@@ -41,12 +49,27 @@ class BoxSSOState:
             return False
         return bool(expected) and hmac.compare_digest(expected, presented_key)
 
-    async def activate(self, generation: int) -> None:
+    async def activate(self, generation: int, user_id: int | None = None) -> None:
+        """换一代 = 换一个人。**代号只许往前走。**
+
+        代号是上一个人的凭据失效的唯一依据(`validates` 只认当前这一代)。倒退或复用一个代号,
+        等于把上一个人的 cookie 重新变成有效的 —— 那个人还能读到现在这个人的成长数据。
+
+        今天 launcher 发的代号是 `max(持久高水位, 上一代) + 1`(smartbox-software
+        `setup-wizard/app/services/box_identity.py`),严格递增。但那是**另一个仓**的行为:
+        这里不该把自己的安全性建在它身上,闸要建在操作数所在的这一侧。
+
+        ⚠️ `active_generation` 只在内存里:服务一重启它就是 None,此时任何正整数都接受
+        (重启已经让所有旧 cookie 失效了,没有可被复活的东西)。
+        """
         if isinstance(generation, bool) or generation <= 0:
             raise ValueError("generation must be a positive integer")
+        if self.active_generation is not None and generation < self.active_generation:
+            raise ValueError("generation must not go backwards")
         if self.active_generation is not None and generation != self.active_generation:
             await self._close_sockets("Box generation replaced")
         self.active_generation = generation
+        self.active_user_id = user_id
 
     def validates(self, generation: Any) -> bool:
         return (
@@ -65,6 +88,7 @@ class BoxSSOState:
         if not self.validates(generation):
             return False
         self.active_generation = None
+        self.active_user_id = None
         await self._close_sockets("Box session revoked")
         return True
 

@@ -4067,10 +4067,10 @@ msgid "setup:my_side"
 msgstr "Meine Farbe"
 
 msgid "setup:take_black"
-msgstr "Schwarz nehmen"
+msgstr "Schwarz"
 
 msgid "setup:take_white"
-msgstr "Weiß nehmen"
+msgstr "Weiß"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -5979,6 +5979,15 @@ msgstr "Angezeigtes Elo {v}"
 msgid "platform:ref_rank"
 msgstr "etwa {r}"
 
+msgid "platform:level_sheet"
+msgstr "Alle Stärkestufen"
+
+msgid "platform:close"
+msgstr "Schließen"
+
+msgid "platform:plate_aria"
+msgstr "Aktueller Gegner {name} {level}, {rung}; antippen für alle"
+
 msgid "platform:rank_is_theirs"
 msgstr "Der Rang gehört zu {name}"
 
@@ -6919,8 +6928,7 @@ msgstr "Nicht in der Siegquote gezählt: "
 
 msgid "growth:unknown_seat_b"
 msgstr ""
-" — Partien von Angesicht zu Angesicht, importierte Partien und Partien ohne "
-"erfasste Farbe."
+" — Partien von Angesicht zu Angesicht und Partien ohne erfasste Farbe."
 
 msgid "baipu:calib_running_sub"
 msgstr ""
@@ -7100,3 +7108,19 @@ msgstr ""
 
 msgid "kifu:wrong_size_reason"
 msgstr "Das ist ein {n}×{n}-Kifu — das echte Brett kann nur 19×19"
+
+msgid "setup:handicap_side"
+msgstr "Vorgabe · Meine Farbe"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} Mensch-gegen-KI ist fest auf 19x19 · chinesische Regeln; Bildschirm "
+"und echtes Brett teilen sich denselben Kanal"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Die KI-Engine wird vorbereitet — Partiesammlung, Kurse und andere Funktionen"
+" sind schon verfügbar"
+
+msgid "engine:warmup_unavailable"
+msgstr "Die KI-Engine ist noch nicht bereit — bitte später erneut versuchen"

@@ -4040,10 +4040,10 @@ msgid "setup:my_side"
 msgstr "Ma couleur"
 
 msgid "setup:take_black"
-msgstr "Prendre Noir"
+msgstr "Noir"
 
 msgid "setup:take_white"
-msgstr "Prendre Blanc"
+msgstr "Blanc"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -5955,6 +5955,15 @@ msgstr "Elo affiché {v}"
 msgid "platform:ref_rank"
 msgstr "équivaut à {r}"
 
+msgid "platform:level_sheet"
+msgstr "Tous les niveaux de force"
+
+msgid "platform:close"
+msgstr "Fermer"
+
+msgid "platform:plate_aria"
+msgstr "Adversaire actuel {name} {level}, {rung} ; toucher pour tout voir"
+
 msgid "platform:rank_is_theirs"
 msgstr "Le niveau appartient à {name}"
 
@@ -6891,8 +6900,8 @@ msgstr "Parties hors du taux de victoire : "
 
 msgid "growth:unknown_seat_b"
 msgstr ""
-" — parties en face à face, parties importées et parties dont la couleur n'a "
-"pas été enregistrée."
+" — parties en face à face et parties dont la couleur n'a pas été "
+"enregistrée."
 
 msgid "baipu:calib_running_sub"
 msgstr ""
@@ -7079,3 +7088,19 @@ msgstr ""
 
 msgid "kifu:wrong_size_reason"
 msgstr "C'est un kifu {n}×{n} — le plateau réel n'accepte que le 19×19"
+
+msgid "setup:handicap_side"
+msgstr "Handicap · Ma couleur"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} humain contre IA est fixé au 19x19 · règles chinoises ; l'écran et le"
+" goban réel partagent le même canal"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Le moteur d'IA se prépare — vous pouvez déjà utiliser la bibliothèque de "
+"parties, les cours et d'autres fonctions"
+
+msgid "engine:warmup_unavailable"
+msgstr "Le moteur d'IA n'est pas encore prêt — veuillez réessayer plus tard"

@@ -5580,6 +5580,15 @@ msgstr "展示 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "对标{r}"
 
+msgid "platform:level_sheet"
+msgstr "全部棋力档"
+
+msgid "platform:close"
+msgstr "收起"
+
+msgid "platform:plate_aria"
+msgstr "当前对手 {name} {level}，{rung}；点开看全部"
+
 msgid "platform:rank_is_theirs"
 msgstr "段位是 {name} 那边的"
 
@@ -6473,7 +6482,7 @@ msgid "growth:unknown_seat_a"
 msgstr "有 "
 
 msgid "growth:unknown_seat_b"
-msgstr " 局没算进胜率：面对面、导入的谱，以及没记下你执黑还是执白的局。"
+msgstr " 局没算进胜率：面对面的局，以及没记下你执黑还是执白的局。"
 
 msgid "baipu:calib_running_sub"
 msgstr "标定也在用灯 · 跑完或取消后直接进摆谱"
@@ -6624,3 +6633,15 @@ msgstr "这台盒子现在连不上云端。摆过的谱和导入的 SGF 不受�
 
 msgid "kifu:wrong_size_reason"
 msgstr "这是 {n} 路的谱 —— 实体盘只摆得了 19 路"
+
+msgid "setup:handicap_side"
+msgstr "让子 · 我执"
+
+msgid "platform:engine_fixed_hint"
+msgstr "{name}人机固定 19 路 · 中国规则，屏幕和实体盘走同一条隧道"
+
+msgid "engine:warmup_warming"
+msgstr "AI 引擎准备中，可先使用棋谱、课程等功能"
+
+msgid "engine:warmup_unavailable"
+msgstr "AI 引擎暂未就绪，可稍后重试"

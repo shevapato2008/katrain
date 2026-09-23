@@ -28,6 +28,15 @@ const RAIL_ROUTES = ['/kiosk/play', '/kiosk/tsumego', '/kiosk/kifu', '/kiosk/tut
  * (那层 `<Box overflow:auto>` 会让 434 高的两栏在自己里面再滚一次)。
  */
 const SELF_LAYOUT_ROUTES = ['/kiosk/report', '/kiosk/settings'];
+
+/**
+ * `EngineWarmupBanner` 报的是**本地 KataGo** 的就绪状态。跨平台这几屏(`/kiosk/play/
+ * cross-platform/**`)打的是**远端平台的 bot**(星阵是 REST genmove 隧道)——领地/
+ * 支招/变化图同样走这条远端隧道,跟本地引擎无关。留着它会让用户合理地读成
+ * 「引擎没好,我现在不能开局」,压掉不损失任何真实信息。
+ * **判据只写在这一处** —— banner 自己不重复判,别处也不再判一次。
+ */
+const ENGINE_BANNER_SUPPRESSED_PREFIX = '/kiosk/play/cross-platform';
 interface KioskLayoutProps { username?: string }
 
 const KioskShell = ({ username }: KioskLayoutProps) => {
@@ -38,6 +47,7 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
   // 一个真相来源:Dock 出不出、中间区 434 还是 516、主页键给不给,全从这一个数派生。
   const level = dockLevelOf(location.pathname);
   const showRail = level === 1 && RAIL_ROUTES.includes(location.pathname);
+  const showEngineBanner = !location.pathname.startsWith(ENGINE_BANNER_SUPPRESSED_PREFIX);
 
   return (
     <KioskFrame
@@ -61,7 +71,8 @@ const KioskShell = ({ username }: KioskLayoutProps) => {
       ) : undefined}
       // Temporary engine startup feedback belongs to the fixed canvas overlay layer,
       // not to the permanent device-status cluster inside KioskTopbar.
-      extras={<EngineWarmupBanner />}
+      // 跨平台子树不传 —— 它报的是本地引擎,那几屏打的是远端平台,见上面的注释。
+      extras={showEngineBanner ? <EngineWarmupBanner /> : undefined}
     >
       {/* ⚠️ `.kiosk-layout-l1` 是 `grid-template-columns: 296px 680px`(tokens.css:430),
           **右栏由页面自己提供根节点** —— `<Outlet/>` 渲染出来的那一层就是第二列。

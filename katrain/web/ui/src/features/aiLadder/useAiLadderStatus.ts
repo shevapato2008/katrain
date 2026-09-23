@@ -32,7 +32,14 @@ export const aiLadderStatusErrorMessage = (error: unknown): string => {
  */
 export const AI_LADDER_BLOCKED_REFRESH_MS = 15_000;
 
-export const useAiLadderStatus = (token?: string, enabled = true) => {
+/**
+ * `identity`:**「现在这一屏是谁的」**。严格盒端 `token` 恒为 null(身份走 cookie),
+ * 只拿 token 当依赖 ⇒ 换人之后这个 hook 不会重取,屏上留着上一个人的段位。
+ * 今天盒子上换身份必然走 launcher 整页跳转、组件重挂,所以看不出来;
+ * 哪天身份在应用内部就能切,这里就会显示别人的数。传一个稳定的身份键(`user.uuid`)把它钉死。
+ * 不传 = 与从前完全一致(galaxy 那几处调用方就不传)。
+ */
+export const useAiLadderStatus = (token?: string, enabled = true, identity?: string | null) => {
   const [status, setStatus] = useState<AiLadderStatus>({ view_state: 'loading' });
   const generation = useRef(0);
   const activeRequest = useRef<AbortController | null>(null);
@@ -54,7 +61,8 @@ export const useAiLadderStatus = (token?: string, enabled = true) => {
       if (controller.signal.aborted || generation.current !== requestGeneration) return;
       setStatus({ view_state: 'error', message: aiLadderStatusErrorMessage(error) });
     }
-  }, [enabled, token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- identity 不进回调体,它只负责「换人就重取」
+  }, [enabled, token, identity]);
 
   /**
    * 后台复查:只在**答案会在用户不动的情况下改变**的那一屏上跑,而那一屏只有一个——
@@ -82,7 +90,8 @@ export const useAiLadderStatus = (token?: string, enabled = true) => {
     } catch {
       // 见上:背景复查失败保持原样,不把用户赶出一个正确的屏。
     }
-  }, [enabled, token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- identity 不进回调体,它只负责「换人就重取」
+  }, [enabled, token, identity]);
 
   useEffect(() => {
     if (!enabled || !blocked) return undefined;

@@ -5724,6 +5724,15 @@ msgstr "展示 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "對標{r}"
 
+msgid "platform:level_sheet"
+msgstr "全部棋力檔"
+
+msgid "platform:close"
+msgstr "收合"
+
+msgid "platform:plate_aria"
+msgstr "目前對手 {name} {level}，{rung}；點開看全部"
+
 msgid "platform:rank_is_theirs"
 msgstr "段位是 {name} 那邊的"
 
@@ -6617,7 +6626,7 @@ msgid "growth:unknown_seat_a"
 msgstr "有 "
 
 msgid "growth:unknown_seat_b"
-msgstr " 局沒算進勝率：面對面、匯入的譜，以及沒記下你執黑還是執白的局。"
+msgstr " 局沒算進勝率：面對面的局，以及沒記下你執黑還是執白的局。"
 
 msgid "baipu:calib_running_sub"
 msgstr "標定也在用燈 · 跑完或取消後直接進擺譜"
@@ -6768,3 +6777,15 @@ msgstr "這台盒子現在連不上雲端。擺過的譜和匯入的 SGF 不受�
 
 msgid "kifu:wrong_size_reason"
 msgstr "這是 {n} 路的譜 —— 實體盤只擺得了 19 路"
+
+msgid "setup:handicap_side"
+msgstr "讓子 · 我執"
+
+msgid "platform:engine_fixed_hint"
+msgstr "{name}人機固定 19 路 · 中國規則，螢幕和實體盤走同一條隧道"
+
+msgid "engine:warmup_warming"
+msgstr "AI 引擎準備中，可先使用棋譜、課程等功能"
+
+msgid "engine:warmup_unavailable"
+msgstr "AI 引擎暫未就緒，可稍後重試"

@@ -251,6 +251,10 @@ def _real_manager_with_engine_game(session_id="sess-real", game_id="golaxy-engin
     pm = PlatformManager(session_manager=None)
     adapter = RealAdapterStub()
     pm._adapters["golaxy"] = adapter
+    # Task 4.5: golaxy is "owned" by _User (id=1) below — require_platform_owner
+    # now gates this endpoint, so a real PlatformManager with no recorded owner
+    # would 403 every request here.
+    pm._platform_user_ids["golaxy"] = _User.id
     pm._session_to_game[session_id] = game_id
     pm._active_games[game_id] = PlatformGameContext(
         session_id=session_id, platform="golaxy", remote_game_id=game_id, is_engine=is_engine

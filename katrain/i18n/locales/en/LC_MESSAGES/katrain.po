@@ -4015,10 +4015,10 @@ msgid "setup:my_side"
 msgstr "My colour"
 
 msgid "setup:take_black"
-msgstr "Take Black"
+msgstr "Black"
 
 msgid "setup:take_white"
-msgstr "Take White"
+msgstr "White"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -5916,6 +5916,15 @@ msgstr "Displayed Elo {v}"
 msgid "platform:ref_rank"
 msgstr "about {r}"
 
+msgid "platform:level_sheet"
+msgstr "All strength levels"
+
+msgid "platform:close"
+msgstr "Close"
+
+msgid "platform:plate_aria"
+msgstr "Current opponent {name} {level}, {rung}; tap to see all"
+
 msgid "platform:rank_is_theirs"
 msgstr "The rank belongs to {name}"
 
@@ -6846,9 +6855,15 @@ msgid "growth:unknown_seat_a"
 msgstr "Games not counted in the win rate: "
 
 msgid "growth:unknown_seat_b"
+msgstr " — face-to-face games and games where your color wasn't recorded."
+
+msgid "setup:handicap_side"
+msgstr "Handicap · Colour"
+
+msgid "platform:engine_fixed_hint"
 msgstr ""
-" — face-to-face games, imported records, and games where your color wasn't "
-"recorded."
+"{name} human-vs-AI is fixed at 19x19 · Chinese rules; the screen and the "
+"real board share the same tunnel"
 
 msgid "baipu:calib_running_sub"
 msgstr ""
@@ -7027,3 +7042,11 @@ msgstr ""
 
 msgid "kifu:wrong_size_reason"
 msgstr "This is a {n}×{n} record — the physical board only takes 19×19"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"AI engine is warming up — you can use Game Records, Courses and other "
+"features for now"
+
+msgid "engine:warmup_unavailable"
+msgstr "AI engine is not ready yet — please try again later"

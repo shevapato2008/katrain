@@ -3973,10 +3973,10 @@ msgid "setup:my_side"
 msgstr "Мой цвет"
 
 msgid "setup:take_black"
-msgstr "Играть чёрными"
+msgstr "Чёрные"
 
 msgid "setup:take_white"
-msgstr "Играть белыми"
+msgstr "Белые"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -5858,6 +5858,15 @@ msgstr "Показанный Elo {v}"
 msgid "platform:ref_rank"
 msgstr "примерно {r}"
 
+msgid "platform:level_sheet"
+msgstr "Все уровни силы"
+
+msgid "platform:close"
+msgstr "Закрыть"
+
+msgid "platform:plate_aria"
+msgstr "Текущий соперник {name} {level}, {rung}; нажмите, чтобы увидеть всех"
+
 msgid "platform:rank_is_theirs"
 msgstr "Ранг принадлежит {name}"
 
@@ -6781,8 +6790,15 @@ msgid "growth:unknown_seat_a"
 msgstr "Партий не учтено в проценте побед: "
 
 msgid "growth:unknown_seat_b"
+msgstr " — очные партии и партии без записанного цвета."
+
+msgid "setup:handicap_side"
+msgstr "Фора · Мой цвет"
+
+msgid "platform:engine_fixed_hint"
 msgstr ""
-" — очные партии, импортированные записи и партии без записанного цвета."
+"{name} человек против ИИ зафиксировано на 19x19 · китайские правила; экран и"
+" реальная доска используют один канал"
 
 msgid "baipu:calib_running_sub"
 msgstr ""
@@ -6962,3 +6978,11 @@ msgstr ""
 
 msgid "kifu:wrong_size_reason"
 msgstr "Это кифу {n}×{n} — на настоящей доске можно разложить только 19×19"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Движок ИИ готовится — пока можно пользоваться библиотекой партий, курсами и "
+"другими функциями"
+
+msgid "engine:warmup_unavailable"
+msgstr "Движок ИИ ещё не готов — повторите попытку позже"

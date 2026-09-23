@@ -289,6 +289,29 @@ def _guest_row_has_data(repo: Any, user_id: int) -> bool:
         session.close()
 
 
+async def _activate_and_release_previous_user(request: Request, state: Any, generation: int, new_user_id: int) -> None:
+    """Wraps `state.activate(...)`, releasing the PREVIOUS box user's platform
+    connections if this bootstrap is handing the box to someone else.
+
+    `state.activate` itself already tears down the previous generation's
+    WebSockets when a generation is replaced WITHOUT a prior `box-sso/clear`
+    (`BoxSSOState.activate`'s "Box generation replaced" branch) -- but until
+    this function existed, that branch never released `_platform_user_ids`.
+    The result: the next box user would hit `PlatformBusyError` (HTTP 409,
+    "去设置里断开后再登录") for a platform connection they have NO way to
+    reach, because `/status` correctly reports it as not theirs and the
+    disconnect button only renders when it IS theirs -- a dead end until the
+    service restarts. See `box_sso_clear`'s matching release, which only
+    covers the "clear was called first" path.
+    """
+    prior_user_id = state.active_user_id
+    await state.activate(generation, user_id=new_user_id)
+    if prior_user_id is not None and prior_user_id != new_user_id:
+        platform_manager = getattr(request.app.state, "platform_manager", None)
+        if platform_manager is not None:
+            await platform_manager.release_user(prior_user_id)
+
+
 def _require_bridge(request: Request) -> Any:
     if not strict_box_sso_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -299,6 +322,19 @@ def _require_bridge(request: Request) -> Any:
     return state
 
 
+def _reject_generation_regress(state, generation: int) -> None:
+    """代号只许往前走 —— 而且要**在写任何状态之前**判。
+
+    倒退或复用一个代号会让上一个人的 cookie 重新有效(`BoxSSOState.validates` 只认当前这一代),
+    那个人就能读到现在这个人的成长数据。`activate` 自己也挡(那是最后一道),
+    但它排在 `set_tokens` / `bind_user` 之后 —— 在那里抛就正好留下
+    「云端 token 已经是新人的、代号还是旧人的」这个错配窗口。所以这里先判。
+    """
+    active = state.active_generation
+    if active is not None and generation < active:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="generation must not go backwards")
+
+
 @router.post("/box-sso/bootstrap")
 async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     state = _require_bridge(request)
@@ -306,6 +342,7 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid generation")
     if not body.username.strip() or not body.remote_access_token or not body.remote_refresh_token:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid bootstrap payload")
+    _reject_generation_regress(state, body.generation)
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is None:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Board client unavailable")
@@ -317,7 +354,7 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     # Tie the cloud session to this local user so per-user queued work (rank events)
     # can tell whose session is currently up on a shared board.
     remote_client.bind_user(shadow_user["id"])
-    await state.activate(body.generation)
+    await _activate_and_release_previous_user(request, state, body.generation, shadow_user["id"])
     local_access = create_access_token(data={"sub": shadow_user["username"]}, box_generation=body.generation)
     return {"access_token": local_access, "token_type": "bearer"}
 
@@ -325,11 +362,20 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
 @router.post("/box-sso/clear")
 async def box_sso_clear(request: Request, body: BoxClearRequest) -> Any:
     state = _require_bridge(request)
+    # Capture BEFORE clear() wipes it -- clear() resets active_user_id to None
+    # as part of tearing the generation down.
+    released_user_id = state.active_user_id
     if not await state.clear(body.generation):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stale generation")
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is not None:
         remote_client.clear_tokens()
+    # Release this user's platform connections (see auth/logout's non-strict
+    # counterpart) so the next box user doesn't hit a 409 trying to log into
+    # a platform the PREVIOUS box user was using.
+    platform_manager = getattr(request.app.state, "platform_manager", None)
+    if platform_manager is not None and released_user_id is not None:
+        await platform_manager.release_user(released_user_id)
     return {"ok": True}
 
 
@@ -341,6 +387,7 @@ async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest)
     """
     state = _require_bridge(request)
     generation = _validate_guest_bootstrap_generation(body.generation)
+    _reject_generation_regress(state, generation)
     repo = request.app.state.user_repo
     existing = repo.get_user_by_username(GUEST_USERNAME)
     if existing is not None:
@@ -355,7 +402,7 @@ async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest)
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is not None and hasattr(remote_client, "clear_tokens"):
         remote_client.clear_tokens()
-    await state.activate(generation)
+    await _activate_and_release_previous_user(request, state, generation, shadow_user["id"])
     return {
         "access_token": create_access_token(
             data={"sub": shadow_user["username"]}, box_generation=generation
@@ -525,6 +572,16 @@ async def logout(request: Request, response: Response, current_user: User = Depe
     from katrain.web.session import SessionManager, LobbyManager
 
     _clear_loopback_sso_cookie(request, response)
+
+    # Release any platform (星阵/OGS/...) connections this user holds on the
+    # shared box's ONE global adapter-per-platform, without deleting their
+    # saved credentials -- see PlatformManager.release_user. Otherwise the
+    # next person to log into this box hits a 409 "someone else is connected"
+    # trying to log into a platform THIS user was using, with nothing on
+    # screen explaining why.
+    platform_manager = getattr(request.app.state, "platform_manager", None)
+    if platform_manager is not None:
+        await platform_manager.release_user(current_user.id)
 
     # Board mode: clear remote tokens + delete credential file (design 5.4)
     remote_client = getattr(request.app.state, "remote_client", None)

@@ -5679,6 +5679,15 @@ msgstr "표시 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "{r} 수준"
 
+msgid "platform:level_sheet"
+msgstr "전체 기력 단계"
+
+msgid "platform:close"
+msgstr "닫기"
+
+msgid "platform:plate_aria"
+msgstr "현재 상대 {name} {level}, {rung}; 눌러서 전체 보기"
+
 msgid "platform:rank_is_theirs"
 msgstr "기력은 {name} 쪽 것입니다"
 
@@ -6580,7 +6589,7 @@ msgid "growth:unknown_seat_a"
 msgstr "승률에 넣지 않은 대국 "
 
 msgid "growth:unknown_seat_b"
-msgstr "국: 대면 대국, 가져온 기보, 흑백이 기록되지 않은 대국입니다."
+msgstr "국: 대면 대국과 흑백이 기록되지 않은 대국입니다."
 
 msgid "baipu:calib_running_sub"
 msgstr "보정도 불빛을 쓰고 있습니다 · 끝나거나 취소되면 바로 기보 놓기로 들어갑니다"
@@ -6731,3 +6740,15 @@ msgstr "이 기기는 지금 클라우드에 연결할 수 없습니다. 놓아 
 
 msgid "kifu:wrong_size_reason"
 msgstr "{n}줄 기보입니다 — 실물 바둑판은 19줄만 놓을 수 있습니다"
+
+msgid "setup:handicap_side"
+msgstr "접바둑 · 내 돌"
+
+msgid "platform:engine_fixed_hint"
+msgstr "{name} 인간 대 AI는 19줄 고정 · 중국 룰, 화면과 실물 바둑판은 같은 경로를 씁니다"
+
+msgid "engine:warmup_warming"
+msgstr "AI 엔진 준비 중입니다. 기보 라이브러리, 강좌 등 다른 기능은 먼저 사용하실 수 있습니다"
+
+msgid "engine:warmup_unavailable"
+msgstr "AI 엔진이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요"

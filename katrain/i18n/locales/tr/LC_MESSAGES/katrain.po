@@ -4073,10 +4073,10 @@ msgid "setup:my_side"
 msgstr "Benim rengim"
 
 msgid "setup:take_black"
-msgstr "Siyahı al"
+msgstr "Siyah"
 
 msgid "setup:take_white"
-msgstr "Beyazı al"
+msgstr "Beyaz"
 
 msgid "setup:no_camera_hint"
 msgstr "Bu cihazda kalibre kamera yok, gerçek tahta şu an kullanılamaz"
@@ -5954,6 +5954,15 @@ msgstr "Gösterilen Elo {v}"
 msgid "platform:ref_rank"
 msgstr "yaklaşık {r}"
 
+msgid "platform:level_sheet"
+msgstr "Tüm güç seviyeleri"
+
+msgid "platform:close"
+msgstr "Kapat"
+
+msgid "platform:plate_aria"
+msgstr "Mevcut rakip {name} {level}, {rung}; tümünü görmek için dokun"
+
 msgid "platform:rank_is_theirs"
 msgstr "Derece {name} tarafına aittir"
 
@@ -6880,9 +6889,15 @@ msgid "growth:unknown_seat_a"
 msgstr "Kazanma oranına sayılmayan oyun: "
 
 msgid "growth:unknown_seat_b"
+msgstr " — yüz yüze oyunlar ve renginizin kaydedilmediği oyunlar."
+
+msgid "setup:handicap_side"
+msgstr "Avans · Benim rengim"
+
+msgid "platform:engine_fixed_hint"
 msgstr ""
-" — yüz yüze oyunlar, içe aktarılan kayıtlar ve renginizin kaydedilmediği "
-"oyunlar."
+"{name} insan-yapay zeka 19x19'a sabit · Çin kuralları; ekran ve gerçek tahta"
+" aynı kanalı kullanır"
 
 msgid "baipu:calib_running_sub"
 msgstr ""
@@ -7059,3 +7074,12 @@ msgstr ""
 
 msgid "kifu:wrong_size_reason"
 msgstr "Bu {n}×{n} bir kayıt — gerçek tahta yalnızca 19×19 alır"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Yapay zekâ motoru hazırlanıyor — bu sırada Oyun Kayıtları, Dersler ve diğer "
+"özellikleri kullanabilirsiniz"
+
+msgid "engine:warmup_unavailable"
+msgstr ""
+"Yapay zekâ motoru henüz hazır değil — lütfen daha sonra tekrar deneyin"

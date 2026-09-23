@@ -262,6 +262,49 @@ class TestGeometryEndpoint:
         assert response.status_code == 409
         assert response.json()["detail"] == "geometry_not_available"
 
+    def test_relocate_returns_status(self):
+        class FakeCalibration:
+            def relocate(self, *, trigger):
+                assert trigger == "manual"
+                return {"phase": "ready", "session_calibrated": True}
+
+        app, c = _client()
+        app.state.geometry_calibration = FakeCalibration()
+
+        response = c.post("/geometry/relocate")
+
+        assert response.status_code == 200
+        assert response.json()["phase"] == "ready"
+
+    def test_relocate_conflicts_while_calibrating(self):
+        from katrain.web.core.geometry_calibration_service import CalibrationBusy
+
+        class BusyCalibration:
+            def relocate(self, *, trigger):
+                raise CalibrationBusy("geometry calibration already running")
+
+        app, c = _client()
+        app.state.geometry_calibration = BusyCalibration()
+
+        assert c.post("/geometry/relocate").status_code == 409
+
+    def test_relocate_reports_a_reason_when_the_frame_has_no_board(self):
+        class NoBoardCalibration:
+            def relocate(self, *, trigger):
+                raise ValueError("no_board_detected")
+
+        app, c = _client()
+        app.state.geometry_calibration = NoBoardCalibration()
+
+        response = c.post("/geometry/relocate")
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "no_board_detected"
+
+    def test_relocate_returns_404_without_calibration_service(self):
+        _, c = _client()
+        assert c.post("/geometry/relocate").status_code == 404
+
 
 def test_stream_interval_throttles_only_during_active_calibration():
     # The raw preview drops to ~2fps while a calibration is running so its JPEG

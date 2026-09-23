@@ -21,11 +21,14 @@ import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationS
 const startCalibration = vi.fn();
 const cancelCalibration = vi.fn();
 const confirmExisting = vi.fn();
+const relocate = vi.fn();
 let status: GeometryStatus;
 let loaded = true;
 
 vi.mock('../context/GeometryContext', () => ({
-  useGeometry: () => ({ status, loaded, startCalibration, cancelCalibration, confirmExisting, refresh: vi.fn() }),
+  useGeometry: () => ({
+    status, loaded, startCalibration, cancelCalibration, confirmExisting, relocate, refresh: vi.fn(),
+  }),
 }));
 
 vi.mock('../../api/geometryApi', async (importOriginal) => {
@@ -236,6 +239,35 @@ describe('屏 26 棋盘标定', () => {
     renderScreen();
     expect(within(acts()).getByRole('button', { name: '沿用上次标定' })).toBeDisabled();
     expect(screen.getByText(/棋盘挪动过/)).toBeInTheDocument();
+  });
+
+  it('degraded 时出现「对齐外框」,点它调 relocate', async () => {
+    relocate.mockResolvedValue(undefined);
+    status = { ...status, phase: 'degraded', last_valid: true };
+    renderScreen();
+    fireEvent.click(within(acts()).getByRole('button', { name: /对齐外框/ }));
+    await waitFor(() => expect(relocate).toHaveBeenCalledTimes(1));
+  });
+
+  it('ready 时不出现「对齐外框」—— 没坏就不给修的键', () => {
+    status = {
+      ...status, phase: 'ready', session_calibrated: true, last_valid: true,
+      capabilities: { ...status.capabilities, geometry_ready: true },
+    };
+    renderScreen();
+    expect(screen.queryByRole('button', { name: /对齐外框/ })).toBeNull();
+  });
+
+  // degraded 与 failed 各一条:这两态的诊断卡原本就被占着,失败原因最容易被它盖掉
+  it.each(['degraded', 'failed'] as const)('%s 下对齐外框失败,屏上给原因,不被原来那张诊断卡盖掉', async (phase) => {
+    relocate.mockRejectedValue(new Error('geometry relocate failed 400: no_board_detected'));
+    status = {
+      ...status, phase, last_valid: true,
+      error: phase === 'failed' ? 'anchor_not_found:3,15' : 'board_moved',
+    };
+    renderScreen();
+    fireEvent.click(within(acts()).getByRole('button', { name: /对齐外框/ }));
+    expect(await screen.findByText(/找不到棋盘外框/)).toBeInTheDocument();
   });
 
   /**

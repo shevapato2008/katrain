@@ -147,6 +147,25 @@ async def geometry_confirm_existing(request: Request):
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
+@router.post("/relocate")
+async def geometry_relocate(request: Request):
+    """外框重定位(不亮灯,盘上有子也能跑)。漂移或取消之后的人工出口。"""
+    calibration = getattr(request.app.state, "geometry_calibration", None)
+    if calibration is None:
+        raise HTTPException(status_code=404, detail="geometry calibration not enabled")
+    from katrain.web.core.geometry_calibration_service import CalibrationBusy  # 与 /calibrate 同一种写法
+
+    try:
+        # 三帧取图 + 三次外框检测是 OpenCV 重活:放进线程,别卡住事件循环(同文件 /lock 也这么做,:276)。
+        # RK3562 上同步跑会把状态轮询和别的 API 一起冻住。
+        return await asyncio.to_thread(calibration.relocate, trigger="manual")
+    except CalibrationBusy as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        # 找不到外框 / 朝向分不清 / 挪得太远 / 此刻不在可用的三态 —— 是这次请求做不到,不是服务坏了。
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.get("/stream")
 async def geometry_stream(request: Request, scale: int = 1):
     capture = _get_capture(request)

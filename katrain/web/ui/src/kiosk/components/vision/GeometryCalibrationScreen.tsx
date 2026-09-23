@@ -67,7 +67,7 @@ const ACTIVE_PHASES = new Set(['waiting_empty', 'dark_reference', 'flashing_corn
 const GTP_LETTERS = 'ABCDEFGHJKLMNOPQRSTUVWXYZ';
 const gtpPoint = (row: number, col: number) => `${GTP_LETTERS[col] ?? '?'}${19 - row}`;
 
-interface Diagnostic { title: string; body: string; action: string; detail?: string }
+interface Diagnostic { title: string; body: string; action: string; detail?: string; kind?: 'relocate' }
 
 /**
  * 「失败时给**诊断**不给『重试』」是稿子写在屏上的承诺。兑现它的方式是失败那一刻出现的是
@@ -130,7 +130,7 @@ export interface GeometryCalibrationScreenProps {
 export function GeometryCalibrationScreen({
   backLabel, onBack, title, sub, requireRecognition = false,
 }: GeometryCalibrationScreenProps) {
-  const { status, loaded, startCalibration, confirmExisting, cancelCalibration } = useGeometry();
+  const { status, loaded, startCalibration, confirmExisting, cancelCalibration, relocate } = useGeometry();
   const { t } = useTranslation();
 
   const [layout, setLayout] = useState<GeometryLayout | null>(null);
@@ -140,6 +140,8 @@ export function GeometryCalibrationScreen({
   const [actionError, setActionError] = useState<string | null>(null);
   const [layoutError, setLayoutError] = useState<string | null>(null);
   const [manualView, setManualView] = useState<'raw' | 'warped' | null>(null);
+  const [relocating, setRelocating] = useState(false);
+  const [relocateError, setRelocateError] = useState<string | null>(null);
 
   const phase = status.phase;
   const active = ACTIVE_PHASES.has(phase);
@@ -221,6 +223,25 @@ export function GeometryCalibrationScreen({
       setStarting(false);
     }
   };
+
+  const handleRelocate = async () => {
+    setRelocating(true);
+    setRelocateError(null);
+    try {
+      await relocate();
+    } catch (err) {
+      // 失败要说话。最常见的一种是外框被人挡住 / 画面太暗,说得出来用户才知道怎么办。
+      setRelocateError(
+        err instanceof Error && /no_board_detected/.test(err.message)
+          ? t('vision:relocate_no_board', '画面里找不到棋盘外框，挪开挡住边框的东西再试一次。')
+          : t('vision:relocate_failed', '再试一次；一直不行就清空棋盘重新标定。'),
+      );
+    } finally {
+      setRelocating(false);
+    }
+  };
+
+  useEffect(() => { setRelocateError(null); }, [phase]);
 
   // ── 四步的状态 ─────────────────────────────────────────────────────────────
   //
@@ -352,10 +373,13 @@ export function GeometryCalibrationScreen({
     : confirmingManual ? '已清空，确认重新标定'
       : '重新开始标定';
 
-  const diagnostic: Diagnostic | null = failed ? buildDiagnostic(status.error)
-    : phase === 'degraded' ? buildDiagnostic('board_moved')
-      : actionError ? { title: '操作没有生效', body: actionError, action: '再试一次；一直不行就检查摄像头和灯带的接线。' }
-        : null;
+  // 刚按的「对齐外框」没成,排在最前;原来那条链接在它后面,一字不改。
+  const diagnostic: Diagnostic | null = relocateError
+    ? { kind: 'relocate', title: t('vision:relocate_failed_title', '没对上'), body: relocateError, action: '' }
+    : failed ? buildDiagnostic(status.error)
+      : phase === 'degraded' ? buildDiagnostic('board_moved')
+        : actionError ? { title: '操作没有生效', body: actionError, action: '再试一次；一直不行就检查摄像头和灯带的接线。' }
+          : null;
 
   const preview: ReactNode = view === 'raw' ? (
     <GeometryVideoPanel
@@ -434,10 +458,10 @@ export function GeometryCalibrationScreen({
 
           <KioskScrollZone grow className="calib-scroll">
             {diagnostic && (
-              <div className="empty calib-diag" data-testid="geometry-diagnostic-card">
+              <div className="empty calib-diag" data-testid="geometry-diagnostic-card" data-kind={diagnostic.kind ?? 'status'}>
                 <h4>{diagnostic.title}</h4>
                 <p>{diagnostic.body}</p>
-                <p><b>{diagnostic.action}</b></p>
+                {diagnostic.action && <p><b>{diagnostic.action}</b></p>}
                 {diagnostic.detail && <p className="calib-diag__raw">{diagnostic.detail}</p>}
               </div>
             )}
@@ -492,7 +516,7 @@ export function GeometryCalibrationScreen({
                * 运行中**整行只有一颗**「取消标定」。
                *
                * 稿子这里做不到 —— 它只画了一个静止帧,在任何状态下都是那两颗键,而运行中那两颗
-               * **一颗都不成立**:「沿用上次标定」要 `phase ∈ {required,failed}`(否则服务端
+               * **一颗都不成立**:「沿用上次标定」要 `phase ∈ {required,failed,cancelled}`(否则服务端
                * `ValueError`),「重新开始标定」会撞 `CalibrationBusy` → 409。照画就是两颗按不动的键。
                *
                * 不能丢:13 个锚点、每个都要 clear→拍→点亮→拍,是分钟级的。中途发现盘上还有子
@@ -513,6 +537,22 @@ export function GeometryCalibrationScreen({
               </button>
             ) : (
               <>
+                {/* 盘被碰动之后的出口。**不亮灯、不要求空盘** —— 13 点流程要清盘,
+                    而这颗键存在的理由正是盘上有子(对局进行到一半)。
+                    只在真的需要时出现:ready 态不给「修」的键。 */}
+                {(phase === 'degraded' || phase === 'cancelled' || failed) && status.last_valid && (
+                  <button
+                    type="button"
+                    className="kiosk-btn kiosk-btn--secondary"
+                    data-testid="calib-relocate"
+                    disabled={!cameraReady || relocating}
+                    onClick={() => void handleRelocate()}
+                  >
+                    {relocating
+                      ? t('vision:relocating', '正在对齐…')
+                      : t('vision:relocate', '对齐外框')}
+                  </button>
+                )}
                 {/* `last_valid` 为假 = **从来没成功标定过** ⇒ 这颗键不渲染,主行动满宽。
                     「没有上一次可沿用」屏上已经有三处在说(状态格「未标定」、四步全「未开始」、
                     主键满宽),再摆一颗永远按不亮、还要配一行解释的键是往加的方向走。 */}

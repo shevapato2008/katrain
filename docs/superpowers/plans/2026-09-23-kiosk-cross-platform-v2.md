@@ -32,6 +32,16 @@
     ```
     Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
     ```
+11. **跑全量 pytest 之前，环境必须是 `uv sync --extra web --extra vision`。**
+    少了 `--extra web` 缺 fastapi，整套测试塌成一个空的 FAILED 基线（看起来像全绿）；
+    少了 `--extra vision` 缺 opencv-python，**约 40 个 vision 测试文件变成 collection ERROR** ——
+    那看起来像是你这次改动造成的回归，其实只是依赖没装。develop 自己的 CI 是
+    `sync-groups: dev` 再加一个单独的 `--extra vision` job，两边合起来才是完整环境。
+    （Task 0 实测得出，2026-09-23。）
+12. **`sample-go/gate.mjs` 每跑一次都会把 36 屏全部重新截图**，不是只做校验。
+    所以「跑一次闸」会把设计仓里那些本来不该变的图重新弄脏。跑完闸之后要
+    **再还原一次**没改过的那些屏，否则它们会带着抖动被提交进去，
+    而四图的参考物就此悄悄换了。（Task 0 实测得出，2026-09-23。）
 
 ---
 
@@ -125,7 +135,7 @@ Expected: `Fast-forward`。报错就回到 Step 1 的判断。
 
 ```bash
 cd ~/Repositories/katrain-kiosk-go-cross-platform
-uv sync --extra web
+uv sync --extra web --extra vision
 CI=true uv run pytest tests --continue-on-collection-errors -q 2>&1 | grep '^FAILED\|^ERROR' | sort > /tmp/baseline-after.txt
 comm -13 /tmp/baseline-before.txt /tmp/baseline-after.txt
 ```

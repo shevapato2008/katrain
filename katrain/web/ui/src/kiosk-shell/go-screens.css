@@ -1935,3 +1935,13 @@ button.kiosk-row.figrow { flex: none; }
    把图标+两字挤没了空间 —— 缩到够放下图标(18)+ gap(7)+ 两字(30)+ 呼吸空间的量,
    不是字面截断,是把误继承的默认值收回正常范围。只在这一屏的「我执」段生效。 */
 [data-testid="platform-engine-setup-page"] .twocol .kiosk-optseg button { padding: 0 6px; }
+
+/* Task 4.7(2026-09-23)—— jp/ko 三个「我执」按钮(含没有动词可删的 nigiri)
+   统一超盒 3px(量出 scrollHeight=43 > clientHeight=40,见 task-4.7-report.md)。
+   根因不是译文长度:`index.css:3` 的 `:root { line-height: 1.5 }` 一路继承到这颗
+   按钮(`.kiosk-optseg button` 自己没设 line-height),15px 字号算出 22.5px 单行框——
+   这个框对拉丁/中文字形够用,但 CJK 回退字体自身的 ascent+descent 比 22.5px 还高,
+   单行框被撑穿,多出来的 3px 不是折行,是同一行字形本身画到框外。
+   收紧到 1.2(≈18px)把框让给字形的自然行高,不动字号、不动按钮盒高(触摸目标
+   仍是 40/48 那几个数)。11 语种全量复核:此前绿的语种收紧后仍然绿。 */
+[data-testid="platform-engine-setup-page"] .twocol .kiosk-optseg button { line-height: 1.2; }

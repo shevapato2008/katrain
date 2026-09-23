@@ -257,10 +257,13 @@ async def platform_login(
             auth_data = {"password": req.password}
         credentials = PlatformCredentials(platform=platform, username=req.username, auth_data=auth_data)
         success = await pm.connect_platform(platform, credentials, user.id)
-    except PlatformBusyError:
+    except PlatformBusyError as exc:
+        # `/{platform}/login` 是通用端点(OGS/野狐/KGS 都走这条),这条提示原来
+        # 写死了「星阵」—— 换个平台登录会显示错平台名。用抛出方记的 `exc.platform`
+        # (不是外层路径参数,两者理论上同值,但错误信息该忠于真正触发它的那个)。
         raise HTTPException(
             status_code=409,
-            detail="这台盒子上现在连着别人的星阵账号 · 去设置里断开后再登录",
+            detail=f"这台盒子上现在连着别人的{exc.platform}账号 · 去设置里断开后再登录",
         )
     if not success:
         raise HTTPException(status_code=401, detail="Login failed")

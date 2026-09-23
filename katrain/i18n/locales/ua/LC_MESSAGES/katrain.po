@@ -6858,3 +6858,181 @@ msgstr "Партій не враховано у відсотку перемог:
 
 msgid "growth:unknown_seat_b"
 msgstr " — очні партії, імпортовані записи та партії без записаного кольору."
+
+msgid "baipu:calib_running_sub"
+msgstr ""
+"Калібрування теж використовує вогники · після завершення чи скасування "
+"одразу почнеться розкладання"
+
+msgid "baipu:calib_running_title"
+msgstr "Калібрування дошки ще триває"
+
+msgid "baipu:cam_connecting"
+msgstr "Під'єднання до камери"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "Дошку ще не відкалібровано"
+
+msgid "baipu:cam_geo_drift"
+msgstr "Калібрування дошки більше не дійсне"
+
+msgid "baipu:cam_none"
+msgstr "Камеру не під'єднано"
+
+msgid "baipu:capture_hint_camera"
+msgstr ""
+"Ті, що світяться синім — коли знімете всі, наступний хід почнеться сам"
+
+msgid "baipu:checking_board"
+msgstr "Перевірка стану дошки"
+
+msgid "baipu:done_hint_auto"
+msgstr ""
+"Усього {n} ходів · прогрес очищено; натисніть угорі ліворуч, щоб повернутися"
+
+msgid "baipu:guard_sub_collect"
+msgstr "Щоб збирати навчальні дані, камера спершу має чітко бачити дошку"
+
+msgid "baipu:hint_failed"
+msgstr "Не вдалося порахувати — згорніть і натисніть ще раз"
+
+msgid "baipu:hint_loading"
+msgstr "ШІ рахує цей хід…"
+
+msgid "baipu:hint_on_hint"
+msgstr ""
+"Підказки ШІ увімкнено, розпізнавання на паузі — білі вогники — кандидати ШІ;"
+" згорніть підказки, щоб продовжити"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr ""
+"Підказки ШІ увімкнено — білі вогники — кандидати ШІ; згорніть підказки, щоб "
+"продовжити"
+
+msgid "baipu:hint_row"
+msgstr "Шанс перемоги {w}% · очки {s}"
+
+msgid "baipu:hint_title"
+msgstr "Підказки ШІ · де блимають білі вогники"
+
+msgid "baipu:hint_try_reason"
+msgstr ""
+"Під час спроби камера не дивиться на дошку — ШІ не знає, яка там позиція"
+
+msgid "baipu:hint_value"
+msgstr "Натисніть ще раз, щоб згорнути"
+
+msgid "baipu:led_on_camera"
+msgstr ""
+"Вогник горить — поставте {color} камінь на підсвічений перетин; щойно камера"
+" його побачить, почнеться наступний хід"
+
+msgid "baipu:led_title"
+msgstr "Вогники · значення кольорів"
+
+msgid "baipu:led_value_camera"
+msgstr "Камера стежить"
+
+msgid "baipu:led_value_manual"
+msgstr "Підтвердження вручну"
+
+msgid "baipu:led_value_try"
+msgstr "Спроба · розпізнавання на паузі"
+
+msgid "baipu:manual_hint"
+msgstr "{why} — поставте камінь і натисніть «Підтвердити камінь»"
+
+msgid "baipu:manual_hint_calib"
+msgstr "; калібрування — у «Налаштуваннях»"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "Хід {i} з {n}"
+
+msgid "baipu:restore_hint"
+msgstr ""
+"Зніміть пробні камені й поверніть зсунуті — щойно збіжиться, розкладання "
+"продовжиться саме"
+
+msgid "baipu:restore_title"
+msgstr "Поверніть дошку до ходу {n}"
+
+msgid "baipu:resume_body_placed"
+msgstr ""
+"Минулого разу ви дійшли до ходу {n}. Щоб почати знову, спершу зніміть усі "
+"камені з дошки."
+
+msgid "baipu:setup_clear_title"
+msgstr "Спершу зніміть усі камені з дошки"
+
+msgid "baipu:setup_continue"
+msgstr "Готово, далі"
+
+msgid "baipu:setup_entry_hint"
+msgstr ""
+"Зніміть камені під синіми вогниками, поставте на червоні й зелені — щойно "
+"збіжиться, почнеться саме"
+
+msgid "baipu:setup_entry_title"
+msgstr "Спершу розставте дошку як після ходу {n}"
+
+msgid "baipu:try_off_reason"
+msgstr "Камера зараз не розпізнає"
+
+msgid "baipu:trying_hint"
+msgstr ""
+"Ставте що завгодно й розбирайте на дошці. Натисніть «Спробувати» ще раз, щоб"
+" повернутися до кіфу, — вогники допоможуть повернути позицію"
+
+msgid "baipu:trying_title"
+msgstr "Спроба · розпізнавання камерою на паузі"
+
+msgid "baipu:undo_hint_camera"
+msgstr ""
+"Зніміть камені під синіми вогниками й поверніть зняті на червоні та зелені —"
+" щойно збіжиться, продовжиться саме"
+
+msgid "baipu:undo_title"
+msgstr "Повернення до ходу {n}"
+
+msgid "baipu:undo_try_reason"
+msgstr "Під час спроби повернути не можна"
+
+msgid "baipu:verify_hint"
+msgstr "Зайві камені підсвічено синім — зніміть їх, щоб продовжити"
+
+msgid "baipu:verify_title"
+msgstr "Звіряємо дошку"
+
+msgid "baipu:wrong_hint"
+msgstr ""
+"Візьміть камінь під синім вогником ({w}) і поставте на {c} — щойно "
+"збіжиться, продовжиться саме"
+
+msgid "baipu:wrong_size"
+msgstr "Це кіфу на дошці {n}×{n} — розкласти його не можна"
+
+msgid "baipu:wrong_size_hint"
+msgstr ""
+"Справжня дошка й вогники — 19×19: за іншого розміру кожен камінь стане не "
+"туди."
+
+msgid "baipu:wrong_title"
+msgstr "Не туди · треба на {c}"
+
+msgid "kifu:detail_offline"
+msgstr "Щоб відкрити цю партію, потрібен інтернет"
+
+msgid "kifu:detail_offline_hint"
+msgstr ""
+"Бібліотека кіфу в хмарі, а цей пристрій зараз не може до неї під'єднатися."
+
+msgid "kifu:list_offline"
+msgstr "Для пошуку в бібліотеці кіфу потрібен інтернет"
+
+msgid "kifu:list_offline_hint"
+msgstr ""
+"Цей пристрій зараз не може під'єднатися до хмари. Розкладених кіфу та "
+"імпортованих SGF це не стосується."
+
+msgid "kifu:wrong_size_reason"
+msgstr "Це кіфу {n}×{n} — на справжній дошці можна розкласти лише 19×19"

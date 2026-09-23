@@ -6783,3 +6783,182 @@ msgstr "Партий не учтено в проценте побед: "
 msgid "growth:unknown_seat_b"
 msgstr ""
 " — очные партии, импортированные записи и партии без записанного цвета."
+
+msgid "baipu:calib_running_sub"
+msgstr ""
+"Калибровка тоже использует огоньки · после завершения или отмены сразу "
+"начнётся раскладка"
+
+msgid "baipu:calib_running_title"
+msgstr "Калибровка доски ещё идёт"
+
+msgid "baipu:cam_connecting"
+msgstr "Подключение к камере"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "Доска ещё не откалибрована"
+
+msgid "baipu:cam_geo_drift"
+msgstr "Калибровка доски больше не действует"
+
+msgid "baipu:cam_none"
+msgstr "Камера не подключена"
+
+msgid "baipu:capture_hint_camera"
+msgstr "Те, что горят синим — когда снимете все, следующий ход начнётся сам"
+
+msgid "baipu:checking_board"
+msgstr "Проверка состояния доски"
+
+msgid "baipu:done_hint_auto"
+msgstr ""
+"Всего {n} ходов · прогресс очищен; нажмите вверху слева, чтобы вернуться"
+
+msgid "baipu:guard_sub_collect"
+msgstr ""
+"Чтобы собирать обучающие данные, камера сначала должна чётко видеть доску"
+
+msgid "baipu:hint_failed"
+msgstr "Не удалось посчитать — сверните и нажмите ещё раз"
+
+msgid "baipu:hint_loading"
+msgstr "ИИ считает этот ход…"
+
+msgid "baipu:hint_on_hint"
+msgstr ""
+"Подсказки ИИ включены, распознавание на паузе — белые огоньки — кандидаты "
+"ИИ; сверните подсказки, чтобы продолжить"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr ""
+"Подсказки ИИ включены — белые огоньки — кандидаты ИИ; сверните подсказки, "
+"чтобы продолжить"
+
+msgid "baipu:hint_row"
+msgstr "Шанс победы {w}% · очки {s}"
+
+msgid "baipu:hint_title"
+msgstr "Подсказки ИИ · где мигают белые огоньки"
+
+msgid "baipu:hint_try_reason"
+msgstr ""
+"Во время пробы камера не смотрит на доску — ИИ не знает, какая там позиция"
+
+msgid "baipu:hint_value"
+msgstr "Нажмите ещё раз, чтобы свернуть"
+
+msgid "baipu:led_on_camera"
+msgstr ""
+"Огонёк горит — поставьте {color} камень на подсвеченное пересечение; как "
+"только камера его увидит, начнётся следующий ход"
+
+msgid "baipu:led_title"
+msgstr "Огоньки · значение цветов"
+
+msgid "baipu:led_value_camera"
+msgstr "Камера следит"
+
+msgid "baipu:led_value_manual"
+msgstr "Подтверждение вручную"
+
+msgid "baipu:led_value_try"
+msgstr "Проба · распознавание на паузе"
+
+msgid "baipu:manual_hint"
+msgstr "{why} — поставьте камень и нажмите «Подтвердить камень»"
+
+msgid "baipu:manual_hint_calib"
+msgstr "; калибровка — в «Настройках»"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "Ход {i} из {n}"
+
+msgid "baipu:restore_hint"
+msgstr ""
+"Снимите пробные камни и верните сдвинутые — когда совпадёт, раскладка "
+"продолжится сама"
+
+msgid "baipu:restore_title"
+msgstr "Верните доску к ходу {n}"
+
+msgid "baipu:resume_body_placed"
+msgstr ""
+"В прошлый раз вы дошли до хода {n}. Чтобы начать заново, сначала снимите все"
+" камни с доски."
+
+msgid "baipu:setup_clear_title"
+msgstr "Сначала снимите все камни с доски"
+
+msgid "baipu:setup_continue"
+msgstr "Готово, дальше"
+
+msgid "baipu:setup_entry_hint"
+msgstr ""
+"Снимите камни под синими огоньками, поставьте на красные и зелёные — когда "
+"совпадёт, начнётся само"
+
+msgid "baipu:setup_entry_title"
+msgstr "Сначала расставьте доску как после хода {n}"
+
+msgid "baipu:try_off_reason"
+msgstr "Камера сейчас не распознаёт"
+
+msgid "baipu:trying_hint"
+msgstr ""
+"Ставьте что угодно и разбирайте на доске. Нажмите «Попробовать» ещё раз, "
+"чтобы вернуться к кифу, — огоньки помогут вернуть позицию"
+
+msgid "baipu:trying_title"
+msgstr "Проба · распознавание камерой на паузе"
+
+msgid "baipu:undo_hint_camera"
+msgstr ""
+"Снимите камни под синими огоньками и верните снятые на красные и зелёные — "
+"когда совпадёт, продолжится само"
+
+msgid "baipu:undo_title"
+msgstr "Возврат к ходу {n}"
+
+msgid "baipu:undo_try_reason"
+msgstr "Во время пробы вернуть нельзя"
+
+msgid "baipu:verify_hint"
+msgstr "Лишние камни подсвечены синим — снимите их, чтобы продолжить"
+
+msgid "baipu:verify_title"
+msgstr "Сверяем доску"
+
+msgid "baipu:wrong_hint"
+msgstr ""
+"Возьмите камень под синим огоньком ({w}) и поставьте на {c} — когда "
+"совпадёт, продолжится само"
+
+msgid "baipu:wrong_size"
+msgstr "Это кифу на доске {n}×{n} — разложить его нельзя"
+
+msgid "baipu:wrong_size_hint"
+msgstr ""
+"Настоящая доска и огоньки — 19×19: при другом размере каждый камень встанет "
+"не туда."
+
+msgid "baipu:wrong_title"
+msgstr "Не туда · нужно на {c}"
+
+msgid "kifu:detail_offline"
+msgstr "Чтобы открыть эту партию, нужен интернет"
+
+msgid "kifu:detail_offline_hint"
+msgstr ""
+"Библиотека кифу в облаке, а это устройство сейчас не может к ней "
+"подключиться."
+
+msgid "kifu:list_offline"
+msgstr "Для поиска по библиотеке кифу нужен интернет"
+
+msgid "kifu:list_offline_hint"
+msgstr ""
+"Это устройство сейчас не может подключиться к облаку. Разложенные кифу и "
+"импортированные SGF это не затрагивает."
+
+msgid "kifu:wrong_size_reason"
+msgstr "Это кифу {n}×{n} — на настоящей доске можно разложить только 19×19"

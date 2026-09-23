@@ -51,3 +51,18 @@ export function replayBaipuSteps(
   for (const [coord, color] of stones) (color === 'B' ? black : white).push(coord);
   return { black, white, last };
 }
+
+/**
+ * 与 `replayBaipuSteps` 同一播放规则,输出**识别坐标矩阵**(row 0 在上;0 空 / 1 黑 / 2 白)——
+ * 摆谱摄像头推进要把「屏上这一手的局面」推给识别层(`visionSetupMode` / `visionExpectedBoard`),
+ * 那两个接口收的是这种矩阵。规则逐行同上:放子照 `(row,col,color)`,拿子照 `removed[]`。
+ */
+export function replayBaipuMatrix(steps: readonly BaipuStep[], stepCount: number, size: number): number[][] {
+  const b = Array.from({ length: size }, () => Array<number>(size).fill(0));
+  for (let i = 0; i < stepCount && i < steps.length; i += 1) {
+    const s = steps[i];
+    if (s.row != null && s.col != null && s.color) b[s.row][s.col] = s.color === 'B' ? 1 : 2;
+    for (const p of s.removed) b[p.row][p.col] = 0;
+  }
+  return b;
+}

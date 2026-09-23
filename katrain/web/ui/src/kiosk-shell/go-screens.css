@@ -72,6 +72,10 @@
 
 /* 打吃:被叫吃那颗子上画红方框,不换子的颜色 */
 .gob .atari { fill: none; stroke: var(--bad); stroke-width: 5; }
+/* 摆谱:蓝圈 = 该拿走(蓝灯 #2f6fff),白圈 = AI 支招候选(白灯)。浅木盘上发虚,加一圈暗晕(与稿子同值) */
+.gob .remove { fill: rgba(47, 111, 255, .55); stroke: #2f6fff; stroke-width: 6; stroke-dasharray: 10 8; }
+.gob .hint { fill: rgba(255, 255, 255, .70); stroke: #fff; stroke-width: 6; stroke-dasharray: 10 8; }
+.gob .remove, .gob .hint { filter: drop-shadow(0 0 4px rgba(20, 10, 0, .55)); }
 /* ── 教程图那几层(屏 25)。四个既有消费者一个都不画,所以这几条只在课程屏上承重。 ──
    颜色**不许从 galaxy 那块 `SGFBoard` 搬**:`#d32f2f` / `#1565c0` 是 Material 调色板,
    和这套外壳的 token 不是一家。也**不许复用 `--accent`**(这块盘上它已经是「最后一手」

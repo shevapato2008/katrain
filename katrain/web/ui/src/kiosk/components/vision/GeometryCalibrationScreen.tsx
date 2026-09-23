@@ -362,14 +362,15 @@ export function GeometryCalibrationScreen({
   ];
 
   // ── 两颗键 ─────────────────────────────────────────────────────────────────
-  const canStart = cameraReady && ledReady && !starting && !active;
+  const canStart = cameraReady && ledReady && !starting && !relocating && !active;
+  // `lock_moved`:degraded 之后重新标定又取消/失败,phase 会落回可沿用的三态,但锁还是挪动前那把。
   const canReuse = (phase === 'required' || phase === 'failed' || phase === 'cancelled')
-    && status.last_valid && cameraReady && !starting && !active;
+    && status.last_valid && !status.lock_moved && cameraReady && !starting && !relocating && !active;
   const reuseBlockedWhy = active ? '标定进行中'
     : !cameraReady ? '摄像头未连接，无法核对网格'
       : phase === 'ready' ? '这一局已经在用这次标定'
         // 「按不了」永远要有话说:degraded 是唯一剩下的按不了的情形。新文案走 t(),译文在 Task 7b 收口。
-        : phase === 'degraded' ? t('vision:reuse_blocked_moved', '棋盘挪动过，上次的标定对不上了 —— 用「对齐外框」（不亮灯，盘上有子也能对）或重新标定')
+        : phase === 'degraded' || status.lock_moved ? t('vision:reuse_blocked_moved', '棋盘挪动过，上次的标定对不上了 —— 用「对齐外框」（不亮灯，盘上有子也能对）或重新标定')
           : null;
 
   const primaryLabel = phase === 'ready' && !confirmingManual ? '重新标定棋盘'
@@ -549,7 +550,7 @@ export function GeometryCalibrationScreen({
                     type="button"
                     className="kiosk-btn kiosk-btn--secondary"
                     data-testid="calib-relocate"
-                    disabled={!cameraReady || relocating}
+                    disabled={!cameraReady || relocating || starting}
                     onClick={() => void handleRelocate()}
                   >
                     {relocating

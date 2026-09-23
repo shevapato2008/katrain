@@ -57,6 +57,8 @@ export interface GeometryStatus {
   detected_anchors?: GeometryAnchor[];
   /** 最近一次外框重定位为什么没成(`no_board_detected` / `orientation_ambiguous` / `moved_too_far` / `delivery_failed` …);成了或没试过为 null。 */
   relocate_error?: string | null;
+  /** 当前这把锁已知对不上盘(降级过、之后还没换过锁)。为真时「沿用上次标定」服务端一定拒绝。 */
+  lock_moved?: boolean;
   capabilities: {
     camera_ready: boolean;
     led_ready: boolean;

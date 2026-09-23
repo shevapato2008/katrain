@@ -145,6 +145,9 @@ class GeometryCalibrationService:
             "error": None,
             "metrics": {},
             "relocate_error": None,  # 最近一次重定位为什么没成(字符串);metrics 是数值型,不放这里
+            # current_lock 已知对不上盘(降级过)。phase 会被之后的 start → cancel / failed 覆盖掉,
+            # 这一位不会:它只在 current_lock 被换掉时清零。confirm_existing 靠它拒绝把挪动前的锁沿用回来。
+            "lock_moved": False,
         }
 
     def _get_selector(self):
@@ -238,6 +241,9 @@ class GeometryCalibrationService:
                 )
             if self.current_lock is None:
                 raise ValueError("no existing geometry to confirm")
+            if self._status["lock_moved"]:
+                # degraded → 重新标定 → 取消/失败 会把 phase 落到可沿用的三态里,但锁还是挪动前那把。
+                raise ValueError("existing geometry no longer matches the moved board; relocate or recalibrate")
             if not self._is_ready(self.capture):
                 raise ValueError("camera is not ready")
             lock = self.current_lock
@@ -593,6 +599,7 @@ class GeometryCalibrationService:
                     error=None,
                     metrics=metrics,
                     relocate_error=None,
+                    lock_moved=False,
                 )
             try:
                 self.on_success(result.lock)
@@ -611,6 +618,7 @@ class GeometryCalibrationService:
                     session_calibrated=False,
                     last_valid=False,
                     error=str(exc),
+                    lock_moved=False,
                 )
             try:
                 self.on_degraded()
@@ -734,7 +742,7 @@ class GeometryCalibrationService:
         except Exception as exc:
             logger.warning("relocated geometry could not be delivered: %s", exc)
             with self._lock:
-                self._status.update(phase="degraded", error="board_moved")
+                self._status.update(phase="degraded", error="board_moved", lock_moved=True)
             try:
                 self.on_degraded()
             except Exception as invalidate_exc:
@@ -751,6 +759,7 @@ class GeometryCalibrationService:
                 trigger=trigger,
                 error=None,
                 relocate_error=None,
+                lock_moved=False,
             )
             # 替换,不是合并:旧 metrics(比如 LED 标定的 inlier_count/rms_residual)描述的是
             # 已经不再使用的那把锁,留着会让界面把早已作废的「13/13 · RMS …」当成这把新锁的成绩单。
@@ -843,6 +852,7 @@ class GeometryCalibrationService:
             self._status["phase"] = "degraded"
             self._status["error"] = "board_moved"
             self._status["relocate_error"] = reason
+            self._status["lock_moved"] = True
             self._status["metrics"].update(shift_cells=drift.shift_cells, drift_response=drift.response)
         # Outside the lock: on_degraded fans out to the vision worker (IPC).
         self.on_degraded()

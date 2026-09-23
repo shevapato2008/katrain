@@ -2055,3 +2055,26 @@ def test_start_clears_a_stale_relocate_error(tmp_path):
     assert service.status()["relocate_error"] is None
     service.wait(timeout=2)
     service.stop()
+
+
+def test_confirm_existing_refuses_a_moved_lock_after_recalibration_is_cancelled(tmp_path):
+    """degraded → 重新标定 → 取消 把 phase 落到 cancelled(可沿用),但 current_lock 仍是挪动前那把。
+    沿用它 = 绕过 test_confirm_existing_cannot_override_degraded_state 守的那条。"""
+    promoted = []
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FreshFakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_synth(),
+        on_success=promoted.append,
+        on_degraded=lambda: None,
+    )
+    service._status["phase"] = "ready"
+    service._apply_drift(FakeDrift(degraded=True))
+    assert service.status()["lock_moved"] is True
+    service._status["phase"] = "cancelled"  # start() 不清 lock_moved;取消只改 phase
+
+    with pytest.raises(ValueError, match="no longer matches the moved board"):
+        service.confirm_existing()
+    assert promoted == []
+    service.stop()

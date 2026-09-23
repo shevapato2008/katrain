@@ -197,8 +197,15 @@ if __name__ == "__main__":
         layout = json.load(r)
     if layout["stale"]:
         raise SystemExit(f"geometry phase={layout['phase']}: finish an LED calibration on an EMPTY board first")
+    if layout.get("relocated_by"):
+        raise SystemExit(
+            f"current lock was relocated by {layout['relocated_by']}: it is not an LED golden reference — "
+            "run an LED calibration on an EMPTY board first"
+        )
     true_quad = np.array([[c["x"], c["y"]] for c in layout["corners"]], np.float64)
-    want = (layout["frame"]["height"], layout["frame"]["width"])
+    src = layout.get("source") or {}
+    # corners are in the LOCK's source resolution; layout["frame"] is just the live frame size.
+    want = (src.get("height") or layout["frame"]["height"], src.get("width") or layout["frame"]["width"])
     frames = grab_mjpeg_frames(base + "/api/v1/geometry/stream", args.frames)
     if len(frames) < args.frames:
         raise SystemExit(f"stream gave {len(frames)}/{args.frames} frames")

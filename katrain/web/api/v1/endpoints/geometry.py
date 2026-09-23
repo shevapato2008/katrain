@@ -223,6 +223,11 @@ async def geometry_layout(request: Request):
         "warped_margin_cells": float(DEFAULT_MARGIN_CELLS),
         "corners": corners,
         "points": lock.points.astype(float).tolist(),
+        # 这把锁是不是外框重定位出来的。上板精度闸拿 corners 当 LED 13 点的金标准 ——
+        # 重定位过的锁就是被测的外框法自己,拿它当参照等于自己比自己。
+        "relocated_by": (getattr(lock, "diag", None) or {}).get("relocated_by"),
+        # corners/points 所在的分辨率(旧锁为 null)。与上面的 frame(本次取的帧)不一定相同。
+        "source": {"width": getattr(lock, "source_width", None), "height": getattr(lock, "source_height", None)},
     }
 
 

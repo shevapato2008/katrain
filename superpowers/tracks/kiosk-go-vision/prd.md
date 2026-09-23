@@ -5,6 +5,7 @@
 - 输入:2026-09-14「围棋 kiosk 缺口账本」视觉模块七条(V1–V6、N16)
 - **本文所有行号都在 develop `012e2a04` 上重核过(2026-09-20)**。账本成文于 `6f7dc629`,其后 develop 在视觉这一块前进很多(`geometry_calibration_service.py` +396 行、`led_geometry_calibrator.py` +314 行、`VisionSyncOverlay.tsx` 重写、新增 `visionRecovery.ts`)——**N16 已被修掉**(见 §2),其余六条逐行复核后仍然成立。 **2026-09-21 基线移到 develop `7a152df1`**(其后 43 个提交是视觉识别稳定性与退出兜底):本文引用的文件里只有 `server.py` 行号漂移(+1),已按新基线改;这 43 个提交改的是识别链(`move_detector` / `sync` / `worker`),不碰本文的几何标定段落。
 - **2026-09-23 基线再移到 `a586026b`**(本分支合入 origin/develop `3fb7ac5c`)。其间 develop 进了 26 个视觉提交(视差校正、0.20 维持档、参照帧比对、没人用摄像头时停识别、LED 标定每锚点连拍、指引灯随环境光调亮度、标定屏推流缩放)。逐条对过本文六条:**根因全部仍在,没有一个提交碰它们**;但它们都是几何锁的**下游消费者**,由此给 V1 / V3 / V4 加了约束,写在 **§2.1**。本文行号已在 `a586026b` 上重核。
+- **2026-09-24 再合一次 develop(`a512aa6a`)**:又进了一轮识别优化 —— 影子框去重(`board_state.drop_shadow_boxes`,`51faae2a` 等),以及摆谱接摄像头(`49dbe8db` 等,顺手把此前漏进 `.po` 的 key 补齐,`test_kiosk_i18n.py` 因此**转绿**)。本文引用的几何标定 / 标定屏 / 左栏 / `server.py` 几处一行没动,行号仍然有效;`set_geometry` 那条交付口没动;影子去重依赖几何精度,已补进 §2.1。
 
 ---
 
@@ -52,6 +53,7 @@
 | 没人用摄像头时停识别 / 漂移检测 / 1080p 解码(`275625ec`) | 标定服务新参数 `drift_needed`;相机空闲 3 s 后只出队不解码 | V1 自动那条只在漂移循环里触发 ⇒ 只在有人下实体棋时才会跑,正合适。**构造函数保留 `drift_needed`**;取帧照旧用 `grab_fresh()`,它会把相机唤醒 |
 | LED 标定每颗锚点亮约 1 s 连拍取最小(`de40f28c`) | 只影响 13 点流程 | 重新标定变得更慢,V1「不清盘」的价值因此更大 |
 | 指引灯亮度随环境光调(`88b2b1e9` / `7821edb3`,`led_service.py` `set_guidance_scale`) | 不读几何 | V4 只改措辞,不碰 `led_service.py` |
+| 影子框去重(`51faae2a` 等,09-24 合入,`board_state.drop_shadow_boxes`) | 一个石子框离最近交叉点(视差校正后)≥ `SHADOW_MIN_OFFSET = 0.35` 格、又与更靠近交点的同尺寸框重叠,才被当作影子丢掉 —— **直接用锁的网格判「离交点多远」** | 重定位后的几何误差必须远小于 0.35 格,否则真子会被推到「像影子」那一侧;V1 的上板精度闸 0.12 格满足这一条。朝向错了则整盘错位,同样落在 R2 |
 | 标定屏推流缩放 `?scale=`(`de40f28c`,`geometry.py` `_downscale`、屏上 `RAW_STREAM_SCALE`) | 覆盖层坐标要乘回缩放比 | V1-b / V2 / V4 改同一个屏文件,**保留这两个常量与 `onImageLoad` 的乘回** |
 
 **规则**
@@ -59,8 +61,8 @@
 - **R1 · 唯一交付口。** 新几何只经 `on_success` → `server.py` 的 `promote_geometry` → `vision.set_geometry(lock)`。`set_geometry` 会重置运动滤波、作废参照帧、重推视差。**不许**直接去改 worker / extractor,也**不许**原地改旧锁对象(relock 用 `dataclasses.replace` 出新对象)。
 - **R2 · 朝向连续。** LED 锁的四角按**棋盘行列**排(`led_geometry_calibrator.py` 的 `_build_lock`,`diag.orientation = "seated_human"`);外框法和无灯自动标定按**画面位置**排(`geometry_detect.sort_corners`)。两种排法不一定一致;不一致时直接拿外框法的结果建锁,整张网格会转 90° 或 180°:识别坐标、维持档、视差都会跟着转(视差在自动模式下会对着那把转错的锁自己重推,算得自洽,但坐标已经错了,它救不回来)。**重建时必须把外框四角重排成离旧锁四角最近的那一种**;若最近与次近分不开(盘转了约 45°),就拒绝,当作失败处理。2026-09-23 已在 scratchpad 里用真模块做过原型:不对齐时,旋转顺序的锁重定位后,视差推出的镜头落点(nadir)会换到另一条边;对齐后,4 种旋转顺序的 nadir 全部留在原边,镜像顺序的四角也对得上(原型与用例见 plan Task 3)。
 - **R3 · 自动重定位期间不挂起识别。** 挂起(`on_suspend` 把 worker 几何清空)会让 `recognition_ready` 掉下来,`PhysicalBoardGuard` 就会把对局屏卸载、换成标定台,这正是 V1 要避免的事。代价是:从判定漂移到新锁推下去,中间还有几秒 worker 按旧几何识别。这段窗口今天就有(漂移要连续 3 帧才判定),**本赛道不声称下游一定兜得住**,改成上板实测(§7 上板清单第 2 项:碰盘过程中不许有幻影落子进棋谱)。
-- **R4 · 这批优化的文件一行不改。** `katrain/vision/{worker_inprocess,board_state,parallax,parallax_store,reference_frame,camera,service}.py`、`katrain/web/core/led_service.py`;`server.py` 只许改 `GeometryCalibrationService(...)` 构造那一段(`:885-897`),**不碰** `_vision_needs_frames` / `_adjust_led_brightness` / 视觉命令行参数。收尾用 `git diff a586026b` 核对(plan Task 10)。
-- **R5 · 这批优化自带的测试收尾必须原样全绿**:`tests/test_vision/` 下 `test_parallax_*`、`test_board_state_parallax`、`test_board_state_golden`、`test_reference_frame`、`test_sustain_threshold`、`test_vision_idle`、`test_led_glow`、`test_worker_commands`、`test_calibrate_parallax`,以及 `tests/web_ui/test_led_brightness_loop.py`、`tests/test_led_service.py`、`tests/test_geometry_calibration_service.py` 里的 `drift_needed` 用例。
+- **R4 · 这批优化的文件一行不改**(以合进来的 develop 为准:`git diff $(git merge-base HEAD origin/develop)`,不写死提交号 —— 再合 develop 时 develop 自己改这些文件不算本赛道的改动)。 `katrain/vision/{worker_inprocess,board_state,parallax,parallax_store,reference_frame,camera,service}.py`、`katrain/web/core/led_service.py`;`server.py` 只许改 `GeometryCalibrationService(...)` 构造那一段(`:885-897`),**不碰** `_vision_needs_frames` / `_adjust_led_brightness` / 视觉命令行参数。收尾核对见 plan Task 10 Step 2b。
+- **R5 · 这批优化自带的测试收尾必须原样全绿**:`tests/test_vision/` 下 `test_parallax_*`、`test_board_state_parallax`、`test_board_state_golden`、`test_board_state_shadow`、`test_shadow_phantom`、`test_reference_frame`、`test_sustain_threshold`、`test_vision_idle`、`test_led_glow`、`test_worker_commands`、`test_calibrate_parallax`,以及 `tests/web_ui/test_led_brightness_loop.py`、`tests/test_led_service.py`、`tests/test_geometry_calibration_service.py` 里的 `drift_needed` 用例。
 
 ---
 
@@ -108,7 +110,7 @@
   7. vitest:`degraded` 态标定屏出现「对齐外框」键,点它调 `/api/v1/geometry/relocate`;成功后屏回到 `ready`,失败时屏上给原因。
   8. **上板**:见 §7「上板清单」第 1–3 项(满盘外框精度、对局中碰盘恢复、恢复后识别不串位)。
   9. pytest(**朝向闸**,2026-09-23 新增):旧锁四角是画面顺序转过 0/1/2/3 格的四种、再加一种镜像顺序,外框法给的都是画面顺序的单应;重建后四角顺序与旧锁一致,`points[0][0]` 只随平移移动;**`mount_parallax_for_lock(新锁).nadir == mount_parallax_for_lock(旧锁).nadir`**(这一条直接守住 develop 的视差校正)。盘转了约 45°、最近与次近排法分不开时抛 `ValueError("orientation_ambiguous")`。
-  10. 收尾:§2.1 R4 的文件对 `a586026b` 零改动,R5 的测试原样全绿。
+  10. 收尾:§2.1 R4 的文件相对合进来的 develop 零改动,R5 的测试原样全绿。
 - **依赖**:上板闸(精度)。代码本身不依赖上板即可合并(默认关)。
 
 ### V3 · 没有 LED 的盒子做不了第一次标定 —— P2 · ⛔ **本轮不做(Fan 2026-09-23 裁定,§4)**
@@ -257,8 +259,8 @@
 | vitest | V1-b V2 V4 | 标定屏四态(`ready` / `failed` / `cancelled` / `degraded`);左栏 LED 那格的新措辞。 |
 | 结构闸 | V1 | `Scenario.RUNTIME_RECALIBRATION.allows_led()` 为假,且新路径不传 `led` —— **这是「绝不自动亮灯」那条硬规矩的代码级痕迹**,不是可选测试。 |
 | 朝向闸 | V1 | V1 验收 9:四种旋转顺序与一种镜像顺序的旧锁,重建后四角顺序不变、视差 nadir 同一条边;45° 时拒绝。 |
-| 识别优化回归闸 | 全部 | §2.1 R4 的文件 `git diff a586026b` 为空;R5 的测试原样全绿(2026-09-23 在 `a586026b` 上实测 342 条全过)。 |
-| i18n 闸 | V1-b V4 | `tests/web_ui/test_kiosk_i18n.py` **在基线上就是红的**:摆谱 / 棋谱两条线合进来的 16 个 key(`baipu:*` 11 个、`kifu:*` 5 个)没补译,11 个语种各红一条(2026-09-23 实测)。基线比对因此**看不见**本赛道新增的缺译 —— 失败的用例名早就在基线里了。判据改成:**它的失败信息里不出现任何 `vision:` 开头的 key**(`… \| grep -c "'vision:"` 为 0)。那 16 个不归本赛道补。 |
+| 识别优化回归闸 | 全部 | §2.1 R4 的文件相对 `git merge-base HEAD origin/develop` 零改动;R5 的测试原样全绿(2026-09-24 在 `a512aa6a` 上实测 362 条全过)。 |
+| i18n 闸 | V1-b V4 | `tests/web_ui/test_kiosk_i18n.py` 全绿(2026-09-24 在 `a512aa6a` 上实测 12 passed;09-23 时它曾因摆谱 / 棋谱漏译的 16 个 key 红着,develop `7cc6c5d4` 已补)。另加一条按本赛道范围切的判据:`… 2>&1 \| grep -c "'vision:"` 为 0 —— 万一收尾时别的赛道又让它变红,整体结果就看不出本赛道的缺译,这一条仍然看得出。 |
 | 类型 / 构建 / 格式 | 全部 | `npx tsc -b`;`npm run build` + `npm run build:kiosk-2d`;`uv run black -l 120`。 |
 | 四图对比 | 屏 26(标定) | 加了按钮与说明 ⇒ **触发**。`npm run fourup` 跑两次排抖动,四张一起看并**交 Fan 确认**。 |
 | 承重结构实测 | 屏 26 | 标定屏右栏是「会长的东西」(四步 + 诊断 + 说明 + 两颗键,V1-b 又多一颗):把状态造到最满(`degraded` + 诊断 + 对齐失败的原因那句)在真浏览器里量右栏可滚、页面不溢出、动作区不被挤出视口;再按「塌陷在最空状态下量」量一次 `ready` 且无诊断那一态。jsdom 不作数。 |

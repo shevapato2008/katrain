@@ -20,9 +20,9 @@
 
 > **开工前先读 `prd.md` §6.0**:四条新赛道的共享文件归属与合并顺序。本赛道排在合并顺序第一位(设置赛道要引用它的状态词)。
 
-- worktree `/Users/fan/Repositories/katrain-kiosk-go-vision`(分支 `feature/kiosk-go-vision`,基线 **`a586026b`** = 合入 origin/develop `3fb7ac5c`,2026-09-23;原基线 `7a152df1`);**不 push、不合并 develop**。
+- worktree `/Users/fan/Repositories/katrain-kiosk-go-vision`(分支 `feature/kiosk-go-vision`,基线 **`a512aa6a`** = 2026-09-24 合入 origin/develop(此前 `a586026b` / 原基线 `7a152df1`);**「识别优化零改动」一律对 `git merge-base HEAD origin/develop` 比,不写死提交号**;**不 push、不合并 develop**。
 - Python 环境 `uv sync --extra web --extra vision`(光 `uv sync` 缺 fastapi ⇒ 基线会静默变空;光 `--extra web` 缺 OpenCV ⇒ 视觉测试在收集阶段全部报错,2026-09-23 实测);前端 `cd katrain/web/ui && npm ci`。
-- **识别优化零改动(PRD §2.1 R4)**:`katrain/vision/{worker_inprocess,board_state,parallax,parallax_store,reference_frame,camera,service}.py`、`katrain/web/core/led_service.py` 一行不改;`server.py` 只改 `GeometryCalibrationService(...)` 构造调用(`:885-897`),**保留 `drift_needed=`**;`GeometryCalibrationScreen.tsx` 里的 `RAW_STREAM_SCALE` / `WARPED_STREAM_SCALE` 与 `onImageLoad` 乘回照原样保留。收尾由 Task 10 Step 2 用 `git diff a586026b` 核。
+- **识别优化零改动(PRD §2.1 R4)**:`katrain/vision/{worker_inprocess,board_state,parallax,parallax_store,reference_frame,camera,service}.py`、`katrain/web/core/led_service.py` 一行不改;`server.py` 只改 `GeometryCalibrationService(...)` 构造调用(`:885-897`),**保留 `drift_needed=`**;`GeometryCalibrationScreen.tsx` 里的 `RAW_STREAM_SCALE` / `WARPED_STREAM_SCALE` 与 `onImageLoad` 乘回照原样保留。收尾由 Task 10 Step 2b 对 `git merge-base HEAD origin/develop` 核。
 - **新锁的唯一交付口是 `on_success`**(PRD §2.1 R1):不许直接调 worker / extractor,不许原地改旧锁对象。**重定位期间不调 `on_suspend`**(R3:挂起会让 `recognition_ready` 掉下来,守卫把对局屏换成标定台)。
 - **朝向**(R2):任何从外框法得到的锁,四角顺序都必须对齐到旧锁;对不齐就当失败处理。
 - **硬规矩:LED 绝不为几何自动点亮。** 本轮新增的两条重定位路径都走 `Scenario`(`RUNTIME_RECALIBRATION` / `MANUAL_FALLBACK` 里 `outer_corner` 排第一),**不许**把 `led` 传进 `CalibrationContext`,也不许新增任何「自动闪灯」分支。这条有一条结构闸测试守着(Task 4)。
@@ -41,7 +41,7 @@
 |---|---|---|
 | `katrain/vision/relock.py` | **新建** | 按新单应重建 `GeometryLock`(四角对齐旧锁朝向、重算 corners/points,保留 baseline) |
 | `tests/test_relock.py` | **新建** | 纯函数单测(含朝向闸:四种旋转 + 镜像、视差 nadir 同边、45° 拒绝) |
-| `katrain/web/core/geometry_calibration_service.py` | 改 `:70-127`(构造,**保留 `drift_needed`**)、`:193-213`(白名单)、`:635-653`(漂移分支);新增 `relocate()` / `_try_relocate()`(行号在 `a586026b` 上;V3 的 `:129` / `:479-533` / `_calibrate_no_led()` 本轮不动) | V1 V2 |
+| `katrain/web/core/geometry_calibration_service.py` | 改 `:70-127`(构造,**保留 `drift_needed`**)、`:193-213`(白名单)、`:635-653`(漂移分支);新增 `relocate()` / `_try_relocate()`(行号在 `a586026b` 上核过,`a512aa6a` 上这些文件一字未变;V3 的 `:129` / `:479-533` / `_calibrate_no_led()` 本轮不动) | V1 V2 |
 | `tests/test_geometry_calibration_service.py` | 追加 | V1 V2 的七条(含两条反向闸与一条结构闸) |
 | `katrain/web/api/v1/endpoints/geometry.py` | 新增 `POST /relocate` | V1-b |
 | `tests/test_geometry_api.py` | 追加 | 端点两条 |
@@ -77,7 +77,7 @@ Task 2 与 Task 3 互相独立;Task 4 依赖 3;Task 5 依赖 4;Task 6 独立于 
 cd /Users/fan/Repositories/katrain
 # worktree 已于 2026-09-21 建好,本步只核对,不要再 add
 git -C /Users/fan/Repositories/katrain-kiosk-go-vision rev-parse --abbrev-ref HEAD            # 预期 feature/kiosk-go-vision
-git -C /Users/fan/Repositories/katrain-kiosk-go-vision merge-base --is-ancestor a586026b HEAD && echo base-ok
+git -C /Users/fan/Repositories/katrain-kiosk-go-vision merge-base --is-ancestor a512aa6a HEAD && echo base-ok
 cd /Users/fan/Repositories/katrain-kiosk-go-vision
 uv sync --extra web --extra vision
 uv run python -c "import cv2, fastapi; print('env-ok')"   # 两个都要在,缺一个基线就会混进收集错误
@@ -104,13 +104,15 @@ tests/test_vision/test_parallax_apply.py tests/test_vision/test_parallax_fit.py 
 tests/test_vision/test_parallax_wiring.py tests/test_vision/test_board_state_parallax.py tests/test_vision/test_board_state_golden.py
 tests/test_vision/test_reference_frame.py tests/test_vision/test_sustain_threshold.py tests/test_vision/test_vision_idle.py
 tests/test_vision/test_led_glow.py tests/test_vision/test_worker_commands.py tests/test_vision/test_calibrate_parallax.py
+tests/test_vision/test_board_state_shadow.py tests/test_vision/test_shadow_phantom.py
 tests/web_ui/test_led_brightness_loop.py tests/test_led_service.py tests/test_geometry_calibration_service.py
 EOF2
-xargs env CI=true uv run pytest -q < "$BASE/recog-tests.txt" 2>&1 | tail -1   # 2026-09-23 实测:342 passed
+xargs env CI=true uv run pytest -q < "$BASE/recog-tests.txt" 2>&1 | tail -1   # 2026-09-24 在 a512aa6a 上实测:362 passed
+CI=true uv run pytest -q tests/web_ui/test_kiosk_i18n.py 2>&1 | tail -1               # 2026-09-24 实测:12 passed
 CI=true uv run pytest -q tests/web_ui/test_kiosk_i18n.py 2>&1 | grep -c "'vision:"   # 预期 0
 ```
 
-⚠️ `test_kiosk_i18n.py` 在基线上**本来就红**(摆谱 / 棋谱的 16 个 key 没补译,11 个语种各一条),不归本赛道。它在基线名字集合里,所以 Step 2 的 `comm` 比对**看不见**本赛道新增的缺译;要看的是上面那行 `grep -c "'vision:"`。
+⚠️ `test_kiosk_i18n.py` 在 `a512aa6a` 上是绿的(09-23 时曾因别的赛道漏译 16 个 key 红过,develop `7cc6c5d4` 已补)。仍然保留按本赛道范围切的那行 `grep -c "'vision:"`:万一别的赛道再让它变红,失败的用例名早就在基线里,`comm` 比对会看不见本赛道新增的缺译。
 (用 `xargs` 而不是 `$(cat …)`:zsh 不做词分割,后者会把整串当成一个参数。)
 
 - [ ] **Step 3: 前端基线**(脚本同其它赛道:`failed-names.cjs` + `before-failed.txt`)
@@ -1791,12 +1793,13 @@ rg -n "CalibrationContext\(" katrain/web/core/geometry_calibration_service.py
 
 ```bash
 cd /Users/fan/Repositories/katrain-kiosk-go-vision
-git diff --stat a586026b -- katrain/vision/worker_inprocess.py katrain/vision/board_state.py katrain/vision/parallax.py \
+DEV="$(git merge-base HEAD origin/develop)"   # 合进来的 develop;再合一次 develop 也不会误报 develop 自己的改动
+git diff --stat "$DEV" -- katrain/vision/worker_inprocess.py katrain/vision/board_state.py katrain/vision/parallax.py \
   katrain/vision/parallax_store.py katrain/vision/reference_frame.py katrain/vision/camera.py katrain/vision/service.py \
   katrain/web/core/led_service.py                                   # 预期:空
-git diff -U0 a586026b -- katrain/web/server.py | grep '^@@'           # 预期:每个 hunk 都落在 GeometryCalibrationService(...) 那一段
-git diff a586026b -- katrain/web/server.py | grep -c '^[+-].*drift_needed'   # 预期:0(那一行没被增删;只数 +/- 行,上下文行不算)
-git diff a586026b -- katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx | grep -c '^[+-].*STREAM_SCALE'   # 预期:0
+git diff -U0 "$DEV" -- katrain/web/server.py | grep '^@@'           # 预期:每个 hunk 都落在 GeometryCalibrationService(...) 那一段
+git diff "$DEV" -- katrain/web/server.py | grep -c '^[+-].*drift_needed'   # 预期:0(那一行没被增删;只数 +/- 行,上下文行不算)
+git diff "$DEV" -- katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx | grep -c '^[+-].*STREAM_SCALE'   # 预期:0
 BASE="$(git rev-parse --absolute-git-dir)/vision-baseline"
 xargs env CI=true uv run pytest -q < "$BASE/recog-tests.txt" 2>&1 | tail -1   # 预期:与 Task 1 Step 2b 同数全过(再加本赛道新增的用例)
 CI=true uv run pytest -q tests/web_ui/test_kiosk_i18n.py 2>&1 | grep -c "'vision:"          # 预期:0
@@ -1809,4 +1812,4 @@ CI=true uv run pytest -q tests/web_ui/test_kiosk_i18n.py 2>&1 | grep -c "'vision
 写清:① 做了 V1(默认关,含朝向对齐)、V2(含 V6 的前提更正)、V3(**Fan 裁定本轮不做**)、V4(标定屏「串口已连接」、左栏「已连接」、smartbox 设计稿源头一个词的本地提交 —— **未 push,点名交 Fan**;设置屏设置赛道已改;参考图不重拍,四图里那一个词是已知差异)、V5(清单)、Z3;
 ② 新增文案 key 清单;③ 四图与承重结论(附 Fan 确认);④ **`AUTO_RELOCATE_ON_DRIFT` 还是 `False`**,
 翻开它要先跑 `board-checklist.md` 第 1–2 项;⑤ 给对弈赛道的一条登记:V1-b 落地后
-`RecalibrationModal` 那句「重新标定(要清盘)」不再是唯一出路,文案该跟着改(A21);⑥ Step 2b 的识别优化零改动核对结果(贴原样输出);⑦ `test_kiosk_i18n.py` 基线上就红的那 16 个 `baipu:*` / `kifu:*` key 不归本赛道,点名交回对应赛道。
+`RecalibrationModal` 那句「重新标定(要清盘)」不再是唯一出路,文案该跟着改(A21);⑥ Step 2b 的识别优化零改动核对结果(贴原样输出);⑦ `test_kiosk_i18n.py` 的结果(整体 + `vision:` 那行);若收尾时它因别的赛道的 key 变红,点名是哪些 key、交回对应赛道,不在本赛道补。

@@ -32,6 +32,7 @@
 | E5 | 目标视口 **1440×900**（桌面浏览器） | 四图对比和布局实测都在这个视口下做 |
 | E6 | 后台端口 8010；隧道到本机的端口：测试机用 8010，生产用 8011 | 两条隧道可以同时开着，不会混 |
 | E7 | 审计日志第一版只记登录成功 / 失败 / 登出，暂不做查看页 | 切片 1 没有写操作；查看页和用户管理切片一起做 |
+| E8 | 后台会话令牌放在浏览器的 sessionStorage，用 `Authorization: Bearer` 发送，**不用 cookie**；关掉标签页要重新登录 | cookie 不按端口隔离，本机任何被同一浏览器打开过的 localhost 服务都能拿到它（§5.3，2026-09-24 评审） |
 
 ## 3. 现状（2026-09-24 读代码核实）
 
@@ -51,7 +52,7 @@
 |---|---|---|
 | 教程的四个写接口未登录也能调用 | `tutorials.py:150/195/212/232`（改棋盘 / 生成语音 / 改解说 / 审核） | 统一改成 `Depends(get_current_admin_user)`：未登录 401，非管理员 403，guest 403；`changed_by` / `verified_by` 记管理员用户名 |
 | `GET /board/devices` 把全部盒子的 IP 返回给任意登录用户 | `board.py:84` | 改成 `get_current_admin_user`。`POST /board/heartbeat` **不动**，那是盒子自己上报用的 |
-| 生产上的 `admin/admin` 还能登录（9/6 的记录） | 生产库 | **由 Fan 决定**是改口令还是撤掉 `is_admin`。计划里只给查询和执行命令，不自己动生产库。只改口令撤不掉已经签发出去的令牌（见下一行），所以推荐撤权 |
+| 生产上的 `admin/admin` 还能登录（9/6 的记录） | 生产库 | 撤掉 `is_admin` 并把口令换成谁也不知道的随机值（执行前 Fan 点头）。**只改口令、保留管理员身份不行**：已经签发出去的令牌不会失效，旧 refresh token 还能去 `/auth/refresh` 换新的 access token。要保留 `admin` 当管理员，就得先轮换 `KATRAIN_SECRET_KEY`（全部用户和盒子重新登录一次），那要单独出计划 |
 | （2026-09-24 评审新增，Fan 可删）有效期 90 天的 refresh token 能直接当 Bearer 用，包括调管理员接口 | `auth.py:118` `get_user_from_token` 不看 `type` | 只收 `type == "access"` 的令牌。仓里只有 access / refresh 两种 JWT，前端从不用 refresh token，`/auth/refresh` 本来就单独校验 |
 
 前端改动：`AuthContext` 的 User 类型加上 `is_admin?: boolean`。`TutorialFigurePage` 只对管理员显示以下控件：编辑、逻辑检查、确认审核、初始化空棋盘、编辑模式下的工具条和取消/保存、编辑讲解、生成语音、保存文字、识别调试面板。非管理员看到的是：棋盘、手数滑条、原书页对照、讲解文字、音频、视频。
@@ -86,7 +87,7 @@ katrain/web/admin/
   __main__.py      # python -m katrain.web.admin：argparse --host（默认 127.0.0.1）/--port（默认 8010）+ uvicorn
   app.py           # create_admin_app(session_factory=None, static_dir=None)
   settings.py      # KATRAIN_ADMIN_ENV 读取与校验 + 启动闸
-  session.py       # 后台会话令牌、cookie、require_admin 依赖、CSRF 头校验
+  session.py       # 后台会话令牌（Bearer，不用 cookie）、require_admin 依赖
   audit.py         # record(db, action, username, admin_user_id=None, detail=None)
   cron_health.py   # derive_health(row, now) 纯函数
   routers/auth.py  # /api/admin/auth/{login,logout,me}
@@ -98,13 +99,14 @@ katrain/web/admin/
 ### 5.3 鉴权
 
 - **会话令牌**：用 `settings.SECRET_KEY` 签 HS256 JWT，内容为 `{sub, type:"admin_session", aud:"katrain-admin", env, exp: 8 小时}`。
-  - 校验时**必须同时**满足：用 `audience="katrain-admin"` 解码、`type == "admin_session"`、`env == KATRAIN_ADMIN_ENV`。
+  - 校验时**必须同时**满足：用 `audience="katrain-admin"` 解码，并且**显式比较** `aud == "katrain-admin"`、`type == "admin_session"`、`env == KATRAIN_ADMIN_ENV`，三道检查各有一条伪造令牌的测试。
   - 原因：2026-09-24 实测 python-jose 的行为是，**传了 audience、而 token 里根本没有 aud 时，照样放行**。只靠 aud，公开站点的 access token 就能进后台。
   - 反方向不用改公开站点：公开站点解码时不传 audience，带 aud 的 token 会被 jose 以「Invalid audience」拒掉（同日实测）。
-- **cookie**：名字是 `katrain_admin_<env>`，HttpOnly、SameSite=Strict、**Path=/api/admin**、Max-Age 8 小时；**不设 Secure**，因为走的是 SSH 隧道里的 http://localhost。cookie 不按端口隔离：名字里带上 env，两条隧道同时开着也不会互相顶掉；Path 限定在 `/api/admin`，浏览器发往本机其他端口普通页面的请求（开发服务器之类）不会带上它。
-  - 剩下的风险：本机上别的服务如果恰好也在 `/api/admin` 路径下被管理员用同一个浏览器打开，仍会收到这个 cookie。评审（2026-09-24）提过「每个环境一个 `*.localhost` 主机名 + 只认 Host」，没有采用：Safari 未必解析 `*.localhost`，Windows 上的工作人员还要另外配置，代价与剩下的这点风险不相称。
+- **令牌放在哪**：登录接口在响应体里返回令牌，前端存进 **sessionStorage**，每次请求带 `Authorization: Bearer`。**不用 cookie**：cookie 不按端口隔离，管理员用同一个浏览器打开过的任何一个 `http://localhost:<端口>` 服务，都能让浏览器把 cookie 送过去（先把浏览器引到它自己的页面，再同站请求一次），Path、SameSite、换主机名都挡不住（Codex 第二轮评审指出，第一轮改的 Path=/api/admin 只是降低了概率）。sessionStorage 按「协议+主机+端口」隔离，别的端口上的页面读不到；两条隧道（本机 8010 / 8011）也就天然各存各的。代价：关掉标签页要重新登录。
+- **页面防线**：后台的每个响应都带 CSP（`script-src 'self'`、`connect-src 'self'`、`frame-ancestors 'none'` 等）。令牌在 sessionStorage 里，页面上万一出现注入，也执行不了外来脚本，发不出令牌。
 - **每次请求**都按用户名重新查一次库，并要求 `is_admin = true`，撤权立即生效。
-- **CSRF**：所有非 GET 请求（含登录）必须带 `X-Katrain-Admin: 1` 请求头。后台不开 CORS，别的网页（包括本机其他端口）发不出带自定义头的跨源请求。
+- **不需要 CSRF 头**：浏览器不会自动带上 Authorization，别的网页伪造不出带令牌的请求。
+- **登出**：服务端不存会话。前端丢掉令牌就是登出，服务端记一笔审计；已经发出去的令牌要么 8 小时后过期，要么随撤权（`is_admin`）立即失效。
 - **登录失败**只回一句笼统的话：「用户名或密码错误，或该账号没有后台权限」；具体原因（查无此人 / 口令错 / 不是管理员）写进审计日志。
 - 不做登录限流：入口在 SSH 之后，想暴力试口令得先有 SSH 权限。
 
@@ -161,10 +163,10 @@ katrain/web/ui/
 
 管理员打开隧道，进入 http://localhost:8010，登录后落在「定时任务」页，看到：
 - cron 进程是否活着；
-- 9 个任务各自的健康状态、上次运行时间、耗时、连续失败次数、最后一条报错；
+- 9 个任务各自的健康状态、上次运行时间、耗时、连续失败次数、最近报错（interval 任务是最近一次不成功运行里的第一条，loop 是最近一条）；
 - 直播分析队列和复盘队列的积压情况。
 
-点开任意一个任务，可以看到它最近的运行历史和完整报错。页面每 15 秒自动刷新。
+点开任意一个任务，可以看到它最近的运行历史，以及每次运行记下的那条报错的全文（最长 2000 字符；一次运行报了不止一条时，注明一共几条）。页面每 15 秒自动刷新。
 
 ### 6.2 数据：两张新表
 
@@ -204,7 +206,7 @@ katrain/web/ui/
 - **常驻循环**：`AnalyzeJob` 和 `ReportAnalyzerJob` 在每次循环开头更新 `self.last_iteration_at`，并各加一个 `heartbeat_stats()` 方法，返回在途数和容量。`_run_analyze_loop` 给整个循环设置 context，循环里的 ERROR 日志累计到这个循环的统计里；`job.run()` 抛出异常就记一行 `failed`。
 - **心跳**：调度器里单开一个 asyncio 任务，每 `CRON_HEARTBEAT_INTERVAL`（30 秒）为所有已登记的任务写一次 `heartbeat_at`。loop 任务顺带写入 `loop_iteration_at`、`loop_stats` 和 `last_error`。
 - **登记**：进程启动时，把 9 个任务（包括被停用的）全部 upsert 一遍，并**删掉**名字已不在当前代码里的旧行，免得改名后留下一行永远显示「失联」的假记录。上一个进程开了头、没来得及收尾的运行（重启、部署、SIGKILL、OOM）一律标成 `failed`，写明「cron 进程在这次运行结束前退出了」，不让它在历史里永远「运行中」。
-- **cron 比 web 先启动**（两边同时 `up`，表还没建）：登记会失败（按下一条处理）；web 建好表之后，下一次心跳发现状态行缺失就补上。生产发布时也先起 web、确认建好表，再起 cron 和 admin。
+- **cron 比 web 先启动**（两边同时 `up`，表还没建）或数据库一时连不上：登记会失败。调度器最多等 60 秒再发起第一次运行（等登记成功，免得启动那一次的记录整个丢掉、日任务空着显示「等待首次运行」一整天）；等不到也照常跑任务（老版本的 web 根本没有这几张表时，不能因此把任务停掉），之后每次心跳重试完整的登记。生产发布时先起 web、确认建好表，再起 cron 和 admin。
 - **记录器写库失败时**：记一条 WARNING 日志，绝不影响任务本身。后果是心跳过期、页面显示「失联」，失败就这样自然暴露出来，不会被藏住。
 - **时间**：一律用 `datetime.now(timezone.utc)`。
 - **保留期**：`CleanupJob` 删除 `CRON_RUNS_RETENTION_DAYS`（默认 14 天）之前的运行记录。
@@ -229,9 +231,9 @@ SQLite 里的 DateTime 不带时区（测试用的是 SQLite），所以判定�
 
 ```
 GET  /api/admin/health            → 200 {"status":"ok","env":"test"}（不需登录，给 compose healthcheck 用）
-POST /api/admin/auth/login        body {username,password}；头 X-Katrain-Admin: 1
-                                  → 200 {"username","env"} + Set-Cookie | 401 {"detail":"用户名或密码错误，或该账号没有后台权限"} | 403 缺 CSRF 头
-POST /api/admin/auth/logout       → 204，清除 cookie
+POST /api/admin/auth/login        body {username,password}
+                                  → 200 {"username","env","token"}（不设 cookie）| 401 {"detail":"用户名或密码错误，或该账号没有后台权限"}
+POST /api/admin/auth/logout       头 Authorization: Bearer → 204（只记审计；前端丢掉令牌）
 GET  /api/admin/auth/me           → 200 {"username","env"} | 401
 GET  /api/admin/cron/jobs         → 200 {"observed_at", "jobs":[{name, kind, interval_seconds, enabled,
                                           health:{state, reason}, process_started_at, heartbeat_at,
@@ -247,7 +249,7 @@ GET  /api/admin/cron/queues       → 200 {"observed_at",
                                          "report_tasks":{"by_status":{…},"oldest_pending_at"}}
 ```
 - 权威边界：状态数据由 cron 进程写、后台只读；`health` 由后台根据 `observed_at` 当场算出；任务的中文名放在前端的 `jobLabels.ts`，遇到不认识的名字就直接显示原名。
-- 所有需要登录的接口，没有会话都回 401，前端统一跳回登录页。
+- 所有需要登录的接口都读 `Authorization: Bearer`，没有令牌或令牌无效都回 401，前端统一跳回登录页（主页面和运行历史抽屉都一样）。
 
 ### 6.6 页面（按 vertical-slice 七步循环）
 
@@ -273,7 +275,7 @@ GET  /api/admin/cron/queues       → 200 {"observed_at",
 - **骨架**：
   - 公开应用的 openapi 里**没有任何** `/api/admin` 路径，这是核心隔离性质；
   - 后台在 board 模式、弱密钥、未知 env 这三种情况下都拒绝启动；
-  - 会话：带公开站点的 access token 访问后台必须 401（守住 jose 的那个行为）；缺 CSRF 头 403；撤掉 is_admin 后下一次请求 401；
+  - 会话：带公开站点的 access token 访问后台必须 401（守住 jose 的那个行为）；登录不设任何 cookie；撤掉 is_admin 后下一次请求 401；每个响应都带 CSP；
   - compose：develop 与 release 两边，katrain-admin 的端口都只绑 127.0.0.1。
 - **cron**：
   - 记录器：吞掉异常的任务记为 `errors`；抛出异常记为 `failed`；记录器写库失败不影响任务；间隔 < 60 秒的成功运行不写历史；
@@ -293,7 +295,7 @@ GET  /api/admin/cron/queues       → 200 {"observed_at",
 |---|---|
 | 切片 0 发布后，Fan 自己没法编辑教程了 | 发布前先确认各环境的管理员账号（计划里有专门一步，要 Fan 决定） |
 | 合并 develop 到 release 时 `Dockerfile.web` 冲突（两边是完全不同的两份） | 冲突按 release 的版本解决，再手工加上 build:admin 和 COPY 两处；计划里写明 |
-| cron 在 web 建表之前启动，登记失败 | 记录器吞掉写库错误；web 建表之后，下一次心跳把缺的状态行补上（有测试）；生产发布先起 web、确认建好表再起 cron |
+| cron 在 web 建表之前启动，登记失败 | 调度器最多等 60 秒登记成功再发起第一次运行；之后每次心跳重试完整登记（有测试）；生产发布先起 web、确认建好表再起 cron |
 | 撞上 `log*` 忽略规则，新文件没进 git | 文件名避开 log 开头；每个任务提交后用 `git show --stat` 核对文件清单 |
 | 生产 compose 的精确集合测试挡住新服务 | 计划里明确列出要改的每一条断言 |
 

@@ -17,8 +17,8 @@
 ## Global Constraints
 
 - 后台 API 前缀 `/api/admin`，端口 8010。`KATRAIN_ADMIN_ENV ∈ {local, test, prod}`。
-- cookie 名 `katrain_admin_<env>`，HttpOnly、SameSite=Strict、Path=/api/admin、8 小时，不设 Secure。
-- 非 GET 请求必须带 `X-Katrain-Admin: 1`。
+- 会话令牌放在前端的 sessionStorage（键 `katrain_admin_token`），每次请求带 `Authorization: Bearer <令牌>`，8 小时过期。**后台不用 cookie**：cookie 不按端口隔离，本机任何一个被同一浏览器打开过的 localhost 服务都能拿到它（spec §5.3）。
+- 后台的每个响应都带 CSP（`script-src 'self'`、`connect-src 'self'`、`frame-ancestors 'none'` 等）：令牌在 sessionStorage 里，页面上万一出现注入，也发不出令牌。
 - 会话令牌的内容是 `{sub, type:"admin_session", aud:"katrain-admin", env, exp}`，校验时 **type、aud、env 三项都要查**。
 - cron：心跳 30 秒一次；超过 120 秒没有心跳算失联；loop 超过 300 秒没有推进算卡住；运行历史保留 14 天；间隔 ≥ 60 秒的任务每次运行都记历史，更频繁的只记不成功的。
 - `katrain/cron/**` 只许 import 标准库、sqlalchemy 和 `katrain.cron.*`（由 `tests/web_ui/test_cron_import_boundary.py` 守着）。
@@ -31,7 +31,8 @@
 - 带管道的检查命令先写 `set -o pipefail`，否则退出码是 `tail` 的，失败也显示成功（release runbook 2026-09-23 记过这种事故）。生产上的发布命令一律不接管道。
 - 本机 shell 是 zsh：不做词分割；`$VAR:t…` 会被当成路径修饰符，要写成 `${VAR}:…`。
 - 执行者每次调用 Bash、每次 `ssh` 都是新 shell，变量留不到下一步。跨步骤要用的值（端口、PID、SHA、镜像 ID、时间戳）写进文件，或者在每条命令里写成字面量。
-- 判断「有没有弄坏」一律用 Task 2 Step 1 写的 `newfail.sh`，按用例名字和基线比。跑测试之前 `katrain/config.json` 必须是干净的（Task 2 Step 1 核对）：测试会改写这个已提交的文件，事后要还原，而还原会连带冲掉测试之前就有的改动。
+- 判断「有没有弄坏」一律用 Task 2 Step 1 写的 `newfail.sh`（pytest）和 `vitestnewfail.sh`（vitest），按用例名字和基线比。跑测试之前 `katrain/config.json` 必须是干净的（Task 2 Step 1 核对）：测试会改写这个已提交的文件，事后要还原，而还原会连带冲掉测试之前就有的改动。
+- Task 8 起，本 worktree 里同步 Python 依赖一律写 `uv sync --extra web --extra cron`：APScheduler、beautifulsoup4、lxml 原先只写在 `requirements-cron.txt` 里，Task 8 把它们加成 `cron` extra；只写 `--extra web` 会把它们卸掉。
 - 变异检查（亲眼看一条闸红一次）：改之前先 `cp` 备份被改的文件；跑测试时加 `PYTHONDONTWRITEBYTECODE=1`，同一秒内等长的改动和还原会让 Python 读到陈旧的 .pyc；用备份还原。**不要用 `git checkout` 还原**：这时本任务的改动还没提交，会被一起冲掉。
 
 ## Review Focus
@@ -39,7 +40,7 @@
 - cron 进程被 SIGKILL 或 OOM 杀掉，来不及写任何东西：2 分钟内页面必须变成「失联」，不能停在最后一次的「正常」；重启之后，被打断的那次运行在历史里是「失败」，不是永远「运行中」→ Task 9 的 offline 用例、Task 7 的 `test_register_closes_runs_left_running_by_a_process_that_died`，加上 Task 12 的实停验证。
 - cron 比 katrain-web 先启动（两边同时 `up`，表还没建）：web 建好表之后，下一次心跳就要把 9 行状态补上，不能一直空到下次重启 → Task 7 的 `test_heartbeat_fills_in_rows_when_the_table_appeared_after_register`。
 - 任务吞掉了异常、只打了一条 ERROR 日志（cleanup.py 的写法）：必须显示「有报错」，不能显示「成功」→ Task 7 的 `test_a_job_that_swallows_its_exception_is_recorded_as_errors_not_success`。
-- 同一个浏览器里同时开着测试和生产两条隧道（都在 localhost，cookie 不分端口）：不能串号，页头必须显示正确的环境；后台 cookie 也不能被带去本机其他端口的普通页面 → Task 6 的 `test_token_for_other_env_is_rejected` 和 cookie 的 `path=/api/admin` 断言，外加 `SignInPage.test.tsx`。
+- 同一个浏览器里同时开着测试和生产两条隧道，或者本机另一个端口上跑着别的服务：后台会话不能串号，也不能被那个服务拿到。令牌只放在按端口隔离的 sessionStorage 里，登录不设任何 cookie → Task 6 的 `test_login_returns_a_token_and_sets_no_cookie`、`test_token_for_other_env_is_rejected`，Task 2 `client.test.ts` 的 Authorization 用例，外加 `SignInPage.test.tsx` 的环境标签。
 - 管理员登录期间被撤掉权限：下一次请求就必须回到登录页 → Task 6 的 `test_revoking_is_admin_takes_effect_on_next_request`。
 
 ---
@@ -54,8 +55,9 @@
 | `katrain/cron/scheduler.py` | 改 | 所有运行都经过记录器；启动时登记；心跳任务 |
 | `katrain/cron/jobs/analyze.py`、`report_analyze.py` | 改 | `last_iteration_at` + `heartbeat_stats()` |
 | `katrain/cron/jobs/cleanup.py`、`katrain/cron/config.py` | 改 | 清理运行历史；两个新配置 |
+| `pyproject.toml`、`uv.lock`、`requirements-cron.txt` | 改 | 新增 `cron` extra（APScheduler 3.x、bs4、lxml），本地才跑得了 cron 和调度器测试 |
 | `katrain/web/admin/__init__.py`、`__main__.py`、`app.py`、`settings.py` | 新建 | 后台进程、启动闸、静态文件、SPA 兜底 |
-| `katrain/web/admin/session.py`、`audit.py`、`routers/__init__.py`、`routers/auth.py` | 新建 | 会话、CSRF、登录/登出/me、审计 |
+| `katrain/web/admin/session.py`、`audit.py`、`routers/__init__.py`、`routers/auth.py` | 新建 | 会话（Bearer，不用 cookie）、登录/登出/me、审计 |
 | `katrain/web/admin/cron_health.py`、`routers/cron.py` | 新建 | 健康判定、三个只读接口 |
 | `katrain/web/ui/admin.html`、`vite.admin.config.ts` | 新建 | 后台自己的入口和构建配置 |
 | `katrain/web/ui/src/admin/**` | 新建 | 后台前端 |
@@ -125,6 +127,7 @@ for (const state of STATES) {
 }
 ```
 ```bash
+set -o pipefail
 cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
 mkdir -p ../../../superpowers/tracks/admin-console/slice1/reference
 npx playwright test --config=playwright.vite.config.ts tests/admin-reference.shoot.spec.ts --reporter=line 2>&1 | tail -5
@@ -135,6 +138,7 @@ Expected：`8 passed`，目录里正好 8 张 png。有哪一态失败，就是�
 
 - [ ] **Step 6：提交设计稿、参考图和说明**
 ```bash
+set -o pipefail
 cd /Users/fan/Repositories/katrain-admin-console
 git add superpowers/tracks/admin-console/slice1/
 git commit -m "design(admin): cron 可视化设计稿参考图（1440×900，8 态）
@@ -155,12 +159,12 @@ git show --stat HEAD | tail -12
 - Create：`katrain/web/ui/src/admin/api/{client.ts, types.ts, authApi.ts, cronApi.ts}`
 - Create：`katrain/web/ui/src/admin/pages/{SignInPage.tsx, CronPage.tsx}`、`katrain/web/ui/src/admin/components/{AdminShell.tsx, HealthChip.tsx, QueueCards.tsx, RunHistoryDrawer.tsx}`
 - Create（**FIXTURE**，Task 13 删除）：`katrain/web/ui/src/admin/__fixtures__/cronFixture.ts`
-- Test：`katrain/web/ui/src/admin/api/client.test.ts`、`src/admin/pages/CronPage.test.tsx`、`src/admin/pages/SignInPage.test.tsx`
-- 不提交：`.superpowers/baseline/cron_slice_failed_before.txt`、`newfail.sh`、`vitest_before.json`、`vitest_failed_before.txt`（Step 1 生成；之后每次「有没有弄坏」都用它们，Task 13 做最后一次全量对比）
+- Test：`katrain/web/ui/src/admin/api/client.test.ts`、`src/admin/pages/CronPage.test.tsx`、`src/admin/pages/SignInPage.test.tsx`、`src/admin/components/RunHistoryDrawer.test.tsx`
+- 不提交：`.superpowers/baseline/cron_slice_failed_before.txt`、`newfail.sh`、`vitestnewfail.sh`、`vitest_failed_before.txt`（Step 1 生成；之后每次「有没有弄坏」都用它们，Task 13 做最后一次全量对比）
 
 **Interfaces:**
-- Produces（TS 契约，Task 3 定稿，Task 10 的后端必须与之一致）：`src/admin/api/types.ts` 里的 `AdminEnv`、`AdminMe`、`HealthState`、`RunStatus`、`CronJob`、`CronJobsResponse`、`CronRun`、`CronRunsResponse`、`QueueSummary`、`CronQueuesResponse`
-- Produces：`adminFetch<T>(path, init?)`、`AdminAuthError(message?)`、`AdminApiError(status, message)`
+- Produces（TS 契约，Task 3 定稿，Task 10 的后端必须与之一致）：`src/admin/api/types.ts` 里的 `AdminEnv`、`AdminMe`、`AdminLogin`、`HealthState`、`RunStatus`、`CronJob`、`CronJobsResponse`、`CronRun`、`CronRunsResponse`、`QueueSummary`、`CronQueuesResponse`
+- Produces：`adminFetch<T>(path, init?)`（有令牌就带 `Authorization: Bearer`，从不带 cookie）、`getToken()` / `setToken(token)` / `clearToken()`（sessionStorage 键 `katrain_admin_token`）、`errorText(e)`、`AdminAuthError(message?)`、`AdminApiError(status, message)`
 - Produces：data-testid `admin-env`、`admin-main`、`cron-error`、`cron-loading`、`cron-empty`、`cron-process`、`cron-table`、`cron-row-<name>`、`health-<state>`、`queue-live`、`queue-report`、`run-history-scroll`、`signin-env`
 
 - [ ] **Step 1：改任何代码之前：装 Python 依赖，确认 `katrain/config.json` 是干净的，记录两份基线，写好「只报新增失败」的小脚本**（切片 0 已在这个 worktree 里装过依赖时，`uv sync` 很快结束）
@@ -192,25 +196,47 @@ new=$(grep -E '^(FAILED|ERROR) ' "$log" | sed -E 's/ - .*//' | sort -u | comm -1
 [ -z "$new" ] && exit 0
 echo "!! 新增失败："; echo "$new"; exit 1
 SH
-(cd katrain/web/ui && npx vitest run --reporter=json --outputFile=$B/vitest_before.json > /dev/null 2>&1); echo "vitest exit=$?"
-python3 - "$B/vitest_before.json" "$B/vitest_failed_before.txt" <<'PY'
+cat > $B/vitestnewfail.sh <<'SH'
+#!/usr/bin/env bash
+# 用法（在 worktree 根目录）：
+#   bash .superpowers/baseline/vitestnewfail.sh --record <基线文件>   记下当前失败的用例名（改前端之前跑一次）
+#   bash .superpowers/baseline/vitestnewfail.sh <基线文件>            只报基线里没有的失败：有 → 退出码 1
+# vitest 本身没跑成（退出码不是 0/1、没生成报告、报告里一条用例都没有）→ 退出码 2。
+# 报告每次写进新的临时文件，不会读到上一次留下的。
+set -uo pipefail
+record=0; [ "${1:-}" = "--record" ] && { record=1; shift; }
+base="$1"
+out="$(mktemp)"; rm -f "$out"; out="$out.json"
+(cd katrain/web/ui && npx vitest run --reporter=json --outputFile="$out" > /dev/null 2>&1); rc=$?
+[ "$rc" -le 1 ] || { echo "!! vitest 退出码 $rc"; exit 2; }
+[ -s "$out" ] || { echo "!! vitest 没有生成报告"; exit 2; }
+names="$(python3 - "$out" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
+if not d.get("numTotalTests"):
+    sys.exit(3)
 names = set()
 for f in d["testResults"]:
     file = f["name"].split("/katrain/web/ui/")[-1]
     if f.get("status") == "failed" and not f["assertionResults"]:
         names.add(f"{file} :: <文件本身没跑起来>")
     names |= {f"{file} :: {a['fullName']}" for a in f["assertionResults"] if a["status"] == "failed"}
-open(sys.argv[2], "w").write("".join(n + "\n" for n in sorted(names)))
-print(d["numTotalTests"], "tests,", len(names), "failed")
+print(f"# {d['numTotalTests']} tests, {len(names)} failed", file=sys.stderr)
+print("\n".join(sorted(names)))
 PY
+)" || { echo "!! vitest 报告里一条用例都没有"; exit 2; }
+if [ "$record" = 1 ]; then printf '%s\n' "$names" | grep . | sort -u > "$base"; exit 0; fi
+new="$(printf '%s\n' "$names" | grep . | sort -u | comm -13 "$base" -)"
+[ -z "$new" ] && exit 0
+echo "!! 新增失败："; echo "$new"; exit 1
+SH
+bash $B/vitestnewfail.sh --record $B/vitest_failed_before.txt; echo "record exit=$?"
 git status --short
 ```
 Expected：
 - 打印 `ignored-ok` 和 `config-clean`。**没打印 `config-clean` 就停**：`katrain/config.json` 在跑测试之前就有未提交的改动，先弄清楚是谁的，否则后面「还原被测试改写的 config.json」会把它一起冲掉；
 - `pytest exit=0` 或 `1`（2–5 说明 pytest 本身没跑成，基线作废）；下一行是 pytest 的 summary（形如 `3 failed, 1234 passed … in 95.1s`）；`wc -l` 输出一个数（可以是 0）；
-- 最后打印 vitest 的用例总数和失败数；
+- 最后 `vitestnewfail.sh --record` 打印 `# N tests, M failed`，然后 `record exit=0`；
 - `git status --short` 为空；如果出现了 `katrain/config.json`（测试改写的），执行 `git checkout -- katrain/config.json` 还原。
 
 不要把还不存在的测试文件当参数传给 pytest：pytest 会以用法错误直接退出，基线就会**静默为空**。
@@ -220,21 +246,28 @@ Expected：
 `src/admin/api/client.test.ts`：
 ```ts
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { adminFetch } from './client';
+import { adminFetch, clearToken, setToken } from './client';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  clearToken();
+});
 
+// 每次调用都给一个新的 Response：同一个 Response 的 body 只能读一次，第二次 fetch 会报 "Body is unusable"。
 const reply = (status: number, body: unknown) =>
-  vi.fn().mockResolvedValue(new Response(status === 204 ? null : JSON.stringify(body), { status }));
+  vi.fn().mockImplementation(async () => new Response(status === 204 ? null : JSON.stringify(body), { status }));
 
 describe('adminFetch', () => {
-  it('非 GET 请求带上 X-Katrain-Admin: 1，GET 不带', async () => {
+  it('有令牌时带 Authorization: Bearer，没有时不带；从不带 cookie', async () => {
     const f = reply(200, { ok: 1 });
     vi.stubGlobal('fetch', f);
-    await adminFetch('/api/admin/auth/login', { method: 'POST', body: '{}' });
+    setToken('t-123');
     await adminFetch('/api/admin/cron/jobs');
-    expect(new Headers(f.mock.calls[0][1].headers).get('X-Katrain-Admin')).toBe('1');
-    expect(new Headers(f.mock.calls[1][1].headers).get('X-Katrain-Admin')).toBeNull();
+    clearToken();
+    await adminFetch('/api/admin/cron/jobs');
+    expect(new Headers(f.mock.calls[0][1].headers).get('Authorization')).toBe('Bearer t-123');
+    expect(new Headers(f.mock.calls[1][1].headers).get('Authorization')).toBeNull();
+    expect(f.mock.calls[0][1].credentials).toBe('omit');
   });
 
   it('401 抛 AdminAuthError，并带上服务端给的说明', async () => {
@@ -360,6 +393,31 @@ describe('SignInPage', () => {
 });
 ```
 
+`src/admin/components/RunHistoryDrawer.test.tsx`：
+```tsx
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi, type Mock } from 'vitest';
+import RunHistoryDrawer from './RunHistoryDrawer';
+import { getCronRuns } from '../api/cronApi';
+import { AdminAuthError } from '../api/client';
+import type { CronJob } from '../api/types';
+
+const { expire } = vi.hoisted(() => ({ expire: vi.fn() }));
+vi.mock('../api/cronApi', () => ({ getCronRuns: vi.fn() }));
+vi.mock('../session', () => ({ useAdminSession: () => ({ expire }) }));
+
+const job = { name: 'fetch_list', kind: 'interval', interval_seconds: 60, health: { state: 'ok', reason: '' }, last_error: null } as unknown as CronJob;
+
+describe('RunHistoryDrawer', () => {
+  it('会话失效（401）交给会话层处理（回登录页），不显示成数据错误', async () => {
+    (getCronRuns as Mock).mockRejectedValue(new AdminAuthError());
+    render(<RunHistoryDrawer job={job} onClose={() => {}} />);
+    await vi.waitFor(() => expect(expire).toHaveBeenCalled());
+    expect(screen.queryByText(/无法获取运行记录/)).toBeNull();
+  });
+});
+```
+
 - [ ] **Step 3：跑测试，确认失败**：`cd katrain/web/ui && npx vitest run src/admin 2>&1 | tail -8`。期望结果：FAIL，报模块找不到。
 
 - [ ] **Step 4：入口、构建配置、脚本、忽略规则**
@@ -465,6 +523,7 @@ const forbiddenFromAdmin = [
 // 后台接口契约（spec §6.5）。后端 katrain/web/admin/routers/*.py 的 pydantic 模型必须与这里一致。
 export type AdminEnv = 'local' | 'test' | 'prod';
 export interface AdminMe { username: string; env: AdminEnv }
+export interface AdminLogin extends AdminMe { token: string }
 export interface AdminHealth { status: string; env: AdminEnv }
 
 export type HealthState = 'offline' | 'disabled' | 'pending' | 'stuck' | 'running' | 'failed' | 'errors' | 'overdue' | 'ok';
@@ -509,7 +568,37 @@ export interface CronQueuesResponse { observed_at: string; live_analysis: QueueS
 
 `src/admin/api/client.ts`：
 ```ts
-// 后台的所有请求都走这里：同源 cookie 会话；非 GET 请求带 X-Katrain-Admin: 1（后端的 CSRF 闸）。
+// 后台的所有请求都走这里。会话令牌放在 sessionStorage：它按「协议+主机+端口」隔离，本机别的端口上的页面读不到；
+// 每次请求带 Authorization: Bearer。不用 cookie —— cookie 不分端口（spec §5.3）。
+const TOKEN_KEY = 'katrain_admin_token';
+let memoryToken: string | null = null; // 浏览器禁用 storage 时的退路：只活到刷新页面为止
+
+export function getToken(): string | null {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY) ?? memoryToken;
+  } catch {
+    return memoryToken;
+  }
+}
+
+export function setToken(token: string): void {
+  memoryToken = token;
+  try {
+    sessionStorage.setItem(TOKEN_KEY, token);
+  } catch {
+    /* storage blocked: memoryToken still carries this page */
+  }
+}
+
+export function clearToken(): void {
+  memoryToken = null;
+  try {
+    sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* nothing was stored */
+  }
+}
+
 export class AdminAuthError extends Error {
   constructor(message = '未登录或会话已失效') {
     super(message);
@@ -536,11 +625,11 @@ async function detailOf(res: Response): Promise<string | undefined> {
 }
 
 export async function adminFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const method = (init.method ?? 'GET').toUpperCase();
   const headers = new Headers(init.headers);
-  if (method !== 'GET') headers.set('X-Katrain-Admin', '1');
+  const token = getToken();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-  const res = await fetch(path, { ...init, method, headers, credentials: 'same-origin' });
+  const res = await fetch(path, { ...init, headers, credentials: 'omit' });
   if (res.status === 401) throw new AdminAuthError(await detailOf(res));
   if (!res.ok) throw new AdminApiError(res.status, (await detailOf(res)) ?? (res.statusText || '请求失败'));
   return (res.status === 204 ? undefined : await res.json()) as T;
@@ -555,8 +644,8 @@ export function errorText(e: unknown): string {
 
 `src/admin/api/authApi.ts`：
 ```ts
-import { adminFetch } from './client';
-import type { AdminHealth, AdminMe } from './types';
+import { adminFetch, AdminAuthError, clearToken, getToken, setToken } from './client';
+import type { AdminHealth, AdminLogin, AdminMe } from './types';
 
 // FIXTURE 分支：删除条件与 cronApi.ts 相同（Task 13）。
 const useFixture = import.meta.env.VITE_ADMIN_FIXTURE === 'true';
@@ -565,16 +654,27 @@ const fixture = () => import('../__fixtures__/cronFixture');
 export const getHealth = async (): Promise<AdminHealth> =>
   useFixture ? (await fixture()).healthFixture() : adminFetch<AdminHealth>('/api/admin/health');
 
-export const getMe = async (): Promise<AdminMe> =>
-  useFixture ? (await fixture()).meFixture() : adminFetch<AdminMe>('/api/admin/auth/me');
+export const getMe = async (): Promise<AdminMe> => {
+  if (useFixture) return (await fixture()).meFixture();
+  if (!getToken()) throw new AdminAuthError(); // 这个标签页还没登录过：不必去问服务端
+  return adminFetch<AdminMe>('/api/admin/auth/me');
+};
 
-export const login = async (username: string, password: string): Promise<AdminMe> =>
-  useFixture
-    ? (await fixture()).loginFixture()
-    : adminFetch<AdminMe>('/api/admin/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+export const login = async (username: string, password: string): Promise<AdminMe> => {
+  const r = useFixture
+    ? await (await fixture()).loginFixture()
+    : await adminFetch<AdminLogin>('/api/admin/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+  setToken(r.token);
+  return { username: r.username, env: r.env };
+};
 
-export const logout = async (): Promise<void> =>
-  useFixture ? undefined : adminFetch<void>('/api/admin/auth/logout', { method: 'POST' });
+export const logout = async (): Promise<void> => {
+  try {
+    if (!useFixture) await adminFetch<void>('/api/admin/auth/logout', { method: 'POST' });
+  } finally {
+    clearToken(); // 服务端不存会话：丢掉令牌就是登出；那边只记一笔审计
+  }
+};
 ```
 
 `src/admin/api/cronApi.ts`：
@@ -612,7 +712,7 @@ export async function getCronQueues(): Promise<CronQueuesResponse> {
 // 在同一个提交里删除。用法：/admin.html?fixture=<ok|mixed|offline|error|missing|empty|many>&env=<local|test|prod>#/cron
 // 加 &signedout=1 表示「还没登录」（getMe 返回 401），用来截登录页。
 import { AdminApiError, AdminAuthError } from '../api/client';
-import type { AdminEnv, AdminHealth, AdminMe, CronJob, CronJobsResponse, CronQueuesResponse, CronRun, CronRunsResponse } from '../api/types';
+import type { AdminEnv, AdminHealth, AdminLogin, AdminMe, CronJob, CronJobsResponse, CronQueuesResponse, CronRun, CronRunsResponse } from '../api/types';
 
 const params = () => new URLSearchParams(window.location.search);
 const scenario = () => params().get('fixture') ?? 'mixed';
@@ -690,7 +790,7 @@ export function queuesFixture(): Promise<CronQueuesResponse> {
 
 export const meFixture = (): Promise<AdminMe> =>
   params().get('signedout') ? Promise.reject(new AdminAuthError()) : Promise.resolve({ username: 'fan', env: env() });
-export const loginFixture = (): Promise<AdminMe> => Promise.resolve({ username: 'fan', env: env() });
+export const loginFixture = (): Promise<AdminLogin> => Promise.resolve({ username: 'fan', env: env(), token: 'fixture-token' });
 export const healthFixture = (): Promise<AdminHealth> => Promise.resolve({ status: 'ok', env: env() });
 ```
 
@@ -768,7 +868,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { Navigate, useLocation } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import { getMe, login as apiLogin, logout as apiLogout } from './api/authApi';
-import { AdminAuthError } from './api/client';
+import { clearToken } from './api/client';
 import type { AdminMe } from './api/types';
 
 interface SessionValue {
@@ -796,19 +896,24 @@ export function AdminSessionProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     try {
       await apiLogout();
-    } catch (e) {
-      if (!(e instanceof AdminAuthError)) throw e;
+    } catch {
+      /* 令牌已经在 apiLogout 里丢掉了；服务端这次没记上 logout 审计，不影响登出 */
+    } finally {
+      setMe(null);
     }
-    setMe(null);
   }, []);
 
-  const expire = useCallback(() => setMe(null), []);
+  const expire = useCallback(() => {
+    clearToken();
+    setMe(null);
+  }, []);
 
   return (
     <SessionContext.Provider value={{ me, checking, signIn, signOut, expire }}>{children}</SessionContext.Provider>
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook 和 Provider 放在一起，与 src/kiosk/context/*.tsx 同一写法
 export function useAdminSession(): SessionValue {
   const value = useContext(SessionContext);
   if (!value) throw new Error('useAdminSession must be used inside AdminSessionProvider');
@@ -1028,14 +1133,16 @@ export default function QueueCards({ queues }: { queues: CronQueuesResponse }) {
 import { useEffect, useState } from 'react';
 import { Alert, Box, Button, Drawer, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { getCronRuns } from '../api/cronApi';
-import { errorText } from '../api/client';
+import { AdminAuthError, errorText } from '../api/client';
 import type { CronJob, CronRun } from '../api/types';
+import { useAdminSession } from '../session';
 import { jobLabel } from '../jobLabels';
 import { fmtDateTime, fmtDuration } from '../format';
 
 const RUN_LABEL: Record<CronRun['status'], string> = { running: '运行中', success: '成功', errors: '有报错', failed: '失败' };
 
 export default function RunHistoryDrawer({ job, onClose }: { job: CronJob | null; onClose: () => void }) {
+  const { expire } = useAdminSession();
   const [runs, setRuns] = useState<CronRun[]>([]);
   const [next, setNext] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1050,10 +1157,14 @@ export default function RunHistoryDrawer({ job, onClose }: { job: CronJob | null
     setLoading(true);
     getCronRuns(job.name)
       .then((r) => { if (alive) { setRuns(r.runs); setNext(r.next_before_id); } })
-      .catch((e) => { if (alive) setError(errorText(e)); })
+      .catch((e) => {
+        if (!alive) return;
+        if (e instanceof AdminAuthError) expire(); // 会话失效交给会话层（回登录页），和 CronPage 一样
+        else setError(errorText(e));
+      })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [job]);
+  }, [job, expire]);
 
   const loadMore = async () => {
     if (!job || next === null) return;
@@ -1063,7 +1174,8 @@ export default function RunHistoryDrawer({ job, onClose }: { job: CronJob | null
       setRuns((prev) => [...prev, ...r.runs]);
       setNext(r.next_before_id);
     } catch (e) {
-      setError(errorText(e));
+      if (e instanceof AdminAuthError) expire();
+      else setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -1103,7 +1215,8 @@ export default function RunHistoryDrawer({ job, onClose }: { job: CronJob | null
                       <TableCell>{RUN_LABEL[r.status]}</TableCell>
                       <TableCell>{r.duration_ms != null ? fmtDuration(r.duration_ms) : '—'}</TableCell>
                       <TableCell sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
-                        {r.error ?? (r.error_count ? `${r.error_count} 条报错` : '')}
+                        {r.error ?? ''}
+                        {r.error_count > 1 && `（这次运行一共 ${r.error_count} 条报错，这里是第一条）`}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1177,6 +1290,7 @@ export default function CronPage() {
 
   useEffect(() => {
     alive.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 首次拉取是异步的：load() 只在 await 之后 setState
     void load();
     const timer = window.setInterval(() => void load(), REFRESH_MS);
     return () => {
@@ -1208,7 +1322,7 @@ export default function CronPage() {
                 <TableHead>
                   <TableRow>
                     <TableCell>任务</TableCell><TableCell>状态</TableCell><TableCell>频率</TableCell><TableCell>上次开始</TableCell>
-                    <TableCell>耗时</TableCell><TableCell>连续不成功</TableCell><TableCell>最后一条报错</TableCell>
+                    <TableCell>耗时</TableCell><TableCell>连续不成功</TableCell><TableCell>最近报错</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -1242,12 +1356,13 @@ export default function CronPage() {
 
 - [ ] **Step 10：跑测试、类型检查和 lint**
 ```bash
+set -o pipefail
 cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
 npx vitest run src/admin 2>&1 | tail -6
 npx tsc -b 2>&1 | tail -5
 npx eslint src/admin eslint.config.js
 ```
-期望结果：vitest 全部 PASS；`tsc -b` 没有输出；eslint 没有 error（和 `AuthContext.tsx` 同款的 `react-refresh/only-export-components` warning 可以接受）。
+期望结果：vitest 全部 PASS；`tsc -b` 没有输出；eslint 没有输出。这份配置里 `react-refresh/only-export-components` 和 `react-hooks/set-state-in-effect` 都是 error，不是 warning（仓里现有的 `AuthContext.tsx` 自己就带着这个 error）；本计划的代码按仓里先例（`src/kiosk/context/VisionContext.tsx`）在那两行用 `eslint-disable-next-line … -- 理由` 写明了为什么可以。
 
 - [ ] **Step 11：边界规则的变异检查**（每条闸都要亲眼看到它红一次）
 ```bash
@@ -1262,11 +1377,13 @@ npx eslint src/__mut_public_admin.ts; echo "exit=$?"; rm src/__mut_public_admin.
 
 - [ ] **Step 12：假数据界面能跑起来，也能构建**
 ```bash
+set -o pipefail
 npm run build:admin 2>&1 | tail -3
 ls ../static-admin/admin.html ../static-admin/assets | head
 lsof -iTCP:5174 -sTCP:LISTEN && echo '!! 5174 已被占用：先用 ps -o command= -p <pid> 查清是谁，别让截图打到别人的服务上'
 (VITE_ADMIN_FIXTURE=true npm run dev:admin > /private/tmp/claude-501/admin-dev.log 2>&1 &)
-for i in $(seq 1 60); do curl -sf http://127.0.0.1:5174/admin.html | grep -q 'KaTrain 管理后台' && break; sleep 1; done; echo ready
+for i in $(seq 1 60); do curl -sf http://127.0.0.1:5174/admin.html | grep -q 'KaTrain 管理后台' && break; sleep 1; done
+curl -sf http://127.0.0.1:5174/admin.html | grep -q 'KaTrain 管理后台' && echo ready || echo '!! vite 没起来：看 /private/tmp/claude-501/admin-dev.log'
 ```
 期望结果：构建以 `built in` 结尾；`static-admin/admin.html` 存在；在浏览器里打开 `http://127.0.0.1:5174/admin.html?fixture=mixed&env=test#/cron` 能看到完整界面。
 
@@ -1274,6 +1391,7 @@ for i in $(seq 1 60); do curl -sf http://127.0.0.1:5174/admin.html | grep -q 'Ka
 
 - [ ] **Step 14：提交**（提交后用 `--stat` 核对文件清单，防止有文件被 `.gitignore` 吞掉）
 ```bash
+set -o pipefail
 cd /Users/fan/Repositories/katrain-admin-console
 git add .gitignore katrain/web/ui/admin.html katrain/web/ui/vite.admin.config.ts katrain/web/ui/package.json katrain/web/ui/eslint.config.js katrain/web/ui/src/admin
 git status --short --ignored katrain/web/ui/src/admin | grep '^!!' && echo "!! 有文件被忽略" || true
@@ -1303,7 +1421,8 @@ vite dev 没在跑时（比如换了会话接着做），先起 fixture 模式�
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
 curl -sf http://127.0.0.1:5174/admin.html | grep -q 'KaTrain 管理后台' || (VITE_ADMIN_FIXTURE=true npm run dev:admin > /private/tmp/claude-501/admin-dev.log 2>&1 &)
-for i in $(seq 1 60); do curl -sf http://127.0.0.1:5174/admin.html | grep -q 'KaTrain 管理后台' && break; sleep 1; done; echo ready
+for i in $(seq 1 60); do curl -sf http://127.0.0.1:5174/admin.html | grep -q 'KaTrain 管理后台' && break; sleep 1; done
+curl -sf http://127.0.0.1:5174/admin.html | grep -q 'KaTrain 管理后台' && echo ready || echo '!! vite 没起来：看 /private/tmp/claude-501/admin-dev.log'
 ```
 写一次性的截图脚本 `katrain/web/ui/tests/admin-impl.shoot.spec.ts`：
 ```ts
@@ -1346,6 +1465,7 @@ test('impl drawer', async ({ page }) => {
 });
 ```
 ```bash
+set -o pipefail
 mkdir -p ../../../superpowers/tracks/admin-console/slice1/impl
 npx playwright test --config=playwright.vite.config.ts tests/admin-impl.shoot.spec.ts --reporter=line 2>&1 | tail -5
 rm tests/admin-impl.shoot.spec.ts
@@ -1439,6 +1559,7 @@ test('M3 最空不塌', async ({ page }) => {
 （M2 数到 200 行时，fixture 的 200 条已经全部加载完，所以「加载更早的记录」按钮在第 3 次点击后应当消失。这一项只记录，不作判据。）
 
 ```bash
+set -o pipefail
 cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
 npx playwright test --config=playwright.vite.config.ts tests/admin-cron.measure.spec.ts --reporter=line 2>&1 | tail -20
 ```
@@ -1490,10 +1611,16 @@ PAIRS = [
 ]
 
 
+def _default(d):
+    return None if d is None else repr(getattr(d, "arg", d))
+
+
 def _shape(model):
-    """每一列决定表能收什么的全部属性：带长度的 SQL 类型、时区、可空、主键、单列索引、有没有默认值；再加上表的具名索引。"""
+    """每一列决定表能收什么的全部属性：带长度的 SQL 类型、时区、可空、主键、单列索引、默认值与 server_default 的内容；
+    再加上表的具名索引。"""
     cols = {
-        c.name: (str(c.type), getattr(c.type, "timezone", None), c.nullable, c.primary_key, bool(c.index), c.default is not None)
+        c.name: (str(c.type), getattr(c.type, "timezone", None), c.nullable, c.primary_key, bool(c.index),
+                 _default(c.default), _default(c.server_default))
         for c in model.__table__.columns
     }
     indexes = {(i.name, tuple(col.name for col in i.columns)) for i in model.__table__.indexes}
@@ -1619,15 +1746,22 @@ class CronJobRunDB(Base):
     __table_args__ = (Index("ix_cron_job_runs_job_started", "job_name", "started_at"),)
 ```
 - [ ] **Step 5**：重跑 Step 2 的命令。期望结果：2 passed。再跑 `CI=true uv run pytest tests/web_ui/test_cron_import_boundary.py -q -p no:cacheprovider`，期望结果：passed。
-- [ ] **Step 6：变异检查**（本任务的改动还没提交，**不要用 `git checkout` 还原**，那会把它们一起冲掉）：
+- [ ] **Step 6：变异检查**（本任务的改动还没提交，**不要用 `git checkout` 还原**，那会把它们一起冲掉）。两次变异分开做，每次都是备份、改、跑、还原：
 ```bash
+set -o pipefail
 cd /Users/fan/Repositories/katrain-admin-console
 cp katrain/cron/models.py /private/tmp/claude-501/cron-models.py.bak
-# 变异 1：删掉 cron 侧 CronJobStatusDB 的 last_error 一行；变异 2（先还原再做）：把 cron 侧 job_name 的 String(64) 改成 String(255)
+# 变异 1：cron 侧 CronJobStatusDB 少一列
+python3 -c "import pathlib; p = pathlib.Path('katrain/cron/models.py'); s = p.read_text(); old = '    last_error = Column(Text, nullable=True)\n    consecutive_failures'; assert s.count(old) == 1; p.write_text(s.replace(old, '    consecutive_failures'))"
 PYTHONDONTWRITEBYTECODE=1 CI=true uv run pytest tests/web_ui/test_cron_status_tables_parity.py -q -p no:cacheprovider 2>&1 | tail -3
 cp /private/tmp/claude-501/cron-models.py.bak katrain/cron/models.py
+# 变异 2：只改一列的长度
+python3 -c "import pathlib; p = pathlib.Path('katrain/cron/models.py'); s = p.read_text(); old = 'job_name = Column(String(64), primary_key=True)'; assert s.count(old) == 1; p.write_text(s.replace(old, 'job_name = Column(String(255), primary_key=True)'))"
+PYTHONDONTWRITEBYTECODE=1 CI=true uv run pytest tests/web_ui/test_cron_status_tables_parity.py -q -p no:cacheprovider 2>&1 | tail -3
+cp /private/tmp/claude-501/cron-models.py.bak katrain/cron/models.py
+PYTHONDONTWRITEBYTECODE=1 CI=true uv run pytest tests/web_ui/test_cron_status_tables_parity.py -q -p no:cacheprovider 2>&1 | tail -3
 ```
-期望结果：两次变异各跑一次，都 FAIL（第二次证明比较已经细到字符串长度，旧写法只比类型类名，会漏掉它）；还原之后重跑 Step 5，2 passed。
+期望结果：前两次都 FAIL（第二次证明比较已经细到字符串长度）；最后一次 2 passed。
 - [ ] **Step 7：提交** `feat(admin): cron 状态 / 运行历史 / 后台审计三张表`（`git add` 上面三个文件）。
 
 ---
@@ -1639,7 +1773,7 @@ cp /private/tmp/claude-501/cron-models.py.bak katrain/cron/models.py
 - Test：`tests/web_ui/test_admin_app.py`
 
 **Interfaces:**
-- Produces：`create_admin_app(session_factory=None, static_dir: Path | None = None, env: str | None = None) -> FastAPI`，其中 `app.state.session_factory` 和 `app.state.admin_env` 供依赖读取；`check_startup() -> str`；`NOT_BUILT: str`
+- Produces：`create_admin_app(session_factory=None, static_dir: Path | None = None, env: str | None = None) -> FastAPI`，其中 `app.state.session_factory` 和 `app.state.admin_env` 供依赖读取；`check_startup() -> str`；`NOT_BUILT: str`；`CSP: str`（每个响应都带）
 
 - [ ] **Step 1：写测试**
 ```python
@@ -1692,6 +1826,15 @@ def test_startup_guards_accept_a_sane_config(monkeypatch):
     assert admin_settings.check_startup() == "prod"
 
 
+def test_every_response_carries_the_csp(tmp_path):
+    """令牌在前端 sessionStorage 里（session.py 说明了为什么不用 cookie），页面这一侧靠 CSP：只许本源脚本、只许向本源发请求。"""
+    (tmp_path / "admin.html").write_text("<html>admin</html>", encoding="utf-8")
+    client = _client(tmp_path)
+    for path in ("/", "/api/admin/health", "/api/admin/nope"):
+        csp = client.get(path).headers.get("content-security-policy", "")
+        assert "script-src 'self'" in csp and "connect-src 'self'" in csp and "frame-ancestors 'none'" in csp, path
+
+
 def test_public_app_exposes_no_admin_routes(app):
     """核心隔离性质：公开的 katrain-web 上一条 /api/admin 路由都没有（FastAPI 0.115：include_router 直接展开成 APIRoute）。"""
     paths = [getattr(r, "path", "") or "" for r in app.routes]
@@ -1714,8 +1857,8 @@ def test_public_app_exposes_no_admin_routes(app):
 ```python
 """katrain-admin 的启动配置与启动闸。
 
-后台绝不能在盒子上跑，也不能用弱密钥签会话。环境名会写进 cookie 名和令牌：
-测试机与生产两条隧道都在 localhost 上，cookie 不分端口，靠它互不串号。
+后台绝不能在盒子上跑，也不能用弱密钥签会话。环境名会写进令牌：测试机与生产两条隧道各在自己的
+本机端口上，令牌放在按端口隔离的 sessionStorage 里，env 再兜一层，互不串号。
 """
 import os
 
@@ -1755,6 +1898,12 @@ from katrain.web.admin import settings as admin_settings
 
 DEFAULT_STATIC_DIR = Path(__file__).resolve().parent.parent / "static-admin"
 NOT_BUILT = "后台前端未构建：在 katrain/web/ui 下运行 npm run build:admin"
+# 令牌在前端 sessionStorage 里（session.py），页面这一侧的防线是 CSP：只许加载本源的脚本、只许向本源发请求，
+# 页面上万一出现注入，也执行不了外来脚本、发不出令牌。MUI（emotion）运行时插 <style>，所以 style-src 要 'unsafe-inline'。
+CSP = (
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+    "font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+)
 
 
 def create_admin_app(session_factory=None, static_dir: Path | None = None, env: str | None = None) -> FastAPI:
@@ -1765,6 +1914,14 @@ def create_admin_app(session_factory=None, static_dir: Path | None = None, env: 
     app = FastAPI(title="katrain-admin", docs_url=None, redoc_url=None, openapi_url=None)
     app.state.session_factory = session_factory
     app.state.admin_env = env or admin_settings.admin_env()
+
+    @app.middleware("http")
+    async def security_headers(request, call_next):
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = CSP
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        return response
 
     @app.get("/api/admin/health")
     async def health():
@@ -1839,8 +1996,9 @@ sleep 4; curl -s http://127.0.0.1:8019/api/admin/health; echo; kill %1
 - Create：`tests/web_ui/_admin_helpers.py`；Test：`tests/web_ui/test_admin_auth.py`
 
 **Interfaces:**
-- Produces：`require_admin(request) -> dict`（用户 dict，包含 `id`、`username`、`is_admin`；任何失败都抛 401）、`require_csrf_header(request)`（缺少请求头抛 403）、`cookie_name(env) -> str`、`create_session_token(username, env, now=None) -> str`、`audit.record(db, action, username, admin_user_id=None, target=None, detail=None)`
-- Produces（测试辅助）：`make_admin_client(monkeypatch, tmp_path, env="test") -> (TestClient, Session, engine)`、`login(client, username="boss", password="pw")`、`CSRF`
+- Produces：`require_admin(request) -> dict`（读 `Authorization: Bearer <令牌>`；返回的用户 dict 含 `id`、`username`、`is_admin`；任何失败都抛 401）、`bearer_token(request) -> str | None`、`create_session_token(username, env, now=None) -> str`、`username_from_token(token, env) -> str | None`、`audit.record(db, action, username, admin_user_id=None, target=None, detail=None)`
+- Produces（接口）：`POST /api/admin/auth/login` → `{username, env, token}`，**不设任何 cookie**；`POST /api/admin/auth/logout` → 204，只记审计；`GET /api/admin/auth/me` → `{username, env}`
+- Produces（测试辅助）：`make_admin_client(monkeypatch, tmp_path, env="test") -> (TestClient, Session, engine)`、`login(client, username="boss", password="pw")`（登录，并把令牌设成这个 client 之后每个请求的默认请求头）、`bearer(token) -> dict`
 
 - [ ] **Step 1：测试辅助和测试**
 
@@ -1856,8 +2014,6 @@ from sqlalchemy.pool import StaticPool
 from katrain.web.admin.app import create_admin_app
 from katrain.web.core import models_db
 from katrain.web.core.config import settings
-
-CSRF = {"X-Katrain-Admin": "1"}
 
 
 def make_admin_client(monkeypatch, tmp_path, env="test"):
@@ -1875,23 +2031,29 @@ def make_admin_client(monkeypatch, tmp_path, env="test"):
     return client, Session, engine
 
 
+def bearer(token):
+    return {"Authorization": f"Bearer {token}"}
+
+
 def login(client, username="boss", password="pw"):
-    r = client.post("/api/admin/auth/login", json={"username": username, "password": password}, headers=CSRF)
+    """登录，并把令牌设成这个 client 之后每个请求的默认请求头（和前端每次请求都带 Authorization 一样）。"""
+    r = client.post("/api/admin/auth/login", json={"username": username, "password": password})
     assert r.status_code == 200, r.text
+    client.headers.update(bearer(r.json()["token"]))
     return r
 ```
 
 `tests/web_ui/test_admin_auth.py`：
 ```python
-"""后台鉴权：登录/登出/me、会话令牌的三重校验、CSRF 头、撤权即时生效、审计。"""
+"""后台鉴权：登录/登出/me、令牌的三重校验、撤权即时生效、审计；登录不设任何 cookie。"""
 import pytest
 from fastapi import HTTPException
 
-from katrain.web.admin.session import cookie_name, create_session_token
+from katrain.web.admin.session import create_session_token
 from katrain.web.core import models_db
 from katrain.web.core.auth import create_access_token
 from katrain.web.core.config import settings
-from tests.web_ui._admin_helpers import CSRF, login, make_admin_client
+from tests.web_ui._admin_helpers import bearer, login, make_admin_client
 
 LOGIN_FAILED = "用户名或密码错误，或该账号没有后台权限"
 
@@ -1908,15 +2070,20 @@ def _audit(Session):
         return [(r.action, r.username, (r.detail or {}).get("reason")) for r in rows]
 
 
-def test_admin_logs_in_gets_a_strict_httponly_cookie_and_me(ctx):
+def test_login_returns_a_token_and_sets_no_cookie(ctx):
+    """令牌只交给页面自己（sessionStorage 按端口隔离）。cookie 不分端口，本机别的服务会收到它。"""
     client, Session = ctx
     r = login(client)
-    assert r.json() == {"username": "boss", "env": "test"}
-    cookie = r.headers["set-cookie"].lower()
-    assert cookie.startswith(cookie_name("test")) and "httponly" in cookie and "samesite=strict" in cookie
-    assert "path=/api/admin" in cookie  # cookies ignore ports: keep it off other localhost services' pages
+    body = r.json()
+    assert (body["username"], body["env"]) == ("boss", "test") and body["token"]
+    assert "set-cookie" not in r.headers
     assert client.get("/api/admin/auth/me").json() == {"username": "boss", "env": "test"}
     assert _audit(Session) == [("login_success", "boss", None)]
+
+
+def test_no_token_is_401(ctx):
+    client, _ = ctx
+    assert client.get("/api/admin/auth/me").status_code == 401
 
 
 @pytest.mark.parametrize(
@@ -1925,34 +2092,58 @@ def test_admin_logs_in_gets_a_strict_httponly_cookie_and_me(ctx):
 )
 def test_login_failures_share_one_message_but_audit_the_reason(ctx, username, password, reason):
     client, Session = ctx
-    r = client.post("/api/admin/auth/login", json={"username": username, "password": password}, headers=CSRF)
+    r = client.post("/api/admin/auth/login", json={"username": username, "password": password})
     assert r.status_code == 401 and r.json() == {"detail": LOGIN_FAILED}
     assert _audit(Session) == [("login_failed", username, reason)]
 
 
 def test_guest_cannot_even_attempt(ctx):
     client, Session = ctx
-    r = client.post("/api/admin/auth/login", json={"username": "guest", "password": "pw"}, headers=CSRF)
+    r = client.post("/api/admin/auth/login", json={"username": "guest", "password": "pw"})
     assert r.status_code == 401
     assert _audit(Session) == [("login_failed", "guest", "unknown_user")]
 
 
-def test_login_without_csrf_header_is_403(ctx):
-    client, _ = ctx
-    assert client.post("/api/admin/auth/login", json={"username": "boss", "password": "pw"}).status_code == 403
-
-
 def test_public_access_token_is_rejected(ctx):
-    """python-jose 在传了 audience、而令牌里根本没有 aud 时照样放行 —— 这里靠 type 检查挡住。"""
+    """公开站点的 access token（没有 aud、type 是 access）进不了后台。它同时被 aud、type 两道检查挡住，
+    所以这条证明不了任何一道单独在起作用 —— 那由下面三条伪造令牌的用例负责。"""
     client, _ = ctx
-    client.cookies.set(cookie_name("test"), create_access_token(data={"sub": "boss"}))
-    assert client.get("/api/admin/auth/me").status_code == 401
+    r = client.get("/api/admin/auth/me", headers=bearer(create_access_token(data={"sub": "boss"})))
+    assert r.status_code == 401
+
+
+def _forge(**claims):
+    """用同一把 SECRET_KEY 签一个后台令牌，只改传进来的那几项（传 None 表示去掉这一项），单独检验每一道检查。"""
+    from datetime import datetime, timedelta, timezone
+
+    from jose import jwt
+
+    body = {"sub": "boss", "type": "admin_session", "aud": "katrain-admin", "env": "test",
+            "exp": datetime.now(timezone.utc) + timedelta(hours=1)}
+    body.update(claims)
+    return jwt.encode({k: v for k, v in body.items() if v is not None}, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def test_forged_control_token_is_accepted(ctx):
+    """对照组：什么都不改的伪造令牌能进。下面两条被拒，才能归因到改掉的那一项。"""
+    client, _ = ctx
+    assert client.get("/api/admin/auth/me", headers=bearer(_forge())).status_code == 200
+
+
+def test_token_without_aud_is_rejected(ctx):
+    """python-jose 在传了 audience、而令牌里根本没有 aud 时照样放行（2026-09-24 实测）：挡住它的只有显式的 aud 比较。"""
+    client, _ = ctx
+    assert client.get("/api/admin/auth/me", headers=bearer(_forge(aud=None))).status_code == 401
+
+
+def test_token_with_the_wrong_type_is_rejected(ctx):
+    client, _ = ctx
+    assert client.get("/api/admin/auth/me", headers=bearer(_forge(type="access"))).status_code == 401
 
 
 def test_token_for_other_env_is_rejected(ctx):
     client, _ = ctx
-    client.cookies.set(cookie_name("test"), create_session_token("boss", "prod"))
-    assert client.get("/api/admin/auth/me").status_code == 401
+    assert client.get("/api/admin/auth/me", headers=bearer(create_session_token("boss", "prod"))).status_code == 401
 
 
 @pytest.mark.asyncio
@@ -1981,11 +2172,11 @@ def test_revoking_is_admin_takes_effect_on_next_request(ctx):
     assert client.get("/api/admin/auth/me").status_code == 401
 
 
-def test_logout_clears_the_cookie_and_is_audited(ctx):
+def test_logout_is_audited(ctx):
+    """服务端不存会话：登出 = 前端丢掉令牌 + 这里记一笔审计。撤权靠每次请求都查库的 is_admin。"""
     client, Session = ctx
     login(client)
-    assert client.post("/api/admin/auth/logout", headers=CSRF).status_code == 204
-    assert client.get("/api/admin/auth/me").status_code == 401
+    assert client.post("/api/admin/auth/logout").status_code == 204
     assert [a[0] for a in _audit(Session)] == ["login_success", "logout"]
 ```
 - [ ] **Step 2**：`CI=true uv run pytest tests/web_ui/test_admin_auth.py -q -p no:cacheprovider`。期望结果：FAIL，报 `ModuleNotFoundError: katrain.web.admin.session`。
@@ -1994,15 +2185,21 @@ def test_logout_clears_the_cookie_and_is_audited(ctx):
 
 `katrain/web/admin/session.py`：
 ```python
-"""后台会话：签发 / 校验令牌、cookie、require_admin 依赖、CSRF 头。
+"""后台会话：签发 / 校验令牌、require_admin 依赖。
 
-令牌与公开站点的 access token 用同一把 SECRET_KEY，靠两处区分：
-  1. type == "admin_session"，必须显式检查。python-jose 在传了 audience、而令牌里根本没有 aud 时
-     照样放行（2026-09-24 实测）。只靠 aud 的话，公开站点的 token 就能进后台。
-  2. aud == "katrain-admin"。公开站点解码时不传 audience，带 aud 的令牌会被 jose 以
-     "Invalid audience" 拒掉（同日实测），所以后台令牌反过来也进不了公开站点。
-env 也写进令牌和 cookie 名：两条隧道都在 localhost 上，cookie 不分端口。Path 限定在 /api/admin：
-浏览器发往本机其他端口的普通页面（开发服务器之类）的请求不会带上它。
+令牌交给前端放在 sessionStorage，每次请求带 `Authorization: Bearer <令牌>`；**不用 cookie**。cookie 不按端口
+隔离：管理员用同一个浏览器打开过的任何一个 http://localhost:<端口> 服务，都能让浏览器把 cookie 送过去（先把浏览器
+引到它自己的页面，再同站请求一次；Path、SameSite、换主机名都挡不住），拿到就能在隧道开着时重放。sessionStorage
+按「协议+主机+端口」隔离，别的端口上的页面读不到；浏览器也不会自动带上它，所以不需要 CSRF 头。页面这一侧的防线是
+app.py 给每个响应加的 CSP。
+
+令牌与公开站点的 access token 用同一把 SECRET_KEY，靠三道显式检查区分，每一道都有自己的测试：
+  1. aud == "katrain-admin"，**必须显式比较**：python-jose 在传了 audience、而令牌里根本没有 aud 时照样放行
+     （2026-09-24 实测），只靠 decode 的 audience 参数，公开站点的 token 就能进后台。
+  2. type == "admin_session"：aud 碰巧对上的别种令牌也进不来。
+  3. env == 当前环境：测试与生产两条隧道各在自己的端口上，sessionStorage 本来就分开，env 再兜一层。
+反方向：公开站点解码时不传 audience，带 aud 的令牌会被 jose 以 "Invalid audience" 拒掉（同日实测），
+所以后台令牌也进不了公开站点。
 """
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -2016,12 +2213,6 @@ from katrain.web.core.config import settings
 SESSION_TYPE = "admin_session"
 AUDIENCE = "katrain-admin"
 SESSION_HOURS = 8
-CSRF_HEADER = "x-katrain-admin"
-COOKIE_PATH = "/api/admin"
-
-
-def cookie_name(env: str) -> str:
-    return f"katrain_admin_{env}"
 
 
 def create_session_token(username: str, env: str, now: datetime | None = None) -> str:
@@ -2041,31 +2232,20 @@ def username_from_token(token: str, env: str) -> str | None:
     return sub if isinstance(sub, str) and sub else None
 
 
-def set_session_cookie(response, token: str, env: str) -> None:
-    # 不设 secure：只经 SSH 隧道在 http://localhost 上访问。
-    response.set_cookie(
-        key=cookie_name(env), value=token, httponly=True, samesite="strict", path=COOKIE_PATH, max_age=SESSION_HOURS * 3600
-    )
-
-
-def clear_session_cookie(response, env: str) -> None:
-    response.delete_cookie(key=cookie_name(env), path=COOKIE_PATH)
+def bearer_token(request: Request) -> str | None:
+    scheme, _, value = request.headers.get("authorization", "").partition(" ")
+    value = value.strip()
+    return value if scheme.lower() == "bearer" and value else None
 
 
 def user_repo(request: Request) -> SQLAlchemyUserRepository:
     return SQLAlchemyUserRepository(request.app.state.session_factory)
 
 
-def require_csrf_header(request: Request) -> None:
-    if request.method not in ("GET", "HEAD", "OPTIONS") and request.headers.get(CSRF_HEADER) != "1":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="缺少 X-Katrain-Admin 请求头")
-
-
 async def require_admin(request: Request) -> dict[str, Any]:
     """所有需要登录的后台接口都用它。每次按用户名重新查库，撤掉 is_admin 立即生效。任何失败都回 401。"""
-    require_csrf_header(request)
     env = request.app.state.admin_env
-    token = request.cookies.get(cookie_name(env))
+    token = bearer_token(request)
     username = username_from_token(token, env) if token else None
     user = user_repo(request).get_user_by_username(username) if username else None
     if not user or not user.get("is_admin"):
@@ -2093,14 +2273,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
 from katrain.web.admin import audit
-from katrain.web.admin.session import (
-    clear_session_cookie,
-    create_session_token,
-    require_admin,
-    require_csrf_header,
-    set_session_cookie,
-    user_repo,
-)
+from katrain.web.admin.session import create_session_token, require_admin, user_repo
 from katrain.web.core.auth import verify_password
 from katrain.web.core.box_sso import GUEST_USERNAME
 
@@ -2119,6 +2292,10 @@ class Me(BaseModel):
     env: str
 
 
+class LoginOut(Me):
+    token: str
+
+
 def _password_ok(password: str, hashed: str) -> bool:
     try:
         return verify_password(password, hashed)
@@ -2126,9 +2303,8 @@ def _password_ok(password: str, hashed: str) -> bool:
         return False
 
 
-@router.post("/login", response_model=Me)
-async def login(body: LoginBody, request: Request, response: Response):
-    require_csrf_header(request)
+@router.post("/login", response_model=LoginOut)
+async def login(body: LoginBody, request: Request):
     env = request.app.state.admin_env
     username = body.username.strip()
     user = None if username.lower() == GUEST_USERNAME else user_repo(request).get_user_by_username(username)
@@ -2147,30 +2323,31 @@ async def login(body: LoginBody, request: Request, response: Response):
             audit.record(db, "login_success", user["username"], admin_user_id=user["id"])
     if reason:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=LOGIN_FAILED)
-    set_session_cookie(response, create_session_token(user["username"], env), env)
-    return Me(username=user["username"], env=env)
+    return LoginOut(username=user["username"], env=env, token=create_session_token(user["username"], env))
 
 
 @router.post("/logout", status_code=204)
 async def logout(request: Request, admin: dict = Depends(require_admin)):
+    """服务端不存会话：前端丢掉令牌就是登出，这里只记审计。撤权靠每次请求都查库的 is_admin。"""
     with request.app.state.session_factory() as db:
         audit.record(db, "logout", admin["username"], admin_user_id=admin["id"])
-    resp = Response(status_code=204)
-    clear_session_cookie(resp, request.app.state.admin_env)
-    return resp
+    return Response(status_code=204)
 
 
 @router.get("/me", response_model=Me)
 async def me(request: Request, admin: dict = Depends(require_admin)):
     return Me(username=admin["username"], env=request.app.state.admin_env)
 ```
-在 `app.py` 里：文件顶部的 import 区加上 `from katrain.web.admin.routers import auth as auth_router`；再把 `# ── API routers (must be registered before the SPA catch-all below) ──` 这一行下面补上：
+在 `app.py` 里：文件顶部的 import 区加上 `from katrain.web.admin.routers import auth as auth_router`；再在 `# ── API routers (must be registered before the SPA catch-all below) ──` 这一行下面补上：
 ```python
     app.include_router(auth_router.router, prefix="/api/admin/auth")
 ```
 - [ ] **Step 4**：`CI=true uv run pytest tests/web_ui/test_admin_auth.py tests/web_ui/test_admin_app.py -q -p no:cacheprovider`。期望结果：全部 passed。
-- [ ] **Step 5：变异检查**：把 `username_from_token` 里 `claims.get("type") != SESSION_TYPE or` 这一截临时删掉，确认 `test_public_access_token_is_rejected` 变红；然后还原，再确认它变绿。
-- [ ] **Step 6：提交** `feat(admin): 后台会话 —— 登录 / 登出 / me、令牌三重校验、CSRF 头、审计`（`git add` 上面列出的文件）。
+- [ ] **Step 5：变异检查**。两道检查各做一次，每次都是：先 `cp katrain/web/admin/session.py /private/tmp/claude-501/session.py.bak`，改，用 `PYTHONDONTWRITEBYTECODE=1 CI=true uv run pytest tests/web_ui/test_admin_auth.py -q -p no:cacheprovider` 跑，再 `cp /private/tmp/claude-501/session.py.bak katrain/web/admin/session.py` 还原：
+  - 删掉 `username_from_token` 里的 `claims.get("aud") != AUDIENCE or ` → 只有 `test_token_without_aud_is_rejected` 变红；
+  - 删掉 `claims.get("type") != SESSION_TYPE or ` → 只有 `test_token_with_the_wrong_type_is_rejected` 变红。
+  （`test_public_access_token_is_rejected` 两次都还是绿的：公开令牌同时被两道挡住，这正是要用伪造令牌单独检验每一道的原因。）还原之后全部回到绿。
+- [ ] **Step 6：提交** `feat(admin): 后台会话 —— 登录 / 登出 / me、令牌三重校验、Bearer 不用 cookie、审计`（`git add` 上面列出的文件）。
 
 ---
 
@@ -2185,7 +2362,7 @@ async def me(request: Request, admin: dict = Depends(require_admin)):
 - Produces：
   - `install_error_capture() -> None`
   - `RunRecorder(session_factory, clock=utcnow)`，方法有：
-    - `.register(jobs: list[tuple[str, str, int | None, bool]])`
+    - `.register(jobs: list[tuple[str, str, int | None, bool]]) -> bool`（写进去了没有）、`.ensure_registered() -> bool`（没写进去就再试一次）
     - `async .run(job)`
     - `.enter_loop(name) -> Token`、`.exit_loop(token)`
     - `.loop_started(name)`
@@ -2193,7 +2370,7 @@ async def me(request: Request, admin: dict = Depends(require_admin)):
     - `.heartbeat(loop_jobs: dict)`
     - `async .heartbeat_forever(loop_jobs, interval, stop: asyncio.Event)`
   - loop 任务需要提供的接口：`job.name`、`job.last_iteration_at: datetime | None`、`job.heartbeat_stats() -> dict`
-  - 行为约定：`register` 把上一个进程留下的 `running` 历史标成 `failed`；`heartbeat` 发现状态行缺失（表是在 register 之后才建的）就补上
+  - 行为约定：登记时把本进程启动之前留下的 `running` 历史标成 `failed`；登记没写进去（表还没建、库一时连不上）时，每次 `heartbeat` 先重试完整的登记
 
 - [ ] **Step 1：写测试**
 ```python
@@ -2360,14 +2537,14 @@ def test_loop_crash_then_heartbeat(Session):
     assert _status(Session, "analyze").consecutive_failures == 0
 
 
-def test_heartbeat_fills_in_rows_when_the_table_appeared_after_register():
-    """cron 比 katrain-web 先启动：register() 时表还不存在。web 建表之后，下一次心跳必须把状态行补上。"""
+def test_registration_is_retried_until_the_table_exists():
+    """cron 比 katrain-web 先启动：register() 时表还不存在，返回 False；web 建表之后，下一次心跳把登记补上。"""
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     S = sessionmaker(bind=engine)
     rec = RunRecorder(S, clock=Clock())
-    rec.register([("fetch_list", "interval", 60, True), ("analyze", "loop", None, True)])  # no tables yet: swallowed
+    assert rec.register([("fetch_list", "interval", 60, True), ("analyze", "loop", None, True)]) is False
     models_db.Base.metadata.create_all(bind=engine)  # katrain-web starts and creates them
-    rec.heartbeat({})
+    rec.heartbeat({})  # 补登记必须由心跳自己做：这里不能再调 ensure_registered()，否则测不出心跳漏了它
     with S() as s:
         assert sorted(r.job_name for r in s.query(CronJobStatusDB)) == ["analyze", "fetch_list"]
 
@@ -2375,13 +2552,38 @@ def test_heartbeat_fills_in_rows_when_the_table_appeared_after_register():
 def test_register_closes_runs_left_running_by_a_process_that_died(Session):
     """SIGKILL / OOM：上一个进程开了头、没来得及收尾的那条历史，不能在抽屉里永远「运行中」。"""
     with Session() as s:
-        s.add(CronJobRunDB(job_name="fetch_list", started_at=Clock().now, status="running", error_count=0))
+        s.add(CronJobRunDB(job_name="fetch_list", started_at=Clock().now - timedelta(minutes=5), status="running", error_count=0))
         s.commit()
     _recorder(Session, ("fetch_list", 60))
     with Session() as s:
         run = s.query(CronJobRunDB).one()
         assert (run.status, run.finished_at is not None) == ("failed", True)
         assert "结束前退出" in run.error
+
+
+def test_late_registration_closes_only_runs_from_before_this_process(Session):
+    """首次登记没写进去（库一时连不上），之后在心跳里补做：只收尾本进程启动之前留下的 running，
+    本进程自己正在跑的那一次不能被标成失败。"""
+    clock = Clock()
+    with Session() as s:
+        s.add(CronJobRunDB(job_name="fetch_list", started_at=clock.now - timedelta(minutes=5), status="running", error_count=0))
+        s.commit()
+    rec = RunRecorder(Session, clock=clock)
+
+    def _db_down():
+        raise RuntimeError("db down")
+
+    rec._session_factory = _db_down
+    assert rec.register([("fetch_list", "interval", 60, True)]) is False
+    rec._session_factory = Session
+    clock.now += timedelta(seconds=30)
+    with Session() as s:  # this process's own run, started after the process did
+        s.add(CronJobRunDB(job_name="fetch_list", started_at=clock.now, status="running", error_count=0))
+        s.commit()
+    rec.heartbeat({})
+    with Session() as s:
+        assert [r.status for r in s.query(CronJobRunDB).order_by(CronJobRunDB.started_at)] == ["failed", "running"]
+    assert _status(Session, "fetch_list") is not None
 ```
 - [ ] **Step 2**：`CI=true uv run pytest tests/web_ui/test_cron_run_recorder.py -q -p no:cacheprovider`。期望结果：FAIL，报 `ModuleNotFoundError: katrain.cron.run_recorder`。
 
@@ -2484,22 +2686,33 @@ class RunRecorder:
         self._clock = clock
         self._registry: list[tuple[str, str, int | None, bool]] = []
         self._process_started_at: datetime | None = None
+        self._registered = False
         self._intervals: dict[str, int | None] = {}
         self._loops: dict[str, _LoopState] = {}
 
     # ── 进程启动时登记 ────────────────────────────────────────────────────────
-    def register(self, jobs: list[tuple[str, str, int | None, bool]]) -> None:
-        """jobs = [(name, kind, interval_seconds, enabled)]，停用的也登记。删掉代码里已经不存在的旧行。
-        上一个 cron 进程开了头、没来得及收尾的运行（重启、部署、SIGKILL、OOM），一律标成失败，
-        不让它在历史里永远「运行中」。表还不存在时（cron 比 web 先启动）这里会失败，由 heartbeat 补登记。"""
+    def register(self, jobs: list[tuple[str, str, int | None, bool]]) -> bool:
+        """jobs = [(name, kind, interval_seconds, enabled)]，停用的也登记。返回是否写进去了。
+
+        表还不存在（cron 比 katrain-web 先启动）或数据库一时连不上时写不进去：调度器最多等一会儿再发起第一次运行，
+        之后每次 heartbeat 都会重试，直到写进去为止。"""
         self._registry = list(jobs)
         self._intervals = {name: interval for name, _kind, interval, _enabled in jobs}
         self._process_started_at = self._clock()
-        self._write(self._register_rows, self._process_started_at)
+        return self.ensure_registered()
 
-    def _register_rows(self, db, now):
+    def ensure_registered(self) -> bool:
+        if not self._registered and self._registry:
+            self._registered = self._write(self._register_rows, self._process_started_at) is True
+        return self._registered
+
+    def _register_rows(self, db, started):
+        """upsert 全部任务，删掉代码里已经不存在的旧行；本进程启动之前开了头、没来得及收尾的运行（重启、部署、
+        SIGKILL、OOM）一律标成失败。只收尾 started 之前的：登记若是在心跳里补做的，本进程自己的运行这时可能正在跑。"""
+        now = self._clock()
         db.execute(delete(CronJobStatusDB).where(CronJobStatusDB.job_name.notin_([j[0] for j in self._registry])))
-        for run in db.query(CronJobRunDB).filter(CronJobRunDB.status == "running"):
+        stale = db.query(CronJobRunDB).filter(CronJobRunDB.status == "running", CronJobRunDB.started_at < started)
+        for run in stale:
             run.status, run.finished_at, run.error = "failed", now, PREVIOUS_PROCESS_EXITED
         for name, kind, interval, enabled in self._registry:
             row = db.get(CronJobStatusDB, name)
@@ -2507,7 +2720,9 @@ class RunRecorder:
                 row = CronJobStatusDB(job_name=name, consecutive_failures=0)
                 db.add(row)
             row.kind, row.interval_seconds, row.enabled = kind, interval, enabled
-            row.process_started_at = row.heartbeat_at = row.updated_at = now
+            row.process_started_at = started
+            row.heartbeat_at = row.updated_at = now
+        return True
 
     # ── interval 任务 ─────────────────────────────────────────────────────────
     async def run(self, job) -> None:
@@ -2597,6 +2812,7 @@ class RunRecorder:
 
     # ── 心跳 ──────────────────────────────────────────────────────────────────
     def heartbeat(self, loop_jobs: dict) -> None:
+        self.ensure_registered()  # 登记还没写进去（表是后来才建的、库一时连不上）就先补做
         snapshot = {}
         for name, job in loop_jobs.items():
             state = self._loops.setdefault(name, _LoopState())
@@ -2607,13 +2823,7 @@ class RunRecorder:
         self._write(self._heartbeat_rows, self._clock(), snapshot)
 
     def _heartbeat_rows(self, db, now, snapshot):
-        rows = {r.job_name: r for r in db.query(CronJobStatusDB).filter(CronJobStatusDB.job_name.in_(list(self._intervals)))}
-        for name, kind, interval, enabled in self._registry:
-            if name not in rows:  # register() ran before katrain-web had created the table: fill the row in now
-                rows[name] = CronJobStatusDB(job_name=name, kind=kind, interval_seconds=interval, enabled=enabled,
-                                             consecutive_failures=0, process_started_at=self._process_started_at)
-                db.add(rows[name])
-        for row in rows.values():
+        for row in db.query(CronJobStatusDB).filter(CronJobStatusDB.job_name.in_(list(self._intervals))):
             row.heartbeat_at = row.updated_at = now
             if row.job_name not in snapshot:
                 continue
@@ -2657,11 +2867,30 @@ class RunRecorder:
 - Modify：`katrain/cron/jobs/analyze.py`（import；`__init__`；while 循环的开头；Refill 那两行；新增方法）
 - Modify：`katrain/cron/jobs/report_analyze.py`（`__init__`；while 循环的开头；新增方法）
 - Modify：`katrain/cron/jobs/cleanup.py`
+- Modify：`pyproject.toml`（新增 `cron` extra）、`uv.lock`、`requirements-cron.txt`（APScheduler 加上限 `<4`）
 - Test：`tests/web_ui/test_cron_run_recorder.py`（追加三条）
 
 **Interfaces:**
 - Consumes：Task 7 的 `install_error_capture()`、`RunRecorder(session_factory)`、`.register(jobs)`、`async .run(job)`、`.enter_loop(name) -> Token`、`.exit_loop(token)`、`.loop_started(name)`、`.record_loop_crash(name, exc)`、`async .heartbeat_forever(loop_jobs, interval, stop)`；Task 4 的 `CronJobRunDB`
 - Produces：`AnalyzeJob.last_iteration_at: datetime | None` 和 `AnalyzeJob.heartbeat_stats() -> {"in_flight": int, "capacity": int}`，`ReportAnalyzerJob` 也有这两项；`config.HEARTBEAT_INTERVAL`（默认 30）、`config.RUNS_RETENTION_DAYS`（默认 14）；`CronScheduler._schedule(job, interval)`：每一次运行（包括启动时立刻跑的那一次）都经 APScheduler 和记录器
+
+- [ ] **Step 0：让本地装得上 cron 的依赖**。APScheduler、beautifulsoup4、lxml 原先只写在 `requirements-cron.txt` 里（给 `Dockerfile.cron` 用），`uv sync --extra web` 装不上：本任务的调度器测试一 import 就报 `ModuleNotFoundError: apscheduler`，Task 12 本机也起不来 cron。在 `pyproject.toml` 的 `[project.optional-dependencies]` 里、`board = [...]` 那一块之后加：
+```toml
+# katrain-cron 自己的依赖。Dockerfile.cron 从 requirements-cron.txt 装，两处要一起改；本地跑 cron 和调度器测试时装这个 extra。
+cron = [
+    "apscheduler>=3.10,<4",
+    "beautifulsoup4",
+    "lxml",
+]
+```
+`requirements-cron.txt` 里的 `apscheduler>=3.10` 改成 `apscheduler>=3.10,<4`（4.x 是另一套 API，本计划用的是 3.x 的 `add_job(..., next_run_time=...)`）。然后：
+```bash
+cd /Users/fan/Repositories/katrain-admin-console
+uv lock && uv sync --extra web --extra cron
+.venv/bin/python -c "import apscheduler, bs4, lxml; print('cron deps ok, apscheduler', apscheduler.__version__)"
+git diff --stat pyproject.toml uv.lock requirements-cron.txt
+```
+期望结果：打印 `cron deps ok, apscheduler 3.x.y`；`uv.lock` 只新增 apscheduler、tzlocal、beautifulsoup4、soupsieve、lxml 这几项。有别的包跟着升级就停下，看清楚再说。
 
 - [ ] **Step 1：追加测试**（加在 `test_cron_run_recorder.py` 末尾）：
 ```python
@@ -2775,7 +3004,16 @@ class CronScheduler:
         registry = [(job_cls.name, "interval", interval, enabled) for job_cls, interval, enabled in interval_jobs]
         registry.append(("analyze", "loop", None, config.ANALYZE_ENABLED))
         registry.append(("report_analyze", "loop", None, config.REPORT_ANALYZE_ENABLED))
-        self._recorder.register(registry)
+        # 先登记，再发起第一次运行：表还不存在（cron 比 katrain-web 先启动）时，启动那一次的记录会整个丢掉，日任务要
+        # 空着显示「等待首次运行」一整天。最多等 60 秒：老版本的 katrain-web 根本没有这几张表时，不能因此把任务本身也停掉，
+        # 之后每次心跳都会重试完整的登记。
+        registered = self._recorder.register(registry)
+        for _ in range(12):
+            if registered:
+                break
+            logger.warning("cron_job_status is not writable yet (katrain-web may not have created it); retrying in 5s")
+            await asyncio.sleep(5)
+            registered = self._recorder.ensure_registered()
 
         # Start scheduler first (jobs will be added and run immediately)
         self._scheduler.start()
@@ -2939,7 +3177,7 @@ class CronScheduler:
                 )
 ```
 - [ ] **Step 8**：`CI=true uv run pytest tests/web_ui/test_cron_run_recorder.py tests/web_ui/test_cron_import_boundary.py tests/web_ui/test_report_analyzer.py -q -p no:cacheprovider`。期望结果：全部 PASS。`test_report_analyzer.py` 是改了 `report_analyze.py` 之后最可能回归的地方。
-- [ ] **Step 9：提交** `feat(cron): 所有运行经过记录器；常驻循环心跳；清理 14 天前的运行历史`。
+- [ ] **Step 9：提交** `feat(cron): 所有运行经过记录器；常驻循环心跳；清理 14 天前的运行历史`（连同 Step 0 改的 `pyproject.toml`、`uv.lock`、`requirements-cron.txt`）。
 
 ---
 
@@ -3405,7 +3643,9 @@ def test_admin_runs_the_web_image_with_the_admin_entrypoint():
   - 容器表 `| katrain-cron | … |` 那一行之后加：`| katrain-admin | katrain-web:local（同一镜像） | 127.0.0.1:8010 | — | **compose** | 管理后台，只经 SSH 隧道访问（docs/operations/admin-console-access.md） |`；
   - 表格下面那段说明：「manages **web + cron + minio + minio-setup**」改成「manages **web + cron + admin + minio + minio-setup**」，「only ever touches web/cron/minio」改成「only ever touches web/cron/admin/minio」；
   - 第 7 步：标题改成「Rebuild & restart KaTrain web/cron/admin」；命令改成 `docker compose up -d --build katrain-web katrain-cron katrain-admin`；正文补一句「`katrain-admin` 用 katrain-web 刚构建出来的同一个镜像（`pull_policy: never`），不单独构建」；
-  - 第 8 步加一行 `curl -s http://127.0.0.1:8010/api/admin/health   # {"status":"ok","env":"test"}`。
+  - 第 8 步加一行 `curl -s http://127.0.0.1:8010/api/admin/health   # {"status":"ok","env":"test"}`；
+  - 开头 `description` 里的「KaTrain web/cron」改成「KaTrain web/cron/admin」；
+  - 「Selective Deployment」里「First MinIO bring-up: … then recreate web/cron (step 7)」改成「… then recreate web/cron/admin (step 7)」。
 - [ ] **Step 6：写 `docs/operations/admin-console-access.md`**
 ````markdown
 # 管理后台访问方式（katrain-admin）
@@ -3417,7 +3657,7 @@ def test_admin_runs_the_web_image_with_the_admin_entrypoint():
 | 测试（home-ubuntu） | `ssh -N -L 8010:127.0.0.1:8010 home-ubuntu` | http://localhost:8010 |
 | 生产（ucloud-v100） | `ssh -N -L 8011:127.0.0.1:8010 ucloud-v100` | http://localhost:8011 |
 
-两条隧道可以同时开着：本机端口不同，cookie 名里也带着环境名，不会串号。页头会醒目地标出当前是哪个环境。
+两条隧道可以同时开着：本机端口不同，登录状态也按端口各存各的（放在浏览器的 sessionStorage 里），不会串号；关掉标签页就要重新登录。页头会醒目地标出当前是哪个环境。
 
 ## Windows：做成双击即用
 
@@ -3464,6 +3704,7 @@ sudo chmod 600 "/home/admintunnel-$NAME/.ssh/authorized_keys"
 
 - [ ] **Step 2：构建后台前端，用一个一次性的 SQLite 库起三个进程**。直接用 `.venv/bin/python`：这样记下的 PID 就是 Python 进程本身，不是 `uv` 的外壳，Step 3 的 SIGKILL 才真的杀到 cron。
 ```bash
+set -o pipefail
 cd /Users/fan/Repositories/katrain-admin-console
 (cd katrain/web/ui && npm run build:admin 2>&1 | tail -2)
 E=/private/tmp/claude-501/admin-e2e; mkdir -p $E; rm -f $E/e2e.db
@@ -3494,6 +3735,8 @@ test.setTimeout(6 * 60_000);
 
 test('本机真实数据：登录 → 9 个任务 → 运行历史 → cron 被杀后失联', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
+  const cspViolations: string[] = [];
+  page.on('console', (m) => { if (m.text().includes('Content Security Policy')) cspViolations.push(m.text()); });
   await page.goto(`${BASE}/#/signin`);
   await expect(page.getByTestId('signin-env')).toHaveText('正在登录：本机');
   await page.getByLabel('用户名').fill('admin');
@@ -3521,15 +3764,18 @@ test('本机真实数据：登录 → 9 个任务 → 运行历史 → cron 被�
   process.kill(Number(readFileSync(`${E}/cron.pid`, 'utf8').trim()), 'SIGKILL');
   await expect(page.getByTestId('health-offline')).toHaveCount(9, { timeout: 150_000 });
   await page.screenshot({ path: `${SLICE}/integration-local-offline.png` });
+  expect(cspViolations).toEqual([]); // 打包出来的脚本、MUI 的内联样式都没被 CSP 拦掉
 });
 ```
 ```bash
+set -o pipefail
 cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
 npx playwright test --config=playwright.vite.config.ts tests/admin-integration.walk.spec.ts --reporter=line 2>&1 | tail -25
-curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:8010/api/admin/auth/logout   # 不带 X-Katrain-Admin 头
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8010/api/admin/cron/jobs   # 不带令牌
+curl -sI http://127.0.0.1:8010/ | grep -i '^content-security-policy'
 rm tests/admin-integration.walk.spec.ts
 ```
-Expected：`1 passed`，日志里打出 9 个任务各自的状态；curl 打印 `403`。本机连不上的外部源（KataGo 等）应当让对应任务显示「有报错」或「失败」，不能是「正常」：拿打印出来的状态对照 `$E/cron.log` 逐个核对，结论写进 `slice1/visual-review.md` 的「集成」一节。
+Expected：`1 passed`（其中包括「CSP 没有拦掉页面自己的任何东西」），日志里打出 9 个任务各自的状态；第一条 curl 打印 `401`，第二条打印出 CSP 头。本机连不上的外部源（KataGo 等）应当让对应任务显示「有报错」或「失败」，不能是「正常」：拿打印出来的状态对照 `$E/cron.log` 逐个核对，结论写进 `slice1/visual-review.md` 的「集成」一节。
 
 - [ ] **Step 4：收尾**
 ```bash
@@ -3561,7 +3807,7 @@ git commit -m "test(admin): 本机 web+cron+admin 集成验证截图" -m "Co-Aut
 
 - [ ] **Step 1：删除 fixture**：
   - `git rm -r katrain/web/ui/src/admin/__fixtures__`；
-  - 删掉 `cronApi.ts` 和 `authApi.ts` 里的 `useFixture`、`fixture` 两个常量，以及每个函数里 `if (useFixture) …` / `useFixture ? … :` 的那一支，只留 `adminFetch` 调用；
+  - 删掉 `cronApi.ts` 和 `authApi.ts` 里的 `useFixture`、`fixture` 两个常量，以及每个函数里 `if (useFixture) …` / `useFixture ? … :` 的那一支（`login` 里只留 `adminFetch<AdminLogin>(…)` 那一支，`logout` 里的 `if (!useFixture)` 去掉条件、保留请求和 `finally { clearToken(); }`），其余只留 `adminFetch` 调用；
   - 确认：`grep -rn "VITE_ADMIN_FIXTURE\|__fixtures__\|useFixture" katrain/web/ui/src/admin`，期望没有输出。
 - [ ] **Step 2：Python 全量，按名字和基线比**：
 ```bash
@@ -3571,29 +3817,23 @@ set -o pipefail; CI=true uv run pytest tests/test_admin_compose.py -q -p no:cach
 git status --short
 ```
 期望结果：`newfail exit=0`；`compose exit=0`（2 passed）。`git status` 里出现了 `katrain/config.json` 的话（测试改写的；Task 2 Step 1 已确认它在测试之前是干净的），执行 `git checkout -- katrain/config.json` 还原。
-- [ ] **Step 3：前端：vitest 按名字和基线做差，三套构建，公开包和 kiosk 包里没有后台代码**
+- [ ] **Step 3：前端：vitest 按名字和基线比，三套构建，公开包和 kiosk 包里没有后台代码**
+```bash
+cd /Users/fan/Repositories/katrain-admin-console
+bash .superpowers/baseline/vitestnewfail.sh .superpowers/baseline/vitest_failed_before.txt; echo "vitest-newfail exit=$?"
+```
+期望结果：`vitest-newfail exit=0`（1 会列出新增失败；2 说明 vitest 本身没跑成）。
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
-B=/Users/fan/Repositories/katrain-admin-console/.superpowers/baseline
-npx vitest run --reporter=json --outputFile=$B/vitest_after.json > /dev/null 2>&1; echo "vitest exit=$?"
-python3 - "$B/vitest_after.json" "$B/vitest_failed_after.txt" <<'PY'
-import json, sys
-d = json.load(open(sys.argv[1]))
-names = set()
-for f in d["testResults"]:
-    file = f["name"].split("/katrain/web/ui/")[-1]
-    if f.get("status") == "failed" and not f["assertionResults"]:
-        names.add(f"{file} :: <文件本身没跑起来>")
-    names |= {f"{file} :: {a['fullName']}" for a in f["assertionResults"] if a["status"] == "failed"}
-open(sys.argv[2], "w").write("".join(n + "\n" for n in sorted(names)))
-print(d["numTotalTests"], "tests,", len(names), "failed")
-PY
-comm -13 $B/vitest_failed_before.txt $B/vitest_failed_after.txt
+set -euo pipefail
 npx eslint src/admin eslint.config.js
-npm run build 2>&1 | tail -2 && npm run build:kiosk-2d 2>&1 | tail -2 && npm run build:admin 2>&1 | tail -2
-grep -rl "katrain-admin\|/api/admin" ../static ../static-kiosk-2d | head
+npm run build 2>&1 | tail -2
+npm run build:kiosk-2d 2>&1 | tail -2
+npm run build:admin 2>&1 | tail -2
+if grep -rl "katrain-admin\|/api/admin" ../static ../static-kiosk-2d; then echo "!! 公开包或 kiosk 包里有后台代码"; exit 1; fi
+echo boundaries-ok
 ```
-Expected：`comm` 没有输出；eslint 没有 error；三个构建都以 `built in` 结尾，kiosk 那个还打印 `✅ kiosk boundary clean`；最后的 grep 没有输出，即公开包和 kiosk 包里没有后台代码（这是一次性核对，spec §5.5 说明了为什么不做成常设的闸）。
+期望结果：eslint 没有 error；三个构建都以 `built in` 结尾，kiosk 那个还打印 `✅ kiosk boundary clean`；最后打印 `boundaries-ok`。这是一次性核对，spec §5.5 说明了为什么不做成常设的闸。
 - [ ] **Step 4：提交** `chore(admin): 删掉 cron 页 fixture（Task 12 已接真实接口）`。按 spec，fixture 必须在这个提交里删掉。
 
 ---
@@ -3614,6 +3854,7 @@ CI=true uv run pytest tests/web_ui/test_admin_app.py tests/web_ui/test_admin_aut
 ```bash
 ssh home-ubuntu "ss -ltnp | grep ':8010 '"                                      # 只能看到 127.0.0.1:8010
 ssh home-ubuntu "curl -s http://127.0.0.1:8010/api/admin/health"                # {"status":"ok","env":"test"}
+ssh home-ubuntu "curl -fsS http://127.0.0.1:8001/api/v1/health"                # katrain-web 本身：develop 的 compose 没给它配 healthcheck，别等 (healthy)
 curl -s -o /dev/null -w '%{http_code}\n' https://go.sailorvoyage.top/api/admin/health   # 期望 404：公网上没有这个入口
 ssh home-ubuntu "docker exec katrain-postgres psql -U katrain_user -d katrain_db -At -c 'SELECT job_name, last_status, heartbeat_at FROM cron_job_status ORDER BY 1;'"
 ```
@@ -3700,7 +3941,7 @@ def test_admin_console_is_production_only_and_loopback_only():
 ```
   然后在合并结果上跑 release 的闸：部署产物测试；preview 守卫（preview 模式下，结算、回收预扣、补账、周期结算、直播、平台初始化这 7 个会写生产的动作一个都不许跑；合并报「无冲突」也不等于守卫还在）；本切片的测试。
 ```bash
-cd /private/tmp/claude-501/rel-admin-console && uv sync --extra web
+cd /private/tmp/claude-501/rel-admin-console && uv sync --extra web --extra cron
 set -o pipefail
 CI=true uv run pytest tests/deploy "tests/web_ui/test_backend_setup.py::test_preview_mode_keeps_local_app_without_production_effects" -q -p no:cacheprovider 2>&1 | tail -3; echo "gate exit=$?"
 CI=true uv run pytest tests/web_ui/test_admin_app.py tests/web_ui/test_admin_auth.py tests/web_ui/test_admin_cron_api.py tests/web_ui/test_admin_cron_health.py tests/web_ui/test_cron_run_recorder.py tests/web_ui/test_cron_status_tables_parity.py tests/web_ui/test_cron_import_boundary.py -q -p no:cacheprovider 2>&1 | tail -3; echo "slice exit=$?"
@@ -3751,25 +3992,30 @@ Expected：两个 `build-exit=0`；第一条打印的 `image_id=sha256:…` 下�
 ssh ucloud-v100 'sudo bash -s' <<'SH'
 set -euo pipefail
 TS=<TS>   # 例如 20260925-1030；写成字面量，发布记录也要用
-PG=katrain-ucloud-postgres-1; DB=katrain_prod_20260725
-docker exec "$PG" pg_dump -U katrain_user -Fc "$DB" > /opt/katrain/backups/prod-$TS.dump
-echo "DUMP=/opt/katrain/backups/prod-$TS.dump" >> /opt/katrain/backups/anchors-<SHA>.txt
-docker exec "$PG" createdb -U katrain_user katrain_restore_verify_$TS
-docker exec -i "$PG" pg_restore -U katrain_user -d katrain_restore_verify_$TS < /opt/katrain/backups/prod-$TS.dump
-echo "pg_restore exit=0"
+PG=katrain-ucloud-postgres-1; DB=katrain_prod_20260725; V=katrain_restore_verify_$TS; W=/tmp/restore-verify-$TS
+mkdir -p "$W"
 TABLES=$(docker exec "$PG" psql -U katrain_user -d "$DB" -At -c "select tablename from pg_tables where schemaname='public' order by 1")
 N=$(printf '%s\n' "$TABLES" | grep -c . || true)
 [ "$N" -gt 0 ] || { echo "!! 表清单是空的：什么都没比较，不能算通过"; exit 1; }
-for t in $TABLES; do
-  a=$(docker exec "$PG" psql -U katrain_user -d "$DB" -At -c "select count(*) from \"$t\"")
-  b=$(docker exec "$PG" psql -U katrain_user -d katrain_restore_verify_$TS -At -c "select count(*) from \"$t\"")
-  [ "$a" = "$b" ] || echo "MISMATCH $t live=$a restored=$b"
-done
-echo "row-count compare done: $N tables"
-docker exec "$PG" dropdb -U katrain_user katrain_restore_verify_$TS
+counts() { for t in $TABLES; do printf '%s %s\n' "$t" "$(docker exec "$PG" psql -U katrain_user -d "$1" -At -c "select count(*) from \"$t\"")"; done; }
+counts "$DB" > "$W/before"
+docker exec "$PG" pg_dump -U katrain_user -Fc "$DB" > /opt/katrain/backups/prod-$TS.dump
+counts "$DB" > "$W/after"
+echo "DUMP=/opt/katrain/backups/prod-$TS.dump" >> /opt/katrain/backups/anchors-<SHA>.txt
+docker exec "$PG" createdb -U katrain_user "$V"
+docker exec -i "$PG" pg_restore -U katrain_user -d "$V" < /opt/katrain/backups/prod-$TS.dump
+echo "pg_restore exit=0"
+counts "$V" > "$W/restored"
+# dump 拿的是它开始那一刻的快照：dump 前后行数没变的表，恢复出来必须一模一样；dump 期间有写入的表，
+# 恢复出来的行数必须落在前后两个数之间。其余一律算对不上。
+BAD=0
+paste "$W/before" "$W/after" "$W/restored" | awk '{ b=$2; a=$4; r=$6; lo=(b<a?b:a); hi=(b>a?b:a); if (r<lo || r>hi) { print "MISMATCH", $1, "before=" b, "after=" a, "restored=" r; bad=1 } } END { exit bad }' || BAD=1
+docker exec "$PG" dropdb -U katrain_user "$V"
+[ "$BAD" = 0 ] || { echo "!! 行数对不上，见上面的 MISMATCH"; exit 1; }
+echo "row-count check passed: $N tables"
 SH
 ```
-Expected：打印 `pg_restore exit=0` 和 `row-count compare done: <N> tables`（N 是生产库的表数，几十张，不是 0）。`MISMATCH` 只允许出现在 dump 之后仍在写入的表上（直播、分析队列、报告任务之类），而且 `restored ≤ live`；其他表出现 `MISMATCH`，或者 `restored > live`，就停。脚本中途失败时，手工 `dropdb katrain_restore_verify_<TS>` 清掉验证库。
+Expected：打印 `pg_restore exit=0` 和 `row-count check passed: <N> tables`（N 是生产库的表数，几十张，不是 0），ssh 退出码 0。有 `MISMATCH` 时脚本以非 0 退出：停下，把输出交给 Fan。脚本因为别的原因中途退出时，手工 `dropdb katrain_restore_verify_<TS>` 清掉验证库。
 
 4f. **生成候选 env**（正在用的 env 这一步不动；只打印改动的行数，不打印内容，env 里有密钥）：
 ```bash
@@ -3808,13 +4054,14 @@ Expected：只新建或重建 `katrain-web`、`katrain-cron`、`katrain-admin`�
 4i. **分两步起服务**（Fan 点头后）：先起 web、等它健康、确认三张表已经建好，再起 cron 和 admin：
 ```bash
 ssh ucloud-v100 "cd /opt/katrain/current && sudo docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-web"
-ssh ucloud-v100 'for i in $(seq 1 60); do s=$(sudo docker inspect -f "{{.State.Health.Status}}" katrain-ucloud-katrain-web-1); [ "$s" = healthy ] && break; sleep 5; done; echo "katrain-web=$s"'
+ssh ucloud-v100 'for i in $(seq 1 60); do s=$(sudo docker inspect -f "{{.State.Health.Status}}" katrain-ucloud-katrain-web-1); [ "$s" = healthy ] && break; sleep 5; done; echo "katrain-web=$s"; [ "$s" = healthy ]'
 ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c \"select count(*) from information_schema.tables where table_schema='public' and table_name in ('admin_audit_log','cron_job_status','cron_job_runs')\""
 ssh ucloud-v100 "cd /opt/katrain/current && sudo docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-cron katrain-admin"
-ssh ucloud-v100 'for i in $(seq 1 60); do s=$(sudo docker inspect -f "{{.State.Health.Status}}" katrain-ucloud-katrain-admin-1); [ "$s" = healthy ] && break; sleep 5; done; echo "katrain-admin=$s"'
+ssh ucloud-v100 'for i in $(seq 1 60); do s=$(sudo docker inspect -f "{{.State.Health.Status}}" katrain-ucloud-katrain-admin-1); [ "$s" = healthy ] && break; sleep 5; done; echo "katrain-admin=$s"; [ "$s" = healthy ]'
+ssh ucloud-v100 'for i in $(seq 1 60); do s=$(sudo docker inspect -f "{{.State.Health.Status}}" katrain-ucloud-katrain-cron-1); [ "$s" = healthy ] && break; sleep 5; done; echo "katrain-cron=$s"; [ "$s" = healthy ]'
 for u in / /galaxy /api/v1/health; do printf '%s -> ' "$u"; curl -s -o /dev/null -w '%{http_code}\n' "https://modelstella.com$u"; done
 ```
-Expected：`katrain-web=healthy`；表数 `3`；`katrain-admin=healthy`；三个外网探针都是 `200`。**任何一项不对就执行 4j**，不要在生产上现场排查。
+Expected：`katrain-web=healthy`；表数 `3`；`katrain-admin=healthy`、`katrain-cron=healthy`（没到 healthy 时那条 ssh 以非 0 退出）；三个外网探针都是 `200`。**任何一项不对就执行 4j**，不要在生产上现场排查。
 
 4j. **回滚**（只在 4h / 4i 失败时执行；执行前 Fan 点头）：
 ```bash
@@ -3828,7 +4075,7 @@ cd /opt/katrain/current
 docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-web katrain-cron
 SH
 ```
-然后重跑 4i 里等 web 健康的那一行和外网探针，要求恢复 healthy、探针 200。三张新表留在库里无害：旧代码不读它们，旧 cron 也不写。
+然后重跑 4i 里等 web、等 cron 健康的两行和外网探针，要求都恢复 healthy、探针 200。三张新表留在库里无害：旧代码不读它们，旧 cron 也不写。
 - [ ] **Step 5：验证生产**：
 ```bash
 ssh ucloud-v100 "sudo ss -ltnp | grep ':8010 '"                                      # 只有 127.0.0.1:8010
@@ -3852,7 +4099,7 @@ ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user
   - §7 测试：分散在各任务里；§8 不做的事：本计划里没有对应的任务。
 - **占位符扫描**：`<工作人员代号>`、`<工作人员的公钥>` 出现在运维文档模板里，属于运维执行时才有的输入；生产发布里的 `<release 分支尖端的 short sha>`、`<WEB_ID>`、`<CRON_ID>` 是运行时才知道的值，每一个都写明了从哪条命令的输出取得。
 - **名字一致**：
-  - `create_admin_app`、`check_startup`、`require_admin`、`require_csrf_header`、`cookie_name`、`create_session_token`、`RunRecorder.run`、`register`、`heartbeat`、`heartbeat_forever`、`enter_loop`、`exit_loop`、`loop_started`、`record_loop_crash`、`derive_health`、`as_utc`，在定义它们的任务和使用它们的任务里写法一致；
+  - `create_admin_app`、`check_startup`、`require_admin`、`bearer_token`、`username_from_token`、`create_session_token`、`getToken` / `setToken` / `clearToken`、`errorText`、`RunRecorder.run`、`register`、`heartbeat`、`heartbeat_forever`、`enter_loop`、`exit_loop`、`loop_started`、`record_loop_crash`、`derive_health`、`as_utc`，在定义它们的任务和使用它们的任务里写法一致；
   - loop 任务的 `last_iteration_at` 和 `heartbeat_stats()` 在 Task 7 的测试和 Task 8 的实现之间一致；
   - TS 类型与 pydantic 模型的字段一一对应（Task 2 的 types.ts 对 Task 10）。
 - **2026-09-24 按 writing-plans 模板复核**：
@@ -3867,3 +4114,19 @@ ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user
   - 不采纳：「最后一条报错」改存运行里的最后一条 ERROR。现在存的是第一条，通常就是根因，后面的报错多半由它引起；`error_count` 记着总条数。spec §6.2 写明了这个语义。
   - 同形状排查：切片 0 那一轮的发现（看盘、回滚锚点、clone 兜底、`pipefail`、zsh 分词、每次调用都是新 shell）在这份计划里同样存在，一并改了；另外发现变异检查原先写的是用 `git checkout` 还原，那会冲掉本任务还没提交的改动，已改成先备份再还原。
   - 两家的发现没有重合：切片 0 那一轮盯发布与令牌，这一轮盯 cron 语义与会话边界。
+- **2026-09-24 Codex 第二轮（9 条）之后的修订**，全部采纳：
+  - 会话改成令牌放 sessionStorage + `Authorization: Bearer`，**不用 cookie**，所有响应加 CSP。第一轮的 `Path=/api/admin` 只是降低概率：本机被攻陷的服务可以先把浏览器引到它自己的页面，再同站请求自己的 `/api/admin/…`，cookie 照样送过去；换成每环境一个主机名也一样，端口不参与 cookie 匹配。sessionStorage 按端口隔离，是这一类问题的根治。代价写进 spec E8：关掉标签页要重新登录。
+  - 本地装不上 APScheduler：Task 8 新增 `cron` extra（APScheduler 3.x、bs4、lxml），并给 `requirements-cron.txt` 加上 `<4`。
+  - 表晚建：调度器最多等 60 秒登记成功，再发起第一次运行；之后每次心跳重试**完整**登记；登记只收尾本进程启动之前留下的 `running`。
+  - 备份比对：dump 前后各数一遍，恢复出来的行数必须落在两数之间，对不上就非零退出。
+  - 门禁：`| tail` 的代码块统一补 `pipefail`；vitest 改用 `vitestnewfail.sh`（报告每次新生成）；vite 等待循环失败时不再打印 `ready`；构建与边界核对用 `set -euo pipefail`。
+  - 抽屉的 401 交给会话层，加测试。
+  - 「最近报错」的文案与数据一致：存的是第一条，运行历史注明「一共 N 条，这里是第一条」。
+  - parity 比到默认值的内容，两次变异分开写。
+  - server-deploy 再补 description 和 MinIO 那两处。
+  - 同形状（来自切片 0 那一轮）：生产等健康要显式失败，并且等 cron；测试机的 katrain-web 没有 healthcheck，用 curl 健康端点。
+- 两轮评审到此结束（Fan 定的上限是两轮）。第二轮之后的这批修订没有再经过 Codex，改动最大的是 Task 6 的会话方案；Fan 如果想再过一遍，可以单独让 Codex 只审 Task 2、5、6。
+- **把计划里的后端代码真跑了一遍**（2026-09-24，导出代码树 + 主 venv + 临时装的 APScheduler 3.11）：计划原文里所有「在某行之后加 / 改成」的锚点都对得上，Task 4–10 的 61 条测试全过。变异检查发现两条测试是空的，已修：
+  - 公开令牌同时被 aud、type 两道挡住，删掉任何一道它都还是绿的，原 Step 5 的「删 type 检查、看它变红」照做会红不了。现在用伪造令牌给每道检查各配一条测试，另加一条对照用例证明伪造出来的令牌本身能进。
+  - 「心跳重试登记」那条测试最后自己调了 `ensure_registered()`，心跳漏掉重试它也照样绿，已去掉。
+  - 前端也真跑了一遍（导出代码树 + 主工作树的 node_modules）：`tsc -b` 通过（先放一个类型错误确认它确实在查 admin 的文件）；vitest 起初 1 条失败，是 `client.test.ts` 的 `reply()` 给两次 fetch 返回同一个 `Response`，第二次读 body 报 `Body is unusable`，第一版就有这个问题，已改成每次返回新的；ESLint 报出两处 error，原计划误写成「warning 可以接受」，已按仓里先例补上 `eslint-disable-next-line … -- 理由`。

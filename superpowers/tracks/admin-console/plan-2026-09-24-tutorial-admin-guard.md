@@ -245,6 +245,7 @@ def test_update_board_non_admin_forbidden(client_with_auth):
 
 Run：
 ```bash
+set -o pipefail
 cd /Users/fan/Repositories/katrain-admin-console
 CI=true uv run pytest tests/web_ui/test_guest_write_block.py tests/web_ui/test_tutorial_db_api.py -q -p no:cacheprovider -k "tutorial_writer or update_board" 2>&1 | tail -15
 ```
@@ -382,11 +383,12 @@ cd /Users/fan/Repositories/katrain-admin-console
 bash .superpowers/baseline/newfail.sh .superpowers/baseline/web_ui_failed_before.txt tests/web_ui/test_guest_write_block.py tests/web_ui/test_tutorial_db_api.py; echo "newfail exit=$?"
 git status --short
 ```
-Expected：`newfail exit=0`。`test_tutorial_db_api.py` 里那 3 条 monkeypatch `ASSET_BASE` 的用例在基线里就是红的，不算新增。`git status` 只列出本任务改动的三个文件（`katrain/config.json` 如果也出现了，执行 `git checkout -- katrain/config.json` 还原）。
+Expected：`newfail exit=0`。`test_tutorial_db_api.py` 里那 3 条 monkeypatch `ASSET_BASE` 的用例在基线里就是红的，不算新增。另外 `test_update_board_requires_auth` 在基线里也是红的（改之前匿名能写），这一步改完它会变绿（2026-09-24 实跑基线：这个文件红的正好是这 4 条）。`git status` 只列出本任务改动的三个文件（`katrain/config.json` 如果也出现了，执行 `git checkout -- katrain/config.json` 还原）。
 
 - [ ] **Step 8：提交**
 
 ```bash
+set -o pipefail
 git add katrain/web/api/v1/endpoints/tutorials.py tests/web_ui/test_guest_write_block.py tests/web_ui/test_tutorial_db_api.py
 git commit -m "fix(tutorial): 四个教程写接口只许管理员 —— 此前未登录也能改棋盘/讲解/审核
 
@@ -480,6 +482,7 @@ Expected：`newfail exit=0`。其中 `test_guest_403_on_all_write_routes[GET:/ap
 - [ ] **Step 5：提交**
 
 ```bash
+set -o pipefail
 git add katrain/web/api/v1/endpoints/board.py tests/web_ui/test_guest_write_block.py
 git commit -m "fix(board): 设备列表只许管理员 —— 它带着每台盒子的 IP；心跳不变
 
@@ -574,6 +577,7 @@ Expected：`newfail exit=0`，即没有新增的失败，基线里本来就红�
 - [ ] **Step 6：提交**
 
 ```bash
+set -o pipefail
 git add katrain/web/api/v1/endpoints/auth.py tests/web_ui/test_auth_api.py
 git commit -m "fix(auth): Bearer 只认 access token —— refresh token（90 天）不能再直接调接口
 
@@ -589,33 +593,54 @@ git show --stat HEAD | tail -4
 - Modify: `katrain/web/ui/src/context/AuthContext.tsx:6-17`（`interface User`）
 - Modify: `katrain/web/ui/src/galaxy/pages/tutorials/TutorialFigurePage.tsx`：第 39 行（`useAuth`）、第 51–53 行之后（新增 `canEdit`）、第 465–507 行（讲解区）、第 531–535 行（识别调试面板）、第 538–567 行（actions）
 - Test: `katrain/web/ui/src/galaxy/pages/tutorials/TutorialFigurePage.test.tsx`
-- 不提交：`.superpowers/baseline/vitest_{before,after}.json`、`vitest_failed_{before,after}.txt`（Step 1、Step 7 生成）
+- 不提交：`.superpowers/baseline/vitestnewfail.sh`、`vitest_failed_before.txt`（Step 1 生成）
 
 **Interfaces:**
 - Consumes：`useAuth()` 返回的 `user?: User | null`，其中 `User.is_admin?: boolean`（本任务新增声明）
 - Produces：`canEdit: boolean`，页面内部使用
 
-- [ ] **Step 1：装前端依赖；改前端之前记录 vitest 基线（按用例名字）**
+- [ ] **Step 1：装前端依赖；改前端之前按用例名字记录 vitest 基线，写好「只报新增失败」的 vitest 小脚本**
 
 ```bash
-cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
-npm ci
-B=/Users/fan/Repositories/katrain-admin-console/.superpowers/baseline
-npx vitest run --reporter=json --outputFile=$B/vitest_before.json > /dev/null 2>&1; echo "vitest exit=$?"
-python3 - "$B/vitest_before.json" "$B/vitest_failed_before.txt" <<'PY'
+cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui && npm ci
+cd /Users/fan/Repositories/katrain-admin-console
+cat > .superpowers/baseline/vitestnewfail.sh <<'SH'
+#!/usr/bin/env bash
+# 用法（在 worktree 根目录）：
+#   bash .superpowers/baseline/vitestnewfail.sh --record <基线文件>   记下当前失败的用例名（改前端之前跑一次）
+#   bash .superpowers/baseline/vitestnewfail.sh <基线文件>            只报基线里没有的失败：有 → 退出码 1
+# vitest 本身没跑成（退出码不是 0/1、没生成报告、报告里一条用例都没有）→ 退出码 2。
+# 报告每次写进新的临时文件，不会读到上一次留下的。
+set -uo pipefail
+record=0; [ "${1:-}" = "--record" ] && { record=1; shift; }
+base="$1"
+out="$(mktemp)"; rm -f "$out"; out="$out.json"
+(cd katrain/web/ui && npx vitest run --reporter=json --outputFile="$out" > /dev/null 2>&1); rc=$?
+[ "$rc" -le 1 ] || { echo "!! vitest 退出码 $rc"; exit 2; }
+[ -s "$out" ] || { echo "!! vitest 没有生成报告"; exit 2; }
+names="$(python3 - "$out" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
+if not d.get("numTotalTests"):
+    sys.exit(3)
 names = set()
 for f in d["testResults"]:
     file = f["name"].split("/katrain/web/ui/")[-1]
     if f.get("status") == "failed" and not f["assertionResults"]:
         names.add(f"{file} :: <文件本身没跑起来>")
     names |= {f"{file} :: {a['fullName']}" for a in f["assertionResults"] if a["status"] == "failed"}
-open(sys.argv[2], "w").write("".join(n + "\n" for n in sorted(names)))
-print(d["numTotalTests"], "tests,", len(names), "failed")
+print(f"# {d['numTotalTests']} tests, {len(names)} failed", file=sys.stderr)
+print("\n".join(sorted(names)))
 PY
+)" || { echo "!! vitest 报告里一条用例都没有"; exit 2; }
+if [ "$record" = 1 ]; then printf '%s\n' "$names" | grep . | sort -u > "$base"; exit 0; fi
+new="$(printf '%s\n' "$names" | grep . | sort -u | comm -13 "$base" -)"
+[ -z "$new" ] && exit 0
+echo "!! 新增失败："; echo "$new"; exit 1
+SH
+bash .superpowers/baseline/vitestnewfail.sh --record .superpowers/baseline/vitest_failed_before.txt; echo "record exit=$?"
 ```
-Expected：`npm ci` 打印 `added N packages`，没有 `ERR!`；最后一行打印用例总数和失败数（失败数可以不为 0，记下即可）。
+Expected：`npm ci` 打印 `added N packages`，没有 `ERR!`；脚本打印 `# N tests, M failed`（M 可以不为 0，记下即可），然后 `record exit=0`。
 
 - [ ] **Step 2：写测试**。在 `TutorialFigurePage.test.tsx` 里：
 
@@ -759,40 +784,36 @@ Expected：「非管理员只读」和「未登录」两条 FAIL，因为按钮�
 
 Run：
 ```bash
-set -o pipefail
+cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
+set -euo pipefail
 npx vitest run src/galaxy/pages/tutorials/TutorialFigurePage.test.tsx 2>&1 | tail -6
 npx tsc -b 2>&1 | tail -5
 npx eslint src/galaxy/pages/tutorials/TutorialFigurePage.tsx src/context/AuthContext.tsx
+echo gates-ok
 ```
-Expected：vitest 全部 PASS；`tsc -b` 没有输出（注意别用 `tsc --noEmit`，那个一个文件都不检查）；eslint 没有输出。
+Expected：vitest 全部 PASS；`tsc -b` 没有输出（注意别用 `tsc --noEmit`，那个一个文件都不检查）；eslint 没有输出；最后打印 `gates-ok`（`set -e` 下，前面任何一步失败都走不到这一行）。
 
-- [ ] **Step 7：前端全量单测按名字和基线做差；两套构建都要过**（`AuthContext.tsx` 属于共享区，kiosk 包也会用到）
+- [ ] **Step 7：前端全量单测按名字和基线比；两套构建都要过**（`AuthContext.tsx` 属于共享区，kiosk 包也会用到）
+
+```bash
+cd /Users/fan/Repositories/katrain-admin-console
+bash .superpowers/baseline/vitestnewfail.sh .superpowers/baseline/vitest_failed_before.txt; echo "vitest-newfail exit=$?"
+```
+Expected：`vitest-newfail exit=0`。退出码 1 时它会列出新增的失败；2 说明 vitest 本身没跑成。（不要用 `git stash` 回到改动前去复跑：katrain 的十个 worktree 共用一条 stash 栈，pop 可能弹出别人的在制品。基线在 Step 1 已经记好了。）
 
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
-B=/Users/fan/Repositories/katrain-admin-console/.superpowers/baseline
-npx vitest run --reporter=json --outputFile=$B/vitest_after.json > /dev/null 2>&1; echo "vitest exit=$?"
-python3 - "$B/vitest_after.json" "$B/vitest_failed_after.txt" <<'PY'
-import json, sys
-d = json.load(open(sys.argv[1]))
-names = set()
-for f in d["testResults"]:
-    file = f["name"].split("/katrain/web/ui/")[-1]
-    if f.get("status") == "failed" and not f["assertionResults"]:
-        names.add(f"{file} :: <文件本身没跑起来>")
-    names |= {f"{file} :: {a['fullName']}" for a in f["assertionResults"] if a["status"] == "failed"}
-open(sys.argv[2], "w").write("".join(n + "\n" for n in sorted(names)))
-print(d["numTotalTests"], "tests,", len(names), "failed")
-PY
-comm -13 $B/vitest_failed_before.txt $B/vitest_failed_after.txt
-set -o pipefail
-npm run build 2>&1 | tail -3 && npm run build:kiosk-2d 2>&1 | tail -3
+set -euo pipefail
+npm run build 2>&1 | tail -3
+npm run build:kiosk-2d 2>&1 | tail -3
+echo builds-ok
 ```
-Expected：`comm` 没有输出（没有新增的失败）；两个构建都以 `built in` 结尾，kiosk 那个还打印 `✅ kiosk boundary clean`。（不要用 `git stash` 回到改动前去复跑：katrain 的十个 worktree 共用一条 stash 栈，pop 可能弹出别人的在制品。基线在 Step 1 已经记好了。）
+Expected：两个构建都以 `built in` 结尾，kiosk 那个还打印 `✅ kiosk boundary clean`，最后打印 `builds-ok`。
 
 - [ ] **Step 8：提交**
 
 ```bash
+set -o pipefail
 cd /Users/fan/Repositories/katrain-admin-console
 git add katrain/web/ui/src/context/AuthContext.tsx katrain/web/ui/src/galaxy/pages/tutorials/TutorialFigurePage.tsx katrain/web/ui/src/galaxy/pages/tutorials/TutorialFigurePage.test.tsx
 git commit -m "feat(tutorial): 编辑控件只给管理员；前端声明 User.is_admin
@@ -984,26 +1005,24 @@ Expected：三份清单。记下来，一并交给 Fan。
 
 - [ ] **Step 2：🛑 请 Fan 决定**
   1. 在 Mac 本机、测试机、生产上，各自把哪个用户名设成管理员（通常是他自己的账号）。
-  2. 生产上的 `admin`（id=1）怎么处理：
-     - **选项 A（推荐）**：撤掉 `is_admin`，口令改成一个谁也不知道的随机值，相当于停用。撤权即时生效：管理员接口每次请求都按用户名重新查 `is_admin`，此前签发给 `admin` 的令牌从下一次请求起就没有管理员权限了。
-     - **选项 B**：保留管理员身份，只改成强口令。**单独这样做不够**：改口令不会让已经签发出去的令牌失效。access token 有效 7 天；Task 3 上线之前，有效 90 天的 refresh token 也能直接当 Bearer 用。谁在改口令之前用 `admin/admin` 登录过，谁就还握着管理员权限。选 B 必须同时轮换 `KATRAIN_SECRET_KEY`，代价是所有用户（包括盒子）都要重新登录一次。
+  2. 确认生产上的 `admin`（id=1）按下面的办法停用：
+     - 撤掉 `is_admin`，口令改成一个谁也不知道的随机值，相当于停用。撤权即时生效：管理员接口每次请求都按用户名重新查 `is_admin`，此前签发给 `admin` 的令牌（包括拿旧 refresh token 去 `/auth/refresh` 新换出来的）从下一次请求起就没有管理员权限了。
+     - **本计划不提供「保留管理员身份、只改强口令」**：改口令不会让已经签发出去的令牌失效，旧 refresh token 还能去 `/auth/refresh` 换出新的 access token（Task 3 只挡住了「refresh token 直接当 Bearer」）。Fan 如果要保留 `admin` 这个账号当管理员，得先轮换 `KATRAIN_SECRET_KEY`，全部用户和盒子都要重新登录一次；那是另一件事，要单独出计划，不在本任务里做。
 
-- [ ] **Step 3：给 Fan 指定的账号授权**，每个环境一条命令（把 `<用户名>` 换成他给的值）：
+- [ ] **Step 3：给 Fan 指定的账号授权**，每个环境一条命令。用 Step 1 清单里的**数字 id**，不要把用户名拼进 SQL 或 shell：注册接口不限制用户名里的字符，单引号、`$()` 都可能出现（把 `<数字id>` 换成 Fan 从清单里选定的那一个）：
 ```bash
-ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c \"UPDATE users SET is_admin = true WHERE username = '<用户名>' RETURNING id, username, is_admin;\""
+ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c 'UPDATE users SET is_admin = true WHERE id = <数字id> RETURNING id, username, is_admin;'"
 ```
 测试机和 Mac 本机用 Step 1 里对应的那条 `docker exec … psql` 前缀，执行同样的 `UPDATE`。
-Expected：**恰好一行** `<id>|<用户名>|t`。一行都没有，就是用户名写错了：停下，和 Fan 核对，不要进 Step 4。
+Expected：**恰好一行** `<数字id>|<Fan 说的那个用户名>|t`。一行都没有，或者用户名对不上，就停下和 Fan 核对，不要进 Step 4。
 
-- [ ] **Step 4：请 Fan 用这个账号在测试机和生产上各真实登录一次**，证明口令可用、`is_admin` 已经生效。由 Fan 自己在终端里执行，口令只在他那边输入（`<站点>` 分别换成 `https://go.sailorvoyage.top` 和 `https://modelstella.com`）：
+- [ ] **Step 4：请 Fan 用这个账号在测试机和生产上各真实登录一次**，证明口令可用、`is_admin` 已经生效。由 Fan 自己执行，口令只在他那边输入（`<站点>` 分别换成 `https://go.sailorvoyage.top` 和 `https://modelstella.com`）。下面这行开头的 `! ` 是 Claude Code 输入框的「由用户在本会话里执行」前缀；在普通终端里执行时去掉它（在 shell 里 `!` 是取反，会把成功显示成失败）：
 ```
 ! bash -c 'read -r -p "用户名: " U; read -r -s -p "密码: " P; echo; T=$(U="$U" P="$P" python3 -c "import json,os; print(json.dumps({\"username\": os.environ[\"U\"], \"password\": os.environ[\"P\"]}))" | curl -s -X POST <站点>/api/v1/auth/login -H "Content-Type: application/json" --data @- | python3 -c "import json,sys; print(json.load(sys.stdin).get(\"access_token\", \"\"))"); curl -s -H "Authorization: Bearer $T" <站点>/api/v1/auth/me | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get(\"username\"), \"is_admin=\", d.get(\"is_admin\"))"'
 ```
 Expected：打印 `<用户名> is_admin= True`。**两台线上机器都验过，才能进 Step 5。** Mac 本机的库只在做教程时用，下次在本机编辑教程时自然会验到。
 
-- [ ] **Step 5：按 Fan 的决定处理生产上的 `admin`**（执行前再得到他一次点头）
-
-选项 A（停用 `admin`）：
+- [ ] **Step 5：停用生产上的 `admin`**（执行前再得到他一次点头）
 ```bash
 ssh ucloud-v100 "sudo docker exec -i katrain-ucloud-katrain-web-1 python3 -" <<'PY'
 import secrets
@@ -1012,7 +1031,8 @@ from katrain.web.core.auth import get_password_hash
 from katrain.web.core.db import SessionLocal
 
 with SessionLocal() as s:
-    u = s.query(models_db.User).filter(models_db.User.username == "admin").one()
+    u = s.query(models_db.User).filter(models_db.User.id == 1).one()
+    assert u.username == "admin", u.username
     u.hashed_password = get_password_hash(secrets.token_urlsafe(32))  # nobody ever sees it
     u.is_admin = False
     s.commit()
@@ -1021,14 +1041,9 @@ PY
 ```
 Expected：打印 `1 admin False`。**容器名以 Step 1 实际查到的为准**。
 
-选项 B（Fan 自己在终端里执行，口令只在他那边输入；另外还要安排 `KATRAIN_SECRET_KEY` 的轮换，见 Step 2）：
-```
-! ssh -t ucloud-v100 "sudo docker exec -it katrain-ucloud-katrain-web-1 python3 -c \"import getpass; from katrain.web.core import models_db; from katrain.web.core.auth import get_password_hash; from katrain.web.core.db import SessionLocal; s=SessionLocal(); u=s.query(models_db.User).filter(models_db.User.username=='admin').one(); u.hashed_password=get_password_hash(getpass.getpass('new admin password: ')); s.commit(); print('ok', u.id)\""
-```
-
 - [ ] **Step 6：复查**
   - 重新跑 Step 1 的三条查询，确认结果和 Fan 的决定一致；
-  - 选了 A 时，公开过的旧口令已经登不进去（`admin` 不是保留用户名，只有 `guest` 是）：
+  - 公开过的旧口令已经登不进去（`admin` 不是保留用户名，只有 `guest` 是）：
 ```bash
 curl -s -o /dev/null -w '%{http_code}\n' -X POST https://modelstella.com/api/v1/auth/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"admin"}'
 ```
@@ -1059,9 +1074,9 @@ Expected：`newfail exit=0`（develop 带进来的新失败也会列出来，先
 
 ```bash
 ssh home-ubuntu "cd ~/Repositories/katrain && git pull --ff-only && docker compose up -d --build katrain-web"
-ssh home-ubuntu "docker ps --format '{{.Names}}\t{{.Status}}'"
+ssh home-ubuntu "docker ps --format '{{.Names}}\t{{.Status}}'; for i in \$(seq 1 30); do curl -fsS http://127.0.0.1:8001/api/v1/health && exit 0; sleep 2; done; exit 1"; echo "health exit=$?"
 ```
-Expected：`katrain-web  Up … (healthy)`；如果还是 `(health: starting)`，隔半分钟再查一次，直到 healthy。
+Expected：`katrain-web  Up …`（develop 的 compose 没给 katrain-web 配 healthcheck，不会出现 `(healthy)`，别等它），然后打印健康检查的 JSON，`health exit=0`。
 
 - [ ] **Step 3：验证测试机**（用不存在的 id 探测：不会写任何东西；401 说明闸在查库之前就生效了）
 
@@ -1153,25 +1168,30 @@ ssh ucloud-v100 "cd /opt/katrain/releases/<SHA> && sudo docker build --pull=fals
 ssh ucloud-v100 'sudo bash -s' <<'SH'
 set -euo pipefail
 TS=<TS>   # 例如 20260925-1030；写成字面量，发布记录也要用
-PG=katrain-ucloud-postgres-1; DB=katrain_prod_20260725
-docker exec "$PG" pg_dump -U katrain_user -Fc "$DB" > /opt/katrain/backups/prod-$TS.dump
-echo "DUMP=/opt/katrain/backups/prod-$TS.dump" >> /opt/katrain/backups/anchors-<SHA>.txt
-docker exec "$PG" createdb -U katrain_user katrain_restore_verify_$TS
-docker exec -i "$PG" pg_restore -U katrain_user -d katrain_restore_verify_$TS < /opt/katrain/backups/prod-$TS.dump
-echo "pg_restore exit=0"
+PG=katrain-ucloud-postgres-1; DB=katrain_prod_20260725; V=katrain_restore_verify_$TS; W=/tmp/restore-verify-$TS
+mkdir -p "$W"
 TABLES=$(docker exec "$PG" psql -U katrain_user -d "$DB" -At -c "select tablename from pg_tables where schemaname='public' order by 1")
 N=$(printf '%s\n' "$TABLES" | grep -c . || true)
 [ "$N" -gt 0 ] || { echo "!! 表清单是空的：什么都没比较，不能算通过"; exit 1; }
-for t in $TABLES; do
-  a=$(docker exec "$PG" psql -U katrain_user -d "$DB" -At -c "select count(*) from \"$t\"")
-  b=$(docker exec "$PG" psql -U katrain_user -d katrain_restore_verify_$TS -At -c "select count(*) from \"$t\"")
-  [ "$a" = "$b" ] || echo "MISMATCH $t live=$a restored=$b"
-done
-echo "row-count compare done: $N tables"
-docker exec "$PG" dropdb -U katrain_user katrain_restore_verify_$TS
+counts() { for t in $TABLES; do printf '%s %s\n' "$t" "$(docker exec "$PG" psql -U katrain_user -d "$1" -At -c "select count(*) from \"$t\"")"; done; }
+counts "$DB" > "$W/before"
+docker exec "$PG" pg_dump -U katrain_user -Fc "$DB" > /opt/katrain/backups/prod-$TS.dump
+counts "$DB" > "$W/after"
+echo "DUMP=/opt/katrain/backups/prod-$TS.dump" >> /opt/katrain/backups/anchors-<SHA>.txt
+docker exec "$PG" createdb -U katrain_user "$V"
+docker exec -i "$PG" pg_restore -U katrain_user -d "$V" < /opt/katrain/backups/prod-$TS.dump
+echo "pg_restore exit=0"
+counts "$V" > "$W/restored"
+# dump 拿的是它开始那一刻的快照：dump 前后行数没变的表，恢复出来必须一模一样；dump 期间有写入的表，
+# 恢复出来的行数必须落在前后两个数之间。其余一律算对不上。
+BAD=0
+paste "$W/before" "$W/after" "$W/restored" | awk '{ b=$2; a=$4; r=$6; lo=(b<a?b:a); hi=(b>a?b:a); if (r<lo || r>hi) { print "MISMATCH", $1, "before=" b, "after=" a, "restored=" r; bad=1 } } END { exit bad }' || BAD=1
+docker exec "$PG" dropdb -U katrain_user "$V"
+[ "$BAD" = 0 ] || { echo "!! 行数对不上，见上面的 MISMATCH"; exit 1; }
+echo "row-count check passed: $N tables"
 SH
 ```
-Expected：打印 `pg_restore exit=0` 和 `row-count compare done: <N> tables`（N 是生产库的表数，几十张，不是 0）。`MISMATCH` 只允许出现在 dump 之后仍在写入的表上（直播、分析队列之类），而且 `restored ≤ live`；其他表出现 `MISMATCH`，或者 `restored > live`，就停。脚本中途失败时，手工执行 `dropdb katrain_restore_verify_<TS>` 清掉验证库。
+Expected：打印 `pg_restore exit=0` 和 `row-count check passed: <N> tables`（N 是生产库的表数，几十张，不是 0），ssh 退出码 0。有 `MISMATCH` 时脚本以非 0 退出：停下，把输出交给 Fan。脚本因为别的原因中途退出时，手工 `dropdb katrain_restore_verify_<TS>` 清掉验证库。
 
 5f. **生成候选 env**（正在用的 env 这一步不动；只打印改动的行数，不打印内容，env 里有密钥）：
 ```bash
@@ -1215,10 +1235,12 @@ ssh ucloud-v100 "cd /opt/katrain/current && sudo docker compose --env-file /etc/
 
 5i. **等健康，再从外网探一遍**：
 ```bash
-ssh ucloud-v100 'for i in $(seq 1 60); do s=$(sudo docker inspect -f "{{.State.Health.Status}}" katrain-ucloud-katrain-web-1); [ "$s" = healthy ] && break; sleep 5; done; echo "katrain-web=$s"'
+ssh ucloud-v100 'for i in $(seq 1 60); do s=$(sudo docker inspect -f "{{.State.Health.Status}}" katrain-ucloud-katrain-web-1); [ "$s" = healthy ] && break; sleep 5; done; echo "katrain-web=$s"; [ "$s" = healthy ]'
+# 只有 5d 也构建了 cron 时，再等 cron（它的 healthcheck 是 kill -0 1）：
+# ssh ucloud-v100 'for i in $(seq 1 60); do s=$(sudo docker inspect -f "{{.State.Health.Status}}" katrain-ucloud-katrain-cron-1); [ "$s" = healthy ] && break; sleep 5; done; echo "katrain-cron=$s"; [ "$s" = healthy ]'
 for u in / /galaxy /api/v1/health; do printf '%s -> ' "$u"; curl -s -o /dev/null -w '%{http_code}\n' "https://modelstella.com$u"; done
 ```
-Expected：5 分钟内打印 `katrain-web=healthy`；三行都是 `200`。**任何一项不对就执行 5j**，不要在生产上现场排查。
+Expected：5 分钟内打印 `katrain-web=healthy`（重建了 cron 时还有 `katrain-cron=healthy`），这几条 ssh 的退出码都是 0；三行都是 `200`。**任何一项不对就执行 5j**，不要在生产上现场排查。
 
 5j. **回滚**（只在 5h / 5i 失败时执行；执行前 Fan 点头）：
 ```bash
@@ -1231,7 +1253,7 @@ cd /opt/katrain/current
 docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-web katrain-cron
 SH
 ```
-然后重跑 5i，要求恢复 healthy、探针 200。数据库不用回滚：本切片没有 DDL。
+然后重跑 5i：web 和 cron 都要回到 healthy，探针 200。数据库不用回滚：本切片没有 DDL。
 
 - [ ] **Step 6：验证生产**：Step 3 的循环把 `B` 换成 `https://modelstella.com`，要求五行都是 `401`。再请 Fan 用管理员账号改一条讲解，确认可以改。
 
@@ -1251,3 +1273,5 @@ SH
   - 不采纳：「管理员编辑到一半失去权限」的状态转换测试，以及给 `BoardEditToolbar` 再加一层 `canEdit`。进入编辑态的唯一入口「编辑」按钮已经门控；真正的闸在后端；编辑中途被登出只会卡在编辑态，刷新即恢复，不是安全问题。
   - 同形状排查：这一轮顺带发现，发布步骤原来在 cron 镜像也重建时仍只 `up -d katrain-web`，已改成 dry-run 和 `up -d` 都带上 `katrain-cron`。
   - 同形状补齐（来自 cron 切片那一轮）：跑测试之前先确认 `katrain/config.json` 干净；pytest 退出码只接受 0/1；备份比对时表清单不许为空；env 改成候选文件先过预检、再原子替换；合并后核对 `Dockerfile.web` 仍是 release 那份 4 阶段构建。
+- 2026-09-24 Codex 第二轮（6 条）之后的修订，全部采纳：删掉「保留 admin 管理员身份、只改口令」的选项（旧 refresh token 还能去 `/auth/refresh` 换新令牌，要保留就得另做密钥轮换，单独出计划）；授权用数字 id，不把用户名拼进 SQL/shell；测试机 katrain-web 没有 healthcheck，改用 curl 健康端点；生产等健康显式失败、重建 cron 时也等 cron；前端门禁改用 `vitestnewfail.sh`（只接受退出码 0/1、报告必须新生成且非空），门禁代码块用 `set -euo pipefail`；写明 `! ` 前缀只在 Claude Code 输入框里用。另外把 cron 切片那一轮指出的备份比对问题一并改了：dump 前后各数一遍，恢复出来的行数必须落在两数之间，对不上就非零退出。
+- 2026-09-24 实跑验证：Task 3 按原文改进导出的代码树。`tests/web_ui` 全量（约 1360 条）改前 / 改后按用例名字比较，唯一的差别是新写的 `test_refresh_token_is_not_a_bearer_credential`：改前红、改后绿。其余失败名单一模一样，都是这个环境里原本就红的。

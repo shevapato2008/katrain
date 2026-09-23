@@ -76,7 +76,6 @@ import numpy as np
 import pytest
 
 from katrain.vision.config import DEFAULT_MARGIN_CELLS, BoardConfig
-from katrain.vision.parallax import mount_parallax_for_lock
 from katrain.vision.reference_frame import ReferenceFrame, build_sampler, to_gray
 
 BLACK, WHITE = 1, 2
@@ -128,11 +127,6 @@ def test_the_patch_of_every_cell_is_centred_on_its_intersection_and_inside_the_f
 
 def test_the_patch_follows_the_mount_parallax_outward():
     """A stone is imaged away from the nadir, so with parallax the patch shifts outward, not inward."""
-
-    class _Lock:  # the mount helper only needs M and the grid it was locked on
-        def __init__(self):
-            self.M = np.array([[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]])
-
     parallax = type("P", (), {"nadir": (19.612, 9.0), "k": 0.989689})()
     shifted = build_sampler(SIZE, SIZE, CONFIG, parallax)
     plain = _sampler()

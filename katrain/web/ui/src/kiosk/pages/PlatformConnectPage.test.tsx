@@ -10,23 +10,23 @@ import PlatformConnectPage from './PlatformConnectPage';
  * 屏 07 跨平台 · 连接的**行为**那一半。版式归四图,一条几何都不断言;
  * 「软键盘会不会盖住输入框」归真浏览器那条承重闸。
  *
- * 断言五件事:
- *   ① **登录段的目标是推出来的**:显示顺序里第一个「可登录且未连接」的家。
- *      写死成 golaxy 的实现在这条上会红(变异:让星阵也连上 ⇒ 目标必须换人)。
- *   ② **三家全连上 ⇒ 整段不渲染**;两家未连接**仍然只有一段**。
- *   ③ **字段跟着平台换**:OGS 用户名 + 密码(不给「获取验证码」),星阵手机号 + 验证码。
- *   ④ **野狐那行行尾只有一枚标、没有按钮**,而且判别位是 `PLATFORM_META.comingSoon`
+ * 2026-09-23(Task 5):登录改成独立成页(`PlatformLoginPage`),这一屏自己不再有
+ * 登录表单 —— 相应地,原来断言字段/验证码/登录提交的用例都搬到
+ * `PlatformLoginPage.test.tsx` 里去了,这里只留「登录」按钮跳对了地方。
+ *
+ * 断言四件事:
+ *   ① **点「登录」跳到那一家的登录页**,不再是在本屏展开一段表单。
+ *   ② **野狐那行行尾只有一枚标、没有按钮**,而且判别位是 `PLATFORM_META.comingSoon`
  *      那个真标记,不是平台名字符串。
- *   ⑤ **登出走一次确认**:取消不发请求。
+ *   ③ **登出走一次确认**:取消不发请求。
+ *   ④ 能力标 / 已连接跳转 / 问不到 `/platforms` 时的降级行为不变。
  */
 
-const { platformStatus, platformLogin, platformLogout, platformSmsRequest } = vi.hoisted(() => ({
+const { platformStatus, platformLogout } = vi.hoisted(() => ({
   platformStatus: vi.fn(),
-  platformLogin: vi.fn(),
   platformLogout: vi.fn(),
-  platformSmsRequest: vi.fn(),
 }));
-vi.mock('../../api', () => ({ API: { platformStatus, platformLogin, platformLogout, platformSmsRequest } }));
+vi.mock('../../api', () => ({ API: { platformStatus, platformLogout } }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ token: 'tok', user: { id: 1, username: 'u' }, isAuthenticated: true }) }));
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -66,9 +66,7 @@ const rowOf = (name: string) =>
 beforeEach(() => {
   vi.clearAllMocks();
   platformStatus.mockResolvedValue(DRAFT_STATE);
-  platformLogin.mockResolvedValue({});
   platformLogout.mockResolvedValue({});
-  platformSmsRequest.mockResolvedValue({});
 });
 
 describe('屏 07 跨平台 · 连接', () => {
@@ -83,73 +81,20 @@ describe('屏 07 跨平台 · 连接', () => {
     expect(names).toEqual(['OGS', '星阵围棋', '野狐围棋']);
   });
 
-  it('登录段的目标是推出来的:OGS 已连、野狐 comingSoon ⇒ 落到星阵', async () => {
-    renderPage();
-    expect(await screen.findByTestId('platform-login-section')).toHaveTextContent('登录 · 星阵围棋');
-  });
-
-  /** 一家可登录的都不剩 ⇒ 整段不渲染。**写死 golaxy 的实现在这条上会红。** */
-  it('能登的都连上了:登录段整个不渲染,不留一句「都连上了」', async () => {
-    platformStatus.mockResolvedValue({
-      platforms: [row('ogs', true), row('golaxy', true), row('fox', false)],
-    });
-    renderPage();
-    await waitFor(() => expect(screen.getAllByTestId('platform-row')).toHaveLength(3));
-    expect(screen.queryAllByTestId('platform-login-section')).toHaveLength(0);
-  });
-
-  it('两家都没连:仍然只有一段,点谁那一段就换成谁', async () => {
+  it('点「登录」跳到那一家的登录页,不再展开页内表单', async () => {
     platformStatus.mockResolvedValue({
       platforms: [row('ogs', false), row('golaxy', false), row('fox', false)],
     });
     renderPage();
-    const section = await screen.findByTestId('platform-login-section');
-    expect(section).toHaveTextContent('登录 · OGS');
-    expect(screen.getAllByTestId('platform-login-section')).toHaveLength(1);
+    await waitFor(() => expect(screen.getAllByTestId('platform-row')).toHaveLength(3));
+    // 登录段这一版已经整个撤掉 —— 撤页内登录表单是这一版的重点,漏了这条断言就等于没测。
+    expect(screen.queryByTestId('platform-login-section')).not.toBeInTheDocument();
 
     await userEvent.click(within(rowOf('星阵围棋')).getByRole('button', { name: '登录' }));
-    await waitFor(() => expect(screen.getByTestId('platform-login-section'))
-      .toHaveTextContent('登录 · 星阵围棋'));
-    expect(screen.getAllByTestId('platform-login-section'), '叠出了第二段').toHaveLength(1);
-  });
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/login/golaxy');
 
-  it('星阵那条路是手机号 + 验证码', async () => {
-    renderPage();
-    const section = await screen.findByTestId('platform-login-section');
-    expect(within(section).getByLabelText('手机号')).toBeInTheDocument();
-    expect(within(section).getByTestId('platform-sms')).toHaveTextContent('获取验证码');
-
-  });
-
-  it('OGS 那条路是用户名 + 密码,没有「获取验证码」', async () => {
-    platformStatus.mockResolvedValue({
-      platforms: [row('ogs', false), row('golaxy', true), row('fox', false)],
-    });
-    renderPage();
-    const section = await screen.findByTestId('platform-login-section');
-    expect(section).toHaveTextContent('登录 · OGS');
-    expect(within(section).getByLabelText('用户名')).toBeInTheDocument();
-    // 密码那条路没有短信键 —— 摆一颗按下去没有后端的键,比不摆更糟。
-    expect(within(section).queryByTestId('platform-sms')).not.toBeInTheDocument();
-  });
-
-  it('星阵登录发的是 sms_code,不是 password', async () => {
-    renderPage();
-    const section = await screen.findByTestId('platform-login-section');
-    await userEvent.type(within(section).getByTestId('platform-login-user'), '13800000000');
-    await userEvent.type(within(section).getByTestId('platform-login-pass'), '123456');
-    await userEvent.click(within(section).getByTestId('platform-login-submit'));
-    await waitFor(() => expect(platformLogin).toHaveBeenCalledWith(
-      'golaxy', { username: '13800000000', sms_code: '123456' }, 'tok',
-    ));
-  });
-
-  it('没填手机号就点「获取验证码」:说出来,不发请求', async () => {
-    renderPage();
-    const section = await screen.findByTestId('platform-login-section');
-    await userEvent.click(within(section).getByTestId('platform-sms'));
-    expect(await screen.findByTestId('platform-login-error')).toHaveTextContent('请先输入手机号');
-    expect(platformSmsRequest).not.toHaveBeenCalled();
+    await userEvent.click(within(rowOf('OGS')).getByRole('button', { name: '登录' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/login/ogs');
   });
 
   it('野狐那行只有一枚标、没有按钮;判别位是 comingSoon 不是平台名', async () => {
@@ -187,17 +132,6 @@ describe('屏 07 跨平台 · 连接', () => {
 
     await userEvent.click(within(rowOf('星阵围棋')).getByRole('button', { name: '人机对弈' }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/cross-platform/engine/golaxy');
-  });
-
-  it('填了手机号点「获取验证码」:发出去,并进入 60 秒倒计时', async () => {
-    renderPage();
-    const section = await screen.findByTestId('platform-login-section');
-    await userEvent.type(within(section).getByTestId('platform-login-user'), '13800000000');
-    await userEvent.click(within(section).getByTestId('platform-sms'));
-    await waitFor(() => expect(platformSmsRequest).toHaveBeenCalledWith('golaxy', '13800000000', 'tok'));
-    // 倒计时期间不许再点 —— 连点会把那边的短信配额打光。
-    await waitFor(() => expect(within(section).getByTestId('platform-sms')).toBeDisabled());
-    expect(within(section).getByTestId('platform-sms')).toHaveTextContent('秒后可重发');
   });
 
   it('返回键回对弈首页', async () => {

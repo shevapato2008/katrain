@@ -1384,10 +1384,55 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
    **只给有模态的那一屏加**,不动共享的 `.kiosk-layout-b`。 */
 .kiosk-layout-b.plat-layout { position: relative; }
 
-/* 屏 07 登录段:错误落点 + 提交键。稿子只画到两行输入 —— 错误没有落点等于没报错,
-   而「登录」这个动作稿子那一帧也没画(它把提交寄托在行尾那颗药丸上)。 */
+/* 登录出错的落点(`PlatformLoginPage`)。错误没有落点等于没报错。 */
 .loginerr { margin: 8px 2px 0; font-size: 11.5px; line-height: 1.5; color: var(--bad); }
-.loginsubmit { width: 100%; margin-top: 10px; justify-content: center; }
+
+/* ── 屏 07b/08 登录独立成页 ───────────────────────────────────────────────
+   设计源 `go-kiosk.tmpl.html:663-699`,逐字抄,**只改了两处、都写在各自那一行边上**:
+     ① `.xplogin__main` 原来是 `justify-content: center`,改成滚动容器 `overflow-y: auto`,
+        居中改由 `.xpcol { margin: auto }` 接手 —— 见下面的说明。
+     ② `.xpqr`(二维码区)这一轮不搬,Task 6 搬。
+   全部选择器套一层 `[data-testid="platform-login-page"]` 作用域 —— 本 track 判例
+   (同一份样式表里的同名类会跨屏污染,`.xpwho b` / `.xpfacts p` 这种元素选择器尤其危险)。
+
+   **`.xplogin__main` 为什么必须能滚(承重,归真浏览器几何闸,不归四图)**:
+   `PlatformConnectPage.tsx` 那段软键盘避让是「给滚动区垫一段等于键盘高度的下内衬」——
+   但 `.xplogin` 是 `overflow: hidden` + 垂直居中,垫 padding 换不来任何可滚的余量。
+   `.xplogin__main` 换成 `overflow-y: auto` 之后,`.xpcol` 改用 `margin: auto` 而不是
+   父级的 `justify-content: center`:居中的 flex 容器一旦溢出会把顶部裁掉且滚不回去,
+   `margin: auto` 在有余量时一样居中,内容溢出时会让出滚动空间而不是裁切。 */
+[data-testid="platform-login-page"] .xplogin { flex: 1; min-height: 0; display: flex; padding: 0; overflow: hidden; }
+[data-testid="platform-login-page"] .xplogin__aside { width: 300px; flex: none; display: flex; flex-direction: column; justify-content: center;
+  gap: 16px; padding: 18px 22px; border-right: 1px solid var(--hair);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent 62%); }
+[data-testid="platform-login-page"] .xpwho { display: flex; align-items: center; gap: 11px; }
+[data-testid="platform-login-page"] .xpwho .mark { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); background: var(--panel); color: var(--accent); }
+[data-testid="platform-login-page"] .xpwho .mark svg { width: 21px; height: 21px; fill: currentColor; }
+[data-testid="platform-login-page"] .xpwho b { display: block; font-family: var(--font-serif); font-size: 17px; font-weight: 600; }
+[data-testid="platform-login-page"] .xpwho span { font-size: 11.5px; color: var(--dim); letter-spacing: .03em; }
+[data-testid="platform-login-page"] .xpfacts { display: flex; flex-direction: column; gap: 13px; }
+[data-testid="platform-login-page"] .xpfacts > div { display: flex; flex-direction: column; gap: 3px; }
+[data-testid="platform-login-page"] .xpfacts b { font-size: 11px; font-weight: 600; letter-spacing: .1em; color: var(--dim); }
+[data-testid="platform-login-page"] .xpfacts p { font-size: 12.5px; line-height: 1.55; color: var(--text); }
+[data-testid="platform-login-page"] .xplogin__main { flex: 1; min-width: 0; display: flex; flex-direction: column;
+  align-items: center; padding: 18px 24px; overflow-y: auto; }
+[data-testid="platform-login-page"] .xpcol { width: 520px; display: flex; flex-direction: column; gap: 14px; margin: auto; }
+[data-testid="platform-login-page"] .xpcol .igrow + .igrow { margin-top: 0; }
+[data-testid="platform-login-page"] .xplogin .kiosk-seclabel { margin-bottom: 0; }
+[data-testid="platform-login-page"] .xplogin .kiosk-optseg { height: 52px; }
+[data-testid="platform-login-page"] .xpfield { flex: 1; min-width: 0; height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 14px;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--panel); font-size: 13.5px; color: var(--dim); }
+[data-testid="platform-login-page"] .xpfield b { font-family: var(--font-mono); font-size: 17px; font-weight: 500; letter-spacing: .04em; color: var(--text); }
+[data-testid="platform-login-page"] .xpfield i { margin-left: auto; font-style: normal; font-size: 12px; color: var(--accent); }
+[data-testid="platform-login-page"] .xpcode { height: 56px; flex: none; }
+[data-testid="platform-login-page"] .xptabs { flex: none; }
+[data-testid="platform-login-page"] .xpgo { flex: 1; height: 56px; justify-content: center; font-size: 16px; }
+
+/* `.xpfield` 这一版直接挂在真 `<input>` 上(判例同屏 04 `.nameinput`:「静态稿只能画到
+   药丸这一步,真页面上它必须真能输入……把 `<span>` 换成 `<input>`」)。稿子里配 `.xpfield`
+   的 `<b>`(已填值)/`<i>`(点此输入提示)两个子元素只存在于静态 mock —— 真输入框自己的
+   value/placeholder 就顶替了它们的角色,这两条选择器在真页面上不会被匹配到,留着无害。 */
 
 /* ── 屏 24 课程 · 书目与章节 ────────────────────────────────────────────────
    章行本身就是展开控件(稿子那三个行尾键「已看完 / 接着看 / 开始」不做 —— 盒上没有可信的

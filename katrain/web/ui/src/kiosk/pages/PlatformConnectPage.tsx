@@ -1,47 +1,42 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API, type PlatformInfo } from '../../api';
-import { platformErrorMessage } from '../utils/platformErrorMessage';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
+import { useKeyboardInset } from '../hooks/useKeyboardInset';
 import { PLATFORM_META, defaultPlatforms, mergePlatformStatus } from '../constants/platforms';
 import { interpolate } from '../utils/interpolate';
 
 /**
  * 屏 07 跨平台 · 连接(`sample-go/shots/07-platform.png`,L2 布局 B)。
  *
- * 首页「跨平台对弈」那三张卡未连接时全都落到这儿。三件事必须画对,少一件这一屏就白画了:
+ * 首页「跨平台对弈」那三张卡未连接时全都落到这儿。两件事必须画对,少一件这一屏就白画了:
  *
  * ① **每家支持什么不一样**,四个能力标由 `/platforms` 下发,不是界面写死的四个格子。
  *    亮着的才是那一家真支持的。
- * ② **登录字段跟着平台换** —— OGS 是用户名 + 密码,星阵是手机号 + 验证码。
- *    给一套通用表单是错的,那会让星阵那家永远登不上去。
- * ③ **已连接的那家进的是大厅还是人机开局**,取决于 `supports_engine_play` ——
+ * ② **已连接的那家进的是大厅还是人机开局**,取决于 `supports_engine_play` ——
  *    星阵能给的对手是那 39 档 bot 不是人(`get_online_users` 直接 `return []`),
  *    所以它进人机开局;OGS 进大厅。
  *
- * ## 三处按 2026-08-24 的裁定落的
+ * ## 2026-09-23(Task 5):登录改成独立成页
  *
- * **登录是页内一段,不是弹层。** 判例在仓里:屏 04 那两颗「点此输入」药丸
- * (`go-screens.css` 的 `.nameinput` 那一段)——「静态稿只能画到药丸这一步,真页面上它必须
- * 真能输入……**不做「点药丸弹一个输入框」**,那是稿子上没有的一层流程」。这里是同一个构件。
- * 改成弹层还会把一整段从四图里拿掉。
- *   · 默认目标 = 显示顺序里第一个「**可登录且未连接**」的平台(可登录 = `PLATFORM_META` 里
- *     有 `login` 且不是 `comingSoon`)。稿子那一帧 OGS 已连、野狐 comingSoon ⇒ 落到星阵,
- *     标题正是「登录 · 星阵围棋」。**推导出来的,不是写死的。**
- *   · 点某一行的「登录」= 把那一家设为这一段的目标(换标题、换字段、清空表单),不弹任何东西。
- *   · **三家全连上 ⇒ 整段不渲染。** 每一行都写着「已连接」,那就是答案;再加一句
- *     「都连上了」正是 Fan 8-22 要砍的小字。
- *   · 两家未连接**仍然只有一段**,目标跟着点谁走 —— 叠两段只会把第二段埋得更深。
+ * 原来这一屏有一段页内登录表单(2026-08-24 裁定,判例是屏 04 的「点此输入」药丸:
+ * 「静态稿只能画到药丸这一步,真页面上它必须真能输入……不做『点药丸弹一个输入框』」)。
+ * 这一版把登录段整段撤掉,「登录」按钮改成跳 `PlatformLoginPage`
+ * (`/kiosk/play/cross-platform/login/:platform`)—— 星阵已经有验证码/密码两条真路,
+ * 摆进一段折叠在连接页里的表单反而挤;独立成页之后每家还能各自长出扫码(Task 6)。
+ * 「不做弹层」那条判例仍然成立,只是「页内一段」换成了「独立一页」,两者都不是弹层。
+ *
+ * ## 其余仍按 2026-08-24 的裁定落的
  *
  * **登出留在行尾,而且要有字。** 稿子那一行只有「已连接」+「进入大厅」,这一处是
  * **实现反过来纠正稿子**:登出是业务动作,规范 §11 明写「悔棋、认输、求和、提示这些
- * 业务动作一律不许上页控条」;收进登录段也不行 —— 三家全连上时那段不渲染,而那正是
- * 最需要登出的时候。行尾也不挤:这一屏是布局 B 通栏 992,能力标右缘到行尾之间空着 545px。
- * 误触的代价在星阵那家是重走一遍短信,所以走一次确认弹层(和屏 08 的「挑战」同一条规矩)。
+ * 业务动作一律不许上页控条」;行尾也不挤:这一屏是布局 B 通栏 992,能力标右缘到行尾之间
+ * 空着 545px。误触的代价在星阵那家是重走一遍短信,所以走一次确认弹层
+ * (和屏 08 的「挑战」同一条规矩)。
  *
  * **野狐那一行行尾是一枚警示标,没有按钮。** 稿子那枚 `.wip`「对弈未接后端」是
  * **给读稿人看的进度标注**,不上屏(屏 15 / 19 已按这条处理过);但它编码的**产品事实
@@ -57,12 +52,6 @@ import { interpolate } from '../utils/interpolate';
  *
  */
 
-/** 这一家现在能不能走登录这条路。`comingSoon` 的家有 `login` 配置,但登进去也没法下。 */
-const canLogIn = (platform: string): boolean => {
-  const meta = PLATFORM_META[platform];
-  return !!meta?.login && !meta.comingSoon;
-};
-
 const PlatformConnectPage = () => {
   const { t } = useTranslation();
   // token 只当**凭据**用（严格盒端恒为 null，身份在 HttpOnly sb_go_token cookie 里）；
@@ -72,15 +61,7 @@ const PlatformConnectPage = () => {
 
   const [platforms, setPlatforms] = useState<PlatformInfo[]>(defaultPlatforms);
   const [loaded, setLoaded] = useState(false);
-  /** 用户点过某一行的「登录」之后,这一段的目标就跟着他走;`null` = 还没点过,按默认推。 */
-  const [picked, setPicked] = useState<string | null>(null);
-  const [form, setForm] = useState({ user: '', pass: '' });
-  const [loginBusy, setLoginBusy] = useState(false);
-  const [loginError, setLoginError] = useState('');
-  const [smsBusy, setSmsBusy] = useState(false);
-  const [smsLeft, setSmsLeft] = useState(0);
   const [logoutTarget, setLogoutTarget] = useState<string | null>(null);
-  const loginSectionRef = useRef<HTMLElement | null>(null);
 
   const refresh = useCallback(async () => {
     if (!isAuthenticated) { setLoaded(true); return; }
@@ -97,121 +78,9 @@ const PlatformConnectPage = () => {
 
   useEffect(() => { void refresh(); }, [refresh]);
 
-  // 验证码倒计时:每一跳重新挂一个 1s 的 timeout,到 0 为止。
-  useEffect(() => {
-    if (smsLeft <= 0) return undefined;
-    const id = setTimeout(() => setSmsLeft((n) => Math.max(0, n - 1)), 1000);
-    return () => clearTimeout(id);
-  }, [smsLeft]);
-
-  /**
-   * ⚠️ **软键盘会把这一段整个压在底下,而滚动区已经滚不动了。**
-   * 真浏览器量出来:滚动区 clientH 460 / scrollH 610 ⇒ maxScroll 只有 150;
-   * 而键盘高 188、上缘落在 y=412(带中文候选条时 246 / 上缘 354)——
-   * 两个输入框滚到底时都在 412 以下。键盘自己那句 `scrollIntoView` 需要 scrollTop≈294,
-   * 比 maxScroll 还大,救不回来。
-   *
-   * ⇒ 聚焦时给滚动区垫一段等于键盘高度的下内衬,**不动版式**:不重排段序、不改任何
-   * 画出来的元素,四图仍然逐像素可比。键盘没加载(`.skbd` 不存在)时垫 0 —— 那就是没有键盘。
-   */
-  useEffect(() => {
-    const zone = document.querySelector<HTMLElement>('.kiosk-layout-b .kiosk-side__scroll');
-    if (!zone) return undefined;
-    const inZone = (el: EventTarget | null) =>
-      el instanceof HTMLElement && el.tagName === 'INPUT' && zone.contains(el);
-
-    let rafId = 0;
-    let blurTimer = 0;
-    const onFocus = (e: FocusEvent) => {
-      if (!inZone(e.target)) return;
-      const el = e.target as HTMLElement;
-      // 键盘挂在 body 上、在**缩放画布外面**,所以它量出来的 px 是屏幕 px,
-      // 而内衬要写进画布坐标 —— 得先除以画布的缩放比。
-      rafId = requestAnimationFrame(() => {
-        rafId = 0;
-        const keyboardPx = document.querySelector<HTMLElement>('.skbd')?.offsetHeight ?? 0;
-        const canvasW = document.querySelector<HTMLElement>('.kiosk-screen')?.getBoundingClientRect().width;
-        const scale = canvasW && canvasW > 0 ? canvasW / 1024 : 1;
-        zone.style.paddingBottom = `${Math.round(keyboardPx / scale)}px`;
-        el.scrollIntoView({ block: 'center' });
-      });
-    };
-    const onBlur = (e: FocusEvent) => {
-      if (!inZone(e.target)) return;
-      blurTimer = window.setTimeout(() => {
-        blurTimer = 0;
-        if (!inZone(document.activeElement)) zone.style.paddingBottom = '';
-      }, 150);
-    };
-    zone.addEventListener('focusin', onFocus);
-    zone.addEventListener('focusout', onBlur);
-    return () => {
-      zone.removeEventListener('focusin', onFocus);
-      zone.removeEventListener('focusout', onBlur);
-      // **摘掉监听器不等于取消已经排上队的回调。** 这两个回调都会去摸 `document`，
-      // 卸载之后再跑就是访问一个已经不存在的文档。在浏览器里这只是一次无害的写入，
-      // 在 jsdom 里它是 `ReferenceError: document is not defined` —— 一条**未捕获异常**，
-      // 于是 vitest 整批以非零退出码结束，而每一条用例都还是绿的
-      // （2026-09-01 实测：1695 条全过、rc=1）。
-      // 它是否触发只取决于测试调度，所以「今天没红」不代表没有这个洞。
-      if (rafId) cancelAnimationFrame(rafId);
-      if (blurTimer) clearTimeout(blurTimer);
-      zone.style.paddingBottom = '';
-    };
-  }, []);
-
-  /** 登录段的目标:点过谁就是谁;没点过就取显示顺序里第一个「可登录且未连接」的。 */
-  const loginTarget = useMemo(() => {
-    const openOnes = platforms.filter((p) => canLogIn(p.platform) && !p.connected);
-    if (picked && openOnes.some((p) => p.platform === picked)) return picked;
-    return openOnes[0]?.platform ?? null;
-  }, [platforms, picked]);
-
-  const targetMeta = loginTarget ? PLATFORM_META[loginTarget] : undefined;
-  const isSms = targetMeta?.login?.passLabel === 'Verification Code';
-
-  const pickForLogin = (platform: string) => {
-    setPicked(platform);
-    setForm({ user: '', pass: '' });
-    setLoginError('');
-    setSmsLeft(0);
-    requestAnimationFrame(() => loginSectionRef.current?.scrollIntoView({ block: 'nearest' }));
-  };
-
-  const sendSms = async () => {
-    if (!loginTarget || !isAuthenticated) return;
-    if (!form.user.trim()) { setLoginError(t('platform:need_phone', '请先输入手机号')); return; }
-    setSmsBusy(true);
-    setLoginError('');
-    try {
-      await API.platformSmsRequest(loginTarget, form.user, token);
-      setSmsLeft(60);
-    } catch (e) {
-      setLoginError(platformErrorMessage(e, t('platform:sms_failed', '验证码没发出去')));
-    } finally {
-      setSmsBusy(false);
-    }
-  };
-
-  const submitLogin = async () => {
-    if (!loginTarget || !isAuthenticated) return;
-    setLoginBusy(true);
-    setLoginError('');
-    try {
-      await API.platformLogin(
-        loginTarget,
-        isSms ? { username: form.user, sms_code: form.pass } : { username: form.user, password: form.pass },
-        token,
-      );
-      setForm({ user: '', pass: '' });
-      setPicked(null);
-      await refresh();
-    } catch (e) {
-      setLoginError(platformErrorMessage(e, t('platform:login_failed', '登录失败')));
-    } finally {
-      setLoginBusy(false);
-    }
-  };
+  // 软键盘避让 —— 逻辑与注释见 `useKeyboardInset` 头注(2026-09-23 从这里提成共享 hook,
+  // 登录页 `PlatformLoginPage` 也用它)。这一屏的滚动容器是 `.kiosk-layout-b .kiosk-side__scroll`。
+  useKeyboardInset('.kiosk-layout-b .kiosk-side__scroll');
 
   const doLogout = async (platform: string) => {
     setLogoutTarget(null);
@@ -296,7 +165,7 @@ const PlatformConnectPage = () => {
                           type="button"
                           className="kiosk-btn kiosk-btn--pill"
                           data-testid="platform-login"
-                          onClick={() => pickForLogin(p.platform)}
+                          onClick={() => navigate(`/kiosk/play/cross-platform/login/${p.platform}`)}
                         >{t('Login', '登录')}</button>
                       </>
                     )}
@@ -334,92 +203,6 @@ const PlatformConnectPage = () => {
             </div>
           </div>
         </section>
-
-        {/* 三家全连上 ⇒ 这一段整个不渲染。行本身每一行都写着「已连接」,那就是答案。 */}
-        {loginTarget && targetMeta?.login && (
-          <section
-            className="kiosk-section"
-            data-testid="platform-login-section"
-            ref={loginSectionRef}
-          >
-            <KioskSecLabel
-              zh={interpolate(t('platform:sign_in_to', '登录 · {name}'), { name: t(targetMeta.label, targetMeta.labelCn) })}
-              en="Sign in"
-              value={isSms
-                ? t('platform:sms_fields', '手机号 + 验证码')
-                : t('platform:pw_fields', '用户名 + 密码')}
-            />
-            <div className="kiosk-rows">
-              <div className="kiosk-row">
-                <span className="kiosk-row__lead">
-                  {t(targetMeta.login.userLabel, targetMeta.login.userLabelCn)}
-                </span>
-                <div className="kiosk-row__t">
-                  <em>{isSms
-                    ? t('platform:phone_note', '只用来向平台换一个登录凭证')
-                    : t('platform:user_note', '那边的账号名，不是盒子的账号')}</em>
-                </div>
-                <div className="kiosk-row__end">
-                  <input
-                    className="nameinput nameinput--search"
-                    data-testid="platform-login-user"
-                    type={targetMeta.login.userType === 'tel' ? 'tel' : 'text'}
-                    aria-label={t(targetMeta.login.userLabel, targetMeta.login.userLabelCn)}
-                    placeholder={t('local:tap_to_type', '点此输入')}
-                    value={form.user}
-                    onChange={(e) => setForm((f) => ({ ...f, user: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div className="kiosk-row">
-                <span className="kiosk-row__lead">
-                  {t(targetMeta.login.passLabel, targetMeta.login.passLabelCn)}
-                </span>
-                <div className="kiosk-row__t">
-                  <em>{isSms
-                    ? t('platform:code_note', '六位数字 · 60 秒内有效')
-                    : t('platform:pw_note', '只发给那个平台，不存在盒子上')}</em>
-                </div>
-                <div className="kiosk-row__end">
-                  {isSms && (
-                    <button
-                      type="button"
-                      className="kiosk-btn kiosk-btn--pill"
-                      data-testid="platform-sms"
-                      disabled={smsBusy || smsLeft > 0}
-                      onClick={() => { void sendSms(); }}
-                    >
-                      {smsLeft > 0
-                        ? interpolate(t('platform:sms_again', '{n} 秒后可重发'), { n: smsLeft })
-                        : t('platform:sms_get', '获取验证码')}
-                    </button>
-                  )}
-                  <input
-                    className="nameinput nameinput--search"
-                    data-testid="platform-login-pass"
-                    type={isSms ? 'text' : 'password'}
-                    aria-label={t(targetMeta.login.passLabel, targetMeta.login.passLabelCn)}
-                    placeholder={t('local:tap_to_type', '点此输入')}
-                    value={form.pass}
-                    onChange={(e) => setForm((f) => ({ ...f, pass: e.target.value }))}
-                    onKeyDown={(e) => { if (e.key === 'Enter') void submitLogin(); }}
-                  />
-                </div>
-              </div>
-            </div>
-            {/* 登录出错要有落点 —— 没有落点的错误等于没报错。 */}
-            {loginError && <p className="loginerr" data-testid="platform-login-error">{loginError}</p>}
-            <button
-              type="button"
-              className="kiosk-btn kiosk-btn--secondary loginsubmit"
-              data-testid="platform-login-submit"
-              disabled={loginBusy}
-              onClick={() => { void submitLogin(); }}
-            >
-              {loginBusy ? t('platform:logging_in', '正在登录…') : t('Login', '登录')}
-            </button>
-          </section>
-        )}
       </KioskScrollZone>
 
       {/* 登出确认。它离「进入大厅」只有 10px,误触在星阵那家的代价是重走一遍短信。 */}

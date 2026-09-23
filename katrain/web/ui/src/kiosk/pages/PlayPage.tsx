@@ -166,11 +166,13 @@ const PlayPage = () => {
                 />
               );
             }
+            // 2026-09-23(Task 5):「未连接」这一支改跳独立的登录页 —— 已连接那两支
+            // 原样不动(Task 10 再改,那时 `/kiosk/play/cross-platform/golaxy` 才存在)。
             const target = p.connected
               ? (p.supports_engine_play
                   ? `/kiosk/play/cross-platform/engine/${p.platform}`
                   : `/kiosk/play/cross-platform/lobby?platform=${p.platform}`)
-              : '/kiosk/play/cross-platform';
+              : `/kiosk/play/cross-platform/login/${p.platform}`;
             // 副标说的是**下一步会发生什么**,而且每一句都从真状态推出来:
             // 连上了就说走哪条路,没连上就说这个平台要拿什么登录(登录字段在 PLATFORM_META 里)。
             const sub = p.connected

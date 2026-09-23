@@ -123,6 +123,12 @@ class VisionServiceConfig:
     # (e.g. "120-170" or "145"; a bare midpoint expands to a +/-AE_SCALAR_HALF_WIDTH band,
     # clamped to [0, 255] — see parse_ae_target). Calibrated: known-good scenes meter 146-160.
     ae_target: str = "120-170"
+    # Reference-frame check ("off" | "shadow" | "on", 2026-09-23): compare each cell against the last
+    # frame whose raw board matched the game record and keep the occupancy of cells that look
+    # unchanged, bounded per cell. "shadow" computes and logs it without touching recognition — the
+    # default until board data in daylight sets the threshold and the two hold limits.
+    # See superpowers/tracks/vision-optimizations/reference-frame/design.md.
+    reference_check: str = "shadow"
     imgsz: int = 960
     use_clahe: bool = False
     intrinsics_file: str | None = None  # persistent camera calibration .npz
@@ -175,4 +181,5 @@ class VisionServiceConfig:
             "capture_fps": self.capture_fps,
             "parallax": self.parallax,
             "parallax_auto": self.parallax_enabled,
+            "reference_check": self.reference_check,
         }

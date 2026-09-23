@@ -1,6 +1,6 @@
 """Synthetic ver9 stone-parallax geometry for tests ONLY.
 
-Constants are the CAD-derived values of superpowers/tracks/vision-stone-parallax/geometry.md §3.
+Constants are the CAD-derived values of superpowers/tracks/vision-optimizations/stone-parallax/geometry.md §3.
 Production never uses them: the nadir must be calibrated on site (prd P1-2). Grid convention matches
 the geometry-lock warp: fx = column, fy = row, row 0 is the far side (away from the camera), and the
 nadir lies beyond row 18 on the camera side.

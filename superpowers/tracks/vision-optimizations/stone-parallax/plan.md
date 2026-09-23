@@ -12,7 +12,7 @@
 
 **Tech Stack:** Python 3.12、numpy、pytest;OpenCV / RKNN 只在标定工具的采帧部分用到。
 
-**Spec:** `superpowers/tracks/vision-stone-parallax/design.md`(设计)与同目录 `prd.md`(需求,含 2026-09-22 修订)。
+**Spec:** `superpowers/tracks/vision-optimizations/stone-parallax/design.md`(设计)与同目录 `prd.md`(需求,含 2026-09-22 修订)。
 执行者两份都要读;本计划的每条验收都能在 prd.md §3 里找到出处(见文末「验收对照」)。
 
 ## Global Constraints
@@ -36,7 +36,7 @@
 - Python:`PY=/Users/fan/Repositories/katrain-vision-stone-parallax/.venv/bin/python`。这个 venv 已用
   `uv sync --extra web --extra vision --extra board` 装好;**只给 `--extra web` 会缺 cv2,`tests/test_vision` 会整片
   收集失败,看起来像你的改动弄红的**。所有 `pytest` 一律 `"$PY" -m pytest ... -p no:cacheprovider`。
-- 参考脚本 `superpowers/tracks/vision-stone-parallax/parallax_correct.py` 可以用 `"$PY"` 或 `/opt/homebrew/bin/python3`
+- 参考脚本 `superpowers/tracks/vision-optimizations/stone-parallax/parallax_correct.py` 可以用 `"$PY"` 或 `/opt/homebrew/bin/python3`
   跑(系统 `python3` 没有 numpy)。**仓库里的测试不许 import 这些参考脚本。**
 - 基线:`tests/test_vision` 在 develop `34e9c7b6` 上 651 passed。
 
@@ -70,7 +70,7 @@
 | `tests/test_vision/test_parallax_store.py` | 新建 | 文件格式与读写 |
 | `tests/test_vision/test_parallax_wiring.py` | 新建 | config / adapter / `attach_parallax` / 诊断日志 |
 | `tests/test_vision/test_calibrate_parallax.py` | 新建 | 标定工具判定与写文件 |
-| `superpowers/tracks/vision-stone-parallax/handoff.md` | 新建 | 上板步骤与待填的对照数据 |
+| `superpowers/tracks/vision-optimizations/stone-parallax/handoff.md` | 新建 | 上板步骤与待填的对照数据 |
 
 ## 依赖与并行
 
@@ -371,7 +371,7 @@ Expected:第一条打印的路径在 `$MUT` 下面;pytest `1 failed, 1 passed`(D
 ```python
 """Synthetic ver9 stone-parallax geometry for tests ONLY.
 
-Constants are the CAD-derived values of superpowers/tracks/vision-stone-parallax/geometry.md §3.
+Constants are the CAD-derived values of superpowers/tracks/vision-optimizations/stone-parallax/geometry.md §3.
 Production never uses them: the nadir must be calibrated on site (prd P1-2). Grid convention matches
 the geometry-lock warp: fx = column, fy = row, row 0 is the far side (away from the camera), and the
 nadir lies beyond row 18 on the camera side.
@@ -497,7 +497,7 @@ def apply_parallax(
 ```python
 """Stone-parallax correction parameters and calibration fit -- pure math, no I/O.
 
-Derivation and measured inputs: superpowers/tracks/vision-stone-parallax/geometry.md.
+Derivation and measured inputs: superpowers/tracks/vision-optimizations/stone-parallax/geometry.md.
 """
 
 from __future__ import annotations
@@ -2638,8 +2638,8 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ### Task 9: 全量验证与文档
 
 **Files:**
-- Create: `superpowers/tracks/vision-stone-parallax/handoff.md`
-- Modify: `superpowers/tracks/vision-stone-parallax/README.md`(文件表加 `design.md` / `plan.md` / `handoff.md`;「接进流水线的位置」改成指向 `_positions`)
+- Create: `superpowers/tracks/vision-optimizations/stone-parallax/handoff.md`
+- Modify: `superpowers/tracks/vision-optimizations/stone-parallax/README.md`(文件表加 `design.md` / `plan.md` / `handoff.md`;「接进流水线的位置」改成指向 `_positions`)
 
 **约束:** 新增失败只能靠**名字集合**的基线 diff 判定,不许按条数比。本分支没有前端改动 ⇒ 不需要 `npm run build`。
 
@@ -2747,7 +2747,7 @@ k / nadir / m / h_implied / rms / 最差点 / 网格偏移 start、end / 棋子 
 - [ ] **Step 5: 更新 README 并提交**
 
 ```bash
-git add -- superpowers/tracks/vision-stone-parallax/handoff.md superpowers/tracks/vision-stone-parallax/README.md
+git add -- superpowers/tracks/vision-optimizations/stone-parallax/handoff.md superpowers/tracks/vision-optimizations/stone-parallax/README.md
 git commit -m "docs(vision-parallax): handoff for the on-board run; README points at the implementation
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"

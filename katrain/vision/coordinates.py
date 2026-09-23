@@ -45,12 +45,16 @@ def grid_to_physical(pos_x: int, pos_y: int, config: BoardConfig) -> tuple[float
     return x_mm, y_mm
 
 
+def grid_to_pixel_float(fx: float, fy: float, img_w: int, img_h: int, config: BoardConfig) -> tuple[float, float]:
+    """Continuous grid position -> warped-image pixel, unrounded. `grid_to_pixel` truncates this."""
+    x_mm, y_mm = grid_to_physical(fx, fy, config)
+    return x_mm / config.total_width * img_w, y_mm / config.total_length * img_h
+
+
 def grid_to_pixel(pos_x: int, pos_y: int, img_w: int, img_h: int, config: BoardConfig) -> tuple[int, int]:
     """Convert grid intersection to pixel coordinates in the warped image."""
-    x_mm, y_mm = grid_to_physical(pos_x, pos_y, config)
-    px = int(x_mm / config.total_width * img_w)
-    py = int(y_mm / config.total_length * img_h)
-    return px, py
+    px, py = grid_to_pixel_float(pos_x, pos_y, img_w, img_h, config)
+    return int(px), int(py)
 
 
 def apply_parallax(fx: float, fy: float, nadir: tuple[float, float] | None, k: float | None) -> tuple[float, float]:

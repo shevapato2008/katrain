@@ -1,6 +1,6 @@
 """Stone-parallax correction parameters and calibration fit -- pure math, no I/O.
 
-Derivation and measured inputs: superpowers/tracks/vision-stone-parallax/geometry.md.
+Derivation and measured inputs: superpowers/tracks/vision-optimizations/stone-parallax/geometry.md.
 """
 
 from __future__ import annotations

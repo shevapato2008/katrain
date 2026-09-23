@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import time
 from unittest.mock import AsyncMock
 
 import httpx
@@ -109,6 +110,97 @@ class TestGolaxyScanLoginUsername:
 
 
 # --------------------------------------------------------------------------- #
+# ScanSession/ScanSessionStore TTL + cap semantics (F5, task-6a review)       #
+# --------------------------------------------------------------------------- #
+
+
+class TestScanSessionTTLSemanticsF5:
+    """Review's M-I: making `ScanSession.expired` always return `False`
+    survived all 107 pre-existing mutation-judge tests — TTL/expiry had ZERO
+    coverage. These are direct, no-HTTP unit tests on `ScanSession`/
+    `ScanSessionStore` themselves, closing that gap at its source."""
+
+    def test_expired_property_reflects_the_ttl(self):
+        from katrain.web.platforms.golaxy.scan_login import ScanSession
+
+        fresh = ScanSession(scan_id="s1", golaxy_uuid="u1", initiating_user_id=1, expires_at=time.time() + 60)
+        assert fresh.expired is False
+
+        already_past = ScanSession(scan_id="s2", golaxy_uuid="u2", initiating_user_id=1, expires_at=time.time() - 1)
+        assert already_past.expired is True
+
+    def test_store_sweeps_expired_sessions_on_create(self):
+        store = ScanSessionStore(ttl_seconds=300.0, max_per_user=100)
+        stale = store.create(golaxy_uuid="u-stale", initiating_user_id=1)
+        stale.expires_at = time.time() - 86400  # force-expire without waiting
+
+        store.create(golaxy_uuid="u-fresh", initiating_user_id=2)  # triggers the sweep
+
+        assert store.get(stale.scan_id) is None
+        assert len(store._sessions) == 1
+
+
+class TestScanSessionCapF5:
+    """F5: an unbounded `scan/start` grows the store forever, each call also
+    costing one real Golaxy request (review's P4 probe: 201 calls -> 201
+    rows, 200 of them already expired). `MAX_SESSIONS_PER_USER` bounds the
+    per-user live-session count; `check_capacity` lets the endpoint reject
+    BEFORE paying for the Golaxy call."""
+
+    def test_check_capacity_raises_once_the_cap_is_reached(self):
+        from katrain.web.platforms.golaxy.scan_login import ScanRateLimited
+
+        store = ScanSessionStore(ttl_seconds=300.0, max_per_user=3)
+        for _ in range(3):
+            store.create(golaxy_uuid="u", initiating_user_id=1)
+
+        with pytest.raises(ScanRateLimited):
+            store.check_capacity(1)
+        # A different user is unaffected — the cap is per-user, not global.
+        store.check_capacity(2)
+
+    def test_create_also_enforces_the_cap_as_a_backstop(self):
+        from katrain.web.platforms.golaxy.scan_login import ScanRateLimited
+
+        store = ScanSessionStore(ttl_seconds=300.0, max_per_user=2)
+        store.create(golaxy_uuid="u1", initiating_user_id=1)
+        store.create(golaxy_uuid="u2", initiating_user_id=1)
+        with pytest.raises(ScanRateLimited):
+            store.create(golaxy_uuid="u3", initiating_user_id=1)
+        assert len(store._sessions) == 2
+
+    def test_expired_sessions_do_not_count_against_the_cap(self):
+        store = ScanSessionStore(ttl_seconds=300.0, max_per_user=2)
+        s1 = store.create(golaxy_uuid="u1", initiating_user_id=1)
+        s1.expires_at = time.time() - 86400
+        store.create(golaxy_uuid="u2", initiating_user_id=1)
+        # s1 is expired -> only 1 LIVE session for user 1 -> room for one more.
+        store.create(golaxy_uuid="u3", initiating_user_id=1)
+
+    def test_scan_start_endpoint_returns_429_once_rate_limited(self, monkeypatch):
+        import katrain.web.platforms.golaxy.scan_login as scan_login_mod
+
+        call_count = {"n": 0}
+
+        async def fake_start(self):
+            call_count["n"] += 1
+            return ScanStart(uuid=f"g-{call_count['n']}", payload=f"golaxy_url&&&g-{call_count['n']}")
+
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "start", fake_start)
+
+        app = _build_app(FakeManager())
+        app.state.golaxy_scan_sessions = ScanSessionStore(max_per_user=2)
+        client = _client_with_user(app, _CurrentUser(1))
+
+        assert client.post("/api/v1/platforms/golaxy/scan/start").status_code == 200
+        assert client.post("/api/v1/platforms/golaxy/scan/start").status_code == 200
+        r = client.post("/api/v1/platforms/golaxy/scan/start")
+        assert r.status_code == 429
+        # The rejected attempt must not have cost a Golaxy call.
+        assert call_count["n"] == 2
+
+
+# --------------------------------------------------------------------------- #
 # GolaxyAdapter.connect() — scan-code branch (step ④, reuses login token path) #
 # --------------------------------------------------------------------------- #
 
@@ -157,6 +249,72 @@ class TestAdapterScanCodeLogin:
         assert result is True
         adapter._rest.login_sms.assert_awaited_once()
         adapter._rest.login_scan_code.assert_not_awaited()
+
+
+class TestCrossUserPrincipalLeakF1:
+    """F1 (task-6a review, high, release-blocking): `GolaxyAdapter` is a
+    per-platform SINGLETON, registered once at startup and never rebuilt
+    (`manager.py`'s `register_adapter`) — so a login with no principal
+    (scan-login) run on an adapter instance a PREVIOUS user already logged
+    into via SMS/password must not silently keep serving that previous
+    user's `0086-{phone}` for account-level calls like `/items/{username}`.
+
+    Deliberately does NOT construct a fresh `GolaxyAdapter()` and assert
+    `_username is None` — that was F1's own root cause (`_username`'s
+    constructor default is `None`, so that assertion can't tell "correctly
+    cleared" from "nobody ever set it"). Both tests below drive a real
+    principal through the SAME adapter instance first, so a green result
+    here is actually informative.
+    """
+
+    async def test_disconnect_then_second_user_scan_login_does_not_inherit_first_principal(self):
+        from katrain.web.platforms.manager import PlatformManager
+
+        class FakeStore:
+            def __init__(self):
+                self.rows: dict = {}
+
+            def save_credentials(self, user_id, credentials):
+                self.rows[(user_id, credentials.platform)] = credentials
+
+            def load_credentials(self, user_id, platform):
+                return self.rows.get((user_id, platform))
+
+            def list_platforms(self, user_id):
+                return []
+
+        pm = PlatformManager(None, credential_store=FakeStore())
+        adapter = GolaxyAdapter()
+        pm.register_adapter(adapter)
+        adapter._rest.login_sms = AsyncMock(return_value={"access_token": "A", "refresh_token": "a"})
+        adapter._rest.login_scan_code = AsyncMock(return_value={"access_token": "B", "refresh_token": "b"})
+
+        # User A (id=1) logs in via SMS — a real, verified principal.
+        await pm.connect_platform("golaxy", PlatformCredentials("golaxy", "13800138000", {"sms_code": "1234"}), 1)
+        assert adapter._rest._username == "0086-13800138000"
+
+        # A disconnects (the box's "断开" button).
+        await pm.disconnect_platform("golaxy", 1)
+
+        # User B (id=2) scans in — no principal available at this layer.
+        ok = await pm.connect_platform("golaxy", PlatformCredentials("golaxy", "", {"scan_uuid": "B-uuid"}), 2)
+        assert ok is True
+        assert adapter._rest._username is None, "B's scan login inherited A's Golaxy login principal"
+
+    async def test_same_user_switching_to_scan_login_without_disconnect_also_clears_principal(self):
+        """F1's second half: `close()` alone is insufficient, because a user
+        re-logging in WITHOUT an intervening disconnect never reaches it —
+        this drives that path directly through `adapter.connect()` twice."""
+        adapter = GolaxyAdapter()
+        adapter._rest.login_sms = AsyncMock(return_value={"access_token": "A", "refresh_token": "a"})
+        adapter._rest.login_scan_code = AsyncMock(return_value={"access_token": "B", "refresh_token": "b"})
+
+        await adapter.connect(PlatformCredentials("golaxy", "13800138000", {"sms_code": "1234"}))
+        assert adapter._rest._username == "0086-13800138000"
+
+        # No disconnect()/close() call in between.
+        await adapter.connect(PlatformCredentials("golaxy", "", {"scan_uuid": "B-uuid"}))
+        assert adapter._rest._username is None
 
 
 # --------------------------------------------------------------------------- #
@@ -208,6 +366,20 @@ class FakeManager:
         return self._connect_result
 
 
+class RaisingManager(FakeManager):
+    """F4 (task-6a review): the real `PlatformManager.connect_platform`
+    raises a bare `ValueError` for an unregistered platform name. Used to
+    prove that `scan_confirm` no longer lets that reach the caller as an
+    unhandled 500, and (via the `connect_calls` tracking it inherits) that a
+    REGISTERED-but-wrong platform's `connect_platform` is never even called —
+    the `session.platform` check must reject it before either can happen."""
+
+    async def connect_platform(self, platform: str, credentials: PlatformCredentials, user_id: int) -> bool:
+        if platform != "golaxy":
+            raise ValueError(f"Unknown platform: {platform}")
+        return await super().connect_platform(platform, credentials, user_id)
+
+
 def _build_app(manager):
     app = create_app(enable_engine=False)
     app.state.platform_manager = manager
@@ -232,6 +404,13 @@ def _client_with_user(app, current_user: _CurrentUser) -> TestClient:
 
 class TestScanStart:
     def test_pins_initiating_user_and_returns_local_payload(self, monkeypatch):
+        """F7 (task-6a review, gate-was-blind): originally used caller id 1,
+        which coincides with a literal `1` — a mutation hardcoding
+        `initiating_user_id=1` in the endpoint (instead of `user.id`) survived
+        every one of the 107 mutation-judge tests, because the ONLY test that
+        could have caught it used the constant its own assertion checked for.
+        Caller id 7 (review's own probe used the same value) makes a hardcoded
+        `1` observably wrong."""
         import katrain.web.platforms.golaxy.scan_login as scan_login_mod
 
         async def fake_start(self):
@@ -241,7 +420,7 @@ class TestScanStart:
 
         manager = FakeManager()
         app = _build_app(manager)
-        client = _client_with_user(app, _CurrentUser(1))
+        client = _client_with_user(app, _CurrentUser(7))
 
         r = client.post("/api/v1/platforms/golaxy/scan/start")
         assert r.status_code == 200, r.text
@@ -251,7 +430,7 @@ class TestScanStart:
 
         store = app.state.golaxy_scan_sessions
         session = store.get(body["scan_id"])
-        assert session.initiating_user_id == 1
+        assert session.initiating_user_id == 7
         assert session.golaxy_uuid == "golaxy-uuid-1"
 
     def test_start_then_state_is_reachable_across_separate_requests(self, monkeypatch):
@@ -299,6 +478,22 @@ class TestScanStart:
         r = client.post("/api/v1/platforms/golaxy/scan/start")
         assert r.status_code == 502
 
+    def test_unregistered_platform_is_rejected_before_any_golaxy_call(self, monkeypatch):
+        """The `platform != "golaxy"` gate itself had no test (review's M-J:
+        deleting it left all 107 mutation-judge tests green). Also asserts
+        Golaxy is never even touched for an unsupported platform name."""
+        import katrain.web.platforms.golaxy.scan_login as scan_login_mod
+
+        async def explode(self):
+            raise AssertionError("must not call Golaxy for an unsupported platform")
+
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "start", explode)
+
+        app = _build_app(FakeManager())
+        client = _client_with_user(app, _CurrentUser(1))
+        r = client.post("/api/v1/platforms/fantasy/scan/start")
+        assert r.status_code == 400
+
 
 def _seeded_store(
     app, *, initiating_user_id: int, state: ScanState = ScanState.WAITING
@@ -307,6 +502,72 @@ def _seeded_store(
     session = store.create(golaxy_uuid="golaxy-uuid-1", initiating_user_id=initiating_user_id)
     session.state = state
     return store, session
+
+
+class TestScanPlatformValidationF4:
+    """F4 (task-6a review, medium): `scan_state`/`scan_confirm` trusted the
+    `platform` URL path param unconditionally — a golaxy `scan_id` posted to
+    an unregistered platform reached `connect_platform` and raised a bare
+    `ValueError` -> unhandled 500; against a REGISTERED-but-wrong platform
+    (e.g. "ogs"), it would make a real network call with empty credentials.
+    Fixed by recording `platform` on `ScanSession` and checking it before
+    ANY manager call, plus a `ValueError` backstop as defense in depth."""
+
+    @staticmethod
+    def _forbid_golaxy_network(monkeypatch):
+        """Every test in this class exists to prove a REJECTION happens
+        before any downstream call — so if the rejection is ever mutated
+        away, the code must not be allowed to fall through to a real network
+        call to Golaxy either. Explosive stand-ins double as a second,
+        independent signal on top of the status-code assertion, and (the
+        actual point) guarantee these tests can never egress for real."""
+        import katrain.web.platforms.golaxy.scan_login as scan_login_mod
+
+        async def explode(self, *a, **kw):
+            raise AssertionError("must not call Golaxy — the platform check should have rejected first")
+
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "start", explode)
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "poll", explode)
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "username", explode)
+
+    def test_state_for_a_mismatched_platform_is_404_not_leaked(self, monkeypatch):
+        self._forbid_golaxy_network(monkeypatch)
+        app = _build_app(FakeManager())
+        _seeded_store(app, initiating_user_id=1)  # creates a "golaxy" session
+        scan_id = next(iter(app.state.golaxy_scan_sessions._sessions))
+        client = _client_with_user(app, _CurrentUser(1))
+
+        r = client.get(f"/api/v1/platforms/ogs/scan/state?scan_id={scan_id}")
+        assert r.status_code == 404
+
+    def test_confirm_for_an_unregistered_platform_is_400_not_500(self, monkeypatch):
+        """Mirrors the review's P3 probe."""
+        self._forbid_golaxy_network(monkeypatch)
+        manager = RaisingManager()
+        app = _build_app(manager)
+        _seeded_store(app, initiating_user_id=1, state=ScanState.CONFIRMED)
+        scan_id = next(iter(app.state.golaxy_scan_sessions._sessions))
+        client = _client_with_user(app, _CurrentUser(1))
+
+        r = client.post("/api/v1/platforms/fantasy/scan/confirm", json={"scan_id": scan_id})
+        assert r.status_code == 404  # session.platform mismatch catches it first
+        assert manager.connect_calls == []
+
+    def test_confirm_for_a_registered_but_different_platform_never_calls_it(self, monkeypatch):
+        """The scarier half of F4: "ogs" IS a registered platform, so without
+        the `session.platform` check this would reach a REAL
+        `connect_platform("ogs", ...)` with empty credentials, not just a
+        ValueError."""
+        self._forbid_golaxy_network(monkeypatch)
+        manager = FakeManager()
+        app = _build_app(manager)
+        _seeded_store(app, initiating_user_id=1, state=ScanState.CONFIRMED)  # golaxy session
+        scan_id = next(iter(app.state.golaxy_scan_sessions._sessions))
+        client = _client_with_user(app, _CurrentUser(1))
+
+        r = client.post("/api/v1/platforms/ogs/scan/confirm", json={"scan_id": scan_id})
+        assert r.status_code == 404
+        assert manager.connect_calls == []
 
 
 class TestScanState:
@@ -361,6 +622,43 @@ class TestScanState:
 
         assert r1.status_code == 200 and r1.json() == {"state": "confirmed"}
         assert r2.status_code == 200 and r2.json() == {"state": "confirmed"}
+
+    def test_successive_polls_reuse_the_same_http_client(self, monkeypatch):
+        """F6 (task-6a review, low but real on RK3562): `scan/state` is
+        polled every second for as long as the QR screen is open. Without an
+        injected, reused client, each poll opens and closes a fresh
+        `httpx.AsyncClient` — one TLS handshake to api.19x19.com per second.
+        Captures the `client` kwarg `GolaxyScanLogin` is constructed with
+        across two separate polls and asserts it's the SAME object both
+        times (and is not `None`, i.e. actually injected)."""
+        import katrain.web.platforms.golaxy.scan_login as scan_login_mod
+
+        seen_clients: list = []
+
+        class SpyScanLogin:
+            def __init__(self, client=None):
+                seen_clients.append(client)
+
+            async def poll(self, uuid):
+                return scan_login_mod.ScanState.WAITING
+
+        # `scan_state` does `from ...scan_login import GolaxyScanLogin` fresh
+        # inside the function body every call, so it always resolves the
+        # CURRENT attribute on the scan_login module — patch it there, not on
+        # `platforms` (which never holds a module-level reference to it).
+        monkeypatch.setattr(scan_login_mod, "GolaxyScanLogin", SpyScanLogin)
+
+        app = _build_app(FakeManager())
+        _seeded_store(app, initiating_user_id=1, state=ScanState.WAITING)
+        scan_id = next(iter(app.state.golaxy_scan_sessions._sessions))
+        client = _client_with_user(app, _CurrentUser(1))
+
+        client.get(f"/api/v1/platforms/golaxy/scan/state?scan_id={scan_id}")
+        client.get(f"/api/v1/platforms/golaxy/scan/state?scan_id={scan_id}")
+
+        assert len(seen_clients) == 2
+        assert seen_clients[0] is not None
+        assert seen_clients[0] is seen_clients[1], "each poll opened its own httpx.AsyncClient"
 
 
 class TestScanConfirmOwnership:
@@ -450,6 +748,40 @@ class TestScanConfirmIdempotency:
         r = client.post("/api/v1/platforms/golaxy/scan/confirm", json={"scan_id": scan_id})
         assert r.status_code == 409
 
+    def test_consumed_success_does_not_replay_forever_once_the_session_expires(self, monkeypatch):
+        """F3 (task-6a review, medium): R-30's idempotency window is meant to
+        cover a network-retry timescale, not the session's whole
+        `DEFAULT_SCAN_TTL_SECONDS` lifetime. Before the fix, `consumed` was
+        checked BEFORE `expired`, so a successfully-confirmed session's cached
+        `{"connected": True}` could be replayed forever regardless of TTL —
+        even after the platform connection it refers to might have been torn
+        down or handed to someone else."""
+        import katrain.web.platforms.golaxy.scan_login as scan_login_mod
+
+        async def fake_username(self, uuid):
+            return "阿范"
+
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "username", fake_username)
+
+        manager = FakeManager()
+        app = _build_app(manager)
+        _seeded_store(app, initiating_user_id=1, state=ScanState.CONFIRMED)
+        scan_id = next(iter(app.state.golaxy_scan_sessions._sessions))
+        client = _client_with_user(app, _CurrentUser(1))
+
+        r1 = client.post("/api/v1/platforms/golaxy/scan/confirm", json={"scan_id": scan_id})
+        assert r1.status_code == 200
+        assert len(manager.connect_calls) == 1
+
+        # Push the session's TTL a day into the past — simulates the retry
+        # arriving long after the scan session should have died.
+        app.state.golaxy_scan_sessions.get(scan_id).expires_at = time.time() - 86400
+
+        r2 = client.post("/api/v1/platforms/golaxy/scan/confirm", json={"scan_id": scan_id})
+        assert r2.status_code == 410, r2.text
+        # Must not have re-exchanged the token either.
+        assert len(manager.connect_calls) == 1
+
 
 # --------------------------------------------------------------------------- #
 # R-29: principal vs nickname — the full chain, from a fresh (post-restart)   #
@@ -470,6 +802,46 @@ class TestPrincipalVsNickname:
         await adapter.connect(creds)
 
         assert adapter._rest._username is None
+
+    def test_confirm_endpoint_never_sends_the_nickname_as_the_login_principal(self, monkeypatch):
+        """F2 (task-6a review, medium-high): R-29's decision is made at
+        `platforms.py`'s `scan_confirm` — `username=""` on the
+        `PlatformCredentials` it hands to `connect_platform` — but nothing
+        in the original 24 tests looked AT that line: both other
+        `TestPrincipalVsNickname` tests construct their OWN
+        `PlatformCredentials(username="")` directly, which is the value the
+        endpoint is supposed to PRODUCE, not evidence that it does. A
+        one-line "optimization" (`username=display_name` instead of `""`) —
+        exactly the thing R-29 forbids — survives all of them. This test
+        drives the real endpoint end to end and inspects what `FakeManager`
+        actually received."""
+        import katrain.web.platforms.golaxy.scan_login as scan_login_mod
+
+        async def fake_start(self):
+            return ScanStart(uuid="golaxy-uuid-1", payload="golaxy_url&&&golaxy-uuid-1")
+
+        async def fake_poll(self, uuid):
+            return ScanState.CONFIRMED
+
+        async def fake_username(self, uuid):
+            return "阿范"
+
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "start", fake_start)
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "poll", fake_poll)
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "username", fake_username)
+
+        manager = FakeManager()
+        app = _build_app(manager)
+        client = _client_with_user(app, _CurrentUser(1))
+
+        scan_id = client.post("/api/v1/platforms/golaxy/scan/start").json()["scan_id"]
+        client.get(f"/api/v1/platforms/golaxy/scan/state?scan_id={scan_id}")
+        r = client.post("/api/v1/platforms/golaxy/scan/confirm", json={"scan_id": scan_id})
+
+        assert r.status_code == 200, r.text
+        assert len(manager.connect_calls) == 1
+        credentials_sent = manager.connect_calls[0][1]
+        assert credentials_sent.username == "", "scan/confirm sent the nickname as the login principal"
 
     async def test_reconnect_from_stored_scan_credentials_then_item_counts_is_honestly_unavailable(self):
         """Simulates a restart: a FRESH adapter is built, credentials saved by

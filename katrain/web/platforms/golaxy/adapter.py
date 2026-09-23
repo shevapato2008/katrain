@@ -308,6 +308,14 @@ class GolaxyRestClient:
         if self._client:
             await self._client.aclose()
             self._client = None
+        # F1 (task-6a review): `GolaxyAdapter` is a per-platform SINGLETON,
+        # created once at startup and never rebuilt — the SAME `_username`
+        # otherwise survives across completely different katrain users who
+        # each connect/disconnect it over the box's lifetime. Necessary but
+        # NOT sufficient on its own: `connect()` also clears it explicitly,
+        # because a user re-logging in WITHOUT an intervening disconnect
+        # never reaches this method.
+        self._username = None
 
     # --- Auth ---
 
@@ -432,12 +440,25 @@ class GolaxyRestClient:
         """Record the Golaxy login principal for account-level calls like
         `/items/{username}`. Normalizes a bare phone to the `0086-{phone}`
         form the API expects (== store.state.username); leaves an
-        already-prefixed value untouched. No-op on falsy input, so calling it
-        on a token-only reconnect that lacks the phone doesn't clobber a value
-        set earlier."""
+        already-prefixed value untouched. No-op on falsy input — by itself
+        that's ambiguous between "this login path legitimately has no
+        principal" and "just don't touch whatever's already there", which is
+        exactly the bug in F1 (task-6a review). Callers that need the FIRST
+        meaning must call `clear_username()` first; this method alone can
+        only ever ADD a principal, never remove one."""
         if not username:
             return
         self._username = username if username.startswith("0086-") else f"0086-{username}"
+
+    def clear_username(self) -> None:
+        """Explicitly forget the login principal — the deliberate counterpart
+        to `set_username`'s falsy no-op. `connect()` calls this at the start
+        of EVERY login attempt, before deciding which branch handles it, so a
+        login with no verified principal (scan-login, R-29 path 2) can never
+        silently inherit whoever was connected through this SAME adapter
+        instance before it (`GolaxyAdapter` is a per-platform singleton that
+        outlives any one katrain user's session — see F1, task-6a review)."""
+        self._username = None
 
     def get_auth_data(self) -> dict:
         return {"access_token": self._access_token, "refresh_token": self._refresh_token, "user_code": self._user_code}
@@ -623,9 +644,15 @@ class GolaxyAdapter(PlatformAdapter):
 
     async def connect(self, credentials: PlatformCredentials) -> bool:
         try:
-            # Record the login principal up front so account-level calls
-            # (/items/{username} for the 道具 badges) work on every auth path,
-            # including token-only reconnect after a restart.
+            # F1 (task-6a review): forget whoever was connected through this
+            # SAME adapter instance before — `GolaxyAdapter` is a per-platform
+            # singleton, never rebuilt, so without this a login with no
+            # verified principal (scan-login below) would silently inherit
+            # the PREVIOUS owner's `0086-{phone}` via `set_username`'s falsy
+            # no-op. Then record the login principal up front so account-level
+            # calls (/items/{username} for the 道具 badges) work on every auth
+            # path, including token-based reconnect.
+            self._rest.clear_username()
             self._rest.set_username(credentials.username)
             auth_data = credentials.auth_data
             if "access_token" in auth_data and auth_data["access_token"]:
@@ -657,11 +684,14 @@ class GolaxyAdapter(PlatformAdapter):
 
             # Scan-login: the confirmed uuid IS the credential, there is no
             # phone number at this layer (R-29, task-6a-brief.md). Callers
-            # pass `credentials.username = ""` for this path on purpose — see
-            # `set_username`'s empty-string no-op above, which is exactly what
-            # makes `fetch_item_counts()` degrade honestly (raises `Fatal`
-            # instead of guessing a `0086-{昵称}` principal) until this user
-            # separately links a real phone-based login.
+            # pass `credentials.username = ""` for this path on purpose. The
+            # `clear_username()` call above (not `set_username`'s no-op — see
+            # F1, task-6a review) is what actually makes this leave `_username`
+            # unset, which is what makes `fetch_item_counts()` degrade
+            # honestly (raises `Fatal` instead of guessing a `0086-{昵称}`
+            # principal, or — before F1 was fixed — silently reusing whoever
+            # was connected before this scan login) until this user separately
+            # links a real phone-based login.
             scan_uuid = auth_data.get("scan_uuid")
             if scan_uuid:
                 await self._rest.login_scan_code(scan_uuid)

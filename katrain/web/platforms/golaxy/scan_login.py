@@ -37,6 +37,12 @@ QR_PREFIX = "golaxy_url&&&"
 # (内存表,不持久化——一次没扫完的登录不值得跨重启保留)。
 DEFAULT_SCAN_TTL_SECONDS = 300.0
 
+# F5 (task-6a review): 同一用户同时允许多少条「还没过期」的扫码会话。没有这条上限,
+# 一个连发 scan/start 的客户端(重试循环/前端 bug)会让 store 单调增长,而且每条都
+# 各打过一次星阵 —— 长开机的盒子(2G 内存的 RK3562)上不是零成本。5 已经比任何正常
+# 使用模式(一次一张码,偶尔点一次「换一张」)宽裕。
+MAX_SESSIONS_PER_USER = 5
+
 
 class ScanState(str, Enum):
     WAITING = "waiting"  # 0
@@ -70,6 +76,16 @@ TERMINAL_STATES = frozenset({ScanState.CONFIRMED, ScanState.EXPIRED, ScanState.C
 class ScanStart:
     uuid: str
     payload: str
+
+
+class ScanRateLimited(Exception):
+    """Raised by `ScanSessionStore.create` when `initiating_user_id` already
+    has `MAX_SESSIONS_PER_USER` live (non-expired) sessions (F5, task-6a
+    review). The endpoint layer maps this to HTTP 429."""
+
+    def __init__(self, user_id: int):
+        self.user_id = user_id
+        super().__init__(f"too many in-flight scan sessions for user {user_id}")
 
 
 class GolaxyScanLogin:
@@ -127,6 +143,14 @@ class ScanSession:
     golaxy_uuid: str
     initiating_user_id: int
     expires_at: float
+    # F4 (task-6a review): which platform this session belongs to. Today only
+    # "golaxy" ever creates one, but the session itself didn't record it —
+    # `scan_state`/`scan_confirm` trusted the URL's `platform` path param
+    # unconditionally, so a golaxy `scan_id` posted to an unrelated/unknown
+    # platform path reached `connect_platform` and blew up as a bare
+    # `ValueError` -> unhandled 500. Recording it here lets the endpoints
+    # check "is this session even for the platform in this URL" themselves.
+    platform: str = "golaxy"
     state: ScanState = ScanState.WAITING
     consumed: bool = False
     result: Optional[dict] = None
@@ -144,18 +168,47 @@ class ScanSessionStore:
     按 scan_id 的细粒度锁。
     """
 
-    def __init__(self, ttl_seconds: float = DEFAULT_SCAN_TTL_SECONDS) -> None:
+    def __init__(
+        self, ttl_seconds: float = DEFAULT_SCAN_TTL_SECONDS, max_per_user: int = MAX_SESSIONS_PER_USER
+    ) -> None:
         self._ttl = ttl_seconds
+        self._max_per_user = max_per_user
         self._sessions: dict[str, ScanSession] = {}
         self.lock = asyncio.Lock()
 
-    def create(self, *, golaxy_uuid: str, initiating_user_id: int) -> ScanSession:
+    def _sweep_expired(self) -> None:
+        """Drop every session whose TTL has lapsed. `state`/`confirm` already
+        discard a session THEY happen to touch after it expires, but a
+        session nobody ever polls again (an abandoned tab, a client that
+        gave up) would otherwise sit in `_sessions` forever (F5, task-6a
+        review). Runs on every `create()`, so the table self-bounds even
+        under a caller that only ever calls `scan/start`."""
+        expired_ids = [sid for sid, s in self._sessions.items() if s.expired]
+        for sid in expired_ids:
+            del self._sessions[sid]
+
+    def check_capacity(self, initiating_user_id: int) -> None:
+        """Sweep expired sessions and raise `ScanRateLimited` if the caller
+        already has `MAX_SESSIONS_PER_USER` live ones — WITHOUT creating
+        anything. Callers should call this BEFORE making the (real, costs a
+        Golaxy request) `scan/code` call, so a rate-limited caller never pays
+        for an outbound request that's going to be discarded anyway; `create`
+        re-checks the same condition as a defense-in-depth backstop against
+        a race between this check and the eventual `create()` call."""
+        self._sweep_expired()
+        live_for_user = sum(1 for s in self._sessions.values() if s.initiating_user_id == initiating_user_id)
+        if live_for_user >= self._max_per_user:
+            raise ScanRateLimited(initiating_user_id)
+
+    def create(self, *, golaxy_uuid: str, initiating_user_id: int, platform: str = "golaxy") -> ScanSession:
+        self.check_capacity(initiating_user_id)
         scan_id = _uuid.uuid4().hex
         session = ScanSession(
             scan_id=scan_id,
             golaxy_uuid=golaxy_uuid,
             initiating_user_id=initiating_user_id,
             expires_at=time.time() + self._ttl,
+            platform=platform,
         )
         self._sessions[scan_id] = session
         return session

@@ -487,3 +487,10 @@ def test_the_first_frame_of_a_real_stone_is_never_captured_as_a_reference():
     if worker._reference is not None:  # a later frame may legitimately re-take it
         _, sim = worker._reference.unchanged(to_gray(_board_frame([(9, 9, WHITE)])), REFERENCE_ZNCC)
         assert sim[9][9] < REFERENCE_ZNCC, "the reference contains the stone it calls empty"
+
+
+def test_the_worker_config_carries_the_reference_check_mode():
+    from katrain.vision.config_service import VisionServiceConfig
+
+    assert VisionServiceConfig().to_worker_config()["reference_check"] == "shadow"
+    assert VisionServiceConfig(reference_check="on").to_worker_config()["reference_check"] == "on"

@@ -4187,6 +4187,14 @@ def run_web():
         "Mac rig — lower this to auto-play them.",
     )
     parser.add_argument(
+        "--vision-reference-check",
+        choices=["off", "shadow", "on"],
+        default=None,
+        help="Per-cell comparison against the last frame whose board matched the game: 'on' keeps the "
+        "occupancy of cells that look structurally unchanged (bounded per cell), 'shadow' only logs "
+        "what it would do (default), 'off' disables it.",
+    )
+    parser.add_argument(
         "--vision-auto-exposure",
         choices=["software", "off"],
         default=None,
@@ -4280,6 +4288,8 @@ def run_web():
             vision_kwargs["ambiguous_confidence"] = args.vision_ambiguous_confidence
         if args.vision_auto_exposure is not None:
             vision_kwargs["auto_exposure"] = args.vision_auto_exposure
+        if args.vision_reference_check is not None:
+            vision_kwargs["reference_check"] = args.vision_reference_check
         if args.vision_ae_target is not None:
             vision_kwargs["ae_target"] = args.vision_ae_target
         settings._vision_config = VisionServiceConfig(**vision_kwargs)

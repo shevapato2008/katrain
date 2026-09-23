@@ -633,12 +633,21 @@ export default AiLevelSheet;
 
 - [ ] **Step 4: 写样式**
 
-先 grep 冲突（同 Task 1 Step 4 的做法），再写。面板要 `position:absolute; inset:0;` 相对 `.kiosk-rail`（给 `.kiosk-rail` 加 `position:relative` 时**注意这是承重改动**：加 `position:relative` 会改变子树里读 `offsetTop` 的元素的 `offsetParent`。先 grep：
+先 grep 冲突（同 Task 1 Step 4 的做法），再写。面板要 `position:absolute; inset:0;` 相对 `.kiosk-rail`。
 
-```bash
-grep -rn "offsetTop\|offsetParent" katrain/web/ui/src/kiosk/ | grep -v test
-```
-命中就触发承重实测（归 Task 4）；没命中走视觉关卡即可。
+> ## ⚠️ 这一处已经 grep 过了，**命中**，所以承重实测是必做的，不是「视察一下」
+>
+> ```
+> katrain/web/ui/src/kiosk/shell/scrollSync.ts:38
+>     bar.style.top = `${scroll.offsetTop}px`;
+> ```
+> `offsetTop` 是相对 `offsetParent` 量的。`.kiosk-rail` 今天**没有 `position`**（`tokens.css:616` 只有 `display/flex-direction/gap/min-width`），所以滚动区的 `offsetParent` 是更外面某一层。一旦给 rail 加 `position: relative`，**`offsetParent` 就换人了**，`scroll.offsetTop` 跟着变 ⇒ **滚动条拇指错位**。
+>
+> 三条要求：
+> 1. **作用域必须限定在这一屏**：`[data-testid="platform-engine-setup-page"] .kiosk-rail { position: relative; }`。
+>    **绝不能裸写 `.kiosk-rail { position: relative }`** —— 那个类是全部 L2/L3 屏共用的，裸加等于一次改掉每一屏的拇指位置。
+> 2. Task 4 的几何闸**补一条拇指断言**（见那边的清单）。
+> 3. **变异**：把作用域去掉改成裸 `.kiosk-rail`，再跑屏 02/03/04 的四图 —— 拇指应当移位。不移位说明那条闸没量到东西。
 
 ```css
 .aisheet {
@@ -749,9 +758,12 @@ interface 加一行，默认 `true` 保持既有三个调用点行为不变：
 - [ ] **Step 4: 回看所有调用点**
 
 ```bash
-grep -rn "KioskStepTrack" katrain/web/ui/src/kiosk --include=*.tsx | grep -v test
+grep -rln "KioskStepTrack" katrain/web/ui/src --include="*.tsx" --include="*.ts" | grep -v "\.test\."
 ```
-逐个确认没传 `readout` ⇒ 行为不变。**这是共享件，改完不回看就是把风险留给别的屏。**
+已经替你查过（2026-09-23）：非测试消费者**只有两个** —— `pages/PlatformEngineSetupPage.tsx`（本屏）和 **`pages/TutorialSectionPage.tsx`**。
+⚠️ **`AiSetupPage.tsx` 没有 import 它**——早先的调研说它用了，那是错的，别去那儿找。
+
+逐个确认没传 `readout` ⇒ 行为不变，并**把 `TutorialSectionPage` 的测试跑一遍**。**这是共享件，改完不回看就是把风险留给别的屏。**
 
 - [ ] **Step 5: 跑测试确认绿**
 
@@ -969,7 +981,8 @@ EOF
 | 视口没被撑破 | `.kiosk-rail` 的 `clientHeight` 恒 516；内容区 `clientHeight` 恒 400 |
 | 覆盖层真的盖住 | 面板打开后，在轨的中心点做 `elementFromPoint`，命中的必须是面板子树里的元素 |
 | 覆盖层不盖盘 | 面板 border box 完整落在 `.kiosk-rail` 的裁切框内，与 `.kiosk-board` 无交集 |
-| 面板自己能滚 | 39 档时面板 body `scrollHeight > clientHeight`；派发一次滚轮，`scrollTop` 变化不为 0 |
+| 面板自己能滚 | 39 档时面板 body `scrollHeight > clientHeight`；派发一次**真实触摸**拖动，`scrollTop` 变化不为 0 |
+| **滚动条拇指没被 `position:relative` 挪走** | 不溢出时 `bar.style.display === 'none'`（`syncScrollbar` 早返回那一支）；溢出时拇指顶边与滚动区顶边之差 < 1px。**理由见 Task 2 那段警告**：`scrollSync.ts:38` 读 `scroll.offsetTop`，而 `offsetTop` 随 `offsetParent` 变 |
 
 - [ ] **Step 1: 写几何闸**
 
@@ -1120,9 +1133,11 @@ Run: `cd katrain/web/ui && npm run build && npx playwright test tests/kiosk-geom
 Expected: 全绿。**Playwright 打的是构建产物，改了源码不重建等于没改。**
 把 `console.log` 打出来的数字抄进本任务的验收记录。
 
-- [ ] **Step 3: 变异测试这条闸**
+- [ ] **Step 3: 变异测试这条闸（两处）**
 
-把 `AiLevelSheet` 的 `z-index: 20` 临时改成 `z-index: 0`，重建，重跑 —— 「盖住轨」那条**必须变红**。红了再改回去。不红说明闸量错了对象。
+① 把 `AiLevelSheet` 的 `z-index: 20` 临时改成 `z-index: 0`，重建，重跑 —— 「盖住轨」那条**必须变红**。
+② 把 `position: relative` 的作用域去掉，改成裸 `.kiosk-rail { position: relative }`，重建，**跑屏 02/03/04 的四图** —— 拇指应当移位。
+两处都验完再改回去。不红说明闸量错了对象。
 
 - [ ] **Step 4: 拆出屏 09 的四图 spec**
 

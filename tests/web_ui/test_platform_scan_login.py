@@ -211,6 +211,21 @@ class TestScanSessionSupersedeF5:
 
         assert store.get(old.scan_id) is old
 
+    def test_ten_rapid_opens_by_the_same_user_never_trip_the_cap(self):
+        """The literal scenario ruling ① names: a user mashing "换一张" ten
+        times in a row (well past `max_per_user=5`) — without supersede
+        this would 429 on the 6th with nothing on screen to do about it.
+        With it, the store holds exactly one live session for this user at
+        every step, and the 10th open still succeeds."""
+        store = ScanSessionStore(ttl_seconds=300.0, max_per_user=5)
+        last = None
+        for i in range(10):
+            last = store.create(golaxy_uuid=f"u-{i}", initiating_user_id=1)
+            live_for_user = [s for s in store._sessions.values() if s.initiating_user_id == 1]
+            assert len(live_for_user) == 1
+        assert last is not None
+        assert store.get(last.scan_id) is last
+
     def test_supersede_does_not_touch_another_users_session(self):
         store = ScanSessionStore(ttl_seconds=300.0, max_per_user=5)
         other = store.create(golaxy_uuid="u-other", initiating_user_id=2)

@@ -106,13 +106,16 @@ def dedup_detections(detections: list["Detection"]) -> list["Detection"]:
         return dets  # every min_side would be <= 0: nothing can dedup anything
 
     # How far apart, on each axis, the centres of two boxes that either rule can merge may be: at most the sum
-    # of their reaches, where reach = half the larger bbox extent + how far (x_center, y_center) sits from the
-    # bbox midpoint (0 for every backend, but Detection does not enforce it). The centre rule's radius,
-    # 0.5 * min_side, is always inside that sum.
+    # of their reaches, where reach = half the larger bbox extent + how far off-centre (x_center, y_center) is
+    # from the bbox midpoint, summed over both axes (0 for every backend, but Detection does not enforce it;
+    # the sum -- not a per-axis max -- is what lets a NaN on either axis propagate into reach, instead of being
+    # swallowed by max() and silently landing the box in the grid). The centre rule's radius, 0.5 * min_side,
+    # is always inside that sum.
     reach = [
         (
             max(d.bbox[2] - d.bbox[0], d.bbox[3] - d.bbox[1]) / 2.0
-            + max(abs(d.x_center - (d.bbox[0] + d.bbox[2]) / 2.0), abs(d.y_center - (d.bbox[1] + d.bbox[3]) / 2.0))
+            + abs(d.x_center - (d.bbox[0] + d.bbox[2]) / 2.0)
+            + abs(d.y_center - (d.bbox[1] + d.bbox[3]) / 2.0)
             if s > 0
             else 0.0
         )

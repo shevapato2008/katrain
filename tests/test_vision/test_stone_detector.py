@@ -405,6 +405,7 @@ class TestDedupVectorisationIsEquivalent:
         dets.append(_rect(528.0, 800.0, 0, 0.97, 1056, 20))
         dets.append(Detection(float("inf"), 300.0, 0, 0.6, (280.0, 280.0, 330.0, 330.0)))
         dets.append(Detection(float("nan"), 700.0, 1, 0.6, (680.0, 680.0, 730.0, 730.0)))
+        dets.append(Detection(300.0, float("nan"), 1, 0.6, (280.0, 280.0, 330.0, 330.0)))
         assert [id(d) for d in dedup_detections(dets)] == [id(d) for d in self._reference_dedup(dets)]
 
     def test_one_huge_box_does_not_widen_the_grid_for_everyone(self, monkeypatch):

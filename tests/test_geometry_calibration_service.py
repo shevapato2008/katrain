@@ -1745,15 +1745,15 @@ def test_drift_auto_relocates_instead_of_degrading():
     service._apply_drift(FakeDrift(degraded=True))
 
     status = service.status()
-    assert status["phase"] == "ready"                              # 不进标定台
-    assert len(calls.success) == 1                                 # 新几何经 on_success 推给识别 worker(R1)
+    assert status["phase"] == "ready"  # 不进标定台
+    assert len(calls.success) == 1  # 新几何经 on_success 推给识别 worker(R1)
     assert np.allclose(calls.success[0].corners, IMG_QUAD + BUMP, atol=0.5)
     assert calls.degraded == []
-    assert calls.suspend == []      # PRD §2.1 R3:挂起会让守卫把对局屏换成标定台
-    assert calls.persist == []      # 不写盘:磁盘上那份是 LED golden reference
-    assert status["metrics"].get("relocated") == 1.0               # metrics 是 Record<string, number|null>,不放布尔
+    assert calls.suspend == []  # PRD §2.1 R3:挂起会让守卫把对局屏换成标定台
+    assert calls.persist == []  # 不写盘:磁盘上那份是 LED golden reference
+    assert status["metrics"].get("relocated") == 1.0  # metrics 是 Record<string, number|null>,不放布尔
     assert status["relocate_error"] is None
-    assert status["confidence"] == pytest.approx(0.77)             # 报的是这次外框法的置信度,不是旧锁的
+    assert status["confidence"] == pytest.approx(0.77)  # 报的是这次外框法的置信度,不是旧锁的
     service.stop()
 
 
@@ -1763,27 +1763,30 @@ def test_drift_degrades_when_relocation_fails():
     service._apply_drift(FakeDrift(degraded=True))
 
     status = service.status()
-    assert status["phase"] == "degraded"                           # 终态与今天相同
+    assert status["phase"] == "degraded"  # 终态与今天相同
     assert status["error"] == "board_moved"
-    assert status["relocate_error"] == "no_board_detected"         # 原因放独立字段,不塞进数值型 metrics
+    assert status["relocate_error"] == "no_board_detected"  # 原因放独立字段,不塞进数值型 metrics
     assert calls.degraded == [True]
     service.stop()
 
 
 def test_auto_relocate_is_off_by_default(tmp_path):
-    """**反向闸。** 默认关,等上板精度闸(< 0.12 格)。这条一旦变绿说明有人把默认打开了。"""
+    """**反向闸。** 默认关,等上板精度闸(< 0.12 格)。这条一旦变红说明有人把默认打开了。"""
     assert calibration_module.AUTO_RELOCATE_ON_DRIFT is False
     selector = _FakeSelector(M=_outer_M(IMG_QUAD + BUMP))
-    service = GeometryCalibrationService(          # 不传 auto_relocate:用默认
-        led=FakeLed(), capture=FreshFakeCapture(), save_path=tmp_path / "geometry.npz",
-        initial_lock=_lock(IMG_QUAD), selector=selector,
+    service = GeometryCalibrationService(  # 不传 auto_relocate:用默认
+        led=FakeLed(),
+        capture=FreshFakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        initial_lock=_lock(IMG_QUAD),
+        selector=selector,
     )
     service._status["phase"] = "ready"
 
     service._apply_drift(FakeDrift(degraded=True))
 
     assert service.status()["phase"] == "degraded"
-    assert selector.calls == []                                    # 根本没去试
+    assert selector.calls == []  # 根本没去试
     service.stop()
 
 
@@ -1792,7 +1795,7 @@ def test_manual_relocate_works_on_a_crowded_board(phase):
     selector = _FakeSelector(M=_outer_M(IMG_QUAD + BUMP))
     service, calls = _relocating_service(selector=selector, auto_relocate=False, phase=phase)
 
-    out = service.relocate(trigger="manual")                       # **不要求空盘**
+    out = service.relocate(trigger="manual")  # **不要求空盘**
 
     assert out["phase"] == "ready"
     assert selector.calls[-1].name == "MANUAL_FALLBACK"
@@ -1844,7 +1847,7 @@ def test_manual_relocate_refuses_an_ambiguous_orientation():
 def test_manual_relocate_refuses_while_a_calibration_runs():
     service, _calls = _relocating_service(selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded")
     release = threading.Event()
-    service._thread = threading.Thread(target=release.wait, daemon=True)   # 造「正在标定」:只看线程活没活
+    service._thread = threading.Thread(target=release.wait, daemon=True)  # 造「正在标定」:只看线程活没活
     service._thread.start()
     try:
         with pytest.raises(CalibrationBusy):
@@ -1910,6 +1913,12 @@ def test_ready_is_not_published_before_the_new_lock_is_delivered():
         assert status["phase"] == "degraded"
         assert status["geometry_revision"] == old_revision
         assert service.current_lock is old_lock
+        # 互斥覆盖的是**交付那一半**,不只是外框检测那一半:on_success 还卡着的时候,
+        # start / confirm_existing 也必须被当前这轮重定位挡住。
+        with pytest.raises(CalibrationBusy):
+            service.start(trigger="manual", empty_confirmed=True)
+        with pytest.raises(ValueError, match="relocation in progress"):
+            service.confirm_existing()
     finally:
         release.set()
         worker.join(timeout=5)
@@ -1969,7 +1978,80 @@ def test_a_relocation_that_cannot_be_delivered_does_not_claim_ready():
         service.relocate(trigger="manual")
     assert service.status()["phase"] == "degraded"
     assert service.status()["relocate_error"] == "delivery_failed"
-    assert service.current_lock is old_lock                    # 没交付的锁不许留在服务里
+    assert service.current_lock is old_lock  # 没交付的锁不许留在服务里
     assert service.status()["geometry_revision"] == old_revision
     assert calls.degraded == [True]
+    service.stop()
+
+
+class _RaisingSelector:
+    """外框检测本身炸了(比如 cv2.error):不是「没找到盘」那种干净的 ok=False。"""
+
+    def calibrate(self, scenario, ctx):
+        raise RuntimeError("boom")
+
+
+def test_auto_relocate_survives_a_non_calibration_exception():
+    """选择器抛出的不是 CalibrationOutcome(ok=False),而是货真价实的异常(cv2.error 等):
+    这条路今天只接 (CalibrationBusy, ValueError),别的异常会从 _apply_drift 漏到 _drift_loop
+    的 `except Exception: sleep(0.1)`,服务停在 ready 上、每秒静默重试、对一块已经歪了的盘
+    继续按旧几何识别。必须落到 degraded,并把异常类型记进 relocate_error。"""
+    service, calls = _relocating_service(selector=_RaisingSelector())
+
+    service._apply_drift(FakeDrift(degraded=True))
+
+    status = service.status()
+    assert status["phase"] == "degraded"
+    assert calls.degraded == [True]
+    assert status["relocate_error"] == "relocate_error:RuntimeError"
+    service.stop()
+
+
+def test_relocation_replaces_stale_led_run_metrics():
+    """LED 标定留下的 inlier_count/rms_residual 描述的是旧锁;重定位后继续挂着会让界面把
+    早已作废的「13/13 · RMS …」当成这把新锁的成绩单。metrics 必须是替换,不是合并。"""
+    service, calls = _relocating_service(selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded")
+    service._status["metrics"] = {"inlier_count": 13, "rms_residual": 0.4}
+
+    service.relocate(trigger="manual")
+
+    assert service.status()["metrics"] == {"relocated": 1.0}
+    service.stop()
+
+
+def test_a_relocation_delivery_failure_survives_a_raising_on_degraded():
+    """on_degraded 本身再炸一次(和 _run 里 LegacyPublishRollbackError 分支同一个套路):
+    不许把「delivery_failed」这个真原因吞掉,也不许让 on_degraded 的异常逃成 500。"""
+    service, calls = _relocating_service(selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded")
+
+    def boom_delivery(_lock):
+        raise RuntimeError("worker gone")
+
+    def boom_degraded():
+        raise RuntimeError("degraded callback exploded")
+
+    service.on_success = boom_delivery
+    service.on_degraded = boom_degraded
+    with pytest.raises(ValueError, match="delivery_failed"):
+        service.relocate(trigger="manual")
+    assert service.status()["phase"] == "degraded"
+    assert service.status()["relocate_error"] == "delivery_failed"
+    service.stop()
+
+
+def test_start_clears_a_stale_relocate_error(tmp_path):
+    """一次失败的 relocate 写过 relocate_error 之后又跑了一次正常标定:陈旧的原因不该继续
+    挂在 status 里,让界面把这次成功的标定误读成还带着上一轮的重定位失败原因。"""
+    service = GeometryCalibrationService(
+        led=FakeLed(),
+        capture=FreshFakeCapture(),
+        save_path=tmp_path / "geometry.npz",
+        calibrator_factory=lambda **kwargs: ResultCalibrator(CalibrationResult(ok=True, lock=_synth()), **kwargs),
+    )
+    service._status["relocate_error"] = "no_board_detected"
+
+    service.start(trigger="manual", empty_confirmed=True)
+
+    assert service.status()["relocate_error"] is None
+    service.wait(timeout=2)
     service.stop()

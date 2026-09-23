@@ -174,6 +174,7 @@ class GeometryCalibrationService:
                 trigger=trigger,
                 error=None,
                 metrics={},
+                relocate_error=None,
             )
             self._thread = threading.Thread(target=self._run, daemon=True, name="geometry-calibration")
             self._thread.start()
@@ -734,7 +735,10 @@ class GeometryCalibrationService:
             logger.warning("relocated geometry could not be delivered: %s", exc)
             with self._lock:
                 self._status.update(phase="degraded", error="board_moved")
-            self.on_degraded()
+            try:
+                self.on_degraded()
+            except Exception as invalidate_exc:
+                logger.warning("on_degraded failed after relocation delivery failure: %s", invalidate_exc)
             return "delivery_failed"
         with self._lock:
             self.current_lock = lock
@@ -748,14 +752,19 @@ class GeometryCalibrationService:
                 error=None,
                 relocate_error=None,
             )
-            self._status["metrics"] = {**self._status["metrics"], "relocated": 1.0}
+            # 替换,不是合并:旧 metrics(比如 LED 标定的 inlier_count/rms_residual)描述的是
+            # 已经不再使用的那把锁,留着会让界面把早已作废的「13/13 · RMS …」当成这把新锁的成绩单。
+            self._status["metrics"] = {"relocated": 1.0}
         return None
 
     def relocate(self, trigger: str = "manual") -> dict:
         """用户按的「对齐外框」。**不要求空盘** —— 这颗键存在的理由正是盘上有子。
 
-        走 `MANUAL_FALLBACK`:策略表里 `outer_corner` 排第一,`led_fiducial` 排第二但本轮**不接**
-        (它要求空盘,而且 `_compute_relocation` 根本不把 `led` 交出去 ⇒ 它自己 is_applicable 为假)。
+        走 `MANUAL_FALLBACK`:策略表里 `outer_corner` 排第一,`led_fiducial` 排第二但本轮**不接** ——
+        `LedFiducialStrategy.is_applicable` 在 `ctx.led is None` 或 `ctx.board is None` 时就否决,
+        而 `_compute_relocation` 传的 `CalibrationContext` 正是 `led=None`、`board=None`
+        (前者是「LED 不为几何自动点亮」的硬规矩;后者这里压根没有识别出的盘面状态可传),
+        它自己判不适用,不是因为「要求空盘」。
         """
         from katrain.vision.calibration_strategy import Scenario
 
@@ -790,8 +799,11 @@ class GeometryCalibrationService:
         Without invalidation the vision worker keeps warping with the pre-drift matrix, so a
         bumped board yields confident-but-wrong detections (sub-cell shift → SyncStateMachine's
         confidence gate never fires) and wrong LED/voice guidance + wrong judging, with no
-        recovery signal on the tsumego surface. Recovery is a fresh calibration (degraded is
-        terminal for confirm_existing — see test_confirm_existing_cannot_override_degraded_state).
+        recovery signal on the tsumego surface. When ``auto_relocate`` is on this first tries a
+        silent outer-corner relocation (below); only when that is unavailable or fails does it
+        degrade. Recovery from a degraded state is a fresh calibration or the user-pressed
+        ``relocate()`` (degraded is terminal for confirm_existing — see
+        test_confirm_existing_cannot_override_degraded_state).
         """
         if not drift.degraded:
             return
@@ -817,6 +829,12 @@ class GeometryCalibrationService:
                 )
             except (CalibrationBusy, ValueError) as exc:
                 reason = str(exc)
+            except Exception as exc:
+                # 选择器/relock 里冒出来的不是「没找到盘」那种干净的失败(比如 cv2.error),
+                # 而是真的异常。不接住就会从这里漏到 _drift_loop 的 `except Exception: sleep(0.1)`,
+                # 服务停在 ready 上对一块已经歪了的盘继续按旧几何识别,还每秒静默重试。
+                logger.warning("auto relocation failed: %s", exc, exc_info=True)
+                reason = f"relocate_error:{type(exc).__name__}"
             if reason is None or reason == "delivery_failed":  # 成功;或 _adopt 已经降级过了
                 return
         with self._lock:
@@ -826,4 +844,5 @@ class GeometryCalibrationService:
             self._status["error"] = "board_moved"
             self._status["relocate_error"] = reason
             self._status["metrics"].update(shift_cells=drift.shift_cells, drift_response=drift.response)
+        # Outside the lock: on_degraded fans out to the vision worker (IPC).
         self.on_degraded()

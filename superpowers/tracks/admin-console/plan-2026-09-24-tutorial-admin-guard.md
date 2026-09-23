@@ -45,30 +45,29 @@
 
 ---
 
-### Task 0: 准备 worktree 环境并记录测试基线
+### Task 1: 教程的四个写接口只许管理员
 
 **Files:**
-- 无代码改动；基线文件写到 `/Users/fan/Repositories/katrain-admin-console/.superpowers/baseline/`（`.superpowers/` 已被 git 忽略；如果没被忽略，就改放 scratchpad）
+- Modify: `katrain/web/api/v1/endpoints/tutorials.py`（第 15–18 行的 import；第 150–262 行的四个写接口）
+- Test: `tests/web_ui/test_guest_write_block.py`（模块 docstring 第 8–9 行；第 130–150 行附近加辅助函数；第 268–305 行的两条教程用例）
+- Test: `tests/web_ui/test_tutorial_db_api.py`（`client_with_auth` 夹具；在文件末尾新增一条用例）
+- 不提交：`.superpowers/baseline/web_ui_failed_before.txt`（Step 2 生成；`.superpowers/` 被根目录 `.gitignore:208` 忽略）
 
 **Interfaces:**
-- Produces：`.superpowers/baseline/web_ui_failed_before.txt`（基线里失败用例的**名字**，一行一个，已排序）
+- Consumes：`get_current_admin_user(request, token) -> katrain.web.models.User`（`auth.py:155`；只认 `Authorization: Bearer`；未登录 401，非管理员 403，detail 为 `"Admin privileges required"`）
+- Produces：`tests/web_ui/test_guest_write_block.py` 里的 `_create_admin_and_login(app, username="tutorial-admin") -> (headers, user_id, unique_name)`，Task 2 会复用
+- Produces：`.superpowers/baseline/web_ui_failed_before.txt`：改动前 `tests/web_ui` 失败用例的**名字**（一行一个，已排序），Task 2 的 Step 5 拿它做差
 
-- [ ] **Step 1：装 Python 依赖**（worktree 里是空的；只跑 `uv sync` 不会装 fastapi）
+- [ ] **Step 1：装 Python 依赖，确认基线目录被 git 忽略**（worktree 里是空的；只跑 `uv sync` 不会装 fastapi）
 
-Run: `cd /Users/fan/Repositories/katrain-admin-console && uv sync --extra web`
-Expected：以 `Installed`/`Audited` 结尾，没有报错。
+```bash
+cd /Users/fan/Repositories/katrain-admin-console
+uv sync --extra web
+git check-ignore -v .superpowers/baseline/x.txt
+```
+Expected：`uv sync` 以 `Installed` 或 `Audited` 结尾，没有报错；`git check-ignore` 打印 `.gitignore:208:.superpowers/	.superpowers/baseline/x.txt`。
 
-- [ ] **Step 2：装前端依赖**
-
-Run: `cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui && npm ci`
-Expected：`added N packages`，没有 `ERR!`。
-
-- [ ] **Step 3：确认 `.superpowers/` 被 git 忽略**
-
-Run: `cd /Users/fan/Repositories/katrain-admin-console && git check-ignore -v .superpowers/baseline/x.txt`
-Expected：输出里有一条匹配的忽略规则。**如果没有输出**，就把下面所有 `.superpowers/baseline/` 换成 `/private/tmp/claude-501/admin-guard-baseline/`。
-
-- [ ] **Step 4：跑 web_ui 基线，只记失败用例的名字**
+- [ ] **Step 2：改任何代码之前，记录 web_ui 基线（只记失败用例的名字）**
 
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console
@@ -78,24 +77,11 @@ CI=true uv run pytest tests/web_ui -q -p no:cacheprovider --continue-on-collecti
 wc -l .superpowers/baseline/web_ui_failed_before.txt
 git status --short
 ```
-Expected：`wc -l` 输出一个数（可以是 0）。`git status --short` 应该为空。**如果 `katrain/config.json` 出现在输出里**（有的测试会改写这个已提交的文件），执行 `git checkout -- katrain/config.json` 还原。
+Expected：`wc -l` 输出一个数（可以是 0）。`git status --short` 应该为空。**如果 `katrain/config.json` 出现在输出里**（有的测试会改写这个已提交的文件），执行 `git checkout -- katrain/config.json` 还原。不要把还不存在的测试文件当参数传给 pytest：pytest 会以用法错误直接退出，基线就会**静默为空**。
 
----
+- [ ] **Step 3：把 `test_guest_write_block.py` 里锁定旧行为的用例改成新的期望**
 
-### Task 1: 教程的四个写接口只许管理员
-
-**Files:**
-- Modify: `katrain/web/api/v1/endpoints/tutorials.py`（第 15–18 行的 import；第 150–262 行的四个写接口）
-- Test: `tests/web_ui/test_guest_write_block.py`（模块 docstring 第 8–9 行；第 130–150 行附近加辅助函数；第 268–305 行的两条教程用例）
-- Test: `tests/web_ui/test_tutorial_db_api.py`（`client_with_auth` 夹具；在文件末尾新增一条用例）
-
-**Interfaces:**
-- Consumes：`get_current_admin_user(request, token) -> katrain.web.models.User`（`auth.py:155`；只认 `Authorization: Bearer`；未登录 401，非管理员 403，detail 为 `"Admin privileges required"`）
-- Produces：`tests/web_ui/test_guest_write_block.py` 里的 `_create_admin_and_login(app, username="tutorial-admin") -> (headers, user_id, unique_name)`，Task 2 会复用
-
-- [ ] **Step 1：把 `test_guest_write_block.py` 里锁定旧行为的用例改成新的期望**
-
-1a. 模块 docstring 第 8–9 行，把：
+3a. 模块 docstring 第 8–9 行，把：
 ```python
   - The four optional-auth tutorial-authoring writers guest-only reject
     (anonymous stays allowed).
@@ -108,7 +94,7 @@ Expected：`wc -l` 输出一个数（可以是 0）。`git status --short` 应�
     superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md §4.
 ```
 
-1b. 在 `_seed_tutorial_figure` 函数之后（它以 `return figure.id` 结尾），插入这两个辅助函数：
+3b. 在 `_seed_tutorial_figure` 函数之后（它以 `return figure.id` 结尾），插入这两个辅助函数：
 ```python
 async def _create_admin_and_login(app, username="tutorial-admin"):
     """Same as `_create_user_and_login`, then flip is_admin (the test_billing_api idiom)."""
@@ -133,7 +119,7 @@ def _fake_tts(monkeypatch):
     )
 ```
 
-1c. 在 `test_tutorial_writer_guest_403` 里，把：
+3c. 在 `test_tutorial_writer_guest_403` 里，把：
 ```python
     assert resp.status_code == 403
     assert resp.json() == {"detail": "Guest is read-only"}
@@ -144,7 +130,7 @@ def _fake_tts(monkeypatch):
     assert resp.json() == {"detail": "Admin privileges required"}
 ```
 
-1d. 把**整个** `test_tutorial_writer_anonymous_still_2xx` 函数（从它上面的 `@pytest.mark.asyncio` 装饰器开始，到 `assert resp.status_code == 200, resp.text` 结束）替换成下面三条：
+3d. 把**整个** `test_tutorial_writer_anonymous_still_2xx` 函数（从它上面的 `@pytest.mark.asyncio` 装饰器开始，到 `assert resp.status_code == 200, resp.text` 结束）替换成下面三条：
 ```python
 @pytest.mark.asyncio
 @pytest.mark.parametrize("method,action,body", TUTORIAL_WRITE_ROUTES, ids=[r[1] for r in TUTORIAL_WRITE_ROUTES])
@@ -192,9 +178,9 @@ async def test_tutorial_writer_admin_2xx(full_app, method, action, body, monkeyp
         assert [h.changed_by for h in history] == [admin_name]
 ```
 
-- [ ] **Step 2：改 `test_tutorial_db_api.py`**
+- [ ] **Step 4：改 `test_tutorial_db_api.py`**
 
-2a. 在 `client_with_auth` 夹具里，把：
+4a. 在 `client_with_auth` 夹具里，把：
 ```python
     # Create a test user
     user = models_db.User(
@@ -215,7 +201,7 @@ async def test_tutorial_writer_admin_2xx(full_app, method, action, body, monkeyp
     session.add(models_db.User(username="plainuser", hashed_password="fakehash"))
 ```
 
-2b. 在文件末尾新增：
+4b. 在文件末尾新增：
 ```python
 def test_update_board_non_admin_forbidden(client_with_auth):
     """Tutorial writes are admin-only (2026-09-24): logged in but not admin => 403."""
@@ -229,7 +215,7 @@ def test_update_board_non_admin_forbidden(client_with_auth):
     assert resp.status_code == 403
 ```
 
-- [ ] **Step 3：跑测试，确认它们失败，而且失败原因是对的**
+- [ ] **Step 5：跑测试，确认它们失败，而且失败原因是对的**
 
 Run：
 ```bash
@@ -243,9 +229,9 @@ Expected：FAIL。
 - `test_update_board_non_admin_forbidden` 失败，是因为拿到了 200；
 - `test_tutorial_writer_admin_2xx[*]` 和 `test_update_board_authenticated_success` 此刻**会通过**（旧代码本来就放行），这是正常的。
 
-- [ ] **Step 4：改 `tutorials.py`**
+- [ ] **Step 6：改 `tutorials.py`**
 
-4a. 第 15–18 行，把：
+6a. 第 15–18 行，把：
 ```python
 from katrain.web.api.v1.endpoints.auth import get_current_user_optional
 from katrain.web.core.box_sso import is_guest_user
@@ -258,11 +244,11 @@ from katrain.web.api.v1.endpoints.auth import get_current_admin_user
 from katrain.web.core.db import get_db
 from katrain.web.models import User as AuthUser
 ```
-等 Step 4b–4e 全部改完，再确认旧的名字已经没人用了：
+等 6b–6e 全部改完，再确认旧的名字已经没人用了：
 Run：`grep -nE "get_current_user_optional|is_guest_user" katrain/web/api/v1/endpoints/tutorials.py; grep -nw "User" katrain/web/api/v1/endpoints/tutorials.py`
 Expected：第一条 grep 没有输出；第二条只命中 `from katrain.web.models import User as AuthUser` 这一行。如果还有别处在用 ORM 的 `User`，就把原来的 `from katrain.web.core.models_db import User` 加回来。
 
-4b. `update_figure_board`：把签名里的
+6b. `update_figure_board`：把签名里的
 ```python
     current_user: User | None = Depends(get_current_user_optional),
 ):
@@ -292,7 +278,7 @@ Expected：第一条 grep 没有输出；第二条只命中 `from katrain.web.mo
         change_type="edit",
 ```
 
-4c. `generate_audio_for_figure`：把
+6c. `generate_audio_for_figure`：把
 ```python
     current_user: User | None = Depends(get_current_user_optional),
 ):
@@ -307,7 +293,7 @@ Expected：第一条 grep 没有输出；第二条只命中 `from katrain.web.mo
     figure = db_queries.get_figure(db, figure_id)
 ```
 
-4d. `update_figure_narration`：把
+6d. `update_figure_narration`：把
 ```python
     current_user: User | None = Depends(get_current_user_optional),
 ):
@@ -324,7 +310,7 @@ Expected：第一条 grep 没有输出；第二条只命中 `from katrain.web.mo
     figure = db_queries.get_figure(db, figure_id)
 ```
 
-4e. `verify_figure`：把
+6e. `verify_figure`：把
 ```python
     current_user: User | None = Depends(get_current_user_optional),
 ):
@@ -363,7 +349,7 @@ Expected：第一条 grep 没有输出；第二条只命中 `from katrain.web.mo
             change_type="verify",
 ```
 
-- [ ] **Step 5：跑测试，确认通过**
+- [ ] **Step 7：跑测试，确认通过**
 
 Run：
 ```bash
@@ -372,7 +358,7 @@ git status --short
 ```
 Expected：`passed`，没有 `failed`。`git status` 只列出本任务改动的三个文件（如果 `katrain/config.json` 也出现了，`git checkout -- katrain/config.json` 还原）。
 
-- [ ] **Step 6：提交**
+- [ ] **Step 8：提交**
 
 ```bash
 git add katrain/web/api/v1/endpoints/tutorials.py tests/web_ui/test_guest_write_block.py tests/web_ui/test_tutorial_db_api.py
@@ -392,7 +378,7 @@ Expected：`--stat` 里正好是这三个文件。
 - Test: `tests/web_ui/test_guest_write_block.py:486-498`（`test_real_user_can_heartbeat_and_list_devices`）
 
 **Interfaces:**
-- Consumes：Task 1 的 `_create_admin_and_login(app, username)`
+- Consumes：Task 1 的 `_create_admin_and_login(app, username)`，以及 Task 1 Step 2 记下的 `.superpowers/baseline/web_ui_failed_before.txt`
 
 - [ ] **Step 1：拆分用例**。把整个 `test_real_user_can_heartbeat_and_list_devices`（带着它的 `@pytest.mark.asyncio`）替换成：
 ```python
@@ -465,7 +451,18 @@ async def list_devices(
 Run：`CI=true uv run pytest tests/web_ui/test_guest_write_block.py -q -p no:cacheprovider 2>&1 | tail -3`
 Expected：全部 passed。其中 `test_guest_403_on_all_write_routes[GET:/api/v1/board/devices]` 仍然是 403，只是现在由管理员闸拦下。
 
-- [ ] **Step 5：提交**
+- [ ] **Step 5：后端两处都改完了，跑 web_ui 全量，按名字和基线做差**
+
+```bash
+cd /Users/fan/Repositories/katrain-admin-console
+CI=true uv run pytest tests/web_ui -q -p no:cacheprovider --continue-on-collection-errors -rfE 2>&1 \
+  | grep -E '^(FAILED|ERROR) ' | sed -E 's/ - .*//' | sort -u > .superpowers/baseline/web_ui_failed_after.txt
+comm -13 .superpowers/baseline/web_ui_failed_before.txt .superpowers/baseline/web_ui_failed_after.txt
+git status --short
+```
+Expected：`comm` 没有输出，即没有新增的失败；基线里本来就红的用例不算。`git status --short` 只列出本任务的两个文件；`katrain/config.json` 如果也出现了，执行 `git checkout -- katrain/config.json` 还原。`comm` 有输出时逐条看：是本切片造成的就修，不是的就在提交信息里写明。
+
+- [ ] **Step 6：提交**
 
 ```bash
 git add katrain/web/api/v1/endpoints/board.py tests/web_ui/test_guest_write_block.py
@@ -483,14 +480,37 @@ git show --stat HEAD | tail -4
 - Modify: `katrain/web/ui/src/context/AuthContext.tsx:6-17`（`interface User`）
 - Modify: `katrain/web/ui/src/galaxy/pages/tutorials/TutorialFigurePage.tsx`：第 39 行（`useAuth`）、第 51–53 行之后（新增 `canEdit`）、第 465–507 行（讲解区）、第 531–535 行（识别调试面板）、第 538–567 行（actions）
 - Test: `katrain/web/ui/src/galaxy/pages/tutorials/TutorialFigurePage.test.tsx`
+- 不提交：`.superpowers/baseline/vitest_{before,after}.json`、`vitest_failed_{before,after}.txt`（Step 1、Step 7 生成）
 
 **Interfaces:**
 - Consumes：`useAuth()` 返回的 `user?: User | null`，其中 `User.is_admin?: boolean`（本任务新增声明）
 - Produces：`canEdit: boolean`，页面内部使用
 
-- [ ] **Step 1：写测试**。在 `TutorialFigurePage.test.tsx` 里：
+- [ ] **Step 1：装前端依赖；改前端之前记录 vitest 基线（按用例名字）**
 
-1a. 把 `beforeEach` 里的
+```bash
+cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
+npm ci
+B=/Users/fan/Repositories/katrain-admin-console/.superpowers/baseline
+npx vitest run --reporter=json --outputFile=$B/vitest_before.json > /dev/null 2>&1; echo "vitest exit=$?"
+python3 - "$B/vitest_before.json" "$B/vitest_failed_before.txt" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+names = set()
+for f in d["testResults"]:
+    file = f["name"].split("/katrain/web/ui/")[-1]
+    if f.get("status") == "failed" and not f["assertionResults"]:
+        names.add(f"{file} :: <文件本身没跑起来>")
+    names |= {f"{file} :: {a['fullName']}" for a in f["assertionResults"] if a["status"] == "failed"}
+open(sys.argv[2], "w").write("".join(n + "\n" for n in sorted(names)))
+print(d["numTotalTests"], "tests,", len(names), "failed")
+PY
+```
+Expected：`npm ci` 打印 `added N packages`，没有 `ERR!`；最后一行打印用例总数和失败数（失败数可以不为 0，记下即可）。
+
+- [ ] **Step 2：写测试**。在 `TutorialFigurePage.test.tsx` 里：
+
+2a. 把 `beforeEach` 里的
 ```tsx
     (useAuth as Mock).mockReturnValue({ token: 'fake-token' });
 ```
@@ -499,7 +519,7 @@ git show --stat HEAD | tail -4
     (useAuth as Mock).mockReturnValue({ token: 'fake-token', user: { is_admin: true } });
 ```
 
-1b. 在 `describe('TutorialFigurePage', () => {` 之前加一个渲染辅助函数：
+2b. 在 `describe('TutorialFigurePage', () => {` 之前加一个渲染辅助函数：
 ```tsx
 const renderPage = () =>
   render(
@@ -524,7 +544,7 @@ const sectionWithBoard = {
 const EDIT_BUTTONS = [/编辑讲解/, /生成语音并保存/, /保存文字/, /确认审核/, /逻辑检查/, /^编辑$/, /初始化空棋盘/];
 ```
 
-1c. 在 `describe` 块里、最后一条 `it` 之后，加上：
+2c. 在 `describe` 块里、最后一条 `it` 之后，加上：
 ```tsx
   it('管理员看得到编辑控件', async () => {
     (TutorialAPI.getSection as Mock).mockResolvedValue(sectionWithBoard);
@@ -558,12 +578,12 @@ const EDIT_BUTTONS = [/编辑讲解/, /生成语音并保存/, /保存文字/, /
   });
 ```
 
-- [ ] **Step 2：跑测试，确认失败**
+- [ ] **Step 3：跑测试，确认失败**
 
 Run：`cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui && npx vitest run src/galaxy/pages/tutorials/TutorialFigurePage.test.tsx 2>&1 | tail -15`
 Expected：「非管理员只读」和「未登录」两条 FAIL，因为按钮还在；「管理员看得到编辑控件」和原有两条 PASS。
 
-- [ ] **Step 3：改 `AuthContext.tsx`**。在 `interface User` 里的 `avatar_url?: string;` 之后加：
+- [ ] **Step 4：改 `AuthContext.tsx`**。在 `interface User` 里的 `avatar_url?: string;` 之后加：
 ```ts
     // Admin flag. `/auth/me` has always returned it (katrain/web/models.py User.is_admin);
     // the client never declared it before 2026-09-24. Only decides which editing controls
@@ -571,21 +591,21 @@ Expected：「非管理员只读」和「未登录」两条 FAIL，因为按钮�
     is_admin?: boolean;
 ```
 
-- [ ] **Step 4：改 `TutorialFigurePage.tsx`**
+- [ ] **Step 5：改 `TutorialFigurePage.tsx`**
 
-4a. 第 39 行 `const { token } = useAuth();` 改成：
+5a. 第 39 行 `const { token } = useAuth();` 改成：
 ```tsx
   const { token, user } = useAuth();
 ```
 
-4b. 在 `const showCompare = isWide && compareOpen;` 之后加一行（前面带注释）：
+5b. 在 `const showCompare = isWide && compareOpen;` 之后加一行（前面带注释）：
 ```tsx
   /* 编辑控件只给管理员（2026-09-24）。后端四个写接口已改成 get_current_admin_user，
      不藏的话普通用户点下去只会拿到 403。未登录（user 为空）同样只读。 */
   const canEdit = user?.is_admin === true;
 ```
 
-4c. 讲解区的标题行：把「编辑讲解」这个 `<Button …>…</Button>` 整个包进 `{canEdit && ( … )}`，改完是：
+5c. 讲解区的标题行：把「编辑讲解」这个 `<Button …>…</Button>` 整个包进 `{canEdit && ( … )}`，改完是：
 ```tsx
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
               <Typography variant="caption" color="text.secondary">语音讲解</Typography>
@@ -603,7 +623,7 @@ Expected：「非管理员只读」和「未登录」两条 FAIL，因为按钮�
             </Box>
 ```
 
-4d. 把 `{isEditingNarration ? (` 改成 `{canEdit && isEditingNarration ? (`。再把没有讲解文本时显示的那段文字
+5d. 把 `{isEditingNarration ? (` 改成 `{canEdit && isEditingNarration ? (`。再把没有讲解文本时显示的那段文字
 ```tsx
                 暂无讲解文本。点击“编辑讲解”后可直接填写并生成语音。
 ```
@@ -612,9 +632,9 @@ Expected：「非管理员只读」和「未登录」两条 FAIL，因为按钮�
                 {canEdit ? '暂无讲解文本。点击“编辑讲解”后可直接填写并生成语音。' : '暂无讲解文本。'}
 ```
 
-4e. 识别调试面板：把 `{currentFigure?.recognition_debug && (` 改成 `{canEdit && currentFigure?.recognition_debug && (`。
+5e. 识别调试面板：把 `{currentFigure?.recognition_debug && (` 改成 `{canEdit && currentFigure?.recognition_debug && (`。
 
-4f. actions：把 `actions={(` 改成 `actions={canEdit ? (`，再把 actions 整个 JSX 末尾的 `)}`（紧挨在 `/>` 之前、结束 `<Box sx={{ py: 1.5, borderTop: …`）改成 `) : null}`。改完末尾是这样：
+5f. actions：把 `actions={(` 改成 `actions={canEdit ? (`，再把 actions 整个 JSX 末尾的 `)}`（紧挨在 `/>` 之前、结束 `<Box sx={{ py: 1.5, borderTop: …`）改成 `) : null}`。改完末尾是这样：
 ```tsx
           )}
         </Box>
@@ -624,7 +644,7 @@ Expected：「非管理员只读」和「未登录」两条 FAIL，因为按钮�
 }
 ```
 
-- [ ] **Step 5：跑测试、真正的类型检查和 lint**
+- [ ] **Step 6：跑测试、真正的类型检查和 lint**
 
 Run：
 ```bash
@@ -634,7 +654,30 @@ npx eslint src/galaxy/pages/tutorials/TutorialFigurePage.tsx src/context/AuthCon
 ```
 Expected：vitest 全部 PASS；`tsc -b` 没有输出（注意别用 `tsc --noEmit`，那个一个文件都不检查）；eslint 没有输出。
 
-- [ ] **Step 6：提交**
+- [ ] **Step 7：前端全量单测按名字和基线做差；两套构建都要过**（`AuthContext.tsx` 属于共享区，kiosk 包也会用到）
+
+```bash
+cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
+B=/Users/fan/Repositories/katrain-admin-console/.superpowers/baseline
+npx vitest run --reporter=json --outputFile=$B/vitest_after.json > /dev/null 2>&1; echo "vitest exit=$?"
+python3 - "$B/vitest_after.json" "$B/vitest_failed_after.txt" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+names = set()
+for f in d["testResults"]:
+    file = f["name"].split("/katrain/web/ui/")[-1]
+    if f.get("status") == "failed" and not f["assertionResults"]:
+        names.add(f"{file} :: <文件本身没跑起来>")
+    names |= {f"{file} :: {a['fullName']}" for a in f["assertionResults"] if a["status"] == "failed"}
+open(sys.argv[2], "w").write("".join(n + "\n" for n in sorted(names)))
+print(d["numTotalTests"], "tests,", len(names), "failed")
+PY
+comm -13 $B/vitest_failed_before.txt $B/vitest_failed_after.txt
+npm run build 2>&1 | tail -3 && npm run build:kiosk-2d 2>&1 | tail -3
+```
+Expected：`comm` 没有输出（没有新增的失败）；两个构建都以 `built in` 结尾，kiosk 那个还打印 `✅ kiosk boundary clean`。（不要用 `git stash` 回到改动前去复跑：katrain 的十个 worktree 共用一条 stash 栈，pop 可能弹出别人的在制品。基线在 Step 1 已经记好了。）
+
+- [ ] **Step 8：提交**
 
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console
@@ -655,6 +698,10 @@ git show --stat HEAD | tail -5
 **Files:**
 - Create（临时，不提交，除非量出了错误数值）：`katrain/web/ui/tests/tutorial-rail-readonly.measure.spec.ts`
 - Create：`superpowers/tracks/admin-console/slice0/measurements.md`，以及同目录下的 3 张 png
+
+**Interfaces:**
+- Consumes：Task 3 的 `canEdit` 门控；`BoardPageShell.tsx` 已有的 data-testid：`board-page-shell`、`board-right-rail`、`board-rail-module`、`board-rail-scroll`、`board-rail-actions`
+- Produces：`slice0/measurements.md` 和 3 张截图，交给 Fan 确认
 
 先把关系式写死（取数之前）：
 - R1（所有状态）：`|rail.top − shell.top| ≤ 1` 且 `|rail.bottom − shell.bottom| ≤ 1`（右栏撑满外壳那一行 grid）
@@ -795,34 +842,12 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 5: 回归验证（基线对比）和两套构建
+### Task 5: 🛑 发布前清点各环境的管理员账号（需要 Fan 决策）
 
-- [ ] **Step 1：跑 web_ui，按名字和基线做差**
+**Files:** 无代码改动。Step 1 只读；Step 3 按 Fan 的决定改库，每条命令执行前都要他再点一次头。
 
-```bash
-cd /Users/fan/Repositories/katrain-admin-console
-CI=true uv run pytest tests/web_ui -q -p no:cacheprovider --continue-on-collection-errors -rfE 2>&1 \
-  | grep -E '^(FAILED|ERROR) ' | sed -E 's/ - .*//' | sort -u > .superpowers/baseline/web_ui_failed_after.txt
-comm -13 .superpowers/baseline/web_ui_failed_before.txt .superpowers/baseline/web_ui_failed_after.txt
-git status --short
-```
-Expected：`comm` 没有输出（没有新增的失败）；`git status` 为空（`katrain/config.json` 如果被改了就还原）。
-
-- [ ] **Step 2：前端全量单测**
-
-Run：`cd katrain/web/ui && npx vitest run 2>&1 | tail -6`
-Expected：和改动前的通过数一致。如果有失败，先在 `git stash` 之前的状态下跑一遍，确认那条失败是不是本来就有。
-
-- [ ] **Step 3：两套构建都要过**（`AuthContext.tsx` 属于共享区，kiosk 也会用到）
-
-Run：`npm run build 2>&1 | tail -3 && npm run build:kiosk-2d 2>&1 | tail -3`
-Expected：两个都以 `built in` 结尾，kiosk 那个还要打印 `✅ kiosk boundary clean`。
-
----
-
-### Task 6: 🛑 发布前清点各环境的管理员账号（需要 Fan 决策）
-
-这一步不改任何数据。改完以后只有 `is_admin` 的账号能编辑教程，所以要先弄清楚每个环境里谁是管理员。
+**Interfaces:**
+- Produces：三个环境各自 `is_admin = true` 的账号，以及 Fan 对生产 `admin`（id=1）的处置。Task 6 的发布以它为前提：发布以后只有管理员能编辑教程
 
 - [ ] **Step 1：只读查询三个环境**
 
@@ -880,7 +905,13 @@ Expected：打印 `1 admin False`。**容器名以 Step 1 实际查到的为准*
 
 ---
 
-### Task 7: 🛑 发布：先测试机，再生产（每一步推送或部署前都要 Fan 点头）
+### Task 6: 🛑 发布：先测试机，再生产（每一步推送或部署前都要 Fan 点头）
+
+**Files:**
+- Modify（release 分支，在 Step 4 建的临时 worktree 里）：`docs/operations/ucloud-migration-runbook.md`（追加一条发布记录）
+
+**Interfaces:**
+- Consumes：Task 1–3 的提交；Task 5 在各环境授权的管理员账号
 
 - [ ] **Step 1：跟上 develop，然后快进推送**（不碰共享的主工作树）
 
@@ -974,6 +1005,10 @@ Expected：
 
 ## Self-Review 记录
 
-- 对照 spec 的覆盖：§4 的三个问题分别落在 Task 1、Task 2、Task 6；前端只读落在 Task 3；承重实测落在 Task 4；「会改变谁能编辑教程」落在 Task 6；「先测试机再生产」落在 Task 7。
+- 对照 spec 的覆盖：§4 的三个问题分别落在 Task 1、Task 2、Task 5；前端只读落在 Task 3；承重实测落在 Task 4；「会改变谁能编辑教程」落在 Task 5；「先测试机再生产」落在 Task 6。
 - 占位符：`<用户名>`、`<release 分支尖端的 short sha>`、`<build-web.sh 打出的 image_id>` 都是**运行时才知道的输入**，每一个都写明了从哪一步取得，不属于没写完的内容。
 - 名字一致：`_create_admin_and_login`、`_fake_tts`、`canEdit`、`AuthUser` 在各任务之间用法一致。
+- 2026-09-24 按 writing-plans 模板复核：
+  - 原来单独的「准备环境 + 记录基线」（旧 Task 0）和「回归验证 + 两套构建」（旧 Task 5）都不是能单独验收的交付物。按 Task Right-Sizing 并进用到它们的任务：Python 依赖和 pytest 基线进 Task 1，全量对比进 Task 2 末尾，前端依赖、vitest 基线、两套构建进 Task 3。旧 Task 6、7 依次改为 Task 5、6。
+  - Task 4–6 补了 Interfaces。
+  - 旧 Task 5 的「有失败就先 `git stash` 回去复跑」改成事先按用例名字记 vitest 基线：katrain 的十个 worktree 共用一条 stash 栈。

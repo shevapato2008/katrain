@@ -24,18 +24,18 @@
 - `katrain/cron/**` 只许 import 标准库、sqlalchemy 和 `katrain.cron.*`（由 `tests/web_ui/test_cron_import_boundary.py` 守着）。
 - 后台进程不调用 `init_db()`；新表都定义在 `katrain/web/core/models_db.py` 里，cron 侧写同名映射。
 - 目标视口 1440×900；后台界面只做中文；文件名不许以 `log` 开头（登录页叫 `SignInPage.tsx`）。
-- **Task 3 的四图对比经 Fan 明确确认之前，不做任何后端任务（Task 5 起）**。这是 Fan 定的硬性关卡。
+- **Task 3 的四图对比经 Fan 明确确认之前，不做任何后端任务（Task 4 起）**。这是 Fan 定的硬性关卡。
 - 只在 worktree `~/Repositories/katrain-admin-console`（分支 `feature/admin-console`）里工作，不碰共享主工作树的分支。
 - 推送、部署、写生产库，**执行当下**都要 Fan 点头。先测试机，再生产。
 - 提交信息末尾加 `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`。
 
 ## Review Focus
 
-- 同一个浏览器里同时开着测试和生产两条隧道（都在 localhost，cookie 不分端口）：不能串号，页头必须显示正确的环境 → Task 7 的 `test_token_for_other_env_is_rejected`，外加登录页显示环境的 `SignInPage.test.tsx`。
-- 任务吞掉了异常、只打了一条 ERROR 日志（cleanup.py 的写法）：必须显示「有报错」，不能显示「成功」→ Task 8 的 `test_a_job_that_swallows_its_exception_is_recorded_as_errors_not_success`。
-- cron 进程被 SIGKILL 或 OOM 杀掉，来不及写任何东西：2 分钟内页面必须变成「失联」，不能一直停在最后一次的「正常」→ Task 10 的 offline 用例，加上 Task 13 的实停验证。
-- 管理员登录期间被撤掉权限：下一次请求就必须回到登录页 → Task 7 的 `test_revoking_is_admin_takes_effect_on_next_request`。
-- 测试用的 SQLite 返回不带时区的时间，和带时区的「现在」相减会直接抛 TypeError → Task 10 的 `test_naive_timestamps_from_sqlite_are_treated_as_utc`。
+- 同一个浏览器里同时开着测试和生产两条隧道（都在 localhost，cookie 不分端口）：不能串号，页头必须显示正确的环境 → Task 6 的 `test_token_for_other_env_is_rejected`，外加登录页显示环境的 `SignInPage.test.tsx`。
+- 任务吞掉了异常、只打了一条 ERROR 日志（cleanup.py 的写法）：必须显示「有报错」，不能显示「成功」→ Task 7 的 `test_a_job_that_swallows_its_exception_is_recorded_as_errors_not_success`。
+- cron 进程被 SIGKILL 或 OOM 杀掉，来不及写任何东西：2 分钟内页面必须变成「失联」，不能一直停在最后一次的「正常」→ Task 9 的 offline 用例，加上 Task 12 的实停验证。
+- 管理员登录期间被撤掉权限：下一次请求就必须回到登录页 → Task 6 的 `test_revoking_is_admin_takes_effect_on_next_request`。
+- 测试用的 SQLite 返回不带时区的时间，和带时区的「现在」相减会直接抛 TypeError → Task 9 的 `test_naive_timestamps_from_sqlite_are_treated_as_utc`。
 
 ---
 
@@ -58,61 +58,86 @@
 | `docker-compose.yml`、`Dockerfile.web`、`.claude/skills/server-deploy/SKILL.md` | 改 | 测试机部署 |
 | `docs/operations/admin-console-access.md` | 新建 | 隧道访问方式、工作人员的受限账号 |
 | `tests/web_ui/test_admin_*.py`、`test_cron_run_recorder.py`、`test_cron_status_tables_parity.py`、`_admin_helpers.py`；`tests/test_admin_compose.py` | 新建 | 测试 |
-| release 分支：`Dockerfile.web`、`deploy/ucloud/compose.yml`、`deploy/ucloud/scripts/build-web.sh`、`tests/deploy/test_ucloud_artifacts.py` | 改（Task 16） | 生产部署 |
-
----
-
-### Task 0: 准备 worktree 环境并记录基线
-
-**Files:** 无代码改动。
-
-- [ ] **Step 1**：`cd /Users/fan/Repositories/katrain-admin-console && uv sync --extra web`。期望结果：没有报错。（如果切片 0 的 Task 0 已经做过，就跳过这一步。）
-- [ ] **Step 2**：`cd katrain/web/ui && npm ci`。期望结果：`added N packages`。
-- [ ] **Step 3：基线**。只记失败用例的名字，`katrain/config.json` 如果被改了要还原：
-```bash
-cd /Users/fan/Repositories/katrain-admin-console && mkdir -p .superpowers/baseline
-git check-ignore -q .superpowers/baseline/x || echo "!! .superpowers 未被忽略：改用 /private/tmp/claude-501/admin-console-baseline/"
-CI=true uv run pytest tests/web_ui -q -p no:cacheprovider --continue-on-collection-errors -rfE 2>&1 \
-  | grep -E '^(FAILED|ERROR) ' | sed -E 's/ - .*//' | sort -u > .superpowers/baseline/cron_slice_failed_before.txt
-wc -l .superpowers/baseline/cron_slice_failed_before.txt
-(cd katrain/web/ui && npx vitest run 2>&1 | tail -4) > .superpowers/baseline/vitest_before.txt
-git status --short; git checkout -- katrain/config.json 2>/dev/null || true
-```
-（不要把还不存在的测试文件当参数传给 pytest：pytest 会直接以用法错误退出，基线就会**静默为空**。）
+| release 分支：`Dockerfile.web`、`deploy/ucloud/compose.yml`、`deploy/ucloud/scripts/build-web.sh`、`tests/deploy/test_ucloud_artifacts.py` | 改（Task 15） | 生产部署 |
 
 ---
 
 ### Task 1: 设计稿（Artifact）—— 🛑 Fan 确认后才能进入 Task 2
 
 **Files:**
+- Create：`superpowers/tracks/admin-console/slice1/design/admin-cron-design.html`（自包含的本地设计稿，参考图只从它截）
 - Create：`superpowers/tracks/admin-console/slice1/reference/{signin,ok,mixed,offline,error,missing,empty,drawer}.png`（1440×900 参考图）
 - Create：`superpowers/tracks/admin-console/slice1/design-notes.md`（设计方向、配色、字号、状态色，以及 Artifact 链接）
+- Create（临时，不提交）：`katrain/web/ui/tests/admin-reference.shoot.spec.ts`
 
-- [ ] **Step 1**：调用 `frontend-design` skill 定审美方向。输入：
+**Interfaces:**
+- Produces：8 张参考图，文件名就是状态名。Task 3 的实现截图用同样的 8 个文件名，一一对应
+- Produces：本地设计稿的约定：用 `?state=<状态>` 切换，并把当前状态写到 `<body data-state="<状态>">` 上。截图前回读它，确认切到了对的屏
+- Produces：`design-notes.md` 里确认过的视觉取值。Task 2 的 `theme.ts` 和 Step 13 的对齐都以它为准
+
+- [ ] **Step 1：装前端依赖**（参考图要用 Playwright 截，worktree 里是空的）
+
+Run：`cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui && npm ci`
+Expected：`added N packages`，没有 `ERR!`。之后 Playwright 如果报 `Executable doesn't exist`，执行一次 `npx playwright install chromium`。
+
+- [ ] **Step 2**：调用 `frontend-design` skill 定审美方向。输入：
   - 这是内部运维后台，延续站点的 zen 深色基调：`src/theme.ts` 的底色 #0f0f0f、面板 #252525、文字 #f5f3f0 / #b8b5b0、主色玉绿 #4a6b5c；
   - 信息密集的表格，界面全中文，数字用等宽数字；视口 1440×900；
   - 页头必须显著标出环境（本机 / 测试 / 生产），生产要最醒目。
-- [ ] **Step 2**：调用 `ui-ux-pro-max` 补细节：九种健康状态（正常 / 运行中 / 有报错 / 该跑没跑 / 失败 / 卡住 / 失联 / 已停用 / 等待首次运行）的配色语义、表格密度、抽屉宽度、中文与数字混排的字体。
-- [ ] **Step 3**：按 Artifact 工具的要求先调用 `quickstart`（intent: `design`），再按它返回的说明，做一份可以用 `?state=` 切换状态的 HTML 设计稿。状态包括：
+- [ ] **Step 3**：调用 `ui-ux-pro-max` 补细节：九种健康状态（正常 / 运行中 / 有报错 / 该跑没跑 / 失败 / 卡住 / 失联 / 已停用 / 等待首次运行）的配色语义、表格密度、抽屉宽度、中文与数字混排的字体。
+- [ ] **Step 4：做设计稿**。先按 Artifact 工具的要求调用 `quickstart`（intent: `design`），按它返回的类型做一份给 Fan 看的设计稿并发布；同时在 `superpowers/tracks/admin-console/slice1/design/admin-cron-design.html` 存一份自包含的本地 HTML（不引用任何网络资源），参考图只从这一份截。本地 HTML 用 `?state=` 切换下列状态，并执行 `document.body.dataset.state = state`：
   - `signin`：登录页，带环境标签；
   - `ok`：全部正常；
   - `mixed`：包含失败、有报错、该跑没跑、已停用、运行中；
   - `offline`：cron 失联；
-  - `error`：接口 502，错误条加上「数据停在」；
+  - `error`：刷新时接口返回 502，错误条写明原因和「页面数据停在 HH:MM:SS」，表格保留上一次的数据；
   - `missing`：503，表不存在；
   - `empty`：cron 还没上报过；
-  - `drawer`：打开 fetch_list 的运行历史，200 条，带「加载更早的记录」。
+  - `drawer`：打开 fetch_list 的运行历史，已加载 200 条，列表停在顶部。
 
-  数据形状必须与 spec §6.5 的接口契约一致。发布后把链接写进 `design-notes.md`。
-- [ ] **Step 4**：用 Playwright 把本地的设计稿 HTML 按 1440×900 逐个状态截图，存成上面列出的 8 张参考图（`page.goto('file://<设计稿路径>?state=<state>')`；截图前先回读页面上的状态标识，确认切到了对的屏）。
-- [ ] **Step 5**：提交参考图和说明：
+  数据形状必须与 spec §6.5 的接口契约一致。把 Artifact 链接写进 `design-notes.md`。
+
+- [ ] **Step 5：按 1440×900 截 8 张参考图**
+
+写一次性的截图脚本 `katrain/web/ui/tests/admin-reference.shoot.spec.ts`：
+```ts
+// One-off, not committed. run from katrain/web/ui:
+//   npx playwright test --config=playwright.vite.config.ts tests/admin-reference.shoot.spec.ts
+import path from 'node:path';
+import { test, expect } from '@playwright/test';
+
+const SLICE = path.resolve('../../../superpowers/tracks/admin-console/slice1'); // relative to katrain/web/ui
+const STATES = ['signin', 'ok', 'mixed', 'offline', 'error', 'missing', 'empty', 'drawer'];
+
+for (const state of STATES) {
+  test(`reference ${state}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`file://${SLICE}/design/admin-cron-design.html?state=${state}`);
+    // Read back which state is on screen: a failed switch produces the same kind of picture as a successful one.
+    await expect(page.locator('body')).toHaveAttribute('data-state', state);
+    await page.screenshot({ path: `${SLICE}/reference/${state}.png` });
+  });
+}
+```
 ```bash
+cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
+mkdir -p ../../../superpowers/tracks/admin-console/slice1/reference
+npx playwright test --config=playwright.vite.config.ts tests/admin-reference.shoot.spec.ts --reporter=line 2>&1 | tail -5
+rm tests/admin-reference.shoot.spec.ts
+ls ../../../superpowers/tracks/admin-console/slice1/reference
+```
+Expected：`8 passed`，目录里正好 8 张 png。有哪一态失败，就是设计稿没切到那一屏：修设计稿再截，不许跳过。
+
+- [ ] **Step 6：提交设计稿、参考图和说明**
+```bash
+cd /Users/fan/Repositories/katrain-admin-console
 git add superpowers/tracks/admin-console/slice1/
 git commit -m "design(admin): cron 可视化设计稿参考图（1440×900，8 态）
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+git show --stat HEAD | tail -12
 ```
-- [ ] **Step 6：🛑 停。把 Artifact 链接发给 Fan。他明确确认之后才能进入 Task 2。改动意见在本任务内反复迭代。**
+- [ ] **Step 7：🛑 停。把 Artifact 链接发给 Fan。他明确确认之后才能进入 Task 2。改动意见在本任务内反复迭代：改设计稿 → 重跑 Step 5 → 重新提交。**
 
 ---
 
@@ -124,15 +149,43 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 - Create：`katrain/web/ui/src/admin/{main.tsx, AdminApp.tsx, theme.ts, session.tsx, envLabel.ts, jobLabels.ts, format.ts}`
 - Create：`katrain/web/ui/src/admin/api/{client.ts, types.ts, authApi.ts, cronApi.ts}`
 - Create：`katrain/web/ui/src/admin/pages/{SignInPage.tsx, CronPage.tsx}`、`katrain/web/ui/src/admin/components/{AdminShell.tsx, HealthChip.tsx, QueueCards.tsx, RunHistoryDrawer.tsx}`
-- Create（**FIXTURE**，Task 14 删除）：`katrain/web/ui/src/admin/__fixtures__/cronFixture.ts`
+- Create（**FIXTURE**，Task 13 删除）：`katrain/web/ui/src/admin/__fixtures__/cronFixture.ts`
 - Test：`katrain/web/ui/src/admin/api/client.test.ts`、`src/admin/pages/CronPage.test.tsx`、`src/admin/pages/SignInPage.test.tsx`
+- 不提交：`.superpowers/baseline/cron_slice_failed_before.txt`、`vitest_before.json`、`vitest_failed_before.txt`（Step 1 生成，Task 13 拿来做差）
 
 **Interfaces:**
-- Produces（TS 契约，Task 4 定稿，Task 11 的后端必须与之一致）：`src/admin/api/types.ts` 里的 `AdminEnv`、`AdminMe`、`HealthState`、`RunStatus`、`CronJob`、`CronJobsResponse`、`CronRun`、`CronRunsResponse`、`QueueSummary`、`CronQueuesResponse`
+- Produces（TS 契约，Task 3 定稿，Task 10 的后端必须与之一致）：`src/admin/api/types.ts` 里的 `AdminEnv`、`AdminMe`、`HealthState`、`RunStatus`、`CronJob`、`CronJobsResponse`、`CronRun`、`CronRunsResponse`、`QueueSummary`、`CronQueuesResponse`
 - Produces：`adminFetch<T>(path, init?)`、`AdminAuthError(message?)`、`AdminApiError(status, message)`
 - Produces：data-testid `admin-env`、`admin-main`、`cron-error`、`cron-loading`、`cron-empty`、`cron-process`、`cron-table`、`cron-row-<name>`、`health-<state>`、`queue-live`、`queue-report`、`run-history-scroll`、`signin-env`
 
-- [ ] **Step 1：先写三个行为测试**
+- [ ] **Step 1：改任何代码之前，装 Python 依赖并记录两份基线**（只记失败用例的名字。切片 0 已在这个 worktree 里装过依赖时，`uv sync` 很快结束）
+
+```bash
+cd /Users/fan/Repositories/katrain-admin-console
+uv sync --extra web
+git check-ignore -q .superpowers/baseline/x && echo ignored-ok   # 根目录 .gitignore:208 忽略了 .superpowers/
+B=/Users/fan/Repositories/katrain-admin-console/.superpowers/baseline; mkdir -p $B
+CI=true uv run pytest tests/web_ui -q -p no:cacheprovider --continue-on-collection-errors -rfE 2>&1 \
+  | grep -E '^(FAILED|ERROR) ' | sed -E 's/ - .*//' | sort -u > $B/cron_slice_failed_before.txt
+wc -l < $B/cron_slice_failed_before.txt
+(cd katrain/web/ui && npx vitest run --reporter=json --outputFile=$B/vitest_before.json > /dev/null 2>&1); echo "vitest exit=$?"
+python3 - "$B/vitest_before.json" "$B/vitest_failed_before.txt" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+names = set()
+for f in d["testResults"]:
+    file = f["name"].split("/katrain/web/ui/")[-1]
+    if f.get("status") == "failed" and not f["assertionResults"]:
+        names.add(f"{file} :: <文件本身没跑起来>")
+    names |= {f"{file} :: {a['fullName']}" for a in f["assertionResults"] if a["status"] == "failed"}
+open(sys.argv[2], "w").write("".join(n + "\n" for n in sorted(names)))
+print(d["numTotalTests"], "tests,", len(names), "failed")
+PY
+git status --short; git checkout -- katrain/config.json 2>/dev/null || true
+```
+Expected：打印 `ignored-ok`；`wc -l` 输出一个数（可以是 0）；最后打印 vitest 的用例总数和失败数。不要把还不存在的测试文件当参数传给 pytest：pytest 会以用法错误直接退出，基线就会**静默为空**。
+
+- [ ] **Step 2：先写三个行为测试**
 
 `src/admin/api/client.test.ts`：
 ```ts
@@ -277,9 +330,9 @@ describe('SignInPage', () => {
 });
 ```
 
-- [ ] **Step 2：跑测试，确认失败**：`cd katrain/web/ui && npx vitest run src/admin 2>&1 | tail -8`。期望结果：FAIL，报模块找不到。
+- [ ] **Step 3：跑测试，确认失败**：`cd katrain/web/ui && npx vitest run src/admin 2>&1 | tail -8`。期望结果：FAIL，报模块找不到。
 
-- [ ] **Step 3：入口、构建配置、脚本、忽略规则**
+- [ ] **Step 4：入口、构建配置、脚本、忽略规则**
 
 `katrain/web/ui/admin.html`：
 ```html
@@ -332,9 +385,9 @@ export default defineConfig({
 katrain/web/static-admin/
 ```
 
-- [ ] **Step 4：ESLint 导入边界**。在 `eslint.config.js` 里：
+- [ ] **Step 5：ESLint 导入边界**。在 `eslint.config.js` 里：
 
-4a. 在 `const forbiddenFromKiosk = [` 之前加：
+5a. 在 `const forbiddenFromKiosk = [` 之前加：
 ```js
 // Admin console boundary (superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md §5.5):
 // only src/admin/** may import admin code, or admin UI would ship inside a public/kiosk bundle.
@@ -350,9 +403,9 @@ const forbiddenFromAdmin = [
   },
 ]
 ```
-4b. 在 `forbiddenFromKiosk`、`forbiddenFromServer`、`forbiddenFromShared` 这三个数组的末尾，各加一项 `adminIsPrivate,`。
+5b. 在 `forbiddenFromKiosk`、`forbiddenFromServer`、`forbiddenFromShared` 这三个数组的末尾，各加一项 `adminIsPrivate,`。
 
-4c. 在 `defineConfig([ … ])` 的最后一个配置对象之后加：
+5c. 在 `defineConfig([ … ])` 的最后一个配置对象之后加：
 ```js
   {
     files: ['src/admin/**/*.{ts,tsx}'],
@@ -362,7 +415,7 @@ const forbiddenFromAdmin = [
   },
 ```
 
-- [ ] **Step 5：API 层**
+- [ ] **Step 6：API 层**
 
 `src/admin/api/types.ts`：
 ```ts
@@ -456,7 +509,7 @@ export async function adminFetch<T>(path: string, init: RequestInit = {}): Promi
 import { adminFetch } from './client';
 import type { AdminHealth, AdminMe } from './types';
 
-// FIXTURE 分支：删除条件与 cronApi.ts 相同（Task 14）。
+// FIXTURE 分支：删除条件与 cronApi.ts 相同（Task 13）。
 const useFixture = import.meta.env.VITE_ADMIN_FIXTURE === 'true';
 const fixture = () => import('../__fixtures__/cronFixture');
 
@@ -481,7 +534,7 @@ import { adminFetch } from './client';
 import type { CronJobsResponse, CronQueuesResponse, CronRunsResponse } from './types';
 
 // FIXTURE（切片 1 第 2–3 步）：VITE_ADMIN_FIXTURE=true 时用假数据跑界面。
-// 删除条件：Task 13 接上真实接口、Task 14 验收通过后，与 src/admin/__fixtures__/ 在同一个提交里删掉。
+// 删除条件：Task 12 接上真实接口、Task 13 验收通过后，与 src/admin/__fixtures__/ 在同一个提交里删掉。
 const useFixture = import.meta.env.VITE_ADMIN_FIXTURE === 'true';
 const fixture = () => import('../__fixtures__/cronFixture');
 
@@ -503,10 +556,10 @@ export async function getCronQueues(): Promise<CronQueuesResponse> {
 }
 ```
 
-- [ ] **Step 6：Fixture**（`src/admin/__fixtures__/cronFixture.ts`）
+- [ ] **Step 7：Fixture**（`src/admin/__fixtures__/cronFixture.ts`）
 ```ts
 // FIXTURE —— 只供切片 1 的 Task 2–3 使用（假数据跑界面、四图对比、承重实测）。
-// 删除条件：Task 13 接上真实接口、Task 14 验收通过后，与 cronApi.ts / authApi.ts 里的 useFixture 分支
+// 删除条件：Task 12 接上真实接口、Task 13 验收通过后，与 cronApi.ts / authApi.ts 里的 useFixture 分支
 // 在同一个提交里删除。用法：/admin.html?fixture=<ok|mixed|offline|error|missing|empty|many>&env=<local|test|prod>#/cron
 // 加 &signedout=1 表示「还没登录」（getMe 返回 401），用来截登录页。
 import { AdminApiError, AdminAuthError } from '../api/client';
@@ -550,9 +603,12 @@ const mixed = (): CronJob[] => NINE.map((j) => {
   }
 });
 
+let errorCalls = 0;
+
 export function jobsFixture(): Promise<CronJobsResponse> {
   switch (scenario()) {
-    case 'error': return Promise.reject(new AdminApiError(502, 'Bad Gateway'));
+    // 第一次成功、之后都 502：设计稿的 error 态是「错误条 + 页面数据停在 HH:MM:SS」，得先有过一次成功的数据。
+    case 'error': return errorCalls++ === 0 ? Promise.resolve({ observed_at: OBSERVED, jobs: mixed() }) : Promise.reject(new AdminApiError(502, 'Bad Gateway'));
     case 'missing': return Promise.reject(new AdminApiError(503, 'cron 状态表不存在：katrain-web 新版本还没启动过'));
     case 'empty': return Promise.resolve({ observed_at: OBSERVED, jobs: [] });
     case 'offline': return Promise.resolve({ observed_at: OBSERVED, jobs: NINE.map((j) => ({ ...j, heartbeat_at: at(600), health: { state: 'offline', reason: 'cron 进程失联：10 分钟没有心跳' } })) });
@@ -589,7 +645,7 @@ export const loginFixture = (): Promise<AdminMe> => Promise.resolve({ username: 
 export const healthFixture = (): Promise<AdminHealth> => Promise.resolve({ status: 'ok', env: env() });
 ```
 
-- [ ] **Step 7：会话、主题和小工具**
+- [ ] **Step 8：会话、主题和小工具**
 
 `src/admin/theme.ts`：
 ```ts
@@ -770,7 +826,7 @@ export default function AdminApp() {
 }
 ```
 
-- [ ] **Step 8：页面和组件**
+- [ ] **Step 9：页面和组件**
 
 `src/admin/pages/SignInPage.tsx`：
 ```tsx
@@ -1134,7 +1190,7 @@ export default function CronPage() {
 }
 ```
 
-- [ ] **Step 9：跑测试、类型检查和 lint**
+- [ ] **Step 10：跑测试、类型检查和 lint**
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
 npx vitest run src/admin 2>&1 | tail -6
@@ -1143,7 +1199,7 @@ npx eslint src/admin eslint.config.js
 ```
 期望结果：vitest 全部 PASS；`tsc -b` 没有输出；eslint 没有 error（和 `AuthContext.tsx` 同款的 `react-refresh/only-export-components` warning 可以接受）。
 
-- [ ] **Step 10：边界规则的变异检查**（每条闸都要亲眼看到它红一次）
+- [ ] **Step 11：边界规则的变异检查**（每条闸都要亲眼看到它红一次）
 ```bash
 printf "import { jobLabel } from '../admin/jobLabels';\nexport const x = jobLabel;\n" > src/galaxy/__mut_admin.ts
 npx eslint src/galaxy/__mut_admin.ts; echo "exit=$?"; rm src/galaxy/__mut_admin.ts
@@ -1152,18 +1208,19 @@ npx eslint src/admin/__mut_kiosk.ts; echo "exit=$?"; rm src/admin/__mut_kiosk.ts
 ```
 期望结果：两次都报 `no-restricted-imports`，`exit=1`；两个临时文件都已删除。
 
-- [ ] **Step 11：假数据界面能跑起来，也能构建**
+- [ ] **Step 12：假数据界面能跑起来，也能构建**
 ```bash
 npm run build:admin 2>&1 | tail -3
 ls ../static-admin/admin.html ../static-admin/assets | head
-(VITE_ADMIN_FIXTURE=true npm run dev:admin > /tmp/admin-dev.log 2>&1 &)
-for i in $(seq 1 60); do curl -sf http://127.0.0.1:5174/admin.html >/dev/null && break; sleep 1; done; echo ready
+lsof -iTCP:5174 -sTCP:LISTEN && echo '!! 5174 已被占用：先用 ps -o command= -p <pid> 查清是谁，别让截图打到别人的服务上'
+(VITE_ADMIN_FIXTURE=true npm run dev:admin > /private/tmp/claude-501/admin-dev.log 2>&1 &)
+for i in $(seq 1 60); do curl -sf http://127.0.0.1:5174/admin.html | grep -q 'KaTrain 管理后台' && break; sleep 1; done; echo ready
 ```
 期望结果：构建以 `built in` 结尾；`static-admin/admin.html` 存在；在浏览器里打开 `http://127.0.0.1:5174/admin.html?fixture=mixed&env=test#/cron` 能看到完整界面。
 
-- [ ] **Step 12：对齐设计稿**。拿 Task 1 的参考图逐屏对照，**只调整**上面这些文件里 `sx` 的数值、字号、颜色、间距和文案，让它与确认稿一致。**不改**数据流、data-testid 和状态语义。调整后重跑 Step 9。
+- [ ] **Step 13：对齐设计稿**。拿 Task 1 的参考图逐屏对照，**只调整**上面这些文件里 `sx` 的数值、字号、颜色、间距和文案，让它与确认稿一致。**不改**数据流、data-testid 和状态语义。调整后重跑 Step 10。
 
-- [ ] **Step 13：提交**（提交后用 `--stat` 核对文件清单，防止有文件被 `.gitignore` 吞掉）
+- [ ] **Step 14：提交**（提交后用 `--stat` 核对文件清单，防止有文件被 `.gitignore` 吞掉）
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console
 git add .gitignore katrain/web/ui/admin.html katrain/web/ui/vite.admin.config.ts katrain/web/ui/package.json katrain/web/ui/eslint.config.js katrain/web/ui/src/admin
@@ -1176,18 +1233,73 @@ git show --stat HEAD | tail -30
 
 ---
 
-### Task 3: 四图对比 + 承重实测 —— 🛑 Fan 确认后才进入任何后端任务
+### Task 3: 四图对比 + 承重实测 + 契约定稿 —— 🛑 Fan 确认后才定契约、进后端
 
 **Files:**
 - Create：`superpowers/tracks/admin-console/slice1/impl/*.png`、`side-by-side/*.png`、`diff/*.png`、`visual-review.md`、`measurements.md`
+- Create（临时，不提交）：`katrain/web/ui/tests/admin-impl.shoot.spec.ts`
 - Create（临时，除非量出了错误数值）：`katrain/web/ui/tests/admin-cron.measure.spec.ts`
+- Modify（仅当 Task 1–3 改动了字段时）：`katrain/web/ui/src/admin/api/types.ts`、`superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md` §6.5
 
-- [ ] **Step 1：截实现图**。vite dev（fixture 模式）还开着的情况下，按 1440×900 逐态截图，存到 `slice1/impl/<state>.png`。状态和 Task 1 的 8 张一一对应：
-  - `signin`：`?fixture=ok&env=test&signedout=1#/signin`；
-  - `ok`、`mixed`、`offline`、`error`、`missing`、`empty`：`?fixture=<state>&env=test#/cron`；
-  - `drawer`：`?fixture=mixed&env=test#/cron`，点击 `cron-row-fetch_list`，再点 3 次「加载更早的记录」。
+**Interfaces:**
+- Consumes：Task 1 的 8 张参考图（文件名 = 状态名）；Task 2 的 fixture 地址 `/admin.html?fixture=<状态>&env=<环境>[&signedout=1]#/<路由>` 和 data-testid
+- Produces：定稿的契约：`src/admin/api/types.ts` 与 spec §6.5 逐字段一致。Task 10 的 pydantic 模型照它写
 
-  每张截图前都先回读页面上的一个标识，确认到了对的屏：`cron-table`、`cron-error`、`cron-empty`，或者抽屉的标题。
+- [ ] **Step 1：截实现图**（1440×900，与 Task 1 的 8 张参考图同名、一一对应）
+
+vite dev 没在跑时（比如换了会话接着做），先起 fixture 模式。5174 上可能是别的会话的 vite，就绪判定要认页面标题：
+```bash
+cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
+curl -sf http://127.0.0.1:5174/admin.html | grep -q 'KaTrain 管理后台' || (VITE_ADMIN_FIXTURE=true npm run dev:admin > /private/tmp/claude-501/admin-dev.log 2>&1 &)
+for i in $(seq 1 60); do curl -sf http://127.0.0.1:5174/admin.html | grep -q 'KaTrain 管理后台' && break; sleep 1; done; echo ready
+```
+写一次性的截图脚本 `katrain/web/ui/tests/admin-impl.shoot.spec.ts`：
+```ts
+// One-off, not committed. run from katrain/web/ui:
+//   npx playwright test --config=playwright.vite.config.ts tests/admin-impl.shoot.spec.ts
+import { test, expect, type Page } from '@playwright/test';
+
+const BASE = process.env.ADMIN_BASE ?? 'http://127.0.0.1:5174';
+const OUT = '../../../superpowers/tracks/admin-console/slice1/impl'; // relative to katrain/web/ui
+
+// Each shot first waits for a marker only that screen has: a failed switch looks exactly like a successful one.
+const SHOTS: Array<[string, string, (p: Page) => Promise<void>]> = [
+  ['signin', '?fixture=ok&env=test&signedout=1#/signin', (p) => expect(p.getByTestId('signin-env')).toHaveText('正在登录：测试环境')],
+  ['ok', '?fixture=ok&env=test#/cron', (p) => expect(p.getByTestId('health-ok')).toHaveCount(9)],
+  ['mixed', '?fixture=mixed&env=test#/cron', (p) => expect(p.getByTestId('health-failed')).toBeVisible()],
+  ['offline', '?fixture=offline&env=test#/cron', (p) => expect(p.getByTestId('health-offline')).toHaveCount(9)],
+  // first load succeeds, the 15 s refresh gets 502: error bar + "页面数据停在"
+  ['error', '?fixture=error&env=test#/cron', (p) => expect(p.getByTestId('cron-error')).toContainText('页面数据停在', { timeout: 20_000 })],
+  ['missing', '?fixture=missing&env=test#/cron', (p) => expect(p.getByTestId('cron-error')).toContainText('cron 状态表不存在')],
+  ['empty', '?fixture=empty&env=test#/cron', (p) => expect(p.getByTestId('cron-empty')).toBeVisible()],
+];
+
+for (const [state, query, ready] of SHOTS) {
+  test(`impl ${state}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${BASE}/admin.html${query}`);
+    await ready(page);
+    await page.screenshot({ path: `${OUT}/${state}.png` });
+  });
+}
+
+test('impl drawer', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${BASE}/admin.html?fixture=mixed&env=test#/cron`);
+  await page.getByTestId('cron-row-fetch_list').click();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '加载更早的记录' }).click();
+  await expect(page.locator('[data-testid="run-history-scroll"] tbody tr')).toHaveCount(200);
+  await page.getByTestId('run-history-scroll').evaluate((e) => { e.scrollTop = 0; });
+  await page.screenshot({ path: `${OUT}/drawer.png` });
+});
+```
+```bash
+mkdir -p ../../../superpowers/tracks/admin-console/slice1/impl
+npx playwright test --config=playwright.vite.config.ts tests/admin-impl.shoot.spec.ts --reporter=line 2>&1 | tail -5
+rm tests/admin-impl.shoot.spec.ts
+diff <(ls ../../../superpowers/tracks/admin-console/slice1/reference) <(ls ../../../superpowers/tracks/admin-console/slice1/impl) && echo same-names
+```
+Expected：`8 passed`；最后打印 `same-names`。
 
 - [ ] **Step 2：并排图和叠加 / 差异图**：
 ```bash
@@ -1280,23 +1392,24 @@ npx playwright test --config=playwright.vite.config.ts tests/admin-cron.measure.
 ```
 期望结果：3 passed，打印出 M1、M2、M3 的数字。全部通过：删掉 spec，把数字和逐条判定写进 `measurements.md`。**量出过错误数值**：先修布局，再把这个 spec 改名为 `tests/admin-cron.spec.ts` 留作几何闸，与修复放在同一个提交里。
 
-- [ ] **Step 4**：停掉 vite：`kill $(lsof -tiTCP:5174 -sTCP:LISTEN) 2>/dev/null || true`。
+- [ ] **Step 4**：停掉本任务起的 vite。只杀命令行里带 `vite.admin.config` 的那个，5174 上可能是别的会话的服务：
+```bash
+for pid in $(lsof -tiTCP:5174 -sTCP:LISTEN); do ps -o command= -p $pid | grep -q vite.admin.config && kill $pid; done
+```
 - [ ] **Step 5：提交证据**：`git add superpowers/tracks/admin-console/slice1 katrain/web/ui/src/admin/__fixtures__ && git commit -m "test(admin-ui): cron 页四图对比与承重实测（1440×900）" -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"`
-- [ ] **Step 6：🛑 停。把并排图、差异图、`visual-review.md` 和 `measurements.md` 交给 Fan。他明确确认之后，才能进入 Task 4 及以后的后端任务。**
+- [ ] **Step 6：🛑 停。把并排图、差异图、`visual-review.md` 和 `measurements.md` 交给 Fan。他明确确认之后，才做 Step 7 的契约定稿，然后进入 Task 4（第一个后端任务）。**
+- [ ] **Step 7：契约定稿**（Fan 确认之后）。对照 `katrain/web/ui/src/admin/api/types.ts` 和 spec §6.5，逐个字段核对名字、可空性和枚举值；设计稿如果增减了字段，两边同步改。再确认 spec §6.5 末尾的权威边界仍然成立：状态数据由 cron 写、后台只读；`health` 由后台按 `observed_at` 当场算出；任务的中文名在前端。
+- [ ] **Step 8：提交契约**。有改动：
+```bash
+cd /Users/fan/Repositories/katrain-admin-console
+git add katrain/web/ui/src/admin/api/types.ts superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md
+git commit -m "docs(admin): cron 契约定稿" -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+```
+没有改动：在 `superpowers/tracks/admin-console/slice1/visual-review.md` 末尾记一句「契约无变更（YYYY-MM-DD，Fan 确认四图之后）」，只提交这个文件。
 
 ---
 
-### Task 4: 契约定稿
-
-**Files:**
-- Modify（仅当 Task 1–3 改动了字段时）：`katrain/web/ui/src/admin/api/types.ts`、`superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md` §6.5
-
-- [ ] **Step 1**：对照 `types.ts` 和 spec §6.5，逐个字段核对名字、可空性和枚举值。设计稿如果增减了字段，就把两边同步改。**权威边界**写进 spec：状态数据由 cron 写、后台只读；`health` 由后台按 `observed_at` 当场算出；任务的中文名在前端。
-- [ ] **Step 2**：有改动就提交 `docs(admin): cron 契约定稿`，没有改动就在 `visual-review.md` 末尾记一句「契约无变更」并提交。
-
----
-
-### Task 5: 三张新表（web 侧建表，cron 侧同名映射）
+### Task 4: 三张新表（web 侧建表，cron 侧同名映射）
 
 **Files:**
 - Modify：`katrain/web/core/models_db.py`（末尾追加）
@@ -1453,7 +1566,7 @@ class CronJobRunDB(Base):
 
 ---
 
-### Task 6: 后台进程骨架（健康检查、启动闸、静态文件）
+### Task 5: 后台进程骨架（健康检查、启动闸、静态文件）
 
 **Files:**
 - Create：`katrain/web/admin/__init__.py`、`katrain/web/admin/settings.py`、`katrain/web/admin/app.py`、`katrain/web/admin/__main__.py`、`katrain/web/admin/routers/__init__.py`
@@ -1652,7 +1765,7 @@ sleep 4; curl -s http://127.0.0.1:8019/api/admin/health; echo; kill %1
 
 ---
 
-### Task 7: 会话、登录 / 登出 / me、审计
+### Task 6: 会话、登录 / 登出 / me、审计
 
 **Files:**
 - Create：`katrain/web/admin/session.py`、`katrain/web/admin/audit.py`、`katrain/web/admin/routers/auth.py`
@@ -1992,14 +2105,14 @@ async def me(request: Request, admin: dict = Depends(require_admin)):
 
 ---
 
-### Task 8: cron 运行记录器
+### Task 7: cron 运行记录器
 
 **Files:**
 - Create：`katrain/cron/run_recorder.py`
 - Test：`tests/web_ui/test_cron_run_recorder.py`
 
 **Interfaces:**
-- Consumes：Task 5 的 `CronJobStatusDB`、`CronJobRunDB`
+- Consumes：Task 4 的 `CronJobStatusDB`、`CronJobRunDB`
 - Produces：
   - `install_error_capture() -> None`
   - `RunRecorder(session_factory, clock=utcnow)`，方法有：
@@ -2426,7 +2539,7 @@ class RunRecorder:
 
 ---
 
-### Task 9: 接进调度器 + 常驻循环 + 清理 + 配置
+### Task 8: 接进调度器 + 常驻循环 + 清理 + 配置
 
 **Files:**
 - Modify：`katrain/cron/config.py`（第 109 行 `CLEANUP_INTERVAL` 之后）
@@ -2434,7 +2547,11 @@ class RunRecorder:
 - Modify：`katrain/cron/jobs/analyze.py`（import；`__init__`；while 循环的开头；Refill 那两行；新增方法）
 - Modify：`katrain/cron/jobs/report_analyze.py`（`__init__`；while 循环的开头；新增方法）
 - Modify：`katrain/cron/jobs/cleanup.py`
-- Test：`tests/web_ui/test_cron_run_recorder.py`（追加两条）
+- Test：`tests/web_ui/test_cron_run_recorder.py`（追加三条）
+
+**Interfaces:**
+- Consumes：Task 7 的 `install_error_capture()`、`RunRecorder(session_factory)`、`.register(jobs)`、`async .run(job)`、`.enter_loop(name) -> Token`、`.exit_loop(token)`、`.loop_started(name)`、`.record_loop_crash(name, exc)`、`async .heartbeat_forever(loop_jobs, interval, stop)`；Task 4 的 `CronJobRunDB`
+- Produces：`AnalyzeJob.last_iteration_at: datetime | None` 和 `AnalyzeJob.heartbeat_stats() -> {"in_flight": int, "capacity": int}`，`ReportAnalyzerJob` 也有这两项；`config.HEARTBEAT_INTERVAL`（默认 30）、`config.RUNS_RETENTION_DAYS`（默认 14）；`CronScheduler._recorder`（测试会替换它）
 
 - [ ] **Step 1：追加测试**（加在 `test_cron_run_recorder.py` 末尾）：
 ```python
@@ -2480,7 +2597,7 @@ def test_cleanup_prunes_cron_runs_older_than_retention(Session, monkeypatch):
     with Session() as s:
         assert s.query(CronJobRunDB).count() == 1
 ```
-- [ ] **Step 2**：`CI=true uv run pytest tests/web_ui/test_cron_run_recorder.py -q -p no:cacheprovider`。期望结果：新加的两条和 `test_scheduler_routes_…` FAIL（`AttributeError`：`heartbeat_stats`、`RUNS_RETENTION_DAYS`、`_recorder`）。
+- [ ] **Step 2**：`CI=true uv run pytest tests/web_ui/test_cron_run_recorder.py -q -p no:cacheprovider`。期望结果：新加的三条都 FAIL。`test_scheduler_routes_…` 是断言 `[] == ['fetch_list']` 不成立，因为启动时那一次运行还没有经过记录器；另外两条报 `AttributeError`（`last_iteration_at`、`RUNS_RETENTION_DAYS`）。
 
 - [ ] **Step 3：`config.py`**。在 `CLEANUP_INTERVAL = …` 那一行之后加：
 ```python
@@ -2723,7 +2840,7 @@ class CronScheduler:
 
 ---
 
-### Task 10: 健康判定（纯函数）
+### Task 9: 健康判定（纯函数）
 
 **Files:**
 - Create：`katrain/web/admin/cron_health.py`
@@ -2882,7 +2999,7 @@ def derive_health(row, now: datetime) -> Health:
 
 ---
 
-### Task 11: cron 的三个只读接口
+### Task 10: cron 的三个只读接口
 
 **Files:**
 - Create：`katrain/web/admin/routers/cron.py`
@@ -2890,7 +3007,7 @@ def derive_health(row, now: datetime) -> Health:
 - Test：`tests/web_ui/test_admin_cron_api.py`
 
 **Interfaces:**
-- Consumes：`require_admin`（Task 7）、`derive_health` / `as_utc`（Task 10）、`models_db.CronJobStatus` / `CronJobRun` / `LiveAnalysisDB` / `ReportTask`
+- Consumes：`require_admin`（Task 6）、`derive_health` / `as_utc`（Task 9）、`models_db.CronJobStatus` / `CronJobRun` / `LiveAnalysisDB` / `ReportTask`
 - Produces：`GET /api/admin/cron/jobs`、`GET /api/admin/cron/jobs/{name}/runs`、`GET /api/admin/cron/queues`，响应形状与 `src/admin/api/types.ts` 一致
 
 - [ ] **Step 1：写测试**
@@ -3110,12 +3227,12 @@ async def queues(request: Request):
 ```python
     app.include_router(cron_router.router, prefix="/api/admin/cron")
 ```
-- [ ] **Step 4**：`CI=true uv run pytest tests/web_ui/test_admin_cron_api.py tests/web_ui/test_admin_auth.py tests/web_ui/test_admin_app.py -q -p no:cacheprovider`。期望结果：全部 passed。如果 `func.min` 在 SQLite 上返回的是字符串，导致 `as_utc` 报错，就对 `oldest` 先判断 `isinstance(oldest, str)`，是字符串就用 `datetime.fromisoformat(oldest)` 转一下。
+- [ ] **Step 4**：`CI=true uv run pytest tests/web_ui/test_admin_cron_api.py tests/web_ui/test_admin_auth.py tests/web_ui/test_admin_app.py -q -p no:cacheprovider`。期望结果：全部 passed。（SQLite 上 `func.min` 返回**不带时区**的 `datetime`（2026-09-24 用 SQLAlchemy 2.0.46 实测），`as_utc` 按 UTC 补上时区；PG 上返回带时区的值。两种都不用另外处理。）
 - [ ] **Step 5：提交** `feat(admin): cron 三个只读接口（任务、运行历史、队列）`。
 
 ---
 
-### Task 12: 测试机部署配置 + 访问文档
+### Task 11: 测试机部署配置 + 访问文档
 
 **Files:**
 - Modify：`docker-compose.yml`（katrain-web 加 `image:`；新增服务 katrain-admin）
@@ -3123,6 +3240,10 @@ async def queues(request: Request):
 - Modify：`.claude/skills/server-deploy/SKILL.md`（架构表加一行；第 7 步、第 8 步的命令）
 - Create：`docs/operations/admin-console-access.md`
 - Test：`tests/test_admin_compose.py`
+
+**Interfaces:**
+- Consumes：Task 5 的启动命令 `python3 -m katrain.web.admin --host 0.0.0.0 --port 8010`，以及启动闸要的环境变量 `KATRAIN_SECRET_KEY`、`KATRAIN_ADMIN_ENV`；Task 2 的 `npm run build:admin`
+- Produces：develop 的 compose 服务 `katrain-admin`（镜像 `katrain-web:local`，只发布 `127.0.0.1:8010`）；运维文档 `docs/operations/admin-console-access.md`
 
 - [ ] **Step 1：写测试**
 ```python
@@ -3212,40 +3333,121 @@ sudo chmod 600 "/home/admintunnel-$NAME/.ssh/authorized_keys"
 ```
 这样的账号只能把本机端口转发到 127.0.0.1:8010，拿不到 shell，也连不到服务器上的其他端口。后台账号本身（`users.is_admin`）另外开。
 ````
-- [ ] **Step 7**：重跑 Step 2 的命令，期望结果：2 passed。再执行 `docker compose config -q && echo compose-ok`，期望结果：`compose-ok`（需要本机有 Docker；没有的话，这一步留到 Task 15 在测试机上执行）。
+- [ ] **Step 7**：重跑 Step 2 的命令，期望结果：2 passed。再执行 `docker compose config -q && echo compose-ok`，期望结果：`compose-ok`（需要本机有 Docker；没有的话，这一步留到 Task 14 在测试机上执行）。
 - [ ] **Step 8：变异检查**：把端口临时改成 `"8010:8010"`，确认 `test_admin_is_published_on_loopback_only` 变红；然后还原。
 - [ ] **Step 9：提交** `deploy(admin): 测试机 compose 加 katrain-admin（只绑 127.0.0.1）+ 访问文档`。
 
 ---
 
-### Task 13: 集成 —— 本机真实跑起 web + cron + admin
+### Task 12: 集成 —— 本机真实跑起 web + cron + admin
+
+**Files:**
+- Create：`superpowers/tracks/admin-console/slice1/integration-local.png`、`integration-local-offline.png`；`visual-review.md` 加「集成」一节
+- Create（临时，不提交）：`katrain/web/ui/tests/admin-integration.walk.spec.ts`
+
+**Interfaces:**
+- Consumes：`python -m katrain --ui web`（启动时建表；空库且设了 `KATRAIN_ADMIN_BOOTSTRAP_PASSWORD` 时建管理员 `admin`，见 `server.py` 的 bootstrap 分支）；`python -m katrain.cron`（Task 8 接好的记录器）；`python -m katrain.web.admin`（Task 5、6、10）；`npm run build:admin`（Task 2）
+- Produces：两张集成截图，以及「cron 被 SIGKILL 之后 150 秒内 9 个任务全部显示失联」的实测结果
 
 - [ ] **Step 1：备份本机配置**（本机的 `--ui web` 退出时会改写它）：
 `cp ~/.katrain/config.json /private/tmp/claude-501/katrain-config.json.bak 2>/dev/null || echo "no config.json"`
-- [ ] **Step 2：用一个一次性的 SQLite 库起三个进程**：
+
+- [ ] **Step 2：构建后台前端，用一个一次性的 SQLite 库起三个进程**。直接用 `.venv/bin/python`：这样记下的 PID 就是 Python 进程本身，不是 `uv` 的外壳，Step 3 的 SIGKILL 才真的杀到 cron。
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console
-export KATRAIN_DATABASE_URL=sqlite:////private/tmp/claude-501/admin-e2e.db KATRAIN_SECRET_KEY=$(python3 -c "import secrets;print(secrets.token_urlsafe(48))")
-rm -f /private/tmp/claude-501/admin-e2e.db
-KATRAIN_ADMIN_BOOTSTRAP_PASSWORD=e2e-admin-pw uv run python -m katrain --ui web --port 8001 --disable-engine > /private/tmp/claude-501/e2e-web.log 2>&1 &
-sleep 8   # 等 web 的 init_db 把表建好
-uv run python -m katrain.cron > /private/tmp/claude-501/e2e-cron.log 2>&1 &
-KATRAIN_ADMIN_ENV=local uv run python -m katrain.web.admin --port 8010 > /private/tmp/claude-501/e2e-admin.log 2>&1 &
-cd katrain/web/ui && (npm run dev:admin > /private/tmp/claude-501/e2e-vite.log 2>&1 &)
+(cd katrain/web/ui && npm run build:admin 2>&1 | tail -2)
+E=/private/tmp/claude-501/admin-e2e; mkdir -p $E; rm -f $E/e2e.db
+export KATRAIN_DATABASE_URL=sqlite:///$E/e2e.db
+export KATRAIN_SECRET_KEY=$(python3 -c "import secrets;print(secrets.token_urlsafe(48))")
+KATRAIN_ADMIN_BOOTSTRAP_PASSWORD=e2e-admin-pw .venv/bin/python -m katrain --ui web --port 8001 --disable-engine > $E/web.log 2>&1 & echo $! > $E/web.pid
+for i in $(seq 1 180); do curl -sf -o /dev/null http://127.0.0.1:8001/ && break; sleep 1; done   # 首次运行会先构建公开前端，可能要一两分钟
+.venv/bin/python -m katrain.cron > $E/cron.log 2>&1 & echo $! > $E/cron.pid
+KATRAIN_ADMIN_ENV=local .venv/bin/python -m katrain.web.admin --port 8010 > $E/admin.log 2>&1 & echo $! > $E/admin.pid
+for i in $(seq 1 30); do curl -sf http://127.0.0.1:8010/api/admin/health && break; sleep 1; done; echo
 ```
-（空库加上 `ADMIN_BOOTSTRAP_PASSWORD`，web 启动时会建一个 `admin` 管理员。）
-- [ ] **Step 3：用真浏览器验证**（Playwright 或 `/browse`，1440×900），打开 `http://127.0.0.1:5174/admin.html#/signin`：
-  1. 页头环境标签显示「本机」；用 `admin` / `e2e-admin-pw` 登录后进入定时任务页；
-  2. 9 个任务都在；cron 心跳在 30 秒内出现；fetch_list 在 60 秒内至少有一条运行历史（打开抽屉查看）；
-  3. 本机连不上的外部源（星阵 / 弈客 / Pandanet、KataGo）会让相应任务显示「有报错」或「失败」，而不是「正常」。这正是要验证的诚实性，把截图存为 `superpowers/tracks/admin-console/slice1/integration-local.png`；
-  4. `kill` 掉 cron 进程，等 130 秒，刷新页面：9 个任务全部显示「失联」；
-  5. 在另一个终端里对后台发一条不带请求头的 POST：`curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:8010/api/admin/auth/logout`，期望结果：`403`。
-- [ ] **Step 4：收尾**：`kill` 掉全部后台进程（先用 `jobs` 或 `lsof -tiTCP:8001,8010,5174 -sTCP:LISTEN` 找出来）；恢复配置：`cp /private/tmp/claude-501/katrain-config.json.bak ~/.katrain/config.json`；检查 `git status --short`，被改动的已提交文件要还原。
-- [ ] **Step 5：提交** `test(admin): 本机 web+cron+admin 集成验证截图`。
+Expected：最后打印 `{"status":"ok","env":"local"}`。
+
+- [ ] **Step 3：真浏览器走一遍**（1440×900。打的是后台进程自己发出去的构建产物，与部署后一致）
+
+写一次性的脚本 `katrain/web/ui/tests/admin-integration.walk.spec.ts`：
+```ts
+// One-off, not committed. Needs web + cron + admin from Step 2. run from katrain/web/ui:
+//   npx playwright test --config=playwright.vite.config.ts tests/admin-integration.walk.spec.ts
+import { readFileSync } from 'node:fs';
+import { test, expect } from '@playwright/test';
+
+const BASE = 'http://127.0.0.1:8010';
+const E = '/private/tmp/claude-501/admin-e2e';
+const SLICE = '../../../superpowers/tracks/admin-console/slice1'; // relative to katrain/web/ui
+
+test.setTimeout(6 * 60_000);
+
+test('本机真实数据：登录 → 9 个任务 → 运行历史 → cron 被杀后失联', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${BASE}/#/signin`);
+  await expect(page.getByTestId('signin-env')).toHaveText('正在登录：本机');
+  await page.getByLabel('用户名').fill('admin');
+  await page.getByLabel('密码').fill('e2e-admin-pw');
+  await page.getByRole('button', { name: '登录' }).click();
+  await expect(page.getByTestId('admin-env')).toHaveText('本机');
+
+  // cron registers all 9 jobs at start (disabled ones too); the heartbeat says the process is alive.
+  await expect(page.locator('[data-testid^="cron-row-"]')).toHaveCount(9, { timeout: 60_000 });
+  await expect(page.getByTestId('cron-process')).toContainText('在线');
+
+  // fetch_list (every 60 s) runs once at startup and keeps every run, so its history is not empty.
+  await expect(page.getByTestId('cron-row-fetch_list')).not.toContainText('等待首次运行', { timeout: 60_000 });
+  await page.getByTestId('cron-row-fetch_list').click();
+  await expect(page.locator('[data-testid="run-history-scroll"] tbody tr').first()).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  const states = await page.locator('[data-testid^="cron-row-"]').evaluateAll((rows) =>
+    rows.map((r) => `${r.getAttribute('data-testid')!.slice(9)}=${r.querySelector('[data-testid^="health-"]')!.getAttribute('data-testid')!.slice(7)}`),
+  );
+  console.log('states', states.join(' '));
+  await page.screenshot({ path: `${SLICE}/integration-local.png` });
+
+  // SIGKILL is the OOM-killer case: cron gets no chance to write anything. 120 s + one 15 s refresh.
+  process.kill(Number(readFileSync(`${E}/cron.pid`, 'utf8').trim()), 'SIGKILL');
+  await expect(page.getByTestId('health-offline')).toHaveCount(9, { timeout: 150_000 });
+  await page.screenshot({ path: `${SLICE}/integration-local-offline.png` });
+});
+```
+```bash
+cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
+npx playwright test --config=playwright.vite.config.ts tests/admin-integration.walk.spec.ts --reporter=line 2>&1 | tail -25
+curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:8010/api/admin/auth/logout   # 不带 X-Katrain-Admin 头
+rm tests/admin-integration.walk.spec.ts
+```
+Expected：`1 passed`，日志里打出 9 个任务各自的状态；curl 打印 `403`。本机连不上的外部源（KataGo 等）应当让对应任务显示「有报错」或「失败」，不能是「正常」：拿打印出来的状态对照 `$E/cron.log` 逐个核对，结论写进 `slice1/visual-review.md` 的「集成」一节。
+
+- [ ] **Step 4：收尾**
+```bash
+E=/private/tmp/claude-501/admin-e2e
+for f in web admin cron; do kill "$(cat $E/$f.pid)" 2>/dev/null; done   # cron 已在 Step 3 被 SIGKILL，它报错可以忽略
+lsof -iTCP:8001 -sTCP:LISTEN; lsof -iTCP:8010 -sTCP:LISTEN
+cp /private/tmp/claude-501/katrain-config.json.bak ~/.katrain/config.json 2>/dev/null || true
+cd /Users/fan/Repositories/katrain-admin-console && git status --short
+```
+Expected：两条 `lsof` 都没有输出；`git status --short` 只列出这一步新增的截图和 `visual-review.md`（`katrain/config.json` 如果被改了，执行 `git checkout -- katrain/config.json` 还原）。
+
+- [ ] **Step 5：提交**
+```bash
+git add superpowers/tracks/admin-console/slice1/integration-local.png superpowers/tracks/admin-console/slice1/integration-local-offline.png superpowers/tracks/admin-console/slice1/visual-review.md
+git commit -m "test(admin): 本机 web+cron+admin 集成验证截图" -m "Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+```
 
 ---
 
-### Task 14: 删掉 fixture、全量验证、两套边界
+### Task 13: 删掉 fixture、全量验证、两套边界
+
+**Files:**
+- Delete：`katrain/web/ui/src/admin/__fixtures__/cronFixture.ts`
+- Modify：`katrain/web/ui/src/admin/api/cronApi.ts`、`katrain/web/ui/src/admin/api/authApi.ts`（删掉 fixture 分支）
+
+**Interfaces:**
+- Consumes：Task 2 的 `useFixture` 分支和 `src/admin/__fixtures__/`；Task 2 Step 1 记下的 `.superpowers/baseline/cron_slice_failed_before.txt`、`vitest_failed_before.txt`
+- Produces：不含 fixture 的 `src/admin/`，以及三套构建产物
 
 - [ ] **Step 1：删除 fixture**：
   - `git rm -r katrain/web/ui/src/admin/__fixtures__`；
@@ -3261,19 +3463,37 @@ CI=true uv run pytest tests/test_admin_compose.py -q -p no:cacheprovider
 git status --short; git checkout -- katrain/config.json 2>/dev/null || true
 ```
 期望结果：`comm` 没有输出（没有新增的失败）；`test_admin_compose.py` 2 passed。
-- [ ] **Step 3：前端**：
+- [ ] **Step 3：前端：vitest 按名字和基线做差，三套构建，公开包和 kiosk 包里没有后台代码**
 ```bash
-cd katrain/web/ui
-npx vitest run 2>&1 | tail -4        # 与 .superpowers/baseline/vitest_before.txt 对比：只多不少
+cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
+B=/Users/fan/Repositories/katrain-admin-console/.superpowers/baseline
+npx vitest run --reporter=json --outputFile=$B/vitest_after.json > /dev/null 2>&1; echo "vitest exit=$?"
+python3 - "$B/vitest_after.json" "$B/vitest_failed_after.txt" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+names = set()
+for f in d["testResults"]:
+    file = f["name"].split("/katrain/web/ui/")[-1]
+    if f.get("status") == "failed" and not f["assertionResults"]:
+        names.add(f"{file} :: <文件本身没跑起来>")
+    names |= {f"{file} :: {a['fullName']}" for a in f["assertionResults"] if a["status"] == "failed"}
+open(sys.argv[2], "w").write("".join(n + "\n" for n in sorted(names)))
+print(d["numTotalTests"], "tests,", len(names), "failed")
+PY
+comm -13 $B/vitest_failed_before.txt $B/vitest_failed_after.txt
 npx eslint src/admin eslint.config.js
 npm run build 2>&1 | tail -2 && npm run build:kiosk-2d 2>&1 | tail -2 && npm run build:admin 2>&1 | tail -2
-grep -rl "katrain-admin\|/api/admin" ../static ../static-kiosk-2d | head   # 期望为空：公开包和 kiosk 包里没有后台代码
+grep -rl "katrain-admin\|/api/admin" ../static ../static-kiosk-2d | head
 ```
-- [ ] **Step 4：提交** `chore(admin): 删掉 cron 页 fixture（Task 13 已接真实接口）`。按 spec，fixture 必须在这个提交里删掉。
+Expected：`comm` 没有输出；eslint 没有 error；三个构建都以 `built in` 结尾，kiosk 那个还打印 `✅ kiosk boundary clean`；最后的 grep 没有输出，即公开包和 kiosk 包里没有后台代码（这是一次性核对，spec §5.5 说明了为什么不做成常设的闸）。
+- [ ] **Step 4：提交** `chore(admin): 删掉 cron 页 fixture（Task 12 已接真实接口）`。按 spec，fixture 必须在这个提交里删掉。
 
 ---
 
-### Task 15: 🛑 部署测试机，Fan 验收（推送和部署前都要 Fan 点头）
+### Task 14: 🛑 部署测试机，Fan 验收（推送和部署前都要 Fan 点头）
+
+**Interfaces:**
+- Consumes：Task 11 的 compose 服务 `katrain-admin` 和 `server-deploy` 的第 7、8 步；切片 0 Task 5 在测试机上授权的管理员账号
 
 - [ ] **Step 1**：跟上 develop，再快进推送：
 ```bash
@@ -3291,13 +3511,20 @@ ssh home-ubuntu "docker exec katrain-postgres psql -U katrain_user -d katrain_db
 ```
 - [ ] **Step 4**：开隧道 `ssh -N -L 8010:127.0.0.1:8010 home-ubuntu`，在浏览器里打开 http://localhost:8010：
   - 页头显示「测试环境」；
-  - 用 Fan 的管理员账号登录（切片 0 的 Task 6 已经授权）；
+  - 用 Fan 的管理员账号登录（切片 0 的 Task 5 已经授权）；
   - 9 个任务都有真实状态。
 - [ ] **Step 5：🛑 Fan 验收。** 验收通过后，切片 1 才算满足 vertical-slice 的「完成的定义」：可部署、状态诚实、已集成、已验收、fixture 已删。
 
 ---
 
-### Task 16: 🛑 生产部署（每一步都要 Fan 点头）
+### Task 15: 🛑 生产部署（每一步都要 Fan 点头）
+
+**Files**（release 分支，在 Step 2 建的临时 worktree 里）:
+- Modify：`Dockerfile.web`、`deploy/ucloud/compose.yml`、`deploy/ucloud/scripts/build-web.sh`、`tests/deploy/test_ucloud_artifacts.py`、`docs/operations/ucloud-migration-runbook.md`
+
+**Interfaces:**
+- Consumes：develop 上本切片的全部提交；切片 0 Task 5 在生产上授权的管理员账号（容器名、库名以那一步实际查到的为准）
+- Produces：生产上的 `katrain-admin` 服务（只绑 127.0.0.1:8010）、三张新表、runbook 里的一条发布记录
 
 - [ ] **Step 1：先把连带发布的提交列给 Fan**：`git -C /Users/fan/Repositories/katrain log --oneline --no-merges origin/release/ucloud-20260805..origin/develop`。发布会连带 develop 自上次发布以来的全部提交；🛑 Fan 同意后再继续。
 - [ ] **Step 2：合并到 release**（临时 worktree）：
@@ -3362,10 +3589,38 @@ def test_admin_console_is_production_only_and_loopback_only():
     assert admin["environment"]["KATRAIN_ADMIN_ENV"] == "prod"
 ```
   然后执行：`cd "$REL" && uv sync --extra web && CI=true uv run pytest tests/deploy -q -p no:cacheprovider`，期望结果：全部通过。提交后，🛑 Fan 点头再 `git push origin HEAD:release/ucloud-20260805`。
-- [ ] **Step 4：在 ucloud-v100 上发布**。与切片 0 计划 Task 7 Step 4 的命令完全相同，只有三处不同：
-  - **CRON_IMAGE 这次一定要重建**，因为 `katrain/cron/` 改了：`sudo docker build --pull=false -f Dockerfile.cron -t katrain-cron:$SHA .`，env 里同时改 `WEB_IMAGE` 和 `CRON_IMAGE`；
-  - **本次有 DDL**：katrain-web 启动时会建三张新表，备份和实际恢复验证不能省；
-  - dry-run 和 `up -d` 的服务名改成 `katrain-web katrain-cron katrain-admin`。dry-run 的输出里只应重建这三个，外加一次性的 `minio-setup`。
+- [ ] **Step 4：在 ucloud-v100 上发布**（每一行执行前都要 Fan 点头）。跟切片 0 的发布比有三处不同，已经写进下面的命令：`CRON_IMAGE` 这次一定要重建（`katrain/cron/` 改了）；这次有 DDL（katrain-web 启动时建三张新表），备份和实际恢复验证不能省；dry-run 和 `up -d` 带上三个服务。容器名 `katrain-ucloud-postgres-1` 和库名 `katrain_prod_20260725` 以切片 0 Task 5 Step 1 实际查到的为准。
+```bash
+SHA=<release 分支尖端的 short sha：Step 3 推送之后在本机执行 git -C "$REL" rev-parse --short HEAD>
+sudo git clone --depth 1 --branch release/ucloud-20260805 https://github.com/shevapato2008/katrain.git /opt/katrain/releases/$SHA
+sudo git -C /opt/katrain/releases/$SHA rev-parse --short HEAD          # 必须等于 $SHA
+cd /opt/katrain/releases/$SHA
+sudo deploy/ucloud/scripts/build-web.sh katrain-web:$SHA              # 记下输出的 image_id，下面叫 <WEB_ID>
+sudo docker build --pull=false -f Dockerfile.cron -t katrain-cron:$SHA .
+sudo docker image inspect --format '{{.Id}}' katrain-cron:$SHA         # 下面叫 <CRON_ID>
+TS=$(date +%Y%m%d-%H%M)
+sudo sh -c "docker exec katrain-ucloud-postgres-1 pg_dump -U katrain_user -Fc katrain_prod_20260725 > /opt/katrain/backups/prod-$TS.dump"
+sudo docker exec katrain-ucloud-postgres-1 createdb -U katrain_user katrain_restore_verify_$TS
+sudo sh -c "docker exec -i katrain-ucloud-postgres-1 pg_restore -U katrain_user -d katrain_restore_verify_$TS < /opt/katrain/backups/prod-$TS.dump"; echo "pg_restore exit=$?"
+for t in $(sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c "select tablename from pg_tables where schemaname='public' order by 1"); do
+  a=$(sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c "select count(*) from \"$t\"")
+  b=$(sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_restore_verify_$TS -At -c "select count(*) from \"$t\"")
+  [ "$a" = "$b" ] || echo "MISMATCH $t $a $b"
+done; echo "row-count compare done"
+sudo docker exec katrain-ucloud-postgres-1 dropdb -U katrain_user katrain_restore_verify_$TS
+sudo cp /etc/katrain/ucloud.env /opt/katrain/backups/ucloud.env.$(date +%Y%m%dT%H%M%S).bak
+sudo sed -i "s|^WEB_IMAGE=.*|WEB_IMAGE=<WEB_ID>|; s|^CRON_IMAGE=.*|CRON_IMAGE=<CRON_ID>|" /etc/katrain/ucloud.env
+sudo stat -c '%U:%G %a' /etc/katrain/ucloud.env                                               # 必须是 root:root 600
+sudo deploy/ucloud/scripts/preflight.sh --phase full --env-file /etc/katrain/ucloud.env       # 只有容量闸红属于历次都有的已知情况，要明说
+sudo ln -sfn /opt/katrain/releases/$SHA /opt/katrain/current
+cd /opt/katrain/current
+sudo docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d --dry-run katrain-web katrain-cron katrain-admin
+sudo docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-web katrain-cron katrain-admin
+```
+Expected：
+- `pg_restore exit=0`，而且没有任何 `MISMATCH` 行；
+- dry-run 的输出里只重建 `katrain-web`、`katrain-cron`、`katrain-admin`，外加一次性的 `minio-setup`；`katago-*` 和 `postgres` 只出现 `Waiting` / `Healthy`；
+- `up -d` 之后 katrain-web、katrain-admin 转为 healthy，katrain-cron 为 Up。
 - [ ] **Step 5：验证生产**：
 ```bash
 ssh ucloud-v100 "sudo ss -ltnp | grep ':8010 '"                                      # 只有 127.0.0.1:8010
@@ -3380,15 +3635,21 @@ ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user
 ## Self-Review 记录
 
 - **对照 spec 的覆盖**：
-  - §5.1 进程与网络：Task 6、12、16；
-  - §5.2 结构：Task 5–11；
-  - §5.3 鉴权：Task 7；§5.4 审计：Task 7；
-  - §5.5 前端隔离：Task 2 的 Step 3、4、10，以及 Task 14 的 Step 3；
-  - §5.6 部署：Task 12、15、16；§5.7 访问：Task 12 的 Step 6；
-  - §6.2 两张表：Task 5；§6.3 记录方式：Task 8、9；§6.4 健康判定：Task 10；§6.5 契约：Task 2 的 types.ts、Task 4、Task 11；§6.6 七步：Task 1–4、13–15；§6.7 诚实：CronPage 的三条测试和 Task 13 的 Step 3；
+  - §5.1 进程与网络：Task 5、11、15；
+  - §5.2 结构：Task 4–10；
+  - §5.3 鉴权：Task 6；§5.4 审计：Task 6；
+  - §5.5 前端隔离：Task 2 的 Step 4、5、11，以及 Task 13 的 Step 3；
+  - §5.6 部署：Task 11、14、15；§5.7 访问：Task 11 的 Step 6；
+  - §6.2 两张表：Task 4；§6.3 记录方式：Task 7、8；§6.4 健康判定：Task 9；§6.5 契约：Task 2 的 types.ts、Task 3 的 Step 7、Task 10；§6.6 七步：Task 1–3、12–14；§6.7 诚实：CronPage 的三条测试和 Task 12 的 Step 3；
   - §7 测试：分散在各任务里；§8 不做的事：本计划里没有对应的任务。
-- **占位符扫描**：`<工作人员代号>`、`<工作人员的公钥>` 出现在运维文档模板里，属于运维执行时才有的输入；生产发布所需的 SHA 和 image_id 引用了切片 0 计划的同名步骤，那里写明了来源。
+- **占位符扫描**：`<工作人员代号>`、`<工作人员的公钥>` 出现在运维文档模板里，属于运维执行时才有的输入；生产发布里的 `<release 分支尖端的 short sha>`、`<WEB_ID>`、`<CRON_ID>` 是运行时才知道的值，每一个都写明了从哪条命令的输出取得。
 - **名字一致**：
   - `create_admin_app`、`check_startup`、`require_admin`、`require_csrf_header`、`cookie_name`、`create_session_token`、`RunRecorder.run`、`register`、`heartbeat`、`heartbeat_forever`、`enter_loop`、`exit_loop`、`loop_started`、`record_loop_crash`、`derive_health`、`as_utc`，在定义它们的任务和使用它们的任务里写法一致；
-  - loop 任务的 `last_iteration_at` 和 `heartbeat_stats()` 在 Task 8 的测试和 Task 9 的实现之间一致；
-  - TS 类型与 pydantic 模型的字段一一对应（Task 2 的 types.ts 对 Task 11）。
+  - loop 任务的 `last_iteration_at` 和 `heartbeat_stats()` 在 Task 7 的测试和 Task 8 的实现之间一致；
+  - TS 类型与 pydantic 模型的字段一一对应（Task 2 的 types.ts 对 Task 10）。
+- **2026-09-24 按 writing-plans 模板复核**：
+  - 原来单独的「准备环境 + 记录基线」（旧 Task 0）和「契约定稿」（旧 Task 4）都不是能单独验收的交付物，按 Task Right-Sizing 并进用到它们的任务：`npm ci` 进 Task 1（截参考图要用 Playwright），Python 依赖和两份基线进 Task 2 的 Step 1，契约定稿成为 Task 3 的 Step 7–8。其后的任务依次前移一个编号。
+  - 所有任务都有了 Interfaces。
+  - 旧 Task 16 写的是「命令与切片 0 计划 Task 7 Step 4 完全相同，只有三处不同」，违反「不许写 Similar to Task N」，现在 Task 15 Step 4 写全了命令。
+  - 参考图、实现截图、本机集成三处原来只有文字描述，补上了可以直接运行的 Playwright 脚本。fixture 的 `error` 态改成「第一次成功、之后 502」，这样才截得出设计稿里「错误条 + 页面数据停在」那一屏。
+  - vitest 基线从「数通过数」改成按用例名字做差；停 vite 时只杀自己起的那个进程。

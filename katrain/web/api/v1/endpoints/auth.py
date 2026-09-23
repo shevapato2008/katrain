@@ -317,7 +317,7 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     # Tie the cloud session to this local user so per-user queued work (rank events)
     # can tell whose session is currently up on a shared board.
     remote_client.bind_user(shadow_user["id"])
-    await state.activate(body.generation)
+    await state.activate(body.generation, user_id=shadow_user["id"])
     local_access = create_access_token(data={"sub": shadow_user["username"]}, box_generation=body.generation)
     return {"access_token": local_access, "token_type": "bearer"}
 
@@ -325,11 +325,20 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
 @router.post("/box-sso/clear")
 async def box_sso_clear(request: Request, body: BoxClearRequest) -> Any:
     state = _require_bridge(request)
+    # Capture BEFORE clear() wipes it -- clear() resets active_user_id to None
+    # as part of tearing the generation down.
+    released_user_id = state.active_user_id
     if not await state.clear(body.generation):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stale generation")
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is not None:
         remote_client.clear_tokens()
+    # Release this user's platform connections (see auth/logout's non-strict
+    # counterpart) so the next box user doesn't hit a 409 trying to log into
+    # a platform the PREVIOUS box user was using.
+    platform_manager = getattr(request.app.state, "platform_manager", None)
+    if platform_manager is not None and released_user_id is not None:
+        await platform_manager.release_user(released_user_id)
     return {"ok": True}
 
 
@@ -355,7 +364,7 @@ async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest)
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is not None and hasattr(remote_client, "clear_tokens"):
         remote_client.clear_tokens()
-    await state.activate(generation)
+    await state.activate(generation, user_id=shadow_user["id"])
     return {
         "access_token": create_access_token(
             data={"sub": shadow_user["username"]}, box_generation=generation
@@ -525,6 +534,16 @@ async def logout(request: Request, response: Response, current_user: User = Depe
     from katrain.web.session import SessionManager, LobbyManager
 
     _clear_loopback_sso_cookie(request, response)
+
+    # Release any platform (星阵/OGS/...) connections this user holds on the
+    # shared box's ONE global adapter-per-platform, without deleting their
+    # saved credentials -- see PlatformManager.release_user. Otherwise the
+    # next person to log into this box hits a 409 "someone else is connected"
+    # trying to log into a platform THIS user was using, with nothing on
+    # screen explaining why.
+    platform_manager = getattr(request.app.state, "platform_manager", None)
+    if platform_manager is not None:
+        await platform_manager.release_user(current_user.id)
 
     # Board mode: clear remote tokens + delete credential file (design 5.4)
     remote_client = getattr(request.app.state, "remote_client", None)

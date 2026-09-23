@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Optional
 
@@ -21,6 +22,29 @@ from katrain.web.platforms.models import (
 logger = logging.getLogger("katrain_web")
 
 
+class PlatformBusyError(Exception):
+    """Raised by `connect_platform` when a DIFFERENT user tries to log into a
+    platform that's currently connected and owned by someone else. The box
+    has one adapter per platform, shared by whoever is using it — a silent
+    takeover would disconnect the previous owner's live game without warning.
+    The caller (endpoint layer) maps this to HTTP 409 with an actionable
+    message: go disconnect the other account first."""
+
+    def __init__(self, platform: str, owner_user_id: int):
+        self.platform = platform
+        self.owner_user_id = owner_user_id
+        super().__init__(f"{platform} is connected by another user ({owner_user_id})")
+
+
+class PlatformOwnershipError(Exception):
+    """Raised by `disconnect_platform` when a user who doesn't own the
+    connection tries to tear it down. The caller maps this to HTTP 403."""
+
+    def __init__(self, platform: str):
+        self.platform = platform
+        super().__init__(f"{platform} is not owned by this user")
+
+
 class PlatformManager:
     """Singleton managing all platform connections for a user.
 
@@ -35,6 +59,12 @@ class PlatformManager:
         self._active_games: dict[str, PlatformGameContext] = {}  # game_id -> context
         self._session_to_game: dict[str, str] = {}  # session_id -> game_id
         self._platform_user_ids: dict[str, int] = {}  # platform -> owning user_id
+        self._locks: dict[str, asyncio.Lock] = {}  # platform -> serializes connect/disconnect
+        self._callbacks_wired: set[str] = set()  # platforms whose adapter callbacks are wired
+        # platform -> user_id currently in the middle of connect(); lets
+        # _on_token_refreshed attribute a mid-login refresh to the right
+        # person even before `_platform_user_ids` is updated (see below).
+        self._pending_owner: dict[str, int] = {}
 
     # --- Adapter registry ---
 
@@ -45,12 +75,23 @@ class PlatformManager:
     def get_adapter(self, platform: str) -> Optional[PlatformAdapter]:
         return self._adapters.get(platform)
 
-    def list_platforms(self) -> list[dict]:
-        """List all registered platforms with connection status."""
+    def list_platforms(self, user_id: Optional[int] = None) -> list[dict]:
+        """List all registered platforms with connection status.
+
+        `user_id=None` (internal/legacy callers) returns the adapter's raw
+        `is_connected` — unfiltered, for admin/diagnostic use only. The HTTP
+        `/status` endpoint always passes the caller's `user_id`: on a shared
+        box, "connected" must mean "connected AS YOU", not "connected as
+        whoever is currently holding the one global adapter".
+        """
         return [
             {
                 "platform": name,
-                "connected": adapter.is_connected,
+                "connected": (
+                    adapter.is_connected
+                    if user_id is None
+                    else (adapter.is_connected and self._platform_user_ids.get(name) == user_id)
+                ),
                 "supports_live_play": adapter.supports_live_play,
                 "supports_automatch": adapter.supports_automatch,
                 "supports_rooms": adapter.supports_rooms,
@@ -60,39 +101,102 @@ class PlatformManager:
             for name, adapter in self._adapters.items()
         ]
 
+    def owner_of(self, platform: str) -> Optional[int]:
+        """The user_id currently holding this platform's connection, or None."""
+        return self._platform_user_ids.get(platform)
+
     # --- Connection lifecycle ---
 
     async def connect_platform(self, platform: str, credentials: PlatformCredentials, user_id: int) -> bool:
-        """Connect to a platform. Saves credentials on success."""
+        """Connect to a platform as `user_id`. Saves credentials on success.
+
+        The box has ONE adapter per platform, shared by whoever is using it.
+        Raises `PlatformBusyError` if a DIFFERENT user currently owns the
+        connection — checked and raised BEFORE `adapter.connect()` is ever
+        called, and while holding this platform's lock, so a concurrent
+        second login can't interleave with this one and silently take over
+        a previous owner's live session.
+        """
         adapter = self._adapters.get(platform)
         if adapter is None:
             raise ValueError(f"Unknown platform: {platform}")
-        success = await adapter.connect(credentials)
-        if success:
-            self._platform_user_ids[platform] = user_id
-            self._setup_callbacks(adapter)
-            # Persist the RESULTING tokens, not the transient login secret. SMS/OAuth
-            # login exchanges a one-time sms_code for access/refresh tokens that live
-            # only in the adapter; saving the raw input credentials would store just the
-            # (now-consumed) sms_code, forcing a fresh SMS login on every restart.
-            # Adapters that expose get_auth_data() (Golaxy) get their tokens merged in;
-            # others (OGS) fall back to the input credentials unchanged.
-            auth_to_save = dict(credentials.auth_data)
-            get_auth = getattr(adapter, "get_auth_data", None)
-            if callable(get_auth):
-                auth_to_save.update({k: v for k, v in (get_auth() or {}).items() if v})
-            self._credential_store.save_credentials(
-                user_id,
-                PlatformCredentials(platform=platform, username=credentials.username, auth_data=auth_to_save),
-            )
-            logger.info(f"Connected to {platform} as {credentials.username}")
-        return success
+        lock = self._locks.setdefault(platform, asyncio.Lock())
+        async with lock:
+            owner = self._platform_user_ids.get(platform)
+            if owner is not None and owner != user_id and adapter.is_connected:
+                raise PlatformBusyError(platform, owner)
 
-    async def disconnect_platform(self, platform: str) -> None:
-        adapter = self._adapters.get(platform)
-        if adapter and adapter.is_connected:
-            await adapter.disconnect()
-            logger.info(f"Disconnected from {platform}")
+            # Callbacks are wired exactly once per platform (not once per
+            # connect) — otherwise every reconnect adds another copy of every
+            # handler and a single token refresh gets persisted N times.
+            if platform not in self._callbacks_wired:
+                self._setup_callbacks(adapter)
+                self._callbacks_wired.add(platform)
+
+            # Pin the owner for THIS connection attempt before awaiting
+            # adapter.connect(): a token_refreshed event fired mid-login must
+            # be attributed to the user who is CURRENTLY logging in, not to
+            # whatever `_platform_user_ids` happened to hold a moment ago
+            # (which, in this same call, is the PREVIOUS owner).
+            self._pending_owner[platform] = user_id
+            try:
+                success = await adapter.connect(credentials)
+            finally:
+                self._pending_owner.pop(platform, None)
+
+            if success:
+                self._platform_user_ids[platform] = user_id
+                # Persist the RESULTING tokens, not the transient login secret. SMS/OAuth
+                # login exchanges a one-time sms_code for access/refresh tokens that live
+                # only in the adapter; saving the raw input credentials would store just the
+                # (now-consumed) sms_code, forcing a fresh SMS login on every restart.
+                # Adapters that expose get_auth_data() (Golaxy) get their tokens merged in;
+                # others (OGS) fall back to the input credentials unchanged.
+                auth_to_save = dict(credentials.auth_data)
+                get_auth = getattr(adapter, "get_auth_data", None)
+                if callable(get_auth):
+                    auth_to_save.update({k: v for k, v in (get_auth() or {}).items() if v})
+                self._credential_store.save_credentials(
+                    user_id,
+                    PlatformCredentials(platform=platform, username=credentials.username, auth_data=auth_to_save),
+                )
+                logger.info(f"Connected to {platform} as {credentials.username}")
+            return success
+
+    async def disconnect_platform(self, platform: str, user_id: int) -> None:
+        """Disconnect `platform`, but only on behalf of the user who owns it.
+
+        Raises `PlatformOwnershipError` if a different user currently owns
+        the connection. A platform nobody owns (`owner is None`) is a no-op
+        for any caller — that's the "already disconnected" case, not a
+        permission question.
+        """
+        lock = self._locks.setdefault(platform, asyncio.Lock())
+        async with lock:
+            owner = self._platform_user_ids.get(platform)
+            if owner not in (None, user_id):
+                raise PlatformOwnershipError(platform)
+            adapter = self._adapters.get(platform)
+            if adapter and adapter.is_connected:
+                await adapter.disconnect()
+                logger.info(f"Disconnected from {platform}")
+            self._platform_user_ids.pop(platform, None)
+
+    async def release_user(self, user_id: int) -> None:
+        """Release every platform this user currently owns, WITHOUT touching
+        their saved credentials — this is the "box changed hands" path (a
+        different local account logged in/out), not an explicit "forget my
+        {platform} account" action. See `disconnect_platform` for the
+        credential-deleting path (driven separately by the endpoint layer).
+
+        Not clearing ownership here means: the next user to log into this box
+        would hit `PlatformBusyError` trying to connect a platform the
+        PREVIOUS box user was using, with no way to tell why — this closes
+        that gap.
+        """
+        for platform, owner in list(self._platform_user_ids.items()):
+            if owner == user_id:
+                await self.disconnect_platform(platform, user_id)
 
     def list_connected_platforms(self) -> list[str]:
         return [name for name, a in self._adapters.items() if a.is_connected]
@@ -255,10 +359,12 @@ class PlatformManager:
         propagate to the caller unhandled (the endpoint layer decides how to
         map them to HTTP responses).
 
-        No `user_id`/ownership check: analysis is read-only and creates no
-        session, and the caller is already authenticated at the endpoint layer
-        (Depends(get_current_user)) — consistent with the other read-only
-        platform routes, which also don't cross-check session ownership.
+        Ownership is enforced at the ENDPOINT layer (`require_platform_owner`),
+        not here. This used to be commented as needing no check because it's
+        "read-only" — that reasoning doesn't hold: `session_id` resolves to a
+        specific game inside `platform`'s connection, which on a shared box
+        may belong to a DIFFERENT user than the caller. Read-only is not the
+        same as no-owner; it still reads someone else's session.
         """
         game_id = self._session_to_game.get(session_id)
         if game_id is None:
@@ -374,7 +480,13 @@ class PlatformManager:
         logger.warning("Platform auth expired")
 
     async def _on_token_refreshed(self, platform: str, new_auth_data: dict) -> None:
-        user_id = self._platform_user_ids.get(platform)
+        # Mid-login (inside connect_platform's lock) the pending owner is the
+        # user CURRENTLY logging in, not whatever `_platform_user_ids` holds
+        # right now (which, during a takeover, is still the previous owner).
+        # Once connect_platform finishes, `_pending_owner` is cleared and this
+        # falls back to the settled owner for refreshes that happen later in
+        # the session's lifetime.
+        user_id = self._pending_owner.get(platform) or self._platform_user_ids.get(platform)
         if user_id is None:
             logger.debug(f"token_refreshed for {platform} but no known user; skipping persist")
             return

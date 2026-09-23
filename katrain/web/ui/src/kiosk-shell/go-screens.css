@@ -1913,10 +1913,21 @@ button.kiosk-row.figrow { flex: none; }
    标签在控件上面占两行 72px —— 和设计稿的横排一行 44px 不是同一个结构,已核实改错)。
    标签贴着自己那一列的控件(8),列与列之间 26 —— 到配对物的距离必须小于到干扰物的
    距离,否则「我执」会被读成「让子」的第二行。 */
-.twocol { display: flex; align-items: center; gap: 26px; flex: none; }
-.twocol .tcol { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
-.twocol .iglab { width: 30px; flex: none; font-size: 12.5px; color: var(--dim); }
-.twocol .catpick, .twocol .kiosk-optseg { flex: 1; min-width: 0; }
+/* `.twocol`/`.tcol` 加页级前缀:这两个名字太通用,这份样式表被全部 kiosk 屏共用
+   (`KioskApp.tsx` 一次性载入)——不加前缀就是给下一个想要「两列一行」的屏埋雷
+   (`.gside` 那次两屏各写各的、后一条只覆盖它自己写了的属性、漏掉的那个属性
+   穿过去撑破另一屏,是同一个形状)。今天只有屏 09 用这两个类(2026-09-23 核过)。 */
+[data-testid="platform-engine-setup-page"] .twocol { display: flex; align-items: center; gap: 26px; flex: none; }
+[data-testid="platform-engine-setup-page"] .twocol .tcol { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+/* 30px 是照「让子」「我执」这两个**两字中文**标签定的宽度,不是给任意标签留的通用值——
+   日文「自分の手番」(5 字)在这个宽度下会折行,把这一行从 44px 撑成 56px
+   (`kiosk-geometry-platform.spec.ts` 里标成 `test.fail()` 的那 1px 超盒就是这么来的)。
+   德文「Meine Farbe」(11 字)大概率也折,只是还没把总高顶过 400 预算,没人量过。
+   真正的修法是把这一行改成 i18n 友好的布局(标签换行不挤占控件宽度,或去掉固定宽度
+   改 `min-width`),不是给某个语种单独加宽这一个数字。 */
+[data-testid="platform-engine-setup-page"] .twocol .iglab { width: 30px; flex: none; font-size: 12.5px; color: var(--dim); }
+[data-testid="platform-engine-setup-page"] .twocol .catpick,
+[data-testid="platform-engine-setup-page"] .twocol .kiosk-optseg { flex: 1; min-width: 0; }
 
 /* 屏 09 修复轮 5(Task 4.6,2026-09-23)—— 「我执」三个选项挤成两行字。
    设计源两列各 `flex: 1`(go-kiosk.tmpl.html:652),这一屏因为多一个选项

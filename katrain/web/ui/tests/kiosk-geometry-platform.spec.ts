@@ -84,23 +84,8 @@ for (const lang of LOCALES) {
        * 用 `test.fail()` 不用 `test.skip()` —— `skip` 会让这一格从此没人量,
        * `fail()` 这条仍然真跑,一旦哪天它意外变绿,Playwright 报「unexpected
        * pass」,红给人看,逼人回来删这个标记,不会烂在这儿。
-       *
-       * 1. **根因**:`.twocol .iglab { width: 30px }`(`go-screens.css:1918`)是
-       *    照「我执」这类两字中文标签定的常量;jp 的 `setup:my_side` = 「自分の
-       *    手番」5 字塞不下,组内标签折行,那一行从 44px 撑到 56px,总高超出
-       *    400px 右栏预算约 1px(`.kiosk-side__scroll` 量出 `scrollHeight=401`)。
-       * 2. **不是译文问题**:「自分の手番」是正常译法,没有冗余动词可删——和
-       *    `en`/`es`/`tr`/`ua` 那一族「动词 · 颜色」重复不是同一类缺陷。
-       * 3. **为什么现在不修**:正确修法是这一行的 i18n 重做(`.iglab` 换
-       *    `width: auto` + `white-space: nowrap`,或者重排两列比例),而当前
-       *    `.twocol .tcol` 的 flex 比例是只照 cn/de 不折行调出来的
-       *    (`go-screens.css:1932-1933` 那段注释)——动它要把全部 11 语种重测,
-       *    收益只是 jp 下一条本来就拨得动的滚动条少 1px 溢出,成本明显更大。
-       * 4. **给下一个修的人的线索**:30px 是**照中文字数定的常量**,不是按语种
-       *    量出来的——德文 `Meine Farbe`(11 字符)大概率也早就在这个 30px 里
-       *    折行了,只是没把这一屏的总高顶过 400 所以没人发现。**该重做的是这一
-       *    行的 i18n,不是给 jp 单独打补丁**——动手前先把 11 语种下 `.iglab`
-       *    各自的实际高度量一遍,不要只看 jp。
+       * 根因、为什么不现在修、给下一个修的人的线索:见 `go-screens.css`
+       * `.twocol .iglab { width: 30px }` 那一行上面的注释,不在这里重复。
        */
       if (lang === 'jp' && camera === true) test.fail();
 

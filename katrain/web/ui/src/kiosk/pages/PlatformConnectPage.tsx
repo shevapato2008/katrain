@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { API, type PlatformInfo } from '../../api';
+import { platformErrorMessage } from '../utils/platformErrorMessage';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
@@ -186,7 +187,7 @@ const PlatformConnectPage = () => {
       await API.platformSmsRequest(loginTarget, form.user, token);
       setSmsLeft(60);
     } catch (e) {
-      setLoginError(e instanceof Error ? e.message : t('platform:sms_failed', '验证码没发出去'));
+      setLoginError(platformErrorMessage(e, t('platform:sms_failed', '验证码没发出去')));
     } finally {
       setSmsBusy(false);
     }
@@ -206,7 +207,7 @@ const PlatformConnectPage = () => {
       setPicked(null);
       await refresh();
     } catch (e) {
-      setLoginError(e instanceof Error ? e.message : t('platform:login_failed', '登录失败'));
+      setLoginError(platformErrorMessage(e, t('platform:login_failed', '登录失败')));
     } finally {
       setLoginBusy(false);
     }

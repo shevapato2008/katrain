@@ -83,10 +83,11 @@ beforeEach(() => {
 });
 
 describe('屏 09 跨平台 · 人机开局', () => {
-  it('对手只有名牌 + 轨两个控件 —— 稿子那段 39 行名单不做', async () => {
+  it('对手默认只有名牌 + 轨两个控件 —— 39 档全表默认不常驻,点开才出现', async () => {
     renderPage();
     await ready();
-    expect(screen.queryAllByTestId('setup-level-row')).toHaveLength(0);
+    expect(screen.queryAllByTestId('level-row')).toHaveLength(0);
+    expect(screen.queryByTestId('setup-level-sheet')).not.toBeInTheDocument();
     expect(screen.getByTestId('setup-opponent').querySelectorAll('.kiosk-row')).toHaveLength(0);
     expect(plate()).toHaveTextContent('星阵 1 · 第 1 档');
   });

@@ -9,6 +9,7 @@ import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { PLATFORM_META } from '../constants/platforms';
 import { interpolate } from '../utils/interpolate';
+import { platformErrorMessage } from '../utils/platformErrorMessage';
 
 /**
  * 屏 08 跨平台 · 大厅(`sample-go/shots/08-platform-lobby.png`,L2 布局 B)。
@@ -114,7 +115,7 @@ const PlatformLobbyPage = () => {
         bad: false,
       });
     } catch (e) {
-      setToast({ text: e instanceof Error ? e.message : t('platform:challenge_failed', '挑战没发出去'), bad: true });
+      setToast({ text: platformErrorMessage(e, t('platform:challenge_failed', '挑战没发出去')), bad: true });
     } finally {
       setChallengeTarget(null);
     }
@@ -131,7 +132,7 @@ const PlatformLobbyPage = () => {
         setAutomatch(true);
       }
     } catch (e) {
-      setToast({ text: e instanceof Error ? e.message : t('platform:automatch_failed', '匹配没开起来'), bad: true });
+      setToast({ text: platformErrorMessage(e, t('platform:automatch_failed', '匹配没开起来')), bad: true });
     }
   };
 

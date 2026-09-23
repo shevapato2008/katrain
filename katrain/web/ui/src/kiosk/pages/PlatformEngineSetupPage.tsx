@@ -16,6 +16,7 @@ import AiOpponentPlate from '../components/setup/AiOpponentPlate';
 import AiLevelSheet from '../components/setup/AiLevelSheet';
 import { PLATFORM_META } from '../constants/platforms';
 import { interpolate } from '../utils/interpolate';
+import { platformErrorMessage } from '../utils/platformErrorMessage';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
 
 /**
@@ -31,26 +32,29 @@ import { playInputState, writePlayOnBoard } from '../utils/playInput';
  *   那 39 档(星猛虎 / 星壮牛 / 星皮猴 …,每档带 `level_name` / `display_elo` / `ref_rank`)。
  *   **加载失败就是加载失败**,不给一份写死的兜底表 —— 那会让人选中一个星阵不认识的档。
  * · **让子和贴目是联动的**,贴目不是第二个可选项:分先→黑贴 7.5,让先→贴 0,让 N 子→黑贴 N 子
- *   (`app.js` 的口径)。所以「这一局会是」那一行写的是**算出来的结果**。
+ *   (`app.js` 的口径)。「让子 · 我执」那一组的读数写的是**算出来的结果**,不是第二个控件。
  * · **不计时**:星阵这条链不带钟。
  *
- * ## ⚠️ 稿子画的那段「39 档名单」**不做**(2026-08-24 裁定)
+ * ## 39 档怎么选:常驻的是步进器,全表是名牌点开的瞬态面板
  *
- * 稿子在步进器**下面**还摊开了一段 `.rows`(名字 / 展示 Elo / 对标棋力 / 「选它」)。
- * 不照做,三条理由,每条都能落到仓里一条已经落过锤的判例或一个量出来的数上:
+ * 稿子在步进器**下面**还摊开过一段常驻的 `.rows`(名字 / 展示 Elo / 对标棋力 / 「选它」)。
+ * 那种**常驻**列表没有做,理由仍然成立、没有过期:
  *
- * ① **规范逐字禁掉了这一处。** 共享 `tokens.css` 在 `.kiosk-optseg` 上面写着:
- *    「一屏里所有选择组必须用同一种控件,**不许难度用列表**、执棋方用宫格、时间用 2×2 ——
- *    那是一屏三套选择手势」。这一屏的选择组是 落子 / 对手 / 让子 / 我执;同为**有序档**的
- *    让子只有步进器,给对手再加一段带「选它」的列表,屏内自相矛盾。
- * ② **屏 02 的 29 档已经按同一条判过。** `KioskStepTrack` 的文件头写着为什么不是下拉、
- *    不是分段:7″ 触屏上下拉要点两次,而弹层正好盖住左边那块盘。39 档同理。
+ * ① **一屏一种选择手势。** 这一屏的选择组是 落子 / 对手 / 让子 / 我执;同为**有序档**的
+ *    让子只有步进器,常驻对手再摊开一段带「选它」的列表,屏内自相矛盾。
+ * ② **屏 02 的 29 档已经按同一条判过。** `KioskStepTrack` 的文件头写着为什么不是下拉:
+ *    7″ 触屏上下拉要点两次才看得见选项。
  * ③ **摊开之后装不下。** 真浏览器量:39×52 + 38×8 ⇒ 那一段 390 高,而滚动视口只有 400 ——
  *    一段吃掉 97.5% 的视口,右栏 maxScroll 2627 ≈ 6.6 屏。
  *
- * **不掉功能**:39 个值一个不少、全都走得到。删的是**控件**不是**值** ——
- * 这条 track 自己的定义在 `AiSetupPage`:「把 15 档收成 3 档是删功能,不是重画」。
- * 名单上唯一不在步进器上的那一列(`ref_rank`)已经并进 `.catmeta`。
+ * 但 39 个值一个不少、全都走得到:`AiLevelSheet` 是名牌(`AiOpponentPlate`)点开才挂载的
+ * 全表,`position:absolute` 相对 `.kiosk-rail`——**不盖左边那块盘**,关掉不留痕迹,不是
+ * 「删掉又加回来」而是常驻列表和瞬态面板从一开始就是两件事。它能放行的原因是**手指跨不动
+ * 那条轨**:39 档的 `KioskStepTrack` 每档约 8px,「换一档」按钮只能挪到相邻档,隔着十几档
+ * 想跳过去只能长按连发;名牌点开是唯一能一步跳到任意一档的路。共享 `tokens.css` 已经在
+ * `.kiosk-optseg` 规范上加了这条例外(2026-09-23),不再是这一屏单独违规。
+ * `ref_rank`(名单上唯一不在步进器上的那一列)现在显示在名牌上(`AiOpponentPlate`),
+ * 不在 `KioskStepTrack` 自带的 `.catmeta` 读数里 ——`readout={false}` 关掉了后者。
  *
  * ## 这一版改掉的三样
  *
@@ -107,7 +111,7 @@ const PlatformEngineSetupPage = () => {
         if (sorted.length) setLevel(sorted[0].elo_score);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setLevelsError(e instanceof Error ? e.message : '');
+        if (!cancelled) setLevelsError(platformErrorMessage(e, ''));
       })
       .finally(() => { if (!cancelled) setLevelsLoading(false); });
     return () => { cancelled = true; };
@@ -142,7 +146,7 @@ const PlatformEngineSetupPage = () => {
       );
       navigate(`/kiosk/play/cross-platform/engine/game/${session_id}`, { state: backToState(location) });
     } catch (e) {
-      setStartError(e instanceof Error ? e.message : t('Failed to start game', '创建对局失败'));
+      setStartError(platformErrorMessage(e, t('Failed to start game', '创建对局失败')));
     } finally {
       setStarting(false);
     }

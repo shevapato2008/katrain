@@ -38,7 +38,7 @@ const norm = (p: string) => (p.length > 1 && p.endsWith('/') ? p.slice(0, -1) : 
 /**
  * 高亮哪一项。二/三级页高亮它的**父项**(做题屏 → 训练营,对局屏 → 对弈)。
  *
- * 下了 Dock 的三条(baipu / live / research)**返回 null** —— 它们没有父项,
+ * 下了 Dock 的两条(baipu / research)**返回 null** —— 它们没有父项,
  * 乱认一个父项等于告诉用户「你在棋谱里」,而 Dock 上那一格并没有把他带到这儿来。
  *
  * 前缀匹配卡在 `/` 上,不是裸 startsWith:`/kiosk/playground` 不许点亮「对弈」。

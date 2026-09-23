@@ -68,20 +68,16 @@
     "shotFrom": "main"
   },
   "15-kifu.png": {
-    "sha256": "342c3c7af5458ea653dc04ce24d653976fa50e204e361b6cf579d095bcd6f3e6",
-    "shotFrom": "main"
+    "sha256": "3a868711d4314ab72240d0a5a0836786909c8bf9123d4f948c35dcc6a793ba62",
+    "shotFrom": "feat/kiosk-go-kifu-list-design-2026-09-23"
   },
   "16-kifu-detail.png": {
     "sha256": "2ce96de24b8f98f829d770b8b105e8ab1156b04c3df6e33d600ba4abb31f315a",
     "shotFrom": "main"
   },
   "17-baipu.png": {
-    "sha256": "5eb5674f03ce106b73977e599a417468dc7242df8ed1fc46c69d60cefbb4de73",
-    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
-  },
-  "18-live.png": {
-    "sha256": "923eb8c65277f31422a40077ebcdbcb9e1fc2a2d61939dd52b1f4918ce7b2b38",
-    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+    "sha256": "29e5639cf3c184e7feb60ea8f012f9d38438508a980932d65555c98cdc15f651",
+    "shotFrom": "feat/kiosk-go-kifu-list-design-2026-09-23"
   },
   "19-review.png": {
     "sha256": "ca981b4849ae8230944ba72126d412a28f376ae6fd15ca6357207e30f73567e5",

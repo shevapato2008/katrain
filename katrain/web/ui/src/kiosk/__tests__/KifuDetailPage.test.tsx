@@ -5,6 +5,7 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import KifuDetailPage from '../pages/KifuDetailPage';
 import type { BaipuStep } from '../../api/baipuApi';
+import { ApiError } from '../../api';
 
 /**
  * 屏 16 · 棋谱详情 `/kiosk/kifu/:kifuId`(计划外补的一屏,记作 Task 15b)。
@@ -98,6 +99,15 @@ describe('屏 16 棋谱详情 · 三种状态', () => {
     expect(screen.getByText('404')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitFor(() => expect(getAlbum).toHaveBeenCalledTimes(2));
+    await waitLoaded();
+  });
+
+  it('连不上云端(503)时说「要联网」,不印原文;重试照样再拉一次', async () => {
+    getAlbum.mockRejectedValueOnce(new ApiError(503, 'Request failed 503: {"detail":"Remote kifu service unavailable"}'));
+    renderPage();
+    expect(await screen.findByText('这一局要联网才能读')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitLoaded();
   });
 
@@ -231,5 +241,17 @@ describe('屏 16 棋谱详情 · 两个出口', () => {
     // 限定在页控条里找 —— 「棋谱」两个字在折叠块标题(「棋谱 · 交叉点坐标」)里也有一份。
     fireEvent.click(within(screen.getByTestId('kifu-detail-pagebar')).getByRole('button'));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
+  });
+
+  it('13 路的谱「摆到实体盘」灰着,并说明实体盘只摆得了 19 路', async () => {
+    baipuLoad.mockResolvedValue({
+      board_size: 13, meta: {},
+      steps: [step({ move_index: 0, property: 'B', row: 3, col: 3, color: 'B' })],
+    });
+    renderPage();
+    await waitLoaded();
+    const btn = screen.getByRole('button', { name: '摆到实体盘' });
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute('title', expect.stringContaining('13 路'));
   });
 });

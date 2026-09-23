@@ -5245,7 +5245,7 @@ msgid "kifu:greet_b"
 msgstr "партії"
 
 msgid "kifu:greet_sub"
-msgstr "Відомі партії, професійні трансляції та розкладка на справжній дошці"
+msgstr "Відомі партії та розкладка на справжній дошці"
 
 msgid "kifu:famous_records"
 msgstr "Відомі партії"
@@ -6857,4 +6857,4 @@ msgid "growth:unknown_seat_a"
 msgstr "Партій не враховано у відсотку перемог: "
 
 msgid "growth:unknown_seat_b"
-msgstr " — очні партії, імпортовані записи та партії без записаного кольору."
+msgstr " — очні партії та партії без записаного кольору."

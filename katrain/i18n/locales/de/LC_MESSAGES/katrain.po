@@ -5284,8 +5284,7 @@ msgid "kifu:greet_b"
 msgstr "anderer"
 
 msgid "kifu:greet_sub"
-msgstr ""
-"Berühmte Partien, Profi-Übertragungen und Nachstellen auf dem echten Brett"
+msgstr "Berühmte Partien und Nachstellen auf dem echten Brett"
 
 msgid "kifu:famous_records"
 msgstr "Berühmte Partien"
@@ -6920,5 +6919,4 @@ msgstr "Nicht in der Siegquote gezählt: "
 
 msgid "growth:unknown_seat_b"
 msgstr ""
-" — Partien von Angesicht zu Angesicht, importierte Partien und Partien ohne "
-"erfasste Farbe."
+" — Partien von Angesicht zu Angesicht und Partien ohne erfasste Farbe."

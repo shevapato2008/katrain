@@ -5223,8 +5223,7 @@ msgid "kifu:greet_b"
 msgstr "games"
 
 msgid "kifu:greet_sub"
-msgstr ""
-"Famous games, pro broadcasts, and replaying records onto the real board"
+msgstr "Famous games and replaying records onto the real board"
 
 msgid "kifu:famous_records"
 msgstr "Famous games"
@@ -6847,6 +6846,4 @@ msgid "growth:unknown_seat_a"
 msgstr "Games not counted in the win rate: "
 
 msgid "growth:unknown_seat_b"
-msgstr ""
-" — face-to-face games, imported records, and games where your color wasn't "
-"recorded."
+msgstr " — face-to-face games and games where your color wasn't recorded."

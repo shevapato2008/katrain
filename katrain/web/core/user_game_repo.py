@@ -19,6 +19,13 @@ class InvalidAuthoritativeRankedGameError(ValueError):
     pass
 
 
+#: 「自己下的局」——**白名单**,不是黑名单。导入的谱、棋谱库里的谱、研究存档都是**别人下的**,
+#: 只是存在你名下。成长屏上每个数都只讲「这个账户自己练了多少」,所以一律按这份名单数。
+#: 前端同一口径在 `kiosk/components/report/reviewPresentation.ts` 的 `isPlaySource`;
+#: 以后新增一种来源,**默认不算**,要算就显式加进来。
+PLAYED_SOURCES = ("play_ai", "play_local", "play_human")
+
+
 class UserGameRepository:
     def __init__(self, session_factory):
         self.session_factory = session_factory
@@ -263,8 +270,12 @@ class UserGameRepository:
             session.close()
 
     def count_since(self, user_id: int, *, since) -> int:
-        """近 N 天下了多少局。**只数局数,不数胜负** —— 胜负在 `decided_since`,
-        两者口径不同(导入的谱、面对面、执色没记下来的局在这里算、在那里不算)。
+        """近 N 天**自己下了**多少局。**只数局数,不数胜负** —— 胜负在 `decided_since`,
+        两者口径仍不同(面对面、执色没记下来的局在这里算、在那里不算)。
+
+        **2026-09-23 改:只数 `PLAYED_SOURCES`。** 此前连导入的谱、棋谱库的谱、研究存档也数,
+        于是屏上「近 30 天对局」比同屏日历的全年总数还大(实测 40 vs 39)——
+        那一格写着「对局」,数出来的却是「名下的记录条数」。Fan 裁定:成长屏只讲这个账户自己练的。
 
         ⚠️ `since` 要**带时区**:`created_at` 是 `DateTime(timezone=True)`,
         而 SQLite 不存时区。生产是 PG,口径以 PG 为准。
@@ -275,6 +286,7 @@ class UserGameRepository:
                 session.query(func.count(models_db.UserGame.id))
                 .filter(
                     models_db.UserGame.user_id == user_id,
+                    models_db.UserGame.source.in_(PLAYED_SOURCES),
                     models_db.UserGame.created_at >= since,
                 )
                 .scalar()

@@ -5258,7 +5258,7 @@ msgid "kifu:greet_b"
 msgstr "des autres"
 
 msgid "kifu:greet_sub"
-msgstr "Parties célèbres, diffusions pro et rejeu sur le goban réel"
+msgstr "Parties célèbres et rejeu sur le goban réel"
 
 msgid "kifu:famous_records"
 msgstr "Parties célèbres"
@@ -6891,5 +6891,5 @@ msgstr "Parties hors du taux de victoire : "
 
 msgid "growth:unknown_seat_b"
 msgstr ""
-" — parties en face à face, parties importées et parties dont la couleur n'a "
-"pas été enregistrée."
+" — parties en face à face et parties dont la couleur n'a pas été "
+"enregistrée."

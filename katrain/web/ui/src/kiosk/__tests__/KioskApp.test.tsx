@@ -1,6 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { BaipuAPI } from '../../api/baipuApi';
+import { GeometryAPI } from '../../api/geometryApi';
 
 const mockUseAuth = vi.fn();
 vi.mock('../../context/AuthContext', () => ({
@@ -23,6 +25,19 @@ vi.mock('../../api/tutorialApi', () => ({
 
 vi.mock('../pages/ReportsPage', () => ({
   default: () => <h1>KIOSK_REPORT_PAGE</h1>,
+}));
+
+vi.mock('../pages/KifuPage', () => ({
+  default: () => <h1>KIOSK_KIFU_PAGE</h1>,
+}));
+
+// 只替换叶子:入口路由、标定守卫和 GeometryProvider 都用真的。
+vi.mock('../pages/BaipuSessionPage', () => ({
+  default: ({ collect }: { collect: boolean }) => <div data-testid="baipu-session" data-collect={String(collect)} />,
+}));
+
+vi.mock('../components/vision/GeometryCalibrationScreen', () => ({
+  default: ({ title }: { title: string }) => <h1>{title}</h1>,
 }));
 
 import KioskApp from '../KioskApp';
@@ -124,6 +139,51 @@ describe('KioskApp', () => {
     renderApp('/kiosk');
     // 游客也一样落到对弈页 —— index 重定向和兜底都在守卫**外面**。
     expect(screen.queryByRole('button', { name: /^登录$/ })).toBeNull();
+  });
+
+  it('/kiosk/baipu 重定向到棋谱屏 —— 那一页没有任何出口,旧链接不许再落进去', () => {
+    // token 给 null:盒上 token 恒为 null,守卫判的是 isAuthenticated。
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true, isLoading: false,
+      user: { id: 1, username: '张三', rank: '2D', credits: 0 },
+      login: vi.fn(), logout: vi.fn(), token: null,
+    });
+    renderApp('/kiosk/baipu');
+    expect(screen.getByRole('heading', { name: 'KIOSK_KIFU_PAGE' })).toBeInTheDocument();
+  });
+
+  describe('摆谱真实入口:未标定的盒子按采集模式决定是否过守卫', () => {
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false,
+        user: { id: 1, username: '张三', rank: '2D', credits: 0 },
+        login: vi.fn(), logout: vi.fn(), token: null,
+      });
+      vi.spyOn(GeometryAPI, 'status').mockResolvedValue({
+        phase: 'required', session_calibrated: false, last_valid: false,
+        capabilities: { camera_ready: true, led_ready: true, geometry_ready: false },
+      });
+    });
+
+    afterEach(() => {
+      cleanup(); // 先卸载 Provider、清掉轮询,再还原 API。
+      vi.restoreAllMocks();
+    });
+
+    // disabled 会被 PhysicalBoardGuard 无条件放行,无法发现 KioskApp 外面误套回守卫。
+    it('上线态在 required 时直接进摆谱,不要求摄像头标定', async () => {
+      vi.spyOn(BaipuAPI, 'mode').mockResolvedValue({ collect: false });
+      renderApp('/kiosk/baipu/session/g1');
+      expect(await screen.findByTestId('baipu-session')).toHaveAttribute('data-collect', 'false');
+      expect(screen.queryByRole('heading', { name: '先标定棋盘' })).toBeNull();
+    });
+
+    it('采集态在 required 时仍被真实守卫拦下,不挂摆谱屏', async () => {
+      vi.spyOn(BaipuAPI, 'mode').mockResolvedValue({ collect: true });
+      renderApp('/kiosk/baipu/session/g1');
+      expect(await screen.findByRole('heading', { name: '先标定棋盘' })).toBeInTheDocument();
+      expect(screen.queryByTestId('baipu-session')).toBeNull();
+    });
   });
 
   /* 🔴 边界的另一半。摘守卫只摘了自由对弈那条链,**这几格证明其余没跟着被摘掉** ——

@@ -5047,7 +5047,7 @@ msgid "kifu:greet_b"
 msgstr "棋"
 
 msgid "kifu:greet_sub"
-msgstr "名局、職業直播，以及把譜擺到實體盤上"
+msgstr "名局，以及把譜擺到實體盤上"
 
 msgid "kifu:famous_records"
 msgstr "名局棋譜"
@@ -6617,4 +6617,4 @@ msgid "growth:unknown_seat_a"
 msgstr "有 "
 
 msgid "growth:unknown_seat_b"
-msgstr " 局沒算進勝率：面對面、匯入的譜，以及沒記下你執黑還是執白的局。"
+msgstr " 局沒算進勝率：面對面的局，以及沒記下你執黑還是執白的局。"

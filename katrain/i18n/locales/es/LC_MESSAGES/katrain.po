@@ -5112,9 +5112,7 @@ msgid "kifu:greet_b"
 msgstr "de otros"
 
 msgid "kifu:greet_sub"
-msgstr ""
-"Partidas famosas, retransmisiones profesionales y reproducción en el tablero"
-" físico"
+msgstr "Partidas famosas y reproducción en el tablero físico"
 
 msgid "kifu:famous_records"
 msgstr "Partidas famosas"
@@ -6742,6 +6740,4 @@ msgid "growth:unknown_seat_a"
 msgstr "Partidas fuera del porcentaje: "
 
 msgid "growth:unknown_seat_b"
-msgstr ""
-" — partidas cara a cara, partidas importadas y partidas sin tu color "
-"registrado."
+msgstr " — partidas cara a cara y partidas sin tu color registrado."

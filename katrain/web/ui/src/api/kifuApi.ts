@@ -1,6 +1,7 @@
 // API functions for kifu album (tournament game records) module
 
 import type { KifuAlbumListResponse, KifuAlbumDetail } from '../types/kifu';
+import { ApiError } from '../api';
 
 const API_BASE = '/api/v1/kifu';
 
@@ -8,7 +9,9 @@ async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`);
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Request failed ${response.status}: ${body}`);
+    // 带上 `status`:board 模式下棋谱库连不上云端是 **503**,屏上要说「要联网」而不是「没搜到」。
+    // 消息格式不变(`Request failed <status>: <body>`),按文本断言的既有测试照旧。
+    throw new ApiError(response.status, `Request failed ${response.status}: ${body}`);
   }
   return response.json();
 }

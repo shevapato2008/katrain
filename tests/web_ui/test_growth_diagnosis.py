@@ -170,8 +170,9 @@ class _FakeConnectivity:
 
 
 class _FakeRemoteClient:
-    def __init__(self, *, payload=None, raises=None):
+    def __init__(self, *, payload=None, raises=None, bound_user_id="1"):
         self._payload, self._raises, self.calls = payload, raises, []
+        self.bound_user_id = bound_user_id
 
     async def get_growth_diagnosis(self, days, reports):
         self.calls.append((days, reports))

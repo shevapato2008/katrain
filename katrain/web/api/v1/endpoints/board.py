@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -103,9 +103,10 @@ async def list_devices(
     ]
 
 
-# ── Live Match Proxy (board mode only) ──
-# When KATRAIN_MODE=board, live_service is not started.
-# These endpoints proxy live match requests to the remote server.
+# ── Read-only proxies to the remote server (board mode only) ──
+# The box has no local tutorial store; these endpoints forward reads to the cloud via RemoteAPIClient.
+# (There used to be a /live/* proxy here for the kiosk live screens. The kiosk live module was removed
+# on 2026-09-22 — Fan: live stays in galaxy only — and the proxy went with it on 2026-09-23.)
 
 
 def _get_remote_client(request: Request):
@@ -130,77 +131,6 @@ async def _proxy(call, what: str):
     except Exception as e:
         logger.warning(f"{what} proxy failed: {e}")
         raise HTTPException(status_code=502, detail="Remote server unavailable")
-
-
-@router.get("/live/matches")
-async def proxy_live_matches(
-    request: Request,
-    status: Optional[str] = Query(None),
-    source: Optional[str] = Query(None),
-    lang: Optional[str] = Query(None),
-    limit: int = Query(50, ge=1, le=200),
-):
-    """Proxy live matches from remote server (board mode)."""
-    c = _get_remote_client(request)
-    return await _proxy(
-        lambda: c.get_live_matches(status=status, source=source, lang=lang, limit=limit),
-        "Live matches",
-    )
-
-
-# NOTE: /live/matches/featured MUST be declared before /live/matches/{match_id},
-# otherwise FastAPI matches "featured" as a match_id.
-@router.get("/live/matches/featured")
-async def proxy_live_featured(request: Request, lang: Optional[str] = Query(None)):
-    """Proxy featured match from remote server (board mode)."""
-    c = _get_remote_client(request)
-    return await _proxy(lambda: c.get_live_featured(lang=lang), "Live featured")
-
-
-@router.get("/live/matches/{match_id}")
-async def proxy_live_match(request: Request, match_id: str):
-    """Proxy single live match from remote server (board mode)."""
-    c = _get_remote_client(request)
-    return await _proxy(lambda: c.get_live_match(match_id), "Live match")
-
-
-@router.get("/live/matches/{match_id}/analysis")
-async def proxy_live_analysis(request: Request, match_id: str, move_number: Optional[int] = Query(None)):
-    """Proxy KataGo analysis for a match (board mode)."""
-    c = _get_remote_client(request)
-    return await _proxy(lambda: c.get_live_match_analysis(match_id, move_number=move_number), "Live analysis")
-
-
-@router.get("/live/matches/{match_id}/analysis/preload")
-async def proxy_live_preload(request: Request, match_id: str):
-    """Proxy analysis preload for a match (board mode)."""
-    c = _get_remote_client(request)
-    return await _proxy(lambda: c.preload_live_analysis(match_id), "Live preload")
-
-
-@router.get("/live/upcoming")
-async def proxy_live_upcoming(
-    request: Request,
-    limit: int = Query(20, ge=1, le=100),
-    lang: Optional[str] = Query(None),
-):
-    """Proxy upcoming matches (board mode)."""
-    c = _get_remote_client(request)
-    return await _proxy(lambda: c.get_live_upcoming(limit=limit, lang=lang), "Live upcoming")
-
-
-@router.get("/live/stats")
-async def proxy_live_stats(request: Request):
-    """Proxy live service stats (board mode)."""
-    c = _get_remote_client(request)
-    return await _proxy(lambda: c.get_live_stats(), "Live stats")
-
-
-@router.get("/live/translations")
-async def proxy_live_translations(request: Request, lang: str = Query("en")):
-    """Proxy live translations table (board mode)."""
-    c = _get_remote_client(request)
-    return await _proxy(lambda: c.get_live_translations(lang), "Live translations")
 
 
 # ── Tutorial Proxy (board mode only) ──

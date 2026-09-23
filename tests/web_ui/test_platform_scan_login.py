@@ -254,6 +254,38 @@ class TestScanStart:
         assert session.initiating_user_id == 1
         assert session.golaxy_uuid == "golaxy-uuid-1"
 
+    def test_start_then_state_is_reachable_across_separate_requests(self, monkeypatch):
+        """Not a reachability fixture (R-team-lead review, task-6a): `start` and
+        `state` must find the SAME session through the real HTTP boundary
+        (`request.app.state.golaxy_scan_sessions`), not through a store the
+        test manufactured and handed to both sides. Every other test in this
+        module that exercises `state`/`confirm` seeds its own `ScanSessionStore`
+        directly (`_seeded_store`) — that proves each endpoint's OWN logic given
+        a session, but says nothing about whether `start`'s session is actually
+        the one `state` looks up on a real device. This is the one test that
+        drives both through the same `TestClient` end to end."""
+        import katrain.web.platforms.golaxy.scan_login as scan_login_mod
+
+        async def fake_start(self):
+            return ScanStart(uuid="golaxy-uuid-1", payload="golaxy_url&&&golaxy-uuid-1")
+
+        async def fake_poll(self, uuid):
+            assert uuid == "golaxy-uuid-1"
+            return ScanState.WAITING
+
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "start", fake_start)
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "poll", fake_poll)
+
+        app = _build_app(FakeManager())
+        client = _client_with_user(app, _CurrentUser(1))
+
+        started = client.post("/api/v1/platforms/golaxy/scan/start")
+        scan_id = started.json()["scan_id"]
+
+        polled = client.get(f"/api/v1/platforms/golaxy/scan/state?scan_id={scan_id}")
+        assert polled.status_code == 200, polled.text
+        assert polled.json() == {"state": "waiting"}
+
     def test_upstream_failure_is_a_502_not_a_silent_pending_session(self, monkeypatch):
         import katrain.web.platforms.golaxy.scan_login as scan_login_mod
 
@@ -303,6 +335,32 @@ class TestScanState:
         client = _client_with_user(app, _CurrentUser(1))
         r = client.get("/api/v1/platforms/golaxy/scan/state?scan_id=does-not-exist")
         assert r.status_code == 404
+
+    def test_terminal_state_is_cached_and_never_repolled(self, monkeypatch):
+        """Once a session reaches CONFIRMED (even before the user's own
+        `confirm` call lands), further `state` polls must stop hitting
+        Golaxy: polling again could flip an already-confirmed uuid to
+        EXPIRED (Golaxy likely invalidates it once confirmed), which would
+        flash "二维码已失效" at a user who just approved the login on their
+        phone. Polls twice; the mock explodes on any Golaxy call so a
+        regression is caught immediately rather than by a subtler race."""
+        import katrain.web.platforms.golaxy.scan_login as scan_login_mod
+
+        app = _build_app(FakeManager())
+        _seeded_store(app, initiating_user_id=1, state=ScanState.CONFIRMED)
+        scan_id = next(iter(app.state.golaxy_scan_sessions._sessions))
+
+        async def explode(self, uuid):
+            raise AssertionError("must not poll Golaxy once a session is terminal")
+
+        monkeypatch.setattr(scan_login_mod.GolaxyScanLogin, "poll", explode)
+
+        client = _client_with_user(app, _CurrentUser(1))
+        r1 = client.get(f"/api/v1/platforms/golaxy/scan/state?scan_id={scan_id}")
+        r2 = client.get(f"/api/v1/platforms/golaxy/scan/state?scan_id={scan_id}")
+
+        assert r1.status_code == 200 and r1.json() == {"state": "confirmed"}
+        assert r2.status_code == 200 and r2.json() == {"state": "confirmed"}
 
 
 class TestScanConfirmOwnership:

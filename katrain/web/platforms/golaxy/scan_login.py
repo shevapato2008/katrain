@@ -55,6 +55,16 @@ _STATES = {
     6019: ScanState.CANCELLED,
 }
 
+# States Golaxy will never walk back from. `UNKNOWN` is deliberately NOT here —
+# an unrecognized code might still resolve to something real on a later poll,
+# so it stays live. The other three are terminal for a DIFFERENT reason than
+# "no point asking again": once CONFIRMED, Golaxy very likely invalidates the
+# uuid server-side, so a poll AFTER confirmation can flip a legitimately-
+# confirmed session to EXPIRED — the user tapped "confirm" on their phone and
+# the kiosk screen would flash "二维码已失效" right back at them. Once a
+# session reaches one of these, the endpoint must cache it and stop asking.
+TERMINAL_STATES = frozenset({ScanState.CONFIRMED, ScanState.EXPIRED, ScanState.CANCELLED})
+
 
 @dataclass(frozen=True)
 class ScanStart:

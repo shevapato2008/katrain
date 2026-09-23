@@ -373,8 +373,20 @@ async def scan_start(platform: str, request: Request, user: User = Depends(get_c
 async def scan_state(platform: str, scan_id: str, request: Request, user: User = Depends(get_current_user)):
     """Poll a scan session's state. 403s if the caller isn't who started it
     (R-28) — the box may have been handed to a different logged-in user
-    between `start` and now."""
-    from katrain.web.platforms.golaxy.scan_login import GolaxyScanLogin, ScanState
+    between `start` and now.
+
+    Once `session.state` reaches a `TERMINAL_STATES` member, this stops
+    calling Golaxy and just returns the cached value. Two reasons, the second
+    is the one that actually matters: (1) the client polls every second per
+    protocol step ③ — asking again after a terminal state is pure waste, one
+    idle box hitting the third party once a second forever; (2) Golaxy very
+    likely invalidates the uuid once it's been confirmed, so a poll AFTER
+    confirmation can flip an already-CONFIRMED session back to EXPIRED — the
+    user tapped confirm on their phone and the kiosk screen would flash "二维码
+    已失效" right back at them. Terminal states are irreversible on OUR side
+    regardless of what a further Golaxy poll might report.
+    """
+    from katrain.web.platforms.golaxy.scan_login import TERMINAL_STATES, GolaxyScanLogin, ScanState
 
     session = _scan_store(request.app).get(scan_id)
     if session is None:
@@ -384,7 +396,7 @@ async def scan_state(platform: str, scan_id: str, request: Request, user: User =
     if session.expired:
         _scan_store(request.app).discard(scan_id)
         return {"state": ScanState.EXPIRED.value}
-    if not session.consumed:
+    if session.state not in TERMINAL_STATES:
         try:
             session.state = await GolaxyScanLogin().poll(session.golaxy_uuid)
         except Exception:

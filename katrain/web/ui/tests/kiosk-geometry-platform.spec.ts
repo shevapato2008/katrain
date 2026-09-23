@@ -338,7 +338,12 @@ test('登录页:聚焦最下面那个字段时,它没有被软键盘盖住,提�
   await mountFakeKeyboard(page, 260);
   const field = page.locator('[data-testid="login-field-password"]');
   await field.click();
-  await page.waitForTimeout(150);
+  // ⚠️ 2026-09-23 真浏览器逐帧量出来(`debug_kb4` 探针):Chromium 对触摸聚焦的可编辑元素
+  // 会自己做一次「把焦点元素滚回可见」的合成器动画,~140ms 才收敛到 0,且**这个动画不经过
+  // JS 的 scrollTop setter**——hook 只能等它停(靠原生 scroll 事件的静默期,不是猜时长)
+  // 再补一次赋值(`useKeyboardInset.ts` 头注第二条)。150ms 量不到收敛后的稳定值,
+  // 350ms 留出双倍余量。
+  await page.waitForTimeout(350);
 
   const geom = await page.evaluate(() => {
     const kb = document.querySelector('.skbd')!.getBoundingClientRect();

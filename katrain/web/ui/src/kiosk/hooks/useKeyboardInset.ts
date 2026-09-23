@@ -22,6 +22,21 @@ import { useEffect } from 'react';
  * 判定「不用动」)。⇒ 改成聚焦时直接把 zone 滚到刚撑出来的新底(`scrollHeight - clientHeight`
  * ——这个差值就是上面那行加的 padding,不会多滚一像素):字段和它后面的提交键在这种短表单里
  * 本来就同时装得下,滚到底只是把整段一起往上提一截,不会把正在输入的字段推出视野。
+ *
+ * ⚠️ **第二个坑,比上面那个更隐蔽:我们赋的 `scrollTop` 会被浏览器自己的原生行为撤销,
+ * 而这个撤销不经过 JS 的 `scrollTop` setter。** 这不是我们代码里调用的 `scrollIntoView`,
+ * 也不是任何一段能读到调用栈的脚本——**Chromium 对触摸聚焦的可编辑元素,会在其可滚动祖先上
+ * 自己做一次「把焦点元素滚回可见」的合成器动画**。真浏览器逐帧量出来(20ms 一帧):我们把
+ * `scrollTop` 设成 44 后,接下来 6 帧里它被平滑地拉回 0(`44→43→31→12→3→1→0`,~140ms 收敛),
+ * 而**在 `scrollTop` 的属性描述符上打点从没抓到第二次 `set` 调用**——说明这不是哪段 JS 在写
+ * `scrollTop`,是引擎内部直接改的合成层偏移,JS 层面完全看不见、拦不住。**逐帧纠正循环
+ * (每帧把 `scrollTop` 按回目标值)、`focus({ preventScroll: true })` 重新聚焦、给目标元素
+ * 设 `scroll-margin-bottom` 三种都实测无效**——都是在跟一个不经过 JS 的动画拔河,赢不了。
+ *
+ * ⇒ 唯一管用的做法是**不跟它拔河,等它自己停**:监听 zone 的原生 `scroll` 事件,每次触发就
+ * 把「应用我们目标值」这件事往后推;停止收到 `scroll` 事件一小段时间(说明原生动画已经跑完,
+ * 不是靠猜一个固定延时)之后,再把 `scrollTop` 设成目标值一次——这次没有动画在竞争,稳稳生效
+ * (`debug_kb3` 已验证:原生动画结束后手动赋值会一直保持,不会再被撤销)。
  */
 export function useKeyboardInset(zoneSelector: string): void {
   useEffect(() => {
@@ -31,7 +46,26 @@ export function useKeyboardInset(zoneSelector: string): void {
       el instanceof HTMLElement && el.tagName === 'INPUT' && zone.contains(el);
 
     let rafId = 0;
+    let settleTimer = 0;
     let blurTimer = 0;
+    let watching = false;
+
+    const applyTarget = () => {
+      const target = zone.scrollHeight - zone.clientHeight;
+      if (zone.scrollTop !== target) zone.scrollTop = target;
+    };
+
+    // 原生动画每一帧都会触发 scroll 事件——用它做「动画还在跑」的信号,不用猜时长。
+    const onScroll = () => {
+      window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(() => {
+        settleTimer = 0;
+        watching = false;
+        zone.removeEventListener('scroll', onScroll);
+        applyTarget();
+      }, 60);
+    };
+
     const onFocus = (e: FocusEvent) => {
       if (!inZone(e.target)) return;
       // 键盘挂在 body 上、在**缩放画布外面**,所以它量出来的 px 是屏幕 px,
@@ -42,10 +76,13 @@ export function useKeyboardInset(zoneSelector: string): void {
         const canvasW = document.querySelector<HTMLElement>('.kiosk-screen')?.getBoundingClientRect().width;
         const scale = canvasW && canvasW > 0 ? canvasW / 1024 : 1;
         zone.style.paddingBottom = `${Math.round(keyboardPx / scale)}px`;
-        // 读 scrollHeight 会强制走一次同步布局,拿到的已经是加了新 padding 之后的值。
-        console.log('[DEBUG useKeyboardInset]', keyboardPx, scale, zone.scrollHeight, zone.clientHeight);
-        zone.scrollTop = zone.scrollHeight - zone.clientHeight;
-        console.log('[DEBUG useKeyboardInset after]', zone.scrollTop);
+        applyTarget();
+        // 挂 scroll 监听,等浏览器自己的「滚回可见」动画(如果这次 focus 触发了它)跑完再补一次。
+        if (!watching) {
+          watching = true;
+          zone.addEventListener('scroll', onScroll);
+        }
+        onScroll();
       });
     };
     const onBlur = (e: FocusEvent) => {
@@ -60,6 +97,7 @@ export function useKeyboardInset(zoneSelector: string): void {
     return () => {
       zone.removeEventListener('focusin', onFocus);
       zone.removeEventListener('focusout', onBlur);
+      zone.removeEventListener('scroll', onScroll);
       // **摘掉监听器不等于取消已经排上队的回调。** 这两个回调都会去摸 `document`,
       // 卸载之后再跑就是访问一个已经不存在的文档。在浏览器里这只是一次无害的写入,
       // 在 jsdom 里它是 `ReferenceError: document is not defined` —— 一条**未捕获异常**,
@@ -67,6 +105,7 @@ export function useKeyboardInset(zoneSelector: string): void {
       // (2026-09-01 实测:1695 条全过、rc=1)。
       // 它是否触发只取决于测试调度,所以「今天没红」不代表没有这个洞。
       if (rafId) cancelAnimationFrame(rafId);
+      if (settleTimer) window.clearTimeout(settleTimer);
       if (blurTimer) clearTimeout(blurTimer);
       zone.style.paddingBottom = '';
     };

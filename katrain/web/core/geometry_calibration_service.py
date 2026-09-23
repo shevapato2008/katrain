@@ -190,11 +190,18 @@ class GeometryCalibrationService:
         }
         return status
 
+    # 取消过的运行也能沿用:取消时服务端什么都没丢(current_lock 还在,on_resume 已把识别
+    # 恢复到旧几何),缺的只是把 phase 拉回 ready 的入口。**degraded 不在表里** ——
+    # 那一态是「这份几何已知是错的」,它的出路是重定位(relocate),不是确认沿用。
+    _REUSABLE_PHASES = frozenset({"required", "failed", "cancelled"})
+
     def confirm_existing(self) -> dict:
         """Promote a persisted lock for this process after operator inspection."""
         with self._lock:
-            if self._status["phase"] not in {"required", "failed"}:
-                raise ValueError("existing geometry can only be confirmed after restart or failed recalibration")
+            if self._status["phase"] not in self._REUSABLE_PHASES:
+                raise ValueError(
+                    "existing geometry can only be confirmed after restart, a failed run, or a cancelled run"
+                )
             if self.current_lock is None:
                 raise ValueError("no existing geometry to confirm")
             if not self._is_ready(self.capture):

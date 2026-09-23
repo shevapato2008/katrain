@@ -899,6 +899,14 @@ def test_cancel_before_store_pointer_swap_keeps_old_generation_and_restores_expo
     assert current.profile.exposure is None
     np.testing.assert_array_equal(current.geometry.baseline, old_lock.baseline)
     assert (tmp_path / "hardware-vision" / "generations" / "new").is_dir()
+
+    # V2:取消之后「沿用上次标定」能用,而且沿用的是旧锁(不是被取消那次的新锁)
+    status = service.confirm_existing()
+    assert status["phase"] == "ready"
+    assert status["session_calibrated"] is True
+    assert service.current_lock is old_lock
+    assert promoted == [old_lock]
+
     service.stop()
 
 

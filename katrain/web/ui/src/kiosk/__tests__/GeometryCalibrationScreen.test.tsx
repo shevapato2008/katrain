@@ -225,6 +225,19 @@ describe('屏 26 棋盘标定', () => {
     await waitFor(() => expect(confirmExisting).toHaveBeenCalled());
   });
 
+  it('取消之后「沿用上次标定」可以按', () => {
+    status = { ...status, phase: 'cancelled', last_valid: true };
+    renderScreen();
+    expect(within(acts()).getByRole('button', { name: '沿用上次标定' })).toBeEnabled();
+  });
+
+  it('漂移失效时按不了,而且屏上说得出为什么', () => {
+    status = { ...status, phase: 'degraded', last_valid: true };
+    renderScreen();
+    expect(within(acts()).getByRole('button', { name: '沿用上次标定' })).toBeDisabled();
+    expect(screen.getByText(/棋盘挪动过/)).toBeInTheDocument();
+  });
+
   /**
    * 🔴 运行中稿子那两颗键**一颗都不成立**:「沿用上次标定」服务端会 `ValueError`,
    * 「重新开始标定」会撞 409。而一次标定是分钟级的 —— 没有退出路径 = 卡死。

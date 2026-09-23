@@ -339,11 +339,14 @@ export function GeometryCalibrationScreen({
 
   // ── 两颗键 ─────────────────────────────────────────────────────────────────
   const canStart = cameraReady && ledReady && !starting && !active;
-  const canReuse = (phase === 'required' || phase === 'failed') && status.last_valid && cameraReady && !starting && !active;
+  const canReuse = (phase === 'required' || phase === 'failed' || phase === 'cancelled')
+    && status.last_valid && cameraReady && !starting && !active;
   const reuseBlockedWhy = active ? '标定进行中'
     : !cameraReady ? '摄像头未连接，无法核对网格'
       : phase === 'ready' ? '这一局已经在用这次标定'
-        : null;
+        // 「按不了」永远要有话说:degraded 是唯一剩下的按不了的情形。新文案走 t(),译文在 Task 7b 收口。
+        : phase === 'degraded' ? t('vision:reuse_blocked_moved', '棋盘挪动过，上次的标定对不上了 —— 用「对齐外框」（不亮灯，盘上有子也能对）或重新标定')
+          : null;
 
   const primaryLabel = phase === 'ready' && !confirmingManual ? '重新标定棋盘'
     : confirmingManual ? '已清空，确认重新标定'
@@ -496,7 +499,10 @@ export function GeometryCalibrationScreen({
                * 却退不出去,人只能干等它失败 —— **一个没有退出路径的分钟级流程,在 7 寸触摸屏上就是卡死。**
                *
                * 走危险色不走绿:绿色在这一屏的其它每个状态下都是「开始 / 重来」,同一个位置同一个
-               * 颜色换成「取消」,条件反射按下去就毁掉一次运行。不配确认弹层 —— 取消是廉价且可逆的。
+               * 颜色换成「取消」,条件反射按下去就毁掉一次运行。
+               * 不配确认弹层 —— 取消是廉价且可逆的:取消之后「沿用上次标定」仍然可以按
+               * (2026-09-20 起,`_REUSABLE_PHASES` 含 cancelled)。**这句话在那之前是不成立的**,
+               * 当时取消会让本次开机的标定一起作废;登记不做确认层的那条裁定,依据的正是这个前提。
                */
               <button
                 type="button"

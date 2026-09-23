@@ -4903,7 +4903,7 @@ msgid "kifu:greet_b"
 msgstr "棋"
 
 msgid "kifu:greet_sub"
-msgstr "名局、职业直播，以及把谱摆到实体盘上"
+msgstr "名局，以及把谱摆到实体盘上"
 
 msgid "kifu:famous_records"
 msgstr "名局棋谱"
@@ -6482,7 +6482,7 @@ msgid "growth:unknown_seat_a"
 msgstr "有 "
 
 msgid "growth:unknown_seat_b"
-msgstr " 局没算进胜率：面对面、导入的谱，以及没记下你执黑还是执白的局。"
+msgstr " 局没算进胜率：面对面的局，以及没记下你执黑还是执白的局。"
 
 msgid "setup:handicap_side"
 msgstr "让子 · 我执"

@@ -643,6 +643,7 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.vision_pump_task = None
     app.state.vision_poller_task = None
     app.state.capture = None
+    app.state.baipu_collect = False
     app.state.geometry = None
     app.state.geometry_calibration = None
     app.state.hardware_vision_store = None
@@ -812,15 +813,25 @@ async def _lifespan_board(app: FastAPI, log):
         # geometry). "every-move" (LED fiducial, sub-pixel) is opt-in for high-quality TRAINING
         # capture; "off" disables. Select via --baipu-fiducial-mode or $KATRAIN_BAIPU_FIDUCIAL_MODE.
         # NOTE: real-hardware crowded-board accuracy of "auto" is gated by P12 Task 9 (待硬件).
-        from katrain.web.core.baipu_capture import resolve_fiducial_mode
+        from katrain.web.core.baipu_capture import resolve_baipu_collect, resolve_fiducial_mode
 
         app.state.baipu_fiducial_mode = resolve_fiducial_mode(
             getattr(settings, "_baipu_fiducial_mode", None), os.getenv("KATRAIN_BAIPU_FIDUCIAL_MODE")
         )
         app.state.baipu_drift_threshold_cells = getattr(settings, "baipu_drift_threshold_cells", 0.15)
-        log.info("Capture service started (camera=%s)", capture_config.camera_device)
+        # 上线版摆谱不拍照(Fan 2026-09-14)。采集服务在这里总是起的(几何标定要它),
+        # 拍不拍由这个开关单独决定,默认关。采 YOLO 训练数据时给 --baipu-collect。
+        app.state.baipu_collect = resolve_baipu_collect(
+            getattr(settings, "_baipu_collect", None), os.getenv("KATRAIN_BAIPU_COLLECT")
+        )
+        log.info(
+            "Capture service started (camera=%s, baipu_collect=%s)",
+            capture_config.camera_device,
+            app.state.baipu_collect,
+        )
     else:
         app.state.capture = None
+        app.state.baipu_collect = False
 
     # Calibration service needs only the camera: confirm-existing/promote and drift monitoring
     # run without an LED (no-LED geometry is a supported primary path). LED is required only for
@@ -4289,10 +4300,18 @@ def run_web():
         "every-move (LED fiducial, sub-pixel — use for TRAINING data capture) | off. "
         "Also settable via $KATRAIN_BAIPU_FIDUCIAL_MODE.",
     )
+    parser.add_argument(
+        "--baipu-collect",
+        action="store_true",
+        help="摆谱时逐手拍照采 YOLO 训练帧(需同时给 --capture-camera)。默认关:上线版摆谱不拍照。"
+        " Also settable via $KATRAIN_BAIPU_COLLECT=1.",
+    )
     args, _unknown = parser.parse_known_args()
     settings._hardware_vision_dir = args.hardware_vision_dir
     if args.baipu_fiducial_mode:
         settings._baipu_fiducial_mode = args.baipu_fiducial_mode
+    if args.baipu_collect:
+        settings._baipu_collect = True
 
     # Configure vision service if model path provided
     if args.vision_model:

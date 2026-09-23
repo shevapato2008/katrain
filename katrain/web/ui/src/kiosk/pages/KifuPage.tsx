@@ -2,29 +2,23 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
 import { useTranslation } from '../../hooks/useTranslation';
+import { ApiError } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
 import {
   cacheSgf, getCachedSgf, getProgress, listRecent,
   type BaipuProgress, type BaipuRecentEntry,
 } from '../../api/baipuApi';
-import { useLiveMatches } from '../../hooks/live/useLiveMatches';
 import { translateResult } from '../../utils/resultTranslation';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
-import { KioskCard } from '../shell/KioskCard';
+import { Icon } from '../shell/icons';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { whenLabel } from '../utils/whenLabel';
-import { liveSourceLabel } from '../../utils/liveSources';
 
 const DEBOUNCE_MS = 350;
 /** 一页 6 条:这是**滚栏里的一段**,不是整屏的列表。20 条会把下面两组挤到看不见。 */
 const PAGE_SIZE = 6;
 
-/**
- * 直播源的中文名。`components/live/MatchCard.tsx` 和 `MatchInfo.tsx` 里已经各有一份
- * 同样的表(两份并行,早于本轮),这是第三处 —— **没有合并是有意的**:那两份带着颜色,
- * 是 galaxy 那套卡片的样子;这里只要名字。合并要动 galaxy 的两屏,已登记为债。
- */
 interface RecentItem extends BaipuRecentEntry {
   progress: BaipuProgress | null;
 }
@@ -40,39 +34,33 @@ const isDone = (p: BaipuProgress | null): boolean =>
  * 屏 15 · 棋谱 `/kiosk/kifu` —— L1 布局 A(镜像栏 296 + 16 + 右栏 680)。
  *
  * 规范 §3 只许围棋加**一个**棋种专属 Dock 项,这一项就是它:原来的
- * 「棋谱 / 摆谱 / 直播」三项收在这儿。**摆谱和直播的入口就在这一屏** ——
- * Task 4 把那两项下了 Dock,在本屏接上之前它们只能靠输 URL 到达,那笔账在这里销。
+ * 「棋谱 / 摆谱 / 直播」三项收在这儿。**摆谱的入口就在这一屏** ——
+ * Task 4 把它下了 Dock,在本屏接上之前它只能靠输 URL 到达,那笔账在这里销。
  *
- * 结构对着稿子 `data-screen="kifu"`:
- * 问候 → 继续摆谱 → 名局棋谱 → 最近摆过 → 职业直播。
+ * 结构对着稿子 `data-screen="kifu"`(2026-09-23 版):
+ * 问候 → 继续摆谱 → 名局棋谱(搜索框 + 导入 SGF / 一页六局 / 翻页)→ 最近摆过。
  *
- * ## 三处和稿子不一样的地方
+ * ## 名局列表一进来就摊开(Fan 2026-09-23)
  *
- * ① **稿子第五块「棋谱详情 · 后端已有 · 界面未接」没搬。** 那一整块(连同里面的
- *    `PlaceholderPage`、`galaxy/pages/KifuLibraryPage.tsx` 两个文件名)是**说给读稿人听的**
- *    进度说明,不是给下棋的人用的东西 —— 和那三处 `.note` 同类(G5)。
- *    而且它说的事本轮已经不成立:详情屏(屏 16)接上了,就在这张列表点下去的地方。
+ * 上一版照 8 月的稿子画成三张卡(搜棋谱 / 摆到实体盘 / 导入 SGF),列表收在「搜棋谱」开关后面,
+ * 首屏能看见的一排行是直播 —— 盒上看起来就是「直播的列表挪进了棋谱库」。Fan 改判:这一屏的
+ * 正文就是棋谱库那一页谱。三张卡拆掉:搜索框常驻在列表头上,「导入 SGF」贴在它右边;
+ * 「摆到实体盘」不另开入口 —— 挑一局点进屏 16 再摆,和从这张表挑谱是同一个动作。
  *
- * ② **搜索没有被三张卡换掉。** 稿子把「搜棋谱」画成一张卡,而现状这一页本来就是一个
- *    能用的棋谱库(搜索 + 分页 + 预览)。**把能用的功能换成一个入口是净损失**,
- *    所以「搜棋谱」这张卡是个开关:按下去搜索框和结果行就在这一组里展开,
- *    收起时这一组和稿子逐像素一样。结果行点进屏 16。
+ * ## 没有直播(Fan 2026-09-22)
  *
- * ③ **组标题右端那个值换成了真数据。** 稿子写的是「按棋手 / 赛事 / 日期搜」——
- *    那是一句解释;规范说 `.secval` 的位置放的是数据(G5),所以写「共 N 局」。
- *    直播那组同理:稿子写死「来源:星阵 · 弈客」,实现里按**这一批真的来自哪几家**算。
+ * kiosk 端整个直播模块删掉,只在 galaxy 保留 —— 这一屏没有直播那一组,问候副标里的「职业直播」
+ * 也一起去掉,盒上的 `/api/v1/board/live/*` 代理同样删了。**别再把直播加回这一屏。**
+ *
+ * ## 组标题右端是真数据
+ *
+ * 规范说 `.secval` 的位置放的是数据(G5),所以写「共 N 局」,取自列表那一发的 `total`。
  *
  * ## `kifu:famous_records` 是另起的 key
  *
  * `kifu:records` 在 cn PO 里是**「条记录」**(galaxy 拿它当「1234 条记录」的量词用)。
  * 复用它,这一组的标题会变成「条记录」——**PO 赢默认值**,闸四(`kiosk-shell-contract`)
  * 抓的就是这个。
- *
- * ## 直播那一块断网时整块不渲染
- *
- * 稿子的原话:「断网时这一块**整块不渲染**,不摆一排『加载中』骗人在等」。照办。
- * ⚠️ 代价要说清楚:**「没有直播」和「拉不到」在屏上长得一样**。这是稿子选的口径
- * (7″ 屏上一块常驻的报错块比它值钱的地方少),已登记。
  */
 const KifuPage = () => {
   const navigate = useNavigate();
@@ -83,40 +71,29 @@ const KifuPage = () => {
   const [recent, setRecent] = useState<RecentItem[]>(readRecent);
   const [importError, setImportError] = useState<string | null>(null);
 
-  // ── 名局棋谱:默认收起,按「搜棋谱」展开 ──
-  const [searchOpen, setSearchOpen] = useState(false);
+  // ── 名局棋谱:一进来就是第一页 ──
   const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [albums, setAlbums] = useState<KifuAlbumSummary[] | null>(null);
   const [total, setTotal] = useState<number | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  /** 列表失败是不是「连不上云端」(503)。棋谱库只在云端,这一种要说「要联网」,别的照原样报。 */
+  const [listOffline, setListOffline] = useState(false);
   const [reload, setReload] = useState(0);
 
-  const { matches, error: liveError } = useLiveMatches({ limit: 8 });
-
+  // 只在输入**真变了**时才起表。挂载时 `'' === ''` 也起表的话,350ms 后那一下 `setPage(1)`
+  // 会把进屏就翻的页弹回第 1 页 —— 列表藏在开关后面时没人碰得到,默认摊开后就碰得到了。
   useEffect(() => {
+    if (searchInput === query) return;
     const timer = setTimeout(() => {
       setQuery(searchInput);
       setPage(1);
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [searchInput]);
-
-  // 收起时**只探一个数**:组标题右端那句「共 N 局」是稿子给这个位置留的值,
-  // 而规范说这个位置放的是数据。`page_size: 1` 只为拿 `total`,**不取列表也不渲染行** ——
-  // 一屏常路是「继续摆谱 / 接着摆」,不该为它拉一页六条回来。
-  useEffect(() => {
-    if (searchOpen) return;
-    let cancelled = false;
-    KifuAPI.getAlbums({ page: 1, page_size: 1 })
-      .then((resp) => { if (!cancelled) setTotal(resp.total); })
-      .catch(() => { /* 离线就没有这个数 —— 位置空着,不编一个 */ });
-    return () => { cancelled = true; };
-  }, [searchOpen]);
+  }, [searchInput, query]);
 
   useEffect(() => {
-    if (!searchOpen) return;
     let cancelled = false;
     // ⚠️ 清空只能在异步回调里(`react-hooks/set-state-in-effect`)。重试那一下靠 `reload`
     // 计数器 —— `setPage(p => p)` 是同一个值,React 会跳过重渲染,效应根本不会再跑。
@@ -128,10 +105,14 @@ const KifuPage = () => {
         setTotal(resp.total);
       })
       .catch((err: Error) => {
-        if (!cancelled) { setListError(err.message); setAlbums(null); }
+        if (!cancelled) {
+          setListError(err.message);
+          setListOffline(err instanceof ApiError && err.status === 503);
+          setAlbums(null);
+        }
       });
     return () => { cancelled = true; };
-  }, [searchOpen, query, page, reload]);
+  }, [query, page, reload]);
 
   const startSession = useCallback((id: string, name: string, sgf: string) => {
     cacheSgf(id, name, sgf);
@@ -170,15 +151,11 @@ const KifuPage = () => {
   const resumable = recent.find((e) => (e.progress?.k ?? 0) > 0 && !isDone(e.progress)) ?? null;
   const totalPages = total == null ? 1 : Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const liveSources = [...new Set(matches.map((m) => m.source))]
-    .map((s) => liveSourceLabel(s))
-    .join(' · ');
-
   return (
     <KioskScrollZone>
       <div className="kiosk-greet">
         <b>{t('kifu:greet_a', '看别人的')}<i>{t('kifu:greet_b', '棋')}</i></b>
-        <span>{t('kifu:greet_sub', '名局、职业直播，以及把谱摆到实体盘上')}</span>
+        <span>{t('kifu:greet_sub', '名局，以及把谱摆到实体盘上')}</span>
       </div>
 
       {resumable && (
@@ -215,29 +192,6 @@ const KifuPage = () => {
           en="Records"
           value={total != null ? `${t('kifu:total_prefix', '共')} ${total.toLocaleString()} ${t('kifu:games_unit', '局')}` : undefined}
         />
-        <div className="kiosk-cards">
-          <KioskCard
-            title={t('kifu:search_records', '搜棋谱')}
-            sub={t('kifu:search_sub', '一个搜索框，模糊匹配')}
-            icon="magnifying-glass"
-            current={searchOpen}
-            ariaLabel={`${t('kifu:search_records', '搜棋谱')}，${searchOpen ? t('kifu:expanded', '已展开') : t('kifu:collapsed', '收起')}`}
-            onClick={() => setSearchOpen((v) => !v)}
-          />
-          <KioskCard
-            title={t('kifu:place_on_board', '摆到实体盘')}
-            sub={t('kifu:place_sub', '灯一手一手指着摆')}
-            icon="grid-nine"
-            // 带上来处:摆谱列表的返回键回这里,键名「棋谱」
-            onClick={() => navigate('/kiosk/baipu', { state: backToState(location) })}
-          />
-          <KioskCard
-            title={t('kifu:import_sgf', '导入 SGF')}
-            sub={t('kifu:import_sub', '本地文件，离线也能摆')}
-            icon="upload-simple"
-            onClick={() => fileInputRef.current?.click()}
-          />
-        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -247,80 +201,100 @@ const KifuPage = () => {
           onChange={onImport}
         />
 
-        {searchOpen && (
-          <div className="ksearch" data-testid="kifu-search">
-            <input
-              type="search"
-              className="ksearch__box"
-              placeholder={t('kifu:search_placeholder_cn', '棋手、赛事、年份都能搜')}
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
-            {listError ? (
-              <div className="empty">
-                <h4>{t('kifu:list_failed', '棋谱库读不到')}</h4>
-                <p>{listError}</p>
-                <button
-                  type="button"
-                  className="kiosk-btn kiosk-btn--pill pill"
-                  onClick={() => { setListError(null); setReload((v) => v + 1); }}
-                >
-                  {t('kifu:retry', '重试')}
-                </button>
-              </div>
-            ) : albums == null ? (
-              <div className="empty"><h4>{t('kifu:searching', '正在找')}</h4></div>
-            ) : albums.length === 0 ? (
+        <div className="ksearch" data-testid="kifu-search">
+          <div className="ksearch__bar">
+            <label className="ksearch__field">
+              <Icon name="magnifying-glass" />
+              <input
+                type="search"
+                className="ksearch__box"
+                placeholder={t('kifu:search_placeholder_cn', '棋手、赛事、年份都能搜')}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="kiosk-btn kiosk-btn--pill ksearch__import"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Icon name="upload-simple" />
+              {t('kifu:import_sgf', '导入 SGF')}
+            </button>
+          </div>
+          {listError ? (
+            <div className="empty">
+              <h4>{listOffline ? t('kifu:list_offline', '棋谱库要联网才能搜') : t('kifu:list_failed', '棋谱库读不到')}</h4>
+              <p>{listOffline
+                ? t('kifu:list_offline_hint', '这台盒子现在连不上云端。摆过的谱和导入的 SGF 不受影响。')
+                : listError}</p>
+              <button
+                type="button"
+                className="kiosk-btn kiosk-btn--pill pill"
+                onClick={() => { setListError(null); setReload((v) => v + 1); }}
+              >
+                {t('kifu:retry', '重试')}
+              </button>
+            </div>
+          ) : albums == null ? (
+            <div className="empty">
+              <h4>{query ? t('kifu:searching', '正在找') : t('kifu:loading', '加载中...')}</h4>
+            </div>
+          ) : albums.length === 0 ? (
+            // 没搜任何东西时是空库,不是「没对上」—— 别叫人去换一个根本没输过的词。
+            query ? (
               <div className="empty">
                 <h4>{t('kifu:no_results_cn', '没有对得上的谱')}</h4>
                 <p>{t('kifu:no_results_hint', '换棋手名、赛事名或者年份再试。')}</p>
               </div>
             ) : (
-              <>
-                <div className="kiosk-rows">
-                  {albums.map((a) => (
-                    <button
-                      type="button"
-                      className="kiosk-row"
-                      key={a.id}
-                      onClick={() => navigate(`/kiosk/kifu/${a.id}`)}
-                    >
-                      <span className="kiosk-row__lead">{a.move_count} {t('kifu:moves_unit', '手')}</span>
-                      <span className="kiosk-row__t">
-                        <b>{a.player_black} {t('kifu:versus', '对')} {a.player_white}</b>
-                        <em>{[a.event, a.round_name, a.date_played].filter(Boolean).join(' · ')}</em>
-                      </span>
-                      <span className="kiosk-row__end">
-                        <span className="kiosk-tag">{translateResult(a.result, t, a.rules)}</span>
-                      </span>
-                    </button>
-                  ))}
+              <div className="empty"><h4>{t('kifu:no_results', '未找到棋谱')}</h4></div>
+            )
+          ) : (
+            <>
+              <div className="kiosk-rows">
+                {albums.map((a) => (
+                  <button
+                    type="button"
+                    className="kiosk-row"
+                    key={a.id}
+                    onClick={() => navigate(`/kiosk/kifu/${a.id}`)}
+                  >
+                    <span className="kiosk-row__lead">{a.move_count} {t('kifu:moves_unit', '手')}</span>
+                    <span className="kiosk-row__t">
+                      <b>{a.player_black} {t('kifu:versus', '对')} {a.player_white}</b>
+                      <em>{[a.event, a.round_name, a.date_played].filter(Boolean).join(' · ')}</em>
+                    </span>
+                    <span className="kiosk-row__end">
+                      <span className="kiosk-tag">{translateResult(a.result, t, a.rules)}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <div className="kpager">
+                  <button
+                    type="button"
+                    className="kiosk-btn kiosk-btn--pill"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    {t('kifu:prev_page', '上一页')}
+                  </button>
+                  <span>{page} / {totalPages}</span>
+                  <button
+                    type="button"
+                    className="kiosk-btn kiosk-btn--pill"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    {t('kifu:next_page', '下一页')}
+                  </button>
                 </div>
-                {totalPages > 1 && (
-                  <div className="kpager">
-                    <button
-                      type="button"
-                      className="kiosk-btn kiosk-btn--pill"
-                      disabled={page <= 1}
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    >
-                      {t('kifu:prev_page', '上一页')}
-                    </button>
-                    <span>{page} / {totalPages}</span>
-                    <button
-                      type="button"
-                      className="kiosk-btn kiosk-btn--pill"
-                      disabled={page >= totalPages}
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    >
-                      {t('kifu:next_page', '下一页')}
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </section>
 
       <section className="kiosk-section">
@@ -376,50 +350,6 @@ const KifuPage = () => {
           </div>
         )}
       </section>
-
-      {/* 断网 / 还没取到 ⇒ 整块不渲染。见文件头那段。 */}
-      {!liveError && matches.length > 0 && (
-        <section className="kiosk-section" data-testid="kifu-live">
-          <KioskSecLabel
-            zh={t('kifu:pro_live', '职业直播')}
-            en="Live"
-            value={liveSources ? `${t('kifu:source_prefix', '来源：')}${liveSources}` : undefined}
-          />
-          <div className="kiosk-rows">
-            {matches.slice(0, 4).map((m) => (
-              <button
-                type="button"
-                className="kiosk-row"
-                key={m.id}
-                onClick={() => navigate(`/kiosk/live/${m.id}`)}
-              >
-                <span className="kiosk-row__lead">
-                  {m.status === 'live' ? t('kifu:live_now', '直播中') : whenLabel(new Date(m.date).getTime(), t)}
-                </span>
-                <span className="kiosk-row__t">
-                  <b>{[m.tournament, m.round_name].filter(Boolean).join(' · ')}</b>
-                  <em>
-                    {liveSourceLabel(m.source)}
-                    {' · '}
-                    {m.status === 'live'
-                      ? `${t('kifu:move_ordinal', '第')} ${m.move_count} ${t('kifu:moves_unit', '手')}`
-                      : `${m.player_black} ${t('kifu:versus', '对')} ${m.player_white}`}
-                  </em>
-                </span>
-                <span className="kiosk-row__end">
-                  {m.status === 'live' ? (
-                    <span className="kiosk-tag kiosk-tag--live">{t('kifu:live_now', '直播中')}</span>
-                  ) : m.status === 'finished' ? (
-                    <span className="kiosk-tag">{t('kifu:ended', '已结束')}</span>
-                  ) : (
-                    <span className="kiosk-tag">{t('kifu:not_started', '未开始')}</span>
-                  )}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
     </KioskScrollZone>
   );
 };

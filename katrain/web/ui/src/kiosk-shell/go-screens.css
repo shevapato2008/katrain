@@ -691,10 +691,14 @@
 .mvrows .mv[role="button"] { cursor: pointer; border-radius: 5px; padding: 0 4px; margin: 0 -4px; }
 .mvrows .mv[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-/* ── 屏 15 棋谱:「搜棋谱」展开出来的那一段 ────────────────────────────────
-   稿子这一组只有三张卡。搜索框和结果行是**收起态之外**的东西:
-   稿子画的是收起的样子,展开才有这一段(理由见 `KifuPage.tsx` 头上第 ② 条)。 */
-.ksearch { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+/* ── 屏 15 棋谱:名局列表(2026-09-23 起一进来就摊开)────────────────────────
+   头一行:搜索框 + 「导入 SGF」;下面是结果行与翻页。稿子同名类在 sample-go 模板里,高 44 圆角 11。 */
+.ksearch { display: flex; flex-direction: column; gap: 10px; }
+.ksearch__bar { display: flex; gap: 10px; }
+/* 放大镜画在框里:框本身还是 `.ksearch__box`(别屏的 select 借它的描边),这里只给它让出左边 40。 */
+.ksearch__field { position: relative; flex: 1; min-width: 0; display: flex; }
+.ksearch__field svg { position: absolute; left: 14px; top: 13px; width: 18px; height: 18px; color: var(--dim); pointer-events: none; }
+.ksearch__field .ksearch__box { flex: 1; min-width: 0; padding-left: 40px; }
 .ksearch__box {
   height: 44px; padding: 0 14px; border: 1px solid var(--hair); border-radius: 11px;
   background: var(--panel); color: var(--text);
@@ -702,6 +706,8 @@
 }
 .ksearch__box::placeholder { color: var(--dim); }
 .ksearch__box:focus-visible { outline: none; border-color: var(--accent); }
+.ksearch__import { height: 44px; flex: none; }
+.ksearch__import svg { width: 16px; height: 16px; }
 .kpager { display: flex; align-items: center; justify-content: center; gap: 12px;
   font-family: var(--font-mono); font-size: 12px; color: var(--dim); }
 .kpager button:disabled { opacity: .4; }

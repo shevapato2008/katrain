@@ -108,8 +108,11 @@ class _FakeConnectivity:
 
 
 class _FakeRemoteClient:
-    def __init__(self, *, payload=None, raises=None):
+    def __init__(self, *, payload=None, raises=None, bound_user_id="1"):
         self._payload, self._raises, self.calls = payload, raises, []
+        # 盒上的云端会话绑在某个本机用户上(`auth.py` bootstrap 里 `bind_user`)。
+        # 不是当前这个人就不许问云端 —— 见 `RepositoryDispatcher.cloud_session_is`。
+        self.bound_user_id = bound_user_id
 
     async def get_growth_activity(self, days, tz_offset):
         self.calls.append((days, tz_offset))
@@ -185,3 +188,30 @@ def test_box_offline_does_not_ask_and_bad_cloud_shape_falls_back(factory, caplog
     with caplog.at_level(logging.INFO):
         assert _client(factory, remote=bad).get(URL).json()["authority"] == "local_cache"
     assert "unrecognised shape" in caplog.text
+
+
+def test_a_cloud_session_belonging_to_someone_else_never_answers(factory, caplog):
+    """**盒子是共用设备。** `RemoteAPIClient` 是进程级单例,只揣着最后登录那个人的 token;
+    云端是按 token 里的身份算数的。所以问云端之前必须先问「云端认的是谁」——
+    否则甲的成长屏会显示乙的账,而且还标着 `cloud`(看起来更可信)。
+
+    退回本机是**正确的降级**:屏上那句「本机记录」就是它的出口,而本机有这个人自己的数。
+    """
+    _game(factory, datetime.now(timezone.utc) - timedelta(minutes=5))
+    remote = _FakeRemoteClient(payload=dict(CLOUD), bound_user_id="2")  # 云端会话是另一个人的
+    with caplog.at_level(logging.INFO):
+        body = _client(factory, remote=remote).get(URL).json()
+
+    assert remote.calls == [], "云端会话是别人的,根本不该去问"
+    assert body["authority"] == "local_cache"
+    assert [d["games"] for d in body["days"]] == [1], "退回本机时要给的是**这个人自己**的数"
+    assert "belongs to user 2" in caplog.text
+
+
+def test_an_unbound_cloud_session_is_not_assumed_to_be_this_user(factory):
+    """没 bind 过 = 证明不了这份 token 属于谁。非严格盒端会从磁盘恢复 refresh token 而不 bind,
+    那份 token 的主人未必是屏前这个人 ⇒ 一律当「不是」。"""
+    remote = _FakeRemoteClient(payload=dict(CLOUD), bound_user_id=None)
+    body = _client(factory, remote=remote).get(URL).json()
+    assert remote.calls == []
+    assert body["authority"] == "local_cache"

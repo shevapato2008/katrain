@@ -322,6 +322,19 @@ def _require_bridge(request: Request) -> Any:
     return state
 
 
+def _reject_generation_regress(state, generation: int) -> None:
+    """代号只许往前走 —— 而且要**在写任何状态之前**判。
+
+    倒退或复用一个代号会让上一个人的 cookie 重新有效(`BoxSSOState.validates` 只认当前这一代),
+    那个人就能读到现在这个人的成长数据。`activate` 自己也挡(那是最后一道),
+    但它排在 `set_tokens` / `bind_user` 之后 —— 在那里抛就正好留下
+    「云端 token 已经是新人的、代号还是旧人的」这个错配窗口。所以这里先判。
+    """
+    active = state.active_generation
+    if active is not None and generation < active:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="generation must not go backwards")
+
+
 @router.post("/box-sso/bootstrap")
 async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     state = _require_bridge(request)
@@ -329,6 +342,7 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid generation")
     if not body.username.strip() or not body.remote_access_token or not body.remote_refresh_token:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid bootstrap payload")
+    _reject_generation_regress(state, body.generation)
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is None:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Board client unavailable")
@@ -373,6 +387,7 @@ async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest)
     """
     state = _require_bridge(request)
     generation = _validate_guest_bootstrap_generation(body.generation)
+    _reject_generation_regress(state, generation)
     repo = request.app.state.user_repo
     existing = repo.get_user_by_username(GUEST_USERNAME)
     if existing is not None:

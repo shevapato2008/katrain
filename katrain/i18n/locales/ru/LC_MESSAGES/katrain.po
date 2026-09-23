@@ -5168,8 +5168,7 @@ msgid "kifu:greet_b"
 msgstr "партии"
 
 msgid "kifu:greet_sub"
-msgstr ""
-"Знаменитые партии, профессиональные трансляции и раскладка на реальной доске"
+msgstr "Знаменитые партии и раскладка на реальной доске"
 
 msgid "kifu:famous_records"
 msgstr "Знаменитые партии"
@@ -6791,8 +6790,7 @@ msgid "growth:unknown_seat_a"
 msgstr "Партий не учтено в проценте побед: "
 
 msgid "growth:unknown_seat_b"
-msgstr ""
-" — очные партии, импортированные записи и партии без записанного цвета."
+msgstr " — очные партии и партии без записанного цвета."
 
 msgid "setup:handicap_side"
 msgstr "Фора · Мой цвет"

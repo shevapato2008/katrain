@@ -212,6 +212,30 @@ async def test_bridge_clear_invalidates_generation_and_closes_registered_sockets
 
 
 @pytest.mark.asyncio
+async def test_a_generation_that_goes_backwards_is_refused(strict_app):
+    """代号只许往前走。
+
+    倒退或复用一个代号,等于把**上一个人**的 cookie 重新变成有效的
+    (`BoxSSOState.validates` 只认当前这一代)—— 那个人就能读到现在这个人的成长数据。
+    今天 launcher 发的代号严格递增(`max(高水位, 上一代)+1`),但那是另一个仓的行为,
+    这条闸建在操作数所在的这一侧。
+    """
+    async with AsyncClient(
+        transport=ASGITransport(app=strict_app), base_url="http://127.0.0.1:8081"
+    ) as client:
+        assert (await bootstrap(client, generation=9, username="alice")).status_code == 200
+        regressed = await bootstrap(client, generation=8, username="bob")
+        guest_regressed = await guest_bootstrap(client, generation=8)
+
+    assert regressed.status_code == 409
+    assert guest_regressed.status_code == 409
+    assert strict_app.state.box_sso.active_generation == 9
+    # 只绑过一次(alice 那次)。被拒的这次连 set_tokens / bind_user 都没走到 ——
+    # 否则会留下「云端 token 已经是 bob 的、代号还是 alice 的」这个错配窗口。
+    strict_app.state.remote_client.bind_user.assert_called_once()
+
+
+@pytest.mark.asyncio
 async def test_new_generation_closes_sockets_from_prior_generation(strict_app):
     socket = MagicMock()
     socket.close = AsyncMock()

@@ -14,39 +14,27 @@ const OUT = resolve(process.cwd(),
 /**
  * 屏 15 棋谱(L1 布局 A,形态 1)。
  *
- * 造的数据逐条对着稿子那张图:三条「最近摆过」的名字、手数、时间,和两场直播。
+ * 造的数据逐条对着稿子那张图:三条「最近摆过」的名字、手数、时间。
  * 时钟冻在 16:40,所以第一条 15:40 落在「今天 15:40」上、第二条落「昨天」、第三条落「前天」。
  *
- * ⚠️ **两处稿子上有而实现里没有的**,差异图上会红一片,都是预期:
- *  ① 稿子第五块「棋谱详情 · 后端已有 · 界面未接」—— 那是**说给读稿人听的**进度说明
- *    (块里印着 `PlaceholderPage` 和 `galaxy/pages/KifuLibraryPage.tsx` 两个文件名),
- *    而且它说的事本轮已经不成立:详情屏接上了,就是下一张对照台那一屏。
+ * 稿子 2026-09-23 按 Fan 改判重画过(smartbox `feat/kiosk-go-kifu-list-design-2026-09-23`):
+ * 名局列表一进来就摊开(搜索框 + 导入 SGF 一行、一页六局、翻页),没有直播那一组、
+ * 也没有「棋谱详情 · 界面未接」那块进度说明。名局六行与「共 2,318 局」照稿子造。
  */
-const ALBUMS = Array.from({ length: 6 }, (_, i) => ({
-  id: i + 1,
-  player_black: '柯洁', player_white: '申真谞',
-  black_rank: '九段', white_rank: '九段',
-  event: '第 29 届三星杯', round_name: '半决赛',
-  result: 'B+R', move_count: 241,
-  date_played: '2026-06-30', board_size: 19, handicap: 0,
-  komi: 7.5, rules: 'chinese',
-}));
-
-const MATCHES = [
-  {
-    id: 'm1', source: 'xingzhen', tournament: '第 29 届三星杯', round_name: '八强',
-    date: '2026-08-20T06:00:00Z', player_black: '柯洁', player_white: '申真谞',
-    black_rank: '九段', white_rank: '九段', status: 'live', result: null, move_count: 118,
-    current_winrate: 0.52, current_score: 1.2, last_updated: '',
-    board_size: 19, komi: 7.5, rules: 'chinese',
-  },
-  {
-    id: 'm2', source: 'yike', tournament: '名人战挑战赛', round_name: '第三局',
-    date: '2026-08-20T06:00:00Z', player_black: '芈昱廷', player_white: '杨鼎新',
-    black_rank: '九段', white_rank: '九段', status: 'scheduled', result: null, move_count: 0,
-    current_winrate: 0.5, current_score: 0, last_updated: '',
-    board_size: 19, komi: 7.5, rules: 'chinese',
-  },
+// 名局六行对着稿子那六局(棋手、赛事、轮次、日期、手数、结果)—— 差异图上剩下的才是实现与稿子真不一样的地方。
+const game = (id: number, b: string, w: string, event: string, round: string, date: string,
+  moves: number, result: string, rules = 'chinese') => ({
+  id, player_black: b, player_white: w, black_rank: '九段', white_rank: '九段',
+  event, round_name: round, result, move_count: moves, date_played: date,
+  board_size: 19, handicap: 0, komi: 7.5, rules,
+});
+const ALBUMS = [
+  game(1, '申真谞', '柯洁', '第 29 届三星杯', '半决赛', '2026-06-30', 241, 'B+R'),
+  game(2, '朴廷桓', '丁浩', 'LG 杯', '决赛第二局', '2026-02-12', 186, 'W+R'),
+  game(3, '一力辽', '芝野虎丸', '名人战', '第七局', '2025-11-06', 312, 'B+1.5', 'japanese'),
+  game(4, '杨鼎新', '卞相壹', '春兰杯', '八强', '2025-10-18', 207, 'W+R'),
+  game(5, '辜梓豪', '申旻埈', '梦百合杯', '四强', '2025-09-02', 268, 'B+0.5', 'korean'),
+  game(6, '许家元', '李轩豪', '应氏杯', '十六强', '2025-07-21', 159, 'W+R'),
 ];
 
 test('四图:棋谱 ←→ sample-go/shots/15-kifu.png', async ({ page }) => {
@@ -77,10 +65,7 @@ test('四图:棋谱 ←→ sample-go/shots/15-kifu.png', async ({ page }) => {
   await stubBackendStatics(page);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: kioskMeJson({ username: '访客' }) }));
   await page.route('**/api/v1/kifu/albums*', (route) => route.fulfill({
-    json: { items: ALBUMS, total: 1234, page: 1, page_size: 6 },
-  }));
-  await page.route('**/live/matches*', (route) => route.fulfill({
-    json: { matches: MATCHES, live_count: 1, total: 2 },
+    json: { items: ALBUMS, total: 2318, page: 1, page_size: 6 },
   }));
   await page.goto('/kiosk/kifu');
   await page.waitForSelector('[data-testid="kifu-recent-rows"] .kiosk-row:nth-child(3)');
@@ -92,13 +77,13 @@ test('四图:棋谱 ←→ sample-go/shots/15-kifu.png', async ({ page }) => {
     outDir: OUT,
     slug: '15-kifu',
     referenceCaption:
-      '参考:sample-go/shots/15-kifu.png · L1 布局 A(镜像栏 296 + 16 + 右栏 680)· '
-      + '「棋谱 / 摆谱 / 直播」三项收成的那一项 · 稿子第五块「棋谱详情 · 界面未接」是写给读稿人的进度说明',
+      '参考:sample-go/shots/15-kifu.png(2026-09-23 改稿)· L1 布局 A(镜像栏 296 + 16 + 右栏 680)· '
+      + '名局列表一进来就摊开 · 没有直播',
     implementationCaption:
-      '实现:/kiosk/kifu @1024×600 · 时钟冻 16:40 · 最近摆过三条和两场直播是 fixture · '
-      + '**没搬**稿子第五块「棋谱详情 · 界面未接」:那是说给读稿人听的,而且详情屏本轮已接上(见屏 16 对照台) · '
-      + '组标题右端写真数据(共 1,234 局 / 来源按这批真的来自哪几家算),不是稿子那两句解释 · '
-      + '「搜棋谱」是开关不是跳转 —— 收起时和稿子一样,按下去在这一组里展开搜索框和结果行 · '
+      '实现:/kiosk/kifu @1024×600 · 时钟冻 16:40 · 名局六行与最近摆过三条是照稿子造的 fixture · '
+      + '名局列表一进来就摊开:搜索框常驻、「导入 SGF」贴在右边(Fan 2026-09-23)· '
+      + '没有直播:Fan 2026-09-22 裁定 kiosk 端删掉直播,只在 galaxy 保留 · '
+      + '组标题右端写真数据(共 N 局)· '
       + 'Dock 七项(2026-08-25 起补了「成长」,围棋独有)',
   });
   console.log(`[fourup 15-kifu] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);

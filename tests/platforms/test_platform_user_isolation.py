@@ -32,8 +32,9 @@ from katrain.web.core.config import settings
 from katrain.web.core.db import Base, get_db
 from katrain.web.platforms.base import PlatformAdapter
 from katrain.web.platforms.credentials import PlatformCredentialStore
+from katrain.web.platforms.golaxy.adapter import AreaAnalysis, OwnershipPoint
 from katrain.web.platforms.manager import PlatformManager
-from katrain.web.platforms.models import PlatformCredentials
+from katrain.web.platforms.models import PlatformCredentials, PlatformGameContext
 
 from tests.web_ui._helpers import _create_user_and_login
 
@@ -52,6 +53,7 @@ class SpyGolaxyAdapter(PlatformAdapter):
     def __init__(self, emit_token_refresh_on_connect: bool = False):
         super().__init__()
         self.connect_calls = 0
+        self.engine_analysis_calls: list[tuple[str, str]] = []
         self.disconnect_calls = 0
         self.emit_token_refresh_on_connect = emit_token_refresh_on_connect
 
@@ -61,6 +63,17 @@ class SpyGolaxyAdapter(PlatformAdapter):
             await self._emit("token_refreshed", {"access_token": "NEW-FROM-THIS-LOGIN"})
         self._connected = True
         return True
+
+    def get_auth_data(self) -> dict:
+        """Mirrors real `GolaxyAdapter.get_auth_data`: the tokens resulting
+        from the connect that just happened, which `connect_platform` merges
+        into what it persists AFTER `connect()` returns (manager.py:155-158).
+        Without this, the mid-connect `token_refreshed` save (attributed via
+        `_pending_owner`) would be silently overwritten by a post-connect save
+        carrying only the raw login credentials."""
+        if self.emit_token_refresh_on_connect and self._connected:
+            return {"access_token": "NEW-FROM-THIS-LOGIN"}
+        return {}
 
     async def disconnect(self) -> None:
         self.disconnect_calls += 1
@@ -106,6 +119,13 @@ class SpyGolaxyAdapter(PlatformAdapter):
         from katrain.web.platforms.golaxy.engine_client import ItemCountsResult
 
         return ItemCountsResult(area=5, options=5, variation=5)
+
+    async def engine_analysis(self, game_id: str, kind: str):
+        """Stub for D1: records that a metered analysis pull actually reached
+        the adapter (== quota would have been spent), so tests can assert it
+        was NEVER called for a game that no longer belongs to the caller."""
+        self.engine_analysis_calls.append((game_id, kind))
+        return AreaAnalysis(ownership=[OwnershipPoint(col=3, row=4, value=0.87)], winrate=0.61, delta=1.2)
 
     @property
     def token_refreshed_handlers(self) -> int:
@@ -324,26 +344,34 @@ async def test_token_refresh_during_user2_login_never_writes_into_user1_row(
     client,
     credential_store,
     manager,
-    user1_token,
     user2_token,
     user1_id,
     user2_id,
     golaxy_adapter_emitting_token_refresh,
 ):
-    """就算将来放开了换人,刷新出来的 token 也必须落在**发起这次连接**的人头上。"""
+    """就算将来放开了换人,刷新出来的 token 也必须落在**发起这次连接**的人头上。
+
+    B2 (2026-09-23 终审): 原版本先给 user1 走 `/auth/logout`,而登出会经
+    `release_user` -> `disconnect_platform` 把 `_platform_user_ids['golaxy']`
+    pop 掉 —— 等 user2 登录时 `_pending_owner` 回退查到的已经是 `None`,
+    `_on_token_refreshed` 走的是「no known user; skipping persist」那一支,
+    `_pending_owner` 这个机制从头到尾没被执行过,所以那个版本改哪条代码路径
+    这条用例都是绿的(独立终审实测:拔掉 `_pending_owner` 回退,10 passed)。
+
+    真正危险、且**可达**的状态是「owner 还记着 user1、但链路已经掉线」——
+    `connect_platform` 的占用判据是
+    `owner is not None and owner != user_id and adapter.is_connected`
+    (manager.py:126),**带 `adapter.is_connected`**——链路一断(掉线/token 过
+    期/远端踢线),user2 不需要任何登出就能直接连上,而 `_platform_user_ids`
+    此刻仍是 user1。这里直接摆出那个状态(不经 logout),让 user2 登录去触发
+    mid-connect 的 token_refreshed。"""
     manager._platform_user_ids["golaxy"] = user1_id
-    golaxy_adapter_emitting_token_refresh._connected = True
+    golaxy_adapter_emitting_token_refresh._connected = False  # owner set, but link is down
     credential_store.save_credentials(
         user1_id,
         PlatformCredentials(platform="golaxy", username="13800000000", auth_data={"access_token": "OLD"}),
     )
     before = credential_store.load_credentials(user1_id, "golaxy")
-
-    # Box-level logout (releases ownership WITHOUT deleting saved credentials —
-    # that's the box-SSO "next person's turn" path, distinct from an explicit
-    # platform disconnect) then user2 connects fresh.
-    logout_resp = await client.post("/api/v1/auth/logout", headers={"Authorization": f"Bearer {user1_token}"})
-    assert logout_resp.status_code == 200, logout_resp.text
 
     r = await client.post(
         "/api/v1/platforms/golaxy/login",
@@ -355,6 +383,13 @@ async def test_token_refresh_during_user2_login_never_writes_into_user1_row(
     after = credential_store.load_credentials(user1_id, "golaxy")
     assert after is not None, "用户 1 的凭据行被误删了"
     assert after.auth_data == before.auth_data, "用户 2 的 token 被写进了用户 1 那一行"
+
+    # Prove the mechanism actually ran (not just "nothing touched user1"):
+    # the mid-login refresh must have landed on user2's OWN row, attributed
+    # via `_pending_owner`, not silently dropped.
+    user2_row = credential_store.load_credentials(user2_id, "golaxy")
+    assert user2_row is not None, "刷新出来的 token 哪儿也没落"
+    assert user2_row.auth_data.get("access_token") == "NEW-FROM-THIS-LOGIN"
 
 
 @pytest.mark.asyncio
@@ -378,3 +413,70 @@ async def test_box_user_logout_releases_the_platform(client, user1_token, user2_
         json={"username": "13900000000", "password": "x"},
     )
     assert r.status_code != 409, "上一个人登出了,平台还占着"
+
+
+# --- Group 3: D1 -- releasing OWNERSHIP must also release the GAME CONTEXTS - #
+
+
+@pytest.fixture
+def engine_game_for_user1(manager, connected_golaxy_for_user1):
+    """User1 has a live human-vs-engine game (`S1`) bridged through golaxy,
+    on top of `connected_golaxy_for_user1`'s ownership setup. Poked directly
+    into the manager's dicts (like `connected_golaxy_for_user1` does), the
+    same way `PlatformManager.start_engine_game` would have left them."""
+    ctx = PlatformGameContext(
+        session_id="S1",
+        platform="golaxy",
+        remote_game_id="g1",
+        my_color="B",
+        is_engine=True,
+    )
+    manager._active_games["g1"] = ctx
+    manager._session_to_game["S1"] = "g1"
+    return ctx
+
+
+@pytest.mark.asyncio
+async def test_disconnect_tears_down_the_bridged_game_not_just_ownership(
+    manager, golaxy_adapter_spy, user1_id, engine_game_for_user1
+):
+    """D1: `disconnect_platform` used to pop `_platform_user_ids` and stop
+    there, leaving `_active_games`/`_session_to_game` pointing at a game that
+    no longer belongs to anyone -- the next owner of this platform would
+    inherit it."""
+    await manager.disconnect_platform("golaxy", user1_id)
+
+    assert manager.get_game_context("S1") is None, "断开后 user1 的对局桥仍然挂着"
+    assert not manager.is_platform_game("S1")
+    with pytest.raises(KeyError):
+        await manager.engine_analysis("golaxy", "S1", "area")
+
+
+@pytest.mark.asyncio
+async def test_user2_engine_analysis_cannot_reach_user1_abandoned_game(
+    client, user1_token, user2_token, golaxy_adapter_spy, engine_game_for_user1
+):
+    """D1 end-to-end: user1 abandons a live engine game (box changes hands),
+    user2 becomes the new golaxy owner. `require_platform_owner` alone would
+    let user2's analysis call through -- it only checks "is the platform
+    yours", never "is this game yours". Assert the metered adapter call
+    itself is never reached for user1's game."""
+    r = await client.post("/api/v1/auth/logout", headers={"Authorization": f"Bearer {user1_token}"})
+    assert r.status_code == 200, r.text
+
+    r = await client.post(
+        "/api/v1/platforms/golaxy/login",
+        headers={"Authorization": f"Bearer {user2_token}"},
+        json={"username": "13900000000", "password": "x"},
+    )
+    assert r.status_code == 200, r.text
+
+    r = await client.post(
+        "/api/v1/platforms/golaxy/engine/analysis",
+        headers={"Authorization": f"Bearer {user2_token}"},
+        json={"session_id": "S1", "kind": "area"},
+    )
+    assert r.status_code == 404, (
+        f"user2 拿 user1 已放弃的对局 S1 跑了一次分析 (got {r.status_code}): {r.text}"
+    )
+    assert golaxy_adapter_spy.engine_analysis_calls == [], "计费的分析调用本不该打到 adapter 上"

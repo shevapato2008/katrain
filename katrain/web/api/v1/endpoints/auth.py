@@ -289,6 +289,29 @@ def _guest_row_has_data(repo: Any, user_id: int) -> bool:
         session.close()
 
 
+async def _activate_and_release_previous_user(request: Request, state: Any, generation: int, new_user_id: int) -> None:
+    """Wraps `state.activate(...)`, releasing the PREVIOUS box user's platform
+    connections if this bootstrap is handing the box to someone else.
+
+    `state.activate` itself already tears down the previous generation's
+    WebSockets when a generation is replaced WITHOUT a prior `box-sso/clear`
+    (`BoxSSOState.activate`'s "Box generation replaced" branch) -- but until
+    this function existed, that branch never released `_platform_user_ids`.
+    The result: the next box user would hit `PlatformBusyError` (HTTP 409,
+    "去设置里断开后再登录") for a platform connection they have NO way to
+    reach, because `/status` correctly reports it as not theirs and the
+    disconnect button only renders when it IS theirs -- a dead end until the
+    service restarts. See `box_sso_clear`'s matching release, which only
+    covers the "clear was called first" path.
+    """
+    prior_user_id = state.active_user_id
+    await state.activate(generation, user_id=new_user_id)
+    if prior_user_id is not None and prior_user_id != new_user_id:
+        platform_manager = getattr(request.app.state, "platform_manager", None)
+        if platform_manager is not None:
+            await platform_manager.release_user(prior_user_id)
+
+
 def _require_bridge(request: Request) -> Any:
     if not strict_box_sso_enabled():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -317,7 +340,7 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     # Tie the cloud session to this local user so per-user queued work (rank events)
     # can tell whose session is currently up on a shared board.
     remote_client.bind_user(shadow_user["id"])
-    await state.activate(body.generation, user_id=shadow_user["id"])
+    await _activate_and_release_previous_user(request, state, body.generation, shadow_user["id"])
     local_access = create_access_token(data={"sub": shadow_user["username"]}, box_generation=body.generation)
     return {"access_token": local_access, "token_type": "bearer"}
 
@@ -364,7 +387,7 @@ async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest)
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is not None and hasattr(remote_client, "clear_tokens"):
         remote_client.clear_tokens()
-    await state.activate(generation, user_id=shadow_user["id"])
+    await _activate_and_release_previous_user(request, state, generation, shadow_user["id"])
     return {
         "access_token": create_access_token(
             data={"sub": shadow_user["username"]}, box_generation=generation

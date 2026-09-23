@@ -181,6 +181,33 @@ class PlatformManager:
                 await adapter.disconnect()
                 logger.info(f"Disconnected from {platform}")
             self._platform_user_ids.pop(platform, None)
+            # Releasing OWNERSHIP is not the same as releasing the GAME
+            # CONTEXTS bridged through this connection. Leaving
+            # `_active_games`/`_session_to_game` populated after the owner is
+            # gone means the NEXT person to connect this platform inherits
+            # someone else's game: `require_platform_owner` only checks "is
+            # the platform yours", never "is this game yours", so the new
+            # owner's engine-analysis calls would spend THEIR metered
+            # allowance on the PREVIOUS owner's game, and the previous
+            # owner's still-open game screen would keep submitting moves
+            # through the NEW owner's token. Ending the game here closes both
+            # directions.
+            #
+            # Trade-off, stated plainly: this ABANDONS any game that is still
+            # in progress at the moment the platform changes hands (box
+            # logout, box-SSO generation replaced, explicit disconnect).
+            # There is no "hand the live game to the next local user" option
+            # on a shared box — the remote platform sees the connection drop
+            # and applies whatever it does for a disconnected opponent
+            # (typically a timeout/forfeit on ITS side, outside our control).
+            # We chose "always end" over "add a per-game user_id and only end
+            # games the departing user doesn't still own" because a shared
+            # box has exactly one adapter per platform: once the OWNER
+            # changes, nobody left holding that adapter can safely keep
+            # talking to the remote game on the old owner's behalf anyway.
+            stale_game_ids = [gid for gid, ctx in self._active_games.items() if ctx.platform == platform]
+            for game_id in stale_game_ids:
+                await self.end_platform_game(game_id, "platform_released")
 
     async def release_user(self, user_id: int) -> None:
         """Release every platform this user currently owns, WITHOUT touching

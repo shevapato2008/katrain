@@ -645,6 +645,12 @@ class GolaxyAdapter(PlatformAdapter):
         await self._rest.close()
         self._connected = False
         self._active_game_id = None
+        # Backstop for `PlatformManager.disconnect_platform`, which already
+        # walks `_active_games` and calls `discard_engine_game` per game — but
+        # anything that disconnects this adapter WITHOUT going through the
+        # manager (a future caller, a test double) must not leave a stale
+        # tunnel history an attacker/next-owner could resume against.
+        self._engine_games.clear()
 
     async def request_sms_code(self, phone: str) -> bool:
         """Request an SMS verification code for phone-based login.

@@ -226,6 +226,31 @@ async def test_new_generation_closes_sockets_from_prior_generation(strict_app):
     socket.close.assert_awaited_once()
 
 
+@pytest.mark.asyncio
+async def test_generation_replaced_without_prior_clear_releases_the_departing_user(strict_app):
+    """D2: `box-sso/clear` already releases the departing user's platform
+    connections (see `test_platform_user_isolation.py`), but bootstrap can
+    also hand the box to a new person WITHOUT a clear in between (`activate`'s
+    own "Box generation replaced" branch). Before this fix that path left the
+    previous user's `_platform_user_ids` entry in place, so the next login to
+    that platform 409s with "去设置里断开后再登录" -- a dead end, since the
+    disconnect button only renders when `/status` reports the connection as
+    theirs, and for the new user it never will."""
+    platform_manager = MagicMock()
+    platform_manager.release_user = AsyncMock()
+    strict_app.state.platform_manager = platform_manager
+
+    async with AsyncClient(
+        transport=ASGITransport(app=strict_app), base_url="http://127.0.0.1:8081"
+    ) as client:
+        await bootstrap(client, generation=30, username="alice")
+        alice_user_id = strict_app.state.user_repo.get_user_by_username("alice")["id"]
+        second = await bootstrap(client, generation=31, username="bob")
+
+    assert second.status_code == 200
+    platform_manager.release_user.assert_awaited_once_with(alice_user_id)
+
+
 def test_strict_lobby_rejects_query_token_but_accepts_same_origin_go_cookie(strict_app):
     with TestClient(strict_app, client=("127.0.0.1", 50000)) as client:
         boot = client.post(

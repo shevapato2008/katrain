@@ -6,7 +6,6 @@ import { API, type PlatformInfo } from '../../api';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
-import { useKeyboardInset } from '../hooks/useKeyboardInset';
 import { PLATFORM_META, defaultPlatforms, mergePlatformStatus } from '../constants/platforms';
 import { interpolate } from '../utils/interpolate';
 
@@ -30,6 +29,16 @@ import { interpolate } from '../utils/interpolate';
  * 摆进一段折叠在连接页里的表单反而挤;独立成页之后每家还能各自长出扫码(Task 6)。
  * 「不做弹层」那条判例仍然成立,只是「页内一段」换成了「独立一页」,两者都不是弹层。
  *
+ * ⚠️ **这一屏现在没有任何 `<input>`。** 表单撤走之后,这里**没留下一个字段**——
+ * 2026-09-24 复审时发现骨架提交(`72e4e94c`)把表单删了,却漏删了配套的
+ * `useKeyboardInset('.kiosk-layout-b .kiosk-side__scroll')` 调用:那次调用从此
+ * 变成死代码(`inZone` 只认 `<input>`,而这个 zone 里一个都没有,`onFocus`/`onBlur`
+ * 永远不会真的触发),已经删掉。真浏览器核对过:`grep 'input\|textarea'` 这个文件
+ * 为空,`kiosk-shell-scroll.spec.ts` 里那条为旧表单写的软键盘闸也已经退役
+ * (`platform-login-section`/`platform-login-pass` 这两个 testid 不存在了,
+ * 那条闸测的对象已经不在这屏上——理由见它退役时留的那段说明)。
+ *
+
  * ## 其余仍按 2026-08-24 的裁定落的
  *
  * **登出留在行尾,而且要有字。** 稿子那一行只有「已连接」+「进入大厅」,这一处是
@@ -77,10 +86,6 @@ const PlatformConnectPage = () => {
   }, [isAuthenticated, token]);
 
   useEffect(() => { void refresh(); }, [refresh]);
-
-  // 软键盘避让 —— 逻辑与注释见 `useKeyboardInset` 头注(2026-09-23 从这里提成共享 hook,
-  // 登录页 `PlatformLoginPage` 也用它)。这一屏的滚动容器是 `.kiosk-layout-b .kiosk-side__scroll`。
-  useKeyboardInset('.kiosk-layout-b .kiosk-side__scroll');
 
   const doLogout = async (platform: string) => {
     setLogoutTarget(null);

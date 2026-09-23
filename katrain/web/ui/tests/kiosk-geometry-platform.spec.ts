@@ -301,6 +301,19 @@ test('39 档面板:完整落在右栏内、与棋盘无交集、轨的四角都�
  * (`go-screens.css` 已经把它从 `justify-content: center` 改成 `overflow-y: auto`,
  * 居中改用 `.xpcol { margin: auto }`)。这条闸量的正是「聚焦最下面那个字段时,
  * 它没有被软键盘盖住,提交键仍够得到」。
+ *
+ * ⚠️ **2026-09-24 复审指出的一个更底层的错:这一屏不该造一个假 `.skbd`。**
+ * `/kiosk` 路由本来就会异步加载一套**真的**触屏键盘(`index.html` 里 `pinyin-ime.js` /
+ * `pinyin-compose.js` / `smartkeyboard.js`,聚焦任意 `<input>` 就会真的弹出、真的用
+ * `.skbd`/`.skbd-open` 这套类名)——`kiosk-shell-scroll.spec.ts` 里屏 07 那条旧闸走的
+ * 正是这一套。之前这里自己 `appendChild` 了一个固定 260px 高的假 `.skbd`,而
+ * `document.querySelector('.skbd')` 只会取**第一个**匹配——两个 `.skbd` 同时存在时取到的
+ * 是真键盘那个(先加载进 DOM),假的那个从未被量过、也从未影响过 `useKeyboardInset`
+ * (它读的也是第一个匹配)。断言照样能读到数字、能过、能不过,看起来像是在测真实场景,
+ * 实际测的是**真键盘在随便什么状态下恰好落在哪**——一次真正的假绿/假红来源。
+ * ⇒ 改成**用真键盘**:等 `.skbd` 挂载(脚本异步加载完成的信号)、聚焦真的触发它弹出、
+ * 等它真的滑上来(判据是位置阈值,不是 `skbd-open` 这个类——类一加就为真,
+ * transform 过渡还在跑,`kiosk-shell-scroll.spec.ts` 那条旧闸已经踩过这个坑并写了注释)。
  */
 async function bootLogin(page: Page, platform: 'golaxy' | 'ogs', lang = 'cn') {
   await freezeClock(page);
@@ -313,45 +326,84 @@ async function bootLogin(page: Page, platform: 'golaxy' | 'ogs', lang = 'cn') {
   await page.goto(`/kiosk/play/cross-platform/login/${platform}`);
   await page.waitForSelector('[data-testid="login-submit"]');
   await page.waitForLoadState('networkidle');
-}
-
-/** 真挂一个固定高度的 `.skbd`,而不是把 viewport 改矮 —— 键盘是 overlay,不改变 viewport 高度。 */
-async function mountFakeKeyboard(page: Page, height = 260) {
-  await page.evaluate((h) => {
-    const kb = document.createElement('div');
-    kb.className = 'skbd';
-    Object.assign(kb.style, { position: 'fixed', left: '0', right: '0', bottom: '0', height: `${h}px`, zIndex: '999' });
-    document.body.appendChild(kb);
-  }, height);
+  // 键盘是 index.html 在 load 之后异步塞进来的三个脚本——不等它,量到的是「没有键盘」
+  // (同 `kiosk-shell-scroll.spec.ts` 那条旧闸的判据)。
+  await page.waitForSelector('.skbd', { state: 'attached' });
 }
 
 /**
- * ⚠️ 这条断言只在**装了 hook 且 padding 计算是真的**这一种状态下才该绿。
- * 报告里的「先不装 hook 跑一遍」和「hook 恒 0 跑一遍」两段红,是靠临时改动
- * `PlatformLoginPage.tsx`(去掉 `useKeyboardInset(...)` 调用)和
- * `useKeyboardInset.ts`(把 `paddingBottom` 算式改成恒 `'0px'`)重跑这同一条测试
- * 得到的 —— 不是这个文件里的第三个变体,那样反而会把「今天到底装没装 hook」这件事
- * 埋进测试参数里,自己骗自己。
+ * 聚焦指定字段,等**真键盘**真的滑上来(不是 `skbd-open` 类一加就判定完成——
+ * transform 过渡 .22s 还在跑的那一刻,键盘可能还在屏幕外,「输入框在键盘上方」
+ * 会恒成立,断言落在两种语义恰好同值的那一侧,假绿),再等输入框自身位置不再变化
+ * (那是 `useKeyboardInset` 让它收敛的信号,不是猜一个时长)。
  */
-test('登录页:聚焦最下面那个字段时,它没有被软键盘盖住,提交键仍够得到', async ({ page }) => {
-  await bootLogin(page, 'golaxy');
-  await mountFakeKeyboard(page, 260);
-  const field = page.locator('[data-testid="login-field-password"]');
-  await field.click();
-  // ⚠️ 2026-09-23 真浏览器逐帧量出来(`debug_kb4` 探针):Chromium 对触摸聚焦的可编辑元素
-  // 会自己做一次「把焦点元素滚回可见」的合成器动画,~140ms 才收敛到 0,且**这个动画不经过
-  // JS 的 scrollTop setter**——hook 只能等它停(靠原生 scroll 事件的静默期,不是猜时长)
-  // 再补一次赋值(`useKeyboardInset.ts` 头注第二条)。150ms 量不到收敛后的稳定值,
-  // 350ms 留出双倍余量。
-  await page.waitForTimeout(350);
+async function focusAndSettle(page: Page, fieldTestId: string, timeout = 2000) {
+  await page.locator(`[data-testid="${fieldTestId}"]`).click();
+  await page.waitForFunction(() => {
+    const k = document.querySelector('.skbd') as HTMLElement | null;
+    if (!k || !k.offsetHeight) return false;
+    return k.getBoundingClientRect().top <= window.innerHeight - k.offsetHeight + 2;
+  }, undefined, { timeout });
+  await page.waitForFunction((testId) => {
+    const w = window as unknown as { __lastBottom?: number };
+    const el = document.querySelector(`[data-testid="${testId}"]`) as HTMLElement;
+    const now = Math.round(el.getBoundingClientRect().bottom);
+    const settled = w.__lastBottom === now;
+    w.__lastBottom = now;
+    return settled;
+  }, fieldTestId, { polling: 60, timeout });
+}
 
-  const geom = await page.evaluate(() => {
+/** 供多条用例共用的读数——含 `gaveUp`,让「hook 主动放弃」和「还没收敛」在断言失败信息里分得开。 */
+async function readLoginKeyboardGeom(page: Page) {
+  return page.evaluate(() => {
     const kb = document.querySelector('.skbd')!.getBoundingClientRect();
     const f = document.querySelector('[data-testid="login-field-password"]')!.getBoundingClientRect();
     const go = document.querySelector('.xpgo')!.getBoundingClientRect();
-    return { fieldClear: f.bottom <= kb.top, goClear: go.bottom <= kb.top, f: f.bottom, kb: kb.top, go: go.bottom };
+    const zone = document.querySelector('[data-testid="platform-login-page"] .xplogin__main') as HTMLElement;
+    return {
+      fieldClear: f.bottom <= kb.top,
+      goClear: go.bottom <= kb.top,
+      gaveUp: zone.dataset.kbInsetGaveUp === '1',
+      f: f.bottom, kb: kb.top, go: go.bottom,
+    };
   });
+}
+
+/**
+ * ⚠️ 2026-09-24 复审指出:原来这里 `waitForTimeout(350)` 是按 Mac 的帧间隔(~20ms)
+ * 倒推出来的一个安全边际——**RK3562 板上页面实测只有 6–15fps**(一帧 67–167ms,
+ * 2026-09-20 实测),固定时长在慢机上不够。改成**等条件不等时长**:`useKeyboardInset`
+ * 已经从「猜一个安静期」改成「每帧读回验证,连续几帧命中才算收敛,超时放弃并留痕
+ * (`zone.dataset.kbInsetGaveUp`)」(头注第三条),测试这里对应地改成轮询同一个判据,
+ * 而不是自己另算一个时长。
+ */
+test('登录页:聚焦最下面那个字段时,它没有被软键盘盖住,提交键仍够得到', async ({ page }) => {
+  await bootLogin(page, 'golaxy');
+  await focusAndSettle(page, 'login-field-password');
+
+  const geom = await readLoginKeyboardGeom(page);
   console.log('[geom login keyboard]', JSON.stringify(geom));
+  expect(geom.gaveUp, 'hook 主动放弃了(超过 HOLD_TIMEOUT_MS 仍未收敛)').toBe(false);
   expect(geom.fieldClear, '字段被键盘盖住').toBe(true);
   expect(geom.goClear, '提交键被键盘盖住').toBe(true);
+});
+
+/**
+ * 判据「这段逻辑的正确性不许依赖『一帧有多快』」——用 CDP 把 CPU 降到板子那个数量级
+ * (RK3562 实测 6–15fps,这里用 `rate: 8` 粗略换算,足以把帧间隔拉到远超原来那个
+ * 固定 60ms 静默期)重跑同一个场景,证明收敛不是靠 Mac 的帧率侥幸躲过时长竞态的。
+ */
+test('登录页软键盘避让:CPU 降速到板子量级仍能收敛(不靠帧率侥幸)', async ({ page }) => {
+  const cdp = await page.context().newCDPSession(page);
+  await bootLogin(page, 'golaxy');
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 8 });
+  await focusAndSettle(page, 'login-field-password', 6000);
+
+  const geom = await readLoginKeyboardGeom(page);
+  console.log('[geom login keyboard throttled]', JSON.stringify(geom));
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+  expect(geom.gaveUp, 'hook 主动放弃了').toBe(false);
+  expect(geom.fieldClear, '字段被键盘盖住(降速态)').toBe(true);
+  expect(geom.goClear, '提交键被键盘盖住(降速态)').toBe(true);
 });

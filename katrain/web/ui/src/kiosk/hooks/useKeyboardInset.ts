@@ -3,9 +3,12 @@ import { useEffect } from 'react';
 /**
  * ⚠️ **软键盘会把聚焦的字段压在底下,而滚动区往往已经滚不动了。**
  *
- * 真浏览器量出来(屏 07 连接页那次):滚动区 clientH 460 / scrollH 610 ⇒ maxScroll 只有 150;
- * 而键盘高 188、上缘落在 y=412(带中文候选条时 246 / 上缘 354)——两个输入框滚到底时都在
- * 412 以下。键盘自己那句 `scrollIntoView` 需要 scrollTop≈294,比 maxScroll 还大,救不回来。
+ * 真浏览器量出来(屏 07 连接页那次,该屏当时还有页内登录表单 —— 这套避让逻辑就是
+ * 为它写的;2026-09-23 Task 5 把那段表单整段撤到独立的登录页之后,`PlatformConnectPage`
+ * 已经**没有任何输入框**了,这个 hook 现在只被 `PlatformLoginPage` 用):
+ * 滚动区 clientH 460 / scrollH 610 ⇒ maxScroll 只有 150;而键盘高 188、上缘落在 y=412
+ * (带中文候选条时 246 / 上缘 354)——两个输入框滚到底时都在 412 以下。键盘自己那句
+ * `scrollIntoView` 需要 scrollTop≈294,比 maxScroll 还大,救不回来。
  *
  * ⇒ 聚焦时给滚动容器垫一段等于键盘高度的下内衬,**不动版式**:不重排段序、不改任何画出来的
  * 元素,四图仍然逐像素可比。键盘没加载(`.skbd` 不存在)时垫 0 —— 那就是没有键盘。
@@ -26,18 +29,25 @@ import { useEffect } from 'react';
  * ⚠️ **第二个坑,比上面那个更隐蔽:我们赋的 `scrollTop` 会被浏览器自己的原生行为撤销,
  * 而这个撤销不经过 JS 的 `scrollTop` setter。** 这不是我们代码里调用的 `scrollIntoView`,
  * 也不是任何一段能读到调用栈的脚本——**Chromium 对触摸聚焦的可编辑元素,会在其可滚动祖先上
- * 自己做一次「把焦点元素滚回可见」的合成器动画**。真浏览器逐帧量出来(20ms 一帧):我们把
- * `scrollTop` 设成 44 后,接下来 6 帧里它被平滑地拉回 0(`44→43→31→12→3→1→0`,~140ms 收敛),
- * 而**在 `scrollTop` 的属性描述符上打点从没抓到第二次 `set` 调用**——说明这不是哪段 JS 在写
- * `scrollTop`,是引擎内部直接改的合成层偏移,JS 层面完全看不见、拦不住。**逐帧纠正循环
- * (每帧把 `scrollTop` 按回目标值)、`focus({ preventScroll: true })` 重新聚焦、给目标元素
- * 设 `scroll-margin-bottom` 三种都实测无效**——都是在跟一个不经过 JS 的动画拔河,赢不了。
+ * 自己做一次「把焦点元素滚回可见」的合成器动画**。真浏览器逐帧量出来(Mac 上 20ms 一帧):
+ * 我们把 `scrollTop` 设成 44 后,接下来 6 帧里它被平滑地拉回 0(`44→43→31→12→3→1→0`,
+ * ~140ms 收敛),而**在 `scrollTop` 的属性描述符上打点从没抓到第二次 `set` 调用**——说明这
+ * 不是哪段 JS 在写 `scrollTop`,是引擎内部直接改的合成层偏移,JS 层面完全看不见、拦不住。
  *
- * ⇒ 唯一管用的做法是**不跟它拔河,等它自己停**:监听 zone 的原生 `scroll` 事件,每次触发就
- * 把「应用我们目标值」这件事往后推;停止收到 `scroll` 事件一小段时间(说明原生动画已经跑完,
- * 不是靠猜一个固定延时)之后,再把 `scrollTop` 设成目标值一次——这次没有动画在竞争,稳稳生效
- * (`debug_kb3` 已验证:原生动画结束后手动赋值会一直保持,不会再被撤销)。
+ * ⚠️ **第三个坑:「等一小段静默期」不能靠猜一个固定毫秒数。** 第一版用「停止收到 scroll
+ * 事件 60ms 后视为动画结束」——这个 60ms 是照 Mac 的帧间隔(约 20ms)倒推出来的一个安全边际,
+ * 而 **RK3562 板上页面实测只有 6–15fps**(一帧 67–167ms,2026-09-20 实测)。板上原生动画
+ * 两帧之间的间隔比 60ms 静默期本身还长 ⇒ 静默期会在动画**还没跑完**的时候提前到期,
+ * 摘掉 `scroll` 监听器之后就再没有任何东西会去纠正后续的帧。**这条逻辑的正确性不许依赖
+ * 「一帧有多快」。** ⇒ 改成**读回验证**:每一帧都把 `scrollTop` 按回目标值,再读一次确认
+ * 它现在确实停在目标值上;连续 `STABLE_FRAMES` 帧都命中才认为原生动画已经收敛。`scroll`
+ * 监听器整个 focus 期间都挂着(不再像第一版那样在「静默期」结束后摘掉)——原生动画随时可能
+ * 因为别的原因重新触发,摘了就再也看不见。给一个绝对的等待上限(`HOLD_TIMEOUT_MS`),超过了
+ * 就放弃并**留下痕迹**(`zone.dataset.kbInsetGaveUp` + `console.error`),不静默失败。
  */
+const STABLE_FRAMES = 3;
+const HOLD_TIMEOUT_MS = 1500;
+
 export function useKeyboardInset(zoneSelector: string): void {
   useEffect(() => {
     const zone = document.querySelector<HTMLElement>(zoneSelector);
@@ -46,24 +56,58 @@ export function useKeyboardInset(zoneSelector: string): void {
       el instanceof HTMLElement && el.tagName === 'INPUT' && zone.contains(el);
 
     let rafId = 0;
-    let settleTimer = 0;
+    let holdRafId = 0;
     let blurTimer = 0;
-    let watching = false;
+    let holding = false;
+    let holdDeadline = 0;
+    let stableFrames = 0;
+
+    const target = () => zone.scrollHeight - zone.clientHeight;
 
     const applyTarget = () => {
-      const target = zone.scrollHeight - zone.clientHeight;
-      if (zone.scrollTop !== target) zone.scrollTop = target;
+      const t = target();
+      if (zone.scrollTop !== t) zone.scrollTop = t;
+      return t;
     };
 
-    // 原生动画每一帧都会触发 scroll 事件——用它做「动画还在跑」的信号,不用猜时长。
+    // 每一帧都读回验证:赋值之后,`scrollTop` 是不是真的停在目标值上。
+    // 停不住(被原生动画拉走)就继续按,连续 `STABLE_FRAMES` 帧都命中才收手;
+    // 超过 `HOLD_TIMEOUT_MS` 还没收敛就放弃并留痕——不许静默失败。
+    const holdLoop = () => {
+      const t = applyTarget();
+      stableFrames = zone.scrollTop === t ? stableFrames + 1 : 0;
+      if (stableFrames >= STABLE_FRAMES) {
+        holding = false;
+        holdRafId = 0;
+        return;
+      }
+      if (performance.now() > holdDeadline) {
+        zone.dataset.kbInsetGaveUp = '1';
+        // eslint-disable-next-line no-console -- 特意留痕:这条不该静默失败。
+        console.error(
+          '[useKeyboardInset] 放弃等待原生「滚回可见」动画收敛(超过', HOLD_TIMEOUT_MS, 'ms)',
+          zoneSelector,
+        );
+        holding = false;
+        holdRafId = 0;
+        return;
+      }
+      holdRafId = requestAnimationFrame(holdLoop);
+    };
+
+    const startHold = () => {
+      stableFrames = 0;
+      holdDeadline = performance.now() + HOLD_TIMEOUT_MS;
+      delete zone.dataset.kbInsetGaveUp;
+      if (holding) return; // 已经在按了,只是重置计时和计数——不用再挂一个新的 rAF 链。
+      holding = true;
+      holdRafId = requestAnimationFrame(holdLoop);
+    };
+
+    // 整个 focus 期间常驻——原生动画随时可能重新开始(比如软键盘候选条切换导致的
+    // 二次布局),不在某个「静默期」之后摘掉,否则那之后的重新触发就没人管了。
     const onScroll = () => {
-      window.clearTimeout(settleTimer);
-      settleTimer = window.setTimeout(() => {
-        settleTimer = 0;
-        watching = false;
-        zone.removeEventListener('scroll', onScroll);
-        applyTarget();
-      }, 60);
+      if (zone.scrollTop !== target()) startHold();
     };
 
     const onFocus = (e: FocusEvent) => {
@@ -76,17 +120,13 @@ export function useKeyboardInset(zoneSelector: string): void {
         const canvasW = document.querySelector<HTMLElement>('.kiosk-screen')?.getBoundingClientRect().width;
         const scale = canvasW && canvasW > 0 ? canvasW / 1024 : 1;
         zone.style.paddingBottom = `${Math.round(keyboardPx / scale)}px`;
-        applyTarget();
-        // 挂 scroll 监听,等浏览器自己的「滚回可见」动画(如果这次 focus 触发了它)跑完再补一次。
-        if (!watching) {
-          watching = true;
-          zone.addEventListener('scroll', onScroll);
-        }
-        onScroll();
+        startHold();
       });
     };
     const onBlur = (e: FocusEvent) => {
       if (!inZone(e.target)) return;
+      if (holdRafId) cancelAnimationFrame(holdRafId);
+      holding = false;
       blurTimer = window.setTimeout(() => {
         blurTimer = 0;
         if (!inZone(document.activeElement)) zone.style.paddingBottom = '';
@@ -94,6 +134,7 @@ export function useKeyboardInset(zoneSelector: string): void {
     };
     zone.addEventListener('focusin', onFocus);
     zone.addEventListener('focusout', onBlur);
+    zone.addEventListener('scroll', onScroll);
     return () => {
       zone.removeEventListener('focusin', onFocus);
       zone.removeEventListener('focusout', onBlur);
@@ -105,7 +146,7 @@ export function useKeyboardInset(zoneSelector: string): void {
       // (2026-09-01 实测:1695 条全过、rc=1)。
       // 它是否触发只取决于测试调度,所以「今天没红」不代表没有这个洞。
       if (rafId) cancelAnimationFrame(rafId);
-      if (settleTimer) window.clearTimeout(settleTimer);
+      if (holdRafId) cancelAnimationFrame(holdRafId);
       if (blurTimer) clearTimeout(blurTimer);
       zone.style.paddingBottom = '';
     };

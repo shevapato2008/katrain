@@ -1859,6 +1859,18 @@ button.kiosk-row.figrow { flex: none; }
    收窄作用域本来就是默认做法,不需要更特殊的理由。 */
 [data-testid="platform-engine-setup-page"] .kiosk-rail { position: relative; }
 
+/* 屏 09 收紧留白,复刻设计源 sample-go/go-kiosk.tmpl.html:627-629 的三条屏专属覆盖 ——
+   几何闸量出右栏 459 溢出视口 400(Task 4 2026-09-23)。**只收留白,不收命中区**:
+   分段仍 48、± 仍 44×44、名牌仍 56,全部 ≥44。
+
+   ⚠️ 第三条不能照抄设计稿的字面量 `margin-top:16px`。设计源那份原型的滚动容器没有
+   `gap`,它写 16 得到的就是屏上的 16;这里的 `.kiosk-side__scroll` 带
+   `gap: var(--l1-section-gap)` = 8(tokens.css:517),会叠加成 16+8=24。要的是屏上
+   真的 16,所以这里写 8(8 + 已有的 8 gap = 16),不是把字面量原样搬过来。 */
+[data-testid="platform-engine-setup-page"] .inputgrp { padding: 16px; }
+[data-testid="platform-engine-setup-page"] .inputgrp .kiosk-optseg { height: 48px; }
+[data-testid="platform-engine-setup-page"] .setgrp + .setgrp { margin-top: 8px; }
+
 .aisheet {
   position: absolute; inset: 44px 0 48px; z-index: 20;
   display: flex; flex-direction: column; gap: 8px;

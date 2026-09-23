@@ -127,7 +127,7 @@ class VisionServiceConfig:
     # frame whose raw board matched the game record and keep the occupancy of cells that look
     # unchanged, bounded per cell. "shadow" computes and logs it without touching recognition — the
     # default until board data in daylight sets the threshold and the two hold limits.
-    # See superpowers/tracks/vision-reference-frame/design.md.
+    # See superpowers/tracks/vision-optimizations/reference-frame/design.md.
     reference_check: str = "shadow"
     imgsz: int = 960
     use_clahe: bool = False

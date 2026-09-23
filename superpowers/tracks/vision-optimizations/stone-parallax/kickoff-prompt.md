@@ -9,14 +9,14 @@
 ## 0. 你在哪
 
 - 仓库 `/Users/fan/Repositories/katrain-kiosk-debug`,当前分支 `fix/kiosk-ui-debug` @ `7a152df1`
-- 赛道目录 `superpowers/tracks/vision-stone-parallax/`
+- 赛道目录 `superpowers/tracks/vision-optimizations/stone-parallax/`
 
 **动手前先读完这四个,不要跳**:
 
-1. `superpowers/tracks/vision-stone-parallax/README.md` — 索引
-2. `superpowers/tracks/vision-stone-parallax/prd.md` — 本轮需求(三条需求条目,带根因行号与验收)
-3. `superpowers/tracks/vision-stone-parallax/geometry.md` — 公式推导、实测输入、二次曲面校核
-4. `superpowers/tracks/vision-stone-parallax/parallax_correct.py` — 参考实现
+1. `superpowers/tracks/vision-optimizations/stone-parallax/README.md` — 索引
+2. `superpowers/tracks/vision-optimizations/stone-parallax/prd.md` — 本轮需求(三条需求条目,带根因行号与验收)
+3. `superpowers/tracks/vision-optimizations/stone-parallax/geometry.md` — 公式推导、实测输入、二次曲面校核
+4. `superpowers/tracks/vision-optimizations/stone-parallax/parallax_correct.py` — 参考实现
 
 然后读这几处源码(PRD 里的根因就指着它们):
 
@@ -30,8 +30,8 @@
 (本机 numpy 在 `/opt/homebrew/bin/python3`,系统 `python3` 没装):
 
 ```
-/opt/homebrew/bin/python3 superpowers/tracks/vision-stone-parallax/parallax_correct.py
-/opt/homebrew/bin/python3 superpowers/tracks/vision-stone-parallax/verify_quadric.py
+/opt/homebrew/bin/python3 superpowers/tracks/vision-optimizations/stone-parallax/parallax_correct.py
+/opt/homebrew/bin/python3 superpowers/tracks/vision-optimizations/stone-parallax/verify_quadric.py
 ```
 
 ## 1. 已经确认的结论 —— 别重新推导,也别绕过
@@ -68,14 +68,14 @@
   `calibration_registry` / `geometry_lock`)、标定工具的交互形态、
   诊断字段怎么加才不破坏既有消费方、这一轮要不要同时处理 `detection_points`
   的元组扩位。
-- 产出写进 `superpowers/tracks/vision-stone-parallax/design.md`。
+- 产出写进 `superpowers/tracks/vision-optimizations/stone-parallax/design.md`。
 - 顺手把 `prd.md` 开头的「分支 / worktree:待定」补上(建议
   `feature/vision-stone-parallax`,用 superpowers 的 **using-git-worktrees** 技能开)。
 - **门槛**:我说「设计通过」才进阶段 2。
 
 ### 阶段 2 · 计划(模型:opus 5,技能:writing-plans)
 
-用 **writing-plans** 技能,产出 `superpowers/tracks/vision-stone-parallax/plan.md`。
+用 **writing-plans** 技能,产出 `superpowers/tracks/vision-optimizations/stone-parallax/plan.md`。
 
 要求:
 
@@ -93,7 +93,7 @@
 所以:先确保 `design.md` 和 `plan.md` 已经落盘(untracked 也算可审),然后跑
 
 ```
-/codex:adversarial-review --wait --scope working-tree 重点审 superpowers/tracks/vision-stone-parallax/plan.md 与 design.md：方案是否正确、任务拆分是否可执行、验收是否可证伪、是否漏掉 prd.md §3 的验收项、是否违反 prd.md §1 的七条约束
+/codex:adversarial-review --wait --scope working-tree 重点审 superpowers/tracks/vision-optimizations/stone-parallax/plan.md 与 design.md：方案是否正确、任务拆分是否可执行、验收是否可证伪、是否漏掉 prd.md §3 的验收项、是否违反 prd.md §1 的七条约束
 ```
 
 - 拿到反馈**回到阶段 2 改计划**,改完再审一次。
@@ -128,7 +128,7 @@
    注明是哪副棋子、哪次标定。
 2. 更新 `prd.md`:每条需求标上完成状态;§5 风险里已经排除的划掉。
 3. 上板验证的对照数据(修正前后 `ambiguous_stone` 里 `unbacked=True` 的计数)
-   记进 `superpowers/tracks/vision-stone-parallax/` 下的一份 handoff。
+   记进 `superpowers/tracks/vision-optimizations/stone-parallax/` 下的一份 handoff。
 
 ## 4. 现在开始
 

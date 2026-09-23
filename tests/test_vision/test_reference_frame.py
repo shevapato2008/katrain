@@ -1,6 +1,6 @@
 """Reference-frame check (2026-09-23): per-cell ZNCC against the last frame whose board matched the
 game record, as bounded evidence against daylight false negatives/positives.
-Design: superpowers/tracks/vision-reference-frame/design.md
+Design: superpowers/tracks/vision-optimizations/reference-frame/design.md
 """
 
 import numpy as np
@@ -150,6 +150,52 @@ def test_a_mostly_crushed_cell_with_one_grid_line_left_is_also_cannot_tell():
     assert np.isnan(sim[2][2]) and not mask[2][2]
 
 
+def _shaded(frame, gain):
+    """The same scene under a light that has moved: a left-to-right brightness ramp scaled by `gain`."""
+    ramp = np.linspace(1.0 - gain, 1.0 + gain, SIZE, dtype=np.float32)[None, :, None]
+    return np.clip(frame.astype(np.float32) * ramp, 0, 255).astype(np.uint8)
+
+
+def test_a_refresh_absorbs_drift_but_never_a_new_stone_nobody_recognised():
+    """Fan 2026-09-23: refresh while the player thinks. A stone that landed unrecognised in that minute
+    must keep the old sample, or it would later be vetoed as 'the reference says empty here'."""
+    reference = ReferenceFrame(_sampler(), to_gray(_board_frame()), _empty_board())
+    later = to_gray(_shaded(_board_frame([(4, 4, BLACK)]), 0.05))
+    refreshed, kept = reference.refreshed(later, ZNCC, REFERENCE_ANCHOR_ZNCC)
+    assert kept[4][4] and kept.sum() == 1
+    sim = refreshed.similarity(later)
+    assert sim[4][4] < ZNCC  # the unrecognised stone still reads as a change
+    assert np.nanmin(np.delete(sim.reshape(-1), 4 * 19 + 4)) > 0.999  # everything else is this frame now
+    assert (refreshed.board == reference.board).all() and refreshed is not reference
+
+
+def test_a_refresh_step_is_bounded_by_the_current_sample_too():
+    """With the anchor gate wide open, the minute-to-minute gate alone still keeps the new stone out."""
+    reference = ReferenceFrame(_sampler(), to_gray(_board_frame()), _empty_board())
+    _, kept = reference.refreshed(to_gray(_board_frame([(4, 4, BLACK)])), ZNCC, -1.0)
+    assert kept[4][4] and kept.sum() == 1
+
+
+def _shadow_edge(frame, x0, width=30, depth=0.6):
+    """A soft shadow edge (a window frame) at x = x0, shadow on its left."""
+    xs = np.arange(SIZE, dtype=np.float32)
+    mask = 1.0 - (1.0 - depth) * np.clip((x0 - xs) / width + 0.5, 0.0, 1.0)
+    return np.clip(frame.astype(np.float32) * mask[None, :, None], 0, 255).astype(np.uint8)
+
+
+def test_minute_refreshes_follow_a_shadow_edge_that_would_age_the_capture_out():
+    """The reason refresh exists: a shadow edge creeping across a cell. Each minute changes it a little,
+    the sum ends below the veto threshold against the original capture."""
+    x, _ = _cell_centre(4, 4)
+    frames = [to_gray(_shadow_edge(_board_frame(), x + dx)) for dx in range(-40, 1, 8)]
+    original = ReferenceFrame(_sampler(), frames[0], _empty_board())
+    refreshed = original
+    for frame in frames[1:]:
+        refreshed, _ = refreshed.refreshed(frame, ZNCC, REFERENCE_ANCHOR_ZNCC)
+    assert original.similarity(frames[-1])[4][4] < ZNCC  # without refresh the rule would go quiet here
+    assert refreshed.similarity(frames[-1])[4][4] >= ZNCC  # with it, the cell is still protected
+
+
 def test_a_sampler_compares_and_hashes_by_identity():
     sampler = _sampler()
     assert sampler == sampler and sampler != _sampler()  # no elementwise ndarray comparison
@@ -169,7 +215,9 @@ from katrain.vision.board_state import EMPTY
 from katrain.vision.ipc import CommandType, WorkerCommand
 from katrain.vision.worker_inprocess import (
     REFERENCE_HOLD_KEEP,
+    REFERENCE_ANCHOR_ZNCC,
     REFERENCE_HOLD_SUPPRESS,
+    REFERENCE_REFRESH_S,
     REFERENCE_ZNCC,
     InProcessAdapter,
 )
@@ -336,8 +384,9 @@ def test_the_reference_is_taken_only_when_nothing_can_be_hiding_in_it():
     assert adapter._reference is not None and adapter._reference.board[4][4] == BLACK
 
 
-def test_the_same_expected_board_is_never_re_captured():
+def test_the_same_expected_board_is_never_re_captured(monkeypatch):
     """v1 re-took the reference every 2 s while the board was unchanged, which fixated a poisoned one."""
+    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: 1000.0)
     adapter = _adapter("on")
     board = _empty_board()
     adapter._expected_np = board
@@ -351,6 +400,55 @@ def test_the_same_expected_board_is_never_re_captured():
     adapter._expected_np = board
     adapter._maybe_capture_reference(board, board, to_gray(_board_frame([(4, 4, BLACK)])))
     assert adapter._reference is not first and adapter._reference.board[4][4] == BLACK
+
+
+def test_a_long_think_refreshes_the_reference_per_cell_once_a_minute(monkeypatch, caplog):
+    clock = [1000.0]
+    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
+    adapter = _adapter("on")
+    board = _empty_board()
+    adapter._expected_np = board
+    adapter._maybe_capture_reference(board, board, to_gray(_board_frame()))
+    first = adapter._reference
+    adapter._ref_hold[2][2] = 7
+    adapter._ref_released[3][3] = True
+    later = to_gray(_shaded(_board_frame([(4, 4, BLACK)]), 0.05))
+
+    clock[0] += REFERENCE_REFRESH_S - 1
+    adapter._maybe_capture_reference(board, board, later)
+    assert adapter._reference is first
+
+    clock[0] += 1
+    with caplog.at_level("INFO"):
+        adapter._maybe_capture_reference(board, board, later)
+    assert adapter._reference is not first
+    assert adapter._reference.similarity(later)[4][4] < REFERENCE_ZNCC  # the unrecognised stone was not absorbed
+    assert adapter._ref_hold[2][2] == 7 and adapter._ref_released[3][3]  # a refresh is not a new reference
+    assert "refcheck refreshed" in caplog.text and "(4,4)" in caplog.text
+
+    second = adapter._reference
+    clock[0] += 30
+    adapter._maybe_capture_reference(board, board, later)
+    assert adapter._reference is second  # the minute restarts at each refresh
+
+
+def test_the_worker_stops_absorbing_a_cell_once_it_has_left_the_original_capture(monkeypatch, caplog):
+    """Codex 2026-09-23 P2: minute-to-minute matches are not transitive. A stone fading in over ten
+    minutes passes the 0.90 step gate every time; only the anchor gate stops the chain."""
+    clock = [1000.0]
+    monkeypatch.setattr("katrain.vision.worker_inprocess.time.monotonic", lambda: clock[0])
+    empty = to_gray(_board_frame()).astype(np.float32)
+    stone = to_gray(_board_frame([(4, 4, BLACK)])).astype(np.float32)
+    adapter = _adapter("on")
+    board = _empty_board()
+    adapter._expected_np = board
+    adapter._maybe_capture_reference(board, board, empty.astype(np.uint8))
+    for t in np.linspace(0.1, 1.0, 10):
+        clock[0] += REFERENCE_REFRESH_S
+        caplog.clear()
+        with caplog.at_level("INFO"):
+            adapter._maybe_capture_reference(board, board, ((1 - t) * empty + t * stone).astype(np.uint8))
+    assert "refcheck refreshed" in caplog.text and "(4,4)" in caplog.text
 
 
 def test_the_reference_is_dropped_by_every_discontinuity():

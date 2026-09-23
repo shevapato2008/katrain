@@ -80,6 +80,14 @@ REFERENCE_HOLD_KEEP = 90  # frames, ~36 s at 2.3 fps
 # a colour disagreement, which board_state.py:316 already releases on its own after 15 raw frames and
 # must not be re-blocked for longer than that.
 REFERENCE_HOLD_SUPPRESS = 10  # frames, ~4 s at 2.3 fps
+# While the game does not advance (a long think), light drifts and the reference ages out. Every this
+# many seconds the next frame that passes every capture guard re-samples, cell by cell, only what still
+# matches -- the current sample at REFERENCE_ZNCC and the sample from when the game last advanced at
+# REFERENCE_ANCHOR_ZNCC. On the synthetic board a soft shadow edge sweeping across a cell bottoms out at
+# 0.545 against the anchor while every real occupancy change measures <= 0.21, hence 0.45 (0.70 would
+# refuse exactly the drift this exists for). Provisional until the board's shadow logs. See design §4.1.
+REFERENCE_REFRESH_S = 60.0
+REFERENCE_ANCHOR_ZNCC = 0.45
 REFERENCE_MODES = ("off", "shadow", "on")
 
 
@@ -232,6 +240,7 @@ class InProcessAdapter:
         self._ref_released = np.zeros(grid, dtype=bool)  # cells whose budget ran out: no longer vetoed
         self._ref_vetoing = False  # the last check disagreed somewhere (applied in "on", logged in shadow)
         self._ref_log_frame = -1
+        self._ref_taken_at = 0.0  # monotonic time of the last capture or refresh
         self._glow_pending: set[tuple[int, int]] = set()
         self._glow_wait = 0
         self._expected_np: np.ndarray | None = None
@@ -477,14 +486,34 @@ class InProcessAdapter:
             or not np.array_equal(observed, expected)
         ):
             return
+        now = time.monotonic()
         if self._reference is not None and np.array_equal(self._reference.board, board):
-            return  # nothing new to record
+            if now - self._ref_taken_at >= REFERENCE_REFRESH_S:
+                self._refresh_reference(gray, now)
+            return
         h, w = gray.shape[:2]
         if self._ref_sampler is None or (self._ref_sampler.img_w, self._ref_sampler.img_h) != (w, h):
             extractor = self._active_extractor()
             self._ref_sampler = build_sampler(w, h, extractor.config, extractor.parallax)
         self._reference = ReferenceFrame(self._ref_sampler, gray, board)
+        self._ref_taken_at = now
         self._reset_reference_budget()
+
+    def _refresh_reference(self, gray: np.ndarray, now: float) -> None:
+        """Same board, a minute on: re-sample what still matches, keep the rest. Hold counts and released
+        cells carry over -- a refresh must not give a poisoned reference a new life (design §4.1)."""
+        self._reference, kept = self._reference.refreshed(gray, REFERENCE_ZNCC, REFERENCE_ANCHOR_ZNCC)
+        self._ref_taken_at = now
+        blind = ~self._reference.usable.reshape(kept.shape)  # neither frame could ever compare these
+        rows, cols = np.nonzero(kept & ~blind)
+        logger.info(
+            "refcheck refreshed: kept %d changed cell(s) from the old reference%s%s (+%d that cannot be compared)",
+            len(rows),
+            ": " if len(rows) else "",
+            ", ".join(f"({r},{c})" for r, c in list(zip(rows.tolist(), cols.tolist()))[:6])
+            + (" ..." if len(rows) > 6 else ""),
+            int((kept & blind).sum()),
+        )
 
     def _measure_pending_glow(self, frame: np.ndarray) -> None:
         """Measure each newly lit lamp that is still a bare lamp (no stone on the camera's board there) and

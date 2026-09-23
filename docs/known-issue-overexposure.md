@@ -1,7 +1,7 @@
 # 已知问题：白天强光下的过曝（2026-09-23 记录，暂不解决）
 
 Fan 2026-09-23：「先简单记录一下光照强度过强的问题，后续再去解决」。本轮优先做参照图对比
-（`superpowers/tracks/vision-reference-frame/design.md`），这一条留档。
+（`superpowers/tracks/vision-optimizations/reference-frame/design.md`），这一条留档。
 
 ## 现象
 

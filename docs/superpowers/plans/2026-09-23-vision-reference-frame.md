@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11、numpy、OpenCV（仅 `cvtColor`）、pytest。板子是 RK3562（ARM Cortex-A53 级，2 GB，服务内存上限 1700 MB），识别每帧 380–600 ms。
 
-**Spec:** `superpowers/tracks/vision-reference-frame/design.md`（v2；相邻问题 `docs/known-issue-overexposure.md` 明确不在本轮范围）
+**Spec:** `superpowers/tracks/vision-optimizations/reference-frame/design.md`（v2；相邻问题 `docs/known-issue-overexposure.md` 明确不在本轮范围）
 
 **审核记录：** v1 由 Codex 审出 8 条 P1、4 条 P2；v2 又被审出 8 条 P1、2 条 P2（本文是 v3）。其中「板上跑的是子进程 worker」一条经实测驳回
 （板子 journal 有 16035 行 `katrain.vision.worker_inprocess`；`service.py:42` 在 `frame_source` 非空时
@@ -69,7 +69,7 @@
 ```python
 """Reference-frame check (2026-09-23): per-cell ZNCC against the last frame whose board matched the
 game record, as bounded evidence against daylight false negatives/positives.
-Design: superpowers/tracks/vision-reference-frame/design.md
+Design: superpowers/tracks/vision-optimizations/reference-frame/design.md
 """
 
 import numpy as np
@@ -241,7 +241,7 @@ act on it and never writes the result back into recognition's own history. See t
 A cell that cannot be compared -- flat (blown out or pitch black) or mostly clipped -- comes back NaN,
 and the caller falls back to the detector. See docs/known-issue-overexposure.md.
 
-Design: superpowers/tracks/vision-reference-frame/design.md
+Design: superpowers/tracks/vision-optimizations/reference-frame/design.md
 """
 
 from __future__ import annotations
@@ -1061,7 +1061,7 @@ Expected: FAIL，`KeyError: 'reference_check'`
     # frame whose raw board matched the game record and keep the occupancy of cells that look
     # unchanged, bounded per cell. "shadow" computes and logs it without touching recognition — the
     # default until board data in daylight sets the threshold and the two hold limits.
-    # See superpowers/tracks/vision-reference-frame/design.md.
+    # See superpowers/tracks/vision-optimizations/reference-frame/design.md.
     reference_check: str = "shadow"
 ```
 
@@ -1114,7 +1114,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ### Task 4: 成本核实与文档收口
 
 **Files:**
-- Modify: `superpowers/tracks/vision-reference-frame/design.md`（§11、§12 补实测数字）
+- Modify: `superpowers/tracks/vision-optimizations/reference-frame/design.md`（§11、§12 补实测数字）
 
 - [ ] **Step 1: 本机量一次每帧成本与内存**
 
@@ -1147,7 +1147,7 @@ Expected: 本机每帧 < 10 ms。板子约为本机的 5–10 倍；真值等部
 - [ ] **Step 3: 提交**
 
 ```bash
-git add superpowers/tracks/vision-reference-frame/design.md
+git add superpowers/tracks/vision-optimizations/reference-frame/design.md
 git commit -m "docs(vision): reference-frame cost on this machine and what the board run must answer
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"

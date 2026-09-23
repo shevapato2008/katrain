@@ -17,7 +17,7 @@ act on it and never writes the result back into recognition's own history. See t
 A cell that cannot be compared -- flat (blown out or pitch black) or mostly clipped -- comes back NaN,
 and the caller falls back to the detector. See docs/known-issue-overexposure.md.
 
-Design: superpowers/tracks/vision-reference-frame/design.md
+Design: superpowers/tracks/vision-optimizations/reference-frame/design.md
 """
 
 from __future__ import annotations
@@ -125,6 +125,16 @@ def build_sampler(
     return CellSampler(img_w=img_w, img_h=img_h, grid_size=grid, points=index.shape[1], flat_index=index)
 
 
+def _normalise(patches: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(zero-mean unit-std patches, usable); unusable rows are only mean-centred."""
+    std, usable = _usable(patches)
+    return (patches - patches.mean(axis=1, keepdims=True)) / np.where(usable, std, 1.0)[:, None], usable
+
+
+def _zncc(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    return (a * b).sum(axis=1) / a.shape[1]
+
+
 def _usable(patches: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """(std, usable): a patch is usable when it has structure and is neither mostly blown out nor
     mostly crushed black."""
@@ -138,21 +148,41 @@ class ReferenceFrame:
     """One reference: the normalised cell patches of a frame plus the board it is known to show."""
 
     def __init__(self, sampler: CellSampler, gray: np.ndarray, board: np.ndarray):
-        patches = sampler.sample(gray)
-        std, usable = _usable(patches)
         self.sampler = sampler
         self.board = np.array(board, dtype=int, copy=True)
-        self.usable = usable
-        self.normalised = (patches - patches.mean(axis=1, keepdims=True)) / np.where(usable, std, 1.0)[:, None]
+        self.normalised, self.usable = _normalise(sampler.sample(gray))
+        # The sample taken when the game last advanced. Refreshes never replace it: ZNCC is not
+        # transitive, so a chain of minute-to-minute matches could otherwise walk a cell arbitrarily far.
+        self.anchor, self.anchor_usable = self.normalised, self.usable
 
     def similarity(self, gray: np.ndarray) -> np.ndarray:
         """(grid, grid) float32 ZNCC in [-1, 1]; NaN where either frame's patch cannot be compared."""
-        patches = self.sampler.sample(gray)
-        std, usable = _usable(patches)
+        normalised, usable = _normalise(self.sampler.sample(gray))
         usable &= self.usable
-        normalised = (patches - patches.mean(axis=1, keepdims=True)) / np.where(usable, std, 1.0)[:, None]
-        zncc = (self.normalised * normalised).sum(axis=1) / normalised.shape[1]
+        zncc = _zncc(self.normalised, normalised)
         return np.where(usable, zncc, np.nan).astype(np.float32).reshape(self.sampler.grid_size, -1)
+
+    def refreshed(self, gray: np.ndarray, threshold: float, anchor_threshold: float) -> tuple["ReferenceFrame", np.ndarray]:
+        """This reference with the cells that still look the same re-sampled from `gray`, so slow light
+        drift during a long think does not age it out. A cell is re-sampled only if both frames can
+        compare it, it matches the current sample at `threshold` AND the anchor at `anchor_threshold`;
+        every other cell keeps its old sample -- a change nobody recognised (a stone that landed unseen)
+        is never absorbed. Returns (new reference, (grid, grid) mask of the cells kept from the old one).
+        """
+        normalised, usable = _normalise(self.sampler.sample(gray))
+        take = (
+            usable
+            & self.usable
+            & self.anchor_usable
+            & (_zncc(self.normalised, normalised) >= threshold)
+            & (_zncc(self.anchor, normalised) >= anchor_threshold)
+        )
+        new = object.__new__(ReferenceFrame)
+        new.sampler, new.board = self.sampler, self.board.copy()
+        new.anchor, new.anchor_usable = self.anchor, self.anchor_usable
+        new.normalised = np.where(take[:, None], normalised, self.normalised)
+        new.usable = self.usable.copy()
+        return new, (~take).reshape(self.sampler.grid_size, -1)
 
     def unchanged(self, gray: np.ndarray, threshold: float) -> tuple[np.ndarray, np.ndarray]:
         """(mask, similarity): mask is True where the cell is structurally the same as the reference.

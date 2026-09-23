@@ -345,6 +345,26 @@ def _scan_store(app):
     return store
 
 
+def _golaxy_scan_http_client(app):
+    """F6 (task-6a review, low-but-real on-device cost): `scan/state` is
+    polled every second (protocol step ③) for as long as the login QR screen
+    is open. `GolaxyScanLogin()` with no client injected opens and closes a
+    fresh `httpx.AsyncClient` per call (see `scan_login.py`'s `_get` —
+    intentional there, for the "don't `async with` someone else's client"
+    rule), which on RK3562 means one full TLS handshake to api.19x19.com per
+    second for as long as that screen is open. Reusing one long-lived client
+    across polls avoids that; lazily created and stashed on `app.state` for
+    the same reason `_scan_store` is (no `server.py` wiring needed — a fresh
+    client on first use is a fine default)."""
+    import httpx
+
+    client = getattr(app.state, "golaxy_scan_http_client", None)
+    if client is None:
+        client = httpx.AsyncClient(timeout=10.0)
+        app.state.golaxy_scan_http_client = client
+    return client
+
+
 @router.post("/{platform}/scan/start")
 async def scan_start(platform: str, request: Request, user: User = Depends(get_current_user)):
     """Start a Golaxy scan-code login. Does NOT go through `require_platform_owner`
@@ -357,15 +377,26 @@ async def scan_start(platform: str, request: Request, user: User = Depends(get_c
     (uuid itself carries no identity; the box can be handed to someone else
     mid-scan).
     """
-    from katrain.web.platforms.golaxy.scan_login import GolaxyScanLogin
+    from katrain.web.platforms.golaxy.scan_login import GolaxyScanLogin, ScanRateLimited
 
     if platform != "golaxy":
         raise HTTPException(status_code=400, detail=f"{platform} 不支持扫码登录")
+    store = _scan_store(request.app)
     try:
-        start = await GolaxyScanLogin().start()
+        # F5 (task-6a review): check the per-user cap BEFORE the outbound
+        # Golaxy call below — a rate-limited caller must not pay for a
+        # request whose result is just going to be discarded.
+        store.check_capacity(user.id)
+    except ScanRateLimited:
+        raise HTTPException(status_code=429, detail="扫码请求太频繁,请稍后再试")
+    try:
+        start = await GolaxyScanLogin(client=_golaxy_scan_http_client(request.app)).start()
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"连不上星阵: {exc}")
-    session = _scan_store(request.app).create(golaxy_uuid=start.uuid, initiating_user_id=user.id)
+    try:
+        session = store.create(golaxy_uuid=start.uuid, initiating_user_id=user.id, platform=platform)
+    except ScanRateLimited:
+        raise HTTPException(status_code=429, detail="扫码请求太频繁,请稍后再试")
     return {"scan_id": session.scan_id, "payload": start.payload, "expires_at": session.expires_at}
 
 
@@ -389,7 +420,10 @@ async def scan_state(platform: str, scan_id: str, request: Request, user: User =
     from katrain.web.platforms.golaxy.scan_login import TERMINAL_STATES, GolaxyScanLogin, ScanState
 
     session = _scan_store(request.app).get(scan_id)
-    if session is None:
+    if session is None or session.platform != platform:
+        # F4 (task-6a review): a `scan_id` from a DIFFERENT platform's path
+        # (or an unknown platform) must look exactly like "doesn't exist" —
+        # not leak whether some other platform's session with this id exists.
         raise HTTPException(status_code=404, detail="扫码会话不存在或已过期")
     if session.initiating_user_id != user.id:
         raise HTTPException(status_code=403, detail="这条扫码登录不是你发起的")
@@ -398,7 +432,9 @@ async def scan_state(platform: str, scan_id: str, request: Request, user: User =
         return {"state": ScanState.EXPIRED.value}
     if session.state not in TERMINAL_STATES:
         try:
-            session.state = await GolaxyScanLogin().poll(session.golaxy_uuid)
+            session.state = await GolaxyScanLogin(client=_golaxy_scan_http_client(request.app)).poll(
+                session.golaxy_uuid
+            )
         except Exception:
             raise HTTPException(status_code=502, detail="连不上星阵")
     return {"state": session.state.value}
@@ -422,6 +458,16 @@ async def scan_confirm(
     simultaneous retries can't both pass the `consumed` check before either
     sets it.
 
+    F3 (task-6a review): `expired` is checked BEFORE `consumed` — a
+    successfully-consumed session's cached `{"connected": True}` must not be
+    replayable forever. R-30's idempotency window is meant to cover a
+    network-retry timescale, not the session's full `DEFAULT_SCAN_TTL_SECONDS`
+    lifetime; by then the platform may have since been disconnected or handed to
+    someone else, and a stale "已连接" would leave the kiosk screen out of
+    sync with reality (every subsequent platform call would then 400/403 with
+    no visible cause). Checking `consumed` first would let TTL never fire for
+    a session that ever succeeded.
+
     Uses `username=""` (R-29, task-6a-brief.md): `/scan/username` only gives
     the display nickname, not the `0086-{phone}` login principal that
     `/items/{username}` (道具 badges) needs — and there's no verified response
@@ -437,23 +483,30 @@ async def scan_confirm(
 
     store = _scan_store(request.app)
     session = store.get(req.scan_id)
-    if session is None:
+    if session is None or session.platform != platform:
+        # F4 (task-6a review): same reasoning as `scan_state` above — a
+        # mismatched/unknown platform path must look like "doesn't exist",
+        # and this ALSO keeps an unrelated platform's `connect_platform`
+        # (bare `ValueError` on an unregistered name, or a real network call
+        # on a registered-but-wrong one, e.g. OGS) from ever being reached.
         raise HTTPException(status_code=404, detail="扫码会话不存在或已过期")
     if session.initiating_user_id != user.id:
         raise HTTPException(status_code=403, detail="这条扫码登录不是你发起的")
 
     async with store.lock:
-        if session.consumed:
-            return session.result
         if session.expired:
             store.discard(req.scan_id)
             raise HTTPException(status_code=410, detail="扫码会话已过期")
+        if session.consumed:
+            return session.result
         if session.state != ScanState.CONFIRMED:
             raise HTTPException(status_code=409, detail="还没在手机上确认")
 
         display_name = ""
         try:
-            display_name = await GolaxyScanLogin().username(session.golaxy_uuid)
+            display_name = await GolaxyScanLogin(client=_golaxy_scan_http_client(request.app)).username(
+                session.golaxy_uuid
+            )
         except Exception:
             logger.warning("scan/confirm: could not fetch Golaxy nickname (non-fatal)")
 
@@ -466,6 +519,14 @@ async def scan_confirm(
                 status_code=409,
                 detail=f"这台盒子上现在连着别人的{exc.platform}账号 · 去设置里断开后再登录",
             )
+        except ValueError:
+            # F4 backstop (task-6a review): `connect_platform` raises a bare
+            # `ValueError` for an unregistered platform name. The
+            # `session.platform != platform` check above should make this
+            # unreachable in practice, but a session created before that
+            # check existed, or any future gap in it, must still surface as
+            # an ordinary 400 — not an unhandled 500.
+            raise HTTPException(status_code=400, detail=f"Unknown platform: {platform}")
         if not success:
             raise HTTPException(status_code=401, detail="扫码登录失败")
 

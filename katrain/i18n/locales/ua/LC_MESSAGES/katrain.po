@@ -4052,10 +4052,10 @@ msgid "setup:my_side"
 msgstr "Мій колір"
 
 msgid "setup:take_black"
-msgstr "Грати чорними"
+msgstr "Чорні"
 
 msgid "setup:take_white"
-msgstr "Грати білими"
+msgstr "Білі"
 
 msgid "setup:no_camera_hint"
 msgstr ""

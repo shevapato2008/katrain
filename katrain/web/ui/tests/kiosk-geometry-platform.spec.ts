@@ -21,6 +21,15 @@ test.use({ viewport: KIOSK_VIEWPORT, hasTouch: true });
  */
 const LONGEST = '星阵超级究极加强版机器人';
 
+/**
+ * 全部 11 个语种 —— 不是「挑几个看起来长的」,是仓里实际支持的全集
+ * (`cn` 不是 `zh`,`jp` 不是 `ja`)。Task 4.7:之前只测过 `cn`/`de` 两个,
+ * `de`/`fr`/`ru` 是凭印象点的名,`ua` 和 `ru` 同一个「动词 · 颜色」重复模式
+ * 却因为没被点到名一直没测过。按语种分岔的断言(整条链不滚 / 提示行不裁切 /
+ * 分段按钮不折行)全部改成量这十一个,不再凭感觉挑样本。
+ */
+const LOCALES = ['en', 'cn', 'tw', 'jp', 'ko', 'de', 'es', 'fr', 'ru', 'tr', 'ua'] as const;
+
 const LEVELS = {
   levels: Array.from({ length: 39 }, (_, i) => ({
     elo_score: 100 + i * 10, level_name: `第 ${i + 1} 档`, name: LONGEST,
@@ -57,16 +66,17 @@ async function boot(page: Page, opts: { camera: boolean; lang?: string }) {
 /**
  * **2026-09-23 修复轮 3:按语种参数化。** 之前只在 `cn` 下量过 ——
  * `.kiosk-opthint` 是定高的(`tokens.css:720-722`,`height`/`line-height` 同一个
- * token),译文一折行,第二行被静默裁掉,屏上看不出来。`de`/`fr`/`ru` 的
- * `platform:engine_fixed_hint`/`setup:no_camera_hint` 字符数是中文的 3–5 倍
- * (量过,见 `task-3-report.md`「德文下的版面」一节)。至少覆盖 `cn`(基线)和
- * `de`(最长的那个语种)× 两态摄像头,四组。
+ * token),译文一折行,第二行被静默裁掉,屏上看不出来。
  *
- * ⚠️ **德文那几组预期会红 —— 不要为了让它们变绿去改产品代码或放松断言。**
+ * **2026-09-23 Task 4.7:从「挑几个语种」改成量全部 11 个。** `de`/`fr`/`ru` 是
+ * 之前凭印象点的名,不是量出来的;`ua` 和 `ru` 同一个「动词 · 颜色」重复模式,
+ * `en`/`tr` 从没量过 —— 名单本身就是缺口。见 `LOCALES` 定义处的说明。
+ *
+ * ⚠️ 任何一组红了 —— 不要为了让它变绿去改产品代码或放松断言。
  * 这是一个语种维度的版面缺口,是产品决定(换两行高的提示行 / 缩短译文 / 别的),
  * 不是这条闸的作者能现场定的;闸的任务是把数字如实量出来,交给人裁。
  */
-for (const lang of ['cn', 'de'] as const) {
+for (const lang of LOCALES) {
   for (const camera of [true, false] as const) {
     test(`屏 09 最坏内容量下,整条链上没有任何一层在滚(lang=${lang} camera=${camera})`, async ({ page }) => {
       await boot(page, { camera, lang });
@@ -158,7 +168,8 @@ test('屏 09 滚动条:不溢出态应撤条(当前实现下这一态达不到,�
 
 /** `.kiosk-opthint` 定高(`tokens.css:720-722` height/line-height 同一个 token),文案换行会被静默裁掉。 */
 /**
- * 按语种参数化,理由和上面那组链测试同一段注释。cn/de × 摄像头可用/不可用,四组。
+ * 按语种参数化,理由和上面那组链测试同一段注释。Task 4.7 起改成全部 11 个语种
+ * × 摄像头可用/不可用。
  *
  * **2026-09-23 修复轮 4:换轴。** 原来断的是 `scrollWidth <= clientWidth`(水平),
  * 而 `.kiosk-opthint` 是 `white-space: normal` —— **它永远不会横向溢出,只会折行**,
@@ -172,7 +183,7 @@ test('屏 09 滚动条:不溢出态应撤条(当前实现下这一态达不到,�
  * `height: auto; min-height: var(--opthint-h)`(只在这一屏,`.kiosk-opthint` 是
  * 屏 02/03/04 共用的,那几屏本来就整栏滚,不在这轮处理范围内)。
  */
-for (const lang of ['cn', 'de'] as const) {
+for (const lang of LOCALES) {
   test(`屏 09 提示行不被裁切(lang=${lang})—— 摄像头可用/不可用两种文案都要测(更长的那句才是真边界)`, async ({ page }) => {
     for (const camera of [true, false]) {
       await boot(page, { camera, lang });
@@ -191,10 +202,11 @@ for (const lang of ['cn', 'de'] as const) {
  * 「我执」分段按钮里的字不许折行(Task 4.6,Fan 裁定)。
  * `[data-testid="setup-side-seg"]` 里每个 `button` 断言 `scrollHeight <= clientHeight` ——
  * 折行不是被裁掉,是画到盒子外面压住下面的留白(同类型缺陷见上面 `.kiosk-opthint` 的注释)。
- * cn 和 de 都要量:cn 的猜先/执黑/执白从来不折,de 的 `Schwarz nehmen`(14 字母)在半栏(~200px)
- * 折成两行是这条闸要抓的真缺陷。
+ * Task 4.7 起全部 11 个语种都要量:cn 的猜先/执黑/执白从来不折,de 的 `Schwarz nehmen`
+ * (14 字母)在半栏(~200px)折成两行是这条闸原本要抓的真缺陷;`en`/`es`/`tr`/`ua` 有
+ * 同一种「动词 · 颜色」重复的译文,此前没被点名量过,不能假设它们安全。
  */
-for (const lang of ['cn', 'de'] as const) {
+for (const lang of LOCALES) {
   test(`屏 09「我执」分段按钮不折行(lang=${lang})`, async ({ page }) => {
     await boot(page, { camera: true, lang });
     const buttons = await page.evaluate(() => {

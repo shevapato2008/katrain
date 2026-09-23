@@ -4015,10 +4015,10 @@ msgid "setup:my_side"
 msgstr "My colour"
 
 msgid "setup:take_black"
-msgstr "Take Black"
+msgstr "Black"
 
 msgid "setup:take_white"
-msgstr "Take White"
+msgstr "White"
 
 msgid "setup:no_camera_hint"
 msgstr ""

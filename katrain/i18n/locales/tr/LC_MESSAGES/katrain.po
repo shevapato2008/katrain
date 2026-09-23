@@ -4073,10 +4073,10 @@ msgid "setup:my_side"
 msgstr "Benim rengim"
 
 msgid "setup:take_black"
-msgstr "Siyahı al"
+msgstr "Siyah"
 
 msgid "setup:take_white"
-msgstr "Beyazı al"
+msgstr "Beyaz"
 
 msgid "setup:no_camera_hint"
 msgstr "Bu cihazda kalibre kamera yok, gerçek tahta şu an kullanılamaz"

@@ -2033,3 +2033,48 @@ button.kiosk-row.figrow { flex: none; }
    收紧到 1.2(≈18px)把框让给字形的自然行高,不动字号、不动按钮盒高(触摸目标
    仍是 40/48 那几个数)。11 语种全量复核:此前绿的语种收紧后仍然绿。 */
 [data-testid="platform-engine-setup-page"] .twocol .kiosk-optseg button { line-height: 1.2; }
+
+/* ── 外来平台的品牌标记 ────────────────────────────────────────────────
+   两个槽共用这一组:屏 01「跨平台对弈」的卡内 40 方衬(`.kiosk-card__tile`,
+   几何在 `tokens.css`)和屏 07a/07b/08 登录页左栏的 42 方衬(`.xpwho .mark`)。
+
+   **这不是把图标换个文件,是把衬的语气换掉。** `.kiosk-card__tile` 原本是为
+   Phosphor 线性图标设计的容器:`--panel` 底 + `--hair` 描边 + `color: var(--accent)`
+   染色 —— 这整套说的是「**我们画的图标**」。而这三张卡按下去意味着离开这台盒子、
+   去别人家下棋,所以衬要从「我们的图标底衬」变成「放外来物的凹槽」:底沉到最暗的
+   `--ink`,描边退回中性,取消染色。**几何(40/42、圆角、间距)一个字没动。**
+
+   为什么写在这儿而不是 `tokens.css`:那份是四棋类共享包、由 `MANIFEST.sha256`
+   钉死字节(真源在 smartbox-software),而品牌标记只有围棋 kiosk 有。
+   选择器一律带第二个类(`.is-brand`),特异性 0,2,0 > tokens 的 0,1,0 ——
+   **不靠加载顺序赢**(Vite 不保证 go-screens.css 与组件级 CSS 的相对顺序)。
+
+   `.is-soon` 的压暗(`card.css`:`opacity:.5; filter:grayscale(.3)`)**已经作用在整卡上**,
+   这里不再给标记单独加一层去色。野狐保留它的橙色,跟着整卡一起淡下去 ——
+   那条规则已经拍过板,不在这儿判第二遍。 */
+.kiosk-card__tile.is-brand,
+[data-testid="platform-login-page"] .xpwho .mark.is-brand {
+  background: var(--ink);
+  border-color: var(--hair);
+  overflow: hidden;   /* 满幅标记由衬的圆角裁切 */
+}
+.kiosk-card__mark,
+[data-testid="platform-login-page"] .xpwho .mark.is-brand img {
+  /* 默认满幅:标记自带方形底(星阵的星座、野狐的应用图标),铺满衬、由衬切圆角。
+     星阵那张在官方文件里左边本来就裁掉一半 —— 满幅之后那道裁切读起来是
+     「一片裁到边的星空」,居中留白反而会像渲染坏了。 */
+  width: 100%; height: 100%; display: block; object-fit: contain;
+}
+/* 圆形实心标记(OGS 那颗棋子)。
+   **尺寸按墨量配,不按外框配**:Phosphor 是镂空线条,实心图形在同样外框下墨量约三倍,
+   并排会把视线抢走 —— 而跨平台这一排在屏 01 上是第三优先级(人机、人人都在它上面)。
+   内接圆的面积是外接方的 π/4,所以 62% 见方的圆 ≈ 22px 线性图标的墨量,和邻座持平。
+
+   那圈 1px 的浅色环是**功能不是装饰**:棋子黑的那半(#010101)和深色衬(#0F1416)
+   几乎同值,不加环的话屏上只剩一个白色半圆,读起来像月亮不像棋子。 */
+.kiosk-card__tile.is-brand.is-disc .kiosk-card__mark,
+[data-testid="platform-login-page"] .xpwho .mark.is-brand.is-disc img {
+  width: 62%; height: 62%;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 28%, transparent);
+}

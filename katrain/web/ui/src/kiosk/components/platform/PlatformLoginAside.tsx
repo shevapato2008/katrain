@@ -1,7 +1,11 @@
 import { useTranslation } from '../../../hooks/useTranslation';
 import { Icon } from '../../shell/icons';
 import { PLATFORM_META } from '../../constants/platforms';
+import { PLATFORM_MARKS } from '../../constants/platformMarks';
 import { LOGIN_FACTS } from '../../constants/platformLoginFacts';
+
+/** 查不到品牌标记时才用 —— 见 `constants/platformMarks.ts` 头上那段「查不到就回落,不抛」。 */
+const FALLBACK_ICON = 'globe-hemisphere-west' as const;
 
 /**
  * 登录页左栏(`.xplogin__aside`,设计源 `go-kiosk.tmpl.html:1391-1417`)。
@@ -11,25 +15,25 @@ import { LOGIN_FACTS } from '../../constants/platformLoginFacts';
  * 所以它们要在 `test_login_facts_keys_are_translated`(Task 5 Step 6)里单独点名,
  * 靠正则扫源码「找到就该翻」不够,得靠一张表「该有就必须有」。
  *
- * `PLATFORM_LOGIN_ICON` 只覆盖今天真能登录的两家(golaxy/ogs)——野狐 `comingSoon`,
- * 到不了这一屏(`PlatformConnectPage.canLogIn` 和 `PlayPage` 的卡片都先把它挡在外面)。
+ * 标记来自 `constants/platformMarks.ts`(三家都有)。这一屏今天只到得了 golaxy/ogs
+ * 两家——野狐 `comingSoon`,`PlatformConnectPage.canLogIn` 和 `PlayPage` 的卡片
+ * 都先把它挡在外面了;`FALLBACK_ICON` 那条回落因此在这一屏上今天跑不到,
+ * 留着是因为平台列表由服务端下发,多一家是正常事件。
  */
-const PLATFORM_LOGIN_ICON = {
-  golaxy: 'globe-hemisphere-west',
-  ogs: 'globe-hemisphere-west',
-} as const;
-
 export function PlatformLoginAside({ platform }: { platform: string }) {
   const { t } = useTranslation();
   const meta = PLATFORM_META[platform];
   const facts = LOGIN_FACTS[platform] ?? [];
+  const mark = PLATFORM_MARKS[platform];
   const name = meta ? t(meta.label, meta.labelCn) : platform;
 
   return (
     <aside className="xplogin__aside">
       <div className="xpwho">
-        <span className="mark" aria-hidden="true">
-          <Icon name={PLATFORM_LOGIN_ICON[platform as keyof typeof PLATFORM_LOGIN_ICON] ?? 'globe-hemisphere-west'} />
+        {/* 标记和卡片那边共用同一张表、同一组 CSS(`.is-brand` / `.is-disc`),
+            两个槽的几何不同(42 vs 40)但语气一致 —— 都是「放外来物的凹槽」。 */}
+        <span className={`mark${mark ? ` is-brand${mark.disc ? ' is-disc' : ''}` : ''}`} aria-hidden="true">
+          {mark ? <img src={mark.src} alt="" /> : <Icon name={FALLBACK_ICON} />}
         </span>
         <div>
           <b>{name}</b>

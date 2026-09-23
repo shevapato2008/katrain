@@ -1,5 +1,7 @@
 # 影子框（shadow-dedup）设计
 
+状态：第二版已实现（Task 1/2），标注集验证 `VERDICT: PASS  (valid: images == expected and recall >= 0.95; pass: no label lost or recoloured by the shadow step)`，待 RK3562 侧光局复测。
+
 2026-09-23。起因：RK3562 白天侧光局里「检测到疑似落子」弹了 19 次，其中 H5 一个点 16 次、D7 2 次，
 而那两个点上什么都没有（Fan 现场确认）。证据全部在
 [`../evidence-2026-09-23-daylight-game/`](../evidence-2026-09-23-daylight-game/)。

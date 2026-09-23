@@ -24,7 +24,7 @@ node bin/archify.mjs deliver architecture <本目录>/recognition-pipeline.archi
 | 4 | 8 帧平均 + CLAHE，只喂给模型 | `temporal.FrameAverager`、`enhance.py` | n=8，clipLimit 3.0 |
 | 5 | YOLO（RKNN）检测 + NMS | `inference/rknn_backend.py` | 黑 / 白 / 红灯 / 绿灯；同框 IoU ≥ 0.5 留一个 |
 | 5a | 去重复框：同一颗子被框两次（一紧一松） | `stone_detector.dedup_detections` | 中心距 < 较小框边长的一半，留高分 |
-| 5b | 去影子（**规划中**）：侧光下「子 + 影子」被再框一次 | `board_state.py`（规划中） | 与邻框互压 ≥ 0.27、且自己落在两个交叉点之间才去掉 |
+| 5b | 去影子：侧光下「子 + 影子」被再框一次的那个框 | `board_state.drop_shadow_boxes` | 离交叉点 ≥ 0.35 格，且与一个离点更近、分数不低于它、大小相近的框互压 ≥ 0.27 |
 | 6 | 视差修正后落到交叉点：占用感知分配、粘滞、三档滞回、颜色保持、亮灯格不新增 | `board_state.py`、`parallax.py` | k≈0.990；0.40 / 0.30 / 0.20；变色 15 帧 |
 | 7 | 两帧投票：连续两帧一致才改 | `worker_inprocess.py` | — |
 | 8 | 参照帧比对（**影子模式**，只记日志） | `_reference_check` | ZNCC ≥ 0.90；否决 90 / 10 帧 |
@@ -51,6 +51,7 @@ node bin/archify.mjs deliver architecture <本目录>/recognition-pipeline.archi
 | 09-22 | 指引灯按实测光斑自动调亮度 | 夜里灯光透过白子，白子认不出 | 已上线，还没在整局里验证过 | 同上 §1 第 6 条 |
 | 09-23 | 参照帧比对：逐格与「最近一次确认时的画面」比结构，结构没变就不信检测器的改口 | 白天反光、窗边光照不均造成的漏识别和误识别 | **影子模式**，等白天实测数据定阈值 | [`reference-frame/design.md`](reference-frame/design.md)、`docs/superpowers/plans/2026-09-23-vision-reference-frame.md` |
 | 09-23 | 长考时每分钟逐格续期参照帧 | 光影随时间漂移，参照变旧后就不起作用 | 影子模式，同上 | [`reference-frame/design.md`](reference-frame/design.md) §4.1 |
+| 09-23 | 去重复框之后新增「去影子」一步 | 侧光下「子 + 影子」被再框一次，偏出半格，逃过去重，经视差 + 粘滞在邻点（H5）自我维持成假子；低于门槛的则升级成疑似落子卡片（D7）。第一版并进去重，会吞掉贴在一起的真子，已撤回 | 待上板 | [shadow-dedup/design.md](shadow-dedup/design.md)、[validation.md](shadow-dedup/validation.md) |
 | — | 过曝：白子拍成一片死白 | 像素信息本身丢了，参照帧也救不回 | **未做**，只留档；设想在标定时提示挪棋盘 | `docs/known-issue-overexposure.md` |
 
 ## 目录

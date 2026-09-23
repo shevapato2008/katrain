@@ -1472,6 +1472,9 @@ button.kiosk-row.figrow { flex: none; }
 .lrow { display: flex; align-items: center; gap: 9px; font-size: 12px; }
 .lrow b { font-family: var(--font-serif); font-size: 13px; font-weight: 600; }
 .lrow i { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+/* 只有「名 + 数」两列的行(屏 17 AI 支招候选)数贴右,稿子 `.lrow i{margin-left:auto}`。
+   不写成全局:采集机那几行是「名 + 灯点 + 数」,灯点已经 `margin-left:auto`,两个 auto 会把灯点挤到中间。 */
+.lrow b + i { margin-left: auto; }
 /* 图例那一列的色点 —— 和 `LED_HEX` 同源,别在这儿另写一遍十六进制以外的东西。
    **`margin-left:auto` 挂在色点上而不是挂在 `<i>` 上**:挂错的话色点会贴着左边那句读数,
    屏上读成「已采集 13 帧 ●」—— 那颗点看起来在给帧数分类,而它其实是右边那句图例的样本。

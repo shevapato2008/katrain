@@ -421,9 +421,22 @@ async def scan_state(platform: str, scan_id: str, request: Request, user: User =
 
     session = _scan_store(request.app).get(scan_id)
     if session is None or session.platform != platform:
-        # F4 (task-6a review): a `scan_id` from a DIFFERENT platform's path
-        # (or an unknown platform) must look exactly like "doesn't exist" —
-        # not leak whether some other platform's session with this id exists.
+        # F4 (task-6a review, team-lead ruling ③ confirmed 404): a `scan_id`
+        # from a DIFFERENT platform's path (or an unknown platform) must look
+        # exactly like "doesn't exist". 404 leaks the least — it never
+        # confirms or denies that a session with this id exists for SOME
+        # platform, just not this one. For a caller who legitimately holds
+        # this session and merely got the platform segment wrong in the URL,
+        # this is a client bug, not an attack — the distinguishing detail
+        # (mismatched vs. truly absent) belongs in the server LOG, never in
+        # the response body.
+        if session is not None:
+            logger.debug(
+                "scan/state: scan_id %s belongs to platform %s, requested via %s",
+                scan_id,
+                session.platform,
+                platform,
+            )
         raise HTTPException(status_code=404, detail="扫码会话不存在或已过期")
     if session.initiating_user_id != user.id:
         raise HTTPException(status_code=403, detail="这条扫码登录不是你发起的")
@@ -484,11 +497,20 @@ async def scan_confirm(
     store = _scan_store(request.app)
     session = store.get(req.scan_id)
     if session is None or session.platform != platform:
-        # F4 (task-6a review): same reasoning as `scan_state` above — a
-        # mismatched/unknown platform path must look like "doesn't exist",
-        # and this ALSO keeps an unrelated platform's `connect_platform`
-        # (bare `ValueError` on an unregistered name, or a real network call
-        # on a registered-but-wrong one, e.g. OGS) from ever being reached.
+        # F4 (task-6a review, team-lead ruling ③ confirmed 404): same
+        # reasoning as `scan_state` above — a mismatched/unknown platform
+        # path must look like "doesn't exist" in the RESPONSE (404 leaks the
+        # least), while the distinguishing detail goes to the log; this ALSO
+        # keeps an unrelated platform's `connect_platform` (bare `ValueError`
+        # on an unregistered name, or a real network call on a
+        # registered-but-wrong one, e.g. OGS) from ever being reached.
+        if session is not None:
+            logger.debug(
+                "scan/confirm: scan_id %s belongs to platform %s, requested via %s",
+                req.scan_id,
+                session.platform,
+                platform,
+            )
         raise HTTPException(status_code=404, detail="扫码会话不存在或已过期")
     if session.initiating_user_id != user.id:
         raise HTTPException(status_code=403, detail="这条扫码登录不是你发起的")

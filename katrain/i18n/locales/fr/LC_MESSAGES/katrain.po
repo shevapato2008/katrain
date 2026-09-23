@@ -5955,6 +5955,12 @@ msgstr "Elo affiché {v}"
 msgid "platform:ref_rank"
 msgstr "équivaut à {r}"
 
+msgid "platform:level_sheet"
+msgstr "Tous les niveaux de force"
+
+msgid "platform:close"
+msgstr "Fermer"
+
 msgid "platform:plate_aria"
 msgstr "Adversaire actuel {name} {level}, {rung} ; toucher pour tout voir"
 

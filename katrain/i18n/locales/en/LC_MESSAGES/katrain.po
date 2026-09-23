@@ -5917,6 +5917,12 @@ msgstr "Displayed Elo {v}"
 msgid "platform:ref_rank"
 msgstr "about {r}"
 
+msgid "platform:level_sheet"
+msgstr "All strength levels"
+
+msgid "platform:close"
+msgstr "Close"
+
 msgid "platform:plate_aria"
 msgstr "Current opponent {name} {level}, {rung}; tap to see all"
 

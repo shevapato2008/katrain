@@ -5954,6 +5954,12 @@ msgstr "Gösterilen Elo {v}"
 msgid "platform:ref_rank"
 msgstr "yaklaşık {r}"
 
+msgid "platform:level_sheet"
+msgstr "Tüm güç seviyeleri"
+
+msgid "platform:close"
+msgstr "Kapat"
+
 msgid "platform:plate_aria"
 msgstr "Mevcut rakip {name} {level}, {rung}; tümünü görmek için dokun"
 

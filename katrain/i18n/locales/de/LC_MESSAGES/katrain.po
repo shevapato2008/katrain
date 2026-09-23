@@ -5980,6 +5980,12 @@ msgstr "Angezeigtes Elo {v}"
 msgid "platform:ref_rank"
 msgstr "etwa {r}"
 
+msgid "platform:level_sheet"
+msgstr "Alle Stärkestufen"
+
+msgid "platform:close"
+msgstr "Schließen"
+
 msgid "platform:plate_aria"
 msgstr "Aktueller Gegner {name} {level}, {rung}; antippen für alle"
 

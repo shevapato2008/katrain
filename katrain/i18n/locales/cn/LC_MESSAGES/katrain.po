@@ -5580,6 +5580,12 @@ msgstr "展示 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "对标{r}"
 
+msgid "platform:level_sheet"
+msgstr "全部棋力档"
+
+msgid "platform:close"
+msgstr "收起"
+
 msgid "platform:plate_aria"
 msgstr "当前对手 {name} {level}，{rung}；点开看全部"
 

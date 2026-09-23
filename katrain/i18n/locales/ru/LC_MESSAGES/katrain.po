@@ -5859,6 +5859,12 @@ msgstr "Показанный Elo {v}"
 msgid "platform:ref_rank"
 msgstr "примерно {r}"
 
+msgid "platform:level_sheet"
+msgstr "Все уровни силы"
+
+msgid "platform:close"
+msgstr "Закрыть"
+
 msgid "platform:plate_aria"
 msgstr "Текущий соперник {name} {level}, {rung}; нажмите, чтобы увидеть всех"
 

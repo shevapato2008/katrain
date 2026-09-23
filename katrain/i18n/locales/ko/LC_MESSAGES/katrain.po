@@ -5679,6 +5679,12 @@ msgstr "표시 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "{r} 수준"
 
+msgid "platform:level_sheet"
+msgstr "전체 기력 단계"
+
+msgid "platform:close"
+msgstr "닫기"
+
 msgid "platform:plate_aria"
 msgstr "현재 상대 {name} {level}, {rung}; 눌러서 전체 보기"
 

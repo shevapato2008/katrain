@@ -5749,6 +5749,12 @@ msgstr "表示 Elo {v}"
 msgid "platform:ref_rank"
 msgstr "目安 {r}"
 
+msgid "platform:level_sheet"
+msgstr "すべての棋力レベル"
+
+msgid "platform:close"
+msgstr "閉じる"
+
 msgid "platform:plate_aria"
 msgstr "現在の対戦相手 {name} {level}、{rung}；タップして全て見る"
 

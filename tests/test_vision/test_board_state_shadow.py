@@ -2,6 +2,7 @@
 however tightly packed, are not. Geometry from the RK3562 daylight game (2026-09-23) and the labelled set
 (kifu_24171); see superpowers/tracks/vision-optimizations/shadow-dedup/design.md."""
 
+import logging
 import random
 
 from katrain.vision.board_state import (
@@ -196,3 +197,16 @@ def test_the_worker_drops_a_shadow_before_the_board_sees_it():
     assert plain[10][11] == BLACK  # precondition: without the step the shadow lands on (10, 11)
     board, _ = _run({"confidence_threshold": 0.40, "confidence_keep": 0.30}, [[stone, shadow]] * 6)
     assert int(board[10][10]) == BLACK and int(board[10][11]) == 0
+
+
+def test_the_worker_logs_how_many_shadow_boxes_it_dropped(caplog):
+    """The board test must see the step fire, not infer it from silence."""
+    from tests.test_vision.test_sustain_threshold import _run
+
+    stone = _at(10, 10, BLACK - 1, 0.8, cells=1.05)
+    shadow = _at(10, 10.6, BLACK - 1, 0.45, cells=1.0)
+    caplog.set_level(logging.INFO, logger="katrain.vision.worker_inprocess")
+    _run({"confidence_threshold": 0.40, "confidence_keep": 0.30}, [[stone, shadow]] * 30)
+    records = [r for r in caplog.records if r.message.startswith("vision: ")]
+    assert len(records) == 1
+    assert "shadow=30," in records[0].message

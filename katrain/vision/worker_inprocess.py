@@ -263,6 +263,7 @@ class InProcessAdapter:
         self._last_preview_time = 0.0
         self._geometry = None
         self._frame_count = 0
+        self._shadow_dropped_since_log = 0
         # 2-frame per-cell voting (ported from worker.py): a cell only updates when two
         # consecutive frames agree; otherwise it holds the last stable value.
         self._prev_observed_board: np.ndarray | None = None
@@ -750,7 +751,10 @@ class InProcessAdapter:
                     _infer_ms = (time.monotonic() - _t_inf) * 1000
                     # A stone's shadow boxed a second time (side light) is dropped before the keep/sustain split,
                     # so no consumer -- board assignment, the sustain tier, the ambiguous-move promoter -- sees it.
+                    _n_boxes = len(all_detections)
                     all_detections = self._active_extractor().drop_shadow_boxes(all_detections, w, h)
+                    _shadow_dropped = _n_boxes - len(all_detections)
+                    self._shadow_dropped_since_log += _shadow_dropped
                     # Sustain-tier detections (below keep) reach board assignment only on stones the game
                     # has played (_game_stone_sustain), plus the board-delta diagnostic and the preview;
                     # every other consumer sees exactly what it saw before the tier existed.
@@ -762,16 +766,18 @@ class InProcessAdapter:
                         )
                         tr.note(
                             f"det[pre={pre:.0f} npu={npu:.0f} post={post:.0f}] boxes={len(all_detections)} "
-                            f"keep={len(detections)} avgN={len(getattr(self._averager, '_frames', ()))}"
+                            f"shadow={_shadow_dropped} keep={len(detections)} "
+                            f"avgN={len(getattr(self._averager, '_frames', ()))}"
                         )
                     self._frame_count += 1
                     if self._frame_count % 30 == 0:
                         _mc = (sum(d.confidence for d in detections) / len(detections)) if detections else 0.0
                         logger.info(
-                            "vision: %d stones, mean_conf=%.2f, %s motion=%s enh=%.0fms infer=%.0fms, "
+                            "vision: %d stones, mean_conf=%.2f, shadow=%d, %s motion=%s enh=%.0fms infer=%.0fms, "
                             "bound=%s paused=%s geom=%s",
                             len(detections),
                             _mc,
+                            self._shadow_dropped_since_log,
                             self._brightness_log(),
                             self._motion_diagnostic(),
                             _enh_ms,
@@ -780,6 +786,7 @@ class InProcessAdapter:
                             self._paused,
                             self._geometry is not None,
                         )
+                        self._shadow_dropped_since_log = 0
                     masked = None
                     if self._lit_points:
                         exp = self._expected_np

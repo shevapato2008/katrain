@@ -1875,6 +1875,19 @@ button.kiosk-row.figrow { flex: none; }
 [data-testid="platform-engine-setup-page"] .inputgrp .kiosk-optseg { height: 48px; }
 [data-testid="platform-engine-setup-page"] .setgrp + .setgrp { margin-top: 8px; }
 
+/* 修复轮 4(2026-09-23)—— `.kiosk-opthint` 定高一行(`tokens.css:720-722`,
+   `height`/`line-height` 同一个 token)+ `overflow: visible`,长语种(德文量过:
+   `clientHeight=16` 但内容要 `scrollHeight=32`)折成两行时,第二行不是被裁掉,
+   是画到盒子外面、压在下面的留白上 —— `kiosk-geometry-platform.spec.ts` 的内容闸
+   已经把断言换成了量高度(`scrollHeight <= clientHeight`)而不是量宽度,这条 CSS
+   是配它的产品修法:放开定高,让第二行真正占用布局空间,而不是覆盖到邻居身上。
+
+   ⚠️ 只在这一屏开:`.kiosk-opthint` 是屏 02/03/04 共用的,那几屏本来就整栏滚,
+   多一行只是多滚一点,不构成这一屏「一屏放得下」这个承诺要守的风险 ——
+   本轮只处理这一屏,其余屏「定高 + overflow:visible」这个组合仍然是潜在的
+   重叠源,是已知未处理项,不是这次顺手就治好了。 */
+[data-testid="platform-engine-setup-page"] .kiosk-opthint { height: auto; min-height: var(--opthint-h); }
+
 .aisheet {
   position: absolute; inset: 44px 0 48px; z-index: 20;
   display: flex; flex-direction: column; gap: 8px;

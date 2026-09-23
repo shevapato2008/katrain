@@ -157,19 +157,32 @@ test('屏 09 滚动条:不溢出态应撤条(当前实现下这一态达不到,�
  */
 
 /** `.kiosk-opthint` 定高(`tokens.css:720-722` height/line-height 同一个 token),文案换行会被静默裁掉。 */
-/** 按语种参数化,理由和上面那组链测试同一段注释。cn/de × 摄像头可用/不可用,四组。
- * ⚠️ 德文那两组预期会红 —— 报数,不修。 */
+/**
+ * 按语种参数化,理由和上面那组链测试同一段注释。cn/de × 摄像头可用/不可用,四组。
+ *
+ * **2026-09-23 修复轮 4:换轴。** 原来断的是 `scrollWidth <= clientWidth`(水平),
+ * 而 `.kiosk-opthint` 是 `white-space: normal` —— **它永远不会横向溢出,只会折行**,
+ * 那条断言在 cn/de 下都绿,却两边都没在量真正的东西(闸量错了对象的教科书形状)。
+ * 折行超出的是**垂直**方向:`.kiosk-opthint` 定高一行(`tokens.css:720-722`,
+ * `height`/`line-height` 同一个 token),德文实测 `clientHeight=16` 但内容要两行
+ * `scrollHeight=32`,`overflow: visible` ⇒ 第二行不是被裁掉看不见,是画到盒子
+ * 外面、压在下面的留白上 —— 换成量高度才是量它真正会不会出事的那个轴。
+ *
+ * 配套的产品修法:`go-screens.css` 给这一屏的 `.kiosk-opthint` 开了
+ * `height: auto; min-height: var(--opthint-h)`(只在这一屏,`.kiosk-opthint` 是
+ * 屏 02/03/04 共用的,那几屏本来就整栏滚,不在这轮处理范围内)。
+ */
 for (const lang of ['cn', 'de'] as const) {
   test(`屏 09 提示行不被裁切(lang=${lang})—— 摄像头可用/不可用两种文案都要测(更长的那句才是真边界)`, async ({ page }) => {
     for (const camera of [true, false]) {
       await boot(page, { camera, lang });
       const hint = await page.evaluate(() => {
         const el = document.querySelector('[data-testid="setup-input-hint"]') as HTMLElement;
-        return { scrollWidth: el.scrollWidth, clientWidth: el.clientWidth, text: el.textContent };
+        return { scrollHeight: el.scrollHeight, clientHeight: el.clientHeight, text: el.textContent };
       });
       console.log(`[geom 09 hint lang=${lang} camera=${camera}]`, JSON.stringify(hint));
-      expect(hint.scrollWidth, `提示行被裁切(lang=${lang} camera=${camera}):「${hint.text}」`)
-        .toBeLessThanOrEqual(hint.clientWidth);
+      expect(hint.scrollHeight, `提示行被裁切(lang=${lang} camera=${camera}):「${hint.text}」`)
+        .toBeLessThanOrEqual(hint.clientHeight);
     }
   });
 }

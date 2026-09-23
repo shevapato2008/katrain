@@ -151,8 +151,12 @@ detections → detections_to_board（滞回/占用感知）→ 两帧投票 → 
 
 ## 11. 成本
 
-每帧：361 格 × 24×24 采样点 = 20.8 万个点的取样 + 三遍向量化统计。索引表约 0.8 MiB，
-参照图归一化后约 0.8 MiB，每帧临时量约 0.8 MiB×3。本机实测数字见计划 Task 4，板上数字用 vtrace 的 refchk 段量。
+每帧：361 格 × 24×24 采样点 = 20.8 万个点的取样 + 三遍向量化统计。
+
+**MacBook 实测（2026-09-23，1056×1056）**：每帧 **1.1 ms**，索引表 0.79 MiB、参照图 0.79 MiB（常驻），
+每帧临时峰值 2.4 MiB，建一次索引表 2 ms。板上按 5–10 倍估约 5–11 ms，相比每帧 380–600 ms 可忽略；
+真值部署后用 vtrace 的 `refchk` 段量，写回这里。
+
 必须整体向量化（RK3562 上逐格 Python 循环是负优化，见 memory `reference_arm_sbc_numpy_call_overhead`）。
 
 ## 12. 验收
@@ -162,6 +166,11 @@ detections → detections_to_board（滞回/占用感知）→ 两帧投票 → 
 过曝拍平、大面积过曝但有网格线、8 帧平均过渡态、参照中毒防线（有待确认落子时不拍、raw≠expected 时不拍）、
 逐格上限到点放行、shadow 模式恒等。
 
-板上（白天）：shadow 模式跑满一局，统计
-① 会纠正的假阴性数 ② 会纠正的假阳性数 ③ 会挡住真落子的次数 ④ 未变格子的 ZNCC 分布，
-据此定阈值与两个上限，再决定是否打开 `on`。
+板上（白天）：shadow 模式跑满一局，从 `refcheck would keep` 日志统计
+① 会纠正的假阴性数（ref 有子、board 空）② 会纠正的假阳性数（ref 空、board 有子）
+③ 会挡住真落子的次数（被 keep 的格子随后真的成为一手棋）④ 未变格子的 ZNCC 分布（定阈值要靠它）
+⑤ `refchk` 段耗时。据此定 `REFERENCE_ZNCC`、`REFERENCE_HOLD_KEEP`、`REFERENCE_HOLD_SUPPRESS`，
+再决定是否把 `on` 交给板子。
+
+单元测试现状（2026-09-23）：`tests/test_vision/test_reference_frame.py` 31 条全过，其中三条闸
+（比对用平均前的帧、拍参照要求投票前观测一致、shadow 恒等）各做过一次变异验证，确认会红。

@@ -6759,6 +6759,190 @@ msgstr ""
 "{name} humano contra IA está fijado en 19x19 · reglas chinas; la pantalla y "
 "el tablero físico comparten el mismo canal"
 
+msgid "baipu:calib_running_sub"
+msgstr ""
+"La calibración también usa las luces · al terminar o cancelarla empieza la "
+"reproducción"
+
+msgid "baipu:calib_running_title"
+msgstr "La calibración del tablero sigue en curso"
+
+msgid "baipu:cam_connecting"
+msgstr "Conectando con la cámara"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "El tablero aún no está calibrado"
+
+msgid "baipu:cam_geo_drift"
+msgstr "La calibración del tablero ya no es válida"
+
+msgid "baipu:cam_none"
+msgstr "No hay cámara conectada"
+
+msgid "baipu:capture_hint_camera"
+msgstr ""
+"Las que brillan en azul: cuando las retires todas, pasa sola a la siguiente "
+"jugada"
+
+msgid "baipu:checking_board"
+msgstr "Comprobando el estado del tablero"
+
+msgid "baipu:done_hint_auto"
+msgstr ""
+"{n} jugadas en total · progreso borrado; pulsa arriba a la izquierda para "
+"volver"
+
+msgid "baipu:guard_sub_collect"
+msgstr ""
+"Para recoger datos de entrenamiento, la cámara tiene que ver bien el tablero"
+" primero"
+
+msgid "baipu:hint_failed"
+msgstr "No se obtuvo resultado: ciérralo y vuelve a pulsar"
+
+msgid "baipu:hint_loading"
+msgstr "La IA está calculando esta jugada…"
+
+msgid "baipu:hint_on_hint"
+msgstr ""
+"Sugerencias de la IA activas, reconocimiento en pausa: las luces blancas son"
+" las jugadas candidatas; ciérralas para seguir"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr ""
+"Sugerencias de la IA activas: las luces blancas son las jugadas candidatas; "
+"ciérralas para seguir"
+
+msgid "baipu:hint_row"
+msgstr "Victoria {w}% · puntos {s}"
+
+msgid "baipu:hint_title"
+msgstr "Sugerencias de la IA · donde parpadean las luces blancas"
+
+msgid "baipu:hint_try_reason"
+msgstr ""
+"Mientras pruebas, la cámara no mira el tablero y la IA no sabe qué posición "
+"hay"
+
+msgid "baipu:hint_value"
+msgstr "Pulsa otra vez para cerrar"
+
+msgid "baipu:led_on_camera"
+msgstr ""
+"La luz está encendida: pon la piedra {color} en la intersección iluminada; "
+"cuando la cámara la vea, pasa sola a la siguiente"
+
+msgid "baipu:led_title"
+msgstr "Luces · leyenda de colores"
+
+msgid "baipu:led_value_camera"
+msgstr "La cámara está mirando"
+
+msgid "baipu:led_value_manual"
+msgstr "Confirmación manual"
+
+msgid "baipu:led_value_try"
+msgstr "Probando · reconocimiento en pausa"
+
+msgid "baipu:manual_hint"
+msgstr "{why}: coloca la piedra y pulsa «Confirmar la piedra»"
+
+msgid "baipu:manual_hint_calib"
+msgstr "; la calibración está en «Configuración»"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "Jugada {i} de {n}"
+
+msgid "baipu:restore_hint"
+msgstr ""
+"Retira las piedras de prueba y devuelve las que moviste; cuando coincida, "
+"sigue sola"
+
+msgid "baipu:restore_title"
+msgstr "Vuelve a dejar el tablero en la jugada {n}"
+
+msgid "baipu:resume_body_placed"
+msgstr ""
+"La última vez llegaste a la jugada {n}. Para empezar de nuevo, retira antes "
+"todas las piedras del tablero."
+
+msgid "baipu:setup_clear_title"
+msgstr "Primero retira todas las piedras del tablero"
+
+msgid "baipu:setup_continue"
+msgstr "Ya está, continuar"
+
+msgid "baipu:setup_entry_hint"
+msgstr ""
+"Retira las piedras con luz azul y coloca piedras donde hay luz roja o verde;"
+" cuando coincida, empieza sola"
+
+msgid "baipu:setup_entry_title"
+msgstr "Primero prepara el tablero como en la jugada {n}"
+
+msgid "baipu:try_off_reason"
+msgstr "La cámara no está reconociendo"
+
+msgid "baipu:trying_hint"
+msgstr ""
+"Coloca libremente y analiza en el tablero. Pulsa «Probar» otra vez para "
+"volver a la partida: las luces te guiarán para recolocar el tablero"
+
+msgid "baipu:trying_title"
+msgstr "Probando · reconocimiento de la cámara en pausa"
+
+msgid "baipu:undo_hint_camera"
+msgstr ""
+"Retira las piedras con luz azul y devuelve las capturadas donde hay luz roja"
+" o verde; cuando coincida, sigue sola"
+
+msgid "baipu:undo_title"
+msgstr "Vuelta a la jugada {n}"
+
+msgid "baipu:undo_try_reason"
+msgstr "No se puede deshacer mientras pruebas"
+
+msgid "baipu:verify_hint"
+msgstr "Las piedras que sobran brillan en azul: retíralas para seguir"
+
+msgid "baipu:verify_title"
+msgstr "Comprobando el tablero"
+
+msgid "baipu:wrong_hint"
+msgstr ""
+"Coge la piedra con luz azul ({w}) y ponla en {c}; cuando coincida, sigue "
+"sola"
+
+msgid "baipu:wrong_size"
+msgstr "Es una partida de {n}×{n}: no se puede reproducir"
+
+msgid "baipu:wrong_size_hint"
+msgstr ""
+"El tablero físico y sus luces son de 19×19: con otro tamaño cada piedra "
+"quedaría fuera de sitio."
+
+msgid "baipu:wrong_title"
+msgstr "Mal colocada · va en {c}"
+
+msgid "kifu:detail_offline"
+msgstr "Esta partida necesita conexión a internet para abrirse"
+
+msgid "kifu:detail_offline_hint"
+msgstr ""
+"La biblioteca de partidas está en la nube y este equipo no puede conectarse "
+"ahora."
+
+msgid "kifu:list_offline"
+msgstr "Buscar en la biblioteca de partidas requiere conexión a internet"
+
+msgid "kifu:list_offline_hint"
+msgstr ""
+"Este equipo no puede conectarse a la nube ahora. Las partidas reproducidas y"
+" los SGF importados no se ven afectados."
+
+msgid "kifu:wrong_size_reason"
+msgstr "Es una partida de {n}×{n}: el tablero físico solo admite 19×19"
+
 msgid "engine:warmup_warming"
 msgstr "El motor de IA se está preparando — mientras tanto puedes usar la biblioteca de partidas, los cursos y otras funciones"
 

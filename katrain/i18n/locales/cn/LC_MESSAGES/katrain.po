@@ -6484,6 +6484,156 @@ msgstr "有 "
 msgid "growth:unknown_seat_b"
 msgstr " 局没算进胜率：面对面的局，以及没记下你执黑还是执白的局。"
 
+msgid "baipu:calib_running_sub"
+msgstr "标定也在用灯 · 跑完或取消后直接进摆谱"
+
+msgid "baipu:calib_running_title"
+msgstr "棋盘标定还在进行"
+
+msgid "baipu:cam_connecting"
+msgstr "正在连接摄像头"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "棋盘还没标定"
+
+msgid "baipu:cam_geo_drift"
+msgstr "棋盘标定已失效"
+
+msgid "baipu:cam_none"
+msgstr "没接摄像头"
+
+msgid "baipu:capture_hint_camera"
+msgstr "亮蓝灯的那几颗 —— 拿干净了自动下一手"
+
+msgid "baipu:checking_board"
+msgstr "正在检查棋盘状态"
+
+msgid "baipu:done_hint_auto"
+msgstr "一共 {n} 手 · 进度已清掉，按左上角返回"
+
+msgid "baipu:guard_sub_collect"
+msgstr "采集训练数据要先让摄像头看清盘面"
+
+msgid "baipu:hint_failed"
+msgstr "没算出来 —— 收起后再按一次试试"
+
+msgid "baipu:hint_loading"
+msgstr "AI 正在算这一手…"
+
+msgid "baipu:hint_on_hint"
+msgstr "AI 支招中，识别暂停 —— 白灯是 AI 的候选点，收起支招后接着摆"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr "AI 支招中 —— 白灯是 AI 的候选点，收起支招后接着摆"
+
+msgid "baipu:hint_row"
+msgstr "胜率 {w}% · 目差 {s}"
+
+msgid "baipu:hint_title"
+msgstr "AI 支招 · 白灯闪烁处"
+
+msgid "baipu:hint_try_reason"
+msgstr "试下中摄像头不看盘，AI 不知道盘上是什么局面"
+
+msgid "baipu:hint_value"
+msgstr "再按一次收起"
+
+msgid "baipu:led_on_camera"
+msgstr "灯已点亮 —— 把{color}子放在亮着的那个交叉点，摄像头认到就自动下一手"
+
+msgid "baipu:led_title"
+msgstr "灯 · 颜色对照"
+
+msgid "baipu:led_value_camera"
+msgstr "摄像头在看"
+
+msgid "baipu:led_value_manual"
+msgstr "手动确认"
+
+msgid "baipu:led_value_try"
+msgstr "试下中 · 暂停识别"
+
+msgid "baipu:manual_hint"
+msgstr "{why} —— 摆好后按「确认落子」"
+
+msgid "baipu:manual_hint_calib"
+msgstr "；标定在「设置」里"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "第 {i} / {n} 手"
+
+msgid "baipu:restore_hint"
+msgstr "试下的子拿走、挪动的放回 —— 对上了自动接着摆"
+
+msgid "baipu:restore_title"
+msgstr "把盘面摆回第 {n} 手"
+
+msgid "baipu:resume_body_placed"
+msgstr "上次摆到第 {n} 手。从头摆要先把盘上的子都拿下来。"
+
+msgid "baipu:setup_clear_title"
+msgstr "先把盘上的子都拿下来"
+
+msgid "baipu:setup_continue"
+msgstr "摆好了，继续"
+
+msgid "baipu:setup_entry_hint"
+msgstr "蓝灯的子拿走、红绿灯处放上 —— 对上了自动开始"
+
+msgid "baipu:setup_entry_title"
+msgstr "先把盘面摆成第 {n} 手"
+
+msgid "baipu:try_off_reason"
+msgstr "摄像头没在识别"
+
+msgid "baipu:trying_hint"
+msgstr "盘上随便摆、推演。再按「试下」回到谱上，灯会带你把盘面摆回去"
+
+msgid "baipu:trying_title"
+msgstr "试下中 · 摄像头暂停识别"
+
+msgid "baipu:undo_hint_camera"
+msgstr "蓝灯的子拿走，被提的子放回红绿灯处 —— 对上了自动继续"
+
+msgid "baipu:undo_title"
+msgstr "撤回到第 {n} 手"
+
+msgid "baipu:undo_try_reason"
+msgstr "试下中不能撤回"
+
+msgid "baipu:verify_hint"
+msgstr "多出来的子亮蓝灯 —— 拿走就继续"
+
+msgid "baipu:verify_title"
+msgstr "正在对一下盘面"
+
+msgid "baipu:wrong_hint"
+msgstr "把蓝灯那颗({w})拿起来，放到 {c} —— 对上了自动继续"
+
+msgid "baipu:wrong_size"
+msgstr "这是 {n} 路的谱，摆不了"
+
+msgid "baipu:wrong_size_hint"
+msgstr "实体盘和灯都是 19 路的 —— 别的路数摆上去每一颗都会错位。"
+
+msgid "baipu:wrong_title"
+msgstr "放错了 · 应该在 {c}"
+
+msgid "kifu:detail_offline"
+msgstr "这一局要联网才能读"
+
+msgid "kifu:detail_offline_hint"
+msgstr "棋谱库在云端，这台盒子现在连不上。"
+
+msgid "kifu:list_offline"
+msgstr "棋谱库要联网才能搜"
+
+msgid "kifu:list_offline_hint"
+msgstr "这台盒子现在连不上云端。摆过的谱和导入的 SGF 不受影响。"
+
+msgid "kifu:wrong_size_reason"
+msgstr "这是 {n} 路的谱 —— 实体盘只摆得了 19 路"
+
 msgid "setup:handicap_side"
 msgstr "让子 · 我执"
 

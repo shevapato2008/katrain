@@ -72,6 +72,10 @@
 
 /* 打吃:被叫吃那颗子上画红方框,不换子的颜色 */
 .gob .atari { fill: none; stroke: var(--bad); stroke-width: 5; }
+/* 摆谱:蓝圈 = 该拿走(蓝灯 #2f6fff),白圈 = AI 支招候选(白灯)。浅木盘上发虚,加一圈暗晕(与稿子同值) */
+.gob .remove { fill: rgba(47, 111, 255, .55); stroke: #2f6fff; stroke-width: 6; stroke-dasharray: 10 8; }
+.gob .hint { fill: rgba(255, 255, 255, .70); stroke: #fff; stroke-width: 6; stroke-dasharray: 10 8; }
+.gob .remove, .gob .hint { filter: drop-shadow(0 0 4px rgba(20, 10, 0, .55)); }
 /* ── 教程图那几层(屏 25)。四个既有消费者一个都不画,所以这几条只在课程屏上承重。 ──
    颜色**不许从 galaxy 那块 `SGFBoard` 搬**:`#d32f2f` / `#1565c0` 是 Material 调色板,
    和这套外壳的 token 不是一家。也**不许复用 `--accent`**(这块盘上它已经是「最后一手」
@@ -1468,6 +1472,9 @@ button.kiosk-row.figrow { flex: none; }
 .lrow { display: flex; align-items: center; gap: 9px; font-size: 12px; }
 .lrow b { font-family: var(--font-serif); font-size: 13px; font-weight: 600; }
 .lrow i { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--dim); }
+/* 只有「名 + 数」两列的行(屏 17 AI 支招候选)数贴右,稿子 `.lrow i{margin-left:auto}`。
+   不写成全局:采集机那几行是「名 + 灯点 + 数」,灯点已经 `margin-left:auto`,两个 auto 会把灯点挤到中间。 */
+.lrow b + i { margin-left: auto; }
 /* 图例那一列的色点 —— 和 `LED_HEX` 同源,别在这儿另写一遍十六进制以外的东西。
    **`margin-left:auto` 挂在色点上而不是挂在 `<i>` 上**:挂错的话色点会贴着左边那句读数,
    屏上读成「已采集 13 帧 ●」—— 那颗点看起来在给帧数分类,而它其实是右边那句图例的样本。
@@ -1486,6 +1493,8 @@ button.kiosk-row.figrow { flex: none; }
    `.cdlg{inset:0}` 找的是最近的**定位祖先**,所以这一屏的布局根要 `position:relative`
    —— 屏 06(布局 A)和屏 08(布局 B)已经各踩过一次,判据一样。**只给这一屏加**。 */
 .kiosk-layout-a.baipu-layout { position: relative; }
+/* 摄像头用不了、临时露出「确认落子」时,灯折叠头右端的「手动确认」用警告色(稿 17d)。 */
+.baipu-layout .kiosk-fold__head b.warn, .baipu-layout .lrow .warn { color: var(--warn); }
 
 /* ── 屏 18 直播 · 观战 ──────────────────────────────────────────────────────
    状态标(直播中 / 已结束)在页控条右端。它**不占流内高度** —— 这一屏右栏六块正好

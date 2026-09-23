@@ -38,7 +38,7 @@ const PLATFORMS = {
   ],
 };
 
-/** 稿子那三个人,逐字对上(`shots/08-platform-lobby.png`)。 */
+/** 稿子那三个人,逐字对上(`shots/08a-platform-lobby.png`)。 */
 const OGS_USERS = {
   users: [
     { user_id: '1', username: 'stone_walker', rank: '4d', status: 'idle' },
@@ -118,7 +118,7 @@ test('四图:跨平台 · 连接 ←→ sample-go/shots/07-platform.png', async 
   console.log(`[fourup 07-platform] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });
 
-test('四图:跨平台 · 大厅 ←→ sample-go/shots/08-platform-lobby.png', async ({ page }) => {
+test('四图:跨平台 · 大厅 ←→ sample-go/shots/08a-platform-lobby.png', async ({ page }) => {
   await boot(page, '/kiosk/play/cross-platform/lobby?platform=ogs');
   await page.waitForSelector('[data-testid="platform-lobby-page"]');
   await expect(page.locator('[data-testid="platform-user"]')).toHaveCount(3);
@@ -127,11 +127,11 @@ test('四图:跨平台 · 大厅 ←→ sample-go/shots/08-platform-lobby.png', 
 
   const r = await captureFourUp({
     page,
-    referencePng: resolve(SHOTS, '08-platform-lobby.png'),
+    referencePng: resolve(SHOTS, '08a-platform-lobby.png'),
     outDir: OUT,
-    slug: '08-platform-lobby',
+    slug: '08a-platform-lobby',
     referenceCaption:
-      '参考:sample-go/shots/08-platform-lobby.png · L2 布局 B · '
+      '参考:sample-go/shots/08a-platform-lobby.png · L2 布局 B · '
       + '分段选的是平台不是筛法 · 段位是平台那边的,不是盒子的',
     implementationCaption:
       '实现:/kiosk/play/cross-platform/lobby?platform=ogs @1024×600 · 时钟冻 16:40 · '
@@ -142,7 +142,7 @@ test('四图:跨平台 · 大厅 ←→ sample-go/shots/08-platform-lobby.png', 
       + '**「输入之后回车」是真按回车**:旧实现 400ms 防抖,每敲一个字向外部平台发一次搜索 · '
       + '**对局中那一行不摆灰按钮**,摆状态标 —— 那个人现在收不到挑战,灰按钮会让人一直按',
   });
-  console.log(`[fourup 08-platform-lobby] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
+  console.log(`[fourup 08a-platform-lobby] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });
 
 test('四图:跨平台 · 人机开局 ←→ sample-go/shots/09-platform-engine.png', async ({ page }) => {

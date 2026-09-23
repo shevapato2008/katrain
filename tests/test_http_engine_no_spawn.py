@@ -51,12 +51,18 @@ class _Handler(BaseHTTPRequestHandler):
         pass  # silence server logs
 
 
+class _ConcurrentHTTPServer(ThreadingHTTPServer):
+    # The concurrency test opens eight connections at once; the stdlib backlog is only five.
+    # Leave headroom so a busy full suite measures session reuse, not listen-queue overflow.
+    request_queue_size = 16
+
+
 @pytest.fixture
 def server():
     _Handler.status = 200
     _Handler.delay = 0.0
     _Handler.big = False
-    httpd = ThreadingHTTPServer(("127.0.0.1", 0), _Handler)
+    httpd = _ConcurrentHTTPServer(("127.0.0.1", 0), _Handler)
     port = httpd.server_address[1]
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()

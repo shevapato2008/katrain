@@ -9,7 +9,7 @@ from typing import Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, field_validator
 
-from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
 from katrain.web.models import User
 
 logger = logging.getLogger("katrain_web")
@@ -34,7 +34,14 @@ _VALID_HANDICAP = {-1, 0, 2, 3, 4, 5, 6, 7, 8, 9}  # 让子值 (handicap); no 1
 
 
 def _komi_for_handicap(h: int) -> float:
-    """Derive komi from handicap, matching Golaxy 自由对弈 conventions (chinese rules)."""
+    """Derive komi from handicap, matching Golaxy 自由对弈 conventions (chinese rules).
+
+    ⚠️ kiosk 本地那条路(`web/ui/src/kiosk/utils/setupOptions.ts` 的 `resolveGameTerms`)
+    对让 N 子给的是 **komi = 0**,不是这里的 N。**两边都对,别去统一。**
+    对面的引擎不是同一个:星阵不另加让子补偿,所以那 N 目要由 komi 带过去;
+    而 KataGo 的中国规则 `whiteHandicapBonusRule = WHB_N` 会自己给白方加 N,
+    komi 再写 N 就补两遍。净补偿两边都是白方 +N。
+    """
     if h == 0:
         return 7.5  # 分先 (even game)
     if h == -1:
@@ -189,7 +196,7 @@ def _maybe_show_hint(app_state, session_id: str, position_token: Optional[int], 
 
 @router.post("/{platform}/login")
 async def platform_login(
-    platform: str, req: PlatformLoginRequest, request: Request, user: User = Depends(get_current_user)
+    platform: str, req: PlatformLoginRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Login to a Go platform. Tries saved JWT first, then password."""
     from katrain.web.platforms.models import PlatformCredentials
@@ -221,7 +228,7 @@ async def platform_login(
 
 
 @router.delete("/{platform}/logout")
-async def platform_logout(platform: str, request: Request, user: User = Depends(get_current_user)):
+async def platform_logout(platform: str, request: Request, user: User = Depends(require_writable_user)):
     """Logout from a platform and delete saved credentials."""
     pm = request.app.state.platform_manager
     await pm.disconnect_platform(platform)
@@ -244,7 +251,7 @@ async def platform_status(request: Request, user: User = Depends(get_current_use
 
 
 @router.post("/{platform}/sms/request")
-async def request_sms(platform: str, req: SmsRequest, request: Request, user: User = Depends(get_current_user)):
+async def request_sms(platform: str, req: SmsRequest, request: Request, user: User = Depends(require_writable_user)):
     """Request an SMS verification code for phone-based login (Golaxy)."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -264,7 +271,7 @@ async def request_sms(platform: str, req: SmsRequest, request: Request, user: Us
 
 @router.post("/{platform}/engine/start")
 async def start_engine(
-    platform: str, req: EngineStartRequest, request: Request, user: User = Depends(get_current_user)
+    platform: str, req: EngineStartRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Start a human-vs-AI engine game. Client sends level + human_color +
     handicap; komi/rule/board_size are derived/fixed server-side (see
@@ -303,7 +310,7 @@ async def start_engine(
 
 @router.post("/{platform}/engine/analysis")
 async def engine_analysis(
-    platform: str, req: EngineAnalysisRequest, request: Request, user: User = Depends(get_current_user)
+    platform: str, req: EngineAnalysisRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Run one analysis tunnel (area/options/judge/variation) for the engine
     game behind `req.session_id`. Insufficient quota is a normal, expected
@@ -443,7 +450,7 @@ async def platform_challenges(platform: str, request: Request, user: User = Depe
 
 @router.post("/{platform}/challenge")
 async def send_challenge(
-    platform: str, req: PlatformChallengeRequest, request: Request, user: User = Depends(get_current_user)
+    platform: str, req: PlatformChallengeRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Send a challenge to a user on a platform."""
     pm = request.app.state.platform_manager
@@ -456,7 +463,7 @@ async def send_challenge(
 
 @router.post("/{platform}/challenge/accept")
 async def accept_challenge(
-    platform: str, req: AcceptChallengeRequest, request: Request, user: User = Depends(get_current_user)
+    platform: str, req: AcceptChallengeRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Accept an incoming challenge."""
     pm = request.app.state.platform_manager
@@ -470,7 +477,7 @@ async def accept_challenge(
 
 @router.post("/{platform}/challenge/decline")
 async def decline_challenge(
-    platform: str, req: DeclineChallengeRequest, request: Request, user: User = Depends(get_current_user)
+    platform: str, req: DeclineChallengeRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Decline an incoming challenge."""
     pm = request.app.state.platform_manager
@@ -486,7 +493,7 @@ async def decline_challenge(
 
 @router.post("/{platform}/automatch/start")
 async def start_automatch(
-    platform: str, req: AutomatchRequest, request: Request, user: User = Depends(get_current_user)
+    platform: str, req: AutomatchRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Start automatch on a platform."""
     pm = request.app.state.platform_manager
@@ -500,7 +507,7 @@ async def start_automatch(
 
 
 @router.post("/{platform}/automatch/cancel")
-async def cancel_automatch(platform: str, request: Request, user: User = Depends(get_current_user)):
+async def cancel_automatch(platform: str, request: Request, user: User = Depends(require_writable_user)):
     """Cancel automatch on a platform."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)

@@ -87,6 +87,12 @@ class VisionService:
             if status is not None:
                 self._latest_status = status
 
+    @property
+    def last_motion_at(self) -> float | None:
+        """Latest camera motion, also available while move detection is paused."""
+        self.refresh_status()
+        return self._latest_status.last_motion_at
+
     # -- commands ------------------------------------------------------------
 
     def confirm_pose_lock(self) -> bool:
@@ -96,17 +102,20 @@ class VisionService:
         self._worker.send_command(WorkerCommand(action=CommandType.CONFIRM_POSE_LOCK))
         return True
 
-    def set_expected_board(self, board: np.ndarray) -> None:
+    def set_expected_board(self, board: np.ndarray, *, expected_node_id: int | None = None) -> None:
         """Update expected board for sync comparison."""
         if self._worker:
-            self._worker.send_command(
-                WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data={"board": board.tolist()})
-            )
+            data = {"board": board.tolist()}
+            if expected_node_id is not None:
+                data["expected_node_id"] = expected_node_id
+            self._worker.send_command(WorkerCommand(action=CommandType.SET_EXPECTED_BOARD, data=data))
 
-    def set_expected_from_stones(self, stones: list[list], board_size: int = 19) -> None:
+    def set_expected_from_stones(
+        self, stones: list[list], board_size: int = 19, *, expected_node_id: int | None = None
+    ) -> None:
         """Convert GameState.stones to board matrix and set as expected."""
         board = game_state_stones_to_board(stones, board_size)
-        self.set_expected_board(board)
+        self.set_expected_board(board, expected_node_id=expected_node_id)
 
     def enter_setup_mode(self, target_board: np.ndarray) -> None:
         """Enter tsumego setup mode with target position."""
@@ -160,6 +169,11 @@ class VisionService:
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.SET_MOVE_ARMED, data={"armed": armed}))
 
+    def needs_frames(self) -> bool:
+        """此刻有没有人要看棋盘(实体对局 / 监视 / 摆棋准备 / 识别预览)。子进程模式读不到 ⇒ 保守答「要」。"""
+        needs = getattr(self._worker, "needs_frames", None)
+        return bool(needs()) if callable(needs) else self._worker is not None
+
     def set_viewer_active(self, active: bool) -> None:
         """Tell worker whether MJPEG viewers are connected."""
         if self._worker:
@@ -170,12 +184,19 @@ class VisionService:
             self._worker.send_command(WorkerCommand(action=CommandType.SET_GEOMETRY, data={"geometry": geometry}))
 
     def pause_detection(self) -> None:
-        """Suspend MoveDetector move confirmation only (hint display; PRD R4.3).
+        """Suspend the whole compare pipeline: move confirmation AND SyncStateMachine.
 
-        Narrowed scope after review: SyncStateMachine.update keeps running while paused —
-        capture_pending/illegal_change flows must stay live during a catch-up wait (guide
-        stone removal, report anomalies). During an LED hint, lit-and-expected-empty
-        intersections are protected from feeding sync via set_lit_points() masking instead.
+        ⚠️ This docstring used to claim SyncStateMachine.update keeps running while
+        paused. It does not, and has not: `should_feed_sync(bound, monitor, paused)`
+        (gating.py:34-35) returns False when paused, and both workers gate
+        `self._sync.update()` on it — so capture_pending / illegal_change / move
+        confirmation all stop together. Anyone reasoning from the old sentence would
+        pick the wrong mechanism (PAUSE_REASON_GAME_OVER relies on the real one).
+
+        Callers: LED hint display (PRD R4.3), and game-over (see
+        PhysicalPlayOrchestrator.PAUSE_REASON_GAME_OVER). During an LED hint,
+        lit-and-expected-empty intersections are additionally protected from feeding
+        sync via set_lit_points() masking.
         """
         if self._worker:
             self._worker.send_command(WorkerCommand(action=CommandType.PAUSE_DETECTION))
@@ -194,8 +215,24 @@ class VisionService:
     # -- data retrieval ------------------------------------------------------
 
     def get_detected_board(self) -> list[list[int]] | None:
-        """Return the latest detected board state (19x19 grid)."""
+        """Return the latest detected board state (19x19 grid).
+
+        Pulls fresh status first. The cached `_latest_status` is only refreshed by
+        whoever last touched another status property, so it can be arbitrarily old.
+        """
+        self.refresh_status()
         return self._latest_status.detected_board
+
+    def get_board_observation(self) -> tuple[list[list[int]] | None, int]:
+        """The latest board reading together with the observation it came from.
+
+        The sequence number is what makes a presence check sound: `worker.py` publishes
+        status at 1 Hz, so "the newest board we have" can easily predate a move confirmed
+        since. Callers must require a sequence strictly greater than the one stamped on
+        the ConfirmedMove before treating an empty cell as a disappearance.
+        """
+        self.refresh_status()
+        return self._latest_status.detected_board, int(self._latest_status.observation_seq)
 
     def get_preview_jpeg(self) -> bytes | None:
         """Get latest JPEG preview frame from worker."""

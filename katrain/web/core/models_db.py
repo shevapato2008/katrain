@@ -723,6 +723,13 @@ class UserGame(Base):
     source = Column(String(50), nullable=False)  # play_ai / play_human / import / research
     category = Column(String(50), default="game")  # game / position
     game_type = Column(String(50), nullable=True)  # free / rated / null
+    # 这个用户坐哪一方('B' / 'W')。**算不出来就是 NULL,不猜** —— 面对面(两边都是人)、
+    # 导入的谱、研究局都没有「你」这一方;拿玩家名去比就是在编(重名、没填名字)。
+    # **必须可空**:非空列会让 `migrations.add_missing_columns` 补一个 `''` 默认值,
+    # 而 `''` 会被读成「记过执色」。这一列诞生之前的行一律 NULL 且**不回填**(那个事实
+    # 当时没记下来);唯一的例外是升降级局 —— 账本 `ai_ladder_game_ledger.user_color`
+    # 早就记着,`UserGameRepository.decided_since` 查询时读它,不改写这一列。
+    user_color = Column(String(1), nullable=True)
     origin_device_id = Column(String(64), nullable=True)
     sgf_hash = Column(String(64), nullable=True, index=True)
     event = Column(String(255), nullable=True)

@@ -57,10 +57,16 @@ class _FakeGameRepo:
     def count_since(self, user_id, since):  # noqa: ARG002
         return 5
 
+    def decided_since(self, user_id, since):  # noqa: ARG002
+        return {"decided": 4, "wins": 3, "losses": 1}
+
 
 class _FakeLadderRepo:
     def growth_summary(self, user_id, since):  # noqa: ARG002
         return dict(LOCAL_LADDER)
+
+    def rung_trend(self, user_id, since):  # noqa: ARG002
+        return [{"date": "2026-09-20", "rung": 18, "rank_name": "3级"}]
 
 
 class _FakeConnectivity:
@@ -71,7 +77,9 @@ class _FakeConnectivity:
 class _FakeRemoteClient:
     """`get_growth_summary` 要么返回一份 payload,要么抛一个真的 httpx 异常。"""
 
-    def __init__(self, *, payload=None, raises=None):
+    def __init__(self, *, payload=None, raises=None, bound_user_id="1"):
+        # 云端会话绑在哪个本机用户上;不是当前这个人就退回本机(`cloud_session_is`)。
+        self.bound_user_id = bound_user_id
         self._payload = payload
         self._raises = raises
         self.calls = []
@@ -208,3 +216,24 @@ def test_days_原样带给云端():
         "/api/v1/growth/summary?days=7"
     )
     assert remote.calls == [7]
+
+
+# ── 2026-09 新增的三个字段:算得出胜负的局 ──
+
+
+def test_本机那一支回出算得出胜负的三个数():
+    body = _client().get("/api/v1/growth/summary").json()
+    assert (body["decided_games_in_window"], body["wins_in_window"], body["losses_in_window"]) == (4, 3, 1)
+    assert body["rung_trend"] == [{"date": "2026-09-20", "rung": 18, "rank_name": "3级"}]
+    # 两个口径不同:下了 5 局,算得出胜负的 4 局。
+    assert body["games_in_window"] == 5
+
+
+def test_老云端不回新字段_照样算长得对_不退回本机():
+    """新字段**不进** `_REQUIRED_KEYS`。进了的话,云端还没部署这一版的那几天里,
+    盒子会把老云端的正常响应判成坏 payload,四个数全部退回本机缓存。"""
+    remote = _FakeRemoteClient(payload=dict(CLOUD))
+    body = _client(dispatcher=_dispatcher(online=True, remote_client=remote)).get("/api/v1/growth/summary").json()
+    assert body["authority"] == "cloud"
+    # 原样转出:没有就是没有,前端据此退回「升降级胜率」,不由盒子替云端补一个本机数。
+    assert "decided_games_in_window" not in body

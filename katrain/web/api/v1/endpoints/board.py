@@ -14,7 +14,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from katrain.web.api.v1.endpoints.auth import get_current_user
+from katrain.web.api.v1.endpoints.auth import get_current_user, require_writable_user
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import DeviceHeartbeatDB
 from katrain.web.models import User
@@ -42,7 +42,7 @@ class HeartbeatResponse(BaseModel):
 async def device_heartbeat(
     request: Request,
     body: HeartbeatRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
     db: Session = Depends(get_db),
 ):
     """Receive heartbeat from an RK3588 board device.
@@ -83,7 +83,7 @@ async def device_heartbeat(
 
 @router.get("/devices")
 async def list_devices(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_writable_user),
     db: Session = Depends(get_db),
 ):
     """List all registered board devices (admin monitoring)."""

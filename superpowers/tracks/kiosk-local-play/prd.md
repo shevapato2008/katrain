@@ -1,5 +1,7 @@
 # PRD：Kiosk 对弈模块 · 本地对弈（两人面对面对弈 + 存谱复盘）
 
+> ⚠️ **2026-09-14：本文件是 v1（2026-07-12）的记录，部分描述已过期**（例如 `GameHistoryPage` 已并入屏 19、「页面在 KioskAuthGuard 之内 ⇒ token 必有」在严格盒端 SSO 后不成立）。现行设计见 [`v2-design.md`](./v2-design.md)。
+
 - **Track**: `kiosk-local-play`
 - **目标分支**: `feature/kiosk-local-play`
 - **作者**: fan

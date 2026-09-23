@@ -7,6 +7,10 @@ import KifuPage from '../pages/KifuPage';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import type { MatchSummary } from '../../types/live';
 import { ApiError } from '../../api';
+import {
+  __resetKioskActivityStorageForTests,
+  setKioskIdentity,
+} from '../storage/kioskActivityStorage';
 
 /**
  * 屏 15 · 棋谱 `/kiosk/kifu`。
@@ -25,6 +29,7 @@ import { ApiError } from '../../api';
  */
 
 const mockNavigate = vi.fn();
+const TEST_UUID = 'kifu-page-test-user';
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
@@ -69,24 +74,24 @@ const liveResult = (over: Partial<ReturnType<typeof useLiveMatchesMock>> = {}) =
 const renderPage = () =>
   render(
     <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/kiosk/kifu']}>
         <KifuPage />
       </MemoryRouter>
     </ThemeProvider>,
   );
 
-/** 往 localStorage 里造一条「最近摆过」。**造的是真的存储键**,不是 mock 的模块。 */
+/** 往当前用户的 localStorage 命名空间里造一条「最近摆过」。 */
 const seedRecent = (
   entries: { id: string; name: string; savedAt: number }[],
   progress: Record<string, { k: number; frames: number; updatedAt: number; total?: number }> = {},
   sgfFor: string[] = [],
 ) => {
-  localStorage.setItem('baipu:recent', JSON.stringify(entries));
+  localStorage.setItem(`baipu:recent:${TEST_UUID}`, JSON.stringify(entries));
   for (const [id, p] of Object.entries(progress)) {
-    localStorage.setItem(`baipu:progress:${id}`, JSON.stringify(p));
+    localStorage.setItem(`baipu:progress:${id}:${TEST_UUID}`, JSON.stringify(p));
   }
   for (const id of sgfFor) {
-    localStorage.setItem(`baipu:sgf:${id}`, JSON.stringify({
+    localStorage.setItem(`baipu:sgf:${id}:${TEST_UUID}`, JSON.stringify({
       id, name: id, sgf: '(;FF[4]GM[1]SZ[19];B[pd])', savedAt: 1,
     }));
   }
@@ -95,6 +100,8 @@ const seedRecent = (
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  __resetKioskActivityStorageForTests();
+  setKioskIdentity(TEST_UUID, false);
   getAlbums.mockResolvedValue({ items: [album(1), album(2)], total: 2, page: 1, page_size: 6 });
   useLiveMatchesMock.mockReturnValue(liveResult());
 });

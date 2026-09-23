@@ -15,6 +15,12 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
+// 摆谱缓存按身份分区(kioskActivityStorage,develop 2026-09):真用户的键带 `:<uuid>` 后缀。
+vi.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { uuid: 'u1' }, isGuest: false, isLoading: false }),
+}));
+const key = (k: string) => `${k}:u1`;
+
 const { baipuLoad, baipuCapture } = vi.hoisted(() => ({ baipuLoad: vi.fn(), baipuCapture: vi.fn() }));
 vi.mock('../../api/baipuApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api/baipuApi')>();
@@ -49,7 +55,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   Element.prototype.scrollIntoView = vi.fn();   // jsdom 缺口,不是产品要绕的东西
-  localStorage.setItem('baipu:sgf:g1', JSON.stringify({ id: 'g1', name: '三星杯', sgf: '(;SZ[19];B[pd];W[dp])', savedAt: 1 }));
+  localStorage.setItem(key('baipu:sgf:g1'), JSON.stringify({ id: 'g1', name: '三星杯', sgf: '(;SZ[19];B[pd];W[dp])', savedAt: 1 }));
   baipuLoad.mockResolvedValue({ board_size: 19, steps: STEPS, meta: META });
   baipuCapture.mockResolvedValue({ kind: 'disabled' });
   ledPoint.mockResolvedValue({ ok: true, connected: true });
@@ -82,7 +88,7 @@ describe('屏 17 摆谱 · 出口都回棋谱屏(K1)', () => {
     await waitFor(() => expect(screen.getByTestId('baipu-pcard')).toHaveAttribute('data-mood', 'done'));
     fireEvent.click(screen.getByRole('button', { name: '完成' }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
-    expect(localStorage.getItem('baipu:progress:g1')).toBeNull();
+    expect(localStorage.getItem(key('baipu:progress:g1'))).toBeNull();
   });
 });
 
@@ -128,17 +134,17 @@ describe('屏 17 摆谱 · 上线态不拍照(K4,Fan 2026-09-14)', () => {
 describe('屏 17 摆谱 · 只摆 19 路(K2)', () => {
   // 实体盘和灯阵都是 19 路。13 路的行列发给灯,会亮在实体盘左上角那一块 —— 每一颗都错位。
   it('13 路的谱:说清摆不了、一颗灯都不点,并从「最近摆过」和本地缓存里拿掉', async () => {
-    localStorage.setItem('baipu:recent', JSON.stringify([
+    localStorage.setItem(key('baipu:recent'), JSON.stringify([
       { id: 'g1', name: '三星杯', savedAt: 1 }, { id: 'other', name: '别的', savedAt: 1 },
     ]));
-    localStorage.setItem('baipu:progress:g1', JSON.stringify({ k: 0, frames: 0, updatedAt: 1 }));
+    localStorage.setItem(key('baipu:progress:g1'), JSON.stringify({ k: 0, frames: 0, updatedAt: 1 }));
     baipuLoad.mockResolvedValue({ board_size: 13, steps: [move(0, 3, 3, 'B')], meta: META });
     renderPage();
     expect(await screen.findByText('这是 13 路的谱，摆不了')).toBeInTheDocument();
     expect(ledPoint).not.toHaveBeenCalled();
-    expect(localStorage.getItem('baipu:sgf:g1')).toBeNull();
-    expect(localStorage.getItem('baipu:progress:g1')).toBeNull();
-    expect(JSON.parse(localStorage.getItem('baipu:recent')!)).toEqual([{ id: 'other', name: '别的', savedAt: 1 }]);
+    expect(localStorage.getItem(key('baipu:sgf:g1'))).toBeNull();
+    expect(localStorage.getItem(key('baipu:progress:g1'))).toBeNull();
+    expect(JSON.parse(localStorage.getItem(key('baipu:recent'))!)).toEqual([{ id: 'other', name: '别的', savedAt: 1 }]);
     fireEvent.click(screen.getByRole('button', { name: /棋谱/ }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
   });

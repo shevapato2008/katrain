@@ -1,6 +1,7 @@
 import { test } from '@playwright/test';
 import { resolve } from 'node:path';
 import { captureFourUp, freezeClock, KIOSK_VIEWPORT, stubBackendStatics } from './helpers/fourup';
+import { scopedKey, kioskMeJson } from './helpers/kioskIdentity';
 
 test.use({ viewport: KIOSK_VIEWPORT });
 test.describe.configure({ mode: 'serial' });
@@ -67,17 +68,16 @@ const STEPS = {
 
 const boot = async (page: import('@playwright/test').Page) => {
   await freezeClock(page);
-  await page.addInitScript(() => {
+  // 种子键带身份后缀 + `/me` 给同一个 uuid,缺一不可 —— 见 helpers/kioskIdentity.ts。
+  await page.addInitScript((sgfKey: string) => {
     localStorage.setItem('token', 'fourup');
     localStorage.setItem('katrain_language', 'cn');
-    localStorage.setItem('baipu:sgf:s1', JSON.stringify({
+    localStorage.setItem(sgfKey, JSON.stringify({
       id: 's1', name: '摆谱 · 三星杯半决赛', sgf: '(;SZ[19];B[pd])', savedAt: 1,
     }));
-  });
+  }, scopedKey('baipu:sgf:s1'));
   await stubBackendStatics(page);
-  await page.route('**/api/v1/auth/me', (route) => route.fulfill({
-    json: { id: 1, username: '访客', rank: '5段', credits: 0 },
-  }));
+  await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: kioskMeJson({ username: '访客' }) }));
   // ⚠️ **这条不是装饰,是这一屏的四图能不能自己站住的前提。**
   // (2026-09-14 起只有采集态套守卫,但**上线态同样离不开这条桩**:上线态要等棋盘状态读到过才挂摆谱屏
   //  —— 不桩就停在「正在检查棋盘状态」,`baipu-pcard` 照样永远不出现。)

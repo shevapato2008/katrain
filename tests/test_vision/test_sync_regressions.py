@@ -90,3 +90,50 @@ class TestSetupSurvivesBoardLost:
         types = {e.type for e in events}
         assert SyncEventType.SETUP_PROGRESS in types
         assert SyncEventType.ILLEGAL_CHANGE not in types
+
+
+class TestBoardLossEpisodes:
+    def test_repeated_displaced_board_does_not_reacquire_until_reading_recovers(self):
+        m = _synced_machine()
+        displaced = board_with({(row, 0): BLACK for row in range(12)})
+
+        events = m.update(displaced)
+        assert [event.type for event in events] == [SyncEventType.BOARD_LOST]
+
+        for _ in range(5):
+            assert m.update(displaced) == []
+            assert m.state == SyncState.BOARD_LOST
+
+        recovered = m.update(empty_board())
+        assert [event.type for event in recovered].count(SyncEventType.BOARD_REACQUIRED) == 1
+        assert m.state == SyncState.SYNCED
+        assert m.update(empty_board()) == []
+
+    def test_visible_but_still_displaced_board_does_not_end_camera_loss(self):
+        m = _synced_machine()
+        m.update(None, board_detected=False)
+
+        displaced = board_with({(row, 0): BLACK for row in range(12)})
+        assert m.update(displaced, board_detected=True) == []
+        assert m.state == SyncState.BOARD_LOST
+
+    def test_large_digital_capture_requests_removal_without_losing_board(self):
+        m = _synced_machine()
+        captured_stones = board_with({(row, 0): BLACK for row in range(12)})
+        m.set_expected_board(captured_stones)
+        m.update(captured_stones)
+        m.set_expected_board(empty_board())
+
+        events = m.update(captured_stones)
+        assert [event.type for event in events] == [SyncEventType.CAPTURE_PENDING]
+        assert len(events[0].data["positions"]) == 12
+        assert m.state == SyncState.CAPTURE_PENDING
+        assert m.update(captured_stones) == []
+        assert SyncEventType.CAPTURES_CLEARED in {event.type for event in m.update(empty_board())}
+
+    def test_digital_setup_changes_do_not_count_as_displacement(self):
+        m = _synced_machine()
+        m.set_expected_board(board_with({(row, 0): BLACK for row in range(12)}))
+
+        assert m.update(empty_board()) == []
+        assert m.state == SyncState.SYNCED

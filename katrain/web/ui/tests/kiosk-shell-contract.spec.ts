@@ -79,9 +79,10 @@ function codeOnly(src: string): string {
  * 算出来的是两个尺寸,而我们的整套验收(四图对比 + 几何闸)都建立在
  * 「1024×600 画布里的 px 就是屏上的 px」这一条上。
  *
- * `RotationWrapper.tsx` 是**永久豁免**:它在画布**外面**,职责就是把整个视口铺满
- * 再按方向旋转,`100vw/100vh` 正是它该写的东西。KioskFrame 在它里面按 min(w/1024, h/600)
- * 缩放 —— 那一层才是画布。
+ * `KioskViewport.tsx` 是**永久豁免**:它在画布**外面**,职责就是把整个视口铺满,
+ * `100vw/100vh` 正是它该写的东西。KioskFrame 在它里面按 min(w/1024, h/600)
+ * 缩放 —— 那一层才是画布。(2026-09 之前这条豁免给的是 `RotationWrapper.tsx`:旋转机器删了,
+ * 那只盒子是承重的、原样留下改名成 `KioskViewport`,豁免跟着盒子走。)
  *
  * 划账记录:
  *   Task 4 —— `components/layout/navTabs.tsx` 随旧 Dock 一起删,从图标名单里划掉。
@@ -98,15 +99,13 @@ function codeOnly(src: string): string {
 // `TutorialVideoPlayer` 的;重画之后视频走 `fill` 占那块 516,那个参数不再传。
 // **课程这一族从此一条都不剩。**
 const VIEWPORT_UNIT_BASELINE = [
-  'src/kiosk/__tests__/RotationWrapper.test.tsx',
   'src/kiosk/components/guards/KioskAuthGuard.tsx',
-  'src/kiosk/components/layout/RotationWrapper.tsx',
+  'src/kiosk/components/layout/KioskViewport.tsx',
   'src/kiosk/components/report/ReportLibraryImportDialog.test.tsx',
   'src/kiosk/components/report/ReportLibraryImportDialog.tsx', // (C) 对话框
   'src/kiosk/components/report/ReportLocalImportDialog.test.tsx',
   'src/kiosk/components/report/ReportLocalImportDialog.tsx', // (C) 对话框
   'src/kiosk/components/tsumego/SuccessOverlay.tsx', // (C) 做题屏上的浮层
-  'src/kiosk/pages/TsumegoCategoriesPage.tsx', // (B) 训练营分类,未排
   'src/kiosk/pages/TsumegoLevelPage.tsx',
 ];
 
@@ -192,7 +191,6 @@ const MUI_ICON_BASELINE = [
   'src/kiosk/components/vision/VisionSyncOverlay.tsx', // (A) 标定/识别
   'src/kiosk/pages/GamePage.tsx', // (C) 屏 05 已重画;剩的是对话框里的图标
   'src/kiosk/pages/LivePage.tsx', // (A) 直播屏
-  'src/kiosk/pages/TsumegoCategoriesPage.tsx',
 ];
 
 test('图标不许新增手写内联路径或 MUI 图标 —— 只能从 kiosk-shell/icons/ 出', () => {

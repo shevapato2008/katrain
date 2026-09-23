@@ -257,7 +257,7 @@ class TestColorsAndProtocol:
 
         svc.start()
         try:
-            assert "BRIGHT 200" in fake.written
+            assert "BRIGHT 255" in fake.written
         finally:
             svc.stop()
 
@@ -362,7 +362,7 @@ class TestConnectionHandshake:
         svc._open_serial()
 
         assert svc.is_connected() is True
-        assert fake.written == ["BRIGHT 200"]
+        assert fake.written == ["BRIGHT 255"]
         assert fake._buf == []
 
     def test_delayed_ready_precedes_bright_and_fresh_ok_connects(self):
@@ -377,7 +377,7 @@ class TestConnectionHandshake:
         svc._open_serial()
 
         assert fake.reset_calls == 1
-        assert fake.write_times == [("BRIGHT 200", 1000.25)]
+        assert fake.write_times == [("BRIGHT 255", 1000.25)]
         assert svc.is_connected() is True
 
     def test_ready_banner_does_not_replace_postwrite_ok(self):
@@ -391,7 +391,7 @@ class TestConnectionHandshake:
 
         svc._open_serial()
 
-        assert fake.write_times == [("BRIGHT 200", 1000.25)]
+        assert fake.write_times == [("BRIGHT 255", 1000.25)]
         assert svc.is_connected() is False
         assert fake.closed is True
 
@@ -409,7 +409,7 @@ class TestConnectionHandshake:
         assert fake.reset_calls == 1
         assert fake.prewrite_reads == 0
         assert clock.t == 1000.0
-        assert fake.written == ["BRIGHT 200"]
+        assert fake.written == ["BRIGHT 255"]
         assert svc.is_connected() is False
 
     def test_bright_err_closes_without_connecting(self):
@@ -696,3 +696,43 @@ class TestLastErrorsAggregatesAllFinishPaths:
         finally:
             fake.raise_after_first_batch = False  # let stop()'s clear(strict=True) succeed cleanly
             svc.stop()
+
+
+# ---------------------------------------------------------------- guidance brightness (ambient loop, 2026-09-22)
+
+
+def _capturing_service():
+    svc = LedService(LedServiceConfig(), serial_factory=lambda: FakeSerial())
+    sent = []
+    svc._submit = lambda commands, strict: sent.append(list(commands)) or {"ok": True}
+    return svc, sent
+
+
+def test_guidance_brightness_scales_every_lamp_and_never_turns_a_lit_channel_off():
+    svc, sent = _capturing_service()
+    svc.set_guidance_scale(0.5)
+    svc.set_points([{"row": 3, "col": 3, "color": "white"}, {"row": 4, "col": 4, "color": "hint"}])
+    assert sent[-1][1] == f"SETI {rc2idx(3, 3)} 0 128 0"
+    assert sent[-1][2] == f"SETI {rc2idx(4, 4)} 128 128 128"
+    svc.set_guidance_scale(0.0)  # clamped to the floor; a lit channel stays lit
+    svc.set_points([{"row": 3, "col": 3, "color": "white"}])
+    green = int(sent[-1][1].split()[3])
+    assert green == round(255 * _led_service.MIN_GUIDANCE_SCALE) and green >= 1
+
+
+def test_changing_the_brightness_reshows_the_lit_guidance_and_nothing_after_a_clear():
+    svc, sent = _capturing_service()
+    svc.set_points([{"row": 15, "col": 15, "color": "white"}])
+    svc.set_guidance_scale(0.25)
+    assert sent[-1] == ["CLEAR", f"SETI {rc2idx(15, 15)} 0 64 0", "SHOW"]
+    svc.clear()
+    count = len(sent)
+    svc.set_guidance_scale(1.0)
+    assert len(sent) == count  # nothing lit, nothing re-shown
+
+
+def test_calibration_lamps_are_never_scaled():
+    svc, sent = _capturing_service()
+    svc.set_guidance_scale(0.25)
+    svc.set_rgb_points([{"row": 9, "col": 9, "rgb": (0, 96, 0)}])
+    assert sent[-1][1] == f"SETI {rc2idx(9, 9)} 0 96 0"

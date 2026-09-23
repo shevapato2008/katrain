@@ -69,7 +69,20 @@ def _geometry_snapshot(request: Request):
     return lock, "ready" if lock is not None else "required", 0
 
 
-def _encode_warped_frame(frame, lock) -> bytes:
+def _downscale(frame, scale: int):
+    """按屏上的显示尺寸编码。标定屏只把画面显示成 ~514 px 宽,原样推 1920x1080 / 1056x1056
+    等于让 katrain 白编码、让浏览器在主线程上白解码(RK3562 实测:标定收尾 19 s 里页面主线程
+    6.8 s 花在 JS 以外的浏览器内部工作,JS 合计 <2%)。"""
+    scale = max(1, min(int(scale), 8))
+    if scale == 1:
+        return frame
+    import cv2
+
+    h, w = frame.shape[:2]
+    return cv2.resize(frame, (max(1, w // scale), max(1, h // scale)), interpolation=cv2.INTER_AREA)
+
+
+def _encode_warped_frame(frame, lock, scale: int = 1) -> bytes:
     import cv2
 
     from katrain.vision.config import DEFAULT_MARGIN_CELLS
@@ -80,7 +93,7 @@ def _encode_warped_frame(frame, lock) -> bytes:
     # lines — and looks identical to what the detector actually sees. The overlay insets to match
     # via layout.warped_margin_cells (see geometry_layout / buildWarpedGeometryModel).
     warped = warp_with_margin(frame, lock.M, int(lock.out_size), margin_cells=DEFAULT_MARGIN_CELLS)
-    ok, jpeg = cv2.imencode(".jpg", warped, [cv2.IMWRITE_JPEG_QUALITY, 65])
+    ok, jpeg = cv2.imencode(".jpg", _downscale(warped, scale), [cv2.IMWRITE_JPEG_QUALITY, 65])
     if not ok:
         raise RuntimeError("failed to encode warped geometry frame")
     return jpeg.tobytes()
@@ -135,7 +148,7 @@ async def geometry_confirm_existing(request: Request):
 
 
 @router.get("/stream")
-async def geometry_stream(request: Request):
+async def geometry_stream(request: Request, scale: int = 1):
     capture = _get_capture(request)
 
     async def generate():
@@ -144,7 +157,7 @@ async def geometry_stream(request: Request):
         while True:
             frame = capture.read_frame()
             if frame is not None:
-                ok, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 65])
+                ok, jpeg = cv2.imencode(".jpg", _downscale(frame, scale), [cv2.IMWRITE_JPEG_QUALITY, 65])
                 if ok:
                     yield _mjpeg_part(jpeg.tobytes())
             await asyncio.sleep(_stream_interval_s(_calibration_phase(request)))
@@ -195,7 +208,7 @@ async def geometry_layout(request: Request):
 
 
 @router.get("/warped-stream")
-async def geometry_warped_stream(request: Request):
+async def geometry_warped_stream(request: Request, scale: int = 1):
     capture = _get_capture(request)
     lock, _phase, _revision = _geometry_snapshot(request)
     if lock is None:
@@ -205,7 +218,7 @@ async def geometry_warped_stream(request: Request):
         while not await request.is_disconnected():
             frame = capture.read_frame()
             if frame is not None:
-                yield _mjpeg_part(_encode_warped_frame(frame, lock))
+                yield _mjpeg_part(_encode_warped_frame(frame, lock, scale))
             await asyncio.sleep(0.2)
 
     return StreamingResponse(generate(), media_type="multipart/x-mixed-replace;boundary=frame")

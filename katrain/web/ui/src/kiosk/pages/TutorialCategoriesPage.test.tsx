@@ -32,7 +32,7 @@ const cat = (over: Partial<TutorialCategory>): TutorialCategory => ({
 
 const renderPage = () => render(
   <ThemeProvider theme={kioskTheme}>
-    <MemoryRouter><TutorialCategoriesPage /></MemoryRouter>
+    <MemoryRouter initialEntries={['/kiosk/tutorial']}><TutorialCategoriesPage /></MemoryRouter>
   </ThemeProvider>,
 );
 

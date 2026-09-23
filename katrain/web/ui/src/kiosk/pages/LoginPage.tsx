@@ -1,24 +1,53 @@
-import { useState, type KeyboardEvent } from 'react';
-import { Box, TextField, Button, Typography, Alert, useTheme } from '@mui/material';
+import { useState, useEffect, type KeyboardEvent } from 'react';
+import { Box, TextField, Button, Typography, Alert, CircularProgress, useTheme } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from '../../hooks/useTranslation';
 import { KIOSK_SERIF } from '../theme';
-import { LAUNCHER_LOGIN_URL, isStrictBoxKiosk } from '../shell/boxUrls';
+import { LAUNCHER_LOGIN_URL } from '../shell/boxUrls';
 
 // Brand lockup matches the Header (智星盒 / StellaBox) — Newsreader serif, jade console palette.
 const BRAND_SERIF = KIOSK_SERIF;
 
+// Decision B (logout-then-register): in a strict box kiosk there is no local
+// auth form at all — the box identity lives solely in the HttpOnly cookie set
+// by the setup-wizard. Falling through here means that cookie is absent/expired,
+// so send the user to the wizard's launcher gate via a top-level navigation
+// instead of rendering a dead username/password form nobody can submit.
 const LoginPage = () => {
   const theme = useTheme();
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, isAuthenticated, isLoading, isStrictBoxKiosk } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isStrictBoxKiosk) {
+      window.location.href = LAUNCHER_LOGIN_URL;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (isStrictBoxKiosk) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          width: '100%',
+          height: '100%',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   const handleLogin = async () => {
     setError('');

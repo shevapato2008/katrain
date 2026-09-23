@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import PhysicalBoardGuard from './PhysicalBoardGuard';
-import { readPlayOnBoard } from '../../utils/playInput';
+import { readSessionPlayOnBoard } from '../../utils/playInput';
 
 /**
  * 对局那四条路由外面的那一层。
@@ -15,13 +16,16 @@ import { readPlayOnBoard } from '../../utils/playInput';
  *
  * 偏好默认 `true`,所以什么都不选的用户走的还是原来那条路 —— 这一层是**纯增量**。
  *
- * ⚠️ 偏好在这里**只读一次**(渲染时同步读 localStorage,不订阅变化):这一局落在哪儿
- * 是开局那一刻定的(「开局后不可改」),中途换掉等于把人从一块已经摆着子的盘上赶下来。
+ * ⚠️ 读的是**开局那一刻定下的值**(`readSessionPlayOnBoard`):活动会话就是当前这一局时,
+ * 用开局屏算好的 `onBoard`(设备 ∧ 偏好 ∧ 19 路)—— 9/13 路的局偏好开着也不会被拦去标定(P8);
+ * 否则回落偏好。与 `GamePage` 的 `physicalPlay` 读同一个函数,两边不许给出两个答案。
+ * 只在渲染时同步读,不订阅变化:这一局落在哪儿开局后不可改。
  */
-const PlayInputGuard = ({ children }: { children: ReactNode }) => (
-  readPlayOnBoard()
+const PlayInputGuard = ({ children }: { children: ReactNode }) => {
+  const { pathname } = useLocation();
+  return readSessionPlayOnBoard(pathname).onBoard
     ? <PhysicalBoardGuard requireRecognition sub="在实体盘上对弈，要先让摄像头看清盘面">{children}</PhysicalBoardGuard>
-    : <>{children}</>
-);
+    : <>{children}</>;
+};
 
 export default PlayInputGuard;

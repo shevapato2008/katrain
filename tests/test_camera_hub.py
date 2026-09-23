@@ -62,6 +62,8 @@ class ControlCamera(FakeCamera):
         self.control_calls = []
         self.controls_effective = True
         self.initial_exposure = 166.0
+        self.current_auto_exposure = 1.0
+        self.current_exposure = 120.0
 
     def request_controls(self, exposure=None, auto_exposure=None):
         self.control_calls.append((exposure, auto_exposure))
@@ -77,6 +79,8 @@ def test_camera_hub_forwards_runtime_controls_to_the_camera():
     assert camera.control_calls == [(120.0, 0.25)]
     assert hub.controls_effective is True
     assert hub.initial_exposure == 166.0
+    assert hub.current_auto_exposure == 1.0
+    assert hub.current_exposure == 120.0
 
 
 def test_camera_hub_controls_are_inert_before_start():
@@ -86,3 +90,5 @@ def test_camera_hub_controls_are_inert_before_start():
 
     assert hub.controls_effective is None
     assert hub.initial_exposure is None
+    assert hub.current_auto_exposure is None
+    assert hub.current_exposure is None

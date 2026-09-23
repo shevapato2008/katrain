@@ -275,7 +275,13 @@ class NewGamePopup(QuickConfigGui):
         for bw, info in katrain.players_info.items():
             self.player_setup.update_player_info(bw, info)
 
-        self.rules_spinner.value_refs = [name for abbr, name in katrain.engine.RULESETS_ABBR]
+        # `aga-button` 是 2026-09-21 为 kiosk 的「AI 赛规则」加进 `RULESETS_ABBR` 的,
+        # **桌面这张下拉不给它** —— `.po` 里每个规则名都有自己的 msgid
+        # (`msgid "chinese"` 等),而这一条没有,放进去屏上就是个没翻译的裸 `aga-button`。
+        # 过滤掉正好保持桌面 GUI 改动前的样子;哪天要给桌面开放它,先补 11 个语种的文案。
+        self.rules_spinner.value_refs = [
+            name for abbr, name in katrain.engine.RULESETS_ABBR if name != "aga-button"
+        ]
         self.bind(mode=self.update_playername)
         Clock.schedule_once(self.update_from_current_game, 0.1)
 

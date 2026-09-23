@@ -27,6 +27,7 @@ from katrain.web.core.ranked_session_guard import RankedAnalysisActivity
 from katrain.web.core.user_game_repo import UserGameAnalysisRepository, UserGameRepository
 from katrain.web import server
 from katrain.web.server import create_app
+from katrain.web.models import EndgameConflict, GameEnd
 
 
 class FixtureRecipe:
@@ -99,6 +100,8 @@ class FakeKaTrain:
     engine_error = None
 
     def __init__(self, username: str):
+        self.ai_ladder_commit_lock = threading.RLock()
+        self.clock_started = False
         self.calls = []
         self.config_updates = []
         self.game_type = "free"
@@ -107,6 +110,7 @@ class FakeKaTrain:
         self.engine = FakeLadderEngine(type(self).engine_error)
         self.game = SimpleNamespace(
             end_result=None,
+            terminal=None,
             current_node=SimpleNamespace(end_state=None, player="B", score=3.5),
         )
         self.players_info = {
@@ -136,6 +140,14 @@ class FakeKaTrain:
             "player_to_move": "B",
         }
 
+    def start_clock(self):
+        # 与 WebKaTrain.start_clock 同语义:幂等,只有第一次返回 True。
+        # 实体盘绑定 = 「棋盘可用」那一刻,钟从这里起步。
+        if self.clock_started:
+            return False
+        self.clock_started = True
+        return True
+
     def __call__(self, action, *args, **kwargs):
         self.calls.append((action, kwargs))
         if action == "update_player":
@@ -156,16 +168,28 @@ class FakeKaTrain:
                 ruleset=kwargs.get("rules", "chinese"),
             )
         elif action == "resign":
-            self.game.end_result = "W+R"
-            self.game.current_node.end_state = "W+R"
-            self._state["end_result"] = "W+R"
+            self._commit_end_state("W+R")
         elif action == "timeout":
-            self.game.end_result = "W+T"
-            self.game.current_node.end_state = "W+T"
-            self._state["end_result"] = "W+T"
+            self._commit_end_state("W+T")
         elif action == "play":
             self._state["history"].append({"move": args[0]})
             self._state["player_to_move"] = "W"
+
+    def _commit_end_state(self, result, *, node=None, fill_pending=False):
+        # 与真 `WebKaTrain._commit_end_state` 同口径:已有终局事实或节点上已有结果就拒(`already_ended`);
+        # 写结果、终局事实与替身自己的 `_state`。替身没有导航,不必分局面线。
+        with self.ai_ladder_commit_lock:
+            target = self.game.current_node if node is None else node
+            if getattr(self.game, "terminal", None) is not None or target.end_state:
+                raise EndgameConflict("already_ended")
+            target.end_state = result
+            try:
+                self.game.end_result = result
+            except AttributeError:
+                pass  # `test_ranked_resign_supports_real_game_read_only_end_result` 换上的对局 `end_result` 只读
+            self.game.terminal = GameEnd(self.game, target, result)
+            self._state["end_result"] = result
+            return self.game.terminal
 
     def update_config(self, setting, value):
         self.config_updates.append((setting, value))
@@ -175,6 +199,10 @@ class FakeKaTrain:
 
     def shutdown(self):
         return None
+
+    def ensure_current_score(self, timeout_s=None, node=None):
+        # 真 WebKaTrain 对升降级局不补分析,原样返回那一手已有的分数(A12);替身的当前手本来就带 3.5。
+        return (self.game.current_node if node is None else node).score
 
     def config(self, setting, default=None):
         if setting == "game/count_min_moves":
@@ -784,7 +812,8 @@ async def test_ranked_session_rejects_canonical_mutation_and_analysis_endpoints(
                 resolved_path, headers=api_app.state._test_headers, json={"session_id": session_id, **payload}
             )
 
-    assert response.status_code == 403, (path, response.text)
+    expected_status = 409 if path == "/api/nav" else 403
+    assert response.status_code == expected_status, (path, response.text)
 
 
 @pytest.mark.asyncio
@@ -850,7 +879,7 @@ async def test_free_session_canonical_mutations_remain_available(api_app, client
             ),
         )
 
-    assert [response.status_code for response in responses] == [200, 200, 200, 200, 200]
+    assert [response.status_code for response in responses] == [200, 200, 409, 200, 200]
 
 
 @pytest.mark.asyncio
@@ -902,7 +931,8 @@ async def test_pending_ranked_user_cannot_analyze_a_second_free_session(api_app,
             json={"session_id": free.session_id, **payload},
         )
 
-    assert response.status_code == 403, (path, response.text)
+    expected_status = 409 if path == "/api/nav" else 403
+    assert response.status_code == expected_status, (path, response.text)
 
 
 @pytest.mark.asyncio
@@ -956,6 +986,18 @@ async def test_free_session_creation_registers_auto_analysis_before_ranked_start
     assert created.status_code == 200
     assert started.status_code == 409
     assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
+
+
+@pytest.mark.asyncio
+async def test_ended_free_session_analysis_does_not_block_ranked_start(api_app, client):
+    async with client as ac:
+        created = await ac.post("/api/session", headers=api_app.state._test_headers)
+        free = api_app.state.session_manager.get_session(created.json()["session_id"])
+        free.game_ended = True
+        started = await start_ranked(api_app, ac)
+
+    assert created.status_code == 200
+    assert started.status_code == 201
 
 
 @pytest.mark.asyncio
@@ -1065,9 +1107,14 @@ async def test_ranked_start_rejects_preexisting_background_analysis(api_app, cli
         )
         started = await start_ranked(api_app, ac)
 
-    assert analysis.status_code == 200
-    assert started.status_code == 409
-    assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
+    if analysis_path == "/api/nav":
+        assert analysis.status_code == 409
+        assert started.status_code == 201
+        assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is not None
+    else:
+        assert analysis.status_code == 200
+        assert started.status_code == 409
+        assert api_app.state.ai_ladder_repo.get_pending_game(api_app.state._test_user_id) is None
 
 
 @pytest.mark.asyncio
@@ -1082,7 +1129,7 @@ async def test_pending_ranked_user_navigation_does_not_trigger_free_session_anal
             json={"session_id": free.session_id, "node_id": 0},
         )
 
-    assert response.status_code == 403
+    assert response.status_code == 409
     assert free.katrain.calls == calls_before
 
 
@@ -1295,7 +1342,7 @@ async def test_settled_ranked_game_rejects_public_and_vision_moves_without_chang
         ).status_code == 200
         sgf_before = session.katrain.get_sgf()
         snapshot = session.ai_ladder_snapshot
-        vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones: None)
+        vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones, **_kwargs: None)
         api_app.state.ranked_vision_binding = SimpleNamespace(
             session_id=session_id,
             user_id=snapshot.user_id,
@@ -1366,7 +1413,7 @@ async def test_ranked_vision_bind_requires_owner_and_freezes_identity(api_app, c
         vision.bound_session_id = session_id
 
     vision.bind_session = bind_session
-    vision.set_expected_from_stones = lambda stones: None
+    vision.set_expected_from_stones = lambda stones, **_kwargs: None
     api_app.state.vision = vision
     async with client as ac:
         started = await start_ranked(api_app, ac)
@@ -1463,7 +1510,7 @@ async def test_confirmed_ranked_vision_move_plays_exactly_once_on_human_turn(api
     api_app.state.ranked_vision_binding = SimpleNamespace(
         session_id=session_id, user_id=snapshot.user_id, user_color=snapshot.user_color, game_id=snapshot.game_id
     )
-    vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones: None)
+    vision = SimpleNamespace(bound_session_id=session_id, set_expected_from_stones=lambda stones, **_kwargs: None)
 
     handler = __import__("katrain.web.server", fromlist=["_handle_confirmed_move"])._handle_confirmed_move
     first, duplicate = await asyncio.gather(
@@ -1493,7 +1540,9 @@ async def test_confirmed_ranked_vision_move_rejects_ai_turn_and_seat_tamper(api_
     else:
         session.katrain.players_info["W"].player_subtype = "ai:default"
     before = list(session.katrain._state["history"])
-    vision = SimpleNamespace(bound_session_id=session.session_id, set_expected_from_stones=lambda stones: None)
+    vision = SimpleNamespace(
+        bound_session_id=session.session_id, set_expected_from_stones=lambda stones, **_kwargs: None
+    )
 
     delay = await __import__("katrain.web.server", fromlist=["_handle_confirmed_move"])._handle_confirmed_move(
         api_app, vision, session.session_id, SimpleNamespace(col=3, row=3, color=1), logging.getLogger("vision")
@@ -4315,6 +4364,12 @@ async def test_a_real_resign_stops_the_heartbeat_without_anyone_setting_the_flag
     ), "认输之后还在报生存 —— 心跳唯一的停止条件在最常用的终局路径上没被置位"
 
 
+def _writes_a_terminal_result_by_hand(line: str) -> bool:
+    """r1:server.py 不再直写 `end_state`,终局一律经 `WebKaTrain._commit_end_state` —— 那同样绕过了
+    `session.katrain(...)`,同样不触发 `_on_state`。只认前一种写法的话,这条绊线在 Task 2 之后就扫不到任何东西了。"""
+    return "current_node.end_state = " in line or "._commit_end_state(" in line
+
+
 def test_every_place_that_writes_a_terminal_result_by_hand_also_ends_the_game():
     """绊线:凡是绕过 `session.katrain(...)` 直接把终局写到树上的地方,都必须自己置 `game_ended`。
 
@@ -4334,7 +4389,7 @@ def test_every_place_that_writes_a_terminal_result_by_hand_also_ends_the_game():
     lines = source.splitlines()
     offenders = []
     for index, line in enumerate(lines):
-        if "current_node.end_state = " not in line:
+        if not _writes_a_terminal_result_by_hand(line):
             continue
         # 直写终局之后 12 行内必须出现 game_ended 置真(两处现存写法都在 4 行以内)。
         window = "\n".join(lines[index : index + 12])
@@ -4354,15 +4409,18 @@ def test_the_tripwire_can_actually_see_a_missing_flag():
     """
 
     fake = (
-        "                    session.katrain.game.current_node.end_state = result\n" * 1 + "                    pass\n"
+        "                    session.katrain.game.current_node.end_state = result\n"
+        "                    pass\n"
+        "                    session.katrain._commit_end_state(result)\n"
+        "                    pass\n"
     )
     lines = fake.splitlines()
     hits = [
         i
         for i, line in enumerate(lines)
-        if "current_node.end_state = " in line and "session.game_ended = True" not in "\n".join(lines[i : i + 12])
+        if _writes_a_terminal_result_by_hand(line) and "session.game_ended = True" not in "\n".join(lines[i : i + 12])
     ]
-    assert hits, "扫描逻辑抓不到缺失的置位 —— 上面那条断言说明不了任何事情"
+    assert hits == [0, 2], "扫描逻辑抓不到缺失的置位 —— 上面那条断言说明不了任何事情"
 
 
 def _lifespan_create_task_targets() -> list[str]:

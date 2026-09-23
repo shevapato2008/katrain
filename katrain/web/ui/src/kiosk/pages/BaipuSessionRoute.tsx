@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { BaipuAPI } from '../../api/baipuApi';
 import type { GeometryPhase } from '../../api/geometryApi';
 import { useTranslation } from '../../hooks/useTranslation';
 import GeometryCalibrationScreen from '../components/vision/GeometryCalibrationScreen';
 import PhysicalBoardGuard from '../components/vision/PhysicalBoardGuard';
 import { useGeometry } from '../context/GeometryContext';
+import { useBackTo } from '../hooks/useBackTo';
 import { KioskPagebar } from '../shell/KioskPagebar';
 import BaipuSessionPage from './BaipuSessionPage';
 
@@ -41,7 +41,8 @@ const CALIBRATION_RUNNING: readonly GeometryPhase[] = [
  */
 export default function BaipuSessionRoute() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
+  // 与摆谱屏同一个去处:打开它的那一页(棋谱屏 / 棋谱详情),没写明回棋谱屏。
+  const back = useBackTo('/kiosk/kifu');
   const { status, loaded } = useGeometry();
   const [collect, setCollect] = useState<boolean | null>(null);
 
@@ -58,7 +59,7 @@ export default function BaipuSessionRoute() {
         <KioskPagebar
           testId="baipu-pagebar"
           backLabel={t('baipu:back_kifu', '棋谱')}
-          onBack={() => navigate('/kiosk/kifu')}
+          onBack={back}
           title={t('baipu:title', '摆谱')}
         />
         <div className="empty" data-testid="baipu-loading">
@@ -69,7 +70,7 @@ export default function BaipuSessionRoute() {
   }
   if (collect) {
     return (
-      <PhysicalBoardGuard sub={t('baipu:guard_sub_collect', '采集训练数据要先让摄像头看清盘面')}>
+      <PhysicalBoardGuard sub={t('baipu:guard_sub_collect', '采集训练数据要先让摄像头看清盘面')} fallback="/kiosk/kifu">
         <BaipuSessionPage collect />
       </PhysicalBoardGuard>
     );
@@ -78,7 +79,7 @@ export default function BaipuSessionRoute() {
     return (
       <GeometryCalibrationScreen
         backLabel={t('baipu:back_kifu', '棋谱')}
-        onBack={() => navigate('/kiosk/kifu')}
+        onBack={back}
         title={t('baipu:calib_running_title', '棋盘标定还在进行')}
         sub={t('baipu:calib_running_sub', '标定也在用灯 · 跑完或取消后直接进摆谱')}
       />

@@ -214,7 +214,7 @@ describe('屏 06 在线大厅', () => {
     const card = screen.getByTestId('lobby-game');
     expect(card.tagName).toBe('BUTTON');
     await userEvent.click(card);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/room/aaaa1111');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/room/aaaa1111', { state: { backTo: '/kiosk/play/pvp/lobby' } });
   });
 
   /**
@@ -240,7 +240,7 @@ describe('屏 06 在线大厅', () => {
     renderPage();
     await waitFor(() => expect(screen.getAllByTestId('lobby-player')).toHaveLength(5));
     push({ type: 'match_found', session_id: 'sess-9' });
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/room/sess-9'));
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/pvp/room/sess-9', { state: { backTo: '/kiosk/play/pvp/lobby' } }));
   });
 
   /**

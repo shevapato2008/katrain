@@ -6,6 +6,7 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import AiSetupPage from './AiSetupPage';
 import { PLAY_ON_BOARD_KEY, readPlayOnBoard } from '../utils/playInput';
+import { openPick, pick } from '../__tests__/helpers/setupPick';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -137,8 +138,10 @@ describe('AiSetupPage', () => {
         label: '自由对弈',
         route: '/kiosk/play/ai/game/s1',
         ts: expect.any(Number),
+        // 摄像头未标定(vision.enabled=false)⇒ 开局写下「这一局不下实体盘」
+        onBoard: false,
       });
-      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/game/s1');
+      expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/game/s1', { state: { backTo: '/kiosk/play/ai/setup/free' } });
     });
   });
 
@@ -190,15 +193,22 @@ describe('AiSetupPage', () => {
 
   // 升降级那一屏上,规则 / 让子 / 贴目 / 路数**都是服务端定的**:给个能点的控件
   // 只会是个改不动的旋钮。屏上因此是一格读数,不是一排灰掉的选择器。
-  it('升降级屏:服务端定的那几项是读数,不是控件', () => {
+  it('升降级屏:盘面那三格是读数,不是控件', () => {
     renderPage('ranked');
-    expect(screen.getByTestId('setup-ranked-fixed')).toHaveTextContent('19 路');
-    expect(screen.getByTestId('setup-ranked-fixed')).toHaveTextContent('中国规则 · 贴 7.5 目 · 不让子');
-    // 路数、让子、贴目、规则、棋力五组在这一屏一组都不该出现。
-    expect(screen.queryByTestId('setup-size')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('setup-handicap')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('setup-komi')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('setup-rules')).not.toBeInTheDocument();
+    // 盘面条件在服务端写死,而且客户端连发都不许发
+    // (`api/v1/endpoints/ai_ladder.py:105-108` 的 `LADDER_*` + `extra="forbid"`)。
+    // 所以这三格**不是按钮**:虚线读数说的是「这条路本来就没得选」,
+    // 灰掉的按钮说的是「你现在不能改」—— 两句话不一样。
+    for (const id of ['setup-size', 'setup-rules', 'setup-handicap']) {
+      const cell = screen.getByTestId(id);
+      expect(cell.tagName).not.toBe('BUTTON');
+      expect(cell).toHaveClass('su-cell--fixed');
+    }
+    expect(screen.getByTestId('setup-size')).toHaveTextContent('19 路');
+    expect(screen.getByTestId('setup-rules')).toHaveTextContent('中国规则');
+    expect(screen.getByTestId('setup-handicap')).toHaveTextContent('分先');
+    expect(screen.getByTestId('setup-komi-value')).toHaveTextContent('黑贴 3¾ 子 · 7.5 目');
+    // 棋力那条轨在这一屏不该出现 —— 对手由盒子配档。
     expect(screen.queryByTestId('setup-strength')).not.toBeInTheDocument();
     // 用时和执子照旧是能选的。
     expect(screen.getByTestId('setup-clock')).toBeInTheDocument();
@@ -221,111 +231,76 @@ describe('AiSetupPage', () => {
     expect(stakes).toHaveTextContent(loss);
   });
 
-  it('自由对弈:路数三档照旧都在,而且是分段控件不是下拉', () => {
+  it('自由对弈:路数三档都在', async () => {
     renderPage('free');
-    const size = screen.getByTestId('setup-size');
-    expect(size).toHaveTextContent('19 路');
-    expect(size).toHaveTextContent('13 路');
-    expect(size).toHaveTextContent('9 路');
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
-  });
-
-  // 规范 §11(v1.21):一屏之内所有选择组必须用同一种控件,项数上限 6。
-  // 这一条**倒过来了**:原来钉的是「规则要是下拉、AGA 不许可见」,
-  // 而稿子 02 屏画的正是四段并排。项数 4 ≤ 6,分段就是对的那一种。
-  it('规则四段并排 —— 不再是下拉', () => {
-    renderPage('free');
-    const rules = screen.getByTestId('setup-rules');
-    for (const label of ['中国', '日本', '韩国', 'AGA']) {
-      expect(rules).toHaveTextContent(label);
-    }
+    const pop = await openPick(userEvent.setup(), 'setup-size');
+    expect([...pop.querySelectorAll('[data-k]')].map((e) => e.textContent)).toEqual(['19 路', '13 路', '9 路']);
   });
 
   // 「怎么落子」是**两段之和**:设备能不能(`VisionContext`,后端给)+ 这一局想不想
-  // (`utils/playInput` 的偏好,默认开)。2026-08-23 之前这里画的是一格读数,
-  // 理由写着「全仓没有任何地方能让用户切」—— **那句话是错的**,做题屏早就有这颗开关。
-  //
-  // 选中态取的是**实际会落在哪**(两段之和),不是偏好本身:左边那块盘画的是
-  // 「按下按钮后真会出现的局面」,同一屏的控件不能说另一件事。
-  const seg = () => within(screen.getByTestId('setup-input'));
+  // (`utils/playInput` 的偏好,默认开)。选中态取的是**实际会落在哪**(两段之和),
+  // 不是偏好本身:左边那块盘画的是「按下按钮后真会出现的局面」,同屏控件不能说另一件事。
   it.each([
-    [true, 'board'],
-    [false, 'screen'],
+    [true, '实体盘'],
+    [false, '屏幕'],
   ])('没动过偏好时,落子跟着设备走:isVisionEnabled=%s', (enabled, expected) => {
     vision.enabled = enabled;
     renderPage('free');
-    expect(seg().getByRole('button', { name: '实体盘' }))
-      .toHaveAttribute('aria-pressed', String(expected === 'board'));
-    expect(seg().getByRole('button', { name: '屏幕' }))
-      .toHaveAttribute('aria-pressed', String(expected === 'screen'));
+    expect(screen.getByTestId('setup-input-value')).toHaveTextContent(expected);
   });
 
   // 没摄像头时「实体盘」灰掉,**而「屏幕」永远按得动** —— 一组全灰的控件在屏上
-  // 和一段读数没区别,而读数该用虚线边的 `.igfix`,不是骗人的实线圆角。
-  // 灰了就得有人说为什么:那一行 `.kiosk-opthint` 就是那个人。
-  it('没标定摄像头时「实体盘」灰掉,「屏幕」照样能按,而且说得出为什么', () => {
+  // 和一段读数没区别。灰了就得有人说为什么。
+  it('没标定摄像头时「实体盘」灰掉,说得出为什么,而且屏幕照样选得了', async () => {
     vision.enabled = false;
     renderPage('free');
-    expect(seg().getByRole('button', { name: '实体盘' })).toBeDisabled();
-    expect(seg().getByRole('button', { name: '屏幕' })).toBeEnabled();
-    expect(screen.getByTestId('setup-input-group'))
-      .toHaveTextContent('这台机器没有标定过摄像头,只能下在屏幕上');
+    const pop = await openPick(userEvent.setup(), 'setup-input');
+    const board = pop.querySelector('[data-k="board"]') as HTMLButtonElement;
+    expect(board).toBeDisabled();
+    expect(board).toHaveTextContent('没标定过摄像头');
+    expect(pop.querySelector('[data-k="screen"]')).toBeEnabled();
+    expect(screen.getByTestId('setup-seat-hint')).toHaveTextContent('没标定过摄像头');
   });
 
   // 盒子上那块盘是 19 路的 —— 选了 9 路,「实体盘」这条路就不成立了。
   // **偏好不动**(调回 19 路它自己就回来),但屏上说的是这一局的真实去向。
+  // 反方向(拿实体盘锁死路数)不行:那会让用户**点不到 9 路**。
   it('切到 9 路,实体盘这条路自己塌掉;调回 19 路又回来', async () => {
     vision.enabled = true;
     renderPage('free');
     const user = userEvent.setup();
-    expect(seg().getByRole('button', { name: '实体盘' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('setup-input-value')).toHaveTextContent('实体盘');
 
-    await user.click(within(screen.getByTestId('setup-size')).getByRole('button', { name: '9 路' }));
-    expect(seg().getByRole('button', { name: '实体盘' })).toBeDisabled();
-    expect(seg().getByRole('button', { name: '屏幕' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByTestId('setup-input-group')).toHaveTextContent('盘上那块是 19 路');
+    await pick(user, 'setup-size', '9');
+    expect(screen.getByTestId('setup-input-value')).toHaveTextContent('屏幕');
+    const pop = await openPick(user, 'setup-input');
+    expect(pop.querySelector('[data-k="board"]')).toHaveTextContent('盘上那块是 19 路');
+    await user.keyboard('{Escape}');
 
-    await user.click(within(screen.getByTestId('setup-size')).getByRole('button', { name: '19 路' }));
-    expect(seg().getByRole('button', { name: '实体盘' })).toHaveAttribute('aria-pressed', 'true');
+    await pick(user, 'setup-size', '19');
+    expect(screen.getByTestId('setup-input-value')).toHaveTextContent('实体盘');
   });
 
   // 选「屏幕」要**真的落进偏好里** —— 它是对局屏和 `PlayInputGuard` 唯一能读到的东西。
-  // 只改屏上那个高亮而不落盘,等于开局之后又被推回实体盘。
   it('选了屏幕就写进偏好,对局屏和守卫读的是同一个值', async () => {
     vision.enabled = true;
     renderPage('free');
     const user = userEvent.setup();
-    await user.click(seg().getByRole('button', { name: '屏幕' }));
+    await pick(user, 'setup-input', 'screen');
     expect(readPlayOnBoard()).toBe(false);
-    expect(seg().getByRole('button', { name: '屏幕' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('setup-input-value')).toHaveTextContent('屏幕');
 
-    await user.click(seg().getByRole('button', { name: '实体盘' }));
+    await pick(user, 'setup-input', 'board');
     expect(readPlayOnBoard()).toBe(true);
   });
 
-  // 让子 > 0 时贴目那一组**整个换成一段话**,不是把控件灰掉:
-  // 灰掉说的是「你现在不能改」,而这一局是根本没有贴目这回事。
-  it('让子调上去,贴目那一组换成说明;调回 0 再变回档位轨', async () => {
+  // 棋力轨两头的键要禁用,**不是回绕**:从最低档按 `−` 绕到最高档,
+  // 是把一次误触变成一局完全不同的棋 —— 而这一组标着「开局后不可改」。
+  it('棋力轨两头到底就禁用', () => {
     renderPage('free');
-    const user = userEvent.setup();
-    expect(screen.getByTestId('setup-komi')).toBeInTheDocument();
-    expect(screen.queryByTestId('setup-komi-explain')).not.toBeInTheDocument();
-
-    await user.click(within(screen.getByTestId('setup-handicap')).getByRole('button', { name: '多让一子' }));
-    expect(screen.getByTestId('setup-komi-explain')).toHaveTextContent('已经让了 1 子');
-    expect(screen.queryByTestId('setup-komi')).not.toBeInTheDocument();
-
-    await user.click(within(screen.getByTestId('setup-handicap')).getByRole('button', { name: '少让一子' }));
-    expect(screen.getByTestId('setup-komi')).toBeInTheDocument();
-  });
-
-  // 两头的键要禁用,**不是回绕**:让子从 0 按 `−` 绕到 9 子,是把一次误触变成
-  // 一局完全不同的棋 —— 而这一组标着「开局后不可改」。
-  it('档位轨两头到底就禁用', () => {
-    renderPage('free');
-    const handicap = within(screen.getByTestId('setup-handicap'));
-    expect(handicap.getByRole('button', { name: '少让一子' })).toBeDisabled();   // 默认 0 子
-    expect(handicap.getByRole('button', { name: '多让一子' })).toBeEnabled();
+    const track = within(screen.getByTestId('setup-strength'));
+    expect(track.getByRole('button', { name: /降低/ })).toBeEnabled();   // 默认第 15 档
+    expect(track.getByRole('button', { name: /提高/ })).toBeEnabled();
   });
 
   it('Start button is present without scrolling (rendered, not gated behind overflow)', () => {
@@ -483,7 +458,7 @@ describe('AiSetupPage — 升降级挡局面板', () => {
     renderPage('ranked');
 
     await user.click(screen.getByRole('button', { name: '继续对局' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/game/occupied-session');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/play/ai/game/occupied-session', { state: { backTo: '/kiosk/play/ai/setup/ranked' } });
   });
 
   it.each([
@@ -579,5 +554,31 @@ describe('AiSetupPage — 升降级挡局面板', () => {
 
     await waitFor(() => expect(retryRanked).toHaveBeenCalled());
     expect(screen.queryByText('结束对局失败，请重试')).not.toBeInTheDocument();
+  });
+});
+
+/* A3 · AI 策略那一组测试整块撤掉(2026-09-21)——
+   **不是 skip,是被测对象整个不存在了**:策略选择器已经从这一屏移除,对手钉死拟人。
+   撤它的理由写在 `pages/AiSetupPage.tsx` 顶上 `AI_STRATEGY` 那段注里。
+   「送出的是真实策略 id」那条陷阱改由 `__tests__/AiSetupPage.test.tsx` 的
+   开局载荷断言接住(`ai_strategy: 'ai:human'`)。 */
+
+describe('A15 · 升降级开局 503 分原因', () => {
+  beforeEach(() => {
+    startRanked.mockReset();
+    mockNavigate.mockReset();
+    withBlocking(null);
+  });
+
+  it('盒子断网:说「连不上云端」,不说引擎不可用', async () => {
+    const err: Error & { status?: number } = new Error('Remote server unavailable');
+    err.status = 503;
+    startRanked.mockRejectedValueOnce(err);
+    renderPage('ranked');
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /开始对局|开始计分局/i }));
+    expect(await screen.findByText(/连不上云端/)).toBeInTheDocument();
+    expect(screen.queryByText(/升降级引擎暂时不可用/)).not.toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

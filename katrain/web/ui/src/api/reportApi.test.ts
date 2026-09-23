@@ -135,6 +135,23 @@ describe('ReportsAPI', () => {
     await expect(ReportsAPI.create('token', { user_game_id: 'game-1' }))
       .rejects.toThrow('Request failed 409: report already exists');
   });
+
+  // N24:屏上要分「连不上 / 找不到 / 积分不足」,所以错误对象得带着状态码与原始 body;
+  // message 保持原句 —— galaxy 屏上与上一条单测都认它。
+  it('非 2xx 时拒绝的错误带 status 与原始 body,message 不变', async () => {
+    const body = '{"detail":"Remote report service unavailable"}';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      text: vi.fn().mockResolvedValue(body),
+    }));
+
+    await expect(ReportsAPI.get(null, 7)).rejects.toMatchObject({
+      message: `Request failed 503: ${body}`,
+      status: 503,
+      body,
+    });
+  });
 });
 
 describe('report statuses', () => {

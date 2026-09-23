@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { backToState } from '../hooks/useBackTo';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
@@ -76,6 +77,7 @@ const isDone = (p: BaipuProgress | null): boolean =>
  */
 const KifuPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -140,8 +142,8 @@ const KifuPage = () => {
 
   const startSession = useCallback((id: string, name: string, sgf: string) => {
     cacheSgf(id, name, sgf);
-    navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, { state: { sgf, name } });
-  }, [navigate]);
+    navigate(`/kiosk/baipu/session/${encodeURIComponent(id)}`, { state: { ...backToState(location), sgf, name } });
+  }, [navigate, location]);
 
   const resume = useCallback((entry: RecentItem) => {
     const cached = getCachedSgf(entry.id);

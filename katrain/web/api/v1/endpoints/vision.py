@@ -208,10 +208,19 @@ async def bind_session(
     request.app.state.ranked_vision_binding = ranked_binding
     _drain_stale_move_queue(request)
 
+    # 实体盘的局:在绑上之前一颗子也放不进去,所以这里才是「棋盘可用」那一刻,钟从这里起步。
+    # (Fan 2026-09-20:「我要看到电子棋盘再开始计时」。RK3562 实测建局→绑定隔了 69 秒,
+    #  那段时间用户还在标定屏,却已经被扣时。)`start_clock` 幂等,重连再绑不会重置。
+    if session.katrain.start_clock():
+        logger.info("Clock started for session %s (vision bound)", body.session_id)
+
     # Set expected board from current game state
     game_state = session.katrain.get_state()
     if game_state and "stones" in game_state:
-        vision.set_expected_from_stones(game_state["stones"])
+        vision.set_expected_from_stones(
+            game_state["stones"],
+            expected_node_id=game_state.get("current_node_id"),
+        )
 
     orchestrator = getattr(request.app.state, "physical_play", None)
     if orchestrator is not None:
@@ -345,6 +354,8 @@ async def retry_engine_move(
       re-arms the orchestrator's engine_error context with it (detection stays
       paused throughout — never resumed mid-retry), HTTP 200 {"ok": false, "detail",
       "recovery_token": <new>}.
+    - game_ended -> clear the recovery pause, record the terminal game for its
+      session owner, and return {"ok": true, "game_ended": true}.
     """
     episode = _consume_recovery_episode(request, body, current_user)
     tracker = request.app.state.engine_recovery
@@ -357,6 +368,22 @@ async def retry_engine_move(
             raise RuntimeError("Platform gateway not available")
         await gateway.play_move(body.session_id, col, row, user_id=0)
     except Exception as e:
+        from katrain.web.platforms.gateway import PlatformMoveRejectedError
+
+        if isinstance(e, PlatformMoveRejectedError) and e.reason == "game_ended":
+            # Import here to avoid the server/router import cycle during package setup.
+            from katrain.web.server import _record_platform_engine_game_off_request
+
+            if orchestrator is not None:
+                orchestrator.clear_engine_error()
+            manager = getattr(request.app.state, "session_manager", None)
+            try:
+                session = manager.get_session(body.session_id) if manager is not None else None
+            except KeyError:
+                session = None
+            if session is not None:
+                await _record_platform_engine_game_off_request(session, request.app)
+            return {"ok": True, "game_ended": True}
         new_episode = tracker.trip_now(game_id=episode.game_id, coords=episode.coords, detail=str(e))
         if orchestrator is not None:
             orchestrator.enter_engine_error(episode.coords, new_episode.recovery_token)

@@ -29,13 +29,14 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { kioskTheme } from './theme';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useTranslation } from '../hooks/useTranslation';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
-import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
 import { GeometryProvider } from './context/GeometryContext';
-import PhysicalBoardGuard from './components/vision/PhysicalBoardGuard';
+import { EngineReadinessProvider } from './context/EngineReadinessProvider';
 import PlayInputGuard from './components/vision/PlayInputGuard';
-import RotationWrapper from './components/layout/RotationWrapper';
+import TsumegoInputGuard from './components/vision/TsumegoInputGuard';
+import KioskViewport from './components/layout/KioskViewport';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
 import LoginPage from './pages/LoginPage';
@@ -46,7 +47,6 @@ import GamePage from './pages/GamePage';
 import GrowthPage from './pages/GrowthPage';
 import TsumegoPage from './pages/TsumegoPage';
 import TsumegoCategoriesPage from './pages/TsumegoCategoriesPage';
-import TsumegoLevelPage from './pages/TsumegoLevelPage';
 import TsumegoUnitsPage from './pages/TsumegoUnitsPage';
 import TsumegoUnitListPage from './pages/TsumegoUnitListPage';
 import TsumegoProblemPage from './pages/TsumegoProblemPage';
@@ -70,6 +70,10 @@ import TutorialSectionPage from './pages/TutorialSectionPage';
 
 const KioskRoutes = () => {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  // The shared zero-persistence guest account has literal username "guest";
+  // never surface that raw string in the header — show the localized label.
+  const headerUsername = user?.username === 'guest' ? t('Guest', '访客') : user?.username;
 
   return (
     <Routes>
@@ -97,7 +101,7 @@ const KioskRoutes = () => {
               **挡它的是服务端**(`guard_session_reader`:有主人的会话要求「是这局的参与者」),
               不是这一层。前端少一道门不等于后端少一道。
           `*` 兜底也必须在守卫外面:留在里面的话,游客输一个不存在的路径会连兜底都匹配不到。 */}
-      <Route element={<KioskLayout username={user?.username} />}>
+      <Route element={<KioskLayout username={headerUsername} />}>
         <Route index element={<Navigate to="play" replace />} />
 
         {/* --- 游客可达:自由对弈那条链 --- */}
@@ -128,10 +132,15 @@ const KioskRoutes = () => {
           <Route path="play/cross-platform/engine/:platform" element={<PlatformEngineSetupPage />} />
           {/* Tsumego — 5-level navigation (static `problem`/`all` win over dynamic params in v6 best-match) */}
           <Route path="tsumego" element={<TsumegoPage />} />
-          <Route path="tsumego/problem/:problemId" element={<PhysicalBoardGuard sub="实体做题要先让摄像头看清盘面"><TsumegoProblemPage /></PhysicalBoardGuard>} />
+          {/* ⚠️ 2026-09-14(T9):不再裸套 `PhysicalBoardGuard`。做题的实体开关默认关,
+              屏幕做题的人不该被标定台挡住 —— 和对弈那四条换成 `PlayInputGuard` 是同一件事。
+              **不要退回裸的 `PhysicalBoardGuard`。** */}
+          <Route path="tsumego/problem/:problemId" element={<TsumegoInputGuard><TsumegoProblemPage /></TsumegoInputGuard>} />
           <Route path="tsumego/:level" element={<TsumegoCategoriesPage />} />
-          <Route path="tsumego/:level/all" element={<TsumegoLevelPage />} />
           <Route path="tsumego/:level/:category" element={<TsumegoUnitsPage />} />
+          {/* 错题页(T1):屏 13 同一副骨架,题从「这一类里试过、还没做对的」来。
+              静态段 `wrong` 在 v6 最佳匹配里本来就赢过 `:unit`,放在前面是给人读的。 */}
+          <Route path="tsumego/:level/:category/wrong" element={<TsumegoUnitListPage set="wrong" />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
           {/* ⚠️ research / live 两条**下了 Dock 但路由照旧存在**(规范 §3:研究并进复盘、直播并进棋谱)。
               `baipu` 这一条 2026-09-14 改成重定向:它原来挂的 `BaipuListPage` 是 7 月的选谱页,
@@ -189,17 +198,18 @@ const KioskApp = () => {
   return (
     <ThemeProvider theme={kioskTheme}>
       <CssBaseline />
-      <OrientationProvider>
-        <VisionProvider>
-          <GeometryProvider>
-            <TsumegoProgressProvider>
-              <RotationWrapper>
+      <VisionProvider>
+        <GeometryProvider>
+          <TsumegoProgressProvider>
+            {/* 承重的视口盒子(画布的包含块、登录页的高度来源)—— 见 KioskViewport 头注。 */}
+            <KioskViewport>
+              <EngineReadinessProvider>
                 <KioskRoutes />
-              </RotationWrapper>
-            </TsumegoProgressProvider>
-          </GeometryProvider>
-        </VisionProvider>
-      </OrientationProvider>
+              </EngineReadinessProvider>
+            </KioskViewport>
+          </TsumegoProgressProvider>
+        </GeometryProvider>
+      </VisionProvider>
     </ThemeProvider>
   );
 };

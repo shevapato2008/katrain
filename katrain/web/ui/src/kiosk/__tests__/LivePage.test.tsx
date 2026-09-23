@@ -15,11 +15,6 @@ vi.mock('../../hooks/live/useLiveMatch', () => ({
 vi.mock('../../api/live', () => ({
   LiveAPI: { getUpcoming: vi.fn().mockResolvedValue({ matches: [] }) },
 }));
-// OrientationContext: kiosk is landscape-only.
-vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
-}));
-
 import { useLiveMatches } from '../../hooks/live/useLiveMatches';
 import { useLiveMatch } from '../../hooks/live/useLiveMatch';
 import LivePage from '../pages/LivePage';

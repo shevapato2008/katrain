@@ -14,12 +14,13 @@ import { useReportTasks } from '../../features/report/useReportTasks';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { KifuAlbumSummary } from '../../types/kifu';
 import { replayBaipuSteps, type BoardState } from '../../utils/baipuReplay';
+import { cacheBackedReadFailureKind, requestFailureKind, type RequestFailureKind } from '../../utils/requestFailure';
 import ReportImportMenu from '../components/report/ReportImportMenu';
 import ReportLibraryImportDialog from '../components/report/ReportLibraryImportDialog';
 import ReportLocalImportDialog, { type LocalImportPayload } from '../components/report/ReportLocalImportDialog';
 import { ReviewWinratePlot } from '../components/report/ReviewWinratePlot';
 import {
-  outcomeLine, rowDisc, rowState, rowTitle, yourColor, type RowState,
+  failureLine, failureReason, isPlaySource, outcomeLine, rowDisc, rowState, rowTitle, yourColor, type RowState,
 } from '../components/report/reviewPresentation';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { Icon } from '../shell/icons';
@@ -50,9 +51,8 @@ import { whenLabel } from '../utils/whenLabel';
  * 国象同一格 2026-07-28 把「妙手」撤成了「漏着」,理由是**它的分析跑在盒子自己身上**:
  * 单线程 12 万节点、13–16 层,同一局面能摆 45cp,噪声吃掉了判据。
  * **围棋这条线不是**:报告是 cron 离线跑的(`katrain/cron/jobs/report_analyze.py`),
- * 每手 500 或 2000 次计算,跟盒子算力无关;而且这个仓里已经有一份妙手口径
- * (`features/report/reportModel.ts:192`,`delta_score >= 2`),不用现发明。
- * ⇒ 照稿子写「妙手」。算式和出处见 `features/report/reportStats.ts`。
+ * 每手 500 或 2000 次计算,跟盒子算力无关;判级在服务端(`katrain/core/move_grade.yaml` 七档)。
+ * ⇒ 照稿子写「妙手」。2026-09-14 起两格与屏 20 走同一条判级管线,见 `features/report/reportStats.ts`。
  *
  * ## 和稿子不一样的地方(每条都有理由,四图上会红)
  *
@@ -72,7 +72,6 @@ import { whenLabel } from '../utils/whenLabel';
 type SourceFilter = 'all' | 'play_local';
 
 const PAGE_SIZE = 12;
-const messageOf = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
 type ImportAction = 'save' | ReportType | null;
 
@@ -116,8 +115,12 @@ export default function ReportsPage() {
    * 老服务端不带这一格 ⇒ `null` = 不知道,而**不知道要退到最保守的那句话**。
    */
   const [authority, setAuthority] = useState<DataAuthority | null>(null);
-  const [gamesLoading, setGamesLoading] = useState(Boolean(token));
-  const [gamesError, setGamesError] = useState<string | null>(null);
+  // 初值判 `isAuthenticated` 不判 `token`:盒上 token 恒为 null,判 token 时首帧 gamesLoading=false、
+  // games=[],列表回来之前会先闪一帧「还没有下过的棋」(2026-09-14 调研 N7)。
+  // 不配单测:jsdom 的 render 包在 act 里,effect 在断言前已经跑完,「effect 之前那一帧」测不到。
+  const [gamesLoading, setGamesLoading] = useState(isAuthenticated);
+  /** 列表读不到的**原因类别**。存类别不存原文:原文在盒上断网时是 `Request failed 503: {…}`。 */
+  const [gamesFailure, setGamesFailure] = useState<RequestFailureKind | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const listRequestGenerationRef = useRef(0);
 
@@ -142,9 +145,14 @@ export default function ReportsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const {
-    reportStatesByGame, error: tasksError, clearError: clearTasksError,
+    reportStatesByGame, error: tasksError, errorKind: tasksErrorKind, clearError: clearTasksError,
     refresh: refreshTasks, createReport, retryReport,
   } = useReportTasks(token, isAuthenticated);
+
+  // 屏上只说分出来的类别,原文不印 —— 但排障时总得有个地方能看见它。
+  useEffect(() => {
+    if (tasksError != null) console.warn('[review] report tasks', tasksError);
+  }, [tasksError]);
 
   // ── 列表 ────────────────────────────────────────────────────────────────
   const loadGames = useCallback(async () => {
@@ -154,7 +162,7 @@ export default function ReportsPage() {
       return null;
     }
     setGamesLoading(true);
-    setGamesError(null);
+    setGamesFailure(null);
     try {
       const response = await UserGamesAPI.list(token, {
         page, page_size: PAGE_SIZE, q: query || undefined, sort: 'created_at_desc',
@@ -168,7 +176,9 @@ export default function ReportsPage() {
       return response;
     } catch (error) {
       if (requestGeneration !== listRequestGenerationRef.current) return null;
-      setGamesError(messageOf(error, translationRef.current('report:load_games_failed', '加载对局列表失败')));
+      // 屏上只说分出来的类别,原文不上屏 —— 但排障时总得有个地方能看见它。
+      console.warn('[review] list', error);
+      setGamesFailure(requestFailureKind(error));
       return null;
     } finally {
       if (requestGeneration === listRequestGenerationRef.current) setGamesLoading(false);
@@ -215,9 +225,11 @@ export default function ReportsPage() {
       })
       .catch((error: Error) => {
         if (request !== detailRequestRef.current) return;
+        console.warn('[review] preview', error);
         setSelectedGame(null);
         setBoard(null);
-        setDetailError(messageOf(error, translationRef.current('report:preview_failed', '棋谱预览加载失败')));
+        // 预览读的是 GET /user-games/{id}:盒上云端失败会退本机缓存,缓存没有也回 404 ⇒ 404 不能说成「已经不在了」。
+        setDetailError(failureLine(translationRef.current('report:preview_failed', '棋谱预览加载失败'), cacheBackedReadFailureKind(error), translationRef.current));
       });
     return () => { detailRequestRef.current += 1; };
   }, [isAuthenticated, selectedGame?.id, selectedGameId, token]);
@@ -231,6 +243,9 @@ export default function ReportsPage() {
   const completedTaskId = selectedState?.kind === 'analyzed' ? selectedState.taskId : null;
 
   useEffect(() => {
+    // 上一局读不出来时留下的那句话只在成功时才清 —— 选中一局没报告的新局,
+    // `plotEmpty` 先查 `movesError`,会把上一局的错粘到这一局身上。新选择 / 新请求先清白板。
+    setMovesError(null);
     if (!isAuthenticated || completedTaskId == null) {
       setMoves(null);
       return;
@@ -245,8 +260,9 @@ export default function ReportsPage() {
       })
       .catch((error: Error) => {
         if (request !== movesRequestRef.current) return;
+        console.warn('[review] moves', error);
         setMoves(null);
-        setMovesError(messageOf(error, translationRef.current('review:moves_failed', '报告读不出来')));
+        setMovesError(failureLine(translationRef.current('review:moves_failed', '报告读不出来'), requestFailureKind(error), translationRef.current));
       })
       .finally(() => {
         if (request === movesRequestRef.current) setMovesLoading(false);
@@ -336,15 +352,26 @@ export default function ReportsPage() {
     if (!isAuthenticated) return;
     setLocalImporting(reportType ?? 'save');
     setLocalImportError(null);
+    // 一记住 `created` 就知道 `create` 那一步过没过 —— 过了之后再炸(多半是
+    // `createForGame` 的 402 积分不足),对局已经存上了,不是「导入失败」,再点一次会重复导入。
+    let created: UserGameDetail | null = null;
     try {
-      const created = await UserGamesAPI.create(token, toLocalUserGameParams(payload));
+      created = await UserGamesAPI.create(token, toLocalUserGameParams(payload));
       await focusImportedGame(created);
       if (reportType) await createForGame(created, reportType);
       setLocalImportOpen(false);
       setLocalImportError(null);
       await refreshTasks();
     } catch (error) {
-      setLocalImportError(messageOf(error, translationRef.current('report:import_failed', '导入 SGF 失败')));
+      console.warn('[review] import-local', error);
+      if (created) {
+        // 导入本身成功了 —— 建报告那一步失败已经由 `useReportTasks.createReport` 落到
+        // 「生成报告」告警行(它在 rethrow 之前设了 error/errorKind),这里不重复说一遍。
+        setLocalImportOpen(false);
+        setLocalImportError(null);
+      } else {
+        setLocalImportError(failureLine(translationRef.current('report:import_failed', '导入 SGF 失败'), requestFailureKind(error), translationRef.current));
+      }
     } finally {
       setLocalImporting(null);
     }
@@ -354,16 +381,28 @@ export default function ReportsPage() {
     if (!isAuthenticated) return;
     setLibraryImporting(reportType ?? 'save');
     setLibraryImportError(null);
+    // 同上:`created` 记住的是「对局存上了没有」,不是「这一趟全走完了没有」。
+    let created: UserGameDetail | null = null;
     try {
       const albumDetail = await KifuAPI.getAlbum(album.id);
-      const created = await UserGamesAPI.create(token, toLibraryUserGameParams(album, albumDetail.sgf_content));
+      created = await UserGamesAPI.create(token, toLibraryUserGameParams(album, albumDetail.sgf_content));
       await focusImportedGame(created);
       if (reportType) await createForGame(created, reportType);
       setLibraryImportOpen(false);
       setLibraryImportError(null);
       await refreshTasks();
     } catch (error) {
-      setLibraryImportError(messageOf(error, translationRef.current('report:library_import_failed', '从棋谱库导入失败')));
+      console.warn('[review] import-library', error);
+      if (created) {
+        // 导入本身成功了 —— 建报告那一步失败已经由 `useReportTasks.createReport` 落到
+        // 「生成报告」告警行,这里不重复说一遍。
+        setLibraryImportOpen(false);
+        setLibraryImportError(null);
+      } else {
+        // 这个 catch 前面还有 `KifuAPI.getAlbum`:今天它抛的错不带 status ⇒ 那一步失败落 other、只说前半句。
+        // kifu 赛道 T6 改抛 ApiError(status) 后自动分得出;本赛道不改 kifuApi.ts(归 kifu 赛道,改了必冲突)。
+        setLibraryImportError(failureLine(translationRef.current('report:library_import_failed', '从棋谱库导入失败'), requestFailureKind(error), translationRef.current));
+      }
     } finally {
       setLibraryImporting(null);
     }
@@ -386,7 +425,8 @@ export default function ReportsPage() {
       if (next && next.items.length === 0 && page > 1 && next.total > 0) updateLocation(query, page - 1);
       setDeleteTarget(null);
     } catch (error) {
-      setActionError(messageOf(error, translationRef.current('report:delete_failed', '删除对局失败')));
+      console.warn('[review] delete', error);
+      setActionError(failureLine(translationRef.current('report:delete_failed', '删除对局失败'), requestFailureKind(error), translationRef.current));
     } finally {
       setDeleteLoading(false);
     }
@@ -403,12 +443,17 @@ export default function ReportsPage() {
   }
 
   const totalPages = Math.max(1, Math.ceil(totalGames / PAGE_SIZE));
+  // 列表读不到时的原因。**一整张列表不会「已经不在了」** —— `not_found` 只在单局取谱时才成立
+  // (那局被删了),对列表本身没有意义,这里不说。
+  const gamesFailureReason = gamesFailure && gamesFailure !== 'not_found' ? failureReason(gamesFailure, t) : '';
   /**
    * **没下完的局不给生成报告。** 半局的报告本身没意义;而且离线 KataGo 把残局算完再回去
    * 接着下,那是一条真作弊通道。
    * ⚠️ 判别位是「**这局结束了没有**」——**不是「算不算分」**。用 `isRated` 去管它,
    * 就又变成一个 prop 兼管两件事、逼调用方撒谎(计分局下完了照样该有报告,
    * 国象稿子明写两者进的是同一条复盘线)。
+   * 「未终局」只由 `rowState` 给**对弈局**(`isPlaySource`)—— 导入的谱、棋谱库、研究存档
+   * 没写结果不算没下完,没有「回去接着下」这回事,照样能分析(P14)。这里不另写一份判定。
    */
   const canAnalyzeSelected = Boolean(selectedSummary) && selectedState?.kind !== 'unfinished';
   /**
@@ -530,10 +575,10 @@ export default function ReportsPage() {
                 </>
               )}
             >
-              {gamesError ? (
+              {gamesFailure ? (
                 <div className="empty">
                   <h4>{t('review:list_failed', '对局列表读不到')}</h4>
-                  <p>{gamesError}</p>
+                  {gamesFailureReason && <p>{gamesFailureReason}</p>}
                   <button type="button" className="kiosk-btn kiosk-btn--pill pill" onClick={() => void loadGames()}>
                     {t('kifu:retry', '重试')}
                   </button>
@@ -573,6 +618,14 @@ export default function ReportsPage() {
                       onSelect={() => setSelectedGameId(game.id)}
                       onOpenReport={(taskId) => navigate(`/kiosk/report/${taskId}`)}
                       onResume={(taskId) => { void retryReport(taskId).catch(() => undefined); }}
+                      // 行尾的「开始分析」走标准档。**同时选中这一行** —— 否则报错只会落在
+                      // 下面「生成报告」区的 actionError 里,而那一段说的是「选中的那一局」,
+                      // 指的却是另一局。选中让出错的那一行和错误信息对得上。
+                      onStartAnalysis={() => {
+                        setSelectedGameId(game.id);
+                        setActionError(null);
+                        void createForGame(game, 'normal').catch(() => undefined);
+                      }}
                       onDelete={() => setDeleteTarget(game.id)}
                     />
                   ))}
@@ -605,7 +658,10 @@ export default function ReportsPage() {
               />
               {(actionError || tasksError) && (
                 <p className="rverr" role="status">
-                  {actionError || tasksError}
+                  {/* 报告任务那条错可能来自列表、创建或重试,前半句说不准是哪件 ⇒ 前半句固定说
+                      「报告任务出错了」,后半句按类别接原因;分不出原因时只说前半句,不能只剩
+                      一句「已经不在了」没有主语。不印原文(盒上断网时是 Request failed 503: {…})。 */}
+                  {actionError || failureLine(t('review:tasks_failed', '报告任务出错了'), tasksErrorKind ?? 'other', t)}
                   <button
                     type="button" className="kiosk-btn kiosk-btn--pill"
                     onClick={() => { setActionError(null); clearTasksError(); void refreshTasks(); }}
@@ -699,7 +755,7 @@ export default function ReportsPage() {
  * 「跳转和干活分在两个手势上」(Fan 2026-07-28)。
  * 整行做不成一个 `<button>`:按钮里套按钮是非法 DOM。
  */
-function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport, onResume, onDelete }: {
+function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport, onResume, onStartAnalysis, onDelete }: {
   game: UserGameSummary;
   state: RowState;
   selected: boolean;
@@ -708,14 +764,16 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport,
   onSelect: () => void;
   onOpenReport: (taskId: number) => void;
   onResume: (taskId: number) => void;
+  onStartAnalysis: () => void;
   onDelete: () => void;
 }) {
   const mine = yourColor(game, username);
   const ts = savedAt(game);
   // 没下完的那句话自己就带着手数(「下到第 22 手就退出了」),再挂一段「22 手」是同一个数说两遍。
+  // 只有对弈局会念那一句;导入的谱没写结果时念「谱里没写结果」,手数照常挂在后面。
   const sub = [
     outcomeLine(game, mine, t),
-    game.result ? `${game.move_count} ${t('report:moves_unit', '手')}` : null,
+    game.result || !isPlaySource(game.source) ? `${game.move_count} ${t('report:moves_unit', '手')}` : null,
     ts == null ? null : whenLabel(ts, t),
   ].filter(Boolean).join(' · ');
 
@@ -781,8 +839,19 @@ function ReviewRow({ game, state, selected, username, t, onSelect, onOpenReport,
             </button>
           </>
         )}
+        {/* 「未分析」曾经是**唯一一个有事可做却没有键**的状态 —— 其它每一档行尾都有动作
+            (已分析→查看报告、只算到一半→继续分析、失败→重试),只有这一档是个死标,
+            所以它看起来像坏了。能力其实一直都在:选中这一行之后,下面「生成报告」区的
+            两张卡就可用了 —— 缺的只是这一行自己不指过去。
+            走**标准**档而不是弹二选一:精读慢四倍,不该是每局都被问到的选项;
+            想精读的人仍旧走下面那两张卡,这里不删任何路。 */}
         {state.kind === 'unanalyzed' && (
-          <span className="kiosk-tag">{t('review:tag_unanalyzed', '未分析')}</span>
+          <>
+            <span className="kiosk-tag">{t('review:tag_unanalyzed', '未分析')}</span>
+            <button type="button" className="kiosk-btn kiosk-btn--pill" onClick={onStartAnalysis}>
+              {t('review:start_analysis', '开始分析')}
+            </button>
+          </>
         )}
         {state.kind === 'unfinished' && (
           <span className="kiosk-tag">{t('review:tag_unfinished', '未终局')}</span>

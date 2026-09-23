@@ -22,6 +22,15 @@ export interface FourUpOptions {
   referenceCaption: string;
   /** 画在并排图右半标签带上的一句话 —— 预期差异必须写在图里 */
   implementationCaption: string;
+  /**
+   * 参考图就在**本仓**里,不走 `smartbox-software` 那张指纹表。
+   *
+   * 开局设置 r2(屏 02/03/04)属于这一种:它的设计源是 2026-09-21 通过的那份稿子,
+   * 不是 `sample-go/shots/`。稿子渲染出来的三张图落在
+   * `superpowers/tracks/kiosk-go-play-ai/visual/reference/`,跟着这个仓走 ——
+   * 参考图和实现同仓、同一次提交,比「另一个仓停在哪条分支」可靠。
+   */
+  localReference?: boolean;
 }
 
 export interface FourUpResult {
@@ -51,8 +60,9 @@ export interface FourUpResult {
  * (本轮 9 个),不是「看起来通用」。
  */
 export async function captureFourUp(o: FourUpOptions): Promise<FourUpResult> {
-  // 参考图那一半住在**另一个仓**,按登记的指纹取 —— 见 `resolveReferenceShot`。
-  const referencePng = resolveReferenceShot(o.referencePng);
+  // 参考图那一半默认住在**另一个仓**,按登记的指纹取 —— 见 `resolveReferenceShot`。
+  // `localReference` 的那几屏参考图就在本仓里,不过指纹表。
+  const referencePng = o.localReference ? o.referencePng : resolveReferenceShot(o.referencePng);
   mkdirSync(o.outDir, { recursive: true });
   const implementationPath = resolve(o.outDir, `${o.slug}--implementation.png`);
   /**

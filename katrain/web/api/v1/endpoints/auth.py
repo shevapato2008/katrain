@@ -10,10 +10,13 @@ from pydantic import BaseModel
 from katrain.web.core.auth import verify_password, create_access_token, create_refresh_token
 from katrain.web.core.box_sso import (
     BRIDGE_KEY_HEADER,
+    GUEST_USERNAME,
+    is_guest_user,
     resolve_http_token,
     strict_box_sso_enabled,
 )
 from katrain.web.core.config import settings
+from katrain.web.core import models_db
 from katrain.web.core.db import get_db
 from katrain.web.models import User, UserInDB
 from sqlalchemy.orm import Session
@@ -103,6 +106,15 @@ class BoxClearRequest(BaseModel):
     generation: int
 
 
+class GuestBootstrapRequest(BaseModel):
+    # Intentionally `Any`, not `int`: Pydantic v2 silently coerces a JSON `true`/
+    # `false` to the plain int 1/0 for an `int`-typed field *before* any endpoint
+    # code runs, which would make an `isinstance(..., bool)` guard dead code. By
+    # keeping the raw value untouched here, `_validate_guest_bootstrap_generation`
+    # can reject bool (and any other non-int) with a real 400, not a coerced pass-through.
+    generation: Any
+
+
 async def get_user_from_token(token: str, repo: Any, box_sso: Any = None) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -179,12 +191,102 @@ async def get_current_user_optional(
         return None
 
 
+async def require_writable_user(request: Request, token: Optional[str] = Depends(oauth2_scheme_optional)) -> User:
+    """Like `get_current_user`, but 403s the reserved `guest` account.
+
+    The central write-block for guest mode (R2-F1): every per-user HTTP route
+    that persists data swaps its `Depends(get_current_user)` for this instead,
+    so the guest can authenticate (read-only browsing) but can never create a
+    row. See superpowers/tracks/box-sso-2026-07-13 guest-mode spec.
+    """
+    user = await get_current_user(request, token)
+    if is_guest_user(user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Guest is read-only")
+    return user
+
+
 def _get_or_create_shadow_user(repo: Any, username: str) -> dict:
     """Get existing local user or create a shadow user for board-mode auth (design 5.3)."""
     user_dict = repo.get_user_by_username(username)
     if user_dict:
         return user_dict
     return repo.create_user(username=username, hashed_password=SHADOW_USER_NO_LOCAL_AUTH)
+
+
+def _validate_guest_bootstrap_generation(generation: Any) -> int:
+    """Reject bool, any non-int, and non-positive values with a 400 (not 422).
+
+    Scoped to /box-sso/guest-bootstrap only -- the pre-existing /box-sso/bootstrap
+    endpoint has the same latent `int`-field coercion pattern but is out of scope
+    for this fix.
+    """
+    if isinstance(generation, bool) or not isinstance(generation, int) or generation <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid generation")
+    return generation
+
+
+def _reject_reserved_username(username: str) -> None:
+    """Nobody may register or log in directly as the reserved guest account."""
+    if (username or "").strip().lower() == GUEST_USERNAME:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reserved username")
+
+
+def _guest_row_has_data(repo: Any, user_id: int) -> bool:
+    """True if the existing `guest` row is NOT pristine (R2-F7 / R3-F5 / R4-F6 / R5-F4).
+
+    A closed, explicit contract over the real SQLAlchemy models: covers every
+    user-FK table (owned rows), one attributable non-FK column (sync_queue,
+    a String not a FK), and the named User profile fields compared to their
+    exact real defaults -- NOT "any field diverging" (uuid/timestamps legitimately
+    differ) and NOT "any counter == 0" (credits defaults to 10000, not 0).
+    """
+    session = repo.session_factory()
+    try:
+        user = session.query(models_db.User).filter(models_db.User.id == user_id).first()
+        if user is None:
+            return False
+        if (
+            user.rank != "20k"
+            or user.net_wins != 0
+            or user.elo_points != 0
+            or user.credits != 10000
+            or user.is_admin is not False
+            or user.avatar_url is not None
+        ):
+            return True
+
+        owned_row_queries = [
+            session.query(models_db.UserGame).filter(models_db.UserGame.user_id == user_id),
+            session.query(models_db.UserGameAnalysis)
+            .join(models_db.UserGame, models_db.UserGameAnalysis.game_id == models_db.UserGame.id)
+            .filter(models_db.UserGame.user_id == user_id),
+            session.query(models_db.UserTsumegoProgress).filter(
+                models_db.UserTsumegoProgress.user_id == user_id
+            ),
+            session.query(models_db.UserTutorialProgress).filter(
+                models_db.UserTutorialProgress.user_id == user_id
+            ),
+            session.query(models_db.RatingHistory).filter(models_db.RatingHistory.user_id == user_id),
+            session.query(models_db.Relationship).filter(models_db.Relationship.follower_id == user_id),
+            session.query(models_db.Relationship).filter(models_db.Relationship.following_id == user_id),
+            session.query(models_db.LiveCommentDB).filter(models_db.LiveCommentDB.user_id == user_id),
+            session.query(models_db.ReportTask).filter(models_db.ReportTask.user_id == user_id),
+            session.query(models_db.ReportTaskMove)
+            .join(models_db.ReportTask, models_db.ReportTaskMove.task_id == models_db.ReportTask.id)
+            .filter(models_db.ReportTask.user_id == user_id),
+            session.query(models_db.PlatformGameDB).filter(models_db.PlatformGameDB.user_id == user_id),
+            session.query(models_db.CreditTransaction).filter(models_db.CreditTransaction.user_id == user_id),
+            # R4-F6: two distinct user FKs on RechargeOrder -- both must be checked.
+            session.query(models_db.RechargeOrder).filter(models_db.RechargeOrder.user_id == user_id),
+            session.query(models_db.RechargeOrder).filter(models_db.RechargeOrder.confirmed_by == user_id),
+            session.query(models_db.RedeemCode).filter(models_db.RedeemCode.used_by == user_id),
+            # R4-F6: SyncQueueEntry.user_id is a String(64), not an FK, but still
+            # guest-attributable state -- must be checked too.
+            session.query(models_db.SyncQueueEntry).filter(models_db.SyncQueueEntry.user_id == str(user_id)),
+        ]
+        return any(query.first() is not None for query in owned_row_queries)
+    finally:
+        session.close()
 
 
 def _require_bridge(request: Request) -> Any:
@@ -207,6 +309,9 @@ async def box_sso_bootstrap(request: Request, body: BoxBootstrapRequest) -> Any:
     remote_client = getattr(request.app.state, "remote_client", None)
     if remote_client is None:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Board client unavailable")
+    # A cloud account literally named "guest" must not collapse into the box's
+    # reserved zero-persistence guest identity (see guest-mode spec CRO-1).
+    _reject_reserved_username(body.username)
     remote_client.set_tokens(body.remote_access_token, body.remote_refresh_token)
     shadow_user = _get_or_create_shadow_user(request.app.state.user_repo, body.username)
     # Tie the cloud session to this local user so per-user queued work (rank events)
@@ -228,10 +333,42 @@ async def box_sso_clear(request: Request, body: BoxClearRequest) -> Any:
     return {"ok": True}
 
 
+@router.post("/box-sso/guest-bootstrap")
+async def box_sso_guest_bootstrap(request: Request, body: GuestBootstrapRequest) -> Any:
+    """Mint a LOCAL katrain JWT for the reserved `guest` account (no remote/cloud
+    tokens). Guarded by a pristine-row check so a legacy real `guest` shadow row
+    with accumulated data is never adopted (409). See guest-mode spec R1-F6/R2-F7.
+    """
+    state = _require_bridge(request)
+    generation = _validate_guest_bootstrap_generation(body.generation)
+    repo = request.app.state.user_repo
+    existing = repo.get_user_by_username(GUEST_USERNAME)
+    if existing is not None:
+        # R2-F7: a legacy real "guest" (board-mode shadow) also has the sentinel hash;
+        # only adopt a PRISTINE row. Any accumulated personalization -> fail closed.
+        if existing.get("hashed_password") != SHADOW_USER_NO_LOCAL_AUTH or _guest_row_has_data(
+            repo, existing["id"]
+        ):
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="guest identity conflict")
+    shadow_user = _get_or_create_shadow_user(repo, GUEST_USERNAME)
+    # Defensive: guest must never carry a prior real session's cloud credentials.
+    remote_client = getattr(request.app.state, "remote_client", None)
+    if remote_client is not None and hasattr(remote_client, "clear_tokens"):
+        remote_client.clear_tokens()
+    await state.activate(generation)
+    return {
+        "access_token": create_access_token(
+            data={"sub": shadow_user["username"]}, box_generation=generation
+        ),
+        "token_type": "bearer",
+    }
+
+
 @router.post("/login", response_model=Token)
 async def login(request: Request, login_data: LoginRequest, response: Response) -> Any:
     if strict_box_sso_enabled():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Direct login disabled")
+    _reject_reserved_username(login_data.username)
     remote_client = getattr(request.app.state, "remote_client", None)
 
     if remote_client is not None:
@@ -324,6 +461,7 @@ async def refresh(request: Request, body: RefreshRequest) -> Any:
 async def register(request: Request, register_data: LoginRequest, db: Session = Depends(get_db)) -> Any:
     if strict_box_sso_enabled():
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Direct registration disabled")
+    _reject_reserved_username(register_data.username)
     remote_client = getattr(request.app.state, "remote_client", None)
 
     if remote_client is not None:
@@ -449,8 +587,11 @@ async def logout(request: Request, response: Response, current_user: User = Depe
             # path); it skips synthetic opponent ids (<=0), so engine games record
             # only the human. NOTE: GameRepository has no `record_game` method --
             # the previous call here always raised AttributeError and recorded nothing.
+            # Guest never persists a result (belt-and-suspenders: the guest cannot
+            # actually reach here since it can't enter the lobby / become a
+            # multiplayer participant, but guard the write anyway).
             game_repo = request.app.state.game_repo
-            if game_repo:
+            if game_repo and not is_guest_user(current_user):
                 try:
                     game_repo.record_multiplayer_game(
                         sgf_content=session.katrain.get_sgf(),

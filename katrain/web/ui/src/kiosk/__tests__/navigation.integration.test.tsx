@@ -89,7 +89,7 @@ describe('Kiosk navigation integration', () => {
       // Task 12 把这一屏按稿子整屏换了(`shots/11-training.png`):原来那条
       // 「选择难度级别 · 练习死活以提高计算力」的标题栏没有了,问候行取而代之。
       await waitFor(() => {
-        expect(screen.getByText('题在实体盘上摆好，落子即判')).toBeInTheDocument();
+        expect(screen.getByText('落子即判，走错当场退回')).toBeInTheDocument();
       });
     });
 

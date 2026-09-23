@@ -107,6 +107,53 @@
 /* 长名字兜底(G11 第 9 条):≥19 个汉字会让问候行变两行,56 的块撑成 65,整栏往下推。 */
 .kiosk-greet b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* 训练营首页:Galaxy 同款的连续难度阶梯。彩条是当前档位的题型题量构成,不是完成进度。 */
+.tsumego-level-list { display: flex; flex-direction: column; gap: 7px; }
+.tsumego-level-row {
+  width: 100%; min-height: 56px; padding: 0 13px;
+  display: grid; grid-template-columns: 66px 90px minmax(80px, 1fr) 66px 20px;
+  align-items: center; gap: 10px;
+  border: 1px solid var(--hair); border-radius: 12px; background: var(--raise);
+  color: var(--text); text-align: left; cursor: pointer;
+}
+.tsumego-level-row.is-current {
+  border-color: var(--accent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 18%, var(--raise)), var(--raise));
+}
+.tsumego-level-row > b { font-family: var(--font-serif); font-size: 17px; font-weight: 700; }
+.tsumego-level-row__tag {
+  width: max-content; max-width: 90px; padding: 4px 7px; overflow: hidden;
+  border-radius: 6px; background: var(--panel); color: var(--dim);
+  font-size: 9px; line-height: 1; text-overflow: ellipsis; white-space: nowrap;
+}
+.tsumego-level-row__tag.is-current { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+.tsumego-level-row__mix { min-width: 0; height: 7px; display: flex; gap: 3px; }
+.tsumego-level-row__mix i { min-width: 4px; border-radius: 999px; background: var(--accent); }
+.tsumego-level-row__mix .tone-1 { background: var(--warn); }
+.tsumego-level-row__mix .tone-2 { background: #8b82a8; }
+.tsumego-level-row__mix .tone-3 { background: #527b80; }
+.tsumego-level-row__mix .tone-4 { background: #b2766d; }
+.tsumego-level-row__mix .tone-5 { background: #80935c; }
+.tsumego-level-row__count { color: var(--dim); font-size: 10px; text-align: right; font-variant-numeric: tabular-nums; }
+.tsumego-level-row__arrow { color: var(--accent); font-size: 19px; text-align: right; }
+.tsumego-level-seam {
+  height: 24px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px;
+  color: var(--warn); font-size: 9px; letter-spacing: .12em;
+}
+.tsumego-level-seam::before,
+.tsumego-level-seam::after { content: ""; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--warn) 45%, transparent)); }
+.tsumego-level-seam::after { background: linear-gradient(90deg, color-mix(in srgb, var(--warn) 45%, transparent), transparent); }
+
+/* 难度之后的题型页沿用 kiosk 一级卡片，只把同类卡铺成三列。综合训练单独成组，
+   让“专项”和“混合”两种入口在扫视时不会混在一起。 */
+.tsumego-category-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--l1-card-gap);
+}
+.tsumego-category-grid .kiosk-card { width: 100%; }
+.tsumego-mixed-section { margin-top: var(--l1-section-gap); }
+.tsumego-mixed-card .kiosk-card { width: 100%; }
+.tsumego-empty-actions { display: flex; justify-content: center; gap: 10px; }
+
 .kiosk-resume {
   display: flex; align-items: center; gap: 12px; padding: 0 14px;
   border: 1px solid var(--hair); border-radius: 12px; background: var(--raise);
@@ -210,6 +257,32 @@
 .pcard .clock { margin-left: auto; text-align: right; flex: none; }
 .pcard .clock b { font-family: var(--font-mono); font-size: 19px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .pcard .clock span { display: block; font-size: 10.5px; color: var(--dim); }
+/* F5:读秒阶段大字用青玉色,到点整张卡红边红字 —— 两人面对面下时分不出谁在读秒/谁到点了。 */
+.pcard[data-clock="byoyomi"] .clock b { color: var(--accent); }
+.pcard[data-clock="expired"] { border-color: var(--bad); }
+.pcard[data-clock="expired"] .clock b, .pcard[data-clock="expired"] .clock span { color: var(--bad); }
+
+/* F4:右栏状态条(设计稿 05 附 B/C)—— 开关行之上、右栏里的一块常驻区块,不是浮层 Alert。
+ * 左边标题+副行,右边一颗药丸键(复盘本局 / 重试)。数子失败 / 超时判负态用 data-tone="bad"。 */
+.gstatus { display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px solid var(--hair); border-radius: var(--row-radius); background: var(--panel); flex: none; }
+.gstatus b { display: block; font-family: var(--font-serif); font-size: 13px; font-weight: 600; }
+.gstatus span { display: block; font-size: 10.5px; color: var(--dim); margin-top: 1px; }
+.gstatus[data-tone="bad"] { border-color: var(--bad); }
+.gstatus[data-tone="bad"] b { color: var(--bad); }
+.gstatus .kiosk-btn--pill { margin-left: auto; flex: none; }
+
+@keyframes game-win-trophy {
+  0% { transform: scale(.7) rotate(-12deg); opacity: .3; }
+  30% { transform: scale(1.25) rotate(8deg); opacity: 1; }
+  55% { transform: scale(1) rotate(-5deg); }
+  80% { transform: scale(1.1) rotate(3deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+.game-win-trophy { animation: game-win-trophy 1.6s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .game-win-trophy { animation: none; }
+}
 
 /* 纯显示开关那一排。**不带图标不是漏了** —— 开关本来就没有图标,安一个反而像「按下去有后果」。
  * 基态(药丸键)与稿子 `go-kiosk.tmpl.html:281-293` 逐字相同;直播屏和复盘屏也用它,
@@ -292,7 +365,8 @@
 .gsec > h3 { display: flex; justify-content: space-between; align-items: baseline; flex: none; }
 .gsec > h3 em { font-family: var(--font-serif); font-style: italic; font-size: 11px;
   letter-spacing: 0; text-transform: none; color: var(--dim); }
-.gsec__h { margin-top: 14px !important; }
+/* 14 → 10:左栏加了走势块,两个小标题各让 4px(见下面 `.grule` 那条的实测)。 */
+.gsec__h { margin-top: 10px !important; }
 
 /* 段位那个大字。**不写「20 级」** —— 未定级时写「未定级」,那是这一屏最要紧的一句诚实话。 */
 .grank { font-family: var(--font-serif); font-weight: 600; font-size: 44px; line-height: 1.1;
@@ -313,8 +387,11 @@
    我先写了「走共享的 .lead」,一 grep 发现整个 `src/` 里只有我自己那句注释。
    稿子 `:160` 的 `.row .lead` 是 46px 宽的等宽数字格(给手数 / 局数用的),
    照搬到「1 2 3」上会空出 46px 的死区。⇒ 这一屏自己写一个窄的序号。 */
-.grules { display: flex; flex-direction: column; gap: 6px; }
-.grule { height: 44px; display: flex; align-items: center; gap: 10px;
+/* 2026-09 从 44/6 压到 30/4:左栏加了近 30 天走势(规范 §5 要它在左栏),而左栏是固定高度的一栏 ——
+   不压的话真浏览器实测左栏溢出 38px、底下两格被挤出框 36.5px;压到 32 还差 7.5px。
+   这三行**不可点**,不受 44px 触控下限约束;压的是行高不是字号。 */
+.grules { display: flex; flex-direction: column; gap: 4px; }
+.grule { height: 30px; display: flex; align-items: center; gap: 10px;
   padding: 0 10px; border: 1px solid var(--hair); border-radius: 9px; background: var(--raise); }
 .grule .lead { width: 18px; flex: none; font-family: var(--font-mono); font-size: 12px;
   color: var(--dim); font-variant-numeric: tabular-nums; }
@@ -329,6 +406,8 @@
    flex-direction** ⇒ 这里的 `column` 漏了过去,把屏 06 的标变成竖排、撑破了对局卡。
    两屏的单测和几何闸**全绿** —— 它们各自只看自己那一屏;是四图重取时逮到的。 */
 .gcol { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+/* 数据条下面那一两句话由栏的 12px 间距排开;共享 `.setnote` 自带的 8px 下边距在这里会叠成 20px。 */
+.gcol > .setnote { margin: 0; }
 /* 两块诊断并排,吃掉右栏剩下的高度。`min-height:0` 缺一个,里面的空态就顶破整栏。 */
 .gdiag { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; min-height: 0; }
 .gdiag .empty { flex: 1; display: flex; flex-direction: column; justify-content: center; }
@@ -343,6 +422,75 @@
 .grung b { font-family: var(--font-sans); font-size: 12.5px; font-weight: 600; }
 .grung span { font-family: var(--font-mono); font-size: 11.5px; color: var(--dim);
   font-variant-numeric: tabular-nums; }
+
+/* 能力诊断:一段一行「段名 + 问题手比例细条」—— 国象样稿 14 屏 `.metric/.bar` 那一族,
+   这一屏借自己左栏的 `.gmetric/.gbar`(字号、等宽数字、4px 细条都同一套)。
+   细条走 `--warn`:它画的是**问题手**的比例,满格是坏事,不能和左栏那条强调色进度条同色。
+   样本量那句贴底(`margin-top:auto`),和样稿一样 —— 数在上、口径在下。 */
+/* 行距 12→8:日历加进右栏后诊断块只剩约 200px(承重实测)。 */
+.gdlines { display: flex; flex-direction: column; gap: 8px; }
+.gdlines > .gmetric { margin-top: 0; }
+.gbar.is-bad > span { background: var(--warn); }
+.gdweak { font-style: normal; font-family: var(--font-sans); font-size: 10.5px; font-weight: 600;
+  color: var(--warn); margin-left: 8px; padding: 0 6px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); }
+.gdlines + .gdnote { margin-top: auto; }
+.gdnote { margin-bottom: 0; }
+/* `.gdiag .empty` 是 flex 列,子项默认拉满 —— 「去复盘」那颗胶囊不能被拉成整行宽。 */
+.gdiag .empty .pill { align-self: flex-start; }
+
+/* 左栏近 30 天走势(共享规范 §5:大数 → 进度 → 走势 → 两格;国象样稿 14 屏的 `.spark`)。
+   ⚠️ 类名全带 `g` 前缀:同一份样式表里撞过同名类(`.gside` 那次),裸 `.spark` 以后谁都可能再写。
+   svg 是 `preserveAspectRatio="none"` 铺满画框;末端点、峰值点、标注都是 HTML 绝对定位 ——
+   画进 svg 的圆会被横向拉成椭圆、字会被拉宽。 */
+/* `flex: none`:左栏是 flex 列,不写的话画框在内容偏多时会被默默压扁,而不是让实测报溢出。 */
+.gspark { position: relative; flex: none; height: 46px; margin-top: 2px; }
+.gspark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.gspark .fill { fill: color-mix(in srgb, var(--accent) 14%, transparent); }
+.gspark .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round;
+  vector-effect: non-scaling-stroke; }
+.gspark__end { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px;
+  border-radius: 50%; background: var(--accent); }
+/* 最高点走 `--good`,和棋种强调色分开(规范原话:强调色换了,「好」也还得读得出是好)。 */
+.gspark__peak { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px;
+  border-radius: 50%; background: var(--good);
+  box-shadow: 0 0 0 2px var(--panel), 0 0 7px color-mix(in srgb, var(--good) 80%, transparent); }
+/* 标注垫一层面板底色:它横在峰值点旁边,通常正压着爬上来的那段折线(与峰值点那圈描边同色)。 */
+.gspark__lbl { position: absolute; font-family: var(--font-sans); font-size: 10.5px; font-weight: 600;
+  color: var(--good); white-space: nowrap; transform: translateY(-50%);
+  padding: 0 3px; border-radius: 3px; background: var(--panel); }
+.gtrend-note { margin: 2px 0 0; }
+
+/* 右栏「近一年练棋日历」(Fan 2026-09-22;稿子 smartbox go-kiosk.tmpl.html 屏 22)。
+   左边一栏摘要 84px,右边 53 周 × 7 行的格子,8px 格 2px 缝 ⇒ 格子区 528×68,整块约 109 高。
+   ⚠️ 写成 `.panel.gcal`:`.panel` 那条(本文件更靠后)同特异度会把这里的内边距盖掉。 */
+.panel.gcal { display: flex; gap: 12px; padding: 12px 14px; }
+.gcal__sum { width: 84px; flex: none; display: flex; flex-direction: column; }
+.gcal__k { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; color: var(--dim); }
+.gcal__v { margin-top: 6px; font-family: var(--font-serif); font-weight: 600; font-size: 26px; line-height: 1;
+  color: var(--accent); font-variant-numeric: tabular-nums; }
+.gcal__v small { font-size: 13px; margin-left: 2px; color: var(--text); }
+.gcal__sub { margin-top: 5px; font-size: 10.5px; color: var(--dim); line-height: 1.35; }
+.gcal__err { margin-top: 8px; }
+.gcal__legend { margin-top: auto; display: flex; align-items: center; gap: 2px; font-size: 10px; color: var(--dim); }
+.gcal__legend > span { margin: 0 3px; }
+.gcal__legend > span:first-child { margin-left: 0; }
+.gcal__plot { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.gcal__months { position: relative; height: 11px; margin-left: 18px; font-size: 10px; line-height: 11px; color: var(--dim); }
+.gcal__months > span { position: absolute; top: 0; white-space: nowrap; }
+.gcal__body { display: flex; gap: 6px; }
+.gcal__days { width: 12px; flex: none; display: grid; grid-template-rows: repeat(7, 8px); row-gap: 2px;
+  font-size: 9px; line-height: 8px; color: var(--dim); text-align: right; }
+.gcal__grid { display: grid; grid-template-rows: repeat(7, 8px); grid-auto-flow: column; grid-auto-columns: 8px; gap: 2px; }
+/* 五档(Fan 定的固定阈值 0 / 1–2 / 3–5 / 6–9 / 10+):空格是描边色混进面板,其余四档是强调色按比例混进面板。
+   颜色全从 token 推 —— 换棋种强调色时整张日历跟着换。 */
+.gcal__c { width: 8px; height: 8px; border-radius: 2px; background: color-mix(in srgb, var(--hair) 55%, var(--panel)); }
+.gcal__c.l1 { background: color-mix(in srgb, var(--accent) 30%, var(--panel)); }
+.gcal__c.l2 { background: color-mix(in srgb, var(--accent) 52%, var(--panel)); }
+.gcal__c.l3 { background: color-mix(in srgb, var(--accent) 76%, var(--panel)); }
+.gcal__c.l4 { background: var(--accent); }
+.gcal__c.is-today { box-shadow: 0 0 0 1px var(--text); }
+.gcal__c.is-void { visibility: hidden; }
 
 /* 动作区排成两行 —— 只有自由对弈那一屏有七个键(三个分析 + 四个动作)。
    只换排布,格子高 / 图标 / 字号 / 圆角继续走共享 `.kiosk-actions button`:
@@ -385,8 +533,8 @@
 .mvrows .mv { color: var(--text); }
 .mvrows .mv.now { color: var(--accent); font-weight: 600; }
 
-/* 星阵道具键:**一个会扣次数的按钮和一个纯显示开关长成一样,是这一屏最容易犯的错**,
-   所以它们既不与动作区并排、也不与「坐标 / 手数」并排。
+/* 星阵道具键与对局动作都是点击按钮，连续摆在 `.engine-button-cluster` 中；
+   「坐标 / 手数」是滑动开关，留在独立的 `.gtoggles--switch` 组。
    角标三态照实现分:数字 = 还剩几次;`0` 用红底**不灰掉**(去星阵 App 充了值马上又能用,
    灰掉等于说「这个功能没有」);`—` = 这一次没取到数,和 0 不是一回事。 */
 .items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; flex: none; }
@@ -401,6 +549,14 @@
   display: grid; place-items: center; border-radius: 999px; font-size: 10.5px; font-weight: 600;
   font-family: var(--font-mono); background: #0C1211; color: var(--dim); }
 .items .cnt.zero { background: var(--bad); color: #fff; }
+
+/* 三颗道具 + 四颗对局操作共用四列尺寸。道具行第四格留空，让两种语义仍各占一行；
+   两行之间只留标准按钮缝，视觉上属于同一片点击区。 */
+.engine-button-cluster {
+  display: flex; flex-direction: column; gap: var(--action-cell-gap); flex: none; margin-top: auto;
+}
+.engine-button-cluster .items { grid-template-columns: repeat(4, 1fr); gap: var(--action-cell-gap); }
+.engine-button-cluster .kiosk-actions { margin-top: 0; }
 
 /* 平台条(稿子 `go-kiosk.tmpl.html:1856`)**故意没搬**,三个值一个都喂不了:
      · 「哪一家」是 `GamePage.tsx:185` 的写死常量 `'golaxy'`,而页控条标题已经写着「星阵围棋 · 人机」;
@@ -871,6 +1027,21 @@ button.kiosk-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 .kiosk-row__end select.ksearch__box {
   height: var(--btn-secondary-h); padding: 0 10px; font-size: 13px; max-width: 180px;
 }
+
+/* AI 段位详情:**就地展开**在同一列行里,不做弹层(`KioskAiLadderRows` 头注)。
+   往里缩一格、左边一条细线 —— 看得出这几行是上面那一行「段位」的下一层,不是新的一组。
+   行本身仍是共享的 `.kiosk-row`(52 高、flex:none),这里一条都不覆盖它的几何。 */
+.ladder-detail { display: flex; flex-direction: column; gap: var(--row-gap); padding-left: 20px; position: relative; }
+.ladder-detail::before { content: ''; position: absolute; left: 9px; top: 4px; bottom: 4px; width: 1px; background: var(--hair); }
+.ladder-detail .kiosk-row__t b[data-sev="warn"] { color: var(--warn); }
+.ladder-meter { gap: 8px; }
+.ladder-meter em { font-style: normal; font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.ladder-meter__pips { display: inline-flex; align-items: center; gap: 5px; }
+.ladder-meter__pips i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--hair); }
+.ladder-meter__pips i[data-zero] { width: 2px; border-radius: 1px; border: 0; background: var(--dim); height: 14px; }
+.ladder-meter__pips i[data-on="up"] { background: var(--good); border-color: var(--good); }
+.ladder-meter__pips i[data-on="down"] { background: var(--bad); border-color: var(--bad); }
+.ladder-recent { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
 
 /* ── 屏 02 / 03 / 04 开局设置三屏 ────────────────────────────────────
    三屏同一副骨架(L2 布局 A),右栏是一叠 `.setgrp`。样式照 `sample-go` 稿子自己的
@@ -1487,3 +1658,179 @@ button.kiosk-row.figrow { flex: none; }
 .ladder-progress::-webkit-progress-value { border-radius: 4px; background: var(--accent); }
 
 .ladder-retry { margin-top: 10px; }
+
+/* Temporary KataGo startup feedback. KioskFrame renders this through `extras`, so it
+   stays attached to the fixed 1024×600 canvas while remaining distinct from the
+   topbar's permanent identity/device controls. The 360px bound occupies only the
+   otherwise-unused center lane between the two topbar clusters at the target canvas. */
+.kiosk-engine-warmup {
+  position: absolute;
+  z-index: 4;
+  top: 11px;
+  left: 50%;
+  width: 360px;
+  max-width: 360px;
+  min-height: 34px;
+  padding: 7px 12px;
+  transform: translateX(-50%);
+  border: 1px solid var(--hair);
+  border-radius: 9px;
+  background: var(--raise);
+  color: var(--warn);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.kiosk-engine-warmup.is-unavailable { color: var(--bad); }
+/* ══════════════════════════════════════════════════════════════════════════
+   开局设置 r2(2026-09-21)—— 屏 02 / 03 / 04 共用
+   ══════════════════════════════════════════════════════════════════════════
+
+   要解决的是同一个毛病:**八组设置被画成八件等重的东西**,右栏 1200px 内容挤在
+   352px 的可视高里,7″ 屏上要滑三屏半。真相是它们分两类 ——
+     · 「这局棋是什么」:路数 · 规则 · 让子。三个输入,**贴目是结果不是第四个输入**。
+     · 「你怎么坐」:落子 · 我执 · 用时。
+   所以画成两行三格 + 一条推导。
+
+   ⚠️ 这一组里每一个可点的件都**显式写了 `padding`**,一个都不许省。
+   `src/index.css:41` 有一条 `button{padding:.6em 1.2em}`(Vite 模板自带),
+   它按属性生效、不按特异性败给类选择器 —— 没写 padding 的类它照样命中。
+   `.catstep` 就是这么被撑成 50px、字形被挤出内容盒的(量出来的,见 SetupStepper.tsx)。
+   ────────────────────────────────────────────────────────────────────────── */
+
+.kiosk-rail[data-su] { position: relative; }
+
+.su-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.su-row--2 { grid-template-columns: repeat(2, 1fr); }
+
+.su-cell {
+  position: relative; display: flex; flex-direction: column; justify-content: center; gap: 3px;
+  height: 50px; padding: 0 26px 0 11px; margin: 0; text-align: left; cursor: pointer;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--raise);
+  font-family: var(--font-sans); overflow: hidden;
+}
+.su-cell__k { font-size: 11px; line-height: 1; color: var(--dim); letter-spacing: .06em; }
+.su-cell__v { font-size: 15px; line-height: 1.1; color: var(--text); font-weight: 500; white-space: nowrap; }
+/* 收起/展开的那个小箭头。图标是 kiosk-shell 的 `caret-down`(Phosphor v2,
+   viewBox 0 0 256 256),由 `<Icon>` 内联成 svg 再包一层 `.kiosk-icon` ——
+   所以尺寸要落在**里面那个 svg** 上,只给外层写 width/height 的话 svg 按自己的
+   固有尺寸铺开,会盖住半格。 */
+.su-cell__c { position: absolute; right: 10px; top: 50%; width: 12px; height: 12px; margin-top: -6px; color: var(--dim); line-height: 0; }
+.su-cell__c .kiosk-icon, .su-cell__c svg { display: block; width: 12px; height: 12px; }
+
+/* ± 那两颗键里的字形盒。`line-height: 1` + `display:block` 让它的 border box
+   就是字形自己的行盒 —— 几何闸量的是这个盒相对按钮盒的偏移。
+   字号写死 20px:跟着继承走的话中文字体回退会把两颗键量出不同的高。 */
+.su-step__g { display: block; font-size: 20px; line-height: 1; font-family: var(--font-sans); }
+.su-cell[aria-expanded="true"] { border-color: var(--accent); background: var(--panel); }
+.su-cell[aria-expanded="true"] .su-cell__c { color: var(--accent); transform: rotate(180deg); }
+.su-cell:disabled { cursor: default; opacity: .45; }
+
+/* 锁死的一格:**不是灰掉的控件,是一个读数**。虚线 + 无 chevron。
+   灰掉 = 「你现在不能改」(换个前提就回来);虚线 = 「这条路本来就没得选」。 */
+.su-cell--fixed { background: var(--panel); border-style: dashed; cursor: default; padding-right: 11px; }
+.su-cell--fixed .su-cell__v { color: var(--text); }
+
+/* 姓名那两格是**输入框**,不是下拉:没有 chevron,占位文字走 `--dim`。 */
+.su-cell--input { padding-right: 11px; }
+.su-cell--input .su-cell__v { color: var(--dim); font-weight: 400; }
+
+/* 推导条 —— 上面三格加起来等于什么。楷体 + 强调色只给那个数。 */
+.su-out {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  height: 36px; padding: 0 13px; margin: 6px 0 0; text-align: left;
+  border-radius: 11px; background: var(--panel); border: 1px solid var(--hair);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+  font-family: var(--font-sans); position: relative;
+}
+/* 平时它不是「被禁用的按钮」,它就是一行字 —— `:disabled` 不许降透明度。 */
+.su-out:disabled { cursor: default; opacity: 1; }
+.su-out__k { flex: none; font-size: 11px; color: var(--dim); letter-spacing: .06em; }
+.su-out__v {
+  font-family: var(--font-serif); font-size: 15px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.su-out__v i { font-style: normal; color: var(--accent); }
+.su-out__n { flex: none; margin-left: auto; font-size: 11px; color: var(--dim); }
+/* 只有「自定贴目」那一档才变回控件 */
+.su-out--pick { border-color: var(--accent); cursor: pointer; padding-right: 28px; }
+.su-out--pick .su-out__n { color: var(--accent); }
+.su-out .su-cell__c { right: 11px; }
+
+/* 弹层。让子 11 档排两列、贴目 15 档排三列 —— 一列比整条右栏还高。
+   列内按列排(`grid-auto-flow: column`):按行排会把「倒贴/分先/让先」和让子档拆开。 */
+.su-pop {
+  position: absolute; z-index: 40; padding: 6px; margin: 0;
+  border: 1px solid var(--accent); border-radius: 12px; background: var(--panel);
+  box-shadow: 0 18px 44px rgba(0,0,0,.6);
+}
+.su-pop--2 {
+  display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: column;
+  grid-template-rows: repeat(6, auto); gap: 4px; min-width: 240px;
+}
+.su-pop--3 {
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-flow: column;
+  grid-template-rows: repeat(5, auto); gap: 4px; min-width: 300px;
+}
+.su-pop__i {
+  display: flex; align-items: center; gap: 8px; width: 100%; height: 44px;
+  padding: 0 11px; margin: 0;
+  border: 0; border-radius: 8px; background: transparent; color: var(--text);
+  font-family: var(--font-sans); font-size: 14px; text-align: left; cursor: pointer;
+}
+.su-pop__i:hover { background: var(--raise); }
+.su-pop__i[aria-selected="true"] {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent); font-weight: 600;
+}
+.su-pop__i:disabled { opacity: .3; cursor: default; background: transparent; }
+.su-pop__i em { margin-left: auto; font-style: normal; font-size: 11px; color: var(--warn); }
+
+/* 棋力轨的 ±:SVG,不是字形。理由写在 `components/setup/SetupStepper.tsx`。 */
+.su-step {
+  width: 46px; height: 44px; flex: none; display: grid; place-items: center;
+  padding: 0; margin: 0;
+  border: 1px solid var(--hair); border-radius: 11px; background: var(--raise);
+  color: var(--accent); cursor: pointer;
+}
+.su-step:disabled { opacity: .38; cursor: default; }
+
+.su-hint { margin: 5px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--dim); }
+.su-hint b { color: var(--text); font-weight: 600; }
+.su-hint:empty { display: none; }
+
+/* 升降级的赌注:两端对齐的一行,不做成卡片 —— 它是一句话,不是一块内容。 */
+.su-stake { display: flex; gap: 8px; }
+.su-stake span {
+  flex: 1; height: 36px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--hair); border-radius: 10px; background: var(--raise);
+  font-size: 12.5px; color: var(--dim);
+}
+.su-stake b { font-family: var(--font-serif); font-size: 14px; color: var(--text); font-weight: 600; }
+.su-stake span:first-child b { color: var(--good); }
+.su-stake span:last-child b { color: var(--bad); }
+
+/* 紧排:这三屏的目标是**右栏不滚**,行距按真浏览器量出来的数收,不按通用节奏走。
+   `.kiosk-side__scroll` 自己是 flex 列、带 `--l1-section-gap`,它叠在
+   `.setgrp + .setgrp` 的 margin 上 —— 段间距实际是 8+20=28px,不是 20。
+   (量出来的:逐段相加比 scrollHeight 少 16.4px,差额就在这儿。) */
+.kiosk-rail[data-su] .setgrp + .setgrp { margin-top: 6px; }
+.kiosk-rail[data-su] .kiosk-seclabel { height: 18px; margin-bottom: 5px; }
+.kiosk-rail[data-su] .catmeta { margin-top: 5px; }
+
+/* 姓名那两格里的输入框:**长得就是那一格的值那一行**,不另画一个框中框。
+   7″ 触屏上一格里再套一个输入框,点击靶只剩中间那一条。 */
+.su-nameinput {
+  width: 100%; padding: 0; margin: 0; border: 0; background: transparent;
+  color: var(--text); font-family: var(--font-sans); font-size: 15px; font-weight: 500;
+  outline: none; min-width: 0;
+}
+.su-nameinput::placeholder { color: var(--dim); font-weight: 400; }
+
+/* 升降级那段对手说明在这三屏里收一档行距:它是一段读数,不是正文。
+   (整段并进「盒子定好的」之后仍差 9px —— 真浏览器量出来的,不是估的。) */
+.kiosk-rail[data-su] .setexplain { padding: 9px 12px; line-height: 1.5; }

@@ -74,8 +74,7 @@ const TsumegoListPage = () => {
       });
 
     // Load progress from localStorage —— 走 `readLocalProgress()`,**不要再直接读 key**:
-    // 2026-08-25 起那把钥匙按账号分(`tsumego_progress:u<id>`),因为盒子是共享设备。
-    // 这里绕过去的话读到的永远是空的(旧的不分人 key 已被删),屏上会显示成「一题没做过」。
+    // 2026-08-25 起按账号隔离，访客只使用内存缓存，避免共享设备上的数据串用。
     setProgress(readLocalProgress());
 
     // If logged in, also fetch from server

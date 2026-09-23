@@ -27,6 +27,9 @@ export const LAUNCHER_URL = `${WIZARD_ORIGIN}/launcher`;
  */
 export const LAUNCHER_LOGIN_URL = `${LAUNCHER_URL}?authmode=login`;
 
+/** 已知当前为访客会话时，先退出访客再打开注册/登录表单。 */
+export const LAUNCHER_REGISTER_URL = `${LAUNCHER_URL}?logout=1&authmode=register`;
+
 /**
  * 严格盒端(出厂盒子)那一档。
  *

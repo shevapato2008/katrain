@@ -19,6 +19,8 @@ LINES = {
     "correct": "答对了",
     "wrong_remove": "答错了，请取回棋子",
     "capture_remove": "请提走被吃的棋子",
+    "stone_offcenter": "棋子没放正，请摆正后继续。",
+    "suspected_move": "检测到疑似落子，请在屏幕上确认。",
 }
 
 

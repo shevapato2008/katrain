@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, NamedTuple, Optional, Union
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class MoveRequest(BaseModel):
@@ -86,6 +86,18 @@ class UpdatePlayerRequest(BaseModel):
 
 class ToggleAnalysisRequest(BaseModel):
     session_id: str
+
+
+class ResignRequest(BaseModel):
+    """`/api/resign` 的请求体。`color` 是**认输的一方**。
+
+    本地对局（`pvp_local`）两个人共用一块屏，「轮到谁」不等于「谁按的键」，所以必须说清是哪一方
+    认输；其它模式不收它（服务端从座位推），带了就 400，免得被静默忽略。
+    单独一个模型、不往共享的 `ToggleAnalysisRequest` 里加字段：那个模型被十几个端点共用。
+    """
+
+    session_id: str
+    color: Optional[Literal["B", "W"]] = None
 
 
 class PVRequest(BaseModel):
@@ -216,3 +228,40 @@ class CountRequest(BaseModel):
 class CountResponse(BaseModel):
     session_id: str
     accept: bool
+
+
+class GameEnd(NamedTuple):
+    """这一局在哪一手、以什么结果结束(r1)。不随游标变 —— 翻手看棋不会让它消失。
+
+    `game` / `node` 是运行时对象(`WebGame` / `GameNode`)。类型放 models 而不放 interface:
+    `tests/web_ui/conftest.py` 把 `katrain.web.interface` 整个换成 MagicMock,定义在那里的类在 web_ui 测试里是假的。"""
+
+    game: Any
+    node: Any
+    result: str
+
+
+class EndgameConflict(Exception):
+    """终局 / 提交判别没通过(r1)。`reason` ∈ already_ended | position_changed | stale_turn | not_your_turn
+    | clock_not_expired | remote_ended。server 在 `create_app` 里统一映射成 409。"""
+
+    def __init__(self, reason: str):
+        super().__init__(reason)
+        self.reason = reason
+
+
+class TimeoutRequest(BaseModel):
+    """`/api/timeout`(r1 C1)。kiosk 带上它以为超时的那一局、那一手、那一方,由服务端在对局提交锁里核对轮次并用
+    服务端时钟核实;galaxy 的旧调用只带 `session_id`,语义照旧。三个 expected 字段要么都给、要么都不给。"""
+
+    session_id: str
+    expected_game_id: Optional[str] = None
+    expected_node_id: Optional[int] = None
+    color: Optional[Literal["B", "W"]] = None
+
+    @model_validator(mode="after")
+    def _expected_fields_come_together(self):
+        given = [value is not None for value in (self.expected_game_id, self.expected_node_id, self.color)]
+        if any(given) and not all(given):
+            raise ValueError("expected_game_id, expected_node_id and color must be given together")
+        return self

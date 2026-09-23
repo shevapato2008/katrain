@@ -42,6 +42,7 @@ import BoardPageShell from '../components/board/BoardPageShell';
 import ModulePlate from '../components/layout/ModulePlate';
 import { useBoardCoordinates } from '../components/board/useBoardCoordinates';
 import { RAIL_TIGHT, railBadgeSx, railBodySx, railMetaSx, railPlayerSx } from '../../components/railStyles';
+import { formatRank } from '../../utils/rank';
 
 /* 右栏窄档（320 / 340）下的卡片压缩。整块列表从 520 搬进 320，卡片必须自己收 ——
    用具名容器查询，不用视口媒体查询：判据是「卡片实际拿到多少宽」，而右栏宽度是
@@ -193,7 +194,7 @@ function GameRecordCard({
             </Typography>
             {album.black_rank && (
               <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, ml: 0.5, flexShrink: 0 }}>
-                {album.black_rank}
+                {formatRank(album.black_rank, t)}
               </Typography>
             )}
           </Box>
@@ -205,7 +206,7 @@ function GameRecordCard({
           <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
             {album.white_rank && (
               <Typography component="span" sx={{ color: 'text.secondary', ...railBadgeSx, mr: 0.5, flexShrink: 0 }}>
-                {album.white_rank}
+                {formatRank(album.white_rank, t)}
               </Typography>
             )}
             <Typography

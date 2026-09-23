@@ -106,7 +106,7 @@ class TestRoundTrip:
 
 
 class TestOutOfRangeDecode:
-    @pytest.mark.parametrize("raw", [-1, 361, 999])
+    @pytest.mark.parametrize("raw", [-2, 361, 999])
     def test_out_of_range_returns_unknown_special(self, raw):
         result = golaxy_to_katrain(raw, BOARD_SIZE)
         assert isinstance(result, UnknownSpecial)
@@ -140,8 +140,7 @@ class TestOutOfRangeEncode:
 
 
 class TestResultTypes:
-    """Pass/Resign are provided as pattern-matchable types, but decode does
-    NOT currently produce them (real sentinel encodings are unverified)."""
+    """Live calibration captured the engine tunnel's terminal sentinels."""
 
     def test_move_is_a_golaxy_coord_result(self):
         assert issubclass(Move, GolaxyCoordResult)
@@ -155,12 +154,12 @@ class TestResultTypes:
     def test_unknown_special_is_a_golaxy_coord_result(self):
         assert issubclass(UnknownSpecial, GolaxyCoordResult)
 
-    def test_decode_never_produces_pass_or_resign_this_iteration(self):
-        # Sentinel encodings for PASS/RESIGN are unverified this iteration;
-        # golaxy_to_katrain must classify anything not a valid on-board
-        # index as UnknownSpecial rather than guessing.
-        for raw in (-1, 361, 999, -100, 10000):
-            result = golaxy_to_katrain(raw, BOARD_SIZE)
-            assert not isinstance(result, Pass)
-            assert not isinstance(result, Resign)
-            assert isinstance(result, UnknownSpecial)
+    def test_decode_live_captured_pass_sentinel(self):
+        assert isinstance(golaxy_to_katrain(-1, BOARD_SIZE), Pass)
+
+    def test_decode_live_captured_resign_sentinel(self):
+        assert isinstance(golaxy_to_katrain(-3, BOARD_SIZE), Resign)
+
+    @pytest.mark.parametrize("raw", [-2, 361, 999, -100, 10000])
+    def test_other_out_of_range_values_remain_unknown(self, raw):
+        assert isinstance(golaxy_to_katrain(raw, BOARD_SIZE), UnknownSpecial)

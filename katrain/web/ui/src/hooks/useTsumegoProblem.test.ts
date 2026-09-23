@@ -165,3 +165,15 @@ describe('scheduledReply metadata', () => {
     expect(moveResult?.scheduledReply).toEqual({ player: 'W', coords: sgfToCoords('dd', 9) });
   });
 });
+
+describe('load errors', () => {
+  it('只有 404 说「Problem not found」;其它状态码原样带上 —— 503 不许被说成题不存在', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 503, json: async () => ({}) })));
+    const unavailable = renderHook(() => useTsumegoProblem('p1'));
+    await waitFor(() => expect(unavailable.result.current.error).toBe('HTTP 503'));
+
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) })));
+    const missing = renderHook(() => useTsumegoProblem('p2'));
+    await waitFor(() => expect(missing.result.current.error).toBe('Problem not found'));
+  });
+});

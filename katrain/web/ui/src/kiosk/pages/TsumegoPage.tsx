@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
-import { readActiveSession } from '../utils/activeSession';
-import { CATEGORY_META, categoryRank, levelChinese, readLastCategory, readLastLevel } from './tsumegoUnits';
+import { categoryRank, isDanLevel, levelChinese, loadErrorCopy, readLastLevel, readPracticeResume } from './tsumegoUnits';
 import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
-import { KioskCard } from '../shell/KioskCard';
 
 interface LevelInfo {
   level: string;
@@ -17,33 +15,21 @@ interface LevelInfo {
  * 屏 11 · 训练营 `/kiosk/tsumego` —— L1 布局 A(镜像栏 296 + 16 + 右栏 680)。
  * 稿子 `sample-go/go-kiosk.tmpl.html` 的 `data-screen="training"`,参考图 `shots/11-training.png`。
  *
- * 右栏四块:问候行 → 接着上次 → 按分类 → 按级别。左栏那条镜像栏由 `KioskLayout` 渲染。
+ * Galaxy 同一条主路径:先按难度选一档,下一屏再选题型,然后才进单元。
+ * 左栏镜像仍由 `KioskLayout` 渲染;右栏只承担问候、继续训练和连续难度阶梯。
  *
  * ── 三条口径,都是「不许编」的具体落法 ──────────────────────────────────
  *
- * ① **进度环里写「—」不写 0%**(G8)。题库(`data/life-n-death` 那批 SGF)**不在仓库里**,
- *    靠 `sync_tsumego_db.py` 灌进库、随云端更新;每一档做完没做完要按级把该级所有题号取回来
- *    才算得出,那是 R2/§3.5 当年明确不做的事(SBC 上一次取几千个 id 太贵)。
- *    ⇒ 环恒为 `null`。**这和单元列表屏的 `0%` 不是一回事**:那边的进度真存在
- *    `/api/v1/tsumego/progress` 里,`0%` 是「真的一道没做」;这边是「我不知道」。两屏的差别不许抹平。
- *
- * ② **一档有多少题、有哪几档,全从 `/levels` 来。** 稿子上画的是 15 级 / 10 级 / 5 级 / 1 级 /
- *    3 段 / 7 段 六张,那是**稿子挑的六个代表**;真实现照单全收后端返回的每一档,
- *    从易到难(`level_sort_key`:级越大越弱、段越大越强)。副标写题量 —— 稿子那句
- *    「最容易的一档 / 会吃子之后 / …」是逐档手写的,而档数是变的,写不出来也不该现编。
- *
- * ③ **「按分类」是有级别作用域的。** 路由是级别在前(`tsumego/:level/:category`),
- *    所以这一排卡必须先有一个级别 —— 取上次做题那一档(`readLastLevel`),没有就取最弱的那档。
- *    组标题右端的值写明是哪一档,不让人对着六张卡猜它们属于谁。
+ * `/levels` 已按由易到难返回真实 22 档(以题库为准)。每行的彩条只表示这一档各题型的题量构成;
+ * 它不是完成进度,因此不再画会被误读成进度的「—」圆环。
  */
 const TsumegoPage = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [levels, setLevels] = useState<LevelInfo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const resume = readActiveSession('practice');
+  const resume = readPracticeResume();
   const lastLevel = readLastLevel();
-  const lastCategory = readLastCategory();
 
   const load = useCallback(() => {
     setLevels(null);
@@ -59,9 +45,6 @@ const TsumegoPage = () => {
 
   useEffect(load, [load]);
 
-  // 作用域那一档:上次做的(且后端还有这一档)优先,否则最弱的那档 —— `/levels` 已按从易到难排好。
-  const scoped = levels?.find(l => l.level === lastLevel) ?? levels?.[0] ?? null;
-
   // 问候行是**一条**可翻译的句子,重点词用 `{what}` 占位标出来 —— 照现有的 `{n}` 惯例
   // (`'数子要下满 {n} 手'`)。拆成两个 msgid 会让译者看不到整句,而中英之间该不该有空格
   // 恰恰在整句里才定得下来(中文没有,英文有)。
@@ -69,7 +52,9 @@ const TsumegoPage = () => {
   const greet = (
     <div className="kiosk-greet">
       <b>{greetHead}<i>{t('what', '什么')}</i>{greetTail}</b>
-      <span>{t('Problems are set on the physical board · judged as you place', '题在实体盘上摆好，落子即判')}</span>
+      {/* 稿子写「题在实体盘上摆好，落子即判」—— 实体做题开关默认关,无摄像头的盒子根本没有实体盘,
+          那句只在一种情况下成立(N26③)。换成屏幕 / 实体盘 / 有无摄像头都成立的一句。 */}
+      <span>{t('tsumego:greetSub', '落子即判，走错当场退回')}</span>
     </div>
   );
 
@@ -91,15 +76,15 @@ const TsumegoPage = () => {
   );
 
   // 三态各说各的话,一态都不许冒充另一态,更不许冒充「加载完了、就是没有」。
-  if (levels === null || error || levels.length === 0 || !scoped) {
+  if (levels === null || error || levels.length === 0) {
     return (
       <KioskScrollZone>
         {greet}
         {resumeBar}
         {error ? (
           <div className="empty" data-testid="tsumego-error">
-            <h4>{t('Problem set unavailable', '题库读不到')}</h4>
-            <p>{error}</p>
+            <h4>{loadErrorCopy(t, error).title}</h4>
+            <p>{loadErrorCopy(t, error).body}</p>
             <button type="button" className="kiosk-btn kiosk-btn--pill pill" onClick={load}>
               {t('Retry', '重试')}
             </button>
@@ -110,18 +95,16 @@ const TsumegoPage = () => {
           </div>
         ) : (
           <div className="empty" data-testid="tsumego-empty">
-            <h4>{t('No problems on this box yet', '这台盒子上还没有题')}</h4>
-            <p>{t('The problem set syncs down from the cloud.', '题库随云端同步下来，同步过来才有题可做。')}</p>
+            {/* 接口真回了空。**不说「随云端同步下来」**:盒上题库是在线直读的,没有同步这回事(N9)。 */}
+            <h4>{t('tsumego:bankEmpty', '题库里还没有题')}</h4>
           </div>
         )}
       </KioskScrollZone>
     );
   }
 
-  const categories = Object.entries(scoped.categories)
-    .sort(([a], [b]) => categoryRank(a) - categoryRank(b) || a.localeCompare(b));
   const span = levels.length > 1
-    ? `${levelChinese(levels[0].level)} → ${levelChinese(levels[levels.length - 1].level)}`
+    ? `${levelChinese(levels[0].level)} → ${levelChinese(levels[levels.length - 1].level)} · ${levels.length} ${t('tsumego:levelsUnit', '档')}`
     : levelChinese(levels[0].level);
 
   return (
@@ -130,48 +113,45 @@ const TsumegoPage = () => {
       {resumeBar}
 
       <section className="kiosk-section">
-        <KioskSecLabel
-          zh={t('By category', '按分类')}
-          en={'By\u00a0category'}
-          value={`${levelChinese(scoped.level)} · ${categories.length} ${t('tsumego:category_unit', '类')}`}
-        />
-        <div className="kiosk-cards">
-          {categories.map(([key, count]) => {
-            const meta = CATEGORY_META[key];
+        <KioskSecLabel zh={t('tsumego:chooseByLevel', '按棋力选择')} en={'Choose\u00a0level'} value={span} />
+        <div className="tsumego-level-list">
+          {levels.map((level, index) => {
+            const current = level.level === lastLevel;
+            const categories = Object.entries(level.categories)
+              .sort(([a], [b]) => categoryRank(a) - categoryRank(b) || a.localeCompare(b));
+            const beginsDan = isDanLevel(level.level) && index > 0 && !isDanLevel(levels[index - 1].level);
             return (
-              <KioskCard
-                key={key}
-                title={t(`tsumego:${key}`, meta?.zh ?? key)}
-                // 表外的分类没有手写说明,写题量 —— 那是这一格唯一知道为真的事。
-                sub={meta ? meta.sub : `${count} ${t('tsumego:problems', '题')}`}
-                icon={meta?.icon ?? 'puzzle-piece'}
-                current={key === lastCategory}
-                onClick={() => navigate(`/kiosk/tsumego/${scoped.level}/${key}`)}
-              />
+              <Fragment key={level.level}>
+                {beginsDan ? (
+                  <div className="tsumego-level-seam" aria-label={t('tsumego:rankBoundary', '级位与段位分界')}>
+                    <span>{t('tsumego:kyuRanks', '级位')}</span><b>1K → 1D</b><span>{t('tsumego:danRanks', '段位')}</span>
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  className={`tsumego-level-row${current ? ' is-current' : ''}`}
+                  aria-label={[
+                    levelChinese(level.level),
+                    `${level.total} ${t('tsumego:problems', '题')}`,
+                    current ? t('tsumego:yourLevel', '你的水平') : undefined,
+                  ].filter(Boolean).join('，')}
+                  onClick={() => navigate(`/kiosk/tsumego/${level.level}`)}
+                >
+                  <b>{levelChinese(level.level)}</b>
+                  <span className={`tsumego-level-row__tag${current ? ' is-current' : ''}`}>
+                    {current ? t('tsumego:yourLevel', '你的水平') : t('tsumego:specializedPractice', '专项训练')}
+                  </span>
+                  <span className="tsumego-level-row__mix" aria-label={`${categories.length} ${t('tsumego:category_unit', '类')}`}>
+                    {categories.map(([key, count], categoryIndex) => (
+                      <i key={key} className={`tone-${categoryIndex % 6}`} style={{ flexGrow: count }} />
+                    ))}
+                  </span>
+                  <span className="tsumego-level-row__count">{level.total} {t('tsumego:problems', '题')}</span>
+                  <span className="tsumego-level-row__arrow" aria-hidden="true">›</span>
+                </button>
+              </Fragment>
             );
           })}
-        </div>
-      </section>
-
-      <section className="kiosk-section">
-        <KioskSecLabel zh={t('By level', '按级别')} en={'By\u00a0level'} value={span} />
-        <div className="kiosk-cards">
-          {levels.map((level) => (
-            <KioskCard
-              key={level.level}
-              // 环是「这一档做到哪了」,而这一层算不出(见文件头 ①)⇒ 恒 null,卡上写「—」。
-              ring={null}
-              title={levelChinese(level.level)}
-              sub={`${level.total} ${t('tsumego:problems', '题')}`}
-              current={level.level === lastLevel}
-              ariaLabel={[
-                levelChinese(level.level),
-                `${level.total} ${t('tsumego:problems', '题')}`,
-                t('progress unknown', '进度未知'),
-              ].join('，')}
-              onClick={() => navigate(`/kiosk/tsumego/${level.level}`)}
-            />
-          ))}
         </div>
       </section>
     </KioskScrollZone>

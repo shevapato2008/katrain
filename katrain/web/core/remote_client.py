@@ -96,14 +96,17 @@ class RemoteAPIClient:
 
     async def _refresh_access_token(self) -> bool:
         """Attempt to refresh the access token. Returns True on success."""
-        if not self._refresh_token:
+        refresh_token, bound_user_id = self._refresh_token, self._bound_user_id
+        if not refresh_token:
             return False
         try:
             resp = await self._client.post(
                 "/api/v1/auth/refresh",
-                json={"refresh_token": self._refresh_token},
+                json={"refresh_token": refresh_token},
             )
             if resp.status_code == 200:
+                if (self._refresh_token, self._bound_user_id) != (refresh_token, bound_user_id):
+                    return False
                 data = resp.json()
                 self._access_token = data["access_token"]
                 self._auth_required = False
@@ -126,11 +129,16 @@ class RemoteAPIClient:
         auth: bool = True,
     ) -> httpx.Response:
         """Make an HTTP request with automatic token refresh on 401."""
+        session = (self._refresh_token, self._bound_user_id)
         headers = self._auth_headers() if auth else {}
         resp = await self._client.request(method, path, json=json, params=params, headers=headers)
 
-        if resp.status_code == 401 and auth and self._refresh_token:
+        if resp.status_code == 401 and auth and session[0]:
+            if (self._refresh_token, self._bound_user_id) != session:
+                return resp
             refreshed = await self._refresh_access_token()
+            if (self._refresh_token, self._bound_user_id) != session:
+                return resp
             if refreshed:
                 headers = self._auth_headers()
                 resp = await self._client.request(method, path, json=json, params=params, headers=headers)
@@ -302,6 +310,16 @@ class RemoteAPIClient:
 
     async def get_growth_summary(self, days: int) -> Dict:
         resp = await self._request("GET", "/api/v1/growth/summary", params={"days": days})
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_growth_diagnosis(self, days: int, reports: int) -> Dict:
+        resp = await self._request("GET", "/api/v1/growth/diagnosis", params={"days": days, "reports": reports})
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_growth_activity(self, days: int, tz_offset: int) -> Dict:
+        resp = await self._request("GET", "/api/v1/growth/activity", params={"days": days, "tz_offset": tz_offset})
         resp.raise_for_status()
         return resp.json()
 

@@ -8,7 +8,7 @@
 
 **Tech Stack:** FastAPI + SQLAlchemy + pytest（httpx ASGITransport）；React 19 + MUI 7 + vitest + Playwright（vite dev）。
 
-**Spec:** `docs/superpowers/specs/2026-09-24-admin-console-design.md` §4
+**Spec:** `superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md` §4
 
 ## Global Constraints
 
@@ -105,7 +105,7 @@ Expected：`wc -l` 输出一个数（可以是 0）。`git status --short` 应�
   - The four tutorial-authoring writers are ADMIN-ONLY since 2026-09-24:
     anonymous 401, non-admin and guest 403 ("Admin privileges required").
     They used to be guest-only reject with anonymous allowed (R3-F1); see
-    docs/superpowers/specs/2026-09-24-admin-console-design.md §4.
+    superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md §4.
 ```
 
 1b. 在 `_seed_tutorial_figure` 函数之后（它以 `return figure.id` 结尾），插入这两个辅助函数：

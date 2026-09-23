@@ -12,7 +12,7 @@
 
 **Tech Stack:** FastAPI 0.115 + SQLAlchemy 2 + python-jose + APScheduler 3；React 19 + MUI 7 + react-router 6（HashRouter）+ Vite 8 + vitest 4 + Playwright。
 
-**Spec:** `docs/superpowers/specs/2026-09-24-admin-console-design.md`（§5 骨架，§6 cron 可视化）
+**Spec:** `superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md`（§5 骨架，§6 cron 可视化）
 
 ## Global Constraints
 
@@ -336,7 +336,7 @@ katrain/web/static-admin/
 
 4a. 在 `const forbiddenFromKiosk = [` 之前加：
 ```js
-// Admin console boundary (docs/superpowers/specs/2026-09-24-admin-console-design.md §5.5):
+// Admin console boundary (superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md §5.5):
 // only src/admin/** may import admin code, or admin UI would ship inside a public/kiosk bundle.
 const adminIsPrivate = {
   group: ['**/admin/**', '*/admin/*', '../admin/*', '../../admin/*', '../../../admin/*'],
@@ -1289,7 +1289,7 @@ npx playwright test --config=playwright.vite.config.ts tests/admin-cron.measure.
 ### Task 4: 契约定稿
 
 **Files:**
-- Modify（仅当 Task 1–3 改动了字段时）：`katrain/web/ui/src/admin/api/types.ts`、`docs/superpowers/specs/2026-09-24-admin-console-design.md` §6.5
+- Modify（仅当 Task 1–3 改动了字段时）：`katrain/web/ui/src/admin/api/types.ts`、`superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md` §6.5
 
 - [ ] **Step 1**：对照 `types.ts` 和 spec §6.5，逐个字段核对名字、可空性和枚举值。设计稿如果增减了字段，就把两边同步改。**权威边界**写进 spec：状态数据由 cron 写、后台只读；`health` 由后台按 `observed_at` 当场算出；任务的中文名在前端。
 - [ ] **Step 2**：有改动就提交 `docs(admin): cron 契约定稿`，没有改动就在 `visual-review.md` 末尾记一句「契约无变更」并提交。
@@ -1345,7 +1345,7 @@ def test_web_create_all_builds_the_admin_tables():
 ```python
 
 
-# ── Admin console (katrain-admin, docs/superpowers/specs/2026-09-24-admin-console-design.md) ─────────
+# ── Admin console (katrain-admin, superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md) ─────────
 # Schema owner is katrain-web (create_all in init_db). katrain-admin never creates tables.
 
 
@@ -1525,7 +1525,7 @@ def test_public_app_exposes_no_admin_routes(app):
 
 `katrain/web/admin/__init__.py`：
 ```python
-"""katrain-admin: the loopback-only admin console (docs/superpowers/specs/2026-09-24-admin-console-design.md)."""
+"""katrain-admin: the loopback-only admin console (superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md)."""
 ```
 `katrain/web/admin/routers/__init__.py`：
 ```python
@@ -2485,7 +2485,7 @@ def test_cleanup_prunes_cron_runs_older_than_retention(Session, monkeypatch):
 - [ ] **Step 3：`config.py`**。在 `CLEANUP_INTERVAL = …` 那一行之后加：
 ```python
 
-# Run recorder for the admin console (docs/superpowers/specs/2026-09-24-admin-console-design.md §6)
+# Run recorder for the admin console (superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md §6)
 HEARTBEAT_INTERVAL = int(os.getenv("CRON_HEARTBEAT_INTERVAL", "30"))
 RUNS_RETENTION_DAYS = int(os.getenv("CRON_RUNS_RETENTION_DAYS", "14"))
 ```
@@ -3151,7 +3151,7 @@ def test_admin_runs_the_web_image_with_the_admin_entrypoint():
   - katrain-web 的 `build:` 块之后加一行 `    image: katrain-web:local`；
   - 在 `katrain-cron:` 服务之前插入：
 ```yaml
-  # 管理后台（docs/superpowers/specs/2026-09-24-admin-console-design.md）。与 katrain-web 同一个镜像，
+  # 管理后台（superpowers/tracks/admin-console/spec-2026-09-24-admin-console.md）。与 katrain-web 同一个镜像，
   # 只发布到 127.0.0.1：阿里云网关经 WireGuard 只到得了 10.8.0.2:8001，碰不到这里。
   # 访问方式见 docs/operations/admin-console-access.md（SSH 隧道）。
   katrain-admin:

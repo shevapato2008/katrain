@@ -4,8 +4,8 @@
 - 状态：待 Fan 审阅
 - 分支：`feature/admin-console`（worktree `~/Repositories/katrain-admin-console`，基于 develop `ddedbf9b`）
 - 执行计划：
-  - 切片 0（安全修复）：`docs/superpowers/plans/2026-09-24-tutorial-admin-guard.md`
-  - 骨架 + 切片 1（cron 可视化）：`docs/superpowers/plans/2026-09-24-admin-console-cron.md`
+  - 切片 0（安全修复）：`superpowers/tracks/admin-console/plan-2026-09-24-tutorial-admin-guard.md`
+  - 骨架 + 切片 1（cron 可视化）：`superpowers/tracks/admin-console/plan-2026-09-24-admin-console-cron.md`
 
 ## 0. 一句话
 

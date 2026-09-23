@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObjec
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { backToState } from '../hooks/useBackTo';
 import { useTranslation } from '../../hooks/useTranslation';
+import { ApiError } from '../../api';
 import { KifuAPI } from '../../api/kifuApi';
 import { BaipuAPI, cacheSgf, canonToGtp, type BaipuStep } from '../../api/baipuApi';
 import { replayBaipuSteps } from '../../utils/baipuReplay';
 import { translateResult } from '../../utils/resultTranslation';
+import { interpolate } from '../utils/interpolate';
 import { colsFor, rowsFor } from '../shell/goBoard';
 import { GoBoardSvg } from '../shell/GoBoardSvg';
 import { KioskPagebar } from '../shell/KioskPagebar';
@@ -20,7 +22,7 @@ import type { KifuAlbumDetail } from '../../types/kifu';
  * 稿子 `sample-go/go-kiosk.tmpl.html` 的 `data-screen="kifu-detail"`。**它在计划书里没有
  * 对应的 Task**(计划的 Task 15 只到屏 15),和屏 13 一样是稿子后来长出来的一屏 ——
  * 记成 Task 15b。做它的直接理由:屏 15 那张列表点下去总得有个落点,而这一屏的三件事
- * (逐手回放 / 摆到实体盘 / 去研究)现在散在 `KifuPage` 的预览栏和 `BaipuListPage` 里。
+ * (逐手回放 / 摆到实体盘 / 去研究)原来散在 `KifuPage` 的预览栏和 `BaipuListPage`(2026-09-14 已删)里。
  *
  * ## 盘为什么不复用 `LiveBoard`
  *
@@ -89,6 +91,8 @@ const KifuDetailPage = () => {
   const [steps, setSteps] = useState<BaipuStep[] | null>(null);
   const [boardSize, setBoardSize] = useState(19);
   const [error, setError] = useState<string | null>(null);
+  /** 读不到是不是「连不上云端」(503)—— 棋谱库只在云端。 */
+  const [offline, setOffline] = useState(false);
   const [reload, setReload] = useState(0);
   const [cursor, setCursor] = useState(0);   // 已经走到第几手(0 = 开局)
   const nowRef = useRef<HTMLSpanElement | null>(null);
@@ -111,7 +115,10 @@ const KifuDetailPage = () => {
         setCursor(0);
       })
       .catch((e: Error) => {
-        if (!cancelled) setError(e.message);
+        if (!cancelled) {
+          setError(e.message);
+          setOffline(e instanceof ApiError && e.status === 503);
+        }
       });
     return () => { cancelled = true; };
   }, [kifuId, reload]);
@@ -185,8 +192,11 @@ const KifuDetailPage = () => {
       icon: 'grid-nine',
       label: t('kifu:place_on_board', '摆到实体盘'),
       onClick: goBaipu,
-      disabled: !album?.sgf_content,
-      reason: t('kifu:need_sgf', '这一局还没读到谱'),
+      // 实体盘和灯阵只有 19 路。摆谱屏自己也会拦(它是所有入口的汇合点),这里先灰掉,别让人白跳一趟。
+      disabled: !album?.sgf_content || boardSize !== 19,
+      reason: album?.sgf_content && boardSize !== 19
+        ? interpolate(t('kifu:wrong_size_reason', '这是 {n} 路的谱 —— 实体盘只摆得了 19 路'), { n: boardSize })
+        : t('kifu:need_sgf', '这一局还没读到谱'),
     },
     {
       key: 'research',
@@ -245,8 +255,8 @@ const KifuDetailPage = () => {
 
         {error ? (
           <div className="empty" data-testid="kifu-detail-error">
-            <h4>{t('kifu:load_failed', '这一局读不到')}</h4>
-            <p>{error}</p>
+            <h4>{offline ? t('kifu:detail_offline', '这一局要联网才能读') : t('kifu:load_failed', '这一局读不到')}</h4>
+            <p>{offline ? t('kifu:detail_offline_hint', '棋谱库在云端，这台盒子现在连不上。') : error}</p>
             <button
               type="button"
               className="kiosk-btn kiosk-btn--pill pill"

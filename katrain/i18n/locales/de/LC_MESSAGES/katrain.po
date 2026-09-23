@@ -5284,8 +5284,7 @@ msgid "kifu:greet_b"
 msgstr "anderer"
 
 msgid "kifu:greet_sub"
-msgstr ""
-"Berühmte Partien, Profi-Übertragungen und Nachstellen auf dem echten Brett"
+msgstr "Berühmte Partien und Nachstellen auf dem echten Brett"
 
 msgid "kifu:famous_records"
 msgstr "Berühmte Partien"

@@ -14,14 +14,13 @@ const OUT = resolve(process.cwd(),
 /**
  * 屏 17 摆谱 · 进行中(L2 布局 A:盘 516 + 16 + 右栏 460)。
  *
- * ⚠️ **稿子那一帧里有三处是错的,不是我没对齐**(2026-08-24 裁定,已回报稿子作者):
- *  ① 「绿灯 = 该放上 / 红灯 = 该拿走」—— **反了,而且漏了一色**。
- *    `constants/ledColors.ts` 定死 黑→红 `#ff3b30` / 白→绿 `#34c759` / 提子→蓝 `#2f6fff`,
- *    后端 `COLOR_RGB`、`ledColors.test.ts` 那条精确相等、两条 track 的 PRD 全一致。
- *    ⇒ 屏上换成三句真图例:红=放黑子 / 绿=放白子 / 蓝=该拿走。
- *  ② 盘上那个候选圈稿子画成**绿**的,而 C7 是**黑**棋 —— 规范(建议 E,已采纳)定死
- *    「屏上高亮色必须和灯同色」,所以实现里它是红的。
- *  ③ 稿子动作区四格,多一颗**虚手**。这一屏是在重放一份既有 SGF,而这条 track 的数据契约
+ * 2026-09-23 稿子改画上线态(Fan:逐手拍照只为采 YOLO 训练数据,RK3562 上用户只用亮灯摆谱),
+ * 原先这里记的三处稿子错误里有两处随之修掉 —— 稿子现在也是「灯 · 颜色对照」三句真图例
+ * (红=放黑子 / 绿=放白子 / 蓝=该拿走,`constants/ledColors.ts`)、C7 待摆圈是红的、
+ * 页控条不写帧数、确认键画 hand-pointing。**采集态不取四图**(只在 `--baipu-collect` 起的采集机上出现)。
+ *
+ * ⚠️ 稿子里还剩一处是错的,不是我没对齐(2026-08-24 裁定,已回报稿子作者):
+ *  · 稿子动作区四格,多一颗**虚手**。这一屏是在重放一份既有 SGF,而这条 track 的数据契约
  *    把 pass 定义成「无物理动作」(不产帧、`frames.length = 1 + 非 pass 落子数`)——
  *    一颗人能按的虚手要么破坏那条等式,要么什么都不干。⇒ 三格:确认落子 / 撤回上一手 / 完成。
  *
@@ -76,6 +75,8 @@ const boot = async (page: import('@playwright/test').Page) => {
   await stubBackendStatics(page);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: kioskMeJson({ username: '访客' }) }));
   // ⚠️ **这条不是装饰,是这一屏的四图能不能自己站住的前提。**
+  // (2026-09-14 起只有采集态套守卫,但**上线态同样离不开这条桩**:上线态要等棋盘状态读到过才挂摆谱屏
+  //  —— 不桩就停在「正在检查棋盘状态」,`baipu-pcard` 照样永远不出现。)
   // `baipu/session/:source` 外面套着 `PhysicalBoardGuard`,它读 `GeometryContext`;
   // 而 `GeometryProvider` 只在**接口 404** 时才落到 `disabled`(那是「这台盒子没摄像头」
   // 这个**读到了的结论**),接口连不上时 phase 停在 `required` ⇒ 整屏被换成标定台,
@@ -93,10 +94,11 @@ const boot = async (page: import('@playwright/test').Page) => {
   await page.route('**/api/v1/led/**', (route) => route.fulfill({
     json: { ok: true, connected: true, shown_at: null, errors: [] },
   }));
-  // 采集在这台机器上是通的:回一份成功,好让「已采集 N 帧 / 最近保存」有真数。
-  await page.route('**/api/v1/baipu/capture', (route) => route.fulfill({
-    json: { path: '/data/baipu/s1/move_012.jpg', geometry_correction: null },
-  }));
+  // 取的是**上线态**(盒子默认)。钉死 `collect:false`:不让这张图随 :8001 上起的是不是采集机而变 ——
+  // 与上面 `geometry/status` 那条同一个判据(一张随后端在不在而变的实现图,不是这一屏的实现图)。
+  await page.route('**/api/v1/baipu/mode', (route) => route.fulfill({ json: { collect: false } }));
+  // 同一个判据:引擎在不在不属于这一屏 —— 不钉的话 :8001 没起时顶栏多一条「AI 引擎准备中」。
+  await page.route('**/api/v1/health', (route) => route.fulfill({ json: { engines: { local: 'reachable' } } }));
   await page.goto('/kiosk/baipu/session/s1');
   await page.waitForSelector('[data-testid="baipu-pcard"]');
 };
@@ -121,22 +123,15 @@ test('四图:摆谱 · 进行中 ←→ sample-go/shots/17-baipu.png', async ({ 
     slug: '17-baipu',
     referenceCaption:
       '参考:sample-go/shots/17-baipu.png · L2 布局 A(盘 516 + 16 + 右栏 460)· '
-      + '主角在盘上不在屏上:灯指下一手，摄像头认，人负责摆',
+      + '主角在盘上不在屏上:灯指下一手，人摆好按确认 · 上线态(不拍照)',
     implementationCaption:
-      '实现:/kiosk/baipu/session/s1 @1024×600 · 时钟冻 16:40 · 摆到第 13 手 · '
-      + '**稿子那两行 LED 图例是错的**:黑→红 / 白→绿 / 提子→蓝(ledColors.ts 四处独立来源一致)，'
-      + '稿子写「绿灯=该放上 / 红灯=该拿走」会让人去拿一颗刚该放下的子 ⇒ 换成三句真图例 · '
-      + '**盘上那个圈是红的不是绿的**:C7 是黑棋，规范定死「屏上高亮色必须和灯同色」 · '
+      '实现:/kiosk/baipu/session/s1 @1024×600 · 时钟冻 16:40 · 摆到第 13 手 · 上线态 collect=false · '
       + '**动作区三格不是四格**:稿子多的那颗「虚手」不做——这一屏在重放既有 SGF，'
       + '而 pass 按数据契约不产帧，一颗能按的虚手要么破坏 frames 等式要么什么都不干 · '
       + '**玩家卡两张删了**:摆谱没有人在下棋，名字进页控条标题 · '
       + '**通栏状态条删了**:LED 那颗健康点由右上角「重新点灯」兼任(它就是这个故障的补救)，'
       + '相机那颗删——唯一数据源在摆谱专用部署下恒报 false，挂上去就是在好机器上画红点 · '
-      + '「完成」常驻但摆完前灰着(常驻是为了那颗按 250 次的键位置不跳)· '
-      + '**「已采集 13 帧」比稿子多一帧,是稿子少算了**:数据契约写着 '
-      + '`frames.length = 1(开局空盘那帧) + 非 pass 落子数`，摆到第 13 手 = 1 + 12 = 13 · '
-      + '「最近保存」印的是**文件名**不是稿子那句「第 12 手」——盘前的人要拿它去磁盘上对，'
-      + '而手数在同一块账的第一行已经有了',
+      + '「完成」常驻但摆完前灰着(常驻是为了那颗按 250 次的键位置不跳)',
   });
   console.log(`[fourup 17-baipu] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

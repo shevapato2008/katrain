@@ -17,7 +17,7 @@
  * identityKey === null is ALSO the correct value while identity is still unresolved
  * (AuthContext.isLoading === true) — callers MUST treat "unresolved" the same as "guest"
  * for storage purposes. This closes the first-paint race: several call sites (e.g.
- * TsumegoProgressProvider, BaipuListPage) read synchronously in a useState/useMemo
+ * TsumegoProgressProvider, KifuPage) read synchronously in a useState/useMemo
  * initializer, before AuthContext's async /me probe has resolved who is actually looking
  * at the screen. Passing identityKey=null during that window guarantees the synchronous
  * read can never surface a real user's (or the legacy unscoped) data.

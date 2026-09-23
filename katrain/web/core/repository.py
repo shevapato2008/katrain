@@ -235,25 +235,19 @@ class RepositoryDispatcher:
     async def tsumego_get_progress_local(self, user_id: int) -> Dict:
         return self._local_tsumego_progress_repo.list(user_id)
 
-    # ── Kifu (online-only, offline = unavailable) ──
+    # ── Kifu (online-only: offline / cloud failure = 503, never an empty library) ──
+    #
+    # 棋谱库只在云端,盒上没有本地副本。以前这两条离线回空列表 / None,端点就把「连不上」
+    # 说成了「没搜到 / 没有这一局」,屏 15 写「没有对得上的谱 · 换棋手名再试」。
+    # 远端 404 照旧是 404:`_remote_only` 只把离线、传输错误和 5xx 收成不可用。
 
     async def kifu_list_albums(self, q=None, page=1, page_size=20):
-        if not self.is_online:
-            return {"items": [], "total": 0, "page": page, "page_size": page_size}
-        try:
-            return await self.remote_kifu.list_albums(q, page, page_size)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("kifu_list_albums remote failed: %s", e)
-            return {"items": [], "total": 0, "page": page, "page_size": page_size}
+        return await self._remote_only(
+            lambda: self.remote_kifu.list_albums(q, page, page_size), "Remote kifu service unavailable"
+        )
 
     async def kifu_get_album(self, album_id):
-        if not self.is_online:
-            return None
-        try:
-            return await self.remote_kifu.get_album(album_id)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("kifu_get_album remote failed: %s", e)
-            return None
+        return await self._remote_only(lambda: self.remote_kifu.get_album(album_id), "Remote kifu service unavailable")
 
     # ── User Games (online→remote, offline→local+sync) ──
 

@@ -5168,8 +5168,7 @@ msgid "kifu:greet_b"
 msgstr "партии"
 
 msgid "kifu:greet_sub"
-msgstr ""
-"Знаменитые партии, профессиональные трансляции и раскладка на реальной доске"
+msgstr "Знаменитые партии и раскладка на реальной доске"
 
 msgid "kifu:famous_records"
 msgstr "Знаменитые партии"

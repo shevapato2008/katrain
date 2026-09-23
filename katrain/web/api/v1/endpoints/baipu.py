@@ -99,11 +99,24 @@ class BaipuCaptureRequest(BaseModel):
     overwrite_existing: bool = False
 
 
+def _collect_enabled(request: Request) -> bool:
+    """采集态 = 采集服务在 **且** 启动时显式开了 ``--baipu-collect``。见 ``resolve_baipu_collect``。"""
+    state = request.app.state
+    return getattr(state, "capture", None) is not None and bool(getattr(state, "baipu_collect", False))
+
+
+@router.get("/mode")
+async def baipu_mode(request: Request) -> Dict[str, bool]:
+    """摆谱屏进门先问这一句:拍不拍照。``collect=false`` 时前端不发 /capture、不套标定守卫。"""
+    return {"collect": _collect_enabled(request)}
+
+
 @router.post("/capture")
 async def baipu_capture(request: Request, body: BaipuCaptureRequest) -> Dict[str, Any]:
-    capture = getattr(request.app.state, "capture", None)
-    if capture is None:
+    # 上线态(开关没开)与「没有采集服务」回同一个 404 —— 前端 `disabled` 分支认的就是这个形状。
+    if not _collect_enabled(request):
         raise HTTPException(status_code=404, detail="Capture service not enabled")
+    capture = request.app.state.capture
     geometry = getattr(request.app.state, "geometry", None)
     if geometry is None:
         raise HTTPException(status_code=409, detail="Geometry not locked; run /geometry/lock first")

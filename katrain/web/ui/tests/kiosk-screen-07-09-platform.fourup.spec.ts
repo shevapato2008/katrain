@@ -11,7 +11,11 @@ const OUT = resolve(process.cwd(),
   '../../../superpowers/tracks/kiosk-go-shell-align/visual/07-09-platform/1024x600');
 
 /**
- * 跨平台三屏(07 连接 · 08 大厅 · 09 人机开局)。三屏一条流程,所以放同一个文件。
+ * 跨平台两屏(07 连接 · 08 大厅)。
+ *
+ * 屏 09(人机开局)2026-09-23 拆去了独立文件 `kiosk-screen-09-setup.fourup.spec.ts` ——
+ * 它多了一条真浏览器几何闸(`kiosk-geometry-platform.spec.ts`),拆开是为了这一屏的
+ * 四图能单独重跑,不用带着 07/08 一起动。
  *
  * 共同的一条预期差异:稿子里那枚琥珀 / 蓝色的 `.wip` 标(「对弈未接后端」「后端已有 ·
  * 界面未接」)**是说给读稿人听的进度标注,不上屏** —— 屏 15、屏 19 重画时已按这条处理过,
@@ -47,22 +51,6 @@ const OGS_USERS = {
   ],
 };
 
-/**
- * 星阵那 39 档,按 `GOLAXY_AI_LEVELS` 的形状造。稿子那一帧停在**第 22 档「星皮猴 · 2 段」**,
- * 所以这里造够 39 档并把默认档推到第 22 档 —— 造不到那一档,下面比的就不是同一帧。
- */
-const GOLAXY_LEVELS = {
-  levels: Array.from({ length: 39 }, (_, i) => ({
-    elo_score: 100 + i * 10,
-    level_name: `第 ${i + 1} 档`,
-    name: `星阵 ${i + 1}`,
-    goal_difference: 0,
-    timing: '',
-    display_elo: 400 + i * 50,
-    ref_rank: `业余 ${i + 1}`,
-  })),
-};
-
 async function boot(page: Page, path: string) {
   await freezeClock(page);
   await page.addInitScript(() => {
@@ -75,7 +63,6 @@ async function boot(page: Page, path: string) {
   }));
   await page.route('**/api/v1/platforms/status', (route) => route.fulfill({ json: PLATFORMS }));
   await page.route('**/api/v1/platforms/ogs/users*', (route) => route.fulfill({ json: OGS_USERS }));
-  await page.route('**/api/v1/platforms/golaxy/engine/levels', (route) => route.fulfill({ json: GOLAXY_LEVELS }));
   // 稿子那一帧「落子」选中的是实体盘 ⇒ 这台机器标定过摄像头。
   await page.route('**/api/v1/vision/status', (route) => route.fulfill({
     json: {
@@ -143,42 +130,4 @@ test('四图:跨平台 · 大厅 ←→ sample-go/shots/08a-platform-lobby.png',
       + '**对局中那一行不摆灰按钮**,摆状态标 —— 那个人现在收不到挑战,灰按钮会让人一直按',
   });
   console.log(`[fourup 08a-platform-lobby] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
-});
-
-test('四图:跨平台 · 人机开局 ←→ sample-go/shots/09-platform-engine.png', async ({ page }) => {
-  await boot(page, '/kiosk/play/cross-platform/engine/golaxy');
-  await page.waitForSelector('[data-testid="platform-engine-start"]');
-  await expect(page.locator('[data-testid="setup-opponent"] .catmeta')).toContainText('第 1 / 39 档');
-  // 稿子那一帧停在**第 22 档**(实现默认落在最弱那一档)。不把它推到同一档,
-  // 比的就是两个不同的状态 —— 读数、盘、底下那段结论都会跟着差。
-  const stronger = page.getByRole('button', { name: '换强一档的对手' });
-  for (let i = 0; i < 21; i += 1) await stronger.click();
-  await expect(page.locator('[data-testid="setup-opponent"] .catmeta')).toContainText('第 22 / 39 档');
-  // 点完那 21 下,＋ 键还留着 `:focus-visible` 的圈,而稿子那一帧没有 ——
-  // 那圈是**取图动作**带出来的,不是这一态的长相。
-  await stronger.evaluate((el: HTMLElement) => el.blur());
-  await page.waitForLoadState('networkidle');
-
-  const r = await captureFourUp({
-    page,
-    referencePng: resolve(SHOTS, '09-platform-engine.png'),
-    outDir: OUT,
-    slug: '09-platform-engine',
-    referenceCaption:
-      '参考:sample-go/shots/09-platform-engine.png · L2 布局 A · 与自由对弈同骨架 · '
-      + '棋力档由平台下发 · 让子和贴目联动',
-    implementationCaption:
-      '实现:/kiosk/play/cross-platform/engine/golaxy @1024×600 · 时钟冻 16:40 · '
-      + '**那块自己画的 300px svg 棋盘预览换成了共享 `KioskSetupBoard`**(布局 A 的左栏是 516 的真盘)· '
-      + '**两个 MUI 下拉换成档位轨**:7″ 触屏上下拉要点两次才看得见选项,而弹层正好盖住左边那块盘 · '
-      + '**补上「怎么落子」那颗开关**(屏 02/03/04 早就接了,这一屏之前漏了)· '
-      + '⚠️ **稿子画的那段 39 行名单不做 —— 这是裁定,不是没对齐**:共享 `tokens.css` 在 '
-      + '`.kiosk-optseg` 上面写着「一屏里所有选择组必须用同一种控件,不许难度用列表」,'
-      + '而屏 02 的 29 档已按同一条判成步进器(`KioskStepTrack` 文件头);真浏览器量下来,'
-      + '摊开那 39 行让右栏 maxScroll 到 2627 ≈ 6.6 屏,一段吃掉 97.5% 的视口。'
-      + '**39 个值一个不少、全都走得到** —— 删的是控件不是值;名单上唯一不在步进器上的那一列'
-      + '(`ref_rank` 对标棋力)已并进 `.catmeta` · '
-      + '**加载失败就是加载失败**,不给一份写死的兜底表(会让人选中星阵不认识的档)',
-  });
-  console.log(`[fourup 09-platform-engine] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

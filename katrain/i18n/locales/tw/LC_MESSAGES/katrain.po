@@ -6789,3 +6789,24 @@ msgstr "AI 引擎準備中，可先使用棋譜、課程等功能"
 
 msgid "engine:warmup_unavailable"
 msgstr "AI 引擎暫未就緒，可稍後重試"
+
+msgid "vision:relocate"
+msgstr "對齊外框"
+
+msgid "vision:relocating"
+msgstr "正在對齊…"
+
+msgid "vision:relocate_failed_title"
+msgstr "沒對上"
+
+msgid "vision:relocate_no_board"
+msgstr "畫面裡找不到棋盤外框，移開擋住邊框的東西再試一次。"
+
+msgid "vision:relocate_failed"
+msgstr "再試一次；一直不行就清空棋盤重新標定。"
+
+msgid "vision:reuse_blocked_moved"
+msgstr "棋盤挪動過，上次的標定對不上了 —— 用「對齊外框」（不亮燈，盤上有子也能對）或重新標定"
+
+msgid "vision:led_serial_note"
+msgstr "LED 那一格只說序列埠通了，不代表每顆燈都亮；引導時發現某處不亮，多半是燈條那一段壞了。"

@@ -7083,3 +7083,32 @@ msgstr ""
 msgid "engine:warmup_unavailable"
 msgstr ""
 "Yapay zekâ motoru henüz hazır değil — lütfen daha sonra tekrar deneyin"
+
+msgid "vision:relocate"
+msgstr "Çerçeve hizala"
+
+msgid "vision:relocating"
+msgstr "Hizalanıyor…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Hizalanamadı"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"Görüntüde tahtanın dış çerçevesi bulunamadı — kenarı kapatan şeyi kaldırıp "
+"tekrar deneyin."
+
+msgid "vision:relocate_failed"
+msgstr "Tekrar deneyin; hâlâ olmuyorsa tahtayı boşaltıp yeniden kalibre edin."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"Tahta yerinden oynadı, son kalibrasyon artık uymuyor — «Çerçeve hizala»yı "
+"kullanın (ışık yakmaz, tahtada taş varken de çalışır) ya da yeniden kalibre "
+"edin"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"«LED» durumu yalnızca seri portun bağlı olduğunu gösterir, her lambanın "
+"yandığını değil; rehberlik sırasında bir nokta yanmazsa büyük olasılıkla "
+"şeridin o bölümü arızalıdır."

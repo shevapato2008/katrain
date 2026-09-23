@@ -7104,3 +7104,32 @@ msgstr ""
 
 msgid "engine:warmup_unavailable"
 msgstr "Le moteur d'IA n'est pas encore prêt — veuillez réessayer plus tard"
+
+msgid "vision:relocate"
+msgstr "Aligner cadre"
+
+msgid "vision:relocating"
+msgstr "Alignement…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Non aligné"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"Le cadre extérieur du goban est introuvable dans l'image — écartez ce qui "
+"masque le bord et réessayez."
+
+msgid "vision:relocate_failed"
+msgstr "Réessayez ; si ça persiste, videz le goban et recalibrez."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"Le goban a bougé et le dernier calibrage ne correspond plus — utilisez « "
+"Aligner cadre » (sans LED, fonctionne avec des pierres sur le plateau) ou "
+"recalibrez"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"L'indicateur « LED » signale seulement que le port série est connecté, pas "
+"que chaque lampe s'allume ; si un point ne s'allume pas pendant le guidage, "
+"ce tronçon de la bande LED est probablement défectueux."

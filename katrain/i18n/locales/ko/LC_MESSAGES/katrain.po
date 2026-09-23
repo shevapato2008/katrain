@@ -6752,3 +6752,28 @@ msgstr "AI 엔진 준비 중입니다. 기보 라이브러리, 강좌 등 다른
 
 msgid "engine:warmup_unavailable"
 msgstr "AI 엔진이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요"
+
+msgid "vision:relocate"
+msgstr "테두리 정렬"
+
+msgid "vision:relocating"
+msgstr "정렬 중…"
+
+msgid "vision:relocate_failed_title"
+msgstr "정렬 실패"
+
+msgid "vision:relocate_no_board"
+msgstr "화면에서 바둑판 테두리를 찾을 수 없습니다. 테두리를 가리는 물건을 치우고 다시 시도하세요."
+
+msgid "vision:relocate_failed"
+msgstr "다시 시도하세요. 계속 안 되면 판을 비우고 다시 보정하세요."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"바둑판이 옮겨져서 지난번 보정이 맞지 않습니다 —— 「테두리 정렬」(LED가 켜지지 않고 판 위에 돌이 있어도 가능)을 쓰거나 다시 "
+"보정하세요"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"'LED' 항목은 시리얼 연결만을 뜻하며, 모든 램프가 켜진다는 뜻은 아닙니다. 안내 중 어딘가 켜지지 않으면 그 구간의 LED 스트립이"
+" 고장났을 가능성이 큽니다."

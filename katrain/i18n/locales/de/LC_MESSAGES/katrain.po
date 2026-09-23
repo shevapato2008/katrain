@@ -7124,3 +7124,34 @@ msgstr ""
 
 msgid "engine:warmup_unavailable"
 msgstr "Die KI-Engine ist noch nicht bereit — bitte später erneut versuchen"
+
+msgid "vision:relocate"
+msgstr "Rahmen ausrichten"
+
+msgid "vision:relocating"
+msgstr "Richte aus…"
+
+msgid "vision:relocate_failed_title"
+msgstr "Nicht ausgerichtet"
+
+msgid "vision:relocate_no_board"
+msgstr ""
+"Der äußere Rahmen des Bretts ist im Bild nicht zu finden — entfernen Sie, "
+"was den Rand verdeckt, und versuchen Sie es erneut."
+
+msgid "vision:relocate_failed"
+msgstr ""
+"Noch einmal versuchen; klappt es weiterhin nicht, das Brett leeren und neu "
+"kalibrieren."
+
+msgid "vision:reuse_blocked_moved"
+msgstr ""
+"Das Brett wurde verschoben, die letzte Kalibrierung passt nicht mehr — "
+"nutzen Sie „Rahmen ausrichten“ (keine LEDs, funktioniert mit Steinen auf dem"
+" Brett) oder kalibrieren Sie neu"
+
+msgid "vision:led_serial_note"
+msgstr ""
+"Der Status „LED“ zeigt nur, dass die serielle Verbindung steht — nicht, dass"
+" jede Lampe leuchtet; leuchtet während der Führung eine Stelle nicht, ist "
+"meist dieser Abschnitt des LED-Streifens defekt."

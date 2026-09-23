@@ -6865,6 +6865,184 @@ msgstr ""
 "{name} human-vs-AI is fixed at 19x19 · Chinese rules; the screen and the "
 "real board share the same tunnel"
 
+msgid "baipu:calib_running_sub"
+msgstr ""
+"Calibration is using the lights too · replay starts as soon as it finishes "
+"or is cancelled"
+
+msgid "baipu:calib_running_title"
+msgstr "Board calibration is still running"
+
+msgid "baipu:cam_connecting"
+msgstr "Connecting to the camera"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "The board is not calibrated yet"
+
+msgid "baipu:cam_geo_drift"
+msgstr "The board calibration is no longer valid"
+
+msgid "baipu:cam_none"
+msgstr "No camera connected"
+
+msgid "baipu:capture_hint_camera"
+msgstr "The ones lit blue — once they are all off, it moves on by itself"
+
+msgid "baipu:checking_board"
+msgstr "Checking the board status"
+
+msgid "baipu:done_hint_auto"
+msgstr "{n} moves in all · progress cleared; tap top-left to go back"
+
+msgid "baipu:guard_sub_collect"
+msgstr ""
+"Collecting training data needs the camera to see the board clearly first"
+
+msgid "baipu:hint_failed"
+msgstr "No result — close it and press again"
+
+msgid "baipu:hint_loading"
+msgstr "The AI is thinking about this move…"
+
+msgid "baipu:hint_on_hint"
+msgstr ""
+"AI hints on, recognition paused — white lights are the AI's candidate "
+"points; close the hints to carry on"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr ""
+"AI hints on — white lights are the AI's candidate points; close the hints to"
+" carry on"
+
+msgid "baipu:hint_row"
+msgstr "Win rate {w}% · score {s}"
+
+msgid "baipu:hint_title"
+msgstr "AI hints · where the white lights blink"
+
+msgid "baipu:hint_try_reason"
+msgstr ""
+"While trying moves the camera isn't watching, so the AI can't know the "
+"position on the board"
+
+msgid "baipu:hint_value"
+msgstr "Press again to close"
+
+msgid "baipu:led_on_camera"
+msgstr ""
+"The light is on — put the {color} stone on the lit intersection; once the "
+"camera sees it, the next move comes up by itself"
+
+msgid "baipu:led_title"
+msgstr "Lights · colour key"
+
+msgid "baipu:led_value_camera"
+msgstr "Camera watching"
+
+msgid "baipu:led_value_manual"
+msgstr "Confirm by hand"
+
+msgid "baipu:led_value_try"
+msgstr "Trying moves · recognition paused"
+
+msgid "baipu:manual_hint"
+msgstr "{why} — place the stone, then press “Confirm the stone”"
+
+msgid "baipu:manual_hint_calib"
+msgstr "; calibration is in “Settings”"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "Move {i} of {n}"
+
+msgid "baipu:restore_hint"
+msgstr ""
+"Take off the stones you tried and put back any you moved — once it matches, "
+"the replay carries on by itself"
+
+msgid "baipu:restore_title"
+msgstr "Set the board back to move {n}"
+
+msgid "baipu:resume_body_placed"
+msgstr ""
+"Last time you reached move {n}. To start over, first clear all stones off "
+"the board."
+
+msgid "baipu:setup_clear_title"
+msgstr "First clear all stones off the board"
+
+msgid "baipu:setup_continue"
+msgstr "Board set — continue"
+
+msgid "baipu:setup_entry_hint"
+msgstr ""
+"Take off stones under blue lights, place stones at red and green lights — it"
+" starts by itself once it matches"
+
+msgid "baipu:setup_entry_title"
+msgstr "First set the board up as at move {n}"
+
+msgid "baipu:try_off_reason"
+msgstr "The camera isn't recognizing"
+
+msgid "baipu:trying_hint"
+msgstr ""
+"Place anything and explore on the board. Press “Try it” again to go back to "
+"the record — the lights will guide you to set the board back"
+
+msgid "baipu:trying_title"
+msgstr "Trying moves · camera recognition paused"
+
+msgid "baipu:undo_hint_camera"
+msgstr ""
+"Take off the stones under blue lights and put captured stones back at the "
+"red and green lights — it carries on once it matches"
+
+msgid "baipu:undo_title"
+msgstr "Back to move {n}"
+
+msgid "baipu:undo_try_reason"
+msgstr "Can't take back while trying moves"
+
+msgid "baipu:verify_hint"
+msgstr "Extra stones are lit blue — take them off to continue"
+
+msgid "baipu:verify_title"
+msgstr "Checking the board"
+
+msgid "baipu:wrong_hint"
+msgstr ""
+"Pick up the stone under the blue light ({w}) and put it on {c} — it carries "
+"on once it matches"
+
+msgid "baipu:wrong_size"
+msgstr "This is a {n}×{n} record — it can't be replayed"
+
+msgid "baipu:wrong_size_hint"
+msgstr ""
+"The physical board and its lights are 19×19 — any other size would put every"
+" stone in the wrong place."
+
+msgid "baipu:wrong_title"
+msgstr "Wrong spot · it goes on {c}"
+
+msgid "kifu:detail_offline"
+msgstr "This game needs a network connection to open"
+
+msgid "kifu:detail_offline_hint"
+msgstr ""
+"The record library is in the cloud, and this box can't reach it right now."
+
+msgid "kifu:list_offline"
+msgstr "Searching the record library needs a network connection"
+
+msgid "kifu:list_offline_hint"
+msgstr ""
+"This box can't reach the cloud right now. Records you've replayed and "
+"imported SGFs aren't affected."
+
+msgid "kifu:wrong_size_reason"
+msgstr "This is a {n}×{n} record — the physical board only takes 19×19"
+
 msgid "engine:warmup_warming"
 msgstr ""
 "AI engine is warming up — you can use Game Records, Courses and other "

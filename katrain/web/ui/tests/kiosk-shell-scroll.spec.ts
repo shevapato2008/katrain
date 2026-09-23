@@ -1154,6 +1154,13 @@ const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang'; c
       capabilities: { camera_ready: false, led_ready: false, geometry_ready: false, recognition_ready: false },
     },
   }));
+  // 没接摄像头 ⇒ 非采集机走**手动兜底**(稿 17d:确认 / 撤回 / 试下 / AI支招 四格)。钉死 —— 不钉就随 :8001 在不在而变。
+  await page.route('**/api/v1/vision/status', (route) => route.fulfill({
+    json: {
+      enabled: false, camera_connected: false, pose_locked: false, sync_state: 'idle',
+      bound_session_id: null, recognition_ready: false, led_connected: true,
+    },
+  }));
   await page.route('**/api/v1/baipu/load', (route) => route.fulfill({ json: BAIPU_STEPS(241) }));
   await page.route('**/api/v1/led/**', (route) => route.fulfill({
     json: { ok: true, connected: true, shown_at: null, errors: [] },
@@ -1218,14 +1225,16 @@ const railOf = (page: Page) => page.evaluate(() => {
   };
 });
 
-test('摆谱:241 手四态轮一遍,「确认落子」始终贴右栏底、盘恒 516', async ({ page }) => {
+// 2026-09-23 摆谱改摄像头自动推进:非采集机平时没有确认键,摄像头用不了才临时露出(手动兜底,四格)。
+// 四格是这一屏**格子最多**的一态(摄像头态三格;卡住时露出「摆好了，继续」也是四格),量这一态就覆盖了格数那一维。
+test('摆谱:241 手手动兜底四格,动作区始终贴右栏底、盘恒 516', async ({ page }) => {
   await bootBaipu(page);
 
   const guiding = await railOf(page);
   expect(guiding.railH, '右栏不是 516 —— 布局 A 的高度账先崩了').toBe(516);
   expect(guiding.boardW, '盘不是 516 宽').toBe(516);
   expect(guiding.boardH, '盘不是 516 高').toBe(516);
-  expect(guiding.actsCount, '动作区不是三格 —— 稿子那颗「虚手」不做').toBe(3);
+  expect(guiding.actsCount, '手动兜底不是四格(确认 / 撤回 / 试下 / AI支招)').toBe(4);
   expect(guiding.movesOverflow, '241 手没造出溢出 —— 下面的断言都是空的').toBeGreaterThan(100);
   expect(guiding.railOverflow, '右栏自己被顶破了 —— 溢出该由着法那一块自己吃掉').toBeLessThanOrEqual(0);
   expect(guiding.actsBottom, '动作区没贴右栏底').toBe(guiding.railBottom);

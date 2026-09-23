@@ -610,6 +610,10 @@ export const API = {
     apiPost("/api/v1/vision/move-detection", { armed }),
   visionExpectedBoard: (board: number[][]): Promise<void> =>
     apiPost("/api/v1/vision/expected-board", { board }),
+  // 摄像头此刻看到的整盘(识别坐标)。摆谱「摆好了，继续」拿它当 setup 目标 —— 整盘逐子精确匹配
+  // 在中后盘可能被一颗认不稳的子卡住,按现状接着摆是唯一不改后端的出口。
+  visionDetectedBoard: (): Promise<{ board: number[][] }> =>
+    fetch("/api/v1/vision/detected-board").then(r => r.json()),
   // Task 9: engine-move recovery dialog actions. 200 {ok:false, recovery_token} is a
   // normal "failed again" outcome (NOT an HTTP error); a 409 (stale/consumed token) DOES
   // reject via apiPost's !response.ok throw — callers treat that as "recovery expired".

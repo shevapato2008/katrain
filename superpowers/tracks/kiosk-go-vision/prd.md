@@ -61,7 +61,7 @@
 - **R1 · 唯一交付口。** 新几何只经 `on_success` → `server.py` 的 `promote_geometry` → `vision.set_geometry(lock)`。`set_geometry` 会重置运动滤波、作废参照帧、重推视差。**不许**直接去改 worker / extractor,也**不许**原地改旧锁对象(relock 用 `dataclasses.replace` 出新对象)。
 - **R2 · 朝向连续。** LED 锁的四角按**棋盘行列**排(`led_geometry_calibrator.py` 的 `_build_lock`,`diag.orientation = "seated_human"`);外框法和无灯自动标定按**画面位置**排(`geometry_detect.sort_corners`)。两种排法不一定一致;不一致时直接拿外框法的结果建锁,整张网格会转 90° 或 180°:识别坐标、维持档、视差都会跟着转(视差在自动模式下会对着那把转错的锁自己重推,算得自洽,但坐标已经错了,它救不回来)。**重建时必须把外框四角重排成离旧锁四角最近的那一种**;若最近与次近分不开(盘转了约 45°),就拒绝,当作失败处理。2026-09-23 已在 scratchpad 里用真模块做过原型:不对齐时,旋转顺序的锁重定位后,视差推出的镜头落点(nadir)会换到另一条边;对齐后,4 种旋转顺序的 nadir 全部留在原边,镜像顺序的四角也对得上(原型与用例见 plan Task 3)。
 - **R3 · 自动重定位期间不挂起识别。** 挂起(`on_suspend` 把 worker 几何清空)会让 `recognition_ready` 掉下来,`PhysicalBoardGuard` 就会把对局屏卸载、换成标定台,这正是 V1 要避免的事。代价是:从判定漂移到新锁推下去,中间还有几秒 worker 按旧几何识别。这段窗口今天就有(漂移要连续 3 帧才判定),**本赛道不声称下游一定兜得住**,改成上板实测(§7 上板清单第 2 项:碰盘过程中不许有幻影落子进棋谱)。
-- **R4 · 这批优化的文件一行不改**(以合进来的 develop 为准:`git diff $(git merge-base HEAD origin/develop)`,不写死提交号 —— 再合 develop 时 develop 自己改这些文件不算本赛道的改动)。 `katrain/vision/{worker_inprocess,board_state,parallax,parallax_store,reference_frame,camera,service}.py`、`katrain/web/core/led_service.py`;`server.py` 只许改 `GeometryCalibrationService(...)` 构造那一段(`:885-897`),**不碰** `_vision_needs_frames` / `_adjust_led_brightness` / 视觉命令行参数。收尾核对见 plan Task 10 Step 2b。
+- **R4 · 这批优化的文件一行不改**(以合进来的 develop 为准:`git diff $(git merge-base HEAD origin/develop)`,不写死提交号 —— 再合 develop 时 develop 自己改这些文件不算本赛道的改动)。 `katrain/vision/{worker_inprocess,board_state,parallax,parallax_store,reference_frame,camera,service}.py`、`katrain/web/core/led_service.py`、`katrain/web/server.py`(2026-09-24 起整份不改:服务默认参数就是开关常量,不必在构造处显式传)。收尾核对见 plan Task 10 Step 2b。
 - **R5 · 这批优化自带的测试收尾必须原样全绿**:`tests/test_vision/` 下 `test_parallax_*`、`test_board_state_parallax`、`test_board_state_golden`、`test_board_state_shadow`、`test_shadow_phantom`、`test_reference_frame`、`test_sustain_threshold`、`test_vision_idle`、`test_led_glow`、`test_worker_commands`、`test_calibrate_parallax`,以及 `tests/web_ui/test_led_brightness_loop.py`、`tests/test_led_service.py`、`tests/test_geometry_calibration_service.py` 里的 `drift_needed` 用例。
 
 ---
@@ -94,7 +94,7 @@
   - 标定服务固定用 `calibrator_factory=LedGeometryCalibrator`(`:82`),**不经 `CalibrationSelector`**;`build_default_selector()` 的唯一生产调用方是 `baipu_capture.py:248`,而那里算出的 `M` 只进采集 manifest。
   - `OuterCornerStrategy` 本来就是为这件事写的:`requires_led = False`、`works_on_crowded_board = True`,用的是**外框**(棋子永远挡不住外框)。
 - **期望**:两条路,合起来才闭环。
-  - **(a) 自动静默重定位**:漂移判定成立时,先跑一次 `Scenario.RUNTIME_RECALIBRATION`(策略表里只有 `outer_corner`,**结构上不可能亮灯**)。成功 ⇒ 用新的单应重建 lock(重算 `corners` / `points`,**四角按旧锁朝向重排**(§2.1 R2),**保留 `baseline`**)、`on_success` 推给识别 worker(§2.1 R1)、`phase` 留在 `ready`、漂移基准重置;失败 ⇒ 照今天降级成 `degraded`,并把失败原因写进 `metrics`。**不写盘**:磁盘上那份是 LED 13 点的 golden reference,外框法只是本次开机的运行时修正,重启后回到 `required`,可以「沿用上次标定」(2026-09-23 更正:原稿这里写的是「持久化」,与 plan 的「不写盘」矛盾,以 plan 为准)。重定位期间**不挂起识别**(§2.1 R3)。
+  - **(a) 自动静默重定位**:漂移判定成立时,先跑一次 `Scenario.RUNTIME_RECALIBRATION`(策略表里只有 `outer_corner`,**结构上不可能亮灯**)。成功 ⇒ 用新的单应重建 lock(重算 `corners` / `points`,**四角按旧锁朝向重排**(§2.1 R2),**保留 `baseline`**)、`on_success` 推给识别 worker(§2.1 R1)、`phase` 留在 `ready`、漂移基准重置;失败 ⇒ 照今天降级成 `degraded`,并把失败原因写进 `status()["relocate_error"]`(`metrics` 只放数值)。**不写盘**:磁盘上那份是 LED 13 点的 golden reference,外框法只是本次开机的运行时修正,重启后回到 `required`,可以「沿用上次标定」(2026-09-23 更正:原稿这里写的是「持久化」,与 plan 的「不写盘」矛盾,以 plan 为准)。重定位期间**不挂起识别**(§2.1 R3)。
   - **(b) 用户按的「对齐外框」**:`degraded` / `cancelled` / `failed` 三态下,标定屏给一颗「对齐外框(不亮灯,盘上有子也行)」,走 `Scenario.MANUAL_FALLBACK` 的 `outer_corner`(**LED 那一支本轮不接** —— 它要求空盘,而这颗键存在的理由正是盘上有子)。它是自动那条路失败后的人工出口。
   - **(c) 精度闸**:外框法在**满盘**下的真机精度没有人量过。`outer_corner_accuracy.py` 定的判据是误差 < **0.12 格**。所以:
     - 自动那条路(a)的开关**默认关**,常量写在源码里(`AUTO_RELOCATE_ON_DRIFT = False`)并在注释里点名它等的是哪一条上板闸;
@@ -102,7 +102,7 @@
     - 上板闸通过后,在**同一次改动**里把常量翻成 `True` 并补一条测试。
 - **验收**:
   1. pytest:注入一个假 selector,漂移成立且 `auto_relocate=True` 时不进 `degraded`,`phase` 仍 `ready`,`on_success` 被调用一次,**持久化零次**、**`on_suspend` 零次**(后两条钉住「不写盘」与 §2.1 R3)。
-  2. pytest:假 selector 返回 `ok=False` 时,终态与今天相同(`degraded` + `on_degraded` 一次),且 `metrics` 里能看到失败原因。
+  2. pytest:假 selector 返回 `ok=False` 时,终态与今天相同(`degraded` + `on_degraded` 一次),且 `status()["relocate_error"]` 里能看到失败原因。
   3. pytest:`AUTO_RELOCATE_ON_DRIFT = False`(默认)时,漂移仍然直接 `degraded` —— **这一条钉住「默认关」**,免得闸没过就悄悄上线。
   4. pytest:`relocate()` 在 `degraded` / `cancelled` / `failed` 三态都能跑,且**不接受空盘要求**(盘上有子照跑);运行中(`active`)调用抛 `CalibrationBusy`。
   5. pytest(**结构闸**):`Scenario.RUNTIME_RECALIBRATION.allows_led()` 为假,且本轮新增的两条路径都没有把 `led` 传进 `CalibrationContext`。
@@ -223,7 +223,7 @@
 
 1. **`KifuPage.tsx` / `KioskApp.tsx` 与未合并的 kifu 分支**:直播赛道要在 `KifuPage.tsx` 的直播那一段(:378-417)加一行入口,设置赛道要删 `KioskApp.tsx` 的 `OrientationProvider` / `RotationWrapper`(:34、:41、:202-214)。两处与 kifu 的 hunk 都不相邻,属文本冲突。**规则:先合 kifu,再合这两家**;谁后合谁负责 rebase。
 2. **`GeometryContext` 的状态词(`phase` / `loaded` / `capabilities`)**:设置赛道 ST5 要在设置屏说「还没问到 / 没有摄像头」,视觉赛道 V2/V3 要改标定屏说「取消了还能沿用 / 这台盒子没有 LED」。**规则:`GeometryContext.tsx` 与 `geometryApi.ts` 归视觉赛道改,设置赛道只消费**;同一件事的措辞以视觉赛道为准,设置赛道照抄。
-3. **`server.py`**:成长赛道 G2 只在 `_record_ai_game_locked` 的 `data` 字典(:1830-1844)与 `_record_platform_engine_game` 的 `data_overrides`(:3615)各加一个键,**不碰终局收尾入口 `_finish_ended_game`**(上一轮定的唯一入口);视觉赛道只改挂 `GeometryCalibrationService` 的那一段(:761-826;**在视觉分支 `a586026b` 上是 `:835-897`**,构造调用在 `:885-897`)。两处不相邻。
+3. **`server.py`**:成长赛道 G2 只在 `_record_ai_game_locked` 的 `data` 字典(:1830-1844)与 `_record_platform_engine_game` 的 `data_overrides`(:3615)各加一个键,**不碰终局收尾入口 `_finish_ended_game`**(上一轮定的唯一入口);视觉赛道只改挂 `GeometryCalibrationService` 的那一段(:761-826;**2026-09-24 起视觉赛道整份不改 `server.py`**)。两处不相邻。
 4. **数据库迁移**:仓里**没有 alembic**(装着包但没有 env.py / 版本链)。加列只走 `katrain/web/core/migrations.py` 的 `add_missing_columns`(在模型上加一列可空列即可,它是幂等的 `ALTER TABLE ADD COLUMN`,SQLite / PG 双兼容)。本轮只有成长赛道 G2 加一列,其余三家零迁移。
 5. **i18n**:四家都只写 `t('ns:key','中文默认')`,**本轮不改任何 `.po`**(并行改 11 份必冲突)。合并完统一交 `katrain-i18n-expert`,各赛道交付时附新增 key 清单。
    **⚠️ 2026-09-23 视觉赛道核到这条已经被取代(只改了本份 PRD)**:(另:这条闸在 develop 上此刻就是红的,见 §7「i18n 闸」一行。)develop 在 09-21 合进了 `tests/web_ui/test_kiosk_i18n.py`,要求 `src/kiosk` 下**每一个** `t('key','中文')` 在 11 个语种里都有真译文(不许空、不许 TODO)。照「不改 `.po`」做,新 key 一进来这条闸就红。设置赛道实际已经各自补译(`d3b446a8`,15 key × 11 语种)。所以视觉赛道的做法是:**新 key 在本赛道内用 `katrain-i18n-expert` 补齐 11 语种**;能复用的现成 key 就复用(V4 复用 `settings:led_serial_connected`)。`.po` 是按条目追加,与别家冲突时手工合并条目即可。
@@ -243,7 +243,7 @@
 | `katrain/web/core/geometry_calibration_service.py` | V1 自动重定位与 `relocate()`;V2 白名单加 `cancelled`(V3 无灯首标本轮不做) | 无(独占) |
 | `katrain/vision/geometry_lock.py`(或新建 `relock.py`) | V1:按新单应重建 lock 的纯函数 | 摆谱链只读它,不改 |
 | `katrain/web/api/v1/endpoints/geometry.py` | 新增 `POST /geometry/relocate` | 无 |
-| `katrain/web/server.py`(:885-897,只改构造调用;`_vision_needs_frames` / `_adjust_led_brightness` 不碰) | V1:把开关接进服务构造(保留 `drift_needed=`) | **成长赛道**改的是 `:1830-1844` / `:3615`,不相邻 |
+| ~~`katrain/web/server.py`~~ | **不改**(2026-09-24:开关用服务的默认参数,不在构造处显式传) | — |
 | `katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx` | V1-b 按钮、V2 判别位与原因、V4 措辞(V3 本轮不做,`canStart` 不动);**保留 `RAW_STREAM_SCALE` / `WARPED_STREAM_SCALE` 与 `onImageLoad` 的乘回**(§2.1) | 无 |
 | `katrain/web/ui/src/kiosk/context/GeometryContext.tsx`、`src/api/geometryApi.ts` | 新增 `relocate()` 动作 | **设置赛道**只消费,不改(§6.0 第 2 条) |
 | `katrain/web/ui/src/kiosk/components/game/RecalibrationModal.tsx` | **本轮不改**;但 V1-b 落地后它那句「重新标定(要清盘)」就不再是唯一出路 ⇒ 登记给**对弈赛道**(A21) | play-ai |

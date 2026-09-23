@@ -22,7 +22,7 @@
 
 - worktree `/Users/fan/Repositories/katrain-kiosk-go-vision`(分支 `feature/kiosk-go-vision`,基线 **`a512aa6a`** = 2026-09-24 合入 origin/develop(此前 `a586026b` / 原基线 `7a152df1`);**「识别优化零改动」一律对 `git merge-base HEAD origin/develop` 比,不写死提交号**;**不 push、不合并 develop**。
 - Python 环境 `uv sync --extra web --extra vision`(光 `uv sync` 缺 fastapi ⇒ 基线会静默变空;光 `--extra web` 缺 OpenCV ⇒ 视觉测试在收集阶段全部报错,2026-09-23 实测);前端 `cd katrain/web/ui && npm ci`。
-- **识别优化零改动(PRD §2.1 R4)**:`katrain/vision/{worker_inprocess,board_state,parallax,parallax_store,reference_frame,camera,service}.py`、`katrain/web/core/led_service.py` 一行不改;`server.py` 只改 `GeometryCalibrationService(...)` 构造调用(`:885-897`),**保留 `drift_needed=`**;`GeometryCalibrationScreen.tsx` 里的 `RAW_STREAM_SCALE` / `WARPED_STREAM_SCALE` 与 `onImageLoad` 乘回照原样保留。收尾由 Task 10 Step 2b 对 `git merge-base HEAD origin/develop` 核。
+- **识别优化零改动(PRD §2.1 R4)**:`katrain/vision/{worker_inprocess,board_state,parallax,parallax_store,reference_frame,camera,service}.py`、`katrain/web/core/led_service.py` 一行不改;`katrain/web/server.py` **不改**(含 `drift_needed=` 那一行与 `_vision_needs_frames` / `_adjust_led_brightness`);`GeometryCalibrationScreen.tsx` 里的 `RAW_STREAM_SCALE` / `WARPED_STREAM_SCALE` 与 `onImageLoad` 乘回照原样保留。收尾由 Task 10 Step 2b 对 `git merge-base HEAD origin/develop` 核。
 - **新锁的唯一交付口是 `on_success`**(PRD §2.1 R1):不许直接调 worker / extractor,不许原地改旧锁对象。**重定位期间不调 `on_suspend`**(R3:挂起会让 `recognition_ready` 掉下来,守卫把对局屏换成标定台)。
 - **朝向**(R2):任何从外框法得到的锁,四角顺序都必须对齐到旧锁;对不齐就当失败处理。
 - **硬规矩:LED 绝不为几何自动点亮。** 本轮新增的两条重定位路径都走 `Scenario`(`RUNTIME_RECALIBRATION` / `MANUAL_FALLBACK` 里 `outer_corner` 排第一),**不许**把 `led` 传进 `CalibrationContext`,也不许新增任何「自动闪灯」分支。这条有一条结构闸测试守着(Task 4)。
@@ -45,7 +45,7 @@
 | `tests/test_geometry_calibration_service.py` | 追加 | V1 V2 的七条(含两条反向闸与一条结构闸) |
 | `katrain/web/api/v1/endpoints/geometry.py` | 新增 `POST /relocate` | V1-b |
 | `tests/test_geometry_api.py` | 追加 | 端点两条 |
-| `katrain/web/server.py` | 只改 `:885-897`(`GeometryCalibrationService(...)` 构造调用加开关) | V1 |
+| ~~`katrain/web/server.py`~~ | **不改**(服务默认参数就是开关常量;显式导入会让 lifespan 测试的假模块 ImportError) | — |
 | `katrain/web/ui/src/api/geometryApi.ts`(共享) | 新增 `relocate()` | V1-b |
 | `katrain/web/ui/src/kiosk/context/GeometryContext.tsx` | 新增 `relocate` 动作 | V1-b |
 | `katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx` | V1-b 按钮、V2 判别位与原因、V4 措辞、V6 注释;`canStart` 不动(V3 不做);推流缩放那段不动 | 前端主体 |
@@ -560,8 +560,8 @@ EOF
 
 **Files:**
 - Modify: `katrain/web/core/geometry_calibration_service.py`
-- Modify: `katrain/web/server.py`(只改 `:840` 的 import 与 `:885-897` 的 `GeometryCalibrationService(...)` 构造调用)
-- Test: `tests/test_geometry_calibration_service.py`(追加 13 条,含两条反向闸、一条结构闸、三条并发/交付闸);`tests/web_ui/test_board_lifespan_camera_degraded.py`(不改,跑它兜 `server.py` 那段构造)
+- **不改** `katrain/web/server.py`(见 Step 3 末尾)
+- Test: `tests/test_geometry_calibration_service.py`(追加 15 条,含两条反向闸、一条结构闸、四条并发/交付闸、一条相机掉线);`tests/web_ui/test_board_lifespan_camera_degraded.py`(不改,跑它兜 `server.py` 那段构造)
 
 **Interfaces:**
 - Consumes:Task 3 的 `relock_with_homography(lock, M, Minv, *, frame_size, confidence)`;Task 2 的 `_REUSABLE_PHASES`。
@@ -607,11 +607,11 @@ class _Calls:
         self.success, self.degraded, self.suspend, self.persist = [], [], [], []
 
 
-def _relocating_service(*, selector, auto_relocate=True, phase="ready"):
+def _relocating_service(*, selector, auto_relocate=True, phase="ready", capture=None):
     calls = _Calls()
     service = GeometryCalibrationService(
         led=FakeLed(),
-        capture=FreshFakeCapture(),
+        capture=capture or FreshFakeCapture(),
         # 用 persist_state 而不是 save_path:这样「写没写盘」能直接数(不写盘是本条路的约束)
         persist_state=lambda lock, strategy, before_publish: calls.persist.append(lock),
         initial_lock=_lock(IMG_QUAD),
@@ -741,18 +741,89 @@ def test_manual_relocate_refuses_while_a_calibration_runs():
     service.stop()
 
 
-def test_start_and_reuse_are_refused_while_relocating():
-    """重定位占着互斥时,「重新开始标定」与「沿用上次标定」都得等 —— 否则两边互相覆盖 current_lock / phase。"""
-    service, _calls = _relocating_service(selector=_FakeSelector(M=None), phase="failed")
-    service._relocating = True                                     # 造「正在重定位」:判据只看这个标志
+class _BlockingSelector(_FakeSelector):
+    """外框检测「正在跑」:进来就停住,等测试放行。用来在**真的** relocate 窗口里戳别的入口。"""
+
+    def __init__(self, M):
+        super().__init__(M=M)
+        self.entered, self.release = threading.Event(), threading.Event()
+
+    def calibrate(self, scenario, ctx):
+        self.entered.set()
+        self.release.wait(timeout=5)
+        return super().calibrate(scenario, ctx)
+
+
+def test_start_reuse_and_a_second_relocate_are_refused_while_a_real_relocation_runs():
+    """互斥要覆盖**整个**窗口 —— 在线程里真跑一次 relocate,卡在外框检测里,再去按别的键。
+    (只把 `_relocating` 手动设成 True 的测试证明不了「从占住到结果落定」。)"""
+    selector = _BlockingSelector(M=_outer_M(IMG_QUAD + BUMP))
+    service, _calls = _relocating_service(selector=selector, phase="failed")
+    worker = threading.Thread(target=service.relocate, kwargs={"trigger": "manual"}, daemon=True)
+    worker.start()
+    assert selector.entered.wait(timeout=2)
     try:
         with pytest.raises(CalibrationBusy):
             service.start(trigger="manual", empty_confirmed=True)
         # confirm_existing 走 ValueError:/confirm-existing 只把 ValueError 映射成 409(geometry.py:146)
         with pytest.raises(ValueError, match="relocation in progress"):
             service.confirm_existing()
+        with pytest.raises(CalibrationBusy):
+            service.relocate(trigger="manual")
     finally:
-        service._relocating = False
+        selector.release.set()
+        worker.join(timeout=5)
+    assert service.status()["phase"] == "ready"
+    service.stop()
+
+
+def test_ready_is_not_published_before_the_new_lock_is_delivered():
+    """先交付、后发布:on_success 还没回来时,status() 不许说 ready,current_lock / revision 不许换。"""
+    service, _calls = _relocating_service(selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded")
+    old_lock, old_revision = service.current_lock, service.status()["geometry_revision"]
+    entered, release = threading.Event(), threading.Event()
+
+    def slow_delivery(_lock):
+        entered.set()
+        release.wait(timeout=5)
+
+    service.on_success = slow_delivery
+    worker = threading.Thread(target=service.relocate, kwargs={"trigger": "manual"}, daemon=True)
+    worker.start()
+    assert entered.wait(timeout=2)
+    try:
+        status = service.status()
+        assert status["phase"] == "degraded"
+        assert status["geometry_revision"] == old_revision
+        assert service.current_lock is old_lock
+    finally:
+        release.set()
+        worker.join(timeout=5)
+    assert service.status()["phase"] == "ready"
+    assert service.current_lock is not old_lock
+    service.stop()
+
+
+class _CameraDropsOnFourthGrab(FreshFakeCapture):
+    """前三次取帧正常(给外框检测),第四次(重建漂移基准)掉线。"""
+
+    def grab_fresh(self, settle_ms=0.0):
+        if self.grab_calls >= 3:
+            self.grab_calls += 1
+            raise RuntimeError("camera dropped")
+        return super().grab_fresh(settle_ms=settle_ms)
+
+
+def test_a_camera_that_drops_while_rearming_drift_is_a_clean_failure():
+    """重建漂移基准时相机掉线:干净的失败(400 + 原因),不是 500,也不发布新锁。"""
+    service, calls = _relocating_service(
+        selector=_FakeSelector(M=_outer_M(IMG_QUAD + BUMP)), phase="degraded", capture=_CameraDropsOnFourthGrab()
+    )
+    with pytest.raises(ValueError, match="drift_setup_failed"):
+        service.relocate(trigger="manual")
+    assert service.status()["phase"] == "degraded"
+    assert service.status()["relocate_error"] == "drift_setup_failed"
+    assert calls.success == []
     service.stop()
 
 
@@ -778,11 +849,14 @@ def test_a_relocation_that_cannot_be_delivered_does_not_claim_ready():
     def boom(_lock):
         raise RuntimeError("worker gone")
 
+    old_lock, old_revision = service.current_lock, service.status()["geometry_revision"]
     service.on_success = boom
     with pytest.raises(ValueError, match="delivery_failed"):
         service.relocate(trigger="manual")
     assert service.status()["phase"] == "degraded"
     assert service.status()["relocate_error"] == "delivery_failed"
+    assert service.current_lock is old_lock                    # 没交付的锁不许留在服务里
+    assert service.status()["geometry_revision"] == old_revision
     assert calls.degraded == [True]
     service.stop()
 ```
@@ -874,12 +948,12 @@ _RELOCATABLE_PHASES = frozenset({"degraded", "cancelled", "failed"})
 
 ```python
     def _relocate(self, scenario, *, trigger: str, allowed_phases) -> str | None:
-        """外框重定位一次:占住互斥 → 取帧 → 选择器 → relock → 装上并交付。成功回 None,失败回原因串。
+        """外框重定位一次:占住互斥 → 取帧 → 选择器 → relock → 交付 → 发布。成功回 None,失败回原因串。
 
         **绝不亮灯**:`Scenario` 决定 allow_led,而且这里根本不把 `led` 交给 `CalibrationContext`(防御在两层)。
         **不写盘**:磁盘上那份是 LED 13 点的 golden reference,外框法是本次开机的运行时修正。
-        **不挂起识别**(PRD §2.1 R3)。互斥从占住一直持有到交付完成,期间 start / confirm_existing /
-        另一次 relocate 都进不来 —— 否则两边会互相覆盖 current_lock 与 phase。
+        **不挂起识别**(PRD §2.1 R3)。互斥从占住一直持有到**结果落定**(成功发布,或失败原因写进 status),
+        期间 start / confirm_existing / 另一次 relocate 都进不来 —— 否则两边会互相覆盖 current_lock、phase 与错误。
         """
         with self._lock:
             if self._relocating or (self._thread is not None and self._thread.is_alive()):
@@ -890,13 +964,17 @@ _RELOCATABLE_PHASES = frozenset({"degraded", "cancelled", "failed"})
                 raise ValueError("no existing geometry to relocate")
             self._relocating = True
             lock = self.current_lock
+        reason = None
         try:
             new_lock, reason = self._compute_relocation(lock, scenario)
-            if new_lock is None:
-                return reason
-            return self._adopt_relocated_lock(new_lock, trigger=trigger)
+            if new_lock is not None:
+                reason = self._adopt_relocated_lock(new_lock, trigger=trigger)
+            return reason
         finally:
             with self._lock:
+                # 失败原因在**放开互斥之前**落定:放开之后别的请求可能已经开始下一轮,再写就盖到下一轮身上。
+                if reason is not None:
+                    self._status["relocate_error"] = reason
                 self._relocating = False
 
     def _compute_relocation(self, lock, scenario):
@@ -907,16 +985,22 @@ _RELOCATABLE_PHASES = frozenset({"degraded", "cancelled", "failed"})
         if grab is None:
             return None, "no_capture"
         frames = []
-        for _ in range(3):
-            frame, _seq, _ts = grab(settle_ms=0.0)   # grab_fresh 自己会把空闲的相机叫醒(develop 275625ec)
-            if frame is not None:
-                frames.append(frame)
+        try:
+            for _ in range(3):
+                frame, _seq, _ts = grab(settle_ms=0.0)   # grab_fresh 自己会把空闲的相机叫醒(develop 275625ec)
+                if frame is not None:
+                    frames.append(frame)
+        except Exception as exc:                      # 相机掉线:干净的失败,不是 500
+            logger.warning("relocation could not read frames: %s", exc)
+            return None, "no_frame"
         if not frames:
             return None, "no_frame"
         height, width = frames[0].shape[:2]
         ctx = CalibrationContext(
             frames=frames, board=None, geometry=lock, led=None, capture=self.capture, out_size=int(lock.out_size)
         )
+        # 选择器**不包 try**:OuterCornerStrategy 找不到盘回的是 ok=False,抛异常只可能是 bug ——
+        # 也包括测试里那条「led 不许交给策略」的断言,包住就把结构闸吞了。
         out = self._get_selector().calibrate(scenario, ctx)
         if not out.ok or out.M is None:
             return None, out.reason or "relocate_failed"
@@ -929,9 +1013,22 @@ _RELOCATABLE_PHASES = frozenset({"degraded", "cancelled", "failed"})
             return None, str(exc)
 
     def _adopt_relocated_lock(self, lock, *, trigger: str) -> str | None:
-        """装上新锁:换 lock、重置漂移基准、revision+1、状态回 ready,再经 on_success 交付(PRD §2.1 R1)。
-        交付失败**不许停在 ready**:降级、说清原因、让下游清掉几何 —— 与漂移降级同一条出路。"""
-        monitor = self._prepare_drift_monitor(lock)
+        """**先交付、后发布**:on_success 成功之前,status() 不许说 ready,current_lock / revision 不许换
+        (否则慢回调期间前端看到假 ready,回调失败后服务里还留着一把没交付的锁)。
+        交付失败 ⇒ 旧锁与 revision 原样留着,降级、让下游清掉几何 —— 与漂移降级同一条出路。"""
+        try:
+            monitor = self._prepare_drift_monitor(lock)   # 要取一帧:相机可能正好掉线(同文件已有这种用例)
+        except Exception as exc:
+            logger.warning("relocation could not re-arm drift monitoring: %s", exc)
+            return "drift_setup_failed"
+        try:
+            self.on_success(lock)
+        except Exception as exc:
+            logger.warning("relocated geometry could not be delivered: %s", exc)
+            with self._lock:
+                self._status.update(phase="degraded", error="board_moved")
+            self.on_degraded()
+            return "delivery_failed"
         with self._lock:
             self.current_lock = lock
             self._drift_monitor = monitor
@@ -940,14 +1037,6 @@ _RELOCATABLE_PHASES = frozenset({"degraded", "cancelled", "failed"})
                 phase="ready", session_calibrated=True, last_valid=True, trigger=trigger, error=None, relocate_error=None
             )
             self._status["metrics"] = {**self._status["metrics"], "relocated": 1.0}
-        try:
-            self.on_success(lock)
-        except Exception as exc:
-            logger.warning("relocated geometry could not be delivered: %s", exc)
-            with self._lock:
-                self._status.update(phase="degraded", error="board_moved", relocate_error="delivery_failed")
-            self.on_degraded()
-            return "delivery_failed"
         return None
 ```
 
@@ -1010,31 +1099,19 @@ _RELOCATABLE_PHASES = frozenset({"degraded", "cancelled", "failed"})
 
         reason = self._relocate(Scenario.MANUAL_FALLBACK, trigger=trigger, allowed_phases=_RELOCATABLE_PHASES)
         if reason is not None:
-            if reason != "delivery_failed":
-                with self._lock:
-                    self._status["relocate_error"] = reason
-            raise ValueError(reason)
+            raise ValueError(reason)          # relocate_error 已在 _relocate 放开互斥之前写好
         return self.status()
 ```
 
-`server.py`:**只改 `:885-897` 那个构造调用**,加一行参数;常量要从模块里导进来(`:840` 那行 import 现在只导了类,照抄会 `NameError`):
-
-```python
-        from katrain.web.core.geometry_calibration_service import AUTO_RELOCATE_ON_DRIFT, GeometryCalibrationService
-        ...
-            drift_needed=lambda: _vision_needs_frames(app),   # 原样留着
-            # 漂移后自动用外框找回几何:**默认关**,等满盘精度上板闸与识别栅栏(见
-            # geometry_calibration_service 顶部的 AUTO_RELOCATE_ON_DRIFT)。用户按的「对齐外框」不受它影响。
-            auto_relocate=AUTO_RELOCATE_ON_DRIFT,
-```
+`server.py`:**不改**(2026-09-24 Codex 第 2 轮后定)。服务构造参数 `auto_relocate` 的默认值就是 `AUTO_RELOCATE_ON_DRIFT`,不显式传也是它;而显式导入这个常量会让 `tests/web_ui/test_board_lifespan_camera_degraded.py:357-361`、`:706-710` 注入的假模块(只给了 `GeometryCalibrationService`)在 lifespan 里 `ImportError`。开关的说明写在服务模块顶部那段注释里。
 
 - [ ] **Step 4: 跑,确认通过**
 
 ```bash
 CI=true uv run pytest tests/test_geometry_calibration_service.py tests/test_relock.py -q
-# server.py 那段构造只有 lifespan 测试走得到 —— 照抄出 NameError 时单测全绿、只有它红
+# server.py 不改;跑 lifespan 测试确认服务构造签名的变化没把 board 模式的启动打坏
 CI=true uv run pytest tests/web_ui/test_board_lifespan_camera_degraded.py -q
-uv run black -l 120 katrain/web/core/geometry_calibration_service.py katrain/web/server.py
+uv run black -l 120 katrain/web/core/geometry_calibration_service.py
 ```
 
 - [ ] **Step 5: 结构闸单独跑一遍(它守的是硬规矩)**
@@ -1047,7 +1124,7 @@ uv run python -c "from katrain.vision.calibration_strategy import Scenario; asse
 - [ ] **Step 6: 提交**
 
 ```bash
-git add katrain/web/core/geometry_calibration_service.py katrain/web/server.py tests/test_geometry_calibration_service.py
+git add katrain/web/core/geometry_calibration_service.py tests/test_geometry_calibration_service.py
 git commit -m "$(cat <<'EOF'
 feat(vision): 漂移后先用外框自动重定位,并给出用户按的 relocate()
 
@@ -1243,6 +1320,7 @@ async def geometry_relocate(request: Request):
                   <button
                     type="button"
                     className="kiosk-btn kiosk-btn--secondary"
+                    data-testid="calib-relocate"
                     disabled={!cameraReady || relocating}
                     onClick={() => void handleRelocate()}
                   >
@@ -1277,14 +1355,14 @@ async def geometry_relocate(request: Request):
   // 诊断卡:**把 `:352-355` 那个 `const diagnostic` 整个换成这一段** —— 刚按的「对齐外框」没成,排在最前;
   // 原来那条链接在它后面,一字不改。
   const diagnostic: Diagnostic | null = relocateError
-    ? { title: t('vision:relocate_failed_title', '没对上'), body: relocateError, action: '' }
+    ? { kind: 'relocate', title: t('vision:relocate_failed_title', '没对上'), body: relocateError, action: '' }
     : failed ? buildDiagnostic(status.error)
       : phase === 'degraded' ? buildDiagnostic('board_moved')
         : actionError ? { title: '操作没有生效', body: actionError, action: '再试一次；一直不行就检查摄像头和灯带的接线。' }
           : null;
 ```
 
-⚠️ 写之前回读 `Diagnostic` 类型与诊断卡的渲染:`action` 为空串时那一行要不渲染(没有就加一个 `diagnostic.action &&` 的判断)。
+同时改 `Diagnostic`(`:70`)与诊断卡渲染(`:434-437`):类型加 `kind?: 'relocate'`;卡片 div 加 `data-kind={diagnostic.kind ?? 'status'}`(承重测试靠它分辨「这张卡是对齐失败那张」—— `degraded` 态本来就有一张诊断卡,只等 testid 什么也证明不了);`<p><b>{diagnostic.action}</b></p>` 改成 `{diagnostic.action && <p><b>{diagnostic.action}</b></p>}`(对齐失败那张没有 action)。
 phase 一变(比如对齐成功回到 ready、或用户转去重新标定),`relocateError` 要清掉 —— 加一个 `useEffect(() => { setRelocateError(null); }, [phase]);`。
 
 (新文案的 11 语种译文**不在这里做**,统一在 Task 7b 收口 —— Task 2 / 5 / 7 都会加 key,分三次补会三次冲 `.po`。)
@@ -1578,9 +1656,9 @@ cd /Users/fan/Repositories/katrain-kiosk-go-vision
 git add katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx \
         katrain/web/ui/src/kiosk/__tests__/GeometryCalibrationScreen.test.tsx \
         katrain/web/ui/src/kiosk/components/layout/GoConsoleRail.tsx \
-        katrain/web/ui/src/kiosk/components/layout/GoConsoleRail.test.tsx \
-        katrain/web/ui/src/kiosk/components/physical/PoseLostBanner.tsx \
-        katrain/web/ui/src/kiosk/__tests__/PoseLostBanner.test.tsx
+        katrain/web/ui/src/kiosk/components/layout/GoConsoleRail.test.tsx
+# PoseLostBanner 两个文件已由 Step 2 的 `git rm` 暂存为删除;再 `git add` 它们会报 pathspec did not match
+git diff --cached --name-only      # 核对:恰好上面四个文件 + 两个删除
 git commit -m "$(cat <<'EOF'
 fix(vision): 「LED 就绪」改成「串口已连接」/「已连接」;删掉零消费者的 PoseLostBanner
 
@@ -1708,23 +1786,41 @@ EOF
 最满 = `degraded` + 诊断卡 + 对齐失败那句 + **三颗键**(重新开始标定 / 沿用上次标定 / 对齐外框)。
 「最空不塌」既有的 `§11 标定屏:头尾钉死…总高正好 460` 已经在量(`required` 常态),不重复写。
 
+先给既有的两个辅助函数加一个语言参数(默认 `'cn'`,既有调用一个字不用改)。**不要靠再注册一个 init script 去覆盖语言** ——Playwright 不保证多个 init script 的执行顺序(Codex 第 2 轮):
+
+```ts
+// tests/kiosk-shell-geometry.spec.ts:21
+const boot = async (page: Page, path: string, lang = 'cn') => {
+  await page.addInitScript((l) => {
+    localStorage.setItem('token', 'kiosk-shell-geometry');
+    localStorage.setItem('katrain_language', l);
+  }, lang);
+  ...                                     // 其余一字不动
+
+// :1705
+const bootCalib = async (page: Page, over: Record<string, unknown>, lang = 'cn') => {
+  ...
+  await boot(page, '/kiosk/vision/setup', lang);
+  ...                                     // 其余一字不动
+```
+
 ```ts
 // 追加到 tests/kiosk-shell-geometry.spec.ts,紧跟既有「§11 标定屏:失败时多一张诊断卡…」那条之后
 for (const lang of ['cn', 'de'] as const) {
   test(`§11 标定屏(${lang}):degraded + 对齐外框失败 + 三颗键,键不溢出、不被顶出去,中段自己滚`, async ({ page }) => {
-    await bootCalib(page, { phase: 'degraded', error: 'board_moved', last_valid: true });
-    if (lang !== 'cn') {
-      // boot() 的 init script 钉的是 cn;后注册的 init script 后执行 ⇒ 覆盖成目标语种,再重载一次
-      await page.addInitScript((l) => localStorage.setItem('katrain_language', l), lang);
-      await page.reload();
-      await page.waitForSelector('[data-testid="calib-step"]');
-    }
+    await bootCalib(page, { phase: 'degraded', error: 'board_moved', last_valid: true }, lang);
     // **在 bootCalib 之后注册**:Playwright 后注册的先匹配,早注册会被 boot 的兜底路由盖掉(见 bootCalib 的注释)
-    await page.route('**/api/v1/geometry/relocate', (r) => r.fulfill({ status: 400, json: { detail: 'no_board_detected' } }));
+    let relocateCalls = 0;
+    await page.route('**/api/v1/geometry/relocate', (r) => {
+      relocateCalls += 1;
+      return r.fulfill({ status: 400, json: { detail: 'no_board_detected' } });
+    });
     const acts = page.locator('.calib-acts');
     await expect(acts.locator('.kiosk-btn')).toHaveCount(3);
-    await acts.locator('.kiosk-btn').nth(2).click();              // 第三颗 = 对齐外框(不按文字找:德文下文字不同)
-    await page.waitForSelector('[data-testid="geometry-diagnostic-card"]');
+    await page.getByTestId('calib-relocate').click();             // 按 testid 找:顺序与德文文字都不可靠
+    // degraded 态本来就有一张诊断卡 ⇒ 只等 testid 什么也证明不了;等的是「对齐失败」那一张
+    await page.waitForSelector('[data-testid="geometry-diagnostic-card"][data-kind="relocate"]');
+    expect(relocateCalls, '对齐外框没有真的打到 /geometry/relocate').toBe(1);
 
     const m = await calibBoxes(page);
     expect(m.rail.h, '右栏高度被诊断卡顶变了').toBe(460);
@@ -1828,7 +1924,7 @@ EOF
 # 追加到 tests/test_vision/test_outer_corner_accuracy.py
 import io
 
-from katrain.vision.tools.outer_corner_accuracy import corner_error_cells, grab_mjpeg_frames, grid_error_cells, measure_real
+from katrain.vision.tools.outer_corner_accuracy import corner_error_cells, grab_mjpeg_frames, grid_error_cells, live_gate, measure_real
 
 
 def _blank_frames(n):
@@ -1848,6 +1944,13 @@ def test_measure_real_scores_every_frame_against_the_reference_quad():
 def test_measure_real_passes_when_every_detection_is_close():
     res = measure_real(_blank_frames(2), QUAD, detect_fn=lambda f: QUAD + np.array([1, 0]))
     assert gate(res, max_error_cells=0.12) is True
+
+
+def test_live_gate_needs_most_frames_detected():
+    """十帧里只认出一帧、那一帧还合格 —— 不许算过:`gate()` 会丢掉所有 None,样本太少的「过」不是证据。"""
+    assert live_gate({0: 0.01, 1: None}) is False
+    assert live_gate({i: 0.05 for i in range(8)} | {8: None, 9: None}) is True      # 8/10 且都合格
+    assert live_gate({i: 0.05 for i in range(7)} | {i: None for i in range(7, 10)}) is False
 
 
 def test_one_bad_corner_is_not_hidden_by_the_median():
@@ -1912,6 +2015,16 @@ def grid_error_cells(detected_quad, true_quad) -> float:
     diag = 0.5 * (np.linalg.norm(tq[2] - tq[0]) + np.linalg.norm(tq[3] - tq[1]))
     cell_px = diag / (18.0 * np.sqrt(2.0))
     return float(np.max(np.linalg.norm(a.astype(np.float64) - b.astype(np.float64), axis=1)) / cell_px)
+
+
+def live_gate(res, max_error_cells: float = 0.12, min_detect_ratio: float = 0.8) -> bool:
+    """Real-board gate: at least ``min_detect_ratio`` of the frames must find the board AND every
+    frame that did must be under ``max_error_cells``. ``gate()`` drops None, so one good frame out
+    of ten would pass it -- too few samples to be evidence for turning the auto switch on."""
+    found = [e for e in res.values() if e is not None]
+    if not res or len(found) < min_detect_ratio * len(res):
+        return False
+    return all(e < max_error_cells for e in found)
 
 
 def measure_real(frames, true_quad, detect_fn: Optional[Callable] = None):
@@ -1996,7 +2109,7 @@ if __name__ == "__main__":
         print(f"frame={i:>2}  err={'DETECT_FAIL' if err is None else f'{err:.3f} cells'}")
     found = [e for e in res.values() if e is not None]
     print(f"detected {len(found)}/{len(res)}  worst-intersection={max(found):.3f} cells" if found else "detected 0")
-    print(f"GATE(<0.12 cells) = {gate(res)}")
+    print(f"GATE(<0.12 cells, >=80% frames detected) = {live_gate(res)}")
 ```
 
 - [ ] **Step 4: 跑测试 + 合成模式没被改坏**
@@ -2059,10 +2172,9 @@ rg -n "上板|真机" superpowers/tracks/sbc-baipu-led-guide/plan.md | sed -n '1
   1. 空盘先跑一次(对照):`uv run python -m katrain.vision.tools.outer_corner_accuracy --live http://127.0.0.1:8081`
   2. 轻手摆到约 60 子(别碰盘),再跑一次;有余力摆到约 150 子跑第三次。
   **不带 `--live` 跑出来的是合成图**,只是下界,不能当这道闸。
-- **判据**:每一次都 `GATE(<0.12 cells) = True`(`outer_corner_accuracy.py` 的 `gate`)。
+- **判据**:每一次都 `GATE(<0.12 cells, >=80% frames detected) = True`(`outer_corner_accuracy.py` 的 `live_gate`:19×19 网格最大误差,且至少八成帧认出盘)。
   空盘那次就已 ≥ 0.12 ⇒ 外框法与 LED 法本身有系统偏差,同样算不过。
-  摆子时碰了盘 ⇒ 这组作废,回空盘重标重测。`detected k/n` 照实记:找不到盘时自动重定位会退回 `degraded`,
-  不串位但帮不上忙 —— 这个数决定开关打开后值不值,不决定安不安全。
+  摆子时碰了盘 ⇒ 这组作废,回空盘重标重测。`detected k/n` 照实记;低于八成 `live_gate` 就判不过 —— 十帧只认出一两帧时「那一两帧合格」样本太少,算不了证据(Codex 第 2 轮)。
 - **记录**:每次的 `detected` 与 `max` 写回本文件这一节 + 在 PR 里贴一行。**过了才允许把
   `AUTO_RELOCATE_ON_DRIFT` 翻成 `True`,并且要和结果同一次提交。**
 ```
@@ -2132,8 +2244,7 @@ DEV="$(git merge-base HEAD origin/develop)"   # 合进来的 develop;再合一�
 git diff --stat "$DEV" -- katrain/vision/worker_inprocess.py katrain/vision/board_state.py katrain/vision/parallax.py \
   katrain/vision/parallax_store.py katrain/vision/reference_frame.py katrain/vision/camera.py katrain/vision/service.py \
   katrain/web/core/led_service.py                                   # 预期:空
-git diff -U0 "$DEV" -- katrain/web/server.py | grep '^@@'           # 预期:每个 hunk 都落在 GeometryCalibrationService(...) 那一段
-git diff "$DEV" -- katrain/web/server.py | grep -c '^[+-].*drift_needed'   # 预期:0(那一行没被增删;只数 +/- 行,上下文行不算)
+git diff --stat "$DEV" -- katrain/web/server.py                       # 预期:空(本赛道不改 server.py)
 git diff "$DEV" -- katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx | grep -c '^[+-].*STREAM_SCALE'   # 预期:0
 BASE="$(git rev-parse --absolute-git-dir)/vision-baseline"
 xargs env CI=true uv run pytest -q < "$BASE/recog-tests.txt" 2>&1 | tail -1   # 预期:与 Task 1 Step 2b 同数全过(再加本赛道新增的用例)

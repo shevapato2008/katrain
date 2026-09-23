@@ -38,7 +38,7 @@
 - 管理员标志和鉴权已有：`users.is_admin`（`katrain/web/core/models_db.py:83`），`get_current_admin_user`（`katrain/web/api/v1/endpoints/auth.py:155`，服务端模式下只认 `Authorization: Bearer`）。全仓只有计费的两个接口在用它。`/auth/me` 已经返回 `is_admin`，但前端的 User 类型里没声明这个字段。
 - 公开应用是 `create_app()`（`server.py:913`，2476 行的工厂，路由都是它内部的闭包），**没有办法只拿一部分出来复用**。以独立进程共享同一个 Postgres 的先例是 `katrain/cron`。
 - 建表全靠公开 web 启动时的 `init_db()`：`models_db.Base.metadata.create_all` 加 `migrations.py` 补列补索引（`katrain/web/core/auth.py:118`）。**cron 从来不建表**，它和 web 对同一张表各写一个 ORM 类（例如 `report_tasks`）。
-- 测试机上 cron 的镜像**只有 `katrain/cron/`**（`Dockerfile.cron`），由 `tests/web_ui/test_cron_import_boundary.py` 守着；生产上的 cron 跑的是 web 镜像（`CRON_IMAGE`）。
+- cron 的镜像**只有 `katrain/cron/`**（`Dockerfile.cron`），由 `tests/web_ui/test_cron_import_boundary.py` 守着。两台机器都是这样：生产的 `CRON_IMAGE` 也是用 `docker build --pull=false -f Dockerfile.cron` 单独构建的（见 release 分支 runbook 2026-09-06 那一条）。
 - cron 有 9 个任务：7 个 APScheduler 定时任务（`scheduler.py:34-69`，另外启动时还会立刻各跑一次），2 个常驻循环（直播分析 `analyze`、用户复盘 `report_analyze`）。**没有任何运行记录**。不少任务会吞掉自己的异常（例如 `cleanup.py:103` 的 `except Exception: logger.exception(...)`），所以在外面包一层只能看到「没抛异常」，看不到「失败了」。
 - 部署有两套：
   - 测试机 home-ubuntu 用根目录的 `docker-compose.yml`（develop 分支），katrain-web 绑在所有网卡的 8001，阿里云网关经 WireGuard 访问 `10.8.0.2:8001`。

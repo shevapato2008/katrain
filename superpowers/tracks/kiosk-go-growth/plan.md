@@ -14,6 +14,55 @@
 
 **Spec:** `superpowers/tracks/kiosk-go-growth/prd.md`
 
+## 执行中的更正(2026-09-22,核对真实代码后)
+
+> 下面各 Task 正文保留原样作为当时的设想;**与本节冲突时以本节为准**。
+
+**流程**:按垂直切片执行 —— 三个切片的前端先做完、四图经 Fan 确认(2026-09-22「过」,连同契约),
+再按 G2 → G1 → G3 做后端。
+
+**G2(Task 2/3)**
+1. `_user_seat` 放在 `server.py` **模块顶层**(`_record_platform_engine_game` 旁边):计划写的「与
+   `_record_ai_game_locked` 同一层」是 `create_app` 里的嵌套函数,测试 import 不到;也避开视觉赛道
+   正在改的 `create_app` 前那一段(:761-826)。
+2. **计划漏了盒子 → 云端那一跳**:盒上的局是 POST 云端 `/api/v1/user-games/` 写进去的,
+   `UserGameCreate` 没有 `user_color` 时 pydantic 静默丢掉。已加 `Optional[Literal["B","W"]]`,
+   本机落库那一支也透传。
+3. **云端建升降级对局行**(`AiLadderRankedRepository._create_or_validate_user_game`)也要写执色,
+   取自预约记录 `row.user_color`;不进 `expected` 比对(老行是 NULL)。盒子的结算载荷按白名单
+   `GAME_RECORD_FIELDS` 转发(`AiLadderGameRecordPayload` 是 `extra="forbid"`),`user_color`
+   不在白名单里 —— 这正是它不会把结算同步打成 422 的原因,**别把它加进白名单**。
+4. `decided_since` 的执色 = `COALESCE(user_games.user_color, ai_ladder_game_ledger.user_color)`:
+   这一列诞生之前的升降级局在账本里早就记着执色,读它不是追认;不读的话部署当天只下升降级的人
+   胜率会从有数变成「—」最长 30 天。其余历史行仍不回填。
+5. 计划说 `rankedWinrate` 有 galaxy 在用 —— 实际只有 `GrowthPage` 一个调用者。
+6. `tests/platforms/test_growth_summary.py` 原先断言 `UserGame` **没有** `user_color` —— 前提变了,那句删掉。
+7. `black` 只对基线上本来就 black 干净的文件整文件跑;`models_db.py` / `server.py` /
+   `test_growth_authority.py` 在基线上不干净,整文件跑会带出几十行无关改动(其中一处在视觉赛道的区域),
+   这三份只手写自己的那几行。
+8. **部署顺序:先云端再盒子。** 老云端会静默丢掉新盒子传来的 `user_color`,那些局永远算不进胜率。
+
+**G3(Task 8)**
+9. 类名是 `AiLadderRankedRepository`,不是 `AiLadderRepository`;计划里的账本种子过不了
+   `ck_ai_ladder_ledger_decision`(counted 的行要 config_snapshot / certified / available / route),
+   照 `tests/platforms/test_growth_summary.py::_ledger` 造。
+10. 前端纯函数改名 `trendGeometry.ts`:`rungTrend.ts` 与 `RungTrend.tsx` 在 macOS 大小写不敏感的
+    文件系统上互相顶替。横轴是近 30 天窗口本身(不是首末两点拉满),窗口外的点丢掉。
+
+**G4(Task 8b,2026-09-22 Fan 新增)**
+11. G1–G3 四图确认后 Fan 加了「近一年练棋日历」,裁定与契约见 `prd.md` §3 G4。前端与重出的参考图
+    已在 `0739d220`;Task 8b 只展开后端与集成。日历进右栏后第一次量最满态溢出 94px,为此诊断块三段
+    行距 12→8、三句样本说明并成一段 —— **已确认过的 G1 诊断块因此微调**,四图里看得见。
+
+**合并时(2026-09-23)**
+12. **`.po` 这一轮还是改了**,与 Global Constraints 里「不改 `.po`」相反:那条约束的理由是四条赛道
+    并行改 11 份必冲突,而合并是单独进行的。真正的原因是 develop 在本赛道基线之后新增了
+    `tests/web_ui/test_kiosk_i18n.py`(整棵 kiosk 树的 key 都要有真译文),不补译文合进去 develop 就是红的。
+    照设置赛道 `d3b446a8` 的做法:43 个 key 写进 `scripts/batch_translate_galaxy.py` → 跑它 → `python i18n.py`。
+13. 两处排版约束是真浏览器量出来的:星期列 12px/9px 只放得下一个字符(拉丁语种用单字母),
+    图例行 84px 被格子吃掉 60px(非 CJK 用 − / +);es/fr/tr 的「下过棋或解过题」第一版会折成两行、
+    把日历撑高 15px,改短后 11 个语种的日历都是 109px,与 cn 量过的那条承重结论一致。
+
 ## Global Constraints
 
 > **开工前先读 `prd.md` §6.0**:四条新赛道的共享文件归属与合并顺序。与本 plan 冲突时以 §6.0 为准。
@@ -55,8 +104,11 @@
 | `tests/web_ui/test_growth_trend.py` | **新建** | G3 后端三条(含前提闸) |
 | `katrain/web/ui/src/kiosk/components/growth/RungTrend.tsx` + `rungTrend.ts`(+ 测试) | **新建** | G3:纯函数算折线 + 一块 SVG |
 | `katrain/web/ui/tests/kiosk-screen-22-growth.spec.ts` | 追加三条 | 承重实测(最满 / 最空)+ 走势块 |
+| `katrain/web/core/growth_activity.py` | **新建**(G4) | 按客户端时区逐日数对局(三种来源白名单)与首次解题 |
+| `tests/web_ui/test_growth_activity.py` | **新建**(G4) | 仓储四条 + 端点五条 |
+| `katrain/web/ui/src/kiosk/components/growth/ActivityCalendar.tsx` + `calendarGrid.ts`(+ 测试) | **已建**(G4,`0739d220`) | 纯函数排格子 + 一块日历 |
 
-任务顺序:Task 1 基线 → Task 2 加列与落账(G2 后端) → Task 3 summary 三字段(G2 后端) → Task 4 胜率那一格(G2 前端) → Task 5 诊断聚合(G1 后端) → Task 6 诊断端点(G1 后端) → Task 7 诊断块(G1 前端) → **Task 8 档位走势(G3,前后端)** → Task 9 四图与承重 → Task 10 收尾。**Task 5 依赖 Task 2**(诊断要读执色);Task 8 独立于 G1 / G2,可并行,但四图要等它一起重取。
+任务顺序:Task 1 基线 → Task 2 加列与落账(G2 后端) → Task 3 summary 三字段(G2 后端) → Task 4 胜率那一格(G2 前端) → Task 5 诊断聚合(G1 后端) → Task 6 诊断端点(G1 后端) → Task 7 诊断块(G1 前端) → **Task 8 档位走势(G3,前后端)** → **Task 8b 练棋日历(G4,前端已完成,后端 + 集成)** → Task 9 四图与承重 → Task 10 收尾。**Task 5 依赖 Task 2**(诊断要读执色);Task 8 独立于 G1 / G2,可并行,但四图要等它一起重取。
 
 ---
 
@@ -1567,6 +1619,490 @@ EOF
 
 ---
 
+### Task 8b: G4 · 近一年练棋日历(Fan 2026-09-22 新增;前端已完成,本 Task 展开后端与集成)
+
+> 裁定与契约见 `prd.md` §3 G4。前端、重出的参考图、承重两态与四图都在 `0739d220`,Fan 09-22「两项都过了」。
+
+**Files:**
+- Create: `katrain/web/core/growth_activity.py`
+- Create: `tests/web_ui/test_growth_activity.py`
+- Modify: `katrain/web/api/v1/endpoints/growth.py`(新增 `GET /activity`)
+- Modify: `katrain/web/core/repository.py`(新增 `growth_activity_remote`)、`katrain/web/core/remote_client.py`(新增 `get_growth_activity`)
+- Modify: `katrain/web/server.py`(两个 lifespan 各挂一行 `growth_activity_repo`,挨着 `report_diagnosis_repo`)
+
+**Interfaces:**
+- Consumes(前端已写死):`getGrowthActivity` 请求 `/api/v1/growth/activity?days=365&tz_offset=${-new Date().getTimezoneOffset()}`,
+  `isGrowthActivity` 校验 `window_days: number`、`days[].date` 形如 `YYYY-MM-DD`、`games` / `solved` 为 number、`authority` 三档之一。
+- Produces:`{"window_days": 365, "days": [{"date", "games", "solved"}], "authority": "this_node" | "cloud" | "local_cache"}`,
+  `days` 只列有活动的日子、升序。
+
+- [x] **Step 0(已完成,`0739d220`):前端 + 参考图**
+
+`ActivityCalendar.tsx` + `calendarGrid.ts`(+ 单测)、`growthApi.ts` 的 `GrowthActivity` / `isGrowthActivity` / `getGrowthActivity`、
+`GrowthPage` 接入与四态单测、`go-screens.css` 屏 22 那一段、承重两态(在线 / 离线最满)、四图(参考图 pin `1a454cfc…`)。
+fixture 只在 `tests/` 下(`FULL_ACTIVITY` / `EMPTY_ACTIVITY` / fourup 的 `ACTIVITY`),生产代码里没有。
+
+- [x] **Step 1: 写仓储的失败测试**
+
+`tests/web_ui/test_growth_activity.py`:
+
+```python
+"""近一年练棋日历(G4):每天下完几局、首次解出几道题。
+
+**一格 = 当天下完的对局 + 当天新解出的题**(Fan 2026-09-22)。按**客户端时区**切天 ——
+按 UTC 切,北京早上 8 点前下的棋会落到前一天,「今天」那格明明下过却是空的。
+
+「下完的对局」只认自己下的三种来源(白名单):导入的谱、棋谱库、研究局都不是你下的。
+
+端点和 `growth/summary` 同形:盒上先问云端,拿不到退本机并如实标 `local_cache`。
+四种退回原因在共用的 `_cloud_first` 里,`test_growth_authority.py` 已逐条断言;这里只验本端点的
+标签与路径接对了(404 那条日志里要出现 `/growth/activity`)。
+"""
+
+import logging
+from datetime import datetime, timedelta, timezone
+
+import httpx
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from katrain.web.core import models_db
+from katrain.web.core.growth_activity import GrowthActivityRepository
+
+NOW = datetime(2026, 9, 22, 4, 0, tzinfo=timezone.utc)  # 北京 9-22 中午
+BEIJING = 480
+
+
+@pytest.fixture()
+def factory(tmp_path):
+    engine = create_engine(f"sqlite:///{tmp_path/'a.db'}")
+    models_db.Base.metadata.create_all(engine)
+    return sessionmaker(bind=engine, expire_on_commit=False)
+
+
+_seq = iter(range(1, 10_000))
+
+
+def _game(factory, at, *, source="play_ai", user_id=1):
+    s = factory()
+    s.add(
+        models_db.UserGame(
+            id=f"g{next(_seq)}", user_id=user_id, sgf_content="(;GM[1])", source=source, created_at=at
+        )
+    )
+    s.commit()
+    s.close()
+
+
+def _solve(factory, at, *, completed=True, user_id=1):
+    s = factory()
+    s.add(
+        models_db.UserTsumegoProgress(
+            user_id=user_id,
+            problem_id=f"p{next(_seq)}",
+            completed=completed,
+            attempts=1,
+            first_completed_at=at if completed else None,
+        )
+    )
+    s.commit()
+    s.close()
+
+
+def _daily(factory, *, days=365, tz_offset=BEIJING):
+    return GrowthActivityRepository(factory).daily(1, days=days, tz_offset=tz_offset, now=NOW)
+
+
+def test_days_are_cut_in_the_clients_timezone(factory):
+    _game(factory, datetime(2026, 9, 21, 23, 0, tzinfo=timezone.utc))  # 北京 9-22 早上 7 点
+    assert _daily(factory) == [{"date": "2026-09-22", "games": 1, "solved": 0}]
+    assert _daily(factory, tz_offset=0) == [{"date": "2026-09-21", "games": 1, "solved": 0}]
+
+
+def test_only_games_you_played_count(factory):
+    for source in ("play_ai", "play_local", "play_human", "import", "kifu_library", "research"):
+        _game(factory, NOW - timedelta(hours=1), source=source)
+    assert _daily(factory) == [{"date": "2026-09-22", "games": 3, "solved": 0}]
+
+
+def test_solved_counts_first_solves_and_shares_the_day_with_games(factory):
+    at = NOW - timedelta(hours=1)
+    _game(factory, at)
+    _solve(factory, at)
+    _solve(factory, at, completed=False)  # 做过没解出
+    _solve(factory, at, user_id=2)  # 别人的
+    assert _daily(factory) == [{"date": "2026-09-22", "games": 1, "solved": 1}]
+
+
+def test_window_edges_in_the_clients_timezone_and_only_active_days(factory):
+    """窗口 = 北京的今天往前数 365 天(含今天)⇒ 首日是北京 2025-09-23。
+    首日凌晨 2 点那局(= UTC 前一天 18:00)必须在内 —— `since` 进 SQL 前没换成 UTC 的话,
+    SQLite 按字面时间比,这一局会被比掉。"""
+    _game(factory, datetime(2025, 9, 22, 15, 0, tzinfo=timezone.utc))  # 北京 2025-09-22 23:00,窗口外
+    _game(factory, datetime(2025, 9, 22, 18, 0, tzinfo=timezone.utc))  # 北京 2025-09-23 02:00,首日
+    _game(factory, NOW - timedelta(days=3))
+    assert _daily(factory) == [
+        {"date": "2025-09-23", "games": 1, "solved": 0},
+        {"date": "2026-09-19", "games": 1, "solved": 0},
+    ]
+```
+
+- [x] **Step 2: 跑,确认失败**
+
+```bash
+CI=true uv run pytest tests/web_ui/test_growth_activity.py -q
+```
+
+预期:收集阶段 `ModuleNotFoundError: katrain.web.core.growth_activity`。
+
+- [x] **Step 3: 仓储**
+
+`katrain/web/core/growth_activity.py`:
+
+```python
+"""近一年练棋日历(G4)的数据源:每天下完几局、首次解出几道题。
+
+**一格 = 当天下完的对局 + 当天新解出的题**(Fan 2026-09-22 定)。两项分开回,由前端相加上色 ——
+以后要分开画也不用改契约。
+
+**按客户端的时区切天。** 按 UTC 切,北京早上 8 点前下的棋会落到前一天,「今天」那格明明下过却是空的。
+`tz_offset` 是东几区的分钟数(北京 = 480)。
+
+**哪些算「下完的对局」**:只认自己下的那三种来源,口径同前端
+`kiosk/components/report/reviewPresentation.ts` 的 `isPlaySource`。用**白名单**不用黑名单 ——
+导入的谱、棋谱库、研究局都不是你下的,之后再加一种新来源也不会悄悄混进来。
+
+⚠️ 解题时间是 `first_completed_at`,由 `merge_tsumego_progress` 盖戳。盒子离线时解的题,
+同步到云端那一刻才在云端盖戳 ⇒ 云端那份可能把它算到同步那天。盒子通常在线,不为此改同步协议。
+"""
+
+from collections import defaultdict
+from datetime import date, datetime, time, timedelta, timezone
+from typing import Dict, List
+
+from katrain.web.core import models_db
+
+PLAYED_SOURCES = ("play_ai", "play_local", "play_human")
+
+
+def _local_date(ts: datetime, tz: timezone) -> date:
+    # SQLite 读回来是 naive(不存时区);写进去的一律是 UTC(`func.now()` / `utcnow()`)。
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    return ts.astimezone(tz).date()
+
+
+class GrowthActivityRepository:
+    def __init__(self, session_factory):
+        self.session_factory = session_factory
+
+    def daily(self, user_id: int, *, days: int, tz_offset: int, now: datetime = None) -> List[Dict]:
+        """→ `[{"date": "YYYY-MM-DD", "games": n, "solved": m}, ...]`,按日期升序,**只列有活动的日子**。
+
+        窗口是客户端时区里的「今天」往前数 `days` 天(含今天)。
+        """
+        tz = timezone(timedelta(minutes=tz_offset))
+        today = (now or datetime.now(timezone.utc)).astimezone(tz).date()
+        first = today - timedelta(days=days - 1)
+        # 换成 UTC 再进 SQL:SQLite 比的是字面时间,带 +08:00 的参数会被当成 UTC 读,错开 8 小时。
+        since = datetime.combine(first, time.min, tzinfo=tz).astimezone(timezone.utc)
+
+        G, P = models_db.UserGame, models_db.UserTsumegoProgress
+        session = self.session_factory()
+        try:
+            games = (
+                session.query(G.created_at)
+                .filter(G.user_id == user_id, G.source.in_(PLAYED_SOURCES), G.created_at >= since)
+                .all()
+            )
+            solved = (
+                session.query(P.first_completed_at)
+                .filter(P.user_id == user_id, P.completed.is_(True), P.first_completed_at >= since)
+                .all()
+            )
+        finally:
+            session.close()
+
+        buckets: Dict[date, List[int]] = defaultdict(lambda: [0, 0])
+        for column, rows in ((0, games), (1, solved)):
+            for (ts,) in rows:
+                if ts is None:
+                    continue
+                day = _local_date(ts, tz)
+                if first <= day <= today:
+                    buckets[day][column] += 1
+        return [{"date": d.isoformat(), "games": g, "solved": s} for d, (g, s) in sorted(buckets.items())]
+```
+
+- [x] **Step 4: 跑,确认仓储四条通过**
+
+```bash
+CI=true uv run pytest tests/web_ui/test_growth_activity.py -q
+```
+
+预期:`4 passed`。**变异自查一次**:把 `.astimezone(timezone.utc)` 那一段删掉再跑,
+`test_window_edges_…` 必须变红(证明那条测试真的守着那一行),然后改回。
+
+- [x] **Step 5: 写端点的失败测试(追加到同一文件)**
+
+```python
+# ── 端点 ──
+
+
+class _FakeConnectivity:
+    def __init__(self, online):
+        self.is_online = online
+
+
+class _FakeRemoteClient:
+    def __init__(self, *, payload=None, raises=None):
+        self._payload, self._raises, self.calls = payload, raises, []
+
+    async def get_growth_activity(self, days, tz_offset):
+        self.calls.append((days, tz_offset))
+        if self._raises is not None:
+            raise self._raises
+        return self._payload
+
+
+def _client(factory, *, remote=None, online=True):
+    from katrain.web.api.v1.endpoints.auth import get_current_user
+    from katrain.web.api.v1.endpoints.growth import router
+    from katrain.web.core.repository import RepositoryDispatcher
+    from katrain.web.models import User
+
+    app = FastAPI()
+    app.include_router(router, prefix="/api/v1/growth")
+    app.dependency_overrides[get_current_user] = lambda: User(id=1, username="me")
+    app.state.growth_activity_repo = GrowthActivityRepository(factory)
+    if remote is not None:
+        app.state.repository_dispatcher = RepositoryDispatcher(
+            connectivity_manager=_FakeConnectivity(online),
+            remote_tsumego=None,
+            remote_kifu=None,
+            remote_user_games=None,
+            local_user_game_repo=None,
+            remote_client=remote,
+        )
+    return TestClient(app)
+
+
+CLOUD = {"window_days": 365, "days": [{"date": "2026-09-20", "games": 4, "solved": 2}], "authority": "this_node"}
+URL = "/api/v1/growth/activity?days=365&tz_offset=480"
+
+
+def test_this_node_answers_the_contract(factory):
+    _game(factory, datetime.now(timezone.utc) - timedelta(minutes=5))
+    body = _client(factory).get(URL).json()
+    assert (body["window_days"], body["authority"]) == (365, "this_node")
+    assert [(d["games"], d["solved"]) for d in body["days"]] == [(1, 0)]
+
+
+def test_bad_params_are_422(factory):
+    client = _client(factory)
+    for query in ("days=0", "days=366", "tz_offset=-721", "tz_offset=841"):
+        assert client.get(f"/api/v1/growth/activity?{query}").status_code == 422, query
+
+
+def test_box_online_takes_the_clouds_answer_and_says_cloud(factory):
+    remote = _FakeRemoteClient(payload=dict(CLOUD))
+    body = _client(factory, remote=remote).get(URL).json()
+    assert remote.calls == [(365, 480)]  # 时区原样带给云端:云端按盒子的「今天」切天
+    assert body["days"] == CLOUD["days"]
+    assert body["authority"] == "cloud"
+
+
+def test_box_falls_back_to_local_cache_when_the_cloud_lacks_the_endpoint(factory, caplog):
+    request = httpx.Request("GET", "https://cloud.example/api/v1/growth/activity")
+    missing = httpx.HTTPStatusError("404", request=request, response=httpx.Response(404, request=request))
+    _game(factory, datetime.now(timezone.utc) - timedelta(minutes=5))
+    with caplog.at_level(logging.INFO):
+        body = _client(factory, remote=_FakeRemoteClient(raises=missing)).get(URL).json()
+    assert body["authority"] == "local_cache"
+    assert [d["games"] for d in body["days"]] == [1]
+    assert "no /growth/activity" in caplog.text
+
+
+def test_box_offline_does_not_ask_and_bad_cloud_shape_falls_back(factory, caplog):
+    remote = _FakeRemoteClient(payload=dict(CLOUD))
+    assert _client(factory, remote=remote, online=False).get(URL).json()["authority"] == "local_cache"
+    assert remote.calls == []
+
+    bad = _FakeRemoteClient(payload={"window_days": 365, "days": "nope"})
+    with caplog.at_level(logging.INFO):
+        assert _client(factory, remote=bad).get(URL).json()["authority"] == "local_cache"
+    assert "unrecognised shape" in caplog.text
+```
+
+- [x] **Step 6: 跑,确认端点五条失败**
+
+```bash
+CI=true uv run pytest tests/web_ui/test_growth_activity.py -q
+```
+
+预期:仓储 4 passed,端点 5 failed(404 —— 路由还不存在)。
+
+- [x] **Step 7: 远端客户端 + dispatcher + 端点 + 挂仓储**
+
+`remote_client.py`,在 `get_growth_diagnosis` 之后(**手写,不整文件跑 black** —— 它在基线上就不干净):
+
+```python
+    async def get_growth_activity(self, days: int, tz_offset: int) -> Dict:
+        resp = await self._request("GET", "/api/v1/growth/activity", params={"days": days, "tz_offset": tz_offset})
+        resp.raise_for_status()
+        return resp.json()
+```
+
+`repository.py`,在 `growth_diagnosis_remote` 之后:
+
+```python
+    async def growth_activity_remote(self, days: int, tz_offset: int) -> tuple[dict | None, str]:
+        """练棋日历,口径同 `growth_summary_remote`。`tz_offset` 原样带给云端 —— 按盒子这边的「今天」切天。"""
+        return await self._cloud_first(
+            "growth activity",
+            "/growth/activity",
+            lambda: self._remote_client.get_growth_activity(days, tz_offset),
+        )
+```
+
+`growth.py`,文件末尾(不用新增 import:仓储从 `app.state` 取):
+
+```python
+# ── 近一年练棋日历(G4)──────────────────────────────────────────────────────
+
+DEFAULT_ACTIVITY_DAYS = 365
+#: 东几区的分钟数(北京 = 480)。世界上的时区落在 UTC−12 … UTC+14。
+MIN_TZ_OFFSET, MAX_TZ_OFFSET = -12 * 60, 14 * 60
+
+
+def _looks_like_activity(payload: Any) -> bool:
+    if not isinstance(payload, dict) or not isinstance(payload.get("window_days"), int):
+        return False
+    days = payload.get("days")
+    return isinstance(days, list) and all(
+        isinstance(d, dict)
+        and isinstance(d.get("date"), str)
+        and isinstance(d.get("games"), int)
+        and isinstance(d.get("solved"), int)
+        for d in days
+    )
+
+
+@router.get("/activity")
+async def growth_activity(
+    request: Request,
+    days: int = DEFAULT_ACTIVITY_DAYS,
+    tz_offset: int = 0,
+    current_user: User = Depends(get_current_user),
+):
+    """近一年练棋日历:每天下完几局、首次解出几道题,**只列有活动的日子**。
+
+    按客户端时区切天(`tz_offset`)—— 按 UTC 切,北京早上 8 点前下的棋会落到前一天。
+    盒子上先问云端(跨设备完整);退回本机时如实标 `local_cache`,屏上写「本机记录」。
+    """
+    if not 1 <= days <= MAX_WINDOW_DAYS:
+        raise HTTPException(status_code=422, detail=f"days must be 1..{MAX_WINDOW_DAYS}")
+    if not MIN_TZ_OFFSET <= tz_offset <= MAX_TZ_OFFSET:
+        raise HTTPException(status_code=422, detail=f"tz_offset must be {MIN_TZ_OFFSET}..{MAX_TZ_OFFSET}")
+
+    repo = getattr(request.app.state, "growth_activity_repo", None)
+    if repo is None:
+        raise HTTPException(status_code=503, detail="growth activity unavailable on this node")
+
+    dispatcher = getattr(request.app.state, "repository_dispatcher", None)
+    if dispatcher is not None:
+        remote, reason = await dispatcher.growth_activity_remote(days, tz_offset)
+        if remote is not None and _looks_like_activity(remote):
+            return {**remote, "authority": "cloud"}
+        if remote is not None:
+            logger.warning("growth activity: cloud answered 200 with an unrecognised shape, using local cache")
+            reason = "remote_bad_payload"
+        logger.info("growth activity: serving local cache (%s)", reason)
+
+    return {
+        "window_days": days,
+        "days": repo.daily(current_user.id, days=days, tz_offset=tz_offset),
+        "authority": "local_cache" if dispatcher is not None else "this_node",
+    }
+```
+
+`server.py`,**两处** lifespan 各在 `app.state.report_diagnosis_repo = …` 那一行之后加(手写,不整文件跑 black):
+
+```python
+    # 成长屏「近一年练棋日历」:逐日数对局与首次解题(盒上只在连不上云端时兜底)。
+    from katrain.web.core.growth_activity import GrowthActivityRepository
+
+    app.state.growth_activity_repo = GrowthActivityRepository(session_factory)
+```
+
+- [x] **Step 8: 跑,确认通过;格式化只动基线干净的文件**
+
+```bash
+CI=true uv run pytest tests/web_ui/test_growth_activity.py tests/web_ui/test_growth_authority.py tests/web_ui/test_growth_diagnosis.py tests/web_ui/test_growth_trend.py -q
+uv run black -l 120 katrain/web/core/growth_activity.py katrain/web/api/v1/endpoints/growth.py katrain/web/core/repository.py tests/web_ui/test_growth_activity.py
+git diff --stat
+git status --short katrain/config.json katrain/web/ui/src/kiosk/__tests__/fixtures/   # pytest 改写过的话 git checkout 还原
+```
+
+预期:全部通过;`git diff --stat` 只列本 Task 的六个文件。
+
+- [x] **Step 9: 提交**
+
+```bash
+git add katrain/web/core/growth_activity.py tests/web_ui/test_growth_activity.py katrain/web/api/v1/endpoints/growth.py katrain/web/core/repository.py katrain/web/core/remote_client.py katrain/web/server.py
+git diff --cached --stat
+git commit -m "$(cat <<'EOF'
+feat(growth): GET /growth/activity —— 近一年练棋日历的后端(G4)
+
+一格 = 当天下完的对局(play_ai/play_local/play_human 白名单)+ 当天首次解出的题,
+按客户端时区切天。盒上先问云端,退回本机如实标 local_cache。
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+EOF
+)"
+```
+
+- [x] **Step 10: 集成 —— 真服务端 + 真浏览器**
+
+沿用 G1–G3 的集成脚手架(scratchpad `int/serve.py`:`create_app(enable_engine=False)` 起在 :8123,独立 SQLite;
+**不走 `python -m katrain`**,它退出时会改写 `~/.katrain/config.json`)。先 `npm run build`(服务端发的是构建产物)。
+
+1. 快照 `~/.katrain/config.json`;起服务:
+   `KATRAIN_DATABASE_URL="sqlite:///$SP/int/int.db" KATRAIN_SECRET_KEY=<≥32 位> CI=true uv run python $SP/int/serve.py`。
+2. 造数据:
+   - **经真接口**建一局 `POST /api/v1/user-games/`(`source: "play_ai"`)—— 证明真的落账路径写出的来源在白名单里,落在今天。
+   - 用 `sqlite3` 直接插历史:几天前的对局若干、一局 `source='import'`(不该算)、北京凌晨 2 点那种跨 UTC 日界的一局、
+     `user_tsumego_progress` 两道解出一道没解出。
+3. `curl` 接口(`tz_offset=480`),记下 `days` 条数与今天那条的 `games + solved`。
+4. 真浏览器 1024×600 打开 `/kiosk/growth`,读 `growth-cal-days` 的文本、今天那格(`.gcal__c.is-today`)的 `data-level`、
+   跨日界那局所在格子的 `data-date`,**与第 3 步的数对上**(天数 = `days` 条数;档位按 0/1–2/3–5/6–9/10+ 由今天的合计推出)。截一张图存档。
+5. 停服务;`diff` 快照与 `~/.katrain/config.json`,必须一致;`git status` 干净。
+
+> **验收记录(2026-09-22,`78a94bab`)**
+> - 单测:仓储 4 + 端点 5 全过;变异 —— 删掉 `since` 换 UTC 那一段,`test_window_edges_…` 变红,改回变绿。
+>   成长四个测试文件合计 45 passed。
+> - 集成(真服务端 :8123 + 独立 SQLite + Chromium 1024×600,`timezoneId=Asia/Shanghai`):
+>   造数前写死的期望 —— 09-10 解 10 题(档 4)、09-16 一局(UTC 09-15 20:00,跨日界,档 1)、
+>   09-19 三局(另有一局 `import` 不算,档 2)、今天经真接口建一局 + 解 2 题(档 3 合计,档 2),共 4 天。
+>   接口(`tz_offset=480`)逐条相符;`tz_offset=0` 时跨日界那局回到 09-15。
+>   浏览器自己发出 `tz_offset=480`;屏上「4 天」、今天那格 `data-level=2`、亮着的格子恰是那四天且档位相符、
+>   带日期的格子 365 个。`~/.katrain/config.json` 前后一致,`git status` 干净。
+> - 顺带看见(**不在本 Task 改**):同一屏「近 30 天对局」是 6,日历同期对局合计 5 ——
+>   G2 那一格的 `count_since` 连导入的谱也数,日历按 PRD 只数自己下的。已记入交付说明待 Fan 定。
+
+- [x] **Step 11: Fixture 删除条件核对**
+
+```bash
+git grep -n "FULL_ACTIVITY\|EMPTY_ACTIVITY\|mulberry32" -- katrain/web/ui/src
+```
+
+预期:无输出(日历的假数据只在 `katrain/web/ui/tests/` 与 `__tests__/` 下,生产代码里没有)。
+
+---
+
 ### Task 9: 四图对比与承重实测(屏 22)
 
 **Files:**
@@ -1708,7 +2244,7 @@ cd /Users/fan/Repositories/katrain-kiosk-go-growth && uv run black -l 120 --chec
 git diff 7a152df1..HEAD -- katrain/web/ui/src | grep -o "t('[a-z]*:[a-z_0-9]*'" | sort -u
 ```
 
-交付说明里写清:① 做了 G1 G2 G3(G3 是 Fan 2026-09-21 裁定的「画档位」);② 新增 key 清单;③ 四图与承重结论(附 Fan 确认);
+交付说明里写清:① 做了 G1 G2 G3 G4(G3 是 Fan 2026-09-21 裁定的「画档位」;G4 是 09-22 新增的练棋日历,smartbox 设计分支 `9d359bac9` 未 push);② 新增 key 清单;③ 四图与承重结论(附 Fan 确认);
 ④ **部署顺序**:先 home-ubuntu 再 ucloud;⑤ 云端未部署期间盒上的表现(胜率标签退回升降级口径、诊断走本机缓存或 503 ⇒ 屏上「诊断没读到」)。
 
 - [ ] **Step 4: 部署前自检(交给部署会话)**

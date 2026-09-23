@@ -31,14 +31,12 @@ import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from '../hooks/useTranslation';
 import { TsumegoProgressProvider } from '../context/TsumegoProgressContext';
-import { OrientationProvider } from './context/OrientationContext';
 import { VisionProvider } from './context/VisionContext';
 import { GeometryProvider } from './context/GeometryContext';
 import { EngineReadinessProvider } from './context/EngineReadinessProvider';
-import PhysicalBoardGuard from './components/vision/PhysicalBoardGuard';
 import PlayInputGuard from './components/vision/PlayInputGuard';
 import TsumegoInputGuard from './components/vision/TsumegoInputGuard';
-import RotationWrapper from './components/layout/RotationWrapper';
+import KioskViewport from './components/layout/KioskViewport';
 import KioskAuthGuard from './components/guards/KioskAuthGuard';
 import KioskLayout from './components/layout/KioskLayout';
 import LoginPage from './pages/LoginPage';
@@ -55,10 +53,7 @@ import TsumegoProblemPage from './pages/TsumegoProblemPage';
 import ResearchPage from './pages/ResearchPage';
 import KifuPage from './pages/KifuPage';
 import KifuDetailPage from './pages/KifuDetailPage';
-import BaipuListPage from './pages/BaipuListPage';
-import BaipuSessionPage from './pages/BaipuSessionPage';
-import LivePage from './pages/LivePage';
-import LiveMatchPage from './pages/LiveMatchPage';
+import BaipuSessionRoute from './pages/BaipuSessionRoute';
 import LobbyPage from './pages/LobbyPage';
 import SettingsPage from './pages/SettingsPage';
 import ReportsPage from './pages/ReportsPage';
@@ -145,17 +140,19 @@ const KioskRoutes = () => {
               静态段 `wrong` 在 v6 最佳匹配里本来就赢过 `:unit`,放在前面是给人读的。 */}
           <Route path="tsumego/:level/:category/wrong" element={<TsumegoUnitListPage set="wrong" />} />
           <Route path="tsumego/:level/:category/:unit" element={<TsumegoUnitListPage />} />
-          {/* ⚠️ research / baipu / live 三条**下了 Dock 但路由照旧存在**(规范 §3:
-              研究并进复盘、摆谱降为选中棋谱之后的落子方式、直播并进棋谱)。
-              入口在 Task 15(棋谱屏出 摆谱/直播)和 Task 16(复盘屏出 研究)里补。
-              **在那之前这三屏只能靠直接输 URL 到达** —— 可接受的中间态,不是终态。 */}
+          {/* ⚠️ research 这一条**下了 Dock 但路由照旧存在**(规范 §3:研究并进复盘)。
+              `baipu` 这一条 2026-09-14 改成重定向:它原来挂的 `BaipuListPage` 是 7 月的选谱页,
+              没有页控条、不在 Dock 词典里 ⇒ 盒上进去就出不来,而摆谱屏的返回 / 退出 / 完成、
+              屏 15「摆到实体盘」、屏 23「去摆谱」全都指着它。选谱早被屏 15 棋谱列表 + 屏 16 详情取代
+              (稿子屏 15 注释:「摆到实体盘」和「导入 SGF」进的是同一条摆谱流程),
+              所以删页,留一条重定向接住旧链接。
+              直播**不在 kiosk 上**:Fan 2026-09-22 裁定 kiosk 端删掉整个直播模块,只在 galaxy 保留。
+              旧地址 `/kiosk/live*` 落到下面的 `*` 兜底(→ 对弈),不另留重定向。 */}
           <Route path="research" element={<ResearchPage />} />
           <Route path="kifu" element={<KifuPage />} />
           <Route path="kifu/:kifuId" element={<KifuDetailPage />} />
-          <Route path="baipu" element={<BaipuListPage />} />
-          <Route path="baipu/session/:source" element={<PhysicalBoardGuard sub="摆谱要先让摄像头看清盘面"><BaipuSessionPage /></PhysicalBoardGuard>} />
-          <Route path="live" element={<LivePage />} />
-          <Route path="live/:matchId" element={<LiveMatchPage />} />
+          <Route path="baipu" element={<Navigate to="/kiosk/kifu" replace />} />
+          <Route path="baipu/session/:source" element={<BaipuSessionRoute />} />
           <Route path="report" element={<ReportsPage />} />
           <Route path="report/:taskId" element={<ReportDetailPage />} />
           {/* 成长(屏 22)。**Dock 第五项**,一级页 ⇒ 路径必须与 `DOCK_TABS` 里那条**全等**
@@ -199,19 +196,18 @@ const KioskApp = () => {
   return (
     <ThemeProvider theme={kioskTheme}>
       <CssBaseline />
-      <OrientationProvider>
-        <VisionProvider>
-          <GeometryProvider>
-            <TsumegoProgressProvider>
-              <RotationWrapper>
-                <EngineReadinessProvider>
-                  <KioskRoutes />
-                </EngineReadinessProvider>
-              </RotationWrapper>
-            </TsumegoProgressProvider>
-          </GeometryProvider>
-        </VisionProvider>
-      </OrientationProvider>
+      <VisionProvider>
+        <GeometryProvider>
+          <TsumegoProgressProvider>
+            {/* 承重的视口盒子(画布的包含块、登录页的高度来源)—— 见 KioskViewport 头注。 */}
+            <KioskViewport>
+              <EngineReadinessProvider>
+                <KioskRoutes />
+              </EngineReadinessProvider>
+            </KioskViewport>
+          </TsumegoProgressProvider>
+        </GeometryProvider>
+      </VisionProvider>
     </ThemeProvider>
   );
 };

@@ -2,6 +2,7 @@
 
 from typing import Optional, List
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import func
@@ -9,8 +10,21 @@ from sqlalchemy.orm import Session, defer
 
 from katrain.web.core.db import get_db
 from katrain.web.core.models_db import KifuAlbum
+from katrain.web.core.repository import RemoteServiceUnavailableError
 
 router = APIRouter()
+
+
+async def _from_dispatcher(call, not_found_detail: str):
+    """board 模式走云端。**连不上是 503,不是空库**(见 `RepositoryDispatcher.kifu_list_albums` 那段注释)。"""
+    try:
+        return await call()
+    except RemoteServiceUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except httpx.HTTPStatusError as exc:
+        status = exc.response.status_code
+        detail = not_found_detail if status == 404 else f"Remote kifu request failed ({status})"
+        raise HTTPException(status_code=status, detail=detail) from exc
 
 
 class KifuAlbumSummary(BaseModel):
@@ -64,7 +78,7 @@ async def list_kifu_albums(
     # Board mode: delegate to repository dispatcher
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        return await dispatcher.kifu_list_albums(q, page, page_size)
+        return await _from_dispatcher(lambda: dispatcher.kifu_list_albums(q, page, page_size), "Kifu albums not found")
 
     query = db.query(KifuAlbum).options(defer(KifuAlbum.sgf_content), defer(KifuAlbum.search_text))
     count_query = db.query(func.count(KifuAlbum.id))
@@ -99,7 +113,7 @@ async def get_kifu_album(request: Request, album_id: int, db: Session = Depends(
     # Board mode: delegate to repository dispatcher
     dispatcher = getattr(request.app.state, "repository_dispatcher", None)
     if dispatcher is not None:
-        result = await dispatcher.kifu_get_album(album_id)
+        result = await _from_dispatcher(lambda: dispatcher.kifu_get_album(album_id), f"Kifu album {album_id} not found")
         if not result:
             raise HTTPException(status_code=404, detail=f"Kifu album {album_id} not found")
         return result

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { kioskMeJson } from './helpers/kioskIdentity';
 
 /**
  * 错题页(T1)的承重闸。
@@ -33,7 +34,7 @@ test('错题页:60 道装不下时通栏自己滚,真滚轮滚得到最后一格
   await page.route('**/api/v1/**', (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === '/api/v1/auth/me') {
-      return route.fulfill({ json: { id: 1, username: 'tester', rank: '5段', credits: 0 } });
+      return route.fulfill({ json: kioskMeJson() });
     }
     if (path.startsWith('/api/v1/tsumego/levels/') && path.includes('/categories/')) {
       return route.fulfill({ json: IDS.map((id) => ({ id })) });

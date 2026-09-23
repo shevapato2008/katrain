@@ -17,6 +17,33 @@ logger = logging.getLogger("katrain_web")
 router = APIRouter()
 
 
+def require_platform_owner(platform: str, request: Request, user: User = Depends(get_current_user)) -> User:
+    """Gate every ACTION / platform-data endpoint: the caller must be the
+    user who currently owns this platform's connection.
+
+    The box has one adapter per platform shared by whoever is using it —
+    without this, any authenticated user could read or act through whoever
+    else's session happens to be connected (see task-4.5-brief.md).
+
+    Only enforced against a REAL `PlatformManager` — a deliberate escape
+    hatch for the many pre-existing endpoint tests that inject a bare
+    `FakeManager`/`MagicMock` unrelated to ownership (schema validation,
+    "not connected" branches, etc.); those are left unaffected. `MagicMock`
+    auto-creates `owner_of` as another Mock on attribute access, so a plain
+    `getattr(mgr, "owner_of", None)` check can't tell "doesn't implement
+    ownership" from "real one, ask it" — hence the explicit isinstance check.
+    Every real deployment uses the real class, so production is covered.
+    """
+    from katrain.web.platforms.manager import PlatformManager
+
+    mgr = request.app.state.platform_manager
+    if not isinstance(mgr, PlatformManager):
+        return user
+    if mgr.owner_of(platform) != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="这台盒子上现在连的不是你的账号")
+    return user
+
+
 # --- Request/Response models ---
 
 
@@ -34,7 +61,14 @@ _VALID_HANDICAP = {-1, 0, 2, 3, 4, 5, 6, 7, 8, 9}  # 让子值 (handicap); no 1
 
 
 def _komi_for_handicap(h: int) -> float:
-    """Derive komi from handicap, matching Golaxy 自由对弈 conventions (chinese rules)."""
+    """Derive komi from handicap, matching Golaxy 自由对弈 conventions (chinese rules).
+
+    ⚠️ kiosk 本地那条路(`web/ui/src/kiosk/utils/setupOptions.ts` 的 `resolveGameTerms`)
+    对让 N 子给的是 **komi = 0**,不是这里的 N。**两边都对,别去统一。**
+    对面的引擎不是同一个:星阵不另加让子补偿,所以那 N 目要由 komi 带过去;
+    而 KataGo 的中国规则 `whiteHandicapBonusRule = WHB_N` 会自己给白方加 N,
+    komi 再写 N 就补两遍。净补偿两边都是白方 +N。
+    """
     if h == 0:
         return 7.5  # 分先 (even game)
     if h == -1:
@@ -191,7 +225,15 @@ def _maybe_show_hint(app_state, session_id: str, position_token: Optional[int], 
 async def platform_login(
     platform: str, req: PlatformLoginRequest, request: Request, user: User = Depends(require_writable_user)
 ):
-    """Login to a Go platform. Tries saved JWT first, then password."""
+    """Login to a Go platform. Tries saved JWT first, then password.
+
+    Login-type endpoint: the caller has no owner yet, so this does NOT go
+    through `require_platform_owner` — but a DIFFERENT user already
+    connected on this box must still be refused (409), which
+    `PlatformManager.connect_platform` enforces before it ever touches the
+    adapter (see manager.py).
+    """
+    from katrain.web.platforms.manager import PlatformBusyError
     from katrain.web.platforms.models import PlatformCredentials
 
     pm = request.app.state.platform_manager
@@ -199,21 +241,30 @@ async def platform_login(
     if adapter is None:
         raise HTTPException(status_code=404, detail=f"Unknown platform: {platform}")
 
-    # Try saved credentials (JWT token) first to avoid OGS rate-limiting
-    saved = pm._credential_store.load_credentials(user.id, platform)
-    if saved and saved.auth_data.get("user_jwt"):
-        saved.auth_data["password"] = req.password  # Keep password as fallback
-        success = await pm.connect_platform(platform, saved, user.id)
-        if success:
-            return {"status": "connected", "platform": platform, "username": saved.username}
+    try:
+        # Try saved credentials (JWT token) first to avoid OGS rate-limiting
+        saved = pm._credential_store.load_credentials(user.id, platform)
+        if saved and saved.auth_data.get("user_jwt"):
+            saved.auth_data["password"] = req.password  # Keep password as fallback
+            success = await pm.connect_platform(platform, saved, user.id)
+            if success:
+                return {"status": "connected", "platform": platform, "username": saved.username}
 
-    # Fresh login: SMS code (Golaxy) or password (OGS/Fox/KGS).
-    if req.sms_code:
-        auth_data = {"sms_code": req.sms_code}
-    else:
-        auth_data = {"password": req.password}
-    credentials = PlatformCredentials(platform=platform, username=req.username, auth_data=auth_data)
-    success = await pm.connect_platform(platform, credentials, user.id)
+        # Fresh login: SMS code (Golaxy) or password (OGS/Fox/KGS).
+        if req.sms_code:
+            auth_data = {"sms_code": req.sms_code}
+        else:
+            auth_data = {"password": req.password}
+        credentials = PlatformCredentials(platform=platform, username=req.username, auth_data=auth_data)
+        success = await pm.connect_platform(platform, credentials, user.id)
+    except PlatformBusyError as exc:
+        # `/{platform}/login` 是通用端点(OGS/野狐/KGS 都走这条),这条提示原来
+        # 写死了「星阵」—— 换个平台登录会显示错平台名。用抛出方记的 `exc.platform`
+        # (不是外层路径参数,两者理论上同值,但错误信息该忠于真正触发它的那个)。
+        raise HTTPException(
+            status_code=409,
+            detail=f"这台盒子上现在连着别人的{exc.platform}账号 · 去设置里断开后再登录",
+        )
     if not success:
         raise HTTPException(status_code=401, detail="Login failed")
 
@@ -222,18 +273,32 @@ async def platform_login(
 
 @router.delete("/{platform}/logout")
 async def platform_logout(platform: str, request: Request, user: User = Depends(require_writable_user)):
-    """Logout from a platform and delete saved credentials."""
+    """Logout from a platform and delete saved credentials.
+
+    Ownership is enforced by `PlatformManager.disconnect_platform` itself
+    (raises `PlatformOwnershipError` -> 403 here), not via
+    `require_platform_owner`: disconnecting a platform nobody currently owns
+    is a harmless no-op (idempotent "already logged out"), which the
+    dependency's stricter "must equal caller" check would wrongly reject.
+    """
+    from katrain.web.platforms.manager import PlatformOwnershipError
+
     pm = request.app.state.platform_manager
-    await pm.disconnect_platform(platform)
+    try:
+        await pm.disconnect_platform(platform, user.id)
+    except PlatformOwnershipError:
+        raise HTTPException(status_code=403, detail="这台盒子上现在连的不是你的账号")
     pm._credential_store.delete_credentials(user.id, platform)
     return {"status": "disconnected", "platform": platform}
 
 
 @router.get("/status")
 async def platform_status(request: Request, user: User = Depends(get_current_user)):
-    """List all platforms and their connection/credential status."""
+    """List all platforms and their connection/credential status, AS SEEN BY
+    THIS CALLER — "connected" means "connected as you", not "connected as
+    whoever else is currently using this shared box"."""
     pm = request.app.state.platform_manager
-    platforms = pm.list_platforms()
+    platforms = pm.list_platforms(user.id)
     saved = {p["platform"]: p["username"] for p in pm._credential_store.list_platforms(user.id)}
     for p in platforms:
         p["saved_username"] = saved.get(p["platform"])
@@ -271,6 +336,7 @@ async def start_engine(
     EngineStartRequest)."""
     from katrain.web.core.ranked_session_guard import temporary_analysis_lease
 
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -312,6 +378,7 @@ async def engine_analysis(
     here and surface as 5xx, same as other routes."""
     from katrain.web.core.ranked_session_guard import guard_user_has_no_pending_ranked_game, temporary_analysis_lease
 
+    require_platform_owner(platform, request, user)
     guard_user_has_no_pending_ranked_game(request.app, user, "platform analysis")
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -355,7 +422,7 @@ async def engine_levels(platform: str, request: Request, user: User = Depends(ge
 
 
 @router.get("/{platform}/engine/items")
-async def engine_items(platform: str, request: Request, user: User = Depends(get_current_user)):
+async def engine_items(platform: str, request: Request, user: User = Depends(require_platform_owner)):
     """Remaining metered-道具 counts (领地/支招/变化图) for the connected
     engine-play account — powers the analysis-button badges. Account-level, not
     per-game. Each count is an int, or `null` when the platform didn't report
@@ -382,7 +449,7 @@ async def platform_users(
     q: Optional[str] = None,
     room: Optional[str] = None,
     request: Request = None,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_platform_owner),
 ):
     """List online users on a platform.
 
@@ -415,7 +482,7 @@ async def platform_users(
 
 
 @router.get("/{platform}/rooms")
-async def platform_rooms(platform: str, request: Request, user: User = Depends(get_current_user)):
+async def platform_rooms(platform: str, request: Request, user: User = Depends(require_platform_owner)):
     """List rooms/channels on a platform (Fox, KGS)."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -428,7 +495,7 @@ async def platform_rooms(platform: str, request: Request, user: User = Depends(g
 
 
 @router.get("/{platform}/challenges")
-async def platform_challenges(platform: str, request: Request, user: User = Depends(get_current_user)):
+async def platform_challenges(platform: str, request: Request, user: User = Depends(require_platform_owner)):
     """List open challenges on a platform (OGS seek graph)."""
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
@@ -446,6 +513,7 @@ async def send_challenge(
     platform: str, req: PlatformChallengeRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Send a challenge to a user on a platform."""
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -459,6 +527,7 @@ async def accept_challenge(
     platform: str, req: AcceptChallengeRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Accept an incoming challenge."""
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -473,6 +542,7 @@ async def decline_challenge(
     platform: str, req: DeclineChallengeRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Decline an incoming challenge."""
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -489,6 +559,7 @@ async def start_automatch(
     platform: str, req: AutomatchRequest, request: Request, user: User = Depends(require_writable_user)
 ):
     """Start automatch on a platform."""
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:
@@ -502,6 +573,7 @@ async def start_automatch(
 @router.post("/{platform}/automatch/cancel")
 async def cancel_automatch(platform: str, request: Request, user: User = Depends(require_writable_user)):
     """Cancel automatch on a platform."""
+    require_platform_owner(platform, request, user)
     pm = request.app.state.platform_manager
     adapter = pm.get_adapter(platform)
     if adapter is None or not adapter.is_connected:

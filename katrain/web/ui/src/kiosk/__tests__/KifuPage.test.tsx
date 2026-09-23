@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import KifuPage from '../pages/KifuPage';
 import type { KifuAlbumSummary } from '../../types/kifu';
-import type { MatchSummary } from '../../types/live';
+import { ApiError } from '../../api';
 import {
   __resetKioskActivityStorageForTests,
   setKioskIdentity,
@@ -16,15 +16,13 @@ import {
  *
  * 这份文件是**整份重写**的:上一版断言的是 MUI 的两栏「列表 + 预览」(`variant="h4"` 标题、
  * `CardActionArea`、`Pagination`、右栏那块 `LiveBoard` 预览)。那套界面本轮整个换掉了 ——
- * 预览和「在研究中打开」搬进了屏 16(`KifuDetailPage`),这一屏变成三条路的汇合点。
+ * 预览和「在研究中打开」搬进了屏 16(`KifuDetailPage`)。
  *
  * 几条**判据落在哪儿**值得写明:
- *  · 「收起时不拉列表」断言的是 `getAlbums` **被调用时的参数形状**(`page_size: 1` 只够拿
- *    组标题右端那个「共 N 局」),不是屏上有没有搜索框 —— 把整页拉回来先不渲染,后者一样绿。
+ *  · 列表默认摊开(2026-09-23 Fan)—— 断言落在 `getAlbums` 的调用次数与参数形状上:
+ *    进来只有一发,就是第一页六局。
  *  · 「已摆完」那三条(有 total / 没 total / k < total)是**同一条口径的三个方向**:
  *    旧进度里没有 `total`,读到 `undefined` 的正确反应是不下结论。
- *  · 直播那块断网时整块不渲染 —— 断言的是 `queryByTestId` 为空,并且**同一批数据在
- *    不报错时是渲染的**,否则「一直不渲染」也能骗过这条。
  */
 
 const mockNavigate = vi.fn();
@@ -37,9 +35,6 @@ vi.mock('react-router-dom', async () => {
 const { getAlbums } = vi.hoisted(() => ({ getAlbums: vi.fn() }));
 vi.mock('../../api/kifuApi', () => ({ KifuAPI: { getAlbums } }));
 
-const { useLiveMatchesMock } = vi.hoisted(() => ({ useLiveMatchesMock: vi.fn() }));
-vi.mock('../../hooks/live/useLiveMatches', () => ({ useLiveMatches: useLiveMatchesMock }));
-
 const album = (id: number, over: Partial<KifuAlbumSummary> = {}): KifuAlbumSummary => ({
   id,
   player_black: '柯洁', player_white: '申真谞',
@@ -50,30 +45,10 @@ const album = (id: number, over: Partial<KifuAlbumSummary> = {}): KifuAlbumSumma
   ...over,
 });
 
-const match = (id: string, over: Partial<MatchSummary> = {}): MatchSummary => ({
-  id,
-  source: 'xingzhen',
-  tournament: '第 29 届三星杯',
-  round_name: '八强',
-  date: '2026-08-22T06:00:00Z',
-  player_black: '柯洁', player_white: '申真谞',
-  black_rank: '九段', white_rank: '九段',
-  status: 'live', result: null, move_count: 118,
-  current_winrate: 0.5, current_score: 0, last_updated: '',
-  board_size: 19, komi: 7.5, rules: 'chinese',
-  ...over,
-});
-
-const liveResult = (over: Partial<ReturnType<typeof useLiveMatchesMock>> = {}) => ({
-  matches: [] as MatchSummary[], liveCount: 0, total: 0,
-  loading: false, error: null, refresh: vi.fn(),
-  ...over,
-});
-
 const renderPage = () =>
   render(
     <ThemeProvider theme={kioskTheme}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/kiosk/kifu']}>
         <KifuPage />
       </MemoryRouter>
     </ThemeProvider>,
@@ -102,103 +77,139 @@ beforeEach(() => {
   __resetKioskActivityStorageForTests();
   setKioskIdentity(TEST_UUID, false);
   getAlbums.mockResolvedValue({ items: [album(1), album(2)], total: 2, page: 1, page_size: 6 });
-  useLiveMatchesMock.mockReturnValue(liveResult());
 });
 
-describe('屏 15 棋谱 · 问候与三张卡', () => {
-  it('问候行照稿子写「看别人的棋」', () => {
+describe('屏 15 棋谱 · 问候与列表头', () => {
+  // 副标去掉了稿子里的「职业直播」:Fan 2026-09-22 裁定 kiosk 端不做直播,屏上不许许诺没有的东西。
+  it('问候行照稿子写「看别人的棋」,副标不提直播', () => {
     renderPage();
     expect(screen.getByText('看别人的')).toBeInTheDocument();
     expect(screen.getByText('棋')).toBeInTheDocument();
-    expect(screen.getByText('名局、职业直播，以及把谱摆到实体盘上')).toBeInTheDocument();
+    expect(screen.getByText('名局，以及把谱摆到实体盘上')).toBeInTheDocument();
   });
 
-  it('三张卡在,顺序是 搜棋谱 / 摆到实体盘 / 导入 SGF', () => {
+  // 2026-09-23 Fan:列表要一进来就在。三张卡(搜棋谱 / 摆到实体盘 / 导入 SGF)拆了,
+  // 「导入 SGF」挪到搜索框右边 —— 屏上一张卡都不剩,也就没有要先按的开关。
+  it('没有卡片,搜索框和「导入 SGF」一进来就在同一行', () => {
     renderPage();
-    const cards = [...document.querySelectorAll('.kiosk-card')].map((c) => c.querySelector('b')?.textContent);
-    expect(cards).toEqual(['搜棋谱', '摆到实体盘', '导入 SGF']);
-  });
-
-  it('「摆到实体盘」进 /kiosk/baipu —— Task 4 把摆谱下了 Dock,入口就是这张卡', () => {
-    renderPage();
-    fireEvent.click(screen.getByText('摆到实体盘').closest('button')!);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/baipu');
+    expect(document.querySelectorAll('.kiosk-card')).toHaveLength(0);
+    const bar = document.querySelector('[data-testid="kifu-search"] .ksearch__bar')!;
+    expect(within(bar as HTMLElement).getByPlaceholderText('棋手、赛事、年份都能搜')).toBeInTheDocument();
+    expect(within(bar as HTMLElement).getByRole('button', { name: /导入 SGF/ })).toBeInTheDocument();
   });
 
   it('「导入 SGF」按下去开的是本地文件选择框', () => {
     renderPage();
     const input = screen.getByTestId('kifu-sgf-input') as HTMLInputElement;
     const clicked = vi.spyOn(input, 'click');
-    fireEvent.click(screen.getByText('导入 SGF').closest('button')!);
+    fireEvent.click(screen.getByRole('button', { name: /导入 SGF/ }));
     expect(clicked).toHaveBeenCalled();
   });
 });
 
-describe('屏 15 棋谱 · 搜棋谱是开关不是跳转', () => {
-  it('收起时只探一个数,不取列表、不渲染行', async () => {
+describe('屏 15 棋谱 · 名局列表默认摊开', () => {
+  it('进来就拉第一页六局并铺出行 —— 不先探一个数、不等谁按开关', async () => {
     renderPage();
-    expect(screen.queryByTestId('kifu-search')).not.toBeInTheDocument();
-    await waitFor(() => expect(getAlbums).toHaveBeenCalledTimes(1));
-    // 判据落在**请求的形状**上:`page_size: 1` 只够拿 `total`。
-    // 断言「有没有搜索框」是不够的 —— 把整页拉回来但先不渲染,那条一样绿。
-    expect(getAlbums).toHaveBeenCalledWith({ page: 1, page_size: 1 });
-    expect(document.querySelectorAll('.kiosk-rows .kiosk-row')).toHaveLength(0);
-  });
-
-  it('收起时那句「共 N 局」照样是真数据', async () => {
-    getAlbums.mockResolvedValue({ items: [], total: 1234, page: 1, page_size: 1 });
-    renderPage();
-    expect(await screen.findByText('共 1,234 局')).toBeInTheDocument();
-  });
-
-  it('按下去才展开搜索框、才发请求,结果行铺出来', async () => {
-    renderPage();
-    fireEvent.click(screen.getByText('搜棋谱').closest('button')!);
-    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith(
-      { q: undefined, page: 1, page_size: 6 },
-    ));
-    expect(screen.getByTestId('kifu-search')).toBeInTheDocument();
     const rows = await screen.findAllByText('柯洁 对 申真谞');
     expect(rows).toHaveLength(2);
+    // 判据落在请求形状上:只有一发,就是列表本身。旧写法挂载时先发一发 page_size: 1 探总数。
+    expect(getAlbums).toHaveBeenCalledTimes(1);
+    expect(getAlbums).toHaveBeenCalledWith({ q: undefined, page: 1, page_size: 6 });
   });
 
-  it('组标题右端写的是真数据「共 N 局」,不是稿子那句「按棋手 / 赛事 / 日期搜」', async () => {
+  it('组标题右端写的是真数据「共 N 局」', async () => {
     getAlbums.mockResolvedValue({ items: [album(1)], total: 1234, page: 1, page_size: 6 });
     renderPage();
-    fireEvent.click(screen.getByText('搜棋谱').closest('button')!);
     expect(await screen.findByText('共 1,234 局')).toBeInTheDocument();
-    // 稿子写在这个位置的是一句解释(「按棋手 / 赛事 / 日期搜」),规范说这里放数据。
     expect(screen.queryByText('按棋手 / 赛事 / 日期搜')).not.toBeInTheDocument();
   });
 
   it('点一行进屏 16 的详情', async () => {
     renderPage();
-    fireEvent.click(screen.getByText('搜棋谱').closest('button')!);
     const rows = await screen.findAllByText('柯洁 对 申真谞');
     fireEvent.click(rows[0].closest('button')!);
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu/1');
   });
 
-  it('搜不到东西时说的是「没有对得上的谱」,不是空着', async () => {
+  it('没搜的时候库是空的:说「未找到棋谱」,不说「换棋手名再试」', async () => {
     getAlbums.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 6 });
     renderPage();
-    fireEvent.click(screen.getByText('搜棋谱').closest('button')!);
+    expect(await screen.findByText('未找到棋谱')).toBeInTheDocument();
+    expect(screen.queryByText('没有对得上的谱')).toBeNull();
+    expect(screen.queryByText('换棋手名、赛事名或者年份再试。')).toBeNull();
+  });
+
+  it('搜了对不上:说「没有对得上的谱」并给换词的提示', async () => {
+    renderPage();
+    await screen.findAllByText('柯洁 对 申真谞');
+    getAlbums.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 6 });
+    fireEvent.change(screen.getByPlaceholderText('棋手、赛事、年份都能搜'), { target: { value: '不存在' } });
     expect(await screen.findByText('没有对得上的谱')).toBeInTheDocument();
+    expect(screen.getByText('换棋手名、赛事名或者年份再试。')).toBeInTheDocument();
+    expect(getAlbums).toHaveBeenLastCalledWith({ q: '不存在', page: 1, page_size: 6 });
+  });
+
+  it('翻页:第 1 页「上一页」是灰的;「下一页」发第 2 页', async () => {
+    getAlbums.mockResolvedValue({ items: [album(1)], total: 20, page: 1, page_size: 6 });
+    renderPage();
+    await screen.findByText('1 / 4');
+    expect(screen.getByRole('button', { name: '上一页' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: '下一页' }));
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: undefined, page: 2, page_size: 6 }));
+  });
+
+  // 搜索防抖原先挂载时也跑一次:350ms 后 setQuery('') + setPage(1)。列表藏在开关后面时没人能在
+  // 350ms 内翻页;默认摊开后,进屏就点「下一页」会被它弹回第 1 页。
+  it('进来马上翻页,不会被搜索防抖弹回第 1 页', async () => {
+    // 全假时钟:点击一定落在挂载后 350ms 以内(`findBy*` 会让真时间流过去,点击可能晚于那一下)。
+    vi.useFakeTimers();
+    try {
+      getAlbums.mockResolvedValue({ items: [album(1)], total: 20, page: 1, page_size: 6 });
+      renderPage();
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(screen.getByText('1 / 4')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '下一页' }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(screen.getByText('2 / 4')).toBeInTheDocument();
+      await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+      expect(screen.getByText('2 / 4')).toBeInTheDocument();
+      expect(getAlbums).toHaveBeenLastCalledWith({ q: undefined, page: 2, page_size: 6 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('在第 3 页改搜索词,结果回第 1 页', async () => {
+    getAlbums.mockResolvedValue({ items: [album(1)], total: 30, page: 1, page_size: 6 });
+    renderPage();
+    await screen.findByText('1 / 5');
+    fireEvent.click(screen.getByRole('button', { name: '下一页' }));
+    await screen.findByText('2 / 5');
+    fireEvent.click(screen.getByRole('button', { name: '下一页' }));
+    await screen.findByText('3 / 5');
+    fireEvent.change(screen.getByPlaceholderText('棋手、赛事、年份都能搜'), { target: { value: '柯洁' } });
+    await waitFor(() => expect(getAlbums).toHaveBeenLastCalledWith({ q: '柯洁', page: 1, page_size: 6 }));
   });
 
   it('库读不到时如实报错并给重试 —— 重试真的会再发一次请求', async () => {
-    // 只让**列表**那一发失败:探数那一发(page_size 1)在挂载时就走掉了,
-    // 用 `mockRejectedValueOnce` 会被它吃掉,列表反而成功。
-    getAlbums.mockImplementation((o: { page_size?: number }) => (o?.page_size === 6
-      ? Promise.reject(new Error('boom'))
-      : Promise.resolve({ items: [], total: 1234, page: 1, page_size: 1 })));
+    getAlbums.mockRejectedValue(new Error('boom'));
     renderPage();
-    fireEvent.click(screen.getByText('搜棋谱').closest('button')!);
     expect(await screen.findByText('棋谱库读不到')).toBeInTheDocument();
     expect(screen.getByText('boom')).toBeInTheDocument();
     const before = getAlbums.mock.calls.length;
     fireEvent.click(screen.getByRole('button', { name: '重试' }));
     await waitFor(() => expect(getAlbums.mock.calls.length).toBe(before + 1));
+  });
+
+  it('棋谱库连不上云端(503)时说「要联网」,不印原文,也不说「没搜到」', async () => {
+    getAlbums.mockRejectedValue(new ApiError(503, 'Request failed 503: {"detail":"Remote kifu service unavailable"}'));
+    renderPage();
+    expect(await screen.findByText('棋谱库要联网才能搜')).toBeInTheDocument();
+    expect(screen.queryByText(/Request failed/)).toBeNull();
+    expect(screen.queryByText('没有对得上的谱')).toBeNull();
+    expect(screen.getByRole('button', { name: '重试' })).toBeInTheDocument();
+    // 断网不连累另外两条路:导入 SGF 还在
+    expect(screen.getByRole('button', { name: /导入 SGF/ })).toBeInTheDocument();
   });
 });
 
@@ -271,35 +282,5 @@ describe('屏 15 棋谱 · 继续摆谱与最近摆过', () => {
     renderPage();
     expect(screen.getByTestId('kifu-recent-empty')).toBeInTheDocument();
     expect(screen.queryByTestId('kifu-recent-rows')).not.toBeInTheDocument();
-  });
-});
-
-describe('屏 15 棋谱 · 职业直播', () => {
-  it('有直播就铺出来,来源按这一批真的来自哪几家算', () => {
-    useLiveMatchesMock.mockReturnValue(liveResult({
-      matches: [match('m1'), match('m2', { source: 'yike', status: 'scheduled' as MatchSummary['status'] })],
-    }));
-    renderPage();
-    expect(screen.getByTestId('kifu-live')).toBeInTheDocument();
-    expect(screen.getByText('来源：星阵 · 弈客')).toBeInTheDocument();
-    expect(screen.getAllByText('直播中').length).toBeGreaterThan(0);
-    expect(screen.getByText('未开始')).toBeInTheDocument();
-  });
-
-  it('点一场进 /kiosk/live/:id —— Task 4 把直播下了 Dock,入口就是这儿', () => {
-    useLiveMatchesMock.mockReturnValue(liveResult({ matches: [match('m1')] }));
-    renderPage();
-    fireEvent.click(screen.getByText('第 29 届三星杯 · 八强').closest('button')!);
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/live/m1');
-  });
-
-  // 稿子的口径:断网时**整块不渲染**,不摆一排「加载中」骗人在等。
-  // 同一批数据在不报错时是渲染的(上面那条),所以这条不是「一直没有」也能过。
-  it('拉不到直播时整块不渲染', () => {
-    useLiveMatchesMock.mockReturnValue(liveResult({
-      matches: [match('m1')], error: new Error('offline'),
-    }));
-    renderPage();
-    expect(screen.queryByTestId('kifu-live')).not.toBeInTheDocument();
   });
 });

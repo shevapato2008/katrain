@@ -68,6 +68,49 @@ def _terminal_of(session):
     return terminal if isinstance(terminal, GameEnd) else None
 
 
+def _kiosk_game_terms(settings: dict, default_komi: float, default_rules: str) -> tuple[int, float, str]:
+    """kiosk 三屏送来的盘面条件,**在 kiosk 这条端点上 fail-closed**。
+
+    两条,都只管 kiosk 自己那几个 mode(`free` / `ranked` / `pvp_local`):
+
+    ① **让子局的 komi 归零。** 白方的补偿由 KataGo 按规则自动加
+       (chinese = `WHB_N`,`KataGo/cpp/game/rules.cpp:292`;补偿是引擎从盘面初始
+       黑子数自己算的,不看 `HA` —— `boardhistory.cpp:379-401` + `:442-455`),
+       komi 再写一遍就补两遍。kiosk 前端已经保证送 0(`utils/setupOptions.ts`
+       的 `resolveGameTerms`),这里是第二道 —— 判胜负的数落进棋谱,错了看不出来。
+
+       **判据是 `>= 2` 不是 `> 0`**:`HA[1]` 不摆子,KataGo 的补偿判据也是
+       `blackTurnAdvantage <= 1 → 0`(`boardhistory.cpp:397-399`);而「让先」
+       在 kiosk 的枚举里是独立一档(handicap=0 / komi=0),不该由这条规则管。
+
+    ② **`color` 只认 black / white。** `human_bw = "B" if color == "black" else "W"`
+       对任何别的值都落到白 —— 送个 `"guess"` 进来不是 50% 坐白,是 100% 坐白。
+       kiosk 的「猜先」在前端就掷完了(`AiSetupPage.tsx` 的 `drawSeat`),
+       这里挡的是将来任何一版客户端想当然地把 `"nigiri"` 直接发过来。
+
+    ⚠️ **这道兜底只长在 kiosk 那三个 mode 上**(`free` / `ranked` / `pvp_local`,
+    都走 `POST /api/game/setup`)。**绕过它的那条路是 `POST /api/new-game`** ——
+    那里 `request.handicap` / `request.komi` 原样透传给 `_do_new_game`(见上面
+    `mode == "newgame"` 那一支)。前端的出口是 `src/api.ts` 的 `API.newGame`,
+    今天 kiosk 侧**零调用者**(唯一调用者是 galaxy 的 `AiSetupPage.tsx:271`),
+    而「零调用者」这个前提由
+    `src/kiosk/__tests__/kioskNewGameBoundary.test.ts` 钉着 —— 哪天有人在 kiosk 里
+    用了它,那条闸会红并指回这里。
+
+    ⚠️ **这两条只加在 kiosk 分支,不加进 `_do_new_game`。**
+    `_do_new_game` 同时服务 galaxy 的 `NewGameDialog` —— 那边让子和贴目是两个
+    自由数字框(`src/components/NewGameDialog.tsx:285` 和 `:305`),没有任何耦合,
+    用户输进去的 6.5 就是他要的 6.5。在那一层归零 = 把用户亲手输的数悄悄改掉,
+    方向和这里要修的毛病一模一样,只是反过来。
+    """
+    handicap = int(settings.get("handicap", 0) or 0)
+    komi = float(settings.get("komi", default_komi))
+    if handicap >= 2 and komi != 0:
+        komi = 0.0
+    rules = settings.get("rules", default_rules)
+    return handicap, komi, rules
+
+
 def _count_result(score):
     """目差 → 终局结果(正数黑领先)。数子与双停补分(Task 5)共用同一种格式。返回 `(result, winner_color)`。"""
     if score >= 0:
@@ -321,6 +364,14 @@ async def _lifespan_server(app: FastAPI, log):
     app.state.game_repo = game_repo
     app.state.user_game_repo = user_game_repo
     app.state.user_game_analysis_repo = user_game_analysis_repo
+    # 成长屏「能力诊断」:跨报告汇总你执的那一方的逐手评级。
+    from katrain.web.core.report_diagnosis_repo import ReportDiagnosisRepository
+
+    app.state.report_diagnosis_repo = ReportDiagnosisRepository(session_factory)
+    # 成长屏「近一年练棋日历」:逐日数对局与首次解题(盒上只在连不上云端时兜底)。
+    from katrain.web.core.growth_activity import GrowthActivityRepository
+
+    app.state.growth_activity_repo = GrowthActivityRepository(session_factory)
     app.state.ai_ladder_repo = ai_ladder_repo
     app.state.ai_ladder_authoritative = True
     app.state.report_session_factory = session_factory
@@ -470,6 +521,15 @@ async def _lifespan_board(app: FastAPI, log):
     local_tsumego_progress_repo = LocalTsumegoProgressRepository(session_factory)
     app.state.user_game_repo = local_user_game_repo
     app.state.user_game_analysis_repo = local_user_game_analysis_repo
+    # 盒子上报告在云端,这一份只在连不上云端时兜底(本机库里通常没有逐手数据 ⇒ 0 份,
+    # 端点据此标 local_cache,屏上说「读不到云端的报告」)。
+    from katrain.web.core.report_diagnosis_repo import ReportDiagnosisRepository
+
+    app.state.report_diagnosis_repo = ReportDiagnosisRepository(session_factory)
+    # 成长屏「近一年练棋日历」:逐日数对局与首次解题(盒上只在连不上云端时兜底)。
+    from katrain.web.core.growth_activity import GrowthActivityRepository
+
+    app.state.growth_activity_repo = GrowthActivityRepository(session_factory)
     app.state.ai_ladder_repo = AiLadderRankedRepository(session_factory)
     # The board keeps an optimistic local profile so a completed game remains durable
     # through an outage. The cloud reservation/finalizer is canonical across devices;
@@ -583,6 +643,7 @@ async def _lifespan_board(app: FastAPI, log):
     app.state.vision_pump_task = None
     app.state.vision_poller_task = None
     app.state.capture = None
+    app.state.baipu_collect = False
     app.state.geometry = None
     app.state.geometry_calibration = None
     app.state.hardware_vision_store = None
@@ -683,6 +744,14 @@ async def _lifespan_board(app: FastAPI, log):
     # Vision service (optional — enabled when --vision-model is provided)
     if vision_config and vision_config.enabled and camera_hub is not None:
         from katrain.vision.service import VisionService
+        from katrain.vision.parallax_store import attach_parallax
+
+        vision_config, parallax_level, parallax_message = attach_parallax(
+            vision_config,
+            hardware_vision_dir,
+            hardware_vision_state.generation if hardware_vision_state is not None else None,
+        )
+        log.log(parallax_level, parallax_message)
 
         vision = VisionService(vision_config, frame_source=camera_hub)
         vision.start()
@@ -744,15 +813,25 @@ async def _lifespan_board(app: FastAPI, log):
         # geometry). "every-move" (LED fiducial, sub-pixel) is opt-in for high-quality TRAINING
         # capture; "off" disables. Select via --baipu-fiducial-mode or $KATRAIN_BAIPU_FIDUCIAL_MODE.
         # NOTE: real-hardware crowded-board accuracy of "auto" is gated by P12 Task 9 (待硬件).
-        from katrain.web.core.baipu_capture import resolve_fiducial_mode
+        from katrain.web.core.baipu_capture import resolve_baipu_collect, resolve_fiducial_mode
 
         app.state.baipu_fiducial_mode = resolve_fiducial_mode(
             getattr(settings, "_baipu_fiducial_mode", None), os.getenv("KATRAIN_BAIPU_FIDUCIAL_MODE")
         )
         app.state.baipu_drift_threshold_cells = getattr(settings, "baipu_drift_threshold_cells", 0.15)
-        log.info("Capture service started (camera=%s)", capture_config.camera_device)
+        # 上线版摆谱不拍照(Fan 2026-09-14)。采集服务在这里总是起的(几何标定要它),
+        # 拍不拍由这个开关单独决定,默认关。采 YOLO 训练数据时给 --baipu-collect。
+        app.state.baipu_collect = resolve_baipu_collect(
+            getattr(settings, "_baipu_collect", None), os.getenv("KATRAIN_BAIPU_COLLECT")
+        )
+        log.info(
+            "Capture service started (camera=%s, baipu_collect=%s)",
+            capture_config.camera_device,
+            app.state.baipu_collect,
+        )
     else:
         app.state.capture = None
+        app.state.baipu_collect = False
 
     # Calibration service needs only the camera: confirm-existing/promote and drift monitoring
     # run without an LED (no-LED geometry is a supported primary path). LED is required only for
@@ -813,6 +892,7 @@ async def _lifespan_board(app: FastAPI, log):
             on_degraded=invalidate_geometry,
             on_suspend=suspend_vision,
             on_resume=resume_vision,
+            drift_needed=lambda: _vision_needs_frames(app),
         )
     else:
         app.state.geometry_calibration = None
@@ -1320,6 +1400,10 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
             elif mode in ("free", "ranked"):
                 # Kiosk human-vs-AI game setup
                 color = settings.get("color", "black")
+                # fail-closed:下一行对**任何**不等于 "black" 的值都落到白。
+                # 不挡的话送个 "nigiri" 进来是 100% 坐白,而屏上说的是「猜先」。
+                if color not in ("black", "white"):
+                    raise HTTPException(status_code=400, detail=f"unsupported color: {color!r}")
                 human_bw = "B" if color == "black" else "W"
                 ai_bw = "W" if color == "black" else "B"
                 ai_strategy = settings.get("ai_strategy", "ai:default")
@@ -1355,12 +1439,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.katrain.update_config("timer/byo_length", 0)
                     session.katrain.update_config("timer/paused", True)
 
+                handicap, komi, rules = _kiosk_game_terms(settings, 6.5, "japanese")
                 session.katrain(
                     "new_game",
                     size=settings.get("board_size", 19),
-                    handicap=settings.get("handicap", 0),
-                    komi=settings.get("komi", 6.5),
-                    rules=settings.get("rules", "japanese"),
+                    handicap=handicap,
+                    komi=komi,
+                    rules=rules,
                     game_type=mode,  # R3/R5: rated/ranked games forbid analysis (anti-cheat)
                 )
 
@@ -1398,12 +1483,13 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                     session.katrain.update_config("timer/byo_length", 0)
                     session.katrain.update_config("timer/paused", True)
 
+                handicap, komi, rules = _kiosk_game_terms(settings, 7.5, "chinese")
                 session.katrain(
                     "new_game",
                     size=settings.get("board_size", 19),
-                    handicap=settings.get("handicap", 0),
-                    komi=settings.get("komi", 7.5),
-                    rules=settings.get("rules", "chinese"),
+                    handicap=handicap,
+                    komi=komi,
+                    rules=rules,
                     game_type="pvp_local",
                 )
                 if black_name:
@@ -1843,6 +1929,8 @@ def create_app(enable_engine=True, session_timeout=None, max_sessions=None):
                 "category": "game",
                 "game_type": game_type,
                 "game_date": game_date,
+                # 这个用户坐哪一方:算得出就写,算不出就 None(见 models_db.UserGame.user_color)。
+                "user_color": _user_seat(players_info, game_type),
             }
 
             # Platform engine sessions use placeholder player metadata; their
@@ -3509,6 +3597,16 @@ def _guard_engine_move_pending(app: FastAPI, session_id: str) -> None:
         raise HTTPException(status_code=409, detail="engine move pending")
 
 
+def _vision_needs_frames(app: FastAPI) -> bool:
+    """漂移检测跟着识别线程一起停:没在下实体棋 / 监视 / 摆棋准备 / 看预览时不检测(RK3562 实测每秒 ~0.5 s CPU)。
+
+    没有视觉服务 ⇒ 保持旧行为一直检测。摆谱直接从摄像头取帧、不经识别线程,所以摆谱期间也不检测 ——
+    摆谱的 LED 引导按固定灯号点灯、不依赖摄像头几何,受影响的只有采集训练照片时的标注。
+    """
+    vision = getattr(app.state, "vision", None)
+    return True if vision is None else vision.needs_frames()
+
+
 async def _led_failsafe_loop(app: FastAPI, idle_timeout: float = 300.0):
     """Blackout the LED board after >5 min of inactivity (plan §2.1 Gemini 新#2).
 
@@ -3555,6 +3653,54 @@ def _diag_log_vision_evt(log, evt: dict, n_clients: int) -> None:
         log.info("[DIAG-VIS] %s data=%s -> %d clients", t, data, n_clients)
 
 
+# Ambient LED brightness loop (2026-09-22). A guidance lamp's glow, measured by the vision worker on a
+# bare lit point before the player places the stone (led_glow), steers the guidance brightness: at night
+# full brightness shines through a white stone and it is not recognised until the lamp goes out (RK3562).
+# Target in detect_led_centroid score units. Calibration anchors (green@96) scored a median 35k at 17:35,
+# when white stones on lit lamps were still recognised, and 70k at 19:38, when they were not;
+# provisional, to be tuned from the "LED glow" log lines.
+LED_GLOW_TARGET = 60000.0
+LED_GLOW_DEADBAND = (0.8, 1.25)  # target / score inside this band: leave the brightness alone
+LED_GLOW_STEP = (0.5, 2.0)  # one reading moves the brightness by at most these factors
+# A bare lamp's glow never covers more than ~2000 px of the raw 1080p frame (full brightness, dark room);
+# readings of 3000-21000 px with a low peak were a hand or the whole scene changing, not the lamp.
+LED_GLOW_MAX_AREA = 2500
+
+
+def _adjust_led_brightness(app: FastAPI, data: dict, log) -> None:
+    led = getattr(app.state, "led", None)
+    if led is None or not hasattr(led, "set_guidance_scale"):
+        return
+    before = led.guidance_scale
+    score = float(data.get("score") or 0.0)
+    after = before
+    if data.get("ok") and score > 0 and int(data.get("area") or 0) <= LED_GLOW_MAX_AREA:
+        ratio = LED_GLOW_TARGET / score
+        if not LED_GLOW_DEADBAND[0] <= ratio <= LED_GLOW_DEADBAND[1]:
+            from katrain.web.core.led_service import MIN_GUIDANCE_SCALE
+
+            # The glow grows faster than the brightness (the lit patch widens as well; ~brightness^2 on the
+            # RK3562), so step by the square root of the ratio: stepping by the ratio itself overshot every
+            # time. One reading per lamp, taken as it comes on: re-measuring the same lamp at each new
+            # brightness swung it bright/dim/bright, and later readings caught the stone already on it.
+            step = min(LED_GLOW_STEP[1], max(LED_GLOW_STEP[0], ratio**0.5))
+            after = min(1.0, max(MIN_GUIDANCE_SCALE, before * step))
+    log.info(
+        "LED glow at (%s,%s): ok=%s score=%.0f peak=%s area=%s -> guidance brightness %.2f -> %.2f (target %.0f)",
+        data.get("row"),
+        data.get("col"),
+        data.get("ok"),
+        score,
+        data.get("peak"),
+        data.get("area"),
+        before,
+        after,
+        LED_GLOW_TARGET,
+    )
+    if abs(after - before) >= 0.02:
+        led.set_guidance_scale(after)  # the waiting lamp shows the new brightness at once
+
+
 async def _vision_event_pump(app: FastAPI):
     """Sole consumer of the vision worker event queue — see vision_pump docstring."""
     from katrain.web.core.vision_pump import route_vision_event
@@ -3565,6 +3711,9 @@ async def _vision_event_pump(app: FastAPI):
             vision = getattr(app.state, "vision", None)
             if vision:
                 for evt in vision.poll_events():
+                    if isinstance(evt, dict) and evt.get("type") == "led_glow":
+                        _adjust_led_brightness(app, evt.get("data") or {}, log)
+                        continue
                     if isinstance(evt, dict):
                         _diag_log_vision_evt(log, evt, len(app.state.vision_ws_clients))
                     route_vision_event(
@@ -3591,6 +3740,19 @@ def _session_owner(app: FastAPI, session):
     return User(**row) if row else None
 
 
+def _user_seat(players_info, game_type):
+    """这一局里「这个用户」坐哪一方('B' / 'W'),写进 `user_games.user_color`。
+
+    **两边都是人(面对面)或都不是人 ⇒ None。** 面对面那一局没有「你」这一方,硬挑一方出来记,
+    成长屏的胜率就开始编;平台引擎局两个座位都不标 human,它的执色由
+    `_record_platform_engine_game` 显式给。
+    """
+    if game_type == "pvp_local":
+        return None
+    seats = [bw for bw, info in players_info.items() if getattr(info, "human", False)]
+    return seats[0] if len(seats) == 1 else None
+
+
 async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
     """Record a completed platform engine game through the AI-game ledger."""
     from katrain.web.platforms.gateway import is_platform_engine_session
@@ -3612,7 +3774,13 @@ async def _record_platform_engine_game(session, app: FastAPI, user) -> None:
         app,
         user,
         result,
-        data_overrides={"source": "play_ai", "player_black": names["B"], "player_white": names["W"]},
+        data_overrides={
+            "source": "play_ai",
+            "player_black": names["B"],
+            "player_white": names["W"],
+            # 人坐的是引擎的另一边。两个座位都不标 human,这里是唯一知道这件事的地方。
+            "user_color": human_color,
+        },
     )
 
 
@@ -4024,6 +4192,20 @@ def run_web():
         "confidence (default: max(0.25, confidence - 0.15)). Fights weak-light flicker.",
     )
     parser.add_argument(
+        "--vision-parallax",
+        choices=["auto", "off"],
+        default="auto",
+        help="Stone-parallax correction: 'auto' derives it from the geometry lock (a calibrate_parallax "
+        "file under --hardware-vision-dir wins when present); 'off' disables it.",
+    )
+    parser.add_argument(
+        "--vision-confidence-sustain",
+        type=float,
+        default=None,
+        help="Sustain tier below 'keep': detections down to this confidence can only keep an existing "
+        "stone alive, never add one or reach any other consumer (default: min(0.20, keep)).",
+    )
+    parser.add_argument(
         "--vision-enhance",
         choices=["clahe", "off"],
         default=None,
@@ -4052,6 +4234,14 @@ def run_web():
         help="Confirmed moves below this confidence go to the on-screen confirmation card "
         "instead of auto-playing (default: 0.55). Far-side stones meter ~0.36-0.45 on the "
         "Mac rig — lower this to auto-play them.",
+    )
+    parser.add_argument(
+        "--vision-reference-check",
+        choices=["off", "shadow", "on"],
+        default=None,
+        help="Per-cell comparison against the last frame whose board matched the game: 'on' keeps the "
+        "occupancy of cells that look structurally unchanged (bounded per cell), 'shadow' only logs "
+        "what it would do (default), 'off' disables it.",
     )
     parser.add_argument(
         "--vision-auto-exposure",
@@ -4110,10 +4300,18 @@ def run_web():
         "every-move (LED fiducial, sub-pixel — use for TRAINING data capture) | off. "
         "Also settable via $KATRAIN_BAIPU_FIDUCIAL_MODE.",
     )
+    parser.add_argument(
+        "--baipu-collect",
+        action="store_true",
+        help="摆谱时逐手拍照采 YOLO 训练帧(需同时给 --capture-camera)。默认关:上线版摆谱不拍照。"
+        " Also settable via $KATRAIN_BAIPU_COLLECT=1.",
+    )
     args, _unknown = parser.parse_known_args()
     settings._hardware_vision_dir = args.hardware_vision_dir
     if args.baipu_fiducial_mode:
         settings._baipu_fiducial_mode = args.baipu_fiducial_mode
+    if args.baipu_collect:
+        settings._baipu_collect = True
 
     # Configure vision service if model path provided
     if args.vision_model:
@@ -4134,6 +4332,9 @@ def run_web():
             vision_kwargs["confidence_threshold"] = args.vision_confidence
         if args.vision_confidence_keep is not None:
             vision_kwargs["confidence_keep"] = args.vision_confidence_keep
+        if args.vision_confidence_sustain is not None:
+            vision_kwargs["confidence_sustain"] = args.vision_confidence_sustain
+        vision_kwargs["parallax_enabled"] = args.vision_parallax == "auto"
         if args.vision_enhance is not None:
             vision_kwargs["enhance"] = args.vision_enhance
         if args.vision_move_frames is not None:
@@ -4144,6 +4345,8 @@ def run_web():
             vision_kwargs["ambiguous_confidence"] = args.vision_ambiguous_confidence
         if args.vision_auto_exposure is not None:
             vision_kwargs["auto_exposure"] = args.vision_auto_exposure
+        if args.vision_reference_check is not None:
+            vision_kwargs["reference_check"] = args.vision_reference_check
         if args.vision_ae_target is not None:
             vision_kwargs["ae_target"] = args.vision_ae_target
         settings._vision_config = VisionServiceConfig(**vision_kwargs)

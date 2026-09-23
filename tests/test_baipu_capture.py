@@ -391,6 +391,17 @@ def test_resolve_fiducial_mode_precedence():
     assert resolve_fiducial_mode(None, "off") == "off"
 
 
+def test_resolve_baipu_collect_defaults_off():
+    from katrain.web.core.baipu_capture import resolve_baipu_collect
+
+    assert resolve_baipu_collect() is False  # 上线版默认不拍照
+    assert resolve_baipu_collect(None, "") is False
+    assert resolve_baipu_collect(None, "0") is False
+    assert resolve_baipu_collect(True, None) is True  # --baipu-collect
+    assert resolve_baipu_collect(None, "1") is True  # KATRAIN_BAIPU_COLLECT=1
+    assert resolve_baipu_collect(None, " TRUE ") is True
+
+
 class TestFiducialAuto:
     """P12 'auto' mode: no-LED outer-corner per-move geometry. Guidance LED unchanged."""
 

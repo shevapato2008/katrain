@@ -313,6 +313,16 @@ class RemoteAPIClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def get_growth_diagnosis(self, days: int, reports: int) -> Dict:
+        resp = await self._request("GET", "/api/v1/growth/diagnosis", params={"days": days, "reports": reports})
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_growth_activity(self, days: int, tz_offset: int) -> Dict:
+        resp = await self._request("GET", "/api/v1/growth/activity", params={"days": days, "tz_offset": tz_offset})
+        resp.raise_for_status()
+        return resp.json()
+
     # ── Reports (remote-only in board mode) ──
 
     async def list_reports(self) -> List[Dict]:
@@ -342,53 +352,6 @@ class RemoteAPIClient:
 
     async def get_report_moves(self, task_id: int) -> List[Dict]:
         resp = await self._request("GET", f"/api/v1/reports/{task_id}/moves")
-        resp.raise_for_status()
-        return resp.json()
-
-    # ── Live (read-only) ──
-
-    async def get_live_matches(self, **params) -> Any:
-        # Filter out None values from params
-        params = {k: v for k, v in params.items() if v is not None}
-        resp = await self._request("GET", "/api/v1/live/matches", params=params)
-        resp.raise_for_status()
-        return resp.json()
-
-    async def get_live_match(self, match_id: str) -> Dict:
-        resp = await self._request("GET", f"/api/v1/live/matches/{match_id}")
-        resp.raise_for_status()
-        return resp.json()
-
-    async def get_live_featured(self, lang: Optional[str] = None) -> Dict:
-        params = {k: v for k, v in {"lang": lang}.items() if v is not None}
-        resp = await self._request("GET", "/api/v1/live/matches/featured", params=params)
-        resp.raise_for_status()
-        return resp.json()
-
-    async def get_live_match_analysis(self, match_id: str, move_number: Optional[int] = None) -> Dict:
-        params = {k: v for k, v in {"move_number": move_number}.items() if v is not None}
-        resp = await self._request("GET", f"/api/v1/live/matches/{match_id}/analysis", params=params)
-        resp.raise_for_status()
-        return resp.json()
-
-    async def preload_live_analysis(self, match_id: str) -> Dict:
-        resp = await self._request("GET", f"/api/v1/live/matches/{match_id}/analysis/preload")
-        resp.raise_for_status()
-        return resp.json()
-
-    async def get_live_upcoming(self, limit: int = 20, lang: Optional[str] = None) -> Dict:
-        params = {k: v for k, v in {"limit": limit, "lang": lang}.items() if v is not None}
-        resp = await self._request("GET", "/api/v1/live/upcoming", params=params)
-        resp.raise_for_status()
-        return resp.json()
-
-    async def get_live_stats(self) -> Dict:
-        resp = await self._request("GET", "/api/v1/live/stats")
-        resp.raise_for_status()
-        return resp.json()
-
-    async def get_live_translations(self, lang: str) -> Dict:
-        resp = await self._request("GET", "/api/v1/live/translations", params={"lang": lang})
         resp.raise_for_status()
         return resp.json()
 

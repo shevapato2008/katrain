@@ -1,14 +1,18 @@
-"""Board startup remains available when the optional camera is absent."""
+"""Board startup degrades without a camera and wires opt-in baipu collection."""
 
 import asyncio
 import importlib.util
+import logging
 import sys
 from pathlib import Path
 from types import SimpleNamespace
 from types import ModuleType
 
 import pytest
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+
+from katrain.web.api.v1.endpoints import baipu as baipu_api
+from katrain.web.core import baipu_capture, capture_service
 
 from katrain.web.models import EndgameConflict, GameEnd
 
@@ -48,6 +52,11 @@ class _CameraUnavailable:
     def start(self):
         self.started = True
         raise RuntimeError("Failed to open camera /dev/video0")
+
+
+class _CameraAvailable(_CameraUnavailable):
+    def start(self):
+        self.started = True
 
 
 class _Led:
@@ -163,6 +172,17 @@ def _install_board_startup_fakes(monkeypatch):
         sys.modules,
         "katrain.web.core.tsumego_progress_repo",
         SimpleNamespace(LocalTsumegoProgressRepository=_Repository),
+    )
+    # 盒上报告 / 成长日历的本机兜底库(develop 2026-09 加进 board lifespan),同一族假仓库。
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.report_diagnosis_repo",
+        SimpleNamespace(ReportDiagnosisRepository=_Repository),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.growth_activity",
+        SimpleNamespace(GrowthActivityRepository=_Repository),
     )
     monkeypatch.setitem(sys.modules, "katrain.web.core.db", SimpleNamespace(SessionLocal=object()))
     monkeypatch.setitem(
@@ -308,6 +328,75 @@ async def test_board_lifespan_keeps_shared_camera_config_mismatch_fatal(server_m
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("cli", "env", "expected_collect"),
+    [
+        pytest.param([], None, False, id="default-off"),
+        pytest.param(["--baipu-collect"], "0", True, id="cli-on"),
+        pytest.param([], "1", True, id="env-on"),
+    ],
+)
+async def test_baipu_collect_startup_wiring(server_module, monkeypatch, tmp_path, cli, env, expected_collect):
+    """CLI/env must reach the HTTP gate through startup, not injected app.state."""
+    server = server_module
+    _install_board_startup_fakes(monkeypatch)
+    monkeypatch.setattr(server, "_init_platform_manager", lambda *args: None)
+    monkeypatch.setattr(server.settings, "KATRAIN_HOST", "127.0.0.1", raising=False)
+    monkeypatch.setattr(server.settings, "KATRAIN_PORT", 8001, raising=False)
+    monkeypatch.setattr(server.settings, "KATRAIN_MODE", "board", raising=False)
+    monkeypatch.delenv("KATRAIN_BAIPU_COLLECT", raising=False)
+    if env is not None:
+        monkeypatch.setenv("KATRAIN_BAIPU_COLLECT", env)
+    monkeypatch.setattr(sys, "argv", ["katrain", "--capture-camera", "0", "--capture-dir", str(tmp_path), *cli])
+
+    # Keep the real resolver and CaptureService; only the camera and calibration
+    # hardware are fake. A missing camera would let default-false hide broken wiring.
+    monkeypatch.setattr(sys.modules["katrain.web.core.camera_hub"], "CameraHub", _CameraAvailable)
+    monkeypatch.setitem(sys.modules, "katrain.web.core.capture_service", capture_service)
+    monkeypatch.setitem(sys.modules, "katrain.web.core.baipu_capture", baipu_capture)
+    monkeypatch.setitem(
+        sys.modules,
+        "katrain.web.core.geometry_calibration_service",
+        SimpleNamespace(GeometryCalibrationService=lambda **kwargs: object()),
+    )
+    monkeypatch.setitem(
+        sys.modules, "katrain.vision.geometry_lock", SimpleNamespace(load_geometry_lock=lambda _path: None)
+    )
+    monkeypatch.setattr(server, "Path", lambda _path: tmp_path / "geometry_lock.npz")
+
+    app = SimpleNamespace(state=SimpleNamespace(session_manager=_Manager()))
+    served_apps = []
+    monkeypatch.setattr(server, "create_app", lambda **kwargs: app)
+    monkeypatch.setattr(server, "build_frontend", lambda **kwargs: None)
+    monkeypatch.setitem(
+        sys.modules,
+        "uvicorn",
+        SimpleNamespace(
+            config=SimpleNamespace(LOGGING_CONFIG={"formatters": {"default": {}, "access": {}}}),
+            run=lambda app, **kwargs: served_apps.append(app),
+        ),
+    )
+
+    try:
+        server.run_web()  # Real argparse and settings assignments.
+        assert served_apps == [app]
+        await server._lifespan_board(served_apps[0], server.logging.getLogger("test.baipu-collect"))
+        assert isinstance(app.state.capture, capture_service.CaptureService)
+        assert app.state.camera_hub.started is True
+        request = SimpleNamespace(app=app)
+        assert await baipu_api.baipu_mode(request) == {"collect": expected_collect}
+        # No geometry lock: enabled collection reaches the existing 409; disabled
+        # collection must stop at the new 404 gate before touching the camera.
+        with pytest.raises(HTTPException) as exc:
+            await baipu_api.baipu_capture(
+                request, baipu_api.BaipuCaptureRequest(game_id="g", move_index=-1, sgf="(;SZ[19];B[pd])")
+            )
+        assert exc.value.status_code == (409 if expected_collect else 404)
+    finally:
+        await _cancel_startup_tasks(app)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("has_generation", [True, False])
 async def test_board_lifespan_selects_camera_mode_from_atomic_hardware_state(
     server_module, monkeypatch, tmp_path, has_generation
@@ -422,6 +511,7 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
         SimpleNamespace(
             geometry=geometry,
             profile=SimpleNamespace(strategy="hardware_auto_then_lock", exposure=None),
+            generation="gen-1",
         )
         if has_generation
         else None
@@ -468,6 +558,17 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
         SimpleNamespace(CameraHub=CameraHub, CameraHubConfig=lambda **kwargs: SimpleNamespace(**kwargs)),
     )
     monkeypatch.setitem(sys.modules, "katrain.vision.service", SimpleNamespace(VisionService=VisionService))
+
+    attach_parallax_calls = []
+    attached_config = SimpleNamespace(marker="attached-config", backend="fake")
+
+    def fake_attach_parallax(vision_config, hardware_vision_dir, current_generation):
+        attach_parallax_calls.append((vision_config, hardware_vision_dir, current_generation))
+        return attached_config, logging.INFO, "parallax off: not calibrated"
+
+    monkeypatch.setitem(
+        sys.modules, "katrain.vision.parallax_store", SimpleNamespace(attach_parallax=fake_attach_parallax)
+    )
     monkeypatch.setitem(
         sys.modules,
         "katrain.web.core.hardware_vision_state",
@@ -504,6 +605,14 @@ async def test_vision_only_startup_uses_geometry_from_atomic_hardware_state(
             assert CameraHub.instance.control_calls == [{"auto_exposure": 3.0}]
         else:
             assert CameraHub.instance.control_calls == []
+        assert attach_parallax_calls == [
+            (
+                server.settings._vision_config,
+                str(tmp_path),
+                "gen-1" if strategy_verified else None,
+            )
+        ]
+        assert VisionService.instances[0].config is attached_config
     finally:
         await _cancel_startup_tasks(app)
 
@@ -580,7 +689,10 @@ async def test_capture_startup_forwards_publish_gate_to_hardware_store(server_mo
     monkeypatch.setitem(
         sys.modules,
         "katrain.web.core.baipu_capture",
-        SimpleNamespace(resolve_fiducial_mode=lambda configured, env: configured),
+        SimpleNamespace(
+            resolve_fiducial_mode=lambda configured, env: configured,
+            resolve_baipu_collect=lambda configured, env: False,
+        ),
     )
     monkeypatch.setitem(
         sys.modules,

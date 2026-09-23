@@ -493,7 +493,11 @@ export default function ReportDetailPage() {
           open={openFold === 'grade'}
           onToggle={() => setOpenFold(openFold === 'grade' ? 'ai' : 'grade')}
           testId="report-detail-grade"
-          title={t('grade:tabs', '着手评价 · 七档')}
+          /* 另铸一个键:`grade:tabs` 是**分段控件的读屏组名**
+             (`MoveGradePanel.tsx:491` 在用,念「着手评价」),这里要的是**折叠块标题**,
+             带「· 七档」那个限定。同一个 msgid 兼管两件事的话,`t()` 翻译表赢,
+             两处必然有一处被另一处的文案覆盖。 */
+          title={t('grade:fold_title', '着手评价 · 七档')}
           value={gradeSummary}
         >
           <MoveGradePanel

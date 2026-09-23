@@ -5,10 +5,6 @@ import { ThemeProvider } from '@mui/material';
 import { kioskTheme } from '../theme';
 import type { GameState } from '../../api';
 
-vi.mock('../context/OrientationContext', () => ({
-  useOrientation: () => ({ rotation: 0, setRotation: vi.fn() }),
-}));
-
 // Mock vision context — enabled with LED reported down (red badge scenario).
 vi.mock('../context/VisionContext', () => ({
   useVision: () => ({

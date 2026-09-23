@@ -179,7 +179,10 @@ def _progress_app(online: bool, remote_get_progress: AsyncMock) -> FastAPI:
         remote_user_games=MagicMock(),
         local_user_game_repo=MagicMock(),
         local_tsumego_progress_repo=local,
-        remote_client=MagicMock(),
+        # 盒上的云端会话绑在某个本机用户上(`auth.py` box-sso bootstrap 里 `bind_user`)。
+        # 这里就绑成下面那个 id=7 的测试用户 —— 裸 MagicMock 的 `bound_user_id` 是个 Mock,
+        # 会被 `cloud_session_is` 判成「别人的会话」而退回本机,那不是这几条用例要测的东西。
+        remote_client=MagicMock(bound_user_id="7"),
     )
     app = _app(dispatcher)
     app.dependency_overrides[get_current_user] = lambda: User(id=7, username="tester")

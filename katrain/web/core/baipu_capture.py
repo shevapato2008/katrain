@@ -324,6 +324,21 @@ def resolve_fiducial_mode(cli=None, env=None, *, default="auto"):
     return default
 
 
+_TRUTHY = ("1", "true", "yes", "on")
+
+
+def resolve_baipu_collect(cli=None, env=None) -> bool:
+    """摆谱要不要逐手拍照采帧:CLI ``--baipu-collect`` > ``$KATRAIN_BAIPU_COLLECT`` > **默认关**。
+
+    拍照只为收集 YOLO 训练数据,上线版摆谱不拍(Fan 2026-09-14)。
+    **不能拿「采集服务在不在」代替这个开关**:盒子为了几何标定总是带着 ``--capture-camera`` 起,
+    采集服务在盒上恒在(``smartbox-katrain.service.d/20-vision-led.conf``)。
+    """
+    if cli:
+        return True
+    return str(env or "").strip().lower() in _TRUTHY
+
+
 def run_capture(
     *,
     led,

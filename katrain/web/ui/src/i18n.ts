@@ -31,6 +31,10 @@ class I18n {
   }
 
   async loadLiveTranslations(lang: string) {
+    // kiosk 包没有直播(Fan 2026-09-22),盒上也没有直播接口可拉(`/api/v1/board/live` 已删)——
+    // 人名 / 赛事译名表只给 galaxy 用。字面量 `if (true) return` 让打包器把下面整段连同 LiveAPI
+    // 一起摇掉;`scripts/verify-kiosk.sh` 查的就是 kiosk 包里再没有任何直播接口路径。
+    if (__KIOSK_2D_ONLY__) return;
     if (this.liveTranslationsLoading) return;
     this.liveTranslationsLoading = true;
     try {

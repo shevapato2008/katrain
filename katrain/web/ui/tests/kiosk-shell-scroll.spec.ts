@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { KIOSK_E2E_UUID, kioskMeJson } from './helpers/kioskIdentity';
 
 /**
  * 规范 §5.2 悬浮滚动区的**承重闸**。四条硬性,一条都不能靠 jsdom ——
@@ -37,9 +38,10 @@ const boot = async (page: Page, path: string, css?: string) => {
     if (document.head ?? document.documentElement) put();
     else document.addEventListener('readystatechange', put, { once: true });
   }, css ?? '');
-  await page.route('**/api/v1/auth/me', (route) => route.fulfill({
-    json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
-  }));
+  // **`/me` 必须带 uuid。** 少了它身份不解析,`kioskActivityStorage` 退回内存 Map,
+  // 用这个 boot 的用例里每一条 `baipu:*` / 活动会话种子都写进了一个页面读不到的地方。
+  // 见 helpers/kioskIdentity.ts。
+  await page.route('**/api/v1/auth/me', (route) => route.fulfill({ json: kioskMeJson() }));
   await page.goto(path);
   await page.waitForSelector('.kiosk-screen', { state: 'attached' });
   // 跨平台三张卡是 `/api/v1/platform/status` 回来之后才渲的 —— 不等它,量到的是没长齐的内容。
@@ -167,9 +169,12 @@ const bootTraining = async (page: Page, levels: ReturnType<typeof LEVELS>, resum
     return route.fulfill({ json: {} });
   });
   await page.goto('/kiosk/tsumego');
-  // 卡是接口回来之后才渲的 —— 等 `.kiosk-screen` 不够,量到的会是还没长齐的内容。
-  // 空态那一支一张卡都没有,所以两个落点都等:等不到才是真的没渲完。
-  await page.waitForSelector('.kiosk-cards .kiosk-card, .empty');
+  // 档位行是接口回来之后才渲的 —— 等 `.kiosk-screen` 不够,量到的会是还没长齐的内容。
+  // 空态那一支一行都没有,所以两个落点都等:等不到才是真的没渲完。
+  // ⚠️ 这一屏的行是 `.tsumego-level-row`(`TsumegoPage.tsx:132`),**不是 `.kiosk-card`**。
+  // 原来写的 `.kiosk-cards .kiosk-card, .empty` 之所以没红,是**右上角那张「实体棋盘」
+  // 卡里的 `.empty` 顶上了** —— 它和档位列表渲没渲完没有任何关系,等于这道等待是空的。
+  await page.waitForSelector('.tsumego-level-list .tsumego-level-row, [data-testid="tsumego-empty"]');
 };
 
 test('训练营:档数多到装不下时,右栏自己滚 —— data-at 走 top→mid→end,拇指 >=24,栏恒 680', async ({ page }) => {
@@ -373,11 +378,12 @@ test('题目列表:.qgrid 十列铺满 992,行内不换行、页面不横向溢�
 
 /* ══ 屏 15 棋谱:五块全长满时,右栏得滚得到最后一块 ═════════════════════════
  * 这一屏是 L1 里**最长的一条右栏**:问候 + 继续摆谱 + 名局棋谱(三张卡 + 搜索框 +
- * 六行结果 + 翻页)+ 最近摆过六行 + 职业直播四行。展开搜索是**唯一**会让它长一截的
+ * 六行结果 + 翻页)+ 最近摆过六行。展开搜索是**唯一**会让它长一截的
  * 交互,所以造输入就造这一版 —— 收起态量出来的数字不算数。
  *
  * 判据不是「有没有滚动条」(那条别处已经守了),是**最后一块滚得到**:
- * 直播那几行如果永远落在视野外,等于 Task 4 把直播下 Dock 之后它就再也到不了了。
+ * 最后一块原来是「职业直播」;2026-09-22 Fan 裁定 kiosk 端删掉直播,最后一块变成「最近摆过」,
+ * 量的是它的**最后一行** —— 它永远落在视野外,就等于最早摆过的那几份谱再也点不到。
  */
 const KIFU_ROWS = Array.from({ length: 6 }, (_, i) => ({
   id: i + 1, player_black: '柯洁', player_white: '申真谞',
@@ -387,44 +393,38 @@ const KIFU_ROWS = Array.from({ length: 6 }, (_, i) => ({
   komi: 7.5, rules: 'chinese', round_name: '半决赛',
 }));
 
-const LIVE_ROWS = Array.from({ length: 4 }, (_, i) => ({
-  id: `m${i}`, source: 'xingzhen', tournament: `第 ${29 - i} 届三星杯`, round_name: '八强',
-  date: '2026-08-22T06:00:00Z', player_black: '柯洁', player_white: '申真谞',
-  black_rank: '九段', white_rank: '九段', status: 'live', result: null, move_count: 118,
-  current_winrate: .5, current_score: 0, last_updated: '', board_size: 19, komi: 7.5, rules: 'chinese',
-}));
-
-test('棋谱:展开搜索之后右栏自己滚,最后一块(职业直播)滚得到', async ({ page }) => {
-  await page.addInitScript(() => {
+test('棋谱:名局列表摊开时右栏自己滚,最后一块(最近摆过)的末行滚得到', async ({ page }) => {
+  // 六条「最近摆过」是这一屏**撑到溢出**的一半内容 —— 种在读不到的键上,
+  // 量到的就是装得下那一档的数,按承重关卡的规矩一概不算。
+  await page.addInitScript((uuid: string) => {
     const now = Date.now();
-    localStorage.setItem('baipu:recent', JSON.stringify(
+    localStorage.setItem(`baipu:recent:${uuid}`, JSON.stringify(
       Array.from({ length: 6 }, (_, i) => ({ id: `kifu_${i}`, name: `名局 ${i}`, savedAt: now - i * 3600e3 })),
     ));
     for (let i = 0; i < 6; i += 1) {
-      localStorage.setItem(`baipu:progress:kifu_${i}`, JSON.stringify({ k: 47, frames: 0, updatedAt: now, total: 241 }));
+      localStorage.setItem(
+        `baipu:progress:kifu_${i}:${uuid}`,
+        JSON.stringify({ k: 47, frames: 0, updatedAt: now, total: 241 }),
+      );
     }
-  });
+  }, KIOSK_E2E_UUID);
   await page.route('**/api/v1/kifu/albums*', (route) => route.fulfill({
     json: { items: KIFU_ROWS, total: 1234, page: 1, page_size: 6 },
   }));
-  await page.route('**/live/matches*', (route) => route.fulfill({
-    json: { matches: LIVE_ROWS, live_count: 4, total: 4 },
-  }));
   await boot(page, '/kiosk/kifu');
-  await page.waitForSelector('[data-testid="kifu-live"]');
+  await page.waitForSelector('[data-testid="kifu-recent-rows"] .kiosk-row:nth-child(6)');
 
   const railW = await page.evaluate(() =>
     Math.round(document.querySelector('.kiosk-side')!.getBoundingClientRect().width));
   expect(railW, '右栏不是 680 —— 后面量的滚动都建在错的宽度上').toBe(680);
 
-  // 展开搜索:这是唯一会让这条栏长一截的交互。
-  await page.getByRole('button', { name: /搜棋谱/ }).click();
+  // 名局列表 2026-09-23 起一进来就摊开(Fan)—— 不用再先按「搜棋谱」,六行 + 翻页就是这条栏的常态。
   await page.waitForSelector('[data-testid="kifu-search"] .kiosk-row');
 
   const before = await overflowOf(page);
   expect(before, '没造出溢出 —— 下面那条断言是空的').toBeGreaterThan(100);
 
-  // 滚到底,直播那一块的下缘必须进得了视野。**用真滚轮**,不是 scrollTop = n。
+  // 滚到底,「最近摆过」末行的下缘必须进得了视野。**用真滚轮**,不是 scrollTop = n。
   const zone = page.locator('.kiosk-side__scroll');
   const zb = (await zone.boundingBox())!;
   await page.mouse.move(zb.x + zb.width / 2, zb.y + zb.height / 2);
@@ -432,16 +432,16 @@ test('棋谱:展开搜索之后右栏自己滚,最后一块(职业直播)滚得�
 
   const m = await page.evaluate(() => {
     const el = document.querySelector('.kiosk-side__scroll') as HTMLElement;
-    const live = document.querySelector('[data-testid="kifu-live"]') as HTMLElement;
+    const last = document.querySelector('[data-testid="kifu-recent-rows"] .kiosk-row:last-child') as HTMLElement;
     return {
       atEnd: el.scrollHeight - el.clientHeight - el.scrollTop,
-      liveBottom: Math.round(live.getBoundingClientRect().bottom),
+      lastBottom: Math.round(last.getBoundingClientRect().bottom),
       zoneBottom: Math.round(el.getBoundingClientRect().bottom),
       horizontal: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
   });
   expect(m.atEnd, '滚不到底').toBeLessThanOrEqual(1);
-  expect(m.liveBottom, '滚到底了,直播那一块的下缘还在视野外 —— 它就是到不了的').toBeLessThanOrEqual(m.zoneBottom);
+  expect(m.lastBottom, '滚到底了,「最近摆过」末行的下缘还在视野外 —— 它就是到不了的').toBeLessThanOrEqual(m.zoneBottom);
   expect(m.horizontal, '页面横向溢出了').toBe(0);
 });
 
@@ -552,23 +552,33 @@ test('设置:滚到「落子与提示」那一组时,导航高亮的正是它', 
   await expect.poll(async () => page.evaluate(() => {
     const items = [...document.querySelectorAll('[data-testid="settings-nav"] button')];
     return items.filter((b) => b.getAttribute('aria-current') === 'true').map((b) => b.textContent);
-  }), { message: '滚到底了,最后一组没能滚到视口顶 —— 尾部留白不够' }).toEqual(['语言']);
+  }), { message: '滚到底了,最后一组没能滚到视口顶 —— 尾部留白不够' }).toEqual(['关于']);
 });
 
 /**
  * 开局设置那几屏(L2 布局 A,右栏 460,形态 1 整栏滚)。
  *
- * **它们是这一轮才第一次能滚的。** 上一版右栏是 MUI 表单外面套一层 `overflow`
- * —— 屏 02 那一版是 `hidden`,装不下的后果是**裁掉**而不是滚。按稿子重画之后右栏是
- * 一叠 `.setgrp`,一定比 460 宽 × 约 400 高装得下的多,所以「能不能滚 / 拨不拨得动 /
- * 主行动键会不会被顶出去」三件事全是新成立的 —— 承重反查在这几屏上是**触发**的。
+ * ## 2026-09-21:前提换了,断言留下
+ *
+ * 这条闸原来的前提是「设置装不下」—— 那是 r1 的事实(屏 02 八组、屏 04 七组,
+ * 溢出好几百)。r2 把八组收成两行六格加一条推导之后,**三屏都装得下了**,
+ * 于是「溢出 > 100」「拨十二下滚轮 scrollTop > 0」这两条前提自己不成立了。
+ *
+ * **不 skip** —— skip 掉等于这两屏的骨架再也没人量。这条闸真正在守的是另外几件事,
+ * 它们和装不装得下**无关**,而且一条都没过期:
+ *   · 右栏恒 460(布局 A 的宽度账)
+ *   · 主行动键在滚动区**外面** ⇒ 贴着右栏底、不跟着滚
+ *   · 溢出(哪怕是将来长出来的)由滚动区吃掉,**不许顶破右栏**
+ *   · 最后一组进得了视野
+ *   · 页面不横向溢出
+ * 所以把「必须溢出」换成「不该有可滚量」,其余原样保留。
+ *
+ * 「撑破了还滚不滚得动」那一条搬去了 `kiosk-setup-r2-geometry.spec.ts`:
+ * 那边往滚动区里塞一块 `flex: 0 0 1200px` 再拨,这边没有可造的溢出了。
  *
  * **两屏各量一次,不是量一屏推另一屏。** 它们共用 `.setgrp` 那套类,但**骨架各自手写**
  * (两个不同的页面组件):屏 04 完全可能把主行动键写进滚动区里,而屏 02 的那条闸
  * 对此一无所知。同一条承重链上可以有不止一处断点 —— 判据能转,结论不能转。
- *
- * 造到会溢出:不用造 —— 屏 02 默认八组、屏 04 默认七组,下面第一条就是核这件事,
- * 溢出不到 100 就说明后面全是空的。
  *
  * 判据先写死再读数:
  *   · 该滚的是 `.kiosk-side__scroll`(**不是** `.kiosk-rail`,也不是页面)
@@ -587,7 +597,7 @@ const SETUP_SCREENS = [
 ];
 
 for (const screen of SETUP_SCREENS) {
-test(`开局设置(${screen.name}):设置装不下时右栏自己滚,而「开始对局」怎么滚都还在`, async ({ page }) => {
+test(`开局设置(${screen.name}):设置装得下、右栏不被顶破,而「开始对局」怎么都还在`, async ({ page }) => {
   await page.route('**/api/v1/vision/status', (route) => route.fulfill({
     json: {
       enabled: false, camera_connected: false, pose_locked: false, sync_state: 'idle',
@@ -601,14 +611,18 @@ test(`开局设置(${screen.name}):设置装不下时右栏自己滚,而「开�
     Math.round(document.querySelector('.kiosk-rail')!.getBoundingClientRect().width));
   expect(railW, '右栏不是 460 —— 布局 A 的宽度账先崩了,后面量的滚动都建在错的宽度上').toBe(460);
 
+  // r2 之后这两屏装得下 —— 这一条就是那个事实本身。
+  // (余量有多少归 `kiosk-setup-r2-geometry.spec.ts` 量,这里只管「不用滚」。)
   const overflow = await overflowOf(page);
-  expect(overflow, '没造出溢出 —— 那下面这几条断言都是空的').toBeGreaterThan(100);
+  expect(overflow, `${screen.name} 右栏又溢出了 ${overflow}px —— r2 的前提是它装得下`)
+    .toBeLessThanOrEqual(0);
 
   // 主行动键在滚动区外面:先记下它现在在哪。
   const ctaBefore = await page.evaluate(() =>
     Math.round(document.querySelector('.kiosk-primary-action')!.getBoundingClientRect().bottom));
 
-  // **用真滚轮**,不是 `scrollTop = n` —— 程序化能滚 ≠ 手指拨得动。
+  // 照样拨十二下真滚轮 —— 装得下的时候它**一格都不该动**,
+  // 而主行动键和最后一组的位置在拨过之后仍要成立。
   const zone = page.locator('.kiosk-side__scroll');
   const zb = (await zone.boundingBox())!;
   await page.mouse.move(zb.x + zb.width / 2, zb.y + zb.height / 2);
@@ -632,9 +646,8 @@ test(`开局设置(${screen.name}):设置装不下时右栏自己滚,而「开�
     };
   }, screen.last);
 
-  expect(m.scrollTop, '拨了十二下滚轮,一格都没动 —— 程序化能滚不算数').toBeGreaterThan(0);
-  expect(m.atEnd, '滚不到底').toBeLessThanOrEqual(1);
-  expect(m.lastBottom, `滚到底了,最后一组「${screen.lastName}」的下缘还在视野外 —— 那一组就是到不了的`)
+  expect(m.scrollTop, '装得下却滚动了 —— 说明有东西超出了可视区').toBe(0);
+  expect(m.lastBottom, `最后一组「${screen.lastName}」的下缘在视野外 —— 那一组就是到不了的`)
     .toBeLessThanOrEqual(m.zoneBottom);
   // 溢出必须由滚动区吃掉,**不能顶破右栏** —— 顶破了主行动键就被推出 516 之外。
   expect(m.railOverflow, '右栏自己被顶破了 —— 溢出该由滚动区吃掉').toBeLessThanOrEqual(0);
@@ -1182,7 +1195,18 @@ const BAIPU_STEPS = (n: number) => ({
   })),
 });
 
-const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang' } = {}) => {
+const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang'; collect?: boolean } = {}) => {
+  // 上线态(默认)不拍照、不套标定守卫;采集失败 / 拍照遮罩那两态要显式 `collect: true`。
+  await page.route('**/api/v1/baipu/mode', (route) => route.fulfill({ json: { collect: opts.collect ?? false } }));
+  // geometry **两态都要桩**:不桩的话 vite 代理连不上 :8001(或连上别的赛道起的后端)⇒ 状态读不到,
+  // 采集态整屏换成标定台,上线态停在「正在检查棋盘状态」(没读到过就不挂摆谱屏,见 BaipuSessionRoute 页头注)。
+  // 以前这几条绿不绿取决于 :8001 在不在(§33 那条「闸绿取决于另一个进程」)。
+  await page.route('**/api/v1/geometry/status', (route) => route.fulfill({
+    json: {
+      phase: 'disabled', session_calibrated: false, last_error: null,
+      capabilities: { camera_ready: false, led_ready: false, geometry_ready: false, recognition_ready: false },
+    },
+  }));
   await page.route('**/api/v1/baipu/load', (route) => route.fulfill({ json: BAIPU_STEPS(241) }));
   await page.route('**/api/v1/led/**', (route) => route.fulfill({
     json: { ok: true, connected: true, shown_at: null, errors: [] },
@@ -1195,13 +1219,29 @@ const bootBaipu = async (page: Page, opts: { capture?: 'ok' | 'fail' | 'hang' } 
   // ⚠️ **不能用上面那个共享 `boot`**:它末尾等 `.kiosk-scrollzone`,而这一屏没有 ——
   // 它的右栏是两个 `KioskFold`(各自内滚),不是整栏滚的 `KioskScrollZone`。
   // 等一个永远不出现的选择器 = 30 秒超时,而且超时信息指向 helper、不指向真正的原因。
-  await page.addInitScript(() => {
+  /* ⚠️ 摆谱的谱**不在裸 `localStorage` 里**,在按身份分命名空间的那一份:
+     `kioskActivityStorage(identityKey, isGuest)`(盒子 SSO 访客隔离的第 4 层)——
+     真用户走 `localStorage`,每个键后缀 `:${user.uuid}`;**访客或身份未解析(uuid 为空)
+     走内存 Map,一个字节都不碰 localStorage**。
+
+     所以这里两件事缺一不可:① `/me` 必须给 `uuid`(缺了 `identityKey` 就是 null,
+     当访客处理),② 种子键要带同一个 uuid 后缀。
+
+     少任何一件,页面都会渲染它**正确的**空态「这台盒子上没有这份谱」,而
+     `waitForSelector('[data-testid="baipu-pcard"]')` 就停在那儿超时 30 秒 ——
+     报错指向选择器,看起来像「摆谱页挂了」,其实页面是对的、夹具过期了。
+     (2026-09-21:三条摆谱用例就是这么红了一段时间的,develop 上同样红。) */
+  // `addInitScript` 的函数体在**浏览器**里跑,拿不到这个文件里的常量 —— 必须当参数传进去。
+  await page.addInitScript((uuid: string) => {
     localStorage.setItem('token', 'kiosk-shell-scroll');
     localStorage.setItem('katrain_language', 'cn');
-    localStorage.setItem('baipu:sgf:g1', JSON.stringify({ id: 'g1', name: '三星杯半决赛', sgf: '(;SZ[19];B[pd])', savedAt: 1 }));
-  });
+    localStorage.setItem(
+      `baipu:sgf:g1:${uuid}`,
+      JSON.stringify({ id: 'g1', name: '三星杯半决赛', sgf: '(;SZ[19];B[pd])', savedAt: 1 }),
+    );
+  }, KIOSK_E2E_UUID);
   await page.route('**/api/v1/auth/me', (route) => route.fulfill({
-    json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
+    json: kioskMeJson(),
   }));
   await page.goto('/kiosk/baipu/session/g1');
   await page.waitForSelector('[data-testid="baipu-pcard"]');
@@ -1258,7 +1298,7 @@ test('摆谱:241 手四态轮一遍,「确认落子」始终贴右栏底、盘�
 });
 
 test('摆谱:采集失败那一态,右栏照样不溢出、键照样贴底', async ({ page }) => {
-  await bootBaipu(page, { capture: 'fail' });
+  await bootBaipu(page, { capture: 'fail', collect: true });
   await page.getByRole('button', { name: '确认落子' }).click();
   await expect(page.getByTestId('baipu-pcard')).toHaveAttribute('data-mood', 'failed');
 
@@ -1276,7 +1316,7 @@ test('摆谱:采集失败那一态,右栏照样不溢出、键照样贴底', asy
  * 于是 top 差 14、高多 28,底边被画布裁掉。
  */
 test('摆谱:拍照遮罩的定位原点是布局根,而且真的盖住了那三颗键', async ({ page }) => {
-  await bootBaipu(page, { capture: 'hang' });
+  await bootBaipu(page, { capture: 'hang', collect: true });
   await page.getByRole('button', { name: '确认落子' }).click();
   await page.waitForSelector('[data-testid="baipu-capture-pending"]');
 
@@ -1301,116 +1341,6 @@ test('摆谱:拍照遮罩的定位原点是布局根,而且真的盖住了那三
   expect(m.dlg.h, `遮罩高 ${m.dlg.h} 对不上布局根 ${m.root.h}`).toBe(m.root.h);
   expect(m.dlg.w).toBe(m.root.w);
   expect(m.covers, '遮罩没盖住那三颗键 —— 拍照时还能按下第二次「确认落子」').toBe(true);
-});
-
-/* ─────────────────────────────────────────────────────────────────────────
- * 屏 18 直播 · 观战:右栏**正好摆满 516,一个像素余量都没有**
- *
- * 44(页控条) + 12 + 60 + 12 + 60 + 12 + 着法块(grow) + 12 + 40(开关排) + 12 + 那句话 = 516。
- * 这一屏删掉了进度条 / 胜率曲线 / AI 推荐列表三块,判据之一就是「能再塞进来的上限只有 101px」——
- * 那么这条闸要守的就是**这个账没被谁悄悄撑破**:
- *   ① 着法表 ≥ 3 行(§11:固定部分之后剩不到三行就得整栏滚,而整栏一滚开关排会滚出视野)
- *   ② 会长的是着法块**自己**,不是右栏(右栏溢出 = 底下那排和那句话被顶出画布)
- *   ③ 开关排和那句话**恒在视野内** —— 观战屏上唯一的一排控件不许跟着内容跑
- *
- * **造数据要造到会溢出**:241 手 ⇒ 121 行,`.mvrows` 装得下 8 行。
- *
- * ⚠️ 顺带守着一个 8px 的坑:共享 `.setnote` 带 `margin-bottom:8px`(那是给屏 27 写的),
- * 在这条 flex 栏里它是最后一个孩子,那 8px 会从 grow 的着法块里偷走 8 并在栏底留一条死空。
- * 本屏用 `.kiosk-rail > .setnote` 归零 —— ③ 那条断言(那句话的底边贴着右栏底)守的就是它。
- * ────────────────────────────────────────────────────────────────────────── */
-const LIVE_MATCH = (moves: number) => ({
-  id: 'lm', source: 'xingzhen', tournament: '第 29 届三星杯', round_name: '八强',
-  date: '2026-08-24', player_black: '申真谞', player_white: '柯洁',
-  black_rank: '九段', white_rank: '九段', status: 'live', result: null,
-  move_count: moves, current_winrate: 0.5, current_score: 0,
-  last_updated: '2026-08-24T08:40:00Z', board_size: 19, komi: 7.5, rules: 'chinese',
-  sgf: null,
-  moves: Array.from({ length: moves }, (_, i) => `${'ABCDEFGHJKLMNOPQRST'[i % 19]}${(i % 19) + 1}`),
-});
-
-const bootLive = async (page: Page, moves = 241) => {
-  // ⚠️ **顺序有讲究**:playwright 后注册的先匹配,而 `matches/lm**` 也能吃掉
-  // `matches/lm/analysis`。所以宽的先注册、窄的后注册,否则分析请求会拿到一份 match JSON,
-  // 页面卡在 loading —— 第一版就是这么超时的,而超时信息只说「等不到那个选择器」。
-  await page.route('**/api/v1/live/matches/lm**', (route) => route.fulfill({ json: LIVE_MATCH(moves) }));
-  await page.route('**/api/v1/live/matches/lm/analysis**', (route) => route.fulfill({ json: { analysis: {} } }));
-  // 同屏 17:**不能用共享 `boot`** —— 它末尾等 `.kiosk-scrollzone`,而这一屏没有那个东西。
-  await page.addInitScript(() => {
-    localStorage.setItem('token', 'kiosk-shell-scroll');
-    localStorage.setItem('katrain_language', 'cn');
-  });
-  await page.route('**/api/v1/auth/me', (route) => route.fulfill({
-    json: { id: 1, username: 'tester', rank: '5段', credits: 0 },
-  }));
-  await page.goto('/kiosk/live/lm');
-  await page.waitForSelector('[data-testid="live-toggles"] button');
-};
-
-test('直播:241 手着法表自己滚,开关排和那句话恒在视野内', async ({ page }) => {
-  await bootLive(page);
-
-  const m = await page.evaluate(() => {
-    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
-    const moves = document.querySelector('[data-testid="live-moves-fold"] .mvrows') as HTMLElement;
-    const tog = document.querySelector('[data-testid="live-toggles"]') as HTMLElement;
-    const note = document.querySelector('.kiosk-rail > .setnote') as HTMLElement;
-    const board = document.querySelector('[data-testid="live-board"]') as HTMLElement;
-    const r = rail.getBoundingClientRect();
-    return {
-      railH: Math.round(r.height),
-      railBottom: Math.round(r.bottom),
-      railOverflow: rail.scrollHeight - rail.clientHeight,
-      movesH: Math.round(moves.getBoundingClientRect().height),
-      movesOverflow: moves.scrollHeight - moves.clientHeight,
-      togBottom: Math.round(tog.getBoundingClientRect().bottom),
-      noteBottom: Math.round(note.getBoundingClientRect().bottom),
-      boardW: Math.round(board.getBoundingClientRect().width),
-      boardH: Math.round(board.getBoundingClientRect().height),
-    };
-  });
-
-  expect(m.railH, '右栏不是 516').toBe(516);
-  expect(m.boardW, '盘不是 516 宽').toBe(516);
-  expect(m.boardH, '盘不是 516 高').toBe(516);
-  expect(m.movesOverflow, '241 手没造出溢出 —— 下面的断言都是空的').toBeGreaterThan(100);
-  expect(m.railOverflow, '右栏自己被顶破了 —— 该溢出的是着法块').toBeLessThanOrEqual(0);
-  // §11:固定部分之后至少留得下三行。一行 `.mvrows` 约 24.4。
-  expect(m.movesH, `着法块只剩 ${m.movesH}px,装不下三行`).toBeGreaterThanOrEqual(3 * 24);
-  expect(m.togBottom, '开关排被顶出右栏了 —— 观战屏上唯一那排控件跟着内容跑了')
-    .toBeLessThanOrEqual(m.railBottom);
-  // 那句话是最后一个孩子:它的底边**就是**右栏底。差出来的就是共享 `.setnote` 那 8px 下边距。
-  expect(m.noteBottom, `那句话的底边 ${m.noteBottom} 没贴住右栏底 ${m.railBottom} —— 多半是 .setnote 那 8px`)
-    .toBe(m.railBottom);
-});
-
-/**
- * 真滚轮:着法表自己拨得动,而且拨的**不是**整页。
- * 程序化写 `scrollTop` 只证明这个属性可写,证明不了手指能滚。
- */
-test('直播:着法表真拨得动,滚的不是整页也不是右栏', async ({ page }) => {
-  await bootLive(page);
-  const box = (await page.locator('[data-testid="live-moves-fold"] .mvrows').boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  for (let i = 0; i < 10; i += 1) await page.mouse.wheel(0, 300);
-
-  const m = await page.evaluate(() => {
-    const moves = document.querySelector('[data-testid="live-moves-fold"] .mvrows') as HTMLElement;
-    const rail = document.querySelector('.kiosk-rail') as HTMLElement;
-    const tog = document.querySelector('[data-testid="live-toggles"]') as HTMLElement;
-    return {
-      scrollTop: Math.round(moves.scrollTop),
-      railScrollTop: Math.round(rail.scrollTop),
-      pageScroll: Math.round(document.documentElement.scrollTop),
-      togBottom: Math.round(tog.getBoundingClientRect().bottom),
-      railBottom: Math.round(rail.getBoundingClientRect().bottom),
-    };
-  });
-
-  expect(m.scrollTop, '拨了十下滚轮,着法表一格都没动').toBeGreaterThan(0);
-  expect(m.railScrollTop, '滚的是整条右栏,不是着法表').toBe(0);
-  expect(m.pageScroll, '滚的是整个页面').toBe(0);
-  expect(m.togBottom, '滚完之后开关排跑了').toBeLessThanOrEqual(m.railBottom);
 });
 
 /* ══ 屏 19 复盘:多了一条 54 的带子之后,列表还得**拨得动** ═══════════════════

@@ -61,7 +61,7 @@ class FakeManager:
     def get_adapter(self, name):
         return self._adapter
 
-    def list_platforms(self):
+    def list_platforms(self, user_id=None):
         # Return copies so the endpoint can mutate (saved_username) without clobbering.
         return [dict(p) for p in self._platforms]
 

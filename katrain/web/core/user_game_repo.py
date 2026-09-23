@@ -19,6 +19,13 @@ class InvalidAuthoritativeRankedGameError(ValueError):
     pass
 
 
+#: 「自己下的局」——**白名单**,不是黑名单。导入的谱、棋谱库里的谱、研究存档都是**别人下的**,
+#: 只是存在你名下。成长屏上每个数都只讲「这个账户自己练了多少」,所以一律按这份名单数。
+#: 前端同一口径在 `kiosk/components/report/reviewPresentation.ts` 的 `isPlaySource`;
+#: 以后新增一种来源,**默认不算**,要算就显式加进来。
+PLAYED_SOURCES = ("play_ai", "play_local", "play_human")
+
+
 class UserGameRepository:
     def __init__(self, session_factory):
         self.session_factory = session_factory
@@ -68,6 +75,7 @@ class UserGameRepository:
                 move_count=kwargs.get("move_count", 0),
                 category=kwargs.get("category", "game"),
                 game_type=kwargs.get("game_type"),
+                user_color=kwargs.get("user_color"),
                 origin_device_id=kwargs.get("origin_device_id"),
                 event=kwargs.get("event"),
                 round_name=kwargs.get("round_name"),
@@ -117,6 +125,8 @@ class UserGameRepository:
                     "source": "play_ai",
                     "category": kwargs.get("category", "game"),
                     "origin_device_id": kwargs.get("origin_device_id"),
+                    # ⚠️ `user_color` 故意不在这里:这一列诞生之前写下的权威局是 NULL,
+                    # 重试时传进来的却是 'B'/'W' ⇒ 一次正常重试会被判成「权威局被篡改」。
                 }
                 if any(getattr(existing, field) != value for field, value in immutable_fields.items()):
                     raise ValueError("authoritative ranked AI game is immutable")
@@ -140,6 +150,7 @@ class UserGameRepository:
                 move_count=kwargs.get("move_count", 0),
                 category=kwargs.get("category", "game"),
                 game_type="ai_ladder_ranked",
+                user_color=kwargs.get("user_color"),
                 origin_device_id=kwargs.get("origin_device_id"),
                 event=kwargs.get("event"),
                 round_name=kwargs.get("round_name"),
@@ -259,9 +270,12 @@ class UserGameRepository:
             session.close()
 
     def count_since(self, user_id: int, *, since) -> int:
-        """近 N 天下了多少局。**只数局数,不数胜负** —— 这张表存的是「哪一方赢」
-        (`result` = `"B+R"`),**没有一列记这个用户坐的是哪一方**,所以从这里算不出胜率。
-        胜率那一格只对升降级局成立,数据在 `AiLadderGameLedger`(它有 `user_color`)。
+        """近 N 天**自己下了**多少局。**只数局数,不数胜负** —— 胜负在 `decided_since`,
+        两者口径仍不同(面对面、执色没记下来的局在这里算、在那里不算)。
+
+        **2026-09-23 改:只数 `PLAYED_SOURCES`。** 此前连导入的谱、棋谱库的谱、研究存档也数,
+        于是屏上「近 30 天对局」比同屏日历的全年总数还大(实测 40 vs 39)——
+        那一格写着「对局」,数出来的却是「名下的记录条数」。Fan 裁定:成长屏只讲这个账户自己练的。
 
         ⚠️ `since` 要**带时区**:`created_at` 是 `DateTime(timezone=True)`,
         而 SQLite 不存时区。生产是 PG,口径以 PG 为准。
@@ -272,11 +286,49 @@ class UserGameRepository:
                 session.query(func.count(models_db.UserGame.id))
                 .filter(
                     models_db.UserGame.user_id == user_id,
+                    models_db.UserGame.source.in_(PLAYED_SOURCES),
                     models_db.UserGame.created_at >= since,
                 )
                 .scalar()
                 or 0
             )
+        finally:
+            session.close()
+
+    def decided_since(self, user_id: int, *, since) -> Dict[str, int]:
+        """近 N 天里**算得出胜负**的局:知道这个用户执哪一方、且 `result` 判得出赢家。
+
+        执色取 `user_games.user_color`;这一列诞生之前的升降级局在这里是 NULL,
+        就回落到账本 `ai_ladder_game_ledger.user_color`(按 `game_id` 对上、且是同一个用户)
+        —— 那个事实账本早就记着,读它不是追认。其余 NULL 的局不算,不猜。
+
+        胜负在 Python 里判,不在 SQL 里:`result` 是 `"B+R"` / `"W+3.5"` / `"0"` / `"Void"`
+        这种自由文本,SQLite 与 PG 的字符串函数不一样,这点数据量不值得写两套 SQL。
+
+        ⚠️ 和 `count_since` **口径不同**:那个数的是下了多少局,这个数的是算得出胜负的局。
+        屏上那句「有 N 局没算进胜率」就是两者的差 —— 不许拿一个冒充另一个。
+        ⚠️ `since` 要**带时区**(同 `count_since`)。
+        """
+        G, L = models_db.UserGame, models_db.AiLadderGameLedger
+        session = self.session_factory()
+        try:
+            rows = (
+                session.query(func.coalesce(G.user_color, L.user_color), G.result)
+                .outerjoin(L, (L.game_id == G.id) & (L.user_id == G.user_id))
+                .filter(G.user_id == user_id, G.created_at >= since, G.result.isnot(None))
+                .all()
+            )
+            wins = losses = 0
+            for color, result in rows:
+                text = (result or "").strip().upper()
+                # 只认「B+…」「W+…」:和棋("0"/"DRAW")、无胜负("VOID")、没下完的都不算。
+                if color not in ("B", "W") or len(text) < 2 or text[0] not in "BW" or text[1] != "+":
+                    continue
+                if text[0] == color:
+                    wins += 1
+                else:
+                    losses += 1
+            return {"decided": wins + losses, "wins": wins, "losses": losses}
         finally:
             session.close()
 
@@ -353,6 +405,7 @@ class UserGameRepository:
             "source": game.source,
             "category": game.category,
             "game_type": game.game_type,
+            "user_color": game.user_color,
             "origin_device_id": game.origin_device_id,
             "event": game.event,
             "round_name": game.round_name,

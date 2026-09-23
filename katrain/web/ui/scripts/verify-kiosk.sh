@@ -2,7 +2,7 @@
 # Verify the kiosk-2d dist stays within the board boundary:
 #  - no three.js / @react-three (3D board removed from kiosk on 2026-07-13 to free Mali GPU)
 #  - no /galaxy/* routes (Galaxy-only pages/links must be DCE'd out)
-#  - no non-board /api/v1/live calls (kiosk talks to /api/v1/board/live only)
+#  - no live API path at all (the kiosk has no live module; the board proxy was removed 2026-09-23)
 # Exits 0 on clean, 1 on any match.
 set -euo pipefail
 
@@ -29,15 +29,13 @@ if matches=$(grep -l "/galaxy/" "$DIST"/assets/*.js 2>/dev/null); then
   fail=1
 fi
 
-# Live API base — kiosk reads only through the board proxy (/api/v1/board/live).
-# Strip the legitimate board base first, then any remaining /api/v1/live is a leak.
-for f in "$DIST"/assets/*.js; do
-  [[ -e "$f" ]] || continue
-  if sed 's#/api/v1/board/live#_#g' "$f" | grep -q "/api/v1/live"; then
-    echo "❌ Found non-board /api/v1/live call in: $f" >&2
-    fail=1
-  fi
-done
+# Live — the kiosk has no live module (Fan 2026-09-22) and the board proxy /api/v1/board/live is gone.
+# Any /api/v1/live or /api/v1/board/live string left in the kiosk dist is a call that would 404 on the box.
+if matches=$(grep -lE "/api/v1/(board/)?live" "$DIST"/assets/*.js 2>/dev/null); then
+  echo "❌ Found live API path in kiosk dist (kiosk has no live module):" >&2
+  echo "$matches" >&2
+  fail=1
+fi
 
 # Strict appliance builds must not retain any JS-readable bearer-token path.
 # Legacy kiosk/Galaxy builds intentionally keep their historical localStorage contract.
@@ -65,7 +63,7 @@ fi
 
 if [[ $fail -eq 0 ]]; then
   size=$(du -sh "$DIST" | cut -f1)
-  echo "✅ kiosk boundary clean — no three.js / /galaxy/ / non-board live API in $DIST ($size total)"
+  echo "✅ kiosk boundary clean — no three.js / /galaxy/ / live API in $DIST ($size total)"
 fi
 
 exit $fail

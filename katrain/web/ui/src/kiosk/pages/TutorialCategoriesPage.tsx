@@ -189,7 +189,7 @@ const TutorialCategoriesPage = () => {
               title={t('tutorial:go_baipu', '去摆谱')}
               sub={t('tutorial:go_baipu_sub', '跟着名局摆一遍')}
               icon="grid-nine"
-              onClick={() => navigate('/kiosk/baipu')}
+              onClick={() => navigate('/kiosk/kifu')}
             />
           </div>
         </section>

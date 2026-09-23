@@ -32,7 +32,7 @@ const cat = (over: Partial<TutorialCategory>): TutorialCategory => ({
 
 const renderPage = () => render(
   <ThemeProvider theme={kioskTheme}>
-    <MemoryRouter><TutorialCategoriesPage /></MemoryRouter>
+    <MemoryRouter initialEntries={['/kiosk/tutorial']}><TutorialCategoriesPage /></MemoryRouter>
   </ThemeProvider>,
 );
 
@@ -182,6 +182,6 @@ describe('屏 23 · 另外两块', () => {
     fireEvent.click(screen.getByRole('button', { name: /去训练营/ }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego');
     fireEvent.click(screen.getByRole('button', { name: /去摆谱/ }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/baipu');
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
   });
 });

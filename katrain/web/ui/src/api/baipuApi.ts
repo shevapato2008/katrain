@@ -13,7 +13,7 @@
 // write below is routed through kioskActivityStorage, identity-scoped by `user.uuid`. A
 // guest (or any unresolved identity) gets an in-memory-only namespace — nothing it reads can
 // be a prior real user's cached SGF/progress, nothing it writes ever reaches disk. Callers
-// that read synchronously at first paint (e.g. KifuPage's `useState(() => listRecent())`
+// that read synchronously at first paint (e.g. a `useState(() => listRecent())`
 // initializer) MUST pass an explicit `store` computed from their own `useAuth()` call, gated
 // on `isLoading`, rather than relying on the default (which falls back to the
 // kioskActivityStorage resolved-identity singleton — safe, but updated by an effect and so
@@ -234,8 +234,8 @@ function safeParse<T>(raw: string | null): T | null {
 // Every function below defaults `store` to the kioskActivityStorage resolved-identity
 // singleton (see top-of-file doc): guest/unresolved -> in-memory only, real user ->
 // localStorage namespaced by `user.uuid`. Callers with a synchronous first-paint read (e.g.
-// KifuPage's `listRecent()` initializer) should pass an explicit store instead of
-// relying on the default — see KifuPage.tsx / BaipuSessionPage.tsx.
+// a `listRecent()` state initializer) should pass an explicit store instead of
+// relying on the default — see BaipuSessionPage.tsx.
 
 export function cacheSgf(
   id: string,

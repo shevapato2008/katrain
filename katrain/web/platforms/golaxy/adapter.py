@@ -362,6 +362,34 @@ class GolaxyRestClient:
         self._refresh_token = data.get("refresh_token")
         return data
 
+    async def login_scan_code(self, uuid: str) -> dict:
+        """Exchange a CONFIRMED scan-login uuid for tokens.
+
+        Same `/api/auth/oauth/token` endpoint as SMS/password login (R-31,
+        task-6a-brief.md) — just a different `grant_type`. Scan login has no
+        phone number at this layer; the uuid IS the credential, so unlike
+        `login_sms`/`login_password` there is no `username` field to send.
+        """
+        client = await self._ensure_client()
+        resp = await client.post(
+            "/api/auth/oauth/token",
+            data={
+                "uuid": uuid,
+                "grant_type": "scan_code",
+                "client_id": "golaxy_web",
+                "scope": "any",
+            },
+            headers={
+                "Authorization": f"Basic {GOLAXY_CLIENT_CREDENTIALS}",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        self._access_token = data.get("access_token")
+        self._refresh_token = data.get("refresh_token")
+        return data
+
     async def request_sms_code(self, phone: str) -> bool:
         """Request SMS verification code."""
         client = await self._ensure_client()
@@ -625,6 +653,21 @@ class GolaxyAdapter(PlatformAdapter):
                 self._connected = True
                 await self._emit("token_refreshed", self._rest.get_auth_data())
                 logger.info(f"Golaxy connected via SMS as {credentials.username}")
+                return True
+
+            # Scan-login: the confirmed uuid IS the credential, there is no
+            # phone number at this layer (R-29, task-6a-brief.md). Callers
+            # pass `credentials.username = ""` for this path on purpose — see
+            # `set_username`'s empty-string no-op above, which is exactly what
+            # makes `fetch_item_counts()` degrade honestly (raises `Fatal`
+            # instead of guessing a `0086-{昵称}` principal) until this user
+            # separately links a real phone-based login.
+            scan_uuid = auth_data.get("scan_uuid")
+            if scan_uuid:
+                await self._rest.login_scan_code(scan_uuid)
+                self._connected = True
+                await self._emit("token_refreshed", self._rest.get_auth_data())
+                logger.info("Golaxy connected via scan code")
                 return True
 
             # Fall through to password login

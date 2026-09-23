@@ -57,6 +57,10 @@ class SmsRequest(BaseModel):
     phone: str
 
 
+class ScanConfirmRequest(BaseModel):
+    scan_id: str
+
+
 _VALID_HANDICAP = {-1, 0, 2, 3, 4, 5, 6, 7, 8, 9}  # 让子值 (handicap); no 1
 
 
@@ -322,6 +326,140 @@ async def request_sms(platform: str, req: SmsRequest, request: Request, user: Us
     if not ok:
         raise HTTPException(status_code=502, detail="SMS request failed")
     return {"status": "sent"}
+
+
+# --- Scan-code login (Golaxy 星阵: QR code from the mobile app) ---
+
+
+def _scan_store(app):
+    """Per-app in-memory `ScanSessionStore` — lazily created and stashed on
+    `app.state`, same shape as `platform_manager`/`session_manager`, but
+    doesn't need wiring in server.py because it's optional startup state
+    (a fresh store is just "no scan session in flight yet")."""
+    from katrain.web.platforms.golaxy.scan_login import ScanSessionStore
+
+    store = getattr(app.state, "golaxy_scan_sessions", None)
+    if store is None:
+        store = ScanSessionStore()
+        app.state.golaxy_scan_sessions = store
+    return store
+
+
+@router.post("/{platform}/scan/start")
+async def scan_start(platform: str, request: Request, user: User = Depends(get_current_user)):
+    """Start a Golaxy scan-code login. Does NOT go through `require_platform_owner`
+    (R-28, task-6a-brief.md): the platform isn't connected yet at this point,
+    so "who owns it" doesn't apply — that gate answers a different question.
+
+    Pins `initiating_user_id` on the resulting `ScanSession` NOW, at the moment
+    of the request that actually authenticated the caller — `poll`/`confirm`
+    check against this, not against "whoever the request happens to be from"
+    (uuid itself carries no identity; the box can be handed to someone else
+    mid-scan).
+    """
+    from katrain.web.platforms.golaxy.scan_login import GolaxyScanLogin
+
+    if platform != "golaxy":
+        raise HTTPException(status_code=400, detail=f"{platform} 不支持扫码登录")
+    try:
+        start = await GolaxyScanLogin().start()
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"连不上星阵: {exc}")
+    session = _scan_store(request.app).create(golaxy_uuid=start.uuid, initiating_user_id=user.id)
+    return {"scan_id": session.scan_id, "payload": start.payload, "expires_at": session.expires_at}
+
+
+@router.get("/{platform}/scan/state")
+async def scan_state(platform: str, scan_id: str, request: Request, user: User = Depends(get_current_user)):
+    """Poll a scan session's state. 403s if the caller isn't who started it
+    (R-28) — the box may have been handed to a different logged-in user
+    between `start` and now."""
+    from katrain.web.platforms.golaxy.scan_login import GolaxyScanLogin, ScanState
+
+    session = _scan_store(request.app).get(scan_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="扫码会话不存在或已过期")
+    if session.initiating_user_id != user.id:
+        raise HTTPException(status_code=403, detail="这条扫码登录不是你发起的")
+    if session.expired:
+        _scan_store(request.app).discard(scan_id)
+        return {"state": ScanState.EXPIRED.value}
+    if not session.consumed:
+        try:
+            session.state = await GolaxyScanLogin().poll(session.golaxy_uuid)
+        except Exception:
+            raise HTTPException(status_code=502, detail="连不上星阵")
+    return {"state": session.state.value}
+
+
+@router.post("/{platform}/scan/confirm")
+async def scan_confirm(
+    platform: str, req: ScanConfirmRequest, request: Request, user: User = Depends(get_current_user)
+):
+    """Exchange a CONFIRMED scan session for a real Golaxy connection.
+
+    Ownership check (R-28) mirrors `scan_state` above — 403 before anything
+    else happens, so an unauthorized caller can never reach the token
+    exchange below, let alone get credentials saved under their own user_id.
+
+    Idempotent (R-30): the confirm button's request WILL be retried on any
+    network hiccup, and Golaxy's scan-code token is one-shot — exchanging it
+    twice either fails outright or mutates shared adapter state. `consumed`
+    is checked and the cached `result` returned before ever touching the
+    network a second time. `store.lock` serializes this so two near-
+    simultaneous retries can't both pass the `consumed` check before either
+    sets it.
+
+    Uses `username=""` (R-29, task-6a-brief.md): `/scan/username` only gives
+    the display nickname, not the `0086-{phone}` login principal that
+    `/items/{username}` (道具 badges) needs — and there's no verified response
+    field with that principal on this path. Guessing `0086-{昵称}` would make
+    item-count lookups silently hit the wrong (or a nonexistent) account, so
+    this deliberately leaves it blank; `PlatformCredentials.username == ""`
+    makes `GolaxyRestClient.set_username` a no-op (see adapter.py), which is
+    exactly what makes `fetch_item_counts()` degrade honestly instead.
+    """
+    from katrain.web.platforms.golaxy.scan_login import GolaxyScanLogin, ScanState
+    from katrain.web.platforms.manager import PlatformBusyError
+    from katrain.web.platforms.models import PlatformCredentials
+
+    store = _scan_store(request.app)
+    session = store.get(req.scan_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="扫码会话不存在或已过期")
+    if session.initiating_user_id != user.id:
+        raise HTTPException(status_code=403, detail="这条扫码登录不是你发起的")
+
+    async with store.lock:
+        if session.consumed:
+            return session.result
+        if session.expired:
+            store.discard(req.scan_id)
+            raise HTTPException(status_code=410, detail="扫码会话已过期")
+        if session.state != ScanState.CONFIRMED:
+            raise HTTPException(status_code=409, detail="还没在手机上确认")
+
+        display_name = ""
+        try:
+            display_name = await GolaxyScanLogin().username(session.golaxy_uuid)
+        except Exception:
+            logger.warning("scan/confirm: could not fetch Golaxy nickname (non-fatal)")
+
+        pm = request.app.state.platform_manager
+        credentials = PlatformCredentials(platform=platform, username="", auth_data={"scan_uuid": session.golaxy_uuid})
+        try:
+            success = await pm.connect_platform(platform, credentials, user.id)
+        except PlatformBusyError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"这台盒子上现在连着别人的{exc.platform}账号 · 去设置里断开后再登录",
+            )
+        if not success:
+            raise HTTPException(status_code=401, detail="扫码登录失败")
+
+        session.result = {"connected": True, "display_name": display_name}
+        session.consumed = True
+    return session.result
 
 
 # --- Engine play (human-vs-AI) ---

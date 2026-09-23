@@ -719,4 +719,29 @@ export const API = {
     apiPost(`/api/v1/platforms/${platform}/automatch/start`, prefs, token),
   platformCancelAutomatch: (platform: string, token: string | null | undefined) =>
     apiPost(`/api/v1/platforms/${platform}/automatch/cancel`, {}, token),
+
+  // Golaxy 扫码登录 (Task 6a/6b) — three thin client calls only, no component wiring here.
+  platformScanStart: (
+    platform: string,
+    token: string | null | undefined,
+  ): Promise<{ scan_id: string; payload: string; expires_at: number }> =>
+    apiPost(`/api/v1/platforms/${platform}/scan/start`, {}, token),
+  platformScanState: async (
+    platform: string,
+    scanId: string,
+    token: string | null | undefined,
+  ): Promise<{ state: string }> => {
+    const response = await fetch(
+      `/api/v1/platforms/${platform}/scan/state?scan_id=${encodeURIComponent(scanId)}`,
+      { headers: authHeaders(token) },
+    );
+    if (!response.ok) throw new Error(`Failed to poll scan state: ${response.status}`);
+    return response.json();
+  },
+  platformScanConfirm: (
+    platform: string,
+    scanId: string,
+    token: string | null | undefined,
+  ): Promise<{ connected: boolean; display_name: string }> =>
+    apiPost(`/api/v1/platforms/${platform}/scan/confirm`, { scan_id: scanId }, token),
 };

@@ -59,9 +59,8 @@ describe('dockActiveOf —— 二/三级页高亮它的父项', () => {
   test('对局屏高亮对弈', () => {
     expect(dockActiveOf('/kiosk/play/ai/game/abc')).toBe('/kiosk/play');
   });
-  test('下了 Dock 的三条路由没有父项 —— 一个都不许乱高亮', () => {
+  test('下了 Dock 的两条路由没有父项 —— 一个都不许乱高亮', () => {
     expect(dockActiveOf('/kiosk/baipu')).toBe(null);
-    expect(dockActiveOf('/kiosk/live')).toBe(null);
     expect(dockActiveOf('/kiosk/research')).toBe(null);
   });
   test('最长前缀优先:report/:taskId 高亮复盘,不是别的', () => {

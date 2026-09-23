@@ -12,6 +12,8 @@ KATRAIN_MODE=board python -m katrain --ui web --host 127.0.0.1 --port 8001 \
   --capture-dir ~/.katrain/baipu_captures
 ```
 
+To capture YOLO training frames while replaying a kifu (摆谱), add `--baipu-collect` (or set `KATRAIN_BAIPU_COLLECT=1`). Without it 摆谱 runs in release mode: LEDs guide each move and the operator confirms, no photos are taken, and `POST /api/v1/baipu/capture` returns 404 even though the capture service is running (geometry calibration only needs `--capture-camera`).
+
 Verify capabilities and start a manual calibration after clearing the board:
 
 ```bash

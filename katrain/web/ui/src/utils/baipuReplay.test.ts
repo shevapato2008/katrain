@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
-import { replayBaipuSteps } from './baipuReplay';
+import { describe, expect, it, test } from 'vitest';
+import { replayBaipuMatrix, replayBaipuSteps } from './baipuReplay';
 import type { BaipuStep } from '../api/baipuApi';
 
 /**
@@ -78,5 +78,19 @@ describe('replayBaipuSteps —— 照 steps 播,不算规则', () => {
       step({ kind: 'clear', property: 'AE', removed: [{ row: 0, col: 0 }] }),
     ];
     expect(replayBaipuSteps(steps, 2, 19).last).toBe('Q16');
+  });
+});
+
+describe('replayBaipuMatrix(摆谱识别用的盘面矩阵)', () => {
+  it('落子进矩阵、提子出矩阵,row 从上往下,1 黑 2 白', () => {
+    const m = (i: number, row: number, col: number, color: 'B' | 'W', removed: { row: number; col: number }[] = []): BaipuStep =>
+      ({ kind: 'move', move_index: i, property: color, row, col, color, removed, board_hash: `h${i}` });
+    const steps = [m(0, 0, 1, 'B'), m(1, 0, 0, 'W'), m(2, 1, 0, 'B', [{ row: 0, col: 0 }])];
+    const b = replayBaipuMatrix(steps, 3, 19);
+    expect(b[0][1]).toBe(1);
+    expect(b[0][0]).toBe(0); // 被提
+    expect(b[1][0]).toBe(1);
+    expect(replayBaipuMatrix(steps, 2, 19)[0][0]).toBe(2);
+    expect(b).toHaveLength(19);
   });
 });

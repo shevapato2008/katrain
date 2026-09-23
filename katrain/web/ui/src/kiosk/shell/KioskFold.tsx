@@ -27,7 +27,7 @@ import { syncScrollbar } from './scrollSync';
  * 会做出一个点不动的折叠头,比不支持更糟)。
  */
 export function KioskFold({
-  fold, title, value, defaultOpen = true, open: openProp, onToggle,
+  fold, title, value, valueTone, defaultOpen = true, open: openProp, onToggle,
   grow = false, bodyClassName, scrollbar = false, testId, children,
 }: {
   /** `data-fold`。规范拿它当这一块的身份(`eval` / `moves` / `ledger`),取图和断言都认它。 */
@@ -35,6 +35,8 @@ export function KioskFold({
   title: ReactNode;
   /** 标题行右端的**当前值**。收起后仍然显示 —— 见上面第 2 条。 */
   value?: ReactNode;
+  /** 值是一句警告(屏 17 摄像头用不了时的「手动确认」)。只改色,不改位置。 */
+  valueTone?: 'warn';
   defaultOpen?: boolean;
   /** 受控开合。**必须和 `onToggle` 成对给** —— 只给这个会做出一个点不动的折叠头。 */
   open?: boolean;
@@ -87,7 +89,7 @@ export function KioskFold({
       >
         <span className="kiosk-fold__toggle"><Icon name="caret-down" /></span>
         {title}
-        {value !== undefined && <b>{value}</b>}
+        {value !== undefined && <b className={valueTone}>{value}</b>}
       </button>
       <div
         className={bodyClassName ? `kiosk-fold__body ${bodyClassName}` : 'kiosk-fold__body'}

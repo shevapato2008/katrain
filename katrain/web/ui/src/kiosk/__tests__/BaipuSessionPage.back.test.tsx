@@ -6,8 +6,9 @@ import { kioskTheme } from '../theme';
 
 /**
  * 摆谱会话屏的返回键原先一律 `navigate('/kiosk/baipu')`(摆谱列表),键名却写「棋谱」
- * (2026-09-22 审计)。现在去**打开这一屏的那一页**,键名跟着去处。
- * 在「读不到棋谱」那一态上验:那一态最好渲染,而三颗页控条返回键用的是同一对 `back` / `backLabel`。
+ * (2026-09-22 审计)。现在去**打开这一屏的那一页**。摆谱列表已删(K1,`/kiosk/baipu` 只剩重定向),
+ * 入口只剩棋谱这一族 ⇒ 键名一律「棋谱」,没写明来处回棋谱屏。
+ * 在「读不到棋谱」那一态上验:那一态最好渲染,而三颗页控条返回键用的是同一个 `back`。
  */
 
 const mockNavigate = vi.fn();
@@ -25,7 +26,7 @@ const renderAt = (state: unknown) => render(
   <ThemeProvider theme={kioskTheme}>
     <MemoryRouter initialEntries={[{ pathname: '/kiosk/baipu/session/nothing-cached', state }]}>
       <Routes>
-        <Route path="/kiosk/baipu/session/:source" element={<BaipuSessionPage />} />
+        <Route path="/kiosk/baipu/session/:source" element={<BaipuSessionPage collect={false} />} />
       </Routes>
     </MemoryRouter>
   </ThemeProvider>,
@@ -40,10 +41,9 @@ describe('摆谱会话 · 返回键去打开它的那一页', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu/7');
   });
 
-  it('从摆谱列表进来或没写明来处:返回键叫「摆谱」,回摆谱列表', () => {
+  it('没写明来处(直接输 URL、继续摆谱):回棋谱屏,不回那条重定向', () => {
     renderAt(null);
-    fireEvent.click(screen.getByRole('button', { name: '摆谱' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/baipu');
-    expect(screen.queryByRole('button', { name: '棋谱' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '棋谱' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
   });
 });

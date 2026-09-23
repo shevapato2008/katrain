@@ -19,8 +19,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from typing import Dict, List
 
 from katrain.web.core import models_db
-
-PLAYED_SOURCES = ("play_ai", "play_local", "play_human")
+from katrain.web.core.user_game_repo import PLAYED_SOURCES
 
 
 def _local_date(ts: datetime, tz: timezone) -> date:

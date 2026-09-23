@@ -4040,10 +4040,10 @@ msgid "setup:my_side"
 msgstr "Ma couleur"
 
 msgid "setup:take_black"
-msgstr "Prendre Noir"
+msgstr "Noir"
 
 msgid "setup:take_white"
-msgstr "Prendre Blanc"
+msgstr "Blanc"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -5258,7 +5258,7 @@ msgid "kifu:greet_b"
 msgstr "des autres"
 
 msgid "kifu:greet_sub"
-msgstr "Parties célèbres, diffusions pro et rejeu sur le goban réel"
+msgstr "Parties célèbres et rejeu sur le goban réel"
 
 msgid "kifu:famous_records"
 msgstr "Parties célèbres"
@@ -5954,6 +5954,15 @@ msgstr "Elo affiché {v}"
 
 msgid "platform:ref_rank"
 msgstr "équivaut à {r}"
+
+msgid "platform:level_sheet"
+msgstr "Tous les niveaux de force"
+
+msgid "platform:close"
+msgstr "Fermer"
+
+msgid "platform:plate_aria"
+msgstr "Adversaire actuel {name} {level}, {rung} ; toucher pour tout voir"
 
 msgid "platform:rank_is_theirs"
 msgstr "Le niveau appartient à {name}"
@@ -6891,5 +6900,207 @@ msgstr "Parties hors du taux de victoire : "
 
 msgid "growth:unknown_seat_b"
 msgstr ""
-" — parties en face à face, parties importées et parties dont la couleur n'a "
-"pas été enregistrée."
+" — parties en face à face et parties dont la couleur n'a pas été "
+"enregistrée."
+
+msgid "baipu:calib_running_sub"
+msgstr ""
+"La calibration utilise aussi les lumières · la reproduction démarre dès "
+"qu'elle se termine ou est annulée"
+
+msgid "baipu:calib_running_title"
+msgstr "La calibration du plateau est encore en cours"
+
+msgid "baipu:cam_connecting"
+msgstr "Connexion à la caméra"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "Le plateau n'est pas encore calibré"
+
+msgid "baipu:cam_geo_drift"
+msgstr "La calibration du plateau n'est plus valable"
+
+msgid "baipu:cam_none"
+msgstr "Aucune caméra branchée"
+
+msgid "baipu:capture_hint_camera"
+msgstr ""
+"Celles éclairées en bleu — une fois toutes retirées, on passe tout seul au "
+"coup suivant"
+
+msgid "baipu:checking_board"
+msgstr "Vérification de l'état du plateau"
+
+msgid "baipu:done_hint_auto"
+msgstr ""
+"{n} coups au total · progression effacée ; appuyez en haut à gauche pour "
+"revenir"
+
+msgid "baipu:guard_sub_collect"
+msgstr ""
+"Pour collecter des données d'entraînement, la caméra doit d'abord bien voir "
+"le plateau"
+
+msgid "baipu:hint_failed"
+msgstr "Pas de résultat — refermez puis appuyez à nouveau"
+
+msgid "baipu:hint_loading"
+msgstr "L'IA calcule ce coup…"
+
+msgid "baipu:hint_on_hint"
+msgstr ""
+"Conseils de l'IA actifs, reconnaissance en pause — les lumières blanches "
+"sont les coups candidats ; fermez-les pour continuer"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr ""
+"Conseils de l'IA actifs — les lumières blanches sont les coups candidats ; "
+"fermez-les pour continuer"
+
+msgid "baipu:hint_row"
+msgstr "Victoire {w}% · écart {s}"
+
+msgid "baipu:hint_title"
+msgstr "Conseils de l'IA · là où clignotent les lumières blanches"
+
+msgid "baipu:hint_try_reason"
+msgstr ""
+"Pendant l'essai, la caméra ne regarde pas le plateau : l'IA ne connaît pas "
+"la position"
+
+msgid "baipu:hint_value"
+msgstr "Appuyez à nouveau pour fermer"
+
+msgid "baipu:led_on_camera"
+msgstr ""
+"La lumière est allumée — posez la pierre {color} sur l'intersection éclairée"
+" ; dès que la caméra la voit, on passe au coup suivant"
+
+msgid "baipu:led_title"
+msgstr "Lumières · légende des couleurs"
+
+msgid "baipu:led_value_camera"
+msgstr "La caméra regarde"
+
+msgid "baipu:led_value_manual"
+msgstr "Confirmation manuelle"
+
+msgid "baipu:led_value_try"
+msgstr "Essai en cours · reconnaissance en pause"
+
+msgid "baipu:manual_hint"
+msgstr "{why} — posez la pierre puis appuyez sur « Confirmer la pierre »"
+
+msgid "baipu:manual_hint_calib"
+msgstr " ; la calibration se trouve dans « Paramètres »"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "Coup {i} sur {n}"
+
+msgid "baipu:restore_hint"
+msgstr ""
+"Retirez les pierres d'essai et remettez celles déplacées — dès que tout "
+"correspond, on reprend tout seul"
+
+msgid "baipu:restore_title"
+msgstr "Remettez le plateau au coup {n}"
+
+msgid "baipu:resume_body_placed"
+msgstr ""
+"La dernière fois, vous étiez au coup {n}. Pour recommencer, retirez d'abord "
+"toutes les pierres du plateau."
+
+msgid "baipu:setup_clear_title"
+msgstr "Retirez d'abord toutes les pierres du plateau"
+
+msgid "baipu:setup_continue"
+msgstr "C'est en place, continuer"
+
+msgid "baipu:setup_entry_hint"
+msgstr ""
+"Retirez les pierres sous lumière bleue, posez-en aux lumières rouges et "
+"vertes — dès que tout correspond, ça démarre"
+
+msgid "baipu:setup_entry_title"
+msgstr "Disposez d'abord le plateau comme au coup {n}"
+
+msgid "baipu:try_off_reason"
+msgstr "La caméra ne fait pas de reconnaissance"
+
+msgid "baipu:trying_hint"
+msgstr ""
+"Posez librement et explorez sur le plateau. Appuyez de nouveau sur « Essayer"
+" » pour revenir au kifu — les lumières vous guideront pour remettre le "
+"plateau"
+
+msgid "baipu:trying_title"
+msgstr "Essai en cours · reconnaissance caméra en pause"
+
+msgid "baipu:undo_hint_camera"
+msgstr ""
+"Retirez les pierres sous lumière bleue et remettez les pierres prises aux "
+"lumières rouges et vertes — dès que tout correspond, on continue"
+
+msgid "baipu:undo_title"
+msgstr "Retour au coup {n}"
+
+msgid "baipu:undo_try_reason"
+msgstr "Impossible de reprendre pendant l'essai"
+
+msgid "baipu:verify_hint"
+msgstr ""
+"Les pierres en trop sont éclairées en bleu — retirez-les pour continuer"
+
+msgid "baipu:verify_title"
+msgstr "Vérification du plateau"
+
+msgid "baipu:wrong_hint"
+msgstr ""
+"Prenez la pierre sous la lumière bleue ({w}) et posez-la en {c} — dès que "
+"tout correspond, on continue"
+
+msgid "baipu:wrong_size"
+msgstr "C'est un kifu {n}×{n} — impossible de le rejouer"
+
+msgid "baipu:wrong_size_hint"
+msgstr ""
+"Le plateau réel et ses lumières sont en 19×19 — toute autre taille "
+"décalerait chaque pierre."
+
+msgid "baipu:wrong_title"
+msgstr "Mal placée · elle va en {c}"
+
+msgid "kifu:detail_offline"
+msgstr "Cette partie nécessite une connexion Internet"
+
+msgid "kifu:detail_offline_hint"
+msgstr ""
+"La bibliothèque de kifus est dans le cloud, et cet appareil ne peut pas la "
+"joindre pour l'instant."
+
+msgid "kifu:list_offline"
+msgstr "La recherche de kifus nécessite une connexion Internet"
+
+msgid "kifu:list_offline_hint"
+msgstr ""
+"Cet appareil ne peut pas joindre le cloud pour l'instant. Les kifus rejoués "
+"et les SGF importés ne sont pas concernés."
+
+msgid "kifu:wrong_size_reason"
+msgstr "C'est un kifu {n}×{n} — le plateau réel n'accepte que le 19×19"
+
+msgid "setup:handicap_side"
+msgstr "Handicap · Ma couleur"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} humain contre IA est fixé au 19x19 · règles chinoises ; l'écran et le"
+" goban réel partagent le même canal"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Le moteur d'IA se prépare — vous pouvez déjà utiliser la bibliothèque de "
+"parties, les cours et d'autres fonctions"
+
+msgid "engine:warmup_unavailable"
+msgstr "Le moteur d'IA n'est pas encore prêt — veuillez réessayer plus tard"

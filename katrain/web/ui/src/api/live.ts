@@ -13,8 +13,10 @@ import type {
 } from '../types/live';
 import { i18n } from '../i18n';
 
-// kiosk/board builds talk to the board-mode read-only proxy; full build hits the live service.
-const API_BASE = __KIOSK_2D_ONLY__ ? '/api/v1/board/live' : '/api/v1/live';
+// Galaxy is the only caller. The kiosk has no live module (Fan 2026-09-22) and the board-mode
+// /api/v1/board/live proxy is gone (2026-09-23); scripts/verify-kiosk.sh fails the kiosk build
+// if any live API path is still bundled.
+const API_BASE = '/api/v1/live';
 
 // Board/kiosk mode is strictly read-only (PRD D4): make write paths fail by construction
 // rather than silently hitting an unproxied board route.

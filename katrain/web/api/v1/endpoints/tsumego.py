@@ -324,6 +324,12 @@ async def get_progress(
         if not dispatcher.is_online:
             response.headers[PROGRESS_AUTHORITY_HEADER] = "local_cache"
             return await dispatcher.tsumego_get_progress_local(current_user.id)
+        if not dispatcher.cloud_session_is(current_user.id):
+            # 盒子是共用设备:云端会话属于最后登录的那个人。不是这个人就读本机那份 ——
+            # 「累计已解题」那一格宁可少几道(本机缓存),也不能显示别人解的题。
+            logger.info("tsumego get_progress: cloud session is another user, serving local cache")
+            response.headers[PROGRESS_AUTHORITY_HEADER] = "local_cache"
+            return await dispatcher.tsumego_get_progress_local(current_user.id)
         try:
             remote = await dispatcher.remote_tsumego.get_progress()
         except httpx.HTTPError as e:

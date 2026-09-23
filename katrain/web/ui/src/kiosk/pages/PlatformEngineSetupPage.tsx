@@ -12,8 +12,11 @@ import { KioskScrollZone } from '../shell/KioskScrollZone';
 import { KioskSecLabel } from '../shell/KioskSecLabel';
 import { KioskStepTrack } from '../shell/KioskStepTrack';
 import KioskSetupBoard from '../components/board/KioskSetupBoard';
+import AiOpponentPlate from '../components/setup/AiOpponentPlate';
+import AiLevelSheet from '../components/setup/AiLevelSheet';
 import { PLATFORM_META } from '../constants/platforms';
 import { interpolate } from '../utils/interpolate';
+import { platformErrorMessage } from '../utils/platformErrorMessage';
 import { playInputState, writePlayOnBoard } from '../utils/playInput';
 
 /**
@@ -29,26 +32,29 @@ import { playInputState, writePlayOnBoard } from '../utils/playInput';
  *   那 39 档(星猛虎 / 星壮牛 / 星皮猴 …,每档带 `level_name` / `display_elo` / `ref_rank`)。
  *   **加载失败就是加载失败**,不给一份写死的兜底表 —— 那会让人选中一个星阵不认识的档。
  * · **让子和贴目是联动的**,贴目不是第二个可选项:分先→黑贴 7.5,让先→贴 0,让 N 子→黑贴 N 子
- *   (`app.js` 的口径)。所以「这一局会是」那一行写的是**算出来的结果**。
+ *   (`app.js` 的口径)。「让子 · 我执」那一组的读数写的是**算出来的结果**,不是第二个控件。
  * · **不计时**:星阵这条链不带钟。
  *
- * ## ⚠️ 稿子画的那段「39 档名单」**不做**(2026-08-24 裁定)
+ * ## 39 档怎么选:常驻的是步进器,全表是名牌点开的瞬态面板
  *
- * 稿子在步进器**下面**还摊开了一段 `.rows`(名字 / 展示 Elo / 对标棋力 / 「选它」)。
- * 不照做,三条理由,每条都能落到仓里一条已经落过锤的判例或一个量出来的数上:
+ * 稿子在步进器**下面**还摊开过一段常驻的 `.rows`(名字 / 展示 Elo / 对标棋力 / 「选它」)。
+ * 那种**常驻**列表没有做,理由仍然成立、没有过期:
  *
- * ① **规范逐字禁掉了这一处。** 共享 `tokens.css` 在 `.kiosk-optseg` 上面写着:
- *    「一屏里所有选择组必须用同一种控件,**不许难度用列表**、执棋方用宫格、时间用 2×2 ——
- *    那是一屏三套选择手势」。这一屏的选择组是 落子 / 对手 / 让子 / 我执;同为**有序档**的
- *    让子只有步进器,给对手再加一段带「选它」的列表,屏内自相矛盾。
- * ② **屏 02 的 29 档已经按同一条判过。** `KioskStepTrack` 的文件头写着为什么不是下拉、
- *    不是分段:7″ 触屏上下拉要点两次,而弹层正好盖住左边那块盘。39 档同理。
+ * ① **一屏一种选择手势。** 这一屏的选择组是 落子 / 对手 / 让子 / 我执;同为**有序档**的
+ *    让子只有步进器,常驻对手再摊开一段带「选它」的列表,屏内自相矛盾。
+ * ② **屏 02 的 29 档已经按同一条判过。** `KioskStepTrack` 的文件头写着为什么不是下拉:
+ *    7″ 触屏上下拉要点两次才看得见选项。
  * ③ **摊开之后装不下。** 真浏览器量:39×52 + 38×8 ⇒ 那一段 390 高,而滚动视口只有 400 ——
  *    一段吃掉 97.5% 的视口,右栏 maxScroll 2627 ≈ 6.6 屏。
  *
- * **不掉功能**:39 个值一个不少、全都走得到。删的是**控件**不是**值** ——
- * 这条 track 自己的定义在 `AiSetupPage`:「把 15 档收成 3 档是删功能,不是重画」。
- * 名单上唯一不在步进器上的那一列(`ref_rank`)已经并进 `.catmeta`。
+ * 但 39 个值一个不少、全都走得到:`AiLevelSheet` 是名牌(`AiOpponentPlate`)点开才挂载的
+ * 全表,`position:absolute` 相对 `.kiosk-rail`——**不盖左边那块盘**,关掉不留痕迹,不是
+ * 「删掉又加回来」而是常驻列表和瞬态面板从一开始就是两件事。它能放行的原因是**手指跨不动
+ * 那条轨**:39 档的 `KioskStepTrack` 每档约 8px,「换一档」按钮只能挪到相邻档,隔着十几档
+ * 想跳过去只能长按连发;名牌点开是唯一能一步跳到任意一档的路。共享 `tokens.css` 已经在
+ * `.kiosk-optseg` 规范上加了这条例外(2026-09-23),不再是这一屏单独违规。
+ * `ref_rank`(名单上唯一不在步进器上的那一列)现在显示在名牌上(`AiOpponentPlate`),
+ * 不在 `KioskStepTrack` 自带的 `.catmeta` 读数里 ——`readout={false}` 关掉了后者。
  *
  * ## 这一版改掉的三样
  *
@@ -87,6 +93,7 @@ const PlatformEngineSetupPage = () => {
   const [humanColor, setHumanColor] = useState<'B' | 'W' | 'nigiri'>('nigiri');
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState('');
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const handicap = HANDICAP_TRACK[handicapIdx];
 
@@ -104,7 +111,7 @@ const PlatformEngineSetupPage = () => {
         if (sorted.length) setLevel(sorted[0].elo_score);
       })
       .catch((e: unknown) => {
-        if (!cancelled) setLevelsError(e instanceof Error ? e.message : '');
+        if (!cancelled) setLevelsError(platformErrorMessage(e, ''));
       })
       .finally(() => { if (!cancelled) setLevelsLoading(false); });
     return () => { cancelled = true; };
@@ -128,8 +135,6 @@ const PlatformEngineSetupPage = () => {
   const komiLabel = handicap === 0 ? t('platform:komi_75', '黑贴 7.5 目')
     : handicap === -1 ? t('platform:komi_0', '不贴目')
       : interpolate(t('platform:komi_n', '黑贴 {n} 子'), { n: handicap });
-  const colorLabel = humanColor === 'nigiri' ? t('platform:nigiri', '猜先')
-    : humanColor === 'B' ? t('setup:take_black', '执黑') : t('setup:take_white', '执白');
 
   const start = async () => {
     if (!isAuthenticated || level === null) return;
@@ -141,7 +146,7 @@ const PlatformEngineSetupPage = () => {
       );
       navigate(`/kiosk/play/cross-platform/engine/game/${session_id}`, { state: backToState(location) });
     } catch (e) {
-      setStartError(e instanceof Error ? e.message : t('Failed to start game', '创建对局失败'));
+      setStartError(platformErrorMessage(e, t('Failed to start game', '创建对局失败')));
     } finally {
       setStarting(false);
     }
@@ -166,7 +171,8 @@ const PlatformEngineSetupPage = () => {
         />
 
         <KioskScrollZone className="setgrp-scroll">
-          {/* ── 怎么落子 ── 开局后不可改的那一组,自带强调框 */}
+          {/* ── 怎么落子 ── 开局后不可改的那一组,自带强调框。路数不占一行了:
+              星阵只开 19 路,那句事实降进了提示行的半句(见下)。 */}
           <section className="setgrp inputgrp" data-testid="setup-input-group">
             <KioskSecLabel
               zh={t('setup:input', '怎么落子')}
@@ -186,22 +192,19 @@ const PlatformEngineSetupPage = () => {
                 ]}
               />
             </div>
-            <div className="igrow">
-              <span className="iglab">{t('setup:size', '路数')}</span>
-              {/* 读数不是控件:星阵只开 19 路,画成一格可选的分段等于承诺一个不存在的选项。 */}
-              <span className="igfix" data-testid="setup-size-fixed">
-                <b>{t('19x19', '19 路')}</b>
-                {interpolate(t('platform:only_19', '{name}只开 19 路 · 中国规则'), { name: t(meta.label, meta.labelCn) })}
-              </span>
-            </div>
-            {!playInput.available && (
-              <p className="kiosk-opthint">
-                {t('setup:no_camera_hint', '这台盒子还没标定摄像头，实体盘这条路现在走不了')}
-              </p>
-            )}
+            {/* 路数不是控件也不占一行:星阵只开 19 路。这句提示同时替掉了原来
+                「这一局会是」段里的规则/路数两项 —— 400px 视口装不下第五段。 */}
+            <p className="kiosk-opthint" data-testid="setup-input-hint">
+              {playInput.available
+                ? interpolate(
+                    t('platform:engine_fixed_hint', '{name}人机固定 19 路 · 中国规则，屏幕和实体盘走同一条隧道'),
+                    { name: t(meta.label, meta.labelCn) },
+                  )
+                : t('setup:no_camera_hint', '这台盒子还没标定摄像头，实体盘这条路现在走不了')}
+            </p>
           </section>
 
-          {/* ── 对手 ── 39 档由平台下发 */}
+          {/* ── 对手 ── 39 档由平台下发;名牌收读数,轨只负责推档 */}
           <section className="setgrp" data-testid="setup-opponent">
             {levelsLoading ? (
               <>
@@ -218,27 +221,32 @@ const PlatformEngineSetupPage = () => {
               </>
             ) : (
               <>
-                <KioskStepTrack
-                  label={t('platform:opponent', '对手')}
+                <KioskSecLabel
+                  zh={t('platform:opponent', '对手')}
                   en="Opponent"
-                  secval={interpolate(
+                  value={interpolate(
                     t('platform:levels_from', '{name}下发 {n} 档'),
                     { name: t(meta.label, meta.labelCn), n: sorted.length },
                   )}
+                />
+                {current && (
+                  <AiOpponentPlate
+                    name={current.name}
+                    levelName={current.level_name}
+                    displayElo={current.display_elo}
+                    refRank={current.ref_rank || undefined}
+                    index={Math.max(0, currentIdx)}
+                    total={sorted.length}
+                    onOpen={() => setSheetOpen(true)}
+                    testId="setup-opponent-plate"
+                  />
+                )}
+                <KioskStepTrack
                   count={sorted.length}
                   index={Math.max(0, currentIdx)}
                   onChange={(i) => setLevel(sorted[i].elo_score)}
-                  value={current ? `${current.name} · ${current.level_name}` : ''}
-                  meta={current ? (
-                    <>
-                      {interpolate(t('platform:rung_n', '第 {i} / {n} 档'), { i: currentIdx + 1, n: sorted.length })}
-                      {' · '}
-                      <b>{interpolate(t('platform:display_elo', '展示 Elo {v}'), { v: current.display_elo })}</b>
-                      {/* `ref_rank` 是那份名单里**唯一不在步进器上的一列** —— 顶上六档是
-                          「野狐 9D」「职业 / 野狐 9D+」,掉了就是掉事实。名单不做了,它得搬到这儿。 */}
-                      {current.ref_rank ? <> · {interpolate(t('platform:ref_rank', '对标{r}'), { r: current.ref_rank })}</> : null}
-                    </>
-                  ) : undefined}
+                  value=""
+                  readout={false}
                   decLabel={t('platform:weaker', '换弱一档的对手')}
                   incLabel={t('platform:stronger', '换强一档的对手')}
                   testId="setup-level"
@@ -247,57 +255,54 @@ const PlatformEngineSetupPage = () => {
             )}
           </section>
 
-          {/* ── 让子 ── */}
-          <section className="setgrp" data-testid="setup-handicap">
-            <KioskStepTrack
-              label={t('setup:handicap', '让子')}
+          {/* ── 让子 · 我执 ── 贴目跟着让子算,写在组标题右端,不再单占一段 ── */}
+          <section className="setgrp" data-testid="setup-handicap-side">
+            <KioskSecLabel
+              zh={t('setup:handicap_side', '让子 · 我执')}
               en="Handicap"
-              count={HANDICAP_TRACK.length}
-              index={handicapIdx}
-              onChange={setHandicapIdx}
-              value={handicapLabel}
-              meta={interpolate(
-                t('platform:handicap_range', '{n} 挡 · 分先 / 让先 / 让 2 – 让 9 子'),
-                { n: HANDICAP_TRACK.length },
-              )}
-              decLabel={t('setup:handicap_less', '少让一子')}
-              incLabel={t('setup:handicap_more', '多让一子')}
-              testId="setup-handicap-track"
+              value={<>{handicapLabel} · {komiLabel}</>}
             />
-          </section>
-
-          {/* ── 我执 ── 顺序照实现:猜先 / 执黑 / 执白 */}
-          <section className="setgrp" data-testid="setup-side">
-            <KioskSecLabel zh={t('setup:my_side', '我执')} en="Side" />
-            <KioskOptSeg
-              ariaLabel={t('setup:my_side', '我执')}
-              testId="setup-side-seg"
-              value={humanColor}
-              onChange={setHumanColor}
-              options={[
-                { value: 'nigiri', label: <><span className="disc rnd" />{t('platform:nigiri', '猜先')}</> },
-                { value: 'B', label: <><span className="disc b" />{t('setup:take_black', '执黑')}</> },
-                { value: 'W', label: <><span className="disc w" />{t('setup:take_white', '执白')}</> },
-              ]}
-            />
-          </section>
-
-          {/* ── 这一局会是 ── 贴目跟着让子算,不是另一个可选项 */}
-          <section className="setgrp" data-testid="setup-summary">
-            <KioskSecLabel zh={t('setup:this_game', '这一局会是')} en="Result" />
-            <p className="setexplain" data-testid="setup-summary-line">
-              <b>
-                {t('setup:chinese_rules', '中国规则')} · {handicapLabel} · {komiLabel} · {t('19x19', '19 路')}
-                {' · '}{t('platform:untimed', '不计时')} · {colorLabel}
-              </b>
-              <br />
-              {interpolate(
-                t('platform:summary_note', '贴目跟着让子算，不是另一个可选项；胜负只进{name}那边的账。'),
-                { name: t(meta.label, meta.labelCn) },
-              )}
-            </p>
+            <div className="twocol">
+              <div className="tcol">
+                <span className="iglab">{t('setup:handicap', '让子')}</span>
+                <KioskStepTrack
+                  count={HANDICAP_TRACK.length}
+                  index={handicapIdx}
+                  onChange={setHandicapIdx}
+                  value=""
+                  readout={false}
+                  decLabel={t('setup:handicap_less', '少让一子')}
+                  incLabel={t('setup:handicap_more', '多让一子')}
+                  testId="setup-handicap-track"
+                />
+              </div>
+              <div className="tcol">
+                <span className="iglab">{t('setup:my_side', '我执')}</span>
+                <KioskOptSeg
+                  ariaLabel={t('setup:my_side', '我执')}
+                  testId="setup-side-seg"
+                  value={humanColor}
+                  onChange={setHumanColor}
+                  options={[
+                    { value: 'nigiri', label: <><span className="disc rnd" />{t('platform:nigiri', '猜先')}</> },
+                    { value: 'B', label: <><span className="disc b" />{t('setup:take_black', '执黑')}</> },
+                    { value: 'W', label: <><span className="disc w" />{t('setup:take_white', '执白')}</> },
+                  ]}
+                />
+              </div>
+            </div>
           </section>
         </KioskScrollZone>
+
+        {sheetOpen && current && (
+          <AiLevelSheet
+            levels={sorted}
+            currentElo={level}
+            onPick={(elo) => setLevel(elo)}
+            onClose={() => setSheetOpen(false)}
+            testId="setup-level-sheet"
+          />
+        )}
 
         {startError && <Alert severity="error" sx={{ mb: 1 }}>{startError}</Alert>}
 

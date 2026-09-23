@@ -6,6 +6,9 @@ const { useEngineReadinessMock } = vi.hoisted(() => ({ useEngineReadinessMock: v
 vi.mock('../../context/EngineReadinessContext', () => ({
   useEngineReadiness: useEngineReadinessMock,
 }));
+vi.mock('../../../hooks/useTranslation', () => ({
+  useTranslation: () => ({ t: (_key: string, fallback?: string) => fallback ?? '' }),
+}));
 
 describe('EngineWarmupBanner', () => {
   beforeEach(() => useEngineReadinessMock.mockReset());

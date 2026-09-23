@@ -40,7 +40,7 @@ const STONE_R = U * 0.47;
  * 要不要把 oak 收进上游共享包是**四个产品一起的决定**,与本文件内部统一这件事不冲突。
  */
 export function GoBoardSvg({
-  size = 19, black = [], white = [], last, ghost = [], ghostFor, atari = [], muted = false, label,
+  size = 19, black = [], white = [], last, ghost = [], ghostFor, atari = [], remove = [], hint = [], muted = false, label,
   numbers, letters, shapes, highlights = [], window: win,
 }: {
   size?: number;
@@ -59,6 +59,10 @@ export function GoBoardSvg({
   ghostFor?: 'B' | 'W';
   /** 被叫吃的子:红方框,**不换子的颜色** —— 换颜色会和「这颗子是什么色」打架。 */
   atari?: readonly string[];
+  /** 摆谱:该拿走的点(蓝灯)。圈的颜色就是那颗灯的颜色(`LED_HEX.remove`),画在子**之后**,压在子上也看得见。 */
+  remove?: readonly string[];
+  /** 摆谱:AI 支招候选点(白灯)。 */
+  hint?: readonly string[];
   /** 还没有真盘面可镜像时压暗。空盘和「看不到盘」是两回事,压暗说的是后者。 */
   muted?: boolean;
   label?: string;
@@ -166,6 +170,8 @@ export function GoBoardSvg({
         const s = STONE_R * 1.15;
         return <rect key={`a${c}`} className="atari" x={p.x - s} y={p.y - s} width={s * 2} height={s * 2} rx={4} />;
       })}
+      {remove.map((c) => { const p = P(c); return <circle key={`rm${c}`} className="remove" cx={p.x} cy={p.y} r={STONE_R * 0.62} />; })}
+      {hint.map((c) => { const p = P(c); return <circle key={`hi${c}`} className="hint" cx={p.x} cy={p.y} r={STONE_R * 0.62} />; })}
       {/* 空点上的记号:先垫盘色圆,再画。放在字母前面 —— 同一个点上不会两者都有。 */}
       {shapes && Object.entries(shapes).flatMap(([c, kind]) => {
         const p = P(c);

@@ -337,7 +337,7 @@ const GameControlPanel = ({
   const moveRows = showMoves ? toMoveRows(gameState.history) : [];
   const nowIndex = gameState.current_node_index ?? 0;
   const nowRef = useRef<HTMLSpanElement | null>(null);
-  // 跟到当前那一手。live 那一屏(`LiveMatchPage.tsx:110`)同一句 —— 对局中「当前」永远是最后一行,
+  // 跟到当前那一手。对局中「当前」永远是最后一行,
   // 不跟的话下到第十手以后屏上就一直停在开头几手。`block: 'nearest'` 只在滚出视野时才动。
   useEffect(() => { nowRef.current?.scrollIntoView({ block: 'nearest' }); }, [nowIndex]);
 

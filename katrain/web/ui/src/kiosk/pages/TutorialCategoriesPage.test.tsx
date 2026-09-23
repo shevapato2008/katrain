@@ -182,7 +182,6 @@ describe('屏 23 · 另外两块', () => {
     fireEvent.click(screen.getByRole('button', { name: /去训练营/ }));
     expect(mockNavigate).toHaveBeenCalledWith('/kiosk/tsumego');
     fireEvent.click(screen.getByRole('button', { name: /去摆谱/ }));
-    // 带上来处(2026-09-22):摆谱列表的返回键回课程、键名「课程」
-    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/baipu', { state: { backTo: '/kiosk/tutorial' } });
+    expect(mockNavigate).toHaveBeenCalledWith('/kiosk/kifu');
   });
 });

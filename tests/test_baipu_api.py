@@ -90,7 +90,7 @@ def _geo():
 
 
 class TestBaipuCaptureEndpoint:
-    def _client(self, tmp_path, capture=True, geometry=True, led=True):
+    def _client(self, tmp_path, capture=True, geometry=True, led=True, collect=True):
         app = FastAPI()
         app.include_router(baipu.router, prefix="/baipu")
         if capture:
@@ -99,12 +99,27 @@ class TestBaipuCaptureEndpoint:
             app.state.geometry = _geo()
         if led:
             app.state.led = _FakeLed()
+        # 这组测的是**采集机**上的 /capture;上线态(开关没开)那一种单独测。
+        app.state.baipu_collect = collect
         return TestClient(app)
 
     def test_404_without_capture(self, tmp_path):
         c = self._client(tmp_path, capture=False)
         r = c.post("/baipu/capture", json={"game_id": "g", "move_index": -1, "sgf": "(;SZ[19];B[pd])"})
         assert r.status_code == 404
+
+    def test_404_when_capture_service_exists_but_collect_is_off(self, tmp_path):
+        # 盒子为了几何标定总是带着 --capture-camera 起 ⇒ 采集服务在盒上恒在。
+        # 上线版摆谱不拍照(Fan 2026-09-14):开关没开就当没有采集,一张帧都不许写。
+        c = self._client(tmp_path, collect=False)
+        r = c.post("/baipu/capture", json={"game_id": "g", "move_index": -1, "sgf": "(;SZ[19];B[pd])"})
+        assert r.status_code == 404
+        assert not (tmp_path / "g").exists()
+
+    def test_mode_is_collect_only_with_capture_service_and_switch(self, tmp_path):
+        assert self._client(tmp_path).get("/baipu/mode").json() == {"collect": True}
+        assert self._client(tmp_path, collect=False).get("/baipu/mode").json() == {"collect": False}
+        assert self._client(tmp_path, capture=False).get("/baipu/mode").json() == {"collect": False}
 
     def test_409_without_geometry(self, tmp_path):
         c = self._client(tmp_path, geometry=False)
@@ -211,6 +226,7 @@ class TestBaipuCaptureEndpoint:
         app.state.geometry = geo
         app.state.led = _FidLed()
         app.state.baipu_fiducial_mode = "every-move"
+        app.state.baipu_collect = True
         c = TestClient(app)
 
         r = c.post("/baipu/capture", json={"game_id": "g", "move_index": -1, "sgf": "(;SZ[19];B[pd];W[dp])"})

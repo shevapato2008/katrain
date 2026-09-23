@@ -4067,10 +4067,10 @@ msgid "setup:my_side"
 msgstr "Meine Farbe"
 
 msgid "setup:take_black"
-msgstr "Schwarz nehmen"
+msgstr "Schwarz"
 
 msgid "setup:take_white"
-msgstr "Weiß nehmen"
+msgstr "Weiß"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -5284,8 +5284,7 @@ msgid "kifu:greet_b"
 msgstr "anderer"
 
 msgid "kifu:greet_sub"
-msgstr ""
-"Berühmte Partien, Profi-Übertragungen und Nachstellen auf dem echten Brett"
+msgstr "Berühmte Partien und Nachstellen auf dem echten Brett"
 
 msgid "kifu:famous_records"
 msgstr "Berühmte Partien"
@@ -5979,6 +5978,15 @@ msgstr "Angezeigtes Elo {v}"
 
 msgid "platform:ref_rank"
 msgstr "etwa {r}"
+
+msgid "platform:level_sheet"
+msgstr "Alle Stärkestufen"
+
+msgid "platform:close"
+msgstr "Schließen"
+
+msgid "platform:plate_aria"
+msgstr "Aktueller Gegner {name} {level}, {rung}; antippen für alle"
 
 msgid "platform:rank_is_theirs"
 msgstr "Der Rang gehört zu {name}"
@@ -6920,5 +6928,199 @@ msgstr "Nicht in der Siegquote gezählt: "
 
 msgid "growth:unknown_seat_b"
 msgstr ""
-" — Partien von Angesicht zu Angesicht, importierte Partien und Partien ohne "
-"erfasste Farbe."
+" — Partien von Angesicht zu Angesicht und Partien ohne erfasste Farbe."
+
+msgid "baipu:calib_running_sub"
+msgstr ""
+"Die Kalibrierung nutzt ebenfalls die Lichter · danach oder nach Abbruch geht"
+" es direkt zum Nachstellen"
+
+msgid "baipu:calib_running_title"
+msgstr "Die Brettkalibrierung läuft noch"
+
+msgid "baipu:cam_connecting"
+msgstr "Kamera wird verbunden"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "Das Brett ist noch nicht kalibriert"
+
+msgid "baipu:cam_geo_drift"
+msgstr "Die Brettkalibrierung ist nicht mehr gültig"
+
+msgid "baipu:cam_none"
+msgstr "Keine Kamera angeschlossen"
+
+msgid "baipu:capture_hint_camera"
+msgstr ""
+"Die blau leuchtenden — sind alle abgenommen, geht es von selbst weiter"
+
+msgid "baipu:checking_board"
+msgstr "Brettstatus wird geprüft"
+
+msgid "baipu:done_hint_auto"
+msgstr "Insgesamt {n} Züge · Fortschritt gelöscht; oben links geht es zurück"
+
+msgid "baipu:guard_sub_collect"
+msgstr "Für Trainingsdaten muss die Kamera das Brett zuerst klar sehen"
+
+msgid "baipu:hint_failed"
+msgstr "Keine Antwort — schließen und noch einmal drücken"
+
+msgid "baipu:hint_loading"
+msgstr "Die KI rechnet diesen Zug…"
+
+msgid "baipu:hint_on_hint"
+msgstr ""
+"KI-Tipps an, Erkennung pausiert — weiße Lichter sind die Kandidaten der KI; "
+"Tipps schließen, dann geht es weiter"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr ""
+"KI-Tipps an — weiße Lichter sind die Kandidaten der KI; Tipps schließen, "
+"dann geht es weiter"
+
+msgid "baipu:hint_row"
+msgstr "Siegchance {w}% · Punkte {s}"
+
+msgid "baipu:hint_title"
+msgstr "KI-Tipps · wo die weißen Lichter blinken"
+
+msgid "baipu:hint_try_reason"
+msgstr ""
+"Beim Probieren schaut die Kamera nicht aufs Brett — die KI kennt die "
+"Stellung darauf nicht"
+
+msgid "baipu:hint_value"
+msgstr "Nochmal drücken zum Schließen"
+
+msgid "baipu:led_on_camera"
+msgstr ""
+"Das Licht ist an — lege den {color}en Stein auf den leuchtenden "
+"Schnittpunkt; erkennt die Kamera ihn, geht es von selbst weiter"
+
+msgid "baipu:led_title"
+msgstr "Lichter · Farblegende"
+
+msgid "baipu:led_value_camera"
+msgstr "Kamera schaut zu"
+
+msgid "baipu:led_value_manual"
+msgstr "Von Hand bestätigen"
+
+msgid "baipu:led_value_try"
+msgstr "Probieren · Erkennung pausiert"
+
+msgid "baipu:manual_hint"
+msgstr "{why} — Stein setzen, dann „Stein bestätigen“ drücken"
+
+msgid "baipu:manual_hint_calib"
+msgstr "; kalibrieren unter „Einstellungen“"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "Zug {i} von {n}"
+
+msgid "baipu:restore_hint"
+msgstr ""
+"Probiersteine abnehmen, verschobene zurücklegen — sobald es passt, geht es "
+"von selbst weiter"
+
+msgid "baipu:restore_title"
+msgstr "Brett auf Zug {n} zurückstellen"
+
+msgid "baipu:resume_body_placed"
+msgstr ""
+"Zuletzt warst du bei Zug {n}. Zum Neuanfang erst alle Steine vom Brett "
+"nehmen."
+
+msgid "baipu:setup_clear_title"
+msgstr "Zuerst alle Steine vom Brett nehmen"
+
+msgid "baipu:setup_continue"
+msgstr "Liegt richtig, weiter"
+
+msgid "baipu:setup_entry_hint"
+msgstr ""
+"Steine unter blauem Licht abnehmen, bei rotem und grünem Licht setzen — "
+"passt es, geht es von selbst los"
+
+msgid "baipu:setup_entry_title"
+msgstr "Zuerst das Brett wie nach Zug {n} aufbauen"
+
+msgid "baipu:try_off_reason"
+msgstr "Die Kamera erkennt gerade nicht"
+
+msgid "baipu:trying_hint"
+msgstr ""
+"Setze frei und probiere auf dem Brett. Nochmal „Probieren“ drücken führt "
+"zurück zum Kifu — die Lichter helfen beim Zurückstellen"
+
+msgid "baipu:trying_title"
+msgstr "Probieren · Kameraerkennung pausiert"
+
+msgid "baipu:undo_hint_camera"
+msgstr ""
+"Steine unter blauem Licht abnehmen, gefangene Steine bei rotem und grünem "
+"Licht zurücklegen — passt es, geht es weiter"
+
+msgid "baipu:undo_title"
+msgstr "Zurück zu Zug {n}"
+
+msgid "baipu:undo_try_reason"
+msgstr "Beim Probieren nicht möglich"
+
+msgid "baipu:verify_hint"
+msgstr "Überzählige Steine leuchten blau — abnehmen, dann geht es weiter"
+
+msgid "baipu:verify_title"
+msgstr "Brett wird abgeglichen"
+
+msgid "baipu:wrong_hint"
+msgstr ""
+"Den Stein unter dem blauen Licht ({w}) aufnehmen und auf {c} legen — passt "
+"es, geht es weiter"
+
+msgid "baipu:wrong_size"
+msgstr "Das ist ein {n}×{n}-Kifu — nachstellen geht nicht"
+
+msgid "baipu:wrong_size_hint"
+msgstr ""
+"Echtes Brett und Lichter sind 19×19 — bei anderer Größe läge jeder Stein "
+"falsch."
+
+msgid "baipu:wrong_title"
+msgstr "Falsch gesetzt · gehört auf {c}"
+
+msgid "kifu:detail_offline"
+msgstr "Für diese Partie ist eine Internetverbindung nötig"
+
+msgid "kifu:detail_offline_hint"
+msgstr ""
+"Die Kifu-Bibliothek liegt in der Cloud, und dieses Gerät erreicht sie gerade"
+" nicht."
+
+msgid "kifu:list_offline"
+msgstr "Die Kifu-Suche braucht eine Internetverbindung"
+
+msgid "kifu:list_offline_hint"
+msgstr ""
+"Dieses Gerät erreicht die Cloud gerade nicht. Nachgestellte Kifus und "
+"importierte SGFs sind nicht betroffen."
+
+msgid "kifu:wrong_size_reason"
+msgstr "Das ist ein {n}×{n}-Kifu — das echte Brett kann nur 19×19"
+
+msgid "setup:handicap_side"
+msgstr "Vorgabe · Meine Farbe"
+
+msgid "platform:engine_fixed_hint"
+msgstr ""
+"{name} Mensch-gegen-KI ist fest auf 19x19 · chinesische Regeln; Bildschirm "
+"und echtes Brett teilen sich denselben Kanal"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Die KI-Engine wird vorbereitet — Partiesammlung, Kurse und andere Funktionen"
+" sind schon verfügbar"
+
+msgid "engine:warmup_unavailable"
+msgstr "Die KI-Engine ist noch nicht bereit — bitte später erneut versuchen"

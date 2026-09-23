@@ -77,7 +77,9 @@ class _FakeConnectivity:
 class _FakeRemoteClient:
     """`get_growth_summary` 要么返回一份 payload,要么抛一个真的 httpx 异常。"""
 
-    def __init__(self, *, payload=None, raises=None):
+    def __init__(self, *, payload=None, raises=None, bound_user_id="1"):
+        # 云端会话绑在哪个本机用户上;不是当前这个人就退回本机(`cloud_session_is`)。
+        self.bound_user_id = bound_user_id
         self._payload = payload
         self._raises = raises
         self.calls = []

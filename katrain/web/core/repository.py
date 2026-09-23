@@ -235,25 +235,19 @@ class RepositoryDispatcher:
     async def tsumego_get_progress_local(self, user_id: int) -> Dict:
         return self._local_tsumego_progress_repo.list(user_id)
 
-    # ── Kifu (online-only, offline = unavailable) ──
+    # ── Kifu (online-only: offline / cloud failure = 503, never an empty library) ──
+    #
+    # 棋谱库只在云端,盒上没有本地副本。以前这两条离线回空列表 / None,端点就把「连不上」
+    # 说成了「没搜到 / 没有这一局」,屏 15 写「没有对得上的谱 · 换棋手名再试」。
+    # 远端 404 照旧是 404:`_remote_only` 只把离线、传输错误和 5xx 收成不可用。
 
     async def kifu_list_albums(self, q=None, page=1, page_size=20):
-        if not self.is_online:
-            return {"items": [], "total": 0, "page": page, "page_size": page_size}
-        try:
-            return await self.remote_kifu.list_albums(q, page, page_size)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("kifu_list_albums remote failed: %s", e)
-            return {"items": [], "total": 0, "page": page, "page_size": page_size}
+        return await self._remote_only(
+            lambda: self.remote_kifu.list_albums(q, page, page_size), "Remote kifu service unavailable"
+        )
 
     async def kifu_get_album(self, album_id):
-        if not self.is_online:
-            return None
-        try:
-            return await self.remote_kifu.get_album(album_id)
-        except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as e:
-            logger.warning("kifu_get_album remote failed: %s", e)
-            return None
+        return await self._remote_only(lambda: self.remote_kifu.get_album(album_id), "Remote kifu service unavailable")
 
     # ── User Games (online→remote, offline→local+sync) ──
 
@@ -317,7 +311,7 @@ class RepositoryDispatcher:
 
     # ── Growth (跨设备的总数在云端;拿不到就退回本机缓存,**并说清是缓存**) ──
 
-    async def growth_summary_remote(self, days: int) -> tuple[dict | None, str]:
+    async def growth_summary_remote(self, days: int, user_id) -> tuple[dict | None, str]:
         """→ `(云端那份汇总, "cloud")`,或 `(None, 退回本机的原因)`。
 
         **不抛。** 这个端点的降级是「换一个数据源」,不是「这次请求失败了」——
@@ -328,32 +322,58 @@ class RepositoryDispatcher:
         而它们在用户屏上长得一模一样(都是「本机记录」)。
         """
         return await self._cloud_first(
-            "growth summary", "/growth/summary", lambda: self._remote_client.get_growth_summary(days)
+            "growth summary", "/growth/summary", lambda: self._remote_client.get_growth_summary(days), user_id=user_id
         )
 
-    async def growth_diagnosis_remote(self, days: int, reports: int) -> tuple[dict | None, str]:
+    async def growth_diagnosis_remote(self, days: int, reports: int, user_id) -> tuple[dict | None, str]:
         """能力诊断,口径同 `growth_summary_remote`。盒子上报告在云端、本机库里没有逐手数据,
         所以退回本机时的「0 份报告」说的是「没连上云端」—— 屏上据 `local_cache` 这样说。"""
         return await self._cloud_first(
             "growth diagnosis",
             "/growth/diagnosis",
             lambda: self._remote_client.get_growth_diagnosis(days, reports),
+            user_id=user_id,
         )
 
-    async def growth_activity_remote(self, days: int, tz_offset: int) -> tuple[dict | None, str]:
+    async def growth_activity_remote(self, days: int, tz_offset: int, user_id) -> tuple[dict | None, str]:
         """练棋日历,口径同 `growth_summary_remote`。`tz_offset` 原样带给云端 —— 按盒子这边的「今天」切天。"""
         return await self._cloud_first(
             "growth activity",
             "/growth/activity",
             lambda: self._remote_client.get_growth_activity(days, tz_offset),
+            user_id=user_id,
         )
 
-    async def _cloud_first(self, label: str, path: str, call) -> tuple[dict | None, str]:
+    def cloud_session_is(self, user_id) -> bool:
+        """云端会话此刻说的是不是**这个**本机用户?
+
+        盒子是共用设备:`RemoteAPIClient` 是进程级单例,只揣着**最后一次登录**那个人的 token
+        (`auth.py` 的 box-sso bootstrap 里 `bind_user(shadow_user["id"])` 绑的就是本机影子用户 id)。
+        所以「问云端」这件事必须先问一句「云端认的是谁」—— 否则甲的页面会显示乙的账。
+        同一判断在 `user_games_create`、`sync_worker`、`ai-ladder/status` 都有,这里是第四处。
+
+        **绑不上就当不是**(没 bind 过 = 证明不了这份 token 属于谁)。非严格盒端会从磁盘恢复
+        refresh token 而不 bind,那份 token 的主人未必是屏前这个人。
+        """
+        bound = getattr(self._remote_client, "bound_user_id", None)
+        return bound is not None and str(bound) == str(user_id)
+
+    async def _cloud_first(self, label: str, path: str, call, *, user_id) -> tuple[dict | None, str]:
         """成长屏那几块的「先问云端」:`(payload, "cloud")` 或 `(None, 原因)`,**不抛**。"""
         if self._remote_client is None:
             return None, "no_remote_client"
         if not self.is_online:
             return None, "offline"
+        if not self.cloud_session_is(user_id):
+            # 退回本机是**正确的降级**,不是错误:屏上那句「本机记录」就是它的出口。
+            # 报 401 会让屏上写「读不到」,而本机明明有这个人自己的数。
+            logger.warning(
+                "%s: cloud session belongs to user %s, not %s — using local cache",
+                label,
+                getattr(self._remote_client, "bound_user_id", None),
+                user_id,
+            )
+            return None, "remote_other_user"
         try:
             payload = await call()
         except httpx.TransportError as exc:

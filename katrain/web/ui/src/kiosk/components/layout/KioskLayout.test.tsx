@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import KioskLayout from './KioskLayout';
 import { DOCK_TABS } from '../../shell/dockRoutes';
+import { EngineReadinessContext } from '../../context/EngineReadinessContext';
 
 // Dock renders the 对弈 label; assert its presence/absence by route.
 function renderAt(path: string) {
@@ -12,11 +13,41 @@ function renderAt(path: string) {
           <Route path="/kiosk/*" element={<div>page</div>} />
           <Route path="/kiosk/settings" element={<div>settings</div>} />
           <Route path="/kiosk/play/ai/setup/:mode" element={<div>setup</div>} />
+          <Route path="/kiosk/play/cross-platform/engine/:platform" element={<div>platform-setup</div>} />
         </Route>
       </Routes>
     </MemoryRouter>,
   );
 }
+
+// EngineReadinessContext 默认值是 'ready'(banner 不渲染任何东西),要看到 banner 本身
+// 得手动喂一个 'warming'/'unavailable'。
+function renderAtWithReadiness(path: string, readiness: 'warming' | 'unavailable' | 'ready') {
+  return render(
+    <EngineReadinessContext.Provider value={readiness}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route element={<KioskLayout username="友" />}>
+            <Route path="/kiosk/*" element={<div>page</div>} />
+            <Route path="/kiosk/play/cross-platform/engine/:platform" element={<div>platform-setup</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </EngineReadinessContext.Provider>,
+  );
+}
+
+// Task 4.6:EngineWarmupBanner 报的是本地引擎,跨平台屏(`/kiosk/play/cross-platform/**`)
+// 打的是远端平台的 bot,和本地引擎无关 —— 判据只写在 KioskLayout 一处。
+test('引擎准备中提示条在跨平台子树整个不出现,别的一级页正常出', () => {
+  const play = renderAtWithReadiness('/kiosk/play', 'warming');
+  expect(play.getByRole('status')).toBeInTheDocument();
+  play.unmount();
+
+  const crossPlatform = renderAtWithReadiness('/kiosk/play/cross-platform/engine/golaxy', 'warming');
+  expect(crossPlatform.queryByRole('status')).not.toBeInTheDocument();
+  crossPlatform.unmount();
+});
 
 test('Dock shows on L1 play', () => {
   renderAt('/kiosk/play');

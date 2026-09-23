@@ -4073,10 +4073,10 @@ msgid "setup:my_side"
 msgstr "Benim rengim"
 
 msgid "setup:take_black"
-msgstr "Siyahı al"
+msgstr "Siyah"
 
 msgid "setup:take_white"
-msgstr "Beyazı al"
+msgstr "Beyaz"
 
 msgid "setup:no_camera_hint"
 msgstr "Bu cihazda kalibre kamera yok, gerçek tahta şu an kullanılamaz"
@@ -5260,7 +5260,7 @@ msgid "kifu:greet_b"
 msgstr "oyunları"
 
 msgid "kifu:greet_sub"
-msgstr "Ünlü oyunlar, profesyonel yayınlar ve kayıtları gerçek tahtaya dizme"
+msgstr "Ünlü oyunlar ve kayıtları gerçek tahtaya dizme"
 
 msgid "kifu:famous_records"
 msgstr "Ünlü oyunlar"
@@ -5953,6 +5953,15 @@ msgstr "Gösterilen Elo {v}"
 
 msgid "platform:ref_rank"
 msgstr "yaklaşık {r}"
+
+msgid "platform:level_sheet"
+msgstr "Tüm güç seviyeleri"
+
+msgid "platform:close"
+msgstr "Kapat"
+
+msgid "platform:plate_aria"
+msgstr "Mevcut rakip {name} {level}, {rung}; tümünü görmek için dokun"
 
 msgid "platform:rank_is_theirs"
 msgstr "Derece {name} tarafına aittir"
@@ -6880,6 +6889,197 @@ msgid "growth:unknown_seat_a"
 msgstr "Kazanma oranına sayılmayan oyun: "
 
 msgid "growth:unknown_seat_b"
+msgstr " — yüz yüze oyunlar ve renginizin kaydedilmediği oyunlar."
+
+msgid "setup:handicap_side"
+msgstr "Avans · Benim rengim"
+
+msgid "platform:engine_fixed_hint"
 msgstr ""
-" — yüz yüze oyunlar, içe aktarılan kayıtlar ve renginizin kaydedilmediği "
-"oyunlar."
+"{name} insan-yapay zeka 19x19'a sabit · Çin kuralları; ekran ve gerçek tahta"
+" aynı kanalı kullanır"
+
+msgid "baipu:calib_running_sub"
+msgstr ""
+"Kalibrasyon da ışıkları kullanıyor · bitince ya da iptal edilince doğrudan "
+"dizmeye geçilir"
+
+msgid "baipu:calib_running_title"
+msgstr "Tahta kalibrasyonu hâlâ sürüyor"
+
+msgid "baipu:cam_connecting"
+msgstr "Kameraya bağlanılıyor"
+
+msgid "baipu:cam_geo_confirm"
+msgstr "Tahta henüz kalibre edilmedi"
+
+msgid "baipu:cam_geo_drift"
+msgstr "Tahta kalibrasyonu artık geçerli değil"
+
+msgid "baipu:cam_none"
+msgstr "Kamera bağlı değil"
+
+msgid "baipu:capture_hint_camera"
+msgstr ""
+"Mavi yananlar — hepsini kaldırınca kendiliğinden sonraki hamleye geçilir"
+
+msgid "baipu:checking_board"
+msgstr "Tahta durumu kontrol ediliyor"
+
+msgid "baipu:done_hint_auto"
+msgstr ""
+"Toplam {n} hamle · ilerleme silindi; geri dönmek için sol üste dokunun"
+
+msgid "baipu:guard_sub_collect"
+msgstr ""
+"Eğitim verisi toplamak için önce kameranın tahtayı net görmesi gerekir"
+
+msgid "baipu:hint_failed"
+msgstr "Hesaplanamadı — kapatıp tekrar basın"
+
+msgid "baipu:hint_loading"
+msgstr "Yapay zekâ bu hamleyi hesaplıyor…"
+
+msgid "baipu:hint_on_hint"
+msgstr ""
+"Yapay zekâ ipuçları açık, tanıma duraklatıldı — beyaz ışıklar yapay zekânın "
+"aday noktaları; devam etmek için ipuçlarını kapatın"
+
+msgid "baipu:hint_on_hint_manual"
+msgstr ""
+"Yapay zekâ ipuçları açık — beyaz ışıklar yapay zekânın aday noktaları; devam"
+" etmek için ipuçlarını kapatın"
+
+msgid "baipu:hint_row"
+msgstr "Kazanma %{w} · puan {s}"
+
+msgid "baipu:hint_title"
+msgstr "Yapay zekâ ipuçları · beyaz ışıkların yanıp söndüğü yer"
+
+msgid "baipu:hint_try_reason"
+msgstr "Denerken kamera tahtaya bakmıyor, yapay zekâ tahtadaki konumu bilemez"
+
+msgid "baipu:hint_value"
+msgstr "Kapatmak için tekrar basın"
+
+msgid "baipu:led_on_camera"
+msgstr ""
+"Işık yandı — {color} taşı yanan kesişime koyun; kamera görünce kendiliğinden"
+" sonraki hamleye geçilir"
+
+msgid "baipu:led_title"
+msgstr "Işıklar · renk açıklaması"
+
+msgid "baipu:led_value_camera"
+msgstr "Kamera izliyor"
+
+msgid "baipu:led_value_manual"
+msgstr "Elle onay"
+
+msgid "baipu:led_value_try"
+msgstr "Deneniyor · tanıma duraklatıldı"
+
+msgid "baipu:manual_hint"
+msgstr "{why} — taşı koyun, sonra «Taşı onayla»ya basın"
+
+msgid "baipu:manual_hint_calib"
+msgstr "; kalibrasyon «Ayarlar»da"
+
+msgid "baipu:pagebar_sub_placed"
+msgstr "{n} hamlenin {i}. hamlesi"
+
+msgid "baipu:restore_hint"
+msgstr ""
+"Denediğiniz taşları kaldırın, oynattıklarınızı geri koyun — eşleşince "
+"kendiliğinden devam eder"
+
+msgid "baipu:restore_title"
+msgstr "Tahtayı {n}. hamleye geri getirin"
+
+msgid "baipu:resume_body_placed"
+msgstr ""
+"Geçen sefer {n}. hamleye gelmiştiniz. Baştan başlamak için önce tahtadaki "
+"tüm taşları kaldırın."
+
+msgid "baipu:setup_clear_title"
+msgstr "Önce tahtadaki tüm taşları kaldırın"
+
+msgid "baipu:setup_continue"
+msgstr "Hazır, devam"
+
+msgid "baipu:setup_entry_hint"
+msgstr ""
+"Mavi ışıktaki taşları kaldırın, kırmızı ve yeşil ışıklara taş koyun — "
+"eşleşince kendiliğinden başlar"
+
+msgid "baipu:setup_entry_title"
+msgstr "Önce tahtayı {n}. hamledeki gibi dizin"
+
+msgid "baipu:try_off_reason"
+msgstr "Kamera tanıma yapmıyor"
+
+msgid "baipu:trying_hint"
+msgstr ""
+"Tahtaya istediğinizi koyup inceleyin. Kayda dönmek için «Dene»ye tekrar "
+"basın — ışıklar tahtayı geri dizmenize rehberlik eder"
+
+msgid "baipu:trying_title"
+msgstr "Deneniyor · kamera tanıma duraklatıldı"
+
+msgid "baipu:undo_hint_camera"
+msgstr ""
+"Mavi ışıktaki taşları kaldırın, esir taşları kırmızı ve yeşil ışıklara geri "
+"koyun — eşleşince kendiliğinden devam eder"
+
+msgid "baipu:undo_title"
+msgstr "{n}. hamleye geri alındı"
+
+msgid "baipu:undo_try_reason"
+msgstr "Denerken geri alınamaz"
+
+msgid "baipu:verify_hint"
+msgstr "Fazla taşlar mavi yanar — kaldırınca devam edilir"
+
+msgid "baipu:verify_title"
+msgstr "Tahta kontrol ediliyor"
+
+msgid "baipu:wrong_hint"
+msgstr ""
+"Mavi ışıktaki taşı ({w}) alıp {c} noktasına koyun — eşleşince kendiliğinden "
+"devam eder"
+
+msgid "baipu:wrong_size"
+msgstr "Bu {n}×{n} bir kayıt — dizilemez"
+
+msgid "baipu:wrong_size_hint"
+msgstr ""
+"Gerçek tahta ve ışıklar 19×19 — başka boyutta her taş yanlış yere düşer."
+
+msgid "baipu:wrong_title"
+msgstr "Yanlış yer · {c} olmalı"
+
+msgid "kifu:detail_offline"
+msgstr "Bu oyunu açmak için internet bağlantısı gerekir"
+
+msgid "kifu:detail_offline_hint"
+msgstr "Kayıt kitaplığı bulutta ve bu cihaz şu anda ona ulaşamıyor."
+
+msgid "kifu:list_offline"
+msgstr "Kayıt kitaplığında arama için internet bağlantısı gerekir"
+
+msgid "kifu:list_offline_hint"
+msgstr ""
+"Bu cihaz şu anda buluta ulaşamıyor. Dizdiğiniz kayıtlar ve içe aktarılan "
+"SGF'ler etkilenmez."
+
+msgid "kifu:wrong_size_reason"
+msgstr "Bu {n}×{n} bir kayıt — gerçek tahta yalnızca 19×19 alır"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Yapay zekâ motoru hazırlanıyor — bu sırada Oyun Kayıtları, Dersler ve diğer "
+"özellikleri kullanabilirsiniz"
+
+msgid "engine:warmup_unavailable"
+msgstr ""
+"Yapay zekâ motoru henüz hazır değil — lütfen daha sonra tekrar deneyin"

@@ -1490,6 +1490,8 @@ button.kiosk-row.figrow { flex: none; }
    `.cdlg{inset:0}` 找的是最近的**定位祖先**,所以这一屏的布局根要 `position:relative`
    —— 屏 06(布局 A)和屏 08(布局 B)已经各踩过一次,判据一样。**只给这一屏加**。 */
 .kiosk-layout-a.baipu-layout { position: relative; }
+/* 摄像头用不了、临时露出「确认落子」时,灯折叠头右端的「手动确认」用警告色(稿 17d)。 */
+.baipu-layout .kiosk-fold__head b.warn, .baipu-layout .lrow .warn { color: var(--warn); }
 
 /* ── 屏 18 直播 · 观战 ──────────────────────────────────────────────────────
    状态标(直播中 / 已结束)在页控条右端。它**不占流内高度** —— 这一屏右栏六块正好

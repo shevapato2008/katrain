@@ -106,14 +106,20 @@ test('四图:跨平台 · 人机开局 ←→ sample-go/shots/09-platform-engine
       + '的局面」,调档时它是唯一的反馈;真机触屏能拖动(几何闸用 CDP 真触摸事件验过,'
       + '鼠标滚轮拨得动 ≠ 触屏拨得动)。**这个交互对不对待 Fan 裁定**——'
       + '如果算进「一屏一种选择手势」的禁令,退回成名牌不可点、去掉 caret · '
-      + '**真浏览器量出来的数**(`kiosk-geometry-platform.spec.ts`):`.kiosk-rail` '
-      + '`clientHeight` 恒 516、内容区恒 400 都成立;但 `.kiosk-side__scroll` 在 39 档 + '
-      + '最长档名(甚至短档名)下 `scrollHeight` 是 459,超出 400 视口 59px —— '
-      + '**这一屏目前不满足「整条链上没有任何一层在滚」**,是本轮量出来待修的缺口,不是掩盖过去 · '
+      + '**真浏览器量出来的数**(`kiosk-geometry-platform.spec.ts`,2026-09-23 修复轮 2 后):'
+      + '`.kiosk-rail` `clientHeight` 恒 516、内容区恒 400 都成立;`.kiosk-side__scroll` 在 39 档 + '
+      + '最长档名下 `scrollHeight` 是 400,与视口齐平,**不再溢出**(修复轮 1 从 459 收到 403,'
+      + '修复轮 2 收到 400)——「整条链上没有任何一层在滚」这条闸现在是绿的 · '
       + '39 档全表面板本身量下来完整落在右栏内、与棋盘无交集、覆盖轨的四角,'
       + '滚动条拇指没被 `.kiosk-rail` 的 `position:relative` 挪走(拇指顶边与滚动区顶边差 0px,'
       + '根源是 `.kiosk-side` 自己已带 `position:relative`,`.kiosk-rail` 那条对这一屏其实不是'
-      + '决定性的 —— 详见几何闸报告)',
+      + '决定性的 —— 详见几何闸报告) · '
+      + '**修复轮 2(2026-09-23)**:`.aiplate`(对手名牌)和 `.twocol`/`.tcol`(让子 · 我执并排)'
+      + '这两块 CSS 按设计源 `sample-go/go-kiosk.tmpl.html:638-654` **逐字对齐**——'
+      + '此前那份是计划里手写的近似,和设计稿结构不一样(最明显的一处:`.twocol` 原来写成了'
+      + '竖排 `grid`,标签在控件上面占两行 72px;设计稿是横排 `flex`,标签和控件同一行 44px)。'
+      + '对齐之后名牌底色改用 `--raise`、描边改成 accent 40%、`.rung` 换等宽体 + '
+      + '`tabular-nums`(连按 ± 时数字不抖),两列从竖排改横排',
   });
   console.log(`[fourup 09-platform-engine] both=${r.both} refOnly=${r.refOnly} implOnly=${r.implOnly}`);
 });

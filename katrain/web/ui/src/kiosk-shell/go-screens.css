@@ -1835,18 +1835,22 @@ button.kiosk-row.figrow { flex: none; }
    (整段并进「盒子定好的」之后仍差 9px —— 真浏览器量出来的,不是估的。) */
 .kiosk-rail[data-su] .setexplain { padding: 9px 12px; line-height: 1.5; }
 
-/* 屏 09 对手名牌 —— <button> 给了背景就必须给 color,否则 h4 继承浏览器默认黑 */
-.aiplate {
-  display: flex; align-items: center; gap: 12px; width: 100%;
-  height: 56px; padding: 0 12px; margin-bottom: 10px;
-  border: 1px solid var(--hair); border-radius: 10px;
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
-  color: var(--text);
-  text-align: left; cursor: pointer;
-}
-.aiplate h4 { margin: 0; font-size: 15px; color: var(--text); }
-.aiplate p  { margin: 2px 0 0; font-size: 12px; color: var(--dim); }
-.aiplate .rung { margin-left: auto; font-size: 13px; color: var(--dim); white-space: nowrap; }
+/* 屏 09 对手名牌 —— 逐字照搬设计源 sample-go/go-kiosk.tmpl.html:638-646
+   (2026-09-23 修复轮 2:上一版是计划里手写的近似,八处和设计稿不一样,已核实改错)。
+   <button> 给了背景就必须给 color,否则 h4 继承浏览器默认黑。
+   `.rung` 用等宽体 + `tabular-nums`:连按 ± 时数字换位不等宽会抖,设计稿注释专门点过这条。 */
+.aiplate { display: flex; align-items: center; gap: 11px; height: 56px; padding: 0 10px 0 12px; flex: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 12px;
+  background: var(--raise); color: var(--text); cursor: pointer; text-align: left; width: 100%; }
+.aiplate > div { flex: 1; min-width: 0; }
+.aiplate h4 { font-family: var(--font-serif); font-size: 15px; font-weight: 600; color: var(--text); margin: 0; }
+.aiplate p { margin-top: 2px; margin-bottom: 0; font-size: 11.5px; color: var(--dim); }
+.aiplate .rung { flex: none; display: flex; align-items: center; gap: 6px; font-family: var(--font-mono);
+  font-size: 12px; font-weight: 500; color: var(--accent); font-variant-numeric: tabular-nums; }
+.aiplate .rung svg { width: 14px; height: 14px; }
+/* 名牌与轨的间距挂在这条上,不是名牌自己的 margin-bottom —— 名牌是共享件,
+   间距是屏 09 这一处布局的事。 */
+.aiplate + .catpick { margin-top: 8px; }
 
 /* 屏 09 名牌点开的 39 档全表 —— 只盖右栏,不盖盘。`position:relative` 只在这一屏的
    `.kiosk-rail` 上开:那个类本身(tokens.css:616)不带 position。
@@ -1891,9 +1895,12 @@ button.kiosk-row.figrow { flex: none; }
 .aisheet__row .nm  { flex: 1; font-size: 14px; }
 .aisheet__row .el  { color: var(--dim); font-size: 12px; white-space: nowrap; }
 
-/* 屏 09 段三「让子 · 我执」并成两列。标签要离自己的控件近、离邻列的控件远。
-   2026-09-23 量过一次反例:列间距 16 时,标签到邻列的 ＋ 号只有 16px、到自己的
-   控件 8px —— 差距不够,眼睛会把标签配给邻列。列间距拉到 26、标签下边距 30 才拉开。 */
-.twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
-.tcol { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.tcol .iglab { font-size: 12px; color: var(--dim); }
+/* 屏 09 段三「让子 · 我执」并排。逐字照搬设计源 sample-go/go-kiosk.tmpl.html:648-654
+   (2026-09-23 修复轮 2:上一版写成了 `display:grid` + 竖排 `.tcol{flex-direction:column}`,
+   标签在控件上面占两行 72px —— 和设计稿的横排一行 44px 不是同一个结构,已核实改错)。
+   标签贴着自己那一列的控件(8),列与列之间 26 —— 到配对物的距离必须小于到干扰物的
+   距离,否则「我执」会被读成「让子」的第二行。 */
+.twocol { display: flex; align-items: center; gap: 26px; flex: none; }
+.twocol .tcol { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.twocol .iglab { width: 30px; flex: none; font-size: 12.5px; color: var(--dim); }
+.twocol .catpick, .twocol .kiosk-optseg { flex: 1; min-width: 0; }

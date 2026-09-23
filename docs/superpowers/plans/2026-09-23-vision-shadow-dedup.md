@@ -4,7 +4,7 @@
 
 **Goal:** 让 `dedup_detections` 把「棋子 + 它的影子」这种偏出半格的重复框认作同一颗子，从源头消掉侧光下的假子（H5 自我维持的假黑子、D7 低置信疑似落子卡片）。
 
-**Architecture:** 在现有「中心距 < 0.5 × 较小边长」规则之外，对两个棋子类框追加一条「交叠面积 ÷ 较小框面积 ≥ 0.27，且两框边长比 ≤ 2」的合并条款；只加不减，LED 框不受影响。网格加速结构的格边长随之放大到「最大框宽/高 + 2 × 框心偏离 bbox 中点的最大值」，并由对比 O(k²) 参考实现的差分测试保证逐对象一致。落地（合 develop、上板）前用 209 张带真值的标注图复核门槛：板上用部署模型导出去重前的框，本机用**分支上的真代码**与基线代码对比。
+**Architecture:** 在现有「中心距 < 0.5 × 较小边长」规则之外，对两个棋子类框追加一条「交叠面积 ÷ 较小框面积 ≥ 0.27，且两框边长比 ≤ 2」的合并条款；只加不减，LED 框不受影响。网格加速结构改为按每个框的「够得着的距离」（半个较大边 + 框心偏离 bbox 中点的量）定格边长，够得着的距离超过中位数两倍的框（手、袖子、非有限坐标）不进网格、改为线性比对，由对比 O(k²) 参考实现的差分测试保证逐对象一致。落地（合 develop、上板）前用 209 张带真值的标注图复核门槛：板上用部署模型导出去重前的框，本机用**分支上的真代码**与基线代码对比。
 
 **Tech Stack:** Python 3.11、numpy、OpenCV、pytest（`uv run`）；RK3562 上的 RKNN 推理（`go4_s.rknn`）；ssh 到 `rk3562-direct` 与 `home-ubuntu`。
 
@@ -31,8 +31,9 @@
 3. **两盏相邻的 LED 同时亮**：LED 框互压到 0.28 也不许合并 —— Task 2 `test_led_boxes_keep_the_centre_distance_rule`。
 4. **影子框的置信度反超真子**（实测从未发生：会成假子的影子框没有一个比它的子分高）：在第 2 帧位置（校正后第 6.467 列），保留下来的影子框仍落在 G5；在第 1 帧位置（6.5006 列），子会被挪到 H5。后者是已知限制（spec §6），用 `xfail(strict=True)` 钉住：将来谁修好了它，这条会变红，提醒去掉标记 —— Task 3 `test_shadow_outscoring_its_stone_still_lands_on_the_stone[frame2|frame1]`。
 5. **低于落子门槛的影子框（D7 那条路）**：去重后 `cell_top` 在空点上不再有候选，疑似落子卡片无从升级 —— Task 3 `test_sub_threshold_shadow_no_longer_reaches_an_empty_point`。
-6. **闸量的是不是真代码**：Task 1B 里的「新」是分支上的 `dedup_detections`，「旧」是基线提交里的同一个函数，不是脚本自带的规则副本；标签与框一对一匹配，逐个标注比，不比总数。PASS / FAIL / INVALID / 复活这四条分支，修计划时都实际触发过。
-7. **框心不在 bbox 中点**：四个后端都输出中点，但 `Detection` 不强制这一点；网格边长加上了偏离量，差分测试 `[40]` 那一格专门守这件事。
+6. **闸量的是不是真代码**：Task 1B 里的「新」是分支上的 `dedup_detections`，「旧」是基线提交里的同一个函数，不是脚本自带的规则副本；标签与框取最大一对一匹配，逐张图比「旧输出」与「幸存者」的覆盖数，不分颜色、分颜色各比一次（后者抓「白子被并成黑子」）。PASS、INVALID，以及 FAIL 的三种原因（多吃标注、丢了正确颜色、复活框落在空点），修计划时都实际触发过。
+7. **框心不在 bbox 中点、坐标非有限**：四个后端都输出中点，但 `Detection` 不强制这一点；「够得着的距离」里含偏离量，差分测试 `[40]` 那一格专门守它。`inf`/`NaN` 坐标的框走线性比对，不许抛异常 —— `test_outliers_and_non_finite_centres_match_reference`。
+8. **一个超大框不许把整批变回 O(k²)**：静止搭在盘上的手、袖子照样进检测。计数重叠比例的计算次数，有没有 1056×20 的长条，次数只许多出「长条 × 每颗子」那一份 —— `test_one_huge_box_does_not_widen_the_grid_for_everyone`。
 
 ---
 
@@ -67,10 +68,10 @@ find $SCR/labels -name '*.txt' | wc -l      # 期望 209
 先查板子：
 
 ```bash
-ssh rk3562-direct 'pgrep -af "board_detect_dump|pytest"; free -m | sed -n 2p; df -m /root | tail -1'
+ssh rk3562-direct 'pgrep -af "[b]oard_detect_dump|[p]ytest" || echo "no test running"; free -m | sed -n 2p; df -m /root | tail -1'
 ```
 
-第一行必须为空（有别的会话在板上跑测试就等它跑完）；`available` ≥ 400；`/root` 所在分区可用 ≥ 500 MB。任一条不满足就停。
+第一行必须是 `no test running`（否则是别的会话在板上跑测试，等它跑完）；`available` ≥ 400；`/root` 所在分区可用 ≥ 500 MB。任一条不满足就停。方括号不能省：不加的话 `pgrep -f` 会匹配到这条 ssh 命令自己的 `bash -c` 进程，永远报「有人在跑」（修计划时在板上实测过）。
 
 ```bash
 R=$(ssh rk3562-direct 'mktemp -d /root/shadow-probe.XXXXXX'); echo "$R"   # 必须形如 /root/shadow-probe.ab12cd，否则停
@@ -112,6 +113,11 @@ ssh rk3562-direct 'ls -d /root/shadow-probe.* 2>/dev/null; echo end'   # 只应�
 
 Measures the REAL code, not a copy of the rule: "new" is dedup_detections from the working tree on
 PYTHONPATH, "old" is the same function as it was at --base. Truth stones come from the YOLO labels only.
+
+Coverage is compared as maximum one-to-one matchings (a number that does not depend on which of several
+equally good matchings is found). Boxes the new rule keeps are the old rule's survivors plus "revived"
+ones (greedy suppression is not monotone, design.md §3); survivors are a subset of the old output, so
+card(old) - card(survivors) is exactly how many labels the new rule's extra merges cost.
 
 Usage (repo root): PYTHONPATH=. python measure_labelled.py <dets.json> <labels_root> --base <sha> --expect-images N
 """
@@ -164,21 +170,32 @@ def labels_for(labels_root: Path, image_name: str):
     return out
 
 
-def match(boxes, labels):
-    """One-to-one, colour-agnostic (black/white are one dedup group): nearest pairs first, each label and each
-    box used at most once, only within half a label side. Returns {label index: box index}."""
-    pairs = []
-    for li, lab in enumerate(labels):
-        for bi, d in enumerate(boxes):
-            dist = math.hypot(d.x_center - lab["x"], d.y_center - lab["y"])
-            if dist <= 0.5 * lab["side"]:
-                pairs.append((dist, li, bi))
-    out, used = {}, set()
-    for _, li, bi in sorted(pairs):
-        if li not in out and bi not in used:
-            out[li] = bi
-            used.add(bi)
-    return out
+def match(boxes, labels, same_colour=False):
+    """Maximum-cardinality one-to-one matching (augmenting paths). A label may take a box within half its
+    side -- of its own colour when same_colour, else either (black/white are one dedup group); nearer boxes
+    are tried first. Returns {label index: box index}."""
+    adj = []
+    for lab in labels:
+        near = sorted(
+            (math.hypot(d.x_center - lab["x"], d.y_center - lab["y"]), bi)
+            for bi, d in enumerate(boxes)
+            if not same_colour or d.class_id == lab["cls"]
+        )
+        adj.append([bi for dist, bi in near if dist <= 0.5 * lab["side"]])
+    owner = {}  # box index -> label index
+
+    def augment(li, visited):
+        for bi in adj[li]:
+            if bi not in visited:
+                visited.add(bi)
+                if bi not in owner or augment(owner[bi], visited):
+                    owner[bi] = li
+                    return True
+        return False
+
+    for li in range(len(labels)):
+        augment(li, set())
+    return {li: bi for bi, li in owner.items()}
 
 
 def where(lab):
@@ -195,7 +212,7 @@ def main():
     old_dedup = load_old(args.base)
     dets = json.load(open(args.dets))
 
-    real_pairs, extra_best, newly_lost, revived_extra = [], [], [], []
+    real_pairs, extra_best, lost, recoloured, revived_extra = [], [], [], [], []
     n_labels = seen_old = n_revived = 0
     max_extent = 0.0
     for name, fr in sorted(dets.items()):
@@ -220,13 +237,21 @@ def main():
 
         kept_old = [d for d in old_dedup(raw) if d.class_id in STONE]
         kept_new = [d for d in dedup_detections(raw) if d.class_id in STONE]
-        m_old, m_new = match(kept_old, labels), match(kept_new, labels)
-        seen_old += len(m_old)
-        newly_lost += [(name, where(labels[li])) for li in sorted(set(m_old) - set(m_new))]
         old_ids = {id(d) for d in kept_old}
+        survivors = [d for d in kept_new if id(d) in old_ids]
+        m_old, m_surv = match(kept_old, labels), match(survivors, labels)
+        seen_old += len(m_old)
+        if len(m_surv) < len(m_old):
+            gone = [where(labels[li]) for li in sorted(set(m_old) - set(m_surv))]
+            lost.append((name, len(m_old) - len(m_surv), gone))
+        c_old, c_surv = match(kept_old, labels, True), match(survivors, labels, True)
+        if len(c_surv) < len(c_old):
+            gone = [where(labels[li]) for li in sorted(set(c_old) - set(c_surv))]
+            recoloured.append((name, len(c_old) - len(c_surv), gone))
+        m_new = match(kept_new, labels)
         matched_new = {id(kept_new[bi]) for bi in m_new.values()}
         for d in kept_new:
-            if id(d) not in old_ids:  # greedy suppression is not monotone: see design.md §3
+            if id(d) not in old_ids:
                 n_revived += 1
                 if id(d) not in matched_new:
                     revived_extra.append((name, round(d.x_center), round(d.y_center), d.confidence))
@@ -236,21 +261,28 @@ def main():
     recall = seen_old / n_labels if n_labels else 0.0
     print(f"images {len(dets)} (expected {args.expect_images})  labelled stones {n_labels}  recall(old) {recall:.4f}")
     print(f"largest raw stone box side {max_extent:.1f} px")
-    print(f"real-vs-real overlapping pairs {len(real_pairs)}  IoMin max {real_max:.3f}  above 0.20: "
-          f"{sum(v > 0.20 for v, *_ in real_pairs)}")
+    print(
+        f"real-vs-real overlapping pairs {len(real_pairs)}  IoMin max {real_max:.3f}  above 0.20: "
+        f"{sum(v > 0.20 for v, *_ in real_pairs)}"
+    )
     for v, name, a, b in real_pairs[:10]:
         print(f"  {v:.3f}  {name}  {a} {b}")
     bins = [0, 0.1, 0.2, 0.27, 0.3, 0.4, 0.5, 0.7, 1.01]
     hist = Counter(next(k for k in range(len(bins) - 1) if bins[k] <= v < bins[k + 1]) for v in extra_best)
     print("extra boxes, best IoMin with a real box:", {f"{bins[k]}-{bins[k+1]}": hist.get(k, 0) for k in range(len(bins) - 1)})
-    print(f"labels the old rule sees but the new rule loses: {len(newly_lost)} {newly_lost[:20]}")
-    print(f"boxes the new rule keeps but the old one dropped: {n_revived}, of which on no label: {len(revived_extra)} "
-          f"{revived_extra[:20]}")
+    print(f"labels the new rule's merges cost: {sum(n for _, n, _ in lost)} {lost[:20]}")
+    print(f"labels that lose their correct-colour box: {sum(n for _, n, _ in recoloured)} {recoloured[:20]}")
+    print(
+        f"boxes the new rule keeps but the old one dropped: {n_revived}, of which on no label: {len(revived_extra)} "
+        f"{revived_extra[:20]}"
+    )
     valid = len(dets) == args.expect_images and recall >= GATE_MIN_RECALL
-    ok = valid and real_max <= GATE_REAL_MAX and not newly_lost and not revived_extra
+    ok = valid and real_max <= GATE_REAL_MAX and not lost and not recoloured and not revived_extra
     verdict = "PASS" if ok else ("FAIL" if valid else "INVALID")
-    print(f"VERDICT: {verdict}  (valid: images == expected and recall >= {GATE_MIN_RECALL}; pass: real max <= "
-          f"{GATE_REAL_MAX}, no newly lost label, no revived box on an empty point)")
+    print(
+        f"VERDICT: {verdict}  (valid: images == expected and recall >= {GATE_MIN_RECALL}; pass: real max <= "
+        f"{GATE_REAL_MAX}, no label lost or recoloured by the new merges, no revived box on an empty point)"
+    )
 
 
 if __name__ == "__main__":
@@ -283,8 +315,8 @@ PYTHONPATH=. uv run python $M $SCR/dets12.json $SCR/labels12 --base 98b1a67a --e
 PYTHONPATH=. uv run python $M $SCR/dets12.json $SCR/labels12 --base 98b1a67a --expect-images 13 | tail -1
 ```
 
-期望（修订计划时在原型上实际跑出来的读数）：第一次运行打印 `images 12 (expected 12)  labelled stones 1296  recall(old) 1.0000`、`largest raw stone box side 82.0 px`、`IoMin max 0.233`（前几对都是 `r17c8 r16c8`，即 J2/J3）、多丢的标注 `0`、复活的框 `0`、`VERDICT: PASS`；第二次（故意报错图数）最后一行是 `VERDICT: INVALID`。读数对不上就先修脚本，不许进 Step 3。
-（另外两个分支修计划时也实际触发过，本任务不重做，因为要改源码：把 `DEDUP_OVERLAP_MIN` 改成 0.20，12 帧里多丢 12 个 J2/J3 标注、判 `FAIL`；三个 50 px 框排在 x = 100/130/150、只在 100 处有标注，复活 1 个且不在标注上、判 `FAIL`。）
+期望（修订计划时在原型上实际跑出来的读数）：第一次运行打印 `images 12 (expected 12)  labelled stones 1296  recall(old) 1.0000`、`largest raw stone box side 82.0 px`、`IoMin max 0.233`（前几对都是 `r17c8 r16c8`，即 J2/J3）、`labels the new rule's merges cost: 0`、`labels that lose their correct-colour box: 0`、复活的框 `0`、`VERDICT: PASS`；第二次（故意报错图数）最后一行是 `VERDICT: INVALID`。读数对不上就先修脚本，不许进 Step 3。
+（其余分支修计划时都实际触发过，本任务不重做，因为要改源码或造数据：把 `DEDUP_OVERLAP_MIN` 改成 0.20，12 帧里新合并吃掉 13 个标注（J2/J3 为主）、判 `FAIL`；一个标注上白框居中、黑框偏 27 px 且分更高，旧规则两个都留、新规则并掉白框 —— 覆盖数不变但丢了正确颜色、判 `FAIL`；三个 50 px 框排在 x = 100/130/150、只在 100 处有标注 —— 复活 1 个且不在标注上、判 `FAIL`；dets 全空 —— `INVALID`。）
 
 - [ ] **Step 3: 跑标注集**
 
@@ -485,7 +517,7 @@ class TestShadowDuplicateDedup:
         return kept
 ```
 
-最后在 `test_clustered_stones_match_reference` 之后追加一个专门让新条款在网格边界上起作用的差分用例（`off_centre=40` 那一格让框心偏离 bbox 中点，守的是网格边长里的偏离量）：
+最后在 `test_clustered_stones_match_reference` 之后追加三个用例：一个差分用例专门让新条款在网格边界上起作用（`off_centre=40` 那一格让框心偏离 bbox 中点，守「够得着的距离」里的偏离量）；一个差分用例专门走网格外的线性比对（大框、长条、`inf`/`NaN` 坐标）；一个计数用例守「一个超大框不许撑大整批网格」：
 
 ```python
     @pytest.mark.parametrize("off_centre", [0, 40])
@@ -516,12 +548,55 @@ class TestShadowDuplicateDedup:
                     )
                 )
         assert [id(d) for d in dedup_detections(dets)] == [id(d) for d in self._reference_dedup(dets)]
+
+    def test_outliers_and_non_finite_centres_match_reference(self):
+        """Boxes that stay out of the grid and are checked linearly: a hand read as one big box with a stone
+        under it (inside the centre radius), a second hand box overlapping another, a 1056 x 20 bar, and
+        centres at inf / NaN (a backend overflow must not raise). The result must equal the scalar scan."""
+        from katrain.vision.stone_detector import dedup_detections
+
+        rng = np.random.default_rng(12)
+        dets = []
+        for _ in range(60):
+            x, y = float(rng.integers(0, 1000)), float(rng.integers(0, 1000))
+            side = float(rng.integers(46, 60))
+            dets.append(_rect(x, y, int(rng.integers(0, 2)), float(rng.integers(1, 9)) / 10.0, side, side))
+        for hx, hy in ((200.0, 200.0), (600.0, 500.0)):
+            dets.append(_rect(hx, hy, 0, 0.95, 160, 160))
+            dets.append(_rect(hx + 8, hy - 6, 1, 0.5, 50, 50))
+        dets.append(_rect(612.0, 520.0, 0, 0.9, 170, 150))
+        dets.append(_rect(528.0, 800.0, 0, 0.97, 1056, 20))
+        dets.append(Detection(float("inf"), 300.0, 0, 0.6, (280.0, 280.0, 330.0, 330.0)))
+        dets.append(Detection(float("nan"), 700.0, 1, 0.6, (680.0, 680.0, 730.0, 730.0)))
+        assert [id(d) for d in dedup_detections(dets)] == [id(d) for d in self._reference_dedup(dets)]
+
+    def test_one_huge_box_does_not_widen_the_grid_for_everyone(self, monkeypatch):
+        """The grid exists for speed (the O(k^2) scan took 86 ms at 213 stones on the RK3562). One oversized
+        box must not size it for every other box: count overlap evaluations with and without a 1056 x 20 bar."""
+        import katrain.vision.stone_detector as sd
+
+        rng = np.random.default_rng(3)
+        stones = [
+            _rect(53 + c * 52.72, 53 + r * 52.72, int(rng.integers(0, 2)), float(rng.uniform(0.3, 0.9)), 56, 56)
+            for r in range(19)
+            for c in range(19)
+            if rng.random() < 0.6
+        ]
+        calls = []
+        real = sd._overlap_of_smaller
+        monkeypatch.setattr(sd, "_overlap_of_smaller", lambda a, b: calls.append(1) or real(a, b))
+        sd.dedup_detections(stones)
+        without_bar = len(calls)
+        calls.clear()
+        sd.dedup_detections(stones + [_rect(528.0, 528.0, 0, 0.99, 1056, 20)])
+        # the bar itself is checked against every stone once; everything else must stay local
+        assert len(calls) <= without_bar + len(stones)
 ```
 
 - [ ] **Step 2: 跑测试，确认失败**
 
 Run: `CI=true uv run pytest tests/test_vision/test_stone_detector.py -q --color=no`
-Expected: FAIL —— `TestDedupVectorisationIsEquivalent` 的各条在运行时报 `ImportError: cannot import name 'DEDUP_MAX_SIDE_RATIO'`（参考实现在函数体内 import 常量）；`TestShadowDuplicateDedup` 里 `test_shadow_box_of_a_stone_is_merged_into_it`、`test_black_shadow_beside_a_white_stone_is_merged`、`test_overlap_threshold_boundary`（正好 0.27 那对）、`test_side_ratio_boundary`（正好 2.0 那对）、`test_led_boxes_keep_the_centre_distance_rule`（stones 那半）、`test_overlapping_pair_two_grid_cells_apart_is_found` 失败。`test_the_closest_real_neighbours_on_the_board_are_kept`、`test_big_box_does_not_swallow_neighbouring_stones_by_overlap`、`test_zero_area_box_never_merges_by_overlap` 在旧代码上就通过（它们守的是「不许多合并」）。
+Expected: FAIL —— `TestDedupVectorisationIsEquivalent` 的各条在运行时报 `ImportError: cannot import name 'DEDUP_MAX_SIDE_RATIO'`（参考实现在函数体内 import 常量；计数用例报的是 `AttributeError`，模块里还没有 `_overlap_of_smaller`）；`TestShadowDuplicateDedup` 里 `test_shadow_box_of_a_stone_is_merged_into_it`、`test_black_shadow_beside_a_white_stone_is_merged`、`test_overlap_threshold_boundary`（正好 0.27 那对）、`test_side_ratio_boundary`（正好 2.0 那对）、`test_led_boxes_keep_the_centre_distance_rule`（stones 那半）、`test_overlapping_pair_two_grid_cells_apart_is_found` 失败。`test_the_closest_real_neighbours_on_the_board_are_kept`、`test_big_box_does_not_swallow_neighbouring_stones_by_overlap`、`test_zero_area_box_never_merges_by_overlap` 在旧代码上就通过（它们守的是「不许多合并」）。
 
 - [ ] **Step 3: 实现**
 
@@ -558,77 +633,128 @@ def _overlap_of_smaller(a: tuple, b: tuple) -> float:
     return w * h / smaller
 ```
 
-把 `dedup_detections` 的文档字符串第一段改为：
+然后把整个 `dedup_detections`（从 `def dedup_detections(` 到 `class StoneDetector` 之前）替换为下面这份。与原函数相比：文档字符串重写了讲规则与网格的段落；网格改为按每个框「够得着的距离」定格边长，超出中位数两倍的框不进网格、改走线性比对；内层判定在旧的中心距规则之后追加新条款（旧规则的代码原样保留）：
 
 ```python
+def dedup_detections(detections: list["Detection"]) -> list["Detection"]:
     """Suppress duplicate boxes that NMS misses. Two detections are the same object when their centres
     are closer than half the smaller box's mean side (size-variant boxes on one stone -- a tight box
     nested in a loose one -- can have mutual IoU below the NMS threshold), or, for two STONE boxes of
     similar size (larger mean side <= DEDUP_MAX_SIDE_RATIO x smaller), when they overlap by at least
     DEDUP_OVERLAP_MIN of the smaller box (a stone boxed a second time together with its shadow).
     Keep the higher confidence.
-```
 
-其后几段（Grouping / bbox-less / greedy scan 的说明）保留；把讲网格边长的那一段替换为：
+    Grouping: black/white dedup against each other (one stone misread as both colors
+    must not yield two stones — the loser would otherwise spill to a neighbouring empty
+    point and manufacture a phantom); LED classes only dedup within their own class, so
+    a lamp halo overlapping a stone never suppresses the stone itself.
 
-```python
-    Grid cell = the larger of ``0.5 * max_side`` (the centre-distance radius bound) and the largest box
-    width/height plus twice the largest centre-to-bbox-midpoint offset (two boxes can only intersect
-    while their bbox midpoints are closer than the larger extent; every backend emits the midpoint as the
-    centre, but Detection does not enforce it). So every pair either rule can merge lands in the same or
-    an adjacent cell, the 3x3 scan never misses one, and the result is identical to the scalar O(k^2)
-    scan. One oversized box widens the cell for the whole batch (``0.5 * max_side`` already did);
-    accepted because detection only runs on motion-still frames.
+    Detections without a real bbox (the (0,0,0,0) default) are never deduped.
+
+    The scan is greedy and order-dependent, so it stays a loop; what changed is WHAT it
+    scans.  It used to compare every detection against every detection kept so far —
+    O(k^2) in interpreted Python, measured on the RK3562 kiosk at 6 / 31 / 86 ms for
+    60 / 130 / 213 stones, i.e. the single largest reason recognition slowed down as a
+    game filled up.  Duplicates are by definition local, so candidates are now looked up
+    in a uniform spatial grid and only the few genuine neighbours are tested.
+
+    Grid: each box's reach -- half its larger bbox extent plus how far its centre sits from the bbox
+    midpoint -- bounds, per axis, how far the centre of any box it can merge with may be (the centre rule's
+    radius is always inside it). The cell is twice the largest reach, so the 3x3 scan never misses a pair and
+    the result is identical to the scalar O(k^2) scan. A box reaching further than twice the median (a hand
+    or sleeve read as one big box, a non-finite coordinate) stays out of the grid and is checked against
+    every kept box instead, so one such box cannot turn the whole scan back into O(k^2).
 
     The overlap clause only ever ADDS merges, but the greedy output is not monotone: a box that the
     centre rule alone drops because B was kept survives once B itself is merged into A by the overlap
     clause.
     """
-```
+    n = len(detections)
+    if n < 2:
+        return list(detections)
 
-函数体里把：
+    # Descending confidence; sorted() is stable, so equal confidences keep input order.
+    # The greedy rule below depends on this exact ordering.
+    dets = sorted(detections, key=lambda d: -d.confidence)
+    sides = [(d.bbox[2] - d.bbox[0] + d.bbox[3] - d.bbox[1]) / 2.0 for d in dets]
 
-```python
-    cell = 0.5 * max_side
-```
+    max_side = max(sides)
+    if max_side <= 0:
+        return dets  # every min_side would be <= 0: nothing can dedup anything
 
-替换为：
+    # How far apart, on each axis, the centres of two boxes that either rule can merge may be: at most the sum
+    # of their reaches, where reach = half the larger bbox extent + how far (x_center, y_center) sits from the
+    # bbox midpoint (0 for every backend, but Detection does not enforce it). The centre rule's radius,
+    # 0.5 * min_side, is always inside that sum.
+    reach = [
+        (
+            max(d.bbox[2] - d.bbox[0], d.bbox[3] - d.bbox[1]) / 2.0
+            + max(abs(d.x_center - (d.bbox[0] + d.bbox[2]) / 2.0), abs(d.y_center - (d.bbox[1] + d.bbox[3]) / 2.0))
+            if s > 0
+            else 0.0
+        )
+        for d, s in zip(dets, sides)
+    ]
+    # A box reaching further than twice the median (a hand or sleeve read as one big box; a non-finite
+    # coordinate) stays out of the grid and is checked linearly, so it cannot size the grid for every other
+    # box -- one 1056 px box would otherwise put the whole board in one bucket.
+    finite = sorted(r for r in reach if 0 < r < math.inf)
+    limit = 2.0 * finite[len(finite) // 2] if finite else 0.0
+    # Two gridded boxes that can clash are closer than 2 * max(reach) on each axis, so with this cell they
+    # land in the same or an adjacent bucket and the 3x3 scan never misses one.
+    cell = 2.0 * max((r for r in reach if 0 < r <= limit), default=1.0)
+    # (cell_x, cell_y) -> indices of KEPT gridded detections.  A detection with side <= 0 makes min_side <= 0
+    # against everything, so it can neither be a duplicate nor suppress one — it is never queried and never
+    # inserted.
+    buckets: dict[tuple[int, int], list[int]] = {}
+    neighbourhood = ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 0), (0, 1), (1, -1), (1, 0), (1, 1))
+    wide: list[int] = []  # KEPT detections outside the grid
+    boxed: list[int] = []  # every KEPT detection with a positive side
 
-```python
-    boxed = [d for d, s in zip(dets, sides) if s > 0]
-    max_extent = max(max(d.bbox[2] - d.bbox[0], d.bbox[3] - d.bbox[1]) for d in boxed)
-    off_centre = max(
-        max(abs(d.x_center - (d.bbox[0] + d.bbox[2]) / 2.0), abs(d.y_center - (d.bbox[1] + d.bbox[3]) / 2.0))
-        for d in boxed
-    )
-    cell = max(0.5 * max_side, max_extent + 2.0 * off_centre)
-```
-
-把内层判定：
-
-```python
-                    if math.hypot(det.x_center - other.x_center, det.y_center - other.y_center) < 0.5 * min_side:
+    kept: list[Detection] = []
+    for i, det in enumerate(dets):
+        d_side = sides[i]
+        is_dup = False
+        if d_side > 0:
+            gridded = reach[i] <= limit  # False for NaN too
+            if gridded:
+                bx, by = int(det.x_center // cell), int(det.y_center // cell)
+                candidates = [j for dx, dy in neighbourhood for j in buckets.get((bx + dx, by + dy), ())] + wide
+            else:
+                candidates = boxed
+            det_is_stone = det.class_id in STONE_CLASS_IDS
+            for j in candidates:
+                other = dets[j]
+                if (other.class_id in STONE_CLASS_IDS) != det_is_stone:
+                    continue  # stone vs LED: different groups
+                if not det_is_stone and det.class_id != other.class_id:
+                    continue  # LED classes: same-class only
+                min_side = d_side if d_side < sides[j] else sides[j]
+                if min_side <= 0:
+                    continue
+                if math.hypot(det.x_center - other.x_center, det.y_center - other.y_center) < 0.5 * min_side:
+                    is_dup = True
+                    break
+                if det_is_stone:
+                    max_pair_side = d_side if d_side > sides[j] else sides[j]
+                    if (
+                        max_pair_side <= DEDUP_MAX_SIDE_RATIO * min_side
+                        and _overlap_of_smaller(det.bbox, other.bbox) >= DEDUP_OVERLAP_MIN
+                    ):
                         is_dup = True
                         break
+        if not is_dup:
+            kept.append(det)
+            if d_side > 0:
+                boxed.append(i)
+                if gridded:
+                    buckets.setdefault((bx, by), []).append(i)
+                else:
+                    wide.append(i)
+    return kept
 ```
 
-替换为：
-
-```python
-                    if math.hypot(det.x_center - other.x_center, det.y_center - other.y_center) < 0.5 * min_side:
-                        is_dup = True
-                        break
-                    if det_is_stone:
-                        max_pair_side = d_side if d_side > sides[j] else sides[j]
-                        if (
-                            max_pair_side <= DEDUP_MAX_SIDE_RATIO * min_side
-                            and _overlap_of_smaller(det.bbox, other.bbox) >= DEDUP_OVERLAP_MIN
-                        ):
-                            is_dup = True
-                            break
-```
-
-（`det_is_stone` 已在循环上方定义；走到这里时 `other` 与 `det` 同组，所以 `det_is_stone` 为真即两个都是棋子类。）
+（`det_is_stone` 在内层循环外定义；走到新条款时 `other` 与 `det` 同组，所以 `det_is_stone` 为真即两个都是棋子类。）
 
 - [ ] **Step 4: 跑测试，确认通过**
 
@@ -642,7 +768,7 @@ uv run black -l 120 katrain/vision/stone_detector.py tests/test_vision/test_ston
 CI=true uv run pytest tests/test_vision -q --color=no -p no:cacheprovider 2>&1 | tail -3
 ```
 
-Expected: 基线 840 passed；现在应为 **851 passed**（本任务新增 11 条：`TestShadowDuplicateDedup` 9 条 + 差分用例 2 格），0 failed。任何原有用例变红都要报告，不许改原有断言让它变绿。
+Expected: 基线 840 passed；现在应为 **853 passed**（本任务新增 13 条：`TestShadowDuplicateDedup` 9 条 + 跨格差分 2 格 + 线性比对差分 1 条 + 网格计数 1 条），0 failed。任何原有用例变红都要报告，不许改原有断言让它变绿。
 
 - [ ] **Step 6: 变异检查（每一条新测试都要能红）**
 
@@ -663,10 +789,13 @@ CI=true PYTHONDONTWRITEBYTECODE=1 uv run pytest tests/test_vision/test_stone_det
 | 新条款里 `>= DEDUP_OVERLAP_MIN` 改成 `>` | `test_overlap_threshold_boundary` |
 | 新条款里 `<= DEDUP_MAX_SIDE_RATIO * min_side` 改成 `<` | `test_side_ratio_boundary` |
 | 删掉 `if det_is_stone:` 这一层（新条款对 LED 也生效） | `test_led_boxes_keep_the_centre_distance_rule`，以及 `test_clustered_stones_match_reference` 和一批 `test_matches_reference_on_random_inputs[...]` |
-| `cell = 0.5 * max_side` | `test_overlapping_pair_two_grid_cells_apart_is_found`、`test_overlap_clause_across_grid_cells_matches_reference[0]` 与 `[40]` |
-| `cell = max(0.5 * max_side, max_extent)`（去掉偏离量） | `test_overlap_clause_across_grid_cells_matches_reference[40]` |
+| `cell = 2.0 * max(` 改成 `cell = 1.0 * max(` | `test_overlapping_pair_two_grid_cells_apart_is_found`、`test_overlap_clause_across_grid_cells_matches_reference[0]` 与 `[40]` |
+| `reach` 里去掉框心偏离那一项（改成 `+ 0.0`） | `test_overlap_clause_across_grid_cells_matches_reference[40]`、`test_outliers_and_non_finite_centres_match_reference` |
+| `limit = math.inf`（所有框都进网格） | `test_one_huge_box_does_not_widen_the_grid_for_everyone`、`test_outliers_and_non_finite_centres_match_reference` |
+| 网格内的框不再比对网格外的框（去掉 `+ wide`） | `test_outliers_and_non_finite_centres_match_reference` |
+| 网格外的框什么都不比对（`candidates = boxed` 改成 `candidates = []`） | `test_outliers_and_non_finite_centres_match_reference` |
 
-把「改动 → 变红的测试名」原样写进报告。任何一行没有按表变红，就是测试没有守住它声称守住的东西，要修测试而不是修表。还原之后再跑一遍 Step 5，必须回到 851 passed。
+把「改动 → 变红的测试名」原样写进报告。任何一行没有按表变红，就是测试没有守住它声称守住的东西，要修测试而不是修表。还原之后再跑一遍 Step 5，必须回到 853 passed。
 
 ---
 
@@ -848,7 +977,7 @@ uv run black -l 120 tests/test_vision/test_shadow_phantom.py
 CI=true uv run pytest tests/test_vision -q --color=no -p no:cacheprovider 2>&1 | tail -3
 ```
 
-Expected: **857 passed, 1 xfailed**（Task 2 后的 851 + 本任务 6 条 + 1 条 xfail），0 failed。
+Expected: **859 passed, 1 xfailed**（Task 2 后的 853 + 本任务 6 条 + 1 条 xfail），0 failed。
 
 报告「可以提交」，由主会话提交。
 
@@ -888,7 +1017,7 @@ Expected: **857 passed, 1 xfailed**（Task 2 后的 851 + 本任务 6 条 + 1 �
 
 1. opus 按 code-review 技能审整个分支，改到通过。
 2. **上板前征得 Fan 同意**（katrain 此刻是停着的，板上在跑象棋；切回围棋是他的操作）。部署只动一个运行时文件：`katrain/vision/stone_detector.py`（按 `reference_rk3562_katrain_deploy_recipe` 备份 → rsync → `systemctl restart smartbox-katrain`），前端不用重建。
-3. 侧光时段下一盘：用 `evidence-2026-09-23-daylight-game/summarize.py` 统计疑似落子卡片数（对照：上一局 111 手 19 次），并打开 vtrace 看去重耗时。注意 `det[pre= npu= post=]` 是后端自己的三段，**不含**去重（去重在 `StoneDetector.detect` 里、后端返回之后），去重耗时要算 `detect − pre − npu − post`。上一局基线（2323 帧）：框数 ≥ 100 的帧中位 3 ms、p95 6 ms，整帧 `total` 中位 504 ms。本机实测新代码在真实帧上是旧代码的 3 倍（0.15 → 0.45 ms），按板子慢约 11 倍折算，预计中位 5–6 ms。中位超过 9 ms，或者出现 > 60 ms 的帧，就停下来报数。
+3. 侧光时段下一盘：用 `evidence-2026-09-23-daylight-game/summarize.py` 统计疑似落子卡片数（对照：上一局 111 手 19 次），并打开 vtrace 看去重耗时。注意 `det[pre= npu= post=]` 是后端自己的三段，**不含**去重（去重在 `StoneDetector.detect` 里、后端返回之后），去重耗时要算 `detect − pre − npu − post`。上一局基线（2323 帧）：框数 ≥ 100 的帧中位 3 ms、p95 6 ms，整帧 `total` 中位 504 ms。本机实测新代码在真实帧上是旧代码的 3 倍（0.15 → 0.50 ms），按板子慢约 11 倍折算，预计中位 5–6 ms；混进一个超大框时仍约 1 ms（本机），不再随它变大。中位超过 9 ms，或者出现 > 60 ms 的帧，就停下来报数。
 4. 通知五子棋 session（`smartbox-software-gomoku-features-d4`）：规则已落地、常量名与值。
 5. 合 develop、push，bump smartbox `vendor/katrain`（只 `git add -- vendor/katrain`）。
 

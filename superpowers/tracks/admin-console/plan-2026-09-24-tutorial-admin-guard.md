@@ -19,12 +19,17 @@
 - 不在共享的主工作树 `~/Repositories/katrain` 里切分支或提交；所有工作都在 worktree `~/Repositories/katrain-admin-console`（分支 `feature/admin-console`）里做。
 - 任何写生产库、推送、部署的动作，**执行当下都要 Fan 点头**（本计划获批不算）。
 - 提交信息末尾加 `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`。
+- 带管道的检查命令先写 `set -o pipefail`，否则退出码是 `tail` 的，失败也显示成功（release runbook 2026-09-23 记过 `git clone … | tail` 把失败显示成了成功）。生产上的发布命令一律不接管道。
+- 本机 shell 是 zsh：不做词分割（`set -- $p` 拆不开「方法 路径」）；`$VAR:t…` 会被当成路径修饰符，要写成 `${VAR}:…`。
+- 执行者每次调用 Bash、每次 `ssh` 都是新 shell，变量留不到下一步。跨步骤要用的值（端口、PID、SHA、镜像 ID、时间戳）写进文件，或者在每条命令里写成字面量。
+- 已有测试文件里有基线就红的用例（例如 `test_tutorial_db_api.py` 里 3 条 monkeypatch 已不存在的 `ASSET_BASE` 的用例）。判断「有没有弄坏」一律用 Task 1 Step 2 写的 `newfail.sh` 按用例名字和基线比，不要求整个文件全绿。
+- 跑测试之前 `katrain/config.json` 必须是干净的（Task 1 Step 1 核对）：测试会改写这个已提交的文件，事后要还原，而还原会连带冲掉测试之前就有的改动。
 
 ## Review Focus
 
-- 已登录但不是管理员的用户打开教程页：应该看到讲解、音频、原书页，**一个编辑按钮都没有**，而不是按钮都在、点了才报 403 → Task 3 的「非管理员只读」用例。
-- 未登录用户（`user` 为空）打开教程页，应与非管理员一样只读 → Task 3 的「未登录只读」用例。
-- 管理员仍能看到并使用全部编辑控件（别把管理员也藏了）→ Task 3 的「管理员看得到编辑控件」用例。
+- 已登录但不是管理员的用户打开教程页：应该看到讲解、音频、原书页，**一个编辑按钮都没有**，而不是按钮都在、点了才报 403 → Task 4 的「非管理员只读」用例。
+- 未登录用户（`user` 为空）打开一个还没有棋盘的图，也不能出现「初始化空棋盘」→ Task 4 的「未登录只读」用例。
+- 拿 refresh token（90 天）当 Bearer 调接口：必须 401，不能因为签名对就放行，更不能拿到管理员权限 → Task 3 的 `test_refresh_token_is_not_a_bearer_credential`。
 - 盒子用普通账号上报心跳，必须照旧成功（只收紧列表，不收紧心跳）→ Task 2 的 `test_real_user_can_heartbeat_but_not_list_devices`。
 - 管理员写入棋盘后，历史记录里的 `changed_by` 应该是管理员用户名，不再是 `"anonymous"` → Task 1 的 `test_tutorial_writer_admin_2xx`。
 
@@ -36,6 +41,8 @@
 |---|---|---|
 | `katrain/web/api/v1/endpoints/tutorials.py` | 改 | 四个写接口改成只许管理员 |
 | `katrain/web/api/v1/endpoints/board.py` | 改 | `GET /devices` 改成只许管理员 |
+| `katrain/web/api/v1/endpoints/auth.py` | 改 | `get_user_from_token` 只收 access token |
+| `tests/web_ui/test_auth_api.py` | 改 | refresh token 当 Bearer 必须 401 |
 | `tests/web_ui/test_guest_write_block.py` | 改 | 原来「未登录可写」的锁换成「未登录 401 / 非管理员 403 / 管理员 200」；拆分设备列表的用例 |
 | `tests/web_ui/test_tutorial_db_api.py` | 改 | 夹具里的 `testadmin` 设为真管理员，再加一条「非管理员 403」 |
 | `katrain/web/ui/src/context/AuthContext.tsx` | 改 | User 类型声明 `is_admin?: boolean` |
@@ -54,9 +61,9 @@
 - 不提交：`.superpowers/baseline/web_ui_failed_before.txt`（Step 2 生成；`.superpowers/` 被根目录 `.gitignore:208` 忽略）
 
 **Interfaces:**
-- Consumes：`get_current_admin_user(request, token) -> katrain.web.models.User`（`auth.py:155`；只认 `Authorization: Bearer`；未登录 401，非管理员 403，detail 为 `"Admin privileges required"`）
+- Consumes：`get_current_admin_user(request, token) -> katrain.web.models.User`（`auth.py:155`；server 模式下只认显式的 `Authorization: Bearer`，strict Box 模式另收绑定 generation 的 SSO cookie；未登录 401 `"Not authenticated"`，非管理员 403 `"Admin privileges required"`）
 - Produces：`tests/web_ui/test_guest_write_block.py` 里的 `_create_admin_and_login(app, username="tutorial-admin") -> (headers, user_id, unique_name)`，Task 2 会复用
-- Produces：`.superpowers/baseline/web_ui_failed_before.txt`：改动前 `tests/web_ui` 失败用例的**名字**（一行一个，已排序），Task 2 的 Step 5 拿它做差
+- Produces：`.superpowers/baseline/web_ui_failed_before.txt`（改动前 `tests/web_ui` 失败用例的**名字**，一行一个，已排序）和 `.superpowers/baseline/newfail.sh`（跑 pytest，只报基线里没有的失败）。后面每一次「有没有弄坏」都用它们
 
 - [ ] **Step 1：装 Python 依赖，确认基线目录被 git 忽略**（worktree 里是空的；只跑 `uv sync` 不会装 fastapi）
 
@@ -64,20 +71,39 @@
 cd /Users/fan/Repositories/katrain-admin-console
 uv sync --extra web
 git check-ignore -v .superpowers/baseline/x.txt
+git diff --quiet -- katrain/config.json && echo config-clean
 ```
-Expected：`uv sync` 以 `Installed` 或 `Audited` 结尾，没有报错；`git check-ignore` 打印 `.gitignore:208:.superpowers/	.superpowers/baseline/x.txt`。
+Expected：`uv sync` 以 `Installed` 或 `Audited` 结尾，没有报错；`git check-ignore` 打印 `.gitignore:208:.superpowers/	.superpowers/baseline/x.txt`；最后打印 `config-clean`。**没打印 `config-clean` 就停**：`katrain/config.json` 在跑测试之前就有未提交的改动，先弄清楚是谁的，否则后面「还原被测试改写的 config.json」会把它一起冲掉。
 
-- [ ] **Step 2：改任何代码之前，记录 web_ui 基线（只记失败用例的名字）**
+- [ ] **Step 2：改任何代码之前，记录 web_ui 基线（只记失败用例的名字），写好「只报新增失败」的小脚本**
 
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console
-mkdir -p .superpowers/baseline
-CI=true uv run pytest tests/web_ui -q -p no:cacheprovider --continue-on-collection-errors -rfE 2>&1 \
-  | grep -E '^(FAILED|ERROR) ' | sed -E 's/ - .*//' | sort -u > .superpowers/baseline/web_ui_failed_before.txt
-wc -l .superpowers/baseline/web_ui_failed_before.txt
+B=.superpowers/baseline; mkdir -p $B
+CI=true uv run pytest tests/web_ui -q -p no:cacheprovider --continue-on-collection-errors -rfE > $B/web_ui_before.log 2>&1; echo "pytest exit=$?"
+tail -1 $B/web_ui_before.log
+grep -E '^(FAILED|ERROR) ' $B/web_ui_before.log | sed -E 's/ - .*//' | sort -u > $B/web_ui_failed_before.txt
+wc -l < $B/web_ui_failed_before.txt
+cat > $B/newfail.sh <<'SH'
+#!/usr/bin/env bash
+# 用法（在 worktree 根目录）：bash .superpowers/baseline/newfail.sh <基线文件> <pytest 参数…>
+# 跑 pytest，只报基线里没有的失败。有新增失败 → 退出码 1；pytest 本身没跑成（中断、内部错误、用法错误、
+# 一条都没收集到，或者没跑到 summary）→ 退出码 2。
+set -uo pipefail
+base="$1"; shift
+log=$(mktemp)
+CI=true uv run pytest "$@" -q -p no:cacheprovider -rfE > "$log" 2>&1
+rc=$?
+tail -1 "$log"
+[ "$rc" -le 1 ] || { echo "!! pytest 退出码 $rc，日志在 $log"; exit 2; }
+tail -1 "$log" | grep -qE '[0-9]+ (passed|failed|errors?)' || { echo "!! pytest 没有跑到 summary，日志在 $log"; exit 2; }
+new=$(grep -E '^(FAILED|ERROR) ' "$log" | sed -E 's/ - .*//' | sort -u | comm -13 "$base" -)
+[ -z "$new" ] && exit 0
+echo "!! 新增失败："; echo "$new"; exit 1
+SH
 git status --short
 ```
-Expected：`wc -l` 输出一个数（可以是 0）。`git status --short` 应该为空。**如果 `katrain/config.json` 出现在输出里**（有的测试会改写这个已提交的文件），执行 `git checkout -- katrain/config.json` 还原。不要把还不存在的测试文件当参数传给 pytest：pytest 会以用法错误直接退出，基线就会**静默为空**。
+Expected：先打印 `pytest exit=0` 或 `1`（2–5 说明 pytest 本身没跑成，基线作废）；下一行是 pytest 的 summary（形如 `3 failed, 1234 passed, … in 95.1s`），**不是**报错或空行；`wc -l` 输出一个数（可以是 0）；`git status --short` 为空。`katrain/config.json` 如果出现在输出里（有的测试会改写这个已提交的文件），执行 `git checkout -- katrain/config.json` 还原。不要把还不存在的测试文件当参数传给 pytest：pytest 会以用法错误直接退出，基线就会**静默为空**。
 
 - [ ] **Step 3：把 `test_guest_write_block.py` 里锁定旧行为的用例改成新的期望**
 
@@ -349,14 +375,14 @@ Expected：第一条 grep 没有输出；第二条只命中 `from katrain.web.mo
             change_type="verify",
 ```
 
-- [ ] **Step 7：跑测试，确认通过**
+- [ ] **Step 7：跑测试，按名字和基线比**
 
-Run：
 ```bash
-CI=true uv run pytest tests/web_ui/test_guest_write_block.py tests/web_ui/test_tutorial_db_api.py -q -p no:cacheprovider 2>&1 | tail -5
+cd /Users/fan/Repositories/katrain-admin-console
+bash .superpowers/baseline/newfail.sh .superpowers/baseline/web_ui_failed_before.txt tests/web_ui/test_guest_write_block.py tests/web_ui/test_tutorial_db_api.py; echo "newfail exit=$?"
 git status --short
 ```
-Expected：`passed`，没有 `failed`。`git status` 只列出本任务改动的三个文件（如果 `katrain/config.json` 也出现了，`git checkout -- katrain/config.json` 还原）。
+Expected：`newfail exit=0`。`test_tutorial_db_api.py` 里那 3 条 monkeypatch `ASSET_BASE` 的用例在基线里就是红的，不算新增。`git status` 只列出本任务改动的三个文件（`katrain/config.json` 如果也出现了，执行 `git checkout -- katrain/config.json` 还原）。
 
 - [ ] **Step 8：提交**
 
@@ -378,7 +404,7 @@ Expected：`--stat` 里正好是这三个文件。
 - Test: `tests/web_ui/test_guest_write_block.py:486-498`（`test_real_user_can_heartbeat_and_list_devices`）
 
 **Interfaces:**
-- Consumes：Task 1 的 `_create_admin_and_login(app, username)`，以及 Task 1 Step 2 记下的 `.superpowers/baseline/web_ui_failed_before.txt`
+- Consumes：Task 1 的 `_create_admin_and_login(app, username)`；Task 1 Step 2 的 `newfail.sh` 和基线文件
 
 - [ ] **Step 1：拆分用例**。把整个 `test_real_user_can_heartbeat_and_list_devices`（带着它的 `@pytest.mark.asyncio`）替换成：
 ```python
@@ -446,23 +472,12 @@ async def list_devices(
     each row carries the box's IP address."""
 ```
 
-- [ ] **Step 4：跑整个文件，确认全部通过**
+- [ ] **Step 4：跑整个文件，按名字和基线比**
 
-Run：`CI=true uv run pytest tests/web_ui/test_guest_write_block.py -q -p no:cacheprovider 2>&1 | tail -3`
-Expected：全部 passed。其中 `test_guest_403_on_all_write_routes[GET:/api/v1/board/devices]` 仍然是 403，只是现在由管理员闸拦下。
+Run：`cd /Users/fan/Repositories/katrain-admin-console && bash .superpowers/baseline/newfail.sh .superpowers/baseline/web_ui_failed_before.txt tests/web_ui/test_guest_write_block.py; echo "newfail exit=$?"`
+Expected：`newfail exit=0`。其中 `test_guest_403_on_all_write_routes[GET:/api/v1/board/devices]` 仍然是 403，只是现在由管理员闸拦下。
 
-- [ ] **Step 5：后端两处都改完了，跑 web_ui 全量，按名字和基线做差**
-
-```bash
-cd /Users/fan/Repositories/katrain-admin-console
-CI=true uv run pytest tests/web_ui -q -p no:cacheprovider --continue-on-collection-errors -rfE 2>&1 \
-  | grep -E '^(FAILED|ERROR) ' | sed -E 's/ - .*//' | sort -u > .superpowers/baseline/web_ui_failed_after.txt
-comm -13 .superpowers/baseline/web_ui_failed_before.txt .superpowers/baseline/web_ui_failed_after.txt
-git status --short
-```
-Expected：`comm` 没有输出，即没有新增的失败；基线里本来就红的用例不算。`git status --short` 只列出本任务的两个文件；`katrain/config.json` 如果也出现了，执行 `git checkout -- katrain/config.json` 还原。`comm` 有输出时逐条看：是本切片造成的就修，不是的就在提交信息里写明。
-
-- [ ] **Step 6：提交**
+- [ ] **Step 5：提交**
 
 ```bash
 git add katrain/web/api/v1/endpoints/board.py tests/web_ui/test_guest_write_block.py
@@ -474,7 +489,101 @@ git show --stat HEAD | tail -4
 
 ---
 
-### Task 3: 教程页只对管理员显示编辑控件
+### Task 3: Bearer 只认 access token
+
+2026-09-24 评审时发现：`get_user_from_token`（`katrain/web/api/v1/endpoints/auth.py:118`）只验签名和 `sub`，不看 `type`。所以有效期 90 天的 refresh token 能直接当 Bearer 用，也能调 Task 1、2 刚收紧的管理员接口；access token 的有效期只有 7 天。仓里签发 JWT 的只有两处（`katrain/web/core/auth.py:34,47`）：`create_access_token` 写 `type: "access"`（2026-02-12 起就有），`create_refresh_token` 写 `type: "refresh"`。前端从不使用 refresh token；本机回环登录的 SSO cookie 里放的也是 access token（`auth.py:467`）；Python 侧只有 `remote_client` 用 refresh token，走的是 `/auth/refresh`，那里本来就要求 `type == "refresh"`。所以只收 access token 不会误伤现有调用方。**这一项是评审新增的，不在 spec §4 的三个问题里，Fan 可以删掉。**
+
+**Files:**
+- Modify: `katrain/web/api/v1/endpoints/auth.py:125-129`（`get_user_from_token` 的解码段）
+- Test: `tests/web_ui/test_auth_api.py`（末尾追加两条，沿用文件里的 `app` 夹具）
+
+**Interfaces:**
+- Consumes：`create_access_token(data)`、`create_refresh_token(data)`（`katrain/web/core/auth.py`）；Task 1 Step 2 的 `newfail.sh` 和基线文件
+- Produces：`get_user_from_token(token, repo, box_sso=None)` 签名不变；`type` 不是 `"access"` 的令牌一律 401
+
+- [ ] **Step 1：写测试**（追加到 `tests/web_ui/test_auth_api.py` 末尾）
+
+```python
+async def _me_with(app, token):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        return await ac.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+
+
+def _make_user(app, username):
+    from passlib.context import CryptContext
+
+    try:
+        app.state.user_repo.create_user(username, CryptContext(schemes=["bcrypt"], deprecated="auto").hash("pw"))
+    except ValueError:
+        pass
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_is_not_a_bearer_credential(app):
+    """A refresh token lives 90 days and only /auth/refresh may accept it. As a Bearer it is 401."""
+    from katrain.web.core.auth import create_refresh_token
+
+    _make_user(app, "rt_user")
+    resp = await _me_with(app, create_refresh_token(data={"sub": "rt_user"}))
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_access_token_is_still_a_bearer_credential(app):
+    from katrain.web.core.auth import create_access_token
+
+    _make_user(app, "at_user")
+    resp = await _me_with(app, create_access_token(data={"sub": "at_user"}))
+    assert resp.status_code == 200 and resp.json()["username"] == "at_user"
+```
+
+- [ ] **Step 2：跑测试，确认失败**
+
+Run：`cd /Users/fan/Repositories/katrain-admin-console && CI=true uv run pytest tests/web_ui/test_auth_api.py -q -p no:cacheprovider -k "bearer_credential" 2>&1 | tail -6`
+Expected：`test_refresh_token_is_not_a_bearer_credential` FAIL（拿到了 200）；`test_access_token_is_still_a_bearer_credential` PASS。
+
+- [ ] **Step 3：改 `get_user_from_token`**。把
+```python
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+```
+改成：
+```python
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        # Only access tokens are Bearer credentials (2026-09-24). A refresh token lives 90 days and is for
+        # /auth/refresh alone; before this check it also unlocked every endpoint, admin-only ones included.
+        if payload.get("type") != "access":
+            raise credentials_exception
+```
+
+- [ ] **Step 4：跑鉴权相关的测试文件，按名字和基线比**
+
+Run：`bash .superpowers/baseline/newfail.sh .superpowers/baseline/web_ui_failed_before.txt tests/web_ui/test_auth_api.py tests/web_ui/test_board_auth.py tests/web_ui/test_auth_persistence.py tests/web_ui/test_guest_write_block.py; echo "newfail exit=$?"`
+Expected：`newfail exit=0`。
+
+- [ ] **Step 5：三处后端改动都完成了，跑 web_ui 全量，按名字和基线比**
+
+Run：`bash .superpowers/baseline/newfail.sh .superpowers/baseline/web_ui_failed_before.txt tests/web_ui --continue-on-collection-errors; echo "newfail exit=$?"; git status --short`
+Expected：`newfail exit=0`，即没有新增的失败，基线里本来就红的用例不算。`git status --short` 只列出本任务的两个文件（`katrain/config.json` 若被改动就执行 `git checkout -- katrain/config.json` 还原）。列出了新增失败时逐条看：是本切片造成的就修，不是的就在提交信息里写明。
+
+- [ ] **Step 6：提交**
+
+```bash
+git add katrain/web/api/v1/endpoints/auth.py tests/web_ui/test_auth_api.py
+git commit -m "fix(auth): Bearer 只认 access token —— refresh token（90 天）不能再直接调接口
+
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
+git show --stat HEAD | tail -4
+```
+
+---
+
+### Task 4: 教程页只对管理员显示编辑控件
 
 **Files:**
 - Modify: `katrain/web/ui/src/context/AuthContext.tsx:6-17`（`interface User`）
@@ -541,7 +650,9 @@ const sectionWithBoard = {
   ],
 };
 
-const EDIT_BUTTONS = [/编辑讲解/, /生成语音并保存/, /保存文字/, /确认审核/, /逻辑检查/, /^编辑$/, /初始化空棋盘/];
+// 只列阅读态下管理员看得到的入口按钮。「生成语音并保存」「保存文字」只在讲解编辑态出现，而进入编辑态的
+// 唯一入口「编辑讲解」已经在这里：把它们也列进来，只会多出两条永远成立的断言。
+const EDIT_BUTTONS = [/编辑讲解/, /确认审核/, /逻辑检查/, /^编辑$/, /初始化空棋盘/];
 ```
 
 2c. 在 `describe` 块里、最后一条 `it` 之后，加上：
@@ -648,6 +759,7 @@ Expected：「非管理员只读」和「未登录」两条 FAIL，因为按钮�
 
 Run：
 ```bash
+set -o pipefail
 npx vitest run src/galaxy/pages/tutorials/TutorialFigurePage.test.tsx 2>&1 | tail -6
 npx tsc -b 2>&1 | tail -5
 npx eslint src/galaxy/pages/tutorials/TutorialFigurePage.tsx src/context/AuthContext.tsx
@@ -673,6 +785,7 @@ open(sys.argv[2], "w").write("".join(n + "\n" for n in sorted(names)))
 print(d["numTotalTests"], "tests,", len(names), "failed")
 PY
 comm -13 $B/vitest_failed_before.txt $B/vitest_failed_after.txt
+set -o pipefail
 npm run build 2>&1 | tail -3 && npm run build:kiosk-2d 2>&1 | tail -3
 ```
 Expected：`comm` 没有输出（没有新增的失败）；两个构建都以 `built in` 结尾，kiosk 那个还打印 `✅ kiosk boundary clean`。（不要用 `git stash` 回到改动前去复跑：katrain 的十个 worktree 共用一条 stash 栈，pop 可能弹出别人的在制品。基线在 Step 1 已经记好了。）
@@ -690,7 +803,7 @@ git show --stat HEAD | tail -5
 
 ---
 
-### Task 4: 真实浏览器实测右栏承重结构 + 截图，给 Fan 确认
+### Task 5: 真实浏览器实测右栏承重结构 + 截图，给 Fan 确认
 
 触发理由：非管理员看到的 `board-rail-actions` 变成空的，`board-rail-scroll` 的高度来源就变了（`BoardPageShell.tsx:163-188`）。
 这里应该滚动的是 **`board-rail-scroll`**：它既不是 `board-right-rail`，也不是 `board-page-shell`。
@@ -700,7 +813,7 @@ git show --stat HEAD | tail -5
 - Create：`superpowers/tracks/admin-console/slice0/measurements.md`，以及同目录下的 3 张 png
 
 **Interfaces:**
-- Consumes：Task 3 的 `canEdit` 门控；`BoardPageShell.tsx` 已有的 data-testid：`board-page-shell`、`board-right-rail`、`board-rail-module`、`board-rail-scroll`、`board-rail-actions`
+- Consumes：Task 4 的 `canEdit` 门控；`BoardPageShell.tsx` 已有的 data-testid：`board-page-shell`、`board-right-rail`、`board-rail-module`、`board-rail-scroll`、`board-rail-actions`
 - Produces：`slice0/measurements.md` 和 3 张截图，交给 Fan 确认
 
 先把关系式写死（取数之前）：
@@ -809,16 +922,15 @@ test('管理员对照', async ({ page }) => {
 
 - [ ] **Step 2：起 vite 开发服务器，跑测量**
 
-先确认 5173 端口没有被别的会话占用：`lsof -iTCP:5173 -sTCP:LISTEN`。没有输出，就用 `PORT=5173`；有输出，就换一个空闲端口，例如 `PORT=5183`。
-
+端口和 PID 写进文件：执行者每次调用 Bash 都是新 shell，变量留不到 Step 4。直接起 `node_modules/.bin/vite`，记下的 PID 才是 vite 自己，不是 npm 的外壳。
 ```bash
-PORT=5173
-mkdir -p /Users/fan/Repositories/katrain-admin-console/superpowers/tracks/admin-console/slice0
 cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
-(npm run dev -- --port $PORT --strictPort > /tmp/admin-guard-vite.log 2>&1 &)
+V=/private/tmp/claude-501/admin-guard-vite; mkdir -p $V ../../../superpowers/tracks/admin-console/slice0
+PORT=5183; while lsof -iTCP:$PORT -sTCP:LISTEN >/dev/null; do PORT=$((PORT+1)); done; echo $PORT > $V/port
+./node_modules/.bin/vite --port $PORT --strictPort > $V/vite.log 2>&1 & echo $! > $V/pid
 for i in $(seq 1 60); do curl -sf http://127.0.0.1:$PORT >/dev/null && break; sleep 1; done
-MEASURE_BASE=$([ "$PORT" = 5173 ] && echo "" || echo "http://127.0.0.1:$PORT") \
-  npx playwright test --config=playwright.vite.config.ts tests/tutorial-rail-readonly.measure.spec.ts --reporter=line 2>&1 | tail -30
+set -o pipefail
+MEASURE_BASE=http://127.0.0.1:$PORT npx playwright test --config=playwright.vite.config.ts tests/tutorial-rail-readonly.measure.spec.ts --reporter=line 2>&1 | tail -30
 ```
 Expected：3 passed，并打印出三行 JSON 数字。
 
@@ -826,7 +938,13 @@ Expected：3 passed，并打印出三行 JSON 数字。
   - 全部通过：删掉 spec（`rm tests/tutorial-rail-readonly.measure.spec.ts`），把三行 JSON 和 R1–R4 逐条的判定写进 `superpowers/tracks/admin-console/slice0/measurements.md`。这里的像素值只做记录，判定看的是关系式。
   - 有一条**量出了错误数值**：先修布局，重跑直到通过。然后按 vertical-slice 的规定，**保留**这个 spec，改名为 `tests/tutorial-rail-readonly.spec.ts` 作为几何闸，和修复放在同一个提交里。
 
-- [ ] **Step 4：停掉 vite**：`kill $(lsof -tiTCP:$PORT -sTCP:LISTEN) 2>/dev/null || true`，然后用 `lsof -iTCP:$PORT -sTCP:LISTEN` 确认已经没有进程在监听。
+- [ ] **Step 4：停掉 Step 2 起的 vite**。只杀记下的那个 PID，而且先核对它确实是 vite（端口上可能已经是别的会话的服务）：
+```bash
+V=/private/tmp/claude-501/admin-guard-vite
+ps -o command= -p "$(cat $V/pid)" | grep -q vite && kill "$(cat $V/pid)"
+lsof -iTCP:"$(cat $V/port)" -sTCP:LISTEN || echo "port free"
+```
+Expected：打印 `port free`。
 
 - [ ] **Step 5：提交证据**
 
@@ -838,16 +956,16 @@ git commit -m "test(tutorial): 只读右栏承重实测（1440×900，溢出/最
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ```
 
-- [ ] **Step 6：🛑 停，请 Fan 看这三张截图和测量结果，明确确认后才能进入 Task 5。**
+- [ ] **Step 6：🛑 停，请 Fan 看这三张截图和测量结果，明确确认后才能进入 Task 6。**
 
 ---
 
-### Task 5: 🛑 发布前清点各环境的管理员账号（需要 Fan 决策）
+### Task 6: 🛑 发布前清点各环境的管理员账号（需要 Fan 决策）
 
-**Files:** 无代码改动。Step 1 只读；Step 3 按 Fan 的决定改库，每条命令执行前都要他再点一次头。
+**Files:** 无代码改动。Step 1 只读；之后每一条改库的命令，执行前都要 Fan 再点一次头。
 
 **Interfaces:**
-- Produces：三个环境各自 `is_admin = true` 的账号，以及 Fan 对生产 `admin`（id=1）的处置。Task 6 的发布以它为前提：发布以后只有管理员能编辑教程
+- Produces：每个环境至少一个**实测能登录**的 `is_admin = true` 账号，以及 Fan 对生产 `admin`（id=1）的处置。Task 7 的发布以它为前提：发布以后只有管理员能编辑教程。
 
 - [ ] **Step 1：只读查询三个环境**
 
@@ -867,16 +985,23 @@ Expected：三份清单。记下来，一并交给 Fan。
 - [ ] **Step 2：🛑 请 Fan 决定**
   1. 在 Mac 本机、测试机、生产上，各自把哪个用户名设成管理员（通常是他自己的账号）。
   2. 生产上的 `admin`（id=1）怎么处理：
-     - 选项 A：撤掉 `is_admin`，并把口令改成一个没有任何人知道的随机值，相当于停用。
-     - 选项 B：保留管理员身份，改成一个强口令。这个由 Fan 自己执行，口令不经过 Claude。
+     - **选项 A（推荐）**：撤掉 `is_admin`，口令改成一个谁也不知道的随机值，相当于停用。撤权即时生效：管理员接口每次请求都按用户名重新查 `is_admin`，此前签发给 `admin` 的令牌从下一次请求起就没有管理员权限了。
+     - **选项 B**：保留管理员身份，只改成强口令。**单独这样做不够**：改口令不会让已经签发出去的令牌失效。access token 有效 7 天；Task 3 上线之前，有效 90 天的 refresh token 也能直接当 Bearer 用。谁在改口令之前用 `admin/admin` 登录过，谁就还握着管理员权限。选 B 必须同时轮换 `KATRAIN_SECRET_KEY`，代价是所有用户（包括盒子）都要重新登录一次。
 
-- [ ] **Step 3：按 Fan 的决定执行**（每条命令执行前，都要再得到他一次点头）
-
-给 Fan 指定的账号授权（把 `<用户名>` 换成他给的值）：
+- [ ] **Step 3：给 Fan 指定的账号授权**，每个环境一条命令（把 `<用户名>` 换成他给的值）：
 ```bash
 ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c \"UPDATE users SET is_admin = true WHERE username = '<用户名>' RETURNING id, username, is_admin;\""
 ```
 测试机和 Mac 本机用 Step 1 里对应的那条 `docker exec … psql` 前缀，执行同样的 `UPDATE`。
+Expected：**恰好一行** `<id>|<用户名>|t`。一行都没有，就是用户名写错了：停下，和 Fan 核对，不要进 Step 4。
+
+- [ ] **Step 4：请 Fan 用这个账号在测试机和生产上各真实登录一次**，证明口令可用、`is_admin` 已经生效。由 Fan 自己在终端里执行，口令只在他那边输入（`<站点>` 分别换成 `https://go.sailorvoyage.top` 和 `https://modelstella.com`）：
+```
+! bash -c 'read -r -p "用户名: " U; read -r -s -p "密码: " P; echo; T=$(U="$U" P="$P" python3 -c "import json,os; print(json.dumps({\"username\": os.environ[\"U\"], \"password\": os.environ[\"P\"]}))" | curl -s -X POST <站点>/api/v1/auth/login -H "Content-Type: application/json" --data @- | python3 -c "import json,sys; print(json.load(sys.stdin).get(\"access_token\", \"\"))"); curl -s -H "Authorization: Bearer $T" <站点>/api/v1/auth/me | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get(\"username\"), \"is_admin=\", d.get(\"is_admin\"))"'
+```
+Expected：打印 `<用户名> is_admin= True`。**两台线上机器都验过，才能进 Step 5。** Mac 本机的库只在做教程时用，下次在本机编辑教程时自然会验到。
+
+- [ ] **Step 5：按 Fan 的决定处理生产上的 `admin`**（执行前再得到他一次点头）
 
 选项 A（停用 `admin`）：
 ```bash
@@ -896,22 +1021,29 @@ PY
 ```
 Expected：打印 `1 admin False`。**容器名以 Step 1 实际查到的为准**。
 
-选项 B（Fan 自己在终端里执行，口令只在他那边输入）：
+选项 B（Fan 自己在终端里执行，口令只在他那边输入；另外还要安排 `KATRAIN_SECRET_KEY` 的轮换，见 Step 2）：
 ```
 ! ssh -t ucloud-v100 "sudo docker exec -it katrain-ucloud-katrain-web-1 python3 -c \"import getpass; from katrain.web.core import models_db; from katrain.web.core.auth import get_password_hash; from katrain.web.core.db import SessionLocal; s=SessionLocal(); u=s.query(models_db.User).filter(models_db.User.username=='admin').one(); u.hashed_password=get_password_hash(getpass.getpass('new admin password: ')); s.commit(); print('ok', u.id)\""
 ```
 
-- [ ] **Step 4：复查**：重新跑 Step 1 的三条查询，确认结果和 Fan 的决定一致。
+- [ ] **Step 6：复查**
+  - 重新跑 Step 1 的三条查询，确认结果和 Fan 的决定一致；
+  - 选了 A 时，公开过的旧口令已经登不进去（`admin` 不是保留用户名，只有 `guest` 是）：
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -X POST https://modelstella.com/api/v1/auth/login -H 'Content-Type: application/json' -d '{"username":"admin","password":"admin"}'
+```
+Expected：`401`；
+  - Fan 用新管理员账号在生产上重跑一次 Step 4，仍然打印 `is_admin= True`。
 
 ---
 
-### Task 6: 🛑 发布：先测试机，再生产（每一步推送或部署前都要 Fan 点头）
+### Task 7: 🛑 发布：先测试机，再生产（每一步推送或部署前都要 Fan 点头）
 
 **Files:**
-- Modify（release 分支，在 Step 4 建的临时 worktree 里）：`docs/operations/ucloud-migration-runbook.md`（追加一条发布记录）
+- Modify（release 分支，在 Step 4 建的临时 worktree `/private/tmp/claude-501/rel-admin-guard` 里）：`docs/operations/ucloud-migration-runbook.md`（追加一条发布记录）
 
 **Interfaces:**
-- Consumes：Task 1–3 的提交；Task 5 在各环境授权的管理员账号
+- Consumes：Task 1–4 的提交；Task 6 在各环境实测过能登录的管理员账号；Task 1 Step 2 的 `newfail.sh` 和基线文件
 
 - [ ] **Step 1：跟上 develop，然后快进推送**（不碰共享的主工作树）
 
@@ -919,96 +1051,203 @@ Expected：打印 `1 admin False`。**容器名以 Step 1 实际查到的为准*
 cd /Users/fan/Repositories/katrain-admin-console
 git fetch origin
 git merge --no-edit origin/develop
-CI=true uv run pytest tests/web_ui/test_guest_write_block.py tests/web_ui/test_tutorial_db_api.py -q -p no:cacheprovider 2>&1 | tail -2
-git push origin HEAD:develop
+bash .superpowers/baseline/newfail.sh .superpowers/baseline/web_ui_failed_before.txt tests/web_ui/test_guest_write_block.py tests/web_ui/test_tutorial_db_api.py tests/web_ui/test_auth_api.py; echo "newfail exit=$?"
 ```
-Expected：pytest 全部通过。push 是快进；如果被拒（develop 又前进了），就重新执行 fetch、merge、测试、push。
+Expected：`newfail exit=0`（develop 带进来的新失败也会列出来，先弄清楚再推）。🛑 Fan 点头后执行 `git push origin HEAD:develop`。push 是快进；如果被拒（develop 又前进了），重新执行 fetch、merge、newfail、push。
 
 - [ ] **Step 2：部署测试机**（develop 的 `.claude/skills/server-deploy`，这次只改了 web）
 
 ```bash
-ssh home-ubuntu "cd ~/Repositories/katrain && git pull --ff-only && docker compose up -d --build katrain-web && docker ps --format '{{.Names}}\t{{.Status}}' | grep katrain-web"
+ssh home-ubuntu "cd ~/Repositories/katrain && git pull --ff-only && docker compose up -d --build katrain-web"
+ssh home-ubuntu "docker ps --format '{{.Names}}\t{{.Status}}'"
 ```
-Expected：`katrain-web  Up … (healthy)`，或者 `Up` 了几秒。
+Expected：`katrain-web  Up … (healthy)`；如果还是 `(health: starting)`，隔半分钟再查一次，直到 healthy。
 
-- [ ] **Step 3：验证测试机**（用不存在的 id 探测：不会写任何东西，401 就证明闸在查库之前生效了）
+- [ ] **Step 3：验证测试机**（用不存在的 id 探测：不会写任何东西；401 说明闸在查库之前就生效了）
 
 ```bash
-for p in "PUT /api/v1/tutorials/figures/999999/board" "POST /api/v1/tutorials/figures/999999/generate-audio" \
-         "PUT /api/v1/tutorials/figures/999999/narration" "PUT /api/v1/tutorials/figures/999999/verify" \
-         "GET /api/v1/board/devices"; do
-  set -- $p; printf '%s %s -> ' "$1" "$2"
-  curl -s -o /dev/null -w '%{http_code}\n' -X "$1" -H 'Content-Type: application/json' -d '{}' "https://go.sailorvoyage.top$2"
+B=https://go.sailorvoyage.top
+for spec in "PUT /api/v1/tutorials/figures/999999/board" "POST /api/v1/tutorials/figures/999999/generate-audio" \
+            "PUT /api/v1/tutorials/figures/999999/narration" "PUT /api/v1/tutorials/figures/999999/verify" \
+            "GET /api/v1/board/devices"; do
+  m=${spec%% *}; u=${spec#* }
+  printf '%s %s -> ' "$m" "$u"
+  curl -s -o /dev/null -w '%{http_code}\n' -X "$m" -H 'Content-Type: application/json' -d '{}' "$B$u"
 done
 ```
-Expected：五行都是 `401`（改之前前四行会是 404 或 422）。然后请 Fan 用他的管理员账号在测试机上改一条讲解，确认编辑流程正常。
+（用参数展开拆「方法 路径」，bash 和 zsh 行为一致；不要写 `set -- $spec`，zsh 不做词分割。）
+Expected：五行都是 `401`（改之前前四行是 404 或 422）。然后请 Fan 用他的管理员账号在测试机上改一条讲解，确认编辑流程正常。
 
-- [ ] **Step 4：生产**。按 release 分支上 `docs/operations/ucloud-migration-runbook.md` 的常规发布流程走，参照它最近的 2026-09-06 条目。在本机新建一个临时 worktree，不要复用别的会话的：
+- [ ] **Step 4：合并到 release 分支，在合并结果上跑 release 自己的闸**
 
-**先让 Fan 知道这次还会带上别人的哪些提交**：发布是把整个 develop 合进 release，所以会连带自上次发布以来 develop 上的**全部**提交（2026-09-24 时约 54 个），不只是本切片。
+先让 Fan 知道这次还会带上哪些别人的提交：发布是把整个 develop 合进 release，会连带自上次发布以来 develop 上的**全部**提交，不只是本切片。
 ```bash
 git -C /Users/fan/Repositories/katrain fetch origin
 git -C /Users/fan/Repositories/katrain log --oneline --no-merges origin/release/ucloud-20260805..origin/develop
 ```
-把这份列表交给 Fan，🛑 **他同意整批发布后**再继续往下做。
+把这份列表交给 Fan，🛑 **他同意整批发布后**再继续。
 
 ```bash
-cd /Users/fan/Repositories/katrain
-REL=/private/tmp/claude-501/rel-admin-guard
-git fetch origin
-git worktree add "$REL" -b release-merge-admin-guard origin/release/ucloud-20260805
-cd "$REL" && git merge --no-edit origin/develop
-git diff --name-only HEAD~1 HEAD -- katrain/cron/ | head
+git -C /Users/fan/Repositories/katrain worktree add /private/tmp/claude-501/rel-admin-guard -b release-merge-admin-guard origin/release/ucloud-20260805
+cd /private/tmp/claude-501/rel-admin-guard && git merge --no-edit origin/develop; echo "merge exit=$?"
+git -C /private/tmp/claude-501/rel-admin-guard diff --name-only HEAD~1 HEAD -- katrain/cron/
 ```
-- 合并**报无冲突也要复查**：release 侧在 `server.py` 里有 `if settings.PREVIEW_MODE:` 守卫。确认 develop 新带进来的启动期写库动作都落在守卫之内（`git diff HEAD~1 HEAD -- katrain/web/server.py | head -80`）。
-- 在 `$REL` 里执行 `uv sync --extra web`，然后跑 `CI=true uv run pytest tests/deploy tests/web_ui/test_guest_write_block.py tests/web_ui/test_tutorial_db_api.py -q -p no:cacheprovider`，要求全部通过。
-- 🛑 Fan 点头后 `git push origin HEAD:release/ucloud-20260805`。
+Expected：`merge exit=0`。有冲突就逐个解决，release 一侧的 `PREVIEW_MODE` 守卫一律保留；`Dockerfile.web` 有冲突时保留 release 的版本（`git checkout --ours Dockerfile.web && git add Dockerfile.web`）。合并提交之后执行 `grep -c '^FROM' /private/tmp/claude-501/rel-admin-guard/Dockerfile.web`，必须是 `4`（release 自己那份 4 阶段构建；develop 那份只有 1 个 `FROM`）。最后一条列出 develop 带进来的 cron 改动：**非空就说明这次 `CRON_IMAGE` 也要重建**，记进 `/private/tmp/claude-501/rel-admin-guard.cron-changed`（写 `yes` / `no`），Step 5 要用。
 
-在 ucloud-v100 上（每一行执行前都要 Fan 点头）：
+合并报「无冲突」也不等于守卫还在：git 不会把一侧新加的代码收进另一侧新加的 `if`。release 上有一条专门的闸：preview 模式下，结算、回收预扣、补账、周期结算、直播、平台初始化这 7 个会写生产的动作一个都不许跑。在合并结果上跑它，连同 release 的部署闸和本切片的新测试：
 ```bash
-SHA=<release 分支尖端的 short sha>
-sudo git clone --depth 1 --branch release/ucloud-20260805 https://github.com/shevapato2008/katrain.git /opt/katrain/releases/$SHA
-sudo git -C /opt/katrain/releases/$SHA rev-parse --short HEAD          # 必须等于 $SHA
-cd /opt/katrain/releases/$SHA && sudo deploy/ucloud/scripts/build-web.sh katrain-web:$SHA   # 记下输出的 image_id
-# CRON_IMAGE 只有在「上一个 release..$SHA 之间 katrain/cron/ 有改动」时才重建：
-#   git diff --name-only <上一个 release sha> $SHA -- katrain/cron/   非空 ⇒
-#   sudo docker build --pull=false -f Dockerfile.cron -t katrain-cron:$SHA . ，再记下 image_id
-TS=$(date +%Y%m%d-%H%M)
-sudo sh -c "docker exec katrain-ucloud-postgres-1 pg_dump -U katrain_user -Fc katrain_prod_20260725 > /opt/katrain/backups/prod-$TS.dump"
-sudo docker exec katrain-ucloud-postgres-1 createdb -U katrain_user katrain_restore_verify_$TS
-sudo sh -c "docker exec -i katrain-ucloud-postgres-1 pg_restore -U katrain_user -d katrain_restore_verify_$TS < /opt/katrain/backups/prod-$TS.dump"; echo "pg_restore exit=$?"
-for t in $(sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c "select tablename from pg_tables where schemaname='public' order by 1"); do
-  a=$(sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c "select count(*) from \"$t\"")
-  b=$(sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_restore_verify_$TS -At -c "select count(*) from \"$t\"")
-  [ "$a" = "$b" ] || echo "MISMATCH $t $a $b"
-done; echo "row-count compare done"
-sudo docker exec katrain-ucloud-postgres-1 dropdb -U katrain_user katrain_restore_verify_$TS
-sudo cp /etc/katrain/ucloud.env /opt/katrain/backups/ucloud.env.$(date +%Y%m%dT%H%M%S).bak
-sudo sed -i "s|^WEB_IMAGE=.*|WEB_IMAGE=<build-web.sh 打出的 image_id>|" /etc/katrain/ucloud.env   # 只有 cron 也重建时才同时改 CRON_IMAGE
-sudo stat -c '%U:%G %a' /etc/katrain/ucloud.env                                               # 必须是 root:root 600
-sudo deploy/ucloud/scripts/preflight.sh --phase full --env-file /etc/katrain/ucloud.env       # 只有容量闸红属于历次都有的已知情况，要明说
-sudo ln -sfn /opt/katrain/releases/$SHA /opt/katrain/current
+cd /private/tmp/claude-501/rel-admin-guard && uv sync --extra web
+set -o pipefail
+CI=true uv run pytest tests/deploy "tests/web_ui/test_backend_setup.py::test_preview_mode_keeps_local_app_without_production_effects" -q -p no:cacheprovider 2>&1 | tail -3; echo "gate exit=$?"
+CI=true uv run pytest tests/web_ui/test_guest_write_block.py tests/web_ui/test_tutorial_db_api.py tests/web_ui/test_auth_api.py -q -p no:cacheprovider -k "tutorial_writer or list_devices or update_board_non_admin or bearer_credential" 2>&1 | tail -3; echo "slice exit=$?"
+```
+Expected：`gate exit=0`、`slice exit=0`。任何一个不是 0 都不许推 release。🛑 Fan 点头后执行 `git -C /private/tmp/claude-501/rel-admin-guard push origin HEAD:release/ucloud-20260805`，再用 `git -C /private/tmp/claude-501/rel-admin-guard rev-parse --short HEAD` 取得下面的 `<SHA>`。
+
+- [ ] **Step 5：在 ucloud-v100 上发布**（每一条执行前都要 Fan 点头）
+
+每次 `ssh` 都是新 shell：`<SHA>`、`<TS>`、`<WEB_ID>`、`<CRON_ID>` 在每条命令里写成字面量；要跨步骤留住的回滚锚点写进服务器上的 `/opt/katrain/backups/anchors-<SHA>.txt`。容器名和库名以 Task 6 Step 1 实际查到的为准。
+
+5a. **先看盘，再动手**。取代码、构建镜像、pg_dump、恢复验证库都要占盘，峰值约 5–6 GB：
+```bash
+ssh ucloud-v100 "df -B1 -P /; ls -1 /opt/katrain/releases; readlink /opt/katrain/current"
+```
+Expected：可用空间（`df` 第 4 列）≥ 10 GB 才继续。不够就停下，把 `releases/` 清单和 `current` 的指向交给 Fan，由他决定回收哪几个旧 release 目录。**`current` 指向的那个目录不能删，那是回滚锚点。**
+
+5b. **记下回滚锚点**（镜像 ID 不是密钥；env 里其他行一律不打印）：
+```bash
+ssh ucloud-v100 'sudo bash -s' <<'SH'
+set -euo pipefail
+A=/opt/katrain/backups/anchors-<SHA>.txt
+OLD=$(readlink /opt/katrain/current)
+W=$(grep '^WEB_IMAGE=' /etc/katrain/ucloud.env | cut -d= -f2)
+C=$(grep '^CRON_IMAGE=' /etc/katrain/ucloud.env | cut -d= -f2)
+docker image inspect --format '{{.Id}}' "$W" "$C" > /dev/null
+printf 'OLD_RELEASE=%s\nOLD_WEB_IMAGE=%s\nOLD_CRON_IMAGE=%s\n' "$OLD" "$W" "$C" | tee "$A"
+SH
+```
+Expected：打印三行 `OLD_RELEASE=/opt/katrain/releases/…`、`OLD_WEB_IMAGE=sha256:…`、`OLD_CRON_IMAGE=sha256:…`，没有报错，即两个旧镜像都还在（回滚要用）。
+
+5c. **取代码**（不接管道。runbook 2026-09-23：`clone --depth 1` 连败两次，那次是靠旧目录增量 fetch 再 archive 发出去的）：
+```bash
+ssh ucloud-v100 "sudo git clone --depth 1 --branch release/ucloud-20260805 https://github.com/shevapato2008/katrain.git /opt/katrain/releases/<SHA>; echo clone-exit=\$?; sudo git -C /opt/katrain/releases/<SHA> rev-parse --short HEAD"
+```
+Expected：`clone-exit=0`，下一行等于 `<SHA>`。**失败时的兜底**：先 `ssh ucloud-v100 "ls -d /opt/katrain/releases/*/.git"` 找一个带 `.git` 的旧目录（下面叫 `<GITDIR>`，写它所在的目录），然后：
+```bash
+ssh ucloud-v100 "sudo git -C <GITDIR> fetch --depth 1 origin release/ucloud-20260805 && sudo git -C <GITDIR> rev-parse --short FETCH_HEAD"
+ssh ucloud-v100 "set -o pipefail; sudo mkdir /opt/katrain/releases/<SHA> && sudo git -C <GITDIR> archive <SHA> | sudo tar -x -C /opt/katrain/releases/<SHA>; echo archive-exit=\$?"
+```
+Expected：第一条打印的正好是 `<SHA>`；第二条 `archive-exit=0`。`mkdir` 报「已存在」时停下，先看清那个目录是怎么来的，**不要 `rm -rf` 带占位符的路径**。
+
+5d. **构建镜像**（日志写文件，只看结果行，退出码不被管道吞掉）：
+```bash
+ssh ucloud-v100 "cd /opt/katrain/releases/<SHA> && sudo deploy/ucloud/scripts/build-web.sh katrain-web:<SHA> > /tmp/build-web-<SHA>.log 2>&1; echo build-exit=\$?; grep -E 'image_id=|size_bytes=' /tmp/build-web-<SHA>.log"
+```
+Expected：`build-exit=0`，打印出 `image_id=sha256:…`，下面叫 `<WEB_ID>`。Step 4 记的是 `yes`（develop 带进来了 cron 改动）时，再构建 cron：
+```bash
+ssh ucloud-v100 "cd /opt/katrain/releases/<SHA> && sudo docker build --pull=false -f Dockerfile.cron -t katrain-cron:<SHA> . > /tmp/build-cron-<SHA>.log 2>&1; echo build-exit=\$?; sudo docker image inspect --format '{{.Id}}' katrain-cron:<SHA>"
+```
+记下打印出的 ID，下面叫 `<CRON_ID>`。
+
+5e. **备份，并实际恢复验证一次**（没有 DDL 也不省）：
+```bash
+ssh ucloud-v100 'sudo bash -s' <<'SH'
+set -euo pipefail
+TS=<TS>   # 例如 20260925-1030；写成字面量，发布记录也要用
+PG=katrain-ucloud-postgres-1; DB=katrain_prod_20260725
+docker exec "$PG" pg_dump -U katrain_user -Fc "$DB" > /opt/katrain/backups/prod-$TS.dump
+echo "DUMP=/opt/katrain/backups/prod-$TS.dump" >> /opt/katrain/backups/anchors-<SHA>.txt
+docker exec "$PG" createdb -U katrain_user katrain_restore_verify_$TS
+docker exec -i "$PG" pg_restore -U katrain_user -d katrain_restore_verify_$TS < /opt/katrain/backups/prod-$TS.dump
+echo "pg_restore exit=0"
+TABLES=$(docker exec "$PG" psql -U katrain_user -d "$DB" -At -c "select tablename from pg_tables where schemaname='public' order by 1")
+N=$(printf '%s\n' "$TABLES" | grep -c . || true)
+[ "$N" -gt 0 ] || { echo "!! 表清单是空的：什么都没比较，不能算通过"; exit 1; }
+for t in $TABLES; do
+  a=$(docker exec "$PG" psql -U katrain_user -d "$DB" -At -c "select count(*) from \"$t\"")
+  b=$(docker exec "$PG" psql -U katrain_user -d katrain_restore_verify_$TS -At -c "select count(*) from \"$t\"")
+  [ "$a" = "$b" ] || echo "MISMATCH $t live=$a restored=$b"
+done
+echo "row-count compare done: $N tables"
+docker exec "$PG" dropdb -U katrain_user katrain_restore_verify_$TS
+SH
+```
+Expected：打印 `pg_restore exit=0` 和 `row-count compare done: <N> tables`（N 是生产库的表数，几十张，不是 0）。`MISMATCH` 只允许出现在 dump 之后仍在写入的表上（直播、分析队列之类），而且 `restored ≤ live`；其他表出现 `MISMATCH`，或者 `restored > live`，就停。脚本中途失败时，手工执行 `dropdb katrain_restore_verify_<TS>` 清掉验证库。
+
+5f. **生成候选 env**（正在用的 env 这一步不动；只打印改动的行数，不打印内容，env 里有密钥）：
+```bash
+ssh ucloud-v100 'sudo bash -s' <<'SH'
+set -euo pipefail
+C=/etc/katrain/ucloud.env.candidate-<SHA>
+install -m 600 -o root -g root /etc/katrain/ucloud.env "$C"
+sed -i "s|^WEB_IMAGE=.*|WEB_IMAGE=<WEB_ID>|" "$C"
+# 只有 5d 也构建了 cron 时，再执行这一行：
+# sed -i "s|^CRON_IMAGE=.*|CRON_IMAGE=<CRON_ID>|" "$C"
+echo "changed lines: $(diff /etc/katrain/ucloud.env "$C" | grep -c '^[<>]' || true)"
+stat -c '%U:%G %a' "$C"
+SH
+```
+Expected：`changed lines: 2`（cron 也改了是 `4`）；`root:root 600`。
+
+5g. **用候选 env 跑预检**：
+```bash
+ssh ucloud-v100 "cd /opt/katrain/releases/<SHA> && sudo deploy/ucloud/scripts/preflight.sh --phase full --env-file /etc/katrain/ucloud.env.candidate-<SHA>; echo preflight-exit=\$?"
+```
+Expected：全绿。**容量闸红了，不要自己越过**：runbook 的规矩是任何一道预检红了就停。把输出里的 `available_bytes` 和 5a 的盘面交给 Fan，由他当场决定是先回收空间，还是这一次越过。最近几次发布的记录都写着「同因越过」（那道闸按迁移的峰值 38.5 GB 设，不是普通发布的峰值），但越不越过由 Fan 当场决定，本计划不预先授权。其他任何一道闸红了都停。决定不发了：`ssh ucloud-v100 "sudo rm /etc/katrain/ucloud.env.candidate-<SHA>"`，正在用的 env 从头到尾没动过。
+
+5h. **启用候选 env、切换 `current`、dry-run**：
+```bash
+ssh ucloud-v100 'sudo bash -s' <<'SH'
+set -euo pipefail
+BAK=/opt/katrain/backups/ucloud.env.$(date +%Y%m%dT%H%M%S).bak
+cp -p /etc/katrain/ucloud.env "$BAK"
+echo "ENV_BACKUP=$BAK" >> /opt/katrain/backups/anchors-<SHA>.txt
+mv /etc/katrain/ucloud.env.candidate-<SHA> /etc/katrain/ucloud.env
+ln -sfn /opt/katrain/releases/<SHA> /opt/katrain/current
 cd /opt/katrain/current
-sudo docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d --dry-run katrain-web
-sudo docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-web
+docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d --dry-run katrain-web
+SH
 ```
-Expected：
-- `pg_restore exit=0`，且没有任何 `MISMATCH` 行；
-- dry-run 的输出里只重建 `katrain-web`，`katago-*` 和 `postgres` 只出现 `Waiting` / `Healthy`；
-- `up -d` 后 katrain-web 转为 healthy。
+Expected：只重建 `katrain-web`；`katago-*` 和 `postgres` 只出现 `Waiting` / `Healthy`。5d 也构建了 cron 时，命令末尾加上 `katrain-cron`，dry-run 里也只多它一个。不对就执行 5j。Fan 点头后再真正起服务：
+```bash
+ssh ucloud-v100 "cd /opt/katrain/current && sudo docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-web"
+```
+（5d 也构建了 cron 时，末尾同样加上 `katrain-cron`。）
 
-- [ ] **Step 5：验证生产**：把 Step 3 的循环里的域名换成 `https://modelstella.com`，要求五行都是 `401`。再请 Fan 用管理员账号改一条讲解，确认可以改。
+5i. **等健康，再从外网探一遍**：
+```bash
+ssh ucloud-v100 'for i in $(seq 1 60); do s=$(sudo docker inspect -f "{{.State.Health.Status}}" katrain-ucloud-katrain-web-1); [ "$s" = healthy ] && break; sleep 5; done; echo "katrain-web=$s"'
+for u in / /galaxy /api/v1/health; do printf '%s -> ' "$u"; curl -s -o /dev/null -w '%{http_code}\n' "https://modelstella.com$u"; done
+```
+Expected：5 分钟内打印 `katrain-web=healthy`；三行都是 `200`。**任何一项不对就执行 5j**，不要在生产上现场排查。
 
-- [ ] **Step 6：在 release 分支的 runbook 里补一条发布记录**，格式照 2026-09-06 那条写：包含镜像 ID、备份文件、恢复验证结果、发布前后的探针表，以及 `admin` 的处置结果。提交并推送 release 分支（🛑 需要 Fan 点头）。然后删掉临时 worktree：先执行 `git -C "$REL" status --ignored` 确认里面没有需要保留的东西，再执行 `git worktree remove "$REL"`。
+5j. **回滚**（只在 5h / 5i 失败时执行；执行前 Fan 点头）：
+```bash
+ssh ucloud-v100 'sudo bash -s' <<'SH'
+set -euo pipefail
+. /opt/katrain/backups/anchors-<SHA>.txt
+cp "$ENV_BACKUP" /etc/katrain/ucloud.env
+ln -sfn "$OLD_RELEASE" /opt/katrain/current
+cd /opt/katrain/current
+docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-web katrain-cron
+SH
+```
+然后重跑 5i，要求恢复 healthy、探针 200。数据库不用回滚：本切片没有 DDL。
+
+- [ ] **Step 6：验证生产**：Step 3 的循环把 `B` 换成 `https://modelstella.com`，要求五行都是 `401`。再请 Fan 用管理员账号改一条讲解，确认可以改。
+
+- [ ] **Step 7：发布记录**：在 `/private/tmp/claude-501/rel-admin-guard/docs/operations/ucloud-migration-runbook.md` 里按 2026-09-23 那条的格式补一条：镜像 ID、备份文件、恢复验证结果、回滚锚点（`anchors-<SHA>.txt` 的内容）、发布前后的探针、`admin` 的处置结果、代码是 clone 来的还是走了兜底、预检容量闸的处理。提交并推送 release 分支（🛑 需要 Fan 点头）。然后删临时 worktree：先执行 `git -C /private/tmp/claude-501/rel-admin-guard status --ignored`，确认里面没有需要保留的东西，再执行 `git -C /Users/fan/Repositories/katrain worktree remove /private/tmp/claude-501/rel-admin-guard`。
 
 ---
 
 ## Self-Review 记录
 
-- 对照 spec 的覆盖：§4 的三个问题分别落在 Task 1、Task 2、Task 5；前端只读落在 Task 3；承重实测落在 Task 4；「会改变谁能编辑教程」落在 Task 5；「先测试机再生产」落在 Task 6。
-- 占位符：`<用户名>`、`<release 分支尖端的 short sha>`、`<build-web.sh 打出的 image_id>` 都是**运行时才知道的输入**，每一个都写明了从哪一步取得，不属于没写完的内容。
-- 名字一致：`_create_admin_and_login`、`_fake_tts`、`canEdit`、`AuthUser` 在各任务之间用法一致。
-- 2026-09-24 按 writing-plans 模板复核：
-  - 原来单独的「准备环境 + 记录基线」（旧 Task 0）和「回归验证 + 两套构建」（旧 Task 5）都不是能单独验收的交付物。按 Task Right-Sizing 并进用到它们的任务：Python 依赖和 pytest 基线进 Task 1，全量对比进 Task 2 末尾，前端依赖、vitest 基线、两套构建进 Task 3。旧 Task 6、7 依次改为 Task 5、6。
-  - Task 4–6 补了 Interfaces。
-  - 旧 Task 5 的「有失败就先 `git stash` 回去复跑」改成事先按用例名字记 vitest 基线：katrain 的十个 worktree 共用一条 stash 栈。
+- 对照 spec 的覆盖：§4 的三个问题分别落在 Task 1、Task 2、Task 6；前端只读落在 Task 4；承重实测落在 Task 5；「会改变谁能编辑教程」落在 Task 6；「先测试机再生产」落在 Task 7。Task 3（Bearer 只认 access token）是评审新增的，spec 里没有。
+- 占位符：`<用户名>`、`<站点>`、`<SHA>`、`<TS>`、`<WEB_ID>`、`<CRON_ID>`、`<GITDIR>` 都是**运行时才知道的输入**，每一个都写明了从哪一步、哪条命令的输出取得，不属于没写完的内容。
+- 名字一致：`_create_admin_and_login`、`_fake_tts`、`canEdit`、`AuthUser`、`newfail.sh`、`anchors-<SHA>.txt` 在各任务之间用法一致。
+- 2026-09-24 按 writing-plans 模板复核：原来单独的「准备环境 + 记录基线」（旧 Task 0）和「回归验证 + 两套构建」（旧 Task 5）并进了用到它们的任务；每个任务都有 Interfaces；「有失败就 `git stash` 回去复跑」改成了事先按用例名字记 vitest 基线（katrain 的十个 worktree 共用一条 stash 栈）。
+- 2026-09-24 Codex 第一轮对抗评审（12 条）之后的修订：
+  - 采纳：选项 B 单独改口令撤不掉已签发的令牌，并据此新增 Task 3；发布前先看盘，容量闸红了由 Fan 当场决定，不预先授权；在合并结果上跑 release 的 PREVIEW 守卫测试；记回滚锚点、等健康、写明回滚命令；`test_tutorial_db_api.py` 里 3 条基线就红的用例让「整文件全绿」不可能，改用 `newfail.sh` 按名字比；探针循环不再依赖词分割；门禁命令加 `pipefail`；撤旧管理员之前，先让新管理员真实登录一次；`clone --depth 1` 失败时的兜底；vite 只杀自己记下的 PID；接口说明补上 strict Box 例外。
+  - 部分采纳：前端测试删掉两条永远成立的断言（「生成语音并保存」「保存文字」只在讲解编辑态出现）。
+  - 不采纳：「管理员编辑到一半失去权限」的状态转换测试，以及给 `BoardEditToolbar` 再加一层 `canEdit`。进入编辑态的唯一入口「编辑」按钮已经门控；真正的闸在后端；编辑中途被登出只会卡在编辑态，刷新即恢复，不是安全问题。
+  - 同形状排查：这一轮顺带发现，发布步骤原来在 cron 镜像也重建时仍只 `up -d katrain-web`，已改成 dry-run 和 `up -d` 都带上 `katrain-cron`。
+  - 同形状补齐（来自 cron 切片那一轮）：跑测试之前先确认 `katrain/config.json` 干净；pytest 退出码只接受 0/1；备份比对时表清单不许为空；env 改成候选文件先过预检、再原子替换；合并后核对 `Dockerfile.web` 仍是 release 那份 4 阶段构建。

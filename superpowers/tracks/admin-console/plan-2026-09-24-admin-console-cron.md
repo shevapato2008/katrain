@@ -17,7 +17,7 @@
 ## Global Constraints
 
 - 后台 API 前缀 `/api/admin`，端口 8010。`KATRAIN_ADMIN_ENV ∈ {local, test, prod}`。
-- cookie 名 `katrain_admin_<env>`，HttpOnly、SameSite=Strict、Path=/、8 小时，不设 Secure。
+- cookie 名 `katrain_admin_<env>`，HttpOnly、SameSite=Strict、Path=/api/admin、8 小时，不设 Secure。
 - 非 GET 请求必须带 `X-Katrain-Admin: 1`。
 - 会话令牌的内容是 `{sub, type:"admin_session", aud:"katrain-admin", env, exp}`，校验时 **type、aud、env 三项都要查**。
 - cron：心跳 30 秒一次；超过 120 秒没有心跳算失联；loop 超过 300 秒没有推进算卡住；运行历史保留 14 天；间隔 ≥ 60 秒的任务每次运行都记历史，更频繁的只记不成功的。
@@ -28,14 +28,19 @@
 - 只在 worktree `~/Repositories/katrain-admin-console`（分支 `feature/admin-console`）里工作，不碰共享主工作树的分支。
 - 推送、部署、写生产库，**执行当下**都要 Fan 点头。先测试机，再生产。
 - 提交信息末尾加 `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`。
+- 带管道的检查命令先写 `set -o pipefail`，否则退出码是 `tail` 的，失败也显示成功（release runbook 2026-09-23 记过这种事故）。生产上的发布命令一律不接管道。
+- 本机 shell 是 zsh：不做词分割；`$VAR:t…` 会被当成路径修饰符，要写成 `${VAR}:…`。
+- 执行者每次调用 Bash、每次 `ssh` 都是新 shell，变量留不到下一步。跨步骤要用的值（端口、PID、SHA、镜像 ID、时间戳）写进文件，或者在每条命令里写成字面量。
+- 判断「有没有弄坏」一律用 Task 2 Step 1 写的 `newfail.sh`，按用例名字和基线比。跑测试之前 `katrain/config.json` 必须是干净的（Task 2 Step 1 核对）：测试会改写这个已提交的文件，事后要还原，而还原会连带冲掉测试之前就有的改动。
+- 变异检查（亲眼看一条闸红一次）：改之前先 `cp` 备份被改的文件；跑测试时加 `PYTHONDONTWRITEBYTECODE=1`，同一秒内等长的改动和还原会让 Python 读到陈旧的 .pyc；用备份还原。**不要用 `git checkout` 还原**：这时本任务的改动还没提交，会被一起冲掉。
 
 ## Review Focus
 
-- 同一个浏览器里同时开着测试和生产两条隧道（都在 localhost，cookie 不分端口）：不能串号，页头必须显示正确的环境 → Task 6 的 `test_token_for_other_env_is_rejected`，外加登录页显示环境的 `SignInPage.test.tsx`。
+- cron 进程被 SIGKILL 或 OOM 杀掉，来不及写任何东西：2 分钟内页面必须变成「失联」，不能停在最后一次的「正常」；重启之后，被打断的那次运行在历史里是「失败」，不是永远「运行中」→ Task 9 的 offline 用例、Task 7 的 `test_register_closes_runs_left_running_by_a_process_that_died`，加上 Task 12 的实停验证。
+- cron 比 katrain-web 先启动（两边同时 `up`，表还没建）：web 建好表之后，下一次心跳就要把 9 行状态补上，不能一直空到下次重启 → Task 7 的 `test_heartbeat_fills_in_rows_when_the_table_appeared_after_register`。
 - 任务吞掉了异常、只打了一条 ERROR 日志（cleanup.py 的写法）：必须显示「有报错」，不能显示「成功」→ Task 7 的 `test_a_job_that_swallows_its_exception_is_recorded_as_errors_not_success`。
-- cron 进程被 SIGKILL 或 OOM 杀掉，来不及写任何东西：2 分钟内页面必须变成「失联」，不能一直停在最后一次的「正常」→ Task 9 的 offline 用例，加上 Task 12 的实停验证。
+- 同一个浏览器里同时开着测试和生产两条隧道（都在 localhost，cookie 不分端口）：不能串号，页头必须显示正确的环境；后台 cookie 也不能被带去本机其他端口的普通页面 → Task 6 的 `test_token_for_other_env_is_rejected` 和 cookie 的 `path=/api/admin` 断言，外加 `SignInPage.test.tsx`。
 - 管理员登录期间被撤掉权限：下一次请求就必须回到登录页 → Task 6 的 `test_revoking_is_admin_takes_effect_on_next_request`。
-- 测试用的 SQLite 返回不带时区的时间，和带时区的「现在」相减会直接抛 TypeError → Task 9 的 `test_naive_timestamps_from_sqlite_are_treated_as_utc`。
 
 ---
 
@@ -90,8 +95,8 @@ Expected：`added N packages`，没有 `ERR!`。之后 Playwright 如果报 `Exe
   - `ok`：全部正常；
   - `mixed`：包含失败、有报错、该跑没跑、已停用、运行中；
   - `offline`：cron 失联；
-  - `error`：刷新时接口返回 502，错误条写明原因和「页面数据停在 HH:MM:SS」，表格保留上一次的数据；
-  - `missing`：503，表不存在；
+  - `error`：刷新时接口返回 502，错误条写明状态码和原因（`502 Bad Gateway`）以及「页面数据停在 HH:MM:SS」，表格保留上一次的数据；
+  - `missing`：错误条写 `503` 加原因（表不存在）；
   - `empty`：cron 还没上报过；
   - `drawer`：打开 fetch_list 的运行历史，已加载 200 条，列表停在顶部。
 
@@ -151,23 +156,42 @@ git show --stat HEAD | tail -12
 - Create：`katrain/web/ui/src/admin/pages/{SignInPage.tsx, CronPage.tsx}`、`katrain/web/ui/src/admin/components/{AdminShell.tsx, HealthChip.tsx, QueueCards.tsx, RunHistoryDrawer.tsx}`
 - Create（**FIXTURE**，Task 13 删除）：`katrain/web/ui/src/admin/__fixtures__/cronFixture.ts`
 - Test：`katrain/web/ui/src/admin/api/client.test.ts`、`src/admin/pages/CronPage.test.tsx`、`src/admin/pages/SignInPage.test.tsx`
-- 不提交：`.superpowers/baseline/cron_slice_failed_before.txt`、`vitest_before.json`、`vitest_failed_before.txt`（Step 1 生成，Task 13 拿来做差）
+- 不提交：`.superpowers/baseline/cron_slice_failed_before.txt`、`newfail.sh`、`vitest_before.json`、`vitest_failed_before.txt`（Step 1 生成；之后每次「有没有弄坏」都用它们，Task 13 做最后一次全量对比）
 
 **Interfaces:**
 - Produces（TS 契约，Task 3 定稿，Task 10 的后端必须与之一致）：`src/admin/api/types.ts` 里的 `AdminEnv`、`AdminMe`、`HealthState`、`RunStatus`、`CronJob`、`CronJobsResponse`、`CronRun`、`CronRunsResponse`、`QueueSummary`、`CronQueuesResponse`
 - Produces：`adminFetch<T>(path, init?)`、`AdminAuthError(message?)`、`AdminApiError(status, message)`
 - Produces：data-testid `admin-env`、`admin-main`、`cron-error`、`cron-loading`、`cron-empty`、`cron-process`、`cron-table`、`cron-row-<name>`、`health-<state>`、`queue-live`、`queue-report`、`run-history-scroll`、`signin-env`
 
-- [ ] **Step 1：改任何代码之前，装 Python 依赖并记录两份基线**（只记失败用例的名字。切片 0 已在这个 worktree 里装过依赖时，`uv sync` 很快结束）
+- [ ] **Step 1：改任何代码之前：装 Python 依赖，确认 `katrain/config.json` 是干净的，记录两份基线，写好「只报新增失败」的小脚本**（切片 0 已在这个 worktree 里装过依赖时，`uv sync` 很快结束）
 
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console
 uv sync --extra web
 git check-ignore -q .superpowers/baseline/x && echo ignored-ok   # 根目录 .gitignore:208 忽略了 .superpowers/
+git diff --quiet -- katrain/config.json && echo config-clean
 B=/Users/fan/Repositories/katrain-admin-console/.superpowers/baseline; mkdir -p $B
-CI=true uv run pytest tests/web_ui -q -p no:cacheprovider --continue-on-collection-errors -rfE 2>&1 \
-  | grep -E '^(FAILED|ERROR) ' | sed -E 's/ - .*//' | sort -u > $B/cron_slice_failed_before.txt
+CI=true uv run pytest tests/web_ui -q -p no:cacheprovider --continue-on-collection-errors -rfE > $B/cron_slice_before.log 2>&1; echo "pytest exit=$?"
+tail -1 $B/cron_slice_before.log
+grep -E '^(FAILED|ERROR) ' $B/cron_slice_before.log | sed -E 's/ - .*//' | sort -u > $B/cron_slice_failed_before.txt
 wc -l < $B/cron_slice_failed_before.txt
+cat > $B/newfail.sh <<'SH'
+#!/usr/bin/env bash
+# 用法（在 worktree 根目录）：bash .superpowers/baseline/newfail.sh <基线文件> <pytest 参数…>
+# 跑 pytest，只报基线里没有的失败。有新增失败 → 退出码 1；pytest 本身没跑成（中断、内部错误、用法错误、
+# 一条都没收集到，或者没跑到 summary）→ 退出码 2。
+set -uo pipefail
+base="$1"; shift
+log=$(mktemp)
+CI=true uv run pytest "$@" -q -p no:cacheprovider -rfE > "$log" 2>&1
+rc=$?
+tail -1 "$log"
+[ "$rc" -le 1 ] || { echo "!! pytest 退出码 $rc，日志在 $log"; exit 2; }
+tail -1 "$log" | grep -qE '[0-9]+ (passed|failed|errors?)' || { echo "!! pytest 没有跑到 summary，日志在 $log"; exit 2; }
+new=$(grep -E '^(FAILED|ERROR) ' "$log" | sed -E 's/ - .*//' | sort -u | comm -13 "$base" -)
+[ -z "$new" ] && exit 0
+echo "!! 新增失败："; echo "$new"; exit 1
+SH
 (cd katrain/web/ui && npx vitest run --reporter=json --outputFile=$B/vitest_before.json > /dev/null 2>&1); echo "vitest exit=$?"
 python3 - "$B/vitest_before.json" "$B/vitest_failed_before.txt" <<'PY'
 import json, sys
@@ -181,9 +205,15 @@ for f in d["testResults"]:
 open(sys.argv[2], "w").write("".join(n + "\n" for n in sorted(names)))
 print(d["numTotalTests"], "tests,", len(names), "failed")
 PY
-git status --short; git checkout -- katrain/config.json 2>/dev/null || true
+git status --short
 ```
-Expected：打印 `ignored-ok`；`wc -l` 输出一个数（可以是 0）；最后打印 vitest 的用例总数和失败数。不要把还不存在的测试文件当参数传给 pytest：pytest 会以用法错误直接退出，基线就会**静默为空**。
+Expected：
+- 打印 `ignored-ok` 和 `config-clean`。**没打印 `config-clean` 就停**：`katrain/config.json` 在跑测试之前就有未提交的改动，先弄清楚是谁的，否则后面「还原被测试改写的 config.json」会把它一起冲掉；
+- `pytest exit=0` 或 `1`（2–5 说明 pytest 本身没跑成，基线作废）；下一行是 pytest 的 summary（形如 `3 failed, 1234 passed … in 95.1s`）；`wc -l` 输出一个数（可以是 0）；
+- 最后打印 vitest 的用例总数和失败数；
+- `git status --short` 为空；如果出现了 `katrain/config.json`（测试改写的），执行 `git checkout -- katrain/config.json` 还原。
+
+不要把还不存在的测试文件当参数传给 pytest：pytest 会以用法错误直接退出，基线就会**静默为空**。
 
 - [ ] **Step 2：先写三个行为测试**
 
@@ -266,7 +296,7 @@ describe('CronPage', () => {
     await flush();
     expect(screen.getByTestId('cron-row-fetch_list')).toBeInTheDocument();
     await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
-    expect(screen.getByTestId('cron-error')).toHaveTextContent('Bad Gateway');
+    expect(screen.getByTestId('cron-error')).toHaveTextContent('502 Bad Gateway');
     expect(screen.getByTestId('cron-error')).toHaveTextContent('页面数据停在');
     expect(screen.getByTestId('cron-row-fetch_list')).toBeInTheDocument();
   });
@@ -283,7 +313,7 @@ describe('CronPage', () => {
     (getCronJobs as Mock).mockRejectedValue(new AdminApiError(503, 'cron 状态表不存在：katrain-web 新版本还没启动过'));
     renderPage();
     await flush();
-    expect(screen.getByTestId('cron-error')).toHaveTextContent('cron 状态表不存在');
+    expect(screen.getByTestId('cron-error')).toHaveTextContent('503 cron 状态表不存在');
   });
 
   it('没有登记任何任务时显示空态说明', async () => {
@@ -405,7 +435,20 @@ const forbiddenFromAdmin = [
 ```
 5b. 在 `forbiddenFromKiosk`、`forbiddenFromServer`、`forbiddenFromShared` 这三个数组的末尾，各加一项 `adminIsPrivate,`。
 
-5c. 在 `defineConfig([ … ])` 的最后一个配置对象之后加：
+5c. 在 `defineConfig([ … ])` 里，紧跟第一个配置对象（`files: ['**/*.{ts,tsx}']` 那一块）之后、kiosk 那一块之前，插入一条兜底规则，管住 `main.tsx`、`AppRouter.tsx`、`GalaxyApp.tsx` 这些没被更窄规则覆盖到的公开入口：
+```js
+  {
+    // 公开入口和其他没被更窄规则覆盖的文件，也不许 import 后台代码。必须放在下面几块之前：flat config 里
+    // 同一条规则，后匹配到的那一块会整个替换前面的选项；下面几块自己的列表里已经带着 adminIsPrivate。
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/admin/**', '**/*.test.{ts,tsx}', '**/__tests__/**'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [adminIsPrivate] }],
+    },
+  },
+```
+
+5d. 在 `defineConfig([ … ])` 的最后一个配置对象之后加：
 ```js
   {
     files: ['src/admin/**/*.{ts,tsx}'],
@@ -499,8 +542,14 @@ export async function adminFetch<T>(path: string, init: RequestInit = {}): Promi
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   const res = await fetch(path, { ...init, method, headers, credentials: 'same-origin' });
   if (res.status === 401) throw new AdminAuthError(await detailOf(res));
-  if (!res.ok) throw new AdminApiError(res.status, (await detailOf(res)) ?? `${res.status} ${res.statusText}`);
+  if (!res.ok) throw new AdminApiError(res.status, (await detailOf(res)) ?? (res.statusText || '请求失败'));
   return (res.status === 204 ? undefined : await res.json()) as T;
+}
+
+/** 错误条上的文字：接口错误带上状态码（spec §6.7「写明状态码和原因」）。 */
+export function errorText(e: unknown): string {
+  if (e instanceof AdminApiError) return `${e.status} ${e.message}`;
+  return e instanceof Error ? e.message : String(e);
 }
 ```
 
@@ -651,13 +700,12 @@ export const healthFixture = (): Promise<AdminHealth> => Promise.resolve({ statu
 ```ts
 import { createTheme } from '@mui/material/styles';
 import { zenTheme } from '../theme';
+import { CHINESE_UI_FONT } from '../galaxy/theme';
 
-// 后台沿用站点的 zen 深色基调；字体用系统自带的中文字体栈，后台不加载网页字体。
-// 具体取值以 Task 1 确认的设计稿为准（superpowers/tracks/admin-console/slice1/design-notes.md）。
-const FONT = "-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif";
-
+// 后台沿用站点的 zen 深色基调；字体栈与 galaxy 中文界面用同一个常量（spec §5.5）。admin.html 不加载网页字体，
+// 没装 'LXGW WenKai' 的机器自然退到系统字体。具体取值以 Task 1 确认的设计稿为准（slice1/design-notes.md）。
 export const adminTheme = createTheme(zenTheme, {
-  typography: { fontFamily: FONT },
+  typography: { fontFamily: CHINESE_UI_FONT },
   components: { MuiTableCell: { styleOverrides: { root: { fontVariantNumeric: 'tabular-nums' } } } },
 });
 ```
@@ -835,6 +883,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Alert, Box, Button, Chip, Paper, Stack, TextField, Typography } from '@mui/material';
 import { useAdminSession } from '../session';
 import { getHealth } from '../api/authApi';
+import { errorText } from '../api/client';
 import type { AdminEnv } from '../api/types';
 import { ENV_COLOR, ENV_LABEL } from '../envLabel';
 
@@ -863,7 +912,7 @@ export default function SignInPage() {
       await signIn(username, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : '登录失败');
+      setError(errorText(err));
     } finally {
       setBusy(false);
     }
@@ -979,6 +1028,7 @@ export default function QueueCards({ queues }: { queues: CronQueuesResponse }) {
 import { useEffect, useState } from 'react';
 import { Alert, Box, Button, Drawer, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { getCronRuns } from '../api/cronApi';
+import { errorText } from '../api/client';
 import type { CronJob, CronRun } from '../api/types';
 import { jobLabel } from '../jobLabels';
 import { fmtDateTime, fmtDuration } from '../format';
@@ -1000,7 +1050,7 @@ export default function RunHistoryDrawer({ job, onClose }: { job: CronJob | null
     setLoading(true);
     getCronRuns(job.name)
       .then((r) => { if (alive) { setRuns(r.runs); setNext(r.next_before_id); } })
-      .catch((e) => { if (alive) setError(e instanceof Error ? e.message : String(e)); })
+      .catch((e) => { if (alive) setError(errorText(e)); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [job]);
@@ -1013,7 +1063,7 @@ export default function RunHistoryDrawer({ job, onClose }: { job: CronJob | null
       setRuns((prev) => [...prev, ...r.runs]);
       setNext(r.next_before_id);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -1078,7 +1128,7 @@ export default function RunHistoryDrawer({ job, onClose }: { job: CronJob | null
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Paper, Skeleton, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { getCronJobs, getCronQueues } from '../api/cronApi';
-import { AdminAuthError } from '../api/client';
+import { AdminAuthError, errorText } from '../api/client';
 import type { CronJob, CronJobsResponse, CronQueuesResponse } from '../api/types';
 import { useAdminSession } from '../session';
 import { jobLabel } from '../jobLabels';
@@ -1121,7 +1171,7 @@ export default function CronPage() {
         expire();
         return;
       }
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     }
   }, [expire]);
 
@@ -1205,8 +1255,10 @@ printf "import { jobLabel } from '../admin/jobLabels';\nexport const x = jobLabe
 npx eslint src/galaxy/__mut_admin.ts; echo "exit=$?"; rm src/galaxy/__mut_admin.ts
 printf "import KioskApp from '../kiosk/KioskApp';\nexport const y = KioskApp;\n" > src/admin/__mut_kiosk.ts
 npx eslint src/admin/__mut_kiosk.ts; echo "exit=$?"; rm src/admin/__mut_kiosk.ts
+printf "import { jobLabel } from './admin/jobLabels';\nexport const z = jobLabel;\n" > src/__mut_public_admin.ts
+npx eslint src/__mut_public_admin.ts; echo "exit=$?"; rm src/__mut_public_admin.ts
 ```
-期望结果：两次都报 `no-restricted-imports`，`exit=1`；两个临时文件都已删除。
+期望结果：三次都报 `no-restricted-imports`，`exit=1`；三个临时文件都已删除。第三次是 src 根目录下的文件，只有 5c 那条兜底规则管得到它。
 
 - [ ] **Step 12：假数据界面能跑起来，也能构建**
 ```bash
@@ -1439,7 +1491,13 @@ PAIRS = [
 
 
 def _shape(model):
-    return {c.name: (type(c.type).__name__, c.nullable, c.primary_key) for c in model.__table__.columns}
+    """每一列决定表能收什么的全部属性：带长度的 SQL 类型、时区、可空、主键、单列索引、有没有默认值；再加上表的具名索引。"""
+    cols = {
+        c.name: (str(c.type), getattr(c.type, "timezone", None), c.nullable, c.primary_key, bool(c.index), c.default is not None)
+        for c in model.__table__.columns
+    }
+    indexes = {(i.name, tuple(col.name for col in i.columns)) for i in model.__table__.indexes}
+    return cols, indexes
 
 
 def test_both_sides_map_identical_columns():
@@ -1561,7 +1619,15 @@ class CronJobRunDB(Base):
     __table_args__ = (Index("ix_cron_job_runs_job_started", "job_name", "started_at"),)
 ```
 - [ ] **Step 5**：重跑 Step 2 的命令。期望结果：2 passed。再跑 `CI=true uv run pytest tests/web_ui/test_cron_import_boundary.py -q -p no:cacheprovider`，期望结果：passed。
-- [ ] **Step 6：变异检查**：临时删掉 cron 侧的 `last_error` 那一行，跑 parity 测试，确认它变红；然后还原（`git checkout -- katrain/cron/models.py` 之前先确认这个文件里只有本任务的改动，否则手工删行再补回）。
+- [ ] **Step 6：变异检查**（本任务的改动还没提交，**不要用 `git checkout` 还原**，那会把它们一起冲掉）：
+```bash
+cd /Users/fan/Repositories/katrain-admin-console
+cp katrain/cron/models.py /private/tmp/claude-501/cron-models.py.bak
+# 变异 1：删掉 cron 侧 CronJobStatusDB 的 last_error 一行；变异 2（先还原再做）：把 cron 侧 job_name 的 String(64) 改成 String(255)
+PYTHONDONTWRITEBYTECODE=1 CI=true uv run pytest tests/web_ui/test_cron_status_tables_parity.py -q -p no:cacheprovider 2>&1 | tail -3
+cp /private/tmp/claude-501/cron-models.py.bak katrain/cron/models.py
+```
+期望结果：两次变异各跑一次，都 FAIL（第二次证明比较已经细到字符串长度，旧写法只比类型类名，会漏掉它）；还原之后重跑 Step 5，2 passed。
 - [ ] **Step 7：提交** `feat(admin): cron 状态 / 运行历史 / 后台审计三张表`（`git add` 上面三个文件）。
 
 ---
@@ -1848,6 +1914,7 @@ def test_admin_logs_in_gets_a_strict_httponly_cookie_and_me(ctx):
     assert r.json() == {"username": "boss", "env": "test"}
     cookie = r.headers["set-cookie"].lower()
     assert cookie.startswith(cookie_name("test")) and "httponly" in cookie and "samesite=strict" in cookie
+    assert "path=/api/admin" in cookie  # cookies ignore ports: keep it off other localhost services' pages
     assert client.get("/api/admin/auth/me").json() == {"username": "boss", "env": "test"}
     assert _audit(Session) == [("login_success", "boss", None)]
 
@@ -1934,7 +2001,8 @@ def test_logout_clears_the_cookie_and_is_audited(ctx):
      照样放行（2026-09-24 实测）。只靠 aud 的话，公开站点的 token 就能进后台。
   2. aud == "katrain-admin"。公开站点解码时不传 audience，带 aud 的令牌会被 jose 以
      "Invalid audience" 拒掉（同日实测），所以后台令牌反过来也进不了公开站点。
-env 也写进令牌和 cookie 名：两条隧道都在 localhost 上，cookie 不分端口。
+env 也写进令牌和 cookie 名：两条隧道都在 localhost 上，cookie 不分端口。Path 限定在 /api/admin：
+浏览器发往本机其他端口的普通页面（开发服务器之类）的请求不会带上它。
 """
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -1949,6 +2017,7 @@ SESSION_TYPE = "admin_session"
 AUDIENCE = "katrain-admin"
 SESSION_HOURS = 8
 CSRF_HEADER = "x-katrain-admin"
+COOKIE_PATH = "/api/admin"
 
 
 def cookie_name(env: str) -> str:
@@ -1975,12 +2044,12 @@ def username_from_token(token: str, env: str) -> str | None:
 def set_session_cookie(response, token: str, env: str) -> None:
     # 不设 secure：只经 SSH 隧道在 http://localhost 上访问。
     response.set_cookie(
-        key=cookie_name(env), value=token, httponly=True, samesite="strict", path="/", max_age=SESSION_HOURS * 3600
+        key=cookie_name(env), value=token, httponly=True, samesite="strict", path=COOKIE_PATH, max_age=SESSION_HOURS * 3600
     )
 
 
 def clear_session_cookie(response, env: str) -> None:
-    response.delete_cookie(key=cookie_name(env), path="/")
+    response.delete_cookie(key=cookie_name(env), path=COOKIE_PATH)
 
 
 def user_repo(request: Request) -> SQLAlchemyUserRepository:
@@ -2124,6 +2193,7 @@ async def me(request: Request, admin: dict = Depends(require_admin)):
     - `.heartbeat(loop_jobs: dict)`
     - `async .heartbeat_forever(loop_jobs, interval, stop: asyncio.Event)`
   - loop 任务需要提供的接口：`job.name`、`job.last_iteration_at: datetime | None`、`job.heartbeat_stats() -> dict`
+  - 行为约定：`register` 把上一个进程留下的 `running` 历史标成 `failed`；`heartbeat` 发现状态行缺失（表是在 register 之后才建的）就补上
 
 - [ ] **Step 1：写测试**
 ```python
@@ -2288,6 +2358,30 @@ def test_loop_crash_then_heartbeat(Session):
     Loop.last_iteration_at = clock.now + timedelta(seconds=15)  # restarted and iterating again
     rec.heartbeat({"analyze": Loop()})
     assert _status(Session, "analyze").consecutive_failures == 0
+
+
+def test_heartbeat_fills_in_rows_when_the_table_appeared_after_register():
+    """cron 比 katrain-web 先启动：register() 时表还不存在。web 建表之后，下一次心跳必须把状态行补上。"""
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    S = sessionmaker(bind=engine)
+    rec = RunRecorder(S, clock=Clock())
+    rec.register([("fetch_list", "interval", 60, True), ("analyze", "loop", None, True)])  # no tables yet: swallowed
+    models_db.Base.metadata.create_all(bind=engine)  # katrain-web starts and creates them
+    rec.heartbeat({})
+    with S() as s:
+        assert sorted(r.job_name for r in s.query(CronJobStatusDB)) == ["analyze", "fetch_list"]
+
+
+def test_register_closes_runs_left_running_by_a_process_that_died(Session):
+    """SIGKILL / OOM：上一个进程开了头、没来得及收尾的那条历史，不能在抽屉里永远「运行中」。"""
+    with Session() as s:
+        s.add(CronJobRunDB(job_name="fetch_list", started_at=Clock().now, status="running", error_count=0))
+        s.commit()
+    _recorder(Session, ("fetch_list", 60))
+    with Session() as s:
+        run = s.query(CronJobRunDB).one()
+        assert (run.status, run.finished_at is not None) == ("failed", True)
+        assert "结束前退出" in run.error
 ```
 - [ ] **Step 2**：`CI=true uv run pytest tests/web_ui/test_cron_run_recorder.py -q -p no:cacheprovider`。期望结果：FAIL，报 `ModuleNotFoundError: katrain.cron.run_recorder`。
 
@@ -2297,7 +2391,7 @@ def test_loop_crash_then_heartbeat(Session):
 
 只依赖标准库、sqlalchemy 和 katrain.cron.*：Dockerfile.cron 只 COPY katrain/cron/，
 由 tests/web_ui/test_cron_import_boundary.py 守着。表由 katrain-web 的 create_all 建；
-cron 如果在 web 建表之前启动，写入会失败，按规矩 1 处理，建表之后自然恢复。
+cron 如果比 web 先启动，登记时表还不存在，写入失败按规矩 1 处理；web 建表之后，下一次心跳会把缺的状态行补上。
 
 三条硬规矩：
 1. 记录器自己出错，只记一条 WARNING，绝不影响任务本身。后果是心跳过期、后台显示「失联」：
@@ -2324,6 +2418,7 @@ logger = logging.getLogger("katrain_cron.recorder")
 ERROR_TEXT_LIMIT = 2000
 # 间隔 ≥ 60 秒的任务，每次运行都进历史；更频繁的（poll_moves 3 秒一次）只记不成功的那几次。
 RECORD_EVERY_RUN_MIN_INTERVAL = 60
+PREVIOUS_PROCESS_EXITED = "cron 进程在这次运行结束前退出了（重启、部署或被杀）"
 
 
 def utcnow() -> datetime:
@@ -2387,18 +2482,26 @@ class RunRecorder:
     def __init__(self, session_factory, clock=utcnow):
         self._session_factory = session_factory
         self._clock = clock
+        self._registry: list[tuple[str, str, int | None, bool]] = []
+        self._process_started_at: datetime | None = None
         self._intervals: dict[str, int | None] = {}
         self._loops: dict[str, _LoopState] = {}
 
     # ── 进程启动时登记 ────────────────────────────────────────────────────────
     def register(self, jobs: list[tuple[str, str, int | None, bool]]) -> None:
-        """jobs = [(name, kind, interval_seconds, enabled)]，停用的也登记。删掉代码里已经不存在的旧行。"""
+        """jobs = [(name, kind, interval_seconds, enabled)]，停用的也登记。删掉代码里已经不存在的旧行。
+        上一个 cron 进程开了头、没来得及收尾的运行（重启、部署、SIGKILL、OOM），一律标成失败，
+        不让它在历史里永远「运行中」。表还不存在时（cron 比 web 先启动）这里会失败，由 heartbeat 补登记。"""
+        self._registry = list(jobs)
         self._intervals = {name: interval for name, _kind, interval, _enabled in jobs}
-        self._write(self._register_rows, jobs, self._clock())
+        self._process_started_at = self._clock()
+        self._write(self._register_rows, self._process_started_at)
 
-    def _register_rows(self, db, jobs, now):
-        db.execute(delete(CronJobStatusDB).where(CronJobStatusDB.job_name.notin_([j[0] for j in jobs])))
-        for name, kind, interval, enabled in jobs:
+    def _register_rows(self, db, now):
+        db.execute(delete(CronJobStatusDB).where(CronJobStatusDB.job_name.notin_([j[0] for j in self._registry])))
+        for run in db.query(CronJobRunDB).filter(CronJobRunDB.status == "running"):
+            run.status, run.finished_at, run.error = "failed", now, PREVIOUS_PROCESS_EXITED
+        for name, kind, interval, enabled in self._registry:
             row = db.get(CronJobStatusDB, name)
             if row is None:
                 row = CronJobStatusDB(job_name=name, consecutive_failures=0)
@@ -2408,7 +2511,7 @@ class RunRecorder:
 
     # ── interval 任务 ─────────────────────────────────────────────────────────
     async def run(self, job) -> None:
-        """包住一次 interval 运行。任务的异常原样再抛，交给调用方（APScheduler / _run_job_once）记日志。"""
+        """包住一次 interval 运行。任务的异常原样再抛，交给调用方（APScheduler）记日志。"""
         name = job.name
         keep = (self._intervals.get(name) or 0) >= RECORD_EVERY_RUN_MIN_INTERVAL
         started = self._clock()
@@ -2430,6 +2533,7 @@ class RunRecorder:
             _current_sink.reset(token)
             if not cancelled:  # 进程关停时被取消：不写结束；下次启动时那一次立即运行会覆盖状态
                 status = "failed" if exc is not None else ("errors" if sink.count else "success")
+                # 吞掉异常的运行记第一条 ERROR：后面的报错多半是它引起的；error_count 记着一共几条。
                 error = f"{type(exc).__name__}: {exc}"[:ERROR_TEXT_LIMIT] if exc is not None else sink.first
                 duration_ms = int((time.monotonic() - t0) * 1000)
                 self._write(self._finish_rows, name, run_id, started, status, error, sink.count, duration_ms, keep)
@@ -2503,7 +2607,13 @@ class RunRecorder:
         self._write(self._heartbeat_rows, self._clock(), snapshot)
 
     def _heartbeat_rows(self, db, now, snapshot):
-        for row in db.query(CronJobStatusDB).filter(CronJobStatusDB.job_name.in_(list(self._intervals))):
+        rows = {r.job_name: r for r in db.query(CronJobStatusDB).filter(CronJobStatusDB.job_name.in_(list(self._intervals)))}
+        for name, kind, interval, enabled in self._registry:
+            if name not in rows:  # register() ran before katrain-web had created the table: fill the row in now
+                rows[name] = CronJobStatusDB(job_name=name, kind=kind, interval_seconds=interval, enabled=enabled,
+                                             consecutive_failures=0, process_started_at=self._process_started_at)
+                db.add(rows[name])
+        for row in rows.values():
             row.heartbeat_at = row.updated_at = now
             if row.job_name not in snapshot:
                 continue
@@ -2551,23 +2661,22 @@ class RunRecorder:
 
 **Interfaces:**
 - Consumes：Task 7 的 `install_error_capture()`、`RunRecorder(session_factory)`、`.register(jobs)`、`async .run(job)`、`.enter_loop(name) -> Token`、`.exit_loop(token)`、`.loop_started(name)`、`.record_loop_crash(name, exc)`、`async .heartbeat_forever(loop_jobs, interval, stop)`；Task 4 的 `CronJobRunDB`
-- Produces：`AnalyzeJob.last_iteration_at: datetime | None` 和 `AnalyzeJob.heartbeat_stats() -> {"in_flight": int, "capacity": int}`，`ReportAnalyzerJob` 也有这两项；`config.HEARTBEAT_INTERVAL`（默认 30）、`config.RUNS_RETENTION_DAYS`（默认 14）；`CronScheduler._recorder`（测试会替换它）
+- Produces：`AnalyzeJob.last_iteration_at: datetime | None` 和 `AnalyzeJob.heartbeat_stats() -> {"in_flight": int, "capacity": int}`，`ReportAnalyzerJob` 也有这两项；`config.HEARTBEAT_INTERVAL`（默认 30）、`config.RUNS_RETENTION_DAYS`（默认 14）；`CronScheduler._schedule(job, interval)`：每一次运行（包括启动时立刻跑的那一次）都经 APScheduler 和记录器
 
 - [ ] **Step 1：追加测试**（加在 `test_cron_run_recorder.py` 末尾）：
 ```python
-def test_scheduler_routes_startup_runs_through_the_recorder():
+def test_every_interval_run_is_started_by_apscheduler_through_the_recorder():
+    """包括启动时立刻跑的那一次：只有一条路径，max_instances=1 才管得住全部运行。"""
     from katrain.cron.scheduler import CronScheduler
 
     sched = CronScheduler()
-    calls = []
-
-    class FakeRecorder:
-        async def run(self, job):
-            calls.append(job.name)
-
-    sched._recorder = FakeRecorder()
-    asyncio.run(sched._run_job_once(Job("fetch_list", _ok)))
-    assert calls == ["fetch_list"]
+    added = []
+    sched._scheduler.add_job = lambda func, trigger, **kw: added.append((func, trigger, kw))
+    sched._schedule(Job("fetch_list", _ok), 60)
+    ((func, trigger, kw),) = added
+    assert func == sched._recorder.run and trigger == "interval"
+    assert kw["args"][0].name == "fetch_list" and kw["seconds"] == 60 and kw["max_instances"] == 1
+    assert kw["next_run_time"] is not None  # first run right away, still through APScheduler
 
 
 def test_loop_jobs_expose_heartbeat_stats_without_touching_the_db():
@@ -2597,7 +2706,7 @@ def test_cleanup_prunes_cron_runs_older_than_retention(Session, monkeypatch):
     with Session() as s:
         assert s.query(CronJobRunDB).count() == 1
 ```
-- [ ] **Step 2**：`CI=true uv run pytest tests/web_ui/test_cron_run_recorder.py -q -p no:cacheprovider`。期望结果：新加的三条都 FAIL。`test_scheduler_routes_…` 是断言 `[] == ['fetch_list']` 不成立，因为启动时那一次运行还没有经过记录器；另外两条报 `AttributeError`（`last_iteration_at`、`RUNS_RETENTION_DAYS`）。
+- [ ] **Step 2**：`CI=true uv run pytest tests/web_ui/test_cron_run_recorder.py -q -p no:cacheprovider`。期望结果：新加的三条都 FAIL，都报 `AttributeError`：`_schedule`、`last_iteration_at`、`RUNS_RETENTION_DAYS` 都还不存在。
 
 - [ ] **Step 3：`config.py`**。在 `CLEANUP_INTERVAL = …` 那一行之后加：
 ```python
@@ -2616,6 +2725,7 @@ Every run goes through RunRecorder (katrain/cron/run_recorder.py) so katrain-adm
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -2671,29 +2781,13 @@ class CronScheduler:
         self._scheduler.start()
         logger.info("Scheduler started")
 
-        # Register and immediately run each job once, then schedule for intervals
+        # Every run -- the first one, right now, included -- is started by APScheduler (see _schedule)
         for job_cls, interval, enabled in interval_jobs:
             if not enabled:
                 logger.info("Job %s is disabled, skipping", job_cls.name)
                 continue
-            job = job_cls()
-
-            # Run immediately on startup (non-blocking)
-            logger.info("Running %s immediately on startup", job.name)
-            asyncio.create_task(self._run_job_once(job))
-
-            # Schedule for regular intervals — through the recorder, like the startup run
-            self._scheduler.add_job(
-                self._recorder.run,
-                "interval",
-                args=[job],
-                seconds=interval,
-                id=job.name,
-                name=job.name,
-                max_instances=1,
-                misfire_grace_time=interval,
-            )
-            logger.info("Registered job %s (interval=%ds)", job.name, interval)
+            self._schedule(job_cls(), interval)
+            logger.info("Registered job %s (interval=%ds, first run now)", job_cls.name, interval)
 
         # AnalyzeJob runs as a persistent async loop, not via APScheduler interval
         if config.ANALYZE_ENABLED:
@@ -2723,12 +2817,21 @@ class CronScheduler:
         # Block until shutdown signal
         await self._shutdown_event.wait()
 
-    async def _run_job_once(self, job):
-        """Run a job once (through the recorder), logging any errors without crashing."""
-        try:
-            await self._recorder.run(job)
-        except Exception:
-            logger.exception("Job %s failed on startup", job.name)
+    def _schedule(self, job, interval: int) -> None:
+        """每一次运行（包括启动时立刻跑的那一次）都由 APScheduler 发起，max_instances=1 管得住全部运行，
+        记录器同一时刻只看得到这个任务的一次运行。以前启动那一次是单独 create_task 的，不受 max_instances
+        约束：它若比后面一次定时运行更晚结束，就会把较旧的结果盖到状态行上。"""
+        self._scheduler.add_job(
+            self._recorder.run,
+            "interval",
+            args=[job],
+            seconds=interval,
+            id=job.name,
+            name=job.name,
+            max_instances=1,
+            misfire_grace_time=interval,
+            next_run_time=datetime.now(timezone.utc),
+        )
 
     async def _run_analyze_loop(self, job):
         """Run a persistent loop job continuously, restarting on unexpected errors."""
@@ -3021,27 +3124,26 @@ import pytest
 from katrain.web.core import models_db
 from tests.web_ui._admin_helpers import login, make_admin_client
 
-NOW = datetime.now(timezone.utc)
-
-
 @pytest.fixture
 def ctx(monkeypatch, tmp_path):
+    # 「现在」在夹具执行时取，不在模块导入时取：全量测试跑得久，导入时取的时间会让心跳老过 120 秒、变成失联。
+    now = datetime.now(timezone.utc)
     client, Session, engine = make_admin_client(monkeypatch, tmp_path)
     with Session() as s:
         s.add(models_db.CronJobStatus(job_name="fetch_list", kind="interval", interval_seconds=60, enabled=True,
-                                      process_started_at=NOW - timedelta(hours=1), heartbeat_at=NOW - timedelta(seconds=10),
-                                      last_started_at=NOW - timedelta(seconds=20), last_status="success", consecutive_failures=0))
+                                      process_started_at=now - timedelta(hours=1), heartbeat_at=now - timedelta(seconds=10),
+                                      last_started_at=now - timedelta(seconds=20), last_status="success", consecutive_failures=0))
         s.add(models_db.CronJobStatus(job_name="analyze", kind="loop", interval_seconds=None, enabled=True,
-                                      heartbeat_at=NOW - timedelta(seconds=10), last_status="running", consecutive_failures=0,
-                                      loop_iteration_at=NOW - timedelta(seconds=3),
+                                      heartbeat_at=now - timedelta(seconds=10), last_status="running", consecutive_failures=0,
+                                      loop_iteration_at=now - timedelta(seconds=3),
                                       loop_stats={"in_flight": 2, "capacity": 16, "errors_total": 0, "last_error_at": None}))
         for i in range(60):
-            s.add(models_db.CronJobRun(job_name="fetch_list", started_at=NOW - timedelta(minutes=60 - i), status="success", error_count=0))
-        s.add(models_db.ReportTask(user_id=1, user_game_id="g1", status="pending", created_at=NOW - timedelta(minutes=5)))
-        s.add(models_db.ReportTask(user_id=1, user_game_id="g2", status="pending", created_at=NOW - timedelta(minutes=2)))
+            s.add(models_db.CronJobRun(job_name="fetch_list", started_at=now - timedelta(minutes=60 - i), status="success", error_count=0))
+        s.add(models_db.ReportTask(user_id=1, user_game_id="g1", status="pending", created_at=now - timedelta(minutes=5)))
+        s.add(models_db.ReportTask(user_id=1, user_game_id="g2", status="pending", created_at=now - timedelta(minutes=2)))
         s.add(models_db.ReportTask(user_id=1, user_game_id="g3", status="completed"))
         s.commit()
-    return client, Session, engine
+    return client, engine, now
 
 
 def test_everything_needs_a_session(ctx):
@@ -3075,17 +3177,17 @@ def test_runs_are_newest_first_and_paginate(ctx):
 
 
 def test_queues_count_by_status_and_report_the_oldest_pending(ctx):
-    client, _, _ = ctx
+    client, _, now = ctx
     login(client)
     body = client.get("/api/admin/cron/queues").json()
     assert body["report_tasks"]["by_status"] == {"pending": 2, "completed": 1}
     oldest = datetime.fromisoformat(body["report_tasks"]["oldest_pending_at"].replace("Z", "+00:00"))
-    assert abs((oldest - (NOW - timedelta(minutes=5))).total_seconds()) < 1
+    assert abs((oldest - (now - timedelta(minutes=5))).total_seconds()) < 1
     assert body["live_analysis"] == {"by_status": {}, "oldest_pending_at": None}
 
 
 def test_jobs_say_503_when_the_tables_do_not_exist(ctx):
-    client, _, engine = ctx
+    client, engine, _ = ctx
     login(client)
     models_db.CronJobStatus.__table__.drop(engine)
     r = client.get("/api/admin/cron/jobs")
@@ -3278,6 +3380,7 @@ def test_admin_runs_the_web_image_with_the_admin_entrypoint():
   katrain-admin:
     image: katrain-web:local
     container_name: katrain-admin
+    pull_policy: never   # 镜像由上面 katrain-web 那一项在本机构建；测试机连不上 Docker Hub，不许去拉
     command: ["python3", "-m", "katrain.web.admin", "--host", "0.0.0.0", "--port", "8010"]
     depends_on:
       - katrain-web
@@ -3292,9 +3395,16 @@ def test_admin_runs_the_web_image_with_the_admin_entrypoint():
       - "host.docker.internal:host-gateway"
 ```
 - [ ] **Step 4：`Dockerfile.web`**：把 `RUN cd katrain/web/ui && npm install && npm run build` 改成 `RUN cd katrain/web/ui && npm install && npm run build && npm run build:admin`。
-- [ ] **Step 5：`server-deploy` skill**：
-  - 在容器表 `| katrain-cron | … |` 那一行之后加：`| katrain-admin | katrain-web:local（同一镜像） | 127.0.0.1:8010 | — | **compose** | 管理后台，只经 SSH 隧道访问（docs/operations/admin-console-access.md） |`；
-  - 第 7 步的命令改成 `docker compose up -d --build katrain-web katrain-cron katrain-admin`；
+- [ ] **Step 5：`server-deploy` skill**（`.claude/skills/server-deploy/SKILL.md`。凡是写死了服务集合的地方都要改，漏一处，照着它部署的人就会漏掉 admin）：
+  - 架构图：`katrain-cron` 那个框下面加一个框：
+```
+                 ┌───────────────┐
+  127.0.0.1:8010 │ katrain-admin │ 管理后台：与 katrain-web 同一个镜像，只经 SSH 隧道访问
+                 └───────────────┘
+```
+  - 容器表 `| katrain-cron | … |` 那一行之后加：`| katrain-admin | katrain-web:local（同一镜像） | 127.0.0.1:8010 | — | **compose** | 管理后台，只经 SSH 隧道访问（docs/operations/admin-console-access.md） |`；
+  - 表格下面那段说明：「manages **web + cron + minio + minio-setup**」改成「manages **web + cron + admin + minio + minio-setup**」，「only ever touches web/cron/minio」改成「only ever touches web/cron/admin/minio」；
+  - 第 7 步：标题改成「Rebuild & restart KaTrain web/cron/admin」；命令改成 `docker compose up -d --build katrain-web katrain-cron katrain-admin`；正文补一句「`katrain-admin` 用 katrain-web 刚构建出来的同一个镜像（`pull_policy: never`），不单独构建」；
   - 第 8 步加一行 `curl -s http://127.0.0.1:8010/api/admin/health   # {"status":"ok","env":"test"}`。
 - [ ] **Step 6：写 `docs/operations/admin-console-access.md`**
 ````markdown
@@ -3334,7 +3444,7 @@ sudo chmod 600 "/home/admintunnel-$NAME/.ssh/authorized_keys"
 这样的账号只能把本机端口转发到 127.0.0.1:8010，拿不到 shell，也连不到服务器上的其他端口。后台账号本身（`users.is_admin`）另外开。
 ````
 - [ ] **Step 7**：重跑 Step 2 的命令，期望结果：2 passed。再执行 `docker compose config -q && echo compose-ok`，期望结果：`compose-ok`（需要本机有 Docker；没有的话，这一步留到 Task 14 在测试机上执行）。
-- [ ] **Step 8：变异检查**：把端口临时改成 `"8010:8010"`，确认 `test_admin_is_published_on_loopback_only` 变红；然后还原。
+- [ ] **Step 8：变异检查**：先 `cp docker-compose.yml /private/tmp/claude-501/compose.yml.bak`，把端口临时改成 `"8010:8010"`，确认 `test_admin_is_published_on_loopback_only` 变红；然后 `cp /private/tmp/claude-501/compose.yml.bak docker-compose.yml` 还原（不要用 `git checkout`，本任务的改动还没提交）。
 - [ ] **Step 9：提交** `deploy(admin): 测试机 compose 加 katrain-admin（只绑 127.0.0.1）+ 访问文档`。
 
 ---
@@ -3453,16 +3563,14 @@ git commit -m "test(admin): 本机 web+cron+admin 集成验证截图" -m "Co-Aut
   - `git rm -r katrain/web/ui/src/admin/__fixtures__`；
   - 删掉 `cronApi.ts` 和 `authApi.ts` 里的 `useFixture`、`fixture` 两个常量，以及每个函数里 `if (useFixture) …` / `useFixture ? … :` 的那一支，只留 `adminFetch` 调用；
   - 确认：`grep -rn "VITE_ADMIN_FIXTURE\|__fixtures__\|useFixture" katrain/web/ui/src/admin`，期望没有输出。
-- [ ] **Step 2：Python 全量对比基线**：
+- [ ] **Step 2：Python 全量，按名字和基线比**：
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console
-CI=true uv run pytest tests/web_ui -q -p no:cacheprovider --continue-on-collection-errors -rfE 2>&1 \
-  | grep -E '^(FAILED|ERROR) ' | sed -E 's/ - .*//' | sort -u > .superpowers/baseline/cron_slice_failed_after.txt
-comm -13 .superpowers/baseline/cron_slice_failed_before.txt .superpowers/baseline/cron_slice_failed_after.txt
-CI=true uv run pytest tests/test_admin_compose.py -q -p no:cacheprovider
-git status --short; git checkout -- katrain/config.json 2>/dev/null || true
+bash .superpowers/baseline/newfail.sh .superpowers/baseline/cron_slice_failed_before.txt tests/web_ui --continue-on-collection-errors; echo "newfail exit=$?"
+set -o pipefail; CI=true uv run pytest tests/test_admin_compose.py -q -p no:cacheprovider 2>&1 | tail -2; echo "compose exit=$?"
+git status --short
 ```
-期望结果：`comm` 没有输出（没有新增的失败）；`test_admin_compose.py` 2 passed。
+期望结果：`newfail exit=0`；`compose exit=0`（2 passed）。`git status` 里出现了 `katrain/config.json` 的话（测试改写的；Task 2 Step 1 已确认它在测试之前是干净的），执行 `git checkout -- katrain/config.json` 还原。
 - [ ] **Step 3：前端：vitest 按名字和基线做差，三套构建，公开包和 kiosk 包里没有后台代码**
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console/katrain/web/ui
@@ -3493,14 +3601,14 @@ Expected：`comm` 没有输出；eslint 没有 error；三个构建都以 `built
 ### Task 14: 🛑 部署测试机，Fan 验收（推送和部署前都要 Fan 点头）
 
 **Interfaces:**
-- Consumes：Task 11 的 compose 服务 `katrain-admin` 和 `server-deploy` 的第 7、8 步；切片 0 Task 5 在测试机上授权的管理员账号
+- Consumes：Task 11 的 compose 服务 `katrain-admin` 和 `server-deploy` 的第 7、8 步；切片 0 Task 6 在测试机上实测过能登录的管理员账号
 
-- [ ] **Step 1**：跟上 develop，再快进推送：
+- [ ] **Step 1**：跟上 develop，跑本切片的测试；测试通过、🛑 Fan 点头之后再快进推送：
 ```bash
 cd /Users/fan/Repositories/katrain-admin-console && git fetch origin && git merge --no-edit origin/develop
-CI=true uv run pytest tests/web_ui/test_admin_app.py tests/web_ui/test_admin_auth.py tests/web_ui/test_admin_cron_api.py tests/web_ui/test_admin_cron_health.py tests/web_ui/test_cron_run_recorder.py tests/web_ui/test_cron_status_tables_parity.py tests/test_admin_compose.py -q -p no:cacheprovider
-git push origin HEAD:develop
+CI=true uv run pytest tests/web_ui/test_admin_app.py tests/web_ui/test_admin_auth.py tests/web_ui/test_admin_cron_api.py tests/web_ui/test_admin_cron_health.py tests/web_ui/test_cron_run_recorder.py tests/web_ui/test_cron_status_tables_parity.py tests/test_admin_compose.py -q -p no:cacheprovider; echo "pytest exit=$?"
 ```
+期望结果：`pytest exit=0`。然后才执行 `git push origin HEAD:develop`（被拒说明 develop 又前进了：重新 fetch、merge、测试、push）。
 - [ ] **Step 2**：`ssh home-ubuntu "cd ~/Repositories/katrain && git pull --ff-only && docker compose up -d --build katrain-web katrain-cron katrain-admin && docker ps --format '{{.Names}}\t{{.Status}}\t{{.Ports}}' | grep katrain"`
 - [ ] **Step 3：验证**：
 ```bash
@@ -3511,7 +3619,7 @@ ssh home-ubuntu "docker exec katrain-postgres psql -U katrain_user -d katrain_db
 ```
 - [ ] **Step 4**：开隧道 `ssh -N -L 8010:127.0.0.1:8010 home-ubuntu`，在浏览器里打开 http://localhost:8010：
   - 页头显示「测试环境」；
-  - 用 Fan 的管理员账号登录（切片 0 的 Task 5 已经授权）；
+  - 用 Fan 的管理员账号登录（切片 0 的 Task 6 已经授权并实测过）；
   - 9 个任务都有真实状态。
 - [ ] **Step 5：🛑 Fan 验收。** 验收通过后，切片 1 才算满足 vertical-slice 的「完成的定义」：可部署、状态诚实、已集成、已验收、fixture 已删。
 
@@ -3519,22 +3627,24 @@ ssh home-ubuntu "docker exec katrain-postgres psql -U katrain_user -d katrain_db
 
 ### Task 15: 🛑 生产部署（每一步都要 Fan 点头）
 
-**Files**（release 分支，在 Step 2 建的临时 worktree 里）:
+**Files**（release 分支，在 Step 2 建的临时 worktree `/private/tmp/claude-501/rel-admin-console` 里）:
 - Modify：`Dockerfile.web`、`deploy/ucloud/compose.yml`、`deploy/ucloud/scripts/build-web.sh`、`tests/deploy/test_ucloud_artifacts.py`、`docs/operations/ucloud-migration-runbook.md`
 
 **Interfaces:**
-- Consumes：develop 上本切片的全部提交；切片 0 Task 5 在生产上授权的管理员账号（容器名、库名以那一步实际查到的为准）
+- Consumes：develop 上本切片的全部提交；切片 0 Task 6 在生产上实测过能登录的管理员账号（容器名、库名以切片 0 Task 6 Step 1 实际查到的为准）
 - Produces：生产上的 `katrain-admin` 服务（只绑 127.0.0.1:8010）、三张新表、runbook 里的一条发布记录
 
-- [ ] **Step 1：先把连带发布的提交列给 Fan**：`git -C /Users/fan/Repositories/katrain log --oneline --no-merges origin/release/ucloud-20260805..origin/develop`。发布会连带 develop 自上次发布以来的全部提交；🛑 Fan 同意后再继续。
-- [ ] **Step 2：合并到 release**（临时 worktree）：
+- [ ] **Step 1：先把连带发布的提交列给 Fan**：`git -C /Users/fan/Repositories/katrain fetch origin && git -C /Users/fan/Repositories/katrain log --oneline --no-merges origin/release/ucloud-20260805..origin/develop`。发布会连带 develop 自上次发布以来的全部提交；🛑 Fan 同意后再继续。
+- [ ] **Step 2：合并到 release**（临时 worktree；路径写成字面量，因为每次调用 Bash 都是新 shell）：
 ```bash
-cd /Users/fan/Repositories/katrain && git fetch origin
-REL=/private/tmp/claude-501/rel-admin-console
-git worktree add "$REL" -b release-merge-admin-console origin/release/ucloud-20260805
-cd "$REL" && git merge --no-edit origin/develop || git status --short | grep '^UU'
+git -C /Users/fan/Repositories/katrain worktree add /private/tmp/claude-501/rel-admin-console -b release-merge-admin-console origin/release/ucloud-20260805
+cd /private/tmp/claude-501/rel-admin-console && git merge --no-edit origin/develop; echo "merge exit=$?"; git status --short | grep '^UU' || true
 ```
-**`Dockerfile.web` 一定会冲突**：develop 和 release 各有一份完全不同的 Dockerfile.web。冲突时保留 release 的版本（`git checkout --ours Dockerfile.web`），然后手工加上 Step 3 的两处改动。其他冲突逐个判断。合并即使报「无冲突」，也要看一眼 `server.py` 里 `if settings.PREVIEW_MODE:` 守卫附近，确认没有启动期写库的动作跑到守卫外面去。
+`Dockerfile.web` 几乎一定会冲突：develop 和 release 各有一份完全不同的 Dockerfile.web。冲突时保留 release 的版本（`git checkout --ours Dockerfile.web && git add Dockerfile.web`），再手工加上 Step 3 的改动。其他冲突逐个判断，release 一侧的 `PREVIEW_MODE` 守卫一律保留。合并提交之后核对：
+```bash
+grep -c '^FROM' /private/tmp/claude-501/rel-admin-console/Dockerfile.web
+```
+期望结果：`4`，即 release 自己那份 4 阶段构建。develop 那份只有 1 个 `FROM`：看到 1 就说明合并把它换掉了。
 - [ ] **Step 3：release 分支上的四处改动**
   1. `Dockerfile.web`：ui-builder 阶段把 `RUN npm run build` 改成 `RUN npm run build && npm run build:admin`；runtime 阶段在 `COPY --from=ui-builder --chown=10001:10001 /src/static /app/katrain/web/static` 之后加 `COPY --from=ui-builder --chown=10001:10001 /src/static-admin /app/katrain/web/static-admin`；source-pruner 的 `rm -rf` 列表加上 `/app/katrain/web/static-admin \`。
   2. `deploy/ucloud/compose.yml`：在 `katrain-cron:` 之前加：
@@ -3588,39 +3698,137 @@ def test_admin_console_is_production_only_and_loopback_only():
     assert admin["command"][:3] == ["python3", "-m", "katrain.web.admin"]
     assert admin["environment"]["KATRAIN_ADMIN_ENV"] == "prod"
 ```
-  然后执行：`cd "$REL" && uv sync --extra web && CI=true uv run pytest tests/deploy -q -p no:cacheprovider`，期望结果：全部通过。提交后，🛑 Fan 点头再 `git push origin HEAD:release/ucloud-20260805`。
-- [ ] **Step 4：在 ucloud-v100 上发布**（每一行执行前都要 Fan 点头）。跟切片 0 的发布比有三处不同，已经写进下面的命令：`CRON_IMAGE` 这次一定要重建（`katrain/cron/` 改了）；这次有 DDL（katrain-web 启动时建三张新表），备份和实际恢复验证不能省；dry-run 和 `up -d` 带上三个服务。容器名 `katrain-ucloud-postgres-1` 和库名 `katrain_prod_20260725` 以切片 0 Task 5 Step 1 实际查到的为准。
+  然后在合并结果上跑 release 的闸：部署产物测试；preview 守卫（preview 模式下，结算、回收预扣、补账、周期结算、直播、平台初始化这 7 个会写生产的动作一个都不许跑；合并报「无冲突」也不等于守卫还在）；本切片的测试。
 ```bash
-SHA=<release 分支尖端的 short sha：Step 3 推送之后在本机执行 git -C "$REL" rev-parse --short HEAD>
-sudo git clone --depth 1 --branch release/ucloud-20260805 https://github.com/shevapato2008/katrain.git /opt/katrain/releases/$SHA
-sudo git -C /opt/katrain/releases/$SHA rev-parse --short HEAD          # 必须等于 $SHA
-cd /opt/katrain/releases/$SHA
-sudo deploy/ucloud/scripts/build-web.sh katrain-web:$SHA              # 记下输出的 image_id，下面叫 <WEB_ID>
-sudo docker build --pull=false -f Dockerfile.cron -t katrain-cron:$SHA .
-sudo docker image inspect --format '{{.Id}}' katrain-cron:$SHA         # 下面叫 <CRON_ID>
-TS=$(date +%Y%m%d-%H%M)
-sudo sh -c "docker exec katrain-ucloud-postgres-1 pg_dump -U katrain_user -Fc katrain_prod_20260725 > /opt/katrain/backups/prod-$TS.dump"
-sudo docker exec katrain-ucloud-postgres-1 createdb -U katrain_user katrain_restore_verify_$TS
-sudo sh -c "docker exec -i katrain-ucloud-postgres-1 pg_restore -U katrain_user -d katrain_restore_verify_$TS < /opt/katrain/backups/prod-$TS.dump"; echo "pg_restore exit=$?"
-for t in $(sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c "select tablename from pg_tables where schemaname='public' order by 1"); do
-  a=$(sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c "select count(*) from \"$t\"")
-  b=$(sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_restore_verify_$TS -At -c "select count(*) from \"$t\"")
-  [ "$a" = "$b" ] || echo "MISMATCH $t $a $b"
-done; echo "row-count compare done"
-sudo docker exec katrain-ucloud-postgres-1 dropdb -U katrain_user katrain_restore_verify_$TS
-sudo cp /etc/katrain/ucloud.env /opt/katrain/backups/ucloud.env.$(date +%Y%m%dT%H%M%S).bak
-sudo sed -i "s|^WEB_IMAGE=.*|WEB_IMAGE=<WEB_ID>|; s|^CRON_IMAGE=.*|CRON_IMAGE=<CRON_ID>|" /etc/katrain/ucloud.env
-sudo stat -c '%U:%G %a' /etc/katrain/ucloud.env                                               # 必须是 root:root 600
-sudo deploy/ucloud/scripts/preflight.sh --phase full --env-file /etc/katrain/ucloud.env       # 只有容量闸红属于历次都有的已知情况，要明说
-sudo ln -sfn /opt/katrain/releases/$SHA /opt/katrain/current
-cd /opt/katrain/current
-sudo docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d --dry-run katrain-web katrain-cron katrain-admin
-sudo docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-web katrain-cron katrain-admin
+cd /private/tmp/claude-501/rel-admin-console && uv sync --extra web
+set -o pipefail
+CI=true uv run pytest tests/deploy "tests/web_ui/test_backend_setup.py::test_preview_mode_keeps_local_app_without_production_effects" -q -p no:cacheprovider 2>&1 | tail -3; echo "gate exit=$?"
+CI=true uv run pytest tests/web_ui/test_admin_app.py tests/web_ui/test_admin_auth.py tests/web_ui/test_admin_cron_api.py tests/web_ui/test_admin_cron_health.py tests/web_ui/test_cron_run_recorder.py tests/web_ui/test_cron_status_tables_parity.py tests/web_ui/test_cron_import_boundary.py -q -p no:cacheprovider 2>&1 | tail -3; echo "slice exit=$?"
 ```
-Expected：
-- `pg_restore exit=0`，而且没有任何 `MISMATCH` 行；
-- dry-run 的输出里只重建 `katrain-web`、`katrain-cron`、`katrain-admin`，外加一次性的 `minio-setup`；`katago-*` 和 `postgres` 只出现 `Waiting` / `Healthy`；
-- `up -d` 之后 katrain-web、katrain-admin 转为 healthy，katrain-cron 为 Up。
+  期望结果：`gate exit=0`、`slice exit=0`，有一个不是 0 就不许推。提交之后，🛑 Fan 点头再执行 `git -C /private/tmp/claude-501/rel-admin-console push origin HEAD:release/ucloud-20260805`，然后用 `git -C /private/tmp/claude-501/rel-admin-console rev-parse --short HEAD` 取得下面的 `<SHA>`。
+- [ ] **Step 4：在 ucloud-v100 上发布**（每一条执行前都要 Fan 点头）。每次 `ssh` 都是新 shell：`<SHA>`、`<TS>`、`<WEB_ID>`、`<CRON_ID>` 在每条命令里写成字面量；回滚锚点写进服务器上的 `/opt/katrain/backups/anchors-<SHA>.txt`。容器名和库名以切片 0 Task 6 Step 1 实际查到的为准。和切片 0 的发布相比有三处不同：`CRON_IMAGE` 这次一定要重建（`katrain/cron/` 改了）；这次有 DDL（katrain-web 启动时建三张新表）；多了一个服务 `katrain-admin`，而且要先起 web、建好表，再起 cron 和 admin。
+
+4a. **先看盘，再动手**。取代码、构建两个镜像、pg_dump、恢复验证库都要占盘，峰值约 6–7 GB：
+```bash
+ssh ucloud-v100 "df -B1 -P /; ls -1 /opt/katrain/releases; readlink /opt/katrain/current"
+```
+Expected：可用空间（`df` 第 4 列）≥ 10 GB 才继续。不够就停下，把 `releases/` 清单和 `current` 的指向交给 Fan，由他决定回收哪几个旧 release 目录。**`current` 指向的那个目录不能删，那是回滚锚点。**
+
+4b. **记下回滚锚点**（镜像 ID 不是密钥；env 里其他行一律不打印）：
+```bash
+ssh ucloud-v100 'sudo bash -s' <<'SH'
+set -euo pipefail
+A=/opt/katrain/backups/anchors-<SHA>.txt
+OLD=$(readlink /opt/katrain/current)
+W=$(grep '^WEB_IMAGE=' /etc/katrain/ucloud.env | cut -d= -f2)
+C=$(grep '^CRON_IMAGE=' /etc/katrain/ucloud.env | cut -d= -f2)
+docker image inspect --format '{{.Id}}' "$W" "$C" > /dev/null
+printf 'OLD_RELEASE=%s\nOLD_WEB_IMAGE=%s\nOLD_CRON_IMAGE=%s\n' "$OLD" "$W" "$C" | tee "$A"
+SH
+```
+Expected：打印三行 `OLD_RELEASE=…`、`OLD_WEB_IMAGE=sha256:…`、`OLD_CRON_IMAGE=sha256:…`，没有报错，即两个旧镜像都还在（回滚要用）。
+
+4c. **取代码**（不接管道。runbook 2026-09-23：`clone --depth 1` 连败两次，那次是靠旧目录增量 fetch 再 archive 发出去的）：
+```bash
+ssh ucloud-v100 "sudo git clone --depth 1 --branch release/ucloud-20260805 https://github.com/shevapato2008/katrain.git /opt/katrain/releases/<SHA>; echo clone-exit=\$?; sudo git -C /opt/katrain/releases/<SHA> rev-parse --short HEAD"
+```
+Expected：`clone-exit=0`，下一行等于 `<SHA>`。**失败时的兜底**：先 `ssh ucloud-v100 "ls -d /opt/katrain/releases/*/.git"` 找一个带 `.git` 的旧目录（下面叫 `<GITDIR>`，写它所在的目录），然后：
+```bash
+ssh ucloud-v100 "sudo git -C <GITDIR> fetch --depth 1 origin release/ucloud-20260805 && sudo git -C <GITDIR> rev-parse --short FETCH_HEAD"
+ssh ucloud-v100 "set -o pipefail; sudo mkdir /opt/katrain/releases/<SHA> && sudo git -C <GITDIR> archive <SHA> | sudo tar -x -C /opt/katrain/releases/<SHA>; echo archive-exit=\$?"
+```
+Expected：第一条打印的正好是 `<SHA>`；第二条 `archive-exit=0`。`mkdir` 报「已存在」时停下，先看清那个目录是怎么来的，**不要 `rm -rf` 带占位符的路径**。
+
+4d. **构建两个镜像**（日志写文件，只看结果行，退出码不被管道吞掉）：
+```bash
+ssh ucloud-v100 "cd /opt/katrain/releases/<SHA> && sudo deploy/ucloud/scripts/build-web.sh katrain-web:<SHA> > /tmp/build-web-<SHA>.log 2>&1; echo build-exit=\$?; grep -E 'image_id=|size_bytes=' /tmp/build-web-<SHA>.log"
+ssh ucloud-v100 "cd /opt/katrain/releases/<SHA> && sudo docker build --pull=false -f Dockerfile.cron -t katrain-cron:<SHA> . > /tmp/build-cron-<SHA>.log 2>&1; echo build-exit=\$?; sudo docker image inspect --format '{{.Id}}' katrain-cron:<SHA>"
+```
+Expected：两个 `build-exit=0`；第一条打印的 `image_id=sha256:…` 下面叫 `<WEB_ID>`，第二条打印的 ID 下面叫 `<CRON_ID>`。`build-web.sh` 的容器内容自检里要有 Step 3 加的两项（能 import `katrain.web.admin.app`、`static-admin/admin.html` 存在）。
+
+4e. **备份，并实际恢复验证一次**（这次有 DDL，更不能省）：
+```bash
+ssh ucloud-v100 'sudo bash -s' <<'SH'
+set -euo pipefail
+TS=<TS>   # 例如 20260925-1030；写成字面量，发布记录也要用
+PG=katrain-ucloud-postgres-1; DB=katrain_prod_20260725
+docker exec "$PG" pg_dump -U katrain_user -Fc "$DB" > /opt/katrain/backups/prod-$TS.dump
+echo "DUMP=/opt/katrain/backups/prod-$TS.dump" >> /opt/katrain/backups/anchors-<SHA>.txt
+docker exec "$PG" createdb -U katrain_user katrain_restore_verify_$TS
+docker exec -i "$PG" pg_restore -U katrain_user -d katrain_restore_verify_$TS < /opt/katrain/backups/prod-$TS.dump
+echo "pg_restore exit=0"
+TABLES=$(docker exec "$PG" psql -U katrain_user -d "$DB" -At -c "select tablename from pg_tables where schemaname='public' order by 1")
+N=$(printf '%s\n' "$TABLES" | grep -c . || true)
+[ "$N" -gt 0 ] || { echo "!! 表清单是空的：什么都没比较，不能算通过"; exit 1; }
+for t in $TABLES; do
+  a=$(docker exec "$PG" psql -U katrain_user -d "$DB" -At -c "select count(*) from \"$t\"")
+  b=$(docker exec "$PG" psql -U katrain_user -d katrain_restore_verify_$TS -At -c "select count(*) from \"$t\"")
+  [ "$a" = "$b" ] || echo "MISMATCH $t live=$a restored=$b"
+done
+echo "row-count compare done: $N tables"
+docker exec "$PG" dropdb -U katrain_user katrain_restore_verify_$TS
+SH
+```
+Expected：打印 `pg_restore exit=0` 和 `row-count compare done: <N> tables`（N 是生产库的表数，几十张，不是 0）。`MISMATCH` 只允许出现在 dump 之后仍在写入的表上（直播、分析队列、报告任务之类），而且 `restored ≤ live`；其他表出现 `MISMATCH`，或者 `restored > live`，就停。脚本中途失败时，手工 `dropdb katrain_restore_verify_<TS>` 清掉验证库。
+
+4f. **生成候选 env**（正在用的 env 这一步不动；只打印改动的行数，不打印内容，env 里有密钥）：
+```bash
+ssh ucloud-v100 'sudo bash -s' <<'SH'
+set -euo pipefail
+C=/etc/katrain/ucloud.env.candidate-<SHA>
+install -m 600 -o root -g root /etc/katrain/ucloud.env "$C"
+sed -i "s|^WEB_IMAGE=.*|WEB_IMAGE=<WEB_ID>|; s|^CRON_IMAGE=.*|CRON_IMAGE=<CRON_ID>|" "$C"
+echo "changed lines: $(diff /etc/katrain/ucloud.env "$C" | grep -c '^[<>]' || true)"
+stat -c '%U:%G %a' "$C"
+SH
+```
+Expected：`changed lines: 4`（WEB_IMAGE、CRON_IMAGE 各一删一增）；`root:root 600`。
+
+4g. **用候选 env 跑预检**：
+```bash
+ssh ucloud-v100 "cd /opt/katrain/releases/<SHA> && sudo deploy/ucloud/scripts/preflight.sh --phase full --env-file /etc/katrain/ucloud.env.candidate-<SHA>; echo preflight-exit=\$?"
+```
+Expected：全绿。**容量闸红了，不要自己越过**：runbook 的规矩是任何一道预检红了就停。把输出里的 `available_bytes` 和 4a 的盘面交给 Fan，由他当场决定是先回收空间，还是这一次越过。最近几次发布的记录都写着「同因越过」（那道闸按迁移的峰值 38.5 GB 设，不是普通发布的峰值），但越不越过由 Fan 当场决定，本计划不预先授权。其他任何一道闸红了都停。决定不发了：`ssh ucloud-v100 "sudo rm /etc/katrain/ucloud.env.candidate-<SHA>"`，正在用的 env 从头到尾没动过。
+
+4h. **启用候选 env、切换 `current`、dry-run**：
+```bash
+ssh ucloud-v100 'sudo bash -s' <<'SH'
+set -euo pipefail
+BAK=/opt/katrain/backups/ucloud.env.$(date +%Y%m%dT%H%M%S).bak
+cp -p /etc/katrain/ucloud.env "$BAK"
+echo "ENV_BACKUP=$BAK" >> /opt/katrain/backups/anchors-<SHA>.txt
+mv /etc/katrain/ucloud.env.candidate-<SHA> /etc/katrain/ucloud.env
+ln -sfn /opt/katrain/releases/<SHA> /opt/katrain/current
+cd /opt/katrain/current
+docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d --dry-run katrain-web katrain-cron katrain-admin
+SH
+```
+Expected：只新建或重建 `katrain-web`、`katrain-cron`、`katrain-admin`，外加一次性的 `minio-setup`；`katago-*` 和 `postgres` 只出现 `Waiting` / `Healthy`。不对就执行 4j。
+
+4i. **分两步起服务**（Fan 点头后）：先起 web、等它健康、确认三张表已经建好，再起 cron 和 admin：
+```bash
+ssh ucloud-v100 "cd /opt/katrain/current && sudo docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-web"
+ssh ucloud-v100 'for i in $(seq 1 60); do s=$(sudo docker inspect -f "{{.State.Health.Status}}" katrain-ucloud-katrain-web-1); [ "$s" = healthy ] && break; sleep 5; done; echo "katrain-web=$s"'
+ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c \"select count(*) from information_schema.tables where table_schema='public' and table_name in ('admin_audit_log','cron_job_status','cron_job_runs')\""
+ssh ucloud-v100 "cd /opt/katrain/current && sudo docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-cron katrain-admin"
+ssh ucloud-v100 'for i in $(seq 1 60); do s=$(sudo docker inspect -f "{{.State.Health.Status}}" katrain-ucloud-katrain-admin-1); [ "$s" = healthy ] && break; sleep 5; done; echo "katrain-admin=$s"'
+for u in / /galaxy /api/v1/health; do printf '%s -> ' "$u"; curl -s -o /dev/null -w '%{http_code}\n' "https://modelstella.com$u"; done
+```
+Expected：`katrain-web=healthy`；表数 `3`；`katrain-admin=healthy`；三个外网探针都是 `200`。**任何一项不对就执行 4j**，不要在生产上现场排查。
+
+4j. **回滚**（只在 4h / 4i 失败时执行；执行前 Fan 点头）：
+```bash
+ssh ucloud-v100 'sudo bash -s' <<'SH'
+set -euo pipefail
+. /opt/katrain/backups/anchors-<SHA>.txt
+cp "$ENV_BACKUP" /etc/katrain/ucloud.env
+ln -sfn "$OLD_RELEASE" /opt/katrain/current
+docker rm -f katrain-ucloud-katrain-admin-1 || true   # 旧版本的 compose 里没有这个服务，up 不会替你停它
+cd /opt/katrain/current
+docker compose --env-file /etc/katrain/ucloud.env -f deploy/ucloud/compose.yml -f deploy/ucloud/compose.production.yml --profile production up -d katrain-web katrain-cron
+SH
+```
+然后重跑 4i 里等 web 健康的那一行和外网探针，要求恢复 healthy、探针 200。三张新表留在库里无害：旧代码不读它们，旧 cron 也不写。
 - [ ] **Step 5：验证生产**：
 ```bash
 ssh ucloud-v100 "sudo ss -ltnp | grep ':8010 '"                                      # 只有 127.0.0.1:8010
@@ -3628,7 +3836,7 @@ curl -s -o /dev/null -w '%{http_code}\n' https://modelstella.com/api/admin/healt
 ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user -d katrain_prod_20260725 -At -c 'SELECT count(*) FROM cron_job_status;'"   # 9
 ```
 然后开隧道 `ssh -N -L 8011:127.0.0.1:8010 ucloud-v100`，打开 http://localhost:8011：页头显示「生产环境」，Fan 用管理员账号登录，能看到 9 个任务的真实状态。
-- [ ] **Step 6：在 runbook 里补一条发布记录**，格式照 2026-09-06 那条。其中要写明：新服务 katrain-admin 只绑 127.0.0.1；新增三张表；发布前后的探针表。提交并推送 release 分支（🛑 Fan 点头）。删临时 worktree 之前，先执行 `git -C "$REL" status --ignored`。
+- [ ] **Step 6：在 runbook 里补一条发布记录**（`/private/tmp/claude-501/rel-admin-console/docs/operations/ucloud-migration-runbook.md`），格式照 2026-09-23 那条。其中要写明：新服务 katrain-admin 只绑 127.0.0.1；新增三张表；镜像 ID；备份文件与恢复验证结果；回滚锚点（`anchors-<SHA>.txt` 的内容）；代码是 clone 来的还是走了兜底；预检容量闸怎么处理的；发布前后的探针。提交并推送 release 分支（🛑 Fan 点头）。然后删临时 worktree：先执行 `git -C /private/tmp/claude-501/rel-admin-console status --ignored` 确认没有需要保留的东西，再执行 `git -C /Users/fan/Repositories/katrain worktree remove /private/tmp/claude-501/rel-admin-console`。
 
 ---
 
@@ -3653,3 +3861,9 @@ ssh ucloud-v100 "sudo docker exec katrain-ucloud-postgres-1 psql -U katrain_user
   - 旧 Task 16 写的是「命令与切片 0 计划 Task 7 Step 4 完全相同，只有三处不同」，违反「不许写 Similar to Task N」，现在 Task 15 Step 4 写全了命令。
   - 参考图、实现截图、本机集成三处原来只有文字描述，补上了可以直接运行的 Playwright 脚本。fixture 的 `error` 态改成「第一次成功、之后 502」，这样才截得出设计稿里「错误条 + 页面数据停在」那一屏。
   - vitest 基线从「数通过数」改成按用例名字做差；停 vite 时只杀自己起的那个进程。
+- **2026-09-24 Codex 第一轮对抗评审（15 条）之后的修订**：
+  - 采纳：跑测试之前先确认 `katrain/config.json` 干净，再允许还原；cron 比 web 先启动时，心跳把缺的状态行补上（原先要等到下次重启）；启动那一次也经 APScheduler，`max_instances` 管得住全部运行，不会旧结果盖新状态；登记时把上一个进程留下的 `running` 历史标成失败；备份比对时表清单不许为空；发布改成候选 env 先过预检、再原子替换，写明回滚（包括删掉旧 compose 不认识的 admin 容器）；pytest 退出码只接受 0/1，并确认跑到了 summary；错误条带状态码；API 测试的「现在」在夹具里取；ESLint 兜底规则管住 `main.tsx`、`AppRouter.tsx` 这些公开入口；字体复用 `CHINESE_UI_FONT`；server-deploy 凡写死服务集合处都改；parity 比到字符串长度、时区和索引。
+  - 部分采纳：`localhost` 上 cookie 不分端口。没有改成每个环境一个 `*.localhost` 主机名（Safari 未必能解析，Windows 上的工作人员还要另配），而是把 cookie 的 Path 限定到 `/api/admin`：发往本机其他端口普通页面的请求不再带它。剩下的风险写进了 spec §5.3。
+  - 不采纳：「最后一条报错」改存运行里的最后一条 ERROR。现在存的是第一条，通常就是根因，后面的报错多半由它引起；`error_count` 记着总条数。spec §6.2 写明了这个语义。
+  - 同形状排查：切片 0 那一轮的发现（看盘、回滚锚点、clone 兜底、`pipefail`、zsh 分词、每次调用都是新 shell）在这份计划里同样存在，一并改了；另外发现变异检查原先写的是用 `git checkout` 还原，那会冲掉本任务还没提交的改动，已改成先备份再还原。
+  - 两家的发现没有重合：切片 0 那一轮盯发布与令牌，这一轮盯 cron 语义与会话边界。

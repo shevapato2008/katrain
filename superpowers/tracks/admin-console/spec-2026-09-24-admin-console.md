@@ -51,7 +51,8 @@
 |---|---|---|
 | 教程的四个写接口未登录也能调用 | `tutorials.py:150/195/212/232`（改棋盘 / 生成语音 / 改解说 / 审核） | 统一改成 `Depends(get_current_admin_user)`：未登录 401，非管理员 403，guest 403；`changed_by` / `verified_by` 记管理员用户名 |
 | `GET /board/devices` 把全部盒子的 IP 返回给任意登录用户 | `board.py:84` | 改成 `get_current_admin_user`。`POST /board/heartbeat` **不动**，那是盒子自己上报用的 |
-| 生产上的 `admin/admin` 还能登录（9/6 的记录） | 生产库 | **由 Fan 决定**是改口令还是撤掉 `is_admin`。计划里只给查询和执行命令，不自己动生产库 |
+| 生产上的 `admin/admin` 还能登录（9/6 的记录） | 生产库 | **由 Fan 决定**是改口令还是撤掉 `is_admin`。计划里只给查询和执行命令，不自己动生产库。只改口令撤不掉已经签发出去的令牌（见下一行），所以推荐撤权 |
+| （2026-09-24 评审新增，Fan 可删）有效期 90 天的 refresh token 能直接当 Bearer 用，包括调管理员接口 | `auth.py:118` `get_user_from_token` 不看 `type` | 只收 `type == "access"` 的令牌。仓里只有 access / refresh 两种 JWT，前端从不用 refresh token，`/auth/refresh` 本来就单独校验 |
 
 前端改动：`AuthContext` 的 User 类型加上 `is_admin?: boolean`。`TutorialFigurePage` 只对管理员显示以下控件：编辑、逻辑检查、确认审核、初始化空棋盘、编辑模式下的工具条和取消/保存、编辑讲解、生成语音、保存文字、识别调试面板。非管理员看到的是：棋盘、手数滑条、原书页对照、讲解文字、音频、视频。
 
@@ -100,7 +101,8 @@ katrain/web/admin/
   - 校验时**必须同时**满足：用 `audience="katrain-admin"` 解码、`type == "admin_session"`、`env == KATRAIN_ADMIN_ENV`。
   - 原因：2026-09-24 实测 python-jose 的行为是，**传了 audience、而 token 里根本没有 aud 时，照样放行**。只靠 aud，公开站点的 access token 就能进后台。
   - 反方向不用改公开站点：公开站点解码时不传 audience，带 aud 的 token 会被 jose 以「Invalid audience」拒掉（同日实测）。
-- **cookie**：名字是 `katrain_admin_<env>`，HttpOnly、SameSite=Strict、Path=/、Max-Age 8 小时；**不设 Secure**，因为走的是 SSH 隧道里的 http://localhost。cookie 不按端口隔离，名字里带上 env，两条隧道同时开着也不会互相顶掉。
+- **cookie**：名字是 `katrain_admin_<env>`，HttpOnly、SameSite=Strict、**Path=/api/admin**、Max-Age 8 小时；**不设 Secure**，因为走的是 SSH 隧道里的 http://localhost。cookie 不按端口隔离：名字里带上 env，两条隧道同时开着也不会互相顶掉；Path 限定在 `/api/admin`，浏览器发往本机其他端口普通页面的请求（开发服务器之类）不会带上它。
+  - 剩下的风险：本机上别的服务如果恰好也在 `/api/admin` 路径下被管理员用同一个浏览器打开，仍会收到这个 cookie。评审（2026-09-24）提过「每个环境一个 `*.localhost` 主机名 + 只认 Host」，没有采用：Safari 未必解析 `*.localhost`，Windows 上的工作人员还要另外配置，代价与剩下的这点风险不相称。
 - **每次请求**都按用户名重新查一次库，并要求 `is_admin = true`，撤权立即生效。
 - **CSRF**：所有非 GET 请求（含登录）必须带 `X-Katrain-Admin: 1` 请求头。后台不开 CORS，别的网页（包括本机其他端口）发不出带自定义头的跨源请求。
 - **登录失败**只回一句笼统的话：「用户名或密码错误，或该账号没有后台权限」；具体原因（查无此人 / 口令错 / 不是管理员）写进审计日志。
@@ -179,7 +181,7 @@ katrain/web/ui/
 | last_started_at / last_finished_at / last_success_at | DateTime(tz)，可空 | |
 | last_status | String(16)，可空 | `running` / `success` / `errors` / `failed` |
 | last_duration_ms | Integer，可空 | |
-| last_error | Text，可空 | 截断到 2000 字符 |
+| last_error | Text，可空 | 截断到 2000 字符。interval：最近一次不成功的运行里**第一条** ERROR（后面的报错多半由它引起），或逃出任务的异常；loop：最近一条 ERROR |
 | consecutive_failures | Integer，默认 0 | `failed` 或 `errors` 加一，`success` 清零 |
 | loop_iteration_at | DateTime(tz)，可空 | 只有 loop 用：最近一次循环推进的时间 |
 | loop_stats | JSON，可空 | 只有 loop 用：`{in_flight, capacity, errors_total, last_error_at}` |
@@ -198,14 +200,14 @@ katrain/web/ui/
 
 - **只依赖标准库、sqlalchemy 和 `katrain.cron.*`**，由现有的 `test_cron_import_boundary.py` 自动把关。
 - **错误捕获**：在根 logger 上挂一个级别为 ERROR 的 `logging.Handler`，配合 `contextvars.ContextVar` 标记「当前是哪个任务在跑」。任务运行期间任何地方打出的 ERROR 日志都会记到这次运行上，包括第三方 client 模块的 logger，以及任务内部 `create_task` 派生出来的子任务（它们会继承 context）。这样，任务把异常吞掉之后，页面也能显示「有报错」，而不是「成功」。
-- **定时任务**：`_run_job_once(job)` 和 `add_job(...)` 的回调都换成 `recorder.run(job)`。执行顺序是：先写「开始」→ 设置 context → `await job.run()` → 复位 context → 写「结束」。记录器自己的写库**放在 context 之外**，所以它自己的报错不会记到任务头上。状态判定：异常逃出任务是 `failed`；跑完了但期间有 ERROR 日志是 `errors`；否则是 `success`。
+- **定时任务**：`add_job(...)` 的回调换成 `recorder.run(job)`；启动时立刻跑的那一次也改由 APScheduler 发起（`next_run_time=now`），不再单独 `create_task`。这样只有一条路径，`max_instances=1` 管得住全部运行，记录器同一时刻只看得到这个任务的一次运行。执行顺序是：先写「开始」→ 设置 context → `await job.run()` → 复位 context → 写「结束」。记录器自己的写库**放在 context 之外**，所以它自己的报错不会记到任务头上。状态判定：异常逃出任务是 `failed`；跑完了但期间有 ERROR 日志是 `errors`；否则是 `success`。
 - **常驻循环**：`AnalyzeJob` 和 `ReportAnalyzerJob` 在每次循环开头更新 `self.last_iteration_at`，并各加一个 `heartbeat_stats()` 方法，返回在途数和容量。`_run_analyze_loop` 给整个循环设置 context，循环里的 ERROR 日志累计到这个循环的统计里；`job.run()` 抛出异常就记一行 `failed`。
 - **心跳**：调度器里单开一个 asyncio 任务，每 `CRON_HEARTBEAT_INTERVAL`（30 秒）为所有已登记的任务写一次 `heartbeat_at`。loop 任务顺带写入 `loop_iteration_at`、`loop_stats` 和 `last_error`。
-- **登记**：进程启动时，把 9 个任务（包括被停用的）全部 upsert 一遍，并**删掉**名字已不在当前代码里的旧行，免得改名后留下一行永远显示「失联」的假记录。
+- **登记**：进程启动时，把 9 个任务（包括被停用的）全部 upsert 一遍，并**删掉**名字已不在当前代码里的旧行，免得改名后留下一行永远显示「失联」的假记录。上一个进程开了头、没来得及收尾的运行（重启、部署、SIGKILL、OOM）一律标成 `failed`，写明「cron 进程在这次运行结束前退出了」，不让它在历史里永远「运行中」。
+- **cron 比 web 先启动**（两边同时 `up`，表还没建）：登记会失败（按下一条处理）；web 建好表之后，下一次心跳发现状态行缺失就补上。生产发布时也先起 web、确认建好表，再起 cron 和 admin。
 - **记录器写库失败时**：记一条 WARNING 日志，绝不影响任务本身。后果是心跳过期、页面显示「失联」，失败就这样自然暴露出来，不会被藏住。
 - **时间**：一律用 `datetime.now(timezone.utc)`。
 - **保留期**：`CleanupJob` 删除 `CRON_RUNS_RETENTION_DAYS`（默认 14 天）之前的运行记录。
-- **已知的小重叠**：启动时的那一次立即运行，和 APScheduler 的第一次定时运行，理论上可能重叠（`max_instances` 只管 APScheduler 自己发起的运行）。后果只是状态行被更新两次，不影响正确性，接受。
 
 ### 6.4 健康状态判定（后台侧的纯函数，自上而下，命中即停）
 
@@ -291,7 +293,7 @@ GET  /api/admin/cron/queues       → 200 {"observed_at",
 |---|---|
 | 切片 0 发布后，Fan 自己没法编辑教程了 | 发布前先确认各环境的管理员账号（计划里有专门一步，要 Fan 决定） |
 | 合并 develop 到 release 时 `Dockerfile.web` 冲突（两边是完全不同的两份） | 冲突按 release 的版本解决，再手工加上 build:admin 和 COPY 两处；计划里写明 |
-| cron 在 web 建表之前启动，写入失败 | 记录器吞掉写库错误，下次重试；web 启动建表后自动恢复 |
+| cron 在 web 建表之前启动，登记失败 | 记录器吞掉写库错误；web 建表之后，下一次心跳把缺的状态行补上（有测试）；生产发布先起 web、确认建好表再起 cron |
 | 撞上 `log*` 忽略规则，新文件没进 git | 文件名避开 log 开头；每个任务提交后用 `git show --stat` 核对文件清单 |
 | 生产 compose 的精确集合测试挡住新服务 | 计划里明确列出要改的每一条断言 |
 

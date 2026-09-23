@@ -160,8 +160,8 @@
     "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
   },
   "26-calib.png": {
-    "sha256": "ebc129e9d48dd1c54457423b5372556a447db2a9ce2dd2f37ad9d821b1030754",
-    "shotFrom": "feat/kiosk-go-lobby-2026-08-24"
+    "sha256": "8c61ebb39b6a14d9571f965d869c84f5261e9d76a617778d0d5b3e509b4cfc38",
+    "shotFrom": "main"
   },
   "27-settings.png": {
     "sha256": "a7c8eeb142e80a7d0e3f76c47544ff82551d907abfe1e579367bb15fcaa87ff6",

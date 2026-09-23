@@ -34,17 +34,22 @@
 
 - **前置**:RK3562 + 摄像头 + 实体盘;**这台机器上只跑这一家服务**(2G 内存)。
   先在**空盘**上跑一次 LED 13 点标定并成功 —— 这次的角点就是真值;**之后盘和相机都不许再动**。
+  这把锁必须是刚做完的这次空盘 LED 标定,不能是重定位锁——`34893ea7` 之后工具会先查
+  `layout["relocated_by"]`,这把锁若是外框重定位出来的就直接拒绝退出,避免拿被测的外框法自己当参照
+  (`outer_corner_accuracy.py:200-204`);分辨率核对也改成比对锁的来源尺寸 `layout["source"]`
+  (`:206-208`,两个字段由 `geometry.py:228`「relocated_by」与 `:230`「source」下发),不再用当次
+  取帧的 `frame` 尺寸。
 - **操作**(量具是 Task 8b 加的真帧模式,`--live` 与 `live_gate` 已落地,见
-  `katrain/vision/tools/outer_corner_accuracy.py` 的 `__main__` 块,`:176-212`):
+  `katrain/vision/tools/outer_corner_accuracy.py` 的 `__main__` 块,`:176-219`):
   1. 空盘先跑一次(对照):`uv run python -m katrain.vision.tools.outer_corner_accuracy --live http://127.0.0.1:8081`
      (真值取 `/api/v1/geometry/layout`,帧取 `/api/v1/geometry/stream` —— 两个路由在
      `katrain/web/api/v1/endpoints/geometry.py:187` 和 `:169`;工具侧取图见 `outer_corner_accuracy.py:196`
-     和 `:202`)。
+     和 `:209`)。
   2. 轻手摆到约 60 子(别碰盘),再跑一次;有余力摆到约 150 子跑第三次。
   **不带 `--live` 跑出来的是合成图**,只是下界(默认阈值 0.12 见
   `katrain/vision/tools/outer_corner_accuracy.py:5`),不能当这道闸。
 - **判据**:每一次都 `GATE(<0.12 cells, >=80% frames detected) = True`(打印在
-  `outer_corner_accuracy.py:212`,判的是 `live_gate()` 的返回值,`:123-130`;`live_gate` 逐帧算的是
+  `outer_corner_accuracy.py:219`,判的是 `live_gate()` 的返回值,`:123-130`;`live_gate` 逐帧算的是
   `grid_error_cells`——19×19 网格最大误差,不是角点中位误差,`:107-120`,由 `measure_real` 调用,
   `:133-146`)。
   空盘那次就已 ≥ 0.12 ⇒ 外框法与 LED 法本身有系统偏差,同样算不过。
@@ -86,18 +91,18 @@
   (`katrain/web/ui/src/kiosk/components/game/RecalibrationModal.tsx`,「重新标定」按钮文案在 `:76`)
   走清盘的 LED 路径退回 `failed`/`cancelled`。盘上留几颗子,不清空。
 - **操作**:按「对齐外框」按钮 —— 已实现,`data-testid="calib-relocate"`
-  (`GeometryCalibrationScreen.tsx:551`),只在 `phase ∈ {degraded, cancelled, failed}` 且
-  `status.last_valid` 为真时渲染(条件在 `:547`),按下后调用前端 `relocate()`(`handleRelocate`,
+  (`GeometryCalibrationScreen.tsx:552`),只在 `phase ∈ {degraded, cancelled, failed}` 且
+  `status.last_valid` 为真时渲染(条件在 `:548`),按下后调用前端 `relocate()`(`handleRelocate`,
   `:227-243`),打到 `POST /api/v1/geometry/relocate`(`katrain/web/api/v1/endpoints/geometry.py:150-151`),
-  服务端由 `GeometryCalibrationService.relocate()` 处理(`katrain/web/core/geometry_calibration_service.py:760-774`,
+  服务端由 `GeometryCalibrationService.relocate()` 处理(`katrain/web/core/geometry_calibration_service.py:769-783`,
   走 `Scenario.MANUAL_FALLBACK`,`allowed_phases=_RELOCATABLE_PHASES = {"degraded","cancelled","failed"}`,
   `:42`)。不亮灯、不要求空盘。
 - **判据**:盘上有子也能恢复到 `ready`;nadir 日志同第 2 项判据①(同一条边)。
   **失败路径要一并验**:画面里找不到外框 / 挪得太远时,请求走 400,前端把 `relocateError` 写进状态
   (`:233-239`),渲染成诊断卡 `data-testid="geometry-diagnostic-card"`
-  (`GeometryCalibrationScreen.tsx:463-464`,`kind="relocate"`,标题「没对上」,内容按错误类型分
+  (`GeometryCalibrationScreen.tsx:464-465`,`kind="relocate"`,标题「没对上」,内容按错误类型分
   「画面里找不到棋盘外框,挪开挡住边框的东西再试一次」或「再试一次;一直不行就清空棋盘重新标定」,
-  错误分支在 `:233-239`、诊断卡构造逻辑在 `:380-382`)——确认这张卡出现、且不是一片空白。
+  错误分支在 `:233-239`、诊断卡构造逻辑在 `:381-383`)——确认这张卡出现、且不是一片空白。
 - **记录**:恢复前/后的 phase、nadir 坐标、(若触发了失败路径)诊断卡文案,写回本节。
 
 ## 4. 无灯首标 —— ⛔ V3 本轮不做,留位
@@ -108,13 +113,17 @@
 ## 5. 取消后沿用(V2 的验收)
 
 - **前置**:标定跑到一半。
-- **操作**:按「取消标定」(`katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx:540`
+- **操作**:按「取消标定」(`katrain/web/ui/src/kiosk/components/vision/GeometryCalibrationScreen.tsx:541`
   `t('vision:cancel_calibration', '取消标定')`),再按「沿用上次标定」
-  (`:570` `t('vision:reuse_calibration', '沿用上次标定')`,按钮可按受 `canReuse` 控制,`:567`)。
+  (`:571` `t('vision:reuse_calibration', '沿用上次标定')`,按钮可按受 `canReuse` 控制,`:568`)。
 - **判据**:`cancelled` 态下「沿用上次标定」可按(白名单放开见 `_REUSABLE_PHASES = {"required", "failed",
-  "cancelled"}`,`katrain/web/core/geometry_calibration_service.py:228`,由 `confirm_existing()`
-  在 `:230-238` 校验;**`degraded` 不在表里** —— 那一态的出路是第 3 项的「对齐外框」,不是沿用。
-  前端 `canReuse` 判别见 `GeometryCalibrationScreen.tsx:366-367`),按下后恢复识别,继续下棋不受影响。
+  "cancelled"}`,`katrain/web/core/geometry_calibration_service.py:231`,由 `confirm_existing()`
+  在 `:233-241` 校验;**`degraded` 不在表里** —— 那一态的出路是第 3 项的「对齐外框」,不是沿用。
+  前端 `canReuse` 判别见 `GeometryCalibrationScreen.tsx:367-368`),按下后恢复识别,继续下棋不受影响。
+  **这只对「直接取消」成立**——若中途先碰过盘(降级)、又重新标定一次再取消/失败,phase 虽然落回
+  这可沿用的三态,锁还是挪动前那把:`lock_moved` 仍是 `True`,「沿用上次标定」仍按不动
+  (`confirm_existing()` 的拒绝在 `geometry_calibration_service.py:244-246`,前端 `canReuse` 同一条件在
+  `GeometryCalibrationScreen.tsx:368`);这种情形的出口是第 3 项的「对齐外框」,或清盘重新标定。
 - **记录**:取消前的 phase、按下「沿用上次标定」后是否恢复识别,写回本节。
 
 ## 6. LED 目视 bring-up(可选)

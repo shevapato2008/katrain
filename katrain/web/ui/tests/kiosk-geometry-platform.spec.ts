@@ -187,6 +187,32 @@ for (const lang of ['cn', 'de'] as const) {
   });
 }
 
+/**
+ * 「我执」分段按钮里的字不许折行(Task 4.6,Fan 裁定)。
+ * `[data-testid="setup-side-seg"]` 里每个 `button` 断言 `scrollHeight <= clientHeight` ——
+ * 折行不是被裁掉,是画到盒子外面压住下面的留白(同类型缺陷见上面 `.kiosk-opthint` 的注释)。
+ * cn 和 de 都要量:cn 的猜先/执黑/执白从来不折,de 的 `Schwarz nehmen`(14 字母)在半栏(~200px)
+ * 折成两行是这条闸要抓的真缺陷。
+ */
+for (const lang of ['cn', 'de'] as const) {
+  test(`屏 09「我执」分段按钮不折行(lang=${lang})`, async ({ page }) => {
+    await boot(page, { camera: true, lang });
+    const buttons = await page.evaluate(() => {
+      const seg = document.querySelector('[data-testid="setup-side-seg"]') as HTMLElement;
+      return Array.from(seg.querySelectorAll('button')).map((b) => ({
+        text: b.textContent,
+        scrollHeight: b.scrollHeight,
+        clientHeight: b.clientHeight,
+      }));
+    });
+    console.log(`[geom 09 side-seg lang=${lang}]`, JSON.stringify(buttons));
+    for (const b of buttons) {
+      expect(b.scrollHeight, `「我执」按钮折行(lang=${lang}):「${b.text}」`)
+        .toBeLessThanOrEqual(b.clientHeight);
+    }
+  });
+}
+
 test('39 档面板:完整落在右栏内、与棋盘无交集、轨的四角都被盖住、手指拨得动', async ({ page }) => {
   await boot(page, { camera: true });
   await page.click('[data-testid="setup-opponent-plate"]');

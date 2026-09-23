@@ -6900,3 +6900,12 @@ msgid "platform:engine_fixed_hint"
 msgstr ""
 "{name} insan-yapay zeka 19x19'a sabit · Çin kuralları; ekran ve gerçek tahta"
 " aynı kanalı kullanır"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Yapay zekâ motoru hazırlanıyor — bu sırada Oyun Kayıtları, Dersler ve diğer "
+"özellikleri kullanabilirsiniz"
+
+msgid "engine:warmup_unavailable"
+msgstr ""
+"Yapay zekâ motoru henüz hazır değil — lütfen daha sonra tekrar deneyin"

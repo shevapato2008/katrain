@@ -6633,3 +6633,9 @@ msgstr "讓子 · 我執"
 
 msgid "platform:engine_fixed_hint"
 msgstr "{name}人機固定 19 路 · 中國規則，螢幕和實體盤走同一條隧道"
+
+msgid "engine:warmup_warming"
+msgstr "AI 引擎準備中，可先使用棋譜、課程等功能"
+
+msgid "engine:warmup_unavailable"
+msgstr "AI 引擎暫未就緒，可稍後重試"

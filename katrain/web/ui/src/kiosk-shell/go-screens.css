@@ -1917,3 +1917,21 @@ button.kiosk-row.figrow { flex: none; }
 .twocol .tcol { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
 .twocol .iglab { width: 30px; flex: none; font-size: 12.5px; color: var(--dim); }
 .twocol .catpick, .twocol .kiosk-optseg { flex: 1; min-width: 0; }
+
+/* 屏 09 修复轮 5(Task 4.6,2026-09-23)—— 「我执」三个选项挤成两行字。
+   设计源两列各 `flex: 1`(go-kiosk.tmpl.html:652),这一屏因为多一个选项
+   (让子只有一个控件,我执有三个)要偏 —— **这条偏离是本屏专属,不回改设计源**。
+   真浏览器实测(`platform-engine-setup-page` 作用域):等宽时每列 212px,
+   三个按钮分到 (212−6 容器 padding−6 两条 3px gap)/3 ≈ 66.7px,减掉继承自
+   `index.css:38` 的 Vite 模板 `button{padding:0.6em 1.2em}`(在这里等于
+   `9px 18px`,两侧 36px)后只剩约 30px 给图标+间距+文字 —— 中文「猜先」两个字
+   都会被挤到折成两行(截图验过,不是靠推断)。
+   比例 34:66 —— 让子只有一个步进轨(−/点/+ 三个热区),我执要塞三段文字按钮,
+   量出这个比例后中/德两语种「我执」三段都不折行(见 `kiosk-geometry-platform.spec.ts`
+   「屏 09「我执」分段按钮不折行」)。 */
+[data-testid="platform-engine-setup-page"] .twocol .tcol:nth-child(1) { flex: 0.52; }
+[data-testid="platform-engine-setup-page"] .twocol .tcol:nth-child(2) { flex: 1; }
+/* 同一处修复:继承来的 Vite 模板按钮 padding 对三段一行的分段控件太宽,
+   把图标+两字挤没了空间 —— 缩到够放下图标(18)+ gap(7)+ 两字(30)+ 呼吸空间的量,
+   不是字面截断,是把误继承的默认值收回正常范围。只在这一屏的「我执」段生效。 */
+[data-testid="platform-engine-setup-page"] .twocol .kiosk-optseg button { padding: 0 6px; }

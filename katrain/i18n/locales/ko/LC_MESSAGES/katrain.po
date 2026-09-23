@@ -6596,3 +6596,9 @@ msgstr "접바둑 · 내 돌"
 
 msgid "platform:engine_fixed_hint"
 msgstr "{name} 인간 대 AI는 19줄 고정 · 중국 룰, 화면과 실물 바둑판은 같은 경로를 씁니다"
+
+msgid "engine:warmup_warming"
+msgstr "AI 엔진 준비 중입니다. 기보 라이브러리, 강좌 등 다른 기능은 먼저 사용하실 수 있습니다"
+
+msgid "engine:warmup_unavailable"
+msgstr "AI 엔진이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요"

@@ -6762,3 +6762,9 @@ msgid "platform:engine_fixed_hint"
 msgstr ""
 "{name} humano contra IA está fijado en 19x19 · reglas chinas; la pantalla y "
 "el tablero físico comparten el mismo canal"
+
+msgid "engine:warmup_warming"
+msgstr "El motor de IA se está preparando — mientras tanto puedes usar la biblioteca de partidas, los cursos y otras funciones"
+
+msgid "engine:warmup_unavailable"
+msgstr "El motor de IA aún no está listo — inténtalo de nuevo más tarde"

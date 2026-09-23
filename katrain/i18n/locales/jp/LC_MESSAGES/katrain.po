@@ -6658,3 +6658,9 @@ msgstr "置石 · 自分の手番"
 
 msgid "platform:engine_fixed_hint"
 msgstr "{name} の人間対AIは19路固定 · 中国ルール、画面と実物の碁盤は同じ経路を使います"
+
+msgid "engine:warmup_warming"
+msgstr "AIエンジン準備中です。棋譜ライブラリや講座などの機能は先にご利用いただけます"
+
+msgid "engine:warmup_unavailable"
+msgstr "AIエンジンはまだ準備できていません。しばらくしてから再試行してください"

@@ -4040,10 +4040,10 @@ msgid "setup:my_side"
 msgstr "Ma couleur"
 
 msgid "setup:take_black"
-msgstr "Prendre Noir"
+msgstr "Noir"
 
 msgid "setup:take_white"
-msgstr "Prendre Blanc"
+msgstr "Blanc"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -6910,3 +6910,11 @@ msgid "platform:engine_fixed_hint"
 msgstr ""
 "{name} humain contre IA est fixé au 19x19 · règles chinoises ; l'écran et le"
 " goban réel partagent le même canal"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Le moteur d'IA se prépare — vous pouvez déjà utiliser la bibliothèque de "
+"parties, les cours et d'autres fonctions"
+
+msgid "engine:warmup_unavailable"
+msgstr "Le moteur d'IA n'est pas encore prêt — veuillez réessayer plus tard"

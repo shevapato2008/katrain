@@ -6867,3 +6867,11 @@ msgid "platform:engine_fixed_hint"
 msgstr ""
 "{name} human-vs-AI is fixed at 19x19 · Chinese rules; the screen and the "
 "real board share the same tunnel"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"AI engine is warming up — you can use Game Records, Courses and other "
+"features for now"
+
+msgid "engine:warmup_unavailable"
+msgstr "AI engine is not ready yet — please try again later"

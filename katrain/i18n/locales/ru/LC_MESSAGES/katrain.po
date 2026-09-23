@@ -3973,10 +3973,10 @@ msgid "setup:my_side"
 msgstr "Мой цвет"
 
 msgid "setup:take_black"
-msgstr "Играть чёрными"
+msgstr "Чёрные"
 
 msgid "setup:take_white"
-msgstr "Играть белыми"
+msgstr "Белые"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -6801,3 +6801,11 @@ msgid "platform:engine_fixed_hint"
 msgstr ""
 "{name} человек против ИИ зафиксировано на 19x19 · китайские правила; экран и"
 " реальная доска используют один канал"
+
+msgid "engine:warmup_warming"
+msgstr ""
+"Движок ИИ готовится — пока можно пользоваться библиотекой партий, курсами и "
+"другими функциями"
+
+msgid "engine:warmup_unavailable"
+msgstr "Движок ИИ ещё не готов — повторите попытку позже"

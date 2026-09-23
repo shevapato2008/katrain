@@ -3902,7 +3902,7 @@ msgid "vision:cancel_calibration"
 msgstr "Отменить калибровку"
 
 msgid "vision:reuse_calibration"
-msgstr "Прошлую калибровку"
+msgstr "Взять прошлую"
 
 msgid "vision:camera_down"
 msgstr "Камера не подключена · переключено на сенсорный экран"

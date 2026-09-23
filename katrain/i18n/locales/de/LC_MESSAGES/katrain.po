@@ -3996,7 +3996,7 @@ msgid "vision:cancel_calibration"
 msgstr "Kalibrierung abbrechen"
 
 msgid "vision:reuse_calibration"
-msgstr "Kalibrierung nutzen"
+msgstr "Letzte übernehmen"
 
 msgid "vision:camera_down"
 msgstr "Kamera nicht verbunden · auf Touch umgestellt"

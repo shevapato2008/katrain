@@ -1,5 +1,8 @@
 # 影子重复框去重 Implementation Plan
 
+> **已被取代（2026-09-23）**：本计划的标注集验证闸 FAIL（两颗贴着的真子被当成影子并掉），见 `superpowers/tracks/vision-optimizations/shadow-dedup/validation.md`。第二版见 `docs/superpowers/plans/2026-09-23-vision-shadow-step.md`。
+
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 让 `dedup_detections` 把「棋子 + 它的影子」这种偏出半格的重复框认作同一颗子，从源头消掉侧光下的假子（H5 自我维持的假黑子、D7 低置信疑似落子卡片）。

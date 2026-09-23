@@ -80,6 +80,7 @@ REFERENCE_HOLD_KEEP = 90  # frames, ~36 s at 2.3 fps
 # a colour disagreement, which board_state.py:316 already releases on its own after 15 raw frames and
 # must not be re-blocked for longer than that.
 REFERENCE_HOLD_SUPPRESS = 10  # frames, ~4 s at 2.3 fps
+REFERENCE_MODES = ("off", "shadow", "on")
 
 
 def measure_led_glow(ref: np.ndarray, frame: np.ndarray, geometry, row: int, col: int):
@@ -219,9 +220,17 @@ class InProcessAdapter:
         # Reference-frame check: the last frame whose *raw* board matched the game record, kept as
         # normalised per-cell patches in memory only -- never a file, one reference at a time.
         self._ref_mode = str(config.get("reference_check", "shadow"))
+        if self._ref_mode not in REFERENCE_MODES:
+            # Only argparse validates the CLI; a config dict could say "On" or "true" and silently get
+            # shadow. Say so, and fall back to the mode that changes nothing.
+            logger.warning("reference_check=%r is not one of %s; using 'shadow'", self._ref_mode, REFERENCE_MODES)
+            self._ref_mode = "shadow"
         self._ref_sampler: CellSampler | None = None
         self._reference: ReferenceFrame | None = None
-        self._ref_hold = np.zeros((board_config.grid_size, board_config.grid_size), dtype=int)
+        grid = (board_config.grid_size, board_config.grid_size)
+        self._ref_hold = np.zeros(grid, dtype=int)  # veto frames spent per cell, over this reference's life
+        self._ref_released = np.zeros(grid, dtype=bool)  # cells whose budget ran out: no longer vetoed
+        self._ref_vetoing = False  # the last check disagreed somewhere (applied in "on", logged in shadow)
         self._ref_log_frame = -1
         self._glow_pending: set[tuple[int, int]] = set()
         self._glow_wait = 0
@@ -348,29 +357,43 @@ class InProcessAdapter:
         if self._reference is not None:
             logger.info("refcheck reference dropped: %s", reason)
         self._reference = None
+        self._reset_reference_budget()
+
+    def _reset_reference_budget(self) -> None:
         self._ref_hold[:] = 0
+        self._ref_released[:] = False
+        self._ref_vetoing = False
 
     def _reference_check(self, board: np.ndarray, gray: np.ndarray | None) -> np.ndarray:
         """The board to hand downstream: cells that still look exactly as they did when the board last
         matched the game record keep that value, for a bounded number of frames.
 
-        The caller's array is the recognition pipeline's own history and is never modified: a veto
-        must not feed back into hysteresis, the sustain tier or the colour-flip release, or a wrong
-        veto would have no way out (it would keep re-asserting itself through the state it corrupted).
+        The caller's array is board assignment's own history (_last_stable_board, and through it the
+        hysteresis, the sustain tier and the colour-flip release) and is never modified: a veto fed
+        back there would re-assert itself through the state it corrupted and have no way out.
+        Everything downstream -- MoveDetector (including the baseline its force_sync takes after a
+        confirmed move), the stuck-stone promoter, Sync, status -- consistently sees the board this
+        returns; MoveDetector's baseline is re-synced to the game record on every SET_EXPECTED_BOARD.
         """
         reference = self._reference
         if reference is None or gray is None:
             return board
-        try:
-            unchanged, sim = reference.unchanged(gray, REFERENCE_ZNCC)
-        except ValueError:  # frame size changed under us; the next capture rebuilds the sampler
+        sampler = reference.sampler
+        if gray.shape[:2] != (sampler.img_h, sampler.img_w):  # the next capture rebuilds the sampler
             self._ref_sampler = None
             self._invalidate_reference("frame size")
             return board
+        try:
+            unchanged, sim = reference.unchanged(gray, REFERENCE_ZNCC)
+        except Exception:  # a real bug here must be loud, and must never take recognition down with it
+            logger.warning("refcheck comparison failed; dropping the reference", exc_info=True)
+            self._invalidate_reference("comparison failed")
+            return board
         for row, col in self._lit_points:
             unchanged[row][col] = False  # a lit lamp changes the cell's look on its own
-        disagree = unchanged & (board != reference.board)
-        if not disagree.any():
+        disagree = unchanged & (board != reference.board) & ~self._ref_released
+        self._ref_vetoing = bool(disagree.any())
+        if not self._ref_vetoing:
             return board
         # Counted over this reference's whole life, never reset on an agreeing frame: a detector that
         # sees the stone only every other frame would never exhaust a consecutive counter, and the
@@ -382,11 +405,24 @@ class InProcessAdapter:
         # 15 raw frames by design, and this must not quietly re-block that for half a minute.
         missing = (reference.board != EMPTY) & (board == EMPTY)
         limit = np.where(missing, REFERENCE_HOLD_KEEP, REFERENCE_HOLD_SUPPRESS)
-        if (disagree & (self._ref_hold > limit)).any():
-            # The detector has insisted for too long. It wins, and the reference goes: if it was the
-            # poisoned one (a stone already on the board when it was taken), this is the only exit.
-            self._invalidate_reference("the detector kept disagreeing")
-            return board
+        exhausted = disagree & (self._ref_hold > limit)
+        if exhausted.any():
+            # The detector has insisted on these cells for too long: it wins there, for the rest of
+            # this reference's life. Only those cells -- one daylight glare often loses a stone AND
+            # invents another in the same frames, and releasing the invented one must not cut the long
+            # hold on the lost one. If the reference was the poisoned one (a stone already on the
+            # board when it was taken), this is the exit: the real stone lands, the game moves on, and
+            # the next capture replaces the reference.
+            self._ref_released |= exhausted
+            er, ec = np.nonzero(exhausted)
+            logger.info(
+                "refcheck releases %s: the detector kept disagreeing",
+                ", ".join(f"({r},{c})" for r, c in zip(er.tolist(), ec.tolist())),
+            )
+            disagree &= ~exhausted
+            self._ref_vetoing = bool(disagree.any())
+            if not self._ref_vetoing:
+                return board
         rows, cols = np.nonzero(disagree)
         if self._frame_count != self._ref_log_frame:
             self._ref_log_frame = self._frame_count
@@ -408,9 +444,7 @@ class InProcessAdapter:
         effective[disagree] = reference.board[disagree]
         return effective
 
-    def _maybe_capture_reference(
-        self, board: np.ndarray, observed: np.ndarray, gray: np.ndarray | None, motion_stable: bool
-    ) -> None:
+    def _maybe_capture_reference(self, board: np.ndarray, observed: np.ndarray, gray: np.ndarray | None) -> None:
         """Take a new reference only when nothing can be hiding in the picture.
 
         `board` is the RAW voted board and `observed` this frame's pre-vote observation; both must
@@ -424,6 +458,9 @@ class InProcessAdapter:
         authorise its own replacement reference. Even with all of this, board == game record is
         agreement between two fallible matrices, not proof of the pixels -- REFERENCE_HOLD_SUPPRESS is
         the last line.
+
+        Only ever called on a still frame (the loop reaches it inside its motion gate), so motion is
+        not re-checked here.
         """
         expected = self._expected_np
         if (
@@ -431,12 +468,11 @@ class InProcessAdapter:
             or gray is None
             or not self._bound
             or self._paused
-            or not motion_stable
             or self._lit_points
             or expected is None
             or self._geometry is None
             or self._move_detector.pending_move is not None
-            or bool(self._ref_hold.any())
+            or self._ref_vetoing  # this frame's board is being corrected: don't freeze that state
             or not np.array_equal(board, expected)
             or not np.array_equal(observed, expected)
         ):
@@ -448,7 +484,7 @@ class InProcessAdapter:
             extractor = self._active_extractor()
             self._ref_sampler = build_sampler(w, h, extractor.config, extractor.parallax)
         self._reference = ReferenceFrame(self._ref_sampler, gray, board)
-        self._ref_hold[:] = 0
+        self._reset_reference_budget()
 
     def _measure_pending_glow(self, frame: np.ndarray) -> None:
         """Measure each newly lit lamp that is still a bare lamp (no stone on the camera's board there) and
@@ -671,7 +707,7 @@ class InProcessAdapter:
                         tr.mark("ae")
                     # Reference-frame check runs on the warped frame BEFORE the averager and BEFORE
                     # CLAHE -- see to_gray's docstring for why either one would break it.
-                    ref_gray = to_gray(warped) if self._ref_mode != "off" else None
+                    ref_gray = to_gray(warped) if self._ref_mode != "off" and self._bound and not self._paused else None
                     _t_enh = time.monotonic()
                     warped = self._averager.add(warped)
                     if tr:
@@ -747,7 +783,7 @@ class InProcessAdapter:
                     if tr:
                         tr.mark("assign")
                     observed_board = self._reference_check(stable_board, ref_gray)
-                    self._maybe_capture_reference(stable_board, raw_observation, ref_gray, motion_stable=True)
+                    self._maybe_capture_reference(stable_board, raw_observation, ref_gray)
                     if tr:
                         tr.mark("refchk")
                     self._observation_seq += 1
@@ -1016,11 +1052,13 @@ class InProcessAdapter:
                     # The reference stays valid only while the game moved FORWARD from the position it
                     # shows: every stone it holds is still there in the same colour, and at most one
                     # new stone appeared. Undo, navigation to a sibling, a new game and an undone
-                    # capture all take a stone away from that position, so they drop it. The equality
-                    # guard above matters on its own: the orchestrator re-sends the same expected
-                    # board off game state (physical_play_orchestrator.py:160), not off a change
-                    # event, and a re-send would otherwise read as "zero stones added" and drop the
-                    # reference at game-update frequency.
+                    # capture all take a stone away from that position, so they drop it. The
+                    # orchestrator re-sends the same expected board off game state
+                    # (physical_play_orchestrator.py:160), several times a second while the engine
+                    # streams: a re-send must keep the reference, which this rule does (kept, zero
+                    # added). Do NOT "simplify" it to `added != 1` -- that drops the reference on every
+                    # re-send and the feature would silently never hold anything. The equality check
+                    # above only skips the arithmetic.
                     # Known and accepted: a setup edit that only adds one stone looks like a move
                     # here. The capture guards and REFERENCE_HOLD_SUPPRESS bound that case.
                     ref_board = self._reference.board

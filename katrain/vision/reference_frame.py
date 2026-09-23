@@ -28,14 +28,17 @@ import cv2
 import numpy as np
 
 from katrain.vision.config import BoardConfig
-from katrain.vision.coordinates import grid_to_physical
+from katrain.vision.coordinates import grid_to_pixel_float
 
 # Gray levels. Below this std the patch has no structure to correlate.
 MIN_PATCH_STD = 3.0
-# A pixel at or above this is clipped; a patch with more than MAX_CLIPPED_FRACTION of them carries no
-# usable structure even when a surviving grid line keeps its std up.
+# A pixel at or above CLIP_LEVEL is blown out, one at or below CRUSH_LEVEL is crushed black. A patch
+# with more than MAX_SATURATED_FRACTION of either carries no usable structure even when a surviving
+# grid line keeps its std up -- the glare case and its mirror, a corner lost in deep shadow. A black
+# stone reads ~20-40 in play, well above CRUSH_LEVEL.
 CLIP_LEVEL = 250
-MAX_CLIPPED_FRACTION = 0.25
+CRUSH_LEVEL = 5
+MAX_SATURATED_FRACTION = 0.25
 # Patch radius as a fraction of one cell. Larger leaks the neighbours' changes in (which only makes
 # the rule stay silent, the safe direction); smaller stops covering the stone.
 PATCH_RADIUS_CELLS = 0.45
@@ -44,7 +47,7 @@ PATCH_RADIUS_CELLS = 0.45
 SAMPLE_STEP = 2
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)  # holds an ndarray: identity equality and hash, not elementwise
 class CellSampler:
     """Which pixels of a warped frame belong to each intersection.
 
@@ -72,7 +75,8 @@ def to_gray(warped: np.ndarray) -> np.ndarray:
     changes. The averager shows a new stone at partial weight for several frames, which is exactly the
     window where a veto would erase a move mid-appearance.
     """
-    return cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY) if warped.ndim == 3 else warped
+    # A 2-D input is copied, never aliased: the caller hands the same buffer on to the averager.
+    return cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY) if warped.ndim == 3 else warped.copy()
 
 
 def build_sampler(
@@ -97,7 +101,9 @@ def build_sampler(
     )
     patch = min(2 * max(4, int(round(radius_cells * cell_px))), img_w, img_h)
     half = patch // 2
-    offsets = np.arange(0, patch, step, dtype=np.int32)  # from the block's top-left corner, NOT its centre
+    # From the block's top-left corner, NOT its centre (x0 already subtracts `half`), and started at
+    # step // 2 so the samples stay centred on the block: arange(0, ...) would sit step/2 px up-left.
+    offsets = np.arange(step // 2, patch, step, dtype=np.int32)
 
     nadir_x = nadir_y = None
     k = getattr(parallax, "k", None)
@@ -112,9 +118,7 @@ def build_sampler(
                 # inverse of apply_parallax: where a stone on this intersection appears
                 fx = nadir_x + (fx - nadir_x) / k
                 fy = nadir_y + (fy - nadir_y) / k
-            x_mm, y_mm = grid_to_physical(fx, fy, config)
-            px = x_mm / config.total_width * img_w
-            py = y_mm / config.total_length * img_h
+            px, py = grid_to_pixel_float(fx, fy, img_w, img_h, config)
             x0 = min(max(int(round(px)) - half, 0), img_w - patch)
             y0 = min(max(int(round(py)) - half, 0), img_h - patch)
             index[row * grid + col] = ((y0 + offsets)[:, None] * img_w + (x0 + offsets)[None, :]).reshape(-1)
@@ -122,10 +126,12 @@ def build_sampler(
 
 
 def _usable(patches: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """(std, usable): a patch is usable when it has structure and is not mostly clipped."""
+    """(std, usable): a patch is usable when it has structure and is neither mostly blown out nor
+    mostly crushed black."""
     std = patches.std(axis=1)
-    clipped = (patches >= CLIP_LEVEL).mean(axis=1)
-    return std, (std >= MIN_PATCH_STD) & (clipped <= MAX_CLIPPED_FRACTION)
+    blown = (patches >= CLIP_LEVEL).mean(axis=1)
+    crushed = (patches <= CRUSH_LEVEL).mean(axis=1)
+    return std, (std >= MIN_PATCH_STD) & (blown <= MAX_SATURATED_FRACTION) & (crushed <= MAX_SATURATED_FRACTION)
 
 
 class ReferenceFrame:

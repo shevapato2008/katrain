@@ -53,7 +53,8 @@ def test_the_patch_of_every_cell_is_centred_on_its_intersection_and_inside_the_f
     for row, col in ((0, 0), (0, 18), (18, 0), (18, 18), (0, 9), (9, 0), (18, 9), (9, 18), (2, 2), (9, 9)):
         ys, xs = np.divmod(sampler.flat_index[row * 19 + col], SIZE)
         x, y = _cell_centre(row, col)
-        assert abs((xs.min() + xs.max()) / 2 - x) <= 2 and abs((ys.min() + ys.max()) / 2 - y) <= 2
+        # < 1, not <= 2: the first draft sampled arange(0, patch, 2) and sat exactly 1 px up-left
+        assert abs((xs.min() + xs.max()) / 2 - x) < 1 and abs((ys.min() + ys.max()) / 2 - y) < 1
 
 
 def test_the_patch_follows_the_mount_parallax_outward():
@@ -137,6 +138,24 @@ def test_a_mostly_clipped_cell_with_one_grid_line_left_is_also_cannot_tell():
     assert np.isnan(sim[2][2]) and not mask[2][2]
 
 
+def test_a_mostly_crushed_cell_with_one_grid_line_left_is_also_cannot_tell():
+    """The mirror of the glare case: a corner lost in deep window shadow."""
+    before = _board_frame([(2, 2, BLACK)])
+    after = before.copy()
+    x, y = _cell_centre(2, 2)
+    after[y - 30 : y + 30, x - 30 : x + 30] = 2
+    after[y - 30 : y + 30, x - 2 : x + 2] = 60  # one grid line keeps the std up
+    reference = ReferenceFrame(_sampler(), to_gray(before), _empty_board())
+    mask, sim = reference.unchanged(to_gray(after), ZNCC)
+    assert np.isnan(sim[2][2]) and not mask[2][2]
+
+
+def test_a_sampler_compares_and_hashes_by_identity():
+    sampler = _sampler()
+    assert sampler == sampler and sampler != _sampler()  # no elementwise ndarray comparison
+    assert len({sampler}) == 1
+
+
 def test_a_frame_of_the_wrong_size_is_refused():
     reference = ReferenceFrame(_sampler(), to_gray(_board_frame()), _empty_board())
     with pytest.raises(ValueError):
@@ -194,9 +213,24 @@ def test_an_invented_stone_is_suppressed_but_only_for_a_few_frames():
     detector_says[12][3] = WHITE
     for _ in range(REFERENCE_HOLD_SUPPRESS):
         assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == EMPTY
-    # the detector keeps insisting: the reference loses, and drops itself so a real stone can land
+    # the detector keeps insisting: it wins that cell for the rest of this reference's life
     assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == WHITE
-    assert adapter._reference is None
+    assert adapter._ref_released[12][3] and adapter._reference is not None
+    assert adapter._reference_check(detector_says, to_gray(frame))[12][3] == WHITE
+
+
+def test_releasing_an_invented_stone_does_not_cut_the_hold_on_a_lost_one():
+    """One daylight glare often does both at once; the review found that dropping the whole reference
+    on the first exhausted cell ended the long hold after only REFERENCE_HOLD_SUPPRESS frames."""
+    truth = _empty_board()
+    truth[4][4] = BLACK
+    frame = _board_frame([(4, 4, BLACK)])
+    adapter = _with_reference("on", frame, truth)
+    detector_says = _empty_board()  # lost (4,4) ...
+    detector_says[12][3] = WHITE  # ... and invented (12,3)
+    for _ in range(REFERENCE_HOLD_SUPPRESS + 5):
+        effective = adapter._reference_check(detector_says, to_gray(frame))
+    assert effective[4][4] == BLACK and effective[12][3] == WHITE
 
 
 def test_a_missing_stone_is_held_far_longer_than_an_invented_one():
@@ -275,32 +309,30 @@ def test_the_reference_is_taken_only_when_nothing_can_be_hiding_in_it():
     board[4][4] = BLACK
     adapter._expected_np = board
 
-    adapter._maybe_capture_reference(_empty_board(), _empty_board(), gray, motion_stable=True)  # camera disagrees
-    assert adapter._reference is None
-    adapter._maybe_capture_reference(board, board, gray, motion_stable=False)  # something is moving
+    adapter._maybe_capture_reference(_empty_board(), _empty_board(), gray)  # camera disagrees
     assert adapter._reference is None
     adapter._lit_points = {(3, 3)}
-    adapter._maybe_capture_reference(board, board, gray, motion_stable=True)  # a lamp is lit
+    adapter._maybe_capture_reference(board, board, gray)  # a lamp is lit
     assert adapter._reference is None
     adapter._lit_points = set()
     adapter._paused = True
-    adapter._maybe_capture_reference(board, board, gray, motion_stable=True)  # recognition is paused
+    adapter._maybe_capture_reference(board, board, gray)  # recognition is paused
     assert adapter._reference is None
     adapter._paused = False
     real_detector, adapter._move_detector = adapter._move_detector, SimpleNamespace(pending_move=(4, 4, BLACK))
-    adapter._maybe_capture_reference(board, board, gray, motion_stable=True)  # a move is being confirmed
+    adapter._maybe_capture_reference(board, board, gray)  # a move is being confirmed
     assert adapter._reference is None
     adapter._move_detector = real_detector
-    adapter._ref_hold[7][7] = 1
-    adapter._maybe_capture_reference(board, board, gray, motion_stable=True)  # a cell is under veto
+    adapter._ref_vetoing = True
+    adapter._maybe_capture_reference(board, board, gray)  # this frame's board is being corrected
     assert adapter._reference is None
-    adapter._ref_hold[:] = 0
+    adapter._ref_vetoing = False
     stale = board.copy()
     stale[4][4] = EMPTY  # this frame's own observation has not caught up with the vote
-    adapter._maybe_capture_reference(board, stale, gray, motion_stable=True)
+    adapter._maybe_capture_reference(board, stale, gray)
     assert adapter._reference is None
 
-    adapter._maybe_capture_reference(board, board, gray, motion_stable=True)
+    adapter._maybe_capture_reference(board, board, gray)
     assert adapter._reference is not None and adapter._reference.board[4][4] == BLACK
 
 
@@ -309,15 +341,15 @@ def test_the_same_expected_board_is_never_re_captured():
     adapter = _adapter("on")
     board = _empty_board()
     adapter._expected_np = board
-    adapter._maybe_capture_reference(board, board, to_gray(_board_frame()), motion_stable=True)
+    adapter._maybe_capture_reference(board, board, to_gray(_board_frame()))
     first = adapter._reference
-    adapter._maybe_capture_reference(board, board, to_gray(_board_frame(seed=1)), motion_stable=True)
+    adapter._maybe_capture_reference(board, board, to_gray(_board_frame(seed=1)))
     assert adapter._reference is first
 
     board = board.copy()
     board[4][4] = BLACK
     adapter._expected_np = board
-    adapter._maybe_capture_reference(board, board, to_gray(_board_frame([(4, 4, BLACK)])), motion_stable=True)
+    adapter._maybe_capture_reference(board, board, to_gray(_board_frame([(4, 4, BLACK)])))
     assert adapter._reference is not first and adapter._reference.board[4][4] == BLACK
 
 
@@ -357,11 +389,33 @@ def test_a_move_keeps_the_reference_but_an_undo_or_a_jump_drops_it():
         assert (adapter._reference is not None) is kept
 
 
+def test_one_passing_veto_does_not_freeze_the_reference_for_good():
+    """The first draft blocked capture while any hold count was non-zero, and only a capture reset
+    them: one frame of glare kept the reference on an old position for the rest of its life."""
+    ref_board = _empty_board()
+    adapter = _with_reference("on", _board_frame(), ref_board)
+    glare = _empty_board()
+    glare[12][3] = WHITE
+    adapter._reference_check(glare, to_gray(_board_frame()))  # one frame of glare
+    adapter._reference_check(_empty_board(), to_gray(_board_frame()))  # and it is gone
+    moved = ref_board.copy()
+    moved[4][4] = BLACK  # the game moves on, the player plays it
+    adapter._expected_np = moved
+    adapter._maybe_capture_reference(moved, moved, to_gray(_board_frame([(4, 4, BLACK)])))
+    assert adapter._reference.board[4][4] == BLACK
+
+
+def test_an_unknown_mode_is_reported_and_changes_nothing(caplog):
+    with caplog.at_level("WARNING"):
+        adapter = _adapter("On")
+    assert adapter._ref_mode == "shadow" and "reference_check" in caplog.text
+
+
 def test_off_mode_never_takes_a_reference():
     adapter = _adapter("off")
     board = _empty_board()
     adapter._expected_np = board
-    adapter._maybe_capture_reference(board, board, to_gray(_board_frame()), motion_stable=True)
+    adapter._maybe_capture_reference(board, board, to_gray(_board_frame()))
     assert adapter._reference is None
 
 

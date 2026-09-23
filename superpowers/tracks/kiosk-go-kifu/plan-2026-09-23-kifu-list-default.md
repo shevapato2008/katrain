@@ -18,7 +18,7 @@
 - 设计稿屏 15(artifact `e4d3c7ef` 第 34 版;源 `smartbox-software` 分支
   `feat/kiosk-go-kifu-list-design-2026-09-23` 提交 `d3c67394f`,
   `superpowers/shared/kiosk-shell/sample-go/go-kiosk.tmpl.html` 的 `data-screen="kifu"`,参考图
-  `shots/15-kifu.png` sha256 `47699255b9ea40bb74b4b4ce0a77996ac05cbf7cdc0eb354dd014776aff11799`)。
+  `shots/15-kifu.png` sha256 `3a868711d4314ab72240d0a5a0836786909c8bf9123d4f948c35dcc6a793ba62`)。
 - 直播 kiosk 端删除的前一个裁定:Fan 2026-09-22「在 kiosk 界面,我们就直接删掉直播模块吧……在 galaxy 模块保留就好」。
 
 ## Global Constraints
@@ -142,14 +142,17 @@ describe('屏 15 棋谱 · 名局列表默认摊开', () => {
   // 搜索防抖原先挂载时也跑一次:350ms 后 setQuery('') + setPage(1)。列表藏在开关后面时没人能在
   // 350ms 内翻页;默认摊开后,进屏就点「下一页」会被它弹回第 1 页。
   it('进来马上翻页,不会被搜索防抖弹回第 1 页', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // 全假时钟:点击一定落在挂载后 350ms 以内(`findBy*` 会让真时间流过去,点击可能晚于那一下)。
+    vi.useFakeTimers();
     try {
       getAlbums.mockResolvedValue({ items: [album(1)], total: 20, page: 1, page_size: 6 });
       renderPage();
-      await screen.findByText('1 / 4');
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(screen.getByText('1 / 4')).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: '下一页' }));
-      await screen.findByText('2 / 4');
-      await vi.advanceTimersByTimeAsync(1000);
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(screen.getByText('2 / 4')).toBeInTheDocument();
+      await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
       expect(screen.getByText('2 / 4')).toBeInTheDocument();
       expect(getAlbums).toHaveBeenLastCalledWith({ q: undefined, page: 2, page_size: 6 });
     } finally {
@@ -286,6 +289,8 @@ Expected: FAIL —— 「没有卡片」(找到 3 张 `.kiosk-card`)、「进来
 Run: `cd katrain/web/ui && npx vitest run src/kiosk/__tests__/KifuPage.test.tsx && npx tsc -b && npx eslint src/kiosk/pages/KifuPage.tsx src/kiosk/__tests__/KifuPage.test.tsx`
 Expected: PASS;tsc 0;eslint 0 problems。
 
+  **变异一次**:注掉 `if (searchInput === query) return;` → 「进来马上翻页」应红 → 恢复。(第一版用 `shouldAdvanceTime` 写的这条对变异是绿的:`findBy*` 让真时间流过 350ms,点击晚于那一下。)
+
 - [ ] **Step 5: 真浏览器 —— 滚动闸与几何闸**
 
 `kiosk-shell-scroll.spec.ts` 屏 15 那条删掉两行「展开搜索」(`getByRole('button', { name: /搜棋谱/ }).click()` 与其注释),
@@ -297,7 +302,7 @@ Expected: 全过(与本分支改动前的名字集合比,只有屏 15 那条的�
 - [ ] **Step 6: 四图**
 
 `reference-shots.json` 的 `15-kifu.png` 改成
-`{"sha256": "47699255b9ea40bb74b4b4ce0a77996ac05cbf7cdc0eb354dd014776aff11799", "shotFrom": "feat/kiosk-go-kifu-list-design-2026-09-23"}`。
+`{"sha256": "3a868711d4314ab72240d0a5a0836786909c8bf9123d4f948c35dcc6a793ba62", "shotFrom": "feat/kiosk-go-kifu-list-design-2026-09-23"}`。
 `kiosk-screen-15-kifu.fourup.spec.ts` 注释 ①② 改为「稿子 2026-09-23 已按 Fan 改判重画(列表默认摊开、无直播组、无『界面未接』块),预期差异只剩 fixture 数据」,图注去掉「搜棋谱是开关」那句。
 
 Run: `cd katrain/web/ui && KATRAIN_PW_VISUAL_PORT=5273 npx playwright test --config=playwright.visual.config.ts tests/kiosk-screen-15-kifu.fourup.spec.ts`

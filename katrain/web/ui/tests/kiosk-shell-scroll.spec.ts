@@ -393,7 +393,7 @@ const KIFU_ROWS = Array.from({ length: 6 }, (_, i) => ({
   komi: 7.5, rules: 'chinese', round_name: '半决赛',
 }));
 
-test('棋谱:展开搜索之后右栏自己滚,最后一块(最近摆过)的末行滚得到', async ({ page }) => {
+test('棋谱:名局列表摊开时右栏自己滚,最后一块(最近摆过)的末行滚得到', async ({ page }) => {
   // 六条「最近摆过」是这一屏**撑到溢出**的一半内容 —— 种在读不到的键上,
   // 量到的就是装得下那一档的数,按承重关卡的规矩一概不算。
   await page.addInitScript((uuid: string) => {
@@ -418,8 +418,7 @@ test('棋谱:展开搜索之后右栏自己滚,最后一块(最近摆过)的末�
     Math.round(document.querySelector('.kiosk-side')!.getBoundingClientRect().width));
   expect(railW, '右栏不是 680 —— 后面量的滚动都建在错的宽度上').toBe(680);
 
-  // 展开搜索:这是唯一会让这条栏长一截的交互。
-  await page.getByRole('button', { name: /搜棋谱/ }).click();
+  // 名局列表 2026-09-23 起一进来就摊开(Fan)—— 不用再先按「搜棋谱」,六行 + 翻页就是这条栏的常态。
   await page.waitForSelector('[data-testid="kifu-search"] .kiosk-row');
 
   const before = await overflowOf(page);

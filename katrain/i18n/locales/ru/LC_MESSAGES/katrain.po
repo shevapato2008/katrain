@@ -3973,10 +3973,10 @@ msgid "setup:my_side"
 msgstr "Мой цвет"
 
 msgid "setup:take_black"
-msgstr "Чёрные"
+msgstr "Играть чёрными"
 
 msgid "setup:take_white"
-msgstr "Белые"
+msgstr "Играть белыми"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -6807,3 +6807,77 @@ msgstr ""
 
 msgid "engine:warmup_unavailable"
 msgstr "Движок ИИ ещё не готов — повторите попытку позже"
+
+msgid "platform:fact_whose"
+msgstr "Чей это аккаунт"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Это собственный аккаунт Golaxy, а не аккаунт приставки. Ещё нет аккаунта? "
+"Зарегистрируйтесь в приложении Golaxy на телефоне — на приставке "
+"зарегистрироваться нельзя."
+
+msgid "platform:fact_three_ways"
+msgstr "Три способа"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Сканирование — вообще ничего не нужно вводить. Код из SMS — просто дождитесь"
+" сообщения. Пароль — самый быстрый способ, но вводить его придётся на "
+"сенсорном экране."
+
+msgid "platform:fact_stored"
+msgstr "Что остаётся на приставке"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Здесь сохраняется только токен входа, выданный Golaxy, — пароль не хранится."
+" Отключить можно в любой момент в настройках."
+
+msgid "platform:fact_only_one"
+msgstr "На приставке — только так"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"На сайте OGS также работают аккаунты Google, Apple и другие — для этого "
+"нужен браузер, так что это оставлено для зарубежной версии."
+
+msgid "platform:fact_third_party"
+msgstr "Регистрация через сторонний сервис"
+
+msgid "platform:fact_third_party_body"
+msgstr "У таких аккаунтов нет пароля OGS — сначала задайте его на сайте OGS."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Ваш аккаунт на online-go.com. Регистрация должна проходить в браузере — на "
+"приставке это сделать нельзя."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Здесь сохраняется только сессия после входа — пароль не хранится. Отключить "
+"можно в любой момент в настройках."
+
+msgid "platform:login_tab_sms"
+msgstr "Код из SMS"
+
+msgid "platform:login_tab_password"
+msgstr "Пароль"
+
+msgid "platform:login_field_phone"
+msgstr "Номер телефона"
+
+msgid "platform:login_field_code"
+msgstr "Код из SMS"
+
+msgid "platform:login_sub_sms"
+msgstr "Не подключено · вход по коду из SMS"
+
+msgid "platform:login_sub_password"
+msgstr "Не подключено · вход по аккаунту и паролю {name}"
+
+msgid "platform:login_title"
+msgstr "Вход в {name}"
+
+msgid "platform:login_tabs"
+msgstr "Способ входа"

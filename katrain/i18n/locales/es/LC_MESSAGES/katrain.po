@@ -3898,10 +3898,10 @@ msgid "setup:my_side"
 msgstr "Mi color"
 
 msgid "setup:take_black"
-msgstr "Negras"
+msgstr "Jugar con negras"
 
 msgid "setup:take_white"
-msgstr "Blancas"
+msgstr "Jugar con blancas"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -6760,7 +6760,84 @@ msgstr ""
 "el tablero físico comparten el mismo canal"
 
 msgid "engine:warmup_warming"
-msgstr "El motor de IA se está preparando — mientras tanto puedes usar la biblioteca de partidas, los cursos y otras funciones"
+msgstr ""
+"El motor de IA se está preparando — mientras tanto puedes usar la biblioteca"
+" de partidas, los cursos y otras funciones"
 
 msgid "engine:warmup_unavailable"
 msgstr "El motor de IA aún no está listo — inténtalo de nuevo más tarde"
+
+msgid "platform:fact_whose"
+msgstr "De quién es la cuenta"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Es la cuenta propia de Golaxy, no la de la caja. ¿Aún no tienes cuenta? "
+"Regístrate en la app de Golaxy en tu teléfono — no se puede registrar en la "
+"caja."
+
+msgid "platform:fact_three_ways"
+msgstr "Tres formas"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Escanear: no hay que escribir nada. Código SMS: espera un mensaje de texto. "
+"Contraseña: la más rápida, pero hay que escribirla en la pantalla táctil."
+
+msgid "platform:fact_stored"
+msgstr "Qué queda en la caja"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Solo se guarda el token de acceso que emite Golaxy, no la contraseña. "
+"Desconéctala cuando quieras desde Ajustes."
+
+msgid "platform:fact_only_one"
+msgstr "En la caja, solo así"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"En la web de OGS también funcionan cuentas de Google, Apple y otras — esa "
+"vía necesita un navegador, así que se deja para la edición internacional."
+
+msgid "platform:fact_third_party"
+msgstr "Registrado con un tercero"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"Esas cuentas no tienen contraseña de OGS — primero hay que configurar una en"
+" la web de OGS."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Tu cuenta en online-go.com. El registro debe hacerse en un navegador — no se"
+" puede hacer en la caja."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Solo se guarda la sesión tras iniciar sesión, no la contraseña. Desconéctala"
+" cuando quieras desde Ajustes."
+
+msgid "platform:login_tab_sms"
+msgstr "Código SMS"
+
+msgid "platform:login_tab_password"
+msgstr "Contraseña"
+
+msgid "platform:login_field_phone"
+msgstr "Número de teléfono"
+
+msgid "platform:login_field_code"
+msgstr "Código SMS"
+
+msgid "platform:login_sub_sms"
+msgstr "Sin conexión · inicia sesión con un código SMS"
+
+msgid "platform:login_sub_password"
+msgstr "Sin conexión · inicia sesión con la cuenta y contraseña de {name}"
+
+msgid "platform:login_title"
+msgstr "Iniciar sesión en {name}"
+
+msgid "platform:login_tabs"
+msgstr "Método de acceso"

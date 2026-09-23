@@ -4015,10 +4015,10 @@ msgid "setup:my_side"
 msgstr "My colour"
 
 msgid "setup:take_black"
-msgstr "Black"
+msgstr "Take Black"
 
 msgid "setup:take_white"
-msgstr "White"
+msgstr "Take White"
 
 msgid "setup:no_camera_hint"
 msgstr ""
@@ -6872,3 +6872,76 @@ msgstr ""
 
 msgid "engine:warmup_unavailable"
 msgstr "AI engine is not ready yet — please try again later"
+
+msgid "platform:fact_whose"
+msgstr "Whose account"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Golaxy's own account, not the box's. No account yet? Register in the Golaxy "
+"app on your phone — you can't sign up on the box."
+
+msgid "platform:fact_three_ways"
+msgstr "Three ways in"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Scan — no typing at all. SMS code — wait for a text. Password — fastest, but"
+" you type it on the touchscreen."
+
+msgid "platform:fact_stored"
+msgstr "What stays on the box"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Only the login token Golaxy issues stays here — no password. Disconnect any "
+"time in Settings."
+
+msgid "platform:fact_only_one"
+msgstr "Only this way on the box"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"OGS's website also supports Google, Apple, and other accounts — that route "
+"needs a browser, so it's saved for the overseas edition."
+
+msgid "platform:fact_third_party"
+msgstr "Signed up via a third party?"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"Those accounts have no OGS password — set one on the OGS website first."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"Your account on online-go.com. Sign-up has to happen in a browser — it can't"
+" be done on the box."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Only the session after signing in stays here — no password. Disconnect any "
+"time in Settings."
+
+msgid "platform:login_tab_sms"
+msgstr "SMS code"
+
+msgid "platform:login_tab_password"
+msgstr "Password"
+
+msgid "platform:login_field_phone"
+msgstr "Phone number"
+
+msgid "platform:login_field_code"
+msgstr "SMS code"
+
+msgid "platform:login_sub_sms"
+msgstr "Not connected · sign in with an SMS code"
+
+msgid "platform:login_sub_password"
+msgstr "Not connected · sign in with {name}'s account and password"
+
+msgid "platform:login_title"
+msgstr "Sign in to {name}"
+
+msgid "platform:login_tabs"
+msgstr "Sign-in method"

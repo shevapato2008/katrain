@@ -4073,10 +4073,10 @@ msgid "setup:my_side"
 msgstr "Benim rengim"
 
 msgid "setup:take_black"
-msgstr "Siyah"
+msgstr "Siyahı al"
 
 msgid "setup:take_white"
-msgstr "Beyaz"
+msgstr "Beyazı al"
 
 msgid "setup:no_camera_hint"
 msgstr "Bu cihazda kalibre kamera yok, gerçek tahta şu an kullanılamaz"
@@ -6907,3 +6907,78 @@ msgstr ""
 msgid "engine:warmup_unavailable"
 msgstr ""
 "Yapay zekâ motoru henüz hazır değil — lütfen daha sonra tekrar deneyin"
+
+msgid "platform:fact_whose"
+msgstr "Kimin hesabı"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"Bu, kutunun değil Golaxy'nin kendi hesabıdır. Hesabınız yok mu? "
+"Telefonunuzdaki Golaxy uygulamasından kaydolun — kutu üzerinden kayıt "
+"olunamaz."
+
+msgid "platform:fact_three_ways"
+msgstr "Üç yol"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"Tarama — tek harf bile yazmaya gerek yok. SMS kodu — bir mesaj beklemeniz "
+"yeterli. Parola — en hızlısı, ama dokunmatik ekrandan yazmanız gerekir."
+
+msgid "platform:fact_stored"
+msgstr "Kutuda ne kalır"
+
+msgid "platform:fact_stored_golaxy"
+msgstr ""
+"Burada yalnızca Golaxy'nin verdiği oturum jetonu kalır — parola saklanmaz. "
+"İstediğiniz zaman Ayarlar'dan bağlantıyı kesebilirsiniz."
+
+msgid "platform:fact_only_one"
+msgstr "Kutuda yalnızca bu yol"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"OGS web sitesinde Google, Apple gibi hesaplar da kullanılabilir; bu yol "
+"tarayıcı gerektirdiğinden yurt dışı sürümüne bırakıldı."
+
+msgid "platform:fact_third_party"
+msgstr "Üçüncü taraftan kaydoldunuzsa"
+
+msgid "platform:fact_third_party_body"
+msgstr ""
+"Bu tür hesapların OGS parolası yoktur — önce OGS web sitesinden bir tane "
+"oluşturmanız gerekir."
+
+msgid "platform:fact_whose_ogs"
+msgstr ""
+"online-go.com hesabınız. Kayıt işlemi bir tarayıcıda yapılmalıdır — kutu "
+"üzerinden yapılamaz."
+
+msgid "platform:fact_stored_ogs"
+msgstr ""
+"Burada yalnızca oturum açtıktan sonraki oturum kalır — parola saklanmaz. "
+"İstediğiniz zaman Ayarlar'dan bağlantıyı kesebilirsiniz."
+
+msgid "platform:login_tab_sms"
+msgstr "SMS kodu"
+
+msgid "platform:login_tab_password"
+msgstr "Parola"
+
+msgid "platform:login_field_phone"
+msgstr "Telefon numarası"
+
+msgid "platform:login_field_code"
+msgstr "SMS kodu"
+
+msgid "platform:login_sub_sms"
+msgstr "Bağlı değil · SMS koduyla giriş yapın"
+
+msgid "platform:login_sub_password"
+msgstr "Bağlı değil · {name} hesabı ve parolasıyla giriş yapın"
+
+msgid "platform:login_title"
+msgstr "{name} girişi"
+
+msgid "platform:login_tabs"
+msgstr "Giriş yöntemi"

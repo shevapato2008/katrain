@@ -6639,3 +6639,63 @@ msgstr "AI 引擎準備中，可先使用棋譜、課程等功能"
 
 msgid "engine:warmup_unavailable"
 msgstr "AI 引擎暫未就緒，可稍後重試"
+
+msgid "platform:fact_whose"
+msgstr "用誰的帳號"
+
+msgid "platform:fact_whose_golaxy"
+msgstr "星陣自己的帳號，不是智星盒的。沒有就在手機上的星陣 APP 註冊——盒上註冊不了。"
+
+msgid "platform:fact_three_ways"
+msgstr "三種都能用"
+
+msgid "platform:fact_three_ways_body"
+msgstr "掃碼一個字都不用打；驗證碼等一條簡訊；密碼最快，但要在觸屏上打。"
+
+msgid "platform:fact_stored"
+msgstr "盒上留下什麼"
+
+msgid "platform:fact_stored_golaxy"
+msgstr "只留星陣發的登入權杖，不留密碼。想斷開隨時去設定裡。"
+
+msgid "platform:fact_only_one"
+msgstr "盒上只做這一種"
+
+msgid "platform:fact_only_one_body"
+msgstr "OGS 網頁上還能用 Google、Apple 等帳號；那條要跳瀏覽器，留給出海版。"
+
+msgid "platform:fact_third_party"
+msgstr "用第三方註冊的"
+
+msgid "platform:fact_third_party_body"
+msgstr "那種帳號沒有 OGS 密碼，得先去 OGS 網頁上設一個。"
+
+msgid "platform:fact_whose_ogs"
+msgstr "online-go.com 的帳號。註冊要在瀏覽器裡做，盒上做不了。"
+
+msgid "platform:fact_stored_ogs"
+msgstr "只留登入後的工作階段，不留密碼。想斷開隨時去設定裡。"
+
+msgid "platform:login_tab_sms"
+msgstr "驗證碼"
+
+msgid "platform:login_tab_password"
+msgstr "密碼"
+
+msgid "platform:login_field_phone"
+msgstr "手機號碼"
+
+msgid "platform:login_field_code"
+msgstr "驗證碼"
+
+msgid "platform:login_sub_sms"
+msgstr "未連接 · 用手機驗證碼登入"
+
+msgid "platform:login_sub_password"
+msgstr "未連接 · 用{name}的帳號密碼登入"
+
+msgid "platform:login_title"
+msgstr "登入{name}"
+
+msgid "platform:login_tabs"
+msgstr "登入方式"

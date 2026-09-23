@@ -6602,3 +6602,67 @@ msgstr "AI 엔진 준비 중입니다. 기보 라이브러리, 강좌 등 다른
 
 msgid "engine:warmup_unavailable"
 msgstr "AI 엔진이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요"
+
+msgid "platform:fact_whose"
+msgstr "누구의 계정"
+
+msgid "platform:fact_whose_golaxy"
+msgstr ""
+"스마트박스가 아닌 골락시 자체 계정입니다. 계정이 없다면 휴대폰의 골락시 앱에서 가입하세요 — 박스에서는 가입할 수 없습니다."
+
+msgid "platform:fact_three_ways"
+msgstr "세 가지 방법"
+
+msgid "platform:fact_three_ways_body"
+msgstr ""
+"스캔은 한 글자도 입력할 필요가 없습니다. 인증 코드는 문자 메시지를 기다리면 됩니다. 비밀번호가 가장 빠르지만 터치스크린으로 입력해야 "
+"합니다."
+
+msgid "platform:fact_stored"
+msgstr "박스에 남는 것"
+
+msgid "platform:fact_stored_golaxy"
+msgstr "골락시가 발급한 로그인 토큰만 남고 비밀번호는 저장되지 않습니다. 연결 해제는 언제든 설정에서 할 수 있습니다."
+
+msgid "platform:fact_only_one"
+msgstr "박스에서는 이 방법뿐"
+
+msgid "platform:fact_only_one_body"
+msgstr ""
+"OGS 웹사이트에서는 Google, Apple 등의 계정도 사용할 수 있지만, 그 경로는 브라우저가 필요해서 해외판으로 남겨둡니다."
+
+msgid "platform:fact_third_party"
+msgstr "제3자로 가입한 경우"
+
+msgid "platform:fact_third_party_body"
+msgstr "그런 계정에는 OGS 비밀번호가 없습니다. 먼저 OGS 웹사이트에서 설정해야 합니다."
+
+msgid "platform:fact_whose_ogs"
+msgstr "online-go.com 계정입니다. 가입은 브라우저에서 해야 하며 박스에서는 할 수 없습니다."
+
+msgid "platform:fact_stored_ogs"
+msgstr "로그인 후 세션만 남고 비밀번호는 저장되지 않습니다. 연결 해제는 언제든 설정에서 할 수 있습니다."
+
+msgid "platform:login_tab_sms"
+msgstr "인증번호"
+
+msgid "platform:login_tab_password"
+msgstr "비밀번호"
+
+msgid "platform:login_field_phone"
+msgstr "전화번호"
+
+msgid "platform:login_field_code"
+msgstr "인증번호"
+
+msgid "platform:login_sub_sms"
+msgstr "연결 안 됨 · 문자 인증번호로 로그인"
+
+msgid "platform:login_sub_password"
+msgstr "연결 안 됨 · {name} 계정과 비밀번호로 로그인"
+
+msgid "platform:login_title"
+msgstr "{name} 로그인"
+
+msgid "platform:login_tabs"
+msgstr "로그인 방식"
